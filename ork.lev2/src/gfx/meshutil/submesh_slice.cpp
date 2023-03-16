@@ -90,6 +90,181 @@ void submeshSliceWithPlane(
   }
 }
 
+/////////////////////////////////////////////////////
+// create edge chains
+/////////////////////////////////////////////////////
+
+struct EdgeChain {
+  std::vector<edge_ptr_t> _edges;
+  std::unordered_set<vertex_ptr_t> _vertices;
+};
+
+using edge_chain_ptr_t = std::shared_ptr<EdgeChain>;
+
+/////////////////////////////////////////////////
+
+struct EdgeLoop {
+  std::vector<edge_ptr_t> _edges;
+};
+
+using edge_loop_ptr_t = std::shared_ptr<EdgeLoop>;
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct ChainLinker {
+
+  //////////////////////////////////////////////////////////
+  edge_chain_ptr_t add_edge(edge_ptr_t e) {
+    auto va = e->_vertexA;
+    auto vb = e->_vertexB;
+    _vtxrefcounts[va]++;
+    _vtxrefcounts[vb]++;
+    //printf("grab va<%d> vb<%d>\n", va->_poolindex, vb->_poolindex);
+    //////////////////////////////////
+    edge_chain_ptr_t dest_chain;
+    for (auto c : _edge_chains) {
+      auto last_edge = *c->_edges.rbegin();
+      if (last_edge->_vertexB == va) {
+        dest_chain = c;
+      }
+    }
+    //////////////////////////////////
+    if (dest_chain) { // previous dest chain found !
+      //printf("Added to Chain\n");
+      // find position
+      dest_chain->_edges.push_back(e);
+      dest_chain->_vertices.insert(vb);
+    }
+    //////////////////////////////////
+    else { // no dest chain found, create a new one
+      //printf("Create New Chain vb<%d>\n", vb->_poolindex);
+      dest_chain = std::make_shared<EdgeChain>();
+      dest_chain->_edges.push_back(e);
+      dest_chain->_vertices.insert(vb);
+      _edge_chains.push_back(dest_chain);
+    }
+    return dest_chain;
+  }
+  //////////////////////////////////////////////////////////
+  bool loops_possible() const{
+    for (auto vrcitem : _vtxrefcounts) {
+      vertex_ptr_t vtx = vrcitem.first;
+      int count        = vrcitem.second;
+      if (count != 2) {
+        return false;
+      }
+    }
+    return true;
+  }
+  //////////////////////////////////////////////////////////
+  edge_chain_ptr_t findChainForVertex(vertex_ptr_t va ){
+    for( auto chain : _edge_chains ){
+      auto& edges = chain->_edges;
+      auto last_edge = *edges.rbegin();
+      if( last_edge->_vertexB == va ){
+        return chain;
+      }
+    }
+    return nullptr;
+  }
+  //////////////////////////////////////////////////////////
+  void removeChain(edge_chain_ptr_t chain_to_remove){
+    printf( "removeChain chain<%p> numedges<%zu>\n", (void*) chain_to_remove.get(), chain_to_remove->_edges.size() );
+    auto the_lambda = std::remove_if(_edge_chains.begin(), _edge_chains.end(), [chain_to_remove](edge_chain_ptr_t testchain) { return (testchain==chain_to_remove); });
+    _edge_chains.erase(the_lambda,_edge_chains.end());    
+  }
+  //////////////////////////////////////////////////////////
+  void closeChains(){
+    std::unordered_set<edge_chain_ptr_t> closed;
+    for( auto chain : _edge_chains ){
+      auto first_edge = *chain->_edges.begin();
+      auto last_edge = *chain->_edges.rbegin();
+      if( first_edge->_vertexA == last_edge->_vertexB ){
+        closed.insert(chain);
+      }
+    }
+    for( auto chain : closed ){
+      removeChain(chain);
+      auto loop = std::make_shared<EdgeLoop>();
+      loop->_edges = chain->_edges;
+      _edge_loops.push_back(loop);
+    }
+  }
+  //////////////////////////////////////////////////////////
+  void link(){
+    OrkAssert( loops_possible() );
+
+    /////////////////////////////////////////////////////
+
+    printf("prelink numchains<%zu>\n", _edge_chains.size());
+
+    //////////////////////////////////////////////////////////////////////////
+    // link chains
+    //////////////////////////////////////////////////////////////////////////
+
+    bool keep_joining = true;
+
+    while (keep_joining) {
+
+      //////////////////////////////////////////////////
+      // find a left and right chain to join
+      //////////////////////////////////////////////////
+
+      edge_chain_ptr_t left_chain;
+      edge_chain_ptr_t right_chain;
+
+      for( auto c : _edge_chains ){
+        auto subj_vtx = (*c->_edges.begin())->_vertexA;
+        auto c2 = findChainForVertex(subj_vtx);
+        if(c2){
+          left_chain = c2;
+          right_chain = c;
+          break;
+        }
+      }
+
+      //////////////////////////////////////////////////
+      // join the left and right chain
+      //////////////////////////////////////////////////
+
+      if( left_chain and right_chain ){
+        left_chain->_edges.insert(
+            left_chain->_edges.end(),   //
+            right_chain->_edges.begin(), //
+            right_chain->_edges.end());
+
+        if(_edge_chains.size()>1)
+          removeChain(right_chain);
+
+        keep_joining = _edge_chains.size()>1;
+      }
+
+      //////////////////////////////////////////////////
+      // no joinable chains...
+      //////////////////////////////////////////////////
+
+      else{
+        keep_joining = false;
+      }
+
+      //////////////////////////////////////////////////
+
+    } // while (progress_made) {
+
+    closeChains();    
+
+    printf("postlink numchains<%zu>\n", _edge_chains.size());
+    printf("postlink numloops<%zu>\n", _edge_loops.size());
+
+  }
+  //////////////////////////////////////////////////////////
+  std::vector<edge_chain_ptr_t> _edge_chains;
+  std::vector<edge_loop_ptr_t> _edge_loops;
+  std::unordered_map<vertex_ptr_t, int> _vtxrefcounts;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
 void submeshClipWithPlane(
     const submesh& inpsubmesh, //
     fplane3& slicing_plane,    //
@@ -113,6 +288,7 @@ void submeshClipWithPlane(
   }
 
   std::unordered_set<vertex_ptr_t> added_vertices;
+  submesh temp_front, temp_back;
 
   for (auto input_poly : inpsubmesh.RefPolys()) {
     int numverts = input_poly->GetNumSides();
@@ -146,11 +322,11 @@ void submeshClipWithPlane(
     };
     //////////////////////////////////////////////
     if (numverts == front_count) { // all front ?
-      add_whole_poly(input_poly, outsmeshFront);
+      add_whole_poly(input_poly, temp_front);
     }
     //////////////////////////////////////////////
     else if (numverts == back_count) { // all back ?
-      add_whole_poly(input_poly, outsmeshBack);
+      //add_whole_poly(input_poly, temp_back);
     }
     //////////////////////////////////////////////
     else { // those to clip
@@ -173,7 +349,7 @@ void submeshClipWithPlane(
       }
       if (front_verts.size() >= 3) {
         auto out_fpoly = std::make_shared<poly>(front_verts);
-        add_whole_poly(out_fpoly, outsmeshFront);
+        add_whole_poly(out_fpoly, temp_front);
       }
 
       std::vector<vertex_ptr_t> back_verts;
@@ -183,7 +359,7 @@ void submeshClipWithPlane(
       }
       if (back_verts.size() >= 3) {
         auto out_bpoly = std::make_shared<poly>(back_verts);
-        add_whole_poly(out_bpoly, outsmeshBack);
+        add_whole_poly(out_bpoly, temp_back);
       }
     }
   }
@@ -194,151 +370,31 @@ void submeshClipWithPlane(
 
   if (close_mesh and added_vertices.size()) {
 
-    //////////////////////////////////////////
-    // identify edge-loop/edge-chain islands
-    //////////////////////////////////////////
-
-    struct EdgeChain {
-      std::vector<edge_ptr_t> _edges;
-      std::unordered_set<vertex_ptr_t> _vertices;
-    };
-    using edge_chain_ptr_t = std::shared_ptr<EdgeChain>;
-
-    struct EdgeLoop {
-      std::vector<edge_ptr_t> _edges;
-    };
-
-    bool keep_going = true;
-
-    auto unattached_vertices = added_vertices;
-
-    std::vector<edge_ptr_t> loose_edges;
-    std::vector<edge_chain_ptr_t> edge_chains;
-    std::vector<EdgeLoop> edge_loops;
-
-    int i = 0;
-    for (auto edge_item : outsmeshBack._edgemap) {
+    ChainLinker _linker;
+    for (auto edge_item : temp_back._edgemap) {
       auto edge = edge_item.second;
-      auto va   = edge->_vertexA;
-      if (added_vertices.find(va) != added_vertices.end()) {
-        loose_edges.push_back(edge);
-        printf("added edge<%d: %p>\n", i, (void*)edge.get());
-        i++;
+      auto va = edge->_vertexA;
+      auto vb = edge->_vertexB;
+      if( added_vertices.find(va)!=added_vertices.end())
+        _linker.add_edge(edge_item.second);
+    }
+    _linker.link();
+    for( auto loop : _linker._edge_loops ){
+      std::vector<vertex_ptr_t> vertex_loop;
+      for( auto edge : loop->_edges ){
+        vertex_loop.push_back(edge->_vertexA);
+      }
+      vertex center_vert_temp;
+      center_vert_temp.center(vertex_loop);
+      auto center_vertex = outsmeshBack.mergeVertex(center_vert_temp);
+      for( auto edge : loop->_edges ){
+        auto va = outsmeshBack.mergeVertex(*edge->_vertexA);
+        auto vb = outsmeshBack.mergeVertex(*edge->_vertexB);
+        outsmeshBack.mergeTriangle(va,vb,center_vertex);
       }
     }
 
-    while (loose_edges.size()) {
-
-      //////////////////////////////////////
-      // grab a loose edge
-      //////////////////////////////////////
-
-      auto e = *loose_edges.rbegin();
-      loose_edges.pop_back();
-      auto va = e->_vertexA;
-      auto vb = e->_vertexB;
-      printf("grab va<%d> vb<%d>\n", va->_poolindex, vb->_poolindex);
-
-      ////////////////////////////////////////////
-      // check if an accepting chain already exists
-      ////////////////////////////////////////////
-
-      edge_chain_ptr_t dest_chain;
-
-      for (auto c : edge_chains) {
-        auto last_edge = *c->_edges.rbegin();
-        if (last_edge->_vertexB == va) {
-          dest_chain = c;
-        }
-      }
-
-      ////////////////////////////////////////////
-      // previous dest chain found !
-      ////////////////////////////////////////////
-
-      if (dest_chain) {
-        printf("Added to Chain\n");
-        // find position
-        dest_chain->_edges.push_back(e);
-        dest_chain->_vertices.insert(vb);
-      }
-
-      ////////////////////////////////////////////
-      // no dest chain found, create a new one
-      ////////////////////////////////////////////
-
-      else {
-        printf("Create New Chain vb<%d>\n", vb->_poolindex);
-        dest_chain = std::make_shared<EdgeChain>();
-        dest_chain->_edges.push_back(e);
-        dest_chain->_vertices.insert(vb);
-        edge_chains.push_back(dest_chain);
-      }
-
-      ////////////////////////////////////////////
-    }
-
-    printf("numchains<%zu>\n", edge_chains.size());
-
-    //////////////////////////////////////////////////////////////////////////
-
-    bool progress_made = true;
-
-    while (progress_made) {
-
-      ////////////////////////////////////////////
-
-      int _joinChainL = -1;
-      int _joinChainR = -1;
-
-      for( size_t i=0; i<edge_chains.size(); i++ ){
-        auto chainL = edge_chains[i];
-
-        auto last_edge = *(chainL->_edges.rbegin());
-
-        for( size_t j=0; j<edge_chains.size(); j++ ){
-
-          auto chainR = edge_chains[j];
-
-          printf( "i<%d> j<%d> chainL<%p> chainR<%p>\n", i, j, (void*) chainL.get(), (void*) chainR.get() );
-
-          if(chainL != chainR){
-            auto first_edge = *(chainR->_edges.begin());
-
-            if (last_edge->_vertexB == first_edge->_vertexA) {
-
-              _joinChainL = i;
-              _joinChainR = j;
-              goto here;
-
-            }
-          }
-        } // for( size_t j=0; i<edge_chains.size(); j++ ){
-      } // for( size_t i=0; i<edge_chains.size(); i++ ){
-
-      here:
-
-      ////////////////////////////////////////////
-
-      progress_made = (_joinChainL>=0) and (_joinChainR>=0);
-      if( progress_made ){
-        auto chainL = edge_chains[_joinChainL];
-        auto chainR = edge_chains[_joinChainR];
-        printf("JOIN [L: %d, R: %d]\n", _joinChainL, _joinChainR);
-
-        chainL->_edges.insert( chainL->_edges.end(), //
-                               chainR->_edges.begin(), //
-                               chainR->_edges.end());
-
-        auto it_rem = edge_chains.begin() + _joinChainR;
-        OrkAssert(it_rem!=edge_chains.end());
-        edge_chains.erase(it_rem);
-        printf("JOIN2 [L: %d, R: %d]\n", _joinChainL, _joinChainR);
-      } // if( progress_made ){
-
-    } // while (progress_made) {
-
-  }   // if (close_mesh and added_vertices.size()) {
+  } // if (close_mesh and added_vertices.size()) {
 
   ///////////////////////////////////////////////////////////
 }

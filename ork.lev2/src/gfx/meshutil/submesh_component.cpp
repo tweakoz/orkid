@@ -149,6 +149,38 @@ void vertex::Center(const vertex** pverts, int icnt) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void vertex::center(const std::vector<vertex_ptr_t>& verts) {
+  int icnt = verts.size();
+  mPos = fvec3(0.0f, 0.0f, 0.0f);
+  mNrm = fvec3(0.0f, 0.0f, 0.0f);
+  for (int i = 0; i < vertex::kmaxcolors; i++) {
+    mCol[i] = fvec4(0.0f, 0.0f, 0.0f);
+  }
+  for (int i = 0; i < vertex::kmaxuvs; i++) {
+    mUV[i].Clear();
+  }
+  float ficnt = 1.0f / float(icnt);
+  for (int i = 0; i < icnt; i++) {
+    mPos += verts[i]->mPos * ficnt;
+    mNrm += verts[i]->mNrm * ficnt;
+    for (int ic = 0; ic < vertex::kmaxcolors; ic++) {
+      mCol[ic] += verts[i]->mCol[ic] * ficnt;
+    }
+    for (int it = 0; it < vertex::kmaxuvs; it++) {
+      mUV[it].mMapTexCoord += verts[i]->mUV[it].mMapTexCoord * ficnt;
+      mUV[it].mMapBiNormal += verts[i]->mUV[it].mMapBiNormal * ficnt;
+      mUV[it].mMapTangent += verts[i]->mUV[it].mMapTangent * ficnt;
+    }
+  }
+  mNrm.normalizeInPlace();
+  for (int it = 0; it < vertex::kmaxuvs; it++) {
+    mUV[it].mMapBiNormal.normalizeInPlace();
+    mUV[it].mMapTangent.normalizeInPlace();
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 U64 vertex::Hash() const {
   boost::Crc64 crc64;
   crc64.accumulateItem(miNumWeights);

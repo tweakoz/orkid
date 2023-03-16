@@ -9,3 +9,5 @@ db.addData(a)
 print(db.size)
 print(a.shape)
 print(db)
+
+db.wtf(db)

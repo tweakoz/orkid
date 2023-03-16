@@ -111,6 +111,7 @@ struct vertex {
   const fvec3& Pos() const;
 
   void Center(const vertex** pverts, int icnt);
+  void center(const std::vector<vertex_ptr_t>& verts);
 
   U64 Hash() const;
 

@@ -63,8 +63,8 @@ struct DataBlock {
   std::string _name = "noname";
 };
 
-typedef std::shared_ptr<DataBlock> datablock_ptr_t;
-typedef std::shared_ptr<const DataBlock> datablock_constptr_t;
+using datablock_ptr_t = std::shared_ptr<DataBlock>;
+using datablock_constptr_t = std::shared_ptr<const DataBlock>;
 
 ///////////////////////////////////////////////////////////////////////////////
 template <typename T> T* DataBlock::allocateItems(size_t itemcount) {

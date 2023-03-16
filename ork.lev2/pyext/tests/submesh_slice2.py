@@ -52,8 +52,13 @@ class SceneGraphApp(object):
     submesh = mesh.submesh_list[0]
     slicing_plane = plane(vec3(0,0,1),0)
     clipped = submesh.clipWithPlane(slicing_plane,True)
-    clipped_top = clipped["front"].triangulate()
-    clipped_bot = clipped["back"].triangulate()
+    clipped_top = clipped["front"]#.triangulate()
+    clipped_bot = clipped["back"]#.triangulate()
+
+    print(clipped_top)
+    print(clipped_bot)
+
+    assert(False)
 
     self.prim_top = meshutil.RigidPrimitive(clipped_top,ctx)
     self.prim_bot = meshutil.RigidPrimitive(clipped_bot,ctx)
