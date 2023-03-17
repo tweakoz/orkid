@@ -197,6 +197,9 @@ struct ChainLinker {
     /////////////////////////////////////////////////////
 
     printf("prelink numchains<%zu>\n", _edge_chains.size());
+    for( int i=0; i<_edge_chains.size(); i++){
+      printf("chain %d:%p | numedges<%zu>\n", i, _edge_chains[i].get(), _edge_chains[i]->_edges.size());
+    }
 
     //////////////////////////////////////////////////////////////////////////
     // link chains
@@ -228,6 +231,7 @@ struct ChainLinker {
       //////////////////////////////////////////////////
 
       if( left_chain and right_chain ){
+
         left_chain->_edges.insert(
             left_chain->_edges.end(),   //
             right_chain->_edges.begin(), //
@@ -235,6 +239,8 @@ struct ChainLinker {
 
         if(_edge_chains.size()>1)
           removeChain(right_chain);
+
+        printf( "chain<%p> numedges<%zu>\n", (void*) left_chain.get(), left_chain->_edges.size() );
 
         keep_joining = _edge_chains.size()>1;
       }
@@ -287,8 +293,7 @@ void submeshClipWithPlane(
     }
   }
 
-  std::unordered_set<vertex_ptr_t> added_vertices;
-  submesh temp_front, temp_back;
+  std::unordered_set<vertex_ptr_t> front_added, back_added;
 
   for (auto input_poly : inpsubmesh.RefPolys()) {
     int numverts = input_poly->GetNumSides();
@@ -310,23 +315,28 @@ void submeshClipWithPlane(
       }
     }
     //////////////////////////////////////////////
-    auto add_whole_poly = [&added_vertices](poly_ptr_t src_poly, submesh& dest) {
+    //////////////////////////////////////////////
+    auto add_whole_poly = [](poly_ptr_t src_poly, submesh& dest) -> std::unordered_set<vertex_ptr_t> {
       std::vector<vertex_ptr_t> new_verts;
+      std::unordered_set<vertex_ptr_t> added;
       for (auto v : src_poly->_vertices) {
         OrkAssert(v);
         auto newv = dest.mergeVertex(*v);
         new_verts.push_back(newv);
-        added_vertices.insert(newv);
+        added.insert(newv);
       }
       dest.mergePoly(poly(new_verts));
+      return added;
     };
     //////////////////////////////////////////////
     if (numverts == front_count) { // all front ?
-      add_whole_poly(input_poly, temp_front);
+      auto _front_added = add_whole_poly(input_poly, outsmeshFront);
+      front_added.insert(_front_added.begin(),_front_added.end());
     }
     //////////////////////////////////////////////
     else if (numverts == back_count) { // all back ?
-      //add_whole_poly(input_poly, temp_back);
+      auto _back_added = add_whole_poly(input_poly, outsmeshBack);
+      //back_added.insert(_back_added.begin(),_back_added.end());
     }
     //////////////////////////////////////////////
     else { // those to clip
@@ -349,7 +359,7 @@ void submeshClipWithPlane(
       }
       if (front_verts.size() >= 3) {
         auto out_fpoly = std::make_shared<poly>(front_verts);
-        add_whole_poly(out_fpoly, temp_front);
+        auto front_added = add_whole_poly(out_fpoly, outsmeshFront);
       }
 
       std::vector<vertex_ptr_t> back_verts;
@@ -359,7 +369,8 @@ void submeshClipWithPlane(
       }
       if (back_verts.size() >= 3) {
         auto out_bpoly = std::make_shared<poly>(back_verts);
-        add_whole_poly(out_bpoly, temp_back);
+        auto _back_added = add_whole_poly(out_bpoly, outsmeshBack);
+        back_added.insert(_back_added.begin(),_back_added.end());
       }
     }
   }
@@ -368,25 +379,35 @@ void submeshClipWithPlane(
   // close mesh
   ///////////////////////////////////////////////////////////
 
-  if (close_mesh and added_vertices.size()) {
+  printf( "back_added.size<%zu>\n", back_added.size() );
+  for( auto b : back_added ){
+    printf( "b %i\n", b->_poolindex );
+  }
+  if (close_mesh and back_added.size()) {
 
     ChainLinker _linker;
-    for (auto edge_item : temp_back._edgemap) {
+    for (auto edge_item : outsmeshBack._edgemap) {
       auto edge = edge_item.second;
       auto va = edge->_vertexA;
       auto vb = edge->_vertexB;
-      if( added_vertices.find(va)!=added_vertices.end())
+      if( back_added.find(va)!=back_added.end())
         _linker.add_edge(edge_item.second);
     }
     _linker.link();
     for( auto loop : _linker._edge_loops ){
       std::vector<vertex_ptr_t> vertex_loop;
+      printf( "begin edgeloop <%p>\n", (void*) loop.get() );
+      int ie = 0;
       for( auto edge : loop->_edges ){
         vertex_loop.push_back(edge->_vertexA);
+        printf( " edge<%d> vtxi<%d>\n", ie, edge->_vertexA->_poolindex );
+        ie++;
       }
       vertex center_vert_temp;
       center_vert_temp.center(vertex_loop);
       auto center_vertex = outsmeshBack.mergeVertex(center_vert_temp);
+      auto center_pos = center_vert_temp.mPos;
+      printf( "center<%g %g %g>\n",center_pos.x,center_pos.y,center_pos.z );
       for( auto edge : loop->_edges ){
         auto va = outsmeshBack.mergeVertex(*edge->_vertexA);
         auto vb = outsmeshBack.mergeVertex(*edge->_vertexB);

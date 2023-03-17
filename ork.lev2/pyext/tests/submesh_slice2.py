@@ -41,6 +41,18 @@ class SceneGraphApp(object):
     setupUiCamera(app=self,eye=vec3(0,1,5),tgt=vec3(0,1,0))
     self.modelinsts=[]
 
+  def printSubMesh(self,name, subm):
+    print(subm)
+    out_str = "submesh: %s\n" % name
+    for idx, vtx in enumerate(subm.vertexpool.orderedVertices):
+      out_str += " vtx> %d: %s\n"%(idx, vtx.position)
+    for idx, poly in enumerate(subm.polys):
+      out_str += "  poly> %d: [ "%idx
+      for v in poly.vertices:
+        out_str += "(%g %g %g) " % (v.position.x,v.position.y,v.position.z)
+      out_str += "]\n"
+    print(out_str)
+
   ##############################################
 
   def onGpuInit(self,ctx):
@@ -48,15 +60,22 @@ class SceneGraphApp(object):
     createSceneGraph(app=self,rendermodel="ForwardPBR")
 
     mesh = meshutil.Mesh()
-    mesh.readFromWavefrontObj("data://tests/simple_obj/monkey.obj")
+    mesh.readFromWavefrontObj("data://tests/simple_obj/box.obj")
     submesh = mesh.submesh_list[0]
+    self.printSubMesh("srcmesh", submesh)
     slicing_plane = plane(vec3(0,0,1),0)
     clipped = submesh.clipWithPlane(slicing_plane,True)
     clipped_top = clipped["front"]#.triangulate()
     clipped_bot = clipped["back"]#.triangulate()
 
-    print(clipped_top)
-    print(clipped_bot)
+
+    #print(clipped_top)
+    #print(clipped_bot)
+
+    #print(clipped_top.vertexpool.orderedVertices[5])
+    #print(clipped_top.vertexpool.orderedVertices[17])
+
+    self.printSubMesh("clipped_top", clipped_top)
 
     assert(False)
 
@@ -73,7 +92,7 @@ class SceneGraphApp(object):
     pipeline.bindParam( material.param("m"), tokens.RCFD_M)
 
     self.prim_node_top = self.prim_top.createNode("top",self.layer1,pipeline)
-    self.prim_node_bot = self.prim_bot.createNode("bot",self.layer1,pipeline)
+    #self.prim_node_bot = self.prim_bot.createNode("bot",self.layer1,pipeline)
 
     ###################################
 
@@ -91,10 +110,10 @@ class SceneGraphApp(object):
   ################################################
 
   def onUpdate(self,updinfo):
-    θ = updinfo.absolutetime * math.pi * 2.0 * 0.1
-    y = 0.5+math.sin(θ*1.7)*0.5
-    self.prim_node_top.worldTransform.translation = vec3(0,1+y,1)
-    self.prim_node_bot.worldTransform.translation = vec3(0,1-y,1)
+    θ = updinfo.absolutetime * math.pi * 2.0 * 0.3
+    y = math.sin(θ*1.7)
+    self.prim_node_top.worldTransform.translation = vec3(0,2+y,1)
+    #self.prim_node_bot.worldTransform.translation = vec3(0,2-y,1)
 
     self.scene.updateScene(self.cameralut) 
 
