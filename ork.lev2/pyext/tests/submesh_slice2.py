@@ -63,10 +63,10 @@ class SceneGraphApp(object):
     mesh.readFromWavefrontObj("data://tests/simple_obj/box.obj")
     submesh = mesh.submesh_list[0]
     self.printSubMesh("srcmesh", submesh)
-    slicing_plane = plane(vec3(0,0,1),0)
+    slicing_plane = plane(vec3(0,0.25,1).normalized(),0)
     clipped = submesh.clipWithPlane(slicing_plane,True)
-    clipped_top = clipped["front"]#.triangulate()
-    clipped_bot = clipped["back"]#.triangulate()
+    clipped_top = clipped["front"].triangulate()
+    clipped_bot = clipped["back"].triangulate()
 
 
     #print(clipped_top)
@@ -76,8 +76,8 @@ class SceneGraphApp(object):
     #print(clipped_top.vertexpool.orderedVertices[17])
 
     self.printSubMesh("clipped_top", clipped_top)
+    self.printSubMesh("clipped_bot", clipped_bot)
 
-    assert(False)
 
     self.prim_top = meshutil.RigidPrimitive(clipped_top,ctx)
     self.prim_bot = meshutil.RigidPrimitive(clipped_bot,ctx)
@@ -92,7 +92,7 @@ class SceneGraphApp(object):
     pipeline.bindParam( material.param("m"), tokens.RCFD_M)
 
     self.prim_node_top = self.prim_top.createNode("top",self.layer1,pipeline)
-    #self.prim_node_bot = self.prim_bot.createNode("bot",self.layer1,pipeline)
+    self.prim_node_bot = self.prim_bot.createNode("bot",self.layer1,pipeline)
 
     ###################################
 
@@ -113,7 +113,7 @@ class SceneGraphApp(object):
     θ = updinfo.absolutetime * math.pi * 2.0 * 0.3
     y = math.sin(θ*1.7)
     self.prim_node_top.worldTransform.translation = vec3(0,2+y,1)
-    #self.prim_node_bot.worldTransform.translation = vec3(0,2-y,1)
+    self.prim_node_bot.worldTransform.translation = vec3(0,2-y,1)
 
     self.scene.updateScene(self.cameralut) 
 
