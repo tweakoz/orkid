@@ -27,29 +27,96 @@ parser = argparse.ArgumentParser(description='scenegraph example')
 ################################################################################
 
 args = vars(parser.parse_args())
-numinstances = 500
+
+################################################################################
+
+def printSubMesh(name, subm):
+  print(subm)
+  out_str = "submesh: %s\n" % name
+  for idx, vtx in enumerate(subm.vertexpool.orderedVertices):
+    out_str += " vtx> %d: %s\n"%(idx, vtx.position)
+  for idx, poly in enumerate(subm.polys):
+    out_str += "  poly> %d: [ "%idx
+    for v in poly.vertices:
+      out_str += "%d " % v.poolindex
+    out_str += "]\n"
+  print(out_str)
+
+################################################################################
 
 class Fragments:
   def __init__(self, #
-               ctx, #
-               layer, #
-               pipeline, #
-               inp_submesh, #
-               plane): #
+               context=None, #
+               layer=None, #
+               pipeline=None, #
+               slicing_plane=None,
+               model_asset_path=None, #
+               ): #
 
-    self.inp_submesh = inp_submesh
-    self.slicing_plane = plane
-    self.clipped = inp_submesh.clipWithPlane( plane=self.slicing_plane,
-                                              flip_orientation = False,
-                                              close_mesh = True )
+    if slicing_plane==None:
+      nx = random.uniform(-1,1)
+      ny = random.uniform(-1,1)
+      nz = random.uniform(-1,1)
+      self.normal = vec3(nx,ny,nz).normalized()
+    else:
+      self.normal = slicing_plane.normal
+
+    ##################################
+    # load model 
+    ##################################
+
+    self.mesh = meshutil.Mesh()
+    self.mesh.readFromWavefrontObj(model_asset_path)
+
+    ##################################
+    # extract submesh
+    ##################################
+
+    self.ori_submesh = self.mesh.submesh_list[0]
+    printSubMesh("srcmesh", self.ori_submesh)
+
+    # original submesh primitive
+
+    self.ori_prim = meshutil.RigidPrimitive(self.ori_submesh,context)
+    self.ori_sgnode = self.ori_prim.createNode("ori",layer,pipeline)
+    self.ori_sgnode.enabled = False
+
+    ##################################
+    # strip UV's, normals and colors from submesh
+    ##################################
+
+    self.stripped = self.ori_submesh.copy(preserve_normals=False,
+                                          preserve_colors=False,
+                                          preserve_texcoords=False)
+
+    printSubMesh("stripped", self.stripped)
+
+    self.slicing_plane = slicing_plane
+
+    ##################################
+    # clip
+    ##################################
+
+    self.clipped = self.stripped.clipWithPlane( plane=self.slicing_plane,
+                                                flip_orientation = False,
+                                                close_mesh = True )
+
     self.front = self.clipped["front"].triangulate()
     self.back = self.clipped["back"].triangulate()
-    self.prim_top = meshutil.RigidPrimitive(self.front,ctx)
-    self.prim_bot = meshutil.RigidPrimitive(self.back ,ctx)
+    self.prim_top = meshutil.RigidPrimitive(self.front,context)
+    self.prim_bot = meshutil.RigidPrimitive(self.back ,context)
     self.prim_node_top = self.prim_top.createNode("top",layer,pipeline)
     self.prim_node_bot = self.prim_bot.createNode("bot",layer,pipeline)
     self.prim_node_top.enabled = True
     self.prim_node_bot.enabled = True
+
+    ##################################
+
+  def update(self,abstime):
+    θ = abstime * math.pi * 2.0 * 0.03
+    y = math.sin(θ*1.7)
+    self.prim_node_top.worldTransform.translation = self.normal*y
+    self.prim_node_bot.worldTransform.translation = self.normal*(-y)
 
 ################################################################################
 
@@ -63,18 +130,6 @@ class SceneGraphApp(object):
     setupUiCamera(app=self,eye=vec3(0,1,5),tgt=vec3(0,1,0))
     self.modelinsts=[]
 
-  def printSubMesh(self,name, subm):
-    print(subm)
-    out_str = "submesh: %s\n" % name
-    for idx, vtx in enumerate(subm.vertexpool.orderedVertices):
-      out_str += " vtx> %d: %s\n"%(idx, vtx.position)
-    for idx, poly in enumerate(subm.polys):
-      out_str += "  poly> %d: [ "%idx
-      for v in poly.vertices:
-        out_str += "%d " % v.poolindex
-      out_str += "]\n"
-    print(out_str)
-
   ##############################################
 
   def onGpuInit(self,ctx):
@@ -87,9 +142,9 @@ class SceneGraphApp(object):
     # create Grid
     ##################################
 
-    self.grid_data = createGridData()
-    self.grid_node = self.layer1.createGridNode("grid",self.grid_data)
-    self.grid_node.sortkey = 1
+    #self.grid_data = createGridData()
+    #self.grid_node = self.layer1.createGridNode("grid",self.grid_data)
+    #self.grid_node.sortkey = 1
 
     ##################################
     # shared material
@@ -104,43 +159,18 @@ class SceneGraphApp(object):
     material = pipeline.sharedMaterial
     pipeline.bindParam( material.param("m"), tokens.RCFD_M)
 
-    ##################################
-    # load model 
-    ##################################
 
-    mesh = meshutil.Mesh()
-    mesh.readFromWavefrontObj("data://tests/simple_obj/box.obj")
-
-    ##################################
-    # extract submesh
-    ##################################
-
-    submesh = mesh.submesh_list[0]
-
-    # original submesh primitive
-
-    self.prim_ori = meshutil.RigidPrimitive(submesh,ctx)
-    self.prim_node_ori = self.prim_ori.createNode("ori",self.layer1,pipeline)
-    self.prim_node_ori.enabled = False
-
-
-    ##################################
-    # strip UV's, normals and colors from submesh
-    ##################################
-
-    self.printSubMesh("srcmesh", submesh)
-    stripped = submesh.copy(preserve_normals=False,
-                            preserve_colors=False,
-                            preserve_texcoords=False)
-    self.printSubMesh("stripped", stripped)
 
     ##################################
     # clip with plane
     ##################################
 
-    slicing_plane = plane(vec3(1,1,1).normalized(),-.5)
+    f = Fragments(context = ctx,
+                  layer=self.layer1,
+                  pipeline=pipeline,
+                  slicing_plane=plane(vec3(1,1,1).normalized(),-.5),
+                  model_asset_path = "data://tests/simple_obj/cone.obj" )
 
-    f = Fragments(ctx,self.layer1,pipeline,stripped,slicing_plane)
     self.fragments += [f]
 
   ##############################################
@@ -153,12 +183,10 @@ class SceneGraphApp(object):
   ################################################
 
   def onUpdate(self,updinfo):
-    θ = updinfo.absolutetime * math.pi * 2.0 * 0.03
-    y = math.sin(θ*1.7)
+    #########################################
     for f in self.fragments:
-      f.prim_node_top.worldTransform.translation = vec3(0,2+y,1)
-      f.prim_node_bot.worldTransform.translation = vec3(0,2-y,1)
-
+      f.update(updinfo.absolutetime)
+    #########################################
     self.scene.updateScene(self.cameralut) 
 
 ###############################################################################
