@@ -108,7 +108,7 @@ class Fragments:
                                                 close_mesh = True )
 
     #print(self.clipped["front"].vertexpool.orderedVertices[12])
-    #print(self.clipped["front"].vertexpool.orderedVertices[13])
+    #print(self.clipped["front"].vertexpool.orderedVertices[26])
 
     self.front = self.clipped["front"].triangulate()
     self.back = self.clipped["back"].triangulate()
@@ -177,9 +177,9 @@ class SceneGraphApp(object):
     f = Fragments(context = ctx,
                   layer=self.layer1,
                   pipeline=pipeline,
-                  flip_orientation=False,
+                  flip_orientation=True,
                   origin = vec3(2,0,2),
-                  slicing_plane=plane(vec3(0,1,1).normalized(),.5),
+                  slicing_plane=plane(vec3(0,1,1).normalized(),+.5),
                   model_asset_path = "data://tests/simple_obj/cone.obj" )
 
 
@@ -188,7 +188,7 @@ class SceneGraphApp(object):
     f = Fragments(context = ctx,
                   layer=self.layer1,
                   pipeline=pipeline,
-                  flip_orientation=False,
+                  flip_orientation=True,
                   origin = vec3(0,0,0),
                   slicing_plane=plane(vec3(1,1,1).normalized(),.5),
                   model_asset_path = "data://tests/simple_obj/box.obj" )
@@ -199,7 +199,7 @@ class SceneGraphApp(object):
     f = Fragments(context = ctx,
                   layer=self.layer1,
                   pipeline=pipeline,
-                  flip_orientation=True,
+                  flip_orientation=False,
                   origin = vec3(-2,0,-2),
                   slicing_plane=plane(vec3(1,0,0).normalized(),0),
                   model_asset_path = "data://tests/simple_obj/torus.obj" )

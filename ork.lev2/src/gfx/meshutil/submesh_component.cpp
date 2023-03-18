@@ -478,7 +478,7 @@ fvec3 poly::ComputeNormal() const {
   auto v1 = _vertices[1]->mPos;
   for (int i = 2; i < inumvtx; i++) {
     auto v2 = _vertices[i % inumvtx]->mPos;
-    rval += (v0 - v1).crossWith(v2 - v1);
+    rval += (v1 - v0).crossWith(v2 - v1);
     v0 = v1;
     v1 = v2;
   }

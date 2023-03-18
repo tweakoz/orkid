@@ -10,9 +10,13 @@
 #include <ork/lev2/gfx/meshutil/meshutil.h>
 #include <deque>
 
+constexpr bool do_front = true;
+constexpr bool do_back = true;
+
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::meshutil {
 ///////////////////////////////////////////////////////////////////////////////
+
 
 std::vector<edge_ptr_t> reverse_edgelist(const std::vector<edge_ptr_t>& inp) {
   std::vector<edge_ptr_t> rval;
@@ -457,10 +461,10 @@ void submeshClipWithPlane(
 
       ///////////////////////////////////////////
 
-      if (1)
+      if (do_front)
         process_clipped_poly(clipped_front.mVerts, outsmesh_Front, front_planar_verts_deque, true);
 
-      if (1)
+      if (do_back)
         process_clipped_poly(clipped_back.mVerts, outsmesh_Back, back_planar_verts_deque, false);
     } // clipped ?
 
@@ -573,8 +577,8 @@ void submeshClipWithPlane(
 
     };
 
-    if(1) do_close(outsmesh_Front, front_planar_verts_deque, false);
-    if(1) do_close(outsmesh_Back,  back_planar_verts_deque,  true);
+    if(do_front) do_close(outsmesh_Front, front_planar_verts_deque, false);
+    if(do_back) do_close(outsmesh_Back,  back_planar_verts_deque,  true);
 
   } // if(close_mesh){
 
