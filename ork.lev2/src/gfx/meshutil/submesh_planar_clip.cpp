@@ -107,7 +107,7 @@ struct ChainLinker {
     //////////////////////////////////
     // previous dest chain found !
     //////////////////////////////////
-    if (dest_chain) { 
+    if (dest_chain) {
       // printf("Added to Chain\n");
       //  find position
       dest_chain->_edges.push_back(e);
@@ -116,7 +116,7 @@ struct ChainLinker {
     //////////////////////////////////
     // no dest chain found, create a new one
     //////////////////////////////////
-    else { 
+    else {
       // printf("Create New Chain vb<%d>\n", vb->_poolindex);
       dest_chain = std::make_shared<EdgeChain>();
       dest_chain->_edges.push_back(e);
@@ -326,29 +326,30 @@ void submeshClipWithPlane(
   /////////////////////////////////////////////////////////////////////
 
   auto add_whole_poly = [](poly_ptr_t src_poly, submesh& dest) -> std::unordered_set<vertex_ptr_t> {
-
-      std::vector<vertex_ptr_t> new_verts;
-      std::unordered_set<vertex_ptr_t> added;
-      printf("  subm[%s] add poly size<%zu>\n", dest.name.c_str(), src_poly->_vertices.size());
-      for (auto v : src_poly->_vertices) {
-        OrkAssert(v);
-        auto newv = dest.mergeVertex(*v);
-        auto pos  = newv->mPos;
-        printf("   subm[%s] add vertex pool<%02d> (%+g %+g %+g)\n", dest.name.c_str(), newv->_poolindex, pos.x, pos.y, pos.z);
-        new_verts.push_back(newv);
-        added.insert(newv);
-      }
-      dest.mergePoly(poly(new_verts));
-      return added;
-    };
+    std::vector<vertex_ptr_t> new_verts;
+    std::unordered_set<vertex_ptr_t> added;
+    printf("  subm[%s] add poly size<%zu>\n", dest.name.c_str(), src_poly->_vertices.size());
+    for (auto v : src_poly->_vertices) {
+      OrkAssert(v);
+      auto newv = dest.mergeVertex(*v);
+      auto pos  = newv->mPos;
+      printf("   subm[%s] add vertex pool<%02d> (%+g %+g %+g)\n", dest.name.c_str(), newv->_poolindex, pos.x, pos.y, pos.z);
+      new_verts.push_back(newv);
+      added.insert(newv);
+    }
+    dest.mergePoly(poly(new_verts));
+    return added;
+  };
 
   /////////////////////////////////////////////////////////////////////
   // input mesh polygon loop
   /////////////////////////////////////////////////////////////////////
 
   std::vector<edge_ptr_t> back_planar_edges, front_planar_edges;
+  std::deque<vertex_ptr_t> front_planar_verts_deque;
+  std::deque<vertex_ptr_t> back_planar_verts_deque;
 
-  for (auto input_poly : inpsubmesh.RefPolys()) {
+  for (auto input_poly : inpsubmesh._orderedPolys) {
     int numverts = input_poly->GetNumSides();
     //////////////////////////////////////////////
     // count sides of the plane to which the poly's vertices belong
@@ -377,7 +378,7 @@ void submeshClipWithPlane(
     //////////////////////////////////////////////
     // all of this poly's vertices in front ? -> trivially route to outsmesh_Front
     //////////////////////////////////////////////
-    if (numverts == front_count) { 
+    if (numverts == front_count) {
       add_whole_poly(input_poly, outsmesh_Front);
     }
     //////////////////////////////////////////////
@@ -389,7 +390,7 @@ void submeshClipWithPlane(
     //////////////////////////////////////////////
     // the remaining are those which must be clipped against plane
     //////////////////////////////////////////////
-    else { 
+    else {
 
       mupoly_clip_adapter clip_input;
       mupoly_clip_adapter clipped_front;
@@ -413,16 +414,15 @@ void submeshClipWithPlane(
 
       ///////////////////////////////////////////
 
-      auto process_clipped_poly = [&](std::vector<vertex>& clipped_poly_vertices, //
-                                      submesh& outsubmesh,                        //
-                                      std::vector<edge_ptr_t>& planar_edges,      //
-                                      bool flip_nrm) {                            //
+      auto process_clipped_poly = [&](std::vector<vertex>& clipped_poly_vertices,   //
+                                      submesh& outsubmesh,                          //
+                                      std::deque<vertex_ptr_t>& planar_verts_deque, //
+                                      bool flip_nrm) {                              //
         std::vector<vertex_ptr_t> merged_vertices;
-        std::deque<vertex_ptr_t> planar_verts;
 
         /////////////////////////////////////////
         // classify all points in clipped poly, with respect to plane
-        //  put all points which live on plane into planar_verts
+        //  put all points which live on plane into planar_verts_deque
         /////////////////////////////////////////
 
         for (auto& v : clipped_poly_vertices) {
@@ -437,7 +437,7 @@ void submeshClipWithPlane(
             merged_v->mUV[0].Clear();
             merged_v->mUV[1].Clear();
             printf("subm[%s] bpv (%+g %+g %+g) \n", outsubmesh.name.c_str(), p.x, p.y, p.z);
-            planar_verts.push_back(merged_v);
+            planar_verts_deque.push_back(merged_v);
           } else {
             printf("subm[%s] REJECT: point_dist_to_plane<%g>\n", outsubmesh.name.c_str(), point_dist_to_plane);
           }
@@ -453,35 +453,18 @@ void submeshClipWithPlane(
           add_whole_poly(out_bpoly, outsubmesh);
         }
 
-        /////////////////////////////////////////
-        // if we closing the hole we opened,
-        //  take note of edges which lie on the
-        //  slicing plane
-        /////////////////////////////////////////
-
-        if (close_mesh) {
-          while (planar_verts.size() >= 2) {
-            auto v0 = planar_verts[0];
-            auto v1 = planar_verts[1];
-            auto e  = std::make_shared<edge>(v0, v1);
-            planar_edges.push_back(e);
-            planar_verts.pop_front();
-            planar_verts.pop_front();
-          }
-
-          printf("stragglers<%zu>\n", planar_verts.size());
-        }
       };
 
       ///////////////////////////////////////////
 
       if (1)
-        process_clipped_poly(clipped_front.mVerts, outsmesh_Front, front_planar_edges, true);
+        process_clipped_poly(clipped_front.mVerts, outsmesh_Front, front_planar_verts_deque, true);
 
-      if (0)
-        process_clipped_poly(clipped_back.mVerts, outsmesh_Back, back_planar_edges, false);
-    }
-  }
+      if (1)
+        process_clipped_poly(clipped_back.mVerts, outsmesh_Back, back_planar_verts_deque, false);
+    } // clipped ?
+
+  } // for (auto input_poly : inpsubmesh._orderedPolys) {
 
   ///////////////////////////////////////////////////////////
   // close mesh
@@ -489,12 +472,33 @@ void submeshClipWithPlane(
 
   if (close_mesh) {
 
-    printf("front_planar_edges.size<%zu>\n", front_planar_edges.size());
-    printf("back_planar_edges.size<%zu>\n", back_planar_edges.size());
-
     auto do_close = [&](submesh& outsubmesh, //
-                        std::vector<edge_ptr_t>& planar_edges,
+                        std::deque<vertex_ptr_t>& planar_verts_deque,
                         bool test) { //
+      printf("subm[%s] planar_verts_deque[ ", outsubmesh.name.c_str());
+      for (auto v : planar_verts_deque) {
+        printf("%d ", v->_poolindex);
+      }
+      printf("]\n");
+
+      /////////////////////////////////////////
+      //  take note of edges which lie on the
+      //  slicing plane
+      /////////////////////////////////////////
+
+      std::vector<edge_ptr_t> planar_edges;
+
+      while (planar_verts_deque.size() >= 2) {
+        auto v0 = planar_verts_deque[0];
+        auto v1 = planar_verts_deque[1];
+        auto e  = std::make_shared<edge>(v0, v1);
+        planar_edges.push_back(e);
+        planar_verts_deque.pop_front();
+        planar_verts_deque.pop_front();
+      }
+
+      printf("subm[%s] stragglers<%zu>\n", outsubmesh.name.c_str(), planar_verts_deque.size());
+
       if (planar_edges.size()) {
 
         ChainLinker _linker;
@@ -557,6 +561,7 @@ void submeshClipWithPlane(
             float d = vx.dotWith(avg_n);
 
             if ((d < 0.0f) == (test ^ flip_orientation)) {
+            //if (test == flip_orientation) {
               outsubmesh.mergeTriangle(vb, va, center_vertex);
             } else {
               outsubmesh.mergeTriangle(va, vb, center_vertex);
@@ -568,8 +573,8 @@ void submeshClipWithPlane(
 
     };
 
-    do_close(outsmesh_Front, front_planar_edges, false);
-    // do_close(outsmesh_Back,back_planar_edges, true);
+    if(1) do_close(outsmesh_Front, front_planar_verts_deque, false);
+    if(1) do_close(outsmesh_Back,  back_planar_verts_deque,  true);
 
   } // if(close_mesh){
 

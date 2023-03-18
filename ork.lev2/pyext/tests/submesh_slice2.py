@@ -49,15 +49,21 @@ class Fragments:
                context=None, #
                layer=None, #
                pipeline=None, #
+               flip_orientation = False,
+               origin = vec3(0,0,0),
                slicing_plane=None,
                model_asset_path=None, #
                ): #
+
+    self.origin = origin
+    self.speed = random.uniform(.05,.1)
 
     if slicing_plane==None:
       nx = random.uniform(-1,1)
       ny = random.uniform(-1,1)
       nz = random.uniform(-1,1)
       self.normal = vec3(nx,ny,nz).normalized()
+      slicing_plane = plane(self.normal, random.uniform(-1,1))
     else:
       self.normal = slicing_plane.normal
 
@@ -98,25 +104,28 @@ class Fragments:
     ##################################
 
     self.clipped = self.stripped.clipWithPlane( plane=self.slicing_plane,
-                                                flip_orientation = False,
+                                                flip_orientation = flip_orientation,
                                                 close_mesh = True )
+
+    #print(self.clipped["front"].vertexpool.orderedVertices[12])
+    #print(self.clipped["front"].vertexpool.orderedVertices[13])
 
     self.front = self.clipped["front"].triangulate()
     self.back = self.clipped["back"].triangulate()
-    self.prim_top = meshutil.RigidPrimitive(self.front,context)
-    self.prim_bot = meshutil.RigidPrimitive(self.back ,context)
-    self.prim_node_top = self.prim_top.createNode("top",layer,pipeline)
-    self.prim_node_bot = self.prim_bot.createNode("bot",layer,pipeline)
-    self.prim_node_top.enabled = True
-    self.prim_node_bot.enabled = True
+    self.prim_front = meshutil.RigidPrimitive(self.front,context)
+    self.prim_back = meshutil.RigidPrimitive(self.back ,context)
+    self.prim_node_front = self.prim_front.createNode("front",layer,pipeline)
+    self.prim_node_back = self.prim_back.createNode("back",layer,pipeline)
+    self.prim_node_front.enabled = True
+    self.prim_node_back.enabled = True
 
     ##################################
 
   def update(self,abstime):
-    θ = abstime * math.pi * 2.0 * 0.0
+    θ = abstime * math.pi * 2.0 * self.speed 
     y = math.sin(θ*1.7)
-    self.prim_node_top.worldTransform.translation = self.normal*y
-    self.prim_node_bot.worldTransform.translation = self.normal*(-y)
+    self.prim_node_front.worldTransform.translation = self.origin+self.normal*y
+    self.prim_node_back.worldTransform.translation = self.origin+self.normal*(-y)
 
 ################################################################################
 
@@ -168,10 +177,32 @@ class SceneGraphApp(object):
     f = Fragments(context = ctx,
                   layer=self.layer1,
                   pipeline=pipeline,
-                  slicing_plane=plane(vec3(1,1,1).normalized(),-.5),
+                  flip_orientation=False,
+                  origin = vec3(2,0,2),
+                  slicing_plane=plane(vec3(0,1,1).normalized(),.5),
                   model_asset_path = "data://tests/simple_obj/cone.obj" )
 
-    #assert(False)
+
+    self.fragments += [f]
+
+    f = Fragments(context = ctx,
+                  layer=self.layer1,
+                  pipeline=pipeline,
+                  flip_orientation=False,
+                  origin = vec3(0,0,0),
+                  slicing_plane=plane(vec3(1,1,1).normalized(),.5),
+                  model_asset_path = "data://tests/simple_obj/box.obj" )
+
+
+    self.fragments += [f]
+
+    f = Fragments(context = ctx,
+                  layer=self.layer1,
+                  pipeline=pipeline,
+                  flip_orientation=True,
+                  origin = vec3(-2,0,-2),
+                  slicing_plane=plane(vec3(1,0,0).normalized(),0),
+                  model_asset_path = "data://tests/simple_obj/torus.obj" )
 
     self.fragments += [f]
 
