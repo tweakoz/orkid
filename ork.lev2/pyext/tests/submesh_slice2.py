@@ -29,6 +29,28 @@ parser = argparse.ArgumentParser(description='scenegraph example')
 args = vars(parser.parse_args())
 numinstances = 500
 
+class Fragments:
+  def __init__(self, #
+               ctx, #
+               layer, #
+               pipeline, #
+               inp_submesh, #
+               plane): #
+
+    self.inp_submesh = inp_submesh
+    self.slicing_plane = plane
+    self.clipped = inp_submesh.clipWithPlane( plane=self.slicing_plane,
+                                              flip_orientation = False,
+                                              close_mesh = True )
+    self.front = self.clipped["front"].triangulate()
+    self.back = self.clipped["back"].triangulate()
+    self.prim_top = meshutil.RigidPrimitive(self.front,ctx)
+    self.prim_bot = meshutil.RigidPrimitive(self.back ,ctx)
+    self.prim_node_top = self.prim_top.createNode("top",layer,pipeline)
+    self.prim_node_bot = self.prim_bot.createNode("bot",layer,pipeline)
+    self.prim_node_top.enabled = True
+    self.prim_node_bot.enabled = True
+
 ################################################################################
 
 class SceneGraphApp(object):
@@ -56,6 +78,8 @@ class SceneGraphApp(object):
   ##############################################
 
   def onGpuInit(self,ctx):
+
+    self.fragments = []
 
     createSceneGraph(app=self,rendermodel="ForwardPBR")
 
@@ -116,28 +140,8 @@ class SceneGraphApp(object):
 
     slicing_plane = plane(vec3(1,1,1).normalized(),-.5)
 
-    clipped = stripped.clipWithPlane( plane=slicing_plane,
-                                      flip_orientation = False,
-                                      close_mesh = True )
-
-    ##################################
-    # triangulate results
-    ##################################
-
-    clipped_top = clipped["front"].triangulate()
-    clipped_bot = clipped["back"].triangulate()
-
-    ##################################
-    # create clipped primitives
-    ##################################
-
-    self.prim_top = meshutil.RigidPrimitive(clipped_top,ctx)
-    self.prim_bot = meshutil.RigidPrimitive(clipped_bot,ctx)
-    self.prim_node_top = self.prim_top.createNode("top",self.layer1,pipeline)
-    self.prim_node_bot = self.prim_bot.createNode("bot",self.layer1,pipeline)
-    self.prim_node_top.enabled = True
-    self.prim_node_bot.enabled = True
-
+    f = Fragments(ctx,self.layer1,pipeline,stripped,slicing_plane)
+    self.fragments += [f]
 
   ##############################################
 
@@ -151,8 +155,9 @@ class SceneGraphApp(object):
   def onUpdate(self,updinfo):
     θ = updinfo.absolutetime * math.pi * 2.0 * 0.03
     y = math.sin(θ*1.7)
-    self.prim_node_top.worldTransform.translation = vec3(0,2+y,1)
-    self.prim_node_bot.worldTransform.translation = vec3(0,2-y,1)
+    for f in self.fragments:
+      f.prim_node_top.worldTransform.translation = vec3(0,2+y,1)
+      f.prim_node_bot.worldTransform.translation = vec3(0,2-y,1)
 
     self.scene.updateScene(self.cameralut) 
 
