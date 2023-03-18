@@ -17,6 +17,12 @@ void pyinit_meshutil_submesh(py::module& module_meshutil) {
   auto submesh_type =
       py::class_<submesh, submesh_ptr_t>(module_meshutil, "SubMesh")
           .def(py::init<>())
+          .def_property("name", [](submesh_ptr_t submesh) -> std::string {
+            return submesh->name;
+          },
+          [](submesh_ptr_t submesh, std::string n) {            
+            return submesh->name = n;
+          })
           .def_property_readonly("isConvexHull", [](submesh_ptr_t submesh) -> bool {
             return submesh->isConvexHull();
           })
@@ -119,6 +125,9 @@ void pyinit_meshutil_submesh(py::module& module_meshutil) {
                  fplane3_ptr_t plane, bool close_mesh=false ) -> py::dict {
                 submesh_ptr_t res_front = std::make_shared<submesh>();
                 submesh_ptr_t res_back = std::make_shared<submesh>();
+
+                res_front->name = inpsubmesh->name + ".front";
+                res_back->name = inpsubmesh->name + ".back";
                 submeshClipWithPlane(*inpsubmesh,*plane, close_mesh, *res_front,*res_back);
                 py::dict rval;
                 rval["front"] = res_front;

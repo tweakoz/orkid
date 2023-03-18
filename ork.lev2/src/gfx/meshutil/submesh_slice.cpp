@@ -129,10 +129,10 @@ struct ChainLinker {
       _vtxAs.insert(va);
     }
 
-    printf("EDGE va<%d> vb<%d>\n", va->_poolindex, vb->_poolindex);
+    printf("[%s] EDGE va<%d> vb<%d>\n", _name.c_str(), va->_poolindex, vb->_poolindex);
 
-    printf( "VA<%g %g %g> <%g %g %g>\n", va->mPos.x, va->mPos.y, va->mPos.z, va->mNrm.x, va->mNrm.y, va->mNrm.z );
-    printf( "VB<%g %g %g> <%g %g %g>\n", vb->mPos.x, vb->mPos.y, vb->mPos.z, vb->mNrm.x, vb->mNrm.y, vb->mNrm.z );
+    printf( "[%s] VA<%g %g %g> <%g %g %g>\n", _name.c_str(), va->mPos.x, va->mPos.y, va->mPos.z, va->mNrm.x, va->mNrm.y, va->mNrm.z );
+    printf( "[%s] VB<%g %g %g> <%g %g %g>\n", _name.c_str(), vb->mPos.x, vb->mPos.y, vb->mPos.z, vb->mNrm.x, vb->mNrm.y, vb->mNrm.z );
 
     //////////////////////////////////
     edge_chain_ptr_t dest_chain;
@@ -211,9 +211,9 @@ struct ChainLinker {
 
     /////////////////////////////////////////////////////
 
-    printf("prelink numchains<%zu>\n", _edge_chains.size());
+    printf("[%s] prelink numchains<%zu>\n", _name.c_str(), _edge_chains.size());
     for( int i=0; i<_edge_chains.size(); i++){
-      printf("chain %d:%p | numedges<%zu>\n", i, _edge_chains[i].get(), _edge_chains[i]->_edges.size());
+      printf("[%s] chain %d:%p | numedges<%zu>\n", _name.c_str(), i, _edge_chains[i].get(), _edge_chains[i]->_edges.size());
     }
 
     //////////////////////////////////////////////////////////////////////////
@@ -259,7 +259,7 @@ struct ChainLinker {
         if(_edge_chains.size()>1)
           removeChain(right_chain);
 
-        printf( "lchain<%p> rchain<%p> presize<%zu> postsize<%zu> chcount<%zu>\n", (void*) left_chain.get(), (void*) right_chain.get(), presize, postsize, _edge_chains.size() );
+        printf( "[%s] lchain<%p> rchain<%p> presize<%zu> postsize<%zu> chcount<%zu>\n", _name.c_str(), (void*) left_chain.get(), (void*) right_chain.get(), presize, postsize, _edge_chains.size() );
 
         keep_joining = _edge_chains.size()>1;
       }
@@ -278,8 +278,8 @@ struct ChainLinker {
 
     closeChains();    
 
-    printf("postlink numchains<%zu>\n", _edge_chains.size());
-    printf("postlink numloops<%zu>\n", _edge_loops.size());
+    printf("[%s] postlink numchains<%zu>\n", _name.c_str(), _edge_chains.size());
+    printf("[%s] postlink numloops<%zu>\n", _name.c_str(), _edge_loops.size());
 
   }
   //////////////////////////////////////////////////////////
@@ -287,6 +287,7 @@ struct ChainLinker {
   std::vector<edge_loop_ptr_t> _edge_loops;
   std::unordered_map<vertex_ptr_t, int> _vtxrefcounts;
   std::unordered_set<vertex_ptr_t> _vtxAs, _vtxBs;
+  std::string _name;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -344,12 +345,12 @@ void submeshClipWithPlane(
     auto add_whole_poly = [](poly_ptr_t src_poly, submesh& dest) -> std::unordered_set<vertex_ptr_t> {
       std::vector<vertex_ptr_t> new_verts;
       std::unordered_set<vertex_ptr_t> added;
-      printf( "  add poly size<%zu>\n", src_poly->_vertices.size() );
+      printf( "  subm[%s] add poly size<%zu>\n", dest.name.c_str(), src_poly->_vertices.size() );
       for (auto v : src_poly->_vertices) {
         OrkAssert(v);
         auto newv = dest.mergeVertex(*v);
         auto pos = newv->mPos;
-        printf( "   add vertex pool<%02d> (%+g %+g %+g)\n", newv->_poolindex, pos.x, pos.y, pos.z );
+        printf( "   subm[%s] add vertex pool<%02d> (%+g %+g %+g)\n", dest.name.c_str(), newv->_poolindex, pos.x, pos.y, pos.z );
         new_verts.push_back(newv);
         added.insert(newv);
       }
@@ -395,7 +396,7 @@ void submeshClipWithPlane(
             newv->mNrm = fvec3(0,0,0);//flip_nrm ? (slicing_plane.n*-1) : slicing_plane.n;
             newv->mUV[0].Clear();
             newv->mUV[1].Clear();
-            printf( "bpv (%+g %+g %+g) \n", p.x, p.y, p.z );
+            printf( "subm[%s] bpv (%+g %+g %+g) \n", outsubmesh.name.c_str(), p.x, p.y, p.z );
             planar_verts.push_back(newv);
           }
         }
@@ -439,24 +440,25 @@ void submeshClipWithPlane(
       if(planar_edges.size()) {
 
         ChainLinker _linker;
+        _linker._name = outsubmesh.name;
         for (auto edge : planar_edges) {
           _linker.add_edge(edge);
         }
         _linker.link();
         for( auto loop : _linker._edge_loops ){
           std::vector<vertex_ptr_t> vertex_loop;
-          printf( "begin edgeloop <%p>\n", (void*) loop.get() );
+          printf( "subm[%s] begin edgeloop <%p>\n", outsubmesh.name.c_str(), (void*) loop.get() );
           int ie = 0;
           for( auto edge : loop->_edges ){
             vertex_loop.push_back(edge->_vertexA);
-            printf( " edge<%d> vtxi<%d>\n", ie, edge->_vertexA->_poolindex );
+            printf( " subm[%s] edge<%d> vtxi<%d>\n", outsubmesh.name.c_str(), ie, edge->_vertexA->_poolindex );
             ie++;
           }
           vertex center_vert_temp;
           center_vert_temp.center(vertex_loop);
           auto center_vertex = outsubmesh.mergeVertex(center_vert_temp);
           auto center_pos = center_vert_temp.mPos;
-          printf( "center<%g %g %g>\n",center_pos.x,center_pos.y,center_pos.z );
+          printf( " subm[%s] center<%g %g %g>\n",outsubmesh.name.c_str(), center_pos.x,center_pos.y,center_pos.z );
           for( auto edge : loop->_edges ){
             auto va = outsubmesh.mergeVertex(*edge->_vertexA);
             auto vb = outsubmesh.mergeVertex(*edge->_vertexB);

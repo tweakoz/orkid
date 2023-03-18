@@ -69,9 +69,11 @@ class SceneGraphApp(object):
     self.printSubMesh("stripped", stripped)
     slicing_plane = plane(vec3(0,1,1).normalized(),-.5)
     clipped = stripped.clipWithPlane(slicing_plane,True)
-    clipped_bot = clipped["back"].copy(preserve_normals=False,
-                                       preserve_colors=False,
-                                       preserve_texcoords=False)
+    clipped_bot = clipped["back"]
+
+    #clipped_bot = clipped["back"].copy(preserve_normals=False,
+    #                                   preserve_colors=False,
+    #                                   preserve_texcoords=False)
     #clipped_top = clipped["front"].triangulate()
     #clipped_bot = clipped["back"]#.triangulate()
 
