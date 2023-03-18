@@ -59,38 +59,17 @@ class SceneGraphApp(object):
 
     createSceneGraph(app=self,rendermodel="ForwardPBR")
 
-    mesh = meshutil.Mesh()
-    mesh.readFromWavefrontObj("data://tests/simple_obj/box.obj")
-    submesh = mesh.submesh_list[0]
-    self.printSubMesh("srcmesh", submesh)
-    stripped = submesh.copy(preserve_normals=False,
-                            preserve_colors=False,
-                            preserve_texcoords=False)
-    self.printSubMesh("stripped", stripped)
-    slicing_plane = plane(vec3(1,1,1).normalized(),-.5)
+    ##################################
+    # create Grid
+    ##################################
 
-    clipped = stripped.clipWithPlane( plane=slicing_plane,
-                                      flip_orientation = False,
-                                      close_mesh = True )
+    self.grid_data = createGridData()
+    self.grid_node = self.layer1.createGridNode("grid",self.grid_data)
+    self.grid_node.sortkey = 1
 
-    clipped_top = clipped["front"].triangulate()
-    clipped_bot = clipped["back"].triangulate()
-
-
-    #print(clipped_top)
-    #print(clipped_bot)
-
-    #print(clipped_top.vertexpool.orderedVertices[0])
-    #print(clipped_top.vertexpool.orderedVertices[29])
-
-    #self.printSubMesh("clipped_top", clipped_top)
-    #self.printSubMesh("clipped_back", clipped_bot)
-
-    #assert(False)
-
-    self.prim_ori = meshutil.RigidPrimitive(submesh,ctx)
-    self.prim_top = meshutil.RigidPrimitive(clipped_top,ctx)
-    self.prim_bot = meshutil.RigidPrimitive(clipped_bot,ctx)
+    ##################################
+    # shared material
+    ##################################
 
     pipeline = createPipeline( app = self,
                                ctx = ctx,
@@ -101,19 +80,64 @@ class SceneGraphApp(object):
     material = pipeline.sharedMaterial
     pipeline.bindParam( material.param("m"), tokens.RCFD_M)
 
+    ##################################
+    # load model 
+    ##################################
+
+    mesh = meshutil.Mesh()
+    mesh.readFromWavefrontObj("data://tests/simple_obj/box.obj")
+
+    ##################################
+    # extract submesh
+    ##################################
+
+    submesh = mesh.submesh_list[0]
+
+    # original submesh primitive
+
+    self.prim_ori = meshutil.RigidPrimitive(submesh,ctx)
     self.prim_node_ori = self.prim_ori.createNode("ori",self.layer1,pipeline)
+    self.prim_node_ori.enabled = False
+
+
+    ##################################
+    # strip UV's, normals and colors from submesh
+    ##################################
+
+    self.printSubMesh("srcmesh", submesh)
+    stripped = submesh.copy(preserve_normals=False,
+                            preserve_colors=False,
+                            preserve_texcoords=False)
+    self.printSubMesh("stripped", stripped)
+
+    ##################################
+    # clip with plane
+    ##################################
+
+    slicing_plane = plane(vec3(1,1,1).normalized(),-.5)
+
+    clipped = stripped.clipWithPlane( plane=slicing_plane,
+                                      flip_orientation = False,
+                                      close_mesh = True )
+
+    ##################################
+    # triangulate results
+    ##################################
+
+    clipped_top = clipped["front"].triangulate()
+    clipped_bot = clipped["back"].triangulate()
+
+    ##################################
+    # create clipped primitives
+    ##################################
+
+    self.prim_top = meshutil.RigidPrimitive(clipped_top,ctx)
+    self.prim_bot = meshutil.RigidPrimitive(clipped_bot,ctx)
     self.prim_node_top = self.prim_top.createNode("top",self.layer1,pipeline)
     self.prim_node_bot = self.prim_bot.createNode("bot",self.layer1,pipeline)
-
-    ###################################
-    self.prim_node_ori.enabled = False
     self.prim_node_top.enabled = True
     self.prim_node_bot.enabled = True
-    ###################################
 
-    self.grid_data = createGridData()
-    self.grid_node = self.layer1.createGridNode("grid",self.grid_data)
-    self.grid_node.sortkey = 1
 
   ##############################################
 
