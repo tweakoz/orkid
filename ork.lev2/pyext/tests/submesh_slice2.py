@@ -113,7 +113,7 @@ class Fragments:
     ##################################
 
   def update(self,abstime):
-    θ = abstime * math.pi * 2.0 * 0.03
+    θ = abstime * math.pi * 2.0 * 0.0
     y = math.sin(θ*1.7)
     self.prim_node_top.worldTransform.translation = self.normal*y
     self.prim_node_bot.worldTransform.translation = self.normal*(-y)
@@ -170,6 +170,8 @@ class SceneGraphApp(object):
                   pipeline=pipeline,
                   slicing_plane=plane(vec3(1,1,1).normalized(),-.5),
                   model_asset_path = "data://tests/simple_obj/cone.obj" )
+
+    #assert(False)
 
     self.fragments += [f]
 
