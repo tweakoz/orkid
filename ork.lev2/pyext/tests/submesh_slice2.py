@@ -69,7 +69,7 @@ class SceneGraphApp(object):
     self.printSubMesh("stripped", stripped)
     slicing_plane = plane(vec3(1,1,1).normalized(),-.5)
     clipped = stripped.clipWithPlane(slicing_plane,True)
-    #clipped_top = clipped["front"].triangulate()
+    clipped_top = clipped["front"].triangulate()
     clipped_bot = clipped["back"].triangulate()
 
 
@@ -79,13 +79,13 @@ class SceneGraphApp(object):
     #print(clipped_bot.vertexpool.orderedVertices[1])
     #print(clipped_bot.vertexpool.orderedVertices[4])
 
-    #self.printSubMesh("clipped_top", clipped_top)
+    self.printSubMesh("clipped_top", clipped_top)
     self.printSubMesh("clipped_back", clipped_bot)
 
     #assert(False)
 
-    #self.prim_ori = meshutil.RigidPrimitive(submesh,ctx)
-    #self.prim_top = meshutil.RigidPrimitive(clipped_top,ctx)
+    self.prim_ori = meshutil.RigidPrimitive(submesh,ctx)
+    self.prim_top = meshutil.RigidPrimitive(clipped_top,ctx)
     self.prim_bot = meshutil.RigidPrimitive(clipped_bot,ctx)
 
     pipeline = createPipeline( app = self,
@@ -97,13 +97,13 @@ class SceneGraphApp(object):
     material = pipeline.sharedMaterial
     pipeline.bindParam( material.param("m"), tokens.RCFD_M)
 
-    #self.prim_node_ori = self.prim_ori.createNode("ori",self.layer1,pipeline)
-    #self.prim_node_top = self.prim_top.createNode("top",self.layer1,pipeline)
+    self.prim_node_ori = self.prim_ori.createNode("ori",self.layer1,pipeline)
+    self.prim_node_top = self.prim_top.createNode("top",self.layer1,pipeline)
     self.prim_node_bot = self.prim_bot.createNode("bot",self.layer1,pipeline)
 
     ###################################
-    #self.prim_node_ori.enabled = False
-    #self.prim_node_top.enabled = True
+    self.prim_node_ori.enabled = False
+    self.prim_node_top.enabled = True
     self.prim_node_bot.enabled = True
     ###################################
 
@@ -123,8 +123,8 @@ class SceneGraphApp(object):
   def onUpdate(self,updinfo):
     θ = updinfo.absolutetime * math.pi * 2.0 * 0.3
     y = math.sin(θ*1.7)
-    #self.prim_node_top.worldTransform.translation = vec3(0,2+y,1)
-    #self.prim_node_bot.worldTransform.translation = vec3(0,2-y,1)
+    self.prim_node_top.worldTransform.translation = vec3(0,2+y,1)
+    self.prim_node_bot.worldTransform.translation = vec3(0,2-y,1)
 
     self.scene.updateScene(self.cameralut) 
 

@@ -106,6 +106,16 @@ using edge_chain_ptr_t = std::shared_ptr<EdgeChain>;
 
 struct EdgeLoop {
   std::vector<edge_ptr_t> _edges;
+
+  void reversed(EdgeLoop& out) const {
+    for( auto it_e  = _edges.rbegin(); it_e != _edges.rend(); it_e++ ){
+      auto ne = std::make_shared<edge>();
+      auto e = *it_e;
+      ne->_vertexA = e->_vertexB;
+      ne->_vertexB = e->_vertexA;
+      out._edges.push_back(ne);
+    }
+  }
 };
 
 using edge_loop_ptr_t = std::shared_ptr<EdgeLoop>;
@@ -121,14 +131,6 @@ struct ChainLinker {
     _vtxrefcounts[va]++;
     _vtxrefcounts[vb]++;
 
-    if( _vtxAs.find(va) != _vtxAs.end() ){
-      std::swap(va,vb);  
-      std::swap(e->_vertexA,e->_vertexB);  
-    }
-    else{
-      _vtxAs.insert(va);
-    }
-
     printf("[%s] EDGE va<%d> vb<%d>\n", _name.c_str(), va->_poolindex, vb->_poolindex);
 
     printf( "[%s] VA<%g %g %g> <%g %g %g>\n", _name.c_str(), va->mPos.x, va->mPos.y, va->mPos.z, va->mNrm.x, va->mNrm.y, va->mNrm.z );
@@ -139,6 +141,11 @@ struct ChainLinker {
     for (auto c : _edge_chains) {
       auto last_edge = *c->_edges.rbegin();
       if (last_edge->_vertexB == va) {
+        dest_chain = c;
+      }
+      else if (last_edge->_vertexB == vb) {
+        std::swap(va,vb);  
+        std::swap(e->_vertexA,e->_vertexB);  
         dest_chain = c;
       }
     }
@@ -286,7 +293,6 @@ struct ChainLinker {
   std::vector<edge_chain_ptr_t> _edge_chains;
   std::vector<edge_loop_ptr_t> _edge_loops;
   std::unordered_map<vertex_ptr_t, int> _vtxrefcounts;
-  std::unordered_set<vertex_ptr_t> _vtxAs, _vtxBs;
   std::string _name;
 };
 
@@ -419,7 +425,7 @@ void submeshClipWithPlane(
 
       ///////////////////////////////////////////
 
-      //process_clipped(clipped_front.mVerts,outsmeshFront,front_planar_edges,true);
+      process_clipped(clipped_front.mVerts,outsmeshFront,front_planar_edges,true);
       process_clipped(clipped_back.mVerts,outsmeshBack,back_planar_edges,false);
 
     }
@@ -446,6 +452,10 @@ void submeshClipWithPlane(
         }
         _linker.link();
         for( auto loop : _linker._edge_loops ){
+
+          //EdgeLoop reversed;
+          //loop->reversed(reversed);
+
           std::vector<vertex_ptr_t> vertex_loop;
           printf( "subm[%s] begin edgeloop <%p>\n", outsubmesh.name.c_str(), (void*) loop.get() );
           int ie = 0;
@@ -465,7 +475,8 @@ void submeshClipWithPlane(
             if(flip){
               std::swap(va,vb);
             }
-            outsubmesh.mergeTriangle(vb,va,center_vertex);
+            //outsubmesh.mergeTriangle(vb,va,center_vertex);
+            outsubmesh.mergeTriangle(va,vb,center_vertex);
           }
         }
 
@@ -475,7 +486,7 @@ void submeshClipWithPlane(
 
   if(close_mesh){
     do_close(outsmeshBack,back_planar_edges,false);
-    //do_close(outsmeshFront,front_planar_edges,true);
+    do_close(outsmeshFront,front_planar_edges,true);
   }
 
   ///////////////////////////////////////////////////////////
