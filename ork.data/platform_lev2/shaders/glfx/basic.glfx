@@ -37,6 +37,7 @@ vertex_interface iface_rigid : ub_vtx {
     vec4 frg_clr;
     vec2 frg_uv0;
     vec4 frg_nrmd;
+    vec3 frg_pos;
   }
 }
 
@@ -61,6 +62,7 @@ fragment_interface iface_fdefault {
     vec4 frg_clr;
     vec2 frg_uv0;
     vec4 frg_nrmd;
+    vec3 frg_pos;
   }
   outputs {
     layout(location = 0) vec4 out_clr;
@@ -128,6 +130,7 @@ vertex_shader vs_wnormal : iface_rigid {
   vec3 wnorm = normalize((m * vec4(normal,0)).xyz);
   ///////////////////////////
   frg_clr     = vec4(vec3(.5)+wnorm*0.5, 1.0);
+  frg_pos     = (m * position).xyz;
   frg_uv0     = uv0;
   frg_nrmd    = vec4(wnorm, -hpos.z/hpos.w);
   gl_Position = hpos;
@@ -220,6 +223,16 @@ fragment_shader ps_wnormalsk : iface_fdefault {
 }
 
 ///////////////////////////////////////////////////////////////
+fragment_shader ps_fnormal : iface_fdefault { 
+  vec3 X = dFdx(frg_pos);  
+  vec3 Y = dFdy(frg_pos);
+  vec3 normal=normalize(cross(X,Y)); 
+
+  vec3 c = vec3(.5,.5,.5)+normal*0.5;
+  out_clr = vec4(c,1);
+
+}
+///////////////////////////////////////////////////////////////
 fragment_shader ps_modclr : iface_fmt { out_clr = modcolor; }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_pick : iface_fpick {
@@ -256,6 +269,14 @@ technique tek_wnormal {
   pass p0 {
     vertex_shader   = vs_wnormal;
     fragment_shader = ps_fragclr;
+    state_block     = sb_default;
+  }
+}
+technique tek_fnormal {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_wnormal;
+    fragment_shader = ps_fnormal;
     state_block     = sb_default;
   }
 }

@@ -42,6 +42,14 @@ void pyinit_scenegraph(py::module& module_lev2) {
                 node->_dqxfdata._modcolor = color;
                 node->_dqxfdata._use_modcolor = true;
               })
+          .def_property(
+              "enabled",                     //
+              [](node_ptr_t node) -> bool { //
+                return node->_enabled;
+              },
+              [](node_ptr_t node, bool ena) { //
+                node->_enabled = ena;
+              })
           .def_property_readonly(
               "user",                                       //
               [](node_ptr_t node) -> varmap::varmap_ptr_t { //

@@ -285,6 +285,13 @@ struct submesh {
 
   //////////////////////////////////////////////////////////////////////////////
 
+  void copy( submesh& dest,
+             bool preserve_normals=true,
+             bool preserve_colors=true,
+             bool preserve_texcoords=true ) const;
+
+  //////////////////////////////////////////////////////////////////////////////
+
   vertex_ptr_t mergeVertex(const vertex& vtx);
   edge_ptr_t MergeEdge(const edge& ed, int ipolyindex = -1);
   poly_ptr_t mergePoly(const poly& ply);

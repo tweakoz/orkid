@@ -49,7 +49,7 @@ class SceneGraphApp(object):
     for idx, poly in enumerate(subm.polys):
       out_str += "  poly> %d: [ "%idx
       for v in poly.vertices:
-        out_str += "(%g %g %g) " % (v.position.x,v.position.y,v.position.z)
+        out_str += "%d " % v.poolindex
       out_str += "]\n"
     print(out_str)
 
@@ -60,40 +60,54 @@ class SceneGraphApp(object):
     createSceneGraph(app=self,rendermodel="ForwardPBR")
 
     mesh = meshutil.Mesh()
-    mesh.readFromWavefrontObj("data://tests/simple_obj/box.obj")
+    mesh.readFromWavefrontObj("data://tests/simple_obj/tetra.obj")
     submesh = mesh.submesh_list[0]
     self.printSubMesh("srcmesh", submesh)
-    slicing_plane = plane(vec3(0,0.25,1).normalized(),0)
-    clipped = submesh.clipWithPlane(slicing_plane,True)
-    clipped_top = clipped["front"].triangulate()
-    clipped_bot = clipped["back"].triangulate()
+    stripped = submesh.copy(preserve_normals=False,
+                            preserve_colors=False,
+                            preserve_texcoords=False)
+    self.printSubMesh("stripped", stripped)
+    slicing_plane = plane(vec3(0,1,1).normalized(),-.5)
+    clipped = stripped.clipWithPlane(slicing_plane,True)
+    clipped_bot = clipped["back"].copy(preserve_normals=False,
+                                       preserve_colors=False,
+                                       preserve_texcoords=False)
+    #clipped_top = clipped["front"].triangulate()
+    #clipped_bot = clipped["back"]#.triangulate()
 
 
     #print(clipped_top)
     #print(clipped_bot)
 
-    #print(clipped_top.vertexpool.orderedVertices[5])
-    #print(clipped_top.vertexpool.orderedVertices[17])
+    print(clipped_bot.vertexpool.orderedVertices[5])
+    print(clipped_bot.vertexpool.orderedVertices[7])
 
-    self.printSubMesh("clipped_top", clipped_top)
+    #self.printSubMesh("clipped_top", clipped_top)
     self.printSubMesh("clipped_bot", clipped_bot)
 
+    #assert(False)
 
-    self.prim_top = meshutil.RigidPrimitive(clipped_top,ctx)
+    #self.prim_ori = meshutil.RigidPrimitive(submesh,ctx)
+    #self.prim_top = meshutil.RigidPrimitive(clipped_top,ctx)
     self.prim_bot = meshutil.RigidPrimitive(clipped_bot,ctx)
 
     pipeline = createPipeline( app = self,
                                ctx = ctx,
                                rendermodel = "ForwardPBR",
                                shaderfile=Path("orkshader://basic"),
-                               techname="tek_wnormal" )
+                               techname="tek_fnormal" )
 
     material = pipeline.sharedMaterial
     pipeline.bindParam( material.param("m"), tokens.RCFD_M)
 
-    self.prim_node_top = self.prim_top.createNode("top",self.layer1,pipeline)
+    #self.prim_node_ori = self.prim_ori.createNode("top",self.layer1,pipeline)
+    #self.prim_node_top = self.prim_top.createNode("top",self.layer1,pipeline)
     self.prim_node_bot = self.prim_bot.createNode("bot",self.layer1,pipeline)
 
+    ###################################
+    #self.prim_node_ori.enabled = False
+    #self.prim_node_top.enabled = False
+    self.prim_node_bot.enabled = True
     ###################################
 
     self.grid_data = createGridData()
@@ -112,8 +126,8 @@ class SceneGraphApp(object):
   def onUpdate(self,updinfo):
     θ = updinfo.absolutetime * math.pi * 2.0 * 0.3
     y = math.sin(θ*1.7)
-    self.prim_node_top.worldTransform.translation = vec3(0,2+y,1)
-    self.prim_node_bot.worldTransform.translation = vec3(0,2-y,1)
+    #self.prim_node_top.worldTransform.translation = vec3(0,2+y,1)
+    #self.prim_node_bot.worldTransform.translation = vec3(0,2-y,1)
 
     self.scene.updateScene(self.cameralut) 
 

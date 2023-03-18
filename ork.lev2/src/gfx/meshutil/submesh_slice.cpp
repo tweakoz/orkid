@@ -207,7 +207,7 @@ struct ChainLinker {
   //////////////////////////////////////////////////////////
   void link(){
 
-    OrkAssert( loops_possible() );
+    //OrkAssert( loops_possible() );
 
     /////////////////////////////////////////////////////
 
@@ -345,30 +345,11 @@ void submeshClipWithPlane(
       std::vector<vertex_ptr_t> new_verts;
       std::unordered_set<vertex_ptr_t> added;
       printf( "  add poly size<%zu>\n", src_poly->_vertices.size() );
-      float ax = 0.0f;
-      float ay = 0.0f;
-      for (auto v : src_poly->_vertices) {
-        ax += v->mPos.x*0.25;
-        ay += v->mPos.y*0.25;
-      }
-      std::string deco;
-      if(ax>0.99){
-        deco = "\t# +X";
-      }
-      else if(ax<-0.99){
-        deco = "\t# -X";
-      }
-      else if(ay>0.99){
-        deco = "\t# +Y";
-      }
-      else if(ay<-0.99){
-        deco = "\t# -Y";
-      }
       for (auto v : src_poly->_vertices) {
         OrkAssert(v);
         auto newv = dest.mergeVertex(*v);
         auto pos = newv->mPos;
-        printf( "   add vertex pool<%02d> (%+g %+g %+g) %s\n", newv->_poolindex, pos.x, pos.y, pos.z, deco.c_str() );
+        printf( "   add vertex pool<%02d> (%+g %+g %+g)\n", newv->_poolindex, pos.x, pos.y, pos.z );
         new_verts.push_back(newv);
         added.insert(newv);
       }
@@ -411,7 +392,7 @@ void submeshClipWithPlane(
           temp_verts.push_back(newv);
           if(abs(slicing_plane.pointDistance(newv->mPos)) < 0.00001 ){
             const auto& p = newv->mPos;
-            newv->mNrm = flip_nrm ? (slicing_plane.n*-1) : slicing_plane.n;
+            newv->mNrm = fvec3(0,0,0);//flip_nrm ? (slicing_plane.n*-1) : slicing_plane.n;
             newv->mUV[0].Clear();
             newv->mUV[1].Clear();
             printf( "bpv (%+g %+g %+g) \n", p.x, p.y, p.z );

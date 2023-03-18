@@ -617,6 +617,59 @@ bool submesh::isConvexHull() const {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+void submesh::copy(  submesh& dest, //
+                     bool preserve_normals, //
+                     bool preserve_colors, //
+                     bool preserve_texcoords ) const{ //
+
+  std::unordered_map<int,int> vtx_map;
+
+  for( auto v : _vtxpool->_orderedVertices ){
+
+    auto temp_v = std::make_shared<vertex>();
+    temp_v->mPos = v->mPos;
+    if(preserve_normals){
+      temp_v->mNrm = v->mNrm;
+    }
+    if(preserve_colors){
+      for( int ic=0; ic<vertex::kmaxcolors; ic++ ){
+        temp_v->mCol[ic] = v->mCol[ic];
+      }
+      temp_v->miNumColors = v->miNumColors;
+    }
+    if(preserve_texcoords){
+      for( int it=0; it<vertex::kmaxuvs; it++ ){
+        temp_v->mUV[it] = v->mUV[it];
+      }
+      temp_v->miNumUvs = v->miNumUvs;
+    }
+
+    auto new_v = dest.mergeVertex(*temp_v);
+    vtx_map[v->_poolindex] = new_v->_poolindex;
+
+  }
+  for( auto p : _orderedPolys ){
+    std::vector<vertex_ptr_t> newverts;
+    for( auto v : p->_vertices ){
+      auto it = vtx_map.find(v->_poolindex);
+      OrkAssert(it!=vtx_map.end());
+      auto newv = dest._vtxpool->_orderedVertices[it->second];
+      newverts.push_back(newv);
+    }
+    auto newp = std::make_shared<poly>(newverts);
+    dest.mergePoly(*newp);
+  }
+
+  dest.name = name;
+  dest._mergeEdges = _mergeEdges;
+  dest._annotations = _annotations;
+  dest._aaBoxDirty = true;
+  dest._surfaceArea = 0.0f;
+
+}
+
+///////////////////////////////////////////////////////////////////////////////
 /*
 void SubMesh::GenIndexBuffers( void )
 {

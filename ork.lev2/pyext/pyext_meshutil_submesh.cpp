@@ -43,6 +43,30 @@ void pyinit_meshutil_submesh(py::module& module_meshutil) {
           .def("igl_test", [](submesh_ptr_t submesh) { return submesh->igl_test(); })
 #endif //#if defined(ENABLE_IGL)
           .def(
+              "copy",
+              [](submesh_constptr_t inpsubmesh, py::kwargs kwargs) -> submesh_ptr_t {
+                submesh_ptr_t rval = std::make_shared<submesh>();
+                bool preserve_normals   = true;
+                bool preserve_colors    = true;
+                bool preserve_texcoords = true;
+                if (kwargs) {
+                  for (auto item : kwargs) {
+                    auto key = py::cast<std::string>(item.first);
+                    if (key == "preserve_normals") {
+                      preserve_normals = py::cast<bool>(item.second);
+                    }
+                    if (key == "preserve_colors") {
+                      preserve_colors = py::cast<bool>(item.second);
+                    }
+                    if (key == "preserve_texcoords") {
+                      preserve_texcoords = py::cast<bool>(item.second);
+                    }
+                  }
+                }
+                inpsubmesh->copy(*rval, preserve_normals,preserve_colors,preserve_texcoords);
+                return rval;
+              })
+          .def(
               "triangulate",
               [](submesh_constptr_t inpsubmesh) -> submesh_ptr_t {
                 submesh_ptr_t rval = std::make_shared<submesh>();
