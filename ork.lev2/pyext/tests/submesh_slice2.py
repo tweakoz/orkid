@@ -60,7 +60,7 @@ class SceneGraphApp(object):
     createSceneGraph(app=self,rendermodel="ForwardPBR")
 
     mesh = meshutil.Mesh()
-    mesh.readFromWavefrontObj("data://tests/simple_obj/box.obj")
+    mesh.readFromWavefrontObj("data://tests/simple_obj/cylinder.obj")
     submesh = mesh.submesh_list[0]
     self.printSubMesh("srcmesh", submesh)
     stripped = submesh.copy(preserve_normals=False,
@@ -76,11 +76,11 @@ class SceneGraphApp(object):
     #print(clipped_top)
     #print(clipped_bot)
 
-    #print(clipped_bot.vertexpool.orderedVertices[1])
-    #print(clipped_bot.vertexpool.orderedVertices[4])
+    #print(clipped_top.vertexpool.orderedVertices[0])
+    #print(clipped_top.vertexpool.orderedVertices[29])
 
-    self.printSubMesh("clipped_top", clipped_top)
-    self.printSubMesh("clipped_back", clipped_bot)
+    #self.printSubMesh("clipped_top", clipped_top)
+    #self.printSubMesh("clipped_back", clipped_bot)
 
     #assert(False)
 
@@ -121,7 +121,7 @@ class SceneGraphApp(object):
   ################################################
 
   def onUpdate(self,updinfo):
-    θ = updinfo.absolutetime * math.pi * 2.0 * 0.3
+    θ = updinfo.absolutetime * math.pi * 2.0 * 0.03
     y = math.sin(θ*1.7)
     self.prim_node_top.worldTransform.translation = vec3(0,2+y,1)
     self.prim_node_bot.worldTransform.translation = vec3(0,2-y,1)

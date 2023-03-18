@@ -113,7 +113,7 @@ struct vertex {
   void Center(const vertex** pverts, int icnt);
   void center(const std::vector<vertex_ptr_t>& verts);
 
-  U64 Hash() const;
+  U64 Hash(float quantization=1e5f) const;
 
   uint32_t _poolindex = 0xffffffff;
 

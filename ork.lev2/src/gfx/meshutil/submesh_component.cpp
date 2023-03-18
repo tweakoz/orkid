@@ -181,10 +181,9 @@ void vertex::center(const std::vector<vertex_ptr_t>& verts) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-U64 vertex::Hash() const {
+U64 vertex::Hash(float quantization) const {
   boost::Crc64 crc64;
 
-  constexpr float quantization = 1e6;
 
   crc64.accumulateItem(miNumWeights);
   crc64.accumulateItem(miNumColors);

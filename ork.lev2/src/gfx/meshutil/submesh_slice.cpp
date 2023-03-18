@@ -95,6 +95,41 @@ void submeshSliceWithPlane(
 // create edge chains
 /////////////////////////////////////////////////////
 
+std::vector<edge_ptr_t> reverse_edgelist(const std::vector<edge_ptr_t>& inp){
+  std::vector<edge_ptr_t> rval;
+    for( auto it_e  = inp.rbegin(); //
+              it_e != inp.rend(); //
+              it_e++ ){ //
+
+      auto ne = std::make_shared<edge>();
+      auto e = *it_e;
+      ne->_vertexA = e->_vertexB;
+      ne->_vertexB = e->_vertexA;
+      rval.push_back(ne);
+    }
+    return rval;
+}
+
+std::string dump_edgelist(const std::vector<edge_ptr_t>& inp){
+  std::string rval;
+  std::set<vertex_ptr_t> visited_verts;
+  for( auto e : inp ){
+    auto va = e->_vertexA;
+    auto vb = e->_vertexB;
+    auto itva = visited_verts.find(va);
+    if(itva==visited_verts.end()){
+      visited_verts.insert(va);
+      rval += FormatString( "%d ", va->_poolindex );
+    }
+    itva = visited_verts.find(vb);
+    if(itva==visited_verts.end()){
+      visited_verts.insert(vb);
+      rval += FormatString( "%d ", vb->_poolindex );
+    }
+  }
+  return rval;
+}
+
 struct EdgeChain {
   std::vector<edge_ptr_t> _edges;
   std::unordered_set<vertex_ptr_t> _vertices;
@@ -106,15 +141,8 @@ using edge_chain_ptr_t = std::shared_ptr<EdgeChain>;
 
 struct EdgeLoop {
   std::vector<edge_ptr_t> _edges;
-
   void reversed(EdgeLoop& out) const {
-    for( auto it_e  = _edges.rbegin(); it_e != _edges.rend(); it_e++ ){
-      auto ne = std::make_shared<edge>();
-      auto e = *it_e;
-      ne->_vertexA = e->_vertexB;
-      ne->_vertexB = e->_vertexA;
-      out._edges.push_back(ne);
-    }
+    out._edges = reverse_edgelist(_edges);
   }
 };
 
@@ -185,6 +213,12 @@ struct ChainLinker {
       if( last_edge->_vertexB == va ){
         return chain;
       }
+      auto first_edge = *edges.begin();
+      if( first_edge->_vertexA == va ){
+        auto reversed = reverse_edgelist(edges);
+        chain->_edges = reversed;
+        return chain;
+      }
     }
     return nullptr;
   }
@@ -197,6 +231,7 @@ struct ChainLinker {
   //////////////////////////////////////////////////////////
   void closeChains(){
     std::unordered_set<edge_chain_ptr_t> closed;
+    //////////////////////////////////
     for( auto chain : _edge_chains ){
       auto first_edge = *chain->_edges.begin();
       auto last_edge = *chain->_edges.rbegin();
@@ -204,11 +239,20 @@ struct ChainLinker {
         closed.insert(chain);
       }
     }
+    //////////////////////////////////
     for( auto chain : closed ){
       removeChain(chain);
       auto loop = std::make_shared<EdgeLoop>();
       loop->_edges = chain->_edges;
       _edge_loops.push_back(loop);
+    }
+    //////////////////////////////////
+    if(_edge_loops.size()==0){
+      printf( "[%s] EDGELOOP DEBUG\n", _name.c_str() );
+      for( auto chain : _edge_chains ){
+        auto d = dump_edgelist(chain->_edges);
+        printf( "[%s]   CHAIN numedges<%zu> [%s]\n", _name.c_str(), chain->_edges.size(), d.c_str() );
+      }
     }
   }
   //////////////////////////////////////////////////////////
@@ -220,7 +264,8 @@ struct ChainLinker {
 
     printf("[%s] prelink numchains<%zu>\n", _name.c_str(), _edge_chains.size());
     for( int i=0; i<_edge_chains.size(); i++){
-      printf("[%s] chain %d:%p | numedges<%zu>\n", _name.c_str(), i, _edge_chains[i].get(), _edge_chains[i]->_edges.size());
+      auto d = dump_edgelist(_edge_chains[i]->_edges);
+      printf("[%s] chain %d:%p | numedges<%zu> [%s]\n", _name.c_str(), i, _edge_chains[i].get(), _edge_chains[i]->_edges.size(), d.c_str() );
     }
 
     //////////////////////////////////////////////////////////////////////////
@@ -304,6 +349,8 @@ void submeshClipWithPlane(
     bool close_mesh,
     submesh& outsmeshFront, //
     submesh& outsmeshBack) {
+
+  constexpr float PLANE_EPSILON = 0.0001f;
 
   std::unordered_set<vertex_ptr_t> front_verts, back_verts, planar_verts;
 
@@ -397,7 +444,7 @@ void submeshClipWithPlane(
         for (auto& v : clipped_verts) {
           auto newv = std::make_shared<vertex>(v);
           temp_verts.push_back(newv);
-          if(abs(slicing_plane.pointDistance(newv->mPos)) < 0.00001 ){
+          if(abs(slicing_plane.pointDistance(newv->mPos)) < PLANE_EPSILON ){
             const auto& p = newv->mPos;
             newv->mNrm = fvec3(0,0,0);//flip_nrm ? (slicing_plane.n*-1) : slicing_plane.n;
             newv->mUV[0].Clear();
@@ -475,8 +522,12 @@ void submeshClipWithPlane(
             if(flip){
               std::swap(va,vb);
             }
-            //outsubmesh.mergeTriangle(vb,va,center_vertex);
-            outsubmesh.mergeTriangle(va,vb,center_vertex);
+
+
+            // TODO correct winding order
+
+            outsubmesh.mergeTriangle(vb,va,center_vertex);
+            //outsubmesh.mergeTriangle(va,vb,center_vertex);
           }
         }
 
