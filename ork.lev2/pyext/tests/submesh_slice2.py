@@ -97,6 +97,16 @@ class Fragments:
 
     printSubMesh("stripped", self.stripped)
 
+    self.pipeline = pipeline
+    self.context = context
+    self.layer = layer
+
+    self.clip(slicing_plane,flip_orientation,initial=True)
+
+    ##################################
+
+  def clip(self,slicing_plane,flip_orientation,initial=None):
+
     self.slicing_plane = slicing_plane
 
     ##################################
@@ -107,17 +117,22 @@ class Fragments:
                                                 flip_orientation = flip_orientation,
                                                 close_mesh = True )
 
-    #print(self.clipped["front"].vertexpool.orderedVertices[12])
-    #print(self.clipped["front"].vertexpool.orderedVertices[26])
-
     self.front = self.clipped["front"].triangulate()
     self.back = self.clipped["back"].triangulate()
-    self.prim_front = meshutil.RigidPrimitive(self.front,context)
-    self.prim_back = meshutil.RigidPrimitive(self.back ,context)
-    self.prim_node_front = self.prim_front.createNode("front",layer,pipeline)
-    self.prim_node_back = self.prim_back.createNode("back",layer,pipeline)
-    self.prim_node_front.enabled = True
-    self.prim_node_back.enabled = True
+
+    ##################################
+    # if initial, build primitive
+    ##################################
+
+    if initial:
+      self.prim_front = meshutil.RigidPrimitive(self.front,self.context)
+      self.prim_back = meshutil.RigidPrimitive(self.back ,self.context)
+      self.prim_node_front = self.prim_front.createNode("front",self.layer,self.pipeline)
+      self.prim_node_back = self.prim_back.createNode("back",self.layer,self.pipeline)
+      self.prim_node_front.enabled = True
+      self.prim_node_back.enabled = True
+    else: # TODO - update existing primitive
+      pass
 
     ##################################
 
