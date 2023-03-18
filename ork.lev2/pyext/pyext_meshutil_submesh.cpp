@@ -121,14 +121,40 @@ void pyinit_meshutil_submesh(py::module& module_meshutil) {
               })
           .def(
               "clipWithPlane",
-              [](submesh_constptr_t inpsubmesh, 
-                 fplane3_ptr_t plane, bool close_mesh=false ) -> py::dict {
+              [](submesh_constptr_t inpsubmesh,py::kwargs kwargs) -> py::dict {
+
                 submesh_ptr_t res_front = std::make_shared<submesh>();
                 submesh_ptr_t res_back = std::make_shared<submesh>();
-
                 res_front->name = inpsubmesh->name + ".front";
                 res_back->name = inpsubmesh->name + ".back";
-                submeshClipWithPlane(*inpsubmesh,*plane, close_mesh, *res_front,*res_back);
+
+                fplane3_ptr_t plane = nullptr;
+                bool close_mesh = false;
+                bool flip_orientation = false;
+
+                for (auto item : kwargs) {
+                  auto key = py::cast<std::string>(item.first);
+                  if (key == "flip_orientation") {
+                    flip_orientation = py::cast<bool>(item.second);
+                  }
+                  else if (key == "close_mesh") {
+                    close_mesh = py::cast<bool>(item.second);
+                  }
+                  else if (key == "plane") {
+                    plane = py::cast<fplane3_ptr_t>(item.second);
+                  }
+                  else{
+                    OrkAssert(false);
+                  }
+                }
+
+                submeshClipWithPlane(*inpsubmesh, //
+                                     *plane, // 
+                                     close_mesh, // 
+                                     flip_orientation, // 
+                                     *res_front, //
+                                     *res_back);
+
                 py::dict rval;
                 rval["front"] = res_front;
                 rval["back"] = res_back;

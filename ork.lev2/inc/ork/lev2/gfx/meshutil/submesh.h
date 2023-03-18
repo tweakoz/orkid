@@ -207,6 +207,8 @@ struct poly {
   fvec3 ComputeNormal() const;
   fplane3 computePlane() const;
   
+  bool containsVertex(vertex_ptr_t v) const;
+
   U64 HashIndices(void) const;
 
   std::vector<vertex_ptr_t> _vertices;
@@ -415,6 +417,7 @@ void submeshSliceWithPlane(const submesh& inpsubmesh, //
 void submeshClipWithPlane(const submesh& inpsubmesh, //
                            fplane3& slicing_plane, //
                            bool close_mesh,
+                           bool flip_orientation,
                            submesh& outsmeshFront, //
                            submesh& outsmeshBack
                            );

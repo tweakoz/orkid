@@ -60,7 +60,7 @@ class SceneGraphApp(object):
     createSceneGraph(app=self,rendermodel="ForwardPBR")
 
     mesh = meshutil.Mesh()
-    mesh.readFromWavefrontObj("data://tests/simple_obj/cylinder.obj")
+    mesh.readFromWavefrontObj("data://tests/simple_obj/box.obj")
     submesh = mesh.submesh_list[0]
     self.printSubMesh("srcmesh", submesh)
     stripped = submesh.copy(preserve_normals=False,
@@ -68,7 +68,11 @@ class SceneGraphApp(object):
                             preserve_texcoords=False)
     self.printSubMesh("stripped", stripped)
     slicing_plane = plane(vec3(1,1,1).normalized(),-.5)
-    clipped = stripped.clipWithPlane(slicing_plane,True)
+
+    clipped = stripped.clipWithPlane( plane=slicing_plane,
+                                      flip_orientation = False,
+                                      close_mesh = True )
+
     clipped_top = clipped["front"].triangulate()
     clipped_bot = clipped["back"].triangulate()
 

@@ -296,6 +296,16 @@ const AnnoMap* poly::GetAnnoMap() const {
 
 ////////////////////////////////////////////////////////////////
 
+bool poly::containsVertex(vertex_ptr_t v) const{
+  for( auto v2 : _vertices ){
+    if(v2==v)
+      return true;
+  }
+  return false;
+}
+
+////////////////////////////////////////////////////////////////
+
 void poly::SetAnnoMap(const AnnoMap* pmap) {
   mAnnotationSet = pmap;
 }

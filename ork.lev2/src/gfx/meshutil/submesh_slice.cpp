@@ -347,6 +347,7 @@ void submeshClipWithPlane(
     const submesh& inpsubmesh, //
     fplane3& slicing_plane,    //
     bool close_mesh,
+    bool flip_orientation,
     submesh& outsmeshFront, //
     submesh& outsmeshBack) {
 
@@ -488,7 +489,7 @@ void submeshClipWithPlane(
 
   auto do_close = [&](submesh& outsubmesh, //
                      std::vector<edge_ptr_t>& planar_edges,
-                     bool flip){ //
+                     bool test){ //
 
       if(planar_edges.size()) {
 
@@ -516,18 +517,47 @@ void submeshClipWithPlane(
           auto center_vertex = outsubmesh.mergeVertex(center_vert_temp);
           auto center_pos = center_vert_temp.mPos;
           printf( " subm[%s] center<%g %g %g>\n",outsubmesh.name.c_str(), center_pos.x,center_pos.y,center_pos.z );
+
+          ///////////////////////////////////////////
+          // compute normal based on connected faces
+          ///////////////////////////////////////////
+
+          fvec3 avg_n;
+          int ncount = 0;
           for( auto edge : loop->_edges ){
             auto va = outsubmesh.mergeVertex(*edge->_vertexA);
             auto vb = outsubmesh.mergeVertex(*edge->_vertexB);
-            if(flip){
-              std::swap(va,vb);
+            for( auto p : outsubmesh._orderedPolys ){
+              if(p->containsVertex(va) or p->containsVertex(vb) ){
+                avg_n += p->ComputeNormal();
+                ncount++;
+              }
             }
+          }
+          avg_n *= 1.0f / float(ncount);
 
+          ///////////////////////////////////////////
 
+          for( auto edge : loop->_edges ){
+            auto va = outsubmesh.mergeVertex(*edge->_vertexA);
+            auto vb = outsubmesh.mergeVertex(*edge->_vertexB);
+
+            ///////////////////////////////////////////
             // TODO correct winding order
+            ///////////////////////////////////////////
 
-            outsubmesh.mergeTriangle(vb,va,center_vertex);
-            //outsubmesh.mergeTriangle(va,vb,center_vertex);
+            auto dab = (vb->mPos-va->mPos).normalized();
+            auto dbc = (center_vertex->mPos-vb->mPos).normalized();
+            auto vx = dab.crossWith(dbc).normalized();
+
+            float d = vx.dotWith(avg_n);
+
+            if( (d<0.0f) == (test^flip_orientation) ){
+              outsubmesh.mergeTriangle(vb,va,center_vertex);
+            }
+            else{
+              outsubmesh.mergeTriangle(va,vb,center_vertex);
+            }
           }
         }
 
@@ -536,8 +566,8 @@ void submeshClipWithPlane(
   };
 
   if(close_mesh){
-    do_close(outsmeshBack,back_planar_edges,false);
-    do_close(outsmeshFront,front_planar_edges,true);
+    do_close(outsmeshBack,back_planar_edges, true);
+    do_close(outsmeshFront,front_planar_edges, false);
   }
 
   ///////////////////////////////////////////////////////////
