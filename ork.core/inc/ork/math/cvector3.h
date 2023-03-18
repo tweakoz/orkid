@@ -72,7 +72,8 @@ template <typename T> struct Vector3 final
 
   void normalizeInPlace(); // normalize this vector
   Vector3 normalized() const;
-
+  Vector3 quantized(float v) const;
+  
   inline T length() const {
     return magnitude();
   }

@@ -60,32 +60,27 @@ class SceneGraphApp(object):
     createSceneGraph(app=self,rendermodel="ForwardPBR")
 
     mesh = meshutil.Mesh()
-    mesh.readFromWavefrontObj("data://tests/simple_obj/tetra.obj")
+    mesh.readFromWavefrontObj("data://tests/simple_obj/box.obj")
     submesh = mesh.submesh_list[0]
     self.printSubMesh("srcmesh", submesh)
     stripped = submesh.copy(preserve_normals=False,
                             preserve_colors=False,
                             preserve_texcoords=False)
     self.printSubMesh("stripped", stripped)
-    slicing_plane = plane(vec3(0,1,1).normalized(),-.5)
+    slicing_plane = plane(vec3(1,1,1).normalized(),-.5)
     clipped = stripped.clipWithPlane(slicing_plane,True)
-    clipped_bot = clipped["back"]
-
-    #clipped_bot = clipped["back"].copy(preserve_normals=False,
-    #                                   preserve_colors=False,
-    #                                   preserve_texcoords=False)
     #clipped_top = clipped["front"].triangulate()
-    #clipped_bot = clipped["back"]#.triangulate()
+    clipped_bot = clipped["back"].triangulate()
 
 
     #print(clipped_top)
     #print(clipped_bot)
 
-    print(clipped_bot.vertexpool.orderedVertices[5])
-    print(clipped_bot.vertexpool.orderedVertices[7])
+    #print(clipped_bot.vertexpool.orderedVertices[1])
+    #print(clipped_bot.vertexpool.orderedVertices[4])
 
     #self.printSubMesh("clipped_top", clipped_top)
-    self.printSubMesh("clipped_bot", clipped_bot)
+    self.printSubMesh("clipped_back", clipped_bot)
 
     #assert(False)
 
@@ -102,13 +97,13 @@ class SceneGraphApp(object):
     material = pipeline.sharedMaterial
     pipeline.bindParam( material.param("m"), tokens.RCFD_M)
 
-    #self.prim_node_ori = self.prim_ori.createNode("top",self.layer1,pipeline)
+    #self.prim_node_ori = self.prim_ori.createNode("ori",self.layer1,pipeline)
     #self.prim_node_top = self.prim_top.createNode("top",self.layer1,pipeline)
     self.prim_node_bot = self.prim_bot.createNode("bot",self.layer1,pipeline)
 
     ###################################
     #self.prim_node_ori.enabled = False
-    #self.prim_node_top.enabled = False
+    #self.prim_node_top.enabled = True
     self.prim_node_bot.enabled = True
     ###################################
 

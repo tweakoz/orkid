@@ -201,6 +201,15 @@ template <typename T> struct Vector4 final
     return (this->x != b.x || this->y != b.y || this->z != b.z || this->w != b.w);
   }
 
+  inline Vector4 quantized(float v) const {
+    Vector4 rval;
+    rval.x = float(int(this->x*v))/v;
+    rval.y = float(int(this->y*v))/v;
+    rval.z = float(int(this->z*v))/v;
+    rval.w = float(int(this->w*v))/v;
+    return rval;    
+  }
+
   void setHSV(T h, T s, T v);
   void setRGB(T r, T g, T b) {
     setXYZ(r, g, b);

@@ -604,6 +604,14 @@ template <typename T> T Vector3<T>::calcTriangularArea(const Vector3<T>& V, cons
   return T(0);
 }
 
+template <typename T> Vector3<T> Vector3<T>::quantized(float v) const {
+  Vector3<T> rval;
+  rval.x = float(int(this->x*v))/v;
+  rval.y = float(int(this->y*v))/v;
+  rval.z = float(int(this->z*v))/v;
+  return rval;
+}
+
 } // namespace ork
 
 ///////////////////////////////////////////////////////////////////////////////

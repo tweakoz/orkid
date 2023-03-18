@@ -419,7 +419,7 @@ void submeshClipWithPlane(
 
       ///////////////////////////////////////////
 
-      process_clipped(clipped_front.mVerts,outsmeshFront,front_planar_edges,true);
+      //process_clipped(clipped_front.mVerts,outsmeshFront,front_planar_edges,true);
       process_clipped(clipped_back.mVerts,outsmeshBack,back_planar_edges,false);
 
     }
@@ -475,7 +475,7 @@ void submeshClipWithPlane(
 
   if(close_mesh){
     do_close(outsmeshBack,back_planar_edges,false);
-    do_close(outsmeshFront,front_planar_edges,true);
+    //do_close(outsmeshFront,front_planar_edges,true);
   }
 
   ///////////////////////////////////////////////////////////

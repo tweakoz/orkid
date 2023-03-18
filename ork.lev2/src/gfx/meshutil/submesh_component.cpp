@@ -183,20 +183,36 @@ void vertex::center(const std::vector<vertex_ptr_t>& verts) {
 
 U64 vertex::Hash() const {
   boost::Crc64 crc64;
+
+  constexpr float quantization = 1e6;
+
   crc64.accumulateItem(miNumWeights);
   crc64.accumulateItem(miNumColors);
   crc64.accumulateItem(miNumUvs);
-  for (int i = 0; i < vertex::kmaxinfluences; i++) {
+  for (int i = 0; i < miNumWeights; i++) {
     int ilen = (int)mJointNames[i].length();
     if (ilen) {
       crc64.accumulateString(mJointNames[i]);
     }
+    crc64.accumulateItem(mJointWeights[i]);
   }
-  crc64.accumulateItem(mCol);
-  crc64.accumulateItem(mUV);
-  crc64.accumulateItem(mJointWeights);
-  crc64.accumulateItem(mNrm);
-  crc64.accumulateItem(mPos);
+  for (int i = 0; i < miNumColors; i++) {
+    crc64.accumulateItem(mCol[i].quantized(quantization));
+  }
+  for (int i = 0; i < miNumUvs; i++) {
+    const auto& UV = mUV[i];
+    crc64.accumulateItem(UV.mMapBiNormal.quantized(quantization));
+    crc64.accumulateItem(UV.mMapTangent.quantized(quantization));
+    crc64.accumulateItem(UV.mMapTexCoord.quantized(quantization));
+  }
+  crc64.accumulateItem(mNrm.quantized(quantization));
+  crc64.accumulateItem(mPos.quantized(quantization));
+
+  /*auto f2u = [](float f) -> uint32_t {
+    auto pu = (uint32_t*) & f;
+    return *pu;
+  };
+  printf( "<%g %g %g> <%08x %08x %08x>\n", mPos.x, mPos.y, mPos.z, f2u(mPos.x), f2u(mPos.y), f2u(mPos.z));*/
   crc64.finish();
   return crc64.result();
 }
