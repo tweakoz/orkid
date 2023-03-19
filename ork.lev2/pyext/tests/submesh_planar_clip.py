@@ -124,16 +124,21 @@ class Fragments:
     self.front = self.clipped["front"].triangulate()
     self.back = self.clipped["back"].triangulate()
 
+    #printSubMesh("front", self.front)
+
+    #print(self.front.vertexpool.orderedVertices[2])
+    #print(self.front.vertexpool.orderedVertices[4])
+
     ##################################
     # if initial, build primitive
     ##################################
 
     if initial:
       self.prim_front = meshutil.RigidPrimitive(self.front,self.context)
-      self.prim_back = meshutil.RigidPrimitive(self.back ,self.context)
       self.prim_node_front = self.prim_front.createNode("front",self.layer,self.pipeline)
-      self.prim_node_back = self.prim_back.createNode("back",self.layer,self.pipeline)
       self.prim_node_front.enabled = True
+      self.prim_back = meshutil.RigidPrimitive(self.back ,self.context)
+      self.prim_node_back = self.prim_back.createNode("back",self.layer,self.pipeline)
       self.prim_node_back.enabled = True
     else: # TODO - update existing primitive
       self.prim_front.fromSubMesh(self.front,self.context)
@@ -199,6 +204,16 @@ class SceneGraphApp(object):
                   layer=self.layer1,
                   pipeline=pipeline,
                   flip_orientation=False,
+                  origin = vec3(2,0,-2),
+                  slicing_plane=plane(vec3(0,1,0).normalized(),-.4),
+                  model_asset_path = "data://tests/simple_obj/tetra.obj" )
+
+    self.fragments += [f]
+
+    f = Fragments(context = ctx,
+                  layer=self.layer1,
+                  pipeline=pipeline,
+                  flip_orientation=False,
                   origin = vec3(2,0,2),
                   slicing_plane=plane(vec3(0,1,1).normalized(),+.5),
                   model_asset_path = "data://tests/simple_obj/cone.obj" )
@@ -234,16 +249,6 @@ class SceneGraphApp(object):
                   origin = vec3(-2,0,2),
                   slicing_plane=plane(vec3(1,0,0).normalized(),0),
                   model_asset_path = "data://tests/simple_obj/uvsphere.obj" )
-
-    self.fragments += [f]
-
-    f = Fragments(context = ctx,
-                  layer=self.layer1,
-                  pipeline=pipeline,
-                  flip_orientation=False,
-                  origin = vec3(2,0,-2),
-                  slicing_plane=plane(vec3(0,1,0).normalized(),-.4),
-                  model_asset_path = "data://tests/simple_obj/tetra.obj" )
 
     self.fragments += [f]
 

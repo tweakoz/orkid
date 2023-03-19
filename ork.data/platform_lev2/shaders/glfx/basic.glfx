@@ -223,13 +223,17 @@ fragment_shader ps_wnormalsk : iface_fdefault {
 }
 
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_fnormal : iface_fdefault { 
+fragment_shader ps_fnormal 
+  : iface_fdefault
+  : extension(GL_NV_fragment_shader_barycentric)  { 
   vec3 X = dFdx(frg_pos);  
   vec3 Y = dFdy(frg_pos);
   vec3 normal=normalize(cross(X,Y)); 
 
+  float closest_edge = min(gl_BaryCoordNV.x, min(gl_BaryCoordNV.y, gl_BaryCoordNV.z));
+
   vec3 c = vec3(.5,.5,.5)+normal*0.5;
-  out_clr = vec4(c,1);
+  out_clr = vec4(c*pow(closest_edge,0.15),1);
 
 }
 ///////////////////////////////////////////////////////////////
