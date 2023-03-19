@@ -91,7 +91,7 @@ void pyinit_meshutil(py::module& module_lev2) {
             //node->_userdata->template makeValueForKey<T>("_primitive") = prim; // hold on to reference
             return node;
       })
-      .def("fromSubMesh", [](rigidprim_t& prim, submesh_ptr_t submesh, Context* context) { prim.fromSubMesh(*submesh, context); })
+      .def("fromSubMesh", [](rigidprim_t& prim, submesh_ptr_t submesh, ctx_t context) { prim.fromSubMesh(*submesh, context.get()); })
       .def("renderEML", [](rigidprim_t& prim, ctx_t context) { prim.renderEML(context.get()); });
   /////////////////////////////////////////////////////////////////////////////////
   auto mesh_type = py::class_<Mesh, mesh_ptr_t>(module_meshutil, "Mesh") //

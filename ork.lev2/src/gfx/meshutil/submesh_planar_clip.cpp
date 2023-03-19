@@ -524,29 +524,28 @@ void submeshClipWithPlane(
             printf(" subm[%s] edge<%d> vtxi<%d>\n", outsubmesh.name.c_str(), ie, edge->_vertexA->_poolindex);
             ie++;
           }
-          vertex center_vert_temp;
-          center_vert_temp.center(vertex_loop);
-          auto center_vertex = outsubmesh.mergeVertex(center_vert_temp);
-          auto center_pos    = center_vert_temp.mPos;
-          printf(" subm[%s] center<%g %g %g>\n", outsubmesh.name.c_str(), center_pos.x, center_pos.y, center_pos.z);
+
+          ///////////////////////////////////////////
+          // compute mesh center
+          ///////////////////////////////////////////
+
+          fvec3 mesh_center_pos = inpsubmesh.center();
+
+          ///////////////////////////////////////////
+          // compute loop center
+          ///////////////////////////////////////////
+
+          vertex temp_loop_center;
+          temp_loop_center.center(vertex_loop);
+          auto center_vertex = outsubmesh.mergeVertex(temp_loop_center);
+          auto loop_center_pos    = temp_loop_center.mPos;
+          printf(" subm[%s] center<%g %g %g>\n", outsubmesh.name.c_str(), loop_center_pos.x, loop_center_pos.y, loop_center_pos.z);
 
           ///////////////////////////////////////////
           // compute normal based on connected faces
           ///////////////////////////////////////////
 
-          fvec3 avg_n;
-          int ncount = 0;
-          for (auto edge : loop->_edges) {
-            auto va = outsubmesh.mergeVertex(*edge->_vertexA);
-            auto vb = outsubmesh.mergeVertex(*edge->_vertexB);
-            for (auto p : outsubmesh._orderedPolys) {
-              if (p->containsVertex(va) or p->containsVertex(vb)) {
-                avg_n += p->ComputeNormal();
-                ncount++;
-              }
-            }
-          }
-          avg_n *= 1.0f / float(ncount);
+          fvec3 avg_n = (loop_center_pos-mesh_center_pos).normalized();
 
           ///////////////////////////////////////////
 

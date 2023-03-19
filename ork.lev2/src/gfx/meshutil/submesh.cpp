@@ -670,6 +670,18 @@ void submesh::copy(  submesh& dest, //
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+fvec3 submesh::center() const {
+  size_t num_verts = _vtxpool->_orderedVertices.size();
+  fvec3 center;
+  for( auto v : _vtxpool->_orderedVertices ){
+    center += v->mPos;
+  }
+  center *= 1.0f / float(num_verts);
+  return center;
+}
+
+///////////////////////////////////////////////////////////////////////////////
 /*
 void SubMesh::GenIndexBuffers( void )
 {

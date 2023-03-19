@@ -316,6 +316,8 @@ struct submesh {
 
   bool isConvexHull() const;
 
+  fvec3 center() const;
+
   //////////////////////////////////////////////////////////////////////////////
 
   void addQuad(

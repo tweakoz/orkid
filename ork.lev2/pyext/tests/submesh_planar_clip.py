@@ -57,7 +57,9 @@ class Fragments:
 
     self.origin = origin
     self.speed = random.uniform(.05,.1)
-
+    self.target_plane_axis = vec3(0,1,0)
+    self.current_plane_axis = vec3(0,1,0)
+    self.counter = 0.0
     if slicing_plane==None:
       nx = random.uniform(-1,1)
       ny = random.uniform(-1,1)
@@ -100,12 +102,13 @@ class Fragments:
     self.pipeline = pipeline
     self.context = context
     self.layer = layer
+    self.flip_orientation = flip_orientation
 
-    self.clip(slicing_plane,flip_orientation,initial=True)
+    self.clip(slicing_plane,initial=True)
 
     ##################################
 
-  def clip(self,slicing_plane,flip_orientation,initial=None):
+  def clip(self,slicing_plane,initial=None):
 
     self.slicing_plane = slicing_plane
 
@@ -114,7 +117,7 @@ class Fragments:
     ##################################
 
     self.clipped = self.stripped.clipWithPlane( plane=self.slicing_plane,
-                                                flip_orientation = flip_orientation,
+                                                flip_orientation = self.flip_orientation,
                                                 close_mesh = True )
 
     self.front = self.clipped["front"].triangulate()
@@ -132,7 +135,8 @@ class Fragments:
       self.prim_node_front.enabled = True
       self.prim_node_back.enabled = True
     else: # TODO - update existing primitive
-      pass
+      self.prim_front.fromSubMesh(self.front,self.context)
+      self.prim_back.fromSubMesh(self.back ,self.context)
 
     ##################################
 
@@ -141,6 +145,22 @@ class Fragments:
     y = math.sin(θ*1.7)
     self.prim_node_front.worldTransform.translation = self.origin+self.normal*y
     self.prim_node_back.worldTransform.translation = self.origin+self.normal*(-y)
+    self.counter += 0.01
+
+    axis = vec3()
+    axis.lerp(self.current_plane_axis, self.target_plane_axis,self.counter)
+
+    if self.counter > 1.0:
+      self.counter = 0.0
+      nx = random.uniform(-1,1)
+      ny = random.uniform(-1,1)
+      nz = random.uniform(-1,1)
+      self.normal = vec3(nx,ny,nz).normalized()
+      self.current_plane_axis = self.target_plane_axis
+      self.target_plane_axis = self.normal
+      slicing_plane = plane(self.normal, random.uniform(-1,1))
+      #self.clip(slicing_plane,initial=False)
+
 
 ################################################################################
 
@@ -192,7 +212,7 @@ class SceneGraphApp(object):
     f = Fragments(context = ctx,
                   layer=self.layer1,
                   pipeline=pipeline,
-                  flip_orientation=True,
+                  flip_orientation=False,
                   origin = vec3(2,0,2),
                   slicing_plane=plane(vec3(0,1,1).normalized(),+.5),
                   model_asset_path = "data://tests/simple_obj/cone.obj" )
