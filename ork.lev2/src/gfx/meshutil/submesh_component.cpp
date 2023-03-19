@@ -78,6 +78,30 @@ vertex::vertex(fvec3 pos, fvec3 nrm, fvec3 bin, fvec2 uv, fvec4 col)
 
 ////////////////////////////////////////////////////////////////
 
+vertex::vertex(const vertex& rhs){
+  _poolindex = 0xffffffff;
+
+  mPos = rhs.mPos;
+  mNrm = rhs.mNrm;
+  miNumWeights = rhs.miNumWeights;
+  miNumColors = rhs.miNumColors;
+  miNumUvs = rhs.miNumUvs;
+
+  for( int i=0; i<kmaxinfluences; i++ ){
+    mJointNames [i]= rhs.mJointNames[i];
+    mJointWeights[i] = rhs.mJointWeights[i];
+  }
+  for( int i=0; i<kmaxcolors; i++ ){
+    mCol [i]= rhs.mCol[i];
+  }
+  for( int i=0; i<kmaxuvs; i++ ){
+    mUV [i]= rhs.mUV[i];
+  }
+
+}
+
+////////////////////////////////////////////////////////////////
+
 void vertex::set(fvec3 pos, fvec3 nrm, fvec3 bin, fvec2 uv, fvec4 col) {
   mPos                = pos;
   mNrm                = nrm;

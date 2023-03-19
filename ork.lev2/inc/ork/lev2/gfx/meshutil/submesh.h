@@ -103,6 +103,8 @@ struct vertex {
 
   vertex();
   vertex(fvec3 pos, fvec3 nrm, fvec3 bin, fvec2 uv, fvec4 col);
+  vertex(const vertex& rhs);
+
   void set(fvec3 pos, fvec3 nrm, fvec3 bin, fvec2 uv, fvec4 col);
 
   vertex lerp(const vertex& vtx, float flerp) const;
@@ -148,6 +150,8 @@ struct vertexpool {
   size_t GetNumVertices(void) const {
     return _orderedVertices.size();
   }
+
+  void rehash();
 
   static const vertexpool EmptyPool;
 
@@ -423,6 +427,8 @@ void submeshClipWithPlane(const submesh& inpsubmesh, //
                            submesh& outsmeshFront, //
                            submesh& outsmeshBack
                            );
+
+void submeshBarycentricUV(const submesh& inpsubmesh, submesh& outsmesh);
 
 void submeshWriteObj(const submesh& inpsubmesh, const file::Path& BasePath);
 // void SubDivQuads(submesh* poutsmesh) const;

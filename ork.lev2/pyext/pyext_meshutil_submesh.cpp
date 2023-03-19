@@ -73,6 +73,13 @@ void pyinit_meshutil_submesh(py::module& module_meshutil) {
                 return rval;
               })
           .def(
+              "barycentricUVs",
+              [](submesh_constptr_t inpsubmesh) -> submesh_ptr_t {
+                submesh_ptr_t rval = std::make_shared<submesh>();
+                submeshBarycentricUV(*inpsubmesh, *rval);
+                return rval;
+              })
+          .def(
               "triangulate",
               [](submesh_constptr_t inpsubmesh) -> submesh_ptr_t {
                 submesh_ptr_t rval = std::make_shared<submesh>();

@@ -121,8 +121,8 @@ class Fragments:
                                                 flip_orientation = self.flip_orientation,
                                                 close_mesh = True )
 
-    self.front = self.clipped["front"].triangulate()
-    self.back = self.clipped["back"].triangulate()
+    self.front = self.clipped["front"].barycentricUVs()
+    self.back = self.clipped["back"].barycentricUVs()
 
     #printSubMesh("front", self.front)
 
@@ -189,7 +189,7 @@ class SceneGraphApp(object):
                                ctx = ctx,
                                rendermodel = "ForwardPBR",
                                shaderfile=Path("orkshader://basic"),
-                               techname="tek_fnormal" )
+                               techname="tek_fnormal_wire" )
 
     material = pipeline.sharedMaterial
     pipeline.bindParam( material.param("m"), tokens.RCFD_M)

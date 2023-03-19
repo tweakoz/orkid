@@ -103,5 +103,21 @@ vertex_ptr_t vertexpool::mergeVertex(const vertex& vtx) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+void vertexpool::rehash(){
+  //auto copy_of_ordered = _orderedVertices;
+  //_orderedVertices.clear();
+  _vtxmap.clear();
+  for( auto v : _orderedVertices ){
+    uint64_t h = v->Hash();
+    auto it = _vtxmap.find(h);
+    OrkAssert(it==_vtxmap.end());
+    _vtxmap[h] = v;
+  }
+
+}
+
+
+///////////////////////////////////////////////////////////////////////////////
 }} // namespace ork::meshutil
 ///////////////////////////////////////////////////////////////////////////////
