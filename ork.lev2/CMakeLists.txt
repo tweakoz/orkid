@@ -69,6 +69,7 @@ set( libs ork_core )
 list(APPEND libs OpenImageIO OpenImageIO_Util )
 list(APPEND libs portaudio rtmidi  )
 list(APPEND libs avformat avcodec swscale avutil )
+list(APPEND libs ConvexDecomposition.3.24 Bullet3Geometry LinearMath )
 #list(APPEND libs embree )
 
 IF( "${ARCHITECTURE}" STREQUAL "x86_64" )
@@ -109,6 +110,7 @@ list(APPEND libs  mpfr gmp )
 target_include_directories (ork_lev2 PRIVATE ${INCD} )
 target_include_directories (ork_lev2 PRIVATE ${COREINCD} )
 target_include_directories (ork_lev2 PRIVATE ${CGAL_INCLUDE_DIR} )
+target_include_directories (ork_lev2 PRIVATE $ENV{OBT_STAGE}/include/bullet )
 
 
 target_link_libraries(ork_lev2 PUBLIC ${libs} )

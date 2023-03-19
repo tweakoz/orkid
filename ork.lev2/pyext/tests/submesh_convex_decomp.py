@@ -109,6 +109,10 @@ class Fragments:
 
     ##################################
 
+    as_convex_hulls = self.stripped.convexDecomposition()
+
+    ##################################
+
   def clip(self,slicing_plane,initial=None):
 
     self.slicing_plane = slicing_plane

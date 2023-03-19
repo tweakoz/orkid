@@ -430,6 +430,8 @@ void submeshClipWithPlane(const submesh& inpsubmesh, //
 
 void submeshBarycentricUV(const submesh& inpsubmesh, submesh& outsmesh);
 
+std::vector<submesh_ptr_t> submeshBulletConvexDecomposition(const submesh& inpsubmesh);
+
 void submeshWriteObj(const submesh& inpsubmesh, const file::Path& BasePath);
 // void SubDivQuads(submesh* poutsmesh) const;
 // void SubDivTriangles(submesh* poutsmesh) const;

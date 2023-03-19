@@ -73,6 +73,16 @@ void pyinit_meshutil_submesh(py::module& module_meshutil) {
                 return rval;
               })
           .def(
+              "convexDecomposition",
+              [](submesh_constptr_t inpsubmesh) -> py::list {
+                py::list pyl;
+                auto outlist = submeshBulletConvexDecomposition(*inpsubmesh);
+                for( auto i : outlist ){
+                  pyl.append(i);
+                }
+                return pyl;
+              })
+          .def(
               "barycentricUVs",
               [](submesh_constptr_t inpsubmesh) -> submesh_ptr_t {
                 submesh_ptr_t rval = std::make_shared<submesh>();
