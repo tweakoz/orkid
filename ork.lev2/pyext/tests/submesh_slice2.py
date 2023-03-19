@@ -56,7 +56,7 @@ class Fragments:
                ): #
 
     self.origin = origin
-    self.speed = random.uniform(.05,.1)
+    self.speed = random.uniform(.05,.25)
 
     if slicing_plane==None:
       nx = random.uniform(-1,1)
@@ -138,7 +138,6 @@ class Fragments:
 
   def update(self,abstime):
     θ = abstime * math.pi * 2.0 * self.speed 
-    y = math.sin(θ*1.7)
     self.prim_node_front.worldTransform.translation = self.origin+vec3(0,1,0)
     self.prim_node_front.worldTransform.orientation = quat(vec3(0,1,0),θ)
     self.prim_node_back.worldTransform.translation = self.origin-vec3(0,1,0)
@@ -220,6 +219,26 @@ class SceneGraphApp(object):
                   origin = vec3(-2,0,-2),
                   slicing_plane=plane(vec3(1,0,0).normalized(),0),
                   model_asset_path = "data://tests/simple_obj/torus.obj" )
+
+    self.fragments += [f]
+
+    f = Fragments(context = ctx,
+                  layer=self.layer1,
+                  pipeline=pipeline,
+                  flip_orientation=False,
+                  origin = vec3(-2,0,2),
+                  slicing_plane=plane(vec3(1,0,0).normalized(),0),
+                  model_asset_path = "data://tests/simple_obj/uvsphere.obj" )
+
+    self.fragments += [f]
+
+    f = Fragments(context = ctx,
+                  layer=self.layer1,
+                  pipeline=pipeline,
+                  flip_orientation=False,
+                  origin = vec3(2,0,-2),
+                  slicing_plane=plane(vec3(0,1,0).normalized(),-.4),
+                  model_asset_path = "data://tests/simple_obj/tetra.obj" )
 
     self.fragments += [f]
 
