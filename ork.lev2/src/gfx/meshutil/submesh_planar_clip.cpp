@@ -564,7 +564,6 @@ void submeshClipWithPlane(
             float d = vx.dotWith(avg_n);
 
             if ((d < 0.0f) == (test ^ flip_orientation)) {
-            //if (test == flip_orientation) {
               outsubmesh.mergeTriangle(vb, va, center_vertex);
             } else {
               outsubmesh.mergeTriangle(va, vb, center_vertex);

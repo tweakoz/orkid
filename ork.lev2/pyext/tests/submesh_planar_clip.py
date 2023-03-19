@@ -60,6 +60,7 @@ class Fragments:
     self.target_plane_axis = vec3(0,1,0)
     self.current_plane_axis = vec3(0,1,0)
     self.counter = 0.0
+
     if slicing_plane==None:
       nx = random.uniform(-1,1)
       ny = random.uniform(-1,1)
@@ -142,25 +143,10 @@ class Fragments:
 
   def update(self,abstime):
     θ = abstime * math.pi * 2.0 * self.speed 
-    y = math.sin(θ*1.7)
-    self.prim_node_front.worldTransform.translation = self.origin+self.normal*y
-    self.prim_node_back.worldTransform.translation = self.origin+self.normal*(-y)
-    self.counter += 0.01
-
-    axis = vec3()
-    axis.lerp(self.current_plane_axis, self.target_plane_axis,self.counter)
-
-    if self.counter > 1.0:
-      self.counter = 0.0
-      nx = random.uniform(-1,1)
-      ny = random.uniform(-1,1)
-      nz = random.uniform(-1,1)
-      self.normal = vec3(nx,ny,nz).normalized()
-      self.current_plane_axis = self.target_plane_axis
-      self.target_plane_axis = self.normal
-      slicing_plane = plane(self.normal, random.uniform(-1,1))
-      #self.clip(slicing_plane,initial=False)
-
+    self.prim_node_front.worldTransform.translation = self.origin+vec3(0,1,0)
+    self.prim_node_front.worldTransform.orientation = quat(vec3(0,1,0),θ)
+    self.prim_node_back.worldTransform.translation = self.origin-vec3(0,1,0)
+    self.prim_node_back.worldTransform.orientation = quat(vec3(0,1,0),-θ)
 
 ################################################################################
 
@@ -238,6 +224,26 @@ class SceneGraphApp(object):
                   origin = vec3(-2,0,-2),
                   slicing_plane=plane(vec3(1,0,0).normalized(),0),
                   model_asset_path = "data://tests/simple_obj/torus.obj" )
+
+    self.fragments += [f]
+
+    f = Fragments(context = ctx,
+                  layer=self.layer1,
+                  pipeline=pipeline,
+                  flip_orientation=True,
+                  origin = vec3(-2,0,2),
+                  slicing_plane=plane(vec3(1,0,0).normalized(),0),
+                  model_asset_path = "data://tests/simple_obj/uvsphere.obj" )
+
+    self.fragments += [f]
+
+    f = Fragments(context = ctx,
+                  layer=self.layer1,
+                  pipeline=pipeline,
+                  flip_orientation=False,
+                  origin = vec3(2,0,-2),
+                  slicing_plane=plane(vec3(0,1,0).normalized(),-.4),
+                  model_asset_path = "data://tests/simple_obj/tetra.obj" )
 
     self.fragments += [f]
 
