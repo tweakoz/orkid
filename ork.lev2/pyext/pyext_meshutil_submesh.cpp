@@ -8,6 +8,10 @@
 #include "pyext.h"
 #include <ork/lev2/gfx/meshutil/igl.h>
 
+namespace ork::meshutil{
+std::vector<submesh_ptr_t> submeshBulletConvexDecomposition(const submesh& inpsubmesh);
+} // namespace ork::meshutil
+
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2 {
 using namespace meshutil;
@@ -17,6 +21,9 @@ void pyinit_meshutil_submesh(py::module& module_meshutil) {
   auto submesh_type =
       py::class_<submesh, submesh_ptr_t>(module_meshutil, "SubMesh")
           .def(py::init<>())
+          .def_static("createFromFrustum", [](frustum_ptr_t frus) -> submesh_ptr_t { //
+            return submeshFromFrustum(*frus,false);
+          })
           .def_property("name", [](submesh_ptr_t submesh) -> std::string {
             return submesh->name;
           },
@@ -48,7 +55,7 @@ void pyinit_meshutil_submesh(py::module& module_meshutil) {
           .def_property_readonly("convexVolume", [](submesh_ptr_t submesh) -> float {            
             return submesh->convexVolume();
           })
-#if defined(ENABLE_IGL)
+          #if defined(ENABLE_IGL)
           .def("igl_test", [](submesh_ptr_t submesh) { return submesh->igl_test(); })
 #endif //#if defined(ENABLE_IGL)
           .def(
@@ -100,7 +107,7 @@ void pyinit_meshutil_submesh(py::module& module_meshutil) {
                 return rval;
               })
           .def(
-              "quadulate",
+              "quadulated",
               [](submesh_constptr_t inpsubmesh, py::kwargs kwargs) -> submesh_ptr_t {
                 submesh_ptr_t rval = std::make_shared<submesh>();
                 if (kwargs) {
@@ -126,7 +133,7 @@ void pyinit_meshutil_submesh(py::module& module_meshutil) {
                 return rval;
               })
           .def(
-              "sliceWithPlane",
+              "slicedWithPlane",
               [](submesh_constptr_t inpsubmesh, 
                  fplane3_ptr_t plane ) -> py::dict {
                 submesh_ptr_t res_front = std::make_shared<submesh>();
@@ -140,7 +147,7 @@ void pyinit_meshutil_submesh(py::module& module_meshutil) {
                 return rval;
               })
           .def(
-              "clipWithPlane",
+              "clippedWithPlane",
               [](submesh_constptr_t inpsubmesh,py::kwargs kwargs) -> py::dict {
 
                 submesh_ptr_t res_front = std::make_shared<submesh>();

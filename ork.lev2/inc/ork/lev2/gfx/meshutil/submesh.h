@@ -429,6 +429,7 @@ void submeshClipWithPlane(const submesh& inpsubmesh, //
                            );
 
 void submeshBarycentricUV(const submesh& inpsubmesh, submesh& outsmesh);
+submesh_ptr_t submeshFromFrustum(const Frustum& frustum, bool projective_rect_uv);
 
 std::vector<submesh_ptr_t> submeshBulletConvexDecomposition(const submesh& inpsubmesh);
 
