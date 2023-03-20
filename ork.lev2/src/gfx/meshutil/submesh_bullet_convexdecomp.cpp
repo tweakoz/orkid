@@ -33,13 +33,13 @@ namespace ork::meshutil {
 using decomp_int_t = unsigned int;
 using decomp_constint_t = const unsigned int;
 
-class MyConvexDecomposition : public ConvexDecomposition::ConvexDecompInterface {
+struct MyConvexDecomposition : public ConvexDecomposition::ConvexDecompInterface {
   
   void ConvexDecompResult(ConvexDecomposition::ConvexResult &result) final {
 
     decomp_int_t vcount = result.mHullVcount;
     const float* vertices = result.mHullVertices;
-    decomp_int_t hulltcount = result.mHullTcount;
+    decomp_int_t num_triangles = result.mHullTcount;
     decomp_constint_t* hullindices = result.mHullIndices;
 
     float hullvolume = result.mHullVolume; 
@@ -50,13 +50,47 @@ class MyConvexDecomposition : public ConvexDecomposition::ConvexDecompInterface 
     const auto& obb_xform = result.mOBBTransform;     // float[16] the 4x4 transform of the OBB.
     float obb_volume = result.mOBBVolume;             // the volume of the OBB
 
-    printf( "Convex Hull Result vcount<%d> tcount<%d> volume<%g>\n", int(vcount), int(hulltcount), hullvolume );
+    printf( "Convex Hull Result vcount<%d> num_triangles<%d> volume<%g>\n", int(vcount), int(num_triangles), hullvolume );
 
     float sph_radius = result.mSphereRadius;          // radius and center of best fit sphere
     const auto& sph_center = result.mSphereCenter;    // float[3];
     float sph_volume = result.mSphereVolume;
 
+
+    auto out_mesh = std::make_shared<submesh>();
+    std::vector<vertex_ptr_t> out_verts;
+    for( int tri_index=0; tri_index<num_triangles; tri_index++ ){
+      int i0 = hullindices[tri_index*3+0];
+      int i1 = hullindices[tri_index*3+1];
+      int i2 = hullindices[tri_index*3+2];
+
+      auto inpv0 = vertices+(i0*3);
+      auto inpv1 = vertices+(i1*3);
+      auto inpv2 = vertices+(i2*3);
+      auto v0 = std::make_shared<vertex>();
+      v0->mPos.x = inpv0[0];
+      v0->mPos.y = inpv0[1];
+      v0->mPos.z = inpv0[2];
+      auto v1 = std::make_shared<vertex>();
+      v1->mPos.x = inpv1[0];
+      v1->mPos.y = inpv1[1];
+      v1->mPos.z = inpv1[2];
+      auto v2 = std::make_shared<vertex>();
+      v2->mPos.x = inpv2[0];
+      v2->mPos.y = inpv2[1];
+      v2->mPos.z = inpv2[2];
+
+      auto merged_v0 = out_mesh->mergeVertex(*v0);
+      auto merged_v1 = out_mesh->mergeVertex(*v1);
+      auto merged_v2 = out_mesh->mergeVertex(*v2);
+
+      out_mesh->mergeTriangle(merged_v0,merged_v1,merged_v2);
+    }
+    _output_submeshes.push_back(out_mesh);
   }
+
+  std::vector<submesh_ptr_t> _output_submeshes;
+
 };
 
 std::vector<submesh_ptr_t> submeshBulletConvexDecomposition(const submesh& inpsubmesh){
@@ -64,7 +98,7 @@ std::vector<submesh_ptr_t> submeshBulletConvexDecomposition(const submesh& inpsu
   submesh triangulated;
   submeshTriangulate(inpsubmesh,triangulated);
 
-  std::vector<submesh_ptr_t> convex_output_submeshes;
+  
   std::vector<fvec3> _tempverts;
   std::vector<decomp_int_t> _tempindices;
   for( auto v : triangulated._vtxpool->_orderedVertices ){
@@ -103,7 +137,7 @@ std::vector<submesh_ptr_t> submeshBulletConvexDecomposition(const submesh& inpsu
                           );
   }
 
-  return convex_output_submeshes;
+  return interface._output_submeshes;
 
 }
 

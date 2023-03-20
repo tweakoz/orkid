@@ -44,31 +44,20 @@ def printSubMesh(name, subm):
 
 ################################################################################
 
-class Fragments:
+class ConvexDecomp:
   def __init__(self, #
                context=None, #
                layer=None, #
                pipeline=None, #
-               flip_orientation = False,
                origin = vec3(0,0,0),
-               slicing_plane=None,
                model_asset_path=None, #
                ): #
 
     self.origin = origin
-    self.speed = 0 #random.uniform(.05,.1)
+    self.speed = random.uniform(.05,.1)
     self.target_plane_axis = vec3(0,1,0)
     self.current_plane_axis = vec3(0,1,0)
     self.counter = 0.0
-
-    if slicing_plane==None:
-      nx = random.uniform(-1,1)
-      ny = random.uniform(-1,1)
-      nz = random.uniform(-1,1)
-      self.normal = vec3(nx,ny,nz).normalized()
-      slicing_plane = plane(self.normal, random.uniform(-1,1))
-    else:
-      self.normal = slicing_plane.normal
 
     ##################################
     # load model 
@@ -98,64 +87,41 @@ class Fragments:
                                           preserve_colors=False,
                                           preserve_texcoords=False)
 
-    printSubMesh("stripped", self.stripped)
-
     self.pipeline = pipeline
     self.context = context
     self.layer = layer
-    self.flip_orientation = flip_orientation
-
-    self.clip(slicing_plane,initial=True)
 
     ##################################
 
-    as_convex_hulls = self.stripped.convexDecomposition()
-
-    ##################################
-
-  def clip(self,slicing_plane,initial=None):
-
-    self.slicing_plane = slicing_plane
-
-    ##################################
-    # clip
-    ##################################
-
-    self.clipped = self.stripped.clipWithPlane( plane=self.slicing_plane,
-                                                flip_orientation = self.flip_orientation,
-                                                close_mesh = True )
-
-    self.front = self.clipped["front"].barycentricUVs()
-    self.back = self.clipped["back"].barycentricUVs()
-
-    #printSubMesh("front", self.front)
-
-    #print(self.front.vertexpool.orderedVertices[2])
-    #print(self.front.vertexpool.orderedVertices[4])
-
-    ##################################
-    # if initial, build primitive
-    ##################################
-
-    if initial:
-      self.prim_front = meshutil.RigidPrimitive(self.front,self.context)
-      self.prim_node_front = self.prim_front.createNode("front",self.layer,self.pipeline)
-      self.prim_node_front.enabled = True
-      self.prim_back = meshutil.RigidPrimitive(self.back ,self.context)
-      self.prim_node_back = self.prim_back.createNode("back",self.layer,self.pipeline)
-      self.prim_node_back.enabled = True
-    else: # TODO - update existing primitive
-      self.prim_front.fromSubMesh(self.front,self.context)
-      self.prim_back.fromSubMesh(self.back ,self.context)
+    self.convex_hulls = self.stripped.convexDecomposition()
+    self.barys = []
+    self.prims = []
+    self.primnodes = []
+    self.normals = []
+    for item in self.convex_hulls:
+      bary = item.barycentricUVs()
+      prim = meshutil.RigidPrimitive(bary,self.context)
+      prim_node = prim.createNode("%s"%bary,self.layer,self.pipeline)
+      self.barys += [bary]
+      self.prims += [prim]
+      self.primnodes += [prim_node]
+      nx = random.uniform(-1,1)
+      ny = random.uniform(-1,1)
+      nz = random.uniform(-1,1)
+      self.normals += [vec3(nx,ny,nz).normalized()]
 
     ##################################
 
   def update(self,abstime):
     θ = abstime * math.pi * 2.0 * self.speed 
-    self.prim_node_front.worldTransform.translation = self.origin+vec3(0,1,0)
-    self.prim_node_front.worldTransform.orientation = quat(vec3(0,1,0),θ)
-    self.prim_node_back.worldTransform.translation = self.origin-vec3(0,1,0)
-    self.prim_node_back.worldTransform.orientation = quat(vec3(0,1,0),-θ)
+    size = len(self.primnodes)
+    for i in range(0,size):
+      node = self.primnodes[i]
+      norm = self.normals[i]
+
+      node.worldTransform.translation = self.origin+norm
+      node.worldTransform.orientation = quat(vec3(0,1,0),θ)
+      node.worldTransform.scale = 1
 
 ################################################################################
 
@@ -173,7 +139,7 @@ class SceneGraphApp(object):
 
   def onGpuInit(self,ctx):
 
-    self.fragments = []
+    self.decomps = []
 
     createSceneGraph(app=self,rendermodel="ForwardPBR")
 
@@ -201,60 +167,40 @@ class SceneGraphApp(object):
 
 
     ##################################
-    # clip with plane
+    # convex decompositions
     ##################################
 
-    f = Fragments(context = ctx,
+    d = ConvexDecomp(context = ctx,
                   layer=self.layer1,
                   pipeline=pipeline,
-                  flip_orientation=False,
-                  origin = vec3(2,0,-2),
-                  slicing_plane=plane(vec3(0,1,0).normalized(),-.4),
-                  model_asset_path = "data://tests/simple_obj/tetra.obj" )
-
-    self.fragments += [f]
-
-    f = Fragments(context = ctx,
-                  layer=self.layer1,
-                  pipeline=pipeline,
-                  flip_orientation=False,
                   origin = vec3(2,0,2),
-                  slicing_plane=plane(vec3(0,1,1).normalized(),+.5),
-                  model_asset_path = "data://tests/simple_obj/cone.obj" )
-
-
-    self.fragments += [f]
-
-    f = Fragments(context = ctx,
-                  layer=self.layer1,
-                  pipeline=pipeline,
-                  flip_orientation=True,
-                  origin = vec3(0,0,0),
-                  slicing_plane=plane(vec3(1,1,1).normalized(),.5),
-                  model_asset_path = "data://tests/simple_obj/box.obj" )
-
-
-    self.fragments += [f]
-
-    f = Fragments(context = ctx,
-                  layer=self.layer1,
-                  pipeline=pipeline,
-                  flip_orientation=False,
-                  origin = vec3(-2,0,-2),
-                  slicing_plane=plane(vec3(1,0,0).normalized(),0),
                   model_asset_path = "data://tests/simple_obj/torus.obj" )
 
-    self.fragments += [f]
+    self.decomps += [d]
 
-    f = Fragments(context = ctx,
+    d = ConvexDecomp(context = ctx,
                   layer=self.layer1,
                   pipeline=pipeline,
-                  flip_orientation=True,
                   origin = vec3(-2,0,2),
-                  slicing_plane=plane(vec3(1,0,0).normalized(),0),
-                  model_asset_path = "data://tests/simple_obj/uvsphere.obj" )
+                  model_asset_path = "data://tests/simple_obj/box.obj" )
 
-    self.fragments += [f]
+    self.decomps += [d]
+
+    d = ConvexDecomp(context = ctx,
+                  layer=self.layer1,
+                  pipeline=pipeline,
+                  origin = vec3(2,0,-2),
+                  model_asset_path = "data://tests/simple_obj/cone.obj" )
+
+    self.decomps += [d]
+
+    d = ConvexDecomp(context = ctx,
+                  layer=self.layer1,
+                  pipeline=pipeline,
+                  origin = vec3(-2,0,-2),
+                  model_asset_path = "data://tests/simple_obj/monkey.obj" )
+
+    self.decomps += [d]
 
   ##############################################
 
@@ -267,8 +213,8 @@ class SceneGraphApp(object):
 
   def onUpdate(self,updinfo):
     #########################################
-    for f in self.fragments:
-      f.update(updinfo.absolutetime)
+    for d in self.decomps:
+      d.update(updinfo.absolutetime)
     #########################################
     self.scene.updateScene(self.cameralut) 
 

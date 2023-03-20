@@ -69,7 +69,7 @@ set( libs ork_core )
 list(APPEND libs OpenImageIO OpenImageIO_Util )
 list(APPEND libs portaudio rtmidi  )
 list(APPEND libs avformat avcodec swscale avutil )
-list(APPEND libs ConvexDecomposition.3.24 Bullet3Geometry LinearMath )
+list(APPEND libs ConvexDecomposition Bullet3Geometry LinearMath )
 #list(APPEND libs embree )
 
 IF( "${ARCHITECTURE}" STREQUAL "x86_64" )
