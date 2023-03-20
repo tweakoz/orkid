@@ -390,7 +390,7 @@ poly_ptr_t submesh::mergePoly(const poly& ply) {
       if ((ply._vertices[0]->_poolindex == ply._vertices[1]->_poolindex) ||
           (ply._vertices[1]->_poolindex == ply._vertices[2]->_poolindex) ||
           (ply._vertices[2]->_poolindex == ply._vertices[0]->_poolindex)) {
-        logchan_submesh->log(
+        if(0)logchan_submesh->log(
             "Mesh::mergePoly() removing zero area tri<%d %d %d>",
             ply._vertices[0]->_poolindex,
             ply._vertices[1]->_poolindex,
@@ -408,7 +408,7 @@ poly_ptr_t submesh::mergePoly(const poly& ply) {
           (ply._vertices[1]->_poolindex == ply._vertices[2]->_poolindex) ||
           (ply._vertices[1]->_poolindex == ply._vertices[3]->_poolindex) ||
           (ply._vertices[2]->_poolindex == ply._vertices[3]->_poolindex)) {
-        logchan_submesh->log(
+        if(0)logchan_submesh->log(
             "Mesh::mergePoly() removing zero area quad<%d %d %d %d>",
             ply._vertices[0]->_poolindex,
             ply._vertices[1]->_poolindex,

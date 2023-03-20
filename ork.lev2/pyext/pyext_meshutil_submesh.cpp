@@ -21,8 +21,8 @@ void pyinit_meshutil_submesh(py::module& module_meshutil) {
   auto submesh_type =
       py::class_<submesh, submesh_ptr_t>(module_meshutil, "SubMesh")
           .def(py::init<>())
-          .def_static("createFromFrustum", [](frustum_ptr_t frus) -> submesh_ptr_t { //
-            return submeshFromFrustum(*frus,false);
+          .def_static("createFromFrustum", [](frustum_ptr_t frus, bool projective_rect_uv=false) -> submesh_ptr_t { //
+            return submeshFromFrustum(*frus,projective_rect_uv);
           })
           .def_property("name", [](submesh_ptr_t submesh) -> std::string {
             return submesh->name;

@@ -34,6 +34,110 @@ def createPipeline( app=None,
 
 ################################################################################
 
+PSEUDOWIRE_SHADERTEXT = """
+////////////////////////////////////////
+fxconfig fxcfg_default { glsl_version = "330"; }
+////////////////////////////////////////
+uniform_set ublock_vtx {
+  mat4 m;
+  mat4 mvp;
+}
+////////////////////////////////////////
+uniform_set ublock_frg {
+  vec4 modcolor;
+}
+////////////////////////////////////////
+vertex_interface iface_vtx : ublock_vtx {
+  inputs {
+    vec4 pos : POSITION;
+    vec3 nrm : NORMAL;
+    vec3 uvQ : BINORMAL;
+  }
+  outputs {
+    vec3 world_nrm;
+    vec3 world_pos;
+    vec3 frg_uvq;
+  }
+}
+////////////////////////////////////////
+fragment_interface iface_frg : ublock_frg {
+  inputs {
+    vec3 world_nrm;
+    vec3 world_pos;
+    vec3 frg_uvq;
+  }
+  outputs { layout(location = 0) vec4 out_clr; }
+}
+////////////////////////////////////////
+vertex_shader vs_pseudowire : iface_vtx {
+  gl_Position =  mvp * pos;
+  world_pos = (m * pos).xyz;
+  world_nrm = (m * vec4(nrm,0)).xyz;
+  frg_uvq = uvQ;
+}
+////////////////////////////////////////
+fragment_shader ps_pseudowire : iface_frg {
+  
+    float intens = 0.0;
+    float width = 12.0;
+
+    // https://www.reedbeta.com/blog/quadrilateral-interpolation-part-1/
+    vec2 UV = frg_uvq.xy / frg_uvq.z;
+
+    //vec2 param_space = mod(UV*10,1);
+    vec2 param_space = UV;
+
+    vec2 df = fwidth(param_space);
+    float dd = min(df.x,df.y);
+    
+    width *= dd;
+
+    if(param_space.x<width)
+        intens += 1;
+    if(param_space.y<width)
+        intens += 1;
+    if((1-param_space.x)<width)
+        intens += 1;
+    if((1-param_space.y)<width)
+        intens += 1;
+    if(intens>0)
+        intens = 1;
+    else
+        intens = 0;
+
+
+    out_clr = vec4(modcolor.xyz*intens,1);
+}
+
+////////////////////////////////////////
+technique tek_pseudowire {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_pseudowire;
+    fragment_shader = ps_pseudowire;
+    state_block     = default;
+  }
+}
+"""
+
+def pseudowire_pipeline(app = None,ctx=None):
+    pipeline = createPipeline( app = app,
+                               ctx = ctx,
+                               shadertext = PSEUDOWIRE_SHADERTEXT,
+                               blending=tokens.ADDITIVE,
+                               culltest=tokens.OFF,
+                               depthtest=tokens.OFF,
+                               techname = "tek_pseudowire",
+                               rendermodel = "ForwardPBR" )
+
+    param_world = pipeline.sharedMaterial.param("m")
+    param_modcolor = pipeline.sharedMaterial.param("modcolor")
+    pipeline.bindParam( param_world, tokens.RCFD_M )
+    pipeline.bindParam( param_modcolor, tokens.RCFD_MODCOLOR )
+    return pipeline 
+
+################################################################################
+
 shadertext = """
 fxconfig fxcfg_default {
     glsl_version = "410";

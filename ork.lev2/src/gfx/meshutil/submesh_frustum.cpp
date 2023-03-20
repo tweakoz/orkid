@@ -71,14 +71,16 @@ submesh_ptr_t submeshFromFrustum(const Frustum& frustum, bool projective_rect_uv
     auto NBL = NC[3];
     auto FBL = FC[3];
 
-    addq(NBL, NBR, NTR, NTL, fvec4());
-    addq(FBL, FTL, FTR, FBR, fvec4());
+    fvec4 color = fvec4(1,1,1,1);
 
-    addq(NTL, NTR, FTR, FTL, fvec4());
-    addq(NBR, NBL, FBL, FBR, fvec4());
+    addq(NBL, NBR, NTR, NTL, color);
+    addq(FBL, FTL, FTR, FBR, color);
 
-    addq(NTL, FTL, FBL, NBL, fvec4());
-    addq(NBR, FBR, FTR, NTR, fvec4());
+    addq(NTL, NTR, FTR, FTL, color);
+    addq(NBR, NBL, FBL, FBR, color);
+
+    addq(NTL, FTL, FBL, NBL, color);
+    addq(NBR, FBR, FTR, NTR, color);
   return rval;
 }
 

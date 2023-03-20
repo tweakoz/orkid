@@ -50,7 +50,7 @@ struct MyConvexDecomposition : public ConvexDecomposition::ConvexDecompInterface
     const auto& obb_xform = result.mOBBTransform;     // float[16] the 4x4 transform of the OBB.
     float obb_volume = result.mOBBVolume;             // the volume of the OBB
 
-    printf( "Convex Hull Result vcount<%d> num_triangles<%d> volume<%g>\n", int(vcount), int(num_triangles), hullvolume );
+    //printf( "Convex Hull Result vcount<%d> num_triangles<%d> volume<%g>\n", int(vcount), int(num_triangles), hullvolume );
 
     float sph_radius = result.mSphereRadius;          // radius and center of best fit sphere
     const auto& sph_center = result.mSphereCenter;    // float[3];

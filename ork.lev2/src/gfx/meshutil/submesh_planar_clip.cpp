@@ -90,7 +90,7 @@ struct ChainLinker {
     _vtxrefcounts[va]++;
     _vtxrefcounts[vb]++;
 
-    printf("[%s] EDGE va<%d> vb<%d>\n", _name.c_str(), va->_poolindex, vb->_poolindex);
+    //printf("[%s] EDGE va<%d> vb<%d>\n", _name.c_str(), va->_poolindex, vb->_poolindex);
 
     // printf( "[%s] VA<%g %g %g> <%g %g %g>\n", _name.c_str(), va->mPos.x, va->mPos.y, va->mPos.z, va->mNrm.x, va->mNrm.y,
     // va->mNrm.z ); printf( "[%s] VB<%g %g %g> <%g %g %g>\n", _name.c_str(), vb->mPos.x, vb->mPos.y, vb->mPos.z, vb->mNrm.x,
@@ -185,10 +185,10 @@ struct ChainLinker {
     }
     //////////////////////////////////
     if (_edge_loops.size() == 0) {
-      printf("[%s] EDGELOOP DEBUG\n", _name.c_str());
+      //printf("[%s] EDGELOOP DEBUG\n", _name.c_str());
       for (auto chain : _edge_chains) {
         auto d = dump_edgelist(chain->_edges);
-        printf("[%s]   CHAIN numedges<%zu> [%s]\n", _name.c_str(), chain->_edges.size(), d.c_str());
+        //printf("[%s]   CHAIN numedges<%zu> [%s]\n", _name.c_str(), chain->_edges.size(), d.c_str());
       }
     }
   }
@@ -199,10 +199,10 @@ struct ChainLinker {
 
     /////////////////////////////////////////////////////
 
-    printf("[%s] prelink numchains<%zu>\n", _name.c_str(), _edge_chains.size());
+    //printf("[%s] prelink numchains<%zu>\n", _name.c_str(), _edge_chains.size());
     for (int i = 0; i < _edge_chains.size(); i++) {
       auto d = dump_edgelist(_edge_chains[i]->_edges);
-      printf(
+      if(0)printf(
           "[%s] chain %d:%p | numedges<%zu> [%s]\n",
           _name.c_str(),
           i,
@@ -254,7 +254,7 @@ struct ChainLinker {
         if (_edge_chains.size() > 1)
           removeChain(right_chain);
 
-        printf(
+        if(0)printf(
             "[%s] lchain<%p> rchain<%p> presize<%zu> postsize<%zu> chcount<%zu>\n",
             _name.c_str(),
             (void*)left_chain.get(),
@@ -280,8 +280,8 @@ struct ChainLinker {
 
     closeChains();
 
-    printf("[%s] postlink numchains<%zu>\n", _name.c_str(), _edge_chains.size());
-    printf("[%s] postlink numloops<%zu>\n", _name.c_str(), _edge_loops.size());
+    //printf("[%s] postlink numchains<%zu>\n", _name.c_str(), _edge_chains.size());
+    //printf("[%s] postlink numloops<%zu>\n", _name.c_str(), _edge_loops.size());
   }
   //////////////////////////////////////////////////////////
   std::vector<edge_chain_ptr_t> _edge_chains;
@@ -332,12 +332,12 @@ void submeshClipWithPlane(
   auto add_whole_poly = [](poly_ptr_t src_poly, submesh& dest) -> std::unordered_set<vertex_ptr_t> {
     std::vector<vertex_ptr_t> new_verts;
     std::unordered_set<vertex_ptr_t> added;
-    printf("  subm[%s] add poly size<%zu>\n", dest.name.c_str(), src_poly->_vertices.size());
+    //printf("  subm[%s] add poly size<%zu>\n", dest.name.c_str(), src_poly->_vertices.size());
     for (auto v : src_poly->_vertices) {
       OrkAssert(v);
       auto newv = dest.mergeVertex(*v);
       auto pos  = newv->mPos;
-      printf("   subm[%s] add vertex pool<%02d> (%+g %+g %+g)\n", dest.name.c_str(), newv->_poolindex, pos.x, pos.y, pos.z);
+      //printf("   subm[%s] add vertex pool<%02d> (%+g %+g %+g)\n", dest.name.c_str(), newv->_poolindex, pos.x, pos.y, pos.z);
       new_verts.push_back(newv);
       added.insert(newv);
     }
@@ -375,10 +375,10 @@ void submeshClipWithPlane(
     //////////////////////////////////////////////
     // input poly statistics
     //////////////////////////////////////////////
-    printf("input poly numv<%d>\n", numverts);
-    printf(" front_count<%d>\n", front_count);
-    printf(" back_count<%d>\n", back_count);
-    printf(" planar_count<%d>\n", planar_count);
+    //printf("input poly numv<%d>\n", numverts);
+    //printf(" front_count<%d>\n", front_count);
+    //printf(" back_count<%d>\n", back_count);
+    //printf(" planar_count<%d>\n", planar_count);
     //////////////////////////////////////////////
     // all of this poly's vertices in front ? -> trivially route to outsmesh_Front
     //////////////////////////////////////////////
@@ -440,10 +440,10 @@ void submeshClipWithPlane(
             merged_v->mNrm = fvec3(0, 0, 0);
             merged_v->mUV[0].Clear();
             merged_v->mUV[1].Clear();
-            printf("subm[%s] bpv (%+g %+g %+g) \n", outsubmesh.name.c_str(), p.x, p.y, p.z);
+            //printf("subm[%s] bpv (%+g %+g %+g) \n", outsubmesh.name.c_str(), p.x, p.y, p.z);
             planar_verts_deque.push_back(merged_v);
           } else {
-            printf("subm[%s] REJECT: point_dist_to_plane<%g>\n", outsubmesh.name.c_str(), point_dist_to_plane);
+            //printf("subm[%s] REJECT: point_dist_to_plane<%g>\n", outsubmesh.name.c_str(), point_dist_to_plane);
           }
         }
 
@@ -479,11 +479,13 @@ void submeshClipWithPlane(
     auto do_close = [&](submesh& outsubmesh, //
                         std::deque<vertex_ptr_t>& planar_verts_deque,
                         bool test) { //
+      /*
       printf("subm[%s] planar_verts_deque[ ", outsubmesh.name.c_str());
       for (auto v : planar_verts_deque) {
         printf("%d ", v->_poolindex);
       }
       printf("]\n");
+      */
 
       /////////////////////////////////////////
       //  take note of edges which lie on the
@@ -501,7 +503,7 @@ void submeshClipWithPlane(
         planar_verts_deque.pop_front();
       }
 
-      printf("subm[%s] stragglers<%zu>\n", outsubmesh.name.c_str(), planar_verts_deque.size());
+      //printf("subm[%s] stragglers<%zu>\n", outsubmesh.name.c_str(), planar_verts_deque.size());
 
       if (planar_edges.size()) {
 
@@ -517,11 +519,11 @@ void submeshClipWithPlane(
           // loop->reversed(reversed);
 
           std::vector<vertex_ptr_t> vertex_loop;
-          printf("subm[%s] begin edgeloop <%p>\n", outsubmesh.name.c_str(), (void*)loop.get());
+          //printf("subm[%s] begin edgeloop <%p>\n", outsubmesh.name.c_str(), (void*)loop.get());
           int ie = 0;
           for (auto edge : loop->_edges) {
             vertex_loop.push_back(edge->_vertexA);
-            printf(" subm[%s] edge<%d> vtxi<%d>\n", outsubmesh.name.c_str(), ie, edge->_vertexA->_poolindex);
+            //printf(" subm[%s] edge<%d> vtxi<%d>\n", outsubmesh.name.c_str(), ie, edge->_vertexA->_poolindex);
             ie++;
           }
 
@@ -539,7 +541,7 @@ void submeshClipWithPlane(
           temp_loop_center.center(vertex_loop);
           auto center_vertex = outsubmesh.mergeVertex(temp_loop_center);
           auto loop_center_pos    = temp_loop_center.mPos;
-          printf(" subm[%s] center<%g %g %g>\n", outsubmesh.name.c_str(), loop_center_pos.x, loop_center_pos.y, loop_center_pos.z);
+          //printf(" subm[%s] center<%g %g %g>\n", outsubmesh.name.c_str(), loop_center_pos.x, loop_center_pos.y, loop_center_pos.z);
 
           ///////////////////////////////////////////
           // compute normal based on connected faces

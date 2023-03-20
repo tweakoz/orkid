@@ -98,11 +98,12 @@ template <typename vtx_t> RigidPrimitive<vtx_t>::RigidPrimitive() {
 ////////////////////////////////////////////////////////////////////////////////
 template <typename vtx_t>
 void RigidPrimitive<vtx_t>::fromClusterizer(const meshutil::XgmClusterizerStd& cluz, lev2::Context* context) {
+  _gpuClusters.clear();
   //////////////////////////////////////////////////////////////
   // create Indexed TriStripped Primitive Groups
   //////////////////////////////////////////////////////////////
   size_t inumclus = cluz.GetNumClusters();
-  printf("inumclus<%zu>\n", inumclus);
+  //printf("inumclus<%zu>\n", inumclus);
   //OrkAssert(inumclus <= 1);
   for (size_t icluster = 0; icluster < inumclus; icluster++) {
     auto clusterbuilder = cluz.GetCluster(icluster);

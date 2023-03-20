@@ -21,6 +21,8 @@ def procsubmesh(inpsubmesh):
                                preserve_texcoords=False)
   return stripped
 
+################################################################################
+
 def proc_with_plane(inpsubmesh,plane):
   submesh2 = inpsubmesh.clippedWithPlane(plane=plane,
                                          close_mesh=True, 
@@ -29,6 +31,18 @@ def proc_with_plane(inpsubmesh,plane):
   return procsubmesh(submesh2)
 
 ################################################################################
+
+def proc_with_frustum(inpsubmesh,frustum):
+  submesh2 = proc_with_plane(inpsubmesh,frustum.nearPlane)
+  submesh3 = proc_with_plane(submesh2,frustum.farPlane)
+  submesh4 = proc_with_plane(submesh3,frustum.leftPlane)
+  submesh5 = proc_with_plane(submesh4,frustum.rightPlane)
+  submesh6 = proc_with_plane(submesh5,frustum.topPlane)
+  submesh7 = proc_with_plane(submesh6,frustum.bottomPlane)
+  return submesh7
+
+################################################################################
+
 print("###############################")
 print("# FRUSTUM SUBMESH")
 print("###############################")
@@ -43,6 +57,7 @@ print("box.submesh: convexVolume: %s" % submesh.convexVolume)
 
 submesh.writeWavefrontObj("frustumA.obj")
 
+#################################################
 
 fvmtx2 = mtx4.lookAt(vec3(1,0,1),vec3(1,1,0),vec3(0,1,0))
 frustum2 = Frustum()
@@ -50,21 +65,7 @@ frustum2.set(fvmtx2,fpmtx)
 submesh2 = procsubmesh(meshutil.SubMesh.createFromFrustum(frustum2))
 submesh2.writeWavefrontObj("frustumB.obj")
 
-print(frustum2.nearPlane)
-print(frustum2.farPlane)
-print(frustum2.leftPlane)
-print(frustum2.rightPlane)
-print(frustum2.topPlane)
-print(frustum2.bottomPlane)
+final =proc_with_frustum(submesh,frustum2)
 
-submesh2 = proc_with_plane(submesh,frustum2.nearPlane)
-submesh3 = proc_with_plane(submesh2,frustum2.farPlane)
-submesh4 = proc_with_plane(submesh3,frustum2.leftPlane)
-submesh5 = proc_with_plane(submesh4,frustum2.rightPlane)
-submesh6 = proc_with_plane(submesh5,frustum2.topPlane)
-submesh7 = proc_with_plane(submesh6,frustum2.bottomPlane)
-
-print(submesh7)
-
-submesh7.writeWavefrontObj("submesh7.obj")
+final.writeWavefrontObj("final.obj")
 
