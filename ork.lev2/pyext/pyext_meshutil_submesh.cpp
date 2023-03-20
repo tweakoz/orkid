@@ -45,6 +45,9 @@ void pyinit_meshutil_submesh(py::module& module_meshutil) {
               }
               return pyl;
           })
+          .def_property_readonly("convexVolume", [](submesh_ptr_t submesh) -> float {            
+            return submesh->convexVolume();
+          })
 #if defined(ENABLE_IGL)
           .def("igl_test", [](submesh_ptr_t submesh) { return submesh->igl_test(); })
 #endif //#if defined(ENABLE_IGL)
@@ -90,7 +93,7 @@ void pyinit_meshutil_submesh(py::module& module_meshutil) {
                 return rval;
               })
           .def(
-              "triangulate",
+              "triangulated",
               [](submesh_constptr_t inpsubmesh) -> submesh_ptr_t {
                 submesh_ptr_t rval = std::make_shared<submesh>();
                 submeshTriangulate(*inpsubmesh, *rval);

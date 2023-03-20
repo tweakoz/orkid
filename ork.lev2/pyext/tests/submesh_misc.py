@@ -106,7 +106,7 @@ a = meshutil.Mesh()
 a.readFromWavefrontObj("data://tests/simple_obj/box.obj")
 submesh = a.submesh_list[0]
 print(submesh)
-print(submesh.isConvexHull)
+print("box.submesh: isconvexhull: %s" % submesh.isConvexHull)
 ################################################################################
 print("###############################")
 print("# vtxpool")

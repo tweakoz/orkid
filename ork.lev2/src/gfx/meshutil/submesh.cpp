@@ -612,7 +612,7 @@ bool submesh::isConvexHull() const {
       }
     }
   }
-  printf( "front<%d> back<%d>\n", front, back );
+  //printf( "front<%d> back<%d>\n", front, back );
   return (front>0) and (back==0);
 }
 
@@ -679,6 +679,44 @@ fvec3 submesh::center() const {
   }
   center *= 1.0f / float(num_verts);
   return center;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+float submesh::convexVolume() const {
+  float volume = 0.0f;
+  fvec3 c = center();
+  for( auto p : _orderedPolys ){
+    int numsides = p->_vertices.size();
+    OrkAssert(numsides==3);
+    const auto& v0 = p->_vertices[0]->mPos;
+    const auto& v1 = p->_vertices[1]->mPos;
+    const auto& v2 = p->_vertices[2]->mPos;
+
+    float U = (v0-v1).length();
+    float V = (v1-v2).length();
+    float W = (v2-v0).length();
+
+    float u = (v2-c).length();
+    float v = (v0-c).length();
+    float w = (v1-c).length();
+
+    float usq = u*u;
+    float vsq = v*v;
+    float wsq = w*w;
+
+    float sqU = U*U;
+    float sqV = V*V;
+    float sqW = W*W;
+    float termA = vsq + wsq - sqU;
+    float termB = wsq + usq - sqV;
+    float termC = usq + vsq - sqW;
+
+    //sqrt(4*u*u*v*v*w*w – u*u*(v*v + w*w – U*U)^2 – v*v(w*w + u*u – V*V)^2 – w*w(u*u + v*v – W*W)^2 + (u*u + v*v – W*W) * (w*w + u*u – V*V) * (v*v + w*w – U*U)) / 12
+
+    float this_vol = sqrt(4.0f*usq*vsq*wsq - usq*termA*termA - vsq*termB*termB - wsq*termC*termC + (termC*termB*termA)) / 12.0f;
+    volume += this_vol;
+  }
+  return volume;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
