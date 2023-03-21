@@ -59,24 +59,21 @@ struct Hash3232 : public std::unary_function<int, std::size_t> {
 };
 ///////////////////////////////////////////////////////////////////////////////
 
-static const int kmaxpolysperedge = 4;
-
 struct edge {
   edge();
   edge(vertex_ptr_t va, vertex_ptr_t vb);
 
   vertex_ptr_t edgeVertex(int iv) const;
 
-  U64 GetHashKey(void) const;
+  U64 GetHashKey() const;
   bool Matches(const edge& other) const;
   void ConnectToPoly(int ipoly);
-  int GetNumConnectedPolys(void) const;
+  int GetNumConnectedPolys() const;
   int GetConnectedPoly(int ip) const;
 
   vertex_ptr_t _vertexA;
   vertex_ptr_t _vertexB;
-  int miNumConnectedPolys;
-  int miConnectedPolys[kmaxpolysperedge];
+  std::vector<int> _connectedPolys;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

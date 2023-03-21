@@ -85,7 +85,6 @@ class SceneGraphApp(object):
     frusmesh1 = meshutil.SubMesh.createFromFrustum(frustum1,True)
     self.submesh1 = procsubmesh(frusmesh1)
     self.prim1 = meshutil.RigidPrimitive(frusmesh1,ctx)
-    self.prim1 = createFrustumPrim(ctx=ctx,vmatrix=fvmtx1,pmatrix=fpmtx1)
     self.sgnode1 = self.prim1.createNode("m1",self.layer1,self.pseudowire_pipe)
     self.sgnode1.enabled = True
     self.sgnode1.sortkey = 2;
@@ -125,9 +124,18 @@ class SceneGraphApp(object):
   ##############################################
 
   def onGpuIter(self):
-    θ = self.abstime * math.pi * 2.0 * 1
+    θ = self.abstime * math.pi * 2.0 * 0.1
+
+    self.fpmtx1 = mtx4.perspective(45,1,0.1,3)
+    self.fvmtx1 = mtx4.lookAt(vec3(0,0,1),vec3(math.sin(θ*1.3)*0.5,0,0),vec3(0,1,0))
+    self.frustum1 = Frustum()
+    self.frustum1.set(self.fvmtx1,self.fpmtx1)
+    frusmesh1 = meshutil.SubMesh.createFromFrustum(self.frustum1,True)
+    self.submesh1 = procsubmesh(frusmesh1)
+    self.prim1.fromSubMesh(frusmesh1,self.context)
+
     self.fpmtx2 = mtx4.perspective(45,1,0.1,3)
-    self.fvmtx2 = mtx4.lookAt(vec3(1,0,1),vec3(1,1+math.sin(θ)*0.5,0),vec3(0,1,0))
+    self.fvmtx2 = mtx4.lookAt(vec3(1,0,1),vec3(1,0.5+math.sin(θ)*0.4,0),vec3(0,1,0))
     self.frustum2 = Frustum()
     self.frustum2.set(self.fvmtx2,self.fpmtx2)
     frusmesh2 = meshutil.SubMesh.createFromFrustum(self.frustum2,True)

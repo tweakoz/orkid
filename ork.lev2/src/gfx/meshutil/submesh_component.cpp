@@ -260,40 +260,33 @@ vertex_ptr_t edge::edgeVertex(int iv) const {
 
 ////////////////////////////////////////////////////////////////
 
-edge::edge()
-    : miNumConnectedPolys(0) {
-  for (int i = 0; i < kmaxpolysperedge; i++)
-    miConnectedPolys[i] = -1;
+edge::edge() {
 }
 
 ////////////////////////////////////////////////////////////////
 
 edge::edge(vertex_ptr_t va, vertex_ptr_t vb)
     : _vertexA(va)
-    , _vertexB(vb)
-    , miNumConnectedPolys(0) {
-  for (int i = 0; i < kmaxpolysperedge; i++)
-    miConnectedPolys[i] = -1;
+    , _vertexB(vb){
+
 }
 
 ////////////////////////////////////////////////////////////////
 
 int edge::GetNumConnectedPolys(void) const {
-  return miNumConnectedPolys;
+  return _connectedPolys.size();
 }
 
 ////////////////////////////////////////////////////////////////
 
 int edge::GetConnectedPoly(int ip) const {
-  OrkAssert(ip < miNumConnectedPolys);
-  return miConnectedPolys[ip];
+  return _connectedPolys[ip];
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void edge::ConnectToPoly(int ipoly) {
-  OrkAssert(miNumConnectedPolys < kmaxpolysperedge);
-  miConnectedPolys[miNumConnectedPolys++] = ipoly;
+  _connectedPolys.push_back(ipoly);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -101,8 +101,7 @@ void pyinit_meshutil_component(py::module& module_meshutil) {
     })
     .def_property_readonly("connectedPolys", [](edge_ptr_t e) -> py::list {            
       py::list pyl;
-      for( int i=0; i<e->miNumConnectedPolys; i++ ){
-        int c = e->miConnectedPolys[i];
+      for( int c : e->_connectedPolys ){
         pyl.append(c);
       }
       return pyl;
