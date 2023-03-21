@@ -28,22 +28,43 @@ void submeshJoinCoplanar(const submesh& inpsubmesh, submesh& outsmesh){
   for (int ip = 0; ip < inump; ip++) {
     auto inp_poly = inp_polys[ip];
     auto plane = inp_poly->computePlane();
+
+    //////////////////////////////////////////////////////////
+    // quantize normals
+    //  2^28 possible encodings more or less equally distributed (octahedral encoding)
+    //  -> each encoding covers 4.682e-8 steradians (12.57 steradians / 2^28)
+    // TODO: make an argument ?
+    //////////////////////////////////////////////////////////
+
     fvec2 nenc = plane.n.normalOctahedronEncoded();
-    double quantization = 16384.0;
-    uint64_t ux = uint64_t(double(nenc.x)*quantization);    // 12 bits
-    uint64_t uy = uint64_t(double(nenc.y)*quantization);    // 12 bits
-    uint64_t ud = uint64_t( (quantization*1024.0)+plane.d*quantization ); // ~ 24 bits
+    double normal_quantization = 16383.0;
+    uint64_t ux = uint64_t(double(nenc.x)*normal_quantization);        // 14 bits
+    uint64_t uy = uint64_t(double(nenc.y)*normal_quantization);        // 14 bits  (total of 2^28 possible normals ~= )
+
+    //////////////////////////////////////////////////////////
+    // quantize plane distance
+    //   (64km [-32k..+32k] range with .25 millimeter precision)
+    // TODO: make an argument ?
+    //////////////////////////////////////////////////////////
+
+    double distance_quantization = 4096.0;
+    uint64_t ud = uint64_t( (plane.d+32767.0)*distance_quantization ); //  16+12 bits 
     uint64_t hash = ud | (ux<<32) | (uy<<48);
     polys_by_plane[hash].push_back(inp_poly);
-    //outsmesh.mergePoly(poly(out_vertices));
+
   }
 
   printf( "NUMPLANES<%zu>\n", polys_by_plane.size() );
 
   int plane_count = 0;
-  for( auto item : polys_by_plane ){
-    uint64_t hash = item.first;
-    printf( "plane<%d:%zx> numpolys<%zu>\n", plane_count, hash, item.second.size() );
+
+  struct Island{
+
+  };
+
+  for( auto item_by_plane : polys_by_plane ){
+    uint64_t hash = item_by_plane.first;
+    printf( "plane<%d:%zx> numpolys<%zu>\n", plane_count, hash, item_by_plane.second.size() );
     plane_count++;
   }
 
