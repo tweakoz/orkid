@@ -78,25 +78,25 @@ class SceneGraphApp(object):
     self.pseudowire_pipe = pseudowire_pipeline(app=self,ctx=ctx)
 
     #################################################################
-    fpmtx1 = mtx4.perspective(45,1,0.1,3)
-    fvmtx1 = mtx4.lookAt(vec3(0,0,1),vec3(0,0,0),vec3(0,1,0))
-    frustum1 = Frustum()
-    frustum1.set(fvmtx1,fpmtx1)
-    frusmesh1 = meshutil.SubMesh.createFromFrustum(frustum1,True)
-    self.submesh1 = procsubmesh(frusmesh1)
-    self.prim1 = meshutil.RigidPrimitive(frusmesh1,ctx)
+    self.fpmtx1 = mtx4.perspective(45,1,0.1,3)
+    self.fvmtx1 = mtx4.lookAt(vec3(0,0,1),vec3(0,0,0),vec3(0,1,0))
+    self.frustum1 = Frustum()
+    self.frustum1.set(self.fvmtx1,self.fpmtx1)
+    self.frusmesh1 = meshutil.SubMesh.createFromFrustum(self.frustum1,True)
+    self.submesh1 = procsubmesh(self.frusmesh1)
+    self.prim1 = meshutil.RigidPrimitive(self.frusmesh1,ctx)
     self.sgnode1 = self.prim1.createNode("m1",self.layer1,self.pseudowire_pipe)
     self.sgnode1.enabled = True
     self.sgnode1.sortkey = 2;
     self.sgnode1.modcolor = vec4(1,0,0,1)
     #################################################################
-    fpmtx2 = mtx4.perspective(45,1,0.1,3)
-    fvmtx2 = mtx4.lookAt(vec3(1,0,1),vec3(1,1,0),vec3(0,1,0))
-    frustum2 = Frustum()
-    frustum2.set(fvmtx2,fpmtx2)
-    frusmesh2 = meshutil.SubMesh.createFromFrustum(frustum2,True)
-    self.submesh2 = procsubmesh(frusmesh2)
-    self.prim2 = meshutil.RigidPrimitive(frusmesh2,ctx)
+    self.fpmtx2 = mtx4.perspective(45,1,0.1,3)
+    self.fvmtx2 = mtx4.lookAt(vec3(1,0,1),vec3(1,1,0),vec3(0,1,0))
+    self.frustum2 = Frustum()
+    self.frustum2.set(self.fvmtx2,self.fpmtx2)
+    self.frusmesh2 = meshutil.SubMesh.createFromFrustum(self.frustum2,True)
+    self.submesh2 = procsubmesh(self.frusmesh2)
+    self.prim2 = meshutil.RigidPrimitive(self.frusmesh2,ctx)
     self.sgnode2 = self.prim2.createNode("m2",self.layer1,self.pseudowire_pipe)
     self.sgnode2.enabled = True
     self.sgnode2.sortkey = 2;
@@ -113,7 +113,7 @@ class SceneGraphApp(object):
     material = solid_wire_pipeline.sharedMaterial
     solid_wire_pipeline.bindParam( material.param("m"), tokens.RCFD_M)
     #################################################################
-    submesh_isect = proc_with_frustum(self.submesh1,frustum2)
+    submesh_isect = proc_with_frustum(self.submesh1,self.frustum2)
     self.barysub_isect = submesh_isect.barycentricUVs()
     self.prim3 = meshutil.RigidPrimitive(self.barysub_isect,ctx)
     self.sgnode3 = self.prim3.createNode("m3",self.layer1,solid_wire_pipeline)
@@ -126,17 +126,13 @@ class SceneGraphApp(object):
   def onGpuIter(self):
     θ = self.abstime * math.pi * 2.0 * 0.1
 
-    self.fpmtx1 = mtx4.perspective(45,1,0.1,3)
     self.fvmtx1 = mtx4.lookAt(vec3(0,0,1),vec3(math.sin(θ*1.3)*0.5,0,0),vec3(0,1,0))
-    self.frustum1 = Frustum()
     self.frustum1.set(self.fvmtx1,self.fpmtx1)
     frusmesh1 = meshutil.SubMesh.createFromFrustum(self.frustum1,True)
     self.submesh1 = procsubmesh(frusmesh1)
     self.prim1.fromSubMesh(frusmesh1,self.context)
 
-    self.fpmtx2 = mtx4.perspective(45,1,0.1,3)
     self.fvmtx2 = mtx4.lookAt(vec3(1,0,1),vec3(1,0.5+math.sin(θ)*0.4,0),vec3(0,1,0))
-    self.frustum2 = Frustum()
     self.frustum2.set(self.fvmtx2,self.fpmtx2)
     frusmesh2 = meshutil.SubMesh.createFromFrustum(self.frustum2,True)
     self.prim2.fromSubMesh(frusmesh2,self.context)

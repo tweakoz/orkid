@@ -40,17 +40,17 @@ template <typename T> Vector3<T> Vector3<T>::absolute() const {
 
 template <typename T> Vector3<T> Vector3<T>::minXYZ(const Vector3<T>& rhs) const {
   Vector3<T> rval;
-  rval.x = std::min(this->x,rhs.x);
-  rval.y = std::min(this->y,rhs.y);
-  rval.z = std::min(this->z,rhs.z);
+  rval.x = std::min(this->x, rhs.x);
+  rval.y = std::min(this->y, rhs.y);
+  rval.z = std::min(this->z, rhs.z);
   return rval;
 }
 
 template <typename T> Vector3<T> Vector3<T>::maxXYZ(const Vector3<T>& rhs) const {
   Vector3<T> rval;
-  rval.x = std::max(this->x,rhs.x);
-  rval.y = std::max(this->y,rhs.y);
-  rval.z = std::max(this->z,rhs.z);
+  rval.x = std::max(this->x, rhs.x);
+  rval.y = std::max(this->y, rhs.y);
+  rval.z = std::max(this->z, rhs.z);
   return rval;
 }
 
@@ -147,41 +147,36 @@ template <typename T> const Vector3<T>& Vector3<T>::Yellow() {
 
 template <typename T>
 Vector3<T>::Vector3()
-    : base_t(0,0,0) {
+    : base_t(0, 0, 0) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
 Vector3<T>::Vector3(T _x, T _y, T _z)
-    : base_t(_x,_y,_z) {
+    : base_t(_x, _y, _z) {
 }
 
 template <typename T>
 Vector3<T>::Vector3(T _a)
-    : base_t(_a,_a,_a) {
+    : base_t(_a, _a, _a) {
 }
-
 
 template <typename T>
 Vector3<T>::Vector3(const kln::point& klein_point)
-  : base_t(T(klein_point.x()), T(klein_point.y()), T(klein_point.z()) ){
-
+    : base_t(T(klein_point.x()), T(klein_point.y()), T(klein_point.z())) {
 }
 template <typename T>
 Vector3<T>::Vector3(const kln::direction& klein_direction)
-  : base_t(T(klein_direction.x()), T(klein_direction.y()), T(klein_direction.z()) ){
-
+    : base_t(T(klein_direction.x()), T(klein_direction.y()), T(klein_direction.z())) {
 }
 
-template <typename T>
-kln::point Vector3<T>::asKleinPoint() const{
-  return kln::point(float(this->x),float(this->y),float(this->z));
+template <typename T> kln::point Vector3<T>::asKleinPoint() const {
+  return kln::point(float(this->x), float(this->y), float(this->z));
 }
-template <typename T>
-kln::direction Vector3<T>::asKleinDirection() const{
+template <typename T> kln::direction Vector3<T>::asKleinDirection() const {
   auto N = normalized();
-  return kln::direction(float(N.x),float(N.y),float(N.z));
+  return kln::direction(float(N.x), float(N.y), float(N.z));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -331,9 +326,9 @@ template <typename T> void Vector3<T>::setRGBAU64(uint64_t inp) {
   uint64_t r = (inp >> 48) & 0xffff;
   uint64_t g = (inp >> 32) & 0xffff;
   uint64_t b = (inp >> 16) & 0xffff;
-  this->x          = (kfic * T(uint64_t(r)));
-  this->y          = (kfic * T(uint64_t(g)));
-  this->z          = (kfic * T(uint64_t(b)));
+  this->x    = (kfic * T(uint64_t(r)));
+  this->y    = (kfic * T(uint64_t(g)));
+  this->z    = (kfic * T(uint64_t(b)));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -346,8 +341,8 @@ template <typename T> void Vector3<T>::setHSV(T h, T s, T v) {
   if (s == 0.0f) {
     // Grayscale
     this->x = (v);
-    this->y=(v);
-    this->z=(v);
+    this->y = (v);
+    this->z = (v);
   } else {
     const T kone(1.0f);
 
@@ -361,28 +356,28 @@ template <typename T> void Vector3<T>::setHSV(T h, T s, T v) {
     T cc = v * (kone - (s * (kone - f)));
     if (i < kone) {
       this->x = (v);
-      this->y=(cc);
-      this->z=(aa);
+      this->y = (cc);
+      this->z = (aa);
     } else if (i < 2.0f) {
       this->x = (bb);
-      this->y=(v);
-      this->z=(aa);
+      this->y = (v);
+      this->z = (aa);
     } else if (i < 3.0f) {
       this->x = (aa);
-      this->y=(v);
-      this->z=(cc);
+      this->y = (v);
+      this->z = (cc);
     } else if (i < 4.0f) {
       this->x = (aa);
-      this->y=(bb);
-      this->z=(v);
+      this->y = (bb);
+      this->z = (v);
     } else if (i < 5.0f) {
       this->x = (cc);
-      this->y=(aa);
-      this->z=(v);
+      this->y = (aa);
+      this->z = (v);
     } else {
       this->x = (v);
-      this->y=(aa);
-      this->z=(bb);
+      this->y = (aa);
+      this->z = (bb);
     }
   }
 }
@@ -450,7 +445,7 @@ template <typename T> Vector3<T>::Vector3(const Vector2<T>& vec) {
 
 template <typename T> T Vector3<T>::dotWith(const Vector3<T>& vec) const {
   const base_t& as_base_t = *this;
-  return glm::dot(as_base_t,vec);
+  return glm::dot(as_base_t, vec);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -459,7 +454,7 @@ template <typename T>
 Vector3<T> Vector3<T>::crossWith(const Vector3<T>& vec) const // c = this X vec
 {
   const base_t& as_base_t = *this;
-  return Vector3<T>(glm::cross(as_base_t,vec));
+  return Vector3<T>(glm::cross(as_base_t, vec));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -474,7 +469,7 @@ template <typename T> Vector3<T> Vector3<T>::normalized() const {
   T mag = magnitude();
   if (mag > Epsilon()) {
     const base_t& as_base_t = *this;
-    return  Vector3<T>(glm::normalize(as_base_t));
+    return Vector3<T>(glm::normalize(as_base_t));
   }
   return *this;
 }
@@ -482,8 +477,8 @@ template <typename T> Vector3<T> Vector3<T>::normalized() const {
 ////////////////////////////////////////////////////////////////////////////////
 
 template <typename T> T Vector3<T>::magnitude() const {
-   const base_t& as_base_t = *this;
-   return glm::length(as_base_t);
+  const base_t& as_base_t = *this;
+  return glm::length(as_base_t);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -496,40 +491,42 @@ template <typename T> T Vector3<T>::magnitudeSquared() const {
 
 template <typename T> Vector4<T> Vector3<T>::transform(const Matrix44<T>& matrix) const {
   const auto& xf = matrix.asGlmMat4();
-  const auto& v = this->asGlmVec4();
-  return Vector4<T>(xf*v);
+  const auto& v  = this->asGlmVec4();
+  return Vector4<T>(xf * v);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
 template <typename T> Vector3<T> Vector3<T>::transform(const Matrix33<T>& matrix) const {
   auto xf = matrix.asGlmMat4();
-  auto v = this->asGlmVec4();
-  return base_t(xf*v);
+  auto v  = this->asGlmVec4();
+  return base_t(xf * v);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
 template <typename T> Vector3<T> Vector3<T>::transform3x3(const Matrix44<T>& matrix) const {
-  auto xf = matrix.asGlmMat4();
-  xf[0][3]=0;
-  xf[1][3]=0;
-  xf[2][3]=0;
-  xf[3][0]=0;
-  xf[3][1]=0;
-  xf[3][2]=0;
-  auto v = this->asGlmVec4();
-  return base_t(xf*v);
+  auto xf  = matrix.asGlmMat4();
+  xf[0][3] = 0;
+  xf[1][3] = 0;
+  xf[2][3] = 0;
+  xf[3][0] = 0;
+  xf[3][1] = 0;
+  xf[3][2] = 0;
+  auto v   = this->asGlmVec4();
+  return base_t(xf * v);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
-void Vector3<T>::serp(const Vector3<T>& PA, //
-                      const Vector3<T>& PB, //
-                      const Vector3<T>& PC, //
-                      const Vector3<T>& PD, 
-                      T par_x, T par_y ) {
+void Vector3<T>::serp(
+    const Vector3<T>& PA, //
+    const Vector3<T>& PB, //
+    const Vector3<T>& PC, //
+    const Vector3<T>& PD,
+    T par_x,
+    T par_y) {
   Vector3<T> PAB, PCD;
   PAB.lerp(PA, PB, par_x);
   PCD.lerp(PC, PD, par_x);
@@ -538,22 +535,20 @@ void Vector3<T>::serp(const Vector3<T>& PA, //
 
 ////////////////////////////////////////////////////////////////////////////////
 
-template <typename T>
-T ork::Vector3<T>::angle(const Vector3& vec) const{
+template <typename T> T ork::Vector3<T>::angle(const Vector3& vec) const {
   const base_t& a = *this;
   const base_t& b = vec;
 
-  return T(glm::angle(a,b));
+  return T(glm::angle(a, b));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-template <typename T>
-T ork::Vector3<T>::orientedAngle(const Vector3& vec, const Vector3& refaxis) const{
+template <typename T> T ork::Vector3<T>::orientedAngle(const Vector3& vec, const Vector3& refaxis) const {
   const base_t& a = *this;
   const base_t& b = vec;
 
-  return T(glm::orientedAngle(a,b,refaxis));
+  return T(glm::orientedAngle(a, b, refaxis));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -561,8 +556,8 @@ T ork::Vector3<T>::orientedAngle(const Vector3& vec, const Vector3& refaxis) con
 template <typename T> void Vector3<T>::rotateOnX(T rad) {
   T previousY = this->y;
   T previousZ = this->z;
-  this->y      = (previousY * Cos(rad) - previousZ * Sin(rad));
-  this->z      = (previousY * Sin(rad) + previousZ * Cos(rad));
+  this->y     = (previousY * Cos(rad) - previousZ * Sin(rad));
+  this->z     = (previousY * Sin(rad) + previousZ * Cos(rad));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -592,10 +587,10 @@ template <typename T> void Vector3<T>::lerp(const Vector3<T>& from, const Vector
     par = T(0.0f);
   if (par > T(1.0f))
     par = T(1.0f);
-  T ipar = T(1.0f) - par;
-  this->x      = (from.x * ipar) + (to.x * par);
-  this->y      = (from.y * ipar) + (to.y * par);
-  this->z      = (from.z * ipar) + (to.z * par);
+  T ipar  = T(1.0f) - par;
+  this->x = (from.x * ipar) + (to.x * par);
+  this->y = (from.y * ipar) + (to.y * par);
+  this->z = (from.z * ipar) + (to.z * par);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -606,10 +601,35 @@ template <typename T> T Vector3<T>::calcTriangularArea(const Vector3<T>& V, cons
 
 template <typename T> Vector3<T> Vector3<T>::quantized(float v) const {
   Vector3<T> rval;
-  rval.x = float(int(this->x*v))/v;
-  rval.y = float(int(this->y*v))/v;
-  rval.z = float(int(this->z*v))/v;
+  rval.x = float(int(this->x * v)) / v;
+  rval.y = float(int(this->y * v)) / v;
+  rval.z = float(int(this->z * v)) / v;
   return rval;
+}
+
+template <typename T> Vector2<T> octahedronWrap(Vector2<T> v) {
+  float x = (T(1) - abs(v.y)) * (v.x >= T(0) ? T(1) : T(-1));
+  float y = (T(1) - abs(v.x)) * (v.y >= T(0) ? T(1) : T(-1));
+  return Vector2<T>(x, y);
+}
+
+template <typename T> Vector2<T> Vector3<T>::normalOctahedronEncoded() const {
+
+  Vector3<T> temp_n = *this;
+  temp_n *= (1.0f / (abs(temp_n.x) + abs(temp_n.y) + abs(temp_n.z)));
+  Vector2<T> xy = temp_n.xy();
+  xy            = (temp_n.z >= 0.0f) ? xy : octahedronWrap(xy);
+  xy            = (xy * T(0.5)) + Vector2<T>(T(0.5), T(0.5));
+  return xy;
+}
+
+template <typename T> void Vector3<T>::decodeNormalOctahedronEncoded(Vector2<T> enc) {
+  enc     = enc * T(2) - Vector2<T>(T(1),T(1));
+  this->z = T(1) - abs(enc.x) - abs(enc.y);
+  auto xy = (this->z >= T(0)) ? enc : octahedronWrap(enc);
+  this->x = xy.x;
+  this->y = xy.y;
+  normalizeInPlace();
 }
 
 } // namespace ork

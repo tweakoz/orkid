@@ -425,6 +425,7 @@ void submeshClipWithPlane(const submesh& inpsubmesh, //
                            submesh& outsmeshBack
                            );
 
+void submeshJoinCoplanar(const submesh& inpsubmesh, submesh& outsmesh);
 void submeshBarycentricUV(const submesh& inpsubmesh, submesh& outsmesh);
 submesh_ptr_t submeshFromFrustum(const Frustum& frustum, bool projective_rect_uv);
 

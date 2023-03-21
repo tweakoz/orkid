@@ -218,6 +218,8 @@ template <typename T> struct Vector3 final
   Vector3<T> minXYZ( const Vector3<T>& rhs ) const;
   Vector3<T> maxXYZ( const Vector3<T>& rhs ) const;
 
+  Vector2<T> normalOctahedronEncoded() const;
+  void decodeNormalOctahedronEncoded(Vector2<T> enc);
 
   uint64_t RGBAU64() const;
   void setRGBAU64(uint64_t v);

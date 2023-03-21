@@ -187,6 +187,13 @@ void pyinit_meshutil_submesh(py::module& module_meshutil) {
                 rval["back"] = res_back;
                 return rval;
               })
+          .def(
+              "coplanarJoined",
+              [](submesh_constptr_t inpsubmesh) -> submesh_ptr_t {
+                submesh_ptr_t rval = std::make_shared<submesh>();
+                submeshJoinCoplanar(*inpsubmesh, *rval);
+                return rval;
+              })
 #if defined(ENABLE_IGL)
           .def("toIglMesh", [](submesh_ptr_t submesh, int numsides) -> iglmesh_ptr_t { return submesh->toIglMesh(numsides); })
 #endif //#if defined(ENABLE_IGL)
