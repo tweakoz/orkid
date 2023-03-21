@@ -145,6 +145,7 @@ class SceneGraphApp(object):
     submesh_isect = proc_with_frustum(self.submesh1,self.frustum2)
     self.barysub_isect = submesh_isect.barycentricUVs()
     self.prim3.fromSubMesh(self.barysub_isect,self.context)
+    print("intersection convexVolume: %s" % submesh_isect.convexVolume)
 
   ##############################################
 

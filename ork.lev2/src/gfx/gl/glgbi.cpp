@@ -1053,8 +1053,15 @@ void GlGeometryBufferInterface::UnLockIB(const IndexBufferBase& IdxBuf) {
 void GlGeometryBufferInterface::ReleaseIB(IndexBufferBase& IdxBuf) {
   auto plat_handle = (GLIdxBufHandle*)IdxBuf.GetHandle();
 
-  if (plat_handle)
+  if (plat_handle){
+
+    uint32_t ibo = plat_handle->mIBO;
+    if(ibo){
+      glDeleteBuffers(1,&ibo);
+    }
+
     delete plat_handle;
+  }
 
   IdxBuf.SetHandle(0);
 }

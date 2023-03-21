@@ -36,18 +36,24 @@ struct XgmClusterizerStd;
 ///////////////////////////////////////////////////////////////////////////////
 template <typename vtx_t> struct RigidPrimitive {
 
-  using idxbuf_t      = lev2::StaticIndexBuffer<uint16_t>;
-  using vtxbuf_t      = lev2::StaticVertexBuffer<vtx_t>;
-  using vtxbuf_ptr_t  = std::shared_ptr<vtxbuf_t>;
-  using vtxbuf_list_t = std::vector<vtxbuf_t>;
-  using idxbuf_ptr_t  = std::shared_ptr<idxbuf_t>;
+  using idxbuf_t               = lev2::StaticIndexBuffer<uint16_t>;
+  using vtxbuf_t               = lev2::StaticVertexBuffer<vtx_t>;
+  using vtxbuf_ptr_t           = std::shared_ptr<vtxbuf_t>;
+  using vtxbuf_list_t          = std::vector<vtxbuf_t>;
+  using idxbuf_ptr_t           = std::shared_ptr<idxbuf_t>;
+
+  ////////////////////////
 
   struct PrimitiveGroup {
     idxbuf_ptr_t _idxbuffer;
     lev2::PrimitiveType _primtype = lev2::PrimitiveType::NONE;
   };
-  using primgroup_ptr_t      = std::shared_ptr<PrimitiveGroup>;
-  using primgroup_ptr_list_t = std::vector<primgroup_ptr_t>;
+
+  using primgroup_ptr_t        = std::shared_ptr<PrimitiveGroup>;
+  using primgroup_ptr_list_t   = std::vector<primgroup_ptr_t>;
+
+  ////////////////////////
+
   struct PrimGroupCluster {
     vtxbuf_ptr_t _vtxbuffer;
     primgroup_ptr_list_t _primgroups;
@@ -57,6 +63,8 @@ template <typename vtx_t> struct RigidPrimitive {
 
   using primgroupcluster_ptr_t = std::shared_ptr<PrimGroupCluster>;
   using cluster_ptr_list_t     = std::vector<primgroupcluster_ptr_t>;
+
+  ////////////////////////
 
   RigidPrimitive();
 
@@ -70,6 +78,7 @@ template <typename vtx_t> struct RigidPrimitive {
   void gpuLoadFromChunks(lev2::Context* context, chunkfile::InputStream* hdrstream, chunkfile::InputStream* geostream);
 
   //////////////////////////////////////////////////////////////////////////////
+
   inline lev2::scenegraph::drawable_node_ptr_t createNode(
       std::string named, //
       lev2::scenegraph::layer_ptr_t layer,
@@ -89,6 +98,9 @@ template <typename vtx_t> struct RigidPrimitive {
     });
     return layer->createDrawableNode(named, drw);
   }
+
+  //////////////////////////////////////////////////////////////////////////////
+
   lev2::fxpipeline_ptr_t _pipeline;
   cluster_ptr_list_t _gpuClusters;
 };
@@ -98,6 +110,15 @@ template <typename vtx_t> RigidPrimitive<vtx_t>::RigidPrimitive() {
 ////////////////////////////////////////////////////////////////////////////////
 template <typename vtx_t>
 void RigidPrimitive<vtx_t>::fromClusterizer(const meshutil::XgmClusterizerStd& cluz, lev2::Context* context) {
+  auto GBI = context->GBI();
+  for( auto c : _gpuClusters ){
+    auto vbuf = c->_vtxbuffer;
+    GBI->ReleaseVB(*vbuf);
+    for( auto pg : c->_primgroups ){
+      auto ibuf = pg->_idxbuffer;
+      GBI->ReleaseIB(*ibuf);
+    }
+  }
   _gpuClusters.clear();
   //////////////////////////////////////////////////////////////
   // create Indexed TriStripped Primitive Groups
