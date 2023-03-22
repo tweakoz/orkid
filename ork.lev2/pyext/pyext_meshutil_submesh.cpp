@@ -36,6 +36,14 @@ void pyinit_meshutil_submesh(py::module& module_meshutil) {
           .def_property_readonly("vertexpool", [](submesh_ptr_t submesh) -> vertexpool_ptr_t {            
             return submesh->_vtxpool;
           })
+          .def_property_readonly("as_polyset", [](submesh_ptr_t submesh) -> polyset_ptr_t {            
+            polyset_ptr_t rval = std::make_shared<PolySet>();
+              for( auto item : submesh->_polymap ){
+                auto p = item.second;
+                rval->_polys.insert(p);
+              }
+              return rval;
+          })
           .def_property_readonly("polys", [](submesh_ptr_t submesh) -> py::list {            
               py::list pyl;
               for( auto item : submesh->_polymap ){
@@ -283,8 +291,20 @@ void pyinit_meshutil_submesh(py::module& module_meshutil) {
             rval += FormatString("  num_edges<%d>\n", (int)sm->_edgemap.size());
             return rval;
           });
-
   type_codec->registerStdCodec<submesh_ptr_t>(submesh_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  auto polyset_type = py::class_<PolySet, polyset_ptr_t>(module_meshutil, "PolySet")
+          .def(py::init<>())
+          .def("splitByIsland",[](polyset_ptr_t pset) -> py::list {
+            py::list pyl;
+            auto islands = pset->splitByIsland();
+            for( auto island : islands ){
+              pyl.append(island);
+            }
+            return pyl;
+          });
+  type_codec->registerStdCodec<polyset_ptr_t>(polyset_type);
+  /////////////////////////////////////////////////////////////////////////////////
 }
 
 /////////////////////////////////////////////////////////////////////////////////

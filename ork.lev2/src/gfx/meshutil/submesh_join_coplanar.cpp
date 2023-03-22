@@ -14,16 +14,60 @@
 namespace ork::meshutil {
 ///////////////////////////////////////////////////////////////////////////////
 
-void submeshJoinCoplanar(const submesh& inpsubmesh, submesh& outsmesh){
+std::vector<polyset_ptr_t> PolySet::splitByIsland() const{
 
-  using polyvect_t = std::vector<poly_ptr_t>;
+  std::vector<polyset_ptr_t> polysets;
+
+  auto copy_of_polys = _polys;
+
+  while(copy_of_polys.size()>0){
+
+    std::unordered_set<poly_ptr_t> processed;
+
+    for( auto p : copy_of_polys ){
+      submesh::PolyVisitContext visit_ctx;
+      visit_ctx._visitor = [&](poly_ptr_t p) -> bool {
+          processed.insert(p);
+          return true;
+      };
+      auto par_submesh = p->_parentSubmesh;
+      par_submesh->visitConnectedPolys(p,visit_ctx);
+    }
+
+    if( processed.size() ){
+      auto pset = std::make_shared<PolySet>();
+      polysets.push_back(pset);
+      for( auto p : processed ){
+        auto itp = copy_of_polys.find(p);
+        OrkAssert(itp!=copy_of_polys.end());
+        copy_of_polys.erase(itp);
+        pset->_polys.insert(p);
+      }
+    }
+  }
+  return polysets;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+std::vector<edge_ptr_t> PolySet::boundaryLoop(){
+
+  std::vector<edge_ptr_t> rval;
+
+
+  return rval;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void submeshJoinCoplanar(const submesh& inpsubmesh, submesh& outsmesh){
 
   ////////////////////////////////////////////////////////
 
   int inump = inpsubmesh.GetNumPolys();
   const auto& inp_polys = inpsubmesh._orderedPolys;
 
-  std::unordered_map<uint64_t,polyvect_t> polys_by_plane;
+  std::unordered_map<uint64_t,PolySet> polys_by_plane;
 
   for (int ip = 0; ip < inump; ip++) {
     auto inp_poly = inp_polys[ip];
@@ -50,7 +94,7 @@ void submeshJoinCoplanar(const submesh& inpsubmesh, submesh& outsmesh){
     double distance_quantization = 4096.0;
     uint64_t ud = uint64_t( (plane.d+32767.0)*distance_quantization ); //  16+12 bits 
     uint64_t hash = ud | (ux<<32) | (uy<<48);
-    polys_by_plane[hash].push_back(inp_poly);
+    polys_by_plane[hash]._polys.insert(inp_poly);
 
   }
 
@@ -58,14 +102,26 @@ void submeshJoinCoplanar(const submesh& inpsubmesh, submesh& outsmesh){
 
   int plane_count = 0;
 
-  struct Island{
 
-  };
 
   for( auto item_by_plane : polys_by_plane ){
-    uint64_t hash = item_by_plane.first;
-    printf( "plane<%d:%zx> numpolys<%zu>\n", plane_count, hash, item_by_plane.second.size() );
+    uint64_t plane_hash = item_by_plane.first;
+    auto& planar_polyset = item_by_plane.second;
+
+
+    auto islands = planar_polyset.splitByIsland();
+
+    printf( "plane<%d:%llx> numpolys<%zu> numislands<%zu>\n", plane_count, plane_hash, planar_polyset._polys.size(), islands.size() );
+
+    int i = 0;
+    for( auto island : islands ){
+      printf( "  island<%d> numpolys<%zu>\n", i, island->_polys.size() );
+      i++;
+    }
+
+
     plane_count++;
+
   }
 
   ////////////////////////////////////////////////////////

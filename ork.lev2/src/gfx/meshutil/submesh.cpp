@@ -456,6 +456,8 @@ poly_ptr_t submesh::mergePoly(const poly& ply) {
     nply.SetAnnoMap(ply.GetAnnoMap());
     auto new_poly = std::make_shared<poly>(nply);
     _orderedPolys.push_back(new_poly);
+    new_poly->_submeshIndex = inewpi;
+    new_poly->_parentSubmesh = this;
     _polymap[ucrc] = new_poly;
     //////////////////////////////////////////////////
     // add n sided counters
@@ -717,6 +719,26 @@ float submesh::convexVolume() const {
     volume += this_vol;
   }
   return volume;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void submesh::visitConnectedPolys(poly_ptr_t p,PolyVisitContext& visitctx) const{
+  auto it_vp = visitctx._visited.find(p);
+  if( it_vp == visitctx._visited.end() ){
+    visitctx._visited.insert(p);
+    bool ok = visitctx._visitor(p);
+    if(ok){
+      for(auto e : p->_edges ){
+        for( auto i : e->_connectedPolys ){
+          auto cp = _orderedPolys[i];
+          if(cp!=p){
+            visitConnectedPolys(cp,visitctx);
+          }
+        }
+      }
+    }
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////

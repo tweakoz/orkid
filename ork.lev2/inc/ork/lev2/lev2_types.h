@@ -487,6 +487,7 @@ namespace ork::meshutil{
   struct poly;
   struct edge;
   struct uvmapcoord;
+  struct PolySet;
 
 	using material_semanticmap_t = orkmap<std::string, MaterialBindingItem>;
 
@@ -509,6 +510,8 @@ namespace ork::meshutil{
   using edge_ptr_t = std::shared_ptr<edge>;
   using edge_constptr_t = std::shared_ptr<const edge>;
   using uvmapcoord_ptr_t = std::shared_ptr<uvmapcoord>;
+
+  using polyset_ptr_t = std::shared_ptr<PolySet>;
 
 #if defined(ENABLE_IGL)
   struct IglMesh;

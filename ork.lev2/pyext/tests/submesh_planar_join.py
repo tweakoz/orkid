@@ -24,10 +24,14 @@ from common.scenegraph import createSceneGraph
 mesh = meshutil.Mesh()
 mesh.readFromWavefrontObj("data://tests/simple_obj/cone.obj")
 submesh = mesh.submesh_list[0]
-
 print(submesh)
+
+pset = submesh.as_polyset
+print(pset)
+islands = pset.splitByIsland()
+print(islands)
+
 
 
 joined = submesh.coplanarJoined()
-
 print(joined)

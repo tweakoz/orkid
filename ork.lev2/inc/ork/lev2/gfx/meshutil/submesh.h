@@ -214,8 +214,18 @@ struct poly {
 
   std::vector<vertex_ptr_t> _vertices;
   std::vector<edge_ptr_t> _edges;
+  int _submeshIndex = -1;
+  const submesh* _parentSubmesh = nullptr;
 
   const AnnoMap* mAnnotationSet;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct PolySet{
+  std::vector<polyset_ptr_t> splitByIsland() const;
+  std::vector<edge_ptr_t> boundaryLoop() const;
+  std::unordered_set<poly_ptr_t> _polys;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -310,6 +320,17 @@ struct submesh {
   void GetEdges(const poly& ply, orkvector<edge>& Edges) const;
   void GetAdjacentPolys(int ply, orkset<int>& output) const;
   edge_constptr_t edgeBetween(int a, int b) const;
+
+
+  using poly_visitor_t = std::function<bool(poly_ptr_t)>;
+
+  struct PolyVisitContext{
+    std::unordered_set<poly_ptr_t> _visited;
+    poly_visitor_t _visitor;
+    bool _indirect = false;
+  };
+
+  void visitConnectedPolys(poly_ptr_t p,PolyVisitContext& context) const;
 
   /////////////////////////////////////////////////////////////////////////
 
@@ -435,6 +456,8 @@ void submeshWriteObj(const submesh& inpsubmesh, const file::Path& BasePath);
 // void SubDivQuads(submesh* poutsmesh) const;
 // void SubDivTriangles(submesh* poutsmesh) const;
 // void SubDiv(submesh* poutsmesh) const;
+
+std::vector<polyset_ptr_t> splitByIsland(polyset_ptr_t inpset);
 
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::meshutil
