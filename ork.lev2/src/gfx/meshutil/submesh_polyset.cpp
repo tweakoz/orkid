@@ -191,7 +191,7 @@ edge_vect_t Island::boundaryLoop() const {
       int va = e->_vertexA->_poolindex;
       int vb = e->_vertexB->_poolindex;
       printf("poly<%d> edge[%d->%d] inumcon_in_island<%d>\n", poly_index, va,vb,inumcon_in_island );
-      if(inumcon_in_island==1){
+      if(inumcon_in_island==0){
         loose_edges.insert(e);
       }
     } // for(auto e : p->_edges) {
