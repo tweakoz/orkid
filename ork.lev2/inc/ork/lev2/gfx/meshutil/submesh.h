@@ -213,7 +213,7 @@ struct poly {
   U64 HashIndices(void) const;
 
   std::vector<vertex_ptr_t> _vertices;
-  std::vector<edge_ptr_t> _edges;
+  edge_vect_t _edges;
   int _submeshIndex = -1;
   const submesh* _parentSubmesh = nullptr;
 
@@ -228,7 +228,7 @@ struct PolySet {
 };
 
 struct Island : public PolySet {
-  std::vector<edge_ptr_t> boundaryLoop() const;
+  edge_vect_t boundaryLoop() const;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -238,12 +238,12 @@ struct EdgeChain {
   std::string dump() const;
   void reverseOf(const EdgeChain& src);
 
-  std::vector<edge_ptr_t> _edges;
+  edge_vect_t _edges;
   std::unordered_set<vertex_ptr_t> _vertices;
 };
 
 struct EdgeLoop {
-  std::vector<edge_ptr_t> _edges;
+  edge_vect_t _edges;
   void reverseOf(const EdgeLoop& src);
 };
 

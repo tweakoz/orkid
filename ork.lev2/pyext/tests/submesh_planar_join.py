@@ -31,7 +31,9 @@ print(pset)
 islands = pset.splitByIsland()
 print(islands)
 
+for island in islands:
+  loop = island.boundaryLoop()
+  print(len(loop), loop)
 
-
-joined = submesh.coplanarJoined()
-print(joined)
+#joined = submesh.coplanarJoined()
+#print(joined)

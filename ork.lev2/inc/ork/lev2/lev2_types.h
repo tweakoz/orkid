@@ -520,6 +520,7 @@ namespace ork::meshutil{
   using edge_chain_ptr_t = std::shared_ptr<EdgeChain>;
   using edge_loop_ptr_t = std::shared_ptr<EdgeLoop>;
   using edge_chain_linker_ptr_t = std::shared_ptr<EdgeChainLinker>;
+  using edge_vect_t = std::vector<edge_ptr_t>;
 
 #if defined(ENABLE_IGL)
   struct IglMesh;

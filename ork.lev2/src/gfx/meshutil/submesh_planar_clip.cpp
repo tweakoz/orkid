@@ -73,7 +73,7 @@ void submeshClipWithPlane(
   // input mesh polygon loop
   /////////////////////////////////////////////////////////////////////
 
-  std::vector<edge_ptr_t> back_planar_edges, front_planar_edges;
+  edge_vect_t back_planar_edges, front_planar_edges;
   std::deque<vertex_ptr_t> front_planar_verts_deque;
   std::deque<vertex_ptr_t> back_planar_verts_deque;
 
@@ -216,7 +216,7 @@ void submeshClipWithPlane(
       //  slicing plane
       /////////////////////////////////////////
 
-      std::vector<edge_ptr_t> planar_edges;
+      edge_vect_t planar_edges;
 
       while (planar_verts_deque.size() >= 2) {
         auto v0 = planar_verts_deque[0];
