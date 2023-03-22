@@ -14,52 +14,6 @@
 namespace ork::meshutil {
 ///////////////////////////////////////////////////////////////////////////////
 
-std::vector<polyset_ptr_t> PolySet::splitByIsland() const{
-
-  std::vector<polyset_ptr_t> polysets;
-
-  auto copy_of_polys = _polys;
-
-  while(copy_of_polys.size()>0){
-
-    std::unordered_set<poly_ptr_t> processed;
-
-    for( auto p : copy_of_polys ){
-      submesh::PolyVisitContext visit_ctx;
-      visit_ctx._visitor = [&](poly_ptr_t p) -> bool {
-          processed.insert(p);
-          return true;
-      };
-      auto par_submesh = p->_parentSubmesh;
-      par_submesh->visitConnectedPolys(p,visit_ctx);
-    }
-
-    if( processed.size() ){
-      auto pset = std::make_shared<PolySet>();
-      polysets.push_back(pset);
-      for( auto p : processed ){
-        auto itp = copy_of_polys.find(p);
-        OrkAssert(itp!=copy_of_polys.end());
-        copy_of_polys.erase(itp);
-        pset->_polys.insert(p);
-      }
-    }
-  }
-  return polysets;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-std::vector<edge_ptr_t> PolySet::boundaryLoop(){
-
-  std::vector<edge_ptr_t> rval;
-
-
-  return rval;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
 void submeshJoinCoplanar(const submesh& inpsubmesh, submesh& outsmesh){
 
   ////////////////////////////////////////////////////////

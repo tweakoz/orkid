@@ -488,6 +488,10 @@ namespace ork::meshutil{
   struct edge;
   struct uvmapcoord;
   struct PolySet;
+  struct Island;
+  struct EdgeChain;
+  struct EdgeLoop;
+  struct EdgeChainLinker;
 
 	using material_semanticmap_t = orkmap<std::string, MaterialBindingItem>;
 
@@ -512,6 +516,10 @@ namespace ork::meshutil{
   using uvmapcoord_ptr_t = std::shared_ptr<uvmapcoord>;
 
   using polyset_ptr_t = std::shared_ptr<PolySet>;
+  using island_ptr_t = std::shared_ptr<Island>;
+  using edge_chain_ptr_t = std::shared_ptr<EdgeChain>;
+  using edge_loop_ptr_t = std::shared_ptr<EdgeLoop>;
+  using edge_chain_linker_ptr_t = std::shared_ptr<EdgeChainLinker>;
 
 #if defined(ENABLE_IGL)
   struct IglMesh;

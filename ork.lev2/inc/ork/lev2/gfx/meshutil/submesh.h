@@ -222,10 +222,43 @@ struct poly {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct PolySet{
-  std::vector<polyset_ptr_t> splitByIsland() const;
-  std::vector<edge_ptr_t> boundaryLoop() const;
+struct PolySet {
+  std::vector<island_ptr_t> splitByIsland() const;
   std::unordered_set<poly_ptr_t> _polys;
+};
+
+struct Island : public PolySet {
+  std::vector<edge_ptr_t> boundaryLoop() const;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct EdgeChain {
+
+  std::string dump() const;
+  void reverseOf(const EdgeChain& src);
+
+  std::vector<edge_ptr_t> _edges;
+  std::unordered_set<vertex_ptr_t> _vertices;
+};
+
+struct EdgeLoop {
+  std::vector<edge_ptr_t> _edges;
+  void reverseOf(const EdgeLoop& src);
+};
+
+struct EdgeChainLinker {
+  edge_chain_ptr_t add_edge(edge_ptr_t e);
+  bool loops_possible() const;
+  edge_chain_ptr_t findChainForVertex(vertex_ptr_t va);
+  void removeChain(edge_chain_ptr_t chain_to_remove);
+  void closeChains();
+  void link();
+
+  std::vector<edge_chain_ptr_t> _edge_chains;
+  std::vector<edge_loop_ptr_t> _edge_loops;
+  std::unordered_map<vertex_ptr_t, int> _vtxrefcounts;
+  std::string _name;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

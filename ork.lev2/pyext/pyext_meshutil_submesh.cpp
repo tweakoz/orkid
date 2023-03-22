@@ -305,6 +305,18 @@ void pyinit_meshutil_submesh(py::module& module_meshutil) {
           });
   type_codec->registerStdCodec<polyset_ptr_t>(polyset_type);
   /////////////////////////////////////////////////////////////////////////////////
+  auto island_type = py::class_<Island, PolySet, island_ptr_t>(module_meshutil, "Island")
+          .def(py::init<>())
+          .def("boundaryLoop",[](island_ptr_t island) -> py::list {
+            py::list pyl;
+            auto edges = island->boundaryLoop();
+            for( auto edge : edges ){
+              pyl.append(edge);
+            }
+            return pyl;
+          });
+  type_codec->registerStdCodec<island_ptr_t>(island_type);
+  /////////////////////////////////////////////////////////////////////////////////
 }
 
 /////////////////////////////////////////////////////////////////////////////////

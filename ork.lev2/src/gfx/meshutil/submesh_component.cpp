@@ -260,53 +260,6 @@ vertex_ptr_t edge::edgeVertex(int iv) const {
 
 ////////////////////////////////////////////////////////////////
 
-edge::edge() {
-}
-
-////////////////////////////////////////////////////////////////
-
-edge::edge(vertex_ptr_t va, vertex_ptr_t vb)
-    : _vertexA(va)
-    , _vertexB(vb){
-
-}
-
-////////////////////////////////////////////////////////////////
-
-int edge::GetNumConnectedPolys(void) const {
-  return _connectedPolys.size();
-}
-
-////////////////////////////////////////////////////////////////
-
-int edge::GetConnectedPoly(int ip) const {
-  return _connectedPolys[ip];
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void edge::ConnectToPoly(int ipoly) {
-  _connectedPolys.push_back(ipoly);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-U64 edge::GetHashKey(void) const {
-  u64 uv = (_vertexA->_poolindex < _vertexB->_poolindex) //
-               ? u64(_vertexA->_poolindex) | (u64(_vertexB->_poolindex) << 32)
-               : u64(_vertexB->_poolindex) | (u64(_vertexA->_poolindex) << 32);
-  return uv;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-bool edge::Matches(const edge& other) const {
-  return ((_vertexA == other._vertexA) && (_vertexB == other._vertexB)) ||
-         ((_vertexB == other._vertexA) && (_vertexA == other._vertexB)); // should we care about order here ?
-}
-
-////////////////////////////////////////////////////////////////
-
 const AnnoMap* poly::GetAnnoMap() const {
   return mAnnotationSet;
 }
