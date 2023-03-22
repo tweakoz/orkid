@@ -27,6 +27,37 @@ void submeshJoinCoplanar(const submesh& inpsubmesh, submesh& outsmesh){
     int i = 0;
     for( auto island : islands ){
       printf( "  island<%d> numpolys<%zu>\n", i, island->_polys.size() );
+      bool loop_joined = false;
+      if( island->_polys.size() > 1 ){
+        auto loop = island->boundaryLoop();
+        int inumedges = loop.size();
+        if(inumedges){
+          std::vector<vertex_ptr_t> new_vertices;
+          for( int ie=0; ie<inumedges; ie++ ){
+            auto the_edge = loop[ie];
+            auto va = the_edge->_vertexA;
+            auto vb = the_edge->_vertexB;
+            if(ie==0){
+              new_vertices.push_back(outsmesh.mergeVertex(*va));
+            }
+            else{
+              new_vertices.push_back(outsmesh.mergeVertex(*va));
+              new_vertices.push_back(outsmesh.mergeVertex(*vb));
+            }
+          }
+          outsmesh.mergePoly(poly(new_vertices));
+          loop_joined = true;
+        }
+      }
+      if(not loop_joined){
+        for( auto ip : island->_polys ){
+          std::vector<vertex_ptr_t> new_vertices;
+          for( auto iv : ip->_vertices ){
+            new_vertices.push_back(outsmesh.mergeVertex(*iv));
+          }
+          outsmesh.mergePoly(poly(new_vertices));
+        }
+      }
       i++;
     }
     plane_count++;

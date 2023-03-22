@@ -56,7 +56,6 @@ for pset_key in plane_polysets.keys():
       loop = island.boundaryLoop()
       print(loop)
     #print(polyset_for_plane.polys)
-assert(False)
 
 
 
@@ -64,4 +63,5 @@ assert(False)
 #print(len(edges))
 
 joined = submesh.coplanarJoined()
+joined.writeWavefrontObj("joined.obj")
 print(joined)

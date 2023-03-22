@@ -339,7 +339,7 @@ poly::poly(vertex_ptr_t ia, vertex_ptr_t ib, vertex_ptr_t ic, vertex_ptr_t id)
 poly::poly(const std::vector<vertex_ptr_t>& vertices)
     : mAnnotationSet(0) {
 
-  OrkAssert(vertices.size()<=5);
+  //OrkAssert(vertices.size()<=5);
   OrkAssert(vertices.size()>=3);
 
   for( int i=0; i<vertices.size(); i++ ){
