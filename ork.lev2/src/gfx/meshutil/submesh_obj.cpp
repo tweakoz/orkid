@@ -65,6 +65,8 @@ void submeshWriteObj(const submesh& inpsubmesh, const file::Path& BasePath) {
   objmesh OutMesh;
   OutMesh.name = "submesh";
 
+  std::unordered_set<int> already_written;
+
   orkvector<int> triangles;
   orkvector<int> quads;
   inpsubmesh.FindNSidedPolys(triangles, 3);
@@ -72,6 +74,7 @@ void submeshWriteObj(const submesh& inpsubmesh, const file::Path& BasePath) {
   for (int i = 0; i < triangles.size(); i++) {
     objpoly outpoly;
     int igti          = triangles[i];
+    already_written.insert(igti);
     const poly& intri = inpsubmesh.RefPoly(igti);
     for (int iv = 0; iv < 3; iv++) {
       int idx = intri.GetVertexID(iv);
@@ -82,6 +85,7 @@ void submeshWriteObj(const submesh& inpsubmesh, const file::Path& BasePath) {
   for (int i = 0; i < quads.size(); i++) {
     objpoly outpoly;
     int igti          = quads[i];
+    already_written.insert(igti);
     const poly& intri = inpsubmesh.RefPoly(igti);
     for (int iv = 0; iv < 4; iv++) {
       int idx = intri.GetVertexID(iv);
@@ -89,6 +93,20 @@ void submeshWriteObj(const submesh& inpsubmesh, const file::Path& BasePath) {
     }
     OutMesh.mpolys.push_back(outpoly);
   }
+  int ipoly = 0;
+  for( auto p : inpsubmesh._orderedPolys ){
+    auto it_a = already_written.find(ipoly);
+    if(it_a==already_written.end()){
+      objpoly outpoly;
+      for ( auto v : p->_vertices ) {
+        int idx = v->_poolindex;
+        outpoly.mvtxindices.push_back(idx);
+      }
+      OutMesh.mpolys.push_back(outpoly);
+    }
+    ipoly++;
+  }
+
   ObjMeshPool.push_back(OutMesh);
   ObjMaterialPool[OutMesh.matname] = OutMaterial;
   //////////////////////////////////////////////////////////////////////////////
