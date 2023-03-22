@@ -73,7 +73,7 @@ struct PointsPrimitive {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-using points_v12c4_ptr_t = std::shared_ptr<PointsPrimitive<SVtxV12C4>>;
-using points_v12t8_ptr_t = std::shared_ptr<PointsPrimitive<SVtxV12T8>>;
+using points_v12c4_ptr_t = std::shared_ptr<PointsPrimitive<VtxV12C4>>;
+using points_v12t8_ptr_t = std::shared_ptr<PointsPrimitive<VtxV12T8>>;
 
 } // namespace ork::lev2::primitives

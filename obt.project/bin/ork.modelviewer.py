@@ -29,6 +29,7 @@ parser.add_argument("-f", '--forceregen', action="store_true", help='force asset
 parser.add_argument('--forwardpbr', action="store_true", help='use forward pbr renderer' )
 parser.add_argument("-m", "--model", type=str, required=False, default="data://tests/pbr1/pbr1", help='asset to load')
 parser.add_argument("-i", "--lightintensity", type=float, default=1.0, help='light intensity')
+parser.add_argument("-s", "--specularintensity", type=float, default=1.0, help='specular intensity')
 parser.add_argument("-d", "--camdist", type=float, default=0.0, help='camera distance')
 parser.add_argument("-e", "--envmap", type=str, default="", help='environment map')
 
@@ -39,6 +40,7 @@ vrmode = (args["vrmode"]==True)
 showgrid = args["showgrid"]
 modelpath = args["model"]
 lightintens = args["lightintensity"]
+specuintens = args["specularintensity"]
 camdist = args["camdist"]
 fwdpbr = args["forwardpbr"]
 envmap = args["envmap"]
@@ -69,7 +71,7 @@ class SceneGraphApp(object):
     params_dict = {
       "SkyboxIntensity": float(lightintens),
       "DiffuseIntensity": lightintens*float(1),
-      "SpecularIntensity": lightintens*float(1),
+      "SpecularIntensity": specuintens,
       "depthFogDistance": float(10000),
     }
 

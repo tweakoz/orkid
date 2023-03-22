@@ -119,13 +119,13 @@ void pyinit_primitives(py::module& module_lev2) {
   type_codec->registerStdCodec<primitives::frustum_ptr_t>(frusprim_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto pointsprim_type = //
-      py::class_<primitives::PointsPrimitive<SVtxV12C4>, primitives::points_v12c4_ptr_t>(primitives, "PointsPrimitiveV12C4")
+      py::class_<primitives::PointsPrimitive<VtxV12C4>, primitives::points_v12c4_ptr_t>(primitives, "PointsPrimitiveV12C4")
           .def("create", [](int numpoints){
-            return std::make_shared<primitives::PointsPrimitive<SVtxV12C4>>(numpoints);
+            return std::make_shared<primitives::PointsPrimitive<VtxV12C4>>(numpoints);
           })
-          .def("lock", [](primitives::points_v12c4_ptr_t prim, ctx_t& context) -> py::array_t<SVtxV12C4> {
+          .def("lock", [](primitives::points_v12c4_ptr_t prim, ctx_t& context) -> py::array_t<VtxV12C4> {
             auto buffer = prim->lock(context.get());
-            return py::array_t<SVtxV12C4>(prim->_numpoints,buffer,py::none());
+            return py::array_t<VtxV12C4>(prim->_numpoints,buffer,py::none());
           })
           .def("unlock", [](primitives::points_v12c4_ptr_t prim, ctx_t& context){
             return prim->unlock(context.get());

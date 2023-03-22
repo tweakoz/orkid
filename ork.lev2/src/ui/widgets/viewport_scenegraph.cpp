@@ -35,6 +35,12 @@ void SceneGraphViewport::_doGpuInit(lev2::Context* context) {
   _rtgroup->_name = FormatString("ui::SceneGraphViewport<%p>", (void*) this);
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
+void SceneGraphViewport::forkDB(){
+
+  _override_acqdbuf = std::make_shared<lev2::AcquiredRenderDrawBuffer>();
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -48,8 +54,18 @@ void SceneGraphViewport::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
     ////////////////////////////////////////////////////
 
     auto acqbuf = drwev->_acqdbuf;
-    auto DB = acqbuf->_DB;
-    auto rcfd = acqbuf->_RCFD;
+
+    if(_override_acqdbuf){
+      auto DB = _scenegraph->_dbufcontext_SG->acquireForReadLocked();
+      auto RCFD = drwev->_acqdbuf->_RCFD;
+      _override_acqdbuf->_RCFD = RCFD;
+      _override_acqdbuf->_DB = DB;
+      acqbuf = _override_acqdbuf;
+      OrkAssert(false);
+    }
+    else{
+      OrkAssert(false);
+    }
 
     auto cimpl = _scenegraph->_compositorImpl;
     cimpl->_cameraName = _cameraname;
@@ -69,6 +85,11 @@ void SceneGraphViewport::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
 
     comptek->_outputNode = orig_onode;
 
+    ////////////////////////////////////////////////////
+    if(_override_acqdbuf){
+      _scenegraph->_dbufcontext_SG->releaseFromReadLocked(_override_acqdbuf->_DB);
+      _override_acqdbuf->_DB = nullptr;
+    }
     ////////////////////////////////////////////////////
 
   }

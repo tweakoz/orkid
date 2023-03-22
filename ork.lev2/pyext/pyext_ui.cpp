@@ -340,6 +340,12 @@ void pyinit_ui(py::module& module_lev2) {
                 return rval;
               })
           //////////////////////////////////
+          .def(
+              "forkDB",
+              [](uisgviewport_ptr_t sgview) { //
+                sgview->forkDB();
+              })
+          //////////////////////////////////
           .def_property(
               "scenegraph",
               [](uisgviewport_ptr_t sgview) -> lev2::scenegraph::scene_ptr_t { //

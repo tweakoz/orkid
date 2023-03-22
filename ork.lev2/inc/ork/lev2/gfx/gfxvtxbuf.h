@@ -271,16 +271,16 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-struct SVtxV12 {
+struct VtxV12 {
   F32 x, y, z; // 12
 
-  SVtxV12()
+  VtxV12()
       : x(0.0f)
       , y(0.0f)
       , z(0.0f) {
   }
 
-  SVtxV12(F32 X, F32 Y, F32 Z)
+  VtxV12(F32 X, F32 Y, F32 Z)
       : x(X)
       , y(Y)
       , z(Z) {
@@ -298,39 +298,29 @@ struct SVtxV12 {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-struct SVtxV12T8 {
-  F32 x, y, z; // 12
-  F32 u, v;    // 20
+struct _VtxV12T8 {
+  float x, y, z;
+  float u,v ;
+};
 
-  SVtxV12T8()
-      : x(0.0f)
-      , y(0.0f)
-      , z(0.0f)
-      , u(0.0f)
-      , v(0.0f) {
-  }
+struct VtxV12T8 {
+  fvec3 pos; // 12
+  fvec2 uv0; // 20
 
-  SVtxV12T8(F32 X, F32 Y, F32 Z)
-      : x(X)
-      , y(Y)
-      , z(Z)
-      , u(0.0f)
-      , v(0.0f) {
+  VtxV12T8(F32 X, F32 Y, F32 Z)
+      : pos(X,Y,Z){
   }
-  SVtxV12T8(F32 X, F32 Y, F32 Z, F32 U, F32 V)
-      : x(X)
-      , y(Y)
-      , z(Z)
-      , u(U)
-      , v(V) {
+  VtxV12T8(F32 X, F32 Y, F32 Z, F32 U, F32 V)
+      : pos(X,Y,Z)
+      , uv0(U,V) {
   }
 
   void EndianSwap() {
-    swapbytes_dynamic(x);
-    swapbytes_dynamic(y);
-    swapbytes_dynamic(z);
-    swapbytes_dynamic(u);
-    swapbytes_dynamic(v);
+    swapbytes_dynamic(pos.x);
+    swapbytes_dynamic(pos.y);
+    swapbytes_dynamic(pos.z);
+    swapbytes_dynamic(uv0.x);
+    swapbytes_dynamic(uv0.y);
   }
 
   constexpr static EVtxStreamFormat meFormat = EVtxStreamFormat::V12T8;
@@ -339,29 +329,29 @@ struct SVtxV12T8 {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-struct _SVtxV12C4 {
+struct _VtxV12C4 {
   float x, y, z; 
   uint32_t color;   
 };
 
-struct SVtxV12C4 {
+struct VtxV12C4 {
   F32 x, y, z; // 12
   U32 color;   // 20
 
-  SVtxV12C4()
+  VtxV12C4()
       : x(0.0f)
       , y(0.0f)
       , z(0.0f)
       , color(0xffffffff) {
   }
 
-  SVtxV12C4(F32 X, F32 Y, F32 Z)
+  VtxV12C4(F32 X, F32 Y, F32 Z)
       : x(X)
       , y(Y)
       , z(Z)
       , color(0xffffffff) {
   }
-  SVtxV12C4(F32 X, F32 Y, F32 Z, U32 c)
+  VtxV12C4(F32 X, F32 Y, F32 Z, U32 c)
       : x(X)
       , y(Y)
       , z(Z)

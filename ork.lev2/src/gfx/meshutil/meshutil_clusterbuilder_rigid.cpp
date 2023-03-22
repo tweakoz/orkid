@@ -73,17 +73,17 @@ void XgmRigidClusterBuilder::buildVertexBuffer(lev2::Context& context, lev2::EVt
   switch (format) {
     ////////////////////////////////////////////////////////////////////////////
     case lev2::EVtxStreamFormat::V12: {
-      _vertexBuffer = buildTypedVertexBuffer<lev2::SVtxV12>(context, _submesh, [](const meshutil::vertex& inpvtx) {
-        return lev2::SVtxV12( inpvtx.mPos.x, inpvtx.mPos.y, inpvtx.mPos.z );
+      _vertexBuffer = buildTypedVertexBuffer<lev2::VtxV12>(context, _submesh, [](const meshutil::vertex& inpvtx) {
+        return lev2::VtxV12( inpvtx.mPos.x, inpvtx.mPos.y, inpvtx.mPos.z );
       });
       break;
     }
     ////////////////////////////////////////////////////////////////////////////
     case lev2::EVtxStreamFormat::V12T8: {
-      _vertexBuffer = buildTypedVertexBuffer<lev2::SVtxV12T8>(context, _submesh, [](const meshutil::vertex& inpvtx) {
+      _vertexBuffer = buildTypedVertexBuffer<lev2::VtxV12T8>(context, _submesh, [](const meshutil::vertex& inpvtx) {
         const auto& POS = inpvtx.mPos;
         const auto& UV0 = inpvtx.mUV[0].mMapTexCoord;
-        return lev2::SVtxV12T8( POS.x, POS.y, POS.z, 
+        return lev2::VtxV12T8( POS.x, POS.y, POS.z, 
                                 UV0.x, UV0.y );
       });
       break;

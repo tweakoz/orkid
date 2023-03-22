@@ -18,7 +18,7 @@ void pyinit_scenegraph(py::module& module_lev2) {
   auto sgmodule   = module_lev2.def_submodule("scenegraph", "SceneGraph operations");
   auto type_codec = python::TypeCodec::instance();
   /////////////////////////////////////////////////////////////////////////////////
-  auto synchro_type =                                   //
+  auto synchro_type = //
       py::class_<Synchro, synchro_ptr_t>(sgmodule, "Synchro");
   type_codec->registerStdCodec<synchro_ptr_t>(synchro_type);
 
@@ -26,24 +26,29 @@ void pyinit_scenegraph(py::module& module_lev2) {
   auto node_type =                                   //
       py::class_<Node, node_ptr_t>(sgmodule, "Node") //
           .def_property(
-              "worldTransform",                     //
+              "worldTransform",                       //
               [](node_ptr_t node) -> decompxf_ptr_t { //
                 return node->_dqxfdata._worldTransform;
               },
               [](node_ptr_t node, decompxf_ptr_t mtx) { //
                 node->_dqxfdata._worldTransform = mtx;
               })
+          .def_property_readonly(
+              "name",
+              [](node_ptr_t node) -> std::string { //
+                return node->_name;
+              })
           .def_property(
-              "modcolor",                     //
+              "modcolor",                    //
               [](node_ptr_t node) -> fvec4 { //
                 return node->_dqxfdata._modcolor;
               },
               [](node_ptr_t node, fvec4 color) { //
-                node->_dqxfdata._modcolor = color;
+                node->_dqxfdata._modcolor     = color;
                 node->_dqxfdata._use_modcolor = true;
               })
           .def_property(
-              "enabled",                     //
+              "enabled",                    //
               [](node_ptr_t node) -> bool { //
                 return node->_enabled;
               },
@@ -60,12 +65,16 @@ void pyinit_scenegraph(py::module& module_lev2) {
   // auto ibufproxy_type =
   //  py::class_<InstanceBufferProxy, ibufproxy_ptr_t>(sgmodule, "InstanceBufferProxy",))
   /////////////////////////////////////////////////////////////////////////////////
-  auto drawablenode_type =                                                         //
+  auto drawablenode_type =                                                          //
       py::class_<DrawableNode, Node, drawable_node_ptr_t>(sgmodule, "DrawableNode") //
           .def_property(
               "sortkey",
-              [](drawable_node_ptr_t node) -> uint32_t { return node->_drawable->_sortkey; },
-              [](drawable_node_ptr_t node, uint32_t key) { node->_drawable->_sortkey = key; })
+              [](drawable_node_ptr_t node) -> uint32_t { //
+                return node->_drawable->_sortkey;
+              },
+              [](drawable_node_ptr_t node, uint32_t key) { //
+                node->_drawable->_sortkey = key;
+              })
           .def_property_readonly(
               "instanceData",
               [](drawable_node_ptr_t drwnode) -> instanceddrawinstancedata_ptr_t {
@@ -80,7 +89,7 @@ void pyinit_scenegraph(py::module& module_lev2) {
                 return rval;
               })
           .def(
-              "setInstanceMatrix",                                            //
+              "setInstanceMatrix",                                             //
               [](drawable_node_ptr_t node, int instance, fmtx4_ptr_t matrix) { //
                 auto drw     = node->_drawable;
                 auto instdrw = std::dynamic_pointer_cast<InstancedModelDrawable>(drw);
@@ -93,7 +102,7 @@ void pyinit_scenegraph(py::module& module_lev2) {
                 return node->_userdata;
               })
           .def(
-              "setInstanceColor",                                            //
+              "setInstanceColor",                                             //
               [](drawable_node_ptr_t node, int instance, fvec4_ptr_t color) { //
                 auto drw     = node->_drawable;
                 auto instdrw = std::dynamic_pointer_cast<InstancedModelDrawable>(drw);
@@ -122,14 +131,14 @@ void pyinit_scenegraph(py::module& module_lev2) {
   /////////////////////////////////////////////////////////////////////////////////
   auto layer_type = //
       py::class_<Layer, layer_ptr_t>(sgmodule, "Layer")
-        .def_property(
-            "sortkey",
-            [](layer_ptr_t layer) -> uint32_t { //
-              return layer->_sortkey;
-            },
-            [](layer_ptr_t layer, uint32_t sortkey) { //
-              layer->_sortkey = sortkey;
-            })
+          .def_property(
+              "sortkey",
+              [](layer_ptr_t layer) -> uint32_t { //
+                return layer->_sortkey;
+              },
+              [](layer_ptr_t layer, uint32_t sortkey) { //
+                layer->_sortkey = sortkey;
+              })
           .def(
               "createDrawableNode",
               [](layer_ptr_t layer, //
@@ -142,10 +151,10 @@ void pyinit_scenegraph(py::module& module_lev2) {
               [](layer_ptr_t layer, //
                  std::string named,
                  griddrawabledataptr_t data) -> node_ptr_t { //
-                if(data->_colortexpath == "")
+                if (data->_colortexpath == "")
                   data->_colortexpath = "lev2://textures/gridcell_blue.png";
                 auto drawable = data->createDrawable();
-                printf( "D\n");
+                printf("D\n");
                 return layer->createDrawableNode(named, drawable);
               })
           .def(
@@ -183,22 +192,22 @@ void pyinit_scenegraph(py::module& module_lev2) {
           .def(py::init<>())
           .def(py::init<varmap::varmap_ptr_t>())
           .def_property_readonly(
-              "compositordata",                                      //
+              "compositordata",                            //
               [](scene_ptr_t SG) -> compositordata_ptr_t { //
                 return SG->_compositorData;
               })
           .def_property_readonly(
-              "compositorimpl",                                      //
+              "compositorimpl",                            //
               [](scene_ptr_t SG) -> compositorimpl_ptr_t { //
                 return SG->_compositorImpl;
               })
           .def_property_readonly(
-              "compositoroutputnode",                                //
+              "compositoroutputnode",                         //
               [](scene_ptr_t SG) -> compositoroutnode_ptr_t { //
                 return SG->_outputNode;
               })
           .def_property_readonly(
-              "compositorrendernode",                                //
+              "compositorrendernode",                            //
               [](scene_ptr_t SG) -> compositorrendernode_ptr_t { //
                 return SG->_renderNode;
               })
@@ -230,13 +239,13 @@ void pyinit_scenegraph(py::module& module_lev2) {
                 return SG->pickWithRay(ray);
               })
           .def(
-              "enableSynchro",                                      //
+              "enableSynchro",                      //
               [](scene_ptr_t SG) -> synchro_ptr_t { //
                 SG->_synchro = std::make_shared<Synchro>();
                 return SG->_synchro;
               })
           .def_property(
-              "scenetime",                     //
+              "scenetime",                  //
               [](scene_ptr_t SG) -> float { //
                 return SG->_currentTime;
               },

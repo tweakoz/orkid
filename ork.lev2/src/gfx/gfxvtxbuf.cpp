@@ -88,7 +88,7 @@ vtxbufferbase_ptr_t VertexBufferBase::CreateVertexBuffer(EVtxStreamFormat eforma
 
   switch (eformat) {
     case EVtxStreamFormat::V12:
-      pvb = _createvb<SVtxV12>(inumverts, bstatic);
+      pvb = _createvb<VtxV12>(inumverts, bstatic);
       break;
     case EVtxStreamFormat::V12C4T16:
       pvb = _createvb<SVtxV12C4T16>(inumverts, bstatic);

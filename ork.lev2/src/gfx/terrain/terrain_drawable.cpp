@@ -34,7 +34,7 @@ using namespace ork::lev2;
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
-using vertex_type = SVtxV12;
+using vertex_type = VtxV12;
 
 enum PatchType {
   PT_A = 0,
