@@ -47,6 +47,8 @@ py::object PyCodecImpl::encode(const varval_t& val) const {
       return py::float_(as_double.value());
     } else if (auto as_int = val.tryAs<int>()) {
       return py::int_(as_int.value());
+    } else if (auto as_uint64_t = val.tryAs<uint64_t>()) {
+      return py::int_(as_uint64_t.value());
     } else if (auto as_str = val.tryAs<std::string>()) {
       return py::str(as_str.value());
     } else {

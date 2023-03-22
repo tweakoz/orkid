@@ -37,12 +37,7 @@ void pyinit_meshutil_submesh(py::module& module_meshutil) {
             return submesh->_vtxpool;
           })
           .def_property_readonly("as_polyset", [](submesh_ptr_t submesh) -> polyset_ptr_t {            
-            polyset_ptr_t rval = std::make_shared<PolySet>();
-              for( auto item : submesh->_polymap ){
-                auto p = item.second;
-                rval->_polys.insert(p);
-              }
-              return rval;
+              return submesh->asPolyset();
           })
           .def_property_readonly("polys", [](submesh_ptr_t submesh) -> py::list {            
               py::list pyl;
@@ -219,11 +214,6 @@ void pyinit_meshutil_submesh(py::module& module_meshutil) {
                 return submesh->addQuad(p0, p1, p2, p3, c);
               })
           .def(
-              "mergeVertex",
-              [](submesh_ptr_t submesh, vertex_constptr_t vin) ->  vertex_ptr_t{
-                return submesh->mergeVertex(*vin);
-              })
-          .def(
               "makeVertex",
               [](submesh_ptr_t submesh, py::kwargs kwargs) ->  vertex_ptr_t{
                 auto vin = std::make_shared<vertex>();
@@ -243,6 +233,21 @@ void pyinit_meshutil_submesh(py::module& module_meshutil) {
                   }
                 }
                 return submesh->mergeVertex(*vin);
+              })
+          .def(
+              "mergeVertex",
+              [](submesh_ptr_t submesh, vertex_constptr_t vin) ->  vertex_ptr_t{
+                return submesh->mergeVertex(*vin);
+              })
+          .def(
+              "mergePoly",
+              [](submesh_ptr_t submesh, poly_ptr_t pin) ->  poly_ptr_t{
+                return submesh->mergePoly(*pin);
+              })
+          .def(
+              "mergePolySet",
+              [](submesh_ptr_t submesh, polyset_ptr_t psetin) {
+                submesh->mergePolySet(*psetin);
               })
           .def(
               "makeTriangle",
@@ -295,6 +300,29 @@ void pyinit_meshutil_submesh(py::module& module_meshutil) {
   /////////////////////////////////////////////////////////////////////////////////
   auto polyset_type = py::class_<PolySet, polyset_ptr_t>(module_meshutil, "PolySet")
           .def(py::init<>())
+          .def_property_readonly("numpolys", [](polyset_ptr_t pset) -> int {            
+              return (int) pset->_polys.size();
+          })
+          .def_property_readonly("polys", [](polyset_ptr_t pset) -> py::list {            
+              py::list pyl;
+              for( auto p : pset->_polys ){
+                pyl.append(p);
+              }
+              return pyl;
+          })
+          .def(
+              "splitByPlane",
+              [type_codec](polyset_ptr_t pset) -> py::dict {
+                py::dict rval;
+                auto polys_by_plane = pset->splitByPlane();
+                for( auto item : polys_by_plane ){
+                  uint64_t key = item.first;
+                  polyset_ptr_t val = item.second;
+                  rval[type_codec->encode(key)] = type_codec->encode(val);
+                }
+                OrkAssert(rval.size()>0);
+                return rval;
+              })
           .def("splitByIsland",[](polyset_ptr_t pset) -> py::list {
             py::list pyl;
             auto islands = pset->splitByIsland();
@@ -307,6 +335,14 @@ void pyinit_meshutil_submesh(py::module& module_meshutil) {
   /////////////////////////////////////////////////////////////////////////////////
   auto island_type = py::class_<Island, PolySet, island_ptr_t>(module_meshutil, "Island")
           .def(py::init<>())
+          .def("boundaryEdges",[](island_ptr_t island) -> py::list {
+            py::list pyl;
+            auto edges = island->boundaryEdges();
+            for( auto edge : edges ){
+              pyl.append(edge);
+            }
+            return pyl;
+          })
           .def("boundaryLoop",[](island_ptr_t island) -> py::list {
             py::list pyl;
             auto edges = island->boundaryLoop();

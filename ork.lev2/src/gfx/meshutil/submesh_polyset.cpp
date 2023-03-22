@@ -50,7 +50,56 @@ std::vector<island_ptr_t> PolySet::splitByIsland() const{
 
 ///////////////////////////////////////////////////////////////////////////////
 
-edge_vect_t Island::boundaryLoop() const {
+std::unordered_map<uint64_t,polyset_ptr_t> PolySet::splitByPlane() const {
+
+  OrkAssert(_polys.size()>0);
+  std::unordered_map<uint64_t,polyset_ptr_t> polyset_by_plane;
+
+  for (auto inp_poly : _polys ) {
+
+    auto plane = inp_poly->computePlane();
+
+    //////////////////////////////////////////////////////////
+    // quantize normals
+    //  2^28 possible encodings more or less equally distributed (octahedral encoding)
+    //  -> each encoding covers 4.682e-8 steradians (12.57 steradians / 2^28)
+    // TODO: make an argument ?
+    //////////////////////////////////////////////////////////
+
+    fvec2 nenc = plane.n.normalOctahedronEncoded();
+    double normal_quantization = 16383.0;
+    uint64_t ux = uint64_t(double(nenc.x)*normal_quantization);        // 14 bits
+    uint64_t uy = uint64_t(double(nenc.y)*normal_quantization);        // 14 bits  (total of 2^28 possible normals ~= )
+
+    //////////////////////////////////////////////////////////
+    // quantize plane distance
+    //   (64km [-32k..+32k] range with .25 millimeter precision)
+    // TODO: make an argument ?
+    //////////////////////////////////////////////////////////
+
+    double distance_quantization = 4096.0;
+    uint64_t ud = uint64_t( (plane.d+32767.0)*distance_quantization ); //  16+12 bits 
+    uint64_t hash = ud | (ux<<32) | (uy<<48);
+
+    auto it = polyset_by_plane.find(hash);
+    polyset_ptr_t dest_set;
+    if(it!=polyset_by_plane.end()){
+      dest_set = it->second;
+    }
+    else{
+      dest_set = std::make_shared<PolySet>();
+      polyset_by_plane[hash] = dest_set;
+    }
+    dest_set->_polys.insert(inp_poly);
+
+  }
+  OrkAssert(polyset_by_plane.size()>0);
+  return polyset_by_plane;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+edge_vect_t Island::boundaryEdges() const {
 
   //////////////////////////////////////////
   // grab poly indices present in island
@@ -86,7 +135,63 @@ edge_vect_t Island::boundaryLoop() const {
         }
       }
       if(inumcon_in_island==1){
-        //printf("poly<%d> edge<%p> inumcon_in_island<%d>\n", poly_index, inumcon_in_island );
+        int va = e->_vertexA->_poolindex;
+        int vb = e->_vertexB->_poolindex;
+        printf("poly<%d> edge[%d->%d] inumcon_in_island<%d>\n", poly_index, va,vb,inumcon_in_island );
+        loose_edges.insert(e);
+      }
+    } // for(auto e : p->_edges) {
+  } // for( auto p : _polys ){
+
+  edge_vect_t rval;
+  for (auto edge : loose_edges) {
+    rval.push_back(edge);
+  }
+  //////////////////////////////////////////
+  return rval;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+edge_vect_t Island::boundaryLoop() const {
+
+  //////////////////////////////////////////
+  // grab poly indices present in island
+  //////////////////////////////////////////
+  std::unordered_set<int> polyidcs_in_island;
+  for( auto p : _polys ){
+    polyidcs_in_island.insert(p->_submeshIndex);
+  }
+  //////////////////////////////////////////
+  // 
+  //////////////////////////////////////////
+
+  std::unordered_set<edge_ptr_t> loose_edges;
+  for( auto p : _polys ){
+    size_t num_edges = p->_edges.size();
+    OrkAssert(num_edges!=2);
+    int poly_index = p->_submeshIndex;
+
+    // find num connections within island
+    for(auto e : p->_edges) {
+      int inumcon_in_island = 0;
+      for( int con : e->_connectedPolys ){
+        if(con!=poly_index){
+          ///////////////////////////////
+          // is connected poly in island?
+          ///////////////////////////////
+          auto it_in_island = polyidcs_in_island.find(con);
+          if(it_in_island!=polyidcs_in_island.end()){
+            inumcon_in_island++;
+          }
+          else{
+          }
+        }
+      }
+      int va = e->_vertexA->_poolindex;
+      int vb = e->_vertexB->_poolindex;
+      printf("poly<%d> edge[%d->%d] inumcon_in_island<%d>\n", poly_index, va,vb,inumcon_in_island );
+      if(inumcon_in_island==1){
         loose_edges.insert(e);
       }
     } // for(auto e : p->_edges) {

@@ -367,6 +367,27 @@ void submesh::MergeSubMesh(const submesh& inp_mesh) {
   logchan_submesh->log("<<PROFILE>> <<submesh::MergeSubMesh %f seconds>>", ftime);
 }
 ///////////////////////////////////////////////////////////////////////////////
+void submesh::mergePolySet(const PolySet& pset) {
+  for( auto p : pset._polys ){
+    std::vector<vertex_ptr_t> merged_vertices;
+    for( auto v : p->_vertices ){
+      auto newv = mergeVertex(*v);
+      merged_vertices.push_back(newv);
+    }
+    mergePoly(poly(merged_vertices));
+  }
+  _aaBoxDirty = true;
+}
+///////////////////////////////////////////////////////////////////////////////
+polyset_ptr_t submesh::asPolyset() const{
+  polyset_ptr_t rval = std::make_shared<PolySet>();
+    for( auto item : _polymap ){
+      auto p = item.second;
+      rval->_polys.insert(p);
+    }
+    return rval;
+}
+///////////////////////////////////////////////////////////////////////////////
 poly_ptr_t submesh::mergeTriangle(vertex_ptr_t va, vertex_ptr_t vb, vertex_ptr_t vc){
   return mergePoly(poly(va,vb,vc));
 }

@@ -224,11 +224,13 @@ struct poly {
 
 struct PolySet {
   std::vector<island_ptr_t> splitByIsland() const;
+  std::unordered_map<uint64_t,polyset_ptr_t> splitByPlane() const;
   std::unordered_set<poly_ptr_t> _polys;
 };
 
 struct Island : public PolySet {
   edge_vect_t boundaryLoop() const;
+  edge_vect_t boundaryEdges() const;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -345,6 +347,8 @@ struct submesh {
   poly_ptr_t mergeQuad(vertex_ptr_t va, vertex_ptr_t vb, vertex_ptr_t vc, vertex_ptr_t vd);
   void MergeSubMesh(const submesh& oth);
 
+  void mergePolySet(const PolySet& pset);
+
   //////////////////////////////////////////////////////////////////////////////
 
   int GetNumPolys(int inumsides = 0) const;
@@ -435,6 +439,8 @@ struct submesh {
   iglmesh_ptr_t toIglMesh(int numsides) const;
   void igl_test();
 #endif
+  
+  polyset_ptr_t asPolyset() const;
   
   /////////////////////////////////////////////////////////////////////////
 
