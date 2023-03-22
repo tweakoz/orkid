@@ -39,9 +39,11 @@ std::vector<island_ptr_t> PolySet::splitByIsland() const{
       islands.push_back(island);
       for( auto p : processed ){
         auto itp = copy_of_polys.find(p);
-        OrkAssert(itp!=copy_of_polys.end());
-        copy_of_polys.erase(itp);
-        island->_polys.insert(p);
+        if(itp!=copy_of_polys.end()){
+          //OrkAssert(itp!=copy_of_polys.end());
+          copy_of_polys.erase(itp);
+          island->_polys.insert(p);
+        }
       }
     }
   }

@@ -22,7 +22,7 @@ from common.primitives import createGridData
 from common.scenegraph import createSceneGraph
 
 mesh = meshutil.Mesh()
-mesh.readFromWavefrontObj("data://tests/simple_obj/cone.obj")
+mesh.readFromWavefrontObj("data://tests/simple_obj/monkey.obj")
 submesh = mesh.submesh_list[0]
 print(submesh)
 triangulated = submesh.triangulated()
@@ -33,35 +33,6 @@ print(stripped)
 for i,v in enumerate(stripped.vertexpool.orderedVertices):
   print("vtx %02d: %s" % (i,v.position))
 
-stripped_as_polyset = stripped.as_polyset
-print(stripped_as_polyset)
-print(stripped_as_polyset.numpolys)
-
-plane_polysets =  stripped_as_polyset.splitByPlane()
-for pset_key in plane_polysets.keys():
-  polyset_for_plane = plane_polysets[pset_key]
-  #print(polyset_for_plane.numpolys)
-  if polyset_for_plane.numpolys==30:
-    psub = meshutil.SubMesh()
-    psub.mergePolySet(polyset_for_plane)
-    psub.writeWavefrontObj("island30.obj")
-    islands = psub.as_polyset.splitByIsland()
-    #print(islands)
-    for i, island in enumerate(islands):
-      island_sub = meshutil.SubMesh()
-      island_sub.mergePolySet(island)
-      island_sub.writeWavefrontObj("island%d.obj"%i)
-      edges = island.boundaryEdges()
-      print(edges)
-      loop = island.boundaryLoop()
-      print(loop)
-    #print(polyset_for_plane.polys)
-
-
-
-#print(island.polys)
-#print(len(edges))
-
-joined = submesh.coplanarJoined()
+joined = stripped.coplanarJoined()
 joined.writeWavefrontObj("joined.obj")
 print(joined)
