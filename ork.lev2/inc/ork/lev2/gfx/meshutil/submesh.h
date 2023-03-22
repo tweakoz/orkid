@@ -351,6 +351,7 @@ struct submesh {
 
   //////////////////////////////////////////////////////////////////////////////
 
+  int numVertices() const;
   int GetNumPolys(int inumsides = 0) const;
   void FindNSidedPolys(orkvector<int>& output, int inumsides) const;
   void GetConnectedPolys(const edge& ed, orkset<int>& output) const;

@@ -22,7 +22,8 @@ from common.primitives import createGridData
 from common.scenegraph import createSceneGraph
 
 mesh = meshutil.Mesh()
-mesh.readFromWavefrontObj("data://tests/simple_obj/monkey.obj")
+mesh.readFromWavefrontObj("data://tests/simple_obj/cone.obj")
+#mesh.readFromWavefrontObj("src://actors/rijid/ref/rijid.obj")
 submesh = mesh.submesh_list[0]
 print(submesh)
 triangulated = submesh.triangulated()

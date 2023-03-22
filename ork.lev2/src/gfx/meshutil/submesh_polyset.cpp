@@ -40,7 +40,7 @@ std::vector<island_ptr_t> PolySet::splitByIsland() const{
       for( auto p : processed ){
         auto itp = copy_of_polys.find(p);
         if(itp!=copy_of_polys.end()){
-          //OrkAssert(itp!=copy_of_polys.end());
+          OrkAssert(itp!=copy_of_polys.end());
           copy_of_polys.erase(itp);
           island->_polys.insert(p);
         }
@@ -69,7 +69,7 @@ std::unordered_map<uint64_t,polyset_ptr_t> PolySet::splitByPlane() const {
     //////////////////////////////////////////////////////////
 
     fvec2 nenc = plane.n.normalOctahedronEncoded();
-    double normal_quantization = 16383.0;
+    double normal_quantization = 4096.0;
     uint64_t ux = uint64_t(double(nenc.x)*normal_quantization);        // 14 bits
     uint64_t uy = uint64_t(double(nenc.y)*normal_quantization);        // 14 bits  (total of 2^28 possible normals ~= )
 
@@ -205,7 +205,17 @@ edge_vect_t Island::boundaryLoop() const {
     _linker.add_edge(edge);
   }
   _linker.link();
-  printf( "boundary edge_count<%zu> loop_count<%zu>\n", loose_edges.size(), _linker._edge_loops.size() );
+  if( _linker._edge_loops.size() ){
+    printf( "boundary edge_count<%zu> loop_count<%zu>\n", loose_edges.size(), _linker._edge_loops.size() );
+    for(auto loop : _linker._edge_loops ){
+      size_t num_edges = loop->_edges.size();
+      for( auto e : loop->_edges ){
+        int va = e->_vertexA->_poolindex;
+        int vb = e->_vertexB->_poolindex;
+        printf("edge[%d->%d]\n", va,vb );
+      }
+    }
+  }
 
   //////////////////////////////////////////
   edge_vect_t rval;

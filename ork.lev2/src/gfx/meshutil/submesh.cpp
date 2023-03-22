@@ -282,6 +282,10 @@ void submesh::FindNSidedPolys(orkvector<int>& output, int inumsides) const {
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
+int submesh::numVertices() const {
+  return _vtxpool->GetNumVertices();
+}
+///////////////////////////////////////////////////////////////////////////////
 int submesh::GetNumPolys(int inumsides) const {
   int iret = 0;
   if (0 == inumsides) {
