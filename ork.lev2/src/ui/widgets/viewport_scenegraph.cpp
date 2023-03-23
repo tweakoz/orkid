@@ -45,7 +45,7 @@ void SceneGraphViewport::forkDB(){
 ///////////////////////////////////////////////////////////////////////////////
 
 void SceneGraphViewport::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
-
+  
   if(_scenegraph){
 
     ////////////////////////////////////////////////////
@@ -61,10 +61,6 @@ void SceneGraphViewport::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
       _override_acqdbuf->_RCFD = RCFD;
       _override_acqdbuf->_DB = DB;
       acqbuf = _override_acqdbuf;
-      OrkAssert(false);
-    }
-    else{
-      OrkAssert(false);
     }
 
     auto cimpl = _scenegraph->_compositorImpl;

@@ -419,6 +419,9 @@ int OrkEzApp::mainThreadLoop() {
           /////////////////////////////
           /////////////////////////////
           if (not checkAppState(KAPPSTATEFLAG_JOINED)) {
+            if(_mainWindow->_onUpdateInternal){
+              _mainWindow->_onUpdateInternal(_update_data);
+            }
             if (_mainWindow->_onUpdate) {
               _mainWindow->_onUpdate(_update_data);
             } else if (_mainWindow->_onUpdateWithScene) {

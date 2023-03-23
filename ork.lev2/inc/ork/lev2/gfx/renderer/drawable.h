@@ -320,6 +320,7 @@ struct Drawable {
   const ork::Object* mOwner;
   var_t mDataA;
   var_t mDataB;
+  varmap::varmap_ptr_t _properties;
   fvec4 _modcolor;
   onrenderable_fn_t _onrenderable;
   bool mEnabled;

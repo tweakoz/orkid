@@ -99,6 +99,7 @@ public:
   ongpuinit_t _onGpuInit                    = nullptr;
   ongpuexit_t _onGpuExit                    = nullptr;
   onupdate_t _onUpdate                      = nullptr;
+  onupdate_t _onUpdateInternal              = nullptr;
   onupdateinit_t _onUpdateInit              = nullptr;
   onupdateexit_t _onUpdateExit              = nullptr;
   onupdatewithscene_t _onUpdateWithScene    = nullptr;

@@ -116,6 +116,12 @@ struct Layer {
   lightnode_ptr_t createLightNode(std::string named, light_ptr_t drawable);
   void removeLightNode(lightnode_ptr_t node);
 
+  template <typename T, typename... A> //
+  node_ptr_t makeDrawableNodeWithPrimitive(std::string named, A&&... prim_args) { //
+    auto drawable = T::makeDrawableAndPrimitive(std::forward<A>(prim_args)...); 
+    return this->createDrawableNode(named, drawable);
+  }
+
   //
   Scene* _scene = nullptr;
 

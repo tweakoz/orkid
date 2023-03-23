@@ -137,7 +137,8 @@ class UiSgQuadViewTestApp(object):
     self.layer2 = self.scenegraph2.createLayer("layer")
     self.grid_node2 = self.layer2.createGridNode("grid",self.grid_data)
     self.grid_node2.sortkey = 1
-    #self.mesh_node = submesh_prim.createNode("mesh",self.layer2,pipeline_mesh)
+    self.submesh_prim = submesh_prim
+    self.mesh_node = submesh_prim.createNode("mesh",self.layer2,pipeline_mesh)
     #self.cube_node2 = cube_prim.createNode("cube",self.layer2,pipeline_cube)
 
 

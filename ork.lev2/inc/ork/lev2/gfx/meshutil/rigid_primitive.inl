@@ -79,25 +79,45 @@ template <typename vtx_t> struct RigidPrimitive {
 
   //////////////////////////////////////////////////////////////////////////////
 
+  template <typename... A> //
+  static lev2::callback_drawable_ptr_t makeDrawableAndPrimitive(lev2::fxpipeline_ptr_t pipeline, A&&... prim_args) { //
+    auto prim = std::make_shared<RigidPrimitive>(std::forward<A>(prim_args)...);
+    auto drw = prim->createDrawable(pipeline);
+    drw->_properties["primitive"_crcu] = prim;
+    return drw;
+  }
+
+  //////////////////////////////////////////////////////////////////////////////
+
   inline lev2::scenegraph::drawable_node_ptr_t createNode(
       std::string named, //
       lev2::scenegraph::layer_ptr_t layer,
       lev2::fxpipeline_ptr_t pipeline) {
+    auto drw = createDrawable(pipeline);
+    return layer->createDrawableNode(named, drw);
+  }
 
-    OrkAssert(pipeline);
+  //////////////////////////////////////////////////////////////////////////////
+
+  inline lev2::callback_drawable_ptr_t createDrawable(
+      lev2::fxpipeline_ptr_t pipeline) {
+
+    OrkAssert(pipeline!=nullptr);
+    OrkAssert(pipeline->_technique!=nullptr);
 
     _pipeline = pipeline;
 
     auto drw = std::make_shared<lev2::CallbackDrawable>(nullptr);
     drw->SetRenderCallback([=](lev2::RenderContextInstData& RCID) { //
       auto context = RCID.context();
-      _pipeline->wrappedDrawCall(RCID, //
+      pipeline->wrappedDrawCall(RCID, //
                                  [this, context]() { //
                                   this->renderEML(context); //
                                 });
     });
-    return layer->createDrawableNode(named, drw);
+    return drw;
   }
+
 
   //////////////////////////////////////////////////////////////////////////////
 
