@@ -172,6 +172,13 @@ void pyinit_meshutil_component(py::module& module_meshutil) {
       }
       return pyl;
     })
+    .def_property_readonly("indices", [](poly_ptr_t p) -> py::list {            
+      py::list pyl;          
+      for( auto v : p->_vertices ){
+        pyl.append(v->_poolindex);
+      }
+      return pyl;
+    })
     .def("vertexIndex", [](poly_ptr_t p, int i) -> int {            
       return p->GetVertexID(i);
     })

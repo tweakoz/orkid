@@ -75,6 +75,8 @@ class SceneGraphApp(object):
     print(capsule.euler_number)
     print(capsule.volume)
 
+    trimesh.base.Trimesh
+
     capsule_vertices = []
     for item in capsule.vertices:
       capsule_vertices.append({

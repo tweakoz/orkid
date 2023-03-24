@@ -17,24 +17,20 @@ void pyinit_math(py::module& module_core) {
           .def_buffer([](fvec2& vec) -> pybind11::buffer_info {
             auto data = vec.asArray(); // Pointer to buffer
             return pybind11::buffer_info(
-                data,          // Pointer to buffer
-                sizeof(float), // Size of one scalar
+                data,                  // Pointer to buffer
+                sizeof(float),         // Size of one scalar
                 pybind11::format_descriptor<float>::format(),
-                1,                // Number of dimensions
-                {2},              // Buffer dimensions
-                {sizeof(float)}); // Strides (in bytes) for each index
+                1,                     // Number of dimensions
+                {2},                   // Buffer dimensions
+                {sizeof(float)});      // Strides (in bytes) for each index
           })
           //////////////////////////////////////////////////////////////////////////
           .def(py::init<>())
           .def(py::init<float, float>())
           .def_property(
-              "x",
-              [](const fvec2& vec) -> float { return vec.x; },
-              [](fvec2& vec, float val) { return vec.x = val; }) //
+              "x", [](const fvec2& vec) -> float { return vec.x; }, [](fvec2& vec, float val) { return vec.x = val; }) //
           .def_property(
-              "y",
-              [](const fvec2& vec) -> float { return vec.y; },
-              [](fvec2& vec, float val) { return vec.y = val; }) //
+              "y", [](const fvec2& vec) -> float { return vec.y; }, [](fvec2& vec, float val) { return vec.y = val; }) //
           .def("dot", &fvec2::dotWith)
           .def("perp", &fvec2::perpDotWith)
           .def("mag", &fvec2::magnitude)
@@ -66,12 +62,12 @@ void pyinit_math(py::module& module_core) {
           .def_buffer([](fvec3& vec) -> pybind11::buffer_info {
             auto data = vec.asArray(); // Pointer to buffer
             return pybind11::buffer_info(
-                data,          // Pointer to buffer
-                sizeof(float), // Size of one scalar
+                data,                  // Pointer to buffer
+                sizeof(float),         // Size of one scalar
                 pybind11::format_descriptor<float>::format(),
-                1,                // Number of dimensions
-                {3},              // Buffer dimensions
-                {sizeof(float)}); // Strides (in bytes) for each index
+                1,                     // Number of dimensions
+                {3},                   // Buffer dimensions
+                {sizeof(float)});      // Strides (in bytes) for each index
           })
           //////////////////////////////////////////////////////////////////////////
           .def(py::init<>())
@@ -82,7 +78,6 @@ void pyinit_math(py::module& module_core) {
               [](const fvec3& vec) -> float { return vec.x; },  //
               [](fvec3& vec, float val) { return vec.x = val; } //
               )
-
           .def_property(
               "y",
               [](const fvec3& vec) -> float { return vec.y; },  //
@@ -90,9 +85,18 @@ void pyinit_math(py::module& module_core) {
               )
           .def_property(
               "z",
-              [](const fvec3& vec) -> float { return vec.z; },   //
+              [](const fvec3& vec) -> float { return vec.z; },  //
               [](fvec3& vec, float val) { return vec.z = val; } //
               )
+          .def_property_readonly(
+              "as_list",
+              [](const fvec3& vec) -> py::list { //
+                py::list rval;
+                rval.append(vec.x);
+                rval.append(vec.y);
+                rval.append(vec.z);
+                return rval;
+              })
           .def("angle", &fvec3::angle)
           .def("orientedAngle", &fvec3::orientedAngle)
           .def("dot", &fvec3::dotWith)
@@ -138,12 +142,12 @@ void pyinit_math(py::module& module_core) {
           .def_buffer([](fvec4& vec) -> pybind11::buffer_info {
             auto data = vec.asArray(); // Pointer to buffer
             return pybind11::buffer_info(
-                data,          // Pointer to buffer
-                sizeof(float), // Size of one scalar
+                data,                  // Pointer to buffer
+                sizeof(float),         // Size of one scalar
                 pybind11::format_descriptor<float>::format(),
-                1,                // Number of dimensions
-                {4},              // Buffer dimensions
-                {sizeof(float)}); // Strides (in bytes) for each index
+                1,                     // Number of dimensions
+                {4},                   // Buffer dimensions
+                {sizeof(float)});      // Strides (in bytes) for each index
           })
           //////////////////////////////////////////////////////////////////////////
           .def(py::init<>())
@@ -207,12 +211,12 @@ void pyinit_math(py::module& module_core) {
           .def_buffer([](fquat& quat) -> pybind11::buffer_info {
             auto data = quat.asArray(); // Pointer to buffer
             return pybind11::buffer_info(
-                data,          // Pointer to buffer
-                sizeof(float), // Size of one scalar
+                data,                   // Pointer to buffer
+                sizeof(float),          // Size of one scalar
                 pybind11::format_descriptor<float>::format(),
-                1,                // Number of dimensions
-                {4},              // Buffer dimensions
-                {sizeof(float)}); // Strides (in bytes) for each index
+                1,                      // Number of dimensions
+                {4},                    // Buffer dimensions
+                {sizeof(float)});       // Strides (in bytes) for each index
           })
           //////////////////////////////////////////////////////////////////////////
           .def(py::init<>())
@@ -245,10 +249,10 @@ void pyinit_math(py::module& module_core) {
       py::class_<fmtx3>(module_core, "mtx3", pybind11::buffer_protocol())
           //////////////////////////////////////////////////////////////////////////
           .def_buffer([](fmtx3& mtx) -> pybind11::buffer_info {
-            auto data = mtx.asArray(); // Pointer to buffer
+            auto data = mtx.asArray();               // Pointer to buffer
             return pybind11::buffer_info(
-                data,          // Pointer to buffer
-                sizeof(float), // Size of one scalar
+                data,                                // Pointer to buffer
+                sizeof(float),                       // Size of one scalar
                 pybind11::format_descriptor<float>::format(),
                 2,                                   // Number of dimensions
                 {3, 3},                              // Buffer dimensions
@@ -275,10 +279,10 @@ void pyinit_math(py::module& module_core) {
       py::class_<fmtx4>(module_core, "mtx4", pybind11::buffer_protocol())
           //////////////////////////////////////////////////////////////////////////
           .def_buffer([](fmtx4& mtx) -> pybind11::buffer_info {
-            auto data = mtx.asArray(); // Pointer to buffer
+            auto data = mtx.asArray();               // Pointer to buffer
             return pybind11::buffer_info(
-                data,          // Pointer to buffer
-                sizeof(float), // Size of one scalar
+                data,                                // Pointer to buffer
+                sizeof(float),                       // Size of one scalar
                 pybind11::format_descriptor<float>::format(),
                 2,                                   // Number of dimensions
                 {4, 4},                              // Buffer dimensions
@@ -392,9 +396,7 @@ void pyinit_math(py::module& module_core) {
               })
           .def_static(
               "unproject",
-              [](fmtx4 rIMVP, const fvec3& ClipCoord, fvec3& rVObj) -> bool {
-                return fmtx4::unProject(rIMVP, ClipCoord, rVObj);
-              })
+              [](fmtx4 rIMVP, const fvec3& ClipCoord, fvec3& rVObj) -> bool { return fmtx4::unProject(rIMVP, ClipCoord, rVObj); })
           .def_static(
               "lookAt",
               [](const fvec3& eye, const fvec3& tgt, fvec3& up) -> fmtx4 {
@@ -444,12 +446,12 @@ void pyinit_math(py::module& module_core) {
           .def_buffer([](fplane3& plane) -> pybind11::buffer_info {
             auto data = &plane.n.x; // Pointer to buffer
             return pybind11::buffer_info(
-                data,          // Pointer to buffer
-                sizeof(float), // Size of one scalar
+                data,               // Pointer to buffer
+                sizeof(float),      // Size of one scalar
                 pybind11::format_descriptor<float>::format(),
-                1,                // Number of dimensions
-                {4},              // Buffer dimensions
-                {sizeof(float)}); // Strides (in bytes) for each index
+                1,                  // Number of dimensions
+                {4},                // Buffer dimensions
+                {sizeof(float)});   // Strides (in bytes) for each index
           })
           //////////////////////////////////////////////////////////////////////////
           .def(py::init<>())
