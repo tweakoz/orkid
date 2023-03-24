@@ -21,6 +21,11 @@ void submeshTriangulate(const submesh& inpmesh, submesh& outmesh) {
     int inumv = ply.GetNumSides();
 
     switch (inumv) {
+      case 0:
+      case 1:
+      case 2:
+        OrkAssert(false);
+        break;
       case 3: {
         auto v0 = ply._vertices[0];
         auto v1 = ply._vertices[1];
@@ -44,24 +49,18 @@ void submeshTriangulate(const submesh& inpmesh, submesh& outmesh) {
         outmesh.mergeTriangle(m2, m3, m0);
         break;
       }
-      case 5: {
-        auto v0 = ply._vertices[0];
-        auto v1 = ply._vertices[1];
-        auto v2 = ply._vertices[2];
-        auto v3 = ply._vertices[3];
-        auto v4 = ply._vertices[4];
-        auto m0 = outmesh._vtxpool->mergeVertex(*v0);
-        auto m1 = outmesh._vtxpool->mergeVertex(*v1);
-        auto m2 = outmesh._vtxpool->mergeVertex(*v2);
-        auto m3 = outmesh._vtxpool->mergeVertex(*v3);
-        auto m4 = outmesh._vtxpool->mergeVertex(*v4);
-        outmesh.mergeTriangle(m0, m1, m2);
-        outmesh.mergeTriangle(m2, m3, m0);
-        outmesh.mergeTriangle(m0, m3, m4);
+      default: {
+        auto c = ply.ComputeCenter();
+        auto mc = outmesh._vtxpool->mergeVertex(c);
+        for( int i=0; i<inumv; i++ ){
+          auto v0 = ply._vertices[i];
+          auto v1 = ply._vertices[(i+1)%inumv];
+          auto m0 = outmesh._vtxpool->mergeVertex(*v0);
+          auto m1 = outmesh._vtxpool->mergeVertex(*v1);
+          outmesh.mergeTriangle(mc, m0, m1);
+        }
         break;
       }
-      default:
-        OrkAssert(false);
     }
   }
 }
