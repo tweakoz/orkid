@@ -43,6 +43,18 @@ void pyinit_meshutil_component(py::module& module_meshutil) {
         else if (key == "color0") {
           v->mCol[0] = py::cast<fvec4>(item.second);
         }
+        else if (key == "uv0") {
+          v->mUV[0].mMapTexCoord = py::cast<fvec2>(item.second);
+        }
+        else if (key == "binormal0") {
+          v->mUV[0].mMapBiNormal = py::cast<fvec3>(item.second);
+        }
+        else if (key == "tangent0") {
+          v->mUV[0].mMapTangent = py::cast<fvec3>(item.second);
+        }
+        else if (key == "uvc0") {
+          v->mUV[0] = py::cast<uvmapcoord>(item.second);
+        }
         else{
           OrkAssert(false);
         }
@@ -84,14 +96,23 @@ void pyinit_meshutil_component(py::module& module_meshutil) {
   type_codec->registerStdCodec<vertex_ptr_t>(vertex_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto uvc_type = py::class_<uvmapcoord>(module_meshutil, "UvMapCoord")
-    .def_property_readonly("uv", [](const uvmapcoord& uvc) -> fvec2 {            
+    .def_property("uv", [](const uvmapcoord& uvc) -> fvec2 {            
       return uvc.mMapTexCoord;
+    },
+    [](uvmapcoord& uvc, fvec2 uv) {            
+      uvc.mMapTexCoord = uv;
     })
-    .def_property_readonly("binormal", [](const uvmapcoord& uvc) -> fvec3 {            
+    .def_property("binormal", [](const uvmapcoord& uvc) -> fvec3 {            
       return uvc.mMapBiNormal;
+    },
+    [](uvmapcoord& uvc, fvec3 bin) {            
+      uvc.mMapBiNormal = bin;
     })
-    .def_property_readonly("tangent", [](const uvmapcoord& uvc) -> fvec3 {            
+    .def_property("tangent", [](const uvmapcoord& uvc) -> fvec3 {            
       return uvc.mMapTangent;
+    },
+    [](uvmapcoord& uvc, fvec3 tan) {            
+      uvc.mMapTangent = tan;
     });
   type_codec->registerStdCodec<uvmapcoord>(uvc_type);
   /////////////////////////////////////////////////////////////////////////////////
