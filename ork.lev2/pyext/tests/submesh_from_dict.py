@@ -8,7 +8,7 @@ import ork.path
 from orkengine.core import *
 from orkengine.lev2 import *
 
-subm = meshutil.SubMesh.createFromDict({
+manual_submesh = meshutil.SubMesh.createFromDict({
     "vertices": [
         {
           "p": vec3(0, 0, 0),      # position
@@ -49,7 +49,7 @@ subm = meshutil.SubMesh.createFromDict({
     ]
 })
 
-print(subm)
-print(subm.vertices)
-print(subm.polys)
-print(subm.edges)
+print(manual_submesh)
+print(manual_submesh.vertices)
+print(manual_submesh.polys)
+print(manual_submesh.edges)
