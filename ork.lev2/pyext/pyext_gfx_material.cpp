@@ -387,6 +387,7 @@ void pyinit_gfx_material(py::module& module_lev2) {
                 return m->_shaderpath.c_str();
               },
               [](pbrmaterial_ptr_t m, std::string p)  { //
+                printf( "PBRMaterial<%p> shaderpath<%s>\n", (void*) m.get(), p.c_str() );
                 m->_shaderpath = p;
               });
   type_codec->registerStdCodec<pbrmaterial_ptr_t>(pbr_type);

@@ -742,6 +742,8 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
   auto fxi       = targ->FXI();
 
   auto loadreq = std::make_shared<asset::LoadRequest>();
+
+  printf( "PBRMaterial::gpuInit<%p> _shaderpath<%s>\n", this, _shaderpath.c_str() );
   loadreq->_asset_path = _shaderpath;
 
   _as_freestyle = std::make_shared<FreestyleMaterial>();

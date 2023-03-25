@@ -23,7 +23,7 @@ from common.scenegraph import createSceneGraph
 
 parser = argparse.ArgumentParser(description='scenegraph example')
 parser.add_argument('--vrmode', action="store_true", help='run in vr' )
-parser.add_argument('--showgrid', action="store_true", help='show grid' )
+parser.add_argument("-g", '--showgrid', action="store_true", help='show grid' )
 parser.add_argument('--showskeleton', action="store_true", help='show skeleton' )
 parser.add_argument("-f", '--forceregen', action="store_true", help='force asset regeneration' )
 parser.add_argument('--forwardpbr', action="store_true", help='use forward pbr renderer' )
@@ -32,6 +32,7 @@ parser.add_argument("-i", "--lightintensity", type=float, default=1.0, help='lig
 parser.add_argument("-s", "--specularintensity", type=float, default=1.0, help='specular intensity')
 parser.add_argument("-d", "--camdist", type=float, default=0.0, help='camera distance')
 parser.add_argument("-e", "--envmap", type=str, default="", help='environment map')
+parser.add_argument("-o", "--overrideshader", type=str, default="", help='override shader')
 
 ################################################################################
 
@@ -44,6 +45,7 @@ specuintens = args["specularintensity"]
 camdist = args["camdist"]
 fwdpbr = args["forwardpbr"]
 envmap = args["envmap"]
+oshader = args["overrideshader"]
 
 if args["forceregen"]:
   os.environ["ORKID_LEV2_FORCE_MODEL_REGEN"] = "1"
@@ -90,6 +92,48 @@ class SceneGraphApp(object):
 
     self.model = XgmModel(modelpath)
     self.sgnode = self.model.createNode("node",self.layer1)
+
+    ######################
+    # override shader ?
+    ######################
+
+    if oshader != "":
+      self.modelinst = self.sgnode.user.pyext_retain_modelinst
+      mesh = self.model.meshes[0]
+      orig_submesh = mesh.submeshes[0]
+
+
+      subinst = self.modelinst.submeshinsts[0]
+      mtl_cloned = orig_submesh.material.clone()
+      mtl_cloned.baseColor = vec4(1,1,1,1)
+      
+      mtl_cloned.metallicFactor = 0
+      mtl_cloned.roughnessFactor = 1
+
+      if oshader=="topo":
+        #meshutil_submesh = ???
+        #self.barysub_isect = meshutil_submesh.barycentricUVs()
+        #self.prim = meshutil.RigidPrimitive(self.barysub_isect,ctx)
+        mtl_cloned.metallicFactor = 1
+        mtl_cloned.roughnessFactor = 0
+        mtl_cloned.shaderpath = "orkshader://deferred_ovr_topo.glfx"
+      elif oshader=="mirror":
+        mtl_cloned.metallicFactor = 1
+        mtl_cloned.roughnessFactor = .01
+      elif oshader=="shinyplastic":
+        mtl_cloned.metallicFactor = 0
+        mtl_cloned.roughnessFactor = 0
+      elif oshader=="roughplastic":
+        mtl_cloned.metallicFactor = 0
+        mtl_cloned.roughnessFactor = 1
+      elif oshader=="roughmetal":
+        mtl_cloned.metallicFactor = 1
+        mtl_cloned.roughnessFactor = .25
+
+      mtl_cloned.gpuInit(ctx)
+      subinst.overrideMaterial(mtl_cloned)
+
+    ######################
 
     center = self.model.boundingCenter
     radius = self.model.boundingRadius*2.5

@@ -25,7 +25,6 @@ uniform_set ub_vtx {
   vec3 WCamLoc;
   float SpecularPower;
 }
-
 vertex_interface iface_rigid : ub_vtx {
   inputs {
     vec4 position : POSITION;

@@ -1,0 +1,102 @@
+///////////////////////////////////////////////////////////////
+fxconfig fxcfg_default {
+  glsl_version = "150";
+  import "skintools.i";
+  import "gbuftools.i";
+}
+///////////////////////////////////////////////////////////////
+uniform_set ub_vtx {
+  mat4 mvp;
+  mat4 m;
+
+  vec4 modcolor;
+  float time;
+
+  vec3 AmbientLight;
+  int NumDirectionalLights;
+  vec3 DirectionalLightDir[4];
+  vec3 DirectionalLightColor[4];
+  vec3 EmissiveColor;
+
+  vec3 WCamLoc;
+  float SpecularPower;
+}
+///////////////////////////////////////////////////////////////
+uniform_set ub_frg_deferred {
+  sampler2D ColorMap;
+  sampler2D NormalMap;
+  sampler2D MtlRufMap;
+	float MetallicFactor;
+	float RoughnessFactor;
+  mat4 mrot;
+	vec4 ModColor;
+	vec2 InvViewportSize; // inverse target size
+}
+///////////////////////////////////////////////////////////////
+vertex_interface iface_vwire : ub_vtx {
+  inputs {
+    vec4 position : POSITION;
+    vec3 normal : NORMAL;
+    vec4 vtxcolor : COLOR0;
+    vec2 uv0 : TEXCOORD0;
+    vec3 bary : BINORMAL;
+  }
+  outputs {
+    vec4 frg_clr;
+    vec2 frg_uv0;
+    vec4 frg_nrmd;
+    vec3 frg_pos;
+    vec3 frg_bary;
+  }
+}
+///////////////////////////////////////////////////////////////
+fragment_interface iface_fwire_deferred 
+  : ub_frg_deferred{
+  inputs {
+    vec4 frg_clr;
+    vec2 frg_uv0;
+    vec4 frg_nrmd;
+    vec3 frg_pos;
+    vec3 frg_bary;
+  }
+  outputs {
+		layout(location = 0) uvec4 out_gbuf;
+  }
+}
+///////////////////////////////////////////////////////////////
+vertex_shader vs_wnormal_wire : iface_vwire {
+  vec4 hpos  = mvp * position;
+  vec3 wnorm = normalize((m * vec4(normal,0)).xyz);
+  ///////////////////////////
+  frg_clr     = vec4(vec3(.5)+wnorm*0.5, 1.0);
+  frg_pos     = (m * position).xyz;
+  frg_uv0     = uv0;
+  frg_nrmd    = vec4(wnorm, -hpos.z/hpos.w);
+  frg_bary    = bary;
+  gl_Position = hpos;
+  ///////////////////////////
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_fnormal_wire_deferred
+  : iface_fwire_deferred
+  : lib_gbuf_encode {
+  vec3 X = dFdx(frg_pos);  
+  vec3 Y = dFdy(frg_pos);
+  vec3 normal=normalize(cross(X,Y)); 
+  vec3 bary = frg_bary.xyz;
+  float closest_edge = min(bary.x, min(bary.y, bary.z));
+  vec3 c = vec3(.5,.5,.5)+normal.xyz*0.5;
+  //c = c*pow(closest_edge,0.05);
+  float mtl = 0;
+  float ruf = 1;
+  out_gbuf = packGbuffer(c,normal,ruf,mtl,true);
+}
+///////////////////////////////////////////////////////////////
+technique GBU_CT_NM_RI_NI_MO {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_wnormal_wire;
+    fragment_shader = ps_fnormal_wire_deferred;
+    state_block     = default;
+  }
+}

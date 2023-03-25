@@ -178,7 +178,7 @@ void ModelDrawable::enqueueToRenderQueue(drawablebufitem_constptr_t item, lev2::
   auto do_submesh = [&](xgmsubmeshinst_ptr_t submeshinst) {
     auto submesh = submeshinst->_submesh;
 
-    auto material = submesh->_material;
+    auto material = submeshinst->material();
 
     int inumclus = submesh->_clusters.size();
 
@@ -319,13 +319,11 @@ void ModelRenderable::Render(const IRenderer* renderer) const {
   /////////////////////////////////////////////////////////////
   RenderContextInstData RCID;
   RenderContextInstModelData RCID_MD;
-  //RCID.SetMaterialInst(&minst->RefMaterialInst());
   auto RCFD = context->topRenderContextFrameData();
   RCID._RCFD = RCFD;
   RCID_MD.mMesh    = mesh;
   RCID_MD.mSubMesh = submesh;
   RCID_MD._cluster = this->_cluster;
-  //RCID.SetMaterialIndex(0);
   RCID.SetRenderer(renderer);
   RCID.setRenderable(this);
   RCID._pipeline_cache = _submeshinst->_fxpipelinecache;

@@ -89,11 +89,14 @@ XgmSubMeshInst::XgmSubMeshInst(const XgmSubMesh* submesh)
 }
 
 material_ptr_t XgmSubMeshInst::material() const {
-  if(_override_material) return _override_material;
+  if(_override_material) {
+    return _override_material;
+  }
   return _submesh->_material;
 }
 
 void XgmSubMeshInst::overrideMaterial(material_ptr_t m){
+  printf( "_override_material<%p> orig<%p>\n",(void*)  m.get(), (void*) _submesh->_material.get() );
   _override_material = m;
   _fxpipelinecache = m->pipelineCache();
   OrkAssert(_fxpipelinecache);
@@ -273,6 +276,7 @@ void XgmModel::RenderRigid(
   auto pipeline = fxcache->findPipeline(RCID);
   OrkAssert(pipeline);
 
+
   pTARG->debugPushGroup(
       FormatString("XgmModel::RenderRigid stereo1pass<%d> inummesh<%d> inumclusset<%d>", int(stereo1pass), inummesh, inumclusset));
 
@@ -356,9 +360,9 @@ void XgmModel::RenderSkinned(
 
       auto mtl = XgmClusSet.GetMaterial();
 
-      mtl->gpuUpdate(pTARG);
+      if (mtl != nullptr) {
 
-      if (0 != mtl) {
+        mtl->gpuUpdate(pTARG);
 
         auto fxcache = RCID._pipeline_cache;
         OrkAssert(fxcache);
