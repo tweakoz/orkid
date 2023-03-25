@@ -33,6 +33,7 @@ parser.add_argument("-s", "--specularintensity", type=float, default=1.0, help='
 parser.add_argument("-d", "--camdist", type=float, default=0.0, help='camera distance')
 parser.add_argument("-e", "--envmap", type=str, default="", help='environment map')
 parser.add_argument("-o", "--overrideshader", type=str, default="", help='override shader')
+parser.add_argument("-c", "--overridecolor", type=str, default="", help='override color (vec3)')
 
 ################################################################################
 
@@ -46,6 +47,7 @@ camdist = args["camdist"]
 fwdpbr = args["forwardpbr"]
 envmap = args["envmap"]
 oshader = args["overrideshader"]
+ocolor = args["overridecolor"]
 
 if args["forceregen"]:
   os.environ["ORKID_LEV2_FORCE_MODEL_REGEN"] = "1"
@@ -106,7 +108,12 @@ class SceneGraphApp(object):
       subinst = self.modelinst.submeshinsts[0]
       mtl_cloned = orig_submesh.material.clone()
       mtl_cloned.baseColor = vec4(1,1,1,1)
-      
+
+      if ocolor != "":
+        ocolor_eval = eval(ocolor)
+        mtl_cloned.baseColor = vec4(ocolor_eval,1)
+
+
       mtl_cloned.metallicFactor = 0
       mtl_cloned.roughnessFactor = 1
 
@@ -128,7 +135,7 @@ class SceneGraphApp(object):
         mtl_cloned.roughnessFactor = 1
       elif oshader=="roughmetal":
         mtl_cloned.metallicFactor = 1
-        mtl_cloned.roughnessFactor = .25
+        mtl_cloned.roughnessFactor = .125
 
       mtl_cloned.gpuInit(ctx)
       subinst.overrideMaterial(mtl_cloned)
