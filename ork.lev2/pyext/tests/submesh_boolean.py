@@ -64,7 +64,7 @@ class SceneGraphApp(object):
     a = meshutil.Mesh()
     a.readFromWavefrontObj("data://tests/simple_obj/cylinder.obj")
     b = meshutil.Mesh()
-    b.readFromWavefrontObj("data://tests/simple_obj/icosphere.obj")
+    b.readFromWavefrontObj("data://tests/simple_obj/torus.obj")
 
     a_vertices = a.submesh_list[0].vertices
     b_vertices = b.submesh_list[0].vertices
