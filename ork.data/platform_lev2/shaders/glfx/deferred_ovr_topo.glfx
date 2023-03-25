@@ -50,8 +50,7 @@ vertex_interface iface_vwire : ub_vtx {
   }
 }
 ///////////////////////////////////////////////////////////////
-fragment_interface iface_fwire_deferred 
-  : ub_frg_deferred{
+fragment_interface iface_fwire_deferred {
   inputs {
     vec4 frg_clr;
     vec2 frg_uv0;
@@ -79,7 +78,8 @@ vertex_shader vs_wnormal_wire : iface_vwire {
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_fnormal_wire_deferred
   : iface_fwire_deferred
-  : lib_gbuf_encode {
+  : lib_gbuf_encode
+  : ub_frg_deferred {
   vec3 X = dFdx(frg_pos);  
   vec3 Y = dFdy(frg_pos);
   vec3 normal=normalize(cross(X,Y)); 
@@ -87,9 +87,9 @@ fragment_shader ps_fnormal_wire_deferred
   float closest_edge = min(bary.x, min(bary.y, bary.z));
   vec3 c = vec3(.5,.5,.5)+normal.xyz*0.5;
   //c = c*pow(closest_edge,0.05);
-  float mtl = 0;
-  float ruf = 1;
-  out_gbuf = packGbuffer(c,normal,ruf,mtl,true);
+  float mtl = MetallicFactor;
+  float ruf = RoughnessFactor;
+  out_gbuf = packGbuffer(c,normal,ruf,mtl,false);
 }
 ///////////////////////////////////////////////////////////////
 technique GBU_CT_NM_RI_NI_MO {

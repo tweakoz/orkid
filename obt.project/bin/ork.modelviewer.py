@@ -116,13 +116,16 @@ class SceneGraphApp(object):
 
       mtl_cloned.metallicFactor = 0
       mtl_cloned.roughnessFactor = 1
+      mtl_cloned.texColor = Texture.load("src://effect_textures/white.dds")
+      mtl_cloned.texNormal = Texture.load("src://effect_textures/default_normal.dds")
+      mtl_cloned.texMtlRuf = Texture.load("src://effect_textures/white.dds")
 
       if oshader=="topo":
         #meshutil_submesh = ???
         #self.barysub_isect = meshutil_submesh.barycentricUVs()
         #self.prim = meshutil.RigidPrimitive(self.barysub_isect,ctx)
-        mtl_cloned.metallicFactor = 1
-        mtl_cloned.roughnessFactor = 0
+        mtl_cloned.metallicFactor = 0
+        mtl_cloned.roughnessFactor = 1
         mtl_cloned.shaderpath = "orkshader://deferred_ovr_topo.glfx"
       elif oshader=="mirror":
         mtl_cloned.metallicFactor = 1
