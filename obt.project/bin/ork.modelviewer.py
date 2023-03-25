@@ -138,7 +138,7 @@ class SceneGraphApp(object):
         mtl_cloned.roughnessFactor = 1
       elif oshader=="roughmetal":
         mtl_cloned.metallicFactor = 1
-        mtl_cloned.roughnessFactor = .125
+        mtl_cloned.roughnessFactor = .75
 
       mtl_cloned.gpuInit(ctx)
       subinst.overrideMaterial(mtl_cloned)

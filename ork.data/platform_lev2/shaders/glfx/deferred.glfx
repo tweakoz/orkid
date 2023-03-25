@@ -641,7 +641,7 @@ libblock lib_deferred
       /////////////////////////
       float spec_miplevel = clamp(SpecularMipBias + (roughnessL * EnvironmentMipScale), 0, 13);
       refl = vec3(refl.x,-refl.y,refl.z);
-      vec3 spec_env = env_equirectangular(refl,MapSpecularEnv,spec_miplevel);
+      vec3 spec_env = env_equirectangularFlipV(refl,MapSpecularEnv,spec_miplevel);
       vec3 specular_light = ambient+spec_env*SkyboxLevel;
       vec3 specularC = specular_light*F0*SpecularLevel*SkyboxLevel;
       vec3 specularMask = (F*brdf.x+brdf.y);
