@@ -290,13 +290,18 @@ fragment_shader ps_fnormal_wire
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_vnormal_wire 
   : iface_fwire {
-  //vec3 X = dFdx(frg_pos);  
-  //vec3 Y = dFdy(frg_pos);
-  //vec3 normal=normalize(cross(X,Y)); 
   vec3 normal = normalize(frg_nrmd.xyz);
   vec3 bary = frg_bary.xyz;
   float closest_edge = min(bary.x, min(bary.y, bary.z));
   vec3 c = vec3(.5,.5,.5)+normal*0.5;
+  out_clr = vec4(c*pow(closest_edge,0.05),1);
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_vuv_wire 
+  : iface_fwire {
+  vec3 bary = frg_bary.xyz;
+  float closest_edge = min(bary.x, min(bary.y, bary.z));
+  vec3 c = vec3(frg_uv0.xy,0);
   out_clr = vec4(c*pow(closest_edge,0.05),1);
 }
 ///////////////////////////////////////////////////////////////
@@ -360,6 +365,14 @@ technique tek_vnormal_wire {
   pass p0 {
     vertex_shader   = vs_wnormal_wire;
     fragment_shader = ps_vnormal_wire;
+    state_block     = sb_default;
+  }
+}
+technique tek_vuv_wire {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_wnormal_wire;
+    fragment_shader = ps_vuv_wire;
     state_block     = sb_default;
   }
 }

@@ -486,9 +486,11 @@ void submeshClipWithPlane(const submesh& inpsubmesh, //
                            submesh& outsmeshBack
                            );
 
+void submeshWithTextureBasis(const submesh& inpsubmesh, submesh& outsmesh);
+void submeshWithTextureUnwrap(const submesh& inpsubmesh, submesh& outsmesh);
+
 void submeshWithFaceNormals(const submesh& inpsubmesh, submesh& outsmesh);
 void submeshWithSmoothNormals(const submesh& inpsubmesh, submesh& outsmesh, float threshold_radians);
-void submeshWithTextureBasis(const submesh& inpsubmesh, submesh& outsmesh);
 void submeshJoinCoplanar(const submesh& inpsubmesh, submesh& outsmesh);
 void submeshBarycentricUV(const submesh& inpsubmesh, submesh& outsmesh);
 submesh_ptr_t submeshFromFrustum(const Frustum& frustum, bool projective_rect_uv);

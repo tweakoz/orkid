@@ -7,7 +7,7 @@
 import ork.path
 from orkengine.core import *
 from orkengine.lev2 import *
-import trimesh
+import trimesh, xatlas
 
 
 #!/usr/bin/env python3
@@ -55,7 +55,7 @@ class SceneGraphApp(object):
                                        ctx = ctx,
                                        rendermodel = "ForwardPBR",
                                        shaderfile=Path("orkshader://basic"),
-                                       techname="tek_vnormal_wire" )
+                                       techname="tek_vuv_wire" )
 
     material = solid_wire_pipeline.sharedMaterial
     solid_wire_pipeline.bindParam( material.param("m"), tokens.RCFD_M)
@@ -115,16 +115,43 @@ class SceneGraphApp(object):
     boolean_out = boolean_out.union(tm_ring_4)
     boolean_out = boolean_out.difference(tm_cyl_inner)
 
+    boolean_out = boolean_out.unwrap()
+
+    atlas = xatlas.Atlas()
+    atlas.add_mesh(boolean_out.vertices, boolean_out.faces)
+    atlas.generate()
+    
+    print(atlas.mesh_count)  # Number of meshes
+    print(len(atlas))        # Convenience binding for `atlas.mesh_count`
+    print(atlas.get_mesh(0)) # Data for the i-th mesh
+    print(atlas[0])          # Convenience binding for `atlas.get_mesh`
+
+    print(atlas.width)       # Width of the atlas 
+    print(atlas.height)      # Height of the atlas
+
+    print(atlas.utilization )       # Utilization of the first atlas
+    print(atlas.get_utilization(0)) # Utilization of i-th atlas
+    
+    #vmapping, indices, uvs = xatlas.parametrize(boolean_out.vertices, boolean_out.faces)
+    assert(False)
+
     #################################################################
     # create ork meshes/primitives from boolean results
     #################################################################
 
+    boolean_out_vertices = [{  "p": vec3(item[0], item[1], item[2])} for item in boolean_out.vertices]
+    for i in range(len(boolean_out_vertices)):
+      uv = boolean_out.visual.uv[i]
+      boolean_out_vertices[i]["uv0"] = vec2(uv[0],uv[1])
+
+
     result_submesh = meshutil.SubMesh.createFromDict({
-        "vertices": [{"p": vec3(item[0], item[1], item[2])} for item in boolean_out.vertices],
+        "vertices": boolean_out_vertices,
         "faces": boolean_out.faces
     })
 
     print(result_submesh)
+    result_submesh.writeWavefrontObj("boolean_out.obj")
 
     #cleaned_result = result_submesh.withFaceNormals()
     cleaned_result = result_submesh.withSmoothedNormals(90*constants.DTOR)
