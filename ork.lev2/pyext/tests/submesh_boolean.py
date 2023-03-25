@@ -55,7 +55,7 @@ class SceneGraphApp(object):
                                        ctx = ctx,
                                        rendermodel = "ForwardPBR",
                                        shaderfile=Path("orkshader://basic"),
-                                       techname="tek_fnormal_wire" )
+                                       techname="tek_vnormal_wire" )
 
     material = solid_wire_pipeline.sharedMaterial
     solid_wire_pipeline.bindParam( material.param("m"), tokens.RCFD_M)
@@ -126,8 +126,11 @@ class SceneGraphApp(object):
 
     print(result_submesh)
 
-    self.barysub_isect = result_submesh.barycentricUVs()
-    self.union_prim = meshutil.RigidPrimitive(self.barysub_isect,ctx)
+    #cleaned_result = result_submesh.withFaceNormals()
+    cleaned_result = result_submesh.withSmoothedNormals(90*constants.DTOR)
+    cleaned_result = cleaned_result.withTextureBasis()
+    self.barysubmesh = cleaned_result.withBarycentricUVs()
+    self.union_prim = meshutil.RigidPrimitive(self.barysubmesh,ctx)
     self.union_sgnode = self.union_prim.createNode("union",self.layer1,solid_wire_pipeline)
     self.union_sgnode.enabled = True
     #################################################################

@@ -765,6 +765,17 @@ void submesh::visitConnectedPolys(poly_ptr_t p,PolyVisitContext& visitctx) const
     }
   }
 }
+std::unordered_set<poly_ptr_t> submesh::polysConnectedTo(vertex_ptr_t v) const{
+  std::unordered_set<poly_ptr_t> connected;
+  for ( auto p : _orderedPolys ){
+    for( auto pv : p->_vertices ){
+      if(pv==v){
+        connected.insert(p);
+      }
+    }
+  }
+  return connected;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 /*

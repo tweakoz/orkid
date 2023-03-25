@@ -144,7 +144,7 @@ void pyinit_meshutil_submesh(py::module& module_meshutil) {
                 return pyl;
               })
           .def(
-              "barycentricUVs",
+              "withBarycentricUVs",
               [](submesh_constptr_t inpsubmesh) -> submesh_ptr_t {
                 submesh_ptr_t rval = std::make_shared<submesh>();
                 submeshBarycentricUV(*inpsubmesh, *rval);
@@ -233,6 +233,27 @@ void pyinit_meshutil_submesh(py::module& module_meshutil) {
                 rval["front"] = res_front;
                 rval["back"]  = res_back;
                 return rval;
+              })
+          .def(
+              "withFaceNormals",
+              [](submesh_constptr_t inpsubmesh) -> submesh_ptr_t {
+                submesh_ptr_t res_faced = std::make_shared<submesh>();
+                submeshWithFaceNormals(*inpsubmesh, *res_faced);
+                return res_faced;
+              })
+          .def(
+              "withSmoothedNormals",
+              [](submesh_constptr_t inpsubmesh, float threshold_radians) -> submesh_ptr_t {
+                submesh_ptr_t res_smoothed = std::make_shared<submesh>();
+                submeshWithSmoothNormals(*inpsubmesh, *res_smoothed, threshold_radians);
+                return res_smoothed;
+              })
+          .def(
+              "withTextureBasis",
+              [](submesh_constptr_t inpsubmesh) -> submesh_ptr_t {
+                submesh_ptr_t res_basis = std::make_shared<submesh>();
+                submeshWithTextureBasis(*inpsubmesh, *res_basis);
+                return res_basis;
               })
           .def(
               "coplanarJoined",

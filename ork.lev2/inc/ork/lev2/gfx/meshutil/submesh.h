@@ -358,7 +358,7 @@ struct submesh {
   void GetEdges(const poly& ply, orkvector<edge>& Edges) const;
   void GetAdjacentPolys(int ply, orkset<int>& output) const;
   edge_constptr_t edgeBetween(int a, int b) const;
-
+  std::unordered_set<poly_ptr_t> polysConnectedTo(vertex_ptr_t v) const;
 
   using poly_visitor_t = std::function<bool(poly_ptr_t)>;
 
@@ -486,6 +486,9 @@ void submeshClipWithPlane(const submesh& inpsubmesh, //
                            submesh& outsmeshBack
                            );
 
+void submeshWithFaceNormals(const submesh& inpsubmesh, submesh& outsmesh);
+void submeshWithSmoothNormals(const submesh& inpsubmesh, submesh& outsmesh, float threshold_radians);
+void submeshWithTextureBasis(const submesh& inpsubmesh, submesh& outsmesh);
 void submeshJoinCoplanar(const submesh& inpsubmesh, submesh& outsmesh);
 void submeshBarycentricUV(const submesh& inpsubmesh, submesh& outsmesh);
 submesh_ptr_t submeshFromFrustum(const Frustum& frustum, bool projective_rect_uv);
