@@ -59,41 +59,74 @@ class SceneGraphApp(object):
 
     material = solid_wire_pipeline.sharedMaterial
     solid_wire_pipeline.bindParam( material.param("m"), tokens.RCFD_M)
+
+    #################################################################
+    # load obj source meshes
     #################################################################
 
-    a = meshutil.Mesh()
-    a.readFromWavefrontObj("data://tests/simple_obj/cylinder.obj")
-    b = meshutil.Mesh()
-    b.readFromWavefrontObj("data://tests/simple_obj/torus.obj")
+    cyl_orkmesh = meshutil.Mesh()
+    cyl_orkmesh.readFromWavefrontObj("data://tests/simple_obj/cylinder.obj")
+    tor_orkmesh = meshutil.Mesh()
+    tor_orkmesh.readFromWavefrontObj("data://tests/simple_obj/torus.obj")
 
-    a_vertices = a.submesh_list[0].vertices
-    b_vertices = b.submesh_list[0].vertices
-    a_faces = a.submesh_list[0].polys
-    b_faces = b.submesh_list[0].polys
+    cyl_vertices = cyl_orkmesh.submesh_list[0].vertices
+    cyl_faces = cyl_orkmesh.submesh_list[0].polys
 
-    a_tm = trimesh.base.Trimesh( vertices=[vtx.position.as_list for vtx in a_vertices], 
-                                faces=[face.indices for face in a_faces])
-    b_tm = trimesh.base.Trimesh( vertices=[vtx.position.as_list for vtx in b_vertices], 
-                                faces=[face.indices for face in b_faces])
-    union = a_tm.union(b_tm)
+    tor_vertices = tor_orkmesh.submesh_list[0].vertices
+    tor_faces = tor_orkmesh.submesh_list[0].polys
 
-    union_vertices = []
-    for item in union.vertices:
-      union_vertices.append({
-        "p": vec3(item[0], item[1], item[2])
-    })  
+    #################################################################
+    # apply transform to trimesh
+    #################################################################
 
-    union_submesh = meshutil.SubMesh.createFromDict({
-        "vertices": union_vertices,
-        "faces": union.faces
+    def applyXF(tmesh,pos,rot,scale): 
+      xf = mtx4.composed(pos,rot,scale)
+      tmesh.apply_transform(xf.transposed)
+
+    #################################################################
+    # create trimesh from ork vertices and faces
+    #################################################################
+
+    def createTM(ork_verts,ork_faces,pos,rot,scale): 
+      tmesh = trimesh.base.Trimesh( vertices=[vtx.position.as_list for vtx in ork_verts], 
+                                    faces=[face.indices for face in ork_faces])
+      applyXF(tmesh,pos,rot,scale)
+      return tmesh
+
+    #################################################################
+    # create transformed source meshes
+    #################################################################
+
+    tm_cyl_outer = createTM( cyl_vertices, cyl_faces, vec3(0,0,0), quat(), 1 )
+    tm_cyl_inner = createTM( cyl_vertices, cyl_faces, vec3(0,0,0), quat(), vec3(0.9,2.0,0.9) )
+
+    tm_ring_1 = createTM( tor_vertices, tor_faces, vec3(-1,0,0), quat(), 1 )
+    tm_ring_2 = createTM( tor_vertices, tor_faces, vec3(+1,0,0), quat(), 1 )
+    tm_ring_3 = createTM( tor_vertices, tor_faces, vec3(0,0,-1), quat(), 1 )
+    tm_ring_4 = createTM( tor_vertices, tor_faces, vec3(0,0,+1), quat(), 1 )
+
+    #################################################################
+    # do boolean operations
+    #################################################################
+
+    boolean_out = tm_cyl_outer.union(tm_ring_1)
+    boolean_out = boolean_out.union(tm_ring_2)
+    boolean_out = boolean_out.union(tm_ring_3)
+    boolean_out = boolean_out.union(tm_ring_4)
+    boolean_out = boolean_out.difference(tm_cyl_inner)
+
+    #################################################################
+    # create ork meshes/primitives from boolean results
+    #################################################################
+
+    result_submesh = meshutil.SubMesh.createFromDict({
+        "vertices": [{"p": vec3(item[0], item[1], item[2])} for item in boolean_out.vertices],
+        "faces": boolean_out.faces
     })
 
-    print(union_submesh)
-    #print(union_submesh.vertices)
-    #print(union_submesh.polys)
-    #print(union_submesh.edges)
+    print(result_submesh)
 
-    self.barysub_isect = union_submesh.barycentricUVs()
+    self.barysub_isect = result_submesh.barycentricUVs()
     self.union_prim = meshutil.RigidPrimitive(self.barysub_isect,ctx)
     self.union_sgnode = self.union_prim.createNode("union",self.layer1,solid_wire_pipeline)
     self.union_sgnode.enabled = True

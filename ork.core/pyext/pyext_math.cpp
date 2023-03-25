@@ -292,12 +292,15 @@ void pyinit_math(py::module& module_core) {
           .def(py::init<>())
           .def(py::init<const fmtx4&>())
           .def(py::init<const fquat&>())
+          .def_property_readonly("transposed", [](const fmtx4& inp) -> fmtx4 {
+            return inp.transposed();
+          })
+          .def_property_readonly("inverse", &fmtx4::inverse)
           .def("zNormal", &fmtx4::xNormal)
           .def("yNormal", &fmtx4::yNormal)
           .def("xNormal", &fmtx4::zNormal)
           .def("transpose", &fmtx4::transpose)
           .def("normalize", &fmtx4::normalizeInPlace)
-          .def("inverse", &fmtx4::inverse)
           .def("inverseOf", &fmtx4::inverseOf)
           .def("decompose", &fmtx4::decompose)
           .def("toRotMatrix3", &fmtx4::rotMatrix33)
@@ -341,6 +344,13 @@ void pyinit_math(py::module& module_core) {
           .def_static(
               "composed",
               [](const fvec3& pos, const fquat& rot, float scale) -> fmtx4 {
+                fmtx4 rval;
+                rval.compose(pos, rot, scale);
+                return rval;
+              })
+          .def_static(
+              "composed",
+              [](const fvec3& pos, const fquat& rot, fvec3 scale) -> fmtx4 {
                 fmtx4 rval;
                 rval.compose(pos, rot, scale);
                 return rval;
