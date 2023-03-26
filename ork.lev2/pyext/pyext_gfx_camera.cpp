@@ -23,6 +23,11 @@ void pyinit_gfx_camera(py::module& module_lev2) {
             return cam->UIEventHandler(event);
           })
           .def(
+              "createDrawable", //
+              [](ezuicam_ptr_t cam) -> drawable_ptr_t {
+                return cam->createOverlayDrawable();
+              })
+          .def(
               "lookAt",
               [](ezuicam_ptr_t uic, fvec3 eye, fvec3 tgt, fvec3 up) { //
                 uic->lookAt(eye,tgt,up);

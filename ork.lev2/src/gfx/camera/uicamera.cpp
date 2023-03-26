@@ -124,16 +124,18 @@ callback_drawable_ptr_t UiCamera::createOverlayDrawable(){
     const RenderContextFrameData* RCFD = RCID._RCFD;
     auto context                       = RCID.context();
 
+    fmtx4 mtx_center;
+    mtx_center.compose(mvCenter,fquat(),0.015);
     switch (RCFD->_renderingmodel._modelID){
       case "FORWARD_UNLIT"_crcu:{
-        fmtx4 mtx_center;
-        mtx_center.compose(mvCenter,fquat(),0.015);
         context->MTXI()->SetMMatrix(mtx_center);
         GfxPrimitives::RenderTriCircle(context);
         break;
       }
+      case "FORWARD_PBR"_crcu:
       case "DEFERRED_PBR"_crcu:
-        OrkAssert(false);
+        context->MTXI()->SetMMatrix(mtx_center);
+        GfxPrimitives::RenderTriCircle(context);
         break;
       default:
         OrkAssert(false);

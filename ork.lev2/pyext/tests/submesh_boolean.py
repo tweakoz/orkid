@@ -58,6 +58,12 @@ class SceneGraphApp(object):
     solid_wire_pipeline.bindParam( material.param("m"), tokens.RCFD_M)
 
     #################################################################
+    # create camera overlay
+    #################################################################
+
+    self.cam_overlay = self.layer1.createDrawableNode("camoverlay",self.uicam.createDrawable())
+
+    #################################################################
     # load obj source meshes
     #################################################################
 
