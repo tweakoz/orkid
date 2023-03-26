@@ -64,22 +64,11 @@ class SceneGraphApp(object):
     self.cam_overlay = self.layer1.createDrawableNode("camoverlay",self.uicam.createDrawable())
 
     #################################################################
-    # load obj source meshes
+    # source mesh paths
     #################################################################
 
     cyl_path = "data://tests/simple_obj/cylinder.obj"
     tor_path = "data://tests/simple_obj/torus.obj"
-
-    cyl_orkmesh = meshutil.Mesh()
-    cyl_orkmesh.readFromWavefrontObj(cyl_path)
-    tor_orkmesh = meshutil.Mesh()
-    tor_orkmesh.readFromWavefrontObj(tor_path)
-
-    cyl_vertices = cyl_orkmesh.submesh_list[0].vertices
-    cyl_faces = cyl_orkmesh.submesh_list[0].polys
-
-    tor_vertices = tor_orkmesh.submesh_list[0].vertices
-    tor_faces = tor_orkmesh.submesh_list[0].polys
 
     #################################################################
     # datablock cache setup
@@ -106,7 +95,20 @@ class SceneGraphApp(object):
     # not in cache, so do the boolean ops and fill in cache
     ##########################################################
     else: 
-    
+
+      # load source meshes
+
+      cyl_orkmesh = meshutil.Mesh()
+      cyl_orkmesh.readFromWavefrontObj(cyl_path)
+      tor_orkmesh = meshutil.Mesh()
+      tor_orkmesh.readFromWavefrontObj(tor_path)
+
+      cyl_vertices = cyl_orkmesh.submesh_list[0].vertices
+      cyl_faces = cyl_orkmesh.submesh_list[0].polys
+
+      tor_vertices = tor_orkmesh.submesh_list[0].vertices
+      tor_faces = tor_orkmesh.submesh_list[0].polys
+
       # apply transform to trimesh
 
       def applyXF(tmesh,pos,rot,scale): 
