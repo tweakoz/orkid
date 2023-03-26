@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 ################################################################################
-# Copyright 1996-2020, Michael T. Mayers.
-# Distributed under the Boost Software License - Version 1.0 - August 17, 2003
-# see http://www.boost.org/LICENSE_1_0.txt
+# Copyright 1996-2023, Michael T. Mayers.
+# Distributed under the MIT License
+# see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ################################################################################
 import ork.path
 import math, random, argparse, sys
