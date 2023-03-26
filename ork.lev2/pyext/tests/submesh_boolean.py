@@ -6,19 +6,10 @@
 ################################################################################
 import ork.path
 import math, random, argparse, sys
+import trimesh, pickle
 from orkengine.core import *
 from orkengine.lev2 import *
-import trimesh, pickle
-
-################################################################################
-
-sys.path.append((thisdir()/".."/".."/"examples"/"python").normalized.as_string) # add parent dir to path
-from common.cameras import *
-from common.shaders import *
-from common.misc import *
-from common.primitives import createGridData, createFrustumPrim
-from common.scenegraph import createSceneGraph
-
+from _boilerplate import *
 ################################################################################
 # apply transform to trimesh
 ################################################################################
@@ -39,38 +30,22 @@ def createTM(ork_verts,ork_faces,pos,rot,scale):
 
 ################################################################################
 
-class SceneGraphApp(object):
-
+class SceneGraphApp(BasicUiCamSgApp):
+  ##############################################
   def __init__(self):
     super().__init__()
-    self.ezapp = OrkEzApp.create(self)
-    self.ezapp.setRefreshPolicy(RefreshFastest, 0)
-    self.materials = set()
-    setupUiCamera(app=self,eye=vec3(5,5,5),tgt=vec3(0,0,0))
-
   ##############################################
-
   def onGpuInit(self,ctx):
-
-    createSceneGraph(app=self,rendermodel="ForwardPBR")
-
+    super().onGpuInit(ctx)
     ##################################
     # solid wire pipeline
     ##################################
-    solid_wire_pipeline = createPipeline( app = self,
-                                       ctx = ctx,
-                                       rendermodel = "ForwardPBR",
-                                       shaderfile=Path("orkshader://basic"),
-                                       techname="tek_vuv_wire" )
+    solid_wire_pipeline = self.createPipeline( rendermodel = "ForwardPBR",
+                                               shaderfile=Path("orkshader://basic"),
+                                               techname="tek_vuv_wire" )
 
     material = solid_wire_pipeline.sharedMaterial
     solid_wire_pipeline.bindParam( material.param("m"), tokens.RCFD_M)
-
-    #################################################################
-    # create camera overlay
-    #################################################################
-
-    self.cam_overlay = self.layer1.createDrawableNode("camoverlay",self.uicam.createDrawable())
 
     #################################################################
     # source mesh paths
@@ -172,30 +147,7 @@ class SceneGraphApp(object):
     self.union_prim = meshutil.RigidPrimitive(self.barysubmesh,ctx)
     self.union_sgnode = self.union_prim.createNode("union",self.layer1,solid_wire_pipeline)
     self.union_sgnode.enabled = True
-    #################################################################
-    self.context = ctx
-
-  ##############################################
-
-  def onGpuIter(self):
-    pass
-
-  ##############################################
-
-  def onUiEvent(self,uievent):
-    handled = self.uicam.uiEventHandler(uievent)
-    if handled:
-      self.camera.copyFrom( self.uicam.cameradata )
-
-  ################################################
-
-  def onUpdate(self,updinfo):
-    self.abstime = updinfo.absolutetime
-    #########################################
-    self.scene.updateScene(self.cameralut) 
 
 ###############################################################################
-
 sgapp = SceneGraphApp()
-
 sgapp.ezapp.mainThreadLoop(on_iter=lambda: sgapp.onGpuIter() )
