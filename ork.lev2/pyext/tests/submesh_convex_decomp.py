@@ -98,7 +98,7 @@ class ConvexDecomp:
     self.primnodes = []
     self.normals = []
     for item in self.convex_hulls:
-      bary = item.barycentricUVs()
+      bary = item.withBarycentricUVs()
       prim = meshutil.RigidPrimitive(bary,self.context)
       prim_node = prim.createNode("%s"%bary,self.layer,self.pipeline)
       self.barys += [bary]
@@ -141,6 +141,7 @@ class SceneGraphApp(object):
     self.decomps = []
 
     createSceneGraph(app=self,rendermodel="ForwardPBR")
+    self.cam_overlay = self.layer1.createDrawableNode("camoverlay",self.uicam.createDrawable())
 
     ##################################
     # create Grid
