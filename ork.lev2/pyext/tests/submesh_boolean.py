@@ -29,6 +29,24 @@ from common.primitives import createGridData, createFrustumPrim
 from common.scenegraph import createSceneGraph
 
 ################################################################################
+# apply transform to trimesh
+################################################################################
+
+def applyXF(tmesh,pos,rot,scale): 
+  xf = mtx4.composed(pos,rot,scale)
+  tmesh.apply_transform(xf.transposed)
+
+################################################################################
+# create trimesh from ork vertices and faces
+################################################################################
+
+def createTM(ork_verts,ork_faces,pos,rot,scale): 
+  tmesh = trimesh.base.Trimesh( vertices=[vtx.position.as_list for vtx in ork_verts], 
+                                faces=[face.indices for face in ork_faces])
+  applyXF(tmesh,pos,rot,scale)
+  return tmesh
+
+################################################################################
 
 class SceneGraphApp(object):
 
@@ -108,20 +126,6 @@ class SceneGraphApp(object):
 
       tor_vertices = tor_orkmesh.submesh_list[0].vertices
       tor_faces = tor_orkmesh.submesh_list[0].polys
-
-      # apply transform to trimesh
-
-      def applyXF(tmesh,pos,rot,scale): 
-        xf = mtx4.composed(pos,rot,scale)
-        tmesh.apply_transform(xf.transposed)
-
-      # create trimesh from ork vertices and faces
-
-      def createTM(ork_verts,ork_faces,pos,rot,scale): 
-        tmesh = trimesh.base.Trimesh( vertices=[vtx.position.as_list for vtx in ork_verts], 
-                                      faces=[face.indices for face in ork_faces])
-        applyXF(tmesh,pos,rot,scale)
-        return tmesh
 
       # create transformed source meshes
 
