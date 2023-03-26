@@ -7,8 +7,6 @@
 
 #include <ork/lev2/ui/ged/ged.h>
 
-ImplementReflectionX(ork::lev2::ged::ObjModel, "GedObjModel");
-
 // template class ork::object::Signal<void,ork::lev2::ged::ObjModel>;
 
 namespace ork::lev2::ged {
@@ -23,37 +21,11 @@ ork::object::Signal::operator()<
         (void (ObjModel::*)(std::shared_ptr<Object>), std::shared_ptr<Object>
 */
 
-void ObjModel::describeX(object::ObjectClass* clazz) {
-  ///////////////////////////////////////////
-  // A Touch Of Class
 
-  // GedFactoryEnum::GetClassStatic();
-  // GedFactoryGradient::GetClassStatic();
-  // GedFactoryCurve::GetClassStatic();
-  // GedFactoryAssetList::GetClassStatic();
-  // GedFactoryFileList::GetClassStatic();
-  // GedFactoryTransform::GetClassStatic();
-
-  //////////////////////////////////////////////////////////////////
-  /*RegisterAutoSignal(ObjModel, Repaint);
-  RegisterAutoSignal(ObjModel, ModelInvalidated);
-  RegisterAutoSignal(ObjModel, PreNewObject);
-  RegisterAutoSignal(ObjModel, PropertyInvalidated);
-  RegisterAutoSignal(ObjModel, NewObject);
-  RegisterAutoSignal(ObjModel, SpawnNewGed);
-  //////////////////////////////////////////////////////////////////
-  RegisterAutoSlot(ObjModel, NewObject);
-  RegisterAutoSlot(ObjModel, ObjectDeleted);
-  RegisterAutoSlot(ObjModel, ObjectSelected);
-  RegisterAutoSlot(ObjModel, ObjectDeSelected);
-  RegisterAutoSlot(ObjModel, RelayModelInvalidated);
-  RegisterAutoSlot(ObjModel, RelayPropertyInvalidated);*/
-  //////////////////////////////////////////////////////////////////
-}
 
 objectmodel_ptr_t ObjModel::createShared(opq::opq_ptr_t updateopq){
     auto objmodel = std::make_shared<ObjModel>(updateopq);
-   AutoConnector::setupSignalsAndSlots(objmodel);
+   //AutoConnector::setupSignalsAndSlots(objmodel);
    gAllObjectModels.insert(objmodel);
    return objmodel;
 }
@@ -82,7 +54,6 @@ ObjModel::ObjModel(opq::opq_ptr_t updateopq)
 ///////////////////////////////////////////////////////////////////////////////
 
 ObjModel::~ObjModel() {
-  // DisconnectAll();
   // gAllObjectModels.erase(this);
 }
 
@@ -125,7 +96,8 @@ void ObjModel::SigPropertyInvalidated(object_ptr_t pobj, const reflect::ObjectPr
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ObjModel::SigRepaint() {
+void ObjModel::emitRepaint() {
+  _sigRepaint();
   //mSignalRepaint(&ObjModel::SigRepaint);
 }
 
@@ -266,7 +238,7 @@ void ObjModel::attach(
   }
   // dont spam refresh, please
   if (_enablePaint)
-    SigRepaint();
+    emitRepaint();
 }
 
 //////////////////////////////////////////////////////////////////////////////

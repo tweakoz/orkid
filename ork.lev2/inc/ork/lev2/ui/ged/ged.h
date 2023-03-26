@@ -10,7 +10,7 @@
 //#include <orktool/orktool_pch.h>
 //#include <orktool/qtui/qtui_tool.h>
 ///////////////////////////////////////////////////////////////////////////////
-#include <ork/object/AutoConnector.h>
+//#include <ork/object/AutoConnector.h>
 //#include <ork/kernel/string/ArrayString.h>
 //#include <ork/lev2/gfx/pickbuffer.h>
 #include <ork/util/choiceman.h>
@@ -21,6 +21,7 @@
 #include <ork/lev2/ui/viewport.h>
 #include <ork/kernel/opq.h>
 #include <ork/lev2/gfx/material_freestyle.h>
+#include <ork/kernel/sigslot2.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -85,8 +86,8 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct ObjModel : public ork::AutoConnector {
-  DeclareConcreteX(ObjModel, ork::AutoConnector);
+struct ObjModel : public sigslot2::AutoConnector {
+
 public:
 
   static orkset<objectmodel_ptr_t> gAllObjectModels;
@@ -119,7 +120,7 @@ public:
   int browseStackSize() const;
 
   //////////////////////////////////////////////////////////
-
+  //DeclareAutoSlotX(repaint);
   /*
   DeclarePublicSignal(Repaint);
   DeclarePublicSignal(PreNewObject);
@@ -144,7 +145,7 @@ public:
   void SigModelInvalidated();
   void SigPreNewObject();
   void SigPropertyInvalidated(object_ptr_t pobj, const reflect::ObjectProperty* prop);
-  void SigRepaint();
+  void emitRepaint();
   void SigSpawnNewGed(object_ptr_t pobj);
   void SigNewObject(object_ptr_t pobj);
   void SigPostNewObject(object_ptr_t pobj);
@@ -188,6 +189,8 @@ public:
   persistmapcontainer_ptr_t _persistMapContainer;
   opq::opq_ptr_t _updateOPQ;
 
+
+  sigslot2::signal_void_t _sigRepaint;
 };
 
 }
