@@ -62,7 +62,7 @@ Copyright (c) 2012 Brandon Pelfrey
 #endif
 
 #ifndef XA_PROFILE
-#define XA_PROFILE 0
+#define XA_PROFILE 1
 #endif
 #if XA_PROFILE
 #include <chrono>

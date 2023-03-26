@@ -59,6 +59,9 @@ datablock_ptr_t DataBlockCache::findDataBlock(uint64_t key) {
         free(pdata);
         m[key] = rval;
       }
+      else{
+        printf( "not found in cache <%s>\n", cache_path.c_str() );
+      }
     } else {
       rval = it->second;
     }
@@ -75,6 +78,7 @@ void DataBlockCache::setDataBlock(uint64_t key, datablock_ptr_t item, bool cache
     m[key] = item;
     using namespace boost::filesystem;
     if (cacheable) {
+      printf( "writing to cache <%s>\n", cache_path.c_str() );
       FILE* fout = fopen(cache_path.c_str(), "wb");
       fwrite(item->data(), item->length(), 1, fout);
       fclose(fout);

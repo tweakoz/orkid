@@ -256,6 +256,13 @@ void pyinit_meshutil_submesh(py::module& module_meshutil) {
                 return res_basis;
               })
           .def(
+              "withTextureUnwrap",
+              [](submesh_constptr_t inpsubmesh) -> submesh_ptr_t {
+                submesh_ptr_t res_basis = std::make_shared<submesh>();
+                submeshWithTextureUnwrap(*inpsubmesh, *res_basis);
+                return res_basis;
+              })
+          .def(
               "coplanarJoined",
               [](submesh_constptr_t inpsubmesh) -> submesh_ptr_t {
                 submesh_ptr_t rval = std::make_shared<submesh>();

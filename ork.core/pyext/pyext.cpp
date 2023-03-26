@@ -10,6 +10,7 @@
 #include <ork/kernel/environment.h>
 #include <ork/event/Event.h>
 #include <ork/kernel/datablock.h>
+#include <ork/kernel/datacache.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 struct CorePythonApplication  {
@@ -27,6 +28,7 @@ struct CorePythonApplication  {
 namespace ork {
 void pyinit_math(py::module& module_core);
 void pyinit_dataflow(py::module& module_core);
+void pyinit_datablock(py::module& module_core);
 
 static void _coreappinit() {
   SetCurrentThreadName("main");
@@ -171,6 +173,45 @@ PYBIND11_MODULE(_core, module_core) {
               });
   type_codec->registerStdCodec<crcstrproxy_ptr_t>(crcstrproxy_type);
   /////////////////////////////////////////////////////////////////////////////////
+  using crc64_ctx_t = boost::Crc64;
+  using crc64_ctx_ptr_t = std::shared_ptr<crc64_ctx_t>;
+  auto crc64_type   =                                                        //
+      py::class_<crc64_ctx_t, crc64_ctx_ptr_t>(module_core, "Crc64Context") //
+          .def(py::init<>())
+          .def("begin",[](crc64_ctx_ptr_t ctx){
+            ctx->init();
+          })
+          .def("finish",[](crc64_ctx_ptr_t ctx){
+            ctx->finish();
+          })
+          .def("accum",[](crc64_ctx_ptr_t ctx, py::object value){
+            if( py::isinstance<py::str>(value) ){
+              ctx->accumulateString(py::cast<std::string>(value));
+            }
+            else if( py::isinstance<py::int_>(value) ){
+              ctx->accumulateItem<int>(py::cast<int>(value));
+            }
+            else if( py::isinstance<py::float_>(value) ){
+              ctx->accumulateItem<float>(py::cast<float>(value));
+            }
+            else if( py::isinstance<fvec2>(value) ){
+              ctx->accumulateItem<fvec2>(py::cast<fvec2>(value));
+            }
+            else if( py::isinstance<fvec3>(value) ){
+              ctx->accumulateItem<fvec3>(py::cast<fvec3>(value));
+            }
+            else if( py::isinstance<fvec4>(value) ){
+              ctx->accumulateItem<fvec4>(py::cast<fvec4>(value));
+            }
+            else{
+              OrkAssert(false);
+            }
+          })
+          .def_property_readonly("result",[](crc64_ctx_ptr_t ctx)->uint64_t{
+            return ctx->result();
+          });
+  type_codec->registerStdCodec<crc64_ctx_ptr_t>(crc64_type);
+  /////////////////////////////////////////////////////////////////////////////////
   py::class_<PoolString>(module_core, "PoolString") //
       .def("__repr__", [](const PoolString& s) -> std::string {
         fxstring<512> fxs;
@@ -202,49 +243,6 @@ PYBIND11_MODULE(_core, module_core) {
         fxs.format("Path(%s)", s.c_str());
         return fxs.c_str();
       });
-
-  /////////////////////////////////////////////////////////////////////////////////
-  auto dblock_type = py::class_<DataBlock,datablock_ptr_t>(module_core, "DataBlock")
-      .def(py::init<>())
-      .def("addData",[](datablock_ptr_t db, py::buffer data) {
-        py::buffer_info info = data.request();
-        OrkAssert(info.format == py::format_descriptor<uint8_t>::format());
-        auto src = (const uint8_t*) info.ptr;
-
-        //printf( "ndim<%d>\n", info.ndim );
-        switch( info.ndim ){
-          case 3:{
-            size_t length = info.shape[0];
-            size_t width = info.shape[1];
-            size_t depth = info.shape[2];
-           // printf( "length<%zu>\n", length );
-           // printf( "width<%zu>\n", width );
-            //printf( "depth<%zu>\n", depth );
-            size_t numbytes = length*width*depth;
-            db->addData(src,numbytes);
-            break;
-          }
-          default:
-            OrkAssert(false);
-        }
-      })
-      .def_property_readonly("size",[](datablock_ptr_t db) -> size_t {
-        return db->length();
-      })
-      .def_property_readonly("hash",[](datablock_ptr_t db) -> uint64_t {
-        return db->hash();
-      })
-      .def("__str__", [](datablock_ptr_t db) -> std::string {
-        fxstring<512> fxs;
-        fxs.format("DataBlock(%p) len<%d>", (void*) db.get(), (int) db->length() );
-        return fxs.c_str();
-      })
-      .def("__repr__", [](datablock_ptr_t db) -> std::string {
-        fxstring<512> fxs;
-        fxs.format("DataBlock(%p)", (void*) db.get());
-        return fxs.c_str();
-      });
-  type_codec->registerStdCodec<datablock_ptr_t>(dblock_type);
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<Object>(module_core, "Object") //
       .def("clazz", [](Object* o) -> std::string {
@@ -297,6 +295,7 @@ PYBIND11_MODULE(_core, module_core) {
   /////////////////////////////////////////////////////////////////////////////////
   pyinit_math(module_core);
   pyinit_dataflow(module_core);
+  pyinit_datablock(module_core);
   /////////////////////////////////////////////////////////////////////////////////
 }; // PYBIND11_MODULE(_core, module_core) {
 

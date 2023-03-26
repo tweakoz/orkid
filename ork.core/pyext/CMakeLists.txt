@@ -16,7 +16,7 @@ set( INCD $ENV{ORKID_WORKSPACE_DIR}/ork.core/inc )
 
 ###################################
 
-ADD_LIBRARY( _core SHARED pyext.cpp pyext_math.cpp pyext_dataflow.cpp )
+ADD_LIBRARY( _core SHARED pyext.cpp pyext_math.cpp pyext_dataflow.cpp pyext_datablock.cpp )
 
 ork_std_target_opts(_core)
 

@@ -51,7 +51,7 @@ void submeshWithSmoothNormals(const submesh& inpsubmesh, submesh& outsubmesh, fl
         for( auto p : polys ){
          fvec3 ON = p->ComputeNormal();
          float angle = N.angle(ON);
-         printf( "angle<%g> threshold<%g>\n", angle, threshold_radians);
+         //printf( "angle<%g> threshold<%g>\n", angle, threshold_radians);
          if( angle <= threshold_radians ){
            Naccum += ON;
            ncount++;
