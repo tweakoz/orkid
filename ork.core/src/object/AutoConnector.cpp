@@ -76,18 +76,15 @@ void AutoConnector::disconnectAll(autoconnector_ptr_t on) {
 
 void AutoConnector::connect( // static
     autoconnector_ptr_t sender,
-    const char* SignalName, //
+    std::string SignalName, //
     autoconnector_ptr_t receiver,
-    const char* SlotName) {
+    std::string SlotName) {
 
   OrkAssert(sender != nullptr);
   OrkAssert(receiver != nullptr);
   OrkAssert(sender != receiver);
 
-  ork::PoolString psigname = ork::AddPooledString(SignalName);
-  ork::PoolString psltname = ork::AddPooledString(SlotName);
-
-  bool bOK = ork::object::Connect(sender, psigname, receiver, psltname);
+  bool bOK = ork::object::Connect(sender, SignalName, receiver, SlotName);
 
   OrkAssert(bOK);
 
@@ -95,28 +92,30 @@ void AutoConnector::connect( // static
     Connection* conn = new Connection;
     conn->_sender    = sender;
     conn->_reciever  = receiver;
-    conn->mSignal    = psigname;
-    conn->mSlot      = psltname;
+    conn->mSignal    = SignalName;
+    conn->mSlot      = SlotName;
     sender->_connections.insert(conn);
     receiver->_connections.insert(conn);
   }
 }
 
 void AutoConnector::setupSignalsAndSlots(autoconnector_ptr_t on) {
-  object::ObjectClass* pclass                            = rtti::downcast<object::ObjectClass*>(on->GetClass());
-  const reflect::Description& descript                   = pclass->Description();
-  const reflect::Description::SignalMapType& signals     = descript.GetSignals();
-  const reflect::Description::AutoSlotMapType& autoslots = descript.GetAutoSlots();
-  const reflect::Description::FunctorMapType& functors   = descript.GetFunctors();
+  using namespace object;
+  using namespace reflect;
+  ObjectClass* pclass                            = rtti::downcast<ObjectClass*>(on->GetClass());
+  const Description& descript                   = pclass->Description();
+  const Description::SignalMapType& signals     = descript.GetSignals();
+  const Description::AutoSlotMapType& autoslots = descript.GetAutoSlots();
+  const Description::FunctorMapType& functors   = descript.GetFunctors();
 
-  for (reflect::Description::AutoSlotMapType::const_iterator it = autoslots.begin(); it != autoslots.end(); it++) {
-    const ork::ConstString& slotname                     = it->first;
-    ork::object::AutoSlot ork::Object::*const ptr2slotmp = it->second;
-    ork::object::AutoSlot& slot                          = on->*ptr2slotmp;
-    slot.SetSlotName(ork::AddPooledString(slotname.c_str()));
-    slot.SetObject(on);
+  for (auto it : autoslots ) {
+    const auto& slotname                     = it.first;
+    AutoSlot Object::*const ptr2slotmp = it.second;
+    auto& slot                          = on.get()->*ptr2slotmp;
+    slot.SetSlotName(slotname);
+    slot.attach(on);
   }
-  // for( reflect::Description::AutoSlotMapType::const_iterator it=autoslots.begin(); it!=autoslots.end(); it++ )
+  // for( Description::AutoSlotMapType::const_iterator it=autoslots.begin(); it!=autoslots.end(); it++ )
   //{	const ork::PoolString& slotname = it->first;
   //	AutoSlot* ptr2slot = it->second;
   //	ptr2slot->SetName( slotname );

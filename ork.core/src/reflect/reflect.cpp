@@ -126,9 +126,9 @@ using namespace reflect;
 namespace ork {
 
 template class orklut<ConstString, ObjectProperty*>;
-template class orklut<ConstString, IObjectFunctor*>;
-template class orklut<ConstString, object::Signal Object::*>;
-template class orklut<ConstString, object::AutoSlot Object::*>;
+template class orklut<std::string, IObjectFunctor*>;
+template class orklut<std::string, object::Signal Object::*>;
+template class orklut<std::string, object::AutoSlot Object::*>;
 } // namespace ork
 
 FOREACH_INSTANTIATED_PROPERTY_TYPE(INSTANTIATE);

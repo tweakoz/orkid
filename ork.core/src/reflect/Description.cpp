@@ -52,12 +52,14 @@ const ObjectProperty* Description::property(const ConstString& name) const {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-void Description::addFunctor(const char* key, IObjectFunctor* functor) {
+void Description::addFunctor(std::string key, IObjectFunctor* functor) {
   mFunctions.AddSorted(key, functor);
 }
 
-const IObjectFunctor* Description::findFunctor(const ConstString& name) const {
-  for (const Description* description = this; description != NULL; description = description->_parentDescription) {
+const IObjectFunctor* Description::findFunctor(const std::string& name) const {
+  for (const Description* description = this; //
+       description != NULL; //
+       description = description->_parentDescription) { //
     const FunctorMapType& map         = description->mFunctions;
     FunctorMapType::const_iterator it = map.find(name);
 
@@ -72,17 +74,19 @@ const IObjectFunctor* Description::findFunctor(const ConstString& name) const {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-void Description::addSignal(const char* key, object::Signal Object::*pmember) {
+void Description::addSignal(std::string key, object::Signal Object::*pmember) {
   mSignals.AddSorted(key, pmember);
 }
-void Description::addAutoSlot(const char* key, object::AutoSlot Object::*pmember) {
+void Description::addAutoSlot(std::string key, object::AutoSlot Object::*pmember) {
   mAutoSlots.AddSorted(key, pmember);
 }
 
-object::Signal Object::*Description::findSignal(const ConstString& key) const {
-  for (const Description* description = this; description != NULL; description = description->_parentDescription) {
+object::Signal Object::*Description::findSignal(const std::string& named) const {
+  for (const Description* description = this; //
+       description != NULL; //
+       description = description->_parentDescription) { //
     const SignalMapType& map         = description->mSignals;
-    SignalMapType::const_iterator it = map.find(key);
+    SignalMapType::const_iterator it = map.find(named);
 
     if (it != map.end()) {
       return (*it).second;
@@ -92,10 +96,12 @@ object::Signal Object::*Description::findSignal(const ConstString& key) const {
   return NULL;
 }
 
-object::AutoSlot Object::*Description::FindAutoSlot(const ConstString& key) const {
-  for (const Description* description = this; description != NULL; description = description->_parentDescription) {
+object::AutoSlot Object::*Description::FindAutoSlot(const std::string& named) const {
+  for (const Description* description = this; //
+      description != NULL; //
+      description = description->_parentDescription) { //
     const AutoSlotMapType& map         = description->mAutoSlots;
-    AutoSlotMapType::const_iterator it = map.find(key);
+    AutoSlotMapType::const_iterator it = map.find(named);
 
     if (it != map.end()) {
       return (*it).second;

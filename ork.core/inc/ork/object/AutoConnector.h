@@ -13,19 +13,17 @@
 namespace ork {
 
 class AutoConnector;
-using autoconnector_ptr_t = AutoConnector*;
+using autoconnector_ptr_t = std::shared_ptr<AutoConnector>;
 
 struct Connection {
   autoconnector_ptr_t _sender;
   autoconnector_ptr_t _reciever;
-  PoolString mSignal;
-  PoolString mSlot;
+  std::string mSignal;
+  std::string mSlot;
 
   Connection()
       : _sender(nullptr)
-      , _reciever(nullptr)
-      , mSignal()
-      , mSlot() {
+      , _reciever(nullptr){
   }
 };
 
@@ -37,9 +35,9 @@ public:
   ~AutoConnector();
   static void connect(
       autoconnector_ptr_t sender,
-      const char* SignalName, //
+      std::string SignalName, //
       autoconnector_ptr_t receiver,
-      const char* SlotName);
+      std::string SlotName);
 
   static void disconnectAll(autoconnector_ptr_t on);
 

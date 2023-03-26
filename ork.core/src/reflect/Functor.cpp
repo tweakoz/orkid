@@ -23,7 +23,7 @@ namespace ork::reflect {
     return new LambdaInvokation;
   }
 
-  void LambdaFunctor::invoke(Object* obj, const IInvokation*, serdes::BidirectionalSerializer*) const {
+  void LambdaFunctor::invoke(object_ptr_t obj, const IInvokation*, serdes::BidirectionalSerializer*) const {
     if (mLambda)
       mLambda(obj);
   }

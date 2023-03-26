@@ -45,7 +45,7 @@ public:
   virtual ~Object();
 
   object::ObjectClass* objectClass() const;
-  object::Signal* findSignal(ConstString name);
+  object::Signal* findSignal(std::string name);
 
   virtual bool preSerialize(reflect::serdes::ISerializer&) const;
   virtual bool preDeserialize(reflect::serdes::IDeserializer&);

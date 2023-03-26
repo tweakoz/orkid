@@ -44,9 +44,11 @@ template <typename FType>
   }
 
 template <typename FType> 
-  void Functor<FType>::invoke(const IInvokation* invokation, serdes::BidirectionalSerializer* bidi) const {
-    Function<FType>::invoke(
-        mFunction, static_cast<const Invokation<typename Function<FType>::Parameters>*>(invokation)->GetParams());
+  void Functor<FType>::invoke(const IInvokation* invokation, //
+                              serdes::BidirectionalSerializer* bidi) const { //
+    using params_t = typename Function<FType>::Parameters;
+    auto params = static_cast<const Invokation<params_t>*>(invokation)->GetParams();
+    Function<FType>::invoke(mFunction,params);
   }
 
 template <typename ReturnType> 
@@ -67,13 +69,15 @@ template <typename FType, typename ResultType>
   }
 
 template <typename FType, typename ResultType> 
-  void ObjectFunctor<FType,ResultType>::invoke(Object* obj, const IInvokation* invokation, serdes::BidirectionalSerializer* bidi) const {
+  void ObjectFunctor<FType,ResultType>::invoke(object_ptr_t obj, const IInvokation* invokation, serdes::BidirectionalSerializer* bidi) const {
+    using classtype_t = typename Function<FType>::ClassType;
+    using params_t = typename Function<FType>::Parameters;
     WriteResult__(
         bidi,
         Function<FType>::invoke(
-            *static_cast<typename Function<FType>::ClassType*>(obj),
+            std::dynamic_pointer_cast<classtype_t>(obj),
             mFunction,
-            static_cast<const Invokation<typename Function<FType>::Parameters>*>(invokation)->GetParams()));
+            static_cast<const Invokation<params_t>*>(invokation)->GetParams()));
   }
 
 template <typename FType, typename ResultType> 
@@ -92,9 +96,12 @@ template <typename FType>
   }
 
 template <typename FType> 
-  void ObjectFunctor<FType, void>::invoke(Object* obj, const IInvokation* invokation, serdes::BidirectionalSerializer* bidi) const  {
+  void ObjectFunctor<FType, void>::invoke(object_ptr_t obj, //
+                                          const IInvokation* invokation, //
+                                          serdes::BidirectionalSerializer* bidi) const  { //
     Function<FType>::invoke(
-        *static_cast<typename Function<FType>::ClassType*>(obj),
+        //*static_cast<typename Function<FType>::ClassType*>(obj),
+        std::dynamic_pointer_cast<typename Function<FType>::ClassType>(obj),
         mFunction,
         static_cast<const Invokation<typename Function<FType>::Parameters>*>(invokation)->GetParams());
   }

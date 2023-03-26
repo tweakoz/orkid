@@ -60,24 +60,23 @@ namespace ork { namespace object {
 //////////////////////////////////////////////////////////////////////
 
 void ISlot::Describe() {
-  // reflect::RegisterProperty("Object", &ISlot::mObject);
+  // reflect::RegisterProperty("Object", &ISlot::_object);
   // reflect::RegisterProperty("SlotName", &ISlot::mSlotName);
 }
 
-ISlot::ISlot(Object* object, PoolString name)
-    : mSlotName(name)
-    , mObject(object) {
+ISlot::ISlot(std::string name)
+    : mSlotName(name) {
 }
 
-Object* ISlot::GetObject() const {
-  return mObject;
+object_ptr_t ISlot::GetObject() const {
+  return _object;
 }
 
-void ISlot::SetObject(Object* pobj) {
-  mObject = pobj;
+void ISlot::SetObject(object_ptr_t pobj) {
+  _object = pobj;
 }
 
-const PoolString& ISlot::GetSlotName() const {
+const std::string& ISlot::GetSlotName() const {
   return mSlotName;
 }
 
@@ -87,13 +86,13 @@ void Slot::Describe() {
 }
 Slot::~Slot() {
 }
-Slot::Slot(Object* object, PoolString name)
-    : ISlot(object, name) {
+Slot::Slot(std::string name)
+    : ISlot(name) {
 }
 
 const reflect::IObjectFunctor* Slot::GetFunctor() const {
-  OrkAssert(mObject);
-  object::ObjectClass* clazz = rtti::autocast(mObject->GetClass());
+  OrkAssert(_object);
+  object::ObjectClass* clazz = rtti::autocast(_object->GetClass());
   auto& desc                 = clazz->Description();
   auto classname             = clazz->Name();
   auto f                     = desc.findFunctor(mSlotName);
@@ -101,7 +100,7 @@ const reflect::IObjectFunctor* Slot::GetFunctor() const {
 }
 
 void Slot::Invoke(reflect::IInvokation* invokation) const {
-  GetFunctor()->invoke(mObject, invokation);
+  GetFunctor()->invoke(_object, invokation);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -117,9 +116,8 @@ AutoSlot::~AutoSlot() {
     psig->RemoveSlot(this);
 }
 
-AutoSlot::AutoSlot(Object* object, const char* name)
-    : Slot(object, ork::AddPooledString(name)) {
-  OrkAssert(object != 0);
+AutoSlot::AutoSlot(std::string name)
+    : Slot(name) {
 }
 
 void AutoSlot::addSignal(Signal* psig) {
@@ -150,8 +148,8 @@ void LambdaSlot::Describe() {
   // reflect::RegisterArrayProperty("Signals", &Signal::GetSlot, &Signal::GetSlotCount, &Signal::ResizeSlots);
 }
 
-LambdaSlot::LambdaSlot(Object* owner, const char* pname)
-    : ISlot(owner, ork::AddPooledString(pname)) {
+LambdaSlot::LambdaSlot(std::string pname)
+    : ISlot(pname) {
 }
 
 LambdaSlot::~LambdaSlot() {
@@ -205,7 +203,7 @@ Signal::~Signal() {
   }
 }
 
-bool Signal::HasSlot(Object* obj, PoolString nam) const {
+bool Signal::HasSlot(object_ptr_t obj, std::string nam) const {
   const auto& slots = mSlots.LockForRead();
 
   for (ISlot* pslot : slots) {
@@ -218,19 +216,21 @@ bool Signal::HasSlot(Object* obj, PoolString nam) const {
   return false;
 }
 
-bool Signal::AddSlot(Object* object, PoolString name) {
+bool Signal::AddSlot(object_ptr_t object, std::string name) {
   OrkAssert(false == HasSlot(object, name));
 
   auto& slots = mSlots.LockForWrite();
-  slots.push_back(new Slot(object, name));
+  auto slot = new Slot(name);
+  slot->SetObject(object);
+  slots.push_back(slot);
   mSlots.UnLock();
 
   return true;
 }
 //////////////////////////////////////////////////////////////////////
 bool Signal::AddSlot(ISlot* ptrslot) {
-  Object* obj    = ptrslot->GetObject();
-  PoolString nam = ptrslot->GetSlotName();
+  object_ptr_t obj    = ptrslot->GetObject();
+  std::string nam = ptrslot->GetSlotName();
   OrkAssert(false == HasSlot(obj, nam));
 
   auto& slots = mSlots.LockForWrite();
@@ -239,7 +239,7 @@ bool Signal::AddSlot(ISlot* ptrslot) {
   return true;
 }
 //////////////////////////////////////////////////////////////////////
-bool Signal::RemoveSlot(Object* object, PoolString name) {
+bool Signal::RemoveSlot(object_ptr_t object, std::string name) {
   auto& locked_slots = mSlots.LockForWrite();
   for (auto it = locked_slots.begin(); it != locked_slots.end(); it++) {
     auto conslot = *it;
@@ -314,7 +314,7 @@ void Signal::ResizeSlots(size_t sz) {
 // connect methods
 //////////////////////////////////////////////////////////////////////
 
-bool Connect(Object* pSender, PoolString signal, Object* pReceiver, PoolString slot) {
+bool Connect(object_ptr_t pSender, std::string signal, object_ptr_t pReceiver, std::string slot) {
   object::ObjectClass* pclass            = rtti::downcast<object::ObjectClass*>(pReceiver->GetClass());
   const reflect::Description& descript   = pclass->Description();
   const reflect::IObjectFunctor* functor = descript.findFunctor(slot);
@@ -335,7 +335,7 @@ bool Connect(Signal* psig, AutoSlot* pslot) {
   return false;
 }
 
-bool ConnectToLambda(Object* pSender, PoolString signal, Object* pReceiver, const slot_lambda_t& slt) {
+bool ConnectToLambda(object_ptr_t pSender, std::string signal, object_ptr_t pReceiver, const slot_lambda_t& slt) {
   Signal* pSignal = pSender->findSignal(signal);
   if (pSignal) {
     assert(false);
@@ -345,7 +345,7 @@ bool ConnectToLambda(Object* pSender, PoolString signal, Object* pReceiver, cons
   return false;
 }
 
-bool Disconnect(Object* pSender, PoolString signal, Object* pReceiver, PoolString slot) {
+bool Disconnect(object_ptr_t pSender, std::string signal, object_ptr_t pReceiver, std::string slot) {
   object::ObjectClass* pclass            = rtti::downcast<object::ObjectClass*>(pReceiver->GetClass());
   const reflect::Description& descript   = pclass->Description();
   const reflect::IObjectFunctor* functor = descript.findFunctor(slot);

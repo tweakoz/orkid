@@ -14,6 +14,8 @@
 
 namespace ork::reflect {
 
+///////////////////////////////////////////////////////////////////
+
 class IInvokation {
 public:
   virtual int GetNumParameters() const                           = 0;
@@ -23,18 +25,24 @@ public:
   }
 };
 
+///////////////////////////////////////////////////////////////////
+
 class IFunctor {
 public:
   virtual void invoke(const IInvokation*, serdes::BidirectionalSerializer* = 0) const = 0;
   virtual IInvokation* CreateInvokation() const                                       = 0;
 };
 
+///////////////////////////////////////////////////////////////////
+
 class IObjectFunctor {
 public:
-  virtual void invoke(Object*, const IInvokation*, serdes::BidirectionalSerializer* = 0) const = 0;
+  virtual void invoke(object_ptr_t, const IInvokation*, serdes::BidirectionalSerializer* = 0) const = 0;
   virtual IInvokation* CreateInvokation() const                                                = 0;
   virtual bool Pure() const                                                                    = 0;
 };
+
+///////////////////////////////////////////////////////////////////
 
 template <typename ParameterType> class Invokation : public IInvokation {
   ParameterType mParameters;
@@ -45,6 +53,8 @@ public:
   const ParameterType& GetParams() const;
   void* ParameterData();
 };
+
+///////////////////////////////////////////////////////////////////
 
 template <typename FType> class Functor : public IFunctor {
 public:
@@ -57,11 +67,16 @@ private:
   void invoke(const IInvokation* invokation, serdes::BidirectionalSerializer* bidi) const override;
 };
 
+///////////////////////////////////////////////////////////////////
+
 template <typename ReturnType> //
 static void WriteResult__(serdes::BidirectionalSerializer* bidi, const ReturnType& result);
 
-template <typename FType, typename ResultType = typename Function<FType>::ReturnType> //
-class ObjectFunctor : public IObjectFunctor {
+///////////////////////////////////////////////////////////////////
+
+template <typename FType, //
+          typename ResultType = typename Function<FType>::ReturnType> //
+class ObjectFunctor : public IObjectFunctor { //
 public:
   ObjectFunctor(FType function, bool pure = false);
 
@@ -71,9 +86,11 @@ private:
 
   IInvokation* CreateInvokation() const override;
 
-  void invoke(Object* obj, const IInvokation* invokation, serdes::BidirectionalSerializer* bidi) const override;
+  void invoke(object_ptr_t obj, const IInvokation* invokation, serdes::BidirectionalSerializer* bidi) const override;
   bool Pure() const override;
 };
+
+///////////////////////////////////////////////////////////////////
 
 template <typename FType> class ObjectFunctor<FType, void> : public IObjectFunctor {
 public:
@@ -82,9 +99,11 @@ public:
 private:
   FType mFunction;
   IInvokation* CreateInvokation() const override;
-  void invoke(Object* obj, const IInvokation* invokation, serdes::BidirectionalSerializer* bidi) const override;
+  void invoke(object_ptr_t obj, const IInvokation* invokation, serdes::BidirectionalSerializer* bidi) const override;
   bool Pure() const override;
 };
+
+///////////////////////////////////////////////////////////////////
 
 class LambdaInvokation : public IInvokation {
   int GetNumParameters() const override;
@@ -92,11 +111,13 @@ class LambdaInvokation : public IInvokation {
   void* ParameterData() override;
 };
 
+///////////////////////////////////////////////////////////////////
+
 struct LambdaFunctor {
-  typedef std::function<void(Object*)> lambda_t;
+  typedef std::function<void(object_ptr_t)> lambda_t;
 
   IInvokation* CreateInvokation() const;
-  void invoke(Object* obj, const IInvokation*, serdes::BidirectionalSerializer* = 0) const;
+  void invoke(object_ptr_t obj, const IInvokation*, serdes::BidirectionalSerializer* = 0) const;
   LambdaFunctor();
 
   lambda_t mLambda;

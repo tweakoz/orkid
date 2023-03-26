@@ -28,21 +28,26 @@ namespace ork { namespace object {
 struct ISlot;
 using islot_ptr_t = std::shared_ptr<ISlot>;
 
-typedef std::function<void(Object*)> slot_lambda_t;
+typedef std::function<void(object_ptr_t)> slot_lambda_t;
+
+/////////////////////////////////////////////////////////////////////////////////////////
 
 struct ISlot : public Object {
 
   RttiDeclareAbstract(ISlot, Object);
 
 public:
-  ISlot(Object* object = 0, PoolString name = AddPooledLiteral(""));
+  ISlot(std::string name="");
 
-  Object* GetObject() const;
-  void SetObject(Object* pobj);
+  object_ptr_t GetObject() const;
+  void SetObject(object_ptr_t pobj);
+  inline void attach(object_ptr_t object){
+    SetObject(object);
+  }
 
-  const PoolString& GetSlotName() const;
+  const std::string& GetSlotName() const;
 
-  void SetSlotName(const PoolString& sname) {
+  void SetSlotName(const std::string& sname) {
     mSlotName = sname;
   }
 
@@ -54,20 +59,24 @@ public:
   virtual void Invoke(reflect::IInvokation* invokation) const = 0;
   virtual const reflect::IObjectFunctor* GetFunctor() const   = 0;
 
-  PoolString mSlotName;
-  Object* mObject;
+  std::string mSlotName;
+  object_ptr_t _object;
 };
+
+/////////////////////////////////////////////////////////////////////////////////////////
 
 struct Slot : public ISlot {
   RttiDeclareAbstract(Slot, ISlot);
 
 public:
-  Slot(Object* object = 0, PoolString name = AddPooledLiteral(""));
+  Slot(std::string name = "");
   ~Slot();
 
   const reflect::IObjectFunctor* GetFunctor() const override;
   void Invoke(reflect::IInvokation* invokation) const override;
 };
+
+/////////////////////////////////////////////////////////////////////////////////////////
 
 struct AutoSlot : public Slot {
   typedef orkset<Signal*> sig_set_t;
@@ -75,7 +84,7 @@ struct AutoSlot : public Slot {
   RttiDeclareAbstract(AutoSlot, Slot);
 
 public:
-  AutoSlot(Object* object, const char* pname);
+  AutoSlot(std::string name = "");
   ~AutoSlot();
 
 private:
@@ -84,11 +93,15 @@ private:
   LockedResource<sig_set_t> mConnectedSignals;
 };
 
+using autoslot_ptr_t = std::shared_ptr<AutoSlot>;
+
+/////////////////////////////////////////////////////////////////////////////////////////
+
 struct LambdaSlot : public ISlot {
   typedef orkset<Signal*> sig_set_t;
 
   RttiDeclareAbstract(LambdaSlot, ISlot);
-  LambdaSlot(Object* owner, const char* pname);
+  LambdaSlot(std::string name = "");
   ~LambdaSlot();
 
 private:
@@ -137,13 +150,13 @@ class Signal : public Object {
   RttiDeclareAbstract(Signal, Object);
 
 public:
-  bool AddSlot(Object* component, PoolString name);
+  bool AddSlot(object_ptr_t component, std::string name);
   bool AddSlot(ISlot* pslot);
 
-  bool RemoveSlot(Object* component, PoolString name);
+  bool RemoveSlot(object_ptr_t component, std::string name);
   bool RemoveSlot(ISlot* pslot);
 
-  bool HasSlot(Object* obj, PoolString nam) const;
+  bool HasSlot(object_ptr_t obj, std::string nam) const;
 
   void Invoke(reflect::IInvokation* invokation) const;
 
@@ -171,35 +184,22 @@ private:
 
 /////////////////////////////////////////////////////////////////////////////////////////
 
-bool Connect(Object* pSender, PoolString signal, Object* pReceiver, PoolString slot);
+bool Connect(object_ptr_t pSender, std::string signal, object_ptr_t pReceiver, std::string slot);
 bool Connect(Signal* psig, AutoSlot* pslot);
-bool ConnectToLambda(Object* pSender, PoolString signal, Object* pReceiver, const slot_lambda_t& slt);
+bool ConnectToLambda(object_ptr_t pSender, std::string signal, object_ptr_t pReceiver, const slot_lambda_t& slt);
 
-bool Disconnect(Object* pSender, PoolString signal, Object* pReceiver, PoolString slot);
+bool Disconnect(object_ptr_t pSender, std::string signal, object_ptr_t pReceiver, std::string slot);
 bool Disconnect(Signal* psig, AutoSlot* pslot);
 
 /////////////////////////////////////////////////////////////////////////////////////////
 
-template <typename ReturnType, typename ClassType> void Signal::operator()(ReturnType (ClassType::*function_signature)()) {
+template <typename ReturnType, typename ClassType> //
+void Signal::operator()(ReturnType (ClassType::*function_signature)()) { //
   using FunctionType   = reflect::Function<void (*)()>;
   using InvokationType = reflect::Invokation<typename FunctionType::Parameters>;
   InvokationType invokation;
   Invoke(&invokation);
 }
-
-//DECLARE_SIGNAL_OPERATOR(01);
-//DECLARE_SIGNAL_OPERATOR(02);
-
-//DEFINE_INVOKATION(01)
-//DEFINE_INVOKATION(02)
-
-//#undef PARAMETER_LIST
-//#undef PARAMETER_PASS
-//#undef TYPENAME_LIST
-//#undef PARAMETER_DECLARATION
-
-//#undef EXPANDLIST01
-//#undef EXPANDLIST02
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -225,7 +225,8 @@ public:                                                                         
 
 ///////////////////////////////////////////////////////////////////////////////
 
-#define ConstructAutoSlot(SlotName) mSlot##SlotName(this, "Slot" #SlotName)
+#define ConstructAutoSlot(SlotName) mSlot##SlotName("Slot" #SlotName)
+#define attachAutoSlot(SlotName) mSlot##SlotName.attach(shared_this);
 
 ///////////////////////////////////////////////////////////////////////////////
 

@@ -28,17 +28,17 @@ namespace reflect {
 class Description {
 public:
   using PropertyMapType = orklut<ConstString, ObjectProperty*>;
-  using FunctorMapType  = orklut<ConstString, IObjectFunctor*>;
-  using SignalMapType   = orklut<ConstString, object::Signal Object::*>;
-  using AutoSlotMapType = orklut<ConstString, object::AutoSlot Object::*>;
+  using FunctorMapType  = orklut<std::string, IObjectFunctor*>;
+  using SignalMapType   = orklut<std::string, object::Signal Object::*>;
+  using AutoSlotMapType = orklut<std::string, object::AutoSlot Object::*>;
   using anno_t          = ork::svar64_t;
 
   Description();
 
   void addProperty(const char* key, ObjectProperty* value);
-  void addFunctor(const char* key, IObjectFunctor* functor);
-  void addSignal(const char* key, object::Signal Object::*);
-  void addAutoSlot(const char* key, object::AutoSlot Object::*);
+  void addFunctor(std::string key, IObjectFunctor* functor);
+  void addSignal(std::string key, object::Signal Object::*);
+  void addAutoSlot(std::string key, object::AutoSlot Object::*);
 
   void SetParentDescription(const Description*);
 
@@ -52,9 +52,9 @@ public:
   const PropertyMapType& properties() const;
 
   const ObjectProperty* property(const ConstString&) const;
-  const IObjectFunctor* findFunctor(const ConstString&) const;
-  object::Signal Object::*findSignal(const ConstString&) const;
-  object::AutoSlot Object::*FindAutoSlot(const ConstString&) const;
+  const IObjectFunctor* findFunctor(const std::string&) const;
+  object::Signal Object::*findSignal(const std::string&) const;
+  object::AutoSlot Object::*FindAutoSlot(const std::string&) const;
 
   template <typename T> inline const T* findTypedProperty(const ConstString& named) const {
     return dynamic_cast<const T*>(property(named));

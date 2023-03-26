@@ -26,7 +26,7 @@ private:
   void serialize(serdes::node_ptr_t) const override;
 
 protected:
-  IArray() {
+  IArray() : ObjectProperty() {
   }
 };
 

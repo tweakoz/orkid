@@ -10,7 +10,7 @@
 #include <ork/lev2/gfx/renderer/drawable.h>
 #include <ork/lev2/gfx/dbgfontman.h>
 #include <ork/object/AutoConnector.h>
-#include <ork/reflect/Functor.inl>
+//#include <ork/reflect/Functor.inl>
 INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::CTXBASE, "Lev2CTXBASE");
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2 {
@@ -35,16 +35,23 @@ struct CtxBaseProgressPimpl { //
 using progresspimpl_ptr_t = std::shared_ptr<CtxBaseProgressPimpl>;
 ///////////////////////////////////////////////////////////////////////////////
 void CTXBASE::Describe() {
-  RegisterAutoSlot(ork::lev2::CTXBASE, Repaint);
+  //RegisterAutoSlot(ork::lev2::CTXBASE, Repaint);
+  
+}
+void CTXBASE::onSharedCreate(std::shared_ptr<CTXBASE> shared_this){
+  //AutoConnector::setupSignalsAndSlots(shared_this);
+  //attachAutoSlot(Repaint);
+  //shared_this->_slotRepaint->attach(shared_this);
 }
 ///////////////////////////////////////////////////////////////////////////////
-CTXBASE::CTXBASE(Window* pwin)
-    : ConstructAutoSlot(Repaint)
-    , _target(0)
-    , _orkwindow(pwin)
-    , _needsInitialize(true){
+CTXBASE::CTXBASE(Window* pwin) //
+    //: ConstructAutoSlot(Repaint) //
+    : _target(0) //
+    , _orkwindow(pwin) //
+    , _needsInitialize(true){ //
 
-  AutoConnector::setupSignalsAndSlots(this);
+  _slotRepaint = std::make_shared<object::AutoSlot>("repaint");
+
   if(_orkwindow)
     _orkwindow->mpCTXBASE = this;
   _uievent = std::make_shared<ui::Event>();

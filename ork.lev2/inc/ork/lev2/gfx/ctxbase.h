@@ -49,15 +49,13 @@ struct RefreshPolicyItem {
   int _fps               = -1;
 };
 
-class CTXBASE : public ork::AutoConnector {
-  RttiDeclareAbstract(CTXBASE, ork::AutoConnector);
+class CTXBASE : public ork::Object {
+  RttiDeclareAbstract(CTXBASE, ork::Object);
 
-  DeclarePublicAutoSlot(Repaint);
+  //DeclarePublicAutoSlot(Repaint);
 
 public:
 
-  CTXBASE(Window* pwin);
-  virtual ~CTXBASE();
 
   bool isGlobal() const;
 
@@ -102,6 +100,14 @@ public:
   varmap::varmap_constptr_t _vars;
 
   RefreshPolicyItem _curpolicy;
+
+  object::autoslot_ptr_t _slotRepaint;
+
+  protected:
+    void onSharedCreate(std::shared_ptr<CTXBASE> this_shared);
+    CTXBASE(Window* pwin);
+    virtual ~CTXBASE();
+
 };
 
 ///////////////////////////////////////////////////////////////////////////////

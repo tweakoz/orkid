@@ -23,7 +23,7 @@ public:
   virtual bool isMultiMap(object_constptr_t obj) const = 0;
 
 protected:
-  IMap() {
+  IMap() : ObjectProperty() {
   }
 };
 
