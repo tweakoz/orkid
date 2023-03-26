@@ -158,9 +158,9 @@ class SceneGraphApp(object):
     #cleaned_result = cleaned_result.coplanarJoined()
 
     cleaned_result = cleaned_result.withTextureUnwrap()
-    cleaned_result = cleaned_result.quadulated()
+    #cleaned_result = cleaned_result.quadulated()
 
-    cleaned_result = cleaned_result.withTextureBasis()
+    #cleaned_result = cleaned_result.withTextureBasis()
 
     print(cleaned_result)
     cleaned_result.writeWavefrontObj("boolean_out.obj")
