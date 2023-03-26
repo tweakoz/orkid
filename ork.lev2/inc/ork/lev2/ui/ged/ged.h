@@ -92,8 +92,7 @@ public:
 
   static orkset<objectmodel_ptr_t> gAllObjectModels;
   static void queueFlushAll();
-
-    objectmodel_ptr_t createShared(opq::opq_ptr_t updateopq=nullptr);
+  static objectmodel_ptr_t createShared(opq::opq_ptr_t updateopq=nullptr);
 
   ObjModel(opq::opq_ptr_t updateopq=nullptr);
   ~ObjModel() override; 

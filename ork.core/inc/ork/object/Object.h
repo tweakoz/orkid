@@ -54,6 +54,11 @@ public:
 
   void notify(const event::Event* pEV);
 
+  template <typename T, typename... A> void notifyX(A&&... args) {
+    T ev(std::forward<A>(args)...);
+    notify(&ev);
+  }
+
   boost::uuids::uuid _uuid;
 
 private:

@@ -6,22 +6,13 @@
 ////////////////////////////////////////////////////////////////
 
 #include <ork/lev2/ui/ged/ged.h>
+#include <ork/kernel/core_interface.h>
 
 // template class ork::object::Signal<void,ork::lev2::ged::ObjModel>;
 
 namespace ork::lev2::ged {
 
 orkset<objectmodel_ptr_t> ObjModel::gAllObjectModels;
-
-/* // connect.h line 183
-ork::object::Signal::operator()<
-  void,
-  ObjModel,
-  std::shared_ptr<Object>>
-        (void (ObjModel::*)(std::shared_ptr<Object>), std::shared_ptr<Object>
-*/
-
-
 
 objectmodel_ptr_t ObjModel::createShared(opq::opq_ptr_t updateopq){
     auto objmodel = std::make_shared<ObjModel>(updateopq);
@@ -54,6 +45,7 @@ ObjModel::ObjModel(opq::opq_ptr_t updateopq)
 ///////////////////////////////////////////////////////////////////////////////
 
 ObjModel::~ObjModel() {
+  queueFlushAll();
   // gAllObjectModels.erase(this);
 }
 
@@ -301,13 +293,15 @@ geditemnode_ptr_t ObjModel::recurse(object_ptr_t root_object, //
                                     const char* pname, //
                                     bool binline) {
 
-  /*GedItemNode* rval    = 0;
-  ork::Object* cur_obj = root_object;
+
+  auto cur_obj = root_object;
   if (cur_obj) {
-    ObjectGedVisitEvent gev;
-    cur_obj->Notify(&gev);
+    cur_obj->notifyX<ObjectGedVisitEvent>();
   }
-  auto objclass = rtti::downcast<object::ObjectClass*>(cur_obj->GetClass());
+
+  auto objclass = cur_obj->objectClass();
+
+  /*GedItemNode* rval    = 0;
 
   ///////////////////////////////////////////////////
   // editor.object.ops
