@@ -82,7 +82,7 @@ class SceneGraphApp(object):
     crcA = Crc64Context()
     crcA.accum(cyl_path)          # path to source mesh
     crcA.accum(tor_path)          # path to source mesh
-    crcA.accum("boolean_ops:1.3") # version string (change if you alter the boolean stage)
+    crcA.accum("boolean_ops:1.4") # version string (change if you alter the boolean stage)
     crcA.finish()
     
     cached_dblock = DataBlockCache.findDataBlock(crcA.result)
@@ -136,10 +136,8 @@ class SceneGraphApp(object):
       # write to cache
 
       dblock = DataBlock()
-      verts_bytes = pickle.dumps(boolean_out.vertices)
-      faces_bytes = pickle.dumps(boolean_out.faces)
-      dblock.writeBytes(verts_bytes)
-      dblock.writeBytes(faces_bytes)
+      dblock.writeBytes(pickle.dumps(boolean_out.vertices))
+      dblock.writeBytes(pickle.dumps(boolean_out.faces))
       DataBlockCache.setDataBlock(crcA.result,dblock)
 
     #################################################################

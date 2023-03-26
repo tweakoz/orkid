@@ -128,7 +128,7 @@ void pyinit_datablock(py::module& module_core) {
     auto typecode = dstream->getItem<uint64_t>();
     OrkAssert(typecode == "bytes"_crcu);
     auto length = dstream->getItem<uint64_t>();
-    printf ("readBytes length<%d>\n", int(length) );
+    //printf ("readBytes length<%d>\n", int(length) );
     auto c_str = (const char*) dstream->current();
     dstream->advance(length);
     return py::bytes(c_str,size_t(length));
@@ -137,10 +137,10 @@ void pyinit_datablock(py::module& module_core) {
     auto typecode = dstream->getItem<uint64_t>();
     OrkAssert(typecode == "string"_crcu);
     auto length = dstream->getItem<uint64_t>();
-    printf ("readString length<%d>\n", int(length) );
+    //printf ("readString length<%d>\n", int(length) );
     auto c_str = (const char*) dstream->current();
     auto as_str = std::string(c_str);
-    printf ("readString c_str<%s>\n", as_str.c_str() );
+    //printf ("readString c_str<%s>\n", as_str.c_str() );
     dstream->advance(length);
     return py::str(as_str);
   });
