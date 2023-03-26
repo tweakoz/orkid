@@ -3,17 +3,21 @@
 # Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 # see http://www.boost.org/LICENSE_1_0.txt
 ################################################################################
-import math, random, argparse, sys
+import math
+import random
+import argparse
+import sys
 import ork.path
 
 from orkengine.core import *
 from orkengine.lev2 import *
-sys.path.append((thisdir()/".."/".."/"examples"/"python").normalized.as_string) # add parent dir to path
-from common.scenegraph import createSceneGraph
-from common.misc import *
-from common.shaders import *
-from common.cameras import *
+# add parent dir to path
+sys.path.append((thisdir()/".."/".."/"examples"/"python").normalized.as_string)
 from common.primitives import createGridData
+from common.cameras import *
+from common.shaders import *
+from common.misc import *
+from common.scenegraph import createSceneGraph
 
 tokens = CrcStringProxy()
 constants = mathconstants()
@@ -120,15 +124,16 @@ class BasicUiCamSgApp(object):
 
     ##############################################
 
-    def onGpuInit(self, ctx, add_grid=False):
+    def onGpuInit(self, ctx, add_grid=False, cam_overlay=True):
         self.context = ctx
         createSceneGraph(app=self, rendermodel="ForwardPBR")
-        self.cam_overlay = self.layer1.createDrawableNode(
-            "camoverlay", self.uicam.createDrawable())
+        if cam_overlay:
+            self.cam_overlay = self.layer1.createDrawableNode(
+                "camoverlay", self.uicam.createDrawable())
         if add_grid:
-          self.grid_data = createGridData()
-          self.grid_node = self.layer1.createGridNode("grid",self.grid_data)
-          self.grid_node.sortkey = 1
+            self.grid_data = createGridData()
+            self.grid_node = self.layer1.createGridNode("grid", self.grid_data)
+            self.grid_node.sortkey = 1
 
     ##############################################
 
@@ -150,18 +155,19 @@ class BasicUiCamSgApp(object):
 
     ################################################
 
-    def createPipeline( self,
-                        rendermodel="ForwardPBR",
-                        depthtest=tokens.LEQUALS,
-                        blending=tokens.OFF,
-                        culltest=tokens.PASS_FRONT,
-                        shaderfile=Path("orkshader://manip"),
-                        shadertext=None,
-                        techname="std_mono_fwd"):
+    def createPipeline(self,
+                       rendermodel="ForwardPBR",
+                       depthtest=tokens.LEQUALS,
+                       blending=tokens.OFF,
+                       culltest=tokens.PASS_FRONT,
+                       shaderfile=Path("orkshader://manip"),
+                       shadertext=None,
+                       techname="std_mono_fwd"):
 
         material = FreestyleMaterial()
         if shadertext != None:
-            material.gpuInitFromShaderText(self.context, "myshader", shadertext)
+            material.gpuInitFromShaderText(
+                self.context, "myshader", shadertext)
         else:
             material.gpuInit(self.context, shaderfile)
         #
@@ -180,20 +186,20 @@ class BasicUiCamSgApp(object):
         return pipeline
 
     def createPseudoWirePipeline(self):
-        pipeline = self.createPipeline( shadertext = PSEUDOWIRE_SHADERTEXT,
-                                        blending=tokens.ADDITIVE,
-                                        culltest=tokens.OFF,
-                                        depthtest=tokens.OFF,
-                                        techname = "tek_pseudowire",
-                                        rendermodel = "ForwardPBR" )
+        pipeline = self.createPipeline(shadertext=PSEUDOWIRE_SHADERTEXT,
+                                       blending=tokens.ADDITIVE,
+                                       culltest=tokens.OFF,
+                                       depthtest=tokens.OFF,
+                                       techname="tek_pseudowire",
+                                       rendermodel="ForwardPBR")
 
         param_world = pipeline.sharedMaterial.param("m")
         param_modcolor = pipeline.sharedMaterial.param("modcolor")
-        pipeline.bindParam( param_world, tokens.RCFD_M )
-        pipeline.bindParam( param_modcolor, tokens.RCFD_MODCOLOR )
-        return pipeline 
+        pipeline.bindParam(param_world, tokens.RCFD_M)
+        pipeline.bindParam(param_modcolor, tokens.RCFD_MODCOLOR)
+        return pipeline
 
     def createBaryWirePipeline(self):
-        return self.createPipeline( rendermodel = "ForwardPBR",
-                                    shaderfile=Path("orkshader://basic"),
-                                    techname="tek_fnormal_wire" )
+        return self.createPipeline(rendermodel="ForwardPBR",
+                                   shaderfile=Path("orkshader://basic"),
+                                   techname="tek_fnormal_wire")
