@@ -64,6 +64,7 @@ class SceneGraphApp(object):
   def onGpuInit(self,ctx):
 
     createSceneGraph(app=self,rendermodel="ForwardPBR")
+    self.cam_overlay = self.layer1.createDrawableNode("camoverlay",self.uicam.createDrawable())
 
     ###################################
     # create grid
@@ -114,7 +115,7 @@ class SceneGraphApp(object):
     solid_wire_pipeline.bindParam( material.param("m"), tokens.RCFD_M)
     #################################################################
     submesh_isect = proc_with_frustum(self.submesh1,self.frustum2)
-    self.barysub_isect = submesh_isect.barycentricUVs()
+    self.barysub_isect = submesh_isect.withBarycentricUVs()
     self.prim3 = meshutil.RigidPrimitive(self.barysub_isect,ctx)
     self.sgnode3 = self.prim3.createNode("m3",self.layer1,solid_wire_pipeline)
     self.sgnode3.enabled = True
@@ -139,7 +140,7 @@ class SceneGraphApp(object):
 
 
     submesh_isect = proc_with_frustum(self.submesh1,self.frustum2)
-    self.barysub_isect = submesh_isect.barycentricUVs()
+    self.barysub_isect = submesh_isect.withBarycentricUVs()
     self.prim3.fromSubMesh(self.barysub_isect,self.context)
     print("intersection convexVolume: %s" % submesh_isect.convexVolume)
 
