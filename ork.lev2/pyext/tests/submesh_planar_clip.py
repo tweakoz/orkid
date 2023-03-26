@@ -116,12 +116,12 @@ class Fragments:
     # clip
     ##################################
 
-    self.clipped = self.stripped.clipWithPlane( plane=self.slicing_plane,
-                                                flip_orientation = self.flip_orientation,
-                                                close_mesh = True )
+    self.clipped = self.stripped.clippedWithPlane( plane=self.slicing_plane,
+                                                   flip_orientation = self.flip_orientation,
+                                                   close_mesh = True )
 
-    self.front = self.clipped["front"].barycentricUVs()
-    self.back = self.clipped["back"].barycentricUVs()
+    self.front = self.clipped["front"].withBarycentricUVs()
+    self.back = self.clipped["back"].withBarycentricUVs()
 
     #printSubMesh("front", self.front)
 
@@ -171,14 +171,7 @@ class SceneGraphApp(object):
     self.fragments = []
 
     createSceneGraph(app=self,rendermodel="ForwardPBR")
-
-    ##################################
-    # create Grid
-    ##################################
-
-    #self.grid_data = createGridData()
-    #self.grid_node = self.layer1.createGridNode("grid",self.grid_data)
-    #self.grid_node.sortkey = 1
+    self.cam_overlay = self.layer1.createDrawableNode("camoverlay",self.uicam.createDrawable())
 
     ##################################
     # shared material
