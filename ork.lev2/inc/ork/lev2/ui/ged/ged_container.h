@@ -1,20 +1,20 @@
 #pragma once
 
 #include "ged.h"
-#include <ork/lev2/ui/surface.h>
 
 namespace ork::lev2::ged {
 ///////////////////////////////////////////////////////////////////////////////
 
-struct GedWidget { //}: public ork::AutoConnector {
-  //RttiDeclareAbstract(GedWidget, ork::AutoConnector);
+struct GedContainer { //}: public ork::AutoConnector {
+  //RttiDeclareAbstract(GedContainer, ork::AutoConnector);
 
-  static gedwidget_ptr_t createShared(objectmodel_ptr_t mdl);
+  static gedcontainer_ptr_t createShared(objectmodel_ptr_t mdl);
 
-  GedWidget(objectmodel_ptr_t model);
-  ~GedWidget();
+  GedContainer(objectmodel_ptr_t model);
+  ~GedContainer();
 
   void ComputeStackHash();
+  void gpuInit(lev2::context_ptr_t context);
 
   //////////////////////////////////////////////////////////////
 
@@ -57,8 +57,6 @@ struct GedWidget { //}: public ork::AutoConnector {
 
   U64 GetStackHash() const;
 
-  GedSkin* GetSkin();
-  void AddSkin(GedSkin* psk);
   void SetDims(int iw, int ih);
 
   static const int kdim = 8;
@@ -77,35 +75,5 @@ struct GedWidget { //}: public ork::AutoConnector {
   bool mbDeleteModel;
 };
 
-///////////////////////////////////////////////////////////////////////////////
-class GedSurface : public ui::Surface {
-public:
-  // friend class lev2::PickBuffer<GedSurface>;
 
-  GedSurface(const std::string& name, objectmodel_ptr_t model);
-  ~GedSurface();
-
-  fvec4 AssignPickId(GedObject* pobj);
-
-  void ResetScroll();
-
-  const GedObject* GetMouseOverNode() const;
-
-  static orkset<GedSurface*> gAllViewports;
-  void SetDims(int iw, int ih);
-  void onInvalidate();
-
-private:
-  void DoRePaintSurface(ui::drawevent_constptr_t drwev) override;
-  void DoSurfaceResize() override;
-  ui::HandlerResult DoOnUiEvent(ui::event_constptr_t EV) override;
-  void _doGpuInit(lev2::Context* pt) final;
-
-  objectmodel_ptr_t _model;
-  GedWidget _widget;
-  GedObject* mpActiveNode;
-  int miScrollY;
-  const GedObject* mpMouseOverNode;
-  ork::msgrouter::subscriber_t _simulation_subscriber;
-};
 } //namespace ork::lev2::ged {

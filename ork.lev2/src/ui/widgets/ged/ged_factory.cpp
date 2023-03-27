@@ -7,7 +7,6 @@
 
 #include <ork/lev2/ui/ged/ged.h>
 #include <ork/lev2/ui/ged/ged_node.h>
-#include <ork/lev2/ui/ged/ged_widget.h>
 #include <ork/kernel/core_interface.h>
 #include <ork/rtti/RTTIX.inl>
 

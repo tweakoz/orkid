@@ -28,7 +28,7 @@ struct PersistHashContext;
 struct PersistantMap;
 struct PersistMapContainer;
 //
-struct GedWidget;
+struct GedContainer;
 struct GedItemNode;
 struct GedSkin;
 struct GedObject;
@@ -40,7 +40,7 @@ using persisthashcontext_ptr_t = std::shared_ptr<PersistHashContext>;
 using persistantmap_ptr_t = std::shared_ptr<PersistantMap>;
 using persistmapcontainer_ptr_t = std::shared_ptr<PersistMapContainer>;
 
-using gedwidget_ptr_t = std::shared_ptr<GedWidget>;
+using gedcontainer_ptr_t = std::shared_ptr<GedContainer>;
 using gedobject_ptr_t = std::shared_ptr<GedObject>;
 using geditemnode_ptr_t = std::shared_ptr<GedItemNode>;
 using gedskin_ptr_t = std::shared_ptr<GedSkin>;
@@ -185,7 +185,7 @@ public:
 
 
   bool _enablePaint = true;
-  GedWidget* _gedWidget = nullptr;
+  GedContainer* _gedContainer = nullptr;
   object_ptr_t _currentObject;
   object_ptr_t _rootObject;
   object_ptr_t _enqueuedObject;

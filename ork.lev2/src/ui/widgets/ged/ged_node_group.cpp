@@ -7,7 +7,8 @@
 
 #include <ork/lev2/ui/ged/ged.h>
 #include <ork/lev2/ui/ged/ged_node.h>
-#include <ork/lev2/ui/ged/ged_widget.h>
+#include <ork/lev2/ui/ged/ged_container.h>
+#include <ork/lev2/ui/ged/ged_surface.h>
 #include <ork/lev2/ui/ged/ged_skin.h>
 #include <ork/kernel/core_interface.h>
 
@@ -27,7 +28,7 @@ GedGroupNode::GedGroupNode(
   std::string fixname = name;
   /////////////////////////////////////////////////////////////////
   // localize collapse states to instances of properties underneath other properties
-  GedItemNode* parent = mdl->_gedWidget->ParentItemNode();
+  GedItemNode* parent = mdl->_gedContainer->ParentItemNode();
   if (parent) {
     const char* parname = parent->_propname.c_str();
     if (parname) {
@@ -163,7 +164,7 @@ void GedGroupNode::CheckVis() {
       }
     }
   }
-  _model->_gedWidget->DoResize();
+  _model->_gedContainer->DoResize();
 }
 
 void GedGroupNode::DoDraw(lev2::Context* pTARG) {

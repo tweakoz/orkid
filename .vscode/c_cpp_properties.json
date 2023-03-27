@@ -11,6 +11,7 @@
             "defines": [
               "BUILD_WITH_EASY_PROFILER",
               "ORK_ARCHITECTURE_X86_64",
+              "ORK_CONFIG_OPENGL",
               "ORK_CONFIG_IX",
               "LINUX",
               "GCC",

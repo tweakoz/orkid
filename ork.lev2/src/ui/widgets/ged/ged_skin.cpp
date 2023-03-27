@@ -8,7 +8,8 @@
 #include <ork/lev2/ui/ged/ged.h>
 #include <ork/lev2/ui/ged/ged_node.h>
 #include <ork/lev2/ui/ged/ged_skin.h>
-#include <ork/lev2/ui/ged/ged_widget.h>
+#include <ork/lev2/ui/ged/ged_container.h>
+#include <ork/lev2/ui/ged/ged_surface.h>
 #include <ork/kernel/core_interface.h>
 #include <ork/lev2/gfx/dbgfontman.h>
 #include <ork/lev2/gfx/gfxmaterial_test.h>
@@ -123,8 +124,9 @@ void GedSkin::clear() {
 struct GedSkin0 : public GedSkin { ///////////////////////////////////////////////////////////////////
   bool mbPickMode;
   orkvector<GedText> mTexts;
-  GedSkin0()
+  GedSkin0(ork::lev2::context_ptr_t ctx)
       : GedSkin() {
+    gpuInit(ctx.get());
     mpFONT  = lev2::FontMan::GetFont("i14");
     miCHARW = mpFONT->GetFontDesc().miAdvanceWidth;
     miCHARH = mpFONT->GetFontDesc().miAdvanceHeight;
@@ -316,8 +318,6 @@ struct GedSkin0 : public GedSkin { /////////////////////////////////////////////
     mTexts.clear();
     clear();
     ClearObjSet();
-    if (not _material)
-      gpuInit(pTARG);
   }
   ///////////////////////////////////////////////////////////////////
   void End(Context* pTARG) {
@@ -441,7 +441,8 @@ struct GedSkin1 : public GedSkin { /////////////////////////////////////////////
   bool mbPickMode;
   orkvector<GedText> mTexts;
   ///////////////////////////////////////////////////////////////////
-  GedSkin1() {
+  GedSkin1(ork::lev2::context_ptr_t ctx) {
+    gpuInit(ctx.get());
     mpFONT  = lev2::FontMan::GetFont("i14");
     miCHARW = mpFONT->GetFontDesc().miAdvanceWidth;
     miCHARH = mpFONT->GetFontDesc().miAdvanceHeight;
@@ -629,8 +630,6 @@ struct GedSkin1 : public GedSkin { /////////////////////////////////////////////
     mTexts.clear();
     clear();
     ClearObjSet();
-    if (not _material)
-      gpuInit(pTARG);
   }
   ///////////////////////////////////////////////////////////////////
   void End(Context* pTARG) {
@@ -744,6 +743,16 @@ struct GedSkin1 : public GedSkin { /////////////////////////////////////////////
     mpCurrentGedVp = 0;
   }
 };
+////////////////////////////////////////////////////////////////
+orkvector<GedSkin*> instantiateSkins(ork::lev2::context_ptr_t ctx) {
+  orkvector<GedSkin*> skins;
+  auto skin0 = new GedSkin0(ctx);
+  auto skin1 = new GedSkin1(ctx);
+  skins.push_back(skin0);
+  skins.push_back(skin1);
+    return skins;
+}
+
 ////////////////////////////////////////////////////////////////
 } //namespace ork::lev2::ged {
 ////////////////////////////////////////////////////////////////

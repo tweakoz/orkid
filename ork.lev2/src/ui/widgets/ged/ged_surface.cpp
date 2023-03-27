@@ -8,7 +8,8 @@
 #include <ork/lev2/ui/ged/ged.h>
 #include <ork/lev2/ui/ged/ged_node.h>
 #include <ork/lev2/ui/ged/ged_skin.h>
-#include <ork/lev2/ui/ged/ged_widget.h>
+#include <ork/lev2/ui/ged/ged_container.h>
+#include <ork/lev2/ui/ged/ged_surface.h>
 #include <ork/kernel/core_interface.h>
 #include <ork/lev2/gfx/dbgfontman.h>
 #include <ork/lev2/gfx/gfxmaterial_test.h>
@@ -32,17 +33,17 @@ orkset<GedSurface*> GedSurface::gAllViewports;
 GedSurface::GedSurface(const std::string& name, objectmodel_ptr_t model)
     : ui::Surface(name, 0, 0, 0, 0, fcolor3::Black(), 0.0f)
     , _model(model)
-    , _widget(model)
+    , _container(model)
     , mpActiveNode(nullptr)
     , miScrollY(0)
     , mpMouseOverNode(0) {
 
-//  _widget.setViewport(this);
+//  _container.setViewport(this);
 
   gAllViewports.insert(this);
 
-  //object::Connect(&model.GetSigRepaint(), &_widget.GetSlotRepaint());
-  //object::Connect(&model.GetSigModelInvalidated(), &_widget.GetSlotModelInvalidated());
+  //object::Connect(&model.GetSigRepaint(), &_container.GetSlotRepaint());
+  //object::Connect(&model.GetSigModelInvalidated(), &_container.GetSlotModelInvalidated());
 
   _simulation_subscriber = msgrouter::channel("Simulation")->subscribe([=](msgrouter::content_t c) { this->onInvalidate(); });
 }
@@ -65,7 +66,7 @@ void GedSurface::_doGpuInit(lev2::Context* pt) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void GedSurface::DoSurfaceResize() {
-  _widget.SetDims(width(), height());
+  _container.SetDims(width(), height());
 
   if (0 == _pickbuffer && (nullptr != _target)) {
     _pickbuffer->resize(width(), height());
@@ -97,7 +98,7 @@ void GedSurface::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
     fbi->Clear(GetClearColorRef(), 1.0f);
 
     if (_model->_currentObject) {
-      _model->_gedWidget->Draw(tgt, width(), height(), miScrollY);
+      _container.Draw(tgt, width(), height(), miScrollY);
     }
   }
   mtxi->PopMMatrix();
@@ -151,7 +152,7 @@ ui::HandlerResult GedSurface::DoOnUiEvent(ui::event_constptr_t EV) {
     case ui::EventCode::KEY_DOWN: {
       int mikeyc = filtev.miKeyCode;
       if (mikeyc == '!') {
-        _widget.IncrementSkin();
+        _container.IncrementSkin();
         mNeedsSurfaceRepaint = true;
       }
       break;
@@ -170,7 +171,7 @@ ui::HandlerResult GedSurface::DoOnUiEvent(ui::event_constptr_t EV) {
         } else if (idelta < 0) {
 
           int iwh        = height();                // 500
-          int irh        = _widget.GetRootHeight(); // 200
+          int irh        = _container.GetRootHeight(); // 200
           int iscrollmin = (iwh - irh);             // 300
 
           if (iscrollmin > 0) {

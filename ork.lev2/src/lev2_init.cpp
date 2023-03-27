@@ -254,6 +254,7 @@ void GfxInit(const std::string& gfxlayer) {
   if (gfxlayer != "dummy") {
 #if defined(ORK_CONFIG_OPENGL)
     gloadercontext = OpenGlContextInit();
+    FontMan::gpuInit(gloadercontext.get());
 #endif
   }
   opq::init();

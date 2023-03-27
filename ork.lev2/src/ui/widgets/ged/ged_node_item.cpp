@@ -8,7 +8,7 @@
 #include <ork/lev2/ui/ged/ged.h>
 #include <ork/lev2/ui/ged/ged_node.h>
 #include <ork/lev2/ui/ged/ged_skin.h>
-#include <ork/lev2/ui/ged/ged_widget.h>
+#include <ork/lev2/ui/ged/ged_container.h>
 #include <ork/lev2/gfx/dbgfontman.h>
 #include <ork/kernel/core_interface.h>
 
@@ -41,7 +41,7 @@ GedItemNode::GedItemNode(ObjModel* mdl, //
                          object_ptr_t obj) //
     : _model(mdl)
     , mbcollapsed(false)
-    , _widget(mdl->_gedWidget)
+    , _container(mdl->_gedContainer)
     , _propname(name)
     , _property(prop)
     , _object(obj)
@@ -51,10 +51,10 @@ GedItemNode::GedItemNode(ObjModel* mdl, //
     , _parent(0)
     , mbInvalid(true) {
 
-  int stack_depth = _widget->GetStackDepth();
+  int stack_depth = _container->GetStackDepth();
 
   if (not (stack_depth == 0)) {
-    //GedItemNode* parent = _widget->ParentItemNode();
+    //GedItemNode* parent = _container->ParentItemNode();
   }
 
   Init();
@@ -71,8 +71,8 @@ void GedItemNode::Init() {
   if (CanSideBySide() == false) {
   }
 
-  _widget->PushItemNode(this);
-  _widget->PopItemNode(this);
+  _container->PushItemNode(this);
+  _container->PopItemNode(this);
 }
 
 //////////////////////////////////////////////////////////////////////////////

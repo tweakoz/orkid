@@ -7,7 +7,8 @@
 
 #include <ork/lev2/ui/ged/ged.h>
 #include <ork/lev2/ui/ged/ged_node.h>
-#include <ork/lev2/ui/ged/ged_widget.h>
+#include <ork/lev2/ui/ged/ged_container.h>
+#include <ork/lev2/ui/ged/ged_surface.h>
 #include <ork/kernel/core_interface.h>
 
 namespace ork::lev2::ged {
@@ -51,8 +52,8 @@ ObjModel::~ObjModel() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void ObjModel::SlotRelayPropertyInvalidated(object_ptr_t pobj, const reflect::ObjectProperty* prop) {
-  // if (_gedWidget)
-  //_gedWidget->PropertyInvalidated(pobj, prop);
+  // if (_gedContainer)
+  //_gedContainer->PropertyInvalidated(pobj, prop);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -207,26 +208,26 @@ void ObjModel::attach(
       browseStackPush(_currentObject);
   }
 
-  if (_gedWidget) {
+  if (_gedContainer) {
     if (top_root_item) { // partial tree (starting at top_root_item) ?
-      _gedWidget->PushItemNode(top_root_item.get());
+      _gedContainer->PushItemNode(top_root_item.get());
       recurse(root_object);
-      _gedWidget->PopItemNode(top_root_item.get());
+      _gedContainer->PopItemNode(top_root_item.get());
     } else { // full tree
-      _gedWidget->GetRootItem()->_children.clear();
+      _gedContainer->GetRootItem()->_children.clear();
       if (root_object) {
-        _gedWidget->PushItemNode(_gedWidget->GetRootItem().get());
+        _gedContainer->PushItemNode(_gedContainer->GetRootItem().get());
         recurse(root_object);
-        _gedWidget->PopItemNode(_gedWidget->GetRootItem().get());
+        _gedContainer->PopItemNode(_gedContainer->GetRootItem().get());
       }
       detach();
     }
-    if (_gedWidget->_viewport) {
+    if (_gedContainer->_viewport) {
       if (bnewobj)
-        _gedWidget->_viewport->ResetScroll();
+        _gedContainer->_viewport->ResetScroll();
     }
-    _gedWidget->DoResize();
-  } // if(_gedWidget)
+    _gedContainer->DoResize();
+  } // if(_gedContainer)
 
   // dont spam refresh, please
   if (_enablePaint)
@@ -272,8 +273,8 @@ void ObjModel::dump(const char* header) const {
   printf("OBJMODELDUMP<%s>\n", header);
 
   std::queue<geditemnode_ptr_t> item_queue;
-  if (_gedWidget) {
-    item_queue.push(_gedWidget->GetRootItem());
+  if (_gedContainer) {
+    item_queue.push(_gedContainer->GetRootItem());
   }
   while (!item_queue.empty()) {
     geditemnode_ptr_t node = item_queue.front();
@@ -326,12 +327,12 @@ geditemnode_ptr_t ObjModel::recurse(
     rval = groupnode;
   }
   if (groupnode) {
-    _gedWidget->AddChild(groupnode);
-    _gedWidget->PushItemNode(groupnode.get());
+    _gedContainer->AddChild(groupnode);
+    _gedContainer->PushItemNode(groupnode.get());
   }
   if (is_const_string || is_op_map) {
     // OpsNode* popnode = new OpsNode(*this, "ops", 0, cur_obj);
-    //_gedWidget->AddChild(popnode);
+    //_gedContainer->AddChild(popnode);
   }
 
   ///////////////////////////////////////////////////
@@ -355,13 +356,13 @@ geditemnode_ptr_t ObjModel::recurse(
             pname = anno_edclass.c_str();
 
           auto child = typed_factory->createItemNode(this, pname, nullptr, root_object);
-          _gedWidget->AddChild(child);
+          _gedContainer->AddChild(child);
 
           if (groupnode) {
-            _gedWidget->PopItemNode(groupnode.get());
+            _gedContainer->PopItemNode(groupnode.get());
             groupnode->CheckVis();
           }
-          _gedWidget->DoResize();
+          _gedContainer->DoResize();
           return rval;
         }
       }
@@ -388,8 +389,8 @@ geditemnode_ptr_t ObjModel::recurse(
     if (igcount) {
       const std::string& GroupName = snode->Name;
       groupnode                    = std::make_shared<GedGroupNode>(this, GroupName.c_str(), nullptr, cur_obj);
-      _gedWidget->AddChild(groupnode);
-      _gedWidget->PushItemNode(groupnode.get());
+      _gedContainer->AddChild(groupnode);
+      _gedContainer->PushItemNode(groupnode.get());
     }
     ////////////////////////////////////////////////////////////////////////////////////////
     { // Possibly In Group
@@ -406,14 +407,14 @@ geditemnode_ptr_t ObjModel::recurse(
         propnode = createNode(Name, prop, cur_obj);
         //////////////////////////////////////////////////
         if (propnode)
-          _gedWidget->AddChild(propnode);
+          _gedContainer->AddChild(propnode);
         //////////////////////////////////////////////////
       }
       ////////////////////////////////////////////////////////////////////////////////////////
     } // Possibly In Group
     ////////////////////////////////////////////////////////////////////////////////////////
     if (groupnode) {
-      _gedWidget->PopItemNode(groupnode.get());
+      _gedContainer->PopItemNode(groupnode.get());
       groupnode->CheckVis();
     }
     ////////////////////////////////////////////////////////////////////////////////////////
@@ -426,10 +427,10 @@ geditemnode_ptr_t ObjModel::recurse(
     ////////////////////////////////////////////////////////////////////////////////////////
   }
   if (groupnode) {
-    _gedWidget->PopItemNode(groupnode.get());
+    _gedContainer->PopItemNode(groupnode.get());
     groupnode->CheckVis();
   }
-  _gedWidget->DoResize();
+  _gedContainer->DoResize();
   return rval;
 }
 
@@ -551,7 +552,7 @@ bool ObjModel::IsNodeVisible(const reflect::ObjectProperty* prop) {
     OrkAssert(AnnoSplit.size() == 2);
     const std::string& key                                 = AnnoSplit[0];
     const std::string& val                                 = AnnoSplit[1];
-    GedItemNode* parentnode                                = _gedWidget->ParentItemNode();
+    GedItemNode* parentnode                                = _gedContainer->ParentItemNode();
     orkmap<std::string, std::string>::const_iterator ittag = parentnode->mTags.find(key);
     if (ittag != parentnode->mTags.end()) {
       if (val != ittag->second) {
