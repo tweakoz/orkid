@@ -180,6 +180,21 @@ int GedItemNode::contentWidth() const {
   int ilabw                   = fdesc.stringWidth(istrw);
   return ilabw;
 }
+///////////////////////////////////////////////////////////////////////////////
+void GedItemNode::Draw(lev2::Context* pTARG) {
+  if (mbInvalid) {
+    ReSync();
+  }
+  if (DoDrawDefault()) {
+    int labw = this->propnameWidth();
+
+    activeSkin()->DrawBgBox(this, miX, miY, miW, miH, GedSkin::ESTYLE_BACKGROUND_1);
+    activeSkin()->DrawOutlineBox(this, miX, miY, miW, miH, GedSkin::ESTYLE_DEFAULT_OUTLINE);
+  }
+  DoDraw(pTARG);
+
+  mbInvalid = false;
+}
 
 ////////////////////////////////////////////////////////////////
 } //namespace ork::lev2::ged {
