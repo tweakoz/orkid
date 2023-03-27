@@ -281,7 +281,7 @@ void ObjModel::dump(const char* header) const {
     geditemnode_ptr_t node = item_queue.front();
     item_queue.pop();
     int inumc = node->numChildren();
-     for (int ic = 0; ic < inumc; ic++) {
+    for (int ic = 0; ic < inumc; ic++) {
       geditemnode_ptr_t pchild = node->_children[ic];
       item_queue.push(pchild);
     }
@@ -342,7 +342,6 @@ geditemnode_ptr_t ObjModel::recurse(
 
   auto anno_editor_class = classdesc.classAnnotation("editor.class");
 
-
   if (auto as_conststr = anno_editor_class.tryAs<ConstString>()) {
     auto anno_edclass = as_conststr.value();
     if (anno_edclass.length()) {
@@ -350,7 +349,7 @@ geditemnode_ptr_t ObjModel::recurse(
       if (AnnoEditorClass) {
         auto clazz = rtti::safe_downcast<ork::object::ObjectClass*>(AnnoEditorClass);
         OrkAssert(clazz != nullptr);
-        auto factory = clazz->createShared();
+        auto factory       = clazz->createShared();
         auto typed_factory = std::dynamic_pointer_cast<GedFactory>(factory);
         OrkAssert(typed_factory != nullptr);
         if (typed_factory) {
@@ -371,7 +370,6 @@ geditemnode_ptr_t ObjModel::recurse(
     }
   }
 
-  /*
   ///////////////////////////////////////////////////
   // walk classes to root class
   // mark properties, optionally sorting them by "editor.prop.groups" annotation
@@ -388,37 +386,37 @@ geditemnode_ptr_t ObjModel::recurse(
     const sortnode* snode = sort_stack.front();
     sort_stack.pop();
     ////////////////////////////////////////////////////////////////////////////////////////
-    GedGroupNode* PropGroupNode = 0;
+    gedgroupnode_ptr_t groupnode = nullptr;
     if (igcount) {
       const std::string& GroupName = snode->Name;
-      PropGroupNode                = new GedGroupNode(*this, GroupName.c_str(), 0, cur_obj);
-      _gedWidget->AddChild(PropGroupNode);
-      _gedWidget->PushItemNode(PropGroupNode);
+      groupnode                    = std::make_shared<GedGroupNode>(this, GroupName.c_str(), nullptr, cur_obj);
+      _gedWidget->AddChild(groupnode);
+      _gedWidget->PushItemNode(groupnode.get());
     }
     ////////////////////////////////////////////////////////////////////////////////////////
     { // Possibly In Group
       ////////////////////////////////////////////////////////////////////////////////////////
       for (auto item : snode->PropVect) {
-        const std::string& Name              = item.first;
+        const std::string& Name             = item.first;
         const reflect::ObjectProperty* prop = item.second;
-        GedItemNode* PropContainerW          = 0;
+        geditemnode_ptr_t propnode          = nullptr;
         if (0 == prop)
           continue;
         if (false == IsNodeVisible(prop))
           continue;
         //////////////////////////////////////////////////
-        PropContainerW = CreateNode(Name, prop, cur_obj);
+        propnode = createNode(Name, prop, cur_obj);
         //////////////////////////////////////////////////
-        if (PropContainerW)
-          _gedWidget->AddChild(PropContainerW);
+        if (propnode)
+          _gedWidget->AddChild(propnode);
         //////////////////////////////////////////////////
       }
       ////////////////////////////////////////////////////////////////////////////////////////
     } // Possibly In Group
     ////////////////////////////////////////////////////////////////////////////////////////
-    if (PropGroupNode) {
-      _gedWidget->PopItemNode(PropGroupNode);
-      PropGroupNode->CheckVis();
+    if (groupnode) {
+      _gedWidget->PopItemNode(groupnode.get());
+      groupnode->CheckVis();
     }
     ////////////////////////////////////////////////////////////////////////////////////////
     for (const auto& it : snode->GroupVect) {
@@ -430,13 +428,11 @@ geditemnode_ptr_t ObjModel::recurse(
     ////////////////////////////////////////////////////////////////////////////////////////
   }
   if (groupnode) {
-    _gedWidget->PopItemNode(groupnode);
+    _gedWidget->PopItemNode(groupnode.get());
     groupnode->CheckVis();
   }
   _gedWidget->DoResize();
   return rval;
-  */
-  return nullptr;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
@@ -456,8 +452,8 @@ geditemnode_ptr_t ObjModel::createNode(
   }
   /////////////////////////////////////////////////////////////////////////
   if (AnnoEditorClass) {
-    ork::object::ObjectClass* pclass = rtti::safe_downcast<ork::object::ObjectClass*>(AnnoEditorClass);
-    ork::rtti::ICastable* factory    = pclass->CreateObject();
+    ork::object::ObjectClass* clazz = rtti::safe_downcast<ork::object::ObjectClass*>(AnnoEditorClass);
+    ork::rtti::ICastable* factory    = clazz->CreateObject();
     GedFactory* qf                   = rtti::safe_downcast<GedFactory*>(factory);
     if (qf) {
       return qf->CreateItemNode(*this, Name.c_str(), prop, pobject);
@@ -539,6 +535,145 @@ geditemnode_ptr_t ObjModel::createNode(
   /////////////////////////////////////////////////////////////////////////
   */
   return nullptr;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////
+
+bool ObjModel::IsNodeVisible(const reflect::ObjectProperty* prop) {
+  ConstString anno_vis       = prop->GetAnnotation("editor.visible");
+  ConstString anno_ediftageq = prop->GetAnnotation("editor.iftageq");
+  if (anno_vis.length()) {
+    if (0 == strcmp(anno_vis.c_str(), "false"))
+      return false;
+  }
+  if (anno_ediftageq.length()) {
+    orkvector<std::string> AnnoSplit;
+    SplitString(std::string(anno_ediftageq.c_str()), AnnoSplit, ":");
+    OrkAssert(AnnoSplit.size() == 2);
+    const std::string& key                                 = AnnoSplit[0];
+    const std::string& val                                 = AnnoSplit[1];
+    GedItemNode* parentnode                                = _gedWidget->ParentItemNode();
+    orkmap<std::string, std::string>::const_iterator ittag = parentnode->mTags.find(key);
+    if (ittag != parentnode->mTags.end()) {
+      if (val != ittag->second) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+//////////////////////////////////////////////////////////////////////////////
+
+void ObjModel::EnumerateNodes(
+    sortnode& in_node,                //
+    object::ObjectClass* the_class) { //
+
+  object::ObjectClass* walk_class = the_class;
+  orkvector<object::ObjectClass*> ClassVect;
+  while (walk_class != ork::Object::GetClassStatic()) {
+    ClassVect.push_back(walk_class);
+    walk_class = rtti::downcast<ork::object::ObjectClass*>(walk_class->Parent());
+  }
+  int inumclasses = int(ClassVect.size());
+  for (int ic = (inumclasses - 1); ic >= 0; ic--) {
+    object::ObjectClass* clazz = ClassVect[ic];
+    const auto& class_desc     = clazz->Description();
+    auto& propmap              = class_desc.properties();
+    auto eg_anno               = class_desc.classAnnotation("editor.prop.groups");
+    auto as_conststr           = eg_anno.tryAs<const char*>();
+    const char* eg             = "";
+    if (as_conststr)
+      eg = as_conststr.value();
+    if (strlen(eg)) {
+      FixedString<1024> str_rep = eg;
+      str_rep.replace_in_place("//", "// ");
+      tokenlist src_toklist = CreateTokenList(str_rep.c_str(), " ");
+      /////////////////////////////////////////////////
+      // enumerate groups
+      /////////////////////////////////////////////////
+      struct yo {
+        std::string mUrlType;
+        tokenlist mTokens;
+      };
+      orkvector<yo> Groups;
+      tokenlist* curtoklist = 0;
+      for (auto group : src_toklist) {
+        ork::file::Path aspath(group.c_str());
+        if (aspath.hasUrlBase()) { // START NEW GROUP
+          Groups.push_back(yo());
+          orkvector<yo>::iterator itnew = Groups.end() - 1;
+          curtoklist                    = &itnew->mTokens;
+          itnew->mUrlType               = group;
+        } else { // ADD TO LAST GROUP
+          if (curtoklist) {
+            curtoklist->push_back(group);
+          }
+        }
+      }
+      /////////////////////////////////////////////////
+      // process groups
+      /////////////////////////////////////////////////
+      for (const auto& grp : Groups) {
+        const std::string& UrlType    = grp.mUrlType;
+        const tokenlist& iter_toklist = grp.mTokens;
+        tokenlist::const_iterator itp = iter_toklist.end();
+        sortnode* pnode               = 0;
+        if (UrlType.find("grp") != std::string::npos) { // GroupNode
+          itp                          = iter_toklist.begin();
+          const std::string& GroupName = (*itp);
+          std::pair<std::string, sortnode*> the_pair;
+          the_pair.first  = GroupName;
+          the_pair.second = new sortnode;
+          in_node.GroupVect.push_back(the_pair);
+          pnode       = (in_node.GroupVect.end() - 1)->second;
+          pnode->Name = GroupName;
+          itp++;
+        } else if (UrlType.find("sort") != std::string::npos) { // SortNode
+          pnode = &in_node;
+          itp   = iter_toklist.begin();
+        }
+        if (pnode)
+          for (; itp != iter_toklist.end(); itp++) {
+            const std::string& str                                   = (*itp);
+            auto itf = propmap.find(str.c_str());
+            ork::reflect::ObjectProperty* prop                       = (itf != propmap.end()) ? itf->second : 0;
+            if (prop) {
+              pnode->PropVect.push_back(std::make_pair(str.c_str(), prop));
+            }
+          }
+      }
+      /////////////////////////////////////////////////
+    } else
+      for (auto it : propmap) {
+        ///////////////////////////////////////////////////
+        // editor.object.props
+        ///////////////////////////////////////////////////
+        std::set<std::string> allowed_props;
+        auto obj_props_anno = the_class->Description().classAnnotation("editor.object.props");
+        if (auto as_str = obj_props_anno.tryAs<std::string>()) {
+          auto propnameset = as_str.value();
+          if (propnameset.length()) {
+            auto pvect = ork::SplitString(propnameset, ' ');
+            for (const auto& item : pvect)
+              allowed_props.insert(item);
+          }
+        }
+        ///////////////////////////////////////////////////
+        bool prop_ok            = true;
+        const ConstString& Name = it.first;
+        if (allowed_props.size()) {
+          std::string namstr(Name.c_str());
+          prop_ok = allowed_props.find(namstr) != allowed_props.end();
+        }
+        if (prop_ok) {
+          ork::reflect::ObjectProperty* prop = it.second;
+          if (prop) {
+            in_node.PropVect.push_back(std::make_pair(Name.c_str(), prop));
+          }
+        }
+      }
+  }
 }
 
 } // namespace ork::lev2::ged
