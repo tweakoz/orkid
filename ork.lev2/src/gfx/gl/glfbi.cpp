@@ -319,7 +319,7 @@ void GlFrameBufferInterface::clearDepth(float fdepth) {
 
 void GlFrameBufferInterface::capture(const RtBuffer* rtb, const file::Path& pth) {
 
-  if (not rtb->_impl.Isset())
+  if (not rtb->_impl.isSet())
     return;
 
   auto bufimpl = rtb->_impl.get<GlRtBufferImpl*>();

@@ -29,7 +29,7 @@ struct PyCodecImpl {
 ////////////////////////////////////////////////////////////////////////////////
 py::object PyCodecImpl::encode(const varval_t& val) const {
   py::object rval;
-  if (not val.Isset()) {
+  if (not val.isSet()) {
     return py::none();
   }
   auto orktypeid = val.getOrkTypeId();

@@ -82,7 +82,7 @@ struct fparamVar {
     _value.set<T>(value);
   }
   operator bool() const {
-    return _value.Isset();
+    return _value.isSet();
   }
 
   std::string _name;

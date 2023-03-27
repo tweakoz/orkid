@@ -6,6 +6,7 @@
 ////////////////////////////////////////////////////////////////
 
 #include <ork/lev2/ui/ged/ged.h>
+#include <ork/lev2/ui/ged/ged_node.h>
 #include <ork/kernel/core_interface.h>
 
 // template class ork::object::Signal<void,ork::lev2::ged::ObjModel>;
@@ -300,36 +301,44 @@ geditemnode_ptr_t ObjModel::recurse(object_ptr_t root_object, //
   }
 
   auto objclass = cur_obj->objectClass();
+  const auto& classdesc = objclass->Description();
 
-  /*GedItemNode* rval    = 0;
+  geditemnode_ptr_t rval    = nullptr;
 
   ///////////////////////////////////////////////////
   // editor.object.ops
   ///////////////////////////////////////////////////
-  auto obj_ops_anno = objclass->Description().classAnnotation("editor.object.ops");
+  auto obj_ops_anno = classdesc.classAnnotation("editor.object.ops");
 
-  bool is_const_string = obj_ops_anno.IsSet() && obj_ops_anno.IsA<ConstString>();
-  bool is_op_map       = obj_ops_anno.IsSet() && obj_ops_anno.IsA<ork::reflect::OpMap*>();
+  bool is_const_string = obj_ops_anno.isSet() and obj_ops_anno.isA<ConstString>();
+  bool is_op_map       = obj_ops_anno.isSet() and obj_ops_anno.isA<ork::reflect::OpMap*>();
 
-  // ConstString obj_ops = obj_ops_anno.IsSet() ? obj_ops_anno.Get<ConstString>() : "";
-  const char* usename         = (pname != 0) ? pname : cur_obj->GetClass()->Name().c_str();
-  GedGroupNode* ObjContainerW = binline ? 0 : new GedGroupNode(*this, usename, 0, cur_obj, true);
+  // ConstString obj_ops = obj_ops_anno.isSet() ? obj_ops_anno.Get<ConstString>() : "";
+  const char* usename         = (pname != 0) ? pname : objclass->Name().c_str();
+  gedgroupnode_ptr_t groupnode = binline //
+                               ? nullptr //
+                               : std::make_shared<GedGroupNode>(this,    // mdl
+                                                                usename, // name
+                                                                nullptr, // property
+                                                                cur_obj, // object
+                                                                true);   // is_obj_node
   if (cur_obj == root_object) {
-    rval = ObjContainerW;
+    rval = groupnode;
   }
-  if (ObjContainerW) {
-    GetGedWidget()->AddChild(ObjContainerW);
-    GetGedWidget()->PushItemNode(ObjContainerW);
+  if (groupnode) {
+    //_gedWidget->AddChild(groupnode);
+    //_gedWidget->PushItemNode(groupnode);
   }
   if (is_const_string || is_op_map) {
-    OpsNode* popnode = new OpsNode(*this, "ops", 0, cur_obj);
-    GetGedWidget()->AddChild(popnode);
+    //OpsNode* popnode = new OpsNode(*this, "ops", 0, cur_obj);
+    //_gedWidget->AddChild(popnode);
   }
+  /*
   ///////////////////////////////////////////////////
   // editor.class
   ///////////////////////////////////////////////////
 
-  auto ClassEditorAnno = objclass->Description().classAnnotation("editor.class");
+  auto ClassEditorAnno = classdesc.classAnnotation("editor.class");
   if (auto as_conststr = ClassEditorAnno.TryAs<ConstString>()) {
     ConstString anno_edclass = as_conststr.value();
     if (anno_edclass.length()) {
@@ -344,13 +353,13 @@ geditemnode_ptr_t ObjModel::recurse(object_ptr_t root_object, //
           if (pname == 0)
             pname = anno_edclass.c_str();
 
-          GetGedWidget()->AddChild(qf->CreateItemNode(*this, pname, 0, root_object));
+          _gedWidget->AddChild(qf->CreateItemNode(*this, pname, 0, root_object));
 
-          if (ObjContainerW) {
-            GetGedWidget()->PopItemNode(ObjContainerW);
-            ObjContainerW->CheckVis();
+          if (groupnode) {
+            _gedWidget->PopItemNode(groupnode);
+            groupnode->CheckVis();
           }
-          GetGedWidget()->DoResize();
+          _gedWidget->DoResize();
           return rval;
         }
       }
@@ -377,8 +386,8 @@ geditemnode_ptr_t ObjModel::recurse(object_ptr_t root_object, //
     if (igcount) {
       const std::string& GroupName = snode->Name;
       PropGroupNode                = new GedGroupNode(*this, GroupName.c_str(), 0, cur_obj);
-      GetGedWidget()->AddChild(PropGroupNode);
-      GetGedWidget()->PushItemNode(PropGroupNode);
+      _gedWidget->AddChild(PropGroupNode);
+      _gedWidget->PushItemNode(PropGroupNode);
     }
     ////////////////////////////////////////////////////////////////////////////////////////
     { // Possibly In Group
@@ -395,14 +404,14 @@ geditemnode_ptr_t ObjModel::recurse(object_ptr_t root_object, //
         PropContainerW = CreateNode(Name, prop, cur_obj);
         //////////////////////////////////////////////////
         if (PropContainerW)
-          GetGedWidget()->AddChild(PropContainerW);
+          _gedWidget->AddChild(PropContainerW);
         //////////////////////////////////////////////////
       }
       ////////////////////////////////////////////////////////////////////////////////////////
     } // Possibly In Group
     ////////////////////////////////////////////////////////////////////////////////////////
     if (PropGroupNode) {
-      GetGedWidget()->PopItemNode(PropGroupNode);
+      _gedWidget->PopItemNode(PropGroupNode);
       PropGroupNode->CheckVis();
     }
     ////////////////////////////////////////////////////////////////////////////////////////
@@ -414,11 +423,11 @@ geditemnode_ptr_t ObjModel::recurse(object_ptr_t root_object, //
     }
     ////////////////////////////////////////////////////////////////////////////////////////
   }
-  if (ObjContainerW) {
-    GetGedWidget()->PopItemNode(ObjContainerW);
-    ObjContainerW->CheckVis();
+  if (groupnode) {
+    _gedWidget->PopItemNode(groupnode);
+    groupnode->CheckVis();
   }
-  GetGedWidget()->DoResize();
+  _gedWidget->DoResize();
   return rval;
   */
    return nullptr;

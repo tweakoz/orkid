@@ -31,6 +31,9 @@ class GfxEnv;
 struct DisplayBuffer;
 struct Window;
 struct AppWindow;
+struct Font;
+struct FontMan;
+
 //
 using gfxcontext_lambda_t = std::function<void(Context*)>;
 using context_ptr_t          = std::shared_ptr<Context>;
@@ -38,6 +41,8 @@ using ctxbase_ptr_t          = std::shared_ptr<CTXBASE>;
 using displaybuffer_ptr_t  = std::shared_ptr<DisplayBuffer>;
 using window_ptr_t           = std::shared_ptr<Window>;
 using appwindow_ptr_t        = std::shared_ptr<AppWindow>;
+using font_ptr_t = std::shared_ptr<Font>;
+using fontman_ptr_t = std::shared_ptr<FontMan>;
 
 ///////////////////////////////////////////////////////////////////////////////
 

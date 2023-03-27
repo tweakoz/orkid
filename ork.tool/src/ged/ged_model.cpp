@@ -243,6 +243,7 @@ GedItemNode* ObjModel::Recurse(ork::Object* root_object, const char* pname, bool
   bool is_const_string = obj_ops_anno.IsSet() && obj_ops_anno.IsA<ConstString>();
   bool is_op_map       = obj_ops_anno.IsSet() && obj_ops_anno.IsA<ork::reflect::OpMap*>();
 
+  /*
   // ConstString obj_ops = obj_ops_anno.IsSet() ? obj_ops_anno.Get<ConstString>() : "";
   const char* usename         = (pname != 0) ? pname : cur_obj->GetClass()->Name().c_str();
   GedGroupNode* ObjContainerW = binline ? 0 : new GedGroupNode(*this, usename, 0, cur_obj, true);
@@ -250,13 +251,14 @@ GedItemNode* ObjModel::Recurse(ork::Object* root_object, const char* pname, bool
     rval = ObjContainerW;
   }
   if (ObjContainerW) {
-    GetGedWidget()->AddChild(ObjContainerW);
-    GetGedWidget()->PushItemNode(ObjContainerW);
+    _gedWidget->AddChild(ObjContainerW);
+    _gedWidget->PushItemNode(ObjContainerW);
   }
   if (is_const_string || is_op_map) {
     OpsNode* popnode = new OpsNode(*this, "ops", 0, cur_obj);
-    GetGedWidget()->AddChild(popnode);
+    _gedWidget->AddChild(popnode);
   }
+
   ///////////////////////////////////////////////////
   // editor.class
   ///////////////////////////////////////////////////
@@ -276,13 +278,13 @@ GedItemNode* ObjModel::Recurse(ork::Object* root_object, const char* pname, bool
           if (pname == 0)
             pname = anno_edclass.c_str();
 
-          GetGedWidget()->AddChild(qf->CreateItemNode(*this, pname, 0, root_object));
+          _gedWidget->AddChild(qf->CreateItemNode(*this, pname, 0, root_object));
 
           if (ObjContainerW) {
-            GetGedWidget()->PopItemNode(ObjContainerW);
+            _gedWidget->PopItemNode(ObjContainerW);
             ObjContainerW->CheckVis();
           }
-          GetGedWidget()->DoResize();
+          _gedWidget->DoResize();
           return rval;
         }
       }
@@ -305,12 +307,12 @@ GedItemNode* ObjModel::Recurse(ork::Object* root_object, const char* pname, bool
     const sortnode* snode = sort_stack.front();
     sort_stack.pop();
     ////////////////////////////////////////////////////////////////////////////////////////
-    GedGroupNode* PropGroupNode = 0;
+    gedgroupnode_ptr_t PropGroupNode = nullptr;
     if (igcount) {
       const std::string& GroupName = snode->Name;
-      PropGroupNode                = new GedGroupNode(*this, GroupName.c_str(), 0, cur_obj);
-      GetGedWidget()->AddChild(PropGroupNode);
-      GetGedWidget()->PushItemNode(PropGroupNode);
+      PropGroupNode                = std::make_shared<GedGroupNode>(this, GroupName.c_str(), 0, cur_obj);
+      _gedWidget->AddChild(PropGroupNode);
+      _gedWidget->PushItemNode(PropGroupNode);
     }
     ////////////////////////////////////////////////////////////////////////////////////////
     { // Possibly In Group
@@ -327,14 +329,14 @@ GedItemNode* ObjModel::Recurse(ork::Object* root_object, const char* pname, bool
         PropContainerW = CreateNode(Name, prop, cur_obj);
         //////////////////////////////////////////////////
         if (PropContainerW)
-          GetGedWidget()->AddChild(PropContainerW);
+          _gedWidget->AddChild(PropContainerW);
         //////////////////////////////////////////////////
       }
       ////////////////////////////////////////////////////////////////////////////////////////
     } // Possibly In Group
     ////////////////////////////////////////////////////////////////////////////////////////
     if (PropGroupNode) {
-      GetGedWidget()->PopItemNode(PropGroupNode);
+      _gedWidget->PopItemNode(PropGroupNode);
       PropGroupNode->CheckVis();
     }
     ////////////////////////////////////////////////////////////////////////////////////////
@@ -347,10 +349,10 @@ GedItemNode* ObjModel::Recurse(ork::Object* root_object, const char* pname, bool
     ////////////////////////////////////////////////////////////////////////////////////////
   }
   if (ObjContainerW) {
-    GetGedWidget()->PopItemNode(ObjContainerW);
+    _gedWidget->PopItemNode(ObjContainerW);
     ObjContainerW->CheckVis();
   }
-  GetGedWidget()->DoResize();
+  _gedWidget->DoResize();
   return rval;
 }
 
@@ -370,7 +372,7 @@ bool ObjModel::IsNodeVisible(const reflect::ObjectProperty* prop) {
     OrkAssert(AnnoSplit.size() == 2);
     const std::string& key                                 = AnnoSplit[0];
     const std::string& val                                 = AnnoSplit[1];
-    GedItemNode* parentnode                                = GetGedWidget()->ParentItemNode();
+    GedItemNode* parentnode                                = _gedWidget->ParentItemNode();
     orkmap<std::string, std::string>::const_iterator ittag = parentnode->mTags.find(key);
     if (ittag != parentnode->mTags.end()) {
       if (val != ittag->second) {
@@ -385,6 +387,7 @@ bool ObjModel::IsNodeVisible(const reflect::ObjectProperty* prop) {
 //////////////////////////////////////////////////////////////////////////////
 
 void ObjModel::EnumerateNodes(sortnode& in_node, object::ObjectClass* the_class) {
+  /*
   object::ObjectClass* walk_class = the_class;
   orkvector<object::ObjectClass*> ClassVect;
   while (walk_class != ork::Object::GetClassStatic()) {
@@ -489,6 +492,7 @@ void ObjModel::EnumerateNodes(sortnode& in_node, object::ObjectClass* the_class)
         }
       }
   }
+  */
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -596,7 +600,7 @@ void ObjModel::Attach(ork::Object* root_object, bool bclearstack, GedItemNode* t
   this->mRootObject = root_object;
   bool bnewobj      = (mCurrentObject != mRootObject);
 
-  auto ged_widget = GetGedWidget();
+  auto ged_widget = _gedWidget;
 
   if (bclearstack) {
     while (false == mBrowseStack.empty())
@@ -664,7 +668,7 @@ int ObjModel::StackSize() const {
 
 void ObjModel::Dump(const char* header) const {
   orkprintf("OBJMODELDUMP<%s>\n", header);
-  GedWidget* qw = this->GetGedWidget();
+  GedWidget* qw = this->_gedWidget;
   std::queue<GedItemNode*> ItemQueue;
   if (qw) {
     ItemQueue.push(qw->GetRootItem());

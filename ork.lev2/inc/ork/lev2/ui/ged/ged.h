@@ -7,12 +7,6 @@
 
 #pragma once
 
-//#include <orktool/orktool_pch.h>
-//#include <orktool/qtui/qtui_tool.h>
-///////////////////////////////////////////////////////////////////////////////
-//#include <ork/object/AutoConnector.h>
-//#include <ork/kernel/string/ArrayString.h>
-//#include <ork/lev2/gfx/pickbuffer.h>
 #include <ork/util/choiceman.h>
 #include <ork/kernel/fixedlut.h>
 #include <ork/kernel/orkpool.h>
@@ -27,19 +21,31 @@
 
 namespace ork::lev2::ged {
 
+static constexpr int koff = 1;
+
 struct ObjModel;
-struct GedWidget;
-struct GedItemNode;
 struct PersistHashContext;
 struct PersistantMap;
 struct PersistMapContainer;
+//
+struct GedWidget;
+struct GedItemNode;
+struct GedSkin;
+struct GedObject;
+struct GedGroupNode;
+struct GedSurface;
 
 using objectmodel_ptr_t = std::shared_ptr<ObjModel>;
-using gedwidget_ptr_t = std::shared_ptr<GedWidget>;
-using geditemnode_ptr_t = std::shared_ptr<GedItemNode>;
 using persisthashcontext_ptr_t = std::shared_ptr<PersistHashContext>;
 using persistantmap_ptr_t = std::shared_ptr<PersistantMap>;
 using persistmapcontainer_ptr_t = std::shared_ptr<PersistMapContainer>;
+
+using gedwidget_ptr_t = std::shared_ptr<GedWidget>;
+using gedobject_ptr_t = std::shared_ptr<GedObject>;
+using geditemnode_ptr_t = std::shared_ptr<GedItemNode>;
+using gedskin_ptr_t = std::shared_ptr<GedSkin>;
+using gedgroupnode_ptr_t = std::shared_ptr<GedGroupNode>;
+using gedsurface_ptr_t = std::shared_ptr<GedSurface>;
 
 ///////////////////////////////////////////////////////////////////////////////
 

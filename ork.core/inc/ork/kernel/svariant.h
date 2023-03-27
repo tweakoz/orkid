@@ -458,7 +458,7 @@ public:
   //////////////////////////////////////////////////////////////
   // return true if the variant has been set to something
   //////////////////////////////////////////////////////////////
-  bool Isset() const {
+  bool isSet() const {
     return (_mtinfo != 0);
   }
 #if defined(SVAR_DEBUG)
