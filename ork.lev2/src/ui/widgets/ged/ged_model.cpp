@@ -441,7 +441,7 @@ geditemnode_ptr_t ObjModel::createNode(
     const std::string& Name,             //
     const reflect::ObjectProperty* prop, //
     object_ptr_t pobject) {
-  /*
+
   rtti::Class* AnnoEditorClass = 0;
   /////////////////////////////////////////////////////////////////////////
   // check editor class anno on property
@@ -452,19 +452,20 @@ geditemnode_ptr_t ObjModel::createNode(
   }
   /////////////////////////////////////////////////////////////////////////
   if (AnnoEditorClass) {
-    ork::object::ObjectClass* clazz = rtti::safe_downcast<ork::object::ObjectClass*>(AnnoEditorClass);
-    ork::rtti::ICastable* factory    = clazz->CreateObject();
-    GedFactory* qf                   = rtti::safe_downcast<GedFactory*>(factory);
-    if (qf) {
-      return qf->CreateItemNode(*this, Name.c_str(), prop, pobject);
+    auto clazz = rtti::safe_downcast<ork::object::ObjectClass*>(AnnoEditorClass);
+    auto factory    = clazz->createShared();
+    auto typed_factory = std::dynamic_pointer_cast<GedFactory>(factory);
+    if (typed_factory) {
+      return typed_factory->createItemNode(this, Name.c_str(), prop, pobject);
     }
   }
   /////////////////////////////////////////////////////////////////////////
-  const reflect::IArray* ArrayProp = rtti::autocast(prop);
+  auto array_prop = dynamic_cast<const reflect::IArray*>(prop);
   /////////////////////////////////////////////////////////////////////////
   ConstString anno_ucdclass  = prop->GetAnnotation("ged.userchoice.delegate");
   bool HasUserChoiceDelegate = (anno_ucdclass.length());
   /////////////////////////////////////////////////////////////////////////
+  /*
   if (const reflect::ITyped<Char8>* c8prop = rtti::autocast(prop))
     return new GedLabelNode(*this, Name.c_str(), prop, pobject);
   /////////////////////////////////////////////////////////////////////////
@@ -534,7 +535,7 @@ geditemnode_ptr_t ObjModel::createNode(
     return new GedLabelNode(*this, Name.c_str(), prop, pobject);
   /////////////////////////////////////////////////////////////////////////
   */
-  return nullptr;
+  return std::make_shared<GedLabelNode>(this, Name.c_str(), prop, pobject);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////

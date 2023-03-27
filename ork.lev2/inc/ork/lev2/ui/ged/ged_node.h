@@ -215,4 +215,15 @@ struct GedGroupNode : public GedItemNode {
 };
 
 ///////////////////////////////////////////////////////////////////////////////
+
+struct GedLabelNode : public GedItemNode {
+public:
+  ///////////////////////////////////////////////////
+
+  GedLabelNode(ObjModel* mdl, const char* name, const reflect::ObjectProperty* prop, object_ptr_t obj);
+
+private:
+  virtual void DoDraw(lev2::Context* pTARG);
+};
+///////////////////////////////////////////////////////////////////////////////
 } //namespace ork::lev2::ged {
