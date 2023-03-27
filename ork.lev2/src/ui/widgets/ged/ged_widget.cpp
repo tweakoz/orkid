@@ -50,7 +50,7 @@ GedWidget::GedWidget(objectmodel_ptr_t mdl)
     //, ConstructAutoSlot(Repaint)
     //, ConstructAutoSlot(ModelInvalidated) {
   //SetupSignalsAndSlots();
-
+  _model->_gedWidget = this;
   //mdl->SetGedWidget(this);
   mRootItem = std::make_shared<GedRootNode>(mdl.get(), "Root", nullptr, nullptr);
   PushItemNode(mRootItem.get());

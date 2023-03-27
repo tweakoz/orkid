@@ -185,7 +185,7 @@ public:
 
 
   bool _enablePaint = true;
-  gedwidget_ptr_t _gedWidget;
+  GedWidget* _gedWidget = nullptr;
   object_ptr_t _currentObject;
   object_ptr_t _rootObject;
   object_ptr_t _enqueuedObject;

@@ -7,6 +7,7 @@
 
 #include <ork/pch.h>
 #include <ork/lev2/ui/ged/ged.h>
+#include <ork/lev2/ui/ged/ged_widget.h>
 #include <utpp/UnitTest++.h>
 #include <ork/kernel/string/deco.inl>
 #include <ork/util/hotkey.h>
@@ -18,6 +19,7 @@ using namespace ork::lev2::ged;
 TEST(ged1) {
 
     auto model = ObjModel::createShared();
+    auto widget = std::make_shared<GedWidget>(model);
     auto edit_obj = std::make_shared<HotKey>();
     model->attach(edit_obj);
 

@@ -170,7 +170,7 @@ public:
   orkvector<geditemnode_ptr_t> _children;
   GedItemNode* _parent = nullptr;
   orkmap<std::string, std::string> mTags;
-  gedwidget_ptr_t _widget;
+  GedWidget* _widget = nullptr;
   int micalch;
   ///////////////////////////////////////////////////
   std::string _propname;

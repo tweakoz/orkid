@@ -10,8 +10,6 @@
 #include <ork/lev2/ui/ged/ged_widget.h>
 #include <ork/kernel/core_interface.h>
 
-// template class ork::object::Signal<void,ork::lev2::ged::ObjModel>;
-
 namespace ork::lev2::ged {
 
 orkset<objectmodel_ptr_t> ObjModel::gAllObjectModels;
