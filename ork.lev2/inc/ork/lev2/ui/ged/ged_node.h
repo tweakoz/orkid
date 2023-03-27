@@ -85,8 +85,6 @@ public:
     return miY;
   }
 
-  void DestroyChildren();
-
   ///////////////////////////////////////////////////
 
   /*void activate() {
@@ -139,7 +137,7 @@ public:
     return miX + (miW >> 1) - (propnameWidth() >> 1);
   }
   ///////////////////////////////////////////////////
-  void AddItem(geditemnode_ptr_t w);
+  void addChild(geditemnode_ptr_t w);
   int numChildren() const;
   ///////////////////////////////////////////////////
   virtual int CalcHeight(void);
@@ -216,77 +214,5 @@ struct GedGroupNode : public GedItemNode {
   bool mIsObjNode;
 };
 
-///////////////////////////////////////////////////////////////////////////////
-
-struct GedWidget { //}: public ork::AutoConnector {
-  //RttiDeclareAbstract(GedWidget, ork::AutoConnector);
-
-  GedWidget(objectmodel_ptr_t model);
-  ~GedWidget();
-
-  void ComputeStackHash();
-
-  //////////////////////////////////////////////////////////////
-
-  //DeclarePublicSignal(Repaint);
-  //DeclarePublicAutoSlot(Repaint);
-  //DeclarePublicAutoSlot(ModelInvalidated);
-
-  void SlotRepaint();
-  void SlotModelInvalidated();
-
-  //////////////////////////////////////////////////////////////
-
-  void SetDeleteModel(bool bv) {
-    mbDeleteModel = true;
-  }
-
-  void PropertyInvalidated(object_ptr_t pobj, const reflect::ObjectProperty* prop);
-
-  void Attach(ork::Object* obj);
-
-  void Draw(lev2::Context* pTARG, int iw, int ih, int iscrolly);
-
-  geditemnode_ptr_t GetRootItem() const {
-    return mRootItem;
-  }
-
-  void IncrementSkin();
-  GedItemNode* ParentItemNode() const;
-  void PushItemNode(GedItemNode* qw);
-  void PopItemNode(GedItemNode* qw);
-  void AddChild(geditemnode_ptr_t pw);
-  void DoResize();
-  void OnSelectionChanged();
-  int GetStackDepth() const {
-    return int(_itemstack.size());
-  }
-  int GetRootHeight() const {
-    return miRootH;
-  }
-
-  U64 GetStackHash() const;
-
-  GedSkin* GetSkin();
-  void AddSkin(GedSkin* psk);
-  void SetDims(int iw, int ih);
-
-  static const int kdim = 8;
-
-  geditemnode_ptr_t mRootItem;
-  int miW;
-  int miH;
-  object_ptr_t mRootObject;
-  objectmodel_ptr_t _model;
-  std::deque<GedItemNode*> _itemstack;
-  int miRootH;
-  gedsurface_ptr_t _viewport;
-  U64 mStackHash;
-  orkvector<GedSkin*> mSkins;
-  int miSkin;
-  bool mbDeleteModel;
-
-
-};
 ///////////////////////////////////////////////////////////////////////////////
 } //namespace ork::lev2::ged {

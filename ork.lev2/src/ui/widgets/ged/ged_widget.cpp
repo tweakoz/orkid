@@ -7,13 +7,27 @@
 
 #include <ork/lev2/ui/ged/ged.h>
 #include <ork/lev2/ui/ged/ged_node.h>
+#include <ork/lev2/ui/ged/ged_skin.h>
+#include <ork/lev2/ui/ged/ged_widget.h>
 #include <ork/kernel/core_interface.h>
 
 ////////////////////////////////////////////////////////////////
 namespace ork::lev2::ged {
 ////////////////////////////////////////////////////////////////
 
-orkvector<GedSkin*> InstantiateSkins();
+orkvector<GedSkin*> InstantiateSkins() {
+  orkvector<GedSkin*> skins;
+  /*
+  while (0 == lev2::GfxEnv::GetRef().loadingContext()) {
+    ork::msleep(100);
+  }
+  auto targ = lev2::GfxEnv::GetRef().loadingContext();
+  FontMan::gpuInit(targ);
+  skins.push_back(new GedSkin0());
+  skins.push_back(new GedSkin1());*/
+  
+  return skins;
+}
 
 ////////////////////////////////////////////////////////////////
 
@@ -103,6 +117,56 @@ void GedWidget::PopItemNode(GedItemNode* qw) {
   OrkAssert(_itemstack.front() == qw);
   _itemstack.pop_front();
   ComputeStackHash();
+}
+
+//////////////////////////////////////////////////////////////////////////////
+
+void GedWidget::ComputeStackHash() {
+  // const orkstack<GedItemNode*>& c = _itemstack._Get_container();
+
+  U64 rval = 0;
+  boost::Crc64 the_hash;
+
+  int isize = (int)_itemstack.size();
+
+  the_hash.accumulateItem<ObjModel*>(_model.get());
+  the_hash.accumulateItem<int>(isize);
+
+  int idx = 0;
+  for (std::deque<GedItemNode*>::const_iterator it = _itemstack.begin(); it != _itemstack.end(); it++) {
+    const GedItemNode* pnode = *(it);
+
+    const char* pname = pnode->_propname.c_str();
+
+    size_t ilen = pnode->_propname.length();
+
+    the_hash.accumulate(pname, ilen);
+    the_hash.accumulateItem<int>(idx);
+
+    idx++;
+  }
+  the_hash.finish();
+  mStackHash = the_hash.result(); // | (the_hash.crc1<<32);
+}
+
+////////////////////////////////////////////////////////////////
+
+void GedWidget::SlotRepaint() {
+  // printf( "GedWidget::SlotRepaint\n" );
+  _viewport->MarkSurfaceDirty();
+}
+
+////////////////////////////////////////////////////////////////
+
+void GedWidget::DoResize() {
+  if (mRootItem) {
+    int inum = mRootItem->numChildren();
+    miRootH  = mRootItem->CalcHeight();
+    mRootItem->Layout(2, 2, miW - 4, miH - 4);
+    // printf( "GedWidget<%p>::DoResize() dims<%d %d> miRootH<%d> inumitems<%d>\n", this, miW, miH, miRootH, inum );
+  } else {
+    miRootH = 0;
+  }
 }
 
 ////////////////////////////////////////////////////////////////

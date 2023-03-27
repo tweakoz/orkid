@@ -8,6 +8,8 @@
 #include <ork/lev2/ui/ged/ged.h>
 #include <ork/lev2/ui/ged/ged_node.h>
 #include <ork/lev2/ui/ged/ged_skin.h>
+#include <ork/lev2/ui/ged/ged_widget.h>
+#include <ork/lev2/gfx/dbgfontman.h>
 #include <ork/kernel/core_interface.h>
 
 ////////////////////////////////////////////////////////////////
@@ -30,6 +32,8 @@ void GedObject::OnUiEvent(ork::ui::event_constptr_t ev) {
       break;
   }
 }
+
+////////////////////////////////////////////////////////////////
 
 GedItemNode::GedItemNode(ObjModel* mdl, //
                          const char* name,  //
@@ -56,10 +60,13 @@ GedItemNode::GedItemNode(ObjModel* mdl, //
   Init();
 }
 
+////////////////////////////////////////////////////////////////
+
 GedItemNode::~GedItemNode() {
 }
 
 //////////////////////////////////////////////////////////////////////////////
+
 void GedItemNode::Init() {
   if (CanSideBySide() == false) {
   }
@@ -67,7 +74,9 @@ void GedItemNode::Init() {
   _widget->PushItemNode(this);
   _widget->PopItemNode(this);
 }
+
 //////////////////////////////////////////////////////////////////////////////
+
 int GedItemNode::CalcHeight(void) {
   int ih = get_charh() + 8;
   if (false == mbcollapsed) {
@@ -84,7 +93,9 @@ int GedItemNode::CalcHeight(void) {
   // printf( "GedItemNode<%p> CalcHeight() <%d>\n", this, ih );
   return ih;
 }
+
 //////////////////////////////////////////////////////////////////////////////
+
 void GedItemNode::Layout(int ix, int iy, int iw, int ih) {
   miX = ix;
   miY = iy;
@@ -115,12 +126,20 @@ void GedItemNode::Layout(int ix, int iy, int iw, int ih) {
     }
   }
 }
+
+////////////////////////////////////////////////////////////////
+
 int GedItemNode::get_charh() const {
   return activeSkin()->char_h();
 }
+
+////////////////////////////////////////////////////////////////
+
 int GedItemNode::get_charw() const {
   return activeSkin()->char_w();
 }
+
+////////////////////////////////////////////////////////////////
 
 int GedItemNode::get_text_center_y() const {
   int ich = get_charh();
@@ -129,4 +148,38 @@ int GedItemNode::get_text_center_y() const {
   return ity;
 }
 
+//////////////////////////////////////////////////////////////////////////////
+void GedItemNode::addChild(geditemnode_ptr_t w) {
+  w->SetDecoIndex(int(_children.size()));
+  _children.push_back(w);
+  w->_parent = this;
+}
+//////////////////////////////////////////////////////////////////////////////
+int GedItemNode::numChildren() const {
+  return int(_children.size());
+}
+GedSkin* GedItemNode::activeSkin() const {
+  return nullptr; //mRoot->GetSkin();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+bool GedItemNode::DoDrawDefault() const {
+  return true;
+}
+///////////////////////////////////////////////////////////////////////////////
+int GedItemNode::propnameWidth() const {
+  int istrw                   = (int)strlen(_propname.c_str());
+  const lev2::FontDesc& fdesc = lev2::FontMan::GetRef().currentFont()->GetFontDesc();
+  int ilabw                   = fdesc.stringWidth(istrw);
+  return ilabw;
+}
+///////////////////////////////////////////////////////////////////////////////
+int GedItemNode::contentWidth() const {
+  size_t istrw                = _content.length();
+  const lev2::FontDesc& fdesc = lev2::FontMan::GetRef().currentFont()->GetFontDesc();
+  int ilabw                   = fdesc.stringWidth(istrw);
+  return ilabw;
+}
+
+////////////////////////////////////////////////////////////////
 } //namespace ork::lev2::ged {

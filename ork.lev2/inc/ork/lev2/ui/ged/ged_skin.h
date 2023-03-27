@@ -5,7 +5,7 @@
 
 namespace ork::lev2::ged {
 
-class GedSkin {
+struct GedSkin {
 
 public:
   typedef void (*DrawCB)(GedSkin* pskin, GedObject* pnode, ork::lev2::Context* pTARG);
