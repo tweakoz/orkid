@@ -80,20 +80,14 @@ class GedSurface : public ui::Surface {
 public:
   // friend class lev2::PickBuffer<GedSurface>;
 
-  fvec4 AssignPickId(GedObject* pobj);
-  GedWidget& GetGedWidget() {
-    return mWidget;
-  }
-  GedSurface(const std::string& name, ObjModel& model);
+  GedSurface(const std::string& name, objectmodel_ptr_t model);
   ~GedSurface();
 
-  void ResetScroll() {
-    miScrollY = 0;
-  }
+  fvec4 AssignPickId(GedObject* pobj);
 
-  const GedObject* GetMouseOverNode() const {
-    return mpMouseOverNode;
-  }
+  void ResetScroll();
+
+  const GedObject* GetMouseOverNode() const;
 
   static orkset<GedSurface*> gAllViewports;
   void SetDims(int iw, int ih);
@@ -105,8 +99,8 @@ private:
   ui::HandlerResult DoOnUiEvent(ui::event_constptr_t EV) override;
   void _doGpuInit(lev2::Context* pt) final;
 
-  ObjModel& mModel;
-  GedWidget mWidget;
+  objectmodel_ptr_t _model;
+  GedWidget _widget;
   GedObject* mpActiveNode;
   int miScrollY;
   const GedObject* mpMouseOverNode;

@@ -29,8 +29,8 @@ public:
 
   void Init();
   void resize(int w, int h);
-  uint64_t AssignPickId(const ork::Object*);
-  ork::Object* GetObjectFromPickId(uint64_t);
+  uint64_t AssignPickId(const void*);
+  void* GetObjectFromPickId(uint64_t);
   Context* context() {
     return _context;
   }
@@ -49,7 +49,7 @@ public:
   int _height   = 0;
   bool _inittex = true;
 
-  std::map<uint64_t, ork::Object*> mPickIds;
+  std::map<uint64_t, void*> mPickIds;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

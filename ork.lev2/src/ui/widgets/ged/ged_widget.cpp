@@ -183,6 +183,53 @@ void GedWidget::AddChild(geditemnode_ptr_t child_node) {
   }
 }
 
+void GedWidget::SetDims(int iw, int ih) {
+  miW = iw;
+  miH = ih;
+  DoResize();
+}
+
+//////////////////////////////////////////////////////////////////////////////
+
+void GedWidget::Draw(lev2::Context* pTARG, int iw, int ih, int iscrolly) {
+  /*
+  ///////////////////////////////////////////////
+  GedItemNode* root = GetRootItem();
+  ///////////////////////////////////////////////
+  bool is_pick = pTARG->FBI()->isPickState();
+
+  ///////////////////////////////////////////////
+  activeSkin()->SetScrollY(iscrolly);
+  activeSkin()->Begin(pTARG, mViewport);
+  {
+    orkstack<GedItemNode*> NodeStack;
+    NodeStack.push(root);
+
+    while (false == NodeStack.empty()) {
+      GedItemNode* item = NodeStack.top();
+      NodeStack.pop();
+      int id = item->GetDepth();
+      ///////////////////////////////////////////////
+      int inumc = item->GetNumItems();
+      for (int ic = 0; ic < inumc; ic++) {
+        GedItemNode* child = item->GetItem(ic);
+        if (child->IsVisible()) {
+          child->SetDepth(id + 1);
+          NodeStack.push(child);
+        }
+      }
+      ///////////////////////////////////////////////
+      if (item->IsVisible()) {
+        item->Draw(pTARG);
+      }
+      ///////////////////////////////////////////////
+    }
+  }
+  activeSkin()->End(pTARG);
+  */
+  ///////////////////////////////////////////////
+}
+
 ////////////////////////////////////////////////////////////////
 } //namespace ork::lev2::ged {
 ////////////////////////////////////////////////////////////////

@@ -28,16 +28,16 @@ PickBuffer::PickBuffer(ui::Surface* surf, Context* ctx, int w, int h)
   Init();
 }
 ///////////////////////////////////////////////////////////////////////////////
-uint64_t PickBuffer::AssignPickId(const ork::Object* pobj) {
+uint64_t PickBuffer::AssignPickId(const void* pobj) {
   uint64_t pid  = uint64_t(pobj);
-  mPickIds[pid] = const_cast<ork::Object*>(pobj);
+  mPickIds[pid] = const_cast<void*>(pobj);
   return pid;
 }
 ///////////////////////////////////////////////////////////////////////////////
-ork::Object* PickBuffer::GetObjectFromPickId(uint64_t pid) {
+void* PickBuffer::GetObjectFromPickId(uint64_t pid) {
   // printf("pickid <0x%zx>\n", pid);
   auto it           = mPickIds.find(pid);
-  ork::Object* pobj = (it == mPickIds.end()) ? nullptr : it->second;
+  void* pobj = (it == mPickIds.end()) ? nullptr : it->second;
   return pobj;
 }
 ///////////////////////////////////////////////////////////////////////////////
