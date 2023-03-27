@@ -112,7 +112,7 @@ template <typename T> void Plane<T>::Reset(void) {
 
 template <typename T> bool Plane<T>::IsPointInFront(const Vector3<T>& point) const {
   T distance = pointDistance(point);
-  return (distance >= T(0.0f));
+  return (distance >= Epsilon());
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -326,13 +326,15 @@ bool Plane<T>::ClipPoly(const PolyType& input_poly, //
                         PolyType& out_front_poly, //
                         PolyType& out_back_poly) { //
 
+  bool debug = false;
+
   const int inuminverts                         = input_poly.GetNumVertices();
   OrkAssert(input_poly.GetNumVertices()>=3);
 
-  //printf( "clip poly num verts<%d>\n", inuminverts );
+  if( debug ) printf( "clip poly num verts<%d>\n", inuminverts );
 
   for (int iva = 0; iva < inuminverts; iva++) {
-    //printf( "  iva<%d> of inuminverts<%d>\n", iva, inuminverts );
+    if( debug ) printf( "  iva<%d> of inuminverts<%d>\n", iva, inuminverts );
     int ivb                                 = ((iva == inuminverts - 1) ? 0 : iva + 1);
     const auto& vA = input_poly.GetVertex(iva);
     const auto& vB = input_poly.GetVertex(ivb);
@@ -341,21 +343,24 @@ bool Plane<T>::ClipPoly(const PolyType& input_poly, //
     bool is_vertex_a_front = IsPointInFront(vA.Pos());
     bool is_vertex_b_front = IsPointInFront(vB.Pos());
 
-    //printf( "  is_vertex_a_front<%d> is_vertex_b_front<%d>\n", int(is_vertex_a_front), int(is_vertex_b_front) );
+    if( debug ) printf( "  is_vertex_a_front<%d> is_vertex_b_front<%d>\n", int(is_vertex_a_front), int(is_vertex_b_front) );
 
     if (is_vertex_a_front) {
       out_front_poly.AddVertex(vA);
-      //printf("  add a to front cnt<%d>\n", out_front_poly.GetNumVertices());
+      if( debug ) printf("  add a to front cnt<%d>\n", out_front_poly.GetNumVertices());
     } else {
       out_back_poly.AddVertex(vA);
-      //printf("  add a to back cnt<%d>\n", out_back_poly.GetNumVertices());
+      if( debug ) printf("  add a to back cnt<%d>\n", out_back_poly.GetNumVertices());
     }
 
-    if (is_vertex_b_front != is_vertex_a_front) {
+    if (is_vertex_b_front != is_vertex_a_front) { // did we cross plane ?
+      if( debug ) printf("  plane crossed iva<%d> ivb<%d>\n", iva, ivb );
       Vector3<T> vPos;
       T isectdist;
       TLineSegment3<T> lseg(vA.Pos(), vB.Pos());
-      if (Intersect(lseg, isectdist, vPos)) {
+      bool isect1 = Intersect(lseg, isectdist, vPos);
+      if( debug ) printf("  isect1<%d>\n", int(isect1) );
+      if (isect1) {
         T fDist   = (vA.Pos() - vB.Pos()).magnitude();
         T fDist2  = (vA.Pos() - vPos).magnitude();
         T fScalar = (Abs(fDist) < Epsilon()) ? T(0.0) : fDist2 / fDist;
@@ -363,12 +368,14 @@ bool Plane<T>::ClipPoly(const PolyType& input_poly, //
         LerpedVertex.lerp(vA, vB, fScalar);
         out_front_poly.AddVertex(LerpedVertex);
         out_back_poly.AddVertex(LerpedVertex);
-        //printf("  add l to front cnt<%d>\n", out_front_poly.GetNumVertices());
-        //printf("  add l to front cnt<%d>\n", out_back_poly.GetNumVertices());
+        if( debug ) printf("  add l to front cnt<%d>\n", out_front_poly.GetNumVertices());
+        if( debug ) printf("  add l to front cnt<%d>\n", out_back_poly.GetNumVertices());
       }
       else{
         TLineSegment3<T> lseg2(vB.Pos(), vA.Pos());
-        if (Intersect(lseg2, isectdist, vPos)) {
+        bool isect2 = Intersect(lseg2, isectdist, vPos);
+        if( debug ) printf("  isect2<%d>\n", int(isect2) );
+        if (isect2) {
           T fDist   = (vB.Pos() - vA.Pos()).magnitude();
           T fDist2  = (vB.Pos() - vPos).magnitude();
           T fScalar = (Abs(fDist) < Epsilon()) ? T(0.0) : fDist2 / fDist;
@@ -376,8 +383,14 @@ bool Plane<T>::ClipPoly(const PolyType& input_poly, //
           LerpedVertex.lerp(vB, vA, fScalar);
           out_front_poly.AddVertex(LerpedVertex);
           out_back_poly.AddVertex(LerpedVertex);
-          //printf("  add l2 to front cnt<%d>\n", out_front_poly.GetNumVertices());
-          //printf("  add l2 to front cnt<%d>\n", out_back_poly.GetNumVertices());
+          if( debug ) printf("  add l2 to front cnt<%d>\n", out_front_poly.GetNumVertices());
+          if( debug ) printf("  add l2 to front cnt<%d>\n", out_back_poly.GetNumVertices());
+        }
+        else{
+          if( debug ) printf( "NO INTERSECT vA<%g %g %g> vB<%g %g %g>\n", vA.Pos().x, vA.Pos().y, vA.Pos().z, vB.Pos().x, vB.Pos().y, vB.Pos().z );
+          if( debug ) printf( "NO INTERSECT pdA<%g>\n", pointDistance(vA.Pos()) );
+          if( debug ) printf( "NO INTERSECT pdB<%g>\n", pointDistance(vB.Pos()) );
+          if( debug ) printf( "NO INTERSECT plane_n<%g %g %g> d<%g>\n", n.x, n.y, n.z, d );
         }
 
       }
@@ -386,6 +399,8 @@ bool Plane<T>::ClipPoly(const PolyType& input_poly, //
 
   int numfront = out_front_poly.GetNumVertices();
   int numback = out_back_poly.GetNumVertices();
+
+  if( debug ) printf( "numfront<%d> numback<%d>\n", numfront, numback );
 
   OrkAssert(numfront==0 or numfront>=3);
   OrkAssert(numback==0 or numback>=3);
