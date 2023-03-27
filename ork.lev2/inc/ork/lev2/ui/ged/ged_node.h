@@ -216,6 +216,18 @@ struct GedGroupNode : public GedItemNode {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+struct KeyDecoName {
+  PropTypeString mActualKey;
+  int miMultiIndex;
+
+  PropTypeString DecoratedName() const;
+
+  KeyDecoName(const char* pkey, int imulti); // decomposed name/index
+  KeyDecoName(const char* pkey);             // precomposed name/index
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
 struct GedLabelNode : public GedItemNode {
 public:
   ///////////////////////////////////////////////////
@@ -225,5 +237,52 @@ public:
 private:
   virtual void DoDraw(lev2::Context* pTARG);
 };
+///////////////////////////////////////////////////////////////////////////////
+struct GedMapNode : public GedItemNode {
+public:
+
+  using event_constptr_t = ork::ui::event_constptr_t;
+
+  GedMapNode(ObjModel* mdl, const char* name, const reflect::ObjectProperty* prop, ork::Object* obj);
+  const orkmap<PropTypeString, KeyDecoName>& GetKeys() const {
+    return mMapKeys;
+  }
+  void FocusItem(const PropTypeString& key);
+
+  bool IsKeyPresent(const KeyDecoName& pkey) const;
+  void AddKey(const KeyDecoName& pkey);
+
+  bool IsMultiMap() const {
+    return mbIsMultiMap;
+  }
+
+private:
+  const reflect::IMap* mMapProp;
+  orkmap<PropTypeString, KeyDecoName> mMapKeys;
+  GedItemNode* mKeyNode;
+  PropTypeString mCurrentKey;
+  int mItemIndex;
+  bool mbSingle;
+  bool mbConst;
+  bool mbIsMultiMap;
+  bool mbImpExp;
+
+  void OnMouseDoubleClicked(event_constptr_t ev) final;
+
+  void CheckVis();
+  void DoDraw(Context* pTARG) final;
+
+  void AddItem(event_constptr_t ev);
+  void RemoveItem(event_constptr_t ev);
+  void MoveItem(event_constptr_t ev);
+  void DuplicateItem(event_constptr_t ev);
+  void ImportItem(event_constptr_t ev);
+  void ExportItem(event_constptr_t ev);
+
+  bool DoDrawDefault() const final {
+    return false;
+  }
+};
+
 ///////////////////////////////////////////////////////////////////////////////
 } //namespace ork::lev2::ged {
