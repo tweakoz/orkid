@@ -7,6 +7,7 @@
 
 #include <ork/lev2/ui/ged/ged.h>
 #include <ork/lev2/ui/ged/ged_node.h>
+#include <ork/lev2/ui/ged/ged_widget.h>
 #include <ork/kernel/core_interface.h>
 
 // template class ork::object::Signal<void,ork::lev2::ged::ObjModel>;
@@ -15,23 +16,23 @@ namespace ork::lev2::ged {
 
 orkset<objectmodel_ptr_t> ObjModel::gAllObjectModels;
 
-objectmodel_ptr_t ObjModel::createShared(opq::opq_ptr_t updateopq){
-    auto objmodel = std::make_shared<ObjModel>(updateopq);
-   //AutoConnector::setupSignalsAndSlots(objmodel);
-   gAllObjectModels.insert(objmodel);
-   return objmodel;
+objectmodel_ptr_t ObjModel::createShared(opq::opq_ptr_t updateopq) {
+  auto objmodel = std::make_shared<ObjModel>(updateopq);
+  // AutoConnector::setupSignalsAndSlots(objmodel);
+  gAllObjectModels.insert(objmodel);
+  return objmodel;
 }
 
 ObjModel::ObjModel(opq::opq_ptr_t updateopq)
     : _enablePaint(true) {
-    //, mModelInvalidatedInvoker(mSignalModelInvalidated.CreateInvokation())
-    //, ConstructAutoSlot(NewObject)
-    //, ConstructAutoSlot(RelayModelInvalidated)
-    //, ConstructAutoSlot(RelayPropertyInvalidated)
-    //, ConstructAutoSlot(ObjectDeleted)
-    //, ConstructAutoSlot(ObjectSelected)
-    //, ConstructAutoSlot(ObjectDeSelected)
-    //, ConstructAutoSlot(Repaint) {
+  //, mModelInvalidatedInvoker(mSignalModelInvalidated.CreateInvokation())
+  //, ConstructAutoSlot(NewObject)
+  //, ConstructAutoSlot(RelayModelInvalidated)
+  //, ConstructAutoSlot(RelayPropertyInvalidated)
+  //, ConstructAutoSlot(ObjectDeleted)
+  //, ConstructAutoSlot(ObjectSelected)
+  //, ConstructAutoSlot(ObjectDeSelected)
+  //, ConstructAutoSlot(Repaint) {
 
   _updateOPQ = updateopq ? updateopq : opq::updateSerialQueue();
 
@@ -40,7 +41,6 @@ ObjModel::ObjModel(opq::opq_ptr_t updateopq)
   ///////////////////////////////////////////
 
   // object::Connect(&mSignalNewObject, &mSlotNewObject);
-
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -68,14 +68,14 @@ void ObjModel::SlotRelayModelInvalidated() {
 
 void ObjModel::SigModelInvalidated() {
   // printf("ObjModel::SigModelInvalidated\n");
-  //mSignalModelInvalidated(&ObjModel::SigModelInvalidated); // << operator() instantiated here
+  // mSignalModelInvalidated(&ObjModel::SigModelInvalidated); // << operator() instantiated here
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void ObjModel::SigPreNewObject() {
   _updateOPQ->enqueue([=]() { //
-    //this->mSignalPreNewObject(&ObjModel::SigPreNewObject);
+    // this->mSignalPreNewObject(&ObjModel::SigPreNewObject);
   });
 }
 
@@ -83,7 +83,7 @@ void ObjModel::SigPreNewObject() {
 
 void ObjModel::SigPropertyInvalidated(object_ptr_t pobj, const reflect::ObjectProperty* prop) {
   _updateOPQ->enqueue([=]() { //
-    //this->mSignalPropertyInvalidated(&ObjModel::SigPropertyInvalidated, pobj, prop);
+    // this->mSignalPropertyInvalidated(&ObjModel::SigPropertyInvalidated, pobj, prop);
   });
 }
 
@@ -91,28 +91,28 @@ void ObjModel::SigPropertyInvalidated(object_ptr_t pobj, const reflect::ObjectPr
 
 void ObjModel::emitRepaint() {
   _sigRepaint();
-  //mSignalRepaint(&ObjModel::SigRepaint);
+  // mSignalRepaint(&ObjModel::SigRepaint);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void ObjModel::SigNewObject(object_ptr_t pobj) {
-  //SigPreNewObject();
-  //mSignalNewObject(&ObjModel::SigNewObject, pobj);
-  //SigRepaint();
-  //SigPostNewObject(pobj);
+  // SigPreNewObject();
+  // mSignalNewObject(&ObjModel::SigNewObject, pobj);
+  // SigRepaint();
+  // SigPostNewObject(pobj);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void ObjModel::SigPostNewObject(object_ptr_t pobj) {
-  //mSignalPostNewObject(&ObjModel::SigPostNewObject, pobj);
+  // mSignalPostNewObject(&ObjModel::SigPostNewObject, pobj);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void ObjModel::SigSpawnNewGed(object_ptr_t pOBJ) {
-  //mSignalSpawnNewGed(&ObjModel::SigSpawnNewGed, pOBJ);
+  // mSignalSpawnNewGed(&ObjModel::SigSpawnNewGed, pOBJ);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -181,8 +181,8 @@ persistantmap_ptr_t ObjModel::persistMapForHash(const PersistHashContext& Ctx) {
   auto& the_map             = _persistMapContainer->_prop_persist_map;
   auto it                   = the_map.find(key);
   if (it == the_map.end()) {
-    prval = std::make_shared<PersistantMap>();
-    the_map[key]=prval;
+    prval        = std::make_shared<PersistantMap>();
+    the_map[key] = prval;
   } else
     prval = it->second;
   return prval;
@@ -211,24 +211,25 @@ void ObjModel::attach(
 
   if (_gedWidget) {
     if (top_root_item) { // partial tree (starting at top_root_item) ?
-      //_gedWidget->PushItemNode(top_root_item);
+      _gedWidget->PushItemNode(top_root_item.get());
       recurse(root_object);
-      //_gedWidget->PopItemNode(top_root_item);
+      _gedWidget->PopItemNode(top_root_item.get());
     } else { // full tree
-      //_gedWidget->GetRootItem()->DestroyChildren();
+      _gedWidget->GetRootItem()->_children.clear();
       if (root_object) {
-        //_gedWidget->PushItemNode(_gedWidget->GetRootItem());
+        _gedWidget->PushItemNode(_gedWidget->GetRootItem().get());
         recurse(root_object);
-        //_gedWidget->PopItemNode(_gedWidget->GetRootItem());
+        _gedWidget->PopItemNode(_gedWidget->GetRootItem().get());
       }
       detach();
     }
-    // if (_gedWidget->GetViewport()) {
-    // if (bnewobj)
-    //_gedWidget->GetViewport()->ResetScroll();
-    //}
-    //_gedWidget->DoResize();
-  }
+    if (_gedWidget->_viewport) {
+      if (bnewobj)
+        _gedWidget->_viewport->ResetScroll();
+    }
+    _gedWidget->DoResize();
+  } // if(_gedWidget)
+
   // dont spam refresh, please
   if (_enablePaint)
     emitRepaint();
@@ -274,36 +275,36 @@ void ObjModel::dump(const char* header) const {
 
   std::queue<geditemnode_ptr_t> item_queue;
   if (_gedWidget) {
-    // item_queue.push(qw->GetRootItem());
+    item_queue.push(_gedWidget->GetRootItem());
   }
   while (!item_queue.empty()) {
-    // geditemnode_ptr_t node = item_queue.front();
+    geditemnode_ptr_t node = item_queue.front();
     item_queue.pop();
-    // int inumc = node->GetNumItems();
-    // for (int ic = 0; ic < inumc; ic++) {
-    // geditemnode_ptr_t pchild = node->GetItem(ic);
-    // item_queue.push(pchild);
-    //}
+    int inumc = node->numChildren();
+     for (int ic = 0; ic < inumc; ic++) {
+      geditemnode_ptr_t pchild = node->_children[ic];
+      item_queue.push(pchild);
+    }
     // printf("NODE<%08x> Name<%s>\n", node, node->_propname.c_str());
   }
 }
 
 //////////////////////////////////////////////////////////////////////////////
 
-geditemnode_ptr_t ObjModel::recurse(object_ptr_t root_object, //
-                                    const char* pname, //
-                                    bool binline) {
-
+geditemnode_ptr_t ObjModel::recurse(
+    object_ptr_t root_object, //
+    const char* pname,        //
+    bool binline) {
 
   auto cur_obj = root_object;
   if (cur_obj) {
     cur_obj->notifyX<ObjectGedVisitEvent>();
   }
 
-  auto objclass = cur_obj->objectClass();
+  auto objclass         = cur_obj->objectClass();
   const auto& classdesc = objclass->Description();
 
-  geditemnode_ptr_t rval    = nullptr;
+  geditemnode_ptr_t rval = nullptr;
 
   ///////////////////////////////////////////////////
   // editor.object.ops
@@ -314,33 +315,37 @@ geditemnode_ptr_t ObjModel::recurse(object_ptr_t root_object, //
   bool is_op_map       = obj_ops_anno.isSet() and obj_ops_anno.isA<ork::reflect::OpMap*>();
 
   // ConstString obj_ops = obj_ops_anno.isSet() ? obj_ops_anno.Get<ConstString>() : "";
-  const char* usename         = (pname != 0) ? pname : objclass->Name().c_str();
-  gedgroupnode_ptr_t groupnode = binline //
-                               ? nullptr //
-                               : std::make_shared<GedGroupNode>(this,    // mdl
-                                                                usename, // name
-                                                                nullptr, // property
-                                                                cur_obj, // object
-                                                                true);   // is_obj_node
+  const char* usename          = (pname != 0) ? pname : objclass->Name().c_str();
+  gedgroupnode_ptr_t groupnode = binline            //
+                                     ? nullptr      //
+                                     : std::make_shared<GedGroupNode>(
+                                           this,    // mdl
+                                           usename, // name
+                                           nullptr, // property
+                                           cur_obj, // object
+                                           true);   // is_obj_node
   if (cur_obj == root_object) {
     rval = groupnode;
   }
   if (groupnode) {
-    //_gedWidget->AddChild(groupnode);
-    //_gedWidget->PushItemNode(groupnode);
+    _gedWidget->AddChild(groupnode);
+    _gedWidget->PushItemNode(groupnode.get());
   }
   if (is_const_string || is_op_map) {
-    //OpsNode* popnode = new OpsNode(*this, "ops", 0, cur_obj);
+    // OpsNode* popnode = new OpsNode(*this, "ops", 0, cur_obj);
     //_gedWidget->AddChild(popnode);
   }
-  /*
+
   ///////////////////////////////////////////////////
   // editor.class
   ///////////////////////////////////////////////////
 
-  auto ClassEditorAnno = classdesc.classAnnotation("editor.class");
-  if (auto as_conststr = ClassEditorAnno.TryAs<ConstString>()) {
-    ConstString anno_edclass = as_conststr.value();
+  auto anno_editor_class = classdesc.classAnnotation("editor.class");
+
+
+  if (auto as_conststr = anno_editor_class.tryAs<ConstString>()) {
+    auto anno_edclass = as_conststr.value();
+  /*
     if (anno_edclass.length()) {
       rtti::Class* AnnoEditorClass = rtti::Class::FindClass(anno_edclass);
       if (AnnoEditorClass) {
@@ -364,8 +369,9 @@ geditemnode_ptr_t ObjModel::recurse(object_ptr_t root_object, //
         }
       }
     }
+    */
   }
-
+  /*
   ///////////////////////////////////////////////////
   // walk classes to root class
   // mark properties, optionally sorting them by "editor.prop.groups" annotation
@@ -430,7 +436,7 @@ geditemnode_ptr_t ObjModel::recurse(object_ptr_t root_object, //
   _gedWidget->DoResize();
   return rval;
   */
-   return nullptr;
+  return nullptr;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
@@ -534,5 +540,5 @@ geditemnode_ptr_t ObjModel::createNode(
   */
   return nullptr;
 }
-  
+
 } // namespace ork::lev2::ged

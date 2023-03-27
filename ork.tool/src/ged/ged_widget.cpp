@@ -257,6 +257,20 @@ void GedWidget::Draw(lev2::Context* pTARG, int iw, int ih, int iscrolly) {
   GetSkin()->End(pTARG);
   ///////////////////////////////////////////////
 }
+
+//////////////////////////////////////////////////////////////////////////////
+
+void GedWidget::AddChild(geditemnode_ptr_t pw) {
+  // printf( "GedWidget<%p> AddChild<%p>\n", this, pw );
+
+  GedItemNode* TopItem = (mItemStack.size() > 0) ? mItemStack.front() : 0;
+  if (TopItem == 0) // our root item widget
+  {
+  } else {
+    TopItem->AddItem(pw);
+  }
+}
+
 //////////////////////////////////////////////////////////////////////////////
 
 GedSkin* GedWidget::GetSkin() {
@@ -270,5 +284,6 @@ GedSkin* GedWidget::GetSkin() {
 void GedWidget::AddSkin(GedSkin* psk) {
   mSkins.push_back(psk);
 }
+
 
 }}} // namespace ork::tool::ged

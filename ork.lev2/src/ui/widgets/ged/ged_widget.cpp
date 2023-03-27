@@ -169,6 +169,20 @@ void GedWidget::DoResize() {
   }
 }
 
+//////////////////////////////////////////////////////////////////////////////
+
+void GedWidget::AddChild(geditemnode_ptr_t child_node) {
+  // printf( "GedWidget<%p> AddChild<%p>\n", this, pw );
+
+  GedItemNode* TopItem = (_itemstack.size() > 0) //
+                       ? _itemstack.front() //
+                       : nullptr;
+
+  if (TopItem  ) {
+    TopItem->addChild(child_node);
+  }
+}
+
 ////////////////////////////////////////////////////////////////
 } //namespace ork::lev2::ged {
 ////////////////////////////////////////////////////////////////
