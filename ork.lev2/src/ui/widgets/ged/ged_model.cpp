@@ -345,23 +345,23 @@ geditemnode_ptr_t ObjModel::recurse(
 
   if (auto as_conststr = anno_editor_class.tryAs<ConstString>()) {
     auto anno_edclass = as_conststr.value();
-  /*
     if (anno_edclass.length()) {
       rtti::Class* AnnoEditorClass = rtti::Class::FindClass(anno_edclass);
       if (AnnoEditorClass) {
-        ork::object::ObjectClass* pclass = rtti::safe_downcast<ork::object::ObjectClass*>(AnnoEditorClass);
-        OrkAssert(pclass != nullptr);
-        ork::rtti::ICastable* factory = pclass->CreateObject();
-        GedFactory* qf                = rtti::safe_downcast<GedFactory*>(factory);
-        OrkAssert(qf != nullptr);
-        if (qf) {
+        auto clazz = rtti::safe_downcast<ork::object::ObjectClass*>(AnnoEditorClass);
+        OrkAssert(clazz != nullptr);
+        auto factory = clazz->createShared();
+        auto typed_factory = std::dynamic_pointer_cast<GedFactory>(factory);
+        OrkAssert(typed_factory != nullptr);
+        if (typed_factory) {
           if (pname == 0)
             pname = anno_edclass.c_str();
 
-          _gedWidget->AddChild(qf->CreateItemNode(*this, pname, 0, root_object));
+          auto child = typed_factory->createItemNode(this, pname, nullptr, root_object);
+          _gedWidget->AddChild(child);
 
           if (groupnode) {
-            _gedWidget->PopItemNode(groupnode);
+            _gedWidget->PopItemNode(groupnode.get());
             groupnode->CheckVis();
           }
           _gedWidget->DoResize();
@@ -369,8 +369,8 @@ geditemnode_ptr_t ObjModel::recurse(
         }
       }
     }
-    */
   }
+
   /*
   ///////////////////////////////////////////////////
   // walk classes to root class
