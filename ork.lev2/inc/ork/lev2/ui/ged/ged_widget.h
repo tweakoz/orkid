@@ -9,6 +9,8 @@ namespace ork::lev2::ged {
 struct GedWidget { //}: public ork::AutoConnector {
   //RttiDeclareAbstract(GedWidget, ork::AutoConnector);
 
+  static gedwidget_ptr_t createShared(objectmodel_ptr_t mdl);
+
   GedWidget(objectmodel_ptr_t model);
   ~GedWidget();
 

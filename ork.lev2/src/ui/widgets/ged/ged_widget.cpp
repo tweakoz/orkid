@@ -38,6 +38,13 @@ void GedWidget::IncrementSkin() {
 
 ////////////////////////////////////////////////////////////////
 
+gedwidget_ptr_t GedWidget::createShared(objectmodel_ptr_t mdl){
+  auto widget = std::make_shared<GedWidget>(mdl);
+  return widget;
+}
+
+////////////////////////////////////////////////////////////////
+
 GedWidget::GedWidget(objectmodel_ptr_t mdl)
     : _model(mdl)
     , mRootItem(0)
@@ -50,8 +57,7 @@ GedWidget::GedWidget(objectmodel_ptr_t mdl)
     //, ConstructAutoSlot(Repaint)
     //, ConstructAutoSlot(ModelInvalidated) {
   //SetupSignalsAndSlots();
-  _model->_gedWidget = this;
-  //mdl->SetGedWidget(this);
+  mdl->_gedWidget = this;
   mRootItem = std::make_shared<GedRootNode>(mdl.get(), "Root", nullptr, nullptr);
   PushItemNode(mRootItem.get());
 

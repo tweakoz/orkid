@@ -19,7 +19,7 @@ using namespace ork::lev2::ged;
 TEST(ged1) {
 
     auto model = ObjModel::createShared();
-    auto widget = std::make_shared<GedWidget>(model);
+    auto widget = GedWidget::createShared(model);
     auto edit_obj = std::make_shared<HotKey>();
     model->attach(edit_obj);
 
