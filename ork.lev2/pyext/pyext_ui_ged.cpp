@@ -30,7 +30,11 @@ void pyinit_ui_ged(py::module& module_ui) {
             return mdl->attach(obj_to_attach,clear_stack);
             });
   type_codec->registerStdCodec<objectmodel_ptr_t>(objmodel_type);
-}
+  /////////////////////////////////////////////////////////////////////////////////
+  auto gedsurace_type = //
+      py::class_<GedSurface, ui::Surface, gedsurface_ptr_t>(module_ui, "GedSurface")
+     .def(py::init<std::string,objectmodel_ptr_t>());
+  type_codec->registerStdCodec<gedsurface_ptr_t>(gedsurace_type);}
 
 ///////////////////////////////////////////////////////////////////////////////
 } //namespace ork::lev2 {

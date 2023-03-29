@@ -23,10 +23,15 @@ class UiGedTestApp(BasicUiCamSgApp):
     self.ezapp.setRefreshPolicy(RefreshFixedFPS, 60)
     self.ezapp.topWidget.enableUiDraw()
 
-    self.test_object = dataflow.DgModuleData.createShared()
-    print(self.test_object.clazz.name)
+    # create object model and ged surface
     self.objmodel = ui.ObjModel()
+    self.gedsurface = ui.GedSurface("gedsurface",self.objmodel)
+
+    # create a test object to edit and attach it to the object model
+    self.test_object = dataflow.DgModuleData.createShared()
     self.objmodel.attach(self.test_object,True)
+    print(self.test_object.clazz.name)
+
     assert(False)
   ##############################################
 
