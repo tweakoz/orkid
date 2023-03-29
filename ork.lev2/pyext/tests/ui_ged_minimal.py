@@ -25,7 +25,8 @@ class UiGedTestApp(BasicUiCamSgApp):
 
     self.test_object = dataflow.DgModuleData.createShared()
     print(self.test_object.clazz.name)
-
+    self.objmodel = ui.ObjModel()
+    self.objmodel.attach(self.test_object,True)
     assert(False)
   ##############################################
 
