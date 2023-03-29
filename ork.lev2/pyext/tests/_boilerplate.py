@@ -3,11 +3,7 @@
 # Distributed under the MIT License
 # see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ################################################################################
-import math
-import random
-import argparse
-import sys
-import ork.path
+import math, random, argparse, sys, signal
 
 from orkengine.core import *
 from orkengine.lev2 import *
@@ -121,6 +117,14 @@ class BasicUiCamSgApp(object):
         self.ezapp.setRefreshPolicy(RefreshFastest, 0)
         self.materials = set()
         setupUiCamera(app=self, eye=vec3(5, 5, 5), tgt=vec3(0, 0, 0))
+        ##################################
+        def onCtrlC(signum, frame):
+          print("signalling EXIT to ezapp")
+          self.onExitSignal()
+          self.ezapp.signalExit()
+        ##################################
+        signal.signal(signal.SIGINT, onCtrlC)
+        ##################################
 
     ##############################################
 
@@ -152,6 +156,11 @@ class BasicUiCamSgApp(object):
     def onUpdate(self, updinfo):
         self.abstime = updinfo.absolutetime
         self.scene.updateScene(self.cameralut)
+
+    ################################################
+
+    def onExitSignal(self):
+        pass
 
     ################################################
 

@@ -129,8 +129,23 @@ void pyinit_dataflow(py::module& module_core) {
                 return py::none();
               });
   /////////////////////////////////////////////////////////////////////////////
+  using moduledata_ptr_t = std::shared_ptr<ModuleData>;
+  auto moduledata_type = //
+      py::class_<ModuleData, ork::Object, moduledata_ptr_t>(dfgmodule, "ModuleData")
+          .def_property_readonly(
+              "numInputs",
+              [](moduledata_ptr_t m) -> int { //
+                return m->numInputs();
+              })
+          .def_property_readonly(
+              "numOutputs",
+              [](moduledata_ptr_t m) -> int { //
+                return m->numOutputs();
+              });
+  type_codec->registerStdCodec<moduledata_ptr_t>(moduledata_type);
+  /////////////////////////////////////////////////////////////////////////////
   auto dgmoduledata_type = //
-      py::class_<DgModuleData, dgmoduledata_ptr_t>(dfgmodule, "DgModuleData")
+      py::class_<DgModuleData, ModuleData, dgmoduledata_ptr_t>(dfgmodule, "DgModuleData")
           .def_static("createShared", []() -> dgmoduledata_ptr_t { return DgModuleData::createShared(); })
           .def(
               "createUniformFloatXfInputPlug",

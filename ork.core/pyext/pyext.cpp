@@ -115,6 +115,8 @@ static PoolString _addpoolstring(std::string str) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void pyinit_reflection(py::module& module_core);
+
 PYBIND11_MODULE(_core, module_core) {
   module_core.doc() = "Orkid Core Library (math,kernel,reflection,ect..)";
   /////////////////////////////////////////////////////////////////////////////////
@@ -244,13 +246,6 @@ PYBIND11_MODULE(_core, module_core) {
         return fxs.c_str();
       });
   /////////////////////////////////////////////////////////////////////////////////
-  py::class_<Object>(module_core, "Object") //
-      .def("clazz", [](Object* o) -> std::string {
-        auto clazz = rtti::downcast<object::ObjectClass*>(o->GetClass());
-        auto name  = clazz->Name();
-        return name.c_str();
-      });
-  /////////////////////////////////////////////////////////////////////////////////
   auto varmaptype_t =                                                         //
       py::class_<varmap::VarMap, varmap::varmap_ptr_t>(module_core, "VarMap") //
           .def(py::init<>())
@@ -293,6 +288,7 @@ PYBIND11_MODULE(_core, module_core) {
           });
   type_codec->registerStdCodec<ui::updatedata_ptr_t>(updata_type);
   /////////////////////////////////////////////////////////////////////////////////
+  pyinit_reflection(module_core);
   pyinit_math(module_core);
   pyinit_dataflow(module_core);
   pyinit_datablock(module_core);
