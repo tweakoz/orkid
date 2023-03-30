@@ -102,7 +102,7 @@ std::vector<submesh_ptr_t> submeshBulletConvexDecomposition(const submesh& inpsu
   std::vector<fvec3> _tempverts;
   std::vector<decomp_int_t> _tempindices;
   for( auto v : triangulated._vtxpool->_orderedVertices ){
-    _tempverts.push_back(v->mPos);
+    _tempverts.push_back(dvec3_to_fvec3(v->mPos));
   }
   for( auto p : triangulated._orderedPolys ){
     _tempindices.push_back(p->_vertices[0]->_poolindex);

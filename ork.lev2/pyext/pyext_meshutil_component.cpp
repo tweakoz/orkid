@@ -35,10 +35,10 @@ void pyinit_meshutil_component(py::module& module_meshutil) {
       for (auto item : kwargs) {
         auto key = py::cast<std::string>(item.first);
         if (key == "position") {
-          v->mPos = py::cast<fvec3>(item.second);
+          v->mPos = fvec3_to_dvec3(py::cast<fvec3>(item.second));
         }
         else if (key == "normal") {
-          v->mNrm = py::cast<fvec3>(item.second);
+          v->mNrm = fvec3_to_dvec3(py::cast<fvec3>(item.second));
         }
         else if (key == "color0") {
           v->mCol[0] = py::cast<fvec4>(item.second);
@@ -62,10 +62,10 @@ void pyinit_meshutil_component(py::module& module_meshutil) {
       return v;
     }))
     .def_property_readonly("position", [](vertex_ptr_t vtx) -> fvec3 {            
-      return vtx->mPos;
+      return dvec3_to_fvec3(vtx->mPos);
     })
     .def_property_readonly("normal", [](vertex_ptr_t vtx) -> fvec3 {            
-      return vtx->mNrm;
+      return dvec3_to_fvec3(vtx->mNrm);
     })
     .def_property_readonly("poolindex", [](vertex_ptr_t vtx) -> uint32_t {            
       return vtx->_poolindex;
@@ -146,16 +146,16 @@ void pyinit_meshutil_component(py::module& module_meshutil) {
       return p->GetNumSides();
     })
     .def_property_readonly("normal", [](poly_ptr_t p) -> fvec3 {            
-      return p->ComputeNormal();
+      return dvec3_to_fvec3(p->ComputeNormal());
     })
     .def_property_readonly("center", [](poly_ptr_t p) -> fvec3 {            
-      return p->ComputeCenter().mPos;
+      return dvec3_to_fvec3(p->ComputeCenter().mPos);
     })
-    .def_property_readonly("area", [](poly_ptr_t p) -> float {            
-      return p->ComputeArea(fmtx4());
+    .def_property_readonly("area", [](poly_ptr_t p) -> double {            
+      return p->ComputeArea(dmtx4());
     })
     .def_property_readonly("plane", [](poly_ptr_t p) -> fplane3_ptr_t {            
-      auto pl = std::make_shared<fplane3>(p->computePlane());
+      auto pl = std::make_shared<fplane3>(dplane3_to_fplane3(p->computePlane()));
       return pl;
     })
     .def_property_readonly("edges", [](poly_ptr_t p) -> py::list {  

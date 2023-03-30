@@ -77,8 +77,8 @@ void Mesh::ReadFromXGM(const file::Path& BasePath) {
                       U16 uidx                            = pidx16[ii];
                       const lev2::SVtxV12N12T8I4W4& InVtx = ptypedsource[uidx];
                       vertex ToolVertex;
-                      ToolVertex.mPos                = InVtx.mPosition;
-                      ToolVertex.mNrm                = InVtx.mNormal;
+                      ToolVertex.mPos                = fvec3_to_dvec3(InVtx.mPosition);
+                      ToolVertex.mNrm                = fvec3_to_dvec3(InVtx.mNormal);
                       ToolVertex.mUV[0].mMapTexCoord = InVtx.mUV0;
                       ToolVertex.mCol[0]             = fcolor4::White();
                       vertexcache[(ii % 3)]          = outsub.mergeVertex(ToolVertex);
@@ -98,8 +98,8 @@ void Mesh::ReadFromXGM(const file::Path& BasePath) {
                       U16 uidx                             = pidx16[ii];
                       const lev2::SVtxV12N12B12T8C4& InVtx = ptypedsource[uidx];
                       vertex ToolVertex;
-                      ToolVertex.mPos                = InVtx.mPosition;
-                      ToolVertex.mNrm                = InVtx.mNormal;
+                      ToolVertex.mPos                = fvec3_to_dvec3(InVtx.mPosition);
+                      ToolVertex.mNrm                = fvec3_to_dvec3(InVtx.mNormal);
                       ToolVertex.mUV[0].mMapTexCoord = InVtx.mUV0;
                       ToolVertex.mCol[0]             = fcolor4::White();
                       vertexcache[(ii % 3)]          = outsub.mergeVertex(ToolVertex);
@@ -120,8 +120,8 @@ void Mesh::ReadFromXGM(const file::Path& BasePath) {
                       U16 uidx                           = pidx16[ii];
                       const lev2::SVtxV12N12T16C4& InVtx = ptypedsource[uidx];
                       vertex ToolVertex;
-                      ToolVertex.mPos                = InVtx.mPosition;
-                      ToolVertex.mNrm                = InVtx.mNormal;
+                      ToolVertex.mPos                = fvec3_to_dvec3(InVtx.mPosition);
+                      ToolVertex.mNrm                = fvec3_to_dvec3(InVtx.mNormal);
                       ToolVertex.mUV[0].mMapTexCoord = InVtx.mUV0;
                       ToolVertex.mCol[0]             = fcolor4::White();
                       vertexcache[(ii % 3)]          = outsub.mergeVertex(ToolVertex);

@@ -42,9 +42,9 @@ void pyinit_meshutil_submesh(py::module& module_meshutil) {
                   for (auto item : py_vertex_dict) {
                     auto key = item.first.cast<std::string>();
                     if (key[0] == 'p') {
-                      inp_vtx.mPos = item.second.cast<fvec3>();
+                      inp_vtx.mPos = fvec3_to_dvec3(item.second.cast<fvec3>());
                     } else if (key[0] == 'n') {
-                      inp_vtx.mNrm = item.second.cast<fvec3>();
+                      inp_vtx.mNrm = fvec3_to_dvec3(item.second.cast<fvec3>());
                     } else if (key == "c0") {
                       inp_vtx.mCol[0] = item.second.cast<fvec4>();
                     } else if (key == "uv0") {
@@ -57,8 +57,8 @@ void pyinit_meshutil_submesh(py::module& module_meshutil) {
                   }
                   inserted_vertices.push_back(rval->mergeVertex(inp_vtx));
                 }
-                for (auto pyf : pyfaces) {
-                  auto face = pyf.cast<py::list>();
+                for (auto py_face : pyfaces) {
+                  auto face = py_face.cast<py::list>();
                   std::vector<vertex_ptr_t> face_vertices;
                   for (auto item : face) {
                     int idx = item.cast<int>();
@@ -189,7 +189,8 @@ void pyinit_meshutil_submesh(py::module& module_meshutil) {
                 submesh_ptr_t res_front = std::make_shared<submesh>();
                 submesh_ptr_t res_back  = std::make_shared<submesh>();
                 submesh_ptr_t res_isect = std::make_shared<submesh>();
-                submeshSliceWithPlane(*inpsubmesh, *plane, *res_front, *res_back, *res_isect);
+                auto as_dplane = fplane3_to_dplane3(*plane);
+                submeshSliceWithPlane(*inpsubmesh, as_dplane, *res_front, *res_back, *res_isect);
                 py::dict rval;
                 rval["front"]      = res_front;
                 rval["back"]       = res_back;
@@ -204,7 +205,7 @@ void pyinit_meshutil_submesh(py::module& module_meshutil) {
                 res_front->name         = inpsubmesh->name + ".front";
                 res_back->name          = inpsubmesh->name + ".back";
 
-                fplane3_ptr_t plane   = nullptr;
+                dplane3 as_dplane;
                 bool close_mesh       = false;
                 bool flip_orientation = false;
 
@@ -215,7 +216,8 @@ void pyinit_meshutil_submesh(py::module& module_meshutil) {
                   } else if (key == "close_mesh") {
                     close_mesh = py::cast<bool>(item.second);
                   } else if (key == "plane") {
-                    plane = py::cast<fplane3_ptr_t>(item.second);
+                    auto inp_plane = py::cast<fplane3_ptr_t>(item.second);
+                    as_dplane = fplane3_to_dplane3(*inp_plane);
                   } else {
                     OrkAssert(false);
                   }
@@ -223,7 +225,7 @@ void pyinit_meshutil_submesh(py::module& module_meshutil) {
 
                 submeshClipWithPlane(
                     *inpsubmesh,      //
-                    *plane,           //
+                    as_dplane,           //
                     close_mesh,       //
                     flip_orientation, //
                     *res_front,       //
@@ -292,9 +294,9 @@ void pyinit_meshutil_submesh(py::module& module_meshutil) {
                 for (auto item : kwargs) {
                   auto key = py::cast<std::string>(item.first);
                   if (key == "position") {
-                    vin->mPos = py::cast<fvec3>(item.second);
+                    vin->mPos = fvec3_to_dvec3(py::cast<fvec3>(item.second));
                   } else if (key == "normal") {
-                    vin->mNrm = py::cast<fvec3>(item.second);
+                    vin->mNrm = fvec3_to_dvec3(py::cast<fvec3>(item.second));
                   } else if (key == "color0") {
                     vin->mCol[0] = py::cast<fvec4>(item.second);
                   } else if (key == "uvc0") {

@@ -54,7 +54,7 @@ template <typename T> std::string Matrix33<T>::dumpcn() const {
   auto brace_color = Vector3<T>(0.7, 0.7, 0.7);
   for (int i = 0; i < 3; i++) {
     rval += ork::deco::decorate(brace_color, "[");
-    fvec3 fcol;
+    Vector3<T> fcol;
     switch (i) {
       case 0:
         fcol = Vector3<T>(1, .5, .5);

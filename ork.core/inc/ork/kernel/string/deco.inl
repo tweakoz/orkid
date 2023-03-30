@@ -63,6 +63,12 @@ inline std::string decorate(fvec3 color, std::string inp) {
   int b = int(color.z * 255.0);
   return asciic_rgb256(r, g, b) + inp + asciic_reset();
 }
+inline std::string decorate(dvec3 color, std::string inp) {
+  int r = int(color.x * 255.0);
+  int g = int(color.y * 255.0);
+  int b = int(color.z * 255.0);
+  return asciic_rgb256(r, g, b) + inp + asciic_reset();
+}
 inline std::string decorate(int r, int g, int b, std::string inp) {
   return asciic_rgb256(r, g, b) + inp + asciic_reset();
 }
@@ -103,6 +109,46 @@ inline std::string format(const fvec3& color, const char* formatstring, ...) {
   return asciic_rgb(color) + rval + asciic_reset();
 }
 
+inline std::string format(const dvec3& color, const char* formatstring, ...) {
+  std::string rval;
+
+  char formatbuffer[512];
+
+  va_list args;
+  va_start(args, formatstring);
+  // buffer.vformat(formatstring, args);
+#if 1 // defined(ORK_CONFIG_IX)
+  vsnprintf(&formatbuffer[0], sizeof(formatbuffer), formatstring, args);
+#else
+  vsnprintf_s(&formatbuffer[0], sizeof(formatbuffer), sizeof(formatbuffer), formatstring, args);
+#endif
+  va_end(args);
+  rval = formatbuffer;
+  return asciic_rgb(color) + rval + asciic_reset();
+}
+inline void printf(const dvec3& color, const char* formatstring, ...) {
+
+  int r = int(color.x * 255.0);
+  int g = int(color.y * 255.0);
+  int b = int(color.z * 255.0);
+
+  std::string rval;
+
+  char formatbuffer[512];
+
+  va_list args;
+  va_start(args, formatstring);
+  // buffer.vformat(formatstring, args);
+#if 1 // defined(ORK_CONFIG_IX)
+  vsnprintf(&formatbuffer[0], sizeof(formatbuffer), formatstring, args);
+#else
+  vsnprintf_s(&formatbuffer[0], sizeof(formatbuffer), sizeof(formatbuffer), formatstring, args);
+#endif
+  va_end(args);
+  rval        = formatbuffer;
+  auto fmtstr = asciic_rgb256(r, g, b) + rval + asciic_reset();
+  ::printf("%s", fmtstr.c_str());
+}
 inline void printf(const fvec3& color, const char* formatstring, ...) {
 
   int r = int(color.x * 255.0);

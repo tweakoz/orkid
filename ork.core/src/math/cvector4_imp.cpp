@@ -66,6 +66,14 @@ template struct Vector4<float>;  // explicit template instantiation
 template struct Vector4<double>; // explicit template instantiation
 template struct PropType<fvec4>;
 
+dvec4 fvec4_to_dvec4(const fvec4& v) {
+  return dvec4(v.x, v.y, v.z, v.w);
+}
+
+fvec4 dvec4_to_fvec4(const dvec4& v) {
+  return fvec4(v.x, v.y, v.z, v.w);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 } // namespace ork

@@ -17,8 +17,8 @@ TEST(MergeVertex) {
   vertex vtx1;
 
   // Set only portions
-  vtx1.mPos = fvec3(0.0f, 0.0f, 0.0f);
-  vtx1.mNrm = fvec3(0.0f, 0.0f, 0.0f);
+  vtx1.mPos = dvec3(0, 0, 0);
+  vtx1.mNrm = dvec3(0, 0, 0);
   vtx1.mUV[0].mMapTexCoord = fvec2(0.0f, 0.0f);
   vtx1.mCol[0].setXYZ(0.0f, 0.0f, 0.0f);
   vtx1.mCol[1].setXYZ(0.0f, 0.0f, 0.0f);
@@ -30,8 +30,8 @@ TEST(MergeVertex) {
   vertex vtx2;
 
   // Set only portions
-  vtx2.mPos = fvec3(0.0f, 0.0f, 0.0f);
-  vtx2.mNrm = fvec3(0.0f, 0.0f, 0.0f);
+  vtx2.mPos = dvec3(0, 0, 0);
+  vtx2.mNrm = dvec3(0, 0, 0);
   vtx2.mUV[0].mMapTexCoord = fvec2(0.0f, 0.0f);
   vtx2.mCol[0].setXYZ(0.0f, 0.0f, 0.0f);
   vtx2.mCol[1].setXYZ(0.0f, 0.0f, 0.0f);

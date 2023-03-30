@@ -69,15 +69,15 @@ void submeshTriangulate(const submesh& inpmesh, submesh& outmesh) {
 
 void submeshTrianglesToQuads(const submesh& inpmesh, //
                              submesh& outmesh, //
-                             float area_tolerance, //
+                             double area_tolerance, //
                              bool exclude_non_coplanar, //
                              bool exclude_non_rectangular ) { //
 
   ///////////////////////////////////////
 
-  fplane3 P0, P1;
+  dplane3 P0, P1;
   vertex_ptr_t ici[6];
-  fvec4 VPos[6];
+  dvec3 VPos[6];
 
   ///////////////////////////////////////
 
@@ -100,9 +100,9 @@ void submeshTrianglesToQuads(const submesh& inpmesh, //
     VPos[1] = v1->mPos;
     VPos[2] = v2->mPos;
     P0.CalcPlaneFromTriangle(VPos[0], VPos[1], VPos[2]);
-    // fvec4 VArea012[3] = { VPos[0],VPos[1],VPos[2] };
+    // dvec3 VArea012[3] = { VPos[0],VPos[1],VPos[2] };
 
-    float fArea012 = fvec4::calcTriangularArea(VPos[0], VPos[1], VPos[2], P0.GetNormal());
+    double fArea012 = dvec3::calcTriangularArea(VPos[0], VPos[1], VPos[2], P0.GetNormal());
 
     /*if( 0 != _isnan( fArea012 ) )
     {
@@ -159,21 +159,21 @@ void submeshTrianglesToQuads(const submesh& inpmesh, //
         ici[5] = outmesh.mergeVertex(*v5);
 
         P1.CalcPlaneFromTriangle(VPos[3], VPos[4], VPos[5]);
-        // fvec4 VArea345[3] = { VPos[3],VPos[4],VPos[5] };
+        // dvec3 VArea345[3] = { VPos[3],VPos[4],VPos[5] };
 
         bool coplanar_check = P0.IsCoPlanar(P1);
 
         if (coplanar_check or (not exclude_non_coplanar)) {
 
-          float fArea345 = fvec4::calcTriangularArea(VPos[3], VPos[4], VPos[5], P1.GetNormal());
+          double fArea345 = dvec3::calcTriangularArea(VPos[3], VPos[4], VPos[5], P1.GetNormal());
 
           /*if( 0 != _isnan( fArea345 ) )
           {
               fArea345 = 0.0f;
           }*/
 
-          float DelArea = fabs(fArea012 - fArea345);
-          float AvgArea = (fArea012 + fArea345) * float(0.5f);
+          double DelArea = fabs(fArea012 - fArea345);
+          double AvgArea = (fArea012 + fArea345) * double(0.5f);
           bool area_checkA = (DelArea / AvgArea) < area_tolerance;
           bool area_checkB = (AvgArea / DelArea) < area_tolerance;
 
@@ -256,20 +256,20 @@ void submeshTrianglesToQuads(const submesh& inpmesh, //
                 // AD are corners
                 ////////////////////////////////////////////
 
-                fvec4 VDelAC = (VPos[icorner0] - VPos[ilo0]).normalized();
-                fvec4 VDelAB = (VPos[icorner0] - VPos[ilo1]).normalized();
-                fvec4 VDelDC = (VPos[icorner1] - VPos[ilo0]).normalized();
-                fvec4 VDelBD = (VPos[ilo1] - VPos[icorner1]).normalized();
+                dvec3 VDelAC = (VPos[icorner0] - VPos[ilo0]).normalized();
+                dvec3 VDelAB = (VPos[icorner0] - VPos[ilo1]).normalized();
+                dvec3 VDelDC = (VPos[icorner1] - VPos[ilo0]).normalized();
+                dvec3 VDelBD = (VPos[ilo1] - VPos[icorner1]).normalized();
 
-                float fdotACBD = VDelAC.dotWith(VDelBD); // quad is at least a parallelogram if ang(V02) == ang(V31)
-                float fdotACAB = VDelAC.dotWith(VDelAB); // quad is rectangular if V01 is perpendicular to V02
-                float fdotDCBD = VDelDC.dotWith(VDelBD); // quad is rectangular if V01 is perpendicular to V02
+                double fdotACBD = VDelAC.dotWith(VDelBD); // quad is at least a parallelogram if ang(V02) == ang(V31)
+                double fdotACAB = VDelAC.dotWith(VDelAB); // quad is rectangular if V01 is perpendicular to V02
+                double fdotDCBD = VDelDC.dotWith(VDelBD); // quad is rectangular if V01 is perpendicular to V02
 
                 ////////////////////////////////////////////
                 // make sure its a rectangular quad by comparing edge directions
                 ////////////////////////////////////////////
 
-                bool rect_check = (fdotACBD > float(0.999f)) && (fabs(fdotACAB) < float(0.02f)) && (fabs(fdotDCBD) < float(0.02f));
+                bool rect_check = (fdotACBD > double(0.999f)) && (fabs(fdotACAB) < double(0.02f)) && (fabs(fdotDCBD) < double(0.02f));
 
                 if(rect_check or (not exclude_non_rectangular) ) {
                   auto v0 = ici[icorner0];
@@ -281,17 +281,17 @@ void submeshTrianglesToQuads(const submesh& inpmesh, //
                   // ensure good winding order
                   ////////////////////////////////////////////
 
-                  fplane3 P3;
+                  dplane3 P3;
                   P3.CalcPlaneFromTriangle(VPos[icorner0], VPos[ilo0], VPos[ilo1]);
 
-                  float fdot = P3.n.dotWith(P0.n);
+                  double fdot = P3.n.dotWith(P0.n);
 
                   //////////////////////////////////////
 
-                  if ((float(1.0f) - fdot) < float(0.001f)) {
+                  if ((double(1.0f) - fdot) < double(0.001f)) {
                     outmesh.mergeQuad(v0, v1, v3, v2);
                     was_quadified = true;
-                  } else if ((float(1.0f) + fdot) < float(0.001f)) {
+                  } else if ((double(1.0f) + fdot) < double(0.001f)) {
                     outmesh.mergeQuad(v0, v2, v3, v1);
                     was_quadified = true;
                   }

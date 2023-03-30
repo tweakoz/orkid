@@ -19,7 +19,7 @@ void submeshWithFaceNormals(const submesh& inpsubmesh, submesh& outsubmesh){
 
   for (int ip = 0; ip < inump; ip++) {
     const poly& ply = *inpsubmesh._orderedPolys[ip];
-    fvec3 N = ply.ComputeNormal();
+    dvec3 N = ply.ComputeNormal();
 
     int inumv = ply.GetNumSides();
     std::vector<vertex_ptr_t> merged_vertices;
@@ -39,17 +39,17 @@ void submeshWithSmoothNormals(const submesh& inpsubmesh, submesh& outsubmesh, fl
 
   for (int ip = 0; ip < inump; ip++) {
     const poly& ply = *inpsubmesh._orderedPolys[ip];
-    fvec3 N = ply.ComputeNormal();
+    dvec3 N = ply.ComputeNormal();
 
     int inumv = ply.GetNumSides();
     std::vector<vertex_ptr_t> merged_vertices;
     for( int i=0; i<inumv; i++ ){
         auto inp_v0 = ply._vertices[i];
         auto polys = inpsubmesh.polysConnectedTo(inp_v0);
-        fvec3 Naccum;
+        dvec3 Naccum;
         int ncount = 0;
         for( auto p : polys ){
-         fvec3 ON = p->ComputeNormal();
+         dvec3 ON = p->ComputeNormal();
          float angle = N.angle(ON);
          //printf( "angle<%g> threshold<%g>\n", angle, threshold_radians);
          if( angle <= threshold_radians ){
@@ -61,7 +61,7 @@ void submeshWithSmoothNormals(const submesh& inpsubmesh, submesh& outsubmesh, fl
             Naccum = N;
         }
         else{
-            Naccum *= (1.0f/float(ncount));
+            Naccum *= (1.0/float(ncount));
         }
         auto copy_v0 = *inp_v0;
         copy_v0.mNrm = Naccum;

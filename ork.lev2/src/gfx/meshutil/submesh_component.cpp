@@ -133,7 +133,7 @@ void vertex::set(fvec3 pos, fvec3 nrm, fvec3 bin, fvec2 uv, fvec4 col) {
 
 ////////////////////////////////////////////////////////////////
 
-const fvec3& vertex::Pos() const {
+const dvec3& vertex::Pos() const {
   return mPos;
 }
 
@@ -162,8 +162,8 @@ vertex vertex::lerp(const vertex& vtx, float flerp) const {
 ///////////////////////////////////////////////////////////////////////////////
 
 void vertex::Center(const vertex** pverts, int icnt) {
-  mPos = fvec3(0.0f, 0.0f, 0.0f);
-  mNrm = fvec3(0.0f, 0.0f, 0.0f);
+  mPos = dvec3(0.0f, 0.0f, 0.0f);
+  mNrm = dvec3(0.0f, 0.0f, 0.0f);
   for (int i = 0; i < vertex::kmaxcolors; i++) {
     mCol[i] = fvec4(0.0f, 0.0f, 0.0f);
   }
@@ -194,8 +194,8 @@ void vertex::Center(const vertex** pverts, int icnt) {
 
 void vertex::center(const std::vector<vertex_ptr_t>& verts) {
   int icnt = verts.size();
-  mPos = fvec3(0.0f, 0.0f, 0.0f);
-  mNrm = fvec3(0.0f, 0.0f, 0.0f);
+  mPos = dvec3(0.0f, 0.0f, 0.0f);
+  mNrm = dvec3(0.0f, 0.0f, 0.0f);
   for (int i = 0; i < vertex::kmaxcolors; i++) {
     mCol[i] = fvec4(0.0f, 0.0f, 0.0f);
   }
@@ -397,15 +397,15 @@ int poly::VertexCCW(int vert) const {
 vertex poly::ComputeCenter() const {
   int inumv = GetNumSides();
   vertex vcenter;
-  vcenter.mPos = fvec4(0.0f, 0.0f, 0.0f);
-  vcenter.mNrm = fvec4(0.0f, 0.0f, 0.0f);
+  vcenter.mPos = dvec3(0, 0, 0);
+  vcenter.mNrm = dvec3(0, 0, 0);
   for (int ic = 0; ic < vertex::kmaxcolors; ic++) {
     vcenter.mCol[ic] = fvec4(0.0f, 0.0f, 0.0f);
   }
   for (int it = 0; it < vertex::kmaxuvs; it++) {
     vcenter.mUV[it].Clear();
   }
-  float frecip = float(1.0f) / float(inumv);
+  double frecip = double(1.0) / double(inumv);
   for (int iv = 0; iv < inumv; iv++) {
     auto v       = _vertices[iv];
     vcenter.mPos = vcenter.mPos + v->mPos;
@@ -440,28 +440,28 @@ double poly::ComputeArea(const dmtx4& MatRange) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-float poly::ComputeEdgeLength(const fmtx4& MatRange, int iedge) const {
+double poly::ComputeEdgeLength(const dmtx4& MatRange, int iedge) const {
   int inumvtx = _vertices.size();
   auto v0     = _vertices[(iedge + 0) % inumvtx];
   auto v1     = _vertices[(iedge + 1) % inumvtx];
-  float elen  = (v0->mPos.transform(MatRange) - v1->mPos.transform(MatRange)).magnitude();
+  double elen  = (v0->mPos.transform(MatRange) - v1->mPos.transform(MatRange)).magnitude();
   return elen;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-fplane3 poly::computePlane() const{
+dplane3 poly::computePlane() const{
   OrkAssert(_vertices.size()>=3);
   auto v0 = _vertices[0];
   auto v1 = _vertices[1];
   auto v2 = _vertices[2];
-  return fplane3(v0->mPos,v1->mPos,v2->mPos);
+  return dplane3(v0->mPos,v1->mPos,v2->mPos);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-fvec3 poly::ComputeNormal() const {
-  fvec3 rval(0, 0, 0);
+dvec3 poly::ComputeNormal() const {
+  dvec3 rval(0, 0, 0);
   int inumvtx = _vertices.size();
   auto v0 = _vertices[0]->mPos;
   auto v1 = _vertices[1]->mPos;

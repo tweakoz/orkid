@@ -50,5 +50,20 @@ template <> fmtx3 PropType<fmtx3>::FromString(const PropTypeString& String) {
 
 template struct PropType<fmtx3>;
 template struct Matrix33<float>; // explicit template instantiation
+template struct Matrix33<double>; // explicit template instantiation
+
+fmtx3 dmtx3_to_fmtx3(const dmtx3& in) {
+  fmtx3 out;
+  for (int i = 0; i < 9; i++)
+    out.setElemXY(i / 3,i % 3, F32(in.elemXY(i / 3,i % 3)));
+  return out;
+}
+
+dmtx3 fmtx3_to_dmtx3(const fmtx3& in) {
+  dmtx3 out;
+  for (int i = 0; i < 9; i++)
+    out.setElemXY(i / 3,i % 3, double(in.elemXY(i / 3,i % 3)));
+  return out;
+}
 
 } // namespace ork

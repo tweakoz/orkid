@@ -632,6 +632,62 @@ template <typename T> void Vector3<T>::decodeNormalOctahedronEncoded(Vector2<T> 
   normalizeInPlace();
 }
 
+////////////////////////////////////////////////////////////////////////////////
+
+template <typename T>
+T Vector3<T>::calcTriangularArea(const Vector3<T>& V0, const Vector3<T>& V1, const Vector3<T>& V2, const Vector3<T>& N) {
+  // select largest abs coordinate to ignore for projection
+  T ax = Abs(N.x);
+  T ay = Abs(N.y);
+  T az = Abs(N.z);
+
+  int coord = (ax > ay) ? ((ax > az) ? 1 : 3) : ((ay > az) ? 2 : 3);
+
+  // compute area of the 2D projection
+
+  Vector3<T> Ary[3];
+  Ary[0] = V0;
+  Ary[1] = V1;
+  Ary[2] = V2;
+  T area(0.0f);
+
+  for (int i = 1, j = 2, k = 0; i <= 3; i++, j++, k++) {
+    int ii = i % 3;
+    int jj = j % 3;
+    int kk = k % 3;
+
+    switch (coord) {
+      case 1:
+        area += (Ary[ii].y * (Ary[jj].z - Ary[kk].z));
+        continue;
+      case 2:
+        area += (Ary[ii].x * (Ary[jj].z - Ary[kk].z));
+        continue;
+      case 3:
+        area += (Ary[ii].x * (Ary[jj].y - Ary[kk].y));
+        continue;
+    }
+  }
+
+  T an = Sqrt((T)(ax * ax + ay * ay + az * az));
+
+  switch (coord) {
+    case 1:
+      OrkAssert(ax != T(0));
+      area *= (an / (T(2.0f) * ax));
+      break;
+    case 2:
+      OrkAssert(ay != T(0));
+      area *= (an / (T(2.0f) * ay));
+      break;
+    case 3:
+      OrkAssert(az != T(0));
+      area *= (an / (T(2.0f) * az));
+      break;
+  }
+
+  return Abs(area);
+}
 } // namespace ork
 
 ///////////////////////////////////////////////////////////////////////////////

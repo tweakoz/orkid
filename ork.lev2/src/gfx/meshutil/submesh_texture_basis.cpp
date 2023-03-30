@@ -19,7 +19,7 @@ void submeshWithTextureBasis(const submesh& inpsubmesh, submesh& outsubmesh){
 
   for (int ip = 0; ip < inump; ip++) {
     const poly& ply = *inpsubmesh._orderedPolys[ip];
-    fvec3 N = ply.ComputeNormal();
+    dvec3 N = ply.ComputeNormal();
 
     int inumv = ply.GetNumSides();
     std::vector<vertex_ptr_t> merged_vertices;

@@ -838,33 +838,6 @@ template <typename T> void Matrix44<T>::compose(const Vector3<T>& pos,
                                                 const T& scaley,
                                                 const T& scalez) {
 
-  if(0){
-    glm::mat4 matT, matR, matS;
-    //matT[3] = pos.asGlmVec3();
-    //matT[3][1] = pos.y;
-    //matT[3][2] = pos.z;
-    matS[0][0] = scalex;
-    matS[1][1] = scaley;
-    matS[2][2] = scalez;
-    matR = glm::toMat4 ( qrot.asGlmQuat() );
-
-    auto mtxout = multiply_ltor(matT,matR,matS);
-
-    auto mtxstrT = Matrix44<T>(matT).dump4x3cn();
-    auto mtxstrR = Matrix44<T>(matR).dump4x3cn();
-    auto mtxstrS = Matrix44<T>(matS).dump4x3cn();
-    auto mtxstrO = Matrix44<T>(mtxout).dump4x3cn();
-
-
-    printf( " t<%g %g %g> r<%g %g %g %g> s<%g %g %g>\n", pos.x, pos.y, pos.z, qrot.x, qrot.y, qrot.z, qrot.w, scalex, scaley, scalez );
-    printf( " xfvalT<%s>\n", mtxstrT.c_str() );
-    printf( " xfvalR<%s>\n", mtxstrR.c_str() );
-    printf( " xfvalS<%s>\n", mtxstrS.c_str() );
-    printf( " xfvalO<%s>\n", mtxstrO.c_str() );
-
-    *this = Matrix44<T>(mtxout);
-  }
-  else {
     T one = T(1);
     T two = T(2);
 
@@ -909,7 +882,7 @@ template <typename T> void Matrix44<T>::compose(const Vector3<T>& pos,
                 pos.y,
                 pos.z,
                 1);
-  }
+
 
 }
 ///////////////////////////////////////////////////////////////////////////////

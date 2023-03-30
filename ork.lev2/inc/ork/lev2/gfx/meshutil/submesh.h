@@ -205,10 +205,10 @@ struct poly {
   // int VertexCCW(int vert) const;
 
   vertex ComputeCenter() const;
-  float ComputeEdgeLength(const fmtx4& MatRange, int iedge) const;
+  double ComputeEdgeLength(const dmtx4& MatRange, int iedge) const;
   double ComputeArea(const dmtx4& MatRange) const;
-  fvec3 ComputeNormal() const;
-  fplane3 computePlane() const;
+  dvec3 ComputeNormal() const;
+  dplane3 computePlane() const;
   
   bool containsVertex(vertex_ptr_t v) const;
 
@@ -468,7 +468,7 @@ void submeshTriangulate(const submesh& inpsubmesh, submesh& outsmesh);
 
 void submeshTrianglesToQuads(const submesh& inpsubmesh, 
                              submesh& outsmesh, 
-                             float area_tolerance = 100.0f, // 1:100 .. 100:1
+                             double area_tolerance = 100.0, // 1:100 .. 100:1
                              bool exclude_non_coplanar = true, //
                              bool exclude_non_rectangular = false //
                              );

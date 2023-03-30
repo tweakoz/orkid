@@ -68,7 +68,7 @@ std::unordered_map<uint64_t,polyset_ptr_t> PolySet::splitByPlane() const {
     // TODO: make an argument ?
     //////////////////////////////////////////////////////////
 
-    fvec2 nenc = plane.n.normalOctahedronEncoded();
+    dvec2 nenc = plane.n.normalOctahedronEncoded();
     double normal_quantization = 4096.0;
     uint64_t ux = uint64_t(double(nenc.x)*normal_quantization);        // 14 bits
     uint64_t uy = uint64_t(double(nenc.y)*normal_quantization);        // 14 bits  (total of 2^28 possible normals ~= )

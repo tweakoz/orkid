@@ -45,6 +45,17 @@ template <> double Plane<double>::Epsilon() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+dplane3 fplane3_to_dplane3(const fplane3& f3){
+  fvec3 N = f3.n;
+  float D = f3.d;
+  return dplane3(fvec3_to_dvec3(N), D);
+}
+fplane3 dplane3_to_fplane3(const dplane3& dplane3){
+  dvec3 N = dplane3.n;
+  double D = dplane3.d;
+  return fplane3(dvec3_to_fvec3(N), D);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 } // namespace ork

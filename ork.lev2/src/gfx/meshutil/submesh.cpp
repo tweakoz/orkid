@@ -64,14 +64,14 @@ submesh_ptr_t submeshFromEigen(
     // position
     /////////////////////////////////////////////
     auto inp_pos = verts.row(per_vert_index);
-    outv.mPos    = fvec3(inp_pos(0), inp_pos(1), inp_pos(2));
+    outv.mPos    = dvec3(inp_pos(0), inp_pos(1), inp_pos(2));
     /////////////////////////////////////////////
     // normal
     /////////////////////////////////////////////
     auto donormal = [&](int index) {
       OrkAssert(normals.cols() == 3);
       auto inp  = normals.row(index);
-      outv.mNrm = fvec3(inp(0), inp(1), inp(2));
+      outv.mNrm = dvec3(inp(0), inp(1), inp(2));
     };
     if (numNormals == numVerts) // per vertex
       donormal(per_vert_index);
@@ -239,7 +239,7 @@ const AABox& submesh::aabox() const {
     int inumvtx = (int)_vtxpool->GetNumVertices();
     for (int i = 0; i < inumvtx; i++) {
       const vertex& v = _vtxpool->GetVertex(i);
-      _aaBox.Grow(v.mPos);
+      _aaBox.Grow(dvec3_to_fvec3(v.mPos));
     }
     _aaBox.EndGrow();
     _aaBoxDirty = false;
@@ -488,7 +488,7 @@ poly_ptr_t submesh::mergePoly(const poly& ply) {
     // add n sided counters
     _polyTypeCounter[inumv]++;
     //////////////////////////////////////////////////
-    float farea = ply.ComputeArea(ork::fmtx4::Identity());
+    float farea = ply.ComputeArea(ork::dmtx4::Identity());
     _surfaceArea += farea;
     rval = new_poly;
     _aaBoxDirty = true;

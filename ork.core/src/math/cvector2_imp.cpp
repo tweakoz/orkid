@@ -68,6 +68,14 @@ template struct Vector2<float>;  // explicit template instantiation
 template struct Vector2<double>; // explicit template instantiation
 template struct PropType<fvec2>;
 
+fvec2 dvec2_to_fvec2(const dvec2& in) {
+  return fvec2(in.x, in.y);
+}
+
+dvec2 fvec2_to_dvec2(const fvec2& in) {
+  return dvec2(in.x, in.y);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 /*template <> void Serialize(const fvec2* in, fvec2* out, reflect::BidirectionalSerializer& bidi) {
 

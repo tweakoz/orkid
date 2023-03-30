@@ -44,8 +44,8 @@ void submeshWriteObj(const submesh& inpsubmesh, const file::Path& BasePath) {
 
   ///////////////////////////////////////////////////
   ///////////////////////////////////////////////////
-  orkvector<fvec3> ObjVertexPool;
-  orkvector<fvec3> ObjNormalPool;
+  orkvector<dvec3> ObjVertexPool;
+  orkvector<dvec3> ObjNormalPool;
   orkvector<fvec2> ObjUv0Pool;
   orkvector<objmesh> ObjMeshPool;
   orkmap<std::string, objmat> ObjMaterialPool;

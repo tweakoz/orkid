@@ -39,7 +39,7 @@ void submeshWithTextureUnwrap(const submesh& inpsubmesh, submesh& outsubmesh) {
   }
   std::vector<fvec3> vertices;
   for (auto v : inpsubmesh._vtxpool->_orderedVertices) {
-    vertices.push_back(v->mPos);
+    vertices.push_back(dvec3_to_fvec3(v->mPos));
   }
 
   auto vertex_base = (const uint8_t*)vertices.data();

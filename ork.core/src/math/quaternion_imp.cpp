@@ -15,6 +15,7 @@
 
 namespace ork {
 template struct Quaternion<float>; // explicit template instantiation
+template struct Quaternion<double>; // explicit template instantiation
 typedef struct Quaternion<float> fquat;
 template <> const EPropType PropType<fquat>::meType   = EPROPTYPE_QUATERNION;
 template <> const char* PropType<fquat>::mstrTypeName = "QUATERNION";

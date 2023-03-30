@@ -136,7 +136,7 @@ void ScriptVar::pushToLua(lua_State* L) const {
   auto ctx = (LuaContext*) lua_touserdata(L,-1);
   lua_pop(L, 1);
 
-  assert(_encoded.Isset());
+  assert(_encoded.isSet());
   if (auto as_str = _encoded.tryAs<std::string>()) {
     lua_pushlstring(L, as_str.value().c_str(), as_str.value().length());
   } else if (auto as_number = _encoded.tryAs<double>()) {

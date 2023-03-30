@@ -16,7 +16,7 @@ namespace ork::meshutil {
 
 void submeshSliceWithPlane(
     const submesh& inpsubmesh, //
-    fplane3& slicing_plane,    //
+    dplane3& slicing_plane,    //
     submesh& outsmeshFront,    //
     submesh& outsmesh_Back,
     submesh& outsmeshIntersects) {
@@ -26,10 +26,10 @@ void submeshSliceWithPlane(
   for (auto item : inpsubmesh._vtxpool->_vtxmap) {
     auto vertex          = item.second;
     const auto& pos      = vertex->mPos;
-    float point_distance = slicing_plane.pointDistance(pos);
-    if (point_distance > 0.0f) {
+    double point_distance = slicing_plane.pointDistance(pos);
+    if (point_distance > 0.0) {
       front_verts.insert(vertex);
-    } else if (point_distance < 0.0f) {
+    } else if (point_distance < 0.0) {
       back_verts.insert(vertex);
     } else { // on plane
       planar_verts.insert(vertex);

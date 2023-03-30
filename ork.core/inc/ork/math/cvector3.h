@@ -107,6 +107,7 @@ template <typename T> struct Vector3 final
   }
 
   static T calcTriangularArea(const Vector3& V, const Vector3& N);
+  static T calcTriangularArea(const Vector3& V0, const Vector3& V1, const Vector3& V2, const Vector3& N);
 
   Vector3<T> reflect(const Vector3& N) const; // R = I-(N*2*dot(N,I));
 

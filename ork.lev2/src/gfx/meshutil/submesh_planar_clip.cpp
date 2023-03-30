@@ -28,7 +28,7 @@ void submeshClipWithPlane(
     submesh& outsmesh_Front, //
     submesh& outsmesh_Back) {
 
-  constexpr float PLANE_EPSILON = 0.01f;
+  constexpr double PLANE_EPSILON = 0.01f;
 
   /////////////////////////////////////////////////////////////////////
   // count sides of the plane to which the input mesh vertices belong
@@ -39,7 +39,7 @@ void submeshClipWithPlane(
   for (auto item : inpsubmesh._vtxpool->_vtxmap) {
     auto vertex          = item.second;
     const auto& pos      = vertex->mPos;
-    float point_distance = slicing_plane.pointDistance(pos);
+    double point_distance = slicing_plane.pointDistance(pos);
     if (point_distance > 0.0f) {
       front_verts.insert(vertex);
     } else if (point_distance < 0.0f) {
@@ -158,10 +158,10 @@ void submeshClipWithPlane(
           auto merged_v = outsubmesh.mergeVertex(v);
 
           merged_vertices.push_back(merged_v);
-          float point_dist_to_plane = abs(slicing_plane.pointDistance(merged_v->mPos));
+          double point_dist_to_plane = abs(slicing_plane.pointDistance(merged_v->mPos));
           if (point_dist_to_plane < PLANE_EPSILON) {
             const auto& p  = merged_v->mPos;
-            merged_v->mNrm = fvec3(0, 0, 0);
+            merged_v->mNrm = dvec3(0, 0, 0);
             merged_v->mUV[0].Clear();
             merged_v->mUV[1].Clear();
             //printf("subm[%s] bpv (%+g %+g %+g) \n", outsubmesh.name.c_str(), p.x, p.y, p.z);
@@ -255,7 +255,7 @@ void submeshClipWithPlane(
           // compute mesh center
           ///////////////////////////////////////////
 
-          fvec3 mesh_center_pos = inpsubmesh.center();
+          dvec3 mesh_center_pos = inpsubmesh.center();
 
           ///////////////////////////////////////////
           // compute loop center
@@ -271,7 +271,7 @@ void submeshClipWithPlane(
           // compute normal based on connected faces
           ///////////////////////////////////////////
 
-          fvec3 avg_n = (loop_center_pos-mesh_center_pos).normalized();
+          dvec3 avg_n = (loop_center_pos-mesh_center_pos).normalized();
 
           ///////////////////////////////////////////
 
@@ -287,7 +287,7 @@ void submeshClipWithPlane(
             auto dbc = (center_vertex->mPos - vb->mPos).normalized();
             auto vx  = dab.crossWith(dbc).normalized();
 
-            float d = vx.dotWith(avg_n);
+            double d = vx.dotWith(avg_n);
 
             if ((d < 0.0f) == (test ^ flip_orientation)) {
               outsubmesh.mergeTriangle(vb, va, center_vertex);

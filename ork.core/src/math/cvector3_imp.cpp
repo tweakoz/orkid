@@ -71,4 +71,12 @@ template struct PropType<Vector3<float>>;
 
 template struct Vector3<double>; // explicit template instantiation
 
+dvec3 fvec3_to_dvec3(const fvec3& v) {
+  return dvec3(v.x, v.y, v.z);
+}
+
+fvec3 dvec3_to_fvec3(const dvec3& v) {
+  return fvec3(v.x, v.y, v.z);
+}
+
 } // namespace ork
