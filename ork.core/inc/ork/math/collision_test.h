@@ -33,7 +33,7 @@ public:
 		ECF_TOTALCOLLISION
 	};
 
-	virtual EColFlg CollisionTest( const LineSegment3& seg, fvec3& cp, fvec3& vn ) = 0;
+	virtual EColFlg CollisionTest( const flineseg3& seg, fvec3& cp, fvec3& vn ) = 0;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -62,7 +62,7 @@ struct  CollisionTester
 
 	static bool AbstractCollidableBisectionTest(	IAbstractCollidable& collidable,
 													const float fs, const float fe,
-													const LineSegment3& seg,
+													const flineseg3& seg,
 													fvec3& cp, fvec3& vn, float& fat );
 
 };

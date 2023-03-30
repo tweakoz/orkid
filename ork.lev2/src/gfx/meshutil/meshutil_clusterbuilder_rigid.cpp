@@ -92,7 +92,8 @@ void XgmRigidClusterBuilder::buildVertexBuffer(lev2::Context& context, lev2::EVt
     case lev2::EVtxStreamFormat::V12C4T16: {
       _vertexBuffer = buildTypedVertexBuffer<lev2::SVtxV12C4T16>(context, _submesh, [](const meshutil::vertex& inpvtx) {
         lev2::SVtxV12C4T16 out_vtx;
-        out_vtx._position = inpvtx.mPos;
+        const auto& pos     = inpvtx.mPos;
+        out_vtx._position = fvec3(pos.x, pos.y, pos.z);
         out_vtx._uv0      = inpvtx.mUV[0].mMapTexCoord;
         out_vtx._color    = inpvtx.mCol[0].ABGRU32();
         return out_vtx;
@@ -127,10 +128,12 @@ void XgmRigidClusterBuilder::buildVertexBuffer(lev2::Context& context, lev2::EVt
     case lev2::EVtxStreamFormat::V12N12T16C4: {
       _vertexBuffer = buildTypedVertexBuffer<lev2::SVtxV12N12T16C4>(context, _submesh, [](const meshutil::vertex& inpvtx) {
         lev2::SVtxV12N12T16C4 out_vtx;
-        out_vtx.mPosition = inpvtx.mPos;
+        const auto& pos     = inpvtx.mPos;
+        const auto& nrm     = inpvtx.mNrm;
+        out_vtx.mPosition = fvec3(pos.x, pos.y, pos.z);
         out_vtx.mUV0      = inpvtx.mUV[0].mMapTexCoord;
         out_vtx.mUV1      = inpvtx.mUV[1].mMapTexCoord;
-        out_vtx.mNormal   = inpvtx.mNrm;
+        out_vtx.mNormal   = fvec3(nrm.x, nrm.y, nrm.z);;
         out_vtx.mColor    = inpvtx.mCol[0].ABGRU32();
         return out_vtx;
       });
@@ -140,9 +143,11 @@ void XgmRigidClusterBuilder::buildVertexBuffer(lev2::Context& context, lev2::EVt
     case lev2::EVtxStreamFormat::V12N12B12T8C4: {
       _vertexBuffer = buildTypedVertexBuffer<lev2::SVtxV12N12B12T8C4>(context, _submesh, [](const meshutil::vertex& inpvtx) {
         lev2::SVtxV12N12B12T8C4 out_vtx;
-        out_vtx.mPosition = inpvtx.mPos;
+        const auto& pos     = inpvtx.mPos;
+        const auto& nrm     = inpvtx.mNrm;
+        out_vtx.mPosition = fvec3(pos.x, pos.y, pos.z);
         out_vtx.mUV0      = inpvtx.mUV[0].mMapTexCoord;
-        out_vtx.mNormal   = inpvtx.mNrm;
+        out_vtx.mNormal   = fvec3(nrm.x, nrm.y, nrm.z);;
         out_vtx.mBiNormal = inpvtx.mUV[0].mMapBiNormal;
         out_vtx.mColor    = inpvtx.mCol[0].ABGRU32();
         return out_vtx;
@@ -153,10 +158,12 @@ void XgmRigidClusterBuilder::buildVertexBuffer(lev2::Context& context, lev2::EVt
     case lev2::EVtxStreamFormat::V12N12B12T16: {
       _vertexBuffer = buildTypedVertexBuffer<lev2::SVtxV12N12B12T16>(context, _submesh, [](const meshutil::vertex& inpvtx) {
         lev2::SVtxV12N12B12T16 out_vtx;
-        out_vtx.mPosition = inpvtx.mPos;
+        const auto& pos     = inpvtx.mPos;
+        const auto& nrm     = inpvtx.mNrm;
+        out_vtx.mPosition = fvec3(pos.x, pos.y, pos.z);
         out_vtx.mUV0      = inpvtx.mUV[0].mMapTexCoord;
         out_vtx.mUV1      = inpvtx.mUV[1].mMapTexCoord;
-        out_vtx.mNormal   = inpvtx.mNrm;
+        out_vtx.mNormal   = fvec3(nrm.x, nrm.y, nrm.z);;
         out_vtx.mBiNormal = inpvtx.mUV[0].mMapBiNormal;
         return out_vtx;
       });

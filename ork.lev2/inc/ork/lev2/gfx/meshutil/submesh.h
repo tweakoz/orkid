@@ -100,14 +100,16 @@ struct vertex {
 
   vertex();
   vertex(fvec3 pos, fvec3 nrm, fvec3 bin, fvec2 uv, fvec4 col);
+  vertex(dvec3 pos, dvec3 nrm, fvec3 bin, fvec2 uv, fvec4 col);
   vertex(const vertex& rhs);
 
   void set(fvec3 pos, fvec3 nrm, fvec3 bin, fvec2 uv, fvec4 col);
+  void set(dvec3 pos, dvec3 nrm, fvec3 bin, fvec2 uv, fvec4 col);
 
   vertex lerp(const vertex& vtx, float flerp) const;
   void lerp(const vertex& a, const vertex& b, float flerp);
 
-  const fvec3& Pos() const;
+  const dvec3& Pos() const;
 
   void Center(const vertex** pverts, int icnt);
   void center(const std::vector<vertex_ptr_t>& verts);
@@ -116,8 +118,8 @@ struct vertex {
 
   uint32_t _poolindex = 0xffffffff;
 
-  fvec3 mPos;
-  fvec3 mNrm;
+  dvec3 mPos;
+  dvec3 mNrm;
 
   int miNumWeights;
   int miNumColors;
@@ -204,7 +206,7 @@ struct poly {
 
   vertex ComputeCenter() const;
   float ComputeEdgeLength(const fmtx4& MatRange, int iedge) const;
-  float ComputeArea(const fmtx4& MatRange) const;
+  double ComputeArea(const dmtx4& MatRange) const;
   fvec3 ComputeNormal() const;
   fplane3 computePlane() const;
   
@@ -375,8 +377,8 @@ struct submesh {
   const AABox& aabox() const; /// compute axis aligned bounding box from the current state of the vertex pool
 
   bool isConvexHull() const;
-  fvec3 center() const;
-  float convexVolume() const;
+  dvec3 center() const;
+  double convexVolume() const;
 
   //////////////////////////////////////////////////////////////////////////////
 
@@ -472,14 +474,14 @@ void submeshTrianglesToQuads(const submesh& inpsubmesh,
                              );
 
 void submeshSliceWithPlane(const submesh& inpsubmesh, //
-                           fplane3& slicing_plane, //
+                           dplane3& slicing_plane, //
                            submesh& outsmeshFront, //
                            submesh& outsmeshBack,
                            submesh& outsmeshIntersects
                            );
 
 void submeshClipWithPlane(const submesh& inpsubmesh, //
-                           fplane3& slicing_plane, //
+                           dplane3& slicing_plane, //
                            bool close_mesh,
                            bool flip_orientation,
                            submesh& outsmeshFront, //

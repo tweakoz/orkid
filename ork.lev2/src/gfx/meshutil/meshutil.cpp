@@ -372,8 +372,10 @@ void FlatSubMesh::fromSubmesh(const submesh& mesh){
   ////////////////////////////////////////////////////////
   for (int iv0 = 0; iv0 < inumv; iv0++) {
     const vertex& invtx = vpool->GetVertex(iv0);
-    OutVertex.mPosition = invtx.mPos;
-    OutVertex.mNormal   = invtx.mNrm;
+    const auto& pos     = invtx.mPos;
+    const auto& nrm     = invtx.mNrm;
+    OutVertex.mPosition = fvec3(pos.x, pos.y, pos.z);
+    OutVertex.mNormal   = fvec3(nrm.x, nrm.y, nrm.z);
     OutVertex.mBiNormal = invtx.mUV[0].mMapBiNormal;
     OutVertex.mUV0      = invtx.mUV[0].mMapTexCoord;
     OutVertex.mColor    = invtx.mCol[0].RGBAU32();

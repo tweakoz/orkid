@@ -698,20 +698,20 @@ void submesh::copy(  submesh& dest, //
 
 ///////////////////////////////////////////////////////////////////////////////
 
-fvec3 submesh::center() const {
+dvec3 submesh::center() const {
   size_t num_verts = _vtxpool->_orderedVertices.size();
-  fvec3 center;
+  dvec3 center;
   for( auto v : _vtxpool->_orderedVertices ){
     center += v->mPos;
   }
-  center *= 1.0f / float(num_verts);
+  center *= 1.0 / double(num_verts);
   return center;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-float submesh::convexVolume() const {
-  float volume = 0.0f;
-  fvec3 c = center();
+double submesh::convexVolume() const {
+  double volume = 0.0f;
+  dvec3 c = center();
   for( auto p : _orderedPolys ){
     int numsides = p->_vertices.size();
     OrkAssert(numsides==3);
@@ -719,28 +719,28 @@ float submesh::convexVolume() const {
     const auto& v1 = p->_vertices[1]->mPos;
     const auto& v2 = p->_vertices[2]->mPos;
 
-    float U = (v0-v1).length();
-    float V = (v1-v2).length();
-    float W = (v2-v0).length();
+    double U = (v0-v1).length();
+    double V = (v1-v2).length();
+    double W = (v2-v0).length();
 
-    float u = (v2-c).length();
-    float v = (v0-c).length();
-    float w = (v1-c).length();
+    double u = (v2-c).length();
+    double v = (v0-c).length();
+    double w = (v1-c).length();
 
-    float usq = u*u;
-    float vsq = v*v;
-    float wsq = w*w;
+    double usq = u*u;
+    double vsq = v*v;
+    double wsq = w*w;
 
-    float sqU = U*U;
-    float sqV = V*V;
-    float sqW = W*W;
-    float termA = vsq + wsq - sqU;
-    float termB = wsq + usq - sqV;
-    float termC = usq + vsq - sqW;
+    double sqU = U*U;
+    double sqV = V*V;
+    double sqW = W*W;
+    double termA = vsq + wsq - sqU;
+    double termB = wsq + usq - sqV;
+    double termC = usq + vsq - sqW;
 
     //sqrt(4*u*u*v*v*w*w – u*u*(v*v + w*w – U*U)^2 – v*v(w*w + u*u – V*V)^2 – w*w(u*u + v*v – W*W)^2 + (u*u + v*v – W*W) * (w*w + u*u – V*V) * (v*v + w*w – U*U)) / 12
 
-    float this_vol = sqrt(4.0f*usq*vsq*wsq - usq*termA*termA - vsq*termB*termB - wsq*termC*termC + (termC*termB*termA)) / 12.0f;
+    double this_vol = sqrt(4.0*usq*vsq*wsq - usq*termA*termA - vsq*termB*termB - wsq*termC*termC + (termC*termB*termA)) / 12.0;
     volume += this_vol;
   }
   return volume;

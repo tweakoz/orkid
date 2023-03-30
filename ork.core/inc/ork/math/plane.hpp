@@ -97,22 +97,22 @@ void Plane<T>::CalcFromNormalAndOrigin(
     const Vector3<T>& PosVec) //! calc given normal and position of plane origin
 {
   n = NormalVec;
-  d = T(0.0f);
+  d = T(0);
   d = pointDistance(PosVec) * T(-1.0f);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T> void Plane<T>::Reset(void) {
-  n = Vector3<T>(T(0.0f), T(0.0f), T(0.0f));
-  d = T(0.0f);
+  n = Vector3<T>(T(0), T(0), T(0));
+  d = T(0);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T> bool Plane<T>::IsPointInFront(const Vector3<T>& point) const {
   T distance = pointDistance(point);
-  return (distance >= Epsilon());
+  return (distance >= T(0));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -148,7 +148,7 @@ template <typename T> const T& Plane<T>::GetD(void) const {
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
-void Plane<T>::crossProduct(F64 ii1, F64 jj1, F64 kk1, F64 ii2, F64 jj2, F64 kk2, F64& iicp, F64& jjcp, F64& kkcp) const {
+void Plane<T>::crossProduct(double ii1, double jj1, double kk1, double ii2, double jj2, double kk2, double& iicp, double& jjcp, double& kkcp) const {
   iicp = (jj1 * kk2) - (jj2 * kk1);
   jjcp = (ii2 * kk1) - (ii1 * kk2);
   kkcp = (ii1 * jj2) - (ii2 * jj1);
@@ -156,7 +156,7 @@ void Plane<T>::crossProduct(F64 ii1, F64 jj1, F64 kk1, F64 ii2, F64 jj2, F64 kk2
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> static bool AreValuesCloseEnoughtToBeEqual(f64 a, f64 b, f64 ftolerance) {
+template <typename T> static bool AreValuesCloseEnoughtToBeEqual(double a, double b, double ftolerance) {
   return (fabs(a - b) >= ftolerance) ? false : true;
 }
 
@@ -164,11 +164,11 @@ template <typename T> static bool AreValuesCloseEnoughtToBeEqual(f64 a, f64 b, f
 // ftolerance = smallest distance to consider a point colinear
 
 template <typename T>
-void Plane<T>::CalcPlaneFromTriangle(const Vector3<T>& p0, const Vector3<T>& p1, const Vector3<T>& p2, F64 ftolerance) {
-  F64 ii1, jj1, kk1;
-  F64 ii2, jj2, kk2;
-  F64 iicp, jjcp, kkcp;
-  F64 len0, len1, len2;
+void Plane<T>::CalcPlaneFromTriangle(const Vector3<T>& p0, const Vector3<T>& p1, const Vector3<T>& p2, double ftolerance) {
+  double ii1, jj1, kk1;
+  double ii2, jj2, kk2;
+  double iicp, jjcp, kkcp;
+  double len0, len1, len2;
 
   Vector4<T> p1mp0 = p1 - p0;
   Vector4<T> p2mp1 = p2 - p1;
@@ -218,7 +218,7 @@ void Plane<T>::CalcPlaneFromTriangle(const Vector3<T>& p0, const Vector3<T>& p1,
   n = Vector3<T>((T)iicp, (T)jjcp, (T)kkcp).normalized();
 
   // get plane distance from origin
-  d = T(0.0f);
+  d = T(0);
   d = pointDistance(p0) * T(-1.0f);
 }
 
@@ -226,7 +226,7 @@ void Plane<T>::CalcPlaneFromTriangle(const Vector3<T>& p0, const Vector3<T>& p1,
 
 template <typename T> bool Plane<T>::IsOn(const Vector3<T>& pt) const {
   T d = pointDistance(pt);
-  return (Abs(d) < Epsilon()) ? true : false;
+  return (Abs(d) < Epsilon());
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -300,9 +300,9 @@ template <typename T> template <typename PolyType> bool Plane<T>::ClipPoly(const
       }
       bool IsVtxBIn = IsPointInFront(vB.Pos());
       if (IsVtxBIn != IsVtxAIn) {
-        fvec3 vPos;
+        Vector3<T> vPos;
         T isectdist;
-        LineSegment3 lseg(vA.Pos(), vB.Pos());
+        TLineSegment3<T> lseg(vA.Pos(), vB.Pos());
         if (Intersect(lseg, isectdist, vPos)) {
           T fDist   = (vA.Pos() - vB.Pos()).magnitude();
           T fDist2  = (vA.Pos() - vPos).magnitude();
@@ -326,17 +326,20 @@ bool Plane<T>::ClipPoly(const PolyType& input_poly, //
                         PolyType& out_front_poly, //
                         PolyType& out_back_poly) { //
 
-  bool debug = true;
+  bool debug = false;
 
   const int inuminverts                         = input_poly.GetNumVertices();
   OrkAssert(input_poly.GetNumVertices()>=3);
 
   if( debug ) printf( "clip poly num verts<%d>\n", inuminverts );
 
+  // loop around the input polygon's edges
+
   for (int iva = 0; iva < inuminverts; iva++) {
     if( debug ) printf( "  iva<%d> of inuminverts<%d>\n", iva, inuminverts );
     int ivb                                 = ((iva == inuminverts - 1) ? 0 : iva + 1);
-    const auto& vA = input_poly.GetVertex(iva);
+
+    const auto& vA = input_poly.GetVertex(iva); 
     const auto& vB = input_poly.GetVertex(ivb);
 
     // get the side of each vert to the plane
@@ -347,10 +350,10 @@ bool Plane<T>::ClipPoly(const PolyType& input_poly, //
 
     if (is_vertex_a_front) {
       out_front_poly.AddVertex(vA);
-      if( debug ) printf("  add a to front cnt<%d>\n", out_front_poly.GetNumVertices());
+      if( debug ) printf("  add a to front cnt<%zu>\n", out_front_poly.GetNumVertices());
     } else {
       out_back_poly.AddVertex(vA);
-      if( debug ) printf("  add a to back cnt<%d>\n", out_back_poly.GetNumVertices());
+      if( debug ) printf("  add a to back cnt<%zu>\n", out_back_poly.GetNumVertices());
     }
 
     if (is_vertex_b_front != is_vertex_a_front) { // did we cross plane ?

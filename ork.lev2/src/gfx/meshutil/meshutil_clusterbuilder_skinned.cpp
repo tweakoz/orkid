@@ -132,7 +132,7 @@ void XgmSkinnedClusterBuilder::BuildVertexBuffer_V12N12B12T8I4W4(lev2::Context& 
   using vtx_t    = lev2::SVtxV12N12B12T8I4W4;
   using vtxbuf_t = lev2::StaticVertexBuffer<vtx_t>;
   lev2::VtxWriter<vtx_t> vwriter;
-  const float kVertexScale(1.0f);
+  const double kVertexScale(1.0f);
   const fvec2 UVScale(1.0f, 1.0f);
   int NumVertexIndices = _submesh._vtxpool->GetNumVertices();
   _vertexBuffer        = std::make_shared<vtxbuf_t>(NumVertexIndices, 0, ork::lev2::PrimitiveType::MULTI);
@@ -141,9 +141,11 @@ void XgmSkinnedClusterBuilder::BuildVertexBuffer_V12N12B12T8I4W4(lev2::Context& 
   for (int iv = 0; iv < NumVertexIndices; iv++) {
     vtx_t OutVtx;
     const meshutil::vertex& InVtx = _submesh._vtxpool->GetVertex(iv);
-    OutVtx.mPosition              = InVtx.mPos * kVertexScale;
+    const auto pos     = InVtx.mPos * kVertexScale;
+    const auto nrm     = InVtx.mNrm;
+    OutVtx.mPosition              = fvec3(pos.x, pos.y, pos.z);
+    OutVtx.mNormal                = fvec3(nrm.x, nrm.y, nrm.z);
     OutVtx.mUV0                   = InVtx.mUV[0].mMapTexCoord * UVScale;
-    OutVtx.mNormal                = InVtx.mNrm;
     OutVtx.mBiNormal              = InVtx.mUV[0].mMapBiNormal;
 
     const std::string& jn0 = InVtx.mJointNames[0];
@@ -214,7 +216,7 @@ void XgmSkinnedClusterBuilder::BuildVertexBuffer_V12N12T8I4W4(lev2::Context& con
   using vtx_t    = lev2::SVtxV12N12T8I4W4;
   using vtxbuf_t = lev2::StaticVertexBuffer<vtx_t>;
   lev2::VtxWriter<vtx_t> vwriter;
-  const float kVertexScale(1.0f);
+  const double kVertexScale(1.0);
   const fvec2 UVScale(1.0f, 1.0f);
   int NumVertexIndices = _submesh._vtxpool->GetNumVertices();
 
@@ -223,10 +225,11 @@ void XgmSkinnedClusterBuilder::BuildVertexBuffer_V12N12T8I4W4(lev2::Context& con
   for (int iv = 0; iv < NumVertexIndices; iv++) {
     vtx_t OutVtx;
     const meshutil::vertex& InVtx = _submesh._vtxpool->GetVertex(iv);
-    OutVtx.mPosition              = InVtx.mPos * kVertexScale;
+    const auto pos     = InVtx.mPos * kVertexScale;
+    const auto nrm     = InVtx.mNrm;
+    OutVtx.mPosition              = fvec3(pos.x, pos.y, pos.z);
+    OutVtx.mNormal               = fvec3(nrm.x, nrm.y, nrm.z);
     OutVtx.mUV0                   = InVtx.mUV[0].mMapTexCoord * UVScale;
-    OutVtx.mNormal                = InVtx.mNrm;
-
     const std::string& jn0 = InVtx.mJointNames[0];
     const std::string& jn1 = InVtx.mJointNames[1];
     const std::string& jn2 = InVtx.mJointNames[2];

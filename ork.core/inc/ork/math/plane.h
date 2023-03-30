@@ -85,6 +85,10 @@ using fplane       = Plane<float>;
 using fplane3       = Plane<float>;
 using fplane3_ptr_t = std::shared_ptr<fplane3>;
 
+using dplane       = Plane<double>;
+using dplane3       = Plane<double>;
+using dplane3_ptr_t = std::shared_ptr<dplane3>;
+
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork
 ///////////////////////////////////////////////////////////////////////////////

@@ -468,8 +468,8 @@ void Mesh::ReadFromWavefrontObj(const file::Path& BasePath) {
 
         vertex ToolVertex;
 
-        ToolVertex.mPos                = pos;
-        ToolVertex.mNrm                = nrm;
+        ToolVertex.mPos                = fvec3_to_dvec3(pos);
+        ToolVertex.mNrm                = fvec3_to_dvec3(nrm);
         ToolVertex.mUV[0].mMapTexCoord = uv0;
 
         vertex_cache[iv] = smesh.mergeVertex(ToolVertex);

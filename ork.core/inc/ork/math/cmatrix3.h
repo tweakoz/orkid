@@ -176,12 +176,19 @@ template <typename T> struct Matrix33 final
 };
 
 using fmtx3       = Matrix33<float>;
+using dmtx3       = Matrix33<double>;
 using fmtx3_ptr_t = std::shared_ptr<fmtx3>;
+using dmtx3_ptr_t = std::shared_ptr<dmtx3>;
 
 template <>                       //
 struct use_custom_serdes<fmtx3> { //
   static constexpr bool enable = true;
 };
+
+///////////////////////////////////////////////////////////////////////////////
+
+fmtx3 dmtx3_to_fmtx3(const dmtx3& dvec);
+dmtx3 fmtx3_to_dmtx3(const fmtx3& dvec);
 
 ///////////////////////////////////////////////////////////////////////////////
 

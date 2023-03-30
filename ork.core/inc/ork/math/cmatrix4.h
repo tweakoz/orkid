@@ -261,11 +261,18 @@ template <typename T> struct Matrix44 final
 
 using fmtx4       = Matrix44<float>;
 using fmtx4_ptr_t = std::shared_ptr<fmtx4>;
+using dmtx4       = Matrix44<double>;
+using dmtx4_ptr_t = std::shared_ptr<dmtx4>;
 
 template <>                       //
 struct use_custom_serdes<fmtx4> { //
   static constexpr bool enable = true;
 };
+
+///////////////////////////////////////////////////////////////////////////////
+
+fmtx4 dmtx4_to_fmtx4(const dmtx4& dvec);
+dmtx4 fmtx4_to_dmtx4(const fmtx4& dvec);
 
 ///////////////////////////////////////////////////////////////////////////////
 

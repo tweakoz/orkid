@@ -275,12 +275,14 @@ using fray3_constptr_t = std::shared_ptr<const fray3>;
 using dray3_ptr_t      = std::shared_ptr<dray3>;
 using dray3_constptr_t = std::shared_ptr<const dray3>;
 
-using LineSegment2 = TLineSegment2<float>;
-using LineSegment3 = TLineSegment3<float>;
+//using LineSegment2 = TLineSegment2<float>;
+//using LineSegment3 = TLineSegment3<float>;
 using LineSegment2Helper = TLineSegment2Helper<float>;
 
 using flineseg2 = TLineSegment2<float>;
 using flineseg3 = TLineSegment3<float>;
+using dlineseg2 = TLineSegment2<double>;
+using dlineseg3 = TLineSegment3<double>;
 
 ///////////////////////////////////////////////////////////////////////////////
 // temporary till all code done being refactored

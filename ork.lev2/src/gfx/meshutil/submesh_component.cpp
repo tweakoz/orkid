@@ -71,6 +71,13 @@ vertex::vertex()
 
 ////////////////////////////////////////////////////////////////
 
+vertex::vertex(dvec3 pos, dvec3 nrm, fvec3 bin, fvec2 uv, fvec4 col)
+    : vertex() {
+  set(pos, nrm, bin, uv, col);
+}
+
+////////////////////////////////////////////////////////////////
+
 vertex::vertex(fvec3 pos, fvec3 nrm, fvec3 bin, fvec2 uv, fvec4 col)
     : vertex() {
   set(pos, nrm, bin, uv, col);
@@ -102,9 +109,21 @@ vertex::vertex(const vertex& rhs){
 
 ////////////////////////////////////////////////////////////////
 
-void vertex::set(fvec3 pos, fvec3 nrm, fvec3 bin, fvec2 uv, fvec4 col) {
+void vertex::set(dvec3 pos, dvec3 nrm, fvec3 bin, fvec2 uv, fvec4 col) {
   mPos                = pos;
   mNrm                = nrm;
+  mUV[0].mMapTexCoord = uv;
+  mUV[0].mMapBiNormal = bin;
+  mCol[0]             = col;
+  miNumColors         = 1;
+  miNumUvs            = 1;
+}
+
+////////////////////////////////////////////////////////////////
+
+void vertex::set(fvec3 pos, fvec3 nrm, fvec3 bin, fvec2 uv, fvec4 col) {
+  mPos                = fvec3_to_dvec3(pos);
+  mNrm                = fvec3_to_dvec3(nrm);
   mUV[0].mMapTexCoord = uv;
   mUV[0].mMapBiNormal = bin;
   mCol[0]             = col;
@@ -405,15 +424,15 @@ vertex poly::ComputeCenter() const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-float poly::ComputeArea(const fmtx4& MatRange) const {
-  float farea     = 0.0f;
-  ork::fvec3 base = _vertices[0]->mPos.transform(MatRange);
-  ork::fvec3 prev = _vertices[1]->mPos.transform(MatRange);
+double poly::ComputeArea(const dmtx4& MatRange) const {
+  double farea     = 0.0f;
+  ork::dvec3 base = _vertices[0]->mPos.transform(MatRange);
+  ork::dvec3 prev = _vertices[1]->mPos.transform(MatRange);
   // compute area polygon as area of triangle fan
   for (int i = 2; i < _vertices.size(); i++) {
-    ork::fvec3 next = _vertices[i]->mPos.transform(MatRange);
+    ork::dvec3 next = _vertices[i]->mPos.transform(MatRange);
     // area of triangle 1/2 length of cross product the vector of any two edges
-    farea += (prev - base).crossWith(next - base).magnitude() * 0.5f;
+    farea += (prev - base).crossWith(next - base).magnitude() * 0.5;
     prev = next;
   }
   return farea;

@@ -22,7 +22,7 @@ namespace ork::meshutil {
 
 void submeshClipWithPlane(
     const submesh& inpsubmesh, //
-    fplane3& slicing_plane,    //
+    dplane3& slicing_plane,    //
     bool close_mesh,
     bool flip_orientation,
     submesh& outsmesh_Front, //

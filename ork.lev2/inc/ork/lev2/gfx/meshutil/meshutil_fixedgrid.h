@@ -38,18 +38,18 @@ public:
   int miNumGrids;
   int miNumFilledGrids;
 
-  float areamin;
-  float areamax;
-  float areaavg;
-  float areatot;
+  double areamin;
+  double areamax;
+  double areaavg;
+  double areatot;
   int totpolys;
 
-  fvec3 vsize;
-  fvec3 vmin;
-  fvec3 vmax;
-  fvec3 vctr;
+  dvec3 vsize;
+  dvec3 vmin;
+  dvec3 vmax;
+  dvec3 vctr;
   AABox maab;
-  fmtx4 mMtxWorldToGrid;
+  dmtx4 mMtxWorldToGrid;
 
   ////////////////////////////////////////////////////
 
@@ -59,15 +59,15 @@ public:
   void PreMergeMesh(const submesh& MeshIn);
   GridNode* GetGridNode(const GridAddr& addr);
   void SetGridNode(const GridAddr& addr, GridNode* node);
-  GridAddr GetGridAddress(const fvec3& v);
+  GridAddr GetGridAddress(const dvec3& v);
   void GetCuttingPlanes(
       const GridAddr& addr,
-      fplane3& topplane,
-      fplane3& botplane,
-      fplane3& lftplane,
-      fplane3& rgtplane,
-      fplane3& frnplane,
-      fplane3& bakplane);
+      dplane3& topplane,
+      dplane3& botplane,
+      dplane3& lftplane,
+      dplane3& rgtplane,
+      dplane3& frnplane,
+      dplane3& bakplane);
 
   void EndPreMerge();
   void MergeMesh(const submesh& MeshIn, Mesh& MeshOut);

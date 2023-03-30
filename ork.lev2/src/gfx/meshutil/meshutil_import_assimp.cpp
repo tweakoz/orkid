@@ -464,10 +464,12 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
               const auto& uv = (mesh->mTextureCoords[0])[index];
               const auto& b  = (mesh->mBitangents)[index];
               auto& muvtx    = muverts[facevert_index];
-              muvtx.mPos     = fvec3(v.x, v.y, v.z).transform(ork_model_mtx).xyz();
-              muvtx.mNrm     = fvec3(n.x, n.y, n.z).transform(ork_normal_mtx);
+              auto pos = fvec3(v.x, v.y, v.z).transform(ork_model_mtx).xyz();
+              auto nrm = fvec3(n.x, n.y, n.z).transform(ork_normal_mtx);
+              muvtx.mPos     = fvec3_to_dvec3(pos);
+              muvtx.mNrm     = fvec3_to_dvec3(nrm);
 
-              _vertexExtents.Grow(muvtx.mPos);
+              _vertexExtents.Grow(dvec3_to_fvec3(muvtx.mPos));
 
               // logchan_meshutilassimp->log("v<%g %g %g>\n", v.x, v.y, v.z);
               // logchan_meshutilassimp->log("norm<%g %g %g>\n", muvtx.mNrm.x, muvtx.mNrm.y, muvtx.mNrm.z);

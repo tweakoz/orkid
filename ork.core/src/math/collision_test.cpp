@@ -199,7 +199,7 @@ bool CollisionTester::RaySphereTest(const fray3& ray, const Sphere& sph, float& 
 
 bool CollisionTester::AbstractCollidableBisectionTest(	IAbstractCollidable& collidable,
 														const float fs, const float fe,
-														const LineSegment3& seg,
+														const flineseg3& seg,
 														fvec3& cp, fvec3& vn, float& fat )
 {
 	fat = -1.0f;
@@ -228,7 +228,7 @@ bool CollisionTester::AbstractCollidableBisectionTest(	IAbstractCollidable& coll
 			fvec3 vp1, vn1;
 			float fat0, fat1;
 			////////////////////////////////////////
-			LineSegment3 biseg1( seg.mStart, vm );
+			flineseg3 biseg1( seg.mStart, vm );
 			bool bt1 = AbstractCollidableBisectionTest( collidable, fs, fm, biseg1, vp0, vn0, fat0 );
 			////////////////////////////////////////
 			if( bt1 ) // first half did intersect
@@ -243,7 +243,7 @@ bool CollisionTester::AbstractCollidableBisectionTest(	IAbstractCollidable& coll
 			else
 			////////////////////////////////////////
 			{
-				LineSegment3 biseg2( vm, seg.mEnd );
+				flineseg3 biseg2( vm, seg.mEnd );
 				bool bt2 = AbstractCollidableBisectionTest( collidable, fm, fe, biseg2, vp1, vn1, fat1 );
 				////////////////////////////////////////
 				if( bt2 ) // 2nd half did intersect
