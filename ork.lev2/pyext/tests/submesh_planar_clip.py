@@ -147,9 +147,9 @@ class Fragments:
 
   def update(self,abstime):
     θ = abstime * math.pi * 2.0 * self.speed 
-    self.prim_node_front.worldTransform.translation = self.origin+vec3(0,1,0)
+    self.prim_node_front.worldTransform.translation = self.origin+vec3(0,0.25,0)
     self.prim_node_front.worldTransform.orientation = quat(vec3(0,1,0),θ)
-    self.prim_node_back.worldTransform.translation = self.origin-vec3(0,1,0)
+    self.prim_node_back.worldTransform.translation = self.origin-vec3(0,0.25,0)
     self.prim_node_back.worldTransform.orientation = quat(vec3(0,1,0),-θ)
 
 ################################################################################

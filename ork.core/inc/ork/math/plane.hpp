@@ -326,7 +326,7 @@ bool Plane<T>::ClipPoly(const PolyType& input_poly, //
                         PolyType& out_front_poly, //
                         PolyType& out_back_poly) { //
 
-  bool debug = false;
+  bool debug = true;
 
   const int inuminverts                         = input_poly.GetNumVertices();
   OrkAssert(input_poly.GetNumVertices()>=3);
@@ -401,6 +401,13 @@ bool Plane<T>::ClipPoly(const PolyType& input_poly, //
   int numback = out_back_poly.GetNumVertices();
 
   if( debug ) printf( "numfront<%d> numback<%d>\n", numfront, numback );
+
+  bool front_is_invalid = (numfront>0) and (numfront<3);
+  bool back_is_invalid = (numback>0) and (numback<3);
+
+  if( front_is_invalid or back_is_invalid ){
+    return false;
+  }
 
   OrkAssert(numfront==0 or numfront>=3);
   OrkAssert(numback==0 or numback>=3);
