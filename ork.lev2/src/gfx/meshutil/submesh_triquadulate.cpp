@@ -52,8 +52,7 @@ void submeshTriangulate(const submesh& inpmesh, submesh& outmesh) {
         double maxtp0 = TP0.maxEdgeLength();
         double maxtp1 = TP1.maxEdgeLength();
 
-
-        if( maxtp0<maxtp1 ){
+        if( maxtp0<(maxtp1*0.9) ){
           outmesh.mergeTriangle(m0, m1, m2);
           outmesh.mergeTriangle(m2, m3, m0);
         }

@@ -226,7 +226,7 @@ void vertex::center(const std::vector<vertex_ptr_t>& verts) {
 
 U64 vertex::hash(float quantization) const {
   boost::Crc64 crc64;
-
+  quantization = 100.0;
 
   crc64.accumulateItem(miNumWeights);
   crc64.accumulateItem(miNumColors);
@@ -521,7 +521,7 @@ dvec3 poly::ComputeNormal() const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-U64 poly::HashIndices(void) const {
+uint64_t poly::hash(void) const {
   struct bubblesort {
     static void doit(int* array, int length) {
       int i, j, temp;
@@ -550,7 +550,7 @@ U64 poly::HashIndices(void) const {
   bubblesort::doit(my_array.data(), inumv);
   boost::Crc64 crc64;
   crc64.accumulate((const void*)my_array.data(), sizeof(int) * inumv);
-  U64 ucrc = crc64.result();
+  uint64_t ucrc = crc64.result();
   return ucrc;
 }
 

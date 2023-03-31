@@ -22,12 +22,12 @@ std::vector<island_ptr_t> PolySet::splitByIsland() const{
 
   while(copy_of_polys.size()>0){
 
-    std::unordered_map<uint64_t,poly_ptr_t> processed;
+    poly_set_t processed;
 
     for( auto p : copy_of_polys ){
       submesh::PolyVisitContext visit_ctx;
       visit_ctx._visitor = [&](poly_ptr_t p) -> bool {
-          processed[p->HashIndices()] = p;
+          processed.insert(p);
           return true;
       };
       auto par_submesh = p->_parentSubmesh;
@@ -37,7 +37,7 @@ std::vector<island_ptr_t> PolySet::splitByIsland() const{
     if( processed.size() ){
       auto island = std::make_shared<Island>();
       islands.push_back(island);
-      for( auto it_p : processed ){
+      for( auto it_p : processed._the_map ){
         auto p = it_p.second;
         auto itp = copy_of_polys.find(p);
         if(itp!=copy_of_polys.end()){
@@ -70,7 +70,7 @@ std::unordered_map<uint64_t,polyset_ptr_t> PolySet::splitByPlane() const {
     //////////////////////////////////////////////////////////
 
     dvec2 nenc = plane.n.normalOctahedronEncoded();
-    double normal_quantization = 4096.0;
+    double normal_quantization = 256.0;
     uint64_t ux = uint64_t(double(nenc.x)*normal_quantization);        // 14 bits
     uint64_t uy = uint64_t(double(nenc.y)*normal_quantization);        // 14 bits  (total of 2^28 possible normals ~= )
 
@@ -80,7 +80,7 @@ std::unordered_map<uint64_t,polyset_ptr_t> PolySet::splitByPlane() const {
     // TODO: make an argument ?
     //////////////////////////////////////////////////////////
 
-    double distance_quantization = 4096.0;
+    double distance_quantization = 1024.0;
     uint64_t ud = uint64_t( (plane.d+32767.0)*distance_quantization ); //  16+12 bits 
     uint64_t hash = ud | (ux<<32) | (uy<<48);
 

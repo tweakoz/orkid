@@ -63,11 +63,26 @@ struct Hash3232 : public std::unary_function<int, std::size_t> {
 template <typename T>
 struct unique_set {
   using ptr_t = std::shared_ptr<T>;
-  inline void insert(ptr_t v){
-    _the_map[v->hash()]=v;
+  inline bool insert(ptr_t v){
+    uint64_t h = v->hash();
+    auto it = _the_map.find(h);
+    if(it==_the_map.end()){
+      _the_map[h]=v;
+      return true;
+    }
+    return false;
   }
   inline bool contains(ptr_t v) const {
     return _the_map.find(v->hash())!=_the_map.end();
+  }
+  inline size_t size() const { return _the_map.size(); }
+  inline bool remove(ptr_t v)  {
+    auto it = _the_map.find(v->hash());
+    if (it!=_the_map.end()) {
+      _the_map.erase(it);
+      return true;
+    }
+    return false;
   }
   std::unordered_map<uint64_t,ptr_t> _the_map;
 };
@@ -233,7 +248,7 @@ struct poly {
   
   bool containsVertex(vertex_ptr_t v) const;
 
-  U64 HashIndices(void) const;
+  uint64_t hash() const;
 
   std::vector<vertex_ptr_t> _vertices;
   edge_vect_t _edges;
@@ -242,6 +257,8 @@ struct poly {
 
   const AnnoMap* mAnnotationSet;
 };
+
+using poly_set_t = unique_set<poly>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -381,12 +398,12 @@ struct submesh {
   void GetEdges(const poly& ply, orkvector<edge>& Edges) const;
   void GetAdjacentPolys(int ply, orkset<int>& output) const;
   edge_constptr_t edgeBetween(int a, int b) const;
-  std::unordered_set<poly_ptr_t> polysConnectedTo(vertex_ptr_t v) const;
+  poly_set_t polysConnectedTo(vertex_ptr_t v) const;
 
   using poly_visitor_t = std::function<bool(poly_ptr_t)>;
 
   struct PolyVisitContext{
-    std::unordered_set<poly_ptr_t> _visited;
+    poly_set_t _visited;
     poly_visitor_t _visitor;
     bool _indirect = false;
   };

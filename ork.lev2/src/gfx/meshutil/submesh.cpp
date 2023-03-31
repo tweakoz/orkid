@@ -227,7 +227,7 @@ void submesh::ExportPolyAnnotations(annopolylut& apl) const {
   int inumpolys = (int)_orderedPolys.size();
   for (int ip = 0; ip < inumpolys; ip++) {
     auto ply            = _orderedPolys[ip];
-    U64 uhash           = apl.HashItem(*this, *ply);
+    uint64_t uhash           = apl.HashItem(*this, *ply);
     const AnnoMap* amap = ply->GetAnnoMap();
     apl.mAnnoMap[uhash] = amap;
   }
@@ -247,7 +247,7 @@ const AABox& submesh::aabox() const {
   return _aaBox;
 }
 ///////////////////////////////////////////////////////////////////////////////
-const edge& submesh::RefEdge(U64 edgekey) const {
+const edge& submesh::RefEdge(uint64_t edgekey) const {
   auto it = _edgemap.find(edgekey);
   OrkAssert(it != _edgemap.end());
   return *it->second;
@@ -302,7 +302,7 @@ void submesh::GetEdges(const poly& ply, orkvector<edge>& Edges) const {
   int icnt  = 0;
   int icntf = 0;
   for (int is = 0; is < ply.GetNumSides(); is++) {
-    U64 ue  = ply._edges[is]->hash();
+    uint64_t ue  = ply._edges[is]->hash();
     auto it = _edgemap.find(ue);
     if (it != _edgemap.end()) {
       Edges.push_back(*it->second);
@@ -338,7 +338,7 @@ edge_constptr_t submesh::edgeBetween(int aind, int bind) const {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void submesh::GetConnectedPolys(const edge& ed, orkset<int>& output) const {
-  U64 keyA    = ed.hash();
+  uint64_t keyA    = ed.hash();
   auto itfind = _edgemap.find(keyA);
   if (itfind != _edgemap.end()) {
     auto edfound = itfind->second;
@@ -451,7 +451,7 @@ poly_ptr_t submesh::mergePoly(const poly& ply) {
   //////////////////////////////
   // dupe check
   //////////////////////////////
-  U64 ucrc   = ply.HashIndices();
+  uint64_t ucrc   = ply.hash();
   auto itfhm = _polymap.find(ucrc);
   ///////////////////////////////
   if (itfhm == _polymap.end()) { // no match
@@ -500,14 +500,14 @@ poly_ptr_t submesh::mergePoly(const poly& ply) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 edge_ptr_t submesh::MergeEdge(const edge& ed, int ipolyindex) {
-  U64 crcA    = ed.hash();
+  uint64_t crcA    = ed.hash();
   auto itfind = _edgemap.find(crcA);
 
   edge_ptr_t rval;
 
   if (_edgemap.end() != itfind) {
     rval     = itfind->second;
-    U64 crcB = rval->hash();
+    uint64_t crcB = rval->hash();
     OrkAssert(ed.Matches(*rval));
   } else {
     rval           = std::make_shared<edge>(ed);
@@ -749,9 +749,7 @@ double submesh::convexVolume() const {
 ///////////////////////////////////////////////////////////////////////////////
 
 void submesh::visitConnectedPolys(poly_ptr_t p,PolyVisitContext& visitctx) const{
-  auto it_vp = visitctx._visited.find(p);
-  if( it_vp == visitctx._visited.end() ){
-    visitctx._visited.insert(p);
+  if( visitctx._visited.insert(p) ){
     bool ok = visitctx._visitor(p);
     if(ok){
       for(auto e : p->_edges ){
@@ -765,8 +763,8 @@ void submesh::visitConnectedPolys(poly_ptr_t p,PolyVisitContext& visitctx) const
     }
   }
 }
-std::unordered_set<poly_ptr_t> submesh::polysConnectedTo(vertex_ptr_t v) const{
-  std::unordered_set<poly_ptr_t> connected;
+poly_set_t submesh::polysConnectedTo(vertex_ptr_t v) const{
+  poly_set_t connected;
   for ( auto p : _orderedPolys ){
     for( auto pv : p->_vertices ){
       if(pv==v){
