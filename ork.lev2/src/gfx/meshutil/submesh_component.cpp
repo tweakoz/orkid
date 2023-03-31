@@ -432,6 +432,30 @@ double poly::ComputeEdgeLength(const dmtx4& MatRange, int iedge) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+double poly::minEdgeLength(const dmtx4& MatRange) const {
+  double min_len = 1e12;
+  int numedges = _vertices.size();
+  for( int e=0; e<numedges; e++){
+    double elen = ComputeEdgeLength(MatRange,e);
+    if( elen < min_len )
+      min_len = elen;
+  }
+  return min_len;
+}
+
+double poly::maxEdgeLength(const dmtx4& MatRange) const {
+  double max_len = 0.0;
+  int numedges = _vertices.size();
+  for( int e=0; e<numedges; e++){
+    double elen = ComputeEdgeLength(MatRange,e);
+    if( elen > max_len )
+      max_len = elen;
+  }
+  return max_len;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 dplane3 poly::computePlane() const{
   OrkAssert(_vertices.size()>=3);
   auto v0 = _vertices[0];

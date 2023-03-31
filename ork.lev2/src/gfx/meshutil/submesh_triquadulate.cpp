@@ -45,8 +45,22 @@ void submeshTriangulate(const submesh& inpmesh, submesh& outmesh) {
         auto m1 = outmesh._vtxpool->mergeVertex(*v1);
         auto m2 = outmesh._vtxpool->mergeVertex(*v2);
         auto m3 = outmesh._vtxpool->mergeVertex(*v3);
-        outmesh.mergeTriangle(m0, m1, m2);
-        outmesh.mergeTriangle(m2, m3, m0);
+
+        poly TP0(m0,m1,m2);
+        poly TP1(m1,m2,m3);
+
+        double maxtp0 = TP0.maxEdgeLength();
+        double maxtp1 = TP1.maxEdgeLength();
+
+
+        if( maxtp0<maxtp1 ){
+          outmesh.mergeTriangle(m0, m1, m2);
+          outmesh.mergeTriangle(m2, m3, m0);
+        }
+        else{
+          outmesh.mergeTriangle(m1, m2, m3);
+          outmesh.mergeTriangle(m3, m0, m1);
+        }
         break;
       }
       default: {

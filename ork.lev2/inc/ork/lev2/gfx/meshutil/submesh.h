@@ -224,7 +224,9 @@ struct poly {
 
   vertex ComputeCenter() const;
   double ComputeEdgeLength(const dmtx4& MatRange, int iedge) const;
-  double ComputeArea(const dmtx4& MatRange) const;
+  double minEdgeLength(const dmtx4& MatRange = dmtx4::Identity()) const;
+  double maxEdgeLength(const dmtx4& MatRange = dmtx4::Identity()) const;
+  double ComputeArea(const dmtx4& MatRange = dmtx4::Identity()) const;
   dvec3 ComputeNormal() const;
   dplane3 computePlane() const;
   
