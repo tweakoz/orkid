@@ -82,7 +82,7 @@ vertexpool::vertexpool() {
 
 vertex_ptr_t vertexpool::mergeVertex(const vertex& vtx) {
   vertex_ptr_t rval;
-  U64 vhash = vtx.Hash();
+  U64 vhash = vtx.hash();
   auto it   = _vtxmap.find(vhash);
   if (_vtxmap.end() != it) {
     rval = it->second;
@@ -105,7 +105,7 @@ void vertexpool::rehash(){
   //_orderedVertices.clear();
   _vtxmap.clear();
   for( auto v : _orderedVertices ){
-    uint64_t h = v->Hash();
+    uint64_t h = v->hash();
     auto it = _vtxmap.find(h);
     OrkAssert(it==_vtxmap.end());
     _vtxmap[h] = v;

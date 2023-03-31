@@ -224,7 +224,7 @@ void vertex::center(const std::vector<vertex_ptr_t>& verts) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-U64 vertex::Hash(float quantization) const {
+U64 vertex::hash(float quantization) const {
   boost::Crc64 crc64;
 
 
@@ -257,24 +257,6 @@ U64 vertex::Hash(float quantization) const {
   printf( "<%g %g %g> <%08x %08x %08x>\n", mPos.x, mPos.y, mPos.z, f2u(mPos.x), f2u(mPos.y), f2u(mPos.z));*/
   crc64.finish();
   return crc64.result();
-}
-
-////////////////////////////////////////////////////////////////
-
-vertex_ptr_t edge::edgeVertex(int iv) const {
-  switch (iv) {
-    case 0:
-      return _vertexA;
-      break;
-    case 1:
-      return _vertexB;
-      break;
-    default:
-      OrkAssert(false);
-      break;
-  }
-
-  return nullptr;
 }
 
 ////////////////////////////////////////////////////////////////

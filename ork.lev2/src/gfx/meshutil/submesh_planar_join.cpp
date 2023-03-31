@@ -17,21 +17,14 @@ namespace ork::meshutil {
 void submeshJoinCoplanar(const submesh& inpsubmesh, submesh& outsmesh){
   auto as_pset = inpsubmesh.asPolyset();
   auto polys_by_plane = as_pset->splitByPlane();
-  printf( "NUMPOLYS<%zu> NUMPLANES<%zu>\n", inpsubmesh.GetNumPolys(), polys_by_plane.size() );
   int plane_count = 0;
   for( auto item_by_plane : polys_by_plane ){
     uint64_t plane_hash = item_by_plane.first;
     auto planar_polyset = item_by_plane.second;
     auto islands = planar_polyset->splitByIsland();
     bool polyset_larger_than_one = (planar_polyset->_polys.size()>1);
-    if(polyset_larger_than_one){
-      printf( "plane<%d:%llx> numpolys<%zu> numislands<%zu>\n", plane_count, plane_hash, planar_polyset->_polys.size(), islands.size() );
-    }
     int i = 0;
     for( auto island : islands ){
-      if(polyset_larger_than_one){
-        printf( "  island<%d> numpolys<%zu>\n", i, island->_polys.size() );
-      }
       bool loop_joined = false;
       if( island->_polys.size() > 1 ){
 

@@ -71,7 +71,7 @@ void pyinit_meshutil_component(py::module& module_meshutil) {
       return vtx->_poolindex;
     })
     .def_property_readonly("hash", [](vertex_ptr_t vtx) -> U64 {            
-      return vtx->Hash();
+      return vtx->hash();
     })
     .def("uvc", [](vertex_ptr_t vtx, int iuvc) -> uvmapcoord {            
       OrkAssert(iuvc<vertex::kmaxuvs);
@@ -89,7 +89,7 @@ void pyinit_meshutil_component(py::module& module_meshutil) {
       rval += FormatString("  uvc0.bin<%g %g %g>\n", v->mUV[0].mMapBiNormal.x, v->mUV[0].mMapBiNormal.y, v->mUV[0].mMapBiNormal.z  );
       rval += FormatString("  uvc0.tan<%g %g %g>\n", v->mUV[0].mMapTangent.x, v->mUV[0].mMapTangent.y, v->mUV[0].mMapTangent.z  );
       rval += FormatString("  clr0<%g %g %g %g>\n", v->mCol[0].x, v->mCol[0].y, v->mCol[0].z, v->mCol[0].w  );
-      rval += FormatString("  hash<0x%zx>\n", v->Hash() );
+      rval += FormatString("  hash<0x%zx>\n", v->hash() );
       rval += FormatString("  poolindex<%d>\n", v->_poolindex );
       return rval;
     });
@@ -134,7 +134,7 @@ void pyinit_meshutil_component(py::module& module_meshutil) {
       return pyl;
     })
     .def_property_readonly("hash", [](edge_ptr_t e) -> uint64_t {            
-      return e->GetHashKey();
+      return e->hash();
     })
     .def("__repr__", [](edge_ptr_t e) -> std::string {
       return FormatString("edge[%d->%d]", e->_vertexA->_poolindex, e->_vertexB->_poolindex);

@@ -302,7 +302,7 @@ void submesh::GetEdges(const poly& ply, orkvector<edge>& Edges) const {
   int icnt  = 0;
   int icntf = 0;
   for (int is = 0; is < ply.GetNumSides(); is++) {
-    U64 ue  = ply._edges[is]->GetHashKey();
+    U64 ue  = ply._edges[is]->hash();
     auto it = _edgemap.find(ue);
     if (it != _edgemap.end()) {
       Edges.push_back(*it->second);
@@ -338,7 +338,7 @@ edge_constptr_t submesh::edgeBetween(int aind, int bind) const {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void submesh::GetConnectedPolys(const edge& ed, orkset<int>& output) const {
-  U64 keyA    = ed.GetHashKey();
+  U64 keyA    = ed.hash();
   auto itfind = _edgemap.find(keyA);
   if (itfind != _edgemap.end()) {
     auto edfound = itfind->second;
@@ -500,14 +500,14 @@ poly_ptr_t submesh::mergePoly(const poly& ply) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 edge_ptr_t submesh::MergeEdge(const edge& ed, int ipolyindex) {
-  U64 crcA    = ed.GetHashKey();
+  U64 crcA    = ed.hash();
   auto itfind = _edgemap.find(crcA);
 
   edge_ptr_t rval;
 
   if (_edgemap.end() != itfind) {
     rval     = itfind->second;
-    U64 crcB = rval->GetHashKey();
+    U64 crcB = rval->hash();
     OrkAssert(ed.Matches(*rval));
   } else {
     rval           = std::make_shared<edge>(ed);

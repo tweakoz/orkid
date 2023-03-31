@@ -22,12 +22,12 @@ std::vector<island_ptr_t> PolySet::splitByIsland() const{
 
   while(copy_of_polys.size()>0){
 
-    std::unordered_set<poly_ptr_t> processed;
+    std::unordered_map<uint64_t,poly_ptr_t> processed;
 
     for( auto p : copy_of_polys ){
       submesh::PolyVisitContext visit_ctx;
       visit_ctx._visitor = [&](poly_ptr_t p) -> bool {
-          processed.insert(p);
+          processed[p->HashIndices()] = p;
           return true;
       };
       auto par_submesh = p->_parentSubmesh;
@@ -37,7 +37,8 @@ std::vector<island_ptr_t> PolySet::splitByIsland() const{
     if( processed.size() ){
       auto island = std::make_shared<Island>();
       islands.push_back(island);
-      for( auto p : processed ){
+      for( auto it_p : processed ){
+        auto p = it_p.second;
         auto itp = copy_of_polys.find(p);
         if(itp!=copy_of_polys.end()){
           OrkAssert(itp!=copy_of_polys.end());
@@ -106,7 +107,7 @@ edge_vect_t Island::boundaryEdges() const {
   //////////////////////////////////////////
   // grab poly indices present in island
   //////////////////////////////////////////
-  std::unordered_set<int> polyidcs_in_island;
+  std::set<int> polyidcs_in_island;
   for( auto p : _polys ){
     polyidcs_in_island.insert(p->_submeshIndex);
   }
@@ -114,7 +115,7 @@ edge_vect_t Island::boundaryEdges() const {
   // 
   //////////////////////////////////////////
 
-  std::unordered_set<edge_ptr_t> loose_edges;
+  edge_set_t loose_edges;
   for( auto p : _polys ){
     size_t num_edges = p->_edges.size();
     OrkAssert(num_edges!=2);
@@ -139,14 +140,15 @@ edge_vect_t Island::boundaryEdges() const {
       if(inumcon_in_island==1){
         int va = e->_vertexA->_poolindex;
         int vb = e->_vertexB->_poolindex;
-        printf("poly<%d> edge[%d->%d] inumcon_in_island<%d>\n", poly_index, va,vb,inumcon_in_island );
+        //printf("poly<%d> edge[%d->%d] inumcon_in_island<%d>\n", poly_index, va,vb,inumcon_in_island );
         loose_edges.insert(e);
       }
     } // for(auto e : p->_edges) {
   } // for( auto p : _polys ){
 
   edge_vect_t rval;
-  for (auto edge : loose_edges) {
+  for (auto edge_item : loose_edges._the_map) {
+    auto edge = edge_item.second;
     rval.push_back(edge);
   }
   //////////////////////////////////////////
@@ -160,7 +162,7 @@ edge_vect_t Island::boundaryLoop() const {
   //////////////////////////////////////////
   // grab poly indices present in island
   //////////////////////////////////////////
-  std::unordered_set<int> polyidcs_in_island;
+  std::set<int> polyidcs_in_island;
   for( auto p : _polys ){
     polyidcs_in_island.insert(p->_submeshIndex);
   }
@@ -168,7 +170,7 @@ edge_vect_t Island::boundaryLoop() const {
   // 
   //////////////////////////////////////////
 
-  std::unordered_set<edge_ptr_t> loose_edges;
+  edge_set_t loose_edges;
   for( auto p : _polys ){
     size_t num_edges = p->_edges.size();
     OrkAssert(num_edges!=2);
@@ -192,7 +194,7 @@ edge_vect_t Island::boundaryLoop() const {
       }
       int va = e->_vertexA->_poolindex;
       int vb = e->_vertexB->_poolindex;
-      printf("poly<%d> edge[%d->%d] inumcon_in_island<%d>\n", poly_index, va,vb,inumcon_in_island );
+      //printf("poly<%d> edge[%d->%d] inumcon_in_island<%d>\n", poly_index, va,vb,inumcon_in_island );
       if(inumcon_in_island==0){
         loose_edges.insert(e);
       }
@@ -201,18 +203,19 @@ edge_vect_t Island::boundaryLoop() const {
 
   EdgeChainLinker _linker;
   _linker._name = "findboundaryedges";
-  for (auto edge : loose_edges) {
+  for (auto edge_item : loose_edges._the_map) {
+    auto edge = edge_item.second;
     _linker.add_edge(edge);
   }
   _linker.link();
   if( _linker._edge_loops.size() ){
-    printf( "boundary edge_count<%zu> loop_count<%zu>\n", loose_edges.size(), _linker._edge_loops.size() );
+    //printf( "boundary edge_count<%zu> loop_count<%zu>\n", loose_edges.size(), _linker._edge_loops.size() );
     for(auto loop : _linker._edge_loops ){
       size_t num_edges = loop->_edges.size();
       for( auto e : loop->_edges ){
         int va = e->_vertexA->_poolindex;
         int vb = e->_vertexB->_poolindex;
-        printf("edge[%d->%d]\n", va,vb );
+        //printf("edge[%d->%d]\n", va,vb );
       }
     }
   }

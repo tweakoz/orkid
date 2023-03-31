@@ -57,6 +57,21 @@ struct Hash3232 : public std::unary_function<int, std::size_t> {
     return s1 < s2;
   }
 };
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <typename T>
+struct unique_set {
+  using ptr_t = std::shared_ptr<T>;
+  inline void insert(ptr_t v){
+    _the_map[v->hash()]=v;
+  }
+  inline bool contains(ptr_t v) const {
+    return _the_map.find(v->hash())!=_the_map.end();
+  }
+  std::unordered_map<uint64_t,ptr_t> _the_map;
+};
+
 ///////////////////////////////////////////////////////////////////////////////
 
 struct edge {
@@ -65,7 +80,7 @@ struct edge {
 
   vertex_ptr_t edgeVertex(int iv) const;
 
-  U64 GetHashKey() const;
+  uint64_t hash() const;
   bool Matches(const edge& other) const;
   void ConnectToPoly(int ipoly);
   int GetNumConnectedPolys() const;
@@ -75,6 +90,8 @@ struct edge {
   vertex_ptr_t _vertexB;
   std::vector<int> _connectedPolys;
 };
+
+using edge_set_t = unique_set<edge>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -114,7 +131,7 @@ struct vertex {
   void Center(const vertex** pverts, int icnt);
   void center(const std::vector<vertex_ptr_t>& verts);
 
-  U64 Hash(float quantization=3333.0f) const;
+  uint64_t hash(float quantization=3333.0f) const;
 
   uint32_t _poolindex = 0xffffffff;
 
@@ -131,6 +148,8 @@ struct vertex {
   uvmapcoord mUV[kmaxuvs];
   float mJointWeights[kmaxinfluences];
 };
+
+using vertex_set_t = unique_set<vertex>;
 
 ///////////////////////////////////////////////////////////////////////////////
 

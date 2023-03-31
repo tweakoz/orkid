@@ -34,7 +34,7 @@ void submeshClipWithPlane(
   // count sides of the plane to which the input mesh vertices belong
   /////////////////////////////////////////////////////////////////////
 
-  std::unordered_set<vertex_ptr_t> front_verts, back_verts, planar_verts;
+  vertex_set_t front_verts, back_verts, planar_verts;
 
   for (auto item : inpsubmesh._vtxpool->_vtxmap) {
     auto vertex          = item.second;
@@ -53,9 +53,9 @@ void submeshClipWithPlane(
   // lambda for adding a new poly to the output mesh
   /////////////////////////////////////////////////////////////////////
 
-  auto add_whole_poly = [](poly_ptr_t src_poly, submesh& dest) -> std::unordered_set<vertex_ptr_t> {
+  auto add_whole_poly = [](poly_ptr_t src_poly, submesh& dest) -> vertex_set_t {
     std::vector<vertex_ptr_t> new_verts;
-    std::unordered_set<vertex_ptr_t> added;
+    vertex_set_t added;
     //printf("  subm[%s] add poly size<%zu>\n", dest.name.c_str(), src_poly->_vertices.size());
     for (auto v : src_poly->_vertices) {
       OrkAssert(v);
@@ -86,13 +86,13 @@ void submeshClipWithPlane(
     int back_count   = 0;
     int planar_count = 0;
     for (auto v : input_poly->_vertices) {
-      if (front_verts.find(v) != front_verts.end()) {
+      if (front_verts.contains(v)) {
         front_count++;
       }
-      if (back_verts.find(v) != back_verts.end()) {
+      if (back_verts.contains(v)) {
         back_count++;
       }
-      if (planar_verts.find(v) != planar_verts.end()) {
+      if (planar_verts.contains(v)) {
         planar_count++;
       }
     }

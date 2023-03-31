@@ -26,6 +26,24 @@ edge::edge(vertex_ptr_t va, vertex_ptr_t vb)
 
 ////////////////////////////////////////////////////////////////
 
+vertex_ptr_t edge::edgeVertex(int iv) const {
+  switch (iv) {
+    case 0:
+      return _vertexA;
+      break;
+    case 1:
+      return _vertexB;
+      break;
+    default:
+      OrkAssert(false);
+      break;
+  }
+
+  return nullptr;
+}
+
+////////////////////////////////////////////////////////////////
+
 int edge::GetNumConnectedPolys(void) const {
   return _connectedPolys.size();
 }
@@ -44,10 +62,10 @@ void edge::ConnectToPoly(int ipoly) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-U64 edge::GetHashKey(void) const {
-  u64 uv = (_vertexA->_poolindex < _vertexB->_poolindex) //
-               ? u64(_vertexA->_poolindex) | (u64(_vertexB->_poolindex) << 32)
-               : u64(_vertexB->_poolindex) | (u64(_vertexA->_poolindex) << 32);
+uint64_t edge::hash(void) const {
+  uint64_t uv = (_vertexA->_poolindex < _vertexB->_poolindex) //
+               ? uint64_t(_vertexA->_poolindex) | (uint64_t(_vertexB->_poolindex) << 32)
+               : uint64_t(_vertexB->_poolindex) | (uint64_t(_vertexA->_poolindex) << 32);
   return uv;
 }
 
@@ -83,17 +101,15 @@ void EdgeChain::reverseOf(const EdgeChain& src) {
 
 std::string EdgeChain::dump() const {
   std::string rval;
-  std::set<vertex_ptr_t> visited_verts;
+  vertex_set_t visited_verts;
   for (auto e : _edges) {
     auto va   = e->_vertexA;
     auto vb   = e->_vertexB;
-    auto itva = visited_verts.find(va);
-    if (itva == visited_verts.end()) {
+    if( not visited_verts.contains(va) ) {
       visited_verts.insert(va);
       rval += FormatString("%d ", va->_poolindex);
     }
-    itva = visited_verts.find(vb);
-    if (itva == visited_verts.end()) {
+    if( not visited_verts.contains(vb) ) {
       visited_verts.insert(vb);
       rval += FormatString("%d ", vb->_poolindex);
     }
