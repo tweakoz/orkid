@@ -5,16 +5,16 @@
 # see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ################################################################################
 import math, random, argparse, sys, time
+from threading import Lock
 from orkengine.core import *
 from orkengine.lev2 import *
 from _boilerplate import *
 ################################################################################
 
 def procsubmesh(inpsubmesh):
-  triangulated = inpsubmesh.triangulated()
-  stripped = triangulated.copy(preserve_normals=False,
-                               preserve_colors=False,
-                               preserve_texcoords=False)
+  stripped = inpsubmesh.copy(preserve_normals=False,
+                             preserve_colors=False,
+                             preserve_texcoords=False)
   return stripped
 
 ################################################################################
@@ -35,7 +35,7 @@ def proc_with_frustum(inpsubmesh,frustum):
   submesh5 = proc_with_plane(submesh4,frustum.rightPlane)
   submesh6 = proc_with_plane(submesh5,frustum.topPlane)
   submesh7 = proc_with_plane(submesh6,frustum.bottomPlane)
-  return submesh7.convexDecomposition()[0]
+  return submesh7.repaired()
 
 ################################################################################
 
@@ -44,6 +44,7 @@ class SceneGraphApp(BasicUiCamSgApp):
   ##############################################
   def __init__(self):
     super().__init__()
+    self.mutex = Lock()
   ##############################################
   def onGpuInit(self,ctx):
     super().onGpuInit(ctx,add_grid=True)
@@ -53,7 +54,7 @@ class SceneGraphApp(BasicUiCamSgApp):
     material = solid_wire_pipeline.sharedMaterial
     solid_wire_pipeline.bindParam( material.param("m"), tokens.RCFD_M)
     ##############################
-    self.fpmtx1 = mtx4.perspective(45,1,0.1,3)
+    self.fpmtx1 = mtx4.perspective(45,1,0.3,5)
     self.fvmtx1 = mtx4.lookAt(vec3(0,0,1),vec3(0,0,0),vec3(0,1,0))
     self.frustum1 = Frustum()
     self.frustum1.set(self.fvmtx1,self.fpmtx1)
@@ -65,7 +66,7 @@ class SceneGraphApp(BasicUiCamSgApp):
     self.sgnode1.sortkey = 2;
     self.sgnode1.modcolor = vec4(1,0,0,1)
     ##############################
-    self.fpmtx2 = mtx4.perspective(45,1,0.1,3)
+    self.fpmtx2 = mtx4.perspective(45,1,0.3,5)
     self.fvmtx2 = mtx4.lookAt(vec3(1,0,1),vec3(1,1,0),vec3(0,1,0))
     self.frustum2 = Frustum()
     self.frustum2.set(self.fvmtx2,self.fpmtx2)
@@ -86,25 +87,36 @@ class SceneGraphApp(BasicUiCamSgApp):
   def onUpdate(self,updevent):
     super().onUpdate(updevent)
     θ = self.abstime * math.pi * 2.0 * 0.1
+    #
     self.fvmtx1 = mtx4.lookAt(vec3(0,0,1),vec3(math.sin(θ*1.3)*0.5,0,0),vec3(0,1,0))
-    self.frustum1.set(self.fvmtx1,self.fpmtx1)
-    self.frusmesh1 = meshutil.SubMesh.createFromFrustum(self.frustum1,True)
-    self.submesh1 = procsubmesh(self.frusmesh1)
     self.fvmtx2 = mtx4.lookAt(vec3(1,0,1),vec3(1,0.5+math.sin(θ)*0.4,0),vec3(0,1,0))
+    #
+    self.frustum1.set(self.fvmtx1,self.fpmtx1)
     self.frustum2.set(self.fvmtx2,self.fpmtx2)
+    #
+    self.frusmesh1 = meshutil.SubMesh.createFromFrustum(self.frustum1,True)
     self.frusmesh2 = meshutil.SubMesh.createFromFrustum(self.frustum2,True)
-    submesh_isect = proc_with_frustum(self.submesh1,self.frustum2)
-    submesh_isect = submesh_isect.coplanarJoined().triangulated()
-    self.barysub_isect = submesh_isect.withBarycentricUVs()
+    #
+    submesh1 = procsubmesh(self.frusmesh1)
+
+    isec1 = proc_with_frustum(submesh1,self.frustum2)
+    self.submesh_isect = isec1#.coplanarJoined().triangulated()
+
+    #time.sleep(0.25)
   ##############################################
   def onGpuIter(self):
     super().onGpuIter()
 
+    #self.mutex.acquire()
+
+    # two wireframe frustums
     self.prim1.fromSubMesh(self.frusmesh1,self.context)
     self.prim2.fromSubMesh(self.frusmesh2,self.context)
+    # intersection mesh
+    self.barysub_isect = self.submesh_isect.withBarycentricUVs()
     self.prim3.fromSubMesh(self.barysub_isect,self.context)
-    #time.sleep(0.05)
     #print("intersection convexVolume: %s" % submesh_isect.convexVolume)
+    #self.mutex.release()
 
 ###############################################################################
 

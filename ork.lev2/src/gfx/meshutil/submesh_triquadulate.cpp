@@ -64,8 +64,10 @@ void submeshTriangulate(const submesh& inpmesh, submesh& outmesh) {
         break;
       }
       default: {
-        auto c = ply.ComputeCenter();
-        auto mc = outmesh._vtxpool->mergeVertex(c);
+        dvec3 c = ply.centerOfMass();
+        vertex vc;
+        vc.mPos = c;
+        auto mc = outmesh._vtxpool->mergeVertex(vc);
         for( int i=0; i<inumv; i++ ){
           auto v0 = ply._vertices[i];
           auto v1 = ply._vertices[(i+1)%inumv];

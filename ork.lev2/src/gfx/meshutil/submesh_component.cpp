@@ -379,19 +379,11 @@ int poly::VertexCCW(int vert) const {
 vertex poly::ComputeCenter() const {
   int inumv = GetNumSides();
   vertex vcenter;
-  vcenter.mPos = dvec3(0, 0, 0);
-  vcenter.mNrm = dvec3(0, 0, 0);
-  for (int ic = 0; ic < vertex::kmaxcolors; ic++) {
-    vcenter.mCol[ic] = fvec4(0.0f, 0.0f, 0.0f);
-  }
-  for (int it = 0; it < vertex::kmaxuvs; it++) {
-    vcenter.mUV[it].Clear();
-  }
   double frecip = double(1.0) / double(inumv);
   for (int iv = 0; iv < inumv; iv++) {
     auto v       = _vertices[iv];
-    vcenter.mPos = vcenter.mPos + v->mPos;
-    vcenter.mNrm = vcenter.mNrm + v->mNrm;
+    vcenter.mPos += v->mPos;
+    vcenter.mNrm += v->mNrm;
     for (int it = 0; it < vertex::kmaxuvs; it++) {
       vcenter.mUV[it] = vcenter.mUV[it] + (v->mUV[it] * frecip);
     }
@@ -402,6 +394,53 @@ vertex poly::ComputeCenter() const {
   vcenter.mPos = vcenter.mPos * frecip;
   vcenter.mNrm.normalizeInPlace();
   return vcenter;
+}
+
+dvec3 poly::centerOfMass() const{
+  
+  struct tri{
+    dvec3 a;
+    dvec3 b;
+    dvec3 c;
+    dvec3 na;
+    dvec3 nb;
+    dvec3 nc;
+    dvec3 center() const{
+      return (a + b + c) * (1.0/3.0);
+    }
+    dvec3 avg_n() const{
+      return (na + nb + nc).normalized();
+    }
+    double _area = 0.0;
+  };
+  
+  std::vector<tri> tris;
+
+  ork::dvec3 base = _vertices[0]->mPos;
+  ork::dvec3 prev = _vertices[1]->mPos;
+  double total_area = 0.0;
+  for (int i = 2; i < _vertices.size(); i++) {
+    ork::dvec3 next = _vertices[i]->mPos;
+    tri t;
+    t.c = base;
+    t.a = prev;
+    t.b = next;
+    t._area += (prev - base).crossWith(next - base).magnitude() * 0.5;
+    total_area += t._area;
+    tris.push_back(t);
+    prev = next;
+  }
+  
+  dvec3 vcenter;
+  for( auto t : tris ){
+
+    dvec3 c = t.center();
+    double proportion = t._area / total_area;
+    vcenter += c * proportion;
+  }
+
+  return vcenter;
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////

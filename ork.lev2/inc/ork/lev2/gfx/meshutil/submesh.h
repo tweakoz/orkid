@@ -138,9 +138,9 @@ struct vertex {
   dvec3 mPos;
   dvec3 mNrm;
 
-  int miNumWeights;
-  int miNumColors;
-  int miNumUvs;
+  int miNumWeights = 0;
+  int miNumColors = 0;
+  int miNumUvs = 0;
 
   std::string mJointNames[kmaxinfluences];
 
@@ -223,6 +223,7 @@ struct poly {
   // int VertexCCW(int vert) const;
 
   vertex ComputeCenter() const;
+  dvec3 centerOfMass() const;
   double ComputeEdgeLength(const dmtx4& MatRange, int iedge) const;
   double minEdgeLength(const dmtx4& MatRange = dmtx4::Identity()) const;
   double maxEdgeLength(const dmtx4& MatRange = dmtx4::Identity()) const;
@@ -518,6 +519,8 @@ void submeshBarycentricUV(const submesh& inpsubmesh, submesh& outsmesh);
 submesh_ptr_t submeshFromFrustum(const Frustum& frustum, bool projective_rect_uv);
 
 std::vector<submesh_ptr_t> submeshBulletConvexDecomposition(const submesh& inpsubmesh);
+
+void submeshFixWindingOrder(const submesh& inpsubmesh, submesh& outsmesh, bool inside_out);
 
 void submeshWriteObj(const submesh& inpsubmesh, const file::Path& BasePath);
 // void SubDivQuads(submesh* poutsmesh) const;
