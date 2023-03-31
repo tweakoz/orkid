@@ -163,7 +163,6 @@ struct vertexpool {
 struct AnnoMap {
   orkmap<std::string, std::string> _annotations;
   AnnoMap* Fork() const;
-  static orkset<AnnoMap*> gAllAnnoSets;
   void SetAnnotation(const std::string& key, const std::string& val);
   const std::string& GetAnnotation(const std::string& annoname) const;
 
@@ -321,7 +320,6 @@ struct submesh {
       const auto& anno = it->second;
       return anno.get<T>();
     }
-    assert(false);
     static T rval;
     return rval;
   }
