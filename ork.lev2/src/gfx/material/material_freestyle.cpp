@@ -15,7 +15,7 @@ FreestyleMaterial::FreestyleMaterial() {
   _rasterstate.SetBlending(Blending::OFF);
   _rasterstate.SetDepthTest(EDepthTest::LEQUALS);
   _rasterstate.SetZWriteMask(true);
-  _rasterstate.SetCullTest(ECullTest::PASS_BACK);
+  _rasterstate.SetCullTest(ECullTest::PASS_FRONT);
   miNumPasses = 1;
 }
 ///////////////////////////////////////////////////////////////////////////////

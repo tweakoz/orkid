@@ -4,7 +4,7 @@
 # Distributed under the MIT License
 # see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ################################################################################
-import math, random, argparse, sys
+import math, random, argparse, sys, time
 from orkengine.core import *
 from orkengine.lev2 import *
 from _boilerplate import *
@@ -83,26 +83,28 @@ class SceneGraphApp(BasicUiCamSgApp):
     self.sgnode3 = self.prim3.createNode("m3",self.layer1,solid_wire_pipeline)
     self.sgnode3.enabled = True
   ##############################################
-  def onGpuIter(self):
-    super().onGpuIter()
+  def onUpdate(self,updevent):
+    super().onUpdate(updevent)
     θ = self.abstime * math.pi * 2.0 * 0.1
-
     self.fvmtx1 = mtx4.lookAt(vec3(0,0,1),vec3(math.sin(θ*1.3)*0.5,0,0),vec3(0,1,0))
     self.frustum1.set(self.fvmtx1,self.fpmtx1)
-    frusmesh1 = meshutil.SubMesh.createFromFrustum(self.frustum1,True)
-    self.submesh1 = procsubmesh(frusmesh1)
-    self.prim1.fromSubMesh(frusmesh1,self.context)
-
+    self.frusmesh1 = meshutil.SubMesh.createFromFrustum(self.frustum1,True)
+    self.submesh1 = procsubmesh(self.frusmesh1)
     self.fvmtx2 = mtx4.lookAt(vec3(1,0,1),vec3(1,0.5+math.sin(θ)*0.4,0),vec3(0,1,0))
     self.frustum2.set(self.fvmtx2,self.fpmtx2)
-    frusmesh2 = meshutil.SubMesh.createFromFrustum(self.frustum2,True)
-    self.prim2.fromSubMesh(frusmesh2,self.context)
-
-
+    self.frusmesh2 = meshutil.SubMesh.createFromFrustum(self.frustum2,True)
     submesh_isect = proc_with_frustum(self.submesh1,self.frustum2)
+    submesh_isect = submesh_isect.coplanarJoined().triangulated()
     self.barysub_isect = submesh_isect.withBarycentricUVs()
+  ##############################################
+  def onGpuIter(self):
+    super().onGpuIter()
+
+    self.prim1.fromSubMesh(self.frusmesh1,self.context)
+    self.prim2.fromSubMesh(self.frusmesh2,self.context)
     self.prim3.fromSubMesh(self.barysub_isect,self.context)
-    print("intersection convexVolume: %s" % submesh_isect.convexVolume)
+    #time.sleep(0.05)
+    #print("intersection convexVolume: %s" % submesh_isect.convexVolume)
 
 ###############################################################################
 

@@ -84,6 +84,11 @@ std::unordered_map<uint64_t,polyset_ptr_t> PolySet::splitByPlane() const {
     uint64_t ud = uint64_t( (plane.d+32767.0)*distance_quantization ); //  16+12 bits 
     uint64_t hash = ud | (ux<<32) | (uy<<48);
 
+  if(0)printf( "plane<%f %f %f %f> nenc<%f %f> ud<0x%x> ux<0x%x> uy<%d> hash<0x%016llx>\n",
+          plane.n.x, plane.n.y, plane.n.z, plane.d,
+          nenc.x, nenc.y,
+          int(ud), int(ux), int(uy), hash );
+
     auto it = polyset_by_plane.find(hash);
     polyset_ptr_t dest_set;
     if(it!=polyset_by_plane.end()){
@@ -97,7 +102,16 @@ std::unordered_map<uint64_t,polyset_ptr_t> PolySet::splitByPlane() const {
 
   }
   OrkAssert(polyset_by_plane.size()>0);
+
   return polyset_by_plane;
+}
+
+dvec3 PolySet::averageNormal() const{
+  dvec3 avgnorm(0.0);
+  for( auto p : _polys ){
+    avgnorm += p->computePlane().n;
+  }
+  return avgnorm.normalized();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

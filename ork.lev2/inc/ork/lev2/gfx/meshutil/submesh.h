@@ -248,6 +248,7 @@ struct PolySet {
   std::vector<island_ptr_t> splitByIsland() const;
   std::unordered_map<uint64_t,polyset_ptr_t> splitByPlane() const;
   std::unordered_set<poly_ptr_t> _polys;
+  dvec3 averageNormal() const;
 };
 
 struct Island : public PolySet {
