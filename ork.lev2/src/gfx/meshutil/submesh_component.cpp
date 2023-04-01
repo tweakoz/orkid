@@ -638,31 +638,6 @@ const std::string& poly::GetAnnotation(const std::string& annoname) const {
   return gnomatch;
 }
 
-////////////////////////////////////////////////////////////////
 
-IConnectivity::IConnectivity(submesh* sub) 
-  : _submesh(sub) {
-}
-IConnectivity::~IConnectivity(){
-
-}
-DefaultConnectivity::DefaultConnectivity(submesh* sub) 
-  : IConnectivity(sub) {
-}
-
-poly_index_set_t DefaultConnectivity::connectedPolys(edge_ptr_t edge, bool ordered) const {
-  return connectedPolys(*edge,ordered);
-}
-poly_index_set_t DefaultConnectivity::connectedPolys(const edge& ed, bool ordered) const {
-  poly_index_set_t output;
-  size_t num_polys = _submesh->_orderedPolys.size();
-  for (size_t i = 0; i < num_polys; i++) {
-    auto p = _submesh->_orderedPolys[i];
-    if (p->containsEdge(ed,ordered)) {
-      output.insert(i);
-    }
-  }
-  return output;
-}
 ////////////////////////////////////////////////////////////////
 } // namespace ork::meshutil

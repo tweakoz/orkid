@@ -293,8 +293,10 @@ struct IConnectivity{
   IConnectivity(submesh* sub);
   virtual ~IConnectivity();
 
-  virtual poly_index_set_t connectedPolys(edge_ptr_t edge, bool ordered = true) const = 0;
-  virtual poly_index_set_t connectedPolys(const edge& edge, bool ordered = true) const = 0;
+  virtual poly_index_set_t polysConnectedToEdge(edge_ptr_t edge, bool ordered = true) const = 0;
+  virtual poly_index_set_t polysConnectedToEdge(const edge& edge, bool ordered = true) const = 0;
+  virtual poly_index_set_t polysConnectedToPoly(poly_ptr_t p) const = 0;
+  virtual poly_index_set_t polysConnectedToPoly(int ip) const = 0;
 
   submesh* _submesh = nullptr;
 
@@ -304,8 +306,10 @@ using connectivity_impl_ptr_t = std::shared_ptr<IConnectivity>;
 
 struct DefaultConnectivity : public IConnectivity{
   DefaultConnectivity(submesh* sub);
-  poly_index_set_t connectedPolys(edge_ptr_t edge, bool ordered = true) const final;
-  poly_index_set_t connectedPolys(const edge& edge, bool ordered = true) const final;
+  poly_index_set_t polysConnectedToEdge(edge_ptr_t edge, bool ordered = true) const final;
+  poly_index_set_t polysConnectedToEdge(const edge& edge, bool ordered = true) const final;
+  poly_index_set_t polysConnectedToPoly(poly_ptr_t p) const final;
+  poly_index_set_t polysConnectedToPoly(int ip) const final;
 
 };
 

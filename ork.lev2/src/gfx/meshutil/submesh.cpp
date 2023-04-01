@@ -296,18 +296,7 @@ int submesh::GetNumPolys(int inumsides) const {
 }
 ///////////////////////////////////////////////////////////////////////////////
 poly_index_set_t submesh::adjacentPolys(int ply) const {
-  poly_index_set_t output;
-  auto p = RefPoly(ply);
-  auto edges = p.edges();
-  for (auto e : edges) {
-    auto con_polys = this->connectedPolys(e,false);
-    for (auto ip : con_polys ) {
-      if (ip != ply) {
-        output.insert(ip);
-      }
-    }
-  }
-  return output;
+  return _connectivityIMPL->polysConnectedToPoly(ply);
 }
 ///////////////////////////////////////////////////////////////////////////////
 edge_ptr_t submesh::edgeBetweenPolys(int aind, int bind) const {
@@ -349,11 +338,11 @@ edge_ptr_t submesh::edgeBetweenPolys(int aind, int bind) const {
 }
 ///////////////////////////////////////////////////////////////////////////////
 poly_index_set_t submesh::connectedPolys(edge_ptr_t ed, bool ordered) const { //
-  return _connectivityIMPL->connectedPolys(ed,ordered);
+  return _connectivityIMPL->polysConnectedToEdge(ed,ordered);
 }
 ///////////////////////////////////////////////////////////////////////////////
 poly_index_set_t submesh::connectedPolys(const edge& ed, bool ordered) const { //
-  return _connectivityIMPL->connectedPolys(ed,ordered);
+  return _connectivityIMPL->polysConnectedToEdge(ed,ordered);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void submesh::MergeSubMesh(const submesh& inp_mesh) {
