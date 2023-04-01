@@ -21,8 +21,7 @@ const vertexpool vertexpool::EmptyPool;
 
 /////////////////////////////////////////////////////////////////////////
 submesh::submesh(vertexpool_ptr_t vpool)
-    : _surfaceArea(0)
-    , _mergeEdges(true) {
+    : _surfaceArea(0) {
 
     if(nullptr==vpool){
       vpool = std::make_shared<vertexpool>();
@@ -247,15 +246,11 @@ const AABox& submesh::aabox() const {
   return _aaBox;
 }
 ///////////////////////////////////////////////////////////////////////////////
-const edge& submesh::RefEdge(uint64_t edgekey) const {
-  auto it = _edgemap.find(edgekey);
-  OrkAssert(it != _edgemap.end());
-  return *it->second;
-}
-///////////////////////////////////////////////////////////////////////////////
 vertex_ptr_t submesh::mergeVertex(const vertex& vtx) {
   _aaBoxDirty = true;
-  return _vtxpool->mergeVertex(vtx);
+  auto merged = _vtxpool->mergeVertex(vtx);
+  merged->_parentSubmesh = this;
+  return merged;
 }
 ///////////////////////////////////////////////////////////////////////////////
 poly& submesh::RefPoly(int i) {
@@ -298,56 +293,74 @@ int submesh::GetNumPolys(int inumsides) const {
   return iret;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void submesh::GetEdges(const poly& ply, orkvector<edge>& Edges) const {
-  int icnt  = 0;
-  int icntf = 0;
-  for (int is = 0; is < ply.GetNumSides(); is++) {
-    uint64_t ue  = ply._edges[is]->hash();
-    auto it = _edgemap.find(ue);
-    if (it != _edgemap.end()) {
-      Edges.push_back(*it->second);
-      icntf++;
-    }
-    icnt++;
-  }
-}
-///////////////////////////////////////////////////////////////////////////////
-void submesh::GetAdjacentPolys(int ply, orkset<int>& output) const {
-  orkvector<edge> edges;
-  GetEdges(RefPoly(ply), edges);
-  for (orkvector<edge>::const_iterator edgeIter = edges.begin(); edgeIter != edges.end(); edgeIter++) {
-    orkset<int> connectedPolys;
-    GetConnectedPolys(*edgeIter, connectedPolys);
-    for (orkset<int>::const_iterator it2 = connectedPolys.begin(); it2 != connectedPolys.end(); it2++) {
+orkset<int> submesh::adjacentPolys(int ply, const edge_map_t& edgemap) const {
+  orkset<int> output;
+  auto p = RefPoly(ply);
+  auto edges = p.edges();
+  for (auto e : edges) {
+    auto con_polys = this->connectedPolys(e);
+    for (orkset<int>::const_iterator it2 = con_polys.begin(); it2 != con_polys.end(); it2++) {
       int ic = *it2;
       if (ic != ply) {
-        output.insert(connectedPolys.begin(), connectedPolys.end());
+        output.insert(con_polys.begin(), con_polys.end());
       }
     }
   }
+  return output;
 }
 ///////////////////////////////////////////////////////////////////////////////
-edge_constptr_t submesh::edgeBetween(int aind, int bind) const {
-  const poly& a = RefPoly(aind);
-  const poly& b = RefPoly(bind);
-  for (int eaind = 0; eaind < a.GetNumSides(); eaind++)
-    for (int ebind = 0; ebind < b.GetNumSides(); ebind++)
-      if (a._edges[eaind] == b._edges[ebind])
-        return std::const_pointer_cast<const edge>(a._edges[eaind]);
-  return nullptr;
-}
-///////////////////////////////////////////////////////////////////////////////
-void submesh::GetConnectedPolys(const edge& ed, orkset<int>& output) const {
-  uint64_t keyA    = ed.hash();
-  auto itfind = _edgemap.find(keyA);
-  if (itfind != _edgemap.end()) {
-    auto edfound = itfind->second;
-    int inump    = edfound->GetNumConnectedPolys();
-    for (int ip = 0; ip < inump; ip++) {
-      int ipi = edfound->GetConnectedPoly(ip);
-      output.insert(ipi);
+edge_ptr_t submesh::edgeBetweenPolys(int aind, int bind) const {
+  auto pa = _orderedPolys[aind];
+  auto pb = _orderedPolys[bind];
+  edge_ptr_t rval;
+  std::vector<vertex_ptr_t> verts_in_both;
+  for( auto v_in_b : pb->_vertices ){
+    if( pa->containsVertex(v_in_b) ){
+      verts_in_both.push_back(v_in_b);
     }
   }
+  switch( verts_in_both.size() ){
+    case 2: {
+      auto v0 = verts_in_both[0];
+      auto v1 = verts_in_both[1];
+
+      auto ep0 = pa->edgeForVertices(v0,v1);
+      if( nullptr == ep0 ){
+        ep0 = pa->edgeForVertices(v0,v1);
+      }
+      OrkAssert(ep0);
+
+      auto ep1 = pb->edgeForVertices(ep0->_vertexB, ep0->_vertexA);
+      OrkAssert(ep1);
+
+      rval = ep0;
+
+    }
+    case 0:
+    case 1: 
+      break;
+    default: // we do not support more than 2 verts in common yet
+      OrkAssert(false);
+      break;
+  }
+
+  return rval;
+}
+///////////////////////////////////////////////////////////////////////////////
+orkset<int> submesh::connectedPolys(edge_ptr_t ed) const { //
+  return connectedPolys(*ed);
+}
+///////////////////////////////////////////////////////////////////////////////
+orkset<int> submesh::connectedPolys(const edge& ed) const { //
+  orkset<int> output;
+  size_t num_polys = _orderedPolys.size();
+  for (size_t i = 0; i < num_polys; i++) {
+    auto p = _orderedPolys[i];
+    if (p->containsEdge(ed)) {
+      output.insert(i);
+    }
+  }
+  return output;
 }
 ///////////////////////////////////////////////////////////////////////////////
 void submesh::MergeSubMesh(const submesh& inp_mesh) {
@@ -463,21 +476,6 @@ poly_ptr_t submesh::mergePoly(const poly& ply) {
       auto vtx = ply._vertices[i];
       // vtx->ConnectToPoly(inewpi);
     }
-    //////////////////////////////////////////////////
-    // add edges
-    if (_mergeEdges) {
-      for (int i = 0; i < inumv; i++) {
-        int i0  = (i);
-        int i1  = (i + 1) % inumv;
-        int iv0 = ply.GetVertexID(i0);
-        int iv1 = ply.GetVertexID(i1);
-        auto v0 = _vtxpool->_orderedVertices[iv0];
-        auto v1 = _vtxpool->_orderedVertices[iv1];
-
-        edge Edge(v0, v1);
-        nply._edges.push_back(MergeEdge(Edge, ipolyindex));
-      }
-    }
     nply.SetAnnoMap(ply.GetAnnoMap());
     auto new_poly = std::make_shared<poly>(nply);
     _orderedPolys.push_back(new_poly);
@@ -499,26 +497,12 @@ poly_ptr_t submesh::mergePoly(const poly& ply) {
   return rval;
 }
 ///////////////////////////////////////////////////////////////////////////////
-edge_ptr_t submesh::MergeEdge(const edge& ed, int ipolyindex) {
-  uint64_t crcA    = ed.hash();
-  auto itfind = _edgemap.find(crcA);
-
-  edge_ptr_t rval;
-
-  if (_edgemap.end() != itfind) {
-    rval     = itfind->second;
-    uint64_t crcB = rval->hash();
-    OrkAssert(ed.Matches(*rval));
-  } else {
-    rval           = std::make_shared<edge>(ed);
-    _edgemap[crcA] = rval;
-  }
-  if (ipolyindex >= 0) {
-    rval->ConnectToPoly(ipolyindex);
-  }
-
-  _aaBoxDirty = true;
-  return rval;
+edge_ptr_t submesh::mergeEdge(const edge& ed) {
+  auto v0 = ed._vertexA;
+  auto v1 = ed._vertexB;
+  auto mv0 = mergeVertex(*v0);
+  auto mv1 = mergeVertex(*v1);
+  return std::make_shared<edge>(mv0,mv1);
 }
 ///////////////////////////////////////////////////////////////////////////////
 // addPoly helper methods
@@ -689,7 +673,6 @@ void submesh::copy(  submesh& dest, //
   }
 
   dest.name = name;
-  dest._mergeEdges = _mergeEdges;
   dest._annotations = _annotations;
   dest._aaBoxDirty = true;
   dest._surfaceArea = 0.0f;
@@ -752,8 +735,8 @@ void submesh::visitConnectedPolys(poly_ptr_t p,PolyVisitContext& visitctx) const
   if( visitctx._visited.insert(p) ){
     bool ok = visitctx._visitor(p);
     if(ok){
-      for(auto e : p->_edges ){
-        for( auto i : e->_connectedPolys ){
+      for(auto e : p->edges() ){
+        for( auto i : connectedPolys(e) ){
           auto cp = _orderedPolys[i];
           if(cp!=p){
             visitConnectedPolys(cp,visitctx);
@@ -763,6 +746,9 @@ void submesh::visitConnectedPolys(poly_ptr_t p,PolyVisitContext& visitctx) const
     }
   }
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
 poly_set_t submesh::polysConnectedTo(vertex_ptr_t v) const{
   poly_set_t connected;
   for ( auto p : _orderedPolys ){
@@ -773,6 +759,18 @@ poly_set_t submesh::polysConnectedTo(vertex_ptr_t v) const{
     }
   }
   return connected;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+edge_map_t submesh::allEdgesByVertexHash() const {
+  edge_map_t edges;
+  for( auto p : _orderedPolys ){
+    for( auto e : p->edges() ){
+      edges[e->hash()] = e;
+    }
+  }
+  return edges;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

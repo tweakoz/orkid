@@ -98,6 +98,8 @@ void submeshTrianglesToQuads(const submesh& inpmesh, //
 
   int inumtri = inpmesh.GetNumPolys(3);
 
+  auto inp_edgemap = inpmesh.allEdgesByVertexHash();
+
   for (int ip = 0; ip < inumtri; ip++) {
     bool was_quadified = false;
 
@@ -129,20 +131,14 @@ void submeshTrianglesToQuads(const submesh& inpmesh, //
     /////////////////////////
 
     orkset<int> ConnectedPolySet;
-    orkset<int> ConnectedPolySetA;
-    orkset<int> ConnectedPolySetB;
-    orkset<int> ConnectedPolySetC;
-    inpmesh.GetConnectedPolys(edge(v0, v1), ConnectedPolySetA);
-    inpmesh.GetConnectedPolys(edge(v1, v2), ConnectedPolySetB);
-    inpmesh.GetConnectedPolys(edge(v2, v0), ConnectedPolySetC);
 
-    for ( int conpoly : ConnectedPolySetA ) {
+    for ( int conpoly : inpmesh.connectedPolys(edge(v0, v1)) ) {
       ConnectedPolySet.insert(conpoly);
     }
-    for (int conpoly : ConnectedPolySetB) {
+    for (int conpoly : inpmesh.connectedPolys(edge(v1, v2))) {
       ConnectedPolySet.insert(conpoly);
     }
-    for (int conpoly : ConnectedPolySetC) {
+    for (int conpoly : inpmesh.connectedPolys(edge(v2, v0))) {
       ConnectedPolySet.insert(conpoly);
     }
 

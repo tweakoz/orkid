@@ -14,6 +14,15 @@
 namespace ork::meshutil {
 ///////////////////////////////////////////////////////////////////////////////
 
+submesh* PolySet::submesh() const{
+  bool has_polys = _polys.size()>0;
+  if( has_polys ){
+    auto p = *_polys.begin();
+    return p->_parentSubmesh;
+  }
+  return nullptr;
+}
+
 std::vector<island_ptr_t> PolySet::splitByIsland() const{
 
   std::vector<island_ptr_t> islands;
@@ -118,6 +127,7 @@ dvec3 PolySet::averageNormal() const{
 
 edge_vect_t Island::boundaryEdges() const {
 
+  auto subm = submesh();
   //////////////////////////////////////////
   // grab poly indices present in island
   //////////////////////////////////////////
@@ -131,14 +141,15 @@ edge_vect_t Island::boundaryEdges() const {
 
   edge_set_t loose_edges;
   for( auto p : _polys ){
-    size_t num_edges = p->_edges.size();
+    auto edges = p->edges();
+    size_t num_edges = edges.size();
     OrkAssert(num_edges!=2);
     int poly_index = p->_submeshIndex;
 
     // find num connections within island
-    for(auto e : p->_edges) {
+    for(auto e : edges ) {
       int inumcon_in_island = 0;
-      for( int con : e->_connectedPolys ){
+      for( int con : subm->connectedPolys(*e) ){
         if(con!=poly_index){
           ///////////////////////////////
           // is connected poly in island?
@@ -172,6 +183,7 @@ edge_vect_t Island::boundaryEdges() const {
 ///////////////////////////////////////////////////////////////////////////////
 
 edge_vect_t Island::boundaryLoop() const {
+  auto subm = submesh();
 
   //////////////////////////////////////////
   // grab poly indices present in island
@@ -186,14 +198,15 @@ edge_vect_t Island::boundaryLoop() const {
 
   edge_set_t loose_edges;
   for( auto p : _polys ){
-    size_t num_edges = p->_edges.size();
+    auto edges = p->edges();
+    size_t num_edges = edges.size();
     OrkAssert(num_edges!=2);
     int poly_index = p->_submeshIndex;
 
     // find num connections within island
-    for(auto e : p->_edges) {
+    for(auto e : edges) {
       int inumcon_in_island = 0;
-      for( int con : e->_connectedPolys ){
+      for( int con : subm->connectedPolys(*e) ){
         if(con!=poly_index){
           ///////////////////////////////
           // is connected poly in island?

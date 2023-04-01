@@ -601,15 +601,15 @@ template <typename T> T Vector3<T>::calcTriangularArea(const Vector3<T>& V, cons
 
 template <typename T> Vector3<T> Vector3<T>::quantized(T v) const {
   Vector3<T> rval;
-  rval.x = T(int(this->x * v)) / v;
-  rval.y = T(int(this->y * v)) / v;
-  rval.z = T(int(this->z * v)) / v;
+  rval.x = T(int((this->x * v)+0.5)) / v;
+  rval.y = T(int((this->y * v)+0.5)) / v;
+  rval.z = T(int((this->z * v)+0.5)) / v;
   return rval;
 }
 template <typename T> uint64_t Vector3<T>::hash(T quantization) const{
-  int a = int(this->x * quantization)+(1<<19);
-  int b = int(this->y * quantization)+(1<<19);
-  int c = int(this->z * quantization)+(1<<19);
+  int a = int((this->x * quantization)+0.5)+(1<<19);
+  int b = int((this->y * quantization)+0.5)+(1<<19);
+  int c = int((this->z * quantization)+0.5)+(1<<19);
   return (uint64_t(a)<<42) | (uint64_t(b)<<21) | uint64_t(c);
 }
 

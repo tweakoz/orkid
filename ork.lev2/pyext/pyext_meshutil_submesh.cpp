@@ -23,7 +23,16 @@ void pyinit_meshutil_submesh(py::module& module_meshutil) {
           .def(py::init<>())
           .def_static(
               "createFromFrustum",
-              [](frustum_ptr_t frus, bool projective_rect_uv = false) -> submesh_ptr_t { //
+              [](frustum_ptr_t frus, py::kwargs kwargs) -> submesh_ptr_t { //
+                bool projective_rect_uv   = false;
+                if (kwargs) {
+                  for (auto item : kwargs) {
+                    auto key = py::cast<std::string>(item.first);
+                    if (key == "projective_rect_uv") {
+                      projective_rect_uv = py::cast<bool>(item.second);
+                    }
+                  }
+                }
                 return submeshFromFrustum(*frus, projective_rect_uv);
               })
           //////////////////////////////////////////////////////////////////
@@ -99,7 +108,7 @@ void pyinit_meshutil_submesh(py::module& module_meshutil) {
               "edges",
               [](submesh_ptr_t submesh) -> py::list {
                 py::list pyl;
-                for (auto item : submesh->_edgemap) {
+                for (auto item : submesh->allEdgesByVertexHash()) {
                   auto e = item.second;
                   pyl.append(e);
                 }
@@ -134,6 +143,12 @@ void pyinit_meshutil_submesh(py::module& module_meshutil) {
                 return rval;
               })
           .def(
+              "positionsOnly",
+              [](submesh_constptr_t inpsubmesh, py::kwargs kwargs) -> submesh_ptr_t {
+                submesh_ptr_t rval      = std::make_shared<submesh>();
+                inpsubmesh->copy(*rval, false, false, false);
+                return rval;
+              })          .def(
               "convexDecomposition",
               [](submesh_constptr_t inpsubmesh) -> py::list {
                 py::list pyl;
@@ -374,7 +389,7 @@ void pyinit_meshutil_submesh(py::module& module_meshutil) {
             rval += FormatString("  num_polys<%d>\n", (int)sm->_polymap.size());
             rval += FormatString("  num_triangles<%d>\n", (int)sm->GetNumPolys(3));
             rval += FormatString("  num_quads<%d>\n", (int)sm->GetNumPolys(4));
-            rval += FormatString("  num_edges<%d>\n", (int)sm->_edgemap.size());
+            rval += FormatString("  num_edges<%d>\n", (int)sm->allEdgesByVertexHash().size());
             return rval;
           });
   type_codec->registerStdCodec<submesh_ptr_t>(submesh_type);

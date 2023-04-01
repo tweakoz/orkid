@@ -58,7 +58,7 @@ class SceneGraphApp(BasicUiCamSgApp):
     self.fvmtx1 = mtx4.lookAt(vec3(0,0,1),vec3(0,0,0),vec3(0,1,0))
     self.frustum1 = Frustum()
     self.frustum1.set(self.fvmtx1,self.fpmtx1)
-    self.frusmesh1 = meshutil.SubMesh.createFromFrustum(self.frustum1,True)
+    self.frusmesh1 = meshutil.SubMesh.createFromFrustum(self.frustum1,projective_rect_uv=True)
     self.submesh1 = procsubmesh(self.frusmesh1)
     self.prim1 = meshutil.RigidPrimitive(self.frusmesh1,ctx)
     self.sgnode1 = self.prim1.createNode("m1",self.layer1,self.pseudowire_pipe)
@@ -70,7 +70,7 @@ class SceneGraphApp(BasicUiCamSgApp):
     self.fvmtx2 = mtx4.lookAt(vec3(1,0,1),vec3(1,1,0),vec3(0,1,0))
     self.frustum2 = Frustum()
     self.frustum2.set(self.fvmtx2,self.fpmtx2)
-    self.frusmesh2 = meshutil.SubMesh.createFromFrustum(self.frustum2,True)
+    self.frusmesh2 = meshutil.SubMesh.createFromFrustum(self.frustum2,projective_rect_uv=True)
     self.submesh2 = procsubmesh(self.frusmesh2)
     self.prim2 = meshutil.RigidPrimitive(self.frusmesh2,ctx)
     self.sgnode2 = self.prim2.createNode("m2",self.layer1,self.pseudowire_pipe)
@@ -94,8 +94,8 @@ class SceneGraphApp(BasicUiCamSgApp):
     self.frustum1.set(self.fvmtx1,self.fpmtx1)
     self.frustum2.set(self.fvmtx2,self.fpmtx2)
     #
-    self.frusmesh1 = meshutil.SubMesh.createFromFrustum(self.frustum1,True)
-    self.frusmesh2 = meshutil.SubMesh.createFromFrustum(self.frustum2,True)
+    self.frusmesh1 = meshutil.SubMesh.createFromFrustum(self.frustum1,projective_rect_uv=True)
+    self.frusmesh2 = meshutil.SubMesh.createFromFrustum(self.frustum2,projective_rect_uv=True)
     #
     submesh1 = procsubmesh(self.frusmesh1)
 

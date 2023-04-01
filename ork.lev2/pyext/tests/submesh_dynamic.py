@@ -38,7 +38,8 @@ class SceneGraphApp(BasicUiCamSgApp):
     self.fvmtx1 = mtx4.lookAt(vec3(0,0,1),vec3(0,0,0),vec3(0,1,0))
     self.frustum1 = Frustum()
     self.frustum1.set(self.fvmtx1,self.fpmtx1)
-    self.frusmesh1 = meshutil.SubMesh.createFromFrustum(self.frustum1,True)
+    self.frusmesh1 = meshutil.SubMesh.createFromFrustum(self.frustum1,
+                                                        projective_rect_uv = True)
     self.submesh1 = stripSubMesh(self.frusmesh1)
     self.prim1 = meshutil.RigidPrimitive(self.frusmesh1,ctx)
     self.sgnode1 = self.prim1.createNode("m1",self.layer1,self.pseudowire_pipe)
@@ -60,13 +61,17 @@ class SceneGraphApp(BasicUiCamSgApp):
     #
     self.frustum1.set(self.fvmtx1,self.fpmtx1)
     #
-    submesh1 = meshutil.SubMesh.createFromFrustum(self.frustum1,True)
-    self.submesh_wire_frustum = submesh1
+    submesh1_uv = meshutil.SubMesh.createFromFrustum(self.frustum1,
+                                                     projective_rect_uv=True)
+    submesh1_nuv = submesh1_uv.positionsOnly()
+    #print(submesh1_uv)
+    #print(submesh1_nuv)
+    self.submesh_wire_frustum = submesh1_uv
     #
     pl = plane(vec3(0,0,-1),-1)
-    submesh2 = submesh1.clippedWithPlane(plane=pl,
-                                         close_mesh=True, 
-                                         flip_orientation=False )["front"]
+    submesh2 = submesh1_nuv.clippedWithPlane(plane=pl,
+                                             close_mesh=True, 
+                                             flip_orientation=False )["front"]
     #
     self.submesh_dynamic = stripSubMesh(submesh2) #.withWindingOrderFixed(True)
     #time.sleep(0.25)

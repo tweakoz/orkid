@@ -127,13 +127,13 @@ vertex::vertex(const vertex& rhs){
 }
 
 void vertex::dump(const std::string& name) const{
-  printf("vertex<%s> hash<%zx> pos<%f %f %f> nrm<%f %f %f> uv0<%f %f> col0<%f %f %f %f>\n",
+  printf("vertex<%s> hash<%zx> pos<%.*e %.*e %.*e> nrm<%.*f %.*f %.*f> uv0<%.*f %.*f> col0<%.*f %.*f %.*f %.*f>\n",
          name.c_str(),
          hash(),
-         mPos.x, mPos.y, mPos.z,
-         mNrm.x, mNrm.y, mNrm.z,
-         mUV[0].mMapTexCoord.x, mUV[0].mMapTexCoord.y,
-         mCol[0].x, mCol[0].y, mCol[0].z, mCol[0].w
+         10, mPos.x, 10, mPos.y, 10, mPos.z,
+         3, mNrm.x, 3, mNrm.y, 3, mNrm.z,
+         2, mUV[0].mMapTexCoord.x, 2, mUV[0].mMapTexCoord.y,
+         2, mCol[0].x, 2, mCol[0].y, 2, mCol[0].z, 2, mCol[0].w
          );
 }
 
@@ -277,14 +277,12 @@ uint64_t vertex::hash(double quantization) const {
     crc64.accumulateItem(UV.mMapTangent.hash(quantization));
     crc64.accumulateItem(UV.mMapTexCoord.quantized(quantization));
   }
-  crc64.accumulateItem(mNrm.hash(quantization));
-  crc64.accumulateItem(mPos.hash(quantization));
+  uint64_t pos_hash = mPos.hash(quantization);
+  uint64_t nrm_hash = mNrm.hash(quantization);
+  crc64.accumulateItem(pos_hash);
+  crc64.accumulateItem(nrm_hash);
 
-  /*auto f2u = [](float f) -> uint32_t {
-    auto pu = (uint32_t*) & f;
-    return *pu;
-  };
-  printf( "<%g %g %g> <%08x %08x %08x>\n", mPos.x, mPos.y, mPos.z, f2u(mPos.x), f2u(mPos.y), f2u(mPos.z));*/
+  //printf( "pos<%.*e %.*e %.*e> pos_hash<0x%zx>\n", 10, mPos.x, 10, mPos.y, 10, mPos.z, pos_hash );
   crc64.finish();
   return crc64.result();
 }
@@ -303,6 +301,48 @@ bool poly::containsVertex(vertex_ptr_t v) const{
       return true;
   }
   return false;
+}
+
+////////////////////////////////////////////////////////////////
+
+bool poly::containsEdge(const edge& e) const{
+  size_t num_verts = _vertices.size();
+  for( int i=0; i<num_verts; i++ ){
+    auto v0 = _vertices[i];
+    auto v1 = _vertices[(i+1)%num_verts];
+    if( (v0==e._vertexA) and (v1==e._vertexB) )
+      return true;
+  }
+  return false;
+}
+bool poly::containsEdge(edge_ptr_t e) const{
+  return containsEdge(*e);
+}
+
+////////////////////////////////////////////////////////////////
+
+edge_vect_t poly::edges() const {
+  edge_vect_t rval;
+  size_t num_verts = _vertices.size();
+  for( int i=0; i<num_verts; i++ ){
+    auto va = _vertices[i];
+    auto vb = _vertices[(i+1)%num_verts];
+    rval.push_back( std::make_shared<edge>(va,vb) );
+  }
+  return rval;
+}
+
+////////////////////////////////////////////////////////////////
+
+edge_ptr_t poly::edgeForVertices(vertex_ptr_t va, vertex_ptr_t vb) const {
+  size_t num_verts = _vertices.size();
+  for( int i=0; i<num_verts; i++ ){
+    auto v0 = _vertices[i];
+    auto v1 = _vertices[(i+1)%num_verts];
+    if( (v0==va) and (v1==vb) )
+      return std::make_shared<edge>(va,vb);
+  }
+  return nullptr;
 }
 
 ////////////////////////////////////////////////////////////////

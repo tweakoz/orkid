@@ -24,6 +24,10 @@ edge::edge(vertex_ptr_t va, vertex_ptr_t vb)
     , _vertexB(vb) {
 }
 
+submesh* edge::submesh() const {
+  return _vertexA->_parentSubmesh;
+}
+
 ////////////////////////////////////////////////////////////////
 
 vertex_ptr_t edge::edgeVertex(int iv) const {
@@ -40,24 +44,6 @@ vertex_ptr_t edge::edgeVertex(int iv) const {
   }
 
   return nullptr;
-}
-
-////////////////////////////////////////////////////////////////
-
-int edge::GetNumConnectedPolys(void) const {
-  return _connectedPolys.size();
-}
-
-////////////////////////////////////////////////////////////////
-
-int edge::GetConnectedPoly(int ip) const {
-  return _connectedPolys[ip];
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void edge::ConnectToPoly(int ipoly) {
-  _connectedPolys.push_back(ipoly);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -276,6 +262,7 @@ void EdgeChainLinker::link() {
     edge_chain_ptr_t right_chain;
 
     for (auto c : _edge_chains) {
+
       auto subj_vtx = (*c->_edges.begin())->_vertexA;
       auto c2       = findChainForVertex(subj_vtx);
       if (c2 != c) {

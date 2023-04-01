@@ -117,12 +117,16 @@ void pyinit_meshutil_component(py::module& module_meshutil) {
   type_codec->registerStdCodec<uvmapcoord>(uvc_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto edge_type = py::class_<edge,edge_ptr_t>(module_meshutil, "Edge").def(py::init<>())
-    .def_property_readonly("numConnectedPolys", [](edge_ptr_t e) -> int {            
-      return e->GetNumConnectedPolys();
+    .def_property_readonly("numConnectedPolys", [](edge_ptr_t e) -> int {     
+      auto sub = e->submesh();   
+      auto conpolys = sub->connectedPolys(e);    
+      return conpolys.size();
     })
     .def_property_readonly("connectedPolys", [](edge_ptr_t e) -> py::list {            
       py::list pyl;
-      for( int c : e->_connectedPolys ){
+      auto sub = e->submesh();   
+      auto conpolys = sub->connectedPolys(e);    
+      for( int c : conpolys ){
         pyl.append(c);
       }
       return pyl;
@@ -160,7 +164,7 @@ void pyinit_meshutil_component(py::module& module_meshutil) {
     })
     .def_property_readonly("edges", [](poly_ptr_t p) -> py::list {  
       py::list pyl;          
-      for( auto e : p->_edges ){
+      for( auto e : p->edges() ){
         pyl.append(e);
       }
       return pyl;

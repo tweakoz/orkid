@@ -216,7 +216,7 @@ class SceneGraphApp(object):
     f = Fragments(context = ctx,
                   layer=self.layer1,
                   pipeline=pipeline,
-                  flip_orientation=True,
+                  flip_orientation=False,
                   origin = vec3(0,0,0),
                   slicing_plane=plane(vec3(1,1,1).normalized(),.5),
                   model_asset_path = "data://tests/simple_obj/box.obj" )
@@ -237,7 +237,7 @@ class SceneGraphApp(object):
     f = Fragments(context = ctx,
                   layer=self.layer1,
                   pipeline=pipeline,
-                  flip_orientation=True,
+                  flip_orientation=False,
                   origin = vec3(-2,0,2),
                   slicing_plane=plane(vec3(1,0,0).normalized(),0),
                   model_asset_path = "data://tests/simple_obj/uvsphere.obj" )

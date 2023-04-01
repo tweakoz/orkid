@@ -62,13 +62,35 @@ void submeshClipWithPlane(
       OrkAssert(v);
       auto newv = dest.mergeVertex(*v);
       auto pos  = newv->mPos;
-      // printf("   subm[%s] add vertex pool<%02d> (%+g %+g %+g)\n", dest.name.c_str(), newv->_poolindex, pos.x, pos.y, pos.z);
+      //if(dest.name==".front")
+        //printf("   subm[%s] add vertex pool<%02d> hash<0x%x> (%.*e %.*e %.*e)\n", dest.name.c_str(), newv->_poolindex, newv->hash(), 10, pos.x, 10, pos.y, 10, pos.z);
       new_verts.push_back(newv);
       added.insert(newv);
     }
     dest.mergePoly(poly(new_verts));
+
+    #if 0
+    if(dest.name==".front")
+    if( dest._vtxpool->_orderedVertices.size() == 12 )
+    {
+      auto v4 = dest._vtxpool->_orderedVertices[4];
+      auto v11 = dest._vtxpool->_orderedVertices[11];
+
+      if( v4->hash() != v11->hash() ) {
+        if( (v4->mPos-v11->mPos).magnitude() < 0.001 ){
+          v4->dump("V4");
+          v11->dump("V11");
+          printf( "!!! v4-v11 mag: %.*e\n", 10, (v4->mPos-v11->mPos).magnitude() );
+          OrkAssert(false);
+        }
+      }
+
+    }
+    #endif
+
     return added;
   };
+
 
   /////////////////////////////////////////////////////////////////////
   // input mesh polygon loop
@@ -199,12 +221,13 @@ void submeshClipWithPlane(
   ///////////////////////////////////////////////////////////
 
   auto do_close = [&](submesh& outsubmesh,                            //
-                      std::deque<vertex_ptr_t>& planar_verts_deque) { //
+                      std::deque<vertex_ptr_t>& planar_verts_deque,
+                      bool front) { //
     //printf("subm[%s] planar_verts_deque[ ", outsubmesh.name.c_str());
     //for (auto v : planar_verts_deque) {
       //printf("%d ", v->_poolindex);
     //}
-    //printf("]\n");
+    //aprintf("]\n");
 
     /////////////////////////////////////////
     //  take note of edges which lie on the
@@ -241,7 +264,7 @@ void submeshClipWithPlane(
       }
       _linker.link();
 
-      size_t num_edge_loops = _linker._edge_loops.size();
+      //size_t num_edge_loops = _linker._edge_loops.size();
       //printf( "subm[%s] num_edge_loops<%zu>\n", outsubmesh.name.c_str(), num_edge_loops );
 
       for (auto loop : _linker._edge_loops) {
@@ -283,6 +306,12 @@ void submeshClipWithPlane(
         ///////////////////////////////////////////
 
         for (auto edge : loop->_edges) {
+          
+          auto con_polys = outsubmesh.connectedPolys(edge);
+          if(con_polys.size()==1){
+            //OrkAssert(false);
+          }
+
           auto va = outsubmesh.mergeVertex(*edge->_vertexA);
           auto vb = outsubmesh.mergeVertex(*edge->_vertexB);
 
@@ -296,7 +325,7 @@ void submeshClipWithPlane(
 
           double d = vx.dotWith(avg_n);
 
-          if ((d >= 0.0f) == (flip_orientation)) {
+          if ((d < 0.0f) == (flip_orientation ^ front)) {
             outsubmesh.mergeTriangle(vb, va, center_vertex);
           } else {
             outsubmesh.mergeTriangle(va, vb, center_vertex);
@@ -309,9 +338,9 @@ void submeshClipWithPlane(
   };
 
   if (do_front and close_mesh)
-    do_close(outsmesh_Front, front_planar_verts_deque);
+    do_close(outsmesh_Front, front_planar_verts_deque, true);
   if (do_back and close_mesh)
-    do_close(outsmesh_Back, back_planar_verts_deque);
+    do_close(outsmesh_Back, back_planar_verts_deque, false);
 
   ///////////////////////////////////////////////////////////
 }
