@@ -146,7 +146,11 @@ struct vertex {
   void Center(const vertex** pverts, int icnt);
   void center(const std::vector<vertex_ptr_t>& verts);
 
-  uint64_t hash(float quantization=3333.0f) const;
+  uint64_t hash(double quantization=3333.0) const;
+
+  void dump(const std::string& name) const;
+  void clearAllExceptPosition();
+
 
   uint32_t _poolindex = 0xffffffff;
 
@@ -188,7 +192,7 @@ struct vertexpool {
 
   static const vertexpool EmptyPool;
 
-  std::unordered_map<uint64_t, vertex_ptr_t, HashU6432> _vtxmap;
+  std::unordered_map<uint64_t, vertex_ptr_t> _vtxmap;
   orkvector<vertex_ptr_t> _orderedVertices;
 };
 
@@ -489,8 +493,8 @@ struct submesh {
   AnnotationMap _annotations;
   float _surfaceArea;
   vertexpool_ptr_t _vtxpool;
-  std::unordered_map<uint64_t, edge_ptr_t, HashU6432> _edgemap;
-  std::unordered_map<uint64_t, poly_ptr_t, HashU6432> _polymap;
+  std::unordered_map<uint64_t, edge_ptr_t> _edgemap;
+  std::unordered_map<uint64_t, poly_ptr_t> _polymap;
   orkvector<poly_ptr_t> _orderedPolys;
   std::unordered_map<int,int> _polyTypeCounter;
   bool _mergeEdges;

@@ -54,7 +54,7 @@ class SceneGraphApp(BasicUiCamSgApp):
   ##############################################
   def onUpdate(self,updevent):
     super().onUpdate(updevent)
-    θ = self.abstime * math.pi * 2.0 * 0.1
+    θ = self.abstime * math.pi * 2.0 * 0.01
     #
     self.fvmtx1 = mtx4.lookAt(vec3(0,0,1),vec3(math.sin(θ*1.3)*0.5,0,0),vec3(0,1,0))
     #
@@ -68,7 +68,7 @@ class SceneGraphApp(BasicUiCamSgApp):
                                          close_mesh=True, 
                                          flip_orientation=False )["front"]
     #
-    self.submesh_dynamic = stripSubMesh(submesh2)#.repaired()
+    self.submesh_dynamic = stripSubMesh(submesh2) #.withWindingOrderFixed(True)
     #time.sleep(0.25)
   ##############################################
   def onGpuIter(self):

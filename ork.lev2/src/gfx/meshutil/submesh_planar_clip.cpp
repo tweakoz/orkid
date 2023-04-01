@@ -11,7 +11,7 @@
 #include <deque>
 
 constexpr bool do_front = true;
-constexpr bool do_back = true;
+constexpr bool do_back  = true;
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::meshutil {
@@ -37,8 +37,9 @@ void submeshClipWithPlane(
   vertex_set_t front_verts, back_verts, planar_verts;
 
   for (auto item : inpsubmesh._vtxpool->_vtxmap) {
-    auto vertex          = item.second;
-    const auto& pos      = vertex->mPos;
+    auto vertex           = item.second;
+    const auto& pos       = vertex->mPos;
+    vertex->clearAllExceptPosition();
     double point_distance = slicing_plane.pointDistance(pos);
     if (point_distance > 0.0f) {
       front_verts.insert(vertex);
@@ -56,12 +57,12 @@ void submeshClipWithPlane(
   auto add_whole_poly = [](poly_ptr_t src_poly, submesh& dest) -> vertex_set_t {
     std::vector<vertex_ptr_t> new_verts;
     vertex_set_t added;
-    //printf("  subm[%s] add poly size<%zu>\n", dest.name.c_str(), src_poly->_vertices.size());
+    // printf("  subm[%s] add poly size<%zu>\n", dest.name.c_str(), src_poly->_vertices.size());
     for (auto v : src_poly->_vertices) {
       OrkAssert(v);
       auto newv = dest.mergeVertex(*v);
       auto pos  = newv->mPos;
-      //printf("   subm[%s] add vertex pool<%02d> (%+g %+g %+g)\n", dest.name.c_str(), newv->_poolindex, pos.x, pos.y, pos.z);
+      // printf("   subm[%s] add vertex pool<%02d> (%+g %+g %+g)\n", dest.name.c_str(), newv->_poolindex, pos.x, pos.y, pos.z);
       new_verts.push_back(newv);
       added.insert(newv);
     }
@@ -99,10 +100,10 @@ void submeshClipWithPlane(
     //////////////////////////////////////////////
     // input poly statistics
     //////////////////////////////////////////////
-    //printf("input poly numv<%d>\n", numverts);
-    //printf(" front_count<%d>\n", front_count);
-    //printf(" back_count<%d>\n", back_count);
-    //printf(" planar_count<%d>\n", planar_count);
+    // printf("input poly numv<%d>\n", numverts);
+    // printf(" front_count<%d>\n", front_count);
+    // printf(" back_count<%d>\n", back_count);
+    // printf(" planar_count<%d>\n", planar_count);
     //////////////////////////////////////////////
     // all of this poly's vertices in front ? -> trivially route to outsmesh_Front
     //////////////////////////////////////////////
@@ -142,10 +143,9 @@ void submeshClipWithPlane(
 
       ///////////////////////////////////////////
 
-      auto process_clipped_poly = [&](std::vector<vertex>& clipped_poly_vertices,   //
-                                      submesh& outsubmesh,                          //
-                                      std::deque<vertex_ptr_t>& planar_verts_deque, //
-                                      bool flip_nrm) {                              //
+      auto process_clipped_poly = [&](std::vector<vertex>& clipped_poly_vertices,     //
+                                      submesh& outsubmesh,                            //
+                                      std::deque<vertex_ptr_t>& planar_verts_deque) { //
         std::vector<vertex_ptr_t> merged_vertices;
 
         /////////////////////////////////////////
@@ -156,7 +156,7 @@ void submeshClipWithPlane(
         for (auto& v : clipped_poly_vertices) {
 
           auto merged_v = outsubmesh.mergeVertex(v);
-
+          //merged_v->dump(FormatString("merged_v<%d>", merged_v->_poolindex));
           merged_vertices.push_back(merged_v);
           double point_dist_to_plane = abs(slicing_plane.pointDistance(merged_v->mPos));
           if (point_dist_to_plane < PLANE_EPSILON) {
@@ -164,10 +164,10 @@ void submeshClipWithPlane(
             merged_v->mNrm = dvec3(0, 0, 0);
             merged_v->mUV[0].Clear();
             merged_v->mUV[1].Clear();
-            //printf("subm[%s] bpv (%+g %+g %+g) \n", outsubmesh.name.c_str(), p.x, p.y, p.z);
+            // printf("subm[%s] bpv (%+g %+g %+g) \n", outsubmesh.name.c_str(), p.x, p.y, p.z);
             planar_verts_deque.push_back(merged_v);
           } else {
-            //printf("subm[%s] REJECT: point_dist_to_plane<%g>\n", outsubmesh.name.c_str(), point_dist_to_plane);
+            // printf("subm[%s] REJECT: point_dist_to_plane<%g>\n", outsubmesh.name.c_str(), point_dist_to_plane);
           }
         }
 
@@ -186,125 +186,132 @@ void submeshClipWithPlane(
       ///////////////////////////////////////////
 
       if (do_front)
-        process_clipped_poly(clipped_front.mVerts, outsmesh_Front, front_planar_verts_deque, true);
+        process_clipped_poly(clipped_front.mVerts, outsmesh_Front, front_planar_verts_deque);
 
       if (do_back)
-        process_clipped_poly(clipped_back.mVerts, outsmesh_Back, back_planar_verts_deque, false);
+        process_clipped_poly(clipped_back.mVerts, outsmesh_Back, back_planar_verts_deque);
     } // clipped ?
 
-  } // for (auto input_poly : inpsubmesh._orderedPolys) {
+  }   // for (auto input_poly : inpsubmesh._orderedPolys) {
 
-  ///////////////////////////////////////////////////////////
+      ///////////////////////////////////////////////////////////
   // close mesh
   ///////////////////////////////////////////////////////////
 
-  if (close_mesh) {
+  auto do_close = [&](submesh& outsubmesh,                            //
+                      std::deque<vertex_ptr_t>& planar_verts_deque) { //
+    //printf("subm[%s] planar_verts_deque[ ", outsubmesh.name.c_str());
+    //for (auto v : planar_verts_deque) {
+      //printf("%d ", v->_poolindex);
+    //}
+    //printf("]\n");
 
-    auto do_close = [&](submesh& outsubmesh, //
-                        std::deque<vertex_ptr_t>& planar_verts_deque,
-                        bool test) { //
-      /*
-      printf("subm[%s] planar_verts_deque[ ", outsubmesh.name.c_str());
-      for (auto v : planar_verts_deque) {
-        printf("%d ", v->_poolindex);
+    /////////////////////////////////////////
+    //  take note of edges which lie on the
+    //  slicing plane
+    /////////////////////////////////////////
+
+    edge_vect_t planar_edges;
+
+    while (planar_verts_deque.size() >= 2) {
+      auto v0 = planar_verts_deque[0];
+      auto v1 = planar_verts_deque[1];
+      auto e  = std::make_shared<edge>(v0, v1);
+      planar_edges.push_back(e);
+      planar_verts_deque.pop_front();
+      planar_verts_deque.pop_front();
+    }
+
+    // printf("subm[%s] stragglers<%zu>\n", outsubmesh.name.c_str(), planar_verts_deque.size());
+
+    size_t num_planar_edges = planar_edges.size();
+    //printf("subm[%s] num_planar_edges<%zu>\n", outsubmesh.name.c_str(), num_planar_edges);
+
+    if (planar_edges.size()) {
+
+      EdgeChainLinker _linker;
+      _linker._name = outsubmesh.name;
+      for (auto edge : planar_edges) {
+        _linker.add_edge(edge);
+        auto va = edge->_vertexA;
+        auto vb = edge->_vertexB;
+        //printf("subm[%s] add_edge<%p> vtxA<%d> vtxB<%d>\n", outsubmesh.name.c_str(), (void*)edge.get(), va->_poolindex, vb->_poolindex);
+        //va->dump(FormatString("%d", va->_poolindex).c_str());
+        //vb->dump(FormatString("%d", vb->_poolindex).c_str());
       }
-      printf("]\n");
-      */
+      _linker.link();
 
-      /////////////////////////////////////////
-      //  take note of edges which lie on the
-      //  slicing plane
-      /////////////////////////////////////////
+      size_t num_edge_loops = _linker._edge_loops.size();
+      //printf( "subm[%s] num_edge_loops<%zu>\n", outsubmesh.name.c_str(), num_edge_loops );
 
-      edge_vect_t planar_edges;
+      for (auto loop : _linker._edge_loops) {
 
-      while (planar_verts_deque.size() >= 2) {
-        auto v0 = planar_verts_deque[0];
-        auto v1 = planar_verts_deque[1];
-        auto e  = std::make_shared<edge>(v0, v1);
-        planar_edges.push_back(e);
-        planar_verts_deque.pop_front();
-        planar_verts_deque.pop_front();
-      }
+        // EdgeLoop reversed;
+        // loop->reversed(reversed);
 
-      //printf("subm[%s] stragglers<%zu>\n", outsubmesh.name.c_str(), planar_verts_deque.size());
-
-      if (planar_edges.size()) {
-
-        EdgeChainLinker _linker;
-        _linker._name = outsubmesh.name;
-        for (auto edge : planar_edges) {
-          _linker.add_edge(edge);
-        }
-        _linker.link();
-        for (auto loop : _linker._edge_loops) {
-
-          // EdgeLoop reversed;
-          // loop->reversed(reversed);
-
-          std::vector<vertex_ptr_t> vertex_loop;
-          //printf("subm[%s] begin edgeloop <%p>\n", outsubmesh.name.c_str(), (void*)loop.get());
-          int ie = 0;
-          for (auto edge : loop->_edges) {
-            vertex_loop.push_back(edge->_vertexA);
-            //printf(" subm[%s] edge<%d> vtxi<%d>\n", outsubmesh.name.c_str(), ie, edge->_vertexA->_poolindex);
-            ie++;
-          }
-
-          ///////////////////////////////////////////
-          // compute mesh center
-          ///////////////////////////////////////////
-
-          dvec3 mesh_center_pos = inpsubmesh.center();
-
-          ///////////////////////////////////////////
-          // compute loop center
-          ///////////////////////////////////////////
-
-          vertex temp_loop_center;
-          temp_loop_center.center(vertex_loop);
-          auto center_vertex = outsubmesh.mergeVertex(temp_loop_center);
-          auto loop_center_pos    = temp_loop_center.mPos;
-          //printf(" subm[%s] center<%g %g %g>\n", outsubmesh.name.c_str(), loop_center_pos.x, loop_center_pos.y, loop_center_pos.z);
-
-          ///////////////////////////////////////////
-          // compute normal based on connected faces
-          ///////////////////////////////////////////
-
-          dvec3 avg_n = (loop_center_pos-mesh_center_pos).normalized();
-
-          ///////////////////////////////////////////
-
-          for (auto edge : loop->_edges) {
-            auto va = outsubmesh.mergeVertex(*edge->_vertexA);
-            auto vb = outsubmesh.mergeVertex(*edge->_vertexB);
-
-            ///////////////////////////////////////////
-            // TODO correct winding order
-            ///////////////////////////////////////////
-
-            auto dab = (vb->mPos - va->mPos).normalized();
-            auto dbc = (center_vertex->mPos - vb->mPos).normalized();
-            auto vx  = dab.crossWith(dbc).normalized();
-
-            double d = vx.dotWith(avg_n);
-
-            if ((d < 0.0f) == (test ^ flip_orientation)) {
-              outsubmesh.mergeTriangle(vb, va, center_vertex);
-            } else {
-              outsubmesh.mergeTriangle(va, vb, center_vertex);
-            }
-          }
+        std::vector<vertex_ptr_t> vertex_loop;
+        //printf("subm[%s] begin edgeloop <%p>\n", outsubmesh.name.c_str(), (void*)loop.get());
+        int ie = 0;
+        for (auto edge : loop->_edges) {
+          vertex_loop.push_back(edge->_vertexA);
+          //printf(" subm[%s] edge<%d> vtxi<%d>\n", outsubmesh.name.c_str(), ie, edge->_vertexA->_poolindex);
+          ie++;
         }
 
-      } // if (close_mesh and added_vertices.size()) {
+        ///////////////////////////////////////////
+        // compute mesh center
+        ///////////////////////////////////////////
 
-    };
+        dvec3 mesh_center_pos = inpsubmesh.center();
 
-    if(do_front) do_close(outsmesh_Front, front_planar_verts_deque, false);
-    if(do_back) do_close(outsmesh_Back,  back_planar_verts_deque,  true);
+        ///////////////////////////////////////////
+        // compute loop center
+        ///////////////////////////////////////////
 
-  } // if(close_mesh){
+        vertex temp_loop_center;
+        temp_loop_center.center(vertex_loop);
+        auto center_vertex   = outsubmesh.mergeVertex(temp_loop_center);
+        auto loop_center_pos = temp_loop_center.mPos;
+        // printf(" subm[%s] center<%g %g %g>\n", outsubmesh.name.c_str(), loop_center_pos.x, loop_center_pos.y, loop_center_pos.z);
+
+        ///////////////////////////////////////////
+        // compute normal based on connected faces
+        ///////////////////////////////////////////
+
+        dvec3 avg_n = (loop_center_pos - mesh_center_pos).normalized();
+
+        ///////////////////////////////////////////
+
+        for (auto edge : loop->_edges) {
+          auto va = outsubmesh.mergeVertex(*edge->_vertexA);
+          auto vb = outsubmesh.mergeVertex(*edge->_vertexB);
+
+          ///////////////////////////////////////////
+          // TODO correct winding order
+          ///////////////////////////////////////////
+
+          auto dab = (vb->mPos - va->mPos).normalized();
+          auto dbc = (center_vertex->mPos - vb->mPos).normalized();
+          auto vx  = dab.crossWith(dbc).normalized();
+
+          double d = vx.dotWith(avg_n);
+
+          if ((d >= 0.0f) == (flip_orientation)) {
+            outsubmesh.mergeTriangle(vb, va, center_vertex);
+          } else {
+            outsubmesh.mergeTriangle(va, vb, center_vertex);
+          }
+        }
+      }
+
+    } // if (planar_edges.size()) {
+
+  };
+
+  if (do_front and close_mesh)
+    do_close(outsmesh_Front, front_planar_verts_deque);
+  if (do_back and close_mesh)
+    do_close(outsmesh_Back, back_planar_verts_deque);
 
   ///////////////////////////////////////////////////////////
 }

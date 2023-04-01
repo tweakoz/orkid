@@ -599,17 +599,23 @@ template <typename T> T Vector3<T>::calcTriangularArea(const Vector3<T>& V, cons
   return T(0);
 }
 
-template <typename T> Vector3<T> Vector3<T>::quantized(float v) const {
+template <typename T> Vector3<T> Vector3<T>::quantized(T v) const {
   Vector3<T> rval;
-  rval.x = float(int(this->x * v)) / v;
-  rval.y = float(int(this->y * v)) / v;
-  rval.z = float(int(this->z * v)) / v;
+  rval.x = T(int(this->x * v)) / v;
+  rval.y = T(int(this->y * v)) / v;
+  rval.z = T(int(this->z * v)) / v;
   return rval;
+}
+template <typename T> uint64_t Vector3<T>::hash(T quantization) const{
+  int a = int(this->x * quantization)+(1<<19);
+  int b = int(this->y * quantization)+(1<<19);
+  int c = int(this->z * quantization)+(1<<19);
+  return (uint64_t(a)<<42) | (uint64_t(b)<<21) | uint64_t(c);
 }
 
 template <typename T> Vector2<T> octahedronWrap(Vector2<T> v) {
-  float x = (T(1) - abs(v.y)) * (v.x >= T(0) ? T(1) : T(-1));
-  float y = (T(1) - abs(v.x)) * (v.y >= T(0) ? T(1) : T(-1));
+  T x = (T(1) - abs(v.y)) * (v.x >= T(0) ? T(1) : T(-1));
+  T y = (T(1) - abs(v.x)) * (v.y >= T(0) ? T(1) : T(-1));
   return Vector2<T>(x, y);
 }
 

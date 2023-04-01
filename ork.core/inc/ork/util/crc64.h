@@ -47,7 +47,7 @@ struct Crc64 {
     return _crc0;
   }
 
-  inline void accumulate(void const* data, size_t len) {
+  inline void accumulate(const void* data, size_t len) {
     uint64_t temp_crc = _crc0;
     auto cdata        = (const uint8_t*)data;
     while (len-- > 0) {

@@ -85,6 +85,25 @@ vertex::vertex(fvec3 pos, fvec3 nrm, fvec3 bin, fvec2 uv, fvec4 col)
 
 ////////////////////////////////////////////////////////////////
 
+void vertex::clearAllExceptPosition(){
+    mNrm = dvec3(0,0,0);
+    miNumWeights = 0;
+    miNumColors = 0;
+    miNumUvs = 0;
+    for (int i = 0; i < kmaxcolors; i++) {
+      mCol[i] = fvec4::White();
+    }
+    for (int i = 0; i < kmaxinfluences; i++) {
+      mJointNames[i]   = "";
+      mJointWeights[i] = 0.0f;
+    }
+    for (int i = 0; i < kmaxuvs; i++) {
+      mUV[i] = uvmapcoord();
+    }
+}
+
+////////////////////////////////////////////////////////////////
+
 vertex::vertex(const vertex& rhs){
   _poolindex = 0xffffffff;
 
@@ -105,6 +124,17 @@ vertex::vertex(const vertex& rhs){
     mUV [i]= rhs.mUV[i];
   }
 
+}
+
+void vertex::dump(const std::string& name) const{
+  printf("vertex<%s> hash<%zx> pos<%f %f %f> nrm<%f %f %f> uv0<%f %f> col0<%f %f %f %f>\n",
+         name.c_str(),
+         hash(),
+         mPos.x, mPos.y, mPos.z,
+         mNrm.x, mNrm.y, mNrm.z,
+         mUV[0].mMapTexCoord.x, mUV[0].mMapTexCoord.y,
+         mCol[0].x, mCol[0].y, mCol[0].z, mCol[0].w
+         );
 }
 
 ////////////////////////////////////////////////////////////////
@@ -224,10 +254,10 @@ void vertex::center(const std::vector<vertex_ptr_t>& verts) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-U64 vertex::hash(float quantization) const {
+uint64_t vertex::hash(double quantization) const {
   boost::Crc64 crc64;
-  quantization = 100.0;
-
+  crc64.init();
+  quantization = 1000.0;
   crc64.accumulateItem(miNumWeights);
   crc64.accumulateItem(miNumColors);
   crc64.accumulateItem(miNumUvs);
@@ -243,12 +273,12 @@ U64 vertex::hash(float quantization) const {
   }
   for (int i = 0; i < miNumUvs; i++) {
     const auto& UV = mUV[i];
-    crc64.accumulateItem(UV.mMapBiNormal.quantized(quantization));
-    crc64.accumulateItem(UV.mMapTangent.quantized(quantization));
+    crc64.accumulateItem(UV.mMapBiNormal.hash(quantization));
+    crc64.accumulateItem(UV.mMapTangent.hash(quantization));
     crc64.accumulateItem(UV.mMapTexCoord.quantized(quantization));
   }
-  crc64.accumulateItem(mNrm.quantized(quantization));
-  crc64.accumulateItem(mPos.quantized(quantization));
+  crc64.accumulateItem(mNrm.hash(quantization));
+  crc64.accumulateItem(mPos.hash(quantization));
 
   /*auto f2u = [](float f) -> uint32_t {
     auto pu = (uint32_t*) & f;

@@ -86,9 +86,6 @@ vertex_ptr_t vertexpool::mergeVertex(const vertex& vtx) {
   auto it   = _vtxmap.find(vhash);
   if (_vtxmap.end() != it) {
     rval = it->second;
-    // boost::Crc64 otherCRC = boost::crc64( (const void *) & vtx, sizeof( vertex ) );
-    // U32 otherCRC = Crc32( (const unsigned char *) & OtherVertex, sizeof( vertex ) );
-    // OrkAssert( Crc32::DoesDataMatch( & vtx, & OtherVertex, sizeof( vertex ) ) );
   } else {
     rval             = std::make_shared<vertex>(vtx);
     rval->_poolindex = uint32_t(_orderedVertices.size());
