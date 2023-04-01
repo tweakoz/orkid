@@ -110,9 +110,9 @@ struct submesh {
   int numVertices() const;
   int GetNumPolys(int inumsides = 0) const;
   void FindNSidedPolys(orkvector<int>& output, int inumsides) const;
-  orkset<int> connectedPolys(edge_ptr_t edge) const;
-  orkset<int> connectedPolys(const edge& edge) const;
-  orkset<int> adjacentPolys(int ply, const edge_map_t& edgemap ) const;
+  poly_index_set_t connectedPolys(edge_ptr_t edge, bool ordered = true) const;
+  poly_index_set_t connectedPolys(const edge& edge, bool ordered = true) const;
+  poly_index_set_t adjacentPolys(int ply) const;
   edge_ptr_t edgeBetweenPolys(int a, int b) const;
   poly_set_t polysConnectedTo(vertex_ptr_t v) const;
 
@@ -215,6 +215,7 @@ struct submesh {
   // these are mutable so we can get bounding boxes faster with const refs to Mesh's
   mutable AABox _aaBox;
   mutable bool _aaBoxDirty;
+  connectivity_impl_ptr_t _connectivityIMPL;
   /////////////////////////////////////
 };
 

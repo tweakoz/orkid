@@ -305,18 +305,20 @@ bool poly::containsVertex(vertex_ptr_t v) const{
 
 ////////////////////////////////////////////////////////////////
 
-bool poly::containsEdge(const edge& e) const{
+bool poly::containsEdge(const edge& e, bool ordered) const{
   size_t num_verts = _vertices.size();
   for( int i=0; i<num_verts; i++ ){
     auto v0 = _vertices[i];
     auto v1 = _vertices[(i+1)%num_verts];
     if( (v0==e._vertexA) and (v1==e._vertexB) )
       return true;
+    else if( (not ordered) and (v0==e._vertexB) and (v1==e._vertexA) )
+      return true;
   }
   return false;
 }
-bool poly::containsEdge(edge_ptr_t e) const{
-  return containsEdge(*e);
+bool poly::containsEdge(edge_ptr_t e, bool ordered) const{
+  return containsEdge(*e, ordered);
 }
 
 ////////////////////////////////////////////////////////////////
@@ -636,5 +638,31 @@ const std::string& poly::GetAnnotation(const std::string& annoname) const {
   return gnomatch;
 }
 
+////////////////////////////////////////////////////////////////
+
+IConnectivity::IConnectivity(submesh* sub) 
+  : _submesh(sub) {
+}
+IConnectivity::~IConnectivity(){
+
+}
+DefaultConnectivity::DefaultConnectivity(submesh* sub) 
+  : IConnectivity(sub) {
+}
+
+poly_index_set_t DefaultConnectivity::connectedPolys(edge_ptr_t edge, bool ordered) const {
+  return connectedPolys(*edge,ordered);
+}
+poly_index_set_t DefaultConnectivity::connectedPolys(const edge& ed, bool ordered) const {
+  poly_index_set_t output;
+  size_t num_polys = _submesh->_orderedPolys.size();
+  for (size_t i = 0; i < num_polys; i++) {
+    auto p = _submesh->_orderedPolys[i];
+    if (p->containsEdge(ed,ordered)) {
+      output.insert(i);
+    }
+  }
+  return output;
+}
 ////////////////////////////////////////////////////////////////
 } // namespace ork::meshutil

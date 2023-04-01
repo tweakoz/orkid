@@ -217,8 +217,8 @@ struct poly {
   dplane3 computePlane() const;
   
   bool containsVertex(vertex_ptr_t v) const;
-  bool containsEdge(const edge& e) const;
-  bool containsEdge(edge_ptr_t e) const;
+  bool containsEdge(const edge& e, bool ordered = true) const;
+  bool containsEdge(edge_ptr_t e, bool ordered = true) const;
 
   edge_ptr_t edgeForVertices(vertex_ptr_t vA, vertex_ptr_t vB) const;
 
@@ -233,6 +233,7 @@ struct poly {
 };
 
 using poly_set_t = unique_set<poly>;
+using poly_index_set_t = orkset<int>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -283,6 +284,29 @@ struct EdgeChainLinker {
   std::vector<edge_loop_ptr_t> _edge_loops;
   std::unordered_map<vertex_ptr_t, int> _vtxrefcounts;
   std::string _name;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct IConnectivity{
+
+  IConnectivity(submesh* sub);
+  virtual ~IConnectivity();
+
+  virtual poly_index_set_t connectedPolys(edge_ptr_t edge, bool ordered = true) const = 0;
+  virtual poly_index_set_t connectedPolys(const edge& edge, bool ordered = true) const = 0;
+
+  submesh* _submesh = nullptr;
+
+};
+
+using connectivity_impl_ptr_t = std::shared_ptr<IConnectivity>;
+
+struct DefaultConnectivity : public IConnectivity{
+  DefaultConnectivity(submesh* sub);
+  poly_index_set_t connectedPolys(edge_ptr_t edge, bool ordered = true) const final;
+  poly_index_set_t connectedPolys(const edge& edge, bool ordered = true) const final;
+
 };
 
 ///////////////////////////////////////////////////////////////////////////////

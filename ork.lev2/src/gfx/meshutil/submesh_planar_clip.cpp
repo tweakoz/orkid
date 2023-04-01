@@ -307,7 +307,7 @@ void submeshClipWithPlane(
 
         for (auto edge : loop->_edges) {
           
-          auto con_polys = outsubmesh.connectedPolys(edge);
+          auto con_polys = outsubmesh.connectedPolys(edge, false);
           if(con_polys.size()==1){
             //OrkAssert(false);
           }

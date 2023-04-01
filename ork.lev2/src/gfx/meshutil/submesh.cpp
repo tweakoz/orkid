@@ -23,6 +23,8 @@ const vertexpool vertexpool::EmptyPool;
 submesh::submesh(vertexpool_ptr_t vpool)
     : _surfaceArea(0) {
 
+    _connectivityIMPL = std::make_shared<DefaultConnectivity>(this);
+
     if(nullptr==vpool){
       vpool = std::make_shared<vertexpool>();
     }
@@ -293,16 +295,15 @@ int submesh::GetNumPolys(int inumsides) const {
   return iret;
 }
 ///////////////////////////////////////////////////////////////////////////////
-orkset<int> submesh::adjacentPolys(int ply, const edge_map_t& edgemap) const {
-  orkset<int> output;
+poly_index_set_t submesh::adjacentPolys(int ply) const {
+  poly_index_set_t output;
   auto p = RefPoly(ply);
   auto edges = p.edges();
   for (auto e : edges) {
-    auto con_polys = this->connectedPolys(e);
-    for (orkset<int>::const_iterator it2 = con_polys.begin(); it2 != con_polys.end(); it2++) {
-      int ic = *it2;
-      if (ic != ply) {
-        output.insert(con_polys.begin(), con_polys.end());
+    auto con_polys = this->connectedPolys(e,false);
+    for (auto ip : con_polys ) {
+      if (ip != ply) {
+        output.insert(ip);
       }
     }
   }
@@ -347,20 +348,12 @@ edge_ptr_t submesh::edgeBetweenPolys(int aind, int bind) const {
   return rval;
 }
 ///////////////////////////////////////////////////////////////////////////////
-orkset<int> submesh::connectedPolys(edge_ptr_t ed) const { //
-  return connectedPolys(*ed);
+poly_index_set_t submesh::connectedPolys(edge_ptr_t ed, bool ordered) const { //
+  return _connectivityIMPL->connectedPolys(ed,ordered);
 }
 ///////////////////////////////////////////////////////////////////////////////
-orkset<int> submesh::connectedPolys(const edge& ed) const { //
-  orkset<int> output;
-  size_t num_polys = _orderedPolys.size();
-  for (size_t i = 0; i < num_polys; i++) {
-    auto p = _orderedPolys[i];
-    if (p->containsEdge(ed)) {
-      output.insert(i);
-    }
-  }
-  return output;
+poly_index_set_t submesh::connectedPolys(const edge& ed, bool ordered) const { //
+  return _connectivityIMPL->connectedPolys(ed,ordered);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void submesh::MergeSubMesh(const submesh& inp_mesh) {
