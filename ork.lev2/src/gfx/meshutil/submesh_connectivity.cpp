@@ -60,4 +60,20 @@ poly_index_set_t DefaultConnectivity::polysConnectedToPoly(int ip) const {
   return polysConnectedToPoly(p);
 }
 ////////////////////////////////////////////////////////////////
+poly_index_set_t DefaultConnectivity::polysConnectedToVertex(vertex_ptr_t v) const {
+  return poly_index_set_t();
+}
+////////////////////////////////////////////////////////////////
+vertex_ptr_t DefaultConnectivity::mergeVertex(const vertex& v) {
+  return nullptr;
+}
+////////////////////////////////////////////////////////////////
+poly_ptr_t DefaultConnectivity::mergePoly(const poly& p) {
+  return nullptr;
+}
+////////////////////////////////////////////////////////////////
+edge_ptr_t DefaultConnectivity::mergeEdge(const edge& e) {
+  return nullptr;
+}
+////////////////////////////////////////////////////////////////
 } //namespace ork::meshutil {

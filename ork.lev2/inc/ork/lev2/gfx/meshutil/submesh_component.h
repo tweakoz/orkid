@@ -297,7 +297,10 @@ struct IConnectivity{
   virtual poly_index_set_t polysConnectedToEdge(const edge& edge, bool ordered = true) const = 0;
   virtual poly_index_set_t polysConnectedToPoly(poly_ptr_t p) const = 0;
   virtual poly_index_set_t polysConnectedToPoly(int ip) const = 0;
-
+  virtual poly_index_set_t polysConnectedToVertex(vertex_ptr_t v) const = 0;
+  virtual vertex_ptr_t mergeVertex(const vertex& v) = 0;
+  virtual poly_ptr_t mergePoly(const poly& p) = 0;
+  virtual edge_ptr_t mergeEdge(const edge& ed) = 0;
   submesh* _submesh = nullptr;
 
 };
@@ -310,6 +313,10 @@ struct DefaultConnectivity : public IConnectivity{
   poly_index_set_t polysConnectedToEdge(const edge& edge, bool ordered = true) const final;
   poly_index_set_t polysConnectedToPoly(poly_ptr_t p) const final;
   poly_index_set_t polysConnectedToPoly(int ip) const final;
+  poly_index_set_t polysConnectedToVertex(vertex_ptr_t v) const final;
+  vertex_ptr_t mergeVertex(const vertex& v) final;
+  poly_ptr_t mergePoly(const poly& p) final;
+  edge_ptr_t mergeEdge(const edge& ed) final;
 
 };
 

@@ -101,8 +101,8 @@ struct submesh {
   poly_ptr_t mergePoly(const poly& ply);
   poly_ptr_t mergeTriangle(vertex_ptr_t va, vertex_ptr_t vb, vertex_ptr_t vc);
   poly_ptr_t mergeQuad(vertex_ptr_t va, vertex_ptr_t vb, vertex_ptr_t vc, vertex_ptr_t vd);
-  void MergeSubMesh(const submesh& oth);
 
+  void MergeSubMesh(const submesh& oth);
   void mergePolySet(const PolySet& pset);
 
   //////////////////////////////////////////////////////////////////////////////

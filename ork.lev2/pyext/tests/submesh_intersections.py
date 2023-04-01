@@ -35,7 +35,7 @@ def proc_with_frustum(inpsubmesh,frustum):
   submesh5 = proc_with_plane(submesh4,frustum.rightPlane)
   submesh6 = proc_with_plane(submesh5,frustum.topPlane)
   submesh7 = proc_with_plane(submesh6,frustum.bottomPlane)
-  return submesh7.repaired()
+  return submesh7 #.repaired()
 
 ################################################################################
 
