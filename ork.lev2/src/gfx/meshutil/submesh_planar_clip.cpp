@@ -28,7 +28,7 @@ void submeshClipWithPlane(
     submesh& outsmesh_Front, //
     submesh& outsmesh_Back) {
 
-  constexpr double PLANE_EPSILON = 0.01f;
+  constexpr double PLANE_EPSILON = 0.001f;
 
   /////////////////////////////////////////////////////////////////////
   // count sides of the plane to which the input mesh vertices belong
