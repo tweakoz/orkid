@@ -57,36 +57,14 @@ void submeshClipWithPlane(
   auto add_whole_poly = [](poly_ptr_t src_poly, submesh& dest) -> vertex_set_t {
     std::vector<vertex_ptr_t> new_verts;
     vertex_set_t added;
-    // printf("  subm[%s] add poly size<%zu>\n", dest.name.c_str(), src_poly->_vertices.size());
     for (auto v : src_poly->_vertices) {
       OrkAssert(v);
       auto newv = dest.mergeVertex(*v);
       auto pos  = newv->mPos;
-      //if(dest.name==".front")
-        //printf("   subm[%s] add vertex pool<%02d> hash<0x%x> (%.*e %.*e %.*e)\n", dest.name.c_str(), newv->_poolindex, newv->hash(), 10, pos.x, 10, pos.y, 10, pos.z);
       new_verts.push_back(newv);
       added.insert(newv);
     }
     dest.mergePoly(Polygon(new_verts));
-
-    #if 0
-    if(dest.name==".front")
-    if( dest._vtxpool->_orderedVertices.size() == 12 )
-    {
-      auto v4 = dest._vtxpool->_orderedVertices[4];
-      auto v11 = dest._vtxpool->_orderedVertices[11];
-
-      if( v4->hash() != v11->hash() ) {
-        if( (v4->mPos-v11->mPos).magnitude() < 0.001 ){
-          v4->dump("V4");
-          v11->dump("V11");
-          printf( "!!! v4-v11 mag: %.*e\n", 10, (v4->mPos-v11->mPos).magnitude() );
-          OrkAssert(false);
-        }
-      }
-
-    }
-    #endif
 
     return added;
   };
@@ -120,13 +98,6 @@ void submeshClipWithPlane(
         planar_count++;
       }
     }
-    //////////////////////////////////////////////
-    // input poly statistics
-    //////////////////////////////////////////////
-    // printf("input poly numv<%d>\n", numverts);
-    // printf(" front_count<%d>\n", front_count);
-    // printf(" back_count<%d>\n", back_count);
-    // printf(" planar_count<%d>\n", planar_count);
     //////////////////////////////////////////////
     // all of this poly's vertices in front ? -> trivially route to outsmesh_Front
     //////////////////////////////////////////////
@@ -179,18 +150,12 @@ void submeshClipWithPlane(
         for (auto& v : clipped_poly_vertices) {
 
           auto merged_v = outsubmesh.mergeVertex(v);
-          //merged_v->dump(FormatString("merged_v<%d>", merged_v->_poolindex));
+          merged_v->clearAllExceptPosition();
           merged_vertices.push_back(merged_v);
           double point_dist_to_plane = abs(slicing_plane.pointDistance(merged_v->mPos));
           if (point_dist_to_plane < PLANE_EPSILON) {
-            const auto& p  = merged_v->mPos;
-            merged_v->mNrm = dvec3(0, 0, 0);
-            merged_v->mUV[0].Clear();
-            merged_v->mUV[1].Clear();
-            // printf("subm[%s] bpv (%+g %+g %+g) \n", outsubmesh.name.c_str(), p.x, p.y, p.z);
             planar_verts_deque.push_back(merged_v);
           } else {
-            // printf("subm[%s] REJECT: point_dist_to_plane<%g>\n", outsubmesh.name.c_str(), point_dist_to_plane);
           }
         }
 
@@ -217,19 +182,14 @@ void submeshClipWithPlane(
 
   });  // inpsubmesh.visitAllPolys( [&](poly_const_ptr_t input_poly){
 
-      ///////////////////////////////////////////////////////////
+  ///////////////////////////////////////////////////////////
   // close mesh
   ///////////////////////////////////////////////////////////
 
   auto do_close = [&](submesh& outsubmesh,                            //
                       std::deque<vertex_ptr_t>& planar_verts_deque,
                       bool front) { //
-    //printf("subm[%s] planar_verts_deque[ ", outsubmesh.name.c_str());
-    //for (auto v : planar_verts_deque) {
-      //printf("%d ", v->_poolindex);
-    //}
-    //aprintf("]\n");
-
+ 
     /////////////////////////////////////////
     //  take note of edges which lie on the
     //  slicing plane
@@ -246,70 +206,42 @@ void submeshClipWithPlane(
       planar_verts_deque.pop_front();
     }
 
-    // printf("subm[%s] stragglers<%zu>\n", outsubmesh.name.c_str(), planar_verts_deque.size());
-
-    size_t num_planar_edges = planar_edges.size();
-    //printf("subm[%s] num_planar_edges<%zu>\n", outsubmesh.name.c_str(), num_planar_edges);
+    /////////////////////////////////////////
+    // we have some edges on the cutting plane
+    /////////////////////////////////////////
 
     if (planar_edges.size()) {
+
+      // link edge chains into edge loops
 
       EdgeChainLinker _linker;
       _linker._name = outsubmesh.name;
       for (auto edge : planar_edges) {
         _linker.add_edge(edge);
-        auto va = edge->_vertexA;
-        auto vb = edge->_vertexB;
-        //printf("subm[%s] add_edge<%p> vtxA<%d> vtxB<%d>\n", outsubmesh.name.c_str(), (void*)edge.get(), va->_poolindex, vb->_poolindex);
-        //va->dump(FormatString("%d", va->_poolindex).c_str());
-        //vb->dump(FormatString("%d", vb->_poolindex).c_str());
       }
       _linker.link();
 
-      //size_t num_edge_loops = _linker._edge_loops.size();
-      //printf( "subm[%s] num_edge_loops<%zu>\n", outsubmesh.name.c_str(), num_edge_loops );
+      // create a new triangle fan for each edge loop
 
       for (auto loop : _linker._edge_loops) {
 
-        // EdgeLoop reversed;
-        // loop->reversed(reversed);
+        // compute loop center
 
         std::vector<vertex_ptr_t> vertex_loop;
-        //printf("subm[%s] begin edgeloop <%p>\n", outsubmesh.name.c_str(), (void*)loop.get());
-        int ie = 0;
-        for (auto edge : loop->_edges) {
+        for (auto edge : loop->_edges)
           vertex_loop.push_back(edge->_vertexA);
-          //printf(" subm[%s] edge<%d> vtxi<%d>\n", outsubmesh.name.c_str(), ie, edge->_vertexA->_poolindex);
-          ie++;
-        }
-
-        ///////////////////////////////////////////
-        // compute mesh center
-        ///////////////////////////////////////////
-
-        dvec3 mesh_center_pos = inpsubmesh.center();
-
-        ///////////////////////////////////////////
-        // compute loop center
-        ///////////////////////////////////////////
-
         vertex temp_loop_center;
         temp_loop_center.center(vertex_loop);
         auto center_vertex   = outsubmesh.mergeVertex(temp_loop_center);
-        auto loop_center_pos = temp_loop_center.mPos;
-        // printf(" subm[%s] center<%g %g %g>\n", outsubmesh.name.c_str(), loop_center_pos.x, loop_center_pos.y, loop_center_pos.z);
 
-        ///////////////////////////////////////////
-        // compute normal based on connected faces
-        ///////////////////////////////////////////
-
-        dvec3 avg_n = (loop_center_pos - mesh_center_pos).normalized();
-
-        ///////////////////////////////////////////
+        // create triangle fan
 
         for (auto edge : loop->_edges) {
           
           auto va = outsubmesh.mergeVertex(*edge->_vertexA);
           auto vb = outsubmesh.mergeVertex(*edge->_vertexB);
+
+          // flip orientation if needed
 
           auto con_polys = outsubmesh.connectedPolys(edge, false);
           bool do_swap = false;
@@ -318,17 +250,28 @@ void submeshClipWithPlane(
             for( auto ic : con_polys ){
               int icon_poly = *con_polys.begin();
               auto con_poly = outsubmesh.poly(icon_poly);
+
+              // if any of the connected polys has an edge that
+              //  matches our vertices, but in the opposite winding order
+              //  then we need to flip the orientation of the triangle fan
+              
               if( con_poly->edgeForVertices(vb,va) ){
                 do_swap = true;
               }
             }
           }
 
+          // final flip decision
+          //  based on winding order and flip_orientation argument
+
           if(do_swap ^ flip_orientation){
             std::swap(va,vb);
           }
 
+          // create triangle
+
           outsubmesh.mergeTriangle(vb, va, center_vertex);
+
         }
       }
 
