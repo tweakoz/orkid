@@ -45,16 +45,18 @@ class SceneGraphApp(BasicUiCamSgApp):
   def __init__(self):
     super().__init__()
     self.mutex = Lock()
+    self.uicam.lookAt( vec3(0,0,20), vec3(0,0,0), vec3(0,1,0) )
+    self.camera.copyFrom( self.uicam.cameradata )
   ##############################################
   def onGpuInit(self,ctx):
-    super().onGpuInit(ctx,add_grid=True)
+    super().onGpuInit(ctx,add_grid=False)
     ##############################
     self.pseudowire_pipe = self.createPseudoWirePipeline()
     solid_wire_pipeline = self.createBaryWirePipeline()
     material = solid_wire_pipeline.sharedMaterial
     solid_wire_pipeline.bindParam( material.param("m"), tokens.RCFD_M)
     ##############################
-    self.fpmtx1 = mtx4.perspective(45,1,0.3,5)
+    self.fpmtx1 = mtx4.perspective(45*constants.DTOR,1,0.3,5)
     self.fvmtx1 = mtx4.lookAt(vec3(0,0,1),vec3(0,0,0),vec3(0,1,0))
     self.frustum1 = Frustum()
     self.frustum1.set(self.fvmtx1,self.fpmtx1)
@@ -66,7 +68,7 @@ class SceneGraphApp(BasicUiCamSgApp):
     self.sgnode1.sortkey = 2;
     self.sgnode1.modcolor = vec4(1,0,0,1)
     ##############################
-    self.fpmtx2 = mtx4.perspective(45,1,0.3,5)
+    self.fpmtx2 = mtx4.perspective(45*constants.DTOR,1,0.3,5)
     self.fvmtx2 = mtx4.lookAt(vec3(1,0,1),vec3(1,1,0),vec3(0,1,0))
     self.frustum2 = Frustum()
     self.frustum2.set(self.fvmtx2,self.fpmtx2)
@@ -83,13 +85,104 @@ class SceneGraphApp(BasicUiCamSgApp):
     self.prim3 = meshutil.RigidPrimitive(self.barysub_isect,ctx)
     self.sgnode3 = self.prim3.createNode("m3",self.layer1,solid_wire_pipeline)
     self.sgnode3.enabled = True
+    ################################################################################
+    class UpdateSettings:
+      def __init__(self):
+        self.fov_min = 45
+        self.fov_max = 135
+        self.fov_speed = 1.8
+        self.lat_min = 0.5
+        self.lat_max = 0.5
+        self.lat_speed = 1.0
+      def computeFOV(self,θ):
+        deg = self.fov_min+math.sin(θ*self.fov_speed)*(self.fov_max-self.fov_min)
+        return deg*constants.DTOR
+      def computeLAT(self,θ):
+        return self.lat_min+math.sin(θ*self.lat_speed)*(self.lat_max-self.lat_min)
+      def lerp(self,oth,alpha):
+        inv_alpha = 1.0-alpha
+        self.fov_min   = self.fov_min*inv_alpha   + oth.fov_min*alpha
+        self.fov_max   = self.fov_max*inv_alpha   + oth.fov_max*alpha
+        self.fov_speed = self.fov_speed*inv_alpha + oth.fov_speed*alpha
+        self.lat_min   = self.lat_min*inv_alpha   + oth.lat_min*alpha
+        self.lat_max   = self.lat_max*inv_alpha   + oth.lat_max*alpha
+        self.lat_speed = self.lat_speed*inv_alpha + oth.lat_speed*alpha
+    ################################################################################
+    self.upd_1a = UpdateSettings()
+    self.upd_2a = UpdateSettings()
+    self.upd_1b = UpdateSettings()
+    self.upd_2b = UpdateSettings()
+    self.upd_1c = UpdateSettings()
+    self.upd_2c = UpdateSettings()
+    ################################################################################
+    self.upd_1a.fov_speed = 1.7
+    self.upd_1a.fov_min = 45
+    self.upd_1a.fov_max = 45
+    self.upd_1a.lat_speed = 1.0
+    ################################################################################
+    self.upd_2a.fov_speed = 1.9
+    self.upd_2a.fov_min = 45
+    self.upd_2a.fov_max = 45
+    self.upd_2a.lat_speed = 0.7
+    ################################################################################
+    self.upd_1b.fov_min = 45
+    self.upd_1b.fov_max = 90
+    self.upd_1b.fov_speed = 1.3
+    ################################################################################
+    self.upd_2b.fov_min = 45
+    self.upd_2b.fov_max = 90
+    self.upd_2b.fov_speed = 0.7
+    ################################################################################
+    self.upd_1c.fov_min = 150
+    self.upd_1c.fov_max = 150
+    self.upd_1c.fov_speed = 0
+    self.upd_1c.lat_min = 0
+    self.upd_1c.lat_max = 0
+    ################################################################################
+    self.upd_2c.fov_min = 150
+    self.upd_2c.fov_max = 150
+    self.upd_2c.fov_speed = 0
+    self.upd_2c.lat_min = 0
+    self.upd_2c.lat_max = 0
+    ################################################################################
+    self.upd_c1 = UpdateSettings()
+    self.upd_c2 = UpdateSettings()
+    self.dice = 2
+    self.counter = 10
   ##############################################
   def onUpdate(self,updevent):
     super().onUpdate(updevent)
+    ##############################
+    # handle counter
+    ##############################
+    self.counter -= updevent.deltatime
+    if self.counter<0:
+      self.counter = random.uniform(2,5)
+      old_dice = self.dice
+      while self.dice==old_dice:
+        self.dice = random.randint(0,2)
+    ##############################
+    lerp_rate = 0.01
+    #self.dice = 0
+    if self.dice==0:
+      self.upd_c1.lerp(self.upd_1a,lerp_rate)
+      self.upd_c2.lerp(self.upd_2a,lerp_rate)
+    elif self.dice==1:
+      self.upd_c1.lerp(self.upd_1b,lerp_rate)
+      self.upd_c2.lerp(self.upd_2b,lerp_rate)
+    elif self.dice==2:
+      self.upd_c1.lerp(self.upd_1c,lerp_rate)
+      self.upd_c2.lerp(self.upd_2c,lerp_rate)
+    ##############################
     θ = self.abstime * math.pi * 2.0 * 0.1
     #
-    self.fvmtx1 = mtx4.lookAt(vec3(0,0,1),vec3(math.sin(θ*1.3)*0.5,0,0),vec3(0,1,0))
-    self.fvmtx2 = mtx4.lookAt(vec3(1,0,1),vec3(1,0.5+math.sin(θ)*0.4,0),vec3(0,1,0))
+    self.fpmtx1 = mtx4.perspective(self.upd_c1.computeFOV(θ),1,0.3,5)
+    self.fpmtx2 = mtx4.perspective(self.upd_c2.computeFOV(θ),1,0.3,5)
+    #
+    lat_1 = self.upd_c1.computeLAT(θ)
+    lat_2 = self.upd_c2.computeLAT(θ)
+    self.fvmtx1 = mtx4.lookAt(vec3(0,0,1),vec3(lat_1,0,0),vec3(0,1,0))
+    self.fvmtx2 = mtx4.lookAt(vec3(1,0,1.03),vec3(1,lat_2,0),vec3(0,1,0))
     #
     self.frustum1.set(self.fvmtx1,self.fpmtx1)
     self.frustum2.set(self.fvmtx2,self.fpmtx2)

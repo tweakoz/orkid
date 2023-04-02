@@ -17,6 +17,7 @@ def stripSubMesh(inpsubmesh):
                              preserve_texcoords=False)
   return stripped
 
+
 ################################################################################
 
 class SceneGraphApp(BasicUiCamSgApp):
@@ -27,7 +28,7 @@ class SceneGraphApp(BasicUiCamSgApp):
     self.mutex = Lock()
   ##############################################
   def onGpuInit(self,ctx):
-    super().onGpuInit(ctx,add_grid=True)
+    super().onGpuInit(ctx,add_grid=False)
     ##############################
     self.pseudowire_pipe = self.createPseudoWirePipeline()
     solid_wire_pipeline = self.createBaryWirePipeline()
@@ -79,15 +80,13 @@ class SceneGraphApp(BasicUiCamSgApp):
   def onGpuIter(self):
     super().onGpuIter()
 
-    #self.mutex.acquire()
-
     # two wireframe frustums
     self.prim1.fromSubMesh(self.submesh_wire_frustum,self.context)
     # intersection mesh
     self.barysub_isect = self.submesh_dynamic.withBarycentricUVs()
     self.prim3.fromSubMesh(self.barysub_isect,self.context)
     #print("intersection convexVolume: %s" % submesh_dynamic.convexVolume)
-    #self.mutex.release()
+
 
 ###############################################################################
 

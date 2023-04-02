@@ -137,6 +137,11 @@ struct GLVaoHandle {
       : mVAO(0)
       , mInited(false) {
   }
+  ~GLVaoHandle() {
+    if (mVAO) {
+      glDeleteVertexArrays(1, &mVAO);
+    }
+  }
 };
 
 struct GLVtxBufHandle {
@@ -156,6 +161,14 @@ struct GLVtxBufHandle {
       , miLockCount(0)
       , mbSetupSource(true)
       , mMappedRegion(nullptr) {
+  }
+  ~GLVtxBufHandle() {
+    if (mVBO) {
+      glDeleteBuffers(1, &mVBO);
+    }
+    for( auto item : mVaoMap ){
+      delete item.second;
+    }
   }
   GLVaoHandle* GetVAO(const void* plat_h, const void* vao_key) {
     GLVaoHandle* rval = nullptr;
@@ -480,10 +493,10 @@ void GlGeometryBufferInterface::ReleaseVB(VertexBufferBase& VBuf) {
   GLVtxBufHandle* hBuf = reinterpret_cast<GLVtxBufHandle*>(VBuf.GetHandle());
 
   if (hBuf) {
-    GL_ERRORCHECK();
-    glDeleteBuffers(1, (GLuint*)&hBuf->mVBO);
-    GL_ERRORCHECK();
+    delete hBuf;
+    VBuf.SetHandle(nullptr);
   }
+  
 }
 
 ///////////////////////////////////////////////////////////////////////////////
