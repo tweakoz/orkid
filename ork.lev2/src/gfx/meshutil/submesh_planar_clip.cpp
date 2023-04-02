@@ -312,29 +312,23 @@ void submeshClipWithPlane(
           auto vb = outsubmesh.mergeVertex(*edge->_vertexB);
 
           auto con_polys = outsubmesh.connectedPolys(edge, false);
-          if(con_polys.size()==1){
-            int icon_poly = *con_polys.begin();
-            auto con_poly = outsubmesh.poly(icon_poly);
-            if( con_poly->edgeForVertices(vb,va) ){
-              std::swap(va,vb);
+          bool do_swap = false;
+
+          if(con_polys.size()>0){
+            for( auto ic : con_polys ){
+              int icon_poly = *con_polys.begin();
+              auto con_poly = outsubmesh.poly(icon_poly);
+              if( con_poly->edgeForVertices(vb,va) ){
+                do_swap = true;
+              }
             }
           }
 
-          ///////////////////////////////////////////
-          // TODO correct winding order
-          ///////////////////////////////////////////
+          if(do_swap ^ flip_orientation){
+            std::swap(va,vb);
+          }
 
-          //auto dab = (vb->mPos - va->mPos).normalized();
-          //auto dbc = (center_vertex->mPos - vb->mPos).normalized();
-          //auto vx  = dab.crossWith(dbc).normalized();
-
-          //double d = vx.dotWith(avg_n);
-
-          //if ((d < 0.0f) == (flip_orientation ^ front)) {
-            outsubmesh.mergeTriangle(vb, va, center_vertex);
-          //} else {
-            //outsubmesh.mergeTriangle(va, vb, center_vertex);
-          //}
+          outsubmesh.mergeTriangle(vb, va, center_vertex);
         }
       }
 
