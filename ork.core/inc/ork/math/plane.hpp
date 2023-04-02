@@ -442,6 +442,41 @@ template <typename T> Plane<T> Plane<T>::operator-() const {
   return Plane<T>(-n, n * -d);
 }
 
+template <typename T> 
+uint64_t Plane<T>::hash(T normal_quant, T dist_quant) const{
+
+  //////////////////////////////////////////////////////////
+  // quantize normals
+  //  2^28 possible encodings more or less equally distributed (octahedral encoding)
+  //  -> each encoding covers 4.682e-8 steradians (12.57 steradians / 2^28)
+  // TODO: make an argument ?
+  //////////////////////////////////////////////////////////
+
+  auto nenc = n.normalOctahedronEncoded();
+  OrkAssert(normal_quant>T(0));
+  OrkAssert(normal_quant<=T(16384));
+  uint64_t ux = uint64_t(nenc.x*normal_quant);        // 14 bits
+  uint64_t uy = uint64_t(nenc.y*normal_quant);        // 14 bits  (total of 2^28 possible normals ~= )
+
+  //////////////////////////////////////////////////////////
+  // quantize plane distance
+  //   (64km [-32k..+32k] range with .25 millimeter precision)
+  // TODO: make an argument ?
+  //////////////////////////////////////////////////////////
+
+  OrkAssert(dist_quant>T(0));
+  OrkAssert(dist_quant<=T(4096));
+  uint64_t ud = uint64_t( (d+T(32767))*dist_quant ); //  16+12 bits 
+  uint64_t hash = ud | (ux<<32) | (uy<<48);
+
+  if(0)printf( "plane<%f %f %f %f> nenc<%f %f> ud<0x%x> ux<0x%x> uy<%d> hash<0x%016llx>\n",
+          n.x, n.y, n.z, d,
+          nenc.x, nenc.y,
+          int(ud), int(ux), int(uy), hash );
+
+  return hash;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 } // namespace ork

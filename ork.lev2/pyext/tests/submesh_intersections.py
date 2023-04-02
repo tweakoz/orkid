@@ -148,7 +148,7 @@ class SceneGraphApp(BasicUiCamSgApp):
     self.upd_c1 = UpdateSettings()
     self.upd_c2 = UpdateSettings()
     self.dice = 2
-    self.counter = 10
+    self.counter = 20
   ##############################################
   def onUpdate(self,updevent):
     super().onUpdate(updevent)
@@ -181,8 +181,9 @@ class SceneGraphApp(BasicUiCamSgApp):
     #
     lat_1 = self.upd_c1.computeLAT(θ)
     lat_2 = self.upd_c2.computeLAT(θ)
+    PLANAR_BIAS = 0.0025
     self.fvmtx1 = mtx4.lookAt(vec3(0,0,1),vec3(lat_1,0,0),vec3(0,1,0))
-    self.fvmtx2 = mtx4.lookAt(vec3(1,0,1.03),vec3(1,lat_2,0),vec3(0,1,0))
+    self.fvmtx2 = mtx4.lookAt(vec3(1,0,1+PLANAR_BIAS),vec3(1,lat_2,PLANAR_BIAS),vec3(0,1,0))
     #
     self.frustum1.set(self.fvmtx1,self.fpmtx1)
     self.frustum2.set(self.fvmtx2,self.fpmtx2)

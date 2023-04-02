@@ -28,7 +28,12 @@ void submeshClipWithPlane(
     submesh& outsmesh_Front, //
     submesh& outsmesh_Back) {
 
-  constexpr double PLANE_EPSILON = 0.001f;
+  constexpr double PLANE_EPSILON = 0.0001f;
+
+  double normal_quant = 1024.0;
+  double distance_quant = 1024.0;
+
+  uint64_t slicing_plane_hash = slicing_plane.hash(normal_quant,distance_quant);
 
   /////////////////////////////////////////////////////////////////////
   // count sides of the plane to which the input mesh vertices belong
@@ -41,9 +46,10 @@ void submeshClipWithPlane(
     auto nonconst_vertex = std::const_pointer_cast<struct vertex>(vtx);
     nonconst_vertex->clearAllExceptPosition();
     double point_distance = slicing_plane.pointDistance(pos);
-    if (point_distance > 0.0f) {
+    
+    if (point_distance > (-PLANE_EPSILON) ) {
       front_verts.insert(nonconst_vertex);
-    } else if (point_distance < 0.0f) {
+    } else if (point_distance < (PLANE_EPSILON)) {
       back_verts.insert(nonconst_vertex);
     } else { // on plane
       planar_verts.insert(nonconst_vertex);
@@ -115,9 +121,18 @@ void submeshClipWithPlane(
     //////////////////////////////////////////////
     else {
 
+      auto poly_plane = input_poly->computePlane();
+      uint64_t poly_plane_hash = poly_plane.hash(normal_quant,distance_quant);
+
+      if( slicing_plane_hash == poly_plane_hash ) {
+        //OrkAssert(false);
+      }
+
       mupoly_clip_adapter clip_input;
       mupoly_clip_adapter clipped_front;
       mupoly_clip_adapter clipped_back;
+
+
 
       /////////////////////////////////////////////////
       // fill in mupoly_clip_adapter clip_input

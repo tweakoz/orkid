@@ -79,6 +79,8 @@ public: //
   //////////////////////////////////
   void EndianSwap();
   //////////////////////////////////
+
+  uint64_t hash(T normal_quant=T(16384), T dist_quant=T(4096)) const;
 };
 
 using fplane       = Plane<float>;

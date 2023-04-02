@@ -69,34 +69,8 @@ std::unordered_map<uint64_t,polyset_ptr_t> PolySet::splitByPlane() const {
 
   for (auto inp_poly : _polys ) {
 
-    auto plane = inp_poly->computePlane();
-
-    //////////////////////////////////////////////////////////
-    // quantize normals
-    //  2^28 possible encodings more or less equally distributed (octahedral encoding)
-    //  -> each encoding covers 4.682e-8 steradians (12.57 steradians / 2^28)
-    // TODO: make an argument ?
-    //////////////////////////////////////////////////////////
-
-    dvec2 nenc = plane.n.normalOctahedronEncoded();
-    double normal_quantization = 16384.0;
-    uint64_t ux = uint64_t(double(nenc.x)*normal_quantization);        // 14 bits
-    uint64_t uy = uint64_t(double(nenc.y)*normal_quantization);        // 14 bits  (total of 2^28 possible normals ~= )
-
-    //////////////////////////////////////////////////////////
-    // quantize plane distance
-    //   (64km [-32k..+32k] range with .25 millimeter precision)
-    // TODO: make an argument ?
-    //////////////////////////////////////////////////////////
-
-    double distance_quantization = 4096.0;
-    uint64_t ud = uint64_t( (plane.d+32767.0)*distance_quantization ); //  16+12 bits 
-    uint64_t hash = ud | (ux<<32) | (uy<<48);
-
-  if(0)printf( "plane<%f %f %f %f> nenc<%f %f> ud<0x%x> ux<0x%x> uy<%d> hash<0x%016llx>\n",
-          plane.n.x, plane.n.y, plane.n.z, plane.d,
-          nenc.x, nenc.y,
-          int(ud), int(ux), int(uy), hash );
+   auto plane = inp_poly->computePlane();
+   uint64_t hash = plane.hash();
 
     auto it = polyset_by_plane.find(hash);
     polyset_ptr_t dest_set;
