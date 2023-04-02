@@ -44,7 +44,6 @@ poly_ptr_t submesh::mergePoly(const Polygon& ply) {
       _aaBoxDirty = true;
     }
   }
-
   return p;
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -100,7 +99,10 @@ int submesh::numVertices() const {
 int submesh::numPolys(int inumsides) const {
   int count = 0;
   visitAllPolys([&](poly_const_ptr_t p) {
-    if (p->GetNumSides() == inumsides) {
+    if(inumsides==0){
+      count++;
+    }
+    else if (p->GetNumSides() == inumsides) {
       count++;
     }
   });
@@ -146,13 +148,12 @@ void submesh::exportPolyAnnotations(annopolylut& apl) const {
 ///////////////////////////////////////////////////////////////////////////////
 const AABox& submesh::aabox() const {
   if (_aaBoxDirty) {
-    _aaBox.BeginGrow();
-    int inumvtx = numVertices();
-    for (int i = 0; i < inumvtx; i++) {
-      _aaBox.Grow(dvec3_to_fvec3(vertex(i)->mPos));
-    }
-    _aaBox.EndGrow();
     _aaBoxDirty = false;
+    _aaBox.BeginGrow();
+    visitAllVertices([&](vertex_const_ptr_t v) {
+      _aaBox.Grow(dvec3_to_fvec3(v->mPos));
+    });
+    _aaBox.EndGrow();
   }
   return _aaBox;
 }
@@ -243,6 +244,7 @@ void submesh::addQuad(fvec3 p0, fvec3 p1, fvec3 p2, fvec3 p3, fvec4 c) {
   auto v3 = mergeVertex(muvtx[3]);
   mergePoly(Polygon(v0, v1, v2, v3));
 }
+///////////////////////////////////////////////////////////////////////////////
 void submesh::addQuad(fvec3 p0, fvec3 p1, fvec3 p2, fvec3 p3, fvec2 uv0, fvec2 uv1, fvec2 uv2, fvec2 uv3, fvec4 c) {
   struct vertex muvtx[4];
   fvec3 p0p1 = (p1 - p0).normalized();
@@ -261,6 +263,7 @@ void submesh::addQuad(fvec3 p0, fvec3 p1, fvec3 p2, fvec3 p3, fvec2 uv0, fvec2 u
   auto v3 = mergeVertex(muvtx[3]);
   mergePoly(Polygon(v0, v1, v2, v3));
 }
+///////////////////////////////////////////////////////////////////////////////
 void submesh::addQuad(
     fvec3 p0,
     fvec3 p1,
@@ -289,6 +292,7 @@ void submesh::addQuad(
   auto v3 = mergeVertex(muvtx[3]);
   mergePoly(Polygon(v0, v1, v2, v3));
 }
+///////////////////////////////////////////////////////////////////////////////
 void submesh::addQuad(
     fvec3 p0,
     fvec3 p1,
@@ -354,6 +358,8 @@ void submesh::copy(
 
   std::unordered_map<int, int> vtx_map;
 
+  // copy vertices
+
   visitAllVertices([&](vertex_const_ptr_t v) {
     auto temp_v  = std::make_shared<struct vertex>();
     temp_v->mPos = v->mPos;
@@ -376,6 +382,8 @@ void submesh::copy(
     vtx_map[v->_poolindex] = new_v->_poolindex;
   });
 
+  // copy polys
+
   visitAllPolys([&](poly_const_ptr_t p) {
     std::vector<vertex_ptr_t> newverts;
     for (auto v : p->_vertices) {
@@ -388,6 +396,8 @@ void submesh::copy(
     auto newp = std::make_shared<Polygon>(newverts);
     dest.mergePoly(*newp);
   });
+
+  // copy misc
 
   dest.name         = name;
   dest._annotations = _annotations;
