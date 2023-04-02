@@ -24,6 +24,7 @@ IConnectivity::~IConnectivity(){
 ////////////////////////////////////////////////////////////////
 DefaultConnectivity::DefaultConnectivity(submesh* sub) 
   : IConnectivity(sub) {
+  _vtxpool = std::make_shared<vertexpool>();
   for (int i = 0; i < 8; i++)
     _polyTypeCounter[i] = 0;
 }
@@ -68,8 +69,82 @@ poly_index_set_t DefaultConnectivity::polysConnectedToVertex(vertex_ptr_t v) con
   return poly_index_set_t();
 }
 ////////////////////////////////////////////////////////////////
+vertex_ptr_t DefaultConnectivity::vertex(int id) const {
+  return _vtxpool->_orderedVertices[id];
+}
+////////////////////////////////////////////////////////////////
+poly_ptr_t DefaultConnectivity::poly(int id) const {
+  return _orderedPolys[id];
+}
+////////////////////////////////////////////////////////////////
+size_t DefaultConnectivity::numPolys() const {
+  return _orderedPolys.size();
+}
+////////////////////////////////////////////////////////////////
+size_t DefaultConnectivity::numVertices() const {
+  return _vtxpool->_orderedVertices.size();
+}
+////////////////////////////////////////////////////////////////
+void DefaultConnectivity::visitAllPolys(poly_void_visitor_t visitor) {
+  for( auto p : _orderedPolys )
+    visitor(p);
+}
+////////////////////////////////////////////////////////////////
+void DefaultConnectivity::visitAllPolys(const_poly_void_visitor_t visitor) const {
+  for( auto p : _orderedPolys )
+    visitor(p);
+}
+////////////////////////////////////////////////////////////////
+void DefaultConnectivity::visitAllVertices(vertex_void_visitor_t visitor) {
+  for( auto v : _vtxpool->_orderedVertices )
+    visitor(v);
+}
+////////////////////////////////////////////////////////////////
+void DefaultConnectivity::visitAllVertices(const_vertex_void_visitor_t visitor) const {
+  for( auto v : _vtxpool->_orderedVertices )
+    visitor(v);
+}
+///////////////////////////////////////////////////////////////////////////////
+edge_ptr_t DefaultConnectivity::edgeBetweenPolys(int aind, int bind) const {
+  auto pa = poly(aind);
+  auto pb = poly(bind);
+  edge_ptr_t rval;
+  std::vector<vertex_ptr_t> verts_in_both;
+  for( auto v_in_b : pb->_vertices ){
+    if( pa->containsVertex(v_in_b) ){
+      verts_in_both.push_back(v_in_b);
+    }
+  }
+  switch( verts_in_both.size() ){
+    case 2: {
+      auto v0 = verts_in_both[0];
+      auto v1 = verts_in_both[1];
+
+      auto ep0 = pa->edgeForVertices(v0,v1);
+      if( nullptr == ep0 ){
+        ep0 = pa->edgeForVertices(v0,v1);
+      }
+      OrkAssert(ep0);
+
+      auto ep1 = pb->edgeForVertices(ep0->_vertexB, ep0->_vertexA);
+      OrkAssert(ep1);
+
+      rval = ep0;
+
+    }
+    case 0:
+    case 1: 
+      break;
+    default: // we do not support more than 2 verts in common yet
+      OrkAssert(false);
+      break;
+  }
+
+  return rval;
+}
+////////////////////////////////////////////////////////////////
 vertex_ptr_t DefaultConnectivity::mergeVertex(const struct vertex& v) {
-  return nullptr;
+  return _vtxpool->mergeVertex(v);
 }
 ////////////////////////////////////////////////////////////////
 poly_ptr_t DefaultConnectivity::mergePoly(const Polygon& ply) {
@@ -159,74 +234,6 @@ edge_ptr_t DefaultConnectivity::mergeEdge(const edge& e) {
   auto mv0 = mergeVertex(*v0);
   auto mv1 = mergeVertex(*v1);
   return std::make_shared<edge>(mv0,mv1);
-}
-vertex_ptr_t DefaultConnectivity::vertex(int id) const {
-  return nullptr;
-}
-poly_ptr_t DefaultConnectivity::poly(int id) const {
-  return nullptr;
-}
-size_t DefaultConnectivity::numPolys() const {
-  return 0;
-}
-size_t DefaultConnectivity::numVertices() const {
-  return 0;
-}
-
-void DefaultConnectivity::visitAllPolys(poly_void_visitor_t visitor) {
-  for( auto p : _orderedPolys )
-    visitor(p);
-}
-void DefaultConnectivity::visitAllPolys(const_poly_void_visitor_t visitor) const {
-  for( auto p : _orderedPolys )
-    visitor(p);
-}
-
-void DefaultConnectivity::visitAllVertices(vertex_void_visitor_t visitor) {
-  for( auto v : _vtxpool->_orderedVertices )
-    visitor(v);
-}
-void DefaultConnectivity::visitAllVertices(const_vertex_void_visitor_t visitor) const {
-  for( auto v : _vtxpool->_orderedVertices )
-    visitor(v);
-}
-///////////////////////////////////////////////////////////////////////////////
-edge_ptr_t DefaultConnectivity::edgeBetweenPolys(int aind, int bind) const {
-  auto pa = poly(aind);
-  auto pb = poly(bind);
-  edge_ptr_t rval;
-  std::vector<vertex_ptr_t> verts_in_both;
-  for( auto v_in_b : pb->_vertices ){
-    if( pa->containsVertex(v_in_b) ){
-      verts_in_both.push_back(v_in_b);
-    }
-  }
-  switch( verts_in_both.size() ){
-    case 2: {
-      auto v0 = verts_in_both[0];
-      auto v1 = verts_in_both[1];
-
-      auto ep0 = pa->edgeForVertices(v0,v1);
-      if( nullptr == ep0 ){
-        ep0 = pa->edgeForVertices(v0,v1);
-      }
-      OrkAssert(ep0);
-
-      auto ep1 = pb->edgeForVertices(ep0->_vertexB, ep0->_vertexA);
-      OrkAssert(ep1);
-
-      rval = ep0;
-
-    }
-    case 0:
-    case 1: 
-      break;
-    default: // we do not support more than 2 verts in common yet
-      OrkAssert(false);
-      break;
-  }
-
-  return rval;
 }
 ////////////////////////////////////////////////////////////////
 } //namespace ork::meshutil {
