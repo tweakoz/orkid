@@ -21,11 +21,7 @@ void submeshBarycentricUV(const submesh& inpsubmesh, submesh& outsmesh){
 
   ////////////////////////////////////////////////////////
 
-  int inump = triangulated.GetNumPolys();
-  const auto& inp_polys = triangulated._orderedPolys;
-
-  for (int ip = 0; ip < inump; ip++) {
-    auto inp_poly = inp_polys[ip];
+  triangulated.visitAllPolys([&](poly_ptr_t inp_poly) {
     int inumpv = inp_poly->GetNumSides();
     std::vector<vertex_ptr_t> out_vertices;
     for( int iv=0; iv<inumpv; iv++ ){
@@ -49,8 +45,8 @@ void submeshBarycentricUV(const submesh& inpsubmesh, submesh& outsmesh){
       auto outv = outsmesh.mergeVertex(temp_out);
       out_vertices.push_back(outv);
     }
-    outsmesh.mergePoly(poly(out_vertices));
-  }
+    outsmesh.mergePoly(Polygon(out_vertices));
+  });
 
   ////////////////////////////////////////////////////////
 

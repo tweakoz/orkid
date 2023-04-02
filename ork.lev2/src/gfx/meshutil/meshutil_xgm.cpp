@@ -83,7 +83,7 @@ void Mesh::ReadFromXGM(const file::Path& BasePath) {
                       ToolVertex.mCol[0]             = fcolor4::White();
                       vertexcache[(ii % 3)]          = outsub.mergeVertex(ToolVertex);
                       if (2 == (ii % 3)) {
-                        poly ToolPoly(vertexcache[0], vertexcache[1], vertexcache[2]);
+                        Polygon ToolPoly(vertexcache[0], vertexcache[1], vertexcache[2]);
                         outsub.mergePoly(ToolPoly);
                       }
                     }
@@ -104,7 +104,7 @@ void Mesh::ReadFromXGM(const file::Path& BasePath) {
                       ToolVertex.mCol[0]             = fcolor4::White();
                       vertexcache[(ii % 3)]          = outsub.mergeVertex(ToolVertex);
                       if (2 == (ii % 3)) {
-                        poly ToolPoly(vertexcache[0], vertexcache[1], vertexcache[2]);
+                        Polygon ToolPoly(vertexcache[0], vertexcache[1], vertexcache[2]);
                         outsub.mergePoly(ToolPoly);
                       }
                     }
@@ -126,7 +126,7 @@ void Mesh::ReadFromXGM(const file::Path& BasePath) {
                       ToolVertex.mCol[0]             = fcolor4::White();
                       vertexcache[(ii % 3)]          = outsub.mergeVertex(ToolVertex);
                       if (2 == (ii % 3)) {
-                        poly ToolPoly(vertexcache[0], vertexcache[1], vertexcache[2]);
+                        Polygon ToolPoly(vertexcache[0], vertexcache[1], vertexcache[2]);
                         outsub.mergePoly(ToolPoly);
                       }
                     }

@@ -207,7 +207,7 @@ void buildXgmCluster( lev2::Context& context,
   for (int i = 0; i < inumtriangles; i++) {
     int itri_i = ToolMeshTriangles[i];
 
-    const ork::meshutil::poly& ClusTri = clusterbuilder->_submesh.RefPoly(itri_i);
+    const ork::meshutil::Polygon& ClusTri = clusterbuilder->_submesh.RefPoly(itri_i);
 
     TriangleIndices.push_back(ClusTri.GetVertexID(0));
     TriangleIndices.push_back(ClusTri.GetVertexID(1));

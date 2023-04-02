@@ -50,16 +50,14 @@ void submeshWriteObj(const submesh& inpsubmesh, const file::Path& BasePath) {
   orkvector<objmesh> ObjMeshPool;
   orkmap<std::string, objmat> ObjMaterialPool;
 
-  int inumv = inpsubmesh._vtxpool->GetNumVertices();
   ///////////////////////////////////////////////////
   objmat OutMaterial;
   ///////////////////////////////////////////////////
-  for (int iv0 = 0; iv0 < inumv; iv0++) {
-    const vertex& invtx = inpsubmesh._vtxpool->GetVertex(iv0);
-    ObjVertexPool.push_back(invtx.mPos);
-    ObjNormalPool.push_back(invtx.mNrm);
-    ObjUv0Pool.push_back(invtx.mUV[0].mMapTexCoord);
-  }
+  inpsubmesh.visitAllVertices([&](vertex_const_ptr_t v) {
+    ObjVertexPool.push_back(v->mPos);
+    ObjNormalPool.push_back(v->mNrm);
+    ObjUv0Pool.push_back(v->mUV[0].mMapTexCoord);
+  });
   ///////////////////////////////////////////////////
   OutMaterial.mColor = fcolor3::White();
   objmesh OutMesh;
@@ -75,7 +73,7 @@ void submeshWriteObj(const submesh& inpsubmesh, const file::Path& BasePath) {
     objpoly outpoly;
     int igti          = triangles[i];
     already_written.insert(igti);
-    const poly& intri = inpsubmesh.RefPoly(igti);
+    const Polygon& intri = inpsubmesh.RefPoly(igti);
     for (int iv = 0; iv < 3; iv++) {
       int idx = intri.GetVertexID(iv);
       outpoly.mvtxindices.push_back(idx);
@@ -86,7 +84,7 @@ void submeshWriteObj(const submesh& inpsubmesh, const file::Path& BasePath) {
     objpoly outpoly;
     int igti          = quads[i];
     already_written.insert(igti);
-    const poly& intri = inpsubmesh.RefPoly(igti);
+    const Polygon& intri = inpsubmesh.RefPoly(igti);
     for (int iv = 0; iv < 4; iv++) {
       int idx = intri.GetVertexID(iv);
       outpoly.mvtxindices.push_back(idx);
@@ -94,7 +92,7 @@ void submeshWriteObj(const submesh& inpsubmesh, const file::Path& BasePath) {
     OutMesh.mpolys.push_back(outpoly);
   }
   int ipoly = 0;
-  for( auto p : inpsubmesh._orderedPolys ){
+  inpsubmesh.visitAllPolys([&](poly_const_ptr_t p) {
     auto it_a = already_written.find(ipoly);
     if(it_a==already_written.end()){
       objpoly outpoly;
@@ -105,7 +103,7 @@ void submeshWriteObj(const submesh& inpsubmesh, const file::Path& BasePath) {
       OutMesh.mpolys.push_back(outpoly);
     }
     ipoly++;
-  }
+  });
 
   ObjMeshPool.push_back(OutMesh);
   ObjMaterialPool[OutMesh.matname] = OutMaterial;

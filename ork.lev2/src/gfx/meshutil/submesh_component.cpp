@@ -289,13 +289,13 @@ uint64_t vertex::hash(double quantization) const {
 
 ////////////////////////////////////////////////////////////////
 
-const AnnoMap* poly::GetAnnoMap() const {
+const AnnoMap* Polygon::GetAnnoMap() const {
   return mAnnotationSet;
 }
 
 ////////////////////////////////////////////////////////////////
 
-bool poly::containsVertex(vertex_ptr_t v) const{
+bool Polygon::containsVertex(vertex_ptr_t v) const{
   for( auto v2 : _vertices ){
     if(v2==v)
       return true;
@@ -305,7 +305,7 @@ bool poly::containsVertex(vertex_ptr_t v) const{
 
 ////////////////////////////////////////////////////////////////
 
-bool poly::containsEdge(const edge& e, bool ordered) const{
+bool Polygon::containsEdge(const edge& e, bool ordered) const{
   size_t num_verts = _vertices.size();
   for( int i=0; i<num_verts; i++ ){
     auto v0 = _vertices[i];
@@ -317,13 +317,13 @@ bool poly::containsEdge(const edge& e, bool ordered) const{
   }
   return false;
 }
-bool poly::containsEdge(edge_ptr_t e, bool ordered) const{
+bool Polygon::containsEdge(edge_ptr_t e, bool ordered) const{
   return containsEdge(*e, ordered);
 }
 
 ////////////////////////////////////////////////////////////////
 
-edge_vect_t poly::edges() const {
+edge_vect_t Polygon::edges() const {
   edge_vect_t rval;
   size_t num_verts = _vertices.size();
   for( int i=0; i<num_verts; i++ ){
@@ -336,7 +336,7 @@ edge_vect_t poly::edges() const {
 
 ////////////////////////////////////////////////////////////////
 
-edge_ptr_t poly::edgeForVertices(vertex_ptr_t va, vertex_ptr_t vb) const {
+edge_ptr_t Polygon::edgeForVertices(vertex_ptr_t va, vertex_ptr_t vb) const {
   size_t num_verts = _vertices.size();
   for( int i=0; i<num_verts; i++ ){
     auto v0 = _vertices[i];
@@ -349,26 +349,26 @@ edge_ptr_t poly::edgeForVertices(vertex_ptr_t va, vertex_ptr_t vb) const {
 
 ////////////////////////////////////////////////////////////////
 
-void poly::SetAnnoMap(const AnnoMap* pmap) {
+void Polygon::SetAnnoMap(const AnnoMap* pmap) {
   mAnnotationSet = pmap;
 }
 
 ////////////////////////////////////////////////////////////////
 
-int poly::GetNumSides(void) const {
+int Polygon::GetNumSides(void) const {
   return _vertices.size();
 }
 
 ////////////////////////////////////////////////////////////////
 
-int poly::GetVertexID(int i) const {
+int Polygon::GetVertexID(int i) const {
   OrkAssert(i < GetNumSides());
   return _vertices[i]->_poolindex;
 }
 
 ////////////////////////////////////////////////////////////////
 
-poly::poly(vertex_ptr_t ia, vertex_ptr_t ib, vertex_ptr_t ic)
+Polygon::Polygon(vertex_ptr_t ia, vertex_ptr_t ib, vertex_ptr_t ic)
     : mAnnotationSet(0) {
 
   OrkAssert(ia);
@@ -389,7 +389,7 @@ poly::poly(vertex_ptr_t ia, vertex_ptr_t ib, vertex_ptr_t ic)
 
 ////////////////////////////////////////////////////////////////
 
-poly::poly(vertex_ptr_t ia, vertex_ptr_t ib, vertex_ptr_t ic, vertex_ptr_t id)
+Polygon::Polygon(vertex_ptr_t ia, vertex_ptr_t ib, vertex_ptr_t ic, vertex_ptr_t id)
     : mAnnotationSet(0) {
 
   OrkAssert(ia);
@@ -409,7 +409,7 @@ poly::poly(vertex_ptr_t ia, vertex_ptr_t ib, vertex_ptr_t ic, vertex_ptr_t id)
 
 ////////////////////////////////////////////////////////////////
 
-poly::poly(const std::vector<vertex_ptr_t>& vertices)
+Polygon::Polygon(const std::vector<vertex_ptr_t>& vertices)
     : mAnnotationSet(0) {
 
   //OrkAssert(vertices.size()<=5);
@@ -429,7 +429,7 @@ poly::poly(const std::vector<vertex_ptr_t>& vertices)
 ///////////////////////////////////////////////////////////////////////////////
 /*   // disabled during submesh refactor
 
-int poly::VertexCW(int vert) const {
+int Polygon::VertexCW(int vert) const {
   for (int i = 0; i < miNumSides; i++) {
     if (miVertices[i] == vert)
       return miVertices[(i + miNumSides - 1) % miNumSides];
@@ -439,7 +439,7 @@ int poly::VertexCW(int vert) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-int poly::VertexCCW(int vert) const {
+int Polygon::VertexCCW(int vert) const {
   for (int i = 0; i < miNumSides; i++) {
     if (miVertices[i] == vert)
       return miVertices[(i + 1) % miNumSides];
@@ -448,7 +448,7 @@ int poly::VertexCCW(int vert) const {
 }
 */
 ///////////////////////////////////////////////////////////////////////////////
-vertex poly::ComputeCenter() const {
+vertex Polygon::ComputeCenter() const {
   int inumv = GetNumSides();
   vertex vcenter;
   double frecip = double(1.0) / double(inumv);
@@ -468,7 +468,7 @@ vertex poly::ComputeCenter() const {
   return vcenter;
 }
 
-dvec3 poly::centerOfMass() const{
+dvec3 Polygon::centerOfMass() const{
   
   struct tri{
     dvec3 a;
@@ -517,7 +517,7 @@ dvec3 poly::centerOfMass() const{
 
 ///////////////////////////////////////////////////////////////////////////////
 
-double poly::ComputeArea(const dmtx4& MatRange) const {
+double Polygon::ComputeArea(const dmtx4& MatRange) const {
   double farea     = 0.0f;
   ork::dvec3 base = _vertices[0]->mPos.transform(MatRange);
   ork::dvec3 prev = _vertices[1]->mPos.transform(MatRange);
@@ -533,7 +533,7 @@ double poly::ComputeArea(const dmtx4& MatRange) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-double poly::ComputeEdgeLength(const dmtx4& MatRange, int iedge) const {
+double Polygon::ComputeEdgeLength(const dmtx4& MatRange, int iedge) const {
   int inumvtx = _vertices.size();
   auto v0     = _vertices[(iedge + 0) % inumvtx];
   auto v1     = _vertices[(iedge + 1) % inumvtx];
@@ -543,7 +543,7 @@ double poly::ComputeEdgeLength(const dmtx4& MatRange, int iedge) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-double poly::minEdgeLength(const dmtx4& MatRange) const {
+double Polygon::minEdgeLength(const dmtx4& MatRange) const {
   double min_len = 1e12;
   int numedges = _vertices.size();
   for( int e=0; e<numedges; e++){
@@ -554,7 +554,7 @@ double poly::minEdgeLength(const dmtx4& MatRange) const {
   return min_len;
 }
 
-double poly::maxEdgeLength(const dmtx4& MatRange) const {
+double Polygon::maxEdgeLength(const dmtx4& MatRange) const {
   double max_len = 0.0;
   int numedges = _vertices.size();
   for( int e=0; e<numedges; e++){
@@ -567,7 +567,7 @@ double poly::maxEdgeLength(const dmtx4& MatRange) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-dplane3 poly::computePlane() const{
+dplane3 Polygon::computePlane() const{
   OrkAssert(_vertices.size()>=3);
   auto v0 = _vertices[0];
   auto v1 = _vertices[1];
@@ -577,7 +577,7 @@ dplane3 poly::computePlane() const{
 
 ///////////////////////////////////////////////////////////////////////////////
 
-dvec3 poly::ComputeNormal() const {
+dvec3 Polygon::ComputeNormal() const {
   dvec3 rval(0, 0, 0);
   int inumvtx = _vertices.size();
   auto v0 = _vertices[0]->mPos;
@@ -593,7 +593,7 @@ dvec3 poly::ComputeNormal() const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-uint64_t poly::hash(void) const {
+uint64_t Polygon::hash(void) const {
   struct bubblesort {
     static void doit(int* array, int length) {
       int i, j, temp;
@@ -628,7 +628,7 @@ uint64_t poly::hash(void) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const std::string& poly::GetAnnotation(const std::string& annoname) const {
+const std::string& Polygon::GetAnnotation(const std::string& annoname) const {
   if (mAnnotationSet) {
     orkmap<std::string, std::string>::const_iterator it = mAnnotationSet->_annotations.find(annoname);
     if (it != mAnnotationSet->_annotations.end()) {

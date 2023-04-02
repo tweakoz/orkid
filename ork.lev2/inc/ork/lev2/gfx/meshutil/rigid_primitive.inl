@@ -180,18 +180,16 @@ template <typename vtx_t> void RigidPrimitive<vtx_t>::fromSubMesh(const submesh&
   //////////////////////////////////////////////////////////////
   meshutil::XgmClusterizerStd clusterizer;
   meshutil::MeshConfigurationFlags meshflags;
-  auto vpool = submeshTris._vtxpool;
-  int numverts      = vpool->GetNumVertices();
-  int inumpolys     = submeshTris.GetNumPolys(3);
+  int numverts      = submeshTris.numVertices();
+  int inumpolys     = submeshTris.numPolys(3);
   clusterizer.Begin();
-  for (int p = 0; p < inumpolys; p++) {
-    const auto& poly = submeshTris.RefPoly(p);
-    auto vtxa        = poly._vertices[0];
-    auto vtxb        = poly._vertices[1];
-    auto vtxc        = poly._vertices[2];
+  submeshTris.visitAllPolys([&](poly_const_ptr_t ply) {
+    auto vtxa        = ply->_vertices[0];
+    auto vtxb        = ply->_vertices[1];
+    auto vtxc        = ply->_vertices[2];
     XgmClusterTri tri{*vtxa, *vtxb, *vtxc};
     clusterizer.addTriangle(tri, meshflags);
-  }
+  });
   clusterizer.End();
   //////////////////////////////////////////////////////////////
   // build primitives

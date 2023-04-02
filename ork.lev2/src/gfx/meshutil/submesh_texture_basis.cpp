@@ -15,22 +15,20 @@ namespace ork::meshutil {
 ///////////////////////////////////////////////////////////////////////////////
 
 void submeshWithTextureBasis(const submesh& inpsubmesh, submesh& outsubmesh){
-  int inump = inpsubmesh.GetNumPolys();
 
-  for (int ip = 0; ip < inump; ip++) {
-    const poly& ply = *inpsubmesh._orderedPolys[ip];
-    dvec3 N = ply.ComputeNormal();
+  inpsubmesh.visitAllPolys( [&](poly_const_ptr_t input_poly) {
+    dvec3 N = input_poly->ComputeNormal();
 
-    int inumv = ply.GetNumSides();
+    int inumv = input_poly->GetNumSides();
     std::vector<vertex_ptr_t> merged_vertices;
     for( int i=0; i<inumv; i++ ){
-        auto inp_v0 = *ply._vertices[i];
+        auto inp_v0 = *(input_poly->_vertices[i]);
         inp_v0.mNrm = N;
-        auto out_v = outsubmesh._vtxpool->mergeVertex(inp_v0);
+        auto out_v = outsubmesh.mergeVertex(inp_v0);
         merged_vertices.push_back(out_v);
     }
     outsubmesh.mergePoly(merged_vertices);
-  }
+  });
 
 }
 

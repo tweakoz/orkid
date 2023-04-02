@@ -48,14 +48,14 @@ AnnoMap::~AnnoMap() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-U64 annopolyposlut::HashItem(const submesh& tmesh, const poly& ply) const {
+U64 annopolyposlut::HashItem(const submesh& tmesh, const Polygon& ply) const {
   boost::Crc64 crc64;
   int inumpv = ply.GetNumSides();
   for (int iv = 0; iv < inumpv; iv++) {
     int ivi           = ply.GetVertexID(iv);
-    const vertex& vtx = tmesh._vtxpool->GetVertex(ivi);
-    crc64.accumulateItem(vtx.mPos);
-    crc64.accumulateItem(vtx.mNrm);
+    auto vtx = tmesh.vertex(ivi);
+    crc64.accumulateItem(vtx->mPos);
+    crc64.accumulateItem(vtx->mNrm);
   }
   crc64.finish();
   return crc64.result();
@@ -63,7 +63,7 @@ U64 annopolyposlut::HashItem(const submesh& tmesh, const poly& ply) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const AnnoMap* annopolylut::Find(const submesh& tmesh, const poly& ply) const {
+const AnnoMap* annopolylut::Find(const submesh& tmesh, const Polygon& ply) const {
   const AnnoMap* rval                            = 0;
   U64 uhash                                      = HashItem(tmesh, ply);
   orkmap<U64, const AnnoMap*>::const_iterator it = mAnnoMap.find(uhash);

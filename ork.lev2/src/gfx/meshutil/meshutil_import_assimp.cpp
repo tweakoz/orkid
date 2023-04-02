@@ -589,7 +589,7 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
             outvtx[0]                             = out_submesh.mergeVertex(muverts[0]);
             outvtx[1]                             = out_submesh.mergeVertex(muverts[1]);
             outvtx[2]                             = out_submesh.mergeVertex(muverts[2]);
-            ork::meshutil::poly new_poly(outvtx[0],outvtx[1],outvtx[2]);
+            ork::meshutil::Polygon new_poly(outvtx[0],outvtx[1],outvtx[2]);
             out_submesh.mergePoly(new_poly);
           } else {
             logchan_meshutilassimp->log("non triangle");
@@ -778,14 +778,12 @@ void clusterizeToolMeshToXgmMesh(const ork::meshutil::Mesh& inp_model, ork::lev2
     ork::meshutil::XgmClusterTri clustertri;
     clusterizer->Begin();
 
-    auto vertexpool = inp_submesh->_vtxpool;
-    const auto& polys      = inp_submesh->RefPolys();
-    for (const auto& poly : polys) {
-      assert(poly->GetNumSides() == 3);
+    inp_submesh->visitAllPolys([&](poly_ptr_t p) {
+      assert(p->GetNumSides() == 3);
       for (int i = 0; i < 3; i++)
-        clustertri._vertex[i] = vertexpool->GetVertex(poly->GetVertexID(i));
+        clustertri._vertex[i] = *inp_submesh->vertex(p->GetVertexID(i));
       clusterizer->addTriangle(clustertri, materialGroup->mMeshConfigurationFlags);
-    }
+    });
 
     clusterizer->End();
 

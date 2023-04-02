@@ -99,7 +99,7 @@ void XgmClusterizerDiced::End() {
 
   DicedMesh.SetMergeEdges(false);
 
-  if (gbFORCEDICE || _preDicedMesh.GetNumPolys() > 10000) {
+  if (gbFORCEDICE || _preDicedMesh.numPolys() > 10000) {
     float ftimeA = float(OldSchool::GetRef().GetLoResTime());
 
     GridGraph thegraph(isize);
@@ -127,7 +127,7 @@ void XgmClusterizerDiced::End() {
   for (auto it : submeshes_by_polygroup) {
     const std::string& pgname = it.first;
     const submesh& pgrp       = *it.second;
-    int inumpolys             = pgrp.GetNumPolys();
+    int inumpolys             = pgrp.numPolys();
 
     inumpacc += inumpolys;
 
@@ -135,15 +135,15 @@ void XgmClusterizerDiced::End() {
     _clusters.push_back(new_builder);
 
     for (int ip = 0; ip < inumpolys; ip++) {
-      const poly& ply = pgrp.RefPoly(ip);
+      const Polygon& ply = pgrp.RefPoly(ip);
 
       OrkAssert(ply.GetNumSides() == 3);
 
       XgmClusterTri ClusTri;
 
-      ClusTri._vertex[0] = pgrp._vtxpool->GetVertex(ply.GetVertexID(0));
-      ClusTri._vertex[1] = pgrp._vtxpool->GetVertex(ply.GetVertexID(1));
-      ClusTri._vertex[2] = pgrp._vtxpool->GetVertex(ply.GetVertexID(2));
+      ClusTri._vertex[0] = *pgrp.vertex(ply.GetVertexID(0));
+      ClusTri._vertex[1] = *pgrp.vertex(ply.GetVertexID(1));
+      ClusTri._vertex[2] = *pgrp.vertex(ply.GetVertexID(2));
 
       bool bOK = new_builder->addTriangle(ClusTri);
 
@@ -172,7 +172,7 @@ void XgmClusterizerDiced::End() {
     fvec3 vmax   = bbox.Max();
     float fdist  = (vmax - vmin).magnitude();
 
-    int inumv = (int)builder->_submesh._vtxpool->GetNumVertices();
+    int inumv = (int)builder->_submesh.numVertices();
     orkprintf(
         "clus<%d> inumv<%d> bbmin<%g %g %g> bbmax<%g %g %g> diag<%g>\n",
         ic,

@@ -101,14 +101,17 @@ std::vector<submesh_ptr_t> submeshBulletConvexDecomposition(const submesh& inpsu
   
   std::vector<fvec3> _tempverts;
   std::vector<decomp_int_t> _tempindices;
-  for( auto v : triangulated._vtxpool->_orderedVertices ){
-    _tempverts.push_back(dvec3_to_fvec3(v->mPos));
-  }
-  for( auto p : triangulated._orderedPolys ){
-    _tempindices.push_back(p->_vertices[0]->_poolindex);
-    _tempindices.push_back(p->_vertices[1]->_poolindex);
-    _tempindices.push_back(p->_vertices[2]->_poolindex);
-  }
+  triangulated.visitAllVertices( [&](vertex_ptr_t vtx) {
+    _tempverts.push_back(dvec3_to_fvec3(vtx->mPos));
+  });
+  size_t tcount = 0;
+  triangulated.visitAllPolys( [&](poly_ptr_t poly) {
+    _tempindices.push_back(poly->_vertices[0]->_poolindex);
+    _tempindices.push_back(poly->_vertices[1]->_poolindex);
+    _tempindices.push_back(poly->_vertices[2]->_poolindex);
+    tcount++;
+  });
+
   MyConvexDecomposition interface;
 
   if(0){
@@ -129,8 +132,8 @@ std::vector<submesh_ptr_t> submeshBulletConvexDecomposition(const submesh& inpsu
     decomp_int_t depth = 7; // a maximum of 10, generally not over 7.
     calcConvexDecomposition((decomp_int_t) _tempverts.size(), // vcount
                           (const float*) _tempverts.data(), // vertices
-                          triangulated._orderedPolys.size(), // tcount
-                          (const decomp_int_t*) _tempindices.data(), // indices
+                          tcount, // tcount
+                          _tempindices.data(), // indices
                           & interface, // callback
                           masterVolume, // mastervolume
                           depth // depth

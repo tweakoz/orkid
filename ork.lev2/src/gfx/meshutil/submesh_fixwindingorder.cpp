@@ -18,23 +18,21 @@ void submeshFixWindingOrder(const submesh& inpsubmesh, submesh& outsmesh, bool i
   dvec3 C = inpsubmesh.center();
 
   std::unordered_map<int, int> vtx_map;
-
-  for (auto v : inpsubmesh._vtxpool->_orderedVertices) {
-
+  inpsubmesh.visitAllVertices([&](vertex_const_ptr_t v) {
     auto temp_v  = std::make_shared<vertex>();
     temp_v->mPos = v->mPos;
     auto new_v             = outsmesh.mergeVertex(*temp_v);
     vtx_map[v->_poolindex] = new_v->_poolindex;
-  }
-  for (auto p : inpsubmesh._orderedPolys) {
+  });
+  inpsubmesh.visitAllPolys([&](poly_const_ptr_t p) {
     std::vector<vertex_ptr_t> newverts;
     for (auto v : p->_vertices) {
       auto it = vtx_map.find(v->_poolindex);
       OrkAssert(it != vtx_map.end());
-      auto newv = outsmesh._vtxpool->_orderedVertices[it->second];
+      auto newv = outsmesh.vertex(it->second);
       newverts.push_back(newv);
     }
-    poly new_poly(newverts);
+    Polygon new_poly(newverts);
     dvec3 N1 = new_poly.ComputeNormal();
 
     dvec3 poly_c = new_poly.centerOfMass();
@@ -46,16 +44,13 @@ void submeshFixWindingOrder(const submesh& inpsubmesh, submesh& outsmesh, bool i
     bool flip = (DOT<0.0) xor inside_out;
     if(flip){
       std::reverse(newverts.begin(),newverts.end());
-      new_poly = poly(newverts);
+      new_poly = Polygon(newverts);
     }
     outsmesh.mergePoly(new_poly);
-  }
+  });
 
   outsmesh.name         = inpsubmesh.name;
-  //outsmesh._mergeEdges  = _mergeEdges;
-  //outsmesh._annotations = _annotations;
   outsmesh._aaBoxDirty  = true;
-  //outsmesh._surfaceArea = 0.0f;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

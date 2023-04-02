@@ -489,7 +489,7 @@ namespace ork::meshutil{
 	struct MaterialBindingItem;
   struct vertex;
   struct vertexpool;
-  struct poly;
+  struct Polygon;
   struct edge;
   struct uvmapcoord;
   struct PolySet;
@@ -511,13 +511,13 @@ namespace ork::meshutil{
 	using material_info_map_t = std::map<std::string, material_info_ptr_t>;
 
   using vertex_ptr_t = std::shared_ptr<vertex>;
-  using vertex_constptr_t     = std::shared_ptr<const vertex>;
+  using vertex_const_ptr_t     = std::shared_ptr<const vertex>;
   using vertexpool_ptr_t = std::shared_ptr<vertexpool>;
   using vertexpool_constptr_t = std::shared_ptr<const vertexpool>;
-  using poly_ptr_t = std::shared_ptr<poly>;
-  using poly_constptr_t       = std::shared_ptr<const poly>;
+  using poly_ptr_t = std::shared_ptr<Polygon>;
+  using poly_const_ptr_t       = std::shared_ptr<const Polygon>;
   using edge_ptr_t = std::shared_ptr<edge>;
-  using edge_constptr_t = std::shared_ptr<const edge>;
+  using edge_const_ptr_t = std::shared_ptr<const edge>;
   using uvmapcoord_ptr_t = std::shared_ptr<uvmapcoord>;
 
   using polyset_ptr_t = std::shared_ptr<PolySet>;

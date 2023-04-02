@@ -142,6 +142,8 @@ struct vertex {
 };
 
 using vertex_set_t = unique_set<vertex>;
+using vertex_void_visitor_t = std::function<void(vertex_ptr_t)>;
+using const_vertex_void_visitor_t = std::function<void(vertex_const_ptr_t)>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -184,7 +186,7 @@ struct AnnoMap {
 ///////////////////////////////////////////////////////////////////////////////
 
 
-struct poly {
+struct Polygon {
 
   const AnnoMap* GetAnnoMap() const;
   void SetAnnoMap(const AnnoMap* pmap);
@@ -194,18 +196,18 @@ struct poly {
   int GetNumSides(void) const;
   int GetVertexID(int i) const;
 
-  poly(
+  Polygon(
       vertex_ptr_t ia, //
       vertex_ptr_t ib,
       vertex_ptr_t ic);
 
-  poly(
+  Polygon(
       vertex_ptr_t ia, //
       vertex_ptr_t ib,
       vertex_ptr_t ic,
       vertex_ptr_t id);
 
-  poly(const std::vector<vertex_ptr_t>& vertices);
+  Polygon(const std::vector<vertex_ptr_t>& vertices);
 
   vertex ComputeCenter() const;
   dvec3 centerOfMass() const;
@@ -225,15 +227,17 @@ struct poly {
   uint64_t hash() const;
   edge_vect_t edges() const;
   std::vector<vertex_ptr_t> _vertices;
-  //edge_vect_t _edges;
   int _submeshIndex = -1;
   submesh* _parentSubmesh = nullptr;
 
   const AnnoMap* mAnnotationSet;
 };
 
-using poly_set_t = unique_set<poly>;
+using poly_set_t = unique_set<Polygon>;
 using poly_index_set_t = orkset<int>;
+using poly_bool_visitor_t = std::function<bool(poly_ptr_t)>;
+using poly_void_visitor_t = std::function<void(poly_ptr_t)>;
+using const_poly_void_visitor_t = std::function<void(poly_const_ptr_t)>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -298,9 +302,18 @@ struct IConnectivity{
   virtual poly_index_set_t polysConnectedToPoly(poly_ptr_t p) const = 0;
   virtual poly_index_set_t polysConnectedToPoly(int ip) const = 0;
   virtual poly_index_set_t polysConnectedToVertex(vertex_ptr_t v) const = 0;
-  virtual vertex_ptr_t mergeVertex(const vertex& v) = 0;
-  virtual poly_ptr_t mergePoly(const poly& p) = 0;
+  virtual vertex_ptr_t mergeVertex(const struct vertex& v) = 0;
+  virtual poly_ptr_t mergePoly(const Polygon& p) = 0;
   virtual edge_ptr_t mergeEdge(const edge& ed) = 0;
+  virtual vertex_ptr_t vertex(int id) const = 0;
+  virtual poly_ptr_t poly(int id) const = 0;
+  virtual size_t numPolys() const = 0;
+  virtual size_t numVertices() const = 0;
+  virtual void visitAllPolys(poly_void_visitor_t visitor) = 0;
+  virtual void visitAllPolys(const_poly_void_visitor_t visitor) const = 0;
+  virtual void visitAllVertices(vertex_void_visitor_t visitor) = 0;
+  virtual void visitAllVertices(const_vertex_void_visitor_t visitor) const = 0;
+  virtual edge_ptr_t edgeBetweenPolys(int aind, int bind) const = 0;
   submesh* _submesh = nullptr;
 
 };
@@ -314,9 +327,26 @@ struct DefaultConnectivity : public IConnectivity{
   poly_index_set_t polysConnectedToPoly(poly_ptr_t p) const final;
   poly_index_set_t polysConnectedToPoly(int ip) const final;
   poly_index_set_t polysConnectedToVertex(vertex_ptr_t v) const final;
-  vertex_ptr_t mergeVertex(const vertex& v) final;
-  poly_ptr_t mergePoly(const poly& p) final;
+  edge_ptr_t edgeBetweenPolys(int aind, int bind) const final;
+
+  vertex_ptr_t mergeVertex(const struct vertex& v) final;
+  poly_ptr_t mergePoly(const Polygon& p) final;
   edge_ptr_t mergeEdge(const edge& ed) final;
+  vertex_ptr_t vertex(int id) const final;
+  poly_ptr_t poly(int id) const final;
+  size_t numPolys() const final;
+  size_t numVertices() const final;
+
+
+  void visitAllPolys(poly_void_visitor_t visitor) final;
+  void visitAllPolys(const_poly_void_visitor_t visitor) const final;
+  void visitAllVertices(vertex_void_visitor_t visitor) final;
+  void visitAllVertices(const_vertex_void_visitor_t visitor) const final;
+
+  vertexpool_ptr_t _vtxpool;
+  std::unordered_map<uint64_t, poly_ptr_t> _polymap;
+  orkvector<poly_ptr_t> _orderedPolys;
+  std::unordered_map<int,int> _polyTypeCounter;
 
 };
 

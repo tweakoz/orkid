@@ -24,23 +24,22 @@ bool on_xatlas_progress( xatlas::ProgressCategory cat, //
 }
 
 void submeshWithTextureUnwrap(const submesh& inpsubmesh, submesh& outsubmesh) {
-  int inump = inpsubmesh.GetNumPolys();
 
   size_t sizeof_vertex = sizeof(vertex);
 
   std::vector<uint16_t> indices;
-  for (auto p : inpsubmesh._orderedPolys) {
-    int inumv = p->GetNumSides();
+  inpsubmesh.visitAllPolys( [&](poly_const_ptr_t input_poly) {
+    int inumv = input_poly->GetNumSides();
     OrkAssert(inumv == 3);
     for (int i = 0; i < inumv; i++) {
-      auto v = p->_vertices[i];
+      auto v = input_poly->_vertices[i];
       indices.push_back(v->_poolindex);
     }
-  }
+  });
   std::vector<fvec3> vertices;
-  for (auto v : inpsubmesh._vtxpool->_orderedVertices) {
-    vertices.push_back(dvec3_to_fvec3(v->mPos));
-  }
+  inpsubmesh.visitAllVertices([&](vertex_const_ptr_t vtx) {
+    vertices.push_back(dvec3_to_fvec3(vtx->mPos));
+  });
 
   auto vertex_base = (const uint8_t*)vertices.data();
 
@@ -105,7 +104,7 @@ void submeshWithTextureUnwrap(const submesh& inpsubmesh, submesh& outsubmesh) {
     for (uint32_t v = 0; v < mesh.vertexCount; v++) {
       const xatlas::Vertex& vertex = mesh.vertexArray[v];
       int orig_vtx_index           = vertex.xref;
-      auto temp_vtx                = *(inpsubmesh._vtxpool->_orderedVertices[orig_vtx_index]);
+      auto temp_vtx                = *(inpsubmesh.vertex(orig_vtx_index));
       float tu                     = vertex.uv[0] / atlas->width;
       float tv                     = vertex.uv[1] / atlas->height;
       int chart_index              = vertex.chartIndex;

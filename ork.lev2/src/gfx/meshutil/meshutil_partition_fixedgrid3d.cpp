@@ -56,10 +56,6 @@ void GridGraph::BeginPreMerge() {
 ////////////////////////////////////////////////////
 
 void GridGraph::PreMergeMesh(const submesh& MeshIn) {
-  auto InVPool = MeshIn._vtxpool;
-  const auto& polys         = MeshIn.RefPolys();
-
-  int inumpolys = int(polys.size());
 
   ///////////////////////////////////////////
   // 1st step, calc some data
@@ -71,29 +67,26 @@ void GridGraph::PreMergeMesh(const submesh& MeshIn) {
   double thisareamin = std::numeric_limits<double>::max();
   double thisareaavg = 0.0;
 
-  for (int ipoly = 0; ipoly < inumpolys; ipoly++) {
-    const poly& ply = *polys[ipoly];
-    // vertex center = ply.ComputeCenter( InVPool );
-
-    int inumsides = ply.GetNumSides();
-    for (int iv = 0; iv < inumsides; iv++) {
-      int ivi         = ply.GetVertexID(iv);
-      const vertex& v = InVPool->GetVertex(ivi);
-      maab.Grow(dvec3_to_fvec3(v.mPos));
-    }
-
+  MeshIn.visitAllPolys([&](poly_const_ptr_t ply) {
     ///////////////////////////////
-    double thisarea = ply.ComputeArea(dmtx4::Identity());
-    thisareamax    = std::max(thisareamax, thisarea);
-    thisareamin    = std::min(thisareamin, thisarea);
+    double thisarea = ply->ComputeArea(dmtx4::Identity());
+    thisareamax     = std::max(thisareamax, thisarea);
+    thisareamin     = std::min(thisareamin, thisarea);
     thisareaavg += thisarea;
     ///////////////////////////////
     areatot += thisarea;
     areamin = std::min(areamin, thisarea);
     areamax = std::max(areamax, thisarea);
-    ///////////////////////////////
+    //////////////////////////////
     totpolys++;
-  }
+    //////////////////////////////
+    int inumsides = ply->GetNumSides();
+    for (int iv = 0; iv < inumsides; iv++) {
+      int ivi         = ply->GetVertexID(iv);
+      const vertex& v = *MeshIn.vertex(ivi);
+      maab.Grow(dvec3_to_fvec3(v.mPos));
+    }
+  });
 }
 
 ////////////////////////////////////////////////////
@@ -260,10 +253,6 @@ void GridGraph::EndPreMerge() {
 ////////////////////////////////////////////////////
 
 void GridGraph::MergeMesh(const submesh& MeshIn, Mesh& MeshOut) {
-  auto InVPool = MeshIn._vtxpool;
-  const auto& polys         = MeshIn.RefPolys();
-
-  int inumpolys = int(polys.size());
 
   int inumgtot = 0;
 
@@ -272,9 +261,9 @@ void GridGraph::MergeMesh(const submesh& MeshIn, Mesh& MeshOut) {
 
   dplane3 topplane, bottomplane, leftplane, rightplane, frontplane, backplane;
 
-  for (int ipoly = 0; ipoly < inumpolys; ipoly++) {
-    const poly& ply = *polys[ipoly];
-
+  int inumpolys = 0;
+  MeshIn.visitAllPolys([&](poly_const_ptr_t ply) {
+    inumpolys++;
     ginumouters++;
 
     /////////////////////////////////
@@ -282,15 +271,15 @@ void GridGraph::MergeMesh(const submesh& MeshIn, Mesh& MeshOut) {
     /////////////////////////////////
     AABox thaab;
     thaab.BeginGrow();
-    for (int iv = 0; iv < ply.GetNumSides(); iv++) {
-      const dvec3& vpos = InVPool->GetVertex(ply.GetVertexID(iv)).mPos;
+    for (int iv = 0; iv < ply->GetNumSides(); iv++) {
+      const dvec3& vpos = MeshIn.vertex(ply->GetVertexID(iv))->mPos;
       thaab.Grow(dvec3_to_fvec3(vpos));
     }
     thaab.EndGrow();
 
-    dvec3 pntA = InVPool->GetVertex(ply.GetVertexID(0)).mPos;
-    dvec3 pntB = InVPool->GetVertex(ply.GetVertexID(1)).mPos;
-    dvec3 pntC = InVPool->GetVertex(ply.GetVertexID(2)).mPos;
+    dvec3 pntA = MeshIn.vertex(ply->GetVertexID(0))->mPos;
+    dvec3 pntB = MeshIn.vertex(ply->GetVertexID(1))->mPos;
+    dvec3 pntC = MeshIn.vertex(ply->GetVertexID(2))->mPos;
     dvec3 dirA = (pntA - pntB).normalized();
     dvec3 dirB = (pntA - pntC).normalized();
     dvec3 pnrm = dirA.crossWith(dirB);
@@ -336,9 +325,9 @@ void GridGraph::MergeMesh(const submesh& MeshIn, Mesh& MeshOut) {
           mupoly_clip_adapter poly_fnt, poly_bak;
           mupoly_clip_adapter srcp;
 
-          int inumv = ply.GetNumSides();
+          int inumv = ply->GetNumSides();
           for (int iv = 0; iv < inumv; iv++) {
-            srcp.AddVertex(InVPool->GetVertex(ply.GetVertexID(iv)));
+            srcp.AddVertex(*MeshIn.vertex(ply->GetVertexID(iv)));
           }
 
           ginuminners++;
@@ -390,12 +379,12 @@ void GridGraph::MergeMesh(const submesh& MeshIn, Mesh& MeshOut) {
                           auto v3 = node_submesh.mergeVertex(poly_bak.GetVertex(3));
                           auto v4 = node_submesh.mergeVertex(poly_bak.GetVertex(4));
 
-                          poly polya(v0, v1, v2);
-                          poly polyb(v0, v2, v4);
-                          poly polyc(v4, v2, v3);
-                          polya.SetAnnoMap(ply.GetAnnoMap());
-                          polyb.SetAnnoMap(ply.GetAnnoMap());
-                          polyc.SetAnnoMap(ply.GetAnnoMap());
+                          Polygon polya(v0, v1, v2);
+                          Polygon polyb(v0, v2, v4);
+                          Polygon polyc(v4, v2, v3);
+                          polya.SetAnnoMap(ply->GetAnnoMap());
+                          polyb.SetAnnoMap(ply->GetAnnoMap());
+                          polyc.SetAnnoMap(ply->GetAnnoMap());
 
                           node_submesh.mergePoly(polya);
                           node_submesh.mergePoly(polyb);
@@ -412,8 +401,8 @@ void GridGraph::MergeMesh(const submesh& MeshIn, Mesh& MeshOut) {
                           for (int ic = 2; ic < inumclippedverts; ic++) {
                             auto va = node_submesh.mergeVertex(poly_bak.GetVertex(ic - 1));
                             auto vb = node_submesh.mergeVertex(poly_bak.GetVertex(ic));
-                            poly polya(v0, va, vb);
-                            polya.SetAnnoMap(ply.GetAnnoMap());
+                            Polygon polya(v0, va, vb);
+                            polya.SetAnnoMap(ply->GetAnnoMap());
                             node_submesh.mergePoly(polya);
                           }
                           break;
@@ -439,7 +428,7 @@ void GridGraph::MergeMesh(const submesh& MeshIn, Mesh& MeshOut) {
         }
       }
     }
-  }
+  });
   double fng = double(inumgtot) / double(inumpolys);
   orkprintf("mergemesh nodetouces avg<%d> tot<%d>\n", int(fng), inumgtot);
   orkprintf("NumFilledGrids<%d> numinners<%d> numouters<%d>\n", miNumFilledGrids, ginuminners, ginumouters);

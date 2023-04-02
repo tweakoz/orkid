@@ -15,36 +15,33 @@ namespace ork::meshutil {
 ///////////////////////////////////////////////////////////////////////////////
 
 void submeshWithFaceNormals(const submesh& inpsubmesh, submesh& outsubmesh) {
-  int inump = inpsubmesh.GetNumPolys();
 
-  for (int ip = 0; ip < inump; ip++) {
-    const poly& ply = *inpsubmesh._orderedPolys[ip];
-    dvec3 N         = ply.ComputeNormal();
+  inpsubmesh.visitAllPolys([&](poly_const_ptr_t p) {
+    dvec3 N         = p->ComputeNormal();
 
-    int inumv = ply.GetNumSides();
+    int inumv = p->GetNumSides();
     std::vector<vertex_ptr_t> merged_vertices;
     for (int i = 0; i < inumv; i++) {
-      auto inp_v0 = *ply._vertices[i];
+      auto inp_v0 = *p->_vertices[i];
       inp_v0.mNrm = N;
-      auto out_v  = outsubmesh._vtxpool->mergeVertex(inp_v0);
+      auto out_v  = outsubmesh.mergeVertex(inp_v0);
       merged_vertices.push_back(out_v);
     }
     outsubmesh.mergePoly(merged_vertices);
-  }
+  });
 }
 void submeshWithSmoothNormals(const submesh& inpsubmesh, submesh& outsubmesh, float threshold_radians) {
-  int inump = inpsubmesh.GetNumPolys();
 
   threshold_radians *= 0.5f;
 
-  for (int ip = 0; ip < inump; ip++) {
-    const poly& ply = *inpsubmesh._orderedPolys[ip];
-    dvec3 N         = ply.ComputeNormal();
+  inpsubmesh.visitAllPolys([&](poly_const_ptr_t p) {
 
-    int inumv = ply.GetNumSides();
+    dvec3 N         = p->ComputeNormal();
+
+    int inumv = p->GetNumSides();
     std::vector<vertex_ptr_t> merged_vertices;
     for (int i = 0; i < inumv; i++) {
-      auto inp_v0 = ply._vertices[i];
+      auto inp_v0 = p->_vertices[i];
       auto polys  = inpsubmesh.polysConnectedTo(inp_v0);
       dvec3 Naccum;
       int ncount = 0;
@@ -65,11 +62,11 @@ void submeshWithSmoothNormals(const submesh& inpsubmesh, submesh& outsubmesh, fl
       }
       auto copy_v0 = *inp_v0;
       copy_v0.mNrm = Naccum;
-      auto out_v   = outsubmesh._vtxpool->mergeVertex(copy_v0);
+      auto out_v   = outsubmesh.mergeVertex(copy_v0);
       merged_vertices.push_back(out_v);
     }
     outsubmesh.mergePoly(merged_vertices);
-  }
+  });
 }
 
 ///////////////////////////////////////////////////////////////////////////////

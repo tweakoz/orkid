@@ -33,24 +33,24 @@ struct IndexTestContext {
 
 struct annopolylut {
   orkmap<U64, const AnnoMap*> mAnnoMap;
-  virtual U64 HashItem(const submesh& tmesh, const poly& item) const = 0;
-  const AnnoMap* Find(const submesh& tmesh, const poly& item) const;
+  virtual U64 HashItem(const submesh& tmesh, const Polygon& item) const = 0;
+  const AnnoMap* Find(const submesh& tmesh, const Polygon& item) const;
 };
 struct annopolyposlut : public annopolylut {
-  virtual U64 HashItem(const submesh& tmesh, const poly& item) const;
+  virtual U64 HashItem(const submesh& tmesh, const Polygon& item) const;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
 struct submesh {
 
-  submesh(vertexpool_ptr_t vpool = nullptr);
+  submesh();
   ~submesh();
 
   //////////////////////////////////////////////////////////////////////////////
 
-  void ImportPolyAnnotations(const annopolylut& apl);
-  void ExportPolyAnnotations(annopolylut& apl) const;
+  void importPolyAnnotations(const annopolylut& apl);
+  void exportPolyAnnotations(annopolylut& apl) const;
 
   void setStringAnnotation(const char* annokey, std::string annoval);
   AnnotationMap& annotations() {
@@ -83,9 +83,10 @@ struct submesh {
 
   //////////////////////////////////////////////////////////////////////////////
 
-  poly& RefPoly(int i);
-  const poly& RefPoly(int i) const;
-  const orkvector<poly_ptr_t>& RefPolys() const;
+  Polygon& RefPoly(int i);
+  const Polygon& RefPoly(int i) const;
+  vertex_ptr_t vertex(int i) const;
+  poly_ptr_t poly(int i) const;
 
   //////////////////////////////////////////////////////////////////////////////
 
@@ -96,9 +97,9 @@ struct submesh {
 
   //////////////////////////////////////////////////////////////////////////////
 
-  vertex_ptr_t mergeVertex(const vertex& vtx);
+  vertex_ptr_t mergeVertex(const struct vertex& vtx);
   edge_ptr_t mergeEdge(const edge& ed);
-  poly_ptr_t mergePoly(const poly& ply);
+  poly_ptr_t mergePoly(const struct Polygon& ply);
   poly_ptr_t mergeTriangle(vertex_ptr_t va, vertex_ptr_t vb, vertex_ptr_t vc);
   poly_ptr_t mergeQuad(vertex_ptr_t va, vertex_ptr_t vb, vertex_ptr_t vc, vertex_ptr_t vd);
 
@@ -108,7 +109,11 @@ struct submesh {
   //////////////////////////////////////////////////////////////////////////////
 
   int numVertices() const;
-  int GetNumPolys(int inumsides = 0) const;
+
+  void visitAllVertices(vertex_void_visitor_t visitor);
+  void visitAllVertices(const_vertex_void_visitor_t visitor) const;
+
+  int numPolys(int inumsides = 0) const;
   void FindNSidedPolys(orkvector<int>& output, int inumsides) const;
   poly_index_set_t connectedPolys(edge_ptr_t edge, bool ordered = true) const;
   poly_index_set_t connectedPolys(const edge& edge, bool ordered = true) const;
@@ -116,14 +121,15 @@ struct submesh {
   edge_ptr_t edgeBetweenPolys(int a, int b) const;
   poly_set_t polysConnectedTo(vertex_ptr_t v) const;
 
-  using poly_visitor_t = std::function<bool(poly_ptr_t)>;
 
   struct PolyVisitContext{
     poly_set_t _visited;
-    poly_visitor_t _visitor;
+    poly_bool_visitor_t _visitor;
     bool _indirect = false;
   };
 
+  void visitAllPolys(poly_void_visitor_t visitor);
+  void visitAllPolys(const_poly_void_visitor_t visitor) const;
   void visitConnectedPolys(poly_ptr_t p,PolyVisitContext& context) const;
 
   edge_map_t allEdgesByVertexHash() const;
@@ -206,10 +212,6 @@ struct submesh {
   std::string name;
   AnnotationMap _annotations;
   float _surfaceArea;
-  vertexpool_ptr_t _vtxpool;
-  std::unordered_map<uint64_t, poly_ptr_t> _polymap;
-  orkvector<poly_ptr_t> _orderedPolys;
-  std::unordered_map<int,int> _polyTypeCounter;
 
   /////////////////////////////////////
   // these are mutable so we can get bounding boxes faster with const refs to Mesh's

@@ -35,20 +35,20 @@ void submeshClipWithPlane(
   /////////////////////////////////////////////////////////////////////
 
   vertex_set_t front_verts, back_verts, planar_verts;
-
-  for (auto item : inpsubmesh._vtxpool->_vtxmap) {
-    auto vertex           = item.second;
-    const auto& pos       = vertex->mPos;
-    vertex->clearAllExceptPosition();
+  inpsubmesh.visitAllVertices([&](vertex_const_ptr_t vtx) {
+    const auto& pos       = vtx->mPos;
+    // todo: fix nonconst
+    auto nonconst_vertex = std::const_pointer_cast<struct vertex>(vtx);
+    nonconst_vertex->clearAllExceptPosition();
     double point_distance = slicing_plane.pointDistance(pos);
     if (point_distance > 0.0f) {
-      front_verts.insert(vertex);
+      front_verts.insert(nonconst_vertex);
     } else if (point_distance < 0.0f) {
-      back_verts.insert(vertex);
+      back_verts.insert(nonconst_vertex);
     } else { // on plane
-      planar_verts.insert(vertex);
+      planar_verts.insert(nonconst_vertex);
     }
-  }
+  });
 
   /////////////////////////////////////////////////////////////////////
   // lambda for adding a new poly to the output mesh
@@ -67,7 +67,7 @@ void submeshClipWithPlane(
       new_verts.push_back(newv);
       added.insert(newv);
     }
-    dest.mergePoly(poly(new_verts));
+    dest.mergePoly(Polygon(new_verts));
 
     #if 0
     if(dest.name==".front")
@@ -100,7 +100,8 @@ void submeshClipWithPlane(
   std::deque<vertex_ptr_t> front_planar_verts_deque;
   std::deque<vertex_ptr_t> back_planar_verts_deque;
 
-  for (auto input_poly : inpsubmesh._orderedPolys) {
+  inpsubmesh.visitAllPolys( [&](poly_const_ptr_t ip){
+    auto input_poly = std::const_pointer_cast<Polygon>(ip);
     int numverts = input_poly->GetNumSides();
     //////////////////////////////////////////////
     // count sides of the plane to which the poly's vertices belong
@@ -153,8 +154,8 @@ void submeshClipWithPlane(
 
       int inumv = input_poly->GetNumSides();
       for (int iv = 0; iv < inumv; iv++) {
-        auto v = inpsubmesh._vtxpool->GetVertex(input_poly->GetVertexID(iv));
-        clip_input.AddVertex(v);
+        auto v = inpsubmesh.vertex(input_poly->GetVertexID(iv));
+        clip_input.AddVertex(*v);
       }
 
       /////////////////////////////////////////////////
@@ -199,7 +200,7 @@ void submeshClipWithPlane(
         /////////////////////////////////////////
 
         if (merged_vertices.size() >= 3) {
-          auto out_bpoly = std::make_shared<poly>(merged_vertices);
+          auto out_bpoly = std::make_shared<Polygon>(merged_vertices);
           add_whole_poly(out_bpoly, outsubmesh);
         }
 
@@ -214,7 +215,7 @@ void submeshClipWithPlane(
         process_clipped_poly(clipped_back.mVerts, outsmesh_Back, back_planar_verts_deque);
     } // clipped ?
 
-  }   // for (auto input_poly : inpsubmesh._orderedPolys) {
+  });  // inpsubmesh.visitAllPolys( [&](poly_const_ptr_t input_poly){
 
       ///////////////////////////////////////////////////////////
   // close mesh

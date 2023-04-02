@@ -54,13 +54,13 @@ void submeshJoinCoplanar(const submesh& inpsubmesh, submesh& outsmesh){
             }
           }
 
-          poly new_poly(new_vertices);
+          Polygon new_poly(new_vertices);
           dvec3 poly_n = new_poly.ComputeNormal();
           float DOT = new_poly.ComputeNormal().dotWith(plane_n);
           //printf( "poly_n<%g %g %g> DOT<%g>\n", poly_n.x, poly_n.y, poly_n.z, DOT);
           if(DOT>0){
            std::reverse(std::begin(new_vertices), std::end(new_vertices));
-            new_poly = poly(new_vertices);
+            new_poly = Polygon(new_vertices);
           }
           outsmesh.mergePoly(new_poly);
           loop_joined = true;
@@ -72,14 +72,14 @@ void submeshJoinCoplanar(const submesh& inpsubmesh, submesh& outsmesh){
           for( auto iv : p->_vertices ){
             new_vertices.push_back(outsmesh.mergeVertex(*iv));
           }
-          poly new_poly(new_vertices);
+          Polygon new_poly(new_vertices);
           dvec3 poly_n = new_poly.ComputeNormal();
           float DOT = new_poly.ComputeNormal().dotWith(plane_n);
           //printf( "poly_n<%g %g %g>\n", poly_n.x, poly_n.y, poly_n.z);
           //printf( "poly_n<%g %g %g> DOT<%g>\n", poly_n.x, poly_n.y, poly_n.z, DOT);
           if(DOT>0){
            std::reverse(std::begin(new_vertices), std::end(new_vertices));
-            new_poly = poly(new_vertices);
+            new_poly = Polygon(new_vertices);
           }
           outsmesh.mergePoly(new_poly);
       }
@@ -92,7 +92,7 @@ void submeshJoinCoplanar(const submesh& inpsubmesh, submesh& outsmesh){
           for( auto iv : ip->_vertices ){
             new_vertices.push_back(outsmesh.mergeVertex(*iv));
           }
-          outsmesh.mergePoly(poly(new_vertices));
+          outsmesh.mergePoly(Polygon(new_vertices));
         }
       }
       i++;

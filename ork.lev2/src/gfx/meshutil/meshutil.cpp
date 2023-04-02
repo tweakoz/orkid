@@ -35,7 +35,7 @@ void Mesh::Prune() {
   for (auto it = _submeshesByPolyGroup.begin(); it != _submeshesByPolyGroup.end(); it++) {
     const submesh& src_grp  = *it->second;
     const std::string& name = it->first;
-    int inump               = src_grp.GetNumPolys();
+    int inump               = src_grp.numPolys();
     if (0 == inump) {
       SubsToPrune.insert(name);
     }
@@ -89,7 +89,7 @@ void Mesh::Dump(const std::string& comment) const {
       }
       orkset<const AnnoMap*> annosets;
       for (int ip = 0; ip < inump; ip++) {
-        const poly& ply     = src_grp.RefPoly(ip);
+        const Polygon& ply     = src_grp.RefPoly(ip);
         const AnnoMap* amap = ply.GetAnnoMap();
         if (amap)
           annosets.insert(amap);
@@ -105,7 +105,7 @@ void Mesh::Dump(const std::string& comment) const {
       }
       for (int ip = 0; ip < inump; ip++) {
         fprintf(fout, "poly<%d> <", ip);
-        const poly& ply = src_grp.RefPoly(ip);
+        const Polygon& ply = src_grp.RefPoly(ip);
         int inumv       = ply.GetNumSides();
         for (int iv = 0; iv < inumv; iv++) {
           int i0  = iv;
@@ -163,7 +163,7 @@ const char* Mesh::GetAnnotation(const char* annokey) const {
 void submesh::SplitOnAnno(Mesh& out, const std::string& annokey) const {
   int inumpolys = (int)_orderedPolys.size();
   for (int ip = 0; ip < inumpolys; ip++) {
-    const poly& ply    = _orderedPolys[ip];
+    const Polygon& ply    = _orderedPolys[ip];
     std::string pgroup = ply.GetAnnotation(annokey);
     if (pgroup != "") {
       submesh& sub = out.MergeSubMesh(pgroup.c_str());
@@ -189,7 +189,7 @@ void submesh::SplitOnAnno(Mesh& out, const std::string& prefix, const std::strin
   AnnotationMap merge_annos;
   merge_annos["SplitPrefix"] = prefix;
   for (int ip = 0; ip < inumpolys; ip++) {
-    const poly& ply         = _orderedPolys[ip];
+    const Polygon& ply         = _orderedPolys[ip];
     std::string pgroup      = ply.GetAnnotation(annokey);
     std::string merged_name = prefix + std::string("_") + pgroup;
     if (pgroup != "") {
@@ -214,7 +214,7 @@ void submesh::SplitOnAnno(Mesh& out, const std::string& prefix, const std::strin
 void submesh::SplitOnAnno(Mesh& out, const std::string& annokey, const AnnotationMap& mrgannos) const {
   int inumpolys = (int)_orderedPolys.size();
   for (int ip = 0; ip < inumpolys; ip++) {
-    const poly& ply    = _orderedPolys[ip];
+    const Polygon& ply    = _orderedPolys[ip];
     std::string pgroup = ply.GetAnnotation(annokey);
     if (pgroup != "") {
       submesh& sub = out.MergeSubMesh(pgroup.c_str());
@@ -357,11 +357,11 @@ void FlatSubMesh::fromSubmesh(const submesh& mesh){
   ////////////////////////////////////////////////////////
   _aabox = mesh.aabox();
   ////////////////////////////////////////////////////////
-  auto vpool = mesh._vtxpool;
+  //auto vpool = mesh._vtxpool;
   ////////////////////////////////////////////////////////
   mesh.FindNSidedPolys(TrianglePolyIndices, 3);
   mesh.FindNSidedPolys(QuadPolyIndices, 4);
-  int inumv   = (int)vpool->GetNumVertices();
+  int inumv   = (int)mesh.numVertices();
   int inumtri = int(TrianglePolyIndices.size());
   int inumqua = int(QuadPolyIndices.size());
   ////////////////////////////////////////////////////////
@@ -371,14 +371,14 @@ void FlatSubMesh::fromSubmesh(const submesh& mesh){
   // generate vertices
   ////////////////////////////////////////////////////////
   for (int iv0 = 0; iv0 < inumv; iv0++) {
-    const vertex& invtx = vpool->GetVertex(iv0);
-    const auto& pos     = invtx.mPos;
-    const auto& nrm     = invtx.mNrm;
+    auto invtx = mesh.vertex(iv0);
+    const auto& pos     = invtx->mPos;
+    const auto& nrm     = invtx->mNrm;
     OutVertex.mPosition = fvec3(pos.x, pos.y, pos.z);
     OutVertex.mNormal   = fvec3(nrm.x, nrm.y, nrm.z);
-    OutVertex.mBiNormal = invtx.mUV[0].mMapBiNormal;
-    OutVertex.mUV0      = invtx.mUV[0].mMapTexCoord;
-    OutVertex.mColor    = invtx.mCol[0].RGBAU32();
+    OutVertex.mBiNormal = invtx->mUV[0].mMapBiNormal;
+    OutVertex.mUV0      = invtx->mUV[0].mMapTexCoord;
+    OutVertex.mColor    = invtx->mCol[0].RGBAU32();
     MergeVertsT8.push_back(OutVertex);
   }
   ////////////////////////////////////////////////////////
@@ -386,7 +386,7 @@ void FlatSubMesh::fromSubmesh(const submesh& mesh){
   ////////////////////////////////////////////////////////
   for (int it = 0; it < inumtri; it++) {
     int idx           = TrianglePolyIndices[it];
-    const poly& intri = mesh.RefPoly(idx);
+    const Polygon& intri = mesh.RefPoly(idx);
     int inumsides     = intri.GetNumSides();
     for (int iv = 0; iv < inumsides; iv++) {
       int idx = intri.GetVertexID(iv);
@@ -398,7 +398,7 @@ void FlatSubMesh::fromSubmesh(const submesh& mesh){
   ////////////////////////////////////////////////////////
   for (int iq = 0; iq < inumqua; iq++) {
     int idx           = QuadPolyIndices[iq];
-    const poly& inqua = mesh.RefPoly(idx);
+    const Polygon& inqua = mesh.RefPoly(idx);
     int inumsides     = inqua.GetNumSides();
     int idx0          = inqua.GetVertexID(0);
     int idx1          = inqua.GetVertexID(1);

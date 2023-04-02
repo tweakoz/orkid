@@ -22,21 +22,20 @@ void submeshSliceWithPlane(
     submesh& outsmeshIntersects) {
 
   std::unordered_set<vertex_ptr_t> front_verts, back_verts, planar_verts;
-
-  for (auto item : inpsubmesh._vtxpool->_vtxmap) {
-    auto vertex          = item.second;
-    const auto& pos      = vertex->mPos;
+  inpsubmesh.visitAllVertices([&](vertex_const_ptr_t vtx) {
+    auto non_const = std::const_pointer_cast<vertex>(vtx);
+    const auto& pos      = non_const->mPos;
     double point_distance = slicing_plane.pointDistance(pos);
     if (point_distance > 0.0) {
-      front_verts.insert(vertex);
+      front_verts.insert(non_const);
     } else if (point_distance < 0.0) {
-      back_verts.insert(vertex);
+      back_verts.insert(non_const);
     } else { // on plane
-      planar_verts.insert(vertex);
+      planar_verts.insert(non_const);
     }
-  }
+  });
 
-  for (auto input_poly : inpsubmesh.RefPolys()) {
+  inpsubmesh.visitAllPolys( [&](poly_const_ptr_t input_poly) {
     int numverts = input_poly->GetNumSides();
     //////////////////////////////////////////////
     // count sides for which the poly's vertices belong
@@ -65,11 +64,11 @@ void submeshSliceWithPlane(
       }
       switch (new_verts.size()) {
         case 3: {
-          dest.mergePoly(poly(new_verts[0], new_verts[1], new_verts[2]));
+          dest.mergePoly(Polygon(new_verts[0], new_verts[1], new_verts[2]));
           break;
         }
         case 4: {
-          dest.mergePoly(poly(new_verts[0], new_verts[1], new_verts[2], new_verts[3]));
+          dest.mergePoly(Polygon(new_verts[0], new_verts[1], new_verts[2], new_verts[3]));
           break;
         }
         default:
@@ -88,7 +87,7 @@ void submeshSliceWithPlane(
     else { // the rest
       do_poly(outsmeshIntersects);
     }
-  }
+  });
 }
 
 ///////////////////////////////////////////////////////////////////////////////

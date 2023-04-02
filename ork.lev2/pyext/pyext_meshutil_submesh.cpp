@@ -73,7 +73,7 @@ void pyinit_meshutil_submesh(py::module& module_meshutil) {
                     int idx = item.cast<int>();
                     face_vertices.push_back(inserted_vertices[idx]);
                   }
-                  rval->mergePoly(poly(face_vertices));
+                  rval->mergePoly(Polygon(face_vertices));
                 }
                 return rval;
               })
@@ -83,14 +83,11 @@ void pyinit_meshutil_submesh(py::module& module_meshutil) {
               [](submesh_ptr_t submesh) -> std::string { return submesh->name; },
               [](submesh_ptr_t submesh, std::string n) { return submesh->name = n; })
           .def_property_readonly("isConvexHull", [](submesh_ptr_t submesh) -> bool { return submesh->isConvexHull(); })
-          .def_property_readonly("vertexpool", [](submesh_ptr_t submesh) -> vertexpool_ptr_t { return submesh->_vtxpool; })
           .def_property_readonly(
               "vertices",
               [](submesh_ptr_t submesh) -> py::list {
                 py::list pyl;
-                for (auto v : submesh->_vtxpool->_orderedVertices) {
-                  pyl.append(v);
-                }
+                submesh->visitAllVertices([&](vertex_ptr_t v) { pyl.append(v); });
                 return pyl;
               })
           .def_property_readonly("as_polyset", [](submesh_ptr_t submesh) -> polyset_ptr_t { return submesh->asPolyset(); })
@@ -98,10 +95,7 @@ void pyinit_meshutil_submesh(py::module& module_meshutil) {
               "polys",
               [](submesh_ptr_t submesh) -> py::list {
                 py::list pyl;
-                for (auto item : submesh->_polymap) {
-                  auto p = item.second;
-                  pyl.append(p);
-                }
+                submesh->visitAllPolys([&](poly_ptr_t p) { pyl.append(p); });
                 return pyl;
               })
           .def_property_readonly(
@@ -307,8 +301,8 @@ void pyinit_meshutil_submesh(py::module& module_meshutil) {
 #if defined(ENABLE_IGL)
           .def("toIglMesh", [](submesh_ptr_t submesh, int numsides) -> iglmesh_ptr_t { return submesh->toIglMesh(numsides); })
 #endif //#if defined(ENABLE_IGL)
-          .def("numPolys", [](submesh_constptr_t submesh, int numsides) -> int { return submesh->GetNumPolys(numsides); })
-          .def("numVertices", [](submesh_constptr_t submesh) -> int { return submesh->_vtxpool->GetNumVertices(); })
+          .def("numPolys", [](submesh_constptr_t submesh, int numsides) -> int { return submesh->numPolys(numsides); })
+          .def("numVertices", [](submesh_constptr_t submesh) -> int { return submesh->numVertices(); })
           .def(
               "writeWavefrontObj",
               [](submesh_constptr_t submesh, const std::string& outpath) { return submeshWriteObj(*submesh, outpath); })
@@ -342,7 +336,7 @@ void pyinit_meshutil_submesh(py::module& module_meshutil) {
               })
           .def(
               "mergeVertex",
-              [](submesh_ptr_t submesh, vertex_constptr_t vin) -> vertex_ptr_t { return submesh->mergeVertex(*vin); })
+              [](submesh_ptr_t submesh, vertex_const_ptr_t vin) -> vertex_ptr_t { return submesh->mergeVertex(*vin); })
           .def("mergePoly", [](submesh_ptr_t submesh, poly_ptr_t pin) -> poly_ptr_t { return submesh->mergePoly(*pin); })
           .def("mergePolySet", [](submesh_ptr_t submesh, polyset_ptr_t psetin) { submesh->mergePolySet(*psetin); })
           .def(
@@ -385,10 +379,10 @@ void pyinit_meshutil_submesh(py::module& module_meshutil) {
                  fvec4 c) { return submesh->addQuad(p0, p1, p2, p3, n0, n1, n2, n3, uv0, uv1, uv2, uv3, c); })
           .def("__repr__", [](submesh_ptr_t sm) -> std::string {
             std::string rval = FormatString("Submesh<%p>\n", (void*)sm.get());
-            rval += FormatString("  num_vertices<%d>\n", (int)sm->_vtxpool->_vtxmap.size());
-            rval += FormatString("  num_polys<%d>\n", (int)sm->_polymap.size());
-            rval += FormatString("  num_triangles<%d>\n", (int)sm->GetNumPolys(3));
-            rval += FormatString("  num_quads<%d>\n", (int)sm->GetNumPolys(4));
+            rval += FormatString("  num_vertices<%d>\n", (int)sm->numVertices());
+            rval += FormatString("  num_polys<%d>\n", (int)sm->numPolys());
+            rval += FormatString("  num_triangles<%d>\n", (int)sm->numPolys(3));
+            rval += FormatString("  num_quads<%d>\n", (int)sm->numPolys(4));
             rval += FormatString("  num_edges<%d>\n", (int)sm->allEdgesByVertexHash().size());
             return rval;
           });

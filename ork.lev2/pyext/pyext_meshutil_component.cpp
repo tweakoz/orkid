@@ -145,7 +145,7 @@ void pyinit_meshutil_component(py::module& module_meshutil) {
     });
   type_codec->registerStdCodec<edge_ptr_t>(vtxpool_type);
   /////////////////////////////////////////////////////////////////////////////////
-  auto poly_type = py::class_<poly,poly_ptr_t>(module_meshutil, "Poly")
+  auto poly_type = py::class_<Polygon,poly_ptr_t>(module_meshutil, "Poly")
     .def_property_readonly("numSides", [](poly_ptr_t p) -> int {            
       return p->GetNumSides();
     })
