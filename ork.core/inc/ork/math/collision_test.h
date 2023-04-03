@@ -10,13 +10,12 @@
 #define _ORK_MATH_COLLISIONTEST_H
 
 #include <ork/config/config.h>
-#include <ork/math/plane.h>
+#include <ork/math/frustum.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork {
 ///////////////////////////////////////////////////////////////////////////////
 
-struct Frustum;
 struct AABox;
 struct Sphere;
 struct Circle;

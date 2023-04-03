@@ -28,19 +28,19 @@ template <typename T> bool Plane<T>::PlaneIntersect(const Plane<T>& oth, Vector3
 ///////////////////////////////////////////////////////////////////////////////
 
 template <> float Plane<float>::Abs(float in) {
-  return fabs(in);
+  return (in>=0.0f) ? in : -in;
 }
 template <> float Plane<float>::Epsilon() {
-  return Float::Epsilon();
+  return 1.0e-5f;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 template <> double Plane<double>::Abs(double in) {
-  return fabs(in);
+  return (in>=0.0) ? in : -in;
 }
 template <> double Plane<double>::Epsilon() {
-  return double(Float::Epsilon()) * 0.0001;
+  return 1.0e-6;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -40,14 +40,14 @@ Plane<T>::Plane(const Vector4<T>& vec)
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
-Plane<T>::Plane(const Vector3<T>& vec, T nd)
+Plane<T>::Plane(const vect3_t& vec, T nd)
     : n(vec)
     , d(nd) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> Plane<T>::Plane(const Vector3<T>& pta, const Vector3<T>& ptb, const Vector3<T>& ptc) {
+template <typename T> Plane<T>::Plane(const vect3_t& pta, const vect3_t& ptb, const vect3_t& ptc) {
   CalcPlaneFromTriangle(pta, ptb, ptc);
 }
 
@@ -72,14 +72,14 @@ Plane<T>::Plane(const kln::plane& klein_plane)
 template <typename T>
 Plane<T>::Plane(T* Tp) //! set explicitly
 {
-  n = Vector3<T>(Tp[0], Tp[1], Tp[2]);
+  n = vect3_t(Tp[0], Tp[1], Tp[2]);
   d = Tp[3];
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
-Plane<T>::Plane(const Vector3<T>& NormalVec, const Vector3<T>& PosVec) //! calc given normal and position of plane origin
+Plane<T>::Plane(const vect3_t& NormalVec, const vect3_t& PosVec) //! calc given normal and position of plane origin
 {
   CalcFromNormalAndOrigin(NormalVec, PosVec);
 }
@@ -93,8 +93,8 @@ template <typename T> Plane<T>::~Plane() {
 
 template <typename T>
 void Plane<T>::CalcFromNormalAndOrigin(
-    const Vector3<T>& NormalVec,
-    const Vector3<T>& PosVec) //! calc given normal and position of plane origin
+    const vect3_t& NormalVec,
+    const vect3_t& PosVec) //! calc given normal and position of plane origin
 {
   n = NormalVec;
   d = T(0);
@@ -104,32 +104,53 @@ void Plane<T>::CalcFromNormalAndOrigin(
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T> void Plane<T>::Reset(void) {
-  n = Vector3<T>(T(0), T(0), T(0));
+  n = vect3_t(T(0), T(0), T(0));
   d = T(0);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> bool Plane<T>::IsPointInFront(const Vector3<T>& point) const {
+template <typename T> bool Plane<T>::isPointInFront(const vect3_t& point) const {
   T distance = pointDistance(point);
-  return (distance >= T(0));
+  return (distance >= Epsilon());
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> bool Plane<T>::IsPointBehind(const Vector3<T>& point) const {
-  return (!IsPointInFront(point));
+template <typename T> bool Plane<T>::isPointBehind(const vect3_t& point) const {
+  T distance = pointDistance(point);
+  return (distance < (-Epsilon()));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void Plane<T>::CalcD(const Vector3<T>& pt) {
-  d = -pt.dotWith(n);
+template <typename T> bool Plane<T>::isPointCoplanar(const vect3_t& point) const{
+  T distance = pointDistance(point);
+  return (distance < (Epsilon()) && distance > (-Epsilon()));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> T Plane<T>::pointDistance(const Vector3<T>& pt) const {
+template <typename T>
+PointClassification Plane<T>::classifyPoint(const vect3_t& point) const {
+  T distance = pointDistance(point);
+  if (distance > Epsilon())
+    return PointClassification::FRONT;
+  else if (distance < -Epsilon())
+    return PointClassification::BACK;
+  else
+    return PointClassification::COPLANAR;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <typename T> void Plane<T>::CalcD(const vect3_t& point) {
+  d = -point.dotWith(n);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <typename T> T Plane<T>::pointDistance(const vect3_t& pt) const {
   return n.dotWith(pt) + d;
 }
 
@@ -141,14 +162,14 @@ template <typename T> const Vector3<T>& Plane<T>::GetNormal(void) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> const T& Plane<T>::GetD(void) const {
+template <typename T> T Plane<T>::GetD(void) const {
   return d;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
-void Plane<T>::crossProduct(double ii1, double jj1, double kk1, double ii2, double jj2, double kk2, double& iicp, double& jjcp, double& kkcp) const {
+void Plane<T>::crossProduct(T ii1, T jj1, T kk1, T ii2, T jj2, T kk2, T& iicp, T& jjcp, T& kkcp) const {
   iicp = (jj1 * kk2) - (jj2 * kk1);
   jjcp = (ii2 * kk1) - (ii1 * kk2);
   kkcp = (ii1 * jj2) - (ii2 * jj1);
@@ -164,15 +185,15 @@ template <typename T> static bool AreValuesCloseEnoughtToBeEqual(double a, doubl
 // ftolerance = smallest distance to consider a point colinear
 
 template <typename T>
-void Plane<T>::CalcPlaneFromTriangle(const Vector3<T>& p0, const Vector3<T>& p1, const Vector3<T>& p2, double ftolerance) {
-  double ii1, jj1, kk1;
-  double ii2, jj2, kk2;
-  double iicp, jjcp, kkcp;
-  double len0, len1, len2;
+void Plane<T>::CalcPlaneFromTriangle(const vect3_t& p0, const vect3_t& p1, const vect3_t& p2, T ftolerance) {
+  T ii1, jj1, kk1;
+  T ii2, jj2, kk2;
+  T iicp, jjcp, kkcp;
+  T len0, len1, len2;
 
-  Vector4<T> p1mp0 = p1 - p0;
-  Vector4<T> p2mp1 = p2 - p1;
-  Vector4<T> p0mp2 = p0 - p2;
+  vect4_t p1mp0 = p1 - p0;
+  vect4_t p2mp1 = p2 - p1;
+  vect4_t p0mp2 = p0 - p2;
 
   len0 = p1mp0.magnitude();
   len1 = p2mp1.magnitude();
@@ -215,7 +236,7 @@ void Plane<T>::CalcPlaneFromTriangle(const Vector3<T>& p0, const Vector3<T>& p1,
 
   // get plane normal
 
-  n = Vector3<T>((T)iicp, (T)jjcp, (T)kkcp).normalized();
+  n = vect3_t((T)iicp, (T)jjcp, (T)kkcp).normalized();
 
   // get plane distance from origin
   d = T(0);
@@ -224,16 +245,16 @@ void Plane<T>::CalcPlaneFromTriangle(const Vector3<T>& p0, const Vector3<T>& p1,
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> bool Plane<T>::IsOn(const Vector3<T>& pt) const {
+template <typename T> bool Plane<T>::IsOn(const vect3_t& pt) const {
   T d = pointDistance(pt);
   return (Abs(d) < Epsilon());
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void Plane<T>::CalcNormal(const Vector3<T>& pta, const Vector3<T>& ptb, const Vector3<T>& ptc) {
-  Vector3<T> bminusa = (ptb - pta);
-  Vector3<T> cminusa = (ptc - pta);
+template <typename T> void Plane<T>::CalcNormal(const vect3_t& pta, const vect3_t& ptb, const vect3_t& ptc) {
+  vect3_t bminusa = (ptb - pta);
+  vect3_t cminusa = (ptc - pta);
 
   n = bminusa.crossWith(cminusa).normalized();
   d = -ptc.dotWith(n);
@@ -241,8 +262,8 @@ template <typename T> void Plane<T>::CalcNormal(const Vector3<T>& pta, const Vec
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> bool Plane<T>::Intersect(const TLineSegment3<T>& lseg, T& dis, Vector3<T>& result) const {
-  Vector3<T> dif = (lseg.mEnd - lseg.mStart);
+template <typename T> bool Plane<T>::Intersect(const TLineSegment3<T>& lseg, T& dis, vect3_t& result) const {
+  vect3_t dif = (lseg.mEnd - lseg.mStart);
   T length       = dif.magnitude();
 
   Ray3<T> ray;
@@ -258,7 +279,7 @@ template <typename T> bool Plane<T>::Intersect(const TLineSegment3<T>& lseg, T& 
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> bool Plane<T>::Intersect(const Ray3<T>& ray, T& dis, Vector3<T>& res) const {
+template <typename T> bool Plane<T>::Intersect(const Ray3<T>& ray, T& dis, vect3_t& res) const {
   bool bOK = Intersect(ray, dis);
 
   if (bOK) {
@@ -285,11 +306,11 @@ template <typename T> bool Plane<T>::Intersect(const Ray3<T>& ray, T& dis) const
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> template <typename PolyType> bool Plane<T>::ClipPoly(const PolyType& PolyToClip, PolyType& OutPoly) {
+template <typename T> template <typename PolyType> bool Plane<T>::ClipPoly(const PolyType& PolyToClip, PolyType& OutPoly) const {
   const int inuminverts = (int)PolyToClip.GetNumVertices();
   if (inuminverts) {
     const typename PolyType::VertexType& StartVtx = PolyToClip.GetVertex(0);
-    bool IsVtxAIn                                 = IsPointInFront(StartVtx.Pos());
+    bool IsVtxAIn                                 = isPointInFront(StartVtx.Pos());
     // get the side of each vert to the plane
     for (int iva = 0; iva < inuminverts; iva++) {
       int ivb                                 = ((iva == inuminverts - 1) ? 0 : iva + 1);
@@ -298,9 +319,9 @@ template <typename T> template <typename PolyType> bool Plane<T>::ClipPoly(const
       if (IsVtxAIn) {
         OutPoly.AddVertex(vA);
       }
-      bool IsVtxBIn = IsPointInFront(vB.Pos());
+      bool IsVtxBIn = isPointInFront(vB.Pos());
       if (IsVtxBIn != IsVtxAIn) {
-        Vector3<T> vPos;
+        vect3_t vPos;
         T isectdist;
         TLineSegment3<T> lseg(vA.Pos(), vB.Pos());
         if (Intersect(lseg, isectdist, vPos)) {
@@ -324,7 +345,7 @@ template <typename T> //
 template <typename PolyType> //
 bool Plane<T>::ClipPoly(const PolyType& input_poly, //
                         PolyType& out_front_poly, //
-                        PolyType& out_back_poly) { //
+                        PolyType& out_back_poly) const { //
 
   bool debug = false;
 
@@ -343,8 +364,8 @@ bool Plane<T>::ClipPoly(const PolyType& input_poly, //
     const auto& vB = input_poly.GetVertex(ivb);
 
     // get the side of each vert to the plane
-    bool is_vertex_a_front = IsPointInFront(vA.Pos());
-    bool is_vertex_b_front = IsPointInFront(vB.Pos());
+    bool is_vertex_a_front = isPointInFront(vA.Pos());
+    bool is_vertex_b_front = isPointInFront(vB.Pos());
 
     if( debug ) printf( "  is_vertex_a_front<%d> is_vertex_b_front<%d>\n", int(is_vertex_a_front), int(is_vertex_b_front) );
 
@@ -358,7 +379,7 @@ bool Plane<T>::ClipPoly(const PolyType& input_poly, //
 
     if (is_vertex_b_front != is_vertex_a_front) { // did we cross plane ?
       if( debug ) printf("  plane crossed iva<%d> ivb<%d>\n", iva, ivb );
-      Vector3<T> vPos;
+      vect3_t vPos;
       T isectdist;
       TLineSegment3<T> lseg(vA.Pos(), vB.Pos());
       bool isect1 = Intersect(lseg, isectdist, vPos);
@@ -430,7 +451,7 @@ template <typename T> void Plane<T>::EndianSwap() {
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T> void Plane<T>::SimpleTransform(const Matrix44<T>& transform) {
-  Vector3<T> point(n * -d);
+  vect3_t point(n * -d);
   point = point.transform(transform).xyz();
   n     = n.transform3x3(transform).normalized();
   d = -n.dotWith(point);

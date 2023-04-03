@@ -17,8 +17,6 @@ static constexpr double PLANE_EPSILON = 0.0001f;
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::meshutil {
 ///////////////////////////////////////////////////////////////////////////////
-// submeshClipWithPlane
-///////////////////////////////////////////////////////////////////////////////
 
 struct PolyVtxCount {
   int _front_count  = 0;
@@ -26,9 +24,11 @@ struct PolyVtxCount {
   int _planar_count = 0;
 };
 
+///////////////////////////////////////////////////////////////////////////////
+
 struct PlanarVertexCategorize {
 
-  PlanarVertexCategorize(const submesh& inpsubmesh, dplane3& slicing_plane) {
+  PlanarVertexCategorize(const submesh& inpsubmesh, const dplane3& slicing_plane) {
 
     inpsubmesh.visitAllVertices([&](vertex_const_ptr_t vtx) {
       // todo: fix nonconst
@@ -45,9 +45,9 @@ struct PlanarVertexCategorize {
       }
     });
 
-    printf("_front_verts<%zu>\n", _front_verts.size());
-    printf("_back_verts<%zu>\n", _back_verts.size());
-    printf("_planar_verts<%zu>\n", _planar_verts.size());
+    //printf("_front_verts<%zu>\n", _front_verts.size());
+    //printf("_back_verts<%zu>\n", _back_verts.size());
+    //printf("_planar_verts<%zu>\n", _planar_verts.size());
   }
 
   PolyVtxCount categorizePolygon(poly_const_ptr_t input_poly) const {
@@ -90,7 +90,10 @@ vertex_set_t addWholePoly(poly_const_ptr_t src_poly, submesh& dest) {
 
 struct Clipper {
 
-  Clipper(const submesh& inpsubmesh, submesh& outsmesh_Front, submesh& outsmesh_Back, dplane3& slicing_plane) {
+  Clipper(const submesh& inpsubmesh, // 
+          const dplane3& slicing_plane, //
+          submesh& outsmesh_Front, //
+          submesh& outsmesh_Back ) { //
 
     /////////////////////////////////////////////////////////////////////
     // categorize all vertices in input mesh
@@ -204,7 +207,7 @@ void _submeshClipWithPlaneConvex(
     submesh& outsmesh_Front, //
     submesh& outsmesh_Back) {
 
-  Clipper clipper(inpsubmesh, outsmesh_Front, outsmesh_Back, slicing_plane);
+  Clipper clipper(inpsubmesh, slicing_plane, outsmesh_Front, outsmesh_Back);
 
   ///////////////////////////////////////////////////////////
   // close mesh
@@ -315,7 +318,7 @@ void _submeshClipWithPlaneConcave(
     submesh& outsmesh_Front, //
     submesh& outsmesh_Back) {
 
-  Clipper clipper(inpsubmesh, outsmesh_Front, outsmesh_Back, slicing_plane);
+  Clipper clipper(inpsubmesh, slicing_plane, outsmesh_Front, outsmesh_Back);
 
   ///////////////////////////////////////////////////////////
   // close mesh
@@ -433,7 +436,7 @@ void submeshClipWithPlane(
     submesh& outsmesh_Back) {
 
   bool is_convex = inpsubmesh.isConvexHull();
-  is_convex      = true;
+  is_convex      = false;
 
   if (is_convex) {
     _submeshClipWithPlaneConvex(

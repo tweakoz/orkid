@@ -13,6 +13,7 @@
 #include <ork/math/cvector3.h>
 #include <ork/math/cvector4.h>
 #include <ork/math/line.h>
+#include <ork/util/crc.h>
 
 ////////////////////////////////////////////////////////////////////////////////
 //	misc
@@ -20,57 +21,69 @@
 namespace ork {
 ///////////////////////////////////////////////////////////////////////////////
 
+enum class PointClassification : uint32_t {
+  CrcEnum(FRONT),
+  CrcEnum(BACK),
+  CrcEnum(COPLANAR)
+};
+
 template <typename T> class Plane {
   static T Abs(T in);
   static T Epsilon();
 
 public: //
+
+  using vect3_t = Vector3<T>;
+  using vect4_t = Vector4<T>;
+
   //////////
-  Vector3<T> n;
+  vect3_t n;
   T d;
   //////////
   Plane();                                                                    /// set explicitly to 0,0,0,0
-  Plane(const Vector4<T>& vec);                                               /// init from normal and distance
-  Plane(const Vector3<T>& vec, T dist);                                       /// init from normal and distance
-  Plane(const Vector3<T>& pta, const Vector3<T>& ptb, const Vector3<T>& ptc); /// init from triangle
+  Plane(const vect4_t& vec);                                               /// init from normal and distance
+  Plane(const vect3_t& vec, T dist);                                       /// init from normal and distance
+  Plane(const vect3_t& pta, const vect3_t& ptb, const vect3_t& ptc); /// init from triangle
   Plane(T nx, T ny, T nz, T dist);                                            /// init from normal and distance
   Plane(T* f32p);                                                             /// set explicitly
-  Plane(const Vector3<T>& NormalVec, const Vector3<T>& PosVec);               /// calc given normal and position of plane origin
+  Plane(const vect3_t& NormalVec, const vect3_t& PosVec);               /// calc given normal and position of plane origin
 
   Plane(const kln::plane& klein_plane);                                            /// init from normal and distance
 
   void CalcFromNormalAndOrigin(
-      const Vector3<T>& NormalVec,
-      const Vector3<T>& PosVec); //! calc given normal and position of plane origin
+      const vect3_t& NormalVec,
+      const vect3_t& PosVec); //! calc given normal and position of plane origin
   ~Plane();
   void Reset(void);
-  bool IsPointInFront(const Vector3<T>& pt) const;
-  bool IsPointBehind(const Vector3<T>& pt) const;
-  void CalcD(const Vector3<T>& pt);
-  bool IsOn(const Vector3<T>& pt) const;
-  void CalcNormal(const Vector3<T>& pta, const Vector3<T>& ptb, const Vector3<T>& ptc);
+  bool isPointInFront(const vect3_t& pt) const;
+  bool isPointBehind(const vect3_t& pt) const;
+  bool isPointCoplanar(const vect3_t& pt) const;
+  PointClassification classifyPoint(const vect3_t& pt) const;
+  void CalcD(const vect3_t& pt);
+  bool IsOn(const vect3_t& pt) const;
+  void CalcNormal(const vect3_t& pta, const vect3_t& ptb, const vect3_t& ptc);
 
   //////////////////////////////////
 
-  bool Intersect(const TLineSegment3<T>& seg, T& dis, Vector3<T>& res) const;
-  bool Intersect(const Ray3<T>& ray, T& dis, Vector3<T>& res) const;
+  bool Intersect(const TLineSegment3<T>& seg, T& dis, vect3_t& res) const;
+  bool Intersect(const Ray3<T>& ray, T& dis, vect3_t& res) const;
   bool Intersect(const Ray3<T>& ray, T& dis) const;
 
   //////////////////////////////////
 
-  T pointDistance(const Vector3<T>& pt) const;
-  const Vector3<T>& GetNormal(void) const;
-  const T& GetD(void) const;
-  void crossProduct(F64 ii1, F64 jj1, F64 kk1, F64 ii2, F64 jj2, F64 kk2, F64& iicp, F64& jjcp, F64& kkcp) const;
-  void CalcPlaneFromTriangle(const Vector3<T>& p0, const Vector3<T>& p1, const Vector3<T>& p2, f64 ftolerance = EPSILON);
+  T pointDistance(const vect3_t& pt) const;
+  const vect3_t& GetNormal(void) const;
+  T GetD(void) const;
+  void crossProduct(T ii1, T jj1, T kk1, T ii2, T jj2, T kk2, T& iicp, T& jjcp, T& kkcp) const;
+  void CalcPlaneFromTriangle(const vect3_t& p0, const vect3_t& p1, const vect3_t& p2, T ftolerance = EPSILON);
 
   bool IsCoPlanar(const Plane<T>& OtherPlane) const;
 
-  bool PlaneIntersect(const Plane<T>& oth, Vector3<T>& outpos, Vector3<T>& outdir) const;
+  bool PlaneIntersect(const Plane<T>& oth, vect3_t& outpos, vect3_t& outdir) const;
 
-  template <typename PolyType> bool ClipPoly(const PolyType& PolyToClip, PolyType& OutPoly);
+  template <typename PolyType> bool ClipPoly(const PolyType& PolyToClip, PolyType& OutPoly) const;
 
-  template <typename PolyType> bool ClipPoly(const PolyType& PolyToClip, PolyType& OutPolyFront, PolyType& OutPolyBack);
+  template <typename PolyType> bool ClipPoly(const PolyType& PolyToClip, PolyType& OutPolyFront, PolyType& OutPolyBack) const;
 
   void SimpleTransform(const Matrix44<T>& transform);
 

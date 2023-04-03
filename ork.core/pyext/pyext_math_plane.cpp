@@ -68,9 +68,9 @@ void pyinit_math_plane(py::module& module_core) {
               [](fplane3& plane, const fvec3& pta, const fvec3& ptb, const fvec3& ptc) {
                 plane.CalcPlaneFromTriangle(pta, ptb, ptc);
               })
-          .def("isPointInFront", [](const fplane3& plane, const fvec3& point) -> bool { return plane.IsPointInFront(point); })
-          .def("isPointBehind", [](const fplane3& plane, const fvec3& point) -> bool { return plane.IsPointBehind(point); })
-          .def("isPointOn", [](const fplane3& plane, const fvec3& point) -> bool { return plane.IsOn(point); })
+          .def("isPointInFront", [](const fplane3& plane, const fvec3& point) -> bool { return plane.isPointInFront(point); })
+          .def("isPointBehind", [](const fplane3& plane, const fvec3& point) -> bool { return plane.isPointBehind(point); })
+          .def("isPointCoplanar", [](const fplane3& plane, const fvec3& point) -> bool { return plane.isPointCoplanar(point); })
           .def("distanceToPoint", [](const fplane3& plane, const fvec3& point) -> float { return plane.pointDistance(point); })
           .def(
               "intersectWithPlane",

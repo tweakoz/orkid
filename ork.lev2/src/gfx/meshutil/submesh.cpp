@@ -331,21 +331,33 @@ bool submesh::isConvexHull() const {
   int back  = 0;
   visitAllPolys([&](poly_const_ptr_t p1) {
     auto pl = p1->computePlane();
+    //printf( "plane<%f %f %f> <%f>\n", p1.get(), pl.n.x, pl.n.y, pl.n.z, pl.d );
     visitAllPolys([&](poly_const_ptr_t p2) {
       if (p1 != p2) {
         for (auto v : p2->_vertices) {
-          bool is_front = pl.IsPointInFront(v->mPos);
-          if (is_front) {
-            front++;
-          } else {
-            back++;
+          switch(pl.classifyPoint(v->mPos)) {
+            case PointClassification::FRONT:
+            case PointClassification::COPLANAR:
+              front++;
+              break;
+            case PointClassification::BACK:{
+              back++;
+              //double distance = pl.pointDistance(v->mPos);
+              //auto d =FormatString( "vd:distance<%.e>", 10, distance );
+              //v->dump(d);
+              break;
+            }
           }
         }
       }
     });
+    //bool is_convex = (front > 0) and (back == 0);
+    //OrkAssert(is_convex);
   });
-  // printf( "front<%d> back<%d>\n", front, back );
-  return (front > 0) and (back == 0);
+   //printf( "front<%d> back<%d>\n", front, back );
+  bool is_convex = (front > 0) and (back == 0);
+  //OrkAssert(is_convex);
+  return is_convex;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

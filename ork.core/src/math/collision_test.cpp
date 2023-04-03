@@ -25,12 +25,12 @@ namespace ork {
 bool CollisionTester::FrustumPointTest( const Frustum& frus, const fvec3& pnt )
 {
 	fvec4 tpos( pnt );
-	bool	bv = frus._nearPlane.IsPointInFront( tpos );
-			bv &= frus._farPlane.IsPointInFront( tpos );
-			bv &= frus._leftPlane.IsPointInFront( tpos );
-			bv &= frus._rightPlane.IsPointInFront( tpos );
-			bv &= frus._topPlane.IsPointInFront( tpos );
-			bv &= frus._bottomPlane.IsPointInFront( tpos );
+	bool	bv = frus._nearPlane.isPointInFront( tpos );
+			bv &= frus._farPlane.isPointInFront( tpos );
+			bv &= frus._leftPlane.isPointInFront( tpos );
+			bv &= frus._rightPlane.isPointInFront( tpos );
+			bv &= frus._topPlane.isPointInFront( tpos );
+			bv &= frus._bottomPlane.isPointInFront( tpos );
 
 	return bv;
 }
