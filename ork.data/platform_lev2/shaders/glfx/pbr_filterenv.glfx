@@ -129,12 +129,17 @@ fragment_shader ps_filterDiffuseEnvMap
 	//out_clr = textureLod(prefiltmap, frg_uv0,0);
 }
 ///////////////////////////////////////////////////////////////
+state_block sb_filter : default {
+  DepthTest = OFF;
+  CullTest  = OFF;
+}
+///////////////////////////////////////////////////////////////
 technique tek_filterSpecularMap {
 	fxconfig=fxcfg_default;
 	pass p0 {
 		vertex_shader=vs_yo;
 		fragment_shader=ps_filterSpecularEnvMap;
-		state_block=sb_default;
+		state_block=sb_filter;
 	}
 }
 ///////////////////////////////////////////////////////////////
@@ -143,7 +148,7 @@ technique tek_filterDiffuseMap {
 	pass p0 {
 		vertex_shader=vs_yo;
 		fragment_shader=ps_filterDiffuseEnvMap;
-		state_block=sb_default;
+		state_block=sb_filter;
 	}
 }
 ///////////////////////////////////////////////////////////////
