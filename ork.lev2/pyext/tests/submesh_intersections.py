@@ -94,12 +94,20 @@ class SceneGraphApp(BasicUiCamSgApp):
         self.lat_min = 0.5
         self.lat_max = 0.5
         self.lat_speed = 1.0
-      def computeFOV(self,θ):
-        deg = self.fov_min+math.sin(θ*self.fov_speed)*(self.fov_max-self.fov_min)
+        self.timeaccum = 0.0
+        self.lat_accum = 0.0
+        self.fov_accum = 0.0
+      def computeFOV(self):
+        θ = self.fov_accum
+        deg = self.fov_min+math.sin(θ)*(self.fov_max-self.fov_min)
         return deg*constants.DTOR
-      def computeLAT(self,θ):
-        return self.lat_min+math.sin(θ*self.lat_speed)*(self.lat_max-self.lat_min)
-      def lerp(self,oth,alpha):
+      def computeLAT(self):
+        θ = self.lat_accum
+        return self.lat_min+math.sin(θ)*(self.lat_max-self.lat_min)
+      def lerp(self,oth,alpha, deltatime):
+        self.timeaccum += deltatime
+        self.lat_accum += deltatime * self.lat_speed
+        self.fov_accum += deltatime * self.fov_speed
         inv_alpha = 1.0-alpha
         self.fov_min   = self.fov_min*inv_alpha   + oth.fov_min*alpha
         self.fov_max   = self.fov_max*inv_alpha   + oth.fov_max*alpha
@@ -165,23 +173,25 @@ class SceneGraphApp(BasicUiCamSgApp):
     lerp_rate = 0.01
     #self.dice = 0
     if self.dice==0:
-      self.upd_c1.lerp(self.upd_1a,lerp_rate)
-      self.upd_c2.lerp(self.upd_2a,lerp_rate)
+      self.upd_c1.lerp(self.upd_1a,lerp_rate,updevent.deltatime)
+      self.upd_c2.lerp(self.upd_2a,lerp_rate,updevent.deltatime)
     elif self.dice==1:
-      self.upd_c1.lerp(self.upd_1b,lerp_rate)
-      self.upd_c2.lerp(self.upd_2b,lerp_rate)
+      self.upd_c1.lerp(self.upd_1b,lerp_rate,updevent.deltatime)
+      self.upd_c2.lerp(self.upd_2b,lerp_rate,updevent.deltatime)
     elif self.dice==2:
-      self.upd_c1.lerp(self.upd_1c,lerp_rate)
-      self.upd_c2.lerp(self.upd_2c,lerp_rate)
+      self.upd_c1.lerp(self.upd_1c,lerp_rate,updevent.deltatime)
+      self.upd_c2.lerp(self.upd_2c,lerp_rate,updevent.deltatime)
     ##############################
-    θ = self.abstime * math.pi * 2.0 * 0.1
+
+    ##############################
+    θ = self.abstime # * math.pi * 2.0 * 0.1
     #
-    self.fpmtx1 = mtx4.perspective(self.upd_c1.computeFOV(θ),1,0.3,5)
-    self.fpmtx2 = mtx4.perspective(self.upd_c2.computeFOV(θ),1,0.3,5)
-    #
-    lat_1 = self.upd_c1.computeLAT(θ)
-    lat_2 = self.upd_c2.computeLAT(θ)
-    PLANAR_BIAS = 0.0025
+    self.fpmtx1 = mtx4.perspective(self.upd_c1.computeFOV(),1,0.3,5)
+    self.fpmtx2 = mtx4.perspective(self.upd_c2.computeFOV(),1,0.3,5)
+    #2
+    lat_1 = self.upd_c1.computeLAT()
+    lat_2 = self.upd_c2.computeLAT()
+    PLANAR_BIAS = 0.0016
     self.fvmtx1 = mtx4.lookAt(vec3(0,0,1),vec3(lat_1,0,0),vec3(0,1,0))
     self.fvmtx2 = mtx4.lookAt(vec3(1,0,1+PLANAR_BIAS),vec3(1,lat_2,PLANAR_BIAS),vec3(0,1,0))
     #
