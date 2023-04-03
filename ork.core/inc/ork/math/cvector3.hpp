@@ -621,10 +621,10 @@ template <typename T> Vector2<T> octahedronWrap(Vector2<T> v) {
 template <typename T> uint64_t Vector3<T>::hashNormal(T quantization) const{
   auto nenc = normalOctahedronEncoded();
   OrkAssert(quantization>T(0));
-  OrkAssert(quantization<=T(16384));
-  uint64_t ux = uint64_t(nenc.x*quantization);        // 14 bits
-  uint64_t uy = uint64_t(nenc.y*quantization);        // 14 bits  (total of 2^28 possible normals ~= )
-  return (uy<<21) | ux;
+  OrkAssert(quantization<=T(1e9));
+  uint64_t ux = uint64_t(nenc.x*quantization)+uint64_t(0x80000000);        // 16 bits
+  uint64_t uy = uint64_t(nenc.y*quantization)+uint64_t(0x80000000);        // 16 bits  (total of 2^28 possible normals ~= )
+  return (uy<<32) | ux;
 }
 
 template <typename T> Vector2<T> Vector3<T>::normalOctahedronEncoded() const {
