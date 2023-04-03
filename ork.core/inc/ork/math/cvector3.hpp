@@ -618,6 +618,14 @@ template <typename T> Vector2<T> octahedronWrap(Vector2<T> v) {
   T y = (T(1) - abs(v.x)) * (v.y >= T(0) ? T(1) : T(-1));
   return Vector2<T>(x, y);
 }
+template <typename T> uint64_t Vector3<T>::hashNormal(T quantization) const{
+  auto nenc = normalOctahedronEncoded();
+  OrkAssert(quantization>T(0));
+  OrkAssert(quantization<=T(16384));
+  uint64_t ux = uint64_t(nenc.x*quantization);        // 14 bits
+  uint64_t uy = uint64_t(nenc.y*quantization);        // 14 bits  (total of 2^28 possible normals ~= )
+  return (uy<<21) | ux;
+}
 
 template <typename T> Vector2<T> Vector3<T>::normalOctahedronEncoded() const {
 

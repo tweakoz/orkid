@@ -74,6 +74,7 @@ template <typename T> struct Vector3 final
   Vector3 normalized() const;
   Vector3 quantized(T v) const;
   uint64_t hash(T quantization) const;
+  uint64_t hashNormal(T quantization) const;
   inline T length() const {
     return magnitude();
   }
