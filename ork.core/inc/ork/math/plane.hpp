@@ -348,14 +348,6 @@ bool Plane<T>::ClipPoly(const PolyType& input_poly, //
 
     if( debug ) printf( "  is_vertex_a_front<%d> is_vertex_b_front<%d>\n", int(is_vertex_a_front), int(is_vertex_b_front) );
 
-    if (is_vertex_a_front) {
-      out_front_poly.AddVertex(vA);
-      if( debug ) printf("  add a to front cnt<%zu>\n", out_front_poly.GetNumVertices());
-    } else {
-      out_back_poly.AddVertex(vA);
-      if( debug ) printf("  add a to back cnt<%zu>\n", out_back_poly.GetNumVertices());
-    }
-
     if (is_vertex_b_front != is_vertex_a_front) { // did we cross plane ?
       if( debug ) printf("  plane crossed iva<%d> ivb<%d>\n", iva, ivb );
       Vector3<T> vPos;
@@ -369,34 +361,29 @@ bool Plane<T>::ClipPoly(const PolyType& input_poly, //
         T fScalar = (Abs(fDist) < Epsilon()) ? T(0.0) : fDist2 / fDist;
         typename PolyType::VertexType LerpedVertex;
         LerpedVertex.lerp(vA, vB, fScalar);
+        if (is_vertex_a_front) {
+          out_front_poly.AddVertex(vA);
+          if( debug ) printf("  add a to front cnt<%zu>\n", out_front_poly.GetNumVertices());
+        }
         out_front_poly.AddVertex(LerpedVertex);
         out_back_poly.AddVertex(LerpedVertex);
+        if ( not is_vertex_b_front) {
+          out_back_poly.AddVertex(vA);
+          if( debug ) printf("  add a to back cnt<%zu>\n", out_back_poly.GetNumVertices());
+        }
         if( debug ) printf("  add l to front cnt<%d>\n", out_front_poly.GetNumVertices());
         if( debug ) printf("  add l to front cnt<%d>\n", out_back_poly.GetNumVertices());
       }
-      else{
-        TLineSegment3<T> lseg2(vB.Pos(), vA.Pos());
-        bool isect2 = Intersect(lseg2, isectdist, vPos);
-        if( debug ) printf("  isect2<%d>\n", int(isect2) );
-        if (isect2) {
-          T fDist   = (vB.Pos() - vA.Pos()).magnitude();
-          T fDist2  = (vB.Pos() - vPos).magnitude();
-          T fScalar = (Abs(fDist) < Epsilon()) ? T(0.0) : fDist2 / fDist;
-          typename PolyType::VertexType LerpedVertex;
-          LerpedVertex.lerp(vB, vA, fScalar);
-          out_front_poly.AddVertex(LerpedVertex);
-          out_back_poly.AddVertex(LerpedVertex);
-          if( debug ) printf("  add l2 to front cnt<%d>\n", out_front_poly.GetNumVertices());
-          if( debug ) printf("  add l2 to front cnt<%d>\n", out_back_poly.GetNumVertices());
-        }
-        else{
-          if( debug ) printf( "NO INTERSECT vA<%g %g %g> vB<%g %g %g>\n", vA.Pos().x, vA.Pos().y, vA.Pos().z, vB.Pos().x, vB.Pos().y, vB.Pos().z );
-          if( debug ) printf( "NO INTERSECT pdA<%g>\n", pointDistance(vA.Pos()) );
-          if( debug ) printf( "NO INTERSECT pdB<%g>\n", pointDistance(vB.Pos()) );
-          if( debug ) printf( "NO INTERSECT plane_n<%g %g %g> d<%g>\n", n.x, n.y, n.z, d );
-        }
+    }
+    else{
+    if (is_vertex_a_front) {
+      out_front_poly.AddVertex(vA);
+      if( debug ) printf("  add a to front cnt<%zu>\n", out_front_poly.GetNumVertices());
+    } else {
+      out_back_poly.AddVertex(vA);
+      if( debug ) printf("  add a to back cnt<%zu>\n", out_back_poly.GetNumVertices());
+    }
 
-      }
     }
   }
 
