@@ -122,6 +122,7 @@ struct submesh {
   edge_ptr_t edgeBetweenPolys(int a, int b) const;
   poly_set_t polysConnectedTo(vertex_ptr_t v) const;
 
+  uint64_t hash() const;
 
   struct PolyVisitContext{
     poly_set_t _visited;

@@ -98,7 +98,7 @@ std::vector<submesh_ptr_t> submeshBulletConvexDecomposition(const submesh& inpsu
   submesh triangulated;
   submeshTriangulate(inpsubmesh,triangulated);
 
-  
+  printf( "DECOMP.triangulated hash<0x%zx>\n", triangulated.hash() );
   std::vector<fvec3> _tempverts;
   std::vector<decomp_int_t> _tempindices;
   triangulated.visitAllVertices( [&](vertex_ptr_t vtx) {

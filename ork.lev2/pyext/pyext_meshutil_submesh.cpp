@@ -82,6 +82,11 @@ void pyinit_meshutil_submesh(py::module& module_meshutil) {
               "name",
               [](submesh_ptr_t submesh) -> std::string { return submesh->name; },
               [](submesh_ptr_t submesh, std::string n) { return submesh->name = n; })
+          .def_property_readonly(
+              "hashed",
+              [](submesh_ptr_t submesh) -> uint64_t {
+                return submesh->hash();
+              })
           .def_property_readonly("isConvexHull", [](submesh_ptr_t submesh) -> bool { return submesh->isConvexHull(); })
           .def_property_readonly(
               "vertices",

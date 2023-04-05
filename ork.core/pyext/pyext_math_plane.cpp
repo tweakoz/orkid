@@ -59,6 +59,9 @@ void pyinit_math_plane(py::module& module_core) {
           .def(py::init<const fvec3&, const fvec3&, const fvec3&>())
           .def(py::init<float, float, float, float>())
           .def_property_readonly("d", [](const fplane3& thisplane) -> float { return thisplane.d; })
+          .def_property_readonly("hashed", [](const fplane3& thisplane) -> uint64_t { 
+            return thisplane.hash();
+            })
           .def_property_readonly("normal", [](const fplane3& thisplane) -> fvec3 { return thisplane.n; })
           .def(
               "fromNormalAndOrigin",

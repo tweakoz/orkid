@@ -26,6 +26,19 @@ submesh::submesh()
 /////////////////////////////////////////////////////////////////////////
 submesh::~submesh() {
 }
+
+///////////////////////////////////////////////////////////////////////////////
+uint64_t submesh::hash() const{
+  boost::Crc64 crc64;
+  crc64.init();
+
+  visitAllVertices( [&](vertex_const_ptr_t vtx) {
+    crc64.accumulateItem<uint64_t>(vtx->hash());
+  });
+
+  crc64.finish();
+  return crc64.result();
+}
 ///////////////////////////////////////////////////////////////////////////////
 poly_ptr_t submesh::mergePoly(const Polygon& ply) {
   auto p = _connectivityIMPL->mergePoly(ply);

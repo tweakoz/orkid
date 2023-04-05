@@ -98,6 +98,12 @@ void pyinit_math(py::module& module_core) {
                 rval.append(vec.z);
                 return rval;
               })
+          .def(
+              "hashed",
+              [](const fvec3& vec, double quant) -> uint64_t { //
+                dvec3 as_dvec3 = fvec3_to_dvec3(vec);
+                return as_dvec3.hash(quant);
+              })
           .def("angle", &fvec3::angle)
           .def("orientedAngle", &fvec3::orientedAngle)
           .def("dot", &fvec3::dotWith)
