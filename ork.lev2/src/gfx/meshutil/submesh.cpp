@@ -27,16 +27,89 @@ submesh::submesh()
 submesh::~submesh() {
 }
 ///////////////////////////////////////////////////////////////////////////////
-poly_ptr_t submesh::mergeTriangle(vertex_ptr_t va, vertex_ptr_t vb, vertex_ptr_t vc) {
-  return mergePoly(Polygon(va, vb, vc));
+poly_ptr_t submesh::mergePoly(const Polygon& ply) {
+  auto p = _connectivityIMPL->mergePoly(ply);
+  if (p) {
+    if (p->_parentSubmesh == nullptr) {
+      p->_parentSubmesh = this;
+      _surfaceArea += p->ComputeArea(ork::dmtx4::Identity());
+      _aaBoxDirty = true;
+    }
+  }
+  return p;
 }
 ///////////////////////////////////////////////////////////////////////////////
 poly_ptr_t submesh::mergeQuad(vertex_ptr_t va, vertex_ptr_t vb, vertex_ptr_t vc, vertex_ptr_t vd) {
   return mergePoly(Polygon(va, vb, vc, vd));
 }
 ///////////////////////////////////////////////////////////////////////////////
-poly_ptr_t submesh::mergePoly(const Polygon& ply) {
-  auto p = _connectivityIMPL->mergePoly(ply);
+poly_ptr_t submesh::mergeTriangle(vertex_ptr_t va, vertex_ptr_t vb, vertex_ptr_t vc) {
+  return mergePoly(Polygon(va, vb, vc));
+}
+///////////////////////////////////////////////////////////////////////////////
+poly_ptr_t submesh::mergeUnorderedTriangle(vertex_ptr_t va, vertex_ptr_t vb, vertex_ptr_t vc) {
+
+  if( numPolys() == 0 ){
+    return mergeTriangle(va, vb, vc);
+  }
+
+  auto e0         = std::make_shared<edge>(va, vb);
+  auto e1         = std::make_shared<edge>(vb, vc);
+  auto e2         = std::make_shared<edge>(vc, va);
+  auto con_polys_ab = connectedPolys(e0, false);
+  auto con_polys_bc = connectedPolys(e1, false);
+  auto con_polys_ca = connectedPolys(e2, false);
+  int matching_order = 0;
+  int not_matching_order = 0;
+  for (auto ic : con_polys_ab) {
+    int icon_poly = *con_polys_ab.begin();
+    auto con_poly = poly(icon_poly);
+    if (con_poly->edgeForVertices(vb, va)) {
+      not_matching_order++;
+    }
+    else{
+      matching_order++;
+    }
+  }
+  for (auto ic : con_polys_bc) {
+    int icon_poly = *con_polys_bc.begin();
+    auto con_poly = poly(icon_poly);
+    if (con_poly->edgeForVertices(vc, vb)) {
+      not_matching_order++;
+    }
+    else{
+      matching_order++;
+    }
+  }
+  for (auto ic : con_polys_ca) {
+    int icon_poly = *con_polys_ca.begin();
+    auto con_poly = poly(icon_poly);
+    if (con_poly->edgeForVertices(va, vc)) {
+      not_matching_order++;
+    }
+    else{
+      matching_order++;
+    }
+  }
+  printf( "matching_order<%d>\n", matching_order );
+  printf( "not_matching_order<%d>\n", not_matching_order );
+  
+  poly_ptr_t ptemp = nullptr;
+
+  if( matching_order < not_matching_order ){
+    ptemp = mergeTriangle(va, vb, vc);
+  }
+  else if( matching_order > not_matching_order ){
+    ptemp = mergeTriangle(va, vc, vb);
+  }
+  else if( matching_order == not_matching_order ) {
+    ptemp = mergeTriangle(va, vb, vc);
+  }
+  else{
+    OrkAssert(false);
+  }
+
+  auto p = _connectivityIMPL->mergePoly(*ptemp);
   if (p) {
     if (p->_parentSubmesh == nullptr) {
       p->_parentSubmesh = this;

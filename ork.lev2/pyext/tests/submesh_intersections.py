@@ -11,7 +11,7 @@ from orkengine.lev2 import *
 from _boilerplate import *
 ################################################################################
 
-def procsubmesh(inpsubmesh):
+def strippedSubmesh(inpsubmesh):
   stripped = inpsubmesh.copy(preserve_normals=False,
                              preserve_colors=False,
                              preserve_texcoords=False)
@@ -20,11 +20,11 @@ def procsubmesh(inpsubmesh):
 ################################################################################
 
 def proc_with_plane(inpsubmesh,plane):
-  submesh2 = inpsubmesh.clippedWithPlane(plane=plane,
+  submesh2 = strippedSubmesh(inpsubmesh).clippedWithPlane(plane=plane,
                                          close_mesh=True, 
                                          flip_orientation=False )["front"]
 
-  return procsubmesh(submesh2)
+  return submesh2 
 
 ################################################################################
 
@@ -35,7 +35,7 @@ def proc_with_frustum(inpsubmesh,frustum):
   submesh5 = proc_with_plane(submesh4,frustum.rightPlane)
   submesh6 = proc_with_plane(submesh5,frustum.topPlane)
   submesh7 = proc_with_plane(submesh6,frustum.bottomPlane)
-  return submesh7 #.repaired()
+  return submesh7
 
 ################################################################################
 
@@ -61,7 +61,7 @@ class SceneGraphApp(BasicUiCamSgApp):
     self.frustum1 = Frustum()
     self.frustum1.set(self.fvmtx1,self.fpmtx1)
     self.frusmesh1 = meshutil.SubMesh.createFromFrustum(self.frustum1,projective_rect_uv=True)
-    self.submesh1 = procsubmesh(self.frusmesh1)
+    self.submesh1 = strippedSubmesh(self.frusmesh1)
     self.prim1 = meshutil.RigidPrimitive(self.frusmesh1,ctx)
     self.sgnode1 = self.prim1.createNode("m1",self.layer1,self.pseudowire_pipe)
     self.sgnode1.enabled = True
@@ -73,7 +73,7 @@ class SceneGraphApp(BasicUiCamSgApp):
     self.frustum2 = Frustum()
     self.frustum2.set(self.fvmtx2,self.fpmtx2)
     self.frusmesh2 = meshutil.SubMesh.createFromFrustum(self.frustum2,projective_rect_uv=True)
-    self.submesh2 = procsubmesh(self.frusmesh2)
+    self.submesh2 = strippedSubmesh(self.frusmesh2)
     self.prim2 = meshutil.RigidPrimitive(self.frusmesh2,ctx)
     self.sgnode2 = self.prim2.createNode("m2",self.layer1,self.pseudowire_pipe)
     self.sgnode2.enabled = True
@@ -201,7 +201,7 @@ class SceneGraphApp(BasicUiCamSgApp):
     self.frusmesh1 = meshutil.SubMesh.createFromFrustum(self.frustum1,projective_rect_uv=True)
     self.frusmesh2 = meshutil.SubMesh.createFromFrustum(self.frustum2,projective_rect_uv=True)
     #
-    submesh1 = procsubmesh(self.frusmesh1)
+    submesh1 = strippedSubmesh(self.frusmesh1)
 
     isec1 = proc_with_frustum(submesh1,self.frustum2)
     self.submesh_isect = isec1#.coplanarJoined().triangulated()

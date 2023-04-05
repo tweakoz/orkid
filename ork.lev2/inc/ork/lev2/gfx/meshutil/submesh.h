@@ -101,6 +101,7 @@ struct submesh {
   edge_ptr_t mergeEdge(const edge& ed);
   poly_ptr_t mergePoly(const struct Polygon& ply);
   poly_ptr_t mergeTriangle(vertex_ptr_t va, vertex_ptr_t vb, vertex_ptr_t vc);
+  poly_ptr_t mergeUnorderedTriangle(vertex_ptr_t va, vertex_ptr_t vb, vertex_ptr_t vc);
   poly_ptr_t mergeQuad(vertex_ptr_t va, vertex_ptr_t vb, vertex_ptr_t vc, vertex_ptr_t vd);
 
   void MergeSubMesh(const submesh& oth);

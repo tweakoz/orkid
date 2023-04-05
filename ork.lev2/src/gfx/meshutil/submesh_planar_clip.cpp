@@ -235,21 +235,22 @@ void _submeshClipWithPlaneConvex(
     auto center_vertex = outsubmesh.mergeVertex(temp_loop_center);
 
     /////////////////////////////////////////
-    // sort merged vertices by angle around center
+    // sort merged vertices by angle around center (relative to first vertex)
     /////////////////////////////////////////
+
 
     auto v0 = merged_vertices[0];
     auto d0 = (v0->mPos - center_vertex->mPos).normalized();
-    size_t num_merged = merged_vertices.size();
-    using vang_by_angle_map_t = std::map<double,vertex_ptr_t>;
-    vang_by_angle_map_t vertices_by_angle;
+
+    std::map<double,vertex_ptr_t> vertices_by_angle;
     vertices_by_angle[0] = v0;
-    for( int iv=1; iv<num_merged; iv++ ) {
+
+    for( int iv=1; iv<merged_vertices.size(); iv++ ) {
       auto vn = merged_vertices[iv];
       auto dn = (vn->mPos - center_vertex->mPos).normalized();
-      auto cross = d0.crossWith(dn);
-      double angle = d0.orientedAngle(dn, cross);
-      vertices_by_angle[angle] = vn;
+      auto cross = dn.crossWith(d0);
+      double angle = dn.orientedAngle(d0, cross);
+      vertices_by_angle[-angle] = vn;
     }
 
     /////////////////////////////////////////
@@ -271,18 +272,16 @@ void _submeshClipWithPlaneConvex(
       auto con_polys = outsubmesh.connectedPolys(e, false);
       bool do_swap   = false;
 
-      if (con_polys.size() > 0) {
-        for (auto ic : con_polys) {
-          int icon_poly = *con_polys.begin();
-          auto con_poly = outsubmesh.poly(icon_poly);
+      for (auto ic : con_polys) {
+        int icon_poly = *con_polys.begin();
+        auto con_poly = outsubmesh.poly(icon_poly);
 
-          // if any of the connected polys has an edge that
-          //  matches our vertices, but in the opposite winding order
-          //  then we need to flip the orientation of the triangle fan
+        // if any of the connected polys has an edge that
+        //  matches our vertices, but in the opposite winding order
+        //  then we need to flip the orientation of the triangle fan
 
-          if (con_poly->edgeForVertices(vb, va)) {
-            do_swap = true;
-          }
+        if (con_poly->edgeForVertices(vb, va)) {
+          do_swap = true;
         }
       }
 
