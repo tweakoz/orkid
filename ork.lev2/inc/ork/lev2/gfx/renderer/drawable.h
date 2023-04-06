@@ -466,6 +466,22 @@ struct InstancedDrawableInstanceData {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+struct StringDrawableData : public DrawableData {
+
+  DeclareConcreteX(StringDrawableData, DrawableData);
+
+  StringDrawableData() {
+  }
+  StringDrawableData(AssetPath path);
+  drawable_ptr_t createDrawable() const final;
+  std::string _initialString;
+  fvec2 _pos2D;
+  fvec4 _color;
+  float _scale = 1.0f;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
 struct BillboardStringDrawableData : public DrawableData {
 
   DeclareConcreteX(BillboardStringDrawableData, DrawableData);
@@ -492,6 +508,17 @@ struct InstancedBillboardStringDrawableData : public DrawableData {
   fvec3 _offset;
   fvec3 _upvec;
   float _scale = 1.0f;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct StringDrawable final : public Drawable {
+
+  StringDrawable(const StringDrawableData* data);
+  ~StringDrawable();
+  void enqueueToRenderQueue(drawablebufitem_constptr_t item, lev2::IRenderer* renderer) const override;
+  std::function<void(lev2::RenderContextInstData& RCID)> _rendercb;
+  const StringDrawableData* _data = nullptr;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

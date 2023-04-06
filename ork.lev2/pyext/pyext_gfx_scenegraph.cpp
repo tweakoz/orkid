@@ -147,6 +147,14 @@ void pyinit_scenegraph(py::module& module_lev2) {
                 return layer->createDrawableNode(named, drawable);
               })
           .def(
+              "createDrawableNodeFromData",
+              [](layer_ptr_t layer, //
+                 std::string named,
+                 drawabledata_ptr_t drawable_data) -> node_ptr_t { //
+                 auto drawable = drawable_data->createDrawable();
+                return layer->createDrawableNode(named, drawable);
+              })
+          .def(
               "createGridNode",
               [](layer_ptr_t layer, //
                  std::string named,

@@ -215,6 +215,8 @@ struct DrawableData;
 struct DrawBufContext;
 struct GridDrawableData;
 struct GridDrawableInst;
+struct StringDrawable;
+struct StringDrawableData;
 struct InstancedBillboardStringDrawable;
 struct InstancedBillboardStringDrawableData;
 struct InstancedDrawableInstanceData;
@@ -225,6 +227,8 @@ struct ModelDrawableData;
 struct ModelDrawable;
 struct OverlayStringDrawable;
 //
+using string_drawabledata_ptr_t = std::shared_ptr<StringDrawableData>;
+using string_drawable_ptr_t = std::shared_ptr<StringDrawable>;
 using billboard_string_drawable_ptr_t = std::shared_ptr<BillboardStringDrawable>;
 using callback_drawable_ptr_t       = std::shared_ptr<CallbackDrawable>;
 using drawable_ptr_t                = std::shared_ptr<Drawable>;

@@ -13,10 +13,76 @@
 #include <ork/lev2/gfx/dbgfontman.h>
 #include <ork/reflect/properties/registerX.inl>
 
+ImplementReflectionX(ork::lev2::StringDrawableData, "StringDrawableData");
 ImplementReflectionX(ork::lev2::BillboardStringDrawableData, "BillboardStringDrawableData");
 ImplementReflectionX(ork::lev2::InstancedBillboardStringDrawableData, "InstancedBillboardStringDrawableData");
 
 namespace ork::lev2 {
+///////////////////////////////////////////////////////////////////////////////
+void StringDrawableData::describeX(object::ObjectClass* clazz) {}
+///////////////////////////////////////////////////////////////////////////////
+StringDrawableData::StringDrawableData(AssetPath path){
+
+}
+///////////////////////////////////////////////////////////////////////////////
+drawable_ptr_t StringDrawableData::createDrawable() const {
+  auto rval = std::make_shared<StringDrawable>(this);
+  return rval;
+}
+///////////////////////////////////////////////////////////////////////////////
+StringDrawable::StringDrawable(const StringDrawableData* data)
+    : Drawable() {
+  _data = data;
+
+  _rendercb = [this](lev2::RenderContextInstData& RCID){
+    auto context = RCID.context();
+    auto mtxi = context->MTXI();
+    auto fbi = context->FBI();
+    auto RCFD = RCID._RCFD;
+    const auto& CPD             = RCFD->topCPD();
+    auto renderable = (CallbackRenderable*) RCID._irenderable;
+    auto data = renderable->_drawDataA.get<const StringDrawableData*>();
+    auto& current_string = data->_initialString;
+
+    int w = fbi->GetVPW();
+    int h = fbi->GetVPH();
+    mtxi->PushUIMatrix(w,h);
+
+    context->PushModColor(data->_color);
+    FontMan::PushFont("i14");
+    auto font = FontMan::currentFont();
+
+    font->_use_deferred = RCFD->_renderingmodel.isDeferredPBR();
+
+    auto pos_2d = data->_pos2D;
+
+    FontMan::beginTextBlock(context);
+    FontMan::DrawText(context, pos_2d.x, pos_2d.y, current_string.c_str());
+    FontMan::endTextBlock(context);
+    FontMan::PopFont();
+    context->PopModColor();
+    mtxi->PopUIMatrix();
+
+  };
+}
+///////////////////////////////////////////////////////////////////////////////
+StringDrawable::~StringDrawable(){
+}
+///////////////////////////////////////////////////////////////////////////////
+void StringDrawable::enqueueToRenderQueue(drawablebufitem_constptr_t item, lev2::IRenderer* renderer) const {
+  ork::opq::assertOnQueue2(opq::mainSerialQueue());
+  auto& cb_renderable = renderer->enqueueCallback();
+  auto worldmatrix = item->mXfData._worldTransform->composed();
+  cb_renderable.SetMatrix(worldmatrix);
+  cb_renderable.SetObject(GetOwner());
+  cb_renderable.SetRenderCallback(_rendercb);
+  cb_renderable.SetSortKey(0x7fff);
+  cb_renderable._drawDataA.set<const StringDrawableData*>(_data);
+  cb_renderable.SetModColor(renderer->GetTarget()->RefModColor());
+}
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 void BillboardStringDrawableData::describeX(object::ObjectClass* clazz) {}
 ///////////////////////////////////////////////////////////////////////////////
@@ -31,25 +97,6 @@ drawable_ptr_t BillboardStringDrawableData::createDrawable() const {
   rval->_scale = _scale;
   rval->_upvec = _upvec;
   return rval;
-}
-///////////////////////////////////////////////////////////////////////////////
-
-void InstancedBillboardStringDrawableData::describeX(object::ObjectClass* clazz){
-}
-
-InstancedBillboardStringDrawableData::InstancedBillboardStringDrawableData(){
-}
-///////////////////////////////////////////////////////////////////////////////
-drawable_ptr_t InstancedBillboardStringDrawableData::createDrawable() const {
-  auto drw = std::make_shared<InstancedBillboardStringDrawable>();
-  drw->_data = this;
-  //drw->_currentString = _initialString;
-  drw->_offset = _offset;
-  drw->_scale = _scale;
-  drw->_upvec = _upvec;
-  //drw->bindModelAsset(_assetpath);
-  //drw->_modcolor = _modcolor;
-  return drw;
 }
 ///////////////////////////////////////////////////////////////////////////////
 void BillboardStringDrawable::enqueueToRenderQueue(drawablebufitem_constptr_t item, lev2::IRenderer* renderer) const {
@@ -119,20 +166,28 @@ BillboardStringDrawable::BillboardStringDrawable()
 ///////////////////////////////////////////////////////////////////////////////
 BillboardStringDrawable::~BillboardStringDrawable() {
 }
-/////////////////////////////////////////////////////////////////////
-void InstancedBillboardStringDrawable::enqueueToRenderQueue(drawablebufitem_constptr_t item, lev2::IRenderer* renderer) const {
-  ork::opq::assertOnQueue2(opq::mainSerialQueue());
-  auto& cb_renderable = renderer->enqueueCallback();
-  //auto worldmatrix = item->mXfData._worldTransform->composed();
-  //cb_renderable.SetMatrix(worldmatrix);
-  cb_renderable.SetObject(GetOwner());
-  cb_renderable.SetRenderCallback(_rendercb);
-  cb_renderable.SetSortKey(0x7fff);
-  cb_renderable._drawDataB.set<const InstancedBillboardStringDrawable*>(this);
-  cb_renderable.SetModColor(renderer->GetTarget()->RefModColor());  
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+
+void InstancedBillboardStringDrawableData::describeX(object::ObjectClass* clazz){
 }
-/////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////
+
+InstancedBillboardStringDrawableData::InstancedBillboardStringDrawableData(){
+}
+///////////////////////////////////////////////////////////////////////////////
+drawable_ptr_t InstancedBillboardStringDrawableData::createDrawable() const {
+  auto drw = std::make_shared<InstancedBillboardStringDrawable>();
+  drw->_data = this;
+  //drw->_currentString = _initialString;
+  drw->_offset = _offset;
+  drw->_scale = _scale;
+  drw->_upvec = _upvec;
+  //drw->bindModelAsset(_assetpath);
+  //drw->_modcolor = _modcolor;
+  return drw;
+}
 /////////////////////////////////////////////////////////////////////
 InstancedBillboardStringDrawable::InstancedBillboardStringDrawable(){
   _rendercb = [this](lev2::RenderContextInstData& RCID){
@@ -188,6 +243,18 @@ InstancedBillboardStringDrawable::InstancedBillboardStringDrawable(){
 }
 InstancedBillboardStringDrawable::~InstancedBillboardStringDrawable(){
 
+}
+/////////////////////////////////////////////////////////////////////
+void InstancedBillboardStringDrawable::enqueueToRenderQueue(drawablebufitem_constptr_t item, lev2::IRenderer* renderer) const {
+  ork::opq::assertOnQueue2(opq::mainSerialQueue());
+  auto& cb_renderable = renderer->enqueueCallback();
+  //auto worldmatrix = item->mXfData._worldTransform->composed();
+  //cb_renderable.SetMatrix(worldmatrix);
+  cb_renderable.SetObject(GetOwner());
+  cb_renderable.SetRenderCallback(_rendercb);
+  cb_renderable.SetSortKey(0x7fff);
+  cb_renderable._drawDataB.set<const InstancedBillboardStringDrawable*>(this);
+  cb_renderable.SetModColor(renderer->GetTarget()->RefModColor());  
 }
 
 /////////////////////////////////////////////////////////////////////

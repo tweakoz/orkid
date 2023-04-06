@@ -22,7 +22,7 @@ void pyinit_gfx_drawables(py::module& module_lev2) {
 
   /////////////////////////////////////////////////////////////////////////////////
   auto drawabledata_type = //
-      py::class_<DrawableData, drawabledata_ptr_t>(module_lev2, "DrawableData")
+      py::class_<DrawableData, ork::Object, drawabledata_ptr_t>(module_lev2, "DrawableData")
       .def("createDrawable",[](drawabledata_ptr_t data) -> drawable_ptr_t {
         return data->createDrawable();
       });
@@ -117,6 +117,27 @@ void pyinit_gfx_drawables(py::module& module_lev2) {
               [](griddrawabledataptr_t drw) -> float { return drw->_minorTileDim; },
               [](griddrawabledataptr_t drw, float val) { drw->_minorTileDim = val; });
   type_codec->registerStdCodec<griddrawabledataptr_t>(griddrawdata_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  auto stringdrawdata_type = //
+      py::class_<StringDrawableData, DrawableData, string_drawabledata_ptr_t>(module_lev2, "StringDrawableData")
+          .def(py::init<>())
+          .def_property(
+              "text",
+              [](string_drawabledata_ptr_t drw) -> std::string { return drw->_initialString; },
+              [](string_drawabledata_ptr_t drw, std::string val) { drw->_initialString = val; })
+          .def_property(
+              "pos2D",
+              [](string_drawabledata_ptr_t drw) -> fvec2 { return drw->_pos2D; },
+              [](string_drawabledata_ptr_t drw, fvec2 val) { drw->_pos2D = val; })
+          .def_property(
+              "scale",
+              [](string_drawabledata_ptr_t drw) -> float { return drw->_scale; },
+              [](string_drawabledata_ptr_t drw, float val) { drw->_scale = val; })
+          .def_property(
+              "color",
+              [](string_drawabledata_ptr_t drw) -> fvec4 { return drw->_color; },
+              [](string_drawabledata_ptr_t drw, fvec4 val) { drw->_color = val; });
+  type_codec->registerStdCodec<string_drawabledata_ptr_t>(stringdrawdata_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto ptcdrawdata_type = //
       py::class_<ParticlesDrawableData, DrawableData, particles_drawable_data_ptr_t>(module_lev2, "ParticlesDrawableData")
