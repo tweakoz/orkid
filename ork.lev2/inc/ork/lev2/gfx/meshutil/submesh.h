@@ -257,6 +257,7 @@ void submeshBarycentricUV(const submesh& inpsubmesh, submesh& outsmesh);
 submesh_ptr_t submeshFromFrustum(const Frustum& frustum, bool projective_rect_uv);
 
 std::vector<submesh_ptr_t> submeshBulletConvexDecomposition(const submesh& inpsubmesh);
+void submeshConvexHull(const submesh& inpsubmesh, submesh& outsmesh);
 
 void submeshFixWindingOrder(const submesh& inpsubmesh, submesh& outsmesh, bool inside_out);
 

@@ -24,6 +24,8 @@
 // DEALINGS IN THE SOFTWARE.
 //
 
+#pragma once 
+
 struct _arg {};
 
 template <typename T>

@@ -30,6 +30,24 @@
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmacro-redefined"
 
+#if defined(__APPLE__)
+#include <type_traits>
+#include <cstdint>
+namespace std{
+template <class> struct result_of;
+
+template <class F, class... TN>
+struct result_of<F(TN...)>
+{
+    using type = ::std::invoke_result_t<F, TN...>;
+};
+
+template<class... TN> using result_of_t = typename result_of<TN...>::type;    
+
+using intmax_t = ::intmax_t;
+}
+#endif
+
 //---------------------------------------------------------------------------
 
 #include "LuaContext.h"

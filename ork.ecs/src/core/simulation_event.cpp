@@ -11,6 +11,7 @@
 #include <ork/ecs/system.h>
 #include <ork/ecs/component.h>
 #include <ork/ecs/entity.h>
+#include <ork/kernel/orklut.hpp>
 #include "message_private.h"
 
 namespace ork::ecs {

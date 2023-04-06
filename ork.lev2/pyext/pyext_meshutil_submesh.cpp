@@ -286,10 +286,17 @@ void pyinit_meshutil_submesh(py::module& module_meshutil) {
                 return rval;
               })
           .def(
+              "convexHull",
+              [](submesh_constptr_t inpsubmesh) -> submesh_ptr_t {
+                submesh_ptr_t rval = std::make_shared<submesh>();
+                submeshJoinCoplanar(*inpsubmesh, *rval);
+                return rval;
+              })
+          .def(
               "withWindingOrderFixed",
               [](submesh_constptr_t inpsubmesh, bool inside_out) -> submesh_ptr_t {
                 submesh_ptr_t rval = std::make_shared<submesh>();
-                submeshFixWindingOrder(*inpsubmesh, *rval, inside_out);
+                submeshConvexHull(*inpsubmesh, *rval);
                 return rval;
               })
           .def(
