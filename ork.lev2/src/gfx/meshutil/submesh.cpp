@@ -269,7 +269,7 @@ poly_index_set_t submesh::connectedPolys(const edge& ed, bool ordered) const { /
 }
 ///////////////////////////////////////////////////////////////////////////////
 void submesh::MergeSubMesh(const submesh& inp_mesh) {
-  float ftimeA     = float(OldSchool::GetRef().GetLoResTime());
+  //float ftimeA     = float(OldSchool::GetRef().GetLoResTime());
   int inumpingroup = 0;
   inp_mesh.visitAllPolys([&](poly_const_ptr_t p) {
     std::vector<vertex_ptr_t> new_vertices;
@@ -283,10 +283,10 @@ void submesh::MergeSubMesh(const submesh& inp_mesh) {
     mergePoly(*new_poly);
     inumpingroup++;
   });
-  logchan_submesh->log("inumpingroup<%d> numoutpolys<%d>", inumpingroup, numPolys());
-  float ftimeB = float(OldSchool::GetRef().GetLoResTime());
-  float ftime  = (ftimeB - ftimeA);
-  logchan_submesh->log("<<PROFILE>> <<submesh::MergeSubMesh %f seconds>>", ftime);
+  //logchan_submesh->log("inumpingroup<%d> numoutpolys<%d>", inumpingroup, numPolys());
+  //float ftimeB = float(OldSchool::GetRef().GetLoResTime());
+  //float ftime  = (ftimeB - ftimeA);
+  //logchan_submesh->log("<<PROFILE>> <<submesh::MergeSubMesh %f seconds>>", ftime);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void submesh::mergePolySet(const PolySet& pset) {

@@ -289,14 +289,14 @@ void pyinit_meshutil_submesh(py::module& module_meshutil) {
               "convexHull",
               [](submesh_constptr_t inpsubmesh) -> submesh_ptr_t {
                 submesh_ptr_t rval = std::make_shared<submesh>();
-                submeshJoinCoplanar(*inpsubmesh, *rval);
+                submeshConvexHull(*inpsubmesh, *rval);
                 return rval;
               })
           .def(
               "withWindingOrderFixed",
               [](submesh_constptr_t inpsubmesh, bool inside_out) -> submesh_ptr_t {
                 submesh_ptr_t rval = std::make_shared<submesh>();
-                submeshConvexHull(*inpsubmesh, *rval);
+                submeshFixWindingOrder(*inpsubmesh, *rval, inside_out);
                 return rval;
               })
           .def(
@@ -351,6 +351,7 @@ void pyinit_meshutil_submesh(py::module& module_meshutil) {
               [](submesh_ptr_t submesh, vertex_const_ptr_t vin) -> vertex_ptr_t { return submesh->mergeVertex(*vin); })
           .def("mergePoly", [](submesh_ptr_t submesh, poly_ptr_t pin) -> poly_ptr_t { return submesh->mergePoly(*pin); })
           .def("mergePolySet", [](submesh_ptr_t submesh, polyset_ptr_t psetin) { submesh->mergePolySet(*psetin); })
+          .def("mergeSubmesh", [](submesh_ptr_t submesh, submesh_ptr_t subm2) { submesh->MergeSubMesh(*subm2); })
           .def(
               "makeTriangle",
               [](submesh_ptr_t submesh, vertex_ptr_t va, vertex_ptr_t vb, vertex_ptr_t vc) -> poly_ptr_t {
