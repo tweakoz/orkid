@@ -155,13 +155,13 @@ void Interface::BindParamCTex(const FxShaderParam* hpar, const Texture* pTex) {
   auto container = _activeShader->_internalHandle.get<rootcontainer_ptr_t>();
   auto puni                    = static_cast<Uniform*>(hpar->GetPlatformHandle());
   const UniformInstance* pinst = container->_activePass->uniformInstance(puni);
-  printf("Bind1 Tex<%p> puni<%p> par<%s> pinst<%p>\n", pTex, puni, hpar->_name.c_str(), pinst);
+  //printf("Bind1 Tex<%p> puni<%p> par<%s> pinst<%p>\n", pTex, puni, hpar->_name.c_str(), pinst);
   if (pinst) {
     int iloc = pinst->mLocation;
 
     const char* teknam = container->mActiveTechnique->_name.c_str();
 
-    printf("Bind2 Tex<%p> par<%s> iloc<%d> teknam<%s>\n", pTex, hpar->_name.c_str(), iloc, teknam);
+    //printf("Bind2 Tex<%p> par<%s> iloc<%d> teknam<%s>\n", pTex, hpar->_name.c_str(), iloc, teknam);
     if (iloc >= 0) {
       const char* psem = puni->_semantic.c_str();
       const char* pnam = puni->_name.c_str();
