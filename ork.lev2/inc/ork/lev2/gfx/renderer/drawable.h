@@ -478,6 +478,7 @@ struct StringDrawableData : public DrawableData {
   fvec2 _pos2D;
   fvec4 _color;
   float _scale = 1.0f;
+  std::string _font;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

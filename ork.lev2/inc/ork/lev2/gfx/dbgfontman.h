@@ -130,6 +130,9 @@ struct FontMan { //: public NoRttiSingleton<FontMan> {
   }
   Font* _pushFont(const std::string& name) {
     Font* pFont = OldStlSchoolFindValFromKey(mFontMap, name, (Font*)nullptr);
+    if(pFont == nullptr) {
+      printf( "FontMan::_pushFont<%s> not found\n", name.c_str() );
+    }
     OrkAssert(pFont);
     mFontStack.push(mpCurrentFont);
     mpCurrentFont = pFont;

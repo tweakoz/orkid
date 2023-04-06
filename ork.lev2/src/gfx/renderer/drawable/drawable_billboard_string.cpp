@@ -22,7 +22,7 @@ namespace ork::lev2 {
 void StringDrawableData::describeX(object::ObjectClass* clazz) {}
 ///////////////////////////////////////////////////////////////////////////////
 StringDrawableData::StringDrawableData(AssetPath path){
-
+  _font = "i14";
 }
 ///////////////////////////////////////////////////////////////////////////////
 drawable_ptr_t StringDrawableData::createDrawable() const {
@@ -43,13 +43,17 @@ StringDrawable::StringDrawable(const StringDrawableData* data)
     auto renderable = (CallbackRenderable*) RCID._irenderable;
     auto data = renderable->_drawDataA.get<const StringDrawableData*>();
     auto& current_string = data->_initialString;
+    auto fontname = data->_font;
+    if(fontname.empty()){
+      fontname = "i14";
+    }
 
     int w = fbi->GetVPW();
     int h = fbi->GetVPH();
     mtxi->PushUIMatrix(w,h);
 
     context->PushModColor(data->_color);
-    FontMan::PushFont("i14");
+    FontMan::PushFont(fontname);
     auto font = FontMan::currentFont();
 
     font->_use_deferred = RCFD->_renderingmodel.isDeferredPBR();

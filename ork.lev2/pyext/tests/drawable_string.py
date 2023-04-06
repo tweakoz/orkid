@@ -171,7 +171,8 @@ class UiSgQuadViewTestApp(object):
       createPanel("cameraD",self.griditems[3],self.scenegraph2),
     ]
     
-    #self.panels[0].griditem.widget.aspect_from_rtgroup = True
+    self.font_change_counter = 1.0
+    self.fontlist =  ["i12","i13","i14","i16","i24","i32","i48", "d24"]
 
   ################################################
 
@@ -179,6 +180,7 @@ class UiSgQuadViewTestApp(object):
 
     abstime = updinfo.absolutetime
 
+    
     RED = vec3(1,0,0)
     WHITE = vec3(1,1,1)    
     color = vec3()
@@ -188,6 +190,14 @@ class UiSgQuadViewTestApp(object):
     str_x = 100+math.sin(abstime)*100
     str_y = 100+math.cos(abstime*0.3)*100
     self.stringdrawable.pos2D = vec2(str_x,str_y)
+
+    self.font_change_counter -= updinfo.deltatime
+    if self.font_change_counter < 0:
+      self.font_change_counter = 1.0
+      font_id = random.randint(0,len(self.fontlist)-1)
+      self.stringdrawable.font = self.fontlist[font_id]
+      print("font: %s" % self.stringdrawable.font)
+
 
     cube_y = 0.4+math.sin(abstime)*0.2
     self.cube_node1.worldTransform.translation = vec3(0,cube_y,0) 

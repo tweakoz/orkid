@@ -136,7 +136,12 @@ void pyinit_gfx_drawables(py::module& module_lev2) {
           .def_property(
               "color",
               [](string_drawabledata_ptr_t drw) -> fvec4 { return drw->_color; },
-              [](string_drawabledata_ptr_t drw, fvec4 val) { drw->_color = val; });
+              [](string_drawabledata_ptr_t drw, fvec4 val) { drw->_color = val; })
+          .def_property(
+              "font",
+              [](string_drawabledata_ptr_t drw) -> std::string { return drw->_font; },
+              [](string_drawabledata_ptr_t drw, std::string val) { drw->_font = val; })
+              ;
   type_codec->registerStdCodec<string_drawabledata_ptr_t>(stringdrawdata_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto ptcdrawdata_type = //
