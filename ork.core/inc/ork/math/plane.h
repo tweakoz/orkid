@@ -62,7 +62,8 @@ public: //
   void CalcD(const vect3_t& pt);
   bool IsOn(const vect3_t& pt) const;
   void CalcNormal(const vect3_t& pta, const vect3_t& ptb, const vect3_t& ptc);
-
+  vect3_t closestPointOnPlane(const vect3_t& pt) const;
+  
   //////////////////////////////////
 
   bool Intersect(const TLineSegment3<T>& seg, T& dis, vect3_t& res) const;
@@ -86,6 +87,7 @@ public: //
   template <typename PolyType> bool ClipPoly(const PolyType& PolyToClip, PolyType& OutPolyFront, PolyType& OutPolyBack) const;
 
   void SimpleTransform(const Matrix44<T>& transform);
+
 
   Plane<T> operator-() const;
 

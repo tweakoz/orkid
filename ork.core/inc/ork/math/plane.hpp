@@ -91,6 +91,14 @@ template <typename T> Plane<T>::~Plane() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+template <typename T> 
+typename Plane<T>::vect3_t Plane<T>::closestPointOnPlane(const vect3_t& pt) const{
+  T fdist = pointDistance(pt);
+  return pt - (n * fdist);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 template <typename T>
 void Plane<T>::CalcFromNormalAndOrigin(
     const vect3_t& NormalVec,
