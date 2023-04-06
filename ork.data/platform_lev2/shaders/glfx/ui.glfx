@@ -77,7 +77,7 @@ fragment_shader ps_uitext : iface_fmt {
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_uitextured : iface_fmt {
   vec4 texc = texture(ColorMap, frg_uv);
-  out_clr   = vec4(texc.xyz, texc.w);
+  out_clr   = vec4(texc.xyz, 1);
 }
 ///////////////////////////////////////////////////////////////
 vertex_shader vs_vtxcolor : iface_vdefault {

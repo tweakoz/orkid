@@ -138,6 +138,7 @@ void Surface::DoDraw(ui::drawevent_constptr_t drwev) {
   if (_rtgroup) {
     static auto texmtl = std::make_shared<lev2::GfxMaterialUITextured>(tgt);
     auto ptex          = _rtgroup->GetMrt(0)->texture();
+    OrkAssert(ptex);
     texmtl->SetTexture(lev2::ETEXDEST_DIFFUSE, ptex);
     material = texmtl;
   }

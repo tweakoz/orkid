@@ -233,7 +233,7 @@ GfxMaterialUITextured::GfxMaterialUITextured(Context* pTarg, const std::string& 
   _rasterstate.SetShadeModel(ESHADEMODEL_SMOOTH);
   _rasterstate.SetAlphaTest(EALPHATEST_OFF);
   _rasterstate.SetBlending(Blending::OFF);
-  _rasterstate.SetDepthTest(EDepthTest::LEQUALS);
+  _rasterstate.SetDepthTest(EDepthTest::OFF);
   _rasterstate.SetCullTest(ECullTest::OFF);
 
   if (pTarg) {
@@ -306,9 +306,12 @@ bool GfxMaterialUITextured::BeginPass(Context* pTarg, int iPass) {
 
   const fmtx4& MatMVP = pTarg->MTXI()->RefMVPMatrix();
 
+  auto texture = GetTexture(ETEXDEST_DIFFUSE).mpTexture;
+  OrkAssert(texture != nullptr);
+  
   pTarg->FXI()->BindPass(iPass);
   pTarg->FXI()->BindParamMatrix(hTransform, MatMVP);
-  pTarg->FXI()->BindParamCTex(hColorMap, GetTexture(ETEXDEST_DIFFUSE).mpTexture);
+  pTarg->FXI()->BindParamCTex(hColorMap, texture);
   pTarg->FXI()->BindParamVect4(hModColor, pTarg->RefModColor());
   pTarg->FXI()->CommitParams();
   return true;
