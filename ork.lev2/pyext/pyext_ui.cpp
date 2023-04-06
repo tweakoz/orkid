@@ -309,7 +309,7 @@ void pyinit_ui(py::module& module_lev2) {
                 py::list rval;
                 for (auto item : layoutitems) {
                   auto shared_item     = std::make_shared<ui::LayoutItemBase>();
-                  printf( "item._widget<%p>\n", (void*) item._widget.get() );
+                  //printf( "item._widget<%p>\n", (void*) item._widget.get() );
                   shared_item->_widget = item._widget;
                   shared_item->_layout = item._layout;
                   rval.append(shared_item);
@@ -336,7 +336,7 @@ void pyinit_ui(py::module& module_lev2) {
                 py::list rval;
                 for (auto item : layoutitems) {
                   auto shared_item     = std::make_shared<ui::LayoutItemBase>();
-                  printf( "item._widget<%p>\n", (void*) item._widget.get() );
+                  //printf( "item._widget<%p>\n", (void*) item._widget.get() );
                   shared_item->_widget = item._widget;
                   shared_item->_layout = item._layout;
                   rval.append(shared_item);

@@ -202,17 +202,14 @@ bool Interface::compilePipelineVTG(rootcontainer_ptr_t container) {
     for (const auto& itp : vtx_iface->_inputAttributes) {
       Attribute* pattr = itp.second;
       int iloc         = pattr->mLocation;
-       printf( "	vtxattr<%s> loc<%d> dir<%s> sem<%s>\n",
-       pattr->mName.c_str(), iloc, pattr->mDirection.c_str(),
-       pattr->mSemantic.c_str() );
+       //printf( "	vtxattr<%s> loc<%d> dir<%s> sem<%s>\n",
+       //pattr->mName.c_str(), iloc, pattr->mDirection.c_str(),
+       //pattr->mSemantic.c_str() );
       glBindAttribLocation(prgo, iloc, pattr->mName.c_str());
       GL_ERRORCHECK();
       pass->_vtxAttributeById[iloc]                    = pattr;
       pass->_vtxAttributesBySemantic[pattr->mSemantic] = pattr;
       counter++;
-      if(counter>100){
-        OrkAssert(false);
-      }
     }
 
     //////////////////////////
