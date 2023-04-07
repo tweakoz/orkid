@@ -78,6 +78,9 @@ class UiSgQuadViewTestApp(object):
                                         margin = 1,
                                         uiclass = ui.UiSceneGraphViewport,
                                         args = ["box",vec4(1,0,1,1)] )
+    
+    for i, item in enumerate(self.griditems):
+      item.widget.userID = i
 
     def onCtrlC(signum, frame):
       print("signalling EXIT to ezapp")
@@ -108,6 +111,10 @@ class UiSgQuadViewTestApp(object):
     self.stringdrawable.pos2D = vec2(100,100)
     self.stringdrawable.color = vec4(1,1,0,1)
 
+    def _on_string_render(userID):
+        self.stringdrawable.text = "yoyoyo: VPID<%d>" % userID
+
+    self.stringdrawable.onRender(_on_string_render)
 
     # create scenegraph 1   
 

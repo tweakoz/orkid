@@ -27,6 +27,7 @@ StringDrawableData::StringDrawableData(AssetPath path){
 ///////////////////////////////////////////////////////////////////////////////
 drawable_ptr_t StringDrawableData::createDrawable() const {
   auto rval = std::make_shared<StringDrawable>(this);
+  rval->_rendercb_user = _onRender;
   return rval;
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -35,6 +36,12 @@ StringDrawable::StringDrawable(const StringDrawableData* data)
   _data = data;
 
   _rendercb = [this](lev2::RenderContextInstData& RCID){
+
+    /////////////////////////////////////
+    if( _rendercb_user ){
+      _rendercb_user(RCID);
+    }
+    /////////////////////////////////////
     auto context = RCID.context();
     auto mtxi = context->MTXI();
     auto fbi = context->FBI();

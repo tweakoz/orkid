@@ -57,6 +57,8 @@ void SceneGraphViewport::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
 
     if(_override_acqdbuf){
       auto DB = _scenegraph->_dbufcontext_SG->acquireForReadLocked();
+      auto WDB = (lev2::DrawableBuffer*) DB;
+      WDB->setUserProperty("vpID"_crcu,_userID);
       auto RCFD = drwev->_acqdbuf->_RCFD;
       _override_acqdbuf->_RCFD = RCFD;
       _override_acqdbuf->_DB = DB;
@@ -77,6 +79,7 @@ void SceneGraphViewport::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
     comptek->_renderNode->_bufferKey = (uint64_t) this;
     
     comptek->_outputNode = _outputnode;
+    
     _scenegraph->_renderWithAcquiredRenderDrawBuffer(acqbuf);
 
     comptek->_outputNode = orig_onode;

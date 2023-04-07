@@ -36,6 +36,7 @@ namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////
 
 using onrenderable_fn_t = std::function<void(IRenderable*)>;
+using on_render_rcid_t = std::function<void(lev2::RenderContextInstData& RCID)>;
 
 struct DrawableOwner : public ork::Object {
   typedef orkvector<drawable_ptr_t> DrawableVector;
@@ -323,6 +324,8 @@ struct Drawable {
   varmap::varmap_ptr_t _properties;
   fvec4 _modcolor;
   onrenderable_fn_t _onrenderable;
+  on_render_rcid_t _rendercb;
+  on_render_rcid_t _rendercb_user;
   bool mEnabled;
   std::string _name;
 
@@ -479,6 +482,7 @@ struct StringDrawableData : public DrawableData {
   fvec4 _color;
   float _scale = 1.0f;
   std::string _font;
+  on_render_rcid_t _onRender;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -518,7 +522,6 @@ struct StringDrawable final : public Drawable {
   StringDrawable(const StringDrawableData* data);
   ~StringDrawable();
   void enqueueToRenderQueue(drawablebufitem_constptr_t item, lev2::IRenderer* renderer) const override;
-  std::function<void(lev2::RenderContextInstData& RCID)> _rendercb;
   const StringDrawableData* _data = nullptr;
 };
 
@@ -534,7 +537,6 @@ struct BillboardStringDrawable final : public Drawable {
   float _scale = 1.0f;
   fvec3 _upvec;
   fvec4 _color;
-  std::function<void(lev2::RenderContextInstData& RCID)> _rendercb;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -549,7 +551,6 @@ struct OverlayStringDrawable final : public Drawable {
   fvec2 _position;
   float _scale = 1.0f;
   fvec4 _color;
-  std::function<void(lev2::RenderContextInstData& RCID)> _rendercb;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -564,7 +565,6 @@ struct InstancedBillboardStringDrawable final : public InstancedDrawable {
   fvec3 _offset;
   float _scale = 1.0f;
   fvec3 _upvec;
-  std::function<void(lev2::RenderContextInstData& RCID)> _rendercb;
   textitem_vect _text_items;
 };
 

@@ -106,6 +106,14 @@ void pyinit_ui(py::module& module_lev2) {
   /////////////////////////////////////////////////////////////////////////////////
   auto widget_type = //
       py::class_<ui::Widget, uiwidget_ptr_t>(uimodule, "UiWidget")
+          .def_property(
+              "userID",
+              [](uiwidget_ptr_t widget) -> uint64_t { //
+                return widget->_userID;
+              },
+              [](uiwidget_ptr_t widget, uint64_t uid )  { //
+                widget->_userID = uid;
+              })
           .def_property_readonly(
               "name",
               [](uiwidget_ptr_t widget) -> std::string { //

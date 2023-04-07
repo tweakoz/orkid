@@ -141,6 +141,17 @@ void pyinit_gfx_drawables(py::module& module_lev2) {
               "font",
               [](string_drawabledata_ptr_t drw) -> std::string { return drw->_font; },
               [](string_drawabledata_ptr_t drw, std::string val) { drw->_font = val; })
+          .def(
+              "onRender",
+              [](string_drawabledata_ptr_t drw, py::object callback) { 
+                  drw->_onRender = [callback](RenderContextInstData& RCID){
+                    auto RCFD = RCID._RCFD;
+                    auto DB = RCFD->GetDB();
+                    auto vpID = DB->getUserProperty("vpID"_crcu).get<uint64_t>();
+                    py::gil_scoped_acquire acquire;
+                    callback(int(vpID));
+                  };
+                })
               ;
   type_codec->registerStdCodec<string_drawabledata_ptr_t>(stringdrawdata_type);
   /////////////////////////////////////////////////////////////////////////////////

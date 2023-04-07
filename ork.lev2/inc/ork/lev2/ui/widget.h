@@ -194,6 +194,7 @@ public:
   evhandler_t _evhandler = nullptr;
 
   std::string _name;
+  uint64_t _userID = 0;
   drawevent_constptr_t _drawEvent;
   Rect _geometry;
   std::stack<eventfilter_ptr_t> _eventfilterstack;
