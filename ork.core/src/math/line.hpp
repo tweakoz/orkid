@@ -77,6 +77,29 @@ float TLineSegment2Helper<T>::pointDistancePercent( const vec2_type  &pt ) const
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+template <typename T>
+InfiniteLine3D<T>::InfiniteLine3D(vec3_type n, vec3_type p)
+    : _normal(n)
+    , _point(p) {
+}
+
+template <typename T> //
+T InfiniteLine3D<T>::distanceToPoint(const vec3_type& point) const {
+  return _normal.dotWith(point - _point);
+}
+template <typename T> //
+typename InfiniteLine3D<T>::vec3_type InfiniteLine3D<T>::closestPointOnLine(const vec3_type& point) const {
+  auto n = _normal.crossWith(point - _point).normalized();
+  return n.crossWith(_normal) + _point;
+}
+
+template <typename T> T InfiniteLine3D<T>::distanceToLine(const InfiniteLine3D& othline) const {
+  auto n = _normal.crossWith(othline._normal).normalized();
+  return n.dotWith(_point - othline._point);
+}
+
+///////////////////////////////////////////////////////////////////////////////
 }
 ///////////////////////////////////////////////////////////////////////////////
 

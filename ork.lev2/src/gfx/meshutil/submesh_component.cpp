@@ -293,6 +293,15 @@ const AnnoMap* Polygon::GetAnnoMap() const {
   return mAnnotationSet;
 }
 
+void Polygon::visitEdges(const std::function<void(edge_ptr_t)>& visitor) const{
+  size_t num_verts = _vertices.size();
+  for( int i=0; i<num_verts; i++ ){
+    auto v0 = _vertices[i];
+    auto v1 = _vertices[(i+1)%num_verts];
+    visitor( std::make_shared<edge>(v0,v1) );
+  }
+}
+
 ////////////////////////////////////////////////////////////////
 
 bool Polygon::containsVertex(vertex_ptr_t v) const{

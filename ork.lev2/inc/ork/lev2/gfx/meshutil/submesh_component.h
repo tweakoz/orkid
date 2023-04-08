@@ -227,7 +227,7 @@ struct Polygon {
   bool containsVertex(vertex_ptr_t v) const;
   bool containsEdge(const edge& e, bool ordered = true) const;
   bool containsEdge(edge_ptr_t e, bool ordered = true) const;
-
+  void visitEdges(const std::function<void(edge_ptr_t)>& visitor) const;
   edge_ptr_t edgeForVertices(vertex_ptr_t vA, vertex_ptr_t vB) const;
 
   uint64_t hash() const;

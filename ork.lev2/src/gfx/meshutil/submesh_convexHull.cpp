@@ -14,158 +14,183 @@
 namespace ork::meshutil {
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> struct InfiniteLine3D {
-
-  using vec3_type = Vector3<T>;
-
-  InfiniteLine3D() = default;
-
-  InfiniteLine3D(vec3_type n, vec3_type p);
-  T distanceToPoint(const vec3_type& point) const;
-  T distanceToLine(const InfiniteLine3D& othline) const;
-  vec3_type closestPointOnLine(const vec3_type& point) const;
-
-  vec3_type _normal;
-  vec3_type _point;
-};
-
-template <typename T>
-InfiniteLine3D<T>::InfiniteLine3D(vec3_type n, vec3_type p)
-    : _normal(n)
-    , _point(p) {
-}
-
-template <typename T> //
-T InfiniteLine3D<T>::distanceToPoint(const vec3_type& point) const {
-  return _normal.dotWith(point - _point);
-}
-template <typename T> //
-typename InfiniteLine3D<T>::vec3_type InfiniteLine3D<T>::closestPointOnLine(const vec3_type& point) const {
-  auto n = _normal.crossWith(point - _point).normalized();
-  return n.crossWith(_normal) + _point;
-}
-
-template <typename T> T InfiniteLine3D<T>::distanceToLine(const InfiniteLine3D& othline) const {
-  auto n = _normal.crossWith(othline._normal).normalized();
-  return n.dotWith(_point - othline._point);
-}
-
-double vquant = 10000.0;
-using vptr_t = std::shared_ptr<dvec3>;
-  struct Triangle {
-
-    Triangle(vptr_t v0, vptr_t v1, vptr_t v2)
-        : _v0(v0)
-        , _v1(v1)
-        , _v2(v2) {
-    }
-
-    dplane3 plane() const {
-      dvec3 a = *_v0;
-      dvec3 b = *_v1;
-      dvec3 c = *_v2;
-      dvec3 n = (b-a).crossWith(c-a).normalized();
-      return dplane3(n,a);
-    };
-
-    uint64_t hash() const {
-      boost::Crc64 crc;
-      crc.init();
-      crc.accumulateItem<uint64_t>(_v0->hash(vquant));
-      crc.accumulateItem<uint64_t>(_v1->hash(vquant));
-      crc.accumulateItem<uint64_t>(_v2->hash(vquant));
-      crc.finish();
-      return crc.result();
-    }
-
-    vptr_t _v0;
-    vptr_t _v1;
-    vptr_t _v2;
-  };
-  using tri_ptr_t = std::shared_ptr<Triangle>;
-
-// iterative algorithm
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+// iterative method
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 
 void submeshConvexHullIterative(const submesh& inpsubmesh, submesh& outsmesh) {
 
-  using line_t = InfiniteLine3D<double>;
-  std::unordered_map<uint64_t,vertex_const_ptr_t> vertices;
-  inpsubmesh.visitAllVertices([&](vertex_const_ptr_t va) { 
-    vertices[(uint64_t) (void*) va.get() ] = va;
-    });
+  ///////////////////////////////////////////////////
+  // trivially reject
+  ///////////////////////////////////////////////////
 
-  OrkAssert(vertices.size()>=4);
+  if (inpsubmesh.numVertices() < 4) {
+    return;
+  }
+
+  ///////////////////////////////////////////////////
+  // collect vertices
+  ///////////////////////////////////////////////////
+
+  std::unordered_set<vertex_const_ptr_t> vertices;
+  inpsubmesh.visitAllVertices([&](vertex_const_ptr_t va) { 
+    vertices.insert(va);
+    });
+  OrkAssert(vertices.size()>=4); // ensure we still have 4 vertices after welding
 
   ///////////////////////////////////////////////////
   // create initial tetrahedron
   ///////////////////////////////////////////////////
 
-  submesh init_mesh;
+  dvec3 center;
+  auto make_vtx = [&]() -> vertex_ptr_t {
+    auto va = vertices.begin();
+    auto nva = outsmesh.mergeVertex(*(*va));
+    center += nva->mPos;
+    vertices.erase(va);
+    return nva;
+  };
+  auto nva = make_vtx();
+  auto nvb = make_vtx();
+  auto nvc = make_vtx();
+  auto nvd = make_vtx();
+  center *= 0.25;
+  
+  auto do_flip = [&](vertex_ptr_t a, vertex_ptr_t b, vertex_ptr_t c) -> bool {
+    return (a->mPos-center).crossWith(b->mPos-center).dotWith(c->mPos-center)>=0.0;
+  };
+  auto make_tri = [&](vertex_ptr_t a, vertex_ptr_t b, vertex_ptr_t c) -> poly_ptr_t {
+    return do_flip(a,b,c) ? outsmesh.mergeTriangle(a,c,b) : outsmesh.mergeTriangle(a,b,c);
+  };
 
-  auto va = vertices.begin();
-  auto nva = init_mesh.mergeVertex(*va->second);
-  vertices.erase(va);
-  auto vb = vertices.begin();
-  auto nvb = init_mesh.mergeVertex(*vb->second);
-  vertices.erase(vb);
-  auto vc = vertices.begin();
-  auto nvc = init_mesh.mergeVertex(*vc->second);
-  vertices.erase(vc);
-  auto vd = vertices.begin();
-  auto nvd = init_mesh.mergeVertex(*vd->second);
-  vertices.erase(vd);
-
-  auto tri_abc = init_mesh.mergeTriangle(nva,nvb,nvc);
-  auto tri_acd = init_mesh.mergeTriangle(nva,nvc,nvd);
-  auto tri_adb = init_mesh.mergeTriangle(nva,nvd,nvb);
-  auto tri_bcd = init_mesh.mergeTriangle(nvb,nvc,nvd);
-
-  submeshFixWindingOrder(init_mesh,outsmesh,false);
+  std::vector<poly_ptr_t> polys;
+  polys.push_back(make_tri(nva,nvb,nvc));
+  polys.push_back(make_tri(nva,nvc,nvd));
+  polys.push_back(make_tri(nva,nvd,nvb));
+  polys.push_back(make_tri(nvb,nvc,nvd));
 
   ///////////////////////////////////////////////////
   // build conflict graph
   ///////////////////////////////////////////////////
 
-  std::map<vertex_const_ptr_t,poly_set_t> conflict_graph;
+  using conflict_graph_t = std::map<vertex_const_ptr_t, std::unordered_set<poly_ptr_t>>;
 
-  for( auto it : vertices ){
-    auto v = it.second;
-    auto vpos = v->mPos;
-    if(tri_abc->computePlane().isPointInFront(vpos)){
-      conflict_graph[v].insert(tri_abc);
-    }
-    if(tri_acd->computePlane().isPointInFront(vpos)){
-      conflict_graph[v].insert(tri_acd);
-    }
-    if(tri_adb->computePlane().isPointInFront(vpos)){
-      conflict_graph[v].insert(tri_adb);
-    }
-    if(tri_bcd->computePlane().isPointInFront(vpos)){
-      conflict_graph[v].insert(tri_bcd);
-    }
-  }
+  conflict_graph_t conflict_graph;
 
+  auto update_conflict_graph = [&]() {
+    conflict_graph.clear();
+    for( auto v : vertices ){
+      auto vpos = v->mPos;
+      for( auto p : polys ){
+        if(p->computePlane().isPointInFront(vpos)){
+          conflict_graph[v].insert(p);
+        }
+      }
+    }
+  };
+
+  update_conflict_graph();
+
+  ///////////////////////////////////////////////////
+  // iterate on conflict graph
+  ///////////////////////////////////////////////////
 
   while( not conflict_graph.empty() ){
 
+    ///////////////////////////////
+    // get next conflict point
+    ///////////////////////////////
+
     auto it_p =  conflict_graph.begin();
-    auto vtx = it_p->first;
+    auto conflict_point = it_p->first;
     auto& polyset = it_p->second;
     size_t num_conflicts = polyset.size();
-    printf( "vtx<%p> num_conflicts<%zu>\n", vtx.get(), num_conflicts );
+    printf( "conflict_point<%p> num_conflicts<%zu>\n", conflict_point.get(), num_conflicts );
 
-    conflict_graph.erase(it_p);
+    ///////////////////////////////
+    // remove all conflicting polys from outsmesh
+    //  and build edge set
+    ///////////////////////////////
+
+    edge_set_t edgeset;
+    for( auto it : polyset ){
+      auto the_poly = it;
+
+      the_poly->visitEdges([&](edge_ptr_t the_edge) {
+        auto reverse_edge = std::make_shared<edge>(the_edge->_vertexB,the_edge->_vertexA);
+        if(edgeset.contains(reverse_edge))
+          edgeset.remove(the_edge);
+        else
+          edgeset.insert(the_edge);
+      });
+
+      outsmesh.removePoly(the_poly);
+    }
+
+    ///////////////////////////////
+    // link edge loops from chains
+    ///////////////////////////////
+
+    EdgeChainLinker linker;
+    for( auto it : edgeset._the_map ){
+      auto the_edge = it.second;
+      printf( "  edge[%d->%d]\n", //
+                 the_edge->_vertexA->_poolindex, //
+                 the_edge->_vertexB->_poolindex);
+      linker.add_edge(the_edge);
+    }
+    linker.link();
+    OrkAssert(linker._edge_loops.size()==1);
+
+    ///////////////////////////////
+    // flip edge loop if needed
+    ///////////////////////////////
+
+    auto loop = linker._edge_loops[0];
+    auto edgeA = loop->_edges[0];
+    auto edgeB = loop->_edges[1];
+    bool flip = do_flip(edgeA->_vertexA, //
+                        edgeA->_vertexB, //
+                        edgeB->_vertexB);
+
+    if(flip){
+      auto temp = std::make_shared<EdgeLoop>();
+      temp->reverseOf(*loop);
+      loop = temp;
+    }
+
+    ///////////////////////////////
+    // merge new polys
+    ///////////////////////////////
+
+    int num_edges = loop->_edges.size();
+    auto new_c = outsmesh.mergeVertex(*conflict_point);
+    for( int i=0; i<num_edges; i++ ){
+      auto edge = loop->_edges[i];
+      printf( "  loopedge[%d->%d]\n", //
+                 edge->_vertexA->_poolindex, //
+                 edge->_vertexB->_poolindex);
+      auto new_tri = outsmesh.mergeTriangle(edge->_vertexB, //
+                                            edge->_vertexA, //
+                                            new_c);
+    }
+
+    ///////////////////////////////
+    // remove point and move to next conflict 
+    ///////////////////////////////
+    vertices.erase(conflict_point);
+    update_conflict_graph();
   }
 
-  OrkAssert(false);
-  ///////////////////////////////////////////////////
-  // construct octahedron from 6 points
-  ///////////////////////////////////////////////////
-
-  // create diamond from 6 vertices
 }
 
-// the inefficient method
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+// brute force method
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 
 void submeshConvexHullBruteForce(const submesh& inpsubmesh, submesh& outsmesh) {
 
@@ -204,6 +229,8 @@ void submeshConvexHullBruteForce(const submesh& inpsubmesh, submesh& outsmesh) {
     });
   });
 }
+
+///////////////////////////////////////////////////////////////////////////////
 
 void submeshConvexHull(const submesh& inpsubmesh, submesh& outsmesh) {
   // submeshConvexHullBruteForce(inpsubmesh, outsmesh);

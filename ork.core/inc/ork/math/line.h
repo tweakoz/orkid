@@ -128,6 +128,25 @@ public:
   }
 };
 
+///////////////////////////////////////////////////////////////////////////////
+
+template <typename T> struct InfiniteLine3D {
+
+  using vec3_type = Vector3<T>;
+
+  InfiniteLine3D() = default;
+
+  InfiniteLine3D(vec3_type n, vec3_type p);
+  T distanceToPoint(const vec3_type& point) const;
+  T distanceToLine(const InfiniteLine3D& othline) const;
+  vec3_type closestPointOnLine(const vec3_type& point) const;
+
+  vec3_type _normal;
+  vec3_type _point;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
 template <typename T> struct TLineSegment3 {
   typedef Vector3<T> vec3_type;
 
