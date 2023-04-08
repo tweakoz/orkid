@@ -107,7 +107,7 @@ void submeshConvexHullIterative(const submesh& inpsubmesh, submesh& outsmesh) {
     auto conflict_point = it_p->first;
     auto& polyset = it_p->second;
     size_t num_conflicts = polyset.size();
-    printf( "conflict_point<%p> num_conflicts<%zu>\n", conflict_point.get(), num_conflicts );
+    //printf( "conflict_point<%p> num_conflicts<%zu>\n", conflict_point.get(), num_conflicts );
 
     ///////////////////////////////
     // remove all conflicting polys from outsmesh
@@ -136,7 +136,7 @@ void submeshConvexHullIterative(const submesh& inpsubmesh, submesh& outsmesh) {
     EdgeChainLinker linker;
     for( auto it : edgeset._the_map ){
       auto the_edge = it.second;
-      printf( "  edge[%d->%d]\n", //
+      if(0)printf( "  edge[%d->%d]\n", //
                  the_edge->_vertexA->_poolindex, //
                  the_edge->_vertexB->_poolindex);
       linker.add_edge(the_edge);
@@ -169,7 +169,7 @@ void submeshConvexHullIterative(const submesh& inpsubmesh, submesh& outsmesh) {
     auto new_c = outsmesh.mergeVertex(*conflict_point);
     for( int i=0; i<num_edges; i++ ){
       auto edge = loop->_edges[i];
-      printf( "  loopedge[%d->%d]\n", //
+      if(0)printf( "  loopedge[%d->%d]\n", //
                  edge->_vertexA->_poolindex, //
                  edge->_vertexB->_poolindex);
       auto new_tri = outsmesh.mergeTriangle(edge->_vertexB, //
