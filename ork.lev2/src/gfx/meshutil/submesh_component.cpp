@@ -305,6 +305,13 @@ void Polygon::visitEdges(const std::function<void(edge_ptr_t)>& visitor) const{
 ////////////////////////////////////////////////////////////////
 
 bool Polygon::containsVertex(vertex_ptr_t v) const{
+  auto as_const = std::const_pointer_cast<const vertex>(v);
+  return containsVertex(as_const);
+}
+
+////////////////////////////////////////////////////////////////
+
+bool Polygon::containsVertex(vertex_const_ptr_t v) const{
   for( auto v2 : _vertices ){
     if(v2==v)
       return true;

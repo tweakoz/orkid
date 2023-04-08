@@ -59,7 +59,11 @@ void submeshConvexHullIterative(const submesh& inpsubmesh, submesh& outsmesh) {
   center *= 0.25;
   
   auto do_flip = [&](vertex_ptr_t a, vertex_ptr_t b, vertex_ptr_t c) -> bool {
-    return (a->mPos-center).crossWith(b->mPos-center).dotWith(c->mPos-center)>=0.0;
+    auto d_ab = (b->mPos-a->mPos).normalized();
+    auto d_bc = (c->mPos-b->mPos).normalized();
+    auto d_n = d_ab.crossWith(d_bc).normalized();
+    auto d_c = (b->mPos-center).normalized();
+    return d_n.dotWith(d_c)>=0.0;
   };
   auto make_tri = [&](vertex_ptr_t a, vertex_ptr_t b, vertex_ptr_t c) -> poly_ptr_t {
     return do_flip(a,b,c) ? outsmesh.mergeTriangle(a,c,b) : outsmesh.mergeTriangle(a,b,c);
@@ -84,8 +88,10 @@ void submeshConvexHullIterative(const submesh& inpsubmesh, submesh& outsmesh) {
     for( auto v : vertices ){
       auto vpos = v->mPos;
       for( auto p : polys ){
-        if(p->computePlane().isPointInFront(vpos)){
-          conflict_graph[v].insert(p);
+        if( not p->containsVertex(v) ){
+          if(p->computePlane().isPointInFront(vpos)){
+            conflict_graph[v].insert(p);
+          }
         }
       }
     }
@@ -128,6 +134,7 @@ void submeshConvexHullIterative(const submesh& inpsubmesh, submesh& outsmesh) {
 
       outsmesh.removePoly(the_poly);
     }
+    polyset.clear();
 
     ///////////////////////////////
     // link edge loops from chains

@@ -225,6 +225,7 @@ struct Polygon {
   dplane3 computePlane() const;
   
   bool containsVertex(vertex_ptr_t v) const;
+  bool containsVertex(vertex_const_ptr_t v) const;
   bool containsEdge(const edge& e, bool ordered = true) const;
   bool containsEdge(edge_ptr_t e, bool ordered = true) const;
   void visitEdges(const std::function<void(edge_ptr_t)>& visitor) const;
