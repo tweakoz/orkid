@@ -50,115 +50,119 @@ template <typename T> T InfiniteLine3D<T>::distanceToLine(const InfiniteLine3D& 
   return n.dotWith(_point - othline._point);
 }
 
-// quicker algorithm
+double vquant = 10000.0;
+using vptr_t = std::shared_ptr<dvec3>;
+  struct Triangle {
 
-void submeshConvexHullQuicker(const submesh& inpsubmesh, submesh& outsmesh) {
+    Triangle(vptr_t v0, vptr_t v1, vptr_t v2)
+        : _v0(v0)
+        , _v1(v1)
+        , _v2(v2) {
+    }
+
+    dplane3 plane() const {
+      dvec3 a = *_v0;
+      dvec3 b = *_v1;
+      dvec3 c = *_v2;
+      dvec3 n = (b-a).crossWith(c-a).normalized();
+      return dplane3(n,a);
+    };
+
+    uint64_t hash() const {
+      boost::Crc64 crc;
+      crc.init();
+      crc.accumulateItem<uint64_t>(_v0->hash(vquant));
+      crc.accumulateItem<uint64_t>(_v1->hash(vquant));
+      crc.accumulateItem<uint64_t>(_v2->hash(vquant));
+      crc.finish();
+      return crc.result();
+    }
+
+    vptr_t _v0;
+    vptr_t _v1;
+    vptr_t _v2;
+  };
+  using tri_ptr_t = std::shared_ptr<Triangle>;
+
+// iterative algorithm
+
+void submeshConvexHullIterative(const submesh& inpsubmesh, submesh& outsmesh) {
 
   using line_t = InfiniteLine3D<double>;
-  std::unordered_set<vertex_const_ptr_t> vertices;
-  inpsubmesh.visitAllVertices([&](vertex_const_ptr_t va) { vertices.insert(va); });
+  std::unordered_map<uint64_t,vertex_const_ptr_t> vertices;
+  inpsubmesh.visitAllVertices([&](vertex_const_ptr_t va) { 
+    vertices[(uint64_t) (void*) va.get() ] = va;
+    });
 
-  auto numverts = vertices.size();
-
-  switch (numverts) {
-    case 0:
-    case 1:
-    case 2:
-    case 3:
-      outsmesh = submesh();
-      return;
-    case 4: // tetrahedron
-      outsmesh = inpsubmesh;
-      return;
-    default: // general case
-      break;
-  }
+  OrkAssert(vertices.size()>=4);
 
   ///////////////////////////////////////////////////
-  // find 2 most distant vertices
+  // create initial tetrahedron
   ///////////////////////////////////////////////////
 
-  double fmaxdist_points = 0.0;
-  line_t line;
-  vertex_const_ptr_t v0, v1;
-  for (auto va : vertices) {
-    for (auto vb : vertices) {
-      if(va!=vb){
-      double fdist = (va->mPos - vb->mPos).magnitudeSquared();
-      if (fdist > fmaxdist_points) {
-        fmaxdist_points = fdist;
-        line            = line_t(va->mPos, vb->mPos);
-        v0              = va;
-        v1              = vb;
-      }
+  submesh init_mesh;
+
+  auto va = vertices.begin();
+  auto nva = init_mesh.mergeVertex(*va->second);
+  vertices.erase(va);
+  auto vb = vertices.begin();
+  auto nvb = init_mesh.mergeVertex(*vb->second);
+  vertices.erase(vb);
+  auto vc = vertices.begin();
+  auto nvc = init_mesh.mergeVertex(*vc->second);
+  vertices.erase(vc);
+  auto vd = vertices.begin();
+  auto nvd = init_mesh.mergeVertex(*vd->second);
+  vertices.erase(vd);
+
+  auto tri_abc = init_mesh.mergeTriangle(nva,nvb,nvc);
+  auto tri_acd = init_mesh.mergeTriangle(nva,nvc,nvd);
+  auto tri_adb = init_mesh.mergeTriangle(nva,nvd,nvb);
+  auto tri_bcd = init_mesh.mergeTriangle(nvb,nvc,nvd);
+
+  submeshFixWindingOrder(init_mesh,outsmesh,false);
+
+  ///////////////////////////////////////////////////
+  // build conflict graph
+  ///////////////////////////////////////////////////
+
+  std::map<vertex_const_ptr_t,poly_set_t> conflict_graph;
+
+  for( auto it : vertices ){
+    auto v = it.second;
+    auto vpos = v->mPos;
+    if(tri_abc->computePlane().isPointInFront(vpos)){
+      conflict_graph[v].insert(tri_abc);
+    }
+    if(tri_acd->computePlane().isPointInFront(vpos)){
+      conflict_graph[v].insert(tri_acd);
+    }
+    if(tri_adb->computePlane().isPointInFront(vpos)){
+      conflict_graph[v].insert(tri_adb);
+    }
+    if(tri_bcd->computePlane().isPointInFront(vpos)){
+      conflict_graph[v].insert(tri_bcd);
     }
   }
-  }
-  vertices.erase(v0);
-  vertices.erase(v1);
 
-  ///////////////////////////////////////////////////
-  // find most distant vertex from line (v_fml)
-  ///////////////////////////////////////////////////
 
-  double fmaxdist_line = 0.0;
-  std::map<double, vertex_const_ptr_t> line_distmap;
-  for (auto va : vertices) {
-    double fdist = line.distanceToPoint(va->mPos);
-    line_distmap.insert(std::make_pair(fdist, va));
-  }
-  auto v_fml = line_distmap.rbegin()->second;
-  vertices.erase(v_fml);
+  while( not conflict_graph.empty() ){
 
-  ///////////////////////////////////////////////////
-  // this gives us the info to create a basis (and a plane)
-  ///////////////////////////////////////////////////
+    auto it_p =  conflict_graph.begin();
+    auto vtx = it_p->first;
+    auto& polyset = it_p->second;
+    size_t num_conflicts = polyset.size();
+    printf( "vtx<%p> num_conflicts<%zu>\n", vtx.get(), num_conflicts );
 
-  dvec3 line_dir    = line._normal;
-  dvec3 line_point  = line.closestPointOnLine(v_fml->mPos);
-  dvec3 basis_dir   = (v_fml->mPos - line_point).normalized();
-  dvec3 basis_cross = line_dir.crossWith(basis_dir).normalized();
-
-  dplane3 plane(line_point, v_fml->mPos, v_fml->mPos + basis_cross);
-
-  ///////////////////////////////////////////////////
-  // sort vertices using angle from line 
-  //  utilizing basis - with basis_dir as angle 0
-  ///////////////////////////////////////////////////
-
-  std::map<double, vertex_const_ptr_t> angle_distmap;
-  for (auto va : vertices) {
-    auto va_c = plane.closestPointOnPlane(va->mPos);
-    dvec3 va_dir          = (va_c - line_point).normalized();
-    double fangle         = basis_dir.orientedAngle(va_dir,line_dir);
-    angle_distmap[fangle] = va;
-    float fdist           = plane.pointDistance(va->mPos);
-    printf("dist<%f> angle<%f> pos<%f %f %f>\n", fdist, fangle, va->mPos.x, va->mPos.y, va->mPos.z);
+    conflict_graph.erase(it_p);
   }
 
   OrkAssert(false);
-  ///////////////////////////////////////////////////
-  // sort vertices with distance from plane
-  ///////////////////////////////////////////////////
-
-  std::map<double, vertex_const_ptr_t> plane_distmap;
-  for (auto va : vertices) {
-    double fdist         = plane.pointDistance(va->mPos);
-    plane_distmap[fdist] = va;
-  }
-
   ///////////////////////////////////////////////////
   // construct octahedron from 6 points
   ///////////////////////////////////////////////////
 
   // create diamond from 6 vertices
-  struct triangle_t {
-    vertex_ptr_t _v0;
-    vertex_ptr_t _v1;
-    vertex_ptr_t _v2;
-    dplane3 _plane;
-  };
-  std::unordered_map<uint64_t, triangle_t> xxx;
 }
 
 // the inefficient method
@@ -203,7 +207,7 @@ void submeshConvexHullBruteForce(const submesh& inpsubmesh, submesh& outsmesh) {
 
 void submeshConvexHull(const submesh& inpsubmesh, submesh& outsmesh) {
   // submeshConvexHullBruteForce(inpsubmesh, outsmesh);
-  submeshConvexHullQuicker(inpsubmesh, outsmesh);
+  submeshConvexHullIterative(inpsubmesh, outsmesh);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

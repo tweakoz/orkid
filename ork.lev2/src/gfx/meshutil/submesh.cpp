@@ -40,6 +40,10 @@ uint64_t submesh::hash() const{
   return crc64.result();
 }
 ///////////////////////////////////////////////////////////////////////////////
+void submesh::removePoly(poly_ptr_t p) {
+  _connectivityIMPL->removePoly(p);
+}
+///////////////////////////////////////////////////////////////////////////////
 poly_ptr_t submesh::mergePoly(const Polygon& ply) {
   auto p = _connectivityIMPL->mergePoly(ply);
   if (p) {

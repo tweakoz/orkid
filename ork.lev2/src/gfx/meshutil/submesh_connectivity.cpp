@@ -147,6 +147,12 @@ vertex_ptr_t DefaultConnectivity::mergeVertex(const struct vertex& v) {
   return _vtxpool->mergeVertex(v);
 }
 ////////////////////////////////////////////////////////////////
+void DefaultConnectivity::removePoly(poly_ptr_t ply) {
+  auto it = std::find(_orderedPolys.begin(), _orderedPolys.end(), ply);
+  OrkAssert(it != _orderedPolys.end());
+  _orderedPolys.erase(it);
+}
+////////////////////////////////////////////////////////////////
 poly_ptr_t DefaultConnectivity::mergePoly(const Polygon& ply) {
   poly_ptr_t rval;
   int ipolyindex = numPolys();

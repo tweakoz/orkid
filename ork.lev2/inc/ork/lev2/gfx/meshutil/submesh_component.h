@@ -37,6 +37,12 @@ namespace ork::meshutil {
 template <typename T>
 struct unique_set {
   using ptr_t = std::shared_ptr<T>;
+
+  inline unique_set() {
+  }
+  inline unique_set(ptr_t initial) {
+    insert(initial);
+  }
   inline bool insert(ptr_t v){
     uint64_t h = v->hash();
     auto it = _the_map.find(h);
@@ -229,6 +235,7 @@ struct Polygon {
   std::vector<vertex_ptr_t> _vertices;
   int _submeshIndex = -1;
   submesh* _parentSubmesh = nullptr;
+  varmap::VarMap _varmap;
 
   const AnnoMap* mAnnotationSet;
 };
@@ -314,6 +321,7 @@ struct IConnectivity{
   virtual void visitAllVertices(vertex_void_visitor_t visitor) = 0;
   virtual void visitAllVertices(const_vertex_void_visitor_t visitor) const = 0;
   virtual edge_ptr_t edgeBetweenPolys(int aind, int bind) const = 0;
+  virtual void removePoly(poly_ptr_t) = 0;
   submesh* _submesh = nullptr;
 
 };
@@ -336,6 +344,7 @@ struct DefaultConnectivity : public IConnectivity{
   poly_ptr_t poly(int id) const final;
   size_t numPolys() const final;
   size_t numVertices() const final;
+  void removePoly(poly_ptr_t) final;
 
 
   void visitAllPolys(poly_void_visitor_t visitor) final;
