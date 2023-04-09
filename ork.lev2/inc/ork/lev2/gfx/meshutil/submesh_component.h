@@ -167,6 +167,7 @@ struct vertex {
   uvmapcoord mUV[kmaxuvs];
   float mJointWeights[kmaxinfluences];
   submesh* _parentSubmesh = nullptr;
+  int _numConnectedPolys = 0;
 };
 
 using vertex_set_t = unique_set<vertex>;
@@ -342,6 +343,7 @@ struct IConnectivity{
   virtual edge_ptr_t edgeBetweenPolys(int aind, int bind) const = 0;
   virtual void removePoly(poly_ptr_t) = 0;
   virtual void clearPolys() =0;
+  virtual dvec3 centerOfPolys() const = 0;
 
   submesh* _submesh = nullptr;
 
@@ -372,11 +374,14 @@ struct DefaultConnectivity : public IConnectivity{
   void visitAllPolys(const_poly_void_visitor_t visitor) const final;
   void visitAllVertices(vertex_void_visitor_t visitor) final;
   void visitAllVertices(const_vertex_void_visitor_t visitor) const final;
+  dvec3 centerOfPolys() const final;
 
   vertexpool_ptr_t _vtxpool;
   std::unordered_map<uint64_t, poly_ptr_t> _polymap;
   orkvector<poly_ptr_t> _orderedPolys;
   std::unordered_map<int,int> _polyTypeCounter;
+  dvec3 _centerOfPolysAccum;
+  int _centerOfPolysCount = 0;
 
 };
 

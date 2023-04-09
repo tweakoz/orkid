@@ -21,7 +21,7 @@ class SceneGraphApp(BasicUiCamSgApp):
     self.mutex = Lock()
     self.uicam.lookAt( vec3(0,0,20), vec3(0,0,0), vec3(0,1,0) )
     self.camera.copyFrom( self.uicam.cameradata )
-    self.NUMPOINTS = 80
+    self.NUMPOINTS = 128
     self.pnt = [vec3(0) for i in range(self.NUMPOINTS)]
     self.numsteps = 0
   ##############################################

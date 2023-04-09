@@ -160,12 +160,19 @@ void DefaultConnectivity::removePoly(poly_ptr_t ply) {
      OrkAssert(ply == it2->second);
      _polymap.erase(it2);
   }
+  for( auto v : ply->_vertices ) {
+    _centerOfPolysAccum -= v->mPos;
+    v->_numConnectedPolys--;
+    _centerOfPolysCount--;
+  }
 
 }
 ////////////////////////////////////////////////////////////////
 void DefaultConnectivity::clearPolys() {
   _orderedPolys.clear();
   _polymap.clear();
+  visitAllVertices([](vertex_ptr_t v) { v->_numConnectedPolys = 0; });
+  _centerOfPolysCount = 0;
 }
 ////////////////////////////////////////////////////////////////
 poly_ptr_t DefaultConnectivity::mergePoly(const Polygon& ply) {
@@ -176,6 +183,9 @@ poly_ptr_t DefaultConnectivity::mergePoly(const Polygon& ply) {
   OrkAssert(inumv >= 3);
   for (auto v : ply._vertices) {
     OrkAssert(v != nullptr);
+    v->_numConnectedPolys++;
+    _centerOfPolysCount++;
+    _centerOfPolysAccum += v->mPos;
   }
   ///////////////////////////////
   // zero area poly removal
@@ -255,6 +265,26 @@ edge_ptr_t DefaultConnectivity::mergeEdge(const edge& e) {
   auto mv0 = mergeVertex(*v0);
   auto mv1 = mergeVertex(*v1);
   return std::make_shared<edge>(mv0, mv1);
+}
+///////////////////////////////////////////////////////////////////////////////
+
+dvec3 DefaultConnectivity::centerOfPolys() const {
+  /*
+  std::unordered_set<vertex_ptr_t> all_mesh_verts;
+  visitAllPolys([&](poly_const_ptr_t the_poly) {
+    all_mesh_verts.insert(the_poly->_vertices[0]);
+    all_mesh_verts.insert(the_poly->_vertices[1]);
+    all_mesh_verts.insert(the_poly->_vertices[2]);
+  });
+  dvec3 center;
+  for (auto v : all_mesh_verts) {
+    center += v->mPos;
+  }
+  center *= 1.0 / double(all_mesh_verts.size());
+  //printf( "xxx<%f %f %f> center<%f %f %f>\n", xxx.x, xxx.y, xxx.z, center.x, center.y, center.z );
+  //return center;
+  */
+  return _centerOfPolysAccum*1.0/double(_centerOfPolysCount);
 }
 ////////////////////////////////////////////////////////////////
 } // namespace ork::meshutil

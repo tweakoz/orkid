@@ -251,9 +251,6 @@ void submeshConvexHullIterative(const submesh& inpsubmesh, submesh& outsmesh, in
       break;
     }
 
-    double t2 = timer.SecsSinceStart();
-
-    dt12 += (t2 - t1);
 
     ///////////////////////////////
     // flip edge loop if needed
@@ -273,6 +270,9 @@ void submeshConvexHullIterative(const submesh& inpsubmesh, submesh& outsmesh, in
       temp->reverseOf(*loop);
       loop = temp;
     }
+
+    double t2 = timer.SecsSinceStart();
+    dt12 += (t2 - t1);
 
     ///////////////////////////////
     // merge new polys
