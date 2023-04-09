@@ -142,7 +142,8 @@ struct submesh {
   const AABox& aabox() const; /// compute axis aligned bounding box from the current state of the vertex pool
 
   bool isConvexHull() const;
-  dvec3 center() const;
+  dvec3 centerOfVertices() const;
+  dvec3 centerOfPolys() const;
   double convexVolume() const;
 
   //////////////////////////////////////////////////////////////////////////////

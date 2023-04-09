@@ -8,6 +8,7 @@
 #include <ork/math/plane.hpp>
 #include <ork/lev2/gfx/meshutil/submesh.h>
 #include <ork/lev2/gfx/meshutil/meshutil.h>
+#include <ork/kernel/timer.h>
 #include <deque>
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -78,6 +79,9 @@ struct ConflictGraph {
 
 void submeshConvexHullIterative(const submesh& inpsubmesh, submesh& outsmesh, int num_steps) {
 
+  ork::Timer timer;
+  timer.Start();
+
   ///////////////////////////////////////////////////
   // trivially reject
   ///////////////////////////////////////////////////
@@ -101,6 +105,7 @@ void submeshConvexHullIterative(const submesh& inpsubmesh, submesh& outsmesh, in
   });
   inp_center *= (1.0f / float(initial_counter));
   OrkAssert(vertices.size() >= 4); // ensure we still have 4 vertices after welding
+
 
   ///////////////////////////////////////////////////
   // create initial tetrahedron
@@ -153,6 +158,7 @@ void submeshConvexHullIterative(const submesh& inpsubmesh, submesh& outsmesh, in
   make_tri(nva, nvd, nvb);
   make_tri(nvb, nvc, nvd);
 
+
   ///////////////////////////////////////////////////
   // build conflict graph
   ///////////////////////////////////////////////////
@@ -176,20 +182,6 @@ void submeshConvexHullIterative(const submesh& inpsubmesh, submesh& outsmesh, in
 
   update_conflict_graph();
 
-  /////////////////////////////////////////////////
-
-  auto addPolyToConflictGraph = [&](poly_ptr_t p) {
-    vertices.visit([&](vertex_ptr_t v) {
-      auto vpos = v->mPos;
-      if (not p->containsVertex(v)) {
-        double sv = p->signedVolumeWithPoint(vpos);
-        if (sv > 0.0) {
-          conflict_graph.insert(v, p);
-        }
-      }
-    });
-  };
-
   ///////////////////////////////////////////////////
   // iterate on conflict graph
   ///////////////////////////////////////////////////
@@ -197,8 +189,16 @@ void submeshConvexHullIterative(const submesh& inpsubmesh, submesh& outsmesh, in
   edge_set_t edgeset;
   std::vector<poly_ptr_t> polys_to_remove;
   EdgeChainLinker linker;
+  std::unordered_set<vertex_ptr_t> all_mesh_verts;
+
+  double dt01 = 0.0;
+  double dt12 = 0.0;
+  double dt23 = 0.0;
+  double dt34 = 0.0;
 
   while (not conflict_graph.empty()) {
+
+    double t0 = timer.SecsSinceStart();
 
     polys_to_remove.clear();
     edgeset.clear();
@@ -234,6 +234,9 @@ void submeshConvexHullIterative(const submesh& inpsubmesh, submesh& outsmesh, in
       conflict_graph.removePoly(the_poly);
     }
 
+    double t1 = timer.SecsSinceStart();
+
+    dt01 += (t1 - t0);
     ///////////////////////////////
     // link edge loops from chains
     ///////////////////////////////
@@ -247,6 +250,11 @@ void submeshConvexHullIterative(const submesh& inpsubmesh, submesh& outsmesh, in
       conflict_graph.clear();
       break;
     }
+
+    double t2 = timer.SecsSinceStart();
+
+    dt12 += (t2 - t1);
+
     ///////////////////////////////
     // flip edge loop if needed
     ///////////////////////////////
@@ -272,22 +280,21 @@ void submeshConvexHullIterative(const submesh& inpsubmesh, submesh& outsmesh, in
 
     int num_edges = loop->_edges.size();
     auto new_c    = outsmesh.mergeVertex(*conflict_point);
-    std::unordered_set<vertex_ptr_t> verts;
+    ///////////////////////////////
+    // triangle fan
+    ///////////////////////////////
     for (int i = 0; i < num_edges; i++) {
       auto edge  = loop->_edges[i];
+      ////////////////////////////////////
+      // verts a and b for the fan triangle
+      ////////////////////////////////////
       auto new_a = outsmesh.mergeVertex(*edge->_vertexA);
       auto new_b = outsmesh.mergeVertex(*edge->_vertexB);
-      verts.clear();
-      outsmesh.visitAllPolys([&](poly_ptr_t the_poly) {
-        verts.insert(the_poly->_vertices[0]);
-        verts.insert(the_poly->_vertices[1]);
-        verts.insert(the_poly->_vertices[2]);
-      });
-      dvec3 new_center;
-      for (auto v : verts) {
-        new_center += v->mPos;
-      }
-      new_center *= 1.0 / double(verts.size());
+      ////////////////////////////////////
+      // compute new center of mesh
+      ////////////////////////////////////
+      dvec3 new_center = outsmesh.centerOfPolys();
+      ////////////////////////////////////
 
       bool flip = do_flip(
           new_center, //
@@ -302,15 +309,29 @@ void submeshConvexHullIterative(const submesh& inpsubmesh, submesh& outsmesh, in
           new_a, //
           new_b, //
           new_c);
-      addPolyToConflictGraph(new_tri);
-    }
-
+      vertices.visit([&](vertex_ptr_t v) {
+        auto vpos = v->mPos;
+        if (not new_tri->containsVertex(v)) {
+          double sv = new_tri->signedVolumeWithPoint(vpos);
+          if (sv > 0.0) {
+            conflict_graph.insert(v, new_tri);
+          }
+        }
+      });
+    } // for (int i = 0; i < num_edges; i++) {
+    ///////////////////////////////
+    double t3 = timer.SecsSinceStart();
+    dt23 += (t3 - t2);
     ///////////////////////////////
     // remove point and move to next conflict
     ///////////////////////////////
     vertices.remove(conflict_point);
     conflict_graph.remove(conflict_point);
   }
+
+
+  printf( "dt0..1: %f, dt1..2: %f, dt2..3: %f\n", dt01, dt12, dt23);
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////

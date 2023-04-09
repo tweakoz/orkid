@@ -15,7 +15,7 @@ namespace ork::meshutil {
 ///////////////////////////////////////////////////////////////////////////////
 
 void submeshFixWindingOrder(const submesh& inpsubmesh, submesh& outsmesh, bool inside_out) {
-  dvec3 C = inpsubmesh.center();
+  dvec3 C = inpsubmesh.centerOfVertices();
 
   std::unordered_map<int, int> vtx_map;
   inpsubmesh.visitAllVertices([&](vertex_const_ptr_t v) {

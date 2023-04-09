@@ -513,7 +513,7 @@ void submesh::copy(
 
 ///////////////////////////////////////////////////////////////////////////////
 
-dvec3 submesh::center() const {
+dvec3 submesh::centerOfVertices() const {
   size_t num_verts = 0;
   dvec3 accum;
   visitAllVertices([&](vertex_const_ptr_t v) {
@@ -524,9 +524,26 @@ dvec3 submesh::center() const {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+dvec3 submesh::centerOfPolys() const {
+  std::unordered_set<vertex_ptr_t> all_mesh_verts;
+  visitAllPolys([&](poly_const_ptr_t the_poly) {
+    all_mesh_verts.insert(the_poly->_vertices[0]);
+    all_mesh_verts.insert(the_poly->_vertices[1]);
+    all_mesh_verts.insert(the_poly->_vertices[2]);
+  });
+  dvec3 center;
+  for (auto v : all_mesh_verts) {
+    center += v->mPos;
+  }
+  center *= 1.0 / double(all_mesh_verts.size());
+  return center;
+}
+
+///////////////////////////////////////////////////////////////////////////////
 double submesh::convexVolume() const {
   double volume = 0.0f;
-  dvec3 c       = center();
+  dvec3 c       = centerOfVertices();
   visitAllPolys([&](poly_const_ptr_t p) {
     int numsides = p->_vertices.size();
     OrkAssert(numsides == 3);

@@ -68,7 +68,7 @@ class SceneGraphApp(BasicUiCamSgApp):
     super().onUpdate(updevent)
     if self.incr_time:
       self.time += updevent.deltatime
-    self.updatePoints(self.time*0.25)
+    self.updatePoints(self.time*1.25)
     θ = self.abstime # * math.pi * 2.0 * 0.1
     ##############################
     submesh_isect = meshutil.SubMesh()
