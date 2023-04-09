@@ -226,7 +226,11 @@ struct InstancedModelDrawable;
 struct ModelDrawableData;
 struct ModelDrawable;
 struct OverlayStringDrawable;
+struct LabeledPointDrawableData;
+struct LabeledPointDrawable;
 //
+using labeled_point_drawabledata_ptr_t = std::shared_ptr<LabeledPointDrawableData>;
+using labeled_point_drawable_ptr_t = std::shared_ptr<LabeledPointDrawable>;
 using string_drawabledata_ptr_t = std::shared_ptr<StringDrawableData>;
 using string_drawable_ptr_t = std::shared_ptr<StringDrawable>;
 using billboard_string_drawable_ptr_t = std::shared_ptr<BillboardStringDrawable>;

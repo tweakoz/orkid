@@ -287,9 +287,9 @@ void pyinit_meshutil_submesh(py::module& module_meshutil) {
               })
           .def(
               "convexHull",
-              [](submesh_constptr_t inpsubmesh) -> submesh_ptr_t {
+              [](submesh_constptr_t inpsubmesh, int steps = 0) -> submesh_ptr_t {
                 submesh_ptr_t rval = std::make_shared<submesh>();
-                submeshConvexHull(*inpsubmesh, *rval);
+                submeshConvexHull(*inpsubmesh, *rval, steps);
                 return rval;
               })
           .def(

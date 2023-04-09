@@ -11,6 +11,7 @@
 #include <ork/lev2/gfx/camera/cameradata.h>
 #include <ork/lev2/gfx/scenegraph/sgnode_grid.h>
 #include <ork/lev2/gfx/particle/drawable_data.h>
+#include <ork/lev2/gfx/renderer/drawable.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -203,6 +204,39 @@ void pyinit_gfx_drawables(py::module& module_lev2) {
               })
   ;
   type_codec->registerStdCodec<terraindrawableinst_ptr_t>(terdrawinst_type);*/
+  /////////////////////////////////////////////////////////////////////////////////
+  auto labeledpoint_drawdata_type = //
+      py::class_<LabeledPointDrawableData, DrawableData, labeled_point_drawabledata_ptr_t>(module_lev2, "LabeledPointDrawableData")
+          .def(py::init<>())
+          .def_property(
+              "scale",
+              [](labeled_point_drawabledata_ptr_t drw) -> float { return drw->_scale; },
+              [](labeled_point_drawabledata_ptr_t drw, float val) { drw->_scale = val; })
+          .def_property(
+              "color",
+              [](labeled_point_drawabledata_ptr_t drw) -> fvec4 { return drw->_color; },
+              [](labeled_point_drawabledata_ptr_t drw, fvec4 val) { drw->_color = val; })
+          .def_property(
+              "font",
+              [](labeled_point_drawabledata_ptr_t drw) -> std::string { return drw->_font; },
+              [](labeled_point_drawabledata_ptr_t drw, std::string val) { drw->_font = val; })
+          .def_property(
+              "pointsmesh",
+              [](labeled_point_drawabledata_ptr_t drw) -> meshutil::submesh_ptr_t { return drw->_points_only_mesh; },
+              [](labeled_point_drawabledata_ptr_t drw, meshutil::submesh_ptr_t val) { drw->_points_only_mesh = val; })
+          .def(
+              "onRender",
+              [](labeled_point_drawabledata_ptr_t drw, py::object callback) { 
+                  drw->_onRender = [callback](RenderContextInstData& RCID){
+                    auto RCFD = RCID._RCFD;
+                    auto DB = RCFD->GetDB();
+                    auto vpID = DB->getUserProperty("vpID"_crcu).get<uint64_t>();
+                    py::gil_scoped_acquire acquire;
+                    callback(int(vpID));
+                  };
+                })
+              ;
+  type_codec->registerStdCodec<labeled_point_drawabledata_ptr_t>(labeledpoint_drawdata_type);
 
 }
 

@@ -10,33 +10,6 @@ from orkengine.core import *
 from orkengine.lev2 import *
 from _boilerplate import *
 import math, sys, os, random, numpy
-################################################################################
-
-def strippedSubmesh(inpsubmesh):
-  stripped = inpsubmesh.copy(preserve_normals=False,
-                             preserve_colors=False,
-                             preserve_texcoords=False)
-  return stripped
-
-################################################################################
-
-def proc_with_plane(inpsubmesh,plane):
-  submesh2 = strippedSubmesh(inpsubmesh).clippedWithPlane(plane=plane,
-                                         close_mesh=True, 
-                                         flip_orientation=False )["front"]
-
-  return submesh2 
-
-################################################################################
-
-def proc_with_frustum(inpsubmesh,frustum):
-  submesh2 = proc_with_plane(inpsubmesh,frustum.nearPlane)
-  submesh3 = proc_with_plane(submesh2,frustum.farPlane)
-  submesh4 = proc_with_plane(submesh3,frustum.leftPlane)
-  submesh5 = proc_with_plane(submesh4,frustum.rightPlane)
-  submesh6 = proc_with_plane(submesh5,frustum.topPlane)
-  submesh7 = proc_with_plane(submesh6,frustum.bottomPlane)
-  return submesh7
 
 ################################################################################
 
@@ -50,6 +23,7 @@ class SceneGraphApp(BasicUiCamSgApp):
     self.camera.copyFrom( self.uicam.cameradata )
     self.NUMPOINTS = 8
     self.pnt = [vec3(0) for i in range(self.NUMPOINTS)]
+    self.numsteps = 0
   ##############################################
   def updatePoints(self,abstime):
     paramA = 4+math.sin(abstime*0.2)*4
@@ -81,11 +55,14 @@ class SceneGraphApp(BasicUiCamSgApp):
     self.prim3 = meshutil.RigidPrimitive(self.barysub_isect,ctx)
     self.sgnode3 = self.prim3.createNode("m3",self.layer1,solid_wire_pipeline)
     self.sgnode3.enabled = True
+    ##############################
+    self.pts_drawabledata = LabeledPointDrawableData()
+    print("self.pts_drawabledata",self.pts_drawabledata)
     ################################################################################
   ##############################################
   def onUpdate(self,updevent):
     super().onUpdate(updevent)
-    self.updatePoints(updevent.absolutetime)
+    self.updatePoints(1.0) #updevent.absolutetime)
     θ = self.abstime # * math.pi * 2.0 * 0.1
     ##############################
     submesh_isect = meshutil.SubMesh()
@@ -94,8 +71,10 @@ class SceneGraphApp(BasicUiCamSgApp):
     print(submesh_isect)
     for v in submesh_isect.vertices:
       print(v.position)
-    self.barysub_isect = submesh_isect.convexHull().withBarycentricUVs()
-    assert(False)
+    hull = submesh_isect.convexHull(self.numsteps)
+    self.pts_drawabledata.pointsmesh = hull
+    self.barysub_isect = hull.withBarycentricUVs()
+    #assert(False)
     ##############################
 
     #time.sleep(0.25)
@@ -107,6 +86,11 @@ class SceneGraphApp(BasicUiCamSgApp):
     #self.barysub_isect = self.submesh_isect.withBarycentricUVs()
     self.prim3.fromSubMesh(self.barysub_isect,self.context)
 
+  def onUiEvent(self,uievent):
+    super().onUiEvent(uievent)
+    if uievent.code == tokens.KEY_DOWN.hashed:
+        if uievent.keycode == 32: # spacebar
+          self.numsteps = (self.numsteps + 1) % 4
 ###############################################################################
 
 sgapp = SceneGraphApp()

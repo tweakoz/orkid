@@ -533,6 +533,21 @@ dvec3 Polygon::centerOfMass() const{
 
 ///////////////////////////////////////////////////////////////////////////////
 
+double Polygon::signedVolumeWithPoint(const dvec3& point) const{
+  // compute volume of polygon as volume of tetrahedron fan
+  double volume = 0.0;
+  ork::dvec3 base = _vertices[0]->mPos;
+  ork::dvec3 prev = _vertices[1]->mPos;
+  for (int i = 2; i < _vertices.size(); i++) {
+    ork::dvec3 next = _vertices[i]->mPos;
+    volume += (prev - base).crossWith(next - base).dotWith(point - base);
+    prev = next;
+  }
+  return volume;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 double Polygon::computeArea(const dmtx4& MatRange) const {
   double farea     = 0.0f;
   ork::dvec3 base = _vertices[0]->mPos.transform(MatRange);

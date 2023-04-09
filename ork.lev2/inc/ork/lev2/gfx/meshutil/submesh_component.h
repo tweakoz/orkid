@@ -83,7 +83,7 @@ struct unique_set {
       visitor(it.second);
     }
   }
-  
+
   std::unordered_map<uint64_t,ptr_t> _the_map;
 };
 
@@ -238,6 +238,7 @@ struct Polygon {
   double minEdgeLength(const dmtx4& MatRange = dmtx4::Identity()) const;
   double maxEdgeLength(const dmtx4& MatRange = dmtx4::Identity()) const;
   double computeArea(const dmtx4& MatRange = dmtx4::Identity()) const;
+  double signedVolumeWithPoint(const dvec3& point) const;
   dvec3 computeNormal() const;
   dplane3 computePlane() const;
   

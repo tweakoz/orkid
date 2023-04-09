@@ -487,6 +487,26 @@ struct StringDrawableData : public DrawableData {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+struct LabeledPointDrawableData : public DrawableData {
+
+  DeclareConcreteX(LabeledPointDrawableData, DrawableData);
+
+  LabeledPointDrawableData();
+  drawable_ptr_t createDrawable() const final;
+  meshutil::submesh_ptr_t _points_only_mesh;
+  fvec4 _color;
+  float _scale = 1.0f;
+  std::string _font;
+  on_render_rcid_t _onRender;
+};
+struct LabeledPointDrawable : public Drawable {
+  LabeledPointDrawable(const LabeledPointDrawableData* data);
+  ~LabeledPointDrawable();
+  void enqueueToRenderQueue(drawablebufitem_constptr_t item, lev2::IRenderer* renderer) const override;
+  const LabeledPointDrawableData* _data = nullptr;
+};
+///////////////////////////////////////////////////////////////////////////////
+
 struct BillboardStringDrawableData : public DrawableData {
 
   DeclareConcreteX(BillboardStringDrawableData, DrawableData);
