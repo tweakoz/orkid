@@ -61,60 +61,62 @@ LabeledPointDrawable::LabeledPointDrawable(const LabeledPointDrawableData* data)
         }
         /////////////////////////////////////////////////////////////
         size_t num_points = _data->_points_only_mesh->numVertices();
-        VtxWriter<VtxV12> vw;
-        vw.Lock(context,rdata->_vtxbuf.get(),num_points);
-        for( size_t i=0; i<num_points; i++ ){
-            auto inp_vtx = _data->_points_only_mesh->vertex(i);
-            const auto& pos = inp_vtx->mPos;
-            vw.AddVertex(VtxV12(pos.x,pos.y,pos.z));
-        }
-        vw.UnLock(context);
-        /////////////////////////////////////////////////////////////
-        if( _data->_points_pipeline ){
-            _data->_points_pipeline->wrappedDrawCall(RCID, [&]() { //
-                auto gbi = context->GBI();
-                gbi->DrawPrimitiveEML(vw, PrimitiveType::POINTS);
-            });
-        }
-        /////////////////////////////////////////////////////////////
-        if( true ) { //_data->_text_pipeline ){
-            auto mtxi = context->MTXI();
-            auto RCFD = RCID._RCFD;
-            const auto& CPD             = RCFD->topCPD();
-            const CameraMatrices* cmtcs = CPD.cameraMatrices();
-            const CameraData& cdata     = cmtcs->_camdat;
-            auto renderable = (CallbackRenderable*) RCID._irenderable;
-            //auto& current_string = renderable->_drawDataA.get<std::string>();
-            const auto& vprect = CPD.mDstRect;
+        if(num_points>0){
+            VtxWriter<VtxV12> vw;
+            vw.Lock(context,rdata->_vtxbuf.get(),num_points);
+            for( size_t i=0; i<num_points; i++ ){
+                auto inp_vtx = _data->_points_only_mesh->vertex(i);
+                const auto& pos = inp_vtx->mPos;
+                vw.AddVertex(VtxV12(pos.x,pos.y,pos.z));
+            }
+            vw.UnLock(context);
+            /////////////////////////////////////////////////////////////
+            if( _data->_points_pipeline ){
+                _data->_points_pipeline->wrappedDrawCall(RCID, [&]() { //
+                    auto gbi = context->GBI();
+                    gbi->DrawPrimitiveEML(vw, PrimitiveType::POINTS);
+                });
+            }
+            /////////////////////////////////////////////////////////////
+            if( true ) { //_data->_text_pipeline ){
+                auto mtxi = context->MTXI();
+                auto RCFD = RCID._RCFD;
+                const auto& CPD             = RCFD->topCPD();
+                const CameraMatrices* cmtcs = CPD.cameraMatrices();
+                const CameraData& cdata     = cmtcs->_camdat;
+                auto renderable = (CallbackRenderable*) RCID._irenderable;
+                //auto& current_string = renderable->_drawDataA.get<std::string>();
+                const auto& vprect = CPD.mDstRect;
 
-            auto vpmtx = cmtcs->VPMONO();
+                auto vpmtx = cmtcs->VPMONO();
 
-            mtxi->PushUIMatrix();
-            context->PushModColor(fvec4(1,1,1,1));
-            FontMan::PushFont("i16");
-            auto font = FontMan::currentFont();
-            font->_use_deferred = RCFD->_renderingmodel.isDeferredPBR();
+                mtxi->PushUIMatrix();
+                context->PushModColor(fvec4(1,1,1,1));
+                FontMan::PushFont("i16");
+                auto font = FontMan::currentFont();
+                font->_use_deferred = RCFD->_renderingmodel.isDeferredPBR();
 
-            
-            FontMan::beginTextBlock(context);
-            _data->_points_only_mesh->visitAllVertices(
-                [&](meshutil::vertex_const_ptr_t v) {
-                    auto hpos = fvec4(dvec3_to_fvec3(v->mPos),1).transform(vpmtx);
-                    auto dpos = hpos.xyz() / hpos.w;
-                    dpos *= 0.5;
-                    dpos += fvec3(0.5,0.5,0.0f);
-                    dpos *= fvec3(vprect._w,vprect._h,1.0f);
-                    auto str = FormatString("%d",int(v->_poolindex));
-                    FontMan::DrawText(context, dpos.x, vprect._h-dpos.y, str.c_str());
-                }
-            );
+                
+                FontMan::beginTextBlock(context);
+                _data->_points_only_mesh->visitAllVertices(
+                    [&](meshutil::vertex_const_ptr_t v) {
+                        auto hpos = fvec4(dvec3_to_fvec3(v->mPos),1).transform(vpmtx);
+                        auto dpos = hpos.xyz() / hpos.w;
+                        dpos *= 0.5;
+                        dpos += fvec3(0.5,0.5,0.0f);
+                        dpos *= fvec3(vprect._w,vprect._h,1.0f);
+                        auto str = FormatString("%d",int(v->_poolindex));
+                        FontMan::DrawText(context, dpos.x, vprect._h-dpos.y, str.c_str());
+                    }
+                );
 
-            FontMan::endTextBlock(context);
-            font->_use_deferred = false;
-            FontMan::PopFont();
-            context->PopModColor();
-            mtxi->PopUIMatrix();
-              
+                FontMan::endTextBlock(context);
+                font->_use_deferred = false;
+                FontMan::PopFont();
+                context->PopModColor();
+                mtxi->PopUIMatrix();
+                
+            }
         }
     };
 }
