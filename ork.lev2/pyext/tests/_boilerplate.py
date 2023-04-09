@@ -108,6 +108,58 @@ technique tek_pseudowire {
 
 ################################################################################
 
+SHADERTEXT_POINTS = """
+////////////////////////////////////////
+fxconfig fxcfg_default { glsl_version = "330"; }
+////////////////////////////////////////
+uniform_set ublock_vtx {
+  mat4 mvp;
+  float pointsize;
+}
+////////////////////////////////////////
+uniform_set ublock_frg {
+  vec4 modcolor;
+}
+////////////////////////////////////////
+vertex_interface iface_vtx_points : ublock_vtx {
+  inputs {
+    vec4 pos : POSITION;
+    vec4 col : COLOR0;
+  }
+  outputs {
+    vec3 frg_col;
+  }
+}
+////////////////////////////////////////
+fragment_interface iface_frg_points : ublock_frg {
+  inputs {
+    vec3 frg_col;
+  }
+  outputs { layout(location = 0) vec4 out_clr; }
+}
+////////////////////////////////////////
+vertex_shader vs_points : iface_vtx_points {
+  frg_col = col.xyz;
+  gl_Position = mvp * vec4(pos.x,pos.y,pos.z,1);
+  gl_PointSize = pointsize;
+}
+////////////////////////////////////////
+fragment_shader ps_points : iface_frg_points {
+  out_clr = modcolor;
+}
+
+////////////////////////////////////////
+technique tek_points_fwd {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_points;
+    fragment_shader = ps_points;
+    state_block     = default;
+  }
+}
+"""
+################################################################################
+
 
 class BasicUiCamSgApp(object):
 
@@ -212,3 +264,16 @@ class BasicUiCamSgApp(object):
         return self.createPipeline(rendermodel="ForwardPBR",
                                    shaderfile=Path("orkshader://basic"),
                                    techname="tek_fnormal_wire")
+    def createPointsPipeline(self):
+        pipeline =  self.createPipeline( shadertext = SHADERTEXT_POINTS,
+                                         blending=tokens.ADDITIVE,
+                                         depthtest=tokens.LEQUALS,
+                                         techname = "tek_points_fwd",
+                                         rendermodel = "ForwardPBR" )
+        
+        param_psize = pipeline.sharedMaterial.param("pointsize")
+        param_modcolor = pipeline.sharedMaterial.param("modcolor")
+        pipeline.bindParam(param_psize, float(8))
+        pipeline.bindParam(param_modcolor, vec4(1,0,0,1))
+        return pipeline
+

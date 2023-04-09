@@ -44,67 +44,79 @@ void LabeledPointDrawable::enqueueToRenderQueue(drawablebufitem_constptr_t item,
 ///////////////////////////////////////////////////////////////////////////////
 struct LabeledPointRenderData {
   vtxbufferbase_ptr_t _vtxbuf;
-  fxpipeline_ptr_t _pipeline;
 };
 ///////////////////////////////////////////////////////////////////////////////
 LabeledPointDrawable::LabeledPointDrawable(const LabeledPointDrawableData* data)
     : Drawable() {
-  _data = data;
-  // _font = "i14";
-  // _color = fcolor4::Yellow();
-  auto rdata = _properties->makeSharedForKey<LabeledPointRenderData>("rdata");
-  _rendercb = [this,rdata](lev2::RenderContextInstData& RCID) {
-    auto context = RCID.context();
-    if(nullptr==rdata->_vtxbuf){
-        auto vb = VertexBufferBase::CreateVertexBuffer(EVtxStreamFormat::V12,1024,false);
-        rdata->_vtxbuf = vb;
-        rdata->_pipeline = nullptr;
+    _data = data;
+    _properties = std::make_shared<varmap::VarMap>();
+    auto rdata = _properties->makeSharedForKey<LabeledPointRenderData>("rdata");
+    /////////////////////////////////////////////////////////////
+    _rendercb = [this,rdata](lev2::RenderContextInstData& RCID) {
+        auto context = RCID.context();
+        if(nullptr==rdata->_vtxbuf){
+            auto vb = VertexBufferBase::CreateVertexBuffer(EVtxStreamFormat::V12,1024,false);
+            rdata->_vtxbuf = vb;
+            vb->SetRingLock(true);
+        }
+        /////////////////////////////////////////////////////////////
+        size_t num_points = _data->_points_only_mesh->numVertices();
+        VtxWriter<VtxV12> vw;
+        vw.Lock(context,rdata->_vtxbuf.get(),num_points);
+        for( size_t i=0; i<num_points; i++ ){
+            auto inp_vtx = _data->_points_only_mesh->vertex(i);
+            const auto& pos = inp_vtx->mPos;
+            vw.AddVertex(VtxV12(pos.x,pos.y,pos.z));
+        }
+        vw.UnLock(context);
+        /////////////////////////////////////////////////////////////
+        if( _data->_points_pipeline ){
+            _data->_points_pipeline->wrappedDrawCall(RCID, [&]() { //
+                auto gbi = context->GBI();
+                gbi->DrawPrimitiveEML(vw, PrimitiveType::POINTS);
+            });
+        }
+        /////////////////////////////////////////////////////////////
+        if( true ) { //_data->_text_pipeline ){
+            auto mtxi = context->MTXI();
+            auto RCFD = RCID._RCFD;
+            const auto& CPD             = RCFD->topCPD();
+            const CameraMatrices* cmtcs = CPD.cameraMatrices();
+            const CameraData& cdata     = cmtcs->_camdat;
+            auto renderable = (CallbackRenderable*) RCID._irenderable;
+            //auto& current_string = renderable->_drawDataA.get<std::string>();
+            const auto& vprect = CPD.mDstRect;
 
-    }
+            auto vpmtx = cmtcs->VPMONO();
 
-    size_t num_points = _data->_points_only_mesh->numVertices();
-    VtxWriter<VtxV12> vw;
-    vw.Lock(context,rdata->_vtxbuf.get(),num_points);
-    for( size_t i=0; i<num_points; i++ ){
-        auto inp_vtx = _data->_points_only_mesh->vertex(i);
-        const auto& pos = inp_vtx->mPos;
-        vw.AddVertex(VtxV12(pos.x,pos.y,pos.z));
-    }
-    vw.UnLock(context);
-    /*
-    auto mtxi = context->MTXI();
-    auto RCFD = RCID._RCFD;
-    const auto& CPD             = RCFD->topCPD();
-    const CameraMatrices* cmtcs = CPD.cameraMatrices();
-    const CameraData& cdata     = cmtcs->_camdat;
-    auto renderable = (CallbackRenderable*) RCID._irenderable;
-    auto& current_string = renderable->_drawDataA.get<std::string>();
-    const auto& vprect = CPD.mDstRect;
+            mtxi->PushUIMatrix();
+            context->PushModColor(fvec4(1,1,1,1));
+            FontMan::PushFont("i24");
+            auto font = FontMan::currentFont();
+            font->_use_deferred = RCFD->_renderingmodel.isDeferredPBR();
 
+            
+            FontMan::beginTextBlock(context);
+            _data->_points_only_mesh->visitAllVertices(
+                [&](meshutil::vertex_const_ptr_t v) {
+                    auto hpos = fvec4(dvec3_to_fvec3(v->mPos),1).transform(vpmtx);
+                    auto dpos = hpos.xyz() / hpos.w;
+                    dpos *= 0.5;
+                    dpos += fvec3(0.5,0.5,0.0f);
+                    dpos *= fvec3(vprect._w,vprect._h,1.0f);
+                    auto str = FormatString("%d",int(v->_poolindex));
+                    FontMan::DrawText(context, dpos.x, vprect._h-dpos.y, str.c_str());
+                }
+            );
 
-    auto PMatrix = mtxi->Ortho(vprect._x, vprect._x+vprect._w, vprect._y, vprect._y+vprect._h, 0,1);
-    fmtx4 wmatrix;
-    wmatrix.compose(fvec3(_position.x,_position.y,0),fquat(),_scale);
-
-    mtxi->PushMMatrix(wmatrix);
-    mtxi->PushVMatrix(fmtx4::Identity());
-    mtxi->PushPMatrix(PMatrix);
-    context->PushModColor(_color);
-    FontMan::PushFont(_font);
-    auto font = FontMan::currentFont();
-    font->_use_deferred = RCFD->_renderingmodel.isDeferredPBR();
-
-    FontMan::beginTextBlock(context);
-    FontMan::DrawText(context, 0, 0, current_string.c_str());
-    FontMan::endTextBlock(context);
-    font->_use_deferred = false;
-    FontMan::PopFont();
-    context->PopModColor();
-    mtxi->PopMMatrix();
-    mtxi->PopVMatrix();
-    mtxi->PopPMatrix();
-    */
-  };
+            FontMan::endTextBlock(context);
+            font->_use_deferred = false;
+            FontMan::PopFont();
+            context->PopModColor();
+            mtxi->PopUIMatrix();
+              
+        }
+    };
 }
 ///////////////////////////////////////////////////////////////////////////////
 LabeledPointDrawable::~LabeledPointDrawable() {

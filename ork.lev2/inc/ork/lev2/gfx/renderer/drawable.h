@@ -494,6 +494,8 @@ struct LabeledPointDrawableData : public DrawableData {
   LabeledPointDrawableData();
   drawable_ptr_t createDrawable() const final;
   meshutil::submesh_ptr_t _points_only_mesh;
+  fxpipeline_ptr_t _points_pipeline;
+  fxpipeline_ptr_t _text_pipeline;
   fvec4 _color;
   float _scale = 1.0f;
   std::string _font;

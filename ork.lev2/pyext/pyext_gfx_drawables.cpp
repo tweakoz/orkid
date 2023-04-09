@@ -224,6 +224,14 @@ void pyinit_gfx_drawables(py::module& module_lev2) {
               "pointsmesh",
               [](labeled_point_drawabledata_ptr_t drw) -> meshutil::submesh_ptr_t { return drw->_points_only_mesh; },
               [](labeled_point_drawabledata_ptr_t drw, meshutil::submesh_ptr_t val) { drw->_points_only_mesh = val; })
+          .def_property(
+              "pipeline_points",
+              [](labeled_point_drawabledata_ptr_t drw) -> fxpipeline_ptr_t { return drw->_points_pipeline; },
+              [](labeled_point_drawabledata_ptr_t drw, fxpipeline_ptr_t val) { drw->_points_pipeline = val; }) 
+          .def_property(
+              "pipeline_text",
+              [](labeled_point_drawabledata_ptr_t drw) -> fxpipeline_ptr_t { return drw->_text_pipeline; },
+              [](labeled_point_drawabledata_ptr_t drw, fxpipeline_ptr_t val) { drw->_text_pipeline = val; }) 
           .def(
               "onRender",
               [](labeled_point_drawabledata_ptr_t drw, py::object callback) { 

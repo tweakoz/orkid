@@ -57,7 +57,9 @@ class SceneGraphApp(BasicUiCamSgApp):
     self.sgnode3.enabled = True
     ##############################
     self.pts_drawabledata = LabeledPointDrawableData()
-    print("self.pts_drawabledata",self.pts_drawabledata)
+    self.pts_drawabledata.pipeline_points = self.createPointsPipeline()
+    self.sgnode_pts = self.layer1.createDrawableNodeFromData("points",self.pts_drawabledata)
+    #print("self.pts_drawabledata",self.pts_drawabledata)
     ################################################################################
   ##############################################
   def onUpdate(self,updevent):
@@ -68,9 +70,9 @@ class SceneGraphApp(BasicUiCamSgApp):
     submesh_isect = meshutil.SubMesh()
     for i in range(self.NUMPOINTS):
       submesh_isect.makeVertex(position=self.pnt[i])
-    print(submesh_isect)
-    for v in submesh_isect.vertices:
-      print(v.position)
+    #print(submesh_isect)
+    #for v in submesh_isect.vertices:
+    #  print(v.position)
     hull = submesh_isect.convexHull(self.numsteps)
     self.pts_drawabledata.pointsmesh = hull
     self.barysub_isect = hull.withBarycentricUVs()

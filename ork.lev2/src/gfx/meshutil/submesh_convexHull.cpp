@@ -39,7 +39,7 @@ void submeshConvexHullIterative(const submesh& inpsubmesh, submesh& outsmesh, in
   int initial_counter = 0;
   dvec3 inp_center;
   inpsubmesh.visitAllVertices([&](vertex_const_ptr_t va) { 
-    printf( "inp-vtx[%d] <%g %g %g>\n", initial_counter, va->mPos.x, va->mPos.y, va->mPos.z);
+    if(0)printf( "inp-vtx[%d] <%g %g %g>\n", initial_counter, va->mPos.x, va->mPos.y, va->mPos.z);
     auto nva = outsmesh.mergeVertex(*va);
     vertices.insert(nva);
     inp_center += nva->mPos;
@@ -57,7 +57,7 @@ void submeshConvexHullIterative(const submesh& inpsubmesh, submesh& outsmesh, in
     auto nva = vertices.first();
     tetra_center += nva->mPos;
     vertices.remove(nva);
-    printf( "  tetra-vtx[%d] <%g %g %g>\n", nva->_poolindex, nva->mPos.x, nva->mPos.y, nva->mPos.z);
+    if(0) printf( "  tetra-vtx[%d] <%g %g %g>\n", nva->_poolindex, nva->mPos.x, nva->mPos.y, nva->mPos.z);
     return nva;
   };
   auto nva = make_vtx();
@@ -156,6 +156,7 @@ void submeshConvexHullIterative(const submesh& inpsubmesh, submesh& outsmesh, in
     auto& conflict_item =  conflict_graph.front();
     auto conflict_point = conflict_item._vertex;
     size_t num_conflicts = conflict_item._polys.size();
+    if(0){
     printf("//////////////////////////////\n");
     printf("//////////////////////////////\n");
     printf( "conflict_point [%D] <%g %g %g> num_conflicts<%zu>\n", 
@@ -166,28 +167,31 @@ void submeshConvexHullIterative(const submesh& inpsubmesh, submesh& outsmesh, in
              num_conflicts );
     printf("//////////////////////////////\n");
     printf("//////////////////////////////\n");
+    }
 
     ///////////////////////////////
     // remove all conflicting polys from outsmesh
     //  and build edge set
     ///////////////////////////////
 
+    if(0){
     printf("//////////////////////////////\n");
     printf( "// visit polys (conflict resolution)\n");
     printf("//////////////////////////////\n");
+    }
     conflict_item._polys.visit([&](poly_ptr_t the_poly) {
-      printf( "visit poly<%d %d %d>\n", the_poly->_vertices[0]->_poolindex, the_poly->_vertices[1]->_poolindex, the_poly->_vertices[2]->_poolindex);
+      if(0)printf( "visit poly<%d %d %d>\n", the_poly->_vertices[0]->_poolindex, the_poly->_vertices[1]->_poolindex, the_poly->_vertices[2]->_poolindex);
       the_poly->visitEdges([&](edge_ptr_t the_edge) {
         auto reverse_edge = std::make_shared<edge>(the_edge->_vertexB,the_edge->_vertexA);
         if(edgeset.contains(reverse_edge)){
-          printf( " remove edge<%d %d>\n", the_edge->_vertexA->_poolindex, the_edge->_vertexB->_poolindex);
+          if(0)printf( " remove edge<%d %d>\n", the_edge->_vertexA->_poolindex, the_edge->_vertexB->_poolindex);
           edgeset.remove(the_edge);
         }
         else if(edgeset.contains(the_edge)){
           OrkAssert(false);
         }
         else{
-          printf( " insert edge<%d %d>\n", the_edge->_vertexA->_poolindex, the_edge->_vertexB->_poolindex);
+          if(0)printf( " insert edge<%d %d>\n", the_edge->_vertexA->_poolindex, the_edge->_vertexB->_poolindex);
           edgeset.insert(the_edge);
         }
       });
@@ -199,14 +203,17 @@ void submeshConvexHullIterative(const submesh& inpsubmesh, submesh& outsmesh, in
     ///////////////////////////////
     // link edge loops from chains
     ///////////////////////////////
+    if(0){
     printf("//////////////////////////////\n");
     printf( "// link edges\n");
     printf("//////////////////////////////\n");
 
+    }
+
     EdgeChainLinker linker;
     for( auto it : edgeset._the_map ){
       auto the_edge = it.second;
-      if(1)printf( "   edge[%d->%d]\n", //
+      if(0)printf( "   edge[%d->%d]\n", //
                  the_edge->_vertexA->_poolindex, //
                  the_edge->_vertexB->_poolindex);
       linker.add_edge(the_edge);
@@ -240,7 +247,7 @@ void submeshConvexHullIterative(const submesh& inpsubmesh, submesh& outsmesh, in
     auto new_c = outsmesh.mergeVertex(*conflict_point);
     for( int i=0; i<num_edges; i++ ){
       auto edge = loop->_edges[i];
-      if(1)printf( "  loopedge[%d->%d]\n", //
+      if(0)printf( "  loopedge[%d->%d]\n", //
                  edge->_vertexA->_poolindex, //
                  edge->_vertexB->_poolindex);
       auto new_a = outsmesh.mergeVertex(*edge->_vertexA);
