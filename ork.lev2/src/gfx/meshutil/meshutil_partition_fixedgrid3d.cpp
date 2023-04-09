@@ -69,7 +69,7 @@ void GridGraph::PreMergeMesh(const submesh& MeshIn) {
 
   MeshIn.visitAllPolys([&](poly_const_ptr_t ply) {
     ///////////////////////////////
-    double thisarea = ply->ComputeArea(dmtx4::Identity());
+    double thisarea = ply->computeArea(dmtx4::Identity());
     thisareamax     = std::max(thisareamax, thisarea);
     thisareamin     = std::min(thisareamin, thisarea);
     thisareaavg += thisarea;

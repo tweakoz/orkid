@@ -17,7 +17,7 @@ namespace ork::meshutil {
 void submeshWithFaceNormals(const submesh& inpsubmesh, submesh& outsubmesh) {
 
   inpsubmesh.visitAllPolys([&](poly_const_ptr_t p) {
-    dvec3 N         = p->ComputeNormal();
+    dvec3 N         = p->computeNormal();
 
     int inumv = p->GetNumSides();
     std::vector<vertex_ptr_t> merged_vertices;
@@ -36,7 +36,7 @@ void submeshWithSmoothNormals(const submesh& inpsubmesh, submesh& outsubmesh, fl
 
   inpsubmesh.visitAllPolys([&](poly_const_ptr_t p) {
 
-    dvec3 N         = p->ComputeNormal();
+    dvec3 N         = p->computeNormal();
 
     int inumv = p->GetNumSides();
     std::vector<vertex_ptr_t> merged_vertices;
@@ -47,7 +47,7 @@ void submeshWithSmoothNormals(const submesh& inpsubmesh, submesh& outsubmesh, fl
       int ncount = 0;
       for (auto p_item : polys._the_map) {
         auto p      = p_item.second;
-        dvec3 ON    = p->ComputeNormal();
+        dvec3 ON    = p->computeNormal();
         float angle = N.angle(ON);
         // printf( "angle<%g> threshold<%g>\n", angle, threshold_radians);
         if (angle <= threshold_radians) {

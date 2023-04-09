@@ -49,7 +49,7 @@ poly_ptr_t submesh::mergePoly(const Polygon& ply) {
   if (p) {
     if (p->_parentSubmesh == nullptr) {
       p->_parentSubmesh = this;
-      _surfaceArea += p->ComputeArea(ork::dmtx4::Identity());
+      _surfaceArea += p->computeArea(ork::dmtx4::Identity());
       _aaBoxDirty = true;
     }
   }
@@ -130,7 +130,7 @@ poly_ptr_t submesh::mergeUnorderedTriangle(vertex_ptr_t va, vertex_ptr_t vb, ver
   if (p) {
     if (p->_parentSubmesh == nullptr) {
       p->_parentSubmesh = this;
-      _surfaceArea += p->ComputeArea(ork::dmtx4::Identity());
+      _surfaceArea += p->computeArea(ork::dmtx4::Identity());
       _aaBoxDirty = true;
     }
   }

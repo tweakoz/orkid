@@ -464,7 +464,7 @@ int Polygon::VertexCCW(int vert) const {
 }
 */
 ///////////////////////////////////////////////////////////////////////////////
-vertex Polygon::ComputeCenter() const {
+vertex Polygon::computeCenter() const {
   int inumv = GetNumSides();
   vertex vcenter;
   double frecip = double(1.0) / double(inumv);
@@ -533,7 +533,7 @@ dvec3 Polygon::centerOfMass() const{
 
 ///////////////////////////////////////////////////////////////////////////////
 
-double Polygon::ComputeArea(const dmtx4& MatRange) const {
+double Polygon::computeArea(const dmtx4& MatRange) const {
   double farea     = 0.0f;
   ork::dvec3 base = _vertices[0]->mPos.transform(MatRange);
   ork::dvec3 prev = _vertices[1]->mPos.transform(MatRange);
@@ -549,7 +549,7 @@ double Polygon::ComputeArea(const dmtx4& MatRange) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-double Polygon::ComputeEdgeLength(const dmtx4& MatRange, int iedge) const {
+double Polygon::computeEdgeLength(const dmtx4& MatRange, int iedge) const {
   int inumvtx = _vertices.size();
   auto v0     = _vertices[(iedge + 0) % inumvtx];
   auto v1     = _vertices[(iedge + 1) % inumvtx];
@@ -563,7 +563,7 @@ double Polygon::minEdgeLength(const dmtx4& MatRange) const {
   double min_len = 1e12;
   int numedges = _vertices.size();
   for( int e=0; e<numedges; e++){
-    double elen = ComputeEdgeLength(MatRange,e);
+    double elen =computeEdgeLength(MatRange,e);
     if( elen < min_len )
       min_len = elen;
   }
@@ -574,7 +574,7 @@ double Polygon::maxEdgeLength(const dmtx4& MatRange) const {
   double max_len = 0.0;
   int numedges = _vertices.size();
   for( int e=0; e<numedges; e++){
-    double elen = ComputeEdgeLength(MatRange,e);
+    double elen = computeEdgeLength(MatRange,e);
     if( elen > max_len )
       max_len = elen;
   }
@@ -593,7 +593,7 @@ dplane3 Polygon::computePlane() const{
 
 ///////////////////////////////////////////////////////////////////////////////
 
-dvec3 Polygon::ComputeNormal() const {
+dvec3 Polygon::computeNormal() const {
   dvec3 rval(0, 0, 0);
   int inumvtx = _vertices.size();
   auto v0 = _vertices[0]->mPos;

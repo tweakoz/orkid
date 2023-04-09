@@ -150,13 +150,13 @@ void pyinit_meshutil_component(py::module& module_meshutil) {
       return p->GetNumSides();
     })
     .def_property_readonly("normal", [](poly_ptr_t p) -> fvec3 {            
-      return dvec3_to_fvec3(p->ComputeNormal());
+      return dvec3_to_fvec3(p->computeNormal());
     })
     .def_property_readonly("center", [](poly_ptr_t p) -> fvec3 {            
-      return dvec3_to_fvec3(p->ComputeCenter().mPos);
+      return dvec3_to_fvec3(p->computeCenter().mPos);
     })
     .def_property_readonly("area", [](poly_ptr_t p) -> double {            
-      return p->ComputeArea(dmtx4());
+      return p->computeArea(dmtx4());
     })
     .def_property_readonly("plane", [](poly_ptr_t p) -> fplane3_ptr_t {            
       auto pl = std::make_shared<fplane3>(dplane3_to_fplane3(p->computePlane()));

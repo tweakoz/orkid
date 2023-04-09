@@ -30,8 +30,15 @@
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 
 namespace ork::meshutil {
-///////////////////////////////////////////////////////////////////////////////
 
+///////////////////////////////////////////////////////////////////////////////
+using vertex_void_visitor_t = std::function<void(vertex_ptr_t)>;
+using const_vertex_void_visitor_t = std::function<void(vertex_const_ptr_t)>;
+using edge_map_t = std::unordered_map<uint64_t, edge_ptr_t>;
+using poly_index_set_t = orkset<int>;
+using poly_bool_visitor_t = std::function<bool(poly_ptr_t)>;
+using poly_void_visitor_t = std::function<void(poly_ptr_t)>;
+using const_poly_void_visitor_t = std::function<void(poly_const_ptr_t)>;
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
@@ -64,6 +71,19 @@ struct unique_set {
     }
     return false;
   }
+  inline ptr_t first()  {
+    auto it = _the_map.begin();
+    if (it!=_the_map.end()) {
+      return it->second;
+    }
+    return nullptr;
+  }
+  inline void visit(const std::function<void(ptr_t)>& visitor) const {
+    for(auto it : _the_map) {
+      visitor(it.second);
+    }
+  }
+  
   std::unordered_map<uint64_t,ptr_t> _the_map;
 };
 
@@ -84,7 +104,6 @@ struct edge {
 };
 
 using edge_set_t = unique_set<edge>;
-using edge_map_t = std::unordered_map<uint64_t, edge_ptr_t>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -148,8 +167,6 @@ struct vertex {
 };
 
 using vertex_set_t = unique_set<vertex>;
-using vertex_void_visitor_t = std::function<void(vertex_ptr_t)>;
-using const_vertex_void_visitor_t = std::function<void(vertex_const_ptr_t)>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -215,13 +232,13 @@ struct Polygon {
 
   Polygon(const std::vector<vertex_ptr_t>& vertices);
 
-  vertex ComputeCenter() const;
+  vertex computeCenter() const;
   dvec3 centerOfMass() const;
-  double ComputeEdgeLength(const dmtx4& MatRange, int iedge) const;
+  double computeEdgeLength(const dmtx4& MatRange, int iedge) const;
   double minEdgeLength(const dmtx4& MatRange = dmtx4::Identity()) const;
   double maxEdgeLength(const dmtx4& MatRange = dmtx4::Identity()) const;
-  double ComputeArea(const dmtx4& MatRange = dmtx4::Identity()) const;
-  dvec3 ComputeNormal() const;
+  double computeArea(const dmtx4& MatRange = dmtx4::Identity()) const;
+  dvec3 computeNormal() const;
   dplane3 computePlane() const;
   
   bool containsVertex(vertex_ptr_t v) const;
@@ -242,10 +259,6 @@ struct Polygon {
 };
 
 using poly_set_t = unique_set<Polygon>;
-using poly_index_set_t = orkset<int>;
-using poly_bool_visitor_t = std::function<bool(poly_ptr_t)>;
-using poly_void_visitor_t = std::function<void(poly_ptr_t)>;
-using const_poly_void_visitor_t = std::function<void(poly_const_ptr_t)>;
 
 ///////////////////////////////////////////////////////////////////////////////
 

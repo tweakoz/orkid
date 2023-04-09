@@ -33,7 +33,7 @@ void submeshFixWindingOrder(const submesh& inpsubmesh, submesh& outsmesh, bool i
       newverts.push_back(newv);
     }
     Polygon new_poly(newverts);
-    dvec3 N1 = new_poly.ComputeNormal();
+    dvec3 N1 = new_poly.computeNormal();
 
     dvec3 poly_c = new_poly.centerOfMass();
     dvec3 poly_dc = (poly_c-C).normalized();

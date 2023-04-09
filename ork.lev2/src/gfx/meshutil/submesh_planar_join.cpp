@@ -55,8 +55,8 @@ void submeshJoinCoplanar(const submesh& inpsubmesh, submesh& outsmesh){
           }
 
           Polygon new_poly(new_vertices);
-          dvec3 poly_n = new_poly.ComputeNormal();
-          float DOT = new_poly.ComputeNormal().dotWith(plane_n);
+          dvec3 poly_n = new_poly.computeNormal();
+          float DOT = new_poly.computeNormal().dotWith(plane_n);
           //printf( "poly_n<%g %g %g> DOT<%g>\n", poly_n.x, poly_n.y, poly_n.z, DOT);
           if(DOT>0){
            std::reverse(std::begin(new_vertices), std::end(new_vertices));
@@ -73,8 +73,8 @@ void submeshJoinCoplanar(const submesh& inpsubmesh, submesh& outsmesh){
             new_vertices.push_back(outsmesh.mergeVertex(*iv));
           }
           Polygon new_poly(new_vertices);
-          dvec3 poly_n = new_poly.ComputeNormal();
-          float DOT = new_poly.ComputeNormal().dotWith(plane_n);
+          dvec3 poly_n = new_poly.computeNormal();
+          float DOT = new_poly.computeNormal().dotWith(plane_n);
           //printf( "poly_n<%g %g %g>\n", poly_n.x, poly_n.y, poly_n.z);
           //printf( "poly_n<%g %g %g> DOT<%g>\n", poly_n.x, poly_n.y, poly_n.z, DOT);
           if(DOT>0){

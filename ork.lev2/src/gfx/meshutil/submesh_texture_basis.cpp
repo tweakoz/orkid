@@ -17,7 +17,7 @@ namespace ork::meshutil {
 void submeshWithTextureBasis(const submesh& inpsubmesh, submesh& outsubmesh){
 
   inpsubmesh.visitAllPolys( [&](poly_const_ptr_t input_poly) {
-    dvec3 N = input_poly->ComputeNormal();
+    dvec3 N = input_poly->computeNormal();
 
     int inumv = input_poly->GetNumSides();
     std::vector<vertex_ptr_t> merged_vertices;

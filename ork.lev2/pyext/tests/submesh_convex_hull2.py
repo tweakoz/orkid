@@ -48,7 +48,7 @@ class SceneGraphApp(BasicUiCamSgApp):
     self.mutex = Lock()
     self.uicam.lookAt( vec3(0,0,20), vec3(0,0,0), vec3(0,1,0) )
     self.camera.copyFrom( self.uicam.cameradata )
-    self.NUMPOINTS = 16
+    self.NUMPOINTS = 8
     self.pnt = [vec3(0) for i in range(self.NUMPOINTS)]
   ##############################################
   def updatePoints(self,abstime):
@@ -91,7 +91,11 @@ class SceneGraphApp(BasicUiCamSgApp):
     submesh_isect = meshutil.SubMesh()
     for i in range(self.NUMPOINTS):
       submesh_isect.makeVertex(position=self.pnt[i])
+    print(submesh_isect)
+    for v in submesh_isect.vertices:
+      print(v.position)
     self.barysub_isect = submesh_isect.convexHull().withBarycentricUVs()
+    assert(False)
     ##############################
 
     #time.sleep(0.25)
