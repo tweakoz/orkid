@@ -196,6 +196,7 @@ void submeshConvexHullIterative(const submesh& inpsubmesh, submesh& outsmesh, in
   double dt23 = 0.0;
   double dt34 = 0.0;
 
+  int total_edges_visited = 0;
   while (not conflict_graph.empty()) {
 
     double t0 = timer.SecsSinceStart();
@@ -271,29 +272,38 @@ void submeshConvexHullIterative(const submesh& inpsubmesh, submesh& outsmesh, in
       loop = temp;
     }
 
+    ///////////////////////////////
+    // merge conflict point
+    ///////////////////////////////
+
+    auto new_c    = outsmesh.mergeVertex(*conflict_point);
+
+    ///////////////////////////////
+    // merge triangle fan
+    ///////////////////////////////
+
     double t2 = timer.SecsSinceStart();
     dt12 += (t2 - t1);
 
-    ///////////////////////////////
-    // merge new polys
-    ///////////////////////////////
-
     int num_edges = loop->_edges.size();
-    auto new_c    = outsmesh.mergeVertex(*conflict_point);
-    ///////////////////////////////
-    // triangle fan
-    ///////////////////////////////
+    total_edges_visited += num_edges;
     for (int i = 0; i < num_edges; i++) {
+
       auto edge  = loop->_edges[i];
+
       ////////////////////////////////////
       // verts a and b for the fan triangle
       ////////////////////////////////////
+
       auto new_a = outsmesh.mergeVertex(*edge->_vertexA);
       auto new_b = outsmesh.mergeVertex(*edge->_vertexB);
+
       ////////////////////////////////////
       // compute new center of mesh
       ////////////////////////////////////
+
       dvec3 new_center = outsmesh.centerOfPolys();
+
       ////////////////////////////////////
 
       bool flip = do_flip(
@@ -309,15 +319,22 @@ void submeshConvexHullIterative(const submesh& inpsubmesh, submesh& outsmesh, in
           new_a, //
           new_b, //
           new_c);
+
+      ////////////////////////////////////
+      // update visibility of vertices with respect to new triangle
+      ////////////////////////////////////
+
       vertices.visit([&](vertex_ptr_t v) {
-        auto vpos = v->mPos;
         if (not new_tri->containsVertex(v)) {
-          double sv = new_tri->signedVolumeWithPoint(vpos);
+          double sv = new_tri->signedVolumeWithPoint(v->mPos);
           if (sv > 0.0) {
             conflict_graph.insert(v, new_tri);
           }
         }
       });
+
+      ////////////////////////////////////
+
     } // for (int i = 0; i < num_edges; i++) {
     ///////////////////////////////
     double t3 = timer.SecsSinceStart();
@@ -329,8 +346,7 @@ void submeshConvexHullIterative(const submesh& inpsubmesh, submesh& outsmesh, in
     conflict_graph.remove(conflict_point);
   }
 
-
-  printf( "dt0..1: %f, dt1..2: %f, dt2..3: %f\n", dt01, dt12, dt23);
+  printf( "dt0..1: %f, dt1..2: %f, dt2..3: %f  total_edges: %d\n", dt01, dt12, dt23, total_edges_visited);
 
 }
 
