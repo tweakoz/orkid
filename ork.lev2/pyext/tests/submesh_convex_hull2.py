@@ -21,7 +21,7 @@ class SceneGraphApp(BasicUiCamSgApp):
     self.mutex = Lock()
     self.uicam.lookAt( vec3(0,0,20), vec3(0,0,0), vec3(0,1,0) )
     self.camera.copyFrom( self.uicam.cameradata )
-    self.NUMPOINTS = 64
+    self.NUMPOINTS = 80
     self.pnt = [vec3(0) for i in range(self.NUMPOINTS)]
     self.numsteps = 0
   ##############################################
@@ -68,15 +68,12 @@ class SceneGraphApp(BasicUiCamSgApp):
     super().onUpdate(updevent)
     if self.incr_time:
       self.time += updevent.deltatime
-    self.updatePoints(self.time)
+    self.updatePoints(self.time*0.25)
     θ = self.abstime # * math.pi * 2.0 * 0.1
     ##############################
     submesh_isect = meshutil.SubMesh()
     for i in range(self.NUMPOINTS):
       submesh_isect.makeVertex(position=self.pnt[i])
-    #print(submesh_isect)
-    #for v in submesh_isect.vertices:
-    #  print(v.position)
     self.hull = submesh_isect.convexHull(self.numsteps)
     self.barysub_isect = self.hull.withBarycentricUVs()
     #assert(False)
@@ -88,7 +85,6 @@ class SceneGraphApp(BasicUiCamSgApp):
     super().onGpuIter()
 
     # intersection mesh
-    #self.barysub_isect = self.submesh_isect.withBarycentricUVs()
     self.pts_drawabledata.pointsmesh = self.hull
     self.prim3.fromSubMesh(self.barysub_isect,self.context)
 

@@ -341,6 +341,8 @@ struct IConnectivity{
   virtual void visitAllVertices(const_vertex_void_visitor_t visitor) const = 0;
   virtual edge_ptr_t edgeBetweenPolys(int aind, int bind) const = 0;
   virtual void removePoly(poly_ptr_t) = 0;
+  virtual void clearPolys() =0;
+
   submesh* _submesh = nullptr;
 
 };
@@ -364,7 +366,7 @@ struct DefaultConnectivity : public IConnectivity{
   size_t numPolys() const final;
   size_t numVertices() const final;
   void removePoly(poly_ptr_t) final;
-
+  void clearPolys() final;
 
   void visitAllPolys(poly_void_visitor_t visitor) final;
   void visitAllPolys(const_poly_void_visitor_t visitor) const final;

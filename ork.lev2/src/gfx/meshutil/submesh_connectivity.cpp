@@ -155,6 +155,17 @@ void DefaultConnectivity::removePoly(poly_ptr_t ply) {
     _orderedPolys[ipindex]   = last_poly;
     last_poly->_submeshIndex = ipindex;
   }
+  auto it2 = _polymap.find(ply->hash());
+  if (it2 != _polymap.end()) {
+     OrkAssert(ply == it2->second);
+     _polymap.erase(it2);
+  }
+
+}
+////////////////////////////////////////////////////////////////
+void DefaultConnectivity::clearPolys() {
+  _orderedPolys.clear();
+  _polymap.clear();
 }
 ////////////////////////////////////////////////////////////////
 poly_ptr_t DefaultConnectivity::mergePoly(const Polygon& ply) {

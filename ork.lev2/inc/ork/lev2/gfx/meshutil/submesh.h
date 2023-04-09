@@ -104,7 +104,7 @@ struct submesh {
   poly_ptr_t mergeUnorderedTriangle(vertex_ptr_t va, vertex_ptr_t vb, vertex_ptr_t vc);
   poly_ptr_t mergeQuad(vertex_ptr_t va, vertex_ptr_t vb, vertex_ptr_t vc, vertex_ptr_t vd);
   void removePoly(poly_ptr_t ply);
-
+  void clearPolys();
   void MergeSubMesh(const submesh& oth);
   void mergePolySet(const PolySet& pset);
 

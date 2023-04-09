@@ -118,6 +118,11 @@ void pyinit_meshutil_submesh(py::module& module_meshutil) {
           .def("igl_test", [](submesh_ptr_t submesh) { return submesh->igl_test(); })
 #endif //#if defined(ENABLE_IGL)
           .def(
+              "clearPolys",
+              [](submesh_ptr_t submesh) {
+                submesh->clearPolys();
+              })
+          .def(
               "copy",
               [](submesh_constptr_t inpsubmesh, py::kwargs kwargs) -> submesh_ptr_t {
                 submesh_ptr_t rval      = std::make_shared<submesh>();

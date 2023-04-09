@@ -44,6 +44,10 @@ void submesh::removePoly(poly_ptr_t p) {
   _connectivityIMPL->removePoly(p);
 }
 ///////////////////////////////////////////////////////////////////////////////
+void submesh::clearPolys(){
+  _connectivityIMPL->clearPolys();
+}
+///////////////////////////////////////////////////////////////////////////////
 poly_ptr_t submesh::mergePoly(const Polygon& ply) {
   auto p = _connectivityIMPL->mergePoly(ply);
   if (p) {

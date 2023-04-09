@@ -11,31 +11,11 @@ from orkengine.lev2 import *
 from _boilerplate import *
 ################################################################################
 
-def strippedSubmesh(inpsubmesh):
+def stripSubmesh(inpsubmesh):
   stripped = inpsubmesh.copy(preserve_normals=False,
                              preserve_colors=False,
                              preserve_texcoords=False)
   return stripped
-
-################################################################################
-
-def proc_with_plane(inpsubmesh,plane):
-  submesh2 = strippedSubmesh(inpsubmesh).clippedWithPlane(plane=plane,
-                                         close_mesh=True, 
-                                         flip_orientation=False )["front"]
-
-  return submesh2 
-
-################################################################################
-
-def proc_with_frustum(inpsubmesh,frustum):
-  submesh2 = proc_with_plane(inpsubmesh,frustum.nearPlane)
-  submesh3 = proc_with_plane(submesh2,frustum.farPlane)
-  submesh4 = proc_with_plane(submesh3,frustum.leftPlane)
-  submesh5 = proc_with_plane(submesh4,frustum.rightPlane)
-  submesh6 = proc_with_plane(submesh5,frustum.topPlane)
-  submesh7 = proc_with_plane(submesh6,frustum.bottomPlane)
-  return submesh7
 
 ################################################################################
 
@@ -61,7 +41,7 @@ class SceneGraphApp(BasicUiCamSgApp):
     self.frustum1 = Frustum()
     self.frustum1.set(self.fvmtx1,self.fpmtx1)
     self.frusmesh1 = meshutil.SubMesh.createFromFrustum(self.frustum1,projective_rect_uv=True)
-    self.submesh1 = strippedSubmesh(self.frusmesh1)
+    self.submesh1 = stripSubmesh(self.frusmesh1)
     self.prim1 = meshutil.RigidPrimitive(self.frusmesh1,ctx)
     self.sgnode1 = self.prim1.createNode("m1",self.layer1,self.pseudowire_pipe)
     self.sgnode1.enabled = True
@@ -73,15 +53,14 @@ class SceneGraphApp(BasicUiCamSgApp):
     self.frustum2 = Frustum()
     self.frustum2.set(self.fvmtx2,self.fpmtx2)
     self.frusmesh2 = meshutil.SubMesh.createFromFrustum(self.frustum2,projective_rect_uv=True)
-    self.submesh2 = strippedSubmesh(self.frusmesh2)
+    self.submesh2 = stripSubmesh(self.frusmesh2)
     self.prim2 = meshutil.RigidPrimitive(self.frusmesh2,ctx)
     self.sgnode2 = self.prim2.createNode("m2",self.layer1,self.pseudowire_pipe)
     self.sgnode2.enabled = True
     self.sgnode2.sortkey = 2;
     self.sgnode2.modcolor = vec4(0,1,0,1)
     ##############################
-    submesh_isect = proc_with_frustum(self.submesh1,self.frustum2)
-    self.barysub_isect = submesh_isect.withBarycentricUVs()
+    self.barysub_isect = meshutil.SubMesh().withBarycentricUVs()
     self.prim3 = meshutil.RigidPrimitive(self.barysub_isect,ctx)
     self.sgnode3 = self.prim3.createNode("m3",self.layer1,solid_wire_pipeline)
     self.sgnode3.enabled = True
@@ -191,9 +170,9 @@ class SceneGraphApp(BasicUiCamSgApp):
     #2
     lat_1 = self.upd_c1.computeLAT()
     lat_2 = self.upd_c2.computeLAT()
-    PLANAR_BIAS = 0.0016
+    #
     self.fvmtx1 = mtx4.lookAt(vec3(0,0,1),vec3(lat_1,0,0),vec3(0,1,0))
-    self.fvmtx2 = mtx4.lookAt(vec3(1,0,1+PLANAR_BIAS),vec3(1,lat_2,PLANAR_BIAS),vec3(0,1,0))
+    self.fvmtx2 = mtx4.lookAt(vec3(1,0,1),vec3(1,lat_2,0),vec3(0,1,0))
     #
     self.frustum1.set(self.fvmtx1,self.fpmtx1)
     self.frustum2.set(self.fvmtx2,self.fpmtx2)
@@ -201,28 +180,27 @@ class SceneGraphApp(BasicUiCamSgApp):
     self.frusmesh1 = meshutil.SubMesh.createFromFrustum(self.frustum1,projective_rect_uv=True)
     self.frusmesh2 = meshutil.SubMesh.createFromFrustum(self.frustum2,projective_rect_uv=True)
     #
-    submesh1 = strippedSubmesh(self.frusmesh1)
-    submesh2 = strippedSubmesh(self.frusmesh2)
+    self.frusmesh1a = meshutil.SubMesh.createFromFrustum(self.frustum1,projective_rect_uv=False)
+    self.frusmesh2a = meshutil.SubMesh.createFromFrustum(self.frustum2,projective_rect_uv=False)
+    #
+    submesh_verts = meshutil.SubMesh()
+    for v in (self.frusmesh1a.vertices + self.frusmesh2a.vertices):
+      submesh_verts.makeVertex(position=v.position)
+    #
+    self.hull = submesh_verts.convexHull(0) 
+    #
+    self.barysub_isect = self.hull.withBarycentricUVs()
 
-    isec1 = strippedSubmesh(submesh1)
-    isec1.mergeSubmesh(strippedSubmesh(submesh2))
-    self.submesh_isect = isec1.convexHull() #.coplanarJoined().triangulated()
-
-    #time.sleep(0.25)
   ##############################################
   def onGpuIter(self):
     super().onGpuIter()
 
-    #self.mutex.acquire()
-
     # two wireframe frustums
     self.prim1.fromSubMesh(self.frusmesh1,self.context)
     self.prim2.fromSubMesh(self.frusmesh2,self.context)
-    # intersection mesh
-    self.barysub_isect = self.submesh_isect.withBarycentricUVs()
+
+    # convex hull mesh
     self.prim3.fromSubMesh(self.barysub_isect,self.context)
-    #print("intersection convexVolume: %s" % submesh_isect.convexVolume)
-    #self.mutex.release()
 
 ###############################################################################
 
