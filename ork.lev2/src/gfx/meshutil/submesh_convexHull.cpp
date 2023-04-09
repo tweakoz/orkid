@@ -77,6 +77,11 @@ struct ConflictGraph {
       item.second.removePoly(p);
     }
   }
+  void removePolys(std::vector<poly_ptr_t> polys) {
+    for( auto p : polys ){
+      this->removePoly(p);
+    }
+  }
   //////////////////////////////////
   std::map<uint64_t, ConflictItem> _items;
   mutex _mutex;
@@ -224,22 +229,18 @@ void submeshConvexHullIterative(const submesh& inpsubmesh, submesh& outsmesh, in
     ///////////////////////////////
 
     conflict_item._polys.visit([&](poly_ptr_t the_poly) {
+      polys_to_remove.push_back(the_poly);
       the_poly->visitEdges([&](edge_ptr_t the_edge) {
         auto reverse_edge = std::make_shared<edge>(the_edge->_vertexB, the_edge->_vertexA);
         if (edgeset.contains(reverse_edge)) {
           edgeset.remove(the_edge);
-        } else if (edgeset.contains(the_edge)) {
-          OrkAssert(false);
         } else {
           edgeset.insert(the_edge);
         }
       });
-      polys_to_remove.push_back(the_poly);
     });
-    for (auto the_poly : polys_to_remove) {
-      outsmesh.removePoly(the_poly);
-      conflict_graph.removePoly(the_poly);
-    }
+    outsmesh.removePolys(polys_to_remove);
+    conflict_graph.removePolys(polys_to_remove);
 
     double t1 = timer.SecsSinceStart();
 
@@ -296,15 +297,19 @@ void submeshConvexHullIterative(const submesh& inpsubmesh, submesh& outsmesh, in
 
     int istart = 0;
 
+    std::atomic<int> wait_ops = 0;
+
     while (num_edges > 0) {
 
       //printf( "num_edges<%d> istart<%d>\n", num_edges, istart );
 
-      int icount = 4;
+      int icount = 8;
       if( icount > num_edges )
         icount = num_edges;
 
+      wait_ops.fetch_add(1);
       auto op = [=,                   //
+                 & wait_ops,          //
                  &vertices,           //
                  &outsmesh,           //
                  &conflict_graph]() { //
@@ -374,7 +379,7 @@ void submeshConvexHullIterative(const submesh& inpsubmesh, submesh& outsmesh, in
 
         } // for (auto new_tri : polys_added) {
         /////////////////////////////////////////////////////
-
+        wait_ops.fetch_add(-1);
       };
 
       num_edges -= icount;
@@ -394,8 +399,11 @@ void submeshConvexHullIterative(const submesh& inpsubmesh, submesh& outsmesh, in
 
     ///////////////////////////////
 
-    if( _do_parallel)
-      opq::concurrentQueue()->drain();
+    if( _do_parallel){
+      while(wait_ops>0){
+        usleep(0);
+      }
+    }
 
     ///////////////////////////////
     double t3 = timer.SecsSinceStart();
@@ -405,9 +413,11 @@ void submeshConvexHullIterative(const submesh& inpsubmesh, submesh& outsmesh, in
     ///////////////////////////////
     vertices.remove(conflict_point);
     conflict_graph.remove(conflict_point);
-  }
 
-  printf("dt0..1: %f, dt1..2: %f, dt2..3: %f  total_edges: %d\n", dt01, dt12, dt23, total_edges_visited);
+  ///////////////////////////////////////////////////////
+  } // while (not conflict_graph.empty()) {
+
+  //printf("dt0..1: %f, dt1..2: %f, dt2..3: %f  total_edges: %d\n", dt01, dt12, dt23, total_edges_visited);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

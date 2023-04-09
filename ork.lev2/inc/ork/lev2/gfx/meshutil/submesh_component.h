@@ -342,6 +342,7 @@ struct IConnectivity{
   virtual void visitAllVertices(const_vertex_void_visitor_t visitor) const = 0;
   virtual edge_ptr_t edgeBetweenPolys(int aind, int bind) const = 0;
   virtual void removePoly(poly_ptr_t) = 0;
+  virtual void removePolys(std::vector<poly_ptr_t>& polys) = 0;
   virtual void clearPolys() =0;
   virtual dvec3 centerOfPolys() const = 0;
 
@@ -368,6 +369,7 @@ struct DefaultConnectivity : public IConnectivity{
   size_t numPolys() const final;
   size_t numVertices() const final;
   void removePoly(poly_ptr_t) final;
+  void removePolys(std::vector<poly_ptr_t>& polys) final;
   void clearPolys() final;
 
   void visitAllPolys(poly_void_visitor_t visitor) final;

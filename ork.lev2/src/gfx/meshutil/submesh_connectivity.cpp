@@ -157,15 +157,38 @@ void DefaultConnectivity::removePoly(poly_ptr_t ply) {
   }
   auto it2 = _polymap.find(ply->hash());
   if (it2 != _polymap.end()) {
-     OrkAssert(ply == it2->second);
-     _polymap.erase(it2);
+    OrkAssert(ply == it2->second);
+    _polymap.erase(it2);
   }
-  for( auto v : ply->_vertices ) {
+  for (auto v : ply->_vertices) {
     _centerOfPolysAccum -= v->mPos;
     v->_numConnectedPolys--;
     _centerOfPolysCount--;
   }
-
+}
+////////////////////////////////////////////////////////////////
+void DefaultConnectivity::removePolys(std::vector<poly_ptr_t>& polys) {
+  for (auto ply : polys) {
+    int ipindex = ply->_submeshIndex;
+    auto it     = _orderedPolys.begin() + ipindex;
+    if (it != _orderedPolys.end()) {
+      OrkAssert(ply == *it);
+      auto last_poly = _orderedPolys.back();
+      _orderedPolys.pop_back();
+      _orderedPolys[ipindex]   = last_poly;
+      last_poly->_submeshIndex = ipindex;
+    }
+    auto it2 = _polymap.find(ply->hash());
+    if (it2 != _polymap.end()) {
+      OrkAssert(ply == it2->second);
+      _polymap.erase(it2);
+    }
+    for (auto v : ply->_vertices) {
+      _centerOfPolysAccum -= v->mPos;
+      v->_numConnectedPolys--;
+      _centerOfPolysCount--;
+    }
+  }
 }
 ////////////////////////////////////////////////////////////////
 void DefaultConnectivity::clearPolys() {
@@ -284,7 +307,7 @@ dvec3 DefaultConnectivity::centerOfPolys() const {
   //printf( "xxx<%f %f %f> center<%f %f %f>\n", xxx.x, xxx.y, xxx.z, center.x, center.y, center.z );
   //return center;
   */
-  return _centerOfPolysAccum*1.0/double(_centerOfPolysCount);
+  return _centerOfPolysAccum * 1.0 / double(_centerOfPolysCount);
 }
 ////////////////////////////////////////////////////////////////
 } // namespace ork::meshutil

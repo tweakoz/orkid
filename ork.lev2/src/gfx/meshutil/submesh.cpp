@@ -45,6 +45,10 @@ void submesh::removePoly(poly_ptr_t p) {
   _connectivityIMPL->removePoly(p);
 }
 ///////////////////////////////////////////////////////////////////////////////
+void submesh::removePolys(std::vector<poly_ptr_t>& polys){
+  _connectivityIMPL->removePolys(polys);
+}
+///////////////////////////////////////////////////////////////////////////////
 void submesh::clearPolys(){
   _connectivityIMPL->clearPolys();
 }
