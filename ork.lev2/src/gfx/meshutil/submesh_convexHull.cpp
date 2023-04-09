@@ -22,6 +22,8 @@ namespace ork::meshutil {
 
 void submeshConvexHullIterative(const submesh& inpsubmesh, submesh& outsmesh, int num_steps) {
 
+  constexpr bool debug = true;
+
   ///////////////////////////////////////////////////
   // trivially reject
   ///////////////////////////////////////////////////
@@ -39,7 +41,7 @@ void submeshConvexHullIterative(const submesh& inpsubmesh, submesh& outsmesh, in
   int initial_counter = 0;
   dvec3 inp_center;
   inpsubmesh.visitAllVertices([&](vertex_const_ptr_t va) { 
-    if(0)printf( "inp-vtx[%d] <%g %g %g>\n", initial_counter, va->mPos.x, va->mPos.y, va->mPos.z);
+    if(debug)printf( "inp-vtx[%d] <%g %g %g>\n", initial_counter, va->mPos.x, va->mPos.y, va->mPos.z);
     auto nva = outsmesh.mergeVertex(*va);
     vertices.insert(nva);
     inp_center += nva->mPos;
@@ -53,17 +55,23 @@ void submeshConvexHullIterative(const submesh& inpsubmesh, submesh& outsmesh, in
   ///////////////////////////////////////////////////
 
   dvec3 tetra_center;
-  auto make_vtx = [&]() -> vertex_ptr_t {
-    auto nva = vertices.first();
-    tetra_center += nva->mPos;
-    vertices.remove(nva);
-    if(0) printf( "  tetra-vtx[%d] <%g %g %g>\n", nva->_poolindex, nva->mPos.x, nva->mPos.y, nva->mPos.z);
-    return nva;
+  auto make_vtx = [&](int index) -> vertex_ptr_t {
+    vertex_ptr_t rval;
+    for( auto iv : vertices._the_map ) {
+      auto v = iv.second;
+      if(v->_poolindex==index){
+        rval = v;
+        tetra_center += v->mPos;
+        if(debug) printf( "  tetra-vtx[%d] <%g %g %g>\n", v->_poolindex, v->mPos.x, v->mPos.y, v->mPos.z);
+      }
+    }
+    vertices.remove(rval);
+    return rval;
   };
-  auto nva = make_vtx();
-  auto nvb = make_vtx();
-  auto nvc = make_vtx();
-  auto nvd = make_vtx();
+  auto nva = make_vtx(0);
+  auto nvb = make_vtx(1);
+  auto nvc = make_vtx(2);
+  auto nvd = make_vtx(3);
   tetra_center *= 0.25;
   
   //
@@ -78,49 +86,80 @@ void submeshConvexHullIterative(const submesh& inpsubmesh, submesh& outsmesh, in
     return d_n.dotWith(d_c)<0.0;
   };
   auto make_tri = [&](vertex_ptr_t a, vertex_ptr_t b, vertex_ptr_t c) -> poly_ptr_t {
-    return do_flip(tetra_center,a,b,c) ? outsmesh.mergeTriangle(a,c,b) : outsmesh.mergeTriangle(a,b,c);
+    bool flip = do_flip(tetra_center,a,b,c);
+    poly_ptr_t rval = nullptr;
+    if(flip){
+      rval = outsmesh.mergeTriangle(a,c,b);
+    }else{
+      rval = outsmesh.mergeTriangle(a,b,c);
+    }
+      if( debug ){
+        printf( "  tetra-tri flip<%d> <%d %d %d>\n", //
+                int(flip), //
+                rval->_vertices[0]->_poolindex, //
+                rval->_vertices[1]->_poolindex, //
+                rval->_vertices[2]->_poolindex);
+      }
+    return rval;
   };
 
-  std::vector<poly_ptr_t> polys;
-  polys.push_back(make_tri(nva,nvb,nvc));
-  polys.push_back(make_tri(nva,nvc,nvd));
-  polys.push_back(make_tri(nva,nvd,nvb));
-  polys.push_back(make_tri(nvb,nvc,nvd));
+  //std::vector<poly_ptr_t> polys;
+  make_tri(nva,nvb,nvc);
+  make_tri(nva,nvc,nvd);
+  make_tri(nva,nvd,nvb);
+  make_tri(nvb,nvc,nvd);
 
   ///////////////////////////////////////////////////
   // build conflict graph
   ///////////////////////////////////////////////////
 
+  /////////////////////////////////////////////////
   struct ConflictItem{
     void removePoly(poly_ptr_t p){
       _polys.remove(p);
     }
+    //////////////////////////////////
     vertex_ptr_t _vertex;
     poly_set_t _polys;
   };
+  /////////////////////////////////////////////////
   struct ConflictGraph{
+    //////////////////////////////////
     void clear(){ _items.clear(); }
+    //////////////////////////////////
     ConflictItem& item(vertex_ptr_t v){
-      auto it = _items.find(v->hash());
+      auto it = _items.find(v->_poolindex);
       if( it==_items.end() ){
-        auto& item = _items[v->hash()];
+        auto& item = _items[v->_poolindex];
         item._vertex = v;
         return item;
       }
       return it->second;
     }
+    //////////////////////////////////
     void insert(vertex_ptr_t v, poly_ptr_t p){
       auto& item = this->item(v);
       item._polys.insert(p);
     }
+    //////////////////////////////////
     bool empty() const { return _items.empty(); }
+    //////////////////////////////////
     ConflictItem& front() { return _items.begin()->second; }
-    void removeFront(){
-      auto it = _items.begin();
+    //////////////////////////////////
+    void remove(vertex_ptr_t v){
+      auto it = _items.find(v->_poolindex);
       _items.erase(it);
     }
+    //////////////////////////////////
+    void removePoly(poly_ptr_t p){
+      for( auto& item : _items ){
+        item.second.removePoly(p);
+      }
+    }
+    //////////////////////////////////
     std::map<uint64_t, ConflictItem> _items;
   };
+  /////////////////////////////////////////////////
 
   ConflictGraph conflict_graph;
 
@@ -128,16 +167,32 @@ void submeshConvexHullIterative(const submesh& inpsubmesh, submesh& outsmesh, in
     conflict_graph.clear();
     vertices.visit([&](vertex_ptr_t v) {
       auto vpos = v->mPos;
-      for( auto p : polys ){
+      outsmesh.visitAllPolys([&](poly_ptr_t p) {
         if( not p->containsVertex(v) ){
           double sv = p->signedVolumeWithPoint(vpos);
-          if(sv<0.0){
+          if(sv>0.0){
             conflict_graph.insert(v,p);
           }
+        }
+      });
+    });
+  };
+
+  /////////////////////////////////////////////////
+
+  auto addPolyToConflictGraph = [&](poly_ptr_t p){
+    vertices.visit([&](vertex_ptr_t v) {
+      auto vpos = v->mPos;
+      if( not p->containsVertex(v) ){
+        double sv = p->signedVolumeWithPoint(vpos);
+        if(sv>0.0){
+          conflict_graph.insert(v,p);
         }
       }
     });
   };
+
+  /////////////////////////////////////////////////
 
   update_conflict_graph();
 
@@ -145,9 +200,9 @@ void submeshConvexHullIterative(const submesh& inpsubmesh, submesh& outsmesh, in
   // iterate on conflict graph
   ///////////////////////////////////////////////////
 
-  edge_set_t edgeset;
   for( int i=0; i<num_steps; i++) {
   //while( not conflict_graph.empty() ){
+  edge_set_t edgeset;
 
     ///////////////////////////////
     // get next conflict point
@@ -156,7 +211,7 @@ void submeshConvexHullIterative(const submesh& inpsubmesh, submesh& outsmesh, in
     auto& conflict_item =  conflict_graph.front();
     auto conflict_point = conflict_item._vertex;
     size_t num_conflicts = conflict_item._polys.size();
-    if(0){
+    if(debug){
     printf("//////////////////////////////\n");
     printf("//////////////////////////////\n");
     printf( "conflict_point [%D] <%g %g %g> num_conflicts<%zu>\n", 
@@ -174,36 +229,44 @@ void submeshConvexHullIterative(const submesh& inpsubmesh, submesh& outsmesh, in
     //  and build edge set
     ///////////////////////////////
 
-    if(0){
+    if(debug){
     printf("//////////////////////////////\n");
     printf( "// visit polys (conflict resolution)\n");
     printf("//////////////////////////////\n");
     }
+    std::vector<poly_ptr_t> polys_to_remove;
     conflict_item._polys.visit([&](poly_ptr_t the_poly) {
-      if(0)printf( "visit poly<%d %d %d>\n", the_poly->_vertices[0]->_poolindex, the_poly->_vertices[1]->_poolindex, the_poly->_vertices[2]->_poolindex);
+      if(debug)printf( "visit poly<%d %d %d>\n", the_poly->_vertices[0]->_poolindex, the_poly->_vertices[1]->_poolindex, the_poly->_vertices[2]->_poolindex);
       the_poly->visitEdges([&](edge_ptr_t the_edge) {
         auto reverse_edge = std::make_shared<edge>(the_edge->_vertexB,the_edge->_vertexA);
         if(edgeset.contains(reverse_edge)){
-          if(0)printf( " remove edge<%d %d>\n", the_edge->_vertexA->_poolindex, the_edge->_vertexB->_poolindex);
+          if(debug)printf( " remove edge<%d %d>\n", the_edge->_vertexA->_poolindex, the_edge->_vertexB->_poolindex);
           edgeset.remove(the_edge);
         }
         else if(edgeset.contains(the_edge)){
           OrkAssert(false);
         }
         else{
-          if(0)printf( " insert edge<%d %d>\n", the_edge->_vertexA->_poolindex, the_edge->_vertexB->_poolindex);
+          if(debug)printf( " insert edge<%d %d>\n", the_edge->_vertexA->_poolindex, the_edge->_vertexB->_poolindex);
           edgeset.insert(the_edge);
         }
       });
-
-      outsmesh.removePoly(the_poly);
+      polys_to_remove.push_back(the_poly);
     });
+    for( auto the_poly : polys_to_remove ){
+        if(debug){
+          printf( "  remove poly<%d %d %d>\n", the_poly->_vertices[0]->_poolindex, the_poly->_vertices[1]->_poolindex, the_poly->_vertices[2]->_poolindex);
+        }
+        outsmesh.removePoly(the_poly);
+        conflict_graph.removePoly(the_poly);
+    }
+
     conflict_item._polys._the_map.clear();
 
     ///////////////////////////////
     // link edge loops from chains
     ///////////////////////////////
-    if(0){
+    if(debug){
     printf("//////////////////////////////\n");
     printf( "// link edges\n");
     printf("//////////////////////////////\n");
@@ -213,14 +276,20 @@ void submeshConvexHullIterative(const submesh& inpsubmesh, submesh& outsmesh, in
     EdgeChainLinker linker;
     for( auto it : edgeset._the_map ){
       auto the_edge = it.second;
-      if(0)printf( "   edge[%d->%d]\n", //
+      if(debug)printf( "   edge[%d->%d]\n", //
                  the_edge->_vertexA->_poolindex, //
                  the_edge->_vertexB->_poolindex);
       linker.add_edge(the_edge);
     }
     linker.link();
-    OrkAssert(linker._edge_loops.size()==1);
-
+    if(debug){
+      printf( "num loops<%zu>\n", linker._edge_loops.size() );
+    }
+    //OrkAssert(linker._edge_loops.size()==1);
+    if(linker._edge_loops.size()==0){
+      conflict_graph.clear();
+      break;
+    }
     ///////////////////////////////
     // flip edge loop if needed
     ///////////////////////////////
@@ -247,7 +316,7 @@ void submeshConvexHullIterative(const submesh& inpsubmesh, submesh& outsmesh, in
     auto new_c = outsmesh.mergeVertex(*conflict_point);
     for( int i=0; i<num_edges; i++ ){
       auto edge = loop->_edges[i];
-      if(0)printf( "  loopedge[%d->%d]\n", //
+      if(debug)printf( "  loopedge[%d->%d]\n", //
                  edge->_vertexA->_poolindex, //
                  edge->_vertexB->_poolindex);
       auto new_a = outsmesh.mergeVertex(*edge->_vertexA);
@@ -255,14 +324,20 @@ void submeshConvexHullIterative(const submesh& inpsubmesh, submesh& outsmesh, in
       auto new_tri = outsmesh.mergeTriangle(new_a, //
                                             new_b, //
                                             new_c);
-      polys.push_back(new_tri);
+      if(debug){
+      printf( "  new_tri<%d %d %d>\n", //
+                 new_tri->_vertices[0]->_poolindex, //
+                 new_tri->_vertices[1]->_poolindex, //
+                 new_tri->_vertices[2]->_poolindex);
+      }
+      addPolyToConflictGraph(new_tri);
     }
 
     ///////////////////////////////
     // remove point and move to next conflict 
     ///////////////////////////////
     vertices.remove(conflict_point);
-    conflict_graph.removeFront();
+    conflict_graph.remove(conflict_point);
     //update_conflict_graph();
   }
 

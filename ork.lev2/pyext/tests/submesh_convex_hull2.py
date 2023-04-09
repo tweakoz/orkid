@@ -64,7 +64,7 @@ class SceneGraphApp(BasicUiCamSgApp):
   ##############################################
   def onUpdate(self,updevent):
     super().onUpdate(updevent)
-    self.updatePoints(1.0) #updevent.absolutetime)
+    self.updatePoints(updevent.absolutetime*0.01)
     θ = self.abstime # * math.pi * 2.0 * 0.1
     ##############################
     submesh_isect = meshutil.SubMesh()
@@ -92,7 +92,7 @@ class SceneGraphApp(BasicUiCamSgApp):
     super().onUiEvent(uievent)
     if uievent.code == tokens.KEY_DOWN.hashed:
         if uievent.keycode == 32: # spacebar
-          self.numsteps = (self.numsteps + 1) % 4
+          self.numsteps = (self.numsteps + 1) % 6
 ###############################################################################
 
 sgapp = SceneGraphApp()

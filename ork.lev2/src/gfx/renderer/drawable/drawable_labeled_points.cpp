@@ -91,7 +91,7 @@ LabeledPointDrawable::LabeledPointDrawable(const LabeledPointDrawableData* data)
 
             mtxi->PushUIMatrix();
             context->PushModColor(fvec4(1,1,1,1));
-            FontMan::PushFont("i24");
+            FontMan::PushFont("i16");
             auto font = FontMan::currentFont();
             font->_use_deferred = RCFD->_renderingmodel.isDeferredPBR();
 
