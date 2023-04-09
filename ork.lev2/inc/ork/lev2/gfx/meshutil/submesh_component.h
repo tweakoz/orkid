@@ -83,6 +83,9 @@ struct unique_set {
       visitor(it.second);
     }
   }
+  inline void clear(){
+    _the_map.clear();
+  }
 
   std::unordered_map<uint64_t,ptr_t> _the_map;
 };
@@ -305,6 +308,7 @@ struct EdgeChainLinker {
   void removeChain(edge_chain_ptr_t chain_to_remove);
   void closeChains();
   void link();
+  void clear();
 
   std::vector<edge_chain_ptr_t> _edge_chains;
   std::vector<edge_loop_ptr_t> _edge_loops;

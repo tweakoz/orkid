@@ -321,6 +321,12 @@ void EdgeChainLinker::link() {
   // printf("[%s] postlink numloops<%zu>\n", _name.c_str(), _edge_loops.size());
 }
 
+void EdgeChainLinker::clear(){
+  _edge_chains.clear();
+  _edge_loops.clear();
+  _vtxrefcounts.clear();
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::meshutil
 ///////////////////////////////////////////////////////////////////////////////

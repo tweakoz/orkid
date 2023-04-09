@@ -194,8 +194,15 @@ void submeshConvexHullIterative(const submesh& inpsubmesh, submesh& outsmesh, in
   // iterate on conflict graph
   ///////////////////////////////////////////////////
 
+  edge_set_t edgeset;
+  std::vector<poly_ptr_t> polys_to_remove;
+  EdgeChainLinker linker;
+
   while (not conflict_graph.empty()) {
 
+    polys_to_remove.clear();
+    edgeset.clear();
+    linker.clear();
 
     ///////////////////////////////
     // get next conflict point
@@ -203,15 +210,12 @@ void submeshConvexHullIterative(const submesh& inpsubmesh, submesh& outsmesh, in
 
     auto& conflict_item  = conflict_graph.front();
     auto conflict_point  = conflict_item._vertex;
-    size_t num_conflicts = conflict_item._polys.size();
 
     ///////////////////////////////
     // remove all conflicting polys from outsmesh
     //  and build edge set
     ///////////////////////////////
 
-    std::vector<poly_ptr_t> polys_to_remove;
-    edge_set_t edgeset;
     conflict_item._polys.visit([&](poly_ptr_t the_poly) {
       the_poly->visitEdges([&](edge_ptr_t the_edge) {
         auto reverse_edge = std::make_shared<edge>(the_edge->_vertexB, the_edge->_vertexA);
@@ -230,13 +234,10 @@ void submeshConvexHullIterative(const submesh& inpsubmesh, submesh& outsmesh, in
       conflict_graph.removePoly(the_poly);
     }
 
-    //conflict_item._polys._the_map.clear();
-
     ///////////////////////////////
     // link edge loops from chains
     ///////////////////////////////
 
-    EdgeChainLinker linker;
     for (auto it : edgeset._the_map) {
       auto the_edge = it.second;
       linker.add_edge(the_edge);
@@ -271,12 +272,12 @@ void submeshConvexHullIterative(const submesh& inpsubmesh, submesh& outsmesh, in
 
     int num_edges = loop->_edges.size();
     auto new_c    = outsmesh.mergeVertex(*conflict_point);
+    std::unordered_set<vertex_ptr_t> verts;
     for (int i = 0; i < num_edges; i++) {
       auto edge  = loop->_edges[i];
       auto new_a = outsmesh.mergeVertex(*edge->_vertexA);
       auto new_b = outsmesh.mergeVertex(*edge->_vertexB);
-
-      std::unordered_set<vertex_ptr_t> verts;
+      verts.clear();
       outsmesh.visitAllPolys([&](poly_ptr_t the_poly) {
         verts.insert(the_poly->_vertices[0]);
         verts.insert(the_poly->_vertices[1]);
