@@ -20,6 +20,62 @@ namespace ork::meshutil {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
+struct ConflictItem {
+  void removePoly(poly_ptr_t p) {
+    _polys.remove(p);
+  }
+  //////////////////////////////////
+  vertex_ptr_t _vertex;
+  poly_set_t _polys;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct ConflictGraph {
+  //////////////////////////////////
+  void clear() {
+    _items.clear();
+  }
+  //////////////////////////////////
+  ConflictItem& item(vertex_ptr_t v) {
+    auto it = _items.find(v->_poolindex);
+    if (it == _items.end()) {
+      auto& item   = _items[v->_poolindex];
+      item._vertex = v;
+      return item;
+    }
+    return it->second;
+  }
+  //////////////////////////////////
+  void insert(vertex_ptr_t v, poly_ptr_t p) {
+    auto& item = this->item(v);
+    item._polys.insert(p);
+  }
+  //////////////////////////////////
+  bool empty() const {
+    return _items.empty();
+  }
+  //////////////////////////////////
+  ConflictItem& front() {
+    return _items.begin()->second;
+  }
+  //////////////////////////////////
+  void remove(vertex_ptr_t v) {
+    auto it = _items.find(v->_poolindex);
+    _items.erase(it);
+  }
+  //////////////////////////////////
+  void removePoly(poly_ptr_t p) {
+    for (auto& item : _items) {
+      item.second.removePoly(p);
+    }
+  }
+  //////////////////////////////////
+  std::map<uint64_t, ConflictItem> _items;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
 void submeshConvexHullIterative(const submesh& inpsubmesh, submesh& outsmesh, int num_steps) {
 
   ///////////////////////////////////////////////////
@@ -101,60 +157,6 @@ void submeshConvexHullIterative(const submesh& inpsubmesh, submesh& outsmesh, in
   // build conflict graph
   ///////////////////////////////////////////////////
 
-  /////////////////////////////////////////////////
-  struct ConflictItem {
-    void removePoly(poly_ptr_t p) {
-      _polys.remove(p);
-    }
-    //////////////////////////////////
-    vertex_ptr_t _vertex;
-    poly_set_t _polys;
-  };
-  /////////////////////////////////////////////////
-  struct ConflictGraph {
-    //////////////////////////////////
-    void clear() {
-      _items.clear();
-    }
-    //////////////////////////////////
-    ConflictItem& item(vertex_ptr_t v) {
-      auto it = _items.find(v->_poolindex);
-      if (it == _items.end()) {
-        auto& item   = _items[v->_poolindex];
-        item._vertex = v;
-        return item;
-      }
-      return it->second;
-    }
-    //////////////////////////////////
-    void insert(vertex_ptr_t v, poly_ptr_t p) {
-      auto& item = this->item(v);
-      item._polys.insert(p);
-    }
-    //////////////////////////////////
-    bool empty() const {
-      return _items.empty();
-    }
-    //////////////////////////////////
-    ConflictItem& front() {
-      return _items.begin()->second;
-    }
-    //////////////////////////////////
-    void remove(vertex_ptr_t v) {
-      auto it = _items.find(v->_poolindex);
-      _items.erase(it);
-    }
-    //////////////////////////////////
-    void removePoly(poly_ptr_t p) {
-      for (auto& item : _items) {
-        item.second.removePoly(p);
-      }
-    }
-    //////////////////////////////////
-    std::map<uint64_t, ConflictItem> _items;
-  };
-  /////////////////////////////////////////////////
-
   ConflictGraph conflict_graph;
 
   auto update_conflict_graph = [&]() {
@@ -172,6 +174,8 @@ void submeshConvexHullIterative(const submesh& inpsubmesh, submesh& outsmesh, in
     });
   };
 
+  update_conflict_graph();
+
   /////////////////////////////////////////////////
 
   auto addPolyToConflictGraph = [&](poly_ptr_t p) {
@@ -186,16 +190,12 @@ void submeshConvexHullIterative(const submesh& inpsubmesh, submesh& outsmesh, in
     });
   };
 
-  /////////////////////////////////////////////////
-
-  update_conflict_graph();
-
   ///////////////////////////////////////////////////
   // iterate on conflict graph
   ///////////////////////////////////////////////////
 
   while (not conflict_graph.empty()) {
-    edge_set_t edgeset;
+
 
     ///////////////////////////////
     // get next conflict point
@@ -211,6 +211,7 @@ void submeshConvexHullIterative(const submesh& inpsubmesh, submesh& outsmesh, in
     ///////////////////////////////
 
     std::vector<poly_ptr_t> polys_to_remove;
+    edge_set_t edgeset;
     conflict_item._polys.visit([&](poly_ptr_t the_poly) {
       the_poly->visitEdges([&](edge_ptr_t the_edge) {
         auto reverse_edge = std::make_shared<edge>(the_edge->_vertexB, the_edge->_vertexA);
@@ -229,7 +230,7 @@ void submeshConvexHullIterative(const submesh& inpsubmesh, submesh& outsmesh, in
       conflict_graph.removePoly(the_poly);
     }
 
-    conflict_item._polys._the_map.clear();
+    //conflict_item._polys._the_map.clear();
 
     ///////////////////////////////
     // link edge loops from chains

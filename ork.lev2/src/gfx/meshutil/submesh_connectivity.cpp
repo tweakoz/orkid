@@ -8,29 +8,28 @@
 #include <ork/kernel/orklut.hpp>
 #include <ork/math/plane.h>
 #include <ork/lev2/gfx/meshutil/submesh.h>
-#include<ork/util/logger.h>
+#include <ork/util/logger.h>
 
 namespace ork::meshutil {
-static logchannel_ptr_t logchan_connectivity = logger()->createChannel("meshutil.connectivity",fvec3(.9,.9,1));
+static logchannel_ptr_t logchan_connectivity = logger()->createChannel("meshutil.connectivity", fvec3(.9, .9, 1));
 ////////////////////////////////////////////////////////////////
 
-IConnectivity::IConnectivity(submesh* sub) 
-  : _submesh(sub) {
+IConnectivity::IConnectivity(submesh* sub)
+    : _submesh(sub) {
 }
 ////////////////////////////////////////////////////////////////
-IConnectivity::~IConnectivity(){
-
+IConnectivity::~IConnectivity() {
 }
 ////////////////////////////////////////////////////////////////
-DefaultConnectivity::DefaultConnectivity(submesh* sub) 
-  : IConnectivity(sub) {
+DefaultConnectivity::DefaultConnectivity(submesh* sub)
+    : IConnectivity(sub) {
   _vtxpool = std::make_shared<vertexpool>();
   for (int i = 0; i < 8; i++)
     _polyTypeCounter[i] = 0;
 }
 ////////////////////////////////////////////////////////////////
 poly_index_set_t DefaultConnectivity::polysConnectedToEdge(edge_ptr_t edge, bool ordered) const {
-  return polysConnectedToEdge(*edge,ordered);
+  return polysConnectedToEdge(*edge, ordered);
 }
 ////////////////////////////////////////////////////////////////
 poly_index_set_t DefaultConnectivity::polysConnectedToEdge(const edge& ed, bool ordered) const {
@@ -38,7 +37,7 @@ poly_index_set_t DefaultConnectivity::polysConnectedToEdge(const edge& ed, bool 
   size_t num_polys = _orderedPolys.size();
   for (size_t i = 0; i < num_polys; i++) {
     auto p = _orderedPolys[i];
-    if (p->containsEdge(ed,ordered)) {
+    if (p->containsEdge(ed, ordered)) {
       output.insert(i);
     }
   }
@@ -49,8 +48,8 @@ poly_index_set_t DefaultConnectivity::polysConnectedToPoly(poly_ptr_t test_p) co
   poly_index_set_t output;
   auto edges = test_p->edges();
   for (auto e : edges) {
-    auto con_polys = this->polysConnectedToEdge(e,false);
-    for (auto ip : con_polys ) {
+    auto con_polys = this->polysConnectedToEdge(e, false);
+    for (auto ip : con_polys) {
       auto oth_p = _orderedPolys[ip];
       if (oth_p != test_p) {
         output.insert(ip);
@@ -86,22 +85,22 @@ size_t DefaultConnectivity::numVertices() const {
 }
 ////////////////////////////////////////////////////////////////
 void DefaultConnectivity::visitAllPolys(poly_void_visitor_t visitor) {
-  for( auto p : _orderedPolys )
+  for (auto p : _orderedPolys)
     visitor(p);
 }
 ////////////////////////////////////////////////////////////////
 void DefaultConnectivity::visitAllPolys(const_poly_void_visitor_t visitor) const {
-  for( auto p : _orderedPolys )
+  for (auto p : _orderedPolys)
     visitor(p);
 }
 ////////////////////////////////////////////////////////////////
 void DefaultConnectivity::visitAllVertices(vertex_void_visitor_t visitor) {
-  for( auto v : _vtxpool->_orderedVertices )
+  for (auto v : _vtxpool->_orderedVertices)
     visitor(v);
 }
 ////////////////////////////////////////////////////////////////
 void DefaultConnectivity::visitAllVertices(const_vertex_void_visitor_t visitor) const {
-  for( auto v : _vtxpool->_orderedVertices )
+  for (auto v : _vtxpool->_orderedVertices)
     visitor(v);
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -110,19 +109,19 @@ edge_ptr_t DefaultConnectivity::edgeBetweenPolys(int aind, int bind) const {
   auto pb = poly(bind);
   edge_ptr_t rval;
   std::vector<vertex_ptr_t> verts_in_both;
-  for( auto v_in_b : pb->_vertices ){
-    if( pa->containsVertex(v_in_b) ){
+  for (auto v_in_b : pb->_vertices) {
+    if (pa->containsVertex(v_in_b)) {
       verts_in_both.push_back(v_in_b);
     }
   }
-  switch( verts_in_both.size() ){
+  switch (verts_in_both.size()) {
     case 2: {
       auto v0 = verts_in_both[0];
       auto v1 = verts_in_both[1];
 
-      auto ep0 = pa->edgeForVertices(v0,v1);
-      if( nullptr == ep0 ){
-        ep0 = pa->edgeForVertices(v0,v1);
+      auto ep0 = pa->edgeForVertices(v0, v1);
+      if (nullptr == ep0) {
+        ep0 = pa->edgeForVertices(v0, v1);
       }
       OrkAssert(ep0);
 
@@ -130,10 +129,9 @@ edge_ptr_t DefaultConnectivity::edgeBetweenPolys(int aind, int bind) const {
       OrkAssert(ep1);
 
       rval = ep0;
-
     }
     case 0:
-    case 1: 
+    case 1:
       break;
     default: // we do not support more than 2 verts in common yet
       OrkAssert(false);
@@ -148,19 +146,25 @@ vertex_ptr_t DefaultConnectivity::mergeVertex(const struct vertex& v) {
 }
 ////////////////////////////////////////////////////////////////
 void DefaultConnectivity::removePoly(poly_ptr_t ply) {
-  auto it = std::find(_orderedPolys.begin(), _orderedPolys.end(), ply);
-  if(it != _orderedPolys.end())
-    _orderedPolys.erase(it);
+  int ipindex = ply->_submeshIndex;
+  auto it     = _orderedPolys.begin() + ipindex;
+  if (it != _orderedPolys.end()) {
+    OrkAssert(ply == *it);
+    auto last_poly = _orderedPolys.back();
+    _orderedPolys.pop_back();
+    _orderedPolys[ipindex]   = last_poly;
+    last_poly->_submeshIndex = ipindex;
+  }
 }
 ////////////////////////////////////////////////////////////////
 poly_ptr_t DefaultConnectivity::mergePoly(const Polygon& ply) {
   poly_ptr_t rval;
   int ipolyindex = numPolys();
-  Polygon nply      = ply;
+  Polygon nply   = ply;
   int inumv      = ply.GetNumSides();
-  OrkAssert(inumv >= 3 );
-  for( auto v : ply._vertices ){
-    OrkAssert(v!=nullptr);
+  OrkAssert(inumv >= 3);
+  for (auto v : ply._vertices) {
+    OrkAssert(v != nullptr);
   }
   ///////////////////////////////
   // zero area poly removal
@@ -169,12 +173,12 @@ poly_ptr_t DefaultConnectivity::mergePoly(const Polygon& ply) {
       if ((ply._vertices[0]->_poolindex == ply._vertices[1]->_poolindex) ||
           (ply._vertices[1]->_poolindex == ply._vertices[2]->_poolindex) ||
           (ply._vertices[2]->_poolindex == ply._vertices[0]->_poolindex)) {
-        if(0)logchan_connectivity->log(
-            "Mesh::mergePoly() removing zero area tri<%d %d %d>",
-            ply._vertices[0]->_poolindex,
-            ply._vertices[1]->_poolindex,
-            ply._vertices[2]->_poolindex);
-
+        if (0)
+          logchan_connectivity->log(
+              "Mesh::mergePoly() removing zero area tri<%d %d %d>",
+              ply._vertices[0]->_poolindex,
+              ply._vertices[1]->_poolindex,
+              ply._vertices[2]->_poolindex);
 
         return nullptr;
       }
@@ -187,12 +191,13 @@ poly_ptr_t DefaultConnectivity::mergePoly(const Polygon& ply) {
           (ply._vertices[1]->_poolindex == ply._vertices[2]->_poolindex) ||
           (ply._vertices[1]->_poolindex == ply._vertices[3]->_poolindex) ||
           (ply._vertices[2]->_poolindex == ply._vertices[3]->_poolindex)) {
-        if(0)logchan_connectivity->log(
-            "Mesh::mergePoly() removing zero area quad<%d %d %d %d>",
-            ply._vertices[0]->_poolindex,
-            ply._vertices[1]->_poolindex,
-            ply._vertices[2]->_poolindex,
-            ply._vertices[3]->_poolindex);
+        if (0)
+          logchan_connectivity->log(
+              "Mesh::mergePoly() removing zero area quad<%d %d %d %d>",
+              ply._vertices[0]->_poolindex,
+              ply._vertices[1]->_poolindex,
+              ply._vertices[2]->_poolindex,
+              ply._vertices[3]->_poolindex);
 
         return nullptr;
       }
@@ -205,8 +210,8 @@ poly_ptr_t DefaultConnectivity::mergePoly(const Polygon& ply) {
   //////////////////////////////
   // dupe check
   //////////////////////////////
-  uint64_t ucrc   = ply.hash();
-  auto itfhm = _polymap.find(ucrc);
+  uint64_t ucrc = ply.hash();
+  auto itfhm    = _polymap.find(ucrc);
   ///////////////////////////////
   if (itfhm == _polymap.end()) { // no match
 
@@ -221,25 +226,24 @@ poly_ptr_t DefaultConnectivity::mergePoly(const Polygon& ply) {
     auto new_poly = std::make_shared<Polygon>(nply);
     _orderedPolys.push_back(new_poly);
     new_poly->_submeshIndex = inewpi;
-    _polymap[ucrc] = new_poly;
+    _polymap[ucrc]          = new_poly;
     //////////////////////////////////////////////////
     // add n sided counters
     _polyTypeCounter[inumv]++;
     //////////////////////////////////////////////////
     rval = new_poly;
-  }
-  else{
+  } else {
     rval = itfhm->second;
   }
   return rval;
 }
 ////////////////////////////////////////////////////////////////
 edge_ptr_t DefaultConnectivity::mergeEdge(const edge& e) {
-  auto v0 = e._vertexA;
-  auto v1 = e._vertexB;
+  auto v0  = e._vertexA;
+  auto v1  = e._vertexB;
   auto mv0 = mergeVertex(*v0);
   auto mv1 = mergeVertex(*v1);
-  return std::make_shared<edge>(mv0,mv1);
+  return std::make_shared<edge>(mv0, mv1);
 }
 ////////////////////////////////////////////////////////////////
-} //namespace ork::meshutil {
+} // namespace ork::meshutil
