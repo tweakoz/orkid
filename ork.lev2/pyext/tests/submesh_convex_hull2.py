@@ -73,9 +73,8 @@ class SceneGraphApp(BasicUiCamSgApp):
     #print(submesh_isect)
     #for v in submesh_isect.vertices:
     #  print(v.position)
-    hull = submesh_isect.convexHull(self.numsteps)
-    self.pts_drawabledata.pointsmesh = hull
-    self.barysub_isect = hull.withBarycentricUVs()
+    self.hull = submesh_isect.convexHull(self.numsteps)
+    self.barysub_isect = self.hull.withBarycentricUVs()
     #assert(False)
     ##############################
 
@@ -86,6 +85,7 @@ class SceneGraphApp(BasicUiCamSgApp):
 
     # intersection mesh
     #self.barysub_isect = self.submesh_isect.withBarycentricUVs()
+    self.pts_drawabledata.pointsmesh = self.hull
     self.prim3.fromSubMesh(self.barysub_isect,self.context)
 
   def onUiEvent(self,uievent):
