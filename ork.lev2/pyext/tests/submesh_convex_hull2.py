@@ -59,12 +59,16 @@ class SceneGraphApp(BasicUiCamSgApp):
     self.pts_drawabledata = LabeledPointDrawableData()
     self.pts_drawabledata.pipeline_points = self.createPointsPipeline()
     self.sgnode_pts = self.layer1.createDrawableNodeFromData("points",self.pts_drawabledata)
+    self.time = 0.0
+    self.incr_time = True
     #print("self.pts_drawabledata",self.pts_drawabledata)
     ################################################################################
   ##############################################
   def onUpdate(self,updevent):
     super().onUpdate(updevent)
-    self.updatePoints(updevent.absolutetime*0.01)
+    if self.incr_time:
+      self.time += updevent.deltatime
+    self.updatePoints(self.time*0.1)
     θ = self.abstime # * math.pi * 2.0 * 0.1
     ##############################
     submesh_isect = meshutil.SubMesh()
@@ -92,7 +96,9 @@ class SceneGraphApp(BasicUiCamSgApp):
     super().onUiEvent(uievent)
     if uievent.code == tokens.KEY_DOWN.hashed:
         if uievent.keycode == 32: # spacebar
-          self.numsteps = (self.numsteps + 1) % 6
+          self.numsteps = (self.numsteps + 1) % 5
+        if uievent.keycode == ord('A'):
+          self.incr_time = not self.incr_time
 ###############################################################################
 
 sgapp = SceneGraphApp()
