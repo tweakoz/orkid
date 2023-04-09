@@ -19,7 +19,8 @@ const vertexpool vertexpool::EmptyPool;
 
 /////////////////////////////////////////////////////////////////////////
 submesh::submesh()
-    : _surfaceArea(0) {
+    : _surfaceArea(0)
+    , _concmutex("submesh") {
 
   _connectivityIMPL = std::make_shared<DefaultConnectivity>(this);
 }
@@ -59,6 +60,12 @@ poly_ptr_t submesh::mergePoly(const Polygon& ply) {
   }
   return p;
 }
+poly_ptr_t submesh::mergePolyConcurrent(const Polygon& ply) {
+  _concmutex.Lock();
+  auto merged = mergePoly(ply);
+  _concmutex.UnLock();
+  return merged;
+}
 ///////////////////////////////////////////////////////////////////////////////
 poly_ptr_t submesh::mergeQuad(vertex_ptr_t va, vertex_ptr_t vb, vertex_ptr_t vc, vertex_ptr_t vd) {
   return mergePoly(Polygon(va, vb, vc, vd));
@@ -66,6 +73,9 @@ poly_ptr_t submesh::mergeQuad(vertex_ptr_t va, vertex_ptr_t vb, vertex_ptr_t vc,
 ///////////////////////////////////////////////////////////////////////////////
 poly_ptr_t submesh::mergeTriangle(vertex_ptr_t va, vertex_ptr_t vb, vertex_ptr_t vc) {
   return mergePoly(Polygon(va, vb, vc));
+}
+poly_ptr_t submesh::mergeTriangleConcurrent(vertex_ptr_t va, vertex_ptr_t vb, vertex_ptr_t vc) {
+  return mergePolyConcurrent(Polygon(va, vb, vc));
 }
 ///////////////////////////////////////////////////////////////////////////////
 poly_ptr_t submesh::mergeUnorderedTriangle(vertex_ptr_t va, vertex_ptr_t vb, vertex_ptr_t vc) {
@@ -177,6 +187,14 @@ vertex_ptr_t submesh::mergeVertex(const struct vertex& vtx) {
   merged->_parentSubmesh = this;
   return merged;
 }
+
+vertex_ptr_t submesh::mergeVertexConcurrent(const struct vertex& vtx) {
+  _concmutex.Lock();
+  auto merged = mergeVertex(vtx);
+  _concmutex.UnLock();
+  return merged;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 Polygon& submesh::RefPoly(int i) {
   return *_connectivityIMPL->poly(i);
@@ -527,6 +545,12 @@ dvec3 submesh::centerOfVertices() const {
 
 dvec3 submesh::centerOfPolys() const {
   return _connectivityIMPL->centerOfPolys();
+}
+dvec3 submesh::centerOfPolysConcurrent() const {
+  _concmutex.Lock();
+  auto rval = _connectivityIMPL->centerOfPolys();
+  _concmutex.UnLock();
+  return rval;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

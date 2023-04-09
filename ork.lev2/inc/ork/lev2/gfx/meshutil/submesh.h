@@ -98,9 +98,12 @@ struct submesh {
   //////////////////////////////////////////////////////////////////////////////
 
   vertex_ptr_t mergeVertex(const struct vertex& vtx);
+  vertex_ptr_t mergeVertexConcurrent(const struct vertex& vtx);
   edge_ptr_t mergeEdge(const edge& ed);
   poly_ptr_t mergePoly(const struct Polygon& ply);
+  poly_ptr_t mergePolyConcurrent(const struct Polygon& ply);
   poly_ptr_t mergeTriangle(vertex_ptr_t va, vertex_ptr_t vb, vertex_ptr_t vc);
+  poly_ptr_t mergeTriangleConcurrent(vertex_ptr_t va, vertex_ptr_t vb, vertex_ptr_t vc);
   poly_ptr_t mergeUnorderedTriangle(vertex_ptr_t va, vertex_ptr_t vb, vertex_ptr_t vc);
   poly_ptr_t mergeQuad(vertex_ptr_t va, vertex_ptr_t vb, vertex_ptr_t vc, vertex_ptr_t vd);
   void removePoly(poly_ptr_t ply);
@@ -144,6 +147,7 @@ struct submesh {
   bool isConvexHull() const;
   dvec3 centerOfVertices() const;
   dvec3 centerOfPolys() const;
+  dvec3 centerOfPolysConcurrent() const;
   double convexVolume() const;
 
   //////////////////////////////////////////////////////////////////////////////
@@ -222,6 +226,8 @@ struct submesh {
   mutable AABox _aaBox;
   mutable bool _aaBoxDirty;
   connectivity_impl_ptr_t _connectivityIMPL;
+  mutable mutex _concmutex;
+
   /////////////////////////////////////
 };
 
