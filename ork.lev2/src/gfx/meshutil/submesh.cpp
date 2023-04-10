@@ -551,9 +551,9 @@ dvec3 submesh::centerOfPolys() const {
   return _connectivityIMPL->centerOfPolys();
 }
 dvec3 submesh::centerOfPolysConcurrent() const {
-  _concmutex.Lock();
+  //_concmutex.Lock();
   auto rval = _connectivityIMPL->centerOfPolys();
-  _concmutex.UnLock();
+  //_concmutex.UnLock();
   return rval;
 }
 

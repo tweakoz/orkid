@@ -21,7 +21,7 @@ class SceneGraphApp(BasicUiCamSgApp):
     self.mutex = Lock()
     self.uicam.lookAt( vec3(0,0,20), vec3(0,0,0), vec3(0,1,0) )
     self.camera.copyFrom( self.uicam.cameradata )
-    self.NUMPOINTS = 80
+    self.NUMPOINTS = 64
     self.pnt = [vec3(0) for i in range(self.NUMPOINTS)]
     self.numsteps = 0
   ##############################################
@@ -58,7 +58,7 @@ class SceneGraphApp(BasicUiCamSgApp):
     ##############################
     self.pts_drawabledata = LabeledPointDrawableData()
     self.pts_drawabledata.pipeline_points = self.createPointsPipeline()
-    #self.sgnode_pts = self.layer1.createDrawableNodeFromData("points",self.pts_drawabledata)
+    self.sgnode_pts = self.layer1.createDrawableNodeFromData("points",self.pts_drawabledata)
     self.time = 0.0
     self.incr_time = True
     #print("self.pts_drawabledata",self.pts_drawabledata)
