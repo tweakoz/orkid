@@ -87,14 +87,15 @@ CommonStuff::CommonStuff() {
     hasher->finish();
     uint64_t cachekey = hasher->result();
     auto irrmapdblock = DataBlockCache::findDataBlock(cachekey);
-    if (false) { // irrmapdblock) {
+    if (false){ //irrmapdblock) {
       // found in cache, nothing to do..
-      OrkAssert(false);
     } else {
       // not found in cache, generate
       irrmapdblock = std::make_shared<DataBlock>();
       ///////////////////////////
+      printf( "HELLO1\n");
       _filtenvSpecularMap = PBRMaterial::filterSpecularEnvMap(tex, targ);
+      printf( "HELLO2\n");
       _filtenvDiffuseMap  = PBRMaterial::filterDiffuseEnvMap(tex, targ);
       _brdfIntegrationMap = PBRMaterial::brdfIntegrationMap(targ);
       //_environmentMipScale = _filtenvSpecularMap->_num_mips-1;
@@ -106,6 +107,35 @@ CommonStuff::CommonStuff() {
   };
 
 }
+///////////////////////////////////////////////////////////////////////////////
+void CommonStuff::_writeEnvTexture(asset::asset_ptr_t const& tex) {
+  assignEnvTexture(tex);
+}
+///////////////////////////////////////////////////////////////////////////////
+void CommonStuff::assignEnvTexture(asset::asset_ptr_t texasset){
+  asset::vars_t old_varmap;
+  if(_environmentTextureAsset){
+    old_varmap = _environmentTextureAsset->_varmap;
+    printf("OLD <%p:%s>\n\n", _environmentTextureAsset.get(),_environmentTextureAsset->name().c_str());
+  }
+  printf("NEW <%p:%s>\n\n", texasset.get(),texasset->name().c_str());
+
+  _environmentTextureAsset = texasset;
+  if (nullptr == _environmentTextureAsset)
+    return;
+  _environmentTextureAsset->_varmap = _texAssetVarMap;
+}
+///////////////////////////////////////////////////////////////////////////////
+  asset::loadrequest_ptr_t CommonStuff::requestSkyboxTexture(const AssetPath& texture_path) {
+    auto load_req = std::make_shared<asset::LoadRequest>(texture_path);
+    load_req->_asset_vars = _texAssetVarMap;
+    auto enviromentmap_asset = asset::AssetManager<lev2::TextureAsset>::load(load_req);
+    OrkAssert(enviromentmap_asset->GetTexture() != nullptr);
+    OrkAssert(enviromentmap_asset->_varmap.hasKey("postproc"));
+    assignEnvTexture(enviromentmap_asset);
+    return load_req;
+  }
+
 ///////////////////////////////////////////////////////////////////////////////
 lev2::texture_ptr_t CommonStuff::envSpecularTexture() const{
   return _filtenvSpecularMap;
@@ -124,20 +154,6 @@ void CommonStuff::setEnvTexturePath(file::Path path) {
   auto envl_asset = asset::AssetManager<TextureAsset>::load(mtl_load_req);
   OrkAssert(false);
   // TODO - inject asset postload ops ()
-}
-///////////////////////////////////////////////////////////////////////////////
-void CommonStuff::_writeEnvTexture(asset::asset_ptr_t const& tex) {
-  asset::vars_t old_varmap;
-  if(_environmentTextureAsset){
-    old_varmap = _environmentTextureAsset->_varmap;
-    //printf("OLD <%p:%s>\n\n", _environmentTextureAsset.get(),_environmentTextureAsset->name().c_str());
-  }
-  //printf("NEW <%p:%s>\n\n", tex.get(),tex->name().c_str());
-
-  _environmentTextureAsset = tex;
-  if (nullptr == _environmentTextureAsset)
-    return;
-  _environmentTextureAsset->_varmap = _texAssetVarMap;
 }
 ///////////////////////////////////////////////////////////////////////////////
 } //namespace ork::lev2::pbr {

@@ -58,6 +58,7 @@ struct CommonStuff : public ork::Object {
   void _writeEnvTexture(asset::asset_ptr_t const& tex);
   void setEnvTexturePath(file::Path path);
 
+  void assignEnvTexture(asset::asset_ptr_t texasset);
   lev2::texture_ptr_t envSpecularTexture() const;
   lev2::texture_ptr_t envDiffuseTexture() const;
 
@@ -89,16 +90,7 @@ struct CommonStuff : public ork::Object {
     return _depthFogPower;
   }
 
-  asset::loadrequest_ptr_t requestSkyboxTexture(const AssetPath& texture_path) {
-    auto load_req = std::make_shared<asset::LoadRequest>(texture_path);
-    load_req->_asset_vars = _texAssetVarMap;
-    auto enviromentmap_asset = asset::AssetManager<lev2::TextureAsset>::load(load_req);
-    OrkAssert(enviromentmap_asset->GetTexture() != nullptr);
-    OrkAssert(enviromentmap_asset->_varmap.hasKey("postproc"));
-    this->_writeEnvTexture(enviromentmap_asset);
-    //printf( "texture_path<%s> : %p\n", texture_path.c_str(), (void*) enviromentmap_asset.get() );
-    return load_req;
-  }
+  asset::loadrequest_ptr_t requestSkyboxTexture(const AssetPath& texture_path);
 
 
   texture_ptr_t _filtenvSpecularMap;

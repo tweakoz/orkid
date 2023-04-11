@@ -209,6 +209,8 @@ texture_ptr_t PBRMaterial::filterSpecularEnvMap(texture_ptr_t rawenvmap, Context
   auto fxi = targ->FXI();
   auto gbi = targ->GBI();
   auto dwi = targ->DWI();
+  int w = rawenvmap->_width;
+  int h = rawenvmap->_height;
   ///////////////////////////////////////////////
   static std::shared_ptr<FreestyleMaterial> mtl;
   static const FxShaderTechnique* tekFilterSpecMap = nullptr;
@@ -237,7 +239,7 @@ texture_ptr_t PBRMaterial::filterSpecularEnvMap(texture_ptr_t rawenvmap, Context
   auto filtex                                                       = std::make_shared<FilteredEnvMap>();
   rawenvmap->_varmap.makeValueForKey<filtenvmapptr_t>("filtenvmap") = filtex;
   ///////////////////////////////////////////////
-  logchan_pbrgen->log("filterenv-spec tex<%p> hash<0x%zx>", (void*)rawenvmap.get(), rawenvmap->_contentHash);
+  logchan_pbrgen->log("filterenv-spec tex<%p> hash<0x%zx> w<%d> h<%d>", (void*)rawenvmap.get(), rawenvmap->_contentHash, w, h );
   boost::Crc64 basehasher;
   basehasher.accumulateString("filterenv-spec-v0");
   basehasher.accumulateItem<uint64_t>(rawenvmap->_contentHash);
@@ -251,8 +253,6 @@ texture_ptr_t PBRMaterial::filterSpecularEnvMap(texture_ptr_t rawenvmap, Context
     // logchan_pbrgen->log("filterenv-spec tex<%p> loading precomputed!", rawenvmap.get());
   } else {
     RenderContextFrameData RCFD(targ);
-    int w = rawenvmap->_width;
-    int h = rawenvmap->_height;
 
     ////////////////////////////////////
     // count mips
