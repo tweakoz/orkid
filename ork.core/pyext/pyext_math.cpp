@@ -348,6 +348,12 @@ void pyinit_math(py::module& module_core) {
                 mtx.dump(name);
               })
           .def_static("perspective", &fmtx4::createPerspectiveMatrix)
+          .def_static("perspectiveWithFovs", [](float fovy_radians, float fovh_radians, float near, float far) -> fmtx4 {
+                float slope_a = tanf(fovy_radians*0.5);
+                float slope_b = tanf(fovh_radians*0.5);
+                float aspect_ratio = slope_b/slope_a;
+                return fmtx4::createPerspectiveMatrix(fovy_radians, aspect_ratio, near, far);
+           })
           .def_static(
               "composed",
               [](const fvec3& pos, const fquat& rot, float scale) -> fmtx4 {
