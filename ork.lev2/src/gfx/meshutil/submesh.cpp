@@ -558,6 +558,23 @@ dvec3 submesh::centerOfPolysConcurrent() const {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+bool submesh::isVertexInsideConvexHull(vertex_const_ptr_t vtx) const{
+
+  bool rval = true;
+
+  visitAllPolys([&](poly_const_ptr_t p) {
+    auto pl = p->computePlane();
+    auto pc = pl.classifyPoint(vtx->mPos);
+    if (pc == PointClassification::BACK) {
+      rval = false;
+    }
+  });
+
+  return rval;
+}
+
+///////////////////////////////////////////////////////////////////////////////
 double submesh::convexVolume() const {
   double volume = 0.0f;
   dvec3 c       = centerOfVertices();

@@ -11,6 +11,7 @@
 #include <ork/kernel/timer.h>
 #include <ork/kernel/opq.h>
 #include <deque>
+#include <ork/math/misc_math.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::meshutil {
@@ -23,7 +24,8 @@ namespace ork::meshutil {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct ConflictItem {
-  ConflictItem() : _mutex("citem") {
+  ConflictItem()
+      : _mutex("citem") {
   }
   void removePoly(poly_ptr_t p) {
     _polys.remove(p);
@@ -37,7 +39,7 @@ struct ConflictItem {
   //////////////////////////////////
   void appendPolys(std::vector<poly_ptr_t> polys) {
     _mutex.Lock();
-    for( auto p : polys){
+    for (auto p : polys) {
       _polys.insert(p);
     }
     _mutex.UnLock();
@@ -102,7 +104,7 @@ struct ConflictGraph {
     }
   }
   void removePolys(std::vector<poly_ptr_t> polys) {
-    for( auto p : polys ){
+    for (auto p : polys) {
       this->removePoly(p);
     }
   }
@@ -119,6 +121,8 @@ void submeshConvexHullIterative(const submesh& inpsubmesh, submesh& outsmesh, in
   timer.Start();
   constexpr bool _do_parallel = false;
 
+  bool debug = false;
+
   ///////////////////////////////////////////////////
   // trivially reject
   ///////////////////////////////////////////////////
@@ -131,6 +135,9 @@ void submeshConvexHullIterative(const submesh& inpsubmesh, submesh& outsmesh, in
   // collect vertices
   ///////////////////////////////////////////////////
 
+  if (debug)
+    printf("//////////////////////////////////////////////////////////////////////\n");
+
   vertex_set_t vertices;
   int initial_counter = 0;
   dvec3 inp_center;
@@ -138,33 +145,110 @@ void submeshConvexHullIterative(const submesh& inpsubmesh, submesh& outsmesh, in
     auto nva = outsmesh.mergeVertex(*va);
     vertices.insert(nva);
     inp_center += nva->mPos;
+    if (0) // debug)
+      printf("v<%d> : pos<%f %f %f>\n", initial_counter, nva->mPos.x, nva->mPos.y, nva->mPos.z);
     initial_counter++;
   });
   inp_center *= (1.0f / float(initial_counter));
   OrkAssert(vertices.size() >= 4); // ensure we still have 4 vertices after welding
 
+  if (debug)
+    printf("numverts raw<%d> merged<%d>\n", initial_counter, outsmesh.numVertices());
+
+  ///////////////////////////////////////////////////
+  // find 4 points that form a tetrahedron
+  //  with the largest volume
+  ///////////////////////////////////////////////////
+
+  int a           = 0;
+  int b           = 0;
+  vertex_ptr_t va = nullptr;
+  vertex_ptr_t vb = nullptr;
+
+  double max_distsq = 0.0;
+
+  // find vertex a and b that are furthest apart
+  for (int ia = 0; ia < initial_counter; ia++) {
+    auto tva = outsmesh.vertex(ia);
+    for (int ib = 0; ib < initial_counter; ib++) {
+      if (ia != ib) {
+        auto tvb      = outsmesh.vertex(ib);
+        double distsq = (tvb->mPos - tva->mPos).magnitudeSquared();
+        if (distsq > max_distsq) {
+          max_distsq = distsq;
+          a          = ia;
+          b          = ib;
+          va         = tva;
+          vb         = tvb;
+        }
+      }
+    }
+  }
+
+  // find vertex c that forms the triangle with the largest area with a,b
+  std::map<double, poly_ptr_t> polys_by_area;
+  for (int ic = 0; ic < initial_counter; ic++) {
+    if (ic != a and ic != b) {
+      auto tvc            = outsmesh.vertex(ic);
+      auto p              = std::make_shared<Polygon>(va, vb, tvc);
+      double area         = p->computeArea();
+      polys_by_area[area] = p;
+    }
+  }
+
+
+  vertex_ptr_t vc = polys_by_area.rbegin()->second->_vertices[2];
+  int c           = vc->_poolindex;
+  // find vertex d that forms the tetrahedron with the largest volume with a,b,c
+  std::map<double, poly_ptr_t> polys_by_volume;
+  for (int id = 0; id < initial_counter; id++) {
+    if (id != a and id != b and id != c) {
+      auto tvd                = outsmesh.vertex(id);
+      auto p                  = std::make_shared<Polygon>(va, vb, vc);
+      double volume           = abs(p->signedVolumeWithPoint(tvd->mPos));
+      polys_by_volume[volume] = p;
+      p->_vertices.push_back(tvd);
+    }
+  }
+  vertex_ptr_t vd = polys_by_volume.rbegin()->second->_vertices[3];
+  int d           = vd->_poolindex;
+
+  ///////////////////////////////////////////////////
+  ///////////////////////////////////////////////////
+
+  if (false)
+    for (auto it : polys_by_volume) {
+      auto p = it.second;
+      printf(
+          "poly<%p> a<%d> b<%d> c<%d> d<%d> volume<%g>\n",
+          p.get(),
+          p->_vertices[0]->_poolindex,
+          p->_vertices[1]->_poolindex,
+          p->_vertices[2]->_poolindex,
+          p->_vertices[3]->_poolindex,
+          it.first);
+    }
+
   ///////////////////////////////////////////////////
   // create initial tetrahedron
   ///////////////////////////////////////////////////
 
+  auto it_largest_volume = polys_by_volume.rbegin();
+  auto p                 = it_largest_volume->second;
+  auto nva               = p->_vertices[0];
+  auto nvb               = p->_vertices[1];
+  auto nvc               = p->_vertices[2];
+  auto nvd               = p->_vertices[3];
+
   dvec3 tetra_center;
-  auto make_vtx = [&](int index) -> vertex_ptr_t {
-    vertex_ptr_t rval;
-    for (auto iv : vertices._the_map) {
-      auto v = iv.second;
-      if (v->_poolindex == index) {
-        rval = v;
-        tetra_center += v->mPos;
-      }
-    }
-    vertices.remove(rval);
-    return rval;
-  };
-  auto nva = make_vtx(0);
-  auto nvb = make_vtx(1);
-  auto nvc = make_vtx(2);
-  auto nvd = make_vtx(3);
+  tetra_center += nva->mPos;
+  tetra_center += nvb->mPos;
+  tetra_center += nvc->mPos;
+  tetra_center += nvd->mPos;
   tetra_center *= 0.25;
+
+  if (debug)
+    printf("final point selection a<%d> b<%d> c<%d> d<%d> volume<%g>\n", a, b, c, d, it_largest_volume->first);
 
   //
   // make sure tetrahedron is oriented correctly
@@ -188,7 +272,6 @@ void submeshConvexHullIterative(const submesh& inpsubmesh, submesh& outsmesh, in
     return rval;
   };
 
-  // std::vector<poly_ptr_t> polys;
   make_tri(nva, nvb, nvc);
   make_tri(nva, nvc, nvd);
   make_tri(nva, nvd, nvb);
@@ -200,22 +283,54 @@ void submeshConvexHullIterative(const submesh& inpsubmesh, submesh& outsmesh, in
 
   ConflictGraph conflict_graph;
 
+  if (debug)
+    printf("//\n");
   auto update_conflict_graph = [&]() {
     conflict_graph.clear();
     vertices.visit([&](vertex_ptr_t v) {
-      auto vpos = v->mPos;
-      outsmesh.visitAllPolys([&](poly_ptr_t p) {
-        if (not p->containsVertex(v)) {
-          double sv = p->signedVolumeWithPoint(vpos);
-          if (sv > 0.0) {
-            conflict_graph.insert(v, p);
+      if (false) { // outsmesh.isVertexInsideConvexHull(v)) {
+        if (debug)
+          printf("vertex<%d> is inside convex hull\n", v->_poolindex);
+      } else {
+        auto vpos = v->mPos;
+        outsmesh.visitAllPolys([&](poly_ptr_t p) {
+          if (not p->containsVertex(v)) {
+            bool visible = p->signedVolumeWithPoint(vpos) >= 0.0;
+            if (visible) {
+              conflict_graph.insert(v, p);
+              if (false) {
+                printf("visible poly[");
+                for (auto v : p->_vertices) {
+                  printf("%d ", v->_poolindex);
+                }
+                printf("] : visible vertex<%d>\n", v->_poolindex);
+              }
+            }
           }
-        }
-      });
+        });
+      }
     });
   };
 
   update_conflict_graph();
+
+  if (debug) {
+    printf("conflict graph size<%d>\n", conflict_graph._items.size());
+    for (auto& it : conflict_graph._items) {
+      ConflictItem& item = it.second;
+      auto vertex        = item._vertex;
+      printf("vertex<%d> : ", vertex->_poolindex);
+      for (auto it_p : item._polys._the_map) {
+        auto p = it_p.second;
+        printf("poly[");
+        for (auto v : p->_vertices) {
+          printf("%d ", v->_poolindex);
+        }
+        printf("] ");
+      }
+      printf("\n");
+    }
+  }
 
   ///////////////////////////////////////////////////
   // iterate on conflict graph
@@ -232,6 +347,7 @@ void submeshConvexHullIterative(const submesh& inpsubmesh, submesh& outsmesh, in
   double dt34 = 0.0;
 
   int total_edges_visited = 0;
+  // for( int i=0; i<num_steps; i++ ) {
   while (not conflict_graph.empty()) {
 
     double t0 = timer.SecsSinceStart();
@@ -242,6 +358,15 @@ void submeshConvexHullIterative(const submesh& inpsubmesh, submesh& outsmesh, in
 
     auto& conflict_item = conflict_graph.front();
     auto conflict_point = conflict_item._vertex;
+
+    if (outsmesh.isVertexInsideConvexHull(conflict_point)) {
+      vertices.remove(conflict_point);
+      conflict_graph.remove(conflict_point);
+      continue;
+    }
+
+    if (debug)
+      printf("try point<%d> : conflict graph size<%d>\n", conflict_point->_poolindex, conflict_graph._items.size());
 
     ///////////////////////////////
     // remove all conflicting polys from outsmesh
@@ -254,8 +379,12 @@ void submeshConvexHullIterative(const submesh& inpsubmesh, submesh& outsmesh, in
         auto reverse_edge = std::make_shared<edge>(the_edge->_vertexB, the_edge->_vertexA);
         if (edgeset.contains(reverse_edge)) {
           edgeset.remove(the_edge);
+          if (debug)
+            printf("remove edge<%d,%d>\n", the_edge->_vertexA->_poolindex, the_edge->_vertexB->_poolindex);
         } else {
           edgeset.insert(the_edge);
+          if (debug)
+            printf("insert edge<%d,%d>\n", the_edge->_vertexA->_poolindex, the_edge->_vertexB->_poolindex);
         }
       });
     });
@@ -272,167 +401,173 @@ void submeshConvexHullIterative(const submesh& inpsubmesh, submesh& outsmesh, in
     for (auto it : edgeset._the_map) {
       auto the_edge = it.second;
       linker.add_edge(the_edge);
+      if (debug)
+        printf("add_edge<%d,%d>\n", the_edge->_vertexA->_poolindex, the_edge->_vertexB->_poolindex);
     }
     linker.link();
+    if (debug)
+      printf("linker._edge_loops.size()<%d>\n", linker._edge_loops.size());
+    if (debug)
+      printf("linker._edge_chains.size()<%d>\n", linker._edge_chains.size());
     if (linker._edge_loops.size() == 0) {
       conflict_graph.clear();
-      break;
-    }
+      printf("loop failed!\n");
+      // OrkAssert(false);
+    } else {
 
-    ///////////////////////////////
-    // flip edge loop if needed
-    ///////////////////////////////
+      ///////////////////////////////
+      // flip edge loop if needed
+      ///////////////////////////////
 
-    auto loop  = linker._edge_loops[0];
-    auto edgeA = loop->_edges[0];
-    auto edgeB = loop->_edges[1];
-    bool flip  = do_flip(
-        inp_center,      //
-        edgeA->_vertexA, //
-        edgeA->_vertexB, //
-        edgeB->_vertexB);
-
-    if (flip) {
-      auto temp = std::make_shared<EdgeLoop>();
-      temp->reverseOf(*loop);
-      loop = temp;
-    }
-
-    ///////////////////////////////
-    // merge conflict point
-    ///////////////////////////////
-
-    auto new_c = outsmesh.mergeVertexConcurrent(*conflict_point);
-
-    ///////////////////////////////
-    // merge triangle fan
-    ///////////////////////////////
-
-    double t2 = timer.SecsSinceStart();
-    dt12 += (t2 - t1);
-
-    int num_edges = loop->_edges.size();
-    total_edges_visited += num_edges;
-
-    dvec3 new_center = outsmesh.centerOfPolys();
-
-    std::vector<poly_ptr_t> polys_added;
-
-    /////////////////////////////////////////////////////
-    for (int i = 0; i < num_edges; i++) {
-
-      auto edge = loop->_edges[i];
-
-      ////////////////////////////////////
-      // verts a and b for the fan triangle
-      ////////////////////////////////////
-
-      auto new_a = outsmesh.mergeVertex(*edge->_vertexA);
-      auto new_b = outsmesh.mergeVertex(*edge->_vertexB);
-
-      ////////////////////////////////////
-      // compute new center of mesh
-      ////////////////////////////////////
-
-      bool flip = do_flip(
-          new_center, //
-          new_a,      //
-          new_b,      //
-          new_c);
+      auto loop  = linker._edge_loops[0];
+      auto edgeA = loop->_edges[0];
+      auto edgeB = loop->_edges[1];
+      bool flip  = do_flip(
+          inp_center,      //
+          edgeA->_vertexA, //
+          edgeA->_vertexB, //
+          edgeB->_vertexB);
 
       if (flip) {
-        std::swap(new_a, new_b);
+        auto temp = std::make_shared<EdgeLoop>();
+        temp->reverseOf(*loop);
+        loop = temp;
       }
-      auto new_tri = outsmesh.mergeTriangle(
-          new_a, //
-          new_b, //
-          new_c);
 
-      polys_added.push_back(new_tri);
-    }
-    ///////////////////////////////////////////////////////////////////////////
+      ///////////////////////////////
+      // merge conflict point
+      ///////////////////////////////
 
-    int istart = 0;
-    std::atomic<int> job_counter = 0;
-    //printf( "num_edges<%d>\n", num_edges );
-    while (num_edges > 0) {
+      auto new_c = outsmesh.mergeVertexConcurrent(*conflict_point);
 
-      int icount = 8;
-      if (icount > num_edges)
-        icount = num_edges;
+      ///////////////////////////////
+      // merge triangle fan
+      ///////////////////////////////
 
-      job_counter.fetch_add(1);
-      auto op = [=,                   //
-                 &job_counter,        // 
-                 &polys_added,        //
-                 &vertices,           //
-                 &outsmesh,           //
-                 &conflict_graph]() { //
-        /////////////////////////////////////////////////////
-        std::unordered_map<vertex_ptr_t, std::vector<poly_ptr_t>> insert_map;
-        for (int i = 0; i < icount; i++) {
-          auto new_tri = polys_added[istart + i];
-          ////////////////////////////////////
-          // update visibility of vertices with respect to new triangle
-          ////////////////////////////////////
-          vertices.visit([&](vertex_ptr_t v) {
-            if (not new_tri->containsVertex(v)) {
-              double sv = new_tri->signedVolumeWithPoint(v->mPos);
-              if (sv > 0.0) {
-                insert_map[v].push_back(new_tri);
-              }
-            }
-          });
-        } // for (auto new_tri : polys_added) {
-        /////////////////////////////////////////////////////
-        for (auto& item : insert_map) {
-          auto v = item.first;
-          auto& polys = item.second;
-          conflict_graph.insertMultiple(v, polys);
+      double t2 = timer.SecsSinceStart();
+      dt12 += (t2 - t1);
+
+      int num_edges = loop->_edges.size();
+      total_edges_visited += num_edges;
+
+      dvec3 new_center = outsmesh.centerOfPolys();
+
+      std::vector<poly_ptr_t> polys_added;
+
+      /////////////////////////////////////////////////////
+      for (int i = 0; i < num_edges; i++) {
+
+        auto edge = loop->_edges[i];
+
+        ////////////////////////////////////
+        // verts a and b for the fan triangle
+        ////////////////////////////////////
+
+        auto new_a = outsmesh.mergeVertex(*edge->_vertexA);
+        auto new_b = outsmesh.mergeVertex(*edge->_vertexB);
+
+        ////////////////////////////////////
+        // compute new center of mesh
+        ////////////////////////////////////
+
+        bool flip = do_flip(
+            new_center, //
+            new_a,      //
+            new_b,      //
+            new_c);
+
+        if (flip) {
+          std::swap(new_a, new_b);
         }
-        job_counter.fetch_sub(1);
-      };
+        auto new_tri = outsmesh.mergeTriangle(
+            new_a, //
+            new_b, //
+            new_c);
 
-      ////////////////////////////////////
-
-      if (_do_parallel){
-        opq::concurrentQueue()->enqueue(op);
+        polys_added.push_back(new_tri);
       }
-      else // immediate and serial
-        op();
+      ///////////////////////////////////////////////////////////////////////////
 
-      ////////////////////////////////////
+      int istart                   = 0;
+      std::atomic<int> job_counter = 0;
+      // printf( "num_edges<%d>\n", num_edges );
+      while (num_edges > 0) {
 
-      num_edges -= icount;
-      istart += icount;
+        int icount = 8;
+        if (icount > num_edges)
+          icount = num_edges;
 
-    } // while(num_edges>0){
+        job_counter.fetch_add(1);
+        auto op = [=,                   //
+                   &job_counter,        //
+                   &polys_added,        //
+                   &vertices,           //
+                   &outsmesh,           //
+                   &conflict_graph]() { //
+          /////////////////////////////////////////////////////
+          std::unordered_map<vertex_ptr_t, std::vector<poly_ptr_t>> insert_map;
+          for (int i = 0; i < icount; i++) {
+            auto new_tri = polys_added[istart + i];
+            ////////////////////////////////////
+            // update visibility of vertices with respect to new triangle
+            ////////////////////////////////////
+            vertices.visit([&](vertex_ptr_t v) {
+              if (not new_tri->containsVertex(v)) {
+                double sv = new_tri->signedVolumeWithPoint(v->mPos);
+                if (sv > 0.0) {
+                  insert_map[v].push_back(new_tri);
+                }
+              }
+            });
+          } // for (auto new_tri : polys_added) {
+          /////////////////////////////////////////////////////
+          for (auto& item : insert_map) {
+            auto v      = item.first;
+            auto& polys = item.second;
+            conflict_graph.insertMultiple(v, polys);
+          }
+          job_counter.fetch_sub(1);
+        };
 
-    ///////////////////////////////
+        ////////////////////////////////////
 
-    polys_to_remove.clear();
-    edgeset.clear();
-    linker.clear();
+        if (_do_parallel) {
+          opq::concurrentQueue()->enqueue(op);
+        } else // immediate and serial
+          op();
 
-    if (_do_parallel){
-      while(job_counter.load()>0){
-        sched_yield();
+        ////////////////////////////////////
+
+        num_edges -= icount;
+        istart += icount;
+
+      } // while(num_edges>0){
+
+      ///////////////////////////////
+
+      polys_to_remove.clear();
+      edgeset.clear();
+      linker.clear();
+
+      if (_do_parallel) {
+        while (job_counter.load() > 0) {
+          sched_yield();
+        }
       }
+
+      ///////////////////////////////
+      double t3 = timer.SecsSinceStart();
+      dt23 += (t3 - t2);
+      ///////////////////////////////
+      // remove point and move to next conflict
+      ///////////////////////////////
+      vertices.remove(conflict_point);
+      conflict_graph.remove(conflict_point);
     }
-
-    ///////////////////////////////
-    double t3 = timer.SecsSinceStart();
-    dt23 += (t3 - t2);
-    ///////////////////////////////
-    // remove point and move to next conflict
-    ///////////////////////////////
-    vertices.remove(conflict_point);
-    conflict_graph.remove(conflict_point);
-
-  ///////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////
   } // while (not conflict_graph.empty()) {
 
-  //printf("dt0..1: %f, dt1..2: %f, dt2..3: %f  total_edges: %d\n", dt01, dt12, dt23, total_edges_visited);
+  // printf("dt0..1: %f, dt1..2: %f, dt2..3: %f  total_edges: %d\n", dt01, dt12, dt23, total_edges_visited);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

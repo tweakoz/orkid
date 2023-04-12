@@ -111,6 +111,7 @@ struct submesh {
   void clearPolys();
   void MergeSubMesh(const submesh& oth);
   void mergePolySet(const PolySet& pset);
+  bool isVertexInsideConvexHull(vertex_const_ptr_t vtx) const;
 
   //////////////////////////////////////////////////////////////////////////////
 

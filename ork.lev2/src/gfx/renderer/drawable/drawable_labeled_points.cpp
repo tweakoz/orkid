@@ -55,7 +55,7 @@ LabeledPointDrawable::LabeledPointDrawable(const LabeledPointDrawableData* data)
     _rendercb = [this,rdata](lev2::RenderContextInstData& RCID) {
         auto context = RCID.context();
         if(nullptr==rdata->_vtxbuf){
-            auto vb = VertexBufferBase::CreateVertexBuffer(EVtxStreamFormat::V12,1024,false);
+            auto vb = VertexBufferBase::CreateVertexBuffer(EVtxStreamFormat::V12,65536,false);
             rdata->_vtxbuf = vb;
             vb->SetRingLock(true);
         }

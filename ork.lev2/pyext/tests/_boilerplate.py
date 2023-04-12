@@ -273,7 +273,7 @@ class BasicUiCamSgApp(object):
         
         param_psize = pipeline.sharedMaterial.param("pointsize")
         param_modcolor = pipeline.sharedMaterial.param("modcolor")
-        pipeline.bindParam(param_psize, float(8))
+        pipeline.bindParam(param_psize, float(16))
         pipeline.bindParam(param_modcolor, vec4(1,0,0,1))
         return pipeline
 
