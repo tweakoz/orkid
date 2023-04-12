@@ -277,3 +277,31 @@ class BasicUiCamSgApp(object):
         pipeline.bindParam(param_modcolor, vec4(1,0,0,1))
         return pipeline
 
+################################################################################
+
+def stripSubmesh(inpsubmesh):
+  stripped = inpsubmesh.copy(preserve_normals=False,
+                            preserve_colors=False,
+                            preserve_texcoords=False)
+  return stripped
+
+################################################################################
+
+def clipMeshWithPlane(inpsubmesh,plane):
+  submesh2 = stripSubmesh(inpsubmesh)
+  clipped = inpsubmesh.clippedWithPlane(plane=plane,
+                                      close_mesh=True, 
+                                      flip_orientation=False )
+
+  return clipped["front"]
+
+################################################################################
+
+def clipMeshWithFrustum(inpsubmesh,frustum):
+  submesh2 = clipMeshWithPlane(inpsubmesh,frustum.nearPlane)
+  submesh3 = clipMeshWithPlane(submesh2,frustum.farPlane)
+  submesh4 = clipMeshWithPlane(submesh3,frustum.leftPlane)
+  submesh5 = clipMeshWithPlane(submesh4,frustum.rightPlane)
+  submesh6 = clipMeshWithPlane(submesh5,frustum.topPlane)
+  submesh7 = clipMeshWithPlane(submesh6,frustum.bottomPlane)
+  return submesh7
