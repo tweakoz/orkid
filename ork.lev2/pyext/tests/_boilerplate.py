@@ -288,20 +288,25 @@ def stripSubmesh(inpsubmesh):
 ################################################################################
 
 def clipMeshWithPlane(inpsubmesh,plane):
-  submesh2 = stripSubmesh(inpsubmesh)
   clipped = inpsubmesh.clippedWithPlane(plane=plane,
-                                      close_mesh=True, 
+                                      close_mesh=False, 
                                       flip_orientation=False )
 
+  #print("#####################")
+  #print(clipped["front"])
+  #print(clipped["back"])
   return clipped["front"]
 
 ################################################################################
 
 def clipMeshWithFrustum(inpsubmesh,frustum):
-  submesh2 = clipMeshWithPlane(inpsubmesh,frustum.nearPlane)
+  print("#####################")
+  submesh2 = clipMeshWithPlane(stripSubmesh(inpsubmesh),frustum.nearPlane)
   submesh3 = clipMeshWithPlane(submesh2,frustum.farPlane)
   submesh4 = clipMeshWithPlane(submesh3,frustum.leftPlane)
   submesh5 = clipMeshWithPlane(submesh4,frustum.rightPlane)
   submesh6 = clipMeshWithPlane(submesh5,frustum.topPlane)
   submesh7 = clipMeshWithPlane(submesh6,frustum.bottomPlane)
+  for i,a in enumerate(submesh7.vertices):
+    print(i,a.position)
   return submesh7

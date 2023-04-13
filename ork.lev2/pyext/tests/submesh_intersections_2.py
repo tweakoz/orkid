@@ -29,6 +29,7 @@ class SceneGraphApp(BasicUiCamSgApp):
     self.uicam.lookAt( vec3(0,0,20), vec3(0,0,0), vec3(0,1,0) )
     self.camera.copyFrom( self.uicam.cameradata )
     self.numsteps = 0
+    self.maxsteps = 139
   ##############################################
   def onGpuInit(self,ctx):
     super().onGpuInit(ctx,add_grid=False)
@@ -146,48 +147,50 @@ class SceneGraphApp(BasicUiCamSgApp):
   ##############################################
   def onUpdate(self,updevent):
     super().onUpdate(updevent)
-    ##############################
-    # handle counter
-    ##############################
-    self.counter -= updevent.deltatime
-    if self.counter<0:
-      self.counter = random.uniform(2,5)
-      old_dice = self.dice
-      while self.dice==old_dice:
-        self.dice = random.randint(0,2)
-    ##############################
-    lerp_rate = 0.01
-    #self.dice = 0
-    if self.dice==0:
-      self.upd_c1.lerp(self.upd_1a,lerp_rate,updevent.deltatime)
-      self.upd_c2.lerp(self.upd_2a,lerp_rate,updevent.deltatime)
-    elif self.dice==1:
-      self.upd_c1.lerp(self.upd_1b,lerp_rate,updevent.deltatime)
-      self.upd_c2.lerp(self.upd_2b,lerp_rate,updevent.deltatime)
-    elif self.dice==2:
-      self.upd_c1.lerp(self.upd_1c,lerp_rate,updevent.deltatime)
-      self.upd_c2.lerp(self.upd_2c,lerp_rate,updevent.deltatime)
-    ##############################
+    while self.numsteps < self.maxsteps:
+      self.numsteps += 1
+      ##############################
+      # handle counter
+      ##############################
+      self.counter -= updevent.deltatime
+      if self.counter<0:
+        self.counter = random.uniform(2,5)
+        old_dice = self.dice
+        while self.dice==old_dice:
+          self.dice = random.randint(0,2)
+      ##############################
+      lerp_rate = 0.01
+      #self.dice = 0
+      if self.dice==0:
+        self.upd_c1.lerp(self.upd_1a,lerp_rate,updevent.deltatime)
+        self.upd_c2.lerp(self.upd_2a,lerp_rate,updevent.deltatime)
+      elif self.dice==1:
+        self.upd_c1.lerp(self.upd_1b,lerp_rate,updevent.deltatime)
+        self.upd_c2.lerp(self.upd_2b,lerp_rate,updevent.deltatime)
+      elif self.dice==2:
+        self.upd_c1.lerp(self.upd_1c,lerp_rate,updevent.deltatime)
+        self.upd_c2.lerp(self.upd_2c,lerp_rate,updevent.deltatime)
+      ##############################
 
-    ##############################
-    θ = self.abstime # * math.pi * 2.0 * 0.1
-    #
-    self.fpmtx1 = mtx4.perspective(self.upd_c1.computeFOV(),1,0.3,5)
-    self.fpmtx2 = mtx4.perspective(self.upd_c2.computeFOV(),1,0.3,5)
-    #2
-    lat_1 = self.upd_c1.computeLAT()
-    lat_2 = self.upd_c2.computeLAT()
-    PLANAR_BIAS = 0.0016
-    self.fvmtx1 = mtx4.lookAt(vec3(0,0,1),vec3(lat_1,0,0),vec3(0,1,0))
-    self.fvmtx2 = mtx4.lookAt(vec3(1,0,1+PLANAR_BIAS),vec3(1,lat_2,PLANAR_BIAS),vec3(0,1,0))
-    #
-    self.frustum1.set(self.fvmtx1,self.fpmtx1)
-    self.frustum2.set(self.fvmtx2,self.fpmtx2)
-    #
-    self.frusmesh1 = meshutil.SubMesh.createFromFrustum(self.frustum1,projective_rect_uv=True)
-    self.frusmesh2 = meshutil.SubMesh.createFromFrustum(self.frustum2,projective_rect_uv=True)
+      ##############################
+      θ = self.abstime # * math.pi * 2.0 * 0.1
+      #
+      self.fpmtx1 = mtx4.perspective(self.upd_c1.computeFOV(),1,0.3,5)
+      self.fpmtx2 = mtx4.perspective(self.upd_c2.computeFOV(),1,0.3,5)
+      #2
+      lat_1 = self.upd_c1.computeLAT()
+      lat_2 = self.upd_c2.computeLAT()
+      PLANAR_BIAS = 0.0016
+      self.fvmtx1 = mtx4.lookAt(vec3(0,0,1),vec3(lat_1,0,0),vec3(0,1,0))
+      self.fvmtx2 = mtx4.lookAt(vec3(1,0,1+PLANAR_BIAS),vec3(1,lat_2,PLANAR_BIAS),vec3(0,1,0))
+      #
+      self.frustum1.set(self.fvmtx1,self.fpmtx1)
+      self.frustum2.set(self.fvmtx2,self.fpmtx2)
+      #
+      self.frusmesh1 = meshutil.SubMesh.createFromFrustum(self.frustum1,projective_rect_uv=True)
+      self.frusmesh2 = meshutil.SubMesh.createFromFrustum(self.frustum2,projective_rect_uv=True)
 
-    #time.sleep(0.25)
+      #time.sleep(0.25)
   ##############################################
   def onGpuIter(self):
     super().onGpuIter()
@@ -210,6 +213,12 @@ class SceneGraphApp(BasicUiCamSgApp):
     self.prim1.fromSubMesh(self.frusmesh1,self.context)
     self.prim2.fromSubMesh(self.frusmesh2,self.context)
 
+  def onUiEvent(self,uievent):
+    super().onUiEvent(uievent)
+    if uievent.code == tokens.KEY_DOWN.hashed or uievent.code == tokens.KEY_REPEAT.hashed:
+        if uievent.keycode == 32: # spacebar
+          self.maxsteps = (self.maxsteps + 1)
+          print(self.maxsteps)
 
 ###############################################################################
 
