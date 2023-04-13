@@ -299,14 +299,37 @@ def clipMeshWithPlane(inpsubmesh,plane):
 
 ################################################################################
 
-def clipMeshWithFrustum(inpsubmesh,frustum):
-  print("#####################")
-  submesh2 = clipMeshWithPlane(stripSubmesh(inpsubmesh),frustum.nearPlane)
-  submesh3 = clipMeshWithPlane(submesh2,frustum.farPlane)
-  submesh4 = clipMeshWithPlane(submesh3,frustum.leftPlane)
-  submesh5 = clipMeshWithPlane(submesh4,frustum.rightPlane)
-  submesh6 = clipMeshWithPlane(submesh5,frustum.topPlane)
-  submesh7 = clipMeshWithPlane(submesh6,frustum.bottomPlane)
-  for i,a in enumerate(submesh7.vertices):
+def dumpMeshVertices(inpsubmesh):
+  for i,a in enumerate(inpsubmesh.vertices):
     print(i,a.position)
-  return submesh7
+
+################################################################################
+
+def clipMeshWithFrustum(inpsubmesh,frustum, nsteps=10):
+  #print("#####################")
+  submesh_out = inpsubmesh
+  if nsteps>0:
+    submesh_out = stripSubmesh(inpsubmesh)
+    nsteps -= 1
+  if nsteps>0:
+    submesh_out = clipMeshWithPlane(submesh_out,frustum.nearPlane)
+    nsteps -= 1
+  if nsteps>0:
+    submesh_out = clipMeshWithPlane(submesh_out,frustum.farPlane)
+    nsteps -= 1
+  if nsteps>0:
+    submesh_out = clipMeshWithPlane(submesh_out,frustum.leftPlane)
+    nsteps -= 1
+  if nsteps>0:
+    submesh_out = clipMeshWithPlane(submesh_out,frustum.rightPlane)
+    nsteps -= 1
+  if nsteps>0:
+    submesh_out = clipMeshWithPlane(submesh_out,frustum.topPlane)
+    nsteps -= 1
+  if nsteps>0:
+    submesh_out = clipMeshWithPlane(submesh_out,frustum.bottomPlane)
+    nsteps -= 1
+
+  return submesh_out
+
+    

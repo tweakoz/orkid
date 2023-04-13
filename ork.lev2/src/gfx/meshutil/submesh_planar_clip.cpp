@@ -253,49 +253,13 @@ void _submeshClipWithPlaneConvex(
       vertices_by_angle[-angle] = vn;
     }
 
-    /////////////////////////////////////////
-    // create triangle fan
-    /////////////////////////////////////////
-
-    for (auto it = vertices_by_angle.begin(); //
-              it != vertices_by_angle.end();  //
-              it++) { //
-
-      auto it_next = it; it_next++;
-      if (it_next == vertices_by_angle.end())
-        it_next = vertices_by_angle.begin();
-
-      auto va = it->second;
-      auto vb = it_next->second;
-
-      auto e         = std::make_shared<edge>(va, vb);
-      auto con_polys = outsubmesh.connectedPolys(e, false);
-      bool do_swap   = false;
-
-      for (auto ic : con_polys) {
-        int icon_poly = *con_polys.begin();
-        auto con_poly = outsubmesh.poly(icon_poly);
-
-        // if any of the connected polys has an edge that
-        //  matches our vertices, but in the opposite winding order
-        //  then we need to flip the orientation of the triangle fan
-
-        if (con_poly->edgeForVertices(vb, va)) {
-          do_swap = true;
-        }
-      }
-
-      // final flip decision
-      //  based on winding order and flip_orientation argument
-
-      if (do_swap ^ flip_orientation) {
-        std::swap(va, vb);
-      }
-
-      // create triangle
-
-      outsubmesh.mergeTriangle(vb, va, center_vertex);
+    std::vector<vertex_ptr_t> sorted_vertices;
+    for( auto it=vertices_by_angle.begin(); it!=vertices_by_angle.end(); it++ ){
+      auto v = it->second;
+      sorted_vertices.push_back(v);
     }
+
+    outsubmesh.mergePoly(Polygon(sorted_vertices));
 
   };
 
@@ -360,54 +324,32 @@ void _submeshClipWithPlaneConcave(
       // create a new triangle fan for each edge loop
 
       for (auto loop : _linker._edge_loops) {
-
-        // compute loop center
-
-        std::vector<vertex_ptr_t> vertex_loop;
-        for (auto edge : loop->_edges)
-          vertex_loop.push_back(edge->_vertexA);
-        vertex temp_loop_center;
-        temp_loop_center.center(vertex_loop);
-        auto center_vertex = outsubmesh.mergeVertex(temp_loop_center);
-
-        // create triangle fan
-
-        for (auto edge : loop->_edges) {
-
-          auto va = outsubmesh.mergeVertex(*edge->_vertexA);
-          auto vb = outsubmesh.mergeVertex(*edge->_vertexB);
-
-          // flip orientation if needed
-
-          auto con_polys = outsubmesh.connectedPolys(edge, false);
-          bool do_swap   = false;
-
-          if (con_polys.size() > 0) {
-            for (auto ic : con_polys) {
-              int icon_poly = *con_polys.begin();
-              auto con_poly = outsubmesh.poly(icon_poly);
-
-              // if any of the connected polys has an edge that
-              //  matches our vertices, but in the opposite winding order
-              //  then we need to flip the orientation of the triangle fan
-
-              if (con_poly->edgeForVertices(vb, va)) {
-                do_swap = true;
-              }
-            }
+          
+          // sort vertices by angle around center (relative to first vertex)
+  
+          auto v0 = loop->_edges[0]->_vertexA;
+          auto d0 = (v0->mPos - loop->_center).normalized();
+  
+          std::map<double,vertex_ptr_t> vertices_by_angle;
+          vertices_by_angle[0] = v0;
+  
+          for( int iv=1; iv<loop->_edges.size(); iv++ ) {
+            auto vn = loop->_edges[iv]->_vertexA;
+            auto dn = (vn->mPos - loop->_center).normalized();
+            auto cross = dn.crossWith(d0);
+            double angle = dn.orientedAngle(d0, cross);
+            vertices_by_angle[-angle] = vn;
+          }
+  
+          std::vector<vertex_ptr_t> sorted_vertices;
+          for( auto it=vertices_by_angle.begin(); it!=vertices_by_angle.end(); it++ ){
+            auto v = it->second;
+            sorted_vertices.push_back(v);
           }
 
-          // final flip decision
-          //  based on winding order and flip_orientation argument
+          outsubmesh.mergePoly(Polygon(sorted_vertices));
 
-          if (do_swap ^ flip_orientation) {
-            std::swap(va, vb);
-          }
 
-          // create triangle
-
-          outsubmesh.mergeTriangle(vb, va, center_vertex);
-        }
       }
 
     } // if (planar_edges.size()) {

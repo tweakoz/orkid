@@ -28,8 +28,10 @@ class SceneGraphApp(BasicUiCamSgApp):
     self.mutex = Lock()
     self.uicam.lookAt( vec3(0,0,20), vec3(0,0,0), vec3(0,1,0) )
     self.camera.copyFrom( self.uicam.cameradata )
-    self.numsteps = 0
-    self.maxsteps = 139
+    self.numsteps_sim = 0
+    self.maxsteps_sim = 145
+    self.numsteps_cut = 0
+    self.maxsteps_cut = 6
   ##############################################
   def onGpuInit(self,ctx):
     super().onGpuInit(ctx,add_grid=False)
@@ -147,8 +149,8 @@ class SceneGraphApp(BasicUiCamSgApp):
   ##############################################
   def onUpdate(self,updevent):
     super().onUpdate(updevent)
-    while self.numsteps < self.maxsteps:
-      self.numsteps += 1
+    while self.numsteps_sim < self.maxsteps_sim:
+      self.numsteps_sim += 1
       ##############################
       # handle counter
       ##############################
@@ -198,13 +200,15 @@ class SceneGraphApp(BasicUiCamSgApp):
     #
     submesh1 = stripSubmesh(self.frusmesh1)
 
-    isec1 = clipMeshWithFrustum(submesh1,self.frustum2).convexHull(0)
+    clipped = clipMeshWithFrustum(submesh1,self.frustum2,self.maxsteps_cut)
+    #dumpMeshVertices(clipped)
+    isec1 = clipped.convexHull(0)
     #isec1 = submesh1.convexHull(0)
     self.submesh_isect = isec1
-    self.hull = isec1.convexHull(self.numsteps) 
+    self.hull = clipped.convexHull(self.numsteps_sim) 
 
     if self.hull!=None:
-        self.pts_drawabledata.pointsmesh = self.hull
+        self.pts_drawabledata.pointsmesh = clipped
         # intersection mesh
         self.barysub_isect = self.submesh_isect.withBarycentricUVs()
         self.prim_isect.fromSubMesh(self.barysub_isect,self.context)
@@ -216,9 +220,16 @@ class SceneGraphApp(BasicUiCamSgApp):
   def onUiEvent(self,uievent):
     super().onUiEvent(uievent)
     if uievent.code == tokens.KEY_DOWN.hashed or uievent.code == tokens.KEY_REPEAT.hashed:
-        if uievent.keycode == 32: # spacebar
-          self.maxsteps = (self.maxsteps + 1)
-          print(self.maxsteps)
+        if uievent.keycode == ord('['): # spacebar
+          self.maxsteps_cut = (self.maxsteps_cut - 1)
+          if self.maxsteps_cut<0:
+            self.maxsteps_cut = 0
+          print(self.maxsteps_cut)
+        elif uievent.keycode == ord(']'): # spacebar
+          self.maxsteps_cut = (self.maxsteps_cut + 1)
+          if self.maxsteps_cut>8:
+            self.maxsteps_cut = 8
+          print(self.maxsteps_cut)
 
 ###############################################################################
 

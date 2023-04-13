@@ -298,6 +298,9 @@ struct EdgeChain {
 struct EdgeLoop {
   edge_vect_t _edges;
   void reverseOf(const EdgeLoop& src);
+  dvec3 computeCenter() const;
+  dvec3 computeCentroid() const;
+  dvec3 computeNormal() const;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -109,6 +109,41 @@ std::string EdgeChain::dump() const {
 void EdgeLoop::reverseOf(const EdgeLoop& src) {
   _edges = _reverse_edgelist(src._edges);
 }
+
+dvec3 EdgeLoop::computeCenter() const{
+  dvec3 rval;
+  for(auto e : _edges) {
+    rval += e->_vertexA->mPos;
+  }
+  return rval * 1.0/double(_edges.size());
+}
+dvec3 EdgeLoop::computeCentroid() const{
+  // compute centroid via weighting area of triangles
+  dvec3 center = computeCenter();
+  // add weighted centroid of each triangle
+  dvec3 rval;
+  for(auto e : _edges) {
+    auto va = e->_vertexA->mPos;
+    auto vb = e->_vertexB->mPos;
+    auto vc = center;
+
+    // compute area of triangle va,vb,vc using half cross product formula
+    auto tri_area_abc = 
+
+}
+
+dvec3 EdgeLoop::computeNormal() const{
+  // compute normal via cross products
+  dvec3 rval;
+  for(auto e : _edges) {
+    auto va = e->_vertexA;
+    auto vb = e->_vertexB;
+    auto nrm = cross(vb->mPos-va->mPos,va->mNrm);
+    rval += nrm;
+  }
+  return rval.Normal();
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 // ChainLinker - links edge chains into edge loops (if possible)
