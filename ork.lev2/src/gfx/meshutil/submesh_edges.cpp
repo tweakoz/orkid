@@ -49,7 +49,7 @@ vertex_ptr_t edge::edgeVertex(int iv) const {
 ///////////////////////////////////////////////////////////////////////////////
 
 uint64_t edge::hash(void) const {
-  uint64_t uv = true  //(_vertexA->_poolindex < _vertexB->_poolindex) //
+  uint64_t uv = (_vertexA->_poolindex < _vertexB->_poolindex) //
                ? uint64_t(_vertexA->_poolindex) | (uint64_t(_vertexB->_poolindex) << 32)
                : uint64_t(_vertexB->_poolindex) | (uint64_t(_vertexA->_poolindex) << 32);
   return uv;

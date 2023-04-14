@@ -202,13 +202,13 @@ class SceneGraphApp(BasicUiCamSgApp):
 
     clipped = clipMeshWithFrustum(submesh1,self.frustum2,self.maxsteps_cut)
     #dumpMeshVertices(clipped)
-    isec1 = clipped # .convexHull(0)
+    #isec1 = clipped.convexHull(0)
     #isec1 = submesh1.convexHull(0)
-    self.submesh_isect = isec1
-    self.hull = clipped.convexHull(self.numsteps_sim) 
+    self.submesh_isect = clipped
+    self.hull = clipped #clipped.convexHull(self.numsteps_sim) 
 
     if self.hull!=None:
-        self.pts_drawabledata.pointsmesh = clipped
+        self.pts_drawabledata.pointsmesh = self.hull
         # intersection mesh
         self.barysub_isect = self.submesh_isect.withBarycentricUVs()
         self.prim_isect.fromSubMesh(self.barysub_isect,self.context)

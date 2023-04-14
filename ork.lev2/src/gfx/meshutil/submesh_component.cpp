@@ -304,6 +304,12 @@ void Polygon::visitEdges(const std::function<void(edge_ptr_t)>& visitor) const{
 
 ////////////////////////////////////////////////////////////////
 
+void Polygon::reverse() {
+  std::reverse(_vertices.begin(), _vertices.end());
+}
+
+////////////////////////////////////////////////////////////////
+
 bool Polygon::containsVertex(vertex_ptr_t v) const{
   auto as_const = std::const_pointer_cast<const vertex>(v);
   return containsVertex(as_const);

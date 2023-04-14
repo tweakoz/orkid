@@ -245,6 +245,7 @@ struct Polygon {
   double signedVolumeWithPoint(const dvec3& point) const;
   dvec3 computeNormal() const;
   dplane3 computePlane() const;
+  void reverse();
   
   bool containsVertex(vertex_ptr_t v) const;
   bool containsVertex(vertex_const_ptr_t v) const;

@@ -371,7 +371,7 @@ void _submeshClipWithPlaneConcave(
             auto dn = (vn->mPos - loop_center).normalized();
             auto cross = dn.crossWith(d0);
             double angle = dn.orientedAngle(d0, cross);
-            vertices_by_angle[-angle] = vn;
+            vertices_by_angle[angle] = vn;
           }
   
           std::vector<vertex_ptr_t> sorted_vertices;
@@ -386,15 +386,10 @@ void _submeshClipWithPlaneConcave(
 
           Polygon p1(sorted_vertices);
           auto vn0 = (sorted_vertices[0]->mPos-centroid).normalized();
-          dvec3 pn = p1.computeNormal();
-          if( pn.dotWith(vn0) < 0 ) {
-            std::reverse(sorted_vertices.begin(),sorted_vertices.end());
-            Polygon p2(sorted_vertices);
-            outsubmesh.mergePoly(p2);
+          if( p1.computeNormal().dotWith(vn0) < 0 ) {
+            p1.reverse();
           }
-          else{
-            outsubmesh.mergePoly(p1);
-          }
+          outsubmesh.mergePoly(p1);
 
 
       }

@@ -295,7 +295,7 @@ def clipMeshWithPlane(inpsubmesh,plane):
   #print("#####################")
   #print(clipped["front"])
   #print(clipped["back"])
-  return clipped["front"]
+  return clipped["front"].convexHull(0)
 
 ################################################################################
 
