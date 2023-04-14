@@ -171,7 +171,7 @@ struct Clipper {
             clipped_front, //
             clipped_back);
 
-        if (vset_ip.contains(inpsubmesh.vertex(2)) and vset_ip.contains(inpsubmesh.vertex(1)) and
+        /*if (vset_ip.contains(inpsubmesh.vertex(2)) and vset_ip.contains(inpsubmesh.vertex(1)) and
             vset_ip.contains(inpsubmesh.vertex(7))) {
 
           size_t sfront = clipped_front.mVerts.size();
@@ -189,7 +189,7 @@ struct Clipper {
             printf(" %d", merged_v->_poolindex);
           }
           printf("]\n");
-        }
+        }*/
 
         ///////////////////////////////////////////
 

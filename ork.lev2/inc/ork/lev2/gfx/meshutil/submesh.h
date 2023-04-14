@@ -157,58 +157,58 @@ struct submesh {
   //////////////////////////////////////////////////////////////////////////////
 
   void addQuad(
-      fvec3 p0, //
-      fvec3 p1,
-      fvec3 p2,
-      fvec3 p3,
-      fvec4 c = fvec4(1, 1, 1, 1)); /// add quad helper
+      dvec3 p0, //
+      dvec3 p1,
+      dvec3 p2,
+      dvec3 p3,
+      dvec4 c = dvec4(1, 1, 1, 1)); /// add quad helper
                                     /// method
 
   void addQuad(
-      fvec3 p0, //
-      fvec3 p1,
-      fvec3 p2,
-      fvec3 p3,
-      fvec2 uv0,
-      fvec2 uv1,
-      fvec2 uv2,
-      fvec2 uv3,
-      fvec4 c); /// add quad helper
+      dvec3 p0, //
+      dvec3 p1,
+      dvec3 p2,
+      dvec3 p3,
+      dvec2 uv0,
+      dvec2 uv1,
+      dvec2 uv2,
+      dvec2 uv3,
+      dvec4 c); /// add quad helper
                 /// method
 
   void addQuad(
-      fvec3 p0,
-      fvec3 p1,
-      fvec3 p2,
-      fvec3 p3,
-      fvec3 n0,
-      fvec3 n1,
-      fvec3 n2,
-      fvec3 n3,
-      fvec2 uv0,
-      fvec2 uv1,
-      fvec2 uv2,
-      fvec2 uv3,
-      fvec4 c); /// add quad helper method
+      dvec3 p0,
+      dvec3 p1,
+      dvec3 p2,
+      dvec3 p3,
+      dvec3 n0,
+      dvec3 n1,
+      dvec3 n2,
+      dvec3 n3,
+      dvec2 uv0,
+      dvec2 uv1,
+      dvec2 uv2,
+      dvec2 uv3,
+      dvec4 c); /// add quad helper method
 
   void addQuad(
-      fvec3 p0,
-      fvec3 p1,
-      fvec3 p2,
-      fvec3 p3,
-      fvec3 n0,
-      fvec3 n1,
-      fvec3 n2,
-      fvec3 n3,
-      fvec3 b0,
-      fvec3 b1,
-      fvec3 b2,
-      fvec3 b3,
-      fvec2 uv0,
-      fvec2 uv1,
-      fvec2 uv2,
-      fvec2 uv3,
-      fvec4 c); /// add quad helper method
+      dvec3 p0,
+      dvec3 p1,
+      dvec3 p2,
+      dvec3 p3,
+      dvec3 n0,
+      dvec3 n1,
+      dvec3 n2,
+      dvec3 n3,
+      dvec3 b0,
+      dvec3 b1,
+      dvec3 b2,
+      dvec3 b3,
+      dvec2 uv0,
+      dvec2 uv1,
+      dvec2 uv2,
+      dvec2 uv3,
+      dvec4 c); /// add quad helper method
 
   /////////////////////////////////////////////////////////////////////////
 
@@ -266,7 +266,7 @@ void submeshWithFaceNormals(const submesh& inpsubmesh, submesh& outsmesh);
 void submeshWithSmoothNormals(const submesh& inpsubmesh, submesh& outsmesh, float threshold_radians);
 void submeshJoinCoplanar(const submesh& inpsubmesh, submesh& outsmesh);
 void submeshBarycentricUV(const submesh& inpsubmesh, submesh& outsmesh);
-submesh_ptr_t submeshFromFrustum(const Frustum& frustum, bool projective_rect_uv);
+submesh_ptr_t submeshFromFrustum(const dfrustum& frustum, bool projective_rect_uv);
 
 std::vector<submesh_ptr_t> submeshBulletConvexDecomposition(const submesh& inpsubmesh);
 void submeshConvexHull(const submesh& inpsubmesh, submesh& outsmesh, int steps = 0);

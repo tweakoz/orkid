@@ -21,6 +21,8 @@ void pyinit_math_la_t(py::module& module_core, //
   using mat4_t = Matrix44<T>;
   using ray3_t = Ray3<T>;
   using plane_t = Plane<T>;
+  using frustum_t = TFrustum<T>;
+  using frustum_ptr_t = std::shared_ptr<frustum_t>;
   auto vec2_name = pfx+"vec2";
   auto vec3_name = pfx+"vec3";
   auto vec4_name = pfx+"vec4";
@@ -29,6 +31,7 @@ void pyinit_math_la_t(py::module& module_core, //
   auto mat4_name = pfx+"mtx4";
   auto ray3_name = pfx+"ray3";
   auto plane_name = pfx+"plane";
+  auto frustum_name = pfx+"frustum";
 
 
   auto type_codec = python::TypeCodec::instance();
@@ -529,6 +532,33 @@ void pyinit_math_la_t(py::module& module_core, //
             return fxs.c_str();
           });
   type_codec->registerStdCodec<plane_t>(plane_t_type);
-}
+  /////////////////////////////////////////////////////////////////////////////////
+  auto frustum_type =
+      py::class_<frustum_t,frustum_ptr_t>(module_core, frustum_name.c_str())
+          .def(py::init<>())
+          .def(py::init([](const mat4_t& VMatrix, const mat4_t& PMatrix) {
+            auto rval = std::make_shared<frustum_t>();
+            rval->set(VMatrix, PMatrix);
+            return rval;
+          }))
+          .def("set", [](frustum_ptr_t instance, const mat4_t& VMatrix, const mat4_t& PMatrix) { instance->set(VMatrix, PMatrix); })
+          .def("set", [](frustum_ptr_t instance, const mat4_t& IVPMatrix) { instance->set(IVPMatrix); })
+          .def(
+              "nearCorner",
+              [](frustum_ptr_t instance, int index) -> vec3_t { return instance->mNearCorners[std::clamp(index, 0, 3)]; })
+          .def("farCorner", [](frustum_ptr_t instance, int index) -> vec3_t { return instance->mFarCorners[std::clamp(index, 0, 3)]; })
+          .def_property_readonly("center", [](frustum_ptr_t instance) -> vec3_t { return instance->mCenter; })
+          .def_property_readonly("xNormal", [](frustum_ptr_t instance) -> vec3_t { return instance->mXNormal; })
+          .def_property_readonly("yNormal", [](frustum_ptr_t instance) -> vec3_t { return instance->mYNormal; })
+          .def_property_readonly("zNormal", [](frustum_ptr_t instance) -> vec3_t { return instance->mZNormal; })
+          .def_property_readonly("nearPlane", [](frustum_ptr_t instance) -> plane_t { return instance->_nearPlane; })
+          .def_property_readonly("farPlane", [](frustum_ptr_t instance) -> plane_t { return instance->_farPlane; })
+          .def_property_readonly("leftPlane", [](frustum_ptr_t instance) -> plane_t { return instance->_leftPlane; })
+          .def_property_readonly("rightPlane", [](frustum_ptr_t instance) -> plane_t { return instance->_rightPlane; })
+          .def_property_readonly("topPlane", [](frustum_ptr_t instance) -> plane_t { return instance->_topPlane; })
+          .def_property_readonly("bottomPlane", [](frustum_ptr_t instance) -> plane_t { return instance->_bottomPlane; })
+          .def("contains", [](frustum_ptr_t instance, const vec3_t& point) -> bool { return instance->contains(point); });
+  type_codec->registerStdCodec<frustum_ptr_t>(frustum_type);
+  }
 ///////////////////////////////////////////////////////////////////////////////
 }

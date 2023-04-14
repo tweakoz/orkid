@@ -42,33 +42,33 @@ void pyinit_primitives(py::module& module_lev2) {
 
       .def_property(
           "topColor",
-          [](const primitives::CubePrimitive& prim) -> fvec4 { return prim._colorTop; },
-          [](primitives::CubePrimitive& prim, const fvec4& value) { prim._colorTop = value; })
+          [](const primitives::CubePrimitive& prim) -> dvec4 { return prim._colorTop; },
+          [](primitives::CubePrimitive& prim, const dvec4& value) { prim._colorTop = value; })
 
       .def_property(
           "bottomColor",
-          [](const primitives::CubePrimitive& prim) -> fvec4 { return prim._colorBottom; },
-          [](primitives::CubePrimitive& prim, const fvec4& value) { prim._colorBottom = value; })
+          [](const primitives::CubePrimitive& prim) -> dvec4 { return prim._colorBottom; },
+          [](primitives::CubePrimitive& prim, const dvec4& value) { prim._colorBottom = value; })
 
       .def_property(
           "frontColor",
-          [](const primitives::CubePrimitive& prim) -> fvec4 { return prim._colorFront; },
-          [](primitives::CubePrimitive& prim, const fvec4& value) { prim._colorFront = value; })
+          [](const primitives::CubePrimitive& prim) -> dvec4 { return prim._colorFront; },
+          [](primitives::CubePrimitive& prim, const dvec4& value) { prim._colorFront = value; })
 
       .def_property(
           "backColor",
-          [](const primitives::CubePrimitive& prim) -> fvec4 { return prim._colorBack; },
-          [](primitives::CubePrimitive& prim, const fvec4& value) { prim._colorBack = value; })
+          [](const primitives::CubePrimitive& prim) -> dvec4 { return prim._colorBack; },
+          [](primitives::CubePrimitive& prim, const dvec4& value) { prim._colorBack = value; })
 
       .def_property(
           "leftColor",
-          [](const primitives::CubePrimitive& prim) -> fvec4 { return prim._colorLeft; },
-          [](primitives::CubePrimitive& prim, const fvec4& value) { prim._colorLeft = value; })
+          [](const primitives::CubePrimitive& prim) -> dvec4 { return prim._colorLeft; },
+          [](primitives::CubePrimitive& prim, const dvec4& value) { prim._colorLeft = value; })
 
       .def_property(
           "rightColor",
-          [](const primitives::CubePrimitive& prim) -> fvec4 { return prim._colorRight; },
-          [](primitives::CubePrimitive& prim, const fvec4& value) { prim._colorRight = value; })
+          [](const primitives::CubePrimitive& prim) -> dvec4 { return prim._colorRight; },
+          [](primitives::CubePrimitive& prim, const dvec4& value) { prim._colorRight = value; })
 
       .def("gpuInit", [](primitives::CubePrimitive& prim, ctx_t& context) { prim.gpuInit(context.get()); })
       .def("renderEML", [](primitives::CubePrimitive& prim, ctx_t& context) { prim.renderEML(context.get()); })
@@ -80,38 +80,38 @@ void pyinit_primitives(py::module& module_lev2) {
           .def(py::init<>())
           .def_property(
               "frustum",
-              [](primitives::frustum_ptr_t prim) -> Frustum { return prim->_frustum; },
-              [](primitives::frustum_ptr_t prim, const Frustum& value) { prim->_frustum = value; })
+              [](primitives::frustum_ptr_t prim) -> dfrustum { return prim->_frustum; },
+              [](primitives::frustum_ptr_t prim, const dfrustum& value) { prim->_frustum = value; })
 
           .def_property(
               "topColor",
-              [](primitives::frustum_ptr_t prim) -> fvec4 { return prim->_colorTop; },
-              [](primitives::frustum_ptr_t prim, const fvec4& value) { prim->_colorTop = value; })
+              [](primitives::frustum_ptr_t prim) -> dvec4 { return prim->_colorTop; },
+              [](primitives::frustum_ptr_t prim, const dvec4& value) { prim->_colorTop = value; })
 
           .def_property(
               "bottomColor",
-              [](primitives::frustum_ptr_t prim) -> fvec4 { return prim->_colorBottom; },
-              [](primitives::frustum_ptr_t prim, const fvec4& value) { prim->_colorBottom = value; })
+              [](primitives::frustum_ptr_t prim) -> dvec4 { return prim->_colorBottom; },
+              [](primitives::frustum_ptr_t prim, const dvec4& value) { prim->_colorBottom = value; })
 
           .def_property(
               "farColor",
-              [](primitives::frustum_ptr_t prim) -> fvec4 { return prim->_colorFar; },
-              [](primitives::frustum_ptr_t prim, const fvec4& value) { prim->_colorFar = value; })
+              [](primitives::frustum_ptr_t prim) -> dvec4 { return prim->_colorFar; },
+              [](primitives::frustum_ptr_t prim, const dvec4& value) { prim->_colorFar = value; })
 
           .def_property(
               "nearColor",
-              [](primitives::frustum_ptr_t prim) -> fvec4 { return prim->_colorNear; },
-              [](primitives::frustum_ptr_t prim, const fvec4& value) { prim->_colorNear = value; })
+              [](primitives::frustum_ptr_t prim) -> dvec4 { return prim->_colorNear; },
+              [](primitives::frustum_ptr_t prim, const dvec4& value) { prim->_colorNear = value; })
 
           .def_property(
               "leftColor",
-              [](primitives::frustum_ptr_t prim) -> fvec4 { return prim->_colorLeft; },
-              [](primitives::frustum_ptr_t prim, const fvec4& value) { prim->_colorLeft = value; })
+              [](primitives::frustum_ptr_t prim) -> dvec4 { return prim->_colorLeft; },
+              [](primitives::frustum_ptr_t prim, const dvec4& value) { prim->_colorLeft = value; })
 
           .def_property(
               "rightColor",
-              [](primitives::frustum_ptr_t prim) -> fvec4 { return prim->_colorRight; },
-              [](primitives::frustum_ptr_t prim, const fvec4& value) { prim->_colorRight = value; })
+              [](primitives::frustum_ptr_t prim) -> dvec4 { return prim->_colorRight; },
+              [](primitives::frustum_ptr_t prim, const dvec4& value) { prim->_colorRight = value; })
 
           .def("gpuInit", [](primitives::frustum_ptr_t prim, ctx_t& context) { prim->gpuInit(context.get()); })
           .def("renderEML", [](primitives::frustum_ptr_t prim, ctx_t& context) { prim->renderEML(context.get()); })

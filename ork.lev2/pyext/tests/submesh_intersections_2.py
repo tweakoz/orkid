@@ -43,7 +43,7 @@ class SceneGraphApp(BasicUiCamSgApp):
     ##############################
     self.fpmtx1 = dmtx4.perspective(45*constants.DTOR,1,0.3,5)
     self.fvmtx1 = dmtx4.lookAt(dvec3(0,0,1),dvec3(0,0,0),dvec3(0,1,0))
-    self.frustum1 = Frustum()
+    self.frustum1 = dfrustum()
     self.frustum1.set(self.fvmtx1,self.fpmtx1)
     self.frusmesh1 = meshutil.SubMesh.createFromFrustum(self.frustum1,projective_rect_uv=True)
     self.submesh1 = stripSubmesh(self.frusmesh1)
@@ -55,7 +55,7 @@ class SceneGraphApp(BasicUiCamSgApp):
     ##############################
     self.fpmtx2 = dmtx4.perspective(45*constants.DTOR,1,0.3,5)
     self.fvmtx2 = dmtx4.lookAt(dvec3(1,0,1),dvec3(1,1,0),dvec3(0,1,0))
-    self.frustum2 = Frustum()
+    self.frustum2 = dfrustum()
     self.frustum2.set(self.fvmtx2,self.fpmtx2)
     self.frusmesh2 = meshutil.SubMesh.createFromFrustum(self.frustum2,projective_rect_uv=True)
     self.submesh2 = stripSubmesh(self.frusmesh2)

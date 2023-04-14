@@ -29,69 +29,69 @@ struct CubePrimitive {
     float P = +_size * 0.5f;
 
     submeshQuads.addQuad(
-        fvec3(N, N, P),
-        fvec3(P, N, P),
-        fvec3(P, P, P),
-        fvec3(N, P, P), //
-        fvec2(0.0f, 0.0f),
-        fvec2(0.25f, 0.5f),
-        fvec2(0.0f, 0.0f),
-        fvec2(0.25f, 0.5f),
+        dvec3(N, N, P),
+        dvec3(P, N, P),
+        dvec3(P, P, P),
+        dvec3(N, P, P), //
+        dvec2(0.0f, 0.0f),
+        dvec2(0.25f, 0.5f),
+        dvec2(0.0f, 0.0f),
+        dvec2(0.25f, 0.5f),
         _colorFront);
 
     submeshQuads.addQuad(
-        fvec3(P, N, P),
-        fvec3(P, N, N),
-        fvec3(P, P, N),
-        fvec3(P, P, P), //
-        fvec2(0.25f, 0.0f),
-        fvec2(0.5f, 0.5f),
-        fvec2(0.25f, 0.0f),
-        fvec2(0.5f, 0.5f),
+        dvec3(P, N, P),
+        dvec3(P, N, N),
+        dvec3(P, P, N),
+        dvec3(P, P, P), //
+        dvec2(0.25f, 0.0f),
+        dvec2(0.5f, 0.5f),
+        dvec2(0.25f, 0.0f),
+        dvec2(0.5f, 0.5f),
         _colorRight);
 
     submeshQuads.addQuad(
-        fvec3(P, N, N),
-        fvec3(N, N, N),
-        fvec3(N, P, N),
-        fvec3(P, P, N), //
-        fvec2(0.5f, 0.0f),
-        fvec2(0.75f, 0.5f),
-        fvec2(0.5f, 0.0f),
-        fvec2(0.75f, 0.5f),
+        dvec3(P, N, N),
+        dvec3(N, N, N),
+        dvec3(N, P, N),
+        dvec3(P, P, N), //
+        dvec2(0.5f, 0.0f),
+        dvec2(0.75f, 0.5f),
+        dvec2(0.5f, 0.0f),
+        dvec2(0.75f, 0.5f),
         _colorBack);
 
     submeshQuads.addQuad(
-        fvec3(N, N, N),
-        fvec3(N, N, P),
-        fvec3(N, P, P),
-        fvec3(N, P, N), //
-        fvec2(0.75f, 0.0f),
-        fvec2(1.0f, 0.5f),
-        fvec2(0.5f, 0.0f),
-        fvec2(0.75f, 0.5f),
+        dvec3(N, N, N),
+        dvec3(N, N, P),
+        dvec3(N, P, P),
+        dvec3(N, P, N), //
+        dvec2(0.75f, 0.0f),
+        dvec2(1.0f, 0.5f),
+        dvec2(0.5f, 0.0f),
+        dvec2(0.75f, 0.5f),
         _colorLeft);
 
     submeshQuads.addQuad(
-        fvec3(N, P, N),
-        fvec3(N, P, P),
-        fvec3(P, P, P),
-        fvec3(P, P, N), //
-        fvec2(0.0f, 0.5f),
-        fvec2(1.0f, 1.5f),
-        fvec2(0.5f, 0.0f),
-        fvec2(0.75f, 0.5f),
+        dvec3(N, P, N),
+        dvec3(N, P, P),
+        dvec3(P, P, P),
+        dvec3(P, P, N), //
+        dvec2(0.0f, 0.5f),
+        dvec2(1.0f, 1.5f),
+        dvec2(0.5f, 0.0f),
+        dvec2(0.75f, 0.5f),
         _colorTop);
 
     submeshQuads.addQuad(
-        fvec3(N, N, N),
-        fvec3(P, N, N), //
-        fvec3(N, N, P),
-        fvec3(P, N, P),
-        fvec2(0.0f, 0.5f),
-        fvec2(1.0f, 1.5f),
-        fvec2(0.5f, 0.0f),
-        fvec2(0.75f, 0.5f),
+        dvec3(N, N, N),
+        dvec3(P, N, N), //
+        dvec3(N, N, P),
+        dvec3(P, N, P),
+        dvec2(0.0f, 0.5f),
+        dvec2(1.0f, 1.5f),
+        dvec2(0.5f, 0.0f),
+        dvec2(0.75f, 0.5f),
         _colorBottom);
 
     submeshTriangulate(submeshQuads, submeshTris);
@@ -124,12 +124,12 @@ struct CubePrimitive {
 
   float _size = 0.0f;
 
-  fvec4 _colorTop;
-  fvec4 _colorBottom;
-  fvec4 _colorFront;
-  fvec4 _colorBack;
-  fvec4 _colorLeft;
-  fvec4 _colorRight;
+  dvec4 _colorTop;
+  dvec4 _colorBottom;
+  dvec4 _colorFront;
+  dvec4 _colorBack;
+  dvec4 _colorLeft;
+  dvec4 _colorRight;
 
   using rigidprim_t = meshutil::RigidPrimitive<SVtxV12N12B12T8C4>;
   rigidprim_t _primitive;

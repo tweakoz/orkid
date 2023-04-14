@@ -343,17 +343,17 @@ polyset_ptr_t submesh::asPolyset() const {
 ///////////////////////////////////////////////////////////////////////////////
 // addPoly helper methods
 ///////////////////////////////////////////////////////////////////////////////
-void submesh::addQuad(fvec3 p0, fvec3 p1, fvec3 p2, fvec3 p3, fvec4 c) {
+void submesh::addQuad(dvec3 p0, dvec3 p1, dvec3 p2, dvec3 p3, dvec4 c) {
   struct vertex muvtx[4];
 
-  fvec3 B = (p0 - p1).normalized();
-  fvec3 T = (p2 - p0).normalized();
-  fvec3 N = B.crossWith(T);
-
-  muvtx[0].set(p0, N, fvec3(), fvec2(), c);
-  muvtx[1].set(p1, N, fvec3(), fvec2(), c);
-  muvtx[2].set(p2, N, fvec3(), fvec2(), c);
-  muvtx[3].set(p3, N, fvec3(), fvec2(), c);
+  dvec3 B = (p0 - p1).normalized();
+  dvec3 T = (p2 - p0).normalized();
+  dvec3 N = B.crossWith(T);
+  fvec4 cf = dvec4_to_fvec4(c);
+  muvtx[0].set(p0, N, fvec3(), fvec2(), cf);
+  muvtx[1].set(p1, N, fvec3(), fvec2(), cf);
+  muvtx[2].set(p2, N, fvec3(), fvec2(), cf);
+  muvtx[3].set(p3, N, fvec3(), fvec2(), cf);
   auto v0 = mergeVertex(muvtx[0]);
   auto v1 = mergeVertex(muvtx[1]);
   auto v2 = mergeVertex(muvtx[2]);
@@ -361,17 +361,18 @@ void submesh::addQuad(fvec3 p0, fvec3 p1, fvec3 p2, fvec3 p3, fvec4 c) {
   mergePoly(Polygon(v0, v1, v2, v3));
 }
 ///////////////////////////////////////////////////////////////////////////////
-void submesh::addQuad(fvec3 p0, fvec3 p1, fvec3 p2, fvec3 p3, fvec2 uv0, fvec2 uv1, fvec2 uv2, fvec2 uv3, fvec4 c) {
+void submesh::addQuad(dvec3 p0, dvec3 p1, dvec3 p2, dvec3 p3, dvec2 uv0, dvec2 uv1, dvec2 uv2, dvec2 uv3, dvec4 c) {
   struct vertex muvtx[4];
-  fvec3 p0p1 = (p1 - p0).normalized();
-  fvec3 p0p2 = (p2 - p0).normalized();
-  fvec3 nrm  = p0p1.crossWith(p0p2);
+  dvec3 p0p1 = (p1 - p0).normalized();
+  dvec3 p0p2 = (p2 - p0).normalized();
+  dvec3 nrm  = p0p1.crossWith(p0p2);
   // todo compute tangent space from uv gradients
-  fvec3 bin = p0p1;
-  muvtx[0].set(p0, nrm, bin, uv0, c);
-  muvtx[1].set(p1, nrm, bin, uv1, c);
-  muvtx[2].set(p2, nrm, bin, uv2, c);
-  muvtx[3].set(p3, nrm, bin, uv3, c);
+  fvec3 bin = dvec3_to_fvec3(p0p1);
+  fvec4 cf = dvec4_to_fvec4(c);
+  muvtx[0].set(p0, nrm, bin, dvec2_to_fvec2(uv0), cf);
+  muvtx[1].set(p1, nrm, bin, dvec2_to_fvec2(uv1), cf);
+  muvtx[2].set(p2, nrm, bin, dvec2_to_fvec2(uv2), cf);
+  muvtx[3].set(p3, nrm, bin, dvec2_to_fvec2(uv3), cf);
 
   auto v0 = mergeVertex(muvtx[0]);
   auto v1 = mergeVertex(muvtx[1]);
@@ -381,26 +382,27 @@ void submesh::addQuad(fvec3 p0, fvec3 p1, fvec3 p2, fvec3 p3, fvec2 uv0, fvec2 u
 }
 ///////////////////////////////////////////////////////////////////////////////
 void submesh::addQuad(
-    fvec3 p0,
-    fvec3 p1,
-    fvec3 p2,
-    fvec3 p3,
-    fvec3 n0,
-    fvec3 n1,
-    fvec3 n2,
-    fvec3 n3,
-    fvec2 uv0,
-    fvec2 uv1,
-    fvec2 uv2,
-    fvec2 uv3,
-    fvec4 c) { /// add quad helper method
+    dvec3 p0,
+    dvec3 p1,
+    dvec3 p2,
+    dvec3 p3,
+    dvec3 n0,
+    dvec3 n1,
+    dvec3 n2,
+    dvec3 n3,
+    dvec2 uv0,
+    dvec2 uv1,
+    dvec2 uv2,
+    dvec2 uv3,
+    dvec4 c) { /// add quad helper method
   struct vertex muvtx[4];
-  fvec3 p0p1 = (p1 - p0).normalized();
-  fvec3 bin  = p0p1;
-  muvtx[0].set(p0, n0, bin, uv0, c);
-  muvtx[1].set(p1, n1, bin, uv1, c);
-  muvtx[2].set(p2, n2, bin, uv2, c);
-  muvtx[3].set(p3, n3, bin, uv3, c);
+  dvec3 p0p1 = (p1 - p0).normalized();
+  fvec3 bin  = dvec3_to_fvec3(p0p1);
+  fvec4 cf  = dvec4_to_fvec4(c);
+  muvtx[0].set(p0, n0, bin, dvec2_to_fvec2(uv0), cf);
+  muvtx[1].set(p1, n1, bin, dvec2_to_fvec2(uv1), cf);
+  muvtx[2].set(p2, n2, bin, dvec2_to_fvec2(uv2), cf);
+  muvtx[3].set(p3, n3, bin, dvec2_to_fvec2(uv3), cf);
 
   auto v0 = mergeVertex(muvtx[0]);
   auto v1 = mergeVertex(muvtx[1]);
@@ -410,28 +412,39 @@ void submesh::addQuad(
 }
 ///////////////////////////////////////////////////////////////////////////////
 void submesh::addQuad(
-    fvec3 p0,
-    fvec3 p1,
-    fvec3 p2,
-    fvec3 p3,
-    fvec3 n0,
-    fvec3 n1,
-    fvec3 n2,
-    fvec3 n3,
-    fvec3 b0,
-    fvec3 b1,
-    fvec3 b2,
-    fvec3 b3,
-    fvec2 uv0,
-    fvec2 uv1,
-    fvec2 uv2,
-    fvec2 uv3,
-    fvec4 c) { /// add quad helper method
+    dvec3 p0,
+    dvec3 p1,
+    dvec3 p2,
+    dvec3 p3,
+    dvec3 n0,
+    dvec3 n1,
+    dvec3 n2,
+    dvec3 n3,
+    dvec3 b0,
+    dvec3 b1,
+    dvec3 b2,
+    dvec3 b3,
+    dvec2 uv0,
+    dvec2 uv1,
+    dvec2 uv2,
+    dvec2 uv3,
+    dvec4 c) { /// add quad helper method
   struct vertex muvtx[4];
-  muvtx[0].set(p0, n0, b0, uv0, c);
-  muvtx[1].set(p1, n1, b1, uv1, c);
-  muvtx[2].set(p2, n2, b2, uv2, c);
-  muvtx[3].set(p3, n3, b3, uv3, c);
+
+  fvec3 fb0 = dvec3_to_fvec3(b0);
+  fvec3 fb1 = dvec3_to_fvec3(b1);
+  fvec3 fb2 = dvec3_to_fvec3(b2);
+  fvec3 fb3 = dvec3_to_fvec3(b3);
+  fvec2 fuv0 = dvec2_to_fvec2(uv0);
+  fvec2 fuv1 = dvec2_to_fvec2(uv1);
+  fvec2 fuv2 = dvec2_to_fvec2(uv2);
+  fvec2 fuv3 = dvec2_to_fvec2(uv3);
+  fvec4 cf  = dvec4_to_fvec4(c);
+  
+  muvtx[0].set(p0, n0, fb0, fuv0, cf);
+  muvtx[1].set(p1, n1, fb1, fuv1, cf);
+  muvtx[2].set(p2, n2, fb2, fuv2, cf);
+  muvtx[3].set(p3, n3, fb3, fuv3, cf);
 
   auto v0 = mergeVertex(muvtx[0]);
   auto v1 = mergeVertex(muvtx[1]);

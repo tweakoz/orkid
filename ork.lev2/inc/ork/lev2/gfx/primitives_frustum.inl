@@ -18,21 +18,21 @@ struct FrustumPrimitive {
   inline void gpuInit(Context* context, bool projective_rect_uv=true) {
     meshutil::submesh frustum_submesh;
 
-    auto addq      = [&](fvec3 vtxa, fvec3 vtxb, fvec3 vtxc, fvec3 vtxd, fvec4 col) {
+    auto addq      = [&](dvec3 vtxa, dvec3 vtxb, dvec3 vtxc, dvec3 vtxd, dvec4 col) {
       auto normal = (vtxb - vtxa).crossWith(vtxc - vtxa).normalized();
 
-      auto uva = fvec2(0,0);
-      auto uvb = fvec2(1,0);
-      auto uvc = fvec2(1,1);
-      auto uvd = fvec2(0,1);
+      auto uva = dvec2(0,0);
+      auto uvb = dvec2(1,0);
+      auto uvc = dvec2(1,1);
+      auto uvd = dvec2(0,1);
 
       if(projective_rect_uv){
         
         // https://www.reedbeta.com/blog/quadrilateral-interpolation-part-1/
         
-        fray3 rac(vtxa,(vtxc-vtxa));
-        fvec3 intersection;
-        bool intersects = rac.intersectSegment(flineseg3(vtxb,vtxd),intersection);
+        dray3 rac(vtxa,(vtxc-vtxa));
+        dvec3 intersection;
+        bool intersects = rac.intersectSegment(dlineseg3(vtxb,vtxd),intersection);
         OrkAssert(intersects);
 
         float da = (intersection-vtxa).length();
@@ -40,10 +40,10 @@ struct FrustumPrimitive {
         float dc = (intersection-vtxc).length();
         float dd = (intersection-vtxd).length();
 
-        auto uvqa = fvec3(uva.x,uva.y,1) * ((da+dc)/dc);
-        auto uvqb = fvec3(uvb.x,uvb.y,1) * ((db+dd)/dd);
-        auto uvqc = fvec3(uvc.x,uvc.y,1) * ((dc+da)/da);
-        auto uvqd = fvec3(uvd.x,uvd.y,1) * ((dd+db)/db);
+        auto uvqa = dvec3(uva.x,uva.y,1) * ((da+dc)/dc);
+        auto uvqb = dvec3(uvb.x,uvb.y,1) * ((db+dd)/dd);
+        auto uvqc = dvec3(uvc.x,uvc.y,1) * ((dc+da)/da);
+        auto uvqd = dvec3(uvd.x,uvd.y,1) * ((dd+db)/db);
 
         frustum_submesh.addQuad(
           vtxa, vtxb, vtxc, vtxd, 
@@ -103,13 +103,13 @@ struct FrustumPrimitive {
     return layer->createDrawableNode(named, drw);
   }
   //////////////////////////////////////////////////////////////////////////////
-  fvec4 _colorTop;
-  fvec4 _colorBottom;
-  fvec4 _colorNear;
-  fvec4 _colorFar;
-  fvec4 _colorLeft;
-  fvec4 _colorRight;
-  ork::Frustum _frustum;
+  dvec4 _colorTop;
+  dvec4 _colorBottom;
+  dvec4 _colorNear;
+  dvec4 _colorFar;
+  dvec4 _colorLeft;
+  dvec4 _colorRight;
+  ork::dfrustum _frustum;
   using rigidprim_t = meshutil::RigidPrimitive<SVtxV12N12B12T8C4>;
   rigidprim_t _primitive;
 };

@@ -23,7 +23,7 @@ void pyinit_meshutil_submesh(py::module& module_meshutil) {
           .def(py::init<>())
           .def_static(
               "createFromFrustum",
-              [](frustum_ptr_t frus, py::kwargs kwargs) -> submesh_ptr_t { //
+              [](dfrustum_ptr_t frus, py::kwargs kwargs) -> submesh_ptr_t { //
                 bool projective_rect_uv   = false;
                 if (kwargs) {
                   for (auto item : kwargs) {
@@ -240,8 +240,8 @@ void pyinit_meshutil_submesh(py::module& module_meshutil) {
                   } else if (key == "close_mesh") {
                     close_mesh = py::cast<bool>(item.second);
                   } else if (key == "plane") {
-                    auto inp_plane = py::cast<fplane3_ptr_t>(item.second);
-                    as_dplane = fplane3_to_dplane3(*inp_plane);
+                    as_dplane= py::cast<dplane3>(item.second);
+                    //as_dplane = fplane3_to_dplane3(*inp_plane);
                   } else {
                     OrkAssert(false);
                   }
@@ -330,10 +330,10 @@ void pyinit_meshutil_submesh(py::module& module_meshutil) {
               [](submesh_constptr_t submesh, const std::string& outpath) { return submeshWriteObj(*submesh, outpath); })
           .def(
               "addQuad",
-              [](submesh_ptr_t submesh, fvec3 p0, fvec3 p1, fvec3 p2, fvec3 p3) { return submesh->addQuad(p0, p1, p2, p3); })
+              [](submesh_ptr_t submesh, dvec3 p0, dvec3 p1, dvec3 p2, dvec3 p3) { return submesh->addQuad(p0, p1, p2, p3); })
           .def(
               "addQuad",
-              [](submesh_ptr_t submesh, fvec3 p0, fvec3 p1, fvec3 p2, fvec3 p3, fvec4 c) {
+              [](submesh_ptr_t submesh, dvec3 p0, dvec3 p1, dvec3 p2, dvec3 p3, dvec4 c) {
                 return submesh->addQuad(p0, p1, p2, p3, c);
               })
           .def(
@@ -343,9 +343,9 @@ void pyinit_meshutil_submesh(py::module& module_meshutil) {
                 for (auto item : kwargs) {
                   auto key = py::cast<std::string>(item.first);
                   if (key == "position") {
-                    vin->mPos = fvec3_to_dvec3(py::cast<fvec3>(item.second));
+                    vin->mPos = py::cast<dvec3>(item.second);
                   } else if (key == "normal") {
-                    vin->mNrm = fvec3_to_dvec3(py::cast<fvec3>(item.second));
+                    vin->mNrm = py::cast<dvec3>(item.second);
                   } else if (key == "color0") {
                     vin->mCol[0] = py::cast<fvec4>(item.second);
                   } else if (key == "uvc0") {
@@ -375,31 +375,31 @@ void pyinit_meshutil_submesh(py::module& module_meshutil) {
           .def(
               "addQuad",
               [](submesh_ptr_t submesh,
-                 fvec3 p0,
-                 fvec3 p1,
-                 fvec3 p2,
-                 fvec3 p3,
-                 fvec2 uv0,
-                 fvec2 uv1,
-                 fvec2 uv2,
-                 fvec2 uv3,
-                 fvec4 c) { return submesh->addQuad(p0, p1, p2, p3, uv0, uv1, uv2, uv3, c); })
+                 dvec3 p0,
+                 dvec3 p1,
+                 dvec3 p2,
+                 dvec3 p3,
+                 dvec2 uv0,
+                 dvec2 uv1,
+                 dvec2 uv2,
+                 dvec2 uv3,
+                 dvec4 c) { return submesh->addQuad(p0, p1, p2, p3, uv0, uv1, uv2, uv3, c); })
           .def(
               "addQuad",
               [](submesh_ptr_t submesh,
-                 fvec3 p0,
-                 fvec3 p1,
-                 fvec3 p2,
-                 fvec3 p3,
-                 fvec3 n0,
-                 fvec3 n1,
-                 fvec3 n2,
-                 fvec3 n3,
-                 fvec2 uv0,
-                 fvec2 uv1,
-                 fvec2 uv2,
-                 fvec2 uv3,
-                 fvec4 c) { return submesh->addQuad(p0, p1, p2, p3, n0, n1, n2, n3, uv0, uv1, uv2, uv3, c); })
+                 dvec3 p0,
+                 dvec3 p1,
+                 dvec3 p2,
+                 dvec3 p3,
+                 dvec3 n0,
+                 dvec3 n1,
+                 dvec3 n2,
+                 dvec3 n3,
+                 dvec2 uv0,
+                 dvec2 uv1,
+                 dvec2 uv2,
+                 dvec2 uv3,
+                 dvec4 c) { return submesh->addQuad(p0, p1, p2, p3, n0, n1, n2, n3, uv0, uv1, uv2, uv3, c); })
           .def("__repr__", [](submesh_ptr_t sm) -> std::string {
             std::string rval = FormatString("Submesh<%p>\n", (void*)sm.get());
             rval += FormatString("  num_vertices<%d>\n", (int)sm->numVertices());

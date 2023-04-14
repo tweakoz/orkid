@@ -102,6 +102,9 @@ template <typename T> void TFrustum<T>::CalcCorners() {
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T> void TFrustum<T>::set(const mtx44_type& IVPMatrix) {
+
+  constexpr T epsilon = T(0.0001);
+
   T minv = T(-1);
   T maxv = T(1);
   T minz = T(-1);
@@ -135,14 +138,12 @@ template <typename T> void TFrustum<T>::set(const mtx44_type& IVPMatrix) {
   mtx44_type::unProject(IVPMatrix, Vx1y1, mFarCorners[2]);
   mtx44_type::unProject(IVPMatrix, Vx0y1, mFarCorners[3]);
 
-  vec3_type camrayN, camrayF;fmtx4 dmtx4_to_fmtx4(const dmtx4& dvec);
-dmtx4 fmtx4_to_dmtx4(const fmtx4& dvec);
+  vec3_type camrayN, camrayF;
 
+  mtx44_type::unProject(IVPMatrix, vec4_type(0.0, 0.0, minz), camrayN);
+  mtx44_type::unProject(IVPMatrix, vec4_type(0.0, 0.0, maxz), camrayF);
 
-  mtx44_type::unProject(IVPMatrix, fvec4(0.0f, 0.0f, minz), camrayN);
-  mtx44_type::unProject(IVPMatrix, fvec4(0.0f, 0.0f, maxz), camrayF);
-
-  vec4_type camrayHALF = (camrayN + camrayF) * float(0.5f);
+  vec4_type camrayHALF = (camrayN + camrayF) * T(0.5);
 
   mXNormal = mFarCorners[1] - mFarCorners[0];
   mYNormal = mFarCorners[3] - mFarCorners[0];
@@ -151,19 +152,19 @@ dmtx4 fmtx4_to_dmtx4(const fmtx4& dvec);
   mYNormal.normalizeInPlace();
   mZNormal.normalizeInPlace();
 
-  vec3_type inNormal = mZNormal * float(-1.0f);
+  vec3_type inNormal = mZNormal * T(-1.0);
   _nearPlane.CalcFromNormalAndOrigin(mZNormal, camrayN);
   _farPlane.CalcFromNormalAndOrigin(inNormal, camrayF);
 
-  _topPlane.CalcPlaneFromTriangle(mFarCorners[1], mFarCorners[0], mNearCorners[0], EPSILON);
-  _bottomPlane.CalcPlaneFromTriangle(mNearCorners[3], mFarCorners[3], mFarCorners[2], EPSILON);
-  _leftPlane.CalcPlaneFromTriangle(mNearCorners[0], mFarCorners[0], mFarCorners[3], EPSILON);
-  _rightPlane.CalcPlaneFromTriangle(mNearCorners[2], mFarCorners[2], mFarCorners[1], EPSILON);
+  _topPlane.CalcPlaneFromTriangle(mFarCorners[1], mFarCorners[0], mNearCorners[0], epsilon);
+  _bottomPlane.CalcPlaneFromTriangle(mNearCorners[3], mFarCorners[3], mFarCorners[2], epsilon);
+  _leftPlane.CalcPlaneFromTriangle(mNearCorners[0], mFarCorners[0], mFarCorners[3], epsilon);
+  _rightPlane.CalcPlaneFromTriangle(mNearCorners[2], mFarCorners[2], mFarCorners[1], epsilon);
   // CalcCorners()l
 
   mCenter = (mFarCorners[0] + mFarCorners[1] + mFarCorners[2] + mFarCorners[3] + mNearCorners[0] + mNearCorners[1] +
              mNearCorners[2] + mNearCorners[3]) *
-            0.125f;
+            T(0.125);
 
 #if 0 // test (camrayHALF should always be infront of planes, => all of these should return > 0
     F32 Dn = _nearPlane.pointDistance( camrayHALF );

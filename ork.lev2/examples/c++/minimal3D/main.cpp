@@ -69,14 +69,16 @@ struct Resources {
     // init frustum primitive
     ///////////////////////////////////////////////////
     _frustum_prim = std::make_shared<primitives::FrustumPrimitive>();
-    _frustum_prim->_colorTop    = fvec3(.5, 1, .5);
-    _frustum_prim->_colorBottom = fvec3(.5, 0, .5);
-    _frustum_prim->_colorNear  = fvec3(.5, .5, 1);
-    _frustum_prim->_colorFar   = fvec3(.5, .5, 0);
-    _frustum_prim->_colorLeft   = fvec3(0, .5, .5);
-    _frustum_prim->_colorRight  = fvec3(1, .5, .5);
-    auto frus_p = ctx->MTXI()->Persp(45.0, 1.0f, .1, 3);
-    auto frus_v = ctx->MTXI()->LookAt(fvec3(0, 0, -1), fvec3(0, 0, 0), fvec3(0, 1, 0));
+    _frustum_prim->_colorTop    = dvec3(.5, 1, .5);
+    _frustum_prim->_colorBottom = dvec3(.5, 0, .5);
+    _frustum_prim->_colorNear  = dvec3(.5, .5, 1);
+    _frustum_prim->_colorFar   = dvec3(.5, .5, 0);
+    _frustum_prim->_colorLeft   = dvec3(0, .5, .5);
+    _frustum_prim->_colorRight  = dvec3(1, .5, .5);
+    dmtx4 frus_p;
+    dmtx4 frus_v;
+    frus_p.perspective(45.0*DTOR, 1.0f, .1, 3);
+    frus_v.lookAt(dvec3(0, 0, -1), dvec3(0, 0, 0), dvec3(0, 1, 0));
     _frustum_prim->_frustum.set(frus_v, frus_p);
     _frustum_prim->gpuInit(ctx);
   }
