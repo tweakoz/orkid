@@ -288,19 +288,21 @@ struct EdgeChain {
 
   std::string dump() const;
   void reverseOf(const EdgeChain& src);
-
+  dvec3 center() const;
+  dvec3 centroid() const;
+  bool isPlanar() const;
+  dvec3 avgNormalOfFaces() const;
+  dvec3 avgNormalOfEdges() const;
+  bool containsVertexID(int ivtx) const;
+  bool containsVertexID(std::unordered_set<int>& verts) const;
+  void visit(const std::function<void(edge_ptr_t)>& visitor) const;
   edge_vect_t _edges;
   std::unordered_set<vertex_ptr_t> _vertices;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct EdgeLoop {
-  edge_vect_t _edges;
-  void reverseOf(const EdgeLoop& src);
-  dvec3 computeCenter() const;
-  dvec3 computeCentroid() const;
-  dvec3 computeNormal() const;
+struct EdgeLoop : public EdgeChain {
 };
 
 ///////////////////////////////////////////////////////////////////////////////

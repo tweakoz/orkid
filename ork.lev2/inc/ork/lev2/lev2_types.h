@@ -519,6 +519,7 @@ namespace ork::meshutil{
 	using material_info_map_t = std::map<std::string, material_info_ptr_t>;
 
   using vertex_ptr_t = std::shared_ptr<vertex>;
+  using vertex_vect_t = std::vector<vertex_ptr_t>;
   using vertex_const_ptr_t     = std::shared_ptr<const vertex>;
   using vertexpool_ptr_t = std::shared_ptr<vertexpool>;
   using vertexpool_constptr_t = std::shared_ptr<const vertexpool>;

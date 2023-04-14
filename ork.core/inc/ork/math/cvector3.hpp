@@ -18,6 +18,24 @@
 namespace ork {
 ///////////////////////////////////////////////////////////////////////////////
 
+template <typename T> 
+T Vector3<T>::areaOfTriangle(const Vector3<T>& a, const Vector3<T>& b, const Vector3<T>& c){
+  Vector3<T> ab = b - a;
+  Vector3<T> ac = c - a;
+  Vector3<T> cross = ab.crossWith(ac);
+  return 0.5 * cross.magnitude();
+}
+template <typename T> 
+T Vector3<T>::areaOfGeneralPolygon(const std::vector<Vector3<T>>& points){
+  T area = 0;
+  for (int i = 0; i < points.size(); i++) {
+    int j = (i + 1) % points.size();
+    int k = (i + 2) % points.size();
+    area += areaOfTriangle(points[i], points[j], points[k]);
+  }
+  return area;
+}
+
 template <typename T> Vector3<T> Vector3<T>::clamped(T min, T max) const {
   Vector3<T> rval = *this;
   rval.x          = (rval.x > max) ? max : (rval.x < min) ? min : rval.x;

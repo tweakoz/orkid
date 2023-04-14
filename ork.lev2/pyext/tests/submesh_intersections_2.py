@@ -29,9 +29,9 @@ class SceneGraphApp(BasicUiCamSgApp):
     self.uicam.lookAt( vec3(0,0,20), vec3(0,0,0), vec3(0,1,0) )
     self.camera.copyFrom( self.uicam.cameradata )
     self.numsteps_sim = 0
-    self.maxsteps_sim = 145
+    self.maxsteps_sim = 137
     self.numsteps_cut = 0
-    self.maxsteps_cut = 6
+    self.maxsteps_cut = 1
   ##############################################
   def onGpuInit(self,ctx):
     super().onGpuInit(ctx,add_grid=False)
@@ -202,7 +202,7 @@ class SceneGraphApp(BasicUiCamSgApp):
 
     clipped = clipMeshWithFrustum(submesh1,self.frustum2,self.maxsteps_cut)
     #dumpMeshVertices(clipped)
-    isec1 = clipped.convexHull(0)
+    isec1 = clipped # .convexHull(0)
     #isec1 = submesh1.convexHull(0)
     self.submesh_isect = isec1
     self.hull = clipped.convexHull(self.numsteps_sim) 

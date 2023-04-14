@@ -18,6 +18,8 @@ static constexpr double PLANE_EPSILON = 0.0001f;
 namespace ork::meshutil {
 ///////////////////////////////////////////////////////////////////////////////
 
+  const std::unordered_set<int> test_verts = {0,2,8,9};
+
 struct PolyVtxCount {
   int _front_count  = 0;
   int _back_count   = 0;
@@ -143,30 +145,36 @@ struct Clipper {
         // clip the input poly into clipped_front, clipped_back
         /////////////////////////////////////////////////
 
-        bool ok = slicing_plane.ClipPoly(clip_input, clipped_front, clipped_back);
+        bool ok = slicing_plane.ClipPoly( clip_input, //
+                                          clipped_front, // 
+                                          clipped_back); 
 
         ///////////////////////////////////////////
 
         auto process_clipped_poly = [&](std::vector<vertex>& clipped_poly_vertices,     //
                                         submesh& outsubmesh,                            //
-                                        std::deque<vertex_ptr_t>& planar_verts_deque) { //
+                                        vertex_set_t& planar_verts) { //
           std::vector<vertex_ptr_t> merged_vertices;
 
           /////////////////////////////////////////
           // classify all points in clipped poly, with respect to plane
-          //  put all points which live on plane into planar_verts_deque
+          //  put all points which live on plane into planar_verts
           /////////////////////////////////////////
 
-          for (auto& v : clipped_poly_vertices) {
+          std::vector<vertex_ptr_t> potentials;
 
-            auto merged_v = outsubmesh.mergeVertex(v);
-            merged_v->clearAllExceptPosition();
-            merged_vertices.push_back(merged_v);
-            double point_dist_to_plane = abs(slicing_plane.pointDistance(merged_v->mPos));
+          int inumv = clipped_poly_vertices.size();
+          for (int iv = 0; iv < inumv; iv++) {
+            int iv0 = iv;
+            auto& v0 = clipped_poly_vertices[iv0];
+            auto merged_v0 = outsubmesh.mergeVertex(v0);
+
+            merged_v0->clearAllExceptPosition();
+            merged_vertices.push_back(merged_v0);
+            double point_dist_to_plane = abs(slicing_plane.pointDistance(merged_v0->mPos));
             if (point_dist_to_plane < PLANE_EPSILON) {
-              planar_verts_deque.push_back(merged_v);
-            } else {
-            }
+                planar_verts.insert(merged_v0);
+            } 
           }
 
           /////////////////////////////////////////
@@ -184,17 +192,17 @@ struct Clipper {
         ///////////////////////////////////////////
 
         if (do_front)
-          process_clipped_poly(clipped_front.mVerts, outsmesh_Front, front_planar_verts_deque);
+          process_clipped_poly(clipped_front.mVerts, outsmesh_Front, front_planar_verts);
 
         if (do_back)
-          process_clipped_poly(clipped_back.mVerts, outsmesh_Back, back_planar_verts_deque);
+          process_clipped_poly(clipped_back.mVerts, outsmesh_Back, back_planar_verts);
       } // clipped ?
     }); // inpsubmesh.visitAllPolys( [&](poly_const_ptr_t input_poly){
   }
 
   edge_vect_t back_planar_edges, front_planar_edges;
-  std::deque<vertex_ptr_t> front_planar_verts_deque;
-  std::deque<vertex_ptr_t> back_planar_verts_deque;
+  vertex_set_t front_planar_verts;
+  vertex_set_t back_planar_verts;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -206,7 +214,7 @@ void _submeshClipWithPlaneConvex(
     bool flip_orientation,
     submesh& outsmesh_Front, //
     submesh& outsmesh_Back) {
-
+    /*
   Clipper clipper(inpsubmesh, slicing_plane, outsmesh_Front, outsmesh_Back);
 
   ///////////////////////////////////////////////////////////
@@ -214,10 +222,10 @@ void _submeshClipWithPlaneConvex(
   ///////////////////////////////////////////////////////////
 
   auto do_close = [&](submesh& outsubmesh, //
-                      std::deque<vertex_ptr_t>& planar_verts_deque,
+                      vertex_set_t& planar_verts,
                       bool front) { //
 
-    if( planar_verts_deque.size() < 3){
+    if( planar_verts.size() < 3){
       return;
     }
     
@@ -226,7 +234,7 @@ void _submeshClipWithPlaneConvex(
     /////////////////////////////////////////
 
     std::vector<vertex_ptr_t> merged_vertices;
-    for (auto v: planar_verts_deque ) {
+    for (auto v: planar_verts ) {
       auto vm = outsubmesh.mergeVertex(*v);
       merged_vertices.push_back(vm);
     }
@@ -264,9 +272,10 @@ void _submeshClipWithPlaneConvex(
   };
 
   if (do_front and close_mesh)
-    do_close(outsmesh_Front, clipper.front_planar_verts_deque, true);
+    do_close(outsmesh_Front, clipper.front_planar_verts, true);
   if (do_back and close_mesh)
-    do_close(outsmesh_Back, clipper.back_planar_verts_deque, false);
+    do_close(outsmesh_Back, clipper.back_planar_verts, false);
+    */
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -281,6 +290,8 @@ void _submeshClipWithPlaneConcave(
     submesh& outsmesh_Front, //
     submesh& outsmesh_Back) {
 
+    printf( "///////////\n");
+
   Clipper clipper(inpsubmesh, slicing_plane, outsmesh_Front, outsmesh_Back);
 
   ///////////////////////////////////////////////////////////
@@ -288,22 +299,41 @@ void _submeshClipWithPlaneConcave(
   ///////////////////////////////////////////////////////////
 
   auto do_close = [&](submesh& outsubmesh, //
-                      std::deque<vertex_ptr_t>& planar_verts_deque,
+                      vertex_set_t& planar_verts,
                       bool front) { //
+
     /////////////////////////////////////////
     //  take note of edges which lie on the
     //  slicing plane
     /////////////////////////////////////////
 
-    edge_vect_t planar_edges;
+    edge_set_t all_edges;
+    outsubmesh.visitAllPolys([&](poly_ptr_t poly) {
+      poly->visitEdges([&](edge_ptr_t e) {
+        all_edges.insert(e);
+      });
+    });
 
-    while (planar_verts_deque.size() >= 2) {
-      auto v0 = planar_verts_deque[0];
-      auto v1 = planar_verts_deque[1];
-      auto e  = std::make_shared<edge>(v0, v1);
-      planar_edges.push_back(e);
-      planar_verts_deque.pop_front();
-      planar_verts_deque.pop_front();
+    edge_vect_t planar_edges;
+    
+    int index = 0;
+    planar_verts.visit([&](vertex_ptr_t v) {
+      //if (test_verts.count(v->_poolindex)) {
+        printf("v%d : %f %f %f\n", v->_poolindex, v->mPos.x, v->mPos.y, v->mPos.z);
+      //}
+      planar_verts.visit([&](vertex_ptr_t v2) {
+        if (v == v2)
+          return;
+        auto e = std::make_shared<edge>(v, v2);
+        if (all_edges.contains(e)) {
+          planar_edges.push_back(e);
+        }
+      });
+      index++;
+    });
+
+    for (auto e : planar_edges) {
+      printf("e %d %d\n", e->_vertexA->_poolindex, e->_vertexB->_poolindex);
     }
 
     /////////////////////////////////////////
@@ -321,45 +351,62 @@ void _submeshClipWithPlaneConcave(
       }
       _linker.link();
 
-      // create a new triangle fan for each edge loop
+      // create a new polygon for each edge loop
+
+      dvec3 centroid = outsubmesh.centerOfVertices();
 
       for (auto loop : _linker._edge_loops) {
           
+          auto loop_center = loop->center();
           // sort vertices by angle around center (relative to first vertex)
   
           auto v0 = loop->_edges[0]->_vertexA;
-          auto d0 = (v0->mPos - loop->_center).normalized();
+          auto d0 = (v0->mPos - loop_center).normalized();
   
           std::map<double,vertex_ptr_t> vertices_by_angle;
           vertices_by_angle[0] = v0;
   
           for( int iv=1; iv<loop->_edges.size(); iv++ ) {
             auto vn = loop->_edges[iv]->_vertexA;
-            auto dn = (vn->mPos - loop->_center).normalized();
+            auto dn = (vn->mPos - loop_center).normalized();
             auto cross = dn.crossWith(d0);
             double angle = dn.orientedAngle(d0, cross);
             vertices_by_angle[-angle] = vn;
           }
   
           std::vector<vertex_ptr_t> sorted_vertices;
-          for( auto it=vertices_by_angle.begin(); it!=vertices_by_angle.end(); it++ ){
-            auto v = it->second;
+          for( auto it : vertices_by_angle ){
+            auto v = it.second;
             sorted_vertices.push_back(v);
           }
 
-          outsubmesh.mergePoly(Polygon(sorted_vertices));
+          if( sorted_vertices.size() < 3 ) {
+            continue;
+          }
+
+          Polygon p1(sorted_vertices);
+          auto vn0 = (sorted_vertices[0]->mPos-centroid).normalized();
+          dvec3 pn = p1.computeNormal();
+          if( pn.dotWith(vn0) < 0 ) {
+            std::reverse(sorted_vertices.begin(),sorted_vertices.end());
+            Polygon p2(sorted_vertices);
+            outsubmesh.mergePoly(p2);
+          }
+          else{
+            outsubmesh.mergePoly(p1);
+          }
 
 
       }
 
     } // if (planar_edges.size()) {
-
+    
   };
 
   if (do_front and close_mesh)
-    do_close(outsmesh_Front, clipper.front_planar_verts_deque, true);
-  if (do_back and close_mesh)
-    do_close(outsmesh_Back, clipper.back_planar_verts_deque, false);
+    do_close(outsmesh_Front, clipper.front_planar_verts, true);
+  //if (do_back and close_mesh)
+    //do_close(outsmesh_Back, clipper.back_planar_verts, false);
 
   ///////////////////////////////////////////////////////////
 }

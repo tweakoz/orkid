@@ -289,7 +289,7 @@ def stripSubmesh(inpsubmesh):
 
 def clipMeshWithPlane(inpsubmesh,plane):
   clipped = inpsubmesh.clippedWithPlane(plane=plane,
-                                      close_mesh=False, 
+                                      close_mesh=True, 
                                       flip_orientation=False )
 
   #print("#####################")
@@ -310,25 +310,18 @@ def clipMeshWithFrustum(inpsubmesh,frustum, nsteps=10):
   submesh_out = inpsubmesh
   if nsteps>0:
     submesh_out = stripSubmesh(inpsubmesh)
-    nsteps -= 1
-  if nsteps>0:
+  if nsteps>1:
     submesh_out = clipMeshWithPlane(submesh_out,frustum.nearPlane)
-    nsteps -= 1
-  if nsteps>0:
+  if nsteps>2:
     submesh_out = clipMeshWithPlane(submesh_out,frustum.farPlane)
-    nsteps -= 1
-  if nsteps>0:
+  if nsteps>3:
     submesh_out = clipMeshWithPlane(submesh_out,frustum.leftPlane)
-    nsteps -= 1
-  if nsteps>0:
+  if nsteps>4:
     submesh_out = clipMeshWithPlane(submesh_out,frustum.rightPlane)
-    nsteps -= 1
-  if nsteps>0:
+  if nsteps>5:
     submesh_out = clipMeshWithPlane(submesh_out,frustum.topPlane)
-    nsteps -= 1
-  if nsteps>0:
+  if nsteps>6:
     submesh_out = clipMeshWithPlane(submesh_out,frustum.bottomPlane)
-    nsteps -= 1
 
   return submesh_out
 

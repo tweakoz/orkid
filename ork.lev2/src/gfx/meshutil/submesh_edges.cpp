@@ -49,7 +49,7 @@ vertex_ptr_t edge::edgeVertex(int iv) const {
 ///////////////////////////////////////////////////////////////////////////////
 
 uint64_t edge::hash(void) const {
-  uint64_t uv = (_vertexA->_poolindex < _vertexB->_poolindex) //
+  uint64_t uv = true  //(_vertexA->_poolindex < _vertexB->_poolindex) //
                ? uint64_t(_vertexA->_poolindex) | (uint64_t(_vertexB->_poolindex) << 32)
                : uint64_t(_vertexB->_poolindex) | (uint64_t(_vertexA->_poolindex) << 32);
   return uv;
@@ -85,6 +85,109 @@ void EdgeChain::reverseOf(const EdgeChain& src) {
   _edges = _reverse_edgelist(src._edges);
 }
 
+dvec3 EdgeChain::center() const{
+  dvec3 rval;
+  for(auto e : _edges) {
+    rval += e->_vertexA->mPos;
+  }
+  return rval * 1.0/double(_edges.size());
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+dvec3 EdgeChain::centroid() const{
+  // compute centroid via weighting area of triangles
+  dvec3 vc = center();
+  struct tri{
+    dvec3 a,b,c;
+  };
+  std::multimap<double,tri> tri_by_area;
+  double total_area = 0.0;
+  for(auto e : _edges) {
+    auto va = e->_vertexA->mPos;
+    auto vb = e->_vertexB->mPos;
+    auto tri_area_abc = dvec3::areaOfTriangle(va,vb,vc);
+    total_area += tri_area_abc;
+    tri_by_area.insert(std::make_pair(tri_area_abc,tri{va,vb,vc}));
+  }
+  // add weighted centroid of each triangle
+  dvec3 rval;
+  for( auto it : tri_by_area ) {
+    auto tri_area = it.first;
+    auto tri = it.second;
+    auto tri_center = (tri.a+tri.b+tri.c)*1.0/3.0;
+    rval += tri_center * tri_area;
+  }
+  rval *= 1.0/total_area;
+  return rval;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void EdgeChain::visit(const std::function<void(edge_ptr_t)>& visitor) const {
+  for (auto e : _edges) {
+    visitor(e);
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+bool EdgeChain::isPlanar() const{
+  bool rval = true;
+  OrkAssert(_edges.size()>2);
+  auto e0 = _edges[0];
+  auto e1 = _edges[1];
+  auto va = e0->_vertexA;
+  auto vb = e0->_vertexB;
+  auto vc = e1->_vertexB;
+  auto va_pos = va->mPos;
+  auto vb_pos = vb->mPos;
+  auto vc_pos = vc->mPos;
+  Plane plane(va_pos,vb_pos,vc_pos);
+  visit([&](edge_ptr_t e){
+    auto va = e->_vertexA->mPos;
+    auto vb = e->_vertexB->mPos;
+    double da = plane.pointDistance(va);
+    double db = plane.pointDistance(vb);
+    if( fabs(da)>0.0001 or fabs(db)>0.0001 )
+      rval = false;
+  });
+  return rval;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+dvec3 EdgeChain::avgNormalOfFaces() const{
+  dvec3 rval;
+  auto c = center();
+  for(auto e : _edges) {
+    auto a = e->_vertexA->mPos;
+    auto b = e->_vertexB->mPos;
+    auto dba = (b-a).normalized();
+    auto dca = (c-b).normalized();
+    rval += dba.crossWith(dca);
+  }
+  return rval.normalized();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+dvec3 EdgeChain::avgNormalOfEdges() const{
+  dvec3 rval;
+  dvec3 nf = avgNormalOfFaces();
+  for(auto e : _edges) {
+    auto a = e->_vertexA->mPos;
+    auto b = e->_vertexB->mPos;
+    auto dba = (b-a).normalized();
+    auto edge_nrm = dba.crossWith(nf);
+    rval += edge_nrm;
+  }
+  rval = rval.normalized();
+  return rval;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 std::string EdgeChain::dump() const {
   std::string rval;
   vertex_set_t visited_verts;
@@ -102,47 +205,6 @@ std::string EdgeChain::dump() const {
   }
   return rval;
 }  
-
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-
-void EdgeLoop::reverseOf(const EdgeLoop& src) {
-  _edges = _reverse_edgelist(src._edges);
-}
-
-dvec3 EdgeLoop::computeCenter() const{
-  dvec3 rval;
-  for(auto e : _edges) {
-    rval += e->_vertexA->mPos;
-  }
-  return rval * 1.0/double(_edges.size());
-}
-dvec3 EdgeLoop::computeCentroid() const{
-  // compute centroid via weighting area of triangles
-  dvec3 center = computeCenter();
-  // add weighted centroid of each triangle
-  dvec3 rval;
-  for(auto e : _edges) {
-    auto va = e->_vertexA->mPos;
-    auto vb = e->_vertexB->mPos;
-    auto vc = center;
-
-    // compute area of triangle va,vb,vc using half cross product formula
-    auto tri_area_abc = 
-
-}
-
-dvec3 EdgeLoop::computeNormal() const{
-  // compute normal via cross products
-  dvec3 rval;
-  for(auto e : _edges) {
-    auto va = e->_vertexA;
-    auto vb = e->_vertexB;
-    auto nrm = cross(vb->mPos-va->mPos,va->mNrm);
-    rval += nrm;
-  }
-  return rval.Normal();
-}
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -225,6 +287,28 @@ edge_chain_ptr_t EdgeChainLinker::findChainForVertex(vertex_ptr_t va) {
   return nullptr;
 }
 //////////////////////////////////////////////////////////
+bool EdgeChain::containsVertexID(int ivtx) const{
+  for(auto e : _edges) {
+    if( e->_vertexA->_poolindex == ivtx )
+      return true;
+    if( e->_vertexB->_poolindex == ivtx )
+      return true;
+  }
+  return false;
+}
+//////////////////////////////////////////////////////////
+bool EdgeChain::containsVertexID(std::unordered_set<int>& verts) const{
+  for(auto e : _edges) {
+    int iva = e->_vertexA->_poolindex;
+    int ivb = e->_vertexB->_poolindex;
+    if( verts.find(iva)!=verts.end() )
+      return true;
+    if( verts.find(ivb)!=verts.end() )
+      return true;
+  }
+  return false;
+}
+//////////////////////////////////////////////////////////
 void EdgeChainLinker::removeChain(edge_chain_ptr_t chain_to_remove) {
   // printf( "removeChain chain<%p> numedges<%zu>\n", (void*) chain_to_remove.get(), chain_to_remove->_edges.size() );
   auto the_lambda = std::remove_if(_edge_chains.begin(), _edge_chains.end(), [chain_to_remove](edge_chain_ptr_t testchain) {
@@ -271,7 +355,9 @@ void EdgeChainLinker::link() {
   for (int i = 0; i < _edge_chains.size(); i++) {
     auto chain = _edge_chains[i];
     auto d = chain->dump();
-    if (0)
+    if (0){
+      std::unordered_set<int> verts = {0,2,8,9};
+      if(chain->containsVertexID(verts))
       printf(
           "[%s] chain %d:%p | numedges<%zu> [%s]\n",
           _name.c_str(),
@@ -279,6 +365,7 @@ void EdgeChainLinker::link() {
           chain.get(),
           chain->_edges.size(),
           d.c_str());
+    }
   }
 
   //////////////////////////////////////////////////////////////////////////

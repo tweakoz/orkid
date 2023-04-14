@@ -255,6 +255,10 @@ template <typename T> struct Vector3 final
     return Vector3(T(0),T(sinf(radians)),T(-cosf(radians)));
   }
 
+  static T areaOfTriangle(const Vector3& a, const Vector3& b, const Vector3& c);
+  static T areaOfGeneralPolygon(const std::vector<Vector3>& points);
+
+
   T* asArray() const {
     return const_cast<T*>(&this->x);
   }
