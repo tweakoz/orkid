@@ -325,6 +325,15 @@ bool Polygon::containsVertex(vertex_const_ptr_t v) const{
   return false;
 }
 
+bool Polygon::containsVertices(vertex_set_t vset) const{
+  for( auto vitem : vset._the_map ){
+    auto v = vitem.second;
+    if( not containsVertex(v) )
+      return false;
+  }
+  return true;
+}
+
 ////////////////////////////////////////////////////////////////
 
 bool Polygon::containsEdge(const edge& e, bool ordered) const{

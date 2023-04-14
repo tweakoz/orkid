@@ -94,7 +94,7 @@ struct RenderContextInstData {
 //  render modes, target, etc....
 ///////////////////////////////////////////////////////////////////////////////
 
-typedef svar64_t rendervar_t;
+//typedef svar64_t rendervar_t;
 
 struct RenderContextFrameData {
 

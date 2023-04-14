@@ -16,7 +16,7 @@ ORK_PUSH_SYMVIZ_PUBLIC
 
 namespace ork::python {
 
-using varval_t    = ork::varmap::VarMap::value_type;
+using varval_t    = varmap::var_t;
 using decoderfn_t = std::function<void(const pybind11::object& inpval, varval_t& outval)>;
 using encoderfn_t = std::function<void(const varval_t& inpval, pybind11::object& outval)>;
 

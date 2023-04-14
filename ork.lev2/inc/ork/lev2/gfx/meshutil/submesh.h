@@ -88,6 +88,8 @@ struct submesh {
   vertex_ptr_t vertex(int i) const;
   poly_ptr_t poly(int i) const;
 
+  void dumpPolys( std::string hdr, bool showverts=false) const;
+
   //////////////////////////////////////////////////////////////////////////////
 
   void copy( submesh& dest,

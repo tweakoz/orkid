@@ -56,7 +56,7 @@ public:
       mfC = c;
     }
   }
-  inline void CalcFromTwoPoints(float x0, float y0, float x1, float y1) {
+  inline void CalcFromTwoPoints(T x0, T y0, T x1, T y1) {
     T dX = (x1 - x0);
     if (dX == T(0.0f)) {
       if (y1 < y0)
@@ -106,10 +106,10 @@ public:
       mfC  = -c;
     }
   }
-  float pointDistance(const vec2_type& point) const {
+  T pointDistance(const vec2_type& point) const {
     return mNormal.dotWith(point) + mfC;
   }
-  float pointDistance(float fx, float fy) const {
+  T pointDistance(T fx, T fy) const {
     return (mNormal.x * fx) + (mNormal.y * fy) + mfC;
   }
   bool IsPointInFront(const vec2_type& point) const {
@@ -119,11 +119,11 @@ public:
   bool IsPointBehind(const vec2_type& point) const {
     return (!IsPointInFront(point));
   }
-  bool IsPointInFront(float fx, float fy) const {
+  bool IsPointInFront(T fx, T fy) const {
     T distance = pointDistance(fx, fy);
     return (distance >= T(0.0f));
   }
-  bool IsPointBehind(float fx, float fy) const {
+  bool IsPointBehind(T fx, T fy) const {
     return (!IsPointInFront(fx, fy));
   }
 };
@@ -186,8 +186,8 @@ template <typename T> class TLineSegment2Helper {
   T mMag;
 
 public:
-  float pointDistanceSquared(const vec2_type& pt) const;
-  float pointDistancePercent(const vec2_type& pt) const;
+  T pointDistanceSquared(const vec2_type& pt) const;
+  T pointDistancePercent(const vec2_type& pt) const;
   T GetMag() const {
     return (mMag);
   }
@@ -211,14 +211,14 @@ template <typename T> struct Ray3 {
   Ray3(const vec3_type& o, const vec3_type& d)
       : mOrigin(o)
       , mDirection(d)
-      , mInverseDirection(1.0f / d.x, 1.0f / d.y, 1.0f / d.z)
+      , mInverseDirection(T(1) / d.x, T(1) / d.y, T(1) / d.z)
       , mID(-1) {
     mdot_dd = mDirection.dotWith(mDirection);
     mdot_do = mDirection.dotWith(mOrigin);
     mdot_oo = mOrigin.dotWith(mOrigin);
-    mbSignX = (mInverseDirection.x >= 0.0f);
-    mbSignY = (mInverseDirection.y >= 0.0f);
-    mbSignZ = (mInverseDirection.z >= 0.0f);
+    mbSignX = (mInverseDirection.x >= T(0));
+    mbSignY = (mInverseDirection.y >= T(0));
+    mbSignZ = (mInverseDirection.z >= T(0));
   }
   void SetID(int id) {
     mID = id;
@@ -227,14 +227,14 @@ template <typename T> struct Ray3 {
     return mID;
   }
 
-  void lerp(const Ray3& a, const Ray3& b, float fi) {
+  void lerp(const Ray3& a, const Ray3& b, T fi) {
     vec3_type o, d;
     o.lerp(a.mOrigin, b.mOrigin, fi);
     d.lerp(a.mDirection, b.mDirection, fi);
     d.normalizeInPlace();
     *this = Ray3(o, d);
   }
-  void BiLerp(const Ray3& x0y0, const Ray3& x1y0, const Ray3& x0y1, const Ray3& x1y1, float fx, float fy) {
+  void BiLerp(const Ray3& x0y0, const Ray3& x1y0, const Ray3& x0y1, const Ray3& x1y1, T fx, T fy) {
     Ray3 t;
     t.lerp(x0y0, x1y0, fx);
     Ray3 b;
@@ -245,8 +245,8 @@ template <typename T> struct Ray3 {
   bool intersectSegment(
       const TLineSegment3<T>& segment,      //
       vec3_type& intersect_out,          //
-      float coplanar_threshold   = 0.7f, //
-      float length_error_threshold = 1e-3f //
+      T coplanar_threshold   = T(0.7), //
+      T length_error_threshold = T(1e-3) //
   ) const { //
 
     auto da = mDirection; // Unnormalized direction of the ray
@@ -294,8 +294,8 @@ using fray3_constptr_t = std::shared_ptr<const fray3>;
 using dray3_ptr_t      = std::shared_ptr<dray3>;
 using dray3_constptr_t = std::shared_ptr<const dray3>;
 
-//using LineSegment2 = TLineSegment2<float>;
-//using LineSegment3 = TLineSegment3<float>;
+//using LineSegment2 = TLineSegment2<T>;
+//using LineSegment3 = TLineSegment3<T>;
 using LineSegment2Helper = TLineSegment2Helper<float>;
 
 using flineseg2 = TLineSegment2<float>;

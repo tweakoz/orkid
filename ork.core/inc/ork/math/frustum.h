@@ -71,12 +71,6 @@ template <typename T> void TFrustum<T>::SupportMapping(const vec3_type& v, vec3_
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T> void TFrustum<T>::CalcCorners() {
-  // private const int NearPlaneIndex = 0;
-  // private const int FarPlaneIndex = 1;
-  // private const int LeftPlaneIndex = 2;
-  // private const int RightPlaneIndex = 3;
-  // private const int TopPlaneIndex = 4;
-  // private const int BottomPlaneIndex = 5;
 
   vec3_type ray_dir, ray_pos;
 

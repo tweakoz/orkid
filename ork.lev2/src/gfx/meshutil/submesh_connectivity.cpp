@@ -212,44 +212,17 @@ poly_ptr_t DefaultConnectivity::mergePoly(const Polygon& ply) {
   }
   ///////////////////////////////
   // zero area poly removal
-  switch (inumv) {
-    case 3: {
-      if ((ply._vertices[0]->_poolindex == ply._vertices[1]->_poolindex) ||
-          (ply._vertices[1]->_poolindex == ply._vertices[2]->_poolindex) ||
-          (ply._vertices[2]->_poolindex == ply._vertices[0]->_poolindex)) {
-        if (0)
-          logchan_connectivity->log(
-              "Mesh::mergePoly() removing zero area tri<%d %d %d>",
-              ply._vertices[0]->_poolindex,
-              ply._vertices[1]->_poolindex,
-              ply._vertices[2]->_poolindex);
+  ///////////////////////////////
+  double area = ply.computeArea();
+  if(area<0.00001){
 
-        return nullptr;
-      }
-      break;
+    std::string poly_str = "[";
+    for (auto v : ply._vertices) {
+      poly_str += FormatString(" %d", v->_poolindex);
     }
-    case 4: {
-      if ((ply._vertices[0]->_poolindex == ply._vertices[1]->_poolindex) ||
-          (ply._vertices[0]->_poolindex == ply._vertices[2]->_poolindex) ||
-          (ply._vertices[0]->_poolindex == ply._vertices[3]->_poolindex) ||
-          (ply._vertices[1]->_poolindex == ply._vertices[2]->_poolindex) ||
-          (ply._vertices[1]->_poolindex == ply._vertices[3]->_poolindex) ||
-          (ply._vertices[2]->_poolindex == ply._vertices[3]->_poolindex)) {
-        if (0)
-          logchan_connectivity->log(
-              "Mesh::mergePoly() removing zero area quad<%d %d %d %d>",
-              ply._vertices[0]->_poolindex,
-              ply._vertices[1]->_poolindex,
-              ply._vertices[2]->_poolindex,
-              ply._vertices[3]->_poolindex);
-
-        return nullptr;
-      }
-      break;
-    }
-    default:
-      break;
-      // TODO n-sided polys
+    poly_str += " ]";
+    logchan_connectivity->log("Mesh::mergePoly() removing zero area poly %s", poly_str.c_str());
+    return nullptr;
   }
   //////////////////////////////
   // dupe check
@@ -258,13 +231,12 @@ poly_ptr_t DefaultConnectivity::mergePoly(const Polygon& ply) {
   auto itfhm    = _polymap.find(ucrc);
   ///////////////////////////////
   if (itfhm == _polymap.end()) { // no match
-
     int inewpi = (int)_orderedPolys.size();
     //////////////////////////////////////////////////
     // connect to vertices
+    //////////////////////////////////////////////////
     for (int i = 0; i < inumv; i++) {
       auto vtx = ply._vertices[i];
-      // vtx->ConnectToPoly(inewpi);
     }
     nply.SetAnnoMap(ply.GetAnnoMap());
     auto new_poly = std::make_shared<Polygon>(nply);

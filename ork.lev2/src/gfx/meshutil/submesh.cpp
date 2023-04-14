@@ -550,6 +550,9 @@ dvec3 submesh::centerOfVertices() const {
 dvec3 submesh::centerOfPolys() const {
   return _connectivityIMPL->centerOfPolys();
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
 dvec3 submesh::centerOfPolysConcurrent() const {
   //_concmutex.Lock();
   auto rval = _connectivityIMPL->centerOfPolys();
@@ -557,6 +560,27 @@ dvec3 submesh::centerOfPolysConcurrent() const {
   return rval;
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
+void submesh::dumpPolys(std::string hdr, bool showverts) const{
+  int index = 0;
+  if( hdr.length() )
+    printf( "polys <%s>: \n", hdr.c_str() );
+  visitAllPolys([&](poly_const_ptr_t p) {
+    printf( "  p %d [ ", index );
+    for( auto v : p->_vertices ) {
+      if( showverts ){
+        printf( "%d<%f %f %f> ", v->_poolindex, v->mPos.x, v->mPos.y, v->mPos.z );
+      }
+      else{
+        printf( "%d ", v->_poolindex );
+      }
+    }
+    printf( "]\n" );
+    index++;
+  });
+}
+  
 ///////////////////////////////////////////////////////////////////////////////
 
 bool submesh::isVertexInsideConvexHull(vertex_const_ptr_t vtx) const{

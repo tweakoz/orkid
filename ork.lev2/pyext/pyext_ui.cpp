@@ -257,11 +257,11 @@ void pyinit_ui(py::module& module_lev2) {
   type_codec->registerStdCodec<uiviewport_ptr_t>(viewport_type);
 
   /////////////////////////////////////////////////////////////////////////////////
-  auto decodeUIargs = [type_codec](py::list py_args) -> std::vector<svar64_t> {
-    std::vector<svar64_t> decoded_args;
+  auto decodeUIargs = [type_codec](py::list py_args) -> std::vector<svar128_t> {
+    std::vector<svar128_t> decoded_args;
     for (auto list_item : py_args) {
       auto item_val = py::cast<py::object>(list_item);
-      svar64_t val  = type_codec->decode(item_val);
+      svar128_t val  = type_codec->decode(item_val);
       decoded_args.push_back(val);
     }
     return decoded_args;

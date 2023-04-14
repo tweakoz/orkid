@@ -130,7 +130,7 @@ typedef std::function<void(lev2::RenderContextFrameData& RCFD)> prerendercallbac
 
 struct DrawableBuffer {
 public:
-  using rendervar_t = svar64_t;
+  //using rendervar_t = svar64_t;
   using usermap_t   = orklut<CrcString, rendervar_t>;
 
   static std::atomic<int> _gate;

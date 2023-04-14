@@ -29,9 +29,9 @@ class SceneGraphApp(BasicUiCamSgApp):
     self.uicam.lookAt( vec3(0,0,20), vec3(0,0,0), vec3(0,1,0) )
     self.camera.copyFrom( self.uicam.cameradata )
     self.numsteps_sim = 0
-    self.maxsteps_sim = 137
+    self.maxsteps_sim = 451
     self.numsteps_cut = 0
-    self.maxsteps_cut = 1
+    self.maxsteps_cut = 2
   ##############################################
   def onGpuInit(self,ctx):
     super().onGpuInit(ctx,add_grid=False)
@@ -41,8 +41,8 @@ class SceneGraphApp(BasicUiCamSgApp):
     material = solid_wire_pipeline.sharedMaterial
     solid_wire_pipeline.bindParam( material.param("m"), tokens.RCFD_M)
     ##############################
-    self.fpmtx1 = mtx4.perspective(45*constants.DTOR,1,0.3,5)
-    self.fvmtx1 = mtx4.lookAt(vec3(0,0,1),vec3(0,0,0),vec3(0,1,0))
+    self.fpmtx1 = dmtx4.perspective(45*constants.DTOR,1,0.3,5)
+    self.fvmtx1 = dmtx4.lookAt(dvec3(0,0,1),dvec3(0,0,0),dvec3(0,1,0))
     self.frustum1 = Frustum()
     self.frustum1.set(self.fvmtx1,self.fpmtx1)
     self.frusmesh1 = meshutil.SubMesh.createFromFrustum(self.frustum1,projective_rect_uv=True)
@@ -51,10 +51,10 @@ class SceneGraphApp(BasicUiCamSgApp):
     self.sgnode1 = self.prim1.createNode("m1",self.layer1,self.pseudowire_pipe)
     self.sgnode1.enabled = True
     self.sgnode1.sortkey = 2;
-    self.sgnode1.modcolor = vec4(1,0,0,1)
+    self.sgnode1.modcolor = vec4(0.25,0,0,1)
     ##############################
-    self.fpmtx2 = mtx4.perspective(45*constants.DTOR,1,0.3,5)
-    self.fvmtx2 = mtx4.lookAt(vec3(1,0,1),vec3(1,1,0),vec3(0,1,0))
+    self.fpmtx2 = dmtx4.perspective(45*constants.DTOR,1,0.3,5)
+    self.fvmtx2 = dmtx4.lookAt(dvec3(1,0,1),dvec3(1,1,0),dvec3(0,1,0))
     self.frustum2 = Frustum()
     self.frustum2.set(self.fvmtx2,self.fpmtx2)
     self.frusmesh2 = meshutil.SubMesh.createFromFrustum(self.frustum2,projective_rect_uv=True)
@@ -63,7 +63,7 @@ class SceneGraphApp(BasicUiCamSgApp):
     self.sgnode2 = self.prim2.createNode("m2",self.layer1,self.pseudowire_pipe)
     self.sgnode2.enabled = True
     self.sgnode2.sortkey = 2;
-    self.sgnode2.modcolor = vec4(0,1,0,1)
+    self.sgnode2.modcolor = vec4(0,0.25,0,1)
     ##############################
     submesh_isect = clipMeshWithFrustum(self.submesh1,self.frustum2)
     self.barysub_isect = submesh_isect.withBarycentricUVs()
@@ -74,6 +74,7 @@ class SceneGraphApp(BasicUiCamSgApp):
     self.pts_drawabledata = LabeledPointDrawableData()
     self.pts_drawabledata.pipeline_points = self.createPointsPipeline()
     self.sgnode_pts = self.layer1.createDrawableNodeFromData("points",self.pts_drawabledata)
+    self.sgnode_pts.sortkey = 100000
     ################################################################################
     class UpdateSettings:
       def __init__(self):
@@ -177,14 +178,14 @@ class SceneGraphApp(BasicUiCamSgApp):
       ##############################
       θ = self.abstime # * math.pi * 2.0 * 0.1
       #
-      self.fpmtx1 = mtx4.perspective(self.upd_c1.computeFOV(),1,0.3,5)
-      self.fpmtx2 = mtx4.perspective(self.upd_c2.computeFOV(),1,0.3,5)
+      self.fpmtx1 = dmtx4.perspective(self.upd_c1.computeFOV(),1,0.3,5)
+      self.fpmtx2 = dmtx4.perspective(self.upd_c2.computeFOV(),1,0.3,5)
       #2
       lat_1 = self.upd_c1.computeLAT()
       lat_2 = self.upd_c2.computeLAT()
       PLANAR_BIAS = 0.0016
-      self.fvmtx1 = mtx4.lookAt(vec3(0,0,1),vec3(lat_1,0,0),vec3(0,1,0))
-      self.fvmtx2 = mtx4.lookAt(vec3(1,0,1+PLANAR_BIAS),vec3(1,lat_2,PLANAR_BIAS),vec3(0,1,0))
+      self.fvmtx1 = dmtx4.lookAt(dvec3(0,0,1),dvec3(lat_1,0,0),dvec3(0,1,0))
+      self.fvmtx2 = dmtx4.lookAt(dvec3(1,0,1+PLANAR_BIAS),dvec3(1,lat_2,PLANAR_BIAS),dvec3(0,1,0))
       #
       self.frustum1.set(self.fvmtx1,self.fpmtx1)
       self.frustum2.set(self.fvmtx2,self.fpmtx2)
@@ -208,7 +209,8 @@ class SceneGraphApp(BasicUiCamSgApp):
     self.hull = clipped #clipped.convexHull(self.numsteps_sim) 
 
     if self.hull!=None:
-        self.pts_drawabledata.pointsmesh = self.hull
+        clipped.dumpPolys("clippedout")
+        self.pts_drawabledata.pointsmesh = clipped
         # intersection mesh
         self.barysub_isect = self.submesh_isect.withBarycentricUVs()
         self.prim_isect.fromSubMesh(self.barysub_isect,self.context)
@@ -220,6 +222,9 @@ class SceneGraphApp(BasicUiCamSgApp):
   def onUiEvent(self,uievent):
     super().onUiEvent(uievent)
     if uievent.code == tokens.KEY_DOWN.hashed or uievent.code == tokens.KEY_REPEAT.hashed:
+        if uievent.keycode == 32:
+          self.maxsteps_sim = (self.maxsteps_sim + 10)
+          print(self.maxsteps_sim)
         if uievent.keycode == ord('['): # spacebar
           self.maxsteps_cut = (self.maxsteps_cut - 1)
           if self.maxsteps_cut<0:

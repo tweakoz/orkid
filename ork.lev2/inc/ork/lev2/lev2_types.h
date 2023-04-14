@@ -13,7 +13,7 @@
 #include <memory>
 #include <unordered_map>
 #include <ork/kernel/fixedlut.h>
-#include <ork/kernel/svariant.h>
+#include <ork/kernel/varmap.inl>
 #include <ork/util/crc.h>
 #include <ork/lev2/config.h>
 #include <ork/lev2/gfx/config.h>
@@ -263,7 +263,7 @@ struct FrameTechniqueBase;
 struct DefaultRenderer;
 using irenderer_ptr_t         = std::shared_ptr<IRenderer>;
 using defaultrenderer_ptr_t         = std::shared_ptr<DefaultRenderer>;
-using rendervar_t = svar64_t;
+using rendervar_t = varmap::var_t;
 using rendervar_usermap_t = orklut<CrcString, rendervar_t>;
 using rendervar_strmap_t   = orklut<std::string, rendervar_t>;
 

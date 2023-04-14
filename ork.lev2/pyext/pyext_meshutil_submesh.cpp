@@ -118,6 +118,11 @@ void pyinit_meshutil_submesh(py::module& module_meshutil) {
           .def("igl_test", [](submesh_ptr_t submesh) { return submesh->igl_test(); })
 #endif //#if defined(ENABLE_IGL)
           .def(
+              "dumpPolys",
+              [](submesh_ptr_t submesh, std::string hdr) {
+                submesh->dumpPolys(hdr);
+              })
+          .def(
               "clearPolys",
               [](submesh_ptr_t submesh) {
                 submesh->clearPolys();

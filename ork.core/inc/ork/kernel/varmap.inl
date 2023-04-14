@@ -113,8 +113,8 @@ template <typename val_t> struct TVarMap {
 
   std::map<key_t, val_t> _themap;
 };
-
-using VarMap            = TVarMap<svar64_t>;
+using var_t             = svar128_t;
+using VarMap            = TVarMap<var_t>;
 using varmap_ptr_t      = std::shared_ptr<VarMap>;
 using varmap_constptr_t = std::shared_ptr<const VarMap>;
 

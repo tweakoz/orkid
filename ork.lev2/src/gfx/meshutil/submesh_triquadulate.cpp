@@ -17,6 +17,7 @@ void submeshTriangulate(const submesh& inpmesh, submesh& outmesh) {
   //printf( "inpmesh.numPolys<%d>\n", inpmesh.numPolys());
   inpmesh.visitAllPolys([&](poly_const_ptr_t ply) {
     int inumv = ply->GetNumSides();
+
     switch (inumv) {
       case 0:
       case 1:

@@ -1074,7 +1074,10 @@ template <typename T> void Matrix44<T>::ortho(T left, T right, T top, T bottom, 
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
-bool Matrix44<T>::unProject(const Vector4<T>& rVWin, const Matrix44<T>& rIMVP, const SRect& rVP, Vector3<T>& rVObj) {
+bool Matrix44<T>::unProject( const Vector4<T>& rVWin, //
+                             const Matrix44<T>& rIMVP, //
+                             const SRect& rVP, //
+                             Vector3<T>& rVObj) { //
   T in[4];
   T _z  = rVWin.z;
   in[0] = (rVWin.x - T(rVP.miX)) * T(2) / T(rVP.miW) - T(1);
@@ -1087,7 +1090,9 @@ bool Matrix44<T>::unProject(const Vector4<T>& rVWin, const Matrix44<T>& rIMVP, c
   rVObj = rval.xyz();
   return true;
 }
-template <typename T> bool Matrix44<T>::unProject(const Matrix44<T>& rIMVP, const Vector3<T>& ClipCoord, Vector3<T>& rVObj) {
+template <typename T> bool Matrix44<T>::unProject(const Matrix44<T>& rIMVP, //
+                                                  const Vector3<T>& ClipCoord, // 
+                                                  Vector3<T>& rVObj) { //
   Vector4<T> rval = ClipCoord.transform(rIMVP);
   rval.perspectiveDivideInPlace();
   rVObj = rval.xyz();
