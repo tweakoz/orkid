@@ -335,6 +335,15 @@ struct Clipper {
       //////////////////////////////////////////////
       else if (numverts == polyvtxcnt._back_count) { // all back ?
         addWholePoly("B: ", input_poly, outsmesh_Back);
+        // TODO when closing the mesh, construct the closing face
+        // with the planar vertices and input edge connectivity info
+        // every input edge should have a matching output edge (which was clipped)
+        printf( "BACK POLY[");
+        input_poly->visitVertices([&](vertex_ptr_t vtx) {
+          auto v_m = outsmesh_Front.mergeVertex(*vtx);
+          printf( " %d", v_m->_poolindex );
+        });
+        printf( " ]\n");
       }
       //////////////////////////////////////////////
       // the remaining are those which must be clipped against plane
