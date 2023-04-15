@@ -22,7 +22,7 @@ class SceneGraphApp(BasicUiCamSgApp):
     self.uicam.lookAt( vec3(0,0,20), vec3(0,0,0), vec3(0,1,0) )
     self.camera.copyFrom( self.uicam.cameradata )
     self.NUMPOINTS = 160
-    self.pnt = [vec3(0) for i in range(self.NUMPOINTS)]
+    self.pnt = [dvec3(0) for i in range(self.NUMPOINTS)]
     self.numsteps = 0
   ##############################################
   def updatePoints(self,abstime):
@@ -39,7 +39,7 @@ class SceneGraphApp(BasicUiCamSgApp):
         x = r*math.sin(t*paramA)*math.cos(t*paramB)
         y = r*math.sin(t*paramA)*math.sin(t*paramB)
         z = r*math.cos(t*paramA)
-        self.pnt[i] = vec3(x,y,z)*4
+        self.pnt[i] = dvec3(x,y,z)*4
 
   ##############################################
   def onGpuInit(self,ctx):
