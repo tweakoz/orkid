@@ -164,7 +164,7 @@ void clipImpl(
 
   // loop around the input polygon's edges
 
-  std::vector<dvec3> front_vertices;
+  std::vector<vertex_ptr_t> front_vertices;
 
   for (int iva = 0; iva < inuminverts; iva++) {
     if (debug)
@@ -186,8 +186,10 @@ void clipImpl(
 
     if (is_vertex_a_front) {
       if (do_front) {
-        front_vertices.push_back(vA->mPos);
-        // on_out_front(vA->mPos);
+        vertex smvert;
+        smvert.mPos  = vA->mPos;
+        auto out_vtx = out_submesh.mergeVertex(smvert);
+        front_vertices.push_back(out_vtx);
       }
       // if( debug ) printf("  add a to front cnt<%zu>\n", out_front_poly.GetNumVertices());
     } else {
@@ -213,7 +215,10 @@ void clipImpl(
         dvec3 LerpedVertex;
         LerpedVertex.lerp(vA->mPos, vB->mPos, fScalar);
         if (do_front) {
-          front_vertices.push_back(LerpedVertex);
+          vertex smvert;
+          smvert.mPos  = LerpedVertex;
+          auto out_vtx = out_submesh.mergeVertex(smvert);
+          front_vertices.push_back(out_vtx);
         }
         if (do_back) {
           // on_out_back(LerpedVertex);
@@ -232,7 +237,10 @@ void clipImpl(
           dvec3 LerpedVertex;
           LerpedVertex.lerp(vB->mPos, vA->mPos, fScalar);
           if (do_front) {
-            front_vertices.push_back(LerpedVertex);
+            vertex smvert;
+            smvert.mPos  = LerpedVertex;
+            auto out_vtx = out_submesh.mergeVertex(smvert);
+            front_vertices.push_back(out_vtx);
           }
           if (do_back) {
             // on_out_back(LerpedVertex);
@@ -250,13 +258,7 @@ void clipImpl(
   }
 
   if (do_front and (front_vertices.size() > 2)) {
-    vertex_vect_t merged;
-    for (auto& v : front_vertices) {
-      vertex smvert;
-      smvert.mPos = v;
-      merged.push_back(out_submesh.mergeVertex(smvert));
-    }
-    out_submesh.mergePoly(Polygon(merged));
+    out_submesh.mergePoly(Polygon(front_vertices));
   }
 }
 
