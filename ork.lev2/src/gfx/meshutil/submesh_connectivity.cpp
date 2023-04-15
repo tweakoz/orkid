@@ -109,11 +109,11 @@ edge_ptr_t DefaultConnectivity::edgeBetweenPolys(int aind, int bind) const {
   auto pb = poly(bind);
   edge_ptr_t rval;
   std::vector<vertex_ptr_t> verts_in_both;
-  for (auto v_in_b : pb->_vertices) {
-    if (pa->containsVertex(v_in_b)) {
-      verts_in_both.push_back(v_in_b);
+  pb->visitVertices([&](vertex_ptr_t v) {
+    if (pa->containsVertex(v)) {
+      verts_in_both.push_back(v);
     }
-  }
+  });
   switch (verts_in_both.size()) {
     case 2: {
       auto v0 = verts_in_both[0];
@@ -160,11 +160,11 @@ void DefaultConnectivity::removePoly(poly_ptr_t ply) {
     OrkAssert(ply == it2->second);
     _polymap.erase(it2);
   }
-  for (auto v : ply->_vertices) {
+  ply->visitVertices([&](vertex_ptr_t v) {
     _centerOfPolysAccum -= v->mPos;
     v->_numConnectedPolys--;
     _centerOfPolysCount--;
-  }
+  });
 }
 ////////////////////////////////////////////////////////////////
 void DefaultConnectivity::removePolys(std::vector<poly_ptr_t>& polys) {
@@ -183,11 +183,11 @@ void DefaultConnectivity::removePolys(std::vector<poly_ptr_t>& polys) {
       OrkAssert(ply == it2->second);
       _polymap.erase(it2);
     }
-    for (auto v : ply->_vertices) {
+    ply->visitVertices([&](vertex_ptr_t v) {
       _centerOfPolysAccum -= v->mPos;
       v->_numConnectedPolys--;
       _centerOfPolysCount--;
-    }
+    });
   }
 }
 ////////////////////////////////////////////////////////////////
@@ -201,15 +201,14 @@ void DefaultConnectivity::clearPolys() {
 poly_ptr_t DefaultConnectivity::mergePoly(const Polygon& ply) {
   poly_ptr_t rval;
   int ipolyindex = numPolys();
-  Polygon nply   = ply;
-  int inumv      = ply.GetNumSides();
+  int inumv      = ply.numVertices();
   OrkAssert(inumv >= 3);
-  for (auto v : ply._vertices) {
+  ply.visitVertices([&](vertex_ptr_t v) {
     OrkAssert(v != nullptr);
     v->_numConnectedPolys++;
     _centerOfPolysCount++;
     _centerOfPolysAccum += v->mPos;
-  }
+  });
   ///////////////////////////////
   // zero area poly removal
   ///////////////////////////////
@@ -217,9 +216,9 @@ poly_ptr_t DefaultConnectivity::mergePoly(const Polygon& ply) {
   if(area<0.00001){
 
     std::string poly_str = "[";
-    for (auto v : ply._vertices) {
+    ply.visitVertices([&](vertex_ptr_t v) {
       poly_str += FormatString(" %d", v->_poolindex);
-    }
+    });
     poly_str += " ]";
     logchan_connectivity->log("Mesh::mergePoly() removing zero area poly %s", poly_str.c_str());
     return nullptr;
@@ -231,18 +230,24 @@ poly_ptr_t DefaultConnectivity::mergePoly(const Polygon& ply) {
   auto itfhm    = _polymap.find(ucrc);
   ///////////////////////////////
   if (itfhm == _polymap.end()) { // no match
+    // merge poly
     int inewpi = (int)_orderedPolys.size();
-    //////////////////////////////////////////////////
-    // connect to vertices
-    //////////////////////////////////////////////////
-    for (int i = 0; i < inumv; i++) {
-      auto vtx = ply._vertices[i];
-    }
-    nply.SetAnnoMap(ply.GetAnnoMap());
-    auto new_poly = std::make_shared<Polygon>(nply);
+    Polygon temp_poly   = ply;
+    temp_poly.SetAnnoMap(ply.GetAnnoMap());
+    auto new_poly = std::make_shared<Polygon>(temp_poly);
     _orderedPolys.push_back(new_poly);
     new_poly->_submeshIndex = inewpi;
     _polymap[ucrc]          = new_poly;
+    //////////////////////////////////////////////////
+    // add edges
+    //////////////////////////////////////////////////
+    for (int iv=0; iv<inumv; iv++) {
+      auto v0 = ply.vertex(iv);
+      auto v1 = ply.vertex((iv+1)%inumv);
+      auto e0 = mergeEdge(edge(v0,v1));
+      _edgemap[e0->hash()] = e0;
+      //new_poly->_edges.push_back(e0);
+    }
     //////////////////////////////////////////////////
     // add n sided counters
     _polyTypeCounter[inumv]++;

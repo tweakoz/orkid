@@ -311,7 +311,7 @@ void Polygon::reverse() {
 ////////////////////////////////////////////////////////////////
 
 bool Polygon::containsVertex(vertex_ptr_t v) const{
-  auto as_const = std::const_pointer_cast<const vertex>(v);
+  auto as_const = std::const_pointer_cast<const struct vertex>(v);
   return containsVertex(as_const);
 }
 
@@ -386,15 +386,54 @@ void Polygon::SetAnnoMap(const AnnoMap* pmap) {
 
 ////////////////////////////////////////////////////////////////
 
-int Polygon::GetNumSides(void) const {
+size_t Polygon::numSides() const {
   return _vertices.size();
 }
 
 ////////////////////////////////////////////////////////////////
 
-int Polygon::GetVertexID(int i) const {
-  OrkAssert(i < GetNumSides());
+size_t Polygon::numVertices() const {
+  return _vertices.size();
+}
+
+////////////////////////////////////////////////////////////////
+
+int Polygon::vertexID(int i) const {
+  OrkAssert(i < numVertices());
   return _vertices[i]->_poolindex;
+}
+
+////////////////////////////////////////////////////////////////
+
+vertex_ptr_t Polygon::vertex(int i) const {
+  OrkAssert(i < numVertices());
+  return _vertices[i];
+}
+
+////////////////////////////////////////////////////////////////
+
+dvec3 Polygon::vertexPos(int i) const {
+  OrkAssert(i < numVertices());
+  return _vertices[i]->mPos;
+}
+
+////////////////////////////////////////////////////////////////
+
+dvec3 Polygon::vertexNormal(int i) const {
+  OrkAssert(i < numVertices());
+  return _vertices[i]->mNrm;
+}
+
+////////////////////////////////////////////////////////////////
+
+void Polygon::visitVertices(const std::function<void(vertex_ptr_t)>& visitor) const{
+  for( auto v : _vertices ){
+    visitor(v);
+  }
+}
+
+void Polygon::addVertex(vertex_ptr_t v) {
+  _vertices.push_back(v);
 }
 
 ////////////////////////////////////////////////////////////////
@@ -480,11 +519,10 @@ int Polygon::VertexCCW(int vert) const {
 */
 ///////////////////////////////////////////////////////////////////////////////
 vertex Polygon::computeCenter() const {
-  int inumv = GetNumSides();
-  vertex vcenter;
+  int inumv = numSides();
+  struct vertex vcenter;
   double frecip = double(1.0) / double(inumv);
-  for (int iv = 0; iv < inumv; iv++) {
-    auto v       = _vertices[iv];
+  visitVertices([&](vertex_ptr_t v) {
     vcenter.mPos += v->mPos;
     vcenter.mNrm += v->mNrm;
     for (int it = 0; it < vertex::kmaxuvs; it++) {
@@ -493,7 +531,7 @@ vertex Polygon::computeCenter() const {
     for (int ic = 0; ic < vertex::kmaxcolors; ic++) {
       vcenter.mCol[ic] += (v->mCol[ic] * frecip);
     }
-  }
+  });
   vcenter.mPos = vcenter.mPos * frecip;
   vcenter.mNrm.normalizeInPlace();
   return vcenter;
@@ -661,7 +699,7 @@ uint64_t Polygon::hash(void) const {
     }
   };
   std::vector<int> my_array;
-  int inumv = GetNumSides();
+  int inumv = numSides();
   for (int i = 0; i < inumv; i++) {
     my_array.push_back(_vertices[i]->_poolindex);
   }

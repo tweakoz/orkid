@@ -137,13 +137,13 @@ void XgmClusterizerDiced::End() {
     for (int ip = 0; ip < inumpolys; ip++) {
       const Polygon& ply = pgrp.RefPoly(ip);
 
-      OrkAssert(ply.GetNumSides() == 3);
+      OrkAssert(ply.numVertices() == 3);
 
       XgmClusterTri ClusTri;
 
-      ClusTri._vertex[0] = *pgrp.vertex(ply.GetVertexID(0));
-      ClusTri._vertex[1] = *pgrp.vertex(ply.GetVertexID(1));
-      ClusTri._vertex[2] = *pgrp.vertex(ply.GetVertexID(2));
+      ClusTri._vertex[0] = *pgrp.vertex(ply.vertexID(0));
+      ClusTri._vertex[1] = *pgrp.vertex(ply.vertexID(1));
+      ClusTri._vertex[2] = *pgrp.vertex(ply.vertexID(2));
 
       bool bOK = new_builder->addTriangle(ClusTri);
 

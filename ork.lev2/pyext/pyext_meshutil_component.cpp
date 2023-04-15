@@ -147,7 +147,10 @@ void pyinit_meshutil_component(py::module& module_meshutil) {
   /////////////////////////////////////////////////////////////////////////////////
   auto poly_type = py::class_<Polygon,poly_ptr_t>(module_meshutil, "Poly")
     .def_property_readonly("numSides", [](poly_ptr_t p) -> int {            
-      return p->GetNumSides();
+      return p->numSides();
+    })
+    .def_property_readonly("numVertices", [](poly_ptr_t p) -> int {            
+      return p->numVertices();
     })
     .def_property_readonly("normal", [](poly_ptr_t p) -> fvec3 {            
       return dvec3_to_fvec3(p->computeNormal());
@@ -171,28 +174,29 @@ void pyinit_meshutil_component(py::module& module_meshutil) {
     })
     .def_property_readonly("vertices", [](poly_ptr_t p) -> py::list {            
       py::list pyl;          
-      for( auto v : p->_vertices ){
+      p->visitVertices([&](vertex_ptr_t v){
         pyl.append(v);
-      }
+      });
       return pyl;
     })
     .def_property_readonly("indices", [](poly_ptr_t p) -> py::list {            
       py::list pyl;          
-      for( auto v : p->_vertices ){
+      p->visitVertices([&](vertex_ptr_t v){
         pyl.append(v->_poolindex);
-      }
+      });
       return pyl;
     })
     .def("vertexIndex", [](poly_ptr_t p, int i) -> int {            
-      return p->GetVertexID(i);
+      return p->vertexID(i);
     })
     .def("vertex", [](poly_ptr_t p, int i) -> vertex_ptr_t {            
-      return p->_vertices[i];
+      return p->vertex(i);
     })
     .def("__repr__", [](poly_ptr_t p) -> std::string {
       std::string rval = FormatString("Poly<%p> [ ", (void*)p.get());
-      for( auto v : p->_vertices )
+      p->visitVertices([&](vertex_ptr_t v){
         rval += FormatString("%d ", v->_poolindex);
+      });
       rval += FormatString("]" );
       return rval;
     });

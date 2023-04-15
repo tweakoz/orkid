@@ -106,9 +106,9 @@ std::vector<submesh_ptr_t> submeshBulletConvexDecomposition(const submesh& inpsu
   });
   size_t tcount = 0;
   triangulated.visitAllPolys( [&](poly_ptr_t poly) {
-    _tempindices.push_back(poly->_vertices[0]->_poolindex);
-    _tempindices.push_back(poly->_vertices[1]->_poolindex);
-    _tempindices.push_back(poly->_vertices[2]->_poolindex);
+    _tempindices.push_back(poly->vertexID(0));
+    _tempindices.push_back(poly->vertexID(1));
+    _tempindices.push_back(poly->vertexID(2));
     tcount++;
   });
 

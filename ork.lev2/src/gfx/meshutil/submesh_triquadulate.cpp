@@ -16,7 +16,7 @@ void submeshTriangulate(const submesh& inpmesh, submesh& outmesh) {
 
   //printf( "inpmesh.numPolys<%d>\n", inpmesh.numPolys());
   inpmesh.visitAllPolys([&](poly_const_ptr_t ply) {
-    int inumv = ply->GetNumSides();
+    int inumv = ply->numVertices();
 
     switch (inumv) {
       case 0:
@@ -25,9 +25,9 @@ void submeshTriangulate(const submesh& inpmesh, submesh& outmesh) {
         OrkAssert(false);
         break;
       case 3: {
-        auto v0 = ply->_vertices[0];
-        auto v1 = ply->_vertices[1];
-        auto v2 = ply->_vertices[2];
+        auto v0 = ply->vertex(0);
+        auto v1 = ply->vertex(1);
+        auto v2 = ply->vertex(2);
         auto m0 = outmesh.mergeVertex(*v0);
         auto m1 = outmesh.mergeVertex(*v1);
         auto m2 = outmesh.mergeVertex(*v2);
@@ -35,10 +35,10 @@ void submeshTriangulate(const submesh& inpmesh, submesh& outmesh) {
         break;
       }
       case 4: {
-        auto v0 = ply->_vertices[0];
-        auto v1 = ply->_vertices[1];
-        auto v2 = ply->_vertices[2];
-        auto v3 = ply->_vertices[3];
+        auto v0 = ply->vertex(0);
+        auto v1 = ply->vertex(1);
+        auto v2 = ply->vertex(2);
+        auto v3 = ply->vertex(3);
         auto m0 = outmesh.mergeVertex(*v0);
         auto m1 = outmesh.mergeVertex(*v1);
         auto m2 = outmesh.mergeVertex(*v2);
@@ -65,8 +65,8 @@ void submeshTriangulate(const submesh& inpmesh, submesh& outmesh) {
         vc.mPos = c;
         auto mc = outmesh.mergeVertex(vc);
         for (int i = 0; i < inumv; i++) {
-          auto v0 = ply->_vertices[i];
-          auto v1 = ply->_vertices[(i + 1) % inumv];
+          auto v0 = ply->vertex(i);
+          auto v1 = ply->vertex((i + 1) % inumv);
           auto m0 = outmesh.mergeVertex(*v0);
           auto m1 = outmesh.mergeVertex(*v1);
           outmesh.mergeTriangle(mc, m0, m1);
@@ -99,14 +99,14 @@ void submeshTrianglesToQuads(
 
   int ip = 0;
   inpmesh.visitAllPolys([&](poly_const_ptr_t ply) {
-    if (ply->GetNumSides() == 3) {
+    if (ply->numSides() == 3) {
       bool was_quadified = false;
 
       const Polygon& inpoly = inpmesh.RefPoly(ip);
 
-      auto v0 = inpoly._vertices[0];
-      auto v1 = inpoly._vertices[1];
-      auto v2 = inpoly._vertices[2];
+      auto v0 = inpoly.vertex(0);
+      auto v1 = inpoly.vertex(1);
+      auto v2 = inpoly.vertex(2);
 
       ici[0] = outmesh.mergeVertex(*v0);
       ici[1] = outmesh.mergeVertex(*v1);
@@ -143,7 +143,7 @@ void submeshTrianglesToQuads(
 
         const Polygon& other_poly = inpmesh.RefPoly(iotherpoly);
 
-        int inumsides = other_poly.GetNumSides();
+        int inumsides = other_poly.numSides();
 
         if ((inumsides == 3) && (iotherpoly != ip)) { // if not the same triangle
 
@@ -151,9 +151,9 @@ void submeshTrianglesToQuads(
 
           IndexTestContext itestctx;
 
-          auto v3 = other_poly._vertices[0];
-          auto v4 = other_poly._vertices[1];
-          auto v5 = other_poly._vertices[2];
+          auto v3 = other_poly.vertex(0);
+          auto v4 = other_poly.vertex(1);
+          auto v5 = other_poly.vertex(2);
 
           VPos[3] = v3->mPos;
           VPos[4] = v4->mPos;

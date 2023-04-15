@@ -229,6 +229,7 @@ struct submesh {
   // these are mutable so we can get bounding boxes faster with const refs to Mesh's
   mutable AABox _aaBox;
   mutable bool _aaBoxDirty;
+private:
   connectivity_impl_ptr_t _connectivityIMPL;
   mutable mutex _concmutex;
 

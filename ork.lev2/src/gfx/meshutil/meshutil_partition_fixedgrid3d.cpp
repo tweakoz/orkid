@@ -80,9 +80,9 @@ void GridGraph::PreMergeMesh(const submesh& MeshIn) {
     //////////////////////////////
     totpolys++;
     //////////////////////////////
-    int inumsides = ply->GetNumSides();
+    int inumsides = ply->numVertices();
     for (int iv = 0; iv < inumsides; iv++) {
-      int ivi         = ply->GetVertexID(iv);
+      int ivi         = ply->vertexID(iv);
       const vertex& v = *MeshIn.vertex(ivi);
       maab.Grow(dvec3_to_fvec3(v.mPos));
     }
@@ -271,15 +271,15 @@ void GridGraph::MergeMesh(const submesh& MeshIn, Mesh& MeshOut) {
     /////////////////////////////////
     AABox thaab;
     thaab.BeginGrow();
-    for (int iv = 0; iv < ply->GetNumSides(); iv++) {
-      const dvec3& vpos = MeshIn.vertex(ply->GetVertexID(iv))->mPos;
+    for (int iv = 0; iv < ply->numVertices(); iv++) {
+      const dvec3& vpos = MeshIn.vertex(ply->vertexID(iv))->mPos;
       thaab.Grow(dvec3_to_fvec3(vpos));
     }
     thaab.EndGrow();
 
-    dvec3 pntA = MeshIn.vertex(ply->GetVertexID(0))->mPos;
-    dvec3 pntB = MeshIn.vertex(ply->GetVertexID(1))->mPos;
-    dvec3 pntC = MeshIn.vertex(ply->GetVertexID(2))->mPos;
+    dvec3 pntA = MeshIn.vertex(ply->vertexID(0))->mPos;
+    dvec3 pntB = MeshIn.vertex(ply->vertexID(1))->mPos;
+    dvec3 pntC = MeshIn.vertex(ply->vertexID(2))->mPos;
     dvec3 dirA = (pntA - pntB).normalized();
     dvec3 dirB = (pntA - pntC).normalized();
     dvec3 pnrm = dirA.crossWith(dirB);
@@ -325,9 +325,9 @@ void GridGraph::MergeMesh(const submesh& MeshIn, Mesh& MeshOut) {
           mupoly_clip_adapter poly_fnt, poly_bak;
           mupoly_clip_adapter srcp;
 
-          int inumv = ply->GetNumSides();
+          int inumv = ply->numVertices();
           for (int iv = 0; iv < inumv; iv++) {
-            srcp.AddVertex(*MeshIn.vertex(ply->GetVertexID(iv)));
+            srcp.AddVertex(*MeshIn.vertex(ply->vertexID(iv)));
           }
 
           ginuminners++;

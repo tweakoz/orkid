@@ -29,12 +29,11 @@ void submeshWithTextureUnwrap(const submesh& inpsubmesh, submesh& outsubmesh) {
 
   std::vector<uint16_t> indices;
   inpsubmesh.visitAllPolys( [&](poly_const_ptr_t input_poly) {
-    int inumv = input_poly->GetNumSides();
+    int inumv = input_poly->numVertices();
     OrkAssert(inumv == 3);
-    for (int i = 0; i < inumv; i++) {
-      auto v = input_poly->_vertices[i];
-      indices.push_back(v->_poolindex);
-    }
+    input_poly->visitVertices([&](vertex_ptr_t inp_v0) {
+      indices.push_back(inp_v0->_poolindex);
+    });
   });
   std::vector<fvec3> vertices;
   inpsubmesh.visitAllVertices([&](vertex_const_ptr_t vtx) {

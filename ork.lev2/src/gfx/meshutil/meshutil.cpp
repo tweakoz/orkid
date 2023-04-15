@@ -110,14 +110,14 @@ void Mesh::Dump(const std::string& comment) const {
         for (int iv = 0; iv < inumv; iv++) {
           int i0  = iv;
           int i1  = (iv + 1) % inumv;
-          int iv0 = ply.GetVertexID(i0);
-          int iv1 = ply.GetVertexID(i1);
+          int iv0 = ply.vertexID(i0);
+          int iv1 = ply.vertexID(i1);
           edge Edge(iv0, iv1);
           u64 ue  = src_grp.edgeBetween(iv0, iv1);
           u32 ue0 = u32(ue & 0xffffffff);
           u32 ue1 = u32((ue >> 32) & 0xffffffff);
 
-          fprintf(fout, "%d:%08x%08x ", ply.GetVertexID(iv), ue0, ue1);
+          fprintf(fout, "%d:%08x%08x ", ply.vertexID(iv), ue0, ue1);
         }
         fprintf(fout, ">\n");
       }
@@ -171,7 +171,7 @@ void submesh::SplitOnAnno(Mesh& out, const std::string& annokey) const {
       poly NewPoly;
       NewPoly.miNumSides = inumpv;
       for (int iv = 0; iv < inumpv; iv++) {
-        int ivi                = ply.GetVertexID(iv);
+        int ivi                = ply.vertexID(iv);
         const vertex& vtx      = RefVertexPool().GetVertex(ivi);
         int inewvi             = sub.MergeVertex(vtx);
         NewPoly.miVertices[iv] = inewvi;
@@ -198,7 +198,7 @@ void submesh::SplitOnAnno(Mesh& out, const std::string& prefix, const std::strin
       poly NewPoly;
       NewPoly.miNumSides = inumpv;
       for (int iv = 0; iv < inumpv; iv++) {
-        int ivi                = ply.GetVertexID(iv);
+        int ivi                = ply.vertexID(iv);
         const vertex& vtx      = RefVertexPool().GetVertex(ivi);
         int inewvi             = sub.MergeVertex(vtx);
         NewPoly.miVertices[iv] = inewvi;
@@ -223,7 +223,7 @@ void submesh::SplitOnAnno(Mesh& out, const std::string& annokey, const Annotatio
       poly NewPoly;
       NewPoly.miNumSides = inumpv;
       for (int iv = 0; iv < inumpv; iv++) {
-        int ivi                = ply.GetVertexID(iv);
+        int ivi                = ply.vertexID(iv);
         const vertex& vtx      = RefVertexPool().GetVertex(ivi);
         int inewvi             = sub.MergeVertex(vtx);
         NewPoly.miVertices[iv] = inewvi;
@@ -387,9 +387,9 @@ void FlatSubMesh::fromSubmesh(const submesh& mesh){
   for (int it = 0; it < inumtri; it++) {
     int idx           = TrianglePolyIndices[it];
     const Polygon& intri = mesh.RefPoly(idx);
-    int inumsides     = intri.GetNumSides();
-    for (int iv = 0; iv < inumsides; iv++) {
-      int idx = intri.GetVertexID(iv);
+    int numvertices     = intri.numVertices();
+    for (int iv = 0; iv < numvertices; iv++) {
+      int idx = intri.vertexID(iv);
       MergeTriIndices.push_back(idx);
     }
   }
@@ -399,11 +399,11 @@ void FlatSubMesh::fromSubmesh(const submesh& mesh){
   for (int iq = 0; iq < inumqua; iq++) {
     int idx           = QuadPolyIndices[iq];
     const Polygon& inqua = mesh.RefPoly(idx);
-    int inumsides     = inqua.GetNumSides();
-    int idx0          = inqua.GetVertexID(0);
-    int idx1          = inqua.GetVertexID(1);
-    int idx2          = inqua.GetVertexID(2);
-    int idx3          = inqua.GetVertexID(3);
+    int inumsides     = inqua.numVertices();
+    int idx0          = inqua.vertexID(0);
+    int idx1          = inqua.vertexID(1);
+    int idx2          = inqua.vertexID(2);
+    int idx3          = inqua.vertexID(3);
 
     MergeTriIndices.push_back(idx0);
     MergeTriIndices.push_back(idx1);

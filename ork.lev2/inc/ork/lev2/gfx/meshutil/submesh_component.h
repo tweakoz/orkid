@@ -104,6 +104,7 @@ struct edge {
 
   vertex_ptr_t _vertexA;
   vertex_ptr_t _vertexB;
+  varmap::VarMap _varmap;
 };
 
 using edge_set_t = unique_set<edge>;
@@ -168,6 +169,7 @@ struct vertex {
   float mJointWeights[kmaxinfluences];
   submesh* _parentSubmesh = nullptr;
   int _numConnectedPolys = 0;
+  varmap::VarMap _varmap;
 };
 
 using vertex_set_t = unique_set<vertex>;
@@ -220,9 +222,6 @@ struct Polygon {
 
   const std::string& GetAnnotation(const std::string& annoname) const;
 
-  int GetNumSides(void) const;
-  int GetVertexID(int i) const;
-
   Polygon(
       vertex_ptr_t ia, //
       vertex_ptr_t ib,
@@ -254,15 +253,24 @@ struct Polygon {
   bool containsEdge(edge_ptr_t e, bool ordered = true) const;
   void visitEdges(const std::function<void(edge_ptr_t)>& visitor) const;
   edge_ptr_t edgeForVertices(vertex_ptr_t vA, vertex_ptr_t vB) const;
+  void visitVertices(const std::function<void(vertex_ptr_t)>& visitor) const;
+  size_t numVertices() const;
+  size_t numSides() const;
+  int vertexID(int i) const;
+  vertex_ptr_t vertex(int i) const;
+  dvec3 vertexPos(int i) const;
+  dvec3 vertexNormal(int i) const;
+  void addVertex(vertex_ptr_t v);
 
   uint64_t hash() const;
   edge_vect_t edges() const;
-  std::vector<vertex_ptr_t> _vertices;
   int _submeshIndex = -1;
   submesh* _parentSubmesh = nullptr;
   varmap::VarMap _varmap;
 
   const AnnoMap* mAnnotationSet;
+  private:
+  std::vector<vertex_ptr_t> _vertices;
 };
 
 using poly_set_t = unique_set<Polygon>;
@@ -388,6 +396,7 @@ struct DefaultConnectivity : public IConnectivity{
 
   vertexpool_ptr_t _vtxpool;
   std::unordered_map<uint64_t, poly_ptr_t> _polymap;
+  std::unordered_map<uint64_t, edge_ptr_t> _edgemap;
   orkvector<poly_ptr_t> _orderedPolys;
   std::unordered_map<int,int> _polyTypeCounter;
   dvec3 _centerOfPolysAccum;

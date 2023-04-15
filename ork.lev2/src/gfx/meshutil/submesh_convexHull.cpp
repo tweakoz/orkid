@@ -197,7 +197,7 @@ void submeshConvexHullIterative(const submesh& inpsubmesh, submesh& outsmesh, in
   }
 
 
-  vertex_ptr_t vc = polys_by_area.rbegin()->second->_vertices[2];
+  vertex_ptr_t vc = polys_by_area.rbegin()->second->vertex(2);
   int c           = vc->_poolindex;
   // find vertex d that forms the tetrahedron with the largest volume with a,b,c
   std::map<double, poly_ptr_t> polys_by_volume;
@@ -207,10 +207,10 @@ void submeshConvexHullIterative(const submesh& inpsubmesh, submesh& outsmesh, in
       auto p                  = std::make_shared<Polygon>(va, vb, vc);
       double volume           = abs(p->signedVolumeWithPoint(tvd->mPos));
       polys_by_volume[volume] = p;
-      p->_vertices.push_back(tvd);
+      p->addVertex(tvd);
     }
   }
-  vertex_ptr_t vd = polys_by_volume.rbegin()->second->_vertices[3];
+  vertex_ptr_t vd = polys_by_volume.rbegin()->second->vertex(3);
   int d           = vd->_poolindex;
 
   ///////////////////////////////////////////////////
@@ -222,10 +222,10 @@ void submeshConvexHullIterative(const submesh& inpsubmesh, submesh& outsmesh, in
       printf(
           "poly<%p> a<%d> b<%d> c<%d> d<%d> volume<%g>\n",
           p.get(),
-          p->_vertices[0]->_poolindex,
-          p->_vertices[1]->_poolindex,
-          p->_vertices[2]->_poolindex,
-          p->_vertices[3]->_poolindex,
+          p->vertexID(0),
+          p->vertexID(1),
+          p->vertexID(2),
+          p->vertexID(3),
           it.first);
     }
 
@@ -235,10 +235,10 @@ void submeshConvexHullIterative(const submesh& inpsubmesh, submesh& outsmesh, in
 
   auto it_largest_volume = polys_by_volume.rbegin();
   auto p                 = it_largest_volume->second;
-  auto nva               = p->_vertices[0];
-  auto nvb               = p->_vertices[1];
-  auto nvc               = p->_vertices[2];
-  auto nvd               = p->_vertices[3];
+  auto nva               = p->vertex(0);
+  auto nvb               = p->vertex(1);
+  auto nvc               = p->vertex(2);
+  auto nvd               = p->vertex(3);
 
   dvec3 tetra_center;
   tetra_center += nva->mPos;
@@ -300,9 +300,7 @@ void submeshConvexHullIterative(const submesh& inpsubmesh, submesh& outsmesh, in
               conflict_graph.insert(v, p);
               if (false) {
                 printf("visible poly[");
-                for (auto v : p->_vertices) {
-                  printf("%d ", v->_poolindex);
-                }
+                p->visitVertices([&](vertex_ptr_t v) { printf("%d ", v->_poolindex); });
                 printf("] : visible vertex<%d>\n", v->_poolindex);
               }
             }
@@ -323,9 +321,7 @@ void submeshConvexHullIterative(const submesh& inpsubmesh, submesh& outsmesh, in
       for (auto it_p : item._polys._the_map) {
         auto p = it_p.second;
         printf("poly[");
-        for (auto v : p->_vertices) {
-          printf("%d ", v->_poolindex);
-        }
+        p->visitVertices([&](vertex_ptr_t v) { printf("%d ", v->_poolindex); });
         printf("] ");
       }
       printf("\n");

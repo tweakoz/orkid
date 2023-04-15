@@ -50,13 +50,12 @@ AnnoMap::~AnnoMap() {
 
 U64 annopolyposlut::HashItem(const submesh& tmesh, const Polygon& ply) const {
   boost::Crc64 crc64;
-  int inumpv = ply.GetNumSides();
-  for (int iv = 0; iv < inumpv; iv++) {
-    int ivi           = ply.GetVertexID(iv);
+  ply.visitVertices([&](vertex_ptr_t v) {
+    int ivi           = v->_poolindex;
     auto vtx = tmesh.vertex(ivi);
     crc64.accumulateItem(vtx->mPos);
     crc64.accumulateItem(vtx->mNrm);
-  }
+  });
   crc64.finish();
   return crc64.result();
 }

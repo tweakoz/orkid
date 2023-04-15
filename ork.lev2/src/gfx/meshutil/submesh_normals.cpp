@@ -19,14 +19,13 @@ void submeshWithFaceNormals(const submesh& inpsubmesh, submesh& outsubmesh) {
   inpsubmesh.visitAllPolys([&](poly_const_ptr_t p) {
     dvec3 N         = p->computeNormal();
 
-    int inumv = p->GetNumSides();
     std::vector<vertex_ptr_t> merged_vertices;
-    for (int i = 0; i < inumv; i++) {
-      auto inp_v0 = *p->_vertices[i];
-      inp_v0.mNrm = N;
-      auto out_v  = outsubmesh.mergeVertex(inp_v0);
+    p->visitVertices([&](vertex_const_ptr_t v) {
+      auto copy_v0 = *v;
+      copy_v0.mNrm = N;
+      auto out_v   = outsubmesh.mergeVertex(copy_v0);
       merged_vertices.push_back(out_v);
-    }
+    });
     outsubmesh.mergePoly(merged_vertices);
   });
 }
@@ -38,10 +37,8 @@ void submeshWithSmoothNormals(const submesh& inpsubmesh, submesh& outsubmesh, fl
 
     dvec3 N         = p->computeNormal();
 
-    int inumv = p->GetNumSides();
     std::vector<vertex_ptr_t> merged_vertices;
-    for (int i = 0; i < inumv; i++) {
-      auto inp_v0 = p->_vertices[i];
+    p->visitVertices([&](vertex_ptr_t inp_v0) {
       auto polys  = inpsubmesh.polysConnectedTo(inp_v0);
       dvec3 Naccum;
       int ncount = 0;
@@ -64,7 +61,7 @@ void submeshWithSmoothNormals(const submesh& inpsubmesh, submesh& outsubmesh, fl
       copy_v0.mNrm = Naccum;
       auto out_v   = outsubmesh.mergeVertex(copy_v0);
       merged_vertices.push_back(out_v);
-    }
+    });
     outsubmesh.mergePoly(merged_vertices);
   });
 }

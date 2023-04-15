@@ -59,17 +59,17 @@ struct PlanarVertexCategorize {
 
   PolyVtxCount categorizePolygon(poly_const_ptr_t input_poly) const {
     PolyVtxCount counts;
-    for (auto v : input_poly->_vertices) {
-      if (_front_verts.contains(v)) {
+    input_poly->visitVertices([&](vertex_ptr_t vtx) {
+      if (_front_verts.contains(vtx)) {
         counts._front_count++;
       }
-      if (_back_verts.contains(v)) {
+      if (_back_verts.contains(vtx)) {
         counts._back_count++;
       }
-      if (_planar_verts.contains(v)) {
+      if (_planar_verts.contains(vtx)) {
         counts._planar_count++;
       }
-    }
+    });
     return counts;
   }
 
@@ -83,24 +83,24 @@ struct PlanarVertexCategorize {
 vertex_set_t addWholePoly(std::string hdr, poly_const_ptr_t src_poly, submesh& dest) {
   std::vector<vertex_ptr_t> new_verts;
   vertex_set_t added;
-  for (auto v : src_poly->_vertices) {
+  src_poly->visitVertices([&](vertex_ptr_t v) {
     OrkAssert(v);
     auto newv = dest.mergeVertex(*v);
     new_verts.push_back(newv);
     added.insert(newv);
-  }
+  });
   dest.mergePoly(Polygon(new_verts));
   bool log_poly = true;
-  for (auto v : src_poly->_vertices) {
+  src_poly->visitVertices([&](vertex_ptr_t v) {
     if (test_verts.find(v->_poolindex) == test_verts.end())
       log_poly = false;
-  }
+  });
   if (debug and log_poly) {
 
     printf("<%s> add whole poly: [", hdr.c_str());
-    for (auto v : src_poly->_vertices) {
+    src_poly->visitVertices([&](vertex_ptr_t v) {
       printf("v<%d> ", v->_poolindex);
-    }
+    });
     printf("]\n");
   }
   return added;
@@ -166,14 +166,14 @@ void clipImpl(
 
   bool do_back = not do_front;
 
-  const int inuminverts = input_poly->GetNumSides();
-  OrkAssert(input_poly->GetNumSides() >= 3);
+  const int inuminverts = input_poly->numVertices();
+  OrkAssert(inuminverts >= 3);
 
   printf( "CLIP INPUT POLY[");
-  for( auto vtx : input_poly->_vertices ) {
+  input_poly->visitVertices([&](vertex_ptr_t vtx) {
     auto v_m = out_submesh.mergeVertex(*vtx);
     printf( " %d", v_m->_poolindex );
-  }
+  });
   printf( " ]\n");
   //if (debug)
     //printf("clip poly num verts<%d>\n", inuminverts);
@@ -190,8 +190,8 @@ void clipImpl(
              ? 0                  //
              : iva + 1);
 
-    auto out_vtx_a = out_submesh.mergeVertex(*input_poly->_vertices[iva]);
-    auto out_vtx_b = out_submesh.mergeVertex(*input_poly->_vertices[ivb]);
+    auto out_vtx_a = out_submesh.mergeVertex(*input_poly->vertex(iva));
+    auto out_vtx_b = out_submesh.mergeVertex(*input_poly->vertex(ivb));
 
     // get the side of each vert to the plane
     bool is_vertex_a_front = slicing_plane.isPointInFront(out_vtx_a->mPos);
@@ -313,7 +313,7 @@ struct Clipper {
 
     int ip = 0;
     inpsubmesh.visitAllPolys([&](poly_const_ptr_t input_poly) {
-      int numverts    = input_poly->GetNumSides();
+      int numverts    = input_poly->numVertices();
       auto polyvtxcnt = categorized.categorizePolygon(input_poly);
       if (debug)
         printf(

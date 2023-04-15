@@ -61,21 +61,21 @@ void Mesh::MergeSubMesh(const Mesh& src, const submesh& inp_grp, const char* new
   int inumpingroup = inp_grp.numPolys();
   for (int i = 0; i < inumpingroup; i++) {
     const Polygon& inp_poly = inp_grp.RefPoly(i);
-    int inumpv      = inp_poly.GetNumSides();
+    int inumpv      = inp_poly.numVertices();
     poly_ptr_t new_poly;
     switch(inumpv){
       case 3:{
-        auto newvtx0           = pnewgroup->mergeVertex(*inp_grp.vertex(inp_poly.GetVertexID(0)));
-        auto newvtx1           = pnewgroup->mergeVertex(*inp_grp.vertex(inp_poly.GetVertexID(1)));
-        auto newvtx2           = pnewgroup->mergeVertex(*inp_grp.vertex(inp_poly.GetVertexID(2)));
+        auto newvtx0           = pnewgroup->mergeVertex(*inp_grp.vertex(inp_poly.vertexID(0)));
+        auto newvtx1           = pnewgroup->mergeVertex(*inp_grp.vertex(inp_poly.vertexID(1)));
+        auto newvtx2           = pnewgroup->mergeVertex(*inp_grp.vertex(inp_poly.vertexID(2)));
         new_poly = std::make_shared<Polygon>(newvtx0,newvtx1,newvtx2);
         break;
       }
       case 4:{
-        auto newvtx0           = pnewgroup->mergeVertex(*inp_grp.vertex(inp_poly.GetVertexID(0)));
-        auto newvtx1           = pnewgroup->mergeVertex(*inp_grp.vertex(inp_poly.GetVertexID(1)));
-        auto newvtx2           = pnewgroup->mergeVertex(*inp_grp.vertex(inp_poly.GetVertexID(2)));
-        auto newvtx3           = pnewgroup->mergeVertex(*inp_grp.vertex(inp_poly.GetVertexID(3)));
+        auto newvtx0           = pnewgroup->mergeVertex(*inp_grp.vertex(inp_poly.vertexID(0)));
+        auto newvtx1           = pnewgroup->mergeVertex(*inp_grp.vertex(inp_poly.vertexID(1)));
+        auto newvtx2           = pnewgroup->mergeVertex(*inp_grp.vertex(inp_poly.vertexID(2)));
+        auto newvtx3           = pnewgroup->mergeVertex(*inp_grp.vertex(inp_poly.vertexID(3)));
         new_poly = std::make_shared<Polygon>(newvtx0,newvtx1,newvtx2,newvtx3);
         break;
       }
@@ -129,12 +129,12 @@ void MergeToolMeshQueueItem::DoIt(int ithread) const {
   int inump    = mpSourceSubMesh->numPolys();
   for (int i = 0; i < inump; i++) {
     const Polygon& ply = mpSourceSubMesh->RefPoly(i);
-    int inumv       = ply.GetNumSides();
+    int inumv       = ply.numVertices();
 
     std::vector<vertex_ptr_t> merged;
     for (int i = 0; i < inumv; i++) {
 
-      auto src  = ply._vertices[i];
+      auto src  = ply.vertex(i);
       merged.push_back(mpDestSubMesh->mergeVertex(*src));
     }
     Polygon polyA(merged);
@@ -264,8 +264,8 @@ void Mesh::MergeToolMeshAs(const Mesh& sr, const char* pgroupname) {
     for (int ip = 0; ip < inump; ip++) {
       const Polygon& inp_poly = src_group.RefPoly(ip);
       std::vector<vertex_ptr_t> new_vertices;
-      for (int iv = 0; iv < inp_poly.GetNumSides(); iv++) {
-        int ivi               = inp_poly.GetVertexID(iv);
+      for (int iv = 0; iv < inp_poly.numVertices(); iv++) {
+        int ivi               = inp_poly.vertexID(iv);
         const vertex& src_vtx = *src_group.vertex(ivi);
         new_vertices.push_back(dest_group.mergeVertex(src_vtx));
       }

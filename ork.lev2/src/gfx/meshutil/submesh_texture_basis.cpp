@@ -19,14 +19,13 @@ void submeshWithTextureBasis(const submesh& inpsubmesh, submesh& outsubmesh){
   inpsubmesh.visitAllPolys( [&](poly_const_ptr_t input_poly) {
     dvec3 N = input_poly->computeNormal();
 
-    int inumv = input_poly->GetNumSides();
     std::vector<vertex_ptr_t> merged_vertices;
-    for( int i=0; i<inumv; i++ ){
-        auto inp_v0 = *(input_poly->_vertices[i]);
-        inp_v0.mNrm = N;
-        auto out_v = outsubmesh.mergeVertex(inp_v0);
-        merged_vertices.push_back(out_v);
-    }
+    input_poly->visitVertices([&](vertex_ptr_t inp_v0) {
+      auto copy_v0 = *inp_v0;
+      copy_v0.mNrm = N;
+      auto out_v   = outsubmesh.mergeVertex(copy_v0);
+      merged_vertices.push_back(out_v);
+    });
     outsubmesh.mergePoly(merged_vertices);
   });
 

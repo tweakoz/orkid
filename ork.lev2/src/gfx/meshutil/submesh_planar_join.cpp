@@ -69,9 +69,9 @@ void submeshJoinCoplanar(const submesh& inpsubmesh, submesh& outsmesh){
       else if( island->_polys.size() == 1 ){
           auto p = *island->_polys.begin();
           std::vector<vertex_ptr_t> new_vertices;
-          for( auto iv : p->_vertices ){
-            new_vertices.push_back(outsmesh.mergeVertex(*iv));
-          }
+          p->visitVertices([&](vertex_ptr_t v){
+            new_vertices.push_back(outsmesh.mergeVertex(*v));
+          });
           Polygon new_poly(new_vertices);
           dvec3 poly_n = new_poly.computeNormal();
           float DOT = new_poly.computeNormal().dotWith(plane_n);
@@ -89,9 +89,9 @@ void submeshJoinCoplanar(const submesh& inpsubmesh, submesh& outsmesh){
       if(not loop_joined){
         for( auto ip : island->_polys ){
           std::vector<vertex_ptr_t> new_vertices;
-          for( auto iv : ip->_vertices ){
-            new_vertices.push_back(outsmesh.mergeVertex(*iv));
-          }
+          ip->visitVertices([&](vertex_ptr_t v){
+            new_vertices.push_back(outsmesh.mergeVertex(*v));
+          });
           outsmesh.mergePoly(Polygon(new_vertices));
         }
       }

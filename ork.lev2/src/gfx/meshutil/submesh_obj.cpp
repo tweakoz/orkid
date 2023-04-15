@@ -75,7 +75,7 @@ void submeshWriteObj(const submesh& inpsubmesh, const file::Path& BasePath) {
     already_written.insert(igti);
     const Polygon& intri = inpsubmesh.RefPoly(igti);
     for (int iv = 0; iv < 3; iv++) {
-      int idx = intri.GetVertexID(iv);
+      int idx = intri.vertexID(iv);
       outpoly.mvtxindices.push_back(idx);
     }
     OutMesh.mpolys.push_back(outpoly);
@@ -86,7 +86,7 @@ void submeshWriteObj(const submesh& inpsubmesh, const file::Path& BasePath) {
     already_written.insert(igti);
     const Polygon& intri = inpsubmesh.RefPoly(igti);
     for (int iv = 0; iv < 4; iv++) {
-      int idx = intri.GetVertexID(iv);
+      int idx = intri.vertexID(iv);
       outpoly.mvtxindices.push_back(idx);
     }
     OutMesh.mpolys.push_back(outpoly);
@@ -96,10 +96,10 @@ void submeshWriteObj(const submesh& inpsubmesh, const file::Path& BasePath) {
     auto it_a = already_written.find(ipoly);
     if(it_a==already_written.end()){
       objpoly outpoly;
-      for ( auto v : p->_vertices ) {
+      p->visitVertices([&](vertex_ptr_t v) {
         int idx = v->_poolindex;
         outpoly.mvtxindices.push_back(idx);
-      }
+      });
       OutMesh.mpolys.push_back(outpoly);
     }
     ipoly++;

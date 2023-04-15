@@ -33,7 +33,7 @@ class SceneGraphApp(BasicUiCamSgApp):
     #self.maxsteps_sim = 451
     #self.maxsteps_cut = 4
     self.maxsteps_sim = 701
-    self.maxsteps_cut = 3
+    self.maxsteps_cut = 4
   ##############################################
   def onGpuInit(self,ctx):
     super().onGpuInit(ctx,add_grid=False)
@@ -166,7 +166,6 @@ class SceneGraphApp(BasicUiCamSgApp):
           self.dice = random.randint(0,2)
       ##############################
       lerp_rate = 0.01
-      #self.dice = 0
       if self.dice==0:
         self.upd_c1.lerp(self.upd_1a,lerp_rate,updevent.deltatime)
         self.upd_c2.lerp(self.upd_2a,lerp_rate,updevent.deltatime)
@@ -176,8 +175,6 @@ class SceneGraphApp(BasicUiCamSgApp):
       elif self.dice==2:
         self.upd_c1.lerp(self.upd_1c,lerp_rate,updevent.deltatime)
         self.upd_c2.lerp(self.upd_2c,lerp_rate,updevent.deltatime)
-      ##############################
-
       ##############################
       θ = self.abstime # * math.pi * 2.0 * 0.1
       #

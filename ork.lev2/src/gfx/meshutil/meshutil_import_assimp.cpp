@@ -779,9 +779,9 @@ void clusterizeToolMeshToXgmMesh(const ork::meshutil::Mesh& inp_model, ork::lev2
     clusterizer->Begin();
 
     inp_submesh->visitAllPolys([&](poly_ptr_t p) {
-      assert(p->GetNumSides() == 3);
+      assert(p->numVertices() == 3);
       for (int i = 0; i < 3; i++)
-        clustertri._vertex[i] = *inp_submesh->vertex(p->GetVertexID(i));
+        clustertri._vertex[i] = *inp_submesh->vertex(p->vertexID(i));
       clusterizer->addTriangle(clustertri, materialGroup->mMeshConfigurationFlags);
     });
 

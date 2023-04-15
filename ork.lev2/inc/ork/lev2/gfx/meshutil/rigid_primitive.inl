@@ -184,9 +184,9 @@ template <typename vtx_t> void RigidPrimitive<vtx_t>::fromSubMesh(const submesh&
   int inumpolys     = submeshTris.numPolys(3);
   clusterizer.Begin();
   submeshTris.visitAllPolys([&](poly_const_ptr_t ply) {
-    auto vtxa        = ply->_vertices[0];
-    auto vtxb        = ply->_vertices[1];
-    auto vtxc        = ply->_vertices[2];
+    auto vtxa        = ply->vertex(0);
+    auto vtxb        = ply->vertex(1);
+    auto vtxc        = ply->vertex(2);
     XgmClusterTri tri{*vtxa, *vtxb, *vtxc};
     clusterizer.addTriangle(tri, meshflags);
   });

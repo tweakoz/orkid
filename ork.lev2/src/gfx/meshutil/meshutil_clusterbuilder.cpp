@@ -209,9 +209,9 @@ void buildXgmCluster( lev2::Context& context,
 
     const ork::meshutil::Polygon& ClusTri = clusterbuilder->_submesh.RefPoly(itri_i);
 
-    TriangleIndices.push_back(ClusTri.GetVertexID(0));
-    TriangleIndices.push_back(ClusTri.GetVertexID(1));
-    TriangleIndices.push_back(ClusTri.GetVertexID(2));
+    TriangleIndices.push_back(ClusTri.vertexID(0));
+    TriangleIndices.push_back(ClusTri.vertexID(1));
+    TriangleIndices.push_back(ClusTri.vertexID(2));
   }
 
   /////////////////////////////////////////////////////////////

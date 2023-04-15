@@ -218,7 +218,7 @@ int submesh::numPolys(int inumsides) const {
     if(inumsides==0){
       count++;
     }
-    else if (p->GetNumSides() == inumsides) {
+    else if (p->numVertices() == inumsides) {
       count++;
     }
   });
@@ -276,7 +276,7 @@ const AABox& submesh::aabox() const {
 /////////////////////////////////////////////////////////////////////////
 void submesh::FindNSidedPolys(orkvector<int>& output, int inumsides) const {
   visitAllPolys([&](poly_const_ptr_t p) {
-    if (p->GetNumSides() == inumsides) {
+    if (p->numVertices() == inumsides) {
       output.push_back(p->_submeshIndex);
     }
   });
@@ -303,8 +303,8 @@ void submesh::MergeSubMesh(const submesh& inp_mesh) {
   int inumpingroup = 0;
   inp_mesh.visitAllPolys([&](poly_const_ptr_t p) {
     std::vector<vertex_ptr_t> new_vertices;
-    for (int iv = 0; iv < p->GetNumSides(); iv++) {
-      int ivi      = p->GetVertexID(iv);
+    for (int iv = 0; iv < p->numVertices(); iv++) {
+      int ivi      = p->vertexID(iv);
       auto src_vtx = inp_mesh.vertex(ivi);
       new_vertices.push_back(mergeVertex(*src_vtx));
     }
@@ -322,10 +322,9 @@ void submesh::MergeSubMesh(const submesh& inp_mesh) {
 void submesh::mergePolySet(const PolySet& pset) {
   for (auto p : pset._polys) {
     std::vector<vertex_ptr_t> merged_vertices;
-    for (auto v : p->_vertices) {
-      auto newv = mergeVertex(*v);
-      merged_vertices.push_back(newv);
-    }
+    p->visitVertices([&](vertex_const_ptr_t v) {
+      merged_vertices.push_back(mergeVertex(*v));
+    });
     mergePoly(Polygon(merged_vertices));
   }
   _aaBoxDirty = true;
@@ -463,7 +462,7 @@ bool submesh::isConvexHull() const {
     //printf( "plane<%f %f %f> <%f>\n", p1.get(), pl.n.x, pl.n.y, pl.n.z, pl.d );
     visitAllPolys([&](poly_const_ptr_t p2) {
       if (p1 != p2) {
-        for (auto v : p2->_vertices) {
+        p2->visitVertices([&](vertex_const_ptr_t v) {
           switch(pl.classifyPoint(v->mPos)) {
             case PointClassification::FRONT:
             case PointClassification::COPLANAR:
@@ -477,7 +476,7 @@ bool submesh::isConvexHull() const {
               break;
             }
           }
-        }
+        });  
       }
     });
     //bool is_convex = (front > 0) and (back == 0);
@@ -527,13 +526,13 @@ void submesh::copy(
 
   visitAllPolys([&](poly_const_ptr_t p) {
     std::vector<vertex_ptr_t> newverts;
-    for (auto v : p->_vertices) {
+    p->visitVertices([&](vertex_const_ptr_t v) {
       auto it = vtx_map.find(v->_poolindex);
       OrkAssert(it != vtx_map.end());
       int v_index = it->second;
       auto newv   = dest.vertex(v_index);
       newverts.push_back(newv);
-    }
+    });
     auto newp = std::make_shared<Polygon>(newverts);
     dest.mergePoly(*newp);
   });
@@ -581,14 +580,14 @@ void submesh::dumpPolys(std::string hdr, bool showverts) const{
     printf( "polys <%s>: \n", hdr.c_str() );
   visitAllPolys([&](poly_const_ptr_t p) {
     printf( "  p %d [ ", index );
-    for( auto v : p->_vertices ) {
+    p->visitVertices([&](vertex_const_ptr_t v) {
       if( showverts ){
         printf( "%d<%f %f %f> ", v->_poolindex, v->mPos.x, v->mPos.y, v->mPos.z );
       }
       else{
         printf( "%d ", v->_poolindex );
       }
-    }
+    });
     printf( "]\n" );
     index++;
   });
@@ -616,11 +615,11 @@ double submesh::convexVolume() const {
   double volume = 0.0f;
   dvec3 c       = centerOfVertices();
   visitAllPolys([&](poly_const_ptr_t p) {
-    int numsides = p->_vertices.size();
+    int numsides = p->numSides();
     OrkAssert(numsides == 3);
-    const auto& v0 = p->_vertices[0]->mPos;
-    const auto& v1 = p->_vertices[1]->mPos;
-    const auto& v2 = p->_vertices[2]->mPos;
+    const auto& v0 = p->vertexPos(0);
+    const auto& v1 = p->vertexPos(1);
+    const auto& v2 = p->vertexPos(2);
 
     double U = (v0 - v1).length();
     double V = (v1 - v2).length();
@@ -675,13 +674,13 @@ void submesh::visitConnectedPolys(poly_ptr_t p, PolyVisitContext& visitctx) cons
 poly_set_t submesh::polysConnectedTo(vertex_ptr_t v) const {
   poly_set_t connected;
   visitAllPolys([&](poly_const_ptr_t p) {
-    for (auto pv : p->_vertices) {
+    p->visitVertices([&](vertex_const_ptr_t pv) {
       if (pv == v) {
         // todo: remove const_cast
         auto non_const = std::const_pointer_cast<Polygon>(p);
         connected.insert(non_const);
       }
-    }
+    });
   });
   return connected;
 }

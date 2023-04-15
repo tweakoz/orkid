@@ -26,12 +26,12 @@ void submeshFixWindingOrder(const submesh& inpsubmesh, submesh& outsmesh, bool i
   });
   inpsubmesh.visitAllPolys([&](poly_const_ptr_t p) {
     std::vector<vertex_ptr_t> newverts;
-    for (auto v : p->_vertices) {
+    p->visitVertices([&](vertex_const_ptr_t v) {
       auto it = vtx_map.find(v->_poolindex);
       OrkAssert(it != vtx_map.end());
       auto newv = outsmesh.vertex(it->second);
       newverts.push_back(newv);
-    }
+    });
     Polygon new_poly(newverts);
     dvec3 N1 = new_poly.computeNormal();
 
