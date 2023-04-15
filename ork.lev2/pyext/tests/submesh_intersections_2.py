@@ -31,7 +31,7 @@ class SceneGraphApp(BasicUiCamSgApp):
     self.numsteps_sim = 0
     self.maxsteps_sim = 451
     self.numsteps_cut = 0
-    self.maxsteps_cut = 2
+    self.maxsteps_cut = 4
   ##############################################
   def onGpuInit(self,ctx):
     super().onGpuInit(ctx,add_grid=False)
@@ -152,6 +152,7 @@ class SceneGraphApp(BasicUiCamSgApp):
     super().onUpdate(updevent)
     while self.numsteps_sim < self.maxsteps_sim:
       self.numsteps_sim += 1
+      self.dirty = True
       ##############################
       # handle counter
       ##############################
@@ -183,9 +184,8 @@ class SceneGraphApp(BasicUiCamSgApp):
       #2
       lat_1 = self.upd_c1.computeLAT()
       lat_2 = self.upd_c2.computeLAT()
-      PLANAR_BIAS = 0.0016
       self.fvmtx1 = dmtx4.lookAt(dvec3(0,0,1),dvec3(lat_1,0,0),dvec3(0,1,0))
-      self.fvmtx2 = dmtx4.lookAt(dvec3(1,0,1+PLANAR_BIAS),dvec3(1,lat_2,PLANAR_BIAS),dvec3(0,1,0))
+      self.fvmtx2 = dmtx4.lookAt(dvec3(1,0,1),dvec3(1,lat_2,0),dvec3(0,1,0))
       #
       self.frustum1.set(self.fvmtx1,self.fpmtx1)
       self.frustum2.set(self.fvmtx2,self.fpmtx2)
@@ -199,16 +199,17 @@ class SceneGraphApp(BasicUiCamSgApp):
     super().onGpuIter()
 
     #
-    submesh1 = stripSubmesh(self.frusmesh1)
+    if self.dirty:
+      self.dirty = False
+      submesh1 = stripSubmesh(self.frusmesh1)
+      clipped = clipMeshWithFrustum(submesh1,self.frustum2,self.maxsteps_cut)
+      #dumpMeshVertices(clipped)
+      #isec1 = clipped.convexHull(0)
+      #isec1 = submesh1.convexHull(0)
+      self.submesh_isect = clipped
+      self.hull = clipped #clipped.convexHull(self.numsteps_sim) 
 
-    clipped = clipMeshWithFrustum(submesh1,self.frustum2,self.maxsteps_cut)
-    #dumpMeshVertices(clipped)
-    #isec1 = clipped.convexHull(0)
-    #isec1 = submesh1.convexHull(0)
-    self.submesh_isect = clipped
-    self.hull = clipped #clipped.convexHull(self.numsteps_sim) 
-
-    if self.hull!=None:
+      if self.hull!=None:
         clipped.dumpPolys("clippedout")
         self.pts_drawabledata.pointsmesh = clipped
         # intersection mesh
@@ -223,14 +224,17 @@ class SceneGraphApp(BasicUiCamSgApp):
     super().onUiEvent(uievent)
     if uievent.code == tokens.KEY_DOWN.hashed or uievent.code == tokens.KEY_REPEAT.hashed:
         if uievent.keycode == 32:
+          self.dirty = True
           self.maxsteps_sim = (self.maxsteps_sim + 10)
           print(self.maxsteps_sim)
         if uievent.keycode == ord('['): # spacebar
+          self.dirty = True
           self.maxsteps_cut = (self.maxsteps_cut - 1)
           if self.maxsteps_cut<0:
             self.maxsteps_cut = 0
           print(self.maxsteps_cut)
         elif uievent.keycode == ord(']'): # spacebar
+          self.dirty = True
           self.maxsteps_cut = (self.maxsteps_cut + 1)
           if self.maxsteps_cut>8:
             self.maxsteps_cut = 8

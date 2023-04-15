@@ -130,7 +130,7 @@ void EzTopWidget::DoDraw(ui::drawevent_constptr_t drwev) {
     ///////////////////////////
     double this_time           = _mainwin->_render_timer.SecsSinceStart();
     _mainwin->_render_prevtime = this_time;
-    if (this_time >= 5.0) {
+    if (this_time >= 15.0) {
       double FPS = _mainwin->_render_state_numiters / this_time;
       logchan_ezapp->log("FPS<%g>", FPS);
       _mainwin->_render_state_numiters = 0.0;

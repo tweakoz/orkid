@@ -233,8 +233,9 @@ struct Clipper {
 
         ///////////////////////////////////////////
 
-        if (do_front)
+        if (do_front){
           process_clipped_poly(clipped_front.mVerts, outsmesh_Front, front_planar_verts);
+        }
 
         if (do_back)
           process_clipped_poly(clipped_back.mVerts, outsmesh_Back, back_planar_verts);
@@ -265,10 +266,27 @@ void _submeshClipWithPlaneConcave(
 
   inpsubmesh.dumpPolys("inpsubmesh");
 
-  close_mesh = false;
+  //close_mesh = false;
   Clipper clipper(inpsubmesh, slicing_plane, outsmesh_Front, outsmesh_Back);
 
   outsmesh_Front.dumpPolys("clipped_front");
+
+    if(clipper.front_planar_verts._the_map.size() > 0){
+      printf("fpv [" );
+      for( auto v_item : clipper.front_planar_verts._the_map ){
+        auto v = v_item.second;
+        printf(" %d", v->_poolindex );
+      }
+      printf( "]\n" );
+    }
+    if(clipper.back_planar_verts._the_map.size() > 0){
+      printf("bpv [" );
+      for( auto v_item : clipper.back_planar_verts._the_map ){
+        auto v = v_item.second;
+        printf(" %d", v->_poolindex );
+      }
+      printf( "]\n" );
+    }
 
   ///////////////////////////////////////////////////////////
   // close mesh
@@ -278,7 +296,11 @@ void _submeshClipWithPlaneConcave(
                       vertex_set_t& planar_verts,
                       bool front) { //
     outsubmesh.visitAllVertices(
-        [&](vertex_ptr_t v) { printf("submesh v%d : %f %f %f\n", v->_poolindex, v->mPos.x, v->mPos.y, v->mPos.z); });
+        [&](vertex_ptr_t v) { //
+        printf("submesh v%d : %f %f %f\n", v->_poolindex, v->mPos.x, v->mPos.y, v->mPos.z); 
+    });
+
+    outsubmesh.dumpPolys("preclose");
 
     /////////////////////////////////////////
     //  take note of edges which lie on the
@@ -286,9 +308,18 @@ void _submeshClipWithPlaneConcave(
     /////////////////////////////////////////
 
     edge_set_t all_edges;
-    outsubmesh.visitAllPolys([&](poly_ptr_t poly) { poly->visitEdges([&](edge_ptr_t e) { all_edges.insert(e); }); });
+    outsubmesh.visitAllPolys([&](poly_ptr_t poly) { //
+      poly->visitEdges([&](edge_ptr_t e) { //
+        all_edges.insert(e); 
+      });
+    });
 
-    edge_vect_t planar_edges;
+    for( auto e_item : all_edges._the_map ){
+      auto e = e_item.second;
+      printf("all e[%d %d]\n", e->_vertexA->_poolindex, e->_vertexB->_poolindex);
+    }
+
+    edge_set_t planar_edges;
 
     int index = 0;
     planar_verts.visit([&](vertex_ptr_t v) {
@@ -299,14 +330,24 @@ void _submeshClipWithPlaneConcave(
         if (v == v2)
           return;
         auto e = std::make_shared<edge>(v, v2);
-        if (all_edges.contains(e)) {
-          planar_edges.push_back(e);
+        bool has_edge = false;
+        for( auto ie : all_edges._the_map ){
+          auto e = ie.second;
+          if( e->_vertexA == v && e->_vertexB == v2 ){
+            has_edge = true;
+            break;
+          }
+        }
+        if (has_edge) {
+          auto e2 = std::make_shared<edge>(v2, v);
+          planar_edges.insert(e2);
         }
       });
       index++;
     });
 
-    for (auto e : planar_edges) {
+    for (auto e_item : planar_edges._the_map) {
+      auto e = e_item.second;
       printf("planar e %d %d\n", e->_vertexA->_poolindex, e->_vertexB->_poolindex);
     }
 
@@ -320,7 +361,8 @@ void _submeshClipWithPlaneConcave(
 
       EdgeChainLinker _linker;
       _linker._name = outsubmesh.name;
-      for (auto edge : planar_edges) {
+      for (auto edge_item : planar_edges._the_map) {
+        auto edge = edge_item.second;
         _linker.add_edge(edge);
       }
       _linker.link();
@@ -329,19 +371,19 @@ void _submeshClipWithPlaneConcave(
 
       dvec3 centroid = outsubmesh.centerOfVertices();
 
-      for (auto loop : _linker._edge_loops) {
-
-        auto loop_center = loop->center();
+      auto do_chain = [&](edge_chain_ptr_t chain, //
+                         submesh& outsubmesh) { //
+        auto loop_center = chain->center();
         // sort vertices by angle around center (relative to first vertex)
 
-        auto v0 = loop->_edges[0]->_vertexA;
+        auto v0 = chain->_edges[0]->_vertexA;
         auto d0 = (v0->mPos - loop_center).normalized();
 
         std::map<double, vertex_ptr_t> vertices_by_angle;
         vertices_by_angle[0] = v0;
 
-        for (int iv = 1; iv < loop->_edges.size(); iv++) {
-          auto vn                  = loop->_edges[iv]->_vertexA;
+        for (int iv = 1; iv < chain->_edges.size(); iv++) {
+          auto vn                  = chain->_edges[iv]->_vertexA;
           auto dn                  = (vn->mPos - loop_center).normalized();
           auto cross               = dn.crossWith(d0);
           double angle             = dn.orientedAngle(d0, cross);
@@ -355,7 +397,7 @@ void _submeshClipWithPlaneConcave(
         }
 
         if (sorted_vertices.size() < 3) {
-          continue;
+          return;
         }
 
         Polygon p1(sorted_vertices);
@@ -364,8 +406,22 @@ void _submeshClipWithPlaneConcave(
           p1.reverse();
         }
         outsubmesh.mergePoly(p1);
+
+      };
+
+      for (auto loop : _linker._edge_loops) {
+        do_chain(loop, outsubmesh);
       }
 
+      for (auto chain : _linker._edge_chains) {
+        printf( "chain [" );
+        for( auto e : chain->_edges ){
+          printf(" <%d %d>", e->_vertexA->_poolindex, e->_vertexB->_poolindex);
+        }
+        printf( "]\n" );
+        //do_chain(chain, outsubmesh);
+
+      }
     } // if (planar_edges.size()) {
 
   };

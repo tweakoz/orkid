@@ -41,7 +41,7 @@ UiCamera::UiCamera()
     , _vpdim(1,1) {
   other_info = (std::string) "";
   _camcamdata.setUiCamera(this);
-  printf("SETLEV2CAM<%p>\n", (void*)this);
+  //printf("SETLEV2CAM<%p>\n", (void*)this);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

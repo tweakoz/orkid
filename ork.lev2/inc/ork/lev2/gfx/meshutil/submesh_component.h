@@ -312,7 +312,7 @@ struct EdgeLoop : public EdgeChain {
 struct EdgeChainLinker {
   edge_chain_ptr_t add_edge(edge_ptr_t e);
   bool loops_possible() const;
-  edge_chain_ptr_t findChainForVertex(vertex_ptr_t va);
+  edge_chain_ptr_t findChainToLink(edge_chain_ptr_t ch);
   void removeChain(edge_chain_ptr_t chain_to_remove);
   void closeChains();
   void link();

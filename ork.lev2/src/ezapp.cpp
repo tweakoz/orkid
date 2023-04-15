@@ -436,7 +436,7 @@ int OrkEzApp::mainThreadLoop() {
 
         _update_timeaccumulator -= step;
         stats_timeaccum += step;
-        if (stats_timeaccum >= 5.0) {
+        if (stats_timeaccum >= 15.0) {
 
           logchan_ezapp->log("UPS<%g>", state_numiters / stats_timeaccum);
           stats_timeaccum = 0.0;

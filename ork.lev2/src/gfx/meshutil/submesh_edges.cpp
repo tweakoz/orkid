@@ -249,7 +249,7 @@ edge_chain_ptr_t EdgeChainLinker::add_edge(edge_ptr_t e) {
   // no dest chain found, create a new one
   //////////////////////////////////
   else {
-    // printf("Create New Chain vb<%d>\n", vb->_poolindex);
+    printf("Create New Chain vb<%d>\n", vb->_poolindex);
     dest_chain = std::make_shared<EdgeChain>();
     dest_chain->_edges.push_back(e);
     dest_chain->_vertices.insert(vb);
@@ -269,19 +269,32 @@ bool EdgeChainLinker::loops_possible() const {
   return true;
 }
 //////////////////////////////////////////////////////////
-edge_chain_ptr_t EdgeChainLinker::findChainForVertex(vertex_ptr_t va) {
+edge_chain_ptr_t EdgeChainLinker::findChainToLink(edge_chain_ptr_t lch) {
+  auto va = (*lch->_edges.begin())->_vertexA;
+  auto vb = (*lch->_edges.rbegin())->_vertexB;
   for (auto chain : _edge_chains) {
-    auto& edges    = chain->_edges;
-    auto last_edge = *edges.rbegin();
-    if (last_edge->_vertexB == va) {
-      return chain;
-    }
-    auto first_edge = *edges.begin();
-    if (first_edge->_vertexA == va) {
-      EdgeChain reversed;
-      reversed.reverseOf(*chain);
-      chain->_edges = reversed._edges;
-      return chain;
+    if( lch != chain){
+      auto& edges    = chain->_edges;
+      auto last_edge = *edges.rbegin();
+      if (last_edge->_vertexB == va) {
+        return chain;
+      }
+      else if (last_edge->_vertexB == vb) {
+        EdgeChain reversed;
+        reversed.reverseOf(*chain);
+        chain->_edges = reversed._edges;
+        return chain;
+      }
+      auto first_edge = *edges.begin();
+      if (first_edge->_vertexA == va) {
+        EdgeChain reversed;
+        reversed.reverseOf(*chain);
+        chain->_edges = reversed._edges;
+        return chain;
+      }
+      else if (first_edge->_vertexA == vb) {
+        return chain;
+      }
     }
   }
   return nullptr;
@@ -310,7 +323,7 @@ bool EdgeChain::containsVertexID(std::unordered_set<int>& verts) const{
 }
 //////////////////////////////////////////////////////////
 void EdgeChainLinker::removeChain(edge_chain_ptr_t chain_to_remove) {
-  // printf( "removeChain chain<%p> numedges<%zu>\n", (void*) chain_to_remove.get(), chain_to_remove->_edges.size() );
+  printf( "removeChain chain<%p> numedges<%zu>\n", (void*) chain_to_remove.get(), chain_to_remove->_edges.size() );
   auto the_lambda = std::remove_if(_edge_chains.begin(), _edge_chains.end(), [chain_to_remove](edge_chain_ptr_t testchain) {
     return (testchain == chain_to_remove);
   });
@@ -351,22 +364,7 @@ void EdgeChainLinker::link() {
 
   /////////////////////////////////////////////////////
 
-  // printf("[%s] prelink numchains<%zu>\n", _name.c_str(), _edge_chains.size());
-  for (int i = 0; i < _edge_chains.size(); i++) {
-    auto chain = _edge_chains[i];
-    auto d = chain->dump();
-    if (0){
-      std::unordered_set<int> verts = {0,2,8,9};
-      if(chain->containsVertexID(verts))
-      printf(
-          "[%s] chain %d:%p | numedges<%zu> [%s]\n",
-          _name.c_str(),
-          i,
-          chain.get(),
-          chain->_edges.size(),
-          d.c_str());
-    }
-  }
+  printf("[%s] prelink numchains<%zu>\n", _name.c_str(), _edge_chains.size());
 
   //////////////////////////////////////////////////////////////////////////
   // link chains
@@ -383,13 +381,32 @@ void EdgeChainLinker::link() {
     edge_chain_ptr_t left_chain;
     edge_chain_ptr_t right_chain;
 
+    int ic  = 0;
     for (auto c : _edge_chains) {
+      printf( "chain<%d: %p [%s]>\n", ic, (void*) c.get(), c->dump().c_str() );
+      ic ++;
+    }
 
-      auto subj_vtx = (*c->_edges.begin())->_vertexA;
-      auto c2       = findChainForVertex(subj_vtx);
-      if (c2 != c) {
-        left_chain  = c2;
-        right_chain = c;
+    for (auto c1 : _edge_chains) {
+
+      auto c2       = findChainToLink(c1);
+      printf( "chain1<%p> chain2<%p>\n", (void*) c1.get(), (void*) c2.get() );
+      if ((c2 != nullptr) and (c2 != c1)) {
+        int c1end = c1->_edges.rbegin()->get()->_vertexB->_poolindex;
+        int c1beg = c1->_edges.begin()->get()->_vertexA->_poolindex;
+        int c2end = c2->_edges.rbegin()->get()->_vertexB->_poolindex;
+        int c2beg = c2->_edges.begin()->get()->_vertexA->_poolindex;
+        if( c1end == c2beg ){
+          left_chain  = c1;
+          right_chain = c2;
+        }
+        else if( c1beg == c2end ){
+          left_chain  = c2;
+          right_chain = c1;
+        }
+        else{
+          OrkAssert(false);
+        }
         break;
       }
     }
@@ -397,6 +414,19 @@ void EdgeChainLinker::link() {
     //////////////////////////////////////////////////
     // join the left and right chain
     //////////////////////////////////////////////////
+
+    if( left_chain ){
+      printf( "lchain<%s>\n", left_chain->dump().c_str() );
+    }
+    else{
+      printf( "lchain<null>\n" );
+    }
+    if( right_chain ){
+      printf( "rchain<%s>\n", right_chain->dump().c_str() );
+    }
+    else{
+      printf( "rchain<null>\n" );
+    }
 
     if (left_chain and right_chain) {
 
@@ -412,7 +442,7 @@ void EdgeChainLinker::link() {
       if (_edge_chains.size() > 1)
         removeChain(right_chain);
 
-      if (0)
+      if (1)
         printf(
             "[%s] lchain<%p> rchain<%p> presize<%zu> postsize<%zu> chcount<%zu>\n",
             _name.c_str(),

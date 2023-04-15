@@ -250,19 +250,19 @@ static fvec2 pmousepos;
 ///////////////////////////////////////////////////////////////////////////////
 
 void EzUiCam::ZoomBegin(const CamEvTrackData& ed){
-   printf("ZoomBegin\n");
+   //printf("ZoomBegin\n");
 }
 void EzUiCam::ZoomUpdate(const CamEvTrackData& ed){
 
 }
 void EzUiCam::ZoomEnd(){
-   printf("ZoomEnd\n");
+   //printf("ZoomEnd\n");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void EzUiCam::PanBegin(const CamEvTrackData& ed) {
-   printf("BeginPan\n");
+   //printf("BeginPan\n");
   pmousepos = ork::lev2::logicalMousePos();
   // OrkGlobalDisableMousePointer();
 }
@@ -293,7 +293,7 @@ void EzUiCam::PanUpdate(const CamEvTrackData& ed) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void EzUiCam::PanEnd() {
-  printf("EndPan\n");
+  //printf("EndPan\n");
   // QCursor::setPos(pmousepos);
   // OrkGlobalEnableMousePointer();
 }
@@ -301,7 +301,7 @@ void EzUiCam::PanEnd() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void EzUiCam::RotBegin(const CamEvTrackData& ed) {
-   printf("BeginRot\n");
+   //printf("BeginRot\n");
 
   // printf( "Rot: vPushNZ<%g %g %g>\n", vPushNZ.x, vPushNZ.y, vPushNZ.z );
 
@@ -313,7 +313,7 @@ void EzUiCam::RotBegin(const CamEvTrackData& ed) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void EzUiCam::RotEnd() {
-   printf("EndRot\n");
+   //printf("EndRot\n");
   // QCursor::setPos(pmousepos);
   // OrkGlobalEnableMousePointer();
 }
@@ -321,7 +321,7 @@ void EzUiCam::RotEnd() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void EzUiCam::DollyBegin(const CamEvTrackData& ed) {
-   printf("BeginDolly\n");
+   //printf("BeginDolly\n");
   pmousepos = ork::lev2::logicalMousePos();
   // OrkGlobalDisableMousePointer();
 }
@@ -329,7 +329,7 @@ void EzUiCam::DollyBegin(const CamEvTrackData& ed) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void EzUiCam::DollyEnd() {
-   printf("EndDolly\n");
+   //printf("EndDolly\n");
   // QCursor::setPos(pmousepos);
   // OrkGlobalEnableMousePointer();
   mDoDolly = false;
@@ -649,7 +649,7 @@ bool EzUiCam::UIEventHandler(ui::event_constptr_t EV) {
         zmoveamt *= 5.0f;
 
 
-      printf( "mw - zmoveamt<%g> isalt<%d>\n", zmoveamt,int(isalt) );
+      //printf( "mw - zmoveamt<%g> isalt<%d>\n", zmoveamt,int(isalt) );
 
       int mousedelta = EV->miMWY;
 
@@ -686,7 +686,7 @@ bool EzUiCam::UIEventHandler(ui::event_constptr_t EV) {
 
       }
 
-      printf( "mfLoc<%g>\n", mfLoc );
+      //printf( "mfLoc<%g>\n", mfLoc );
 
       mDoZoom = false;
 
