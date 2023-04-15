@@ -10,6 +10,8 @@
 #include <ork/lev2/gfx/meshutil/meshutil.h>
 #include <deque>
 
+static constexpr bool debug         = true;
+
 static constexpr bool do_front        = true;
 static constexpr bool do_back         = true;
 static constexpr double PLANE_EPSILON = 0.001f;
@@ -38,7 +40,7 @@ struct PlanarVertexCategorize {
       auto nonconst_vertex = std::const_pointer_cast<struct vertex>(vtx);
       nonconst_vertex->clearAllExceptPosition();
       double point_distance = slicing_plane.pointDistance(vtx->mPos);
-      printf( "iv<%d> point_distance<%f>\n", iv, point_distance);
+      if(debug)printf( "iv<%d> point_distance<%f>\n", iv, point_distance);
       if (point_distance > (-PLANE_EPSILON)) {
         _front_verts.insert(nonconst_vertex);
       } else if (point_distance < (PLANE_EPSILON)) {
@@ -92,7 +94,7 @@ vertex_set_t addWholePoly(std::string hdr, poly_const_ptr_t src_poly, submesh& d
     if (test_verts.find(v->_poolindex) == test_verts.end())
       log_poly = false;
   }
-  if (log_poly) {
+  if (debug and log_poly) {
 
     printf("<%s> add whole poly: [", hdr.c_str());
     for (auto v : src_poly->_vertices) {
@@ -127,7 +129,7 @@ struct Clipper {
     inpsubmesh.visitAllPolys([&](poly_const_ptr_t input_poly) {
       int numverts    = input_poly->GetNumSides();
       auto polyvtxcnt = categorized.categorizePolygon(input_poly);
-      printf( "ip<%d> numverts<%d> front<%d> back<%d> planar<%d>\n", ip, numverts, polyvtxcnt._front_count, polyvtxcnt._back_count, polyvtxcnt._planar_count );
+      if(debug)printf( "ip<%d> numverts<%d> front<%d> back<%d> planar<%d>\n", ip, numverts, polyvtxcnt._front_count, polyvtxcnt._back_count, polyvtxcnt._planar_count );
       ip++;
       //////////////////////////////////////////////
       // all of this poly's vertices in front ? -> trivially route to outsmesh_Front
@@ -170,26 +172,6 @@ struct Clipper {
             clip_input,    //
             clipped_front, //
             clipped_back);
-
-        /*if (vset_ip.contains(inpsubmesh.vertex(2)) and vset_ip.contains(inpsubmesh.vertex(1)) and
-            vset_ip.contains(inpsubmesh.vertex(7))) {
-
-          size_t sfront = clipped_front.mVerts.size();
-          size_t sback  = clipped_back.mVerts.size();
-          printf("vset_ip contains 2, 1, 7 : sfront<%zu> sback<%zu>\n", sfront, sback);
-          printf("sfront [");
-          for (auto v : clipped_front.mVerts) {
-            auto merged_v = outsmesh_Front.mergeVertex(v);
-            printf(" %d", merged_v->_poolindex);
-          }
-          printf("]\n");
-          printf("sback [");
-          for (auto v : clipped_back.mVerts) {
-            auto merged_v = outsmesh_Back.mergeVertex(v);
-            printf(" %d", merged_v->_poolindex);
-          }
-          printf("]\n");
-        }*/
 
         ///////////////////////////////////////////
 
@@ -262,16 +244,16 @@ void _submeshClipWithPlaneConcave(
     submesh& outsmesh_Front, //
     submesh& outsmesh_Back) {
 
-  printf("///////////\n");
+  if(debug)printf("///////////\n");
 
-  inpsubmesh.dumpPolys("inpsubmesh");
+  if(debug)inpsubmesh.dumpPolys("inpsubmesh");
 
   //close_mesh = false;
   Clipper clipper(inpsubmesh, slicing_plane, outsmesh_Front, outsmesh_Back);
 
-  outsmesh_Front.dumpPolys("clipped_front");
+  if(debug)outsmesh_Front.dumpPolys("clipped_front");
 
-    if(clipper.front_planar_verts._the_map.size() > 0){
+    if(debug)if(clipper.front_planar_verts._the_map.size() > 0){
       printf("fpv [" );
       for( auto v_item : clipper.front_planar_verts._the_map ){
         auto v = v_item.second;
@@ -279,7 +261,7 @@ void _submeshClipWithPlaneConcave(
       }
       printf( "]\n" );
     }
-    if(clipper.back_planar_verts._the_map.size() > 0){
+    if(debug)if(clipper.back_planar_verts._the_map.size() > 0){
       printf("bpv [" );
       for( auto v_item : clipper.back_planar_verts._the_map ){
         auto v = v_item.second;
@@ -295,12 +277,14 @@ void _submeshClipWithPlaneConcave(
   auto do_close = [&](submesh& outsubmesh, //
                       vertex_set_t& planar_verts,
                       bool front) { //
-    outsubmesh.visitAllVertices(
+
+    if(debug)outsubmesh.visitAllVertices(
         [&](vertex_ptr_t v) { //
-        printf("submesh v%d : %f %f %f\n", v->_poolindex, v->mPos.x, v->mPos.y, v->mPos.z); 
+        double point_distance = slicing_plane.pointDistance(v->mPos);
+        printf("outv%d : %f %f %f point_distance<%f>\n", v->_poolindex, v->mPos.x, v->mPos.y, v->mPos.z, point_distance); 
     });
 
-    outsubmesh.dumpPolys("preclose");
+    if(debug)outsubmesh.dumpPolys("preclose");
 
     /////////////////////////////////////////
     //  take note of edges which lie on the
@@ -314,7 +298,7 @@ void _submeshClipWithPlaneConcave(
       });
     });
 
-    for( auto e_item : all_edges._the_map ){
+    if(debug)for( auto e_item : all_edges._the_map ){
       auto e = e_item.second;
       printf("all e[%d %d]\n", e->_vertexA->_poolindex, e->_vertexB->_poolindex);
     }
@@ -323,9 +307,7 @@ void _submeshClipWithPlaneConcave(
 
     int index = 0;
     planar_verts.visit([&](vertex_ptr_t v) {
-      if (test_verts.count(v->_poolindex)) {
-        printf("planar v%d : %f %f %f\n", v->_poolindex, v->mPos.x, v->mPos.y, v->mPos.z);
-      }
+      if(debug)printf("planar v%d : %f %f %f\n", v->_poolindex, v->mPos.x, v->mPos.y, v->mPos.z);
       planar_verts.visit([&](vertex_ptr_t v2) {
         if (v == v2)
           return;
@@ -346,7 +328,7 @@ void _submeshClipWithPlaneConcave(
       index++;
     });
 
-    for (auto e_item : planar_edges._the_map) {
+    if(debug)for (auto e_item : planar_edges._the_map) {
       auto e = e_item.second;
       printf("planar e %d %d\n", e->_vertexA->_poolindex, e->_vertexB->_poolindex);
     }
@@ -373,35 +355,17 @@ void _submeshClipWithPlaneConcave(
 
       auto do_chain = [&](edge_chain_ptr_t chain, //
                          submesh& outsubmesh) { //
-        auto loop_center = chain->center();
-        // sort vertices by angle around center (relative to first vertex)
 
         auto v0 = chain->_edges[0]->_vertexA;
-        auto d0 = (v0->mPos - loop_center).normalized();
+        auto v1 = chain->_edges[0]->_vertexB;
+        auto v2 = chain->_edges[1]->_vertexB;
+        auto d01 = (v1->mPos - v0->mPos).normalized();
+        auto d12 = (v2->mPos - v1->mPos).normalized();
+        auto dc = d01.normalized().crossWith(d12.normalized());
 
-        std::map<double, vertex_ptr_t> vertices_by_angle;
-        vertices_by_angle[0] = v0;
-
-        for (int iv = 1; iv < chain->_edges.size(); iv++) {
-          auto vn                  = chain->_edges[iv]->_vertexA;
-          auto dn                  = (vn->mPos - loop_center).normalized();
-          auto cross               = dn.crossWith(d0);
-          double angle             = dn.orientedAngle(d0, cross);
-          vertices_by_angle[angle] = vn;
-        }
-
-        std::vector<vertex_ptr_t> sorted_vertices;
-        for (auto it : vertices_by_angle) {
-          auto v = it.second;
-          sorted_vertices.push_back(v);
-        }
-
-        if (sorted_vertices.size() < 3) {
-          return;
-        }
-
-        Polygon p1(sorted_vertices);
-        auto vn0 = (sorted_vertices[0]->mPos - centroid).normalized();
+        auto ordered = chain->orderedVertices();
+        Polygon p1(ordered);
+        auto vn0 = (ordered[0]->mPos - centroid).normalized();
         if (p1.computeNormal().dotWith(vn0) < 0) {
           p1.reverse();
         }
@@ -410,15 +374,20 @@ void _submeshClipWithPlaneConcave(
       };
 
       for (auto loop : _linker._edge_loops) {
+        if(debug)printf( "loop [" );
+        if(debug)for( auto e : loop->_edges ){
+          printf(" <%d %d>", e->_vertexA->_poolindex, e->_vertexB->_poolindex);
+        }
+        if(debug)printf( "]\n" );
         do_chain(loop, outsubmesh);
       }
 
       for (auto chain : _linker._edge_chains) {
-        printf( "chain [" );
-        for( auto e : chain->_edges ){
+        if(debug)printf( "chain [" );
+        if(debug)for( auto e : chain->_edges ){
           printf(" <%d %d>", e->_vertexA->_poolindex, e->_vertexB->_poolindex);
         }
-        printf( "]\n" );
+        if(debug)printf( "]\n" );
         //do_chain(chain, outsubmesh);
 
       }

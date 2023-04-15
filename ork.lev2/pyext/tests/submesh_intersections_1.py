@@ -56,9 +56,9 @@ class SceneGraphApp(BasicUiCamSgApp):
     material = solid_wire_pipeline.sharedMaterial
     solid_wire_pipeline.bindParam( material.param("m"), tokens.RCFD_M)
     ##############################
-    self.fpmtx1 = mtx4.perspective(45*constants.DTOR,1,0.3,5)
-    self.fvmtx1 = mtx4.lookAt(vec3(0,0,1),vec3(0,0,0),vec3(0,1,0))
-    self.frustum1 = Frustum()
+    self.fpmtx1 = dmtx4.perspective(45*constants.DTOR,1,0.3,5)
+    self.fvmtx1 = dmtx4.lookAt(dvec3(0,0,1),dvec3(0,0,0),dvec3(0,1,0))
+    self.frustum1 = dfrustum()
     self.frustum1.set(self.fvmtx1,self.fpmtx1)
     self.frusmesh1 = meshutil.SubMesh.createFromFrustum(self.frustum1,projective_rect_uv=True)
     self.submesh1 = strippedSubmesh(self.frusmesh1)
@@ -68,9 +68,9 @@ class SceneGraphApp(BasicUiCamSgApp):
     self.sgnode1.sortkey = 2;
     self.sgnode1.modcolor = vec4(1,0,0,1)
     ##############################
-    self.fpmtx2 = mtx4.perspective(45*constants.DTOR,1,0.3,5)
-    self.fvmtx2 = mtx4.lookAt(vec3(1,0,1),vec3(1,1,0),vec3(0,1,0))
-    self.frustum2 = Frustum()
+    self.fpmtx2 = dmtx4.perspective(45*constants.DTOR,1,0.3,5)
+    self.fvmtx2 = dmtx4.lookAt(dvec3(1,0,1),dvec3(1,1,0),dvec3(0,1,0))
+    self.frustum2 = dfrustum()
     self.frustum2.set(self.fvmtx2,self.fpmtx2)
     self.frusmesh2 = meshutil.SubMesh.createFromFrustum(self.frustum2,projective_rect_uv=True)
     self.submesh2 = strippedSubmesh(self.frusmesh2)
@@ -186,14 +186,13 @@ class SceneGraphApp(BasicUiCamSgApp):
     ##############################
     θ = self.abstime # * math.pi * 2.0 * 0.1
     #
-    self.fpmtx1 = mtx4.perspective(self.upd_c1.computeFOV(),1,0.3,5)
-    self.fpmtx2 = mtx4.perspective(self.upd_c2.computeFOV(),1,0.3,5)
+    self.fpmtx1 = dmtx4.perspective(self.upd_c1.computeFOV(),1,0.3,5)
+    self.fpmtx2 = dmtx4.perspective(self.upd_c2.computeFOV(),1,0.3,5)
     #2
     lat_1 = self.upd_c1.computeLAT()
     lat_2 = self.upd_c2.computeLAT()
-    PLANAR_BIAS = 0.0016
-    self.fvmtx1 = mtx4.lookAt(vec3(0,0,1),vec3(lat_1,0,0),vec3(0,1,0))
-    self.fvmtx2 = mtx4.lookAt(vec3(1,0,1+PLANAR_BIAS),vec3(1,lat_2,PLANAR_BIAS),vec3(0,1,0))
+    self.fvmtx1 = dmtx4.lookAt(dvec3(0,0,1),dvec3(lat_1,0,0),dvec3(0,1,0))
+    self.fvmtx2 = dmtx4.lookAt(dvec3(1,0,1),dvec3(1,lat_2,0),dvec3(0,1,0))
     #
     self.frustum1.set(self.fvmtx1,self.fpmtx1)
     self.frustum2.set(self.fvmtx2,self.fpmtx2)

@@ -299,6 +299,7 @@ struct EdgeChain {
   bool containsVertexID(std::unordered_set<int>& verts) const;
   void visit(const std::function<void(edge_ptr_t)>& visitor) const;
   edge_vect_t _edges;
+  std::vector<vertex_ptr_t> orderedVertices() const;
   std::unordered_set<vertex_ptr_t> _vertices;
 };
 

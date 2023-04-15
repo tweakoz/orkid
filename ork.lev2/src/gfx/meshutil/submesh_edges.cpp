@@ -10,6 +10,8 @@
 #include <ork/lev2/gfx/meshutil/meshutil.h>
 #include <deque>
 
+static constexpr bool debug         = true;
+
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::meshutil {
 ///////////////////////////////////////////////////////////////////////////////
@@ -249,7 +251,7 @@ edge_chain_ptr_t EdgeChainLinker::add_edge(edge_ptr_t e) {
   // no dest chain found, create a new one
   //////////////////////////////////
   else {
-    printf("Create New Chain vb<%d>\n", vb->_poolindex);
+    if(debug)printf("Create New Chain vb<%d>\n", vb->_poolindex);
     dest_chain = std::make_shared<EdgeChain>();
     dest_chain->_edges.push_back(e);
     dest_chain->_vertices.insert(vb);
@@ -322,12 +324,21 @@ bool EdgeChain::containsVertexID(std::unordered_set<int>& verts) const{
   return false;
 }
 //////////////////////////////////////////////////////////
+std::vector<vertex_ptr_t> EdgeChain::orderedVertices() const{
+  std::vector<vertex_ptr_t> rval;
+  for(auto e : _edges) {
+    rval.push_back(e->_vertexA);
+  }
+  rval.push_back(_edges.back()->_vertexB);
+  return rval;
+}
+//////////////////////////////////////////////////////////
 void EdgeChainLinker::removeChain(edge_chain_ptr_t chain_to_remove) {
-  printf( "removeChain chain<%p> numedges<%zu>\n", (void*) chain_to_remove.get(), chain_to_remove->_edges.size() );
-  auto the_lambda = std::remove_if(_edge_chains.begin(), _edge_chains.end(), [chain_to_remove](edge_chain_ptr_t testchain) {
-    return (testchain == chain_to_remove);
-  });
-  _edge_chains.erase(the_lambda, _edge_chains.end());
+  if(debug)printf( "removeChain chain<%p> numedges<%zu>\n", (void*) chain_to_remove.get(), chain_to_remove->_edges.size() );
+  auto it = std::find(_edge_chains.begin(), _edge_chains.end(), chain_to_remove);
+  if( it != _edge_chains.end() ){
+    _edge_chains.erase(it);
+  }
 }
 //////////////////////////////////////////////////////////
 void EdgeChainLinker::closeChains() {
@@ -348,6 +359,24 @@ void EdgeChainLinker::closeChains() {
     _edge_loops.push_back(loop);
   }
   //////////////////////////////////
+  closed.clear();
+  for (auto chain : _edge_chains) {
+    OrkAssert(chain);
+    auto first_edge = *chain->_edges.begin();
+    auto last_edge  = *chain->_edges.rbegin();
+    auto new_edge = std::make_shared<edge>();
+    new_edge->_vertexA = last_edge->_vertexB;
+    new_edge->_vertexB = first_edge->_vertexA;
+    chain->_edges.push_back(new_edge);
+    auto loop    = std::make_shared<EdgeLoop>();
+    loop->_edges = chain->_edges;
+    _edge_loops.push_back(loop);
+  }
+  //////////////////////////////////
+  for (auto chain : closed) {
+    removeChain(chain);
+  }
+  //////////////////////////////////
   if (_edge_loops.size() == 0) {
     // printf("[%s] EDGELOOP DEBUG\n", _name.c_str());
     for (auto chain : _edge_chains) {
@@ -364,7 +393,7 @@ void EdgeChainLinker::link() {
 
   /////////////////////////////////////////////////////
 
-  printf("[%s] prelink numchains<%zu>\n", _name.c_str(), _edge_chains.size());
+  if(debug)printf("[%s] prelink numchains<%zu>\n", _name.c_str(), _edge_chains.size());
 
   //////////////////////////////////////////////////////////////////////////
   // link chains
@@ -382,7 +411,7 @@ void EdgeChainLinker::link() {
     edge_chain_ptr_t right_chain;
 
     int ic  = 0;
-    for (auto c : _edge_chains) {
+    if(debug)for (auto c : _edge_chains) {
       printf( "chain<%d: %p [%s]>\n", ic, (void*) c.get(), c->dump().c_str() );
       ic ++;
     }
@@ -390,7 +419,7 @@ void EdgeChainLinker::link() {
     for (auto c1 : _edge_chains) {
 
       auto c2       = findChainToLink(c1);
-      printf( "chain1<%p> chain2<%p>\n", (void*) c1.get(), (void*) c2.get() );
+      if(debug)printf( "chain1<%p> chain2<%p>\n", (void*) c1.get(), (void*) c2.get() );
       if ((c2 != nullptr) and (c2 != c1)) {
         int c1end = c1->_edges.rbegin()->get()->_vertexB->_poolindex;
         int c1beg = c1->_edges.begin()->get()->_vertexA->_poolindex;
@@ -416,16 +445,16 @@ void EdgeChainLinker::link() {
     //////////////////////////////////////////////////
 
     if( left_chain ){
-      printf( "lchain<%s>\n", left_chain->dump().c_str() );
+      if(debug)printf( "lchain<%s>\n", left_chain->dump().c_str() );
     }
     else{
-      printf( "lchain<null>\n" );
+      if(debug)printf( "lchain<null>\n" );
     }
     if( right_chain ){
-      printf( "rchain<%s>\n", right_chain->dump().c_str() );
+      if(debug)printf( "rchain<%s>\n", right_chain->dump().c_str() );
     }
     else{
-      printf( "rchain<null>\n" );
+      if(debug)printf( "rchain<null>\n" );
     }
 
     if (left_chain and right_chain) {
@@ -442,7 +471,7 @@ void EdgeChainLinker::link() {
       if (_edge_chains.size() > 1)
         removeChain(right_chain);
 
-      if (1)
+      if (debug)
         printf(
             "[%s] lchain<%p> rchain<%p> presize<%zu> postsize<%zu> chcount<%zu>\n",
             _name.c_str(),
