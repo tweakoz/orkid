@@ -148,10 +148,20 @@ using dvec_cb_t = std::function<void(const dvec3&)>;
             addWholePoly("C: ",out_bpoly, outsubmesh);
           }
           */
+
+enum class EPlanarStatus { CROSS_F2B, CROSS_B2F, PLANAR, NONE };
+
+struct PlanarCrossing {
+  vertex_ptr_t _vtxA;
+  vertex_ptr_t _vtxB;
+  EPlanarStatus _status;
+};
+
 void clipImpl(
     const dplane3& slicing_plane,
     poly_const_ptr_t input_poly, //
     submesh& out_submesh,        //
+    std::vector<PlanarCrossing>& planars,
     bool do_front) {             //
 
   bool do_back = not do_front;
@@ -159,37 +169,44 @@ void clipImpl(
   const int inuminverts = input_poly->GetNumSides();
   OrkAssert(input_poly->GetNumSides() >= 3);
 
-  if (debug)
-    printf("clip poly num verts<%d>\n", inuminverts);
+  printf( "CLIP INPUT POLY[");
+  for( auto vtx : input_poly->_vertices ) {
+    auto v_m = out_submesh.mergeVertex(*vtx);
+    printf( " %d", v_m->_poolindex );
+  }
+  printf( " ]\n");
+  //if (debug)
+    //printf("clip poly num verts<%d>\n", inuminverts);
 
   // loop around the input polygon's edges
 
   std::vector<vertex_ptr_t> front_vertices;
 
   for (int iva = 0; iva < inuminverts; iva++) {
-    if (debug)
-      printf("  iva<%d> of inuminverts<%d>\n", iva, inuminverts);
+   //if (debug)
+     // printf("  iva<%d> of inuminverts<%d>\n", iva, inuminverts);
     int ivb =
         ((iva == inuminverts - 1) //
              ? 0                  //
              : iva + 1);
 
-    const auto& vA = input_poly->_vertices[iva];
-    const auto& vB = input_poly->_vertices[ivb];
+    auto out_vtx_a = out_submesh.mergeVertex(*input_poly->_vertices[iva]);
+    auto out_vtx_b = out_submesh.mergeVertex(*input_poly->_vertices[ivb]);
 
     // get the side of each vert to the plane
-    bool is_vertex_a_front = slicing_plane.isPointInFront(vA->mPos);
-    bool is_vertex_b_front = slicing_plane.isPointInFront(vB->mPos);
+    bool is_vertex_a_front = slicing_plane.isPointInFront(out_vtx_a->mPos);
+    bool is_vertex_b_front = slicing_plane.isPointInFront(out_vtx_b->mPos);
 
-    if (debug)
-      printf("  is_vertex_a_front<%d> is_vertex_b_front<%d>\n", int(is_vertex_a_front), int(is_vertex_b_front));
+    if (debug){
+      int aindex = out_vtx_a->_poolindex;
+      int bindex = out_vtx_b->_poolindex;
+      printf("  is_vertex_a_front<%d:%d> is_vertex_b_front<%d:%d>\n", aindex, int(is_vertex_a_front), bindex, int(is_vertex_b_front));
+    }
 
     if (is_vertex_a_front) {
       if (do_front) {
-        vertex smvert;
-        smvert.mPos  = vA->mPos;
-        auto out_vtx = out_submesh.mergeVertex(smvert);
-        front_vertices.push_back(out_vtx);
+        printf( "emit front vtx<%d>\n", out_vtx_a->_poolindex );
+        front_vertices.push_back(out_vtx_a);
       }
       // if( debug ) printf("  add a to front cnt<%zu>\n", out_front_poly.GetNumVertices());
     } else {
@@ -199,65 +216,77 @@ void clipImpl(
       // if( debug ) printf("  add a to back cnt<%zu>\n", out_back_poly.GetNumVertices());
     }
 
-    if (is_vertex_b_front != is_vertex_a_front) { // did we cross plane ?
-      if (debug)
-        printf("  plane crossed iva<%d> ivb<%d>\n", iva, ivb);
+    if (is_vertex_a_front != is_vertex_b_front) { // did we cross plane ?
+
+      bool front_to_back = (is_vertex_a_front and not is_vertex_b_front);
+      bool back_to_front = (not is_vertex_a_front and is_vertex_b_front);
+
+      //if (debug)
+        //printf("  plane crossed iva<%d> ivb<%d>\n", iva, ivb);
       dvec3 vPos;
       double isectdist;
-      dlineseg3 lseg(vA->mPos, vB->mPos);
-      bool isect1 = slicing_plane.Intersect(lseg, isectdist, vPos);
-      if (debug)
-        printf("  isect1<%d>\n", int(isect1));
-      if (isect1) {
-        double fDist   = (vA->mPos - vB->mPos).magnitude();
-        double fDist2  = (vA->mPos - vPos).magnitude();
+      dlineseg3 lsegab(out_vtx_a->mPos, out_vtx_b->mPos);
+      bool does_intersect = slicing_plane.Intersect(lsegab, isectdist, vPos);
+      dvec3 LerpedVertex;
+
+      printf("  does_intersectAB<%d>\n", int(does_intersect));
+      if(does_intersect) {
+        double fDist   = (out_vtx_a->mPos - out_vtx_b->mPos).magnitude();
+        double fDist2  = (out_vtx_a->mPos - vPos).magnitude();
         double fScalar = (abs(fDist) < PLANE_EPSILON) ? 0.0 : fDist2 / fDist;
-        dvec3 LerpedVertex;
-        LerpedVertex.lerp(vA->mPos, vB->mPos, fScalar);
-        if (do_front) {
-          vertex smvert;
-          smvert.mPos  = LerpedVertex;
-          auto out_vtx = out_submesh.mergeVertex(smvert);
-          front_vertices.push_back(out_vtx);
-        }
-        if (do_back) {
-          // on_out_back(LerpedVertex);
-        }
-        // if( debug ) printf("  add l to front cnt<%d>\n", out_front_poly.GetNumVertices());
-        // if( debug ) printf("  add l to front cnt<%d>\n", out_back_poly.GetNumVertices());
-      } else {
-        dlineseg3 lseg2(vB->mPos, vA->mPos);
-        bool isect2 = slicing_plane.Intersect(lseg2, isectdist, vPos);
-        if (debug)
-          printf("  isect2<%d>\n", int(isect2));
-        if (isect2) {
-          double fDist   = (vB->mPos - vA->mPos).magnitude();
-          double fDist2  = (vB->mPos - vPos).magnitude();
-          double fScalar = (abs(fDist) < PLANE_EPSILON) ? 0.0 : fDist2 / fDist;
-          dvec3 LerpedVertex;
-          LerpedVertex.lerp(vB->mPos, vA->mPos, fScalar);
-          if (do_front) {
-            vertex smvert;
-            smvert.mPos  = LerpedVertex;
-            auto out_vtx = out_submesh.mergeVertex(smvert);
-            front_vertices.push_back(out_vtx);
-          }
-          if (do_back) {
-            // on_out_back(LerpedVertex);
-          }
-          // if( debug ) printf("  add l2 to front cnt<%d>\n", out_front_poly.GetNumVertices());
-          // if( debug ) printf("  add l2 to front cnt<%d>\n", out_back_poly.GetNumVertices());
-        } else {
-          // if( debug ) printf( "NO INTERSECT vA<%g %g %g> vB<%g %g %g>\n", vA->mPos.x, vA->mPos.y, vA->mPos.z, vB->mPos.x,
-          // vB->mPos.y, vB->mPos.z ); if( debug ) printf( "NO INTERSECT pdA<%g>\n", pointDistance(vA->mPos) ); if( debug ) printf(
-          // "NO INTERSECT pdB<%g>\n", pointDistance(vB->mPos) ); if( debug ) printf( "NO INTERSECT plane_n<%g %g %g> d<%g>\n", n.x,
-          // n.y, n.z, d );
-        }
+        LerpedVertex.lerp(out_vtx_a->mPos, out_vtx_b->mPos, fScalar);
       }
-    }
+      else{
+        dlineseg3 lsegba(out_vtx_b->mPos, out_vtx_a->mPos);
+        does_intersect = slicing_plane.Intersect(lsegba, isectdist, vPos);
+        printf("  does_intersectBA<%d>\n", int(does_intersect));
+        double fDist   = (out_vtx_b->mPos - out_vtx_a->mPos).magnitude();
+        double fDist2  = (out_vtx_b->mPos - vPos).magnitude();
+        double fScalar = (abs(fDist) < PLANE_EPSILON) ? 0.0 : fDist2 / fDist;
+        LerpedVertex.lerp(out_vtx_b->mPos, out_vtx_a->mPos, fScalar);
+      }
+      if (does_intersect) {
+        vertex smvert;
+        smvert.mPos  = LerpedVertex;
+        auto out_vtx_lerp = out_submesh.mergeVertex(smvert);
+        //////////////////////
+        if (do_front) {
+          printf( "emit front vtx<%d>\n", out_vtx_lerp->_poolindex );
+          front_vertices.push_back(out_vtx_lerp);
+        }
+        //////////////////////
+        PlanarCrossing pc;
+        if(front_to_back){
+          pc._status = EPlanarStatus::CROSS_F2B;
+          pc._vtxA = out_vtx_a;
+          pc._vtxB = out_vtx_lerp;
+          printf( "CROSS F2B %d %d\n", out_vtx_a->_poolindex, out_vtx_lerp->_poolindex );
+        }
+        else if(back_to_front){
+          pc._status = EPlanarStatus::CROSS_B2F;
+          pc._vtxA = out_vtx_b;
+          pc._vtxB = out_vtx_lerp;
+          printf( "CROSS B2F %d %d\n", out_vtx_b->_poolindex, out_vtx_lerp->_poolindex );
+        }
+        //////////////////////
+        planars.push_back(pc);
+        //////////////////////
+      }      // isect1 ?
+    }  // did we cross plane ?
+
   }
 
+
+
   if (do_front and (front_vertices.size() > 2)) {
+
+    printf( "CLIP OUTPUT POLY[");
+    for( auto vtx : front_vertices ) {
+      printf( " %d", vtx->_poolindex );
+    }
+    printf( " ]\n");
+
+
     out_submesh.mergePoly(Polygon(front_vertices));
   }
 }
@@ -321,6 +350,7 @@ struct Clipper {
               slicing_plane,  //
               input_poly,     //
               outsmesh_Front, //
+              _planars_front,
               true);
 
         ///////////////////////////////////////////
@@ -339,6 +369,7 @@ struct Clipper {
   edge_vect_t back_planar_edges, front_planar_edges;
   vertex_set_t front_planar_verts;
   vertex_set_t back_planar_verts;
+  std::vector<PlanarCrossing> _planars_front;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

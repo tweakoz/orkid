@@ -275,13 +275,16 @@ template <typename T> bool Plane<T>::Intersect(const TLineSegment3<T>& lseg, T& 
   T length       = dif.magnitude();
 
   Ray3<T> ray;
-  ray.mDirection = dif * (T(1.0f) / length); // cheaper normalize since we need the length anyway
+  ray.mDirection = dif * (T(1.0) / length); // cheaper normalize since we need the length anyway
   ray.mOrigin    = lseg.mStart;
 
   bool bOK = Intersect(ray, dis, result);
 
-  bOK &= ((dis >= 0.0f) && (dis < length));
+  bOK &= ((dis >= -0.0001) && (dis < (length+Epsilon())));
 
+  if(not bOK){
+    printf( "bOK: %d dis: %f length: %f\n", bOK, dis, length );
+  }
   return bOK;
 }
 
@@ -301,8 +304,10 @@ template <typename T> bool Plane<T>::Intersect(const Ray3<T>& ray, T& dis, vect3
 template <typename T> bool Plane<T>::Intersect(const Ray3<T>& ray, T& dis) const {
   T denom = n.dotWith(ray.mDirection);
   // Line is parallel to the plane or plane normal faces away from ray
-  if (Abs(denom) < Epsilon())
+  if (Abs(denom) < Epsilon()){
+    printf( "abs(denom): %f\n", Abs(denom) );
     return false;
+  }
 
   T pointdist = pointDistance(ray.mOrigin);
   T u         = -pointdist / (denom);

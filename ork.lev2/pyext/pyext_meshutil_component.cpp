@@ -61,11 +61,11 @@ void pyinit_meshutil_component(py::module& module_meshutil) {
       }
       return v;
     }))
-    .def_property_readonly("position", [](vertex_ptr_t vtx) -> fvec3 {            
-      return dvec3_to_fvec3(vtx->mPos);
+    .def_property_readonly("position", [](vertex_ptr_t vtx) -> dvec3 {            
+      return vtx->mPos;
     })
-    .def_property_readonly("normal", [](vertex_ptr_t vtx) -> fvec3 {            
-      return dvec3_to_fvec3(vtx->mNrm);
+    .def_property_readonly("normal", [](vertex_ptr_t vtx) -> dvec3 {            
+      return vtx->mNrm;
     })
     .def_property_readonly("poolindex", [](vertex_ptr_t vtx) -> uint32_t {            
       return vtx->_poolindex;
