@@ -35,9 +35,9 @@ class SceneGraphApp(BasicUiCamSgApp):
     material = solid_wire_pipeline.sharedMaterial
     solid_wire_pipeline.bindParam( material.param("m"), tokens.RCFD_M)
     ##############################
-    self.fpmtx1 = mtx4.perspective(45,1,0.3,5)
-    self.fvmtx1 = mtx4.lookAt(vec3(0,0,1),vec3(0,0,0),vec3(0,1,0))
-    self.frustum1 = Frustum()
+    self.fpmtx1 = dmtx4.perspective(45,1,0.3,5)
+    self.fvmtx1 = dmtx4.lookAt(dvec3(0,0,1),dvec3(0,0,0),dvec3(0,1,0))
+    self.frustum1 = dfrustum()
     self.frustum1.set(self.fvmtx1,self.fpmtx1)
     self.frusmesh1 = meshutil.SubMesh.createFromFrustum(self.frustum1,
                                                         projective_rect_uv = True)
@@ -58,7 +58,7 @@ class SceneGraphApp(BasicUiCamSgApp):
     super().onUpdate(updevent)
     θ = self.abstime * math.pi * 2.0 * 0.01
     #
-    self.fvmtx1 = mtx4.lookAt(vec3(0,0,1),vec3(math.sin(θ*1.3)*0.5,0,0),vec3(0,1,0))
+    self.fvmtx1 = dmtx4.lookAt(dvec3(0,0,1),dvec3(math.sin(θ*1.3)*0.5,0,0),dvec3(0,1,0))
     #
     self.frustum1.set(self.fvmtx1,self.fpmtx1)
     #
@@ -69,7 +69,7 @@ class SceneGraphApp(BasicUiCamSgApp):
     #print(submesh1_nuv)
     self.submesh_wire_frustum = submesh1_uv
     #
-    pl = plane(vec3(0,0,-1),-1)
+    pl = dplane(dvec3(0,0,-1),-1)
     submesh2 = submesh1_nuv.clippedWithPlane(plane=pl,
                                              close_mesh=True, 
                                              flip_orientation=False )["front"]
