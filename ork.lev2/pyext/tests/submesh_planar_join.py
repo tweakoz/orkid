@@ -31,7 +31,7 @@ stripped = triangulated.copy(preserve_normals=False,
                              preserve_colors=False,
                              preserve_texcoords=False)
 print(stripped)
-for i,v in enumerate(stripped.vertexpool.orderedVertices):
+for i,v in enumerate(stripped.vertices):
   print("vtx %02d: %s" % (i,v.position))
 
 joined = stripped.coplanarJoined()

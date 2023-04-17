@@ -93,7 +93,7 @@ class SceneGraphApp(object):
     #print(capsule_submesh.polys)
     #print(capsule_submesh.edges)
 
-    self.barysub_isect = capsule_submesh.barycentricUVs()
+    self.barysub_isect = capsule_submesh.withBarycentricUVs()
     self.capsule_prim = meshutil.RigidPrimitive(self.barysub_isect,ctx)
     self.capsule_sgnode = self.capsule_prim.createNode("capsule",self.layer1,solid_wire_pipeline)
     self.capsule_sgnode.enabled = True

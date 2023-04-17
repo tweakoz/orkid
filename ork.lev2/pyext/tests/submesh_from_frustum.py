@@ -46,12 +46,12 @@ def proc_with_frustum(inpsubmesh,frustum):
 print("###############################")
 print("# FRUSTUM SUBMESH")
 print("###############################")
-fpmtx = mtx4.perspective(45,1,0.1,3)
-fvmtx = mtx4.lookAt(vec3(0,0,1),vec3(0,0,0),vec3(0,1,0))
-frustum = Frustum()
+fpmtx = dmtx4.perspective(45,1,0.1,3)
+fvmtx = dmtx4.lookAt(dvec3(0,0,1),dvec3(0,0,0),dvec3(0,1,0))
+frustum = dfrustum()
 frustum.set(fvmtx,fpmtx)
 submesh = procsubmesh(meshutil.SubMesh.createFromFrustum(frustum))
-for item in submesh.vertexpool.orderedVertices:
+for item in submesh.vertices:
     print(item.position)
 print("box.submesh: convexVolume: %s" % submesh.convexVolume)
 
@@ -59,8 +59,8 @@ submesh.writeWavefrontObj("frustumA.obj")
 
 #################################################
 
-fvmtx2 = mtx4.lookAt(vec3(1,0,1),vec3(1,1,0),vec3(0,1,0))
-frustum2 = Frustum()
+fvmtx2 = dmtx4.lookAt(dvec3(1,0,1),dvec3(1,1,0),dvec3(0,1,0))
+frustum2 = dfrustum()
 frustum2.set(fvmtx2,fpmtx)
 submesh2 = procsubmesh(meshutil.SubMesh.createFromFrustum(frustum2))
 submesh2.writeWavefrontObj("frustumB.obj")

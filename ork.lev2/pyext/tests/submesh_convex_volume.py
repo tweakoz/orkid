@@ -23,7 +23,7 @@ stripped = submesh.copy(preserve_normals=False,
                         preserve_colors=False,
                         preserve_texcoords=False).convexDecomposition()[0]
 assert(stripped.isConvexHull)
-for item in stripped.vertexpool.orderedVertices:
+for item in stripped.vertices:
     print(item.position)
 print("box.submesh: convexVolume: %s" % stripped.convexVolume)
 
@@ -40,7 +40,7 @@ stripped = submesh.triangulated().copy(preserve_normals=False,
                                        preserve_texcoords=False).convexDecomposition()[0]
 print(stripped)
 #assert(stripped.isConvexHull)
-#for item in stripped.vertexpool.orderedVertices:
+#for item in stripped.vertices:
 #    print(item.position)
 print("cone.submesh: convexVolume: %s" % stripped.convexVolume)
 
@@ -58,7 +58,7 @@ stripped = submesh.triangulated().copy(preserve_normals=False,
                                        preserve_texcoords=False).convexDecomposition()[0]
 print(stripped)
 assert(stripped.isConvexHull)
-for item in stripped.vertexpool.orderedVertices:
+for item in stripped.vertices:
     print(item.position)
 print("tetra.submesh: convexVolume: %s" % stripped.convexVolume)
 
@@ -75,6 +75,6 @@ stripped = submesh.triangulated().copy(preserve_normals=False,
                                        preserve_texcoords=False).convexDecomposition()[0]
 print(stripped)
 assert(stripped.isConvexHull)
-for item in stripped.vertexpool.orderedVertices:
+for item in stripped.vertices:
     print(item.position)
 print("sphere.submesh: convexVolume: %s" % stripped.convexVolume)

@@ -10,12 +10,12 @@ from orkengine.lev2 import *
 
 subm = meshutil.SubMesh()
 
-va = subm.makeVertex(position=vec3(0,0,0))
-vb = subm.makeVertex(position=vec3(1,0,0))
-vc = subm.makeVertex(position=vec3(1,1,0))
-vd = subm.makeVertex(position=vec3(0,1,0))
-ve = subm.makeVertex(position=vec3(0,0,0))
-vf = subm.makeVertex(position=vec3(0,0,0),normal=vec3(0,1,0))
+va = subm.makeVertex(position=dvec3(0,0,0))
+vb = subm.makeVertex(position=dvec3(1,0,0))
+vc = subm.makeVertex(position=dvec3(1,1,0))
+vd = subm.makeVertex(position=dvec3(0,1,0))
+ve = subm.makeVertex(position=dvec3(0,0,0))
+vf = subm.makeVertex(position=dvec3(0,0,0),normal=dvec3(0,1,0))
 
 assert(va.poolindex==0)
 assert(vb.poolindex==1)
@@ -31,7 +31,7 @@ pa = subm.makeQuad(va,vb,vc,vd)
 print("poly: %s" % pa)
 print("numsides: %s" % pa.numSides)
 print("normal: %s" % pa.normal)
-print("plane: %s" % pa.plane)
+#print("plane: %s" % pa.plane)
 print("center: %s" % pa.center)
 print("area: %s" % pa.area)
 

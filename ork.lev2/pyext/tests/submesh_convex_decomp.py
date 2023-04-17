@@ -32,7 +32,7 @@ args = vars(parser.parse_args())
 def printSubMesh(name, subm):
   print(subm)
   out_str = "submesh: %s\n" % name
-  for idx, vtx in enumerate(subm.vertexpool.orderedVertices):
+  for idx, vtx in enumerate(subm.vertices):
     out_str += " vtx> %d: %s\n"%(idx, vtx.position)
   for idx, poly in enumerate(subm.polys):
     out_str += "  poly> %d: [ "%idx
