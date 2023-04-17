@@ -81,7 +81,10 @@ struct PlanarVertexCategorize {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-vertex_set_t addWholePoly(std::string hdr, poly_const_ptr_t src_poly, submesh& dest) {
+vertex_set_t addWholePoly(std::string hdr, //
+                          poly_const_ptr_t src_poly, //
+                          submesh& dest) { //
+
   std::vector<vertex_ptr_t> new_verts;
   vertex_set_t added;
   src_poly->visitVertices([&](vertex_ptr_t v) {
@@ -150,6 +153,8 @@ using dvec_cb_t = std::function<void(const dvec3&)>;
           }
           */
 
+///////////////////////////////////////////////////////////////////////////////
+
 enum class EPlanarStatus { CROSS_F2B, CROSS_B2F, PLANAR, NONE };
 
 struct PlanarCrossing {
@@ -158,11 +163,13 @@ struct PlanarCrossing {
   EPlanarStatus _status;
 };
 
-void clipImpl(
+///////////////////////////////////////////////////////////////////////////////
+
+void ClipPolygon(
     const dplane3& slicing_plane,
     poly_const_ptr_t input_poly, //
     submesh& out_submesh,        //
-    std::vector<PlanarCrossing>& planars,
+    std::vector<PlanarCrossing>& crossings,
     bool do_front) {             //
 
   bool do_back = not do_front;
@@ -270,14 +277,12 @@ void clipImpl(
           logchan_clip->log( "CROSS B2F %d %d\n", out_vtx_b->_poolindex, out_vtx_lerp->_poolindex );
         }
         //////////////////////
-        planars.push_back(pc);
+        crossings.push_back(pc);
         //////////////////////
       }      // isect1 ?
     }  // did we cross plane ?
 
-  }
-
-
+  } // for (int iva = 0; iva < inuminverts; iva++) {
 
   if (do_front and (front_vertices.size() > 2)) {
 
@@ -294,13 +299,13 @@ void clipImpl(
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct Clipper {
+struct SubMeshClipper {
 
-  Clipper(
+  SubMeshClipper(
       const submesh& inpsubmesh,    //
       const dplane3& slicing_plane, //
-      submesh& outsmesh_Front,      //
-      submesh& outsmesh_Back) {     //
+      submesh& outsmesh_front,      //
+      submesh& outsmesh_back) {     //
 
     /////////////////////////////////////////////////////////////////////
     // categorize all vertices in input mesh
@@ -325,30 +330,36 @@ struct Clipper {
             polyvtxcnt._back_count,
             polyvtxcnt._planar_count);
       ip++;
+
       //////////////////////////////////////////////
-      // all of this poly's vertices in front ? -> trivially route to outsmesh_Front
+      // all of this poly's vertices in front ? -> trivially route to outsmesh_front
       //////////////////////////////////////////////
+
       if (numverts == polyvtxcnt._front_count) {
-        addWholePoly("A:", input_poly, outsmesh_Front);
+        addWholePoly("A:", input_poly, outsmesh_front);
       }
+
       //////////////////////////////////////////////
       // all of this poly's vertices in back ? -> trivially route to outsmesh_Back
       //////////////////////////////////////////////
+
       else if (numverts == polyvtxcnt._back_count) { // all back ?
-        addWholePoly("B: ", input_poly, outsmesh_Back);
+        addWholePoly("B: ", input_poly, outsmesh_back);
         // TODO when closing the mesh, construct the closing face
         // with the planar vertices and input edge connectivity info
         // every input edge should have a matching output edge (which was clipped)
         logchan_clip->log_continue( "BACK POLY[");
         input_poly->visitVertices([&](vertex_ptr_t vtx) {
-          auto v_m = outsmesh_Front.mergeVertex(*vtx);
+          auto v_m = outsmesh_front.mergeVertex(*vtx);
           logchan_clip->log_continue( " %d", v_m->_poolindex );
         });
         logchan_clip->log_continue( " ]\n");
       }
+
       //////////////////////////////////////////////
       // the remaining are those which must be clipped against plane
       //////////////////////////////////////////////
+
       else {
 
         /////////////////////////////////////////////////
@@ -356,21 +367,20 @@ struct Clipper {
         /////////////////////////////////////////////////
 
         if (do_front)
-          clipImpl(
+          ClipPolygon(
               slicing_plane,  //
               input_poly,     //
-              outsmesh_Front, //
+              outsmesh_front, //
               _planars_front,
               true);
 
-        ///////////////////////////////////////////
-
-        // if (do_front){
-        // process_clipped_poly(front_verts, outsmesh_Front, front_planar_verts);
-        //}
-
-        // if (do_back)
-        // process_clipped_poly(back_verts, outsmesh_Back, back_planar_verts);
+        if (do_back)
+          ClipPolygon(
+              slicing_plane,  //
+              input_poly,     //
+              outsmesh_back, //
+              _planars_back,
+              false);
 
       } // clipped ?
     }); // inpsubmesh.visitAllPolys( [&](poly_const_ptr_t input_poly){
@@ -380,10 +390,10 @@ struct Clipper {
   vertex_set_t front_planar_verts;
   vertex_set_t back_planar_verts;
   std::vector<PlanarCrossing> _planars_front;
+  std::vector<PlanarCrossing> _planars_back;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -393,39 +403,36 @@ void _submeshClipWithPlaneConcave(
     dplane3& slicing_plane,    //
     bool close_mesh,
     bool flip_orientation,
-    submesh& outsmesh_Front, //
-    submesh& outsmesh_Back) {
+    submesh& outsmesh_front, //
+    submesh& outsmesh_back) {
 
-  if (debug)
+  if (debug){
     logchan_clip->log_continue("///////////\n");
-
-  if (debug)
     inpsubmesh.dumpPolys("inpsubmesh");
+  }
 
   // close_mesh = false;
-  Clipper clipper(inpsubmesh, slicing_plane, outsmesh_Front, outsmesh_Back);
+  SubMeshClipper sm_clipper(inpsubmesh, slicing_plane, outsmesh_front, outsmesh_back);
 
-  if (debug)
-    outsmesh_Front.dumpPolys("clipped_front");
-
-  if (debug)
-    if (clipper.front_planar_verts._the_map.size() > 0) {
+  if (debug){
+    outsmesh_front.dumpPolys("clipped_front");
+    if (sm_clipper.front_planar_verts._the_map.size() > 0) {
       logchan_clip->log_continue("fpv [");
-      for (auto v_item : clipper.front_planar_verts._the_map) {
+      for (auto v_item : sm_clipper.front_planar_verts._the_map) {
         auto v = v_item.second;
         logchan_clip->log_continue(" %d", v->_poolindex);
       }
       logchan_clip->log_continue("]\n");
     }
-  if (debug)
-    if (clipper.back_planar_verts._the_map.size() > 0) {
+    if (sm_clipper.back_planar_verts._the_map.size() > 0) {
       logchan_clip->log_continue("bpv [");
-      for (auto v_item : clipper.back_planar_verts._the_map) {
+      for (auto v_item : sm_clipper.back_planar_verts._the_map) {
         auto v = v_item.second;
         logchan_clip->log_continue(" %d", v->_poolindex);
       }
       logchan_clip->log_continue("]\n");
     }
+  }
 
   ///////////////////////////////////////////////////////////
   // close mesh
@@ -434,14 +441,13 @@ void _submeshClipWithPlaneConcave(
   auto do_close = [&](submesh& outsubmesh,              //
                       vertex_set_t& planar_verts,
                       bool front) {                     //
-    if (debug)
+    if (debug){
       outsubmesh.visitAllVertices([&](vertex_ptr_t v) { //
         double point_distance = slicing_plane.pointDistance(v->mPos);
         logchan_clip->log_continue("outv%d : %f %f %f point_distance<%f>\n", v->_poolindex, v->mPos.x, v->mPos.y, v->mPos.z, point_distance);
       });
-
-    if (debug)
       outsubmesh.dumpPolys("preclose");
+    }
 
     /////////////////////////////////////////
     //  take note of edges which lie on the
@@ -533,37 +539,41 @@ void _submeshClipWithPlaneConcave(
       };
 
       for (auto loop : _linker._edge_loops) {
-        if (debug)
+        if (debug){
           logchan_clip->log_continue("loop [");
-        if (debug)
           for (auto e : loop->_edges) {
             logchan_clip->log_continue(" <%d %d>", e->_vertexA->_poolindex, e->_vertexB->_poolindex);
           }
-        if (debug)
           logchan_clip->log_continue("]\n");
+        }
         do_chain(loop, outsubmesh);
       }
 
       for (auto chain : _linker._edge_chains) {
-        if (debug)
+        if (debug){
           logchan_clip->log_continue("chain [");
-        if (debug)
           for (auto e : chain->_edges) {
             logchan_clip->log_continue(" <%d %d>", e->_vertexA->_poolindex, e->_vertexB->_poolindex);
           }
-        if (debug)
           logchan_clip->log_continue("]\n");
+        }
         // do_chain(chain, outsubmesh);
       }
     } // if (planar_edges.size()) {
 
-  };
+  }; // auto do_close = [&](submesh& outsubmesh, //
 
-  if (do_front and close_mesh) {
-    do_close(outsmesh_Front, clipper.front_planar_verts, true);
+  if (do_front and close_mesh) { //
+    do_close(outsmesh_front, //
+             sm_clipper.front_planar_verts, //
+             true);
   }
-  // if (do_back and close_mesh)
-  // do_close(outsmesh_Back, clipper.back_planar_verts, false);
+  if (do_back and close_mesh){ //
+    do_close(outsmesh_back, //
+             sm_clipper.back_planar_verts, //
+             false);
+
+  }
 
   ///////////////////////////////////////////////////////////
 }
