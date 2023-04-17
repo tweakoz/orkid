@@ -15,7 +15,7 @@ namespace ork::meshutil {
 ///////////////////////////////////////////////////////////////////////////////
 
 void submeshJoinCoplanar(const submesh& inpsubmesh, submesh& outsmesh){
-  auto as_pset = inpsubmesh.asPolyset();
+  auto as_pset = inpsubmesh.asPolyGroup();
   auto polys_by_plane = as_pset->splitByPlane();
   size_t num_planes = polys_by_plane.size();
  // printf( "num_planes<%d>\n", int(num_planes) );

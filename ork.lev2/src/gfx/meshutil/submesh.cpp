@@ -311,7 +311,7 @@ void submesh::MergeSubMesh(const submesh& inp_mesh) {
   //logchan_submesh->log("<<PROFILE>> <<submesh::MergeSubMesh %f seconds>>", ftime);
 }
 ///////////////////////////////////////////////////////////////////////////////
-void submesh::mergePolySet(const PolySet& pset) {
+void submesh::mergePolyGroup(const PolyGroup& pset) {
   for (auto p : pset._polys) {
     std::vector<vertex_ptr_t> merged_vertices;
     p->visitVertices([&](vertex_const_ptr_t v) {
@@ -322,8 +322,8 @@ void submesh::mergePolySet(const PolySet& pset) {
   _aaBoxDirty = true;
 }
 ///////////////////////////////////////////////////////////////////////////////
-polyset_ptr_t submesh::asPolyset() const {
-  polyset_ptr_t rval = std::make_shared<PolySet>();
+polygroup_ptr_t submesh::asPolyGroup() const {
+  polygroup_ptr_t rval = std::make_shared<PolyGroup>();
   visitAllPolys([&](poly_const_ptr_t p) {
     // todo : fix const
     auto as_non_const = std::const_pointer_cast<Polygon>(p);

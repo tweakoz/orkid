@@ -291,12 +291,13 @@ struct Polygon {
 };
 
 using poly_set_t = unique_set<Polygon>;
+using polyconst_set_t = unique_set<const Polygon>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct PolySet {
+struct PolyGroup {
   std::vector<island_ptr_t> splitByIsland() const;
-  std::unordered_map<uint64_t,polyset_ptr_t> splitByPlane() const;
+  std::unordered_map<uint64_t,polygroup_ptr_t> splitByPlane() const;
   std::unordered_set<poly_ptr_t> _polys;
   dvec3 averageNormal() const;
   submesh* submesh() const;
@@ -304,7 +305,7 @@ struct PolySet {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct Island : public PolySet {
+struct Island : public PolyGroup {
   edge_vect_t boundaryLoop() const;
   edge_vect_t boundaryEdges() const;
 };

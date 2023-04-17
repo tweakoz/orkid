@@ -95,7 +95,7 @@ void pyinit_meshutil_submesh(py::module& module_meshutil) {
                 submesh->visitAllVertices([&](vertex_ptr_t v) { pyl.append(v); });
                 return pyl;
               })
-          .def_property_readonly("as_polyset", [](submesh_ptr_t submesh) -> polyset_ptr_t { return submesh->asPolyset(); })
+          .def_property_readonly("as_polygroup", [](submesh_ptr_t submesh) -> polygroup_ptr_t { return submesh->asPolyGroup(); })
           .def_property_readonly(
               "polys",
               [](submesh_ptr_t submesh) -> py::list {
@@ -377,8 +377,8 @@ void pyinit_meshutil_submesh(py::module& module_meshutil) {
               "mergeVertex",
               [](submesh_ptr_t submesh, vertex_const_ptr_t vin) -> vertex_ptr_t { return submesh->mergeVertex(*vin); })
           .def("mergePoly", [](submesh_ptr_t submesh, poly_ptr_t pin) -> poly_ptr_t { return submesh->mergePoly(*pin); })
-          .def("mergePolySet", [](submesh_ptr_t submesh, polyset_ptr_t psetin) { submesh->mergePolySet(*psetin); })
-          .def("mergeSubmesh", [](submesh_ptr_t submesh, submesh_ptr_t subm2) { submesh->MergeSubMesh(*subm2); })
+          .def("mergePolyGroup", [](submesh_ptr_t submesh, polygroup_ptr_t psetin) { submesh->mergePolyGroup(*psetin); })
+          .def("mergeSubMesh", [](submesh_ptr_t submesh, submesh_ptr_t subm2) { submesh->MergeSubMesh(*subm2); })
           .def(
               "makeTriangle",
               [](submesh_ptr_t submesh, vertex_ptr_t va, vertex_ptr_t vb, vertex_ptr_t vc) -> poly_ptr_t {
@@ -428,12 +428,12 @@ void pyinit_meshutil_submesh(py::module& module_meshutil) {
           });
   type_codec->registerStdCodec<submesh_ptr_t>(submesh_type);
   /////////////////////////////////////////////////////////////////////////////////
-  auto polyset_type = py::class_<PolySet, polyset_ptr_t>(module_meshutil, "PolySet")
+  auto polyset_type = py::class_<PolyGroup, polygroup_ptr_t>(module_meshutil, "PolyGroup")
                           .def(py::init<>())
-                          .def_property_readonly("numpolys", [](polyset_ptr_t pset) -> int { return (int)pset->_polys.size(); })
+                          .def_property_readonly("numpolys", [](polygroup_ptr_t pset) -> int { return (int)pset->_polys.size(); })
                           .def_property_readonly(
                               "polys",
-                              [](polyset_ptr_t pset) -> py::list {
+                              [](polygroup_ptr_t pset) -> py::list {
                                 py::list pyl;
                                 for (auto p : pset->_polys) {
                                   pyl.append(p);
@@ -442,18 +442,18 @@ void pyinit_meshutil_submesh(py::module& module_meshutil) {
                               })
                           .def(
                               "splitByPlane",
-                              [type_codec](polyset_ptr_t pset) -> py::dict {
+                              [type_codec](polygroup_ptr_t pset) -> py::dict {
                                 py::dict rval;
                                 auto polys_by_plane = pset->splitByPlane();
                                 for (auto item : polys_by_plane) {
                                   uint64_t key                  = item.first;
-                                  polyset_ptr_t val             = item.second;
+                                  polygroup_ptr_t val             = item.second;
                                   rval[type_codec->encode(key)] = type_codec->encode(val);
                                 }
                                 OrkAssert(rval.size() > 0);
                                 return rval;
                               })
-                          .def("splitByIsland", [](polyset_ptr_t pset) -> py::list {
+                          .def("splitByIsland", [](polygroup_ptr_t pset) -> py::list {
                             py::list pyl;
                             auto islands = pset->splitByIsland();
                             for (auto island : islands) {
@@ -461,9 +461,9 @@ void pyinit_meshutil_submesh(py::module& module_meshutil) {
                             }
                             return pyl;
                           });
-  type_codec->registerStdCodec<polyset_ptr_t>(polyset_type);
+  type_codec->registerStdCodec<polygroup_ptr_t>(polyset_type);
   /////////////////////////////////////////////////////////////////////////////////
-  auto island_type = py::class_<Island, PolySet, island_ptr_t>(module_meshutil, "Island")
+  auto island_type = py::class_<Island, PolyGroup, island_ptr_t>(module_meshutil, "PolyIsland")
                          .def(py::init<>())
                          .def(
                              "boundaryEdges",

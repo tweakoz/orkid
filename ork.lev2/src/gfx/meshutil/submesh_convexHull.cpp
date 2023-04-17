@@ -479,19 +479,21 @@ void submeshConvexHullIterative(const submesh& inpsubmesh, submesh& outsmesh, in
             new_a, //
             new_b, //
             new_c);
-
-        polys_added.push_back(new_tri);
+        if( new_tri ){ // zero area triangles are not merged (and therefore nullptr)
+          polys_added.push_back(new_tri);
+        }
       }
       ///////////////////////////////////////////////////////////////////////////
 
+      size_t poly_count = polys_added.size();
       int istart                   = 0;
       std::atomic<int> job_counter = 0;
       // printf( "num_edges<%d>\n", num_edges );
-      while (num_edges > 0) {
+      while (poly_count > 0) {
 
         int icount = 8;
-        if (icount > num_edges)
-          icount = num_edges;
+        if (icount > poly_count)
+          icount = poly_count;
 
         job_counter.fetch_add(1);
         auto op = [=,                   //
@@ -503,7 +505,9 @@ void submeshConvexHullIterative(const submesh& inpsubmesh, submesh& outsmesh, in
           /////////////////////////////////////////////////////
           std::unordered_map<vertex_ptr_t, std::vector<poly_ptr_t>> insert_map;
           for (int i = 0; i < icount; i++) {
+            OrkAssert((istart + i) < polys_added.size());
             auto new_tri = polys_added[istart + i];
+            OrkAssert(new_tri);
             ////////////////////////////////////
             // update visibility of vertices with respect to new triangle
             ////////////////////////////////////
@@ -534,7 +538,7 @@ void submeshConvexHullIterative(const submesh& inpsubmesh, submesh& outsmesh, in
 
         ////////////////////////////////////
 
-        num_edges -= icount;
+        poly_count -= icount;
         istart += icount;
 
       } // while(num_edges>0){

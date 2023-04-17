@@ -111,7 +111,7 @@ struct submesh {
   void removePolys(std::vector<poly_ptr_t>& polys);
   void clearPolys();
   void MergeSubMesh(const submesh& oth);
-  void mergePolySet(const PolySet& pset);
+  void mergePolyGroup(const PolyGroup& pset);
   bool isVertexInsideConvexHull(vertex_const_ptr_t vtx) const;
 
   //////////////////////////////////////////////////////////////////////////////
@@ -217,7 +217,7 @@ struct submesh {
   void igl_test();
 #endif
   
-  polyset_ptr_t asPolyset() const;
+  polygroup_ptr_t asPolyGroup() const;
   
   /////////////////////////////////////////////////////////////////////////
 
@@ -279,7 +279,7 @@ void submeshWriteObj(const submesh& inpsubmesh, const file::Path& BasePath);
 // void SubDivTriangles(submesh* poutsmesh) const;
 // void SubDiv(submesh* poutsmesh) const;
 
-std::vector<polyset_ptr_t> splitByIsland(polyset_ptr_t inpset);
+std::vector<polygroup_ptr_t> splitByIsland(polygroup_ptr_t inpset);
 
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::meshutil

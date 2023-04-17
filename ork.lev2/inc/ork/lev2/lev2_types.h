@@ -500,7 +500,7 @@ namespace ork::meshutil{
   struct Polygon;
   struct edge;
   struct uvmapcoord;
-  struct PolySet;
+  struct PolyGroup;
   struct Island;
   struct EdgeChain;
   struct EdgeLoop;
@@ -534,7 +534,7 @@ namespace ork::meshutil{
   using halfedge_const_ptr_t = std::shared_ptr<const HalfEdge>;
   using halfedge_vect_t = std::vector<halfedge_ptr_t>;
 
-  using polyset_ptr_t = std::shared_ptr<PolySet>;
+  using polygroup_ptr_t = std::shared_ptr<PolyGroup>;
   using island_ptr_t = std::shared_ptr<Island>;
   using edge_chain_ptr_t = std::shared_ptr<EdgeChain>;
   using edge_loop_ptr_t = std::shared_ptr<EdgeLoop>;

@@ -337,6 +337,7 @@ struct SubMeshClipper {
 
       if (numverts == polyvtxcnt._front_count) {
         addWholePoly("A:", input_poly, outsmesh_front);
+        _frontpolys.insert(input_poly);
       }
 
       //////////////////////////////////////////////
@@ -348,6 +349,7 @@ struct SubMeshClipper {
         // TODO when closing the mesh, construct the closing face
         // with the planar vertices and input edge connectivity info
         // every input edge should have a matching output edge (which was clipped)
+        _backpolys.insert(input_poly);
         logchan_clip->log_continue( "BACK POLY[");
         input_poly->visitVertices([&](vertex_ptr_t vtx) {
           auto v_m = outsmesh_front.mergeVertex(*vtx);
@@ -391,6 +393,8 @@ struct SubMeshClipper {
   vertex_set_t back_planar_verts;
   std::vector<PlanarCrossing> _planars_front;
   std::vector<PlanarCrossing> _planars_back;
+  polyconst_set_t _backpolys;
+  polyconst_set_t _frontpolys;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
