@@ -26,14 +26,14 @@ class SceneGraphApp(BasicUiCamSgApp):
   def __init__(self):
     super().__init__()
     self.mutex = Lock()
-    self.uicam.lookAt( vec3(0,0,50), vec3(0,0,0), vec3(0,1,0) )
+    self.uicam.lookAt( vec3(0,2,50), vec3(0,2,0), vec3(0,1,0) )
     self.camera.copyFrom( self.uicam.cameradata )
     self.numsteps_sim = 0
     self.numsteps_cut = 0
     #self.maxsteps_sim = 451
     #self.maxsteps_cut = 4
     self.maxsteps_sim = 701
-    self.maxsteps_cut = 4
+    self.maxsteps_cut = 7
   ##############################################
   def onGpuInit(self,ctx):
     super().onGpuInit(ctx,add_grid=False)

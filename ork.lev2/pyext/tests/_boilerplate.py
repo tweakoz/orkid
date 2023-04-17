@@ -165,7 +165,7 @@ class BasicUiCamSgApp(object):
 
     def __init__(self):
         super().__init__()
-        self.ezapp = OrkEzApp.create(self)
+        self.ezapp = OrkEzApp.create(self,height=640,width=1280)
         self.ezapp.setRefreshPolicy(RefreshFastest, 0)
         self.materials = set()
         setupUiCamera(app=self, eye=vec3(5, 5, 5), tgt=vec3(0, 0, 0))

@@ -191,6 +191,7 @@ struct vertex {
 };
 
 using vertex_set_t = unique_set<vertex>;
+using vertexconst_set_t = unique_set<const vertex>;
 
 ///////////////////////////////////////////////////////////////////////////////
 

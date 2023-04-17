@@ -11,7 +11,7 @@
 #include <ork/util/logger.h>
 #include <deque>
 
-static constexpr bool debug = false;
+static constexpr bool debug = true;
 
 static constexpr bool do_front        = true;
 static constexpr bool do_back         = true;
@@ -74,9 +74,9 @@ struct PlanarVertexCategorize {
     return counts;
   }
 
-  vertex_set_t _front_verts;
-  vertex_set_t _back_verts;
-  vertex_set_t _planar_verts;
+  vertexconst_set_t _front_verts;
+  vertexconst_set_t _back_verts;
+  vertexconst_set_t _planar_verts;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -198,6 +198,7 @@ void ClipPolygon(
   // loop around the input polygon's edges
 
   std::vector<vertex_ptr_t> front_vertices;
+  std::vector<vertex_ptr_t> back_vertices;
 
   for (int iva = 0; iva < inuminverts; iva++) {
     // if (debug)
@@ -231,7 +232,6 @@ void ClipPolygon(
       }
       // if( debug ) printf("  add a to front cnt<%zu>\n", out_front_poly.GetNumVertices());
     } else {
-
       if (do_back) {
         // on_out_back(vA->mPos);
       }
@@ -270,24 +270,6 @@ void ClipPolygon(
         vertex smvert;
         smvert.mPos       = LerpedVertex;
         auto out_vtx_lerp = out_submesh.mergeVertex(smvert);
-
-        //////////////////////
-        if (out_vtx_a->_varmap.hasKey("clipped_vertex")) {
-          // auto pre_existing = out_vtx_a->_varmap.typedValueForKey<vertex_ptr_t>("clipped_vertex").value();
-          // printf( "pre_existing clipped vtxa<%d> : clipped vtx<%d>\n", pre_existing->_poolindex, out_vtx_lerp->_poolindex );
-          // OrkAssert( pre_existing == out_vtx_lerp );
-        } else {
-          // out_vtx_a->_varmap.mergedValueForKey<vertex_ptr_t>("clipped_vertex") = out_vtx_lerp;
-          // printf( "marked vtxa<%d> as clipped vtx<%d>\n", out_vtx_a->_poolindex, out_vtx_lerp->_poolindex );
-        }
-        if (out_vtx_b->_varmap.hasKey("clipped_vertex")) {
-          // auto pre_existing = out_vtx_b->_varmap.typedValueForKey<vertex_ptr_t>("clipped_vertex").value();
-          // printf( "pre_existing clipped vtxb<%d> : clipped vtx<%d>\n", pre_existing->_poolindex, out_vtx_lerp->_poolindex );
-          // OrkAssert( pre_existing == out_vtx_lerp );
-        } else {
-          // out_vtx_b->_varmap.mergedValueForKey<vertex_ptr_t>("clipped_vertex") = out_vtx_lerp;
-          // printf( "marked vtxb<%d> as clipped vtx<%d>\n", out_vtx_b->_poolindex, out_vtx_lerp->_poolindex );
-        }
         //////////////////////
         if (do_front) {
           logchan_clip->log("emit front vtx<%d>\n", out_vtx_lerp->_poolindex);
@@ -303,6 +285,7 @@ void ClipPolygon(
           he_ab->_varmap.mergedValueForKey<PlanarCrossing>("crossing") = pc;
           auto clipped_edge                                            = out_submesh.mergeEdgeForVertices(out_vtx_a, out_vtx_lerp);
           he_ab->_varmap.mergedValueForKey<halfedge_ptr_t>("clipped_edge") = clipped_edge;
+          out_vtx_b->_varmap.mergedValueForKey<vertex_ptr_t>("clipped_vertex") = out_vtx_lerp;
         } else if (back_to_front) {
           pc._status = EPlanarStatus::CROSS_B2F;
           pc._vtxA   = out_vtx_b;
@@ -311,6 +294,7 @@ void ClipPolygon(
           he_ba->_varmap.mergedValueForKey<PlanarCrossing>("crossing") = pc;
           auto clipped_edge                                            = out_submesh.mergeEdgeForVertices(out_vtx_b, out_vtx_lerp);
           he_ba->_varmap.mergedValueForKey<halfedge_ptr_t>("clipped_edge") = clipped_edge;
+          out_vtx_a->_varmap.mergedValueForKey<vertex_ptr_t>("clipped_vertex") = out_vtx_lerp;
         }
         //////////////////////
         crossings.push_back(pc);
@@ -376,6 +360,11 @@ struct SubMeshClipper {
 
     PlanarVertexCategorize categorized(inpsubmesh, slicing_plane);
 
+    categorized._back_verts.visit([&](vertex_const_ptr_t vtx) {
+      auto m = outsmesh_front.mergeVertex(*vtx);
+      m->_varmap.mergedValueForKey<bool>("back_vertex") = true;
+    });
+
     /////////////////////////////////////////////////////////////////////
     // input mesh polygon loop
     /////////////////////////////////////////////////////////////////////
@@ -415,7 +404,7 @@ struct SubMeshClipper {
         logchan_clip->log_continue("BACK POLY[");
         std::vector<vertex_ptr_t> back_vertices;
         input_poly->visitVertices([&](vertex_ptr_t vtx) {
-          auto v_m                                            = outsmesh_front.mergeVertex(*vtx);
+          auto v_m = outsmesh_front.mergeVertex(*vtx);
           v_m->_varmap.mergedValueForKey<bool>("back_vertex") = true;
           back_vertices.push_back(v_m);
           logchan_clip->log_continue(" %d", v_m->_poolindex);
@@ -536,6 +525,7 @@ void _submeshClipWithPlaneConcave(
 
         logchan_clip->log_continue("BACKPOLYVISIT INPUT POLY[");
 
+        std::map<int,int> vertex_remap;
         for( int iva=0; iva<num_v; iva++ ) {
           int ivb = (iva+1)%num_v;
           auto inp_vtx_a = back_poly->vertex(iva);
@@ -558,18 +548,39 @@ void _submeshClipWithPlaneConcave(
             logchan_clip->log_continue("!");
           }
           if(he->_varmap.hasKey("clipped_edge")) {
+            auto clipped_edge = he->_varmap.typedValueForKey<halfedge_ptr_t>("clipped_edge").value();
             logchan_clip->log_continue("$");
+            vertex_remap[he->_vertexA->_poolindex] = clipped_edge->_vertexA->_poolindex;
+            vertex_remap[he->_vertexB->_poolindex] = clipped_edge->_vertexB->_poolindex;
           }
-        };
+        }
+
         logchan_clip->log_continue(" ] num_v<%d> num_clipped<%d>\n", num_v, num_clipped);
 
+        if( vertex_remap.size() ){
+          logchan_clip->log_continue("VERTEX_REMAP [");
+          for( auto item : vertex_remap ) {
+            logchan_clip->log_continue(" %d->%d", item.first, item.second);
+          }
+          logchan_clip->log_continue(" ]\n");
+          std::vector<vertex_ptr_t> remapped_verts;
+          back_poly->visitVertices([&](vertex_ptr_t vtx) {
+            auto it = vertex_remap.find(vtx->_poolindex);
+            if(it!=vertex_remap.end()) {
+              auto remapped_vtx = outsubmesh.vertex(it->second);
+              remapped_verts.push_back(remapped_vtx);
+            } else {
+              remapped_verts.push_back(vtx);
+            }
+          });
+          auto front_poly = outsubmesh.mergePoly(remapped_verts);
+        }
         if (num_clipped > 1 and num_clipped == num_v) {
           // all vertices are clipped, so this poly is now a planar poly
           // and shall be added to the front mesh (with orientation flipped)
           vertex_vect_t front_verts;
           back_poly->visitVertices([&](vertex_ptr_t vtx) {
-            // auto clipped_vtx = vtx->_varmap.typedValueForKey<vertex_ptr_t>("clipped_vertex");
-            // front_verts.push_back(clipped_vtx.value());
+
           });
           // auto front_poly = outsubmesh.mergePoly(front_verts);
           // OrkAssert(false);
