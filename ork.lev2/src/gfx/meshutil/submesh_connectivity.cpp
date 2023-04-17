@@ -65,12 +65,25 @@ poly_index_set_t DefaultConnectivity::polysConnectedToPoly(int ip) const {
 }
 ////////////////////////////////////////////////////////////////
 poly_set_t DefaultConnectivity::polysConnectedToVertex(vertex_ptr_t v) const {
-  poly_set_t output;
-  auto it = _polys_by_vertex.find(v);
-  if (it != _polys_by_vertex.end()) {
-    output = it->second;
+  poly_set_t connected;
+  if(0){
+    auto it = _polys_by_vertex.find(v);
+    if (it != _polys_by_vertex.end()) {
+      connected = it->second;
+    }
   }
-  return output;
+  else{
+    visitAllPolys([&](poly_const_ptr_t p) {
+      p->visitVertices([&](vertex_const_ptr_t pv) {
+        if (pv == v) {
+          // todo: remove const_cast
+          auto non_const = std::const_pointer_cast<Polygon>(p);
+          connected.insert(non_const);
+        }
+      });
+    });
+  }
+  return connected;  
 }
 ////////////////////////////////////////////////////////////////
 vertex_ptr_t DefaultConnectivity::vertex(int id) const {

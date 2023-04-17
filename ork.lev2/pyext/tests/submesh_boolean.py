@@ -40,10 +40,7 @@ class SceneGraphApp(BasicUiCamSgApp):
     ##################################
     # solid wire pipeline
     ##################################
-    solid_wire_pipeline = self.createPipeline( rendermodel = "ForwardPBR",
-                                               shaderfile=Path("orkshader://basic"),
-                                               techname="tek_vuv_wire" )
-
+    solid_wire_pipeline = self.createBaryWirePipeline()
     material = solid_wire_pipeline.sharedMaterial
     solid_wire_pipeline.bindParam( material.param("m"), tokens.RCFD_M)
 
@@ -61,7 +58,7 @@ class SceneGraphApp(BasicUiCamSgApp):
     crcA = Crc64Context()
     crcA.accum(cyl_path)          # path to source mesh
     crcA.accum(tor_path)          # path to source mesh
-    crcA.accum("boolean_ops:1.4") # version string (change if you alter the boolean stage)
+    crcA.accum("boolean_ops:1.5") # version string (change if you alter the boolean stage)
     crcA.finish()
     
     cached_dblock = DataBlockCache.findDataBlock(crcA.result)
@@ -130,20 +127,14 @@ class SceneGraphApp(BasicUiCamSgApp):
     })
 
     print(result_submesh)
+    result_submesh.writeWavefrontObj("boolean_out.obj")
 
-    #cleaned_result = result_submesh.withFaceNormals()
-    cleaned_result = result_submesh.withSmoothedNormals(90*constants.DTOR)
-    #cleaned_result = cleaned_result.coplanarJoined()
+    #result_submesh = meshutil.Mesh()
+    #result_submesh.readFromWavefrontObj(tor_path)
+    #result_submesh = result_submesh.submesh_list[0]
+    self.barysubmesh = result_submesh.withBarycentricUVs()
 
-    cleaned_result = cleaned_result.withTextureUnwrap()
-    #cleaned_result = cleaned_result.quadulated()
 
-    #cleaned_result = cleaned_result.withTextureBasis()
-
-    print(cleaned_result)
-    cleaned_result.writeWavefrontObj("boolean_out.obj")
-
-    self.barysubmesh = cleaned_result.withBarycentricUVs()
     self.union_prim = meshutil.RigidPrimitive(self.barysubmesh,ctx)
     self.union_sgnode = self.union_prim.createNode("union",self.layer1,solid_wire_pipeline)
     self.union_sgnode.enabled = True
