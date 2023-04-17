@@ -118,9 +118,9 @@ struct HalfEdge {
 
   vertex_ptr_t _vertexA;
   vertex_ptr_t _vertexB;
-  HalfEdge* _next = nullptr;
-  HalfEdge* _twin = nullptr; 
-  Polygon* _polygon = nullptr;
+  halfedge_ptr_t _next;
+  halfedge_ptr_t _twin; 
+  poly_ptr_t _polygon;
   varmap::VarMap _varmap;
 };
 
@@ -362,6 +362,8 @@ struct IConnectivity{
   virtual poly_index_set_t polysConnectedToPoly(poly_ptr_t p) const = 0;
   virtual poly_index_set_t polysConnectedToPoly(int ip) const = 0;
   virtual poly_set_t polysConnectedToVertex(vertex_ptr_t v) const = 0;
+  virtual halfedge_vect_t edgesForPoly(poly_ptr_t p) const = 0;
+
   virtual vertex_ptr_t mergeVertex(const struct vertex& v) = 0;
   virtual poly_ptr_t mergePoly(const Polygon& p) = 0;
   virtual vertex_ptr_t vertex(int id) const = 0;
@@ -389,8 +391,8 @@ struct DefaultConnectivity : public IConnectivity{
   poly_index_set_t polysConnectedToEdge(const edge& edge, bool ordered = true) const final;
   poly_index_set_t polysConnectedToPoly(poly_ptr_t p) const final;
   poly_index_set_t polysConnectedToPoly(int ip) const final;
-  //poly_index_set_t polysConnectedToVertex(vertex_ptr_t v) const final;
   poly_set_t polysConnectedToVertex(vertex_ptr_t v) const;
+  halfedge_vect_t edgesForPoly(poly_ptr_t p) const;
 
   vertex_ptr_t mergeVertex(const struct vertex& v) final;
   poly_ptr_t mergePoly(const Polygon& p) final;

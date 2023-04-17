@@ -335,6 +335,13 @@ void pyinit_meshutil_submesh(py::module& module_meshutil) {
 #endif //#if defined(ENABLE_IGL)
           .def("numPolys", [](submesh_constptr_t submesh, int numsides) -> int { return submesh->numPolys(numsides); })
           .def("numVertices", [](submesh_constptr_t submesh) -> int { return submesh->numVertices(); })
+          .def("edgesForPoly", [](submesh_constptr_t submesh, poly_ptr_t p) -> py::list { //
+              py::list rval;
+              auto edges = submesh->edgesForPoly(p);
+              for( auto e : edges )
+                rval.append(e);
+              return rval;
+          })
           .def(
               "writeWavefrontObj",
               [](submesh_constptr_t submesh, const std::string& outpath) { return submeshWriteObj(*submesh, outpath); })

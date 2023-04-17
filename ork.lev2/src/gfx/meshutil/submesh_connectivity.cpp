@@ -132,7 +132,7 @@ void DefaultConnectivity::removePoly(poly_ptr_t ply) {
     for( auto he : itx->second ){
       OrkAssert(he);
       if(he->_twin){
-        OrkAssert(he->_twin->_twin==he.get());
+        OrkAssert(he->_twin->_twin==he);
         he->_twin->_twin = nullptr;
       }
     }
@@ -245,7 +245,7 @@ halfedge_ptr_t DefaultConnectivity::_makeHalfEdge(vertex_ptr_t a,
   auto he = std::make_shared<HalfEdge>();
   he->_vertexA = a;
   he->_vertexB = b;
-  he->_polygon = p.get();
+  he->_polygon = p;
 
   ////////////////////////
   // link poly's previous next edge to this edge
@@ -253,7 +253,7 @@ halfedge_ptr_t DefaultConnectivity::_makeHalfEdge(vertex_ptr_t a,
 
   if(prev_count>0){
     OrkAssert(this_poly_edges[prev_count-1]->_vertexB==a);
-    this_poly_edges[prev_count-1]->_next = he.get();
+    this_poly_edges[prev_count-1]->_next = he;
   }
 
   ////////////////////////
@@ -266,7 +266,7 @@ halfedge_ptr_t DefaultConnectivity::_makeHalfEdge(vertex_ptr_t a,
   // link this edges next to poly's first edge
   ////////////////////////
 
-  he->_next = this_poly_edges[0].get();
+  he->_next = this_poly_edges[0];
 
   ////////////////////////
   // add to connectivity DB's halfedge map
@@ -283,8 +283,8 @@ halfedge_ptr_t DefaultConnectivity::_makeHalfEdge(vertex_ptr_t a,
   check_twin._vertexB = a;
   auto ittwin         = _halfedge_map.find(check_twin.hash());
   if (ittwin != _halfedge_map.end()) {
-    he->_twin = ittwin->second.get();
-    ittwin->second->_twin = he.get();
+    he->_twin = ittwin->second;
+    ittwin->second->_twin = he;
   }
 
   ////////////////////////
@@ -311,5 +311,12 @@ dvec3 DefaultConnectivity::centerOfPolys() const {
   */
   return _centerOfPolysAccum * 1.0 / double(_centerOfPolysCount);
 }
+  halfedge_vect_t DefaultConnectivity::edgesForPoly(poly_ptr_t p) const{
+    auto it = _halfedges_by_poly.find(p);
+    if( it != _halfedges_by_poly.end() )
+      return it->second;
+    return halfedge_vect_t();
+  }
+
 ////////////////////////////////////////////////////////////////
 } // namespace ork::meshutil

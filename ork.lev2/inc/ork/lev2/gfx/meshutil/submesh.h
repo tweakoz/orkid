@@ -128,6 +128,8 @@ struct submesh {
   poly_index_set_t adjacentPolys(int ply) const;
   poly_set_t polysConnectedToVertex(vertex_ptr_t v) const;
 
+  halfedge_vect_t edgesForPoly(poly_ptr_t p) const;
+
   uint64_t hash() const;
 
   struct PolyVisitContext{

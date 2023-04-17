@@ -679,5 +679,9 @@ edge_map_t submesh::allEdgesByVertexHash() const {
   return edges;
 }
 
+halfedge_vect_t submesh::edgesForPoly(poly_ptr_t p) const{
+  return _connectivityIMPL->edgesForPoly(p);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::meshutil

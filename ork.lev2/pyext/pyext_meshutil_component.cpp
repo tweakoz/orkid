@@ -143,7 +143,45 @@ void pyinit_meshutil_component(py::module& module_meshutil) {
     .def("__repr__", [](edge_ptr_t e) -> std::string {
       return FormatString("edge[%d->%d]", e->_vertexA->_poolindex, e->_vertexB->_poolindex);
     });
-  type_codec->registerStdCodec<edge_ptr_t>(vtxpool_type);
+  type_codec->registerStdCodec<edge_ptr_t>(edge_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  auto half_edge_type = py::class_<HalfEdge,halfedge_ptr_t>(module_meshutil, "HalfEdge").def(py::init<>())
+    /*.def_property_readonly("numConnectedPolys", [](halfedge_ptr_t e) -> int {     
+      auto sub = e->submesh();   
+      auto conpolys = sub->connectedPolys(e);    
+      return conpolys.size();
+    })*/
+   /* .def_property_readonly("connectedPolys", [](halfedge_ptr_t e) -> py::list {            
+      py::list pyl;
+      auto sub = e->submesh();   
+      auto conpolys = sub->connectedPolys(e);    
+      for( int c : conpolys ){
+        pyl.append(c);
+      }
+      return pyl;
+    })*/
+    .def_property_readonly("polygon", [](halfedge_ptr_t e) -> poly_ptr_t { 
+        return e->_polygon;
+    })           
+    .def_property_readonly("twin", [](halfedge_ptr_t e) -> halfedge_ptr_t { 
+        return e->_twin;
+    })           
+    .def_property_readonly("next", [](halfedge_ptr_t e) -> halfedge_ptr_t { 
+        return e->_next;
+    })           
+    .def_property_readonly("vertices", [](halfedge_ptr_t e) -> py::list {            
+      py::list pyl;
+      pyl.append(e->_vertexA);
+      pyl.append(e->_vertexB);
+      return pyl;
+    })
+    .def_property_readonly("hash", [](halfedge_ptr_t e) -> uint64_t {            
+      return e->hash();
+    })
+    .def("__repr__", [](halfedge_ptr_t e) -> std::string {
+      return FormatString("HalfEdge[%d->%d]", e->_vertexA->_poolindex, e->_vertexB->_poolindex);
+    });
+  type_codec->registerStdCodec<halfedge_ptr_t>(half_edge_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto poly_type = py::class_<Polygon,poly_ptr_t>(module_meshutil, "Poly")
     .def_property_readonly("numSides", [](poly_ptr_t p) -> int {            
