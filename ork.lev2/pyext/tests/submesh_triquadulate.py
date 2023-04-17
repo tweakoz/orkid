@@ -14,11 +14,11 @@ mesh.readFromWavefrontObj("data://tests/simple_obj/monkey.obj")
 
 submesh = mesh.submesh_list[0]
 
-as_tris = submesh.triangulate()
-as_quads = as_tris.quadulate(area_tolerance=100.0, #
-                             exclude_non_coplanar=False, #
-                             exclude_non_rectangular=False, #
-                             )
+as_tris = submesh.triangulated()
+as_quads = as_tris.quadulated(area_tolerance=100.0, #
+                              exclude_non_coplanar=False, #
+                              exclude_non_rectangular=False, #
+                              )
 
 print(submesh)
 print(as_tris)

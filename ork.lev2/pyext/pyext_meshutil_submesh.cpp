@@ -209,11 +209,22 @@ void pyinit_meshutil_submesh(py::module& module_meshutil) {
               })
           .def(
               "slicedWithPlane",
-              [](submesh_constptr_t inpsubmesh, fplane3_ptr_t plane) -> py::dict {
+              [](submesh_constptr_t inpsubmesh, py::kwargs kwargs) -> py::dict {
                 submesh_ptr_t res_front = std::make_shared<submesh>();
                 submesh_ptr_t res_back  = std::make_shared<submesh>();
                 submesh_ptr_t res_isect = std::make_shared<submesh>();
-                auto as_dplane = fplane3_to_dplane3(*plane);
+
+                dplane3 as_dplane;
+
+                for (auto item : kwargs) {
+                  auto key = py::cast<std::string>(item.first);
+                  if (key == "plane") {
+                    as_dplane= py::cast<dplane3>(item.second);
+                  } else {
+                    OrkAssert(false);
+                  }
+                }
+
                 submeshSliceWithPlane(*inpsubmesh, as_dplane, *res_front, *res_back, *res_isect);
                 py::dict rval;
                 rval["front"]      = res_front;
@@ -241,7 +252,6 @@ void pyinit_meshutil_submesh(py::module& module_meshutil) {
                     close_mesh = py::cast<bool>(item.second);
                   } else if (key == "plane") {
                     as_dplane= py::cast<dplane3>(item.second);
-                    //as_dplane = fplane3_to_dplane3(*inp_plane);
                   } else {
                     OrkAssert(false);
                   }
