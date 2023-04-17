@@ -56,16 +56,16 @@ class Fragments:
 
     self.origin = origin
     self.speed = 0 #random.uniform(.05,.1)
-    self.target_plane_axis = vec3(0,1,0)
-    self.current_plane_axis = vec3(0,1,0)
+    self.target_plane_axis = dvec3(0,1,0)
+    self.current_plane_axis = dvec3(0,1,0)
     self.counter = 0.0
 
     if slicing_plane==None:
       nx = random.uniform(-1,1)
       ny = random.uniform(-1,1)
       nz = random.uniform(-1,1)
-      self.normal = vec3(nx,ny,nz).normalized()
-      slicing_plane = plane(self.normal, random.uniform(-1,1))
+      self.normal = dvec3(nx,ny,nz).normalized()
+      slicing_plane = dplane(self.normal, random.uniform(-1,1))
     else:
       self.normal = slicing_plane.normal
 
@@ -116,6 +116,7 @@ class Fragments:
     # clip
     ##################################
 
+    print(self.slicing_plane)
     self.clipped = self.stripped.clippedWithPlane( plane=self.slicing_plane,
                                                    flip_orientation = self.flip_orientation,
                                                    close_mesh = True )
@@ -197,7 +198,7 @@ class SceneGraphApp(object):
                   pipeline=pipeline,
                   flip_orientation=False,
                   origin = vec3(2,0,-2),
-                  slicing_plane=plane(vec3(0,1,0).normalized(),-.4),
+                  slicing_plane=dplane(dvec3(0,1,0).normalized(),-.4),
                   model_asset_path = "data://tests/simple_obj/tetra.obj" )
 
     self.fragments += [f]
@@ -207,7 +208,7 @@ class SceneGraphApp(object):
                   pipeline=pipeline,
                   flip_orientation=False,
                   origin = vec3(2,0,2),
-                  slicing_plane=plane(vec3(0,1,1).normalized(),+.5),
+                  slicing_plane=dplane(dvec3(0,1,1).normalized(),+.5),
                   model_asset_path = "data://tests/simple_obj/cone.obj" )
 
 
@@ -218,7 +219,7 @@ class SceneGraphApp(object):
                   pipeline=pipeline,
                   flip_orientation=False,
                   origin = vec3(0,0,0),
-                  slicing_plane=plane(vec3(1,1,1).normalized(),.5),
+                  slicing_plane=dplane(dvec3(1,1,1).normalized(),.5),
                   model_asset_path = "data://tests/simple_obj/box.obj" )
 
 
@@ -229,7 +230,7 @@ class SceneGraphApp(object):
                   pipeline=pipeline,
                   flip_orientation=False,
                   origin = vec3(-2,0,-2),
-                  slicing_plane=plane(vec3(1,0,0).normalized(),0),
+                  slicing_plane=dplane(dvec3(1,0,0).normalized(),0),
                   model_asset_path = "data://tests/simple_obj/torus.obj" )
 
     self.fragments += [f]
@@ -239,7 +240,7 @@ class SceneGraphApp(object):
                   pipeline=pipeline,
                   flip_orientation=False,
                   origin = vec3(-2,0,2),
-                  slicing_plane=plane(vec3(1,0,0).normalized(),0),
+                  slicing_plane=dplane(dvec3(1,0,0).normalized(),0),
                   model_asset_path = "data://tests/simple_obj/uvsphere.obj" )
 
     self.fragments += [f]
