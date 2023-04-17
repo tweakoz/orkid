@@ -20,7 +20,7 @@ static constexpr double PLANE_EPSILON = 0.001f;
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::meshutil {
 ///////////////////////////////////////////////////////////////////////////////
-static logchannel_ptr_t logchan_clip = logger()->createChannel("meshutil.clipper", fvec3(.9, .9, 1),false);
+static logchannel_ptr_t logchan_clip = logger()->createChannel("meshutil.clipper", fvec3(.9, .9, 1), true);
 
 const std::unordered_set<int> test_verts = {0, 1, 2, 3, 4, 9};
 
@@ -81,9 +81,10 @@ struct PlanarVertexCategorize {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-vertex_set_t addWholePoly(std::string hdr, //
-                          poly_const_ptr_t src_poly, //
-                          submesh& dest) { //
+vertex_set_t addWholePoly(
+    std::string hdr,           //
+    poly_const_ptr_t src_poly, //
+    submesh& dest) {           //
 
   std::vector<vertex_ptr_t> new_verts;
   vertex_set_t added;
@@ -102,10 +103,8 @@ vertex_set_t addWholePoly(std::string hdr, //
   if (log_poly) {
 
     logchan_clip->log_continue("<%s> add whole poly: [", hdr.c_str());
-    src_poly->visitVertices([&](vertex_ptr_t v) {
-       logchan_clip->log_continue("v<%d> ", v->_poolindex);
-    });
-     logchan_clip->log_continue("]\n");
+    src_poly->visitVertices([&](vertex_ptr_t v) { logchan_clip->log_continue("v<%d> ", v->_poolindex); });
+    logchan_clip->log_continue("]\n");
   }
   return added;
 }
@@ -163,6 +162,14 @@ struct PlanarCrossing {
   EPlanarStatus _status;
 };
 
+struct EdgeChangeRecord {
+  vertex_ptr_t _orig_vtxA;
+  vertex_ptr_t _orig_vtxB;
+  vertex_ptr_t _new_vtxA;
+  vertex_ptr_t _new_vtxB;
+};
+using edge_change_record_ptr_t = std::shared_ptr<EdgeChangeRecord>;
+
 ///////////////////////////////////////////////////////////////////////////////
 
 void ClipPolygon(
@@ -170,29 +177,31 @@ void ClipPolygon(
     poly_const_ptr_t input_poly, //
     submesh& out_submesh,        //
     std::vector<PlanarCrossing>& crossings,
-    bool do_front) {             //
+    bool do_front) { //
 
   bool do_back = not do_front;
 
   const int inuminverts = input_poly->numVertices();
   OrkAssert(inuminverts >= 3);
 
-   logchan_clip->log_continue( "CLIP INPUT POLY[");
+  logchan_clip->log_continue("CLIP INPUT POLY[");
+  vertex_vect_t input_poly_verts;
   input_poly->visitVertices([&](vertex_ptr_t vtx) {
     auto v_m = out_submesh.mergeVertex(*vtx);
-     logchan_clip->log_continue( " %d", v_m->_poolindex );
+    input_poly_verts.push_back(v_m);
+    logchan_clip->log_continue(" %d", v_m->_poolindex);
   });
-   logchan_clip->log_continue( " ]\n");
-  //if (debug)
-    //printf("clip poly num verts<%d>\n", inuminverts);
+  logchan_clip->log_continue(" ]\n");
+  // if (debug)
+  // printf("clip poly num verts<%d>\n", inuminverts);
 
   // loop around the input polygon's edges
 
   std::vector<vertex_ptr_t> front_vertices;
 
   for (int iva = 0; iva < inuminverts; iva++) {
-   //if (debug)
-     // printf("  iva<%d> of inuminverts<%d>\n", iva, inuminverts);
+    // if (debug)
+    //  printf("  iva<%d> of inuminverts<%d>\n", iva, inuminverts);
     int ivb =
         ((iva == inuminverts - 1) //
              ? 0                  //
@@ -201,6 +210,9 @@ void ClipPolygon(
     auto out_vtx_a = out_submesh.mergeVertex(*input_poly->vertex(iva));
     auto out_vtx_b = out_submesh.mergeVertex(*input_poly->vertex(ivb));
 
+    auto he_ab = out_submesh.mergeEdgeForVertices(out_vtx_a, out_vtx_b);
+    auto he_ba = out_submesh.mergeEdgeForVertices(out_vtx_b, out_vtx_a);
+
     // get the side of each vert to the plane
     bool is_vertex_a_front = slicing_plane.isPointInFront(out_vtx_a->mPos);
     bool is_vertex_b_front = slicing_plane.isPointInFront(out_vtx_b->mPos);
@@ -208,16 +220,18 @@ void ClipPolygon(
     {
       int aindex = out_vtx_a->_poolindex;
       int bindex = out_vtx_b->_poolindex;
-       logchan_clip->log("  is_vertex_a_front<%d:%d> is_vertex_b_front<%d:%d>", aindex, int(is_vertex_a_front), bindex, int(is_vertex_b_front));
+      logchan_clip->log(
+          "  is_vertex_a_front<%d:%d> is_vertex_b_front<%d:%d>", aindex, int(is_vertex_a_front), bindex, int(is_vertex_b_front));
     }
 
     if (is_vertex_a_front) {
       if (do_front) {
-         logchan_clip->log( "emit front vtx<%d>", out_vtx_a->_poolindex );
+        logchan_clip->log("emit front vtx<%d>", out_vtx_a->_poolindex);
         front_vertices.push_back(out_vtx_a);
       }
       // if( debug ) printf("  add a to front cnt<%zu>\n", out_front_poly.GetNumVertices());
     } else {
+
       if (do_back) {
         // on_out_back(vA->mPos);
       }
@@ -229,8 +243,8 @@ void ClipPolygon(
       bool front_to_back = (is_vertex_a_front and not is_vertex_b_front);
       bool back_to_front = (not is_vertex_a_front and is_vertex_b_front);
 
-      //if (debug)
-        //printf("  plane crossed iva<%d> ivb<%d>\n", iva, ivb);
+      // if (debug)
+      // printf("  plane crossed iva<%d> ivb<%d>\n", iva, ivb);
       dvec3 vPos;
       double isectdist;
       dlineseg3 lsegab(out_vtx_a->mPos, out_vtx_b->mPos);
@@ -238,13 +252,12 @@ void ClipPolygon(
       dvec3 LerpedVertex;
 
       logchan_clip->log("  does_intersectAB<%d>\n", int(does_intersect));
-      if(does_intersect) {
+      if (does_intersect) {
         double fDist   = (out_vtx_a->mPos - out_vtx_b->mPos).magnitude();
         double fDist2  = (out_vtx_a->mPos - vPos).magnitude();
         double fScalar = (abs(fDist) < PLANE_EPSILON) ? 0.0 : fDist2 / fDist;
         LerpedVertex.lerp(out_vtx_a->mPos, out_vtx_b->mPos, fScalar);
-      }
-      else{
+      } else {
         dlineseg3 lsegba(out_vtx_b->mPos, out_vtx_a->mPos);
         does_intersect = slicing_plane.Intersect(lsegba, isectdist, vPos);
         logchan_clip->log("  does_intersectBA<%d>\n", int(does_intersect));
@@ -255,45 +268,95 @@ void ClipPolygon(
       }
       if (does_intersect) {
         vertex smvert;
-        smvert.mPos  = LerpedVertex;
+        smvert.mPos       = LerpedVertex;
         auto out_vtx_lerp = out_submesh.mergeVertex(smvert);
+
+        //////////////////////
+        if (out_vtx_a->_varmap.hasKey("clipped_vertex")) {
+          // auto pre_existing = out_vtx_a->_varmap.typedValueForKey<vertex_ptr_t>("clipped_vertex").value();
+          // printf( "pre_existing clipped vtxa<%d> : clipped vtx<%d>\n", pre_existing->_poolindex, out_vtx_lerp->_poolindex );
+          // OrkAssert( pre_existing == out_vtx_lerp );
+        } else {
+          // out_vtx_a->_varmap.mergedValueForKey<vertex_ptr_t>("clipped_vertex") = out_vtx_lerp;
+          // printf( "marked vtxa<%d> as clipped vtx<%d>\n", out_vtx_a->_poolindex, out_vtx_lerp->_poolindex );
+        }
+        if (out_vtx_b->_varmap.hasKey("clipped_vertex")) {
+          // auto pre_existing = out_vtx_b->_varmap.typedValueForKey<vertex_ptr_t>("clipped_vertex").value();
+          // printf( "pre_existing clipped vtxb<%d> : clipped vtx<%d>\n", pre_existing->_poolindex, out_vtx_lerp->_poolindex );
+          // OrkAssert( pre_existing == out_vtx_lerp );
+        } else {
+          // out_vtx_b->_varmap.mergedValueForKey<vertex_ptr_t>("clipped_vertex") = out_vtx_lerp;
+          // printf( "marked vtxb<%d> as clipped vtx<%d>\n", out_vtx_b->_poolindex, out_vtx_lerp->_poolindex );
+        }
         //////////////////////
         if (do_front) {
-          logchan_clip->log( "emit front vtx<%d>\n", out_vtx_lerp->_poolindex );
+          logchan_clip->log("emit front vtx<%d>\n", out_vtx_lerp->_poolindex);
           front_vertices.push_back(out_vtx_lerp);
         }
         //////////////////////
         PlanarCrossing pc;
-        if(front_to_back){
+        if (front_to_back) {
           pc._status = EPlanarStatus::CROSS_F2B;
-          pc._vtxA = out_vtx_a;
-          pc._vtxB = out_vtx_lerp;
-          logchan_clip->log( "CROSS F2B %d %d\n", out_vtx_a->_poolindex, out_vtx_lerp->_poolindex );
-        }
-        else if(back_to_front){
+          pc._vtxA   = out_vtx_a;
+          pc._vtxB   = out_vtx_lerp;
+          logchan_clip->log("CROSS F2B %d->%d: %d\n", out_vtx_a->_poolindex, out_vtx_b->_poolindex, out_vtx_lerp->_poolindex);
+          he_ab->_varmap.mergedValueForKey<PlanarCrossing>("crossing") = pc;
+          auto clipped_edge                                            = out_submesh.mergeEdgeForVertices(out_vtx_a, out_vtx_lerp);
+          he_ab->_varmap.mergedValueForKey<halfedge_ptr_t>("clipped_edge") = clipped_edge;
+        } else if (back_to_front) {
           pc._status = EPlanarStatus::CROSS_B2F;
-          pc._vtxA = out_vtx_b;
-          pc._vtxB = out_vtx_lerp;
-          logchan_clip->log( "CROSS B2F %d %d\n", out_vtx_b->_poolindex, out_vtx_lerp->_poolindex );
+          pc._vtxA   = out_vtx_b;
+          pc._vtxB   = out_vtx_lerp;
+          logchan_clip->log("CROSS B2F %d->%d : %d\n", out_vtx_b->_poolindex, out_vtx_a->_poolindex, out_vtx_lerp->_poolindex);
+          he_ba->_varmap.mergedValueForKey<PlanarCrossing>("crossing") = pc;
+          auto clipped_edge                                            = out_submesh.mergeEdgeForVertices(out_vtx_b, out_vtx_lerp);
+          he_ba->_varmap.mergedValueForKey<halfedge_ptr_t>("clipped_edge") = clipped_edge;
         }
         //////////////////////
         crossings.push_back(pc);
         //////////////////////
-      }      // isect1 ?
-    }  // did we cross plane ?
+      }                                                             // isect1 ?
+    }                                                               // did we cross plane ?
+    else if ((not is_vertex_a_front) and (not is_vertex_b_front)) { // all back ?
+      he_ab->_varmap.mergedValueForKey<bool>("back_edge") = true;
+    }
 
   } // for (int iva = 0; iva < inuminverts; iva++) {
 
   if (do_front and (front_vertices.size() > 2)) {
 
-    logchan_clip->log_continue( "CLIP OUTPUT POLY[");
-    for( auto vtx : front_vertices ) {
-      logchan_clip->log_continue( " %d", vtx->_poolindex );
+    logchan_clip->log_continue("CLIP OUTPUT POLY[");
+    for (auto vtx : front_vertices) {
+      logchan_clip->log_continue(" %d", vtx->_poolindex);
     }
-    logchan_clip->log_continue( " ]\n");
-
-
+    logchan_clip->log_continue(" ]\n");
     out_submesh.mergePoly(Polygon(front_vertices));
+
+    int inumverts = input_poly_verts.size();
+    if(front_vertices.size()==inumverts){
+
+    for( int iva=0; iva<inumverts; iva++ ) {
+      int ivb = (iva+1)%inumverts;
+      auto inp_vtx_a = input_poly_verts[iva];
+      auto inp_vtx_b = input_poly_verts[ivb];
+      auto frn_vtx_a = front_vertices[iva];
+      auto frn_vtx_b = front_vertices[ivb];
+
+      if( (inp_vtx_a != frn_vtx_a) or (inp_vtx_b != frn_vtx_b)) {
+        auto he_inp = out_submesh.mergeEdgeForVertices(inp_vtx_a,inp_vtx_b);
+        auto he_out = out_submesh.mergeEdgeForVertices(frn_vtx_a,frn_vtx_b);
+        he_inp->_varmap.mergedValueForKey<halfedge_ptr_t>("clipped_edge") = he_out;
+
+        he_inp = out_submesh.mergeEdgeForVertices(inp_vtx_b,inp_vtx_a);
+        he_out = out_submesh.mergeEdgeForVertices(frn_vtx_b,frn_vtx_a);
+        he_inp->_varmap.mergedValueForKey<halfedge_ptr_t>("clipped_edge") = he_out;
+      }
+    }
+    }
+
+
+
+    
   }
 }
 
@@ -349,13 +412,24 @@ struct SubMeshClipper {
         // TODO when closing the mesh, construct the closing face
         // with the planar vertices and input edge connectivity info
         // every input edge should have a matching output edge (which was clipped)
-        _backpolys.insert(input_poly);
-        logchan_clip->log_continue( "BACK POLY[");
+        logchan_clip->log_continue("BACK POLY[");
+        std::vector<vertex_ptr_t> back_vertices;
         input_poly->visitVertices([&](vertex_ptr_t vtx) {
-          auto v_m = outsmesh_front.mergeVertex(*vtx);
-          logchan_clip->log_continue( " %d", v_m->_poolindex );
+          auto v_m                                            = outsmesh_front.mergeVertex(*vtx);
+          v_m->_varmap.mergedValueForKey<bool>("back_vertex") = true;
+          back_vertices.push_back(v_m);
+          logchan_clip->log_continue(" %d", v_m->_poolindex);
         });
-        logchan_clip->log_continue( " ]\n");
+        logchan_clip->log_continue(" ]\n");
+        auto back_poly = std::make_shared<Polygon>(back_vertices);
+        _backpolys.insert(back_poly);
+        int numv = back_poly->numVertices();
+        for( int iv=0; iv<numv; iv++ ) {
+          auto vtx_a = back_poly->vertex(iv);
+          auto vtx_b = back_poly->vertex((iv+1)%numv);
+          auto he_ab = outsmesh_front.mergeEdgeForVertices(vtx_a,vtx_b);
+          he_ab->_varmap.mergedValueForKey<bool>("back_edge") = true;
+        }
       }
 
       //////////////////////////////////////////////
@@ -378,8 +452,8 @@ struct SubMeshClipper {
 
         if (do_back)
           ClipPolygon(
-              slicing_plane,  //
-              input_poly,     //
+              slicing_plane, //
+              input_poly,    //
               outsmesh_back, //
               _planars_back,
               false);
@@ -410,7 +484,7 @@ void _submeshClipWithPlaneConcave(
     submesh& outsmesh_front, //
     submesh& outsmesh_back) {
 
-  if (debug){
+  if (debug) {
     logchan_clip->log_continue("///////////\n");
     inpsubmesh.dumpPolys("inpsubmesh");
   }
@@ -418,7 +492,7 @@ void _submeshClipWithPlaneConcave(
   // close_mesh = false;
   SubMeshClipper sm_clipper(inpsubmesh, slicing_plane, outsmesh_front, outsmesh_back);
 
-  if (debug){
+  if (debug) {
     outsmesh_front.dumpPolys("clipped_front");
     if (sm_clipper.front_planar_verts._the_map.size() > 0) {
       logchan_clip->log_continue("fpv [");
@@ -442,15 +516,65 @@ void _submeshClipWithPlaneConcave(
   // close mesh
   ///////////////////////////////////////////////////////////
 
-  auto do_close = [&](submesh& outsubmesh,              //
+  auto do_close = [&](submesh& outsubmesh, //
                       vertex_set_t& planar_verts,
-                      bool front) {                     //
-    if (debug){
+                      bool front) { //
+    if (debug) {
       outsubmesh.visitAllVertices([&](vertex_ptr_t v) { //
         double point_distance = slicing_plane.pointDistance(v->mPos);
-        logchan_clip->log_continue("outv%d : %f %f %f point_distance<%f>\n", v->_poolindex, v->mPos.x, v->mPos.y, v->mPos.z, point_distance);
+        logchan_clip->log_continue(
+            "outv%d : %f %f %f point_distance<%f>\n", v->_poolindex, v->mPos.x, v->mPos.y, v->mPos.z, point_distance);
       });
       outsubmesh.dumpPolys("preclose");
+    }
+
+    if (front) {
+
+      sm_clipper._backpolys.visit([&](poly_const_ptr_t back_poly) {
+        int num_clipped = 0;
+        int num_v       = back_poly->numVertices();
+
+        logchan_clip->log_continue("BACKPOLYVISIT INPUT POLY[");
+
+        for( int iva=0; iva<num_v; iva++ ) {
+          int ivb = (iva+1)%num_v;
+          auto inp_vtx_a = back_poly->vertex(iva);
+          auto inp_vtx_b = back_poly->vertex(ivb);
+          auto he = outsubmesh.mergeEdgeForVertices(inp_vtx_a, inp_vtx_b);
+          bool has_clipped = inp_vtx_a->_varmap.hasKey("clipped_vertex");
+          if (has_clipped) {
+            num_clipped++;
+            logchan_clip->log_continue(" <%d>", inp_vtx_a->_poolindex);
+          } else {
+            bool is_back = inp_vtx_a->_varmap.hasKey("back_vertex");
+            if (is_back) {
+              logchan_clip->log_continue(" (%d)", inp_vtx_a->_poolindex);
+
+            } else {
+              logchan_clip->log_continue(" %d", inp_vtx_a->_poolindex);
+            }
+          }
+          if(he->_varmap.hasKey("back_edge")) {
+            logchan_clip->log_continue("!");
+          }
+          if(he->_varmap.hasKey("clipped_edge")) {
+            logchan_clip->log_continue("$");
+          }
+        };
+        logchan_clip->log_continue(" ] num_v<%d> num_clipped<%d>\n", num_v, num_clipped);
+
+        if (num_clipped > 1 and num_clipped == num_v) {
+          // all vertices are clipped, so this poly is now a planar poly
+          // and shall be added to the front mesh (with orientation flipped)
+          vertex_vect_t front_verts;
+          back_poly->visitVertices([&](vertex_ptr_t vtx) {
+            // auto clipped_vtx = vtx->_varmap.typedValueForKey<vertex_ptr_t>("clipped_vertex");
+            // front_verts.push_back(clipped_vtx.value());
+          });
+          // auto front_poly = outsubmesh.mergePoly(front_verts);
+          // OrkAssert(false);
+        }
+      });
     }
 
     /////////////////////////////////////////
@@ -497,11 +621,12 @@ void _submeshClipWithPlaneConcave(
       index++;
     });
 
-    if (debug)
+    if (debug) {
       for (auto e_item : planar_edges._the_map) {
         auto e = e_item.second;
         logchan_clip->log_continue("planar e %d %d\n", e->_vertexA->_poolindex, e->_vertexB->_poolindex);
       }
+    }
 
     /////////////////////////////////////////
     // we have some edges on the cutting plane
@@ -543,7 +668,7 @@ void _submeshClipWithPlaneConcave(
       };
 
       for (auto loop : _linker._edge_loops) {
-        if (debug){
+        if (debug) {
           logchan_clip->log_continue("loop [");
           for (auto e : loop->_edges) {
             logchan_clip->log_continue(" <%d %d>", e->_vertexA->_poolindex, e->_vertexB->_poolindex);
@@ -554,7 +679,7 @@ void _submeshClipWithPlaneConcave(
       }
 
       for (auto chain : _linker._edge_chains) {
-        if (debug){
+        if (debug) {
           logchan_clip->log_continue("chain [");
           for (auto e : chain->_edges) {
             logchan_clip->log_continue(" <%d %d>", e->_vertexA->_poolindex, e->_vertexB->_poolindex);
@@ -568,15 +693,16 @@ void _submeshClipWithPlaneConcave(
   }; // auto do_close = [&](submesh& outsubmesh, //
 
   if (do_front and close_mesh) { //
-    do_close(outsmesh_front, //
-             sm_clipper.front_planar_verts, //
-             true);
+    do_close(
+        outsmesh_front,                //
+        sm_clipper.front_planar_verts, //
+        true);
   }
-  if (do_back and close_mesh){ //
-    do_close(outsmesh_back, //
-             sm_clipper.back_planar_verts, //
-             false);
-
+  if (do_back and close_mesh) { //
+    do_close(
+        outsmesh_back,                //
+        sm_clipper.back_planar_verts, //
+        false);
   }
 
   ///////////////////////////////////////////////////////////

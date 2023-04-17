@@ -41,6 +41,15 @@ template <typename val_t> struct TVarMap {
     return attempt_cast_const<T>(nullptr);
   }
   ///////////////////////////////////////////////////////////////////////////
+  template <typename T> inline T& mergedValueForKey(const key_t& key) {
+    auto& val_untyped = _themap[key];
+    auto it = _themap.find(key);
+    if (val_untyped.template isA<T>()) {
+      return val_untyped.template get<T>();
+    }
+    return val_untyped.template make<T>();
+  }
+  ///////////////////////////////////////////////////////////////////////////
   template <typename T> inline attempt_cast<T> typedValueForKey(const key_t& key) {
     auto it = _themap.find(key);
     if (it != _themap.end()) {

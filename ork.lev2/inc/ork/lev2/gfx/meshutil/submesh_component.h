@@ -112,6 +112,7 @@ using edge_set_t = unique_set<edge>;
 struct HalfEdge {
 
   HalfEdge();
+  static uint64_t hashStatic(vertex_const_ptr_t a, vertex_const_ptr_t b);
 
   uint64_t hash() const;
   submesh* submesh() const;
@@ -364,6 +365,8 @@ struct IConnectivity{
   virtual poly_index_set_t polysConnectedToPoly(int ip) const = 0;
   virtual poly_set_t polysConnectedToVertex(vertex_ptr_t v) const = 0;
   virtual halfedge_vect_t edgesForPoly(poly_ptr_t p) const = 0;
+  virtual halfedge_ptr_t edgeForVertices(vertex_ptr_t a, vertex_ptr_t b) const = 0;
+  virtual halfedge_ptr_t mergeEdgeForVertices(vertex_ptr_t a, vertex_ptr_t b) = 0;
 
   virtual vertex_ptr_t mergeVertex(const struct vertex& v) = 0;
   virtual poly_ptr_t mergePoly(const Polygon& p) = 0;
@@ -394,6 +397,8 @@ struct DefaultConnectivity : public IConnectivity{
   poly_index_set_t polysConnectedToPoly(int ip) const final;
   poly_set_t polysConnectedToVertex(vertex_ptr_t v) const;
   halfedge_vect_t edgesForPoly(poly_ptr_t p) const;
+  halfedge_ptr_t edgeForVertices(vertex_ptr_t a, vertex_ptr_t b) const final;
+  halfedge_ptr_t mergeEdgeForVertices(vertex_ptr_t a, vertex_ptr_t b) final;
 
   vertex_ptr_t mergeVertex(const struct vertex& v) final;
   poly_ptr_t mergePoly(const Polygon& p) final;

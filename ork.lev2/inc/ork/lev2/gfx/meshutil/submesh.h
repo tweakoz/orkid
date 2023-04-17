@@ -102,6 +102,7 @@ struct submesh {
   vertex_ptr_t mergeVertex(const struct vertex& vtx);
   vertex_ptr_t mergeVertexConcurrent(const struct vertex& vtx);
   poly_ptr_t mergePoly(const struct Polygon& ply);
+  poly_ptr_t mergePoly(const vertex_vect_t& ply);
   poly_ptr_t mergePolyConcurrent(const struct Polygon& ply);
   poly_ptr_t mergeTriangle(vertex_ptr_t va, vertex_ptr_t vb, vertex_ptr_t vc);
   poly_ptr_t mergeTriangleConcurrent(vertex_ptr_t va, vertex_ptr_t vb, vertex_ptr_t vc);
@@ -129,6 +130,8 @@ struct submesh {
   poly_set_t polysConnectedToVertex(vertex_ptr_t v) const;
 
   halfedge_vect_t edgesForPoly(poly_ptr_t p) const;
+  halfedge_ptr_t edgeForVertices(vertex_ptr_t a, vertex_ptr_t b) const;
+  halfedge_ptr_t mergeEdgeForVertices(vertex_ptr_t a, vertex_ptr_t b);
 
   uint64_t hash() const;
 

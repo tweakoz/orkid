@@ -20,13 +20,15 @@ HalfEdge::HalfEdge(){
 
 }
 
-uint64_t HalfEdge::hash(void) const {
-  return uint64_t(_vertexA->_poolindex) | (uint64_t(_vertexB->_poolindex) << 32);
+uint64_t HalfEdge::hashStatic(vertex_const_ptr_t a, vertex_const_ptr_t b) {
+  return uint64_t(a->_poolindex) | (uint64_t(b->_poolindex) << 32);
+}
+uint64_t HalfEdge::hash() const {
+  return hashStatic(_vertexA,_vertexB);
 }
 submesh* HalfEdge::submesh() const {
   return _vertexA->_parentSubmesh;
 }
-
 
 edge::edge() {
 }

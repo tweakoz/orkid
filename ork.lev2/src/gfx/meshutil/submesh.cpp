@@ -71,6 +71,10 @@ poly_ptr_t submesh::mergePolyConcurrent(const Polygon& ply) {
   return merged;
 }
 ///////////////////////////////////////////////////////////////////////////////
+poly_ptr_t submesh::mergePoly(const vertex_vect_t& vertices){
+  return mergePoly(Polygon(vertices));
+}
+///////////////////////////////////////////////////////////////////////////////
 poly_ptr_t submesh::mergeQuad(vertex_ptr_t va, vertex_ptr_t vb, vertex_ptr_t vc, vertex_ptr_t vd) {
   return mergePoly(Polygon(va, vb, vc, vd));
 }
@@ -679,9 +683,22 @@ edge_map_t submesh::allEdgesByVertexHash() const {
   return edges;
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
 halfedge_vect_t submesh::edgesForPoly(poly_ptr_t p) const{
   return _connectivityIMPL->edgesForPoly(p);
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
+halfedge_ptr_t submesh::edgeForVertices(vertex_ptr_t a, vertex_ptr_t b) const{
+  return _connectivityIMPL->edgeForVertices(a,b);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+halfedge_ptr_t submesh::mergeEdgeForVertices(vertex_ptr_t a, vertex_ptr_t b) {
+  return _connectivityIMPL->mergeEdgeForVertices(a,b);
+}
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::meshutil

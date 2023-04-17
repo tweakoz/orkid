@@ -26,7 +26,7 @@ class SceneGraphApp(BasicUiCamSgApp):
   def __init__(self):
     super().__init__()
     self.mutex = Lock()
-    self.uicam.lookAt( vec3(0,0,20), vec3(0,0,0), vec3(0,1,0) )
+    self.uicam.lookAt( vec3(0,0,50), vec3(0,0,0), vec3(0,1,0) )
     self.camera.copyFrom( self.uicam.cameradata )
     self.numsteps_sim = 0
     self.numsteps_cut = 0
@@ -43,7 +43,7 @@ class SceneGraphApp(BasicUiCamSgApp):
     material = solid_wire_pipeline.sharedMaterial
     solid_wire_pipeline.bindParam( material.param("m"), tokens.RCFD_M)
     ##############################
-    self.fpmtx1 = dmtx4.perspective(45*constants.DTOR,1,0.3,5)
+    self.fpmtx1 = dmtx4.perspective(35*constants.DTOR,1,0.3,5)
     self.fvmtx1 = dmtx4.lookAt(dvec3(0,0,1),dvec3(0,0,0),dvec3(0,1,0))
     self.frustum1 = dfrustum()
     self.frustum1.set(self.fvmtx1,self.fpmtx1)
@@ -55,7 +55,7 @@ class SceneGraphApp(BasicUiCamSgApp):
     self.sgnode1.sortkey = 2;
     self.sgnode1.modcolor = vec4(0.25,0,0,1)
     ##############################
-    self.fpmtx2 = dmtx4.perspective(45*constants.DTOR,1,0.3,5)
+    self.fpmtx2 = dmtx4.perspective(35*constants.DTOR,1,0.3,5)
     self.fvmtx2 = dmtx4.lookAt(dvec3(1,0,1),dvec3(1,1,0),dvec3(0,1,0))
     self.frustum2 = dfrustum()
     self.frustum2.set(self.fvmtx2,self.fpmtx2)
@@ -116,20 +116,20 @@ class SceneGraphApp(BasicUiCamSgApp):
     self.upd_2c = UpdateSettings()
     ################################################################################
     self.upd_1a.fov_speed = 1.7
-    self.upd_1a.fov_min = 45
-    self.upd_1a.fov_max = 45
+    self.upd_1a.fov_min = 35
+    self.upd_1a.fov_max = 35
     self.upd_1a.lat_speed = 1.0
     ################################################################################
     self.upd_2a.fov_speed = 1.9
-    self.upd_2a.fov_min = 45
-    self.upd_2a.fov_max = 45
+    self.upd_2a.fov_min = 35
+    self.upd_2a.fov_max = 35
     self.upd_2a.lat_speed = 0.7
     ################################################################################
-    self.upd_1b.fov_min = 45
+    self.upd_1b.fov_min = 35
     self.upd_1b.fov_max = 90
     self.upd_1b.fov_speed = 1.3
     ################################################################################
-    self.upd_2b.fov_min = 45
+    self.upd_2b.fov_min = 35
     self.upd_2b.fov_max = 90
     self.upd_2b.fov_speed = 0.7
     ################################################################################

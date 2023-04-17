@@ -66,13 +66,12 @@ poly_index_set_t DefaultConnectivity::polysConnectedToPoly(int ip) const {
 ////////////////////////////////////////////////////////////////
 poly_set_t DefaultConnectivity::polysConnectedToVertex(vertex_ptr_t v) const {
   poly_set_t connected;
-  if(1){
+  if (1) {
     auto it = _polys_by_vertex.find(v);
     if (it != _polys_by_vertex.end()) {
       connected = it->second;
     }
-  }
-  else{
+  } else {
     visitAllPolys([&](poly_const_ptr_t p) {
       p->visitVertices([&](vertex_const_ptr_t pv) {
         if (pv == v) {
@@ -83,7 +82,7 @@ poly_set_t DefaultConnectivity::polysConnectedToVertex(vertex_ptr_t v) const {
       });
     });
   }
-  return connected;  
+  return connected;
 }
 ////////////////////////////////////////////////////////////////
 vertex_ptr_t DefaultConnectivity::vertex(int id) const {
@@ -142,10 +141,10 @@ void DefaultConnectivity::removePoly(poly_ptr_t ply) {
     _polymap.erase(it2);
     auto itx = _halfedges_by_poly.find(ply);
     OrkAssert(itx != _halfedges_by_poly.end());
-    for( auto he : itx->second ){
+    for (auto he : itx->second) {
       OrkAssert(he);
-      if(he->_twin){
-        OrkAssert(he->_twin->_twin==he);
+      if (he->_twin) {
+        OrkAssert(he->_twin->_twin == he);
         he->_twin->_twin = nullptr;
       }
     }
@@ -193,12 +192,10 @@ poly_ptr_t DefaultConnectivity::mergePoly(const Polygon& ply) {
   // zero area poly removal
   ///////////////////////////////
   double area = ply.computeArea();
-  if(area<0.00001){
+  if (area < 0.00001) {
 
     std::string poly_str = "[";
-    ply.visitVertices([&](vertex_ptr_t v) {
-      poly_str += FormatString(" %d", v->_poolindex);
-    });
+    ply.visitVertices([&](vertex_ptr_t v) { poly_str += FormatString(" %d", v->_poolindex); });
     poly_str += " ]";
     logchan_connectivity->log("Mesh::mergePoly() removing zero area poly %s", poly_str.c_str());
     return nullptr;
@@ -213,8 +210,8 @@ poly_ptr_t DefaultConnectivity::mergePoly(const Polygon& ply) {
     ///////////////////////////////
     // merge poly
     ///////////////////////////////
-    int inewpi = (int)_orderedPolys.size();
-    Polygon temp_poly   = ply;
+    int inewpi        = (int)_orderedPolys.size();
+    Polygon temp_poly = ply;
     temp_poly.SetAnnoMap(ply.GetAnnoMap());
     auto new_poly = std::make_shared<Polygon>(temp_poly);
     _orderedPolys.push_back(new_poly);
@@ -223,12 +220,12 @@ poly_ptr_t DefaultConnectivity::mergePoly(const Polygon& ply) {
     //////////////////////////////////////////////////
     // add edges
     //////////////////////////////////////////////////
-    for (int iv=0; iv<inumv; iv++) {
+    for (int iv = 0; iv < inumv; iv++) {
       auto v0 = new_poly->vertex(iv);
-      auto v1 = new_poly->vertex((iv+1)%inumv);
-      auto e0 = _makeHalfEdge(v0,v1,new_poly);
+      auto v1 = new_poly->vertex((iv + 1) % inumv);
+      auto e0 = _makeHalfEdge(v0, v1, new_poly);
     }
-    for (int iv=0; iv<inumv; iv++) {
+    for (int iv = 0; iv < inumv; iv++) {
       auto v0 = new_poly->vertex(iv);
       _polys_by_vertex[v0].insert(new_poly);
     }
@@ -243,9 +240,7 @@ poly_ptr_t DefaultConnectivity::mergePoly(const Polygon& ply) {
   return rval;
 }
 ////////////////////////////////////////////////////////////////
-halfedge_ptr_t DefaultConnectivity::_makeHalfEdge(vertex_ptr_t a,
-                                                  vertex_ptr_t b, 
-                                                  poly_ptr_t p) {
+halfedge_ptr_t DefaultConnectivity::_makeHalfEdge(vertex_ptr_t a, vertex_ptr_t b, poly_ptr_t p) {
 
   auto& this_poly_edges = _halfedges_by_poly[p];
 
@@ -255,22 +250,20 @@ halfedge_ptr_t DefaultConnectivity::_makeHalfEdge(vertex_ptr_t a,
   // create edge
   ////////////////////////
 
-  auto he = std::make_shared<HalfEdge>();
-  he->_vertexA = a;
-  he->_vertexB = b;
+  auto he      = mergeEdgeForVertices(a,b);
   he->_polygon = p;
 
   ////////////////////////
   // link poly's previous next edge to this edge
   ////////////////////////
 
-  if(prev_count>0){
-    OrkAssert(this_poly_edges[prev_count-1]->_vertexB==a);
-    this_poly_edges[prev_count-1]->_next = he;
+  if (prev_count > 0) {
+    OrkAssert(this_poly_edges[prev_count - 1]->_vertexB == a);
+    this_poly_edges[prev_count - 1]->_next = he;
   }
 
   ////////////////////////
-  // add this edge to poly's edge list                                                
+  // add this edge to poly's edge list
   ////////////////////////
 
   this_poly_edges.push_back(he);
@@ -296,7 +289,7 @@ halfedge_ptr_t DefaultConnectivity::_makeHalfEdge(vertex_ptr_t a,
   check_twin._vertexB = a;
   auto ittwin         = _halfedge_map.find(check_twin.hash());
   if (ittwin != _halfedge_map.end()) {
-    he->_twin = ittwin->second;
+    he->_twin             = ittwin->second;
     ittwin->second->_twin = he;
   }
 
@@ -324,12 +317,36 @@ dvec3 DefaultConnectivity::centerOfPolys() const {
   */
   return _centerOfPolysAccum * 1.0 / double(_centerOfPolysCount);
 }
-  halfedge_vect_t DefaultConnectivity::edgesForPoly(poly_ptr_t p) const{
-    auto it = _halfedges_by_poly.find(p);
-    if( it != _halfedges_by_poly.end() )
-      return it->second;
-    return halfedge_vect_t();
+///////////////////////////////////////////////////////////////////////////////
+halfedge_vect_t DefaultConnectivity::edgesForPoly(poly_ptr_t p) const {
+  auto it = _halfedges_by_poly.find(p);
+  if (it != _halfedges_by_poly.end())
+    return it->second;
+  return halfedge_vect_t();
+}
+///////////////////////////////////////////////////////////////////////////////
+halfedge_ptr_t DefaultConnectivity::edgeForVertices(vertex_ptr_t a, vertex_ptr_t b) const {
+  uint64_t ucrc = HalfEdge::hashStatic(a, b);
+  auto it       = _halfedge_map.find(ucrc);
+  if (it != _halfedge_map.end()) {
+    return it->second;
   }
-
-////////////////////////////////////////////////////////////////
+  return nullptr;
+}
+///////////////////////////////////////////////////////////////////////////////
+halfedge_ptr_t DefaultConnectivity::mergeEdgeForVertices(vertex_ptr_t a, vertex_ptr_t b) {
+  uint64_t ucrc = HalfEdge::hashStatic(a, b);
+  auto it       = _halfedge_map.find(ucrc);
+  if (it != _halfedge_map.end()) {
+    return it->second;
+  }
+  else{
+    auto he = std::make_shared<HalfEdge>();
+    he->_vertexA = a;
+    he->_vertexB = b;
+    _halfedge_map[ucrc] = he;
+    return he;
+  }
+}
+///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::meshutil
