@@ -66,7 +66,7 @@ poly_index_set_t DefaultConnectivity::polysConnectedToPoly(int ip) const {
 ////////////////////////////////////////////////////////////////
 poly_set_t DefaultConnectivity::polysConnectedToVertex(vertex_ptr_t v) const {
   poly_set_t connected;
-  if(0){
+  if(1){
     auto it = _polys_by_vertex.find(v);
     if (it != _polys_by_vertex.end()) {
       connected = it->second;

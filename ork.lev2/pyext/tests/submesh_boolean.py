@@ -58,7 +58,7 @@ class SceneGraphApp(BasicUiCamSgApp):
     crcA = Crc64Context()
     crcA.accum(cyl_path)          # path to source mesh
     crcA.accum(tor_path)          # path to source mesh
-    crcA.accum("boolean_ops:1.5") # version string (change if you alter the boolean stage)
+    crcA.accum("boolean_ops:1.6") # version string (change if you alter the boolean stage)
     crcA.finish()
     
     cached_dblock = DataBlockCache.findDataBlock(crcA.result)
@@ -129,9 +129,6 @@ class SceneGraphApp(BasicUiCamSgApp):
     print(result_submesh)
     result_submesh.writeWavefrontObj("boolean_out.obj")
 
-    #result_submesh = meshutil.Mesh()
-    #result_submesh.readFromWavefrontObj(tor_path)
-    #result_submesh = result_submesh.submesh_list[0]
     self.barysubmesh = result_submesh.withBarycentricUVs()
 
 
