@@ -109,6 +109,23 @@ struct edge {
 
 using edge_set_t = unique_set<edge>;
 
+struct HalfEdge {
+
+  HalfEdge();
+
+  uint64_t hash() const;
+  submesh* submesh() const;
+
+  vertex_ptr_t _vertexA;
+  vertex_ptr_t _vertexB;
+  HalfEdge* _next = nullptr;
+  HalfEdge* _twin = nullptr; 
+  Polygon* _polygon = nullptr;
+  varmap::VarMap _varmap;
+};
+
+using halfedge_set_t = unique_set<HalfEdge>;
+
 ///////////////////////////////////////////////////////////////////////////////
 
 struct uvmapcoord {
@@ -344,10 +361,9 @@ struct IConnectivity{
   virtual poly_index_set_t polysConnectedToEdge(const edge& edge, bool ordered = true) const = 0;
   virtual poly_index_set_t polysConnectedToPoly(poly_ptr_t p) const = 0;
   virtual poly_index_set_t polysConnectedToPoly(int ip) const = 0;
-  virtual poly_index_set_t polysConnectedToVertex(vertex_ptr_t v) const = 0;
+  virtual poly_set_t polysConnectedToVertex(vertex_ptr_t v) const = 0;
   virtual vertex_ptr_t mergeVertex(const struct vertex& v) = 0;
   virtual poly_ptr_t mergePoly(const Polygon& p) = 0;
-  virtual edge_ptr_t mergeEdge(const edge& ed) = 0;
   virtual vertex_ptr_t vertex(int id) const = 0;
   virtual poly_ptr_t poly(int id) const = 0;
   virtual size_t numPolys() const = 0;
@@ -356,7 +372,6 @@ struct IConnectivity{
   virtual void visitAllPolys(const_poly_void_visitor_t visitor) const = 0;
   virtual void visitAllVertices(vertex_void_visitor_t visitor) = 0;
   virtual void visitAllVertices(const_vertex_void_visitor_t visitor) const = 0;
-  virtual edge_ptr_t edgeBetweenPolys(int aind, int bind) const = 0;
   virtual void removePoly(poly_ptr_t) = 0;
   virtual void removePolys(std::vector<poly_ptr_t>& polys) = 0;
   virtual void clearPolys() =0;
@@ -374,12 +389,11 @@ struct DefaultConnectivity : public IConnectivity{
   poly_index_set_t polysConnectedToEdge(const edge& edge, bool ordered = true) const final;
   poly_index_set_t polysConnectedToPoly(poly_ptr_t p) const final;
   poly_index_set_t polysConnectedToPoly(int ip) const final;
-  poly_index_set_t polysConnectedToVertex(vertex_ptr_t v) const final;
-  edge_ptr_t edgeBetweenPolys(int aind, int bind) const final;
+  //poly_index_set_t polysConnectedToVertex(vertex_ptr_t v) const final;
+  poly_set_t polysConnectedToVertex(vertex_ptr_t v) const;
 
   vertex_ptr_t mergeVertex(const struct vertex& v) final;
   poly_ptr_t mergePoly(const Polygon& p) final;
-  edge_ptr_t mergeEdge(const edge& ed) final;
   vertex_ptr_t vertex(int id) const final;
   poly_ptr_t poly(int id) const final;
   size_t numPolys() const final;
@@ -394,13 +408,20 @@ struct DefaultConnectivity : public IConnectivity{
   void visitAllVertices(const_vertex_void_visitor_t visitor) const final;
   dvec3 centerOfPolys() const final;
 
+  halfedge_ptr_t _makeHalfEdge(vertex_ptr_t a,
+                               vertex_ptr_t b, 
+                               poly_ptr_t p);
+
   vertexpool_ptr_t _vtxpool;
   std::unordered_map<uint64_t, poly_ptr_t> _polymap;
-  std::unordered_map<uint64_t, edge_ptr_t> _edgemap;
+  std::unordered_map<vertex_ptr_t, poly_set_t> _polys_by_vertex;
   orkvector<poly_ptr_t> _orderedPolys;
   std::unordered_map<int,int> _polyTypeCounter;
   dvec3 _centerOfPolysAccum;
   int _centerOfPolysCount = 0;
+
+  std::unordered_map<poly_ptr_t, halfedge_vect_t> _halfedges_by_poly;
+  std::unordered_map<uint64_t, halfedge_ptr_t> _halfedge_map;
 
 };
 

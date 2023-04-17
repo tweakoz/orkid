@@ -433,6 +433,7 @@ void Polygon::visitVertices(const std::function<void(vertex_ptr_t)>& visitor) co
 }
 
 void Polygon::addVertex(vertex_ptr_t v) {
+  OrkAssert(_submeshIndex==-1); // make sure we have not merged this poly yet...
   _vertices.push_back(v);
 }
 

@@ -101,7 +101,6 @@ struct submesh {
 
   vertex_ptr_t mergeVertex(const struct vertex& vtx);
   vertex_ptr_t mergeVertexConcurrent(const struct vertex& vtx);
-  edge_ptr_t mergeEdge(const edge& ed);
   poly_ptr_t mergePoly(const struct Polygon& ply);
   poly_ptr_t mergePolyConcurrent(const struct Polygon& ply);
   poly_ptr_t mergeTriangle(vertex_ptr_t va, vertex_ptr_t vb, vertex_ptr_t vc);
@@ -127,8 +126,7 @@ struct submesh {
   poly_index_set_t connectedPolys(edge_ptr_t edge, bool ordered = true) const;
   poly_index_set_t connectedPolys(const edge& edge, bool ordered = true) const;
   poly_index_set_t adjacentPolys(int ply) const;
-  edge_ptr_t edgeBetweenPolys(int a, int b) const;
-  poly_set_t polysConnectedTo(vertex_ptr_t v) const;
+  poly_set_t polysConnectedToVertex(vertex_ptr_t v) const;
 
   uint64_t hash() const;
 

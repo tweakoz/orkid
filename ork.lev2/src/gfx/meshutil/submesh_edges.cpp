@@ -10,11 +10,23 @@
 #include <ork/lev2/gfx/meshutil/meshutil.h>
 #include <deque>
 
-static constexpr bool debug         = true;
+static constexpr bool debug         = false;
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::meshutil {
 ///////////////////////////////////////////////////////////////////////////////
+
+HalfEdge::HalfEdge(){
+
+}
+
+uint64_t HalfEdge::hash(void) const {
+  return uint64_t(_vertexA->_poolindex) | (uint64_t(_vertexB->_poolindex) << 32);
+}
+submesh* HalfEdge::submesh() const {
+  return _vertexA->_parentSubmesh;
+}
+
 
 edge::edge() {
 }

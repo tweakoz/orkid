@@ -39,7 +39,7 @@ void submeshWithSmoothNormals(const submesh& inpsubmesh, submesh& outsubmesh, fl
 
     std::vector<vertex_ptr_t> merged_vertices;
     p->visitVertices([&](vertex_ptr_t inp_v0) {
-      auto polys  = inpsubmesh.polysConnectedTo(inp_v0);
+      auto polys  = inpsubmesh.polysConnectedToVertex(inp_v0);
       dvec3 Naccum;
       int ncount = 0;
       for (auto p_item : polys._the_map) {

@@ -8,9 +8,10 @@
 #include <ork/math/plane.hpp>
 #include <ork/lev2/gfx/meshutil/submesh.h>
 #include <ork/lev2/gfx/meshutil/meshutil.h>
+#include <ork/util/logger.h>
 #include <deque>
 
-static constexpr bool debug = true;
+static constexpr bool debug = false;
 
 static constexpr bool do_front        = true;
 static constexpr bool do_back         = true;
@@ -19,6 +20,7 @@ static constexpr double PLANE_EPSILON = 0.001f;
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::meshutil {
 ///////////////////////////////////////////////////////////////////////////////
+static logchannel_ptr_t logchan_clip = logger()->createChannel("meshutil.clipper", fvec3(.9, .9, 1),false);
 
 const std::unordered_set<int> test_verts = {0, 1, 2, 3, 4, 9};
 
@@ -40,8 +42,7 @@ struct PlanarVertexCategorize {
       auto nonconst_vertex = std::const_pointer_cast<struct vertex>(vtx);
       nonconst_vertex->clearAllExceptPosition();
       double point_distance = slicing_plane.pointDistance(vtx->mPos);
-      if (debug)
-        printf("iv<%d> point_distance<%f>\n", iv, point_distance);
+      logchan_clip->log("iv<%d> point_distance<%f>\n", iv, point_distance);
       if (point_distance > (-PLANE_EPSILON)) {
         _front_verts.insert(nonconst_vertex);
       } else if (point_distance < (PLANE_EPSILON)) {
@@ -95,13 +96,13 @@ vertex_set_t addWholePoly(std::string hdr, poly_const_ptr_t src_poly, submesh& d
     if (test_verts.find(v->_poolindex) == test_verts.end())
       log_poly = false;
   });
-  if (debug and log_poly) {
+  if (log_poly) {
 
-    printf("<%s> add whole poly: [", hdr.c_str());
+    logchan_clip->log_continue("<%s> add whole poly: [", hdr.c_str());
     src_poly->visitVertices([&](vertex_ptr_t v) {
-      printf("v<%d> ", v->_poolindex);
+       logchan_clip->log_continue("v<%d> ", v->_poolindex);
     });
-    printf("]\n");
+     logchan_clip->log_continue("]\n");
   }
   return added;
 }
@@ -169,12 +170,12 @@ void clipImpl(
   const int inuminverts = input_poly->numVertices();
   OrkAssert(inuminverts >= 3);
 
-  printf( "CLIP INPUT POLY[");
+   logchan_clip->log_continue( "CLIP INPUT POLY[");
   input_poly->visitVertices([&](vertex_ptr_t vtx) {
     auto v_m = out_submesh.mergeVertex(*vtx);
-    printf( " %d", v_m->_poolindex );
+     logchan_clip->log_continue( " %d", v_m->_poolindex );
   });
-  printf( " ]\n");
+   logchan_clip->log_continue( " ]\n");
   //if (debug)
     //printf("clip poly num verts<%d>\n", inuminverts);
 
@@ -197,15 +198,15 @@ void clipImpl(
     bool is_vertex_a_front = slicing_plane.isPointInFront(out_vtx_a->mPos);
     bool is_vertex_b_front = slicing_plane.isPointInFront(out_vtx_b->mPos);
 
-    if (debug){
+    {
       int aindex = out_vtx_a->_poolindex;
       int bindex = out_vtx_b->_poolindex;
-      printf("  is_vertex_a_front<%d:%d> is_vertex_b_front<%d:%d>\n", aindex, int(is_vertex_a_front), bindex, int(is_vertex_b_front));
+       logchan_clip->log("  is_vertex_a_front<%d:%d> is_vertex_b_front<%d:%d>", aindex, int(is_vertex_a_front), bindex, int(is_vertex_b_front));
     }
 
     if (is_vertex_a_front) {
       if (do_front) {
-        printf( "emit front vtx<%d>\n", out_vtx_a->_poolindex );
+         logchan_clip->log( "emit front vtx<%d>", out_vtx_a->_poolindex );
         front_vertices.push_back(out_vtx_a);
       }
       // if( debug ) printf("  add a to front cnt<%zu>\n", out_front_poly.GetNumVertices());
@@ -229,7 +230,7 @@ void clipImpl(
       bool does_intersect = slicing_plane.Intersect(lsegab, isectdist, vPos);
       dvec3 LerpedVertex;
 
-      printf("  does_intersectAB<%d>\n", int(does_intersect));
+      logchan_clip->log("  does_intersectAB<%d>\n", int(does_intersect));
       if(does_intersect) {
         double fDist   = (out_vtx_a->mPos - out_vtx_b->mPos).magnitude();
         double fDist2  = (out_vtx_a->mPos - vPos).magnitude();
@@ -239,7 +240,7 @@ void clipImpl(
       else{
         dlineseg3 lsegba(out_vtx_b->mPos, out_vtx_a->mPos);
         does_intersect = slicing_plane.Intersect(lsegba, isectdist, vPos);
-        printf("  does_intersectBA<%d>\n", int(does_intersect));
+        logchan_clip->log("  does_intersectBA<%d>\n", int(does_intersect));
         double fDist   = (out_vtx_b->mPos - out_vtx_a->mPos).magnitude();
         double fDist2  = (out_vtx_b->mPos - vPos).magnitude();
         double fScalar = (abs(fDist) < PLANE_EPSILON) ? 0.0 : fDist2 / fDist;
@@ -251,7 +252,7 @@ void clipImpl(
         auto out_vtx_lerp = out_submesh.mergeVertex(smvert);
         //////////////////////
         if (do_front) {
-          printf( "emit front vtx<%d>\n", out_vtx_lerp->_poolindex );
+          logchan_clip->log( "emit front vtx<%d>\n", out_vtx_lerp->_poolindex );
           front_vertices.push_back(out_vtx_lerp);
         }
         //////////////////////
@@ -260,13 +261,13 @@ void clipImpl(
           pc._status = EPlanarStatus::CROSS_F2B;
           pc._vtxA = out_vtx_a;
           pc._vtxB = out_vtx_lerp;
-          printf( "CROSS F2B %d %d\n", out_vtx_a->_poolindex, out_vtx_lerp->_poolindex );
+          logchan_clip->log( "CROSS F2B %d %d\n", out_vtx_a->_poolindex, out_vtx_lerp->_poolindex );
         }
         else if(back_to_front){
           pc._status = EPlanarStatus::CROSS_B2F;
           pc._vtxA = out_vtx_b;
           pc._vtxB = out_vtx_lerp;
-          printf( "CROSS B2F %d %d\n", out_vtx_b->_poolindex, out_vtx_lerp->_poolindex );
+          logchan_clip->log( "CROSS B2F %d %d\n", out_vtx_b->_poolindex, out_vtx_lerp->_poolindex );
         }
         //////////////////////
         planars.push_back(pc);
@@ -280,11 +281,11 @@ void clipImpl(
 
   if (do_front and (front_vertices.size() > 2)) {
 
-    printf( "CLIP OUTPUT POLY[");
+    logchan_clip->log_continue( "CLIP OUTPUT POLY[");
     for( auto vtx : front_vertices ) {
-      printf( " %d", vtx->_poolindex );
+      logchan_clip->log_continue( " %d", vtx->_poolindex );
     }
-    printf( " ]\n");
+    logchan_clip->log_continue( " ]\n");
 
 
     out_submesh.mergePoly(Polygon(front_vertices));
@@ -316,7 +317,7 @@ struct Clipper {
       int numverts    = input_poly->numVertices();
       auto polyvtxcnt = categorized.categorizePolygon(input_poly);
       if (debug)
-        printf(
+        logchan_clip->log_continue(
             "ip<%d> numverts<%d> front<%d> back<%d> planar<%d>\n",
             ip,
             numverts,
@@ -338,12 +339,12 @@ struct Clipper {
         // TODO when closing the mesh, construct the closing face
         // with the planar vertices and input edge connectivity info
         // every input edge should have a matching output edge (which was clipped)
-        printf( "BACK POLY[");
+        logchan_clip->log_continue( "BACK POLY[");
         input_poly->visitVertices([&](vertex_ptr_t vtx) {
           auto v_m = outsmesh_Front.mergeVertex(*vtx);
-          printf( " %d", v_m->_poolindex );
+          logchan_clip->log_continue( " %d", v_m->_poolindex );
         });
-        printf( " ]\n");
+        logchan_clip->log_continue( " ]\n");
       }
       //////////////////////////////////////////////
       // the remaining are those which must be clipped against plane
@@ -396,7 +397,7 @@ void _submeshClipWithPlaneConcave(
     submesh& outsmesh_Back) {
 
   if (debug)
-    printf("///////////\n");
+    logchan_clip->log_continue("///////////\n");
 
   if (debug)
     inpsubmesh.dumpPolys("inpsubmesh");
@@ -409,21 +410,21 @@ void _submeshClipWithPlaneConcave(
 
   if (debug)
     if (clipper.front_planar_verts._the_map.size() > 0) {
-      printf("fpv [");
+      logchan_clip->log_continue("fpv [");
       for (auto v_item : clipper.front_planar_verts._the_map) {
         auto v = v_item.second;
-        printf(" %d", v->_poolindex);
+        logchan_clip->log_continue(" %d", v->_poolindex);
       }
-      printf("]\n");
+      logchan_clip->log_continue("]\n");
     }
   if (debug)
     if (clipper.back_planar_verts._the_map.size() > 0) {
-      printf("bpv [");
+      logchan_clip->log_continue("bpv [");
       for (auto v_item : clipper.back_planar_verts._the_map) {
         auto v = v_item.second;
-        printf(" %d", v->_poolindex);
+        logchan_clip->log_continue(" %d", v->_poolindex);
       }
-      printf("]\n");
+      logchan_clip->log_continue("]\n");
     }
 
   ///////////////////////////////////////////////////////////
@@ -436,7 +437,7 @@ void _submeshClipWithPlaneConcave(
     if (debug)
       outsubmesh.visitAllVertices([&](vertex_ptr_t v) { //
         double point_distance = slicing_plane.pointDistance(v->mPos);
-        printf("outv%d : %f %f %f point_distance<%f>\n", v->_poolindex, v->mPos.x, v->mPos.y, v->mPos.z, point_distance);
+        logchan_clip->log_continue("outv%d : %f %f %f point_distance<%f>\n", v->_poolindex, v->mPos.x, v->mPos.y, v->mPos.z, point_distance);
       });
 
     if (debug)
@@ -457,7 +458,7 @@ void _submeshClipWithPlaneConcave(
     if (debug)
       for (auto e_item : all_edges._the_map) {
         auto e = e_item.second;
-        printf("all e[%d %d]\n", e->_vertexA->_poolindex, e->_vertexB->_poolindex);
+        logchan_clip->log_continue("all e[%d %d]\n", e->_vertexA->_poolindex, e->_vertexB->_poolindex);
       }
 
     edge_set_t planar_edges;
@@ -465,7 +466,7 @@ void _submeshClipWithPlaneConcave(
     int index = 0;
     planar_verts.visit([&](vertex_ptr_t v) {
       if (debug)
-        printf("planar v%d : %f %f %f\n", v->_poolindex, v->mPos.x, v->mPos.y, v->mPos.z);
+        logchan_clip->log_continue("planar v%d : %f %f %f\n", v->_poolindex, v->mPos.x, v->mPos.y, v->mPos.z);
       planar_verts.visit([&](vertex_ptr_t v2) {
         if (v == v2)
           return;
@@ -489,7 +490,7 @@ void _submeshClipWithPlaneConcave(
     if (debug)
       for (auto e_item : planar_edges._the_map) {
         auto e = e_item.second;
-        printf("planar e %d %d\n", e->_vertexA->_poolindex, e->_vertexB->_poolindex);
+        logchan_clip->log_continue("planar e %d %d\n", e->_vertexA->_poolindex, e->_vertexB->_poolindex);
       }
 
     /////////////////////////////////////////
@@ -533,25 +534,25 @@ void _submeshClipWithPlaneConcave(
 
       for (auto loop : _linker._edge_loops) {
         if (debug)
-          printf("loop [");
+          logchan_clip->log_continue("loop [");
         if (debug)
           for (auto e : loop->_edges) {
-            printf(" <%d %d>", e->_vertexA->_poolindex, e->_vertexB->_poolindex);
+            logchan_clip->log_continue(" <%d %d>", e->_vertexA->_poolindex, e->_vertexB->_poolindex);
           }
         if (debug)
-          printf("]\n");
+          logchan_clip->log_continue("]\n");
         do_chain(loop, outsubmesh);
       }
 
       for (auto chain : _linker._edge_chains) {
         if (debug)
-          printf("chain [");
+          logchan_clip->log_continue("chain [");
         if (debug)
           for (auto e : chain->_edges) {
-            printf(" <%d %d>", e->_vertexA->_poolindex, e->_vertexB->_poolindex);
+            logchan_clip->log_continue(" <%d %d>", e->_vertexA->_poolindex, e->_vertexB->_poolindex);
           }
         if (debug)
-          printf("]\n");
+          logchan_clip->log_continue("]\n");
         // do_chain(chain, outsubmesh);
       }
     } // if (planar_edges.size()) {

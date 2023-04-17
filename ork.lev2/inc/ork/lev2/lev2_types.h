@@ -505,6 +505,7 @@ namespace ork::meshutil{
   struct EdgeChain;
   struct EdgeLoop;
   struct EdgeChainLinker;
+  struct HalfEdge;
 
 	using material_semanticmap_t = orkmap<std::string, MaterialBindingItem>;
 
@@ -528,6 +529,10 @@ namespace ork::meshutil{
   using edge_ptr_t = std::shared_ptr<edge>;
   using edge_const_ptr_t = std::shared_ptr<const edge>;
   using uvmapcoord_ptr_t = std::shared_ptr<uvmapcoord>;
+
+  using halfedge_ptr_t = std::shared_ptr<HalfEdge>;
+  using halfedge_const_ptr_t = std::shared_ptr<const HalfEdge>;
+  using halfedge_vect_t = std::vector<halfedge_ptr_t>;
 
   using polyset_ptr_t = std::shared_ptr<PolySet>;
   using island_ptr_t = std::shared_ptr<Island>;

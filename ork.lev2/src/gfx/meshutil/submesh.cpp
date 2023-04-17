@@ -155,10 +155,6 @@ poly_ptr_t submesh::mergeUnorderedTriangle(vertex_ptr_t va, vertex_ptr_t vb, ver
   return p;
 }
 ///////////////////////////////////////////////////////////////////////////////
-edge_ptr_t submesh::mergeEdge(const edge& ed) {
-  return _connectivityIMPL->mergeEdge(ed);
-}
-///////////////////////////////////////////////////////////////////////////////
 vertex_ptr_t submesh::vertex(int i) const {
   return _connectivityIMPL->vertex(i);
 }
@@ -284,10 +280,6 @@ void submesh::FindNSidedPolys(orkvector<int>& output, int inumsides) const {
 ///////////////////////////////////////////////////////////////////////////////
 poly_index_set_t submesh::adjacentPolys(int ply) const {
   return _connectivityIMPL->polysConnectedToPoly(ply);
-}
-///////////////////////////////////////////////////////////////////////////////
-edge_ptr_t submesh::edgeBetweenPolys(int aind, int bind) const {
-  return _connectivityIMPL->edgeBetweenPolys(aind, bind);
 }
 ///////////////////////////////////////////////////////////////////////////////
 poly_index_set_t submesh::connectedPolys(edge_ptr_t ed, bool ordered) const { //
@@ -671,18 +663,8 @@ void submesh::visitConnectedPolys(poly_ptr_t p, PolyVisitContext& visitctx) cons
 
 ///////////////////////////////////////////////////////////////////////////////
 
-poly_set_t submesh::polysConnectedTo(vertex_ptr_t v) const {
-  poly_set_t connected;
-  visitAllPolys([&](poly_const_ptr_t p) {
-    p->visitVertices([&](vertex_const_ptr_t pv) {
-      if (pv == v) {
-        // todo: remove const_cast
-        auto non_const = std::const_pointer_cast<Polygon>(p);
-        connected.insert(non_const);
-      }
-    });
-  });
-  return connected;
+poly_set_t submesh::polysConnectedToVertex(vertex_ptr_t v) const {
+  return _connectivityIMPL->polysConnectedToVertex(v);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

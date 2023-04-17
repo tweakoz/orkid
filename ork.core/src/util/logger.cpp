@@ -50,7 +50,7 @@ namespace ork {
       printf( "%s%s%s", _c1_prefix.c_str(), buf, _reset.c_str() );
     }
     void LogChannel::log_continue(const char *pMsgFormat, ...) const {
-      if(_ENABLE_LOGGING){
+      if(_ENABLE_LOGGING and _enabled){
         va_list args;
         va_start(args, pMsgFormat);
         log_continue_valist(pMsgFormat, args);
