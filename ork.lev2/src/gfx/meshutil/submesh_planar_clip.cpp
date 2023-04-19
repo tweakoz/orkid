@@ -42,7 +42,7 @@ struct PlanarVertexCategorize {
       auto nonconst_vertex = std::const_pointer_cast<struct vertex>(vtx);
       nonconst_vertex->clearAllExceptPosition();
       double point_distance = slicing_plane.pointDistance(vtx->mPos);
-      logchan_clip->log("iv<%d> point_distance<%f>\n", iv, point_distance);
+      logchan_clip->log("iv<%d> point_distance<%f>", iv, point_distance);
       if (point_distance > (-PLANE_EPSILON)) {
         _front_verts.insert(nonconst_vertex);
       } else if (point_distance < (PLANE_EPSILON)) {
@@ -329,7 +329,7 @@ void SubMeshClipper::procEdges(poly_const_ptr_t input_poly, bool do_front) { //
       dray3 lsegab(out_vtx_a->mPos-n_ab*1000.0, n_ab);
       bool does_intersect = _slicing_plane.Intersect(lsegab, isectdist, vPos);
       dvec3 LerpedVertex;
-      logchan_clip->log("  does_intersectAB<%d>\n", int(does_intersect));
+      logchan_clip->log("  does_intersectAB<%d>", int(does_intersect));
       if (does_intersect) {
         double fDist   = (out_vtx_a->mPos - out_vtx_b->mPos).magnitude();
         double fDist2  = (out_vtx_a->mPos - vPos).magnitude();
@@ -338,7 +338,7 @@ void SubMeshClipper::procEdges(poly_const_ptr_t input_poly, bool do_front) { //
       } else {
         dray3 lsegba(out_vtx_b->mPos+n_ab*1000.0, -n_ab);
         does_intersect = _slicing_plane.Intersect(lsegba, isectdist, vPos);
-        logchan_clip->log("  does_intersectBA<%d>\n", int(does_intersect));
+        logchan_clip->log("  does_intersectBA<%d>", int(does_intersect));
         double fDist   = (out_vtx_b->mPos - out_vtx_a->mPos).magnitude();
         double fDist2  = (out_vtx_b->mPos - vPos).magnitude();
         double fScalar = (abs(fDist) < PLANE_EPSILON) ? 0.0 : fDist2 / fDist;
@@ -353,7 +353,7 @@ void SubMeshClipper::procEdges(poly_const_ptr_t input_poly, bool do_front) { //
           plstat._status = EPlanarStatus::CROSS_F2B;
           plstat._vtxA   = out_vtx_a;
           plstat._vtxB   = out_vtx_lerp;
-          logchan_clip->log("CROSS F2B %d->%d: %d\n", out_vtx_a->_poolindex, out_vtx_b->_poolindex, out_vtx_lerp->_poolindex);
+          logchan_clip->log("CROSS F2B %d->%d: %d", out_vtx_a->_poolindex, out_vtx_b->_poolindex, out_vtx_lerp->_poolindex);
           out_submesh.mergeVar<PlanarStatus>(he_ab,"plstatus") = plstat;
           auto clipped_edge                                       = out_submesh.mergeEdgeForVertices(out_vtx_a, out_vtx_lerp);
           out_submesh.mergeVar<halfedge_ptr_t>(he_ab,"clipped_edge") = clipped_edge;
@@ -362,7 +362,7 @@ void SubMeshClipper::procEdges(poly_const_ptr_t input_poly, bool do_front) { //
           plstat._status = EPlanarStatus::CROSS_B2F;
           plstat._vtxA   = out_vtx_b;
           plstat._vtxB   = out_vtx_lerp;
-          logchan_clip->log("CROSS B2F %d->%d : %d\n", out_vtx_b->_poolindex, out_vtx_a->_poolindex, out_vtx_lerp->_poolindex);
+          logchan_clip->log("CROSS B2F %d->%d : %d", out_vtx_b->_poolindex, out_vtx_a->_poolindex, out_vtx_lerp->_poolindex);
           out_submesh.mergeVar<PlanarStatus>(he_ba,"plstatus") = plstat;
           auto clipped_edge                                            = out_submesh.mergeEdgeForVertices(out_vtx_b, out_vtx_lerp);
           out_submesh.mergeVar<halfedge_ptr_t>(he_ba,"clipped_edge") = clipped_edge;
@@ -373,7 +373,7 @@ void SubMeshClipper::procEdges(poly_const_ptr_t input_poly, bool do_front) { //
         }
       }                                                             // isect1 ?
       else{
-        //OrkAssert(false); // crossed the plane, but non intersecting ?
+        OrkAssert(false); // crossed the plane, but non intersecting ?
       }
     }                                                               // did we cross plane ?
   } // for (int iva = 0; iva < inuminverts; iva++) {
@@ -426,7 +426,7 @@ void SubMeshClipper::clipPolygon(poly_const_ptr_t input_poly, bool do_front) { /
           frontmesh_edges.push_back(he_ab);
           break;
         case EPlanarStatus::BACK:
-          //OrkAssert(false);
+         // OrkAssert(false);
           break;
         case EPlanarStatus::CROSS_F2B:{
           auto clipped = out_submesh.typedVar<halfedge_ptr_t>(he_ab,"clipped_edge");
@@ -473,7 +473,7 @@ void SubMeshClipper::closeSubMesh(bool do_front) {
     out_submesh.visitAllVertices([&](vertex_ptr_t v) { //
       double point_distance = _slicing_plane.pointDistance(v->mPos);
       logchan_clip->log_continue(
-          "outv%d : %f %f %f point_distance<%f>\n", v->_poolindex, v->mPos.x, v->mPos.y, v->mPos.z, point_distance);
+          "outv%d : %f %f %f point_distance<%f>", v->_poolindex, v->mPos.x, v->mPos.y, v->mPos.z, point_distance);
     });
     out_submesh.dumpPolys("preclose");
   }
