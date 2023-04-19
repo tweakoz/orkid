@@ -289,7 +289,6 @@ struct Polygon {
   edge_vect_t edges() const;
   int _submeshIndex = -1;
   submesh* _parentSubmesh = nullptr;
-  varmap::VarMap _varmap;
 
   const AnnoMap* mAnnotationSet;
   private:
@@ -389,6 +388,7 @@ struct IConnectivity{
   virtual dvec3 centerOfPolys() const = 0;
   virtual varmap::VarMap& varmapForHalfEdge(halfedge_ptr_t he) = 0;
   virtual varmap::VarMap& varmapForVertex(vertex_const_ptr_t v) = 0;
+  virtual varmap::VarMap& varmapForPolygon(poly_const_ptr_t p) = 0;
 
   submesh* _submesh = nullptr;
 
@@ -429,6 +429,7 @@ struct DefaultConnectivity : public IConnectivity{
 
   varmap::VarMap& varmapForHalfEdge(halfedge_ptr_t he);
   varmap::VarMap& varmapForVertex(vertex_const_ptr_t v);
+  varmap::VarMap& varmapForPolygon(poly_const_ptr_t p);
 
   vertexpool_ptr_t _vtxpool;
   std::unordered_map<uint64_t, poly_ptr_t> _polymap;
@@ -437,6 +438,8 @@ struct DefaultConnectivity : public IConnectivity{
   std::unordered_map<int,int> _polyTypeCounter;
   std::unordered_map<uint64_t,varmap::VarMap> _halfedge_varmap;
   std::unordered_map<uint64_t,varmap::VarMap> _vertex_varmap;
+  std::unordered_map<uint64_t,varmap::VarMap> _poly_varmap;
+
   dvec3 _centerOfPolysAccum;
   int _centerOfPolysCount = 0;
 

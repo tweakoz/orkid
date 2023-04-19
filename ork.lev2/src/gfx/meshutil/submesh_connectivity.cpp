@@ -355,6 +355,9 @@ varmap::VarMap& DefaultConnectivity::varmapForHalfEdge(halfedge_ptr_t he){
 varmap::VarMap& DefaultConnectivity::varmapForVertex(vertex_const_ptr_t v){
   return _vertex_varmap[v->hash()];
 }
+varmap::VarMap& DefaultConnectivity::varmapForPolygon(poly_const_ptr_t p){
+  return _poly_varmap[p->hash()];
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::meshutil

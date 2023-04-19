@@ -159,6 +159,31 @@ struct submesh {
     auto& varmap = _connectivityIMPL->varmapForVertex(v);
     return varmap.hasKey(varname);
   }
+
+  //////////////////////////////////////////////////////////////////////////////
+
+  template <typename T> T& mergeVar(poly_const_ptr_t p, const std::string& varname) {
+    auto& varmap = _connectivityIMPL->varmapForPolygon(p);
+    auto& var    = varmap[varname];
+    if (var.isA<T>())
+      return var.get<T>();
+    return var.make<T>();
+  }
+  template <typename T> T& typedVar(poly_const_ptr_t p, const std::string& varname) {
+    auto& varmap = _connectivityIMPL->varmapForPolygon(p);
+    auto& var    = varmap[varname];
+    return var.get<T>();
+  }
+  template <typename T> attempt_cast<T> tryVarAs(poly_const_ptr_t p, const std::string& varname) {
+    auto& varmap = _connectivityIMPL->varmapForPolygon(p);
+    auto& var    = varmap[varname];
+    return var.tryAs<T>();
+  }
+  inline bool hasVar(poly_const_ptr_t p, const std::string& varname) {
+    auto& varmap = _connectivityIMPL->varmapForPolygon(p);
+    return varmap.hasKey(varname);
+  }
+
   //////////////////////////////////////////////////////////////////////////////
 
   int numVertices() const;
