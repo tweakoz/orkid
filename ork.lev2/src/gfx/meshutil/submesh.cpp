@@ -700,5 +700,6 @@ halfedge_ptr_t submesh::edgeForVertices(vertex_ptr_t a, vertex_ptr_t b) const{
 halfedge_ptr_t submesh::mergeEdgeForVertices(vertex_ptr_t a, vertex_ptr_t b) {
   return _connectivityIMPL->mergeEdgeForVertices(a,b);
 }
+
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::meshutil

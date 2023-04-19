@@ -88,14 +88,11 @@ struct submesh {
   vertex_ptr_t vertex(int i) const;
   poly_ptr_t poly(int i) const;
 
-  void dumpPolys( std::string hdr, bool showverts=false) const;
+  void dumpPolys(std::string hdr, bool showverts = false) const;
 
   //////////////////////////////////////////////////////////////////////////////
 
-  void copy( submesh& dest,
-             bool preserve_normals=true,
-             bool preserve_colors=true,
-             bool preserve_texcoords=true ) const;
+  void copy(submesh& dest, bool preserve_normals = true, bool preserve_colors = true, bool preserve_texcoords = true) const;
 
   //////////////////////////////////////////////////////////////////////////////
 
@@ -117,6 +114,53 @@ struct submesh {
 
   //////////////////////////////////////////////////////////////////////////////
 
+  template <typename T> T& mergeVar(halfedge_ptr_t he, const std::string& varname) {
+    auto& varmap = _connectivityIMPL->varmapForHalfEdge(he);
+    auto& var    = varmap[varname];
+    if (var.isA<T>())
+      return var.get<T>();
+    return var.make<T>();
+  }
+  template <typename T> T& typedVar(halfedge_ptr_t he, const std::string& varname) {
+    auto& varmap = _connectivityIMPL->varmapForHalfEdge(he);
+    auto& var    = varmap[varname];
+    return var.get<T>();
+  }
+  template <typename T> attempt_cast<T> tryVarAs(halfedge_ptr_t he, const std::string& varname) {
+    auto& varmap = _connectivityIMPL->varmapForHalfEdge(he);
+    auto& var    = varmap[varname];
+    return var.tryAs<T>();
+  }
+  inline bool hasVar(halfedge_ptr_t he, const std::string& varname) {
+    auto& varmap = _connectivityIMPL->varmapForHalfEdge(he);
+    return varmap.hasKey(varname);
+  }
+
+  //////////////////////////////////////////////////////////////////////////////
+
+  template <typename T> T& mergeVar(vertex_const_ptr_t v, const std::string& varname) {
+    auto& varmap = _connectivityIMPL->varmapForVertex(v);
+    auto& var    = varmap[varname];
+    if (var.isA<T>())
+      return var.get<T>();
+    return var.make<T>();
+  }
+  template <typename T> T& typedVar(vertex_const_ptr_t v, const std::string& varname) {
+    auto& varmap = _connectivityIMPL->varmapForVertex(v);
+    auto& var    = varmap[varname];
+    return var.get<T>();
+  }
+  template <typename T> attempt_cast<T> tryVarAs(vertex_const_ptr_t v, const std::string& varname) {
+    auto& varmap = _connectivityIMPL->varmapForVertex(v);
+    auto& var    = varmap[varname];
+    return var.tryAs<T>();
+  }
+  inline bool hasVar(vertex_const_ptr_t v, const std::string& varname) {
+    auto& varmap = _connectivityIMPL->varmapForVertex(v);
+    return varmap.hasKey(varname);
+  }
+  //////////////////////////////////////////////////////////////////////////////
+
   int numVertices() const;
 
   void visitAllVertices(vertex_void_visitor_t visitor);
@@ -135,7 +179,7 @@ struct submesh {
 
   uint64_t hash() const;
 
-  struct PolyVisitContext{
+  struct PolyVisitContext {
     poly_set_t _visited;
     poly_bool_visitor_t _visitor;
     bool _indirect = false;
@@ -143,7 +187,7 @@ struct submesh {
 
   void visitAllPolys(poly_void_visitor_t visitor);
   void visitAllPolys(const_poly_void_visitor_t visitor) const;
-  void visitConnectedPolys(poly_ptr_t p,PolyVisitContext& context) const;
+  void visitConnectedPolys(poly_ptr_t p, PolyVisitContext& context) const;
 
   edge_map_t allEdgesByVertexHash() const;
 
@@ -219,9 +263,9 @@ struct submesh {
   iglmesh_ptr_t toIglMesh(int numsides) const;
   void igl_test();
 #endif
-  
+
   polygroup_ptr_t asPolyGroup() const;
-  
+
   /////////////////////////////////////////////////////////////////////////
 
   std::string name;
@@ -232,6 +276,7 @@ struct submesh {
   // these are mutable so we can get bounding boxes faster with const refs to Mesh's
   mutable AABox _aaBox;
   mutable bool _aaBoxDirty;
+
 private:
   connectivity_impl_ptr_t _connectivityIMPL;
   mutable mutex _concmutex;
@@ -241,27 +286,28 @@ private:
 
 void submeshTriangulate(const submesh& inpsubmesh, submesh& outsmesh);
 
-void submeshTrianglesToQuads(const submesh& inpsubmesh, 
-                             submesh& outsmesh, 
-                             double area_tolerance = 100.0, // 1:100 .. 100:1
-                             bool exclude_non_coplanar = true, //
-                             bool exclude_non_rectangular = false //
-                             );
+void submeshTrianglesToQuads(
+    const submesh& inpsubmesh,
+    submesh& outsmesh,
+    double area_tolerance        = 100.0, // 1:100 .. 100:1
+    bool exclude_non_coplanar    = true,  //
+    bool exclude_non_rectangular = false  //
+);
 
-void submeshSliceWithPlane(const submesh& inpsubmesh, //
-                           dplane3& slicing_plane, //
-                           submesh& outsmeshFront, //
-                           submesh& outsmeshBack,
-                           submesh& outsmeshIntersects
-                           );
+void submeshSliceWithPlane(
+    const submesh& inpsubmesh, //
+    dplane3& slicing_plane,    //
+    submesh& outsmeshFront,    //
+    submesh& outsmeshBack,
+    submesh& outsmeshIntersects);
 
-void submeshClipWithPlane(const submesh& inpsubmesh, //
-                           dplane3& slicing_plane, //
-                           bool close_mesh,
-                           bool flip_orientation,
-                           submesh& outsmeshFront, //
-                           submesh& outsmeshBack
-                           );
+void submeshClipWithPlane(
+    const submesh& inpsubmesh, //
+    dplane3& slicing_plane,    //
+    bool close_mesh,
+    bool flip_orientation,
+    submesh& outsmeshFront, //
+    submesh& outsmeshBack);
 
 void submeshWithTextureBasis(const submesh& inpsubmesh, submesh& outsmesh);
 void submeshWithTextureUnwrap(const submesh& inpsubmesh, submesh& outsmesh);

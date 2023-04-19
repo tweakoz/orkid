@@ -117,12 +117,17 @@ struct HalfEdge {
   uint64_t hash() const;
   submesh* submesh() const;
 
+  // conditions for a valid manifold mesh
+  //  _twin != nullptr
+  //  _twin != this
+  //  _twin->_twin == this
+
+
   vertex_ptr_t _vertexA;
   vertex_ptr_t _vertexB;
   halfedge_ptr_t _next;
   halfedge_ptr_t _twin; 
   poly_ptr_t _polygon;
-  varmap::VarMap _varmap;
 };
 
 using halfedge_set_t = unique_set<HalfEdge>;
@@ -187,7 +192,6 @@ struct vertex {
   float mJointWeights[kmaxinfluences];
   submesh* _parentSubmesh = nullptr;
   int _numConnectedPolys = 0;
-  varmap::VarMap _varmap;
 };
 
 using vertex_set_t = unique_set<vertex>;
@@ -383,6 +387,8 @@ struct IConnectivity{
   virtual void removePolys(std::vector<poly_ptr_t>& polys) = 0;
   virtual void clearPolys() =0;
   virtual dvec3 centerOfPolys() const = 0;
+  virtual varmap::VarMap& varmapForHalfEdge(halfedge_ptr_t he) = 0;
+  virtual varmap::VarMap& varmapForVertex(vertex_const_ptr_t v) = 0;
 
   submesh* _submesh = nullptr;
 
@@ -421,11 +427,16 @@ struct DefaultConnectivity : public IConnectivity{
                                vertex_ptr_t b, 
                                poly_ptr_t p);
 
+  varmap::VarMap& varmapForHalfEdge(halfedge_ptr_t he);
+  varmap::VarMap& varmapForVertex(vertex_const_ptr_t v);
+
   vertexpool_ptr_t _vtxpool;
   std::unordered_map<uint64_t, poly_ptr_t> _polymap;
   std::unordered_map<vertex_ptr_t, poly_set_t> _polys_by_vertex;
   orkvector<poly_ptr_t> _orderedPolys;
   std::unordered_map<int,int> _polyTypeCounter;
+  std::unordered_map<uint64_t,varmap::VarMap> _halfedge_varmap;
+  std::unordered_map<uint64_t,varmap::VarMap> _vertex_varmap;
   dvec3 _centerOfPolysAccum;
   int _centerOfPolysCount = 0;
 

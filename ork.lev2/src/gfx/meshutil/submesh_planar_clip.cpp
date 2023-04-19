@@ -177,7 +177,7 @@ void SubMeshClipper::process() {
 
   _categorized._back_verts.visit([&](vertex_const_ptr_t vtx) {
     auto m                                            = _outsubmesh_front.mergeVertex(*vtx);
-    m->_varmap.mergedValueForKey<bool>("back_vertex") = true;
+    _outsubmesh_front.mergeVar<bool>(m,"back_vertex") = true;
   });
 
   /////////////////////////////////////////////////////////////////////
@@ -220,7 +220,7 @@ void SubMeshClipper::process() {
       std::vector<vertex_ptr_t> back_vertices;
       input_poly->visitVertices([&](vertex_ptr_t vtx) {
         auto v_m                                            = _outsubmesh_front.mergeVertex(*vtx);
-        v_m->_varmap.mergedValueForKey<bool>("back_vertex") = true;
+        _outsubmesh_front.mergeVar<bool>(v_m,"back_vertex") = true;
         back_vertices.push_back(v_m);
         logchan_clip->log_continue(" %d", v_m->_poolindex);
       });
@@ -232,7 +232,7 @@ void SubMeshClipper::process() {
         auto vtx_a                                          = back_poly->vertex(iv);
         auto vtx_b                                          = back_poly->vertex((iv + 1) % numv);
         auto he_ab                                          = _outsubmesh_front.mergeEdgeForVertices(vtx_a, vtx_b);
-        he_ab->_varmap.mergedValueForKey<bool>("back_edge") = true;
+        _outsubmesh_front.mergeVar<bool>(he_ab,"back_edge") = true;
       }
     }
 
@@ -386,19 +386,19 @@ void SubMeshClipper::clipPolygon(poly_const_ptr_t input_poly, bool do_front) { /
           pc._vtxA   = out_vtx_a;
           pc._vtxB   = out_vtx_lerp;
           logchan_clip->log("CROSS F2B %d->%d: %d\n", out_vtx_a->_poolindex, out_vtx_b->_poolindex, out_vtx_lerp->_poolindex);
-          he_ab->_varmap.mergedValueForKey<PlanarCrossing>("crossing") = pc;
-          auto clipped_edge                                            = out_submesh.mergeEdgeForVertices(out_vtx_a, out_vtx_lerp);
-          he_ab->_varmap.mergedValueForKey<halfedge_ptr_t>("clipped_edge")     = clipped_edge;
-          out_vtx_b->_varmap.mergedValueForKey<vertex_ptr_t>("clipped_vertex") = out_vtx_lerp;
+          out_submesh.mergeVar<PlanarCrossing>(he_ab,"crossing") = pc;
+          auto clipped_edge                                       = out_submesh.mergeEdgeForVertices(out_vtx_a, out_vtx_lerp);
+          out_submesh.mergeVar<halfedge_ptr_t>(he_ab,"clipped_edge") = clipped_edge;
+          out_submesh.mergeVar<vertex_ptr_t>(out_vtx_b,"clipped_vertex") = out_vtx_lerp;
         } else if (back_to_front) {
           pc._status = EPlanarStatus::CROSS_B2F;
           pc._vtxA   = out_vtx_b;
           pc._vtxB   = out_vtx_lerp;
           logchan_clip->log("CROSS B2F %d->%d : %d\n", out_vtx_b->_poolindex, out_vtx_a->_poolindex, out_vtx_lerp->_poolindex);
-          he_ba->_varmap.mergedValueForKey<PlanarCrossing>("crossing") = pc;
+          out_submesh.mergeVar<PlanarCrossing>(he_ba,"crossing") = pc;
           auto clipped_edge                                            = out_submesh.mergeEdgeForVertices(out_vtx_b, out_vtx_lerp);
-          he_ba->_varmap.mergedValueForKey<halfedge_ptr_t>("clipped_edge")     = clipped_edge;
-          out_vtx_a->_varmap.mergedValueForKey<vertex_ptr_t>("clipped_vertex") = out_vtx_lerp;
+          out_submesh.mergeVar<halfedge_ptr_t>(he_ba,"clipped_edge") = clipped_edge;
+          out_submesh.mergeVar<vertex_ptr_t>(out_vtx_a,"clipped_vertex") = out_vtx_lerp;
         }
         //////////////////////
         crossings.push_back(pc);
@@ -406,7 +406,7 @@ void SubMeshClipper::clipPolygon(poly_const_ptr_t input_poly, bool do_front) { /
       }                                                             // isect1 ?
     }                                                               // did we cross plane ?
     else if ((not is_vertex_a_front) and (not is_vertex_b_front)) { // all back ?
-      he_ab->_varmap.mergedValueForKey<bool>("back_edge") = true;
+      out_submesh.mergeVar<bool>(he_ab,"back_edge") = true;
     }
 
   } // for (int iva = 0; iva < inuminverts; iva++) {
@@ -433,11 +433,11 @@ void SubMeshClipper::clipPolygon(poly_const_ptr_t input_poly, bool do_front) { /
         if ((inp_vtx_a != frn_vtx_a) or (inp_vtx_b != frn_vtx_b)) {
           auto he_inp = out_submesh.mergeEdgeForVertices(inp_vtx_a, inp_vtx_b);
           auto he_out = out_submesh.mergeEdgeForVertices(frn_vtx_a, frn_vtx_b);
-          he_inp->_varmap.mergedValueForKey<halfedge_ptr_t>("clipped_edge") = he_out;
+          out_submesh.mergeVar<halfedge_ptr_t>(he_inp,"clipped_edge") = he_out;
 
           he_inp = out_submesh.mergeEdgeForVertices(inp_vtx_b, inp_vtx_a);
           he_out = out_submesh.mergeEdgeForVertices(frn_vtx_b, frn_vtx_a);
-          he_inp->_varmap.mergedValueForKey<halfedge_ptr_t>("clipped_edge") = he_out;
+          out_submesh.mergeVar<halfedge_ptr_t>(he_inp,"clipped_edge") = he_out;
         }
       }
     }
@@ -474,12 +474,12 @@ void SubMeshClipper::closeSubMesh(bool do_front) {
         auto inp_vtx_a   = back_poly->vertex(iva);
         auto inp_vtx_b   = back_poly->vertex(ivb);
         auto he          = out_submesh.mergeEdgeForVertices(inp_vtx_a, inp_vtx_b);
-        bool has_clipped = inp_vtx_a->_varmap.hasKey("clipped_vertex");
+        bool has_clipped = out_submesh.hasVar(inp_vtx_a,"clipped_vertex");
         if (has_clipped) {
           num_clipped++;
           logchan_clip->log_continue(" <%d>", inp_vtx_a->_poolindex);
         } else {
-          bool is_back = inp_vtx_a->_varmap.hasKey("back_vertex");
+          bool is_back = out_submesh.tryVarAs<bool>(inp_vtx_a,"back_vertex").value();
           if (is_back) {
             logchan_clip->log_continue(" (%d)", inp_vtx_a->_poolindex);
 
@@ -487,11 +487,11 @@ void SubMeshClipper::closeSubMesh(bool do_front) {
             logchan_clip->log_continue(" %d", inp_vtx_a->_poolindex);
           }
         }
-        if (he->_varmap.hasKey("back_edge")) {
+        if (out_submesh.tryVarAs<bool>(he,"back_edge")) {
           logchan_clip->log_continue("!");
         }
-        if (he->_varmap.hasKey("clipped_edge")) {
-          auto clipped_edge = he->_varmap.typedValueForKey<halfedge_ptr_t>("clipped_edge").value();
+        if (auto try_clipped_edge = out_submesh.tryVarAs<halfedge_ptr_t>(he,"clipped_edge")) {
+          auto clipped_edge = try_clipped_edge.value();
           logchan_clip->log_continue("$");
           _vertex_remap[he->_vertexA->_poolindex] = clipped_edge->_vertexA->_poolindex;
           _vertex_remap[he->_vertexB->_poolindex] = clipped_edge->_vertexB->_poolindex;

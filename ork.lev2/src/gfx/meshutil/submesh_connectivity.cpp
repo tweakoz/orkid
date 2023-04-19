@@ -348,5 +348,13 @@ halfedge_ptr_t DefaultConnectivity::mergeEdgeForVertices(vertex_ptr_t a, vertex_
     return he;
   }
 }
+
+varmap::VarMap& DefaultConnectivity::varmapForHalfEdge(halfedge_ptr_t he){
+  return _halfedge_varmap[he->hash()];
+}
+varmap::VarMap& DefaultConnectivity::varmapForVertex(vertex_const_ptr_t v){
+  return _vertex_varmap[v->hash()];
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::meshutil
