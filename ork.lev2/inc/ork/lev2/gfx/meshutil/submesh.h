@@ -86,7 +86,8 @@ struct submesh {
   Polygon& RefPoly(int i);
   const Polygon& RefPoly(int i) const;
   vertex_ptr_t vertex(int i) const;
-  poly_ptr_t poly(int i) const;
+  merged_poly_ptr_t poly(int i);
+  merged_poly_const_ptr_t poly(int i) const;
 
   void dumpPolys(std::string hdr, bool showverts = false) const;
 
@@ -98,15 +99,15 @@ struct submesh {
 
   vertex_ptr_t mergeVertex(const struct vertex& vtx);
   vertex_ptr_t mergeVertexConcurrent(const struct vertex& vtx);
-  poly_ptr_t mergePoly(const struct Polygon& ply);
-  poly_ptr_t mergePoly(const vertex_vect_t& ply);
-  poly_ptr_t mergePolyConcurrent(const struct Polygon& ply);
-  poly_ptr_t mergeTriangle(vertex_ptr_t va, vertex_ptr_t vb, vertex_ptr_t vc);
-  poly_ptr_t mergeTriangleConcurrent(vertex_ptr_t va, vertex_ptr_t vb, vertex_ptr_t vc);
-  poly_ptr_t mergeUnorderedTriangle(vertex_ptr_t va, vertex_ptr_t vb, vertex_ptr_t vc);
-  poly_ptr_t mergeQuad(vertex_ptr_t va, vertex_ptr_t vb, vertex_ptr_t vc, vertex_ptr_t vd);
-  void removePoly(poly_ptr_t ply);
-  void removePolys(std::vector<poly_ptr_t>& polys);
+  merged_poly_ptr_t mergePoly(const struct Polygon& ply);
+  merged_poly_ptr_t mergePoly(const vertex_vect_t& ply);
+  merged_poly_ptr_t mergePolyConcurrent(const struct Polygon& ply);
+  merged_poly_ptr_t mergeTriangle(vertex_ptr_t va, vertex_ptr_t vb, vertex_ptr_t vc);
+  merged_poly_ptr_t mergeTriangleConcurrent(vertex_ptr_t va, vertex_ptr_t vb, vertex_ptr_t vc);
+  merged_poly_ptr_t mergeUnorderedTriangle(vertex_ptr_t va, vertex_ptr_t vb, vertex_ptr_t vc);
+  merged_poly_ptr_t mergeQuad(vertex_ptr_t va, vertex_ptr_t vb, vertex_ptr_t vc, vertex_ptr_t vd);
+  void removePoly(merged_poly_ptr_t ply);
+  void removePolys(std::vector<merged_poly_ptr_t>& polys);
   void clearPolys();
   void MergeSubMesh(const submesh& oth);
   void mergePolyGroup(const PolyGroup& pset);
@@ -162,24 +163,24 @@ struct submesh {
 
   //////////////////////////////////////////////////////////////////////////////
 
-  template <typename T> T& mergeVar(poly_const_ptr_t p, const std::string& varname) {
+  template <typename T> T& mergeVar(merged_poly_const_ptr_t p, const std::string& varname) {
     auto& varmap = _connectivityIMPL->varmapForPolygon(p);
     auto& var    = varmap[varname];
     if (var.isA<T>())
       return var.get<T>();
     return var.make<T>();
   }
-  template <typename T> T& typedVar(poly_const_ptr_t p, const std::string& varname) {
+  template <typename T> T& typedVar(merged_poly_const_ptr_t p, const std::string& varname) {
     auto& varmap = _connectivityIMPL->varmapForPolygon(p);
     auto& var    = varmap[varname];
     return var.get<T>();
   }
-  template <typename T> attempt_cast<T> tryVarAs(poly_const_ptr_t p, const std::string& varname) {
+  template <typename T> attempt_cast<T> tryVarAs(merged_poly_const_ptr_t p, const std::string& varname) {
     auto& varmap = _connectivityIMPL->varmapForPolygon(p);
     auto& var    = varmap[varname];
     return var.tryAs<T>();
   }
-  inline bool hasVar(poly_const_ptr_t p, const std::string& varname) {
+  inline bool hasVar(merged_poly_const_ptr_t p, const std::string& varname) {
     auto& varmap = _connectivityIMPL->varmapForPolygon(p);
     return varmap.hasKey(varname);
   }
@@ -198,21 +199,21 @@ struct submesh {
   poly_index_set_t adjacentPolys(int ply) const;
   poly_set_t polysConnectedToVertex(vertex_ptr_t v) const;
 
-  halfedge_vect_t edgesForPoly(poly_ptr_t p) const;
+  halfedge_vect_t edgesForPoly(merged_poly_const_ptr_t p) const;
   halfedge_ptr_t edgeForVertices(vertex_ptr_t a, vertex_ptr_t b) const;
   halfedge_ptr_t mergeEdgeForVertices(vertex_ptr_t a, vertex_ptr_t b);
 
   uint64_t hash() const;
 
   struct PolyVisitContext {
-    poly_set_t _visited;
-    poly_bool_visitor_t _visitor;
+    merged_polyconst_set_t _visited;
+    merged_poly_bool_visitor_t _visitor;
     bool _indirect = false;
   };
 
-  void visitAllPolys(poly_void_visitor_t visitor);
-  void visitAllPolys(const_poly_void_visitor_t visitor) const;
-  void visitConnectedPolys(poly_ptr_t p, PolyVisitContext& context) const;
+  void visitAllPolys(merged_poly_void_mutable_visitor_t visitor);
+  void visitAllPolys(merged_poly_void_visitor_t visitor) const;
+  void visitConnectedPolys(merged_poly_const_ptr_t p, PolyVisitContext& context) const;
 
   edge_map_t allEdgesByVertexHash() const;
 

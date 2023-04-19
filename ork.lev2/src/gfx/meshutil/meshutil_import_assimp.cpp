@@ -778,7 +778,7 @@ void clusterizeToolMeshToXgmMesh(const ork::meshutil::Mesh& inp_model, ork::lev2
     ork::meshutil::XgmClusterTri clustertri;
     clusterizer->Begin();
 
-    inp_submesh->visitAllPolys([&](poly_ptr_t p) {
+    inp_submesh->visitAllPolys([&](merged_poly_const_ptr_t p) {
       assert(p->numVertices() == 3);
       for (int i = 0; i < 3; i++)
         clustertri._vertex[i] = *inp_submesh->vertex(p->vertexID(i));

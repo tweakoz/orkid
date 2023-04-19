@@ -41,11 +41,11 @@ uint64_t submesh::hash() const{
   return crc64.result();
 }
 ///////////////////////////////////////////////////////////////////////////////
-void submesh::removePoly(poly_ptr_t p) {
+void submesh::removePoly(merged_poly_ptr_t p) {
   _connectivityIMPL->removePoly(p);
 }
 ///////////////////////////////////////////////////////////////////////////////
-void submesh::removePolys(std::vector<poly_ptr_t>& polys){
+void submesh::removePolys(std::vector<merged_poly_ptr_t>& polys){
   _connectivityIMPL->removePolys(polys);
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -53,7 +53,7 @@ void submesh::clearPolys(){
   _connectivityIMPL->clearPolys();
 }
 ///////////////////////////////////////////////////////////////////////////////
-poly_ptr_t submesh::mergePoly(const Polygon& ply) {
+merged_poly_ptr_t submesh::mergePoly(const Polygon& ply) {
   auto p = _connectivityIMPL->mergePoly(ply);
   if (p) {
     if (p->_parentSubmesh == nullptr) {
@@ -64,29 +64,29 @@ poly_ptr_t submesh::mergePoly(const Polygon& ply) {
   }
   return p;
 }
-poly_ptr_t submesh::mergePolyConcurrent(const Polygon& ply) {
+merged_poly_ptr_t submesh::mergePolyConcurrent(const Polygon& ply) {
   _concmutex.Lock();
   auto merged = mergePoly(ply);
   _concmutex.UnLock();
   return merged;
 }
 ///////////////////////////////////////////////////////////////////////////////
-poly_ptr_t submesh::mergePoly(const vertex_vect_t& vertices){
+merged_poly_ptr_t submesh::mergePoly(const vertex_vect_t& vertices){
   return mergePoly(Polygon(vertices));
 }
 ///////////////////////////////////////////////////////////////////////////////
-poly_ptr_t submesh::mergeQuad(vertex_ptr_t va, vertex_ptr_t vb, vertex_ptr_t vc, vertex_ptr_t vd) {
+merged_poly_ptr_t submesh::mergeQuad(vertex_ptr_t va, vertex_ptr_t vb, vertex_ptr_t vc, vertex_ptr_t vd) {
   return mergePoly(Polygon(va, vb, vc, vd));
 }
 ///////////////////////////////////////////////////////////////////////////////
-poly_ptr_t submesh::mergeTriangle(vertex_ptr_t va, vertex_ptr_t vb, vertex_ptr_t vc) {
+merged_poly_ptr_t submesh::mergeTriangle(vertex_ptr_t va, vertex_ptr_t vb, vertex_ptr_t vc) {
   return mergePoly(Polygon(va, vb, vc));
 }
-poly_ptr_t submesh::mergeTriangleConcurrent(vertex_ptr_t va, vertex_ptr_t vb, vertex_ptr_t vc) {
+merged_poly_ptr_t submesh::mergeTriangleConcurrent(vertex_ptr_t va, vertex_ptr_t vb, vertex_ptr_t vc) {
   return mergePolyConcurrent(Polygon(va, vb, vc));
 }
 ///////////////////////////////////////////////////////////////////////////////
-poly_ptr_t submesh::mergeUnorderedTriangle(vertex_ptr_t va, vertex_ptr_t vb, vertex_ptr_t vc) {
+merged_poly_ptr_t submesh::mergeUnorderedTriangle(vertex_ptr_t va, vertex_ptr_t vb, vertex_ptr_t vc) {
 
   if( numPolys() == 0 ){
     return mergeTriangle(va, vb, vc);
@@ -133,37 +133,33 @@ poly_ptr_t submesh::mergeUnorderedTriangle(vertex_ptr_t va, vertex_ptr_t vb, ver
   printf( "matching_order<%d>\n", matching_order );
   printf( "not_matching_order<%d>\n", not_matching_order );
   
-  poly_ptr_t ptemp = nullptr;
+  merged_poly_ptr_t pmerged = nullptr;
 
   if( matching_order < not_matching_order ){
-    ptemp = mergeTriangle(va, vb, vc);
+    pmerged = mergeTriangle(va, vb, vc);
   }
   else if( matching_order > not_matching_order ){
-    ptemp = mergeTriangle(va, vc, vb);
+    pmerged = mergeTriangle(va, vc, vb);
   }
   else if( matching_order == not_matching_order ) {
-    ptemp = mergeTriangle(va, vb, vc);
+    pmerged = mergeTriangle(va, vb, vc);
   }
   else{
     OrkAssert(false);
   }
 
-  auto p = _connectivityIMPL->mergePoly(*ptemp);
-  if (p) {
-    if (p->_parentSubmesh == nullptr) {
-      p->_parentSubmesh = this;
-      _surfaceArea += p->computeArea(ork::dmtx4::Identity());
-      _aaBoxDirty = true;
-    }
-  }
-  return p;
+  return pmerged;
 }
 ///////////////////////////////////////////////////////////////////////////////
 vertex_ptr_t submesh::vertex(int i) const {
   return _connectivityIMPL->vertex(i);
 }
 ///////////////////////////////////////////////////////////////////////////////
-poly_ptr_t submesh::poly(int i) const {
+merged_poly_const_ptr_t submesh::poly(int i) const {
+  return _connectivityIMPL->poly(i);
+}
+///////////////////////////////////////////////////////////////////////////////
+merged_poly_ptr_t submesh::poly(int i) {
   return _connectivityIMPL->poly(i);
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -175,12 +171,15 @@ void submesh::visitAllVertices(const_vertex_void_visitor_t visitor) const {
   auto const_con = const_cast<const IConnectivity*>(_connectivityIMPL.get());
   const_con->visitAllVertices(visitor);
 }
+/////////////////////////////////////////////////////////////////////////////////
+//void submesh::visitAllPolys(poly_void_visitor_t visitor) {
+//  _connectivityIMPL->visitAllPolys(visitor);
+//}
 ///////////////////////////////////////////////////////////////////////////////
-void submesh::visitAllPolys(poly_void_visitor_t visitor) {
+void submesh::visitAllPolys(merged_poly_void_mutable_visitor_t visitor) {
   _connectivityIMPL->visitAllPolys(visitor);
 }
-///////////////////////////////////////////////////////////////////////////////
-void submesh::visitAllPolys(const_poly_void_visitor_t visitor) const {
+void submesh::visitAllPolys(merged_poly_void_visitor_t visitor) const {
   auto const_con = const_cast<const IConnectivity*>(_connectivityIMPL.get());
   const_con->visitAllPolys(visitor);
 }
@@ -214,7 +213,7 @@ int submesh::numVertices() const {
 ///////////////////////////////////////////////////////////////////////////////
 int submesh::numPolys(int inumsides) const {
   int count = 0;
-  visitAllPolys([&](poly_const_ptr_t p) {
+  visitAllPolys([&](merged_poly_const_ptr_t p) {
     if(inumsides==0){
       count++;
     }
@@ -248,14 +247,14 @@ void submesh::MergeAnnos(const AnnotationMap& mrgannos, bool boverwrite) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void submesh::importPolyAnnotations(const annopolylut& apl) {
-  visitAllPolys([&](poly_ptr_t p) {
+  visitAllPolys([&](merged_poly_ptr_t p) {
     const AnnoMap* amap = apl.Find(*this, *p);
     p->SetAnnoMap(amap);
   });
 }
 ///////////////////////////////////////////////////////////////////////////////
 void submesh::exportPolyAnnotations(annopolylut& apl) const {
-  visitAllPolys([&](poly_const_ptr_t p) {
+  visitAllPolys([&](merged_poly_const_ptr_t p) {
     uint64_t uhash      = apl.HashItem(*this, *p);
     const AnnoMap* amap = p->GetAnnoMap();
     apl.mAnnoMap[uhash] = amap;
@@ -275,7 +274,7 @@ const AABox& submesh::aabox() const {
 }
 /////////////////////////////////////////////////////////////////////////
 void submesh::FindNSidedPolys(orkvector<int>& output, int inumsides) const {
-  visitAllPolys([&](poly_const_ptr_t p) {
+  visitAllPolys([&](merged_poly_const_ptr_t p) {
     if (p->numVertices() == inumsides) {
       output.push_back(p->_submeshIndex);
     }
@@ -297,7 +296,7 @@ poly_index_set_t submesh::connectedPolys(const edge& ed, bool ordered) const { /
 void submesh::MergeSubMesh(const submesh& inp_mesh) {
   //float ftimeA     = float(OldSchool::GetRef().GetLoResTime());
   int inumpingroup = 0;
-  inp_mesh.visitAllPolys([&](poly_const_ptr_t p) {
+  inp_mesh.visitAllPolys([&](merged_poly_const_ptr_t p) {
     std::vector<vertex_ptr_t> new_vertices;
     for (int iv = 0; iv < p->numVertices(); iv++) {
       int ivi      = p->vertexID(iv);
@@ -328,9 +327,9 @@ void submesh::mergePolyGroup(const PolyGroup& pset) {
 ///////////////////////////////////////////////////////////////////////////////
 polygroup_ptr_t submesh::asPolyGroup() const {
   polygroup_ptr_t rval = std::make_shared<PolyGroup>();
-  visitAllPolys([&](poly_const_ptr_t p) {
+  visitAllPolys([&](merged_poly_const_ptr_t p) {
     // todo : fix const
-    auto as_non_const = std::const_pointer_cast<Polygon>(p);
+    auto as_non_const = std::const_pointer_cast<MergedPolygon>(p);
     rval->_polys.insert(as_non_const);
   });
   return rval;
@@ -453,10 +452,10 @@ void submesh::addQuad(
 bool submesh::isConvexHull() const {
   int front = 0;
   int back  = 0;
-  visitAllPolys([&](poly_const_ptr_t p1) {
+  visitAllPolys([&](merged_poly_const_ptr_t p1) {
     auto pl = p1->computePlane();
     //printf( "plane<%f %f %f> <%f>\n", p1.get(), pl.n.x, pl.n.y, pl.n.z, pl.d );
-    visitAllPolys([&](poly_const_ptr_t p2) {
+    visitAllPolys([&](merged_poly_const_ptr_t p2) {
       if (p1 != p2) {
         p2->visitVertices([&](vertex_const_ptr_t v) {
           switch(pl.classifyPoint(v->mPos)) {
@@ -520,7 +519,7 @@ void submesh::copy(
 
   // copy polys
 
-  visitAllPolys([&](poly_const_ptr_t p) {
+  visitAllPolys([&](merged_poly_const_ptr_t p) {
     std::vector<vertex_ptr_t> newverts;
     p->visitVertices([&](vertex_const_ptr_t v) {
       auto it = vtx_map.find(v->_poolindex);
@@ -574,7 +573,7 @@ void submesh::dumpPolys(std::string hdr, bool showverts) const{
   int index = 0;
   if( hdr.length() )
     printf( "polys <%s>: \n", hdr.c_str() );
-  visitAllPolys([&](poly_const_ptr_t p) {
+  visitAllPolys([&](merged_poly_const_ptr_t p) {
     printf( "  p %d [ ", index );
     p->visitVertices([&](vertex_const_ptr_t v) {
       if( showverts ){
@@ -595,7 +594,7 @@ bool submesh::isVertexInsideConvexHull(vertex_const_ptr_t vtx) const{
 
   bool rval = true;
 
-  visitAllPolys([&](poly_const_ptr_t p) {
+  visitAllPolys([&](merged_poly_const_ptr_t p) {
     auto pl = p->computePlane();
     auto pc = pl.classifyPoint(vtx->mPos);
     if (pc == PointClassification::BACK) {
@@ -610,7 +609,7 @@ bool submesh::isVertexInsideConvexHull(vertex_const_ptr_t vtx) const{
 double submesh::convexVolume() const {
   double volume = 0.0f;
   dvec3 c       = centerOfVertices();
-  visitAllPolys([&](poly_const_ptr_t p) {
+  visitAllPolys([&](merged_poly_const_ptr_t p) {
     int numsides = p->numSides();
     OrkAssert(numsides == 3);
     const auto& v0 = p->vertexPos(0);
@@ -649,7 +648,7 @@ double submesh::convexVolume() const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void submesh::visitConnectedPolys(poly_ptr_t p, PolyVisitContext& visitctx) const {
+void submesh::visitConnectedPolys(merged_poly_const_ptr_t p, PolyVisitContext& visitctx) const {
   if (visitctx._visited.insert(p)) {
     bool ok = visitctx._visitor(p);
     if (ok) {
@@ -685,7 +684,7 @@ edge_map_t submesh::allEdgesByVertexHash() const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-halfedge_vect_t submesh::edgesForPoly(poly_ptr_t p) const{
+halfedge_vect_t submesh::edgesForPoly(merged_poly_const_ptr_t p) const{
   return _connectivityIMPL->edgesForPoly(p);
 }
 

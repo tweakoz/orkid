@@ -432,10 +432,10 @@ void Polygon::visitVertices(const std::function<void(vertex_ptr_t)>& visitor) co
   }
 }
 
-void Polygon::addVertex(vertex_ptr_t v) {
-  OrkAssert(_submeshIndex==-1); // make sure we have not merged this poly yet...
-  _vertices.push_back(v);
-}
+//void Polygon::addVertex(vertex_ptr_t v) {
+  //OrkAssert(_submeshIndex==-1); // make sure we have not merged this poly yet...
+  //_vertices.push_back(v);
+//}
 
 ////////////////////////////////////////////////////////////////
 
@@ -723,6 +723,17 @@ const std::string& Polygon::GetAnnotation(const std::string& annoname) const {
   return gnomatch;
 }
 
+////////////////////////////////////////////////////////////////
+
+MergedPolygon::MergedPolygon(vertex_ptr_t ia, vertex_ptr_t ib, vertex_ptr_t ic)
+  : Polygon(ia, ib, ic) {
+}
+MergedPolygon::MergedPolygon(vertex_ptr_t ia, vertex_ptr_t ib, vertex_ptr_t ic, vertex_ptr_t id)
+  : Polygon(ia, ib, ic, id) {
+}
+MergedPolygon::MergedPolygon(const std::vector<vertex_ptr_t>& vertices)
+  : Polygon(vertices) {
+}
 
 ////////////////////////////////////////////////////////////////
 } // namespace ork::meshutil

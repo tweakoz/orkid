@@ -31,11 +31,11 @@ std::vector<island_ptr_t> PolyGroup::splitByIsland() const{
 
   while(copy_of_polys.size()>0){
 
-    poly_set_t processed;
+    merged_polyconst_set_t processed;
 
     for( auto p : copy_of_polys ){
       submesh::PolyVisitContext visit_ctx;
-      visit_ctx._visitor = [&](poly_ptr_t p) -> bool {
+      visit_ctx._visitor = [&](merged_poly_const_ptr_t p) -> bool {
           processed.insert(p);
           return true;
       };

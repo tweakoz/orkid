@@ -498,6 +498,7 @@ namespace ork::meshutil{
   struct vertex;
   struct vertexpool;
   struct Polygon;
+  struct MergedPolygon;
   struct edge;
   struct uvmapcoord;
   struct PolyGroup;
@@ -526,6 +527,8 @@ namespace ork::meshutil{
   using vertexpool_constptr_t = std::shared_ptr<const vertexpool>;
   using poly_ptr_t = std::shared_ptr<Polygon>;
   using poly_const_ptr_t       = std::shared_ptr<const Polygon>;
+  using merged_poly_ptr_t = std::shared_ptr<MergedPolygon>;
+  using merged_poly_const_ptr_t       = std::shared_ptr<const MergedPolygon>;
   using edge_ptr_t = std::shared_ptr<edge>;
   using edge_const_ptr_t = std::shared_ptr<const edge>;
   using uvmapcoord_ptr_t = std::shared_ptr<uvmapcoord>;

@@ -67,7 +67,7 @@ void GridGraph::PreMergeMesh(const submesh& MeshIn) {
   double thisareamin = std::numeric_limits<double>::max();
   double thisareaavg = 0.0;
 
-  MeshIn.visitAllPolys([&](poly_const_ptr_t ply) {
+  MeshIn.visitAllPolys([&](merged_poly_const_ptr_t ply) {
     ///////////////////////////////
     double thisarea = ply->computeArea(dmtx4::Identity());
     thisareamax     = std::max(thisareamax, thisarea);
@@ -262,7 +262,7 @@ void GridGraph::MergeMesh(const submesh& MeshIn, Mesh& MeshOut) {
   dplane3 topplane, bottomplane, leftplane, rightplane, frontplane, backplane;
 
   int inumpolys = 0;
-  MeshIn.visitAllPolys([&](poly_const_ptr_t ply) {
+  MeshIn.visitAllPolys([&](merged_poly_const_ptr_t ply) {
     inumpolys++;
     ginumouters++;
 

@@ -27,17 +27,17 @@ struct ConflictItem {
   ConflictItem()
       : _mutex("citem") {
   }
-  void removePoly(poly_ptr_t p) {
+  void removePoly(merged_poly_ptr_t p) {
     _polys.remove(p);
   }
   //////////////////////////////////
-  void appendPoly(poly_ptr_t p) {
+  void appendPoly(merged_poly_ptr_t p) {
     _mutex.Lock();
     _polys.insert(p);
     _mutex.UnLock();
   }
   //////////////////////////////////
-  void appendPolys(std::vector<poly_ptr_t> polys) {
+  void appendPolys(std::vector<merged_poly_ptr_t> polys) {
     _mutex.Lock();
     for (auto p : polys) {
       _polys.insert(p);
@@ -46,7 +46,7 @@ struct ConflictItem {
   }
   //////////////////////////////////
   vertex_ptr_t _vertex;
-  poly_set_t _polys;
+  merged_poly_set_t _polys;
   mutex _mutex;
 };
 
@@ -71,14 +71,14 @@ struct ConflictGraph {
     return it->second;
   }
   //////////////////////////////////
-  void insert(vertex_ptr_t v, poly_ptr_t p) {
+  void insert(vertex_ptr_t v, merged_poly_ptr_t p) {
     _mutex.Lock();
     auto& item = this->item(v);
     _mutex.UnLock();
     item.appendPoly(p);
   }
   //////////////////////////////////
-  void insertMultiple(vertex_ptr_t v, std::vector<poly_ptr_t>& polys) {
+  void insertMultiple(vertex_ptr_t v, std::vector<merged_poly_ptr_t>& polys) {
     _mutex.Lock();
     auto& item = this->item(v);
     _mutex.UnLock();
@@ -98,12 +98,12 @@ struct ConflictGraph {
     _items.erase(it);
   }
   //////////////////////////////////
-  void removePoly(poly_ptr_t p) {
+  void removePoly(merged_poly_ptr_t p) {
     for (auto& item : _items) {
       item.second.removePoly(p);
     }
   }
-  void removePolys(std::vector<poly_ptr_t> polys) {
+  void removePolys(std::vector<merged_poly_ptr_t> polys) {
     for (auto p : polys) {
       this->removePoly(p);
     }
@@ -207,7 +207,7 @@ void submeshConvexHullIterative(const submesh& inpsubmesh, submesh& outsmesh, in
       auto p                  = std::make_shared<Polygon>(va, vb, vc);
       double volume           = abs(p->signedVolumeWithPoint(tvd->mPos));
       polys_by_volume[volume] = p;
-      p->addVertex(tvd);
+      p->_vertices.push_back(tvd);
     }
   }
   vertex_ptr_t vd = polys_by_volume.rbegin()->second->vertex(3);
@@ -293,7 +293,7 @@ void submeshConvexHullIterative(const submesh& inpsubmesh, submesh& outsmesh, in
           printf("vertex<%d> is inside convex hull\n", v->_poolindex);
       } else {
         auto vpos = v->mPos;
-        outsmesh.visitAllPolys([&](poly_ptr_t p) {
+        outsmesh.visitAllPolys([&](merged_poly_ptr_t p) {
           if (not p->containsVertex(v)) {
             bool visible = p->signedVolumeWithPoint(vpos) >= 0.0;
             if (visible) {
@@ -333,7 +333,7 @@ void submeshConvexHullIterative(const submesh& inpsubmesh, submesh& outsmesh, in
   ///////////////////////////////////////////////////
 
   edge_set_t edgeset;
-  std::vector<poly_ptr_t> polys_to_remove;
+  std::vector<merged_poly_ptr_t> polys_to_remove;
   EdgeChainLinker linker;
   std::unordered_set<vertex_ptr_t> all_mesh_verts;
 
@@ -369,7 +369,7 @@ void submeshConvexHullIterative(const submesh& inpsubmesh, submesh& outsmesh, in
     //  and build edge set
     ///////////////////////////////
 
-    conflict_item._polys.visit([&](poly_ptr_t the_poly) {
+    conflict_item._polys.visit([&](merged_poly_ptr_t the_poly) {
       polys_to_remove.push_back(the_poly);
       the_poly->visitEdges([&](edge_ptr_t the_edge) {
         auto reverse_edge = std::make_shared<edge>(the_edge->_vertexB, the_edge->_vertexA);
@@ -448,7 +448,7 @@ void submeshConvexHullIterative(const submesh& inpsubmesh, submesh& outsmesh, in
 
       dvec3 new_center = outsmesh.centerOfPolys();
 
-      std::vector<poly_ptr_t> polys_added;
+      std::vector<merged_poly_ptr_t> polys_added;
 
       /////////////////////////////////////////////////////
       for (int i = 0; i < num_edges; i++) {
@@ -503,7 +503,7 @@ void submeshConvexHullIterative(const submesh& inpsubmesh, submesh& outsmesh, in
                    &outsmesh,           //
                    &conflict_graph]() { //
           /////////////////////////////////////////////////////
-          std::unordered_map<vertex_ptr_t, std::vector<poly_ptr_t>> insert_map;
+          std::unordered_map<vertex_ptr_t, std::vector<merged_poly_ptr_t>> insert_map;
           for (int i = 0; i < icount; i++) {
             OrkAssert((istart + i) < polys_added.size());
             auto new_tri = polys_added[istart + i];

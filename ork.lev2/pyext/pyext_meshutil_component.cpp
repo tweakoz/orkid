@@ -239,5 +239,9 @@ void pyinit_meshutil_component(py::module& module_meshutil) {
       return rval;
     });
   type_codec->registerStdCodec<poly_ptr_t>(poly_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  auto merged_poly_type = py::class_<MergedPolygon,merged_poly_ptr_t>(module_meshutil, "MergedPolygon");
+  type_codec->registerStdCodec<merged_poly_ptr_t>(merged_poly_type);
+  /////////////////////////////////////////////////////////////////////////////////
 }
 }

@@ -100,7 +100,7 @@ void pyinit_meshutil_submesh(py::module& module_meshutil) {
               "polys",
               [](submesh_ptr_t submesh) -> py::list {
                 py::list pyl;
-                submesh->visitAllPolys([&](poly_ptr_t p) { pyl.append(p); });
+                submesh->visitAllPolys([&](merged_poly_ptr_t p) { pyl.append(p); });
                 return pyl;
               })
           .def_property_readonly(
@@ -335,7 +335,7 @@ void pyinit_meshutil_submesh(py::module& module_meshutil) {
 #endif //#if defined(ENABLE_IGL)
           .def("numPolys", [](submesh_constptr_t submesh, int numsides) -> int { return submesh->numPolys(numsides); })
           .def("numVertices", [](submesh_constptr_t submesh) -> int { return submesh->numVertices(); })
-          .def("edgesForPoly", [](submesh_constptr_t submesh, poly_ptr_t p) -> py::list { //
+          .def("edgesForPoly", [](submesh_constptr_t submesh, merged_poly_ptr_t p) -> py::list { //
               py::list rval;
               auto edges = submesh->edgesForPoly(p);
               for( auto e : edges )
@@ -376,17 +376,17 @@ void pyinit_meshutil_submesh(py::module& module_meshutil) {
           .def(
               "mergeVertex",
               [](submesh_ptr_t submesh, vertex_const_ptr_t vin) -> vertex_ptr_t { return submesh->mergeVertex(*vin); })
-          .def("mergePoly", [](submesh_ptr_t submesh, poly_ptr_t pin) -> poly_ptr_t { return submesh->mergePoly(*pin); })
+          .def("mergePoly", [](submesh_ptr_t submesh, poly_ptr_t pin) -> merged_poly_ptr_t { return submesh->mergePoly(*pin); })
           .def("mergePolyGroup", [](submesh_ptr_t submesh, polygroup_ptr_t psetin) { submesh->mergePolyGroup(*psetin); })
           .def("mergeSubMesh", [](submesh_ptr_t submesh, submesh_ptr_t subm2) { submesh->MergeSubMesh(*subm2); })
           .def(
               "makeTriangle",
-              [](submesh_ptr_t submesh, vertex_ptr_t va, vertex_ptr_t vb, vertex_ptr_t vc) -> poly_ptr_t {
+              [](submesh_ptr_t submesh, vertex_ptr_t va, vertex_ptr_t vb, vertex_ptr_t vc) -> merged_poly_ptr_t {
                 return submesh->mergeTriangle(va, vb, vc);
               })
           .def(
               "makeQuad",
-              [](submesh_ptr_t submesh, vertex_ptr_t va, vertex_ptr_t vb, vertex_ptr_t vc, vertex_ptr_t vd) -> poly_ptr_t {
+              [](submesh_ptr_t submesh, vertex_ptr_t va, vertex_ptr_t vb, vertex_ptr_t vc, vertex_ptr_t vd) -> merged_poly_ptr_t {
                 return submesh->mergeQuad(va, vb, vc, vd);
               })
           .def(

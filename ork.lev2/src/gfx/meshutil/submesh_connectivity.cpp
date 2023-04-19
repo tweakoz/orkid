@@ -44,7 +44,7 @@ poly_index_set_t DefaultConnectivity::polysConnectedToEdge(const edge& ed, bool 
   return output;
 }
 ////////////////////////////////////////////////////////////////
-poly_index_set_t DefaultConnectivity::polysConnectedToPoly(poly_ptr_t test_p) const {
+poly_index_set_t DefaultConnectivity::polysConnectedToPoly(merged_poly_ptr_t test_p) const {
   poly_index_set_t output;
   auto edges = test_p->edges();
   for (auto e : edges) {
@@ -89,7 +89,11 @@ vertex_ptr_t DefaultConnectivity::vertex(int id) const {
   return _vtxpool->_orderedVertices[id];
 }
 ////////////////////////////////////////////////////////////////
-poly_ptr_t DefaultConnectivity::poly(int id) const {
+merged_poly_const_ptr_t DefaultConnectivity::poly(int id) const {
+  return _orderedPolys[id];
+}
+////////////////////////////////////////////////////////////////
+merged_poly_ptr_t DefaultConnectivity::poly(int id) {
   return _orderedPolys[id];
 }
 ////////////////////////////////////////////////////////////////
@@ -101,12 +105,12 @@ size_t DefaultConnectivity::numVertices() const {
   return _vtxpool->_orderedVertices.size();
 }
 ////////////////////////////////////////////////////////////////
-void DefaultConnectivity::visitAllPolys(poly_void_visitor_t visitor) {
+void DefaultConnectivity::visitAllPolys(merged_poly_void_mutable_visitor_t visitor) {
   for (auto p : _orderedPolys)
     visitor(p);
 }
 ////////////////////////////////////////////////////////////////
-void DefaultConnectivity::visitAllPolys(const_poly_void_visitor_t visitor) const {
+void DefaultConnectivity::visitAllPolys(merged_poly_void_visitor_t visitor) const {
   for (auto p : _orderedPolys)
     visitor(p);
 }
@@ -125,7 +129,7 @@ vertex_ptr_t DefaultConnectivity::mergeVertex(const struct vertex& v) {
   return _vtxpool->mergeVertex(v);
 }
 ////////////////////////////////////////////////////////////////
-void DefaultConnectivity::removePoly(poly_ptr_t ply) {
+void DefaultConnectivity::removePoly(merged_poly_ptr_t ply) {
   int ipindex = ply->_submeshIndex;
   auto it     = _orderedPolys.begin() + ipindex;
   if (it != _orderedPolys.end()) {
@@ -162,7 +166,7 @@ void DefaultConnectivity::removePoly(poly_ptr_t ply) {
   });
 }
 ////////////////////////////////////////////////////////////////
-void DefaultConnectivity::removePolys(std::vector<poly_ptr_t>& polys) {
+void DefaultConnectivity::removePolys(std::vector<merged_poly_ptr_t>& polys) {
   for (auto ply : polys) {
     removePoly(ply);
   }
@@ -177,8 +181,8 @@ void DefaultConnectivity::clearPolys() {
   _centerOfPolysCount = 0;
 }
 ////////////////////////////////////////////////////////////////
-poly_ptr_t DefaultConnectivity::mergePoly(const Polygon& ply) {
-  poly_ptr_t rval;
+merged_poly_ptr_t DefaultConnectivity::mergePoly(const Polygon& ply) {
+  merged_poly_ptr_t rval;
   int ipolyindex = numPolys();
   int inumv      = ply.numVertices();
   OrkAssert(inumv >= 3);
@@ -211,9 +215,8 @@ poly_ptr_t DefaultConnectivity::mergePoly(const Polygon& ply) {
     // merge poly
     ///////////////////////////////
     int inewpi        = (int)_orderedPolys.size();
-    Polygon temp_poly = ply;
-    temp_poly.SetAnnoMap(ply.GetAnnoMap());
-    auto new_poly = std::make_shared<Polygon>(temp_poly);
+    auto new_poly = std::make_shared<MergedPolygon>(ply._vertices);
+    new_poly->SetAnnoMap(ply.GetAnnoMap());
     _orderedPolys.push_back(new_poly);
     new_poly->_submeshIndex = inewpi;
     _polymap[ucrc]          = new_poly;
@@ -240,7 +243,7 @@ poly_ptr_t DefaultConnectivity::mergePoly(const Polygon& ply) {
   return rval;
 }
 ////////////////////////////////////////////////////////////////
-halfedge_ptr_t DefaultConnectivity::_makeHalfEdge(vertex_ptr_t a, vertex_ptr_t b, poly_ptr_t p) {
+halfedge_ptr_t DefaultConnectivity::_makeHalfEdge(vertex_ptr_t a, vertex_ptr_t b, merged_poly_ptr_t p) {
 
   auto& this_poly_edges = _halfedges_by_poly[p];
 
@@ -318,7 +321,7 @@ dvec3 DefaultConnectivity::centerOfPolys() const {
   return _centerOfPolysAccum * 1.0 / double(_centerOfPolysCount);
 }
 ///////////////////////////////////////////////////////////////////////////////
-halfedge_vect_t DefaultConnectivity::edgesForPoly(poly_ptr_t p) const {
+halfedge_vect_t DefaultConnectivity::edgesForPoly(merged_poly_const_ptr_t p) const {
   auto it = _halfedges_by_poly.find(p);
   if (it != _halfedges_by_poly.end())
     return it->second;
@@ -348,16 +351,17 @@ halfedge_ptr_t DefaultConnectivity::mergeEdgeForVertices(vertex_ptr_t a, vertex_
     return he;
   }
 }
-
+///////////////////////////////////////////////////////////////////////////////
 varmap::VarMap& DefaultConnectivity::varmapForHalfEdge(halfedge_ptr_t he){
   return _halfedge_varmap[he->hash()];
 }
+///////////////////////////////////////////////////////////////////////////////
 varmap::VarMap& DefaultConnectivity::varmapForVertex(vertex_const_ptr_t v){
   return _vertex_varmap[v->hash()];
 }
-varmap::VarMap& DefaultConnectivity::varmapForPolygon(poly_const_ptr_t p){
-  return _poly_varmap[p->hash()];
+///////////////////////////////////////////////////////////////////////////////
+varmap::VarMap& DefaultConnectivity::varmapForPolygon(merged_poly_const_ptr_t p){
+  return _poly_varmap[p];
 }
-
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::meshutil

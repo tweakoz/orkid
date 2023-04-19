@@ -35,10 +35,17 @@ namespace ork::meshutil {
 using vertex_void_visitor_t = std::function<void(vertex_ptr_t)>;
 using const_vertex_void_visitor_t = std::function<void(vertex_const_ptr_t)>;
 using edge_map_t = std::unordered_map<uint64_t, edge_ptr_t>;
+//
 using poly_index_set_t = orkset<int>;
+//
 using poly_bool_visitor_t = std::function<bool(poly_ptr_t)>;
 using poly_void_visitor_t = std::function<void(poly_ptr_t)>;
 using const_poly_void_visitor_t = std::function<void(poly_const_ptr_t)>;
+//
+using merged_poly_bool_visitor_t = std::function<bool(merged_poly_const_ptr_t)>;
+using merged_poly_void_visitor_t = std::function<void(merged_poly_const_ptr_t)>;
+using merged_poly_void_mutable_visitor_t = std::function<void(merged_poly_ptr_t)>;
+using merged_poly_bool_mutable_visitor_t = std::function<bool(merged_poly_ptr_t)>;
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
@@ -242,7 +249,6 @@ struct Polygon {
 
   const AnnoMap* GetAnnoMap() const;
   void SetAnnoMap(const AnnoMap* pmap);
-
   const std::string& GetAnnotation(const std::string& annoname) const;
 
   Polygon(
@@ -283,27 +289,46 @@ struct Polygon {
   vertex_ptr_t vertex(int i) const;
   dvec3 vertexPos(int i) const;
   dvec3 vertexNormal(int i) const;
-  void addVertex(vertex_ptr_t v);
+  //void addVertex(vertex_ptr_t v);
 
   uint64_t hash() const;
   edge_vect_t edges() const;
-  int _submeshIndex = -1;
-  submesh* _parentSubmesh = nullptr;
 
   const AnnoMap* mAnnotationSet;
-  private:
+
   std::vector<vertex_ptr_t> _vertices;
+};
+
+struct MergedPolygon : public Polygon{
+  MergedPolygon(
+      vertex_ptr_t ia, //
+      vertex_ptr_t ib,
+      vertex_ptr_t ic);
+
+  MergedPolygon(
+      vertex_ptr_t ia, //
+      vertex_ptr_t ib,
+      vertex_ptr_t ic,
+      vertex_ptr_t id);
+
+  MergedPolygon(const std::vector<vertex_ptr_t>& vertices);
+
+  int _submeshIndex = -1;
+  submesh* _parentSubmesh = nullptr;
 };
 
 using poly_set_t = unique_set<Polygon>;
 using polyconst_set_t = unique_set<const Polygon>;
+
+using merged_poly_set_t = unique_set<MergedPolygon>;
+using merged_polyconst_set_t = unique_set<const MergedPolygon>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
 struct PolyGroup {
   std::vector<island_ptr_t> splitByIsland() const;
   std::unordered_map<uint64_t,polygroup_ptr_t> splitByPlane() const;
-  std::unordered_set<poly_ptr_t> _polys;
+  std::unordered_set<merged_poly_const_ptr_t> _polys;
   dvec3 averageNormal() const;
   submesh* submesh() const;
 };
@@ -365,30 +390,31 @@ struct IConnectivity{
 
   virtual poly_index_set_t polysConnectedToEdge(edge_ptr_t edge, bool ordered = true) const = 0;
   virtual poly_index_set_t polysConnectedToEdge(const edge& edge, bool ordered = true) const = 0;
-  virtual poly_index_set_t polysConnectedToPoly(poly_ptr_t p) const = 0;
+  virtual poly_index_set_t polysConnectedToPoly(merged_poly_ptr_t p) const = 0;
   virtual poly_index_set_t polysConnectedToPoly(int ip) const = 0;
   virtual poly_set_t polysConnectedToVertex(vertex_ptr_t v) const = 0;
-  virtual halfedge_vect_t edgesForPoly(poly_ptr_t p) const = 0;
+  virtual halfedge_vect_t edgesForPoly(merged_poly_const_ptr_t p) const = 0;
   virtual halfedge_ptr_t edgeForVertices(vertex_ptr_t a, vertex_ptr_t b) const = 0;
   virtual halfedge_ptr_t mergeEdgeForVertices(vertex_ptr_t a, vertex_ptr_t b) = 0;
 
   virtual vertex_ptr_t mergeVertex(const struct vertex& v) = 0;
-  virtual poly_ptr_t mergePoly(const Polygon& p) = 0;
+  virtual merged_poly_ptr_t mergePoly(const Polygon& p) = 0;
   virtual vertex_ptr_t vertex(int id) const = 0;
-  virtual poly_ptr_t poly(int id) const = 0;
+  virtual merged_poly_ptr_t poly(int id) = 0;
+  virtual merged_poly_const_ptr_t poly(int id) const = 0;
   virtual size_t numPolys() const = 0;
   virtual size_t numVertices() const = 0;
-  virtual void visitAllPolys(poly_void_visitor_t visitor) = 0;
-  virtual void visitAllPolys(const_poly_void_visitor_t visitor) const = 0;
+  virtual void visitAllPolys(merged_poly_void_mutable_visitor_t visitor) = 0;
+  virtual void visitAllPolys(merged_poly_void_visitor_t visitor) const = 0;
   virtual void visitAllVertices(vertex_void_visitor_t visitor) = 0;
   virtual void visitAllVertices(const_vertex_void_visitor_t visitor) const = 0;
-  virtual void removePoly(poly_ptr_t) = 0;
-  virtual void removePolys(std::vector<poly_ptr_t>& polys) = 0;
+  virtual void removePoly(merged_poly_ptr_t) = 0;
+  virtual void removePolys(std::vector<merged_poly_ptr_t>& polys) = 0;
   virtual void clearPolys() =0;
   virtual dvec3 centerOfPolys() const = 0;
   virtual varmap::VarMap& varmapForHalfEdge(halfedge_ptr_t he) = 0;
   virtual varmap::VarMap& varmapForVertex(vertex_const_ptr_t v) = 0;
-  virtual varmap::VarMap& varmapForPolygon(poly_const_ptr_t p) = 0;
+  virtual varmap::VarMap& varmapForPolygon(merged_poly_const_ptr_t p) = 0;
 
   submesh* _submesh = nullptr;
 
@@ -400,50 +426,51 @@ struct DefaultConnectivity : public IConnectivity{
   DefaultConnectivity(submesh* sub);
   poly_index_set_t polysConnectedToEdge(edge_ptr_t edge, bool ordered = true) const final;
   poly_index_set_t polysConnectedToEdge(const edge& edge, bool ordered = true) const final;
-  poly_index_set_t polysConnectedToPoly(poly_ptr_t p) const final;
+  poly_index_set_t polysConnectedToPoly(merged_poly_ptr_t p) const final;
   poly_index_set_t polysConnectedToPoly(int ip) const final;
   poly_set_t polysConnectedToVertex(vertex_ptr_t v) const;
-  halfedge_vect_t edgesForPoly(poly_ptr_t p) const;
+  halfedge_vect_t edgesForPoly(merged_poly_const_ptr_t p) const;
   halfedge_ptr_t edgeForVertices(vertex_ptr_t a, vertex_ptr_t b) const final;
   halfedge_ptr_t mergeEdgeForVertices(vertex_ptr_t a, vertex_ptr_t b) final;
 
   vertex_ptr_t mergeVertex(const struct vertex& v) final;
-  poly_ptr_t mergePoly(const Polygon& p) final;
+  merged_poly_ptr_t mergePoly(const Polygon& p) final;
   vertex_ptr_t vertex(int id) const final;
-  poly_ptr_t poly(int id) const final;
+  merged_poly_ptr_t poly(int id) final;
+  merged_poly_const_ptr_t poly(int id) const final;
   size_t numPolys() const final;
   size_t numVertices() const final;
-  void removePoly(poly_ptr_t) final;
-  void removePolys(std::vector<poly_ptr_t>& polys) final;
+  void removePoly(merged_poly_ptr_t) final;
+  void removePolys(std::vector<merged_poly_ptr_t>& polys) final;
   void clearPolys() final;
 
-  void visitAllPolys(poly_void_visitor_t visitor) final;
-  void visitAllPolys(const_poly_void_visitor_t visitor) const final;
+  void visitAllPolys(merged_poly_void_mutable_visitor_t visitor) final;
+  void visitAllPolys(merged_poly_void_visitor_t visitor) const final;
   void visitAllVertices(vertex_void_visitor_t visitor) final;
   void visitAllVertices(const_vertex_void_visitor_t visitor) const final;
   dvec3 centerOfPolys() const final;
 
   halfedge_ptr_t _makeHalfEdge(vertex_ptr_t a,
                                vertex_ptr_t b, 
-                               poly_ptr_t p);
+                               merged_poly_ptr_t p);
 
   varmap::VarMap& varmapForHalfEdge(halfedge_ptr_t he);
   varmap::VarMap& varmapForVertex(vertex_const_ptr_t v);
-  varmap::VarMap& varmapForPolygon(poly_const_ptr_t p);
+  varmap::VarMap& varmapForPolygon(merged_poly_const_ptr_t p);
 
   vertexpool_ptr_t _vtxpool;
-  std::unordered_map<uint64_t, poly_ptr_t> _polymap;
+  std::unordered_map<uint64_t, merged_poly_ptr_t> _polymap;
   std::unordered_map<vertex_ptr_t, poly_set_t> _polys_by_vertex;
-  orkvector<poly_ptr_t> _orderedPolys;
+  orkvector<merged_poly_ptr_t> _orderedPolys;
   std::unordered_map<int,int> _polyTypeCounter;
   std::unordered_map<uint64_t,varmap::VarMap> _halfedge_varmap;
   std::unordered_map<uint64_t,varmap::VarMap> _vertex_varmap;
-  std::unordered_map<uint64_t,varmap::VarMap> _poly_varmap;
+  std::unordered_map<merged_poly_const_ptr_t,varmap::VarMap> _poly_varmap;
 
   dvec3 _centerOfPolysAccum;
   int _centerOfPolysCount = 0;
 
-  std::unordered_map<poly_ptr_t, halfedge_vect_t> _halfedges_by_poly;
+  std::unordered_map<merged_poly_const_ptr_t, halfedge_vect_t> _halfedges_by_poly;
   std::unordered_map<uint64_t, halfedge_ptr_t> _halfedge_map;
 
 };
