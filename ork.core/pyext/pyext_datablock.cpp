@@ -21,6 +21,12 @@ void pyinit_datablock(py::module& module_core) {
   auto dblock_type = py::class_<DataBlock, datablock_ptr_t>(module_core, "DataBlock")
                          .def(py::init<>())
                          .def(
+                             "writeRawData",
+                             [](datablock_ptr_t db, py::bytes data) {
+                               auto as_str = std::string(data);
+                               db->addData(as_str.c_str(), as_str.length());
+                             })
+                         .def(
                              "writeBytes",
                              [](datablock_ptr_t db, py::bytes data) {
                                db->addItem<uint64_t>("bytes"_crcu);
