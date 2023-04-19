@@ -325,7 +325,8 @@ void SubMeshClipper::procEdges(poly_const_ptr_t input_poly, bool do_front) { //
       bool back_to_front = (not is_vertex_a_front and is_vertex_b_front);
       dvec3 vPos;
       double isectdist;
-      dlineseg3 lsegab(out_vtx_a->mPos, out_vtx_b->mPos);
+      auto n_ab = (out_vtx_b->mPos - out_vtx_a->mPos).normalized();
+      dray3 lsegab(out_vtx_a->mPos-n_ab*1000.0, n_ab);
       bool does_intersect = _slicing_plane.Intersect(lsegab, isectdist, vPos);
       dvec3 LerpedVertex;
       logchan_clip->log("  does_intersectAB<%d>\n", int(does_intersect));
@@ -335,7 +336,7 @@ void SubMeshClipper::procEdges(poly_const_ptr_t input_poly, bool do_front) { //
         double fScalar = (abs(fDist) < PLANE_EPSILON) ? 0.0 : fDist2 / fDist;
         LerpedVertex.lerp(out_vtx_a->mPos, out_vtx_b->mPos, fScalar);
       } else {
-        dlineseg3 lsegba(out_vtx_b->mPos, out_vtx_a->mPos);
+        dray3 lsegba(out_vtx_b->mPos+n_ab*1000.0, -n_ab);
         does_intersect = _slicing_plane.Intersect(lsegba, isectdist, vPos);
         logchan_clip->log("  does_intersectBA<%d>\n", int(does_intersect));
         double fDist   = (out_vtx_b->mPos - out_vtx_a->mPos).magnitude();
