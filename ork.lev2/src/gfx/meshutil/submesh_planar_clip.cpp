@@ -14,7 +14,7 @@
 static constexpr bool debug = true;
 
 static constexpr bool do_front        = true;
-static constexpr bool do_back         = true;
+static constexpr bool do_back         = false;
 static constexpr double PLANE_EPSILON = 0.001f;
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -145,6 +145,19 @@ struct SubMeshClipper {
 ///////////////////////////////////////////////////////////////////////////////
 
 void SubMeshClipper::process() {
+
+  _inpsubmesh.visitAllVertices([&](vertex_const_ptr_t input_vertex) {
+    if(do_front){
+      auto merged_front = _outsubmesh_front.mergeVertex(*input_vertex);
+      logchan_clip->log("INPVTX<%d> -> MERGED.front<%d>", input_vertex->_poolindex, merged_front->_poolindex);
+    }
+    if(do_back){
+      auto merged_back = _outsubmesh_back.mergeVertex(*input_vertex);
+      logchan_clip->log("INPVTX<%d> -> MERGED.back<%d>", input_vertex->_poolindex, merged_back->_poolindex);
+    }
+
+  });
+
   /////////////////////////////////////////////////////////////////////
   // categorize all vertices in input mesh
   /////////////////////////////////////////////////////////////////////
@@ -163,8 +176,8 @@ void SubMeshClipper::process() {
     int numverts    = input_poly->numVertices();
     auto polyvtxcnt = _categorized.categorizePolygon(input_poly);
     if (debug)
-      logchan_clip->log_continue(
-          "ip<%d> numverts<%d> front<%d> back<%d> planar<%d>\n",
+      logchan_clip->log(
+          "ip<%d> numverts<%d> front<%d> back<%d> planar<%d>",
           ip,
           numverts,
           polyvtxcnt._front_count,
@@ -190,7 +203,7 @@ void SubMeshClipper::process() {
       // TODO when closing the mesh, construct the closing face
       // with the planar vertices and input edge connectivity info
       // every input edge should have a matching output edge (which was clipped)
-      logchan_clip->log_continue("BACK POLY[");
+    logchan_clip->log_begin("BACK POLY[");
       std::vector<vertex_ptr_t> back_vertices;
       input_poly->visitVertices([&](vertex_ptr_t vtx) {
         auto v_m                                             = _outsubmesh_front.mergeVertex(*vtx);
@@ -357,7 +370,7 @@ void SubMeshClipper::procEdges(merged_poly_const_ptr_t input_poly, bool do_front
               out_vtx_lerp->_poolindex,
               (void*)he_ab.get());
           out_submesh.mergeVar<PlanarStatus>(he_ab, "plstatus")       = plstat;
-          auto clipped_edge                                           = out_submesh.mergeEdgeForVertices(out_vtx_b, out_vtx_lerp);
+          auto clipped_edge                                           = out_submesh.mergeEdgeForVertices(out_vtx_lerp,out_vtx_b);
           out_submesh.mergeVar<halfedge_ptr_t>(he_ab, "clipped_edge") = clipped_edge;
           out_submesh.mergeVar<vertex_ptr_t>(out_vtx_a, "clipped_vertex") = out_vtx_lerp;
           _F2B_EDGE                                                       = nullptr;
@@ -389,7 +402,7 @@ void SubMeshClipper::clipPolygon(merged_poly_const_ptr_t input_poly, bool do_fro
   const int inuminverts = input_poly->numVertices();
   OrkAssert(inuminverts >= 3);
 
-  logchan_clip->log_continue("CLIP INPUT POLY<%d>[", input_poly->_submeshIndex);
+  logchan_clip->log_begin("CLIP INPUT POLY<%d>[", input_poly->_submeshIndex);
   vertex_vect_t input_poly_verts;
   input_poly->visitVertices([&](vertex_ptr_t vtx) {
     auto v_m = out_submesh.mergeVertex(*vtx);
@@ -398,7 +411,7 @@ void SubMeshClipper::clipPolygon(merged_poly_const_ptr_t input_poly, bool do_fro
   });
   logchan_clip->log_continue(" ]\n");
   if (debug)
-    printf("clip poly num verts<%d>\n", inuminverts);
+    logchan_clip->log("clip poly num verts<%d>", inuminverts);
 
   // loop around the input polygon's edges
 
@@ -421,7 +434,7 @@ void SubMeshClipper::clipPolygon(merged_poly_const_ptr_t input_poly, bool do_fro
     auto he_ba     = out_submesh.mergeEdgeForVertices(out_vtx_b, out_vtx_a);
 
     if (debug)
-      printf("  i<%d> iva<%d> of inuminverts<%d> he_ab<%p>\n", i, iva, inuminverts, (void*)he_ab.get());
+      logchan_clip->log_continue("  i<%d> iva<%d> of inuminverts<%d> he_ab<%p>\n", i, iva, inuminverts, (void*)he_ab.get());
 
     if (do_front) {
       auto& plstat = out_submesh.typedVar<PlanarStatus>(he_ab, "plstatus");
@@ -468,7 +481,9 @@ void SubMeshClipper::clipPolygon(merged_poly_const_ptr_t input_poly, bool do_fro
     int inumfrontedges = frontmesh_edges.size();
     for (int ife = 0; ife < inumfrontedges; ife++) {
       auto he  = frontmesh_edges[ife];
+      logchan_clip->log("  EMIT EDGE<%p %d->%d>", (void*) he.get(), he->_vertexA->_poolindex, he->_vertexB->_poolindex );
       auto vtx = he->_vertexA;
+
       frontmesh_vertices.push_back(vtx);
       bool last_edge = (ife == inumfrontedges - 1);
       if (last_edge) {
@@ -490,7 +505,7 @@ void SubMeshClipper::closeSubMesh(bool do_front) {
   if (debug) {
     out_submesh.visitAllVertices([&](vertex_ptr_t v) { //
       double point_distance = _slicing_plane.pointDistance(v->mPos);
-      logchan_clip->log_continue(
+      logchan_clip->log(
           "outv%d : %f %f %f point_distance<%f>", v->_poolindex, v->mPos.x, v->mPos.y, v->mPos.z, point_distance);
     });
     out_submesh.dumpPolys("preclose");
@@ -502,7 +517,7 @@ void SubMeshClipper::closeSubMesh(bool do_front) {
       int num_clipped = 0;
       int num_v       = back_poly->numVertices();
 
-      logchan_clip->log_continue("BACKPOLYVISIT INPUT POLY[");
+      logchan_clip->log_begin("BACKPOLYVISIT INPUT POLY[");
 
       for (int iva = 0; iva < num_v; iva++) {
         int ivb                     = (iva + 1) % num_v;
@@ -582,7 +597,7 @@ void SubMeshClipper::closeSubMesh(bool do_front) {
   if (debug)
     for (auto e_item : all_edges._the_map) {
       auto e = e_item.second;
-      logchan_clip->log_continue("all e[%d %d]\n", e->_vertexA->_poolindex, e->_vertexB->_poolindex);
+      logchan_clip->log("all e[%d %d]", e->_vertexA->_poolindex, e->_vertexB->_poolindex);
     }
 
   edge_set_t planar_edges;
@@ -590,7 +605,7 @@ void SubMeshClipper::closeSubMesh(bool do_front) {
   int index = 0;
   planar_verts.visit([&](vertex_ptr_t v) {
     if (debug)
-      logchan_clip->log_continue("planar v%d : %f %f %f\n", v->_poolindex, v->mPos.x, v->mPos.y, v->mPos.z);
+      logchan_clip->log("planar v%d : %f %f %f", v->_poolindex, v->mPos.x, v->mPos.y, v->mPos.z);
     planar_verts.visit([&](vertex_ptr_t v2) {
       if (v == v2)
         return;
