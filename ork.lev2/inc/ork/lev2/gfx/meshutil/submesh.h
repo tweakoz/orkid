@@ -115,6 +115,7 @@ struct submesh {
 
   //////////////////////////////////////////////////////////////////////////////
 
+
   template <typename T> T& mergeVar(halfedge_ptr_t he, const std::string& varname) {
     auto& varmap = _connectivityIMPL->varmapForHalfEdge(he);
     auto& var    = varmap[varname];
@@ -135,6 +136,9 @@ struct submesh {
   inline bool hasVar(halfedge_ptr_t he, const std::string& varname) {
     auto& varmap = _connectivityIMPL->varmapForHalfEdge(he);
     return varmap.hasKey(varname);
+  }
+  inline varmap::VarMap& varmapForHalfEdge(halfedge_ptr_t he) const {
+    return _connectivityIMPL->varmapForHalfEdge(he);
   }
 
   //////////////////////////////////////////////////////////////////////////////
@@ -160,6 +164,9 @@ struct submesh {
     auto& varmap = _connectivityIMPL->varmapForVertex(v);
     return varmap.hasKey(varname);
   }
+  inline varmap::VarMap& varmapForVertex(vertex_const_ptr_t v) const {
+    return _connectivityIMPL->varmapForVertex(v);
+  }
 
   //////////////////////////////////////////////////////////////////////////////
 
@@ -183,6 +190,9 @@ struct submesh {
   inline bool hasVar(merged_poly_const_ptr_t p, const std::string& varname) {
     auto& varmap = _connectivityIMPL->varmapForPolygon(p);
     return varmap.hasKey(varname);
+  }
+  inline varmap::VarMap& varmapForPolygon(merged_poly_const_ptr_t p) const {
+    return _connectivityIMPL->varmapForPolygon(p);
   }
 
   //////////////////////////////////////////////////////////////////////////////

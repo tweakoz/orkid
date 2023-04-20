@@ -129,6 +129,11 @@ struct SubMeshClipper {
   void procEdges(merged_poly_const_ptr_t input_poly, bool do_front);
   void clipPolygon(merged_poly_const_ptr_t input_poly, bool do_front);
   void closeSubMesh(bool do_front);
+  /////////////////////////////////////
+  void dumpEdgeVars(bool front, halfedge_ptr_t input_edge) const;
+  void dumpPolyVars(bool front, merged_poly_const_ptr_t input_poly) const;
+  void dumpVertexVars(bool front, vertex_ptr_t input_vtx) const;
+  /////////////////////////////////////
   vertex_set_t addWholePoly(
       std::string hdr,                  //
       merged_poly_const_ptr_t src_poly, //
@@ -150,6 +155,41 @@ struct SubMeshClipper {
   std::vector<merged_poly_const_ptr_t> _polys_to_clip;
   std::unordered_map<merged_poly_const_ptr_t, varmap::VarMap> _inp_poly_varmap;
 };
+
+///////////////////////////////////////////////////////////////////////////////
+
+void SubMeshClipper::dumpEdgeVars(bool front, halfedge_ptr_t input_edge) const{
+  auto& varmap = front ? _outsubmesh_front.varmapForHalfEdge(input_edge)
+                       : _outsubmesh_back.varmapForHalfEdge(input_edge);
+  printf( "edge<%p> vars:\n", (void*) input_edge.get());
+  for( auto item : varmap._themap ){
+    auto key = item.first;
+    auto val_str = varmap.encodeAsString(key);
+    printf( "  k: %s v: %s\n", key.c_str(), val_str.c_str() );
+  }
+}
+void SubMeshClipper::dumpPolyVars(bool front, merged_poly_const_ptr_t input_poly) const{
+  auto& varmap = front ? _outsubmesh_front.varmapForPolygon(input_poly)
+                       : _outsubmesh_back.varmapForPolygon(input_poly);
+  printf( "poly<%p> vars:\n", (void*) input_poly.get() );
+  for( auto item : varmap._themap ){
+    auto key = item.first;
+    auto val_str = varmap.encodeAsString(key);
+    printf( "  k: %s v: %s\n", key.c_str(), val_str.c_str() );
+  }
+}
+void SubMeshClipper::dumpVertexVars(bool front, vertex_ptr_t input_vtx) const{
+  auto& varmap = front ? _outsubmesh_front.varmapForVertex(input_vtx)
+                       : _outsubmesh_back.varmapForVertex(input_vtx);  
+  if( varmap._themap.size() ){
+    printf( "vtx<%d> vars:\n", input_vtx->_poolindex);
+    for( auto item : varmap._themap ){
+      auto key = item.first;
+      auto val_str = varmap.encodeAsString(key);
+      printf( "  k: %s v: %s\n", key.c_str(), val_str.c_str() );
+    }
+  }
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -256,6 +296,17 @@ void SubMeshClipper::process() {
     if (do_back)
       this->procEdges(input_poly, false);
   });
+
+  ////////////////////////////////////////////////////////////////////
+
+  if( true ) { // vardump
+
+    _outsubmesh_front.visitAllVertices([&](vertex_ptr_t vtx){
+      dumpVertexVars(true, vtx);
+    });
+
+
+  }
 
   ////////////////////////////////////////////////////////////////////
   // now that all input polys have been categorized, and the database

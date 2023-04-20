@@ -17,6 +17,28 @@ static logchannel_ptr_t logchan_meshutil = logger()->createChannel("meshutil",fv
 
 /////////////////////////////////////////////////////////////////////////
 
+void misc_init(){
+  // register var -> string encoders
+
+  auto he_type = TypeId::of<halfedge_ptr_t>();
+  varmap::VarMap::registerStringEncoder(he_type,[](const varmap::VarMap::value_type& val){
+    auto he = val.template get<halfedge_ptr_t>();
+    return CreateFormattedString("he[%d->%d]", he->_vertexA->_poolindex, he->_vertexB->_poolindex );
+  });
+  auto vtx_type = TypeId::of<vertex_ptr_t>();
+  varmap::VarMap::registerStringEncoder(vtx_type,[](const varmap::VarMap::value_type& val){
+    auto vtx = val.template get<vertex_ptr_t>();
+    return CreateFormattedString("vtx[%d]", vtx->_poolindex);
+  });
+  auto poly_type = TypeId::of<merged_poly_const_ptr_t>();
+  varmap::VarMap::registerStringEncoder(poly_type,[](const varmap::VarMap::value_type& val){
+    auto poly = val.template get<merged_poly_const_ptr_t>();
+    return CreateFormattedString("poly[%d]", poly->_submeshIndex);
+  });
+}
+
+/////////////////////////////////////////////////////////////////////////
+
 Mesh::Mesh()
     : _mergeEdges(true) {
 
