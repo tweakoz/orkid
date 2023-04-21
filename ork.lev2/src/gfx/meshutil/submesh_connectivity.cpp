@@ -125,6 +125,11 @@ void DefaultConnectivity::visitAllVertices(const_vertex_void_visitor_t visitor) 
     visitor(v);
 }
 ////////////////////////////////////////////////////////////////
+void DefaultConnectivity::visitAllEdges(halfedge_void_visitor_t visitor){
+  for( auto he_item : _halfedge_map )
+    visitor(he_item.second);
+}
+////////////////////////////////////////////////////////////////
 vertex_ptr_t DefaultConnectivity::mergeVertex(const struct vertex& v) {
   return _vtxpool->mergeVertex(v);
 }

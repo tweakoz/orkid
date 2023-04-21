@@ -201,6 +201,7 @@ struct submesh {
 
   void visitAllVertices(vertex_void_visitor_t visitor);
   void visitAllVertices(const_vertex_void_visitor_t visitor) const;
+  void visitAllEdges(halfedge_void_visitor_t visitor);
 
   int numPolys(int inumsides = 0) const;
   void FindNSidedPolys(orkvector<int>& output, int inumsides) const;

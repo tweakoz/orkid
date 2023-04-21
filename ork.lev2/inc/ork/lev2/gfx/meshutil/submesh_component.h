@@ -46,6 +46,9 @@ using merged_poly_bool_visitor_t = std::function<bool(merged_poly_const_ptr_t)>;
 using merged_poly_void_visitor_t = std::function<void(merged_poly_const_ptr_t)>;
 using merged_poly_void_mutable_visitor_t = std::function<void(merged_poly_ptr_t)>;
 using merged_poly_bool_mutable_visitor_t = std::function<bool(merged_poly_ptr_t)>;
+//
+using halfedge_void_visitor_t = std::function<void(halfedge_ptr_t)>;
+
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
@@ -404,6 +407,8 @@ struct IConnectivity{
   virtual merged_poly_const_ptr_t poly(int id) const = 0;
   virtual size_t numPolys() const = 0;
   virtual size_t numVertices() const = 0;
+
+  virtual void visitAllEdges(halfedge_void_visitor_t visitor) = 0;
   virtual void visitAllPolys(merged_poly_void_mutable_visitor_t visitor) = 0;
   virtual void visitAllPolys(merged_poly_void_visitor_t visitor) const = 0;
   virtual void visitAllVertices(vertex_void_visitor_t visitor) = 0;
@@ -444,6 +449,7 @@ struct DefaultConnectivity : public IConnectivity{
   void removePolys(std::vector<merged_poly_ptr_t>& polys) final;
   void clearPolys() final;
 
+  void visitAllEdges(halfedge_void_visitor_t visitor) final;
   void visitAllPolys(merged_poly_void_mutable_visitor_t visitor) final;
   void visitAllPolys(merged_poly_void_visitor_t visitor) const final;
   void visitAllVertices(vertex_void_visitor_t visitor) final;

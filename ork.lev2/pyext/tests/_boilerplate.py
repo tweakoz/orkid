@@ -295,7 +295,7 @@ def clipMeshWithPlane(inpsubmesh,plane):
   #print("#####################")
   #print(clipped["front"])
   #print(clipped["back"])
-  return clipped["front"].prune()#.convexHull(0)
+  return clipped["front"]#.convexHull(0)
 
 ################################################################################
 
@@ -309,10 +309,10 @@ def clipMeshWithFrustum(inpsubmesh,frustum, nsteps=10):
   #print("#####################")
   submesh_out = inpsubmesh
   if nsteps>0:
-    submesh_out = stripSubmesh(inpsubmesh)
+    submesh_out = stripSubmesh(inpsubmesh).prune()
   if nsteps>1:
     print("### CLIP_NEAR_PLANE")
-    submesh_out = clipMeshWithPlane(submesh_out,frustum.nearPlane)
+    submesh_out = clipMeshWithPlane(submesh_out,frustum.nearPlane)#.prune()
   if nsteps>2:
     print("### CLIP_FAR_PLANE")
     submesh_out = clipMeshWithPlane(submesh_out,frustum.farPlane)

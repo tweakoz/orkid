@@ -163,6 +163,10 @@ merged_poly_ptr_t submesh::poly(int i) {
   return _connectivityIMPL->poly(i);
 }
 ///////////////////////////////////////////////////////////////////////////////
+void submesh::visitAllEdges(halfedge_void_visitor_t visitor) {
+  _connectivityIMPL->visitAllEdges(visitor);
+}
+///////////////////////////////////////////////////////////////////////////////
 void submesh::visitAllVertices(vertex_void_visitor_t visitor) {
   _connectivityIMPL->visitAllVertices(visitor);
 }
