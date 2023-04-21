@@ -184,14 +184,20 @@ void DefaultConnectivity::clearPolys() {
 merged_poly_ptr_t DefaultConnectivity::mergePoly(const Polygon& ply) {
   merged_poly_ptr_t rval;
   int ipolyindex = numPolys();
-  int inumv      = ply.numVertices();
-  OrkAssert(inumv >= 3);
+  std::vector<vertex_ptr_t> import_verts;
+  std::unordered_set<vertex_ptr_t> unique_verts;
   ply.visitVertices([&](vertex_ptr_t v) {
     OrkAssert(v != nullptr);
     v->_numConnectedPolys++;
     _centerOfPolysCount++;
     _centerOfPolysAccum += v->mPos;
+    if( unique_verts.find(v)==unique_verts.end() ){
+      import_verts.push_back(v);
+      unique_verts.insert(v);
+    }
   });
+  int inumv      = import_verts.size();
+  OrkAssert(inumv >= 3);
   ///////////////////////////////
   // zero area poly removal
   ///////////////////////////////
@@ -215,7 +221,7 @@ merged_poly_ptr_t DefaultConnectivity::mergePoly(const Polygon& ply) {
     // merge poly
     ///////////////////////////////
     int inewpi        = (int)_orderedPolys.size();
-    auto new_poly = std::make_shared<MergedPolygon>(ply._vertices);
+    auto new_poly = std::make_shared<MergedPolygon>(import_verts);
     new_poly->SetAnnoMap(ply.GetAnnoMap());
     _orderedPolys.push_back(new_poly);
     new_poly->_submeshIndex = inewpi;

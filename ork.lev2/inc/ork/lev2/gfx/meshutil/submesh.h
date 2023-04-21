@@ -345,6 +345,7 @@ void submeshClipWithPlane(
     submesh& outsmeshFront, //
     submesh& outsmeshBack);
 
+void submeshPrune(const submesh& inpsubmesh, submesh& outsmesh);
 void submeshWithTextureBasis(const submesh& inpsubmesh, submesh& outsmesh);
 void submeshWithTextureUnwrap(const submesh& inpsubmesh, submesh& outsmesh);
 

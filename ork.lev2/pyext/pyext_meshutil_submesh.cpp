@@ -182,6 +182,13 @@ void pyinit_meshutil_submesh(py::module& module_meshutil) {
                 return rval;
               })
           .def(
+              "prune",
+              [](submesh_constptr_t inpsubmesh) -> submesh_ptr_t {
+                submesh_ptr_t rval = std::make_shared<submesh>();
+                submeshPrune(*inpsubmesh, *rval);
+                return rval;
+              })
+          .def(
               "quadulated",
               [](submesh_constptr_t inpsubmesh, py::kwargs kwargs) -> submesh_ptr_t {
                 submesh_ptr_t rval = std::make_shared<submesh>();

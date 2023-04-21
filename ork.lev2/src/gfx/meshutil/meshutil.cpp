@@ -17,6 +17,8 @@ static logchannel_ptr_t logchan_meshutil = logger()->createChannel("meshutil",fv
 
 /////////////////////////////////////////////////////////////////////////
 
+void planar_clip_init();
+
 void misc_init(){
   // register var -> string encoders
 
@@ -35,6 +37,8 @@ void misc_init(){
     auto poly = val.template get<merged_poly_const_ptr_t>();
     return CreateFormattedString("poly[%d]", poly->_submeshIndex);
   });
+
+  planar_clip_init();
 }
 
 /////////////////////////////////////////////////////////////////////////
