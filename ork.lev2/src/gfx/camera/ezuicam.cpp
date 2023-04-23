@@ -673,7 +673,7 @@ bool EzUiCam::UIEventHandler(ui::event_constptr_t EV) {
         //printf( "UpVector<%g %g %g>\n", UpVector.x, UpVector.y, UpVector.z );
         //printf( "RightVector<%g %g %g>\n", RightVector.x, RightVector.y, RightVector.z );
 
-        float CameraFactor   = RightVector.magnitude() * 20.0f; // 20 pixels of movement
+        float CameraFactor   = RightVector.magnitude() * 100.0f; // 20 pixels of movement
         constexpr float kmin = 0.2f;
         constexpr float kmax = 1e6f;
         mfLoc                = std::clamp(mfLoc, kmin, kmax);

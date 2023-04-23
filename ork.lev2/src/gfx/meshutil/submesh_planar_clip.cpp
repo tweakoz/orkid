@@ -90,6 +90,9 @@ struct PlanarVertexCategorize {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+
+using vtx_heio_t = std::map<int, halfedge_ptr_t>;
+
 enum class EPlanarStatus { CROSS_F2B, CROSS_B2F, PLANAR, FRONT, BACK, NONE };
 
 struct PlanarStatus {
@@ -127,6 +130,7 @@ struct SubMeshClipper {
   /////////////////////////////////////
   void process();
   void procEdges(merged_poly_const_ptr_t input_poly, bool do_front);
+  void postProcEdges(merged_poly_const_ptr_t input_poly, bool do_front);
   void clipPolygon(merged_poly_const_ptr_t input_poly, bool do_front);
   void closeSubMesh(bool do_front);
   /////////////////////////////////////
@@ -136,6 +140,7 @@ struct SubMeshClipper {
   void printPoly(const std::string& HDR, merged_poly_const_ptr_t input_poly) const;
   /////////////////////////////////////
   vertex_ptr_t remappedVertex(vertex_ptr_t input_vtx, bool front);
+  int f2bindex(merged_poly_const_ptr_t input_poly) const;
   /////////////////////////////////////
 
   vertex_set_t addWholePoly(
@@ -167,6 +172,24 @@ void SubMeshClipper::printPoly(const std::string& HDR, merged_poly_const_ptr_t i
   });
   logchan_clip->log_continue(" ]\n");
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
+int SubMeshClipper::f2bindex(merged_poly_const_ptr_t input_poly) const {
+  int _f2b_index = 0;
+  bool match_poly = matchTestPoly(input_poly);
+  auto it = _inp_poly_varmap.find(input_poly);
+  if( it != _inp_poly_varmap.end() ){
+    if (auto try_f2b_index = it->second.typedValueForKey<int>("f2b_index")) {
+      _f2b_index = try_f2b_index.value();
+      if(_f2b_index<0)_f2b_index=0;
+      if (match_poly)
+        logchan_clip->log("_f2b_index<%d>", _f2b_index);
+    }
+  }
+  return _f2b_index;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 void SubMeshClipper::dumpEdgeVars(bool front, halfedge_ptr_t input_edge) const{
@@ -184,7 +207,7 @@ void SubMeshClipper::dumpEdgeVars(bool front, halfedge_ptr_t input_edge) const{
 void SubMeshClipper::dumpPolyVars(bool front, merged_poly_const_ptr_t input_poly) const{
   auto& varmap = front ? _outsubmesh_front.varmapForPolygon(input_poly)
                        : _outsubmesh_back.varmapForPolygon(input_poly);
-  printf( "poly[%p] vars:\n", input_poly->_submeshIndex );
+  printf( "poly[%d] vars:\n", input_poly->_submeshIndex );
   for( auto item : varmap._themap ){
     auto key = item.first;
     auto val_str = varmap.encodeAsString(key);
@@ -329,6 +352,16 @@ void SubMeshClipper::process() {
 
   ////////////////////////////////////////////////////////////////////
 
+  _inpsubmesh.visitAllPolys([&](merged_poly_const_ptr_t input_poly) {
+    if (do_front)
+      this->postProcEdges(input_poly, true);
+
+    if (do_back)
+      this->postProcEdges(input_poly, false);
+  });
+
+  ////////////////////////////////////////////////////////////////////
+
   if( true ) { // vardump
 
     logchan_clip->log("## EDGE VAR MAP #########################");
@@ -461,6 +494,9 @@ void SubMeshClipper::procEdges(merged_poly_const_ptr_t input_poly, bool do_front
           auto clipped_edge                                           = out_submesh.mergeEdgeForVertices(out_vtx_a, out_vtx_lerp);
           out_submesh.mergeVar<halfedge_ptr_t>(he_ab, "clipped_edge") = clipped_edge;
           out_submesh.mergeVar<vertex_ptr_t>(out_vtx_b, "clipped_vertex") = out_vtx_lerp;
+
+          auto& heIO = out_submesh.mergeVar<vtx_heio_t>(out_vtx_b,"heIO");
+          heIO[out_vtx_a->_poolindex] = clipped_edge;
           _F2B_EDGE                                                       = clipped_edge;
           _f2b_count++;
           _f2b_index = iva;
@@ -478,6 +514,8 @@ void SubMeshClipper::procEdges(merged_poly_const_ptr_t input_poly, bool do_front
           auto clipped_edge                                           = out_submesh.mergeEdgeForVertices(out_vtx_lerp,out_vtx_b);
           out_submesh.mergeVar<halfedge_ptr_t>(he_ab, "clipped_edge") = clipped_edge;
           out_submesh.mergeVar<vertex_ptr_t>(out_vtx_a, "clipped_vertex") = out_vtx_lerp;
+          auto& heIO = out_submesh.mergeVar<vtx_heio_t>(out_vtx_a,"heIO");
+          heIO[out_vtx_b->_poolindex] = clipped_edge;
           _F2B_EDGE                                                       = nullptr;
           _b2f_count++;
 
@@ -494,6 +532,61 @@ void SubMeshClipper::procEdges(merged_poly_const_ptr_t input_poly, bool do_front
   if (_F2B_EDGE != nullptr) {
     _inp_poly_varmap[input_poly].makeValueForKey<int>("f2b_index") = _f2b_index;
   }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void SubMeshClipper::postProcEdges(merged_poly_const_ptr_t input_poly, bool do_front) { //
+  bool do_back = not do_front;
+
+  auto& out_submesh = do_front ? _outsubmesh_front : _outsubmesh_back;
+
+  const int inuminverts = input_poly->numVertices();
+  OrkAssert(inuminverts >= 3);
+
+  bool match_poly = matchTestPoly(input_poly);
+
+  int _f2b_index = f2bindex(input_poly);
+  halfedge_ptr_t _F2B_EDGE = nullptr;
+  for (int i = 0; i < inuminverts; i++) {
+    int iva = (i + _f2b_index) % inuminverts;
+    int ivb = (iva + 1) % inuminverts;
+    auto out_vtx_a = out_submesh.mergeVertex(*input_poly->vertex(iva));
+    auto out_vtx_b = out_submesh.mergeVertex(*input_poly->vertex(ivb));
+    auto he_ab     = out_submesh.mergeEdgeForVertices(out_vtx_a, out_vtx_b);
+    auto he_ba     = out_submesh.mergeEdgeForVertices(out_vtx_b, out_vtx_a);
+
+    if (do_front) {
+      auto& plstat = out_submesh.typedVar<PlanarStatus>(he_ab, "plstatus");
+      switch (plstat._status) {
+        case EPlanarStatus::FRONT:
+          break;
+        case EPlanarStatus::BACK:
+          break;
+        case EPlanarStatus::CROSS_F2B: {
+          auto clipped = out_submesh.typedVar<halfedge_ptr_t>(he_ab, "clipped_edge");
+          _F2B_EDGE = clipped;
+          break;
+        }
+        case EPlanarStatus::CROSS_B2F: {
+          OrkAssert(_F2B_EDGE != nullptr);
+          //OrkAssert(_F2B_EDGE->_vertexB == he_ab->_vertexA);
+          auto clipped = out_submesh.typedVar<halfedge_ptr_t>(he_ab, "clipped_edge");
+          auto new_he = out_submesh.mergeEdgeForVertices(_F2B_EDGE->_vertexB, clipped->_vertexA);
+          out_submesh.mergeVar<halfedge_ptr_t>(out_vtx_a, "split_edge") = new_he;
+
+          _F2B_EDGE = nullptr;
+          break;
+        }
+        case EPlanarStatus::NONE: {
+          break;
+        }
+        default:
+          OrkAssert(false);
+          break;
+      }
+    } // if do_front
+  }   // for (int iva = 0; iva < inuminverts; iva++) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -522,13 +615,7 @@ void SubMeshClipper::clipPolygon(merged_poly_const_ptr_t input_poly, bool do_fro
   std::vector<halfedge_ptr_t> frontmesh_edges;
   // std::vector<vertex_ptr_t> back_vertices;
 
-  int _f2b_index = 0;
-  if (auto try_f2b_index = _inp_poly_varmap[input_poly].typedValueForKey<int>("f2b_index")) {
-    _f2b_index = try_f2b_index.value();
-    if(_f2b_index<0)_f2b_index=0;
-    if (match_poly)
-      logchan_clip->log("_f2b_index<%d>", _f2b_index);
-  }
+  int _f2b_index = f2bindex(input_poly);
 
   halfedge_ptr_t _F2B_EDGE = nullptr;
   for (int i = 0; i < inuminverts; i++) {
@@ -609,19 +696,54 @@ void SubMeshClipper::clipPolygon(merged_poly_const_ptr_t input_poly, bool do_fro
   if (do_front and (frontmesh_edges.size() >= 3)) {
     vertex_vect_t frontmesh_vertices;
     int inumfrontedges = frontmesh_edges.size();
+
+    //std::vector<halfedge_ptr_t> frontmesh_edges_remapped;
+
     for (int ife = 0; ife < inumfrontedges; ife++) {
       auto he  = frontmesh_edges[ife];
-      if(match_poly)logchan_clip->log("  EMIT EDGE<%p %d->%d>", (void*) he.get(), he->_vertexA->_poolindex, he->_vertexB->_poolindex );
       auto vtx = he->_vertexA;
 
-      frontmesh_vertices.push_back(remappedVertex(vtx,true));
-      bool last_edge = (ife == inumfrontedges - 1);
-      if (last_edge) {
-        //auto first_vtx = frontmesh_vertices.front();
-        //OrkAssert(he->_vertexB == first_vtx);
-      }
+      auto rmA = remappedVertex(he->_vertexA,true);
+      auto rmB = remappedVertex(he->_vertexB,true);
+      if(match_poly)logchan_clip->log("  EMIT EDGE<%p o(%d->%d) rm(%d->%d)>", //
+                                      (void*) he.get(), //
+                                      he->_vertexA->_poolindex, //
+                                      he->_vertexB->_poolindex, //
+                                      rmA->_poolindex, //
+                                      rmB->_poolindex //
+                                       ); //
+
+      frontmesh_vertices.push_back(rmA);
+      frontmesh_vertices.push_back(rmB);
+
+      //auto remapped = out_submesh.mergeEdgeForVertices(rmA, rmB);
+      //frontmesh_edges_remapped.push_back(remapped);
     }
-    out_submesh.mergePoly(frontmesh_vertices);
+
+    //////////////////////////////////////////////////////////////////////////////////////
+
+    vertex_vect_t frontmesh_vertices_nonrepeat;
+    vertex_ptr_t prev = nullptr;
+    for (int iv = 0; iv < frontmesh_vertices.size(); iv++) {
+      auto v0 = frontmesh_vertices[iv];
+      if (v0 != prev) {
+        frontmesh_vertices_nonrepeat.push_back(v0);
+      }
+      prev = v0;
+    }
+
+    for( auto item : frontmesh_vertices_nonrepeat ){
+      if(match_poly)logchan_clip->log("  frontmesh_vertices_nonrepeat<%d>", item->_poolindex);
+    }
+
+    //////////////////////////////////////////////////////////////////////////////////////
+
+    out_submesh.mergePoly(frontmesh_vertices_nonrepeat);
+  
+
+    //////////////////////////////////////////////////////////////////////////////////////
+
+    //out_submesh.mergePoly(frontmesh_vertices);
   }
 }
 
@@ -888,6 +1010,20 @@ void planar_clip_init(){
     auto& ps = val.template get<PlanarStatus>();
     return CreateFormattedString("plstat[%d : %d->%d]", int(ps._status), ps._vertexA->_poolindex, ps._vertexB->_poolindex); 
   });
+
+  auto heio_type = TypeId::of<vtx_heio_t>();
+    varmap::VarMap::registerStringEncoder(heio_type,[](const varmap::VarMap::value_type& val){
+      auto& heio = val.template get<vtx_heio_t>();
+      std::string rval = "HEIO[ ";
+      for( auto item : heio ){
+        auto he = item.second;
+        rval += CreateFormattedString("(%d:(%d->%d))",item.first,he->_vertexA->_poolindex,he->_vertexB->_poolindex);
+      }
+      rval += "]";
+      return rval; 
+    });
+
+
 
 }
 
