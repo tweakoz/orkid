@@ -130,6 +130,8 @@ template <typename T> struct Vector2 final
     return (this->x != b.x || this->y != b.y);
   }
 
+  uint64_t hash(T quantization) const;
+  
   inline Vector2 quantized(float v) const {
     Vector2 rval;
     rval.x = float(int(this->x*v))/v;

@@ -269,13 +269,13 @@ uint64_t vertex::hash(double quantization) const {
     crc64.accumulateItem(mJointWeights[i]);
   }
   for (int i = 0; i < miNumColors; i++) {
-    crc64.accumulateItem(mCol[i].quantized(quantization));
+    crc64.accumulateItem(mCol[i].hash(quantization));
   }
   for (int i = 0; i < miNumUvs; i++) {
     const auto& UV = mUV[i];
     crc64.accumulateItem(UV.mMapBiNormal.hash(quantization));
     crc64.accumulateItem(UV.mMapTangent.hash(quantization));
-    crc64.accumulateItem(UV.mMapTexCoord.quantized(quantization));
+    crc64.accumulateItem(UV.mMapTexCoord.hash(quantization));
   }
   uint64_t pos_hash = mPos.hash(quantization);
   uint64_t nrm_hash = mNrm.hash(quantization);

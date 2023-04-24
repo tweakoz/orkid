@@ -201,6 +201,8 @@ template <typename T> struct Vector4 final
     return (this->x != b.x || this->y != b.y || this->z != b.z || this->w != b.w);
   }
 
+  uint64_t hash(T quantization) const;
+
   inline Vector4 quantized(float v) const {
     Vector4 rval;
     rval.x = float(int(this->x*v))/v;

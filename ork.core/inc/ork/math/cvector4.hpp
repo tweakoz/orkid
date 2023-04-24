@@ -418,6 +418,40 @@ template <typename T> Vector4<T> Vector4<T>::normalized() const {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+template <typename T> //
+uint64_t Vector4<T>::hash(T quantization) const{
+  boost::Crc64 crc64;
+  crc64.init();
+
+  int bias = (1<<24); // to make negative numbers positive
+  
+  int xx = int((this->x * quantization)+0.5);
+  int yy = int((this->y * quantization)+0.5);
+  int zz = int((this->z * quantization)+0.5);
+  int ww = int((this->w * quantization)+0.5);
+  OrkAssert((xx+bias)>=0);
+  OrkAssert((yy+bias)>=0);
+  OrkAssert((zz+bias)>=0);
+  OrkAssert((ww+bias)>=0);
+  uint64_t a = (xx+bias);
+  uint64_t b = (yy+bias);
+  uint64_t c = (zz+bias);
+  uint64_t d = (ww+bias);
+  OrkAssert(a<0xffffffff);
+  OrkAssert(b<0xffffffff);
+  OrkAssert(c<0xffffffff);
+  OrkAssert(d<0xffffffff);
+  crc64.accumulateItem(a);
+  crc64.accumulateItem(b);
+  crc64.accumulateItem(c);
+  crc64.accumulateItem(d);
+  crc64.finish();
+
+  return crc64.result();
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 template <typename T> T Vector4<T>::magnitude() const {
   return Sqrt(this->x * this->x + this->y * this->y + this->z * this->z);
 }

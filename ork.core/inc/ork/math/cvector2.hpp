@@ -86,6 +86,29 @@ template <typename T> T ork::Vector2<T>::magnitudeSquared() const {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+template <typename T> //
+uint64_t ork::Vector2<T>::hash(T quantization) const{
+  boost::Crc64 crc64;
+  crc64.init();
+
+  int bias = (1<<24); // to make negative numbers positive
+  
+  int xx = int((this->x * quantization)+0.5);
+  int yy = int((this->y * quantization)+0.5);
+  OrkAssert((xx+bias)>=0);
+  OrkAssert((yy+bias)>=0);
+  uint64_t a = (xx+bias);
+  uint64_t b = (yy+bias);
+  OrkAssert(a<0xffffffff);
+  OrkAssert(b<0xffffffff);
+  crc64.accumulateItem(a);
+  crc64.accumulateItem(b);
+  crc64.finish();
+
+  return crc64.result();}
+
+////////////////////////////////////////////////////////////////////////////////
+
 template <typename T>
 T ork::Vector2<T>::angle(const Vector2& vec) const{
   const base_t& a = *this;

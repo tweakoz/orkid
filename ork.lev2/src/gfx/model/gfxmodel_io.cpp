@@ -129,7 +129,7 @@ bool XgmModel::_loadAssimp(XgmModel* mdl, datablock_ptr_t inp_datablock) {
   auto basehasher = DataBlock::createHasher();
   basehasher->accumulateString("assimp2xgm");
 
-  basehasher->accumulateString("version-x021723"); 
+  basehasher->accumulateString("version-x042423"); 
 
   inp_datablock->accumlateHash(basehasher);
   /////////////////////////////////////
