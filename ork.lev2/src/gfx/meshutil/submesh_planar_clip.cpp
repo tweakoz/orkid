@@ -480,11 +480,11 @@ bool SubMeshClipper::procEdges(merged_poly_const_ptr_t input_poly) { //
                 (void*)he_ab.get());
           auto clipped_edge                                           = out_submesh.mergeEdgeForVertices(out_vtx_a, out_vtx_lerp);
           out_submesh.mergeVar<halfedge_ptr_t>(he_ab, "clipped_edge") = clipped_edge;
-          //out_submesh.mergeVar<vertex_ptr_t>(out_vtx_b, "clipped_vertex") = out_vtx_lerp;
-          //auto& clipped_plstat    = out_submesh.mergeVar<PlanarStatus>(clipped_edge, "plstatus");
-          //clipped_plstat._status  = EPlanarStatus::FRONT;
-          //clipped_plstat._vertexA = out_vtx_a;
-          //clipped_plstat._vertexB = out_vtx_lerp;
+          out_submesh.mergeVar<vertex_ptr_t>(out_vtx_b, "clipped_vertex") = out_vtx_lerp;
+          auto& clipped_plstat    = out_submesh.mergeVar<PlanarStatus>(clipped_edge, "plstatus");
+          clipped_plstat._status  = EPlanarStatus::FRONT;
+          clipped_plstat._vertexA = out_vtx_a;
+          clipped_plstat._vertexB = out_vtx_lerp;
 
           auto& heIO                  = out_submesh.mergeVar<vtx_heio_t>(out_vtx_b, "heIO");
           heIO[out_vtx_a->_poolindex] = clipped_edge;
@@ -504,10 +504,10 @@ bool SubMeshClipper::procEdges(merged_poly_const_ptr_t input_poly) { //
                 out_vtx_lerp->_poolindex,
                 (void*)he_ab.get());
           auto clipped_edge       = out_submesh.mergeEdgeForVertices(out_vtx_lerp, out_vtx_b);
-          //auto& clipped_plstat    = out_submesh.mergeVar<PlanarStatus>(clipped_edge, "plstatus");
-          //clipped_plstat._status  = EPlanarStatus::FRONT;
-          //clipped_plstat._vertexA = out_vtx_lerp;
-          //clipped_plstat._vertexB = out_vtx_b;
+          auto& clipped_plstat    = out_submesh.mergeVar<PlanarStatus>(clipped_edge, "plstatus");
+          clipped_plstat._status  = EPlanarStatus::FRONT;
+          clipped_plstat._vertexA = out_vtx_lerp;
+          clipped_plstat._vertexB = out_vtx_b;
 
           out_submesh.mergeVar<halfedge_ptr_t>(he_ab, "clipped_edge")     = clipped_edge;
           out_submesh.mergeVar<vertex_ptr_t>(out_vtx_a, "clipped_vertex") = out_vtx_lerp;
