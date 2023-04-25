@@ -13,9 +13,6 @@ void pyinit_math_la_float(py::module& module_core);
 void pyinit_math_la_double(py::module& module_core);
 void pyinit_math(py::module& module_core) {
   auto type_codec = python::TypeCodec::instance();
-
-
-
   /////////////////////////////////////////////////////////////////////////////////
   struct MathConstantsProxy {};
   using mathconstantsproxy_ptr_t = std::shared_ptr<MathConstantsProxy>;
@@ -37,6 +34,13 @@ void pyinit_math(py::module& module_core) {
   pyinit_math_plane(module_core);
   pyinit_math_la_float(module_core);
   pyinit_math_la_double(module_core);
+  /////////////////////////////////////////////////////////////////////////////////
+  module_core.def("dmtx4_to_fmtx4", [](const dmtx4& dmtx) -> fmtx4 { //
+    return dmtx4_to_fmtx4(dmtx);
+  });
+  module_core.def("fmtx4_to_dmtx4", [](const fmtx4& dmtx) -> dmtx4 { //
+    return fmtx4_to_dmtx4(dmtx);
+  });
 }
 
 } // namespace ork

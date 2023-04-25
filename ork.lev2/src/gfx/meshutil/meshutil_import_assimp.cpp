@@ -479,7 +479,6 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
                 muvtx.miNumUvs = 1;
                 muvtx.mUV[0].mMapTexCoord = fvec2(uv.x, uv.y);
                 muvtx.mUV[0].mMapBiNormal = fvec3(b.x, b.y, b.z).transform(ork_normal_mtx);
-                OrkAssert(uv.y>0.0f);
               }
               /////////////////////////////////////////////
               // yuk -- assimp is not like gltf, or collada...
