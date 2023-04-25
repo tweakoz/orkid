@@ -18,7 +18,7 @@ static constexpr double PLANE_EPSILON = 0.001f;
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::meshutil {
 ///////////////////////////////////////////////////////////////////////////////
-static logchannel_ptr_t logchan_clip = logger()->createChannel("meshutil.clipper", fvec3(.9, .9, 1), true);
+static logchannel_ptr_t logchan_clip = logger()->createChannel("meshutil.clipper", fvec3(.9, .9, 1), false);
 
 const std::unordered_set<int> test_verts = {0,1,2,3};
 
@@ -188,24 +188,24 @@ vertex_ptr_t SubMeshClipper::remappedVertex(vertex_ptr_t input_vtx,halfedge_ptr_
   }
   if (auto as_heio_map = _outsubmesh.tryVarAs<vtx_heio_t>(input_vtx, "heio")) {
     auto& heio_map = as_heio_map.value();
-    printf( "have heio_map for vtx<%d> and conedge<%d->%d>\n", input_vtx->_poolindex, con_edge->_vertexA->_poolindex, con_edge->_vertexB->_poolindex ); 
+    //printf( "have heio_map for vtx<%d> and conedge<%d->%d>\n", input_vtx->_poolindex, con_edge->_vertexA->_poolindex, con_edge->_vertexB->_poolindex ); 
     bool found = false;
     for( auto item : heio_map ){
       auto item_edge = item.second;
       if( item_edge->_vertexA == con_edge->_vertexA ){
         OrkAssert( con_edge->_vertexB == input_vtx );
         rval = item_edge->_vertexB;
-        printf( "remapped <%d> to <%d>\n", input_vtx->_poolindex, rval->_poolindex );
+        //printf( "remapped <%d> to <%d>\n", input_vtx->_poolindex, rval->_poolindex );
         found = true;
       }
       else if( item_edge->_vertexA == con_edge->_vertexB ){
         OrkAssert( con_edge->_vertexA == input_vtx );
         rval = item_edge->_vertexB;
-        printf( "remapped <%d> to <%d>\n", input_vtx->_poolindex, rval->_poolindex );
+        //printf( "remapped <%d> to <%d>\n", input_vtx->_poolindex, rval->_poolindex );
         found = true;
       }
       
-      printf( "item_edge<%d->%d>\n", item_edge->_vertexA->_poolindex, item_edge->_vertexB->_poolindex );
+      //printf( "item_edge<%d->%d>\n", item_edge->_vertexA->_poolindex, item_edge->_vertexB->_poolindex );
     }
     OrkAssert(found);
     //OrkAssert(false);
@@ -382,7 +382,7 @@ void SubMeshClipper::process() {
 
   ////////////////////////////////////////////////////////////////////
 
-  if (true) { // vardump
+  if (false) { // vardump
 
     logchan_clip->log("## EDGE VAR MAP #########################");
     _outsubmesh.visitAllEdges([&](halfedge_ptr_t e) { dumpEdgeVars(e); });
