@@ -24,8 +24,8 @@ class SceneGraphApp(BasicUiCamSgApp):
     self.numsteps_cut = 0
     #self.maxsteps_sim = 451
     #self.maxsteps_cut = 4
-    self.maxsteps_sim = 1212 #701
-    self.maxsteps_cut = 2
+    self.maxsteps_sim = 1212+230 #701
+    self.maxsteps_cut = 7
   ##############################################
   def onGpuInit(self,ctx):
     super().onGpuInit(ctx,add_grid=False)
@@ -144,7 +144,7 @@ class SceneGraphApp(BasicUiCamSgApp):
   ##############################################
   def onUpdate(self,updevent):
     super().onUpdate(updevent)
-    #self.maxsteps_sim += 1
+    self.maxsteps_sim += 1
     #print(self.maxsteps_sim)
     while self.numsteps_sim < self.maxsteps_sim:
       self.numsteps_sim += 1
@@ -203,7 +203,7 @@ class SceneGraphApp(BasicUiCamSgApp):
       self.hull = clipped #clipped.convexHull(self.numsteps_sim) 
 
       if self.hull!=None:
-        clipped.dumpPolys("clippedout")
+        #clipped.dumpPolys("clippedout")
         self.pts_drawabledata.pointsmesh = clipped
         # intersection mesh
         self.barysub_isect = self.submesh_isect.withBarycentricUVs()

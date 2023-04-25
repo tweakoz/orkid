@@ -36,7 +36,7 @@ namespace ork {
       printf( "%s[%s]\t%s%s", _c1_prefix.c_str(), _name.c_str(), buf, _reset.c_str() );
     }
     void LogChannel::log_begin(const char *pMsgFormat, ...) {
-      if(_ENABLE_LOGGING){
+      if(_ENABLE_LOGGING and _enabled){
         va_list args;
         va_start(args, pMsgFormat);
         log_begin_valist(pMsgFormat, args);

@@ -11,7 +11,7 @@
 #include <ork/util/logger.h>
 #include <deque>
 
-static constexpr bool debug = true;
+static constexpr bool debug = false;
 
 static constexpr double PLANE_EPSILON = 0.001f;
 
@@ -207,7 +207,7 @@ vertex_ptr_t SubMeshClipper::remappedVertex(vertex_ptr_t input_vtx,halfedge_ptr_
       
       //printf( "item_edge<%d->%d>\n", item_edge->_vertexA->_poolindex, item_edge->_vertexB->_poolindex );
     }
-    OrkAssert(found);
+    //OrkAssert(found);
     //OrkAssert(false);
    // rval = _outsubmesh.vertex(it->second);
   }
@@ -425,7 +425,7 @@ void SubMeshClipper::procEdges(merged_poly_const_ptr_t input_poly) { //
   int _f2b_index                  = -1;
   int _b2f_count                  = 0;
   bool do_log                     = true; // matchTestPoly(input_poly);
-  printPoly("PROCEDGES POLY", input_poly);
+  if(debug) printPoly("PROCEDGES POLY", input_poly);
 
   if (do_log)
     logchan_clip->log("  procEdges inppoly<%d> numv<%d>", input_poly->_submeshIndex, inuminverts);
@@ -560,14 +560,14 @@ void SubMeshClipper::clipPolygon(merged_poly_const_ptr_t input_poly) { //
 
   bool match_poly = matchTestPoly(input_poly);
   if (match_poly) {
-    printPoly("CLIP INPUT POLY", input_poly);
+    if(debug) printPoly("CLIP INPUT POLY", input_poly);
     std::vector<vertex_const_ptr_t> out_verts;
     input_poly->visitVertices([&](vertex_const_ptr_t vtx) {
       auto mergedv = _outsubmesh.vertex(vtx->_poolindex);
       out_verts.push_back(mergedv);
     });
     logchan_clip->log("clip poly num verts<%d>", inuminverts);
-    for (auto mergedv : out_verts) {
+    if(debug) for (auto mergedv : out_verts) {
       dumpVertexVars(mergedv);
     }
   }
