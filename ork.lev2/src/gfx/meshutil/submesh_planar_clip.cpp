@@ -41,7 +41,7 @@ struct PolyVtxCount {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-using vtx_heio_t = std::map<int, halfedge_ptr_t>;
+using vtx_heio_t = std::multimap<int, halfedge_ptr_t>;
 
 enum class EPlanarStatus { CROSS_F2B, CROSS_B2F, PLANAR, FRONT, BACK, NONE };
 
@@ -490,6 +490,10 @@ void SubMeshClipper::procEdges(merged_poly_const_ptr_t input_poly) { //
                 (void*)he_ab.get());
           }
           _outsubmesh.mergeVar<vertex_ptr_t>(out_vtx_b, "clipped_vertex") = out_vtx_lerp;
+          halfedge_ptr_t he_xx = _outsubmesh.mergeEdgeForVertices(out_vtx_a, out_vtx_lerp);
+          auto hepair = std::make_pair(out_vtx_b->_poolindex,he_xx);
+          _outsubmesh.mergeVar<vtx_heio_t>(out_vtx_b, "heio").insert(hepair);
+
           _F2B_EDGE                                                       = he_ab;
           _f2b_count++;
           _f2b_index = iva;
@@ -507,6 +511,9 @@ void SubMeshClipper::procEdges(merged_poly_const_ptr_t input_poly) { //
                 (void*)he_ab.get());
           }
           _outsubmesh.mergeVar<vertex_ptr_t>(out_vtx_a, "clipped_vertex") = out_vtx_lerp;
+          halfedge_ptr_t he_xx = _outsubmesh.mergeEdgeForVertices(out_vtx_lerp, out_vtx_b);
+          auto hepair = std::make_pair(out_vtx_a->_poolindex,he_xx);
+          _outsubmesh.mergeVar<vtx_heio_t>(out_vtx_b, "heio").insert(hepair);
           _b2f_count++;
           _F2B_EDGE = nullptr;
         } else {
