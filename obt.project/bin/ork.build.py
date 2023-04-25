@@ -27,14 +27,24 @@ this_path = os.path.realpath(__file__)
 this_dir = os.path.dirname(this_path)
 this_dir = os.path.dirname(this_dir)
 this_dir = os.path.dirname(this_dir)
-
 #print(this_dir)
+
+############################################################################
+
+PYTHON = ork.dep.instance("python")
+BOOST = ork.dep.instance("boost")
+ORKID_DEPMODULE = ork.dep.instance("orkid") # fetch from orkid depper to reduce code bloat
+
+#print(PYTHON)
+#ork.env.set("PYTHONHOME",PYTHON.home_dir)
+
+############################################################################
 
 os.environ["ORKID_WORKSPACE_DIR"] = this_dir
 
 stage_dir = Path(os.path.abspath(str(ork.path.stage())))
 
-build_dest = ork.path.stage()/"orkid"
+build_dest = ORKID_DEPMODULE.builddir
 
 if _args["builddir"]!=None:
     build_dest = Path(_args["builddir"])
@@ -60,17 +70,11 @@ with buildtrace.NestedBuildTrace({ "op": "ork.build.py"}) as nested:
   ork_root = prj_root
   ok = True
 
-  PYTHON = ork.dep.instance("python")
-  #print(PYTHON)
-  #ork.env.set("PYTHONHOME",PYTHON.home_dir)
-
-  BOOST = ork.dep.instance("boost")
 
   ######################################################################
   # ensure deps present
   ######################################################################
 
-  ORKID_DEPMODULE = ork.dep.instance("orkid") # fetch from orkid depper to reduce code bloat
 
   dep_list = ORKID_DEPMODULE.deplist
 
