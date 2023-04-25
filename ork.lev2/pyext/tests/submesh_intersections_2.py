@@ -25,7 +25,7 @@ class SceneGraphApp(BasicUiCamSgApp):
     #self.maxsteps_sim = 451
     #self.maxsteps_cut = 4
     self.maxsteps_sim = 1212 #701
-    self.maxsteps_cut = 4
+    self.maxsteps_cut = 2
   ##############################################
   def onGpuInit(self,ctx):
     super().onGpuInit(ctx,add_grid=False)

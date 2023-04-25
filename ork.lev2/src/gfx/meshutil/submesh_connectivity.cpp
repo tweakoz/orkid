@@ -202,7 +202,10 @@ merged_poly_ptr_t DefaultConnectivity::mergePoly(const Polygon& ply) {
     }
   });
   int inumv      = import_verts.size();
-  OrkAssert(inumv >= 3);
+
+  if(inumv<3)
+    return nullptr;
+
   ///////////////////////////////
   // zero area poly removal
   ///////////////////////////////
