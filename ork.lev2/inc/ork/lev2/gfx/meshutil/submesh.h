@@ -130,8 +130,7 @@ struct submesh {
   }
   template <typename T> attempt_cast<T> tryVarAs(halfedge_ptr_t he, const std::string& varname) {
     auto& varmap = _connectivityIMPL->varmapForHalfEdge(he);
-    auto& var    = varmap[varname];
-    return var.tryAs<T>();
+    return varmap.typedValueForKey<T>(varname);
   }
   inline bool hasVar(halfedge_ptr_t he, const std::string& varname) {
     auto& varmap = _connectivityIMPL->varmapForHalfEdge(he);
@@ -157,8 +156,7 @@ struct submesh {
   }
   template <typename T> attempt_cast<T> tryVarAs(vertex_const_ptr_t v, const std::string& varname) {
     auto& varmap = _connectivityIMPL->varmapForVertex(v);
-    auto& var    = varmap[varname];
-    return var.tryAs<T>();
+    return varmap.typedValueForKey<T>(varname);
   }
   inline bool hasVar(vertex_const_ptr_t v, const std::string& varname) {
     auto& varmap = _connectivityIMPL->varmapForVertex(v);
@@ -184,8 +182,7 @@ struct submesh {
   }
   template <typename T> attempt_cast<T> tryVarAs(merged_poly_const_ptr_t p, const std::string& varname) {
     auto& varmap = _connectivityIMPL->varmapForPolygon(p);
-    auto& var    = varmap[varname];
-    return var.tryAs<T>();
+    return varmap.typedValueForKey<T>(varname);
   }
   inline bool hasVar(merged_poly_const_ptr_t p, const std::string& varname) {
     auto& varmap = _connectivityIMPL->varmapForPolygon(p);

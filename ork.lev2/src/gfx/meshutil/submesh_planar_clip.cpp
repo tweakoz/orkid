@@ -20,7 +20,7 @@ namespace ork::meshutil {
 ///////////////////////////////////////////////////////////////////////////////
 static logchannel_ptr_t logchan_clip = logger()->createChannel("meshutil.clipper", fvec3(.9, .9, 1), true);
 
-const std::unordered_set<int> test_verts = {1, 0, 4, 7};
+const std::unordered_set<int> test_verts = {3, 10, 6, 5};
 
 bool matchTestPoly(merged_poly_const_ptr_t src_poly) {
   bool match_poly = true;
@@ -64,15 +64,15 @@ using edge_change_record_ptr_t = std::shared_ptr<EdgeChangeRecord>;
 struct SubMeshClipper {
   /////////////////////////////////////
   SubMeshClipper(
-      const submesh& inpsubmesh,                    //
-      const dplane3& plane,                         //
-      submesh& smfront,                             //
-      bool do_close)                                //
-      : _inpsubmesh(inpsubmesh)                     //
-      , _outsubmesh(smfront)                        //
-      , _slicing_plane(plane)                       //
-      , _do_close(do_close) {                       //
-      //, _categorized(_inpsubmesh, _slicing_plane) { //
+      const submesh& inpsubmesh, //
+      const dplane3& plane,      //
+      submesh& smfront,          //
+      bool do_close)             //
+      : _inpsubmesh(inpsubmesh)  //
+      , _outsubmesh(smfront)     //
+      , _slicing_plane(plane)    //
+      , _do_close(do_close) {    //
+    //, _categorized(_inpsubmesh, _slicing_plane) { //
     process();
   }
   /////////////////////////////////////
@@ -84,7 +84,7 @@ struct SubMeshClipper {
   /////////////////////////////////////
   void dumpEdgeVars(halfedge_ptr_t input_edge) const;
   void dumpPolyVars(merged_poly_const_ptr_t input_poly) const;
-  void dumpVertexVars(vertex_ptr_t input_vtx) const;
+  void dumpVertexVars(vertex_const_ptr_t input_vtx) const;
   void printPoly(const std::string& HDR, merged_poly_const_ptr_t input_poly) const;
   /////////////////////////////////////
   vertex_ptr_t remappedVertex(vertex_ptr_t input_vtx) const;
@@ -107,7 +107,7 @@ struct SubMeshClipper {
   bool _do_close;
   /////////////////////////////////////
   edge_set_t _planar_edges;
-  vertex_set_t _planar_verts;
+  vertex_set_t _planar_verts_pending_close;
   polyconst_set_t _backpolys;
   polyconst_set_t _frontpolys;
   std::map<int, int> _vertex_remap;
@@ -161,13 +161,14 @@ void SubMeshClipper::dumpPolyVars(merged_poly_const_ptr_t input_poly) const {
     printf("  k: %s v: %s\n", key.c_str(), val_str.c_str());
   }
 }
-void SubMeshClipper::dumpVertexVars(vertex_ptr_t input_vtx) const {
+void SubMeshClipper::dumpVertexVars(vertex_const_ptr_t input_vtx) const {
   auto& varmap = _outsubmesh.varmapForVertex(input_vtx);
   printf("vtx[%d] vars: ", input_vtx->_poolindex);
   if (varmap._themap.size()) {
     printf("[\n");
     for (auto item : varmap._themap) {
       auto key     = item.first;
+      printf( "key<%s>\n", key.c_str());
       auto val_str = varmap.encodeAsString(key);
       printf("  k: %s v: %s\n", key.c_str(), val_str.c_str());
     }
@@ -206,12 +207,12 @@ halfedge_ptr_t SubMeshClipper::remappedEdge(halfedge_ptr_t input_edge) const {
 ///////////////////////////////////////////////////////////////////////////////
 
 vertex_ptr_t SubMeshClipper::mergeVertex(const vertex& input_vertex) {
-  auto cat = categorizeVertex(input_vertex);
+  auto cat                                         = categorizeVertex(input_vertex);
   auto merged                                      = _outsubmesh.mergeVertex(input_vertex);
   double d                                         = _slicing_plane.pointDistance(merged->mPos);
   _outsubmesh.mergeVar<double>(merged, "distance") = d;
 
-  switch(cat){
+  switch (cat) {
     case EPlanarStatus::FRONT:
       _outsubmesh.mergeVar<std::string>(merged, "plside") = "FRONT";
       break;
@@ -220,7 +221,7 @@ vertex_ptr_t SubMeshClipper::mergeVertex(const vertex& input_vertex) {
       break;
     case EPlanarStatus::PLANAR:
       _outsubmesh.mergeVar<std::string>(merged, "plside") = "PLANAR";
-      _planar_verts.insert(merged);
+      //_planar_verts_pending_close.insert(merged);
       break;
     default:
       break;
@@ -234,7 +235,7 @@ vertex_ptr_t SubMeshClipper::mergeVertex(const vertex& input_vertex) {
 EPlanarStatus SubMeshClipper::categorizeVertex(const vertex& input_vertex) const {
   EPlanarStatus rval    = EPlanarStatus::NONE;
   double point_distance = _slicing_plane.pointDistance(input_vertex.mPos);
-  if( abs(point_distance) < PLANE_EPSILON ){
+  if (abs(point_distance) < PLANE_EPSILON) {
     rval = EPlanarStatus::PLANAR;
   } else if (point_distance >= 0.0) {
     rval = EPlanarStatus::FRONT;
@@ -246,26 +247,26 @@ EPlanarStatus SubMeshClipper::categorizeVertex(const vertex& input_vertex) const
 
 ///////////////////////////////////////////////////////////////////////////////
 
-  PolyVtxCount SubMeshClipper::categorizePolygon(merged_poly_const_ptr_t input_poly) const {
-    PolyVtxCount counts;
-    input_poly->visitVertices([&](vertex_ptr_t vtx) {
-      EPlanarStatus cat = categorizeVertex(*vtx);
-      switch(cat){
-        case EPlanarStatus::FRONT:
-          counts._front_count++;
-          break;
-        case EPlanarStatus::BACK:
-          counts._back_count++;
-          break;
-        case EPlanarStatus::PLANAR:
-          counts._planar_count++;
-          break;
-        default:
-          OrkAssert(false);
-          break;
-      }
-    });
-    return counts;
+PolyVtxCount SubMeshClipper::categorizePolygon(merged_poly_const_ptr_t input_poly) const {
+  PolyVtxCount counts;
+  input_poly->visitVertices([&](vertex_ptr_t vtx) {
+    EPlanarStatus cat = categorizeVertex(*vtx);
+    switch (cat) {
+      case EPlanarStatus::FRONT:
+        counts._front_count++;
+        break;
+      case EPlanarStatus::BACK:
+        counts._back_count++;
+        break;
+      case EPlanarStatus::PLANAR:
+        counts._planar_count++;
+        break;
+      default:
+        OrkAssert(false);
+        break;
+    }
+  });
+  return counts;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -401,7 +402,6 @@ void SubMeshClipper::process() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void SubMeshClipper::procEdges(merged_poly_const_ptr_t input_poly) { //
-  auto& out_submesh     = _outsubmesh;
   const int inuminverts = input_poly->numVertices();
   OrkAssert(inuminverts >= 3);
   static halfedge_ptr_t _F2B_EDGE = nullptr;
@@ -417,10 +417,10 @@ void SubMeshClipper::procEdges(merged_poly_const_ptr_t input_poly) { //
   for (int iva = 0; iva < inuminverts; iva++) {
 
     int ivb        = (iva + 1) % inuminverts;
-    auto out_vtx_a = out_submesh.mergeVertex(*input_poly->vertex(iva));
-    auto out_vtx_b = out_submesh.mergeVertex(*input_poly->vertex(ivb));
-    auto he_ab     = out_submesh.mergeEdgeForVertices(out_vtx_a, out_vtx_b);
-    auto he_ba     = out_submesh.mergeEdgeForVertices(out_vtx_b, out_vtx_a);
+    auto out_vtx_a = _outsubmesh.mergeVertex(*input_poly->vertex(iva));
+    auto out_vtx_b = _outsubmesh.mergeVertex(*input_poly->vertex(ivb));
+    auto he_ab     = _outsubmesh.mergeEdgeForVertices(out_vtx_a, out_vtx_b);
+    auto he_ba     = _outsubmesh.mergeEdgeForVertices(out_vtx_b, out_vtx_a);
     // get the side of each vert to the plane
     bool is_vertex_a_front = _slicing_plane.isPointInFront(out_vtx_a->mPos);
     bool is_vertex_b_front = _slicing_plane.isPointInFront(out_vtx_b->mPos);
@@ -431,7 +431,7 @@ void SubMeshClipper::procEdges(merged_poly_const_ptr_t input_poly) { //
         out_vtx_b->_poolindex,
         int(is_vertex_a_front),
         int(is_vertex_b_front));
-    auto& plstat    = out_submesh.mergeVar<PlanarStatus>(he_ab, "plstatus");
+    auto& plstat    = _outsubmesh.mergeVar<PlanarStatus>(he_ab, "plstatus");
     plstat._status  = EPlanarStatus::NONE;
     plstat._vertexA = out_vtx_a;
     plstat._vertexB = out_vtx_b;
@@ -481,15 +481,16 @@ void SubMeshClipper::procEdges(merged_poly_const_ptr_t input_poly) { //
           plstat._status  = EPlanarStatus::CROSS_F2B;
           plstat._vertexA = out_vtx_a;
           plstat._vertexB = out_vtx_lerp;
-          if (do_log)
+          if (do_log){
             logchan_clip->log(
                 "    emit CROSS F2B %d->%d: %d he_ab<%p>",
                 out_vtx_a->_poolindex,
                 out_vtx_b->_poolindex,
                 out_vtx_lerp->_poolindex,
                 (void*)he_ab.get());
-          out_submesh.mergeVar<vertex_ptr_t>(out_vtx_b, "clipped_vertex") = out_vtx_lerp;
-          _F2B_EDGE                   = he_ab;
+          }
+          _outsubmesh.mergeVar<vertex_ptr_t>(out_vtx_b, "clipped_vertex") = out_vtx_lerp;
+          _F2B_EDGE                                                       = he_ab;
           _f2b_count++;
           _f2b_index = iva;
 
@@ -497,25 +498,26 @@ void SubMeshClipper::procEdges(merged_poly_const_ptr_t input_poly) { //
           plstat._status  = EPlanarStatus::CROSS_B2F;
           plstat._vertexA = out_vtx_lerp;
           plstat._vertexB = out_vtx_b;
-          if (do_log)
+          if (do_log){
             logchan_clip->log(
                 "    emit CROSS B2F %d->%d : %d he_ab<%p>",
                 out_vtx_b->_poolindex,
                 out_vtx_a->_poolindex,
                 out_vtx_lerp->_poolindex,
                 (void*)he_ab.get());
-          out_submesh.mergeVar<vertex_ptr_t>(out_vtx_a, "clipped_vertex") = out_vtx_lerp;
+          }
+          _outsubmesh.mergeVar<vertex_ptr_t>(out_vtx_a, "clipped_vertex") = out_vtx_lerp;
           _b2f_count++;
-          _F2B_EDGE                                                       = nullptr;
+          _F2B_EDGE = nullptr;
         } else {
           OrkAssert(false);
         }
-      } // isect1 ?
+      }                   // isect1 ?
       else {
         OrkAssert(false); // crossed the plane, but non intersecting ?
       }
-    } // did we cross plane ?
-  }   // for (int iva = 0; iva < inuminverts; iva++) {
+    }                     // did we cross plane ?
+  }                       // for (int iva = 0; iva < inuminverts; iva++) {
   OrkAssert(_b2f_count == _f2b_count);
   if (_F2B_EDGE != nullptr) {
     _inp_poly_varmap[input_poly].makeValueForKey<int>("f2b_index") = _f2b_index;
@@ -525,7 +527,6 @@ void SubMeshClipper::procEdges(merged_poly_const_ptr_t input_poly) { //
 ///////////////////////////////////////////////////////////////////////////////
 
 void SubMeshClipper::postProcEdges(merged_poly_const_ptr_t input_poly) { //
-
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -536,9 +537,18 @@ void SubMeshClipper::clipPolygon(merged_poly_const_ptr_t input_poly) { //
   OrkAssert(inuminverts >= 3);
 
   bool match_poly = matchTestPoly(input_poly);
-  if (match_poly){
+  if (match_poly) {
     printPoly("CLIP INPUT POLY", input_poly);
+    std::vector<vertex_const_ptr_t> out_verts;
+    input_poly->visitVertices([&](vertex_const_ptr_t vtx) {
+      auto mergedv = _outsubmesh.vertex(vtx->_poolindex);
+      out_verts.push_back(mergedv);
+    });
     logchan_clip->log("clip poly num verts<%d>", inuminverts);
+    for( auto mergedv : out_verts ){
+      dumpVertexVars(mergedv);
+    }
+
   }
 
   auto polycat = categorizePolygon(input_poly);
@@ -547,8 +557,8 @@ void SubMeshClipper::clipPolygon(merged_poly_const_ptr_t input_poly) { //
   // handle all-front polygons
   //////////////////////////////////////////////////////////
 
-  if(polycat._back_count==0 and polycat._planar_count==0){
-    if( polycat._front_count>=3){
+  if (polycat._back_count == 0 and polycat._planar_count == 0) {
+    if (polycat._front_count >= 3) {
       _outsubmesh.mergePoly(*input_poly);
       return;
     }
@@ -570,8 +580,8 @@ void SubMeshClipper::clipPolygon(merged_poly_const_ptr_t input_poly) { //
 
     auto out_vtx_a = _outsubmesh.mergeVertex(*input_poly->vertex(iva));
     auto out_vtx_b = _outsubmesh.mergeVertex(*input_poly->vertex(ivb));
-    auto he_ab = _outsubmesh.mergeEdgeForVertices(out_vtx_a, out_vtx_b);
-    auto he_ba = _outsubmesh.mergeEdgeForVertices(out_vtx_b, out_vtx_a);
+    auto he_ab     = _outsubmesh.mergeEdgeForVertices(out_vtx_a, out_vtx_b);
+    auto he_ba     = _outsubmesh.mergeEdgeForVertices(out_vtx_b, out_vtx_a);
 
     if (match_poly)
       logchan_clip->log_continue("  i<%d> iva<%d> of inuminverts<%d> he_ab<%p>\n", i, iva, inuminverts, (void*)he_ab.get());
@@ -579,8 +589,8 @@ void SubMeshClipper::clipPolygon(merged_poly_const_ptr_t input_poly) { //
     auto& plstat = _outsubmesh.typedVar<PlanarStatus>(he_ab, "plstatus");
     switch (plstat._status) {
       case EPlanarStatus::FRONT:
-        if (match_poly){
-            logchan_clip->log("  front");
+        if (match_poly) {
+          logchan_clip->log("  front");
         }
         frontmesh_edges.push_back(he_ab);
         break;
@@ -588,81 +598,35 @@ void SubMeshClipper::clipPolygon(merged_poly_const_ptr_t input_poly) { //
         // OrkAssert(false);
         if (match_poly)
           logchan_clip->log("  back");
-
-        /*if (auto try_clip_ab = _outsubmesh.tryVarAs<halfedge_ptr_t>(he_ab, "clipped_edge")) {
-          auto clipped_ab = try_clip_ab.value();
-          if (match_poly)
-            logchan_clip->log("  back - got clipab <%d->%d>\n", clipped_ab->_vertexA->_poolindex, clipped_ab->_vertexB->_poolindex);
-          OrkAssert(false);
-        } else if (auto try_clip_ba = _outsubmesh.tryVarAs<halfedge_ptr_t>(he_ba, "clipped_edge")) {
-          auto clipped_ba = try_clip_ba.value();
-          if (match_poly)
-            logchan_clip->log("  back - got clipba <%d->%d>\n", clipped_ba->_vertexA->_poolindex, clipped_ba->_vertexB->_poolindex);
-          OrkAssert(false);
-        } else {
-          auto va            = he_ab->_vertexA;
-          auto vb            = he_ab->_vertexB;
-          auto inserted      = std::make_shared<HalfEdge>();
-          inserted->_vertexA = va;
-          inserted->_vertexB = vb;
-          //frontmesh_edges.push_back(inserted);
-        }*/
+        out_vtx_a = remappedVertex(he_ab->_vertexA);
+        out_vtx_b = remappedVertex(he_ab->_vertexB);
+        he_ab     = _outsubmesh.mergeEdgeForVertices(out_vtx_a, out_vtx_b);
+        frontmesh_edges.push_back(he_ab);
         break;
       case EPlanarStatus::CROSS_F2B: {
-        if (match_poly){
-            logchan_clip->log("  front2back");
+        if (match_poly) {
+          logchan_clip->log("  front2back");
         }
+        out_vtx_b = remappedVertex(he_ab->_vertexB);
+        he_ab     = _outsubmesh.mergeEdgeForVertices(out_vtx_a, out_vtx_b);
+        frontmesh_edges.push_back(he_ab);
 
-          //auto out_vtx_lerp = remappedVertex(out_vtx_b);
-          //auto clipped_edge                                           = out_submesh.mergeEdgeForVertices(out_vtx_a, out_vtx_lerp);
-          //frontmesh_edges.push_back(clipped_edge);
-          frontmesh_edges.push_back(he_ab);
-
-          /*out_submesh.mergeVar<halfedge_ptr_t>(he_ab, "clipped_edge") = clipped_edge;
-          auto& clipped_plstat    = out_submesh.mergeVar<PlanarStatus>(clipped_edge, "plstatus");
-          clipped_plstat._status  = EPlanarStatus::FRONT;
-          clipped_plstat._vertexA = out_vtx_a;
-          clipped_plstat._vertexB = out_vtx_lerp;
-
-          auto& heIO                  = out_submesh.mergeVar<vtx_heio_t>(out_vtx_b, "heIO");
-          heIO[out_vtx_a->_poolindex] = clipped_edge;
-          */
-
-        //auto clipped = _outsubmesh.typedVar<halfedge_ptr_t>(he_ab, "clipped_edge");
-        //frontmesh_edges.push_back(clipped);
-        //OrkAssert(clipped != nullptr);
         _F2B_EDGE = he_ab;
         break;
       }
       case EPlanarStatus::CROSS_B2F: {
-        if (match_poly){
+        if (match_poly) {
           logchan_clip->log("  back2front");
-
         }
 
         OrkAssert(_F2B_EDGE != nullptr);
-          //auto out_vtx_lerp = remappedVertex(out_vtx_a);
-          //auto clipped_edge                                           = out_submesh.mergeEdgeForVertices(out_vtx_lerp, out_vtx_b);
-          frontmesh_edges.push_back(he_ab);
+        // auto out_vtx_lerp = remappedVertex(out_vtx_a);
+        // auto clipped_edge                                           = _outsubmesh.mergeEdgeForVertices(out_vtx_lerp, out_vtx_b);
+        out_vtx_a = remappedVertex(he_ab->_vertexA);
+        // out_vtx_b = remappedVertex(he_ab->_vertexB);
+        he_ab = _outsubmesh.mergeEdgeForVertices(out_vtx_a, out_vtx_b);
+        frontmesh_edges.push_back(he_ab);
 
-          /*auto clipped_edge       = out_submesh.mergeEdgeForVertices(out_vtx_lerp, out_vtx_b);
-          auto& clipped_plstat    = out_submesh.mergeVar<PlanarStatus>(clipped_edge, "plstatus");
-          clipped_plstat._status  = EPlanarStatus::FRONT;
-          clipped_plstat._vertexA = out_vtx_lerp;
-          clipped_plstat._vertexB = out_vtx_b;
-
-          out_submesh.mergeVar<halfedge_ptr_t>(he_ab, "clipped_edge")     = clipped_edge;
-          auto& heIO                                                      = out_submesh.mergeVar<vtx_heio_t>(out_vtx_a, "heIO");
-          heIO[out_vtx_b->_poolindex]                                     = clipped_edge;
-          */
-
-
-        //auto clipped = _outsubmesh.typedVar<halfedge_ptr_t>(he_ab, "clipped_edge");
-        //auto inserted      = std::make_shared<HalfEdge>();
-        //inserted->_vertexA = _F2B_EDGE->_vertexB;
-        //inserted->_vertexB = clipped->_vertexA;
-        //frontmesh_edges.push_back(inserted);
-        //frontmesh_edges.push_back(clipped);
         _F2B_EDGE = nullptr;
         break;
       }
@@ -701,9 +665,6 @@ void SubMeshClipper::clipPolygon(merged_poly_const_ptr_t input_poly) { //
 
       frontmesh_vertices.push_back(rmA);
       frontmesh_vertices.push_back(rmB);
-
-      // auto remapped = _outsubmesh.mergeEdgeForVertices(rmA, rmB);
-      // frontmesh_edges_remapped.push_back(remapped);
     }
 
     //////////////////////////////////////////////////////////////////////////////////////
@@ -736,7 +697,7 @@ void SubMeshClipper::clipPolygon(merged_poly_const_ptr_t input_poly) { //
 ///////////////////////////////////////////////////////////////////////////////
 
 void SubMeshClipper::closeSubMesh() {
-
+  return; //
   if (debug) {
     _outsubmesh.visitAllVertices([&](vertex_ptr_t v) { //
       double point_distance = _slicing_plane.pointDistance(v->mPos);
@@ -832,10 +793,10 @@ void SubMeshClipper::closeSubMesh() {
     }
 
   int index = 0;
-  _planar_verts.visit([&](vertex_ptr_t v) {
+  _planar_verts_pending_close.visit([&](vertex_ptr_t v) {
     if (debug)
       logchan_clip->log("planar v%d : %f %f %f", v->_poolindex, v->mPos.x, v->mPos.y, v->mPos.z);
-    _planar_verts.visit([&](vertex_ptr_t v2) {
+    _planar_verts_pending_close.visit([&](vertex_ptr_t v2) {
       if (v == v2)
         return;
       auto e        = std::make_shared<edge>(v, v2);
@@ -971,9 +932,9 @@ void submeshClipWithPlane(
 
   if (debug) {
     outsmesh_front.dumpPolys("clipped_front");
-    if (sm_clipper_front._planar_verts._the_map.size() > 0) {
+    if (sm_clipper_front._planar_verts_pending_close._the_map.size() > 0) {
       logchan_clip->log_continue("fpv [");
-      for (auto v_item : sm_clipper_front._planar_verts._the_map) {
+      for (auto v_item : sm_clipper_front._planar_verts_pending_close._the_map) {
         auto v = v_item.second;
         logchan_clip->log_continue(" %d", v->_poolindex);
       }
