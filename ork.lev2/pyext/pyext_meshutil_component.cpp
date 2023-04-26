@@ -183,7 +183,7 @@ void pyinit_meshutil_component(py::module& module_meshutil) {
     });
   type_codec->registerStdCodec<halfedge_ptr_t>(half_edge_type);
   /////////////////////////////////////////////////////////////////////////////////
-  auto poly_type = py::class_<Polygon,poly_ptr_t>(module_meshutil, "Poly")
+  auto poly_type = py::class_<Polygon,poly_ptr_t>(module_meshutil, "Polygon")
     .def_property_readonly("numSides", [](poly_ptr_t p) -> int {            
       return p->numSides();
     })
@@ -240,7 +240,7 @@ void pyinit_meshutil_component(py::module& module_meshutil) {
     });
   type_codec->registerStdCodec<poly_ptr_t>(poly_type);
   /////////////////////////////////////////////////////////////////////////////////
-  auto merged_poly_type = py::class_<MergedPolygon,merged_poly_ptr_t>(module_meshutil, "MergedPolygon");
+  auto merged_poly_type = py::class_<MergedPolygon,Polygon,merged_poly_ptr_t>(module_meshutil, "MergedPolygon");
   type_codec->registerStdCodec<merged_poly_ptr_t>(merged_poly_type);
   /////////////////////////////////////////////////////////////////////////////////
 }
