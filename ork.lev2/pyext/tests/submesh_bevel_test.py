@@ -36,6 +36,10 @@ class SceneGraphApp(BasicUiCamSgApp):
     solid_wire_pipeline = self.createBaryWirePipeline()
     material = solid_wire_pipeline.sharedMaterial
     solid_wire_pipeline.bindParam( material.param("m"), tokens.RCFD_M)
+    ##############################
+    self.pts_drawabledata = LabeledPointDrawableData()
+    self.pts_drawabledata.pipeline_points = self.createPointsPipeline()
+    self.sgnode_pts = self.layer1.createDrawableNodeFromData("points",self.pts_drawabledata)
 
     #################################################################
     # source mesh paths
@@ -71,6 +75,7 @@ class SceneGraphApp(BasicUiCamSgApp):
     cub_submesh = self.cutWithPlane(cub_submesh,dvec3(-1,-1,0),dvec3(0,beveld,0))
     cub_submesh = self.cutWithPlane(cub_submesh,dvec3(-1,1,0),dvec3(0,-beveld,0))
     cub_submesh = self.cutWithPlane(cub_submesh,dvec3(1,-1,0),dvec3(0,beveld,0))
+    self.pts_drawabledata.pointsmesh = cub_submesh
 
     self.barysubmesh = cub_submesh.withBarycentricUVs()
     self.bary_prim.fromSubMesh(self.barysubmesh,self.context)
