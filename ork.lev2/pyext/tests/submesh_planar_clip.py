@@ -36,9 +36,9 @@ def printSubMesh(name, subm):
     out_str += " vtx> %d: %s\n"%(idx, vtx.position)
   for idx, poly in enumerate(subm.polys):
     out_str += "  poly> %d: [ "%idx
-    for v in poly.vertices:
-      out_str += "%d " % v.poolindex
-    out_str += "]\n"
+    #for v in poly.vertices:
+    #  out_str += "%d " % v.poolindex
+    #out_str += "]\n"
   print(out_str)
 
 ################################################################################
@@ -69,6 +69,8 @@ class Fragments:
     else:
       self.normal = slicing_plane.normal
 
+    self.inv_slicing_plane = dplane(self.normal*-1, slicing_plane.d*-1)
+
     ##################################
     # load model 
     ##################################
@@ -81,7 +83,7 @@ class Fragments:
     ##################################
 
     self.ori_submesh = self.mesh.submesh_list[0]
-    printSubMesh("srcmesh", self.ori_submesh)
+    #printSubMesh("srcmesh", self.ori_submesh)
 
     # original submesh primitive
 
@@ -97,7 +99,7 @@ class Fragments:
                                           preserve_colors=False,
                                           preserve_texcoords=False)
 
-    printSubMesh("stripped", self.stripped)
+    #printSubMesh("stripped", self.stripped)
 
     self.pipeline = pipeline
     self.context = context
@@ -117,12 +119,16 @@ class Fragments:
     ##################################
 
     print(self.slicing_plane)
-    self.clipped = self.stripped.clippedWithPlane( plane=self.slicing_plane,
-                                                   flip_orientation = self.flip_orientation,
-                                                   close_mesh = True )
+    self.clipped_front = self.stripped.clippedWithPlane( plane=self.slicing_plane,
+                                                         flip_orientation = self.flip_orientation,
+                                                         close_mesh = True )
 
-    self.front = self.clipped["front"].withBarycentricUVs()
-    self.back = self.clipped["back"].withBarycentricUVs()
+    self.clipped_back = self.stripped.clippedWithPlane( plane=self.inv_slicing_plane,
+                                                        flip_orientation = self.flip_orientation,
+                                                        close_mesh = True )
+
+    self.front = self.clipped_front.withBarycentricUVs()
+    self.back = self.clipped_back.withBarycentricUVs()
 
     #printSubMesh("front", self.front)
 

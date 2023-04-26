@@ -22,7 +22,7 @@ def strippedSubmesh(inpsubmesh):
 def proc_with_plane(inpsubmesh,plane):
   submesh2 = strippedSubmesh(inpsubmesh).clippedWithPlane(plane=plane,
                                          close_mesh=True, 
-                                         flip_orientation=False )["front"]
+                                         flip_orientation=False )
 
   return submesh2 
 

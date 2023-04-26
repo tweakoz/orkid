@@ -290,12 +290,9 @@ def stripSubmesh(inpsubmesh):
 def clipMeshWithPlane(inpsubmesh,plane):
   clipped = inpsubmesh.clippedWithPlane(plane=plane,
                                         close_mesh=True, 
-                                        flip_orientation=False )
-
-  #print("#####################")
-  #print(clipped["front"])
-  #print(clipped["back"])
-  return clipped["front"]#.convexHull(0)
+                                        flip_orientation=False,
+                                        debug=False )
+  return clipped#.convexHull(0)
 
 ################################################################################
 

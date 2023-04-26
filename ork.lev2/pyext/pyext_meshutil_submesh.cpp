@@ -241,15 +241,14 @@ void pyinit_meshutil_submesh(py::module& module_meshutil) {
               })
           .def(
               "clippedWithPlane",
-              [](submesh_constptr_t inpsubmesh, py::kwargs kwargs) -> py::dict {
+              [](submesh_constptr_t inpsubmesh, py::kwargs kwargs) -> submesh_ptr_t {
                 submesh_ptr_t res_front = std::make_shared<submesh>();
-                submesh_ptr_t res_back  = std::make_shared<submesh>();
                 res_front->name         = inpsubmesh->name + ".front";
-                res_back->name          = inpsubmesh->name + ".back";
-
+                
                 dplane3 as_dplane;
                 bool close_mesh       = false;
                 bool flip_orientation = false;
+                bool debug = false;
 
                 for (auto item : kwargs) {
                   auto key = py::cast<std::string>(item.first);
@@ -259,6 +258,8 @@ void pyinit_meshutil_submesh(py::module& module_meshutil) {
                     close_mesh = py::cast<bool>(item.second);
                   } else if (key == "plane") {
                     as_dplane= py::cast<dplane3>(item.second);
+                  } else if (key == "debug") {
+                    debug= py::cast<bool>(item.second);
                   } else {
                     OrkAssert(false);
                   }
@@ -270,12 +271,9 @@ void pyinit_meshutil_submesh(py::module& module_meshutil) {
                     close_mesh,       //
                     flip_orientation, //
                     *res_front,       //
-                    *res_back);
+                    debug);
 
-                py::dict rval;
-                rval["front"] = res_front;
-                rval["back"]  = res_back;
-                return rval;
+                return res_front;
               })
           .def(
               "withFaceNormals",

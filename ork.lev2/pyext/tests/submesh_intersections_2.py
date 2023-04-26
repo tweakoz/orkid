@@ -26,6 +26,8 @@ class SceneGraphApp(BasicUiCamSgApp):
     #self.maxsteps_cut = 4
     self.maxsteps_sim = 1212+230 #701
     self.maxsteps_cut = 7
+    self.step_incr = 1
+    random.seed(10)
   ##############################################
   def onGpuInit(self,ctx):
     super().onGpuInit(ctx,add_grid=False)
@@ -144,7 +146,7 @@ class SceneGraphApp(BasicUiCamSgApp):
   ##############################################
   def onUpdate(self,updevent):
     super().onUpdate(updevent)
-    self.maxsteps_sim += 1
+    self.maxsteps_sim += self.step_incr
     #print(self.maxsteps_sim)
     while self.numsteps_sim < self.maxsteps_sim:
       self.numsteps_sim += 1
@@ -218,9 +220,11 @@ class SceneGraphApp(BasicUiCamSgApp):
     if uievent.code == tokens.KEY_DOWN.hashed or uievent.code == tokens.KEY_REPEAT.hashed:
         if uievent.keycode == 32:
           self.dirty = True
-          self.maxsteps_sim = (self.maxsteps_sim + 10)
+          self.maxsteps_sim = (self.maxsteps_sim + 1)
           print(self.maxsteps_sim)
-        if uievent.keycode == ord('['): # spacebar
+        elif uievent.keycode == ord('/'): 
+          self.step_incr = (self.step_incr + 1)%2
+        elif uievent.keycode == ord('['): # spacebar
           self.dirty = True
           self.maxsteps_cut = (self.maxsteps_cut - 1)
           if self.maxsteps_cut<0:
