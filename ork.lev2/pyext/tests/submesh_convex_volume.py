@@ -21,7 +21,7 @@ a.readFromWavefrontObj("data://tests/simple_obj/box.obj")
 submesh = a.submesh_list[0].triangulated()
 stripped = submesh.copy(preserve_normals=False,
                         preserve_colors=False,
-                        preserve_texcoords=False).convexDecomposition()[0]
+                        preserve_texcoords=False).convexHull(0)
 assert(stripped.isConvexHull)
 for item in stripped.vertices:
     print(item.position)
@@ -37,7 +37,7 @@ submesh = a.submesh_list[0].triangulated()
 print(submesh)
 stripped = submesh.triangulated().copy(preserve_normals=False,
                                        preserve_colors=False,
-                                       preserve_texcoords=False).convexDecomposition()[0]
+                                       preserve_texcoords=False).convexHull(0)
 print(stripped)
 #assert(stripped.isConvexHull)
 #for item in stripped.vertices:
@@ -55,7 +55,7 @@ submesh = a.submesh_list[0].triangulated()
 print(submesh)
 stripped = submesh.triangulated().copy(preserve_normals=False,
                                        preserve_colors=False,
-                                       preserve_texcoords=False).convexDecomposition()[0]
+                                       preserve_texcoords=False).convexHull(0)
 print(stripped)
 assert(stripped.isConvexHull)
 for item in stripped.vertices:
@@ -72,7 +72,7 @@ submesh = a.submesh_list[0].triangulated()
 print(submesh)
 stripped = submesh.triangulated().copy(preserve_normals=False,
                                        preserve_colors=False,
-                                       preserve_texcoords=False).convexDecomposition()[0]
+                                       preserve_texcoords=False).convexHull(0)
 print(stripped)
 assert(stripped.isConvexHull)
 for item in stripped.vertices:
