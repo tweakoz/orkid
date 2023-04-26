@@ -70,9 +70,8 @@ struct SubMeshClipper {
       : _inpsubmesh(inpsubmesh)  //
       , _outsubmesh(smfront)     //
       , _slicing_plane(plane)    //
-      , _do_close(do_close)
+      , _do_close(do_close)      //
       , _debug(debug) {          //
-    //, _categorized(_inpsubmesh, _slicing_plane) { //
     process();
   }
   /////////////////////////////////////
@@ -207,12 +206,7 @@ vertex_ptr_t SubMeshClipper::remappedVertex(vertex_ptr_t input_vtx, halfedge_ptr
         // printf( "remapped <%d> to <%d>\n", input_vtx->_poolindex, rval->_poolindex );
         found = true;
       }
-
-      // printf( "item_edge<%d->%d>\n", item_edge->_vertexA->_poolindex, item_edge->_vertexB->_poolindex );
     }
-    // OrkAssert(found);
-    // OrkAssert(false);
-    // rval = _outsubmesh.vertex(it->second);
   }
   return rval;
 }
@@ -338,15 +332,18 @@ void SubMeshClipper::process() {
       //  TODO when closing the mesh, construct the closing face
       //  with the planar vertices and input edge connectivity info
       //  every input edge should have a matching output edge (which was clipped)
-      if(_debug)logchan_clip->log_begin("BACK POLY[");
+      if (_debug)
+        logchan_clip->log_begin("BACK POLY[");
       std::vector<vertex_ptr_t> back_vertices;
       input_poly->visitVertices([&](vertex_ptr_t vtx) {
         auto v_m                                       = _outsubmesh.mergeVertex(*vtx);
         _outsubmesh.mergeVar<bool>(v_m, "back_vertex") = true;
         back_vertices.push_back(v_m);
-        if(_debug)logchan_clip->log_continue(" %d", v_m->_poolindex);
+        if (_debug)
+          logchan_clip->log_continue(" %d", v_m->_poolindex);
       });
-      if(_debug)logchan_clip->log_continue(" ]\n");
+      if (_debug)
+        logchan_clip->log_continue(" ]\n");
       auto back_poly = std::make_shared<Polygon>(back_vertices);
       _backpolys.insert(back_poly);
       _polys_to_clip.push_back(input_poly);
@@ -575,9 +572,9 @@ void SubMeshClipper::clipPolygon(merged_poly_const_ptr_t input_poly) { //
     });
     if (_debug)
       logchan_clip->log("clip poly num verts<%d>", inuminverts);
-      for (auto mergedv : out_verts) {
-        dumpVertexVars(mergedv);
-      }
+    for (auto mergedv : out_verts) {
+      dumpVertexVars(mergedv);
+    }
   }
 
   auto polycat = categorizePolygon(input_poly);
@@ -614,14 +611,16 @@ void SubMeshClipper::clipPolygon(merged_poly_const_ptr_t input_poly) { //
     if (match_poly and _debug) {
       int aindex = out_vtx_a->_poolindex;
       int bindex = out_vtx_b->_poolindex;
-      if (_debug)logchan_clip->log_continue("  i<%d> iva<%d> ivb<%d> : ", i, aindex, bindex);
+      if (_debug)
+        logchan_clip->log_continue("  i<%d> iva<%d> ivb<%d> : ", i, aindex, bindex);
     }
 
     auto& plstat = _outsubmesh.typedVar<PlanarStatus>(he_ab, "plstatus");
     switch (plstat._status) {
       case EPlanarStatus::FRONT:
         if (match_poly) {
-          if (_debug)logchan_clip->log_continue("  front\n");
+          if (_debug)
+            logchan_clip->log_continue("  front\n");
         }
         frontmesh_vertices.push_back(out_vtx_a);
         frontmesh_vertices.push_back(out_vtx_b);
@@ -664,7 +663,8 @@ void SubMeshClipper::clipPolygon(merged_poly_const_ptr_t input_poly) { //
 
   //////////////////////////////////////////////////////////////////////////////////////
 
-  if(_debug) logchan_clip->log("  frontmesh_vertices.size<%d>", frontmesh_vertices.size());
+  if (_debug)
+    logchan_clip->log("  frontmesh_vertices.size<%d>", frontmesh_vertices.size());
   vertex_vect_t frontmesh_vertices_nonrepeat;
   vertex_ptr_t prev = nullptr;
   for (int iv = 0; iv < frontmesh_vertices.size(); iv++) {
@@ -675,11 +675,11 @@ void SubMeshClipper::clipPolygon(merged_poly_const_ptr_t input_poly) { //
     prev = v0;
   }
 
-  if(_debug){
+  if (_debug) {
     logchan_clip->log("  frontmesh_vertices_nonrepeat.size<%d>", frontmesh_vertices_nonrepeat.size());
     for (auto item : frontmesh_vertices_nonrepeat) {
       if (match_poly)
-      logchan_clip->log("  frontmesh_vertices_nonrepeat<%d>", item->_poolindex);
+        logchan_clip->log("  frontmesh_vertices_nonrepeat<%d>", item->_poolindex);
     }
   }
 
@@ -687,10 +687,6 @@ void SubMeshClipper::clipPolygon(merged_poly_const_ptr_t input_poly) { //
   if (frontmesh_vertices_nonrepeat.size() >= 3) {
     _outsubmesh.mergePoly(frontmesh_vertices_nonrepeat);
   }
-
-  //////////////////////////////////////////////////////////////////////////////////////
-
-  // out_submesh.mergePoly(frontmesh_vertices);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -853,20 +849,8 @@ void SubMeshClipper::closeSubMesh() {
     dvec3 centroid = _outsubmesh.centerOfVertices();
 
     auto do_chain = [&](edge_chain_ptr_t chain) { //
-      auto v0  = chain->_edges[0]->_vertexA;
-      auto v1  = chain->_edges[0]->_vertexB;
-      auto v2  = chain->_edges[1]->_vertexB;
-      auto d01 = (v1->mPos - v0->mPos).normalized();
-      auto d12 = (v2->mPos - v1->mPos).normalized();
-      auto dc  = d01.normalized().crossWith(d12.normalized());
-
       auto ordered = chain->orderedVertices();
-      Polygon p1(ordered);
-      auto vn0 = (ordered[0]->mPos - centroid).normalized();
-      if (p1.computeNormal().dotWith(vn0) < 0) {
-        // p1.reverse();
-      }
-      _outsubmesh.mergePoly(p1);
+      _outsubmesh.mergePoly(Polygon(ordered));
 
     };
 
