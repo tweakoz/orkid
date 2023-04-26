@@ -26,7 +26,7 @@ class SceneGraphApp(BasicUiCamSgApp):
     tp = dplane(nn,0)
     d = tp.distanceToPoint(o) * -1.0
     new_plane = dplane(nn,d)
-    return clipMeshWithPlane(inpsubmesh,new_plane,debug=True)
+    return clipMeshWithPlane(inpsubmesh,new_plane,debug=False).prune()
   ##############################################
   def onGpuInit(self,ctx):
     super().onGpuInit(ctx)
@@ -47,15 +47,35 @@ class SceneGraphApp(BasicUiCamSgApp):
 
     cub_orkmesh = meshutil.Mesh()
     cub_orkmesh.readFromWavefrontObj(cub_path)
-    cub_submesh = cub_orkmesh.submesh_list[0]
+    cub_submesh = stripSubmesh(cub_orkmesh.submesh_list[0])
+    self.cube_submesh = cub_submesh
+    self.bary_prim = meshutil.RigidPrimitive(cub_submesh,ctx)
+    self.bary_sgnode = self.bary_prim.createNode("bevel",self.layer1,solid_wire_pipeline)
+    self.bary_sgnode.enabled = True
 
-    cub_submesh = self.cutWithPlane(cub_submesh,dvec3(0,1,1),dvec3(0,0,0))
+  ##############################################
+  def onUpdate(self,updevent):
+    super().onUpdate(updevent)
+  ##############################################
+  def onGpuIter(self):
+    super().onGpuIter()
+
+    phi = 0.5+math.sin(self.abstime*3.0)*0.5
+    beveld = 1.5+phi*0.5
+    cub_submesh = self.cutWithPlane(self.cube_submesh,dvec3(0,1,1),dvec3(0,-beveld,0))
+    cub_submesh = self.cutWithPlane(cub_submesh,dvec3(0,-1,-1),dvec3(0,beveld,0))
+    cub_submesh = self.cutWithPlane(cub_submesh,dvec3(0,1,-1),dvec3(0,-beveld,0))
+    cub_submesh = self.cutWithPlane(cub_submesh,dvec3(0,-1,1),dvec3(0,beveld,0))
+
+    cub_submesh = self.cutWithPlane(cub_submesh,dvec3(1,1,0),dvec3(0,-beveld,0))
+    cub_submesh = self.cutWithPlane(cub_submesh,dvec3(-1,-1,0),dvec3(0,beveld,0))
+    cub_submesh = self.cutWithPlane(cub_submesh,dvec3(-1,1,0),dvec3(0,-beveld,0))
+    cub_submesh = self.cutWithPlane(cub_submesh,dvec3(1,-1,0),dvec3(0,beveld,0))
 
     self.barysubmesh = cub_submesh.withBarycentricUVs()
+    self.bary_prim.fromSubMesh(self.barysubmesh,self.context)
 
-    self.bary_prim = meshutil.RigidPrimitive(self.barysubmesh,ctx)
-    self.bary_sgnode = self.bary_prim.createNode("union",self.layer1,solid_wire_pipeline)
-    self.bary_sgnode.enabled = True
+
 
 ###############################################################################
 sgapp = SceneGraphApp()
