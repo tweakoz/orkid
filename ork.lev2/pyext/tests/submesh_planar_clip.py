@@ -121,11 +121,11 @@ class Fragments:
     print(self.slicing_plane)
     self.clipped_front = self.stripped.clippedWithPlane( plane=self.slicing_plane,
                                                          flip_orientation = self.flip_orientation,
-                                                         close_mesh = True )
+                                                         close_mesh = True ).prune()
 
     self.clipped_back = self.stripped.clippedWithPlane( plane=self.inv_slicing_plane,
                                                         flip_orientation = self.flip_orientation,
-                                                        close_mesh = True )
+                                                        close_mesh = True ).prune()
 
     self.front = self.clipped_front.withBarycentricUVs()
     self.back = self.clipped_back.withBarycentricUVs()
