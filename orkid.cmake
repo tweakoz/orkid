@@ -33,9 +33,6 @@ function(orkid_find_python)
 
   find_package(Python3 REQUIRED COMPONENTS Interpreter Development)
   find_package(pybind11 REQUIRED)
-  find_package(BLAS REQUIRED)
-
-  set(ORK_BLAS_LIBRARIES ${BLAS_LIBRARIES} ${LAPACK_LIBRARIE} PARENT_SCOPE)
 
   #################################
   # export found python variables
@@ -49,14 +46,13 @@ function(orkid_find_python)
   set(Python3_LINK_OPTIONS ${Python3_LINK_OPTIONS} PARENT_SCOPE)
   set(Python3_LIBRARIES ${Python3_LIBRARIES} PARENT_SCOPE)
 
-
-  #error()
-
   #################################
 
 endfunction()
 
 orkid_find_python()
+
+find_package(ObtOpenBlas REQUIRED)
 
 ################################################################################
 # enable python for a given target
@@ -358,16 +354,18 @@ function(ork_std_target_opts_linker the_target)
 
   IF(${APPLE})
     target_link_directories(${the_target} PUBLIC ${HOMEBREW_PREFIX}/lib )
-    target_link_libraries(${the_target} LINK_PRIVATE m pthread  ${ORK_BLAS_LIBRARIES} )
+    target_link_libraries(${the_target} LINK_PRIVATE m pthread )
     target_link_libraries(${the_target} LINK_PRIVATE
           "-framework AppKit"
           "-framework IOKit"
     )
     target_link_libraries(${the_target} LINK_PRIVATE objc ${BOOST_LIBS} )
   ELSEIF(${UNIX})
-    target_link_libraries(${the_target} LINK_PRIVATE rt dl pthread ${BOOST_LIBS}  ${ORK_BLAS_LIBRARIES} )
+    target_link_libraries(${the_target} LINK_PRIVATE rt dl pthread ${BOOST_LIBS} )
   ENDIF()
-  
+
+  target_link_libraries(${the_target} LINK_PUBLIC ${ObtOpenBlas_LIBRARIES} )
+
   endfunction()
 
 #############################################################################################################

@@ -657,7 +657,10 @@ dplane3 Polygon::computePlane() const{
   auto v0 = _vertices[0];
   auto v1 = _vertices[1];
   auto v2 = _vertices[2];
-  return dplane3(v0->mPos,v1->mPos,v2->mPos);
+  auto d10 = (v1->mPos - v0->mPos).normalized();
+  auto d20 = (v2->mPos - v1->mPos).normalized();
+  auto n = d10.crossWith(d20);
+  return dplane3(n,v0->mPos);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

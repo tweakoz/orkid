@@ -24,7 +24,7 @@ void pyinit_meshutil_submesh(py::module& module_meshutil) {
           .def_static(
               "createFromFrustum",
               [](dfrustum_ptr_t frus, py::kwargs kwargs) -> submesh_ptr_t { //
-                bool projective_rect_uv   = false;
+                bool projective_rect_uv = false;
                 if (kwargs) {
                   for (auto item : kwargs) {
                     auto key = py::cast<std::string>(item.first);
@@ -82,12 +82,12 @@ void pyinit_meshutil_submesh(py::module& module_meshutil) {
               "name",
               [](submesh_ptr_t submesh) -> std::string { return submesh->name; },
               [](submesh_ptr_t submesh, std::string n) { return submesh->name = n; })
+          .def_property_readonly("hashed", [](submesh_ptr_t submesh) -> uint64_t { return submesh->hash(); })
           .def_property_readonly(
-              "hashed",
-              [](submesh_ptr_t submesh) -> uint64_t {
-                return submesh->hash();
+              "isConvexHull",
+              [](submesh_ptr_t submesh) -> bool { //
+                return submesh->isConvexHull();
               })
-          .def_property_readonly("isConvexHull", [](submesh_ptr_t submesh) -> bool { return submesh->isConvexHull(); })
           .def_property_readonly(
               "vertices",
               [](submesh_ptr_t submesh) -> py::list {
@@ -95,7 +95,11 @@ void pyinit_meshutil_submesh(py::module& module_meshutil) {
                 submesh->visitAllVertices([&](vertex_ptr_t v) { pyl.append(v); });
                 return pyl;
               })
-          .def_property_readonly("as_polygroup", [](submesh_ptr_t submesh) -> polygroup_ptr_t { return submesh->asPolyGroup(); })
+          .def_property_readonly(
+              "as_polygroup",
+              [](submesh_ptr_t submesh) -> polygroup_ptr_t { //
+                return submesh->asPolyGroup();
+              })
           .def_property_readonly(
               "polys",
               [](submesh_ptr_t submesh) -> py::list {
@@ -113,20 +117,22 @@ void pyinit_meshutil_submesh(py::module& module_meshutil) {
                 }
                 return pyl;
               })
-          .def_property_readonly("convexVolume", [](submesh_ptr_t submesh) -> float { return submesh->convexVolume(); })
+          .def_property_readonly(
+              "convexVolume",
+              [](submesh_ptr_t submesh) -> float { //
+                return submesh->convexVolume();
+              })
+          .def_property_readonly(
+              "convexWindingOrder",
+              [](submesh_ptr_t submesh) -> std::string { //
+                return submeshConvexCheckWindingOrder(*submesh);
+              })
+
 #if defined(ENABLE_IGL)
           .def("igl_test", [](submesh_ptr_t submesh) { return submesh->igl_test(); })
 #endif //#if defined(ENABLE_IGL)
-          .def(
-              "dumpPolys",
-              [](submesh_ptr_t submesh, std::string hdr) {
-                submesh->dumpPolys(hdr);
-              })
-          .def(
-              "clearPolys",
-              [](submesh_ptr_t submesh) {
-                submesh->clearPolys();
-              })
+          .def("dumpPolys", [](submesh_ptr_t submesh, std::string hdr) { submesh->dumpPolys(hdr); })
+          .def("clearPolys", [](submesh_ptr_t submesh) { submesh->clearPolys(); })
           .def(
               "copy",
               [](submesh_constptr_t inpsubmesh, py::kwargs kwargs) -> submesh_ptr_t {
@@ -154,10 +160,11 @@ void pyinit_meshutil_submesh(py::module& module_meshutil) {
           .def(
               "positionsOnly",
               [](submesh_constptr_t inpsubmesh, py::kwargs kwargs) -> submesh_ptr_t {
-                submesh_ptr_t rval      = std::make_shared<submesh>();
+                submesh_ptr_t rval = std::make_shared<submesh>();
                 inpsubmesh->copy(*rval, false, false, false);
                 return rval;
-              })          .def(
+              })
+          .def(
               "convexDecomposition",
               [](submesh_constptr_t inpsubmesh) -> py::list {
                 py::list pyl;
@@ -226,7 +233,7 @@ void pyinit_meshutil_submesh(py::module& module_meshutil) {
                 for (auto item : kwargs) {
                   auto key = py::cast<std::string>(item.first);
                   if (key == "plane") {
-                    as_dplane= py::cast<dplane3>(item.second);
+                    as_dplane = py::cast<dplane3>(item.second);
                   } else {
                     OrkAssert(false);
                   }
@@ -244,11 +251,11 @@ void pyinit_meshutil_submesh(py::module& module_meshutil) {
               [](submesh_constptr_t inpsubmesh, py::kwargs kwargs) -> submesh_ptr_t {
                 submesh_ptr_t res_front = std::make_shared<submesh>();
                 res_front->name         = inpsubmesh->name + ".front";
-                
+
                 dplane3 as_dplane;
                 bool close_mesh       = false;
                 bool flip_orientation = false;
-                bool debug = false;
+                bool debug            = false;
 
                 for (auto item : kwargs) {
                   auto key = py::cast<std::string>(item.first);
@@ -257,9 +264,9 @@ void pyinit_meshutil_submesh(py::module& module_meshutil) {
                   } else if (key == "close_mesh") {
                     close_mesh = py::cast<bool>(item.second);
                   } else if (key == "plane") {
-                    as_dplane= py::cast<dplane3>(item.second);
+                    as_dplane = py::cast<dplane3>(item.second);
                   } else if (key == "debug") {
-                    debug= py::cast<bool>(item.second);
+                    debug = py::cast<bool>(item.second);
                   } else {
                     OrkAssert(false);
                   }
@@ -267,7 +274,7 @@ void pyinit_meshutil_submesh(py::module& module_meshutil) {
 
                 submeshClipWithPlane(
                     *inpsubmesh,      //
-                    as_dplane,           //
+                    as_dplane,        //
                     close_mesh,       //
                     flip_orientation, //
                     *res_front,       //
@@ -340,13 +347,15 @@ void pyinit_meshutil_submesh(py::module& module_meshutil) {
 #endif //#if defined(ENABLE_IGL)
           .def("numPolys", [](submesh_constptr_t submesh, int numsides) -> int { return submesh->numPolys(numsides); })
           .def("numVertices", [](submesh_constptr_t submesh) -> int { return submesh->numVertices(); })
-          .def("edgesForPoly", [](submesh_constptr_t submesh, merged_poly_ptr_t p) -> py::list { //
-              py::list rval;
-              auto edges = submesh->edgesForPoly(p);
-              for( auto e : edges )
-                rval.append(e);
-              return rval;
-          })
+          .def(
+              "edgesForPoly",
+              [](submesh_constptr_t submesh, merged_poly_ptr_t p) -> py::list { //
+                py::list rval;
+                auto edges = submesh->edgesForPoly(p);
+                for (auto e : edges)
+                  rval.append(e);
+                return rval;
+              })
           .def(
               "writeWavefrontObj",
               [](submesh_constptr_t submesh, const std::string& outpath) { return submeshWriteObj(*submesh, outpath); })
@@ -452,7 +461,7 @@ void pyinit_meshutil_submesh(py::module& module_meshutil) {
                                 auto polys_by_plane = pset->splitByPlane();
                                 for (auto item : polys_by_plane) {
                                   uint64_t key                  = item.first;
-                                  polygroup_ptr_t val             = item.second;
+                                  polygroup_ptr_t val           = item.second;
                                   rval[type_codec->encode(key)] = type_codec->encode(val);
                                 }
                                 OrkAssert(rval.size() > 0);

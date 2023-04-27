@@ -458,7 +458,12 @@ bool submesh::isConvexHull() const {
   int back  = 0;
   visitAllPolys([&](merged_poly_const_ptr_t p1) {
     auto pl = p1->computePlane();
-    //printf( "plane<%f %f %f> <%f>\n", p1.get(), pl.n.x, pl.n.y, pl.n.z, pl.d );
+    printf( "poly [ " );
+    for( int i=0; i<p1->numVertices(); i++ ){
+      printf( "%d ", p1->vertexID(i) );
+    }
+    printf( "] ");
+    printf( "plane<%f %f %f> <%f>\n", p1.get(), pl.n.x, pl.n.y, pl.n.z, pl.d );
     visitAllPolys([&](merged_poly_const_ptr_t p2) {
       if (p1 != p2) {
         p2->visitVertices([&](vertex_const_ptr_t v) {
@@ -469,8 +474,10 @@ bool submesh::isConvexHull() const {
               break;
             case PointClassification::BACK:{
               back++;
-              //double distance = pl.pointDistance(v->mPos);
-              //auto d =FormatString( "vd:distance<%.e>", 10, distance );
+              double distance = pl.pointDistance(v->mPos);
+              int vindex = v->_poolindex;
+              auto d =FormatString( "vd<%d> distance<%.e>", vindex, 10, distance );
+              printf( "%s\n", d.c_str());
               //v->dump(d);
               break;
             }
@@ -481,7 +488,7 @@ bool submesh::isConvexHull() const {
     //bool is_convex = (front > 0) and (back == 0);
     //OrkAssert(is_convex);
   });
-   //printf( "front<%d> back<%d>\n", front, back );
+   printf( "front<%d> back<%d>\n", front, back );
   bool is_convex = (front > 0) and (back == 0);
   //OrkAssert(is_convex);
   return is_convex;

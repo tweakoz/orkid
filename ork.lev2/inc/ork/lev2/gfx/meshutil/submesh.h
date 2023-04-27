@@ -359,6 +359,8 @@ void submeshConvexHull(const submesh& inpsubmesh, submesh& outsmesh, int steps =
 void submeshFixWindingOrder(const submesh& inpsubmesh, submesh& outsmesh, bool inside_out);
 
 void submeshWriteObj(const submesh& inpsubmesh, const file::Path& BasePath);
+std::string submeshConvexCheckWindingOrder(const submesh& inpsubmesh);
+
 // void SubDivQuads(submesh* poutsmesh) const;
 // void SubDivTriangles(submesh* poutsmesh) const;
 // void SubDiv(submesh* poutsmesh) const;

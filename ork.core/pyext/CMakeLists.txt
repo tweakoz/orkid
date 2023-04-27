@@ -23,7 +23,8 @@ ADD_LIBRARY( _core SHARED ${SOURCES} )
 ork_std_target_opts(_core)
 
 target_include_directories (_core PRIVATE ${INCD} )
-target_link_libraries(_core LINK_PRIVATE ork_core)
+target_link_libraries(_core LINK_PUBLIC ork_core)
+target_link_libraries(_core LINK_PUBLIC ${ObtOpenBlas_LIBRARY} )
 
 install(TARGETS _core LIBRARY DESTINATION ${INSTALL_DEST} )
 

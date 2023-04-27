@@ -11,6 +11,8 @@ set(CMAKE_BUILD_WITH_INSTALL_RPATH ON)
 list(PREPEND CMAKE_MODULE_PATH $ENV{OBT_STAGE}/lib/cmake)
 list(PREPEND CMAKE_MODULE_PATH $ENV{ORKID_WORKSPACE_DIR} )
 
+set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/find_modules/" ${CMAKE_MODULE_PATH} )
+
 ##############################
 
 include(orkid)
