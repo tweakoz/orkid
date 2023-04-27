@@ -116,21 +116,26 @@ template <> Matrix44<double> Matrix44<double>::eigenvectors() const {
                               this_data, lda, //
                               wr.data(), wi.data(), vl.data(), //
                               ldvl, vr.data(), ldvr);
-
   Matrix44<double> rval;
   if(status==0){
-    for( int i=0; i<4; i++ )
-      for( int j=0; j<4; j++ )
-        rval.setElemXY(i,j,vr[j*4+i]);
+
+    for( int i=0; i<4; i++ ){
+      double norm = std::sqrt(vr[0+i]*vr[0+i] 
+                            + vr[4+i]*vr[4+i] 
+                            + vr[8+i]*vr[8+i] 
+                            + vr[12+i]*vr[12+i]);
+      for( int j=0; j<4; j++ ){
+        rval.setElemXY(i,j,vr[i*4+j]/norm);
+
+      }
+    }
   }
   else{
     for( int i=0; i<4; i++ )
       for( int j=0; j<4; j++ )
         rval.setElemXY(i,j,0);
   }
-
   return rval;
-
 }
 
 template <> Matrix44<float> Matrix44<float>::eigenvectors() const {
@@ -148,9 +153,15 @@ template <> Matrix44<float> Matrix44<float>::eigenvectors() const {
                               ldvl, vr.data(), ldvr);
   Matrix44<float> rval;
   if(status==0){
-    for( int i=0; i<4; i++ )
-      for( int j=0; j<4; j++ )
-        rval.setElemXY(i,j,vr[i*4+j]);
+    for( int i=0; i<4; i++ ){
+      double norm = std::sqrt(vr[0+i]*vr[0+i] 
+                            + vr[4+i]*vr[4+i] 
+                            + vr[8+i]*vr[8+i] 
+                            + vr[12+i]*vr[12+i]);
+      for( int j=0; j<4; j++ ){
+        rval.setElemXY(i,j,vr[i*4+j]/norm); 
+      }
+    }
   }
   else{
     for( int i=0; i<4; i++ )
