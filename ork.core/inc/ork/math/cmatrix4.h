@@ -86,6 +86,7 @@ template <typename T> struct Matrix44 final
   std::string dump(Vector3<T> color) const;
   std::string dump4x3(Vector3<T> color) const;
   std::string dump4x3cn(bool do_axis_angle=false) const;
+  std::string dump4x4cn() const;
   std::string dump() const;
   std::string dump4x3() const;
 
@@ -158,6 +159,7 @@ template <typename T> struct Matrix44 final
   static Matrix44<T> multiply_ltor(const Matrix44<T>& a,const Matrix44<T>& b, const Matrix44<T>& c);
   static Matrix44<T> multiply_ltor(const Matrix44<T>& a,const Matrix44<T>& b, const Matrix44<T>& c, const Matrix44<T>& d);
   static Matrix44<T> multiply_ltor(const Matrix44<T>& a,const Matrix44<T>& b, const Matrix44<T>& c,const Matrix44<T>& d, const Matrix44<T>& e );
+  static Matrix44<T> fromOuterProduct(const Vector4<T>& c, const Vector4<T>& r);
 
   ////////////////////////////////////
 
@@ -255,6 +257,12 @@ template <typename T> struct Matrix44 final
     return (T*)&as_base[0][0];
   }
 
+  ///////////////////////////////////////////////////////////////////////////////
+
+  T determinant() const;
+  T determinant3x3() const;
+  Vector4<T> eigenvalues() const;
+  Matrix44<T> eigenvectors() const;
 
   ///////////////////////////////////////////////////////////////////////////////
 };

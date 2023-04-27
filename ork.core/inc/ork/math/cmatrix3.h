@@ -53,6 +53,9 @@ template <typename T> struct Matrix33 final
   // converters
   //////////////////////////////////////////////////////
 
+  base_t asGlmMat3() const {
+    return base_t(*this);
+  }
   base44_t asGlmMat4() const {
     return base44_t(*this);
   }

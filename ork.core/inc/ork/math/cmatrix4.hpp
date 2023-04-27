@@ -24,7 +24,7 @@
 
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/euler_angles.hpp>
-#include <glm/gtx/matrix_decompose.inl> 
+#include <glm/gtx/matrix_decompose.inl>
 
 namespace ork {
 
@@ -32,61 +32,66 @@ template <typename T> const Matrix44<T> Matrix44<T>::Identity() {
   return Matrix44<T>();
 }
 
-template <typename T>
-Matrix44<T>::Matrix44(const kln::translator& t){
+template <typename T> Matrix44<T>::Matrix44(const kln::translator& t) {
   const auto scalar = T(-2);
-  setTranslation(t.e01()*scalar,t.e02()*scalar,t.e03()*scalar);
+  setTranslation(t.e01() * scalar, t.e02() * scalar, t.e03() * scalar);
 }
 
-template <typename T>
-Matrix44<T>::Matrix44(const kln::rotor& r){
+template <typename T> Matrix44<T>::Matrix44(const kln::rotor& r) {
   auto q = Quaternion<T>(r);
   this->fromQuaternion(q);
 }
 
-template <typename T>
-Matrix44<T>::Matrix44(const kln::motor& m){
+template <typename T> Matrix44<T>::Matrix44(const kln::motor& m) {
   const auto& M = m.as_mat4x4();
-  auto dest = asArray();
-  for( int i=0; i<16; i++ ){
+  auto dest     = asArray();
+  for (int i = 0; i < 16; i++) {
     dest[i] = M.data[i];
   }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> 
-Matrix44<T> Matrix44<T>::multiply_ltor(const Matrix44<T>& a,const Matrix44<T>& b){
+template <typename T> Matrix44<T> Matrix44<T>::multiply_ltor(const Matrix44<T>& a, const Matrix44<T>& b) {
   return b.multiply_rtol(a);
 }
 
-template <typename T> 
-Matrix44<T> Matrix44<T>::multiply_ltor(const Matrix44<T>& a,const Matrix44<T>& b, const Matrix44<T>& c){
+template <typename T> Matrix44<T> Matrix44<T>::multiply_ltor(const Matrix44<T>& a, const Matrix44<T>& b, const Matrix44<T>& c) {
   return c.multiply_rtol(b.multiply_rtol(a));
 }
 
-template <typename T> 
-Matrix44<T> Matrix44<T>::multiply_ltor(const Matrix44<T>& a,const Matrix44<T>& b, const Matrix44<T>& c, const Matrix44<T>& d){
+template <typename T>
+Matrix44<T> Matrix44<T>::multiply_ltor(const Matrix44<T>& a, const Matrix44<T>& b, const Matrix44<T>& c, const Matrix44<T>& d) {
   return d.multiply_rtol(c.multiply_rtol(b.multiply_rtol(a)));
 }
 
-template <typename T> 
-Matrix44<T> Matrix44<T>::multiply_ltor(const Matrix44<T>& a,const Matrix44<T>& b, const Matrix44<T>& c,const Matrix44<T>& d, const Matrix44<T>& e ){
+template <typename T>
+Matrix44<T> Matrix44<T>::multiply_ltor(
+    const Matrix44<T>& a,
+    const Matrix44<T>& b,
+    const Matrix44<T>& c,
+    const Matrix44<T>& d,
+    const Matrix44<T>& e) {
   return e.multiply_rtol(d.multiply_rtol(c.multiply_rtol(b.multiply_rtol(a))));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> 
-  void Matrix44<T>::toEulerXYZ(T& ex, T& ey, T& ez) const {
-    const base_t& as_base = *this;
-    glm::extractEulerAngleXYZ(as_base,ex,ey,ez);
-  }
-template <typename T> 
-  void Matrix44<T>::fromEulerXYZ(T ex, T ey, T ez) {
-    base_t& as_base = *this;
-    as_base = glm::eulerAngleXYZ(ex,ey,ez);
-  }
+template <typename T> Matrix44<T> Matrix44<T>::fromOuterProduct(const Vector4<T>& c, const Vector4<T>& r) {
+  auto glm_op = glm::outerProduct(c.asGlmVec4(), r.asGlmVec4());
+  return Matrix44<T>(glm_op);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <typename T> void Matrix44<T>::toEulerXYZ(T& ex, T& ey, T& ez) const {
+  const base_t& as_base = *this;
+  glm::extractEulerAngleXYZ(as_base, ex, ey, ez);
+}
+template <typename T> void Matrix44<T>::fromEulerXYZ(T ex, T ey, T ez) {
+  base_t& as_base = *this;
+  as_base         = glm::eulerAngleXYZ(ex, ey, ez);
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -99,7 +104,7 @@ template <typename T> Matrix33<T> Matrix44<T>::rotMatrix33(void) const {
   auto xnormal = xNormal().normalized();
   auto ynormal = yNormal().normalized();
   auto znormal = zNormal().normalized();
-  rval.fromNormalVectors(xnormal,ynormal,znormal);
+  rval.fromNormalVectors(xnormal, ynormal, znormal);
   return rval;
 }
 template <typename T> Matrix44<T> Matrix44<T>::rotMatrix44(void) const {
@@ -107,7 +112,7 @@ template <typename T> Matrix44<T> Matrix44<T>::rotMatrix44(void) const {
   auto xnormal = xNormal().normalized();
   auto ynormal = yNormal().normalized();
   auto znormal = zNormal().normalized();
-  rval.fromNormalVectors(xnormal,ynormal,znormal);
+  rval.fromNormalVectors(xnormal, ynormal, znormal);
   return rval;
 }
 
@@ -115,7 +120,7 @@ template <typename T> Matrix44<T> Matrix44<T>::rotMatrix44(void) const {
 
 template <typename T> void Matrix44<T>::setToIdentity() {
   base_t& as_base = *this;
-  as_base = base_t(T(1));
+  as_base         = base_t(T(1));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -128,11 +133,11 @@ template <typename T> void Matrix44<T>::dump(std::string name) const {
   Vector4<T> col2 = column(2);
   Vector4<T> col3 = column(3);
 
-  orkprintf("   |   col0  |   col1  |   col2  |   col3  |\n" );
-  orkprintf("   | %+0.4f | %+0.4f | %+0.4f | %+0.4f |\n", col0.x, col1.x, col2.x, col3.x );
-  orkprintf("   | %+0.4f | %+0.4f | %+0.4f | %+0.4f |\n", col0.y, col1.y, col2.y, col3.y );
-  orkprintf("   | %+0.4f | %+0.4f | %+0.4f | %+0.4f |\n", col0.z, col1.z, col2.z, col3.z );
-  orkprintf("   | %+0.4f | %+0.4f | %+0.4f | %+0.4f |\n", col0.w, col1.w, col2.w, col3.w );
+  orkprintf("   |   col0  |   col1  |   col2  |   col3  |\n");
+  orkprintf("   | %+0.4f | %+0.4f | %+0.4f | %+0.4f |\n", col0.x, col1.x, col2.x, col3.x);
+  orkprintf("   | %+0.4f | %+0.4f | %+0.4f | %+0.4f |\n", col0.y, col1.y, col2.y, col3.y);
+  orkprintf("   | %+0.4f | %+0.4f | %+0.4f | %+0.4f |\n", col0.z, col1.z, col2.z, col3.z);
+  orkprintf("   | %+0.4f | %+0.4f | %+0.4f | %+0.4f |\n", col0.w, col1.w, col2.w, col3.w);
 
   orkprintf("\n	");
 
@@ -156,7 +161,7 @@ template <typename T> std::string Matrix44<T>::dump(Vector3<T> color) const {
       //////////////////////////////////
       // round down small numbers
       //////////////////////////////////
-      float elem = elemXY(i,j);
+      float elem = elemXY(i, j);
       elem       = float(int(elem * 10000)) / 10000.0f;
       //////////////////////////////////
       rval += FormatString(" %+0.4g ", elem);
@@ -201,7 +206,7 @@ template <typename T> std::string Matrix44<T>::dump4x3(Vector3<T> color) const {
       //////////////////////////////////
       // round down small numbers
       //////////////////////////////////
-      float elem = elemXY(i,j);
+      float elem = elemXY(i, j);
       elem       = float(int(elem * 10000)) / 10000.0f;
       //////////////////////////////////
       rval += FormatString(" %+0.4g ", elem);
@@ -249,24 +254,56 @@ template <typename T> std::string Matrix44<T>::dump4x3cn(bool do_axis_angle) con
       //////////////////////////////////
       // round down small numbers
       //////////////////////////////////
-      float elem = elemXY(i,j);
+      float elem = elemXY(i, j);
       elem       = float(int(elem * 10000)) / 10000.0f;
       //////////////////////////////////
       rval += ork::deco::format(fcol, " %+0.4g ", elem);
     }
     rval += ork::deco::decorate(brace_color, "]");
   }
-  if(do_axis_angle){
+  if (do_axis_angle) {
     Quaternion<T> q(*this);
     // auto rot = q.toEuler();
-    auto rot = q.toAxisAngle();
+    auto rot  = q.toAxisAngle();
     float ang = round(rot.w * RTOD);
-    if(ang==0.0f){
-    }
-    else{
+    if (ang == 0.0f) {
+    } else {
       rval += ork::deco::format(fvec3(0.8, 0.8, 0.8), "  axis<%g %g %g> ang<%g>", rot.x, rot.y, rot.z, ang);
     }
     // rval += ork::deco::format(fvec3(0.8, 0.8, 0.8), "  quat<%g %g %g %g>", q.x, q.y, q.z, q.w);
+  }
+  return rval;
+}
+template <typename T> std::string Matrix44<T>::dump4x4cn() const {
+  std::string rval;
+  auto brace_color = fvec3(0.7, 0.7, 0.7);
+  for (int i = 0; i < 4; i++) {
+    rval += ork::deco::decorate(brace_color, "[");
+    fvec3 fcol;
+    switch (i) {
+      case 0:
+        fcol = fvec3(1, .5, .5);
+        break;
+      case 1:
+        fcol = fvec3(.5, 1, .5);
+        break;
+      case 2:
+        fcol = fvec3(.5, .5, 1);
+        break;
+      case 3:
+        fcol = fvec3(0.7, 0.7, 0.7);
+        break;
+    }
+    for (int j = 0; j < 4; j++) {
+      //////////////////////////////////
+      // round down small numbers
+      //////////////////////////////////
+      float elem = elemXY(i, j);
+      elem       = float(int(elem * 10000)) / 10000.0f;
+      //////////////////////////////////
+      rval += ork::deco::format(fcol, " %+0.4g ", elem);
+    }
+    rval += ork::deco::decorate(brace_color, "]");
   }
   return rval;
 }
@@ -275,7 +312,7 @@ template <typename T> std::string Matrix44<T>::dump() const {
   for (int i = 0; i < 4; i++) {
     rval += "[";
     for (int j = 0; j < 4; j++) {
-      rval += FormatString(" %+0.4g ", elemXY(i,j));
+      rval += FormatString(" %+0.4g ", elemXY(i, j));
     }
     rval += "] ";
   }
@@ -293,7 +330,7 @@ template <typename T> std::string Matrix44<T>::dump4x3() const {
   for (int i = 0; i < 4; i++) {
     rval += "[";
     for (int j = 0; j < 3; j++) {
-      rval += FormatString(" %+0.4g ", elemXY(i,j));
+      rval += FormatString(" %+0.4g ", elemXY(i, j));
     }
     rval += "] ";
   }
@@ -309,19 +346,16 @@ template <typename T> std::string Matrix44<T>::dump4x3() const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> 
-Matrix44<T> Matrix44<T>::translationOnly() const {
+template <typename T> Matrix44<T> Matrix44<T>::translationOnly() const {
   Matrix44<T> rval = *this;
-  rval.setColumn(0, Vector4<T>(1,0,0,0));
-  rval.setColumn(1, Vector4<T>(0,1,0,0));
-  rval.setColumn(2, Vector4<T>(0,0,1,0));
+  rval.setColumn(0, Vector4<T>(1, 0, 0, 0));
+  rval.setColumn(1, Vector4<T>(0, 1, 0, 0));
+  rval.setColumn(2, Vector4<T>(0, 0, 1, 0));
   return rval;
-
 }
-template <typename T> 
-Matrix44<T> Matrix44<T>::rotScaleOnly() const{
+template <typename T> Matrix44<T> Matrix44<T>::rotScaleOnly() const {
   Matrix44<T> rval = *this;
-  rval.setColumn(3, Vector4<T>(0,0,0,1));
+  rval.setColumn(3, Vector4<T>(0, 0, 0, 1));
   return rval;
 }
 
@@ -395,27 +429,27 @@ template <typename T> void Matrix44<T>::setTranslation(T _x, T _y, T _z) {
 //	set rotation explicitly
 
 template <typename T> void Matrix44<T>::setRotateX(T rad) {
-  auto ident = base_t(1);
+  auto ident      = base_t(1);
   base_t& as_base = *this;
-  as_base = glm::rotate(ident,rad,Vector3<T>(1,0,0));
+  as_base         = glm::rotate(ident, rad, Vector3<T>(1, 0, 0));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 //	set rotation explicitly
 
 template <typename T> void Matrix44<T>::setRotateY(T rad) {
-  auto ident = base_t(1);
+  auto ident      = base_t(1);
   base_t& as_base = *this;
-  as_base = glm::rotate(ident,rad,Vector3<T>(0,1,0));
+  as_base         = glm::rotate(ident, rad, Vector3<T>(0, 1, 0));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 //	set rotation explicitly
 
 template <typename T> void Matrix44<T>::setRotateZ(T rad) {
-  auto ident = base_t(1);
+  auto ident      = base_t(1);
   base_t& as_base = *this;
-  as_base = glm::rotate(ident,rad,Vector3<T>(0,0,1));
+  as_base         = glm::rotate(ident, rad, Vector3<T>(0, 0, 1));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -458,9 +492,9 @@ template <typename T> void Matrix44<T>::setScale(const Vector4<T>& vec) {
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T> void Matrix44<T>::setScale(T x, T y, T z) {
-  auto ident = base_t(1);
+  auto ident      = base_t(1);
   base_t& as_base = *this;
-  as_base = glm::scale(ident,Vector3<T>(x,y,z));
+  as_base         = glm::scale(ident, Vector3<T>(x, y, z));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -489,18 +523,18 @@ template <typename T> void Matrix44<T>::scale(T xscl, T yscl, T zscl) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void Matrix44<T>::setXY(const array44_t& val){
-  for( int i=0; i<4; i++ )
-    for( int j=0; j<4; j++ )
-      setElemXY(i,j,val[i][j]);
+template <typename T> void Matrix44<T>::setXY(const array44_t& val) {
+  for (int i = 0; i < 4; i++)
+    for (int j = 0; j < 4; j++)
+      setElemXY(i, j, val[i][j]);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void Matrix44<T>::setYX(const array44_t& val){
-  for( int i=0; i<4; i++ )
-    for( int j=0; j<4; j++ )
-      setElemXY(i,j,val[j][i]);
+template <typename T> void Matrix44<T>::setYX(const array44_t& val) {
+  for (int i = 0; i < 4; i++)
+    for (int j = 0; j < 4; j++)
+      setElemXY(i, j, val[j][i]);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -518,22 +552,22 @@ template <typename T> void Matrix44<T>::fromQuaternion(Quaternion<T> quat) {
   T yz = quat.y * quat.z;
   T xw = quat.x * quat.w;
 
-  setElemXY(0,0, T(1) - (T(2) * (yy + zz)));
-  setElemXY(0,1, T(2) * (xy + zw));
-  setElemXY(0,2, T(2) * (zx - yw));
-  setElemXY(0,3, T(0));
-  setElemXY(1,0, T(2) * (xy - zw));
-  setElemXY(1,1, T(1) - (T(2) * (zz + xx)));
-  setElemXY(1,2, T(2) * (yz + xw));
-  setElemXY(1,3, T(0));
-  setElemXY(2,0, T(2) * (zx + yw));
-  setElemXY(2,1, T(2) * (yz - xw));
-  setElemXY(2,2, T(1) - (T(2) * (yy + xx)));
-  setElemXY(2,3, T(0));
-  setElemXY(3,0, T(0));
-  setElemXY(3,1, T(0));
-  setElemXY(3,2, T(0));
-  setElemXY(3,3, T(1));
+  setElemXY(0, 0, T(1) - (T(2) * (yy + zz)));
+  setElemXY(0, 1, T(2) * (xy + zw));
+  setElemXY(0, 2, T(2) * (zx - yw));
+  setElemXY(0, 3, T(0));
+  setElemXY(1, 0, T(2) * (xy - zw));
+  setElemXY(1, 1, T(1) - (T(2) * (zz + xx)));
+  setElemXY(1, 2, T(2) * (yz + xw));
+  setElemXY(1, 3, T(0));
+  setElemXY(2, 0, T(2) * (zx + yw));
+  setElemXY(2, 1, T(2) * (yz - xw));
+  setElemXY(2, 2, T(1) - (T(2) * (yy + xx)));
+  setElemXY(2, 3, T(0));
+  setElemXY(3, 0, T(0));
+  setElemXY(3, 1, T(0));
+  setElemXY(3, 2, T(0));
+  setElemXY(3, 3, T(1));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -556,22 +590,22 @@ template <typename T> void Matrix44<T>::createBillboard(Vector3<T> objectPos, Ve
   res = dir;
   res = res.crossWith(cross);
 
-  setElemXY(0,0, cross.x);
-  setElemXY(0,1, cross.y);
-  setElemXY(0,2, cross.z);
-  setElemXY(0,3, T(0));
-  setElemXY(1,0, res.x);
-  setElemXY(1,1, res.y);
-  setElemXY(1,2, res.z);
-  setElemXY(1,3, T(0));
-  setElemXY(2,0, dir.x);
-  setElemXY(2,1, dir.y);
-  setElemXY(2,2, dir.z);
-  setElemXY(2,3, T(0));
-  setElemXY(3,0, objectPos.x);
-  setElemXY(3,1, objectPos.y);
-  setElemXY(3,2, objectPos.z);
-  setElemXY(3,3, T(1));
+  setElemXY(0, 0, cross.x);
+  setElemXY(0, 1, cross.y);
+  setElemXY(0, 2, cross.z);
+  setElemXY(0, 3, T(0));
+  setElemXY(1, 0, res.x);
+  setElemXY(1, 1, res.y);
+  setElemXY(1, 2, res.z);
+  setElemXY(1, 3, T(0));
+  setElemXY(2, 0, dir.x);
+  setElemXY(2, 1, dir.y);
+  setElemXY(2, 2, dir.z);
+  setElemXY(2, 3, T(0));
+  setElemXY(3, 0, objectPos.x);
+  setElemXY(3, 1, objectPos.y);
+  setElemXY(3, 2, objectPos.z);
+  setElemXY(3, 3, T(1));
 }
 
 template <typename T> void Matrix44<T>::createBillboard2(Vector3<T> objectPos, Vector3<T> viewPos, Vector3<T> upVec) {
@@ -592,22 +626,22 @@ template <typename T> void Matrix44<T>::createBillboard2(Vector3<T> objectPos, V
   res = dir;
   res = res.crossWith(cross);
 
-  setElemXY(0,0, cross.x);
-  setElemXY(0,1, cross.y);
-  setElemXY(0,2, cross.z);
-  setElemXY(0,3, T(0));
-  setElemXY(1,0, res.x);
-  setElemXY(1,1, res.y);
-  setElemXY(1,2, res.z);
-  setElemXY(1,3, T(0));
-  setElemXY(2,0, dir.x);
-  setElemXY(2,1, dir.y);
-  setElemXY(2,2, dir.z);
-  setElemXY(2,3, T(0));
-  setElemXY(3,0, objectPos.x);
-  setElemXY(3,1, objectPos.y);
-  setElemXY(3,2, objectPos.z);
-  setElemXY(3,3, T(1));
+  setElemXY(0, 0, cross.x);
+  setElemXY(0, 1, cross.y);
+  setElemXY(0, 2, cross.z);
+  setElemXY(0, 3, T(0));
+  setElemXY(1, 0, res.x);
+  setElemXY(1, 1, res.y);
+  setElemXY(1, 2, res.z);
+  setElemXY(1, 3, T(0));
+  setElemXY(2, 0, dir.x);
+  setElemXY(2, 1, dir.y);
+  setElemXY(2, 2, dir.z);
+  setElemXY(2, 3, T(0));
+  setElemXY(3, 0, objectPos.x);
+  setElemXY(3, 1, objectPos.y);
+  setElemXY(3, 2, objectPos.z);
+  setElemXY(3, 3, T(1));
 }
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -616,7 +650,7 @@ template <typename T> Matrix44<T> Matrix44<T>::multiply_rtol(const Matrix44<T>& 
   base_t& result_as_base = result;
   const base_t& lhs_base = *this;
   const base_t& rhs_base = rhs;
-  result_as_base = lhs_base*rhs_base;
+  result_as_base         = lhs_base * rhs_base;
   return (result);
 }
 
@@ -624,9 +658,9 @@ template <typename T> Matrix44<T> Matrix44<T>::multiply_rtol(const Matrix44<T>& 
 
 template <typename T> Matrix44<T> Matrix44<T>::multiply(T scalar) const {
   Matrix44<T> result;
-  base_t& result_as_base = result;
+  base_t& result_as_base  = result;
   const base_t& a_as_base = *this;
-  result_as_base = a_as_base*scalar;
+  result_as_base          = a_as_base * scalar;
   return (result);
 }
 
@@ -645,7 +679,7 @@ template <typename T> void Matrix44<T>::correctionMatrix(const Matrix44<T>& from
 
   Matrix44<T> inv_from = from.inverse();
   inv_from.dump();
-  *this = multiply_ltor(inv_from,to); // B
+  *this = multiply_ltor(inv_from, to); // B
   this->dump();
 }
 
@@ -702,7 +736,7 @@ void Matrix44<T>::lerp(const Matrix44<T>& from, const Matrix44<T>& to, T par) //
   Matrix44<T> FromR;
   FromR.setRotation(from); // froms ROTATION
   Matrix44<T> ToR;
-  ToR.setRotation(to); // froms ROTATION
+  ToR.setRotation(to);     // froms ROTATION
 
   Quaternion<T> FromQ;
   FromQ.fromMatrix(FromR);
@@ -745,14 +779,14 @@ void Matrix44<T>::lerp(const Matrix44<T>& from, const Matrix44<T>& to, T par) //
 
   //////////////////
 
-  *this = multiply_ltor(FromR , matR , matT);
+  *this = multiply_ltor(FromR, matR, matT);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T> bool Matrix44<T>::decompose(Vector3<T>& pos, Quaternion<T>& qrot, T& Scale) const {
 
-  if( 0 ){
+  if (0) {
     using vec3_t = typename Vector3<T>::base_t;
     using vec4_t = typename Vector4<T>::base_t;
     using quat_t = typename Quaternion<T>::base_t;
@@ -761,59 +795,53 @@ template <typename T> bool Matrix44<T>::decompose(Vector3<T>& pos, Quaternion<T>
     vec4_t perspective;
     quat_t orientation;
 
-    bool OK = glm::decompose(asGlmMat4(),
-                             scale,
-                             orientation,
-                             trans,
-                             skew,
-                             perspective);
+    bool OK = glm::decompose(asGlmMat4(), scale, orientation, trans, skew, perspective);
 
-    if(OK){
-      pos = trans;
-      qrot = orientation;
+    if (OK) {
+      pos   = trans;
+      qrot  = orientation;
       Scale = scale.x;
     }
     return OK;
-  }
-  else {
-  pos = translation();
+  } else {
+    pos = translation();
 
-  Matrix44<T> rot = *this;
+    Matrix44<T> rot = *this;
 
-  T zero = T(0);
-  T one = T(1);
+    T zero = T(0);
+    T one  = T(1);
 
-  rot.setRow(3, zero,zero,zero,one); // set bottom row to 0,0,0,1
-  rot.setColumn(3, zero,zero,zero,one); // set right column to 0,0,0,1
+    rot.setRow(3, zero, zero, zero, one);    // set bottom row to 0,0,0,1
+    rot.setColumn(3, zero, zero, zero, one); // set right column to 0,0,0,1
 
-  Vector4<T> UnitVectorX(one, zero, zero, one);
-  Vector4<T> XFVectorX = UnitVectorX.transform(rot);
-  Vector4<T> UnitVectorY(zero, one, zero, one);
-  Vector4<T> XFVectorY = UnitVectorY.transform(rot);
-  Vector4<T> UnitVectorZ(zero, zero, one, one);
-  Vector4<T> XFVectorZ = UnitVectorZ.transform(rot);
+    Vector4<T> UnitVectorX(one, zero, zero, one);
+    Vector4<T> XFVectorX = UnitVectorX.transform(rot);
+    Vector4<T> UnitVectorY(zero, one, zero, one);
+    Vector4<T> XFVectorY = UnitVectorY.transform(rot);
+    Vector4<T> UnitVectorZ(zero, zero, one, one);
+    Vector4<T> XFVectorZ = UnitVectorZ.transform(rot);
 
-  T magx = XFVectorX.magnitude();
-  T magy = XFVectorY.magnitude();
-  T magz = XFVectorZ.magnitude();
+    T magx = XFVectorX.magnitude();
+    T magy = XFVectorY.magnitude();
+    T magz = XFVectorZ.magnitude();
 
-  T scale = T(0);
-  if(magx > scale)
-    scale = magx;
-  if(magy > scale)
-    scale = magy;
-  if(magz > scale)
-    scale = magz;
+    T scale = T(0);
+    if (magx > scale)
+      scale = magx;
+    if (magy > scale)
+      scale = magy;
+    if (magz > scale)
+      scale = magz;
 
-  Scale = scale;
+    Scale = scale;
 
-  for (int i = 0; i < 3; i++) {
-    for (int j = 0; j < 3; j++) {
-      rot.setElemXY(i, j, rot.elemXY(i, j) / Scale);
+    for (int i = 0; i < 3; i++) {
+      for (int j = 0; j < 3; j++) {
+        rot.setElemXY(i, j, rot.elemXY(i, j) / Scale);
+      }
     }
-  }
 
-  qrot.fromMatrix(rot);    
+    qrot.fromMatrix(rot);
   }
   return true;
 }
@@ -821,85 +849,64 @@ template <typename T> bool Matrix44<T>::decompose(Vector3<T>& pos, Quaternion<T>
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T> void Matrix44<T>::compose(const Vector3<T>& pos, const Quaternion<T>& qrot, const Vector3<T>& scale) {
-  compose(pos,qrot,scale.x,scale.y,scale.z);
+  compose(pos, qrot, scale.x, scale.y, scale.z);
 }
 template <typename T> void Matrix44<T>::compose(const Vector3<T>& pos, const Quaternion<T>& qrot, const T& scale) {
-  compose(pos,qrot,scale,scale,scale);
+  compose(pos, qrot, scale, scale, scale);
 }
 template <typename T> void Matrix44<T>::compose2(const Vector3<T>& pos, const Quaternion<T>& qrot, const T& scale) {
-  compose2(pos,qrot,scale,scale,scale);
+  compose2(pos, qrot, scale, scale, scale);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void Matrix44<T>::compose(const Vector3<T>& pos, 
-                                                const Quaternion<T>& qrot, 
-                                                const T& scalex,
-                                                const T& scaley,
-                                                const T& scalez) {
+template <typename T>
+void Matrix44<T>::compose(const Vector3<T>& pos, const Quaternion<T>& qrot, const T& scalex, const T& scaley, const T& scalez) {
 
-    T one = T(1);
-    T two = T(2);
+  T one = T(1);
+  T two = T(2);
 
-    T l = qrot.norm();
+  T l = qrot.norm();
 
-    // should this be T::Epsilon() ?
-    T s = (fabs(l) < T(EPSILON)) ? one : (two / l);
+  // should this be T::Epsilon() ?
+  T s = (fabs(l) < T(EPSILON)) ? one : (two / l);
 
-    T xs = qrot.x * s;
-    T ys = qrot.y * s;
-    T zs = qrot.z * s;
+  T xs = qrot.x * s;
+  T ys = qrot.y * s;
+  T zs = qrot.z * s;
 
-    T wx = qrot.w * xs;
-    T wy = qrot.w * ys;
-    T wz = qrot.w * zs;
+  T wx = qrot.w * xs;
+  T wy = qrot.w * ys;
+  T wz = qrot.w * zs;
 
-    T xx = qrot.x * xs;
-    T xy = qrot.x * ys;
-    T xz = qrot.x * zs;
+  T xx = qrot.x * xs;
+  T xy = qrot.x * ys;
+  T xz = qrot.x * zs;
 
-    T yy = qrot.y * ys;
-    T yz = qrot.y * zs;
-    T zz = qrot.z * zs;
+  T yy = qrot.y * ys;
+  T yz = qrot.y * zs;
+  T zz = qrot.z * zs;
 
-    setColumn(0,scalex*(one - (yy + zz)),
-                scalex*(xy - wz),
-                scalex*(xz + wy),
-                0);
+  setColumn(0, scalex * (one - (yy + zz)), scalex * (xy - wz), scalex * (xz + wy), 0);
 
+  setColumn(1, scaley * (xy + wz), scaley * (one - (xx + zz)), scaley * (yz - wx), 0);
 
-    setColumn(1,scaley*(xy + wz),
-                scaley*(one - (xx + zz)),
-                scaley*(yz - wx),
-                0);
+  setColumn(2, scalez * (xz - wy), scalez * (yz + wx), scalez * (one - (xx + yy)), 0);
 
-    setColumn(2,scalez*(xz - wy),
-                scalez*(yz + wx),
-                scalez*(one - (xx + yy)),
-                0);
-
-    setColumn(3,pos.x,
-                pos.y,
-                pos.z,
-                1);
-
-
+  setColumn(3, pos.x, pos.y, pos.z, 1);
 }
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void Matrix44<T>::compose2(const Vector3<T>& pos, 
-                                                const Quaternion<T>& qrot, 
-                                                const T& scalex,
-                                                const T& scaley,
-                                                const T& scalez) {
+template <typename T>
+void Matrix44<T>::compose2(const Vector3<T>& pos, const Quaternion<T>& qrot, const T& scalex, const T& scaley, const T& scalez) {
   Matrix44<T> matT, matR, matS;
 
   matT.setTranslation(pos);
-  matS.setScale(scalex,scaley,scalez);
+  matS.setScale(scalex, scaley, scalez);
   matR = qrot.toMatrix();
 
-  auto mtxout = multiply_ltor(matR,matS,matT);
-  *this = Matrix44<T>(mtxout);
+  auto mtxout = multiply_ltor(matR, matS, matT);
+  *this       = Matrix44<T>(mtxout);
 }
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -976,8 +983,6 @@ template <typename T> void Matrix44<T>::toNormalVectors(Vector3<T>& xv, Vector3<
   zv = row(2).xyz().normalized();
 }
 
-
-
 ///////////////////////////////////////////////////////////////////////////////
 // miniork IDEAL frustum matrix ( use the gfxtarget for device specific projection matrices)
 // this will project a point into a clip space box ranged from -1..1 on x/y and 0..1 on z
@@ -1012,13 +1017,13 @@ template <typename T> void Matrix44<T>::perspective(T fovy, T aspect, T fnear, T
   OrkAssert(ffar > fnear);
 
   Matrix44<T> out;
-  out = glm::perspectiveRH(fovy,aspect,fnear,ffar);
+  out   = glm::perspectiveRH(fovy, aspect, fnear, ffar);
   *this = out;
 
-  //auto b = dump4x3(fvec3(1,0,1));
+  // auto b = dump4x3(fvec3(1,0,1));
 
-  //printf( "c<%s>\n", a.c_str() );
-  //printf( "d<%s>\n", b.c_str() );
+  // printf( "c<%s>\n", a.c_str() );
+  // printf( "d<%s>\n", b.c_str() );
 }
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -1026,12 +1031,12 @@ template <typename T> void Matrix44<T>::lookAt(const Vector3<T>& Eye, const Vect
   setToIdentity();
 
   Matrix44<T> out;
-  out = glm::lookAtRH(Eye,Ctr,Up);
+  out   = glm::lookAtRH(Eye, Ctr, Up);
   *this = out;
 
-  //auto b = dump4x3(fvec3(1,1,0));
-  //printf( "a<%s>\n", a.c_str() );
-  //printf( "b<%s>\n", b.c_str() );
+  // auto b = dump4x3(fvec3(1,1,0));
+  // printf( "a<%s>\n", a.c_str() );
+  // printf( "b<%s>\n", b.c_str() );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1066,18 +1071,18 @@ template <typename T> void Matrix44<T>::ortho(T left, T right, T top, T bottom, 
   setColumn(2, zero,    zero,    fScaleZ, zero);
   setColumn(0, TransX,  TransY,  TransZ,  one);*/
   Matrix44<T> out;
-  out = glm::ortho(left,right,top,bottom);
+  out   = glm::ortho(left, right, top, bottom);
   *this = out;
-
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
-bool Matrix44<T>::unProject( const Vector4<T>& rVWin, //
-                             const Matrix44<T>& rIMVP, //
-                             const SRect& rVP, //
-                             Vector3<T>& rVObj) { //
+bool Matrix44<T>::unProject(
+    const Vector4<T>& rVWin,  //
+    const Matrix44<T>& rIMVP, //
+    const SRect& rVP,         //
+    Vector3<T>& rVObj) {      //
   T in[4];
   T _z  = rVWin.z;
   in[0] = (rVWin.x - T(rVP.miX)) * T(2) / T(rVP.miW) - T(1);
@@ -1090,9 +1095,11 @@ bool Matrix44<T>::unProject( const Vector4<T>& rVWin, //
   rVObj = rval.xyz();
   return true;
 }
-template <typename T> bool Matrix44<T>::unProject(const Matrix44<T>& rIMVP, //
-                                                  const Vector3<T>& ClipCoord, // 
-                                                  Vector3<T>& rVObj) { //
+template <typename T>
+bool Matrix44<T>::unProject(
+    const Matrix44<T>& rIMVP,    //
+    const Vector3<T>& ClipCoord, //
+    Vector3<T>& rVObj) {         //
   Vector4<T> rval = ClipCoord.transform(rIMVP);
   rval.perspectiveDivideInPlace();
   rVObj = rval.xyz();
@@ -1149,9 +1156,9 @@ template <typename T> void Matrix44<T>::normalizeInPlace() {
   Zy *= Zi;
   Zz *= Zi;
 
-  result.setColumn(0, Xx,Xy,Xz,0);
-  result.setColumn(1, Yx,Yy,Yz,0);
-  result.setColumn(2, Zx,Zy,Zz,0);
+  result.setColumn(0, Xx, Xy, Xz, 0);
+  result.setColumn(1, Yx, Yy, Yz, 0);
+  result.setColumn(2, Zx, Zy, Zz, 0);
 
   *this = result;
 }
@@ -1170,11 +1177,27 @@ template <typename T> Matrix44<T> Matrix44<T>::inverse() const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> 
-Matrix44<T> Matrix44<T>::composeFrom(const Vector3<T>& pos, const Quaternion<T>& rot, const Vector3<T>& scale){
+template <typename T>
+Matrix44<T> Matrix44<T>::composeFrom(const Vector3<T>& pos, const Quaternion<T>& rot, const Vector3<T>& scale) {
   Matrix44<T> rval;
-  rval.compose(pos,rot,scale.x,scale.y,scale.z);
+  rval.compose(pos, rot, scale.x, scale.y, scale.z);
   return rval;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <typename T> T Matrix44<T>::determinant() const {
+  return glm::determinant(this->asGlmMat4());
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <typename T> T Matrix44<T>::determinant3x3() const {
+  Matrix33<T> m33;
+  m33.setColumn(0, column(0).xyz());
+  m33.setColumn(1, column(1).xyz());
+  m33.setColumn(2, column(2).xyz());
+  return glm::determinant(m33.asGlmMat3());
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1196,7 +1219,7 @@ inline void ::ork::reflect::ITyped<fmtx4>::serialize(serdes::node_ptr_t sernode)
     serializeArraySubLeaf(arynode, value.asArray()[i], i);
   serializer->popNode(); // pop arraynode
 }
-template <> //
+template <>              //
 inline void ::ork::reflect::ITyped<fmtx4>::deserialize(serdes::node_ptr_t arynode) const {
   using namespace serdes;
   auto deserializer  = arynode->_deserializer;

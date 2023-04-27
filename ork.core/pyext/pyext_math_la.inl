@@ -324,6 +324,10 @@ void pyinit_math_la_t(py::module& module_core, //
           .def(py::init<const quat_t&>())
           .def_property_readonly("transposed", [](const mat4_t& inp) -> mat4_t { return inp.transposed(); })
           .def_property_readonly("inverse", &mat4_t::inverse)
+          .def_property_readonly("determinant", &mat4_t::determinant)
+          .def_property_readonly("determinant3x3", &mat4_t::determinant3x3)
+          .def_property_readonly("eigenvalues", &mat4_t::eigenvalues)
+          .def_property_readonly("eigenvectors", &mat4_t::eigenvectors)
           .def("zNormal", &mat4_t::xNormal)
           .def("yNormal", &mat4_t::yNormal)
           .def("xNormal", &mat4_t::zNormal)
@@ -335,8 +339,8 @@ void pyinit_math_la_t(py::module& module_core, //
           .def("toGlm", &mat4_t::asGlmMat4)
           .def(
               "getColumn",
-              [](mat4_t mtx, int column) -> vec4_t { //
-                return mtx.column(column);
+              [](mat4_t mtx, int icolumn) -> vec4_t { //
+                return mtx.column(icolumn);
               })
           .def(
               "setColumn",
@@ -367,6 +371,11 @@ void pyinit_math_la_t(py::module& module_core, //
               "dump",
               [](mat4_t mtx, std::string name) { //
                 mtx.dump(name);
+              })
+          .def( 
+              "dump4x4cn",
+              [](mat4_t mtx) -> std::string { //
+                return mtx.dump4x4cn();
               })
           .def_static("perspective", &mat4_t::createPerspectiveMatrix)
           .def_static(

@@ -10,6 +10,7 @@
 #include <ork/math/cmatrix4.h>
 #include <ork/math/cmatrix4.hpp>
 #include <ork/kernel/string/string.h>
+#include <openblas/lapacke.h>
 
 namespace ork {
 template <> const EPropType PropType<fmtx4>::meType   = EPROPTYPE_MAT44REAL;
@@ -52,8 +53,117 @@ template <> fmtx4 PropType<fmtx4>::FromString(const PropTypeString& String) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+template <> Vector4<double> Matrix44<double>::eigenvalues() const {
+
+  int n = 4;
+  char jobvl = 'N', jobvr = 'N';
+  std::vector<double> wr(n), wi(n);
+  std::vector<double> vl(n * n), vr(n * n);
+  int lda = n, ldvl = n, ldvr = n;
+  auto this_data = (double*) asArray(); // crappy c api's
+  int status = LAPACKE_dgeev( LAPACK_ROW_MAJOR, //
+                              jobvl, jobvr, n, //
+                              this_data, lda, //
+                              wr.data(), wi.data(), vl.data(), //
+                              ldvl, vr.data(), ldvr);
+
+  Vector4<double> rval(0,0,0,0);
+  if(status==0){
+    rval.x = wr[0];
+    rval.y = wr[1];
+    rval.z = wr[2];
+    rval.w = wr[3];
+  }
+  return rval;
+
+}
+
+template <> Vector4<float> Matrix44<float>::eigenvalues() const {
+
+  int n = 4;
+  char jobvl = 'N', jobvr = 'N';
+  std::vector<float> wr(n), wi(n);
+  std::vector<float> vl(n * n), vr(n * n);
+  int lda = n, ldvl = n, ldvr = n;
+  auto this_data = (float*) asArray(); // crappy c api's
+  int status = LAPACKE_sgeev( LAPACK_ROW_MAJOR, //
+                              jobvl, jobvr, n, //
+                              this_data, lda, //
+                              wr.data(), wi.data(), vl.data(), //
+                              ldvl, vr.data(), ldvr);
+  Vector4<float> rval(0,0,0,0);
+  if(status==0){
+    rval.x = wr[0];
+    rval.y = wr[1];
+    rval.z = wr[2];
+    rval.w = wr[3];
+  }
+  return rval;
+
+}
+
+template <> Matrix44<double> Matrix44<double>::eigenvectors() const {
+
+  int n = 4;
+  char jobvl = 'N', jobvr = 'V';
+  std::vector<double> wr(n), wi(n);
+  std::vector<double> vl(n * n), vr(n * n);
+  int lda = n, ldvl = n, ldvr = n;
+  auto this_data = (double*) asArray(); // crappy c api's
+  int status = LAPACKE_dgeev( LAPACK_ROW_MAJOR, //
+                              jobvl, jobvr, n, //
+                              this_data, lda, //
+                              wr.data(), wi.data(), vl.data(), //
+                              ldvl, vr.data(), ldvr);
+
+  Matrix44<double> rval;
+  if(status==0){
+    for( int i=0; i<4; i++ )
+      for( int j=0; j<4; j++ )
+        rval.setElemXY(i,j,vr[j*4+i]);
+  }
+  else{
+    for( int i=0; i<4; i++ )
+      for( int j=0; j<4; j++ )
+        rval.setElemXY(i,j,0);
+  }
+
+  return rval;
+
+}
+
+template <> Matrix44<float> Matrix44<float>::eigenvectors() const {
+
+  int n = 4;
+  char jobvl = 'N', jobvr = 'V';
+  std::vector<float> wr(n), wi(n);
+  std::vector<float> vl(n * n), vr(n * n);
+  int lda = n, ldvl = n, ldvr = n;
+  auto this_data = (float*) asArray(); // crappy c api's
+  int status = LAPACKE_sgeev( LAPACK_ROW_MAJOR, //
+                              jobvl, jobvr, n, //
+                              this_data, lda, //
+                              wr.data(), wi.data(), vl.data(), //
+                              ldvl, vr.data(), ldvr);
+  Matrix44<float> rval;
+  if(status==0){
+    for( int i=0; i<4; i++ )
+      for( int j=0; j<4; j++ )
+        rval.setElemXY(i,j,vr[i*4+j]);
+  }
+  else{
+    for( int i=0; i<4; i++ )
+      for( int j=0; j<4; j++ )
+        rval.setElemXY(i,j,0);
+  }
+  return rval;
+
+}
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+
 
 template struct PropType<fmtx4>;
 template struct Matrix44<float>; // explicit template instantiation
