@@ -13,7 +13,12 @@ include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(ObtOpenBlas DEFAULT_MSG ObtOpenBlas_INCLUDE_DIR ObtOpenBlas_LIBRARY)
 
 if(ObtOpenBlas_FOUND)
+  # this gets invoked ONCE per cmake invocation
   set(ObtOpenBlas_DIR ${CMAKE_CURRENT_SOURCE_DIR}/cmake/configs)
+  set(ObtOpenBlas_LIBRARIES ${ObtOpenBlas_LIBRARY} )  
+  message( "ObtOpenBlas_DIR: " ${ObtOpenBlas_DIR} )
+  message( "ObtOpenBlas_INCLUDE_DIR: " ${ObtOpenBlas_INCLUDE_DIR} )
+  message( "ObtOpenBlas_LIBRARY: " ${ObtOpenBlas_LIBRARY} )
 endif()
 
-mark_as_advanced(ObtOpenBlas_DIR)
+mark_as_advanced(ObtOpenBlas_DIR ObtOpenBlas_LIBRARY ObtOpenBlas_INCLUDE_DIR ObtOpenBlas_LIBRARIES )
