@@ -18,7 +18,7 @@ namespace ork::meshutil {
 ///////////////////////////////////////////////////////////////////////////////
 static logchannel_ptr_t logchan_clip = logger()->createChannel("meshutil.clipper", fvec3(.9, .9, 1), true);
 
-const std::unordered_set<int> test_verts = {0, 1, 3, 4};
+const std::unordered_set<int> test_verts = {0, 1, 2, 3};
 
 bool matchTestPoly(merged_poly_const_ptr_t src_poly) {
   bool match_poly = true;
@@ -106,7 +106,6 @@ struct SubMeshClipper {
   bool _do_close;
   bool _debug;
   /////////////////////////////////////
-  edge_set_t _planar_edges;
   vertex_set_t _planar_verts_pending_close;
   polyconst_set_t _backpolys;
   polyconst_set_t _frontpolys;
@@ -538,12 +537,12 @@ void SubMeshClipper::procEdges(merged_poly_const_ptr_t input_poly) { //
         } else {
           OrkAssert(false);
         }
-      }                   // isect1 ?
+      } // isect1 ?
       else {
         OrkAssert(false); // crossed the plane, but non intersecting ?
       }
-    }                     // did we cross plane ?
-  }                       // for (int iva = 0; iva < inuminverts; iva++) {
+    } // did we cross plane ?
+  }   // for (int iva = 0; iva < inuminverts; iva++) {
   OrkAssert(_b2f_count == _f2b_count);
   if (_F2B_EDGE != nullptr) {
     _inp_poly_varmap[input_poly].makeValueForKey<int>("f2b_index") = _f2b_index;
@@ -798,6 +797,7 @@ void SubMeshClipper::closeSubMesh() {
     }
 
   int index = 0;
+  edge_set_t planar_edges;
   _planar_verts_pending_close.visit([&](vertex_ptr_t v) {
     if (_debug)
       logchan_clip->log("planar v%d : %f %f %f", v->_poolindex, v->mPos.x, v->mPos.y, v->mPos.z);
@@ -815,14 +815,14 @@ void SubMeshClipper::closeSubMesh() {
       }
       if (has_edge) {
         auto e2 = std::make_shared<edge>(v2, v);
-        _planar_edges.insert(e2);
+        planar_edges.insert(e2);
       }
     });
     index++;
   });
 
   if (_debug) {
-    for (auto e_item : _planar_edges._the_map) {
+    for (auto e_item : planar_edges._the_map) {
       auto e = e_item.second;
       logchan_clip->log_continue("planar e %d %d\n", e->_vertexA->_poolindex, e->_vertexB->_poolindex);
     }
@@ -832,13 +832,13 @@ void SubMeshClipper::closeSubMesh() {
   // we have some edges on the cutting plane
   /////////////////////////////////////////
 
-  if (_planar_edges.size()) {
+  if (planar_edges.size()) {
 
     // link edge chains into edge loops
 
     EdgeChainLinker _linker;
     _linker._name = _outsubmesh.name;
-    for (auto edge_item : _planar_edges._the_map) {
+    for (auto edge_item : planar_edges._the_map) {
       auto edge = edge_item.second;
       _linker.add_edge(edge);
     }
@@ -846,13 +846,170 @@ void SubMeshClipper::closeSubMesh() {
 
     // create a new polygon for each edge loop
 
-    dvec3 centroid = _outsubmesh.centerOfVertices();
+    dvec3 submesh_centroid = _outsubmesh.centerOfVertices();
 
     auto do_chain = [&](edge_chain_ptr_t chain) { //
-      auto ordered = chain->orderedVertices();
-      _outsubmesh.mergePoly(Polygon(ordered));
 
-    };
+      if( chain->_edges.size() < 3 )
+        return;
+        
+      auto ordered_x = chain->orderedVertices();
+      vertex_vect_t ordered;
+      for( auto vtx : ordered_x ) {
+        ordered.push_back(_outsubmesh.mergeVertex(*vtx));
+      }
+
+      bool flip_polygon = false;
+
+      double planar_deviation = chain->planarDeviation();
+
+      //printf( "chain<%p> planarDeviation<%f>\n", chain.get(), planar_deviation );
+
+      if (false) { // winding order from adjacent polys
+        // compute correct winding order via the connectivity of
+        //  adjacent polygons
+
+        int forward  = 0;
+        int backward = 0;
+
+        for (auto e : chain->_edges) {
+          auto poly_set = _outsubmesh.connectedPolys(e, false);
+          printf("edge<%d->%d> poly_set<%d>\n", e->_vertexA->_poolindex, e->_vertexB->_poolindex, int(poly_set.size()));
+          size_t num_connected_polys = poly_set.size();
+          switch (num_connected_polys) {
+            case 0: {
+              // no connected polys ?
+              // this edge is on the boundary of the mesh
+              // so we can't do anything with it
+              printf("HAVE BOUNDARY EDGE\n");
+              break;
+            }
+            case 1: {
+              int ipoly    = *poly_set.begin();
+              auto polygon = _outsubmesh.poly(ipoly);
+              // find edge in polygon
+              polygon->visitEdges([&](edge_ptr_t e_poly) {
+                if (e_poly->_vertexA == e->_vertexA and e_poly->_vertexB == e->_vertexB) {
+                  // edge is in same direction as polygon
+                  forward++;
+                } else if (e_poly->_vertexA == e->_vertexB and e_poly->_vertexB == e->_vertexA) {
+                  // edge is in opposite direction as polygon
+                  backward++;
+                }
+              });
+              break;
+            }
+            default: {
+              printf("HAVE OVERBOOKED EDGE count<%d>!\n", int(num_connected_polys));
+              for (auto p : poly_set) {
+                printf("poly<%d>\n", p);
+              }
+              break;
+            }
+          }
+          // auto P = e->_polygon;
+
+        } // for (auto e : chain->_edges) {
+
+        bool all_forward  = (forward == chain->_edges.size());
+        bool all_backward = (backward == chain->_edges.size());
+        printf("forward %d backward %d\n", forward, backward);
+        OrkAssert(all_forward or all_backward);
+
+        if (all_forward) {
+          printf("all forward\n");
+          // flip polygon
+          flip_polygon = true;
+        } else if (all_backward) {
+          printf("all backward\n");
+        }
+        if( flip_polygon ){
+          std::reverse(ordered.begin(), ordered.end());
+        }
+        auto P = Polygon(ordered);
+        _outsubmesh.mergePoly(P);
+
+      } // if (false) { // winding order from adjacent polys
+      else{
+        // compute correct winding order via the centroid of the polygon
+        //  and the centroid of the vertices of the polygon
+
+        printf( "planar_deviation<%g>\n", planar_deviation );
+
+        if( planar_deviation < 0.0001 ){
+
+          dvec3 poly_centroid = chain->centroid();
+          dvec3 poly_normal   = chain->avgNormalOfFaces();
+
+          dvec3 poly_to_centroid = (poly_centroid - submesh_centroid).normalized();
+
+          double dot = poly_to_centroid.dotWith(poly_normal);
+
+          if(0)printf( "submesh center<%g %g %g>\n", submesh_centroid.x, submesh_centroid.y, submesh_centroid.z );
+          if(0)printf( "poly center<%g %g %g>\n", poly_centroid.x, poly_centroid.y, poly_centroid.z );
+          if(0)printf( "poly normal<%g %g %g>\n", poly_normal.x, poly_normal.y, poly_normal.z );
+          if(0)printf( "poly to center<%g %g %g>\n", poly_to_centroid.x, poly_to_centroid.y, poly_to_centroid.z );
+          if(0)printf( "DOT<%g>\n", dot );
+          
+          if (dot < 0.0) {
+            flip_polygon = true;
+          }
+
+          if( flip_polygon ){
+            std::reverse(ordered.begin(), ordered.end());
+          }
+          auto P = Polygon(ordered);
+          _outsubmesh.mergePoly(P);
+        }
+        else{ // triangle fan with correct winding order
+
+          vertex center_vertex;
+          center_vertex.mPos = chain->centroid();;
+          auto center_merged = _outsubmesh.mergeVertex(center_vertex);
+          if(0)printf( "center_merged poolindex<%d>\n", center_merged->_poolindex );
+          // triangle fan
+          for( size_t i=0; i<ordered.size(); i++ ){
+            auto va = ordered[i];
+            auto vb = ordered[(i+1)%ordered.size()];
+            auto vc = ordered[(i+2)%ordered.size()];
+            auto dba = (va->mPos - vb->mPos);
+            auto dbc = (vc->mPos - vb->mPos);
+            auto dbp = (center_merged->mPos - vb->mPos);
+            auto cross_0 = dba.crossWith(dbp);
+            auto cross_1 = dbp.crossWith(dbc);
+            auto dot = cross_0.dotWith(cross_1);
+
+            bool is_ccw = (dot > 0.0);
+            bool is_cw = (dot < 0.0);
+            bool is_coplanar = (fabs(dot) < 0.00001);
+
+            if( is_coplanar ){
+              if(0)printf( "tri<%d %d %d> is_coplanar<%d>\n", //
+                      center_merged->_poolindex, //
+                      va->_poolindex, //
+                      vb->_poolindex, int(is_coplanar) );
+            }
+            else if( 1 ){
+              bool flip = is_cw;
+              if( flip ){
+                std::swap(va,vb);
+              }
+              if(0)printf( "tri<%d %d %d> is_ccw<%d>\n", //
+                      center_merged->_poolindex, va->_poolindex, vb->_poolindex, int(is_ccw) );
+
+              auto P = Polygon(center_merged,va,vb);
+              _outsubmesh.mergePoly(P);
+
+            }
+
+          }        
+        }
+
+      }
+
+
+
+    }; // auto do_chain = [&](edge_chain_ptr_t chain) { //
 
     for (auto loop : _linker._edge_loops) {
       if (_debug) {
@@ -875,7 +1032,7 @@ void SubMeshClipper::closeSubMesh() {
       }
       // do_chain(chain);
     }
-  } // if (_planar_edges.size()) {
+  } // if (planar_edges.size()) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -896,11 +1053,13 @@ vertex_set_t SubMeshClipper::addWholePoly(
   dest.mergePoly(Polygon(new_verts));
   if (matchTestPoly(src_poly)) {
 
-    if (_debug)
+    if (_debug){
       logchan_clip->log_continue("<%s> add whole poly: [", hdr.c_str());
-    src_poly->visitVertices([&](vertex_ptr_t v) { logchan_clip->log_continue("v<%d> ", v->_poolindex); });
-    if (_debug)
+      src_poly->visitVertices([&](vertex_ptr_t v) { //
+        logchan_clip->log_continue("v<%d> ", v->_poolindex);
+      });
       logchan_clip->log_continue("]\n");
+    }
   }
   return added;
 }

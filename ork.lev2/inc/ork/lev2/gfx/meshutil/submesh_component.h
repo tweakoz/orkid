@@ -352,8 +352,9 @@ struct EdgeChain {
   dvec3 center() const;
   dvec3 centroid() const;
   bool isPlanar() const;
-  dvec3 avgNormalOfFaces() const;
-  dvec3 avgNormalOfEdges() const;
+  dvec3 avgNormalOfFaces() const; // CCW rules
+  dvec3 avgNormalOfEdges() const; // CCW rules
+  double planarDeviation() const;
   bool containsVertexID(int ivtx) const;
   bool containsVertexID(std::unordered_set<int>& verts) const;
   void visit(const std::function<void(edge_ptr_t)>& visitor) const;

@@ -172,23 +172,58 @@ bool EdgeChain::isPlanar() const{
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// planarDeviation : measure of how close to planar the edge chain is
+//  return value - max distance of any point from the reference plane
+///////////////////////////////////////////////////////////////////////////////
 
-dvec3 EdgeChain::avgNormalOfFaces() const{
+double EdgeChain::planarDeviation() const{ // using CCW rules
+  double rval = 0.0;
+  if( _edges.size()>2 ){
+    auto e0 = _edges[0];
+    auto e1 = _edges[1];
+    auto va = e0->_vertexA->mPos;
+    auto vb = e0->_vertexB->mPos;
+    auto vc = e1->_vertexB->mPos;
+    auto dba = (vb-va).normalized();
+    auto dcb = (vc-vb).normalized();
+    auto nrm = dba.crossWith(dcb);
+    Plane reference_plane(nrm,va);
+    visit([&](edge_ptr_t e){
+      auto va = e->_vertexA->mPos;
+      auto vb = e->_vertexB->mPos;
+      double da = reference_plane.pointDistance(va);
+      double db = reference_plane.pointDistance(vb);
+      double d = std::max(fabs(da),fabs(db));
+      rval = std::max(rval,d);
+    });
+  }
+  return rval;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+dvec3 EdgeChain::avgNormalOfFaces() const{ // using CCW rules
   dvec3 rval;
   auto c = center();
-  for(auto e : _edges) {
-    auto a = e->_vertexA->mPos;
-    auto b = e->_vertexB->mPos;
-    auto dba = (b-a).normalized();
-    auto dca = (c-b).normalized();
-    rval += dba.crossWith(dca);
+  int num_edges = _edges.size();
+  for( int i=0; i<num_edges; i++ ){
+    auto e0 = _edges[i];
+    auto e1 = _edges[(i+1)%num_edges];
+    OrkAssert(e0->_vertexB == e1->_vertexA);
+    auto va = e0->_vertexA->mPos;
+    auto vb = e0->_vertexB->mPos;
+    auto vc = e1->_vertexB->mPos;
+    auto dba = (vb-va).normalized();
+    auto dcb = (vc-vb).normalized();
+    auto nrm = dba.crossWith(dcb);
+    rval += nrm;
   }
   return rval.normalized();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-dvec3 EdgeChain::avgNormalOfEdges() const{
+dvec3 EdgeChain::avgNormalOfEdges() const{ // using CCW rules
   dvec3 rval;
   dvec3 nf = avgNormalOfFaces();
   for(auto e : _edges) {
@@ -359,6 +394,59 @@ void EdgeChainLinker::closeChains() {
   std::unordered_set<edge_chain_ptr_t> closed;
   //////////////////////////////////
   for (auto chain : _edge_chains) {
+    for (auto e : chain->_edges) {
+      OrkAssert(e);
+    }
+  }
+  //////////////////////////////////
+  // for each chain
+  //  remove and edges that are not connected on both sides
+  //  this can be done by counting the number of times a vertex is referenced
+  //////////////////////////////////
+  std::map<vertex_ptr_t, int> vtxrefcounts;
+  for (auto chain : _edge_chains) {
+    std::unordered_set<edge_ptr_t> edges_to_remove;
+    for( auto e : chain->_edges ){
+      vtxrefcounts[e->_vertexA]++;
+      vtxrefcounts[e->_vertexB]++;
+    }
+    for( auto e : chain->_edges ){
+      if( vtxrefcounts[e->_vertexA] == 1 ){
+        edges_to_remove.insert(e);
+      }
+      if( vtxrefcounts[e->_vertexB] == 1 ){
+        edges_to_remove.insert(e);
+      }
+    }
+    for( auto e : edges_to_remove ){
+      // remove e from chain->_edges std::vector
+      auto it = std::find(chain->_edges.begin(), chain->_edges.end(), e);
+      if( it != chain->_edges.end() ){
+        chain->_edges.erase(it);
+      }
+    }
+
+  }
+  for (auto chain : _edge_chains) {
+    for (auto e : chain->_edges) {
+      OrkAssert(e);
+    }
+  }
+  //////////////////////////////////
+  // remove all chains with less than 3 edges
+  std::unordered_set<edge_chain_ptr_t> chains_to_remove;
+  for( auto chain : _edge_chains ){
+    if( chain->_edges.size() < 3 ){
+      chains_to_remove.insert(chain);
+    }
+  }
+  for( auto chain : chains_to_remove ){
+    removeChain(chain);
+  }
+  //////////////////////////////////
+  // close chains
+  //////////////////////////////////
+  for (auto chain : _edge_chains) {
     auto first_edge = *chain->_edges.begin();
     auto last_edge  = *chain->_edges.rbegin();
     if (first_edge->_vertexA == last_edge->_vertexB) {
@@ -374,7 +462,7 @@ void EdgeChainLinker::closeChains() {
   }
   //////////////////////////////////
   closed.clear();
-  for (auto chain : _edge_chains) {
+  if( 0 ) for (auto chain : _edge_chains) {
     OrkAssert(chain);
     auto first_edge = *chain->_edges.begin();
     auto last_edge  = *chain->_edges.rbegin();
