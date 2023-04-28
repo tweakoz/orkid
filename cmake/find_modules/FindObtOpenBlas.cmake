@@ -14,7 +14,7 @@ find_package_handle_standard_args(ObtOpenBlas DEFAULT_MSG ObtOpenBlas_INCLUDE_DI
 
 if(ObtOpenBlas_FOUND)
   # this gets invoked ONCE per cmake invocation
-  set(ObtOpenBlas_DIR ${CMAKE_CURRENT_SOURCE_DIR}/cmake/configs)
+  set(ObtOpenBlas_DIR $ENV{ORKID_WORKSPACE_DIR}/cmake/configs)
   set(ObtOpenBlas_LIBRARIES ${ObtOpenBlas_LIBRARY} )  
   message( "ObtOpenBlas_DIR: " ${ObtOpenBlas_DIR} )
   message( "ObtOpenBlas_INCLUDE_DIR: " ${ObtOpenBlas_INCLUDE_DIR} )
