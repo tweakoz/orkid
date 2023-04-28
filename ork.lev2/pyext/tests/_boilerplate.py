@@ -302,29 +302,35 @@ def dumpMeshVertices(inpsubmesh):
 
 ################################################################################
 
-def clipMeshWithFrustum(inpsubmesh,frustum, nsteps=10):
+def clipMeshWithFrustum(inpsubmesh,frustum, nsteps=10, debug=False):
   #print("#####################")
   submesh_out = inpsubmesh
   if nsteps>0:
     submesh_out = stripSubmesh(inpsubmesh).prune()
   if nsteps>1:
-    #print("### CLIP_NEAR_PLANE")
-    submesh_out = clipMeshWithPlane(submesh_out,frustum.nearPlane).prune()
+    if debug:
+       print("### CLIP_NEAR_PLANE")
+    submesh_out = clipMeshWithPlane(submesh_out,frustum.nearPlane,debug=debug).prune()
   if nsteps>2:
-    #print("### CLIP_FAR_PLANE")
-    submesh_out = clipMeshWithPlane(submesh_out,frustum.farPlane).prune()
+    if debug:
+      print("### CLIP_FAR_PLANE")
+    submesh_out = clipMeshWithPlane(submesh_out,frustum.farPlane,debug=debug).prune()
   if nsteps>3:
-    #print("### CLIP_LEFT_PLANE")
-    submesh_out = clipMeshWithPlane(submesh_out,frustum.leftPlane).prune()
+    if debug:
+      print("### CLIP_LEFT_PLANE")
+    submesh_out = clipMeshWithPlane(submesh_out,frustum.leftPlane,debug=debug).prune()
   if nsteps>4:
-    #print("### CLIP_RIGHT_PLANE")
-    submesh_out = clipMeshWithPlane(submesh_out,frustum.rightPlane).prune()
+    if debug:
+      print("### CLIP_RIGHT_PLANE")
+    submesh_out = clipMeshWithPlane(submesh_out,frustum.rightPlane,debug=debug).prune()
   if nsteps>5:
-    #print("### CLIP_TOP_PLANE")
-    submesh_out = clipMeshWithPlane(submesh_out,frustum.topPlane).prune()
+    if debug:
+      print("### CLIP_TOP_PLANE")
+    submesh_out = clipMeshWithPlane(submesh_out,frustum.topPlane,debug=debug).prune()
   if nsteps>6:
-    #print("### CLIP_BOTTOM_PLANE")
-    submesh_out = clipMeshWithPlane(submesh_out,frustum.bottomPlane).prune()
+    if debug:
+      print("### CLIP_BOTTOM_PLANE")
+    submesh_out = clipMeshWithPlane(submesh_out,frustum.bottomPlane,debug=debug).prune()
 
   return submesh_out
 

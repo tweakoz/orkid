@@ -274,8 +274,8 @@ struct Polygon {
   double maxEdgeLength(const dmtx4& MatRange = dmtx4::Identity()) const;
   double computeArea(const dmtx4& MatRange = dmtx4::Identity()) const;
   double signedVolumeWithPoint(const dvec3& point) const;
-  dvec3 computeNormal() const;
-  dplane3 computePlane() const;
+  dvec3 computeNormal() const; // using CCW rules
+  dplane3 computePlane() const; // front of plane is facing poly normal using CCW rules
   void reverse();
   
   bool containsVertex(vertex_ptr_t v) const;

@@ -85,56 +85,75 @@ vertex::vertex(fvec3 pos, fvec3 nrm, fvec3 bin, fvec2 uv, fvec4 col)
 
 ////////////////////////////////////////////////////////////////
 
-void vertex::clearAllExceptPosition(){
-    mNrm = dvec3(0,0,0);
-    miNumWeights = 0;
-    miNumColors = 0;
-    miNumUvs = 0;
-    for (int i = 0; i < kmaxcolors; i++) {
-      mCol[i] = fvec4::White();
-    }
-    for (int i = 0; i < kmaxinfluences; i++) {
-      mJointNames[i]   = "";
-      mJointWeights[i] = 0.0f;
-    }
-    for (int i = 0; i < kmaxuvs; i++) {
-      mUV[i] = uvmapcoord();
-    }
+void vertex::clearAllExceptPosition() {
+  mNrm         = dvec3(0, 0, 0);
+  miNumWeights = 0;
+  miNumColors  = 0;
+  miNumUvs     = 0;
+  for (int i = 0; i < kmaxcolors; i++) {
+    mCol[i] = fvec4::White();
+  }
+  for (int i = 0; i < kmaxinfluences; i++) {
+    mJointNames[i]   = "";
+    mJointWeights[i] = 0.0f;
+  }
+  for (int i = 0; i < kmaxuvs; i++) {
+    mUV[i] = uvmapcoord();
+  }
 }
 
 ////////////////////////////////////////////////////////////////
 
-vertex::vertex(const vertex& rhs){
+vertex::vertex(const vertex& rhs) {
   _poolindex = 0xffffffff;
 
-  mPos = rhs.mPos;
-  mNrm = rhs.mNrm;
+  mPos         = rhs.mPos;
+  mNrm         = rhs.mNrm;
   miNumWeights = rhs.miNumWeights;
-  miNumColors = rhs.miNumColors;
-  miNumUvs = rhs.miNumUvs;
+  miNumColors  = rhs.miNumColors;
+  miNumUvs     = rhs.miNumUvs;
 
-  for( int i=0; i<kmaxinfluences; i++ ){
-    mJointNames [i]= rhs.mJointNames[i];
+  for (int i = 0; i < kmaxinfluences; i++) {
+    mJointNames[i]   = rhs.mJointNames[i];
     mJointWeights[i] = rhs.mJointWeights[i];
   }
-  for( int i=0; i<kmaxcolors; i++ ){
-    mCol [i]= rhs.mCol[i];
+  for (int i = 0; i < kmaxcolors; i++) {
+    mCol[i] = rhs.mCol[i];
   }
-  for( int i=0; i<kmaxuvs; i++ ){
-    mUV [i]= rhs.mUV[i];
+  for (int i = 0; i < kmaxuvs; i++) {
+    mUV[i] = rhs.mUV[i];
   }
-
 }
 
-void vertex::dump(const std::string& name) const{
-  printf("vertex<%s> hash<%zx> pos<%.*e %.*e %.*e> nrm<%.*f %.*f %.*f> uv0<%.*f %.*f> col0<%.*f %.*f %.*f %.*f>\n",
-         name.c_str(),
-         hash(),
-         10, mPos.x, 10, mPos.y, 10, mPos.z,
-         3, mNrm.x, 3, mNrm.y, 3, mNrm.z,
-         2, mUV[0].mMapTexCoord.x, 2, mUV[0].mMapTexCoord.y,
-         2, mCol[0].x, 2, mCol[0].y, 2, mCol[0].z, 2, mCol[0].w
-         );
+void vertex::dump(const std::string& name) const {
+  printf(
+      "vertex<%s> hash<%zx> pos<%.*e %.*e %.*e> nrm<%.*f %.*f %.*f> uv0<%.*f %.*f> col0<%.*f %.*f %.*f %.*f>\n",
+      name.c_str(),
+      hash(),
+      10,
+      mPos.x,
+      10,
+      mPos.y,
+      10,
+      mPos.z,
+      3,
+      mNrm.x,
+      3,
+      mNrm.y,
+      3,
+      mNrm.z,
+      2,
+      mUV[0].mMapTexCoord.x,
+      2,
+      mUV[0].mMapTexCoord.y,
+      2,
+      mCol[0].x,
+      2,
+      mCol[0].y,
+      2,
+      mCol[0].z,
+      2,
+      mCol[0].w);
 }
 
 ////////////////////////////////////////////////////////////////
@@ -224,8 +243,8 @@ void vertex::Center(const vertex** pverts, int icnt) {
 
 void vertex::center(const std::vector<vertex_ptr_t>& verts) {
   int icnt = verts.size();
-  mPos = dvec3(0.0f, 0.0f, 0.0f);
-  mNrm = dvec3(0.0f, 0.0f, 0.0f);
+  mPos     = dvec3(0.0f, 0.0f, 0.0f);
+  mNrm     = dvec3(0.0f, 0.0f, 0.0f);
   for (int i = 0; i < vertex::kmaxcolors; i++) {
     mCol[i] = fvec4(0.0f, 0.0f, 0.0f);
   }
@@ -282,7 +301,7 @@ uint64_t vertex::hash(double quantization) const {
   crc64.accumulateItem(pos_hash);
   crc64.accumulateItem(nrm_hash);
 
-  //printf( "pos<%.*e %.*e %.*e> pos_hash<0x%zx>\n", 10, mPos.x, 10, mPos.y, 10, mPos.z, pos_hash );
+  // printf( "pos<%.*e %.*e %.*e> pos_hash<0x%zx>\n", 10, mPos.x, 10, mPos.y, 10, mPos.z, pos_hash );
   crc64.finish();
   return crc64.result();
 }
@@ -293,12 +312,12 @@ const AnnoMap* Polygon::GetAnnoMap() const {
   return mAnnotationSet;
 }
 
-void Polygon::visitEdges(const std::function<void(edge_ptr_t)>& visitor) const{
+void Polygon::visitEdges(const std::function<void(edge_ptr_t)>& visitor) const {
   size_t num_verts = _vertices.size();
-  for( int i=0; i<num_verts; i++ ){
+  for (int i = 0; i < num_verts; i++) {
     auto v0 = _vertices[i];
-    auto v1 = _vertices[(i+1)%num_verts];
-    visitor( std::make_shared<edge>(v0,v1) );
+    auto v1 = _vertices[(i + 1) % num_verts];
+    visitor(std::make_shared<edge>(v0, v1));
   }
 }
 
@@ -310,25 +329,25 @@ void Polygon::reverse() {
 
 ////////////////////////////////////////////////////////////////
 
-bool Polygon::containsVertex(vertex_ptr_t v) const{
+bool Polygon::containsVertex(vertex_ptr_t v) const {
   auto as_const = std::const_pointer_cast<const struct vertex>(v);
   return containsVertex(as_const);
 }
 
 ////////////////////////////////////////////////////////////////
 
-bool Polygon::containsVertex(vertex_const_ptr_t v) const{
-  for( auto v2 : _vertices ){
-    if(v2==v)
+bool Polygon::containsVertex(vertex_const_ptr_t v) const {
+  for (auto v2 : _vertices) {
+    if (v2 == v)
       return true;
   }
   return false;
 }
 
-bool Polygon::containsVertices(vertex_set_t vset) const{
-  for( auto vitem : vset._the_map ){
+bool Polygon::containsVertices(vertex_set_t vset) const {
+  for (auto vitem : vset._the_map) {
     auto v = vitem.second;
-    if( not containsVertex(v) )
+    if (not containsVertex(v))
       return false;
   }
   return true;
@@ -336,19 +355,19 @@ bool Polygon::containsVertices(vertex_set_t vset) const{
 
 ////////////////////////////////////////////////////////////////
 
-bool Polygon::containsEdge(const edge& e, bool ordered) const{
+bool Polygon::containsEdge(const edge& e, bool ordered) const {
   size_t num_verts = _vertices.size();
-  for( int i=0; i<num_verts; i++ ){
+  for (int i = 0; i < num_verts; i++) {
     auto v0 = _vertices[i];
-    auto v1 = _vertices[(i+1)%num_verts];
-    if( (v0==e._vertexA) and (v1==e._vertexB) )
+    auto v1 = _vertices[(i + 1) % num_verts];
+    if ((v0 == e._vertexA) and (v1 == e._vertexB))
       return true;
-    else if( (not ordered) and (v0==e._vertexB) and (v1==e._vertexA) )
+    else if ((not ordered) and (v0 == e._vertexB) and (v1 == e._vertexA))
       return true;
   }
   return false;
 }
-bool Polygon::containsEdge(edge_ptr_t e, bool ordered) const{
+bool Polygon::containsEdge(edge_ptr_t e, bool ordered) const {
   return containsEdge(*e, ordered);
 }
 
@@ -357,10 +376,10 @@ bool Polygon::containsEdge(edge_ptr_t e, bool ordered) const{
 edge_vect_t Polygon::edges() const {
   edge_vect_t rval;
   size_t num_verts = _vertices.size();
-  for( int i=0; i<num_verts; i++ ){
+  for (int i = 0; i < num_verts; i++) {
     auto va = _vertices[i];
-    auto vb = _vertices[(i+1)%num_verts];
-    rval.push_back( std::make_shared<edge>(va,vb) );
+    auto vb = _vertices[(i + 1) % num_verts];
+    rval.push_back(std::make_shared<edge>(va, vb));
   }
   return rval;
 }
@@ -369,11 +388,11 @@ edge_vect_t Polygon::edges() const {
 
 edge_ptr_t Polygon::edgeForVertices(vertex_ptr_t va, vertex_ptr_t vb) const {
   size_t num_verts = _vertices.size();
-  for( int i=0; i<num_verts; i++ ){
+  for (int i = 0; i < num_verts; i++) {
     auto v0 = _vertices[i];
-    auto v1 = _vertices[(i+1)%num_verts];
-    if( (v0==va) and (v1==vb) )
-      return std::make_shared<edge>(va,vb);
+    auto v1 = _vertices[(i + 1) % num_verts];
+    if ((v0 == va) and (v1 == vb))
+      return std::make_shared<edge>(va, vb);
   }
   return nullptr;
 }
@@ -426,15 +445,15 @@ dvec3 Polygon::vertexNormal(int i) const {
 
 ////////////////////////////////////////////////////////////////
 
-void Polygon::visitVertices(const std::function<void(vertex_ptr_t)>& visitor) const{
-  for( auto v : _vertices ){
+void Polygon::visitVertices(const std::function<void(vertex_ptr_t)>& visitor) const {
+  for (auto v : _vertices) {
     visitor(v);
   }
 }
 
-//void Polygon::addVertex(vertex_ptr_t v) {
-  //OrkAssert(_submeshIndex==-1); // make sure we have not merged this poly yet...
-  //_vertices.push_back(v);
+// void Polygon::addVertex(vertex_ptr_t v) {
+// OrkAssert(_submeshIndex==-1); // make sure we have not merged this poly yet...
+//_vertices.push_back(v);
 //}
 
 ////////////////////////////////////////////////////////////////
@@ -450,11 +469,11 @@ Polygon::Polygon(vertex_ptr_t ia, vertex_ptr_t ib, vertex_ptr_t ic)
   _vertices.push_back(ib);
   _vertices.push_back(ic);
 
-  //auto eab = std::make_shared<edge>(ia,ib);
-  //auto ebc = std::make_shared<edge>(ib,ic);
-  //auto eca = std::make_shared<edge>(ic,ia);
-  //for (int i = 4; i < kmaxsidesperpoly; i++) {
-    //_edges[i] = nullptr;
+  // auto eab = std::make_shared<edge>(ia,ib);
+  // auto ebc = std::make_shared<edge>(ib,ic);
+  // auto eca = std::make_shared<edge>(ic,ia);
+  // for (int i = 4; i < kmaxsidesperpoly; i++) {
+  //_edges[i] = nullptr;
   //}
 }
 
@@ -473,8 +492,8 @@ Polygon::Polygon(vertex_ptr_t ia, vertex_ptr_t ib, vertex_ptr_t ic, vertex_ptr_t
   _vertices.push_back(ic);
   _vertices.push_back(id);
 
-  //for (int i = 4; i < kmaxsidesperpoly; i++) {
-    //_edges[i] = nullptr;
+  // for (int i = 4; i < kmaxsidesperpoly; i++) {
+  //_edges[i] = nullptr;
   //}
 }
 
@@ -483,17 +502,17 @@ Polygon::Polygon(vertex_ptr_t ia, vertex_ptr_t ib, vertex_ptr_t ic, vertex_ptr_t
 Polygon::Polygon(const std::vector<vertex_ptr_t>& vertices)
     : mAnnotationSet(0) {
 
-  //OrkAssert(vertices.size()<=5);
-  OrkAssert(vertices.size()>=3);
+  // OrkAssert(vertices.size()<=5);
+  OrkAssert(vertices.size() >= 3);
 
-  for( int i=0; i<vertices.size(); i++ ){
+  for (int i = 0; i < vertices.size(); i++) {
     auto in_vertex = vertices[i];
     OrkAssert(in_vertex);
     _vertices.push_back(in_vertex);
   }
 
-  //for (int i = 4; i < kmaxsidesperpoly; i++) {
-    //_edges[i] = nullptr;
+  // for (int i = 4; i < kmaxsidesperpoly; i++) {
+  //_edges[i] = nullptr;
   //}
 }
 
@@ -538,28 +557,28 @@ vertex Polygon::computeCenter() const {
   return vcenter;
 }
 
-dvec3 Polygon::centerOfMass() const{
-  
-  struct tri{
+dvec3 Polygon::centerOfMass() const {
+
+  struct tri {
     dvec3 a;
     dvec3 b;
     dvec3 c;
     dvec3 na;
     dvec3 nb;
     dvec3 nc;
-    dvec3 center() const{
-      return (a + b + c) * (1.0/3.0);
+    dvec3 center() const {
+      return (a + b + c) * (1.0 / 3.0);
     }
-    dvec3 avg_n() const{
+    dvec3 avg_n() const {
       return (na + nb + nc).normalized();
     }
     double _area = 0.0;
   };
-  
+
   std::vector<tri> tris;
 
-  ork::dvec3 base = _vertices[0]->mPos;
-  ork::dvec3 prev = _vertices[1]->mPos;
+  ork::dvec3 base   = _vertices[0]->mPos;
+  ork::dvec3 prev   = _vertices[1]->mPos;
   double total_area = 0.0;
   for (int i = 2; i < _vertices.size(); i++) {
     ork::dvec3 next = _vertices[i]->mPos;
@@ -572,24 +591,23 @@ dvec3 Polygon::centerOfMass() const{
     tris.push_back(t);
     prev = next;
   }
-  
-  dvec3 vcenter;
-  for( auto t : tris ){
 
-    dvec3 c = t.center();
+  dvec3 vcenter;
+  for (auto t : tris) {
+
+    dvec3 c           = t.center();
     double proportion = t._area / total_area;
     vcenter += c * proportion;
   }
 
   return vcenter;
-
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-double Polygon::signedVolumeWithPoint(const dvec3& point) const{
+double Polygon::signedVolumeWithPoint(const dvec3& point) const {
   // compute volume of polygon as volume of tetrahedron fan
-  double volume = 0.0;
+  double volume   = 0.0;
   ork::dvec3 base = _vertices[0]->mPos;
   ork::dvec3 prev = _vertices[1]->mPos;
   for (int i = 2; i < _vertices.size(); i++) {
@@ -603,7 +621,7 @@ double Polygon::signedVolumeWithPoint(const dvec3& point) const{
 ///////////////////////////////////////////////////////////////////////////////
 
 double Polygon::computeArea(const dmtx4& MatRange) const {
-  double farea     = 0.0f;
+  double farea    = 0.0f;
   ork::dvec3 base = _vertices[0]->mPos.transform(MatRange);
   ork::dvec3 prev = _vertices[1]->mPos.transform(MatRange);
   // compute area polygon as area of triangle fan
@@ -622,7 +640,7 @@ double Polygon::computeEdgeLength(const dmtx4& MatRange, int iedge) const {
   int inumvtx = _vertices.size();
   auto v0     = _vertices[(iedge + 0) % inumvtx];
   auto v1     = _vertices[(iedge + 1) % inumvtx];
-  double elen  = (v0->mPos.transform(MatRange) - v1->mPos.transform(MatRange)).magnitude();
+  double elen = (v0->mPos.transform(MatRange) - v1->mPos.transform(MatRange)).magnitude();
   return elen;
 }
 
@@ -630,10 +648,10 @@ double Polygon::computeEdgeLength(const dmtx4& MatRange, int iedge) const {
 
 double Polygon::minEdgeLength(const dmtx4& MatRange) const {
   double min_len = 1e12;
-  int numedges = _vertices.size();
-  for( int e=0; e<numedges; e++){
-    double elen =computeEdgeLength(MatRange,e);
-    if( elen < min_len )
+  int numedges   = _vertices.size();
+  for (int e = 0; e < numedges; e++) {
+    double elen = computeEdgeLength(MatRange, e);
+    if (elen < min_len)
       min_len = elen;
   }
   return min_len;
@@ -641,10 +659,10 @@ double Polygon::minEdgeLength(const dmtx4& MatRange) const {
 
 double Polygon::maxEdgeLength(const dmtx4& MatRange) const {
   double max_len = 0.0;
-  int numedges = _vertices.size();
-  for( int e=0; e<numedges; e++){
-    double elen = computeEdgeLength(MatRange,e);
-    if( elen > max_len )
+  int numedges   = _vertices.size();
+  for (int e = 0; e < numedges; e++) {
+    double elen = computeEdgeLength(MatRange, e);
+    if (elen > max_len)
       max_len = elen;
   }
   return max_len;
@@ -652,29 +670,24 @@ double Polygon::maxEdgeLength(const dmtx4& MatRange) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-dplane3 Polygon::computePlane() const{
-  OrkAssert(_vertices.size()>=3);
-  auto v0 = _vertices[0];
-  auto v1 = _vertices[1];
-  auto v2 = _vertices[2];
-  auto d10 = (v1->mPos - v0->mPos).normalized();
-  auto d20 = (v2->mPos - v1->mPos).normalized();
-  auto n = d10.crossWith(d20);
-  return dplane3(n,v0->mPos);
+dplane3 Polygon::computePlane() const { // using CCW rules
+  OrkAssert(_vertices.size() >= 3);
+  auto n = computeNormal();
+  auto v0  = _vertices[0];
+  return dplane3(n, v0->mPos);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-dvec3 Polygon::computeNormal() const {
+dvec3 Polygon::computeNormal() const { // using CCW rules
   dvec3 rval(0, 0, 0);
   int inumvtx = _vertices.size();
-  auto v0 = _vertices[0]->mPos;
-  auto v1 = _vertices[1]->mPos;
-  for (int i = 2; i < inumvtx; i++) {
-    auto v2 = _vertices[i % inumvtx]->mPos;
-    rval += (v1 - v0).crossWith(v2 - v1);
-    v0 = v1;
-    v1 = v2;
+  for (size_t i = 0; i < inumvtx; ++i) {
+    dvec3 current = _vertices[i]->mPos;
+    dvec3 next    = _vertices[(i + 1) % inumvtx]->mPos;
+    dvec3 edge1 = next - current;
+    dvec3 edge2 = _vertices[(i + 2) % inumvtx]->mPos - next;
+    rval += edge1.crossWith(edge2);
   }
   return rval.normalized();
 }
@@ -729,13 +742,13 @@ const std::string& Polygon::GetAnnotation(const std::string& annoname) const {
 ////////////////////////////////////////////////////////////////
 
 MergedPolygon::MergedPolygon(vertex_ptr_t ia, vertex_ptr_t ib, vertex_ptr_t ic)
-  : Polygon(ia, ib, ic) {
+    : Polygon(ia, ib, ic) {
 }
 MergedPolygon::MergedPolygon(vertex_ptr_t ia, vertex_ptr_t ib, vertex_ptr_t ic, vertex_ptr_t id)
-  : Polygon(ia, ib, ic, id) {
+    : Polygon(ia, ib, ic, id) {
 }
 MergedPolygon::MergedPolygon(const std::vector<vertex_ptr_t>& vertices)
-  : Polygon(vertices) {
+    : Polygon(vertices) {
 }
 
 ////////////////////////////////////////////////////////////////

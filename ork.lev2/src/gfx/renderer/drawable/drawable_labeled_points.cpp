@@ -22,7 +22,7 @@ void LabeledPointDrawableData::describeX(object::ObjectClass* clazz) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 LabeledPointDrawableData::LabeledPointDrawableData() {
-  _font = "i14";
+  _font = "i16";
 }
 ///////////////////////////////////////////////////////////////////////////////
 drawable_ptr_t LabeledPointDrawableData::createDrawable() const {
@@ -92,8 +92,9 @@ LabeledPointDrawable::LabeledPointDrawable(const LabeledPointDrawableData* data)
 
                 mtxi->PushUIMatrix();
                 context->PushModColor(fvec4(1,1,1,1));
-                FontMan::PushFont("i16");
+                FontMan::PushFont(_data->_font.c_str());
                 auto font = FontMan::currentFont();
+                const auto& fontdesc = font->description();
                 font->_use_deferred = RCFD->_renderingmodel.isDeferredPBR();
 
                 
@@ -105,6 +106,7 @@ LabeledPointDrawable::LabeledPointDrawable(const LabeledPointDrawableData* data)
                         dpos *= 0.5;
                         dpos += fvec3(0.5,0.5,0.0f);
                         dpos *= fvec3(vprect._w,vprect._h,1.0f);
+                        dpos += fvec3( -fontdesc.miCharWidth*0.5f, fontdesc.miCharHeight*0.5f, 0.0f);
                         auto str = FormatString("%d",int(v->_poolindex));
                         FontMan::DrawText(context, dpos.x, vprect._h-dpos.y, str.c_str());
                     }

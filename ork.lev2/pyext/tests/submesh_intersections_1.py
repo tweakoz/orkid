@@ -11,34 +11,6 @@ from orkengine.lev2 import *
 from _boilerplate import *
 ################################################################################
 
-def strippedSubmesh(inpsubmesh):
-  stripped = inpsubmesh.copy(preserve_normals=False,
-                             preserve_colors=False,
-                             preserve_texcoords=False)
-  return stripped
-
-################################################################################
-
-def proc_with_plane(inpsubmesh,plane):
-  submesh2 = strippedSubmesh(inpsubmesh).clippedWithPlane(plane=plane,
-                                         close_mesh=True, 
-                                         flip_orientation=False )
-
-  return submesh2 
-
-################################################################################
-
-def proc_with_frustum(inpsubmesh,frustum):
-  submesh2 = proc_with_plane(inpsubmesh,frustum.nearPlane)
-  submesh3 = proc_with_plane(submesh2,frustum.farPlane)
-  submesh4 = proc_with_plane(submesh3,frustum.leftPlane)
-  submesh5 = proc_with_plane(submesh4,frustum.rightPlane)
-  submesh6 = proc_with_plane(submesh5,frustum.topPlane)
-  submesh7 = proc_with_plane(submesh6,frustum.bottomPlane)
-  return submesh7
-
-################################################################################
-
 class SceneGraphApp(BasicUiCamSgApp):
 
   ##############################################
@@ -47,6 +19,11 @@ class SceneGraphApp(BasicUiCamSgApp):
     self.mutex = Lock()
     self.uicam.lookAt( vec3(0,0,20), vec3(0,0,0), vec3(0,1,0) )
     self.camera.copyFrom( self.uicam.cameradata )
+    self.numsteps_sim = 0
+    self.maxsteps_sim = 111
+    self.maxsteps_cut = 8
+    self.step_incr = 0
+    random.seed(10)
   ##############################################
   def onGpuInit(self,ctx):
     super().onGpuInit(ctx,add_grid=False)
@@ -61,7 +38,7 @@ class SceneGraphApp(BasicUiCamSgApp):
     self.frustum1 = dfrustum()
     self.frustum1.set(self.fvmtx1,self.fpmtx1)
     self.frusmesh1 = meshutil.SubMesh.createFromFrustum(self.frustum1,projective_rect_uv=True)
-    self.submesh1 = strippedSubmesh(self.frusmesh1)
+    self.submesh1 = stripSubmesh(self.frusmesh1)
     self.prim1 = meshutil.RigidPrimitive(self.frusmesh1,ctx)
     self.sgnode1 = self.prim1.createNode("m1",self.layer1,self.pseudowire_pipe)
     self.sgnode1.enabled = True
@@ -73,18 +50,24 @@ class SceneGraphApp(BasicUiCamSgApp):
     self.frustum2 = dfrustum()
     self.frustum2.set(self.fvmtx2,self.fpmtx2)
     self.frusmesh2 = meshutil.SubMesh.createFromFrustum(self.frustum2,projective_rect_uv=True)
-    self.submesh2 = strippedSubmesh(self.frusmesh2)
+    self.submesh2 = stripSubmesh(self.frusmesh2)
     self.prim2 = meshutil.RigidPrimitive(self.frusmesh2,ctx)
     self.sgnode2 = self.prim2.createNode("m2",self.layer1,self.pseudowire_pipe)
     self.sgnode2.enabled = True
     self.sgnode2.sortkey = 2;
     self.sgnode2.modcolor = vec4(0,1,0,1)
     ##############################
-    submesh_isect = proc_with_frustum(self.submesh1,self.frustum2)
+    submesh_isect = clipMeshWithFrustum(self.submesh1,self.frustum2)
     self.barysub_isect = submesh_isect.withBarycentricUVs()
     self.prim3 = meshutil.RigidPrimitive(self.barysub_isect,ctx)
     self.sgnode3 = self.prim3.createNode("m3",self.layer1,solid_wire_pipeline)
     self.sgnode3.enabled = True
+    ##############################
+    self.pts_drawabledata = LabeledPointDrawableData()
+    self.pts_drawabledata.pipeline_points = self.createPointsPipeline()
+    self.pts_drawabledata.font = "i32"
+    self.sgnode_pts = self.layer1.createDrawableNodeFromData("points",self.pts_drawabledata)
+    self.sgnode_pts.sortkey = 100000
     ################################################################################
     class UpdateSettings:
       def __init__(self):
@@ -160,66 +143,108 @@ class SceneGraphApp(BasicUiCamSgApp):
   ##############################################
   def onUpdate(self,updevent):
     super().onUpdate(updevent)
-    ##############################
-    # handle counter
-    ##############################
-    self.counter -= updevent.deltatime
-    if self.counter<0:
-      self.counter = random.uniform(2,5)
-      old_dice = self.dice
-      while self.dice==old_dice:
-        self.dice = random.randint(0,2)
-    ##############################
-    lerp_rate = 0.01
-    #self.dice = 0
-    if self.dice==0:
-      self.upd_c1.lerp(self.upd_1a,lerp_rate,updevent.deltatime)
-      self.upd_c2.lerp(self.upd_2a,lerp_rate,updevent.deltatime)
-    elif self.dice==1:
-      self.upd_c1.lerp(self.upd_1b,lerp_rate,updevent.deltatime)
-      self.upd_c2.lerp(self.upd_2b,lerp_rate,updevent.deltatime)
-    elif self.dice==2:
-      self.upd_c1.lerp(self.upd_1c,lerp_rate,updevent.deltatime)
-      self.upd_c2.lerp(self.upd_2c,lerp_rate,updevent.deltatime)
-    ##############################
 
-    ##############################
-    θ = self.abstime # * math.pi * 2.0 * 0.1
-    #
-    self.fpmtx1 = dmtx4.perspective(self.upd_c1.computeFOV(),1,0.3,5)
-    self.fpmtx2 = dmtx4.perspective(self.upd_c2.computeFOV(),1,0.3,5)
-    #2
-    lat_1 = self.upd_c1.computeLAT()
-    lat_2 = self.upd_c2.computeLAT()
-    self.fvmtx1 = dmtx4.lookAt(dvec3(0,0,1),dvec3(lat_1,0,0),dvec3(0,1,0))
-    self.fvmtx2 = dmtx4.lookAt(dvec3(1,0,1),dvec3(1,lat_2,0),dvec3(0,1,0))
-    #
-    self.frustum1.set(self.fvmtx1,self.fpmtx1)
-    self.frustum2.set(self.fvmtx2,self.fpmtx2)
-    #
-    self.frusmesh1 = meshutil.SubMesh.createFromFrustum(self.frustum1,projective_rect_uv=True)
-    self.frusmesh2 = meshutil.SubMesh.createFromFrustum(self.frustum2,projective_rect_uv=True)
-    #
-    submesh1 = strippedSubmesh(self.frusmesh1)
+    self.maxsteps_sim += self.step_incr
 
-    isec1 = proc_with_frustum(submesh1,self.frustum2)
-    self.submesh_isect = isec1#.coplanarJoined().triangulated()
+    while self.numsteps_sim < self.maxsteps_sim:
+
+      self.numsteps_sim += 1
+      self.dirty = True
+      ##############################
+      # handle counter
+      ##############################
+      self.counter -= updevent.deltatime
+      if self.counter<0:
+        self.counter = random.uniform(2,5)
+        old_dice = self.dice
+        while self.dice==old_dice:
+          self.dice = random.randint(0,2)
+      ##############################
+      lerp_rate = 0.01
+      #self.dice = 0
+      if self.dice==0:
+        self.upd_c1.lerp(self.upd_1a,lerp_rate,updevent.deltatime)
+        self.upd_c2.lerp(self.upd_2a,lerp_rate,updevent.deltatime)
+      elif self.dice==1:
+        self.upd_c1.lerp(self.upd_1b,lerp_rate,updevent.deltatime)
+        self.upd_c2.lerp(self.upd_2b,lerp_rate,updevent.deltatime)
+      elif self.dice==2:
+        self.upd_c1.lerp(self.upd_1c,lerp_rate,updevent.deltatime)
+        self.upd_c2.lerp(self.upd_2c,lerp_rate,updevent.deltatime)
+      ##############################
+
+      ##############################
+      θ = self.abstime # * math.pi * 2.0 * 0.1
+      #
+      self.fpmtx1 = dmtx4.perspective(self.upd_c1.computeFOV(),1,0.3,5)
+      self.fpmtx2 = dmtx4.perspective(self.upd_c2.computeFOV(),1,0.3,5)
+      #2
+      lat_1 = self.upd_c1.computeLAT()
+      lat_2 = self.upd_c2.computeLAT()
+      self.fvmtx1 = dmtx4.lookAt(dvec3(0,0,1),dvec3(lat_1,0,0),dvec3(0,1,0))
+      self.fvmtx2 = dmtx4.lookAt(dvec3(1,0,1),dvec3(1,lat_2,0),dvec3(0,1,0))
+      #
+      self.frustum1.set(self.fvmtx1,self.fpmtx1)
+      self.frustum2.set(self.fvmtx2,self.fpmtx2)
+      #
+      self.frusmesh1 = meshutil.SubMesh.createFromFrustum(self.frustum1,projective_rect_uv=True)
+      self.frusmesh2 = meshutil.SubMesh.createFromFrustum(self.frustum2,projective_rect_uv=True)
+      #
+      submesh1 = stripSubmesh(self.frusmesh1)
+
+      isec1 = clipMeshWithFrustum(submesh1,self.frustum2, debug=True)
+      self.submesh_isect = isec1#.coplanarJoined().triangulated()
 
     #time.sleep(0.25)
   ##############################################
   def onGpuIter(self):
     super().onGpuIter()
 
-    #self.mutex.acquire()
+    if self.dirty:
+      self.dirty = False
+      submesh1 = stripSubmesh(self.frusmesh1)
+      clipped = clipMeshWithFrustum(submesh1,self.frustum2,self.maxsteps_cut)
+      #dumpMeshVertices(clipped)
+      #isec1 = clipped.convexHull(0)
+      #isec1 = submesh1.convexHull(0)
+      self.submesh_isect = clipped
+      self.hull = clipped #clipped.convexHull(self.numsteps_sim) 
+
+      if self.hull!=None:
+        #clipped.dumpPolys("clippedout")
+        self.pts_drawabledata.pointsmesh = clipped
+        # intersection mesh
+        self.barysub_isect = self.submesh_isect.withBarycentricUVs()
+        self.prim3.fromSubMesh(self.barysub_isect,self.context)
+
 
     # two wireframe frustums
     self.prim1.fromSubMesh(self.frusmesh1,self.context)
     self.prim2.fromSubMesh(self.frusmesh2,self.context)
-    # intersection mesh
-    self.barysub_isect = self.submesh_isect.withBarycentricUVs()
-    self.prim3.fromSubMesh(self.barysub_isect,self.context)
+
     #print("intersection convexVolume: %s" % submesh_isect.convexVolume)
     #self.mutex.release()
+  def onUiEvent(self,uievent):
+    super().onUiEvent(uievent)
+    if uievent.code == tokens.KEY_DOWN.hashed or uievent.code == tokens.KEY_REPEAT.hashed:
+        if uievent.keycode == 32: # spacebar
+          self.maxsteps_sim += 1
+          print(self.maxsteps_sim)
+          self.dirty = True
+        elif uievent.keycode == ord('/'): 
+          self.step_incr = (self.step_incr + 1)%2
+        elif uievent.keycode == ord('['): # spacebar
+          self.dirty = True
+          self.maxsteps_cut = (self.maxsteps_cut - 1)
+          if self.maxsteps_cut<0:
+            self.maxsteps_cut = 0
+          print(self.maxsteps_cut)
+        elif uievent.keycode == ord(']'): # spacebar
+          self.dirty = True
+          self.maxsteps_cut = (self.maxsteps_cut + 1)
+          if self.maxsteps_cut>8:
+            self.maxsteps_cut = 8
+          print(self.maxsteps_cut)
 
 ###############################################################################
 

@@ -607,6 +607,8 @@ bool submesh::isVertexInsideConvexHull(vertex_const_ptr_t vtx) const{
 
   visitAllPolys([&](merged_poly_const_ptr_t p) {
     auto pl = p->computePlane();
+    pl.n = -pl.n;
+    pl.d = -pl.d;
     auto pc = pl.classifyPoint(vtx->mPos);
     if (pc == PointClassification::BACK) {
       rval = false;

@@ -153,7 +153,16 @@ void DefaultConnectivity::removePoly(merged_poly_ptr_t ply) {
     for (auto he : itx->second) {
       OrkAssert(he);
       if (he->_twin) {
-        OrkAssert(he->_twin->_twin == he);
+        if( he->_twin->_twin != he ){
+          printf( "he<%p> he->_twin<%p> he->_twin->_twin<%p>\n", he.get(), he->_twin.get(), he->_twin->_twin.get() );
+          if( he->_twin->_twin != nullptr ){
+            printf( "he<%d->%d> twin<%d->%d> twin->_twin<%d->%d>\n", 
+                    he->_vertexA->_poolindex, he->_vertexB->_poolindex, 
+                    he->_twin->_vertexA->_poolindex, he->_twin->_vertexB->_poolindex, 
+                    he->_twin->_twin->_vertexA->_poolindex, he->_twin->_twin->_vertexB->_poolindex );
+            OrkAssert(false);
+          }
+        }
         he->_twin->_twin = nullptr;
       }
     }
