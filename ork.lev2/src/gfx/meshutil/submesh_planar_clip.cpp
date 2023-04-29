@@ -18,7 +18,7 @@ namespace ork::meshutil {
 ///////////////////////////////////////////////////////////////////////////////
 static logchannel_ptr_t logchan_clip = logger()->createChannel("meshutil.clipper", fvec3(.9, .9, 1), true);
 
-const std::unordered_set<int> test_verts = {0, 1, 2, 3};
+const std::unordered_set<int> test_verts = {9,8,7,6,5,4};
 
 bool matchTestPoly(merged_poly_const_ptr_t src_poly) {
   bool match_poly = true;
@@ -569,10 +569,11 @@ void SubMeshClipper::clipPolygon(merged_poly_const_ptr_t input_poly) { //
       auto mergedv = _outsubmesh.vertex(vtx->_poolindex);
       out_verts.push_back(mergedv);
     });
-    if (_debug)
+    if (_debug){
       logchan_clip->log("clip poly num verts<%d>", inuminverts);
-    for (auto mergedv : out_verts) {
-      dumpVertexVars(mergedv);
+      for (auto mergedv : out_verts) {
+        dumpVertexVars(mergedv);
+      }
     }
   }
 
@@ -691,7 +692,9 @@ void SubMeshClipper::clipPolygon(merged_poly_const_ptr_t input_poly) { //
 ///////////////////////////////////////////////////////////////////////////////
 
 void SubMeshClipper::closeSubMesh() {
-  // return;                                              //
+  // return;    
+  
+                                            //
   if (_debug) {
     _outsubmesh.visitAllVertices([&](vertex_ptr_t v) { //
       double point_distance = _slicing_plane.pointDistance(v->mPos);
@@ -796,30 +799,70 @@ void SubMeshClipper::closeSubMesh() {
       logchan_clip->log("all e[%d %d]", e->_vertexA->_poolindex, e->_vertexB->_poolindex);
     }
 
-  int index = 0;
-  edge_set_t planar_edges;
   _planar_verts_pending_close.visit([&](vertex_ptr_t v) {
     if (_debug)
       logchan_clip->log("planar v%d : %f %f %f", v->_poolindex, v->mPos.x, v->mPos.y, v->mPos.z);
-    _planar_verts_pending_close.visit([&](vertex_ptr_t v2) {
-      if (v == v2)
-        return;
-      auto e        = std::make_shared<edge>(v, v2);
-      bool has_edge = false;
-      for (auto ie : all_edges._the_map) {
-        auto e = ie.second;
-        if (e->_vertexA == v && e->_vertexB == v2) {
-          has_edge = true;
-          break;
-        }
-      }
-      if (has_edge) {
-        auto e2 = std::make_shared<edge>(v2, v);
-        planar_edges.insert(e2);
-      }
+  });
+
+  if( _planar_verts_pending_close.size() < 3 ){
+    return;
+  }
+
+  int index = 0;
+  edge_set_t planar_edges;
+  
+ _planar_verts_pending_close.visit([&](vertex_ptr_t v) {
+    if (_debug)
+      logchan_clip->log("planar v%d : %f %f %f", v->_poolindex, v->mPos.x, v->mPos.y, v->mPos.z);
     });
+
+  dvec3 planar_center;
+
+  _planar_verts_pending_close.visit([&](vertex_ptr_t v) {
+    planar_center += v->mPos;
     index++;
   });
+  planar_center *= 1.0/double(index);
+
+
+  auto first_planar_vpos = _planar_verts_pending_close.first()->mPos;
+  //printf( "ref vert<%d>\n", _planar_verts_pending_close.first()->_poolindex );
+  dvec3 planar_reference_direction = (first_planar_vpos - planar_center).normalized();
+
+  std::multimap<double, vertex_ptr_t> verts_by_angle;
+  dvec3 R = _slicing_plane.n;
+
+  _planar_verts_pending_close.visit([&](vertex_ptr_t v) {
+    // using R as the reference direction, compute the angle of the vertex
+    // relative to the reference direction
+    dvec3 V = (v->mPos - planar_center).normalized();
+    double angle = planar_reference_direction.orientedAngle(V, R);
+    verts_by_angle.insert(std::make_pair(angle, v));
+  });
+  _planar_verts_pending_close.clear();
+
+  // we have the verts by polar angle...
+  // now create a boundary loop of edges from the sorted vertices
+
+  for( auto v_item : verts_by_angle ){
+    double angle = v_item.first;
+    auto v = v_item.second;
+    //printf( "angle<%g> v<%d>\n", angle, v->_poolindex );
+  }
+
+
+  for( auto it=verts_by_angle.begin(); it!=verts_by_angle.end(); ++it ){
+    auto it2 = it;
+    ++it2;
+    if( it2 == verts_by_angle.end() ){
+      it2 = verts_by_angle.begin();
+    }
+    auto v1 = it->second;
+    auto v2 = it2->second;
+    auto e = std::make_shared<edge>(v1,v2);
+    planar_edges.insert(e);
+  }
+
 
   if (_debug) {
     for (auto e_item : planar_edges._the_map) {

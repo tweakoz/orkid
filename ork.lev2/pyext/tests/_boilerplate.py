@@ -310,7 +310,7 @@ def clipMeshWithFrustum(inpsubmesh,frustum, nsteps=10, debug=False):
   if nsteps>1:
     if debug:
        print("### CLIP_NEAR_PLANE")
-    submesh_out = clipMeshWithPlane(submesh_out,frustum.nearPlane,debug=debug).prune()
+    submesh_out = clipMeshWithPlane(submesh_out,frustum.nearPlane,debug=debug)#.prune()
   if nsteps>2:
     if debug:
       print("### CLIP_FAR_PLANE")

@@ -20,8 +20,9 @@ class SceneGraphApp(BasicUiCamSgApp):
     self.uicam.lookAt( vec3(0,0,20), vec3(0,0,0), vec3(0,1,0) )
     self.camera.copyFrom( self.uicam.cameradata )
     self.numsteps_sim = 0
-    self.maxsteps_sim = 356
-    self.maxsteps_cut = 3
+    #self.maxsteps_sim = 356
+    self.maxsteps_sim = 1
+    self.maxsteps_cut = 2
     self.step_incr = 0
     random.seed(10)
   ##############################################
@@ -192,7 +193,7 @@ class SceneGraphApp(BasicUiCamSgApp):
       #
       submesh1 = stripSubmesh(self.frusmesh1)
 
-      isec1 = clipMeshWithFrustum(submesh1,self.frustum2, debug=True)
+      isec1 = clipMeshWithFrustum(submesh1,self.frustum2, debug=False)
       self.submesh_isect = isec1#.coplanarJoined().triangulated()
 
     #time.sleep(0.25)
@@ -203,7 +204,7 @@ class SceneGraphApp(BasicUiCamSgApp):
     if self.dirty:
       self.dirty = False
       submesh1 = stripSubmesh(self.frusmesh1)
-      clipped = clipMeshWithFrustum(submesh1,self.frustum2,self.maxsteps_cut,debug=True)
+      clipped = clipMeshWithFrustum(submesh1,self.frustum2,self.maxsteps_cut,debug=False)
       #dumpMeshVertices(clipped)
       #isec1 = clipped.convexHull(0)
       #isec1 = submesh1.convexHull(0)
