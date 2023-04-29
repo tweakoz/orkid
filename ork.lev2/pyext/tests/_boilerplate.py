@@ -322,15 +322,15 @@ def clipMeshWithFrustum(inpsubmesh,frustum, nsteps=10, debug=False):
   if nsteps>4:
     if debug:
       print("### CLIP_RIGHT_PLANE")
-    submesh_out = clipMeshWithPlane(submesh_out,frustum.rightPlane,debug=debug)#.prune()
+    submesh_out = clipMeshWithPlane(submesh_out,frustum.rightPlane,debug=debug).prune()
   if nsteps>5:
     if debug:
       print("### CLIP_TOP_PLANE")
-    submesh_out = clipMeshWithPlane(submesh_out,frustum.topPlane,debug=debug)#.prune()
+    submesh_out = clipMeshWithPlane(submesh_out,frustum.topPlane,debug=debug).prune()
   if nsteps>6:
     if debug:
       print("### CLIP_BOTTOM_PLANE")
-    submesh_out = clipMeshWithPlane(submesh_out,frustum.bottomPlane,debug=debug)#.prune()
+    submesh_out = clipMeshWithPlane(submesh_out,frustum.bottomPlane,debug=debug).prune()
 
   return submesh_out
 

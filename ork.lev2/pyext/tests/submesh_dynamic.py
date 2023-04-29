@@ -72,7 +72,7 @@ class SceneGraphApp(BasicUiCamSgApp):
     pl = dplane(dvec3(0,0,-1),-1)
     submesh2 = submesh1_nuv.clippedWithPlane(plane=pl,
                                              close_mesh=True, 
-                                             flip_orientation=False )["front"]
+                                             flip_orientation=False )
     #
     self.submesh_dynamic = stripSubMesh(submesh2) #.withWindingOrderFixed(True)
     #time.sleep(0.25)

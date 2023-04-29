@@ -25,7 +25,7 @@ class SceneGraphApp(BasicUiCamSgApp):
     #self.maxsteps_sim = 451
     #self.maxsteps_cut = 4
     self.maxsteps_sim = 1750
-    self.maxsteps_cut = 5
+    self.maxsteps_cut = 7
     self.step_incr = 0
     random.seed(10)
   ##############################################
