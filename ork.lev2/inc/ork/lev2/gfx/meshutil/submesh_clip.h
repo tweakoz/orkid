@@ -39,7 +39,6 @@ struct SubMeshClipper;
 struct ClipPrimitiveBase {
   ClipPrimitiveBase() {}
   virtual ~ClipPrimitiveBase() {}
-  virtual void close() = 0;
   virtual double pointDistance(const dvec3& point) const = 0;
   virtual bool isPointInFront(const dvec3& point) const = 0;
   virtual bool doesIntersect(const dray3& ray, double& distance, dvec3& isect_point ) const = 0;

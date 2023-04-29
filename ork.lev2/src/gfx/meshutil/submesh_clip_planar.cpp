@@ -14,8 +14,6 @@ namespace ork::meshutil {
 
 static logchannel_ptr_t logchan_clip = logger()->createChannel("meshutil.clipper", fvec3(.9, .9, 1), true);
 
-const std::unordered_set<int> test_verts = {9, 8, 7, 6, 5, 4};
-
 struct PlanarClipPrimitive : public ClipPrimitiveBase {
 
   PlanarClipPrimitive(
@@ -34,6 +32,48 @@ struct PlanarClipPrimitive : public ClipPrimitiveBase {
   dplane3 _slicing_plane;
   SubMeshClipper& _clipengine;
 };
+
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+
+void submeshClipWithPlane(
+    const submesh& inpsubmesh, //
+    dplane3& slicing_plane,    //
+    bool close_mesh,
+    bool flip_orientation,
+    submesh& outsmesh_front, //
+    bool debug) {
+
+  if (debug) {
+    logchan_clip->log_continue("///////////\n");
+    inpsubmesh.dumpPolys("inpsubmesh");
+  }
+
+  SubMeshClipper clip_engine(inpsubmesh, outsmesh_front, debug);
+
+  clip_engine._test_verts = {9, 8, 7, 6, 5, 4};
+
+  auto clip_prim = std::make_shared<PlanarClipPrimitive>(clip_engine, slicing_plane);
+
+  clip_engine.clipWithPrimitive(clip_prim);
+
+  if (close_mesh) {
+    clip_prim->close();
+  }
+
+  if (debug) {
+    outsmesh_front.dumpPolys("clipped_front");
+    if (clip_engine._surface_verts_pending_close._the_map.size() > 0) {
+      logchan_clip->log_continue("fpv [");
+      for (auto v_item : clip_engine._surface_verts_pending_close._the_map) {
+        auto v = v_item.second;
+        logchan_clip->log_continue(" %d", v->_poolindex);
+      }
+      logchan_clip->log_continue("]\n");
+    }
+  }
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -435,46 +475,6 @@ void PlanarClipPrimitive::close() {
       // do_chain(chain);
     }
   } // if (planar_edges.size()) {
-}
-
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-
-void submeshClipWithPlane(
-    const submesh& inpsubmesh, //
-    dplane3& slicing_plane,    //
-    bool close_mesh,
-    bool flip_orientation,
-    submesh& outsmesh_front, //
-    bool debug) {
-
-  if (debug) {
-    logchan_clip->log_continue("///////////\n");
-    inpsubmesh.dumpPolys("inpsubmesh");
-  }
-
-  SubMeshClipper clip_engine(inpsubmesh, outsmesh_front, debug);
-
-  auto clip_prim = std::make_shared<PlanarClipPrimitive>(clip_engine, slicing_plane);
-
-  clip_engine.clipWithPrimitive(clip_prim);
-
-  if (close_mesh) {
-    clip_prim->close();
-  }
-
-  if (debug) {
-    outsmesh_front.dumpPolys("clipped_front");
-    if (clip_engine._surface_verts_pending_close._the_map.size() > 0) {
-      logchan_clip->log_continue("fpv [");
-      for (auto v_item : clip_engine._surface_verts_pending_close._the_map) {
-        auto v = v_item.second;
-        logchan_clip->log_continue(" %d", v->_poolindex);
-      }
-      logchan_clip->log_continue("]\n");
-    }
-  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
