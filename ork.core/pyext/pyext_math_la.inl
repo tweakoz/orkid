@@ -340,22 +340,26 @@ void pyinit_math_la_t(py::module& module_core, //
           .def(
               "getColumn",
               [](mat4_t mtx, int icolumn) -> vec4_t { //
+                OrkPyAssert(icolumn >= 0 && icolumn < 4);
                 return mtx.column(icolumn);
               })
           .def(
               "setColumn",
-              [](mat4_t& mtx, int column, vec4_t c) { //
-                mtx.setColumn(column, c);
+              [](mat4_t& mtx, int icolumn, vec4_t c) { //
+                OrkPyAssert(icolumn >= 0 && icolumn < 4);
+                mtx.setColumn(icolumn, c);
               })
           .def(
               "getRow",
-              [](mat4_t mtx, int row) -> vec4_t { //
-                return mtx.row(row);
+              [](mat4_t mtx, int irow) -> vec4_t { //
+                OrkPyAssert(irow >= 0 && irow < 4);
+                return mtx.row(irow);
               })
           .def(
               "setRow",
-              [](mat4_t& mtx, int row, vec4_t c) { //
-                mtx.setRow(row, c);
+              [](mat4_t& mtx, int irow, vec4_t c) { //
+                OrkPyAssert(irow >= 0 && irow < 4);
+                mtx.setRow(irow, c);
               })
           .def(
               "compose",

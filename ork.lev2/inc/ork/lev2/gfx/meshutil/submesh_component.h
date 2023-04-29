@@ -135,8 +135,8 @@ struct HalfEdge {
 
   vertex_ptr_t _vertexA;
   vertex_ptr_t _vertexB;
-  halfedge_ptr_t _next;
-  halfedge_ptr_t _twin; 
+  HalfEdge* _next;
+  HalfEdge* _twin; 
   poly_ptr_t _polygon;
 };
 

@@ -153,8 +153,8 @@ void DefaultConnectivity::removePoly(merged_poly_ptr_t ply) {
     for (auto he : itx->second) {
       OrkAssert(he);
       if (he->_twin) {
-        if( he->_twin->_twin != he ){
-          printf( "he<%p> he->_twin<%p> he->_twin->_twin<%p>\n", he.get(), he->_twin.get(), he->_twin->_twin.get() );
+        if( he->_twin->_twin != he.get() ){
+          printf( "he<%p> he->_twin<%p> he->_twin->_twin<%p>\n", he.get(), he->_twin, he->_twin->_twin );
           if( he->_twin->_twin != nullptr ){
             printf( "he<%d->%d> twin<%d->%d> twin->_twin<%d->%d>\n", 
                     he->_vertexA->_poolindex, he->_vertexB->_poolindex, 
@@ -285,7 +285,7 @@ halfedge_ptr_t DefaultConnectivity::_makeHalfEdge(vertex_ptr_t a, vertex_ptr_t b
 
   if (prev_count > 0) {
     OrkAssert(this_poly_edges[prev_count - 1]->_vertexB == a);
-    this_poly_edges[prev_count - 1]->_next = he;
+    this_poly_edges[prev_count - 1]->_next = he.get();
   }
 
   ////////////////////////
@@ -298,7 +298,7 @@ halfedge_ptr_t DefaultConnectivity::_makeHalfEdge(vertex_ptr_t a, vertex_ptr_t b
   // link this edges next to poly's first edge
   ////////////////////////
 
-  he->_next = this_poly_edges[0];
+  he->_next = this_poly_edges[0].get();
 
   ////////////////////////
   // add to connectivity DB's halfedge map
@@ -315,8 +315,8 @@ halfedge_ptr_t DefaultConnectivity::_makeHalfEdge(vertex_ptr_t a, vertex_ptr_t b
   check_twin._vertexB = a;
   auto ittwin         = _halfedge_map.find(check_twin.hash());
   if (ittwin != _halfedge_map.end()) {
-    he->_twin             = ittwin->second;
-    ittwin->second->_twin = he;
+    he->_twin             = ittwin->second.get();
+    ittwin->second->_twin = he.get();
   }
 
   ////////////////////////

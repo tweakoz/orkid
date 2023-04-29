@@ -163,12 +163,12 @@ void pyinit_meshutil_component(py::module& module_meshutil) {
     .def_property_readonly("polygon", [](halfedge_ptr_t e) -> poly_ptr_t { 
         return e->_polygon;
     })           
-    .def_property_readonly("twin", [](halfedge_ptr_t e) -> halfedge_ptr_t { 
-        return e->_twin;
-    })           
-    .def_property_readonly("next", [](halfedge_ptr_t e) -> halfedge_ptr_t { 
-        return e->_next;
-    })           
+    //.def_property_readonly("twin", [](halfedge_ptr_t e) -> halfedge_ptr_t { 
+      //  return e->_twin;
+    //})           
+    //.def_property_readonly("next", [](halfedge_ptr_t e) -> halfedge_ptr_t { 
+      //  return e->_next;
+    //})           
     .def_property_readonly("vertices", [](halfedge_ptr_t e) -> py::list {            
       py::list pyl;
       pyl.append(e->_vertexA);

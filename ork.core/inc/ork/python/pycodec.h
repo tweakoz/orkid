@@ -20,6 +20,22 @@ using varval_t    = varmap::var_t;
 using decoderfn_t = std::function<void(const pybind11::object& inpval, varval_t& outval)>;
 using encoderfn_t = std::function<void(const varval_t& inpval, pybind11::object& outval)>;
 
+# define OrkPyAssert( x ) { if( (x) == 0 ) { \
+   char buffer[1024]; \
+   snprintf( buffer, sizeof(buffer), "Assert At: [File %s] [Line %d] [Reason: Assertion %s failed]", __FILE__, __LINE__, #x ); \
+   try { \
+        py::object traceback = py::module::import("traceback");\
+        py::object formatted_stack = traceback.attr("format_stack")();\
+        for (const auto& frame : formatted_stack) {\
+            std::cout << py::str(frame);\
+        }\
+    } catch (const py::error_already_set& e) {\
+        std::cerr << "Failed to print Python call stack: " << e.what() << std::endl;\
+    }\
+   OrkAssertFunction(&buffer[0]);  \
+   } \
+  }
+
 struct TypeCodec {
   //////////////////////////////////
   static std::shared_ptr<TypeCodec> instance();

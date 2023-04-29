@@ -377,6 +377,8 @@ template <typename T> T Matrix44<T>::elemYX(int ix, int iy) const {
 
 template <typename T> void Matrix44<T>::setElemXY(int ix, int iy, T val) {
   base_t& as_base = *this;
+  OrkAssert(0<=ix and ix<4);
+  OrkAssert(0<=iy and iy<4);
   as_base[ix][iy] = val;
 }
 
@@ -384,6 +386,8 @@ template <typename T> void Matrix44<T>::setElemXY(int ix, int iy, T val) {
 
 template <typename T> T Matrix44<T>::elemXY(int ix, int iy) const {
   const base_t& as_base = *this;
+  OrkAssert(0<=ix and ix<4);
+  OrkAssert(0<=iy and iy<4);
   return as_base[ix][iy];
 }
 
