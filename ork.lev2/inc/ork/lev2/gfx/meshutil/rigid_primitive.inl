@@ -187,7 +187,7 @@ template <typename vtx_t> void RigidPrimitive<vtx_t>::fromSubMesh(const submesh&
     auto vtxa        = ply->vertex(0);
     auto vtxb        = ply->vertex(1);
     auto vtxc        = ply->vertex(2);
-    if(vtxa->mNrm.magnitude()==0){
+    if(false) { //vtxa->mNrm.magnitude()==0){
       // TODO - fixme
       vtxa->mNrm = vtxb->mNrm;
       vtxa->mUV[0].mMapBiNormal = vtxb->mUV[0].mMapBiNormal;
