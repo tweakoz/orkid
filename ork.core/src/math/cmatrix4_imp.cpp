@@ -182,14 +182,14 @@ template struct Matrix44<double>; // explicit template instantiation
 
 fmtx4 dmtx4_to_fmtx4(const dmtx4& in) {
   fmtx4 out;
-  for (int i = 0; i < 9; i++)
+  for (int i = 0; i < 16; i++)
     out.setElemXY(i / 4,i % 4, float(in.elemXY(i / 4,i % 4)));
   return out;
 }
 
 dmtx4 fmtx4_to_dmtx4(const fmtx4& in) {
   dmtx4 out;
-  for (int i = 0; i < 9; i++)
+  for (int i = 0; i < 16; i++)
     out.setElemXY(i / 4,i % 4, double(in.elemXY(i / 4,i % 4)));
   return out;
 }
