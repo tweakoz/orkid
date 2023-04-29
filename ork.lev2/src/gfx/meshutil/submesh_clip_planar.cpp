@@ -12,7 +12,7 @@
 namespace ork::meshutil {
 ///////////////////////////////////////////////////////////////////////////////
 
-static logchannel_ptr_t logchan_clip = logger()->createChannel("meshutil.clipper", fvec3(.9, .9, 1), true);
+static logchannel_ptr_t logchan_clip_plane = logger()->createChannel("meshutil.clipplane", fvec3(.9, .9, 1), true);
 
 struct PlanarClipPrimitive : public ClipPrimitiveBase {
 
@@ -46,7 +46,7 @@ void submeshClipWithPlane(
     bool debug) {
 
   if (debug) {
-    logchan_clip->log_continue("///////////\n");
+    logchan_clip_plane->log_continue("///////////\n");
     inpsubmesh.dumpPolys("inpsubmesh");
   }
 
@@ -65,12 +65,12 @@ void submeshClipWithPlane(
   if (debug) {
     outsmesh_front.dumpPolys("clipped_front");
     if (clip_engine._surface_verts_pending_close._the_map.size() > 0) {
-      logchan_clip->log_continue("fpv [");
+      logchan_clip_plane->log_continue("fpv [");
       for (auto v_item : clip_engine._surface_verts_pending_close._the_map) {
         auto v = v_item.second;
-        logchan_clip->log_continue(" %d", v->_poolindex);
+        logchan_clip_plane->log_continue(" %d", v->_poolindex);
       }
-      logchan_clip->log_continue("]\n");
+      logchan_clip_plane->log_continue("]\n");
     }
   }
 }
@@ -115,7 +115,7 @@ void PlanarClipPrimitive::close() {
   if (_clipengine._debug) {
     _clipengine._outsubmesh.visitAllVertices([&](vertex_ptr_t v) { //
       double point_distance = _slicing_plane.pointDistance(v->mPos);
-      logchan_clip->log("outv%d : %f %f %f point_distance<%f>", v->_poolindex, v->mPos.x, v->mPos.y, v->mPos.z, point_distance);
+      logchan_clip_plane->log("outv%d : %f %f %f point_distance<%f>", v->_poolindex, v->mPos.x, v->mPos.y, v->mPos.z, point_distance);
     });
     _clipengine._outsubmesh.dumpPolys("preclose");
   }
@@ -125,7 +125,7 @@ void PlanarClipPrimitive::close() {
     int num_v       = back_poly->numVertices();
 
     if (_clipengine._debug)
-      logchan_clip->log_begin("BACKPOLYVISIT INPUT POLY[");
+      logchan_clip_plane->log_begin("BACKPOLYVISIT INPUT POLY[");
 
     for (int iva = 0; iva < num_v; iva++) {
       int ivb                     = (iva + 1) % num_v;
@@ -137,43 +137,43 @@ void PlanarClipPrimitive::close() {
       if (has_clipped) {
         num_clipped++;
         if (_clipengine._debug)
-          logchan_clip->log_continue(" <%d>", inp_vtx_a->_poolindex);
+          logchan_clip_plane->log_continue(" <%d>", inp_vtx_a->_poolindex);
       } else {
         bool is_back = _clipengine._outsubmesh.tryVarAs<bool>(inp_vtx_a, "back_vertex").value();
         if (is_back) {
           if (_clipengine._debug)
-            logchan_clip->log_continue(" (%d)", inp_vtx_a->_poolindex);
+            logchan_clip_plane->log_continue(" (%d)", inp_vtx_a->_poolindex);
 
         } else {
           if (_clipengine._debug)
-            logchan_clip->log_continue(" %d", inp_vtx_a->_poolindex);
+            logchan_clip_plane->log_continue(" %d", inp_vtx_a->_poolindex);
         }
       }
       if (he_plane_status._status == ESurfaceStatus::BACK) {
         if (_clipengine._debug)
-          logchan_clip->log_continue("!");
+          logchan_clip_plane->log_continue("!");
       }
       if (auto try_clipped_edge = _clipengine._outsubmesh.tryVarAs<halfedge_ptr_t>(he, "clipped_edge")) {
         auto clipped_edge = try_clipped_edge.value();
         if (_clipengine._debug)
-          logchan_clip->log_continue("$");
+          logchan_clip_plane->log_continue("$");
         _clipengine._vertex_remap[he->_vertexA->_poolindex] = clipped_edge->_vertexA->_poolindex;
         _clipengine._vertex_remap[he->_vertexB->_poolindex] = clipped_edge->_vertexB->_poolindex;
       }
     }
 
     if (_clipengine._debug)
-      logchan_clip->log_continue(" ] num_v<%d> num_clipped<%d>\n", num_v, num_clipped);
+      logchan_clip_plane->log_continue(" ] num_v<%d> num_clipped<%d>\n", num_v, num_clipped);
 
     if (_clipengine._vertex_remap.size()) {
       if (_clipengine._debug)
-        logchan_clip->log_continue("_vertex_remap [");
+        logchan_clip_plane->log_continue("_vertex_remap [");
       for (auto item : _clipengine._vertex_remap) {
         if (_clipengine._debug)
-          logchan_clip->log_continue(" %d->%d", item.first, item.second);
+          logchan_clip_plane->log_continue(" %d->%d", item.first, item.second);
       }
       if (_clipengine._debug)
-        logchan_clip->log_continue(" ]\n");
+        logchan_clip_plane->log_continue(" ]\n");
       std::vector<vertex_ptr_t> remapped_verts;
       back_poly->visitVertices([&](vertex_ptr_t vtx) {
         auto it = _clipengine._vertex_remap.find(vtx->_poolindex);
@@ -213,12 +213,12 @@ void PlanarClipPrimitive::close() {
   if (_clipengine._debug)
     for (auto e_item : all_edges._the_map) {
       auto e = e_item.second;
-      logchan_clip->log("all e[%d %d]", e->_vertexA->_poolindex, e->_vertexB->_poolindex);
+      logchan_clip_plane->log("all e[%d %d]", e->_vertexA->_poolindex, e->_vertexB->_poolindex);
     }
 
   _clipengine._surface_verts_pending_close.visit([&](vertex_ptr_t v) {
     if (_clipengine._debug)
-      logchan_clip->log("planar v%d : %f %f %f", v->_poolindex, v->mPos.x, v->mPos.y, v->mPos.z);
+      logchan_clip_plane->log("planar v%d : %f %f %f", v->_poolindex, v->mPos.x, v->mPos.y, v->mPos.z);
   });
 
   if (_clipengine._surface_verts_pending_close.size() < 3) {
@@ -230,7 +230,7 @@ void PlanarClipPrimitive::close() {
 
   _clipengine._surface_verts_pending_close.visit([&](vertex_ptr_t v) {
     if (_clipengine._debug)
-      logchan_clip->log("planar v%d : %f %f %f", v->_poolindex, v->mPos.x, v->mPos.y, v->mPos.z);
+      logchan_clip_plane->log("planar v%d : %f %f %f", v->_poolindex, v->mPos.x, v->mPos.y, v->mPos.z);
   });
 
   dvec3 planar_center;
@@ -281,7 +281,7 @@ void PlanarClipPrimitive::close() {
   if (_clipengine._debug) {
     for (auto e_item : planar_edges._the_map) {
       auto e = e_item.second;
-      logchan_clip->log_continue("planar e %d %d\n", e->_vertexA->_poolindex, e->_vertexB->_poolindex);
+      logchan_clip_plane->log_continue("planar e %d %d\n", e->_vertexA->_poolindex, e->_vertexB->_poolindex);
     }
   }
 
@@ -455,22 +455,22 @@ void PlanarClipPrimitive::close() {
 
     for (auto loop : _linker._edge_loops) {
       if (_clipengine._debug) {
-        logchan_clip->log_continue("loop [");
+        logchan_clip_plane->log_continue("loop [");
         for (auto e : loop->_edges) {
-          logchan_clip->log_continue(" <%d %d>", e->_vertexA->_poolindex, e->_vertexB->_poolindex);
+          logchan_clip_plane->log_continue(" <%d %d>", e->_vertexA->_poolindex, e->_vertexB->_poolindex);
         }
-        logchan_clip->log_continue("]\n");
+        logchan_clip_plane->log_continue("]\n");
       }
       do_chain(loop);
     }
 
     for (auto chain : _linker._edge_chains) {
       if (_clipengine._debug) {
-        logchan_clip->log_continue("chain [");
+        logchan_clip_plane->log_continue("chain [");
         for (auto e : chain->_edges) {
-          logchan_clip->log_continue(" <%d %d>", e->_vertexA->_poolindex, e->_vertexB->_poolindex);
+          logchan_clip_plane->log_continue(" <%d %d>", e->_vertexA->_poolindex, e->_vertexB->_poolindex);
         }
-        logchan_clip->log_continue("]\n");
+        logchan_clip_plane->log_continue("]\n");
       }
       // do_chain(chain);
     }
