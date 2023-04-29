@@ -18,7 +18,6 @@ void submeshWithFaceNormals(const submesh& inpsubmesh, submesh& outsubmesh) {
 
   inpsubmesh.visitAllPolys([&](poly_const_ptr_t p) {
     dvec3 N         = p->computeNormal();
-
     std::vector<vertex_ptr_t> merged_vertices;
     p->visitVertices([&](vertex_const_ptr_t v) {
       auto copy_v0 = *v;
@@ -29,6 +28,47 @@ void submeshWithFaceNormals(const submesh& inpsubmesh, submesh& outsubmesh) {
     outsubmesh.mergePoly(merged_vertices);
   });
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
+void submeshWithFaceNormalsAndBinormals(const submesh& inpsubmesh, submesh& outsubmesh) {
+
+  inpsubmesh.visitAllPolys([&](poly_const_ptr_t p) {
+    dvec3 N         = p->computeNormal()*-1;
+    int numv = p->numVertices();
+    std::map<vertex_ptr_t,dvec3> vertex_binormal_sums;
+    std::map<vertex_const_ptr_t,vertex_ptr_t> remapped_vertices;
+    for( int i=0; i<numv; i++ ) {
+      auto inp_v0 = p->vertex(i);
+      auto inp_v1 = p->vertex((i+1)%numv);
+      auto edge = (inp_v1->mPos-inp_v0->mPos).normalized();
+      auto cross_product = N.crossWith(edge).normalized();
+      vertex_binormal_sums[inp_v0] += cross_product;
+    }
+    for( auto v : vertex_binormal_sums ) {
+      auto inp_v = v.first;
+      auto binormal_sum = v.second;
+      auto binormal = binormal_sum.normalized();
+      auto vertex_copy = *inp_v;
+      vertex_copy.mNrm = N;
+      vertex_copy.mUV[0].mMapBiNormal = dvec3_to_fvec3(binormal);
+      vertex_copy.miNumUvs = 1;
+      auto merged = outsubmesh.mergeVertex(vertex_copy);
+      remapped_vertices[inp_v] = merged;
+    }
+    std::vector<vertex_ptr_t> merged_vertices;
+    p->visitVertices([&](vertex_const_ptr_t v) {
+      auto it_r = remapped_vertices.find(v);
+      OrkAssert(it_r!=remapped_vertices.end());
+      auto remapped = it_r->second;
+      merged_vertices.push_back(remapped);
+    });
+    outsubmesh.mergePoly(merged_vertices);
+  });
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 void submeshWithSmoothNormals(const submesh& inpsubmesh, submesh& outsubmesh, float threshold_radians) {
 
   threshold_radians *= 0.5f;

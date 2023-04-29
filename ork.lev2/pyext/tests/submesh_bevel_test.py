@@ -37,6 +37,24 @@ class SceneGraphApp(BasicUiCamSgApp):
     material = solid_wire_pipeline.sharedMaterial
     solid_wire_pipeline.bindParam( material.param("m"), tokens.RCFD_M)
     ##############################
+    pbr_material = PBRMaterial()
+    pbr_material.gpuInit(ctx)
+    pbr_material.texColor = Texture.load("src://effect_textures/white")
+    pbr_material.texNormal = Texture.load("src://effect_textures/default_normal")
+    pbr_material.texMtlRuf = Texture.load("src://effect_textures/green")
+    pbr_material.baseColor = vec4(1,1,1,1)
+    pbr_material.roughnessFactor = 0.1
+    pbr_material.metallicFactor = 0
+    #
+    permu = FxPipelinePermutation()
+    permu.rendering_model = "FORWARD_PBR"
+    #permu.technique = pbr_material.shader.technique(techname)
+    #
+    pbr_pipeline = pbr_material.fxcache.findPipeline(permu)
+    #pbr_pipeline.bindParam(pbr_material.param("mvp"), tokens.RCFD_Camera_MVP_Mono)
+    #
+    pbr_pipeline.sharedMaterial = pbr_material
+    ##############################
     #self.pts_drawabledata = LabeledPointDrawableData()
     #self.pts_drawabledata.pipeline_points = self.createPointsPipeline()
     #self.sgnode_pts = self.layer1.createDrawableNodeFromData("points",self.pts_drawabledata)
@@ -54,7 +72,7 @@ class SceneGraphApp(BasicUiCamSgApp):
     cub_submesh = stripSubmesh(cub_orkmesh.submesh_list[0])
     self.cube_submesh = cub_submesh
     self.bary_prim = meshutil.RigidPrimitive(cub_submesh,ctx)
-    self.bary_sgnode = self.bary_prim.createNode("bevel",self.layer1,solid_wire_pipeline)
+    self.bary_sgnode = self.bary_prim.createNode("bevel",self.layer1,pbr_pipeline)
     self.bary_sgnode.enabled = True
 
   ##############################################
@@ -97,7 +115,7 @@ class SceneGraphApp(BasicUiCamSgApp):
 
     #self.pts_drawabledata.pointsmesh = cub_submesh
 
-    self.barysubmesh = cub_submesh.withBarycentricUVs()
+    self.barysubmesh = cub_submesh.withFaceNormalsAndBinormals()# .withBarycentricUVs()
     self.bary_prim.fromSubMesh(self.barysubmesh,self.context)
 
 

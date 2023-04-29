@@ -290,6 +290,13 @@ void pyinit_meshutil_submesh(py::module& module_meshutil) {
                 return res_faced;
               })
           .def(
+              "withFaceNormalsAndBinormals",
+              [](submesh_constptr_t inpsubmesh) -> submesh_ptr_t {
+                submesh_ptr_t res_faced = std::make_shared<submesh>();
+                submeshWithFaceNormalsAndBinormals(*inpsubmesh, *res_faced);
+                return res_faced;
+              })
+          .def(
               "withSmoothedNormals",
               [](submesh_constptr_t inpsubmesh, float threshold_radians) -> submesh_ptr_t {
                 submesh_ptr_t res_smoothed = std::make_shared<submesh>();

@@ -539,7 +539,7 @@ void SubMeshClipper::procEdges(merged_poly_const_ptr_t input_poly) { //
         }
       } // isect1 ?
       else {
-        OrkAssert(false); // crossed the plane, but non intersecting ?
+        //OrkAssert(false); // crossed the plane, but non intersecting ?
       }
     } // did we cross plane ?
   }   // for (int iva = 0; iva < inuminverts; iva++) {

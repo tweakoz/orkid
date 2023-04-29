@@ -246,6 +246,21 @@ class BasicUiCamSgApp(object):
         pipeline.sharedMaterial = material
         return pipeline
 
+    def createPbrPipeline(self,
+                       rendermodel="ForwardPBR"):
+
+        material = PBRMaterial()
+        #
+        permu = FxPipelinePermutation()
+        permu.rendering_model = rendermodel
+        #permu.technique = material.shader.technique(techname)
+        #
+        pipeline = material.fxcache.findPipeline(permu)
+        pipeline.bindParam(material.param("mvp"), tokens.RCFD_Camera_MVP_Mono)
+        #
+        pipeline.sharedMaterial = material
+        return pipeline
+
     def createPseudoWirePipeline(self):
         pipeline = self.createPipeline(shadertext=PSEUDOWIRE_SHADERTEXT,
                                        blending=tokens.ADDITIVE,

@@ -112,6 +112,7 @@ libblock lib_fwd
 
     //return specularC;
     return mix(finallitcolor,skyboxColor,depth_fogval);
+    //return vec3(spec_env);
 
 	} // vec3 environmentLighting(){
 
