@@ -133,7 +133,7 @@ int SubMeshClipper::f2bindex(merged_poly_const_ptr_t input_poly) const {
       _f2b_index = try_f2b_index.value();
       if (_f2b_index < 0)
         _f2b_index = 0;
-      if (match_poly)
+      if (match_poly and _debug)
         logchan_clip->log("_f2b_index<%d>", _f2b_index);
     }
   }
@@ -694,6 +694,7 @@ void SubMeshClipper::clipPolygon(merged_poly_const_ptr_t input_poly) { //
 void SubMeshClipper::closeSubMesh() {
   // return;    
   
+  // TODO - non convex support
                                             //
   if (_debug) {
     _outsubmesh.visitAllVertices([&](vertex_ptr_t v) { //
@@ -889,7 +890,10 @@ void SubMeshClipper::closeSubMesh() {
 
     // create a new polygon for each edge loop
 
-    dvec3 submesh_centroid = _outsubmesh.centerOfVertices();
+    dvec3 submesh_centroid = _outsubmesh.centerOfPolys();
+    vertex submesh_centroid_vertex;
+    submesh_centroid_vertex.mPos = submesh_centroid;
+    auto centroid_merged = _outsubmesh.mergeVertex(submesh_centroid_vertex);
 
     auto do_chain = [&](edge_chain_ptr_t chain) { //
 
@@ -977,22 +981,26 @@ void SubMeshClipper::closeSubMesh() {
         // compute correct winding order via the centroid of the polygon
         //  and the centroid of the vertices of the polygon
 
-        printf( "planar_deviation<%g>\n", planar_deviation );
+        if(_debug)printf( "planar_deviation<%g>\n", planar_deviation );
 
         if( planar_deviation < 0.0001 ){
 
           dvec3 poly_centroid = chain->centroid();
+          vertex poly_centroid_vertex;
+          poly_centroid_vertex.mPos = poly_centroid;
+          _outsubmesh.mergeVertex(poly_centroid_vertex);
+
           dvec3 poly_normal   = chain->avgNormalOfFaces();
 
           dvec3 poly_to_centroid = (poly_centroid - submesh_centroid).normalized();
 
           double dot = poly_to_centroid.dotWith(poly_normal);
 
-          if(0)printf( "submesh center<%g %g %g>\n", submesh_centroid.x, submesh_centroid.y, submesh_centroid.z );
-          if(0)printf( "poly center<%g %g %g>\n", poly_centroid.x, poly_centroid.y, poly_centroid.z );
-          if(0)printf( "poly normal<%g %g %g>\n", poly_normal.x, poly_normal.y, poly_normal.z );
-          if(0)printf( "poly to center<%g %g %g>\n", poly_to_centroid.x, poly_to_centroid.y, poly_to_centroid.z );
-          if(0)printf( "DOT<%g>\n", dot );
+          if(_debug)printf( "submesh center<%g %g %g>\n", submesh_centroid.x, submesh_centroid.y, submesh_centroid.z );
+          if(_debug)printf( "poly center<%g %g %g>\n", poly_centroid.x, poly_centroid.y, poly_centroid.z );
+          if(_debug)printf( "poly normal<%g %g %g>\n", poly_normal.x, poly_normal.y, poly_normal.z );
+          if(_debug)printf( "poly to center<%g %g %g>\n", poly_to_centroid.x, poly_to_centroid.y, poly_to_centroid.z );
+          if(_debug)printf( "DOT<%g>\n", dot );
           
           if (dot < 0.0) {
             flip_polygon = true;
@@ -1009,42 +1017,17 @@ void SubMeshClipper::closeSubMesh() {
           vertex center_vertex;
           center_vertex.mPos = chain->centroid();;
           auto center_merged = _outsubmesh.mergeVertex(center_vertex);
-          if(0)printf( "center_merged poolindex<%d>\n", center_merged->_poolindex );
+          if(_debug)printf( "center_merged poolindex<%d>\n", center_merged->_poolindex );
           // triangle fan
           for( size_t i=0; i<ordered.size(); i++ ){
             auto va = ordered[i];
             auto vb = ordered[(i+1)%ordered.size()];
-            auto vc = ordered[(i+2)%ordered.size()];
-            auto dba = (va->mPos - vb->mPos);
-            auto dbc = (vc->mPos - vb->mPos);
-            auto dbp = (center_merged->mPos - vb->mPos);
-            auto cross_0 = dba.crossWith(dbp);
-            auto cross_1 = dbp.crossWith(dbc);
-            auto dot = cross_0.dotWith(cross_1);
-
-            bool is_ccw = (dot > 0.0);
-            bool is_cw = (dot < 0.0);
-            bool is_coplanar = (fabs(dot) < 0.00001);
-
-            if( is_coplanar ){
-              if(0)printf( "tri<%d %d %d> is_coplanar<%d>\n", //
-                      center_merged->_poolindex, //
-                      va->_poolindex, //
-                      vb->_poolindex, int(is_coplanar) );
-            }
-            else if( 1 ){
-              bool flip = is_cw;
-              if( flip ){
-                std::swap(va,vb);
-              }
-              if(0)printf( "tri<%d %d %d> is_ccw<%d>\n", //
-                      center_merged->_poolindex, va->_poolindex, vb->_poolindex, int(is_ccw) );
-
               auto P = Polygon(center_merged,va,vb);
+              double area = P.signedVolumeWithPoint(submesh_centroid);
+              if( area >= 0.0 ){
+                P = Polygon(center_merged,vb,va);
+              }
               _outsubmesh.mergePoly(P);
-
-            }
-
           }        
         }
 

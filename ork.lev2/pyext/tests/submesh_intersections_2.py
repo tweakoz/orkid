@@ -24,9 +24,9 @@ class SceneGraphApp(BasicUiCamSgApp):
     self.numsteps_cut = 0
     #self.maxsteps_sim = 451
     #self.maxsteps_cut = 4
-    self.maxsteps_sim = 1212+230 #701
-    self.maxsteps_cut = 7
-    self.step_incr = 1
+    self.maxsteps_sim = 1750
+    self.maxsteps_cut = 5
+    self.step_incr = 0
     random.seed(10)
   ##############################################
   def onGpuInit(self,ctx):
@@ -69,6 +69,7 @@ class SceneGraphApp(BasicUiCamSgApp):
     ##############################
     self.pts_drawabledata = LabeledPointDrawableData()
     self.pts_drawabledata.pipeline_points = self.createPointsPipeline()
+    self.pts_drawabledata.font = "i24"
     self.sgnode_pts = self.layer1.createDrawableNodeFromData("points",self.pts_drawabledata)
     self.sgnode_pts.sortkey = 100000
     ################################################################################
@@ -197,7 +198,7 @@ class SceneGraphApp(BasicUiCamSgApp):
     if self.dirty:
       self.dirty = False
       submesh1 = stripSubmesh(self.frusmesh1)
-      clipped = clipMeshWithFrustum(submesh1,self.frustum2,self.maxsteps_cut)
+      clipped = clipMeshWithFrustum(submesh1,self.frustum2,self.maxsteps_cut,debug=False)
       #dumpMeshVertices(clipped)
       #isec1 = clipped.convexHull(0)
       #isec1 = submesh1.convexHull(0)
