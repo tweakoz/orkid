@@ -14,7 +14,7 @@ using namespace pybind11::literals;
 
 namespace ork::python {
 ////////////////////////////////////////////////////////////////////////////////
-ORK_PUSH_SYMVIZ_PRIVATE
+
 struct PyCodecItem {
   py::object _pytype;
   ork::TypeId _orktype;
@@ -75,7 +75,7 @@ varval_t PyCodecImpl::decode(const py::object& val) const {
   OrkAssert(false); // unknown type!
   return rval;
 }
-ORK_POP_SYMVIZ
+
 ////////////////////////////////////////////////////////////////////////////////
 TypeCodec::TypeCodec() {
   _impl.make<PyCodecImpl>();

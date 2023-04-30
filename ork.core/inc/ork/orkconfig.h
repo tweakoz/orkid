@@ -25,9 +25,50 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 
-#define ORK_PUSH_SYMVIZ_PUBLIC _Pragma("GCC visibility push(default)")
-#define ORK_PUSH_SYMVIZ_PRIVATE _Pragma("GCC visibility push(hidden)")
-#define ORK_POP_SYMVIZ _Pragma("GCC visibility pop")
+# if defined(BUILDING_ORKID)
 
-#define ORK_API __attribute__ ((visibility("default")))
+    # if defined(__unix__) // macos, linux
+
+        #define ORK_API __attribute__ ((visibility("default")))
+        //#define ORK_API_PUSH __attribute__ ((visibility("default")))
+        //#define ORK_API_PUSH_PUBLIC _Pragma("GCC visibility push(default)")
+        //#define ORK_API_PUSH_PRIVATE _Pragma("GCC visibility push(hidden)")
+        //#define ORK_API_POP _Pragma("GCC visibility pop")
+
+    #elif defined(_WIN32) // windows
+
+        #define ORK_API __declspec(dllexport)
+
+    #else
+
+        #error
+
+    #endif
+
+#elif defined(USING_ORKID)
+
+    # if defined(__unix__) // macos, linux
+
+        #define ORK_API __attribute__ ((visibility("default")))
+        //#define ORK_API_PUSH_PUBLIC _Pragma("GCC visibility push(default)")
+        //#define ORK_API_PUSH_PRIVATE _Pragma("GCC visibility push(hidden)")
+        //#define ORK_API_POP _Pragma("GCC visibility pop")
+
+    #elif defined(_WIN32) // windows
+
+        #define ORK_API __declspec(dllimport)
+
+    #else
+    
+        #error
+
+    #endif
+
+#else
+
+  #error
+
+#endif
+
+
 

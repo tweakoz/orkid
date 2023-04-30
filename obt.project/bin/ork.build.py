@@ -121,6 +121,8 @@ with buildtrace.NestedBuildTrace({ "op": "ork.build.py"}) as nested:
 
   clangdep = ork.dep.instance("clang")
 
+  cmd += ["-DBUILDING_ORKID=ON"]
+
   cmd += ["-DCMAKE_CXX_COMPILER=%s"%clangdep.bin_clangpp]
   cmd += ["-DCMAKE_CC_COMPILER=%s"%clangdep.bin_clang]
 

@@ -13,7 +13,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED on)
 set(CMAKE_INSTALL_RPATH "$ENV{OBT_SUBSPACE_LIB_DIR}")
 set(CMAKE_BUILD_WITH_INSTALL_RPATH ON)
 
-
 #############################################################################################################
 
 function(orkid_find_python)
@@ -178,6 +177,13 @@ endfunction()
 function(ork_std_target_set_defs the_target)
 
   set( def_list "" )
+
+  IF(${BUILDING_ORKID})
+    list(APPEND def_list -DBUILDING_ORKID)
+  ELSE()
+    list(APPEND def_list -DUSING_ORKID)
+  ENDIF()
+
 
   IF(PROFILER)
     list(APPEND def_list -DBUILD_WITH_EASY_PROFILER)

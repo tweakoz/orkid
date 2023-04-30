@@ -12,7 +12,6 @@
 #include <ork/python/wraprawpointer.inl>
 #include <ork/kernel/varmap.inl>
 
-ORK_PUSH_SYMVIZ_PUBLIC
 
 namespace ork::python {
 
@@ -36,7 +35,7 @@ using encoderfn_t = std::function<void(const varval_t& inpval, pybind11::object&
    } \
   }
 
-struct TypeCodec {
+struct ORK_API TypeCodec {
   //////////////////////////////////
   static std::shared_ptr<TypeCodec> instance();
   pybind11::object encode(const varval_t& val) const;
@@ -85,5 +84,3 @@ protected:
 };
 
 } // namespace ork::python
-
-ORK_POP_SYMVIZ
