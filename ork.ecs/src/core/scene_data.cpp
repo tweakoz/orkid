@@ -336,7 +336,7 @@ void SceneData::cleanup() {
   //////////////////////////////////////////
   // clean up dead systems
   //////////////////////////////////////////
-  std::set<PoolString> keys_to_delete;
+  std::set<std::string> keys_to_delete;
   for (auto it : _systemDatas) {
     auto pscd = it.second;
     if (pscd == nullptr) {

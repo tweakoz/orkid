@@ -34,7 +34,7 @@ namespace ork { namespace lev2 {
 static bool FORCE_MODEL_REGEN(){
   return genviron.has("ORKID_LEV2_FORCE_MODEL_REGEN");
 }
-static logchannel_ptr_t logchan_mioR = logger()->createChannel("gfxmodelIOREAD",fvec3(0.8,0.8,0.4),false);
+static logchannel_ptr_t logchan_mioR = logger()->createChannel("gfxmodelIOREAD",fvec3(0.8,0.8,0.4),true);
 static logchannel_ptr_t logchan_mioW = logger()->createChannel("gfxmodelIOWRITE",fvec3(0.8,0.7,0.4));
 ///////////////////////////////////////////////////////////////////////////////
 bool SaveXGM(const AssetPath& Filename, const lev2::XgmModel* mdl) {
@@ -337,6 +337,8 @@ bool XgmModel::_loadXGM(XgmModel* mdl, datablock_ptr_t datablock) {
       logchan_mioR->log( "pmatname<%s>", pmatname );
       logchan_mioR->log( "pmatclassname<%s>", pmatclassname );
       ork::object::ObjectClass* pmatclass = rtti::autocast(rtti::Class::FindClass(pmatclassname));
+      logchan_mioR->log( "pmatclass<%p>", pmatclass );
+      OrkAssert(pmatclass != nullptr);
 
       static const int kdefaulttranssortpass = 100;
 
@@ -701,7 +703,7 @@ datablock_ptr_t writeXgmToDatablock(const lev2::XgmModel* mdl) {
     HeaderStream->AddItem(istring);
 
     rtti::Class* pclass         = pmat->GetClass();
-    const PoolString& classname = pclass->Name();
+    auto classname = pclass->Name();
     const char* pclassname      = classname.c_str();
 
     logchan_mioW->log("WriteXgm: material<%d> class<%s> name<%s>", imat, pclassname, pmat->GetName().c_str());

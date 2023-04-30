@@ -15,7 +15,8 @@ namespace dflow = ork::dataflow;
 
 namespace ork {
 
-void TouchCoreClasses() {
+struct ClassToucher{
+  ClassToucher(){
   HotKeyConfiguration::GetClassStatic();
   HotKey::GetClassStatic();
   MultiCurve1D::GetClassStatic();
@@ -53,8 +54,11 @@ void TouchCoreClasses() {
   dflow::inplugdata<dflow::Vec3XfPlugTraits>::GetClassStatic();
   dflow::outplugdata<dflow::Vec3fPlugTraits>::GetClassStatic();
   dflow::vect3inplugdata::GetClassStatic();
+  }
+};
 
-  //dflow::vect3inplugxfdata<dflow::fvec3xfdata>::GetClassStatic();
+void TouchCoreClasses() {
+  static ork::ClassToucher toucher;
 }
 
 } // namespace ork

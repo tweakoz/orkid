@@ -78,171 +78,174 @@ void DummyContextInit();
 
 void PreferOpenGL() {
   static auto ctx = ork::lev2::OpenGlContextInit();
-  gbPREFEROPENGL = true;
+  gbPREFEROPENGL  = true;
 }
 
-void ClassInit() {
-  AllocationLabel label("ork::lev2::Init");
+struct ClassToucher {
+  ClassToucher() {
+    AllocationLabel label("ork::lev2::Init");
 
-  Context::GetClassStatic();
+    Context::GetClassStatic();
 
-  PreferOpenGL();
+    PreferOpenGL();
 
-  GfxEnv::GetRef();
-  GfxPrimitives::GetRef();
+    GfxEnv::GetRef();
+    GfxPrimitives::GetRef();
 
-  //////////////////////////////////////////
-  // touch of class
+    //////////////////////////////////////////
+    // touch of class
 
+    LightData::GetClassStatic();
+    PointLightData::GetClassStatic();
+    DirectionalLightData::GetClassStatic();
+    AmbientLightData::GetClassStatic();
+    SpotLightData::GetClassStatic();
 
-  LightData::GetClassStatic();
-  PointLightData::GetClassStatic();
-  DirectionalLightData::GetClassStatic();
-  AmbientLightData::GetClassStatic();
-  SpotLightData::GetClassStatic();
-  
-  scenegraph::DrawableDataKvPair::GetClassStatic();
-  DrawableData::GetClassStatic();
-  ModelDrawableData::GetClassStatic();
-  InstancedModelDrawableData::GetClassStatic();
-  BillboardStringDrawableData::GetClassStatic();
-  InstancedBillboardStringDrawableData::GetClassStatic();
+    scenegraph::DrawableDataKvPair::GetClassStatic();
+    DrawableData::GetClassStatic();
+    ModelDrawableData::GetClassStatic();
+    InstancedModelDrawableData::GetClassStatic();
+    BillboardStringDrawableData::GetClassStatic();
+    InstancedBillboardStringDrawableData::GetClassStatic();
 
+    XgmAnimChannel::GetClassStatic();
+    XgmFloatAnimChannel::GetClassStatic();
+    XgmVect3AnimChannel::GetClassStatic();
+    XgmVect4AnimChannel::GetClassStatic();
+    XgmDecompMatrixAnimChannel::GetClassStatic();
 
-  XgmAnimChannel::GetClassStatic();
-  XgmFloatAnimChannel::GetClassStatic();
-  XgmVect3AnimChannel::GetClassStatic();
-  XgmVect4AnimChannel::GetClassStatic();
-  XgmDecompMatrixAnimChannel::GetClassStatic();
+    particle::ParticleModuleData::GetClassStatic();
+    particle::ParticlePoolData::GetClassStatic();
+    particle::GlobalModuleData::GetClassStatic();
+    particle::RingEmitterData::GetClassStatic();
+    particle::GravityModuleData::GetClassStatic();
+    particle::TurbulenceModuleData::GetClassStatic();
+    particle::VortexModuleData::GetClassStatic();
+    particle::RendererModuleData::GetClassStatic();
+    particle::SpriteRendererData::GetClassStatic();
 
-  particle::ParticleModuleData::GetClassStatic();
-  particle::ParticlePoolData::GetClassStatic();
-  particle::GlobalModuleData::GetClassStatic();
-  particle::RingEmitterData::GetClassStatic();
-  particle::GravityModuleData::GetClassStatic();
-  particle::TurbulenceModuleData::GetClassStatic();
-  particle::VortexModuleData::GetClassStatic();
-  particle::RendererModuleData::GetClassStatic();
-  particle::SpriteRendererData::GetClassStatic();
+    particle::particlebuf_outplugdata_t::GetClassStatic();
+    particle::particlebuf_inplugdata_t::GetClassStatic();
 
-  particle::particlebuf_outplugdata_t::GetClassStatic();
-  particle::particlebuf_inplugdata_t::GetClassStatic();
+    /*
+    particle::ExtConnector::GetClassStatic();
 
-  /*
-  particle::ExtConnector::GetClassStatic();
+    particle::Constants::GetClassStatic();
+    particle::FloatOp2Module::GetClassStatic();
+    particle::Vec3Op2Module::GetClassStatic();
+    particle::Vec3SplitModule::GetClassStatic();
 
-  particle::Constants::GetClassStatic();
-  particle::FloatOp2Module::GetClassStatic();
-  particle::Vec3Op2Module::GetClassStatic();
-  particle::Vec3SplitModule::GetClassStatic();
-
-  particle::ReEmitter::GetClassStatic();
+    particle::ReEmitter::GetClassStatic();
 
 
-  particle::SpriteRenderer::GetClassStatic();
+    particle::SpriteRenderer::GetClassStatic();
 
-  ork::dataflow::floatxfitembase::GetClassStatic();
-  ork::dataflow::floatxfmsbcurve::GetClassStatic();*/
+    ork::dataflow::floatxfitembase::GetClassStatic();
+    ork::dataflow::floatxfmsbcurve::GetClassStatic();*/
 
-  /*dataflow::outplug<proctex::ImgBase>::GetClassStatic();
-  dataflow::inplug<proctex::ImgBase>::GetClassStatic();
+    /*dataflow::outplug<proctex::ImgBase>::GetClassStatic();
+    dataflow::inplug<proctex::ImgBase>::GetClassStatic();
 
-  proctex::ProcTex::GetClassStatic();
-  proctex::ImgModule::GetClassStatic();
-  proctex::Img32Module::GetClassStatic();
-  proctex::Img64Module::GetClassStatic();
-  proctex::Module::GetClassStatic();
+    proctex::ProcTex::GetClassStatic();
+    proctex::ImgModule::GetClassStatic();
+    proctex::Img32Module::GetClassStatic();
+    proctex::Img64Module::GetClassStatic();
+    proctex::Module::GetClassStatic();
 
-  proctex::Periodic::GetClassStatic();
-  proctex::RotSolid::GetClassStatic();
-  proctex::Colorize::GetClassStatic();
-  proctex::SolidColor::GetClassStatic();
-  proctex::ImgOp2::GetClassStatic();
-  proctex::ImgOp3::GetClassStatic();
-  proctex::Transform::GetClassStatic();
-  proctex::Texture::GetClassStatic();
-  proctex::Gradient::GetClassStatic();
-  proctex::Curve1D::GetClassStatic();
-  proctex::Global::GetClassStatic();
-  proctex::Group::GetClassStatic();
+    proctex::Periodic::GetClassStatic();
+    proctex::RotSolid::GetClassStatic();
+    proctex::Colorize::GetClassStatic();
+    proctex::SolidColor::GetClassStatic();
+    proctex::ImgOp2::GetClassStatic();
+    proctex::ImgOp3::GetClassStatic();
+    proctex::Transform::GetClassStatic();
+    proctex::Texture::GetClassStatic();
+    proctex::Gradient::GetClassStatic();
+    proctex::Curve1D::GetClassStatic();
+    proctex::Global::GetClassStatic();
+    proctex::Group::GetClassStatic();
 
-  proctex::Cells::GetClassStatic();
-  proctex::Octaves::GetClassStatic();
+    proctex::Cells::GetClassStatic();
+    proctex::Octaves::GetClassStatic();
 
-  proctex::SphMap::GetClassStatic();
-  proctex::SphRefract::GetClassStatic();
-  proctex::H2N::GetClassStatic();
-  proctex::UvMap::GetClassStatic();
-  proctex::Kaled::GetClassStatic();*/
+    proctex::SphMap::GetClassStatic();
+    proctex::SphRefract::GetClassStatic();
+    proctex::H2N::GetClassStatic();
+    proctex::UvMap::GetClassStatic();
+    proctex::Kaled::GetClassStatic();*/
 
-  RegisterClassX(PointLightData);
+    RegisterClassX(PointLightData);
 
-  RegisterClassX(OutputCompositingNode);
-  RegisterClassX(VrCompositingNode);
-  RegisterClassX(ScreenOutputCompositingNode);
+    RegisterClassX(OutputCompositingNode);
+    RegisterClassX(VrCompositingNode);
+    RegisterClassX(ScreenOutputCompositingNode);
 
-  RegisterClassX(RenderCompositingNode);
-  RegisterClassX(compositor::UnlitNode);
-  RegisterClassX(pbr::deferrednode::DeferredCompositingNode);
-  RegisterClassX(pbr::deferrednode::DeferredCompositingNodePbr);
+    RegisterClassX(RenderCompositingNode);
+    RegisterClassX(compositor::UnlitNode);
+    RegisterClassX(pbr::deferrednode::DeferredCompositingNode);
+    RegisterClassX(pbr::deferrednode::DeferredCompositingNodePbr);
 
 #if defined(ENABLE_NVMESH_SHADERS)
-  RegisterClassX(pbr::deferrednode::DeferredCompositingNodeNvMs);
+    RegisterClassX(pbr::deferrednode::DeferredCompositingNodeNvMs);
 #endif
 
-  RegisterClassX(CompositingScene);
-  RegisterClassX(CompositingData);
-  RegisterClassX(CompositingSceneItem);
+    RegisterClassX(CompositingScene);
+    RegisterClassX(CompositingData);
+    RegisterClassX(CompositingSceneItem);
 
-  RegisterClassX(PostCompositingNode);
-  RegisterClassX(ScaleBiasCompositingNode);
-  //RegisterClassX(PtxCompositingNode);
-  RegisterClassX(Op2CompositingNode);
-  RegisterClassX(NodeCompositingTechnique);
-  RegisterClassX(PBRMaterial);
+    RegisterClassX(PostCompositingNode);
+    RegisterClassX(ScaleBiasCompositingNode);
+    // RegisterClassX(PtxCompositingNode);
+    RegisterClassX(Op2CompositingNode);
+    RegisterClassX(NodeCompositingTechnique);
+    RegisterClassX(PBRMaterial);
+    // RegisterClassX(TerrainDrawableData);
+    RegisterClassX(TextureAsset);
+    RegisterClassX(FxShaderAsset);
+    RegisterClassX(XgmAnimAsset);
+    RegisterClassX(XgmModelAsset);
 
-  //RegisterClassX(TerrainDrawableData);
-  RegisterClassX(TextureAsset);
-  RegisterClassX(FxShaderAsset);
-  RegisterClassX(XgmAnimAsset);
-  RegisterClassX(XgmModelAsset);
+    //////////////////////////////////////////
+    // register audio classes
+    //////////////////////////////////////////
 
-  //////////////////////////////////////////
-  // register audio classes
-  //////////////////////////////////////////
+    RegisterClassX(audio::singularity::ProgramData);
+    RegisterClassX(audio::singularity::BankData);
 
-  RegisterClassX(audio::singularity::ProgramData);
-  RegisterClassX(audio::singularity::BankData);
+    RegisterClassX(audio::singularity::LayerData);
+    RegisterClassX(audio::singularity::AlgData);
+    RegisterClassX(audio::singularity::DspStageData);
 
-  RegisterClassX(audio::singularity::LayerData);
-  RegisterClassX(audio::singularity::AlgData);
-  RegisterClassX(audio::singularity::DspStageData);
+    RegisterClassX(audio::singularity::BlockModulationData);
+    RegisterClassX(audio::singularity::DspParamData);
 
-  RegisterClassX(audio::singularity::BlockModulationData);
-  RegisterClassX(audio::singularity::DspParamData);
+    RegisterClassX(audio::singularity::ControllerData);
+    RegisterClassX(audio::singularity::AsrData);
+    RegisterClassX(audio::singularity::RateLevelEnvData);
+    RegisterClassX(audio::singularity::YmEnvData);
+    RegisterClassX(audio::singularity::LfoData);
+    RegisterClassX(audio::singularity::FunData);
+    RegisterClassX(audio::singularity::ConstantControllerData);
+    RegisterClassX(audio::singularity::CustomControllerData);
 
-  RegisterClassX(audio::singularity::ControllerData);
-  RegisterClassX(audio::singularity::AsrData);
-  RegisterClassX(audio::singularity::RateLevelEnvData);
-  RegisterClassX(audio::singularity::YmEnvData);
-  RegisterClassX(audio::singularity::LfoData);
-  RegisterClassX(audio::singularity::FunData);
-  RegisterClassX(audio::singularity::ConstantControllerData);
-  RegisterClassX(audio::singularity::CustomControllerData);
+    RegisterClassX(audio::singularity::IoMask);
+    RegisterClassX(audio::singularity::DspBlockData);
+    RegisterClassX(audio::singularity::PMXData);
+    RegisterClassX(audio::singularity::PMXMixData);
+    RegisterClassX(audio::singularity::MonoInStereoOutData);
 
-  RegisterClassX(audio::singularity::IoMask);
-  RegisterClassX(audio::singularity::DspBlockData);
-  RegisterClassX(audio::singularity::PMXData);
-  RegisterClassX(audio::singularity::PMXMixData);
-  RegisterClassX(audio::singularity::MonoInStereoOutData);
+    //////////////////////////////////////////
+    // register lev2 graphics target classes
+    //////////////////////////////////////////
 
-  //////////////////////////////////////////
-  // register lev2 graphics target classes
-  //////////////////////////////////////////
+    DummyContextInit();
 
-  DummyContextInit();
+    //////////////////////////////////////////
+  }
+};
 
-  //////////////////////////////////////////
+void ClassInit() {
+  static ClassToucher toucher;
 }
 
 ork::lev2::context_ptr_t gloadercontext;
@@ -250,38 +253,39 @@ ork::lev2::context_ptr_t gloadercontext;
 void GfxInit(const std::string& gfxlayer) {
 
 #if defined(ENABLE_VULKAN)
-  //vk::init();
+  // vk::init();
 #endif
 
   if (gfxlayer != "dummy") {
 #if defined(ORK_CONFIG_OPENGL)
     gloadercontext = OpenGlContextInit();
-    //FontMan::gpuInit(gloadercontext.get());
+    // FontMan::gpuInit(gloadercontext.get());
 #endif
   }
   opq::init();
 }
+struct ModuleInit {
 
-void initModule(ork::appinitdata_ptr_t init_data){
+  ModuleInit(ork::appinitdata_ptr_t init_data) {
+    _ginitdata = init_data;
 
-  _ginitdata = init_data;
+    auto it = init_data->_miscvars.find("lev2_init");
 
-  auto it = init_data->_miscvars.find("lev2_init");
+    if (it == init_data->_miscvars.end()) {
+      init_data->enqueuePreInitOp([] { ClassInit(); });
+      init_data->_miscvars["lev2_init"] = nullptr;
+    }
 
-  if(it == init_data->_miscvars.end() ){
-    init_data->enqueuePreInitOp([]{
-      ClassInit();
-    });
-    init_data->_miscvars["lev2_init"] = nullptr;
+    ///////////////////////////////////////////////////////////////
+
+    meshutil::misc_init();
+
+    ///////////////////////////////////////////////////////////////
   }
+};
 
-  ///////////////////////////////////////////////////////////////
-
-  meshutil::misc_init();
-
-
-  ///////////////////////////////////////////////////////////////
-
+void initModule(ork::appinitdata_ptr_t init_data) {
+  static ModuleInit initer(init_data);
 }
 
 } // namespace lev2

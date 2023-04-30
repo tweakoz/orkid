@@ -80,7 +80,7 @@ public:
   template <typename T> const T* typedComponent(bool bsubclass = false) const;
 
   Component* GetComponentByClass(rtti::Class* clazz);
-  Component* GetComponentByClassName(ork::PoolString classname);
+  Component* GetComponentByClassName(std::string classname);
 
   dagnodedata_constptr_t GetDagNode() const {
     return _dagnode;

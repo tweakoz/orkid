@@ -138,7 +138,6 @@ std::pair<AssetSetEntry*, bool> FindAssetEntryInternal(AssetSetLevel* top_level,
 
 bool AssetSet::Load(int depth) {
   int load_count = 0;
-  ork::ConstString name("");
 
   for (AssetSetLevel* level = mTopLevel; //
        depth != 0 && level != NULL;
@@ -148,7 +147,7 @@ bool AssetSet::Load(int depth) {
       if (false == entry->IsLoaded()) {
         if (entry->Load(mTopLevel)) {
           load_count++;
-          name = entry->asset()->GetClass()->Name();
+          auto name = entry->asset()->GetClass()->Name();
         }
       }
     }

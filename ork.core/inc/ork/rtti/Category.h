@@ -9,7 +9,6 @@
 
 #include <ork/rtti/RTTI.h>
 #include <ork/rtti/Class.h>
-
 #include <ork/config/config.h>
 
 namespace ork { namespace reflect {
@@ -20,9 +19,12 @@ class IDeserializer;
 namespace ork { namespace rtti {
 
 class Category : public Class {
-  RttiDeclareExplicit(Category, Class, NamePolicy, Category) public : Category(const RTTIData& data)
-      : Class(data) {
+  RttiDeclareExplicit(Category, Class, NamePolicy, Category); //
+  public: //
+  Category(const RTTIData& data) //
+      : Class(data) { //
   }
+  
   inline void make_abstract() override {
   }
 };

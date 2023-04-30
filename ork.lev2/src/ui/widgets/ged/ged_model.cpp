@@ -344,7 +344,7 @@ geditemnode_ptr_t ObjModel::recurse(
   if (auto as_conststr = anno_editor_class.tryAs<ConstString>()) {
     auto anno_edclass = as_conststr.value();
     if (anno_edclass.length()) {
-      rtti::Class* AnnoEditorClass = rtti::Class::FindClass(anno_edclass);
+      rtti::Class* AnnoEditorClass = rtti::Class::FindClass(anno_edclass.c_str());
       if (AnnoEditorClass) {
         auto clazz = rtti::safe_downcast<ork::object::ObjectClass*>(AnnoEditorClass);
         OrkAssert(clazz != nullptr);
@@ -447,7 +447,7 @@ geditemnode_ptr_t ObjModel::createNode(
   /////////////////////////////////////////////////////////////////////////
   ConstString anno_edclass = prop->GetAnnotation("editor.class");
   if (anno_edclass.length()) {
-    AnnoEditorClass = rtti::Class::FindClass(anno_edclass);
+    AnnoEditorClass = rtti::Class::FindClass(anno_edclass.c_str());
   }
   /////////////////////////////////////////////////////////////////////////
   if (AnnoEditorClass) {

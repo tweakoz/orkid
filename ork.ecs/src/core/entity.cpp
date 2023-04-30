@@ -107,7 +107,7 @@ Component* Entity::GetComponentByClass(rtti::Class* clazz) {
   return nullptr;
 }
 ///////////////////////////////////////////////////////////////////////////////
-Component* Entity::GetComponentByClassName(ork::PoolString classname) {
+Component* Entity::GetComponentByClassName(std::string classname) {
   if (rtti::Class* clazz = rtti::Class::FindClass(classname))
     return GetComponentByClass(clazz);
   return nullptr;

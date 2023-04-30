@@ -26,7 +26,7 @@ public:                                                         \
   using class_t = typename RTTITyped::RTTICategory;             \
   static void describeX(class_t* clazz);                        \
   static void Describe();                                       \
-  static ::ork::ConstString DesignNameStatic();                 \
+  static ::ork::rtti::Class::name_t DesignNameStatic();                 \
   static class_t* GetClassStatic();                             \
   static object::class_ptr_t objectClassStatic();               \
   class_t* GetClass() const override;                           \
@@ -39,7 +39,7 @@ public:                                                         \
   typedef RTTITyped::RTTICategory class_t;                      \
   static void describeX(class_t* clazz);                        \
   static void Describe();                                       \
-  static ::ork::ConstString DesignNameStatic();                 \
+  static ::ork::rtti::Class::name_t DesignNameStatic();                 \
   static class_t* GetClassStatic();                             \
   static ::ork::object::class_ptr_t objectClassStatic();               \
   class_t* GetClass() const override;                           \
@@ -53,7 +53,7 @@ public:                                                         \
   typedef RTTITyped::RTTICategory class_t;                      \
   static void describeX(class_t* clazz);                        \
   static void Describe();                                       \
-  static ::ork::ConstString DesignNameStatic();                 \
+  static ::ork::rtti::Class::name_t DesignNameStatic();                 \
   static class_t* GetClassStatic();                             \
   static object::class_ptr_t objectClassStatic();               \
   class_t* GetClass() const override;                           \
@@ -68,7 +68,7 @@ public:                                                         \
   using class_t = typename RTTITyped::RTTICategory;             \
   static void describeX(class_t* clazz);                        \
   static void Describe();                                       \
-  static ::ork::ConstString DesignNameStatic();                 \
+  static ::ork::rtti::Class::name_t DesignNameStatic();                 \
   static class_t* GetClassStatic();                             \
   static object::class_ptr_t objectClassStatic();               \
   class_t* GetClass() const override;                           \
@@ -83,7 +83,7 @@ public:                                                         \
   typedef RTTITyped::RTTICategory class_t;                      \
   static void describeX(class_t* clazz);                        \
   static void Describe();                                       \
-  static ::ork::ConstString DesignNameStatic();                 \
+  static ::ork::rtti::Class::name_t DesignNameStatic();                 \
   static class_t* GetClassStatic();                             \
   static object::class_ptr_t objectClassStatic();               \
   class_t* GetClass() const override;                           \
@@ -93,7 +93,7 @@ private:
 ////////////////
 
 #define ImplementReflectionX(ClassName, TheDesignName)          \
-  ::ork::ConstString ClassName::DesignNameStatic() {            \
+  ::ork::rtti::Class::name_t ClassName::DesignNameStatic() {            \
     return TheDesignName;                                       \
   }                                                             \
   void ClassName::Describe() {                                  \
@@ -126,7 +126,7 @@ private:
     return dynamic_cast<::ork::object::class_ptr_t>(GetClassStatic()); \
   }                                                             \
   template <> \
-  ::ork::ConstString ClassName::DesignNameStatic() { \
+  ::ork::rtti::Class::name_t ClassName::DesignNameStatic() { \
     return TheDesignName;                                       \
   }                                                             \
   template <> \

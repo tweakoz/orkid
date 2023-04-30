@@ -26,7 +26,8 @@ using shared_factory_t = std::function<rtti::castable_ptr_t()>;
 using raw_factory_t    = rtti::ICastable* (*)();
 
 struct Class : public ICastable {
-public:
+  public:
+  using name_t = std::string;
   Class(const RTTIData&);
 
   static void InitializeClasses();
@@ -36,8 +37,8 @@ public:
   Class* NextSibling();
   Class* PrevSibling();
   const Class* Parent() const;
-  const PoolString& Name() const;
-  void SetName(ConstString name, bool badd2map = true);
+  const name_t& Name() const;
+  void SetName(name_t name, bool badd2map = true);
 
   void setRawFactory(raw_factory_t factory);
   void setSharedFactory(shared_factory_t factory);
@@ -54,10 +55,10 @@ public:
 
   virtual void Initialize();
 
-  static Class* FindClass(const ConstString& name);
-  static Class* FindClassNoCase(const ConstString& name);
+  static Class* FindClass(const name_t& name);
+  static Class* FindClassNoCase(const name_t& name);
 
-  static ConstString DesignNameStatic();
+  static name_t DesignNameStatic();
   static Category* category();
   /*virtual*/ Class* GetClass() const;
 
@@ -68,7 +69,7 @@ public:
   const ICastable* Cast(const ICastable* other) const;
   ICastable* Cast(ICastable* other) const;
 
-  static void CreateClassAlias(ConstString name, Class*);
+  static void CreateClassAlias(name_t name, Class*);
 
   static inline void registerX(Class* clazz) {
     _explicitLinkClasses.insert(clazz);
@@ -96,15 +97,14 @@ private:
   Class* mNextSiblingClass;
   Class* mPrevSiblingClass;
 
-  PoolString mClassName;
+  name_t _classname;
 
   Class* mNextClass;
 
   static Class* sLastClass;
 
-  typedef orklut<PoolString, Class*> ClassMapType;
+  using ClassMapType = orklut<name_t, Class*>;
   static std::set<Class*> _explicitLinkClasses;
-  static ClassMapType mClassMap;
 };
 
 }} // namespace ork::rtti

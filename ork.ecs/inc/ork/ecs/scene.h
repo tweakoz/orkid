@@ -42,7 +42,7 @@ struct SceneData final : public ork::Object {
   DeclareConcreteX(SceneData, ork::Object);
 
 public:
-  typedef orkmap<PoolString, systemdata_ptr_t> SystemDataLut;
+  using SystemDataLut = orkmap<std::string, systemdata_ptr_t>;
 
   SceneData();
   ~SceneData() final;

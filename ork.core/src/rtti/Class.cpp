@@ -28,6 +28,13 @@ namespace ork { namespace rtti {
 std::set<Class*> Class::_explicitLinkClasses;
 static int counter = 0;
 
+using class_map_t = std::unordered_map<std::string, Class*>;
+using class_map_ptr_t = std::shared_ptr<class_map_t>;
+static class_map_ptr_t getClassMap(){
+  static class_map_ptr_t _gclassMap = std::make_shared<class_map_t>();
+  return _gclassMap;
+}
+
 Class::Class(const RTTIData& rtti)
     : _sharedFactory(nullptr)
     , _rawFactory(nullptr)
@@ -61,7 +68,7 @@ void Class::InitializeClasses() {
     if (clazz)
       _pendingclasses.insert(clazz);
     // clazz->Initialize();
-    // orkprintf("InitClass class<%p:%s> next<%p>\n", clazz, clazz->Name().c_str(), clazz->mNextClass);
+    orkprintf("InitClass class<%p:%s> next<%p>\n", clazz, clazz->Name().c_str(), clazz->mNextClass);
   }
   sLastClass = NULL;
   for (auto clazz : _explicitLinkClasses) {
@@ -77,26 +84,29 @@ void Class::InitializeClasses() {
         //__asm__ volatile("int $0x03");
       }
       clazz->Initialize();
-       //orkprintf("InitClass class<%p:%s>\n", clazz, clazz->Name().c_str());
+      orkprintf("InitClass@2 class<%p:%s>\n", clazz, clazz->Name().c_str());
     }
   }
+  //OrkAssert(false);
 }
 
-void Class::SetName(ConstString name, bool badd2map) {
+void Class::SetName(std::string name, bool badd2map) {
+  OrkAssert(name.length());
   if (name.length()) {
-    mClassName = AddPooledString(name.c_str());
+    _classname = name;
+    printf( "Class<%p>::SetName<%s> add2map<%d> classmap<%p>\n", (void*) this, _classname.c_str(), int(badd2map), (void*) getClassMap().get() );
 
     if (badd2map) {
-      ClassMapType::iterator it = mClassMap.find(mClassName);
-      if (it != mClassMap.end()) {
+      auto it = getClassMap()->find(_classname);
+      if (it != getClassMap()->end()) {
         if (it->second != this) {
           Class* previous = it->second;
 
-          orkprintf("ERROR: Duplicate class name %s! previous class %p\n", mClassName.c_str(), previous);
+          orkprintf("ERROR: Duplicate class name %s! previous class %p\n", _classname.c_str(), previous);
           OrkAssert(false);
         }
       } else {
-        mClassMap.AddSorted(mClassName, this);
+        (*getClassMap())[_classname]=this;
       }
     }
   }
@@ -129,14 +139,14 @@ Class* Class::PrevSibling() {
   return mPrevSiblingClass;
 }
 
-void Class::AddChild(Class* pClass) {
+void Class::AddChild(Class* clazz) {
   if (mChildClass) {
-    pClass->mNextSiblingClass = mChildClass->mNextSiblingClass;
-    pClass->mPrevSiblingClass = mChildClass;
-    pClass->FixSiblingLinks();
+    clazz->mNextSiblingClass = mChildClass->mNextSiblingClass;
+    clazz->mPrevSiblingClass = mChildClass;
+    clazz->FixSiblingLinks();
   }
 
-  mChildClass = pClass;
+  mChildClass = clazz;
 }
 
 void Class::FixSiblingLinks() {
@@ -157,18 +167,25 @@ void Class::RemoveFromHierarchy() {
   mNextSiblingClass = mPrevSiblingClass = this;
 }
 
-const PoolString& Class::Name() const {
-  return mClassName;
+const std::string& Class::Name() const {
+  return _classname;
 }
 
-Class* Class::FindClass(const ConstString& name) {
-  return OldStlSchoolFindValFromKey(mClassMap, FindPooledString(name.c_str()), NULL);
+Class* Class::FindClass(const std::string& name) {
+  auto it = getClassMap()->find(name);
+  Class* rval = nullptr;
+  if (it != getClassMap()->end()) {
+    rval = it->second;
+  }
+  printf( "Class::FindClass<%s> clazz<%p> classmap<%p>\n", name.c_str(), rval, (void*) getClassMap().get() );
+  return rval;
+
 }
 
-Class* Class::FindClassNoCase(const ConstString& name) {
+Class* Class::FindClassNoCase(const std::string& name) {
   std::string nocasename = name.c_str();
   std::transform(nocasename.begin(), nocasename.end(), nocasename.begin(), ::tolower);
-  for (const auto& it : mClassMap) {
+  for (const auto& it : (*getClassMap())) {
     if (0 == strcasecmp(it.first.c_str(), nocasename.c_str()))
       return it.second;
   }
@@ -199,16 +216,14 @@ ICastable* Class::Cast(ICastable* other) const {
   return NULL;
 }
 
-void Class::CreateClassAlias(ConstString name, Class* pclass) {
-  PoolString ClassName = AddPooledString(name.c_str());
+void Class::CreateClassAlias(std::string name, Class* clazz) {
 
-  ClassMapType::iterator it = mClassMap.find(ClassName);
-  OrkAssert(it == mClassMap.end());
-  mClassMap.AddSorted(ClassName, pclass);
+  auto it = getClassMap()->find(name);
+  OrkAssert(it == getClassMap()->end());
+  (*getClassMap())[name] = clazz;
 }
 
 Class* Class::sLastClass = NULL;
-Class::ClassMapType Class::mClassMap;
 
 Category* Class::category() {
   static Category s_category(RTTI<Class, ICastable, NamePolicy, Category>::ClassRTTI());
@@ -218,7 +233,7 @@ Category* Class::category() {
 Class* Class::GetClass() const {
   return Class::GetClassStatic();
 }
-ConstString Class::DesignNameStatic() {
+std::string Class::DesignNameStatic() {
   return "Class";
 }
 
