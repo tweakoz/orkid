@@ -10,10 +10,12 @@
             ],
             "defines": [
               "BUILD_WITH_EASY_PROFILER",
+              "BUILDING_ORKID",
               "ORK_ARCHITECTURE_X86_64",
               "ORK_CONFIG_OPENGL",
               "ORK_CONFIG_IX",
               "LINUX",
+              "__APPLE__",
               "GCC",
               "_REENTRANT",
               "_LARGEFILE64_SOURCE",
