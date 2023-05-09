@@ -46,7 +46,6 @@ struct TestApplication {
 
 int main(int argc, char** argv, char** envp) {
   auto init_data = std::make_shared<ork::AppInitData>(argc,argv,envp);
-  genviron.init_from_envp(envp);
 
     svar128_t var, var2;
     var.set<int>(1);

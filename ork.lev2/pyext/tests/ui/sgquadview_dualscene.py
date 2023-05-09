@@ -7,15 +7,21 @@
 # see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ################################################################################
 
-import sys, math, random, signal, numpy, ork.path
+import sys, math, random, signal, numpy, ork.path, os
 from orkengine.core import *
 from orkengine.lev2 import *
-sys.path.append((thisdir()/".."/".."/"examples"/"python").normalized.as_string) # add parent dir to path
+from PIL import Image
+
+################################################################################
+
+l2exdir = (lev2exdir()/"python").normalized.as_string
+sys.path.append(l2exdir) # add parent dir to path
 from common.cameras import *
 from common.shaders import *
 from common.primitives import createGridData, createCubePrim
 from common.scenegraph import createSceneGraph
-from PIL import Image
+
+################################################################################
 
 save_images = False 
 do_offscreen = False 
@@ -65,7 +71,7 @@ class UiSgQuadViewTestApp(object):
   def __init__(self):
     super().__init__()
 
-    self.ezapp = OrkEzApp.create(self,offscreen=do_offscreen)
+    self.ezapp = OrkEzApp.create(self, offscreen=do_offscreen)
     self.ezapp.setRefreshPolicy(RefreshFixedFPS, 30)
 
     # enable UI draw mode

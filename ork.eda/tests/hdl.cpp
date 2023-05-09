@@ -177,7 +177,6 @@ TEST(hdl1) {
   /////////////////////////////////////
   if (1) { // iverilog sim
     ork::Spawner s;
-    s.mEnvironment.init_from_envp(::environ);
     s.mWorkingDirectory = getcwd(nullptr, 0);
     printf("curwd<%s>\n", s.mWorkingDirectory.c_str());
     s.mCommandLine = "iverilog";

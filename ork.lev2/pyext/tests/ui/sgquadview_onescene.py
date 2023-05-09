@@ -10,12 +10,18 @@
 import sys, math, random, signal, numpy, ork.path
 from orkengine.core import *
 from orkengine.lev2 import *
-sys.path.append((thisdir()/".."/".."/"examples"/"python").normalized.as_string) # add parent dir to path
+from PIL import Image
+
+################################################################################
+
+l2exdir = (lev2exdir()/"python").normalized.as_string
+sys.path.append(l2exdir) # add parent dir to path
 from common.cameras import *
 from common.shaders import *
 from common.primitives import createGridData, createCubePrim
 from common.scenegraph import createSceneGraph
-from PIL import Image
+
+################################################################################
 
 save_images = False 
 do_offscreen = False 

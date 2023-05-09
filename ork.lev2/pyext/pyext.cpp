@@ -108,6 +108,15 @@ void lev2apppoll() {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+static file::Path lev2exdir() {
+  std::string base;
+  bool OK = genviron.get("ORKLEV2EXAMPLESDIR",base);
+  OrkAssert(OK);
+  return file::Path(base);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 namespace ork {
 
 PYBIND11_MODULE(_lev2, module_lev2) {
@@ -118,6 +127,7 @@ PYBIND11_MODULE(_lev2, module_lev2) {
   //////////////////////////////////////////////////////////////////////////////
   module_lev2.def("lev2appinit", &lev2appinit);
   module_lev2.def("lev2apppoll", &lev2apppoll);
+  module_lev2.def("lev2exdir", &lev2exdir);
   //////////////////////////////////////////////////////////////////////////////
   pyinit_ui(module_lev2);
   pyinit_gfx(module_lev2);

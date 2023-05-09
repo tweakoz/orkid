@@ -97,7 +97,6 @@ orkezapp_ptr_t OrkEzApp::create(appinitdata_ptr_t initdata) {
     ImGuiIO& io = ImGui::GetIO();
 
     Environment env;
-    env.init_from_envp(initdata->_envp);
     std::string home_out;
     static file::Path imgui_ini_path;
     if (env.get("HOME", home_out)) {
@@ -209,12 +208,9 @@ OrkEzApp::OrkEzApp(appinitdata_ptr_t initdata)
   _vars = std::make_shared<varmap::VarMap>();
 
   /////////////////////////////////////////////
-  if (initdata->_envp) {
-    genviron.init_from_envp(initdata->_envp);
-    std::string orkdirstr;
-    genviron.get("ORKID_WORKSPACE_DIR", orkdirstr);
-    _orkidWorkspaceDir = file::Path(orkdirstr);
-  }
+  std::string orkdirstr;
+  genviron.get("ORKID_WORKSPACE_DIR", orkdirstr);
+  _orkidWorkspaceDir = file::Path(orkdirstr);
   /////////////////////////////////////////////
   for (auto op : _initdata->_postinitoperations) {
     op();
