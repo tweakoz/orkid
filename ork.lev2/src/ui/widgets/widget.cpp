@@ -242,7 +242,7 @@ void Apple3ButtonMouseEmulationFilter::DoFilter(event_constptr_t Ev) {
 }
 ///////////////////////////////////////////////////////////
 HandlerResult Widget::DoOnUiEvent(event_constptr_t Ev) {
-  return HandlerResult();
+  return  HandlerResult();
 }
 ///////////////////////////////////////////////////////////
 bool Widget::IsEventInside(event_constptr_t Ev) const {

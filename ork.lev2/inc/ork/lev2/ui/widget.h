@@ -13,8 +13,6 @@
 
 namespace ork::ui {
 
-using evrouter_t  = std::function<Widget*(event_constptr_t ev)>;
-using evhandler_t = std::function<HandlerResult(event_constptr_t ev)>;
 
 struct IWidgetEventFilter {
   IWidgetEventFilter(Widget& w);
@@ -211,6 +209,7 @@ private:
   void ReLayout();
   virtual void DoLayout() {
   }
+
 };
 
 } // namespace ork::ui

@@ -19,9 +19,6 @@ class UiGedTestApp(BasicUiCamSgApp):
 
   def __init__(self):
     super().__init__()
-
-    self.ezapp = OrkEzApp.create(self)
-    self.ezapp.setRefreshPolicy(RefreshFixedFPS, 60)
     self.ezapp.topWidget.enableUiDraw()
 
     # create object model and ged surface
@@ -33,7 +30,7 @@ class UiGedTestApp(BasicUiCamSgApp):
     self.objmodel.attach(self.test_object,True)
     print(self.test_object.clazz.name)
 
-    assert(False)
+    #assert(False)
   ##############################################
 
   def onGpuInit(self,ctx):

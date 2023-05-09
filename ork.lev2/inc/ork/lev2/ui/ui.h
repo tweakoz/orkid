@@ -34,6 +34,7 @@ struct DrawEvent;
 struct MultiTouchPoint;
 struct IWidgetEventFilter;
 struct LayoutGroup;
+struct HandlerResult;
 
 using context_ptr_t     = std::shared_ptr<Context>;
 using widget_ptr_t      = std::shared_ptr<Widget>;
@@ -47,6 +48,11 @@ using viewport_ptr_t    = std::shared_ptr<Viewport>;
 using eventfilter_ptr_t = std::shared_ptr<IWidgetEventFilter>;
 using event_ptr_t       = std::shared_ptr<Event>;
 using event_constptr_t  = std::shared_ptr<const Event>;
+
+////////////////////////////////////////////////////////////////////////////////
+
+using evrouter_t  = std::function<Widget*(event_constptr_t ev)>;
+using evhandler_t = std::function<HandlerResult(event_constptr_t ev)>;
 
 ////////////////////////////////////////////////////////////////////////////////
 

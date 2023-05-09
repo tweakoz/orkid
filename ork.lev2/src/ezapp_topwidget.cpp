@@ -150,13 +150,16 @@ void EzTopWidget::_doOnResized() {
 /////////////////////////////////////////////////
 ui::HandlerResult EzTopWidget::DoOnUiEvent(ui::event_constptr_t ev) {
     if (_mainwin->_onUiEvent) {
+      printf( "A\n");
       auto hacked_event      = std::make_shared<ui::Event>();
       *hacked_event          = *ev;
       hacked_event->_vpdim.x = width();
       hacked_event->_vpdim.y = height();
       return _mainwin->_onUiEvent(hacked_event);
-    } else
+    } else {
+      printf( "B\n");
       return ui::HandlerResult();
+    }
 }
     ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2 {

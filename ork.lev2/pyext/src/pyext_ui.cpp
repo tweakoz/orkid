@@ -28,14 +28,14 @@ void pyinit_ui(py::module& module_lev2) {
   auto type_codec = python::TypeCodec::instance();
   /////////////////////////////////////////////////////////////////////////////////
   auto uicontext_type = //
-      py::class_<ui::Context, ui::context_ptr_t>(module_lev2, "UiContext")
+      py::class_<ui::Context, ui::context_ptr_t>(module_lev2, "Context")
           .def_property_readonly("hasKeyboardFocus", [](ui::context_ptr_t uictx) -> bool { return uictx->hasKeyboardFocus(); })
           .def("hasMouseFocus", [](ui::context_ptr_t uictx, uiwidget_ptr_t w) -> bool { return uictx->hasMouseFocus(w.get()); })
           .def("dumpWidgets", [](ui::context_ptr_t uictx,std::string label) { uictx->dumpWidgets(label); });
   type_codec->registerStdCodec<ui::context_ptr_t>(uicontext_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto uievent_type = //
-      py::class_<ui::Event, ui::event_ptr_t>(module_lev2, "UiEvent")
+      py::class_<ui::Event, ui::event_ptr_t>(module_lev2, "Event")
           .def(
               "clone",                                    //
               [](ui::event_ptr_t ev) -> ui::event_ptr_t { //
@@ -102,11 +102,29 @@ void pyinit_ui(py::module& module_lev2) {
   type_codec->registerStdCodec<uidrawevent_ptr_t>(drwev_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto evhandlerrestult_type = //
-      py::class_<ui::HandlerResult>(uimodule, "UiHandlerResult").def(py::init<>());
+      py::class_<ui::HandlerResult>(uimodule, "HandlerResult").def(py::init<>());
   type_codec->registerStdCodec<ui::HandlerResult>(evhandlerrestult_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto widget_type = //
-      py::class_<ui::Widget, uiwidget_ptr_t>(uimodule, "UiWidget")
+      py::class_<ui::Widget, uiwidget_ptr_t>(uimodule, "Widget")
+          .def_property(
+              "evhandler",
+              [](uiwidget_ptr_t widget) -> py::object { //
+                return py::none();
+              },
+              [](uiwidget_ptr_t widget, py::object callback )  { //
+                widget->_evhandler = [callback](ui::event_constptr_t ev) -> ui::HandlerResult {
+                  ui::HandlerResult rval;
+                  py::gil_scoped_acquire acquire_gil;
+                  if (callback) {
+                    auto pyrval = callback(ev);
+                    if (pyrval) {
+                      rval = py::cast<ui::HandlerResult>(pyrval);
+                    }
+                  }
+                  return rval;
+                };
+              })
           .def_property(
               "userID",
               [](uiwidget_ptr_t widget) -> uint64_t { //
@@ -161,11 +179,11 @@ void pyinit_ui(py::module& module_lev2) {
   type_codec->registerStdCodec<uiwidget_ptr_t>(widget_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto group_type = //
-      py::class_<ui::Group, ui::Widget, uigroup_ptr_t>(uimodule, "UiGroup");
+      py::class_<ui::Group, ui::Widget, uigroup_ptr_t>(uimodule, "Group");
   type_codec->registerStdCodec<uigroup_ptr_t>(group_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto layoutgroup_type = //
-      py::class_<ui::LayoutGroup, ui::Group, uilayoutgroup_ptr_t>(uimodule, "UiLayoutGroup")
+      py::class_<ui::LayoutGroup, ui::Group, uilayoutgroup_ptr_t>(uimodule, "LayoutGroup")
           .def_property(
               "clearColor",
               [](uilayoutgroup_ptr_t lgrp) -> fvec4 { //
@@ -257,7 +275,7 @@ void pyinit_ui(py::module& module_lev2) {
   type_codec->registerStdCodec<uilayoutgroup_ptr_t>(layoutgroup_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto surface_type = //
-      py::class_<ui::Surface, ui::Group, uisurface_ptr_t>(uimodule, "UiSurface")
+      py::class_<ui::Surface, ui::Group, uisurface_ptr_t>(uimodule, "Surface")
           .def(
               "onPostRender",
               [](uisurface_ptr_t surface, py::object callback) { //
@@ -296,7 +314,7 @@ void pyinit_ui(py::module& module_lev2) {
   type_codec->registerStdCodec<uisurface_ptr_t>(surface_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto viewport_type = //
-      py::class_<ui::Viewport, ui::Surface, uiviewport_ptr_t>(uimodule, "UiViewport");
+      py::class_<ui::Viewport, ui::Surface, uiviewport_ptr_t>(uimodule, "Viewport");
   type_codec->registerStdCodec<uiviewport_ptr_t>(viewport_type);
 
   /////////////////////////////////////////////////////////////////////////////////
@@ -311,7 +329,7 @@ void pyinit_ui(py::module& module_lev2) {
   };
   /////////////////////////////////////////////////////////////////////////////////
   auto box_type = //
-      py::class_<ui::Box, ui::Widget, uibox_ptr_t>(uimodule, "UiBox")
+      py::class_<ui::Box, ui::Widget, uibox_ptr_t>(uimodule, "Box")
           .def_static(
               "uigridfactory", [decodeUIargs](uilayoutgroup_ptr_t lg, int grid_w, int grid_h, int m, py::list py_args) -> py::list { //
                 auto decoded_args = decodeUIargs(py_args);
@@ -330,7 +348,7 @@ void pyinit_ui(py::module& module_lev2) {
   type_codec->registerStdCodec<uibox_ptr_t>(box_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto evtestbox_type = //
-      py::class_<ui::EvTestBox, ui::Widget, uievtestbox_ptr_t>(uimodule, "UiEvTestBox")
+      py::class_<ui::EvTestBox, ui::Widget, uievtestbox_ptr_t>(uimodule, "EvTestBox")
           .def_static(
               "uigridfactory", [decodeUIargs](uilayoutgroup_ptr_t lg, int grid_w, int grid_h, int m, py::list py_args) -> py::list { //
                 auto decoded_args = decodeUIargs(py_args);
@@ -349,7 +367,7 @@ void pyinit_ui(py::module& module_lev2) {
   type_codec->registerStdCodec<uievtestbox_ptr_t>(evtestbox_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto lambdabox_type = //
-      py::class_<ui::LambdaBox, ui::Widget, uilambdabox_ptr_t>(uimodule, "UiLambdaBox")
+      py::class_<ui::LambdaBox, ui::Widget, uilambdabox_ptr_t>(uimodule, "LambdaBox")
           .def_static(
               "uigridfactory",
               [decodeUIargs](uilayoutgroup_ptr_t lg, int grid_w, int grid_h, int m, py::list py_args) -> py::list { //
@@ -377,7 +395,7 @@ void pyinit_ui(py::module& module_lev2) {
   type_codec->registerStdCodec<uilambdabox_ptr_t>(lambdabox_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto sgviewport_type = //
-      py::class_<ui::SceneGraphViewport, ui::Viewport, uisgviewport_ptr_t>(uimodule, "UiSceneGraphViewport")
+      py::class_<ui::SceneGraphViewport, ui::Viewport, uisgviewport_ptr_t>(uimodule, "SceneGraphViewport")
           .def_static(
               "uigridfactory",
               [decodeUIargs](uilayoutgroup_ptr_t lg, int grid_w, int grid_h, int m, py::list py_args) -> py::list { //
