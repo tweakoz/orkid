@@ -27,7 +27,6 @@ int main(int argc, char** argv, char** envp) {
   auto initdata = std::make_shared<ork::AppInitData>(argc,argv,envp);
   auto app = createEZapp(initdata);
   Environment env;
-  env.init_from_envp(envp);
 
   OrkAssert(env.has("ORKID_WORKSPACE_DIR"));
 

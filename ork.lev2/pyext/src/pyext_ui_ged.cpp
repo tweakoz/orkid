@@ -8,6 +8,7 @@
 #include "pyext.h"
 #include <ork/lev2/ui/widget.h>
 #include <ork/lev2/ui/group.h>
+#include <ork/lev2/ui/layoutgroup.inl>
 #include <ork/lev2/ui/surface.h>
 #include <ork/lev2/ui/viewport.h>
 #include <ork/lev2/ui/ged/ged_surface.h>
@@ -33,7 +34,14 @@ void pyinit_ui_ged(py::module& module_ui) {
   /////////////////////////////////////////////////////////////////////////////////
   auto gedsurace_type = //
       py::class_<GedSurface, ui::Surface, gedsurface_ptr_t>(module_ui, "GedSurface")
-     .def(py::init<std::string,objectmodel_ptr_t>());
+        .def_static(
+            "uifactory", [type_codec](uilayoutgroup_ptr_t lg, py::list py_args) -> uilayoutitem_ptr_t { //
+              auto decoded_args = type_codec->decodeList(py_args);
+              auto name         = decoded_args[0].get<std::string>();
+              auto model        = decoded_args[1].get<objectmodel_ptr_t>();
+              return lg->makeChild2<GedSurface>(name, model);
+            })
+        .def(py::init<std::string,objectmodel_ptr_t>());
   type_codec->registerStdCodec<gedsurface_ptr_t>(gedsurace_type);}
 
 ///////////////////////////////////////////////////////////////////////////////

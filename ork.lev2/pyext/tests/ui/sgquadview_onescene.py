@@ -10,12 +10,18 @@
 import sys, math, random, signal, numpy, ork.path
 from orkengine.core import *
 from orkengine.lev2 import *
-sys.path.append((thisdir()/".."/".."/"examples"/"python").normalized.as_string) # add parent dir to path
+from PIL import Image
+
+################################################################################
+
+l2exdir = (lev2exdir()/"python").normalized.as_string
+sys.path.append(l2exdir) # add parent dir to path
 from common.cameras import *
 from common.shaders import *
 from common.primitives import createGridData, createCubePrim
 from common.scenegraph import createSceneGraph
-from PIL import Image
+
+################################################################################
 
 save_images = False 
 do_offscreen = False 
@@ -77,7 +83,7 @@ class UiSgQuadViewTestApp(object):
     self.griditems = lg_group.makeGrid( width = 2,
                                         height = 2,
                                         margin = 1,
-                                        uiclass = ui.UiSceneGraphViewport,
+                                        uiclass = ui.SceneGraphViewport,
                                         args = ["box",vec4(1,0,1,1)] )
 
     def onCtrlC(signum, frame):
@@ -92,66 +98,37 @@ class UiSgQuadViewTestApp(object):
 
     self.dbufcontext = self.ezapp.vars.dbufcontext
     self.cameralut = self.ezapp.vars.cameras
-    self.uicontext = self.ezapp.uicontext
 
-    # shared geometry
-    
+    # create scenegraph    
+
+    sg_params = VarMap()
+    sg_params.SkyboxIntensity = 3.0
+    sg_params.DiffuseIntensity = 1.0
+    sg_params.SpecularIntensity = 1.0
+    sg_params.AmbientLevel = vec3(.125)
+    #sg_params.preset = "DeferredPBR"
+    sg_params.preset = "ForwardPBR"
+    sg_params.dbufcontext = self.dbufcontext
+
+    self.scenegraph = scenegraph.Scene(sg_params)
     self.grid_data = createGridData()
+    self.layer = self.scenegraph.createLayer("layer")
+    self.grid_node = self.layer.createGridNode("grid",self.grid_data)
+    self.grid_node.sortkey = 1
+    self.rendernode = self.scenegraph.compositorrendernode
     cube_prim = createCubePrim(ctx=ctx,size=2.0)
+    #pipeline_cube = createPipeline( app = self, ctx = ctx, rendermodel="DeferredPBR", techname="std_mono_deferred" )
     pipeline_cube = createPipeline( app = self, ctx = ctx, rendermodel="FORWARD_PBR", techname="std_mono_fwd" )
-    mesh = meshutil.Mesh()
-    mesh.readFromWavefrontObj("data://tests/simple_obj/cone.obj")
-    submesh = mesh.submesh_list[0]
-    submesh_prim = meshutil.RigidPrimitive(submesh,ctx)
-    pipeline_mesh = createPipeline( app = self, ctx = ctx, rendermodel="FORWARD_PBR", techname="std_mono_fwd" )
-
-
-    # create scenegraph 1   
-
-    sg_params1 = VarMap()
-    sg_params1.SkyboxIntensity = 3.0
-    sg_params1.DiffuseIntensity = 1.0
-    sg_params1.SpecularIntensity = 1.0
-    sg_params1.AmbientLevel = vec3(.125)
-    #sg_params1.preset = "DeferredPBR"
-    sg_params1.preset = "ForwardPBR"
-    #sg_params1.dbufcontext = self.dbufcontext
-
-    self.scenegraph1 = scenegraph.Scene(sg_params1)
-    self.layer1 = self.scenegraph1.createLayer("layer")
-    self.grid_node1 = self.layer1.createGridNode("grid",self.grid_data)
-    self.grid_node1.sortkey = 1
-    self.cube_node1 = cube_prim.createNode("cube",self.layer1,pipeline_cube)
-
-    # create scenegraph 2   
-
-    sg_params2 = VarMap()
-    sg_params2.SkyboxIntensity = 0.5
-    sg_params2.DiffuseIntensity = 1.0
-    sg_params2.SpecularIntensity = 1.0
-    sg_params2.AmbientLevel = vec3(.125)
-    #sg_params2.preset = "DeferredPBR"
-    sg_params2.preset = "ForwardPBR"
-    #sg_params2.dbufcontext = self.dbufcontext
-
-    self.scenegraph2 = scenegraph.Scene(sg_params2)
-    self.layer2 = self.scenegraph2.createLayer("layer")
-    self.grid_node2 = self.layer2.createGridNode("grid",self.grid_data)
-    self.grid_node2.sortkey = 1
-    self.submesh_prim = submesh_prim
-    self.mesh_node = submesh_prim.createNode("mesh",self.layer2,pipeline_mesh)
-    #self.cube_node2 = cube_prim.createNode("cube",self.layer2,pipeline_cube)
-
+    self.cube_node = cube_prim.createNode("cube",self.layer,pipeline_cube)
 
     # assign shared scenegraph and creat cameras for all sg viewports
 
-    def createPanel(camname, griditem, scenegraph ):
+    def createPanel(camname, griditem):
 
       camera, uicam = setupUiCameraX( cameralut=self.cameralut,
                                         camname=camname)
       griditem.widget.cameraName = camname
-      griditem.widget.scenegraph = scenegraph
-      griditem.widget.forkDB()
+      griditem.widget.scenegraph = self.scenegraph
 
       the_panel = panel(camera, uicam)
 
@@ -177,33 +154,14 @@ class UiSgQuadViewTestApp(object):
       return the_panel
 
     self.panels = [
-      createPanel("cameraA",self.griditems[0],self.scenegraph1),
-      createPanel("cameraB",self.griditems[1],self.scenegraph1),
-      createPanel("cameraC",self.griditems[2],self.scenegraph2),
-      createPanel("cameraD",self.griditems[3],self.scenegraph2),
+      createPanel("cameraA",self.griditems[0]),
+      createPanel("cameraB",self.griditems[1]),
+      createPanel("cameraC",self.griditems[2]),
+      createPanel("cameraD",self.griditems[3]),
     ]
     
     self.panels[0].griditem.widget.decoupleFromUiSize(4096,4096)
     self.panels[0].griditem.widget.aspect_from_rtgroup = True
-
-    if True: # try out widget replacement
-      lg_group = self.ezapp.topLayoutGroup
-      item = lg_group.makeEvTestBox( w=100, #
-                                     h=100, #
-                                     x=100, #
-                                     y=100, #
-                                     color_normal=vec4(0.75,0.75,0.75,0.5), #
-                                     color_click=vec4(0.5,0.0,0.0,0.5), #
-                                     color_doubleclick=vec4(0.5,1.0,0.5,0.5), #
-                                     color_drag=vec4(0.5,0.5,1.0,0.5), #
-                                     name="testbox1")
-      self.uicontext.dumpWidgets("UI1")
-      lg_group.layout.dump()
-      #lg_group.removeChild(self.panels[0].griditem.layout)
-      lg_group.replaceChild(self.panels[0].griditem.layout,item)
-      self.uicontext.dumpWidgets("UI2")
-      lg_group.layout.dump()
-      lg_group.clearColor = vec4(1,0,1,1)
 
   ################################################
 
@@ -212,15 +170,14 @@ class UiSgQuadViewTestApp(object):
     abstime = updinfo.absolutetime
 
     cube_y = 0.4+math.sin(abstime)*0.2
-    self.cube_node1.worldTransform.translation = vec3(0,cube_y,0) 
-    self.cube_node1.worldTransform.orientation = quat(vec3(0,1,0),abstime*90*constants.DTOR) 
-    self.cube_node1.worldTransform.scale = 0.1
+    self.cube_node.worldTransform.translation = vec3(0,cube_y,0) 
+    self.cube_node.worldTransform.orientation = quat(vec3(0,1,0),abstime*90*constants.DTOR) 
+    self.cube_node.worldTransform.scale = 0.1
 
     for p in self.panels:
       p.update()
 
-    self.scenegraph1.updateScene(self.cameralut) 
-    self.scenegraph2.updateScene(self.cameralut) 
+    self.scenegraph.updateScene(self.cameralut) 
 
     for g in self.griditems:
       g.widget.setDirty()

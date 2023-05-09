@@ -10,7 +10,7 @@ find_package( pybind11 REQUIRED )
 
 ###################################
 
-set( SRCD ${CMAKE_CURRENT_SOURCE_DIR} )
+set( SRCD ${CMAKE_CURRENT_SOURCE_DIR}/src )
 set( ORKPKGBASE $ENV{OBT_PYPKG}/orkengine )
 set( INSTALL_DEST ${ORKPKGBASE}/lev2 )
 set( INCD $ENV{ORKID_WORKSPACE_DIR}/ork.core/inc )

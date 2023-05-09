@@ -23,7 +23,7 @@ public:
 
 	Environment();
 
-	void init_from_envp(char** envp);
+	//void init_from_envp(char** envp);
 	void init_from_global_env();
 
 

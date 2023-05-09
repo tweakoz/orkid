@@ -347,7 +347,7 @@ bool EzUiCam::UIEventHandler(ui::event_constptr_t EV) {
   float fpux = (fux * 2.0f) - 1.0f;
   float fpuy = (fuy * 2.0f) - 1.0f;
   fvec2 vpc = EV->xfToVpUnitCoord(fvec2(evx,evy));
-  float frad = sqrtf((vpc.x * vpc.x) + (vpc.y * vpc.y));
+  //float frad = sqrtf((vpc.x * vpc.x) + (vpc.y * vpc.y));
 
   fvec2 pos2D(fpux, fpuy);
 
@@ -372,7 +372,7 @@ bool EzUiCam::UIEventHandler(ui::event_constptr_t EV) {
 
       // printf( "fx<%g %g> frad<%g>\n", fx, fy, frad);
 
-      meRotMode = (frad > 0.35f) ? EROT_SCREENZ : EROT_SCREENXY;
+      meRotMode = EROT_SCREENXY;
 
       CommonPostSetup();
 

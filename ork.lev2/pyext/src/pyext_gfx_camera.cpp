@@ -19,7 +19,7 @@ void pyinit_gfx_camera(py::module& module_lev2) {
   auto ezuicam_type = //
       py::class_<EzUiCam, ezuicam_ptr_t>(module_lev2, "EzUiCam")
           .def(py::init<>())
-          .def("uiEventHandler", [](ezuicam_ptr_t cam, ui::event_ptr_t event) -> bool {
+          .def("uiEventHandler", [](ezuicam_ptr_t cam, ui::event_constptr_t event) -> bool {
             return cam->UIEventHandler(event);
           })
           .def(

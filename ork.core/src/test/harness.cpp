@@ -31,7 +31,6 @@ int harness(
   // get orkid root directory from environment variables
   /////////////////////////////////////////////
   ork::Environment environment_vars;
-  environment_vars.init_from_envp(initdata->_envp);
   /////////////////////////////////////////////
   // chdir to test data directory
   /////////////////////////////////////////////

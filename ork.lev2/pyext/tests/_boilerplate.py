@@ -7,8 +7,11 @@ import math, random, argparse, sys, signal
 
 from orkengine.core import *
 from orkengine.lev2 import *
-# add parent dir to path
-sys.path.append((thisdir()/".."/".."/"examples"/"python").normalized.as_string)
+
+################################################################################
+
+l2exdir = (lev2exdir()/"python").normalized.as_string
+sys.path.append(l2exdir) # add parent dir to path
 from common.primitives import createGridData
 from common.cameras import *
 from common.shaders import *

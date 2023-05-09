@@ -91,9 +91,21 @@ struct ORK_API TypeCodec {
     return rval;
   }
   //////////////////////////////////
+  std::vector<varval_t> decodeList(pybind11::list py_args){
+    std::vector<varval_t> decoded_list;
+    for (auto list_item : py_args) {
+      auto item_val = pybind11::cast<pybind11::object>(list_item);
+      varval_t val  = this->decode(item_val);
+      decoded_list.push_back(val);
+    }
+    return decoded_list;
+  }
+  //////////////////////////////////
 protected:
   TypeCodec();
   svar64_t _impl;
 };
+
+using typecodec_ptr_t = std::shared_ptr<TypeCodec>;
 
 } // namespace ork::python
