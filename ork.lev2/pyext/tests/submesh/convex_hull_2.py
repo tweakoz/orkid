@@ -5,12 +5,13 @@
 # see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ################################################################################
 import math, random, argparse, sys, time
+import os, random, numpy
 from threading import Lock
 from orkengine.core import *
 from orkengine.lev2 import *
+################################################################################
+sys.path.append((thisdir()/"..").normalized.as_string) # add parent dir to path
 from _boilerplate import *
-import math, sys, os, random, numpy
-
 ################################################################################
 
 class SceneGraphApp(BasicUiCamSgApp):

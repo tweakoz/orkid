@@ -10,8 +10,9 @@
 import sys, math, random, numpy, ork.path
 from orkengine.core import *
 from orkengine.lev2 import *
+################################################################################
+sys.path.append((thisdir()/"..").normalized.as_string) # add parent dir to path
 from _boilerplate import *
-
 ################################################################################
 
 class UiGedTestApp(BasicUiCamSgApp):

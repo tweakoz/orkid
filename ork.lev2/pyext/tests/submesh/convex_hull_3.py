@@ -8,10 +8,9 @@ import math, random, argparse, sys, time
 from threading import Lock
 from orkengine.core import *
 from orkengine.lev2 import *
-from _boilerplate import *
 ################################################################################
-
-
+sys.path.append((thisdir()/"..").normalized.as_string) # add parent dir to path
+from _boilerplate import *
 ################################################################################
 
 class SceneGraphApp(BasicUiCamSgApp):
