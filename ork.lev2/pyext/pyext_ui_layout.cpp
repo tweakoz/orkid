@@ -113,8 +113,18 @@ void pyinit_ui_layout(py::module& uimodule) {
                 return layout->childLayout(w.get());
               })
           //////////////////////////////////
+          .def(
+              "removeChild",
+              [](uilayout_ptr_t layout, uilayout_ptr_t ch) { //
+                layout->removeChild(ch);
+              })
+          //////////////////////////////////
           .def("fill", [](uilayout_ptr_t layout, uilayout_ptr_t other) { //
             return layout->fill(other.get());
+          })
+          //////////////////////////////////
+          .def("dump", [](uilayout_ptr_t layout) { //
+            return layout->dump();
           });
   //////////////////////////////////
   type_codec->registerStdCodec<uilayout_ptr_t>(layout_type);

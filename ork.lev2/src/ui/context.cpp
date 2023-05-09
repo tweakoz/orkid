@@ -122,4 +122,32 @@ void Context::draw(drawevent_constptr_t drwev) {
   }
 }
 /////////////////////////////////////////////////////////////////////////
+void Context::dumpWidgets(std::string label) const{
+
+  struct Item{
+    Widget* w = nullptr;
+    int level = 0;
+  };
+
+  std::stack<Item> wstack;
+  wstack.push({_top.get(),0});
+
+  printf( "///////////////////////////////////////////////////////\n");
+  printf( "// UICONTEXT<%p> widgetdump<%s>\n", this, label.c_str() );
+  while(not wstack.empty()){
+    auto top = wstack.top();
+    auto w = top.w;
+    int l = top.level;
+    wstack.pop();
+    auto indent = std::string(l*2,'.');
+    printf( "// %s widget<%p> name<%s>\n", indent.c_str(), top.w, top.w->_name.c_str() );
+    if( auto as_group = dynamic_cast<Group*>(w) ){
+      for( auto child : as_group->_children ){
+        wstack.push({child.get(),l+1});
+      }
+    }
+  }
+  printf( "///////////////////////////////////////////////////////\n");
+}
+/////////////////////////////////////////////////////////////////////////
 } // namespace ork::ui

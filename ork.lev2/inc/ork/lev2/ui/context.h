@@ -43,6 +43,7 @@ struct Context {
   //////////////////////////////////////
   void draw(drawevent_constptr_t drwev);
   //////////////////////////////////////
+  void dumpWidgets(std::string label) const;
 
   group_ptr_t _top;
   bool _hasKeyboardFocus             = false;

@@ -30,7 +30,8 @@ void pyinit_ui(py::module& module_lev2) {
   auto uicontext_type = //
       py::class_<ui::Context, ui::context_ptr_t>(module_lev2, "UiContext")
           .def_property_readonly("hasKeyboardFocus", [](ui::context_ptr_t uictx) -> bool { return uictx->hasKeyboardFocus(); })
-          .def("hasMouseFocus", [](ui::context_ptr_t uictx, uiwidget_ptr_t w) -> bool { return uictx->hasMouseFocus(w.get()); });
+          .def("hasMouseFocus", [](ui::context_ptr_t uictx, uiwidget_ptr_t w) -> bool { return uictx->hasMouseFocus(w.get()); })
+          .def("dumpWidgets", [](ui::context_ptr_t uictx,std::string label) { uictx->dumpWidgets(label); });
   type_codec->registerStdCodec<ui::context_ptr_t>(uicontext_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto uievent_type = //
@@ -165,6 +166,14 @@ void pyinit_ui(py::module& module_lev2) {
   /////////////////////////////////////////////////////////////////////////////////
   auto layoutgroup_type = //
       py::class_<ui::LayoutGroup, ui::Group, uilayoutgroup_ptr_t>(uimodule, "UiLayoutGroup")
+          .def_property(
+              "clearColor",
+              [](uilayoutgroup_ptr_t lgrp) -> fvec4 { //
+                return lgrp->clearColor();
+              },
+              [](uilayoutgroup_ptr_t lgrp, fvec4 c) { //
+                lgrp->setClearColor(c);
+              })
           .def_property_readonly(
               "layout",
               [](uilayoutgroup_ptr_t lgrp) -> uilayout_ptr_t { //
@@ -174,6 +183,40 @@ void pyinit_ui(py::module& module_lev2) {
               "layoutAndAddChild",
               [](uilayoutgroup_ptr_t lgrp, uiwidget_ptr_t w) -> uilayout_ptr_t { //
                 return lgrp->layoutAndAddChild(w);
+              })
+          .def(
+              "removeChild",
+              [](uilayoutgroup_ptr_t lgrp, uilayout_ptr_t ch) { //
+                lgrp->removeChild(ch);
+              })
+          .def(
+              "replaceChild",
+              [](uilayoutgroup_ptr_t lgrp, uilayout_ptr_t ch, uilayoutitem_ptr_t rep) { //
+                lgrp->replaceChild(ch,rep);
+              })
+          .def(
+              "makeEvTestBox",
+              [type_codec](uilayoutgroup_ptr_t lgrp, 
+                 py::kwargs kwargs) -> uilayoutitem_ptr_t { //
+                 uilayoutitem_ptr_t rval;
+                 if (kwargs) {
+                    auto var_args = type_codec->decode_kwargs(kwargs);
+                    int w  = var_args.typedValueForKey<int>("w").value();
+                    int h  = var_args.typedValueForKey<int>("h").value();
+                    int x  = var_args.typedValueForKey<int>("x").value();
+                    int y  = var_args.typedValueForKey<int>("y").value();
+                    fvec4 color_normal = var_args.typedValueForKey<fvec4>("color_normal").value();;
+                    fvec4 color_click = var_args.typedValueForKey<fvec4>("color_click").value();;
+                    fvec4 color_doubleclick = var_args.typedValueForKey<fvec4>("color_doubleclick").value();;
+                    fvec4 color_drag = var_args.typedValueForKey<fvec4>("color_drag").value();;
+                    std::string name = var_args.typedValueForKey<std::string>("name").value();;
+                    auto litem = lgrp->makeChild<ui::EvTestBox>(name, color_normal);
+                    //auto layout = lgrp->layoutAndAddChild(child._widget);
+                    rval = std::make_shared<ui::LayoutItemBase>();
+                    rval->_widget = litem._widget;
+                    rval->_layout = litem._layout;
+                 }
+                 return rval;
               })
           .def("makeGrid", [](uilayoutgroup_ptr_t lgrp, py::kwargs kwargs) -> py::list { //
             py::list rval;

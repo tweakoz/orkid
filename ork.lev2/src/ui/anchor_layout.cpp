@@ -16,13 +16,77 @@ Layout::Layout(Widget* w)
   static int _names = 0;
   _name             = _names++;
 }
+/////////////////////////////////////////////////////////////////////////
 Layout::~Layout() {
 }
-/////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////
+void Layout::visitHierarchy(visit_fn_t vfn){
+  vfn(this);
+  for( auto it : _childlayouts ){
+    it->visitHierarchy(vfn);
+  }
+}
+////////////////////////////////////////////////////////////////////////
+void Layout::visitGuides(guide_visit_fn gfn){
+  if( _top ) gfn( _top.get() );
+  if( _left ) gfn( _left.get() );
+  if( _bottom ) gfn( _bottom.get() );
+  if( _right ) gfn( _right.get() );
+  if( _centerH ) gfn( _centerH.get() );
+  if( _centerV ) gfn( _centerV.get() );
+  for( auto g : _customguides ){
+    gfn( g.get() );
+  }
+}
+////////////////////////////////////////////////////////////////////////
 layout_ptr_t Layout::childLayout(Widget* w) {
   auto l = std::make_shared<Layout>(w);
   _childlayouts.push_back(l);
   return l;
+}
+/////////////////////////////////////////////////////////////////////////
+void Layout::removeChild(layout_ptr_t l){
+  auto it = std::find(_childlayouts.begin(), _childlayouts.end(), l);
+  if(it!=_childlayouts.end()){
+    _childlayouts.erase(it);
+    prune();
+  }
+}
+/////////////////////////////////////////////////////////////////////////
+void Layout::prune(){
+  /////////////////////////////////////
+  std::unordered_set<Guide*> referenced_guides;
+  auto vfn = [this,&referenced_guides](Layout* l){
+    auto gfn = [this,&referenced_guides](Guide* g){
+      referenced_guides.insert(g);
+    };
+    //printf( "visit L<%d>\n", l->_name);
+    l->visitGuides(gfn);
+  };
+  visitHierarchy(vfn);
+  /////////////////////////////////////
+  //for( auto g : referenced_guides ){
+    //printf( "REFERENCED g<%d>\n", g->_name );
+  //}
+  /////////////////////////////////////
+  std::unordered_set<Guide*> guides_removed;
+  auto vfn2 = [this,&referenced_guides,&guides_removed](Layout* l){
+    auto gfn = [this,&referenced_guides,&guides_removed](Guide* g){
+      std::unordered_set<Guide*> guides2rem;
+      for( auto g2 : g->_associates ){
+        if( referenced_guides.find(g2) == referenced_guides.end() ){
+          guides2rem.insert(g2);
+        }
+      }
+      for( auto g2 : guides2rem ){
+        g->_disassociate(g2);
+        //printf( "DISASSOCIATE g<%d> g2<%d>\n", g->_name, g2->_name);
+        guides_removed.insert(g2);
+      }
+    };
+    l->visitGuides(gfn);
+  };
+  visitHierarchy(vfn2);
 }
 /////////////////////////////////////////////////////////////////////////
 guide_ptr_t Layout::top() {
@@ -227,7 +291,7 @@ bool Layout::isAnchorAllowed(Layout* layout) const {
 /////////////////////////////////////////////////////////////////////////
 void Layout::dump() {
   printf("//////////////////////////\n");
-  printf("// Layout<%d> margin<%d>\n", _name, _margin);
+  printf("// Layout<%d> margin<%d> widget<%p>\n", _name, _margin, _widget);
   if (_top)
     _top->dump();
   if (_left)

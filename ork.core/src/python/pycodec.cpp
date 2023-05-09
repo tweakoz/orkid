@@ -71,6 +71,7 @@ varval_t PyCodecImpl::decode(const py::object& val) const {
       return rval;
     }
   }
+  std::cout << "BadValue: " << val.cast<std::string>() << std::endl;
   throw std::runtime_error("pycodec-decode: unregistered type");
   OrkAssert(false); // unknown type!
   return rval;

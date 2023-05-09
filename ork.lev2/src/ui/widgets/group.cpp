@@ -94,6 +94,7 @@ LayoutGroup::LayoutGroup(const std::string& name, int x, int y, int w, int h)
 }
 /////////////////////////////////////////////////////////////////////////
 void LayoutGroup::_doOnResized() {
+  _clear = true;
 }
 /////////////////////////////////////////////////////////////////////////
 void LayoutGroup::DoLayout() {
@@ -120,6 +121,21 @@ void LayoutGroup::DoLayout() {
 }
 /////////////////////////////////////////////////////////////////////////
 void LayoutGroup::DoDraw(drawevent_constptr_t drwev) {
+  if(_clear){
+    auto context = drwev->GetTarget();
+    auto FBI = context->FBI();
+    lev2::ViewportRect vrect;
+    vrect._x = x();
+    vrect._y = y();
+    vrect._w = width();
+    vrect._h = height();
+    FBI->pushScissor(vrect);
+    FBI->pushViewport(vrect);
+    FBI->Clear(_clearColor,1);
+    FBI->popViewport();
+    FBI->popScissor();
+    _clear = false;
+  }
   drawChildren(drwev);
 }
 /////////////////////////////////////////////////////////////////////////

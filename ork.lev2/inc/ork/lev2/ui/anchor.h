@@ -56,6 +56,7 @@ struct Layout {
   ~Layout();
 
   layout_ptr_t childLayout(Widget* w);
+  void removeChild(layout_ptr_t l);
 
   void setMargin(int margin);
 
@@ -81,6 +82,13 @@ struct Layout {
   guide_ptr_t fixedVerticalGuide(int fixed);
 
   void dump();
+  void prune();
+
+  using visit_fn_t = std::function<void(Layout* l)>;
+  using guide_visit_fn = std::function<void(Guide* g)>;
+
+  void visitHierarchy(visit_fn_t vfn);
+  void visitGuides(guide_visit_fn gfn);
 
   int _margin = 0;
   int _name   = -1;
@@ -106,6 +114,7 @@ struct Layout {
 struct Guide {
 
   Guide(Layout* layout, Edge edge);
+  ~Guide();
 
   void anchorTo(guide_ptr_t other);
   void anchorTo(Guide* other);

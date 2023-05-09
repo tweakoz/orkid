@@ -7,7 +7,7 @@
 namespace ork::lev2::ged {
 ///////////////////////////////////////////////////////////////////////////////
 
-class GedSurface : public ui::Surface {
+struct GedSurface : public ui::Surface {
 public:
   // friend class lev2::PickBuffer<GedSurface>;
 

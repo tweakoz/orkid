@@ -92,6 +92,7 @@ class UiSgQuadViewTestApp(object):
 
     self.dbufcontext = self.ezapp.vars.dbufcontext
     self.cameralut = self.ezapp.vars.cameras
+    self.uicontext = self.ezapp.uicontext
 
     # shared geometry
     
@@ -184,6 +185,25 @@ class UiSgQuadViewTestApp(object):
     
     self.panels[0].griditem.widget.decoupleFromUiSize(4096,4096)
     self.panels[0].griditem.widget.aspect_from_rtgroup = True
+
+    if True: # try out widget replacement
+      lg_group = self.ezapp.topLayoutGroup
+      item = lg_group.makeEvTestBox( w=100, #
+                                     h=100, #
+                                     x=100, #
+                                     y=100, #
+                                     color_normal=vec4(0.75,0.75,0.75,0.5), #
+                                     color_click=vec4(0.5,0.0,0.0,0.5), #
+                                     color_doubleclick=vec4(0.5,1.0,0.5,0.5), #
+                                     color_drag=vec4(0.5,0.5,1.0,0.5), #
+                                     name="testbox1")
+      self.uicontext.dumpWidgets("UI1")
+      lg_group.layout.dump()
+      #lg_group.removeChild(self.panels[0].griditem.layout)
+      lg_group.replaceChild(self.panels[0].griditem.layout,item)
+      self.uicontext.dumpWidgets("UI2")
+      lg_group.layout.dump()
+      lg_group.clearColor = vec4(1,0,1,1)
 
   ################################################
 

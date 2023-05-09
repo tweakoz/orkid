@@ -78,6 +78,19 @@ struct ORK_API TypeCodec {
         });
   }
   //////////////////////////////////
+  inline varmap::VarMap decode_kwargs(pybind11::kwargs kwargs) { //
+    varmap::VarMap rval;
+    if (kwargs) {
+      for (auto item : kwargs) {
+        auto key = pybind11::cast<std::string>(item.first);
+        auto obj = pybind11::cast<pybind11::object>(item.second);
+        auto val = this->decode(obj);
+        rval.setValueForKey(key, val);
+      }
+    }
+    return rval;
+  }
+  //////////////////////////////////
 protected:
   TypeCodec();
   svar64_t _impl;

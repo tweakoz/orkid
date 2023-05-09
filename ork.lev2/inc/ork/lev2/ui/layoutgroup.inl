@@ -40,6 +40,8 @@ template <typename T> struct LayoutItem : public LayoutItemBase {
   }
 };
 
+using layoutitem_ptr_t = std::shared_ptr<LayoutItemBase>;
+
 struct LayoutGroup : public Group {
 
   LayoutGroup(const std::string& name, int x = 0, int y = 0, int w = 0, int h = 0);
@@ -88,11 +90,34 @@ struct LayoutGroup : public Group {
     return layout;
   }
   //////////////////////////////////////
-
+  inline void removeChild(anchor::layout_ptr_t ch) {
+    _layout->removeChild(ch);
+    Group::removeChild(ch->_widget);
+  }
+  //////////////////////////////////////
+  inline void replaceChild(anchor::layout_ptr_t ch, 
+                           layoutitem_ptr_t rep) {
+    _layout->removeChild(rep->_layout);
+    Group::removeChild(ch->_widget);
+    Group::addChild(rep->_widget);
+    ch->_widget = rep->_widget.get();
+    rep->_layout = ch;
+  }
+  //////////////////////////////////////
+  inline void setClearColor(fvec4 clr) {
+    _clearColor = clr;
+  }
+  //////////////////////////////////////
+  inline fvec4 clearColor() const {
+    return _clearColor;
+  }
+  //////////////////////////////////////
 private:
   void DoDraw(ui::drawevent_constptr_t drwev) override;
   void _doOnResized() override;
   void DoLayout() override;
+  bool _clear = true;
+  fvec4 _clearColor;
 };
 
 } // namespace ork::ui
