@@ -110,7 +110,7 @@ void lev2apppoll() {
 
 static file::Path lev2exdir() {
   std::string base;
-  bool OK = genviron.get("ORKLEV2EXAMPLESDIR",base);
+  bool OK = genviron.get("ORKID_LEV2_EXAMPLES_DIR",base);
   OrkAssert(OK);
   return file::Path(base);
 }
