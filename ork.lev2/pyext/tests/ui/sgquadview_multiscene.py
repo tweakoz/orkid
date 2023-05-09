@@ -28,49 +28,6 @@ do_offscreen = False
 
 ################################################################################
 
-class panel:
-  def __init__(self,camname, scenegraph):
-
-    self.cameralut = CameraDataLut()
-    self.camera, self.uicam = setupUiCameraX( cameralut=self.cameralut, camname=camname )
-    self.camname = camname
-    self.cur_eye = vec3(0,0,0)
-    self.cur_tgt = vec3(0,0,1)
-    self.dst_eye = vec3(0,0,0)
-    self.dst_tgt = vec3(0,0,0)
-    self.counter = 0
-    self.scenegraph = scenegraph
-    self.use_event = False
-
-  def update(self):
-    def genpos():
-      r = vec3(0)
-      r.x = random.uniform(-10,10)
-      r.z = random.uniform(-10,10)
-      r.y = random.uniform(  0,10)
-      return r 
-    
-    if self.counter<=0:
-      self.counter = int(random.uniform(1,1000))
-      self.dst_eye = genpos()
-      self.dst_tgt = vec3(0,random.uniform(  0,2),0)
-
-    if not self.use_event:
-      self.cur_eye = self.cur_eye*0.9995 + self.dst_eye*0.0005
-      self.cur_tgt = self.cur_tgt*0.9995 + self.dst_tgt*0.0005
-      self.uicam.distance = 1
-      self.uicam.lookAt( self.cur_eye,
-                         self.cur_tgt,
-                         vec3(0,1,0))
-
-    self.counter = self.counter-1
-
-    self.uicam.updateMatrices()
-    self.camera.copyFrom( self.uicam.cameradata )
-    self.scenegraph.updateScene(self.cameralut)
-
-################################################################################
-
 class UiSgQuadViewTestApp(object):
 
   def __init__(self):
@@ -132,87 +89,114 @@ class UiSgQuadViewTestApp(object):
     #sg_params.dbufcontext = self.dbufcontext
 
     ########################################################
-    # create scenegraphs
+    # create scenegraph / panels
     ########################################################
 
-    self.scenegraphs = []
+    class Panel:
 
-    class SgItem:
+      ####################################################################################
+
       def __init__(self,parent,index):
+        #
         self.parent = parent
         self.index = index
+        self.camname = "Camera%d"%index
+        #
         self.scenegraph = scenegraph.Scene(sg_params)
         self.layer = self.scenegraph.createLayer("layer")
         self.grid_node = self.layer.createGridNode("grid",parent.grid_data)
         self.grid_node.sortkey = 1
         self.cube_node = cube_prim.createNode("cube",self.layer,pipeline_cube)
+        #
+        self.cameralut = CameraDataLut()
+        self.camera, self.uicam = setupUiCameraX( cameralut=self.cameralut, camname=self.camname )
+        self.cur_eye = vec3(0,0,0)
+        self.cur_tgt = vec3(0,0,1)
+        self.dst_eye = vec3(0,0,0)
+        self.dst_tgt = vec3(0,0,0)
+        self.counter = 0
+        self.use_event = False
 
-    ########################################################
-
-    for index in range(0,4):
-      self.scenegraphs.append(SgItem(self,index))
-
-    ##########################################################################
-    # assign shared scenegraphs and create cameras/panels for all sg viewports
-    ##########################################################################
-
-    def createPanel(parent, index, camname ):
-
-      griditem = parent.griditems[index]
-      scenegraph = parent.scenegraphs[index].scenegraph
-
-      the_panel = panel(camname, scenegraph)
-      
-      griditem.widget.cameraName = camname
-      griditem.widget.scenegraph = scenegraph
-      griditem.widget.forkDB()
-
-      ########################################### 
-      # route events to panels ui camera ?
-      ########################################### 
-
-      def onPanelEvent(index, event):
-        if event.code == tokens.KEY_DOWN.hashed or event.code == tokens.KEY_REPEAT.hashed:
-          if event.keycode == 32: # spacebar
-             the_panel.use_event = not the_panel.use_event
-
-        if the_panel.use_event:
-          the_panel.uicam.uiEventHandler(event)
+        griditem = parent.griditems[index]
         
-        return ui.HandlerResult()
+        griditem.widget.cameraName = self.camname
+        griditem.widget.scenegraph = self.scenegraph
+        griditem.widget.forkDB()
 
-      griditem.widget.evhandler = lambda ev: onPanelEvent(index,ev)
+        ########################################### 
+        # route events to panels ui camera ?
+        ########################################### 
 
-      ########################################### 
+        def onPanelEvent(index, event):
+          if event.code == tokens.KEY_DOWN.hashed or event.code == tokens.KEY_REPEAT.hashed:
+            if event.keycode == 32: # spacebar
+              self.use_event = not self.use_event
 
-      if save_images:
-        the_panel.capbuf = CaptureBuffer()
-        the_panel.frame_index = 0
+          if self.use_event:
+            self.uicam.uiEventHandler(event)
+          
+          return ui.HandlerResult()
 
-        def _on_render():
-          rtgroup = griditem.widget.rtgroup
-          rtbuffer = rtgroup.buffer(0) #rtg's MRT buffer 0
-          FBI = ctx.FBI()
-          FBI.captureAsFormat(rtbuffer,the_panel.capbuf,"RGBA8")
-          as_np = numpy.array(the_panel.capbuf,dtype=numpy.uint8).reshape( rtgroup.height, rtgroup.width, 4 )
-          img = Image.fromarray(as_np, 'RGBA')
-          flipped = img.transpose(Image.FLIP_TOP_BOTTOM)
-          out_path = ork.path.temp()/("%s-%003d.png"%(camname,the_panel.frame_index))
-          flipped.save(out_path)
-          the_panel.frame_index += 1
+        griditem.widget.evhandler = lambda ev: onPanelEvent(index,ev)
 
-        griditem.widget.onPostRender(_on_render)
+        ########################################### 
 
-      the_panel.griditem = griditem
-      return the_panel
+        if save_images:
+          self.capbuf = CaptureBuffer()
+          self.frame_index = 0
+
+          def _on_render():
+            rtgroup = griditem.widget.rtgroup
+            rtbuffer = rtgroup.buffer(0) #rtg's MRT buffer 0
+            FBI = ctx.FBI()
+            FBI.captureAsFormat(rtbuffer,self.capbuf,"RGBA8")
+            as_np = numpy.array(self.capbuf,dtype=numpy.uint8).reshape( rtgroup.height, rtgroup.width, 4 )
+            img = Image.fromarray(as_np, 'RGBA')
+            flipped = img.transpose(Image.FLIP_TOP_BOTTOM)
+            out_path = ork.path.temp()/("%s-%003d.png"%(camname,self.frame_index))
+            flipped.save(out_path)
+            self.frame_index += 1
+
+          griditem.widget.onPostRender(_on_render)
+
+        self.griditem = griditem
+
+      ####################################################################################
+
+      def update(self):
+        def genpos():
+          r = vec3(0)
+          r.x = random.uniform(-10,10)
+          r.z = random.uniform(-10,10)
+          r.y = random.uniform(  0,10)
+          return r 
+      
+        if self.counter<=0:
+          self.counter = int(random.uniform(1,1000))
+          self.dst_eye = genpos()
+          self.dst_tgt = vec3(0,random.uniform(  0,2),0)
+
+        if not self.use_event:
+          self.cur_eye = self.cur_eye*0.9995 + self.dst_eye*0.0005
+          self.cur_tgt = self.cur_tgt*0.9995 + self.dst_tgt*0.0005
+          self.uicam.distance = 1
+          self.uicam.lookAt( self.cur_eye,
+                            self.cur_tgt,
+                            vec3(0,1,0))
+
+        self.counter = self.counter-1
+
+        self.uicam.updateMatrices()
+        self.camera.copyFrom( self.uicam.cameradata )
+        self.scenegraph.updateScene(self.cameralut)
 
     ##########################################################################
 
     self.panels = [
-      createPanel(self, 0, "cameraA"),
-      createPanel(self, 1, "cameraB"),
-      createPanel(self, 2, "cameraC"),
-      createPanel(self, 3, "cameraD"),
+      Panel(self, 0),
+      Panel(self, 1),
+      Panel(self, 2),
+      Panel(self, 3),
     ]
     
     ##########################################################################
