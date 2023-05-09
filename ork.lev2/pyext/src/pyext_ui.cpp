@@ -229,13 +229,39 @@ void pyinit_ui(py::module& module_lev2) {
                     fvec4 color_drag = var_args.typedValueForKey<fvec4>("color_drag").value();;
                     std::string name = var_args.typedValueForKey<std::string>("name").value();;
                     auto litem = lgrp->makeChild<ui::EvTestBox>(name, color_normal);
-                    //auto layout = lgrp->layoutAndAddChild(child._widget);
                     rval = std::make_shared<ui::LayoutItemBase>();
                     rval->_widget = litem._widget;
                     rval->_layout = litem._layout;
                  }
                  return rval;
               })
+          .def("makeChild", [](uilayoutgroup_ptr_t lgrp, py::kwargs kwargs) -> uilayoutitem_ptr_t { //
+            uilayoutitem_ptr_t rval;
+            if (kwargs) {
+              int width  = 0;
+              int height = 0;
+              int margin = 0;
+              py::list args;
+              py::object uifactory;
+              int args_parsed = 0;
+              for (auto item : kwargs) {
+                auto key = py::cast<std::string>(item.first);
+                if (key == "uiclass") {
+                  auto uiclass_obj   = py::cast<py::object>(item.second);
+                  bool has_uifactory = py::hasattr(uiclass_obj, "uifactory");
+                  OrkAssert(has_uifactory);
+                  uifactory = uiclass_obj.attr("uifactory");
+                  args_parsed++;
+                } else if (key == "args") {
+                  args = py::cast<py::list>(item.second);
+                  args_parsed++;
+                }
+              }
+              OrkAssert(args_parsed == 2);
+              rval = py::cast<uilayoutitem_ptr_t>(uifactory(lgrp, args));
+            }
+            return rval;
+          })
           .def("makeGrid", [](uilayoutgroup_ptr_t lgrp, py::kwargs kwargs) -> py::list { //
             py::list rval;
             if (kwargs) {
@@ -318,21 +344,11 @@ void pyinit_ui(py::module& module_lev2) {
   type_codec->registerStdCodec<uiviewport_ptr_t>(viewport_type);
 
   /////////////////////////////////////////////////////////////////////////////////
-  auto decodeUIargs = [type_codec](py::list py_args) -> std::vector<svar128_t> {
-    std::vector<svar128_t> decoded_args;
-    for (auto list_item : py_args) {
-      auto item_val = py::cast<py::object>(list_item);
-      svar128_t val  = type_codec->decode(item_val);
-      decoded_args.push_back(val);
-    }
-    return decoded_args;
-  };
-  /////////////////////////////////////////////////////////////////////////////////
   auto box_type = //
       py::class_<ui::Box, ui::Widget, uibox_ptr_t>(uimodule, "Box")
           .def_static(
-              "uigridfactory", [decodeUIargs](uilayoutgroup_ptr_t lg, int grid_w, int grid_h, int m, py::list py_args) -> py::list { //
-                auto decoded_args = decodeUIargs(py_args);
+              "uigridfactory", [type_codec](uilayoutgroup_ptr_t lg, int grid_w, int grid_h, int m, py::list py_args) -> py::list { //
+                auto decoded_args = type_codec->decodeList(py_args);
                 auto name         = decoded_args[0].get<std::string>();
                 auto color        = decoded_args[1].get<fvec4>();
                 auto layoutitems  = lg->makeGridOfWidgets<ui::Box>(grid_w, grid_h, name, color);
@@ -350,8 +366,8 @@ void pyinit_ui(py::module& module_lev2) {
   auto evtestbox_type = //
       py::class_<ui::EvTestBox, ui::Widget, uievtestbox_ptr_t>(uimodule, "EvTestBox")
           .def_static(
-              "uigridfactory", [decodeUIargs](uilayoutgroup_ptr_t lg, int grid_w, int grid_h, int m, py::list py_args) -> py::list { //
-                auto decoded_args = decodeUIargs(py_args);
+              "uigridfactory", [type_codec](uilayoutgroup_ptr_t lg, int grid_w, int grid_h, int m, py::list py_args) -> py::list { //
+                auto decoded_args = type_codec->decodeList(py_args);
                 auto name         = decoded_args[0].get<std::string>();
                 auto color        = decoded_args[1].get<fvec4>();
                 auto layoutitems  = lg->makeGridOfWidgets<ui::EvTestBox>(grid_w, grid_h, name, color);
@@ -370,8 +386,8 @@ void pyinit_ui(py::module& module_lev2) {
       py::class_<ui::LambdaBox, ui::Widget, uilambdabox_ptr_t>(uimodule, "LambdaBox")
           .def_static(
               "uigridfactory",
-              [decodeUIargs](uilayoutgroup_ptr_t lg, int grid_w, int grid_h, int m, py::list py_args) -> py::list { //
-                auto decoded_args = decodeUIargs(py_args);
+              [type_codec](uilayoutgroup_ptr_t lg, int grid_w, int grid_h, int m, py::list py_args) -> py::list { //
+                auto decoded_args = type_codec->decodeList(py_args);
                 auto name         = decoded_args[0].get<std::string>();
                 auto color        = decoded_args[1].get<fvec4>();
                 auto layoutitems  = lg->makeGridOfWidgets<ui::LambdaBox>(grid_w, grid_h, name, color);
@@ -398,8 +414,8 @@ void pyinit_ui(py::module& module_lev2) {
       py::class_<ui::SceneGraphViewport, ui::Viewport, uisgviewport_ptr_t>(uimodule, "SceneGraphViewport")
           .def_static(
               "uigridfactory",
-              [decodeUIargs](uilayoutgroup_ptr_t lg, int grid_w, int grid_h, int m, py::list py_args) -> py::list { //
-                auto decoded_args = decodeUIargs(py_args);
+              [type_codec](uilayoutgroup_ptr_t lg, int grid_w, int grid_h, int m, py::list py_args) -> py::list { //
+                auto decoded_args = type_codec->decodeList(py_args);
                 auto name         = decoded_args[0].get<std::string>();
                 auto layoutitems  = lg->makeGridOfWidgets<ui::SceneGraphViewport>(grid_w, grid_h, name);
                 py::list rval;

@@ -59,6 +59,16 @@ struct LayoutGroup : public Group {
   }
   //////////////////////////////////////
   template <typename T, typename... A> //
+  layoutitem_ptr_t makeChild2(A&&... args) {
+    layoutitem_ptr_t rval;
+    rval = std::make_shared<LayoutItem<T>>();
+    rval->_widget = std::make_shared<T>(std::forward<A>(args)...);
+    rval->_layout = _layout->childLayout(rval->_widget.get());
+    addChild(rval->_widget);
+    return rval;
+  }
+  //////////////////////////////////////
+  template <typename T, typename... A> //
   std::vector<LayoutItem<T>> makeGridOfWidgets(int w, int h, A&&... args) {
     std::vector<LayoutItem<T>> widgets;
     for (int x = 0; x < w; x++) {

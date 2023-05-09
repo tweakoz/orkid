@@ -67,7 +67,7 @@ void GedSurface::_doGpuInit(lev2::Context* pt) {
 ///////////////////////////////////////////////////////////////////////////////
 void GedSurface::DoSurfaceResize() {
   _container.SetDims(width(), height());
-
+  printf( "gedsurf resize<%d %d>\n", width(), height() );
   if (0 == _pickbuffer && (nullptr != _target)) {
     _pickbuffer->resize(width(), height());
   }
@@ -95,7 +95,7 @@ void GedSurface::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
   fbi->pushViewport(ViewportRect(0, 0, width(), height()));
   mtxi->PushMMatrix(matSCROLL);
   {
-    fbi->Clear(GetClearColorRef(), 1.0f);
+    fbi->Clear(fvec3(1,0,1), 1.0f);
 
     if (_model->_currentObject) {
       _container.Draw(tgt, width(), height(), miScrollY);

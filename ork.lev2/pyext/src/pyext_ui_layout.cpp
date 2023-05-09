@@ -26,7 +26,9 @@ void pyinit_ui_layout(py::module& uimodule) {
 
   /////////////////////////////////////////////////////////////////////////////////
   auto layout_type = //
-      py::class_<ui::anchor::Layout, uilayout_ptr_t>(uimodule, "UiLayout")
+      py::class_<ui::anchor::Layout, uilayout_ptr_t>(uimodule, "Layout")
+          //////////////////////////////////
+          .def(py::init<ui::Widget*>())
           //////////////////////////////////
           .def_property(
               "top",
@@ -130,7 +132,7 @@ void pyinit_ui_layout(py::module& uimodule) {
   type_codec->registerStdCodec<uilayout_ptr_t>(layout_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto guide_type = //
-      py::class_<ui::anchor::Guide, uiguide_ptr_t>(uimodule, "UiGuide")
+      py::class_<ui::anchor::Guide, uiguide_ptr_t>(uimodule, "Guide")
           .def_property_readonly(
               "margin",
               [](uiguide_ptr_t guide) -> int { //
@@ -148,6 +150,10 @@ void pyinit_ui_layout(py::module& uimodule) {
               })
           .def_property_readonly("proportion", [](uiguide_ptr_t guide) -> float { //
             return guide->_proportion;
+          })
+          //////////////////////////////////
+          .def("anchorTo", [](uiguide_ptr_t guide, uiguide_ptr_t other_guide) { //
+            return guide->anchorTo(other_guide);
           });
   type_codec->registerStdCodec<uiguide_ptr_t>(guide_type);
   /////////////////////////////////////////////////////////////////////////////////
