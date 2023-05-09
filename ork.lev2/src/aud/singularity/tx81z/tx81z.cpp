@@ -372,7 +372,8 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
       if (true) {
         auto envname  = ork::FormatString("op%d-env", opindex);
         auto opaname  = ork::FormatString("op%d-amp", opindex);
-        auto ENVELOPE = layerdata->appendController<YmEnvData>(envname);
+        //auto ENVELOPE = layerdata->appendController<YmEnvData>(envname);
+        auto ENVELOPE = layerdata->appendController<TX81ZEnvData>(envname);
         auto OPAMP    = layerdata->appendController<CustomControllerData>(opaname);
 
         ///////////////////////////////////////////////

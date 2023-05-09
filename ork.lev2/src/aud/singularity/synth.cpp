@@ -205,7 +205,10 @@ layer_ptr_t synth::allocLayer() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void synth::releaseLayer(layer_ptr_t l) {
-  if ((--l->_keepalive) == 0) {
+  if (l->_keepalive<=0) {
+    return;
+  }
+  else if ((--l->_keepalive) == 0) {
     // printf("LAYER<%p> DONE\n", this);
     _deactiveateVoiceQ.push(l);
   }

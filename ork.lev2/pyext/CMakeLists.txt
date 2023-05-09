@@ -44,6 +44,8 @@ if( APPLE )
     PROPERTIES
       LINK_FLAGS "-undefined dynamic_lookup"
       SUFFIX     ".so"
+      INSTALL_RPATH "$ENV{OBT_STAGE}/lib"
+      BUILD_WITH_INSTALL_RPATH TRUE
   )
 else()
   target_link_options(_lev2 PUBLIC -Wl,--no-undefined )

@@ -38,6 +38,8 @@ IF( APPLE )
     PROPERTIES
       LINK_FLAGS "-undefined dynamic_lookup"
       SUFFIX     ".so"
+      INSTALL_RPATH "$ENV{OBT_STAGE}/lib"
+      BUILD_WITH_INSTALL_RPATH TRUE
   )
 ENDIF()
 

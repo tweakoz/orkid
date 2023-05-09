@@ -27,7 +27,7 @@
 
 # if defined(BUILDING_ORKID)
 
-    # if defined(__unix__) // macos, linux
+    # if defined(__unix__) or defined(__APPLE__) // macos, linux
 
         #define ORK_API __attribute__ ((visibility("default")))
         //#define ORK_API_PUSH __attribute__ ((visibility("default")))
@@ -47,7 +47,7 @@
 
 #elif defined(USING_ORKID)
 
-    # if defined(__unix__) // macos, linux
+    # if defined(__unix__) or defined(__APPLE__)// macos, linux
 
         #define ORK_API __attribute__ ((visibility("default")))
         //#define ORK_API_PUSH_PUBLIC _Pragma("GCC visibility push(default)")

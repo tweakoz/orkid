@@ -180,6 +180,59 @@ struct YmEnvInst : public ControllerInst {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+struct PolynomialEval{
+  PolynomialEval();
+  float evaluate(float input) const;
+  std::vector<float> _polynomial;  
+};
+
+struct TX81ZEnvTables{
+  TX81ZEnvTables();
+  PolynomialEval _attack;
+  PolynomialEval _decay1;
+  PolynomialEval _decay2;
+  PolynomialEval _release;
+  PolynomialEval _level;
+};
+
+const TX81ZEnvTables& getTX81ZEnvTables();
+
+struct TX81ZEnvData : public ControllerData {
+  DeclareConcreteX(TX81ZEnvData, ControllerData);
+  TX81ZEnvData();
+  ControllerInst* instantiate(layer_ptr_t layer) const final;
+  int _attackRate = 0;
+  int _decay1Rate  = 0;
+  int _decay1Level = 0;
+  int _decay2Rate  = 0;
+  int _releaseRate = 0;
+  int _egshift       = 0;
+  int _rateScale     = 0;
+  int _levScale     = 0;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct TX81ZEnvInst : public ControllerInst {
+  TX81ZEnvInst(const TX81ZEnvData* data, layer_ptr_t l);
+  void compute() final;
+  void keyOn(const KeyOnInfo& KOI) final;
+  void keyOff() final;
+
+  const TX81ZEnvData* _envdata;
+  int state;
+  double time_since_state;
+  KeyOnInfo _koi;
+  layer_ptr_t _layer         = nullptr;
+  float _attackRate = 0.0f;
+  float _decay1Rate  = 0.0f;
+  float _decay1Level = 0.0f;
+  float _decay2Rate  = 0.0f;
+  float _releaseRate = 0.0f;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
 struct envframe {
   std::string _name;
   int _index                    = 0;

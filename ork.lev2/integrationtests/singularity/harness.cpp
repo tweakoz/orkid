@@ -93,6 +93,8 @@ singularitytestapp_ptr_t createEZapp(appinitdata_ptr_t init_data) {
   auto ezapp  = std::make_shared<SingularityTestApp>(init_data);
   auto ezwin  = ezapp->_mainWindow;
   auto appwin = ezwin->_appwin;
+  auto uicontext                  = ezapp->_uicontext;
+  appwin->_rootWidget->_uicontext = uicontext.get();
   //////////////////////////////////////////////////////////
   // a wee bit convoluted, TODO: fixme
   auto hudvplayout       = ezapp->_topLayoutGroup->layoutAndAddChild(ezapp->_hudvp);
@@ -133,14 +135,16 @@ singularitytestapp_ptr_t createEZapp(appinitdata_ptr_t init_data) {
     deco::printf(fvec3::Yellow(), "  fxparameterMODC<%p>\n", fxparameterMODC);
   });
   //////////////////////////////////////////////////////////
-  auto dbufcontext = std::make_shared<DrawBufContext>();
-  ezapp->onUpdate([=](ui::updatedata_ptr_t updata) {
+    auto dbufcontext = ezapp->_vars->makeSharedForKey<DrawBufContext>("dbufcontext");
+    ezapp->onUpdate([=](ui::updatedata_ptr_t updata) {
     ///////////////////////////////////////
     auto DB = dbufcontext->acquireForWriteLocked();
-    DB->Reset();
-    DB->copyCameras(*cameras);
-    ezapp->_hudvp->onUpdateThreadTick(updata);
-    dbufcontext->releaseFromWriteLocked(DB);
+    if(DB){
+      DB->Reset();
+      DB->copyCameras(*cameras);
+      ezapp->_hudvp->onUpdateThreadTick(updata);
+     dbufcontext->releaseFromWriteLocked(DB);
+    }
   });
   //////////////////////////////////////////////////////////
   ezapp->onDraw([=](ui::drawevent_constptr_t drwev) {
@@ -169,7 +173,8 @@ singularitytestapp_ptr_t createEZapp(appinitdata_ptr_t init_data) {
     context->beginFrame();
     mtxi->PushUIMatrix();
     // ezapp->_hudvp->draw(drwev);
-    ezapp->_eztopwidget->_topLayoutGroup->draw(drwev);
+    //ezapp->_eztopwidget->_topLayoutGroup->draw(drwev);
+    //ezapp->_uicontext->draw(drwev);
     mtxi->PopUIMatrix();
     context->endFrame();
     ////////////////////////////////////////////////////
