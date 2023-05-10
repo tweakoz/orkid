@@ -81,7 +81,7 @@ void GedSurface::_doGpuInit(lev2::Context* pt) {
 void GedSurface::DoSurfaceResize() {
   _container.SetDims(width(), height());
   printf( "gedsurf resize<%d %d>\n", width(), height() );
-  if (0 == _pickbuffer && (nullptr != _target)) {
+  if (_pickbuffer && (nullptr != _target)) {
     _pickbuffer->resize(width(), height());
   }
   // TODO: _pickbuffer->Resize()
@@ -108,7 +108,7 @@ void GedSurface::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
   fbi->pushViewport(ViewportRect(0, 0, width(), height()));
   mtxi->PushMMatrix(matSCROLL);
   {
-    fbi->Clear(fvec3(1,0,1), 1.0f);
+    fbi->Clear(fvec3(0.25,0.25,0.35), 1.0f);
 
     if (_model->_currentObject) {
       _container.Draw(tgt, width(), height(), miScrollY);
@@ -239,14 +239,13 @@ ui::HandlerResult GedSurface::DoOnUiEvent(ui::event_constptr_t EV) {
     case ui::EventCode::RELEASE:
     case ui::EventCode::DOUBLECLICK: {
 
-      /*QMouseEvent* qem = (QMouseEvent*)qip;
-
       GetPixel(ilocx, ilocy, ctx);
       float fx                   = float(ilocx) / float(width());
       float fy                   = float(ilocy) / float(height());
-      ork::rtti::ICastable* pobj = ctx.GetObject(_pickbuffer, 0);
+      auto pobj = ctx.GetObject(_pickbuffer, 0);
 
-      bool is_in_set = IsObjInSet(pobj);
+      printf( "GedSurface:: pick fx<%g> fy<%g> pobj<%p>\n", fx, fy, (void*) pobj );
+      /*bool is_in_set = IsObjInSet(pobj);
       const auto clr = ctx._pickvalues[0];
       /////////////////////////////////////
       // test object against known set
@@ -276,7 +275,8 @@ ui::HandlerResult GedSurface::DoOnUiEvent(ui::event_constptr_t EV) {
               pnode->OnUiEvent(locEV);
             break;
         }
-      }*/
+      }
+      */
 
       mNeedsSurfaceRepaint = true;
       break;

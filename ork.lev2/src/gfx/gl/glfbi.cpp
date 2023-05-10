@@ -605,7 +605,7 @@ void GlFrameBufferInterface::GetPixel(const fvec4& rAt, PixelFetchContext& ctx) 
 
   bool bInBounds = (rAt.x >= 0.0f and rAt.x < 1.0f and rAt.y >= 0.0f and rAt.y < 1.0f);
 
-  // printf("GetPixel rtg<%p> numbuf<%d>\n", ctx._rtgroup, ctx._rtgroup->mNumMrts );
+  printf("GetPixel rtg<%p> numbuf<%d>\n", (void*)ctx._rtgroup.get(), ctx._rtgroup->mNumMrts );
 
   if (bInBounds) {
     if (ctx._rtgroup) {
@@ -614,7 +614,7 @@ void GlFrameBufferInterface::GetPixel(const fvec4& rAt, PixelFetchContext& ctx) 
       int sx = int((rAt.x) * float(W));
       int sy = int((1.0f - rAt.y) * float(H));
 
-      // printf("GetPixel<%d %d> FboObj<%p>\n", sx, sy, FboObj);
+      //printf("GetPixel<%d %d> FboObj<%p>\n", sx, sy, FboObj);
       auto as_impl = ctx._rtgroup->_impl.tryAs<glrtgroupimpl_ptr_t>();
       if(as_impl){
         auto fboobj = as_impl.value()->_standard;
@@ -622,7 +622,7 @@ void GlFrameBufferInterface::GetPixel(const fvec4& rAt, PixelFetchContext& ctx) 
         glBindFramebuffer(GL_FRAMEBUFFER, fboobj->_fbo);
         GL_ERRORCHECK();
 
-        // printf("GetPixel<%d %d> FboMaster<%u>\n", sx, sy, fboobj->_fbo);
+        printf("GetPixel<%d %d> FboMaster<%u>\n", sx, sy, fboobj->_fbo);
 
         if (fboobj->_fbo) {
 
@@ -633,7 +633,7 @@ void GlFrameBufferInterface::GetPixel(const fvec4& rAt, PixelFetchContext& ctx) 
           glGetIntegerv(GL_READ_BUFFER, &readbuffer);
           GL_ERRORCHECK();
 
-          // printf("readbuf<%d>\n", int(readbuffer));
+          printf("readbuf<%d>\n", int(readbuffer));
 
           for (int MrtIndex = 0; MrtIndex < 4; MrtIndex++) {
             int MrtTest = 1 << MrtIndex;
@@ -670,7 +670,7 @@ void GlFrameBufferInterface::GetPixel(const fvec4& rAt, PixelFetchContext& ctx) 
                   // uint64_t rval = (d << 48) | (c << 32) | (b << 16) | a;
                   /////////////////////////////////////////////////////////////////
                   ctx._pickvalues[MrtIndex].set<uint64_t>(value);
-                  // printf("getpix MrtIndex<%d> rx<%d> ry<%d> value<0x%zx>\n", MrtIndex, sx, sy, value);
+                  printf("getpix MrtIndex<%d> rx<%d> ry<%d> value<0x%zx>\n", MrtIndex, sx, sy, value);
                   /////////////////////////////////////////////////////////////////
                   break;
                 }

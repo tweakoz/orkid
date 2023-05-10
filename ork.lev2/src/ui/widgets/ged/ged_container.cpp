@@ -65,7 +65,7 @@ GedContainer::~GedContainer() {
 
 void GedContainer::gpuInit(lev2::Context* context){
   mSkins = instantiateSkins(context);
-  _activeSkin = mSkins[0];
+  _activeSkin = mSkins[1];
 }
 
 ////////////////////////////////////////////////////////////////
