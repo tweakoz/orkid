@@ -6,6 +6,7 @@
 ////////////////////////////////////////////////////////////////
 
 #include "pyext.h"
+#include <ork/util/hotkey.h>
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork {
 //using namespace rtti;
@@ -30,6 +31,17 @@ void pyinit_reflection(py::module& module_core) {
   auto objtype_t = py::class_<Object,rtti::ICastable,object_ptr_t>(module_core, "Object"); //
   type_codec->registerStdCodec<object_ptr_t>(objtype_t);
   /////////////////////////////////////////////////////////////////////////////////
+  using hotkey_ptr_t = std::shared_ptr<HotKey>;
+  auto hkey_type =                                                              //
+      py::class_<HotKey,Object,hotkey_ptr_t>(module_core, "HotKey") //
+          .def(py::init<>());
+  type_codec->registerStdCodec<hotkey_ptr_t>(hkey_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  using hotkeyconfig_ptr_t = std::shared_ptr<HotKeyConfiguration>;
+  auto hkeycfg_type =                                                              //
+      py::class_<HotKeyConfiguration,Object,hotkeyconfig_ptr_t>(module_core, "HotKeyConfiguration") //
+          .def(py::init<>());
+  type_codec->registerStdCodec<hotkeyconfig_ptr_t>(hkeycfg_type);
 
 }
 

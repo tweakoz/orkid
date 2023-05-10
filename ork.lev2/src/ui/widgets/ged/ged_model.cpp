@@ -414,7 +414,6 @@ geditemnode_ptr_t ObjModel::recurse(
         if (false == IsNodeVisible(prop))
           continue;
         //////////////////////////////////////////////////
-        OrkAssert(false);
         propnode = createNode(Name, prop, cur_obj);
         //////////////////////////////////////////////////
         if (propnode)
@@ -545,7 +544,6 @@ geditemnode_ptr_t ObjModel::createNode(
     return new GedLabelNode(*this, Name.c_str(), prop, pobject);
   /////////////////////////////////////////////////////////////////////////
   */
-  OrkAssert(false);
   return std::make_shared<GedLabelNode>(_gedContainer, Name.c_str(), prop, pobject);
 }
 

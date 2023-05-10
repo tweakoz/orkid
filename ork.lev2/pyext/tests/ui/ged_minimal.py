@@ -39,7 +39,7 @@ class UiGedTestApp(object):
     self.ged_layout.right.anchorTo(root_layout.right)
 
     # create a test object to edit and attach it to the object model
-    self.test_object = dataflow.DgModuleData.createShared()
+    self.test_object = HotKeyConfiguration()
     self.objmodel.attach(self.test_object,True)
     print(self.test_object.clazz.name)
 
