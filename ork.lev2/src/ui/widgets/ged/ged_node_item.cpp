@@ -164,10 +164,6 @@ geditemnode_ptr_t GedItemNode::child(int idx) const{
   return _children[idx];
 }
 ///////////////////////////////////////////////////////////////////////////////
-bool GedItemNode::DoDrawDefault() const {
-  return true;
-}
-///////////////////////////////////////////////////////////////////////////////
 int GedItemNode::propnameWidth() const {
   int istrw                   = (int)strlen(_propname.c_str());
   const lev2::FontDesc& fdesc = lev2::FontMan::GetRef().currentFont()->GetFontDesc();
@@ -188,7 +184,7 @@ void GedItemNode::Draw(lev2::Context* pTARG) {
   if (mbInvalid) {
     ReSync();
   }
-  if (DoDrawDefault()) {
+  if (_doDrawDefault) {
     int labw = this->propnameWidth();
 
     skin->DrawBgBox(this, miX, miY, miW, miH, GedSkin::ESTYLE_BACKGROUND_1);

@@ -22,7 +22,6 @@ GedLabelNode::GedLabelNode(GedContainer* c, const char* name, const reflect::Obj
 
 void GedLabelNode::DoDraw(lev2::Context* pTARG){
     printf( "GedLabelNode<%p>::DoDraw\n", this );
-    //GedItemNode::DoDraw(pTARG);
     auto& fontman = lev2::FontMan::GetRef();
     auto font = fontman.GetFont("i16");
 }

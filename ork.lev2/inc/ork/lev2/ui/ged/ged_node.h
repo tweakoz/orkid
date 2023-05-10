@@ -110,7 +110,6 @@ public:
   virtual bool CanSideBySide() const {
     return false;
   }
-  virtual bool DoDrawDefault() const; // { return true; }
   virtual void Invalidate() {
     mbInvalid = true;
   }
@@ -172,6 +171,7 @@ public:
   ///////////////////////////////////////////////////
   std::string _propname;
   std::string _content;
+  bool _doDrawDefault = true;
   ///////////////////////////////////////////////////
 };
 
@@ -275,10 +275,6 @@ private:
   void DuplicateItem(event_constptr_t ev);
   void ImportItem(event_constptr_t ev);
   void ExportItem(event_constptr_t ev);
-
-  bool DoDrawDefault() const final {
-    return false;
-  }
 };
 
 ///////////////////////////////////////////////////////////////////////////////
