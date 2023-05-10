@@ -827,7 +827,6 @@ void GlGeometryBufferInterface::DrawPrimitiveEML(const VertexBufferBase& VBuf, P
         // miTrianglesRendered += (inum/2);
         break;
       case PrimitiveType::TRIANGLES:
-        // printf( "drawarrays: <ivbase %d> <inum %d> tris\n", ivbase, inum );
         glDrawArrays(GL_TRIANGLES, ivbase, inum);
         miTrianglesRendered += (inum / 3);
         break;

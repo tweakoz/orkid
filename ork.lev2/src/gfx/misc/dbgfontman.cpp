@@ -496,11 +496,12 @@ void Font::enqueueCharacter(FontMan::vtxwriter_t& vw, float fx, float fy, int iu
   fv1 *= kitexs;
   fv2 *= kitexs;
   ///////////////////////////////////////////////
-  /*printf(
-      "queuechar font<%s> ix<%d> iy<%d> iu<%d> iv<%d> fix1<%g> fiy1<%g> fix2<%g> fiy2<%g> fu1<%g> fu2<%g>\n",
+  if(0)
+  printf(
+      "queuechar font<%s> fx<%g> fy<%g> iu<%d> iv<%d> fix1<%g> fiy1<%g> fix2<%g> fiy2<%g> fu1<%g> fu2<%g>\n",
       msFontName.c_str(),
-      ix,
-      iy,
+      fx,
+      fy,
       iu,
       iv,
       fix1,
@@ -508,7 +509,7 @@ void Font::enqueueCharacter(FontMan::vtxwriter_t& vw, float fx, float fy, int iu
       fix2,
       fiy2,
       fu1,
-      fu2);*/
+      fu2);
   ///////////////////////////////////////////////
   vw.AddVertex(TEXT_VTXFMT(fix1, fiy1, 0.0f, fu1, fv1, ucolor));
   vw.AddVertex(TEXT_VTXFMT(fix2, fiy1, 0.0f, fu2, fv1, ucolor));

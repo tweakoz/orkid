@@ -173,7 +173,6 @@ void GedGroupNode::CheckVis() {
 }
 
 void GedGroupNode::DoDraw(lev2::Context* pTARG) {
-    printf( "GedGroupNode<%p>::DoDraw\n", this );
 
   auto model = _container->_model;
   auto skin = _container->_activeSkin;

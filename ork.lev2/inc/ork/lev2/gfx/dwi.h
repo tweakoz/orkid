@@ -9,6 +9,9 @@
 
 struct DrawingInterface {
   DrawingInterface(Context& ctx);
+
+void line2DEML(const fvec2& v0, const fvec2& v1, const fvec4& vertex_color, float depth );
+
   void quad2DEML(const fvec4& QuadRect, //
                  const fvec4& UvRect, //
                  const fvec4& UvRect2, //

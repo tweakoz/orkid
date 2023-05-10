@@ -44,11 +44,11 @@ bool IsObjInSet(void* pobj) {
 using vtx_t = SVtxV16T16C16 ;
 
 GedSkin::GedSkin()
-    : miScrollY(0)
-    , mpCurrentGedVp(nullptr)
-    , mpFONT(nullptr)
-    , miCHARW(0)
-    , miCHARH(0) {
+    : _scrollY(0)
+    , _gedVP(nullptr)
+    , _font(nullptr)
+    , _char_w(0)
+    , _char_h(0) {
 }
 
 void GedSkin::gpuInit(lev2::Context* ctx) {
@@ -67,7 +67,8 @@ void GedSkin::gpuInit(lev2::Context* ctx) {
 struct GedText {
   typedef ork::ArrayString<128> StringType;
 
-  int ix, iy;
+  int ix = 0;
+  int iy = 0;
   StringType mString;
 };
 
@@ -122,14 +123,14 @@ void GedSkin::clear() {
 
 ///////////////////////////////////////////////////////////////////////////////
 struct GedSkin0 : public GedSkin { ///////////////////////////////////////////////////////////////////
-  bool mbPickMode;
-  orkvector<GedText> mTexts;
+  bool _is_pickmode = false;
+  orkvector<GedText> _text_vect;
   GedSkin0(ork::lev2::Context* ctx)
       : GedSkin() {
     gpuInit(ctx);
-    mpFONT  = lev2::FontMan::GetFont("i14");
-    miCHARW = mpFONT->GetFontDesc().miAdvanceWidth;
-    miCHARH = mpFONT->GetFontDesc().miAdvanceHeight;
+    _font  = lev2::FontMan::GetFont("i14");
+    _char_w = _font->GetFontDesc().miAdvanceWidth;
+    _char_h = _font->GetFontDesc().miAdvanceHeight;
   }
   ///////////////////////////////////////////////////////////////////
   fvec4 GetStyleColor(GedObject* pnode, ESTYLE ic) {
@@ -219,21 +220,21 @@ struct GedSkin0 : public GedSkin { /////////////////////////////////////////////
     prim.iy1 = iy;
     prim.iy2 = iy + ih;
 
-    fvec4 uobj = mpCurrentGedVp->AssignPickId(pnode);
+    fvec4 uobj = _gedVP->AssignPickId(pnode);
 
-    if (mbPickMode) {
+    if (_is_pickmode) {
       AddToObjSet((void*)pnode);
       // printf( "insert obj<%p>\n", (void*) pnode );
     }
 
-    prim._ucolor   = mbPickMode ? uobj : GetStyleColor(pnode, ic); // Default Outline
+    prim._ucolor   = _is_pickmode ? uobj : GetStyleColor(pnode, ic); // Default Outline
     prim.meType    = PrimitiveType::QUADS;
     prim.miSortKey = calcsort(isort);
     AddPrim(prim);
   }
   ///////////////////////////////////////////////////////////////////
   void DrawOutlineBox(GedObject* pnode, int ix, int iy, int iw, int ih, ESTYLE ic, int isort) {
-    if (false == mbPickMode) {
+    if (false == _is_pickmode) {
       GedPrim prim;
       prim._ucolor   = GetStyleColor(pnode, ic);
       prim.meType    = PrimitiveType::LINES;
@@ -266,7 +267,7 @@ struct GedSkin0 : public GedSkin { /////////////////////////////////////////////
   }
   ///////////////////////////////////////////////////////////////////
   void DrawLine(GedObject* pnode, int ix, int iy, int ix2, int iy2, ESTYLE ic) {
-    if (false == mbPickMode) {
+    if (false == _is_pickmode) {
       GedPrim prim;
       prim._ucolor   = GetStyleColor(pnode, ic);
       prim.meType    = PrimitiveType::LINES;
@@ -280,7 +281,7 @@ struct GedSkin0 : public GedSkin { /////////////////////////////////////////////
   }
   ///////////////////////////////////////////////////////////////////
   void DrawCheckBox(GedObject* pnode, int ix, int iy, int iw, int ih) {
-    if (false == mbPickMode) {
+    if (false == _is_pickmode) {
       int ixi  = ix + 2;
       int iyi  = iy + 2;
       int ixi2 = ix + iw - 2;
@@ -303,26 +304,26 @@ struct GedSkin0 : public GedSkin { /////////////////////////////////////////////
   }
   ///////////////////////////////////////////////////////////////////
   virtual void DrawText(GedObject* pnode, int ix, int iy, const char* ptext) {
-    if (false == mbPickMode) {
+    if (false == _is_pickmode) {
       GedText text;
       text.ix      = ix;
       text.iy      = iy;
       text.mString = GedText::StringType(ptext);
-      mTexts.push_back(text);
+      _text_vect.push_back(text);
     }
   }
   ///////////////////////////////////////////////////////////////////
   void Begin(Context* pTARG, GedSurface* pVP) {
-    mbPickMode     = pTARG->FBI()->isPickState();
-    mpCurrentGedVp = pVP;
-    mTexts.clear();
+    _is_pickmode     = pTARG->FBI()->isPickState();
+    _gedVP = pVP;
+    _text_vect.clear();
     clear();
     ClearObjSet();
   }
   ///////////////////////////////////////////////////////////////////
   void End(Context* pTARG) {
-    int iw                               = mpCurrentGedVp->width();
-    int ih                               = mpCurrentGedVp->height();
+    int iw                               = _gedVP->width();
+    int ih                               = _gedVP->height();
     miRejected                           = 0;
     miAccepted                           = 0;
     lev2::DynamicVertexBuffer<vtx_t>& VB = lev2::GfxEnv::GetSharedDynamicV16T16C16();
@@ -369,14 +370,14 @@ struct GedSkin0 : public GedSkin { /////////////////////////////////////////////
       }
       vw.UnLock(pTARG);
 
-      _material->begin(mbPickMode ? _tekvtxpick : _tekvtxcolor, RCFD);
+      _material->begin(_is_pickmode ? _tekvtxpick : _tekvtxcolor, RCFD);
       _material->bindParamMatrix(_parmvp, uimatrix);
       pTARG->GBI()->DrawPrimitiveEML(vw, PrimitiveType::TRIANGLES);
       _material->end(RCFD);
       icount = 0;
       // ivbase += inumquads*6;
       ///////////////////////////////////////////////////////////
-      if (false == mbPickMode) {
+      if (false == _is_pickmode) {
         for (int i = 0; i < inumcusts; i++) {
           const GedPrim* prim = primcontainer->mCustomPrims[i];
           if (IsVisible(pTARG, prim->iy1, prim->iy2)) {
@@ -384,7 +385,7 @@ struct GedSkin0 : public GedSkin { /////////////////////////////////////////////
           }
         }
       }
-      if (false == mbPickMode) {
+      if (false == _is_pickmode) {
         if (inumlines) {
           icount = 0;
           vw.Lock(pTARG, &VB, inumlines * 2);
@@ -400,7 +401,7 @@ struct GedSkin0 : public GedSkin { /////////////////////////////////////////////
           }
           vw.UnLock(pTARG);
           if (icount) {
-            _material->begin(mbPickMode ? _tekvtxpick : _tekvtxcolor, RCFD);
+            _material->begin(_is_pickmode ? _tekvtxpick : _tekvtxcolor, RCFD);
             _material->bindParamMatrix(_parmvp, uimatrix);
             pTARG->GBI()->DrawPrimitiveEML(vw, PrimitiveType::LINES);
             _material->end(RCFD);
@@ -410,17 +411,17 @@ struct GedSkin0 : public GedSkin { /////////////////////////////////////////////
     }
     ///////////////////////////////////////////////////////////
     ////////////////////////
-    if (false == mbPickMode) { ////////////////////////
+    if (false == _is_pickmode) { ////////////////////////
       lev2::GfxMaterialUI uimat(pTARG);
       uimat.SetUIColorMode(UiColorMode::MOD);
       // pTARG->PushModColor(fcolor4(0.0f,0.0f,0.2f));
       pTARG->PushModColor(fcolor4::Black());
-      lev2::FontMan::PushFont(mpFONT);
+      lev2::FontMan::PushFont(_font);
       lev2::FontMan::beginTextBlock(pTARG);
       {
-        int inumt = (int)mTexts.size();
+        int inumt = (int)_text_vect.size();
         for (int it = 0; it < inumt; it++) {
-          const GedText& text = mTexts[it];
+          const GedText& text = _text_vect[it];
           if (IsVisible(pTARG, text.iy, text.iy + 8)) {
             lev2::FontMan::DrawText(pTARG, text.ix, text.iy, text.mString.c_str());
           }
@@ -433,19 +434,19 @@ struct GedSkin0 : public GedSkin { /////////////////////////////////////////////
     ////////////////////////
     pTARG->MTXI()->PopMMatrix();
     pTARG->MTXI()->PopUIMatrix();
-    mpCurrentGedVp = 0;
+    _gedVP = 0;
   }
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct GedSkin1 : public GedSkin { ///////////////////////////////////////////////////////////////////
-  bool mbPickMode;
-  orkvector<GedText> mTexts;
+  bool _is_pickmode = false;
+  orkvector<GedText> _text_vect;
   ///////////////////////////////////////////////////////////////////
   GedSkin1(ork::lev2::Context* ctx) {
     gpuInit(ctx);
-    mpFONT  = lev2::FontMan::GetFont("i14");
-    miCHARW = mpFONT->GetFontDesc().miAdvanceWidth;
-    miCHARH = mpFONT->GetFontDesc().miAdvanceHeight;
+    _font  = lev2::FontMan::GetFont("i14");
+    _char_w = _font->GetFontDesc().miAdvanceWidth;
+    _char_h = _font->GetFontDesc().miAdvanceHeight;
   }
   ///////////////////////////////////////////////////////////////////
   fvec4 GetStyleColor(GedObject* pnode, ESTYLE ic) {
@@ -531,21 +532,21 @@ struct GedSkin1 : public GedSkin { /////////////////////////////////////////////
     prim.iy1 = iy;
     prim.iy2 = iy + ih;
 
-    fvec4 uobj = mpCurrentGedVp->AssignPickId(pnode);
+    fvec4 uobj = _gedVP->AssignPickId(pnode);
 
-    if (mbPickMode) {
+    if (_is_pickmode) {
       AddToObjSet((void*)pnode);
       // printf( "insert obj<%p>\n", (void*) pnode );
     }
 
-    prim._ucolor   = mbPickMode ? uobj : GetStyleColor(pnode, ic); // Default Outline
+    prim._ucolor   = _is_pickmode ? uobj : GetStyleColor(pnode, ic); // Default Outline
     prim.meType    = PrimitiveType::QUADS;
     prim.miSortKey = calcsort(isort);
     AddPrim(prim);
   }
   ///////////////////////////////////////////////////////////////////
   void DrawOutlineBox(GedObject* pnode, int ix, int iy, int iw, int ih, ESTYLE ic, int isort) {
-    if (false == mbPickMode) {
+    if (false == _is_pickmode) {
       GedPrim prim;
       prim._ucolor   = GetStyleColor(pnode, ic);
       prim.meType    = PrimitiveType::LINES;
@@ -578,7 +579,7 @@ struct GedSkin1 : public GedSkin { /////////////////////////////////////////////
   }
   ///////////////////////////////////////////////////////////////////
   void DrawLine(GedObject* pnode, int ix, int iy, int ix2, int iy2, ESTYLE ic) {
-    if (false == mbPickMode) {
+    if (false == _is_pickmode) {
       GedPrim prim;
       prim._ucolor   = GetStyleColor(pnode, ic);
       prim.meType    = PrimitiveType::LINES;
@@ -592,7 +593,7 @@ struct GedSkin1 : public GedSkin { /////////////////////////////////////////////
   }
   ///////////////////////////////////////////////////////////////////
   void DrawCheckBox(GedObject* pnode, int ix, int iy, int iw, int ih) {
-    if (false == mbPickMode) {
+    if (false == _is_pickmode) {
       int ixi  = ix + 2;
       int iyi  = iy + 2;
       int ixi2 = ix + iw - 2;
@@ -615,26 +616,26 @@ struct GedSkin1 : public GedSkin { /////////////////////////////////////////////
   }
   ///////////////////////////////////////////////////////////////////
   virtual void DrawText(GedObject* pnode, int ix, int iy, const char* ptext) {
-    if (false == mbPickMode) {
+    if (false == _is_pickmode) {
       GedText text;
       text.ix      = ix;
       text.iy      = iy;
       text.mString = GedText::StringType(ptext);
-      mTexts.push_back(text);
+      _text_vect.push_back(text);
     }
   }
   ///////////////////////////////////////////////////////////////////
   void Begin(Context* pTARG, GedSurface* pVP) {
-    mbPickMode     = pTARG->FBI()->isPickState();
-    mpCurrentGedVp = pVP;
-    mTexts.clear();
+    _is_pickmode     = pTARG->FBI()->isPickState();
+    _gedVP = pVP;
+    _text_vect.clear();
     clear();
     ClearObjSet();
   }
   ///////////////////////////////////////////////////////////////////
   void End(Context* pTARG) {
-    int iw                               = mpCurrentGedVp->width();
-    int ih                               = mpCurrentGedVp->height();
+    int iw                               = _gedVP->width();
+    int ih                               = _gedVP->height();
     miRejected                           = 0;
     miAccepted                           = 0;
     lev2::DynamicVertexBuffer<vtx_t>& VB = lev2::GfxEnv::GetSharedDynamicV16T16C16();
@@ -677,14 +678,14 @@ struct GedSkin1 : public GedSkin { /////////////////////////////////////////////
       }
       vw.UnLock(pTARG);
 
-      _material->begin(mbPickMode ? _tekvtxpick : _tekvtxcolor, RCFD);
+      _material->begin(_is_pickmode ? _tekvtxpick : _tekvtxcolor, RCFD);
       _material->bindParamMatrix(_parmvp, mtxW * uimatrix);
       pTARG->GBI()->DrawPrimitiveEML(vw, PrimitiveType::TRIANGLES);
       _material->end(RCFD);
       icount = 0;
       // ivbase += inumquads*6;
       ///////////////////////////////////////////////////////////
-      if (false == mbPickMode) {
+      if (false == _is_pickmode) {
         for (int i = 0; i < inumcusts; i++) {
           const GedPrim* prim = primcontainer->mCustomPrims[i];
           if (IsVisible(pTARG, prim->iy1, prim->iy2)) {
@@ -692,7 +693,7 @@ struct GedSkin1 : public GedSkin { /////////////////////////////////////////////
           }
         }
       }
-      if (false == mbPickMode) {
+      if (false == _is_pickmode) {
         if (inumlines) {
           icount = 0;
           vw.Lock(pTARG, &VB, inumlines * 2);
@@ -708,7 +709,7 @@ struct GedSkin1 : public GedSkin { /////////////////////////////////////////////
           }
           vw.UnLock(pTARG);
           if (icount) {
-            _material->begin(mbPickMode ? _tekvtxpick : _tekvtxcolor, RCFD);
+            _material->begin(_is_pickmode ? _tekvtxpick : _tekvtxcolor, RCFD);
             _material->bindParamMatrix(_parmvp, mtxW * uimatrix);
             pTARG->GBI()->DrawPrimitiveEML(vw, PrimitiveType::LINES);
             _material->end(RCFD);
@@ -717,17 +718,16 @@ struct GedSkin1 : public GedSkin { /////////////////////////////////////////////
       }
     }
     ///////////////////////////////////////////////////////////
-    ////////////////////////
-    if (false == mbPickMode) { ////////////////////////
-      lev2::GfxMaterialUI uimat(pTARG);
-      uimat.SetUIColorMode(UiColorMode::MOD);
-      lev2::FontMan::PushFont(mpFONT);
+    if (not _is_pickmode) {
+      //lev2::GfxMaterialUI uimat(pTARG);
+      //uimat.SetUIColorMode(UiColorMode::MOD);
+      lev2::FontMan::PushFont(_font);
       lev2::FontMan::beginTextBlock(pTARG);
       pTARG->PushModColor(fcolor4(0.8f, 0.9f, 1.0f));
       {
-        int inumt = (int)mTexts.size();
+        int inumt = (int)_text_vect.size();
         for (int it = 0; it < inumt; it++) {
-          const GedText& text = mTexts[it];
+          const GedText& text = _text_vect[it];
           if (IsVisible(pTARG, text.iy, text.iy + 8)) {
             lev2::FontMan::DrawText(pTARG, text.ix, text.iy, text.mString.c_str());
           }
@@ -740,7 +740,7 @@ struct GedSkin1 : public GedSkin { /////////////////////////////////////////////
     ////////////////////////
     pTARG->MTXI()->PopMMatrix();
     pTARG->MTXI()->PopUIMatrix();
-    mpCurrentGedVp = 0;
+    _gedVP = 0;
   }
 };
 ////////////////////////////////////////////////////////////////

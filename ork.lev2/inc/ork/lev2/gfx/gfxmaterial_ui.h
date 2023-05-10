@@ -31,6 +31,8 @@ public:
   int BeginBlock(Context* pTARG, const RenderContextInstData& MatCtx) override;
   void EndBlock(Context* pTARG) override;
 
+  void wrappedDraw(Context* context, void_lambda_t drawcb);
+
   void SetUIColorMode(UiColorMode emod) {
     meUIColorMode = emod;
   }

@@ -155,19 +155,21 @@ public:
   const reflect::ObjectProperty* _property;
   object_ptr_t _object;
 
-  int miX, miY;
-  int miW, miH;
-  bool mbVisible;
-  bool mbInvalid;
+  int miX = 0;
+  int miY = 0;
+  int miW = 0;
+  int miH = 0;
+  bool mbVisible = false;
+  bool mbInvalid = true;
 
 
-  bool mbcollapsed;
+  bool mbcollapsed = false;
   std::string mvalue;
   orkvector<geditemnode_ptr_t> _children;
   GedItemNode* _parent = nullptr;
   orkmap<std::string, std::string> mTags;
   GedContainer* _container = nullptr;
-  int micalch;
+  int micalch = 0;
   ///////////////////////////////////////////////////
   std::string _propname;
   std::string _content;

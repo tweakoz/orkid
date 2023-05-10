@@ -107,6 +107,17 @@ int GfxMaterialUI::BeginBlock(Context* pTarg, const RenderContextInstData& MatCt
 
 /////////////////////////////////////////////////////////////////////////
 
+void GfxMaterialUI::wrappedDraw(Context* context, void_lambda_t drawcb){
+  RenderContextInstData RCID;
+  this->BeginBlock(context, RCID);
+  this->BeginPass(context, 0);
+  drawcb();
+  this->EndPass(context);
+  this->EndBlock(context);
+}
+
+/////////////////////////////////////////////////////////////////////////
+
 void GfxMaterialUI::EndBlock(Context* pTarg) {
   pTarg->FXI()->EndBlock();
 }
@@ -201,8 +212,7 @@ bool GfxMaterialUIText::BeginPass(Context* pTarg, int iPass) {
   SRasterState& RasterState = _rasterstate; // pTarg->RSI()->RefUIRasterState();
 
   // RasterState.SetAlphaTest( EALPHATEST_GREATER, 0.0f );
-  // pTarg->RSI()->BindRasterState( RasterState );
-
+   
   ///////////////////////////////
 
   const fmtx4& MatMVP = pTarg->MTXI()->RefMVPMatrix();
@@ -214,6 +224,7 @@ bool GfxMaterialUIText::BeginPass(Context* pTarg, int iPass) {
   pTarg->FXI()->BindParamCTex(hColorMap, GetTexture(ETEXDEST_DIFFUSE).mpTexture);
   pTarg->FXI()->BindParamVect4(hModColor, pTarg->RefModColor());
   pTarg->FXI()->CommitParams();
+  //pTarg->RSI()->BindRasterState( RasterState );
 
   return true;
 }

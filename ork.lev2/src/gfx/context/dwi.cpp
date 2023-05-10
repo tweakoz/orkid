@@ -14,6 +14,23 @@ DrawingInterface::DrawingInterface(Context& ctx)
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void DrawingInterface::line2DEML(const fvec2& v0, const fvec2& v1, const fvec4& vertex_color, float depth ){
+
+  auto GBI = _context.GBI();
+
+  DynamicVertexBuffer<SVtxV12C4T16>& vb = GfxEnv::GetSharedDynamicVB();
+  U32 uc                                = vertex_color.ABGRU32();
+  ork::lev2::VtxWriter<SVtxV12C4T16> vw;
+  vw.Lock(GBI, &vb, 6);
+  vw.AddVertex(SVtxV12C4T16(v0.x, v0.y, depth, 0,0,0,0, uc));
+  vw.AddVertex(SVtxV12C4T16(v1.x, v1.y, depth, 0,0,0,0, uc));
+  vw.UnLock(GBI);
+
+  GBI->DrawPrimitiveEML(vw, PrimitiveType::LINES, 2);
+
+}
+///////////////////////////////////////////////////////////////////////////////
+
 void DrawingInterface::quad2DEML(const fvec2& v0, const fvec2& v1, const fvec2& v2, const fvec2& v3, //
                const fvec2& uva0, const fvec2& uva1, const fvec2& uva2, const fvec2& uva3, //
                const fvec2& uvb0, const fvec2& uvb1, const fvec2& uvb2, const fvec2& uvb3, //

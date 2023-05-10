@@ -83,13 +83,13 @@ public:
   virtual void End(ork::lev2::Context* pTARG)                                                             = 0;
 
   void SetScrollY(int iscrolly) {
-    miScrollY = iscrolly;
+    _scrollY = iscrolly;
   }
 
   void AddPrim(const GedPrim& cb); // { mPrims.AddSorted(calcsort(cb.miSortKey),cb); }
 
   int GetScrollY() const {
-    return miScrollY;
+    return _scrollY;
   }
 
   int calcsort(int isort) {
@@ -104,26 +104,26 @@ public:
   void clear();
 
   int char_w() const {
-    return miCHARW;
+    return _char_w;
   }
   int char_h() const {
-    return miCHARH;
+    return _char_h;
   }
 
 protected:
   PrimContainers mPrimContainers;
 
-  int miScrollY;
-  int miRejected;
-  int miAccepted;
-  GedSurface* mpCurrentGedVp;
-  ork::lev2::Font* mpFONT;
-  int miCHARW;
-  int miCHARH;
+  int _scrollY = 0;
+  int miRejected = 0;
+  int miAccepted = 0;
+  GedSurface* _gedVP = nullptr;
+  ork::lev2::Font* _font = nullptr;
+  int _char_w = 0;
+  int _char_h = 0;
 
   bool IsVisible(ork::lev2::Context* pTARG, int iy1, int iy2) {
-    int iry1 = iy1 + miScrollY;
-    int iry2 = iy2 + miScrollY;
+    int iry1 = iy1 + _scrollY;
+    int iry2 = iy2 + _scrollY;
     int ih   = pTARG->mainSurfaceHeight();
 
     if (iry2 < 0) {

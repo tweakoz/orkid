@@ -89,11 +89,16 @@ void GedSurface::DoSurfaceResize() {
 ///////////////////////////////////////////////////////////////////////////////
 void GedSurface::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
 
-  auto tgt = drwev->GetTarget();
-  tgt->debugPushGroup(FormatString("GedSurface::repaint"));
-  auto mtxi     = tgt->MTXI();
-  auto fbi      = tgt->FBI();
+  auto context = drwev->GetTarget();
+  context->debugPushGroup(FormatString("GedSurface::repaint"));
+  auto mtxi     = context->MTXI();
+  auto fbi      = context->FBI();
+  auto dwi = context->DWI();
+
   int pickstate = fbi->_pickState;
+
+  int W = width();
+  int H = height();
 
   //////////////////////////////////////////////////
   // Compute Scoll Transform
@@ -104,20 +109,25 @@ void GedSurface::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
 
   //////////////////////////////////////////////////
 
-  fbi->pushScissor(ViewportRect(0, 0, width(), height()));
-  fbi->pushViewport(ViewportRect(0, 0, width(), height()));
+  fbi->pushScissor(ViewportRect(0, 0, W, H));
+  fbi->pushViewport(ViewportRect(0, 0, W, H));
   mtxi->PushMMatrix(matSCROLL);
   {
     fbi->Clear(fvec3(0.25,0.25,0.35), 1.0f);
 
     if (_model->_currentObject) {
-      _container.Draw(tgt, width(), height(), miScrollY);
+      _container.Draw(context, W, H, miScrollY);
     }
+    auto mtl = defaultUIMaterial();
+    mtl->wrappedDraw(context,[&](){
+        dwi->line2DEML(fvec2(0, 0), fvec2(W, H), fvec4(1, 1, 1, 1), 0.0f);
+        dwi->line2DEML(fvec2(W, 0), fvec2(0, H), fvec4(1, 1, 1, 1), 0.0f);
+    });
   }
   mtxi->PopMMatrix();
   fbi->popViewport();
   fbi->popScissor();
-  tgt->debugPopGroup();
+  context->debugPopGroup();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
