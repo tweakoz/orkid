@@ -26,10 +26,10 @@ void GedRootNode::DoDraw(lev2::Context* pTARG){
 
 }
 void GedRootNode::Layout(int ix, int iy, int iw, int ih){
-
+    GedItemNode::Layout(ix,iy,iw,ih);
 }
-int GedRootNode::CalcHeight(void){
-    return 0;
+int GedRootNode::CalcHeight(){
+    return GedItemNode::CalcHeight();
 }
 
 ////////////////////////////////////////////////////////////////

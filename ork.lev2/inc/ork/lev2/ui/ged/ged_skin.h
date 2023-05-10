@@ -8,6 +8,9 @@ namespace ork::lev2::ged {
 struct GedSkin {
 
 public:
+
+  using vtx_t = SVtxV16T16C16 ;
+
   typedef void (*DrawCB)(GedSkin* pskin, GedObject* pnode, ork::lev2::Context* pTARG);
 
   void gpuInit(lev2::Context* ctx);
@@ -20,6 +23,13 @@ public:
   const ork::lev2::FxShaderParam* _parmvp          = nullptr;
   const ork::lev2::FxShaderParam* _parmodcolor     = nullptr;
   const ork::lev2::FxShaderParam* _parobjid        = nullptr;
+
+  struct GedText {
+    using StringType = ork::ArrayString<128>;
+    int ix = 0;
+    int iy = 0;
+    StringType mString;
+  };
 
   struct GedPrim {
     DrawCB mDrawCB;
@@ -70,6 +80,7 @@ public:
     ESTYLE_DEFAULT_CAPTION,
     ESTYLE_DEFAULT_CHECKBOX,
     ESTYLE_BUTTON_OUTLINE,
+    ESTYLE_DONT_CARE,
   } ESTYLE;
 
   virtual void Begin(ork::lev2::Context* pTARG, GedSurface* pgedvp)                                       = 0;
@@ -110,17 +121,6 @@ public:
     return _char_h;
   }
 
-protected:
-  PrimContainers mPrimContainers;
-
-  int _scrollY = 0;
-  int miRejected = 0;
-  int miAccepted = 0;
-  GedSurface* _gedVP = nullptr;
-  ork::lev2::Font* _font = nullptr;
-  int _char_w = 0;
-  int _char_h = 0;
-
   bool IsVisible(ork::lev2::Context* pTARG, int iy1, int iy2) {
     int iry1 = iy1 + _scrollY;
     int iry2 = iy2 + _scrollY;
@@ -137,6 +137,59 @@ protected:
     miAccepted++;
     return true;
   }
+
+protected:
+
+  static std::set<void*>& GetObjSet();
+  static void ClearObjSet();
+  static void AddToObjSet(void* pobj);
+  static bool IsObjInSet(void* pobj);
+
+  PrimContainers mPrimContainers;
+
+  int _scrollY = 0;
+  int miRejected = 0;
+  int miAccepted = 0;
+  GedSurface* _gedVP = nullptr;
+  ork::lev2::Font* _font = nullptr;
+  int _char_w = 0;
+  int _char_h = 0;
+  orkvector<GedText> _text_vect;
+  bool _is_pickmode = false;
+
+};
+
+struct GedSkin0 : public GedSkin {
+
+  GedSkin0(ork::lev2::Context* ctx);
+  fvec4 GetStyleColor(GedObject* pnode, ESTYLE ic);
+  void DrawBgBox(GedObject* pnode, int ix, int iy, int iw, int ih, ESTYLE ic, int isort) final;
+  void DrawOutlineBox(GedObject* pnode, int ix, int iy, int iw, int ih, ESTYLE ic, int isort) final;
+  void DrawLine(GedObject* pnode, int ix, int iy, int ix2, int iy2, ESTYLE ic) final;
+  void DrawCheckBox(GedObject* pnode, int ix, int iy, int iw, int ih) final;
+  void DrawDownArrow(GedObject* pnode, int ix, int iy, int iw, int ih, ESTYLE ic) final;
+  void DrawRightArrow(GedObject* pnode, int ix, int iy, int iw, int ih, ESTYLE ic) final;
+  void DrawText(GedObject* pnode, int ix, int iy, const char* ptext) final;
+  void Begin(Context* pTARG, GedSurface* pVP) final;
+  void End(Context* pTARG) final;
+
+};
+
+struct GedSkin1 : public GedSkin {
+
+  GedSkin1(ork::lev2::Context* ctx);
+  fvec4 GetStyleColor(GedObject* pnode, ESTYLE ic);
+  void DrawBgBox(GedObject* pnode, int ix, int iy, int iw, int ih, ESTYLE ic, int isort) final;
+  void DrawOutlineBox(GedObject* pnode, int ix, int iy, int iw, int ih, ESTYLE ic, int isort) final;
+  void DrawLine(GedObject* pnode, int ix, int iy, int ix2, int iy2, ESTYLE ic) final;
+  void DrawCheckBox(GedObject* pnode, int ix, int iy, int iw, int ih) final;
+  void DrawDownArrow(GedObject* pnode, int ix, int iy, int iw, int ih, ESTYLE ic) final;
+  void DrawRightArrow(GedObject* pnode, int ix, int iy, int iw, int ih, ESTYLE ic) final;
+  void DrawText(GedObject* pnode, int ix, int iy, const char* ptext) final;
+  void Begin(Context* pTARG, GedSurface* pVP) final;
+  void End(Context* pTARG) final;
+
+
 };
 
 } //namespace ork::lev2::ged {

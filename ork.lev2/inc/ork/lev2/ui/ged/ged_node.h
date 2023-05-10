@@ -140,7 +140,7 @@ public:
   int numChildren() const;
   geditemnode_ptr_t child(int idx) const;
   ///////////////////////////////////////////////////
-  virtual int CalcHeight(void);
+  virtual int CalcHeight();
   /*geditemnode_ptr_t GetChildContainer() {
     return this;
   }*/
@@ -181,7 +181,7 @@ public:
 class GedRootNode : public GedItemNode {
   virtual void DoDraw(lev2::Context* pTARG);
   virtual void Layout(int ix, int iy, int iw, int ih);
-  virtual int CalcHeight(void);
+  virtual int CalcHeight();
 
 public:
   GedRootNode(GedContainer* c, //

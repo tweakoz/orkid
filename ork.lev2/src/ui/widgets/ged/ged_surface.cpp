@@ -111,7 +111,7 @@ void GedSurface::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
   {
 
     if( pickstate == 0){
-      fbi->Clear(fvec3(0.25,0.25,0.35), 1.0f);
+      fbi->Clear(fvec4(0,0,0,0), 1.0f);
     }
     else{
       fbi->Clear(fvec4(0,0,0,0), 1.0f);
@@ -122,12 +122,12 @@ void GedSurface::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
       _container.Draw(context, W, H, miScrollY);
     }
 
-    auto mtl = defaultUIMaterial();
-    mtl->SetUIColorMode(UiColorMode::VTX);
-    mtl->wrappedDraw(context,[&](){
-      dwi->line2DEML(fvec2(0, 0), fvec2(W, H), fvec4(1, 1, 1, 1), 0.0f);
-      dwi->line2DEML(fvec2(W, 0), fvec2(0, H), fvec4(1, 1, 1, 1), 0.0f);
-    });
+    //auto mtl = defaultUIMaterial();
+    //mtl->SetUIColorMode(UiColorMode::VTX);
+    //mtl->wrappedDraw(context,[&](){
+      //dwi->line2DEML(fvec2(0, 0), fvec2(W, H), fvec4(1, 1, 1, 1), 0.0f);
+      //dwi->line2DEML(fvec2(W, 0), fvec2(0, H), fvec4(1, 1, 1, 1), 0.0f);
+    //});
 
 
   }

@@ -101,7 +101,7 @@ void GedItemNode::Layout(int ix, int iy, int iw, int ih) {
   miW = iw;
   miH = ih;
 
-  // printf( "GedItemNode<%p> ix<%d> iy<%d> iw<%d> ih<%d>\n", this, ix, iy, iw, ih );
+   printf( "GedItemNode<%p> Layout ix<%d> iy<%d> iw<%d> ih<%d>\n", this, ix, iy, iw, ih );
 
   bool bsidebyside = CanSideBySide();
 
@@ -130,14 +130,14 @@ void GedItemNode::Layout(int ix, int iy, int iw, int ih) {
 
 int GedItemNode::get_charh() const {
   auto skin = _container->_activeSkin;
-  return skin->char_h();
+  return skin ? skin->char_h() : 8;
 }
 
 ////////////////////////////////////////////////////////////////
 
 int GedItemNode::get_charw() const {
   auto skin = _container->_activeSkin;
-  return skin->char_w();
+  return skin ? skin->char_w() : 8;
 }
 
 ////////////////////////////////////////////////////////////////
