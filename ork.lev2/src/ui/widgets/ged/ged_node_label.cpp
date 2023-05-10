@@ -27,7 +27,7 @@ void GedLabelNode::DoDraw(lev2::Context* pTARG){
   auto skin = _container->_activeSkin;
   bool is_pick = true; //pTARG->FBI()->isPickState();
 
-  skin->DrawBgBox(this, miX, miY, 10, 10, GedSkin::ESTYLE_BACKGROUND_2, 0);
+  skin->DrawBgBox(this, miX, miY, 10, 10, GedSkin::ESTYLE_BACKGROUND_1, 0);
 
   if( not is_pick ){
      skin->DrawText(this, miX, miY, _propname.c_str());
