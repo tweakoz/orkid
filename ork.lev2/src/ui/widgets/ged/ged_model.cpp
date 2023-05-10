@@ -370,7 +370,7 @@ geditemnode_ptr_t ObjModel::recurse(
 
           if (groupnode) {
             _gedContainer->PopItemNode(groupnode.get());
-            groupnode->CheckVis();
+            groupnode->updateVisibility();
           }
           _gedContainer->DoResize();
           return rval;
@@ -414,7 +414,7 @@ geditemnode_ptr_t ObjModel::recurse(
         if (false == IsNodeVisible(prop))
           continue;
         //////////////////////////////////////////////////
-        propnode = createNode(Name, prop, cur_obj);
+        propnode = createObjPropNode(Name, prop, cur_obj);
         //////////////////////////////////////////////////
         if (propnode)
           _gedContainer->AddChild(propnode);
@@ -425,7 +425,7 @@ geditemnode_ptr_t ObjModel::recurse(
     ////////////////////////////////////////////////////////////////////////////////////////
     if (groupnode) {
       _gedContainer->PopItemNode(groupnode.get());
-      groupnode->CheckVis();
+      groupnode->updateVisibility();
     }
     ////////////////////////////////////////////////////////////////////////////////////////
     for (const auto& it : snode->GroupVect) {
@@ -438,7 +438,7 @@ geditemnode_ptr_t ObjModel::recurse(
   }
   if (groupnode) {
     _gedContainer->PopItemNode(groupnode.get());
-    groupnode->CheckVis();
+    groupnode->updateVisibility();
   }
   _gedContainer->DoResize();
   return rval;
@@ -446,7 +446,17 @@ geditemnode_ptr_t ObjModel::recurse(
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 
-geditemnode_ptr_t ObjModel::createNode(
+geditemnode_ptr_t ObjModel::createAbstractNode( const std::string& Name, 
+                                                const reflect::ObjectProperty* par_prop, //
+                                                object_ptr_t par_object, //
+                                                svar256_t abstract_val ){ //
+                                                
+  return std::make_shared<GedLabelNode>(_gedContainer, Name.c_str(), par_prop, par_object);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////
+
+geditemnode_ptr_t ObjModel::createObjPropNode(
     const std::string& Name,             //
     const reflect::ObjectProperty* prop, //
     object_ptr_t pobject) {
@@ -470,9 +480,14 @@ geditemnode_ptr_t ObjModel::createNode(
   }
   /////////////////////////////////////////////////////////////////////////
   auto array_prop = dynamic_cast<const reflect::IArray*>(prop);
+  auto map_prop = dynamic_cast<const reflect::IMap*>(prop);
   /////////////////////////////////////////////////////////////////////////
   ConstString anno_ucdclass  = prop->GetAnnotation("ged.userchoice.delegate");
   bool HasUserChoiceDelegate = (anno_ucdclass.length());
+  /////////////////////////////////////////////////////////////////////////
+  if( map_prop ){
+     return std::make_shared<GedMapNode>(_gedContainer, Name.c_str(), map_prop, pobject);
+  }
   /////////////////////////////////////////////////////////////////////////
   /*
   if (const reflect::ITyped<Char8>* c8prop = rtti::autocast(prop))
@@ -520,24 +535,12 @@ geditemnode_ptr_t ObjModel::createNode(
       return new GedObjNode<PropSetterObj>(*this, Name.c_str(), prop, pobject);
   }
   /////////////////////////////////////////////////////////////////////////
-  else if (const reflect::DirectTypedMap<ent::SceneData::SystemDataLut>* MapProp = rtti::autocast(prop)) {
-    auto mapprop = rtti::downcast<const reflect::DirectTypedMap<ent::SceneData::SystemDataLut>*>(prop);
-    if (mapprop)
-      return new GedMapNode(*this, Name.c_str(), mapprop, pobject);
-  }
-  /////////////////////////////////////////////////////////////////////////
   else if (const reflect::DirectTyped<ork::Object*>* dobjprop = rtti::autocast(prop)) {
     ork::Object* psubobj = 0;
     dobjprop->Get(psubobj, pobject);
     if (psubobj)
       Recurse(psubobj);
     return new GedObjNode<PropSetterObj>(*this, Name.c_str(), prop, pobject);
-  }
-  /////////////////////////////////////////////////////////////////////////
-  else if (const reflect::IMap* MapProp = rtti::autocast(prop)) {
-    auto mapprop = rtti::downcast<const reflect::IMap*>(prop);
-    if (mapprop)
-      return new GedMapNode(*this, Name.c_str(), mapprop, pobject);
   }
   /////////////////////////////////////////////////////////////////////////
   else

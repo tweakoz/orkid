@@ -55,74 +55,41 @@ struct GedItemNode : public GedObject {
 public:
   ///////////////////////////////////////////////////
 
-  GedItemNode(GedContainer* container,
-              const char* name,  //
-              const reflect::ObjectProperty* prop,  //
-              object_ptr_t obj);
+  GedItemNode(
+      GedContainer* container,
+      const char* name,                    //
+      const reflect::ObjectProperty* prop, //
+      object_ptr_t obj);
 
   ///////////////////////////////////////////////////
 
   ~GedItemNode() override;
 
-  void SetVisible(bool bv) {
-    mbVisible = bv;
-  }
-  bool IsVisible() const {
-    return mbVisible;
-  }
+  void SetVisible(bool bv);
+  bool IsVisible() const;
+  void SetXY(int ix, int iy);
+  void SetWH(int iw, int ih);
+  int GetX() const;
+  int GetY() const;
 
-  void SetXY(int ix, int iy) {
-    miX = ix;
-    miY = iy;
-  }
-  void SetWH(int iw, int ih) {
-    miW = iw;
-    miH = ih;
-  }
-  int GetX() const {
-    return miX;
-  }
-  int GetY() const {
-    return miY;
-  }
-
-  ///////////////////////////////////////////////////
-
-  /*void activate() {
-    onActivate();
-  }
-  void deactivate() {
-    onDeactivate();
-  }*/
   ///////////////////////////////////////////////////
 
   void SigInvalidateProperty();
 
   void Init();
 
-  int height() const {
-    return micalch;
-  }
-  int width() const {
-    return miW;
-  }
+  int height() const;
+  int width() const;
 
   virtual void Layout(int ix, int iy, int iw, int ih);
-  virtual bool CanSideBySide() const {
-    return false;
-  }
-  virtual void Invalidate() {
-    mbInvalid = true;
-  }
-  virtual void ReSync() {
-  }
+  virtual bool CanSideBySide() const;
+  virtual void Invalidate();
+  virtual void ReSync();
   ///////////////////////////////////////////////////
   void Draw(lev2::Context* pTARG);
   ///////////////////////////////////////////////////
-  virtual void onActiGedObjectvate() {
-  }
-  virtual void onDeactivate() {
-  }
+  virtual void onActiGedObjectvate();
+  virtual void onDeactivate();
   ///////////////////////////////////////////////////
   int get_charh() const;
   int get_charw() const;
@@ -130,21 +97,14 @@ public:
   ///////////////////////////////////////////////////
   int contentWidth() const;
   int propnameWidth() const;
-  int contentCenterX() const {
-    return miX + (miW >> 1) - (contentWidth() >> 1);
-  }
-  int propnameCenterX() const {
-    return miX + (miW >> 1) - (propnameWidth() >> 1);
-  }
+  int contentCenterX() const;
+  int propnameCenterX() const;
   ///////////////////////////////////////////////////
   void addChild(geditemnode_ptr_t w);
   int numChildren() const;
   geditemnode_ptr_t child(int idx) const;
   ///////////////////////////////////////////////////
   virtual int CalcHeight();
-  /*geditemnode_ptr_t GetChildContainer() {
-    return this;
-  }*/
   ///////////////////////////////////////////////////
   bool IsObjectHilighted(const GedObject* pobj) const;
   ///////////////////////////////////////////////////
@@ -154,7 +114,7 @@ public:
 
   //
   GedContainer* _container = nullptr;
-  bool mbcollapsed = false;
+  bool mbcollapsed         = false;
   std::string _propname;
   const reflect::ObjectProperty* _property;
   object_ptr_t _object;
@@ -163,16 +123,15 @@ public:
   orkvector<geditemnode_ptr_t> _children;
   orkmap<std::string, std::string> mTags;
   std::string _content;
-  bool mbVisible = true;
-  bool mbInvalid = true;
-  bool _doDrawDefault = true;
-  ObjModel* _model = nullptr;
+  bool mbVisible       = true;
+  bool mbInvalid       = true;
+  bool _doDrawDefault  = true;
   GedItemNode* _parent = nullptr;
-  int miX = 0;
-  int miY = 0;
-  int miW = 0;
-  int miH = 0;
-  int micalch = 0;
+  int miX              = 0;
+  int miY              = 0;
+  int miW              = 0;
+  int miH              = 0;
+  int micalch          = 0;
   ///////////////////////////////////////////////////
 };
 
@@ -186,10 +145,11 @@ class GedRootNode : public GedItemNode {
   int CalcHeight() final;
 
 public:
-  GedRootNode(GedContainer* c, //
-              const char* name,  //
-              const reflect::ObjectProperty* prop,  //
-              object_ptr_t obj);
+  GedRootNode(
+      GedContainer* c,                     //
+      const char* name,                    //
+      const reflect::ObjectProperty* prop, //
+      object_ptr_t obj);
 
   bool DoDrawDefault() const {
     return false;
@@ -205,13 +165,14 @@ struct GedGroupNode : public GedItemNode {
   void OnMouseDoubleClicked(ork::ui::event_constptr_t ev) final;
   ork::file::Path::NameType mPersistID;
 
-  GedGroupNode(GedContainer* container, //
-               const char* name, //
-               const reflect::ObjectProperty* prop, //
-               object_ptr_t obj, //
-               bool is_obj_node = false);
+  GedGroupNode(
+      GedContainer* container,             //
+      const char* name,                    //
+      const reflect::ObjectProperty* prop, //
+      object_ptr_t obj,                    //
+      bool is_obj_node = false);
 
-  void CheckVis();
+  void updateVisibility();
   bool DoDrawDefault() const {
     return false;
   } // virtual
@@ -234,6 +195,7 @@ struct KeyDecoName {
 
 struct GedLabelNode : public GedItemNode {
   DeclareAbstractX(GedLabelNode, GedItemNode);
+
 public:
   ///////////////////////////////////////////////////
 
@@ -248,45 +210,43 @@ struct GedMapNode : public GedItemNode {
   DeclareAbstractX(GedMapNode, GedItemNode);
 
 public:
-
   using event_constptr_t = ork::ui::event_constptr_t;
 
-  GedMapNode(ObjModel* mdl, const char* name, const reflect::ObjectProperty* prop, ork::Object* obj);
+  GedMapNode(GedContainer* c, const char* name, const reflect::IMap* prop, object_ptr_t obj);
   const orkmap<PropTypeString, KeyDecoName>& GetKeys() const {
     return mMapKeys;
   }
-  void FocusItem(const PropTypeString& key);
+  void focusItem(const PropTypeString& key);
 
-  bool IsKeyPresent(const KeyDecoName& pkey) const;
-  void AddKey(const KeyDecoName& pkey);
+  bool isKeyPresent(const KeyDecoName& pkey) const;
+  void addKey(const KeyDecoName& pkey);
 
-  bool IsMultiMap() const {
+  bool isMultiMap() const {
     return mbIsMultiMap;
   }
 
 private:
-  const reflect::IMap* mMapProp;
   orkmap<PropTypeString, KeyDecoName> mMapKeys;
-  GedItemNode* mKeyNode;
+  const reflect::IMap* mMapProp = nullptr;
+  GedItemNode* mKeyNode         = nullptr;
   PropTypeString mCurrentKey;
-  int mItemIndex;
-  bool mbSingle;
-  bool mbConst;
-  bool mbIsMultiMap;
-  bool mbImpExp;
+  int mItemIndex    = 0;
+  bool mbSingle     = false;
+  bool mbConst      = false;
+  bool mbIsMultiMap = false;
+  bool mbImpExp     = false;
 
   void OnMouseDoubleClicked(event_constptr_t ev) final;
-
-  void CheckVis();
   void DoDraw(Context* pTARG) final;
 
-  void AddItem(event_constptr_t ev);
-  void RemoveItem(event_constptr_t ev);
-  void MoveItem(event_constptr_t ev);
-  void DuplicateItem(event_constptr_t ev);
-  void ImportItem(event_constptr_t ev);
-  void ExportItem(event_constptr_t ev);
+  void updateVisibility();
+  void addItem(event_constptr_t ev);
+  void removeItem(event_constptr_t ev);
+  void moveItem(event_constptr_t ev);
+  void duplicateItem(event_constptr_t ev);
+  void importItem(event_constptr_t ev);
+  void exportItem(event_constptr_t ev);
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-} //namespace ork::lev2::ged {
+} // namespace ork::lev2::ged

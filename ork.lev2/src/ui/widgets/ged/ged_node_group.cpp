@@ -70,7 +70,7 @@ GedGroupNode::GedGroupNode(
     mbCollapsed = false;
   }
 
-  CheckVis();
+  updateVisibility();
 }
 ///////////////////////////////////////////////////////////////////////////////
 void GedGroupNode::OnMouseDoubleClicked(ork::ui::event_constptr_t ev) {
@@ -146,23 +146,22 @@ void GedGroupNode::OnMouseDoubleClicked(ork::ui::event_constptr_t ev) {
               auto child_as_group = std::dynamic_pointer_cast<GedGroupNode>(child);
               if (child_as_group) {
                 child_as_group->mbCollapsed = mbCollapsed;
-                child_as_group->CheckVis();
+                child_as_group->updateVisibility();
                 pmap->setValue(child_as_group->mPersistID.c_str(), mbCollapsed ? "true" : "false");
               }
             }
           }
         }
 
-        CheckVis();
+        updateVisibility();
         return;
       }
     }
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
-void GedGroupNode::CheckVis() {
+void GedGroupNode::updateVisibility() {
 
-  auto model = _container->_model;
   int inumitems = numChildren();
 
   if (inumitems) {
@@ -176,9 +175,9 @@ void GedGroupNode::CheckVis() {
       }
     }
   }
-  model->_gedContainer->DoResize();
+  _container->DoResize();
 }
-
+///////////////////////////////////////////////////////////////////////////////
 void GedGroupNode::DoDraw(lev2::Context* pTARG) {
 
   auto model = _container->_model;

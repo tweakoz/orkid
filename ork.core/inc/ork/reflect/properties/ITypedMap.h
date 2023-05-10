@@ -44,6 +44,7 @@ private:
   // from ObjectProperty
   void deserialize(serdes::node_ptr_t) const override;
   void serialize(serdes::node_ptr_t sernode) const override;
+  map_kvarray_t enumerateElements(object_constptr_t obj) const override;
 };
 
 }} // namespace ork::reflect

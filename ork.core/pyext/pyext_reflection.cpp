@@ -40,7 +40,12 @@ void pyinit_reflection(py::module& module_core) {
   using hotkeyconfig_ptr_t = std::shared_ptr<HotKeyConfiguration>;
   auto hkeycfg_type =                                                              //
       py::class_<HotKeyConfiguration,Object,hotkeyconfig_ptr_t>(module_core, "HotKeyConfiguration") //
-          .def(py::init<>());
+          .def(py::init<>())
+          .def("createHotKey", [](HotKeyConfiguration& hkc, std::string actionname) -> hotkey_ptr_t {
+            auto hk = std::make_shared<HotKey>();
+            hkc._hotkeys.AddSorted(actionname,hk);
+            return hk;
+          });
   type_codec->registerStdCodec<hotkeyconfig_ptr_t>(hkeycfg_type);
 
 }

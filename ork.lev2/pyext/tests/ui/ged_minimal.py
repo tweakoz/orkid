@@ -19,7 +19,7 @@ class UiGedTestApp(object):
 
   def __init__(self):
     super().__init__()
-    self.ezapp = OrkEzApp.create(self,height=640,width=1280)
+    self.ezapp = OrkEzApp.create(self,left=420, top=420, height=480,width=480)
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     self.ezapp.topWidget.enableUiDraw()
     lg_group = self.ezapp.topLayoutGroup
@@ -39,9 +39,11 @@ class UiGedTestApp(object):
     self.ged_layout.right.anchorTo(root_layout.right)
 
     # create a test object to edit and attach it to the object model
-    self.test_object = HotKeyConfiguration()
-    self.objmodel.attach(self.test_object,True)
-    print(self.test_object.clazz.name)
+    self.hotkeys = HotKeyConfiguration()
+    hk1 = self.hotkeys.createHotKey("test1")
+    hk2 = self.hotkeys.createHotKey("test2")
+    self.objmodel.attach(self.hotkeys,True)
+    print(self.hotkeys.clazz.name)
 
     #root_layout.dump()
     #assert(False)

@@ -51,10 +51,11 @@ void GedItemNode::describeX(class_t* clazz) {
 
 ////////////////////////////////////////////////////////////////
 
-GedItemNode::GedItemNode(GedContainer* container, //
-                         const char* name,  //
-                         const reflect::ObjectProperty* prop,  //
-                         object_ptr_t obj) //
+GedItemNode::GedItemNode(
+    GedContainer* container,             //
+    const char* name,                    //
+    const reflect::ObjectProperty* prop, //
+    object_ptr_t obj)                    //
     : _container(container)
     , mbcollapsed(false)
     , _propname(name)
@@ -63,8 +64,8 @@ GedItemNode::GedItemNode(GedContainer* container, //
 
   int stack_depth = _container->GetStackDepth();
 
-  if (not (stack_depth == 0)) {
-    //GedItemNode* parent = _container->ParentItemNode();
+  if (not(stack_depth == 0)) {
+    // GedItemNode* parent = _container->ParentItemNode();
   }
 
   Init();
@@ -73,6 +74,55 @@ GedItemNode::GedItemNode(GedContainer* container, //
 ////////////////////////////////////////////////////////////////
 
 GedItemNode::~GedItemNode() {
+}
+
+//////////////////////////////////////////////////////////////////////////////
+
+void GedItemNode::SetVisible(bool bv) {
+  mbVisible = bv;
+}
+bool GedItemNode::IsVisible() const {
+  return mbVisible;
+}
+
+void GedItemNode::SetXY(int ix, int iy) {
+  miX = ix;
+  miY = iy;
+}
+void GedItemNode::SetWH(int iw, int ih) {
+  miW = iw;
+  miH = ih;
+}
+int GedItemNode::GetX() const {
+  return miX;
+}
+int GedItemNode::GetY() const {
+  return miY;
+}
+int GedItemNode::height() const {
+  return micalch;
+}
+int GedItemNode::width() const {
+  return miW;
+}
+bool GedItemNode::CanSideBySide() const {
+  return false;
+}
+void GedItemNode::Invalidate() {
+  mbInvalid = true;
+}
+void GedItemNode::ReSync() {
+}
+///////////////////////////////////////////////////
+void GedItemNode::onActiGedObjectvate() {
+}
+void GedItemNode::onDeactivate() {
+}
+int GedItemNode::contentCenterX() const {
+  return miX + (miW >> 1) - (contentWidth() >> 1);
+}
+int GedItemNode::propnameCenterX() const {
+  return miX + (miW >> 1) - (propnameWidth() >> 1);
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -112,7 +162,7 @@ void GedItemNode::Layout(int ix, int iy, int iw, int ih) {
   miW = iw;
   miH = ih;
 
-   printf( "GedItemNode<%p> Layout ix<%d> iy<%d> iw<%d> ih<%d>\n", this, ix, iy, iw, ih );
+  printf("GedItemNode<%p> Layout ix<%d> iy<%d> iw<%d> ih<%d>\n", this, ix, iy, iw, ih);
 
   bool bsidebyside = CanSideBySide();
 
@@ -171,7 +221,7 @@ int GedItemNode::numChildren() const {
   return int(_children.size());
 }
 //////////////////////////////////////////////////////////////////////////////
-geditemnode_ptr_t GedItemNode::child(int idx) const{
+geditemnode_ptr_t GedItemNode::child(int idx) const {
   return _children[idx];
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -207,4 +257,4 @@ void GedItemNode::Draw(lev2::Context* pTARG) {
 }
 
 ////////////////////////////////////////////////////////////////
-} //namespace ork::lev2::ged {
+} // namespace ork::lev2::ged

@@ -89,4 +89,24 @@ void ITypedMap<KeyType, ValueType>::deserialize(serdes::node_ptr_t dsernode) con
   }
 }
 ////////////////////////////////////////////////////////////////////////////////
+template <typename KeyType, typename ValueType> //
+map_kvarray_t ITypedMap<KeyType, ValueType>::enumerateElements(object_constptr_t instance) const {
+  map_kvarray_t rval;
+  int numelements        = elementCount(instance);
+  //printf( "map<%s> ser numelem<%d>\n", _name.c_str(), numelements );
+  for (size_t i = 0; i < numelements; i++) {
+    //////////////////////////////
+    KeyType K;
+    ValueType V;
+    GetKey(instance, i, K);
+    GetVal(instance, K, V);
+    //////////////////////////////
+    map_pair_t P;
+    P.first.set<KeyType>(K);
+    P.second.set<ValueType>(V);
+    rval.push_back(P);
+  }
+  return rval;
+}
+////////////////////////////////////////////////////////////////////////////////
 } // namespace ork::reflect

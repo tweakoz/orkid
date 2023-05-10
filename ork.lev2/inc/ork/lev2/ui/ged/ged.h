@@ -181,7 +181,8 @@ public:
   //////////////////////////////////////////////////////////
 
   bool IsNodeVisible(const reflect::ObjectProperty* prop);
-  geditemnode_ptr_t createNode(const std::string& Name, const reflect::ObjectProperty* prop, object_ptr_t pobject);
+  geditemnode_ptr_t createObjPropNode(const std::string& Name, const reflect::ObjectProperty* prop, object_ptr_t pobject);
+  geditemnode_ptr_t createAbstractNode(const std::string& Name, const reflect::ObjectProperty* par_prop, object_ptr_t par_object, svar256_t abstract_val );
 
 
   bool _enablePaint = true;
