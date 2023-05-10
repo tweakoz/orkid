@@ -196,6 +196,7 @@ void ObjModel::attach(
     bool bclearstack,                  //
     geditemnode_ptr_t top_root_item) { //
 
+
   this->_rootObject = root_object;
   bool bnewobj      = (_currentObject != _rootObject);
 
@@ -210,11 +211,18 @@ void ObjModel::attach(
   }
 
   if (_gedContainer) {
-    if (top_root_item) { // partial tree (starting at top_root_item) ?
+    ///////////////////////////////////////////////////////
+    // partial tree (starting at top_root_item) ?
+    ///////////////////////////////////////////////////////
+    if (top_root_item) { 
       _gedContainer->PushItemNode(top_root_item.get());
       recurse(root_object);
       _gedContainer->PopItemNode(top_root_item.get());
-    } else { // full tree
+    }
+    ///////////////////////////////////////////////////////
+    // full tree
+    ///////////////////////////////////////////////////////
+    else { 
       _gedContainer->GetRootItem()->_children.clear();
       if (root_object) {
         _gedContainer->PushItemNode(_gedContainer->GetRootItem().get());
@@ -223,6 +231,7 @@ void ObjModel::attach(
       }
       detach();
     }
+    ///////////////////////////////////////////////////////
     if (_gedContainer->_viewport) {
       if (bnewobj)
         _gedContainer->_viewport->ResetScroll();
@@ -405,6 +414,7 @@ geditemnode_ptr_t ObjModel::recurse(
         if (false == IsNodeVisible(prop))
           continue;
         //////////////////////////////////////////////////
+        OrkAssert(false);
         propnode = createNode(Name, prop, cur_obj);
         //////////////////////////////////////////////////
         if (propnode)
@@ -535,6 +545,7 @@ geditemnode_ptr_t ObjModel::createNode(
     return new GedLabelNode(*this, Name.c_str(), prop, pobject);
   /////////////////////////////////////////////////////////////////////////
   */
+  OrkAssert(false);
   return std::make_shared<GedLabelNode>(_gedContainer, Name.c_str(), prop, pobject);
 }
 
@@ -570,12 +581,21 @@ void ObjModel::EnumerateNodes(
     sortnode& in_node,                //
     object::ObjectClass* the_class) { //
 
+  ///////////////////////////////////////////////////////////
+  // walk up class heirarchy to Object, enumerating..
+  ///////////////////////////////////////////////////////////
+
   object::ObjectClass* walk_class = the_class;
   orkvector<object::ObjectClass*> ClassVect;
   while (walk_class != ork::Object::GetClassStatic()) {
     ClassVect.push_back(walk_class);
     walk_class = rtti::downcast<ork::object::ObjectClass*>(walk_class->Parent());
   }
+
+  ///////////////////////////////////////////////////////////
+  // in heirarchy order, enumerate properties
+  ///////////////////////////////////////////////////////////
+
   int inumclasses = int(ClassVect.size());
   for (int ic = (inumclasses - 1); ic >= 0; ic--) {
     object::ObjectClass* clazz = ClassVect[ic];
@@ -586,7 +606,11 @@ void ObjModel::EnumerateNodes(
     const char* eg             = "";
     if (as_conststr)
       eg = as_conststr.value();
+    ///////////////////////////////////////////////////////////
+    // overridden order from editor.prop.groups
+    ///////////////////////////////////////////////////////////
     if (strlen(eg)) {
+      printf( "enumerate props for class<%s> (overridden order)\n", clazz->Name().c_str() );
       FixedString<1024> str_rep = eg;
       str_rep.replace_in_place("//", "// ");
       tokenlist src_toklist = CreateTokenList(str_rep.c_str(), " ");
@@ -645,7 +669,12 @@ void ObjModel::EnumerateNodes(
           }
       }
       /////////////////////////////////////////////////
-    } else
+    } 
+    ///////////////////////////////////////////////////////////
+    // default order
+    ///////////////////////////////////////////////////////////
+    else{
+      printf( "enumerate props for class<%s> (default order)\n", clazz->Name().c_str() );
       for (auto it : propmap) {
         ///////////////////////////////////////////////////
         // editor.object.props
@@ -663,6 +692,7 @@ void ObjModel::EnumerateNodes(
         ///////////////////////////////////////////////////
         bool prop_ok            = true;
         const ConstString& Name = it.first;
+        printf( "prop name<%s>\n", Name.c_str() );
         if (allowed_props.size()) {
           std::string namstr(Name.c_str());
           prop_ok = allowed_props.find(namstr) != allowed_props.end();
@@ -674,6 +704,7 @@ void ObjModel::EnumerateNodes(
           }
         }
       }
+    }
   }
 }
 

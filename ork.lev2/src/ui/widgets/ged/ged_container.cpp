@@ -159,7 +159,7 @@ void GedContainer::DoResize() {
     int inum = mRootItem->numChildren();
     miRootH  = mRootItem->CalcHeight();
     mRootItem->Layout(2, 2, miW - 4, miH - 4);
-    // printf( "GedContainer<%p>::DoResize() dims<%d %d> miRootH<%d> inumitems<%d>\n", this, miW, miH, miRootH, inum );
+    printf( "GedContainer<%p>::DoResize() dims<%d %d> miRootH<%d> inumitems<%d>\n", this, miW, miH, miRootH, inum );
   } else {
     miRootH = 0;
   }
@@ -179,18 +179,13 @@ void GedContainer::AddChild(geditemnode_ptr_t child_node) {
   }
 }
 
+//////////////////////////////////////////////////////////////////////////////
+
 void GedContainer::SetDims(int iw, int ih) {
   miW = iw;
   miH = ih;
   DoResize();
 }
-
-//////////////////////////////////////////////////////////////////////////////
-
-/*GedSkin* GedContainer::activeSkin() const{
-  size_t num_skins = mSkins.size();
-  return mSkins[_skin_index%num_skins];
-}*/
 
 //////////////////////////////////////////////////////////////////////////////
 

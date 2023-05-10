@@ -23,7 +23,7 @@ GedRootNode::GedRootNode(
 }
 
 void GedRootNode::DoDraw(lev2::Context* pTARG){
-
+    printf( "GedRootNode<%p>::DoDraw\n", this );
 }
 void GedRootNode::Layout(int ix, int iy, int iw, int ih){
 

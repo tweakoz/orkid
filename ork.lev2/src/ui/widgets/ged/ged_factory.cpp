@@ -26,6 +26,7 @@ GedFactory::createItemNode( GedContainer* c, //
                             const ConstString& Name, //
                             const reflect::ObjectProperty* prop, //
                             object_ptr_t obj) const { //
+                            OrkAssert(false);
   return nullptr; //std::make_shared<GedLabelNode>(mdl, Name.c_str(), prop, obj);
 }
 
