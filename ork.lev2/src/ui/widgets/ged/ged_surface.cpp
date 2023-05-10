@@ -80,11 +80,6 @@ void GedSurface::_doGpuInit(lev2::Context* pt) {
 ///////////////////////////////////////////////////////////////////////////////
 void GedSurface::DoSurfaceResize() {
   _container.SetDims(width(), height());
-  printf( "gedsurf resize<%d %d>\n", width(), height() );
-  if (_pickbuffer && (nullptr != _target)) {
-    _pickbuffer->resize(width(), height());
-  }
-  // TODO: _pickbuffer->Resize()
 }
 ///////////////////////////////////////////////////////////////////////////////
 void GedSurface::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
@@ -112,19 +107,32 @@ void GedSurface::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
   fbi->pushScissor(ViewportRect(0, 0, W, H));
   fbi->pushViewport(ViewportRect(0, 0, W, H));
   mtxi->PushMMatrix(matSCROLL);
+  mtxi->PushUIMatrix();
   {
-    fbi->Clear(fvec3(0.25,0.25,0.35), 1.0f);
+
+    if( pickstate == 0){
+      fbi->Clear(fvec3(0.25,0.25,0.35), 1.0f);
+    }
+    else{
+      fbi->Clear(fvec4(0,0,0,0), 1.0f);
+      printf( "GedSurface::repaint pickstate<%d> W<%d> H<%d>\n", pickstate, W, H );
+    }
 
     if (_model->_currentObject) {
       _container.Draw(context, W, H, miScrollY);
     }
+
     auto mtl = defaultUIMaterial();
+    mtl->SetUIColorMode(UiColorMode::VTX);
     mtl->wrappedDraw(context,[&](){
-        dwi->line2DEML(fvec2(0, 0), fvec2(W, H), fvec4(1, 1, 1, 1), 0.0f);
-        dwi->line2DEML(fvec2(W, 0), fvec2(0, H), fvec4(1, 1, 1, 1), 0.0f);
+      dwi->line2DEML(fvec2(0, 0), fvec2(W, H), fvec4(1, 1, 1, 1), 0.0f);
+      dwi->line2DEML(fvec2(W, 0), fvec2(0, H), fvec4(1, 1, 1, 1), 0.0f);
     });
+
+
   }
   mtxi->PopMMatrix();
+  mtxi->PopUIMatrix();
   fbi->popViewport();
   fbi->popScissor();
   context->debugPopGroup();
@@ -215,7 +223,7 @@ ui::HandlerResult GedSurface::DoOnUiEvent(ui::event_constptr_t EV) {
     case ui::EventCode::MOVE: {
       static int gctr  = 0;
       
-      if (0 == gctr % 4) {
+      if(0) { //} (0 == gctr % 4) {
         GetPixel(ilocx, ilocy, ctx);
         auto pobj = (GedObject*) ctx.GetObject(_pickbuffer, 0);
         if (0) // TODO pobj )
@@ -254,7 +262,7 @@ ui::HandlerResult GedSurface::DoOnUiEvent(ui::event_constptr_t EV) {
       float fy                   = float(ilocy) / float(height());
       auto pobj = ctx.GetObject(_pickbuffer, 0);
 
-      printf( "GedSurface:: pick fx<%g> fy<%g> pobj<%p>\n", fx, fy, (void*) pobj );
+      printf( "GedSurface:: pick ilocx<%d> ilocy<%d> fx<%g> fy<%g> pobj<%p>\n", ilocx, ilocy, fx, fy, (void*) pobj );
       /*bool is_in_set = IsObjInSet(pobj);
       const auto clr = ctx._pickvalues[0];
       /////////////////////////////////////

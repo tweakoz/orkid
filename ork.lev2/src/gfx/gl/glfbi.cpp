@@ -14,6 +14,7 @@
 #include <ork/pch.h>
 
 #include <ork/lev2/gfx/dbgfontman.h>
+#include <ork/util/logger.h>
 
 #define USE_OIIO
 
@@ -27,6 +28,9 @@ OIIO_NAMESPACE_USING
 ///////////////////////////////////////////////////////////////////////////////
 
 namespace ork { namespace lev2 {
+
+static logchannel_ptr_t logchan_glfbi = logger()->createChannel("GLFBI", fvec3(0.8, 0.2, 0.5), true);
+
 extern int G_MSAASAMPLES;
 
 GlFrameBufferInterface::GlFrameBufferInterface(ContextGL& target)
@@ -292,10 +296,15 @@ void GlFrameBufferInterface::_setViewport(int iX, int iY, int iW, int iH) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void GlFrameBufferInterface::Clear(const fcolor4& color, float fdepth) {
-  if (isPickState())
-    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-  else
-    glClearColor(color.x, color.y, color.z, color.w);
+  glClearColor(color.x, color.y, color.z, color.w);
+
+  /*GLuint clearColor[4] = { 
+    GLuint(color.x * 65535.0f),
+    GLuint(color.y * 65535.0f),
+    GLuint(color.z * 65535.0f),
+    GLuint(color.w * 65535.0f)
+  };
+  glClearBufferuiv(GL_COLOR, 0, clearColor);*/
 
   // printf("GlFrameBufferInterface::ClearViewport() color<%g %g %g %g>\n", color.x, color.y, color.z, color.w);
   GL_ERRORCHECK();
@@ -596,7 +605,7 @@ bool GlFrameBufferInterface::captureAsFormat(const RtBuffer* rtb, CaptureBuffer*
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GlFrameBufferInterface::GetPixel(const fvec4& rAt, PixelFetchContext& ctx) {
+void GlFrameBufferInterface::GetPixel(const fvec4& rAt, PixelFetchContext& pfc) {
 
   _target.makeCurrentContext();
   fcolor4 Color(0.0f, 0.0f, 0.0f, 0.0f);
@@ -605,79 +614,80 @@ void GlFrameBufferInterface::GetPixel(const fvec4& rAt, PixelFetchContext& ctx) 
 
   bool bInBounds = (rAt.x >= 0.0f and rAt.x < 1.0f and rAt.y >= 0.0f and rAt.y < 1.0f);
 
-  printf("GetPixel rtg<%p> numbuf<%d>\n", (void*)ctx._rtgroup.get(), ctx._rtgroup->mNumMrts );
+  logchan_glfbi->log("GetPixel rtg<%p> numbuf<%d>", (void*)pfc._rtgroup.get(), pfc._rtgroup->mNumMrts );
 
   if (bInBounds) {
-    if (ctx._rtgroup) {
-      int W  = ctx._rtgroup->width();
-      int H  = ctx._rtgroup->height();
+    if (pfc._rtgroup) {
+      int W  = pfc._rtgroup->width();
+      int H  = pfc._rtgroup->height();
       int sx = int((rAt.x) * float(W));
       int sy = int((1.0f - rAt.y) * float(H));
 
       //printf("GetPixel<%d %d> FboObj<%p>\n", sx, sy, FboObj);
-      auto as_impl = ctx._rtgroup->_impl.tryAs<glrtgroupimpl_ptr_t>();
+      auto as_impl = pfc._rtgroup->_impl.tryAs<glrtgroupimpl_ptr_t>();
       if(as_impl){
         auto fboobj = as_impl.value()->_standard;
         GL_ERRORCHECK();
         glBindFramebuffer(GL_FRAMEBUFFER, fboobj->_fbo);
         GL_ERRORCHECK();
 
-        printf("GetPixel<%d %d> FboMaster<%u>\n", sx, sy, fboobj->_fbo);
+        logchan_glfbi->log("GetPixel<%d %d> FboMaster<%u>", sx, sy, fboobj->_fbo);
 
         if (fboobj->_fbo) {
 
-          int MrtMask = ctx.miMrtMask;
+          int MrtMask = pfc.miMrtMask;
 
-          GLint readbuffer = 0;
+          GLint previous_readbuffer = 0;
           GL_ERRORCHECK();
-          glGetIntegerv(GL_READ_BUFFER, &readbuffer);
+          glGetIntegerv(GL_READ_BUFFER, &previous_readbuffer);
           GL_ERRORCHECK();
 
-          printf("readbuf<%d>\n", int(readbuffer));
+          logchan_glfbi->log("previous_readbuffer<%d>", int(previous_readbuffer));
 
           for (int MrtIndex = 0; MrtIndex < 4; MrtIndex++) {
             int MrtTest = 1 << MrtIndex;
 
-            ctx._pickvalues[MrtIndex] = fcolor4(0.0f, 0.0f, 0.0f, 0.0f);
+            pfc._pickvalues[MrtIndex] = fcolor4(0.0f, 0.0f, 0.0f, 0.0f);
 
             if (MrtTest & MrtMask) {
 
-              auto rtbuffer = ctx._rtgroup->GetMrt(MrtIndex);
+              auto rtbuffer = pfc._rtgroup->GetMrt(MrtIndex);
 
-              OrkAssert(MrtIndex < ctx._rtgroup->GetNumTargets());
+              OrkAssert(MrtIndex < pfc._rtgroup->GetNumTargets());
 
-              GL_ERRORCHECK();
-              glDepthMask(GL_TRUE);
-              GL_ERRORCHECK();
+              //GL_ERRORCHECK();
+              //glDepthMask(GL_TRUE);
+              //GL_ERRORCHECK();
               GL_ERRORCHECK();
               glReadBuffer(GL_COLOR_ATTACHMENT0 + MrtIndex);
               GL_ERRORCHECK();
 
               float rgba[4] = {0.0f, 0.0f, 0.0f, 0.0f};
-              switch (ctx.mUsage[MrtIndex]) {
+              switch (pfc.mUsage[MrtIndex]) {
                 case PixelFetchContext::EPU_PTR64: {
-                  uint64_t value = 0xffffffffffffffff;
-                  OrkAssert(rtbuffer->mFormat == EBufferFormat::RGBA16UI);
-                  glReadPixels(sx, sy, 1, 1, GL_RGBA_INTEGER, GL_UNSIGNED_SHORT, (void*)&value);
+                  OrkAssert(rtbuffer->mFormat == EBufferFormat::RGBA32F);
+                  glReadPixels(sx, sy, 1, 1, GL_RGBA, GL_FLOAT, (void*)rgba);
                   /////////////////////////////////////////////////////////////////
                   // swizzle so hex appears as xxxxyyyyzzzzwwww
                   /////////////////////////////////////////////////////////////////
-                  // uint64_t a, b, c, d;
-                  // a             = (value >> 48) & 0xffff;
-                  // b             = (value >> 32) & 0xffff;
-                  // c             = (value >> 16) & 0xffff;
-                  // d             = (value >> 0) & 0xffff;
-                  // uint64_t rval = (d << 48) | (c << 32) | (b << 16) | a;
+                  uint64_t a             = (rgba[0]*0xffff);
+                  uint64_t b             = (rgba[1]*0xffff);
+                  uint64_t c             = (rgba[2]*0xffff);
+                  uint64_t d             = (rgba[3]*0xffff);
+                  uint64_t value = (d << 48) | (c << 32) | (b << 16) | a;
                   /////////////////////////////////////////////////////////////////
-                  ctx._pickvalues[MrtIndex].set<uint64_t>(value);
-                  printf("getpix MrtIndex<%d> rx<%d> ry<%d> value<0x%zx>\n", MrtIndex, sx, sy, value);
+                  pfc._pickvalues[MrtIndex].set<uint64_t>(value);
+                  logchan_glfbi->log("getpix MrtIndex<%d> rx<%d> ry<%d> rgba<%g %g %g %g> value<0x%zx>", 
+                                      MrtIndex, sx, sy, 
+                                      rgba[0], rgba[1], rgba[2], rgba[3],
+                                      value);
                   /////////////////////////////////////////////////////////////////
                   break;
                 }
                 case PixelFetchContext::EPU_FLOAT: {
                   fvec4 rv;
                   glReadPixels(sx, sy, 1, 1, GL_RGBA, GL_FLOAT, (void*)rv.asArray());
-                  ctx._pickvalues[MrtIndex].set<fvec4>(rv);
+                  pfc._pickvalues[MrtIndex].set<fvec4>(rv);
                   // printf("getpix MrtIndex<%d> rx<%d> ry<%d> <%g %g %g %g>\n", MrtIndex, sx, sy, rv.x, rv.y, rv.z, rv.w);
                   break;
                 }
@@ -690,7 +700,7 @@ void GlFrameBufferInterface::GetPixel(const fvec4& rAt, PixelFetchContext& ctx) 
           }
           GL_ERRORCHECK();
           glBindFramebuffer(GL_FRAMEBUFFER, 0);
-          // glReadBuffer( readbuffer );
+          glReadBuffer( previous_readbuffer );
           GL_ERRORCHECK();
         } else {
           printf("!!!ERR - GetPix BindFBO<%d>\n", fboobj->_fbo);
@@ -699,7 +709,7 @@ void GlFrameBufferInterface::GetPixel(const fvec4& rAt, PixelFetchContext& ctx) 
     } else {
     }
   } else if (bInBounds) {
-    ctx._pickvalues[0] = Color;
+    pfc._pickvalues[0] = Color;
   }
   _target.debugPopGroup();
 }

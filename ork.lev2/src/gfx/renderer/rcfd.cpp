@@ -88,7 +88,10 @@ const DrawableBuffer* RenderContextFrameData::GetDB() const {
 ///////////////////////////////////////////////////////////////////////////////
 
 const CompositingPassData& RenderContextFrameData::topCPD() const {
-  return topCompositor()->topCPD();
+  if( topCompositor() ){
+    return topCompositor()->topCPD();
+  }
+  return CompositingPassData();
 }
 bool RenderContextFrameData::hasCPD() const {
   bool rval = false;

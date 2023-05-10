@@ -16,8 +16,10 @@
 #include <ork/lev2/ui/ui.h>
 #include <ork/lev2/ui/viewport.h>
 #include <ork/rtti/downcast.h>
+#include <ork/util/logger.h>
 
 namespace ork { namespace lev2 {
+static logchannel_ptr_t logchan_pickbuf = logger()->createChannel("PICKBUF", fvec3(0.8, 0.2, 0.5), true);
 
 ///////////////////////////////////////////////////////////////////////////////
 PickBuffer::PickBuffer(ui::Surface* surf, Context* ctx, int w, int h)
@@ -44,7 +46,7 @@ void* PickBuffer::GetObjectFromPickId(uint64_t pid) {
 void PickBuffer::Init() {
   _rtgroup         = std::make_shared<RtGroup>(_context, _width, _height);
   _uimaterial      = new GfxMaterialUITextured(_context);
-  auto buf0        = _rtgroup->createRenderTarget(lev2::EBufferFormat::RGBA16UI);
+  auto buf0        = _rtgroup->createRenderTarget(lev2::EBufferFormat::RGBA32F);
   auto buf1        = _rtgroup->createRenderTarget(lev2::EBufferFormat::RGBA32F);
   buf0->_debugName = FormatString("Pickbuf::mrt0");
   buf1->_debugName = FormatString("Pickbuf::mrt1");
@@ -73,7 +75,7 @@ void PickBuffer::Draw(lev2::PixelFetchContext& ctx) {
   int isurfw = _surface->width();
   int isurfh = _surface->height();
   if (irtgw != isurfw || irtgh != isurfh) {
-    // printf("resize pickbuf size<%d %d>\n", isurfw, isurfh);
+    logchan_pickbuf->log("resize pickbuf size<%d %d>", isurfw, isurfh);
     _width  = isurfw;
     _height = isurfh;
     _rtgroup->Resize(isurfw, isurfh);
@@ -83,7 +85,15 @@ void PickBuffer::Draw(lev2::PixelFetchContext& ctx) {
   fbi->EnterPickState(this);
 
   auto drwev = std::make_shared<ork::ui::DrawEvent>(tgt);
+
+  //////////////////////////////////////////////////////////////
+  // repaint the surface into the pickbuffer's rtgroup
+  //////////////////////////////////////////////////////////////
+
   _surface->RePaintSurface(drwev);
+
+  //////////////////////////////////////////////////////////////
+
   fbi->LeavePickState();
   fbi->PopRtGroup();
   tgt->debugPopGroup();

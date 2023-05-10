@@ -24,7 +24,7 @@ Surface::Surface(const std::string& name, int x, int y, int w, int h, fcolor3 co
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Surface::GetPixel(int ix, int iy, lev2::PixelFetchContext& ctx) {
+void Surface::GetPixel(int ix, int iy, lev2::PixelFetchContext& pfc) {
   int iW   = width();
   int iH   = height();
   float fx = float(ix) / float(iW);
@@ -33,14 +33,16 @@ void Surface::GetPixel(int ix, int iy, lev2::PixelFetchContext& ctx) {
   if (_pickbuffer) {
     auto tgt     = _pickbuffer->context();
     auto fbi     = tgt->FBI();
-    ctx._rtgroup = _pickbuffer->_rtgroup;
+    pfc._rtgroup = _pickbuffer->_rtgroup;
     /////////////////////////////////////////////////////////////
     fbi->pushViewport(0, 0, iW, iH); // ??
     fbi->pushScissor(0, 0, iW, iH);  // ??
     /////////////////////////////////////////////////////////////
-    _pickbuffer->Draw(ctx);
+    // repaint this surface into the pickbuffer's rtgroup
     /////////////////////////////////////////////////////////////
-    fbi->GetPixel(fvec4(fx, fy, 0.0f), ctx);
+    _pickbuffer->Draw(pfc);
+    /////////////////////////////////////////////////////////////
+    fbi->GetPixel(fvec4(fx, fy, 0.0f), pfc);
     /////////////////////////////////////////////////////////////
     fbi->popViewport();
     fbi->popScissor();

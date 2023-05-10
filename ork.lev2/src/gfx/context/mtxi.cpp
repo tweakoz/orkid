@@ -32,12 +32,17 @@ fmtx4 MatrixStackInterface::uiMatrix(float fw, float fh) const {
 ///////////////////////////////////////////////////////////////////////////////
 
 void MatrixStackInterface::PushUIMatrix() {
-  const RenderContextFrameData* pfdata = _target.topRenderContextFrameData();
-  assert(pfdata);
-  const auto& CPD = pfdata->topCPD();
-  float fw        = float(CPD.GetDstRect()._w);
-  float fh        = float(CPD.GetDstRect()._h);
 
+  float fw        = _target.FBI()->GetVPW();
+  float fh        = _target.FBI()->GetVPH();
+
+
+  const RenderContextFrameData* pfdata = _target.topRenderContextFrameData();
+  if(pfdata and pfdata->topCompositor()){
+    const auto& CPD = pfdata->topCPD();
+    fw        = float(CPD.GetDstRect()._w);
+    fh        = float(CPD.GetDstRect()._h);
+  }
   if (_target.hiDPI()) {
     fw *= 0.5f;
     fh *= 0.5f;
