@@ -15,11 +15,15 @@ namespace ork::ui {
 ////////////////////////////////////////////////////////////////////
 
 struct Group : public Widget {
+
+  using visit_fn_t = std::function<void(Widget*)>;
+
   Group(const std::string& name, int x = 0, int y = 0, int w = 0, int h = 0);
   /////////////////////////////
   void addChild(widget_ptr_t w);
   void removeChild(widget_ptr_t w);
   void removeChild(Widget* w);
+  void visitHeirarchy(visit_fn_t vfn);
   /////////////////////////////
   void _doOnResized() override;
   void DoLayout() override;

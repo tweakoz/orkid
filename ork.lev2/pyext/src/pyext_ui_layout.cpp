@@ -28,49 +28,43 @@ void pyinit_ui_layout(py::module& uimodule) {
   auto layout_type = //
       py::class_<ui::anchor::Layout, uilayout_ptr_t>(uimodule, "Layout")
           //////////////////////////////////
-          .def(py::init<ui::Widget*>())
+          //.def(py::init<ui::Widget*>())
           //////////////////////////////////
-          .def_property(
+          .def_property_readonly(
               "top",
               [](uilayout_ptr_t layout) -> uiguide_ptr_t { //
                 return layout->top();
-              },
-              [](uilayout_ptr_t layout, uiguide_ptr_t g) { layout->_top = g; })
+              })
           //////////////////////////////////
-          .def_property(
+          .def_property_readonly(
               "bottom",
               [](uilayout_ptr_t layout) -> uiguide_ptr_t { //
                 return layout->bottom();
-              },
-              [](uilayout_ptr_t layout, uiguide_ptr_t g) { layout->_bottom = g; })
+              })
           //////////////////////////////////
-          .def_property(
+          .def_property_readonly(
               "left",
               [](uilayout_ptr_t layout) -> uiguide_ptr_t { //
                 return layout->left();
-              },
-              [](uilayout_ptr_t layout, uiguide_ptr_t g) { layout->_left = g; })
+              })
           //////////////////////////////////
-          .def_property(
+          .def_property_readonly(
               "right",
               [](uilayout_ptr_t layout) -> uiguide_ptr_t { //
                 return layout->right();
-              },
-              [](uilayout_ptr_t layout, uiguide_ptr_t g) { layout->_right = g; })
+              })
           //////////////////////////////////
-          .def_property(
+          .def_property_readonly(
               "centerH",
               [](uilayout_ptr_t layout) -> uiguide_ptr_t { //
                 return layout->centerH();
-              },
-              [](uilayout_ptr_t layout, uiguide_ptr_t g) { layout->_centerH = g; })
+              })
           //////////////////////////////////
-          .def_property(
+          .def_property_readonly(
               "centerV",
               [](uilayout_ptr_t layout) -> uiguide_ptr_t { //
                 return layout->centerV();
-              },
-              [](uilayout_ptr_t layout, uiguide_ptr_t g) { layout->_centerV = g; })
+              })
           //////////////////////////////////
           .def_property(
               "margin",
@@ -106,7 +100,7 @@ void pyinit_ui_layout(py::module& uimodule) {
           .def(
               "centerIn",
               [](uilayout_ptr_t layout, uilayout_ptr_t other_layout) { //
-                return layout->centerIn(other_layout.get());
+                  layout->centerIn(other_layout.get());
               })
           //////////////////////////////////
           .def(
@@ -122,11 +116,11 @@ void pyinit_ui_layout(py::module& uimodule) {
               })
           //////////////////////////////////
           .def("fill", [](uilayout_ptr_t layout, uilayout_ptr_t other) { //
-            return layout->fill(other.get());
+              layout->fill(other.get());
           })
           //////////////////////////////////
           .def("dump", [](uilayout_ptr_t layout) { //
-            return layout->dump();
+               layout->dump();
           });
   //////////////////////////////////
   type_codec->registerStdCodec<uilayout_ptr_t>(layout_type);
@@ -153,7 +147,7 @@ void pyinit_ui_layout(py::module& uimodule) {
           })
           //////////////////////////////////
           .def("anchorTo", [](uiguide_ptr_t guide, uiguide_ptr_t other_guide) { //
-            return guide->anchorTo(other_guide);
+            guide->anchorTo(other_guide);
           });
   type_codec->registerStdCodec<uiguide_ptr_t>(guide_type);
   /////////////////////////////////////////////////////////////////////////////////

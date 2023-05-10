@@ -51,7 +51,7 @@ void Surface::GetPixel(int ix, int iy, lev2::PixelFetchContext& ctx) {
 /////////////////////////////////////////////////////////////////////////
 
 void Surface::_doOnResized(void) {
-  // printf( "Surface<%s>::OnResize x<%d> y<%d> w<%d> h<%d>\n", _name.c_str(), x(), y(), width(), height() );
+  printf( "Surface<%s>::OnResize x<%d> y<%d> w<%d> h<%d>\n", _name.c_str(), x(), y(), width(), height() );
   DoSurfaceResize();
   SetDirty();
 }

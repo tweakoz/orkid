@@ -48,7 +48,10 @@ GedContainer::GedContainer(objectmodel_ptr_t mdl)
   mRootItem = std::make_shared<GedRootNode>(mdl.get(), "Root", nullptr, nullptr);
   PushItemNode(mRootItem.get());
 
-
+  _connection_modelinvalidated = _model->_sigRepaint.connect([this](){
+      //this->MarkSurfaceDirty();
+  }); // Connect the signal to the slot
+  
   /*object::Connect(	& this->GetSigRepaint(),
                       & mCTQT->GetSlotRepaint() );*/
 }
@@ -57,6 +60,7 @@ GedContainer::GedContainer(objectmodel_ptr_t mdl)
 
 
 GedContainer::~GedContainer() {
+  _connection_modelinvalidated.disconnect();
   //DisconnectAll();
 }
 

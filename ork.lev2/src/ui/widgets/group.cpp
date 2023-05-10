@@ -9,6 +9,22 @@ Group::Group(const std::string& name, int x, int y, int w, int h)
     : Widget(name, x, y, w, h) {
 }
 /////////////////////////////////////////////////////////////////////////
+void Group::visitHeirarchy(visit_fn_t vfn){
+  std::stack<Widget*> stk;
+  stk.push(this);
+  while(not stk.empty()){
+    auto w = stk.top();
+    vfn(w);
+    stk.pop();
+    auto as_group = dynamic_cast<Group*>(this);
+    if(as_group){
+      for( auto it : as_group->_children ){
+        stk.push(it.get());
+      }
+    }
+  }
+}
+/////////////////////////////////////////////////////////////////////////
 void Group::addChild(widget_ptr_t w) {
   if (w->parent()) {
     w->parent()->removeChild(w);
@@ -71,8 +87,10 @@ void Group::DoLayout() {
 }
 /////////////////////////////////////////////////////////////////////////
 Widget* Group::doRouteUiEvent(event_constptr_t ev) {
-  if (0)
+  if (0){
     printf("Group<%s>::doRouteUiEvent\n", _name.c_str());
+  }
+  //
   for (auto& child : _children) {
     bool inside = child->IsEventInside(ev);
     if (0)
@@ -83,8 +101,10 @@ Widget* Group::doRouteUiEvent(event_constptr_t ev) {
         return child_target;
     }
   }
+  //
   if (IsEventInside(ev))
     return this;
+  //
   return nullptr;
 }
 /////////////////////////////////////////////////////////////////////////
@@ -106,7 +126,7 @@ void LayoutGroup::DoLayout() {
   //  either manually or driven indirectly through the resize
   //  of a parent..
   const auto& g = _geometry;
-  if (0)
+  if (1)
     printf(
         "LayoutGroup<%s>::DoLayout l<%p> x<%d> y<%d> w<%d> h<%d>\n", //
         _name.c_str(),

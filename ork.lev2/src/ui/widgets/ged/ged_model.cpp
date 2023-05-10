@@ -66,7 +66,7 @@ void ObjModel::SlotRelayModelInvalidated() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void ObjModel::SigModelInvalidated() {
-  // printf("ObjModel::SigModelInvalidated\n");
+  printf("ObjModel::SigModelInvalidated\n");
   // mSignalModelInvalidated(&ObjModel::SigModelInvalidated); // << operator() instantiated here
 }
 

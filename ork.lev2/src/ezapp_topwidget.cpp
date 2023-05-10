@@ -72,8 +72,6 @@ void EzTopWidget::enableUiDraw() {
     ezapp->onDraw([=](ui::drawevent_constptr_t drwev) {
       ////////////////////////////////////////////////
       auto DB = dbufcontext->acquireForReadLocked();
-      if (nullptr == DB)
-        return;
       ////////////////////////////////////////////////
       auto context = drwev->GetTarget();
       auto fbi     = context->FBI();  // FrameBufferInterface
@@ -84,7 +82,8 @@ void EzTopWidget::enableUiDraw() {
       ////////////////////////////////////////////////////
       rcfd->_name = "EzTopWidget::rcfd";
       rcfd->pushCompositor(compositorimpl);
-      rcfd->setUserProperty("DB"_crc, lev2::rendervar_t(DB));
+      if(DB)
+        rcfd->setUserProperty("DB"_crc, lev2::rendervar_t(DB));
       rcfd->_target = context;
       context->pushRenderContextFrameData(rcfd.get());
       draw_buffer->_DB        = DB;
@@ -104,7 +103,8 @@ void EzTopWidget::enableUiDraw() {
       context->endFrame();
       rcfd->popCompositor();
       ////////////////////////////////////////////////////
-      dbufcontext->releaseFromReadLocked(DB);
+      if(DB)
+        dbufcontext->releaseFromReadLocked(DB);
     });  
 }
 /////////////////////////////////////////////////
@@ -142,6 +142,7 @@ void EzTopWidget::DoDraw(ui::drawevent_constptr_t drwev) {
 }
 /////////////////////////////////////////////////
 void EzTopWidget::_doOnResized() {
+  printf( "EzTopWidget::_doOnResized<%d %d>\n", width(), height() );
     if (_mainwin->_onResize) {
       _mainwin->_onResize(width(), height());
     }

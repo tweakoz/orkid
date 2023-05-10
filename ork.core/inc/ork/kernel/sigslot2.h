@@ -22,6 +22,8 @@ struct AutoConnector : sigslot::observer{
 
 using autoconnector_ptr_t = std::shared_ptr<AutoConnector>;
 
+using scoped_connection = sigslot::scoped_connection;
+//using multisignal_void_t = sigslot::multi_signal<>;
 using signal_void_t = sigslot::signal<>;
 using signal_objptr_t = sigslot::signal<object_ptr_t>;
 

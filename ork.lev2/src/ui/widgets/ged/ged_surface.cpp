@@ -42,6 +42,11 @@ GedSurface::GedSurface(const std::string& name, objectmodel_ptr_t model)
 
   gAllViewports.insert(this);
 
+  _connection_repaint = _model->_sigRepaint.connect([this](){
+      this->MarkSurfaceDirty();
+  }); // Connect the signal to the slot
+  
+
   //object::Connect(&model.GetSigRepaint(), &_container.GetSlotRepaint());
   //object::Connect(&model.GetSigModelInvalidated(), &_container.GetSlotModelInvalidated());
 
@@ -49,6 +54,9 @@ GedSurface::GedSurface(const std::string& name, objectmodel_ptr_t model)
 }
 ///////////////////////////////////////////////////////////////////////////////
 GedSurface::~GedSurface() {
+
+  _connection_repaint.disconnect();
+
   orkset<GedSurface*>::iterator it = gAllViewports.find(this);
 
   if (it != gAllViewports.end()) {
@@ -61,6 +69,7 @@ GedSurface::~GedSurface() {
 
 ///////////////////////////////////////////////////////////////////////////////
 void GedSurface::_doGpuInit(lev2::Context* pt) {
+  Surface::_doGpuInit(pt);
   auto par    = pt->FBI()->GetThisBuffer();
   _pickbuffer = new ork::lev2::PickBuffer(this, pt, 0, 0);
 }

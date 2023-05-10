@@ -143,21 +143,38 @@ void Layout::updateAll() {
 }
 /////////////////////////////////////////////////////////////////////////
 void Layout::_doUpdateAll(visit_set& vset) {
-  if (_top)
+  printf( "  layout<%p>::_doUpdateAll  ", this );
+  if (_top){
+    printf( "  _top<%p>  ", _top.get() );
     _top->updateAssociates(vset);
-  if (_left)
+  }
+  if (_left){
+    printf( "  _left<%p>  ", _left.get() );
     _left->updateAssociates(vset);
-  if (_bottom)
+  }
+  if (_bottom){
+    printf( "  _bottom<%p>  ", _bottom.get() );
     _bottom->updateAssociates(vset);
-  if (_right)
+  }
+  if (_right){
+    printf( "  _right<%p>  ", _right.get() );
     _right->updateAssociates(vset);
-  if (_centerH)
+  }
+  if (_centerH){
+    printf( "  _centerH<%p>  ", _centerH.get() );
     _centerH->updateAssociates(vset);
-  if (_centerV)
+  }
+  if (_centerV){
+    printf( "  _centerV<%p>  ", _centerV.get() );
     _centerV->updateAssociates(vset);
+  }
+  if(_widget){
+    printf( "  _widget<%p:%s>  ", _widget, _widget->_name.c_str() );
+  }
   for (auto g : _customguides)
     g->updateAssociates(vset);
 
+  printf( "\n");
   for (auto l : _childlayouts) {
     l->_doUpdateAll(vset);
   }
@@ -291,7 +308,7 @@ bool Layout::isAnchorAllowed(Layout* layout) const {
 /////////////////////////////////////////////////////////////////////////
 void Layout::dump() {
   printf("//////////////////////////\n");
-  printf("// Layout<%d> margin<%d> widget<%p>\n", _name, _margin, _widget);
+  printf("// Layout<%d:%p> margin<%d> widget<%p:%s>\n", _name, this, _margin, _widget, _widget->_name.c_str());
   if (_top)
     _top->dump();
   if (_left)

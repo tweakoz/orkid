@@ -73,6 +73,8 @@ struct GedContainer { //}: public ork::AutoConnector {
   orkvector<GedSkin*> mSkins;
   int miSkin;
   bool mbDeleteModel;
+  sigslot2::scoped_connection _connection_modelinvalidated;
+
 };
 
 
