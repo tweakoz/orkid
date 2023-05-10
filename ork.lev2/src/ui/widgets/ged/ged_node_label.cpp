@@ -11,10 +11,16 @@
 #include <ork/lev2/ui/ged/ged_container.h>
 #include <ork/kernel/core_interface.h>
 #include <ork/lev2/gfx/dbgfontman.h>
+#include <ork/reflect/properties/registerX.inl>
+
+ImplementReflectionX(ork::lev2::ged::GedLabelNode, "GedLabelNode");
 
 ////////////////////////////////////////////////////////////////
 namespace ork::lev2::ged {
 ////////////////////////////////////////////////////////////////
+
+void GedLabelNode::describeX(class_t* clazz) {
+}
 
 GedLabelNode::GedLabelNode(GedContainer* c, const char* name, const reflect::ObjectProperty* prop, object_ptr_t obj)
       : GedItemNode(c, name, prop, obj) {
@@ -25,9 +31,9 @@ GedLabelNode::GedLabelNode(GedContainer* c, const char* name, const reflect::Obj
 void GedLabelNode::DoDraw(lev2::Context* pTARG){
   auto model = _container->_model;
   auto skin = _container->_activeSkin;
-  bool is_pick = true; //pTARG->FBI()->isPickState();
+  bool is_pick = skin->_is_pickmode;
 
-  skin->DrawBgBox(this, miX, miY, 10, 10, GedSkin::ESTYLE_BACKGROUND_1, 0);
+  skin->DrawBgBox(this, miX, miY, miW, miH, GedSkin::ESTYLE_BACKGROUND_1, 100);
 
   if( not is_pick ){
      skin->DrawText(this, miX, miY, _propname.c_str());

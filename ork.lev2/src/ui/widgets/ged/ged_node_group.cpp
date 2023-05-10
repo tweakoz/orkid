@@ -11,10 +11,17 @@
 #include <ork/lev2/ui/ged/ged_surface.h>
 #include <ork/lev2/ui/ged/ged_skin.h>
 #include <ork/kernel/core_interface.h>
+#include <ork/reflect/properties/registerX.inl>
+
+ImplementReflectionX(ork::lev2::ged::GedGroupNode, "GedGroupNode");
 
 ////////////////////////////////////////////////////////////////
 namespace ork::lev2::ged {
 ////////////////////////////////////////////////////////////////
+
+void GedGroupNode::describeX(class_t* clazz) {
+}
+
 GedGroupNode::GedGroupNode(
     GedContainer* container, //
     const char* name,

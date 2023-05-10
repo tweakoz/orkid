@@ -9,10 +9,16 @@
 #include <ork/lev2/ui/ged/ged_node.h>
 #include <ork/lev2/ui/ged/ged_skin.h>
 #include <ork/kernel/core_interface.h>
+#include <ork/reflect/properties/registerX.inl>
+
+ImplementReflectionX(ork::lev2::ged::GedRootNode, "GedRootNode");
 
 ////////////////////////////////////////////////////////////////
 namespace ork::lev2::ged {
 ////////////////////////////////////////////////////////////////
+
+void GedRootNode::describeX(class_t* clazz) {
+}
 
 GedRootNode::GedRootNode(
     GedContainer* c,                       //

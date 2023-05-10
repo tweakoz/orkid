@@ -5,11 +5,14 @@ namespace ork::ui {
 /////////////////////////////////////////////////////////////////////////
 Context::Context() {
   _tempevent = std::make_shared<Event>();
+  _uitimer.Start();
+  _prevtime = 0.0;
 }
 /////////////////////////////////////////////////////////////////////////
 HandlerResult Context::handleEvent(event_constptr_t ev) {
   OrkAssert(_top);
   HandlerResult rval;
+  double curtime = _uitimer.SecsSinceStart();
   /////////////////////////////////
   // drag operations always target
   //  the widget they started on..
@@ -97,6 +100,27 @@ HandlerResult Context::handleEvent(event_constptr_t ev) {
       break;
     }
     /////////////////////////////////
+    case EventCode::PUSH: {
+
+      double clickdelta = curtime - _prev_click_time;
+
+      _evdragtarget = nullptr;
+      auto dest     = _top->routeUiEvent(ev);
+      if (dest){
+
+        // SYNTHESIZE DOUBLECLICK EVENT
+        if (clickdelta < 0.5) {
+          auto mut_ev = std::const_pointer_cast<Event>(ev);
+          mut_ev->_eventcode = EventCode::DOUBLECLICK;
+        }
+
+         rval = dest->OnUiEvent(ev);
+      }
+
+      _prev_click_time = curtime;
+      break;
+    }
+    /////////////////////////////////
     default: {
       _evdragtarget = nullptr;
       auto dest     = _top->routeUiEvent(ev);
@@ -108,6 +132,8 @@ HandlerResult Context::handleEvent(event_constptr_t ev) {
   }
   /////////////////////////////////
   _prevevent = *ev;
+  _prevtime      = curtime;
+  /////////////////////////////////
   return rval;
 }
 /////////////////////////////////////////////////////////////////////////

@@ -11,26 +11,42 @@
 #include <ork/lev2/ui/ged/ged_container.h>
 #include <ork/lev2/gfx/dbgfontman.h>
 #include <ork/kernel/core_interface.h>
+#include <ork/reflect/properties/registerX.inl>
+
+ImplementReflectionX(ork::lev2::ged::GedObject, "GedObject");
+ImplementReflectionX(ork::lev2::ged::GedItemNode, "GedItemNode");
 
 ////////////////////////////////////////////////////////////////
 namespace ork::lev2::ged {
 ////////////////////////////////////////////////////////////////
 
+void GedObject::describeX(class_t* clazz) {
+}
+
+////////////////////////////////////////////////////////////////
+
 void GedObject::OnUiEvent(ork::ui::event_constptr_t ev) {
   switch (ev->_eventcode) {
     case ui::EventCode::DRAG:
-      //OnMouseDragged(ev);
+      OnMouseDragged(ev);
       break;
     case ui::EventCode::MOVE:
-      //OnMouseMoved(ev);
+      OnMouseMoved(ev);
       break;
     case ui::EventCode::DOUBLECLICK:
-      //OnMouseDoubleClicked(ev);
+      OnMouseDoubleClicked(ev);
       break;
     case ui::EventCode::RELEASE:
-      //OnMouseReleased(ev);
+      OnMouseReleased(ev);
+      break;
+    default:
       break;
   }
+}
+
+////////////////////////////////////////////////////////////////
+
+void GedItemNode::describeX(class_t* clazz) {
 }
 
 ////////////////////////////////////////////////////////////////
@@ -43,12 +59,7 @@ GedItemNode::GedItemNode(GedContainer* container, //
     , mbcollapsed(false)
     , _propname(name)
     , _property(prop)
-    , _object(obj)
-    , miW(0)
-    , miH(0)
-    , mbVisible(true)
-    , _parent(0)
-    , mbInvalid(true) {
+    , _object(obj) {
 
   int stack_depth = _container->GetStackDepth();
 

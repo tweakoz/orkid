@@ -378,7 +378,6 @@ void Widget::ReLayout() {
 }
 /////////////////////////////////////////////////////////////////////////
 void Widget::_doOnResized(void) {
-  OrkAssert(false);
    printf("Widget<%s>::OnResize x<%d> y<%d> w<%d> h<%d>\n", _name.c_str(), _geometry._x, _geometry._y, _geometry._w, _geometry._h);
 }
 /////////////////////////////////////////////////////////////////////////

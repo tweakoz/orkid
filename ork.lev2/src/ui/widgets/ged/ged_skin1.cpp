@@ -112,6 +112,8 @@ void GedSkin1::DrawBgBox(GedObject* pnode, int ix, int iy, int iw, int ih, ESTYL
 
   fvec4 uobj = _gedVP->AssignPickId(pnode);
 
+  //printf( "uobj<%g %g %g %g> pnode<0x%p>\n", uobj.x, uobj.y, uobj.z, uobj.w, pnode );
+
   if (_is_pickmode) {
     AddToObjSet((void*)pnode);
     // printf( "insert obj<%p>\n", (void*) pnode );
@@ -257,13 +259,15 @@ void GedSkin1::End(Context* pTARG) {
     }
     vw.UnLock(pTARG);
 
-    _material->begin(_is_pickmode ? _tekvtxpick : _tekvtxcolor, RCFD);
+    //_material->begin(_is_pickmode ? _tekvtxpick : _tekvtxcolor, RCFD);
+    _material->_rasterstate.SetRGBAWriteMask(true,true);
+    _material->begin(_tekvtxcolor , RCFD);
     _material->bindParamMatrix(_parmvp, mtxW * uimatrix);
     pTARG->GBI()->DrawPrimitiveEML(vw, PrimitiveType::TRIANGLES);
     _material->end(RCFD);
     icount = 0;
 
-    printf("rendered %d quads\n", inumquads);
+    //printf("rendered %d quads\n", inumquads);
     // ivbase += inumquads*6;
     ///////////////////////////////////////////////////////////
     // render custom primitive

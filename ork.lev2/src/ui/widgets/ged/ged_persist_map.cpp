@@ -7,6 +7,7 @@
 
 #include <ork/lev2/ui/ged/ged.h>
 #include <ork/kernel/orklut.hpp>
+#include <ork/reflect/properties/registerX.inl>
 
 ////////////////////////////////////////////////////////////////
 namespace ork::lev2::ged {

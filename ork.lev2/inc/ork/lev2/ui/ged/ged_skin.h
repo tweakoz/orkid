@@ -32,24 +32,15 @@ public:
   };
 
   struct GedPrim {
-    DrawCB mDrawCB;
-    GedObject* mpNode;
-    int ix1, iy1, ix2, iy2;
+    DrawCB mDrawCB = nullptr;
+    GedObject* mpNode = nullptr;
+    int ix1 = 0;
+    int iy1 = 0;
+    int ix2 = 0;
+    int iy2 = 0;
     fvec4 _ucolor;
-    ork::lev2::PrimitiveType meType;
-    int miSortKey;
-
-    GedPrim()
-        : mDrawCB(0)
-        , mpNode(0)
-        , ix1(0)
-        , ix2(0)
-        , iy1(0)
-        , iy2(0)
-        , _ucolor(0)
-        , miSortKey(0)
-        , meType(ork::lev2::PrimitiveType::END) {
-    }
+    ork::lev2::PrimitiveType meType = ork::lev2::PrimitiveType::END;
+    int miSortKey = 0;
   };
 
   struct PrimContainer {
@@ -137,9 +128,6 @@ public:
     miAccepted++;
     return true;
   }
-
-protected:
-
   static std::set<void*>& GetObjSet();
   static void ClearObjSet();
   static void AddToObjSet(void* pobj);

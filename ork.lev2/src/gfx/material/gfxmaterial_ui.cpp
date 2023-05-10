@@ -42,6 +42,7 @@ GfxMaterialUI::GfxMaterialUI(Context* pTarg)
   _rasterstate.SetBlending(Blending::OFF);
   _rasterstate.SetDepthTest(EDepthTest::OFF);
   _rasterstate.SetZWriteMask(false);
+  _rasterstate.SetRGBAWriteMask(true,true);
   _rasterstate.SetCullTest(ECullTest::OFF);
 
   auto mtl_load_req = std::make_shared<asset::LoadRequest>();
@@ -132,7 +133,6 @@ void GfxMaterialUI::EndPass(Context* pTarg) {
 
 bool GfxMaterialUI::BeginPass(Context* pTarg, int iPass) {
   ///////////////////////////////
-  pTarg->RSI()->BindRasterState(_rasterstate);
   ///////////////////////////////
 
   const fmtx4& MatMVP = pTarg->MTXI()->RefMVPMatrix();
@@ -143,6 +143,7 @@ bool GfxMaterialUI::BeginPass(Context* pTarg, int iPass) {
   pTarg->FXI()->BindParamMatrix(hTransform, MatMVP);
   pTarg->FXI()->BindParamVect4(hModColor, pTarg->RefModColor());
   pTarg->FXI()->CommitParams();
+  pTarg->RSI()->BindRasterState(_rasterstate);
 
   return true;
 }

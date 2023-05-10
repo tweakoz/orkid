@@ -115,14 +115,16 @@ void GedSurface::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
     }
     else{
       fbi->Clear(fvec4(0,0,0,0), 1.0f);
-      printf( "GedSurface::repaint pickstate<%d> W<%d> H<%d>\n", pickstate, W, H );
+      //printf( "GedSurface::repaint pickstate<%d> W<%d> H<%d>\n", pickstate, W, H );
     }
+
 
     if (_model->_currentObject) {
       _container.Draw(context, W, H, miScrollY);
     }
 
     //auto mtl = defaultUIMaterial();
+    //mtl->_rasterstate.SetRGBAWriteMask(true,true);
     //mtl->SetUIColorMode(UiColorMode::VTX);
     //mtl->wrappedDraw(context,[&](){
       //dwi->line2DEML(fvec2(0, 0), fvec2(W, H), fvec4(1, 1, 1, 1), 0.0f);
@@ -263,7 +265,8 @@ ui::HandlerResult GedSurface::DoOnUiEvent(ui::event_constptr_t EV) {
       auto pobj = ctx.GetObject(_pickbuffer, 0);
 
       printf( "GedSurface:: pick ilocx<%d> ilocy<%d> fx<%g> fy<%g> pobj<%p>\n", ilocx, ilocy, fx, fy, (void*) pobj );
-      /*bool is_in_set = IsObjInSet(pobj);
+
+      bool is_in_set = GedSkin::IsObjInSet(pobj);
       const auto clr = ctx._pickvalues[0];
       /////////////////////////////////////
       // test object against known set
@@ -271,30 +274,29 @@ ui::HandlerResult GedSurface::DoOnUiEvent(ui::event_constptr_t EV) {
         pobj = 0;
       /////////////////////////////////////
 
-      if (GedObject* pnode = ork::rtti::autocast(pobj)) {
-        if (GedItemNode* as_inode = ork::rtti::autocast(pobj)) {
+      if (auto pnode = dynamic_cast<GedObject*>(pobj)) {
+        if (auto as_inode = dynamic_cast<GedItemNode*>(pobj)) {
           locEV->miX -= as_inode->GetX();
           locEV->miY -= as_inode->GetY();
+          auto clazz = as_inode->GetClass();
+          auto clazzname = clazz->Name();
+          printf( "obj<%p> class<%s>\n", (void*) pobj, clazzname.c_str() );
         }
 
         switch (filtev._eventcode) {
           case ui::EventCode::PUSH:
             mpActiveNode = pnode;
-            if (pnode)
-              pnode->OnUiEvent(locEV);
+            pnode->OnUiEvent(locEV);
             break;
           case ui::EventCode::RELEASE:
-            if (pnode)
-              pnode->OnUiEvent(locEV);
+            pnode->OnUiEvent(locEV);
             mpActiveNode = nullptr;
             break;
           case ui::EventCode::DOUBLECLICK:
-            if (pnode)
-              pnode->OnUiEvent(locEV);
+            pnode->OnUiEvent(locEV);
             break;
         }
       }
-      */
 
       mNeedsSurfaceRepaint = true;
       break;

@@ -50,6 +50,7 @@
 #include <ork/math/plane.hpp>
 
 #include <ork/lev2/gfx/meshutil/meshutil.h>
+#include <ork/lev2/ui/ged/ged_node.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 //#define WIIEMU
@@ -94,6 +95,16 @@ struct ClassToucher {
 
     //////////////////////////////////////////
     // touch of class
+    //////////////////////////////////////////
+
+    ged::GedObject::GetClassStatic();
+    ged::GedItemNode::GetClassStatic();
+    ged::GedRootNode::GetClassStatic();
+    ged::GedGroupNode::GetClassStatic();
+    ged::GedLabelNode::GetClassStatic();
+    ged::GedMapNode::GetClassStatic();
+
+    //////////////////////////////////////////
 
     LightData::GetClassStatic();
     PointLightData::GetClassStatic();
@@ -173,6 +184,7 @@ struct ClassToucher {
     proctex::H2N::GetClassStatic();
     proctex::UvMap::GetClassStatic();
     proctex::Kaled::GetClassStatic();*/
+
 
     RegisterClassX(PointLightData);
 

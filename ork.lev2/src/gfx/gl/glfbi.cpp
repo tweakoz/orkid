@@ -29,7 +29,7 @@ OIIO_NAMESPACE_USING
 
 namespace ork { namespace lev2 {
 
-static logchannel_ptr_t logchan_glfbi = logger()->createChannel("GLFBI", fvec3(0.8, 0.2, 0.5), true);
+static logchannel_ptr_t logchan_glfbi = logger()->createChannel("GLFBI", fvec3(0.8, 0.2, 0.5), false);
 
 extern int G_MSAASAMPLES;
 
@@ -670,10 +670,10 @@ void GlFrameBufferInterface::GetPixel(const fvec4& rAt, PixelFetchContext& pfc) 
                   /////////////////////////////////////////////////////////////////
                   // swizzle so hex appears as xxxxyyyyzzzzwwww
                   /////////////////////////////////////////////////////////////////
-                  uint64_t a             = (rgba[0]*0xffff);
-                  uint64_t b             = (rgba[1]*0xffff);
-                  uint64_t c             = (rgba[2]*0xffff);
-                  uint64_t d             = (rgba[3]*0xffff);
+                  uint64_t a             = uint64_t(rgba[0]);
+                  uint64_t b             = uint64_t(rgba[1]);
+                  uint64_t c             = uint64_t(rgba[2]);
+                  uint64_t d             = uint64_t(rgba[3]);
                   uint64_t value = (d << 48) | (c << 32) | (b << 16) | a;
                   /////////////////////////////////////////////////////////////////
                   pfc._pickvalues[MrtIndex].set<uint64_t>(value);

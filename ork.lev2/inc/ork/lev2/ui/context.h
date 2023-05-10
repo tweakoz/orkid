@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include <ork/kernel/timer.h>
 #include <ork/util/fsm.h>
 #include <ork/lev2/ui/group.h>
 #include <functional>
@@ -53,6 +54,9 @@ struct Context {
   Widget* _overlayWidget             = nullptr;
   Event _prevevent;
   event_ptr_t _tempevent;
+  Timer _uitimer;
+  double _prevtime = 0.0;
+  double _prev_click_time = 0.0;
 };
 
 } // namespace ork::ui

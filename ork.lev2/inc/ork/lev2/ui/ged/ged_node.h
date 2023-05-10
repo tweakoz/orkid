@@ -1,13 +1,16 @@
 #pragma once
 
 #include "ged.h"
+#include <ork/rtti/RTTIX.inl>
 
 namespace ork::lev2::ged {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct GedSkin;
 
-struct GedObject { //} : public ork::Object {
+struct GedObject : public ork::Object {
+
+  DeclareAbstractX(GedObject, ork::Object);
 
   int miD;
   int miDecoIndex;
@@ -15,8 +18,6 @@ struct GedObject { //} : public ork::Object {
   GedObject()
       : miD(0)
       , miDecoIndex(0) {
-  }
-  virtual ~GedObject() {
   }
 
   void SetDepth(int id) {
@@ -49,7 +50,7 @@ struct GedObject { //} : public ork::Object {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct GedItemNode : public GedObject {
-  //RttiDeclareAbstract(GedItemNode, GedObject);
+  DeclareAbstractX(GedItemNode, GedObject);
 
 public:
   ///////////////////////////////////////////////////
@@ -151,37 +152,38 @@ public:
   ///////////////////////////////////////////////////
   using NameType = std::string;
 
-  ObjModel* _model = nullptr;
+  //
+  GedContainer* _container = nullptr;
+  bool mbcollapsed = false;
+  std::string _propname;
   const reflect::ObjectProperty* _property;
   object_ptr_t _object;
-
+  //
+  std::string mvalue;
+  orkvector<geditemnode_ptr_t> _children;
+  orkmap<std::string, std::string> mTags;
+  std::string _content;
+  bool mbVisible = true;
+  bool mbInvalid = true;
+  bool _doDrawDefault = true;
+  ObjModel* _model = nullptr;
+  GedItemNode* _parent = nullptr;
   int miX = 0;
   int miY = 0;
   int miW = 0;
   int miH = 0;
-  bool mbVisible = false;
-  bool mbInvalid = true;
-
-
-  bool mbcollapsed = false;
-  std::string mvalue;
-  orkvector<geditemnode_ptr_t> _children;
-  GedItemNode* _parent = nullptr;
-  orkmap<std::string, std::string> mTags;
-  GedContainer* _container = nullptr;
   int micalch = 0;
-  ///////////////////////////////////////////////////
-  std::string _propname;
-  std::string _content;
-  bool _doDrawDefault = true;
   ///////////////////////////////////////////////////
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 class GedRootNode : public GedItemNode {
-  virtual void DoDraw(lev2::Context* pTARG);
-  virtual void Layout(int ix, int iy, int iw, int ih);
-  virtual int CalcHeight();
+
+  DeclareAbstractX(GedRootNode, GedItemNode);
+
+  void DoDraw(lev2::Context* pTARG) final;
+  void Layout(int ix, int iy, int iw, int ih) final;
+  int CalcHeight() final;
 
 public:
   GedRootNode(GedContainer* c, //
@@ -195,7 +197,10 @@ public:
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct GedGroupNode : public GedItemNode {
-  virtual void DoDraw(lev2::Context* pTARG);
+
+  DeclareAbstractX(GedGroupNode, GedItemNode);
+
+  void DoDraw(lev2::Context* pTARG) final;
   bool mbCollapsed;
   void OnMouseDoubleClicked(ork::ui::event_constptr_t ev) final;
   ork::file::Path::NameType mPersistID;
@@ -228,16 +233,20 @@ struct KeyDecoName {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct GedLabelNode : public GedItemNode {
+  DeclareAbstractX(GedLabelNode, GedItemNode);
 public:
   ///////////////////////////////////////////////////
 
   GedLabelNode(GedContainer* c, const char* name, const reflect::ObjectProperty* prop, object_ptr_t obj);
 
 private:
-  virtual void DoDraw(lev2::Context* pTARG);
+  void DoDraw(lev2::Context* pTARG) final;
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct GedMapNode : public GedItemNode {
+
+  DeclareAbstractX(GedMapNode, GedItemNode);
+
 public:
 
   using event_constptr_t = ork::ui::event_constptr_t;
