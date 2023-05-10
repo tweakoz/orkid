@@ -14,7 +14,7 @@ struct GedContainer { //}: public ork::AutoConnector {
   ~GedContainer();
 
   void ComputeStackHash();
-  void gpuInit(lev2::context_ptr_t context);
+  void gpuInit(lev2::Context* context);
 
   //////////////////////////////////////////////////////////////
 
@@ -58,7 +58,6 @@ struct GedContainer { //}: public ork::AutoConnector {
   U64 GetStackHash() const;
 
   void SetDims(int iw, int ih);
-
   static const int kdim = 8;
 
   geditemnode_ptr_t mRootItem;
@@ -68,10 +67,12 @@ struct GedContainer { //}: public ork::AutoConnector {
   objectmodel_ptr_t _model;
   std::deque<GedItemNode*> _itemstack;
   int miRootH;
-  gedsurface_ptr_t _viewport;
+  GedSurface* _viewport;
   U64 mStackHash;
   orkvector<GedSkin*> mSkins;
-  int miSkin;
+  GedSkin* _activeSkin = nullptr;
+
+  int _skin_index;
   bool mbDeleteModel;
   sigslot2::scoped_connection _connection_modelinvalidated;
 

@@ -21,10 +21,13 @@
 namespace ork::lev2::ged {
 ////////////////////////////////////////////////////////////////
 fvec4 ged::GedSurface::AssignPickId(GedObject* pobj) {
-  uint64_t pid = _pickbuffer->AssignPickId(pobj);
-  fvec4 out;
-  out.setRGBAU64(pid);
-  return out;
+  if(_pickbuffer){
+    uint64_t pid = _pickbuffer->AssignPickId(pobj);
+    fvec4 out;
+    out.setRGBAU64(pid);
+    return out;
+  }
+  return fvec4(0,0,0,0);
 }
 ///////////////////////////////////////////////////////////////////////////////
 static const int kscrollw = 32;
@@ -38,7 +41,7 @@ GedSurface::GedSurface(const std::string& name, objectmodel_ptr_t model)
     , miScrollY(0)
     , mpMouseOverNode(0) {
 
-//  _container.setViewport(this);
+  _container._viewport = this;
 
   gAllViewports.insert(this);
 
@@ -70,6 +73,7 @@ GedSurface::~GedSurface() {
 ///////////////////////////////////////////////////////////////////////////////
 void GedSurface::_doGpuInit(lev2::Context* pt) {
   Surface::_doGpuInit(pt);
+  _container.gpuInit(pt);
   auto par    = pt->FBI()->GetThisBuffer();
   _pickbuffer = new ork::lev2::PickBuffer(this, pt, 0, 0);
 }

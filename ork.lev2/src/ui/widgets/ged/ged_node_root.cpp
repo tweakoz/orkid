@@ -15,11 +15,11 @@ namespace ork::lev2::ged {
 ////////////////////////////////////////////////////////////////
 
 GedRootNode::GedRootNode(
-    ObjModel* mdl,                       //
+    GedContainer* c,                       //
     const char* name,                    //
     const reflect::ObjectProperty* prop, //
     object_ptr_t obj)
-    : GedItemNode(mdl, name, prop, obj) {
+    : GedItemNode(c, name, prop, obj) {
 }
 
 void GedRootNode::DoDraw(lev2::Context* pTARG){

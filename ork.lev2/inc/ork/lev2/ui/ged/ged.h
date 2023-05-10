@@ -196,6 +196,7 @@ public:
 
 
   sigslot2::signal_void_t _sigRepaint;
+  sigslot2::signal_void_t _sigModelInvalidated;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -203,18 +204,17 @@ struct GedFactory : public ork::Object {
   DeclareAbstractX(GedFactory, ork::Object);
 public:
 
-  virtual void recurse(ObjModel* mdl, //
+  virtual void recurse(GedContainer* c, //
                        const reflect::ObjectProperty* prop, //
                        object_ptr_t pobj) const { //
   }
 
   virtual geditemnode_ptr_t //
-  createItemNode(ObjModel* mdl, //
+  createItemNode(GedContainer* c, //
                  const ConstString& Name, //
                  const reflect::ObjectProperty* prop, //
                  object_ptr_t obj) const;
 
 };
-
 
 }

@@ -16,19 +16,20 @@
 namespace ork::lev2::ged {
 ////////////////////////////////////////////////////////////////
 GedGroupNode::GedGroupNode(
-    ObjModel* mdl,
+    GedContainer* container, //
     const char* name,
     const reflect::ObjectProperty* prop,
     object_ptr_t obj,
     bool is_obj_node)
-    : GedItemNode(mdl, name, prop, obj)
+    : GedItemNode(container, name, prop, obj)
     , mbCollapsed(false == is_obj_node)
     , mIsObjNode(is_obj_node) {
 
+    auto model = _container->_model;
   std::string fixname = name;
   /////////////////////////////////////////////////////////////////
   // localize collapse states to instances of properties underneath other properties
-  GedItemNode* parent = mdl->_gedContainer->ParentItemNode();
+  GedItemNode* parent = model->_gedContainer->ParentItemNode();
   if (parent) {
     const char* parname = parent->_propname.c_str();
     if (parname) {
@@ -53,7 +54,7 @@ GedGroupNode::GedGroupNode(
 
   ///////////////////////////////////////////
   PersistHashContext HashCtx;
-  auto pmap = mdl->persistMapForHash(HashCtx);
+  auto pmap = model->persistMapForHash(HashCtx);
   ///////////////////////////////////////////
 
   const std::string& str_collapse = pmap->value(mPersistID.c_str());
@@ -66,6 +67,8 @@ GedGroupNode::GedGroupNode(
 }
 ///////////////////////////////////////////////////////////////////////////////
 void GedGroupNode::OnMouseDoubleClicked(ork::ui::event_constptr_t ev) {
+
+  auto model = _container->_model;
   int inumitems = numChildren();
 
   bool isCTRL = ev->mbCTRL;
@@ -99,23 +102,23 @@ void GedGroupNode::OnMouseDoubleClicked(ork::ui::event_constptr_t ev) {
     if (iy >= koff && iy <= kdim) {
       if (ix >= il && ix < il2 && mIsObjNode) {
         if (_object) {
-          auto top = _model->browseStackTop();
+          auto top = model->browseStackTop();
           if (top == _object) {
-            _model->browseStackPop();
-            top = _model->browseStackTop();
+            model->browseStackPop();
+            top = model->browseStackTop();
             if (top) {
-              _model->attach(top, false);
+              model->attach(top, false);
             }
           } else {
-            _model->browseStackPush(_object);
-            _model->attach(_object, false);
+            model->browseStackPush(_object);
+            model->attach(_object, false);
           }
         }
 
       } else if (ix >= il2 && ix < il2 + idim && mIsObjNode) {
         if (_object) {
           // spawn new window here
-          _model->SigSpawnNewGed(_object);
+          model->SigSpawnNewGed(_object);
         }
       } else if (ix >= koff && ix <= kdim) // drop down
       {
@@ -123,7 +126,7 @@ void GedGroupNode::OnMouseDoubleClicked(ork::ui::event_constptr_t ev) {
 
         ///////////////////////////////////////////
         PersistHashContext HashCtx;
-        auto pmap = _model->persistMapForHash(HashCtx);
+        auto pmap = model->persistMapForHash(HashCtx);
         ///////////////////////////////////////////
 
         pmap->setValue(mPersistID.c_str(), mbCollapsed ? "true" : "false");
@@ -151,6 +154,8 @@ void GedGroupNode::OnMouseDoubleClicked(ork::ui::event_constptr_t ev) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void GedGroupNode::CheckVis() {
+
+  auto model = _container->_model;
   int inumitems = numChildren();
 
   if (inumitems) {
@@ -164,12 +169,15 @@ void GedGroupNode::CheckVis() {
       }
     }
   }
-  _model->_gedContainer->DoResize();
+  model->_gedContainer->DoResize();
 }
 
 void GedGroupNode::DoDraw(lev2::Context* pTARG) {
+
+  auto model = _container->_model;
+  auto skin = _container->_activeSkin;
   int inumitems   = numChildren();
-  int stack_depth = _model->browseStackSize();
+  int stack_depth = model->browseStackSize();
 
   /////////////////
   // drop down box
@@ -200,30 +208,30 @@ void GedGroupNode::DoDraw(lev2::Context* pTARG) {
   int ihy = dby1 + (ih / 2);
   int ihx = il + (iw / 2);
 
-  activeSkin()->DrawBgBox(this, miX, miY, miW, miH, GedSkin::ESTYLE_BACKGROUND_1);
-  activeSkin()->DrawText(this, labx, icentery, _propname.c_str());
-  activeSkin()->DrawBgBox(this, miX, miY, miW, get_charh(), GedSkin::ESTYLE_BACKGROUND_GROUP_LABEL);
+  skin->DrawBgBox(this, miX, miY, miW, miH, GedSkin::ESTYLE_BACKGROUND_1);
+  skin->DrawText(this, labx, icentery, _propname.c_str());
+  skin->DrawBgBox(this, miX, miY, miW, get_charh(), GedSkin::ESTYLE_BACKGROUND_GROUP_LABEL);
 
   ////////////////////////////////
   // draw stack depth indicator on top node
   ////////////////////////////////
 
-  if ((stack_depth - 1) && (_object == _model->browseStackTop()) && mIsObjNode) {
+  if ((stack_depth - 1) && (_object == model->browseStackTop()) && mIsObjNode) {
     std::string arrs;
     for (int i = 0; i < (stack_depth - 1); i++)
       arrs += "<";
-    activeSkin()->DrawText(this, il - idim - ((stack_depth - 1) * get_charw()), icentery, arrs.c_str());
+    skin->DrawText(this, il - idim - ((stack_depth - 1) * get_charw()), icentery, arrs.c_str());
   }
 
   ////////////////////////////////
 
   if (inumitems) {
     if (mbCollapsed) {
-      activeSkin()->DrawRightArrow(this, dbx1, dby1, idim, idim, GedSkin::ESTYLE_BUTTON_OUTLINE);
-      activeSkin()->DrawLine(this, dbx1 + 1, dby1, dbx1 + 1, dby2, GedSkin::ESTYLE_BUTTON_OUTLINE);
+      skin->DrawRightArrow(this, dbx1, dby1, idim, idim, GedSkin::ESTYLE_BUTTON_OUTLINE);
+      skin->DrawLine(this, dbx1 + 1, dby1, dbx1 + 1, dby2, GedSkin::ESTYLE_BUTTON_OUTLINE);
     } else {
-      activeSkin()->DrawDownArrow(this, dbx1, dby1, idim, idim, GedSkin::ESTYLE_BUTTON_OUTLINE);
-      activeSkin()->DrawLine(this, dbx1, dby1 + 1, dbx2, dby1 + 1, GedSkin::ESTYLE_BUTTON_OUTLINE);
+      skin->DrawDownArrow(this, dbx1, dby1, idim, idim, GedSkin::ESTYLE_BUTTON_OUTLINE);
+      skin->DrawLine(this, dbx1, dby1 + 1, dbx2, dby1 + 1, GedSkin::ESTYLE_BUTTON_OUTLINE);
     }
   }
 
@@ -233,14 +241,14 @@ void GedGroupNode::DoDraw(lev2::Context* pTARG) {
 
   if (_object && mIsObjNode) {
 
-    // activeSkin()->DrawOutlineBox( this, il, dby1, iw, ih, GedSkin::ESTYLE_BUTTON_OUTLINE );
-    activeSkin()->DrawLine(this, il, iy2, ihx, dby1, GedSkin::ESTYLE_BUTTON_OUTLINE);
-    activeSkin()->DrawLine(this, il + idim - 2, iy2, ihx, dby1, GedSkin::ESTYLE_BUTTON_OUTLINE);
-    activeSkin()->DrawLine(this, il, iy2, ihx, ihy, GedSkin::ESTYLE_BUTTON_OUTLINE);
-    activeSkin()->DrawLine(this, il + idim - 2, iy2, ihx, ihy, GedSkin::ESTYLE_BUTTON_OUTLINE);
+    // skin->DrawOutlineBox( this, il, dby1, iw, ih, GedSkin::ESTYLE_BUTTON_OUTLINE );
+    skin->DrawLine(this, il, iy2, ihx, dby1, GedSkin::ESTYLE_BUTTON_OUTLINE);
+    skin->DrawLine(this, il + idim - 2, iy2, ihx, dby1, GedSkin::ESTYLE_BUTTON_OUTLINE);
+    skin->DrawLine(this, il, iy2, ihx, ihy, GedSkin::ESTYLE_BUTTON_OUTLINE);
+    skin->DrawLine(this, il + idim - 2, iy2, ihx, ihy, GedSkin::ESTYLE_BUTTON_OUTLINE);
 
-    activeSkin()->DrawOutlineBox(this, il2, dby1, iw, ih, GedSkin::ESTYLE_BUTTON_OUTLINE);
-    activeSkin()->DrawOutlineBox(this, il2 + 3, dby1 + 3, iw - 6, ih - 6, GedSkin::ESTYLE_BUTTON_OUTLINE);
+    skin->DrawOutlineBox(this, il2, dby1, iw, ih, GedSkin::ESTYLE_BUTTON_OUTLINE);
+    skin->DrawOutlineBox(this, il2 + 3, dby1 + 3, iw - 6, ih - 6, GedSkin::ESTYLE_BUTTON_OUTLINE);
   }
 
   ////////////////////////////////

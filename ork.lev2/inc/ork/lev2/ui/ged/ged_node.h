@@ -54,7 +54,7 @@ struct GedItemNode : public GedObject {
 public:
   ///////////////////////////////////////////////////
 
-  GedItemNode(ObjModel* mdl, //
+  GedItemNode(GedContainer* container,
               const char* name,  //
               const reflect::ObjectProperty* prop,  //
               object_ptr_t obj);
@@ -139,6 +139,7 @@ public:
   ///////////////////////////////////////////////////
   void addChild(geditemnode_ptr_t w);
   int numChildren() const;
+  geditemnode_ptr_t child(int idx) const;
   ///////////////////////////////////////////////////
   virtual int CalcHeight(void);
   /*geditemnode_ptr_t GetChildContainer() {
@@ -147,7 +148,6 @@ public:
   ///////////////////////////////////////////////////
   bool IsObjectHilighted(const GedObject* pobj) const;
   ///////////////////////////////////////////////////
-  GedSkin* activeSkin() const;
   virtual void DoDraw(lev2::Context* pTARG) = 0;
   ///////////////////////////////////////////////////
   using NameType = std::string;
@@ -156,9 +156,6 @@ public:
   const reflect::ObjectProperty* _property;
   object_ptr_t _object;
 
-  static GedSkin* gpSkin0;
-  static GedSkin* gpSkin1;
-  static int giSkin;
   int miX, miY;
   int miW, miH;
   bool mbVisible;
@@ -185,7 +182,7 @@ class GedRootNode : public GedItemNode {
   virtual int CalcHeight(void);
 
 public:
-  GedRootNode(ObjModel* mdl, //
+  GedRootNode(GedContainer* c, //
               const char* name,  //
               const reflect::ObjectProperty* prop,  //
               object_ptr_t obj);
@@ -201,7 +198,7 @@ struct GedGroupNode : public GedItemNode {
   void OnMouseDoubleClicked(ork::ui::event_constptr_t ev) final;
   ork::file::Path::NameType mPersistID;
 
-  GedGroupNode(ObjModel* mdl, //
+  GedGroupNode(GedContainer* container, //
                const char* name, //
                const reflect::ObjectProperty* prop, //
                object_ptr_t obj, //
@@ -232,7 +229,7 @@ struct GedLabelNode : public GedItemNode {
 public:
   ///////////////////////////////////////////////////
 
-  GedLabelNode(ObjModel* mdl, const char* name, const reflect::ObjectProperty* prop, object_ptr_t obj);
+  GedLabelNode(GedContainer* c, const char* name, const reflect::ObjectProperty* prop, object_ptr_t obj);
 
 private:
   virtual void DoDraw(lev2::Context* pTARG);

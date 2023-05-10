@@ -124,9 +124,9 @@ void GedSkin::clear() {
 struct GedSkin0 : public GedSkin { ///////////////////////////////////////////////////////////////////
   bool mbPickMode;
   orkvector<GedText> mTexts;
-  GedSkin0(ork::lev2::context_ptr_t ctx)
+  GedSkin0(ork::lev2::Context* ctx)
       : GedSkin() {
-    gpuInit(ctx.get());
+    gpuInit(ctx);
     mpFONT  = lev2::FontMan::GetFont("i14");
     miCHARW = mpFONT->GetFontDesc().miAdvanceWidth;
     miCHARH = mpFONT->GetFontDesc().miAdvanceHeight;
@@ -441,8 +441,8 @@ struct GedSkin1 : public GedSkin { /////////////////////////////////////////////
   bool mbPickMode;
   orkvector<GedText> mTexts;
   ///////////////////////////////////////////////////////////////////
-  GedSkin1(ork::lev2::context_ptr_t ctx) {
-    gpuInit(ctx.get());
+  GedSkin1(ork::lev2::Context* ctx) {
+    gpuInit(ctx);
     mpFONT  = lev2::FontMan::GetFont("i14");
     miCHARW = mpFONT->GetFontDesc().miAdvanceWidth;
     miCHARH = mpFONT->GetFontDesc().miAdvanceHeight;
@@ -744,7 +744,7 @@ struct GedSkin1 : public GedSkin { /////////////////////////////////////////////
   }
 };
 ////////////////////////////////////////////////////////////////
-orkvector<GedSkin*> instantiateSkins(ork::lev2::context_ptr_t ctx) {
+orkvector<GedSkin*> instantiateSkins(ork::lev2::Context* ctx) {
   orkvector<GedSkin*> skins;
   auto skin0 = new GedSkin0(ctx);
   auto skin1 = new GedSkin1(ctx);

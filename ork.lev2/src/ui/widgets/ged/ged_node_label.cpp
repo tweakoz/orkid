@@ -14,8 +14,8 @@
 namespace ork::lev2::ged {
 ////////////////////////////////////////////////////////////////
 
-GedLabelNode::GedLabelNode(ObjModel* mdl, const char* name, const reflect::ObjectProperty* prop, object_ptr_t obj)
-      : GedItemNode(mdl, name, prop, obj) {
+GedLabelNode::GedLabelNode(GedContainer* c, const char* name, const reflect::ObjectProperty* prop, object_ptr_t obj)
+      : GedItemNode(c, name, prop, obj) {
   }
 
 ////////////////////////////////////////////////////////////////

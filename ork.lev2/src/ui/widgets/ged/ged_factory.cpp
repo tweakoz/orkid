@@ -22,7 +22,7 @@ void GedFactory::describeX(object::ObjectClass* clazz) {
 ///////////////////////////////////////////////////////////////////////////////
 
 geditemnode_ptr_t
-GedFactory::createItemNode( ObjModel* mdl, //
+GedFactory::createItemNode( GedContainer* c, //
                             const ConstString& Name, //
                             const reflect::ObjectProperty* prop, //
                             object_ptr_t obj) const { //

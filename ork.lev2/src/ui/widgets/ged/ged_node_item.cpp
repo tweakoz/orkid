@@ -35,13 +35,12 @@ void GedObject::OnUiEvent(ork::ui::event_constptr_t ev) {
 
 ////////////////////////////////////////////////////////////////
 
-GedItemNode::GedItemNode(ObjModel* mdl, //
+GedItemNode::GedItemNode(GedContainer* container, //
                          const char* name,  //
                          const reflect::ObjectProperty* prop,  //
                          object_ptr_t obj) //
-    : _model(mdl)
+    : _container(container)
     , mbcollapsed(false)
-    , _container(mdl->_gedContainer)
     , _propname(name)
     , _property(prop)
     , _object(obj)
@@ -130,13 +129,15 @@ void GedItemNode::Layout(int ix, int iy, int iw, int ih) {
 ////////////////////////////////////////////////////////////////
 
 int GedItemNode::get_charh() const {
-  return activeSkin()->char_h();
+  auto skin = _container->_activeSkin;
+  return skin->char_h();
 }
 
 ////////////////////////////////////////////////////////////////
 
 int GedItemNode::get_charw() const {
-  return activeSkin()->char_w();
+  auto skin = _container->_activeSkin;
+  return skin->char_w();
 }
 
 ////////////////////////////////////////////////////////////////
@@ -158,10 +159,10 @@ void GedItemNode::addChild(geditemnode_ptr_t w) {
 int GedItemNode::numChildren() const {
   return int(_children.size());
 }
-GedSkin* GedItemNode::activeSkin() const {
-  return nullptr; //mRoot->GetSkin();
+//////////////////////////////////////////////////////////////////////////////
+geditemnode_ptr_t GedItemNode::child(int idx) const{
+  return _children[idx];
 }
-
 ///////////////////////////////////////////////////////////////////////////////
 bool GedItemNode::DoDrawDefault() const {
   return true;
@@ -182,14 +183,16 @@ int GedItemNode::contentWidth() const {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void GedItemNode::Draw(lev2::Context* pTARG) {
+  auto skin = _container->_activeSkin;
+
   if (mbInvalid) {
     ReSync();
   }
   if (DoDrawDefault()) {
     int labw = this->propnameWidth();
 
-    activeSkin()->DrawBgBox(this, miX, miY, miW, miH, GedSkin::ESTYLE_BACKGROUND_1);
-    activeSkin()->DrawOutlineBox(this, miX, miY, miW, miH, GedSkin::ESTYLE_DEFAULT_OUTLINE);
+    skin->DrawBgBox(this, miX, miY, miW, miH, GedSkin::ESTYLE_BACKGROUND_1);
+    skin->DrawOutlineBox(this, miX, miY, miW, miH, GedSkin::ESTYLE_DEFAULT_OUTLINE);
   }
   DoDraw(pTARG);
 

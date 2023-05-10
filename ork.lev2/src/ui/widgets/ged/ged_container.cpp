@@ -16,10 +16,10 @@
 namespace ork::lev2::ged {
 ////////////////////////////////////////////////////////////////
 
-orkvector<GedSkin*> instantiateSkins(ork::lev2::context_ptr_t ctx);
+orkvector<GedSkin*> instantiateSkins(ork::lev2::Context* ctx);
 
 void GedContainer::IncrementSkin() {
-  miSkin++;
+  _skin_index++;
   DoResize();
 }
 
@@ -39,16 +39,14 @@ GedContainer::GedContainer(objectmodel_ptr_t mdl)
     , miH(0)
     , miRootH(0)
     , mStackHash(0)
-    , miSkin(1)
+    , _skin_index(1)
     , mbDeleteModel(false) {
-    //, ConstructAutoSlot(Repaint)
-    //, ConstructAutoSlot(ModelInvalidated) {
-  //SetupSignalsAndSlots();
+
   mdl->_gedContainer = this;
-  mRootItem = std::make_shared<GedRootNode>(mdl.get(), "Root", nullptr, nullptr);
+  mRootItem = std::make_shared<GedRootNode>(this, "Root", nullptr, nullptr);
   PushItemNode(mRootItem.get());
 
-  _connection_modelinvalidated = _model->_sigRepaint.connect([this](){
+  _connection_modelinvalidated = _model->_sigModelInvalidated.connect([this](){
       //this->MarkSurfaceDirty();
   }); // Connect the signal to the slot
   
@@ -61,13 +59,13 @@ GedContainer::GedContainer(objectmodel_ptr_t mdl)
 
 GedContainer::~GedContainer() {
   _connection_modelinvalidated.disconnect();
-  //DisconnectAll();
 }
 
 ////////////////////////////////////////////////////////////////
 
-void GedContainer::gpuInit(lev2::context_ptr_t context){
+void GedContainer::gpuInit(lev2::Context* context){
   mSkins = instantiateSkins(context);
+  _activeSkin = mSkins[0];
 }
 
 ////////////////////////////////////////////////////////////////
@@ -189,42 +187,48 @@ void GedContainer::SetDims(int iw, int ih) {
 
 //////////////////////////////////////////////////////////////////////////////
 
-void GedContainer::Draw(lev2::Context* pTARG, int iw, int ih, int iscrolly) {
-  /*
+/*GedSkin* GedContainer::activeSkin() const{
+  size_t num_skins = mSkins.size();
+  return mSkins[_skin_index%num_skins];
+}*/
+
+//////////////////////////////////////////////////////////////////////////////
+
+void GedContainer::Draw(lev2::Context* context, int iw, int ih, int iscrolly) {
   ///////////////////////////////////////////////
-  GedItemNode* root = GetRootItem();
-  ///////////////////////////////////////////////
-  bool is_pick = pTARG->FBI()->isPickState();
+  auto root = GetRootItem();
 
   ///////////////////////////////////////////////
-  activeSkin()->SetScrollY(iscrolly);
-  activeSkin()->Begin(pTARG, mViewport);
+  bool is_pick = context->FBI()->isPickState();
+
+  ///////////////////////////////////////////////
+  _activeSkin->SetScrollY(iscrolly);
+  _activeSkin->Begin(context, _viewport);
   {
-    orkstack<GedItemNode*> NodeStack;
-    NodeStack.push(root);
+    orkstack<geditemnode_ptr_t> node_stack;
+    node_stack.push(root);
 
-    while (false == NodeStack.empty()) {
-      GedItemNode* item = NodeStack.top();
-      NodeStack.pop();
+    while (false == node_stack.empty()) {
+      auto item = node_stack.top();
+      node_stack.pop();
       int id = item->GetDepth();
       ///////////////////////////////////////////////
-      int inumc = item->GetNumItems();
+      int inumc = item->numChildren();
       for (int ic = 0; ic < inumc; ic++) {
-        GedItemNode* child = item->GetItem(ic);
+        auto child = item->child(ic);
         if (child->IsVisible()) {
           child->SetDepth(id + 1);
-          NodeStack.push(child);
+          node_stack.push(child);
         }
       }
       ///////////////////////////////////////////////
       if (item->IsVisible()) {
-        item->Draw(pTARG);
+        item->Draw(context);
       }
       ///////////////////////////////////////////////
     }
   }
-  activeSkin()->End(pTARG);
-  */
+  _activeSkin->End(context);
   ///////////////////////////////////////////////
 }
 

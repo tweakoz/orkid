@@ -67,6 +67,7 @@ void ObjModel::SlotRelayModelInvalidated() {
 
 void ObjModel::SigModelInvalidated() {
   printf("ObjModel::SigModelInvalidated\n");
+  _sigModelInvalidated();
   // mSignalModelInvalidated(&ObjModel::SigModelInvalidated); // << operator() instantiated here
 }
 
@@ -318,7 +319,7 @@ geditemnode_ptr_t ObjModel::recurse(
   gedgroupnode_ptr_t groupnode = binline            //
                                      ? nullptr      //
                                      : std::make_shared<GedGroupNode>(
-                                           this,    // mdl
+                                           _gedContainer,    // mdl
                                            usename, // name
                                            nullptr, // property
                                            cur_obj, // object
@@ -355,7 +356,7 @@ geditemnode_ptr_t ObjModel::recurse(
           if (pname == 0)
             pname = anno_edclass.c_str();
 
-          auto child = typed_factory->createItemNode(this, pname, nullptr, root_object);
+          auto child = typed_factory->createItemNode(_gedContainer, pname, nullptr, root_object);
           _gedContainer->AddChild(child);
 
           if (groupnode) {
@@ -388,7 +389,7 @@ geditemnode_ptr_t ObjModel::recurse(
     gedgroupnode_ptr_t groupnode = nullptr;
     if (igcount) {
       const std::string& GroupName = snode->Name;
-      groupnode                    = std::make_shared<GedGroupNode>(this, GroupName.c_str(), nullptr, cur_obj);
+      groupnode                    = std::make_shared<GedGroupNode>(_gedContainer, GroupName.c_str(), nullptr, cur_obj);
       _gedContainer->AddChild(groupnode);
       _gedContainer->PushItemNode(groupnode.get());
     }
@@ -455,7 +456,7 @@ geditemnode_ptr_t ObjModel::createNode(
     auto factory    = clazz->createShared();
     auto typed_factory = std::dynamic_pointer_cast<GedFactory>(factory);
     if (typed_factory) {
-      return typed_factory->createItemNode(this, Name.c_str(), prop, pobject);
+      return typed_factory->createItemNode(_gedContainer, Name.c_str(), prop, pobject);
     }
   }
   /////////////////////////////////////////////////////////////////////////
@@ -534,7 +535,7 @@ geditemnode_ptr_t ObjModel::createNode(
     return new GedLabelNode(*this, Name.c_str(), prop, pobject);
   /////////////////////////////////////////////////////////////////////////
   */
-  return std::make_shared<GedLabelNode>(this, Name.c_str(), prop, pobject);
+  return std::make_shared<GedLabelNode>(_gedContainer, Name.c_str(), prop, pobject);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
