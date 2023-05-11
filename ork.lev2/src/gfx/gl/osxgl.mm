@@ -282,6 +282,9 @@ void* ContextGL::_doClonePlatformHandle() const {
   new_plato->_context = plato->_context;
   new_plato->_needsInit   = false;
   //new_plato->_bindop = plato->_bindop;
+
+  // TODO : https://github.com/tweakoz/orkid/issues/139
+
   return new_plato;
 }
 
