@@ -6,8 +6,7 @@
 ////////////////////////////////////////////////////////////////
 
 #include <ork/lev2/ui/context.h>
-#include <ork/lev2/ui/box.h>
-#include <ork/lev2/ui/layoutgroup.inl>
+#include <ork/lev2/ui/popups.inl>
 #include <ork/lev2/ui/ged/ged.h>
 #include <ork/lev2/ui/ged/ged_node.h>
 #include <ork/lev2/ui/ged/ged_skin.h>
@@ -15,7 +14,6 @@
 #include <ork/kernel/core_interface.h>
 #include <ork/lev2/gfx/dbgfontman.h>
 #include <ork/reflect/properties/registerX.inl>
-#include <ork/lev2/glfw/ctx_glfw.h>
 
 ImplementReflectionX(ork::lev2::ged::GedMapNode, "GedMapNode");
 
@@ -123,35 +121,20 @@ void GedMapNode::addItem(ui::event_constptr_t ev) {
 
   printf( "GedMapNode<%p> sx<%d> sy<%d> W<%d> H<%d>\n", this, sx, sy, W, H );
 
-  PopupWindow popwin(_l2context(), sx,sy,W,H);
-  auto uic = popwin._uicontext;
-  auto root = uic->makeTop<ui::LayoutGroup>("lg",0,0,W,H);
-  auto box_item = root->makeChild<ui::EvTestBox>("HI",fvec4(1,1,1,1),0,0,0,0);
-  //auto box_item = root->makeChild<ui::Box>("HI",fvec4(1,1,1,1),0,0,0,0);
-  auto root_layout = root->_layout;
-  auto box_layout = box_item._layout;
-  box_layout->top()->anchorTo(root_layout->top());
-  box_layout->left()->anchorTo(root_layout->left());
-  box_layout->right()->anchorTo(root_layout->right());
-  box_layout->bottom()->anchorTo(root_layout->bottom());
-  root_layout->updateAll();
-  popwin.mainThreadLoop();
+  std::string edittext = ui::popupLineEdit(_l2context(),sx,sy,W,H,"YO");
 
-  /*QString qstr = GedInputDialog::getText(ev, this, 0, ibasex, 0, miW - ibasex - 6, klabh);
+  if (edittext.length()) {
+    KeyDecoName kdeca(edittext.c_str());
 
-  std::string sstr = qstr.toStdString();
-  if (sstr.length()) {
-    KeyDecoName kdeca(sstr.c_str());
-
-    if (IsKeyPresent(kdeca)) {
-      if (false == IsMultiMap())
+    if (isKeyPresent(kdeca)) {
+      if (false == isMultiMap())
         return;
     }
 
-    mModel.SigPreNewObject();
-    GedMapIoDriver iodriver(mModel, mMapProp, GetOrkObj());
-    iodriver.insert(sstr.c_str());
-  }*/
+    //mModel.SigPreNewObject();
+    //GedMapIoDriver iodriver(mModel, mMapProp, GetOrkObj());
+    //iodriver.insert(sstr.c_str());
+  }
 }
 
 ////////////////////////////////////////////////////////////////
