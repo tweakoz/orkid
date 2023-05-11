@@ -119,7 +119,7 @@ void EvTestBox::DoDraw(drawevent_constptr_t drwev) {
     ixc = ix1 + (_geometry._w >> 1);
     iyc = iy1 + (_geometry._h >> 1);
 
-    if (0)
+    if (1)
       printf(
           "drawbox<%s> xy1<%d,%d> xy2<%d,%d>\n", //
           _name.c_str(),

@@ -140,8 +140,9 @@ public:
   bool _terminate = false;
   int _counter = 0;
   svar256_t _impl;
+  ui::context_ptr_t _uicontext;
 
-  PopupWindow(Context* pctx, int x, int y, int w, int h, uiwidget_ptr_t root_widget);
+  PopupWindow(Context* pctx, int x, int y, int w, int h);
   ~PopupWindow();
   GLFWwindow* _glfwPopupWindow = nullptr;
 

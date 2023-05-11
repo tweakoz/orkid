@@ -13,6 +13,7 @@
 #include <ork/lev2/gfx/gfxmaterial_ui.h>
 #include <ork/lev2/glfw/ctx_glfw.h>
 #include <ork/lev2/ui/viewport.h>
+#include <ork/lev2/ui/context.h>
 #include <ork/lev2/imgui/imgui_impl_glfw.h>
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/kernel/msgrouter.inl>
@@ -822,7 +823,15 @@ void CtxGLFW::_fire_ui_event() {
 struct PopupImpl {
   //////////////////////////////////////////////////
   PopupImpl(PopupWindow* win, int x, int y, int w, int h) {
+
+    _x = x;
+    _y = y;
+    _w = w;
+    _h = h;
+
     _window = win;
+    _uicontext = win->_uicontext;
+
     glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
     win->_glfwPopupWindow = glfwCreateWindow(w, h, "Popup", NULL, NULL);
     glfwSetWindowPos(win->_glfwPopupWindow, x, y);
@@ -838,13 +847,21 @@ struct PopupImpl {
     glfwShowWindow(win->_glfwPopupWindow);
   }
   //////////////////////////////////////////////////
+  ~PopupImpl(){
+    glfwDestroyWindow(_window->_glfwPopupWindow);
+  }
+  //////////////////////////////////////////////////
   void mainThreadLoop() {
     auto ctxbase = dynamic_cast<CtxGLFW*>(_window->_parent_context->mCtxBase);
     OrkAssert(ctxbase != nullptr);
-    // auto prev_mb_cb = glfwSetMouseButtonCallback(_glfwPopupWindow, newMouseButtonCallback);
-    // glfwSetMouseButtonCallback(_glfwPopupWindow, prev_mb_cb); // restore previous callback
 
     _window->_terminate = false;
+    auto gfx_ctx = _window->_parent_context;
+
+    if( _uicontext->_top ){
+      _uicontext->_top->gpuInit(gfx_ctx);
+      _uicontext->_top->SetRect(0, 0, _w, _h);
+    }
 
     ork::Timer timer;
     timer.Start();
@@ -856,12 +873,21 @@ struct PopupImpl {
       float b = 0.5f + sinf(t * 0.7f) * 0.5f;
 
       glfwPollEvents();
-
       glfwMakeContextCurrent(_window->_glfwPopupWindow);
       glViewport(0, 0, _window->miWidth, _window->miHeight);
       glScissor(0, 0, _window->miWidth, _window->miHeight);
       glClearColor(r, g, b, 1);
-      glClear(GL_COLOR_BUFFER_BIT);
+      glClearDepth(1.0f);
+      glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+      glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+      glDepthMask(GL_TRUE);
+      if( _uicontext->_top ){
+        auto drwev = std::make_shared<ui::DrawEvent>(_window->_parent_context);
+        _uicontext->draw(drwev);
+      }
+
+      glFinish();
+
       glfwSwapBuffers(_window->_glfwPopupWindow);
 
       usleep(1000 * 16);
@@ -871,7 +897,8 @@ struct PopupImpl {
   }
   //////////////////////////////////////////////////
   PopupWindow* _window;
-  int _x, _y;
+  ui::context_ptr_t _uicontext;
+  int _x, _y, _w, _h;
 };
 using popupimpl_ptr_t = std::shared_ptr<PopupImpl>;
 
@@ -881,9 +908,10 @@ using popupimpl_ptr_t = std::shared_ptr<PopupImpl>;
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-PopupWindow::PopupWindow(Context* pctx, int x, int y, int w, int h, uiwidget_ptr_t root_widget)
+PopupWindow::PopupWindow(Context* pctx, int x, int y, int w, int h)
     : Window(x, y, w, h, "Popup")
     , _parent_context(pctx) {
+      _uicontext = std::make_shared<ui::Context>();
   auto impl = _impl.makeShared<PopupImpl>(this,x,y,w,h);
 }
 
@@ -897,7 +925,7 @@ void PopupWindow::mainThreadLoop() {
 ///////////////////////////////////////////////////////////////////////////////
 
 PopupWindow::~PopupWindow() {
-  glfwDestroyWindow(_glfwPopupWindow);
+  _impl = 0;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

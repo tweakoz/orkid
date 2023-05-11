@@ -5,6 +5,9 @@
 // see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ////////////////////////////////////////////////////////////////
 
+#include <ork/lev2/ui/context.h>
+#include <ork/lev2/ui/box.h>
+#include <ork/lev2/ui/layoutgroup.inl>
 #include <ork/lev2/ui/ged/ged.h>
 #include <ork/lev2/ui/ged/ged_node.h>
 #include <ork/lev2/ui/ged/ged_skin.h>
@@ -116,7 +119,18 @@ void GedMapNode::addItem(ui::event_constptr_t ev) {
   int sy = ev->miScreenPosY;
 
   printf( "GedMapNode<%p> sx<%d> sy<%d>\n", this, sx, sy );
-  PopupWindow popwin(_l2context(), sx,sy,miW - ibasex - 6,klabh*2,nullptr);
+
+  PopupWindow popwin(_l2context(), sx,sy,miW - ibasex - 6,klabh*2);
+  auto uic = popwin._uicontext;
+  auto root = uic->makeTop<ui::LayoutGroup>("lg",0,0,miW - ibasex - 6,klabh*2);
+  auto box_item = root->makeChild<ui::EvTestBox>("HI",fvec4(1,1,1,1),0,0,0,0);
+  auto root_layout = root->_layout;
+  auto box_layout = box_item._layout;
+  box_layout->top()->anchorTo(root_layout->top());
+  box_layout->left()->anchorTo(root_layout->left());
+  box_layout->right()->anchorTo(root_layout->right());
+  box_layout->bottom()->anchorTo(root_layout->bottom());
+  root_layout->updateAll();
   popwin.mainThreadLoop();
 
   /*QString qstr = GedInputDialog::getText(ev, this, 0, ibasex, 0, miW - ibasex - 6, klabh);
