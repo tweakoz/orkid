@@ -839,7 +839,7 @@ struct PopupImpl {
     _eventSINK                            = std::make_shared<EventSinkGLFW>();
     _eventSINK->_on_callback_mousebuttons = [=](int button, int action, int modifiers) {
       glfwSetWindowShouldClose(_glfwPopupWindow, GLFW_TRUE);
-      _terminate = true;
+      //_terminate = true;
     };
     //////////////////////////////////////////////////
     _eventSINK->_on_callback_keyboard = [=](int key, int scancode, int action, int modifiers) { //
@@ -881,7 +881,10 @@ struct PopupImpl {
   void _fireEvent(ui::event_ptr_t uiev){
       uiev->_uicontext = _uicontext.get();
       uiev->setvpDim(_uicontext->_top.get());
-      ui::Event::sendToContext(uiev);
+      auto handled = ui::Event::sendToContext(uiev);
+      if( handled._widget_finished){
+        _terminate = true;
+      }
   }
   //////////////////////////////////////////////////
   void mainThreadLoop() {

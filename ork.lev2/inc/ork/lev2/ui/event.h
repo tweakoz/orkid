@@ -30,6 +30,7 @@ struct HandlerResult {
 
   Widget* mHandler;
   bool mHoldFocus;
+  bool _widget_finished = false;
 };
 
 struct EventCooked {

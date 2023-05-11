@@ -64,7 +64,8 @@ template <typename T> inline std::string demangled_typename() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <int tsize> class static_variant;
+struct static_variant_base;
+template <int tsize> struct static_variant;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -193,7 +194,15 @@ template <typename T,typename std::enable_if<not IsEqualityComparable<T>::value,
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <int tsize> struct SvarDescriptor {
+struct SvarDescriptorBase {
+  virtual ~SvarDescriptorBase() = default;
+#if defined(SVAR_DEBUG)
+  std::string _typestr;
+#endif
+  size_t _curlength;
+};
+
+template <int tsize> struct SvarDescriptor : public SvarDescriptorBase {
 
   using destroyer_t = std::function<void(static_variant<tsize>& var)>;
   using copier_t    = std::function<void(static_variant<tsize>& lhs, const static_variant<tsize>& rhs)>;
@@ -236,10 +245,6 @@ template <int tsize> struct SvarDescriptor {
   destroyer_t _destroyer;
   copier_t _copier;
   equals_t _equals;
-  size_t _curlength;
-#if defined(SVAR_DEBUG)
-  std::string _typestr;
-#endif
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -254,24 +259,56 @@ template <int tsize, typename T> struct SvarDescriptorFactory {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <int tsize> class static_variant {
+struct static_variant_base{
+
+  template<int size> friend struct SvarDescriptor;
+
+  virtual size_t capacity() const = 0;
+  virtual size_t size() const = 0;
+  virtual bool canConvertFrom(const static_variant_base& oth) const = 0;
+
+protected:
+  static_variant_base() : _mtinfo(nullptr) {
+  }
+  virtual ~static_variant_base() = default;
+  const std::type_info* _mtinfo; // TODO: should this go into _descriptorFactory ?
+  bool _assert_on_destroy = false;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <int tsize> struct static_variant : public static_variant_base {
 public:
   using descriptor_factory_t = SvarDescriptor<tsize> (*)();
 
   static constexpr size_t ksize = tsize;
 
   //////////////////////////////////////////////////////////////
+
+  size_t capacity() const final {
+    return ksize; 
+  }
+  size_t size() const final {
+    auto descriptor = (_descriptorFactory.load())();
+    return descriptor._curlength; 
+  }
+
+  bool canConvertFrom(const static_variant_base& oth) const {
+    return capacity()>=oth.size();
+  }
+
+  //////////////////////////////////////////////////////////////
   // default constuctor
   //////////////////////////////////////////////////////////////
   static_variant()
-      : _mtinfo(nullptr) {
+      : static_variant_base() {
     _descriptorFactory = nullptr;
   }
   //////////////////////////////////////////////////////////////
   // copy constuctor
   //////////////////////////////////////////////////////////////
   static_variant(const static_variant& oth)
-      : _mtinfo(nullptr) {
+      : static_variant_base() {
     _descriptorFactory      = nullptr;
     auto descriptor_factory = oth._descriptorFactory.load();
     if (descriptor_factory) {
@@ -485,11 +522,8 @@ public:
     return TypeId::fromStdTypeInfo(_mtinfo);
   }
   //////////////////////////////////////////////////////////////
-  bool _assert_on_destroy = false;
-  //////////////////////////////////////////////////////////////
 private:
   char _buffer[ksize];
-  const std::type_info* _mtinfo; // TODO: should this go into _descriptorFactory ?
   ork::atomic<descriptor_factory_t> _descriptorFactory;
   //////////////////////////////////////////////////////////////
 };

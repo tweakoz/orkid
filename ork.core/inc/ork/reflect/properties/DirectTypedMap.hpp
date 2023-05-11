@@ -10,6 +10,7 @@
 #include "DirectTypedMap.h"
 #include "ITypedMap.hpp"
 #include <ork/kernel/core_interface.h>
+#include <ork/kernel/svariant_codec.inl>
 
 namespace ork { namespace reflect {
 
@@ -30,6 +31,13 @@ template <typename MapType> const MapType& DirectTypedMap<MapType>::GetMap(objec
   return object.get()->*mProperty;
 }
 
+////////////////////////////////////////////////////////////////////////////////
+template <typename MapType> //
+void DirectTypedMap<MapType>::insertDefaultElement(object_ptr_t obj,
+                                                    map_abstract_item_t key) const {
+
+}
+////////////////////////////////////////////////////////////////////////////////
 template <typename MapType>
 bool DirectTypedMap<MapType>::EraseElement(
     object_ptr_t object, //

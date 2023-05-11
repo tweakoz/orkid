@@ -309,6 +309,9 @@ geditemnode_ptr_t ObjModel::createObjectNode(
   if (cur_obj) {
     cur_obj->notifyX<ObjectGedVisitEvent>();
   }
+  else{
+    return nullptr;
+  }
 
   auto objclass         = cur_obj->objectClass();
   const auto& classdesc = objclass->Description();
@@ -451,7 +454,12 @@ geditemnode_ptr_t ObjModel::createAbstractNode( const std::string& Name,
                                                 object_ptr_t par_object, //
                                                 svar256_t abstract_val ){ //
   if( auto as_obj = abstract_val.tryAs<object_ptr_t>() ){
-    return createObjectNode(as_obj.value(), Name.c_str());
+    auto rval = createObjectNode(as_obj.value(), Name.c_str());
+    if( rval )
+      return rval;
+    else{
+
+    }
   }                                              
   return std::make_shared<GedLabelNode>(_gedContainer, Name.c_str(), par_prop, par_object);
 }

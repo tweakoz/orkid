@@ -15,6 +15,7 @@
 #include <ork/reflect/IDeserializer.h>
 #include "DirectObjectMap.h"
 #include <ork/kernel/core_interface.h>
+#include <ork/kernel/svariant_codec.inl>
 #include "ITypedMap.hpp"
 
 namespace ork::reflect {
@@ -38,6 +39,21 @@ const MapType& DirectObjectMap<MapType>::GetMap(object_constptr_t instance) cons
 template <typename MapType> //
 bool DirectObjectMap<MapType>::isMultiMap(object_constptr_t instance) const {
   return IsMultiMapDeducer(GetMap(instance));
+}
+////////////////////////////////////////////////////////////////////////////////
+template <typename MapType> //
+void DirectObjectMap<MapType>::insertDefaultElement(object_ptr_t obj,
+                                                    map_abstract_item_t key) const {
+
+  SvarDecoder<key.ksize> decoder;
+
+  auto typed_key_attempt = decoder.decode<key_type>(key);
+  OrkAssert(typed_key_attempt);
+  MapType& the_map                  = obj.get()->*_member;
+  the_map.insert(std::make_pair(typed_key_attempt.value(), nullptr));
+  //ork::svar64_t key64;
+  //OrkAssert( key64.canConvertFrom(key) );
+
 }
 ////////////////////////////////////////////////////////////////////////////////
 template <typename MapType> //

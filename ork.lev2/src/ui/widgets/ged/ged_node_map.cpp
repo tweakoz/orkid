@@ -119,9 +119,12 @@ void GedMapNode::addItem(ui::event_constptr_t ev) {
   int W = miW - ibasex - 6;
   int H = klabh*2;
 
-  printf( "GedMapNode<%p> sx<%d> sy<%d> W<%d> H<%d>\n", this, sx, sy, W, H );
+  size_t num_items = mMapKeys.size();
+  std::string initial_key = FormatString("item-%d", num_items);
 
-  std::string edittext = ui::popupLineEdit(_l2context(),sx,sy,W,H,"YO");
+  //printf( "GedMapNode<%p> sx<%d> sy<%d> W<%d> H<%d>\n", this, sx, sy, W, H );
+
+  std::string edittext = ui::popupLineEdit(_l2context(),sx,sy,W,H,initial_key);
 
   if (edittext.length()) {
     KeyDecoName kdeca(edittext.c_str());
@@ -131,6 +134,9 @@ void GedMapNode::addItem(ui::event_constptr_t ev) {
         return;
     }
 
+    reflect::map_abstract_item_t reflect_key = edittext;
+
+    mMapProp->insertDefaultElement(_object, reflect_key);
     //mModel.SigPreNewObject();
     //GedMapIoDriver iodriver(mModel, mMapProp, GetOrkObj());
     //iodriver.insert(sstr.c_str());

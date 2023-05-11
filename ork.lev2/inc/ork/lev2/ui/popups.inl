@@ -17,7 +17,7 @@ namespace ork::ui {
         lev2::PopupWindow popwin(ctx, x,y,w,h);
         auto uic = popwin._uicontext;
         auto root = uic->makeTop<ui::LayoutGroup>("lg",0,0,w,h);
-        auto lineedit_item = root->makeChild<ui::LineEdit>("LineEdit",fvec4(1,1,1,1),0,0,0,0);
+        auto lineedit_item = root->makeChild<ui::LineEdit>("LineEdit",fvec4(1,1,0,1),0,0,0,0);
         auto lineedit_layout = lineedit_item._layout;
         auto lineedit = std::dynamic_pointer_cast<ui::LineEdit>(lineedit_item._widget);
         //auto lineedit_item = root->makeChild<ui::Box>("HI",fvec4(1,1,1,1),0,0,0,0);
@@ -27,7 +27,7 @@ namespace ork::ui {
         lineedit_layout->right()->anchorTo(root_layout->right());
         lineedit_layout->bottom()->anchorTo(root_layout->bottom());
         root_layout->updateAll();
-        lineedit->_value = initial_value;
+        lineedit->setValue(initial_value);
         popwin.mainThreadLoop();        
         return lineedit->_value;
     }

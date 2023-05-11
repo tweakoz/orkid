@@ -20,6 +20,43 @@ LineEdit::LineEdit(
     , _fg_color(color) {
 }
 ///////////////////////////////////////////////////////////////////////////////
+void LineEdit::setValue(const std::string& val) {
+  _value          = val;
+  _original_value = val;
+}
+///////////////////////////////////////////////////////////////////////////////
+HandlerResult LineEdit::DoOnUiEvent(event_constptr_t cev) {
+  HandlerResult rval;
+  switch (cev->_eventcode) {
+    case EventCode::KEY_DOWN: {
+      int key = cev->miKeyCode;
+      printf("key<%d>\n", key);
+      switch (key) {
+        case 256: // esc
+          _value = _original_value;
+          break;
+        case 257: // enter
+          rval._widget_finished = true;
+          break;
+        case 259: // backspace
+          if (_value.length())
+            _value.pop_back();
+          break;
+        default:
+          if (key >= 32 && key <= 126) {
+            _value += char(key);
+          }
+          break;
+      }
+      rval.setHandled(this);
+      break;
+    }
+    default:
+      break;
+  }
+  return rval;
+}
+///////////////////////////////////////////////////////////////////////////////
 void LineEdit::DoDraw(drawevent_constptr_t drwev) {
 
   auto tgt    = drwev->GetTarget();
@@ -37,7 +74,7 @@ void LineEdit::DoDraw(drawevent_constptr_t drwev) {
     ixc = ix1 + (_geometry._w >> 1);
     iyc = iy1 + (_geometry._h >> 1);
 
-    if (1)
+    if (0)
       printf(
           "drawlineedit<%s> xy1<%d,%d> xy2<%d,%d>\n", //
           _name.c_str(),
@@ -77,9 +114,8 @@ void LineEdit::DoDraw(drawevent_constptr_t drwev) {
     lev2::FontMan::endTextBlock(tgt);
     ork::lev2::FontMan::PopFont();
     tgt->PopModColor();
-
   }
   mtxi->PopUIMatrix();
 }
 ///////////////////////////////////////////////////////////////////////////////
-} //namespace ork::ui {
+} // namespace ork::ui
