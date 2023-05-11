@@ -8,6 +8,7 @@
 #include <ork/lev2/ui/ged/ged.h>
 #include <ork/lev2/ui/ged/ged_node.h>
 #include <ork/lev2/ui/ged/ged_skin.h>
+#include <ork/lev2/ui/ged/ged_surface.h>
 #include <ork/lev2/ui/ged/ged_container.h>
 #include <ork/lev2/gfx/dbgfontman.h>
 #include <ork/kernel/core_interface.h>
@@ -137,6 +138,12 @@ void GedItemNode::Init() {
 
 //////////////////////////////////////////////////////////////////////////////
 
+lev2::Context* GedItemNode::_l2context() const{
+  return lev2::contextForCurrentThread();
+}
+
+//////////////////////////////////////////////////////////////////////////////
+
 int GedItemNode::computeHeight(void) {
   int ih = get_charh() + 8;
   if (false == mbcollapsed) {
@@ -149,7 +156,7 @@ int GedItemNode::computeHeight(void) {
     }
   }
   micalch = ih;
-  printf("GedItemNode<%p:%s> height<%d>\n", this, _propname.c_str(), ih);
+  //printf("GedItemNode<%p:%s> height<%d>\n", this, _propname.c_str(), ih);
   return ih;
 }
 
@@ -161,7 +168,7 @@ void GedItemNode::Layout(int ix, int iy, int iw, int ih) {
   miW = iw;
   miH = ih;
 
-  printf("GedItemNode<%p> Layout ix<%d> iy<%d> iw<%d> ih<%d>\n", this, ix, iy, iw, ih);
+  //printf("GedItemNode<%p> Layout ix<%d> iy<%d> iw<%d> ih<%d>\n", this, ix, iy, iw, ih);
 
   bool bsidebyside = CanSideBySide();
 

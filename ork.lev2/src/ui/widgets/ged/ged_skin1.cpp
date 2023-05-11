@@ -319,7 +319,7 @@ void GedSkin1::End(Context* pTARG) {
       for (int it = 0; it < inumt; it++) {
         const GedText& text = _text_vect[it];
         if (IsVisible(pTARG, text.iy, text.iy + 8)) {
-          lev2::FontMan::DrawText(pTARG, text.ix, text.iy, text.mString.c_str());
+          lev2::FontMan::DrawText(pTARG, text.ix, text.iy+1, text.mString.c_str());
         }
       }
     }

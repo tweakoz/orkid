@@ -12,6 +12,7 @@
 #include <ork/kernel/core_interface.h>
 #include <ork/lev2/gfx/dbgfontman.h>
 #include <ork/reflect/properties/registerX.inl>
+#include <ork/lev2/glfw/ctx_glfw.h>
 
 ImplementReflectionX(ork::lev2::ged::GedMapNode, "GedMapNode");
 
@@ -107,12 +108,18 @@ void GedMapNode::addKey(const KeyDecoName& pkey) {
 ////////////////////////////////////////////////////////////////
 
 void GedMapNode::addItem(ui::event_constptr_t ev) {
-  /*const int klabh = get_charh();
+  const int klabh = get_charh();
   const int kdim  = klabh - 2;
 
   int ibasex = (kdim + 4) * 2 + 3;
+  int sx = ev->miScreenPosX;
+  int sy = ev->miScreenPosY;
 
-  QString qstr = GedInputDialog::getText(ev, this, 0, ibasex, 0, miW - ibasex - 6, klabh);
+  printf( "GedMapNode<%p> sx<%d> sy<%d>\n", this, sx, sy );
+  PopupWindow popwin(_l2context(), sx,sy,400,32,nullptr);
+  popwin.mainThreadLoop();
+
+  /*QString qstr = GedInputDialog::getText(ev, this, 0, ibasex, 0, miW - ibasex - 6, klabh);
 
   std::string sstr = qstr.toStdString();
   if (sstr.length()) {
@@ -283,7 +290,7 @@ void GedMapNode::OnMouseDoubleClicked(ui::event_constptr_t ev) {
 
   auto model = _container->_model;
 
-  printf("GedMapNode<%p> ilx<%d> ily<%d>\n", this, ix, iy);
+  //printf("GedMapNode<%p> ilx<%d> ily<%d>\n", this, ix, iy);
 
   if (ix >= koff && ix <= kdim && iy >= koff && iy <= kdim) // drop down
   {
@@ -306,8 +313,7 @@ void GedMapNode::OnMouseDoubleClicked(ui::event_constptr_t ev) {
 
   if (mbConst == false) {
     ix -= (kdim + 4);
-    if (ix >= koff && ix <= kdim && iy >= koff && iy <= kdim) // drop down
-    {
+    if( (ix >= koff) and (ix <= kdim) and (iy >= koff) and (iy <= kdim)) { // add item
       addItem(ev);
       // model.Attach(model.CurrentObject());
       printf("MAPADDITEM\n");
@@ -315,24 +321,21 @@ void GedMapNode::OnMouseDoubleClicked(ui::event_constptr_t ev) {
       return;
     }
     ix -= (kdim + 4);
-    if (ix >= koff && ix <= kdim && iy >= koff && iy <= kdim) // drop down
-    {
+    if( (ix >= koff) and (ix <= kdim) and (iy >= koff) and (iy <= kdim)) { // remove item
       removeItem(ev);
       // model->Attach(model->CurrentObject());
       model->enqueueUpdate();
       return;
     }
     ix -= (kdim + 4);
-    if (ix >= koff && ix <= kdim && iy >= koff && iy <= kdim) // Move Item
-    {
+    if( (ix >= koff) and (ix <= kdim) and (iy >= koff) and (iy <= kdim)) { // rename Item
       moveItem(ev);
       // model->Attach(model->CurrentObject());
       model->enqueueUpdate();
       return;
     }
     ix -= (kdim + 4);
-    if (ix >= koff && ix <= kdim && iy >= koff && iy <= kdim) // Move Item
-    {
+    if( (ix >= koff) and (ix <= kdim) and (iy >= koff) and (iy <= kdim)) { // duplicate Item
       duplicateItem(ev);
       // model->Attach(model->CurrentObject());
       model->enqueueUpdate();

@@ -37,17 +37,28 @@ ui::event_constptr_t CtxGLFW::uievent() const {
   return _uievent;
 }
 ///////////////////////////////////////////////////////////////////////////////
-static void _fire_ui_event(CtxGLFW* ctx){
-  auto uiev = ctx->uievent();
-  auto gfxwin      = uiev->mpGfxWin;
-  auto root        = gfxwin ? gfxwin->GetRootWidget() : nullptr;
-  uiev->_uicontext = root ? root->_uicontext : nullptr;
-  if (root) {
-    uiev->setvpDim(root);
-    ui::Event::sendToContext(uiev);
-    //_pushTimer.Start();
+static GLFWmonitor* monitorForWindow( GLFWwindow* window ){
+  int winX, winY; // window position
+  glfwGetWindowPos(window, &winX, &winY); // get window position
+
+  int monitorCount;
+  GLFWmonitor** monitors = glfwGetMonitors(&monitorCount); // get all available monitors
+
+  for (int i = 0; i < monitorCount; i++) {
+      int monitorX, monitorY;
+      glfwGetMonitorPos(monitors[i], &monitorX, &monitorY); // get monitor position
+
+      int monitorWidth, monitorHeight;
+      glfwGetMonitorWorkarea(monitors[i], NULL, NULL, &monitorWidth, &monitorHeight); // get monitor size
+
+      if (winX >= monitorX && winX < monitorX + monitorWidth &&
+          winY >= monitorY && winY < monitorY + monitorHeight) {
+          // The window is located on this monitor
+          // ...
+          return monitors[i];
+      }
   }
-  //ctx->SlotRepaint(); // refresh UI after button event
+  return nullptr;
 }
 ///////////////////////////////////////////////////////////////////////////////
 inline int to_qtmillis(RefreshPolicyItem policy) {
@@ -74,37 +85,11 @@ inline int to_qtmillis(RefreshPolicyItem policy) {
   return qt_millis;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void CtxGLFW::_setRefreshPolicy(RefreshPolicyItem newpolicy) { // final
-
-  auto prev         = _curpolicy;
-  int prev_qtmillis = to_qtmillis(prev);
-  int next_qtmillis = to_qtmillis(newpolicy);
-
-  if (next_qtmillis != prev_qtmillis) {
-    if (next_qtmillis == -1) {
-      // Timer().stop();
-    } else {
-      // Timer().start();
-      // Timer().setInterval(next_qtmillis);
-    }
-  }
-
-  _curpolicy = newpolicy;
-}
-///////////////////////////////////////////////////////////////////////////////
 static void _glfw_callback_refresh(GLFWwindow* window) {
-  auto ctx              = (CtxGLFW*)glfwGetWindowUserPointer(window);
-  auto orkwin           = ctx->GetWindow();
-  static int gistackctr = 0;
-  static int gictr      = 0;
-
-  gistackctr++;
-  if ((1 == gistackctr) && (gictr > 0)) {
-    ctx->uievent()->mpBlindEventData = (void*)nullptr;
-    //ctx->SlotRepaint();
-  }
-  gistackctr--;
-  gictr++;
+  auto sink              = (EventSinkGLFW*)glfwGetWindowUserPointer(window);
+  if( nullptr == sink )
+    return;
+  sink->_on_callback_refresh();
 }
 ///////////////////////////////////////////////////////////////////////////////
 static void _glfw_callback_winresized(GLFWwindow* window, int w, int h) {
@@ -115,9 +100,10 @@ static void _glfw_callback_winresized(GLFWwindow* window, int w, int h) {
   }
 #endif
 
-  //printf("win resized<%p %d %d>\n", window, w, h);
-  auto ctx = (CtxGLFW*)glfwGetWindowUserPointer(window);
-  ctx->onResize(w, h);
+  auto sink              = (EventSinkGLFW*)glfwGetWindowUserPointer(window);
+  if( nullptr == sink )
+    return;
+  sink->_on_callback_winresized(w, h);
 }
 ///////////////////////////////////////////////////////////////////////////////
 static void _glfw_callback_fbresized(GLFWwindow* window, int w, int h) {
@@ -127,9 +113,10 @@ static void _glfw_callback_fbresized(GLFWwindow* window, int w, int h) {
     h *= content_scale_y;
   }
 #endif
-  //printf("fb resized<%p %d %d>\n", window, w, h);
-  auto ctx = (CtxGLFW*)glfwGetWindowUserPointer(window);
-  ctx->onResize(w, h);
+  auto sink              = (EventSinkGLFW*)glfwGetWindowUserPointer(window);
+  if( nullptr == sink )
+    return;
+  sink->_on_callback_fbresized(w, h);
 }
 ///////////////////////////////////////////////////////////////////////////////
 static void _glfw_callback_contentScaleChanged(GLFWwindow* window, float sw, float sh) {
@@ -138,190 +125,59 @@ static void _glfw_callback_contentScaleChanged(GLFWwindow* window, float sw, flo
 ///////////////////////////////////////////////////////////////////////////////
 static void _glfw_callback_focusChanged(GLFWwindow* window, int focus) {
   bool has_focus = (focus == GLFW_TRUE);
-
   ////////////////////////
   // TODO - resolve where to send input, IMGUI - or ork::lev2::ui ?
   ////////////////////////
-
   //ImGui_ImplGlfw_WindowFocusCallback(window, focus);
-
   ////////////////////////
   //printf("fb focus<%p %d>\n", window, focus);
 }
 ///////////////////////////////////////////////////////////////////////////////
 static void _glfw_callback_keyboard(GLFWwindow* window, int key, int scancode, int action, int modifiers) {
-  //printf("_glfw_callback_keyboard<%p>\n", window);
-  auto ctx = (CtxGLFW*) glfwGetWindowUserPointer(window);
-  auto uiev = ctx->uievent();
-
-  ////////////////////////
-  // TODO - resolve where to send input, IMGUI - or ork::lev2::ui ?
-  ////////////////////////
-
-  //ImGui_ImplGlfw_KeyCallback(window, key, scancode, action, modifiers);
-
-  ////////////////////////
-
-  switch(action){
-    case GLFW_PRESS:
-      uiev->_eventcode = ui::EventCode::KEY_DOWN;
-      break;
-    case GLFW_RELEASE:
-      uiev->_eventcode = ui::EventCode::KEY_UP;
-      break;
-    case GLFW_REPEAT:
-      uiev->_eventcode = ui::EventCode::KEY_REPEAT;
-      break;
-  }
-  //auto keyc       = _keymap.find(Qt::Key(ikeyUNI));
-  uiev->miKeyCode = key;
-
-  uiev->mbALT          = (modifiers & GLFW_MOD_ALT);
-  uiev->mbCTRL         = (modifiers & GLFW_MOD_CONTROL);
-  uiev->mbSHIFT        = (modifiers & GLFW_MOD_SHIFT);
-  uiev->mbMETA         = (modifiers & GLFW_MOD_SUPER);
-
-  _fire_ui_event(ctx);                    
+  auto sink              = (EventSinkGLFW*)glfwGetWindowUserPointer(window);
+  if( nullptr == sink )
+    return;
+  sink->_on_callback_keyboard(key,scancode,action,modifiers);
 }
 ///////////////////////////////////////////////////////////////////////////////
 static void _glfw_callback_mousebuttons(GLFWwindow* window, int button, int action, int modifiers){
-  //printf("_glfw_callback_mousebuttons<%p>\n", window);
-
-  ////////////////////////
-  // TODO - resolve where to send input, IMGUI - or ork::lev2::ui ?
-  ////////////////////////
-
-  //ImGui_ImplGlfw_MouseButtonCallback(window, button, action, modifiers);
-
-  ////////////////////////
-
-  auto ctx = (CtxGLFW*) glfwGetWindowUserPointer(window);
-  auto uiev = ctx->uievent();
-
-  bool DOWN = (action == GLFW_PRESS);
-
-  switch(button){
-    case GLFW_MOUSE_BUTTON_LEFT:
-      uiev->mbLeftButton = DOWN;
-      ctx->_buttonState = (ctx->_buttonState&6) | int(DOWN);
-      break;
-    case GLFW_MOUSE_BUTTON_MIDDLE:
-      uiev->mbMiddleButton = DOWN;
-      ctx->_buttonState = (ctx->_buttonState&5) | (int(DOWN)<<1);
-      break;
-    case GLFW_MOUSE_BUTTON_RIGHT:
-      uiev->mbRightButton = DOWN;
-      ctx->_buttonState = (ctx->_buttonState&3) | (int(DOWN)<<2);
-      break;
-  }
-
-  uiev->mbALT          = (modifiers & GLFW_MOD_ALT);
-  uiev->mbCTRL         = (modifiers & GLFW_MOD_CONTROL);
-  uiev->mbSHIFT        = (modifiers & GLFW_MOD_SHIFT);
-  uiev->mbMETA         = (modifiers & GLFW_MOD_SUPER);
-
-
-  uiev->_eventcode = DOWN //
-                   ? ork::ui::EventCode::PUSH //
-                   : ork::ui::EventCode::RELEASE;
-
-  _fire_ui_event(ctx);                    
-
-  /////////////////////////
-
+  auto sink              = (EventSinkGLFW*)glfwGetWindowUserPointer(window);
+  if( nullptr == sink )
+    return;
+  sink->_on_callback_mousebuttons(button,action,modifiers);
 }
 ///////////////////////////////////////////////////////////////////////////////
 static void _glfw_callback_scroll(GLFWwindow* window, double xoffset, double yoffset){
-  //printf("_glfw_callback_scroll<%p>\n", window);
-
-  //ImGui_ImplGlfw_ScrollCallback(window, xoffset, yoffset);
-
-  auto ctx = (CtxGLFW*)glfwGetWindowUserPointer(window);
-  auto uiev = ctx->uievent();
+  auto sink              = (EventSinkGLFW*)glfwGetWindowUserPointer(window);
+  if( nullptr == sink )
+    return;
+  sink->_on_callback_scroll(xoffset,yoffset);
+}
+void CtxGLFW::_on_callback_scroll(double xoffset, double yoffset){
+  auto uiev = this->uievent();
   uiev->_eventcode = ui::EventCode::MOUSEWHEEL;
 
   uiev->miMWY = int(yoffset);
   uiev->miMWX = int(xoffset);
 
-  _fire_ui_event(ctx);                    
+  _fire_ui_event();                    
 }
 ///////////////////////////////////////////////////////////////////////////////
 static void _glfw_callback_cursor(GLFWwindow* window, double xoffset, double yoffset){
-  //printf("_glfw_callback_cursor<%p>\n", window);
-
-  auto ctx = (CtxGLFW*)glfwGetWindowUserPointer(window);
-  auto uiev = ctx->uievent();
-
-  uiev->mpBlindEventData = nullptr;
-
-  // InputManager::instance()->poll();
-
-
-  //int ix = event->x();
-  //int iy = event->y();
-  //if (_HIDPI()) {
-    //ix /= 2;
-    //iy /= 2;
-  //}
-
-#if defined(__APPLE__)
-  if (false and _macosUseHIDPI) {
-    xoffset *= 2;
-    yoffset *= 2;
-  }
-#endif
-
-  uiev->miLastX = uiev->miX;
-  uiev->miLastY = uiev->miY;
-
-  uiev->miX = int(xoffset);
-  uiev->miY = int(yoffset);
-
-  float unitX = xoffset / float(ctx->_width);
-  float unitY = yoffset / float(ctx->_height);
-
-  uiev->mfLastUnitX = uiev->mfUnitX;
-  uiev->mfLastUnitY = uiev->mfUnitY;
-  uiev->mfUnitX     = unitX;
-  uiev->mfUnitY     = unitY;
-
-  if(ctx->_buttonState==0){
-      uiev->_eventcode = ui::EventCode::MOVE; //
-      _fire_ui_event(ctx);                   
-  }
-  else{
-      uiev->_eventcode = ui::EventCode::DRAG; //
-      _fire_ui_event(ctx);                   
-  }
-
-
+  auto sink              = (EventSinkGLFW*)glfwGetWindowUserPointer(window);
+  if( nullptr == sink )
+    return;
+  sink->_on_callback_cursor(xoffset,yoffset);
 }
 ///////////////////////////////////////////////////////////////////////////////
 static void _glfw_callback_enterleave(GLFWwindow* window, int entered) {
-  //printf("_glfw_callback_enterleave<%p> entered<%d>\n", window, entered);
-
-  //ImGui_ImplGlfw_CursorEnterCallback(window, entered);
-
-  bool was_entered = bool(entered);
-  auto ctx = (CtxGLFW*)glfwGetWindowUserPointer(window);
-  auto uiev = ctx->uievent();
-
-  uiev->_eventcode       = was_entered //
-                         ? ui::EventCode::GOT_KEYFOCUS //
-                         : ui::EventCode::LOST_KEYFOCUS;
-
-  if(ctx->GetWindow()){
-    if(was_entered) {
-      ctx->GetWindow()->GotFocus();
-    }
-    else {
-      ctx->GetWindow()->LostFocus();
-    }
-  }
-  _fire_ui_event(ctx);         
+  auto sink              = (EventSinkGLFW*)glfwGetWindowUserPointer(window);
+  if( nullptr == sink )
+    return;
+  sink->_on_callback_enterleave(entered);
 }
 ///////////////////////////////////////////////////////////////////////////////
-CtxGLFW::CtxGLFW(Window* ork_win) //, QWidget* pparent)
+CtxGLFW::CtxGLFW(Window* ork_win) 
     : CTXBASE(ork_win) {
 
   _onRunLoopIteration = []() {};
@@ -329,6 +185,34 @@ CtxGLFW::CtxGLFW(Window* ork_win) //, QWidget* pparent)
   _uievent = std::make_shared<ui::Event>();
 
   _runstate = 1;
+
+  _eventSINK = std::make_shared<EventSinkGLFW>();
+
+  _eventSINK->_on_callback_refresh = [=]() {
+    _on_callback_refresh();
+  };
+  _eventSINK->_on_callback_enterleave = [=](int entered) {
+    _on_callback_enterleave(entered);
+  };
+  _eventSINK->_on_callback_winresized = [=](int w, int h) {
+    _on_callback_winresized(w, h);
+  };
+  _eventSINK->_on_callback_fbresized = [=](int w, int h) {
+    _on_callback_fbresized(w, h);
+  };
+  _eventSINK->_on_callback_mousebuttons = [=](int button, int action, int modifiers) {
+    _on_callback_mousebuttons(button, action, modifiers);
+  };
+  _eventSINK->_on_callback_keyboard = [=](int key, int scancode, int action, int modifiers) {
+    _on_callback_keyboard(key, scancode, action, modifiers);
+  };
+  _eventSINK->_on_callback_scroll = [=](double xoffset, double yoffset) {
+    _on_callback_scroll(xoffset, yoffset);
+  };
+  _eventSINK->_on_callback_cursor = [=](double xoffset, double yoffset) {
+    _on_callback_cursor(xoffset, yoffset);
+  };
+
 
   //printf("CtxGLFW created<%p> glfw_win<%p> isglobal<%d>\n", this, _glfwWindow, int(isGlobal()));
 }
@@ -341,10 +225,12 @@ void CtxGLFW::initWithData(appinitdata_ptr_t aid) {
 ///////////////////////////////////////////////////////////////////////////////
 void CtxGLFW::Show() {
 
+  GLFWmonitor* fullscreen_monitor = nullptr;
+  GLFWmonitor* selected_monitor = nullptr;
+
   if (_orkwindow) {
     _orkwindow->SetDirty(true);
 
-    GLFWmonitor* fullscreen_monitor = nullptr;
 
     if (_appinitdata->_fullscreen) {
 
@@ -393,6 +279,7 @@ void CtxGLFW::Show() {
       printf( "USING GLFW _width<%d> \n", _width );
       printf( "USING GLFW _height<%d> \n", _height );
       //////////////////////////////////////
+      selected_monitor = fullscreen_monitor;
     }
 
     #if defined(__APPLE__)
@@ -420,8 +307,9 @@ void CtxGLFW::Show() {
         fullscreen_monitor, // monitor
         global->_glfwWindow // sharegroup
     );
+
     OrkAssert(_glfwWindow != nullptr);
-    glfwSetWindowUserPointer(_glfwWindow, (void*)this);
+    glfwSetWindowUserPointer(_glfwWindow, (void*)_eventSINK.get());
     glfwSetWindowAttrib(_glfwWindow,GLFW_OPENGL_PROFILE,GLFW_OPENGL_CORE_PROFILE);
 
     if( not _appinitdata->_offscreen ){
@@ -468,6 +356,13 @@ void CtxGLFW::Show() {
   if( not _appinitdata->_offscreen ){
     glfwShowWindow(_glfwWindow);
   }
+
+    if( selected_monitor == nullptr ){
+      selected_monitor = monitorForWindow(_glfwWindow);
+      OrkAssert(selected_monitor != nullptr);
+    }
+
+    _glfwMonitor = selected_monitor;
 
   glfwGetWindowContentScale	(	_glfwWindow, &content_scale_x, &content_scale_y);
 }
@@ -631,9 +526,28 @@ void CtxGLFW::SlotRepaint() {
   //lamb();
 }
 ///////////////////////////////////////////////////////////////////////////////
+void CtxGLFW::_setRefreshPolicy(RefreshPolicyItem newpolicy) { // final
+
+  auto prev         = _curpolicy;
+  int prev_qtmillis = to_qtmillis(prev);
+  int next_qtmillis = to_qtmillis(newpolicy);
+
+  if (next_qtmillis != prev_qtmillis) {
+    if (next_qtmillis == -1) {
+      // Timer().stop();
+    } else {
+      // Timer().start();
+      // Timer().setInterval(next_qtmillis);
+    }
+  }
+
+  _curpolicy = newpolicy;
+}
+///////////////////////////////////////////////////////////////////////////////
 void error_callback( int error, const char *msg ) {
     printf( "GLFW ERROR<%d:%s>\n", error, msg );
 }
+///////////////////////////////////////////////////////////////////////////////
 CtxGLFW* CtxGLFW::globalOffscreenContext() {
   static CtxGLFW* gctx = nullptr;
   if (nullptr == gctx) {
@@ -731,6 +645,285 @@ CtxGLFW* CtxGLFW::globalOffscreenContext() {
 
   }
   return gctx;
+}
+///////////////////////////////////////////////////////////////////////////////
+void CtxGLFW::_on_callback_mousebuttons(int button, int action, int modifiers){
+  //printf("_glfw_callback_mousebuttons<%p>\n", window);
+
+  ////////////////////////
+  // TODO - resolve where to send input, IMGUI - or ork::lev2::ui ?
+  ////////////////////////
+
+  //ImGui_ImplGlfw_MouseButtonCallback(window, button, action, modifiers);
+
+  ////////////////////////
+
+  auto uiev = this->uievent();
+
+  bool DOWN = (action == GLFW_PRESS);
+
+  switch(button){
+    case GLFW_MOUSE_BUTTON_LEFT:
+      uiev->mbLeftButton = DOWN;
+      this->_buttonState = (this->_buttonState&6) | int(DOWN);
+      break;
+    case GLFW_MOUSE_BUTTON_MIDDLE:
+      uiev->mbMiddleButton = DOWN;
+      this->_buttonState = (this->_buttonState&5) | (int(DOWN)<<1);
+      break;
+    case GLFW_MOUSE_BUTTON_RIGHT:
+      uiev->mbRightButton = DOWN;
+      this->_buttonState = (this->_buttonState&3) | (int(DOWN)<<2);
+      break;
+  }
+
+  uiev->mbALT          = (modifiers & GLFW_MOD_ALT);
+  uiev->mbCTRL         = (modifiers & GLFW_MOD_CONTROL);
+  uiev->mbSHIFT        = (modifiers & GLFW_MOD_SHIFT);
+  uiev->mbMETA         = (modifiers & GLFW_MOD_SUPER);
+
+
+  uiev->_eventcode = DOWN //
+                   ? ork::ui::EventCode::PUSH //
+                   : ork::ui::EventCode::RELEASE;
+
+
+  _fire_ui_event();                    
+
+  /////////////////////////
+
+}
+///////////////////////////////////////////////////////////////////////////////
+void CtxGLFW::_on_callback_refresh(){
+  auto orkwin           = this->GetWindow();
+  static int gistackctr = 0;
+  static int gictr      = 0;
+
+  gistackctr++;
+  if ((1 == gistackctr) && (gictr > 0)) {
+    this->uievent()->mpBlindEventData = (void*)nullptr;
+    //ctx->SlotRepaint();
+  }
+  gistackctr--;
+  gictr++;
+}
+void CtxGLFW::_on_callback_winresized(int w, int h){
+  this->onResize(w,h);
+}
+void CtxGLFW::_on_callback_fbresized(int w, int h){
+  this->onResize(w,h);
+}
+void CtxGLFW::_on_callback_keyboard(int key, int scancode, int action, int modifiers){
+  auto uiev = this->uievent();
+
+  ////////////////////////
+  // TODO - resolve where to send input, IMGUI - or ork::lev2::ui ?
+  ////////////////////////
+
+  //ImGui_ImplGlfw_KeyCallback(window, key, scancode, action, modifiers);
+
+  ////////////////////////
+
+  switch(action){
+    case GLFW_PRESS:
+      uiev->_eventcode = ui::EventCode::KEY_DOWN;
+      break;
+    case GLFW_RELEASE:
+      uiev->_eventcode = ui::EventCode::KEY_UP;
+      break;
+    case GLFW_REPEAT:
+      uiev->_eventcode = ui::EventCode::KEY_REPEAT;
+      break;
+  }
+  //auto keyc       = _keymap.find(Qt::Key(ikeyUNI));
+  uiev->miKeyCode = key;
+
+  uiev->mbALT          = (modifiers & GLFW_MOD_ALT);
+  uiev->mbCTRL         = (modifiers & GLFW_MOD_CONTROL);
+  uiev->mbSHIFT        = (modifiers & GLFW_MOD_SHIFT);
+  uiev->mbMETA         = (modifiers & GLFW_MOD_SUPER);
+
+  _fire_ui_event();                    
+}
+void CtxGLFW::_on_callback_cursor(double xoffset, double yoffset){
+
+  auto uiev = this->uievent();
+
+  uiev->mpBlindEventData = nullptr;
+
+  // InputManager::instance()->poll();
+
+
+  //int ix = event->x();
+  //int iy = event->y();
+  //if (_HIDPI()) {
+    //ix /= 2;
+    //iy /= 2;
+  //}
+
+#if defined(__APPLE__)
+  if (false and _macosUseHIDPI) {
+    xoffset *= 2;
+    yoffset *= 2;
+  }
+#endif
+
+  uiev->miLastX = uiev->miX;
+  uiev->miLastY = uiev->miY;
+
+  uiev->miX = int(xoffset);
+  uiev->miY = int(yoffset);
+
+  float unitX = xoffset / float(this->_width);
+  float unitY = yoffset / float(this->_height);
+
+  uiev->mfLastUnitX = uiev->mfUnitX;
+  uiev->mfLastUnitY = uiev->mfUnitY;
+  uiev->mfUnitX     = unitX;
+  uiev->mfUnitY     = unitY;
+
+  if(this->_glfwMonitor){
+    int winX, winY; // window position
+    glfwGetWindowPos(_glfwWindow, &winX, &winY); // get window position
+    int screenX = 0;
+    int screenY = 0;
+    glfwGetMonitorPos(this->_glfwMonitor, &screenX, &screenY); // get monitor position
+    uiev->miScreenPosX = winX + screenX + int(xoffset);
+    uiev->miScreenPosY = winY + screenY + int(yoffset);
+  }
+  //int winX, winY; // window coordinate to convert
+  //glfwGetWindowPos(window, &winX, &winY); // get window position
+
+  if(this->_buttonState==0){
+      uiev->_eventcode = ui::EventCode::MOVE; //
+      _fire_ui_event();                   
+  }
+  else{
+      uiev->_eventcode = ui::EventCode::DRAG; //
+      _fire_ui_event();                   
+  }
+
+
+}
+///////////////////////////////////////////////////////////////////////////////
+void CtxGLFW::_on_callback_enterleave(int entered){
+  //printf("_glfw_callback_enterleave<%p> entered<%d>\n", window, entered);
+
+  //ImGui_ImplGlfw_CursorEnterCallback(window, entered);
+
+  bool was_entered = bool(entered);
+
+  auto uiev = this->uievent();
+
+  uiev->_eventcode       = was_entered //
+                         ? ui::EventCode::GOT_KEYFOCUS //
+                         : ui::EventCode::LOST_KEYFOCUS;
+
+  auto ork_window = this->GetWindow();
+
+  if(ork_window){
+    if(was_entered) {
+      ork_window->GotFocus();
+    }
+    else {
+      ork_window->LostFocus();
+    }
+  }
+  _fire_ui_event();         
+}
+///////////////////////////////////////////////////////////////////////////////
+void CtxGLFW::_fire_ui_event(){
+  auto uiev = this->uievent();
+  auto gfxwin      = uiev->mpGfxWin;
+  auto root        = gfxwin ? gfxwin->GetRootWidget() : nullptr;
+  uiev->_uicontext = root ? root->_uicontext : nullptr;
+  if (root) {
+    uiev->setvpDim(root);
+    ui::Event::sendToContext(uiev);
+    //_pushTimer.Start();
+  }
+  //this->SlotRepaint(); // refresh UI after button event
+}
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+
+PopupWindow::PopupWindow(Context* pctx, int x, int y, int w, int h, uiwidget_ptr_t root_widget)
+  : Window(x,y,w,h,"Popup")
+  , _parent_context(pctx) {
+  glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
+  _glfwPopupWindow = glfwCreateWindow(w, h, "Popup", NULL, NULL);
+  glfwSetWindowPos(_glfwPopupWindow, x,y);
+  _eventSINK = std::make_shared<EventSinkGLFW>();
+  _eventSINK->_on_callback_mousebuttons = [=](int button, int action, int modifiers) {
+    glfwSetWindowShouldClose(_glfwPopupWindow, GLFW_TRUE);
+    _terminate = true;
+  };
+  glfwSetWindowUserPointer(_glfwPopupWindow, (void*)_eventSINK.get());
+  glfwSetMouseButtonCallback(_glfwPopupWindow,_glfw_callback_mousebuttons);
+
+  glfwShowWindow(_glfwPopupWindow);
+
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void PopupWindow::mainThreadLoop(){
+
+  auto ctxbase = dynamic_cast<CtxGLFW*>(_parent_context->mCtxBase);
+  OrkAssert(ctxbase!=nullptr);
+
+  //auto prev_mb_cb = glfwSetMouseButtonCallback(_glfwPopupWindow, newMouseButtonCallback);
+  //glfwSetMouseButtonCallback(_glfwPopupWindow, prev_mb_cb); // restore previous callback
+
+  _terminate = false;
+
+  glfwMakeContextCurrent(_glfwPopupWindow);
+  while(not _terminate){
+    glfwPollEvents();
+    glfwWaitEvents();
+  }
+
+  glfwMakeContextCurrent(ctxbase->_glfwWindow);
+
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+PopupWindow::~PopupWindow(){
+  glfwDestroyWindow(_glfwPopupWindow);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void PopupWindow::draw(){
+
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void PopupWindow::GotFocus(){
+
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void PopupWindow::LostFocus(){
+
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void PopupWindow::OnShow(){
+
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void PopupWindow::Hide()  {
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////

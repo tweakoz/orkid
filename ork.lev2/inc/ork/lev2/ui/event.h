@@ -73,6 +73,8 @@ struct Event final // RawEvent
   int miState          = 0;
   int miKeyCode        = 0;
   int miNumHits        = 0;
+  int miScreenPosX     = 0;
+  int miScreenPosY     = 0;
 
   f32 mfX         = 0.0f;
   f32 mfY         = 0.0f;

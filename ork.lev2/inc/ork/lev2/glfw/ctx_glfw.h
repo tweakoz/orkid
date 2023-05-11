@@ -35,6 +35,27 @@ namespace lev2 {
 
 fvec2 logicalMousePos();
 
+using glfw_win_lambda_t = std::function<void()>;
+using glfw_win_int1_lambda_t = std::function<void(int)>;
+using glfw_win_int2_lambda_t = std::function<void(int, int)>;
+using glfw_win_int3_lambda_t = std::function<void(int, int, int)>;
+using glfw_win_int4_lambda_t = std::function<void(int, int, int, int)>;
+using glfw_win_float2_lambda_t = std::function<void(float, float)>;
+using glfw_win_double2_lambda_t = std::function<void(double, double)>;
+
+struct EventSinkGLFW{
+  glfw_win_lambda_t _on_callback_refresh;
+  glfw_win_int1_lambda_t _on_callback_enterleave;
+  glfw_win_int2_lambda_t _on_callback_winresized;
+  glfw_win_int2_lambda_t _on_callback_fbresized;
+  glfw_win_int3_lambda_t _on_callback_mousebuttons;
+  glfw_win_int4_lambda_t _on_callback_keyboard;
+  glfw_win_double2_lambda_t _on_callback_scroll;
+  glfw_win_double2_lambda_t _on_callback_cursor;
+};
+
+using eventsink_glfw_ptr_t = std::shared_ptr<EventSinkGLFW>;
+
 struct CtxGLFW : public CTXBASE {
 
   static CtxGLFW* globalOffscreenContext();
@@ -60,6 +81,16 @@ struct CtxGLFW : public CTXBASE {
   void pollEvents();
   void _doEnqueueWindowResize( int w, int h ) final;
 
+  void _on_callback_refresh();
+  void _on_callback_winresized(int w, int h);
+  void _on_callback_fbresized(int w, int h);
+  void _on_callback_keyboard(int key, int scancode, int action, int mods);
+  void _on_callback_mousebuttons(int button, int action, int modifiers);
+  void _on_callback_scroll(double xoffset, double yoffset);
+  void _on_callback_cursor(double xoffset, double yoffset);
+  void _on_callback_enterleave(int entered);
+  void _fire_ui_event();
+
   ui::event_constptr_t uievent() const;
   ui::event_ptr_t uievent();
   Context* context() const;
@@ -78,6 +109,8 @@ struct CtxGLFW : public CTXBASE {
   appinitdata_ptr_t _appinitdata;
   std::function<void(Context*)> _onGpuInit;
   std::function<void(Context*)> _onGpuExit;
+  GLFWmonitor* _glfwMonitor = nullptr;
+  eventsink_glfw_ptr_t _eventSINK;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -89,12 +122,34 @@ public:
   AppWindow(uiwidget_ptr_t root_widget);
   ~AppWindow();
 
-  virtual void draw(void);
-  virtual void GotFocus(void);
-  virtual void LostFocus(void);
-  virtual void Hide(void) {
+  virtual void draw();
+  void GotFocus() final;
+  void LostFocus() final;
+  virtual void Hide()  {
   }
-  virtual void OnShow();
+  void OnShow() final;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct PopupWindow : public ork::lev2::Window {
+public:
+  bool mbinit = true;
+  Context* _parent_context = nullptr;
+  eventsink_glfw_ptr_t _eventSINK;
+  bool _terminate = false;
+
+  PopupWindow(Context* pctx, int x, int y, int w, int h, uiwidget_ptr_t root_widget);
+  ~PopupWindow();
+  GLFWwindow* _glfwPopupWindow = nullptr;
+
+  virtual void draw() ;
+  void GotFocus() final;
+  void LostFocus() final;
+  virtual void Hide();
+  void OnShow() final;
+
+  void mainThreadLoop();
 };
 
 ///////////////////////////////////////////////////////////////////////////////

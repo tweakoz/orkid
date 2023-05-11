@@ -530,10 +530,10 @@ public:
   virtual void OnShow() {
   }
 
-  virtual void GotFocus(void) {
+  virtual void GotFocus() {
     mbHasFocus = true;
   }
-  virtual void LostFocus(void) {
+  virtual void LostFocus() {
     mbHasFocus = false;
   }
   bool HasFocus() const {
