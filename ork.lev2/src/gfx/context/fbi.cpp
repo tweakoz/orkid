@@ -125,8 +125,8 @@ ViewportRect::ViewportRect(int x, int y, int w, int h)
     : ui::Rect(0, 0, 0, 0) {
   _x = OldStlSchoolClampToRange(x, 0, 16384);
   _y = OldStlSchoolClampToRange(y, 0, 16384);
-  _w = OldStlSchoolClampToRange(w, 32, 16384);
-  _h = OldStlSchoolClampToRange(h, 32, 16384);
+  _w = OldStlSchoolClampToRange(w, 8, 16384);
+  _h = OldStlSchoolClampToRange(h, 8, 16384);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -118,11 +118,14 @@ void GedMapNode::addItem(ui::event_constptr_t ev) {
   int sx = ev->miScreenPosX;
   int sy = ev->miScreenPosY;
 
-  printf( "GedMapNode<%p> sx<%d> sy<%d>\n", this, sx, sy );
+  int W = miW - ibasex - 6;
+  int H = klabh*2;
 
-  PopupWindow popwin(_l2context(), sx,sy,miW - ibasex - 6,klabh*2);
+  printf( "GedMapNode<%p> sx<%d> sy<%d> W<%d> H<%d>\n", this, sx, sy, W, H );
+
+  PopupWindow popwin(_l2context(), sx,sy,W,H);
   auto uic = popwin._uicontext;
-  auto root = uic->makeTop<ui::LayoutGroup>("lg",0,0,miW - ibasex - 6,klabh*2);
+  auto root = uic->makeTop<ui::LayoutGroup>("lg",0,0,W,H);
   auto box_item = root->makeChild<ui::EvTestBox>("HI",fvec4(1,1,1,1),0,0,0,0);
   //auto box_item = root->makeChild<ui::Box>("HI",fvec4(1,1,1,1),0,0,0,0);
   auto root_layout = root->_layout;
