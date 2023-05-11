@@ -280,7 +280,12 @@ public:
   void SetPlatformHandle(void* ph) {
     mPlatformHandle = ph;
   }
-
+  void* clonePlatformHandle() const {
+    return _doClonePlatformHandle();
+  }
+  virtual void* _doClonePlatformHandle() const {
+    return nullptr;
+  }
   virtual void TakeThreadOwnership() {
   }
 

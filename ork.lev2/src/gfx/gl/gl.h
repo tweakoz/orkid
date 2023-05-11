@@ -477,6 +477,7 @@ public:
   }
   void _doEndFrame(void) final {
   }
+  void* _doClonePlatformHandle() const final;
 
 public:
   //////////////////////////////////////////////

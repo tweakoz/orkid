@@ -140,6 +140,24 @@ static void _glfw_callback_keyboard(GLFWwindow* window, int key, int scancode, i
     return;
   sink->_on_callback_keyboard(key, scancode, action, modifiers);
 }
+void fillEventKeyboard(ui::event_ptr_t uiev, int key, int scancode, int action, int modifiers) {
+  uiev->miKeyCode = key;
+  uiev->mbALT     = (modifiers & GLFW_MOD_ALT);
+  uiev->mbCTRL    = (modifiers & GLFW_MOD_CONTROL);
+  uiev->mbSHIFT   = (modifiers & GLFW_MOD_SHIFT);
+  uiev->mbMETA    = (modifiers & GLFW_MOD_SUPER);
+  switch (action) {
+    case GLFW_PRESS:
+      uiev->_eventcode = ui::EventCode::KEY_DOWN;
+      break;
+    case GLFW_RELEASE:
+      uiev->_eventcode = ui::EventCode::KEY_UP;
+      break;
+    case GLFW_REPEAT:
+      uiev->_eventcode = ui::EventCode::KEY_REPEAT;
+      break;
+  }
+}
 ///////////////////////////////////////////////////////////////////////////////
 static void _glfw_callback_mousebuttons(GLFWwindow* window, int button, int action, int modifiers) {
   auto sink = (EventSinkGLFW*)glfwGetWindowUserPointer(window);
@@ -169,6 +187,55 @@ static void _glfw_callback_cursor(GLFWwindow* window, double xoffset, double yof
   if (nullptr == sink)
     return;
   sink->_on_callback_cursor(xoffset, yoffset);
+}
+void fillEventCursor(ui::event_ptr_t uiev, 
+                     GLFWwindow* window,
+                     GLFWmonitor* monitor,
+                     double xoffset, double yoffset,
+                     double w, double h) {
+  uiev->mpBlindEventData = nullptr;
+
+  // InputManager::instance()->poll();
+
+  // int ix = event->x();
+  // int iy = event->y();
+  // if (_HIDPI()) {
+  // ix /= 2;
+  // iy /= 2;
+  //}
+
+#if defined(__APPLE__)
+  if (false and _macosUseHIDPI) {
+    xoffset *= 2;
+    yoffset *= 2;
+  }
+#endif
+
+  uiev->miLastX = uiev->miX;
+  uiev->miLastY = uiev->miY;
+
+  uiev->miX = int(xoffset);
+  uiev->miY = int(yoffset);
+
+  float unitX = xoffset / float(w);
+  float unitY = yoffset / float(h);
+
+  uiev->mfLastUnitX = uiev->mfUnitX;
+  uiev->mfLastUnitY = uiev->mfUnitY;
+  uiev->mfUnitX     = unitX;
+  uiev->mfUnitY     = unitY;
+
+  if (monitor) {
+    int winX, winY;                              // window position
+    glfwGetWindowPos(window, &winX, &winY); // get window position
+    int screenX = 0;
+    int screenY = 0;
+    glfwGetMonitorPos(monitor, &screenX, &screenY); // get monitor position
+    uiev->miScreenPosX = winX + screenX + int(xoffset);
+    uiev->miScreenPosY = winY + screenY + int(yoffset);
+  }
+  // int winX, winY; // window coordinate to convert
+  // glfwGetWindowPos(window, &winX, &winY); // get window position
 }
 ///////////////////////////////////////////////////////////////////////////////
 static void _glfw_callback_enterleave(GLFWwindow* window, int entered) {
@@ -691,84 +758,12 @@ void CtxGLFW::_on_callback_fbresized(int w, int h) {
 }
 void CtxGLFW::_on_callback_keyboard(int key, int scancode, int action, int modifiers) {
   auto uiev = this->uievent();
-
-  ////////////////////////
-  // TODO - resolve where to send input, IMGUI - or ork::lev2::ui ?
-  ////////////////////////
-
-  // ImGui_ImplGlfw_KeyCallback(window, key, scancode, action, modifiers);
-
-  ////////////////////////
-
-  switch (action) {
-    case GLFW_PRESS:
-      uiev->_eventcode = ui::EventCode::KEY_DOWN;
-      break;
-    case GLFW_RELEASE:
-      uiev->_eventcode = ui::EventCode::KEY_UP;
-      break;
-    case GLFW_REPEAT:
-      uiev->_eventcode = ui::EventCode::KEY_REPEAT;
-      break;
-  }
-  // auto keyc       = _keymap.find(Qt::Key(ikeyUNI));
-  uiev->miKeyCode = key;
-
-  uiev->mbALT   = (modifiers & GLFW_MOD_ALT);
-  uiev->mbCTRL  = (modifiers & GLFW_MOD_CONTROL);
-  uiev->mbSHIFT = (modifiers & GLFW_MOD_SHIFT);
-  uiev->mbMETA  = (modifiers & GLFW_MOD_SUPER);
-
+  fillEventKeyboard(uiev, key, scancode, action, modifiers);
   _fire_ui_event();
 }
 void CtxGLFW::_on_callback_cursor(double xoffset, double yoffset) {
-
   auto uiev = this->uievent();
-
-  uiev->mpBlindEventData = nullptr;
-
-  // InputManager::instance()->poll();
-
-  // int ix = event->x();
-  // int iy = event->y();
-  // if (_HIDPI()) {
-  // ix /= 2;
-  // iy /= 2;
-  //}
-
-#if defined(__APPLE__)
-  if (false and _macosUseHIDPI) {
-    xoffset *= 2;
-    yoffset *= 2;
-  }
-#endif
-
-  uiev->miLastX = uiev->miX;
-  uiev->miLastY = uiev->miY;
-
-  uiev->miX = int(xoffset);
-  uiev->miY = int(yoffset);
-
-  float unitX = xoffset / float(this->_width);
-  float unitY = yoffset / float(this->_height);
-
-  uiev->mfLastUnitX = uiev->mfUnitX;
-  uiev->mfLastUnitY = uiev->mfUnitY;
-  uiev->mfUnitX     = unitX;
-  uiev->mfUnitY     = unitY;
-
-  if (this->_glfwMonitor) {
-    int winX, winY;                              // window position
-    glfwGetWindowPos(_glfwWindow, &winX, &winY); // get window position
-    int screenX = 0;
-    int screenY = 0;
-    glfwGetMonitorPos(this->_glfwMonitor, &screenX, &screenY); // get monitor position
-    uiev->miScreenPosX = winX + screenX + int(xoffset);
-    uiev->miScreenPosY = winY + screenY + int(yoffset);
-  }
-  // int winX, winY; // window coordinate to convert
-  // glfwGetWindowPos(window, &winX, &winY); // get window position
-
+  fillEventCursor(uiev, _glfwWindow, _glfwMonitor, xoffset, yoffset,_width,_height);
   if (this->_buttonState == 0) {
     uiev->_eventcode = ui::EventCode::MOVE; //
     _fire_ui_event();
@@ -835,16 +830,38 @@ struct PopupImpl {
 
     _window = win;
 
+    auto global = CtxGLFW::globalOffscreenContext();
+
     glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
-    _glfwPopupWindow = glfwCreateWindow(w, h, "Popup", NULL, NULL);
+    _glfwPopupWindow = glfwCreateWindow(w, h, "Popup", NULL, global->_glfwWindow);
     glfwSetWindowPos(_glfwPopupWindow, x, y);
+    //////////////////////////////////////////////////
     _eventSINK                            = std::make_shared<EventSinkGLFW>();
     _eventSINK->_on_callback_mousebuttons = [=](int button, int action, int modifiers) {
       glfwSetWindowShouldClose(_glfwPopupWindow, GLFW_TRUE);
       _terminate = true;
     };
+    //////////////////////////////////////////////////
+    _eventSINK->_on_callback_keyboard = [=](int key, int scancode, int action, int modifiers) { //
+      if(_uicontext->_top){
+        auto uiev = std::make_shared<ui::Event>();
+        fillEventKeyboard(uiev, key, scancode, action, modifiers);
+        _fireEvent(uiev);
+      }
+    };
+    _eventSINK->_on_callback_cursor = [=](double xoffset, double yoffset) { //
+        auto uiev = std::make_shared<ui::Event>();
+        fillEventCursor(uiev, nullptr, nullptr, xoffset, yoffset, _w, _h);
+        uiev->_eventcode = ui::EventCode::MOVE; //
+        _fireEvent(uiev);
+    };
+    //////////////////////////////////////////////////
     glfwSetWindowUserPointer(_glfwPopupWindow, (void*)_eventSINK.get());
     glfwSetMouseButtonCallback(_glfwPopupWindow, _glfw_callback_mousebuttons);
+    glfwSetCursorPosCallback(_glfwPopupWindow, _glfw_callback_cursor);
+    glfwSetKeyCallback(_glfwPopupWindow, _glfw_callback_keyboard);
+    //glfwSetScrollCallback(_glfwPopupWindow, _glfw_callback_scroll);
+    //glfwSetCursorEnterCallback(_glfwPopupWindow, _glfw_callback_enterleave);
     glfwSetWindowAttrib(_glfwPopupWindow, GLFW_FOCUS_ON_SHOW, GLFW_TRUE);
 
     glfwShowWindow(_glfwPopupWindow);
@@ -853,10 +870,18 @@ struct PopupImpl {
     _rtgroup->_pseudoRTG = true;
     _rtgroup->mNumMrts   = 1;
     _rtgroup->_autoclear = true;
+
+    _cloned_plato = _parent_context->clonePlatformHandle();
   }
   //////////////////////////////////////////////////
   ~PopupImpl() {
     glfwDestroyWindow(_glfwPopupWindow);
+  }
+  //////////////////////////////////////////////////
+  void _fireEvent(ui::event_ptr_t uiev){
+      uiev->_uicontext = _uicontext.get();
+      uiev->setvpDim(_uicontext->_top.get());
+      ui::Event::sendToContext(uiev);
   }
   //////////////////////////////////////////////////
   void mainThreadLoop() {
@@ -874,30 +899,37 @@ struct PopupImpl {
     timer.Start();
     while (not _terminate) {
 
+      glfwPollEvents();
+      glfwMakeContextCurrent(_glfwPopupWindow);
+
       float t = timer.SecsSinceStart();
       float r = 0.5f + sinf(t * 0.3f) * 0.5f;
       float g = 0.5f + sinf(t * 0.5f) * 0.5f;
       float b = 0.5f + sinf(t * 0.7f) * 0.5f;
+      _rtgroup->_clearColor = fvec4(r, g, b, 1);
 
-      glfwPollEvents();
-      glfwMakeContextCurrent(_glfwPopupWindow);
-
-      _parent_context->FBI()->PushRtGroup(_rtgroup.get());
       _parent_context->FBI()->pushViewport(0, 0, _w, _h);
       _parent_context->FBI()->pushScissor(0, 0, _w, _h);
+      _parent_context->FBI()->PushRtGroup(_rtgroup.get());
+      glfwMakeContextCurrent(_glfwPopupWindow);
 
-      _rtgroup->_clearColor = fvec4(r, g, b, 1);
+      void* plato = (void*) _parent_context->GetPlatformHandle();
+
+      _parent_context->SetPlatformHandle(_cloned_plato);
 
       if (_uicontext->_top) {
         auto drwev = std::make_shared<ui::DrawEvent>(_parent_context);
         _uicontext->draw(drwev);
       }
+
+      _parent_context->SetPlatformHandle(plato);
+
+      _parent_context->FBI()->PopRtGroup();
       _parent_context->FBI()->popScissor();
       _parent_context->FBI()->popViewport();
-      _parent_context->FBI()->PopRtGroup();
+      glfwMakeContextCurrent(_glfwPopupWindow);
 
       glFinish();
-
       glfwSwapBuffers(_glfwPopupWindow);
 
       usleep(1000 * 16);
@@ -914,6 +946,7 @@ struct PopupImpl {
   rtgroup_ptr_t _rtgroup;
   int _x, _y, _w, _h;
   bool _terminate = false;
+  void* _cloned_plato = nullptr;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

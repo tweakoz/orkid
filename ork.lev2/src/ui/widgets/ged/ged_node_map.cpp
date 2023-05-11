@@ -124,6 +124,7 @@ void GedMapNode::addItem(ui::event_constptr_t ev) {
   auto uic = popwin._uicontext;
   auto root = uic->makeTop<ui::LayoutGroup>("lg",0,0,miW - ibasex - 6,klabh*2);
   auto box_item = root->makeChild<ui::EvTestBox>("HI",fvec4(1,1,1,1),0,0,0,0);
+  //auto box_item = root->makeChild<ui::Box>("HI",fvec4(1,1,1,1),0,0,0,0);
   auto root_layout = root->_layout;
   auto box_layout = box_item._layout;
   box_layout->top()->anchorTo(root_layout->top());

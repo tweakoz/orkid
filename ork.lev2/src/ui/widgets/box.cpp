@@ -101,6 +101,7 @@ EvTestBox::EvTestBox(
 ///////////////////////////////////////////////////////////////////////////////
 HandlerResult EvTestBox::DoOnUiEvent(event_constptr_t Ev) {
   _colorsel = Ev->_eventcode;
+  printf( "EvTestBox::DoOnUiEvent<%s> code<%d>\n", _name.c_str(), int(Ev->_eventcode) );
   return HandlerResult();
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -119,7 +120,7 @@ void EvTestBox::DoDraw(drawevent_constptr_t drwev) {
     ixc = ix1 + (_geometry._w >> 1);
     iyc = iy1 + (_geometry._h >> 1);
 
-    if (1)
+    if (0)
       printf(
           "drawbox<%s> xy1<%d,%d> xy2<%d,%d>\n", //
           _name.c_str(),
@@ -182,7 +183,7 @@ void EvTestBox::DoDraw(drawevent_constptr_t drwev) {
         break;
     }
 
-    defmtl->_rasterstate.SetBlending(lev2::Blending::ALPHA);
+    defmtl->_rasterstate.SetBlending(lev2::Blending::OFF);
     defmtl->_rasterstate.SetDepthTest(lev2::EDepthTest::OFF);
     ///////////////////////////////
     if (not hasMouseFocus())

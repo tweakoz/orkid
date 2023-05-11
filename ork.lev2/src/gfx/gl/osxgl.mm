@@ -42,7 +42,7 @@ struct GlOsxPlatformObject
   static GlOsxPlatformObject* _current;
   /////////////////////////////////////
 	ContextGL*		_context = nullptr;
-  CtxGLFW* _thiscontext = nullptr;
+  CtxGLFW* _ctxbase = nullptr;
   bool _needsInit       = true;
   void_lambda_t _bindop;
 
@@ -52,10 +52,12 @@ struct GlOsxPlatformObject
   /////////////////////////////////////
   void makeCurrent() {
     _current = this;
-    _thiscontext->makeCurrent();
+    if(_ctxbase)
+      _ctxbase->makeCurrent();
   }
   void swapBuffers() {
-    _thiscontext->swapBuffers();
+    if(_ctxbase)
+      _ctxbase->swapBuffers();
   }
   /////////////////////////////////////
 };
@@ -112,7 +114,7 @@ void ContextGL::GLinit()
   auto global_ctxbase = CtxGLFW::globalOffscreenContext();
 
   GlOsxPlatformObject::_global_plato               = new GlOsxPlatformObject;
-  GlOsxPlatformObject::_global_plato->_thiscontext = global_ctxbase;
+  GlOsxPlatformObject::_global_plato->_ctxbase = global_ctxbase;
 
   ////////////////////////////////////
   // load extensions
@@ -181,7 +183,7 @@ void ContextGL::initializeWindowContext( Window *pWin, CTXBASE* pctxbase  ) {
   auto glfw_window    = glfw_container->_glfwWindow;
   ///////////////////////
   GlOsxPlatformObject* plato = new GlOsxPlatformObject;
-  plato->_thiscontext       = glfw_container;
+  plato->_ctxbase       = glfw_container;
   mCtxBase                  = pctxbase;
   mPlatformHandle           = (void*)plato;
   ///////////////////////
@@ -211,7 +213,7 @@ void ContextGL::initializeOffscreenContext( DisplayBuffer *pBuf )
 
   auto global_plato = GlOsxPlatformObject::_global_plato;
 
-  plato->_thiscontext = global_plato->_thiscontext;
+  plato->_ctxbase = global_plato->_ctxbase;
   plato->_needsInit   = false;
 
   _defaultRTG  = new RtGroup(this, miW, miH, MsaaSamples::MSAA_1X);
@@ -241,7 +243,7 @@ void ContextGL::initializeLoaderContext() {
   mPlatformHandle           = (void*)plato;
 
   auto global_plato   = GlOsxPlatformObject::_global_plato;
-  plato->_thiscontext = global_plato->_thiscontext;
+  plato->_ctxbase = global_plato->_ctxbase;
   plato->_needsInit   = false;
 
   _defaultRTG  = new RtGroup(this, miW, miH, MsaaSamples::MSAA_1X);
@@ -269,6 +271,18 @@ void ContextGL::makeCurrentContext( void ){
     plato->makeCurrent();
     plato->_bindop();
   }
+}
+
+/////////////////////////////////////////////////////////////////////////
+
+void* ContextGL::_doClonePlatformHandle() const {
+  auto plato = (GlOsxPlatformObject*)mPlatformHandle;
+  auto new_plato = new GlOsxPlatformObject;
+  new_plato->_ctxbase = nullptr; //plato->_ctxbase;
+  new_plato->_context = plato->_context;
+  new_plato->_needsInit   = false;
+  //new_plato->_bindop = plato->_bindop;
+  return new_plato;
 }
 
 /////////////////////////////////////////////////////////////////////////

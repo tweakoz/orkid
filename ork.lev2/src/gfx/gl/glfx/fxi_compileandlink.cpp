@@ -25,6 +25,7 @@ void Shader::dumpFinalText() const {
 
 bool Shader::Compile() {
   GL_NF_ERRORCHECK();
+
   mShaderObjectId = glCreateShader(mShaderType);
 
 #if defined(ENABLE_COMPUTE_SHADERS)
