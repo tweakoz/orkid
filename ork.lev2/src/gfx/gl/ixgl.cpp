@@ -60,7 +60,7 @@ struct GlIxPlatformObject {
   }
   /////////////////////////////////////
   int getXwindowID() {
-    int x11window = glfwGetX11Window(_thiscontext->_glfwWindow);
+    int x11window = glfwGetX11Window(_ctxbase->_glfwWindow);
     return x11window;
   }
   /////////////////////////////////////
@@ -77,13 +77,17 @@ struct GlIxPlatformObject {
   /////////////////////////////////////
   void makeCurrent() {
     _current = this;
-    _thiscontext->makeCurrent();
+    if( _ctxbase ){
+      _ctxbase->makeCurrent();
+    }
   }
   void swapBuffers() {
-    _thiscontext->swapBuffers();
+    if( _ctxbase ){
+      _ctxbase->swapBuffers();
+    }
   }
   /////////////////////////////////////
-  CtxGLFW* _thiscontext = nullptr;
+  CtxGLFW* _ctxbase = nullptr;
   bool _needsInit       = true;
   void_lambda_t _bindop;
   /////////////////////////////////////
@@ -96,6 +100,18 @@ struct GlxLoadContext {
   GlIxPlatformObject* _global_plato = nullptr;
   GLFWwindow* _pushedContext        = nullptr;
 };
+
+/////////////////////////////////////////////////////////////////////////
+
+void* ContextGL::_doClonePlatformHandle() const {
+  auto plato = (GlIxPlatformObject*)mPlatformHandle;
+  auto new_plato = new GlIxPlatformObject;
+  new_plato->_ctxbase = nullptr; //plato->_ctxbase;
+  //new_plato->_context = plato->_context;
+  new_plato->_needsInit   = false;
+  //new_plato->_bindop = plato->_bindop;
+  return new_plato;
+}
 
 /////////////////////////////////////////////////////////////////////////
 
@@ -136,7 +152,7 @@ void ContextGL::GLinit() {
   auto global_ctxbase = CtxGLFW::globalOffscreenContext();
 
   GlIxPlatformObject::_global_plato               = new GlIxPlatformObject;
-  GlIxPlatformObject::_global_plato->_thiscontext = global_ctxbase;
+  GlIxPlatformObject::_global_plato->_ctxbase = global_ctxbase;
 
   ////////////////////////////////////
   // load extensions
@@ -207,7 +223,7 @@ void ContextGL::initializeWindowContext(Window* pWin, CTXBASE* pctxbase) {
   auto glfw_window    = glfw_container->_glfwWindow;
   ///////////////////////
   GlIxPlatformObject* plato = new GlIxPlatformObject;
-  plato->_thiscontext       = glfw_container;
+  plato->_ctxbase       = glfw_container;
   mCtxBase                  = pctxbase;
   mPlatformHandle           = (void*)plato;
   ///////////////////////
@@ -369,7 +385,7 @@ void ContextGL::initializeOffscreenContext(DisplayBuffer* pBuf) {
 
   auto global_plato = GlIxPlatformObject::_global_plato;
 
-  plato->_thiscontext = global_plato->_thiscontext;
+  plato->_ctxbase = global_plato->_ctxbase;
   plato->_needsInit   = false;
 
   _defaultRTG  = new RtGroup(this, miW, miH, MsaaSamples::MSAA_1X);
@@ -393,7 +409,7 @@ void ContextGL::initializeLoaderContext() {
   mPlatformHandle           = (void*)plato;
 
   auto global_plato   = GlIxPlatformObject::_global_plato;
-  plato->_thiscontext = global_plato->_thiscontext;
+  plato->_ctxbase = global_plato->_ctxbase;
   plato->_needsInit   = false;
 
   _defaultRTG  = new RtGroup(this, miW, miH, MsaaSamples::MSAA_1X);
