@@ -103,21 +103,23 @@ HandlerResult Context::handleEvent(event_constptr_t ev) {
     case EventCode::PUSH: {
 
       double clickdelta = curtime - _prev_click_time;
+      double dblclickdelta = curtime - _prev_dbl_click_time;
 
       _evdragtarget = nullptr;
       auto dest     = _top->routeUiEvent(ev);
       if (dest){
 
         // SYNTHESIZE DOUBLECLICK EVENT
-        if (clickdelta < 0.5) {
+        if ((dblclickdelta>0.75) and (clickdelta < 0.5)) {
           auto mut_ev = std::const_pointer_cast<Event>(ev);
           mut_ev->_eventcode = EventCode::DOUBLECLICK;
+          _prev_dbl_click_time = curtime; // add delay for double-double click
         }
 
          rval = dest->OnUiEvent(ev);
       }
-
       _prev_click_time = curtime;
+
       break;
     }
     /////////////////////////////////

@@ -66,6 +66,8 @@ GedMapNode::GedMapNode(
     : GedItemNode(c, name, map_prop, obj)
     , mMapProp(map_prop) { //
 
+  c->PushItemNode(this);
+
   auto model = c->_model;
 
   auto enumerated_items = map_prop->enumerateElements(obj);
@@ -84,8 +86,10 @@ GedMapNode::GedMapNode(
 
     //model->createNode( name, prop, obj );
     auto item_node = model->createAbstractNode(keyname.c_str(), map_prop, obj, val );
-    addChild(item_node);
+    //c->//addChild(item_node);
   }
+
+  c->PopItemNode(this);
 }
 
 void GedMapNode::focusItem(const PropTypeString& key) {
@@ -394,20 +398,19 @@ void GedMapNode::OnMouseDoubleClicked(ui::event_constptr_t ev) {
 ////////////////////////////////////////////////////////////////
 
 void GedMapNode::updateVisibility() {
-  /*
-  int inumitems = GetNumItems();
+
+  int inumitems = numChildren();
 
   if (mbSingle) {
     for (int it = 0; it < inumitems; it++) {
-      GetItem(it)->SetVisible(it == mItemIndex);
+      child(it)->SetVisible(it == mItemIndex);
     }
   } else {
     for (int it = 0; it < inumitems; it++) {
-      GetItem(it)->SetVisible(true);
+      child(it)->SetVisible(true);
     }
   }
-  mModel.GetGedWidget()->DoResize();
-  */
+  _container->DoResize();
 }
 
 ////////////////////////////////////////////////////////////////

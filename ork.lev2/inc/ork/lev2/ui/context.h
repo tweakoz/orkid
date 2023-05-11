@@ -57,6 +57,7 @@ struct Context {
   Timer _uitimer;
   double _prevtime = 0.0;
   double _prev_click_time = 0.0;
+  double _prev_dbl_click_time = 0.0;
 };
 
 } // namespace ork::ui

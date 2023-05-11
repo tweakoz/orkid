@@ -84,15 +84,7 @@ public:
   virtual void DrawText(GedObject* pnode, int ix, int iy, const char* ptext)                              = 0;
   virtual void End(ork::lev2::Context* pTARG)                                                             = 0;
 
-  void SetScrollY(int iscrolly) {
-    _scrollY = iscrolly;
-  }
-
   void AddPrim(const GedPrim& cb); // { mPrims.AddSorted(calcsort(cb.miSortKey),cb); }
-
-  int GetScrollY() const {
-    return _scrollY;
-  }
 
   int calcsort(int isort) {
     int ioutsort = (isort << 16); //+int(mPrims.size());

@@ -30,7 +30,7 @@ fvec4 ged::GedSurface::AssignPickId(GedObject* pobj) {
   return fvec4(0,0,0,0);
 }
 ///////////////////////////////////////////////////////////////////////////////
-static const int kscrollw = 32;
+static const int kscrollw = 8;
 orkset<GedSurface*> GedSurface::gAllViewports;
 ///////////////////////////////////////////////////////////////////////////////
 GedSurface::GedSurface(const std::string& name, objectmodel_ptr_t model)
@@ -99,15 +99,16 @@ void GedSurface::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
   // Compute Scoll Transform
   //////////////////////////////////////////////////
 
-  ork::fmtx4 matSCROLL;
-  matSCROLL.setTranslation(0.0f, float(miScrollY), 0.0f);
+  //ork::fmtx4 matSCROLL;
+  //matSCROLL.setTranslation(0.0f, float(miScrollY), 0.0f);
+
 
   //////////////////////////////////////////////////
 
   fbi->pushScissor(ViewportRect(0, 0, W, H));
   fbi->pushViewport(ViewportRect(0, 0, W, H));
-  mtxi->PushMMatrix(matSCROLL);
-  mtxi->PushUIMatrix();
+  //mtxi->PushMMatrix(matSCROLL);
+  //mtxi->PushUIMatrix();
   {
 
     if( pickstate == 0){
@@ -133,8 +134,8 @@ void GedSurface::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
 
 
   }
-  mtxi->PopMMatrix();
-  mtxi->PopUIMatrix();
+  //mtxi->PopMMatrix();
+  //mtxi->PopUIMatrix();
   fbi->popViewport();
   fbi->popScissor();
   context->debugPopGroup();

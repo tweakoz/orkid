@@ -220,7 +220,9 @@ void GedSkin1::End(Context* pTARG) {
   miAccepted                           = 0;
   lev2::DynamicVertexBuffer<vtx_t>& VB = lev2::GfxEnv::GetSharedDynamicV16T16C16();
   ////////////////////////
-  const ork::fmtx4& mtxW = pTARG->MTXI()->RefMMatrix();
+  ork::fmtx4 mtxW;
+  mtxW.setTranslation(0.0f, float(_scrollY), 0.0f);
+  //const ork::fmtx4& mtxW = pTARG->MTXI()->RefMMatrix();
   auto uimatrix          = pTARG->MTXI()->uiMatrix(iw, ih);
   pTARG->MTXI()->PushUIMatrix(iw, ih);
   pTARG->MTXI()->PushMMatrix(mtxW);
@@ -262,7 +264,7 @@ void GedSkin1::End(Context* pTARG) {
     //_material->begin(_is_pickmode ? _tekvtxpick : _tekvtxcolor, RCFD);
     _material->_rasterstate.SetRGBAWriteMask(true,true);
     _material->begin(_tekvtxcolor , RCFD);
-    _material->bindParamMatrix(_parmvp, mtxW * uimatrix);
+    _material->bindParamMatrix(_parmvp, uimatrix*mtxW);
     pTARG->GBI()->DrawPrimitiveEML(vw, PrimitiveType::TRIANGLES);
     _material->end(RCFD);
     icount = 0;
@@ -300,7 +302,7 @@ void GedSkin1::End(Context* pTARG) {
         vw.UnLock(pTARG);
         if (icount) {
           _material->begin(_is_pickmode ? _tekvtxpick : _tekvtxcolor, RCFD);
-          _material->bindParamMatrix(_parmvp, mtxW * uimatrix);
+          _material->bindParamMatrix(_parmvp, uimatrix*mtxW);
           pTARG->GBI()->DrawPrimitiveEML(vw, PrimitiveType::LINES);
           _material->end(RCFD);
         }

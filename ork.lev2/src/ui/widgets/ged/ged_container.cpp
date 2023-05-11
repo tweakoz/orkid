@@ -157,7 +157,7 @@ void GedContainer::SlotRepaint() {
 void GedContainer::DoResize() {
   if (mRootItem) {
     int inum = mRootItem->numChildren();
-    miRootH  = mRootItem->CalcHeight();
+    miRootH  = mRootItem->computeHeight();
     mRootItem->Layout(2, 2, miW - 4, miH - 4);
     printf( "GedContainer<%p>::DoResize() dims<%d %d> miRootH<%d> inumitems<%d>\n", this, miW, miH, miRootH, inum );
   } else {
@@ -190,19 +190,12 @@ void GedContainer::SetDims(int iw, int ih) {
 //////////////////////////////////////////////////////////////////////////////
 
 void GedContainer::Draw(lev2::Context* context, int iw, int ih, int iscrolly) {
+  _activeSkin->_scrollY = iscrolly;
+  _activeSkin->Begin(context, _viewport); { //
   ///////////////////////////////////////////////
-  auto root = GetRootItem();
-
+  orkstack<geditemnode_ptr_t> node_stack;
+  node_stack.push(GetRootItem());
   ///////////////////////////////////////////////
-  bool is_pick = context->FBI()->isPickState();
-
-  ///////////////////////////////////////////////
-  _activeSkin->SetScrollY(iscrolly);
-  _activeSkin->Begin(context, _viewport);
-  {
-    orkstack<geditemnode_ptr_t> node_stack;
-    node_stack.push(root);
-
     while (false == node_stack.empty()) {
       auto item = node_stack.top();
       node_stack.pop();

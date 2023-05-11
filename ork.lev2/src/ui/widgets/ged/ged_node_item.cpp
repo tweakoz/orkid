@@ -137,20 +137,19 @@ void GedItemNode::Init() {
 
 //////////////////////////////////////////////////////////////////////////////
 
-int GedItemNode::CalcHeight(void) {
+int GedItemNode::computeHeight(void) {
   int ih = get_charh() + 8;
   if (false == mbcollapsed) {
     int inum = numChildren();
     for (int i = 0; i < inum; i++) {
-      bool bvis = _children[i]->IsVisible();
-
-      if (bvis) {
-        ih += _children[i]->CalcHeight();
+      auto child = _children[i];
+      if (child->IsVisible()) {
+        ih += child->computeHeight();
       }
     }
   }
   micalch = ih;
-  // printf( "GedItemNode<%p> CalcHeight() <%d>\n", this, ih );
+  printf("GedItemNode<%p:%s> height<%d>\n", this, _propname.c_str(), ih);
   return ih;
 }
 

@@ -104,7 +104,7 @@ public:
   int numChildren() const;
   geditemnode_ptr_t child(int idx) const;
   ///////////////////////////////////////////////////
-  virtual int CalcHeight();
+  virtual int computeHeight();
   ///////////////////////////////////////////////////
   bool IsObjectHilighted(const GedObject* pobj) const;
   ///////////////////////////////////////////////////
@@ -142,7 +142,6 @@ class GedRootNode : public GedItemNode {
 
   void DoDraw(lev2::Context* pTARG) final;
   void Layout(int ix, int iy, int iw, int ih) final;
-  int CalcHeight() final;
 
 public:
   GedRootNode(
