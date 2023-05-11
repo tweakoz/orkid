@@ -104,7 +104,7 @@ public:
   ~ObjModel() override; 
 
   void attach(object_ptr_t obj, bool bclearstack = true, geditemnode_ptr_t rootw = 0);
-  geditemnode_ptr_t recurse(object_ptr_t obj, const char* pname = 0, bool binline = false);
+  geditemnode_ptr_t createObjectNode(object_ptr_t obj, const char* pname = 0, bool binline = false);
   void detach();
 
   void dump(const char* header) const;

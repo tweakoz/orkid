@@ -34,6 +34,8 @@ INSTANTIATE_TRANSPARENT_RTTI(ork::HotKeyManager, "HotKeyManager");
 
 namespace ork {
 
+template class orklut<std::string,hotkey_ptr_t>;
+
 #if defined(LINUX)
 
 static bool ix_kb_state[256];

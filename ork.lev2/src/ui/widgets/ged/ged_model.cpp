@@ -216,7 +216,7 @@ void ObjModel::attach(
     ///////////////////////////////////////////////////////
     if (top_root_item) { 
       _gedContainer->PushItemNode(top_root_item.get());
-      recurse(root_object);
+      createObjectNode(root_object);
       _gedContainer->PopItemNode(top_root_item.get());
     }
     ///////////////////////////////////////////////////////
@@ -226,7 +226,7 @@ void ObjModel::attach(
       _gedContainer->GetRootItem()->_children.clear();
       if (root_object) {
         _gedContainer->PushItemNode(_gedContainer->GetRootItem().get());
-        recurse(root_object);
+        createObjectNode(root_object);
         _gedContainer->PopItemNode(_gedContainer->GetRootItem().get());
       }
       detach();
@@ -300,7 +300,7 @@ void ObjModel::dump(const char* header) const {
 
 //////////////////////////////////////////////////////////////////////////////
 
-geditemnode_ptr_t ObjModel::recurse(
+geditemnode_ptr_t ObjModel::createObjectNode(
     object_ptr_t root_object, //
     const char* pname,        //
     bool binline) {
@@ -450,7 +450,9 @@ geditemnode_ptr_t ObjModel::createAbstractNode( const std::string& Name,
                                                 const reflect::ObjectProperty* par_prop, //
                                                 object_ptr_t par_object, //
                                                 svar256_t abstract_val ){ //
-                                                
+  if( auto as_obj = abstract_val.tryAs<object_ptr_t>() ){
+    return createObjectNode(as_obj.value(), Name.c_str());
+  }                                              
   return std::make_shared<GedLabelNode>(_gedContainer, Name.c_str(), par_prop, par_object);
 }
 
