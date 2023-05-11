@@ -116,7 +116,7 @@ void GedMapNode::addItem(ui::event_constptr_t ev) {
   int sy = ev->miScreenPosY;
 
   printf( "GedMapNode<%p> sx<%d> sy<%d>\n", this, sx, sy );
-  PopupWindow popwin(_l2context(), sx,sy,400,32,nullptr);
+  PopupWindow popwin(_l2context(), sx,sy,miW - ibasex - 6,klabh*2,nullptr);
   popwin.mainThreadLoop();
 
   /*QString qstr = GedInputDialog::getText(ev, this, 0, ibasex, 0, miW - ibasex - 6, klabh);

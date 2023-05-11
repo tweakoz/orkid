@@ -138,6 +138,8 @@ public:
   Context* _parent_context = nullptr;
   eventsink_glfw_ptr_t _eventSINK;
   bool _terminate = false;
+  int _counter = 0;
+  svar256_t _impl;
 
   PopupWindow(Context* pctx, int x, int y, int w, int h, uiwidget_ptr_t root_widget);
   ~PopupWindow();
