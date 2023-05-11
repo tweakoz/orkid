@@ -249,5 +249,39 @@ private:
   void exportItem(event_constptr_t ev);
 };
 
+struct GedObjNode : public GedItemNode {
+  DeclareAbstractX(GedObjNode, GedItemNode);
+
+public:
+  GedObjNode(GedContainer* c, const char* name, const reflect::ObjectProperty* prop, object_ptr_t obj);
+  
+  //void OnCreateObject();
+  //void OnMouseDoubleClicked(ork::ui::event_constptr_t ev) final;
+
+  void DoDraw(lev2::Context* pTARG) final; // virtual
+private:
+  //Setter mSetter;
+  bool mbInteractive;
+  bool mbCollapse;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct GedFactoryNode : public GedItemNode {
+  DeclareAbstractX(GedFactoryNode, GedItemNode);
+public:
+  GedFactoryNode( GedContainer* c, 
+                  const char* name, 
+                  const reflect::ObjectProperty* prop, 
+                  object_ptr_t obj);
+  
+
+  void DoDraw(lev2::Context* pTARG) final; // virtual
+
+  bool mbInteractive;
+  bool mbCollapse;
+  factory_class_set_t _factory_set;
+};
+
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2::ged

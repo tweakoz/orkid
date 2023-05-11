@@ -216,7 +216,7 @@ void ObjModel::attach(
     ///////////////////////////////////////////////////////
     if (top_root_item) { 
       _gedContainer->PushItemNode(top_root_item.get());
-      createObjectNode(root_object);
+      recurse(root_object);
       _gedContainer->PopItemNode(top_root_item.get());
     }
     ///////////////////////////////////////////////////////
@@ -226,7 +226,7 @@ void ObjModel::attach(
       _gedContainer->GetRootItem()->_children.clear();
       if (root_object) {
         _gedContainer->PushItemNode(_gedContainer->GetRootItem().get());
-        createObjectNode(root_object);
+        recurse(root_object);
         _gedContainer->PopItemNode(_gedContainer->GetRootItem().get());
       }
       detach();
@@ -300,7 +300,7 @@ void ObjModel::dump(const char* header) const {
 
 //////////////////////////////////////////////////////////////////////////////
 
-geditemnode_ptr_t ObjModel::createObjectNode(
+geditemnode_ptr_t ObjModel::recurse(
     object_ptr_t root_object, //
     const char* pname,        //
     bool binline) {
@@ -308,9 +308,6 @@ geditemnode_ptr_t ObjModel::createObjectNode(
   auto cur_obj = root_object;
   if (cur_obj) {
     cur_obj->notifyX<ObjectGedVisitEvent>();
-  }
-  else{
-    return nullptr;
   }
 
   auto objclass         = cur_obj->objectClass();
@@ -352,7 +349,7 @@ geditemnode_ptr_t ObjModel::createObjectNode(
   // editor.class
   ///////////////////////////////////////////////////
 
-  auto anno_editor_class = classdesc.classAnnotation("editor.class");
+  /*auto anno_editor_class = classdesc.classAnnotation("editor.class");
 
   if (auto as_conststr = anno_editor_class.tryAs<ConstString>()) {
     auto anno_edclass = as_conststr.value();
@@ -380,7 +377,7 @@ geditemnode_ptr_t ObjModel::createObjectNode(
         }
       }
     }
-  }
+  }*/
 
   ///////////////////////////////////////////////////
   // walk classes to root class
@@ -454,11 +451,27 @@ geditemnode_ptr_t ObjModel::createAbstractNode( const std::string& Name,
                                                 object_ptr_t par_object, //
                                                 svar256_t abstract_val ){ //
   if( auto as_obj = abstract_val.tryAs<object_ptr_t>() ){
-    auto rval = createObjectNode(as_obj.value(), Name.c_str());
-    if( rval )
-      return rval;
-    else{
-
+    if( as_obj.value() ){
+      recurse(as_obj.value(), Name.c_str());
+    }
+    else{ // factory
+      auto anno_edclass = par_prop->GetAnnotation("editor.factorylistbase");
+      if (anno_edclass.length()) {
+        auto base_clazz = rtti::Class::FindClass(anno_edclass.c_str());
+        auto as_obj_clazz = dynamic_cast<ork::object::ObjectClass*>(base_clazz);
+        if (as_obj_clazz) {
+          factory_class_set_t factory_set;
+          enumerateFactories(as_obj_clazz, factory_set);
+          for( auto clazz : factory_set ){
+              auto clazz_name = clazz->Name();
+              printf( "!!! FACTORY<%s>\n", clazz_name.c_str() );
+          }
+          auto factory_node = std::make_shared<GedFactoryNode>(_gedContainer, Name.c_str(), par_prop, par_object);
+          factory_node->_factory_set = factory_set;
+          _gedContainer->AddChild(factory_node);
+          return factory_node;
+        }
+      }
     }
   }                                              
   return std::make_shared<GedLabelNode>(_gedContainer, Name.c_str(), par_prop, par_object);
@@ -480,14 +493,14 @@ geditemnode_ptr_t ObjModel::createObjPropNode(
     AnnoEditorClass = rtti::Class::FindClass(anno_edclass.c_str());
   }
   /////////////////////////////////////////////////////////////////////////
-  if (AnnoEditorClass) {
+  /*if (AnnoEditorClass) {
     auto clazz = rtti::safe_downcast<ork::object::ObjectClass*>(AnnoEditorClass);
     auto factory    = clazz->createShared();
     auto typed_factory = std::dynamic_pointer_cast<GedFactory>(factory);
     if (typed_factory) {
       return typed_factory->createItemNode(_gedContainer, Name.c_str(), prop, pobject);
     }
-  }
+  }*/
   /////////////////////////////////////////////////////////////////////////
   auto array_prop = dynamic_cast<const reflect::IArray*>(prop);
   auto map_prop = dynamic_cast<const reflect::IMap*>(prop);

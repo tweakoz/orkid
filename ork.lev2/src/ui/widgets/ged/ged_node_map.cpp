@@ -86,9 +86,10 @@ GedMapNode::GedMapNode(
     else
       OrkAssert(false);
 
-    //model->createNode( name, prop, obj );
+    printf( "GedMapNode<%p> keyname<%s>\n", this, keyname.c_str() );
+
     auto item_node = model->createAbstractNode(keyname.c_str(), map_prop, obj, val );
-    //c->//addChild(item_node);
+
   }
 
   c->PopItemNode(this);
@@ -137,6 +138,7 @@ void GedMapNode::addItem(ui::event_constptr_t ev) {
     reflect::map_abstract_item_t reflect_key = edittext;
 
     mMapProp->insertDefaultElement(_object, reflect_key);
+    _container->_model->enqueueUpdateAll();
     //mModel.SigPreNewObject();
     //GedMapIoDriver iodriver(mModel, mMapProp, GetOrkObj());
     //iodriver.insert(sstr.c_str());
