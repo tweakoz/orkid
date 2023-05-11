@@ -60,6 +60,19 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* rtgroup) {
 
   GL_ERRORCHECK();
 
+  if( rtgroup->_pseudoRTG ){
+    static const SRasterState defstate;
+    _target.RSI()->BindRasterState(defstate, true);
+    _currentRtGroup = rtgroup;
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    if( rtgroup->_autoclear ){
+      rtGroupClear(rtgroup);
+    }
+    GL_ERRORCHECK();
+    return;
+  }
+
+
   glrtgroupimpl_ptr_t rtg_impl;
 
   int inumtargets = rtgroup->GetNumTargets();

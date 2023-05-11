@@ -109,7 +109,7 @@ struct RtGroup final {
   fvec4 _clearColor;
   bool _depthOnly = false;
   std::string _name;
-
+  bool _pseudoRTG = false;
   rendertarget_rtgroup_ptr_t _rendertarget;
 
 };

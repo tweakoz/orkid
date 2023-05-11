@@ -7,6 +7,7 @@
 #include <ork/kernel/opq.h>
 #include <ork/lev2/gfx/ctxbase.h>
 #include <ork/lev2/gfx/gfxenv.h>
+#include <ork/lev2/gfx/rtgroup.h>
 #include <ork/pch.h>
 ////////////////////////////////////////////////////////////////////////////////
 #include <ork/lev2/gfx/camera/uicam.h>
@@ -822,7 +823,10 @@ void CtxGLFW::_fire_ui_event() {
 
 struct PopupImpl {
   //////////////////////////////////////////////////
-  PopupImpl(PopupWindow* win, int x, int y, int w, int h) {
+  PopupImpl(PopupWindow* win, lev2::Context* ctx, int x, int y, int w, int h) {
+
+    _parent_context = ctx;
+    _uicontext      = win->_uicontext;
 
     _x = x;
     _y = y;
@@ -830,42 +834,45 @@ struct PopupImpl {
     _h = h;
 
     _window = win;
-    _uicontext = win->_uicontext;
 
     glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
-    win->_glfwPopupWindow = glfwCreateWindow(w, h, "Popup", NULL, NULL);
-    glfwSetWindowPos(win->_glfwPopupWindow, x, y);
-    win->_eventSINK                            = std::make_shared<EventSinkGLFW>();
-    win->_eventSINK->_on_callback_mousebuttons = [=](int button, int action, int modifiers) {
-      glfwSetWindowShouldClose(win->_glfwPopupWindow, GLFW_TRUE);
-      win->_terminate = true;
+    _glfwPopupWindow = glfwCreateWindow(w, h, "Popup", NULL, NULL);
+    glfwSetWindowPos(_glfwPopupWindow, x, y);
+    _eventSINK                            = std::make_shared<EventSinkGLFW>();
+    _eventSINK->_on_callback_mousebuttons = [=](int button, int action, int modifiers) {
+      glfwSetWindowShouldClose(_glfwPopupWindow, GLFW_TRUE);
+      _terminate = true;
     };
-    glfwSetWindowUserPointer(win->_glfwPopupWindow, (void*)win->_eventSINK.get());
-    glfwSetMouseButtonCallback(win->_glfwPopupWindow, _glfw_callback_mousebuttons);
-    glfwSetWindowAttrib(win->_glfwPopupWindow, GLFW_FOCUS_ON_SHOW, GLFW_TRUE);
+    glfwSetWindowUserPointer(_glfwPopupWindow, (void*)_eventSINK.get());
+    glfwSetMouseButtonCallback(_glfwPopupWindow, _glfw_callback_mousebuttons);
+    glfwSetWindowAttrib(_glfwPopupWindow, GLFW_FOCUS_ON_SHOW, GLFW_TRUE);
 
-    glfwShowWindow(win->_glfwPopupWindow);
+    glfwShowWindow(_glfwPopupWindow);
+
+    _rtgroup             = std::make_shared<lev2::RtGroup>(_parent_context, _w, _h);
+    _rtgroup->_pseudoRTG = true;
+    _rtgroup->mNumMrts   = 1;
+    _rtgroup->_autoclear = true;
   }
   //////////////////////////////////////////////////
-  ~PopupImpl(){
-    glfwDestroyWindow(_window->_glfwPopupWindow);
+  ~PopupImpl() {
+    glfwDestroyWindow(_glfwPopupWindow);
   }
   //////////////////////////////////////////////////
   void mainThreadLoop() {
-    auto ctxbase = dynamic_cast<CtxGLFW*>(_window->_parent_context->mCtxBase);
+    auto ctxbase = dynamic_cast<CtxGLFW*>(_parent_context->mCtxBase);
     OrkAssert(ctxbase != nullptr);
 
-    _window->_terminate = false;
-    auto gfx_ctx = _window->_parent_context;
+    _terminate = false;
 
-    if( _uicontext->_top ){
-      _uicontext->_top->gpuInit(gfx_ctx);
+    if (_uicontext->_top) {
+      _uicontext->_top->gpuInit(_parent_context);
       _uicontext->_top->SetRect(0, 0, _w, _h);
     }
 
     ork::Timer timer;
     timer.Start();
-    while (not _window->_terminate) {
+    while (not _terminate) {
 
       float t = timer.SecsSinceStart();
       float r = 0.5f + sinf(t * 0.3f) * 0.5f;
@@ -873,22 +880,25 @@ struct PopupImpl {
       float b = 0.5f + sinf(t * 0.7f) * 0.5f;
 
       glfwPollEvents();
-      glfwMakeContextCurrent(_window->_glfwPopupWindow);
-      glViewport(0, 0, _window->miWidth, _window->miHeight);
-      glScissor(0, 0, _window->miWidth, _window->miHeight);
-      glClearColor(r, g, b, 1);
-      glClearDepth(1.0f);
-      glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
-      glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-      glDepthMask(GL_TRUE);
-      if( _uicontext->_top ){
-        auto drwev = std::make_shared<ui::DrawEvent>(_window->_parent_context);
+      glfwMakeContextCurrent(_glfwPopupWindow);
+
+      _parent_context->FBI()->PushRtGroup(_rtgroup.get());
+      _parent_context->FBI()->pushViewport(0, 0, _w, _h);
+      _parent_context->FBI()->pushScissor(0, 0, _w, _h);
+
+      _rtgroup->_clearColor = fvec4(r, g, b, 1);
+
+      if (_uicontext->_top) {
+        auto drwev = std::make_shared<ui::DrawEvent>(_parent_context);
         _uicontext->draw(drwev);
       }
+      _parent_context->FBI()->popScissor();
+      _parent_context->FBI()->popViewport();
+      _parent_context->FBI()->PopRtGroup();
 
       glFinish();
 
-      glfwSwapBuffers(_window->_glfwPopupWindow);
+      glfwSwapBuffers(_glfwPopupWindow);
 
       usleep(1000 * 16);
     }
@@ -896,11 +906,15 @@ struct PopupImpl {
     glfwMakeContextCurrent(ctxbase->_glfwWindow);
   }
   //////////////////////////////////////////////////
+  GLFWwindow* _glfwPopupWindow = nullptr;
   PopupWindow* _window;
+  eventsink_glfw_ptr_t _eventSINK;
+  lev2::Context* _parent_context = nullptr;
   ui::context_ptr_t _uicontext;
+  rtgroup_ptr_t _rtgroup;
   int _x, _y, _w, _h;
+  bool _terminate = false;
 };
-using popupimpl_ptr_t = std::shared_ptr<PopupImpl>;
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -909,10 +923,9 @@ using popupimpl_ptr_t = std::shared_ptr<PopupImpl>;
 ///////////////////////////////////////////////////////////////////////////////
 
 PopupWindow::PopupWindow(Context* pctx, int x, int y, int w, int h)
-    : Window(x, y, w, h, "Popup")
-    , _parent_context(pctx) {
-      _uicontext = std::make_shared<ui::Context>();
-  auto impl = _impl.makeShared<PopupImpl>(this,x,y,w,h);
+    : Window(x, y, w, h, "Popup") {
+  _uicontext = std::make_shared<ui::Context>();
+  auto impl  = _impl.makeShared<PopupImpl>(this, pctx, x, y, w, h);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -926,31 +939,6 @@ void PopupWindow::mainThreadLoop() {
 
 PopupWindow::~PopupWindow() {
   _impl = 0;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void PopupWindow::draw() {
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void PopupWindow::GotFocus() {
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void PopupWindow::LostFocus() {
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void PopupWindow::OnShow() {
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void PopupWindow::Hide() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////

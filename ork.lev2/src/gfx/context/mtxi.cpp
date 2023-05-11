@@ -36,7 +36,6 @@ void MatrixStackInterface::PushUIMatrix() {
   float fw        = _target.FBI()->GetVPW();
   float fh        = _target.FBI()->GetVPH();
 
-
   const RenderContextFrameData* pfdata = _target.topRenderContextFrameData();
   if(pfdata and pfdata->topCompositor()){
     const auto& CPD = pfdata->topCPD();

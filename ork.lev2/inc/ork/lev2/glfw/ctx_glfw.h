@@ -134,23 +134,12 @@ public:
 
 struct PopupWindow : public ork::lev2::Window {
 public:
-  bool mbinit = true;
-  Context* _parent_context = nullptr;
-  eventsink_glfw_ptr_t _eventSINK;
-  bool _terminate = false;
-  int _counter = 0;
+
   svar256_t _impl;
   ui::context_ptr_t _uicontext;
 
   PopupWindow(Context* pctx, int x, int y, int w, int h);
   ~PopupWindow();
-  GLFWwindow* _glfwPopupWindow = nullptr;
-
-  virtual void draw() ;
-  void GotFocus() final;
-  void LostFocus() final;
-  virtual void Hide();
-  void OnShow() final;
 
   void mainThreadLoop();
 };
