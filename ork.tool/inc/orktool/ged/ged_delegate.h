@@ -18,35 +18,6 @@ class outplugbase;
 namespace ork { namespace tool { namespace ged {
 
 ///////////////////////////////////////////////////////////////////////////////
-QMenu* qmenuFromChoiceList(
-    util::choicelist_ptr_t chclist, //
-    util::choicefilter_ptr_t Filter = nullptr);
-
-///////////////////////////////////////////////////////////////////////////////
-template <typename IODriver> struct GedFloatNode : public GedItemNode {
-
-  bool mLogMode;
-  GedFloatNode(ObjModel& mdl, const char* name, const reflect::ObjectProperty* prop, ork::Object* obj);
-
-  void OnUiEvent(ork::ui::event_constptr_t ev) final;
-  void DoDraw(lev2::Context* pTARG) final;
-
-  void onActivate() final;
-  void onDeactivate() final;
-
-  typedef float datatype;
-  void ReSync(); // virtual
-  // Slider<GedFloatNode>* GetSlider() {
-  // return _slider;
-  //}
-  IODriver& RefIODriver() {
-    return mIoDriver;
-  }
-
-  Slider<GedFloatNode>* _slider;
-  IODriver mIoDriver;
-};
-///////////////////////////////////////////////////////////////////////////////
 template <typename IODriver, typename T> class GedSimpleNode : public GedItemNode {
 public:
   GedSimpleNode(ObjModel& mdl, const char* name, const reflect::ObjectProperty* prop, ork::Object* obj);

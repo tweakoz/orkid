@@ -559,14 +559,6 @@ geditemnode_ptr_t ObjModel::createObjPropNode(
   }
   /////////////////////////////////////////////////////////////////////////
   /*
-  if (const reflect::ITyped<Char8>* c8prop = rtti::autocast(prop))
-    return new GedLabelNode(*this, Name.c_str(), prop, pobject);
-  /////////////////////////////////////////////////////////////////////////
-  else if (const reflect::ITyped<PoolString>* psprop = rtti::autocast(prop))
-    return new GedSimpleNode<GedIoDriver<PoolString>, PoolString>(*this, Name.c_str(), psprop, pobject);
-  /////////////////////////////////////////////////////////////////////////
-  else if (const reflect::ITyped<float>* floatprop = rtti::autocast(prop))
-    return new GedFloatNode<GedIoDriver<float>>(*this, Name.c_str(), floatprop, pobject);
   /////////////////////////////////////////////////////////////////////////
   else if (const reflect::ITyped<fvec4>* vec4prop = rtti::autocast(prop))
     return new GedSimpleNode<GedIoDriver<fvec4>, fvec4>(*this, Name.c_str(), vec4prop, pobject);
@@ -584,34 +576,10 @@ geditemnode_ptr_t ObjModel::createObjPropNode(
     return new GedSimpleNode<GedIoDriver<TransformNode>, TransformNode>(*this, Name.c_str(), xfprop, pobject);
   }
   /////////////////////////////////////////////////////////////////////////
-  else if (const reflect::ITyped<ork::rtti::ICastable*>* castprop = rtti::autocast(prop)) {
-    return new GedObjNode<PropSetterObj>(*this, Name.c_str(), prop, pobject);
-  }
-  /////////////////////////////////////////////////////////////////////////
   else if (const reflect::ITyped<int>* intprop = rtti::autocast(prop)) {
     return HasUserChoiceDelegate ? (GedItemNode*)new GedSimpleNode<GedIoDriver<int>, int>(*this, Name.c_str(), intprop, pobject)
                                  : (GedItemNode*)new GedIntNode<GedIoDriver<int>>(*this, Name.c_str(), intprop, pobject);
   }
-  /////////////////////////////////////////////////////////////////////////
-  else if (const reflect::IObject* objprop = rtti::autocast(prop)) {
-    ork::Object* psubobj = objprop->Access(pobject);
-    if (psubobj)
-      Recurse(psubobj, Name.c_str());
-    else
-      return new GedObjNode<PropSetterObj>(*this, Name.c_str(), prop, pobject);
-  }
-  /////////////////////////////////////////////////////////////////////////
-  else if (const reflect::DirectTyped<ork::Object*>* dobjprop = rtti::autocast(prop)) {
-    ork::Object* psubobj = 0;
-    dobjprop->Get(psubobj, pobject);
-    if (psubobj)
-      Recurse(psubobj);
-    return new GedObjNode<PropSetterObj>(*this, Name.c_str(), prop, pobject);
-  }
-  /////////////////////////////////////////////////////////////////////////
-  else
-    return new GedLabelNode(*this, Name.c_str(), prop, pobject);
-  /////////////////////////////////////////////////////////////////////////
   */
   return std::make_shared<GedLabelNode>(_gedContainer, Name.c_str(), prop, pobject);
 }

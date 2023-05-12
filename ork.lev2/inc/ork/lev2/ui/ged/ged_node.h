@@ -421,4 +421,23 @@ public:
   bool _is_log_mode = false;
 };
 ///////////////////////////////////////////////////////////////////////////////
+
+struct GedCurve2DNode : public GedItemNode {
+  using datatype = float;
+  DeclareAbstractX(GedCurve2DNode, GedItemNode);
+public:
+  GedCurve2DNode( GedContainer* c, 
+               const char* name, 
+               newiodriver_ptr_t iodriver);
+  
+
+  void DoDraw(lev2::Context* pTARG) final; // virtual
+  
+  void OnUiEvent(ork::ui::event_constptr_t ev) final;
+
+  newiodriver_ptr_t _iodriver;
+  sliderbase_ptr_t _slider;
+  bool _is_log_mode = false;
+};
+///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2::ged
