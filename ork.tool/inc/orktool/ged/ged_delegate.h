@@ -21,81 +21,6 @@ namespace ork { namespace tool { namespace ged {
 QMenu* qmenuFromChoiceList(
     util::choicelist_ptr_t chclist, //
     util::choicefilter_ptr_t Filter = nullptr);
-///////////////////////////////////////////////////////////////////////////////
-class SliderBase {
-public:
-  virtual void resize(int ix, int iy, int iw, int ih)  = 0;
-  virtual void OnUiEvent(ork::ui::event_constptr_t ev) = 0;
-
-  void SetLogMode(bool bv) {
-    mlogmode = bv;
-  }
-  float GetIndicPos() const {
-    return mfIndicPos;
-  }
-  float GetTextPos() const {
-    return mfTextPos;
-  }
-  void SetIndicPos(float fi) {
-    mfIndicPos = fi;
-  }
-  void SetTextPos(float ti) {
-    mfTextPos = ti;
-  }
-  PropTypeString& ValString() {
-    return mValStr;
-  }
-  void SetLabelH(int ilabh) {
-    miLabelH = ilabh;
-  }
-  void onActivate() {
-    OrkAssert(false);
-  }
-  void onDeactivate() {
-    OrkAssert(false);
-  }
-
-protected:
-  float mfx;
-  float mfw;
-  float mfh;
-  int miLabelH;
-  bool mlogmode;
-  float mfTextPos;
-  float mfIndicPos;
-  PropTypeString mValStr;
-  SliderBase();
-};
-///////////////////////////////////////////////////////////////////////////////
-template <typename T> class Slider : public SliderBase {
-public:
-  typedef typename T::datatype datatype;
-
-  Slider(T& ParentW, datatype min, datatype max, datatype def);
-
-  void OnUiEvent(ork::ui::event_constptr_t ev) final;
-
-  void resize(int ix, int iy, int iw, int ih) final;
-  void SetVal(datatype val);
-  void Refresh();
-
-  void SetMinMax(datatype min, datatype max) {
-    mmin = min;
-    mmax = max;
-  }
-
-private:
-  T& _parent;
-  datatype mval;
-  datatype mmin;
-  datatype mmax;
-  bool mbUpdateOnDrag;
-
-  float LogToVal(float logval) const;
-  float ValToLog(float val) const;
-  float LinToVal(float linval) const;
-  float ValToLin(float val) const;
-};
 
 ///////////////////////////////////////////////////////////////////////////////
 template <typename IODriver> struct GedFloatNode : public GedItemNode {
@@ -119,23 +44,6 @@ template <typename IODriver> struct GedFloatNode : public GedItemNode {
   }
 
   Slider<GedFloatNode>* _slider;
-  IODriver mIoDriver;
-};
-///////////////////////////////////////////////////////////////////////////////
-template <typename IODriver> struct GedIntNode : public GedItemNode {
-  bool mLogMode;
-  GedIntNode(ObjModel& mdl, const char* name, const reflect::ObjectProperty* prop, ork::Object* obj);
-
-  void OnUiEvent(ork::ui::event_constptr_t ev) final;
-
-  void DoDraw(lev2::Context* pTARG) final;
-  typedef int datatype;
-  void ReSync(); // virtual
-  IODriver& RefIODriver() {
-    return mIoDriver;
-  }
-
-  SliderBase* _slider;
   IODriver mIoDriver;
 };
 ///////////////////////////////////////////////////////////////////////////////

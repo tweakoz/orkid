@@ -269,7 +269,11 @@ namespace ork {
 ///////////////////////////////////////////////////////////////////////////////
 
 void HotKey::describeX(object::ObjectClass* clazz) {
-  clazz->directProperty("KeyCode", &HotKey::miKeyCode);
+
+  //clazz->directProperty("KeyCode", &HotKey::miKeyCode);
+  clazz->intProperty("KeyCode", int_range{0,127}, &HotKey::miKeyCode);
+
+
   clazz->directProperty("Alt", &HotKey::mbAlt);
   clazz->directProperty("Ctrl", &HotKey::mbCtrl);
   clazz->directProperty("Shift", &HotKey::mbShift);

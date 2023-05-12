@@ -35,9 +35,9 @@ private:
   sigslot2::scoped_connection _connection_repaint;
   objectmodel_ptr_t _model;
   GedContainer _container;
-  GedObject* mpActiveNode;
+  GedObject* _activeNode = nullptr;
   int miScrollY = 0;
-  const GedObject* mpMouseOverNode;
+  const GedObject* _mouseoverNode = nullptr;
   ork::msgrouter::subscriber_t _simulation_subscriber;
 };
 

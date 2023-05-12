@@ -37,9 +37,7 @@ GedSurface::GedSurface(const std::string& name, objectmodel_ptr_t model)
     : ui::Surface(name, 0, 0, 0, 0, fcolor3::Black(), 0.0f)
     , _model(model)
     , _container(model)
-    , mpActiveNode(nullptr)
-    , miScrollY(0)
-    , mpMouseOverNode(0) {
+    , miScrollY(0){
 
   _container._viewport = this;
 
@@ -135,7 +133,7 @@ int GedSurface::_clampedScroll(int scroll) const {
 ///////////////////////////////////////////////////////////////////////////////
 
 void GedSurface::onInvalidate() {
-  mpActiveNode = nullptr;
+  _activeNode = nullptr;
   MarkSurfaceDirty();
 }
 
@@ -170,8 +168,8 @@ ui::HandlerResult GedSurface::DoOnUiEvent(ui::event_constptr_t EV) {
   locEV->miRawX = locEV->miX;
   locEV->miRawY = locEV->miY;
 
-  if (mpActiveNode)
-    mpActiveNode->OnUiEvent(locEV);
+  if (_activeNode)
+    _activeNode->OnUiEvent(locEV);
 
   switch (filtev._eventcode) {
     case ui::EventCode::KEY_DOWN:
@@ -246,9 +244,9 @@ ui::HandlerResult GedSurface::DoOnUiEvent(ui::event_constptr_t EV) {
         {
           auto pnode = dynamic_cast<GedObject*>(pobj);
           if (pnode) {
-            mpMouseOverNode = pnode;
+            _mouseoverNode = pnode;
 
-            if (pnode != mpActiveNode)
+            if (pnode != _activeNode)
               pnode->OnUiEvent(locEV);
           }
         }
@@ -257,13 +255,13 @@ ui::HandlerResult GedSurface::DoOnUiEvent(ui::event_constptr_t EV) {
       break;
     }
     case ui::EventCode::DRAG: {
-      if (mpActiveNode) {
-        auto as_item_node = dynamic_cast<GedItemNode*>(mpActiveNode);
+      if (_activeNode) {
+        auto as_item_node = dynamic_cast<GedItemNode*>(_activeNode);
         if (as_item_node) {
           locEV->miX -= as_item_node->GetX();
           locEV->miY -= as_item_node->GetY();
         }
-        mpActiveNode->OnUiEvent(locEV);
+        _activeNode->OnUiEvent(locEV);
         mNeedsSurfaceRepaint = true;
       } else {
       }
@@ -299,12 +297,12 @@ ui::HandlerResult GedSurface::DoOnUiEvent(ui::event_constptr_t EV) {
 
         switch (filtev._eventcode) {
           case ui::EventCode::PUSH:
-            mpActiveNode = pnode;
+            _activeNode = pnode;
             pnode->OnUiEvent(locEV);
             break;
           case ui::EventCode::RELEASE:
             pnode->OnUiEvent(locEV);
-            mpActiveNode = nullptr;
+            _activeNode = nullptr;
             break;
           case ui::EventCode::DOUBLECLICK:
             pnode->OnUiEvent(locEV);
@@ -324,7 +322,7 @@ void GedSurface::ResetScroll() {
   miScrollY = 0;
 }
 const GedObject* GedSurface::GetMouseOverNode() const {
-  return mpMouseOverNode;
+  return _mouseoverNode;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

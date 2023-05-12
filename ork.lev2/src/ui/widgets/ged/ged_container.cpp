@@ -48,6 +48,7 @@ GedContainer::GedContainer(objectmodel_ptr_t mdl)
 
   _connection_modelinvalidated = _model->_sigModelInvalidated.connect([this](){
       //this->MarkSurfaceDirty();
+
   }); // Connect the signal to the slot
   
   /*object::Connect(	& this->GetSigRepaint(),

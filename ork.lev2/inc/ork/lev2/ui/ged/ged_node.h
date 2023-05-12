@@ -47,6 +47,8 @@ struct GedObject : public ork::Object {
   virtual void OnUiEvent(ork::ui::event_constptr_t ev);
 };
 
+using gedobject_ptr_t = std::shared_ptr<GedObject>;
+
 ///////////////////////////////////////////////////////////////////////////////
 
 struct GedItemNode : public GedObject {
@@ -301,6 +303,103 @@ public:
   void OnMouseDoubleClicked(ork::ui::event_constptr_t ev) final;
 
   newiodriver_ptr_t _iodriver;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+class SliderBase {
+public:
+  virtual ~SliderBase() {}
+  virtual void resize(int ix, int iy, int iw, int ih)  = 0;
+  virtual void OnUiEvent(ork::ui::event_constptr_t ev) = 0;
+
+  void SetLogMode(bool bv) {
+    mlogmode = bv;
+  }
+  float GetIndicPos() const {
+    return mfIndicPos;
+  }
+  float GetTextPos() const {
+    return mfTextPos;
+  }
+  void SetIndicPos(float fi) {
+    mfIndicPos = fi;
+  }
+  void SetTextPos(float ti) {
+    mfTextPos = ti;
+  }
+  PropTypeString& ValString() {
+    return mValStr;
+  }
+  void SetLabelH(int ilabh) {
+    miLabelH = ilabh;
+  }
+  void onActivate() {
+    OrkAssert(false);
+  }
+  void onDeactivate() {
+    OrkAssert(false);
+  }
+
+protected:
+  bool mlogmode = false;
+  int miLabelH = 0;
+  float mfx = 0.0f;
+  float mfw = 0.0f;
+  float mfh = 0.0f;
+  float mfTextPos = 0.0f;
+  float mfIndicPos = 0.0f;
+  PropTypeString mValStr;
+};
+///////////////////////////////////////////////////////////////////////////////
+template <typename T> class Slider : public SliderBase {
+public:
+  typedef typename T::datatype datatype;
+
+  Slider(T& ParentW, datatype min, datatype max, datatype def);
+
+  void OnUiEvent(ork::ui::event_constptr_t ev) final;
+
+  void resize(int ix, int iy, int iw, int ih) final;
+  void SetVal(datatype val);
+  void Refresh();
+
+  void SetMinMax(datatype min, datatype max) {
+    mmin = min;
+    mmax = max;
+  }
+
+private:
+  T& _parent;
+  datatype mval;
+  datatype mmin;
+  datatype mmax;
+  bool mbUpdateOnDrag;
+
+  float LogToVal(float logval) const;
+  float ValToLog(float val) const;
+  float LinToVal(float linval) const;
+  float ValToLin(float val) const;
+};
+
+using sliderbase_ptr_t = std::shared_ptr<SliderBase>;
+///////////////////////////////////////////////////////////////////////////////
+
+struct GedIntNode : public GedItemNode {
+  using datatype = int;
+  DeclareAbstractX(GedIntNode, GedItemNode);
+public:
+  GedIntNode( GedContainer* c, 
+               const char* name, 
+               newiodriver_ptr_t iodriver);
+  
+
+  void DoDraw(lev2::Context* pTARG) final; // virtual
+  
+  void OnUiEvent(ork::ui::event_constptr_t ev) final;
+
+  newiodriver_ptr_t _iodriver;
+  sliderbase_ptr_t _slider;
+  bool _is_log_mode = false;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -67,6 +67,7 @@ void ObjModel::SlotRelayModelInvalidated() {
 
 void ObjModel::SigModelInvalidated() {
   printf("ObjModel::SigModelInvalidated\n");
+  OrkAssert(false);
   _sigModelInvalidated();
   // mSignalModelInvalidated(&ObjModel::SigModelInvalidated); // << operator() instantiated here
 }
@@ -149,6 +150,7 @@ void ObjModel::enqueueObject(object_ptr_t obj) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void ObjModel::enqueueUpdate() {
+  OrkAssert(false);
   auto lamb = [=]() { queueFlush(); };
   _updateOPQ->enqueue(lamb);
 }
@@ -196,6 +198,7 @@ void ObjModel::attach(
     bool bclearstack,                  //
     geditemnode_ptr_t top_root_item) { //
 
+  _gedContainer->_viewport->onInvalidate();
 
   this->_rootObject = root_object;
   bool bnewobj      = (_currentObject != _rootObject);
@@ -517,16 +520,29 @@ geditemnode_ptr_t ObjModel::createObjPropNode(
     auto iodriver = std::make_shared<NewIoDriver>();
     bool initial_value = false;
     as_boolprop->get(initial_value,pobject);
-    iodriver->_par_prop = map_prop;
+    iodriver->_par_prop = prop;
     iodriver->_object = pobject;
     iodriver->_abstract_val = initial_value;
     iodriver->_onValueChanged = [=](){
       as_boolprop->set(iodriver->_abstract_val.get<bool>(),pobject);
-      _gedContainer->_model->enqueueUpdate();
+      //_gedContainer->_model->enqueueUpdate();
     };
     return std::make_shared<GedBoolNode>(_gedContainer, Name.c_str(), iodriver);
   }
   /////////////////////////////////////////////////////////////////////////
+  else if (auto as_intprop = dynamic_cast<const reflect::ITyped<int>*>(prop)){
+    auto iodriver = std::make_shared<NewIoDriver>();
+    int initial_value = 0;
+    as_intprop->get(initial_value,pobject);
+    iodriver->_par_prop = prop;
+    iodriver->_object = pobject;
+    iodriver->_abstract_val = initial_value;
+    iodriver->_onValueChanged = [=](){
+      as_intprop->set(iodriver->_abstract_val.get<int>(),pobject);
+      //_gedContainer->_model->enqueueUpdate();
+    };
+    return std::make_shared<GedIntNode>(_gedContainer, Name.c_str(), iodriver);
+  }  /////////////////////////////////////////////////////////////////////////
   /*
   if (const reflect::ITyped<Char8>* c8prop = rtti::autocast(prop))
     return new GedLabelNode(*this, Name.c_str(), prop, pobject);
