@@ -277,6 +277,7 @@ public:
   
 
   void DoDraw(lev2::Context* pTARG) final; // virtual
+  void OnMouseDoubleClicked(ui::event_constptr_t ev) final;
 
   bool mbInteractive;
   bool mbCollapse;

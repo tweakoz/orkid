@@ -10,6 +10,7 @@
 #include <ork/lev2/ui/ged/ged_container.h>
 #include <ork/lev2/ui/ged/ged_skin.h>
 #include <ork/kernel/core_interface.h>
+#include <ork/lev2/ui/popups.inl>
 #include <ork/rtti/RTTIX.inl>
 
 // template class ork::object::Signal<void,ork::lev2::ged::ObjModel>;
@@ -36,6 +37,32 @@ void GedFactoryNode::DoDraw(lev2::Context* pTARG) {
 
   if (not is_pick) {
     skin->DrawText(this, miX, miY, _propname.c_str());
+  }
+}
+
+////////////////////////////////////////////////////////////////
+
+void GedFactoryNode::OnMouseDoubleClicked(ui::event_constptr_t ev) {
+  auto model = _container->_model;
+  auto skin  = _container->_activeSkin;
+  const int klabh = get_charh();
+  const int kdim  = klabh - 2;
+  int ibasex = (kdim + 4) * 2 + 3;
+  int sx = ev->miScreenPosX;
+  int sy = ev->miScreenPosY; // - H*2;
+
+  if( not _factory_set.empty() ){
+    std::vector<std::string> factory_names;
+    for( auto f : _factory_set ){
+      factory_names.push_back(f->Name());
+    }
+
+    std::string choice = ui::popupChoiceList( _l2context(), //
+                                              sx,sy,
+                                              factory_names);
+
+    printf( "choice<%s>\n", choice.c_str() );
+    OrkAssert(false);
   }
 }
 
