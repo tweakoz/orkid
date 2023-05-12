@@ -126,7 +126,7 @@ void LayoutGroup::DoLayout() {
   //  either manually or driven indirectly through the resize
   //  of a parent..
   const auto& g = _geometry;
-  if (1)
+  if (0)
     printf(
         "LayoutGroup<%s>::DoLayout l<%p> x<%d> y<%d> w<%d> h<%d>\n", //
         _name.c_str(),

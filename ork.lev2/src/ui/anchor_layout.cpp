@@ -143,33 +143,33 @@ void Layout::updateAll() {
 }
 /////////////////////////////////////////////////////////////////////////
 void Layout::_doUpdateAll(visit_set& vset) {
-  printf( "  layout<%p>::_doUpdateAll  ", this );
+  //printf( "  layout<%p>::_doUpdateAll  ", this );
   if (_top){
-    printf( "  _top<%p>  ", _top.get() );
+    //printf( "  _top<%p>  ", _top.get() );
     _top->updateAssociates(vset);
   }
   if (_left){
-    printf( "  _left<%p>  ", _left.get() );
+    //printf( "  _left<%p>  ", _left.get() );
     _left->updateAssociates(vset);
   }
   if (_bottom){
-    printf( "  _bottom<%p>  ", _bottom.get() );
+    //printf( "  _bottom<%p>  ", _bottom.get() );
     _bottom->updateAssociates(vset);
   }
   if (_right){
-    printf( "  _right<%p>  ", _right.get() );
+    //printf( "  _right<%p>  ", _right.get() );
     _right->updateAssociates(vset);
   }
   if (_centerH){
-    printf( "  _centerH<%p>  ", _centerH.get() );
+    //printf( "  _centerH<%p>  ", _centerH.get() );
     _centerH->updateAssociates(vset);
   }
   if (_centerV){
-    printf( "  _centerV<%p>  ", _centerV.get() );
+    //printf( "  _centerV<%p>  ", _centerV.get() );
     _centerV->updateAssociates(vset);
   }
   if(_widget){
-    printf( "  _widget<%p:%s>  ", _widget, _widget->_name.c_str() );
+    //printf( "  _widget<%p:%s>  ", _widget, _widget->_name.c_str() );
   }
   for (auto g : _customguides)
     g->updateAssociates(vset);

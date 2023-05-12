@@ -110,7 +110,7 @@ void GedSurface::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
     }
 
     if (_model->_currentObject) {
-      printf("miScrollY<%d>\n", miScrollY);
+      //printf("miScrollY<%d>\n", miScrollY);
       _container.Draw(context, W, H, miScrollY);
     }
 
@@ -195,7 +195,7 @@ ui::HandlerResult GedSurface::DoOnUiEvent(ui::event_constptr_t EV) {
           if (miScrollY < iscrollmin) {
             miScrollY = iscrollmin;
           }
-          printf("predelta<%d> iscrollmin<%d> miScrollY<%d>\n", idelta, iscrollmin, miScrollY);
+          //printf("predelta<%d> iscrollmin<%d> miScrollY<%d>\n", idelta, iscrollmin, miScrollY);
         }
       }
 
@@ -244,7 +244,7 @@ ui::HandlerResult GedSurface::DoOnUiEvent(ui::event_constptr_t EV) {
       float fy                   = float(ilocy) / float(height());
       auto pobj = ctx.GetObject(_pickbuffer, 0);
 
-      printf( "GedSurface:: pick ilocx<%d> ilocy<%d> fx<%g> fy<%g> pobj<%p>\n", ilocx, ilocy, fx, fy, (void*) pobj );
+      //printf( "GedSurface:: pick ilocx<%d> ilocy<%d> fx<%g> fy<%g> pobj<%p>\n", ilocx, ilocy, fx, fy, (void*) pobj );
 
       bool is_in_set = GedSkin::IsObjInSet(pobj);
       const auto clr = ctx._pickvalues[0];
@@ -260,7 +260,7 @@ ui::HandlerResult GedSurface::DoOnUiEvent(ui::event_constptr_t EV) {
           locEV->miY -= as_inode->GetY();
           auto clazz = as_inode->GetClass();
           auto clazzname = clazz->Name();
-          printf( "obj<%p> class<%s>\n", (void*) pobj, clazzname.c_str() );
+          //printf( "obj<%p> class<%s>\n", (void*) pobj, clazzname.c_str() );
         }
 
         switch (filtev._eventcode) {

@@ -717,7 +717,7 @@ void ObjModel::EnumerateNodes(
         ///////////////////////////////////////////////////
         bool prop_ok            = true;
         const ConstString& Name = it.first;
-        printf( "prop name<%s>\n", Name.c_str() );
+        //printf( "prop name<%s>\n", Name.c_str() );
         if (allowed_props.size()) {
           std::string namstr(Name.c_str());
           prop_ok = allowed_props.find(namstr) != allowed_props.end();

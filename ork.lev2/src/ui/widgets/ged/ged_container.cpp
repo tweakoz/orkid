@@ -159,7 +159,7 @@ void GedContainer::DoResize() {
     int inum = mRootItem->numChildren();
     miRootH  = mRootItem->computeHeight();
     mRootItem->Layout(2, 2, miW - 4, miH - 4);
-    printf( "GedContainer<%p>::DoResize() dims<%d %d> miRootH<%d> inumitems<%d>\n", this, miW, miH, miRootH, inum );
+    if(0)printf( "GedContainer<%p>::DoResize() dims<%d %d> miRootH<%d> inumitems<%d>\n", this, miW, miH, miRootH, inum );
   } else {
     miRootH = 0;
   }

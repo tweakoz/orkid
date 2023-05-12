@@ -178,7 +178,7 @@ void Guide::updateGeometry() {
     default:
       break;
   }
-  printf( "setgeo<%s> %d,%d %d,%d\n",
+  if(0)printf( "setgeo<%s> %d,%d %d,%d\n",
           _layout->_widget->_name.c_str(), 
           geo._x, geo._y, geo._w, geo._h);
   _layout->_widget->setGeometry(geo);
@@ -232,7 +232,7 @@ void Guide::anchorTo(Guide* other) {
     _relative = other;
     _relative->_associate(this);
 
-    printf( "guide<%p> anchorTo<%p>\n", this, other );
+    if(0)printf( "guide<%p> anchorTo<%p>\n", this, other );
 
   } else
     _relative = nullptr;

@@ -70,6 +70,8 @@ void DirectObjectMap<MapType>::setElement(object_ptr_t obj, //
   auto V = val.get<object_ptr_t>();
   auto TV = std::dynamic_pointer_cast<element_type>(V);
   auto P = std::make_pair(typed_key, TV);
+  if( auto it = the_map.find(typed_key); it != the_map.end() )
+    the_map.erase(it); // erase old value (if any
   the_map.insert(P);
   printf( "setElement val<%p>\n", (void*) V.get() );
   //ork::svar64_t key64;
