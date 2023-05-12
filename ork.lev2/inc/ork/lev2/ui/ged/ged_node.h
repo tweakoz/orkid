@@ -287,4 +287,21 @@ public:
 };
 
 ///////////////////////////////////////////////////////////////////////////////
+
+struct GedBoolNode : public GedItemNode {
+  DeclareAbstractX(GedBoolNode, GedItemNode);
+public:
+  GedBoolNode( GedContainer* c, 
+               const char* name, 
+               newiodriver_ptr_t iodriver);
+  
+
+  void DoDraw(lev2::Context* pTARG) final; // virtual
+  void OnMouseReleased(ork::ui::event_constptr_t ev) final;
+  void OnMouseDoubleClicked(ork::ui::event_constptr_t ev) final;
+
+  newiodriver_ptr_t _iodriver;
+};
+
+///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2::ged

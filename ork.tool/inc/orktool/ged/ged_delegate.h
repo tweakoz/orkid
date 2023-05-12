@@ -98,17 +98,6 @@ private:
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-template <typename Setter> class GedBoolNode : public GedItemNode {
-public:
-  typedef bool datatype;
-  Setter mSetter;
-  GedBoolNode(ObjModel& mdl, const char* name, const reflect::ObjectProperty* prop, ork::Object* obj);
-  void OnMouseDoubleClicked(ork::ui::event_constptr_t ev) final;
-  void OnMouseReleased(ork::ui::event_constptr_t ev) final;
-
-  void DoDraw(lev2::Context* pTARG) final;
-};
-///////////////////////////////////////////////////////////////////////////////
 template <typename IODriver> struct GedFloatNode : public GedItemNode {
 
   bool mLogMode;
@@ -164,21 +153,7 @@ public:
 private:
   IODriver mIoDriver;
 };
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-template <typename Setter> class GedObjNode : public GedItemNode {
-public:
-  GedObjNode(ObjModel& mdl, const char* name, const reflect::ObjectProperty* prop, ork::Object* obj);
-  void OnCreateObject();
 
-  void OnMouseDoubleClicked(ork::ui::event_constptr_t ev) final;
-
-  void DoDraw(lev2::Context* pTARG); // virtual
-private:
-  Setter mSetter;
-  bool mbInteractive;
-  bool mbCollapse;
-};
 ///////////////////////////////////////////////////////////////////////////////
 template <typename IODriver> class GedAssetNode : public GedItemNode {
   DECLARE_TRANSPARENT_TEMPLATE_ABSTRACT_RTTI(GedAssetNode<IODriver>, GedItemNode);
@@ -302,12 +277,4 @@ class ObjectExportDelegate : public IOpsDelegate {
   void Execute(ork::Object* ptarget) final;
 };
 ///////////////////////////////////////////////////////////////////////////////
-void EnumerateFactories(
-    const ork::Object* pdestobj,
-    const reflect::ObjectProperty* prop,
-    orkset<object::ObjectClass*>& FactoryClassVect);
-void EnumerateFactories(object::ObjectClass* pbaseclass, orkset<object::ObjectClass*>& FactoryClassVect);
-object::ObjectClass* FactoryMenu(orkset<object::ObjectClass*>& FactoryClasses);
-bool DeserializeInPlace(reflect::serdes::IDeserializer& deserializer, rtti::ICastable* value);
-QMenu* CreateFactoryMenu(const orkset<object::ObjectClass*>& FactoryClassVect);
 }}} // namespace ork::tool::ged

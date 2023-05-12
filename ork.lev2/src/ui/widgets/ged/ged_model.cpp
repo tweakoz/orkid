@@ -513,15 +513,26 @@ geditemnode_ptr_t ObjModel::createObjPropNode(
      return std::make_shared<GedMapNode>(_gedContainer, Name.c_str(), map_prop, pobject);
   }
   /////////////////////////////////////////////////////////////////////////
+  else if (auto as_boolprop = dynamic_cast<const reflect::ITyped<bool>*>(prop)){
+    auto iodriver = std::make_shared<NewIoDriver>();
+    bool initial_value = false;
+    as_boolprop->get(initial_value,pobject);
+    iodriver->_par_prop = map_prop;
+    iodriver->_object = pobject;
+    iodriver->_abstract_val = initial_value;
+    iodriver->_onValueChanged = [=](){
+      as_boolprop->set(iodriver->_abstract_val.get<bool>(),pobject);
+      _gedContainer->_model->enqueueUpdate();
+    };
+    return std::make_shared<GedBoolNode>(_gedContainer, Name.c_str(), iodriver);
+  }
+  /////////////////////////////////////////////////////////////////////////
   /*
   if (const reflect::ITyped<Char8>* c8prop = rtti::autocast(prop))
     return new GedLabelNode(*this, Name.c_str(), prop, pobject);
   /////////////////////////////////////////////////////////////////////////
   else if (const reflect::ITyped<PoolString>* psprop = rtti::autocast(prop))
     return new GedSimpleNode<GedIoDriver<PoolString>, PoolString>(*this, Name.c_str(), psprop, pobject);
-  /////////////////////////////////////////////////////////////////////////
-  else if (const reflect::ITyped<bool>* boolprop = rtti::autocast(prop))
-    return new GedBoolNode<PropSetterObj>(*this, Name.c_str(), boolprop, pobject);
   /////////////////////////////////////////////////////////////////////////
   else if (const reflect::ITyped<float>* floatprop = rtti::autocast(prop))
     return new GedFloatNode<GedIoDriver<float>>(*this, Name.c_str(), floatprop, pobject);

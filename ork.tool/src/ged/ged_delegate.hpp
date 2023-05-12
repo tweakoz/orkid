@@ -225,64 +225,6 @@ template <typename T> void Slider<T>::resize(int ix, int iy, int iw, int ih) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename Setter>
-GedBoolNode<Setter>::GedBoolNode(ObjModel& mdl, const char* name, const reflect::ObjectProperty* prop, ork::Object* obj)
-    : GedItemNode(mdl, name, prop, obj)
-    , mSetter(prop, obj) {
-}
-
-///////////////////////////////////////////////////////////////////////////////
-static const int CHECKBOX_MARGIN = 2;
-#define CHECKBOX_SIZE(height) (height - CHECKBOX_MARGIN * 2)
-#define CHECKBOX_X(x, width, SIZE) (x + width - SIZE - CHECKBOX_MARGIN)
-#define CHECKBOX_Y(y) (y + CHECKBOX_MARGIN)
-
-template <typename Setter> void GedBoolNode<Setter>::DoDraw(lev2::Context* pTARG) {
-  // GedItemNode::DoDraw( pTARG );
-
-  const int SIZE = CHECKBOX_SIZE(miH);
-  const int X    = CHECKBOX_X(miX, miW, SIZE);
-  const int Y    = CHECKBOX_Y(miY);
-
-  GetSkin()->DrawBgBox(this, X, Y, SIZE, SIZE, GedSkin::ESTYLE_BACKGROUND_2);
-
-  bool value = false;
-  mSetter.GetValue(value);
-  if (value)
-    GetSkin()->DrawCheckBox(this, miX + miW - SIZE - CHECKBOX_MARGIN, miY + CHECKBOX_MARGIN, SIZE, SIZE);
-
-  GetSkin()->DrawText(this, miX + 4, miY + 2, _propname.c_str());
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-template <typename Setter> void GedBoolNode<Setter>::OnMouseReleased(ork::ui::event_constptr_t ev) {
-  int evx = ev->miX;
-  int evy = ev->miY;
-
-  const int SIZE = CHECKBOX_SIZE(miH);
-  const int X    = CHECKBOX_X(miX, miW, SIZE);
-  const int Y    = CHECKBOX_Y(miY);
-
-  if (evx > X && evx < X + SIZE && evy > Y && evy < Y + SIZE) {
-    bool value = false;
-    mSetter.GetValue(value);
-    mSetter.SetValue(!value);
-  }
-  SigInvalidateProperty();
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-template <typename Setter> void GedBoolNode<Setter>::OnMouseDoubleClicked(ork::ui::event_constptr_t ev) {
-  bool value = false;
-  mSetter.GetValue(value);
-  mSetter.SetValue(!value);
-  SigInvalidateProperty();
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
 template <typename IODriver>
 GedFloatNode<IODriver>::GedFloatNode(ObjModel& mdl, const char* name, const reflect::ObjectProperty* prop, ork::Object* obj)
     : GedItemNode(mdl, name, prop, obj)
