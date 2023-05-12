@@ -9,6 +9,7 @@
 #include <ork/lev2/ui/ged/ged_node.h>
 #include <ork/lev2/ui/ged/ged_skin.h>
 #include <ork/lev2/ui/ged/ged_container.h>
+#include <ork/lev2/ui/popups.inl>
 #include <ork/kernel/core_interface.h>
 #include <ork/lev2/gfx/dbgfontman.h>
 #include <ork/math/multicurve.h>
@@ -117,53 +118,48 @@ void GedCurve2DEditPoint::describeX(class_t* clazz) {
 
 struct GedCurve2DEditSeg : public GedObject {
   DeclareAbstractX(GedCurve2DEditSeg, GedObject);
+
 public:
+  ///////////////////////////////////
+  GedCurve2DEditSeg()
+      : mCurveObject(0)
+      , _parent(0)
+      , miSeg(-1) {
+  }
+  ///////////////////////////////////
   void OnMouseDoubleClicked(ork::ui::event_constptr_t ev) final {
     if (_parent && mCurveObject) {
       if (ev->IsButton0DownF()) {
         mCurveObject->SplitSegment(miSeg);
         //_parent->SigInvalidateProperty();
       } else if (ev->IsButton2DownF()) {
-        /*
-        QMenu* pMenu         = new QMenu(0);
-        QAction* pchildmenu0 = pMenu->addAction("Seg:Lin");
-        QAction* pchildmenu1 = pMenu->addAction("Seg:Box");
-        QAction* pchildmenu2 = pMenu->addAction("Seg:Log");
-        QAction* pchildmenu3 = pMenu->addAction("Seg:Exp");
-
-        pchildmenu0->setData(QVariant("lin"));
-        pchildmenu1->setData(QVariant("box"));
-        pchildmenu2->setData(QVariant("log"));
-        pchildmenu3->setData(QVariant("exp"));
-
-        QAction* pact = pMenu->exec(QCursor::pos());
-
-        if (pact) {
-          QVariant UserData = pact->data();
-          QString UserName  = UserData.toString();
-          std::string sval  = UserName.toStdString();
-          if (sval == "lin")
-            mCurveObject->SetSegmentType(miSeg, MultiCurveSegmentType::LINEAR);
-          if (sval == "box")
-            mCurveObject->SetSegmentType(miSeg, MultiCurveSegmentType::BOX);
-          if (sval == "log")
-            mCurveObject->SetSegmentType(miSeg, MultiCurveSegmentType::LOG);
-          if (sval == "exp")
-            mCurveObject->SetSegmentType(miSeg, MultiCurveSegmentType::EXP);
-          _parent->SigInvalidateProperty();
-        }*/
+        int sx = ev->miScreenPosX;
+        int sy = ev->miScreenPosY; // - H*2;
+        std::vector<std::string> choices;
+        choices.push_back("Seg:Lin");
+        choices.push_back("Seg:Box");
+        choices.push_back("Seg:Log");
+        choices.push_back("Seg:Exp");
+        std::string choice = ui::popupChoiceList(
+            _parent->_l2context(), //
+            sx,
+            sy,
+            choices);
+        if (choice == "Seg:Lin")
+          mCurveObject->SetSegmentType(miSeg, MultiCurveSegmentType::LINEAR);
+        if (choice == "Seg:Box")
+          mCurveObject->SetSegmentType(miSeg, MultiCurveSegmentType::BOX);
+        if (choice == "Seg:Log")
+          mCurveObject->SetSegmentType(miSeg, MultiCurveSegmentType::LOG);
+        if (choice == "Seg:Exp")
+          mCurveObject->SetSegmentType(miSeg, MultiCurveSegmentType::EXP);
+        //_parent->SigInvalidateProperty();
       }
     }
   }
 
   void SetSeg(int idx) {
     miSeg = idx;
-  }
-
-  GedCurve2DEditSeg()
-      : mCurveObject(0)
-      , _parent(0)
-      , miSeg(-1) {
   }
 
   void SetCurveObject(MultiCurve1D* pgrad) {
@@ -176,6 +172,8 @@ public:
   GedItemNode* _parent;
   int miSeg;
 };
+
+////////////////////////////////////////////////////////////////
 
 void GedCurve2DEditSeg::describeX(class_t* clazz) {
 }
@@ -190,15 +188,15 @@ struct CurveEditorImpl {
       : _node(node)
       , mEditPoints(kpoolsize)
       , mEditSegs(kpoolsize) {
-    //if (0 == mCurveObject) {
-      //const reflect::IObject* pprop = rtti::autocast(GetOrkProp());
-      //mCurveObject                  = rtti::autocast(pprop->Access(GetOrkObj()));
-   // }
+    // if (0 == mCurveObject) {
+    // const reflect::IObject* pprop = rtti::autocast(GetOrkProp());
+    // mCurveObject                  = rtti::autocast(pprop->Access(GetOrkObj()));
+    // }
 
-    //if (0 == mCurveObject) {
-      //const reflect::IObject* pprop = rtti::autocast(GetOrkProp());
-      //ObjProxy<MultiCurve1D>* proxy = rtti::autocast(pprop->Access(GetOrkObj()));
-      //mCurveObject                  = proxy->_parent;
+    // if (0 == mCurveObject) {
+    // const reflect::IObject* pprop = rtti::autocast(GetOrkProp());
+    // ObjProxy<MultiCurve1D>* proxy = rtti::autocast(pprop->Access(GetOrkObj()));
+    // mCurveObject                  = proxy->_parent;
     //}
   }
   void render(lev2::Context* pTARG);
@@ -214,6 +212,186 @@ using curveeditorimpl_ptr_t = std::shared_ptr<CurveEditorImpl>;
 
 ////////////////////////////////////////////////////////////////
 
+static void CurveCustomPrim(
+    GedSkin* pskin,              //
+    GedObject* pnode,            //
+    ork::lev2::Context* pTARG) { //
+
+  auto pthis          = dynamic_cast<CurveEditorImpl*>(pnode);
+  const orklut<float, float>& data = pthis->mCurveObject->GetVertices();
+  const int knumpoints             = (int)data.size();
+  const int ksegs                  = knumpoints - 1;
+  auto node = pthis->_node;
+
+  int x = node->miX;
+  int y = node->miY;
+  int w = node->miW;
+  int h = node->miH;
+
+  if (0 == ksegs)
+    return;
+
+  if (pTARG->FBI()->isPickState()) {
+  } else if (pthis->mCurveObject) {
+    lev2::DynamicVertexBuffer<lev2::SVtxV12C4T16>& VB = lev2::GfxEnv::GetSharedDynamicVB();
+    lev2::GfxMaterial3DSolid gridmat(pTARG);
+    gridmat.SetColorMode(lev2::GfxMaterial3DSolid::EMODE_MOD_COLOR);
+    gridmat._rasterstate.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
+    gridmat._rasterstate.SetCullTest(ork::lev2::ECullTest::OFF);
+    gridmat._rasterstate.SetBlending(ork::lev2::Blending::OFF);
+    gridmat._rasterstate.SetDepthTest(ork::lev2::EDepthTest::ALWAYS);
+    gridmat._rasterstate.SetShadeModel(ork::lev2::ESHADEMODEL_SMOOTH);
+
+    // pthis->mVertexBuffer.Reset();
+
+    static const int kexplogsegs = 16;
+    int inuml                    = 0;
+    for (int i = 0; i < ksegs; i++) {
+      switch (pthis->mCurveObject->GetSegmentType(i)) {
+        case MultiCurveSegmentType::LINEAR:
+          inuml += 2;
+          break;
+        case MultiCurveSegmentType::BOX:
+          inuml += 4;
+          break;
+        case MultiCurveSegmentType::LOG:
+          inuml += kexplogsegs * 2;
+          break;
+        case MultiCurveSegmentType::EXP:
+          inuml += kexplogsegs * 2;
+          break;
+      }
+    }
+
+    int ivbaseA  = VB.GetNumVertices();
+    int reserveA = 1024;
+
+    lev2::VtxWriter<lev2::SVtxV12C4T16> vw;
+    vw.Lock(pTARG, &VB, reserveA);
+
+    fvec2 uv;
+
+    int icountA = 0;
+
+    const float kz = 0.0f;
+
+    float fx = float(x);
+    float fy = float(y + pskin->_scrollY);
+    float fw = float(w);
+    float fh = float(kh);
+
+    lev2::SVtxV12C4T16 v0(fvec3(fx, fy, kz), uv, 0xffffffff);
+    lev2::SVtxV12C4T16 v1(fvec3(fx + fw, fy, kz), uv, 0xffffffff);
+    lev2::SVtxV12C4T16 v2(fvec3(fx + fw, fy + fh, kz), uv, 0xffffffff);
+    lev2::SVtxV12C4T16 v3(fvec3(fx, fy + fh, kz), uv, 0xffffffff);
+
+    vw.AddVertex(v0);
+    vw.AddVertex(v1);
+    vw.AddVertex(v2);
+
+    vw.AddVertex(v0);
+    vw.AddVertex(v2);
+    vw.AddVertex(v3);
+
+    icountA += 6;
+
+    float fmin = pthis->mCurveObject->GetMin();
+    float fmax = pthis->mCurveObject->GetMax();
+    float frng = (fmax - fmin);
+
+    for (int i = 0; i < ksegs; i++) {
+      std::pair<float, float> data_a = data.GetItemAtIndex(i);
+      std::pair<float, float> data_b = data.GetItemAtIndex(i + 1);
+
+      float fia  = data_a.first;
+      float fib  = data_b.first;
+      float fiya = data_a.second;
+      float fiyb = data_b.second;
+
+      float fx0 = fx + (fia * fw);
+      float fx1 = fx + (fib * fw);
+      float fy0 = fy + fh - (fiya * fh);
+      float fy1 = fy + fh - (fiyb * fh);
+
+      switch (pthis->mCurveObject->GetSegmentType(i)) {
+        case MultiCurveSegmentType::LOG:
+        case MultiCurveSegmentType::EXP: {
+          for (int j = 0; j < kexplogsegs; j++) {
+            int k      = j + 1;
+            float fj   = float(j) / float(kexplogsegs);
+            float fk   = float(k) / float(kexplogsegs);
+            float fiaL = (fj * fib) + (1.0f - fj) * fia;
+            float fiaR = (fk * fib) + (1.0f - fk) * fia;
+            float fsL  = pthis->mCurveObject->Sample(fiaL);
+            float fsR  = pthis->mCurveObject->Sample(fiaR);
+
+            float fuL = (fsL - fmin) / frng;
+            float fuR = (fsR - fmin) / frng;
+
+            fx0 = fx + (fiaL * fw);
+            fx1 = fx + (fiaR * fw);
+            fy0 = fy + fh - (fuL * fh);
+            fy1 = fy + fh - (fuR * fh);
+            lev2::SVtxV12C4T16 v0(fvec3(fx0, fy0, kz), uv, 0xffffffff);
+            lev2::SVtxV12C4T16 v1(fvec3(fx1, fy1, kz), uv, 0xffffffff);
+            vw.AddVertex(v0);
+            vw.AddVertex(v1);
+            icountA += 2;
+          }
+          break;
+        }
+        case MultiCurveSegmentType::LINEAR: {
+          lev2::SVtxV12C4T16 v0(fvec3(fx0, fy0, kz), uv, 0xffffffff);
+          lev2::SVtxV12C4T16 v1(fvec3(fx1, fy1, kz), uv, 0xffffffff);
+          vw.AddVertex(v0);
+          vw.AddVertex(v1);
+          icountA += 2;
+          break;
+        }
+        case MultiCurveSegmentType::BOX: {
+          lev2::SVtxV12C4T16 v0(fvec3(fx0, fy0, kz), uv, 0xffffffff);
+          lev2::SVtxV12C4T16 v1(fvec3(fx1, fy0, kz), uv, 0xffffffff);
+          lev2::SVtxV12C4T16 v2(fvec3(fx1, fy1, kz), uv, 0xffffffff);
+          vw.AddVertex(v0);
+          vw.AddVertex(v1);
+          vw.AddVertex(v1);
+          vw.AddVertex(v2);
+          icountA += 4;
+          break;
+        }
+      }
+    }
+    vw.UnLock(pTARG);
+
+    ////////////////////////////////////////////////////////////////
+    F32 fVPW = (F32)pTARG->FBI()->GetVPW();
+    F32 fVPH = (F32)pTARG->FBI()->GetVPH();
+    if (0.0f == fVPW)
+      fVPW = 1.0f;
+    if (0.0f == fVPH)
+      fVPH = 1.0f;
+    fmtx4 mtxortho = pTARG->MTXI()->Ortho(0.0f, fVPW, 0.0f, fVPH, 0.0f, 1.0f);
+    pTARG->MTXI()->PushPMatrix(mtxortho);
+    pTARG->MTXI()->PushVMatrix(fmtx4::Identity());
+    pTARG->MTXI()->PushMMatrix(fmtx4::Identity());
+    pTARG->PushModColor(fvec3::Blue());
+    pTARG->GBI()->DrawPrimitive(&gridmat, VB, ork::lev2::PrimitiveType::TRIANGLES, ivbaseA, 6);
+    pTARG->PopModColor();
+    pTARG->PushModColor(fvec3::White());
+    pTARG->GBI()->DrawPrimitive(&gridmat, VB, ork::lev2::PrimitiveType::LINES, ivbaseA + 6, icountA - 6);
+    pTARG->PopModColor();
+    pTARG->MTXI()->PopPMatrix();
+    pTARG->MTXI()->PopVMatrix();
+    pTARG->MTXI()->PopMMatrix();
+    ////////////////////////////////////////////////////////////////
+
+  } else {
+    OrkAssert(false);
+  }
+}
+
+////////////////////////////////////////////////////////////////
+
 void CurveEditorImpl::render(lev2::Context* pTARG) {
   auto container = _node->_container;
   auto model     = container->_model;
@@ -225,10 +403,75 @@ void CurveEditorImpl::render(lev2::Context* pTARG) {
   int w = _node->miW;
   int h = _node->miH;
 
-  skin->DrawBgBox(_node, x, y, w, h, GedSkin::ESTYLE_BACKGROUND_1, 100);
+  const orklut<float, float>& data = mCurveObject->GetVertices();
 
-  if (not is_pick) {
-    skin->DrawText(_node, x, y, _node->_propname.c_str());
+  skin->DrawBgBox(_node, x, y + 2, w, kh - 3, GedSkin::ESTYLE_BACKGROUND_1);
+  GedSkin::GedPrim prim;
+  prim.mDrawCB = CurveCustomPrim;
+  prim.mpNode  = _node;
+  prim.meType  = ork::lev2::PrimitiveType::MULTI;
+  prim.iy1     = y;
+  prim.iy2     = y + kh;
+  skin->AddPrim(prim);
+
+  ////////////////////////////////////
+
+  const int knumpoints = (int)data.size();
+  const int ksegs      = knumpoints - 1;
+
+  ////////////////////////////////////
+  // draw segments
+
+  if (pTARG->FBI()->isPickState()) {
+    mEditSegs.clear();
+
+    for (int i = 0; i < ksegs; i++) {
+      auto pointa = data.GetItemAtIndex(i);
+      auto pointb = data.GetItemAtIndex(i + 1);
+
+      auto editseg = mEditSegs.allocate();
+      editseg->SetCurveObject(mCurveObject);
+      editseg->SetParent(_node);
+      editseg->SetSeg(i);
+
+      float fi0 = pointa.first;
+      float fi1 = pointb.first;
+      float fw  = (fi1 - fi0);
+
+      int fx0 = x + int(fi0 * float(w));
+      int fw0 = int(fw * float(w));
+
+      skin->DrawBgBox(editseg, fx0, y, fw0, kh, GedSkin::ESTYLE_DEFAULT_CHECKBOX, 1);
+      skin->DrawOutlineBox(editseg, fx0, y, fw0, kh, GedSkin::ESTYLE_DEFAULT_HIGHLIGHT, 1);
+    }
+  }
+
+  ////////////////////////////////////
+  // draw points
+
+  mEditPoints.clear();
+
+  for (int i = 0; i < knumpoints; i++) {
+    std::pair<float, float> point = data.GetItemAtIndex(i);
+
+    auto editpoint = mEditPoints.allocate();
+    editpoint->SetCurveObject(mCurveObject);
+    editpoint->SetParent(_node);
+    editpoint->SetPoint(i);
+
+    int fxc = int(point.first * float(w));
+    int fyc = int(point.second * float(kh));
+    int fx0 = x + (fxc - kpntsize);
+    int fy0 = y + (kh - (kpntsize)) - fyc;
+
+    GedSkin::ESTYLE pntstyl =
+        _node->IsObjectHilighted(editpoint) ? GedSkin::ESTYLE_DEFAULT_HIGHLIGHT : GedSkin::ESTYLE_DEFAULT_CHECKBOX;
+    if (pTARG->FBI()->isPickState()) {
+      skin->DrawBgBox(editpoint, fx0, fy0, kpntsize * 2, kpntsize * 2, pntstyl, 2);
+    } else {
+      skin->DrawOutlineBox(editpoint, fx0 + 1, fy0 + 1, kpntsize * 2 - 2, kpntsize * 2 - 2, pntstyl, 2);
+    }
+    skin->DrawOutlineBox(editpoint, fx0, fy0, kpntsize * 2, kpntsize * 2, GedSkin::ESTYLE_DEFAULT_HIGHLIGHT, 2);
   }
 }
 
@@ -253,8 +496,7 @@ void GedCurve2DNode::DoDraw(lev2::Context* pTARG) { // final
 
 int GedCurve2DNode::computeHeight() { // final
   return kh;
-} 
-
+}
 
 ////////////////////////////////////////////////////////////////
 

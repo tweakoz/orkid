@@ -160,6 +160,14 @@ int GedItemNode::computeHeight(void) {
   return ih;
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
+bool GedItemNode::IsObjectHilighted(const GedObject* pobj) const {
+  auto pvp = _container->_viewport;
+  const GedObject* pmoobj = pvp->GetMouseOverNode();
+  return (pmoobj == pobj);
+}
+
 //////////////////////////////////////////////////////////////////////////////
 
 void GedItemNode::Layout(int ix, int iy, int iw, int ih) {
