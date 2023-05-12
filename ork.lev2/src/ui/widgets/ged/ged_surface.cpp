@@ -96,19 +96,9 @@ void GedSurface::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
   int H = height();
 
   //////////////////////////////////////////////////
-  // Compute Scoll Transform
-  //////////////////////////////////////////////////
-
-  //ork::fmtx4 matSCROLL;
-  //matSCROLL.setTranslation(0.0f, float(miScrollY), 0.0f);
-
-
-  //////////////////////////////////////////////////
 
   fbi->pushScissor(ViewportRect(0, 0, W, H));
   fbi->pushViewport(ViewportRect(0, 0, W, H));
-  //mtxi->PushMMatrix(matSCROLL);
-  //mtxi->PushUIMatrix();
   {
 
     if( pickstate == 0){
@@ -119,23 +109,12 @@ void GedSurface::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
       //printf( "GedSurface::repaint pickstate<%d> W<%d> H<%d>\n", pickstate, W, H );
     }
 
-
     if (_model->_currentObject) {
+      printf("miScrollY<%d>\n", miScrollY);
       _container.Draw(context, W, H, miScrollY);
     }
 
-    //auto mtl = defaultUIMaterial();
-    //mtl->_rasterstate.SetRGBAWriteMask(true,true);
-    //mtl->SetUIColorMode(UiColorMode::VTX);
-    //mtl->wrappedDraw(context,[&](){
-      //dwi->line2DEML(fvec2(0, 0), fvec2(W, H), fvec4(1, 1, 1, 1), 0.0f);
-      //dwi->line2DEML(fvec2(W, 0), fvec2(0, H), fvec4(1, 1, 1, 1), 0.0f);
-    //});
-
-
   }
-  //mtxi->PopMMatrix();
-  //mtxi->PopUIMatrix();
   fbi->popViewport();
   fbi->popScissor();
   context->debugPopGroup();

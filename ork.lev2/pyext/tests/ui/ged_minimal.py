@@ -43,6 +43,7 @@ class UiGedTestApp(object):
     hk1 = self.hotkeys.createHotKey("test1")
     hk2 = self.hotkeys.createHotKey("test2")
     self.objmodel.attach(self.hotkeys,True)
+    self.objmodel.attach(self.hotkeys,True)
     print(self.hotkeys.clazz.name)
 
     #root_layout.dump()

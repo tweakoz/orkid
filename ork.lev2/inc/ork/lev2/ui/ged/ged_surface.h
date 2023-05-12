@@ -34,7 +34,7 @@ private:
   objectmodel_ptr_t _model;
   GedContainer _container;
   GedObject* mpActiveNode;
-  int miScrollY;
+  int miScrollY = 0;
   const GedObject* mpMouseOverNode;
   ork::msgrouter::subscriber_t _simulation_subscriber;
 };

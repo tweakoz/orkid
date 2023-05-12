@@ -229,6 +229,8 @@ OrkEzApp::OrkEzApp(appinitdata_ptr_t initdata)
     // create leve gfxwindow
     //////////////////////////////////////
     _mainWindow->_appwin = std::make_shared<AppWindow>(nullptr);
+    _mainWindow->_appwin->miWidth = _initdata->_width;
+    _mainWindow->_appwin->miHeight = _initdata->_height;
     GfxEnv::GetRef().RegisterWinContext(_mainWindow->_appwin.get());
     //////////////////////////////////////
     //////////////////////////////////////

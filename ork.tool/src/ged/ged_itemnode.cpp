@@ -91,7 +91,7 @@ void GedItemNode::Layout(int ix, int iy, int iw, int ih) {
   miW = iw;
   miH = ih;
 
-  // printf( "GedItemNode<%p> ix<%d> iy<%d> iw<%d> ih<%d>\n", this, ix, iy, iw, ih );
+  printf( "GedItemNode<%p:%s> ix<%d> iy<%d> iw<%d> ih<%d>\n", this, _propname.c_str(), ix, iy, iw, ih );
 
   bool bsidebyside = CanSideBySide();
 
