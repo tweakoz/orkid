@@ -138,6 +138,8 @@ public:
   int micalch          = 0;
 
   newiodriver_ptr_t _iodriver;
+  svar64_t _impl;
+
   ///////////////////////////////////////////////////
 };
 
@@ -434,6 +436,7 @@ public:
   void DoDraw(lev2::Context* pTARG) final; // virtual
   
   void OnUiEvent(ork::ui::event_constptr_t ev) final;
+  int computeHeight() final;
 
   newiodriver_ptr_t _iodriver;
   sliderbase_ptr_t _slider;
