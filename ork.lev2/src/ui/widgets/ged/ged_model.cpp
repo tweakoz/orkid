@@ -542,7 +542,22 @@ geditemnode_ptr_t ObjModel::createObjPropNode(
       //_gedContainer->_model->enqueueUpdate();
     };
     return std::make_shared<GedIntNode>(_gedContainer, Name.c_str(), iodriver);
-  }  /////////////////////////////////////////////////////////////////////////
+  }
+  /////////////////////////////////////////////////////////////////////////
+  else if (auto as_floatprop = dynamic_cast<const reflect::ITyped<float>*>(prop)){
+    auto iodriver = std::make_shared<NewIoDriver>();
+    float initial_value = 0;
+    as_floatprop->get(initial_value,pobject);
+    iodriver->_par_prop = prop;
+    iodriver->_object = pobject;
+    iodriver->_abstract_val = initial_value;
+    iodriver->_onValueChanged = [=](){
+      as_floatprop->set(iodriver->_abstract_val.get<float>(),pobject);
+      //_gedContainer->_model->enqueueUpdate();
+    };
+    return std::make_shared<GedIntNode>(_gedContainer, Name.c_str(), iodriver);
+  }
+  /////////////////////////////////////////////////////////////////////////
   /*
   if (const reflect::ITyped<Char8>* c8prop = rtti::autocast(prop))
     return new GedLabelNode(*this, Name.c_str(), prop, pobject);
