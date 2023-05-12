@@ -38,6 +38,13 @@ void DirectTypedMap<MapType>::insertDefaultElement(object_ptr_t obj,
 
 }
 ////////////////////////////////////////////////////////////////////////////////
+template <typename MapType> //
+void DirectTypedMap<MapType>::setElement(object_ptr_t obj, //
+                                         map_abstract_item_t key, //
+                                         map_abstract_item_t val) const { //
+
+}
+////////////////////////////////////////////////////////////////////////////////
 template <typename MapType>
 bool DirectTypedMap<MapType>::EraseElement(
     object_ptr_t object, //

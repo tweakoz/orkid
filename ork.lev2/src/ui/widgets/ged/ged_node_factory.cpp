@@ -22,8 +22,9 @@ namespace ork::lev2::ged {
 void GedFactoryNode::describeX(class_t* clazz) {
 }
 
-GedFactoryNode::GedFactoryNode(GedContainer* c, const char* name, const reflect::ObjectProperty* prop, object_ptr_t obj)
-    : GedItemNode(c, name, prop, obj) {
+GedFactoryNode::GedFactoryNode(GedContainer* c, const char* name, newiodriver_ptr_t iodriver )
+    : GedItemNode(c, name, iodriver->_par_prop, iodriver->_object)
+    , _iodriver(iodriver) {
 }
 
 ////////////////////////////////////////////////////////////////
@@ -62,7 +63,14 @@ void GedFactoryNode::OnMouseDoubleClicked(ui::event_constptr_t ev) {
                                               factory_names);
 
     printf( "choice<%s>\n", choice.c_str() );
-    OrkAssert(false);
+    if( choice != "" ){
+      auto clazz = rtti::Class::FindClass(choice.c_str());
+      auto obj_clazz = dynamic_cast<object::ObjectClass*>(clazz);
+      printf( "obj_clazz<%p:%s>\n", obj_clazz, obj_clazz->Name().c_str() );
+      auto instance = obj_clazz->createShared();
+      _iodriver->_abstract_val = instance;
+      _iodriver->_onValueChanged();
+    }
   }
 }
 

@@ -15,6 +15,9 @@
 #include <ork/kernel/thread.h>
 #include <ork/kernel/mutex.h>
 
+#if defined(ENABLE_LIBSURVIVE)
+#include <libsurvive/survive_api.h>
+#endif
 #if defined(ENABLE_OPENVR)
 #include <openvr/openvr.h>
 namespace _ovr = ::vr;
@@ -160,8 +163,17 @@ private:
 
 using device_ptr_t = std::shared_ptr<Device>;
 
+#if defined(ENABLE_LIBSURVIVE)
+
+namespace libsurvive {
+
+}
+
+#endif
+
 #if defined(ENABLE_OPENVR)
 namespace openvr {
+
 struct OpenVrDevice final : public Device {
 
   OpenVrDevice();

@@ -447,15 +447,16 @@ geditemnode_ptr_t ObjModel::recurse(
 ////////////////////////////////////////////////////////////////////////////////////////////
 
 geditemnode_ptr_t ObjModel::createAbstractNode( const std::string& Name, 
-                                                const reflect::ObjectProperty* par_prop, //
-                                                object_ptr_t par_object, //
-                                                svar256_t abstract_val ){ //
-  if( auto as_obj = abstract_val.tryAs<object_ptr_t>() ){
+                                                newiodriver_ptr_t iodriver ){ //
+
+
+
+  if( auto as_obj = iodriver->_abstract_val.tryAs<object_ptr_t>() ){
     if( as_obj.value() ){
       recurse(as_obj.value(), Name.c_str());
     }
     else{ // factory
-      auto anno_edclass = par_prop->GetAnnotation("editor.factorylistbase");
+      auto anno_edclass = iodriver->_par_prop->GetAnnotation("editor.factorylistbase");
       if (anno_edclass.length()) {
         auto base_clazz = rtti::Class::FindClass(anno_edclass.c_str());
         auto as_obj_clazz = dynamic_cast<ork::object::ObjectClass*>(base_clazz);
@@ -466,7 +467,7 @@ geditemnode_ptr_t ObjModel::createAbstractNode( const std::string& Name,
               auto clazz_name = clazz->Name();
               printf( "!!! FACTORY<%s>\n", clazz_name.c_str() );
           }
-          auto factory_node = std::make_shared<GedFactoryNode>(_gedContainer, Name.c_str(), par_prop, par_object);
+          auto factory_node = std::make_shared<GedFactoryNode>(_gedContainer, Name.c_str(), iodriver );
           factory_node->_factory_set = factory_set;
           _gedContainer->AddChild(factory_node);
           return factory_node;
@@ -474,7 +475,7 @@ geditemnode_ptr_t ObjModel::createAbstractNode( const std::string& Name,
       }
     }
   }                                              
-  return std::make_shared<GedLabelNode>(_gedContainer, Name.c_str(), par_prop, par_object);
+  return std::make_shared<GedLabelNode>(_gedContainer, Name.c_str(), iodriver->_par_prop, iodriver->_object);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////

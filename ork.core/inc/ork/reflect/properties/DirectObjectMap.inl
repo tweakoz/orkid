@@ -57,6 +57,27 @@ void DirectObjectMap<MapType>::insertDefaultElement(object_ptr_t obj,
 }
 ////////////////////////////////////////////////////////////////////////////////
 template <typename MapType> //
+void DirectObjectMap<MapType>::setElement(object_ptr_t obj, //
+                                          map_abstract_item_t key, //
+                                          map_abstract_item_t val) const { //
+
+  SvarDecoder<key.ksize> decoder;
+
+  auto typed_key_attempt = decoder.decode<key_type>(key);
+  OrkAssert(typed_key_attempt);
+  const auto& typed_key = typed_key_attempt.value();
+  MapType& the_map                  = obj.get()->*_member;
+  auto V = val.get<object_ptr_t>();
+  auto TV = std::dynamic_pointer_cast<element_type>(V);
+  auto P = std::make_pair(typed_key, TV);
+  the_map.insert(P);
+  printf( "setElement val<%p>\n", (void*) V.get() );
+  //ork::svar64_t key64;
+  //OrkAssert( key64.canConvertFrom(key) );
+
+}
+////////////////////////////////////////////////////////////////////////////////
+template <typename MapType> //
 bool DirectObjectMap<MapType>::ReadElement(
     object_constptr_t instance, //
     const key_type& key,

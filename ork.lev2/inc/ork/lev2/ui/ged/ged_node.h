@@ -134,6 +134,8 @@ public:
   int miW              = 0;
   int miH              = 0;
   int micalch          = 0;
+
+  newiodriver_ptr_t _iodriver;
   ///////////////////////////////////////////////////
 };
 
@@ -272,8 +274,7 @@ struct GedFactoryNode : public GedItemNode {
 public:
   GedFactoryNode( GedContainer* c, 
                   const char* name, 
-                  const reflect::ObjectProperty* prop, 
-                  object_ptr_t obj);
+                  newiodriver_ptr_t iodriver);
   
 
   void DoDraw(lev2::Context* pTARG) final; // virtual
@@ -282,6 +283,7 @@ public:
   bool mbInteractive;
   bool mbCollapse;
   factory_class_set_t _factory_set;
+  newiodriver_ptr_t _iodriver;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

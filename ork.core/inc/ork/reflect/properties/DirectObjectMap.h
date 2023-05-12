@@ -45,7 +45,11 @@ protected:
   }
   bool GetKey(object_constptr_t, int idx, key_type&) const override;
   bool GetVal(object_constptr_t, const key_type& k, object_ptr_t& v) const override;
+
+  // abstract interface
+
   void insertDefaultElement(object_ptr_t obj,map_abstract_item_t key) const override;
+  void setElement(object_ptr_t obj,map_abstract_item_t key, map_abstract_item_t val) const override;
 
 private:
   //void deserialize(serdes::node_ptr_t) const override;

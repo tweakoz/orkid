@@ -41,7 +41,11 @@ protected:
   }
   bool GetKey(object_constptr_t, int idx, KeyType&) const override;
   bool GetVal(object_constptr_t, const KeyType& k, ValueType& v) const override;
+
+  // abstract interface
+  
   void insertDefaultElement(object_ptr_t obj,map_abstract_item_t key) const override;
+  void setElement(object_ptr_t obj,map_abstract_item_t key, map_abstract_item_t val) const override;
 
 private:
   MapType Object::*mProperty;

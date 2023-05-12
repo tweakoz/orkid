@@ -26,6 +26,7 @@ public:
   fvec4 _fg_color;
   std::string _value;
   std::vector<std::string> _choices;
+  int _mouse_hover_y = 0;
   static fvec2 computeDimensions(const std::vector<std::string>& choices);
 private:
   void DoDraw(ui::drawevent_constptr_t drwev) override;

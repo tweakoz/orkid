@@ -75,6 +75,18 @@ public:
   orklut<std::string, std::string> _properties;
 };
 
+
+struct NewIoDriver {
+
+  void_lambda_t _onValueChanged = [](){};
+  svar64_t _impl;  
+  const reflect::ObjectProperty* _par_prop = nullptr;
+  object_ptr_t _object = nullptr;
+  svar256_t _abstract_val;
+};
+
+using newiodriver_ptr_t = std::shared_ptr<NewIoDriver>;
+
 ///////////////////////////////////////////////////////////////////////////////
 
 struct PersistMapContainer : public ork::Object {
@@ -182,8 +194,7 @@ public:
 
   bool IsNodeVisible(const reflect::ObjectProperty* prop);
   geditemnode_ptr_t createObjPropNode(const std::string& Name, const reflect::ObjectProperty* prop, object_ptr_t pobject);
-  geditemnode_ptr_t createAbstractNode(const std::string& Name, const reflect::ObjectProperty* par_prop, object_ptr_t par_object, svar256_t abstract_val );
-
+  geditemnode_ptr_t createAbstractNode(const std::string& Name, newiodriver_ptr_t iodriver );
 
   bool _enablePaint = true;
   GedContainer* _gedContainer = nullptr;

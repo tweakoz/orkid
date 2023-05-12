@@ -55,10 +55,22 @@ PropTypeString KeyDecoName::DecoratedName() const {
   rval.format("%s:%d", mActualKey.c_str(), miMultiIndex);
   return rval;
 }
+
 ///////////////////////////////////////////////////////////////////////////////
 
 void GedMapNode::describeX(class_t* clazz) {
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct MapIoDriverImpl{
+  GedMapNode* _node = nullptr;
+  const reflect::IMap* _map_prop = nullptr;
+  object_ptr_t _obj = nullptr;
+};
+using mapiodriverimpl_ptr_t = std::shared_ptr<MapIoDriverImpl>;
+
+///////////////////////////////////////////////////////////////////////////////
 
 GedMapNode::GedMapNode(
     GedContainer* c,               //
@@ -75,7 +87,7 @@ GedMapNode::GedMapNode(
   auto enumerated_items = map_prop->enumerateElements(obj);
   for (auto e : enumerated_items) {
     auto key = e.first;
-    auto val = e.second;
+
     std::string keyname;
     if( auto k_as_str = key.tryAs<std::string>() )
       keyname = k_as_str.value();
@@ -88,7 +100,18 @@ GedMapNode::GedMapNode(
 
     printf( "GedMapNode<%p> keyname<%s>\n", this, keyname.c_str() );
 
-    auto item_node = model->createAbstractNode(keyname.c_str(), map_prop, obj, val );
+    auto iodriver = std::make_shared<NewIoDriver>();
+    auto ioimpl = iodriver->_impl.makeShared<MapIoDriverImpl>();
+    ioimpl->_node = this;
+    ioimpl->_map_prop = map_prop;
+    iodriver->_par_prop = map_prop;
+    iodriver->_object = obj;
+    iodriver->_abstract_val = e.second;
+    iodriver->_onValueChanged = [=](){
+      map_prop->setElement( obj, key, iodriver->_abstract_val );
+      c->_model->enqueueUpdateAll();
+    };
+    auto item_node = model->createAbstractNode(keyname.c_str(), iodriver );
 
   }
 
@@ -139,9 +162,7 @@ void GedMapNode::addItem(ui::event_constptr_t ev) {
 
     mMapProp->insertDefaultElement(_object, reflect_key);
     _container->_model->enqueueUpdateAll();
-    //mModel.SigPreNewObject();
-    //GedMapIoDriver iodriver(mModel, mMapProp, GetOrkObj());
-    //iodriver.insert(sstr.c_str());
+
   }
 }
 

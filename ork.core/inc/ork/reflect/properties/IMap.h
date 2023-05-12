@@ -25,7 +25,12 @@ public:
   static const int kDeserializeInsertElement = -1;
   virtual bool isMultiMap(object_constptr_t obj) const = 0;
   virtual map_kvarray_t enumerateElements(object_constptr_t obj) const = 0;
+
+  // abstract interface
+
   virtual void insertDefaultElement(object_ptr_t obj,map_abstract_item_t key) const = 0;
+  virtual void setElement(object_ptr_t obj,map_abstract_item_t key, map_abstract_item_t val) const = 0;
+
 protected:
   IMap() : ObjectProperty() {
   }
