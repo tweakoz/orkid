@@ -39,12 +39,11 @@ class UiGedTestApp(object):
     self.ged_layout.right.anchorTo(root_layout.right)
 
     # create a test object to edit and attach it to the object model
-    self.hotkeys = HotKeyConfiguration()
-    hk1 = self.hotkeys.createHotKey("test1")
-    hk2 = self.hotkeys.createHotKey("test2")
-    self.objmodel.attach(self.hotkeys,True)
-    self.objmodel.attach(self.hotkeys,True)
-    print(self.hotkeys.clazz.name)
+    self.test_object = GedTestObjectConfiguration()
+    hk1 = self.test_object.createTestObject("test1")
+    hk2 = self.test_object.createTestObject("test2")
+    self.objmodel.attach(self.test_object,True)
+    print(self.test_object.clazz.name)
 
     #root_layout.dump()
     #assert(False)

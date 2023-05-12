@@ -67,7 +67,6 @@ void ObjModel::SlotRelayModelInvalidated() {
 
 void ObjModel::SigModelInvalidated() {
   printf("ObjModel::SigModelInvalidated\n");
-  OrkAssert(false);
   _sigModelInvalidated();
   // mSignalModelInvalidated(&ObjModel::SigModelInvalidated); // << operator() instantiated here
 }
@@ -150,7 +149,6 @@ void ObjModel::enqueueObject(object_ptr_t obj) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void ObjModel::enqueueUpdate() {
-  OrkAssert(false);
   auto lamb = [=]() { queueFlush(); };
   _updateOPQ->enqueue(lamb);
 }
@@ -555,7 +553,7 @@ geditemnode_ptr_t ObjModel::createObjPropNode(
       as_floatprop->set(iodriver->_abstract_val.get<float>(),pobject);
       //_gedContainer->_model->enqueueUpdate();
     };
-    return std::make_shared<GedIntNode>(_gedContainer, Name.c_str(), iodriver);
+    return std::make_shared<GedFloatNode>(_gedContainer, Name.c_str(), iodriver);
   }
   /////////////////////////////////////////////////////////////////////////
   /*

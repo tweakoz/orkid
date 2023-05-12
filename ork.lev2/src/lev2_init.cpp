@@ -51,6 +51,7 @@
 
 #include <ork/lev2/gfx/meshutil/meshutil.h>
 #include <ork/lev2/ui/ged/ged_node.h>
+#include <ork/lev2/ui/ged/ged_test_objects.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 //#define WIIEMU
@@ -109,6 +110,9 @@ struct ClassToucher {
     ged::GedIntNode::GetClassStatic();
     ged::GedFloatNode::GetClassStatic();
     ged::GedCurve2DNode::GetClassStatic();
+
+    ged::TestObject::GetClassStatic();
+    ged::TestObjectConfiguration::GetClassStatic();
 
     //////////////////////////////////////////
 

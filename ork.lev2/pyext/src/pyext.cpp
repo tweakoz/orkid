@@ -7,6 +7,7 @@
 
 #include "pyext.h"
 #include <ork/kernel/environment.h>
+#include <ork/lev2/ui/ged/ged_test_objects.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -146,6 +147,24 @@ PYBIND11_MODULE(_lev2, module_lev2) {
   pyinit_gfx_particles(module_lev2);
   pyinit_gfx_xgmmodel(module_lev2);
   pyinit_gfx_pbr(module_lev2);
+  //////////////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////////
+  auto type_codec = python::TypeCodec::instance();
+  using namespace lev2::ged;
+  auto gedto_type =                                                              //
+      py::class_<TestObject,Object,testobject_ptr_t>(module_lev2, "GedTestObject") //
+          .def(py::init<>());
+  type_codec->registerStdCodec<testobject_ptr_t>(gedto_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  auto gedtocfg_type =                                                              //
+      py::class_<TestObjectConfiguration,Object,testobjectconfiguration_ptr_t>(module_lev2, "GedTestObjectConfiguration") //
+          .def(py::init<>())
+          .def("createTestObject", [](TestObjectConfiguration& hkc, std::string actionname) -> testobject_ptr_t {
+            auto hk = std::make_shared<TestObject>();
+            hkc._testobjects.AddSorted(actionname,hk);
+            return hk;
+          });
+  type_codec->registerStdCodec<testobjectconfiguration_ptr_t>(gedtocfg_type);
   //////////////////////////////////////////////////////////////////////////////
 };
 

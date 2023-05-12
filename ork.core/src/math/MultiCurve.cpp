@@ -8,6 +8,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/pch.h>
 #include <ork/math/multicurve.h>
+#include <ork/kernel/orklut.hpp>
 #include <ork/reflect/properties/registerX.inl>
 #include <ork/reflect/properties/DirectTypedMap.hpp>
 #include <ork/reflect/properties/DirectTypedVector.hpp>
@@ -19,6 +20,7 @@ ImplementReflectionX(ork::MultiCurve1D, "MultiCurve1D");
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork {
 ///////////////////////////////////////////////////////////////////////////////
+template class orklut<std::string,multicurve1d_ptr_t>;
 
 BeginEnumRegistration(MultiCurveSegmentType);
 RegisterEnum(MultiCurveSegmentType, LINEAR);
