@@ -85,16 +85,43 @@ GedMapNode::GedMapNode(
   auto model = c->_model;
 
   auto enumerated_items = map_prop->enumerateElements(obj);
+
+  auto key_comparator = [](const reflect::map_pair_t& a, const reflect::map_pair_t& b) -> bool { //
+    auto& KA = a.first;
+    auto& KB = b.first;
+
+    if( auto k_as_str = KA.tryAs<std::string>() )
+        return k_as_str.value() < KB.get<std::string>();
+    else if( auto k_as_cstr = KA.tryAs<const char*>() )
+        return strcmp(k_as_cstr.value(),KB.get<const char*>())<0;
+    else if( auto k_as_int = KA.tryAs<int>() )
+        return k_as_int.value() < KB.get<int>();
+    else
+      OrkAssert(false);
+    return false;
+  };
+
+  std::sort(enumerated_items.begin(), enumerated_items.end(), key_comparator );
+
   for (auto e : enumerated_items) {
     auto key = e.first;
 
     std::string keyname;
-    if( auto k_as_str = key.tryAs<std::string>() )
+    if( auto k_as_str = key.tryAs<std::string>() ){
       keyname = k_as_str.value();
-    else if( auto k_as_cstr = key.tryAs<const char*>() )
+      KeyDecoName kdeca(keyname.c_str());
+      addKey(kdeca);
+    }
+    else if( auto k_as_cstr = key.tryAs<const char*>() ){
       keyname = k_as_cstr.value();
-    else if( auto k_as_int = key.tryAs<int>() )
+      KeyDecoName kdeca(keyname.c_str());
+      addKey(kdeca);
+    }
+    else if( auto k_as_int = key.tryAs<int>() ){
       keyname = FormatString("%d", k_as_int.value() );
+      KeyDecoName kdeca(keyname.c_str());
+      addKey(kdeca);
+    }
     else
       OrkAssert(false);
 
@@ -109,7 +136,7 @@ GedMapNode::GedMapNode(
     iodriver->_abstract_val = e.second;
     iodriver->_onValueChanged = [=](){
       map_prop->setElement( obj, key, iodriver->_abstract_val );
-      c->_model->enqueueUpdateAll();
+      c->_model->enqueueUpdate();
     };
     auto item_node = model->createAbstractNode(keyname.c_str(), iodriver );
 
@@ -154,12 +181,14 @@ void GedMapNode::addItem(ui::event_constptr_t ev) {
     KeyDecoName kdeca(edittext.c_str());
 
     if (isKeyPresent(kdeca)) {
-      if (false == isMultiMap())
-        return;
+      OrkAssert(false);
+      //if (false == isMultiMap())
+        //return;
     }
 
     reflect::map_abstract_item_t reflect_key = edittext;
 
+    addKey(kdeca);
     mMapProp->insertDefaultElement(_object, reflect_key);
     _container->_model->enqueueUpdateAll();
 

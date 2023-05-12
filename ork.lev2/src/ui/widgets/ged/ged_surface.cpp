@@ -164,7 +164,19 @@ ui::HandlerResult GedSurface::DoOnUiEvent(ui::event_constptr_t EV) {
   switch (filtev._eventcode) {
     case ui::EventCode::KEY_DOWN: {
       int mikeyc = filtev.miKeyCode;
-      if (mikeyc == '!') {
+      printf( "key<%d>\n", mikeyc );
+      if (mikeyc == 268) { // HOME
+        miScrollY = 0;
+        mNeedsSurfaceRepaint = true;
+      }
+      else if (mikeyc == 269) { // END
+        int iwh        = height();                // 500
+        int irh        = _container.GetRootHeight(); // 200
+        int iscrollmin = (iwh - irh);             // 300
+        miScrollY = iscrollmin;
+        mNeedsSurfaceRepaint = true;
+      }
+      else if (mikeyc == '!') {
         _container.IncrementSkin();
         mNeedsSurfaceRepaint = true;
       }

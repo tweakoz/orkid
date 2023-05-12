@@ -44,7 +44,8 @@ HandlerResult LineEdit::DoOnUiEvent(event_constptr_t cev) {
           break;
         default:
           if (key >= 32 && key <= 126) {
-            _value += char(key);
+            auto L = std::tolower(key);
+            _value += cev->mbSHIFT ? char(key) : L;
           }
           break;
       }
