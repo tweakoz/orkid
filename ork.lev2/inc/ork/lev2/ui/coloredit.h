@@ -23,8 +23,11 @@ public:
   fvec4 _originalColor;
   fvec4 _currentColor;
   ork::lev2::freestyle_mtl_ptr_t _material;
+  float _intensity = 1.0f;
+  fvec2 _push_pos;
   const ork::lev2::FxShaderTechnique* _tekvtxcolor = nullptr;
   const ork::lev2::FxShaderTechnique* _tekmodcolor = nullptr;
+  const ork::lev2::FxShaderTechnique* _tekcolorwheel = nullptr;
   const ork::lev2::FxShaderParam* _parmvp          = nullptr;
   const ork::lev2::FxShaderParam* _parmodcolor     = nullptr;
 
