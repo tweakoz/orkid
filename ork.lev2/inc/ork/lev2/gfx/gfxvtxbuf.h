@@ -924,7 +924,7 @@ struct SVtxV16T16C16 // 48 BPV
   float miCB;
   float miCA;
 
-  SVtxV16T16C16(
+  explicit SVtxV16T16C16(
       float px,
       float py,
       float pz,
@@ -951,7 +951,7 @@ struct SVtxV16T16C16 // 48 BPV
       , miCA(ca) {
   }
 
-  SVtxV16T16C16(
+  explicit SVtxV16T16C16(
       fvec4 pos,  //
       fvec4 uvwq, //
       fvec4 rgba) //

@@ -115,6 +115,13 @@ Vector4<T>::Vector4() : base_t(0,0,0,1){
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
+Vector4<T>::Vector4(T scalar) : base_t(scalar,scalar,scalar,scalar) {
+
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <typename T>
 Vector4<T>::Vector4(T _x, T _y, T _z, T _w)
   : base_t(_x,_y,_z,_w){
 }
@@ -152,17 +159,13 @@ template <typename T> void Vector4<T>::setRGBAU64(uint64_t inp) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-template <typename T> U32 Vector4<T>::VtxColorAsU32() const {
-  U32 r = U32(this->x * T(255.0f));
-  U32 g = U32(this->y * T(255.0f));
-  U32 b = U32(this->z * T(255.0f));
-  U32 a = U32(this->w * T(255.0f));
+template <typename T> U32 Vector4<T>::vertexColorU32() const {
 
-  //#if defined(ORK_CONFIG_DARWIN)||defined(ORK_CONFIG_IX)//GL
-  return U32((a << 24) | (b << 16) | (g << 8) | r);
-  //#else // WIN32/DX
-  //	return U32( (a<<24)|(r<<16)|(g<<8)|b );
-  //#endif
+  #if defined(ORK_CONFIG_IX)//GL
+  return BGRAU32();
+  #elif defined(ORK_CONFIG_DARWIN)
+  return ABGRU32();
+  #endif
 }
 
 ////////////////////////////////////////////////////////////////////////////////

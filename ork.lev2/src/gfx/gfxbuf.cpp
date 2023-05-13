@@ -212,7 +212,7 @@ void DisplayBuffer::RenderMatOrthoQuad(
       DynamicVertexBuffer<SVtxV12C4T16>& vb = GfxEnv::GetSharedDynamicVB();
 
       // U32 uc = clr.GetBGRAU32();
-      U32 uc = clr.VtxColorAsU32();
+      U32 uc = clr.vertexColorU32();
       ork::lev2::VtxWriter<SVtxV12C4T16> vw;
       vw.Lock(context(), &vb, 6);
       vw.AddVertex(SVtxV12C4T16(fx0, fy0, 0.0f, fu0, fv0, uv2[0], uv2[1], uc));
@@ -281,7 +281,7 @@ void DisplayBuffer::RenderMatOrthoQuad(
       DynamicVertexBuffer<SVtxV12C4T16>& vb = GfxEnv::GetSharedDynamicVB();
 
       // U32 uc = clr.GetBGRAU32();
-      U32 uc = clr.VtxColorAsU32();
+      U32 uc = clr.vertexColorU32();
       ork::lev2::VtxWriter<SVtxV12C4T16> vw;
       vw.Lock(context(), &vb, 6);
       vw.AddVertex(SVtxV12C4T16(fx0, fy0, 0.0f, uv0.x, uv0.y, 0.0f, 0.0f, uc));

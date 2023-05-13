@@ -59,7 +59,7 @@ vertex_shader vs_ui
 ///////////////////////////////////////////////////////////////
 vertex_shader vs_vtxcolor
 	: iface_vui {
-		gl_Position = mvp*position;
+	gl_Position = mvp*position;
     frg_clr = vtxcolor;
 }
 ///////////////////////////////////////////////////////////////
@@ -95,8 +95,8 @@ technique ui_modcolor {
 technique ui_vtxcolor {
 	fxconfig=fxcfg_default;
 	pass p0 {
-    vertex_shader=vs_vtxcolor;
-		fragment_shader=fs_ui;
+        vertex_shader=vs_vtxcolor;
+	    fragment_shader=fs_ui;
 		state_block=sb_ui;
 	}
 }

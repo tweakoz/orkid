@@ -121,7 +121,7 @@ void StreakRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
       float fwidth    = _input_width->value();
       float flength   = _input_length->value();
       fvec4 color     = fvec4(1, 1, 1, 1); // mGradient.Sample(mOutDataUnitAge) * fgi;
-      uint32_t ucolor = color.VtxColorAsU32();
+      uint32_t ucolor = color.vertexColorU32();
 
       for (int i = 0; i < icnt; i++) {
         auto ptcl = ptclbase + i;

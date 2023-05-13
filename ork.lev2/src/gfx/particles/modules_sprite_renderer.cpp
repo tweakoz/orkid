@@ -172,7 +172,7 @@ void SpriteRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
       }
 
       fvec4 color(1, 1, 1, 1);
-      U32 ucolor  = color.VtxColorAsU32();
+      U32 ucolor  = color.vertexColorU32();
       float fang  = input_rot * DTOR;
 
       ///////////////////////////////////////////////////////////////

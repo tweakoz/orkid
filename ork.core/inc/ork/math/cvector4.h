@@ -30,14 +30,15 @@ template <typename T> struct Vector4 final
   using base_t = glm::vec<4, T, glm::defaultp>;
 
   Vector4();
+  Vector4(T scalar);        
   explicit Vector4(T _x, T _y, T _z, T _w = T(1)); 
   Vector4(const base_t& vec);        
   Vector4(const Vector4& vec);                    
   Vector4(const Vector3<T>& vec, T w = T(1.0f));  
 
-  Vector4(U32 uval) {
-    setRGBAU32(uval);
-  }
+  //explicit Vector4(U32 uval) {
+    //setRGBAU32(uval);
+  //}
 
   ~Vector4(){}; 
 
@@ -221,7 +222,7 @@ template <typename T> struct Vector4 final
   U32 RGBAU32() const;
   U32 BGRAU32() const;
   U16 RGBU16() const;
-  U32 VtxColorAsU32() const;
+  U32 vertexColorU32() const;
 
   void setRGBAU32(U32 uval);
   void setBGRAU32(U32 uval);
