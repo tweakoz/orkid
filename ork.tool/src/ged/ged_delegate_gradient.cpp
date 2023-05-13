@@ -26,61 +26,6 @@
 namespace ork { namespace tool { namespace ged {
 ///////////////////////////////////////////////////////////////////////////////
 
-
-class GedGradientEditSeg : public GedObject {
-  RttiDeclareAbstract(GedGradientEditSeg, GedObject);
-
-  ork::Gradient<ork::fvec4>* mGradientObject;
-  GedItemNode* _parent;
-  int miSeg;
-
-public:
-  void OnUiEvent(ork::ui::event_constptr_t ev) final {
-    const auto& filtev = ev->mFilteredEvent;
-
-    switch (filtev._eventcode) {
-      case ui::EventCode::DOUBLECLICK: {
-        // printf( "GradSplit par<%p> go<%p>\n", _parent, mGradientObject );
-        if (_parent && mGradientObject) {
-          orklut<float, ork::fvec4>& data = mGradientObject->Data();
-          bool bok                        = false;
-
-          std::pair<float, ork::fvec4> pointa = data.GetItemAtIndex(miSeg);
-          std::pair<float, ork::fvec4> pointb = data.GetItemAtIndex(miSeg + 1);
-
-          ork::fvec4 plerp = (pointa.second + pointb.second) * 0.5f;
-          float filerp     = (pointa.first + pointb.first) * 0.5f;
-
-          data.AddSorted(filerp, plerp);
-        }
-        break;
-      }
-    }
-  }
-
-  void SetSeg(int idx) {
-    miSeg = idx;
-  }
-
-  GedGradientEditSeg()
-      : mGradientObject(0)
-      , _parent(0)
-      , miSeg(-1) {
-  }
-
-  void SetGradientObject(ork::Gradient<ork::fvec4>* pgrad) {
-    mGradientObject = pgrad;
-  }
-  void SetParent(GedItemNode* ppar) {
-    _parent = ppar;
-  }
-};
-
-void GedGradientEditSeg::Describe() {
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
 class GedGradientV4Widget : public GedItemNode {
   static const int kh        = 48;
   static const int kpoolsize = 32;
