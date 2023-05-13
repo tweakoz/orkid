@@ -275,8 +275,8 @@ namespace ork::lev2::ged {
       if ( not _is_pickmode ) {
         for (int i = 0; i < inumcusts; i++) {
           const GedPrim* prim = primcontainer->mCustomPrims[i];
-          if (IsVisible(pTARG, prim->iy1, prim->iy2)) {
-            prim->mDrawCB(this, prim->mpNode, pTARG);
+          if (IsVisible(pTARG, prim->iy1, prim->iy2) and prim->_renderLambda) {
+            prim->_renderLambda();
           }
         }
       }
@@ -307,8 +307,6 @@ namespace ork::lev2::ged {
     ///////////////////////////////////////////////////////////
     ////////////////////////
     if ( not _is_pickmode ) { ////////////////////////
-      lev2::GfxMaterialUI uimat(pTARG);
-      uimat.SetUIColorMode(UiColorMode::MOD);
       // pTARG->PushModColor(fcolor4(0.0f,0.0f,0.2f));
       pTARG->PushModColor(fcolor4::Black());
       lev2::FontMan::PushFont(_font);

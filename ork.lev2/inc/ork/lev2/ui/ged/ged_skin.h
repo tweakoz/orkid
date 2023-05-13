@@ -12,7 +12,7 @@ public:
   using vtx_t = SVtxV16T16C16 ;
 
   typedef void (*DrawCB)(GedSkin* pskin, GedObject* pnode, ork::lev2::Context* pTARG);
-
+  using prim_lambda_t = std::function<void()>;
   void gpuInit(lev2::Context* ctx);
 
   ork::lev2::freestyle_mtl_ptr_t _material;
@@ -32,7 +32,7 @@ public:
   };
 
   struct GedPrim {
-    DrawCB mDrawCB = nullptr;
+    prim_lambda_t _renderLambda;
     GedObject* mpNode = nullptr;
     int ix1 = 0;
     int iy1 = 0;

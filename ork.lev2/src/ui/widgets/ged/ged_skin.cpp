@@ -80,7 +80,7 @@ void GedSkin::AddPrim(const GedPrim& cb) {
   }
 
   PrimContainer* pctr = it->second;
-  if (cb.mDrawCB) {
+  if (cb._renderLambda) {
     GedPrim* pooledprim = pctr->mPrimPool.allocate();
     *pooledprim         = cb;
     pctr->mCustomPrims.push_back(pooledprim);

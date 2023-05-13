@@ -29,8 +29,8 @@ class GedGradientEditPoint : public GedObject {
   DeclareAbstractX(GedGradientEditPoint, GedObject);
 
   gradient_fvec4_t* mGradientObject = nullptr;
-  GedItemNode* _parent = nullptr;
-  int miPoint = -1;
+  GedItemNode* _parent              = nullptr;
+  int miPoint                       = -1;
 
 public:
   void SetPoint(int idx) {
@@ -180,7 +180,6 @@ public:
 void GedGradientEditSeg::describeX(class_t* clazz) {
 }
 
-
 ////////////////////////////////////////////////////////////////
 
 void GedGradientEditPoint::describeX(class_t* clazz) {
@@ -198,14 +197,14 @@ struct GradientEditorImpl {
       , mEditPoints(kpoolsize)
       , mEditSegs(kpoolsize) {
 
-    _node = node;
+    _node     = node;
     _iodriver = node->_iodriver;
     OrkAssert(_iodriver);
     _gradient = dynamic_cast<gradient_fvec4_t*>(_iodriver->_object.get());
     OrkAssert(_gradient);
   }
   void render(lev2::Context* pTARG);
-  GedGradientNode* _node = nullptr;
+  GedGradientNode* _node      = nullptr;
   gradient_fvec4_t* _gradient = nullptr;
   newiodriver_ptr_t _iodriver;
   ork::pool<GedGradientEditPoint> mEditPoints;
@@ -227,15 +226,53 @@ void GradientEditorImpl::render(lev2::Context* pTARG) {
 
   ////////////////////////////////////
 
-  const auto& data = _gradient->_data;
-  const int knumpoints                  = (int)data.size();
-  const int ksegs                       = knumpoints - 1;
+  const auto& data     = _gradient->_data;
+  const int knumpoints = (int)data.size();
+  const int ksegs      = knumpoints - 1;
 
+  ////////////////////////////////////
+  // draw gradient itself
+  ////////////////////////////////////
+
+  if( ksegs and not is_pick ){
+
+    GedSkin::GedPrim custom_prim;
+    custom_prim.mpNode  = _node;
+    custom_prim.iy1     = y;
+    custom_prim.iy2     = y + h;
+    custom_prim._renderLambda = [=]() {
+        int x1 = x;
+        int x2 = x + w;
+        int y1 = y;
+        int y2 = y + h;
+
+        const float fZ = 0.0f;
+        using vtx_t = GedSkin::vtx_t;
+        uint32_t ucolor = 0x000000ff;
+        RenderContextFrameData RCFD(pTARG);
+        DynamicVertexBuffer<vtx_t>& VB = GfxEnv::GetSharedDynamicV16T16C16();
+
+
+        lev2::VtxWriter<vtx_t> vw;
+        skin->_material->_rasterstate.SetRGBAWriteMask(true, true);
+        skin->_material->begin(skin->_tekvtxcolor, RCFD);
+        skin->_material->bindParamMatrix(skin->_parmvp, skin->_uiMVPMatrix);
+        
+        vw.Lock(pTARG, &VB, 3);
+            vw.AddVertex(vtx_t(fvec4(x1,y1,fZ), fvec4(), ucolor));
+            vw.AddVertex(vtx_t(fvec4(x2,y2,fZ), fvec4(), ucolor));
+            vw.AddVertex(vtx_t(fvec4(x2,y1,fZ), fvec4(), ucolor));
+        vw.UnLock(pTARG);
+
+        pTARG->GBI()->DrawPrimitiveEML(vw, PrimitiveType::TRIANGLES);
+        skin->_material->end(RCFD);
+
+    };
+    skin->AddPrim(custom_prim);
+  }
   ////////////////////////////////////
   // draw segments (for picking)
   ////////////////////////////////////
-
-
 
   if (pTARG->FBI()->isPickState()) {
     mEditSegs.clear();
@@ -268,27 +305,26 @@ void GradientEditorImpl::render(lev2::Context* pTARG) {
   mEditPoints.clear();
 
   for (int i = 0; i < knumpoints; i++) {
-      auto point = data.GetItemAtIndex(i);
+    auto point = data.GetItemAtIndex(i);
 
-      auto editpoint = mEditPoints.allocate();
-      editpoint->SetGradientObject(_gradient);
-      editpoint->SetParent(_node);
-      editpoint->SetPoint(i);
+    auto editpoint = mEditPoints.allocate();
+    editpoint->SetGradientObject(_gradient);
+    editpoint->SetParent(_node);
+    editpoint->SetPoint(i);
 
-      int fxc = int(point.first * float(w));
-      int fx0 = x + (fxc - kpntsize);
-      int fy0 = y + (kh - (kpntsize * 2));
+    int fxc = int(point.first * float(w));
+    int fx0 = x + (fxc - kpntsize);
+    int fy0 = y + (kh - (kpntsize * 2));
 
-      GedSkin::ESTYLE pntstyl = _node->IsObjectHilighted(editpoint)
-                              ? GedSkin::ESTYLE_DEFAULT_HIGHLIGHT 
-                              : GedSkin::ESTYLE_DEFAULT_CHECKBOX;
+    GedSkin::ESTYLE pntstyl =
+        _node->IsObjectHilighted(editpoint) ? GedSkin::ESTYLE_DEFAULT_HIGHLIGHT : GedSkin::ESTYLE_DEFAULT_CHECKBOX;
 
-      if (pTARG->FBI()->isPickState()) {
-        skin->DrawBgBox(editpoint, fx0 + 1, fy0 + 1, kpntsize * 2 - 2, kpntsize * 2 - 2, pntstyl, 2);
-      } else {
-        skin->DrawOutlineBox(editpoint, fx0 + 1, fy0 + 1, kpntsize * 2 - 2, kpntsize * 2 - 2, pntstyl, 2);
-      }
-      skin->DrawOutlineBox(editpoint, fx0, fy0, kpntsize * 2, kpntsize * 2, GedSkin::ESTYLE_DEFAULT_HIGHLIGHT, 2);
+    if (pTARG->FBI()->isPickState()) {
+      skin->DrawBgBox(editpoint, fx0 + 1, fy0 + 1, kpntsize * 2 - 2, kpntsize * 2 - 2, pntstyl, 2);
+    } else {
+      skin->DrawOutlineBox(editpoint, fx0 + 1, fy0 + 1, kpntsize * 2 - 2, kpntsize * 2 - 2, pntstyl, 2);
+    }
+    skin->DrawOutlineBox(editpoint, fx0, fy0, kpntsize * 2, kpntsize * 2, GedSkin::ESTYLE_DEFAULT_HIGHLIGHT, 2);
   }
 }
 
