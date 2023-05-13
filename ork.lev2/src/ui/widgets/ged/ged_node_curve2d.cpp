@@ -189,16 +189,9 @@ struct CurveEditorImpl {
       : _node(node)
       , mEditPoints(kpoolsize)
       , mEditSegs(kpoolsize) {
-    // if (0 == mCurveObject) {
-    // const reflect::IObject* pprop = rtti::autocast(GetOrkProp());
-    // mCurveObject                  = rtti::autocast(pprop->Access(GetOrkObj()));
-    // }
 
-    // if (0 == mCurveObject) {
-    // const reflect::IObject* pprop = rtti::autocast(GetOrkProp());
-    // ObjProxy<MultiCurve1D>* proxy = rtti::autocast(pprop->Access(GetOrkObj()));
-    // mCurveObject                  = proxy->_parent;
-    //}
+        mCurveObject = dynamic_cast<MultiCurve1D*>(node->_iodriver->_object.get());
+        OrkAssert(mCurveObject);
   }
   void render(lev2::Context* pTARG);
 
@@ -218,16 +211,16 @@ static void CurveCustomPrim(
     GedObject* pnode,            //
     ork::lev2::Context* pTARG) { //
 
-  auto pthis          = dynamic_cast<CurveEditorImpl*>(pnode);
+  auto typed_node          = dynamic_cast<GedCurve2DNode*>(pnode);
+  auto pthis = typed_node->_impl.getShared<CurveEditorImpl>();
   const orklut<float, float>& data = pthis->mCurveObject->GetVertices();
   const int knumpoints             = (int)data.size();
   const int ksegs                  = knumpoints - 1;
-  auto node = pthis->_node;
 
-  int x = node->miX;
-  int y = node->miY;
-  int w = node->miW;
-  int h = node->miH;
+  int x = typed_node->miX;
+  int y = typed_node->miY;
+  int w = typed_node->miW;
+  int h = typed_node->miH;
 
   if (0 == ksegs)
     return;
@@ -394,6 +387,7 @@ static void CurveCustomPrim(
 ////////////////////////////////////////////////////////////////
 
 void CurveEditorImpl::render(lev2::Context* pTARG) {
+
   auto container = _node->_container;
   auto model     = container->_model;
   auto skin      = container->_activeSkin;
@@ -513,8 +507,8 @@ void GedNodeFactoryCurve1D::describeX(class_t* clazz) {
 geditemnode_ptr_t GedNodeFactoryCurve1D::createItemNode( GedContainer* container, 
                                                           const ConstString& Name, 
                                                           newiodriver_ptr_t iodriver ) const {
-  OrkAssert(false);
-  return nullptr;
+  auto node =  std::make_shared<GedCurve2DNode>(container, Name.c_str(), iodriver);
+  return node;
 }
 
 ////////////////////////////////////////////////////////////////
