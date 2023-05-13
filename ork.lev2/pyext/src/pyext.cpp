@@ -160,7 +160,7 @@ PYBIND11_MODULE(_lev2, module_lev2) {
             return curve;
           })
           .def("createGradient", [](testobject_ptr_t to, std::string objname) -> gradient_fvec4_ptr_t {
-            auto gradient = std::make_shared<gradient_fvec4>();
+            auto gradient = std::make_shared<gradient_fvec4_t>();
             to->_gradients.AddSorted(objname,gradient);
             return gradient;
           });

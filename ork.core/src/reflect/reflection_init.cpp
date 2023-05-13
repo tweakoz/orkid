@@ -22,7 +22,7 @@ struct ClassToucher{
   HotKey::GetClassStatic();
   MultiCurve1D::GetClassStatic();
   GradientBase::GetClassStatic();
-  gradient_fvec4::GetClassStatic();
+  gradient_fvec4_t::GetClassStatic();
   asset::Asset::GetClassStatic();
   TransformNode::GetClassStatic();
   DecompTransform::GetClassStatic();

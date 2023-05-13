@@ -89,7 +89,7 @@ template <typename T> void Gradient<T>::describeX(class_t* clazz) {
 } // namespace ork
 
 ImplementReflectionX(ork::GradientBase, "GradientBase");
-ImplementTemplateReflectionX(ork::gradient_fvec4, "GradientV4");
+ImplementTemplateReflectionX(ork::gradient_fvec4_t, "GradientV4");
 
 template class ork::orklut<float, ork::fvec4>;
 template struct ork::Gradient<ork::fvec4>;

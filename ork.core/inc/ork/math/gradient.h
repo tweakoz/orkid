@@ -54,8 +54,8 @@ public:
 
 };
 
-using gradient_fvec4 = Gradient<ork::fvec4>;
-using gradient_fvec4_ptr_t = std::shared_ptr<gradient_fvec4>;
+using gradient_fvec4_t = Gradient<fvec4>;
+using gradient_fvec4_ptr_t = std::shared_ptr<gradient_fvec4_t>;
 
 ///////////////////////////////////////////////////////////////////////////////
 }

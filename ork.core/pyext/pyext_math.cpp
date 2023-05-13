@@ -42,7 +42,7 @@ void pyinit_math(py::module& module_core) {
   type_codec->registerStdCodec<multicurve1d_ptr_t>(curve_type);
   /////////////////////////////////////////////////////////////////////////////////
     auto gradient_type = //
-      py::class_<gradient_fvec4,Object,gradient_fvec4_ptr_t>(module_core, "GradientV4");
+      py::class_<gradient_fvec4_t,Object,gradient_fvec4_ptr_t>(module_core, "GradientV4");
   type_codec->registerStdCodec<gradient_fvec4_ptr_t>(gradient_type);
   /////////////////////////////////////////////////////////////////////////////////
   module_core.def("dmtx4_to_fmtx4", [](const dmtx4& dmtx) -> fmtx4 { //
