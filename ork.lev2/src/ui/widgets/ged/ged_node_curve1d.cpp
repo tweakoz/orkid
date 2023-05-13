@@ -25,8 +25,8 @@ static constexpr int kpntsize = 5;
 static constexpr int kh       = 128;
 ////////////////////////////////////////////////////////////////
 
-struct GedCurve2DEditPoint : public GedObject {
-  DeclareAbstractX(GedCurve2DEditPoint, GedObject);
+struct GedCurve1DEditPoint : public GedObject {
+  DeclareAbstractX(GedCurve1DEditPoint, GedObject);
   MultiCurve1D* mCurveObject;
   GedItemNode* _parent;
   int miPoint;
@@ -35,7 +35,7 @@ public:
   void SetPoint(int idx) {
     miPoint = idx;
   }
-  GedCurve2DEditPoint()
+  GedCurve1DEditPoint()
       : mCurveObject(0)
       , _parent(0)
       , miPoint(-1) {
@@ -113,17 +113,17 @@ public:
   }
 };
 
-void GedCurve2DEditPoint::describeX(class_t* clazz) {
+void GedCurve1DEditPoint::describeX(class_t* clazz) {
 }
 
 ////////////////////////////////////////////////////////////////
 
-struct GedCurve2DEditSeg : public GedObject {
-  DeclareAbstractX(GedCurve2DEditSeg, GedObject);
+struct GedCurve1DEditSeg : public GedObject {
+  DeclareAbstractX(GedCurve1DEditSeg, GedObject);
 
 public:
   ///////////////////////////////////
-  GedCurve2DEditSeg()
+  GedCurve1DEditSeg()
       : mCurveObject(0)
       , _parent(0)
       , miSeg(-1) {
@@ -177,7 +177,7 @@ public:
 
 ////////////////////////////////////////////////////////////////
 
-void GedCurve2DEditSeg::describeX(class_t* clazz) {
+void GedCurve1DEditSeg::describeX(class_t* clazz) {
 }
 
 ////////////////////////////////////////////////////////////////
@@ -186,7 +186,7 @@ struct CurveEditorImpl {
 
   static const int kpoolsize = 32;
 
-  CurveEditorImpl(GedCurve2DNode* node)
+  CurveEditorImpl(GedCurve1DNode* node)
       : _node(node)
       , mEditPoints(kpoolsize)
       , mEditSegs(kpoolsize) {
@@ -199,10 +199,10 @@ struct CurveEditorImpl {
   }
   void render(lev2::Context* pTARG);
 
-  GedCurve2DNode* _node      = nullptr;
+  GedCurve1DNode* _node      = nullptr;
   MultiCurve1D* mCurveObject = nullptr;
-  ork::pool<GedCurve2DEditPoint> mEditPoints;
-  ork::pool<GedCurve2DEditSeg> mEditSegs;
+  ork::pool<GedCurve1DEditPoint> mEditPoints;
+  ork::pool<GedCurve1DEditSeg> mEditSegs;
   int _instanceID = 0;
 
 };
@@ -389,10 +389,10 @@ void CurveEditorImpl::render(lev2::Context* pTARG) {
 
 ////////////////////////////////////////////////////////////////
 
-void GedCurve2DNode::describeX(class_t* clazz) {
+void GedCurve1DNode::describeX(class_t* clazz) {
 }
 
-GedCurve2DNode::GedCurve2DNode(GedContainer* c, const char* name, newiodriver_ptr_t iodriver)
+GedCurve1DNode::GedCurve1DNode(GedContainer* c, const char* name, newiodriver_ptr_t iodriver)
     : GedItemNode(c, name, iodriver->_par_prop, iodriver->_object)
     , _iodriver(iodriver) {
 
@@ -401,18 +401,18 @@ GedCurve2DNode::GedCurve2DNode(GedContainer* c, const char* name, newiodriver_pt
 
 ////////////////////////////////////////////////////////////////
 
-void GedCurve2DNode::DoDraw(lev2::Context* pTARG) { // final
+void GedCurve1DNode::DoDraw(lev2::Context* pTARG) { // final
   auto cei = _impl.getShared<CurveEditorImpl>();
   cei->render(pTARG);
 }
 
-int GedCurve2DNode::doComputeHeight() { // final
+int GedCurve1DNode::doComputeHeight() { // final
   return kh;
 }
 
 ////////////////////////////////////////////////////////////////
 
-void GedCurve2DNode::OnUiEvent(ork::ui::event_constptr_t ev) {
+void GedCurve1DNode::OnUiEvent(ork::ui::event_constptr_t ev) {
   return GedItemNode::OnUiEvent(ev);
 }
 
@@ -423,13 +423,13 @@ void GedNodeFactoryCurve1D::describeX(class_t* clazz) {
 
 geditemnode_ptr_t
 GedNodeFactoryCurve1D::createItemNode(GedContainer* container, const ConstString& Name, newiodriver_ptr_t iodriver) const {
-  return std::make_shared<GedCurve2DNode>(container, Name.c_str(), iodriver);
+  return std::make_shared<GedCurve1DNode>(container, Name.c_str(), iodriver);
 }
 
 ////////////////////////////////////////////////////////////////
 } // namespace ork::lev2::ged
 
-ImplementReflectionX(ork::lev2::ged::GedCurve2DNode, "GedCurve2DNode");
-ImplementReflectionX(ork::lev2::ged::GedCurve2DEditPoint, "GedCurve2DEditPoint");
-ImplementReflectionX(ork::lev2::ged::GedCurve2DEditSeg, "GedCurve2DEditSeg");
+ImplementReflectionX(ork::lev2::ged::GedCurve1DNode, "GedCurve1DNode");
+ImplementReflectionX(ork::lev2::ged::GedCurve1DEditPoint, "GedCurve1DEditPoint");
+ImplementReflectionX(ork::lev2::ged::GedCurve1DEditSeg, "GedCurve1DEditSeg");
 ImplementReflectionX(ork::lev2::ged::GedNodeFactoryCurve1D, "GedNodeFactoryCurve1D");

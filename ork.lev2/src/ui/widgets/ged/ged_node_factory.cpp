@@ -9,17 +9,21 @@
 #include <ork/lev2/ui/ged/ged_node.h>
 #include <ork/lev2/ui/ged/ged_container.h>
 #include <ork/lev2/ui/ged/ged_skin.h>
+#include <ork/lev2/ui/ged/ged_factory.h>
 #include <ork/kernel/core_interface.h>
 #include <ork/lev2/ui/popups.inl>
 #include <ork/rtti/RTTIX.inl>
 
-// template class ork::object::Signal<void,ork::lev2::ged::ObjModel>;
 
 ImplementReflectionX(ork::lev2::ged::GedFactoryNode, "GedFactoryNode");
+ImplementReflectionX(ork::lev2::ged::GedNodeFactory, "GedNodeFactory"); // yes I put this here too ;>
 
 namespace ork::lev2::ged {
 
-void GedFactoryNode::describeX(class_t* clazz) {
+void GedNodeFactory::describeX(class_t* clazz) { // factories which create nodes
+}
+
+void GedFactoryNode::describeX(class_t* clazz) { // a node which creates objects
 }
 
 GedFactoryNode::GedFactoryNode(GedContainer* c, const char* name, newiodriver_ptr_t iodriver )
@@ -190,5 +194,3 @@ void enumerateFactories(object::ObjectClass* baseclazz,
 
 ///////////////////////////////////////////////////////////////////////////////
 } //namespace ork::lev2::ged {
-
-//ImplementReflectionX(ork::lev2::ged::GedFactory, "GedFactory");

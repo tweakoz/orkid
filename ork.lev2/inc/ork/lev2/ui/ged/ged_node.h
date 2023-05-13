@@ -261,13 +261,13 @@ struct GedObjNode : public GedItemNode {
 
 public:
   GedObjNode(GedContainer* c, const char* name, const reflect::ObjectProperty* prop, object_ptr_t obj);
-  
-  //void OnCreateObject();
-  //void OnMouseDoubleClicked(ork::ui::event_constptr_t ev) final;
+
+  // void OnCreateObject();
+  // void OnMouseDoubleClicked(ork::ui::event_constptr_t ev) final;
 
   void DoDraw(lev2::Context* pTARG) final; // virtual
 private:
-  //Setter mSetter;
+  // Setter mSetter;
   bool mbInteractive;
   bool mbCollapse;
 };
@@ -276,11 +276,9 @@ private:
 
 struct GedFactoryNode : public GedItemNode {
   DeclareAbstractX(GedFactoryNode, GedItemNode);
+
 public:
-  GedFactoryNode( GedContainer* c, 
-                  const char* name, 
-                  newiodriver_ptr_t iodriver);
-  
+  GedFactoryNode(GedContainer* c, const char* name, newiodriver_ptr_t iodriver);
 
   void DoDraw(lev2::Context* pTARG) final; // virtual
   void OnMouseDoubleClicked(ui::event_constptr_t ev) final;
@@ -295,11 +293,9 @@ public:
 
 struct GedBoolNode : public GedItemNode {
   DeclareAbstractX(GedBoolNode, GedItemNode);
+
 public:
-  GedBoolNode( GedContainer* c, 
-               const char* name, 
-               newiodriver_ptr_t iodriver);
-  
+  GedBoolNode(GedContainer* c, const char* name, newiodriver_ptr_t iodriver);
 
   void DoDraw(lev2::Context* pTARG) final; // virtual
   void OnMouseReleased(ork::ui::event_constptr_t ev) final;
@@ -311,7 +307,8 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 class SliderBase {
 public:
-  virtual ~SliderBase() {}
+  virtual ~SliderBase() {
+  }
   virtual void resize(int ix, int iy, int iw, int ih)  = 0;
   virtual void OnUiEvent(ork::ui::event_constptr_t ev) = 0;
 
@@ -344,12 +341,12 @@ public:
   }
 
 protected:
-  bool mlogmode = false;
-  int miLabelH = 0;
-  float mfx = 0.0f;
-  float mfw = 0.0f;
-  float mfh = 0.0f;
-  float mfTextPos = 0.0f;
+  bool mlogmode    = false;
+  int miLabelH     = 0;
+  float mfx        = 0.0f;
+  float mfw        = 0.0f;
+  float mfh        = 0.0f;
+  float mfTextPos  = 0.0f;
   float mfIndicPos = 0.0f;
   PropTypeString mValStr;
 };
@@ -390,14 +387,12 @@ using sliderbase_ptr_t = std::shared_ptr<SliderBase>;
 struct GedIntNode : public GedItemNode {
   using datatype = int;
   DeclareAbstractX(GedIntNode, GedItemNode);
+
 public:
-  GedIntNode( GedContainer* c, 
-               const char* name, 
-               newiodriver_ptr_t iodriver);
-  
+  GedIntNode(GedContainer* c, const char* name, newiodriver_ptr_t iodriver);
 
   void DoDraw(lev2::Context* pTARG) final; // virtual
-  
+
   void OnUiEvent(ork::ui::event_constptr_t ev) final;
 
   newiodriver_ptr_t _iodriver;
@@ -409,40 +404,49 @@ public:
 struct GedFloatNode : public GedItemNode {
   using datatype = float;
   DeclareAbstractX(GedFloatNode, GedItemNode);
+
 public:
-  GedFloatNode( GedContainer* c, 
-               const char* name, 
-               newiodriver_ptr_t iodriver);
-  
+  GedFloatNode(GedContainer* c, const char* name, newiodriver_ptr_t iodriver);
 
   void DoDraw(lev2::Context* pTARG) final; // virtual
-  
+
   void OnUiEvent(ork::ui::event_constptr_t ev) final;
 
   newiodriver_ptr_t _iodriver;
   sliderbase_ptr_t _slider;
   bool _is_log_mode = false;
 };
+
 ///////////////////////////////////////////////////////////////////////////////
 
-struct GedCurve2DNode : public GedItemNode {
-  using datatype = float;
-  DeclareAbstractX(GedCurve2DNode, GedItemNode);
+struct GedCurve1DNode : public GedItemNode {
+  DeclareAbstractX(GedCurve1DNode, GedItemNode);
+
 public:
-  GedCurve2DNode( GedContainer* c, 
-               const char* name, 
-               newiodriver_ptr_t iodriver);
-  
+  GedCurve1DNode(GedContainer* c, const char* name, newiodriver_ptr_t iodriver);
 
   void DoDraw(lev2::Context* pTARG) final; // virtual
-  
+
   void OnUiEvent(ork::ui::event_constptr_t ev) final;
   int doComputeHeight() final;
 
   newiodriver_ptr_t _iodriver;
-  sliderbase_ptr_t _slider;
-  bool _is_log_mode = false;
 };
 
+///////////////////////////////////////////////////////////////////////////////
+
+struct GedGradientNode : public GedItemNode {
+  DeclareAbstractX(GedGradientNode, GedItemNode);
+
+public:
+  GedGradientNode(GedContainer* c, const char* name, newiodriver_ptr_t iodriver);
+
+  void DoDraw(lev2::Context* pTARG) final; // virtual
+
+  void OnUiEvent(ork::ui::event_constptr_t ev) final;
+  int doComputeHeight() final;
+
+  newiodriver_ptr_t _iodriver;
+};
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2::ged

@@ -110,9 +110,12 @@ struct ClassToucher {
     ged::GedBoolNode::GetClassStatic();
     ged::GedIntNode::GetClassStatic();
     ged::GedFloatNode::GetClassStatic();
-    ged::GedCurve2DNode::GetClassStatic();
+    ged::GedCurve1DNode::GetClassStatic();
+    ged::GedGradientNode::GetClassStatic();
 
+    ged::GedNodeFactory::GetClassStatic();
     ged::GedNodeFactoryCurve1D::GetClassStatic();
+    ged::GedNodeFactoryGradient::GetClassStatic();
 
     ged::TestObject::GetClassStatic();
     ged::TestObjectConfiguration::GetClassStatic();
