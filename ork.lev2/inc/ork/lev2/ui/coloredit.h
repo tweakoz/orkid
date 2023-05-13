@@ -22,6 +22,11 @@ public:
 
   fvec4 _originalColor;
   fvec4 _currentColor;
+  ork::lev2::freestyle_mtl_ptr_t _material;
+  const ork::lev2::FxShaderTechnique* _tekvtxcolor = nullptr;
+  const ork::lev2::FxShaderTechnique* _tekmodcolor = nullptr;
+  const ork::lev2::FxShaderParam* _parmvp          = nullptr;
+  const ork::lev2::FxShaderParam* _parmodcolor     = nullptr;
 
 private:
   void DoDraw(ui::drawevent_constptr_t drwev) override;
