@@ -9,6 +9,7 @@
 #include <ork/lev2/ui/ged/ged_node.h>
 #include <ork/lev2/ui/ged/ged_skin.h>
 #include <ork/lev2/ui/ged/ged_factory.h>
+#include <ork/lev2/ui/ged/ged_surface.h>
 #include <ork/lev2/ui/ged/ged_container.h>
 #include <ork/lev2/ui/popups.inl>
 #include <ork/kernel/core_interface.h>
@@ -190,8 +191,11 @@ struct CurveEditorImpl {
       , mEditPoints(kpoolsize)
       , mEditSegs(kpoolsize) {
 
-        mCurveObject = dynamic_cast<MultiCurve1D*>(node->_iodriver->_object.get());
-        OrkAssert(mCurveObject);
+    mCurveObject = dynamic_cast<MultiCurve1D*>(node->_iodriver->_object.get());
+    OrkAssert(mCurveObject);
+
+    static int ginstid = 0;
+    _instanceID        = ginstid++;
   }
   void render(lev2::Context* pTARG);
 
@@ -199,190 +203,11 @@ struct CurveEditorImpl {
   MultiCurve1D* mCurveObject = nullptr;
   ork::pool<GedCurve2DEditPoint> mEditPoints;
   ork::pool<GedCurve2DEditSeg> mEditSegs;
-  // ork::lev2::DynamicVertexBuffer<ork::lev2::SVtxV12C4T16>	mVertexBuffer;
+  int _instanceID = 0;
+
 };
 
 using curveeditorimpl_ptr_t = std::shared_ptr<CurveEditorImpl>;
-
-////////////////////////////////////////////////////////////////
-
-static void CurveCustomPrim(
-    GedSkin* pskin,              //
-    GedObject* pnode,            //
-    ork::lev2::Context* pTARG) { //
-
-  auto typed_node          = dynamic_cast<GedCurve2DNode*>(pnode);
-  auto pthis = typed_node->_impl.getShared<CurveEditorImpl>();
-  const orklut<float, float>& data = pthis->mCurveObject->GetVertices();
-  const int knumpoints             = (int)data.size();
-  const int ksegs                  = knumpoints - 1;
-
-  int x = typed_node->miX;
-  int y = typed_node->miY;
-  int w = typed_node->miW;
-  int h = typed_node->miH;
-
-  if (0 == ksegs)
-    return;
-
-  if (pTARG->FBI()->isPickState()) {
-  } else if (pthis->mCurveObject) {
-    lev2::DynamicVertexBuffer<lev2::SVtxV12C4T16>& VB = lev2::GfxEnv::GetSharedDynamicVB();
-    lev2::GfxMaterial3DSolid gridmat(pTARG);
-    gridmat.SetColorMode(lev2::GfxMaterial3DSolid::EMODE_MOD_COLOR);
-    gridmat._rasterstate.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
-    gridmat._rasterstate.SetCullTest(ork::lev2::ECullTest::OFF);
-    gridmat._rasterstate.SetBlending(ork::lev2::Blending::OFF);
-    gridmat._rasterstate.SetDepthTest(ork::lev2::EDepthTest::ALWAYS);
-    gridmat._rasterstate.SetShadeModel(ork::lev2::ESHADEMODEL_SMOOTH);
-
-    // pthis->mVertexBuffer.Reset();
-
-    static const int kexplogsegs = 16;
-    int inuml                    = 0;
-    for (int i = 0; i < ksegs; i++) {
-      switch (pthis->mCurveObject->GetSegmentType(i)) {
-        case MultiCurveSegmentType::LINEAR:
-          inuml += 2;
-          break;
-        case MultiCurveSegmentType::BOX:
-          inuml += 4;
-          break;
-        case MultiCurveSegmentType::LOG:
-          inuml += kexplogsegs * 2;
-          break;
-        case MultiCurveSegmentType::EXP:
-          inuml += kexplogsegs * 2;
-          break;
-      }
-    }
-
-    int ivbaseA  = VB.GetNumVertices();
-    int reserveA = 1024;
-
-    lev2::VtxWriter<lev2::SVtxV12C4T16> vw;
-    vw.Lock(pTARG, &VB, reserveA);
-
-    fvec2 uv;
-
-    int icountA = 0;
-
-    const float kz = 0.0f;
-
-    float fx = float(x);
-    float fy = float(y + pskin->_scrollY);
-    float fw = float(w);
-    float fh = float(kh);
-
-    lev2::SVtxV12C4T16 v0(fvec3(fx, fy, kz), uv, 0xffffffff);
-    lev2::SVtxV12C4T16 v1(fvec3(fx + fw, fy, kz), uv, 0xffffffff);
-    lev2::SVtxV12C4T16 v2(fvec3(fx + fw, fy + fh, kz), uv, 0xffffffff);
-    lev2::SVtxV12C4T16 v3(fvec3(fx, fy + fh, kz), uv, 0xffffffff);
-
-    vw.AddVertex(v0);
-    vw.AddVertex(v1);
-    vw.AddVertex(v2);
-
-    vw.AddVertex(v0);
-    vw.AddVertex(v2);
-    vw.AddVertex(v3);
-
-    icountA += 6;
-
-    float fmin = pthis->mCurveObject->GetMin();
-    float fmax = pthis->mCurveObject->GetMax();
-    float frng = (fmax - fmin);
-
-    for (int i = 0; i < ksegs; i++) {
-      std::pair<float, float> data_a = data.GetItemAtIndex(i);
-      std::pair<float, float> data_b = data.GetItemAtIndex(i + 1);
-
-      float fia  = data_a.first;
-      float fib  = data_b.first;
-      float fiya = data_a.second;
-      float fiyb = data_b.second;
-
-      float fx0 = fx + (fia * fw);
-      float fx1 = fx + (fib * fw);
-      float fy0 = fy + fh - (fiya * fh);
-      float fy1 = fy + fh - (fiyb * fh);
-
-      switch (pthis->mCurveObject->GetSegmentType(i)) {
-        case MultiCurveSegmentType::LOG:
-        case MultiCurveSegmentType::EXP: {
-          for (int j = 0; j < kexplogsegs; j++) {
-            int k      = j + 1;
-            float fj   = float(j) / float(kexplogsegs);
-            float fk   = float(k) / float(kexplogsegs);
-            float fiaL = (fj * fib) + (1.0f - fj) * fia;
-            float fiaR = (fk * fib) + (1.0f - fk) * fia;
-            float fsL  = pthis->mCurveObject->Sample(fiaL);
-            float fsR  = pthis->mCurveObject->Sample(fiaR);
-
-            float fuL = (fsL - fmin) / frng;
-            float fuR = (fsR - fmin) / frng;
-
-            fx0 = fx + (fiaL * fw);
-            fx1 = fx + (fiaR * fw);
-            fy0 = fy + fh - (fuL * fh);
-            fy1 = fy + fh - (fuR * fh);
-            lev2::SVtxV12C4T16 v0(fvec3(fx0, fy0, kz), uv, 0xffffffff);
-            lev2::SVtxV12C4T16 v1(fvec3(fx1, fy1, kz), uv, 0xffffffff);
-            vw.AddVertex(v0);
-            vw.AddVertex(v1);
-            icountA += 2;
-          }
-          break;
-        }
-        case MultiCurveSegmentType::LINEAR: {
-          lev2::SVtxV12C4T16 v0(fvec3(fx0, fy0, kz), uv, 0xffffffff);
-          lev2::SVtxV12C4T16 v1(fvec3(fx1, fy1, kz), uv, 0xffffffff);
-          vw.AddVertex(v0);
-          vw.AddVertex(v1);
-          icountA += 2;
-          break;
-        }
-        case MultiCurveSegmentType::BOX: {
-          lev2::SVtxV12C4T16 v0(fvec3(fx0, fy0, kz), uv, 0xffffffff);
-          lev2::SVtxV12C4T16 v1(fvec3(fx1, fy0, kz), uv, 0xffffffff);
-          lev2::SVtxV12C4T16 v2(fvec3(fx1, fy1, kz), uv, 0xffffffff);
-          vw.AddVertex(v0);
-          vw.AddVertex(v1);
-          vw.AddVertex(v1);
-          vw.AddVertex(v2);
-          icountA += 4;
-          break;
-        }
-      }
-    }
-    vw.UnLock(pTARG);
-
-    ////////////////////////////////////////////////////////////////
-    F32 fVPW = (F32)pTARG->FBI()->GetVPW();
-    F32 fVPH = (F32)pTARG->FBI()->GetVPH();
-    if (0.0f == fVPW)
-      fVPW = 1.0f;
-    if (0.0f == fVPH)
-      fVPH = 1.0f;
-    fmtx4 mtxortho = pTARG->MTXI()->Ortho(0.0f, fVPW, 0.0f, fVPH, 0.0f, 1.0f);
-    pTARG->MTXI()->PushPMatrix(mtxortho);
-    pTARG->MTXI()->PushVMatrix(fmtx4::Identity());
-    pTARG->MTXI()->PushMMatrix(fmtx4::Identity());
-    pTARG->PushModColor(fvec3::Blue());
-    pTARG->GBI()->DrawPrimitive(&gridmat, VB, ork::lev2::PrimitiveType::TRIANGLES, ivbaseA, 6);
-    pTARG->PopModColor();
-    pTARG->PushModColor(fvec3::White());
-    pTARG->GBI()->DrawPrimitive(&gridmat, VB, ork::lev2::PrimitiveType::LINES, ivbaseA + 6, icountA - 6);
-    pTARG->PopModColor();
-    pTARG->MTXI()->PopPMatrix();
-    pTARG->MTXI()->PopVMatrix();
-    pTARG->MTXI()->PopMMatrix();
-    ////////////////////////////////////////////////////////////////
-
-  } else {
-    OrkAssert(false);
-  }
-}
 
 ////////////////////////////////////////////////////////////////
 
@@ -400,14 +225,9 @@ void CurveEditorImpl::render(lev2::Context* pTARG) {
 
   const orklut<float, float>& data = mCurveObject->GetVertices();
 
-  skin->DrawBgBox(_node, x, y + 2, w, kh - 3, GedSkin::ESTYLE_BACKGROUND_1);
-  GedSkin::GedPrim prim;
-  prim.mDrawCB = CurveCustomPrim;
-  prim.mpNode  = _node;
-  prim.meType  = ork::lev2::PrimitiveType::MULTI;
-  prim.iy1     = y;
-  prim.iy2     = y + kh;
-  skin->AddPrim(prim);
+  skin->pushCustomColor(fcolor3::Blue());
+  skin->DrawBgBox(_node, x + 1, y + 2, w - 3, h - 3, GedSkin::ESTYLE_CUSTOM_COLOR, 0);
+  skin->popCustomColor();
 
   ////////////////////////////////////
 
@@ -415,7 +235,8 @@ void CurveEditorImpl::render(lev2::Context* pTARG) {
   const int ksegs      = knumpoints - 1;
 
   ////////////////////////////////////
-  // draw segments
+  // draw segments (for picking)
+  ////////////////////////////////////
 
   if (pTARG->FBI()->isPickState()) {
     mEditSegs.clear();
@@ -437,12 +258,93 @@ void CurveEditorImpl::render(lev2::Context* pTARG) {
       int fw0 = int(fw * float(w));
 
       skin->DrawBgBox(editseg, fx0, y, fw0, kh, GedSkin::ESTYLE_DEFAULT_CHECKBOX, 1);
-      skin->DrawOutlineBox(editseg, fx0, y, fw0, kh, GedSkin::ESTYLE_DEFAULT_HIGHLIGHT, 1);
+      // skin->DrawOutlineBox(editseg, fx0, y-1, fw0, kh-2, GedSkin::ESTYLE_DEFAULT_HIGHLIGHT, 1);
     }
   }
 
+  ////////////////////////////////////////////////////////////////////////
+  // line segments
+  ////////////////////////////////////////////////////////////////////////
+
+  static const int kexplogsegs = 16;
+  int inuml                    = 0;
+  for (int i = 0; i < ksegs; i++) {
+    switch (mCurveObject->GetSegmentType(i)) {
+      case MultiCurveSegmentType::LINEAR:
+        inuml += 2;
+        break;
+      case MultiCurveSegmentType::BOX:
+        inuml += 4;
+        break;
+      case MultiCurveSegmentType::LOG:
+        inuml += kexplogsegs * 2;
+        break;
+      case MultiCurveSegmentType::EXP:
+        inuml += kexplogsegs * 2;
+        break;
+    }
+  }
+  float fmin = mCurveObject->GetMin();
+  float fmax = mCurveObject->GetMax();
+  float frng = (fmax - fmin);
+
+  for (int i = 0; i < ksegs; i++) {
+    std::pair<float, float> data_a = data.GetItemAtIndex(i);
+    std::pair<float, float> data_b = data.GetItemAtIndex(i + 1);
+
+    float fia  = data_a.first;
+    float fib  = data_b.first;
+    float fiya = data_a.second;
+    float fiyb = data_b.second;
+
+    float fx0 = x + (fia * w);
+    float fx1 = x + (fib * w);
+    float fy0 = y+h - (fiya * h);
+    float fy1 = y+h - (fiyb * h);
+
+    skin->pushCustomColor(fcolor3::White());
+
+    switch (mCurveObject->GetSegmentType(i)) {
+      case MultiCurveSegmentType::LOG:
+      case MultiCurveSegmentType::EXP: {
+        for (int j = 0; j < kexplogsegs; j++) {
+          int k      = j + 1;
+          float fj   = float(j) / float(kexplogsegs);
+          float fk   = float(k) / float(kexplogsegs);
+          float fiaL = (fj * fib) + (1.0f - fj) * fia;
+          float fiaR = (fk * fib) + (1.0f - fk) * fia;
+          float fsL  = mCurveObject->Sample(fiaL);
+          float fsR  = mCurveObject->Sample(fiaR);
+
+          float fuL = (fsL - fmin) / frng;
+          float fuR = (fsR - fmin) / frng;
+
+          fx0 = x + (fiaL * w);
+          fx1 = x + (fiaR * w);
+          fy0 = y+h - (fuL * h);
+          fy1 = y+h - (fuR * h);
+
+          skin->DrawLine(_node, fx0, fy0, fx1, fy1, GedSkin::ESTYLE_CUSTOM_COLOR);
+        }
+        break;
+      }
+      case MultiCurveSegmentType::LINEAR: {
+        skin->DrawLine(_node, fx0, fy0, fx1, fy1, GedSkin::ESTYLE_CUSTOM_COLOR);
+        break;
+      }
+      case MultiCurveSegmentType::BOX: {
+        skin->DrawLine(_node, fx0, fy0, fx1, fy0, GedSkin::ESTYLE_CUSTOM_COLOR);
+        skin->DrawLine(_node, fx1, fy0, fx1, fy1, GedSkin::ESTYLE_CUSTOM_COLOR);
+        break;
+      }
+    }
+  }
+
+  skin->popCustomColor();
+  
   ////////////////////////////////////
   // draw points
+  ////////////////////////////////////
 
   mEditPoints.clear();
 
@@ -455,18 +357,33 @@ void CurveEditorImpl::render(lev2::Context* pTARG) {
     editpoint->SetPoint(i);
 
     int fxc = int(point.first * float(w));
-    int fyc = int(point.second * float(kh));
+    int fyc = int(point.second * float(h));
     int fx0 = x + (fxc - kpntsize);
-    int fy0 = y + (kh - (kpntsize)) - fyc;
+    int fy0 = y + (h - (kpntsize)) - fyc;
 
-    GedSkin::ESTYLE pntstyl =
-        _node->IsObjectHilighted(editpoint) ? GedSkin::ESTYLE_DEFAULT_HIGHLIGHT : GedSkin::ESTYLE_DEFAULT_CHECKBOX;
+    bool is_highligted = _node->IsObjectHilighted(editpoint);
+
     if (pTARG->FBI()->isPickState()) {
-      skin->DrawBgBox(editpoint, fx0, fy0, kpntsize * 2, kpntsize * 2, pntstyl, 2);
+      skin->DrawBgBox(editpoint, fx0, fy0, kpntsize * 2, kpntsize * 2, GedSkin::ESTYLE_DEFAULT_CHECKBOX, 2);
     } else {
-      skin->DrawOutlineBox(editpoint, fx0 + 1, fy0 + 1, kpntsize * 2 - 2, kpntsize * 2 - 2, pntstyl, 2);
+      int pntsizex2 = kpntsize * 2;
+      // outer
+      skin->pushCustomColor(is_highligted ? fcolor3::White() : fcolor3::White());
+      skin->DrawOutlineBox(editpoint, fx0 + 1, //
+                                      fy0 + 1, //
+                                      pntsizex2 - 2, //
+                                      pntsizex2 - 2, //
+                                      GedSkin::ESTYLE_CUSTOM_COLOR, 2);
+      skin->popCustomColor();
+      // inner
+      skin->pushCustomColor(fcolor3::Black());
+      skin->DrawOutlineBox(editpoint, fx0, //
+                                      fy0, //
+                                      pntsizex2, //
+                                      pntsizex2, //
+                                      GedSkin::ESTYLE_CUSTOM_COLOR, 2);
+      skin->popCustomColor();
     }
-    skin->DrawOutlineBox(editpoint, fx0, fy0, kpntsize * 2, kpntsize * 2, GedSkin::ESTYLE_DEFAULT_HIGHLIGHT, 2);
   }
 }
 
@@ -489,7 +406,7 @@ void GedCurve2DNode::DoDraw(lev2::Context* pTARG) { // final
   cei->render(pTARG);
 }
 
-int GedCurve2DNode::computeHeight() { // final
+int GedCurve2DNode::doComputeHeight() { // final
   return kh;
 }
 
@@ -504,11 +421,9 @@ void GedCurve2DNode::OnUiEvent(ork::ui::event_constptr_t ev) {
 void GedNodeFactoryCurve1D::describeX(class_t* clazz) {
 }
 
-geditemnode_ptr_t GedNodeFactoryCurve1D::createItemNode( GedContainer* container, 
-                                                          const ConstString& Name, 
-                                                          newiodriver_ptr_t iodriver ) const {
-  auto node =  std::make_shared<GedCurve2DNode>(container, Name.c_str(), iodriver);
-  return node;
+geditemnode_ptr_t
+GedNodeFactoryCurve1D::createItemNode(GedContainer* container, const ConstString& Name, newiodriver_ptr_t iodriver) const {
+  return std::make_shared<GedCurve2DNode>(container, Name.c_str(), iodriver);
 }
 
 ////////////////////////////////////////////////////////////////

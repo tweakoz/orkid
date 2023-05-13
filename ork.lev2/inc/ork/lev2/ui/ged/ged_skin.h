@@ -71,6 +71,7 @@ public:
     ESTYLE_DEFAULT_CAPTION,
     ESTYLE_DEFAULT_CHECKBOX,
     ESTYLE_BUTTON_OUTLINE,
+    ESTYLE_CUSTOM_COLOR,
     ESTYLE_DONT_CARE,
   } ESTYLE;
 
@@ -127,6 +128,9 @@ public:
 
   PrimContainers mPrimContainers;
 
+  void pushCustomColor(fcolor3 color);
+  void popCustomColor();
+
   int _scrollY = 0;
   int miRejected = 0;
   int miAccepted = 0;
@@ -136,6 +140,10 @@ public:
   int _char_h = 0;
   orkvector<GedText> _text_vect;
   bool _is_pickmode = false;
+  fmtx4 _uiMatrix;
+  fmtx4 _mMatrix;
+  fmtx4 _uiMVPMatrix;
+  std::stack<fcolor3> _colorStack;
 
 };
 

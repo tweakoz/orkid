@@ -60,6 +60,7 @@ void GedIntNode::DoDraw(lev2::Context* pTARG) {
   auto skin    = _container->_activeSkin;
   bool is_pick = skin->_is_pickmode;
 
+  //printf( "GedIntNode<%p> x<%d> y<%d> w<%d> h<%d>\n", this, miX, miY, miW, miH );
   _slider->resize(miX, miY, miW, miH);
 
   int ixi = int(_slider->GetIndicPos()) - miX;

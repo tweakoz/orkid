@@ -40,8 +40,11 @@ class UiGedTestApp(object):
 
     # create a test object to edit and attach it to the object model
     self.test_object = GedTestObjectConfiguration()
-    hk1 = self.test_object.createTestObject("test1")
-    hk2 = self.test_object.createTestObject("test2")
+    t1 = self.test_object.createTestObject("test1")
+    t2 = self.test_object.createTestObject("test2")
+    c1 = t2.createCurve("curve1")
+    c2 = t2.createCurve("curve2")
+    c3 = t2.createCurve("curve3")
     self.objmodel.attach(self.test_object,True)
     print(self.test_object.clazz.name)
 

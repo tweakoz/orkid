@@ -144,7 +144,14 @@ lev2::Context* GedItemNode::_l2context() const{
 
 //////////////////////////////////////////////////////////////////////////////
 
-int GedItemNode::computeHeight(void) {
+int GedItemNode::computeHeight() {
+  micalch = doComputeHeight();
+  return micalch;
+}
+
+//////////////////////////////////////////////////////////////////////////////
+
+int GedItemNode::doComputeHeight() {
   int ih = get_charh() + 8;
   if (false == mbcollapsed) {
     int inum = numChildren();
@@ -155,8 +162,6 @@ int GedItemNode::computeHeight(void) {
       }
     }
   }
-  micalch = ih;
-  //printf("GedItemNode<%p:%s> height<%d>\n", this, _propname.c_str(), ih);
   return ih;
 }
 
@@ -176,7 +181,8 @@ void GedItemNode::Layout(int ix, int iy, int iw, int ih) {
   miW = iw;
   miH = ih;
 
-  //printf("GedItemNode<%p> Layout ix<%d> iy<%d> iw<%d> ih<%d>\n", this, ix, iy, iw, ih);
+  if(0)
+    printf("GedItemNode<%p:%s> Layout ix<%d> iy<%d> iw<%d> ih<%d>\n", this, this->_propname.c_str(), ix, iy, iw, ih);
 
   bool bsidebyside = CanSideBySide();
 
@@ -192,6 +198,7 @@ void GedItemNode::Layout(int ix, int iy, int iw, int ih) {
 
   for (int i = 0; i < inumitems; i++) {
     bool bvis = _children[i]->IsVisible();
+
 
     if (bvis) {
       int h = _children[i]->micalch;

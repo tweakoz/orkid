@@ -153,16 +153,21 @@ PYBIND11_MODULE(_lev2, module_lev2) {
   using namespace lev2::ged;
   auto gedto_type =                                                              //
       py::class_<TestObject,Object,testobject_ptr_t>(module_lev2, "GedTestObject") //
-          .def(py::init<>());
+          .def(py::init<>())
+          .def("createCurve", [](testobject_ptr_t to, std::string objname) -> testobject_ptr_t {
+            auto curve = std::make_shared<MultiCurve1D>();
+            to->_curves.AddSorted(objname,curve);
+            return to;
+          });
   type_codec->registerStdCodec<testobject_ptr_t>(gedto_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto gedtocfg_type =                                                              //
       py::class_<TestObjectConfiguration,Object,testobjectconfiguration_ptr_t>(module_lev2, "GedTestObjectConfiguration") //
           .def(py::init<>())
-          .def("createTestObject", [](TestObjectConfiguration& hkc, std::string actionname) -> testobject_ptr_t {
-            auto hk = std::make_shared<TestObject>();
-            hkc._testobjects.AddSorted(actionname,hk);
-            return hk;
+          .def("createTestObject", [](testobjectconfiguration_ptr_t toc, std::string objname) -> testobject_ptr_t {
+            auto to = std::make_shared<TestObject>();
+            toc->_testobjects.AddSorted(objname,to);
+            return to;
           });
   type_codec->registerStdCodec<testobjectconfiguration_ptr_t>(gedtocfg_type);
   //////////////////////////////////////////////////////////////////////////////

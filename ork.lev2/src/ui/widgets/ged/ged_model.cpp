@@ -216,7 +216,7 @@ void ObjModel::attach(
     ///////////////////////////////////////////////////////
     // partial tree (starting at top_root_item) ?
     ///////////////////////////////////////////////////////
-    if (top_root_item) { 
+    if (top_root_item) {
       _gedContainer->PushItemNode(top_root_item.get());
       recurse(root_object);
       _gedContainer->PopItemNode(top_root_item.get());
@@ -224,7 +224,7 @@ void ObjModel::attach(
     ///////////////////////////////////////////////////////
     // full tree
     ///////////////////////////////////////////////////////
-    else { 
+    else {
       _gedContainer->GetRootItem()->_children.clear();
       if (root_object) {
         _gedContainer->PushItemNode(_gedContainer->GetRootItem().get());
@@ -318,36 +318,6 @@ geditemnode_ptr_t ObjModel::recurse(
   geditemnode_ptr_t rval = nullptr;
 
   ///////////////////////////////////////////////////
-  // editor.object.ops
-  ///////////////////////////////////////////////////
-  auto obj_ops_anno = classdesc.classAnnotation("editor.object.ops");
-
-  bool is_const_string = obj_ops_anno.isSet() and obj_ops_anno.isA<ConstString>();
-  bool is_op_map       = obj_ops_anno.isSet() and obj_ops_anno.isA<ork::reflect::OpMap*>();
-
-  // ConstString obj_ops = obj_ops_anno.isSet() ? obj_ops_anno.Get<ConstString>() : "";
-  const char* usename          = (pname != 0) ? pname : objclass->Name().c_str();
-  gedgroupnode_ptr_t groupnode = binline            //
-                                     ? nullptr      //
-                                     : std::make_shared<GedGroupNode>(
-                                           _gedContainer,    // mdl
-                                           usename, // name
-                                           nullptr, // property
-                                           cur_obj, // object
-                                           true);   // is_obj_node
-  if (cur_obj == root_object) {
-    rval = groupnode;
-  }
-  if (groupnode) {
-    _gedContainer->AddChild(groupnode);
-    _gedContainer->PushItemNode(groupnode.get());
-  }
-  if (is_const_string || is_op_map) {
-    // OpsNode* popnode = new OpsNode(*this, "ops", 0, cur_obj);
-    //_gedContainer->AddChild(popnode);
-  }
-
-  ///////////////////////////////////////////////////
   // editor.class
   ///////////////////////////////////////////////////
 
@@ -366,20 +336,69 @@ geditemnode_ptr_t ObjModel::recurse(
           if (pname == 0)
             pname = nodefactory_class.c_str();
 
-          auto iodriver = std::make_shared<NewIoDriver>();
+          auto group_name          = FormatString("grp-%s", pname);
+
+          auto groupnode = std::make_shared<GedGroupNode>(
+              _gedContainer,                         // mdl
+              group_name.c_str(), // name
+              nullptr,                               // property
+              cur_obj,                               // object
+              true);                                 // is_obj_node
+
+          _gedContainer->AddChild(groupnode);
+          _gedContainer->PushItemNode(groupnode.get());
+
+          /////////////////////////////////////
+          // create node with factory
+          /////////////////////////////////////
+
+          auto iodriver     = std::make_shared<NewIoDriver>();
           iodriver->_object = root_object;
+
           auto child = typed_factory->createItemNode(_gedContainer, pname, iodriver);
+
           _gedContainer->AddChild(child);
 
-          if (groupnode) {
-            _gedContainer->PopItemNode(groupnode.get());
-            groupnode->updateVisibility();
-          }
+          /////////////////////////////////////
+
+          _gedContainer->PopItemNode(groupnode.get());
+          groupnode->updateVisibility();
+
           _gedContainer->DoResize();
-          return rval;
+          return groupnode;
         }
       }
     }
+  }
+
+  ///////////////////////////////////////////////////
+  // editor.object.ops
+  ///////////////////////////////////////////////////
+  auto obj_ops_anno = classdesc.classAnnotation("editor.object.ops");
+
+  bool is_const_string = obj_ops_anno.isSet() and obj_ops_anno.isA<ConstString>();
+  bool is_op_map       = obj_ops_anno.isSet() and obj_ops_anno.isA<ork::reflect::OpMap*>();
+
+  // ConstString obj_ops = obj_ops_anno.isSet() ? obj_ops_anno.Get<ConstString>() : "";
+  const char* usename          = (pname != 0) ? pname : objclass->Name().c_str();
+  gedgroupnode_ptr_t groupnode = binline       //
+                                     ? nullptr //
+                                     : std::make_shared<GedGroupNode>(
+                                           _gedContainer, // mdl
+                                           usename,       // name
+                                           nullptr,       // property
+                                           cur_obj,       // object
+                                           true);         // is_obj_node
+  if (cur_obj == root_object) {
+    rval = groupnode;
+  }
+  if (groupnode) {
+    _gedContainer->AddChild(groupnode);
+    _gedContainer->PushItemNode(groupnode.get());
+  }
+  if (is_const_string || is_op_map) {
+    // OpsNode* popnode = new OpsNode(*this, "ops", 0, cur_obj);
+    //_gedContainer->AddChild(popnode);
   }
 
   ///////////////////////////////////////////////////
@@ -398,12 +417,12 @@ geditemnode_ptr_t ObjModel::recurse(
     const sortnode* snode = sort_stack.front();
     sort_stack.pop();
     ////////////////////////////////////////////////////////////////////////////////////////
-    gedgroupnode_ptr_t groupnode = nullptr;
+    gedgroupnode_ptr_t groupnode_2 = nullptr;
     if (igcount) {
       const std::string& GroupName = snode->Name;
-      groupnode                    = std::make_shared<GedGroupNode>(_gedContainer, GroupName.c_str(), nullptr, cur_obj);
-      _gedContainer->AddChild(groupnode);
-      _gedContainer->PushItemNode(groupnode.get());
+      groupnode_2                  = std::make_shared<GedGroupNode>(_gedContainer, GroupName.c_str(), nullptr, cur_obj);
+      _gedContainer->AddChild(groupnode_2);
+      _gedContainer->PushItemNode(groupnode_2.get());
     }
     ////////////////////////////////////////////////////////////////////////////////////////
     { // Possibly In Group
@@ -426,9 +445,9 @@ geditemnode_ptr_t ObjModel::recurse(
       ////////////////////////////////////////////////////////////////////////////////////////
     } // Possibly In Group
     ////////////////////////////////////////////////////////////////////////////////////////
-    if (groupnode) {
-      _gedContainer->PopItemNode(groupnode.get());
-      groupnode->updateVisibility();
+    if (groupnode_2) {
+      _gedContainer->PopItemNode(groupnode_2.get());
+      groupnode_2->updateVisibility();
     }
     ////////////////////////////////////////////////////////////////////////////////////////
     for (const auto& it : snode->GroupVect) {
@@ -449,35 +468,32 @@ geditemnode_ptr_t ObjModel::recurse(
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 
-geditemnode_ptr_t ObjModel::createAbstractNode( const std::string& Name, 
-                                                newiodriver_ptr_t iodriver ){ //
+geditemnode_ptr_t ObjModel::createAbstractNode(const std::string& Name,
+                                               newiodriver_ptr_t iodriver) { //
 
-
-
-  if( auto as_obj = iodriver->_abstract_val.tryAs<object_ptr_t>() ){
-    if( as_obj.value() ){
+  if (auto as_obj = iodriver->_abstract_val.tryAs<object_ptr_t>()) {
+    if (as_obj.value()) {
       recurse(as_obj.value(), Name.c_str());
-    }
-    else{ // factory
+    } else { // factory
       auto anno_edclass = iodriver->_par_prop->GetAnnotation("editor.factorylistbase");
       if (anno_edclass.length()) {
-        auto base_clazz = rtti::Class::FindClass(anno_edclass.c_str());
+        auto base_clazz   = rtti::Class::FindClass(anno_edclass.c_str());
         auto as_obj_clazz = dynamic_cast<ork::object::ObjectClass*>(base_clazz);
         if (as_obj_clazz) {
           factory_class_set_t factory_set;
           enumerateFactories(as_obj_clazz, factory_set);
-          for( auto clazz : factory_set ){
-              auto clazz_name = clazz->Name();
-              printf( "!!! FACTORY<%s>\n", clazz_name.c_str() );
+          for (auto clazz : factory_set) {
+            auto clazz_name = clazz->Name();
+            printf("!!! FACTORY<%s>\n", clazz_name.c_str());
           }
-          auto factory_node = std::make_shared<GedFactoryNode>(_gedContainer, Name.c_str(), iodriver );
+          auto factory_node          = std::make_shared<GedFactoryNode>(_gedContainer, Name.c_str(), iodriver);
           factory_node->_factory_set = factory_set;
           _gedContainer->AddChild(factory_node);
           return factory_node;
         }
       }
     }
-  }                                              
+  }
   return std::make_shared<GedLabelNode>(_gedContainer, Name.c_str(), iodriver->_par_prop, iodriver->_object);
 }
 
@@ -507,52 +523,52 @@ geditemnode_ptr_t ObjModel::createObjPropNode(
   }*/
   /////////////////////////////////////////////////////////////////////////
   auto array_prop = dynamic_cast<const reflect::IArray*>(prop);
-  auto map_prop = dynamic_cast<const reflect::IMap*>(prop);
+  auto map_prop   = dynamic_cast<const reflect::IMap*>(prop);
   /////////////////////////////////////////////////////////////////////////
   ConstString anno_ucdclass  = prop->GetAnnotation("ged.userchoice.delegate");
   bool HasUserChoiceDelegate = (anno_ucdclass.length());
   /////////////////////////////////////////////////////////////////////////
-  if( map_prop ){
-     return std::make_shared<GedMapNode>(_gedContainer, Name.c_str(), map_prop, pobject);
+  if (map_prop) {
+    return std::make_shared<GedMapNode>(_gedContainer, Name.c_str(), map_prop, pobject);
   }
   /////////////////////////////////////////////////////////////////////////
-  else if (auto as_boolprop = dynamic_cast<const reflect::ITyped<bool>*>(prop)){
-    auto iodriver = std::make_shared<NewIoDriver>();
+  else if (auto as_boolprop = dynamic_cast<const reflect::ITyped<bool>*>(prop)) {
+    auto iodriver      = std::make_shared<NewIoDriver>();
     bool initial_value = false;
-    as_boolprop->get(initial_value,pobject);
-    iodriver->_par_prop = prop;
-    iodriver->_object = pobject;
-    iodriver->_abstract_val = initial_value;
-    iodriver->_onValueChanged = [=](){
-      as_boolprop->set(iodriver->_abstract_val.get<bool>(),pobject);
+    as_boolprop->get(initial_value, pobject);
+    iodriver->_par_prop       = prop;
+    iodriver->_object         = pobject;
+    iodriver->_abstract_val   = initial_value;
+    iodriver->_onValueChanged = [=]() {
+      as_boolprop->set(iodriver->_abstract_val.get<bool>(), pobject);
       //_gedContainer->_model->enqueueUpdate();
     };
     return std::make_shared<GedBoolNode>(_gedContainer, Name.c_str(), iodriver);
   }
   /////////////////////////////////////////////////////////////////////////
-  else if (auto as_intprop = dynamic_cast<const reflect::ITyped<int>*>(prop)){
-    auto iodriver = std::make_shared<NewIoDriver>();
+  else if (auto as_intprop = dynamic_cast<const reflect::ITyped<int>*>(prop)) {
+    auto iodriver     = std::make_shared<NewIoDriver>();
     int initial_value = 0;
-    as_intprop->get(initial_value,pobject);
-    iodriver->_par_prop = prop;
-    iodriver->_object = pobject;
-    iodriver->_abstract_val = initial_value;
-    iodriver->_onValueChanged = [=](){
-      as_intprop->set(iodriver->_abstract_val.get<int>(),pobject);
+    as_intprop->get(initial_value, pobject);
+    iodriver->_par_prop       = prop;
+    iodriver->_object         = pobject;
+    iodriver->_abstract_val   = initial_value;
+    iodriver->_onValueChanged = [=]() {
+      as_intprop->set(iodriver->_abstract_val.get<int>(), pobject);
       //_gedContainer->_model->enqueueUpdate();
     };
     return std::make_shared<GedIntNode>(_gedContainer, Name.c_str(), iodriver);
   }
   /////////////////////////////////////////////////////////////////////////
-  else if (auto as_floatprop = dynamic_cast<const reflect::ITyped<float>*>(prop)){
-    auto iodriver = std::make_shared<NewIoDriver>();
+  else if (auto as_floatprop = dynamic_cast<const reflect::ITyped<float>*>(prop)) {
+    auto iodriver       = std::make_shared<NewIoDriver>();
     float initial_value = 0;
-    as_floatprop->get(initial_value,pobject);
-    iodriver->_par_prop = prop;
-    iodriver->_object = pobject;
-    iodriver->_abstract_val = initial_value;
-    iodriver->_onValueChanged = [=](){
-      as_floatprop->set(iodriver->_abstract_val.get<float>(),pobject);
+    as_floatprop->get(initial_value, pobject);
+    iodriver->_par_prop       = prop;
+    iodriver->_object         = pobject;
+    iodriver->_abstract_val   = initial_value;
+    iodriver->_onValueChanged = [=]() {
+      as_floatprop->set(iodriver->_abstract_val.get<float>(), pobject);
       //_gedContainer->_model->enqueueUpdate();
     };
     return std::make_shared<GedFloatNode>(_gedContainer, Name.c_str(), iodriver);
@@ -645,7 +661,7 @@ void ObjModel::EnumerateNodes(
     // overridden order from editor.prop.groups
     ///////////////////////////////////////////////////////////
     if (strlen(eg)) {
-      printf( "enumerate props for class<%s> (overridden order)\n", clazz->Name().c_str() );
+      printf("enumerate props for class<%s> (overridden order)\n", clazz->Name().c_str());
       FixedString<1024> str_rep = eg;
       str_rep.replace_in_place("//", "// ");
       tokenlist src_toklist = CreateTokenList(str_rep.c_str(), " ");
@@ -695,21 +711,21 @@ void ObjModel::EnumerateNodes(
         }
         if (pnode)
           for (; itp != iter_toklist.end(); itp++) {
-            const std::string& str                                   = (*itp);
-            auto itf = propmap.find(str.c_str());
-            ork::reflect::ObjectProperty* prop                       = (itf != propmap.end()) ? itf->second : 0;
+            const std::string& str             = (*itp);
+            auto itf                           = propmap.find(str.c_str());
+            ork::reflect::ObjectProperty* prop = (itf != propmap.end()) ? itf->second : 0;
             if (prop) {
               pnode->PropVect.push_back(std::make_pair(str.c_str(), prop));
             }
           }
       }
       /////////////////////////////////////////////////
-    } 
+    }
     ///////////////////////////////////////////////////////////
     // default order
     ///////////////////////////////////////////////////////////
-    else{
-      printf( "enumerate props for class<%s> (default order)\n", clazz->Name().c_str() );
+    else {
+      printf("enumerate props for class<%s> (default order)\n", clazz->Name().c_str());
       for (auto it : propmap) {
         ///////////////////////////////////////////////////
         // editor.object.props
@@ -727,7 +743,7 @@ void ObjModel::EnumerateNodes(
         ///////////////////////////////////////////////////
         bool prop_ok            = true;
         const ConstString& Name = it.first;
-        //printf( "prop name<%s>\n", Name.c_str() );
+        // printf( "prop name<%s>\n", Name.c_str() );
         if (allowed_props.size()) {
           std::string namstr(Name.c_str());
           prop_ok = allowed_props.find(namstr) != allowed_props.end();

@@ -36,6 +36,13 @@ bool GedSkin::IsObjInSet(void* pobj) {
   return rval;
 }
 
+void GedSkin::pushCustomColor(fcolor3 color){
+  _colorStack.push(color);
+}
+void GedSkin::popCustomColor(){
+  _colorStack.pop();
+}
+
 ////////////////////////////////////////////////////////////////
 
 GedSkin::GedSkin()

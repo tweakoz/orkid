@@ -106,7 +106,8 @@ public:
   int numChildren() const;
   geditemnode_ptr_t child(int idx) const;
   ///////////////////////////////////////////////////
-  virtual int computeHeight();
+  int computeHeight();
+  virtual int doComputeHeight();
   ///////////////////////////////////////////////////
   bool IsObjectHilighted(const GedObject* pobj) const;
   ///////////////////////////////////////////////////
@@ -436,7 +437,7 @@ public:
   void DoDraw(lev2::Context* pTARG) final; // virtual
   
   void OnUiEvent(ork::ui::event_constptr_t ev) final;
-  int computeHeight() final;
+  int doComputeHeight() final;
 
   newiodriver_ptr_t _iodriver;
   sliderbase_ptr_t _slider;

@@ -82,6 +82,12 @@ fvec4 GedSkin1::GetStyleColor(GedObject* pnode, ESTYLE ic) {
       color = fvec3(0.6f, 0.6f, 0.7f);
       bsc   = false;
       break;
+    case ESTYLE_CUSTOM_COLOR: {
+      color      = _colorStack.top();
+      balternate = false;
+      bsc        = false;
+      break;
+    }
     default:
       color = fvec3(0.0f, 0.0f, 0.0f);
       break;
@@ -112,7 +118,7 @@ void GedSkin1::DrawBgBox(GedObject* pnode, int ix, int iy, int iw, int ih, ESTYL
 
   fvec4 uobj = _gedVP->AssignPickId(pnode);
 
-  //printf( "uobj<%g %g %g %g> pnode<0x%p>\n", uobj.x, uobj.y, uobj.z, uobj.w, pnode );
+  // printf( "uobj<%g %g %g %g> pnode<0x%p>\n", uobj.x, uobj.y, uobj.z, uobj.w, pnode );
 
   if (_is_pickmode) {
     AddToObjSet((void*)pnode);
@@ -211,6 +217,8 @@ void GedSkin1::Begin(Context* pTARG, GedSurface* pVP) {
   _text_vect.clear();
   clear();
   ClearObjSet();
+  _colorStack = std::stack<fcolor3>();
+  _colorStack.push(fcolor3::White());
 }
 ///////////////////////////////////////////////////////////////////
 void GedSkin1::End(Context* pTARG) {
@@ -220,12 +228,13 @@ void GedSkin1::End(Context* pTARG) {
   miAccepted                           = 0;
   lev2::DynamicVertexBuffer<vtx_t>& VB = lev2::GfxEnv::GetSharedDynamicV16T16C16();
   ////////////////////////
-  ork::fmtx4 mtxW;
-  mtxW.setTranslation(0.0f, float(_scrollY), 0.0f);
-  //const ork::fmtx4& mtxW = pTARG->MTXI()->RefMMatrix();
-  auto uimatrix          = pTARG->MTXI()->uiMatrix(iw, ih);
+  _mMatrix.setTranslation(0.0f, float(_scrollY), 0.0f);
+  _uiMatrix = pTARG->MTXI()->uiMatrix(iw, ih);
+
+  _uiMVPMatrix = _uiMatrix * _mMatrix;
+
   pTARG->MTXI()->PushUIMatrix(iw, ih);
-  pTARG->MTXI()->PushMMatrix(mtxW);
+  pTARG->MTXI()->PushMMatrix(_mMatrix);
   ////////////////////////
   RenderContextFrameData RCFD(pTARG);
   ////////////////////////
@@ -262,15 +271,15 @@ void GedSkin1::End(Context* pTARG) {
     vw.UnLock(pTARG);
 
     //_material->begin(_is_pickmode ? _tekvtxpick : _tekvtxcolor, RCFD);
-    _material->_rasterstate.SetRGBAWriteMask(true,true);
-    _material->begin(_tekvtxcolor , RCFD);
-    _material->bindParamMatrix(_parmvp, uimatrix*mtxW);
+    _material->_rasterstate.SetRGBAWriteMask(true, true);
+    _material->begin(_tekvtxcolor, RCFD);
+    _material->bindParamMatrix(_parmvp, _uiMVPMatrix);
     pTARG->GBI()->DrawPrimitiveEML(vw, PrimitiveType::TRIANGLES);
     _material->end(RCFD);
     icount = 0;
 
-    //printf("rendered %d quads\n", inumquads);
-    // ivbase += inumquads*6;
+    // printf("rendered %d quads\n", inumquads);
+    //  ivbase += inumquads*6;
     ///////////////////////////////////////////////////////////
     // render custom primitive
     ///////////////////////////////////////////////////////////
@@ -302,7 +311,7 @@ void GedSkin1::End(Context* pTARG) {
         vw.UnLock(pTARG);
         if (icount) {
           _material->begin(_is_pickmode ? _tekvtxpick : _tekvtxcolor, RCFD);
-          _material->bindParamMatrix(_parmvp, uimatrix*mtxW);
+          _material->bindParamMatrix(_parmvp, _uiMVPMatrix);
           pTARG->GBI()->DrawPrimitiveEML(vw, PrimitiveType::LINES);
           _material->end(RCFD);
         }
@@ -319,7 +328,7 @@ void GedSkin1::End(Context* pTARG) {
       for (int it = 0; it < inumt; it++) {
         const GedText& text = _text_vect[it];
         if (IsVisible(pTARG, text.iy, text.iy + 8)) {
-          lev2::FontMan::DrawText(pTARG, text.ix, text.iy+1, text.mString.c_str());
+          lev2::FontMan::DrawText(pTARG, text.ix, text.iy + 1, text.mString.c_str());
         }
       }
     }
@@ -333,4 +342,4 @@ void GedSkin1::End(Context* pTARG) {
   _gedVP = 0;
 }
 
-} // namespace ork::lev2::ged {
+} // namespace ork::lev2::ged
