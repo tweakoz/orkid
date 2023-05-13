@@ -10,6 +10,7 @@
 #include <ork/config/config.h>
 #include <ork/kernel/any.h>
 #include <ork/kernel/orklut.h>
+#include <ork/kernel/string/ConstString.h>
 #include <ork/rtti/ICastable.h>
 #include <ork/reflect/Serializable.h>
 #include <ork/reflect/types.h>
@@ -44,6 +45,19 @@ public:
 
   void annotateProperty(const ConstString& propname, const ConstString& key, const ConstString& val);
   ConstString propertyAnnotation(const ConstString& propname, const ConstString& key) const;
+
+  template <typename T> void annotateClassTyped(const ConstString& key, const T& val) {
+    mClassTypedAnnotations.AddSorted(key, val);
+  }
+  template <typename T> attempt_cast_const<T> classAnnotationTyped(const ConstString& key) const {
+    auto it = mClassTypedAnnotations.find(key);
+    if( it != mClassTypedAnnotations.end() ){
+      return it->second.tryAs<T>();
+    }
+    else {
+      return attempt_cast_const<T>(nullptr);
+    }
+  }
 
   void annotateClass(const ConstString& key, const anno_t& val);
   const anno_t& classAnnotation(const ConstString& key) const;
@@ -82,6 +96,7 @@ private:
   AutoSlotMapType mAutoSlots;
 
   orklut<ConstString, anno_t> mClassAnnotations;
+  orklut<ConstString, svar64_t> mClassTypedAnnotations;
 };
 
 } // namespace reflect

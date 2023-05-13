@@ -351,13 +351,10 @@ geditemnode_ptr_t ObjModel::recurse(
   // editor.class
   ///////////////////////////////////////////////////
 
-  auto node_factory_class = classdesc.classAnnotation("editor.ged.node.factory");
-
-  if (auto as_conststr = node_factory_class.tryAs<ConstString>()) {
-    OrkAssert(false);
-    auto anno_edclass = as_conststr.value();
-    if (anno_edclass.length()) {
-      rtti::Class* anno_clazz = rtti::Class::FindClass(anno_edclass.c_str());
+  if (auto as_nodefactory_class = classdesc.classAnnotationTyped<ConstString>("editor.ged.node.factory")) {
+    auto nodefactory_class = as_nodefactory_class.value();
+    if (nodefactory_class.length()) {
+      rtti::Class* anno_clazz = rtti::Class::FindClass(nodefactory_class.c_str());
       if (anno_clazz) {
         auto object_clazz = dynamic_cast<ork::object::ObjectClass*>(anno_clazz);
         OrkAssert(object_clazz != nullptr);
@@ -365,9 +362,9 @@ geditemnode_ptr_t ObjModel::recurse(
         auto typed_factory = std::dynamic_pointer_cast<GedNodeFactory>(factory);
         OrkAssert(typed_factory != nullptr);
         if (typed_factory) {
-          OrkAssert(false);
+
           if (pname == 0)
-            pname = anno_edclass.c_str();
+            pname = nodefactory_class.c_str();
 
           auto iodriver = std::make_shared<NewIoDriver>();
           iodriver->_object = root_object;

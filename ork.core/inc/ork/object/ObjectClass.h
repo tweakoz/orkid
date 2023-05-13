@@ -39,6 +39,13 @@ public:
   void annotate(const ConstString& key, const anno_t& val);
   const anno_t& annotation(const ConstString& key);
 
+  template <typename T> void annotateTyped(const ConstString& key, const T& val) {
+    _description.annotateClassTyped(key, val);
+  }
+  template <typename T> attempt_cast_const<T> annotationTyped(const ConstString& key) const {
+    return _description.classAnnotationTyped<T>(key);
+  }
+
   reflect::Description& Description();
   const reflect::Description& Description() const;
 
