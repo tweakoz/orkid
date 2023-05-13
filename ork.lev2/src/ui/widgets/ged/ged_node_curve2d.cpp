@@ -8,6 +8,7 @@
 #include <ork/lev2/ui/ged/ged.h>
 #include <ork/lev2/ui/ged/ged_node.h>
 #include <ork/lev2/ui/ged/ged_skin.h>
+#include <ork/lev2/ui/ged/ged_factory.h>
 #include <ork/lev2/ui/ged/ged_container.h>
 #include <ork/lev2/ui/popups.inl>
 #include <ork/kernel/core_interface.h>
@@ -505,8 +506,21 @@ void GedCurve2DNode::OnUiEvent(ork::ui::event_constptr_t ev) {
 }
 
 ////////////////////////////////////////////////////////////////
+
+void GedNodeFactoryCurve1D::describeX(class_t* clazz) {
+}
+
+geditemnode_ptr_t GedNodeFactoryCurve1D::createItemNode( GedContainer* container, 
+                                                          const ConstString& Name, 
+                                                          newiodriver_ptr_t iodriver ) const {
+  OrkAssert(false);
+  return nullptr;
+}
+
+////////////////////////////////////////////////////////////////
 } // namespace ork::lev2::ged
 
 ImplementReflectionX(ork::lev2::ged::GedCurve2DNode, "GedCurve2DNode");
 ImplementReflectionX(ork::lev2::ged::GedCurve2DEditPoint, "GedCurve2DEditPoint");
 ImplementReflectionX(ork::lev2::ged::GedCurve2DEditSeg, "GedCurve2DEditSeg");
+ImplementReflectionX(ork::lev2::ged::GedNodeFactoryCurve1D, "GedNodeFactoryCurve1D");

@@ -9,6 +9,7 @@
 #include <ork/lev2/ui/ged/ged_node.h>
 #include <ork/lev2/ui/ged/ged_container.h>
 #include <ork/lev2/ui/ged/ged_surface.h>
+#include <ork/lev2/ui/ged/ged_factory.h>
 #include <ork/kernel/core_interface.h>
 
 namespace ork::lev2::ged {
@@ -350,23 +351,27 @@ geditemnode_ptr_t ObjModel::recurse(
   // editor.class
   ///////////////////////////////////////////////////
 
-  /*auto anno_editor_class = classdesc.classAnnotation("editor.class");
+  auto node_factory_class = classdesc.classAnnotation("editor.ged.node.factory");
 
-  if (auto as_conststr = anno_editor_class.tryAs<ConstString>()) {
+  if (auto as_conststr = node_factory_class.tryAs<ConstString>()) {
+    OrkAssert(false);
     auto anno_edclass = as_conststr.value();
     if (anno_edclass.length()) {
-      rtti::Class* AnnoEditorClass = rtti::Class::FindClass(anno_edclass.c_str());
-      if (AnnoEditorClass) {
-        auto clazz = rtti::safe_downcast<ork::object::ObjectClass*>(AnnoEditorClass);
-        OrkAssert(clazz != nullptr);
-        auto factory       = clazz->createShared();
-        auto typed_factory = std::dynamic_pointer_cast<GedFactory>(factory);
+      rtti::Class* anno_clazz = rtti::Class::FindClass(anno_edclass.c_str());
+      if (anno_clazz) {
+        auto object_clazz = dynamic_cast<ork::object::ObjectClass*>(anno_clazz);
+        OrkAssert(object_clazz != nullptr);
+        auto factory       = object_clazz->createShared();
+        auto typed_factory = std::dynamic_pointer_cast<GedNodeFactory>(factory);
         OrkAssert(typed_factory != nullptr);
         if (typed_factory) {
+          OrkAssert(false);
           if (pname == 0)
             pname = anno_edclass.c_str();
 
-          auto child = typed_factory->createItemNode(_gedContainer, pname, nullptr, root_object);
+          auto iodriver = std::make_shared<NewIoDriver>();
+          iodriver->_object = root_object;
+          auto child = typed_factory->createItemNode(_gedContainer, pname, iodriver);
           _gedContainer->AddChild(child);
 
           if (groupnode) {
@@ -378,7 +383,7 @@ geditemnode_ptr_t ObjModel::recurse(
         }
       }
     }
-  }*/
+  }
 
   ///////////////////////////////////////////////////
   // walk classes to root class

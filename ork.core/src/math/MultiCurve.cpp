@@ -45,8 +45,10 @@ void MultiCurve1D::describeX(object::ObjectClass* clazz) {
   clazz->floatProperty("max", float_range{-2000.0f, +2000.0f}, &ork::MultiCurve1D::mMax);
 
   static const char* EdGrpStr = "sort://min max Curve";
+  static const char* NodeFactory = "GedNodeFactoryCurve1D";
 
   clazz->annotate("editor.prop.groups", EdGrpStr);
+  clazz->annotate("editor.ged.node.factory", NodeFactory);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

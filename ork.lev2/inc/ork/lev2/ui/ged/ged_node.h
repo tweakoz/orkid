@@ -442,5 +442,6 @@ public:
   sliderbase_ptr_t _slider;
   bool _is_log_mode = false;
 };
+
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2::ged

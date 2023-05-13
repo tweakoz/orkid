@@ -3,69 +3,73 @@
 #include "ged.h"
 
 namespace ork::lev2::ged {
+struct GedNodeFactory : public ::ork::Object {
+  virtual geditemnode_ptr_t
+  createItemNode(GedContainer* c, const ConstString& Name, newiodriver_ptr_t iodriver ) const  = 0;
+};
 ///////////////////////////////////////////////////////////////////////////////
-class GedFactoryEnum : public GedFactory {
-  RttiDeclareConcrete(GedFactoryEnum, GedFactory);
-  GedItemNode*
-  CreateItemNode(ObjModel& mdl, const ConstString& Name, const reflect::ObjectProperty* prop, Object* obj) const final;
+struct GedNodeFactoryEnum : public GedNodeFactory {
+  RttiDeclareConcrete(GedNodeFactoryEnum, GedNodeFactory);
+  geditemnode_ptr_t
+  createItemNode(GedContainer* c, const ConstString& Name, newiodriver_ptr_t iodriver ) const final;
 
 public:
 };
 ///////////////////////////////////////////////////////////////////////////////
-class GedFactoryTransform : public GedFactory {
-  RttiDeclareConcrete(GedFactoryTransform, GedFactory);
-  GedItemNode*
-  CreateItemNode(ObjModel& mdl, const ConstString& Name, const reflect::ObjectProperty* prop, Object* obj) const final;
+struct GedNodeFactoryTransform : public GedNodeFactory {
+  RttiDeclareConcrete(GedNodeFactoryTransform, GedNodeFactory);
+  geditemnode_ptr_t
+  createItemNode(GedContainer* c, const ConstString& Name, newiodriver_ptr_t iodriver ) const final;
 
 public:
 };
 ///////////////////////////////////////////////////////////////////////////////
-class GedFactory_PlugFloat : public GedFactory {
-  RttiDeclareConcrete(GedFactory_PlugFloat, GedFactory);
-  GedItemNode*
-  CreateItemNode(ObjModel& mdl, const ConstString& Name, const reflect::ObjectProperty* prop, Object* obj) const final;
-  void Recurse(ObjModel& mdl, const reflect::ObjectProperty* prop, ork::Object* pobj) const final;
+struct GedNodeFactory_PlugFloat : public GedNodeFactory {
+  RttiDeclareConcrete(GedNodeFactory_PlugFloat, GedNodeFactory);
+  geditemnode_ptr_t
+  createItemNode(GedContainer* c, const ConstString& Name, newiodriver_ptr_t iodriver ) const final;
+  //void Recurse(GedContainer* c, const reflect::ObjectProperty* prop, ork::Object* pobj) const final;
 
 public:
-  GedFactory_PlugFloat();
+  GedNodeFactory_PlugFloat();
 };
 ///////////////////////////////////////////////////////////////////////////////
-class GedFactoryOutliner : public GedFactory {
-  RttiDeclareConcrete(GedFactoryOutliner, GedFactory);
-  GedItemNode*
-  CreateItemNode(ObjModel& mdl, const ConstString& Name, const reflect::ObjectProperty* prop, Object* obj) const final;
-
-public:
-};
-///////////////////////////////////////////////////////////////////////////////
-class GedFactoryGradient : public GedFactory {
-  RttiDeclareConcrete(GedFactoryGradient, GedFactory);
-  GedItemNode*
-  CreateItemNode(ObjModel& mdl, const ConstString& Name, const reflect::ObjectProperty* prop, Object* obj) const final;
+struct GedNodeFactoryOutliner : public GedNodeFactory {
+  RttiDeclareConcrete(GedNodeFactoryOutliner, GedNodeFactory);
+  geditemnode_ptr_t
+  createItemNode(GedContainer* c, const ConstString& Name, newiodriver_ptr_t iodriver ) const final;
 
 public:
 };
 ///////////////////////////////////////////////////////////////////////////////
-class GedFactoryCurve : public GedFactory {
-  RttiDeclareConcrete(GedFactoryCurve, GedFactory);
-  GedItemNode*
-  CreateItemNode(ObjModel& mdl, const ConstString& Name, const reflect::ObjectProperty* prop, Object* obj) const final;
+struct GedNodeFactoryGradient : public GedNodeFactory {
+  RttiDeclareConcrete(GedNodeFactoryGradient, GedNodeFactory);
+  geditemnode_ptr_t
+  createItemNode(GedContainer* c, const ConstString& Name, newiodriver_ptr_t iodriver ) const final;
 
 public:
 };
 ///////////////////////////////////////////////////////////////////////////////
-class GedFactoryAssetList : public GedFactory {
-  RttiDeclareConcrete(GedFactoryAssetList, GedFactory);
-  GedItemNode*
-  CreateItemNode(ObjModel& mdl, const ConstString& Name, const reflect::ObjectProperty* prop, Object* obj) const final;
+struct GedNodeFactoryCurve1D : public GedNodeFactory {
+  DeclareConcreteX(GedNodeFactoryCurve1D, GedNodeFactory);
+  geditemnode_ptr_t
+  createItemNode(GedContainer* c, const ConstString& Name, newiodriver_ptr_t iodriver ) const final;
 
 public:
 };
 ///////////////////////////////////////////////////////////////////////////////
-class GedFactoryFileList : public GedFactory {
-  RttiDeclareConcrete(GedFactoryFileList, GedFactory);
-  GedItemNode*
-  CreateItemNode(ObjModel& mdl, const ConstString& Name, const reflect::ObjectProperty* prop, Object* obj) const final;
+struct GedNodeFactoryAssetList : public GedNodeFactory {
+  RttiDeclareConcrete(GedNodeFactoryAssetList, GedNodeFactory);
+  geditemnode_ptr_t
+  createItemNode(GedContainer* c, const ConstString& Name, newiodriver_ptr_t iodriver ) const final;
+
+public:
+};
+///////////////////////////////////////////////////////////////////////////////
+struct GedNodeFactoryFileList : public GedNodeFactory {
+  RttiDeclareConcrete(GedNodeFactoryFileList, GedNodeFactory);
+  geditemnode_ptr_t
+  createItemNode(GedContainer* c, const ConstString& Name, newiodriver_ptr_t iodriver ) const final;
 
 public:
 };
