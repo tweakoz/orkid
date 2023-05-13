@@ -3,6 +3,7 @@
 #include <ork/rtti/RTTIX.inl>
 #include <ork/object/Object.h>
 #include <ork/math/multicurve.h>
+#include <ork/math/gradient.h>
 
 namespace ork::lev2::ged {
 ///////////////////////////////////////////////////////////////////////////
@@ -14,6 +15,7 @@ public:
   bool bool_prop = false;
   float float_prop= 0.0f;
   orklut<std::string, multicurve1d_ptr_t> _curves;
+  orklut<std::string, gradient_fvec4_ptr_t> _gradients;
 };
 
 using testobject_ptr_t      = std::shared_ptr<TestObject>;

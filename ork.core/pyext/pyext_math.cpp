@@ -6,6 +6,8 @@
 ////////////////////////////////////////////////////////////////
 
 #include "pyext.h"
+#include <ork/math/gradient.h>
+#include <ork/math/multicurve.h>
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork {
 void pyinit_math_plane(py::module& module_core);
@@ -34,6 +36,14 @@ void pyinit_math(py::module& module_core) {
   pyinit_math_plane(module_core);
   pyinit_math_la_float(module_core);
   pyinit_math_la_double(module_core);
+  /////////////////////////////////////////////////////////////////////////////////
+    auto curve_type = //
+      py::class_<MultiCurve1D,Object,multicurve1d_ptr_t>(module_core, "MultiCurve1D");
+  type_codec->registerStdCodec<multicurve1d_ptr_t>(curve_type);
+  /////////////////////////////////////////////////////////////////////////////////
+    auto gradient_type = //
+      py::class_<gradient_fvec4,Object,gradient_fvec4_ptr_t>(module_core, "GradientV4");
+  type_codec->registerStdCodec<gradient_fvec4_ptr_t>(gradient_type);
   /////////////////////////////////////////////////////////////////////////////////
   module_core.def("dmtx4_to_fmtx4", [](const dmtx4& dmtx) -> fmtx4 { //
     return dmtx4_to_fmtx4(dmtx);

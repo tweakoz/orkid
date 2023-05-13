@@ -7,6 +7,7 @@
 
 #include <ork/util/hotkey.h>
 #include <ork/math/multicurve.h>
+#include <ork/math/gradient.h>
 #include <ork/math/TransformNode.h>
 #include <ork/asset/Asset.h>
 #include <ork/dataflow/all.h>
@@ -20,6 +21,8 @@ struct ClassToucher{
   HotKeyConfiguration::GetClassStatic();
   HotKey::GetClassStatic();
   MultiCurve1D::GetClassStatic();
+  GradientBase::GetClassStatic();
+  gradient_fvec4::GetClassStatic();
   asset::Asset::GetClassStatic();
   TransformNode::GetClassStatic();
   DecompTransform::GetClassStatic();

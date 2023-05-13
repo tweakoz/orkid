@@ -154,10 +154,15 @@ PYBIND11_MODULE(_lev2, module_lev2) {
   auto gedto_type =                                                              //
       py::class_<TestObject,Object,testobject_ptr_t>(module_lev2, "GedTestObject") //
           .def(py::init<>())
-          .def("createCurve", [](testobject_ptr_t to, std::string objname) -> testobject_ptr_t {
+          .def("createCurve", [](testobject_ptr_t to, std::string objname) -> multicurve1d_ptr_t {
             auto curve = std::make_shared<MultiCurve1D>();
             to->_curves.AddSorted(objname,curve);
-            return to;
+            return curve;
+          })
+          .def("createGradient", [](testobject_ptr_t to, std::string objname) -> gradient_fvec4_ptr_t {
+            auto gradient = std::make_shared<gradient_fvec4>();
+            to->_gradients.AddSorted(objname,gradient);
+            return gradient;
           });
   type_codec->registerStdCodec<testobject_ptr_t>(gedto_type);
   /////////////////////////////////////////////////////////////////////////////////

@@ -45,6 +45,7 @@ class UiGedTestApp(object):
     c1 = t2.createCurve("curve1")
     c2 = t2.createCurve("curve2")
     c3 = t2.createCurve("curve3")
+    g3 = t2.createGradient("gradA")
     self.objmodel.attach(self.test_object,True)
     print(self.test_object.clazz.name)
 

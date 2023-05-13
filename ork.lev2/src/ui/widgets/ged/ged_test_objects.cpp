@@ -38,6 +38,9 @@ void TestObject::describeX(class_t* clazz) {
   clazz //
       ->directObjectMapProperty("Curves", &TestObject::_curves) //
       ->annotate<ConstString>("editor.factorylistbase", "MultiCurve1D");
+  clazz //
+      ->directObjectMapProperty("Gradients", &TestObject::_gradients) //
+      ->annotate<ConstString>("editor.factorylistbase", "GradientV4");
 }
 void TestObjectConfiguration::describeX(class_t* clazz) {
   clazz //

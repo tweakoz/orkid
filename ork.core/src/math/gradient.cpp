@@ -11,7 +11,7 @@
 #include <ork/math/cvector4.h>
 #include <ork/math/gradient.h>
 #include <ork/kernel/orklut.hpp>
-#include <ork/reflect/properties/register.h>
+#include <ork/reflect/properties/registerX.inl>
 #include <ork/reflect/enum_serializer.inl>
 #include <ork/reflect/properties/DirectTyped.h>
 #include <ork/reflect/properties/DirectTyped.hpp>
@@ -22,7 +22,9 @@
 
 namespace ork {
 
-void GradientBase::Describe() {
+template class orklut<std::string,gradient_fvec4_ptr_t>;
+
+void GradientBase::describeX(class_t* clazz) {
 }
 
 GradientBase::GradientBase() {
@@ -76,21 +78,18 @@ template <typename T> T Gradient<T>::sample(float fu) {
   return rval;
 }
 
-template <typename T> void Gradient<T>::Describe() {
-  /*ork::reflect::RegisterMapProperty( "points", & Gradient<T>::_data );
-  ork::reflect::annotatePropertyForEditor<Gradient>( "points", "editor.visible", "false" );
-  ork::reflect::annotateClassForEditor< Gradient >( "editor.class", ConstString("ged.factory.gradient") );
-*/
+template <typename T> void Gradient<T>::describeX(class_t* clazz) {
+  clazz->directMapProperty("points", &Gradient<T>::_data) //
+       ->template annotate<bool>("editor.visible", false);
+  clazz->template annotateTyped<ConstString>("editor.ged.node.factory", "GedNodeFactoryGradient");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 } // namespace ork
 
-INSTANTIATE_TRANSPARENT_RTTI(ork::GradientBase, "GradientBase");
-INSTANTIATE_TRANSPARENT_TEMPLATE_RTTI(ork::gradient_fvec4, "GradientV4");
+ImplementReflectionX(ork::GradientBase, "GradientBase");
+ImplementTemplateReflectionX(ork::gradient_fvec4, "GradientV4");
 
 template class ork::orklut<float, ork::fvec4>;
-// template class ork::orklut<float, ork::orklut<float,ork::fvec4> >;
 template struct ork::Gradient<ork::fvec4>;
-// template class ork::GradLut< ork::GradLut<ork::fvec4> >; //ork::orklut<float,ork::fvec4>;

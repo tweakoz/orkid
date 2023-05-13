@@ -11,6 +11,7 @@
 
 #include <ork/config/config.h>
 #include <ork/object/Object.h>
+#include <ork/rtti/RTTIX.inl>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork{
@@ -21,7 +22,7 @@ namespace reflect { class IDeserializer; }
 ///////////////////////////////////////////////////////////////////////////////
 
 struct GradientBase : public ork::Object {
-	RttiDeclareConcrete(GradientBase, ork::Object);
+  DeclareAbstractX(GradientBase, ork::Object);
 public: 
 	GradientBase();
 };
@@ -38,7 +39,7 @@ template <typename T> struct GradLut : public orklut<float,T>
 template <typename T> //
 struct Gradient : public GradientBase { //
 
-	DECLARE_TRANSPARENT_TEMPLATE_RTTI(Gradient<T>, GradientBase);
+	DeclareTemplateConcreteX(Gradient<T>, GradientBase);
 
 public: 
 
@@ -47,13 +48,14 @@ public:
 	void addDataPoint( float flerp, const T& data );
 	T sample( float atlerp );
 
-  bool preDeserialize( ork::reflect::serdes::IDeserializer& deser );
+  bool preDeserialize( ork::reflect::serdes::IDeserializer& deser ) final;
 
   GradLut<T> _data;
 
 };
 
 using gradient_fvec4 = Gradient<ork::fvec4>;
+using gradient_fvec4_ptr_t = std::shared_ptr<gradient_fvec4>;
 
 ///////////////////////////////////////////////////////////////////////////////
 }

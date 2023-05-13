@@ -356,10 +356,10 @@ void CurveEditorImpl::render(lev2::Context* pTARG) {
     editpoint->SetParent(_node);
     editpoint->SetPoint(i);
 
-    int fxc = int(point.first * float(w));
-    int fyc = int(point.second * float(h));
-    int fx0 = x + (fxc - kpntsize);
-    int fy0 = y + (h - (kpntsize)) - fyc;
+    int ixc = int(point.first * float(w));
+    int iyc = int(point.second * float(h));
+    int fx0 = x + (ixc - kpntsize);
+    int fy0 = y + (h - (kpntsize)) - iyc;
 
     bool is_highligted = _node->IsObjectHilighted(editpoint);
 
@@ -373,7 +373,7 @@ void CurveEditorImpl::render(lev2::Context* pTARG) {
                                       fy0 + 1, //
                                       pntsizex2 - 2, //
                                       pntsizex2 - 2, //
-                                      GedSkin::ESTYLE_CUSTOM_COLOR, 2);
+                                      GedSkin::ESTYLE_CUSTOM_COLOR, 3);
       skin->popCustomColor();
       // inner
       skin->pushCustomColor(fcolor3::Black());
