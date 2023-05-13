@@ -406,6 +406,8 @@ void GedCurve1DNode::DoDraw(lev2::Context* pTARG) { // final
   cei->render(pTARG);
 }
 
+////////////////////////////////////////////////////////////////
+
 int GedCurve1DNode::doComputeHeight() { // final
   return kh;
 }

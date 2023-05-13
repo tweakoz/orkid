@@ -21,25 +21,20 @@
 ////////////////////////////////////////////////////////////////
 namespace ork::lev2::ged {
 ////////////////////////////////////////////////////////////////
-
-static const int kpntsize = 5;
+static constexpr int kpntsize = 5;
+static constexpr int kh       = 128;
+////////////////////////////////////////////////////////////////
 
 class GedGradientEditPoint : public GedObject {
   DeclareAbstractX(GedGradientEditPoint, GedObject);
 
-  gradient_fvec4_t* mGradientObject;
-  GedItemNode* _parent;
-  int miPoint;
+  gradient_fvec4_t* mGradientObject = nullptr;
+  GedItemNode* _parent = nullptr;
+  int miPoint = -1;
 
 public:
   void SetPoint(int idx) {
     miPoint = idx;
-  }
-
-  GedGradientEditPoint()
-      : mGradientObject(0)
-      , _parent(0)
-      , miPoint(-1) {
   }
 
   void SetGradientObject(gradient_fvec4_t* pgrad) {
@@ -195,11 +190,107 @@ void GedGradientEditPoint::describeX(class_t* clazz) {
 ////////////////////////////////////////////////////////////////
 
 struct GradientEditorImpl {
+
+  static const int kpoolsize = 32;
+
   GradientEditorImpl(GedGradientNode* node)
-      : _node(node) {
+      : _node(node)
+      , mEditPoints(kpoolsize)
+      , mEditSegs(kpoolsize) {
+
+    _node = node;
+    _iodriver = node->_iodriver;
+    OrkAssert(_iodriver);
+    _gradient = dynamic_cast<gradient_fvec4_t*>(_iodriver->_object.get());
+    OrkAssert(_gradient);
   }
+  void render(lev2::Context* pTARG);
   GedGradientNode* _node = nullptr;
+  gradient_fvec4_t* _gradient = nullptr;
+  newiodriver_ptr_t _iodriver;
+  ork::pool<GedGradientEditPoint> mEditPoints;
+  ork::pool<GedGradientEditSeg> mEditSegs;
 };
+
+////////////////////////////////////////////////////////////////
+
+void GradientEditorImpl::render(lev2::Context* pTARG) {
+  auto container = _node->_container;
+  auto model     = container->_model;
+  auto skin      = container->_activeSkin;
+  bool is_pick   = skin->_is_pickmode;
+
+  int x = _node->miX;
+  int y = _node->miY;
+  int w = _node->miW;
+  int h = _node->miH;
+
+  ////////////////////////////////////
+
+  const auto& data = _gradient->_data;
+  const int knumpoints                  = (int)data.size();
+  const int ksegs                       = knumpoints - 1;
+
+  ////////////////////////////////////
+  // draw segments (for picking)
+  ////////////////////////////////////
+
+
+
+  if (pTARG->FBI()->isPickState()) {
+    mEditSegs.clear();
+
+    for (int i = 0; i < ksegs; i++) {
+      auto pointa = data.GetItemAtIndex(i);
+      auto pointb = data.GetItemAtIndex(i + 1);
+
+      auto editseg = mEditSegs.allocate();
+      editseg->SetGradientObject(_gradient);
+      editseg->SetParent(_node);
+      editseg->SetSeg(i);
+
+      float fi0 = pointa.first;
+      float fi1 = pointb.first;
+      float fw  = (fi1 - fi0);
+
+      int fx0 = x + int(fi0 * float(w));
+      int fw0 = int(fw * float(w));
+
+      skin->DrawBgBox(editseg, fx0, y, fw0, kh, GedSkin::ESTYLE_DEFAULT_CHECKBOX, 1);
+      // skin->DrawOutlineBox(editseg, fx0, y-1, fw0, kh-2, GedSkin::ESTYLE_DEFAULT_HIGHLIGHT, 1);
+    }
+  }
+
+  ////////////////////////////////////
+  // draw points
+  ////////////////////////////////////
+
+  mEditPoints.clear();
+
+  for (int i = 0; i < knumpoints; i++) {
+      auto point = data.GetItemAtIndex(i);
+
+      auto editpoint = mEditPoints.allocate();
+      editpoint->SetGradientObject(_gradient);
+      editpoint->SetParent(_node);
+      editpoint->SetPoint(i);
+
+      int fxc = int(point.first * float(w));
+      int fx0 = x + (fxc - kpntsize);
+      int fy0 = y + (kh - (kpntsize * 2));
+
+      GedSkin::ESTYLE pntstyl = _node->IsObjectHilighted(editpoint)
+                              ? GedSkin::ESTYLE_DEFAULT_HIGHLIGHT 
+                              : GedSkin::ESTYLE_DEFAULT_CHECKBOX;
+
+      if (pTARG->FBI()->isPickState()) {
+        skin->DrawBgBox(editpoint, fx0 + 1, fy0 + 1, kpntsize * 2 - 2, kpntsize * 2 - 2, pntstyl, 2);
+      } else {
+        skin->DrawOutlineBox(editpoint, fx0 + 1, fy0 + 1, kpntsize * 2 - 2, kpntsize * 2 - 2, pntstyl, 2);
+      }
+      skin->DrawOutlineBox(editpoint, fx0, fy0, kpntsize * 2, kpntsize * 2, GedSkin::ESTYLE_DEFAULT_HIGHLIGHT, 2);
+  }
+}
 
 ////////////////////////////////////////////////////////////////
 
@@ -209,7 +300,8 @@ void GedGradientNode::describeX(class_t* clazz) {
 ////////////////////////////////////////////////////////////////
 
 GedGradientNode::GedGradientNode(GedContainer* c, const char* name, newiodriver_ptr_t iodriver)
-    : GedItemNode(c, name, iodriver->_par_prop, iodriver->_object) {
+    : GedItemNode(c, name, iodriver->_par_prop, iodriver->_object)
+    , _iodriver(iodriver) {
 
   auto gei = _impl.makeShared<GradientEditorImpl>(this);
 }
@@ -217,21 +309,20 @@ GedGradientNode::GedGradientNode(GedContainer* c, const char* name, newiodriver_
 ////////////////////////////////////////////////////////////////
 
 void GedGradientNode::DoDraw(lev2::Context* pTARG) {
-  auto model   = _container->_model;
-  auto skin    = _container->_activeSkin;
-  bool is_pick = skin->_is_pickmode;
-
-  skin->DrawBgBox(this, miX, miY, miW, miH, GedSkin::ESTYLE_BACKGROUND_1, 100);
-
-  if (not is_pick) {
-    skin->DrawText(this, miX, miY, _propname.c_str());
-  }
+  auto gei = _impl.getShared<GradientEditorImpl>();
+  gei->render(pTARG);
 }
+
+////////////////////////////////////////////////////////////////
 
 void GedGradientNode::OnUiEvent(ork::ui::event_constptr_t ev) {
+  return GedItemNode::OnUiEvent(ev);
 }
+
+////////////////////////////////////////////////////////////////
+
 int GedGradientNode::doComputeHeight() {
-  return 100;
+  return kh;
 }
 
 ////////////////////////////////////////////////////////////////
@@ -243,6 +334,7 @@ void GedNodeFactoryGradient::describeX(class_t* clazz) {
 
 geditemnode_ptr_t
 GedNodeFactoryGradient::createItemNode(GedContainer* container, const ConstString& Name, newiodriver_ptr_t iodriver) const {
+  OrkAssert(iodriver);
   return std::make_shared<GedGradientNode>(container, Name.c_str(), iodriver);
 }
 
