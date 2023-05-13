@@ -100,26 +100,29 @@ public:
 
             bool bok = false;
 
-            fvec4 inp = it->second;
+            fvec4 initial_color = it->second;
+            
+            const int kdim  = 256;
+            int sx = ev->miScreenPosX - (kdim>>1);
+            int sy = ev->miScreenPosY - (kdim>>1);
+            if( sx<0)
+                sx = 0;
+            if( sy<0)
+                sy = 0;
+                
+            int W = kdim;
+            int H = kdim;
+            auto ctx = _parent->_l2context();
 
-            /*QRgb rgba = qRgba(inp.x * 255.0f, inp.y * 255.0f, inp.z * 255.0f, inp.w * 255.0f);
+            fvec4 selected = ui::popupColorEdit(ctx, sx, sy, W, H, initial_color);
 
-            rgba = QColorDialog::getRgba(rgba, &bok, 0);
+            data.RemoveItem(it);
+            data.AddSorted(pr.first, selected);
 
-            if (bok) {
-              data.RemoveItem(it);
-              int ir = qRed(rgba);
-              int ig = qGreen(rgba);
-              int ib = qBlue(rgba);
-              int ia = qAlpha(rgba);
-              fvec4 nc(float(ir) / 256.0f, float(ig) / 256.0f, float(ib) / 256.0f, float(ia) / 256.0f);
-              data.AddSorted(pr.first, nc);
-            }
           } else if (is_right) {
             if (it->first != 0.0f && it->first != 1.0f) {
               data.RemoveItem(it);
             }
-          }*/
           }
           break;
         }
@@ -246,8 +249,8 @@ void GradientEditorImpl::render(lev2::Context* pTARG) {
       int y1 = y;
       int y2 = y + h;
 
-      const float fZ  = 0.0f;
-      using vtx_t     = GedSkin::vtx_t;
+      const float fZ = 0.0f;
+      using vtx_t    = GedSkin::vtx_t;
 
       ///////////////////////////////
       DynamicVertexBuffer<vtx_t>& VB = GfxEnv::GetSharedDynamicV16T16C16();
@@ -279,10 +282,10 @@ void GradientEditorImpl::render(lev2::Context* pTARG) {
         const fvec4& c0 = data_a.second;
         const fvec4& c1 = data_b.second;
 
-        vtx_t v0(fvec4(fx0, fy0, kz), uv, c0 );
-        vtx_t v1(fvec4(fx1, fy0, kz), uv, c1 );
-        vtx_t v2(fvec4(fx1, fy1, kz), uv, c1 );
-        vtx_t v3(fvec4(fx0, fy1, kz), uv, c0 );
+        vtx_t v0(fvec4(fx0, fy0, kz), uv, c0);
+        vtx_t v1(fvec4(fx1, fy0, kz), uv, c1);
+        vtx_t v2(fvec4(fx1, fy1, kz), uv, c1);
+        vtx_t v3(fvec4(fx0, fy1, kz), uv, c0);
 
         vw.AddVertex(v0);
         vw.AddVertex(v2);
