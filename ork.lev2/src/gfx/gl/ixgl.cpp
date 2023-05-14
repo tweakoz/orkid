@@ -41,6 +41,29 @@ extern bool gbVSYNC;
 namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
+void setAlwaysOnTop(GLFWwindow *window) {
+    Display *display = glfwGetX11Display();
+    Window x11window = glfwGetX11Window(window);
+
+    Atom wmStateAbove = XInternAtom(display, "_NET_WM_STATE_ABOVE", False);
+    Atom wmState = XInternAtom(display, "_NET_WM_STATE", False);
+
+    XEvent event;
+    memset(&event, 0, sizeof(event));
+    event.type = ClientMessage;
+    event.xclient.window = x11window;
+    event.xclient.message_type = wmState;
+    event.xclient.format = 32;
+    event.xclient.data.l[0] = 1; // _NET_WM_STATE_ADD
+    event.xclient.data.l[1] = wmStateAbove;
+    event.xclient.data.l[2] = 0;
+    event.xclient.data.l[3] = 0;
+    event.xclient.data.l[4] = 0;
+
+    XSendEvent(display, DefaultRootWindow(display), False,
+               SubstructureRedirectMask | SubstructureNotifyMask, &event);
+}
+
 extern std::atomic<int> __FIND_IT;
 
 bool g_allow_HIDPI = false;
