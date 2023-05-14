@@ -28,7 +28,8 @@ void LineEdit::setValue(const std::string& val) {
 HandlerResult LineEdit::DoOnUiEvent(event_constptr_t cev) {
   HandlerResult rval;
   switch (cev->_eventcode) {
-    case EventCode::KEY_DOWN: {
+    case EventCode::KEY_DOWN:
+    case EventCode::KEY_REPEAT: {
       int key = cev->miKeyCode;
       printf("key<%d>\n", key);
       switch (key) {
@@ -49,6 +50,11 @@ HandlerResult LineEdit::DoOnUiEvent(event_constptr_t cev) {
           }
           break;
       }
+      rval.setHandled(this);
+      break;
+    }
+    case EventCode::PASTE_TEXT: {
+      _value = cev->_paste_text;
       rval.setHandled(this);
       break;
     }
@@ -105,7 +111,7 @@ void LineEdit::DoDraw(drawevent_constptr_t drwev) {
 
     tgt->PushModColor(_fg_color);
     ork::lev2::FontMan::PushFont("i14");
-    lev2::FontMan::beginTextBlock(tgt, 16);
+    lev2::FontMan::beginTextBlock(tgt, _value.length());
     int sw = lev2::FontMan::stringWidth(_value.length());
     lev2::FontMan::DrawText(
         tgt, //

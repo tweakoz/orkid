@@ -103,6 +103,7 @@ struct Event final // RawEvent
   fvec2 _vpdim;
 
   static const int kmaxmtpoints = 4;
+  std::string _paste_text;
 
   MultiTouchPoint mMultiTouchPoints[kmaxmtpoints];
   int miNumMultiTouchPoints = 0;

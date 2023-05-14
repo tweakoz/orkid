@@ -22,13 +22,17 @@
 #include <ork/lev2/gfx/dbgfontman.h>
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2 {
-void setAlwaysOnTop(GLFWwindow *window);
+void setAlwaysOnTop(GLFWwindow* window);
 ///////////////////////////////////////////////////////////////////////////////
 float content_scale_x = 1.0f;
 float content_scale_y = 1.0f;
 #if defined(__APPLE__)
 extern bool _macosUseHIDPI;
+const int GLFW_MODIFIER_OSCTRL = GLFW_MOD_SUPER;
+#else
+const int GLFW_MODIFIER_OSCTRL = GLFW_MOD_CTRL;
 #endif
+
 ///////////////////////////////////////////////////////////////////////////////
 static fvec2 gpos;
 ///////////////////////////////////////////////////////////////////////////////
@@ -762,6 +766,15 @@ void CtxGLFW::_on_callback_fbresized(int w, int h) {
 }
 void CtxGLFW::_on_callback_keyboard(int key, int scancode, int action, int modifiers) {
   auto uiev = this->uievent();
+  if (action == GLFW_PRESS && key == GLFW_KEY_V && (modifiers & GLFW_MODIFIER_OSCTRL)) {
+    const char* clipboardText = glfwGetClipboardString(_glfwWindow);
+    if (clipboardText) {
+      uiev->_eventcode  = ui::EventCode::PASTE_TEXT;
+      uiev->_paste_text = clipboardText;
+      _fire_ui_event();
+      return;
+    }
+  }
   fillEventKeyboard(uiev, key, scancode, action, modifiers);
   _fire_ui_event();
 }
@@ -837,7 +850,7 @@ struct PopupImpl {
     auto global = CtxGLFW::globalOffscreenContext();
 
     glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
-    if(win->_useTransparency){
+    if (win->_useTransparency) {
       glfwWindowHint(GLFW_TRANSPARENT_FRAMEBUFFER, GLFW_TRUE);
     }
     _glfwPopupWindow = glfwCreateWindow(w, h, "Popup", NULL, global->_glfwWindow);
@@ -883,8 +896,18 @@ struct PopupImpl {
     _eventSINK->_on_callback_keyboard = [=](int key, int scancode, int action, int modifiers) { //
       if (_uicontext->_top) {
         auto uiev = std::make_shared<ui::Event>();
-        fillEventKeyboard(uiev, key, scancode, action, modifiers);
-        _fireEvent(uiev);
+        if (action == GLFW_PRESS && key == GLFW_KEY_V && (modifiers & GLFW_MODIFIER_OSCTRL)) {
+          const char* clipboardText = glfwGetClipboardString(_glfwPopupWindow);
+          if (clipboardText) {
+            uiev->_eventcode  = ui::EventCode::PASTE_TEXT;
+            uiev->_paste_text = clipboardText;
+            _fireEvent(uiev);
+            return;
+          }
+        } else {
+          fillEventKeyboard(uiev, key, scancode, action, modifiers);
+          _fireEvent(uiev);
+        }
       }
     };
     //////////////////////////////////////////////////
@@ -1030,7 +1053,7 @@ struct PopupImpl {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-PopupWindow::PopupWindow(Context* pctx, int x, int y, int w, int h,bool transparent)
+PopupWindow::PopupWindow(Context* pctx, int x, int y, int w, int h, bool transparent)
     : Window(x, y, w, h, "Popup")
     , _useTransparency(transparent) {
   _uicontext = std::make_shared<ui::Context>();
