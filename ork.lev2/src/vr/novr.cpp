@@ -133,7 +133,12 @@ void NoVrDevice::_processControllerEvents() {
 }
 ////////////////////////////////////////////////////////////////////////////////
 std::shared_ptr<NoVrDevice> novr_device() {
+  static bool init = true;
   static std::shared_ptr<NoVrDevice> _device = std::make_shared<NoVrDevice>();
+  if(init){
+    init = false;
+    setDevice(_device);
+  }
   return _device;
 }
 ////////////////////////////////////////////////////////////////////////////////
