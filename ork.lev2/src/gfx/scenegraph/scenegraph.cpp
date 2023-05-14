@@ -307,7 +307,7 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
   for( auto p : params->_themap ){
     auto k = p.first;
     auto v = p.second;
-    printf( "INITSCENE P<%s:%s>\n", k.c_str(), v.typeName());
+    //printf( "INITSCENE P<%s:%s>\n", k.c_str(), v.typeName());
   }
 
   std::string preset = "DeferredPBR";

@@ -68,7 +68,7 @@ void Class::InitializeClasses() {
     if (clazz)
       _pendingclasses.insert(clazz);
     // clazz->Initialize();
-    orkprintf("InitClass class<%p:%s> next<%p>\n", clazz, clazz->Name().c_str(), clazz->mNextClass);
+    //orkprintf("InitClass class<%p:%s> next<%p>\n", clazz, clazz->Name().c_str(), clazz->mNextClass);
   }
   sLastClass = NULL;
   for (auto clazz : _explicitLinkClasses) {
@@ -84,7 +84,7 @@ void Class::InitializeClasses() {
         //__asm__ volatile("int $0x03");
       }
       clazz->Initialize();
-      orkprintf("InitClass@2 class<%p:%s>\n", clazz, clazz->Name().c_str());
+      //orkprintf("InitClass@2 class<%p:%s>\n", clazz, clazz->Name().c_str());
     }
   }
   //OrkAssert(false);
@@ -94,7 +94,7 @@ void Class::SetName(std::string name, bool badd2map) {
   OrkAssert(name.length());
   if (name.length()) {
     _classname = name;
-    printf( "Class<%p>::SetName<%s> add2map<%d> classmap<%p>\n", (void*) this, _classname.c_str(), int(badd2map), (void*) getClassMap().get() );
+    //printf( "Class<%p>::SetName<%s> add2map<%d> classmap<%p>\n", (void*) this, _classname.c_str(), int(badd2map), (void*) getClassMap().get() );
 
     if (badd2map) {
       auto it = getClassMap()->find(_classname);
@@ -177,7 +177,7 @@ Class* Class::FindClass(const std::string& name) {
   if (it != getClassMap()->end()) {
     rval = it->second;
   }
-  printf( "Class::FindClass<%s> clazz<%p> classmap<%p>\n", name.c_str(), rval, (void*) getClassMap().get() );
+  //printf( "Class::FindClass<%s> clazz<%p> classmap<%p>\n", name.c_str(), rval, (void*) getClassMap().get() );
   return rval;
 
 }

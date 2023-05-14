@@ -93,9 +93,7 @@ CommonStuff::CommonStuff() {
       // not found in cache, generate
       irrmapdblock = std::make_shared<DataBlock>();
       ///////////////////////////
-      printf( "HELLO1\n");
       _filtenvSpecularMap = PBRMaterial::filterSpecularEnvMap(tex, targ);
-      printf( "HELLO2\n");
       _filtenvDiffuseMap  = PBRMaterial::filterDiffuseEnvMap(tex, targ);
       _brdfIntegrationMap = PBRMaterial::brdfIntegrationMap(targ);
       //_environmentMipScale = _filtenvSpecularMap->_num_mips-1;
@@ -116,9 +114,9 @@ void CommonStuff::assignEnvTexture(asset::asset_ptr_t texasset){
   asset::vars_t old_varmap;
   if(_environmentTextureAsset){
     old_varmap = _environmentTextureAsset->_varmap;
-    printf("OLD <%p:%s>\n\n", _environmentTextureAsset.get(),_environmentTextureAsset->name().c_str());
+    //printf("OLD <%p:%s>\n\n", _environmentTextureAsset.get(),_environmentTextureAsset->name().c_str());
   }
-  printf("NEW <%p:%s>\n\n", texasset.get(),texasset->name().c_str());
+  //printf("NEW <%p:%s>\n\n", texasset.get(),texasset->name().c_str());
 
   _environmentTextureAsset = texasset;
   if (nullptr == _environmentTextureAsset)

@@ -96,7 +96,7 @@ material_ptr_t XgmSubMeshInst::material() const {
 }
 
 void XgmSubMeshInst::overrideMaterial(material_ptr_t m){
-  printf( "_override_material<%p> orig<%p>\n",(void*)  m.get(), (void*) _submesh->_material.get() );
+  //printf( "_override_material<%p> orig<%p>\n",(void*)  m.get(), (void*) _submesh->_material.get() );
   _override_material = m;
   _fxpipelinecache = m->pipelineCache();
   OrkAssert(_fxpipelinecache);
