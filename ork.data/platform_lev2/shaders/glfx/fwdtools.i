@@ -172,7 +172,7 @@ libblock lib_fwd
 
 }
 
-libblock lib_fwd_stereo{
+libblock lib_fwd_stereo : lib_fwd {
 
   vec3 forward_lighting_stereo(vec3 modcolor){
     vec3 eyepos = bool(gl_ViewportIndex) ? EyePostionR : EyePostionL;
