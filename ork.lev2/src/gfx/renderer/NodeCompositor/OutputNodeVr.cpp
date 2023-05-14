@@ -137,7 +137,7 @@ struct VRIMPL {
     auto VRDEV = orkidvr::device();
     int width   = VRDEV->_width * 2 * (_vrnode->supersample() + 1);
     int height  = VRDEV->_height * (_vrnode->supersample() + 1);
-     //printf( "B: vr width<%d> height<%d>\n", width, height );
+     printf( "B: vr width<%d> height<%d>\n", width, height );
 
     drawdata._properties["OutputWidth"_crcu].set<int>(width);
     drawdata._properties["OutputHeight"_crcu].set<int>(height);

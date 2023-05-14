@@ -20,7 +20,30 @@ void pyinit_vr(py::module& module_lev2) {
   });
   /////////////////////////////////////////////////////////////////////////////////
   auto vrdevice_type = //
-      py::class_<orkidvr::Device, orkidvr::device_ptr_t>(module_lev2, "Device");
+      py::class_<orkidvr::Device, orkidvr::device_ptr_t>(module_lev2, "Device")
+       .def("setPoseMatrix",[=](orkidvr::device_ptr_t dev, std::string name, const fmtx4& mtx) { //
+        dev->_posemap[name] = mtx;
+      })
+      .def_property("FOV", [](orkidvr::device_ptr_t dev) -> float { //
+        return dev->_fov;
+      }, [](orkidvr::device_ptr_t dev, float fov) { //
+        dev->_fov = fov;
+      })
+      .def_property("IPD", [](orkidvr::device_ptr_t dev) -> float { //
+        return dev->_IPD;
+      }, [](orkidvr::device_ptr_t dev, float ipd) { //
+        dev->_IPD = ipd;
+      })
+      .def_property("near", [](orkidvr::device_ptr_t dev) -> float { //
+        return dev->_near;
+      }, [](orkidvr::device_ptr_t dev, float near) { //
+        dev->_near = near;
+      })
+      .def_property("far", [](orkidvr::device_ptr_t dev) -> float { //
+        return dev->_far;
+      }, [](orkidvr::device_ptr_t dev, float far) { //
+        dev->_far = far;
+      });
   type_codec->registerStdCodec<orkidvr::device_ptr_t>(vrdevice_type);
   /////////////////////////////////////////////////////////////////////////////////
 }
