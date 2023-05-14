@@ -258,7 +258,6 @@ void CurveEditorImpl::render(lev2::Context* pTARG) {
       int fw0 = int(fw * float(w));
 
       skin->DrawBgBox(editseg, fx0, y, fw0, kh, GedSkin::ESTYLE_DEFAULT_CHECKBOX, 1);
-      // skin->DrawOutlineBox(editseg, fx0, y-1, fw0, kh-2, GedSkin::ESTYLE_DEFAULT_HIGHLIGHT, 1);
     }
   }
 
