@@ -56,7 +56,17 @@ public:
           const int knumpoints = (int)data.size();
           const int ksegs      = knumpoints - 1;
 
-          if (miPoint > 0 && miPoint < (knumpoints - 1)) {
+          if (miPoint == 0 or miPoint == (knumpoints - 1)) {
+            int mposy   = ev->miY - _parent->GetY();
+            float fy     = float(mposy) / float(_parent->height());
+            data_t::iterator it  = data.begin() + miPoint;
+            std::pair<float, fvec4> pr = (*it);
+            fvec4 color = pr.second;
+            color.w = std::clamp(fy, 0.0f, 1.0f);
+            data.RemoveItem(it);
+            data.AddSorted(pr.first, color);
+          }
+          else if (miPoint > 0 and miPoint < (knumpoints - 1)) {
             int mousepos = ev->miX - _parent->GetX();
             int mposy   = ev->miY - _parent->GetY();
             float fx     = float(mousepos) / float(_parent->width());

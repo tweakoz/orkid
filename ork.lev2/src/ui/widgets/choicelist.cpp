@@ -53,11 +53,20 @@ HandlerResult ChoiceList::DoOnUiEvent(event_constptr_t cev) {
       }
       rval.setHandled(this);
     }
+    case EventCode::DOUBLECLICK: {
+        int selidx = _mouse_hover_y / CELL_H;
+        if (selidx >= 0 && selidx < _choices.size()) {
+          _value = _choices[selidx];
+          rval.setHandled(this);
+          rval._widget_finished = true;
+        }
+        break;
+    }
     case EventCode::MOVE: {
       int x = cev->miX;
       int y = cev->miY;
       _mouse_hover_y = y;
-      printf("ChoiceList::DoOnUiEvent<MOVE> x<%d> y<%d>\n", x, y);
+      //printf("ChoiceList::DoOnUiEvent<MOVE> x<%d> y<%d>\n", x, y);
       rval.setHandled(this);
       break;
     }
