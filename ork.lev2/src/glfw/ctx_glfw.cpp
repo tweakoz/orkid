@@ -188,11 +188,14 @@ static void _glfw_callback_cursor(GLFWwindow* window, double xoffset, double yof
     return;
   sink->_on_callback_cursor(xoffset, yoffset);
 }
-void fillEventCursor(ui::event_ptr_t uiev, 
-                     GLFWwindow* window,
-                     GLFWmonitor* monitor,
-                     double xoffset, double yoffset,
-                     double w, double h) {
+void fillEventCursor(
+    ui::event_ptr_t uiev,
+    GLFWwindow* window,
+    GLFWmonitor* monitor,
+    double xoffset,
+    double yoffset,
+    double w,
+    double h) {
   uiev->mpBlindEventData = nullptr;
 
   // InputManager::instance()->poll();
@@ -226,7 +229,7 @@ void fillEventCursor(ui::event_ptr_t uiev,
   uiev->mfUnitY     = unitY;
 
   if (monitor) {
-    int winX, winY;                              // window position
+    int winX, winY;                         // window position
     glfwGetWindowPos(window, &winX, &winY); // get window position
     int screenX = 0;
     int screenY = 0;
@@ -763,7 +766,7 @@ void CtxGLFW::_on_callback_keyboard(int key, int scancode, int action, int modif
 }
 void CtxGLFW::_on_callback_cursor(double xoffset, double yoffset) {
   auto uiev = this->uievent();
-  fillEventCursor(uiev, _glfwWindow, _glfwMonitor, xoffset, yoffset,_width,_height);
+  fillEventCursor(uiev, _glfwWindow, _glfwMonitor, xoffset, yoffset, _width, _height);
   if (this->_buttonState == 0) {
     uiev->_eventcode = ui::EventCode::MOVE; //
     _fire_ui_event();
@@ -838,30 +841,89 @@ struct PopupImpl {
     //////////////////////////////////////////////////
     _eventSINK                            = std::make_shared<EventSinkGLFW>();
     _eventSINK->_on_callback_mousebuttons = [=](int button, int action, int modifiers) {
-      glfwSetWindowShouldClose(_glfwPopupWindow, GLFW_TRUE);
-      //_terminate = true;
+      auto uiev = std::make_shared<ui::Event>();
+
+      bool DOWN = (action == GLFW_PRESS);
+
+      switch (button) {
+        case GLFW_MOUSE_BUTTON_LEFT:
+          uiev->mbLeftButton = DOWN;
+          this->_buttonState = (this->_buttonState & 6) | int(DOWN);
+          break;
+        case GLFW_MOUSE_BUTTON_MIDDLE:
+          uiev->mbMiddleButton = DOWN;
+          this->_buttonState   = (this->_buttonState & 5) | (int(DOWN) << 1);
+          break;
+        case GLFW_MOUSE_BUTTON_RIGHT:
+          uiev->mbRightButton = DOWN;
+          this->_buttonState  = (this->_buttonState & 3) | (int(DOWN) << 2);
+          break;
+      }
+
+      uiev->mbALT   = (modifiers & GLFW_MOD_ALT);
+      uiev->mbCTRL  = (modifiers & GLFW_MOD_CONTROL);
+      uiev->mbSHIFT = (modifiers & GLFW_MOD_SHIFT);
+      uiev->mbMETA  = (modifiers & GLFW_MOD_SUPER);
+
+      uiev->_eventcode = DOWN                           //
+                             ? ork::ui::EventCode::PUSH //
+                             : ork::ui::EventCode::RELEASE;
+
+      _fireEvent(uiev);
     };
     //////////////////////////////////////////////////
     _eventSINK->_on_callback_keyboard = [=](int key, int scancode, int action, int modifiers) { //
-      if(_uicontext->_top){
+      if (_uicontext->_top) {
         auto uiev = std::make_shared<ui::Event>();
         fillEventKeyboard(uiev, key, scancode, action, modifiers);
         _fireEvent(uiev);
       }
     };
+    //////////////////////////////////////////////////
     _eventSINK->_on_callback_cursor = [=](double xoffset, double yoffset) { //
-        auto uiev = std::make_shared<ui::Event>();
-        fillEventCursor(uiev, nullptr, nullptr, xoffset, yoffset, _w, _h);
+      auto uiev = std::make_shared<ui::Event>();
+      fillEventCursor(uiev, nullptr, nullptr, xoffset, yoffset, _w, _h);
+
+      if (this->_buttonState == 0) {
         uiev->_eventcode = ui::EventCode::MOVE; //
         _fireEvent(uiev);
+      } else {
+        uiev->_eventcode = ui::EventCode::DRAG; //
+        _fireEvent(uiev);
+      }
+    };
+    //////////////////////////////////////////////////
+    _eventSINK->_on_callback_scroll = [=](double xoffset, double yoffset) {
+      auto uiev        = std::make_shared<ui::Event>();
+      uiev->_eventcode = ui::EventCode::MOUSEWHEEL;
+
+      uiev->miMWY = int(yoffset);
+      uiev->miMWX = int(xoffset);
+
+      _fireEvent(uiev);
+    };
+    ///////////////////////////////////////////////////////////////////////////////
+    _eventSINK->_on_callback_enterleave = [=](int entered) {
+      auto uiev        = std::make_shared<ui::Event>();
+      bool was_entered = bool(entered);
+      uiev->_eventcode = was_entered                       //
+                             ? ui::EventCode::GOT_KEYFOCUS //
+                             : ui::EventCode::LOST_KEYFOCUS;
+
+      if (was_entered) {
+        _window->GotFocus();
+      } else {
+        _window->LostFocus();
+      }
+      _fireEvent(uiev);
     };
     //////////////////////////////////////////////////
     glfwSetWindowUserPointer(_glfwPopupWindow, (void*)_eventSINK.get());
     glfwSetMouseButtonCallback(_glfwPopupWindow, _glfw_callback_mousebuttons);
     glfwSetCursorPosCallback(_glfwPopupWindow, _glfw_callback_cursor);
     glfwSetKeyCallback(_glfwPopupWindow, _glfw_callback_keyboard);
-    //glfwSetScrollCallback(_glfwPopupWindow, _glfw_callback_scroll);
-    //glfwSetCursorEnterCallback(_glfwPopupWindow, _glfw_callback_enterleave);
+    glfwSetScrollCallback(_glfwPopupWindow, _glfw_callback_scroll);
+    glfwSetCursorEnterCallback(_glfwPopupWindow, _glfw_callback_enterleave);
     glfwSetWindowAttrib(_glfwPopupWindow, GLFW_FOCUS_ON_SHOW, GLFW_TRUE);
 
     glfwShowWindow(_glfwPopupWindow);
@@ -878,13 +940,13 @@ struct PopupImpl {
     glfwDestroyWindow(_glfwPopupWindow);
   }
   //////////////////////////////////////////////////
-  void _fireEvent(ui::event_ptr_t uiev){
-      uiev->_uicontext = _uicontext.get();
-      uiev->setvpDim(_uicontext->_top.get());
-      auto handled = ui::Event::sendToContext(uiev);
-      if( handled._widget_finished){
-        _terminate = true;
-      }
+  void _fireEvent(ui::event_ptr_t uiev) {
+    uiev->_uicontext = _uicontext.get();
+    uiev->setvpDim(_uicontext->_top.get());
+    auto handled = ui::Event::sendToContext(uiev);
+    if (handled._widget_finished) {
+      _terminate = true;
+    }
   }
   //////////////////////////////////////////////////
   void mainThreadLoop() {
@@ -905,10 +967,10 @@ struct PopupImpl {
       glfwPollEvents();
       glfwMakeContextCurrent(_glfwPopupWindow);
 
-      float t = timer.SecsSinceStart();
-      float r = 0.5f + sinf(t * 0.3f) * 0.5f;
-      float g = 0.5f + sinf(t * 0.5f) * 0.5f;
-      float b = 0.5f + sinf(t * 0.7f) * 0.5f;
+      float t               = timer.SecsSinceStart();
+      float r               = 0.5f + sinf(t * 0.3f) * 0.5f;
+      float g               = 0.5f + sinf(t * 0.5f) * 0.5f;
+      float b               = 0.5f + sinf(t * 0.7f) * 0.5f;
       _rtgroup->_clearColor = fvec4(r, g, b, 1);
 
       _parent_context->FBI()->pushViewport(0, 0, _w, _h);
@@ -916,7 +978,7 @@ struct PopupImpl {
       _parent_context->FBI()->PushRtGroup(_rtgroup.get());
       glfwMakeContextCurrent(_glfwPopupWindow);
 
-      void* plato = (void*) _parent_context->GetPlatformHandle();
+      void* plato = (void*)_parent_context->GetPlatformHandle();
 
       _parent_context->SetPlatformHandle(_cloned_plato);
 
@@ -948,8 +1010,9 @@ struct PopupImpl {
   ui::context_ptr_t _uicontext;
   rtgroup_ptr_t _rtgroup;
   int _x, _y, _w, _h;
-  bool _terminate = false;
+  bool _terminate     = false;
   void* _cloned_plato = nullptr;
+  int _buttonState    = 0;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

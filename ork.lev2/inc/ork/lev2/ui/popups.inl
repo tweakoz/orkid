@@ -79,11 +79,13 @@ inline fvec4 popupColorEdit( //
 
   lev2::PopupWindow popwin(ctx, x, y, w, h);
   auto uic              = popwin._uicontext;
+  uic->_id = "popupColorEdit";
   auto root             = uic->makeTop<ui::LayoutGroup>("lg", 0, 0, w, h);
   auto coloredit_item   = root->makeChild<ui::ColorEdit>("ColorEdit", initial_value, 0, 0, 0, 0);
   auto coloredit_layout = coloredit_item._layout;
   auto coloredit        = std::dynamic_pointer_cast<ui::ColorEdit>(coloredit_item._widget);
   auto root_layout      = root->_layout;
+  uic->_mousefocuswidget = coloredit.get();
   coloredit_layout->top()->anchorTo(root_layout->top());
   coloredit_layout->left()->anchorTo(root_layout->left());
   coloredit_layout->right()->anchorTo(root_layout->right());

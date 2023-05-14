@@ -46,6 +46,7 @@ struct Context {
   //////////////////////////////////////
   void dumpWidgets(std::string label) const;
 
+  std::string _id;
   group_ptr_t _top;
   bool _hasKeyboardFocus             = false;
   Widget* _evdragtarget              = nullptr;
