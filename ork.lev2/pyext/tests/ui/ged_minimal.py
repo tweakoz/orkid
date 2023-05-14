@@ -19,7 +19,7 @@ class UiGedTestApp(object):
 
   def __init__(self):
     super().__init__()
-    self.ezapp = OrkEzApp.create(self,left=420, top=100, height=960,width=480)
+    self.ezapp = OrkEzApp.create(self,left=420, top=100, height=720,width=480)
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     self.ezapp.topWidget.enableUiDraw()
     lg_group = self.ezapp.topLayoutGroup
@@ -43,10 +43,10 @@ class UiGedTestApp(object):
     t1 = self.test_object.createTestObject("test1")
     t2 = self.test_object.createTestObject("test2")
     c1 = t2.createCurve("curve1")
-    c2 = t2.createCurve("curve2")
-    c3 = t2.createCurve("curve3")
+    #c2 = t2.createCurve("curve2")
+    #c3 = t2.createCurve("curve3")
     ga = t2.createGradient("gradA")
-    gb = t2.createGradient("gradB")
+    #gb = t2.createGradient("gradB")
     gc = t2.createGradient("gradC")
     self.objmodel.attach(self.test_object,True)
     print(self.test_object.clazz.name)

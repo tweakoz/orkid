@@ -869,6 +869,9 @@ struct PopupImpl {
                              ? ork::ui::EventCode::PUSH //
                              : ork::ui::EventCode::RELEASE;
 
+      uiev->miX = _mouseX;
+      uiev->miY = _mouseY;
+
       _fireEvent(uiev);
     };
     //////////////////////////////////////////////////
@@ -883,6 +886,9 @@ struct PopupImpl {
     _eventSINK->_on_callback_cursor = [=](double xoffset, double yoffset) { //
       auto uiev = std::make_shared<ui::Event>();
       fillEventCursor(uiev, nullptr, nullptr, xoffset, yoffset, _w, _h);
+
+      _mouseX = uiev->miX;
+      _mouseY = uiev->miY;
 
       if (this->_buttonState == 0) {
         uiev->_eventcode = ui::EventCode::MOVE; //
@@ -967,11 +973,7 @@ struct PopupImpl {
       glfwPollEvents();
       glfwMakeContextCurrent(_glfwPopupWindow);
 
-      float t               = timer.SecsSinceStart();
-      float r               = 0.5f + sinf(t * 0.3f) * 0.5f;
-      float g               = 0.5f + sinf(t * 0.5f) * 0.5f;
-      float b               = 0.5f + sinf(t * 0.7f) * 0.5f;
-      _rtgroup->_clearColor = fvec4(r, g, b, 1);
+      _rtgroup->_clearColor = fvec4(0, 0, 0, 1);
 
       _parent_context->FBI()->pushViewport(0, 0, _w, _h);
       _parent_context->FBI()->pushScissor(0, 0, _w, _h);
@@ -1013,6 +1015,8 @@ struct PopupImpl {
   bool _terminate     = false;
   void* _cloned_plato = nullptr;
   int _buttonState    = 0;
+  int _mouseX         = 0;
+  int _mouseY         = 0;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

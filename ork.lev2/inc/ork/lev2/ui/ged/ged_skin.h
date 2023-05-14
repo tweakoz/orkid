@@ -20,9 +20,11 @@ public:
   const ork::lev2::FxShaderTechnique* _tekvtxcolor = nullptr;
   const ork::lev2::FxShaderTechnique* _tekvtxpick  = nullptr;
   const ork::lev2::FxShaderTechnique* _tekmodcolor = nullptr;
+  const ork::lev2::FxShaderTechnique* _tekcolorwheel = nullptr;
   const ork::lev2::FxShaderParam* _parmvp          = nullptr;
   const ork::lev2::FxShaderParam* _parmodcolor     = nullptr;
   const ork::lev2::FxShaderParam* _parobjid        = nullptr;
+  const ork::lev2::FxShaderParam* _partime        = nullptr;
 
   struct GedText {
     using StringType = ork::ArrayString<128>;
@@ -144,6 +146,7 @@ public:
   fmtx4 _mMatrix;
   fmtx4 _uiMVPMatrix;
   std::stack<fcolor3> _colorStack;
+  ork::Timer _timer;
 
 };
 

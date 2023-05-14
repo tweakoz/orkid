@@ -46,8 +46,12 @@ HandlerResult ColorEdit::DoOnUiEvent(event_constptr_t cev) {
     case EventCode::PUSH: {
       float fx  = float(cev->miX) - float(_geometry._w >> 1);
       float fy  = float(cev->miY) - float(_geometry._h >> 1);
-      _push_pos = fvec2(fx, fy);
-      printf("_push_pos<%g %g>\n", _push_pos.x, _push_pos.y);
+      _push_pos      = fvec2(fx, fy);
+      _push_angle   = atan2f(_push_pos.y, _push_pos.x);
+      _push_radius = _push_pos.length()/float(_geometry._w>>1);
+      printf( "_push_pos<%g %g>\n", _push_pos.x, _push_pos.y);
+      printf( "push len<%g>\n", _push_pos.length() );
+      printf( "_push_radius<%g>\n", _push_radius);
       rval.setHandled(this);
       break;
     }
@@ -60,17 +64,19 @@ HandlerResult ColorEdit::DoOnUiEvent(event_constptr_t cev) {
       float fy          = float(cev->miY) - float(_geometry._h >> 1);
       auto cur_pos      = fvec2(fx, fy);
       float cur_angle   = atan2f(cur_pos.y, cur_pos.x);
-      float push_angle  = atan2f(_push_pos.y, _push_pos.x);
-      float delta_angle = cur_angle - push_angle;
-      printf("cur_angle<%g>\n", cur_angle);
-      printf("push_angle<%g>\n", push_angle);
-      printf("delta_angle<%g>\n", delta_angle);
+      float radius = cur_pos.length()/float(_geometry._w>>1);
 
-      float L = cur_pos.length()/float(_geometry._w>>1);
-
-      printf( "L<%g>\n", L );
-      //_intensity = ;
-
+      if( _push_radius > 0.9 ){
+        _intensity = fmod(0.0+(PI + cur_angle)/PI2,1.0);
+        _currentColor.setHSV(_hue,_saturation,_intensity);
+      }
+      else{
+        float SAT = (radius-0.45)/(0.85-0.45);
+        SAT = std::clamp(SAT,0.0f,1.0f);
+        _saturation = SAT;
+        _hue = fmod(0.5+(PI + cur_angle)/PI2,1.0);
+        _currentColor.setHSV(_hue,_saturation,_intensity);
+      }
       rval.setHandled(this);
       break;
     }
@@ -113,22 +119,27 @@ void ColorEdit::DoDraw(drawevent_constptr_t drwev) {
   iyc = iy1 + (_geometry._h >> 1);
 
   /////////////////////////////////////////////////////////////////
- // draw background
+  // draw background
   /////////////////////////////////////////////////////////////////
 
   lev2::VtxWriter<vtx_t> vw1;
   vw1.Lock(context, &VB, 6);
 
-  vtx_t v0(fvec3(ix1, iy1, 0), fvec4(), _currentColor);
-  vtx_t v1(fvec3(ix2, iy1, 0), fvec4(), _currentColor);
-  vtx_t v2(fvec3(ix2, iy2, 0), fvec4(), _currentColor);
-  vtx_t v3(fvec3(ix1, iy2, 0), fvec4(), _currentColor);
+  float irx1 = ixc - (_geometry._w >> 2);
+  float irx2 = ixc + (_geometry._w >> 2);
+  float iry1 = iyc - (_geometry._h >> 2);
+  float iry2 = iyc + (_geometry._h >> 2);
+
+  vtx_t v0(fvec3(irx1, iry1, 0), fvec4(), _currentColor);
+  vtx_t v1(fvec3(irx2, iry1, 0), fvec4(), _currentColor);
+  vtx_t v2(fvec3(irx2, iry2, 0), fvec4(), _currentColor);
+  vtx_t v3(fvec3(irx1, iry2, 0), fvec4(), _currentColor);
 
   vw1.AddVertex(v0);
-  vw1.AddVertex(v1);
   vw1.AddVertex(v2);
-
   vw1.AddVertex(v1);
+
+  vw1.AddVertex(v0);
   vw1.AddVertex(v3);
   vw1.AddVertex(v2);
 
@@ -137,6 +148,7 @@ void ColorEdit::DoDraw(drawevent_constptr_t drwev) {
   ///////////////////////////////
 
   _material->_rasterstate.SetRGBAWriteMask(true, true);
+  _material->_rasterstate.SetDepthTest(lev2::EDepthTest::OFF);
   _material->begin(_tekvtxcolor, RCFD);
   _material->bindParamMatrix(_parmvp, uiMatrix);
   gbi->DrawPrimitiveEML(vw1, lev2::PrimitiveType::TRIANGLES);
@@ -191,7 +203,7 @@ void ColorEdit::DoDraw(drawevent_constptr_t drwev) {
 
   ///////////////////////////////
   _material->_rasterstate.SetRGBAWriteMask(true, true);
-  _material->begin(_tekcolorwheel, RCFD);
+  _material->begin(_tekvtxcolor, RCFD);
   _material->bindParamMatrix(_parmvp, uiMatrix);
   gbi->DrawPrimitiveEML(vw2, lev2::PrimitiveType::TRIANGLES);
   _material->end(RCFD);

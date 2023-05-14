@@ -58,7 +58,9 @@ public:
 
           if (miPoint > 0 && miPoint < (knumpoints - 1)) {
             int mousepos = ev->miX - _parent->GetX();
+            int mposy   = ev->miY - _parent->GetY();
             float fx     = float(mousepos) / float(_parent->width());
+            float fy     = float(mposy) / float(_parent->height());
 
             data_t::iterator it  = data.begin() + miPoint;
             data_t::iterator itp = it - 1;
@@ -76,10 +78,16 @@ public:
                   fx = (itn->first - kfbound);
                 }
               }
+
+
               data_t::iterator it        = data.begin() + miPoint;
               std::pair<float, fvec4> pr = (*it);
+
+              fvec4 color = pr.second;
+              color.w = std::clamp(fy, 0.0f, 1.0f);
+
               data.RemoveItem(it);
-              data.AddSorted(fx, pr.second);
+              data.AddSorted(fx, color);
             }
           }
         }
@@ -298,10 +306,12 @@ void GradientEditorImpl::render(lev2::Context* pTARG) {
       vw.UnLock(pTARG);
 
       ///////////////////////////////
+      float time = skin->_timer.SecsSinceStart();
       RenderContextFrameData RCFD(pTARG);
       skin->_material->_rasterstate.SetRGBAWriteMask(true, true);
-      skin->_material->begin(skin->_tekvtxcolor, RCFD);
+      skin->_material->begin(skin->_tekcolorwheel, RCFD);
       skin->_material->bindParamMatrix(skin->_parmvp, skin->_uiMVPMatrix);
+      skin->_material->bindParamFloat(skin->_partime, time);
       pTARG->GBI()->DrawPrimitiveEML(vw, PrimitiveType::TRIANGLES);
       skin->_material->end(RCFD);
       ///////////////////////////////

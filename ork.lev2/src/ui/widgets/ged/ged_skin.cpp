@@ -36,10 +36,10 @@ bool GedSkin::IsObjInSet(void* pobj) {
   return rval;
 }
 
-void GedSkin::pushCustomColor(fcolor3 color){
+void GedSkin::pushCustomColor(fcolor3 color) {
   _colorStack.push(color);
 }
-void GedSkin::popCustomColor(){
+void GedSkin::popCustomColor() {
   _colorStack.pop();
 }
 
@@ -51,21 +51,23 @@ GedSkin::GedSkin()
     , _font(nullptr)
     , _char_w(0)
     , _char_h(0) {
+    _timer.Start();
 }
 
 void GedSkin::gpuInit(lev2::Context* ctx) {
   _material = std::make_shared<FreestyleMaterial>();
   _material->gpuInit(ctx, "orkshader://ui2");
-  _tekpick     = _material->technique("ui_picking");
-  _tekvtxcolor = _material->technique("ui_vtxcolor");
-  _tekvtxpick  = _material->technique("ui_vtxpicking");
-  _tekmodcolor = _material->technique("ui_modcolor");
-  _parmvp      = _material->param("mvp");
-  _parmodcolor = _material->param("modcolor");
-  _parobjid    = _material->param("objid");
+  _tekpick       = _material->technique("ui_picking");
+  _tekvtxcolor   = _material->technique("ui_vtxcolor");
+  _tekvtxpick    = _material->technique("ui_vtxpicking");
+  _tekmodcolor   = _material->technique("ui_modcolor");
+  _tekcolorwheel = _material->technique("ui_colorwheel");
+  _parmvp        = _material->param("mvp");
+  _parmodcolor   = _material->param("modcolor");
+  _parobjid      = _material->param("objid");
+  _partime       = _material->param("time");
   _material->dump();
 }
-
 
 //'ork::tool::ged::GedSkin::PrimContainer *' to
 //'ork::tool::ged::GedSkin::PrimContainer *'
@@ -115,7 +117,7 @@ void GedSkin::clear() {
   mPrimContainerPool.clear();
   mPrimContainers.clear();
 }
-  
+
 ////////////////////////////////////////////////////////////////
 
 orkvector<GedSkin*> instantiateSkins(ork::lev2::Context* ctx) {
@@ -124,9 +126,9 @@ orkvector<GedSkin*> instantiateSkins(ork::lev2::Context* ctx) {
   auto skin1 = new GedSkin1(ctx);
   skins.push_back(skin0);
   skins.push_back(skin1);
-    return skins;
+  return skins;
 }
 
 ////////////////////////////////////////////////////////////////
-} //namespace ork::lev2::ged {
+} // namespace ork::lev2::ged
 ////////////////////////////////////////////////////////////////

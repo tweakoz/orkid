@@ -33,9 +33,8 @@ GradientBase::GradientBase() {
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T> Gradient<T>::Gradient() {
-  _data.AddSorted(0.0f, T(0));
-  _data.AddSorted(0.5f, T(0.5));
-  _data.AddSorted(1.0f, T(1));
+  _data.AddSorted(0.0f, T(0,0,0,1));
+  _data.AddSorted(1.0f, T(1,1,1,1));
 }
 
 template <typename T> bool Gradient<T>::preDeserialize(ork::reflect::serdes::IDeserializer& deser) {
