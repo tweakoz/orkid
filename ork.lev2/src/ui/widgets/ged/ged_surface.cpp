@@ -237,15 +237,17 @@ ui::HandlerResult GedSurface::DoOnUiEvent(ui::event_constptr_t EV) {
     case ui::EventCode::MOVE: {
       static int gctr = 0;
 
-      if (0) { //} (0 == gctr % 4) {
+      if (0 == gctr % 4) {
         GetPixel(ilocx, ilocy, ctx);
         auto pobj = (GedObject*)ctx.GetObject(_pickbuffer, 0);
-        if (0) // TODO pobj )
-        {
+        if( pobj ) {
           auto pnode = dynamic_cast<GedObject*>(pobj);
           if (pnode) {
+            auto as_inode = dynamic_cast<GedItemNode*>(pobj);
+            if( as_inode ){
+              //printf( "pobj<%p> as_inode<%p:%s\n", (void*) pobj, (void*) as_inode, as_inode->_propname.c_str() );
+            }
             _mouseoverNode = pnode;
-
             if (pnode != _activeNode)
               pnode->OnUiEvent(locEV);
           }

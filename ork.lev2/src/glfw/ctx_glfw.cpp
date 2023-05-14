@@ -30,7 +30,7 @@ float content_scale_y = 1.0f;
 extern bool _macosUseHIDPI;
 const int GLFW_MODIFIER_OSCTRL = GLFW_MOD_SUPER;
 #else
-const int GLFW_MODIFIER_OSCTRL = GLFW_MOD_CTRL;
+const int GLFW_MODIFIER_OSCTRL = GLFW_MOD_CONTROL;
 #endif
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -410,6 +410,15 @@ void GedGradientNode::DoDraw(lev2::Context* pTARG) {
 ////////////////////////////////////////////////////////////////
 
 void GedGradientNode::OnUiEvent(ork::ui::event_constptr_t ev) {
+  switch(ev->_eventcode){
+    case ui::EventCode::MOVE:
+      _container->_viewport->MarkSurfaceDirty();
+      _container->SlotRepaint();
+      OrkAssert(false);
+      break;
+    default:
+      break;
+  }
   return GedItemNode::OnUiEvent(ev);
 }
 

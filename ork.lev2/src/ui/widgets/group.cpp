@@ -87,7 +87,7 @@ void Group::DoLayout() {
 }
 /////////////////////////////////////////////////////////////////////////
 Widget* Group::doRouteUiEvent(event_constptr_t ev) {
-  if (0){
+  if (1){
     printf("Group<%s>::doRouteUiEvent\n", _name.c_str());
   }
   //
