@@ -43,7 +43,7 @@ namespace ork { namespace lev2 {
 
 void setAlwaysOnTop(GLFWwindow *window) {
     Display *display = glfwGetX11Display();
-    Window x11window = glfwGetX11Window(window);
+    auto x11window = glfwGetX11Window(window);
 
     Atom wmStateAbove = XInternAtom(display, "_NET_WM_STATE_ABOVE", False);
     Atom wmState = XInternAtom(display, "_NET_WM_STATE", False);
