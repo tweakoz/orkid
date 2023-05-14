@@ -7,6 +7,7 @@
 
 #import <ork/pch.h>
 #if defined( ORK_OSX )
+#define GLFW_EXPOSE_NATIVE_COCOA
 #import <Cocoa/Cocoa.h>
 #import <Foundation/Foundation.h>
 #import <CoreData/CoreData.h>
@@ -21,6 +22,9 @@
 #import <ork/kernel/opq.h>
 
 #import <ork/kernel/objc.h>
+#include <GLFW/glfw3native.h>
+#include <objc/objc.h>
+#include <objc/message.h>
 
 extern "C"
 {
@@ -30,6 +34,16 @@ extern "C"
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
+
+void setAlwaysOnTop(GLFWwindow *window) {
+    id glfwWindow = glfwGetCocoaWindow(window);
+    //id nsWindow = ((id(*)(id, SEL))objc_msgSend)(glfwWindow, sel_registerName("window"));
+    id nsWindow = glfwWindow;
+
+    NSUInteger windowLevel = ((NSUInteger(*)(id, SEL))objc_msgSend)(nsWindow, sel_registerName("level"));
+    windowLevel = CGWindowLevelForKey(kCGFloatingWindowLevelKey);
+    ((void(*)(id, SEL, NSUInteger))objc_msgSend)(nsWindow, sel_registerName("setLevel:"), windowLevel);
+}
 
 bool _macosUseHIDPI = false;
 bool g_allow_HIDPI = false;

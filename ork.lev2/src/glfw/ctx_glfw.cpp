@@ -22,6 +22,7 @@
 #include <ork/lev2/gfx/dbgfontman.h>
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2 {
+void setAlwaysOnTop(GLFWwindow *window);
 ///////////////////////////////////////////////////////////////////////////////
 float content_scale_x = 1.0f;
 float content_scale_y = 1.0f;
@@ -836,9 +837,12 @@ struct PopupImpl {
     auto global = CtxGLFW::globalOffscreenContext();
 
     glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
-    glfwWindowHint(GLFW_TRANSPARENT_FRAMEBUFFER, GLFW_TRUE);
+    if(win->_useTransparency){
+      glfwWindowHint(GLFW_TRANSPARENT_FRAMEBUFFER, GLFW_TRUE);
+    }
     _glfwPopupWindow = glfwCreateWindow(w, h, "Popup", NULL, global->_glfwWindow);
     glfwSetWindowPos(_glfwPopupWindow, x, y);
+    setAlwaysOnTop(_glfwPopupWindow);
     //////////////////////////////////////////////////
     _eventSINK                            = std::make_shared<EventSinkGLFW>();
     _eventSINK->_on_callback_mousebuttons = [=](int button, int action, int modifiers) {
@@ -1026,8 +1030,9 @@ struct PopupImpl {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-PopupWindow::PopupWindow(Context* pctx, int x, int y, int w, int h)
-    : Window(x, y, w, h, "Popup") {
+PopupWindow::PopupWindow(Context* pctx, int x, int y, int w, int h,bool transparent)
+    : Window(x, y, w, h, "Popup")
+    , _useTransparency(transparent) {
   _uicontext = std::make_shared<ui::Context>();
   auto impl  = _impl.makeShared<PopupImpl>(this, pctx, x, y, w, h);
 }

@@ -29,6 +29,8 @@ extern int G_MSAASAMPLES;
 
 extern "C" {
 #include <X11/extensions/Xrandr.h>
+#include <X11/Xlib.h>
+#include <X11/Xatom.h>
 }
 
 extern "C" {

@@ -77,7 +77,7 @@ inline fvec4 popupColorEdit( //
     int h, //
     const fvec4& initial_value) { //
 
-  lev2::PopupWindow popwin(ctx, x, y, w, h);
+  lev2::PopupWindow popwin(ctx, x, y, w, h,true); // transparent
   auto uic              = popwin._uicontext;
   uic->_id = "popupColorEdit";
   auto root             = uic->makeTop<ui::LayoutGroup>("lg", 0, 0, w, h);

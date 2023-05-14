@@ -137,8 +137,9 @@ public:
 
   svar256_t _impl;
   ui::context_ptr_t _uicontext;
+  bool _useTransparency = false;
 
-  PopupWindow(Context* pctx, int x, int y, int w, int h);
+  PopupWindow(Context* pctx, int x, int y, int w, int h, bool transparent = false);
   ~PopupWindow();
 
   void mainThreadLoop();
