@@ -249,13 +249,13 @@ void GradientEditorImpl::render(lev2::Context* pTARG) {
 
     GedSkin::GedPrim custom_prim;
     custom_prim.mpNode        = _node;
-    custom_prim.iy1           = y;
-    custom_prim.iy2           = y + h;
+    custom_prim.iy1           = y - skin->_scrollY;
+    custom_prim.iy2           = y - skin->_scrollY + h;
     custom_prim._renderLambda = [=]() {
       int x1 = x;
       int x2 = x + w;
-      int y1 = y;
-      int y2 = y + h;
+      int y1 = y - skin->_scrollY;
+      int y2 = y + h - skin->_scrollY;
 
       const float fZ = 0.0f;
       using vtx_t    = GedSkin::vtx_t;

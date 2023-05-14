@@ -292,9 +292,13 @@ void GedSkin1::End(Context* pTARG) {
     if (not _is_pickmode) {
       for (int i = 0; i < inumcusts; i++) {
         const GedPrim* prim = primcontainer->mCustomPrims[i];
-        if (IsVisible(pTARG, prim->iy1, prim->iy2) and prim->_renderLambda) {
+          if (prim->_renderLambda) {
           prim->_renderLambda();
         }
+
+        //if (IsVisible(pTARG, prim->iy1, prim->iy2) and prim->_renderLambda) {
+          //prim->_renderLambda();
+       // }
       }
     }
 
