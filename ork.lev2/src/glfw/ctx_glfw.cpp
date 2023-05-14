@@ -836,6 +836,7 @@ struct PopupImpl {
     auto global = CtxGLFW::globalOffscreenContext();
 
     glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
+    glfwWindowHint(GLFW_TRANSPARENT_FRAMEBUFFER, GLFW_TRUE);
     _glfwPopupWindow = glfwCreateWindow(w, h, "Popup", NULL, global->_glfwWindow);
     glfwSetWindowPos(_glfwPopupWindow, x, y);
     //////////////////////////////////////////////////
@@ -973,7 +974,7 @@ struct PopupImpl {
       glfwPollEvents();
       glfwMakeContextCurrent(_glfwPopupWindow);
 
-      _rtgroup->_clearColor = fvec4(0, 0, 0, 1);
+      _rtgroup->_clearColor = fvec4(0, 0, 0, 0);
 
       _parent_context->FBI()->pushViewport(0, 0, _w, _h);
       _parent_context->FBI()->pushScissor(0, 0, _w, _h);

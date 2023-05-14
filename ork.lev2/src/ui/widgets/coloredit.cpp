@@ -20,6 +20,11 @@ ColorEdit::ColorEdit(
     : Widget(name, x, y, w, h)
     , _originalColor(color)
     , _currentColor(color) {
+  auto hsv = _currentColor.xyz().convertRgbToHsv();
+  _currentColorFullBright.setHSV(hsv.x, hsv.y, 1.0);
+  _hue = hsv.x;
+  _saturation = hsv.y;
+  _intensity = hsv.z;
 }
 ///////////////////////////////////////////////////////////////////////////////
 HandlerResult ColorEdit::DoOnUiEvent(event_constptr_t cev) {
@@ -32,7 +37,6 @@ HandlerResult ColorEdit::DoOnUiEvent(event_constptr_t cev) {
         case 256: // esc
           _currentColor         = _originalColor;
           rval._widget_finished = true;
-
           break;
         case 257: // enter
           rval._widget_finished = true;
@@ -44,14 +48,11 @@ HandlerResult ColorEdit::DoOnUiEvent(event_constptr_t cev) {
       break;
     }
     case EventCode::PUSH: {
-      float fx  = float(cev->miX) - float(_geometry._w >> 1);
-      float fy  = float(cev->miY) - float(_geometry._h >> 1);
-      _push_pos      = fvec2(fx, fy);
-      _push_angle   = atan2f(_push_pos.y, _push_pos.x);
-      _push_radius = _push_pos.length()/float(_geometry._w>>1);
-      printf( "_push_pos<%g %g>\n", _push_pos.x, _push_pos.y);
-      printf( "push len<%g>\n", _push_pos.length() );
-      printf( "_push_radius<%g>\n", _push_radius);
+      float fx     = float(cev->miX) - float(_geometry._w >> 1);
+      float fy     = float(cev->miY) - float(_geometry._h >> 1);
+      _push_pos    = fvec2(fx, fy);
+      _push_angle  = atan2f(_push_pos.y, _push_pos.x);
+      _push_radius = _push_pos.length();
       rval.setHandled(this);
       break;
     }
@@ -60,22 +61,25 @@ HandlerResult ColorEdit::DoOnUiEvent(event_constptr_t cev) {
       break;
     }
     case EventCode::DRAG: {
-      float fx          = float(cev->miX) - float(_geometry._w >> 1);
-      float fy          = float(cev->miY) - float(_geometry._h >> 1);
-      auto cur_pos      = fvec2(fx, fy);
-      float cur_angle   = atan2f(cur_pos.y, cur_pos.x);
-      float radius = cur_pos.length()/float(_geometry._w>>1);
-
-      if( _push_radius > 0.9 ){
-        _intensity = fmod(0.0+(PI + cur_angle)/PI2,1.0);
-        _currentColor.setHSV(_hue,_saturation,_intensity);
-      }
-      else{
-        float SAT = (radius-0.45)/(0.85-0.45);
-        SAT = std::clamp(SAT,0.0f,1.0f);
+      float fx        = float(cev->miX) - float(_geometry._w >> 1);
+      float fy        = float(cev->miY) - float(_geometry._h >> 1);
+      auto cur_pos    = fvec2(fx, fy);
+      float cur_angle = atan2f(cur_pos.y, cur_pos.x);
+      float radius    = cur_pos.length();
+      
+      if (_push_radius > _radiusIntensRingI) {
+        _intensity = fmod(0.0 + (PI + cur_angle) / PI2, 1.0);
+        _currentColor.setHSV(_hue, _saturation, _intensity);
+        _currentColorFullBright.setHSV(_hue, _saturation, 1.0);
+      } else {
+        float range = _radiusWheelOuter - _radiusWheelInner;
+        float bias = _radiusWheelInner;
+        float SAT = (radius - bias) / range;
+        SAT         = std::clamp(SAT, 0.0f, 1.0f);
         _saturation = SAT;
-        _hue = fmod(0.5+(PI + cur_angle)/PI2,1.0);
-        _currentColor.setHSV(_hue,_saturation,_intensity);
+        _hue        = fmod(0.5 + (PI + cur_angle) / PI2, 1.0);
+        _currentColor.setHSV(_hue, _saturation, _intensity);
+        _currentColorFullBright.setHSV(_hue, _saturation, 1.0);
       }
       rval.setHandled(this);
       break;
@@ -118,72 +122,128 @@ void ColorEdit::DoDraw(drawevent_constptr_t drwev) {
   ixc = ix1 + (_geometry._w >> 1);
   iyc = iy1 + (_geometry._h >> 1);
 
+  _radiusIntensRingO = (0.5f * float(_geometry._w));
+  _radiusIntensRingI = _radiusIntensRingO * 0.8;
+
+  _radiusWheelOuter = _radiusIntensRingI*0.95;
+  _radiusWheelInner = _radiusWheelOuter * 0.5;
+
+  _radiusCurrentRingO = _radiusWheelInner * 0.9;
+  _radiusCurrentRingI = 0.0;
+
   /////////////////////////////////////////////////////////////////
-  // draw background
+
+  int numquads = 180;
+  fvec3 CTR(float(ixc), float(iyc), 0.0f);
+  float transparency = 0.0f;
+
+  /////////////////////////////////////////////////////////////////
+  // draw intensity ring
+  /////////////////////////////////////////////////////////////////
+
+  lev2::VtxWriter<vtx_t> vw0;
+  vw0.Lock(context, &VB, 6 * numquads);
+
+  for (int i = 0; i < numquads; i++) {
+    float A = DTOR * 360.0 * float(i) / float(numquads);
+    float B = DTOR * 360.0 * float(i + 1) / float(numquads);
+
+    fvec3 XYAI(_radiusIntensRingI * cosf(A), _radiusIntensRingI * sinf(A), 0.0f);
+    fvec3 XYBI(_radiusIntensRingI * cosf(B), _radiusIntensRingI * sinf(B), 0.0f);
+    fvec3 XYAO(_radiusIntensRingO * cosf(A), _radiusIntensRingO * sinf(A), 0.0f);
+    fvec3 XYBO(_radiusIntensRingO * cosf(B), _radiusIntensRingO * sinf(B), 0.0f);
+
+    float intensA = fmod(0.5f + float(i) / float(numquads), 1.0f);
+    float intensB = fmod(0.5f + float(i + 1) / float(numquads), 1.0f);
+
+    fvec3 ICOLORA = _currentColorFullBright.xyz() * intensA;
+    fvec3 ICOLORB = _currentColorFullBright.xyz() * intensB;
+
+    vtx_t v0(CTR + XYAI, fvec4(), ICOLORA);
+    vtx_t v1(CTR + XYBI, fvec4(), ICOLORB);
+    vtx_t v2(CTR + XYAO, fvec4(), ICOLORA);
+    vtx_t v3(CTR + XYBO, fvec4(), ICOLORB);
+
+    vw0.AddVertex(v0);
+    vw0.AddVertex(v1);
+    vw0.AddVertex(v2);
+
+    vw0.AddVertex(v1);
+    vw0.AddVertex(v3);
+    vw0.AddVertex(v2);
+  }
+
+  vw0.UnLock(context);
+
+  ///////////////////////////////
+
+  _material->_rasterstate.SetRGBAWriteMask(true, true);
+  _material->begin(_tekvtxcolor, RCFD);
+  _material->bindParamMatrix(_parmvp, uiMatrix);
+  gbi->DrawPrimitiveEML(vw0, lev2::PrimitiveType::TRIANGLES);
+  _material->end(RCFD);
+
+  /////////////////////////////////////////////////////////////////
+  // draw current ring
   /////////////////////////////////////////////////////////////////
 
   lev2::VtxWriter<vtx_t> vw1;
-  vw1.Lock(context, &VB, 6);
+  vw1.Lock(context, &VB, 6 * numquads);
 
-  float irx1 = ixc - (_geometry._w >> 2);
-  float irx2 = ixc + (_geometry._w >> 2);
-  float iry1 = iyc - (_geometry._h >> 2);
-  float iry2 = iyc + (_geometry._h >> 2);
+  for (int i = 0; i < numquads; i++) {
+    float A = DTOR * 360.0 * float(i) / float(numquads);
+    float B = DTOR * 360.0 * float(i + 1) / float(numquads);
 
-  vtx_t v0(fvec3(irx1, iry1, 0), fvec4(), _currentColor);
-  vtx_t v1(fvec3(irx2, iry1, 0), fvec4(), _currentColor);
-  vtx_t v2(fvec3(irx2, iry2, 0), fvec4(), _currentColor);
-  vtx_t v3(fvec3(irx1, iry2, 0), fvec4(), _currentColor);
+    fvec3 XYAI(_radiusCurrentRingI * cosf(A), _radiusCurrentRingI * sinf(A), 0.0f);
+    fvec3 XYBI(_radiusCurrentRingI * cosf(B), _radiusCurrentRingI * sinf(B), 0.0f);
+    fvec3 XYAO(_radiusCurrentRingO * cosf(A), _radiusCurrentRingO * sinf(A), 0.0f);
+    fvec3 XYBO(_radiusCurrentRingO * cosf(B), _radiusCurrentRingO * sinf(B), 0.0f);
 
-  vw1.AddVertex(v0);
-  vw1.AddVertex(v2);
-  vw1.AddVertex(v1);
+    vtx_t v0(CTR + XYAI, fvec4(), _currentColor);
+    vtx_t v1(CTR + XYBI, fvec4(), _currentColor);
+    vtx_t v2(CTR + XYAO, fvec4(), _currentColor);
+    vtx_t v3(CTR + XYBO, fvec4(), _currentColor);
 
-  vw1.AddVertex(v0);
-  vw1.AddVertex(v3);
-  vw1.AddVertex(v2);
+    vw1.AddVertex(v0);
+    vw1.AddVertex(v1);
+    vw1.AddVertex(v2);
+
+    vw1.AddVertex(v1);
+    vw1.AddVertex(v3);
+    vw1.AddVertex(v2);
+  }
 
   vw1.UnLock(context);
 
   ///////////////////////////////
 
   _material->_rasterstate.SetRGBAWriteMask(true, true);
-  _material->_rasterstate.SetDepthTest(lev2::EDepthTest::OFF);
   _material->begin(_tekvtxcolor, RCFD);
   _material->bindParamMatrix(_parmvp, uiMatrix);
   gbi->DrawPrimitiveEML(vw1, lev2::PrimitiveType::TRIANGLES);
   _material->end(RCFD);
+
 
   /////////////////////////////////////////////////////////////////
   // draw radial color picker
   /////////////////////////////////////////////////////////////////
 
   lev2::VtxWriter<vtx_t> vw2;
-  int numquads = 180;
   vw2.Lock(context, &VB, 6 * numquads);
-
-  float radiusOuter = (0.5f * float(_geometry._w))* 0.85;
-  float radiusInner = radiusOuter * 0.5;
-
-  fvec3 CTR(float(ixc), float(iyc), 0.0f);
-
-  float transparency = 0.0f;
 
   for (int i = 0; i < numquads; i++) {
     float A = DTOR * 360.0 * float(i) / float(numquads);
     float B = DTOR * 360.0 * float(i + 1) / float(numquads);
 
-    fvec3 XYAI(radiusInner * cosf(A), radiusInner * sinf(A), 0.0f);
-    fvec3 XYBI(radiusInner * cosf(B), radiusInner * sinf(B), 0.0f);
-    fvec3 XYAO(radiusOuter * cosf(A), radiusOuter * sinf(A), 0.0f);
-    fvec3 XYBO(radiusOuter * cosf(B), radiusOuter * sinf(B), 0.0f);
+    fvec3 XYAI(_radiusWheelInner * cosf(A), _radiusWheelInner * sinf(A), 0.0f);
+    fvec3 XYBI(_radiusWheelInner * cosf(B), _radiusWheelInner * sinf(B), 0.0f);
+    fvec3 XYAO(_radiusWheelOuter * cosf(A), _radiusWheelOuter * sinf(A), 0.0f);
+    fvec3 XYBO(_radiusWheelOuter * cosf(B), _radiusWheelOuter * sinf(B), 0.0f);
 
     fvec4 RGBAI, RGBAO;
-    ;
+
     RGBAI.setHSV(float(i) / float(numquads), 0.0f, _intensity);
     RGBAO.setHSV(float(i + 1) / float(numquads), 1.0f, _intensity);
-    RGBAI.w = transparency;
-    RGBAO.w = transparency;
 
     vtx_t v0(CTR + XYAI, fvec4(), RGBAI);
     vtx_t v1(CTR + XYBI, fvec4(), RGBAI);

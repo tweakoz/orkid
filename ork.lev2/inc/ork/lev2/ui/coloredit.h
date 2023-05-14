@@ -22,6 +22,7 @@ public:
 
   fvec4 _originalColor;
   fvec4 _currentColor;
+  fvec4 _currentColorFullBright;
   ork::lev2::freestyle_mtl_ptr_t _material;
   float _intensity = 1.0f;
   float _saturation = 1.0f;
@@ -29,6 +30,14 @@ public:
   fvec2 _push_pos;
   float _push_radius = 0.0;
   float _push_angle = 0.0f;
+
+  float _radiusIntensRingO = 0.0f;
+  float _radiusIntensRingI = 0.0f;
+  float _radiusWheelOuter = 0.0f;
+  float _radiusWheelInner = 0.0f;
+  float _radiusCurrentRingO = 0.0f;
+  float _radiusCurrentRingI = 0.0f;
+
   const ork::lev2::FxShaderTechnique* _tekvtxcolor = nullptr;
   const ork::lev2::FxShaderTechnique* _tekmodcolor = nullptr;
   const ork::lev2::FxShaderTechnique* _tekcolorwheel = nullptr;

@@ -196,6 +196,8 @@ template <typename T> struct Vector3 final
   }
 
   void setHSV(T h, T s, T v);
+  Vector3<T> convertRgbToHsv() const;
+
   void setRGB(T r, T g, T b) {
     this->x = r;
     this->y = g;

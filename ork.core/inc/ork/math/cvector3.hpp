@@ -351,6 +351,50 @@ template <typename T> void Vector3<T>::setRGBAU64(uint64_t inp) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+template <typename T> Vector3<T> Vector3<T>::convertRgbToHsv() const {
+
+  T r = this->x;
+  T g = this->y;
+  T b = this->z;
+
+  T h = T(0);
+  T s = T(0);
+  T v = T(0);
+
+  T min = std::min(r, std::min(g, b));
+  T max = std::max(r, std::max(g, b));
+
+  v = max;
+
+  T delta = max - min;
+
+  if (max != T(0)) {
+    s = delta / max;
+  } else {
+    s = T(0);
+    h = T(-1);
+    return Vector3<T>(h, s, v);
+  }
+
+  if (r == max) {
+    h = (g - b) / delta;
+  } else if (g == max) {
+    h = T(2) + (b - r) / delta;
+  } else {
+    h = T(4) + (r - g) / delta;
+  }
+
+  h *= T(60);
+
+  if (h < T(0)) {
+    h += T(360);
+  }
+
+  return Vector3<T>(h/T(360), s, v);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 template <typename T> void Vector3<T>::setHSV(T h, T s, T v) {
   //  hsv.x = saturate(hsv.x);
   //  hsv.y = saturate(hsv.y);
