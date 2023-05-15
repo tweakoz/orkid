@@ -30,8 +30,20 @@ void pyinit_ui(py::module& module_lev2) {
   uimodule.def("popupOpenDialog", [](std::string title, //
                                      std::string default_path_and_file, //
                                      std::vector<std::string> filter_patterns, //
-                                     bool allow_multiple_selects) -> std::string { //
-    return ui::popupOpenDialog(title, default_path_and_file, filter_patterns, allow_multiple_selects);
+                                     bool allow_multiple_selects) -> py::list { //
+    std::string values = ui::popupOpenDialog(title, default_path_and_file, filter_patterns, allow_multiple_selects);
+    py::list rval;
+    // split values by |
+    std::string delimiter = "|";
+    size_t pos            = 0;
+    std::string token;
+    while ((pos = values.find(delimiter)) != std::string::npos) {
+      token = values.substr(0, pos);
+      rval.append(token);
+      values.erase(0, pos + delimiter.length());
+    }
+    rval.append(values);
+    return rval;
   });
   uimodule.def("popupSaveDialog", [](std::string title, //
                                      std::string default_path_and_file, //
