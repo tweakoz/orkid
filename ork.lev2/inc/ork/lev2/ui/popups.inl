@@ -21,14 +21,18 @@ char* tinyfd_openFileDialog(
 /* in case of multiple files, the separator is | */
 /* returns NULL on cancel */
 
-char * tinyfd_saveFileDialog(
-	char const * aTitle , /* NULL or "" */
-	char const * aDefaultPathAndFile , /* NULL or "" */
-	int aNumOfFilterPatterns , /* 0  (1 in the following example) */
-	char const * const * aFilterPatterns , /* NULL or char const * lFilterPatterns[1]={"*.txt"} */
-	char const * aSingleFilterDescription ) ; /* NULL or "text files" */
-		/* returns NULL on cancel */
+char* tinyfd_saveFileDialog(
+    char const* aTitle,                    /* NULL or "" */
+    char const* aDefaultPathAndFile,       /* NULL or "" */
+    int aNumOfFilterPatterns,              /* 0  (1 in the following example) */
+    char const* const* aFilterPatterns,    /* NULL or char const * lFilterPatterns[1]={"*.txt"} */
+    char const* aSingleFilterDescription); /* NULL or "text files" */
+/* returns NULL on cancel */
 
+char* tinyfd_selectFolderDialog(
+    char const* aTitle,        /* NULL or "" */
+    char const* aDefaultPath); /* NULL or "" */
+/* returns NULL on cancel */
 }
 
 namespace ork::ui {
@@ -124,8 +128,8 @@ inline std::string popupOpenDialog(           //
     std::vector<std::string> filter_patterns, //
     bool allow_multiple_selects) {            //
 
-  int num_patterns                        = filter_patterns.size();
-  auto filter_patterns_cstr = new const char *[num_patterns];
+  int num_patterns          = filter_patterns.size();
+  auto filter_patterns_cstr = new const char*[num_patterns];
   for (int i = 0; i < num_patterns; i++)
     filter_patterns_cstr[i] = filter_patterns[i].c_str();
 
@@ -153,13 +157,15 @@ inline std::string popupOpenDialog(           //
   return rval;
 }
 
-inline std::string popupSaveDialog(          //
-    std::string title,                        //
-    std::string default_path_and_file,        //
-    std::vector<std::string> filter_patterns) {            //
+///////////////////////////////////////////////////////////////////////////////
 
-  int num_patterns                        = filter_patterns.size();
-  auto filter_patterns_cstr = new const char *[num_patterns];
+inline std::string popupSaveDialog(             //
+    std::string title,                          //
+    std::string default_path_and_file,          //
+    std::vector<std::string> filter_patterns) { //
+
+  int num_patterns          = filter_patterns.size();
+  auto filter_patterns_cstr = new const char*[num_patterns];
   for (int i = 0; i < num_patterns; i++)
     filter_patterns_cstr[i] = filter_patterns[i].c_str();
 
@@ -175,8 +181,8 @@ inline std::string popupSaveDialog(          //
   if (title.length())
     title_cstr = title.c_str();
 
-  char* result = tinyfd_saveFileDialog(
-      title_cstr, default_path_and_file_cstr, num_patterns, filter_patterns_cstr, filter_description);
+  char* result =
+      tinyfd_saveFileDialog(title_cstr, default_path_and_file_cstr, num_patterns, filter_patterns_cstr, filter_description);
 
   delete[] filter_patterns_cstr;
 
@@ -184,7 +190,32 @@ inline std::string popupSaveDialog(          //
   if (result)
     rval = result;
 
-  return rval;  
-    }
+  return rval;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+inline std::string popupFolderDialog( //
+    std::string title,                      //
+    std::string default_path) {             //
+
+  char const* default_path_cstr = nullptr;
+  if (default_path.length())
+    default_path_cstr = default_path.c_str();
+
+  char const* title_cstr = nullptr;
+  if (title.length())
+    title_cstr = title.c_str();
+
+  char* result = tinyfd_selectFolderDialog(title_cstr, default_path_cstr);
+
+  std::string rval;
+  if (result)
+    rval = result;
+
+  return rval;
+}
+
+///////////////////////////////////////////////////////////////////////////////
 
 } // namespace ork::ui

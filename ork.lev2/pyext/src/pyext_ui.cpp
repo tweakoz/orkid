@@ -50,6 +50,10 @@ void pyinit_ui(py::module& module_lev2) {
                                      std::vector<std::string> filter_patterns) -> std::string { //
     return ui::popupSaveDialog(title, default_path_and_file, filter_patterns);
   });
+  uimodule.def("popupFolderDialog", [](std::string title, //
+                                       std::string default_path) -> std::string { //
+    return ui::popupFolderDialog(title, default_path);
+  });
   /////////////////////////////////////////////////////////////////////////////////
   auto uicontext_type = //
       py::class_<ui::Context, ui::context_ptr_t>(module_lev2, "Context")

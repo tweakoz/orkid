@@ -11,6 +11,5 @@ import sys, math, random, numpy, ork.path
 from orkengine.core import *
 from orkengine.lev2 import *
 
-def_path = ork.path.stage()
-selected_path = ui.popupSaveDialog("Save File", str(def_path/"yo.txt"), ["*.yo"])
+selected_path = ui.popupFolderDialog("Select Folder", str(ork.path.stage()))
 print("selected_path<%s>" % selected_path)
