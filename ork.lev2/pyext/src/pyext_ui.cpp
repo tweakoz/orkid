@@ -15,7 +15,7 @@
 #include <ork/lev2/ui/anchor.h>
 #include <ork/lev2/ui/box.h>
 #include <ork/lev2/ui/ged/ged_surface.h>
-
+#include <ork/lev2/ui/popups.inl>
 ///////////////////////////////////////////////////////////////////////////////
 
 namespace ork::lev2 {
@@ -26,6 +26,18 @@ void pyinit_ui_layout(py::module& module_ui);
 void pyinit_ui(py::module& module_lev2) {
   auto uimodule   = module_lev2.def_submodule("ui", "ui operations");
   auto type_codec = python::TypeCodec::instance();
+  /////////////////////////////////////////////////////////////////////////////////
+  uimodule.def("popupOpenDialog", [](std::string title, //
+                                     std::string default_path_and_file, //
+                                     std::vector<std::string> filter_patterns, //
+                                     bool allow_multiple_selects) -> std::string { //
+    return ui::popupOpenDialog(title, default_path_and_file, filter_patterns, allow_multiple_selects);
+  });
+  uimodule.def("popupSaveDialog", [](std::string title, //
+                                     std::string default_path_and_file, //
+                                     std::vector<std::string> filter_patterns) -> std::string { //
+    return ui::popupSaveDialog(title, default_path_and_file, filter_patterns);
+  });
   /////////////////////////////////////////////////////////////////////////////////
   auto uicontext_type = //
       py::class_<ui::Context, ui::context_ptr_t>(module_lev2, "Context")
