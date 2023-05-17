@@ -184,16 +184,21 @@ struct ChoiceList {
 
 struct ChoiceManager {
 
-  void AddChoiceList(
-      const std::string& ListName, //
-      choicelist_ptr_t plist);
-  choicelist_constptr_t GetChoiceList(const std::string& ListName) const;
-  choicelist_ptr_t GetChoiceList(const std::string& ListName);
+  template <typename T>
+    std::shared_ptr<T> createChoicelist(const std::string& ListName) {
+      auto rval = std::make_shared<T>();
+      auto it = _choicelists.find(ListName);
+      OrkAssert(it == _choicelists.end());
+      _choicelists[ListName] = rval;
+      return rval;
+    }
+  choicelist_constptr_t choicelist(const std::string& ListName) const;
+  choicelist_ptr_t choicelist(const std::string& ListName);
 
   ChoiceManager();
   ~ChoiceManager();
 
-  orkmap<std::string, choicelist_ptr_t> _choicelists;
+  std::unordered_map<std::string, choicelist_ptr_t> _choicelists;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

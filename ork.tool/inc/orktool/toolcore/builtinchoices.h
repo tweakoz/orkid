@@ -40,14 +40,6 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////
 
-class TextureChoices : public ork::util::ChoiceList {
-public:
-  virtual void EnumerateChoices(bool bforcenocache = false);
-  TextureChoices();
-};
-
-///////////////////////////////////////////////////////////////////////////
-
 class FxShaderChoices : public ork::util::ChoiceList {
 public:
   virtual void EnumerateChoices(bool bforcenocache = false);

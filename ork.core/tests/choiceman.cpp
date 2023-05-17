@@ -18,10 +18,8 @@ using namespace ork::util;
 TEST(ChoiceMan1) {
 
   auto chcman   = std::make_shared<ChoiceManager>();
-  auto chclist1 = std::make_shared<ChoiceList>();
-  auto chclist2 = std::make_shared<ChoiceList>();
-  chcman->AddChoiceList("choicelist1", chclist1);
-  chcman->AddChoiceList("choicelist2", chclist2);
+  auto chclist1 = chcman->createChoicelist<ChoiceList>("choicelist1");
+  auto chclist2 = chcman->createChoicelist<ChoiceList>("choicelist2");
 
   chclist1->add(AttrChoiceValue("/nam/a", "val-a", "a"));
   chclist1->add(AttrChoiceValue("/nam/a/b", "val-b", "b"));

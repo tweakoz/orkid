@@ -11,6 +11,7 @@
 #include <ork/kernel/fixedlut.h>
 #include <ork/kernel/orkpool.h>
 #include <ork/kernel/any.h>
+#include <ork/util/choiceman.h>
 #include <ork/kernel/msgrouter.inl>
 #include <ork/lev2/ui/viewport.h>
 #include <ork/kernel/opq.h>
@@ -22,6 +23,7 @@
 namespace ork::lev2::ged {
 
 static constexpr int koff = 1;
+util::choicemanager_ptr_t choicemanager();
 
 struct ObjModel;
 struct PersistHashContext;

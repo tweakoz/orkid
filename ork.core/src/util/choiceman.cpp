@@ -227,20 +227,7 @@ ChoiceManager::~ChoiceManager() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ChoiceManager::AddChoiceList(
-    const std::string& ListName, //
-    choicelist_ptr_t plist) {
-  auto it                 = _choicelists.find(ListName);
-  choicelist_ptr_t plist2 = (it == _choicelists.end()) ? nullptr : it->second;
-  OrkAssert(nullptr == plist2);
-  if (nullptr == plist2) {
-    OldStlSchoolMapInsert(_choicelists, ListName, plist);
-  }
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-choicelist_ptr_t ChoiceManager::GetChoiceList(const std::string& ListName) {
+choicelist_ptr_t ChoiceManager::choicelist(const std::string& ListName) {
   choicelist_ptr_t plist = nullptr;
   auto it                = _choicelists.find(ListName);
   if (it != _choicelists.end()) {
@@ -251,7 +238,7 @@ choicelist_ptr_t ChoiceManager::GetChoiceList(const std::string& ListName) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-choicelist_constptr_t ChoiceManager::GetChoiceList(const std::string& ListName) const {
+choicelist_constptr_t ChoiceManager::choicelist(const std::string& ListName) const {
   choicelist_constptr_t plist = nullptr;
   auto it                     = _choicelists.find(ListName);
   if (it != _choicelists.end()) {
