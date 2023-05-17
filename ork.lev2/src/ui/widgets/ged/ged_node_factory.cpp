@@ -27,8 +27,8 @@ void GedFactoryNode::describeX(class_t* clazz) { // a node which creates objects
 }
 
 GedFactoryNode::GedFactoryNode(GedContainer* c, const char* name, newiodriver_ptr_t iodriver )
-    : GedItemNode(c, name, iodriver->_par_prop, iodriver->_object)
-    , _iodriver(iodriver) {
+    : GedItemNode(c, name, iodriver->_par_prop, iodriver->_object){
+  _iodriver = iodriver;
 }
 
 ////////////////////////////////////////////////////////////////
@@ -47,7 +47,7 @@ void GedFactoryNode::DoDraw(lev2::Context* pTARG) {
 
 ////////////////////////////////////////////////////////////////
 
-void GedFactoryNode::OnMouseDoubleClicked(ui::event_constptr_t ev) {
+bool GedFactoryNode::OnMouseDoubleClicked(ui::event_constptr_t ev) {
   auto model = _container->_model;
   auto skin  = _container->_activeSkin;
   const int klabh = get_charh();
@@ -76,6 +76,7 @@ void GedFactoryNode::OnMouseDoubleClicked(ui::event_constptr_t ev) {
       _iodriver->_onValueChanged();
     }
   }
+  return true;
 }
 
 ////////////////////////////////////////////////////////////////

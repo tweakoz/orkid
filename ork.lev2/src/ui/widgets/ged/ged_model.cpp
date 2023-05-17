@@ -324,6 +324,7 @@ geditemnode_ptr_t ObjModel::recurse(
   if (auto as_nodefactory_class = classdesc.classAnnotationTyped<ConstString>("editor.ged.node.factory")) {
     auto nodefactory_class = as_nodefactory_class.value();
     if (nodefactory_class.length()) {
+      printf( "nodefactory_class<%s>\n", nodefactory_class.c_str());
       rtti::Class* anno_clazz = rtti::Class::FindClass(nodefactory_class.c_str());
       if (anno_clazz) {
         auto object_clazz = dynamic_cast<ork::object::ObjectClass*>(anno_clazz);
@@ -504,23 +505,26 @@ geditemnode_ptr_t ObjModel::createObjPropNode(
     const reflect::ObjectProperty* prop, //
     object_ptr_t pobject) {
 
-  rtti::Class* AnnoEditorClass = 0;
+  rtti::Class* node_factory_class = nullptr;
   /////////////////////////////////////////////////////////////////////////
   // check editor class anno on property
   /////////////////////////////////////////////////////////////////////////
-  ConstString anno_edclass = prop->GetAnnotation("editor.class");
-  if (anno_edclass.length()) {
-    AnnoEditorClass = rtti::Class::FindClass(anno_edclass.c_str());
+  ConstString anno_node_factory_class = prop->GetAnnotation("editor.node.factory");
+  if (anno_node_factory_class.length()) {
+    node_factory_class = rtti::Class::FindClass(anno_node_factory_class.c_str());
   }
   /////////////////////////////////////////////////////////////////////////
-  /*if (AnnoEditorClass) {
-    auto clazz = rtti::safe_downcast<ork::object::ObjectClass*>(AnnoEditorClass);
+  if (node_factory_class) {
+    auto clazz = rtti::safe_downcast<ork::object::ObjectClass*>(node_factory_class);
     auto factory    = clazz->createShared();
-    auto typed_factory = std::dynamic_pointer_cast<GedFactory>(factory);
+    auto typed_factory = std::dynamic_pointer_cast<GedNodeFactory>(factory);
     if (typed_factory) {
-      return typed_factory->createItemNode(_gedContainer, Name.c_str(), prop, pobject);
+      auto iodriver = std::make_shared<NewIoDriver>();
+      iodriver->_par_prop = prop;
+      iodriver->_object   = pobject;
+      return typed_factory->createItemNode(_gedContainer, Name.c_str(), iodriver);
     }
-  }*/
+  }
   /////////////////////////////////////////////////////////////////////////
   auto array_prop = dynamic_cast<const reflect::IArray*>(prop);
   auto map_prop   = dynamic_cast<const reflect::IMap*>(prop);

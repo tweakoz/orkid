@@ -103,6 +103,11 @@ public:
       const char* name, //
       MemberType ClassType::*member);
 
+  template <typename ClassType, typename MemberType>
+  inline PropertyModifier directAssetProperty(
+      const char* name, //
+      MemberType ClassType::*member);
+
   template <typename ClassType>
   inline PropertyModifier floatProperty(const char* name, float_range range, float ClassType::*member);
 

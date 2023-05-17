@@ -338,7 +338,7 @@ void GedMapNode::exportItem(ui::event_constptr_t ev) {
 
 ////////////////////////////////////////////////////////////////
 
-void GedMapNode::OnMouseDoubleClicked(ui::event_constptr_t ev) {
+bool GedMapNode::OnMouseDoubleClicked(ui::event_constptr_t ev) {
   const int klabh = get_charh();
   const int kdim  = klabh - 2;
   // Qt::MouseButtons Buttons = pEV->buttons();
@@ -365,7 +365,7 @@ void GedMapNode::OnMouseDoubleClicked(ui::event_constptr_t ev) {
     pmap->setValue("single", mbSingle ? "true" : "false");
 
     updateVisibility();
-    return;
+    return true;
   }
 
   ///////////////////////////////////////
@@ -377,28 +377,28 @@ void GedMapNode::OnMouseDoubleClicked(ui::event_constptr_t ev) {
       // model.Attach(model.CurrentObject());
       printf("MAPADDITEM\n");
       model->enqueueUpdate();
-      return;
+      return true;
     }
     ix -= (kdim + 4);
     if( (ix >= koff) and (ix <= kdim) and (iy >= koff) and (iy <= kdim)) { // remove item
       removeItem(ev);
       // model->Attach(model->CurrentObject());
       model->enqueueUpdate();
-      return;
+      return true;
     }
     ix -= (kdim + 4);
     if( (ix >= koff) and (ix <= kdim) and (iy >= koff) and (iy <= kdim)) { // rename Item
       moveItem(ev);
       // model->Attach(model->CurrentObject());
       model->enqueueUpdate();
-      return;
+      return true;
     }
     ix -= (kdim + 4);
     if( (ix >= koff) and (ix <= kdim) and (iy >= koff) and (iy <= kdim)) { // duplicate Item
       duplicateItem(ev);
       // model->Attach(model->CurrentObject());
       model->enqueueUpdate();
-      return;
+      return true;
     }
   }
 
@@ -412,7 +412,7 @@ void GedMapNode::OnMouseDoubleClicked(ui::event_constptr_t ev) {
       importItem(ev);
       // model->Attach(model->CurrentObject());
       model->enqueueUpdate();
-      return;
+      return true;
     }
     ix -= (kdim + 4);
     if (ix >= koff && ix <= kdim && iy >= koff && iy <= kdim) // drop down
@@ -420,7 +420,7 @@ void GedMapNode::OnMouseDoubleClicked(ui::event_constptr_t ev) {
       exportItem(ev);
       // model->Attach(model->CurrentObject());
       model->enqueueUpdate();
-      return;
+      return true;
     }
   }
 
@@ -455,6 +455,7 @@ void GedMapNode::OnMouseDoubleClicked(ui::event_constptr_t ev) {
     updateVisibility();
   }*/
   ///////////////////////////////////////
+  return false;
 }
 
 ////////////////////////////////////////////////////////////////

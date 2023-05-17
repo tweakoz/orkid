@@ -46,7 +46,7 @@ public:
   void SetParent(GedItemNode* ppar) {
     _parent = ppar;
   }
-  void OnMouseDoubleClicked(ork::ui::event_constptr_t ev) final {
+  bool OnMouseDoubleClicked(ork::ui::event_constptr_t ev) final {
     if (_parent && mCurveObject) {
       orklut<float, float>& data        = mCurveObject->GetVertices();
       orklut<float, float>::iterator it = data.begin() + miPoint;
@@ -59,8 +59,9 @@ public:
         }
       }
     }
+    return true;
   }
-  void OnUiEvent(ork::ui::event_constptr_t ev) final {
+  bool OnUiEvent(ork::ui::event_constptr_t ev) final {
     const auto& filtev = ev->mFilteredEvent;
 
     switch (filtev._eventcode) {
@@ -110,6 +111,7 @@ public:
       default:
         break;
     }
+    return true;
   }
 };
 
@@ -129,7 +131,7 @@ public:
       , miSeg(-1) {
   }
   ///////////////////////////////////
-  void OnMouseDoubleClicked(ork::ui::event_constptr_t ev) final {
+  bool OnMouseDoubleClicked(ork::ui::event_constptr_t ev) final {
     if (_parent && mCurveObject) {
       if (ev->IsButton0DownF()) {
         mCurveObject->SplitSegment(miSeg);
@@ -158,6 +160,7 @@ public:
         //_parent->SigInvalidateProperty();
       }
     }
+    return true;
   }
 
   void SetSeg(int idx) {
@@ -392,8 +395,8 @@ void GedCurve1DNode::describeX(class_t* clazz) {
 }
 
 GedCurve1DNode::GedCurve1DNode(GedContainer* c, const char* name, newiodriver_ptr_t iodriver)
-    : GedItemNode(c, name, iodriver->_par_prop, iodriver->_object)
-    , _iodriver(iodriver) {
+    : GedItemNode(c, name, iodriver->_par_prop, iodriver->_object){
+  _iodriver = iodriver;
 
   auto cei = _impl.makeShared<CurveEditorImpl>(this);
 }
@@ -413,7 +416,7 @@ int GedCurve1DNode::doComputeHeight() { // final
 
 ////////////////////////////////////////////////////////////////
 
-void GedCurve1DNode::OnUiEvent(ork::ui::event_constptr_t ev) {
+bool GedCurve1DNode::OnUiEvent(ork::ui::event_constptr_t ev) {
   return GedItemNode::OnUiEvent(ev);
 }
 

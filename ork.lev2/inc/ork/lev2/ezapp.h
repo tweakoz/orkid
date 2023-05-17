@@ -213,6 +213,7 @@ public:
   moviecontext_ptr_t _moviecontext;
   float _timescale = 1.0f;
   void_lambda_t _onRunLoopIteration;
+  rcfd_ptr_t _overrideRCFD;
 };
 
 } // namespace ork::lev2

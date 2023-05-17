@@ -27,8 +27,6 @@
 
 namespace ork { namespace reflect {
 
-class ISerializer;
-
 template <typename T>
 DirectTyped<T>::DirectTyped(T Object::*property)
     : _member(property) {

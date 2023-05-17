@@ -116,7 +116,7 @@ template <typename T> void Slider<T>::SetVal(datatype val) {
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
-void Slider<T>::OnUiEvent(ork::ui::event_constptr_t ev) // final
+bool Slider<T>::OnUiEvent(ork::ui::event_constptr_t ev) // final
 {
   const auto& filtev = ev->mFilteredEvent;
 
@@ -182,6 +182,7 @@ void Slider<T>::OnUiEvent(ork::ui::event_constptr_t ev) // final
     }
   }
   SetVal(mval);
+  return true;
   //IoDriverBase& iod = _parent.RefIODriver();
   //_parent.SigInvalidateProperty();
 }

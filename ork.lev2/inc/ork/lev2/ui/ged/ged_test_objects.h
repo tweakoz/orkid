@@ -4,6 +4,7 @@
 #include <ork/object/Object.h>
 #include <ork/math/multicurve.h>
 #include <ork/math/gradient.h>
+#include <ork/dataflow/dataflow.h>
 
 namespace ork::lev2::ged {
 ///////////////////////////////////////////////////////////////////////////
@@ -14,8 +15,10 @@ public:
   int int_prop = 0;
   bool bool_prop = false;
   float float_prop= 0.0f;
+  asset::asset_ptr_t _genericAsset;
   orklut<std::string, multicurve1d_ptr_t> _curves;
   orklut<std::string, gradient_fvec4_ptr_t> _gradients;
+  orklut<std::string, dataflow::graphdata_ptr_t> _particlesystems;
 };
 
 using testobject_ptr_t      = std::shared_ptr<TestObject>;

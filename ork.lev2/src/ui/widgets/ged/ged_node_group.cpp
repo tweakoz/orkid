@@ -73,7 +73,7 @@ GedGroupNode::GedGroupNode(
   updateVisibility();
 }
 ///////////////////////////////////////////////////////////////////////////////
-void GedGroupNode::OnMouseDoubleClicked(ork::ui::event_constptr_t ev) {
+bool GedGroupNode::OnMouseDoubleClicked(ork::ui::event_constptr_t ev) {
 
   auto model = _container->_model;
   int inumitems = numChildren();
@@ -154,10 +154,11 @@ void GedGroupNode::OnMouseDoubleClicked(ork::ui::event_constptr_t ev) {
         }
 
         updateVisibility();
-        return;
+        return true;
       }
     }
   }
+  return false;
 }
 ///////////////////////////////////////////////////////////////////////////////
 void GedGroupNode::updateVisibility() {

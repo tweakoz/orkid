@@ -23,8 +23,8 @@ void GedBoolNode::describeX(class_t* clazz) {
 }
 
 GedBoolNode::GedBoolNode(GedContainer* c, const char* name, newiodriver_ptr_t iodriver )
-      : GedItemNode(c, name, iodriver->_par_prop, iodriver->_object)
-      , _iodriver(iodriver) {
+      : GedItemNode(c, name, iodriver->_par_prop, iodriver->_object){
+  _iodriver = iodriver;
   }
 
 ////////////////////////////////////////////////////////////////
@@ -55,7 +55,7 @@ void GedBoolNode::DoDraw(lev2::Context* pTARG){
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GedBoolNode::OnMouseReleased(ork::ui::event_constptr_t ev) {
+bool GedBoolNode::OnMouseReleased(ork::ui::event_constptr_t ev) {
   int evx = ev->miX;
   int evy = ev->miY;
 
@@ -68,14 +68,16 @@ void GedBoolNode::OnMouseReleased(ork::ui::event_constptr_t ev) {
     _iodriver->_abstract_val.set<bool>(!value);
     _iodriver->_onValueChanged();
   }
+  return true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GedBoolNode::OnMouseDoubleClicked(ork::ui::event_constptr_t ev) {
+bool GedBoolNode::OnMouseDoubleClicked(ork::ui::event_constptr_t ev) {
   bool value = _iodriver->_abstract_val.get<bool>();
   _iodriver->_abstract_val.set<bool>(!value);
   _iodriver->_onValueChanged();
+  return true;
 }
 
 

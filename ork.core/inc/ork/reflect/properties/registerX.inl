@@ -119,6 +119,18 @@ inline object::PropertyModifier object::ObjectClass::directObjectProperty( //
 }
 ///////////////////////////////////////////////////////////////////////////
 template <typename ClassType, typename MemberType>
+inline object::PropertyModifier object::ObjectClass::directAssetProperty( //
+    const char* name,                                                      //
+    MemberType ClassType::*member) {
+  object::PropertyModifier modder;
+  auto typed_member = static_cast<MemberType Object::*>(member);
+  modder._property  = new reflect::DirectObject<MemberType>(typed_member);
+  _description.addProperty(name, modder._property);
+  modder.template annotate<ConstString>("editor.node.factory", "GedNodeFactoryAssetList");
+  return modder;
+}
+///////////////////////////////////////////////////////////////////////////
+template <typename ClassType, typename MemberType>
 inline object::PropertyModifier object::ObjectClass::accessorProperty(
     const char* name,
     void (ClassType::*getter)(MemberType&) const,

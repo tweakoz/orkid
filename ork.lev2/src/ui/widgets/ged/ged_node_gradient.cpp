@@ -44,7 +44,7 @@ public:
     _parent = ppar;
   }
 
-  void OnUiEvent(ui::event_constptr_t ev) final {
+  bool OnUiEvent(ui::event_constptr_t ev) final {
     const auto& filtev = ev->mFilteredEvent;
 
     using data_t = orklut<float, fvec4>;
@@ -146,6 +146,7 @@ public:
         }
       }
     }
+    return true;
   }
 };
 
@@ -157,7 +158,7 @@ class GedGradientEditSeg : public GedObject {
   int miSeg;
 
 public:
-  void OnUiEvent(ork::ui::event_constptr_t ev) final {
+  bool OnUiEvent(ork::ui::event_constptr_t ev) final {
     const auto& filtev = ev->mFilteredEvent;
 
     switch (filtev._eventcode) {
@@ -178,6 +179,7 @@ public:
         break;
       }
     }
+    return true;
   }
 
   void SetSeg(int idx) {
@@ -394,8 +396,8 @@ void GedGradientNode::describeX(class_t* clazz) {
 ////////////////////////////////////////////////////////////////
 
 GedGradientNode::GedGradientNode(GedContainer* c, const char* name, newiodriver_ptr_t iodriver)
-    : GedItemNode(c, name, iodriver->_par_prop, iodriver->_object)
-    , _iodriver(iodriver) {
+    : GedItemNode(c, name, iodriver->_par_prop, iodriver->_object){
+  _iodriver = iodriver;
 
   auto gei = _impl.makeShared<GradientEditorImpl>(this);
 }
@@ -409,7 +411,7 @@ void GedGradientNode::DoDraw(lev2::Context* pTARG) {
 
 ////////////////////////////////////////////////////////////////
 
-void GedGradientNode::OnUiEvent(ork::ui::event_constptr_t ev) {
+bool GedGradientNode::OnUiEvent(ork::ui::event_constptr_t ev) {
   switch(ev->_eventcode){
     case ui::EventCode::MOVE:
       _container->_viewport->MarkSurfaceDirty();

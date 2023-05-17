@@ -25,14 +25,14 @@ struct GedNodeFactoryTransform : public GedNodeFactory {
 public:
 };
 ///////////////////////////////////////////////////////////////////////////////
-struct GedNodeFactory_PlugFloat : public GedNodeFactory {
-  DeclareConcreteX(GedNodeFactory_PlugFloat, GedNodeFactory);
+struct GedNodeFactoryPlug : public GedNodeFactory {
+  DeclareConcreteX(GedNodeFactoryPlug, GedNodeFactory);
   geditemnode_ptr_t
   createItemNode(GedContainer* c, const ConstString& Name, newiodriver_ptr_t iodriver ) const final;
   //void Recurse(GedContainer* c, const reflect::ObjectProperty* prop, ork::Object* pobj) const final;
 
 public:
-  GedNodeFactory_PlugFloat();
+  GedNodeFactoryPlug();
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct GedNodeFactoryOutliner : public GedNodeFactory {

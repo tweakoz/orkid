@@ -70,6 +70,7 @@ void LoadRequest::waitForCompletion() const { //
 ///////////////////////////////////////////////////////////////////////////////
 
 void Asset::describeX(object::ObjectClass* clazz) {
+  clazz->template annotateTyped<ConstString>("editor.ged.node.factory", "GedNodeFactoryAssetList");
 }
 
 Asset::Asset() {

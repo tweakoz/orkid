@@ -26,23 +26,24 @@ void GedObject::describeX(class_t* clazz) {
 
 ////////////////////////////////////////////////////////////////
 
-void GedObject::OnUiEvent(ork::ui::event_constptr_t ev) {
+bool GedObject::OnUiEvent(ork::ui::event_constptr_t ev) {
   switch (ev->_eventcode) {
     case ui::EventCode::DRAG:
-      OnMouseDragged(ev);
+      return OnMouseDragged(ev);
       break;
     case ui::EventCode::MOVE:
-      OnMouseMoved(ev);
+      return OnMouseMoved(ev);
       break;
     case ui::EventCode::DOUBLECLICK:
-      OnMouseDoubleClicked(ev);
+      return OnMouseDoubleClicked(ev);
       break;
     case ui::EventCode::RELEASE:
-      OnMouseReleased(ev);
+      return OnMouseReleased(ev);
       break;
     default:
       break;
   }
+  return false;
 }
 
 ////////////////////////////////////////////////////////////////
@@ -70,6 +71,16 @@ GedItemNode::GedItemNode(
   }
 
   Init();
+}
+
+////////////////////////////////////////////////////////////////
+
+GedItemNode::GedItemNode(
+    GedContainer* container,             //
+    const char* name,                    //
+    newiodriver_ptr_t iodriver)                    //
+    : GedItemNode(container,name,iodriver->_par_prop,iodriver->_object) {
+    _iodriver = iodriver;
 }
 
 ////////////////////////////////////////////////////////////////
@@ -247,15 +258,17 @@ geditemnode_ptr_t GedItemNode::child(int idx) const {
 }
 ///////////////////////////////////////////////////////////////////////////////
 int GedItemNode::propnameWidth() const {
+  auto skin = _container->_activeSkin;
   int istrw                   = (int)strlen(_propname.c_str());
-  const lev2::FontDesc& fdesc = lev2::FontMan::GetRef().currentFont()->GetFontDesc();
+  const lev2::FontDesc& fdesc = skin->_font->GetFontDesc();
   int ilabw                   = fdesc.stringWidth(istrw);
   return ilabw;
 }
 ///////////////////////////////////////////////////////////////////////////////
 int GedItemNode::contentWidth() const {
+  auto skin = _container->_activeSkin;
   size_t istrw                = _content.length();
-  const lev2::FontDesc& fdesc = lev2::FontMan::GetRef().currentFont()->GetFontDesc();
+  const lev2::FontDesc& fdesc = skin->_font->GetFontDesc();
   int ilabw                   = fdesc.stringWidth(istrw);
   return ilabw;
 }

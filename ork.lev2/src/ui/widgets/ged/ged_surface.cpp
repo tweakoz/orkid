@@ -168,8 +168,9 @@ ui::HandlerResult GedSurface::DoOnUiEvent(ui::event_constptr_t EV) {
   locEV->miRawX = locEV->miX;
   locEV->miRawY = locEV->miY;
 
-  if (_activeNode)
-    _activeNode->OnUiEvent(locEV);
+  if (_activeNode){
+    bool was_handled = _activeNode->OnUiEvent(locEV);
+  }
 
   switch (filtev._eventcode) {
     case ui::EventCode::KEY_DOWN:
@@ -248,8 +249,9 @@ ui::HandlerResult GedSurface::DoOnUiEvent(ui::event_constptr_t EV) {
               //printf( "pobj<%p> as_inode<%p:%s\n", (void*) pobj, (void*) as_inode, as_inode->_propname.c_str() );
             }
             _mouseoverNode = pnode;
-            if (pnode != _activeNode)
-              pnode->OnUiEvent(locEV);
+            if (pnode != _activeNode){
+              bool was_handled = pnode->OnUiEvent(locEV);
+            }
           }
         }
       }
@@ -263,7 +265,7 @@ ui::HandlerResult GedSurface::DoOnUiEvent(ui::event_constptr_t EV) {
           locEV->miX -= as_item_node->GetX();
           locEV->miY -= as_item_node->GetY();
         }
-        _activeNode->OnUiEvent(locEV);
+        bool was_handled = _activeNode->OnUiEvent(locEV);
         mNeedsSurfaceRepaint = true;
       } else {
       }
@@ -298,17 +300,20 @@ ui::HandlerResult GedSurface::DoOnUiEvent(ui::event_constptr_t EV) {
         }
 
         switch (filtev._eventcode) {
-          case ui::EventCode::PUSH:
+          case ui::EventCode::PUSH:{
             _activeNode = pnode;
-            pnode->OnUiEvent(locEV);
+            bool was_handled = pnode->OnUiEvent(locEV);
             break;
-          case ui::EventCode::RELEASE:
-            pnode->OnUiEvent(locEV);
+          }
+          case ui::EventCode::RELEASE:{
+            bool was_handled = pnode->OnUiEvent(locEV);
             _activeNode = nullptr;
             break;
-          case ui::EventCode::DOUBLECLICK:
-            pnode->OnUiEvent(locEV);
+          }
+          case ui::EventCode::DOUBLECLICK:{
+            bool was_handled = pnode->OnUiEvent(locEV);
             break;
+          }
         }
       }
 

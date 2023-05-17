@@ -27,7 +27,10 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
       app->onDraw([=](ui::drawevent_constptr_t drwev) { //
         ork::opq::mainSerialQueue()->Process();
         auto context = drwev->GetTarget();
-        scene->renderOnContext(context);
+        if(app->_overrideRCFD)
+          scene->renderOnContext(context,app->_overrideRCFD);
+        else
+          scene->renderOnContext(context);
       });
     }
     app->onResize([=](int w, int h) {
@@ -45,6 +48,8 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
             ork::genviron.init_from_global_env();
 
             auto appinitdata = std::make_shared<AppInitData>();
+            
+            rcfd_ptr_t override_rcfd = nullptr;
 
             if (kwargs) {
               for (auto item : kwargs) {
@@ -63,6 +68,8 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
                   appinitdata->_offscreen = py::cast<bool>(item.second);
                 } else if (key == "ssaa") {
                   appinitdata->_ssaa_samples = py::cast<int>(item.second);
+                } else if( key == "rcfd" ) {
+                  override_rcfd = py::cast<rcfd_ptr_t>(item.second);
                 }
               }
             }
@@ -71,6 +78,7 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
             auto rval                                              = OrkEzApp::create(appinitdata);
             auto d_ev                                              = std::make_shared<ui::DrawEvent>(nullptr);
             rval->_vars->makeValueForKey<uidrawevent_ptr_t>("drawev") = d_ev;
+            rval->_overrideRCFD = override_rcfd;
             ////////////////////////////////////////////////////////////////////
             if (py::hasattr(appinstance, "onGpuInit")) {
               auto gpuinitfn //

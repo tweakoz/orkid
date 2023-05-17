@@ -41,6 +41,9 @@ void pyinit_gfx_renderer(py::module& module_lev2) {
                          .def("setRenderingModel", [](rcfd_ptr_t the_rcfd, std::string rendermodel) { //
                            auto as_crc               = CrcString(rendermodel.c_str());
                            the_rcfd->_renderingmodel = (uint32_t)as_crc._hashed;
+                         })
+                         .def("setUserProperty", [](rcfd_ptr_t the_rcfd, uint32_t crc, py::object obj) { //
+                           //rcfd->setUserProperty("vrcam"_crc, (const CameraData*) gpurec->_camdata.get() );
                          });
   type_codec->registerStdCodec<rcfd_ptr_t>(rcfd_type_t);
   /////////////////////////////////////////////////////////////////////////////////

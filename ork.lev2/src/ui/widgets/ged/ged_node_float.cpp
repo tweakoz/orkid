@@ -27,8 +27,8 @@ void GedFloatNode::describeX(class_t* clazz) {
 ////////////////////////////////////////////////////////////////
 
 GedFloatNode::GedFloatNode(GedContainer* c, const char* name, newiodriver_ptr_t iodriver)
-    : GedItemNode(c, name, iodriver->_par_prop, iodriver->_object)
-    , _iodriver(iodriver) {
+    : GedItemNode(c, name, iodriver->_par_prop, iodriver->_object){
+  _iodriver = iodriver;
 
   float fmin = 0.0f;
   float fmax = 1.0f;
@@ -81,8 +81,8 @@ void GedFloatNode::DoDraw(lev2::Context* pTARG) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GedFloatNode::OnUiEvent(ork::ui::event_constptr_t ev) {
-  _slider->OnUiEvent(ev);
+bool GedFloatNode::OnUiEvent(ork::ui::event_constptr_t ev) {
+  return _slider->OnUiEvent(ev);
 }
 
 ////////////////////////////////////////////////////////////////
