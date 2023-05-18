@@ -46,7 +46,7 @@ struct VRIMPL {
       int height = orkidvr::device()->_height * (_vrnode->supersample() + 1);
 
 
-      printf("A: vr width<%d> height<%d>\n", width, height);
+      //printf("A: vr width<%d> height<%d>\n", width, height);
       _rtg            = new RtGroup(context, width, height, MsaaSamples::MSAA_1X);
       auto buf        = _rtg->createRenderTarget(EBufferFormat::RGBA8);
       buf->_debugName = "WtfVrRt";
@@ -137,7 +137,7 @@ struct VRIMPL {
     auto VRDEV = orkidvr::device();
     int width   = VRDEV->_width * 2 * (_vrnode->supersample() + 1);
     int height  = VRDEV->_height * (_vrnode->supersample() + 1);
-     printf( "B: vr width<%d> height<%d>\n", width, height );
+     //printf( "B: vr width<%d> height<%d>\n", width, height );
 
     drawdata._properties["OutputWidth"_crcu].set<int>(width);
     drawdata._properties["OutputHeight"_crcu].set<int>(height);

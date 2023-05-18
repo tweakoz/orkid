@@ -575,7 +575,6 @@ void Scene::_renderIMPL(Context* context,rcfd_ptr_t RCFD){
     }
   }
 
-  OrkAssert(false);
   auto DB = _dbufcontext_SG->acquireForReadLocked();
 
   RCFD->setUserProperty("DB"_crc, lev2::rendervar_t(DB));
