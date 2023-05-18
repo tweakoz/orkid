@@ -26,6 +26,7 @@ public:
   fvec4 _bg_color;
   fvec4 _fg_color;
   fvec2 _dimensions;
+  int selection_index() const;
   std::string _value;
   std::vector<std::string> _choices;
   int _mouse_hover_y = 0;

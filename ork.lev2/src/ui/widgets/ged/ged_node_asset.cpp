@@ -66,13 +66,16 @@ bool GedAssetNode::OnUiEvent(ui::event_constptr_t ev) {
   switch (ev->_eventcode) {
     case ui::EventCode::DOUBLECLICK: {
       std::vector<std::string> choices;
+      std::map<std::string,util::choice_ptr_t> choicemap;
       auto chclist = choicemanager()->choicelist("lev2tex");
       chclist->EnumerateChoices();
       for( util::choice_ptr_t chc : chclist->mChoicesVect ){
         auto name = chc->mName;
         auto val = chc->mValue;
+        choicemap[name] = chc;
         choices.push_back(name);
       }
+
       //choices.push_back("Asset1");
       //choices.push_back("Asset2");
       fvec2 dimensions = ui::ChoiceList::computeDimensions(choices);
@@ -84,6 +87,17 @@ bool GedAssetNode::OnUiEvent(ui::event_constptr_t ev) {
           choices,
           dimensions);
       printf("choice<%s>\n", choice.c_str());
+      auto it = choicemap.find(choice);
+      if(it!=choicemap.end()){
+        auto chc = it->second;
+        auto prop = _iodriver->_par_prop;
+        auto instance = _iodriver->_object;
+        using prop_t    = reflect::DirectObject<asset::asset_ptr_t>;
+        auto typed_prop = dynamic_cast<const prop_t*>(prop);
+        OrkAssert(typed_prop);
+        auto asset = ork::asset::AssetManager<ork::lev2::TextureAsset>::load(chc->mValue);
+        typed_prop->set(asset, instance);
+      }
       break;
     }
     default:

@@ -35,14 +35,19 @@ void ChoiceList::setValue(const std::string& val) {
   _value = val;
 }
 ///////////////////////////////////////////////////////////////////////////////
+int ChoiceList::selection_index() const{
+    int actual_y = _mouse_hover_y - _scroll_y;
+    int selidx = std::clamp(actual_y / CELL_H,0,int(_choices.size()-1));
+  return selidx;
+}
+///////////////////////////////////////////////////////////////////////////////
 HandlerResult ChoiceList::DoOnUiEvent(event_constptr_t cev) {
   HandlerResult rval;
 
   auto print_item = [this](){
-      int actual_y = _mouse_hover_y - _scroll_y;
-      int selidx = std::clamp(actual_y / CELL_H,0,int(_choices.size()-1));
+      int selidx = selection_index();
       std::string selstr = _choices[selidx];
-      printf( "_scroll_y<%d> actual_y<%d> selidx<%d> selstr<%s>\n", _scroll_y, actual_y, selidx, selstr.c_str() );
+      printf( "_scroll_y<%d> selidx<%d> selstr<%s>\n", _scroll_y, selidx, selstr.c_str() );
   };
 
   switch (cev->_eventcode) {
@@ -56,11 +61,9 @@ HandlerResult ChoiceList::DoOnUiEvent(event_constptr_t cev) {
           break;
         case 257: { // enter
           rval._widget_finished = true;
-          int actual_y = _mouse_hover_y - _scroll_y;
-          int selidx = actual_y / CELL_H;
-          if (selidx >= 0 && selidx < _choices.size()) {
-            _value = _choices[selidx];
-          }
+          print_item();
+          int selidx = selection_index();
+          _value = _choices[selidx];
           break;
         }
         default:
@@ -80,12 +83,10 @@ HandlerResult ChoiceList::DoOnUiEvent(event_constptr_t cev) {
       break;
     }
     case EventCode::DOUBLECLICK: {
-        int selidx = _mouse_hover_y / CELL_H;
-        if (selidx >= 0 && selidx < _choices.size()) {
-          _value = _choices[selidx];
-          rval.setHandled(this);
-          rval._widget_finished = true;
-        }
+        int selidx = selection_index();
+        _value = _choices[selidx];
+        rval.setHandled(this);
+        rval._widget_finished = true;
         break;
     }
     case EventCode::MOVE: {
