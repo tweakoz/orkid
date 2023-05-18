@@ -21,11 +21,11 @@ SplitPanel::SplitPanel(const std::string& name, int x, int y, int w, int h)
 
 SplitPanel::~SplitPanel() {
   if (_child1) {
-    _child1->SetParent(nullptr);
+    _child1->setParent(nullptr);
     _child1 = nullptr;
   }
   if (_child2) {
-    _child2->SetParent(nullptr);
+    _child2->setParent(nullptr);
     _child2 = nullptr;
   }
   if (_parent)

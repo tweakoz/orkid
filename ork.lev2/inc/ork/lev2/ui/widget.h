@@ -157,17 +157,17 @@ public:
   Group* parent() const {
     return _parent;
   }
+
   Group* root() const;
 
   // CWidgetFlags &GetFlagsRef( void ) { return mWidgetFlags; }
 
   virtual void _doOnResized(void);
+  virtual void _doOnParentChanged(Group* parent) {}
   HandlerResult OnUiEvent(event_constptr_t Ev);
 
   bool hasMouseFocus() const;
-  void SetParent(Group* p) {
-    _parent = p;
-  }
+  void setParent(Group* p);
 
   Widget* routeUiEvent(event_constptr_t Ev);
 

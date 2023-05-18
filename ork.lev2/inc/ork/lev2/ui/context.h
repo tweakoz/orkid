@@ -25,7 +25,9 @@ struct Context {
     return rval;
   }
   //////////////////////////////////////
-
+  using tick_lambda_t = std::function<void(updatedata_ptr_t)>;
+  void tick(updatedata_ptr_t upd);
+  //////////////////////////////////////
   HandlerResult handleEvent(event_constptr_t ev);
   // void updateMouseFocus(const HandlerResult& r, event_constptr_t Ev);
   bool hasMouseFocus(const Widget* w) const;
@@ -45,6 +47,18 @@ struct Context {
   void draw(drawevent_constptr_t drwev);
   //////////////////////////////////////
   void dumpWidgets(std::string label) const;
+  //////////////////////////////////////
+  inline void subscribeToTicks(Widget* w, tick_lambda_t lambda){
+    _tickSubscribers[w] = lambda;
+  }
+  //////////////////////////////////////
+  inline void unsubscribeFromTicks(Widget* w){
+    auto it = _tickSubscribers.find(w);
+    if(it!=_tickSubscribers.end()){
+      _tickSubscribers.erase(it);
+    }
+  }
+  //////////////////////////////////////
 
   std::string _id;
   group_ptr_t _top;
@@ -53,6 +67,7 @@ struct Context {
   const Widget* _mousefocuswidget    = nullptr;
   const Widget* _keyboardFocusWidget = nullptr;
   Widget* _overlayWidget             = nullptr;
+  std::unordered_map<Widget*,tick_lambda_t> _tickSubscribers;
   Event _prevevent;
   event_ptr_t _tempevent;
   Timer _uitimer;

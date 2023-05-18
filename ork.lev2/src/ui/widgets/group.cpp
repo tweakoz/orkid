@@ -30,8 +30,7 @@ void Group::addChild(widget_ptr_t w) {
     w->parent()->removeChild(w);
   }
   _children.push_back(w);
-  w->_parent    = this;
-  w->_uicontext = this->_uicontext;
+  w->setParent(this);
   DoLayout();
 }
 /////////////////////////////////////////////////////////////////////////

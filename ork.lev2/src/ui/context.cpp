@@ -9,6 +9,14 @@ Context::Context() {
   _prevtime = 0.0;
 }
 /////////////////////////////////////////////////////////////////////////
+void Context::tick(updatedata_ptr_t updata){
+  for( auto sitem : _tickSubscribers ){
+    auto w = sitem.first;
+    auto cb = sitem.second;
+    cb(updata);
+  }
+}
+/////////////////////////////////////////////////////////////////////////
 HandlerResult Context::handleEvent(event_constptr_t ev) {
   OrkAssert(_top);
   HandlerResult rval;

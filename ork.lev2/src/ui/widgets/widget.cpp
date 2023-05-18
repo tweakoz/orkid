@@ -36,6 +36,14 @@ Widget::Widget(const std::string& name, int x, int y, int w, int h)
 Widget::~Widget() {
 }
 ///////////////////////////////////////////////////////////
+void Widget::setParent(Group* p) {
+  _parent = p;
+  if(p){
+    _uicontext = p->_uicontext;
+  }
+  _doOnParentChanged(p);
+}
+///////////////////////////////////////////////////////////
 void Widget::gpuInit(lev2::Context* pT) {
   _doGpuInit(pT);
 }

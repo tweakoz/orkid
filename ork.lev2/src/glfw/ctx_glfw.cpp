@@ -996,7 +996,16 @@ struct PopupImpl {
 
     ork::Timer timer;
     timer.Start();
+    double prev_time = timer.SecsSinceStart();
+    ui::updatedata_ptr_t updata = std::make_shared<ui::UpdateData>();
+
     while (not _terminate) {
+
+      double this_time = timer.SecsSinceStart();
+      double dt        = this_time - prev_time;
+      prev_time = this_time;
+      updata->_dt = dt;
+      updata->_abstime = this_time;
 
       glfwPollEvents();
       glfwMakeContextCurrent(_glfwPopupWindow);
@@ -1011,6 +1020,8 @@ struct PopupImpl {
       void* plato = (void*)_parent_context->GetPlatformHandle();
 
       _parent_context->SetPlatformHandle(_cloned_plato);
+
+      _uicontext->tick(updata);
 
       if (_uicontext->_top) {
         auto drwev = std::make_shared<ui::DrawEvent>(_parent_context);

@@ -6,6 +6,7 @@
 #include <ork/lev2/gfx/dbgfontman.h>
 #include <ork/lev2/gfx/gfxprimitives.h>
 #include <ork/lev2/ui/choicelist.h>
+#include <ork/lev2/ui/context.h>
 
 namespace ork::ui {
 ///////////////////////////////////////////////////////////////////////////////
@@ -31,6 +32,39 @@ ChoiceList::ChoiceList(
   _value = "";
 }
 ///////////////////////////////////////////////////////////////////////////////
+ChoiceList::~ChoiceList(){
+  if(_uicontext){
+    _uicontext->unsubscribeFromTicks(this);
+  }
+}
+///////////////////////////////////////////////////////////////////////////////
+void ChoiceList::_doOnParentChanged(Group* parent) {
+  if(_uicontext){
+    _uicontext->subscribeToTicks(this,[this](updatedata_ptr_t updata){
+      float abstime = updata->_abstime;
+      _hl_color.x = 0.5f + (0.5f * sinf(abstime * 3.0f));
+      _hl_color.y = 0.5f + (0.5f * sinf(abstime * 3.1f));
+      _hl_color.z = 0.5f + (0.5f * sinf(abstime * 3.2f));
+      _hoverTime += updata->_dt;
+
+      if( _hoverTime > 0.5 ){
+        if( _mouse_hover_y < (CELL_H>>1) ){
+          incScroll(8);
+        }
+        else if( _mouse_hover_y < CELL_H ){
+          incScroll(4);
+        }
+        else if( _mouse_hover_y > (height()-(CELL_H>>1)) ){
+          incScroll(-8);
+        }
+        else if( _mouse_hover_y > (height()-CELL_H) ){
+          incScroll(-4);
+        }
+      }
+    });
+  }
+}
+///////////////////////////////////////////////////////////////////////////////
 void ChoiceList::setValue(const std::string& val) {
   _value = val;
 }
@@ -39,6 +73,16 @@ int ChoiceList::selection_index() const{
     int actual_y = _mouse_hover_y - _scroll_y;
     int selidx = std::clamp(actual_y / CELL_H,0,int(_choices.size()-1));
   return selidx;
+}
+///////////////////////////////////////////////////////////////////////////////
+void ChoiceList::incScroll(int amt){
+    int invisible_h = _choices.size() * CELL_H - MAX_H;
+    int new_scroll = _scroll_y + amt;
+    if(new_scroll<(-invisible_h>>1))
+      new_scroll = -invisible_h>>1;
+    if(new_scroll>(invisible_h>>1))
+      new_scroll = invisible_h>>1;
+    _scroll_y = new_scroll;
 }
 ///////////////////////////////////////////////////////////////////////////////
 HandlerResult ChoiceList::DoOnUiEvent(event_constptr_t cev) {
@@ -70,15 +114,17 @@ HandlerResult ChoiceList::DoOnUiEvent(event_constptr_t cev) {
           break;
       }
       rval.setHandled(this);
+      _hoverTime = 0.0;
+
     }
     case ui::EventCode::MOUSEWHEEL: {
-      _scroll_y += cev->miMWY;
-      int invisible_h = _choices.size() * CELL_H - MAX_H;
-      if(_scroll_y<(-invisible_h>>1))
-        _scroll_y = -invisible_h>>1;
-      else if(_scroll_y>(invisible_h>>1))
-        _scroll_y = invisible_h>>1;
-      // 
+
+      #if defined(__APPLE__) // TODO: technically we want to select on trackpad
+      incScroll(cev->miMWY);
+      #else
+      incScroll(cev->miMWY*16);
+      #endif
+
       print_item();
       break;
     }
@@ -87,15 +133,27 @@ HandlerResult ChoiceList::DoOnUiEvent(event_constptr_t cev) {
         _value = _choices[selidx];
         rval.setHandled(this);
         rval._widget_finished = true;
+        _hoverTime = 0.0;
         break;
+    }
+    case EventCode::MOUSE_ENTER: {
+      OrkAssert(false);
+      break;
+    }
+    case EventCode::MOUSE_LEAVE: {
+      OrkAssert(false);
+      break;
     }
     case EventCode::MOVE: {
       int x = cev->miX;
       int y = cev->miY;
       _mouse_hover_y = y;
+
       //printf("ChoiceList::DoOnUiEvent<MOVE> x<%d> y<%d>\n", x, y);
       print_item();
       rval.setHandled(this);
+      _hoverTime = 0.0;
+
       break;
     }
     default:
@@ -177,7 +235,7 @@ void ChoiceList::DoDraw(drawevent_constptr_t drwev) {
     if (selidx >= 0 && selidx < num_choices) {
       int iy1 = selidx * CELL_H + (_scroll_y%CELL_H);
       int iy2 = iy1 + CELL_H;
-      tgt->PushModColor(fvec4(0.25f, 0.25f, 0.35f, 0.5f));
+      tgt->PushModColor(_hl_color);
       primi.RenderQuadAtZ(
           defmtl.get(),
           tgt,
