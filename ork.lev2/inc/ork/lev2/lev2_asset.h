@@ -21,6 +21,7 @@
 #include <ork/lev2/gfx/shadman.h>
 #include <ork/lev2/gfx/gfxmodel.h>
 #include <ork/lev2/gfx/gfxanim.h>
+#include <ork/util/choiceman.h>
 
 namespace ork { namespace lev2 {
 
@@ -49,6 +50,14 @@ struct StaticTexFileLoader final : public ork::asset::FileAssetLoader {
   ork::asset::asset_ptr_t _doLoadAsset(ork::asset::loadrequest_ptr_t loadreq) final;
   void destroy(ork::asset::asset_ptr_t asset) final;
   void initLoadersForUriProto(const std::string& uriproto) final;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+class TextureChoices : public ::ork::util::ChoiceList {
+public:
+  void EnumerateChoices(bool bforcenocache=false) final;
+  TextureChoices();
 };
 
 ///////////////////////////////////////////////////////////////////////////////

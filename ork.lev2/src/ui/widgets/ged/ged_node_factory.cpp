@@ -61,10 +61,11 @@ bool GedFactoryNode::OnMouseDoubleClicked(ui::event_constptr_t ev) {
     for( auto f : _factory_set ){
       factory_names.push_back(f->Name());
     }
-
+    auto dimensions = ui::ChoiceList::computeDimensions(factory_names);
     std::string choice = ui::popupChoiceList( _l2context(), //
                                               sx,sy,
-                                              factory_names);
+                                              factory_names,
+                                              dimensions);
 
     printf( "choice<%s>\n", choice.c_str() );
     if( choice != "" ){

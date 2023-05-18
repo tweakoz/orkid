@@ -6,33 +6,11 @@
 ////////////////////////////////////////////////////////////////
 
 #include <ork/kernel/core_interface.h>
-#include <ork/util/choiceman.h>
+#include <ork/lev2/lev2_asset.h>
 
 ////////////////////////////////////////////////////////////////
 namespace ork::lev2::ged {
 ////////////////////////////////////////////////////////////////
-
-///////////////////////////////////////////////////////////////////////////
-
-class TextureChoices : public ork::util::ChoiceList {
-public:
-  void EnumerateChoices(bool bforcenocache=false) final;
-  TextureChoices();
-};
-
-///////////////////////////////////////////////////////////////////////////
-
-TextureChoices::TextureChoices() {
-  EnumerateChoices();
-}
-
-void TextureChoices::EnumerateChoices(bool bforcenocache) {
-  clear();
-
-  //auto items = lev2::TextureAsset::GetClassStatic()->EnumerateExisting();
-  //for (const auto& i : items)
-    //add(util::AttrChoiceValue(i.c_str(), i.c_str()));
-}
 
 ///////////////////////////////////////////////////////////////////////////
 

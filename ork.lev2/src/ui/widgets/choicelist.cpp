@@ -10,6 +10,7 @@
 namespace ork::ui {
 ///////////////////////////////////////////////////////////////////////////////
 static constexpr int CELL_H = 32;
+static constexpr int MAX_H = CELL_H*8;
 static constexpr const char* FONTNAME = "i14";
 ///////////////////////////////////////////////////////////////////////////////
 ChoiceList::ChoiceList(
@@ -18,9 +19,15 @@ ChoiceList::ChoiceList(
     int x,
     int y,
     int w,
-    int h)
+    int h,
+    fvec2 dimensions)
     : Widget(name, x, y, w, h)
-    , _fg_color(color) {
+    , _fg_color(color)
+    , _dimensions(dimensions) {
+    
+    if(height()>MAX_H)
+      SetH(MAX_H);
+    
   _value = "";
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -30,6 +37,13 @@ void ChoiceList::setValue(const std::string& val) {
 ///////////////////////////////////////////////////////////////////////////////
 HandlerResult ChoiceList::DoOnUiEvent(event_constptr_t cev) {
   HandlerResult rval;
+
+  auto print_item = [this](){
+      int actual_y = _mouse_hover_y - _scroll_y;
+      int selidx = std::clamp(actual_y / CELL_H,0,int(_choices.size()-1));
+      std::string selstr = _choices[selidx];
+      printf( "_scroll_y<%d> actual_y<%d> selidx<%d> selstr<%s>\n", _scroll_y, actual_y, selidx, selstr.c_str() );
+  };
 
   switch (cev->_eventcode) {
     case EventCode::KEY_DOWN: {
@@ -42,7 +56,8 @@ HandlerResult ChoiceList::DoOnUiEvent(event_constptr_t cev) {
           break;
         case 257: { // enter
           rval._widget_finished = true;
-          int selidx = _mouse_hover_y / CELL_H;
+          int actual_y = _mouse_hover_y - _scroll_y;
+          int selidx = actual_y / CELL_H;
           if (selidx >= 0 && selidx < _choices.size()) {
             _value = _choices[selidx];
           }
@@ -52,6 +67,17 @@ HandlerResult ChoiceList::DoOnUiEvent(event_constptr_t cev) {
           break;
       }
       rval.setHandled(this);
+    }
+    case ui::EventCode::MOUSEWHEEL: {
+      _scroll_y += cev->miMWY;
+      int invisible_h = _choices.size() * CELL_H - MAX_H;
+      if(_scroll_y<(-invisible_h>>1))
+        _scroll_y = -invisible_h>>1;
+      else if(_scroll_y>(invisible_h>>1))
+        _scroll_y = invisible_h>>1;
+      // 
+      print_item();
+      break;
     }
     case EventCode::DOUBLECLICK: {
         int selidx = _mouse_hover_y / CELL_H;
@@ -67,6 +93,7 @@ HandlerResult ChoiceList::DoOnUiEvent(event_constptr_t cev) {
       int y = cev->miY;
       _mouse_hover_y = y;
       //printf("ChoiceList::DoOnUiEvent<MOVE> x<%d> y<%d>\n", x, y);
+      print_item();
       rval.setHandled(this);
       break;
     }
@@ -85,6 +112,8 @@ fvec2 ChoiceList::computeDimensions(const std::vector<std::string>& choices) {
     int sw                    = lev2::FontMan::stringWidth(choice.length());
     w                         = std::max(w, sw);
   }
+  if(h>MAX_H)
+    h = MAX_H;
   return fvec2(w, h);
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -143,9 +172,9 @@ void ChoiceList::DoDraw(drawevent_constptr_t drwev) {
     // draw bg for selected choice
     ///////////////////////////////////////////////////////////////////////
 
-    int selidx = _mouse_hover_y / CELL_H;
+    int selidx = (_mouse_hover_y) / CELL_H;
     if (selidx >= 0 && selidx < num_choices) {
-      int iy1 = selidx * CELL_H;
+      int iy1 = selidx * CELL_H + (_scroll_y%CELL_H);
       int iy2 = iy1 + CELL_H;
       tgt->PushModColor(fvec4(0.25f, 0.25f, 0.35f, 0.5f));
       primi.RenderQuadAtZ(
@@ -176,14 +205,18 @@ void ChoiceList::DoDraw(drawevent_constptr_t drwev) {
     constexpr int KMAXCHARS = 32;
 
     lev2::FontMan::beginTextBlock(tgt, num_choices * KMAXCHARS);
-    for (int i = 0; i < num_choices; i++) {
-      auto choice = _choices[i];
+
+    int numchtodraw = std::min(num_choices, MAX_H / CELL_H);
+    for (int i = 0; i < numchtodraw; i++) {
+      int iyy     = i - (_scroll_y/CELL_H);
+      iyy = std::clamp(iyy, 0, num_choices-1);
+      auto choice = _choices[iyy];
       int sw      = lev2::FontMan::stringWidth(choice.length());
       int iyc     = iy1 + (CELL_H>>1);
       lev2::FontMan::DrawText(
           tgt, //
           ixc - (sw >> 1),
-          iyc - (font_h>>1),
+          iyc - (font_h>>1) + (_scroll_y % CELL_H),
           choice.c_str());
       iy1 += CELL_H;
     }

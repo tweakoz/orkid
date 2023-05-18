@@ -16,7 +16,8 @@ public:
       int x = 0,
       int y = 0,
       int w = 0,
-      int h = 0);
+      int h = 0,
+      fvec2 dimensions=fvec2());
 
     HandlerResult DoOnUiEvent(event_constptr_t Ev) final;
 
@@ -24,9 +25,11 @@ public:
 
   fvec4 _bg_color;
   fvec4 _fg_color;
+  fvec2 _dimensions;
   std::string _value;
   std::vector<std::string> _choices;
   int _mouse_hover_y = 0;
+  int _scroll_y = 0;
   static fvec2 computeDimensions(const std::vector<std::string>& choices);
 private:
   void DoDraw(ui::drawevent_constptr_t drwev) override;

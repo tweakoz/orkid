@@ -67,16 +67,22 @@ bool GedAssetNode::OnUiEvent(ui::event_constptr_t ev) {
     case ui::EventCode::DOUBLECLICK: {
       std::vector<std::string> choices;
       auto chclist = choicemanager()->choicelist("lev2tex");
-
-      choices.push_back("Asset1");
-      choices.push_back("Asset2");
+      chclist->EnumerateChoices();
+      for( util::choice_ptr_t chc : chclist->mChoicesVect ){
+        auto name = chc->mName;
+        auto val = chc->mValue;
+        choices.push_back(name);
+      }
+      //choices.push_back("Asset1");
+      //choices.push_back("Asset2");
       fvec2 dimensions = ui::ChoiceList::computeDimensions(choices);
       printf( "dimensions<%g %g>\n", dimensions.x, dimensions.y);
       std::string choice = ui::popupChoiceList(
           this->_l2context(), //
           sx - (int(dimensions.x)>>1),
           sy - (int(dimensions.y)>>1),
-          choices);
+          choices,
+          dimensions);
       printf("choice<%s>\n", choice.c_str());
       break;
     }

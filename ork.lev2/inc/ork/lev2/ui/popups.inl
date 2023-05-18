@@ -70,15 +70,15 @@ inline std::string popupChoiceList(            //
     lev2::Context* ctx,                        //
     int x,                                     //
     int y,                                     //
-    const std::vector<std::string>& choices) { //
+    const std::vector<std::string>& choices,
+    fvec2 dimensions) { //
 
-  fvec2 dimensions = ui::ChoiceList::computeDimensions(choices);
   int w            = int(dimensions.x);
   int h            = int(dimensions.y);
   lev2::PopupWindow popwin(ctx, x, y, w, h);
   auto uic               = popwin._uicontext;
   auto root              = uic->makeTop<ui::LayoutGroup>("lg", 0, 0, w, h);
-  auto choicelist_item   = root->makeChild<ui::ChoiceList>("ChoiceList", fvec4(1, 1, 0, 1), 0, 0, 0, 0);
+  auto choicelist_item   = root->makeChild<ui::ChoiceList>("ChoiceList", fvec4(1, 1, 0, 1), 0, 0, 0, 0, dimensions);
   auto choicelist_layout = choicelist_item._layout;
   auto choicelist        = std::dynamic_pointer_cast<ui::ChoiceList>(choicelist_item._widget);
   choicelist->_choices   = choices;

@@ -144,11 +144,13 @@ public:
         choices.push_back("Seg:Box");
         choices.push_back("Seg:Log");
         choices.push_back("Seg:Exp");
+        auto dimensions = ui::ChoiceList::computeDimensions(choices);
         std::string choice = ui::popupChoiceList(
             _parent->_l2context(), //
             sx,
             sy,
-            choices);
+            choices,
+            dimensions);
         if (choice == "Seg:Lin")
           mCurveObject->SetSegmentType(miSeg, MultiCurveSegmentType::LINEAR);
         if (choice == "Seg:Box")

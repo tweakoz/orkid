@@ -55,7 +55,8 @@ bool GedPlugNode::OnUiEvent(ui::event_constptr_t ev) {
           this->_l2context(), //
           sx - int(dimensions.x)>>1,
           sy - int(dimensions.y)>>1,
-          choices);
+          choices,
+          dimensions);
       printf("choice<%s>\n", choice.c_str());
       break;
     }

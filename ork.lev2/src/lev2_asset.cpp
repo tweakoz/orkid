@@ -131,6 +131,12 @@ void StaticTexFileLoader::initLoadersForUriProto(const std::string& uriproto){
   addLocation(ctx, ".dds");
 }
 
+///////////////////////////////////////////////////////////////////////////
+
+TextureChoices::TextureChoices() {
+  EnumerateChoices();
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 TextureAsset::TextureAsset() {
@@ -149,6 +155,16 @@ void TextureAsset::describeX(class_t* clazz) {
 void TextureAsset::SetTexture(texture_ptr_t pt) {
   _texture = pt;
   _texture->_asset = this;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void TextureChoices::EnumerateChoices(bool bforcenocache) {
+  clear();
+  auto loader = getLoader<TextureAsset>();
+  auto items = loader->EnumerateExisting();
+  for (const auto& i : items)
+    add(util::AttrChoiceValue(i.c_str(), i.c_str()));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
