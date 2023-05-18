@@ -57,6 +57,7 @@ struct StaticTexFileLoader final : public ork::asset::FileAssetLoader {
 class TextureChoices : public ::ork::util::ChoiceList {
 public:
   void EnumerateChoices(bool bforcenocache=false) final;
+  svar64_t provideSelection(const std::string& key) const final;
   TextureChoices();
 };
 

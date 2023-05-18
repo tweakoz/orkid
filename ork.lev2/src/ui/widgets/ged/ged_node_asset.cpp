@@ -63,11 +63,20 @@ void GedAssetNode::DoDraw(lev2::Context* pTARG) {
 bool GedAssetNode::OnUiEvent(ui::event_constptr_t ev) {
   int sx = ev->miScreenPosX;
   int sy = ev->miScreenPosY;
+
   switch (ev->_eventcode) {
     case ui::EventCode::DOUBLECLICK: {
+
+      auto prop = _iodriver->_par_prop;
+      auto instance = _iodriver->_object;
+      using prop_t    = reflect::DirectObject<asset::asset_ptr_t>;
+      auto typed_prop = dynamic_cast<const prop_t*>(prop);
+      auto asset_class = prop->annotation("editor.asset.class").get<ConstString>();
+      OrkAssert(typed_prop);
+
       std::vector<std::string> choices;
       std::map<std::string,util::choice_ptr_t> choicemap;
-      auto chclist = choicemanager()->choicelist("lev2tex");
+      auto chclist = choicemanager()->choicelist(asset_class.c_str());
       chclist->EnumerateChoices();
       for( util::choice_ptr_t chc : chclist->mChoicesVect ){
         auto name = chc->mName;
@@ -75,9 +84,6 @@ bool GedAssetNode::OnUiEvent(ui::event_constptr_t ev) {
         choicemap[name] = chc;
         choices.push_back(name);
       }
-
-      //choices.push_back("Asset1");
-      //choices.push_back("Asset2");
       fvec2 dimensions = ui::ChoiceList::computeDimensions(choices);
       printf( "dimensions<%g %g>\n", dimensions.x, dimensions.y);
       std::string choice = ui::popupChoiceList(
@@ -90,12 +96,7 @@ bool GedAssetNode::OnUiEvent(ui::event_constptr_t ev) {
       auto it = choicemap.find(choice);
       if(it!=choicemap.end()){
         auto chc = it->second;
-        auto prop = _iodriver->_par_prop;
-        auto instance = _iodriver->_object;
-        using prop_t    = reflect::DirectObject<asset::asset_ptr_t>;
-        auto typed_prop = dynamic_cast<const prop_t*>(prop);
-        OrkAssert(typed_prop);
-        auto asset = ork::asset::AssetManager<ork::lev2::TextureAsset>::load(chc->mValue);
+        auto asset = chclist->provideSelection(chc->mValue).get<asset::asset_ptr_t>();
         typed_prop->set(asset, instance);
       }
       break;

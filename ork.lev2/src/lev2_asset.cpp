@@ -166,6 +166,12 @@ void TextureChoices::EnumerateChoices(bool bforcenocache) {
   for (const auto& i : items)
     add(util::AttrChoiceValue(i.c_str(), i.c_str()));
 }
+svar64_t TextureChoices::provideSelection(const std::string& key) const {
+  auto asset = ork::asset::AssetManager<ork::lev2::TextureAsset>::load(key);
+  svar64_t rval;
+  rval.set<asset::asset_ptr_t>(asset);
+  return rval;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////

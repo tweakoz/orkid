@@ -78,10 +78,10 @@ int ChoiceList::selection_index() const{
 void ChoiceList::incScroll(int amt){
     int invisible_h = _choices.size() * CELL_H - MAX_H;
     int new_scroll = _scroll_y + amt;
-    if(new_scroll<(-invisible_h>>1))
-      new_scroll = -invisible_h>>1;
-    if(new_scroll>(invisible_h>>1))
-      new_scroll = invisible_h>>1;
+    if(new_scroll<(-invisible_h))
+      new_scroll = -invisible_h;
+    if(new_scroll>0)
+      new_scroll = 0;
     _scroll_y = new_scroll;
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -105,7 +105,7 @@ HandlerResult ChoiceList::DoOnUiEvent(event_constptr_t cev) {
           break;
         case 257: { // enter
           rval._widget_finished = true;
-          print_item();
+          //print_item();
           int selidx = selection_index();
           _value = _choices[selidx];
           break;
@@ -125,7 +125,7 @@ HandlerResult ChoiceList::DoOnUiEvent(event_constptr_t cev) {
       incScroll(cev->miMWY*16);
       #endif
 
-      print_item();
+      //print_item();
       break;
     }
     case EventCode::DOUBLECLICK: {
@@ -150,7 +150,7 @@ HandlerResult ChoiceList::DoOnUiEvent(event_constptr_t cev) {
       _mouse_hover_y = y;
 
       //printf("ChoiceList::DoOnUiEvent<MOVE> x<%d> y<%d>\n", x, y);
-      print_item();
+      //print_item();
       rval.setHandled(this);
       _hoverTime = 0.0;
 

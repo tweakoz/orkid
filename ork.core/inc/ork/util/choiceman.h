@@ -163,6 +163,10 @@ struct ChoiceList {
     return _hierarchy;
   }
 
+  virtual svar64_t provideSelection(const std::string& key) const {
+    return svar64_t();
+  }
+
   virtual void EnumerateChoices(bool bforcenocache = false) {
   }
   void add(const AttrChoiceValue& val);
