@@ -19,6 +19,7 @@ struct Group : public Widget {
   using visit_fn_t = std::function<void(Widget*)>;
 
   Group(const std::string& name, int x = 0, int y = 0, int w = 0, int h = 0);
+  ~Group();
   /////////////////////////////
   void addChild(widget_ptr_t w);
   void removeChild(widget_ptr_t w);
@@ -27,6 +28,7 @@ struct Group : public Widget {
   /////////////////////////////
   void _doOnResized() override;
   void DoLayout() override;
+  void _doOnPreDestroy() override;
   /////////////////////////////
   Widget* doRouteUiEvent(event_constptr_t Ev) override;
   /////////////////////////////

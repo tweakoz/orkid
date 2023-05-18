@@ -9,6 +9,9 @@ Group::Group(const std::string& name, int x, int y, int w, int h)
     : Widget(name, x, y, w, h) {
 }
 /////////////////////////////////////////////////////////////////////////
+Group::~Group(){
+}
+/////////////////////////////////////////////////////////////////////////
 void Group::visitHeirarchy(visit_fn_t vfn){
   std::stack<Widget*> stk;
   stk.push(this);
@@ -107,9 +110,18 @@ Widget* Group::doRouteUiEvent(event_constptr_t ev) {
   return nullptr;
 }
 /////////////////////////////////////////////////////////////////////////
+void Group::_doOnPreDestroy() {
+  for( auto c : _children ){
+    c->onPreDestroy();
+  }
+}
+/////////////////////////////////////////////////////////////////////////
 LayoutGroup::LayoutGroup(const std::string& name, int x, int y, int w, int h)
     : Group(name, x, y, w, h) {
   _layout = std::make_shared<anchor::Layout>(this);
+}
+/////////////////////////////////////////////////////////////////////////
+LayoutGroup::~LayoutGroup(){
 }
 /////////////////////////////////////////////////////////////////////////
 void LayoutGroup::_doOnResized() {

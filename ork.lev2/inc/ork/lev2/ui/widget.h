@@ -162,8 +162,11 @@ public:
 
   // CWidgetFlags &GetFlagsRef( void ) { return mWidgetFlags; }
 
+  void onPreDestroy();
+  
   virtual void _doOnResized(void);
   virtual void _doOnParentChanged(Group* parent) {}
+  virtual void _doOnPreDestroy() {}
   HandlerResult OnUiEvent(event_constptr_t Ev);
 
   bool hasMouseFocus() const;

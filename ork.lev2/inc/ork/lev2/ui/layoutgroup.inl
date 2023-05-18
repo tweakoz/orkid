@@ -45,6 +45,7 @@ using layoutitem_ptr_t = std::shared_ptr<LayoutItemBase>;
 struct LayoutGroup : public Group {
 
   LayoutGroup(const std::string& name, int x = 0, int y = 0, int w = 0, int h = 0);
+  ~LayoutGroup();
 
   anchor::layout_ptr_t _layout;
 

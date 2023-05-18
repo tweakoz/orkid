@@ -22,6 +22,7 @@ public:
   ~ChoiceList();
   HandlerResult DoOnUiEvent(event_constptr_t Ev) final;
   void _doOnParentChanged(Group* parent) final;
+  void _doOnPreDestroy() final;
 
     void setValue(const std::string& val);
 

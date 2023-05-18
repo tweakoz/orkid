@@ -33,6 +33,9 @@ ChoiceList::ChoiceList(
 }
 ///////////////////////////////////////////////////////////////////////////////
 ChoiceList::~ChoiceList(){
+}
+///////////////////////////////////////////////////////////////////////////////
+void ChoiceList::_doOnPreDestroy(){
   if(_uicontext){
     _uicontext->unsubscribeFromTicks(this);
   }
@@ -70,7 +73,7 @@ void ChoiceList::setValue(const std::string& val) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 int ChoiceList::selection_index() const{
-    int actual_y = _mouse_hover_y - _scroll_y;
+    int actual_y = _mouse_hover_y - _scroll_y - (CELL_H>>1);
     int selidx = std::clamp(actual_y / CELL_H,0,int(_choices.size()-1));
   return selidx;
 }
@@ -231,9 +234,9 @@ void ChoiceList::DoDraw(drawevent_constptr_t drwev) {
     // draw bg for selected choice
     ///////////////////////////////////////////////////////////////////////
 
-    int selidx = (_mouse_hover_y) / CELL_H;
-    if (selidx >= 0 && selidx < num_choices) {
-      int iy1 = selidx * CELL_H + (_scroll_y%CELL_H);
+    if(1) {
+      int selidx = selection_index();
+      int iy1 = (selidx * CELL_H) + _scroll_y; //((_scroll_y>>5)<<5) + _scroll_y%CELL_H);
       int iy2 = iy1 + CELL_H;
       tgt->PushModColor(_hl_color);
       primi.RenderQuadAtZ(
@@ -251,6 +254,7 @@ void ChoiceList::DoDraw(drawevent_constptr_t drwev) {
       );
       tgt->PopModColor();
     }
+    
 
     ///////////////////////////////////////////////////////////////////////
     // draw choice labels

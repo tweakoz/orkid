@@ -36,6 +36,10 @@ Widget::Widget(const std::string& name, int x, int y, int w, int h)
 Widget::~Widget() {
 }
 ///////////////////////////////////////////////////////////
+void Widget::onPreDestroy(){
+  _doOnPreDestroy();
+}
+///////////////////////////////////////////////////////////
 void Widget::setParent(Group* p) {
   _parent = p;
   if(p){

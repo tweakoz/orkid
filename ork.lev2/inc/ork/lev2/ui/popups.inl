@@ -89,6 +89,7 @@ inline std::string popupChoiceList(            //
   choicelist_layout->bottom()->anchorTo(root_layout->bottom());
   root_layout->updateAll();
   popwin.mainThreadLoop();
+  root->onPreDestroy();
   return choicelist->_value;
 }
 
