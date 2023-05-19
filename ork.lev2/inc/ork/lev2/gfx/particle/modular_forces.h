@@ -18,6 +18,7 @@ struct GravityModuleData : public ParticleModuleData {
 public:
   GravityModuleData();
   static std::shared_ptr<GravityModuleData> createShared();
+  static rtti::castable_ptr_t sharedFactory();
   dflow::dgmoduleinst_ptr_t createInstance() const final;
 };
 

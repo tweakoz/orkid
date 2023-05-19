@@ -33,6 +33,7 @@ std::shared_ptr<fvec3> Vec3XfPlugTraits::data_to_inst(std::shared_ptr<fvec3> inp
 }
 ///////////////////////////////////////////////////////////////////////////////
 void PlugData::describeX(class_t* clazz) {
+  clazz->template annotateTyped<ConstString>("editor.ged.node.factory", "GedNodeFactoryPlug");
 }
 
 /*bool inplugbase::IsDirty() const
@@ -52,7 +53,7 @@ PlugData::PlugData(moduledata_ptr_t pmod, EPlugDir edir, EPlugRate epr, const st
     , _plugrate(epr)
     , _typeID(tid)
     , _name(pname ? pname : "noname") {
-  //printf("PlugData<%p> pmod<%p> construct name<%s>\n", (void*) this, (void*) pmod.get(), _name.c_str());
+  printf("PlugData<%p> pmod<%p> construct name<%s>\n", (void*) this, (void*) pmod.get(), _name.c_str());
 }
 
   const std::type_info& PlugData::GetDataTypeId() const {

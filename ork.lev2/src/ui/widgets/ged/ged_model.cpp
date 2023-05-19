@@ -317,6 +317,8 @@ geditemnode_ptr_t ObjModel::recurse(
 
   geditemnode_ptr_t rval = nullptr;
 
+  printf( "recurse<%p> obj<%p> class<%s>\n", this, cur_obj.get(), objclass->Name().c_str() );
+
   ///////////////////////////////////////////////////
   // editor.class
   ///////////////////////////////////////////////////
@@ -534,6 +536,9 @@ geditemnode_ptr_t ObjModel::createObjPropNode(
   /////////////////////////////////////////////////////////////////////////
   if (map_prop) {
     return std::make_shared<GedMapNode>(_gedContainer, Name.c_str(), map_prop, pobject);
+  }
+  else if (array_prop) {
+    return std::make_shared<GedArrayNode>(_gedContainer, Name.c_str(), array_prop, pobject);
   }
   /////////////////////////////////////////////////////////////////////////
   else if (auto as_boolprop = dynamic_cast<const reflect::ITyped<bool>*>(prop)) {

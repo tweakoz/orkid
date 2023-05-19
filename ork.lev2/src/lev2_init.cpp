@@ -105,6 +105,7 @@ struct ClassToucher {
     ged::GedGroupNode::GetClassStatic();
     ged::GedLabelNode::GetClassStatic();
     ged::GedMapNode::GetClassStatic();
+    ged::GedArrayNode::GetClassStatic();
     ged::GedFactoryNode::GetClassStatic();
     ged::GedObjNode::GetClassStatic();
     ged::GedBoolNode::GetClassStatic();

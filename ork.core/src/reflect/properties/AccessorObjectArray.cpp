@@ -40,6 +40,10 @@ size_t AccessorObjectArray::count(object_constptr_t object) const {
   return (object.get()->*_counter)();
 }
 ////////////////////////////////////////////////////////////////
+array_varray_t AccessorObjectArray::enumerateElements(object_constptr_t obj) const {
+  return array_varray_t();
+}
+////////////////////////////////////////////////////////////////
 void AccessorObjectArray::deserializeElement(serdes::node_ptr_t desernode) const {
   // Command object_command;
 

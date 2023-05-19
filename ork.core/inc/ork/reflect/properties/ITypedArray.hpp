@@ -50,4 +50,28 @@ void ITypedArray<elem_t>::serializeElement(serdes::node_ptr_t elemnode) const {
   auto childnode = serializer->serializeContainerElement(elemnode);
 }
 
+////////////////////////////////////////////////////////////////////////////////
+template <typename elem_t> //
+array_varray_t ITypedArray<elem_t>::enumerateElements(object_constptr_t instance) const {
+  array_varray_t rval;
+  int numelements        = count(instance);
+  //printf( "map<%s> ser numelem<%d>\n", _name.c_str(), numelements );
+  for (size_t i = 0; i < numelements; i++) {
+    //////////////////////////////
+    elem_t V;
+    get(V,instance, i);
+    //////////////////////////////
+    array_abstract_item_t abstract;
+    abstract.set<elem_t>(V);
+    rval.push_back(abstract);
+  }
+  return rval;
+}
+
+template <typename elem_t> //
+void ITypedArray<elem_t>::setElement(object_ptr_t obj,array_abstract_item_t value) const {
+  const elem_t& typed_value = value.get<elem_t>();
+  set(typed_value,obj,0);  
+}
+
 }} // namespace ork::reflect

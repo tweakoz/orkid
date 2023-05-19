@@ -24,6 +24,8 @@ void GedPlugNode::describeX(class_t* clazz) {
 
 GedPlugNode::GedPlugNode(GedContainer* c, const char* name, newiodriver_ptr_t iodriver)
     : GedItemNode(c, name, iodriver) {
+
+      OrkAssert(false);
 }
 
 ////////////////////////////////////////////////////////////////
@@ -33,11 +35,11 @@ void GedPlugNode::DoDraw(lev2::Context* pTARG) {
   auto skin    = _container->_activeSkin;
   bool is_pick = skin->_is_pickmode;
 
-  skin->DrawBgBox(this, miX, miY, miW, miH, GedSkin::ESTYLE_BACKGROUND_1, 100);
+  skin->DrawBgBox(this, miX, miY, miW, miH, GedSkin::ESTYLE_BACKGROUND_2, 100);
 
-  if (not is_pick) {
-    skin->DrawText(this, miX, miY, _propname.c_str());
-  }
+  //if (not is_pick) {
+    //skin->DrawText(this, miX, miY, _propname.c_str());
+  //}
 }
 
 ////////////////////////////////////////////////////////////////

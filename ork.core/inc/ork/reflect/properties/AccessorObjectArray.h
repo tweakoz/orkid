@@ -30,6 +30,7 @@ private:
   void serializeElement(serdes::node_ptr_t) const override;
   void deserialize(serdes::node_ptr_t) const override;
   void serialize(serdes::node_ptr_t) const override;
+  array_varray_t enumerateElements(object_constptr_t obj) const override;
 
   object_ptr_t (Object::*_accessor)(size_t);
   size_t (Object::*_counter)() const;

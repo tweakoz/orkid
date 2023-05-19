@@ -270,6 +270,50 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////
 
+struct GedArrayNode : public GedItemNode {
+
+  DeclareAbstractX(GedArrayNode, GedItemNode);
+
+public:
+  using event_constptr_t = ork::ui::event_constptr_t;
+
+  GedArrayNode(GedContainer* c, const char* name, const reflect::IArray* prop, object_ptr_t obj);
+  /*const orkmap<PropTypeString, KeyDecoName>& GetKeys() const {
+    return mMapKeys;
+  }
+  void focusItem(const PropTypeString& key);
+
+  bool isKeyPresent(const KeyDecoName& pkey) const;
+  void addKey(const KeyDecoName& pkey);
+
+  bool isMultiMap() const {
+    return mbIsMultiMap;
+  }*/
+
+private:
+  //orkmap<PropTypeString, KeyDecoName> mMapKeys;
+  const reflect::IArray* _arrayProperty = nullptr;
+  //GedItemNode* mKeyNode         = nullptr;
+  //PropTypeString mCurrentKey;
+  int _selectedItemIndex    = 0;
+  bool _isSingle     = false;
+  bool _isConst      = false;
+  //bool mbIsMultiMap = false;
+  //bool mbImpExp     = false;
+
+  bool OnMouseDoubleClicked(event_constptr_t ev) final;
+  void DoDraw(Context* pTARG) final;
+  void updateVisibility();
+  //void addItem(event_constptr_t ev);
+  //void removeItem(event_constptr_t ev);
+  //void moveItem(event_constptr_t ev);
+  //void duplicateItem(event_constptr_t ev);
+  //void importItem(event_constptr_t ev);
+  //void exportItem(event_constptr_t ev);
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
 struct GedObjNode : public GedItemNode {
   DeclareAbstractX(GedObjNode, GedItemNode);
 

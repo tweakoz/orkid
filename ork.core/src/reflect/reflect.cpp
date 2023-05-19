@@ -113,8 +113,8 @@ using namespace reflect;
 //   FOREACH_PRIMITIVE_TYPE(MACRO,ITyped);
 #define FOREACH_INSTANTIATED_PROPERTY_TYPE(MACRO)                                                                                  \
   FOREACH_PRIMITIVE_TYPE(MACRO, DirectTyped);                                                                                      \
-  FOREACH_PRIMITIVE_TYPE(MACRO, AccessorTyped);                                                                                    \
-  FOREACH_PRIMITIVE_TYPE(MACRO, AccessorTypedArray);
+  FOREACH_PRIMITIVE_TYPE(MACRO, AccessorTyped);                                                                                    
+  //FOREACH_PRIMITIVE_TYPE(MACRO, AccessorTypedArray);
 
 //FOREACH_PRIMITIVE_TYPE(MACRO, DirectTypedArray);                                                                                 \
 //	MACRO(IObjectArray); \

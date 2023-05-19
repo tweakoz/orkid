@@ -341,17 +341,17 @@ struct GraphInst {
 
 #if 0 // TODO
 template <typename class_t, typename data_t, typename deleg_t> //
-inline void implementFloatXfPlugReflectionX(object::ObjectClass* clazz, //
-                                            typename class_t::&data_t member, //
-                                            std::string name, //
-                                            typename data_t mmin, //
-                                            typename data_t mmax, //
-                                            typename deleg_t deleg) { //
+inline void implementRangedPlugReflectionX(object::ObjectClass* clazz, //
+                                           data_t class_t::* member, //
+                                           std::string name, //
+                                           data_t mmin, //
+                                           data_t mmax, //
+                                           deleg_t deleg) { //
   clazz->directProperty(name, &member) //
-       ->annotate<ConstString>("editor.class", "ged.factory.plug") //
-       ->annotate<deleg_t>("ged.plug.delegate", deleg) //
-       ->annotate<data_t>("editor.range.min", mmin) //
-       ->annotate<data_t>("editor.range.max", mmax);
+       ->template annotate<ConstString>("editor.class", "ged.factory.plug") //
+       ->template annotate<deleg_t>("ged.plug.delegate", deleg) //
+       ->template annotate<data_t>("editor.range.min", mmin) //
+       ->template annotate<data_t>("editor.range.max", mmax);
 }
 
 #endif

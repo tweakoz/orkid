@@ -165,6 +165,11 @@ PYBIND11_MODULE(_lev2, module_lev2) {
             auto gradient = std::make_shared<gradient_fvec4_t>();
             to->_gradients.AddSorted(objname,gradient);
             return gradient;
+          })
+          .def("createParticleSystem", [](testobject_ptr_t to, std::string objname) -> dataflow::graphdata_ptr_t {
+            auto graphdata = std::make_shared<dataflow::GraphData>();
+            to->_particlesystems.AddSorted(objname,graphdata);
+            return graphdata;
           });
   type_codec->registerStdCodec<testobject_ptr_t>(gedto_type);
   /////////////////////////////////////////////////////////////////////////////////

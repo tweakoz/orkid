@@ -14,12 +14,19 @@
 
 namespace ork { namespace reflect {
 
+using array_abstract_item_t = svar256_t;
+using array_varray_t = std::vector<array_abstract_item_t>;
+
 class IArray : public ObjectProperty {
 public:
   virtual void deserializeElement(serdes::node_ptr_t) const = 0;
   virtual void serializeElement(serdes::node_ptr_t) const     = 0;
   virtual size_t count(object_constptr_t) const                    = 0;
   virtual void resize(object_ptr_t obj, size_t size) const         = 0;
+
+  // abstract interface
+  virtual array_varray_t enumerateElements(object_constptr_t obj) const = 0;
+  virtual void setElement(object_ptr_t obj,array_abstract_item_t value) const {};
 
 private:
   void deserialize(serdes::node_ptr_t) const override;

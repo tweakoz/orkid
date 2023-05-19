@@ -90,6 +90,12 @@ struct GravityModuleInst : public ParticleModuleInst {
 //////////////////////////////////////////////////////////////////////////
 
 void GravityModuleData::describeX(class_t* clazz) {
+  //implementFloatXfPlugReflectionX<GravityModuleData,float,int>(clazz,&GravityModuleData::G,"G",-10,10,-999);
+  //RegisterFloatXfPlug(GravityModule, G, -10.0f, 10.0f, ged::OutPlugChoiceDelegate);
+  //RegisterFloatXfPlug(GravityModule, Mass, -10.0f, 10.0f, ged::OutPlugChoiceDelegate);
+  //RegisterFloatXfPlug(GravityModule, OthMass, -10.0f, 10.0f, ged::OutPlugChoiceDelegate);
+  //RegisterFloatXfPlug(GravityModule, MinDistance, 0.0f, 100.0f, ged::OutPlugChoiceDelegate);
+  //RegisterVect3XfPlug(GravityModule, Center, -1000.0f, 1000.0f, ged::OutPlugChoiceDelegate);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -104,12 +110,6 @@ std::shared_ptr<GravityModuleData> GravityModuleData::createShared() {
 
   _initShared(data);
 
-  //RegisterFloatXfPlug(GravityModule, G, -10.0f, 10.0f, ged::OutPlugChoiceDelegate);
-  //RegisterFloatXfPlug(GravityModule, Mass, -10.0f, 10.0f, ged::OutPlugChoiceDelegate);
-  //RegisterFloatXfPlug(GravityModule, OthMass, -10.0f, 10.0f, ged::OutPlugChoiceDelegate);
-  //RegisterFloatXfPlug(GravityModule, MinDistance, 0.0f, 100.0f, ged::OutPlugChoiceDelegate);
-  //RegisterVect3XfPlug(GravityModule, Center, -1000.0f, 1000.0f, ged::OutPlugChoiceDelegate);
-
   createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "G");
   createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "Mass");
   createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "OthMass");
@@ -118,6 +118,11 @@ std::shared_ptr<GravityModuleData> GravityModuleData::createShared() {
 
   return data;
 }
+
+rtti::castable_ptr_t GravityModuleData::sharedFactory(){
+  return createShared();
+}
+
 
 //////////////////////////////////////////////////////////////////////////
 

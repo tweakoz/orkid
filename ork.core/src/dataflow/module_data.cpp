@@ -31,6 +31,12 @@ namespace ork::dataflow {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 void ModuleData::describeX(class_t* clazz) {
+  //std::vector<inplugdata_ptr_t> _inputs;
+  //std::vector<outplugdata_ptr_t> _outputs;
+  clazz->directObjectVectorProperty("inputs", &ModuleData::_inputs)
+      ->annotate<ConstString>("reflect.no_instantiate", "true");
+  clazz->directObjectVectorProperty("outputs", &ModuleData::_outputs)
+      ->annotate<ConstString>("reflect.no_instantiate", "true");
 }
 ModuleData::ModuleData(){
 }

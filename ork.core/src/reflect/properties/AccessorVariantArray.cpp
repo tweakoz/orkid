@@ -22,6 +22,10 @@ AccessorVariantArray::AccessorVariantArray(
     , mResize(resize) {
 }
 
+array_varray_t AccessorVariantArray::enumerateElements(object_constptr_t obj) const {
+  return array_varray_t();
+}
+
 void AccessorVariantArray::deserializeElement(serdes::node_ptr_t desernode) const {
   // return (instance.get()->*_deserializeElement)(deserializer, index);
 }

@@ -31,6 +31,9 @@ private:
   void (Object::*_deserializeElement)(serdes::node_ptr_t);
   size_t (Object::*mCount)() const;
   void (Object::*mResize)(size_t);
+
+  array_varray_t enumerateElements(object_constptr_t obj) const override;
+
 };
 
 }} // namespace ork::reflect

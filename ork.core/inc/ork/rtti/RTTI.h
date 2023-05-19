@@ -20,14 +20,14 @@ struct float_range {
   float _min = 0.0f;
   float _max = 0.0f;
   bool operator==(const float_range& rhs) const {
-    return (_min==rhs._min) and (_max==rhs._max);
+    return (_min == rhs._min) and (_max == rhs._max);
   }
 };
 struct int_range {
   int _min = 0;
   int _max = 0;
   bool operator==(const int_range& rhs) const {
-    return (_min==rhs._min) and (_max==rhs._max);
+    return (_min == rhs._min) and (_max == rhs._max);
   }
 };
 } // namespace ork
@@ -38,19 +38,41 @@ namespace ork::rtti {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+template <typename, typename = std::void_t<>> //
+struct has_sharedFactory //
+       : std::false_type {};
+
+template <typename T> //
+struct has_sharedFactory<T, std::void_t<decltype(&T::sharedFactory)>> //
+       : std::true_type {};
+
+////////////////////////////////////////////////////////////////////////////////
+
 template <typename ClassType> class DefaultPolicy {
 public:
   static ICastable* Factory() {
     return new ClassType();
   }
-  static castable_ptr_t sharedFactory() {
+  static castable_ptr_t sharedFactoryDefault() {
     return std::make_shared<ClassType>();
+  }
+
+  template <typename T = ClassType> //
+  static std::enable_if_t<has_sharedFactory<T>::value, castable_ptr_t> //
+  sharedFactory() {
+    return ClassType::sharedFactory();
+  }
+
+  template <typename T = ClassType> //
+  static std::enable_if_t<!has_sharedFactory<T>::value, castable_ptr_t> //
+  sharedFactory() { //
+    return sharedFactoryDefault();
   }
 
   static void Initialize() {
     ClassType::GetClassStatic()->SetName(ClassType::DesignNameStatic());
     ClassType::GetClassStatic()->setRawFactory(Factory);
-    ClassType::GetClassStatic()->setSharedFactory(sharedFactory);
+    ClassType::GetClassStatic()->setSharedFactory(sharedFactory<ClassType>);
     ClassType::RTTITyped::RTTICategory::template InitializeType<ClassType>();
   }
 };
@@ -108,7 +130,7 @@ public:
     return GetClassStatic();
   }
 
-  static void Describe();                // overridden by users of RTTI.
+  static void Describe();                  // overridden by users of RTTI.
   static Class::name_t DesignNameStatic(); // implemented (or overridden) by users of RTTI, as needed by policy.
 
 protected:
@@ -155,7 +177,7 @@ private:
 public:                                                                                                                            \
   typedef typename RTTIImplementation RTTITyped;                                                                                   \
   typedef typename RTTITyped::basetype_t BaseType;                                                                                 \
-  static ::ork::rtti::Class::name_t DesignNameStatic();                                                                                    \
+  static ::ork::rtti::Class::name_t DesignNameStatic();                                                                            \
   static void Describe();                                                                                                          \
   static RTTITyped::RTTICategory* GetClassStatic();                                                                                \
   RTTITyped::RTTICategory* GetClass() const override;                                                                              \
@@ -168,7 +190,7 @@ private:                                                                        
 #define __INTERNAL_RTTI_DECLARE_TRANSPARENT_TEMPLATE__(ClassType, RTTIImplementation)                                              \
 public:                                                                                                                            \
   typedef typename RTTIImplementation RTTITyped;                                                                                   \
-  static ::ork::rtti::Class::name_t DesignNameStatic();                                                                                    \
+  static ::ork::rtti::Class::name_t DesignNameStatic();                                                                            \
   static void Describe();                                                                                                          \
   static typename RTTITyped::RTTICategory* GetClassStatic();                                                                       \
   virtual typename RTTITyped::RTTICategory* GetClass() const;                                                                      \
@@ -312,7 +334,7 @@ Class* ForceLink(Class*);
 
 #define INSTANTIATE_RTTI(ClassName, TheDesignName)                                                                                 \
   namespace ork {                                                                                                                  \
-  Class::name_t ClassName::RTTITyped::DesignNameStatic() {                                                                           \
+  Class::name_t ClassName::RTTITyped::DesignNameStatic() {                                                                         \
     return TheDesignName;                                                                                                          \
   }                                                                                                                                \
   ClassName::RTTITyped::RTTICategory ClassName::RTTITyped::sClass(ClassName::ClassRTTI());                                         \
@@ -324,7 +346,7 @@ Class* ForceLink(Class*);
 ////////////////////////////////////////////////////////////////////////////////
 
 #define INSTANTIATE_TRANSPARENT_TEMPLATE_RTTI(ClassName, TheDesignName)                                                            \
-  template <> ::ork::rtti::Class::name_t ClassName::DesignNameStatic() {                                                                     \
+  template <>::ork::rtti::Class::name_t ClassName::DesignNameStatic() {                                                            \
     return TheDesignName;                                                                                                          \
   }                                                                                                                                \
   template <> ClassName::RTTITyped::RTTICategory ClassName::sClass(ClassName::RTTITyped::ClassRTTI());                             \
@@ -341,7 +363,7 @@ Class* ForceLink(Class*);
 ////////////////////////////////////////////////////////////////////////////////
 
 #define INSTANTIATE_TRANSPARENT_RTTI(ClassName, TheDesignName)                                                                     \
-  ::ork::rtti::Class::name_t ClassName::DesignNameStatic() {                                                                               \
+  ::ork::rtti::Class::name_t ClassName::DesignNameStatic() {                                                                       \
     return TheDesignName;                                                                                                          \
   }                                                                                                                                \
   ClassName::RTTITyped::RTTICategory ClassName::sClass(ClassName::RTTITyped::ClassRTTI());                                         \

@@ -22,6 +22,11 @@ public:
 private:
   void deserializeElement(serdes::node_ptr_t) const override;
   void serializeElement(serdes::node_ptr_t) const override;
+
+  // abstract interface
+  array_varray_t enumerateElements(object_constptr_t obj) const override;
+  void setElement(object_ptr_t obj,array_abstract_item_t value) const override;
+
 };
 
 }} // namespace ork::reflect

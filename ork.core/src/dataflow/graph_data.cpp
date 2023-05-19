@@ -25,15 +25,15 @@ namespace ork { namespace dataflow {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 void GraphData::describeX(object::ObjectClass* clazz) {
-/*  clazz
-      ->directMapProperty(
+  clazz
+      ->directObjectMapProperty(
           "Modules",             //
           &GraphData::_modules) //
       ->annotate<ConstString>(
           "editor.factorylistbase", //
-          "dflow/dgmodule");
+          "dflow::DgModuleData");
 
-  clazz
+/*  clazz
       ->accessorVariant(
           "zzz_connections", //
           &GraphInst::SerializeConnections,
