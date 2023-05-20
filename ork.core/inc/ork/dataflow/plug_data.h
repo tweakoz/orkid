@@ -14,40 +14,47 @@ namespace ork::dataflow {
 typedef std::string MorphKey;
 typedef std::string MorphGroup;
 
-struct floatxfinplugdata;
-struct floatxfinpluginst;
-struct fvec3xfinplugdata;
-struct fvec3xfinpluginst;
+struct floatpassthrudata;
+struct fvec3passthrudata;
+struct floatxfdata;
+struct fvec3xfdata;
+
+using floatxfdata_ptr_t = std::shared_ptr<floatxfdata>;
+using fvec3xfdata_ptr_t = std::shared_ptr<fvec3xfdata>;
 
 struct FloatPlugTraits {
-  using elemental_data_type          = float;
-  using elemental_inst_type          = float;
-  using data_impl_type_t             = float;
-  using inst_impl_type_t             = float;
+  using elemental_data_type = float;
+  using elemental_inst_type = float;
+  // using data_impl_type_t             = float;
+  // using inst_impl_type_t             = float;
+  using xformer_t                    = floatpassthrudata;
   static constexpr size_t max_fanout = 0;
   static std::shared_ptr<float> data_to_inst(std::shared_ptr<float> inp);
 };
 struct Vec3fPlugTraits {
-  using elemental_data_type          = fvec3;
-  using elemental_inst_type          = fvec3;
-  using data_impl_type_t             = fvec3;
-  using inst_impl_type_t             = fvec3;
+  using elemental_data_type = fvec3;
+  using elemental_inst_type = fvec3;
+  using xformer_t           = fvec3passthrudata;
+  // using data_impl_type_t             = fvec3;
+  // using inst_impl_type_t             = fvec3;
   static constexpr size_t max_fanout = 0;
   static std::shared_ptr<fvec3> data_to_inst(std::shared_ptr<fvec3> inp);
 };
 struct FloatXfPlugTraits {
-  using elemental_data_type          = float;
-  using elemental_inst_type          = float;
-  using data_impl_type_t             = floatxfinplugdata;
-  using inst_impl_type_t             = floatxfinpluginst;
+  using elemental_data_type = float;
+  using elemental_inst_type = float;
+  // using data_impl_type_t             = floatxfinplugdata;
+  // using inst_impl_type_t             = floatxfinpluginst;
+  using xformer_t                    = floatxfdata;
   static constexpr size_t max_fanout = 0;
   static std::shared_ptr<float> data_to_inst(std::shared_ptr<float> inp);
 };
 struct Vec3XfPlugTraits {
-  using elemental_data_type          = fvec3;
-  using elemental_inst_type          = fvec3;
-  using data_impl_type_t             = fvec3xfinplugdata;
-  using inst_impl_type_t             = fvec3xfinpluginst;
+  using elemental_data_type = fvec3;
+  using elemental_inst_type = fvec3;
+  // using data_impl_type_t             = fvec3xfinplugdata;
+  // using inst_impl_type_t             = fvec3xfinpluginst;
+  using xformer_t                    = fvec3xfdata;
   static constexpr size_t max_fanout = 0;
   static std::shared_ptr<fvec3> data_to_inst(std::shared_ptr<fvec3> inp);
 };
@@ -197,6 +204,8 @@ public:
   void setValue(const data_type_t& v);
 
   data_type_ptr_t _value;
+  object_ptr_t _transformer;
+
   inpluginst_ptr_t createInstance() const override;
 };
 
@@ -285,44 +294,33 @@ public:
   int _test = 0;
 };
 
+struct nullpassthrudata : public ork::Object {
+  DeclareAbstractX(nullpassthrudata, ork::Object);
+};
+struct floatpassthrudata : public ork::Object {
+  DeclareAbstractX(floatpassthrudata, ork::Object);
+  float transform(float inp) const {
+    return inp;
+  }
+};
+struct fvec3passthrudata : public ork::Object {
+  DeclareAbstractX(fvec3passthrudata, ork::Object);
+  fvec3 transform(fvec3 inp) const {
+    return inp;
+  }
+};
+
 ///////////////////////////////////////////////////////////////////////////////
 
 struct fvec3xfdata : public ork::Object {
   DeclareConcreteX(fvec3xfdata, ork::Object);
 
 public:
+  fvec3xfdata();
   fvec3 transform(const fvec3& input) const;
-
-  floatxfdata _transformX;
-  floatxfdata _transformY;
-  floatxfdata _transformZ;
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
-struct floatxfinplugdata : public floatinplugdata {
-
-  DeclareAbstractX(floatxfinplugdata, floatinplugdata);
-
-public:
-  explicit floatxfinplugdata(moduledata_ptr_t pmod, EPlugRate epr, const char* pname);
-
-  inpluginst_ptr_t createInstance() const final;
-
-  floatxfdata _transformdata;
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
-struct fvec3xfinplugdata : public vect3inplugdata {
-  DeclareAbstractX(fvec3xfinplugdata, vect3inplugdata);
-
-public:
-  explicit fvec3xfinplugdata(moduledata_ptr_t pmod, EPlugRate epr, const char* pname);
-
-  inpluginst_ptr_t createInstance() const final;
-
-  fvec3xfdata _transformdata;
+  floatxfdata_ptr_t _transformX;
+  floatxfdata_ptr_t _transformY;
+  floatxfdata_ptr_t _transformZ;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -330,7 +328,10 @@ public:
 using floatoutplug_ptr_t = std::shared_ptr<outplugdata<FloatPlugTraits>>;
 using floatinpplug_ptr_t = std::shared_ptr<inplugdata<FloatPlugTraits>>;
 
-using floatxfinplugdata_ptr_t = std::shared_ptr<floatxfinplugdata>;
-using fvec3xfinplugdata_ptr_t = std::shared_ptr<fvec3xfinplugdata>;
+using floatxfinplugdata_t = inplugdata<FloatXfPlugTraits>;
+using fvec3xfinplugdata_t = inplugdata<Vec3XfPlugTraits>;
+
+using floatxfinplugdata_ptr_t = std::shared_ptr<floatxfinplugdata_t>;
+using fvec3xfinplugdata_ptr_t = std::shared_ptr<fvec3xfinplugdata_t>;
 
 } // namespace ork::dataflow

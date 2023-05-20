@@ -46,6 +46,8 @@ inplugdata<traits>::inplugdata(
     const char* pname)                               //
     : InPlugData(pmod, epr, typeid(traits), pname) { //
   _value = std::make_shared<data_type_t>();
+
+  _transformer = std::make_shared<typename traits::xformer_t>();
 }
 
 template <typename traits> const typename inplugdata<traits>::data_type_t& inplugdata<traits>::value() const {

@@ -15,7 +15,7 @@ struct PlugInst {
 
   PlugInst(const PlugData* plugdata);
   virtual ~PlugInst();
-  
+
   const std::type_info& GetDataTypeId() const {
     return _plugdata->_typeID;
   }
@@ -26,8 +26,8 @@ struct PlugInst {
   bool mbDirty;
 };
 
-template <typename T> std::shared_ptr<T> typedPlugInst(pluginst_ptr_t p){
-    return std::dynamic_pointer_cast<T>(p);
+template <typename T> std::shared_ptr<T> typedPlugInst(pluginst_ptr_t p) {
+  return std::dynamic_pointer_cast<T>(p);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -42,8 +42,7 @@ struct InPlugInst : public PlugInst {
 
   void _doSetDirty(bool bv) override; // virtual
 
-  outpluginst_ptr_t _connectedOutput;                       
-
+  outpluginst_ptr_t _connectedOutput;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -68,12 +67,11 @@ template <typename traits> //
 class outpluginst : public OutPlugInst {
 
 public:
-
-  using data_type_t = typename traits::elemental_inst_type;
-  using data_type_ptr_t = std::shared_ptr<data_type_t>;
+  using data_type_t           = typename traits::elemental_inst_type;
+  using data_type_ptr_t       = std::shared_ptr<data_type_t>;
   using data_type_const_ptr_t = std::shared_ptr<const data_type_t>;
 
-  inline explicit outpluginst( const outplugdata<traits>* data );
+  inline explicit outpluginst(const outplugdata<traits>* data);
   virtual data_type_const_ptr_t value_ptr() const;
   virtual data_type_ptr_t value_ptr();
   virtual const data_type_t& value() const;
@@ -88,12 +86,11 @@ public:
 template <typename traits> struct inpluginst : public InPlugInst {
 
 public:
-
-  using data_type_t = typename traits::elemental_inst_type;
-  using data_type_ptr_t = std::shared_ptr<data_type_t>;
+  using data_type_t           = typename traits::elemental_inst_type;
+  using data_type_ptr_t       = std::shared_ptr<data_type_t>;
   using data_type_const_ptr_t = std::shared_ptr<const data_type_t>;
 
-  explicit inpluginst( const inplugdata<traits>* data );
+  explicit inpluginst(const inplugdata<traits>* data);
   data_type_const_ptr_t value_ptr() const;
   data_type_ptr_t value_ptr();
   virtual const data_type_t& value() const;
@@ -101,53 +98,52 @@ public:
 
   data_type_ptr_t _value;
   const inplugdata<traits>* _typed_plugdata;
-
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct floatxfinpluginst : public inpluginst<FloatPlugTraits> {
+struct floatxfinpluginst : public inpluginst<FloatXfPlugTraits> {
 
-  floatxfinpluginst(const floatxfinplugdata* d);
+  floatxfinpluginst(const floatxfinplugdata_t* d);
 
   const float& value() const final;
 
-  const floatxfinplugdata* _data = nullptr;
+  const floatxfinplugdata_t* _data = nullptr;
   mutable float _xfvalue;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct fvec3xfinpluginst : public inpluginst<Vec3fPlugTraits> {
+struct fvec3xfinpluginst : public inpluginst<Vec3XfPlugTraits> {
 
-  fvec3xfinpluginst(const fvec3xfinplugdata* d);
-  
+  fvec3xfinpluginst(const fvec3xfinplugdata_t* d);
+
   const fvec3& value() const final;
 
-  const fvec3xfinplugdata* _data = nullptr;
+  const fvec3xfinplugdata_t* _data = nullptr;
   mutable fvec3 _xfvalue;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-using float_inp_pluginst_t = inpluginst<FloatPlugTraits>;
+using float_inp_pluginst_t     = inpluginst<FloatPlugTraits>;
 using float_inp_pluginst_ptr_t = std::shared_ptr<float_inp_pluginst_t>;
 
-using floatxf_inp_pluginst_t = inpluginst<FloatXfPlugTraits>;
+using floatxf_inp_pluginst_t     = inpluginst<FloatXfPlugTraits>;
 using floatxf_inp_pluginst_ptr_t = std::shared_ptr<floatxf_inp_pluginst_t>;
 
-using float_out_pluginst_t = outpluginst<FloatPlugTraits>;
+using float_out_pluginst_t     = outpluginst<FloatPlugTraits>;
 using float_out_pluginst_ptr_t = std::shared_ptr<float_out_pluginst_t>;
 
 //
 
-using fvec3_inp_pluginst_t = inpluginst<Vec3fPlugTraits>;
+using fvec3_inp_pluginst_t     = inpluginst<Vec3fPlugTraits>;
 using fvec3_inp_pluginst_ptr_t = std::shared_ptr<fvec3_inp_pluginst_t>;
 
-using fvec3xf_inp_pluginst_t = inpluginst<Vec3XfPlugTraits>;
+using fvec3xf_inp_pluginst_t     = inpluginst<Vec3XfPlugTraits>;
 using fvec3xf_inp_pluginst_ptr_t = std::shared_ptr<fvec3xf_inp_pluginst_t>;
 
-using fvec3_out_pluginst_t = outpluginst<Vec3fPlugTraits>;
+using fvec3_out_pluginst_t     = outpluginst<Vec3fPlugTraits>;
 using fvec3_out_pluginst_ptr_t = std::shared_ptr<fvec3_out_pluginst_t>;
 
 } // namespace ork::dataflow

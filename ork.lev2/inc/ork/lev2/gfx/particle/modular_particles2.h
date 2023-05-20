@@ -20,7 +20,7 @@
 namespace ork::lev2::particle {
 ///////////////////////////////////////////////////////////////////////////////
 
-using vertex_t = SVtxV12C4T16;
+using vertex_t        = SVtxV12C4T16;
 using vertex_writer_t = lev2::VtxWriter<vertex_t>;
 
 namespace dflow   = ::ork::dataflow;
@@ -34,10 +34,9 @@ using particlebufferdata_ptr_t = std::shared_ptr<ParticleBufferData>;
 
 struct ParticleBufferInst {
 
-
   ParticleBufferInst(std::shared_ptr<ParticleBufferData> data)
-    : _data(data) {
-      _pool = std::make_shared<pool_t>();
+      : _data(data) {
+    _pool = std::make_shared<pool_t>();
   }
 
   pool_ptr_t _pool;
@@ -45,10 +44,11 @@ struct ParticleBufferInst {
 };
 
 struct ParticleBufferPlugTraits {
-  using elemental_data_type = ParticleBufferData;
-  using elemental_inst_type = ParticleBufferInst;
-  using data_impl_type_t                  = ParticleBufferData;
-  using inst_impl_type_t                  = ParticleBufferInst;
+  using elemental_data_type          = ParticleBufferData;
+  using elemental_inst_type          = ParticleBufferInst;
+  using data_impl_type_t             = ParticleBufferData;
+  using inst_impl_type_t             = ParticleBufferInst;
+  using xformer_t                    = dflow::nullpassthrudata;
   static constexpr size_t max_fanout = 1;
   static std::shared_ptr<ParticleBufferInst> data_to_inst(std::shared_ptr<ParticleBufferData> inp);
 };
@@ -98,8 +98,8 @@ using globalmodule_ptr_t = std::shared_ptr<GlobalModuleData>;
 
 struct ParticleModuleData : public ModuleData {
   DeclareAbstractX(ParticleModuleData, ModuleData);
-public:
 
+public:
   ParticleModuleData();
   static void _initShared(dflow::dgmoduledata_ptr_t sub);
 
@@ -108,7 +108,6 @@ public:
 };
 
 using ptcmoduledata_ptr_t = std::shared_ptr<ParticleModuleData>;
-
 
 struct ParticleModuleInst : public dflow::DgModuleInst {
 
@@ -132,8 +131,8 @@ public:
 
   float _unitAge = 1.0f;
   int _poolSize  = 40;
-  dflow::floatxfinplugdata_ptr_t _pathInterval;
-  dflow::floatxfinplugdata_ptr_t _pathProbability;
+  // dflow::floatxfinplugdata_ptr_t _pathInterval;
+  // dflow::floatxfinplugdata_ptr_t _pathProbability;
   particlebuf_outplugdata_ptr_t _poolOutput;
   std::string _pathStochasticQueueID;
   std::string _pathIntervalQueueID;
@@ -153,7 +152,7 @@ struct ParticlePoolRenderBuffer {
   particle_t* _particles = nullptr;
   int _maxParticles      = 0;
   int _numParticles      = 0;
-  int _index = 0;
+  int _index             = 0;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

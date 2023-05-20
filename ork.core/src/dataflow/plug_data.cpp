@@ -19,22 +19,22 @@
 namespace ork::dataflow {
 bool gbGRAPHLIVE = false;
 
-std::shared_ptr<float> FloatPlugTraits::data_to_inst(std::shared_ptr<float> inp){
+std::shared_ptr<float> FloatPlugTraits::data_to_inst(std::shared_ptr<float> inp) {
   return inp;
 }
-std::shared_ptr<float> FloatXfPlugTraits::data_to_inst(std::shared_ptr<float> inp){
+std::shared_ptr<float> FloatXfPlugTraits::data_to_inst(std::shared_ptr<float> inp) {
   return inp;
 }
-std::shared_ptr<fvec3> Vec3fPlugTraits::data_to_inst(std::shared_ptr<fvec3> inp){
+std::shared_ptr<fvec3> Vec3fPlugTraits::data_to_inst(std::shared_ptr<fvec3> inp) {
   return inp;
 }
-std::shared_ptr<fvec3> Vec3XfPlugTraits::data_to_inst(std::shared_ptr<fvec3> inp){
+std::shared_ptr<fvec3> Vec3XfPlugTraits::data_to_inst(std::shared_ptr<fvec3> inp) {
   return inp;
 }
 ///////////////////////////////////////////////////////////////////////////////
 void PlugData::describeX(class_t* clazz) {
   clazz->template annotateTyped<ConstString>("editor.ged.node.factory", "GedNodeFactoryPlug");
-  clazz->template annotateTyped<reflect::obj_to_string_fn_t>("editor.ged.item.namer", [](object_ptr_t o){
+  clazz->template annotateTyped<reflect::obj_to_string_fn_t>("editor.ged.item.namer", [](object_ptr_t o) {
     auto as_plug = std::dynamic_pointer_cast<PlugData>(o);
     return as_plug->_name;
   });
@@ -57,12 +57,12 @@ PlugData::PlugData(moduledata_ptr_t pmod, EPlugDir edir, EPlugRate epr, const st
     , _plugrate(epr)
     , _typeID(tid)
     , _name(pname ? pname : "noname") {
-  printf("PlugData<%p> pmod<%p> construct name<%s>\n", (void*) this, (void*) pmod.get(), _name.c_str());
+  printf("PlugData<%p> pmod<%p> construct name<%s>\n", (void*)this, (void*)pmod.get(), _name.c_str());
 }
 
-  const std::type_info& PlugData::GetDataTypeId() const {
-    return _typeID;
-  }
+const std::type_info& PlugData::GetDataTypeId() const {
+  return _typeID;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 void InPlugData::describeX(class_t* clazz) {
@@ -80,10 +80,9 @@ InPlugData::InPlugData(moduledata_ptr_t pmod, EPlugRate epr, const std::type_inf
     , _connectedOutput(nullptr)
     , mpMorphable(0) {
 }
-InPlugData::~InPlugData(){
-
+InPlugData::~InPlugData() {
 }
-inpluginst_ptr_t InPlugData::createInstance() const{
+inpluginst_ptr_t InPlugData::createInstance() const {
   return nullptr;
 }
 
@@ -93,24 +92,22 @@ inpluginst_ptr_t InPlugData::createInstance() const{
 //  all paths to target module via different plug types are considered
 ///////////////////////////////////////////////////////////////////////////////
 
-size_t InPlugData::computeMinDepth(dgmoduledata_constptr_t to_module ) const{
+size_t InPlugData::computeMinDepth(dgmoduledata_constptr_t to_module) const {
   size_t depth = NOPATH;
-  if(to_module==_parent_module){
+  if (to_module == _parent_module) {
     depth = 0;
-  }
-  else if(isConnected()){
-    auto upstream_plug = _connectedOutput;
+  } else if (isConnected()) {
+    auto upstream_plug   = _connectedOutput;
     auto upstream_module = upstream_plug->_parent_module;
-    if(upstream_module==to_module){
+    if (upstream_module == to_module) {
       depth = 1;
-    }
-    else{
+    } else {
       size_t min_depth = NOPATH;
-      for( auto upstream_input : upstream_module->_inputs ){
+      for (auto upstream_input : upstream_module->_inputs) {
         size_t this_path_depth = upstream_input->computeMinDepth(to_module);
-        if(this_path_depth!=NOPATH){
+        if (this_path_depth != NOPATH) {
           this_path_depth += 1;
-          if(this_path_depth<min_depth){
+          if (this_path_depth < min_depth) {
             min_depth = this_path_depth;
           }
         }
@@ -118,12 +115,14 @@ size_t InPlugData::computeMinDepth(dgmoduledata_constptr_t to_module ) const{
       depth = min_depth;
     }
   }
-  if(0)printf( "InPlugData<%p:%s> this_module<%s> computeMinDepth dest_module<%s>, depth<%zx>\n",
-          this, 
-          this->_name.c_str(),
-          this->_parent_module->_name.c_str(),
-          to_module->_name.c_str(),
-          depth );
+  if (0)
+    printf(
+        "InPlugData<%p:%s> this_module<%s> computeMinDepth dest_module<%s>, depth<%zx>\n",
+        this,
+        this->_name.c_str(),
+        this->_parent_module->_name.c_str(),
+        to_module->_name.c_str(),
+        depth);
   return depth;
 }
 
@@ -137,8 +136,8 @@ size_t InPlugData::computeMinDepth(dgmoduledata_constptr_t to_module ) const{
   }
 }*/
 ///////////////////////////////////////////////////////////////////////////////
-//void InPlugData::connectInternal(outplugdata_ptr_t vt) {
-  //_internalOutputConnections.push_back(vt);
+// void InPlugData::connectInternal(outplugdata_ptr_t vt) {
+//_internalOutputConnections.push_back(vt);
 //}
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -152,41 +151,41 @@ OutPlugData::OutPlugData(moduledata_ptr_t pmod, EPlugRate epr, const std::type_i
 OutPlugData::~OutPlugData() {
 }
 ///////////////////////////////////////////////////////////////////////////////
-void OutPlugData::_disconnect(inplugdata_ptr_t pinplug){
-  auto it = std::find(_connections.begin(),_connections.end(),pinplug);
-  if(it!=_connections.end()){
+void OutPlugData::_disconnect(inplugdata_ptr_t pinplug) {
+  auto it = std::find(_connections.begin(), _connections.end(), pinplug);
+  if (it != _connections.end()) {
     _connections.erase(it);
   }
 }
-outpluginst_ptr_t OutPlugData::createInstance() const{
+outpluginst_ptr_t OutPlugData::createInstance() const {
   return nullptr;
 }
-   size_t OutPlugData::maxFanOut() const {
-    return 0;
-  }
+size_t OutPlugData::maxFanOut() const {
+  return 0;
+}
 
-  bool OutPlugData::isConnected() const {
-    return (numConnections() != 0);
-  }
+bool OutPlugData::isConnected() const {
+  return (numConnections() != 0);
+}
 
-  size_t OutPlugData::numConnections() const {
-    return _connections.size();
-  }
-  inplugdata_ptr_t OutPlugData::connected(size_t idx) const {
-    return _connections[idx];
-  }
-  ///////////////////////////////////////////////////////////////////////////////
+size_t OutPlugData::numConnections() const {
+  return _connections.size();
+}
+inplugdata_ptr_t OutPlugData::connected(size_t idx) const {
+  return _connections[idx];
+}
+///////////////////////////////////////////////////////////////////////////////
 // plugdata<float>
 ///////////////////////////////////////////////////////////////////////////////
 template <> void inplugdata<FloatPlugTraits>::describeX(class_t* clazz) {
 }
-template <> inpluginst_ptr_t inplugdata<FloatPlugTraits>::createInstance() const{
+template <> inpluginst_ptr_t inplugdata<FloatPlugTraits>::createInstance() const {
   return std::make_shared<inpluginst<FloatPlugTraits>>(this);
 }
 
 template <> void outplugdata<FloatPlugTraits>::describeX(class_t* clazz) {
 }
-template <> outpluginst_ptr_t outplugdata<FloatPlugTraits>::createInstance() const{
+template <> outpluginst_ptr_t outplugdata<FloatPlugTraits>::createInstance() const {
   return std::make_shared<outpluginst<FloatPlugTraits>>(this);
 }
 
@@ -196,7 +195,7 @@ template struct outplugdata<FloatPlugTraits>;
 ///////////////////////////////////////////////////////////////////////////////
 template <> void inplugdata<FloatXfPlugTraits>::describeX(class_t* clazz) {
 }
-template <> inpluginst_ptr_t inplugdata<FloatXfPlugTraits>::createInstance() const{
+template <> inpluginst_ptr_t inplugdata<FloatXfPlugTraits>::createInstance() const {
   return std::make_shared<inpluginst<FloatXfPlugTraits>>(this);
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -206,10 +205,10 @@ template <> void inplugdata<Vec3fPlugTraits>::describeX(class_t* clazz) {
 }
 template <> void outplugdata<Vec3fPlugTraits>::describeX(class_t* clazz) {
 }
-template <> inpluginst_ptr_t inplugdata<Vec3fPlugTraits>::createInstance() const{
+template <> inpluginst_ptr_t inplugdata<Vec3fPlugTraits>::createInstance() const {
   return std::make_shared<inpluginst<Vec3fPlugTraits>>(this);
 }
-template <> outpluginst_ptr_t outplugdata<Vec3fPlugTraits>::createInstance() const{
+template <> outpluginst_ptr_t outplugdata<Vec3fPlugTraits>::createInstance() const {
   return std::make_shared<outpluginst<Vec3fPlugTraits>>(this);
 }
 template struct outplugdata<Vec3fPlugTraits>;
@@ -218,7 +217,7 @@ template struct outplugdata<Vec3fPlugTraits>;
 ///////////////////////////////////////////////////////////////////////////////
 template <> void inplugdata<Vec3XfPlugTraits>::describeX(class_t* clazz) {
 }
-template <> inpluginst_ptr_t inplugdata<Vec3XfPlugTraits>::createInstance() const{
+template <> inpluginst_ptr_t inplugdata<Vec3XfPlugTraits>::createInstance() const {
   return std::make_shared<inpluginst<Vec3XfPlugTraits>>(this);
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -230,25 +229,25 @@ void floatinplugdata::describeX(class_t* clazz) {
   ork::reflect::annotatePropertyForEditor<floatinplug>("value", "editor.visible", "false");*/
 }
 ///////////////////////////////////////////////////////////////////////////////
-void floatxfinplugdata::describeX(class_t* clazz) {
-  // ork::reflect::RegisterProperty("xf", &floatinplugxfdata<floatxf>::XfAccessor);
-}
-///////////////////////////////////////////////////////////////////////////////
 void vect3inplugdata::describeX(class_t* clazz) {
-/*  ork::reflect::RegisterProperty(
-      "value", //
-      &vect3inplugdata::GetValAccessor,
-      &vect3inplugdata::SetValAccessor);
-  ork::reflect::annotatePropertyForEditor<vect3inplug>("value", "editor.visible", "false");
-*/
+  /*  ork::reflect::RegisterProperty(
+        "value", //
+        &vect3inplugdata::GetValAccessor,
+        &vect3inplugdata::SetValAccessor);
+    ork::reflect::annotatePropertyForEditor<vect3inplug>("value", "editor.visible", "false");
+  */
 }
 ///////////////////////////////////////////////////////////////////////////////
-void fvec3xfinplugdata::describeX(class_t* clazz) {
-  // ork::reflect::RegisterProperty("xf", &vect3inplugxfdata<vect3xf>::XfAccessor);
-}
-///////////////////////////////////////////////////////////////////////////////
-//template <> void vect3inplugxfdata<floatxfdata>::describeX(class_t* clazz) {
+//void floatxfinplugdata::describeX(class_t* clazz) {
+  // ork::reflect::RegisterProperty("xf", &floatinplugxfdata<floatxf>::XfAccessor);
 //}
+///////////////////////////////////////////////////////////////////////////////
+//void fvec3xfinplugdata::describeX(class_t* clazz) {
+  // ork::reflect::RegisterProperty("xf", &vect3inplugxfdata<vect3xf>::XfAccessor);
+//}
+///////////////////////////////////////////////////////////////////////////////
+// template <> void vect3inplugxfdata<floatxfdata>::describeX(class_t* clazz) {
+// }
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -339,20 +338,18 @@ float floatxfdata::transform(float input) const {
 void fvec3xfdata::describeX(class_t* clazz) {
 }
 ///////////////////////////////////////////////////////////////////////////////
+fvec3xfdata::fvec3xfdata() {
+  _transformX = std::make_shared<floatxfdata>();
+  _transformY = std::make_shared<floatxfdata>();
+  _transformZ = std::make_shared<floatxfdata>();
+}
+///////////////////////////////////////////////////////////////////////////////
 fvec3 fvec3xfdata::transform(const fvec3& input) const {
   fvec3 output;
-  output.x = (_transformX.transform(input.x));
-  output.y = (_transformY.transform(input.y));
-  output.z = (_transformZ.transform(input.z));
+  output.x = (_transformX->transform(input.x));
+  output.y = (_transformY->transform(input.y));
+  output.z = (_transformZ->transform(input.z));
   return output;
-}
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-inpluginst_ptr_t floatxfinplugdata::createInstance() const {
-  return nullptr;
-}
-inpluginst_ptr_t fvec3xfinplugdata::createInstance() const {
-  return nullptr;
 }
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -368,14 +365,26 @@ void morphable::HandleMorphEvent(const morph_event* me) {
   }
 }
 
-floatxfinplugdata::floatxfinplugdata(moduledata_ptr_t pmod, EPlugRate epr, const char* pname)
-      : floatinplugdata(pmod, epr, pname) {
-  }
+///////////////////////////////////////////////////////////////////////////////
 
-fvec3xfinplugdata::fvec3xfinplugdata(moduledata_ptr_t pmod, EPlugRate epr, const char* pname)
-      : vect3inplugdata(pmod, epr, pname) {
-  }
+void nullpassthrudata::describeX(class_t* clazz){
+  
+}
 
+///////////////////////////////////////////////////////////////////////////////
+
+void floatpassthrudata::describeX(class_t* clazz){
+  
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void fvec3passthrudata::describeX(class_t* clazz){
+
+}
+
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::dataflow
 ///////////////////////////////////////////////////////////////////////////////
@@ -393,16 +402,15 @@ ImplementReflectionX(dflow::floatxfitembasedata, "dflow::floatxfitembasedata");
 ImplementReflectionX(dflow::floatinplugdata, "dflow::floatinplugdata");
 ImplementReflectionX(dflow::vect3inplugdata, "dflow::vect3inplugdata");
 
-ImplementReflectionX(dflow::floatxfinplugdata, "dflow::floatxfinplugdata");
-ImplementReflectionX(dflow::fvec3xfinplugdata, "dflow::fvec3xfinplugdata");
-
 ImplementTemplateReflectionX(dflow::outplugdata<dflow::FloatPlugTraits>, "dflow::outplugdata<float>");
 ImplementTemplateReflectionX(dflow::inplugdata<dflow::FloatPlugTraits>, "dflow::inplugdata<float>");
-//ImplementTemplateReflectionX(dflow::inplugdata<dflow::FloatXfPlugTraits>, "dflow::inplugdata<floatxf>");
 
 ImplementTemplateReflectionX(dflow::outplugdata<dflow::Vec3fPlugTraits>, "dflow::outplugdata<vec3>");
 ImplementTemplateReflectionX(dflow::inplugdata<dflow::Vec3fPlugTraits>, "dflow::inplugdata<vec3>");
 
 ImplementTemplateReflectionX(dflow::inplugdata<dflow::FloatXfPlugTraits>, "dflow::inplugdata<floatxf>");
 ImplementTemplateReflectionX(dflow::inplugdata<dflow::Vec3XfPlugTraits>, "dflow::inplugdata<vec3xf>");
-//ImplementTemplateReflectionX(dflow::inplugdata<dflow::Vec3XfPlugTraits>, "dflow::inplugdata<vec3xf>");
+
+ImplementReflectionX(dflow::nullpassthrudata, "dflow::nullpassthrudata");
+ImplementReflectionX(dflow::floatpassthrudata, "dflow::floatpassthrudata");
+ImplementReflectionX(dflow::fvec3passthrudata, "dflow::fvec3passthrudata");

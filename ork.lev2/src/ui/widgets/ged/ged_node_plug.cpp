@@ -22,34 +22,60 @@
 namespace ork::lev2::ged {
 ////////////////////////////////////////////////////////////////
 
-struct FloatPlugEditorImpl {
+struct FloatPlugXfEditorImpl {
 
   using datatype = float;
   static const int kpoolsize = 32;
 
-  FloatPlugEditorImpl(GedPlugNode* node);
+  FloatPlugXfEditorImpl(GedPlugNode* node);
   void render(lev2::Context* pTARG);
   bool onUiEvent(ui::event_constptr_t ev);
 
   GedPlugNode* _node                   = nullptr;
-  dataflow::InPlugData* _inputPlugData = nullptr;
+  dataflow::floatxfinplugdata_t* _inputPlugData = nullptr;
   Slider<float> _floatSlider;
 };
 
+using floatplugxfeditorimpl_ptr_t = std::shared_ptr<FloatPlugXfEditorImpl>;
+
 ///////////////////////////////////////////////////////////////////////////////
 
-FloatPlugEditorImpl::FloatPlugEditorImpl(GedPlugNode* node)
+FloatPlugXfEditorImpl::FloatPlugXfEditorImpl(GedPlugNode* node)
     : _node(node)
     , _floatSlider(_node, 0.0f, 1.0f, 0.0f)
  {
+  auto c       = _node->_container;
+  auto model   = c->_model;
   auto obj       = _node->_object;
   auto prop      = _node->_property;
-  _inputPlugData = dynamic_cast<dataflow::InPlugData*>(obj.get());
+  _inputPlugData = dynamic_cast<dataflow::floatxfinplugdata_t*>(obj.get());
+
+  if(_inputPlugData){
+    OrkAssert(false);
+
+    c->PushItemNode(_node);
+    auto iodriver             = std::make_shared<NewIoDriver>();
+    //auto ioimpl               = iodriver->_impl.makeShared<ArrayIoDriverImpl>();
+    //ioimpl->_node             = this;
+    //ioimpl->_array_prop       = ary_prop;
+    //ioimpl->_index            = index++;
+    iodriver->_par_prop       = prop;
+    //iodriver->_object         = _inputPlugData->_transformdata;
+    //iodriver->_abstract_val.set<object_ptr_t>(_inputPlugData->_transformdata);
+    iodriver->_onValueChanged = [=]() {
+      // ary_prop->setElement(obj, key, iodriver->_abstract_val);
+      c->_model->enqueueUpdate();
+    };
+
+    auto item_node = model->createAbstractNode("Transform", iodriver);
+    c->PopItemNode(_node);
+  }
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void FloatPlugEditorImpl::render(lev2::Context* pTARG) {
+void FloatPlugXfEditorImpl::render(lev2::Context* pTARG) {
   auto c       = _node->_container;
   auto model   = c->_model;
   auto skin    = c->_activeSkin;
@@ -99,7 +125,7 @@ void FloatPlugEditorImpl::render(lev2::Context* pTARG) {
     dbx1 += ifdim;
     int dbw = _node->miW - (dbx1 - _node->miX);
 
-    auto in_float_plugdata = dynamic_cast<dataflow::floatinplugdata*>(_inputPlugData);
+    auto in_float_plugdata = dynamic_cast<dataflow::floatxfinplugdata_t*>(_inputPlugData);
     if(in_float_plugdata){
         _floatSlider.resize(dbx1, _node->miY, dbw, _node->miH);
         int ixi = int(_floatSlider.GetIndicPos()) - dbx1;
@@ -130,7 +156,7 @@ void FloatPlugEditorImpl::render(lev2::Context* pTARG) {
   //}
 }
 
-bool FloatPlugEditorImpl::onUiEvent(ui::event_constptr_t ev) {
+bool FloatPlugXfEditorImpl::onUiEvent(ui::event_constptr_t ev) {
   return _floatSlider.OnUiEvent(ev);
   /*int sx = ev->miScreenPosX;
   int sy = ev->miScreenPosY;
@@ -164,14 +190,23 @@ void GedPlugNode::describeX(class_t* clazz) {
 
 GedPlugNode::GedPlugNode(GedContainer* c, const char* name, newiodriver_ptr_t iodriver)
     : GedItemNode(c, name, iodriver) {
-  auto pei = _impl.makeShared<FloatPlugEditorImpl>(this);
+  auto as_float_xf = dynamic_cast<dataflow::floatxfinplugdata_ptr_t*>(_object.get());
+  if(as_float_xf){
+    auto pei = _impl.makeShared<FloatPlugXfEditorImpl>(this);
+  }
+  else{
+    printf( "GedPlugNode<%p> not floatxfinplugdata_ptr_t\n", this);
+    printf( " clazz<%s>\n", _object->objectClass()->Name().c_str() );
+  }
 }
 
 ////////////////////////////////////////////////////////////////
 
 void GedPlugNode::DoDraw(lev2::Context* pTARG) {
-  auto pei = _impl.getShared<FloatPlugEditorImpl>();
-  pei->render(pTARG);
+  auto pei = _impl.tryAs<floatplugxfeditorimpl_ptr_t>();
+  if(pei){
+    pei.value()->render(pTARG);
+  }
 }
 
 ////////////////////////////////////////////////////////////////
@@ -183,8 +218,13 @@ int GedPlugNode::doComputeHeight() const {
 ////////////////////////////////////////////////////////////////
 
 bool GedPlugNode::OnUiEvent(ui::event_constptr_t ev) {
-  auto pei = _impl.getShared<FloatPlugEditorImpl>();
-  return pei->onUiEvent(ev);
+  auto pei = _impl.tryAs<floatplugxfeditorimpl_ptr_t>();
+  if(pei){
+    return pei.value()->onUiEvent(ev);
+  }
+  else{
+    return false;
+  }
 }
 
 ////////////////////////////////////////////////////////////////

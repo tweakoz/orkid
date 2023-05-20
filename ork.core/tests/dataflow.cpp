@@ -38,8 +38,7 @@ struct Buffer {};
 struct ImgBasePlugTraits{
   using elemental_data_type = ImgBase;
   using elemental_inst_type = ImgBase;
-  using data_type_t = ImgBase;
-  using inst_type_t = ImgBase;
+  using xformer_t = nullpassthrudata;
   static constexpr size_t max_fanout = 0;
   static std::shared_ptr<ImgBase> data_to_inst(std::shared_ptr<ImgBase> inp){
     return inp;
@@ -48,8 +47,7 @@ struct ImgBasePlugTraits{
 struct Img32PlugTraits{
   using elemental_data_type = Img32;
   using elemental_inst_type = Img32;
-  using data_type_t = Img32;
-  using inst_type_t = Img32;
+  using xformer_t = nullpassthrudata;
   static constexpr size_t max_fanout = 0;
   static std::shared_ptr<Img32> data_to_inst(std::shared_ptr<Img32> inp){
     return inp;
@@ -58,8 +56,7 @@ struct Img32PlugTraits{
 struct Img64PlugTraits{
   using elemental_data_type = Img64;
   using elemental_inst_type = Img64;
-  using data_type_t = Img64;
-  using inst_type_t = Img64;
+  using xformer_t = nullpassthrudata;
   static constexpr size_t max_fanout = 0;
   static std::shared_ptr<Img64> data_to_inst(std::shared_ptr<Img64> inp){
     return inp;  
