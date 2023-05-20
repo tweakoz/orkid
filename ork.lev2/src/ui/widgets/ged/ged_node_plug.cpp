@@ -51,7 +51,6 @@ FloatPlugXfEditorImpl::FloatPlugXfEditorImpl(GedPlugNode* node)
   _inputPlugData = dynamic_cast<dataflow::floatxfinplugdata_t*>(obj.get());
 
   if(_inputPlugData){
-    OrkAssert(false);
 
     c->PushItemNode(_node);
     auto iodriver             = std::make_shared<NewIoDriver>();
@@ -190,12 +189,12 @@ void GedPlugNode::describeX(class_t* clazz) {
 
 GedPlugNode::GedPlugNode(GedContainer* c, const char* name, newiodriver_ptr_t iodriver)
     : GedItemNode(c, name, iodriver) {
-  auto as_float_xf = dynamic_cast<dataflow::floatxfinplugdata_ptr_t*>(_object.get());
+  auto as_float_xf = dynamic_cast<dataflow::floatxfinplugdata_t*>(_object.get());
   if(as_float_xf){
     auto pei = _impl.makeShared<FloatPlugXfEditorImpl>(this);
   }
   else{
-    printf( "GedPlugNode<%p> not floatxfinplugdata_ptr_t\n", this);
+    printf( "GedPlugNode<%p> not floatxfinplugdata_t\n", this);
     printf( " clazz<%s>\n", _object->objectClass()->Name().c_str() );
   }
 }

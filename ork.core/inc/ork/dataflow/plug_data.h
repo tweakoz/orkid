@@ -14,6 +14,7 @@ namespace ork::dataflow {
 typedef std::string MorphKey;
 typedef std::string MorphGroup;
 
+struct nullpassthrudata;
 struct floatpassthrudata;
 struct fvec3passthrudata;
 struct floatxfdata;
@@ -25,26 +26,20 @@ using fvec3xfdata_ptr_t = std::shared_ptr<fvec3xfdata>;
 struct FloatPlugTraits {
   using elemental_data_type = float;
   using elemental_inst_type = float;
-  // using data_impl_type_t             = float;
-  // using inst_impl_type_t             = float;
-  using xformer_t                    = floatpassthrudata;
+  using xformer_t                    = nullpassthrudata;
   static constexpr size_t max_fanout = 0;
   static std::shared_ptr<float> data_to_inst(std::shared_ptr<float> inp);
 };
 struct Vec3fPlugTraits {
   using elemental_data_type = fvec3;
   using elemental_inst_type = fvec3;
-  using xformer_t           = fvec3passthrudata;
-  // using data_impl_type_t             = fvec3;
-  // using inst_impl_type_t             = fvec3;
+  using xformer_t           = nullpassthrudata;
   static constexpr size_t max_fanout = 0;
   static std::shared_ptr<fvec3> data_to_inst(std::shared_ptr<fvec3> inp);
 };
 struct FloatXfPlugTraits {
   using elemental_data_type = float;
   using elemental_inst_type = float;
-  // using data_impl_type_t             = floatxfinplugdata;
-  // using inst_impl_type_t             = floatxfinpluginst;
   using xformer_t                    = floatxfdata;
   static constexpr size_t max_fanout = 0;
   static std::shared_ptr<float> data_to_inst(std::shared_ptr<float> inp);
@@ -52,8 +47,6 @@ struct FloatXfPlugTraits {
 struct Vec3XfPlugTraits {
   using elemental_data_type = fvec3;
   using elemental_inst_type = fvec3;
-  // using data_impl_type_t             = fvec3xfinplugdata;
-  // using inst_impl_type_t             = fvec3xfinpluginst;
   using xformer_t                    = fvec3xfdata;
   static constexpr size_t max_fanout = 0;
   static std::shared_ptr<fvec3> data_to_inst(std::shared_ptr<fvec3> inp);
