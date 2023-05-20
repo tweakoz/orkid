@@ -18,11 +18,13 @@ public:
   ork::lev2::freestyle_mtl_ptr_t _material;
   const ork::lev2::FxShaderTechnique* _tekpick     = nullptr;
   const ork::lev2::FxShaderTechnique* _tekvtxcolor = nullptr;
+  const ork::lev2::FxShaderTechnique* _tektexcolor = nullptr;
   const ork::lev2::FxShaderTechnique* _tekvtxpick  = nullptr;
   const ork::lev2::FxShaderTechnique* _tekmodcolor = nullptr;
   const ork::lev2::FxShaderTechnique* _tekcolorwheel = nullptr;
   const ork::lev2::FxShaderParam* _parmvp          = nullptr;
   const ork::lev2::FxShaderParam* _parmodcolor     = nullptr;
+  const ork::lev2::FxShaderParam* _partexture     = nullptr;
   const ork::lev2::FxShaderParam* _parobjid        = nullptr;
   const ork::lev2::FxShaderParam* _partime        = nullptr;
 
@@ -41,6 +43,7 @@ public:
     int ix2 = 0;
     int iy2 = 0;
     fvec4 _ucolor;
+    texture_ptr_t _texture;
     ork::lev2::PrimitiveType meType = ork::lev2::PrimitiveType::END;
     int miSortKey = 0;
   };
@@ -51,6 +54,7 @@ public:
     fixed_pool<GedPrim, kmaxprims> mPrimPool;
     fixedvector<GedPrim*, kmaxprimsper> mLinePrims;
     fixedvector<GedPrim*, kmaxprimsper> mQuadPrims;
+    std::unordered_map<ork::lev2::texture_ptr_t,fixedvector<GedPrim*, kmaxprimsper>> mTexQuadPrims;
     fixedvector<GedPrim*, kmaxprimsper> mCustomPrims;
 
     void clear();
@@ -82,8 +86,9 @@ public:
   virtual void DrawOutlineBox(GedObject* pnode, int ix, int iy, int iw, int ih, ESTYLE ic, int isort = 0) = 0;
   virtual void DrawLine(GedObject* pnode, int ix, int iy, int iw, int ih, ESTYLE ic)                      = 0;
   virtual void DrawCheckBox(GedObject* pnode, int ix, int iy, int iw, int ih)                             = 0;
-  virtual void DrawDownArrow(GedObject* pnode, int ix, int iy, int iw, int ih, ESTYLE ic)                 = 0;
-  virtual void DrawRightArrow(GedObject* pnode, int ix, int iy, int iw, int ih, ESTYLE ic)                = 0;
+  virtual void DrawDownArrow(GedObject* pnode, int ix, int iy, ESTYLE ic)                 = 0;
+  virtual void DrawRightArrow(GedObject* pnode, int ix, int iy, ESTYLE ic)                = 0;
+  virtual void DrawUpArrow(GedObject* pnode, int ix, int iy, ESTYLE ic)                = 0;
   virtual void DrawText(GedObject* pnode, int ix, int iy, const char* ptext)                              = 0;
   virtual void End(ork::lev2::Context* pTARG)                                                             = 0;
 
@@ -133,6 +138,8 @@ public:
   void pushCustomColor(fcolor3 color);
   void popCustomColor();
 
+  void DrawTexBox( GedObject* pnode, int ix, int iy, texture_ptr_t tex, fvec4 color );
+
   int _scrollY = 0;
   int miRejected = 0;
   int miAccepted = 0;
@@ -140,6 +147,7 @@ public:
   ork::lev2::Font* _font = nullptr;
   int _char_w = 0;
   int _char_h = 0;
+  int _bannerHeight = 0;
   orkvector<GedText> _text_vect;
   bool _is_pickmode = false;
   fmtx4 _uiMatrix;
@@ -147,7 +155,7 @@ public:
   fmtx4 _uiMVPMatrix;
   std::stack<fcolor3> _colorStack;
   ork::Timer _timer;
-
+  std::unordered_map<uint64_t, texture_ptr_t> _textures;
 };
 
 struct GedSkin0 : public GedSkin {
@@ -158,8 +166,9 @@ struct GedSkin0 : public GedSkin {
   void DrawOutlineBox(GedObject* pnode, int ix, int iy, int iw, int ih, ESTYLE ic, int isort) final;
   void DrawLine(GedObject* pnode, int ix, int iy, int ix2, int iy2, ESTYLE ic) final;
   void DrawCheckBox(GedObject* pnode, int ix, int iy, int iw, int ih) final;
-  void DrawDownArrow(GedObject* pnode, int ix, int iy, int iw, int ih, ESTYLE ic) final;
-  void DrawRightArrow(GedObject* pnode, int ix, int iy, int iw, int ih, ESTYLE ic) final;
+  void DrawDownArrow(GedObject* pnode, int ix, int iy, ESTYLE ic) final;
+  void DrawRightArrow(GedObject* pnode, int ix, int iy, ESTYLE ic) final;
+  void DrawUpArrow(GedObject* pnode, int ix, int iy, ESTYLE ic) final;
   void DrawText(GedObject* pnode, int ix, int iy, const char* ptext) final;
   void Begin(Context* pTARG, GedSurface* pVP) final;
   void End(Context* pTARG) final;
@@ -174,12 +183,12 @@ struct GedSkin1 : public GedSkin {
   void DrawOutlineBox(GedObject* pnode, int ix, int iy, int iw, int ih, ESTYLE ic, int isort) final;
   void DrawLine(GedObject* pnode, int ix, int iy, int ix2, int iy2, ESTYLE ic) final;
   void DrawCheckBox(GedObject* pnode, int ix, int iy, int iw, int ih) final;
-  void DrawDownArrow(GedObject* pnode, int ix, int iy, int iw, int ih, ESTYLE ic) final;
-  void DrawRightArrow(GedObject* pnode, int ix, int iy, int iw, int ih, ESTYLE ic) final;
+  void DrawDownArrow(GedObject* pnode, int ix, int iy, ESTYLE ic) final;
+  void DrawRightArrow(GedObject* pnode, int ix, int iy, ESTYLE ic) final;
+  void DrawUpArrow(GedObject* pnode, int ix, int iy, ESTYLE ic) final;
   void DrawText(GedObject* pnode, int ix, int iy, const char* ptext) final;
   void Begin(Context* pTARG, GedSurface* pVP) final;
   void End(Context* pTARG) final;
-
 
 };
 

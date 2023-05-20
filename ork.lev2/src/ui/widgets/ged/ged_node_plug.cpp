@@ -83,7 +83,10 @@ void FloatPlugXfEditorImpl::render(lev2::Context* pTARG) {
 
     //////////////////////////////////////
 
+    const int kcharw = _node->get_charw();
     const int klabh = _node->get_charh();
+    const int kcharwd2 = (kcharw >> 1);
+
     int ioff  = 3;
     int idim  = (klabh);
     int ifdim = klabh;
@@ -102,11 +105,9 @@ void FloatPlugXfEditorImpl::render(lev2::Context* pTARG) {
 
     if (false) {
       if (_node->mbcollapsed) {
-        skin->DrawRightArrow(_node, dbx1, dby1, idim, idim, GedSkin::ESTYLE_BUTTON_OUTLINE);
-        skin->DrawLine(_node, dbx1 + 1, dby1, dbx1 + 1, dby2, GedSkin::ESTYLE_BUTTON_OUTLINE);
+        skin->DrawRightArrow(_node, dbx1, dby1, GedSkin::ESTYLE_BUTTON_OUTLINE);
       } else {
-        skin->DrawDownArrow(_node, dbx1, dby1, idim, idim, GedSkin::ESTYLE_BUTTON_OUTLINE);
-        skin->DrawLine(_node, dbx1, dby1 + 1, dbx2, dby1 + 1, GedSkin::ESTYLE_BUTTON_OUTLINE);
+        skin->DrawDownArrow(_node, dbx1, dby1, GedSkin::ESTYLE_BUTTON_OUTLINE);
       }
 
       dbx1 += (idim + 4);
@@ -124,13 +125,58 @@ void FloatPlugXfEditorImpl::render(lev2::Context* pTARG) {
     dbx1 += ifdim;
     int dbw = _node->miW - (dbx1 - _node->miX);
 
+    //////////////////////////////////////
+    // plugrate BG
+    //////////////////////////////////////
+
+    skin->DrawBgBox(_node, //
+                    dbx1 + 5 - kcharwd2, // x
+                    _node->miY + 3, // y
+                    kcharw * 3 - 1, // w
+                    igdim - 4, // h
+                    GedSkin::ESTYLE_DEFAULT_HIGHLIGHT);
+
+    skin->DrawOutlineBox(_node,  //
+                         dbx1 + 5 - kcharwd2,  // x
+                         _node->miY + 3,  // y
+                         kcharw * 3 - 1,  // w
+                         igdim - 4,  // h
+                         GedSkin::ESTYLE_DEFAULT_OUTLINE);
+
+    //////////////////////////////////////
+    // plugrate
+    //////////////////////////////////////
+
+    const char* ptstr = "??";
+    switch (_inputPlugData->_plugrate) {
+      case dataflow::EPR_EVENT:
+        ptstr = "EV";
+        break;
+      case dataflow::EPR_UNIFORM:
+        ptstr = "UN";
+        break;
+      case dataflow::EPR_VARYING1:
+        ptstr = "V1";
+        break;
+      case dataflow::EPR_VARYING2:
+        ptstr = "V2";
+        break;
+    }
+
+    skin->DrawText(_node, dbx1+4, _node->miY + 2, ptstr);
+
+    dbx1 += kcharw * 3;
+    dbw -= kcharw * 3;
+
+    //////////////////////////////////////
+
     auto in_float_plugdata = dynamic_cast<dataflow::floatxfinplugdata_t*>(_inputPlugData);
     if(in_float_plugdata){
-        _floatSlider.resize(dbx1, _node->miY, dbw, _node->miH);
+        _floatSlider.resize(dbx1 + 4, _node->miY, dbw, _node->miH - 8);
         int ixi = int(_floatSlider.GetIndicPos()) - dbx1;
-        skin->DrawBgBox(_node, dbx1, _node->miY, dbw, igdim, GedSkin::ESTYLE_BACKGROUND_1);
-        skin->DrawBgBox(_node, dbx1 + 2, _node->miY + 2, dbw - 3, igdim - 4, GedSkin::ESTYLE_BACKGROUND_2);
-        skin->DrawBgBox(_node, dbx1 + 2, _node->miY + 4, ixi, igdim - 8, GedSkin::ESTYLE_DEFAULT_HIGHLIGHT);
+        //skin->DrawBgBox(_node, dbx1, _node->miY, dbw, igdim, GedSkin::ESTYLE_BACKGROUND_1);
+        skin->DrawBgBox(_node, dbx1 + 3, _node->miY + 3, dbw - 6, igdim - 3, GedSkin::ESTYLE_BACKGROUND_2);
+        //skin->DrawBgBox(_node, dbx1 + 2, _node->miY + 4, ixi, igdim - 8, GedSkin::ESTYLE_DEFAULT_HIGHLIGHT);
 
         ork::PropTypeString pstr;
         float fvalue = _floatSlider.value();
@@ -138,7 +184,7 @@ void FloatPlugXfEditorImpl::render(lev2::Context* pTARG) {
         int itxi            = _node->miX + (finp);
         float ity = _node->get_text_center_y();
         PropTypeString& str = _floatSlider.ValString();
-        skin->DrawText(_node, itxi, ity, str.c_str());
+        //skin->DrawText(_node, itxi, ity, str.c_str());
         //_content     = str.c_str();
         //int itextlen = contentWidth();
         //skin->DrawText(this, dbx1 + dbw - (itextlen + 8), miY + 4, str.c_str());

@@ -55,8 +55,8 @@ def createParticleData( use_streaks = True ):
       self.ptc_pool   = self.graphdata.create("POOL",particles.Pool)
       self.emitter    = self.graphdata.create("EMITN",particles.NozzleEmitter)
       self.emitter2    = self.graphdata.create("EMITR",particles.RingEmitter)
-      self.gravity    = self.graphdata.create("POOL",particles.Gravity)
-      self.turbulence = self.graphdata.create("GRAV",particles.Turbulence)
+      self.gravity    = self.graphdata.create("GRAV",particles.Gravity)
+      self.turbulence = self.graphdata.create("TURB",particles.Turbulence)
       self.vortex     = self.graphdata.create("VORT",particles.Vortex)
 
       if use_streaks:

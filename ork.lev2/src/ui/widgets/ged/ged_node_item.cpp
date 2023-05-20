@@ -187,10 +187,14 @@ bool GedItemNode::IsObjectHilighted(const GedObject* pobj) const {
 //////////////////////////////////////////////////////////////////////////////
 
 void GedItemNode::Layout(int ix, int iy, int iw, int ih) {
+
   miX = ix;
   miY = iy;
   miW = iw;
   miH = ih;
+
+  OrkAssert(_container != nullptr);
+  auto skin = _container->_activeSkin;
 
   if(0)
     printf("GedItemNode<%p:%s> Layout ix<%d> iy<%d> iw<%d> ih<%d>\n", this, this->_propname.c_str(), ix, iy, iw, ih);
@@ -202,7 +206,7 @@ void GedItemNode::Layout(int ix, int iy, int iw, int ih) {
   if (bsidebyside) {
     inx += get_charw() + 4 + (propnameWidth() + 1);
   } else {
-    iy += get_charh();
+    iy += skin ? skin->_bannerHeight + 1 : get_charh() + 4; 
   }
 
   int inumitems = numChildren();

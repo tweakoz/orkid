@@ -71,6 +71,8 @@ fmtx4 GlMatrixStackInterface::Ortho( float left, float right, float top, float b
 	
 	if(1)
 	{
+		//rval = glm::ortho(left, right, bottom, top, fnear, ffar);
+
 		float zero(0.0f);
 		float one(1.0f);
 		float two(2.0f);

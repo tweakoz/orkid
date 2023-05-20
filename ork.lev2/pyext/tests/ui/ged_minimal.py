@@ -49,6 +49,8 @@ class UiGedTestApp(object):
     #gb = t2.createGradient("gradB")
     #gc = t2.createGradient("gradC")
     ps1 = t2.createParticleSystem("psys1")
+    #self.ptc_pool   = ps1.create("POOL",particles.Pool)
+    gravity = ps1.create("GRAV",particles.Gravity)
     self.objmodel.attach(self.test_object,True)
     print(self.test_object.clazz.name)
 

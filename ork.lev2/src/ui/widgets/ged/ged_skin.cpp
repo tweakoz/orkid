@@ -59,6 +59,7 @@ void GedSkin::gpuInit(lev2::Context* ctx) {
   _material->gpuInit(ctx, "orkshader://ui2");
   _tekpick       = _material->technique("ui_picking");
   _tekvtxcolor   = _material->technique("ui_vtxcolor");
+  _tektexcolor   = _material->technique("ui_texcolor");
   _tekvtxpick    = _material->technique("ui_vtxpicking");
   _tekmodcolor   = _material->technique("ui_modcolor");
   _tekcolorwheel = _material->technique("ui_colorwheel");
@@ -66,6 +67,7 @@ void GedSkin::gpuInit(lev2::Context* ctx) {
   _parmodcolor   = _material->param("modcolor");
   _parobjid      = _material->param("objid");
   _partime       = _material->param("time");
+  _partexture    = _material->param("ColorMap");
   _material->dump();
 }
 
@@ -97,7 +99,13 @@ void GedSkin::AddPrim(const GedPrim& cb) {
       case PrimitiveType::QUADS: {
         GedPrim* pooledprim = pctr->mPrimPool.allocate();
         *pooledprim         = cb;
-        pctr->mQuadPrims.push_back(pooledprim);
+        if(pooledprim->_texture){
+          auto& grptex = pctr->mTexQuadPrims[pooledprim->_texture];
+          grptex.push_back(pooledprim);
+        }
+        else{
+          pctr->mQuadPrims.push_back(pooledprim);
+        }
         break;
       }
     }
@@ -107,6 +115,9 @@ void GedSkin::PrimContainer::clear() {
   mPrimPool.clear();
   mLinePrims.clear();
   mQuadPrims.clear();
+  for( auto& item : mTexQuadPrims ){
+    item.second.clear();
+  }
   mCustomPrims.clear();
 }
 
@@ -116,6 +127,25 @@ void GedSkin::clear() {
   }
   mPrimContainerPool.clear();
   mPrimContainers.clear();
+}
+
+void GedSkin::DrawTexBox( GedObject* pnode, int ix, int iy, texture_ptr_t tex, fvec4 color ){
+  GedPrim prim;
+  prim.ix1 = ix;
+  prim.ix2 = ix + tex->_width - 1;
+  prim.iy1 = iy;
+  prim.iy2 = iy + tex->_height - 1;
+  fvec4 uobj = _gedVP->AssignPickId(pnode);
+  if (_is_pickmode) {
+    AddToObjSet((void*)pnode);
+  }
+
+  prim._ucolor   = _is_pickmode ? uobj : color; 
+  prim.meType    = PrimitiveType::QUADS;
+  prim.miSortKey = calcsort(4);
+  prim._texture = tex;
+  AddPrim(prim);
+
 }
 
 ////////////////////////////////////////////////////////////////

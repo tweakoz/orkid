@@ -511,11 +511,9 @@ void GedMapNode::DoDraw(Context* pTARG) {
   skin->DrawBgBox(this, miX, miY, miW, klabh, GedSkin::ESTYLE_BACKGROUND_MAPNODE_LABEL);
 
   if (mbSingle) {
-    skin->DrawRightArrow(this, dbx1, dby1, idim, idim, GedSkin::ESTYLE_BUTTON_OUTLINE);
-    skin->DrawLine(this, dbx1 + 1, dby1, dbx1 + 1, dby2, GedSkin::ESTYLE_BUTTON_OUTLINE);
+    skin->DrawRightArrow(this, dbx1, dby1, GedSkin::ESTYLE_BUTTON_OUTLINE);
   } else {
-    skin->DrawDownArrow(this, dbx1, dby1, idim, idim, GedSkin::ESTYLE_BUTTON_OUTLINE);
-    skin->DrawLine(this, dbx1, dby1 + 1, dbx2, dby1 + 1, GedSkin::ESTYLE_BUTTON_OUTLINE);
+    skin->DrawDownArrow(this, dbx1, dby1, GedSkin::ESTYLE_BUTTON_OUTLINE);
   }
 
   dbx1 += (idim + 4);

@@ -191,6 +191,7 @@ struct GedGroupNode : public GedItemNode {
       bool is_obj_node = false);
 
   void updateVisibility();
+  int doComputeHeight() const final;
   bool DoDrawDefault() const {
     return false;
   } // virtual

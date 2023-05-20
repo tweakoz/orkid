@@ -20,11 +20,102 @@
 namespace ork::lev2::ged {
 ////////////////////////////////////////////////////////////////
 
+texture_ptr_t createDownArrowTexture(lev2::Context* ctx){
+  auto texture = std::make_shared<lev2::Texture>();
+  texture->_debugName = "ged_downarrow";
+  TextureInitData tid;
+  tid._w     = 9;
+  tid._h     = 9;
+  tid._src_format    = EBufferFormat::RGBA8;
+  tid._dst_format    = EBufferFormat::RGBA8;
+  tid._autogenmips = false;
+  uint32_t X = 0xFFFFFFFF;
+  uint32_t O = 0x00000000;
+  uint32_t data[] = {
+    X, X, X, X, X, X, X, X, X,
+    X, O, O, O, O, O, O, O, X,
+    O, X, O, O, O, O, O, X, O,
+    O, X, O, O, O, O, O, X, O,
+    O, O, X, O, O, O, X, O, O,
+    O, O, X, O, O, O, X, O, O,
+    O, O, O, X, O, X, O, O, O,
+    O, O, O, X, O, X, O, O, O,
+    O, O, O, O, X, O, O, O, O,
+  };
+  tid._data = (const void*) data;
+  ctx->TXI()->initTextureFromData(texture.get(), tid);
+  return texture;
+}
+
+texture_ptr_t createUpArrowTexture(lev2::Context* ctx){
+  auto texture = std::make_shared<lev2::Texture>();
+  texture->_debugName = "ged_uparrow";
+  TextureInitData tid;
+  tid._w     = 9;
+  tid._h     = 9;
+  tid._src_format    = EBufferFormat::RGBA8;
+  tid._dst_format    = EBufferFormat::RGBA8;
+  tid._autogenmips = false;
+  uint32_t X = 0xFFFFFFFF;
+  uint32_t O = 0x00000000;
+  uint32_t data[] = {
+
+    O, O, O, O, X, O, O, O, O,
+    O, O, O, X, O, X, O, O, O,
+    O, O, O, X, O, X, O, O, O,
+    O, O, X, O, O, O, X, O, O,
+    O, O, X, O, O, O, X, O, O,
+    O, X, O, O, O, O, O, X, O,
+    O, X, O, O, O, O, O, X, O,
+    X, O, O, O, O, O, O, O, X,
+    X, X, X, X, X, X, X, X, X,
+  };
+  tid._data = (const void*) data;
+  ctx->TXI()->initTextureFromData(texture.get(), tid);
+  return texture;
+}
+
+texture_ptr_t createRightArrowTexture(lev2::Context* ctx){
+  auto texture = std::make_shared<lev2::Texture>();
+  texture->_debugName = "ged_rightarrow";
+  TextureInitData tid;
+  tid._w     = 9;
+  tid._h     = 9;
+  tid._src_format    = EBufferFormat::RGBA8;
+  tid._dst_format    = EBufferFormat::RGBA8;
+  tid._autogenmips = false;
+  uint32_t X = 0xFFFFFFFF;
+  uint32_t O = 0x00000000;
+  uint32_t data[] = {
+    X, X, O, O, O, O, O, O, O,
+    X, O, X, X, O, O, O, O, O,
+    X, O, O, O, X, X, O, O, O,
+    X, O, O, O, O, O, X, X, O,
+    X, O, O, O, O, O, O, O, X,
+    X, O, O, O, O, O, X, X, O,
+    X, O, O, O, X, X, O, O, O,
+    X, O, X, X, O, O, O, O, O,
+    X, X, O, O, O, O, O, O, O,
+  };
+  tid._data = (const void*) data;
+  ctx->TXI()->initTextureFromData(texture.get(), tid);
+  return texture;
+}
+
+////////////////////////////////////////////////////////////////
+
 GedSkin1::GedSkin1(ork::lev2::Context* ctx) {
   gpuInit(ctx);
   _font   = lev2::FontMan::GetFont("i14");
   _char_w = _font->GetFontDesc().miAdvanceWidth;
   _char_h = _font->GetFontDesc().miAdvanceHeight;
+  _bannerHeight = _char_h + 4;
+
+  ////////////////////////////////////////////////////////
+  _textures["downarrow"_crcu] = createDownArrowTexture(ctx);
+  _textures["uparrow"_crcu] = createUpArrowTexture(ctx);
+  _textures["rightarrow"_crcu] = createRightArrowTexture(ctx);
+  ////////////////////////////////////////////////////////
 }
 ///////////////////////////////////////////////////////////////////
 fvec4 GedSkin1::GetStyleColor(GedObject* pnode, ESTYLE ic) {
@@ -106,7 +197,7 @@ fvec4 GedSkin1::GetStyleColor(GedObject* pnode, ESTYLE ic) {
     color.z  = fg;
   }
 
-  return fvec4((color * fdepth),1);
+  return fvec4((color * fdepth), 1);
 }
 ///////////////////////////////////////////////////////////////////
 void GedSkin1::DrawBgBox(GedObject* pnode, int ix, int iy, int iw, int ih, ESTYLE ic, int isort) {
@@ -139,28 +230,35 @@ void GedSkin1::DrawOutlineBox(GedObject* pnode, int ix, int iy, int iw, int ih, 
     prim.meType    = PrimitiveType::LINES;
     prim.miSortKey = calcsort(isort + 1);
 
+    int ix2 = ix + iw - 1;
+    int iy2 = iy + ih - 1;
+
+    // top
     prim.ix1 = ix;
-    prim.ix2 = ix + iw;
+    prim.ix2 = ix2+1;
     prim.iy1 = iy;
     prim.iy2 = iy;
     AddPrim(prim);
 
-    prim.ix1 = ix + iw;
-    prim.ix2 = ix + iw;
+    // right
+    prim.ix1 = ix2;
+    prim.ix2 = ix2;
     prim.iy1 = iy;
-    prim.iy2 = iy + ih+1;
+    prim.iy2 = iy2+1;
     AddPrim(prim);
 
+    // bottom
     prim.ix1 = ix;
-    prim.ix2 = ix + iw;
-    prim.iy1 = iy + ih;
-    prim.iy2 = iy + ih;
+    prim.ix2 = ix2+1;
+    prim.iy1 = iy2+1;
+    prim.iy2 = iy2+1;
     AddPrim(prim);
 
+    // left
     prim.ix1 = ix;
     prim.ix2 = ix;
     prim.iy1 = iy;
-    prim.iy2 = iy + ih;
+    prim.iy2 = iy2+1;
     AddPrim(prim);
   }
 }
@@ -190,16 +288,16 @@ void GedSkin1::DrawCheckBox(GedObject* pnode, int ix, int iy, int iw, int ih) {
   }
 }
 ///////////////////////////////////////////////////////////////////
-void GedSkin1::DrawDownArrow(GedObject* pnode, int ix, int iy, int iw, int ih, ESTYLE ic) {
-  DrawLine(pnode, ix, iy, ix + iw, iy, GedSkin::ESTYLE_BUTTON_OUTLINE);
-  DrawLine(pnode, ix, iy, ix + (iw >> 1), iy + ih, GedSkin::ESTYLE_BUTTON_OUTLINE);
-  DrawLine(pnode, ix + iw, iy, ix + (iw >> 1), iy + ih, GedSkin::ESTYLE_BUTTON_OUTLINE);
+void GedSkin1::DrawDownArrow(GedObject* pnode, int ix, int iy, ESTYLE ic) {
+  DrawTexBox( pnode, ix, iy, _textures["downarrow"_crcu], GetStyleColor(pnode, ic) );
 }
 ///////////////////////////////////////////////////////////////////
-void GedSkin1::DrawRightArrow(GedObject* pnode, int ix, int iy, int iw, int ih, ESTYLE ic) {
-  DrawLine(pnode, ix, iy, ix, iy + ih, GedSkin::ESTYLE_BUTTON_OUTLINE);
-  DrawLine(pnode, ix, iy, ix + iw, iy + (ih >> 1), GedSkin::ESTYLE_BUTTON_OUTLINE);
-  DrawLine(pnode, ix, iy + ih, ix + iw, iy + (ih >> 1), GedSkin::ESTYLE_BUTTON_OUTLINE);
+void GedSkin1::DrawRightArrow(GedObject* pnode, int ix, int iy, ESTYLE ic) {
+  DrawTexBox( pnode, ix, iy, _textures["rightarrow"_crcu], GetStyleColor(pnode, ic) );
+}
+///////////////////////////////////////////////////////////////////
+void GedSkin1::DrawUpArrow(GedObject* pnode, int ix, int iy, ESTYLE ic) {
+  DrawTexBox( pnode, ix, iy, _textures["uparrow"_crcu], GetStyleColor(pnode, ic) );
 }
 ///////////////////////////////////////////////////////////////////
 void GedSkin1::DrawText(GedObject* pnode, int ix, int iy, const char* ptext) {
@@ -230,6 +328,7 @@ void GedSkin1::End(Context* pTARG) {
   lev2::DynamicVertexBuffer<vtx_t>& VB = lev2::GfxEnv::GetSharedDynamicV16T16C16();
   ////////////////////////
   _mMatrix.setTranslation(0.0f, float(_scrollY), 0.0f);
+  //_mMatrix.setTranslation(0.0f, 0.0f, 0.0f);
   _uiMatrix = pTARG->MTXI()->uiMatrix(iw, ih);
 
   _uiMVPMatrix = _uiMatrix * _mMatrix;
@@ -247,6 +346,8 @@ void GedSkin1::End(Context* pTARG) {
     int inumcusts = (int)primcontainer->mCustomPrims.size();
 
     const float fZ = 0.0f;
+    const float fbias = +0.375f;
+    //const float fbias = +0.5f;
 
     ///////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////
@@ -261,12 +362,12 @@ void GedSkin1::End(Context* pTARG) {
       for (int i = 0; i < inumquads; i++) {
         const GedPrim* prim = primcontainer->mQuadPrims[i];
         if (IsVisible(pTARG, prim->iy1, prim->iy2)) {
-          vw.AddVertex(vtx_t(fvec4(prim->ix1, prim->iy1, fZ), fvec4(), prim->_ucolor));
-          vw.AddVertex(vtx_t(fvec4(prim->ix2, prim->iy2, fZ), fvec4(), prim->_ucolor));
-          vw.AddVertex(vtx_t(fvec4(prim->ix2, prim->iy1, fZ), fvec4(), prim->_ucolor));
-          vw.AddVertex(vtx_t(fvec4(prim->ix1, prim->iy1, fZ), fvec4(), prim->_ucolor));
-          vw.AddVertex(vtx_t(fvec4(prim->ix1, prim->iy2, fZ), fvec4(), prim->_ucolor));
-          vw.AddVertex(vtx_t(fvec4(prim->ix2, prim->iy2, fZ), fvec4(), prim->_ucolor));
+          vw.AddVertex(vtx_t(fvec4(prim->ix1+fbias, prim->iy1+fbias, fZ), fvec4(), prim->_ucolor));
+          vw.AddVertex(vtx_t(fvec4(prim->ix2+fbias, prim->iy2+fbias, fZ), fvec4(), prim->_ucolor));
+          vw.AddVertex(vtx_t(fvec4(prim->ix2+fbias, prim->iy1+fbias, fZ), fvec4(), prim->_ucolor));
+          vw.AddVertex(vtx_t(fvec4(prim->ix1+fbias, prim->iy1+fbias, fZ), fvec4(), prim->_ucolor));
+          vw.AddVertex(vtx_t(fvec4(prim->ix1+fbias, prim->iy2+fbias, fZ), fvec4(), prim->_ucolor));
+          vw.AddVertex(vtx_t(fvec4(prim->ix2+fbias, prim->iy2+fbias, fZ), fvec4(), prim->_ucolor));
           icount += 6;
         }
       }
@@ -282,8 +383,69 @@ void GedSkin1::End(Context* pTARG) {
     _material->end(RCFD);
     icount = 0;
 
-    // printf("rendered %d quads\n", inumquads);
-    //  ivbase += inumquads*6;
+    ///////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////
+    // render texquad primitive
+    ///////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////
+
+    for( const auto& item : primcontainer->mTexQuadPrims ){
+        auto texture = item.first;
+        const auto& prim_vect = item.second;          
+        int inumtexquads = (int)prim_vect.size();
+
+        int texw = texture->_width;
+        int texh = texture->_height;
+
+        float fu0 = 0;
+        float fv0 = 0;
+        float fu1 = texw;
+        float fv1 = texh;
+        int icount = 0;
+        lev2::VtxWriter<vtx_t> vw;
+        vw.Lock(pTARG, &VB, inumtexquads * 6);
+        {
+          for (int i = 0; i < inumtexquads; i++) {
+            const GedPrim* prim = prim_vect[i];
+
+            float fx0 = prim->ix1 + fbias;
+            float fx1 = prim->ix2 + fbias + 0.5f;
+            float fy0 = prim->iy1 + fbias;
+            float fy1 = prim->iy2 + fbias + 0.5f;
+
+            auto V0 = fvec4(fx0, fy0, fZ);
+            auto V1 = fvec4(fx1, fy1, fZ);
+            auto V2 = fvec4(fx1, fy0, fZ);
+            auto V3 = fvec4(fx0, fy1, fZ);
+            auto T0 = fvec4(fu0, fv0, 0.0f, 0.0f);
+            auto T1 = fvec4(fu1, fv1, 0.0f, 0.0f);
+            auto T2 = fvec4(fu1, fv0, 0.0f, 0.0f);
+            auto T3 = fvec4(fu0, fv1, 0.0f, 0.0f);
+            if (IsVisible(pTARG, prim->iy1, prim->iy2)) {
+              vw.AddVertex(vtx_t(V0, T0, prim->_ucolor));
+              vw.AddVertex(vtx_t(V1, T1, prim->_ucolor));
+              vw.AddVertex(vtx_t(V2, T2, prim->_ucolor));
+              vw.AddVertex(vtx_t(V0, T0, prim->_ucolor));
+              vw.AddVertex(vtx_t(V3, T3, prim->_ucolor));
+              vw.AddVertex(vtx_t(V1, T1, prim->_ucolor));
+              icount += 6;
+            }
+          }
+        }
+        vw.UnLock(pTARG);
+
+        _material->_rasterstate.SetRGBAWriteMask(true, true);
+        _material->_rasterstate.SetDepthTest(EDepthTest::OFF);
+        _material->_rasterstate.SetBlending(Blending::ALPHA);
+
+        _material->begin(_is_pickmode ? _tekvtxpick : _tektexcolor, RCFD);
+        //_material->begin(_tekvtxcolor, RCFD);
+        _material->bindParamMatrix(_parmvp, _uiMVPMatrix);
+        _material->bindParamCTex(_partexture, texture.get());
+        pTARG->GBI()->DrawPrimitiveEML(vw, PrimitiveType::TRIANGLES);
+        _material->end(RCFD);
+        icount = 0;
+    }
 
     ///////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////
@@ -294,13 +456,13 @@ void GedSkin1::End(Context* pTARG) {
     if (not _is_pickmode) {
       for (int i = 0; i < inumcusts; i++) {
         const GedPrim* prim = primcontainer->mCustomPrims[i];
-          if (prim->_renderLambda) {
+        if (prim->_renderLambda) {
           prim->_renderLambda();
         }
 
-        //if (IsVisible(pTARG, prim->iy1, prim->iy2) and prim->_renderLambda) {
-          //prim->_renderLambda();
-       // }
+        // if (IsVisible(pTARG, prim->iy1, prim->iy2) and prim->_renderLambda) {
+        // prim->_renderLambda();
+        // }
       }
     }
 
@@ -310,6 +472,8 @@ void GedSkin1::End(Context* pTARG) {
     ///////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////
 
+
+
     if (not _is_pickmode) {
       if (inumlines) {
         icount = 0;
@@ -318,8 +482,8 @@ void GedSkin1::End(Context* pTARG) {
           for (int i = 0; i < inumlines; i++) {
             const GedPrim* prim = primcontainer->mLinePrims[i];
             if (IsVisible(pTARG, prim->iy1, prim->iy2)) {
-              vw.AddVertex(vtx_t(fvec4(prim->ix1, prim->iy1, fZ), fvec4(), prim->_ucolor));
-              vw.AddVertex(vtx_t(fvec4(prim->ix2+0.5, prim->iy2+0.5, fZ), fvec4(), prim->_ucolor));
+              vw.AddVertex(vtx_t(fvec4(prim->ix1+fbias, prim->iy1+fbias, fZ), fvec4(), prim->_ucolor));
+              vw.AddVertex(vtx_t(fvec4(prim->ix2+fbias, prim->iy2+fbias, fZ), fvec4(), prim->_ucolor));
               icount += 2;
             }
           }

@@ -179,6 +179,10 @@ void GedGroupNode::updateVisibility() {
   _container->DoResize();
 }
 ///////////////////////////////////////////////////////////////////////////////
+int GedGroupNode::doComputeHeight() const {
+  return GedItemNode::doComputeHeight() + 1;
+}
+///////////////////////////////////////////////////////////////////////////////
 void GedGroupNode::DoDraw(lev2::Context* pTARG) {
 
   auto model = _container->_model;
@@ -206,18 +210,18 @@ void GedGroupNode::DoDraw(lev2::Context* pTARG) {
 
   ////////////////////////////////
 
-  int il = miX + miW - (idim * 2);
+  int guide_R = miX + miW - (idim * 2);
   int iw = idim - 1;
   int ih = idim - 2;
 
-  int il2 = il + idim + 1;
+  int il2 = guide_R + idim + 1;
   int iy2 = dby2 - 1;
   int ihy = dby1 + (ih / 2);
-  int ihx = il + (iw / 2);
+  int ihx = guide_R + (iw / 2);
 
-  skin->DrawBgBox(this, miX, miY, miW, miH, GedSkin::ESTYLE_BACKGROUND_1);
-  skin->DrawText(this, labx, icentery, _propname.c_str());
-  skin->DrawBgBox(this, miX, miY, miW, get_charh(), GedSkin::ESTYLE_BACKGROUND_GROUP_LABEL);
+  //skin->DrawBgBox(this, miX, miY, miW, miH, GedSkin::ESTYLE_BACKGROUND_1);
+  skin->DrawText(this, labx, icentery-1, _propname.c_str());
+  skin->DrawBgBox(this, miX, miY, miW-2, skin->_bannerHeight, GedSkin::ESTYLE_BACKGROUND_GROUP_LABEL);
 
   ////////////////////////////////
   // draw stack depth indicator on top node
@@ -227,18 +231,16 @@ void GedGroupNode::DoDraw(lev2::Context* pTARG) {
     std::string arrs;
     for (int i = 0; i < (stack_depth - 1); i++)
       arrs += "<";
-    skin->DrawText(this, il - idim - ((stack_depth - 1) * get_charw()), icentery, arrs.c_str());
+    skin->DrawText(this, guide_R - idim - ((stack_depth - 1) * get_charw()), icentery, arrs.c_str());
   }
 
   ////////////////////////////////
 
   if (inumitems) {
     if (mbCollapsed) {
-      skin->DrawRightArrow(this, dbx1, dby1, idim, idim, GedSkin::ESTYLE_BUTTON_OUTLINE);
-      skin->DrawLine(this, dbx1 + 1, dby1, dbx1 + 1, dby2, GedSkin::ESTYLE_BUTTON_OUTLINE);
+      skin->DrawRightArrow(this, dbx1, dby1, GedSkin::ESTYLE_BUTTON_OUTLINE);
     } else {
-      skin->DrawDownArrow(this, dbx1, dby1, idim, idim, GedSkin::ESTYLE_BUTTON_OUTLINE);
-      skin->DrawLine(this, dbx1, dby1 + 1, dbx2, dby1 + 1, GedSkin::ESTYLE_BUTTON_OUTLINE);
+      skin->DrawDownArrow(this, dbx1+1, dby1+1, GedSkin::ESTYLE_BUTTON_OUTLINE);
     }
   }
 
@@ -247,15 +249,9 @@ void GedGroupNode::DoDraw(lev2::Context* pTARG) {
   ////////////////////////////////
 
   if (_object && mIsObjNode) {
-
-    // skin->DrawOutlineBox( this, il, dby1, iw, ih, GedSkin::ESTYLE_BUTTON_OUTLINE );
-    skin->DrawLine(this, il, iy2, ihx, dby1, GedSkin::ESTYLE_BUTTON_OUTLINE);
-    skin->DrawLine(this, il + idim - 2, iy2, ihx, dby1, GedSkin::ESTYLE_BUTTON_OUTLINE);
-    skin->DrawLine(this, il, iy2, ihx, ihy, GedSkin::ESTYLE_BUTTON_OUTLINE);
-    skin->DrawLine(this, il + idim - 2, iy2, ihx, ihy, GedSkin::ESTYLE_BUTTON_OUTLINE);
-
-    skin->DrawOutlineBox(this, il2, dby1, iw-1, ih, GedSkin::ESTYLE_BUTTON_OUTLINE);
-    //skin->DrawOutlineBox(this, il2 + 3, dby1 + 3, iw - 6, ih - 6, GedSkin::ESTYLE_BUTTON_OUTLINE);
+    int boxw = iw-3;
+    int boxh = ih-2;
+    skin->DrawUpArrow( this,  guide_R+4, dby1+1, GedSkin::ESTYLE_BUTTON_OUTLINE );
   }
 
   ////////////////////////////////
