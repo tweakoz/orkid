@@ -483,7 +483,7 @@ void GedMapNode::DoDraw(Context* pTARG) {
   auto skin = _container->_activeSkin;
 
   const int klabh = get_charh();
-  const int kdim  = klabh - 2;
+  const int kdim  = 9;
 
   int inumind = mbConst ? 0 : 4;
   if (mbImpExp)
@@ -498,7 +498,7 @@ void GedMapNode::DoDraw(Context* pTARG) {
 
   int dbx1 = miX + ioff;
   int dbx2 = dbx1 + idim;
-  int dby1 = miY + ioff;
+  int dby1 = miY + ioff + 1;
   int dby2 = dby1 + idim;
 
   int labw = this->propnameWidth();
@@ -511,10 +511,11 @@ void GedMapNode::DoDraw(Context* pTARG) {
   skin->DrawBgBox(this, miX, miY, miW, klabh, GedSkin::ESTYLE_BACKGROUND_MAPNODE_LABEL);
 
   if (mbSingle) {
-    skin->DrawRightArrow(this, dbx1, dby1, GedSkin::ESTYLE_BUTTON_OUTLINE);
+    skin->DrawRightArrow(this, dbx1+1, dby1, GedSkin::ESTYLE_BUTTON_OUTLINE);
   } else {
-    skin->DrawDownArrow(this, dbx1, dby1, GedSkin::ESTYLE_BUTTON_OUTLINE);
+    skin->DrawDownArrow(this, dbx1+1, dby1, GedSkin::ESTYLE_BUTTON_OUTLINE);
   }
+
 
   dbx1 += (idim + 4);
   dbx2 = dbx1 + idim;
@@ -522,6 +523,7 @@ void GedMapNode::DoDraw(Context* pTARG) {
   if (mbConst == false) {
     int idimh = idim >> 1;
 
+    // +
     skin->DrawOutlineBox(this, dbx1, dby1, idim, idim, GedSkin::ESTYLE_BUTTON_OUTLINE);
     skin->DrawLine(this, dbx1 + idimh, dby1, dbx1 + idimh, dby1 + idim, GedSkin::ESTYLE_BUTTON_OUTLINE);
     skin->DrawLine(this, dbx1, dby1 + idimh, dbx2, dby1 + idimh, GedSkin::ESTYLE_BUTTON_OUTLINE);
@@ -529,6 +531,7 @@ void GedMapNode::DoDraw(Context* pTARG) {
     dbx1 += (idim + 4);
     dbx2 = dbx1 + idim;
 
+    // -
     skin->DrawOutlineBox(this, dbx1, dby1, idim, idim, GedSkin::ESTYLE_BUTTON_OUTLINE);
     skin->DrawLine(this, dbx1, dby1 + idimh, dbx2, dby1 + idimh, GedSkin::ESTYLE_BUTTON_OUTLINE);
 
@@ -536,14 +539,16 @@ void GedMapNode::DoDraw(Context* pTARG) {
     dbx2     = dbx1 + idim;
     int dbxc = dbx1 + idimh;
 
+    // Rename
     skin->DrawOutlineBox(this, dbx1, dby1, idim, idim, GedSkin::ESTYLE_BUTTON_OUTLINE);
-    skin->DrawText(this, dbx1, dby1 - 1, "R");
+    skin->DrawText(this, dbx1, dby1 - 3, "R");
 
+    // Duplicate
     dbx1 += (idim + 4);
     dbx2 = dbx1 + idim;
     dbxc = dbx1 + idimh;
     skin->DrawOutlineBox(this, dbx1, dby1, idim, idim, GedSkin::ESTYLE_BUTTON_OUTLINE);
-    skin->DrawText(this, dbx1, dby1 - 1, "D");
+    skin->DrawText(this, dbx1, dby1 - 3, "D");
 
     dbx1 += (idim + 4);
     dbx2 = dbx1 + idim;

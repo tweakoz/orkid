@@ -48,7 +48,7 @@ void GedAssetNode::DoDraw(lev2::Context* pTARG) {
   skin->DrawBgBox(this, miX, miY, miW, miH, GedSkin::ESTYLE_BACKGROUND_1, 100);
 
   if (not is_pick) {
-    skin->DrawText(this, miX, miY, _propname.c_str());
+    skin->DrawText(this, miX+ 4, miY, _propname.c_str());
   }
   skin->DrawBgBox(this, miX + pnamew, miY, miW - pnamew, miH, GedSkin::ESTYLE_BACKGROUND_2);
   if (the_asset) {

@@ -76,7 +76,7 @@ void GedFloatNode::DoDraw(lev2::Context* pTARG) {
   float itxi            = miX + float(finp);
   PropTypeString& str = _slider->ValString();
   skin->DrawText(this, itxi, ity, str.c_str());
-  skin->DrawText(this, miX + 4, ity, _propname.c_str());
+  skin->DrawText(this, miX + 4, ity-1, _propname.c_str());
 }
 
 ///////////////////////////////////////////////////////////////////////////////

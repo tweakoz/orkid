@@ -50,7 +50,7 @@ void GedBoolNode::DoDraw(lev2::Context* pTARG){
   if (value)
     skin->DrawCheckBox(this, miX + miW - SIZE - CHECKBOX_MARGIN, miY + CHECKBOX_MARGIN, SIZE, SIZE);
 
-  skin->DrawText(this, miX + 4, miY + 2, _propname.c_str());
+  skin->DrawText(this, miX + 4, miY + 1, _propname.c_str());
 }
 
 ///////////////////////////////////////////////////////////////////////////////

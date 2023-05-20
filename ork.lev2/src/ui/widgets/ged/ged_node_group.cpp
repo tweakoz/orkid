@@ -238,9 +238,9 @@ void GedGroupNode::DoDraw(lev2::Context* pTARG) {
 
   if (inumitems) {
     if (mbCollapsed) {
-      skin->DrawRightArrow(this, dbx1, dby1, GedSkin::ESTYLE_BUTTON_OUTLINE);
+      skin->DrawRightArrow(this, dbx1+3, dby1+3, GedSkin::ESTYLE_BUTTON_OUTLINE);
     } else {
-      skin->DrawDownArrow(this, dbx1+1, dby1+1, GedSkin::ESTYLE_BUTTON_OUTLINE);
+      skin->DrawDownArrow(this, dbx1+3, dby1+3, GedSkin::ESTYLE_BUTTON_OUTLINE);
     }
   }
 

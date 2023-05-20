@@ -250,8 +250,8 @@ void GedSkin1::DrawOutlineBox(GedObject* pnode, int ix, int iy, int iw, int ih, 
     // bottom
     prim.ix1 = ix;
     prim.ix2 = ix2+1;
-    prim.iy1 = iy2+1;
-    prim.iy2 = iy2+1;
+    prim.iy1 = iy2;
+    prim.iy2 = iy2;
     AddPrim(prim);
 
     // left
