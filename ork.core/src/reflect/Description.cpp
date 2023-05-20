@@ -145,7 +145,9 @@ void Description::annotateClass(const ConstString& key, const Description::anno_
 }
 
 const Description::anno_t& Description::classAnnotation(const ConstString& key) const {
-  for (const Description* description = this; description != NULL; description = description->_parentDescription) {
+  for (const Description* description = this; //
+       description != NULL; //
+       description = description->_parentDescription) { //
     orklut<ConstString, anno_t>::const_iterator it = description->mClassAnnotations.find(key);
     if (it != description->mClassAnnotations.end()) {
       return (*it).second;

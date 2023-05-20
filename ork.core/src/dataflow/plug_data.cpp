@@ -9,7 +9,7 @@
 
 #include <ork/application/application.h>
 #include <ork/reflect/properties/registerX.inl>
-
+#include <ork/reflect/editorsupport/std_annotations.inl>
 
 #include <ork/dataflow/all.h>
 #include <ork/dataflow/plug_data.inl>
@@ -34,6 +34,10 @@ std::shared_ptr<fvec3> Vec3XfPlugTraits::data_to_inst(std::shared_ptr<fvec3> inp
 ///////////////////////////////////////////////////////////////////////////////
 void PlugData::describeX(class_t* clazz) {
   clazz->template annotateTyped<ConstString>("editor.ged.node.factory", "GedNodeFactoryPlug");
+  clazz->template annotateTyped<reflect::obj_to_string_fn_t>("editor.ged.item.namer", [](object_ptr_t o){
+    auto as_plug = std::dynamic_pointer_cast<PlugData>(o);
+    return as_plug->_name;
+  });
 }
 
 /*bool inplugbase::IsDirty() const

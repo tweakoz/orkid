@@ -323,7 +323,7 @@ geditemnode_ptr_t ObjModel::recurse(
   // editor.class
   ///////////////////////////////////////////////////
 
-  if (auto as_nodefactory_class = classdesc.classAnnotationTyped<ConstString>("editor.ged.node.factory")) {
+  if (auto as_nodefactory_class = objclass->annotationTyped<ConstString>("editor.ged.node.factory")) {
     auto nodefactory_class = as_nodefactory_class.value();
     if (nodefactory_class.length()) {
       printf( "nodefactory_class<%s>\n", nodefactory_class.c_str());

@@ -20,7 +20,7 @@ ImplementReflectionX(ork::lev2::ged::GedFloatNode, "GedFloatNode");
 namespace ork::lev2::ged {
 ////////////////////////////////////////////////////////////////
 
-using slider_t = Slider<GedFloatNode>;
+using slider_t = Slider<float>;
 void GedFloatNode::describeX(class_t* clazz) {
 }
 
@@ -50,7 +50,7 @@ GedFloatNode::GedFloatNode(GedContainer* c, const char* name, newiodriver_ptr_t 
   }
 
   float ivalue = _iodriver->_abstract_val.get<float>();
-  _slider = std::make_shared<slider_t>(*this, fmin, fmax, ivalue);
+  _slider = std::make_shared<slider_t>(this, fmin, fmax, ivalue);
 }
 
 ////////////////////////////////////////////////////////////////

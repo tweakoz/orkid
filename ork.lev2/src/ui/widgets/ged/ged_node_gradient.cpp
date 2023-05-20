@@ -426,7 +426,7 @@ bool GedGradientNode::OnUiEvent(ork::ui::event_constptr_t ev) {
 
 ////////////////////////////////////////////////////////////////
 
-int GedGradientNode::doComputeHeight() {
+int GedGradientNode::doComputeHeight() const {
   return kh;
 }
 

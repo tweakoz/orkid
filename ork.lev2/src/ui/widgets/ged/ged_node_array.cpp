@@ -14,6 +14,7 @@
 #include <ork/kernel/core_interface.h>
 #include <ork/lev2/gfx/dbgfontman.h>
 #include <ork/reflect/properties/registerX.inl>
+#include <ork/reflect/editorsupport/std_annotations.inl>
 
 ImplementReflectionX(ork::lev2::ged::GedArrayNode, "GedArrayNode");
 
@@ -30,7 +31,7 @@ struct ArrayIoDriverImpl {
   GedArrayNode* _node                = nullptr;
   const reflect::IArray* _array_prop = nullptr;
   object_ptr_t _obj                  = nullptr;
-  int _index = -1;
+  int _index                         = -1;
 };
 using arrayiodriverimpl_ptr_t = std::shared_ptr<ArrayIoDriverImpl>;
 
@@ -46,33 +47,36 @@ GedArrayNode::GedArrayNode(
 
   c->PushItemNode(this);
 
-  auto model = c->_model;
-
+  auto model            = c->_model;
   auto enumerated_items = ary_prop->enumerateElements(obj);
   int index             = 0;
 
-  printf( "!!! GedArrayNode<%p> numitems<%zu>\n", this, enumerated_items.size() );
+  printf("!!! GedArrayNode<%p> numitems<%zu>\n", this, enumerated_items.size());
 
   for (auto e : enumerated_items) {
 
-    printf( "!!! GedArrayNode<%p> item<%d>\n", this, index );
+    printf("!!! GedArrayNode<%p> item<%d>\n", this, index);
 
     auto iodriver             = std::make_shared<NewIoDriver>();
     auto ioimpl               = iodriver->_impl.makeShared<ArrayIoDriverImpl>();
     ioimpl->_node             = this;
     ioimpl->_array_prop       = ary_prop;
-    ioimpl->_index = index++;
-
-    //printf( "e.type<%s>\n", e.typestr().c_str() );
-
+    ioimpl->_index            = index++;
     iodriver->_par_prop       = ary_prop;
     iodriver->_object         = obj;
     iodriver->_abstract_val   = e;
     iodriver->_onValueChanged = [=]() {
-      //ary_prop->setElement(obj, key, iodriver->_abstract_val);
+      // ary_prop->setElement(obj, key, iodriver->_abstract_val);
       c->_model->enqueueUpdate();
     };
-    auto itemstr = FormatString("%d", index-1);
+    auto itemstr = FormatString("%d", index - 1);
+    if (e.isA<object_ptr_t>()) {
+      auto clazz = e.get<object_ptr_t>()->GetClass();
+      auto try_namer = clazz->annotationTyped<reflect::obj_to_string_fn_t>("editor.ged.item.namer");
+      if (try_namer) {
+        itemstr = try_namer.value()(e.get<object_ptr_t>());
+      } 
+    }
     auto item_node = model->createAbstractNode(itemstr.c_str(), iodriver);
   }
 

@@ -60,7 +60,7 @@ void ObjectClass::annotate(const ConstString& key, const anno_t& val) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-const ObjectClass::anno_t& ObjectClass::annotation(const ConstString& key) {
+const ObjectClass::anno_t& ObjectClass::annotation(const ConstString& key) const {
   return _description.classAnnotation(key);
 }
 

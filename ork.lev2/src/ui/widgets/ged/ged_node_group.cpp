@@ -254,8 +254,8 @@ void GedGroupNode::DoDraw(lev2::Context* pTARG) {
     skin->DrawLine(this, il, iy2, ihx, ihy, GedSkin::ESTYLE_BUTTON_OUTLINE);
     skin->DrawLine(this, il + idim - 2, iy2, ihx, ihy, GedSkin::ESTYLE_BUTTON_OUTLINE);
 
-    skin->DrawOutlineBox(this, il2, dby1, iw, ih, GedSkin::ESTYLE_BUTTON_OUTLINE);
-    skin->DrawOutlineBox(this, il2 + 3, dby1 + 3, iw - 6, ih - 6, GedSkin::ESTYLE_BUTTON_OUTLINE);
+    skin->DrawOutlineBox(this, il2, dby1, iw-1, ih, GedSkin::ESTYLE_BUTTON_OUTLINE);
+    //skin->DrawOutlineBox(this, il2 + 3, dby1 + 3, iw - 6, ih - 6, GedSkin::ESTYLE_BUTTON_OUTLINE);
   }
 
   ////////////////////////////////

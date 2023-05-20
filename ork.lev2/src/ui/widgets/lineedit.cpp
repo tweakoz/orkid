@@ -53,6 +53,11 @@ HandlerResult LineEdit::DoOnUiEvent(event_constptr_t cev) {
       rval.setHandled(this);
       break;
     }
+    case EventCode::DOUBLECLICK: {
+        rval.setHandled(this);
+        rval._widget_finished = true;
+        break;
+    }
     case EventCode::PASTE_TEXT: {
       _value = cev->_paste_text;
       rval.setHandled(this);

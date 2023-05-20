@@ -87,6 +87,10 @@ public:
     return mFunctions;
   }
 
+  const Description* parent() const {
+    return _parentDescription;
+  }
+
 private:
   const Description* _parentDescription;
 

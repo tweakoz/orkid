@@ -106,7 +106,7 @@ fvec4 GedSkin1::GetStyleColor(GedObject* pnode, ESTYLE ic) {
     color.z  = fg;
   }
 
-  return (color * fdepth);
+  return fvec4((color * fdepth),1);
 }
 ///////////////////////////////////////////////////////////////////
 void GedSkin1::DrawBgBox(GedObject* pnode, int ix, int iy, int iw, int ih, ESTYLE ic, int isort) {
@@ -132,6 +132,7 @@ void GedSkin1::DrawBgBox(GedObject* pnode, int ix, int iy, int iw, int ih, ESTYL
 }
 ///////////////////////////////////////////////////////////////////
 void GedSkin1::DrawOutlineBox(GedObject* pnode, int ix, int iy, int iw, int ih, ESTYLE ic, int isort) {
+
   if (not _is_pickmode) {
     GedPrim prim;
     prim._ucolor   = GetStyleColor(pnode, ic);
@@ -147,19 +148,19 @@ void GedSkin1::DrawOutlineBox(GedObject* pnode, int ix, int iy, int iw, int ih, 
     prim.ix1 = ix + iw;
     prim.ix2 = ix + iw;
     prim.iy1 = iy;
-    prim.iy2 = iy + ih;
+    prim.iy2 = iy + ih+1;
     AddPrim(prim);
 
-    prim.ix1 = ix + iw;
-    prim.ix2 = ix;
+    prim.ix1 = ix;
+    prim.ix2 = ix + iw;
     prim.iy1 = iy + ih;
     prim.iy2 = iy + ih;
     AddPrim(prim);
 
     prim.ix1 = ix;
     prim.ix2 = ix;
-    prim.iy1 = iy + ih;
-    prim.iy2 = iy;
+    prim.iy1 = iy;
+    prim.iy2 = iy + ih;
     AddPrim(prim);
   }
 }
@@ -274,6 +275,7 @@ void GedSkin1::End(Context* pTARG) {
 
     //_material->begin(_is_pickmode ? _tekvtxpick : _tekvtxcolor, RCFD);
     _material->_rasterstate.SetRGBAWriteMask(true, true);
+    _material->_rasterstate.SetDepthTest(EDepthTest::OFF);
     _material->begin(_tekvtxcolor, RCFD);
     _material->bindParamMatrix(_parmvp, _uiMVPMatrix);
     pTARG->GBI()->DrawPrimitiveEML(vw, PrimitiveType::TRIANGLES);
@@ -317,13 +319,17 @@ void GedSkin1::End(Context* pTARG) {
             const GedPrim* prim = primcontainer->mLinePrims[i];
             if (IsVisible(pTARG, prim->iy1, prim->iy2)) {
               vw.AddVertex(vtx_t(fvec4(prim->ix1, prim->iy1, fZ), fvec4(), prim->_ucolor));
-              vw.AddVertex(vtx_t(fvec4(prim->ix2, prim->iy2, fZ), fvec4(), prim->_ucolor));
+              vw.AddVertex(vtx_t(fvec4(prim->ix2+0.5, prim->iy2+0.5, fZ), fvec4(), prim->_ucolor));
               icount += 2;
             }
           }
         }
         vw.UnLock(pTARG);
         if (icount) {
+          _material->_rasterstate.SetRGBAWriteMask(true, true);
+          _material->_rasterstate.SetDepthTest(EDepthTest::OFF);
+          _material->_rasterstate.SetBlending(Blending::OFF);
+
           _material->begin(_is_pickmode ? _tekvtxpick : _tekvtxcolor, RCFD);
           _material->bindParamMatrix(_parmvp, _uiMVPMatrix);
           pTARG->GBI()->DrawPrimitiveEML(vw, PrimitiveType::LINES);

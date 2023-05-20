@@ -18,6 +18,8 @@
 #include <ork/dataflow/module.inl>
 #include <ork/dataflow/plug_data.inl>
 
+template class ork::orklut<std::string,ork::dataflow::graphdata_ptr_t>;
+
 ///////////////////////////////////////////////////////////////////////////////
 ImplementReflectionX(ork::dataflow::GraphData, "dflow/graphdata");
 ///////////////////////////////////////////////////////////////////////////////

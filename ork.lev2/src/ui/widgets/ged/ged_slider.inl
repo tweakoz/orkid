@@ -5,7 +5,7 @@
 namespace ork::lev2::ged {
 
 template <typename T>
-Slider<T>::Slider(T& ParentW, datatype min, datatype max, datatype def)
+Slider<T>::Slider(GedItemNode* ParentW, datatype min, datatype max, datatype def)
     : SliderBase()
     , _parent(ParentW)
     , mval(def)
@@ -108,8 +108,8 @@ template <typename T> void Slider<T>::SetVal(datatype val) {
     val = mmax;
   mval = val;
   PropType<datatype>::ToString(mval, mValStr);
-  _parent._iodriver->_abstract_val.template set<datatype>(mval);
-  _parent._iodriver->_onValueChanged();
+  _parent->_iodriver->_abstract_val.template set<datatype>(mval);
+  _parent->_iodriver->_onValueChanged();
   Refresh();
 }
 
@@ -158,21 +158,21 @@ bool Slider<T>::OnUiEvent(ork::ui::event_constptr_t ev) // final
 
         if (mbUpdateOnDrag) {
           SetVal(mval);
-          //IoDriverBase& iod = _parent.RefIODriver();
-          //_parent.SigInvalidateProperty();
+          //IoDriverBase& iod = _parent->RefIODriver();
+          //_parent->SigInvalidateProperty();
         }
       }
       break;
     }
     case ui::EventCode::DOUBLECLICK: {
-      int sx = ev->miScreenPosX-(ev->miX-_parent.miX);
+      int sx = ev->miScreenPosX-(ev->miX-_parent->miX);
       int sy = ev->miScreenPosY;
-      int W = _parent.miW;
-      int H = _parent.miH;
-      datatype ival = _parent._iodriver->_abstract_val.template get<datatype>();
+      int W = _parent->miW;
+      int H = _parent->miH;
+      datatype ival = _parent->_iodriver->_abstract_val.template get<datatype>();
       //std::string initial_val = FormatString("%g", ival);
       PropType<datatype>::ToString(mval, mValStr);
-      std::string edittext = ui::popupLineEdit(_parent._l2context(),sx,sy,W,H,mValStr.c_str());
+      std::string edittext = ui::popupLineEdit(_parent->_l2context(),sx,sy,W,H,mValStr.c_str());
       if (edittext.length()) {
           mval = PropType<datatype>::FromString(edittext.c_str());
           SetVal(mval);
@@ -183,8 +183,8 @@ bool Slider<T>::OnUiEvent(ork::ui::event_constptr_t ev) // final
   }
   SetVal(mval);
   return true;
-  //IoDriverBase& iod = _parent.RefIODriver();
-  //_parent.SigInvalidateProperty();
+  //IoDriverBase& iod = _parent->RefIODriver();
+  //_parent->SigInvalidateProperty();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

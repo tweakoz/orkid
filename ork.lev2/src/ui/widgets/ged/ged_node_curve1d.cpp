@@ -412,7 +412,7 @@ void GedCurve1DNode::DoDraw(lev2::Context* pTARG) { // final
 
 ////////////////////////////////////////////////////////////////
 
-int GedCurve1DNode::doComputeHeight() { // final
+int GedCurve1DNode::doComputeHeight() const { // final
   return kh;
 }
 

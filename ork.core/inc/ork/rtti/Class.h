@@ -65,6 +65,13 @@ struct Class : public ICastable {
   template <typename ClassType> static void InitializeType() {
   }
 
+  void visitUpHierarchy(std::function<bool(const Class*)> visitor) const {
+    bool finished = visitor(this);
+    if((not finished) and _parentClass){
+      _parentClass->visitUpHierarchy(visitor);
+    }
+  }
+
   bool IsSubclassOf(const Class* other) const;
   const ICastable* Cast(const ICastable* other) const;
   ICastable* Cast(ICastable* other) const;

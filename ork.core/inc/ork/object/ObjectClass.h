@@ -37,13 +37,24 @@ public:
   object_ptr_t createShared() const;
 
   void annotate(const ConstString& key, const anno_t& val);
-  const anno_t& annotation(const ConstString& key);
+  const anno_t& annotation(const ConstString& key) const;
 
   template <typename T> void annotateTyped(const ConstString& key, const T& val) {
     _description.annotateClassTyped(key, val);
   }
   template <typename T> attempt_cast_const<T> annotationTyped(const ConstString& key) const {
-    return _description.classAnnotationTyped<T>(key);
+    attempt_cast_const<T> rval(nullptr);
+    auto find_anno = [key,&rval](const rtti::Class* clazz) -> bool {
+      const ObjectClass* object_clazz = rtti::downcast<const ObjectClass*>(clazz);
+      if (object_clazz) {
+        rval = object_clazz->_description.classAnnotationTyped<T>(key);
+        return bool(rval);
+      } else {
+        return false;
+      }
+    };
+    visitUpHierarchy(find_anno);
+    return rval;
   }
 
   reflect::Description& Description();

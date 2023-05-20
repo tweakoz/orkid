@@ -155,14 +155,14 @@ lev2::Context* GedItemNode::_l2context() const{
 
 //////////////////////////////////////////////////////////////////////////////
 
-int GedItemNode::computeHeight() {
+int GedItemNode::computeHeight() const {
   micalch = doComputeHeight();
   return micalch;
 }
 
 //////////////////////////////////////////////////////////////////////////////
 
-int GedItemNode::doComputeHeight() {
+int GedItemNode::doComputeHeight() const {
   int ih = get_charh() + 8;
   if (false == mbcollapsed) {
     int inum = numChildren();

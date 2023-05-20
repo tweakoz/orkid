@@ -7,6 +7,8 @@
 
 #pragma once
 
+#include <ork/dataflow/enum.h>
+
 namespace ork::dataflow {
 
 typedef std::string MorphKey;

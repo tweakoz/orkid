@@ -116,8 +116,8 @@ public:
   int numChildren() const;
   geditemnode_ptr_t child(int idx) const;
   ///////////////////////////////////////////////////
-  int computeHeight();
-  virtual int doComputeHeight();
+  int computeHeight() const;
+  virtual int doComputeHeight() const;
   ///////////////////////////////////////////////////
   bool IsObjectHilighted(const GedObject* pobj) const;
   ///////////////////////////////////////////////////
@@ -146,7 +146,7 @@ public:
   int miY              = 0;
   int miW              = 0;
   int miH              = 0;
-  int micalch          = 0;
+  mutable int micalch          = 0;
 
   newiodriver_ptr_t _iodriver;
   svar64_t _impl;
@@ -407,9 +407,9 @@ protected:
 ///////////////////////////////////////////////////////////////////////////////
 template <typename T> class Slider : public SliderBase {
 public:
-  typedef typename T::datatype datatype;
+  using datatype = T;
 
-  Slider(T& ParentW, datatype min, datatype max, datatype def);
+  Slider(GedItemNode*  ParentW, datatype min, datatype max, datatype def);
 
   bool OnUiEvent(ork::ui::event_constptr_t ev) final;
 
@@ -422,8 +422,10 @@ public:
     mmax = max;
   }
 
+  datatype value() const { return mval; }
+
 private:
-  T& _parent;
+  GedItemNode* _parent = nullptr;
   datatype mval;
   datatype mmin;
   datatype mmax;
@@ -480,7 +482,7 @@ public:
   void DoDraw(lev2::Context* pTARG) final; // virtual
 
   bool OnUiEvent(ork::ui::event_constptr_t ev) final;
-  int doComputeHeight() final;
+  int doComputeHeight() const final;
 
 };
 
@@ -495,7 +497,7 @@ public:
   void DoDraw(lev2::Context* pTARG) final; // virtual
 
   bool OnUiEvent(ork::ui::event_constptr_t ev) final;
-  int doComputeHeight() final;
+  int doComputeHeight() const final;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -524,6 +526,7 @@ public:
   GedPlugNode(GedContainer* c, const char* name, newiodriver_ptr_t iodriver);
 
 private:
+  int doComputeHeight() const final;
   void DoDraw(lev2::Context* pTARG) final;
   bool OnUiEvent(ork::ui::event_constptr_t ev) final;
 };
