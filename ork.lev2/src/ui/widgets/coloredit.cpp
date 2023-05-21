@@ -47,6 +47,22 @@ HandlerResult ColorEdit::DoOnUiEvent(event_constptr_t cev) {
       rval.setHandled(this);
       break;
     }
+    case EventCode::DOUBLECLICK: {
+      float fx     = float(cev->miX) - float(_geometry._w >> 1);
+      float fy     = float(cev->miY) - float(_geometry._h >> 1);
+      auto pos    = fvec2(fx, fy);
+      float radius = pos.length();
+      if( radius < _radiusWheelInner ) {
+        rval._widget_finished = true;
+        rval.setHandled(this);
+      }
+      else if( radius > _radiusWheelOuter ) {
+        _currentColor         = _originalColor;
+        rval._widget_finished = true;
+        rval.setHandled(this);
+      }
+      break;
+    }
     case EventCode::PUSH: {
       float fx     = float(cev->miX) - float(_geometry._w >> 1);
       float fy     = float(cev->miY) - float(_geometry._h >> 1);

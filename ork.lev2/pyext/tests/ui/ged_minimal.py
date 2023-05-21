@@ -40,9 +40,9 @@ class UiGedTestApp(object):
 
     # create a test object to edit and attach it to the object model
     self.test_object = GedTestObjectConfiguration()
-    t1 = self.test_object.createTestObject("test1")
+    #t1 = self.test_object.createTestObject("test1")
     t2 = self.test_object.createTestObject("test2")
-    c1 = t2.createCurve("curve1")
+    #c1 = t2.createCurve("curve1")
     #c2 = t2.createCurve("curve2")
     #c3 = t2.createCurve("curve3")
     ga = t2.createGradient("gradA")

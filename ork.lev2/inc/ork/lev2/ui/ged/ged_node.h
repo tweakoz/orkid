@@ -395,6 +395,8 @@ public:
     OrkAssert(false);
   }
 
+  newiodriver_ptr_t _iodriver;
+
 protected:
   bool mlogmode    = false;
   int miLabelH     = 0;

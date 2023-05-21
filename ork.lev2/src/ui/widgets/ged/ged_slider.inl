@@ -14,6 +14,8 @@ Slider<T>::Slider(GedItemNode* ParentW, datatype min, datatype max, datatype def
     , mbUpdateOnDrag(false) {
   PropType<datatype>::ToString(mval, mValStr);
 
+  _iodriver = _parent->_iodriver;
+
   datatype val = def;
 
   if (val < mmin)
@@ -108,8 +110,8 @@ template <typename T> void Slider<T>::SetVal(datatype val) {
     val = mmax;
   mval = val;
   PropType<datatype>::ToString(mval, mValStr);
-  _parent->_iodriver->_abstract_val.template set<datatype>(mval);
-  _parent->_iodriver->_onValueChanged();
+  _iodriver->_abstract_val.template set<datatype>(mval);
+  _iodriver->_onValueChanged();
   Refresh();
 }
 
@@ -170,7 +172,7 @@ bool Slider<T>::OnUiEvent(ork::ui::event_constptr_t ev) // final
       int sy = ev->miScreenPosY;
       int W = _parent->miW;
       int H = _parent->miH;
-      datatype ival = _parent->_iodriver->_abstract_val.template get<datatype>();
+      datatype ival = _iodriver->_abstract_val.template get<datatype>();
       //std::string initial_val = FormatString("%g", ival);
       PropType<datatype>::ToString(mval, mValStr);
       std::string edittext = ui::popupLineEdit(_parent->_l2context(),sx,sy,W,H,mValStr.c_str());

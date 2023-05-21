@@ -561,7 +561,6 @@ geditemnode_ptr_t ObjModel::createObjPropNode(
     iodriver->_abstract_val   = initial_value;
     iodriver->_onValueChanged = [=]() {
       as_boolprop->set(iodriver->_abstract_val.get<bool>(), pobject);
-      //_gedContainer->_model->enqueueUpdate();
     };
     return std::make_shared<GedBoolNode>(_gedContainer, Name.c_str(), iodriver);
   }
@@ -575,7 +574,6 @@ geditemnode_ptr_t ObjModel::createObjPropNode(
     iodriver->_abstract_val   = initial_value;
     iodriver->_onValueChanged = [=]() {
       as_intprop->set(iodriver->_abstract_val.get<int>(), pobject);
-      //_gedContainer->_model->enqueueUpdate();
     };
     return std::make_shared<GedIntNode>(_gedContainer, Name.c_str(), iodriver);
   }
@@ -589,7 +587,6 @@ geditemnode_ptr_t ObjModel::createObjPropNode(
     iodriver->_abstract_val   = initial_value;
     iodriver->_onValueChanged = [=]() {
       as_floatprop->set(iodriver->_abstract_val.get<float>(), pobject);
-      //_gedContainer->_model->enqueueUpdate();
     };
     return std::make_shared<GedFloatNode>(_gedContainer, Name.c_str(), iodriver);
   }
@@ -598,14 +595,6 @@ geditemnode_ptr_t ObjModel::createObjPropNode(
     auto iodriver       = std::make_shared<NewIoDriver>();
     object_ptr_t child_object = as_dobjprop->getObject(pobject);
     recurse(child_object, Name.c_str());
-    //iodriver->_par_prop       = prop;
-    //iodriver->_object         = pobject;
-    //iodriver->_abstract_val   = child_object;
-    //iodriver->_onValueChanged = [=]() {
-      //as_dobjprop->set(iodriver->_abstract_val.get<object_ptr_t>(), pobject);
-      //_gedContainer->_model->enqueueUpdate();
-    //};
-    //return std::make_shared<GedFloatNode>(_gedContainer, Name.c_str(), iodriver);
   }
   /////////////////////////////////////////////////////////////////////////
   /*

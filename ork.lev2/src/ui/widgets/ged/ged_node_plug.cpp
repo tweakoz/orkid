@@ -94,22 +94,44 @@ FloatPlugXfEditorImpl::FloatPlugXfEditorImpl(GedPlugNode* node)
 
     _connectHitBox            = std::make_shared<PlugInputConnectHitBox>(_node);
     _connectHitBox->_propname = "connectBOX";
+
+    /////////////////////////////////////////
+    // slider
+    /////////////////////////////////////////
+
+    auto sl_iodriver = std::make_shared<NewIoDriver>();
+    sl_iodriver->_par_prop = prop;
+    sl_iodriver->_object   = obj;
+    //sl_iodriver->_abstract_val.set<float>(_inputPlugData->value());
+    _floatSlider._iodriver = sl_iodriver;
+    _floatSlider.SetVal(_inputPlugData->value());
+    sl_iodriver->_onValueChanged = [=]() {
+      _inputPlugData->setValue(  _floatSlider.value() );
+    };
+
+    /////////////////////////////////////////
+    // transform
+    /////////////////////////////////////////
+
     c->PushItemNode(_node);
-    auto iodriver = std::make_shared<NewIoDriver>();
+
+    auto xf_iodriver = std::make_shared<NewIoDriver>();
     // auto ioimpl               = iodriver->_impl.makeShared<ArrayIoDriverImpl>();
     // ioimpl->_node             = this;
     // ioimpl->_array_prop       = ary_prop;
     // ioimpl->_index            = index++;
-    iodriver->_par_prop = prop;
-    iodriver->_object   = _inputPlugData->_transformer;
-    iodriver->_abstract_val.set<object_ptr_t>(_inputPlugData->_transformer);
-    iodriver->_onValueChanged = [=]() {
-      // ary_prop->setElement(obj, key, iodriver->_abstract_val);
+    xf_iodriver->_par_prop = prop;
+    xf_iodriver->_object   = _inputPlugData->_transformer;
+    xf_iodriver->_abstract_val.set<object_ptr_t>(_inputPlugData->_transformer);
+    xf_iodriver->_onValueChanged = [=]() {
+      // ary_prop->setElement(obj, key, xf_iodriver->_abstract_val);
       c->_model->enqueueUpdate();
     };
 
-    auto item_node = model->createAbstractNode("Transform", iodriver);
+    auto item_node = model->createAbstractNode("Transform", xf_iodriver);
     c->PopItemNode(_node);
+
+    /////////////////////////////////////////
   }
 }
 
