@@ -40,12 +40,13 @@ struct ClassToucher{
 
   dflow::floatinplugdata::GetClassStatic();
   dflow::vect3inplugdata::GetClassStatic();
-  //dflow::floatxfinplugdata::GetClassStatic();
-  //dflow::fvec3xfinplugdata::GetClassStatic();
 
   dflow::floatxfdata::GetClassStatic();
   dflow::fvec3xfdata::GetClassStatic();
   dflow::floatxfitembasedata::GetClassStatic();
+  dflow::modscabiasdata::GetClassStatic();
+  dflow::floatxfmsbcurvedata::GetClassStatic();
+  dflow::floatxfmodstepdata::GetClassStatic();
 
   dflow::inplugdata<dflow::FloatPlugTraits>::GetClassStatic();
   dflow::inplugdata<dflow::FloatXfPlugTraits>::GetClassStatic();

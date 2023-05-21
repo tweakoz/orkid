@@ -35,6 +35,13 @@ public:
   GedNodeFactoryPlug();
 };
 ///////////////////////////////////////////////////////////////////////////////
+struct GedNodeFactoryPlugFloatXF : public GedNodeFactory {
+  DeclareConcreteX(GedNodeFactoryPlugFloatXF, GedNodeFactory);
+  geditemnode_ptr_t //
+  createItemNode(GedContainer* c, const ConstString& name, newiodriver_ptr_t iodriver ) const final;
+  GedNodeFactoryPlugFloatXF();
+};
+///////////////////////////////////////////////////////////////////////////////
 struct GedNodeFactoryOutliner : public GedNodeFactory {
   DeclareConcreteX(GedNodeFactoryOutliner, GedNodeFactory);
   geditemnode_ptr_t

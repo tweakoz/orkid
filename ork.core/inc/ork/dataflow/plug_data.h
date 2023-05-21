@@ -234,6 +234,8 @@ public:
   float _bias  = 0.0f;
 };
 
+using modscabiasdata_ptr_t = std::shared_ptr<modscabiasdata>;
+
 ///////////////////////////////////////////////////////////////////////////////
 
 struct floatxfitembasedata : public ork::Object {
@@ -251,10 +253,11 @@ struct floatxfmsbcurvedata : public floatxfitembasedata {
   DeclareConcreteX(floatxfmsbcurvedata, floatxfitembasedata);
 
 public:
-  float transform(float input) const override; // virtual
+  floatxfmsbcurvedata();
+  float transform(float input) const final; // virtual
 
-  ork::MultiCurve1D _multicurve;
-  modscabiasdata _modscalebias;
+  multicurve1d_ptr_t _multicurve;
+  modscabiasdata_ptr_t _modscalebias;
   bool _domodscalebias = false;
   bool _docurve        = false;
 };
@@ -265,7 +268,7 @@ struct floatxfmodstepdata : public floatxfitembasedata {
   DeclareConcreteX(floatxfmodstepdata, floatxfitembasedata);
 
 public:
-  float transform(float input) const override; // virtual
+  float transform(float input) const final; // virtual
 
   float _mod         = 1.0f;
   int _steps         = 4;

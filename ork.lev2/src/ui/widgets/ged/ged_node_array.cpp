@@ -51,11 +51,11 @@ GedArrayNode::GedArrayNode(
   auto enumerated_items = ary_prop->enumerateElements(obj);
   int index             = 0;
 
-  printf("!!! GedArrayNode<%p> numitems<%zu>\n", this, enumerated_items.size());
+  if(0)printf("!!! GedArrayNode<%p> numitems<%zu>\n", this, enumerated_items.size());
 
   for (auto e : enumerated_items) {
 
-    printf("!!! GedArrayNode<%p> item<%d>\n", this, index);
+    if(0)printf("!!! GedArrayNode<%p> item<%d>\n", this, index);
 
     auto iodriver             = std::make_shared<NewIoDriver>();
     auto ioimpl               = iodriver->_impl.makeShared<ArrayIoDriverImpl>();

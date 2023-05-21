@@ -10,10 +10,15 @@
 #include <ork/application/application.h>
 #include <ork/reflect/properties/registerX.inl>
 #include <ork/reflect/editorsupport/std_annotations.inl>
+#include <ork/kernel/orklut.hpp>
 
 #include <ork/dataflow/all.h>
 #include <ork/dataflow/plug_data.inl>
 #include <ork/dataflow/plug_inst.inl>
+
+namespace ork{
+template class orklut<std::string,ork::dataflow::floatxfitembasedata_ptr_t>;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::dataflow {
@@ -125,20 +130,6 @@ size_t InPlugData::computeMinDepth(dgmoduledata_constptr_t to_module) const {
         depth);
   return depth;
 }
-
-///////////////////////////////////////////////////////////////////////////////
-/*void InPlugData::DoSetDirty(bool bd) {
-  if (bd) {
-    _parent_module->SetInputDirty(this);
-    for (auto& item : _internalOutputConnections) {
-      item->SetDirty(bd);
-    }
-  }
-}*/
-///////////////////////////////////////////////////////////////////////////////
-// void InPlugData::connectInternal(outplugdata_ptr_t vt) {
-//_internalOutputConnections.push_back(vt);
-//}
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -238,64 +229,51 @@ void vect3inplugdata::describeX(class_t* clazz) {
   */
 }
 ///////////////////////////////////////////////////////////////////////////////
-//void floatxfinplugdata::describeX(class_t* clazz) {
-  // ork::reflect::RegisterProperty("xf", &floatinplugxfdata<floatxf>::XfAccessor);
-//}
-///////////////////////////////////////////////////////////////////////////////
-//void fvec3xfinplugdata::describeX(class_t* clazz) {
-  // ork::reflect::RegisterProperty("xf", &vect3inplugxfdata<vect3xf>::XfAccessor);
-//}
-///////////////////////////////////////////////////////////////////////////////
-// template <> void vect3inplugxfdata<floatxfdata>::describeX(class_t* clazz) {
-// }
-///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 void modscabiasdata::describeX(object::ObjectClass* clazz) {
-  /*clazz->floatProperty("mod", float_range{0.0f, 16.0f}, &modscabias::mfMod);
-  clazz->floatProperty("scale", float_range{-16.0f, 16.0f}, &modscabias::mfScale);
-  clazz->floatProperty("bias", float_range{-16.0f, 16.0f}, &modscabias::mfBias);
-*/
+  clazz->floatProperty("mod", float_range{0.0f, 16.0f}, &modscabiasdata::_mod);
+  clazz->floatProperty("scale", float_range{-16.0f, 16.0f}, &modscabiasdata::_scale);
+  clazz->floatProperty("bias", float_range{-16.0f, 16.0f}, &modscabiasdata::_bias);
 }
 void floatxfitembasedata::describeX(class_t* clazz) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void floatxfmsbcurvedata::describeX(object::ObjectClass* clazz) {
-  /*
-  ork::reflect::RegisterProperty("curve", &floatxfmsbcurve::CurveAccessor);
-  ork::reflect::RegisterProperty("ModScaleBias", &floatxfmsbcurve::ModScaleBiasAccessor);
+  clazz->directObjectProperty("ModScaleBias", &floatxfmsbcurvedata::_modscalebias);
+  clazz->directObjectProperty("Curve", &floatxfmsbcurvedata::_multicurve);
+  clazz->directProperty("do_modscabia", &floatxfmsbcurvedata::_domodscalebias);
+  clazz->directProperty("do_curve", &floatxfmsbcurvedata::_docurve);
 
-  ork::reflect::RegisterProperty("domodscabia", &floatxfmsbcurve::_domodscalebias);
-  ork::reflect::RegisterProperty("docurve", &floatxfmsbcurve::_docurve);
+  clazz->annotateTyped<ConstString>("editor.prop.groups", //
+                                    "sort:// do_modscabia do_curve ModScaleBias Curve" );
 
-  static const char* EdGrpStr = "sort:// domodscabia docurve ModScaleBias curve";
-
-  reflect::Description::anno_t annoval;
-  annoval.set<const char*>(EdGrpStr);
-  reflect::annotateClassForEditor<floatxfmsbcurve>("editor.prop.groups", annoval);
-*/
+}
+///////////////////////////////////////////////////////////////////////////////
+floatxfmsbcurvedata::floatxfmsbcurvedata(){
+  _multicurve = std::make_shared<MultiCurve1D>();
+  _modscalebias = std::make_shared<modscabiasdata>();
 }
 ///////////////////////////////////////////////////////////////////////////////
 float floatxfmsbcurvedata::transform(float input) const {
   if (_domodscalebias || _docurve) {
-    float fsca    = (_modscalebias._scale * input) + _modscalebias._bias;
-    float modout  = (_modscalebias._mod > 0.0f) ? fmodf(fsca, _modscalebias._mod) : fsca;
+    float fsca    = (_modscalebias->_scale * input) + _modscalebias->_bias;
+    float modout  = (_modscalebias->_mod > 0.0f) ? fmodf(fsca, _modscalebias->_mod) : fsca;
     float biasout = modout;
     input         = biasout;
   }
   if (_docurve) {
     float clampout = (input < 0.0f) ? 0.0f : (input > 1.0f) ? 1.0f : input;
-    input          = _multicurve.Sample(clampout);
+    input          = _multicurve->Sample(clampout);
   }
   return input;
 }
 ///////////////////////////////////////////////////////////////////////////////
 void floatxfmodstepdata::describeX(object::ObjectClass* clazz) {
-  /*clazz->floatProperty("Mod", float_range{0.0f, 16.0f}, &floatxfmodstep::_mod);
-  clazz->intProperty("Step", int_range{1, 128}, &floatxfmodstep::_steps);
-  clazz->floatProperty("OutputBias", float_range{-16.0f, 16.0f}, &floatxfmodstep::_outputBias);
-  clazz->floatProperty("OutputScale", float_range{-1600.0f, 1600.0f}, &floatxfmodstep::_outputScale);
-*/
+  clazz->floatProperty("Mod", float_range{0.0f, 16.0f}, &floatxfmodstepdata::_mod);
+  clazz->intProperty("Step", int_range{1, 128}, &floatxfmodstepdata::_steps);
+  clazz->floatProperty("OutputBias", float_range{-16.0f, 16.0f}, &floatxfmodstepdata::_outputBias);
+  clazz->floatProperty("OutputScale", float_range{-1600.0f, 1600.0f}, &floatxfmodstepdata::_outputScale);
 }
 ///////////////////////////////////////////////////////////////////////////////
 float floatxfmodstepdata::transform(float input) const {
@@ -317,13 +295,11 @@ floatxfdata::~floatxfdata() {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void floatxfdata::describeX(class_t* clazz) {
-  clazz->template annotateTyped<ConstString>("editor.ged.node.factory", "GedNodeFactoryPlugFloatXF");
-  
-  /*
-  ork::reflect::RegisterMapProperty("Transforms", &floatxf::_transforms);
-  ork::reflect::annotatePropertyForEditor<floatxf>("Transforms", "editor.factorylistbase", "dflow/floatxfitembase");
-  ork::reflect::annotatePropertyForEditor<floatxf>("Transforms", "editor.map.policy.impexp", "true");
-  */
+
+  clazz //
+      ->directObjectMapProperty("Transforms", &floatxfdata::_transforms) //
+      ->annotate<ConstString>("editor.factorylistbase", "dflow::floatxfitembasedata");
+
 }
 ///////////////////////////////////////////////////////////////////////////////
 float floatxfdata::transform(float input) const {
@@ -399,7 +375,10 @@ ImplementReflectionX(dflow::OutPlugData, "dflow::outplugdata");
 
 ImplementReflectionX(dflow::floatxfdata, "dflow::floatxfdata");
 ImplementReflectionX(dflow::fvec3xfdata, "dflow::fvec3xfdata");
+ImplementReflectionX(dflow::modscabiasdata, "dflow::modscabiasdata");
 ImplementReflectionX(dflow::floatxfitembasedata, "dflow::floatxfitembasedata");
+ImplementReflectionX(dflow::floatxfmodstepdata, "dflow::floatxfmodstepdata");
+ImplementReflectionX(dflow::floatxfmsbcurvedata, "dflow::floatxfmsbcurvedata");
 
 ImplementReflectionX(dflow::floatinplugdata, "dflow::floatinplugdata");
 ImplementReflectionX(dflow::vect3inplugdata, "dflow::vect3inplugdata");

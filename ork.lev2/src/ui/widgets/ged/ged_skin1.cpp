@@ -166,7 +166,7 @@ fvec4 GedSkin1::GetStyleColor(GedObject* pnode, ESTYLE ic) {
       color = fvec3(0.7f, 0.7f, 0.7f);
       break;
     case ESTYLE_BUTTON_OUTLINE:
-      color      = fvec3(0.6f, 0.6f, 0.7f);
+      color      = fvec3(0.8f, 0.8f, 0.9f);
       balternate = false;
       bsc        = false;
       break;

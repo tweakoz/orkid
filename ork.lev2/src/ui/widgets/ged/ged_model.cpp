@@ -317,7 +317,8 @@ geditemnode_ptr_t ObjModel::recurse(
 
   geditemnode_ptr_t rval = nullptr;
 
-  printf("recurse<%p> obj<%p> class<%s>\n", this, cur_obj.get(), objclass->Name().c_str());
+  if (0)
+    printf("recurse<%p> obj<%p> class<%s>\n", this, cur_obj.get(), objclass->Name().c_str());
 
   ///////////////////////////////////////////////////
   // editor.class
@@ -326,8 +327,9 @@ geditemnode_ptr_t ObjModel::recurse(
   if (auto as_nodefactory_class = objclass->annotationTyped<ConstString>("editor.ged.node.factory")) {
     auto nodefactory_class = as_nodefactory_class.value();
     if (nodefactory_class.length()) {
-      printf("nodefactory_class<%s>\n", nodefactory_class.c_str());
       rtti::Class* anno_clazz = rtti::Class::FindClass(nodefactory_class.c_str());
+      if (0)
+        printf("nodefactory_class<%s> anno_clazz<%p>\n", nodefactory_class.c_str(), (void*)anno_clazz);
       if (anno_clazz) {
         auto object_clazz = dynamic_cast<ork::object::ObjectClass*>(anno_clazz);
         OrkAssert(object_clazz != nullptr);
@@ -474,30 +476,37 @@ geditemnode_ptr_t ObjModel::recurse(
 geditemnode_ptr_t ObjModel::createAbstractNode(const std::string& Name,
                                                newiodriver_ptr_t iodriver) { //
 
-  /*auto anno_edclass = iodriver->_par_prop->GetAnnotation("editor.factorylistbase");
-  if (anno_edclass.length()) {
-    auto anno_edclass = iodriver->_par_prop->GetAnnotation("editor.factorylistbase");
-    if (anno_edclass.length()) {
-      auto base_clazz   = rtti::Class::FindClass(anno_edclass.c_str());
-      auto as_obj_clazz = dynamic_cast<ork::object::ObjectClass*>(base_clazz);
-      if (as_obj_clazz) {
-        factory_class_set_t factory_set;
-        enumerateFactories(as_obj_clazz, factory_set);
-        for (auto clazz : factory_set) {
-          auto clazz_name = clazz->Name();
-          printf("!!! FACTORY<%s>\n", clazz_name.c_str());
-        }
-        auto factory_node          = std::make_shared<GedFactoryNode>(_gedContainer, Name.c_str(), iodriver);
-        factory_node->_factory_set = factory_set;
-        _gedContainer->AddChild(factory_node);
-        return factory_node;
-      }
-    }
-  } else
-  */
   if (auto as_obj = iodriver->_abstract_val.tryAs<object_ptr_t>()) {
+    ///////////////////////////////////////////////////////
+    // object is not null, recurse into it.
+    ///////////////////////////////////////////////////////
     if (as_obj.value()) {
       recurse(as_obj.value(), Name.c_str());
+    } 
+    ///////////////////////////////////////////////////////
+    // as_obj is null
+    //  see if there is a object factory registered for this property
+    //  if so, create a object factory node
+    ///////////////////////////////////////////////////////
+    else { 
+    ///////////////////////////////////////////////////////
+      auto anno_edclass = iodriver->_par_prop->GetAnnotation("editor.factorylistbase");
+      if (anno_edclass.length()) {
+        auto base_clazz   = rtti::Class::FindClass(anno_edclass.c_str());
+        auto as_obj_clazz = dynamic_cast<ork::object::ObjectClass*>(base_clazz);
+        if (as_obj_clazz) {
+          factory_class_set_t factory_set;
+          enumerateFactories(as_obj_clazz, factory_set);
+          for (auto clazz : factory_set) {
+            auto clazz_name = clazz->Name();
+            printf("!!! FACTORY<%s>\n", clazz_name.c_str());
+          }
+          auto factory_node          = std::make_shared<GedFactoryNode>(_gedContainer, Name.c_str(), iodriver);
+          factory_node->_factory_set = factory_set;
+          _gedContainer->AddChild(factory_node);
+          return factory_node;
+        }
+      }
     }
   }
   return std::make_shared<GedLabelNode>(_gedContainer, Name.c_str(), iodriver->_par_prop, iodriver->_object);
@@ -585,6 +594,20 @@ geditemnode_ptr_t ObjModel::createObjPropNode(
     return std::make_shared<GedFloatNode>(_gedContainer, Name.c_str(), iodriver);
   }
   /////////////////////////////////////////////////////////////////////////
+  else if (auto as_dobjprop = dynamic_cast<const reflect::DirectObjectBase*>(prop)) {
+    auto iodriver       = std::make_shared<NewIoDriver>();
+    object_ptr_t child_object = as_dobjprop->getObject(pobject);
+    recurse(child_object, Name.c_str());
+    //iodriver->_par_prop       = prop;
+    //iodriver->_object         = pobject;
+    //iodriver->_abstract_val   = child_object;
+    //iodriver->_onValueChanged = [=]() {
+      //as_dobjprop->set(iodriver->_abstract_val.get<object_ptr_t>(), pobject);
+      //_gedContainer->_model->enqueueUpdate();
+    //};
+    //return std::make_shared<GedFloatNode>(_gedContainer, Name.c_str(), iodriver);
+  }
+  /////////////////////////////////////////////////////////////////////////
   /*
   /////////////////////////////////////////////////////////////////////////
   else if (const reflect::ITyped<fvec4>* vec4prop = rtti::autocast(prop))
@@ -663,16 +686,14 @@ void ObjModel::EnumerateNodes(
     object::ObjectClass* clazz = ClassVect[ic];
     const auto& class_desc     = clazz->Description();
     auto& propmap              = class_desc.properties();
-    auto eg_anno               = class_desc.classAnnotation("editor.prop.groups");
-    auto as_conststr           = eg_anno.tryAs<const char*>();
-    const char* eg             = "";
-    if (as_conststr)
-      eg = as_conststr.value();
+    auto as_group_conststr     = clazz->annotationTyped<ConstString>("editor.prop.groups");
     ///////////////////////////////////////////////////////////
     // overridden order from editor.prop.groups
     ///////////////////////////////////////////////////////////
-    if (strlen(eg)) {
-      printf("enumerate props for class<%s> (overridden order)\n", clazz->Name().c_str());
+    if (as_group_conststr) {
+      auto eg = as_group_conststr.value().c_str();
+      if (1)
+        printf("!!!!! enumerate props for class<%s> (overridden order %s)\n", clazz->Name().c_str(), eg);
       FixedString<1024> str_rep = eg;
       str_rep.replace_in_place("//", "// ");
       tokenlist src_toklist = CreateTokenList(str_rep.c_str(), " ");
@@ -736,7 +757,8 @@ void ObjModel::EnumerateNodes(
     // default order
     ///////////////////////////////////////////////////////////
     else {
-      printf("enumerate props for class<%s> (default order)\n", clazz->Name().c_str());
+      if (0)
+        printf("enumerate props for class<%s> (default order)\n", clazz->Name().c_str());
       for (auto it : propmap) {
         ///////////////////////////////////////////////////
         // editor.object.props

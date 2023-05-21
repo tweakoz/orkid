@@ -122,6 +122,7 @@ struct ClassToucher {
     ged::GedNodeFactoryGradient::GetClassStatic();
     ged::GedNodeFactoryAssetList::GetClassStatic();
     ged::GedNodeFactoryPlug::GetClassStatic();
+    ged::GedNodeFactoryPlugFloatXF::GetClassStatic();
 
     ged::TestObject::GetClassStatic();
     ged::TestObjectConfiguration::GetClassStatic();
