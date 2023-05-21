@@ -10,7 +10,7 @@
 #include <ork/object/Object.h>
 
 namespace ork { namespace reflect {
-
+/*
 AccessorVariantArray::AccessorVariantArray(
     void (Object::*serialize_item)(ISerializer&, size_t) const,
     void (Object::*deserialize_element)(serdes::node_ptr_t),
@@ -41,5 +41,5 @@ size_t AccessorVariantArray::count(object_constptr_t instance) const {
 void AccessorVariantArray::resize(object_ptr_t instance, size_t size) const {
   return (instance.get()->*mResize)(size);
 }
-
+*/
 }} // namespace ork::reflect

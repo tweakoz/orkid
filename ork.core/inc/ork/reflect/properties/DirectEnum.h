@@ -13,16 +13,21 @@
 
 namespace ork::reflect {
 
-template <typename T> class DirectTyped : public ITyped<T> {
+class DirectEnumBase : public ObjectProperty {
+};
+
+template <typename T> class DirectEnum : public DirectEnumBase {
 
 public:
 
   T Object::*_member;
 
-  DirectTyped(T Object::*);
+  DirectEnum(T Object::*);
 
-  void get(T&, object_constptr_t) const override;
-  void set(const T&, object_ptr_t) const override;
+  void get(T&, object_constptr_t) const;
+  void set(const T&, object_ptr_t) const;
+  void deserialize(serdes::node_ptr_t) const final;
+  void serialize(serdes::node_ptr_t) const final;
 };
 
 } // namespace ork::reflect

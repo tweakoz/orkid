@@ -67,6 +67,9 @@ public:
   template <typename ClassType, typename MemberType>
   inline PropertyModifier directProperty(const char* name, MemberType ClassType::*member);
 
+  template <typename ClassType, typename MemberType>
+  inline PropertyModifier directEnumProperty(const char* name, MemberType ClassType::*member);
+
   template <typename ClassType, typename MemberMapType>
   inline PropertyModifier directMapProperty(const char* name, MemberMapType ClassType::*member);
 

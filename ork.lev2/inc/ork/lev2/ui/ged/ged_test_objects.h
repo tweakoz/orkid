@@ -3,6 +3,7 @@
 #include <ork/rtti/RTTIX.inl>
 #include <ork/object/Object.h>
 #include <ork/math/multicurve.h>
+#include <ork/lev2/gfx/gfxenv_enum.h>
 #include <ork/math/gradient.h>
 #include <ork/dataflow/dataflow.h>
 
@@ -15,6 +16,7 @@ public:
   int int_prop = 0;
   bool bool_prop = false;
   float float_prop= 0.0f;
+  ork::lev2::MsaaSamples _msaasamples = ork::lev2::MsaaSamples::MSAA_1X;
   asset::asset_ptr_t _genericAsset;
   orklut<std::string, multicurve1d_ptr_t> _curves;
   orklut<std::string, gradient_fvec4_ptr_t> _gradients;

@@ -9,16 +9,10 @@
 
 #include <ork/rtti/Category.h>
 
-namespace ork { namespace rtti {
-struct RTTIData;
-}} // namespace ork::rtti
-namespace ork { namespace reflect {
-class ISerializer;
-class IDeserializer;
-}} // namespace ork::reflect
+namespace ork::rtti {
+    struct RTTIData;
+} // namespace ork::rtti
 
-namespace ork { namespace object {
-
-using ObjectCategory = rtti::Category;
-
-}} // namespace ork::object
+namespace ork::object {
+    using ObjectCategory = rtti::Category;
+} // namespace ork::object

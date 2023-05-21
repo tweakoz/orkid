@@ -16,7 +16,7 @@ namespace ork { namespace reflect {
 class AccessorVariantArray : public IArray {
 public:
   AccessorVariantArray(
-      void (Object::*serialize_item)(ISerializer&, size_t) const,
+      void (Object::*serialize_item)(serdes::ISerializer&, size_t) const,
       void (Object::*deserialize_element)(serdes::node_ptr_t),
       size_t (Object::*count)() const,
       void (Object::*resize)(size_t));
@@ -27,7 +27,7 @@ private:
   size_t count(object_constptr_t) const override;
   void resize(object_ptr_t, size_t) const override;
 
-  void (Object::*mSerializeItem)(ISerializer&, size_t) const;
+  void (Object::*mSerializeItem)(serdes::ISerializer&, size_t) const;
   void (Object::*_deserializeElement)(serdes::node_ptr_t);
   size_t (Object::*mCount)() const;
   void (Object::*mResize)(size_t);

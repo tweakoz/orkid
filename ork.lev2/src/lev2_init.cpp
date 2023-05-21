@@ -84,6 +84,8 @@ void PreferOpenGL() {
   gbPREFEROPENGL  = true;
 }
 
+void registerEnums();
+
 struct ClassToucher {
   ClassToucher() {
     AllocationLabel label("ork::lev2::Init");
@@ -314,6 +316,7 @@ struct ModuleInit {
     ///////////////////////////////////////////////////////////////
 
     meshutil::misc_init();
+    registerEnums();
 
     ///////////////////////////////////////////////////////////////
   }

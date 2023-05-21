@@ -11,6 +11,7 @@
 #include <ork/lev2/ui/ged/ged_surface.h>
 #include <ork/lev2/ui/ged/ged_factory.h>
 #include <ork/kernel/core_interface.h>
+#include <ork/reflect/properties/DirectEnum.h>
 
 namespace ork::lev2::ged {
 
@@ -552,43 +553,58 @@ geditemnode_ptr_t ObjModel::createObjPropNode(
     return std::make_shared<GedArrayNode>(_gedContainer, Name.c_str(), array_prop, pobject);
   }
   /////////////////////////////////////////////////////////////////////////
-  else if (auto as_boolprop = dynamic_cast<const reflect::ITyped<bool>*>(prop)) {
+  else if (auto as_bool_prop = dynamic_cast<const reflect::ITyped<bool>*>(prop)) {
     auto iodriver      = std::make_shared<NewIoDriver>();
     bool initial_value = false;
-    as_boolprop->get(initial_value, pobject);
+    as_bool_prop->get(initial_value, pobject);
     iodriver->_par_prop       = prop;
     iodriver->_object         = pobject;
     iodriver->_abstract_val   = initial_value;
     iodriver->_onValueChanged = [=]() {
-      as_boolprop->set(iodriver->_abstract_val.get<bool>(), pobject);
+      as_bool_prop->set(iodriver->_abstract_val.get<bool>(), pobject);
     };
     return std::make_shared<GedBoolNode>(_gedContainer, Name.c_str(), iodriver);
   }
   /////////////////////////////////////////////////////////////////////////
-  else if (auto as_intprop = dynamic_cast<const reflect::ITyped<int>*>(prop)) {
+  else if (auto as_int_prop = dynamic_cast<const reflect::ITyped<int>*>(prop)) {
     auto iodriver     = std::make_shared<NewIoDriver>();
     int initial_value = 0;
-    as_intprop->get(initial_value, pobject);
+    as_int_prop->get(initial_value, pobject);
     iodriver->_par_prop       = prop;
     iodriver->_object         = pobject;
     iodriver->_abstract_val   = initial_value;
     iodriver->_onValueChanged = [=]() {
-      as_intprop->set(iodriver->_abstract_val.get<int>(), pobject);
+      as_int_prop->set(iodriver->_abstract_val.get<int>(), pobject);
     };
     return std::make_shared<GedIntNode>(_gedContainer, Name.c_str(), iodriver);
   }
   /////////////////////////////////////////////////////////////////////////
-  else if (auto as_floatprop = dynamic_cast<const reflect::ITyped<float>*>(prop)) {
+  else if (auto as_float_prop = dynamic_cast<const reflect::ITyped<float>*>(prop)) {
     auto iodriver       = std::make_shared<NewIoDriver>();
     float initial_value = 0;
-    as_floatprop->get(initial_value, pobject);
+    as_float_prop->get(initial_value, pobject);
     iodriver->_par_prop       = prop;
     iodriver->_object         = pobject;
     iodriver->_abstract_val   = initial_value;
     iodriver->_onValueChanged = [=]() {
-      as_floatprop->set(iodriver->_abstract_val.get<float>(), pobject);
+      as_float_prop->set(iodriver->_abstract_val.get<float>(), pobject);
     };
     return std::make_shared<GedFloatNode>(_gedContainer, Name.c_str(), iodriver);
+  }
+  /////////////////////////////////////////////////////////////////////////
+  else if (auto as_enum_prop = dynamic_cast<const reflect::DirectEnumBase*>(prop)) {
+    auto iodriver       = std::make_shared<NewIoDriver>();
+    float initial_value = 0;
+    //as_enum_prop->get(initial_value, pobject);
+    iodriver->_par_prop       = prop;
+    iodriver->_object         = pobject;
+    iodriver->_abstract_val   = initial_value;
+    iodriver->_onValueChanged = [=]() {
+      OrkAssert(false);
+      //as_enum_prop->set(iodriver->_abstract_val.get<float>(), pobject);
+    };
+    return std::make_shared<GedEnumNode>(_gedContainer, Name.c_str(), iodriver);
+
   }
   /////////////////////////////////////////////////////////////////////////
   else if (auto as_dobjprop = dynamic_cast<const reflect::DirectObjectBase*>(prop)) {

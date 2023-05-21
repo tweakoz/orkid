@@ -2,6 +2,8 @@
 
 #include "ged.h"
 #include <ork/lev2/lev2_types.h>
+#include <ork/kernel/Array.h>
+#include <ork/kernel/string/ArrayString.h>
 
 namespace ork::lev2::ged {
 

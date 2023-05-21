@@ -7,6 +7,7 @@
 
 #pragma once
 #include <ork/util/crc.h>
+#include <ork/reflect/enum_serializer.inl>
 
 namespace ork::lev2 {
 

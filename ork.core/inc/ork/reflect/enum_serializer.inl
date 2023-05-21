@@ -82,11 +82,11 @@ struct EnumRegistrar {
 
 ///////////////////////////////////////////////////////////////////////////////
 #define DeclareEnumSerializer(ENUMTYPE)                                                                                            \
-  template <> void ::ork::reflect::ITyped<ENUMTYPE>::serialize(serdes::node_ptr_t leafnode) const;                                 \
-  template <> void ::ork::reflect::ITyped<ENUMTYPE>::deserialize(serdes::node_ptr_t desernode) const;
+  template <> void ::ork::reflect::ITyped<ENUMTYPE>::serialize(::ork::reflect::serdes::node_ptr_t leafnode) const;                                 \
+  template <> void ::ork::reflect::ITyped<ENUMTYPE>::deserialize(::ork::reflect::serdes::node_ptr_t desernode) const;
 ///////////////////////////////////////////////////////////////////////////////
 #define ImplementEnumSerializer(ENUMTYPE)                                                                                          \
-  template <> void ::ork::reflect::ITyped<ENUMTYPE>::serialize(serdes::node_ptr_t leafnode) const {                                \
+  template <> void ::ork::reflect::ITyped<ENUMTYPE>::serialize(::ork::reflect::serdes::node_ptr_t leafnode) const {                                \
     auto serializer = leafnode->_serializer;                                                                                       \
     auto instance   = leafnode->_ser_instance;                                                                                     \
     ENUMTYPE value;                                                                                                                \
@@ -97,7 +97,7 @@ struct EnumRegistrar {
     leafnode->_value.template set<std::string>(enumname);                                                                          \
     serializer->serializeLeaf(leafnode);                                                                                           \
   }                                                                                                                                \
-  template <> void ::ork::reflect::ITyped<ENUMTYPE>::deserialize(serdes::node_ptr_t desernode) const {                             \
+  template <> void ::ork::reflect::ITyped<ENUMTYPE>::deserialize(::ork::reflect::serdes::node_ptr_t desernode) const {                             \
     auto instance      = desernode->_deser_instance;                                                                               \
     const auto& var    = desernode->_value;                                                                                        \
     const auto& as_str = var.get<std::string>();                                                                                   \

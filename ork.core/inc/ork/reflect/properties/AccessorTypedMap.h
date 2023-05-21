@@ -13,8 +13,6 @@
 
 namespace ork { namespace reflect {
 
-class BidirectionalSerializer;
-
 template <typename KeyType, typename ValueType> class AccessorTypedMap : public ITypedMap<KeyType, ValueType> {
 public:
   AccessorTypedMap(

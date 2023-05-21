@@ -21,7 +21,7 @@
 
 #include <ork/reflect/properties/AccessorObjectMap.h>
 #include <ork/reflect/properties/AccessorTypedMap.h>
-#include <ork/reflect/properties/AccessorVariantMap.h>
+//#include <ork/reflect/properties/AccessorVariantMap.h>
 #include <ork/reflect/properties/DirectTypedMap.h>
 #include <ork/reflect/Functor.h>
 
@@ -162,7 +162,7 @@ static inline AccessorObjectArray& RegisterArrayProperty(
   return *prop;
 }
 
-template <typename ClassType>
+/*template <typename ClassType>
 static inline AccessorVariantArray& RegisterArrayProperty(
     const char* name,
     void (ClassType::*serialize_item)(ISerializer&, size_t) const,
@@ -179,7 +179,7 @@ static inline AccessorVariantArray& RegisterArrayProperty(
   description.addProperty(name, prop);
 
   return *prop;
-}
+}*/
 
 template <typename ClassType, typename MapType>
 static inline DirectTypedMap<MapType>& RegisterMapProperty(
@@ -197,14 +197,14 @@ static inline AccessorTypedMap<KeyType, ValueType>& RegisterMapProperty(
     bool (ClassType::*getter)(const KeyType&, int, ValueType&) const,
     void (ClassType::*setter)(const KeyType&, int, const ValueType&),
     void (ClassType::*eraser)(const KeyType&, int),
-    void (ClassType::*serializer)(typename AccessorTypedMap<KeyType, ValueType>::SerializationFunction, BidirectionalSerializer&)
+    void (ClassType::*serializer)(typename AccessorTypedMap<KeyType, ValueType>::SerializationFunction, serdes::BidirectionalSerializer&)
         const,
     Description& description = ClassType::GetClassStatic()->Description()) {
   auto _g   = static_cast<bool (Object::*)(const KeyType&, int, ValueType&) const>(getter);
   auto _s   = static_cast<void (Object::*)(const KeyType&, int, const ValueType&)>(setter);
   auto _e   = static_cast<void (Object::*)(const KeyType&, int)>(eraser);
   auto _z   = static_cast<void (Object::*)(
-      typename AccessorTypedMap<KeyType, ValueType>::SerializationFunction, BidirectionalSerializer&) const>(serializer);
+      typename AccessorTypedMap<KeyType, ValueType>::SerializationFunction, serdes::BidirectionalSerializer&) const>(serializer);
   auto prop = new AccessorTypedMap<KeyType, ValueType>(_g, _s, _e, _z);
 
   description.addProperty(name, prop);
@@ -218,13 +218,13 @@ static inline AccessorObjectMap<KeyType>& RegisterMapProperty(
     const Object* (ClassType::*get)(const KeyType&, int) const,
     Object* (ClassType::*access)(const KeyType&, int),
     void (ClassType::*eraser)(const KeyType&, int),
-    void (ClassType::*serializer)(typename AccessorObjectMap<KeyType>::SerializationFunction, BidirectionalSerializer&) const,
+    void (ClassType::*serializer)(typename AccessorObjectMap<KeyType>::SerializationFunction, serdes::BidirectionalSerializer&) const,
     Description& description = ClassType::GetClassStatic()->Description()) {
   AccessorObjectMap<KeyType>* prop = new AccessorObjectMap<KeyType>(
       static_cast<const Object* (Object::*)(const KeyType&, int) const>(get),
       static_cast<Object* (Object::*)(const KeyType&, int)>(access),
       static_cast<void (Object::*)(const KeyType&, int)>(eraser),
-      static_cast<void (Object::*)(typename AccessorObjectMap<KeyType>::SerializationFunction, BidirectionalSerializer&) const>(
+      static_cast<void (Object::*)(typename AccessorObjectMap<KeyType>::SerializationFunction, serdes::BidirectionalSerializer&) const>(
           serializer));
 
   description.addProperty(name, prop);

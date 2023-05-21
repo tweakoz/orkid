@@ -13,6 +13,7 @@
 #include "DirectObjectVector.inl"
 #include "DirectTypedArray.hpp"
 #include "DirectTypedVector.hpp"
+#include "DirectEnum.inl"
 #include "AccessorTyped.hpp"
 
 namespace ork::object {
@@ -38,6 +39,15 @@ inline object::PropertyModifier object::ObjectClass::directProperty(const char* 
   object::PropertyModifier modder;
   auto typed_member = static_cast<MemberType Object::*>(member);
   modder._property  = new reflect::DirectTyped<MemberType>(typed_member);
+  _description.addProperty(name, modder._property);
+  return modder;
+}
+///////////////////////////////////////////////////////////////////////////
+template <typename ClassType, typename MemberType>
+inline object::PropertyModifier object::ObjectClass::directEnumProperty(const char* name, MemberType ClassType::*member) {
+  object::PropertyModifier modder;
+  auto typed_member = static_cast<MemberType Object::*>(member);
+  modder._property  = new reflect::DirectEnum<MemberType>(typed_member);
   _description.addProperty(name, modder._property);
   return modder;
 }

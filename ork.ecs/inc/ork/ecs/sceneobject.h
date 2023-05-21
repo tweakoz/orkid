@@ -12,6 +12,7 @@
 #include <ork/rtti/RTTI.h>
 #include <ork/object/Object.h>
 #include <ork/math/TransformNode.h>
+#include <ork/kernel/string/ArrayString.h>
 
 #include "types.h"
 
