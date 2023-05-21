@@ -16,6 +16,8 @@
 #include <ork/lev2/ui/popups.inl>
 #include <ork/dataflow/dataflow.h>
 #include <ork/dataflow/plug_data.h>
+#include <ork/dataflow/plug_inst.h>
+#include <ork/dataflow/module.h>
 #include "ged_slider.inl"
 
 ////////////////////////////////////////////////////////////////
@@ -39,19 +41,70 @@ bool PlugInputConnectHitBox::OnUiEvent(ui::event_constptr_t ev) {
   bool rval          = false;
   switch (ev->_eventcode) {
     case ui::EventCode::DOUBLECLICK: {
+      
+      auto ged_container = _node->_container;
+      auto ged_model = ged_container->_model;
+
+      auto the_input_plug = std::dynamic_pointer_cast<dataflow::InPlugData>(_node->_object);
+      auto input_module = the_input_plug->_parent_module;
+      auto gdata = input_module->_graphdata;
+
+      OrkAssert(the_input_plug);
+      OrkAssert(input_module);
+      OrkAssert(gdata);
+
       std::vector<std::string> choices;
-      choices.push_back("Plug1");
-      choices.push_back("Plug2");
-      fvec2 dimensions   = ui::ChoiceList::computeDimensions(choices);
-      int sx             = ev->miScreenPosX;
-      int sy             = ev->miScreenPosY;
-      std::string choice = ui::popupChoiceList(
-          _node->_l2context(), //
-          sx - (int(dimensions.x) >> 1),
-          sy - (int(dimensions.y) >> 1),
-          choices,
-          dimensions);
-      printf("choice<%s>\n", choice.c_str());
+      std::map<std::string, dataflow::floatoutplug_ptr_t> choice_to_module;
+
+      choices.push_back("NONE");
+      choice_to_module["NONE"] = nullptr;
+      auto input_as_floatxf = std::dynamic_pointer_cast<dataflow::floatxfinplugdata_t>(the_input_plug);
+
+      for( auto item : gdata->_modules ) { //
+        auto test_module_name = item.first;
+        printf( "TESTING MODULE<%s>\n", test_module_name.c_str() );
+        auto test_module_data = std::dynamic_pointer_cast<dataflow::ModuleData>(item.second);
+        if( test_module_data != input_module ){ //
+          for( auto test_output_plug : test_module_data->_outputs ){ //
+              auto plugname = test_output_plug->_name;
+            printf( "  TESTING PLUG<%s>\n", plugname.c_str() );
+
+            auto output_as_float = std::dynamic_pointer_cast<dataflow::floatoutplug_t>(test_output_plug);
+
+            //bool can_connect = input_as_floatxf and output_as_float;
+            bool can_connect = gdata->canConnect(input_as_floatxf, output_as_float);
+
+            if( can_connect ){ //
+              auto mname = FormatString("%s.%s", test_module_name.c_str(), plugname.c_str());
+              choices.push_back(mname);
+              choice_to_module[mname] = output_as_float;
+            }
+          }
+        }
+      }
+      if( choices.size() ){
+          fvec2 dimensions   = ui::ChoiceList::computeDimensions(choices);
+          int sx             = ev->miScreenPosX;
+          int sy             = ev->miScreenPosY;
+          std::string choice = ui::popupChoiceList(
+              _node->_l2context(), //
+              sx - (int(dimensions.x) >> 1),
+              sy - (int(dimensions.y) >> 1),
+              choices,
+              dimensions);
+          printf("choice<%s>\n", choice.c_str());
+          auto it_choice = choice_to_module.find(choice);
+          OrkAssert(it_choice!=choice_to_module.end());
+          auto output_plug = it_choice->second;
+          if( output_plug ){
+            gdata->safeConnect(input_as_floatxf, output_plug);
+          }
+          else{
+            gdata->disconnect(input_as_floatxf);
+          }
+          ged_model->enqueueUpdate();
+
+      }
       rval = true;
       break;
     }
@@ -75,6 +128,7 @@ struct FloatPlugXfEditorImpl {
   dataflow::floatxfinplugdata_t* _inputPlugData = nullptr;
   Slider<float> _floatSlider;
   pluginputconnecthitbox_ptr_t _connectHitBox;
+  bool _is_connected = false;
 };
 
 using floatplugxfeditorimpl_ptr_t = std::shared_ptr<FloatPlugXfEditorImpl>;
@@ -95,19 +149,25 @@ FloatPlugXfEditorImpl::FloatPlugXfEditorImpl(GedPlugNode* node)
     _connectHitBox            = std::make_shared<PlugInputConnectHitBox>(_node);
     _connectHitBox->_propname = "connectBOX";
 
+    _is_connected = _inputPlugData->isConnected();
+
     /////////////////////////////////////////
     // slider
     /////////////////////////////////////////
 
-    auto sl_iodriver = std::make_shared<NewIoDriver>();
-    sl_iodriver->_par_prop = prop;
-    sl_iodriver->_object   = obj;
-    //sl_iodriver->_abstract_val.set<float>(_inputPlugData->value());
-    _floatSlider._iodriver = sl_iodriver;
-    _floatSlider.SetVal(_inputPlugData->value());
-    sl_iodriver->_onValueChanged = [=]() {
-      _inputPlugData->setValue(  _floatSlider.value() );
-    };
+    if( not _is_connected ){
+
+      auto sl_iodriver = std::make_shared<NewIoDriver>();
+      sl_iodriver->_par_prop = prop;
+      sl_iodriver->_object   = obj;
+      //sl_iodriver->_abstract_val.set<float>(_inputPlugData->value());
+      _floatSlider._iodriver = sl_iodriver;
+      _floatSlider.SetVal(_inputPlugData->value());
+      sl_iodriver->_onValueChanged = [=]() {
+        _inputPlugData->setValue(  _floatSlider.value() );
+      };
+
+    }
 
     /////////////////////////////////////////
     // transform
@@ -247,9 +307,18 @@ void FloatPlugXfEditorImpl::render(lev2::Context* pTARG) {
     //////////////////////////////////////
 
     auto in_float_plugdata = dynamic_cast<dataflow::floatxfinplugdata_t*>(_inputPlugData);
-    if (in_float_plugdata) {
-      int slider_x = plugrate_x + plugrate_w + 3;
-      int slider_w = _node->miW - (slider_x - 2 - _node->miX);
+    float ity           = _node->get_text_center_y();
+    int slider_x = plugrate_x + plugrate_w + 3;
+    int slider_w = _node->miW - (slider_x - 2 - _node->miX);
+
+    if( _is_connected ){
+      auto conplug = _inputPlugData->_connectedOutput;
+      auto conmod  = conplug->_parent_module;
+      auto constr = FormatString("CONNECTED TO<%s.%s>", conmod->_name.c_str(), conplug->_name.c_str());
+      skin->DrawBgBox(_node, slider_x, header_y, slider_w, header_h, GedSkin::ESTYLE_BACKGROUND_3);
+      skin->DrawText(_node, slider_x, ity, constr.c_str());
+    }
+    else if (in_float_plugdata) {
       _floatSlider.resize(slider_x, _node->miY, slider_w, _node->miH - 8);
 
       skin->DrawBgBox(_node, slider_x, header_y, slider_w, header_h, GedSkin::ESTYLE_BACKGROUND_2);
@@ -263,7 +332,6 @@ void FloatPlugXfEditorImpl::render(lev2::Context* pTARG) {
         float fvalue        = _floatSlider.value();
         float finp          = _floatSlider.GetTextPos();
         int itxi            = _node->miX + (finp);
-        float ity           = _node->get_text_center_y();
         PropTypeString& str = _floatSlider.ValString();
         skin->DrawText(_node, itxi, ity, str.c_str());
       }

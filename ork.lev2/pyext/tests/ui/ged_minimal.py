@@ -50,6 +50,7 @@ class UiGedTestApp(object):
     #gc = t2.createGradient("gradC")
     ps1 = t2.createParticleSystem("psys1")
     #self.ptc_pool   = ps1.create("POOL",particles.Pool)
+    globs = ps1.create("GLOB",particles.Globals)
     gravity = ps1.create("GRAV",particles.Gravity)
     self.objmodel.attach(self.test_object,True)
     print(self.test_object.clazz.name)

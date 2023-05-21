@@ -321,7 +321,8 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-using floatoutplug_ptr_t = std::shared_ptr<outplugdata<FloatPlugTraits>>;
+using floatoutplug_t = outplugdata<FloatPlugTraits>;
+using floatoutplug_ptr_t = std::shared_ptr<floatoutplug_t>;
 using floatinpplug_ptr_t = std::shared_ptr<inplugdata<FloatPlugTraits>>;
 
 using floatxfinplugdata_t = inplugdata<FloatXfPlugTraits>;
