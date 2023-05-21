@@ -309,7 +309,7 @@ void FloatPlugXfEditorImpl::render(lev2::Context* pTARG) {
     auto in_float_plugdata = dynamic_cast<dataflow::floatxfinplugdata_t*>(_inputPlugData);
     float ity           = _node->get_text_center_y();
     int slider_x = plugrate_x + plugrate_w + 3;
-    int slider_w = _node->miW - (slider_x - 2 - _node->miX);
+    int slider_w = _node->miW - (slider_x + 2 - _node->miX);
 
     if( _is_connected ){
       auto conplug = _inputPlugData->_connectedOutput;
