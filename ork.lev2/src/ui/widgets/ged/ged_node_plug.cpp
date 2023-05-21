@@ -22,6 +22,46 @@
 namespace ork::lev2::ged {
 ////////////////////////////////////////////////////////////////
 
+class PlugInputConnectHitBox : public GedObject {
+  DeclareAbstractX(PlugInputConnectHitBox, GedObject);
+  PlugInputConnectHitBox(GedPlugNode* node)
+      : _node(node) {
+  }
+  bool OnUiEvent(ui::event_constptr_t ev) final;
+  GedPlugNode* _node = nullptr;
+};
+////////////////////////////////////////////////////////////////
+void PlugInputConnectHitBox::describeX(class_t* clazz) {
+}
+////////////////////////////////////////////////////////////////
+bool PlugInputConnectHitBox::OnUiEvent(ui::event_constptr_t ev) {
+  const auto& filtev = ev->mFilteredEvent;
+  bool rval          = false;
+  switch (ev->_eventcode) {
+    case ui::EventCode::DOUBLECLICK: {
+      std::vector<std::string> choices;
+      choices.push_back("Plug1");
+      choices.push_back("Plug2");
+      fvec2 dimensions   = ui::ChoiceList::computeDimensions(choices);
+      int sx             = ev->miScreenPosX;
+      int sy             = ev->miScreenPosY;
+      std::string choice = ui::popupChoiceList(
+          _node->_l2context(), //
+          sx - (int(dimensions.x) >> 1),
+          sy - (int(dimensions.y) >> 1),
+          choices,
+          dimensions);
+      printf("choice<%s>\n", choice.c_str());
+      rval = true;
+      break;
+    }
+    default:
+      break;
+  }
+  return rval;
+}
+////////////////////////////////////////////////////////////////
+using pluginputconnecthitbox_ptr_t = std::shared_ptr<PlugInputConnectHitBox>;
 struct FloatPlugXfEditorImpl {
 
   using datatype             = float;
@@ -34,6 +74,7 @@ struct FloatPlugXfEditorImpl {
   GedPlugNode* _node                            = nullptr;
   dataflow::floatxfinplugdata_t* _inputPlugData = nullptr;
   Slider<float> _floatSlider;
+  pluginputconnecthitbox_ptr_t _connectHitBox;
 };
 
 using floatplugxfeditorimpl_ptr_t = std::shared_ptr<FloatPlugXfEditorImpl>;
@@ -51,6 +92,8 @@ FloatPlugXfEditorImpl::FloatPlugXfEditorImpl(GedPlugNode* node)
 
   if (_inputPlugData) {
 
+    _connectHitBox            = std::make_shared<PlugInputConnectHitBox>(_node);
+    _connectHitBox->_propname = "connectBOX";
     c->PushItemNode(_node);
     auto iodriver = std::make_shared<NewIoDriver>();
     // auto ioimpl               = iodriver->_impl.makeShared<ArrayIoDriverImpl>();
@@ -117,9 +160,13 @@ void FloatPlugXfEditorImpl::render(lev2::Context* pTARG) {
   // skin->DrawOutlineBox(_node, dbx1, _node->miY, dbw, igdim, GedSkin::ESTYLE_DEFAULT_OUTLINE);
 
   if (_inputPlugData) {
-    for (int i = 0; i <= 6; i += 3) {
-      int j = (i * 2);
-      skin->DrawOutlineBox(_node, dbx1 + i, dby1 + i, idim - j, idim - j, GedSkin::ESTYLE_BUTTON_OUTLINE);
+    if (is_pick) {
+      skin->DrawBgBox(_connectHitBox.get(), dbx1, dby1, idim, idim, GedSkin::ESTYLE_BACKGROUND_2);
+    } else {
+      for (int i = 0; i <= 6; i += 3) {
+        int j = (i * 2);
+        skin->DrawOutlineBox(_node, dbx1 + i, dby1 + i, idim - j, idim - j, GedSkin::ESTYLE_BUTTON_OUTLINE);
+      }
     }
     dbx1 += ifdim;
     int dbw = _node->miW - (dbx1 - _node->miX);
@@ -203,28 +250,18 @@ void FloatPlugXfEditorImpl::render(lev2::Context* pTARG) {
 }
 
 bool FloatPlugXfEditorImpl::onUiEvent(ui::event_constptr_t ev) {
-  return _floatSlider.OnUiEvent(ev);
-  /*int sx = ev->miScreenPosX;
-  int sy = ev->miScreenPosY;
+  bool handled = false;
   switch (ev->_eventcode) {
     case ui::EventCode::DOUBLECLICK: {
-      std::vector<std::string> choices;
-      choices.push_back("Plug1");
-      choices.push_back("Plug2");
-      fvec2 dimensions   = ui::ChoiceList::computeDimensions(choices);
-      std::string choice = ui::popupChoiceList(
-          this->_l2context(), //
-          sx - int(dimensions.x) >> 1,
-          sy - int(dimensions.y) >> 1,
-          choices,
-          dimensions);
-      printf("choice<%s>\n", choice.c_str());
       break;
     }
     default:
       break;
   }
-  return true;*/
+  if (not handled) {
+    handled = _floatSlider.OnUiEvent(ev);
+  }
+  return handled;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -289,3 +326,4 @@ GedNodeFactoryPlug::createItemNode(GedContainer* container, const ConstString& N
 
 ImplementReflectionX(ork::lev2::ged::GedPlugNode, "GedPlugNode");
 ImplementReflectionX(ork::lev2::ged::GedNodeFactoryPlug, "GedNodeFactoryPlug");
+ImplementReflectionX(ork::lev2::ged::PlugInputConnectHitBox, "PlugInputConnectHitBox");

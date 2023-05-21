@@ -14,6 +14,7 @@ struct GedObject : public ork::Object {
 
   int miD;
   int miDecoIndex;
+  std::string _propname;
 
   GedObject()
       : miD(0)
@@ -130,7 +131,6 @@ public:
   //
   GedContainer* _container = nullptr;
   bool mbcollapsed         = false;
-  std::string _propname;
   const reflect::ObjectProperty* _property;
   object_ptr_t _object;
   //

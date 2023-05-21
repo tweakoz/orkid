@@ -60,9 +60,10 @@ GedItemNode::GedItemNode(
     object_ptr_t obj)                    //
     : _container(container)
     , mbcollapsed(false)
-    , _propname(name)
     , _property(prop)
     , _object(obj) {
+
+  _propname = name;
 
   int stack_depth = _container->GetStackDepth();
 
