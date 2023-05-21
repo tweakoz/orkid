@@ -16,6 +16,10 @@
 #include <ork/lev2/gfx/gfxmaterial_ui.h>
 #include <ork/lev2/gfx/pickbuffer.h>
 #include <ork/math/misc_math.h>
+#include <ork/kernel/environment.h>
+#include <ork/lev2/ui/popups.inl>
+#include <ork/reflect/serialize/JsonDeserializer.h>
+#include <ork/reflect/serialize/JsonSerializer.h>
 
 ////////////////////////////////////////////////////////////////
 namespace ork::lev2::ged {
@@ -182,6 +186,50 @@ ui::HandlerResult GedSurface::DoOnUiEvent(ui::event_constptr_t EV) {
       int mikeyc = filtev.miKeyCode;
       printf("key<%d>\n", mikeyc);
       switch (mikeyc) {
+        case 'L': { // load
+          if( EV->mbCTRL ){
+            std::string default_path;
+            genviron.get("ORKID_WORKSPACE_DIR",default_path);
+            auto P = file::Path(default_path)/"ORKFILE.orj";
+            auto path = ui::popupOpenDialog( //
+                "Open Orkid Json Object File", //
+                P.c_str(), //
+                {"*.orj"}, //
+                false); //
+            ork::File inputfile(path, ork::EFM_READ);
+            size_t length = 0;
+            inputfile.GetLength(length);
+            auto dblock = std::make_shared<DataBlock>();
+            auto dest  = (char*) dblock->allocateBlock(length+1);
+            inputfile.Read((void*)dest, length);
+            inputfile.Close();
+            dest[length] = 0; // null terminate
+            object_ptr_t instance_out;
+            reflect::serdes::JsonDeserializer deser(dest);
+            deser.deserializeTop(instance_out);
+            OrkAssert(false);
+          }
+          break;
+        }
+        case 'S': { // save
+          if( EV->mbCTRL ){
+            auto obj = _model->_currentObject;
+            if(obj){
+              std::string default_path;
+              genviron.get("ORKID_WORKSPACE_DIR",default_path);
+              auto P = file::Path(default_path)/"ORKFILE.orj";
+              auto path = ui::popupSaveDialog( //
+                  "Save Orkid Json Object File", //
+                  P.c_str(), //
+                  {"*.orj"}); //
+              printf( "path<%s>\n", path.c_str() );
+              reflect::serdes::JsonSerializer ser;
+              auto topnode    = ser.serializeRoot(obj);
+              auto resultdata = ser.output();
+            }
+          }
+          break;
+        }
         case 264: { // CURS UP
           miScrollY            = _clampedScroll(miScrollY - 16);
           mNeedsSurfaceRepaint = true;
