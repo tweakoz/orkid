@@ -75,6 +75,7 @@ FloatPlugXfEditorImpl::FloatPlugXfEditorImpl(GedPlugNode* node)
 ///////////////////////////////////////////////////////////////////////////////
 
 void FloatPlugXfEditorImpl::render(lev2::Context* pTARG) {
+
   auto c       = _node->_container;
   auto model   = c->_model;
   auto skin    = c->_activeSkin;
@@ -125,22 +126,28 @@ void FloatPlugXfEditorImpl::render(lev2::Context* pTARG) {
     dbx1 += ifdim;
     int dbw = _node->miW - (dbx1 - _node->miX);
 
+    int header_y = _node->miY + 3;
+    int header_h = igdim - 4;
+
     //////////////////////////////////////
     // plugrate BG
     //////////////////////////////////////
 
+    int plugrate_x = dbx1 + 5 - kcharwd2;
+    int plugrate_w = kcharw * 3 - 1;
+
     skin->DrawBgBox(_node, //
-                    dbx1 + 5 - kcharwd2, // x
-                    _node->miY + 3, // y
-                    kcharw * 3 - 1, // w
-                    igdim - 4, // h
+                    plugrate_x, // x
+                    header_y, // y
+                    plugrate_w, // w
+                    header_h, // h
                     GedSkin::ESTYLE_DEFAULT_HIGHLIGHT);
 
     skin->DrawOutlineBox(_node,  //
-                         dbx1 + 5 - kcharwd2,  // x
-                         _node->miY + 3,  // y
-                         kcharw * 3 - 1,  // w
-                         igdim - 4,  // h
+                         plugrate_x,  // x
+                         header_y,  // y
+                         plugrate_w,  // w
+                         header_h,  // h
                          GedSkin::ESTYLE_DEFAULT_OUTLINE);
 
     //////////////////////////////////////
@@ -163,42 +170,38 @@ void FloatPlugXfEditorImpl::render(lev2::Context* pTARG) {
         break;
     }
 
-    skin->DrawText(_node, dbx1+4, _node->miY + 2, ptstr);
+    skin->DrawText(_node, dbx1+4, _node->miY + 1, ptstr);
 
-    dbx1 += kcharw * 3;
-    dbw -= kcharw * 3;
+    //dbx1 += kcharw * 3;
+    //dbw -= kcharw * 3;
 
     //////////////////////////////////////
 
     auto in_float_plugdata = dynamic_cast<dataflow::floatxfinplugdata_t*>(_inputPlugData);
     if(in_float_plugdata){
-        _floatSlider.resize(dbx1 + 4, _node->miY, dbw, _node->miH - 8);
-        int ixi = int(_floatSlider.GetIndicPos()) - dbx1;
-        //skin->DrawBgBox(_node, dbx1, _node->miY, dbw, igdim, GedSkin::ESTYLE_BACKGROUND_1);
-        skin->DrawBgBox(_node, dbx1 + 3, _node->miY + 3, dbw - 6, igdim - 3, GedSkin::ESTYLE_BACKGROUND_2);
-        //skin->DrawBgBox(_node, dbx1 + 2, _node->miY + 4, ixi, igdim - 8, GedSkin::ESTYLE_DEFAULT_HIGHLIGHT);
+        int slider_x = plugrate_x + plugrate_w + 3;
+        int slider_w = _node->miW - ( slider_x - 2 - _node->miX);
+        _floatSlider.resize(slider_x, _node->miY, slider_w, _node->miH - 8);
 
-        ork::PropTypeString pstr;
-        float fvalue = _floatSlider.value();
-        float finp          = _floatSlider.GetTextPos();
-        int itxi            = _node->miX + (finp);
-        float ity = _node->get_text_center_y();
-        PropTypeString& str = _floatSlider.ValString();
-        //skin->DrawText(_node, itxi, ity, str.c_str());
-        //_content     = str.c_str();
-        //int itextlen = contentWidth();
-        //skin->DrawText(this, dbx1 + dbw - (itextlen + 8), miY + 4, str.c_str());
+        skin->DrawBgBox(_node, slider_x, header_y, slider_w, header_h, GedSkin::ESTYLE_BACKGROUND_2 );
+        if( is_pick ){
+        }
+        else if(1){
+          int slider_dd = int(_floatSlider.GetIndicPos()) - slider_x;
 
-    }
-    else{
+          skin->DrawBgBox(_node, slider_x, header_y+1, slider_dd-4, header_h-2, GedSkin::ESTYLE_DEFAULT_HIGHLIGHT);
 
+          ork::PropTypeString pstr;
+          float fvalue = _floatSlider.value();
+          float finp          = _floatSlider.GetTextPos();
+          int itxi            = _node->miX + (finp);
+          float ity = _node->get_text_center_y();
+          PropTypeString& str = _floatSlider.ValString();
+          skin->DrawText(_node, itxi, ity, str.c_str());
+        }
     }
 
   }
-
-  // if (not is_pick) {
-  // skin->DrawText(_node, x, y, _node->_propname.c_str());
-  //}
 }
 
 bool FloatPlugXfEditorImpl::onUiEvent(ui::event_constptr_t ev) {

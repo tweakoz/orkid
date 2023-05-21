@@ -219,7 +219,7 @@ void GedGroupNode::DoDraw(lev2::Context* pTARG) {
   int ihy = dby1 + (ih / 2);
   int ihx = guide_R + (iw / 2);
 
-  //skin->DrawBgBox(this, miX, miY, miW, miH, GedSkin::ESTYLE_BACKGROUND_1);
+  skin->DrawBgBox(this, miX, miY, miW, miH, GedSkin::ESTYLE_BACKGROUND_1);
   skin->DrawText(this, labx, icentery-1, _propname.c_str());
   skin->DrawBgBox(this, miX, miY, miW-2, skin->_bannerHeight, GedSkin::ESTYLE_BACKGROUND_GROUP_LABEL);
 

@@ -286,8 +286,8 @@ void GedItemNode::Draw(lev2::Context* pTARG) {
   if (_doDrawDefault) {
     int labw = this->propnameWidth();
 
-    skin->DrawBgBox(this, miX, miY, miW, miH, GedSkin::ESTYLE_BACKGROUND_1);
-    skin->DrawOutlineBox(this, miX, miY, miW, miH, GedSkin::ESTYLE_DEFAULT_OUTLINE);
+    //skin->DrawBgBox(this, miX, miY, miW, miH, GedSkin::ESTYLE_BACKGROUND_1);
+    //skin->DrawOutlineBox(this, miX, miY, miW, miH, GedSkin::ESTYLE_DEFAULT_OUTLINE);
   }
   DoDraw(pTARG);
 
