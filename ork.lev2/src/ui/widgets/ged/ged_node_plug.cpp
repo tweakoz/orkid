@@ -101,8 +101,8 @@ FloatPlugXfEditorImpl::FloatPlugXfEditorImpl(GedPlugNode* node)
     // ioimpl->_array_prop       = ary_prop;
     // ioimpl->_index            = index++;
     iodriver->_par_prop = prop;
-    // iodriver->_object         = _inputPlugData->_transformdata;
-    // iodriver->_abstract_val.set<object_ptr_t>(_inputPlugData->_transformdata);
+    iodriver->_object         = _inputPlugData->_transformer;
+    iodriver->_abstract_val.set<object_ptr_t>(_inputPlugData->_transformer);
     iodriver->_onValueChanged = [=]() {
       // ary_prop->setElement(obj, key, iodriver->_abstract_val);
       c->_model->enqueueUpdate();
@@ -294,7 +294,7 @@ void GedPlugNode::DoDraw(lev2::Context* pTARG) {
 ////////////////////////////////////////////////////////////////
 
 int GedPlugNode::doComputeHeight() const {
-  return 32;
+  return GedItemNode::doComputeHeight();
 }
 
 ////////////////////////////////////////////////////////////////
@@ -310,9 +310,6 @@ bool GedPlugNode::OnUiEvent(ui::event_constptr_t ev) {
 
 ////////////////////////////////////////////////////////////////
 
-void GedNodeFactoryPlug::describeX(class_t* clazz) {
-}
-
 GedNodeFactoryPlug::GedNodeFactoryPlug() {
 }
 
@@ -321,9 +318,51 @@ GedNodeFactoryPlug::createItemNode(GedContainer* container, const ConstString& N
   return std::make_shared<GedPlugNode>(container, Name.c_str(), iodriver);
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
+struct GedPlugFloatXfNode : public GedItemNode {
+  DeclareAbstractX(GedPlugFloatXfNode, GedItemNode);
+
+public:
+  ///////////////////////////////////////////////////
+
+  GedPlugFloatXfNode(GedContainer* c, const char* name, newiodriver_ptr_t iodriver)
+    : GedItemNode(c, name, iodriver){
+
+  }
+  int doComputeHeight() const final { return 32; }
+  void DoDraw(lev2::Context* pTARG) final {}
+  bool OnUiEvent(ork::ui::event_constptr_t ev) final { return false; }
+};
+
+void GedPlugFloatXfNode::describeX( class_t* clazz ){
+}
+
+///////////////////////////////////////////////////////////////////////////////
+struct GedNodeFactoryPlugFloatXF : public GedNodeFactory {
+
+  DeclareConcreteX(GedNodeFactoryPlugFloatXF, GedNodeFactory);
+
+  geditemnode_ptr_t //
+  createItemNode(GedContainer* c, const ConstString& name, newiodriver_ptr_t iodriver ) const final {
+  return std::make_shared<GedPlugFloatXfNode>(c, name.c_str(), iodriver);
+  }
+
+  GedNodeFactoryPlugFloatXF(){}
+};
+
+void GedNodeFactoryPlugFloatXF::describeX( class_t* clazz ){
+}
+
+void GedNodeFactoryPlug::describeX(class_t* clazz) {
+  GedNodeFactoryPlugFloatXF::GetClassStatic();
+}
+
 ////////////////////////////////////////////////////////////////
 } // namespace ork::lev2::ged
 
 ImplementReflectionX(ork::lev2::ged::GedPlugNode, "GedPlugNode");
+ImplementReflectionX(ork::lev2::ged::GedPlugFloatXfNode, "GedPlugFloatXfNode");
 ImplementReflectionX(ork::lev2::ged::GedNodeFactoryPlug, "GedNodeFactoryPlug");
+ImplementReflectionX(ork::lev2::ged::GedNodeFactoryPlugFloatXF, "GedNodeFactoryPlugFloatXF");
 ImplementReflectionX(ork::lev2::ged::PlugInputConnectHitBox, "PlugInputConnectHitBox");

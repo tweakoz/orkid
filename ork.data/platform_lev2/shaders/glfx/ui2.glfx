@@ -126,7 +126,6 @@ fragment_shader fs_colorwheel
 	vec3 BG = vec3(combinedLines);
 	vec3 FG = frg_clr.xyz;
     out_color = vec4(mix(BG,FG,pow(frg_clr.w,.5)),1); 
-    out_nrmd = vec4(0,0,0,0);
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader fs_picking

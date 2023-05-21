@@ -317,7 +317,7 @@ geditemnode_ptr_t ObjModel::recurse(
 
   geditemnode_ptr_t rval = nullptr;
 
-  printf( "recurse<%p> obj<%p> class<%s>\n", this, cur_obj.get(), objclass->Name().c_str() );
+  printf("recurse<%p> obj<%p> class<%s>\n", this, cur_obj.get(), objclass->Name().c_str());
 
   ///////////////////////////////////////////////////
   // editor.class
@@ -326,7 +326,7 @@ geditemnode_ptr_t ObjModel::recurse(
   if (auto as_nodefactory_class = objclass->annotationTyped<ConstString>("editor.ged.node.factory")) {
     auto nodefactory_class = as_nodefactory_class.value();
     if (nodefactory_class.length()) {
-      printf( "nodefactory_class<%s>\n", nodefactory_class.c_str());
+      printf("nodefactory_class<%s>\n", nodefactory_class.c_str());
       rtti::Class* anno_clazz = rtti::Class::FindClass(nodefactory_class.c_str());
       if (anno_clazz) {
         auto object_clazz = dynamic_cast<ork::object::ObjectClass*>(anno_clazz);
@@ -339,14 +339,14 @@ geditemnode_ptr_t ObjModel::recurse(
           if (pname == 0)
             pname = nodefactory_class.c_str();
 
-          auto group_name          = FormatString("grp-%s", pname);
+          auto group_name = FormatString("grp-%s", pname);
 
           auto groupnode = std::make_shared<GedGroupNode>(
-              _gedContainer,                         // mdl
+              _gedContainer,      // mdl
               group_name.c_str(), // name
-              nullptr,                               // property
-              cur_obj,                               // object
-              true);                                 // is_obj_node
+              nullptr,            // property
+              cur_obj,            // object
+              true);              // is_obj_node
 
           _gedContainer->AddChild(groupnode);
           _gedContainer->PushItemNode(groupnode.get());
@@ -474,27 +474,30 @@ geditemnode_ptr_t ObjModel::recurse(
 geditemnode_ptr_t ObjModel::createAbstractNode(const std::string& Name,
                                                newiodriver_ptr_t iodriver) { //
 
+  /*auto anno_edclass = iodriver->_par_prop->GetAnnotation("editor.factorylistbase");
+  if (anno_edclass.length()) {
+    auto anno_edclass = iodriver->_par_prop->GetAnnotation("editor.factorylistbase");
+    if (anno_edclass.length()) {
+      auto base_clazz   = rtti::Class::FindClass(anno_edclass.c_str());
+      auto as_obj_clazz = dynamic_cast<ork::object::ObjectClass*>(base_clazz);
+      if (as_obj_clazz) {
+        factory_class_set_t factory_set;
+        enumerateFactories(as_obj_clazz, factory_set);
+        for (auto clazz : factory_set) {
+          auto clazz_name = clazz->Name();
+          printf("!!! FACTORY<%s>\n", clazz_name.c_str());
+        }
+        auto factory_node          = std::make_shared<GedFactoryNode>(_gedContainer, Name.c_str(), iodriver);
+        factory_node->_factory_set = factory_set;
+        _gedContainer->AddChild(factory_node);
+        return factory_node;
+      }
+    }
+  } else
+  */
   if (auto as_obj = iodriver->_abstract_val.tryAs<object_ptr_t>()) {
     if (as_obj.value()) {
       recurse(as_obj.value(), Name.c_str());
-    } else { // factory
-      auto anno_edclass = iodriver->_par_prop->GetAnnotation("editor.factorylistbase");
-      if (anno_edclass.length()) {
-        auto base_clazz   = rtti::Class::FindClass(anno_edclass.c_str());
-        auto as_obj_clazz = dynamic_cast<ork::object::ObjectClass*>(base_clazz);
-        if (as_obj_clazz) {
-          factory_class_set_t factory_set;
-          enumerateFactories(as_obj_clazz, factory_set);
-          for (auto clazz : factory_set) {
-            auto clazz_name = clazz->Name();
-            printf("!!! FACTORY<%s>\n", clazz_name.c_str());
-          }
-          auto factory_node          = std::make_shared<GedFactoryNode>(_gedContainer, Name.c_str(), iodriver);
-          factory_node->_factory_set = factory_set;
-          _gedContainer->AddChild(factory_node);
-          return factory_node;
-        }
-      }
     }
   }
   return std::make_shared<GedLabelNode>(_gedContainer, Name.c_str(), iodriver->_par_prop, iodriver->_object);
@@ -517,11 +520,11 @@ geditemnode_ptr_t ObjModel::createObjPropNode(
   }
   /////////////////////////////////////////////////////////////////////////
   if (node_factory_class) {
-    auto clazz = rtti::safe_downcast<ork::object::ObjectClass*>(node_factory_class);
-    auto factory    = clazz->createShared();
+    auto clazz         = rtti::safe_downcast<ork::object::ObjectClass*>(node_factory_class);
+    auto factory       = clazz->createShared();
     auto typed_factory = std::dynamic_pointer_cast<GedNodeFactory>(factory);
     if (typed_factory) {
-      auto iodriver = std::make_shared<NewIoDriver>();
+      auto iodriver       = std::make_shared<NewIoDriver>();
       iodriver->_par_prop = prop;
       iodriver->_object   = pobject;
       return typed_factory->createItemNode(_gedContainer, Name.c_str(), iodriver);
@@ -536,8 +539,7 @@ geditemnode_ptr_t ObjModel::createObjPropNode(
   /////////////////////////////////////////////////////////////////////////
   if (map_prop) {
     return std::make_shared<GedMapNode>(_gedContainer, Name.c_str(), map_prop, pobject);
-  }
-  else if (array_prop) {
+  } else if (array_prop) {
     return std::make_shared<GedArrayNode>(_gedContainer, Name.c_str(), array_prop, pobject);
   }
   /////////////////////////////////////////////////////////////////////////

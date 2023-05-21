@@ -416,7 +416,6 @@ bool GedGradientNode::OnUiEvent(ork::ui::event_constptr_t ev) {
     case ui::EventCode::MOVE:
       _container->_viewport->MarkSurfaceDirty();
       _container->SlotRepaint();
-      OrkAssert(false);
       break;
     default:
       break;

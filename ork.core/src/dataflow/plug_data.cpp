@@ -317,6 +317,8 @@ floatxfdata::~floatxfdata() {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void floatxfdata::describeX(class_t* clazz) {
+  clazz->template annotateTyped<ConstString>("editor.ged.node.factory", "GedNodeFactoryPlugFloatXF");
+  
   /*
   ork::reflect::RegisterMapProperty("Transforms", &floatxf::_transforms);
   ork::reflect::annotatePropertyForEditor<floatxf>("Transforms", "editor.factorylistbase", "dflow/floatxfitembase");
