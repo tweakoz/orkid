@@ -8,20 +8,7 @@
 #pragma once
 
 #include "DirectEnum.h"
-//#include "ITyped.hpp"
-
-////////////////////////////////////////////////
-// commonly needed inline member types
-//  (with custom serdes)
-////////////////////////////////////////////////
-
-//#include <ork/asset/Asset.inl>
-//#include <ork/math/cvector2.hpp>
-//#include <ork/math/cvector3.hpp>
-//#include <ork/math/cvector4.hpp>
-//#include <ork/math/quaternion.hpp>
-//#include <ork/math/cmatrix3.hpp>
-//#include <ork/math/cmatrix4.hpp>
+#include <ork/reflect/enum_serializer.inl>
 
 ////////////////////////////////////////////////
 
@@ -45,5 +32,40 @@ template <typename T> void DirectEnum<T>::deserialize(serdes::node_ptr_t) const 
 template <typename T> void DirectEnum<T>::serialize(serdes::node_ptr_t) const {
 }
 
+template <typename T> enum_abs_array_t DirectEnum<T>::enumerateEnumerations(object_constptr_t obj) const{
+  enum_abs_array_t rval;
+  auto registrar = ::ork::reflect::serdes::EnumRegistrar::instance();
+  auto enumtype  = registrar->findEnumClass<T>();
+  OrkAssert(enumtype!=nullptr);
+  for( auto item : enumtype->_str2intmap ) {
+    auto valptr = std::make_shared<serdes::EnumValue>();
+    valptr->_name = item.first;
+    valptr->_value = item.second;
+    rval.push_back( valptr );
+  }
+  return rval;
+}
+
+template <typename T> //
+void DirectEnum<T>::setFromString( object_ptr_t obj, const std::string& str ) const {
+  auto registrar = ::ork::reflect::serdes::EnumRegistrar::instance();
+  auto enumtype  = registrar->findEnumClass<T>();
+  OrkAssert(enumtype!=nullptr);
+  auto item = enumtype->_str2intmap.find(str);
+  int int_val = item->second;
+  auto as_T = static_cast<T>(int_val);
+  set( as_T, obj);
+}
+template <typename T> //
+std::string DirectEnum<T>::toString( object_constptr_t obj ) const {
+  auto registrar = ::ork::reflect::serdes::EnumRegistrar::instance();
+  auto enumtype  = registrar->findEnumClass<T>();
+  OrkAssert(enumtype!=nullptr);
+  T e_val;
+  get(e_val, obj);
+  int int_val = static_cast<int>(e_val);
+  auto it_s = enumtype->_int2strmap.find(int_val);
+  return it_s->second;
+}
 
 } // namespace ork::reflect

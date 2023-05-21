@@ -18,7 +18,7 @@ using enumregistrar_ptr_t = std::shared_ptr<EnumRegistrar>;
 
 //////////////////////////////////////////////////////////////
 struct EnumValue {
-  int _value = 0;
+  uint64_t _value = 0;
   std::string _name;
 };
 using enumvalue_ptr_t = std::shared_ptr<EnumValue>;
