@@ -85,6 +85,8 @@ void GedSurface::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
   auto fbi  = context->FBI();
   auto dwi  = context->DWI();
 
+  int orig_pickstate = fbi->_pickState;
+  //fbi->_pickState = true;
   int pickstate = fbi->_pickState;
 
   int W = width();
@@ -99,7 +101,7 @@ void GedSurface::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
     if (pickstate == 0) {
       fbi->Clear(fvec4(0, 0, 0, 0), 1.0f);
     } else {
-      fbi->Clear(fvec4(0, 0, 0, 0), 1.0f);
+      fbi->Clear(fvec4(0, 0, 0.5, 0), 1.0f);
       // printf( "GedSurface::repaint pickstate<%d> W<%d> H<%d>\n", pickstate, W, H );
     }
 
@@ -111,6 +113,8 @@ void GedSurface::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
   fbi->popViewport();
   fbi->popScissor();
   context->debugPopGroup();
+
+  fbi->_pickState = orig_pickstate;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -169,7 +173,7 @@ ui::HandlerResult GedSurface::DoOnUiEvent(ui::event_constptr_t EV) {
   locEV->miRawY = locEV->miY;
 
   if (_activeNode){
-    bool was_handled = _activeNode->OnUiEvent(locEV);
+   // bool was_handled = _activeNode->OnUiEvent(locEV);
   }
 
   switch (filtev._eventcode) {
@@ -240,13 +244,16 @@ ui::HandlerResult GedSurface::DoOnUiEvent(ui::event_constptr_t EV) {
 
       if (0 == gctr % 4) {
         GetPixel(ilocx, ilocy, ctx);
-        auto pobj = (GedObject*)ctx.GetObject(_pickbuffer, 0);
+        auto pobj = (ork::Object*)ctx.GetObject(_pickbuffer, 0);
+        if(0)printf( "move ilocx<%d> ilocy<%d> pobj<%p> ", ilocx, ilocy, (void*) pobj );
         if( pobj ) {
+            if(0)printf( "clazz<%s> ", (void*) pobj->objectClass()->Name().c_str() );
           auto pnode = dynamic_cast<GedObject*>(pobj);
           if (pnode) {
+            if(0)printf( "pnode<%p> ", (void*) pnode );
             auto as_inode = dynamic_cast<GedItemNode*>(pobj);
             if( as_inode ){
-              //printf( "pobj<%p> as_inode<%p:%s\n", (void*) pobj, (void*) as_inode, as_inode->_propname.c_str() );
+              if(0)printf( "as_inode<%s>", as_inode->_propname.c_str() );
             }
             _mouseoverNode = pnode;
             if (pnode != _activeNode){
@@ -254,6 +261,8 @@ ui::HandlerResult GedSurface::DoOnUiEvent(ui::event_constptr_t EV) {
             }
           }
         }
+        if(0)printf( "\n");
+        mNeedsSurfaceRepaint = true;
       }
       gctr++;
       break;
@@ -267,7 +276,6 @@ ui::HandlerResult GedSurface::DoOnUiEvent(ui::event_constptr_t EV) {
         }
         bool was_handled = _activeNode->OnUiEvent(locEV);
         mNeedsSurfaceRepaint = true;
-      } else {
       }
       break;
     }
@@ -280,7 +288,7 @@ ui::HandlerResult GedSurface::DoOnUiEvent(ui::event_constptr_t EV) {
       float fy  = float(ilocy) / float(height());
       auto pobj = ctx.GetObject(_pickbuffer, 0);
 
-      // printf( "GedSurface:: pick ilocx<%d> ilocy<%d> fx<%g> fy<%g> pobj<%p>\n", ilocx, ilocy, fx, fy, (void*) pobj );
+      printf( "GedSurface:: pick ilocx<%d> ilocy<%d> fx<%g> fy<%g> pobj<%p>\n", ilocx, ilocy, fx, fy, (void*) pobj );
 
       bool is_in_set = GedSkin::IsObjInSet(pobj);
       const auto clr = ctx._pickvalues[0];
@@ -296,7 +304,7 @@ ui::HandlerResult GedSurface::DoOnUiEvent(ui::event_constptr_t EV) {
           locEV->miY -= as_inode->GetY();
           auto clazz     = as_inode->GetClass();
           auto clazzname = clazz->Name();
-          // printf( "obj<%p> class<%s>\n", (void*) pobj, clazzname.c_str() );
+           printf( "obj<%p> class<%s>\n", (void*) pobj, clazzname.c_str() );
         }
 
         switch (filtev._eventcode) {
@@ -311,6 +319,7 @@ ui::HandlerResult GedSurface::DoOnUiEvent(ui::event_constptr_t EV) {
             break;
           }
           case ui::EventCode::DOUBLECLICK:{
+            _activeNode = pnode;
             bool was_handled = pnode->OnUiEvent(locEV);
             break;
           }

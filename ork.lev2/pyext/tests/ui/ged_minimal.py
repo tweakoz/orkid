@@ -28,7 +28,7 @@ class UiGedTestApp(object):
     # create object model and ged surface
     self.objmodel = ui.ObjModel()
     self.geditem = lg_group.makeChild( uiclass = ui.GedSurface,
-                                       args = ["box",self.objmodel] )
+                                       args = ["GEDSURF",self.objmodel] )
     self.ged_surf = self.geditem.widget
     self.ged_layout = self.geditem.layout
 

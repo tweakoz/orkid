@@ -122,6 +122,7 @@ bool Slider<T>::OnUiEvent(ork::ui::event_constptr_t ev) // final
 
   switch (filtev._eventcode) {
     case ui::EventCode::PUSH: {
+        printf("Slider<p> push..\n", this );
       break;
     }
     case ui::EventCode::DRAG: {
@@ -132,7 +133,7 @@ bool Slider<T>::OnUiEvent(ork::ui::event_constptr_t ev) // final
       bool bright = ev->IsButton2DownF();
 
       if (bleft || bright) {
-        int mousepos = ev->miX;
+        int mousepos = ev->miX+_parent->miX;
 
         float fx    = float(mousepos - mfx) / (mfw-1);
         if(fx<0.0)

@@ -61,14 +61,15 @@ texture_ptr_t createUpArrowTexture(lev2::Context* ctx){
   uint32_t data[] = {
 
     O, O, O, O, X, O, O, O, O,
-    O, O, O, X, O, X, O, O, O,
-    O, O, O, X, O, X, O, O, O,
-    O, O, X, O, O, O, X, O, O,
-    O, O, X, O, O, O, X, O, O,
-    O, X, O, O, O, O, O, X, O,
-    O, X, O, O, O, O, O, X, O,
-    X, O, O, O, O, O, O, O, X,
-    X, X, X, X, X, X, X, X, X,
+    O, O, O, X, X, X, O, O, O,
+    O, O, X, X, O, X, X, O, O,
+    O, X, X, O, O, O, X, X, O,
+    X, X, O, O, X, O, O, X, X,
+    O, O, O, X, X, X, O, O, O,
+    O, O, X, X, O, X, X, O, O,
+    O, X, X, O, O, O, X, X, O,
+    X, X, O, O, X, O, O, X, X,
+
   };
   tid._data = (const void*) data;
   ctx->TXI()->initTextureFromData(texture.get(), tid);
@@ -374,7 +375,6 @@ void GedSkin1::End(Context* pTARG) {
     }
     vw.UnLock(pTARG);
 
-    //_material->begin(_is_pickmode ? _tekvtxpick : _tekvtxcolor, RCFD);
     _material->_rasterstate.SetRGBAWriteMask(true, true);
     _material->_rasterstate.SetDepthTest(EDepthTest::OFF);
     _material->begin(_tekvtxcolor, RCFD);
@@ -438,8 +438,7 @@ void GedSkin1::End(Context* pTARG) {
         _material->_rasterstate.SetDepthTest(EDepthTest::OFF);
         _material->_rasterstate.SetBlending(Blending::ALPHA);
 
-        _material->begin(_is_pickmode ? _tekvtxpick : _tektexcolor, RCFD);
-        //_material->begin(_tekvtxcolor, RCFD);
+        _material->begin(_is_pickmode ? _tekvtxcolor : _tektexcolor, RCFD);
         _material->bindParamMatrix(_parmvp, _uiMVPMatrix);
         _material->bindParamCTex(_partexture, texture.get());
         pTARG->GBI()->DrawPrimitiveEML(vw, PrimitiveType::TRIANGLES);
@@ -472,8 +471,6 @@ void GedSkin1::End(Context* pTARG) {
     ///////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////
 
-
-
     if (not _is_pickmode) {
       if (inumlines) {
         icount = 0;
@@ -494,7 +491,7 @@ void GedSkin1::End(Context* pTARG) {
           _material->_rasterstate.SetDepthTest(EDepthTest::OFF);
           _material->_rasterstate.SetBlending(Blending::OFF);
 
-          _material->begin(_is_pickmode ? _tekvtxpick : _tekvtxcolor, RCFD);
+          _material->begin(_tekvtxcolor, RCFD);
           _material->bindParamMatrix(_parmvp, _uiMVPMatrix);
           pTARG->GBI()->DrawPrimitiveEML(vw, PrimitiveType::LINES);
           _material->end(RCFD);

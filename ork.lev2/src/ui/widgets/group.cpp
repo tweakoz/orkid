@@ -96,11 +96,14 @@ Widget* Group::doRouteUiEvent(event_constptr_t ev) {
   for (auto& child : _children) {
     bool inside = child->IsEventInside(ev);
     if (0)
-      printf("Group<%s>::doRouteUiEvent ch<%p> inside<%d>\n", _name.c_str(), (void*) child.get(), int(inside));
+      printf("Group<%s>::doRouteUiEvent ch<%s> inside<%d>\n", _name.c_str(), child->_name.c_str(), int(inside));
     if (inside) {
       auto child_target = child->routeUiEvent(ev);
-      if (child_target)
+      if (child_target){
+        if (0)
+          printf("  child_target<%s>\n", child_target->_name.c_str() );
         return child_target;
+      }
     }
   }
   //
