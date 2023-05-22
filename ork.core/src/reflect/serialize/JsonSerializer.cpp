@@ -7,6 +7,7 @@
 
 #include <ork/pch.h>
 #include <ork/reflect/serialize/JsonSerializer.h>
+#include <ork/reflect/enum_serializer.inl>
 #include <ork/reflect/Command.h>
 
 #include <ork/reflect/properties/ObjectProperty.h>
@@ -20,7 +21,7 @@
 #include <boost/uuid/uuid_io.hpp>
 #include <cstring>
 #include <boost/filesystem.hpp>
-
+#include <ork/math/cvector4.h>
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunknown-pragmas"
 
@@ -210,6 +211,30 @@ void JsonSerializer::serializeLeaf(node_ptr_t leafnode) {
     rapidjson::Value doubleval;
     doubleval.SetDouble(as_double.value());
     addfn(doubleval);
+  } else if (auto as_fvec2 = leafnode->_value.tryAs<fvec2>()) {
+    rapidjson::Value fv2val;  
+    fv2val.SetArray();
+    fv2val.PushBack(as_fvec2.value().x, *_allocator);
+    fv2val.PushBack(as_fvec2.value().y, *_allocator);
+    addfn(fv2val);
+  } else if (auto as_fvec3 = leafnode->_value.tryAs<fvec3>()) {
+    rapidjson::Value fv3val;  
+    fv3val.SetArray();
+    fv3val.PushBack(as_fvec3.value().x, *_allocator);
+    fv3val.PushBack(as_fvec3.value().y, *_allocator);
+    fv3val.PushBack(as_fvec3.value().z, *_allocator);
+    addfn(fv3val);
+  } else if (auto as_fvec4 = leafnode->_value.tryAs<fvec4>()) {
+    rapidjson::Value fv4val;  
+    fv4val.SetArray();
+    fv4val.PushBack(as_fvec4.value().x, *_allocator);
+    fv4val.PushBack(as_fvec4.value().y, *_allocator);
+    fv4val.PushBack(as_fvec4.value().z, *_allocator);
+    fv4val.PushBack(as_fvec4.value().w, *_allocator);
+    addfn(fv4val);
+  } else if (auto as_enum = leafnode->_value.tryAs<enumvalue_ptr_t>()) {
+    rapidjson::Value strval(as_enum.value()->_name.c_str(), *_allocator);
+    addfn(strval);
   } else if (auto as_str = leafnode->_value.tryAs<std::string>()) {
     rapidjson::Value strval(as_str.value().c_str(), *_allocator);
     addfn(strval);

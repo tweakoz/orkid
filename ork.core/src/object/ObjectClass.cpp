@@ -47,6 +47,7 @@ boost::uuids::uuid ObjectClass::genUUID() {
 ////////////////////////////////////////////////////////////////////////////////
 
 object_ptr_t ObjectClass::createShared() const {
+  OrkAssert(_sharedFactory);
   auto shcast = _sharedFactory();
   auto asobj  = std::dynamic_pointer_cast<Object>(shcast);
   return asobj;

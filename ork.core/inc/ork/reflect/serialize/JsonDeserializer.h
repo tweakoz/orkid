@@ -43,6 +43,7 @@ private:
   ////////////////////////////////////////////
 
   rapidjson::Document _document;
+  std::stack<const ObjectProperty*> _property_stack;
 
 };
 

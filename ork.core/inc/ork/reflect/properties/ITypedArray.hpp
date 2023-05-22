@@ -10,6 +10,7 @@
 #include "ITypedArray.h"
 #include <ork/reflect/ISerializer.h>
 #include <ork/reflect/BidirectionalSerializer.h>
+#include <ork/reflect/enum_serializer.inl>
 #include "codec.inl"
 
 namespace ork { namespace reflect {
@@ -29,6 +30,17 @@ void ITypedArray<elem_t>::deserializeElement(serdes::node_ptr_t arynode) const {
     using ptrtype_t      = typename elem_t::element_type;
     auto typed_ptr_value = std::dynamic_pointer_cast<ptrtype_t>(objvalue);
     set(typed_ptr_value, instance, index);
+  } else if constexpr (std::is_enum_v<elem_t>) {
+    auto registrar = serdes::EnumRegistrar::instance();
+    auto enumtype = registrar->findEnumClass<elem_t>();
+    OrkAssert(enumtype!=nullptr);
+    std::string strvalue;
+    serdes::decode_value<std::string>(childnode->_value, strvalue);
+    auto item = enumtype->_str2intmap.find(strvalue);
+    OrkAssert(item!=enumtype->_str2intmap.end());
+    auto as_int = static_cast<int>(item->second);
+    auto as_T = static_cast<elem_t>(as_int);
+    set(as_T, instance, index);
   } else {
     elem_t value;
     serdes::decode_value<elem_t>(childnode->_value, value);
@@ -44,6 +56,17 @@ void ITypedArray<elem_t>::serializeElement(serdes::node_ptr_t elemnode) const {
   get(value, instance, elemnode->_index);
   if constexpr (std::is_convertible<elem_t, object_ptr_t>::value) {
     elemnode->_value.template set<object_ptr_t>(value);
+  } else if constexpr (std::is_enum_v<elem_t>) {
+    auto registrar = serdes::EnumRegistrar::instance();
+    auto enumtype = registrar->findEnumClass<elem_t>();
+    OrkAssert(enumtype!=nullptr);
+    auto item = enumtype->_int2strmap.find(int(value));
+    OrkAssert(item!=enumtype->_int2strmap.end());
+    auto as_str = item->second;
+    serdes::enumvalue_ptr_t rewrite = std::make_shared<serdes::EnumValue>();
+    rewrite->_name = as_str;
+    rewrite->_value = int(value);
+    elemnode->_value.template set<serdes::enumvalue_ptr_t>(rewrite);
   } else {
     elemnode->_value.template set<elem_t>(value);
   }

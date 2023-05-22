@@ -9,6 +9,7 @@
 #pragma once
 
 #include <ork/reflect/properties/codec.h>
+#include <ork/math/cvector4.h>
 
 namespace ork{
   class PoolString;
@@ -51,6 +52,39 @@ template <>void encode_key(std::string& keystr_out, const PoolString& key_inp);
 template <>void encode_key(std::string& keystr_out, const std::string& key_inp);
 template <>void encode_key(std::string& keystr_out, rtti::Class* const& key_inp);
 template <>void encode_key(std::string& keystr_out, object::ObjectClass* const& key_inp);
+
+////////////////////////////////////////////////////////////////////////////////
+
+template <> //
+inline void decode_value(var_t val_inp, fvec4& val_out) {
+  if( auto as_fvec4 = val_inp.tryAs<fvec4>() ){
+    val_out = as_fvec4.value();
+  }
+  else if( auto as_var_array_t = val_inp.tryAs<var_array_t>() ){
+    auto& var_array = as_var_array_t.value();
+    OrkAssert(var_array.size() == 4);
+    val_out.x = var_array[0].get<double>();
+    val_out.y = var_array[1].get<double>();
+    val_out.z = var_array[2].get<double>();
+    val_out.w = var_array[3].get<double>();
+  }
+  else{
+    OrkAssert(false);
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+template <> //
+inline void decode_value(var_t val_inp, object_ptr_t& val_out) {
+  printf( "val_inp<%s>\n", val_inp.typestr().c_str() );
+  if(auto as_obj = val_inp.tryAs<object_ptr_t>()){
+    val_out = as_obj.value();
+  }
+  else{
+    OrkAssert(false);
+  }
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // fallthroughs

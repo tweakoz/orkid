@@ -7,6 +7,8 @@
 
 #include "pyext.h"
 #include <ork/util/hotkey.h>
+#include <ork/reflect/serialize/JsonDeserializer.h>
+#include <ork/reflect/serialize/JsonSerializer.h>
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork {
 //using namespace rtti;
@@ -28,7 +30,19 @@ void pyinit_reflection(py::module& module_core) {
       });
   type_codec->registerStdCodec<rtti::castable_ptr_t>(icastable_type_t);
   /////////////////////////////////////////////////////////////////////////////////
-  auto objtype_t = py::class_<Object,rtti::ICastable,object_ptr_t>(module_core, "Object"); //
+  auto objtype_t = py::class_<Object,rtti::ICastable,object_ptr_t>(module_core, "Object")
+    .def_static("deserializeJson", [](std::string json) -> object_ptr_t {
+        reflect::serdes::JsonDeserializer deser(json.c_str());
+        object_ptr_t instance_out;
+        deser.deserializeTop(instance_out);
+        return instance_out;
+    })
+    .def("serializeJson", [](object_ptr_t obj) -> std::string {
+        reflect::serdes::JsonSerializer ser;
+        auto topnode    = ser.serializeRoot(obj);
+        auto resultdata = ser.output();
+        return resultdata.c_str();
+    });
   type_codec->registerStdCodec<object_ptr_t>(objtype_t);
   /////////////////////////////////////////////////////////////////////////////////
   using hotkey_ptr_t = std::shared_ptr<HotKey>;
@@ -47,6 +61,8 @@ void pyinit_reflection(py::module& module_core) {
             return hk;
           });
   type_codec->registerStdCodec<hotkeyconfig_ptr_t>(hkeycfg_type);
+  /////////////////////////////////////////////////////////////////////////////////
+
 
 }
 

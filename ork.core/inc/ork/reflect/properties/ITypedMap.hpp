@@ -69,6 +69,8 @@ template <typename KeyType, typename ValueType> //
 void ITypedMap<KeyType, ValueType>::deserialize(serdes::node_ptr_t dsernode) const {
   KeyType key;
   ValueType value;
+
+
   auto deserializer  = dsernode->_deserializer;
   size_t numelements = dsernode->_numchildren;
   auto instance      = dsernode->_deser_instance;
@@ -78,6 +80,12 @@ void ITypedMap<KeyType, ValueType>::deserialize(serdes::node_ptr_t dsernode) con
     elemnode->_parent = dsernode;
     auto childnode    = deserializer->deserializeElement(elemnode);
     serdes::decode_key<KeyType>(childnode->_key, key);
+
+    if constexpr (std::is_same_v<std::remove_cvref_t<KeyType>, std::string>) {
+      printf( "  KEY<%s>\n", key.c_str() );
+    }
+
+
     childnode->_name = childnode->_key;
     serdes::decode_value<ValueType>(childnode->_value, value);
     this->WriteElement(

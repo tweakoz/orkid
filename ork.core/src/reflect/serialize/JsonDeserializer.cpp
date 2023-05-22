@@ -202,7 +202,27 @@ serdes::node_ptr_t JsonDeserializer::_parseSubNode(
       break;
     }
     case rapidjson::kArrayType: {
-      OrkAssert(false);
+      int numchildren = subvalue.Size();
+      serdes::var_array_t vec;
+      for( int ic=0; ic<numchildren; ic++ ) {
+        const auto& childjsonvalue = subvalue[ic];
+        switch( childjsonvalue.GetType() ) {
+          case rapidjson::kObjectType: {
+            OrkAssert(false);
+            break;
+          }
+          case rapidjson::kNumberType: {
+            svar64_t vv;
+            vv.set<double>(childjsonvalue.GetDouble());
+            vec.push_back( vv );
+            break;
+          }
+          default:
+            OrkAssert(false);
+            break;
+        }
+        child_node->_value.set<serdes::var_array_t>(vec);
+      }
       break;
     }
     case rapidjson::kNullType:
@@ -283,15 +303,20 @@ object_ptr_t JsonDeserializer::_parseObjectNode(serdes::node_ptr_t dsernode) {
   auto classstr = objnode["class"].GetString();
   auto uuidstr  = objnode["uuid"].GetString();
 
+  logchan_ds->log("_parseObjectNode classstr<%s>", classstr );
+
   boost::uuids::string_generator gen;
   auto uuid     = gen(uuidstr);
   auto clazz    = rtti::Class::FindClass(classstr);
   auto objclazz = dynamic_cast<object::ObjectClass*>(clazz);
   OrkAssert(objclazz);
+  logchan_ds->log("_parseObjectNode objclazz<%p>", objclazz );
   const auto& description = objclazz->Description();
 
   instance_out        = objclazz->createShared();
   instance_out->_uuid = uuid;
+
+  logchan_ds->log("_parseObjectNode instance_out<%p>", instance_out.get() );
 
   instance_out->preDeserialize(*this);
 
@@ -319,6 +344,7 @@ object_ptr_t JsonDeserializer::_parseObjectNode(serdes::node_ptr_t dsernode) {
     if (prop) {
        logchan_ds->log("found propname<%s> prop<%p>", propname, (void*) prop);
       dsernode->_property = prop;
+      _property_stack.push(prop);
       auto child_node     = std::make_shared<Node>();
 
       child_node->_parent         = dsernode;
@@ -359,7 +385,7 @@ object_ptr_t JsonDeserializer::_parseObjectNode(serdes::node_ptr_t dsernode) {
           OrkAssert(false);
       }
       prop->deserialize(child_node);
-
+      _property_stack.pop();
     } else { // drop property, no longer registered
       logchan_ds->log("dropping property<%s>", propname);
     }

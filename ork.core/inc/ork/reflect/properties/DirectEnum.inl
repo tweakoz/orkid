@@ -27,9 +27,24 @@ template <typename T> void DirectEnum<T>::set(const T& value, object_ptr_t obj) 
   obj.get()->*_member = value;
 }
 
-template <typename T> void DirectEnum<T>::deserialize(serdes::node_ptr_t) const {
+template <typename T> void DirectEnum<T>::deserialize(serdes::node_ptr_t leaf_node) const {
+  OrkAssert(false);
 }
-template <typename T> void DirectEnum<T>::serialize(serdes::node_ptr_t) const {
+template <typename T> void DirectEnum<T>::serialize(serdes::node_ptr_t leaf_node) const {
+  auto registrar = serdes::EnumRegistrar::instance();
+  auto enumtype = registrar->findEnumClass<T>();
+  OrkAssert(enumtype!=nullptr);
+  auto instance   = leaf_node->_ser_instance;
+  T e_val;
+  get(e_val, instance);
+  int int_val = static_cast<int>(e_val);
+  auto it_s = enumtype->_int2strmap.find(int_val);
+  serdes::enumvalue_ptr_t rewrite = std::make_shared<serdes::EnumValue>();
+  rewrite->_name = it_s->second;
+  rewrite->_value = it_s->first;
+  auto serializer = leaf_node->_serializer;
+  leaf_node->_value.template set<serdes::enumvalue_ptr_t>(rewrite);
+  serializer->serializeLeaf(leaf_node);
 }
 
 template <typename T> enum_abs_array_t DirectEnum<T>::enumerateEnumerations(object_constptr_t obj) const{

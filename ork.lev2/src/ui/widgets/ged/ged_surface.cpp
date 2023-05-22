@@ -218,14 +218,16 @@ ui::HandlerResult GedSurface::DoOnUiEvent(ui::event_constptr_t EV) {
               std::string default_path;
               genviron.get("ORKID_WORKSPACE_DIR",default_path);
               auto P = file::Path(default_path)/"ORKFILE.orj";
-              auto path = ui::popupSaveDialog( //
+              /*auto path = ui::popupSaveDialog( //
                   "Save Orkid Json Object File", //
                   P.c_str(), //
                   {"*.orj"}); //
-              printf( "path<%s>\n", path.c_str() );
+              printf( "path<%s>\n", path.c_str() );*/
               reflect::serdes::JsonSerializer ser;
               auto topnode    = ser.serializeRoot(obj);
               auto resultdata = ser.output();
+              printf("mutstr<%s>\n", resultdata.c_str());
+              OrkAssert(false);
             }
           }
           break;

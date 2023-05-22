@@ -17,6 +17,7 @@ namespace ork::reflect::serdes {
 ////////////////////////////////////////////////////////////////////////////////
 using ulong_t = unsigned long int;
 using uint_t  = unsigned int;
+using var_array_t = std::vector<svar64_t>;
 
 template <typename T> //
 void decode_key(std::string keystr, T& key_out);
