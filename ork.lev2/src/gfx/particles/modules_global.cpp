@@ -105,6 +105,9 @@ using globalmoduleinst_ptr_t = std::shared_ptr<GlobalModuleInst>;
 ///////////////////////////////////////////////////////////////////////////////
 
 void GlobalModuleData::describeX(class_t* clazz) {
+  clazz->setSharedFactory( []() -> rtti::castable_ptr_t {
+    return GlobalModuleData::createShared();
+  });
 }
 
 ///////////////////////////////////////////////////////////////////////////////

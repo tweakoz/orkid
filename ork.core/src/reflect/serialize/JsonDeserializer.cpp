@@ -10,6 +10,7 @@
 #include <ork/reflect/Command.h>
 
 #include <ork/reflect/properties/ObjectProperty.h>
+#include <ork/reflect/properties/ITypedArray.h>
 #include <ork/rtti/Class.h>
 #include <ork/rtti/Category.h>
 #include <ork/rtti/downcast.h>
@@ -59,6 +60,7 @@ JsonDeserializer::JsonDeserializer(const std::string& jsondata)
   bool has_top   = _document.HasMember("root");
   OrkAssert(is_object);
   OrkAssert(has_top);
+  _property_stack.push(nullptr);
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -313,7 +315,50 @@ object_ptr_t JsonDeserializer::_parseObjectNode(serdes::node_ptr_t dsernode) {
   logchan_ds->log("_parseObjectNode objclazz<%p>", objclazz );
   const auto& description = objclazz->Description();
 
-  instance_out        = objclazz->createShared();
+  //////////////////////////////////////////////
+  // check for "reflect.no_instantiate"
+  //  this should infer that the object is pre-instantiated
+  //  and lifetime managed by parent
+  //////////////////////////////////////////////
+
+  auto top_prop = _property_stack.top();
+  auto has_anno = top_prop //
+                ? top_prop->annotation("reflect.no_instantiate").tryAs<bool>() //
+                : false;
+
+  if( has_anno ){
+    auto parnode = dsernode->_parent;
+    switch(parnode->_type){
+      case NodeType::ARRAY_ELEMENT_LEAF:{
+        auto arynode = parnode->_parent;
+        auto aryobj = arynode->_deser_instance;
+        int index = arynode->_index;
+        auto top_prop_as_obj_array = dynamic_cast<const ITypedArray< object_ptr_t>*>(top_prop);
+        printf( "ARYINDEX<%d> top_prop_as_obj_array<%s>\n", index, top_prop_as_obj_array->_name.c_str() );
+        top_prop_as_obj_array->get(instance_out, aryobj, index);
+        OrkAssert(instance_out!=nullptr);
+        break;
+      }
+      case NodeType::ARRAY_ELEMENT_OBJECT:
+        OrkAssert(false);
+        break;
+      default:
+        OrkAssert(false);
+        break;
+    }
+  }
+
+  //////////////////////////////////////////////
+  // if we have not been instantiated yet, do so
+  //////////////////////////////////////////////
+
+  if(instance_out==nullptr){
+    instance_out        = objclazz->createShared();
+  }
+
+  //////////////////////////////////////////////
+
+
   instance_out->_uuid = uuid;
 
   logchan_ds->log("_parseObjectNode instance_out<%p>", instance_out.get() );
