@@ -35,19 +35,19 @@ void GraphData::describeX(object::ObjectClass* clazz) {
           "editor.factorylistbase", //
           "dflow::DgModuleData");
 
-/*  clazz
+  clazz
       ->accessorVariant(
           "zzz_connections", //
-          &GraphInst::SerializeConnections,
-          &GraphInst::DeserializeConnections)
+          &GraphData::serializeConnections,
+          &GraphData::deserializeConnections)
       ->annotate<bool>(
           "editor.visible", //
           false);
 
-  clazz->annotate(
+  clazz->annotationTyped<ConstString>(
       "editor.object.ops", //
-      ConstString("dfgraph:dflowgraphedit import:dflowgraphimport export:dflowgraphexport"));
-      */
+      "dfgraph:dflowgraphedit import:dflowgraphimport export:dflowgraphexport");
+      
 }
 ///////////////////////////////////////////////////////////////////////////////
 GraphData::GraphData()
