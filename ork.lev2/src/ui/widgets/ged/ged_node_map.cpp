@@ -370,7 +370,7 @@ bool GedMapNode::OnMouseDoubleClicked(ui::event_constptr_t ev) {
 
   ///////////////////////////////////////
 
-  if (mbConst == false) {
+  if (not mbConst) {
     ix -= (kdim + 4);
     if( (ix >= koff) and (ix <= kdim) and (iy >= koff) and (iy <= kdim)) { // add item
       addItem(ev);
@@ -427,33 +427,35 @@ bool GedMapNode::OnMouseDoubleClicked(ui::event_constptr_t ev) {
   ///////////////////////////////////////
 
   int inumitems = numChildren();
-
-  // QMenu* pmenu = new QMenu(0);
-
+  std::vector<std::string> choices;
+  std::map<std::string, int> choice_to_index;
   for (int it = 0; it < inumitems; it++) {
     auto pchild       = child(it);
     const char* pname = pchild->_propname.c_str();
-    // QAction* pchildact  = pmenu->addAction(pname);
-    // QString qstr(CreateFormattedString("%d", it).c_str());
-    // QVariant UserData(qstr);
-    // pchildact->setData(UserData);
+    choices.push_back(pname);
+    choice_to_index[pname] = it;
   }
-  /*QAction* pact = pmenu->exec(QCursor::pos());
-  if (pact) {
-    QVariant UserData = pact->data();
-    std::string pname = UserData.toString().toStdString();
-    int index         = 0;
-    sscanf(pname.c_str(), "%d", &index);
-    mItemIndex = index;
-    ///////////////////////////////////////////
-    PersistHashContext HashCtx;
-    HashCtx.mObject     = GetOrkObj();
-    HashCtx.mProperty   = GetOrkProp();
-    PersistantMap* pmap = model->GetPersistMap(HashCtx);
-    ///////////////////////////////////////////
-    pmap->SetValue("index", CreateFormattedString("%d", mItemIndex));
-    updateVisibility();
-  }*/
+  fvec2 dimensions   = ui::ChoiceList::computeDimensions(choices);
+  int sx             = ev->miScreenPosX;
+  int sy             = ev->miScreenPosY;
+  std::string choice = ui::popupChoiceList(
+      _l2context(), //
+      sx - (int(dimensions.x) >> 1),
+      sy - (int(dimensions.y) >> 1),
+      choices,
+      dimensions);
+  printf("choice<%s>\n", choice.c_str());
+  auto it_choice = choice_to_index.find(choice);
+  OrkAssert(it_choice != choice_to_index.end());
+  mItemIndex = it_choice->second;
+  ///////////////////////////////////////////
+  //PersistHashContext HashCtx;
+  //HashCtx._object     = _iodriver->_object;
+  //HashCtx._property   = _iodriver->_par_prop;
+  //auto pmap         = _container->_model->persistMapForHash(HashCtx);
+  //pmap->setValue("index", CreateFormattedString("%d", mItemIndex));
+  ///////////////////////////////////////////
+  updateVisibility();
   ///////////////////////////////////////
   return false;
 }
