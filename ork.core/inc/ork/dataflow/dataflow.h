@@ -254,6 +254,15 @@ struct Topology {
   uint64_t _hash = 0;
 };
 
+struct DeserConnection{
+  std::string _inp_module;
+  std::string _inp_plug;
+  std::string _out_module;
+  std::string _out_plug;
+};
+
+using deserconn_ptr_t = std::shared_ptr<DeserConnection>;
+
 struct GraphData : public ork::Object {
 
   DeclareConcreteX(GraphData, ork::Object);
@@ -262,8 +271,6 @@ public:
 
   static void addModule(graphdata_ptr_t gd, const std::string& named, dgmoduledata_ptr_t pchild);
   static void removeModule(graphdata_ptr_t gd, dgmoduledata_ptr_t pchild);
-  static bool serializeConnections(graphdata_const_ptr_t gd, ork::reflect::serdes::ISerializer& ser);
-  static bool deserializeConnections(graphdata_ptr_t gd, ork::reflect::serdes::IDeserializer& deser);
   static graphinst_ptr_t createGraphInst(graphdata_ptr_t gd);
 
 
@@ -291,6 +298,8 @@ public:
 
 
   orklut<std::string, object_ptr_t> _modules;
+  std::vector<deserconn_ptr_t> _deser_connections;
+
   bool _topologyDirty;
 };
 

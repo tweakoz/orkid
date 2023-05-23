@@ -156,7 +156,9 @@ serdes::node_ptr_t JsonDeserializer::_parseSubNode(
 
   switch (subvalue.GetType()) {
     case rapidjson::kObjectType: {
-      if (subvalue.HasMember("object")) {
+      //////////////////////////////////////////////////////////////////////////
+      if (subvalue.HasMember("object")) { // inline object
+      //////////////////////////////////////////////////////////////////////////
         const auto& jsonobjnode = subvalue["object"];
         switch (jsonobjnode.GetType()) {
           case rapidjson::kObjectType: {
@@ -188,7 +190,9 @@ serdes::node_ptr_t JsonDeserializer::_parseSubNode(
             OrkAssert(false);
             break;
         }
-      } else if (subvalue.HasMember("object-ref")) {
+      //////////////////////////////////////////////////////////////////////////
+      } else if (subvalue.HasMember("object-ref")) { // object reference
+      //////////////////////////////////////////////////////////////////////////
         const auto& jsonobjnode = subvalue["object-ref"];
         bool has_uuid           = jsonobjnode.HasMember("uuid-ref");
         OrkAssert(has_uuid);
@@ -198,8 +202,31 @@ serdes::node_ptr_t JsonDeserializer::_parseSubNode(
         auto instance_out           = findTrackedObject(uuid);
         child_node->_deser_instance = instance_out;
         child_node->_value.set<object_ptr_t>(instance_out);
-      } else {
-        OrkAssert(false);
+      //////////////////////////////////////////////////////////////////////////
+      } else { // "blind data" (pass-thru to custom deserializer)
+      //////////////////////////////////////////////////////////////////////////
+        for (auto it = subvalue.MemberBegin(); //
+                  it != subvalue.MemberEnd(); //
+                  ++it) {
+
+          const auto& propkey  = it->name;
+          const auto& propnode = it->value;
+          auto propname = propkey.GetString();
+
+          // create blind serdes::node_ptr tree
+          auto propnode_serdes = pushNode(propname, NodeType::OBJECT);
+          propnode_serdes->_parent = child_node;
+          propnode_serdes->_impl.makeShared<JsonLeafNode>(propnode);
+          auto propnode_child = _parseSubNode(propnode_serdes, propnode);
+          propnode_serdes->_value = propnode_child->_value;
+          popNode();
+
+          child_node->_deser_blind_children.push_back(propnode_serdes);
+
+          // OrkAssert(propnode.IsObject());
+
+        }
+
       }
       break;
     }

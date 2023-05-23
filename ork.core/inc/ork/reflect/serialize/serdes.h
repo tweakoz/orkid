@@ -48,6 +48,7 @@ struct Node {
   size_t _index       = 0;
   size_t _multiindex  = 0;
   size_t _numchildren = 0;
+  std::vector<node_ptr_t> _deser_blind_children;
   NodeType _type      = NodeType::UNKNOWN;
 };
 

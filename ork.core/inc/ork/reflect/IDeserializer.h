@@ -47,4 +47,7 @@ T deserializeMapSubLeaf(
     serdes::node_ptr_t mapnode, //
     std::string& key_out);
 
+serdes::node_ptr_t fetchNextMapSubLeaf(serdes::node_ptr_t mapnode);
+
+
 } // namespace ork::reflect::serdes

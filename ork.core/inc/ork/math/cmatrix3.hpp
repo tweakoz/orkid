@@ -537,6 +537,9 @@ inline void ::ork::reflect::ITyped<fmtx3>::serialize(serdes::node_ptr_t sernode)
     serializeArraySubLeaf(arynode, value.asArray()[i], i);
   serializer->popNode(); // pop arraynode
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
 template <> //
 inline void ::ork::reflect::ITyped<fmtx3>::deserialize(serdes::node_ptr_t arynode) const {
   using namespace serdes;
@@ -551,5 +554,7 @@ inline void ::ork::reflect::ITyped<fmtx3>::deserialize(serdes::node_ptr_t arynod
 
   set(value, instance);
 }
+
+///////////////////////////////////////////////////////////////////////////////
 
 } // namespace ork::reflect

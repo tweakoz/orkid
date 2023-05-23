@@ -42,4 +42,13 @@ T deserializeMapSubLeaf(
   return value;
 }
 
+inline serdes::node_ptr_t fetchNextMapSubLeaf(serdes::node_ptr_t mapnode) {
+  auto deserializer = mapnode->_deserializer;
+  auto elemnode     = deserializer->pushNode("", serdes::NodeType::MAP_ELEMENT_LEAF);
+  elemnode->_parent = mapnode;
+  auto childnode    = deserializer->deserializeElement(elemnode);
+  deserializer->popNode();
+  return childnode;
+}
+
 } // namespace ork::reflect::serdes
