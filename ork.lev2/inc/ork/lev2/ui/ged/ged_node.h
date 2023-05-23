@@ -423,6 +423,9 @@ public:
   void SetMinMax(datatype min, datatype max) {
     mmin = min;
     mmax = max;
+    if(mmax==mmin){
+      mmax = mmin+T(1);
+    }
   }
 
   datatype value() const { return mval; }

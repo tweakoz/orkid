@@ -49,6 +49,7 @@ struct ParticleBufferPlugTraits {
   using data_impl_type_t             = ParticleBufferData;
   using inst_impl_type_t             = ParticleBufferInst;
   using xformer_t                    = dflow::nullpassthrudata;
+  using range_type = no_range;
   static constexpr size_t max_fanout = 1;
   static std::shared_ptr<ParticleBufferInst> data_to_inst(std::shared_ptr<ParticleBufferData> inp);
 };

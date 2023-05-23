@@ -27,6 +27,7 @@ struct FloatPlugTraits {
   using elemental_data_type = float;
   using elemental_inst_type = float;
   using xformer_t                    = nullpassthrudata;
+  using range_type = float_range;
   static constexpr size_t max_fanout = 0;
   static std::shared_ptr<float> data_to_inst(std::shared_ptr<float> inp);
 };
@@ -34,6 +35,7 @@ struct Vec3fPlugTraits {
   using elemental_data_type = fvec3;
   using elemental_inst_type = fvec3;
   using xformer_t           = nullpassthrudata;
+  using range_type = float_range;
   static constexpr size_t max_fanout = 0;
   static std::shared_ptr<fvec3> data_to_inst(std::shared_ptr<fvec3> inp);
 };
@@ -41,6 +43,7 @@ struct FloatXfPlugTraits {
   using elemental_data_type = float;
   using elemental_inst_type = float;
   using xformer_t                    = floatxfdata;
+  using range_type = float_range;
   static constexpr size_t max_fanout = 0;
   static std::shared_ptr<float> data_to_inst(std::shared_ptr<float> inp);
 };
@@ -48,6 +51,7 @@ struct Vec3XfPlugTraits {
   using elemental_data_type = fvec3;
   using elemental_inst_type = fvec3;
   using xformer_t                    = fvec3xfdata;
+  using range_type = float_range;
   static constexpr size_t max_fanout = 0;
   static std::shared_ptr<fvec3> data_to_inst(std::shared_ptr<fvec3> inp);
 };
@@ -187,6 +191,7 @@ public:
   using traits_t        = traits;
   using data_type_t     = typename traits_t::elemental_data_type;
   using data_type_ptr_t = std::shared_ptr<data_type_t>;
+  using range_t = typename traits_t::range_type;
 
   explicit inplugdata(
       moduledata_ptr_t pmod, //
@@ -198,6 +203,7 @@ public:
 
   data_type_ptr_t _value;
   object_ptr_t _transformer;
+  range_t _range;
 
   inpluginst_ptr_t createInstance() const override;
 };

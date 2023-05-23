@@ -184,14 +184,14 @@ std::shared_ptr<RingEmitterData> RingEmitterData::createShared() {
   // inputs
   //////////////////////////////////////////////////
 
-  createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "LifeSpan");
-  createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "EmissionRate");
-  createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "EmissionVelocity");
-  createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "DispersionAngle");
-  createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "EmissionRadius");
-  createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "EmitterSpinRate");
-  createInputPlug<Vec3XfPlugTraits>(data, EPR_UNIFORM, "Direction");
-  createInputPlug<Vec3XfPlugTraits>(data, EPR_UNIFORM, "Offset");
+  createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "LifeSpan")->_range = {0,100};
+  createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "EmissionRate")->_range = {0,1000};
+  createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "EmissionVelocity")->_range = {0,10};
+  createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "DispersionAngle")->_range = {0,1};
+  createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "EmissionRadius")->_range = {0,10};
+  createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "EmitterSpinRate")->_range = {0,100};
+  createInputPlug<Vec3XfPlugTraits>(data, EPR_UNIFORM, "Direction")->_range = {-1,1};
+  createInputPlug<Vec3XfPlugTraits>(data, EPR_UNIFORM, "Offset")->_range = {-10,10};
   return data;
 }
 

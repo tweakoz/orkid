@@ -87,13 +87,9 @@ std::shared_ptr<VortexModuleData> VortexModuleData::createShared() {
 
   _initShared(data);
 
-  //RegisterFloatXfPlug(VortexModule, Falloff, 0.0f, 10.0f, ged::OutPlugChoiceDelegate);
-  //RegisterFloatXfPlug(VortexModule, VortexStrength, -100.0f, 100.0f, ged::OutPlugChoiceDelegate);
-  //RegisterFloatXfPlug(VortexModule, OutwardStrength, -100.0f, 100.0f, ged::OutPlugChoiceDelegate);
-
-  createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "VortexStrength");
-  createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "OutwardStrength");
-  createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "Falloff");
+  createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "VortexStrength")->_range = {-100,100};
+  createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "OutwardStrength")->_range = {-100,100};
+  createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "Falloff")->_range = {0,10};
 
   return data;
 }

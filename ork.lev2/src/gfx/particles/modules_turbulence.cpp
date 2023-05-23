@@ -79,10 +79,7 @@ std::shared_ptr<TurbulenceModuleData> TurbulenceModuleData::createShared() {
 
   _initShared(data);
 
-  //RegisterFloatXfPlug(TurbulenceModule, AmountX, -100.0f, 100.0f, ged::OutPlugChoiceDelegate);
-  //RegisterFloatXfPlug(TurbulenceModule, AmountY, -100.0f, 100.0f, ged::OutPlugChoiceDelegate);
-  //RegisterFloatXfPlug(TurbulenceModule, AmountZ, -100.0f, 100.0f, ged::OutPlugChoiceDelegate);
-  createInputPlug<Vec3XfPlugTraits>(data, EPR_UNIFORM, "Amount");
+  createInputPlug<Vec3XfPlugTraits>(data, EPR_UNIFORM, "Amount")->_range = {-100,100};
 
   return data;
 }

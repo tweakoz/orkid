@@ -151,6 +151,8 @@ FloatPlugXfEditorImpl::FloatPlugXfEditorImpl(GedPlugNode* node)
 
     _is_connected = _inputPlugData->isConnected();
 
+    const auto& range = _inputPlugData->_range;
+    _floatSlider.SetMinMax( range._min, range._max );
     /////////////////////////////////////////
     // slider
     /////////////////////////////////////////

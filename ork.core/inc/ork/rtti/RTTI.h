@@ -16,6 +16,8 @@
 #include <ork/config/config.h>
 
 namespace ork {
+struct no_range {};
+
 struct float_range {
   float _min = 0.0f;
   float _max = 0.0f;

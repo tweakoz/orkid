@@ -207,7 +207,6 @@ ui::HandlerResult GedSurface::DoOnUiEvent(ui::event_constptr_t EV) {
             object_ptr_t instance_out;
             reflect::serdes::JsonDeserializer deser(dest);
             deser.deserializeTop(instance_out);
-            OrkAssert(false);
           }
           break;
         }
@@ -218,16 +217,17 @@ ui::HandlerResult GedSurface::DoOnUiEvent(ui::event_constptr_t EV) {
               std::string default_path;
               genviron.get("ORKID_WORKSPACE_DIR",default_path);
               auto P = file::Path(default_path)/"ORKFILE.orj";
-              /*auto path = ui::popupSaveDialog( //
+              auto path = ui::popupSaveDialog( //
                   "Save Orkid Json Object File", //
                   P.c_str(), //
                   {"*.orj"}); //
-              printf( "path<%s>\n", path.c_str() );*/
+              printf( "path<%s>\n", path.c_str() );
               reflect::serdes::JsonSerializer ser;
               auto topnode    = ser.serializeRoot(obj);
               auto resultdata = ser.output();
-              printf("mutstr<%s>\n", resultdata.c_str());
-              OrkAssert(false);
+              ork::File outputfile(path, ork::EFM_WRITE);
+              outputfile.Write(resultdata.c_str(), resultdata.length());
+              outputfile.Close();
             }
           }
           break;

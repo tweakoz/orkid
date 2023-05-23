@@ -90,12 +90,6 @@ struct GravityModuleInst : public ParticleModuleInst {
 //////////////////////////////////////////////////////////////////////////
 
 void GravityModuleData::describeX(class_t* clazz) {
-  //implementFloatXfPlugReflectionX<GravityModuleData,float,int>(clazz,&GravityModuleData::G,"G",-10,10,-999);
-  //RegisterFloatXfPlug(GravityModule, G, -10.0f, 10.0f, ged::OutPlugChoiceDelegate);
-  //RegisterFloatXfPlug(GravityModule, Mass, -10.0f, 10.0f, ged::OutPlugChoiceDelegate);
-  //RegisterFloatXfPlug(GravityModule, OthMass, -10.0f, 10.0f, ged::OutPlugChoiceDelegate);
-  //RegisterFloatXfPlug(GravityModule, MinDistance, 0.0f, 100.0f, ged::OutPlugChoiceDelegate);
-  //RegisterVect3XfPlug(GravityModule, Center, -1000.0f, 1000.0f, ged::OutPlugChoiceDelegate);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -110,11 +104,11 @@ std::shared_ptr<GravityModuleData> GravityModuleData::createShared() {
 
   _initShared(data);
 
-  createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "G");
-  createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "Mass");
-  createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "OthMass");
-  createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "MinDistance");
-  createInputPlug<Vec3XfPlugTraits>(data, EPR_UNIFORM, "Center");
+  createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "G")->_range = {-10.0f, 10.0f};
+  createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "Mass")->_range = {-10.0f, 10.0f};
+  createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "OthMass")->_range = {-10.0f, 10.0f};
+  createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "MinDistance")->_range = {0.0f, 100.0f};
+  createInputPlug<Vec3XfPlugTraits>(data, EPR_UNIFORM, "Center")->_range = {-1000.0f, 1000.0f};
 
   return data;
 }

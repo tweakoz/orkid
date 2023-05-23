@@ -155,6 +155,7 @@ struct ClassToucher {
     particle::ParticlePoolData::GetClassStatic();
     particle::GlobalModuleData::GetClassStatic();
     particle::RingEmitterData::GetClassStatic();
+    particle::NozzleEmitterData::GetClassStatic();
     particle::GravityModuleData::GetClassStatic();
     particle::TurbulenceModuleData::GetClassStatic();
     particle::VortexModuleData::GetClassStatic();

@@ -39,6 +39,7 @@ struct ImgBasePlugTraits{
   using elemental_data_type = ImgBase;
   using elemental_inst_type = ImgBase;
   using xformer_t = nullpassthrudata;
+  using range_type = no_range;
   static constexpr size_t max_fanout = 0;
   static std::shared_ptr<ImgBase> data_to_inst(std::shared_ptr<ImgBase> inp){
     return inp;
@@ -48,6 +49,7 @@ struct Img32PlugTraits{
   using elemental_data_type = Img32;
   using elemental_inst_type = Img32;
   using xformer_t = nullpassthrudata;
+  using range_type = no_range;
   static constexpr size_t max_fanout = 0;
   static std::shared_ptr<Img32> data_to_inst(std::shared_ptr<Img32> inp){
     return inp;
@@ -57,6 +59,7 @@ struct Img64PlugTraits{
   using elemental_data_type = Img64;
   using elemental_inst_type = Img64;
   using xformer_t = nullpassthrudata;
+  using range_type = no_range;
   static constexpr size_t max_fanout = 0;
   static std::shared_ptr<Img64> data_to_inst(std::shared_ptr<Img64> inp){
     return inp;  

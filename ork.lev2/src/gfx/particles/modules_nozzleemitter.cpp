@@ -153,13 +153,6 @@ void NozzleDirectedEmitter::computePosDir(float fi, fvec3& pos, fvec3& dir) {
 //////////////////////////////////////////////////////////////////////////
 
 void NozzleEmitterData::describeX(class_t* clazz) {
-  //RegisterFloatXfPlug(NozzleEmitter, Lifespan, 0.0f, 20.0f, ged::OutPlugChoiceDelegate);
-  //RegisterFloatXfPlug(NozzleEmitter, EmissionRate, 0.0f, 400.0f, ged::OutPlugChoiceDelegate);
-  //RegisterFloatXfPlug(NozzleEmitter, EmissionVelocity, -100.0f, 100.0f, ged::OutPlugChoiceDelegate);
-  //RegisterFloatXfPlug(NozzleEmitter, DispersionAngle, 0.0f, 1.0f, ged::OutPlugChoiceDelegate);
-  //RegisterVect3XfPlug(NozzleEmitter, Offset, -100.0f, 100.0f, ged::OutPlugChoiceDelegate);
-  //RegisterVect3XfPlug(NozzleEmitter, Direction, -1.0f, 1.0f, ged::OutPlugChoiceDelegate);
-  //RegisterVect3XfPlug(NozzleEmitter, OffsetVelocity, -100.0f, 100.0f, ged::OutPlugChoiceDelegate);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -173,13 +166,13 @@ std::shared_ptr<NozzleEmitterData> NozzleEmitterData::createShared() {
   auto data = std::make_shared<NozzleEmitterData>();
   _initShared(data);
 
-  createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "LifeSpan");
-  createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "EmissionRate");
-  createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "EmissionVelocity");
-  createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "DispersionAngle");
-  createInputPlug<Vec3XfPlugTraits>(data, EPR_UNIFORM, "Direction");
-  createInputPlug<Vec3XfPlugTraits>(data, EPR_UNIFORM, "Offset");
-  createInputPlug<Vec3XfPlugTraits>(data, EPR_UNIFORM, "OffsetVelocity");
+  createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "LifeSpan")->_range = {0,20};
+  createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "EmissionRate")->_range = {0,400};
+  createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "EmissionVelocity")->_range = {-100,100};
+  createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "DispersionAngle")->_range = {0,1};
+  createInputPlug<Vec3XfPlugTraits>(data, EPR_UNIFORM, "Direction")->_range = {-1,1};
+  createInputPlug<Vec3XfPlugTraits>(data, EPR_UNIFORM, "Offset")->_range = {-100,100};
+  createInputPlug<Vec3XfPlugTraits>(data, EPR_UNIFORM, "OffsetVelocity")->_range = {-100,100};
 
   return data;
 }
