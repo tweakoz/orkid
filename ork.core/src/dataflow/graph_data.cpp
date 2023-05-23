@@ -25,28 +25,36 @@ ImplementReflectionX(ork::dataflow::GraphData, "dflow/graphdata");
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace dataflow {
 ///////////////////////////////////////////////////////////////////////////////
+struct ConnectionsProperty : public reflect::ObjectProperty {
+  ConnectionsProperty(){
+  }
+
+  void deserialize(reflect::serdes::node_ptr_t desernode) const {
+  }
+
+  void serialize(reflect::serdes::node_ptr_t desernode) const {
+  }
+};
 ///////////////////////////////////////////////////////////////////////////////
 void GraphData::describeX(object::ObjectClass* clazz) {
   clazz
       ->directObjectMapProperty(
           "Modules",             //
           &GraphData::_modules) //
-      ->annotate<ConstString>(
+      ->annotate<ConstString>( //
           "editor.factorylistbase", //
-          "dflow::DgModuleData");
+          "dflow::DgModuleData")
+      ->annotate<ConstString>( //
+          "editor.object.ops", //
+          "dfgraph:dflowgraphedit import:dflowgraphimport export:dflowgraphexport");
 
-  clazz
-      ->accessorVariant(
-          "zzz_connections", //
-          &GraphData::serializeConnections,
-          &GraphData::deserializeConnections)
-      ->annotate<bool>(
-          "editor.visible", //
-          false);
+    //object::PropertyModifier modder;
+    //auto typed_member = static_cast<MemberType Object::*>(member);
+    auto con_prop = new ConnectionsProperty();
+    con_prop->annotate("editor.visible", false);
+    clazz->Description().addProperty("zzz_connections", con_prop);
 
-  clazz->annotationTyped<ConstString>(
-      "editor.object.ops", //
-      "dfgraph:dflowgraphedit import:dflowgraphimport export:dflowgraphexport");
+
       
 }
 ///////////////////////////////////////////////////////////////////////////////
