@@ -72,6 +72,11 @@ Guide::~Guide(){
 
 }
 /////////////////////////////////////////////////////////////////////////
+float Guide::sortKey() const{
+  bool is_proportional = _type==GuideType::PROPORTIONAL;
+  return is_proportional ? _proportion : float(_fixed);
+}
+/////////////////////////////////////////////////////////////////////////
 void Guide::setMargin(int margin) {
   _margin = margin;
   visit_set vset;
@@ -341,11 +346,22 @@ Line Guide::line(Mode mode) const {
 /////////////////////////////////////////////////////////////////////////
 void Guide::dump() {
   printf(
-      "//   Guide<%d> edge<%s> margin<%d> relative<%d>\n", //
+      "//   Guide<%d> edge<%s> margin<%d> relative<%d>", //
       _name,
       edge2str(_edge).c_str(),
       _margin,
       _relative ? _relative->_name : -1);
+
+
+  switch(_type){
+    case GuideType::NONE: printf( " type<NONE>" ); break;
+    case GuideType::FIXED: printf( " type<FIXED> f<%d>", _fixed ); break;
+    case GuideType::PROPORTIONAL: printf( " type<PROPORTIONAL> p<%g>", _proportion ); break;
+    default:
+      OrkAssert(false);
+      break;
+  }
+  printf( "\n");
   for (auto g : _associates) {
     printf(
         "//     associate<%d> layout<%d> edge<%s> margin<%d>\n", //

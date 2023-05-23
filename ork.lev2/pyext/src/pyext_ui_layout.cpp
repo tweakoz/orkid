@@ -74,6 +74,12 @@ void pyinit_ui_layout(py::module& uimodule) {
               [](uilayout_ptr_t layout, int m) { layout->setMargin(m); })
           //////////////////////////////////
           .def(
+              "updateAll",
+              [](uilayout_ptr_t layout) { //
+                return layout->updateAll();
+              })
+          //////////////////////////////////
+          .def(
               "proportionalHorizontalGuide",
               [](uilayout_ptr_t layout, float prop) -> uiguide_ptr_t { //
                 return layout->proportionalHorizontalGuide(prop);
@@ -100,7 +106,7 @@ void pyinit_ui_layout(py::module& uimodule) {
           .def(
               "centerIn",
               [](uilayout_ptr_t layout, uilayout_ptr_t other_layout) { //
-                  layout->centerIn(other_layout.get());
+                layout->centerIn(other_layout.get());
               })
           //////////////////////////////////
           .def(
@@ -115,12 +121,14 @@ void pyinit_ui_layout(py::module& uimodule) {
                 layout->removeChild(ch);
               })
           //////////////////////////////////
-          .def("fill", [](uilayout_ptr_t layout, uilayout_ptr_t other) { //
-              layout->fill(other.get());
-          })
+          .def(
+              "fill",
+              [](uilayout_ptr_t layout, uilayout_ptr_t other) { //
+                layout->fill(other.get());
+              })
           //////////////////////////////////
           .def("dump", [](uilayout_ptr_t layout) { //
-               layout->dump();
+            layout->dump();
           });
   //////////////////////////////////
   type_codec->registerStdCodec<uilayout_ptr_t>(layout_type);
@@ -130,24 +138,27 @@ void pyinit_ui_layout(py::module& uimodule) {
           .def_property_readonly(
               "margin",
               [](uiguide_ptr_t guide) -> int { //
-                return guide->_margin;
+    return guide->_margin;
               })
           .def_property_readonly(
               "sign",
               [](uiguide_ptr_t guide) -> int { //
-                return guide->_sign;
+    return guide->_sign;
               })
-          .def_property_readonly(
-              "fixed",
+          .def_property_readonly( "fixed",
               [](uiguide_ptr_t guide) -> int { //
                 return guide->_fixed;
-              })
-          .def_property_readonly("proportion", [](uiguide_ptr_t guide) -> float { //
-            return guide->_proportion;
-          })
+            })
+          //////////////////////////////////
+          .def_property("proportion", [](uiguide_ptr_t guide) -> float { //
+              return guide->_proportion;
+            },
+            [](uiguide_ptr_t guide, float prop) { //
+              guide->_proportion = prop;
+            })
           //////////////////////////////////
           .def("anchorTo", [](uiguide_ptr_t guide, uiguide_ptr_t other_guide) { //
-            guide->anchorTo(other_guide);
+    guide->anchorTo(other_guide);
           });
   type_codec->registerStdCodec<uiguide_ptr_t>(guide_type);
   /////////////////////////////////////////////////////////////////////////////////
@@ -162,7 +173,7 @@ void pyinit_ui_layout(py::module& uimodule) {
             return item->_layout;
           });
   type_codec->registerStdCodec<uilayoutitem_ptr_t>(litem_type);
-  }
+}
 
 ///////////////////////////////////////////////////////////////////////////////
-} //namespace ork::lev2 {
+} // namespace ork::lev2

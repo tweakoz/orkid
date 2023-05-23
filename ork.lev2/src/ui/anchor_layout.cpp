@@ -143,38 +143,39 @@ void Layout::updateAll() {
 }
 /////////////////////////////////////////////////////////////////////////
 void Layout::_doUpdateAll(visit_set& vset) {
-  //printf( "  layout<%p>::_doUpdateAll  ", this );
+  bool log = true;
+  if(log)printf( "  layout<%p>::_doUpdateAll  ", this );
   if (_top){
-    //printf( "  _top<%p>  ", _top.get() );
+    if(log)printf( "  _top<%p>  ", _top.get() );
     _top->updateAssociates(vset);
   }
   if (_left){
-    //printf( "  _left<%p>  ", _left.get() );
+    if(log)printf( "  _left<%p>  ", _left.get() );
     _left->updateAssociates(vset);
   }
   if (_bottom){
-    //printf( "  _bottom<%p>  ", _bottom.get() );
+    if(log)printf( "  _bottom<%p>  ", _bottom.get() );
     _bottom->updateAssociates(vset);
   }
   if (_right){
-    //printf( "  _right<%p>  ", _right.get() );
+    if(log)printf( "  _right<%p>  ", _right.get() );
     _right->updateAssociates(vset);
   }
   if (_centerH){
-    //printf( "  _centerH<%p>  ", _centerH.get() );
+    if(log)printf( "  _centerH<%p>  ", _centerH.get() );
     _centerH->updateAssociates(vset);
   }
   if (_centerV){
-    //printf( "  _centerV<%p>  ", _centerV.get() );
+    if(log)printf( "  _centerV<%p>  ", _centerV.get() );
     _centerV->updateAssociates(vset);
   }
   if(_widget){
-    //printf( "  _widget<%p:%s>  ", _widget, _widget->_name.c_str() );
+    if(log)printf( "  _widget<%p:%s>  ", _widget, _widget->_name.c_str() );
   }
   for (auto g : _customguides)
     g->updateAssociates(vset);
 
-  printf( "\n");
+  if(log)printf( "\n");
   for (auto l : _childlayouts) {
     l->_doUpdateAll(vset);
   }
@@ -266,6 +267,7 @@ void Layout::fill(Layout* other) {
 guide_ptr_t Layout::proportionalHorizontalGuide(float proportion) {
   auto guide         = std::make_shared<Guide>(this, Edge::CustomHorizontal);
   guide->_proportion = proportion;
+  guide->_type = GuideType::PROPORTIONAL;
   _customguides.insert(guide);
   return guide;
 }
@@ -273,6 +275,7 @@ guide_ptr_t Layout::proportionalHorizontalGuide(float proportion) {
 guide_ptr_t Layout::proportionalVerticalGuide(float proportion) {
   auto guide         = std::make_shared<Guide>(this, Edge::CustomVertical);
   guide->_proportion = proportion;
+  guide->_type = GuideType::PROPORTIONAL;
   _customguides.insert(guide);
   return guide;
 }
@@ -280,6 +283,7 @@ guide_ptr_t Layout::proportionalVerticalGuide(float proportion) {
 guide_ptr_t Layout::fixedHorizontalGuide(int fixed) {
   auto guide    = std::make_shared<Guide>(this, Edge::CustomHorizontal);
   guide->_fixed = fixed;
+  guide->_type = GuideType::FIXED;
   _customguides.insert(guide);
   return guide;
 }
@@ -287,6 +291,7 @@ guide_ptr_t Layout::fixedHorizontalGuide(int fixed) {
 guide_ptr_t Layout::fixedVerticalGuide(int fixed) {
   auto guide    = std::make_shared<Guide>(this, Edge::CustomVertical);
   guide->_fixed = fixed;
+  guide->_type = GuideType::FIXED;
   _customguides.insert(guide);
   return guide;
 }

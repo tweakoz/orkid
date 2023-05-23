@@ -207,7 +207,10 @@ void pyinit_ui(py::module& module_lev2) {
   type_codec->registerStdCodec<uiwidget_ptr_t>(widget_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto group_type = //
-      py::class_<ui::Group, ui::Widget, uigroup_ptr_t>(uimodule, "Group");
+      py::class_<ui::Group, ui::Widget, uigroup_ptr_t>(uimodule, "Group")
+         .def("updateLayout",[](uigroup_ptr_t grp){
+            grp->DoLayout();
+         });
   type_codec->registerStdCodec<uigroup_ptr_t>(group_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto layoutgroup_type = //
@@ -224,6 +227,32 @@ void pyinit_ui(py::module& module_lev2) {
               "layout",
               [](uilayoutgroup_ptr_t lgrp) -> uilayout_ptr_t { //
                 return lgrp->_layout;
+              })
+          .def_property_readonly(
+              "horizontal_guides",
+              [](uilayoutgroup_ptr_t lgrp) -> std::vector<uiguide_ptr_t> { //
+                std::multimap<float, uiguide_ptr_t> sorted;
+                for (auto g : lgrp->horizontalGuides()) {
+                  sorted.insert(std::make_pair(g->sortKey(),g));
+                }
+                std::vector<uiguide_ptr_t> rval;
+                for( auto item : sorted ){
+                  rval.push_back(item.second);
+                }
+                return rval;
+              })
+          .def_property_readonly(
+              "vertical_guides",
+              [](uilayoutgroup_ptr_t lgrp) -> std::vector<uiguide_ptr_t> { //
+                std::multimap<float, uiguide_ptr_t> sorted;
+                for (auto g : lgrp->verticalGuides()) {
+                  sorted.insert(std::make_pair(g->sortKey(),g));
+                }
+                std::vector<uiguide_ptr_t> rval;
+                for( auto item : sorted ){
+                  rval.push_back(item.second);
+                }
+                return rval;
               })
           .def(
               "layoutAndAddChild",

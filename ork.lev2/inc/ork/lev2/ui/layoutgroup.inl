@@ -71,20 +71,24 @@ struct LayoutGroup : public Group {
   //////////////////////////////////////
   template <typename T, typename... A> //
   std::vector<LayoutItem<T>> makeGridOfWidgets(int w, int h, A&&... args) {
-    std::vector<LayoutItem<T>> widgets;
+    std::vector<LayoutItem<T>> layout_items;
     for (int x = 0; x < w; x++) {
       float fxa = float(x) / float(w);
       float fxb = float(x + 1) / float(w);
       auto gxa  = _layout->proportionalVerticalGuide(fxa); // 23,27,31,35
       auto gxb  = _layout->proportionalVerticalGuide(fxb); // 24,28,32,36
+      _vguides.insert(gxa);
+      _vguides.insert(gxb);
       for (int y = 0; y < h; y++) {
         float fya   = float(y) / float(h);
         float fyb   = float(y + 1) / float(h);
         auto gya    = _layout->proportionalHorizontalGuide(fya); // 25,29,33,37
         auto gyb    = _layout->proportionalHorizontalGuide(fyb); // 26,30,34,38
+        _hguides.insert(gya);
+        _hguides.insert(gyb);
         auto name   = _name + FormatString("-ch-%d", (y * w + x));
         auto chitem = this->makeChild<T>(std::forward<A>(args)...);
-        widgets.push_back(chitem);
+        layout_items.push_back(chitem);
         chitem._layout->setMargin(2);
         chitem._layout->top()->anchorTo(gya);
         chitem._layout->left()->anchorTo(gxa);
@@ -92,7 +96,7 @@ struct LayoutGroup : public Group {
         chitem._layout->right()->anchorTo(gxb);
       }
     }
-    return widgets;
+    return layout_items;
   }
   //////////////////////////////////////
   inline anchor::layout_ptr_t layoutAndAddChild(widget_ptr_t w) {
@@ -123,12 +127,22 @@ struct LayoutGroup : public Group {
     return _clearColor;
   }
   //////////////////////////////////////
+  inline const std::set<uiguide_ptr_t>& horizontalGuides() const {
+    return _hguides;
+  }
+  //////////////////////////////////////
+  inline const  std::set<uiguide_ptr_t>& verticalGuides() const {
+    return _vguides;
+  }
+  //////////////////////////////////////
 private:
   void DoDraw(ui::drawevent_constptr_t drwev) override;
   void _doOnResized() override;
   void DoLayout() override;
   bool _clear = true;
   fvec4 _clearColor;
+  std::set<uiguide_ptr_t> _hguides;
+  std::set<uiguide_ptr_t> _vguides;
 };
 
 } // namespace ork::ui

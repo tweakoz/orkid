@@ -23,7 +23,7 @@ class UiTestApp(object):
     griditems = lg_group.makeGrid( width = 2,
                                    height = 2,
                                    margin = 1,
-                                   uiclass = ui.UiLambdaBox,
+                                   uiclass = ui.LambdaBox,
                                    args = ["box",vec4(1,0,1,1)] )
 
     print(griditems)

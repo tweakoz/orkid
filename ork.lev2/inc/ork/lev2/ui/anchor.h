@@ -111,6 +111,12 @@ struct Layout {
 
 /////////////////////////////////////////////////////////////////////////
 
+enum class GuideType : uint64_t {
+  FIXED = 0,
+  PROPORTIONAL,
+  NONE
+};
+
 struct Guide {
 
   Guide(Layout* layout, Edge edge);
@@ -128,7 +134,7 @@ struct Guide {
 
   void _disassociate(Guide* other);
   void _associate(Guide* other);
-
+  float sortKey() const;
   void dump();
 
   std::set<Guide*> _associates;
@@ -139,7 +145,8 @@ struct Guide {
   int _margin       = 0;
   int _sign         = 1; // sign of offset: -1 or 1
   float _proportion = 0.0f;
-  int _fixed        = 0.0f;
+  int _fixed         = 0;
+  GuideType _type = GuideType::NONE;
 };
 
 /////////////////////////////////////////////////////////////////////////

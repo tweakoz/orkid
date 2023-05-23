@@ -275,7 +275,7 @@ void pyinit_dataflow(py::module& module_core) {
   type_codec->registerStdCodec<pylambdamoduledata_ptr_t>(pylambdamoduledata_type);
   /////////////////////////////////////////////////////////////////////////////
   auto inplugdata_type = //
-      py::class_<InPlugData, inplugdata_ptr_t>(dfgmodule, "InPlugData").def("__repr__", [](inplugdata_ptr_t p) -> std::string {
+      py::class_<InPlugData, ::ork::Object, inplugdata_ptr_t>(dfgmodule, "InPlugData").def("__repr__", [](inplugdata_ptr_t p) -> std::string {
         auto clazz     = p->objectClass();
         auto clazzname = clazz->Name();
         return FormatString("InPlugData(%p:%s)", (void*)p.get(), clazzname.c_str());
@@ -283,7 +283,7 @@ void pyinit_dataflow(py::module& module_core) {
   type_codec->registerStdCodec<inplugdata_ptr_t>(inplugdata_type);
   /////////////////////////////////////////////////////////////////////////////
   auto outplugdata_type = //
-      py::class_<OutPlugData, outplugdata_ptr_t>(dfgmodule, "OutPlugData").def("__repr__", [](outplugdata_ptr_t p) -> std::string {
+      py::class_<OutPlugData, ::ork::Object, outplugdata_ptr_t>(dfgmodule, "OutPlugData").def("__repr__", [](outplugdata_ptr_t p) -> std::string {
         auto clazz     = p->objectClass();
         auto clazzname = clazz->Name();
         return FormatString("OutPlugData(%p:%s)", (void*)p.get(), clazzname.c_str());
@@ -291,7 +291,7 @@ void pyinit_dataflow(py::module& module_core) {
   type_codec->registerStdCodec<outplugdata_ptr_t>(outplugdata_type);
   /////////////////////////////////////////////////////////////////////////////
   auto graphdata_type = //
-      py::class_<GraphData, graphdata_ptr_t>(dfgmodule, "GraphData")
+      py::class_<GraphData, ::ork::Object, graphdata_ptr_t>(dfgmodule, "GraphData")
           .def_static("createShared", []() -> graphdata_ptr_t { return std::make_shared<GraphData>(); })
           .def(
               "createGraphInst",
