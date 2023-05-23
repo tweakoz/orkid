@@ -145,20 +145,22 @@ bool CompositingImpl::assemble(lev2::CompositorDrawData& drawdata) {
   //  todo - create actual camera mgr and select default camera there
   /////////////////////////////////////////////////////////////////////////////
 
-  auto spncam = DB->cameraData(_cameraName);
+  auto the_camera = DB->cameraData(_cameraName);
 
-  target->debugMarker(FormatString("spncam<%p>", (void*) spncam.get()));
+  //printf( "CAMNAME<%s> CAM<%p>\n", _cameraName.c_str(), (void*) the_camera.get() );
 
-  if (spncam) {
-    (*_defaultCameraMatrices) = spncam->computeMatrices(aspectratio);
+  target->debugMarker(FormatString("the_camera<%p>", (void*) the_camera.get()));
+
+  if (the_camera) {
+    (*_defaultCameraMatrices) = the_camera->computeMatrices(aspectratio);
   }
 
   target->debugMarker(FormatString("defcammtx<%p>", _defaultCameraMatrices));
   ddprops["defcammtx"_crcu].set<const CameraMatrices*>(_defaultCameraMatrices);
 
-  if (spncam and spncam->getUiCamera()) {
-    target->debugMarker(FormatString("seleditcam<%p>", (void*) spncam.get() ));
-    ddprops["seleditcam"_crcu].set<cameradata_constptr_t>(spncam);
+  if (the_camera and the_camera->getUiCamera()) {
+    target->debugMarker(FormatString("seleditcam<%p>", (void*) the_camera.get() ));
+    ddprops["seleditcam"_crcu].set<cameradata_constptr_t>(the_camera);
   }
 
   /////////////////////////////////////////////////////////////////////////////

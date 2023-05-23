@@ -75,7 +75,7 @@ class ParticlesApp(object):
     if handled:
       self.uicam.updateMatrices()
       self.camera.copyFrom( self.uicam.cameradata )
-      print(self.uicam.cameradata.eye )
+      #print(self.uicam.cameradata.eye )
     return ui.HandlerResult()
 
   ##############################################
@@ -96,6 +96,7 @@ class ParticlesApp(object):
     self.scenegraph = scenegraph.Scene(sg_params)
     self.layer = self.scenegraph.createLayer("layer")
     self.griditems[1].widget.scenegraph = self.scenegraph
+    self.griditems[1].widget.forkDB()
 
     ###################################
     # create particle drawable 
@@ -129,6 +130,7 @@ class ParticlesApp(object):
 
   def onUpdate(self,updinfo):
     self.scenegraph.updateScene(self.cameralut) # update and enqueue all scenenodes
+    self.griditems[1].widget.setDirty()
 
   ##############################################
 

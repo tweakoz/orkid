@@ -607,6 +607,7 @@ void Scene::_renderIMPL(Context* context,rcfd_ptr_t RCFD){
   fbi->setViewport(tgtrect);
   fbi->setScissor(tgtrect);
   if (1) {
+    //printf( "SceneGraph::_renderIMPL\n");
     context->beginFrame();
     FrameRenderer framerenderer(*RCFD, [&]() {});
     CompositorDrawData drawdata(framerenderer);
@@ -680,6 +681,7 @@ void Scene::_renderWithAcquiredRenderDrawBuffer(acqdrawbuffer_constptr_t acqbuf)
   // Draw!
   ///////////////////////////////////////
   if (1) {
+    //printf( "SceneGraph::_renderWithAcquiredRenderDrawBuffer\n");
     fbi->SetClearColor(fvec4(0, 0, 0, 1));
     fbi->setViewport(tgtrect);
     fbi->setScissor(tgtrect);
