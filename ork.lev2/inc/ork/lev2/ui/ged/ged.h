@@ -74,7 +74,28 @@ public:
   const std::string& value(const std::string& key);
   void setValue(const std::string& key, const std::string& val);
 
+  template <typename T> attempt_cast_const<T> typedValue(const std::string& key) const {
+    auto it = _typedProperties.find(key);
+    if (it != _typedProperties.end()) {
+      return it->second.tryAs<T>();
+    }
+    return attempt_cast_const<T>(nullptr);
+  }
+  template <typename T> T typedValueWithDefault(const std::string& key, const T& the_default) {
+    auto it = _typedProperties.find(key);
+    if (it != _typedProperties.end()) {
+      return it->second.get<T>();
+    }else{
+      _typedProperties[key].set<T>(the_default);
+    }
+    return the_default;
+  }
+  template <typename T> void setTypedValue(const std::string& key, const T& val) {
+    _typedProperties[key].set<T>(val);
+  }
+
   orklut<std::string, std::string> _properties;
+  std::map<std::string, svar64_t> _typedProperties;
 };
 
 

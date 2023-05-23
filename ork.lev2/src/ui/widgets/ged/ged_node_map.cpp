@@ -80,6 +80,17 @@ GedMapNode::GedMapNode(
     : GedItemNode(c, name, map_prop, obj)
     , mMapProp(map_prop) { //
 
+    ///////////////////////////////////////////
+    PersistHashContext HashCtx;
+    HashCtx._object   = _object;
+    HashCtx._property = _property;
+    auto pmap         = _container->_model->persistMapForHash(HashCtx);
+    ///////////////////////////////////////////
+    mbSingle = pmap->typedValueWithDefault<bool>("single",false);
+    mItemIndex = pmap->typedValueWithDefault<int>("index",0);
+    ///////////////////////////////////////////
+
+
   c->PushItemNode(this);
 
   auto model = c->_model;
@@ -143,6 +154,8 @@ GedMapNode::GedMapNode(
   }
 
   c->PopItemNode(this);
+
+  updateVisibility();
 }
 
 void GedMapNode::focusItem(const PropTypeString& key) {
@@ -348,22 +361,17 @@ bool GedMapNode::OnMouseDoubleClicked(ui::event_constptr_t ev) {
   int iy = ev->miY;
 
   auto model = _container->_model;
+  PersistHashContext HashCtx;
+  HashCtx._object   = _object;
+  HashCtx._property = _property;
+  auto pmap         = _container->_model->persistMapForHash(HashCtx);
 
   //printf("GedMapNode<%p> ilx<%d> ily<%d>\n", this, ix, iy);
 
-  if (ix >= koff && ix <= kdim && iy >= koff && iy <= kdim) // drop down
-  {
+  if (ix >= koff && ix <= kdim && iy >= koff && iy <= kdim) { // drop down
+
     mbSingle = !mbSingle;
-
-    ///////////////////////////////////////////
-    PersistHashContext HashCtx;
-    HashCtx._object   = _object;
-    HashCtx._property = _property;
-    auto pmap         = _container->_model->persistMapForHash(HashCtx);
-    ///////////////////////////////////////////
-
-    pmap->setValue("single", mbSingle ? "true" : "false");
-
+    pmap->setTypedValue<bool>("single", mbSingle);
     updateVisibility();
     return true;
   }
@@ -404,8 +412,8 @@ bool GedMapNode::OnMouseDoubleClicked(ui::event_constptr_t ev) {
 
   ///////////////////////////////////////
 
-  if (mbImpExp) // Import Export
-  {
+  if (mbImpExp) { // Import Export
+
     ix -= (kdim + 4);
     if (ix >= koff && ix <= kdim && iy >= koff && iy <= kdim) // drop down
     {
@@ -449,11 +457,7 @@ bool GedMapNode::OnMouseDoubleClicked(ui::event_constptr_t ev) {
   OrkAssert(it_choice != choice_to_index.end());
   mItemIndex = it_choice->second;
   ///////////////////////////////////////////
-  //PersistHashContext HashCtx;
-  //HashCtx._object     = _iodriver->_object;
-  //HashCtx._property   = _iodriver->_par_prop;
-  //auto pmap         = _container->_model->persistMapForHash(HashCtx);
-  //pmap->setValue("index", CreateFormattedString("%d", mItemIndex));
+  pmap->setTypedValue<int>("index", mItemIndex);
   ///////////////////////////////////////////
   updateVisibility();
   ///////////////////////////////////////
