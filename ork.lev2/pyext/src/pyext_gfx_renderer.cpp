@@ -26,24 +26,25 @@ void pyinit_gfx_renderer(py::module& module_lev2) {
                            return std::make_shared<RenderContextFrameData>(ctx.get());
                          }))
                          .def_property_readonly(
-                             "topCompositor",
-                             [](rcfd_ptr_t the_rcfd) -> compositorimpl_ptr_t { return the_rcfd->topCompositor(); })
+                             "topCompositor", [](rcfd_ptr_t the_rcfd) -> compositorimpl_ptr_t { return the_rcfd->topCompositor(); })
                          .def(
                              "pushCompositor",
                              [](rcfd_ptr_t the_rcfd, compositorimpl_ptr_t cimpl) { //
-                                 the_rcfd->pushCompositor(cimpl); 
+                               the_rcfd->pushCompositor(cimpl);
                              })
                          .def(
                              "popCompositor",
                              [](rcfd_ptr_t the_rcfd) { //
-                                 the_rcfd->popCompositor(); 
+                               the_rcfd->popCompositor();
                              })
-                         .def("setRenderingModel", [](rcfd_ptr_t the_rcfd, std::string rendermodel) { //
-                           auto as_crc               = CrcString(rendermodel.c_str());
-                           the_rcfd->_renderingmodel = (uint32_t)as_crc._hashed;
-                         })
+                         .def(
+                             "setRenderingModel",
+                             [](rcfd_ptr_t the_rcfd, std::string rendermodel) { //
+                               auto as_crc               = CrcString(rendermodel.c_str());
+                               the_rcfd->_renderingmodel = (uint32_t)as_crc._hashed;
+                             })
                          .def("setUserProperty", [](rcfd_ptr_t the_rcfd, uint32_t crc, py::object obj) { //
-                           //rcfd->setUserProperty("vrcam"_crc, (const CameraData*) gpurec->_camdata.get() );
+                           // rcfd->setUserProperty("vrcam"_crc, (const CameraData*) gpurec->_camdata.get() );
                          });
   type_codec->registerStdCodec<rcfd_ptr_t>(rcfd_type_t);
   /////////////////////////////////////////////////////////////////////////////////
@@ -54,7 +55,7 @@ void pyinit_gfx_renderer(py::module& module_lev2) {
                            return RenderContextInstData::create(the_rcfd);
                          }))
                          .def(
-                             "pipeline",                                                         //
+                             "pipeline",                                                       //
                              [](rcid_ptr_t the_rcid, material_ptr_t mtl) -> fxpipeline_ptr_t { //
                                auto cache = mtl->pipelineCache();
                                return cache->findPipeline(*the_rcid);
@@ -88,7 +89,7 @@ void pyinit_gfx_renderer(py::module& module_lev2) {
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<LightData, lightdata_ptr_t>(module_lev2, "LightData")
       .def_property(
-          "color",                                       //
+          "color",                                 //
           [](lightdata_ptr_t lightdata) -> fvec3 { //
             return lightdata->mColor;
           },
@@ -135,12 +136,12 @@ void pyinit_gfx_renderer(py::module& module_lev2) {
                 camera->Lookat(eye, tgt, up);
               })
           .def(
-              "fromPoseMatrix",                                                        //
+              "fromPoseMatrix",                            //
               [](cameradata_ptr_t camera, fmtx4 posemtx) { //
                 camera->fromPoseMatrix(posemtx);
               })
           .def(
-              "copyFrom",                                                        //
+              "copyFrom",                                                //
               [](cameradata_ptr_t camera, cameradata_ptr_t src_camera) { //
                 *camera = *src_camera;
               })
@@ -151,7 +152,13 @@ void pyinit_gfx_renderer(py::module& module_lev2) {
                 auto rval   = std::make_shared<fray3>();
                 cammat.projectDepthRay(*pos2d.get(), *rval.get());
                 return rval;
-              });
+              })
+          .def_property_readonly("eye", [](cameradata_ptr_t camera) -> fvec3 { return camera->mEye; })
+          .def_property_readonly("target", [](cameradata_ptr_t camera) -> fvec3 { return camera->mTarget; })
+          .def_property_readonly("mUp", [](cameradata_ptr_t camera) -> fvec3 { return camera->mUp; })
+          .def_property_readonly("xnormal", [](cameradata_ptr_t camera) -> fvec3 { return camera->_xnormal; })
+          .def_property_readonly("ynormal", [](cameradata_ptr_t camera) -> fvec3 { return camera->_ynormal; })
+          .def_property_readonly("znormal", [](cameradata_ptr_t camera) -> fvec3 { return camera->_znormal; });
   type_codec->registerStdCodec<cameradata_ptr_t>(camdattype);
   /////////////////////////////////////////////////////////////////////////////////
   auto camdatluttype = //

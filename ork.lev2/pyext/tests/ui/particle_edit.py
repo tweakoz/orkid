@@ -28,6 +28,9 @@ class ParticlesApp(object):
 
   def __init__(self):
     super().__init__()
+
+    self.materials = set()
+
     self.ezapp = OrkEzApp.create(self)
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     self.ezapp.topWidget.enableUiDraw()
@@ -57,15 +60,24 @@ class ParticlesApp(object):
     self.ged_surf = self.ged_item.widget
 
     ################################################
-
-    self.materials = set()
+    # camera / event handler
+    ################################################
 
     setupUiCamera( app=self, eye = vec3(0,0,30), constrainZ=True, up=vec3(0,1,0))
+    self.griditems[1].widget.evhandler = lambda x: self.onSceneGraphUiEvent(x)
 
   ################################################
-  # gpu data init:
-  #  called on main thread when graphics context is
-  #   made available
+  # scenegraph viewport UI event handler
+  ################################################
+
+  def onSceneGraphUiEvent(self, uievent):
+    handled = self.uicam.uiEventHandler(uievent)
+    if handled:
+      self.uicam.updateMatrices()
+      self.camera.copyFrom( self.uicam.cameradata )
+      print(self.uicam.cameradata.eye )
+    return ui.HandlerResult()
+
   ##############################################
 
   def onGpuInit(self,ctx):
@@ -107,6 +119,10 @@ class ParticlesApp(object):
     self.particlenode = self.layer.createDrawableNode("particle-node",ptc_drawable)
     self.particlenode.sortkey = 2;
 
+    ##################
+    # attach particle graph to editor
+    ##################
+
     self.objmodel.attach(self.ptc_data.graphdata, True)
 
   ################################################
@@ -117,10 +133,7 @@ class ParticlesApp(object):
   ##############################################
 
   def onUiEvent(self,uievent):
-    handled = self.uicam.uiEventHandler(uievent)
-    print(handled)
-    if handled:
-      self.camera.copyFrom( self.uicam.cameradata )
+    return ui.HandlerResult()
 
 ###############################################################################
 
