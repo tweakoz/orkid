@@ -40,7 +40,7 @@ void pyinit_dataflow(py::module& module_core) {
                 auto m         = proxy->_module;
                 auto input     = m->inputNamed(key);
                 auto clazzname = input->objectClass()->Name();
-                printf("inputNamed<%s:%s>\n", key.c_str(), clazzname.c_str());
+                if(0)printf("inputNamed<%s:%s>\n", key.c_str(), clazzname.c_str());
                 if (input) {
                   return type_codec->encode(input);
                 }

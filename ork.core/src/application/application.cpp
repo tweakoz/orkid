@@ -100,7 +100,7 @@ AppInitData::opts_var_map_ptr_t AppInitData::parse() {
     genviron.set("__GL_MaxFramesAllowed", FormatString("%d", vmfa));
   }
 
-  genviron.dump();
+  //genviron.dump();
 
   printf("_msaa_samples<%d>\n", this->_msaa_samples);
   return _commandline_vars;

@@ -77,7 +77,7 @@ inline void decode_value(var_t val_inp, fvec4& val_out) {
 
 template <> //
 inline void decode_value(var_t val_inp, object_ptr_t& val_out) {
-  printf( "val_inp<%s>\n", val_inp.typestr().c_str() );
+  if(0) printf( "val_inp<%s>\n", val_inp.typestr().c_str() );
   if(auto as_obj = val_inp.tryAs<object_ptr_t>()){
     val_out = as_obj.value();
   }

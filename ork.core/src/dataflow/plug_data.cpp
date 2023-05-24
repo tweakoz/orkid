@@ -15,6 +15,7 @@
 #include <ork/dataflow/all.h>
 #include <ork/dataflow/plug_data.inl>
 #include <ork/dataflow/plug_inst.inl>
+#include <ork/math/cvector3.hpp> // << use ITyped<fvec3>::serialize specialization (use_custom_serdes)
 
 namespace ork{
 template class orklut<std::string,ork::dataflow::floatxfitembasedata_ptr_t>;
@@ -62,7 +63,7 @@ PlugData::PlugData(moduledata_ptr_t pmod, EPlugDir edir, EPlugRate epr, const st
     , _plugrate(epr)
     , _typeID(tid)
     , _name(pname ? pname : "noname") {
-  printf("PlugData<%p> pmod<%p> construct name<%s>\n", (void*)this, (void*)pmod.get(), _name.c_str());
+  if(0)printf("PlugData<%p> pmod<%p> construct name<%s>\n", (void*)this, (void*)pmod.get(), _name.c_str());
 }
 
 const std::type_info& PlugData::GetDataTypeId() const {
@@ -185,6 +186,16 @@ template struct outplugdata<FloatPlugTraits>;
 // plugdata<floatxf>
 ///////////////////////////////////////////////////////////////////////////////
 template <> void inplugdata<FloatXfPlugTraits>::describeX(class_t* clazz) {
+  using mytype_t = inplugdata<FloatXfPlugTraits>;
+  clazz->lambdaProperty<mytype_t, float>(
+      "value", //
+      [](const mytype_t* obj_inp, float& valout) { //
+        valout = *(obj_inp->_value);
+        },
+      [](mytype_t* obj_out, const float& valinp) { //
+        *(obj_out->_value) = valinp; 
+        });
+  clazz->directObjectProperty("Transform", &mytype_t::_transformer);
 }
 template <> inpluginst_ptr_t inplugdata<FloatXfPlugTraits>::createInstance(ModuleInst* minst) const {
   return std::make_shared<inpluginst<FloatXfPlugTraits>>(this, minst);
@@ -207,6 +218,15 @@ template struct outplugdata<Vec3fPlugTraits>;
 // plugdata<fvec3xf>
 ///////////////////////////////////////////////////////////////////////////////
 template <> void inplugdata<Vec3XfPlugTraits>::describeX(class_t* clazz) {
+  using mytype_t = inplugdata<Vec3XfPlugTraits>;
+  clazz->lambdaProperty<mytype_t, fvec3>(
+      "value", //
+      [](const mytype_t* obj_inp, fvec3& valout) { //
+        valout = *(obj_inp->_value);
+        },
+      [](mytype_t* obj_out, const fvec3& valinp) { //
+        *(obj_out->_value) = valinp; 
+        });
 }
 template <> inpluginst_ptr_t inplugdata<Vec3XfPlugTraits>::createInstance(ModuleInst* minst) const {
   return std::make_shared<inpluginst<Vec3XfPlugTraits>>(this, minst);

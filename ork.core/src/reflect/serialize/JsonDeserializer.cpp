@@ -25,7 +25,7 @@
 using namespace rapidjson;
 
 namespace ork::reflect::serdes {
-static logchannel_ptr_t logchan_ds = logger()->createChannel("reflection.json.deser",fvec3(0.9,1,0.9));
+static logchannel_ptr_t logchan_ds = logger()->createChannel("reflection.json.deser",fvec3(0.9,1,0.9), false);
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -363,7 +363,7 @@ object_ptr_t JsonDeserializer::_parseObjectNode(serdes::node_ptr_t dsernode) {
         int index = arynode->_index;
         auto top_prop_as_obj_array = dynamic_cast<const ITypedArray< object_ptr_t>*>(top_prop);
         top_prop_as_obj_array->get(instance_out, aryobj, index);
-        printf( "aryobj<%p:%s> ARYINDEX<%d> top_prop_as_obj_array<%s> instance_out<%p>\n", //
+        if(0)printf( "aryobj<%p:%s> ARYINDEX<%d> top_prop_as_obj_array<%s> instance_out<%p>\n", //
                 (void*) aryobj.get(), aryclazz->Name().c_str(), //
                 index, top_prop_as_obj_array->_name.c_str(), //
                 (void*) instance_out.get() );

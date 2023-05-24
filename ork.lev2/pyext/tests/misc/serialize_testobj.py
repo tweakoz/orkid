@@ -2,10 +2,15 @@
 
 ################################################################################
 
-import sys, math, random, numpy, ork.path
+import sys, math, random, numpy, ork.path, ork.deco
 from orkengine.core import *
 from orkengine.lev2 import *
 lev2appinit()
+l2exdir = (lev2exdir()/"python").normalized.as_string
+sys.path.append(l2exdir) # add parent dir to path
+from common.primitives import createParticleData
+
+DECO = ork.deco.Deco()
 
 ################################################################################
 # create object graph
@@ -15,12 +20,9 @@ tconf = GedTestObjectConfiguration()
 tobj = tconf.createTestObject("test2")
 c1 = tobj.createCurve("curve1")
 ga = tobj.createGradient("gradA")
-ps1 = tobj.createParticleSystem("psys1")
-globs = ps1.create("GLOB",particles.Globals)
-gravity = ps1.create("GRAV",particles.Gravity)
-gravityplugs = gravity.inputs
-globalplugs = globs.outputs
-ps1.connect( gravityplugs.G, globalplugs.RelTime )
+
+ptc_data = createParticleData()
+tobj.setParticleSystem("psys1", ptc_data.graphdata )
 
 ################################################################################
 # serialize it to json
@@ -29,14 +31,13 @@ ps1.connect( gravityplugs.G, globalplugs.RelTime )
 as_json = tconf.serializeJson()
 with open("YO.json", "w") as f:
     f.write(as_json)
-print(as_json)
+#print(as_json)
 
 ################################################################################
 # create clone from json
 ################################################################################
 
 clone_of_tconf = Object.deserializeJson(as_json)
-print(clone_of_tconf)
 
 ################################################################################
 # serialize the clone to json
@@ -50,4 +51,9 @@ with open("YO2.json", "w") as f:
 # verify that the two json strings are identical
 ################################################################################
 
-assert(as_json == as_json2)
+match_ok = (as_json == as_json2)
+print( DECO.rgbstr(255,255,255,"particle system dual serdes test : "), end="" )
+if match_ok:
+  print(DECO.rgbstr(0,255,0,"OK"))
+else:
+  print(DECO.err("BAD"))

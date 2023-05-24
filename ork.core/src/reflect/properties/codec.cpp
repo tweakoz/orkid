@@ -18,7 +18,7 @@ namespace ork {
 }
 ////////////////////////////////////////////////////////////////////////////////
 namespace ork::reflect::serdes {
-static logchannel_ptr_t logchan_rcodec = logger()->createChannel("reflection.codec",fvec3(0.9,1,0.9));
+static logchannel_ptr_t logchan_rcodec = logger()->createChannel("reflection.codec",fvec3(0.9,1,0.9), false);
 ////////////////////////////////////////////////////////////////////////////////
 using ulong_t = unsigned long int;
 using uint_t  = unsigned int;

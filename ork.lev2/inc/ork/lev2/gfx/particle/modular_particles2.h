@@ -132,7 +132,7 @@ public:
   dflow::dgmoduleinst_ptr_t createInstance(dataflow::GraphInst* ginst) const final;
 
   float _unitAge = 1.0f;
-  int _poolSize  = 40;
+  int _poolSize  = 16384;
   // dflow::floatxfinplugdata_ptr_t _pathInterval;
   // dflow::floatxfinplugdata_ptr_t _pathProbability;
   particlebuf_outplugdata_ptr_t _poolOutput;

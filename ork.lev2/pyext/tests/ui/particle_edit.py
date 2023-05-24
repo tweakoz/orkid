@@ -21,8 +21,10 @@ from common.scenegraph import createSceneGraph
 parser = argparse.ArgumentParser(description='scenegraph particles example')
 parser.add_argument("-i", "--inputorjfile",type=str, default="", help='load particle orj file')
 args = vars(parser.parse_args())
-orjfile = path.Path(args["inputorjfile"])
-
+inputorjfile = args["inputorjfile"]
+orjfile = path.Path(inputorjfile)
+print(orjfile,inputorjfile)
+use_orjfile = len(inputorjfile) and orjfile.exists()
 ################################################################################
 
 class ParticlesApp(object):
@@ -47,8 +49,8 @@ class ParticlesApp(object):
     ################################################
 
     vguides = lg_group.vertical_guides
-    vguides[1].proportion = 0.35
-    vguides[2].proportion = 0.35
+    vguides[1].proportion = 0.25
+    vguides[2].proportion = 0.25
 
     ################################################
     # replace left viewport with particle editor
@@ -103,7 +105,7 @@ class ParticlesApp(object):
     # create particle drawable 
     ###################################
 
-    if orjfile.exists():
+    if use_orjfile:
       class ImplObject(object):
         def __init__(self):
           super().__init__()
@@ -119,13 +121,6 @@ class ParticlesApp(object):
       self.ptc_data = createParticleData()
 
     ptc_drawable = self.ptc_data.drawable_data.createDrawable()
-
-    #self.emitterplugs = self.ptc_data.emitter.inputs
-    #self.vortexplugs = self.ptc_data.vortex.inputs
-    #self.gravityplugs = self.ptc_data.gravity.inputs
-    #self.turbulenceplugs = self.ptc_data.turbulence.inputs
-    #self.emitterplugs.EmissionVelocity = 1
-    #self.turbulenceplugs.Amount = vec3(1,1,1)*5
 
     ##################
     # create particle sg node

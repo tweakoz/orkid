@@ -290,7 +290,7 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 
 struct floatxfdata : public ork::Object {
-  DeclareAbstractX(floatxfdata, ork::Object);
+  DeclareConcreteX(floatxfdata, ork::Object);
 
 public:
   float transform(float inp) const;

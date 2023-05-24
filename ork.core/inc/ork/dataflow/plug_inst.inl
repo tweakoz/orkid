@@ -31,7 +31,7 @@ typename outpluginst<traits>::data_type_ptr_t outpluginst<traits>::value_ptr() {
 
 template <typename traits> //
 const typename outpluginst<traits>::data_type_t& outpluginst<traits>::value() const {
-  printf( "outplug<%s> getvalue\n", _plugdata->_name.c_str() );
+  //printf( "outplug<%s> getvalue\n", _plugdata->_name.c_str() );
   return (*_value);
 }
 

@@ -170,6 +170,9 @@ PYBIND11_MODULE(_lev2, module_lev2) {
             auto graphdata = std::make_shared<dataflow::GraphData>();
             to->_particlesystems.AddSorted(objname,graphdata);
             return graphdata;
+          })
+          .def("setParticleSystem", [](testobject_ptr_t to, std::string objname, dataflow::graphdata_ptr_t graphdata) {
+            to->_particlesystems.AddSorted(objname,graphdata);
           });
   type_codec->registerStdCodec<testobject_ptr_t>(gedto_type);
   /////////////////////////////////////////////////////////////////////////////////
