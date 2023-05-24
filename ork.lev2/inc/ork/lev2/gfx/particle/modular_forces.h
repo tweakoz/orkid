@@ -19,7 +19,7 @@ public:
   GravityModuleData();
   static std::shared_ptr<GravityModuleData> createShared();
   static rtti::castable_ptr_t sharedFactory();
-  dflow::dgmoduleinst_ptr_t createInstance() const final;
+  dflow::dgmoduleinst_ptr_t createInstance(dataflow::GraphInst* ginst) const final;
 };
 
 using gravitymodule_ptr_t = std::shared_ptr<GravityModuleData>;
@@ -29,7 +29,7 @@ struct TurbulenceModuleData : public ParticleModuleData {
 public:
   TurbulenceModuleData();
   static std::shared_ptr<TurbulenceModuleData> createShared();
-  dflow::dgmoduleinst_ptr_t createInstance() const final;
+  dflow::dgmoduleinst_ptr_t createInstance(dataflow::GraphInst* ginst) const final;
 };
 
 using turbulencemodule_ptr_t = std::shared_ptr<TurbulenceModuleData>;
@@ -40,7 +40,7 @@ struct VortexModuleData : public ParticleModuleData {
 public:
   VortexModuleData();
   static std::shared_ptr<VortexModuleData> createShared();
-  dflow::dgmoduleinst_ptr_t createInstance() const final;
+  dflow::dgmoduleinst_ptr_t createInstance(dataflow::GraphInst* ginst) const final;
 };
 
 using vortexmodule_ptr_t = std::shared_ptr<VortexModuleData>;

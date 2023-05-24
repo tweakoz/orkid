@@ -61,6 +61,7 @@ public:
   std::vector<inplugdata_ptr_t> _inputs;
   std::vector<outplugdata_ptr_t> _outputs;
 
+
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -74,7 +75,7 @@ public:
   bool isGroup() const;
   ////////////////////////////////////////////
   static dgmoduledata_ptr_t createShared();
-  virtual dgmoduleinst_ptr_t createInstance() const;
+  virtual dgmoduleinst_ptr_t createInstance(GraphInst* ginst) const;
   ////////////////////////////////////////////
   size_t computeMinDepth() const;
   size_t computeMaxDepth() const;
@@ -95,7 +96,7 @@ struct LambdaModuleData : public DgModuleData {
 public:
   LambdaModuleData();
   static std::shared_ptr<LambdaModuleData> createShared();
-  dgmoduleinst_ptr_t createInstance() const final;
+  dgmoduleinst_ptr_t createInstance(GraphInst* ginst) const final;
 
   using compute_lamda_t = std::function<void(graphinst_ptr_t,ui::updatedata_ptr_t)>;
   using link_lamda_t = std::function<void(graphinst_ptr_t)>;
@@ -108,7 +109,7 @@ public:
 
 struct ModuleInst {
 
-  ModuleInst(const ModuleData* _this);
+  ModuleInst(const ModuleData* _this, GraphInst* ginst);
   
   int numOutputs() const;
   int numInputs() const;
@@ -125,6 +126,7 @@ struct ModuleInst {
   virtual bool isDirty(void) const;
 
   const ModuleData* _abstract_module_data;
+  GraphInst* _graphinst = nullptr;
   std::vector<inpluginst_ptr_t> _inputs;
   std::vector<outpluginst_ptr_t> _outputs;
   std::unordered_map<std::string,inpluginst_ptr_t> _inputsByName;
@@ -136,7 +138,7 @@ struct ModuleInst {
 
 struct DgModuleInst : public ModuleInst {
 
-  DgModuleInst(const DgModuleData* _this);
+  DgModuleInst(const DgModuleData* _this, GraphInst* ginst);
   virtual ~DgModuleInst();
 
   virtual void onLink(GraphInst* inst) {}

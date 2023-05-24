@@ -51,8 +51,8 @@ void ParticleModuleData:: _initShared(dflow::dgmoduledata_ptr_t data){
   createOutputPlug<ParticleBufferPlugTraits>(data, dflow::EPR_UNIFORM, "pool");
 }
 
-ParticleModuleInst::ParticleModuleInst(const ParticleModuleData* data)
-  : DgModuleInst(data){
+ParticleModuleInst::ParticleModuleInst(const ParticleModuleData* data, dflow::GraphInst* ginst)
+  : DgModuleInst(data,ginst){
 
 }
 

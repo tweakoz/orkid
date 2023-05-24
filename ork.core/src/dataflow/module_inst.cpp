@@ -22,8 +22,9 @@
 namespace ork::dataflow {
 ///////////////////////////////////////////////////////////////////////////////
 
-ModuleInst::ModuleInst(const ModuleData* absdata)
-    : _abstract_module_data(absdata) {
+ModuleInst::ModuleInst(const ModuleData* absdata, GraphInst* ginst)
+    : _abstract_module_data(absdata)
+    , _graphinst(ginst) {
 }
 int ModuleInst::numInputs() const {
   return _inputs.size();
@@ -73,8 +74,8 @@ outpluginst_ptr_t ModuleInst::outputNamed(const std::string& named) const {
   return it->second;
 }
 ///////////////////////////////////////////////////////////////////////////////
-DgModuleInst::DgModuleInst(const DgModuleData* absdata)
-  : ModuleInst(absdata)
+DgModuleInst::DgModuleInst(const DgModuleData* absdata, GraphInst* ginst)
+  : ModuleInst(absdata,ginst)
   , _dgmodule_data(absdata) {
 }
 ///////////////////////////////////////////////////////////////////////////////

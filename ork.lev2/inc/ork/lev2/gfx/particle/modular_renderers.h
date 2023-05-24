@@ -124,7 +124,7 @@ struct SpriteRendererData : public RendererModuleData {
 public:
   SpriteRendererData();
   static std::shared_ptr<SpriteRendererData> createShared();
-  dflow::dgmoduleinst_ptr_t createInstance() const final;
+  dflow::dgmoduleinst_ptr_t createInstance(dataflow::GraphInst* ginst) const final;
 
   basematerial_ptr_t _material;
 };
@@ -138,7 +138,7 @@ struct StreakRendererData : public RendererModuleData {
 public:
   StreakRendererData();
   static std::shared_ptr<StreakRendererData> createShared();
-  dflow::dgmoduleinst_ptr_t createInstance() const final;
+  dflow::dgmoduleinst_ptr_t createInstance(dataflow::GraphInst* ginst) const final;
 
   basematerial_ptr_t _material;
 };

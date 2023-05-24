@@ -222,6 +222,8 @@ void GraphData::safeConnect(inplugdata_ptr_t inp, outplugdata_ptr_t outp) {
   OrkAssert(ok);
   inp->_connectedOutput = outp;
   outp->_connections.push_back(inp);
+  auto inpmod = inp->_parent_module;
+  inp->_sigPlugConnectionChanged();
 }
 ///////////////////////////////////////////////////////////////////////////////
 void GraphData::disconnect(inplugdata_ptr_t inp) {

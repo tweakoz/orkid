@@ -18,8 +18,8 @@ namespace ork::lev2::particle {
 
 struct GravityModuleInst : public ParticleModuleInst {
 
-  GravityModuleInst(const GravityModuleData* gmd)
-      : ParticleModuleInst(gmd) {
+  GravityModuleInst(const GravityModuleData* gmd, dataflow::GraphInst* ginst)
+      : ParticleModuleInst(gmd, ginst) {
   }
 
   ////////////////////////////////////////////////////
@@ -120,8 +120,8 @@ rtti::castable_ptr_t GravityModuleData::sharedFactory(){
 
 //////////////////////////////////////////////////////////////////////////
 
-dgmoduleinst_ptr_t GravityModuleData::createInstance() const {
-  return std::make_shared<GravityModuleInst>(this);
+dgmoduleinst_ptr_t GravityModuleData::createInstance(dataflow::GraphInst* ginst) const {
+  return std::make_shared<GravityModuleInst>(this, ginst);
 }
 
 } // namespace ork::lev2::particle

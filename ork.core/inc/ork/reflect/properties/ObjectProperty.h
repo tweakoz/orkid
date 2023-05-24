@@ -66,6 +66,14 @@ struct ObjectProperty {
     _annotations.AddSorted(key, val);
   }
   /////////////////////////////////////////////////////////////////
+  template <typename T>
+  attempt_cast_const<T> typedAnnotation(const ConstString& key) const {
+    auto it = _annotations.find(key);
+    if (it != _annotations.end()) {
+      return it->second.tryAs<T>();
+    }
+    return attempt_cast_const<T>(nullptr);
+  }
   anno_t annotation(const ConstString& key) const {
     anno_t rval(nullptr);
     auto it = _annotations.find(key);

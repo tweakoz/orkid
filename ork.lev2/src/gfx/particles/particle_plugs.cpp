@@ -43,12 +43,12 @@ void ptcl::particlebuf_inplugdata_t::describeX(class_t* clazz) {
 }
 
 template <> //
-dflow::inpluginst_ptr_t ptcl::particlebuf_inplugdata_t::createInstance() const {
-  return std::make_shared<ptcl::particlebuf_inpluginst_t>(this);
+dflow::inpluginst_ptr_t ptcl::particlebuf_inplugdata_t::createInstance(ModuleInst* minst) const {
+  return std::make_shared<ptcl::particlebuf_inpluginst_t>(this,minst);
 }
 template <> //
-dflow::outpluginst_ptr_t ptcl::particlebuf_outplugdata_t::createInstance() const {
-  return std::make_shared<ptcl::particlebuf_outpluginst_t>(this);
+dflow::outpluginst_ptr_t ptcl::particlebuf_outplugdata_t::createInstance(ModuleInst* minst) const {
+  return std::make_shared<ptcl::particlebuf_outpluginst_t>(this,minst);
 }
 
 ImplementTemplateReflectionX(ptcl::particlebuf_outplugdata_t, "psys::ptclbufoutplug");

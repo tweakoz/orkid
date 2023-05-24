@@ -23,6 +23,8 @@
 #include <ork/rtti/RTTIX.inl>
 #include <ork/util/logger.h>
 
+#include <ork/kernel/sigslot2.h>
+
 namespace ork::dataflow {
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -299,6 +301,7 @@ public:
 
   orklut<std::string, object_ptr_t> _modules;
   std::vector<deserconn_ptr_t> _deser_connections;
+  sigslot2::signal_void_t _sigTopologyUpdated;
 
   bool _topologyDirty;
 };
@@ -335,6 +338,7 @@ struct GraphInst {
   scheduler_ptr_t _scheduler;
 
   std::vector<dgmoduleinst_ptr_t> _module_insts;
+  std::unordered_map<std::string,dgmoduleinst_ptr_t> _module_inst_map;
 
   bool _inProgress;
   std::vector<dgmoduledata_ptr_t> _ordered_module_datas;

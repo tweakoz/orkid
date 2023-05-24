@@ -13,7 +13,7 @@ namespace ork::dataflow {
 
 struct PlugInst {
 
-  PlugInst(const PlugData* plugdata);
+  PlugInst(const PlugData* plugdata, ModuleInst* minst);
   virtual ~PlugInst();
 
   const std::type_info& GetDataTypeId() const {
@@ -22,6 +22,7 @@ struct PlugInst {
   virtual void _doSetDirty(bool bv) {
   }
 
+  ModuleInst* _moduleinst = nullptr;
   const PlugData* _plugdata;
   bool mbDirty;
 };
@@ -34,7 +35,7 @@ template <typename T> std::shared_ptr<T> typedPlugInst(pluginst_ptr_t p) {
 
 struct InPlugInst : public PlugInst {
 
-  InPlugInst(const PlugData* plugdata);
+  InPlugInst(const InPlugData* plugdata, ModuleInst* minst);
   ~InPlugInst();
   outpluginst_ptr_t connected() const;
   bool isConnected() const;
@@ -43,13 +44,14 @@ struct InPlugInst : public PlugInst {
   void _doSetDirty(bool bv) override; // virtual
 
   outpluginst_ptr_t _connectedOutput;
+  sigslot2::scoped_connection _connectionPlugConnectionChanged;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
 struct OutPlugInst : public PlugInst {
 
-  OutPlugInst(const PlugData* plugdata);
+  OutPlugInst(const OutPlugData* plugdata, ModuleInst* minst);
   ~OutPlugInst();
 
   bool isConnected() const;
@@ -71,7 +73,7 @@ public:
   using data_type_ptr_t       = std::shared_ptr<data_type_t>;
   using data_type_const_ptr_t = std::shared_ptr<const data_type_t>;
 
-  inline explicit outpluginst(const outplugdata<traits>* data);
+  inline explicit outpluginst(const outplugdata<traits>* data, ModuleInst* minst);
   virtual data_type_const_ptr_t value_ptr() const;
   virtual data_type_ptr_t value_ptr();
   virtual const data_type_t& value() const;
@@ -90,7 +92,7 @@ public:
   using data_type_ptr_t       = std::shared_ptr<data_type_t>;
   using data_type_const_ptr_t = std::shared_ptr<const data_type_t>;
 
-  explicit inpluginst(const inplugdata<traits>* data);
+  explicit inpluginst(const inplugdata<traits>* data, ModuleInst* minst);
   data_type_const_ptr_t value_ptr() const;
   data_type_ptr_t value_ptr();
   virtual const data_type_t& value() const;
@@ -104,7 +106,7 @@ public:
 
 struct floatxfinpluginst : public inpluginst<FloatXfPlugTraits> {
 
-  floatxfinpluginst(const floatxfinplugdata_t* d);
+  floatxfinpluginst(const floatxfinplugdata_t* d, ModuleInst* minst);
 
   const float& value() const final;
 
@@ -116,7 +118,7 @@ struct floatxfinpluginst : public inpluginst<FloatXfPlugTraits> {
 
 struct fvec3xfinpluginst : public inpluginst<Vec3XfPlugTraits> {
 
-  fvec3xfinpluginst(const fvec3xfinplugdata_t* d);
+  fvec3xfinpluginst(const fvec3xfinplugdata_t* d, ModuleInst* minst);
 
   const fvec3& value() const final;
 

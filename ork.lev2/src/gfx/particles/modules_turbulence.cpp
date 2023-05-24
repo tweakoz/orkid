@@ -18,8 +18,8 @@ namespace ork::lev2::particle {
 
 struct TurbulenceModuleInst : public ParticleModuleInst {
 
-  TurbulenceModuleInst(const TurbulenceModuleData* gmd)
-      : ParticleModuleInst(gmd) {
+  TurbulenceModuleInst(const TurbulenceModuleData* gmd, dataflow::GraphInst* ginst)
+      : ParticleModuleInst(gmd, ginst) {
   }
 
   ////////////////////////////////////////////////////
@@ -86,8 +86,8 @@ std::shared_ptr<TurbulenceModuleData> TurbulenceModuleData::createShared() {
 
 //////////////////////////////////////////////////////////////////////////
 
-dgmoduleinst_ptr_t TurbulenceModuleData::createInstance() const {
-  return std::make_shared<TurbulenceModuleInst>(this);
+dgmoduleinst_ptr_t TurbulenceModuleData::createInstance(dataflow::GraphInst* ginst) const {
+  return std::make_shared<TurbulenceModuleInst>(this,ginst);
 }
 
 } // namespace ork::lev2::particle

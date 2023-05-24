@@ -18,7 +18,7 @@ struct RingEmitterData : public ParticleModuleData {
 public:
   RingEmitterData();
   static std::shared_ptr<RingEmitterData> createShared();
-  dflow::dgmoduleinst_ptr_t createInstance() const final;
+  dflow::dgmoduleinst_ptr_t createInstance(dataflow::GraphInst* ginst) const final;
 };
 
 using ringemittermodule_ptr_t = std::shared_ptr<RingEmitterData>;
@@ -32,7 +32,7 @@ public:
 
   NozzleEmitterData();
   static std::shared_ptr<NozzleEmitterData> createShared();
-  dflow::dgmoduleinst_ptr_t createInstance() const final;
+  dflow::dgmoduleinst_ptr_t createInstance(dataflow::GraphInst* ginst) const final;
 };
 
 using nozzleemittermodule_ptr_t = std::shared_ptr<NozzleEmitterData>;

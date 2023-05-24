@@ -28,7 +28,7 @@ struct RingDirectedEmitter : public DirectedEmitter {
 
 struct RingEmitterInst : public ParticleModuleInst {
 
-  RingEmitterInst(const RingEmitterData* rmd);
+  RingEmitterInst(const RingEmitterData* rmd, dataflow::GraphInst* ginst);
 
   void onLink(GraphInst* inst) final;
   void compute(GraphInst* inst, ui::updatedata_ptr_t updata) final;
@@ -70,8 +70,8 @@ struct RingEmitterInst : public ParticleModuleInst {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-RingEmitterInst::RingEmitterInst(const RingEmitterData* rmd)
-    : ParticleModuleInst(rmd)
+RingEmitterInst::RingEmitterInst(const RingEmitterData* rmd, dataflow::GraphInst* ginst)
+    : ParticleModuleInst(rmd, ginst)
     , _directedEmitter(this) {
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -195,8 +195,8 @@ std::shared_ptr<RingEmitterData> RingEmitterData::createShared() {
   return data;
 }
 
-dgmoduleinst_ptr_t RingEmitterData::createInstance() const {
-  return std::make_shared<RingEmitterInst>(this);
+dgmoduleinst_ptr_t RingEmitterData::createInstance(dataflow::GraphInst* ginst) const {
+  return std::make_shared<RingEmitterInst>(this, ginst);
 }
 
 } // namespace ork::lev2::particle

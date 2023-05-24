@@ -31,7 +31,7 @@ struct StreakRendererInst : public ParticleModuleInst {
   using streak_vtxbuf_ptr_t = std::shared_ptr<streak_vtxbuf_t>;
   using streak_vertex_writer_t = lev2::VtxWriter<streak_vtx_t>;
 
-  StreakRendererInst(const StreakRendererData* srd);
+  StreakRendererInst(const StreakRendererData* srd, dataflow::GraphInst* ginst);
   void onLink(GraphInst* inst) final;
   void compute(GraphInst* inst, ui::updatedata_ptr_t updata) final;
   void _render(const ork::lev2::RenderContextInstData& RCID);
@@ -44,8 +44,8 @@ struct StreakRendererInst : public ParticleModuleInst {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-StreakRendererInst::StreakRendererInst(const StreakRendererData* srd)
-    : ParticleModuleInst(srd)
+StreakRendererInst::StreakRendererInst(const StreakRendererData* srd, dataflow::GraphInst* ginst)
+    : ParticleModuleInst(srd, ginst)
     , _srd(srd) {
   OrkAssert(srd);
   _triple_buf = std::make_shared<triple_buf_t>();
@@ -202,8 +202,8 @@ std::shared_ptr<StreakRendererData> StreakRendererData::createShared() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-dgmoduleinst_ptr_t StreakRendererData::createInstance() const {
-  return std::make_shared<StreakRendererInst>(this);
+dgmoduleinst_ptr_t StreakRendererData::createInstance(dataflow::GraphInst* ginst) const {
+  return std::make_shared<StreakRendererInst>(this, ginst);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

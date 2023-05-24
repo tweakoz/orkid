@@ -27,7 +27,7 @@ struct SpriteRendererInst : public ParticleModuleInst {
   using triple_buf_t     = concurrent_triple_buffer<ParticlePoolRenderBuffer>;
   using triple_buf_ptr_t = std::shared_ptr<triple_buf_t>;
 
-  SpriteRendererInst(const SpriteRendererData* smd);
+  SpriteRendererInst(const SpriteRendererData* smd, dataflow::GraphInst* ginst);
   void onLink(GraphInst* inst) final;
   void compute(GraphInst* inst, ui::updatedata_ptr_t updata) final;
   void _render(const ork::lev2::RenderContextInstData& RCID);
@@ -60,8 +60,8 @@ struct SpriteRendererInst : public ParticleModuleInst {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-SpriteRendererInst::SpriteRendererInst(const SpriteRendererData* smd)
-    : ParticleModuleInst(smd)
+SpriteRendererInst::SpriteRendererInst(const SpriteRendererData* smd, dataflow::GraphInst* ginst)
+    : ParticleModuleInst(smd, ginst)
     , _smd(smd) {
 
   _triple_buf = std::make_shared<triple_buf_t>();
@@ -271,8 +271,8 @@ std::shared_ptr<SpriteRendererData> SpriteRendererData::createShared() {
 
 //////////////////////////////////////////////////////////////////////////
 
-dgmoduleinst_ptr_t SpriteRendererData::createInstance() const {
-  return std::make_shared<SpriteRendererInst>(this);
+dgmoduleinst_ptr_t SpriteRendererData::createInstance(dataflow::GraphInst* ginst) const {
+  return std::make_shared<SpriteRendererInst>(this,ginst);
 }
 
 /////////////////////////////////////////

@@ -17,8 +17,8 @@ namespace ork::lev2::particle {
 
 struct ParticlePoolModuleInst : dflow::DgModuleInst {
 
-  ParticlePoolModuleInst(const ParticlePoolData* data)
-      : dflow::DgModuleInst(data)
+  ParticlePoolModuleInst(const ParticlePoolData* data, dataflow::GraphInst* ginst)
+      : dflow::DgModuleInst(data, ginst)
       , _ppd(data) {
   }
   //  ParticleBufferInst _particle_buffer;
@@ -117,8 +117,8 @@ std::shared_ptr<ParticlePoolData> ParticlePoolData::createShared() {
   return data;
 }
 
-dflow::dgmoduleinst_ptr_t ParticlePoolData::createInstance() const {
-  return std::make_shared<ParticlePoolModuleInst>(this);
+dflow::dgmoduleinst_ptr_t ParticlePoolData::createInstance(dataflow::GraphInst* ginst) const {
+  return std::make_shared<ParticlePoolModuleInst>(this, ginst);
 }
 
 } // namespace ork::lev2::particle

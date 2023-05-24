@@ -12,8 +12,8 @@ namespace ork::dataflow {
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename traits>                                        //
-outpluginst<traits>::outpluginst(const outplugdata<traits>* data) //
-    : OutPlugInst(data)                                           //
+outpluginst<traits>::outpluginst(const outplugdata<traits>* data, ModuleInst* minst) //
+    : OutPlugInst(data,minst)                                     //
     , _typed_plugdata(data) {                                     //
 
   _value = traits::data_to_inst(data->_value);
@@ -31,6 +31,7 @@ typename outpluginst<traits>::data_type_ptr_t outpluginst<traits>::value_ptr() {
 
 template <typename traits> //
 const typename outpluginst<traits>::data_type_t& outpluginst<traits>::value() const {
+  printf( "outplug<%s> getvalue\n", _plugdata->_name.c_str() );
   return (*_value);
 }
 
@@ -42,8 +43,8 @@ void outpluginst<traits>::setValue(const data_type_t& v) {
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename traits>
-inpluginst<traits>::inpluginst(const inplugdata<traits>* data) //
-    : InPlugInst(data)                                         //
+inpluginst<traits>::inpluginst(const inplugdata<traits>* data, ModuleInst* minst) //
+    : InPlugInst(data,minst)                                   //
     , _typed_plugdata(data) {                                  //
   //_value = std::make_shared<data_type_t>();
   _value = traits::data_to_inst(data->_value);
@@ -61,9 +62,16 @@ template <typename traits> typename inpluginst<traits>::data_type_ptr_t inplugin
 template <typename traits> const typename inpluginst<traits>::data_type_t& inpluginst<traits>::value() const {
 
   if (_connectedOutput) {
-    auto out_plug = typedPlugInst<outpluginst<traits>>(_connectedOutput);
+    auto inp_plug_data = dynamic_cast<const inplugdata<traits>*>(_plugdata);
+    auto out_plug = typedPlugInst<outpluginst<typename traits::out_traits_t>>(_connectedOutput);
     OrkAssert(out_plug);
-    return out_plug->value();
+    *_value = out_plug->value();
+    auto as_txflist = std::dynamic_pointer_cast<typename traits::xformer_t>(inp_plug_data->_transformer);
+    if(as_txflist){
+      for( auto xf : as_txflist->_transforms ){
+        //xf->transform( *_value );
+      }
+    }
   }
 
   return (*_value);

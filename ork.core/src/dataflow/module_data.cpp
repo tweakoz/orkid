@@ -133,8 +133,6 @@ it!=mDependencies.end(); it++ )
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 void DgModuleData::describeX(class_t* clazz) {
-  // ork::reflect::RegisterProperty("mgvpos", &DgModuleData::mgvpos);
-  // ork::reflect::annotatePropertyForEditor<dgmodule>("mgvpos", "editor.visible", "false");
 }
 ///////////////////////////////////////////////////////////////////////////////
 DgModuleData::DgModuleData()
@@ -150,8 +148,8 @@ graphdata_ptr_t DgModuleData::childGraph() const {
 dgmoduledata_ptr_t DgModuleData::createShared(){
     return std::make_shared<DgModuleData>();
 }
-dgmoduleinst_ptr_t DgModuleData::createInstance() const{
-  return std::make_shared<DgModuleInst>(this);
+dgmoduleinst_ptr_t DgModuleData::createInstance(GraphInst* ginst) const{
+  return std::make_shared<DgModuleInst>(this,ginst);
 }
 size_t DgModuleData::computeMinDepth() const{
     size_t min_depth = InPlugData::NOPATH;
@@ -188,8 +186,8 @@ size_t DgModuleData::computeMaxDepth() const{
 
 struct LambdaModuleInst : public DgModuleInst {
 
-  LambdaModuleInst(const LambdaModuleData* lmd)
-      : DgModuleInst(lmd)
+  LambdaModuleInst(const LambdaModuleData* lmd, GraphInst* ginst)
+      : DgModuleInst(lmd,ginst)
       , _lmd(lmd) {
   }
 
@@ -230,8 +228,8 @@ std::shared_ptr<LambdaModuleData> LambdaModuleData::createShared() {
 
 //////////////////////////////////////////////////////////////////////////
 
-dgmoduleinst_ptr_t LambdaModuleData::createInstance() const {
-  auto inst = std::make_shared<LambdaModuleInst>(this);
+dgmoduleinst_ptr_t LambdaModuleData::createInstance(GraphInst* ginst) const {
+  auto inst = std::make_shared<LambdaModuleInst>(this,ginst);
   inst->_sharedThis = inst;
   return inst;
 }

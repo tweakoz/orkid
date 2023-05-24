@@ -369,8 +369,8 @@ GedPlugNode::GedPlugNode(GedContainer* c, const char* name, newiodriver_ptr_t io
   if (as_float_xf) {
     auto pei = _impl.makeShared<FloatPlugXfEditorImpl>(this);
   } else {
-    printf("GedPlugNode<%p> not floatxfinplugdata_t\n", this);
-    printf(" clazz<%s>\n", _object->objectClass()->Name().c_str());
+    //printf("GedPlugNode<%p> not floatxfinplugdata_t\n", this);
+    //printf(" clazz<%s>\n", _object->objectClass()->Name().c_str());
   }
 }
 

@@ -87,7 +87,7 @@ InPlugData::InPlugData(moduledata_ptr_t pmod, EPlugRate epr, const std::type_inf
 }
 InPlugData::~InPlugData() {
 }
-inpluginst_ptr_t InPlugData::createInstance() const {
+inpluginst_ptr_t InPlugData::createInstance(ModuleInst* minst) const {
   return nullptr;
 }
 
@@ -148,7 +148,7 @@ void OutPlugData::_disconnect(inplugdata_ptr_t pinplug) {
     _connections.erase(it);
   }
 }
-outpluginst_ptr_t OutPlugData::createInstance() const {
+outpluginst_ptr_t OutPlugData::createInstance(ModuleInst* minst) const {
   return nullptr;
 }
 size_t OutPlugData::maxFanOut() const {
@@ -170,14 +170,14 @@ inplugdata_ptr_t OutPlugData::connected(size_t idx) const {
 ///////////////////////////////////////////////////////////////////////////////
 template <> void inplugdata<FloatPlugTraits>::describeX(class_t* clazz) {
 }
-template <> inpluginst_ptr_t inplugdata<FloatPlugTraits>::createInstance() const {
-  return std::make_shared<inpluginst<FloatPlugTraits>>(this);
+template <> inpluginst_ptr_t inplugdata<FloatPlugTraits>::createInstance(ModuleInst* minst) const {
+  return std::make_shared<inpluginst<FloatPlugTraits>>(this, minst);
 }
 
 template <> void outplugdata<FloatPlugTraits>::describeX(class_t* clazz) {
 }
-template <> outpluginst_ptr_t outplugdata<FloatPlugTraits>::createInstance() const {
-  return std::make_shared<outpluginst<FloatPlugTraits>>(this);
+template <> outpluginst_ptr_t outplugdata<FloatPlugTraits>::createInstance(ModuleInst* minst) const {
+  return std::make_shared<outpluginst<FloatPlugTraits>>(this, minst);
 }
 
 template struct outplugdata<FloatPlugTraits>;
@@ -186,8 +186,8 @@ template struct outplugdata<FloatPlugTraits>;
 ///////////////////////////////////////////////////////////////////////////////
 template <> void inplugdata<FloatXfPlugTraits>::describeX(class_t* clazz) {
 }
-template <> inpluginst_ptr_t inplugdata<FloatXfPlugTraits>::createInstance() const {
-  return std::make_shared<inpluginst<FloatXfPlugTraits>>(this);
+template <> inpluginst_ptr_t inplugdata<FloatXfPlugTraits>::createInstance(ModuleInst* minst) const {
+  return std::make_shared<inpluginst<FloatXfPlugTraits>>(this, minst);
 }
 ///////////////////////////////////////////////////////////////////////////////
 // plugdata<fvec3>
@@ -196,11 +196,11 @@ template <> void inplugdata<Vec3fPlugTraits>::describeX(class_t* clazz) {
 }
 template <> void outplugdata<Vec3fPlugTraits>::describeX(class_t* clazz) {
 }
-template <> inpluginst_ptr_t inplugdata<Vec3fPlugTraits>::createInstance() const {
-  return std::make_shared<inpluginst<Vec3fPlugTraits>>(this);
+template <> inpluginst_ptr_t inplugdata<Vec3fPlugTraits>::createInstance(ModuleInst* minst) const {
+  return std::make_shared<inpluginst<Vec3fPlugTraits>>(this, minst);
 }
-template <> outpluginst_ptr_t outplugdata<Vec3fPlugTraits>::createInstance() const {
-  return std::make_shared<outpluginst<Vec3fPlugTraits>>(this);
+template <> outpluginst_ptr_t outplugdata<Vec3fPlugTraits>::createInstance(ModuleInst* minst) const {
+  return std::make_shared<outpluginst<Vec3fPlugTraits>>(this, minst);
 }
 template struct outplugdata<Vec3fPlugTraits>;
 ///////////////////////////////////////////////////////////////////////////////
@@ -208,16 +208,15 @@ template struct outplugdata<Vec3fPlugTraits>;
 ///////////////////////////////////////////////////////////////////////////////
 template <> void inplugdata<Vec3XfPlugTraits>::describeX(class_t* clazz) {
 }
-template <> inpluginst_ptr_t inplugdata<Vec3XfPlugTraits>::createInstance() const {
-  return std::make_shared<inpluginst<Vec3XfPlugTraits>>(this);
+template <> inpluginst_ptr_t inplugdata<Vec3XfPlugTraits>::createInstance(ModuleInst* minst) const {
+  return std::make_shared<inpluginst<Vec3XfPlugTraits>>(this, minst);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void floatinplugdata::describeX(class_t* clazz) {
   /*ork::reflect::RegisterProperty(
       "value", //
       &floatinplugdata::GetValAccessor,
-      &floatinplugdata::SetValAccessor);
-  ork::reflect::annotatePropertyForEditor<floatinplug>("value", "editor.visible", "false");*/
+      &floatinplugdata::SetValAccessor);*/
 }
 ///////////////////////////////////////////////////////////////////////////////
 void vect3inplugdata::describeX(class_t* clazz) {
@@ -225,7 +224,6 @@ void vect3inplugdata::describeX(class_t* clazz) {
         "value", //
         &vect3inplugdata::GetValAccessor,
         &vect3inplugdata::SetValAccessor);
-    ork::reflect::annotatePropertyForEditor<vect3inplug>("value", "editor.visible", "false");
   */
 }
 ///////////////////////////////////////////////////////////////////////////////

@@ -18,8 +18,8 @@ namespace ork::lev2::particle {
 
 struct VortexModuleInst : public ParticleModuleInst {
 
-  VortexModuleInst(const VortexModuleData* gmd)
-      : ParticleModuleInst(gmd) {
+  VortexModuleInst(const VortexModuleData* gmd, dataflow::GraphInst* ginst)
+      : ParticleModuleInst(gmd, ginst) {
   }
 
   ////////////////////////////////////////////////////
@@ -46,6 +46,7 @@ struct VortexModuleInst : public ParticleModuleInst {
     float falloff         = _input_falloff->value();
     float dt              = updata->_dt;
 
+    //printf( "vortexstrength<%g>\n", vortexstrength );
     for (int i = 0; i < _pool->GetNumAlive(); i++) {
       BasicParticle* particle = _pool->GetActiveParticle(i);
       fvec3 Pos2D             = particle->mPosition;
@@ -96,8 +97,8 @@ std::shared_ptr<VortexModuleData> VortexModuleData::createShared() {
 
 //////////////////////////////////////////////////////////////////////////
 
-dgmoduleinst_ptr_t VortexModuleData::createInstance() const {
-  return std::make_shared<VortexModuleInst>(this);
+dgmoduleinst_ptr_t VortexModuleData::createInstance(dataflow::GraphInst* ginst) const {
+  return std::make_shared<VortexModuleInst>(this,ginst);
 }
 
 } // namespace ork::lev2::particle

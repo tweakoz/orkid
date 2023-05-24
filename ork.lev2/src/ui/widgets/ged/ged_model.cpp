@@ -642,10 +642,10 @@ geditemnode_ptr_t ObjModel::createObjPropNode(
 ////////////////////////////////////////////////////////////////////////////////////////////
 
 bool ObjModel::IsNodeVisible(const reflect::ObjectProperty* prop) {
-  ConstString anno_vis       = prop->GetAnnotation("editor.visible");
+  auto anno_vis       = prop->typedAnnotation<bool>("editor.visible");
   ConstString anno_ediftageq = prop->GetAnnotation("editor.iftageq");
-  if (anno_vis.length()) {
-    if (0 == strcmp(anno_vis.c_str(), "false"))
+  if (anno_vis) {
+    if ( not anno_vis.value() )
       return false;
   }
   if (anno_ediftageq.length()) {

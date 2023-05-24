@@ -50,6 +50,7 @@ struct ParticleBufferPlugTraits {
   using inst_impl_type_t             = ParticleBufferInst;
   using xformer_t                    = dflow::nullpassthrudata;
   using range_type = no_range;
+  using out_traits_t = ParticleBufferPlugTraits;
   static constexpr size_t max_fanout = 1;
   static std::shared_ptr<ParticleBufferInst> data_to_inst(std::shared_ptr<ParticleBufferData> inp);
 };
@@ -87,7 +88,7 @@ struct GlobalModuleData : public ModuleData {
 
 public:
   static std::shared_ptr<GlobalModuleData> createShared();
-  dflow::dgmoduleinst_ptr_t createInstance() const final;
+  dflow::dgmoduleinst_ptr_t createInstance(dataflow::GraphInst* ginst) const final;
 
 public:
   GlobalModuleData();
@@ -112,7 +113,7 @@ using ptcmoduledata_ptr_t = std::shared_ptr<ParticleModuleData>;
 
 struct ParticleModuleInst : public dflow::DgModuleInst {
 
-  ParticleModuleInst(const ParticleModuleData* data);
+  ParticleModuleInst(const ParticleModuleData* data, dataflow::GraphInst* ginst);
   void _onLink(dflow::GraphInst* inst);
   particlebuf_inpluginst_ptr_t _input_buffer;
   particlebuf_outpluginst_ptr_t _output_buffer;
@@ -128,7 +129,7 @@ struct ParticlePoolData : public ParticleModuleData {
 public:
   ParticlePoolData();
   static std::shared_ptr<ParticlePoolData> createShared();
-  dflow::dgmoduleinst_ptr_t createInstance() const final;
+  dflow::dgmoduleinst_ptr_t createInstance(dataflow::GraphInst* ginst) const final;
 
   float _unitAge = 1.0f;
   int _poolSize  = 40;

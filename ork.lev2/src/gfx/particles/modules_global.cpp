@@ -20,8 +20,8 @@ namespace ork::lev2::particle {
 
 struct GlobalModuleInst : dflow::DgModuleInst {
 
-  GlobalModuleInst(const GlobalModuleData* data)
-      : dflow::DgModuleInst(data)
+  GlobalModuleInst(const GlobalModuleData* data, dataflow::GraphInst* ginst)
+      : dflow::DgModuleInst(data,ginst)
       , _gmd(data) {
   }
 
@@ -139,8 +139,8 @@ std::shared_ptr<GlobalModuleData> GlobalModuleData::createShared() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-dflow::dgmoduleinst_ptr_t GlobalModuleData::createInstance() const {
-  return std::make_shared<GlobalModuleInst>(this);
+dflow::dgmoduleinst_ptr_t GlobalModuleData::createInstance(dataflow::GraphInst* ginst) const {
+  return std::make_shared<GlobalModuleInst>(this,ginst);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

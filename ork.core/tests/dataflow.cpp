@@ -40,6 +40,7 @@ struct ImgBasePlugTraits{
   using elemental_inst_type = ImgBase;
   using xformer_t = nullpassthrudata;
   using range_type = no_range;
+  using out_traits_t = ImgBasePlugTraits;
   static constexpr size_t max_fanout = 0;
   static std::shared_ptr<ImgBase> data_to_inst(std::shared_ptr<ImgBase> inp){
     return inp;
@@ -50,6 +51,7 @@ struct Img32PlugTraits{
   using elemental_inst_type = Img32;
   using xformer_t = nullpassthrudata;
   using range_type = no_range;
+  using out_traits_t = Img32PlugTraits;
   static constexpr size_t max_fanout = 0;
   static std::shared_ptr<Img32> data_to_inst(std::shared_ptr<Img32> inp){
     return inp;
@@ -60,6 +62,7 @@ struct Img64PlugTraits{
   using elemental_inst_type = Img64;
   using xformer_t = nullpassthrudata;
   using range_type = no_range;
+  using out_traits_t = Img64PlugTraits;
   static constexpr size_t max_fanout = 0;
   static std::shared_ptr<Img64> data_to_inst(std::shared_ptr<Img64> inp){
     return inp;  
@@ -100,8 +103,8 @@ void BaseModuleData::describeX(class_t* clazz) {
 
 struct BaseModuleInst : public DgModuleInst {
 
-  BaseModuleInst(const BaseModuleData* data)
-      : DgModuleInst(data) {
+  BaseModuleInst(const BaseModuleData* data, GraphInst* ginst)
+      : DgModuleInst(data, ginst) {
   }
 };
 
@@ -127,7 +130,7 @@ public: //
     return gmd;
   }
 
-  dgmoduleinst_ptr_t createInstance() const final;
+  dgmoduleinst_ptr_t createInstance(GraphInst* ginst) const final;
 
   float_ptr_t _outputA;
   float_ptr_t _outputB;
@@ -138,8 +141,8 @@ void GlobalModuleData::describeX(class_t* clazz) {
 }
 
 struct GlobalModuleInst : public BaseModuleInst {
-  GlobalModuleInst(const GlobalModuleData* data)
-      : BaseModuleInst(data) {
+  GlobalModuleInst(const GlobalModuleData* data, GraphInst* ginst)
+      : BaseModuleInst(data, ginst) {
   }
   void onLink(GraphInst* inst) final {
     int numinp = numInputs();
@@ -162,8 +165,8 @@ struct GlobalModuleInst : public BaseModuleInst {
   outpluginst_ptr_t _output_C;
 };
 
-dgmoduleinst_ptr_t GlobalModuleData::createInstance() const {
-  return std::make_shared<GlobalModuleInst>(this);
+dgmoduleinst_ptr_t GlobalModuleData::createInstance(GraphInst* ginst) const {
+  return std::make_shared<GlobalModuleInst>(this,ginst);
 }
 
 ////////////////////////////////////////////////////////////
@@ -191,8 +194,8 @@ void ImgModuleData::describeX(class_t* clazz) {
 }
 
 struct ImgModuleInst : public BaseModuleInst {
-  ImgModuleInst(const ImgModuleData* data)
-      : BaseModuleInst(data) {
+  ImgModuleInst(const ImgModuleData* data, GraphInst* ginst)
+      : BaseModuleInst(data,ginst) {
   }
 };
 
@@ -221,8 +224,8 @@ void Img32ModuleData::describeX(class_t* clazz) {
 }
 
 struct Img32ModuleInst : public ImgModuleInst {
-  Img32ModuleInst(const Img32ModuleData* data)
-      : ImgModuleInst(data) {
+  Img32ModuleInst(const Img32ModuleData* data, GraphInst* ginst)
+      : ImgModuleInst(data, ginst) {
   }
 };
 
@@ -251,8 +254,8 @@ void Img64ModuleData::describeX(class_t* clazz) {
 }
 
 struct Img64ModuleInst : public ImgModuleInst {
-  Img64ModuleInst(const Img64ModuleData* data)
-      : ImgModuleInst(data) {
+  Img64ModuleInst(const Img64ModuleData* data, GraphInst* ginst)
+      : ImgModuleInst(data, ginst) {
   }
 };
 
@@ -274,7 +277,7 @@ public: //
     return gmd;
   }
 
-  dgmoduleinst_ptr_t createInstance() const final;
+  dgmoduleinst_ptr_t createInstance(GraphInst* ginst) const final;
 
 };
 
@@ -282,8 +285,8 @@ void GradientModuleData::describeX(class_t* clazz) {
 }
 
 struct GradientModuleInst : public Img32ModuleInst {
-  GradientModuleInst(const GradientModuleData* data)
-      : Img32ModuleInst(data) {
+  GradientModuleInst(const GradientModuleData* data, GraphInst* ginst)
+      : Img32ModuleInst(data, ginst) {
   }
   void onLink(GraphInst* inst) final {
     auto impl  = inst->_impl.getShared<ImageGenTestImpl>();
@@ -300,8 +303,8 @@ struct GradientModuleInst : public Img32ModuleInst {
   inpluginst_ptr_t _input_imageB;
 };
 
-dgmoduleinst_ptr_t GradientModuleData::createInstance() const {
-  return std::make_shared<GradientModuleInst>(this);
+dgmoduleinst_ptr_t GradientModuleData::createInstance(GraphInst* ginst) const {
+  return std::make_shared<GradientModuleInst>(this, ginst);
 }
 
 ////////////////////////////////////////////////////////////
@@ -323,7 +326,7 @@ public: //
     return gmd;
   }
 
-  dgmoduleinst_ptr_t createInstance() const final;
+  dgmoduleinst_ptr_t createInstance(GraphInst* ginst) const final;
 
 };
 
@@ -331,8 +334,8 @@ void Op1ModuleData::describeX(class_t* clazz) {
 }
 
 struct Op1ModuleInst : public Img32ModuleInst {
-  Op1ModuleInst(const Op1ModuleData* data)
-      : Img32ModuleInst(data) {
+  Op1ModuleInst(const Op1ModuleData* data, GraphInst* ginst)
+      : Img32ModuleInst(data, ginst) {
   }
   void onLink(GraphInst* inst) final {
     auto impl  = inst->_impl.getShared<ImageGenTestImpl>();
@@ -351,8 +354,8 @@ struct Op1ModuleInst : public Img32ModuleInst {
   inpluginst_ptr_t _input_paramB;
 };
 
-dgmoduleinst_ptr_t Op1ModuleData::createInstance() const {
-  return std::make_shared<Op1ModuleInst>(this);
+dgmoduleinst_ptr_t Op1ModuleData::createInstance(GraphInst* ginst) const {
+  return std::make_shared<Op1ModuleInst>(this, ginst);
 }
 
 ////////////////////////////////////////////////////////////
@@ -375,7 +378,7 @@ public: //
     return gmd;
   }
 
-  dgmoduleinst_ptr_t createInstance() const final;
+  dgmoduleinst_ptr_t createInstance(GraphInst* ginst) const final;
 
 };
 
@@ -383,8 +386,8 @@ void Op2ModuleData::describeX(class_t* clazz) {
 }
 
 struct Op2ModuleInst : public Img32ModuleInst {
-  Op2ModuleInst(const Op2ModuleData* data)
-      : Img32ModuleInst(data) {
+  Op2ModuleInst(const Op2ModuleData* data, GraphInst* ginst)
+      : Img32ModuleInst(data, ginst) {
   }
   void onLink(GraphInst* inst) final {
     auto impl  = inst->_impl.getShared<ImageGenTestImpl>();
@@ -405,8 +408,8 @@ struct Op2ModuleInst : public Img32ModuleInst {
   inpluginst_ptr_t _input_paramB;
 };
 
-dgmoduleinst_ptr_t Op2ModuleData::createInstance() const {
-  return std::make_shared<Op2ModuleInst>(this);
+dgmoduleinst_ptr_t Op2ModuleData::createInstance(GraphInst* ginst) const {
+  return std::make_shared<Op2ModuleInst>(this, ginst);
 }
 
 ////////////////////////////////////////////////////////////
@@ -750,11 +753,11 @@ template <> void outplugdata<test::Img32PlugTraits>::describeX(class_t* clazz) {
 
 template <> void inplugdata<test::Img32PlugTraits>::describeX(class_t* clazz) {
 }
-template <> inpluginst_ptr_t inplugdata<test::Img32PlugTraits>::createInstance() const {
-  return std::make_shared<inpluginst<test::Img32PlugTraits>>(this);
+template <> inpluginst_ptr_t inplugdata<test::Img32PlugTraits>::createInstance(ModuleInst* minst) const {
+  return std::make_shared<inpluginst<test::Img32PlugTraits>>(this,minst);
 }
-template <> outpluginst_ptr_t outplugdata<test::Img32PlugTraits>::createInstance() const {
-  return std::make_shared<outpluginst<test::Img32PlugTraits>>(this);
+template <> outpluginst_ptr_t outplugdata<test::Img32PlugTraits>::createInstance(ModuleInst* minst) const {
+  return std::make_shared<outpluginst<test::Img32PlugTraits>>(this,minst);
 }
 
 template struct outplugdata<test::Img32PlugTraits>;
@@ -769,11 +772,11 @@ template <> void outplugdata<test::Img64PlugTraits>::describeX(class_t* clazz) {
 
 template <> void inplugdata<test::Img64PlugTraits>::describeX(class_t* clazz) {
 }
-template <> inpluginst_ptr_t inplugdata<test::Img64PlugTraits>::createInstance() const {
-  return std::make_shared<inpluginst<test::Img64PlugTraits>>(this);
+template <> inpluginst_ptr_t inplugdata<test::Img64PlugTraits>::createInstance(ModuleInst* minst) const {
+  return std::make_shared<inpluginst<test::Img64PlugTraits>>(this,minst);
 }
-template <> outpluginst_ptr_t outplugdata<test::Img64PlugTraits>::createInstance() const {
-  return std::make_shared<outpluginst<test::Img64PlugTraits>>(this);
+template <> outpluginst_ptr_t outplugdata<test::Img64PlugTraits>::createInstance(ModuleInst* minst) const {
+  return std::make_shared<outpluginst<test::Img64PlugTraits>>(this,minst);
 }
 template struct outplugdata<test::Img64PlugTraits>;
 template struct inplugdata<test::Img64PlugTraits>;

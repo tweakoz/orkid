@@ -28,6 +28,7 @@ struct FloatPlugTraits {
   using elemental_inst_type = float;
   using xformer_t                    = nullpassthrudata;
   using range_type = float_range;
+  using out_traits_t = FloatPlugTraits;
   static constexpr size_t max_fanout = 0;
   static std::shared_ptr<float> data_to_inst(std::shared_ptr<float> inp);
 };
@@ -36,6 +37,7 @@ struct Vec3fPlugTraits {
   using elemental_inst_type = fvec3;
   using xformer_t           = nullpassthrudata;
   using range_type = float_range;
+  using out_traits_t = Vec3fPlugTraits;
   static constexpr size_t max_fanout = 0;
   static std::shared_ptr<fvec3> data_to_inst(std::shared_ptr<fvec3> inp);
 };
@@ -44,6 +46,7 @@ struct FloatXfPlugTraits {
   using elemental_inst_type = float;
   using xformer_t                    = floatxfdata;
   using range_type = float_range;
+  using out_traits_t = FloatPlugTraits;
   static constexpr size_t max_fanout = 0;
   static std::shared_ptr<float> data_to_inst(std::shared_ptr<float> inp);
 };
@@ -52,6 +55,7 @@ struct Vec3XfPlugTraits {
   using elemental_inst_type = fvec3;
   using xformer_t                    = fvec3xfdata;
   using range_type = float_range;
+  using out_traits_t = Vec3fPlugTraits;
   static constexpr size_t max_fanout = 0;
   static std::shared_ptr<fvec3> data_to_inst(std::shared_ptr<fvec3> inp);
 };
@@ -128,11 +132,12 @@ public:
   bool isConnected() const;
   bool isMorphable() const;
   size_t computeMinDepth(dgmoduledata_constptr_t to_module) const;
-  virtual inpluginst_ptr_t createInstance() const;
+  virtual inpluginst_ptr_t createInstance(ModuleInst* minst) const;
 
   outplugdata_ptr_t _connectedOutput;                      // which EXTERNAL output plug are we connected to
   orkvector<outplugdata_ptr_t> _internalOutputConnections; // which output plugs IN THE SAME MODULE are connected to me ?
   morphable_ptr_t mpMorphable;
+  mutable sigslot2::signal_void_t _sigPlugConnectionChanged;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -152,7 +157,7 @@ public:
 
   void _disconnect(inplugdata_ptr_t pinplug);
 
-  virtual outpluginst_ptr_t createInstance() const;
+  virtual outpluginst_ptr_t createInstance(ModuleInst* minst) const;
 
   mutable orkvector<inplugdata_ptr_t> _connections;
 };
@@ -177,7 +182,7 @@ public:
   const data_type_t& value() const;
   void setValue(const data_type_t& v);
 
-  outpluginst_ptr_t createInstance() const override;
+  outpluginst_ptr_t createInstance(ModuleInst* minst) const override;
 
   data_type_ptr_t _value;
 };
@@ -205,7 +210,7 @@ public:
   object_ptr_t _transformer;
   range_t _range;
 
-  inpluginst_ptr_t createInstance() const override;
+  inpluginst_ptr_t createInstance(ModuleInst* minst) const override;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -298,6 +303,7 @@ public:
 
 struct nullpassthrudata : public ork::Object {
   DeclareAbstractX(nullpassthrudata, ork::Object);
+  orklut<std::string, floatxfitembasedata_ptr_t> _transforms;
 };
 struct floatpassthrudata : public ork::Object {
   DeclareAbstractX(floatpassthrudata, ork::Object);
@@ -312,6 +318,7 @@ struct fvec3passthrudata : public ork::Object {
   }
 };
 
+using fvec3passthrudata_ptr_t = std::shared_ptr<fvec3passthrudata>;
 ///////////////////////////////////////////////////////////////////////////////
 
 struct fvec3xfdata : public ork::Object {
@@ -323,6 +330,7 @@ public:
   floatxfdata_ptr_t _transformX;
   floatxfdata_ptr_t _transformY;
   floatxfdata_ptr_t _transformZ;
+  orklut<std::string, fvec3passthrudata_ptr_t> _transforms;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -30,7 +30,7 @@ struct NozzleDirectedEmitter : public DirectedEmitter {
 
 struct NozzleEmitterInst : public ParticleModuleInst {
 
-  NozzleEmitterInst(const NozzleEmitterData* ned);
+  NozzleEmitterInst(const NozzleEmitterData* ned, dataflow::GraphInst* ginst);
 
   void onLink(GraphInst* inst) final;
   void compute(GraphInst* inst, ui::updatedata_ptr_t updata) final;
@@ -65,8 +65,8 @@ struct NozzleEmitterInst : public ParticleModuleInst {
 
 //////////////////////////////////////////////////////////////////////////
 
-NozzleEmitterInst::NozzleEmitterInst(const NozzleEmitterData* ned)
-    : ParticleModuleInst(ned)
+NozzleEmitterInst::NozzleEmitterInst(const NozzleEmitterData* ned, dataflow::GraphInst* ginst)
+    : ParticleModuleInst(ned, ginst)
     , _directedEmitter(this){
 
 }
@@ -179,8 +179,8 @@ std::shared_ptr<NozzleEmitterData> NozzleEmitterData::createShared() {
 
 //////////////////////////////////////////////////////////////////////////
 
-dgmoduleinst_ptr_t NozzleEmitterData::createInstance() const {
-  return std::make_shared<NozzleEmitterInst>(this);
+dgmoduleinst_ptr_t NozzleEmitterData::createInstance(dataflow::GraphInst* ginst) const {
+  return std::make_shared<NozzleEmitterInst>(this, ginst);
 }
 
 //////////////////////////////////////////////////////////////////////////

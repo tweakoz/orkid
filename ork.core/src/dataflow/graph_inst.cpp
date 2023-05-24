@@ -36,7 +36,7 @@ void GraphInst::updateTopology(topology_ptr_t topo){
   // create module insts
   ////////////////////////////////////////////////
   for( auto data : _ordered_module_datas ){
-    auto module_inst = data->createInstance();
+    auto module_inst = data->createInstance(this);
     _ordered_module_insts.push_back(module_inst);
   }
   /////////////////////////////////////////////
@@ -52,7 +52,7 @@ void GraphInst::updateTopology(topology_ptr_t topo){
     auto inst_module = _ordered_module_insts[i];
     for( auto input : data_module->_inputs ){
       input_indices[input.get()] = input_index++;
-      auto plug_inst = input->createInstance();
+      auto plug_inst = input->createInstance(inst_module.get());
       OrkAssert(plug_inst);
       inst_module->_inputs.push_back(plug_inst);
       inst_module->_inputsByName[input->_name] = plug_inst;
@@ -71,7 +71,7 @@ void GraphInst::updateTopology(topology_ptr_t topo){
     auto inst_module = _ordered_module_insts[i];
     for( auto output : data_module->_outputs ){
       output_indices[output.get()] = output_index++;
-      auto plug_inst = output->createInstance();
+      auto plug_inst = output->createInstance(inst_module.get());
       OrkAssert(plug_inst);
       inst_module->_outputs.push_back(plug_inst);
       inst_module->_outputsByName[output->_name] = plug_inst;
@@ -85,6 +85,8 @@ void GraphInst::updateTopology(topology_ptr_t topo){
   for( int i=0; i<num_modules; i++ ){
     auto data_module = _ordered_module_datas[i];
     auto inst_module = _ordered_module_insts[i];
+    auto datamodule_name = data_module->_name;
+    _module_inst_map[datamodule_name] = inst_module;
     for( auto input_inst : inst_module->_inputs ){
       auto it_lut = input2dataLUT.find(input_inst);
       OrkAssert(it_lut!=input2dataLUT.end());
