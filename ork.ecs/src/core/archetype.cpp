@@ -38,7 +38,7 @@ Archetype::Archetype()
     : mComponentDatas(EKEYPOLICY_MULTILUT) {
 }
 ///////////////////////////////////////////////////////////////////////////////
-bool Archetype::postDeserialize(reflect::serdes::IDeserializer&) {
+bool Archetype::postDeserialize(reflect::serdes::IDeserializer&, object_ptr_t shared) {
   // Compose();
   for (auto it : mComponentDatas) {
     auto k = it.first->Name();

@@ -67,7 +67,7 @@ DspParamData::DspParamData(std::string name) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool DspParamData::postDeserialize(reflect::serdes::IDeserializer&) { // override
+bool DspParamData::postDeserialize(reflect::serdes::IDeserializer&, object_ptr_t shared) { // override
 
   if (_evaluatorid == "default")
     useDefaultEvaluator();

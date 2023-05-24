@@ -50,7 +50,7 @@ public:
   virtual bool preSerialize(reflect::serdes::ISerializer&) const;
   virtual bool preDeserialize(reflect::serdes::IDeserializer&);
   virtual bool postSerialize(reflect::serdes::ISerializer&) const;
-  virtual bool postDeserialize(reflect::serdes::IDeserializer&);
+  virtual bool postDeserialize(reflect::serdes::IDeserializer&, object_ptr_t shared);
 
   void notify(const event::Event* pEV);
 

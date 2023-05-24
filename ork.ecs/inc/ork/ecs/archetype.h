@@ -84,7 +84,7 @@ public:
   //ComponentDataTable mComponentDataTable;
 
 private:
-  bool postDeserialize(reflect::serdes::IDeserializer&) override;
+  bool postDeserialize(reflect::serdes::IDeserializer&, object_ptr_t shared) override;
 };
 
 /*struct CompositeArchetype : public Archetype {

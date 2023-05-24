@@ -246,7 +246,7 @@ bool GraphData::preDeserialize(reflect::serdes::IDeserializer&) {
   return true;
 }
 ///////////////////////////////////////////////////////////////////////////////
-bool GraphData::postDeserialize(reflect::serdes::IDeserializer&) {
+bool GraphData::postDeserialize(reflect::serdes::IDeserializer&, object_ptr_t shared) {
 
   /////////////////////////////////
   // finish connections
@@ -273,6 +273,12 @@ bool GraphData::postDeserialize(reflect::serdes::IDeserializer&) {
 
   auto modules_copy = _modules;
   _modules.clear();
+  for (auto item : modules_copy) {
+    auto the_module  = std::dynamic_pointer_cast<ModuleData>(item.second);
+    if (the_module != nullptr) {
+      the_module->_graphdata = std::dynamic_pointer_cast<GraphData>(shared);
+    }
+  }
   for (auto item : modules_copy) {
     auto sec = item.second;
     if (sec != nullptr) {

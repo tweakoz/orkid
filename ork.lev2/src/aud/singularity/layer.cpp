@@ -30,7 +30,7 @@ void LayerData::describeX(class_t* clazz) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool LayerData::postDeserialize(reflect::serdes::IDeserializer&) {
+bool LayerData::postDeserialize(reflect::serdes::IDeserializer&, object_ptr_t shared) {
   int icid = 0;
   for (auto item : _controllermap) {
     auto controller            = item.second;

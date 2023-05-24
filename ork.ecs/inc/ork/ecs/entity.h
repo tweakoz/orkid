@@ -34,7 +34,7 @@ public:
   SpawnData();
   ~SpawnData();
 
-  bool postDeserialize(reflect::serdes::IDeserializer&) final;
+  bool postDeserialize(reflect::serdes::IDeserializer&, object_ptr_t shared) final;
 
   archetype_constptr_t GetArchetype() const {
     return _archetype;

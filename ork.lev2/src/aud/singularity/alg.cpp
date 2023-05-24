@@ -29,7 +29,7 @@ void AlgData::describeX(class_t* clazz) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool AlgData::postDeserialize(reflect::serdes::IDeserializer&) { // override
+bool AlgData::postDeserialize(reflect::serdes::IDeserializer&, object_ptr_t shared) { // override
   for (auto item : _stageByName) {
     auto stage     = item.second;
     int index      = stage->_stageIndex;

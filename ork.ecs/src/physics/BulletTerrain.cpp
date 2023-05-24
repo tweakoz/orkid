@@ -183,7 +183,7 @@ BulletShapeTerrainData::BulletShapeTerrainData()
   };
 }
 
-bool BulletShapeTerrainData::postDeserialize(reflect::serdes::IDeserializer&) {
+bool BulletShapeTerrainData::postDeserialize(reflect::serdes::IDeserializer&, object_ptr_t shared) {
   return true;
 }
 

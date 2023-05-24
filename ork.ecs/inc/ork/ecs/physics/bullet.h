@@ -248,7 +248,7 @@ public:
 
 private:
   ork::Object* _visualDataAccessor() { return & _visualData; }
-  bool postDeserialize(reflect::serdes::IDeserializer&) final;
+  bool postDeserialize(reflect::serdes::IDeserializer&, object_ptr_t shared) final;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

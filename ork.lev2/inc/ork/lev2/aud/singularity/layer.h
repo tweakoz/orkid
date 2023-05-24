@@ -18,7 +18,7 @@ namespace ork::audio::singularity {
 struct LayerData : public ork::Object {
 
   DeclareConcreteX(LayerData, ork::Object);
-  bool postDeserialize(reflect::serdes::IDeserializer&) override;
+  bool postDeserialize(reflect::serdes::IDeserializer&, object_ptr_t shared) override;
 
   LayerData(const ProgramData* pdat = nullptr);
 

@@ -248,7 +248,7 @@ bool MultiCurve1D::preDeserialize(ork::reflect::serdes::IDeserializer& deser) {
   return true;
 }
 
-bool MultiCurve1D::postDeserialize(reflect::serdes::IDeserializer&) {
+bool MultiCurve1D::postDeserialize(reflect::serdes::IDeserializer&, object_ptr_t shared) {
   return (true);
 }
 

@@ -474,7 +474,7 @@ void HotKeyConfiguration::RemoveHotKey(const char* actionname) {
   }
 }
 
-bool HotKeyConfiguration::postDeserialize(reflect::serdes::IDeserializer&) // virtual
+bool HotKeyConfiguration::postDeserialize(reflect::serdes::IDeserializer&, object_ptr_t shared) // virtual
 {
   for (auto it : _hotkeys) {
     auto pkey = it.second;

@@ -70,7 +70,7 @@ ConstString SpawnData::GetUserProperty(const ConstString& key) const {
   return rval;
 }
 ///////////////////////////////////////////////////////////////////////////////
-bool SpawnData::postDeserialize(reflect::serdes::IDeserializer&) {
+bool SpawnData::postDeserialize(reflect::serdes::IDeserializer&, object_ptr_t shared) {
   return true;
 }
 ///////////////////////////////////////////////////////////////////////////////

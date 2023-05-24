@@ -53,7 +53,7 @@ struct IoMask final : public ork::Object {
 struct DspBlockData : public ork::Object {
 
   DeclareAbstractX(DspBlockData, ork::Object);
-  bool postDeserialize(reflect::serdes::IDeserializer&) override;
+  bool postDeserialize(reflect::serdes::IDeserializer&, object_ptr_t shared) override;
 
   DspBlockData(std::string name = "");
 
@@ -149,7 +149,7 @@ struct DspBlock {
 struct DspStageData final : public ork::Object {
 
   DeclareConcreteX(DspStageData, ork::Object);
-  bool postDeserialize(reflect::serdes::IDeserializer&) override;
+  bool postDeserialize(reflect::serdes::IDeserializer&, object_ptr_t shared) override;
 
   DspStageData();
   dspblkdata_ptr_t appendBlock();
@@ -187,7 +187,7 @@ struct DspStage final {
 struct AlgData final : public ork::Object {
 
   DeclareConcreteX(AlgData, ork::Object);
-  bool postDeserialize(reflect::serdes::IDeserializer&) override;
+  bool postDeserialize(reflect::serdes::IDeserializer&, object_ptr_t shared) override;
 
   dspstagedata_ptr_t appendStage(const std::string& named);
   dspstagedata_ptr_t stageByName(const std::string& named);

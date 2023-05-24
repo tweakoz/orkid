@@ -296,7 +296,7 @@ public:
   void disconnect(outplugdata_ptr_t inp);
 
   bool preDeserialize(reflect::serdes::IDeserializer&) override;
-  bool postDeserialize(reflect::serdes::IDeserializer&) override;
+  bool postDeserialize(reflect::serdes::IDeserializer&, object_ptr_t shared) override;
 
 
   orklut<std::string, object_ptr_t> _modules;

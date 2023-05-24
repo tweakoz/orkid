@@ -81,7 +81,7 @@ bool Object::postSerialize(reflect::serdes::ISerializer&) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool Object::postDeserialize(reflect::serdes::IDeserializer&) {
+bool Object::postDeserialize(reflect::serdes::IDeserializer&, object_ptr_t shared) {
   return true;
 }
 

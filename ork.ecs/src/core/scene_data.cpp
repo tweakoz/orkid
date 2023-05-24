@@ -322,7 +322,7 @@ void SceneData::prepareForSimulation() {
   }
 }
 
-bool SceneData::postDeserialize(reflect::serdes::IDeserializer&) {
+bool SceneData::postDeserialize(reflect::serdes::IDeserializer&, object_ptr_t shared) {
   cleanup();
   for( auto item : _sceneObjects ){
     auto k = item.first;

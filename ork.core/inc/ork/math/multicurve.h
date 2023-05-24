@@ -79,7 +79,7 @@ public:
   void Init(int inumsegs);
 
 private:
-  bool postDeserialize(reflect::serdes::IDeserializer&) final;           // virtual
+  bool postDeserialize(reflect::serdes::IDeserializer&, object_ptr_t shared) final;           // virtual
   bool preDeserialize(ork::reflect::serdes::IDeserializer& deser) final; // virtual
 };
 

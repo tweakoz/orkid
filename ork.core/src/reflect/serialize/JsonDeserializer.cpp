@@ -466,7 +466,7 @@ object_ptr_t JsonDeserializer::_parseObjectNode(serdes::node_ptr_t dsernode) {
       logchan_ds->log("dropping property<%s>", propname);
     }
   }
-  instance_out->postDeserialize(*this);
+  instance_out->postDeserialize(*this, instance_out);
 
   ///////////////////////////////////
   return instance_out;

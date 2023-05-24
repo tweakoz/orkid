@@ -66,7 +66,7 @@ int DspBlockData::addDspChannel(int channel) {
 
 //////////////////////////////////////////////////////////////////////////////
 
-bool DspBlockData::postDeserialize(reflect::serdes::IDeserializer&) { // override
+bool DspBlockData::postDeserialize(reflect::serdes::IDeserializer&, object_ptr_t shared) { // override
   _numParams = _paramd.size();
   return true;
 }
@@ -133,7 +133,7 @@ void DspStageData::describeX(class_t* clazz) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool DspStageData::postDeserialize(reflect::serdes::IDeserializer&) { // override
+bool DspStageData::postDeserialize(reflect::serdes::IDeserializer&, object_ptr_t shared) { // override
   for (auto item : _namedblockdatas) {
     auto blockdata     = item.second;
     int index          = blockdata->_blockIndex;
