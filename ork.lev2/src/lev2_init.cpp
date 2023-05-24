@@ -22,7 +22,6 @@
 #include <ork/kernel/string/string.h>
 #include <ork/lev2/gfx/material_pbr.inl>
 #include <ork/lev2/gfx/targetinterfaces.h>
-#include <ork/lev2/gfx/particle/modular_particles.h>
 #include <ork/lev2/gfx/terrain/terrain_drawable.h>
 #include <ork/lev2/gfx/renderer/compositor.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorVr.h>
