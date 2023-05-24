@@ -38,7 +38,7 @@ using basematerial_ptr_t = std::shared_ptr<MaterialBase>;
 /////////////////////////////////////////
 
 struct FlatMaterial : public MaterialBase {
-  DeclareAbstractX(FlatMaterial, MaterialBase);
+  DeclareConcreteX(FlatMaterial, MaterialBase);
 public:
   static std::shared_ptr<FlatMaterial> createShared();
   FlatMaterial();
@@ -51,7 +51,7 @@ using flatmaterial_ptr_t = std::shared_ptr<FlatMaterial>;
 /////////////////////////////////////////
 
 struct GradientMaterial : public MaterialBase {
-  DeclareAbstractX(GradientMaterial, MaterialBase);
+  DeclareConcreteX(GradientMaterial, MaterialBase);
 public:
   static std::shared_ptr<GradientMaterial> createShared();
   GradientMaterial();
@@ -66,7 +66,7 @@ using gradientmaterial_ptr_t = std::shared_ptr<GradientMaterial>;
 /////////////////////////////////////////
 
 struct TextureMaterial : public MaterialBase {
-  DeclareAbstractX(TextureMaterial, MaterialBase);
+  DeclareConcreteX(TextureMaterial, MaterialBase);
 
 public:
   static std::shared_ptr<TextureMaterial> createShared();
@@ -82,7 +82,7 @@ using texturematerial_ptr_t = std::shared_ptr<TextureMaterial>;
 /////////////////////////////////////////
 
 struct TexGridMaterial : public MaterialBase {
-  DeclareAbstractX(TexGridMaterial, MaterialBase);
+  DeclareConcreteX(TexGridMaterial, MaterialBase);
 
 public:
   static std::shared_ptr<TexGridMaterial> createShared();
@@ -97,7 +97,7 @@ using texgridmaterial_ptr_t = std::shared_ptr<TexGridMaterial>;
 /////////////////////////////////////////
 
 struct VolTexMaterial : public MaterialBase {
-  DeclareAbstractX(VolTexMaterial, MaterialBase);
+  DeclareConcreteX(VolTexMaterial, MaterialBase);
 
 public:
   static std::shared_ptr<VolTexMaterial> createShared();

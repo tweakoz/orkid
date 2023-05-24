@@ -161,14 +161,10 @@ void StreakRendererData::describeX(class_t* clazz) {
   clazz->setSharedFactory( []() -> rtti::castable_ptr_t {
     return StreakRendererData::createShared();
   });
-  /*
-  RegisterFloatXfPlug(StreakRendererData, Length, -10.0f, 10.0f, ged::OutPlugChoiceDelegate);
-  RegisterFloatXfPlug(StreakRendererData, Width, -10.0f, 10.0f, ged::OutPlugChoiceDelegate);
-  RegisterFloatXfPlug(StreakRendererData, GradientIntensity, 0.0f, 10.0f, ged::OutPlugChoiceDelegate);
-  ork::reflect::RegisterProperty("Gradient", &StreakRendererData::GradientAccessor);
-  ork::reflect::RegisterProperty("BlendMode", &StreakRendererData::meBlendMode);
-  ork::reflect::RegisterProperty("Texture", &StreakRendererData::GetTextureAccessor, &StreakRendererData::SetTextureAccessor);
+  clazz->directObjectProperty("material", &StreakRendererData::_material) //
+       ->annotate<ConstString>("editor.factorylistbase", "psys::MaterialBase");
 
+  /*
   ork::reflect::RegisterProperty("DepthSort", &StreakRendererData::mbSort);
   ork::reflect::RegisterProperty("AlphaMux", &StreakRendererData::mAlphaMux);
   // ork::reflect::annotatePropertyForEditor<StreakRendererData>("Gradient", "editor.class", "ged.factory.gradient" );
@@ -196,9 +192,9 @@ std::shared_ptr<StreakRendererData> StreakRendererData::createShared() {
 
   _initShared(data);
 
-  createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "Length");
-  createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "Width");
-  createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "GradientIntensity");
+  createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "Length")->_range = {-10,10};
+  createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "Width")->_range = {-10,10};
+  createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "GradientIntensity")->_range = {0,10};
 
   return data;
 }

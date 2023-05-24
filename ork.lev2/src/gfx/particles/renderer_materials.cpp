@@ -22,6 +22,8 @@ namespace ork::lev2::particle {
 
 ///////////////////////////////////////////////////////////////////////////////
 void MaterialBase::describeX(class_t* clazz) {
+    clazz->directProperty( "color", &MaterialBase::_color ) //
+         ->annotate<ConstString>("editor.ged.node.factory", "GedNodeFactoryColorV4");
 }
 ///////////////////////////////////////////////////////////////////////////////
 MaterialBase::MaterialBase() {

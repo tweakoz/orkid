@@ -165,24 +165,16 @@ struct ClassToucher {
     particle::particlebuf_outplugdata_t::GetClassStatic();
     particle::particlebuf_inplugdata_t::GetClassStatic();
 
+    particle::MaterialBase::GetClassStatic();
+    particle::FlatMaterial::GetClassStatic();
+    particle::GradientMaterial::GetClassStatic();
+    particle::TextureMaterial::GetClassStatic();
+    particle::TexGridMaterial::GetClassStatic();
+    particle::VolTexMaterial::GetClassStatic();
+
     /*
-    particle::ExtConnector::GetClassStatic();
 
-    particle::Constants::GetClassStatic();
-    particle::FloatOp2Module::GetClassStatic();
-    particle::Vec3Op2Module::GetClassStatic();
-    particle::Vec3SplitModule::GetClassStatic();
-
-    particle::ReEmitter::GetClassStatic();
-
-
-    particle::SpriteRenderer::GetClassStatic();
-
-    ork::dataflow::floatxfitembase::GetClassStatic();
-    ork::dataflow::floatxfmsbcurve::GetClassStatic();*/
-
-    /*dataflow::outplug<proctex::ImgBase>::GetClassStatic();
-    dataflow::inplug<proctex::ImgBase>::GetClassStatic();
+    /*
 
     proctex::ProcTex::GetClassStatic();
     proctex::ImgModule::GetClassStatic();
@@ -210,7 +202,8 @@ struct ClassToucher {
     proctex::SphRefract::GetClassStatic();
     proctex::H2N::GetClassStatic();
     proctex::UvMap::GetClassStatic();
-    proctex::Kaled::GetClassStatic();*/
+    proctex::Kaled::GetClassStatic();
+    */
 
 
     RegisterClassX(PointLightData);

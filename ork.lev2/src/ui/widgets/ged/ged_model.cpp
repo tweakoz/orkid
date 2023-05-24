@@ -608,9 +608,35 @@ geditemnode_ptr_t ObjModel::createObjPropNode(
   }
   /////////////////////////////////////////////////////////////////////////
   else if (auto as_dobjprop = dynamic_cast<const reflect::DirectObjectBase*>(prop)) {
-    auto iodriver       = std::make_shared<NewIoDriver>();
+    //auto iodriver       = std::make_shared<NewIoDriver>();
     object_ptr_t child_object = as_dobjprop->getObject(pobject);
-    recurse(child_object, Name.c_str());
+    //recurse(child_object, Name.c_str());
+    auto iodriver             = std::make_shared<NewIoDriver>();
+    //auto ioimpl               = iodriver->_impl.makeShared<ArrayIoDriverImpl>();
+    //ioimpl->_node             = this;
+    //ioimpl->_array_prop       = ary_prop;
+    //ioimpl->_index            = index++;
+    iodriver->_par_prop       = prop;
+    iodriver->_object         = pobject;
+    iodriver->_abstract_val   = child_object;
+    iodriver->_onValueChanged = [=]() {
+      // ary_prop->setElement(obj, key, iodriver->_abstract_val);
+      this->enqueueUpdate();
+    };
+    std::string itemstr;
+    if (child_object) {
+      auto clazz = child_object->GetClass();
+      //auto try_namer = clazz->annotationTyped<reflect::obj_to_string_fn_t>("editor.ged.item.namer");
+      //if (try_namer) {
+      //  itemstr = try_namer.value()(e.get<object_ptr_t>());
+      //}
+      itemstr = clazz->Name().c_str();
+    }
+    else{
+      auto anno = prop->GetAnnotation("editor.factorylistbase");
+      itemstr = FormatString("FACTORY[ %s ]",  anno.c_str() );
+    }
+    auto item_node = this->createAbstractNode(itemstr.c_str(), iodriver);
   }
   /////////////////////////////////////////////////////////////////////////
   /*
