@@ -106,6 +106,9 @@ struct ParticlePoolModuleInst : dflow::DgModuleInst {
 using poolmoduleinst_ptr_t = std::shared_ptr<ParticlePoolModuleInst>;
 
 void ParticlePoolData::describeX(class_t* clazz) {
+  clazz->setSharedFactory( []() -> rtti::castable_ptr_t {
+    return ParticlePoolData::createShared();
+  });
 }
 
 ParticlePoolData::ParticlePoolData() {

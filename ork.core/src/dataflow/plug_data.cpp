@@ -231,8 +231,8 @@ void vect3inplugdata::describeX(class_t* clazz) {
 ///////////////////////////////////////////////////////////////////////////////
 void modscabiasdata::describeX(object::ObjectClass* clazz) {
   clazz->floatProperty("mod", float_range{0.0f, 16.0f}, &modscabiasdata::_mod);
-  clazz->floatProperty("scale", float_range{-16.0f, 16.0f}, &modscabiasdata::_scale);
-  clazz->floatProperty("bias", float_range{-16.0f, 16.0f}, &modscabiasdata::_bias);
+  clazz->floatProperty("scale", float_range{-1600.0f, 1600.0f}, &modscabiasdata::_scale);
+  clazz->floatProperty("bias", float_range{-1600.0f, 1600.0f}, &modscabiasdata::_bias);
 }
 void floatxfitembasedata::describeX(class_t* clazz) {
 }
@@ -255,9 +255,9 @@ floatxfmsbcurvedata::floatxfmsbcurvedata(){
 ///////////////////////////////////////////////////////////////////////////////
 float floatxfmsbcurvedata::transform(float input) const {
   if (_domodscalebias || _docurve) {
-    float fsca    = (_modscalebias->_scale * input) + _modscalebias->_bias;
-    float modout  = (_modscalebias->_mod > 0.0f) ? fmodf(fsca, _modscalebias->_mod) : fsca;
-    float biasout = modout;
+    input = (_modscalebias->_mod > 0.0f) ? fmodf(input, _modscalebias->_mod) : input;
+    float fsca    = (_modscalebias->_scale * input);
+    float biasout = fsca + _modscalebias->_bias;
     input         = biasout;
   }
   if (_docurve) {

@@ -158,6 +158,9 @@ void StreakRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void StreakRendererData::describeX(class_t* clazz) {
+  clazz->setSharedFactory( []() -> rtti::castable_ptr_t {
+    return StreakRendererData::createShared();
+  });
   /*
   RegisterFloatXfPlug(StreakRendererData, Length, -10.0f, 10.0f, ged::OutPlugChoiceDelegate);
   RegisterFloatXfPlug(StreakRendererData, Width, -10.0f, 10.0f, ged::OutPlugChoiceDelegate);

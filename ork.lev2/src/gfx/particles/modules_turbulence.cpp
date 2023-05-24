@@ -65,6 +65,9 @@ struct TurbulenceModuleInst : public ParticleModuleInst {
 //////////////////////////////////////////////////////////////////////////
 
 void TurbulenceModuleData::describeX(class_t* clazz) {
+  clazz->setSharedFactory( []() -> rtti::castable_ptr_t {
+    return TurbulenceModuleData::createShared();
+  });
 }
 
 //////////////////////////////////////////////////////////////////////////

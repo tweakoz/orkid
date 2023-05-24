@@ -242,6 +242,9 @@ RendererModuleData::RendererModuleData() {
 //////////////////////////////////////////////////////////////////////////
 
 void SpriteRendererData::describeX(class_t* clazz) {
+  clazz->setSharedFactory( []() -> rtti::castable_ptr_t {
+    return SpriteRendererData::createShared();
+  });
 }
 
 //////////////////////////////////////////////////////////////////////////

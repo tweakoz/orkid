@@ -161,6 +161,7 @@ struct ClassToucher {
     particle::VortexModuleData::GetClassStatic();
     particle::RendererModuleData::GetClassStatic();
     particle::SpriteRendererData::GetClassStatic();
+    particle::StreakRendererData::GetClassStatic();
 
     particle::particlebuf_outplugdata_t::GetClassStatic();
     particle::particlebuf_inplugdata_t::GetClassStatic();

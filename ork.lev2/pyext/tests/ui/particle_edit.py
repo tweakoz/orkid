@@ -8,7 +8,7 @@
 ################################################################################
 
 import math, sys, os, random, numpy, argparse
-from pathlib import Path
+from ork import path
 from orkengine.core import *
 from orkengine.lev2 import *
 l2exdir = (lev2exdir()/"python").normalized.as_string
@@ -19,8 +19,9 @@ from common.scenegraph import createSceneGraph
 
 ################################################################################
 parser = argparse.ArgumentParser(description='scenegraph particles example')
-
+parser.add_argument("-i", "--inputorjfile",type=str, default="", help='load particle orj file')
 args = vars(parser.parse_args())
+orjfile = path.Path(args["inputorjfile"])
 
 ################################################################################
 
@@ -102,16 +103,29 @@ class ParticlesApp(object):
     # create particle drawable 
     ###################################
 
-    self.ptc_data = createParticleData()
+    if orjfile.exists():
+      class ImplObject(object):
+        def __init__(self):
+          super().__init__()
+          with open(str(orjfile), "r") as f:
+            as_json = f.read()
+            print(as_json)
+            self.graphdata = Object.deserializeJson(as_json)
+            print(self.graphdata)
+            self.drawable_data = ParticlesDrawableData()
+            self.drawable_data.graphdata = self.graphdata
+      self.ptc_data = ImplObject()
+    else:
+      self.ptc_data = createParticleData()
+
     ptc_drawable = self.ptc_data.drawable_data.createDrawable()
 
-    self.emitterplugs = self.ptc_data.emitter.inputs
-    self.vortexplugs = self.ptc_data.vortex.inputs
-    self.gravityplugs = self.ptc_data.gravity.inputs
-    self.turbulenceplugs = self.ptc_data.turbulence.inputs
-
-    self.emitterplugs.EmissionVelocity = 1
-    self.turbulenceplugs.Amount = vec3(1,1,1)*5
+    #self.emitterplugs = self.ptc_data.emitter.inputs
+    #self.vortexplugs = self.ptc_data.vortex.inputs
+    #self.gravityplugs = self.ptc_data.gravity.inputs
+    #self.turbulenceplugs = self.ptc_data.turbulence.inputs
+    #self.emitterplugs.EmissionVelocity = 1
+    #self.turbulenceplugs.Amount = vec3(1,1,1)*5
 
     ##################
     # create particle sg node

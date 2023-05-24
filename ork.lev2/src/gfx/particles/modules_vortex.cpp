@@ -74,6 +74,9 @@ struct VortexModuleInst : public ParticleModuleInst {
 //////////////////////////////////////////////////////////////////////////
 
 void VortexModuleData::describeX(class_t* clazz) {
+  clazz->setSharedFactory( []() -> rtti::castable_ptr_t {
+    return VortexModuleData::createShared();
+  });
 }
 
 //////////////////////////////////////////////////////////////////////////

@@ -66,12 +66,39 @@ template <typename traits> const typename inpluginst<traits>::data_type_t& inplu
     auto out_plug = typedPlugInst<outpluginst<typename traits::out_traits_t>>(_connectedOutput);
     OrkAssert(out_plug);
     *_value = out_plug->value();
-    auto as_txflist = std::dynamic_pointer_cast<typename traits::xformer_t>(inp_plug_data->_transformer);
-    if(as_txflist){
-      for( auto xf : as_txflist->_transforms ){
-        //xf->transform( *_value );
+
+    ////////////////////////////////////////////////////////////////////////////////////////////
+    // float transformers
+    ////////////////////////////////////////////////////////////////////////////////////////////
+
+    if constexpr (std::is_same_v<std::remove_cvref_t<typename traits::elemental_data_type>, float>) {
+      auto as_txflist = std::dynamic_pointer_cast<typename traits::xformer_t>(inp_plug_data->_transformer);
+      if(as_txflist){
+        for( auto xf_item : as_txflist->_transforms ){
+          auto xformer = xf_item.second;
+          if(xformer){
+            *_value = xformer->transform( *_value );
+          }
+        }
       }
     }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////
+    // fvec3 transformers
+    ////////////////////////////////////////////////////////////////////////////////////////////
+
+    /*if constexpr (std::is_same_v<std::remove_cvref_t<typename traits::elemental_data_type>, fvec3>) {
+      auto as_txflist = std::dynamic_pointer_cast<typename traits::xformer_t>(inp_plug_data->_transformer);
+      if(as_txflist){
+        for( auto xf_item : as_txflist->_transforms ){
+          auto xformer = xf_item.second;
+          *_value = xformer->transform( *_value );
+        }
+      }
+    }*/
+
+    ////////////////////////////////////////////////////////////////////////////////////////////
+
   }
 
   return (*_value);

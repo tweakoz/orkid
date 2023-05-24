@@ -359,10 +359,14 @@ object_ptr_t JsonDeserializer::_parseObjectNode(serdes::node_ptr_t dsernode) {
       case NodeType::ARRAY_ELEMENT_LEAF:{
         auto arynode = parnode->_parent;
         auto aryobj = arynode->_deser_instance;
+        auto aryclazz = aryobj->objectClass();
         int index = arynode->_index;
         auto top_prop_as_obj_array = dynamic_cast<const ITypedArray< object_ptr_t>*>(top_prop);
-        printf( "ARYINDEX<%d> top_prop_as_obj_array<%s>\n", index, top_prop_as_obj_array->_name.c_str() );
         top_prop_as_obj_array->get(instance_out, aryobj, index);
+        printf( "aryobj<%p:%s> ARYINDEX<%d> top_prop_as_obj_array<%s> instance_out<%p>\n", //
+                (void*) aryobj.get(), aryclazz->Name().c_str(), //
+                index, top_prop_as_obj_array->_name.c_str(), //
+                (void*) instance_out.get() );
         OrkAssert(instance_out!=nullptr);
         break;
       }

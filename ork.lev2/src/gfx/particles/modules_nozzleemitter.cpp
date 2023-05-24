@@ -153,6 +153,9 @@ void NozzleDirectedEmitter::computePosDir(float fi, fvec3& pos, fvec3& dir) {
 //////////////////////////////////////////////////////////////////////////
 
 void NozzleEmitterData::describeX(class_t* clazz) {
+  clazz->setSharedFactory( []() -> rtti::castable_ptr_t {
+    return NozzleEmitterData::createShared();
+  });
 }
 
 //////////////////////////////////////////////////////////////////////////
