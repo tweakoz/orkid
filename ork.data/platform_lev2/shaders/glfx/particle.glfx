@@ -372,10 +372,10 @@ geometry_shader gs_streak //
   frg_uv0     = vec2(1.0, 0.0);
   EmitVertex();
   gl_Position = outp.pos3;
-  frg_uv0     = vec2(1.0, 1.0);
+  frg_uv0     = vec2(0.0, 1.0);
   EmitVertex();
   gl_Position = outp.pos2;
-  frg_uv0     = vec2(0.0, 1.0);
+  frg_uv0     = vec2(1.0, 1.0);
   EmitVertex();
   EndPrimitive();
 }
