@@ -11,10 +11,22 @@
 #include <ork/lev2/gfx/particle/modular_forces.h>
 #include <ork/lev2/gfx/particle/modular_renderers.h>
 #include <ork/lev2/gfx/material_freestyle.h>
+#include <ork/lev2/gfx/rtgroup.h>
 #include <ork/dataflow/module.inl>
 #include <ork/dataflow/plug_data.inl>
 
 using namespace ork::dataflow;
+
+namespace ork::lev2 {
+void gradientGeometry(
+    Context* pTARG,                    //
+    const ork::gradient_fvec4_t& grad, //
+    VtxWriter<SVtxV16T16C16>& vw,
+    int x1, //
+    int y1, //
+    int w,  //
+    int h);
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::particle {
@@ -60,8 +72,10 @@ fxpipeline_ptr_t MaterialBase::pipeline(bool streaks) {
   return _pipeline;
 }
 
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////
 void FlatMaterial::describeX(class_t* clazz) {
   clazz
       ->directProperty("color", &FlatMaterial::_color) //
@@ -102,9 +116,7 @@ void FlatMaterial::gpuInit(const RenderContextInstData& RCID) {
   _pipeline->bindParam(fxparameterInvDim, "CPD_Rtg_InvDim"_crcsh);
 
   _tek_sprites = _material->technique("tflatparticle_sprites");
-  ;
   _tek_streaks = _material->technique("tflatparticle_streaks");
-  ;
 }
 void FlatMaterial::update(const RenderContextInstData& RCID) {
   auto context = RCID.context();
@@ -112,72 +124,19 @@ void FlatMaterial::update(const RenderContextInstData& RCID) {
   FXI->BindParamVect4(_parammodcolor, _color);
   _material->_rasterstate.SetBlending(_blending);
 }
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////
 void GradientMaterial::describeX(class_t* clazz) {
-
   clazz->directObjectProperty("gradient", &GradientMaterial::_gradient);
   clazz->directEnumProperty("blendmode", &GradientMaterial::_blending);
-
-  /*
-
-      MaterialBase* pMTLBASE      = 0;
-      //////////////////////////////////////////
-      float Scale = 1.0f;
-      ork::fmtx4 MatScale;
-      MatScale.setScale(Scale, Scale, Scale);
-      ///////////////////////////////////////////////////////////////
-      mCurFGI = mPlugInpGradientIntensity.GetValue();
-      ///////////////////////////////////////////////////////////////
-      // compute particle dynamic vertex buffer
-      //////////////////////////////////////////
-
-        //////////////////////////////////////////
-        // setup particle material
-        //////////////////////////////////////////
-
-        if (pMTLBASE) {
-          auto bound_mtl = (lev2::GfxMaterial3DSolid*)pMTLBASE->Bind(targ);
-
-          if (bound_mtl) {
-            fvec4 user0 = NX_NY;
-            fvec4 user1 = NX_PY;
-            fvec4 user2(float(miAnimTexDim), float(miTexCnt), 0.0f);
-
-            bound_mtl->SetUser0(user0);
-            bound_mtl->SetUser1(user1);
-            bound_mtl->SetUser2(user2);
-
-            bound_mtl->_rasterstate.SetBlending(meBlendMode);
-            targ->MTXI()->PushMMatrix(fmtx4::multiply_ltor(MatScale, mtx));
-            targ->GBI()->DrawPrimitive(bound_mtl, vw, ork::lev2::PrimitiveType::POINTS, ivertexlockcount);
-            mpVB = 0;
-            targ->MTXI()->PopMMatrix();
-          }
-        }
-
-       // if( icnt )
-      */      /*Gradient<fvec4>* pGRAD = 0;
-      if (mpTemplateModule) {
-        SpriteRenderer* ptemplate_module = 0;
-        ptemplate_module                 = rtti::autocast(mpTemplateModule);
-        const PoolString& active_g       = ptemplate_module->mActiveGradient;
-        const PoolString& active_m       = ptemplate_module->mActiveMaterial;
-
-        orklut<PoolString, Object*>::const_iterator itG = mGradients.find(active_g);
-        if (itG != mGradients.end()) {
-          pGRAD = rtti::autocast(itG->second);
-        }
-        orklut<PoolString, Object*>::const_iterator itM = mMaterials.find(active_m);
-        if (itM != mMaterials.end()) {
-          pMTLBASE = rtti::autocast(itM->second);
-        }
-      }*/
 }
-///////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////
 GradientMaterial::GradientMaterial() {
-  _color        = fvec4(1, .5, 0, 1);
-  _gradient     = std::make_shared<gradient_fvec4_t>();
+  _color    = fvec4(1, .5, 0, 1);
+  _gradient = std::make_shared<gradient_fvec4_t>();
+  /////////////////////////////////////////////////////////////////////////
   _vertexSetter = [=](vertex_writer_t& vw,      //
                       const BasicParticle* ptc, //
                       float fang,               //
@@ -194,6 +153,7 @@ GradientMaterial::GradientMaterial() {
     //////////////////////////////////////////////////////
     vw.AddVertex(vertex_t(ptc->mPosition, uv0, uv1, color.vertexColorU32()));
   };
+  /////////////////////////////////////////////////////////////////////////
   _vertexSetterStreak = [](streak_vertex_writer_t& vw, //
                            const BasicParticle* ptcl,  //
                            fvec2 LW,                   //
@@ -209,28 +169,48 @@ GradientMaterial::GradientMaterial() {
         LW,              //
         ork::fvec2(clamped_unitage, ptcl->mfRandom)));
   };
+  /////////////////////////////////////////////////////////////////////////
 }
+/////////////////////////////////////////////////////////////////////////////////////////////
 std::shared_ptr<GradientMaterial> GradientMaterial::createShared() {
   return std::make_shared<GradientMaterial>();
 }
-///////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////
 void GradientMaterial::gpuInit(const RenderContextInstData& RCID) {
   auto context = RCID.context();
-  _material    = std::make_shared<FreestyleMaterial>();
+  ////////////////////////////////////////////////////////////////////
+  _grad_render_mtl = std::make_shared<FreestyleMaterial>();
+  _grad_render_mtl->gpuInit(context, "orkshader://ui2");
+  FxPipelinePermutation permu;
+  permu._forced_technique = _grad_render_mtl->technique("ui_colorwheel");
+  auto grad_render_cache = _grad_render_mtl->pipelineCache();
+  _grad_render_pipeline  = grad_render_cache->findPipeline(permu);
+  auto grad_par_mvp      = _grad_render_mtl->param("mvp");
+  auto grad_par_time      = _grad_render_mtl->param("time");
+  FxPipeline::varval_generator_t gen_mtx = [=]() -> FxPipeline::varval_t {
+    return context->MTXI()->Ortho(0, 256, 0, 1, 0, 1);
+  };
+  _grad_render_pipeline->bindParam(grad_par_mvp, gen_mtx);
+  _grad_render_pipeline->bindParam(grad_par_time, 0.0f);
+  _gradient_rtgroup = std::make_shared<RtGroup>(context, 256, 1);
+  auto rtb0         = _gradient_rtgroup->createRenderTarget(EBufferFormat::RGBA8);
+  _gradient_texture = rtb0->_texture;
+  ////////////////////////////////////////////////////////////////////
+  _material = std::make_shared<FreestyleMaterial>();
   _material->gpuInit(context, "orkshader://particle");
   _material->_rasterstate.SetBlending(Blending::ADDITIVE);
   _material->_rasterstate.SetCullTest(ECullTest::OFF);
   _material->_rasterstate.SetDepthTest(EDepthTest::OFF);
-  // auto fxtechnique    = _material->technique("tparticle_nogs");
-  auto fxtechnique       = _material->technique("tflatparticle_sprites");
-  auto fxparameterM      = _material->param("MatM");
-  auto fxparameterMVP    = _material->param("MatMVP");
-  auto fxparameterIV     = _material->param("MatIV");
-  auto fxparameterIVP    = _material->param("MatIVP");
-  auto fxparameterVP     = _material->param("MatVP");
-  auto fxparameterInvDim = _material->param("Rtg_InvDim");
-  _parammodcolor         = _material->param("modcolor");
-  auto pipeline_cache    = _material->pipelineCache();
+
+  auto fxparameterM       = _material->param("MatM");
+  auto fxparameterMVP     = _material->param("MatMVP");
+  auto fxparameterIV      = _material->param("MatIV");
+  auto fxparameterIVP     = _material->param("MatIVP");
+  auto fxparameterVP      = _material->param("MatVP");
+  auto fxparameterInvDim  = _material->param("Rtg_InvDim");
+  auto fxparameterGradMap = _material->param("GradientMap");
+  _parammodcolor          = _material->param("modcolor");
+  auto pipeline_cache     = _material->pipelineCache();
 
   _pipeline = pipeline_cache->findPipeline(RCID);
   _pipeline->bindParam(fxparameterMVP, "RCFD_Camera_MVP_Mono"_crcsh);
@@ -239,19 +219,42 @@ void GradientMaterial::gpuInit(const RenderContextInstData& RCID) {
   _pipeline->bindParam(fxparameterIV, "RCFD_Camera_IV_Mono"_crcsh);
   _pipeline->bindParam(fxparameterM, "RCFD_M"_crcsh);
   _pipeline->bindParam(fxparameterInvDim, "CPD_Rtg_InvDim"_crcsh);
+  _pipeline->bindParam(fxparameterGradMap, _gradient_texture);
 
-  _tek_sprites = _material->technique("tflatparticle_sprites");
-  ;
-  _tek_streaks = _material->technique("tflatparticle_streaks");
-  ;
+  _tek_sprites = _material->technique("tgradparticle_sprites");
+  _tek_streaks = _material->technique("tgradparticle_streaks");
 }
+/////////////////////////////////////////////////////////////////////////////////////////////
 void GradientMaterial::update(const RenderContextInstData& RCID) {
   auto context = RCID.context();
   auto FXI     = context->FXI();
-  FXI->BindParamVect4(_parammodcolor, _color);
+  auto FBI     = context->FBI();
+  auto GBI     = context->GBI();
+  ///////////////////////////////
+  if (1) {
+    VtxWriter<SVtxV16T16C16> vw;
+    gradientGeometry( //
+        context,      //
+        *_gradient,   //
+        vw,
+        0,   //
+        0,   //
+        256, //
+        1);
+    FBI->PushRtGroup(_gradient_rtgroup.get());
+    FBI->Clear( fvec4(1,1,1,1),1);
+    _grad_render_pipeline->wrappedDrawCall(RCID, [&]() { //
+      GBI->DrawPrimitiveEML(vw, PrimitiveType::TRIANGLES); 
+    });
+    FBI->PopRtGroup();
+  }
+  ///////////////////////////////
+  _material->_rasterstate.SetBlending(_blending);
 }
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////
 void TextureMaterial::describeX(class_t* clazz) {
   // ork::reflect::RegisterProperty("Texture", &TextureMaterial::GetTextureAccessor, &TextureMaterial::SetTextureAccessor);
   // ork::reflect::annotatePropertyForEditor<TextureMaterial>("Texture", "editor.class", "ged.factory.assetlist");
@@ -302,8 +305,10 @@ void TextureMaterial::gpuInit(const RenderContextInstData& RCID) {
   _tek_sprites = _material->technique("ttexparticle_sprites");
   _tek_streaks = _material->technique("ttexparticle_streaks");
 }
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////
 void TexGridMaterial::describeX(class_t* clazz) {
   // ork::reflect::RegisterProperty("Texture", &TexGridMaterial::GetTextureAccessor, &TexGridMaterial::SetTextureAccessor);
   // ork::reflect::annotatePropertyForEditor<TexGridMaterial>("Texture", "editor.class", "ged.factory.assetlist");

@@ -45,23 +45,22 @@ GedGroupNode::GedGroupNode(
     , mbCollapsed(false == is_obj_node)
     , mIsObjNode(is_obj_node) {
 
-      _iodriver = iodriver;
+  _iodriver = iodriver;
 
   auto impl = _impl.makeShared<GROUP_IMPL>();
 
-  if(_iodriver->_parent){
+  if (_iodriver->_parent) {
 
     auto prop = _iodriver->_parent->_par_prop;
     auto obj  = _iodriver->_parent->_object;
 
-    if( prop and obj ){
+    if (prop and obj) {
       auto anno_edclass = prop->GetAnnotation("editor.factorylistbase");
       if (anno_edclass.length()) {
         impl->_factory_enabled  = true;
         impl->_factory_listbase = anno_edclass.c_str();
       }
     }
-
   }
 
   auto model          = _container->_model;
@@ -189,10 +188,10 @@ bool GedGroupNode::OnMouseDoubleClicked(ork::ui::event_constptr_t ev) {
           auto new_obj = invokeFactoryPopup(_l2context(), impl->_factory_listbase, sx, sy);
           printf("new_obj<%p>\n", (void*)new_obj.get());
           handled = true;
-          if( auto as_dobjprop = dynamic_cast<const reflect::DirectObjectBase*>(_iodriver->_par_prop) ){
+          if (auto as_dobjprop = dynamic_cast<const reflect::DirectObjectBase*>(_iodriver->_par_prop)) {
             auto par_obj = _iodriver->_parent->_object;
-            if( par_obj and new_obj ){
-              printf("par_obj<%p> clazz<%s>\n", (void*)par_obj.get(), par_obj->GetClass()->Name().c_str() );
+            if (par_obj and new_obj) {
+              printf("par_obj<%p> clazz<%s>\n", (void*)par_obj.get(), par_obj->GetClass()->Name().c_str());
               as_dobjprop->setObject(par_obj, new_obj);
               _container->_model->enqueueUpdate();
             }
@@ -334,7 +333,7 @@ void GedGroupNode::DoDraw(lev2::Context* pTARG) {
     int boxh = ih - 2;
     skin->DrawUpArrow(this, impl->_ix1_stackU, dby1 + 1, GedSkin::ESTYLE_BUTTON_OUTLINE);
 
-    if(impl->_factory_enabled ){
+    if (impl->_factory_enabled) {
       skin->DrawTexBoxCrc(this, impl->_ix1_refactory, dby1 + 2, "replaceobj"_crcu, GedSkin::ESTYLE_BUTTON_OUTLINE);
     }
     // skin->DrawTexBoxCrc(this, impl->_ix1_gedspawn, dby1 + 2, "spawnnewged"_crcu, GedSkin::ESTYLE_BUTTON_OUTLINE);

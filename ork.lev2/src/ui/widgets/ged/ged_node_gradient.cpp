@@ -18,6 +18,16 @@
 #include <ork/reflect/properties/registerX.inl>
 #include <ork/math/gradient.h>
 
+namespace ork::lev2{
+  void gradientGeometry(
+    Context* pTARG, //
+    const ork::gradient_fvec4_t& grad, //
+    VtxWriter<SVtxV16T16C16>& vw,
+    int x1, //
+    int y1, //
+    int w, //
+    int h);
+}
 ////////////////////////////////////////////////////////////////
 namespace ork::lev2::ged {
 ////////////////////////////////////////////////////////////////
@@ -264,59 +274,16 @@ void GradientEditorImpl::render(lev2::Context* pTARG) {
     custom_prim.iy1           = y - skin->_scrollY;
     custom_prim.iy2           = y - skin->_scrollY + h;
     custom_prim._renderLambda = [=]() {
-      int x1 = x;
-      int x2 = x + w;
-      int y1 = y - skin->_scrollY;
-      int y2 = y + h - skin->_scrollY;
-
-      const float fZ = 0.0f;
-      using vtx_t    = GedSkin::vtx_t;
-
       ///////////////////////////////
-      DynamicVertexBuffer<vtx_t>& VB = GfxEnv::GetSharedDynamicV16T16C16();
-
-      lev2::VtxWriter<vtx_t> vw;
-      vw.Lock(pTARG, &VB, 6 * ksegs);
-
-      fvec4 uv;
-
-      const float kz = 0.0f;
-
-      float fx = float(x1);
-      float fy = float(y1 + skin->_scrollY);
-      float fw = float(w);
-      float fh = float(h);
-
-      for (int i = 0; i < ksegs; i++) {
-        std::pair<float, ork::fvec4> data_a = data.GetItemAtIndex(i);
-        std::pair<float, ork::fvec4> data_b = data.GetItemAtIndex(i + 1);
-
-        float fia = data_a.first;
-        float fib = data_b.first;
-
-        float fx0 = fx + (fia * fw);
-        float fx1 = fx + (fib * fw);
-        float fy0 = fy;
-        float fy1 = fy + fh;
-
-        const fvec4& c0 = data_a.second;
-        const fvec4& c1 = data_b.second;
-
-        vtx_t v0(fvec4(fx0, fy0, kz), uv, c0);
-        vtx_t v1(fvec4(fx1, fy0, kz), uv, c1);
-        vtx_t v2(fvec4(fx1, fy1, kz), uv, c1);
-        vtx_t v3(fvec4(fx0, fy1, kz), uv, c0);
-
-        vw.AddVertex(v0);
-        vw.AddVertex(v2);
-        vw.AddVertex(v1);
-
-        vw.AddVertex(v0);
-        vw.AddVertex(v3);
-        vw.AddVertex(v2);
-      }
-      vw.UnLock(pTARG);
-
+      VtxWriter<SVtxV16T16C16> vw;
+      gradientGeometry( //
+          pTARG,        //
+          *_gradient,   //
+          vw,
+          x,           //
+          y, //
+          w,           //
+          h);
       ///////////////////////////////
       float time = skin->_timer.SecsSinceStart();
       RenderContextFrameData RCFD(pTARG);

@@ -88,7 +88,6 @@ void StreakRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
   const auto& CPD             = RCFD->topCPD();
   const CameraMatrices* cmtcs = CPD.cameraMatrices();
   const CameraData& cdata     = cmtcs->_camdat;
-  const fmtx4& MVP            = context->MTXI()->RefMVPMatrix();
 
   auto material = _srd->_material;
 
@@ -133,8 +132,9 @@ void StreakRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
     vw.UnLock(context);
     _triple_buf->end_pull(render_buffer);
 
-    material->pipeline(true)->wrappedDrawCall(RCID, [&]() {
-      material->update(RCID);
+    auto pipeline = material->pipeline(true);
+    material->update(RCID);
+    pipeline->wrappedDrawCall(RCID, [&]() {
       context->GBI()->DrawPrimitiveEML(vw, ork::lev2::PrimitiveType::POINTS);
     });
 

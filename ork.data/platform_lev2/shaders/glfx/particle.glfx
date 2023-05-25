@@ -36,6 +36,7 @@ uniform_set uset_frg {
   vec4 modcolor;
   vec4 User0;
   sampler2D ColorMap;
+  sampler2D GradientMap;
   sampler3D VolumeMap;
 }
 
@@ -441,6 +442,12 @@ fragment_shader ps_flat : fface_psys {
   vec3 C  = modcolor.xyz*(1.0-unit_age);
   out_clr = vec4(C, modcolor.w);
 }
+fragment_shader ps_grad : fface_psys {
+  float unit_age = frg_uv1.x;
+  vec3 C  = modcolor.xyz*(1.0-unit_age);
+  C = texture(GradientMap, vec2(unit_age, 0.0)).xyz;
+  out_clr = vec4(C, 1);
+}
 fragment_shader ps_modtexclr : fface_psys {
 
   //float alp      = out_clr.r * User0.r + out_clr.g * User0.g + out_clr.b * User0.b + out_clr.a * User0.a;
@@ -487,6 +494,24 @@ technique tflatparticle_streaks {
     vertex_shader   = vs_streak;
     geometry_shader = gs_streak;
     fragment_shader = ps_flat;
+    state_block     = sb_default;
+  }
+}
+technique tgradparticle_sprites {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_vtxtexcolor;
+    geometry_shader = gs_billboardquad;
+    fragment_shader = ps_flat;
+    state_block     = sb_default;
+  }
+}
+technique tgradparticle_streaks {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_streak;
+    geometry_shader = gs_streak;
+    fragment_shader = ps_grad;
     state_block     = sb_default;
   }
 }

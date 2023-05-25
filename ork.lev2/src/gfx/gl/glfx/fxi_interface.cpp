@@ -166,7 +166,7 @@ bool Interface::BindPass(int ipass) {
   if (_active_effect->mShaderCompileFailed)
     return false;
 
-  assert(_active_effect->mActiveTechnique != nullptr);
+  OrkAssert(_active_effect->mActiveTechnique != nullptr);
 
   _active_effect->_activePass = _active_effect->mActiveTechnique->mPasses[ipass];
   GL_ERRORCHECK();
@@ -175,9 +175,6 @@ bool Interface::BindPass(int ipass) {
     auto fx         = const_cast<FxShader*>(_active_effect->mFxShader);
     fx->SetFailedCompile(false == complinkok);
   }
-  auto pass = _active_effect->_activePass;
-  auto tek  = pass->_technique;
-  // printf("binding pass<%p:%s> tek<%s>\n", pass, pass->_name.c_str(), tek->_name.c_str());
 
   GL_ERRORCHECK();
   glUseProgram(_active_effect->_activePass->_programObjectId);

@@ -154,6 +154,12 @@ bool Interface::compilePipelineVTG(rootcontainer_ptr_t container) {
 
     if (_DEBUG_SHADER_COMPILE) {
       auto tek = pass->_technique;
+
+      printf( "link tek<%s> pass<%s> prgo<%d>\n",
+              tek->_name.c_str(),
+              pass->_name.c_str(),
+              int(prgo));
+
       if (pvtxshader) {
         printf(
             "link tek<%s> pass<%s> vtxshader<%s> interface<%p>\n",
