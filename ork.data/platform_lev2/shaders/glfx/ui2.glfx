@@ -128,6 +128,11 @@ fragment_shader fs_colorwheel
     out_color = vec4(mix(BG,FG,pow(frg_clr.w,.5)),1); 
 }
 ///////////////////////////////////////////////////////////////
+fragment_shader fs_gradwalpha
+	: iface_fui {
+    out_color = vec4(frg_clr.xyz,0.01); 
+}
+///////////////////////////////////////////////////////////////
 fragment_shader fs_picking
 	: iface_fpick {
 		//out_iid = uvec4(0x1234,0x5678,0,0xabcd); // comes back as 0xabcd000056781234
@@ -167,6 +172,15 @@ technique ui_colorwheel {
 	pass p0 {
         vertex_shader=vs_vtxcolor;
 	    fragment_shader=fs_colorwheel;
+		state_block=sb_ui;
+	}
+}
+///////////////////////////////////////////////////////////////
+technique ui_gradwalpha {
+	fxconfig=fxcfg_default;
+	pass p0 {
+        vertex_shader=vs_vtxcolor;
+	    fragment_shader=fs_gradwalpha;
 		state_block=sb_ui;
 	}
 }

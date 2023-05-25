@@ -135,6 +135,7 @@ void StreakRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
     auto pipeline = material->pipeline(true);
     material->update(RCID);
     pipeline->wrappedDrawCall(RCID, [&]() {
+      context->RSI()->BindRasterState(material->_material->_rasterstate);
       context->GBI()->DrawPrimitiveEML(vw, ork::lev2::PrimitiveType::POINTS);
     });
 

@@ -182,7 +182,7 @@ void GradientMaterial::gpuInit(const RenderContextInstData& RCID) {
   _grad_render_mtl = std::make_shared<FreestyleMaterial>();
   _grad_render_mtl->gpuInit(context, "orkshader://ui2");
   FxPipelinePermutation permu;
-  permu._forced_technique = _grad_render_mtl->technique("ui_colorwheel");
+  permu._forced_technique = _grad_render_mtl->technique("ui_gradwalpha");
   auto grad_render_cache = _grad_render_mtl->pipelineCache();
   _grad_render_pipeline  = grad_render_cache->findPipeline(permu);
   auto grad_par_mvp      = _grad_render_mtl->param("mvp");
@@ -241,8 +241,8 @@ void GradientMaterial::update(const RenderContextInstData& RCID) {
         0,   //
         256, //
         1);
+    _grad_render_mtl->_rasterstate.SetRGBAWriteMask(true, true);
     FBI->PushRtGroup(_gradient_rtgroup.get());
-    FBI->Clear( fvec4(1,1,1,1),1);
     _grad_render_pipeline->wrappedDrawCall(RCID, [&]() { //
       GBI->DrawPrimitiveEML(vw, PrimitiveType::TRIANGLES); 
     });
