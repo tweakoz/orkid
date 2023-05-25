@@ -62,7 +62,7 @@ public:
     void clear();
   };
 
-  GedSkin();
+  GedSkin(ork::lev2::Context* ctx);
 
   typedef enum {
     ESTYLE_BACKGROUND_1 = 0,
@@ -84,7 +84,9 @@ public:
   } ESTYLE;
 
   void DrawColorBox(GedObject* pnode, int ix, int iy, int iw, int ih, fvec4 color, int isort = 0);
-
+  void DrawTexBoxCrc(GedObject* pnode, int ix, int iy, uint32_t crc, ESTYLE ic );
+  void DrawTexBox( GedObject* pnode, int ix, int iy, texture_ptr_t tex, fvec4 color );
+  virtual fvec4 GetStyleColor(GedObject* pnode, ESTYLE ic) = 0;
   virtual void Begin(ork::lev2::Context* pTARG, GedSurface* pgedvp)                                       = 0;
   virtual void DrawBgBox(GedObject* pnode, int ix, int iy, int iw, int ih, ESTYLE ic, int isort = 0)      = 0;
   virtual void DrawOutlineBox(GedObject* pnode, int ix, int iy, int iw, int ih, ESTYLE ic, int isort = 0) = 0;
@@ -142,8 +144,6 @@ public:
   void pushCustomColor(fcolor3 color);
   void popCustomColor();
 
-  void DrawTexBox( GedObject* pnode, int ix, int iy, texture_ptr_t tex, fvec4 color );
-
   int _scrollY = 0;
   int miRejected = 0;
   int miAccepted = 0;
@@ -165,7 +165,7 @@ public:
 struct GedSkin0 : public GedSkin {
 
   GedSkin0(ork::lev2::Context* ctx);
-  fvec4 GetStyleColor(GedObject* pnode, ESTYLE ic);
+  fvec4 GetStyleColor(GedObject* pnode, ESTYLE ic) final;
   void DrawBgBox(GedObject* pnode, int ix, int iy, int iw, int ih, ESTYLE ic, int isort) final;
   void DrawOutlineBox(GedObject* pnode, int ix, int iy, int iw, int ih, ESTYLE ic, int isort) final;
   void DrawLine(GedObject* pnode, int ix, int iy, int ix2, int iy2, ESTYLE ic) final;
@@ -182,7 +182,7 @@ struct GedSkin0 : public GedSkin {
 struct GedSkin1 : public GedSkin {
 
   GedSkin1(ork::lev2::Context* ctx);
-  fvec4 GetStyleColor(GedObject* pnode, ESTYLE ic);
+  fvec4 GetStyleColor(GedObject* pnode, ESTYLE ic) final;
   void DrawBgBox(GedObject* pnode, int ix, int iy, int iw, int ih, ESTYLE ic, int isort) final;
   void DrawOutlineBox(GedObject* pnode, int ix, int iy, int iw, int ih, ESTYLE ic, int isort) final;
   void DrawLine(GedObject* pnode, int ix, int iy, int ix2, int iy2, ESTYLE ic) final;

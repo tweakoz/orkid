@@ -20,103 +20,16 @@
 namespace ork::lev2::ged {
 ////////////////////////////////////////////////////////////////
 
-texture_ptr_t createDownArrowTexture(lev2::Context* ctx){
-  auto texture = std::make_shared<lev2::Texture>();
-  texture->_debugName = "ged_downarrow";
-  TextureInitData tid;
-  tid._w     = 9;
-  tid._h     = 9;
-  tid._src_format    = EBufferFormat::RGBA8;
-  tid._dst_format    = EBufferFormat::RGBA8;
-  tid._autogenmips = false;
-  uint32_t X = 0xFFFFFFFF;
-  uint32_t O = 0x00000000;
-  uint32_t data[] = {
-    X, X, X, X, X, X, X, X, X,
-    X, O, O, O, O, O, O, O, X,
-    O, X, O, O, O, O, O, X, O,
-    O, X, O, O, O, O, O, X, O,
-    O, O, X, O, O, O, X, O, O,
-    O, O, X, O, O, O, X, O, O,
-    O, O, O, X, O, X, O, O, O,
-    O, O, O, X, O, X, O, O, O,
-    O, O, O, O, X, O, O, O, O,
-  };
-  tid._data = (const void*) data;
-  ctx->TXI()->initTextureFromData(texture.get(), tid);
-  return texture;
-}
-
-texture_ptr_t createUpArrowTexture(lev2::Context* ctx){
-  auto texture = std::make_shared<lev2::Texture>();
-  texture->_debugName = "ged_uparrow";
-  TextureInitData tid;
-  tid._w     = 9;
-  tid._h     = 9;
-  tid._src_format    = EBufferFormat::RGBA8;
-  tid._dst_format    = EBufferFormat::RGBA8;
-  tid._autogenmips = false;
-  uint32_t X = 0xFFFFFFFF;
-  uint32_t O = 0x00000000;
-  uint32_t data[] = {
-
-    O, O, O, O, X, O, O, O, O,
-    O, O, O, X, X, X, O, O, O,
-    O, O, X, X, O, X, X, O, O,
-    O, X, X, O, O, O, X, X, O,
-    X, X, O, O, X, O, O, X, X,
-    O, O, O, X, X, X, O, O, O,
-    O, O, X, X, O, X, X, O, O,
-    O, X, X, O, O, O, X, X, O,
-    X, X, O, O, X, O, O, X, X,
-
-  };
-  tid._data = (const void*) data;
-  ctx->TXI()->initTextureFromData(texture.get(), tid);
-  return texture;
-}
-
-texture_ptr_t createRightArrowTexture(lev2::Context* ctx){
-  auto texture = std::make_shared<lev2::Texture>();
-  texture->_debugName = "ged_rightarrow";
-  TextureInitData tid;
-  tid._w     = 9;
-  tid._h     = 9;
-  tid._src_format    = EBufferFormat::RGBA8;
-  tid._dst_format    = EBufferFormat::RGBA8;
-  tid._autogenmips = false;
-  uint32_t X = 0xFFFFFFFF;
-  uint32_t O = 0x00000000;
-  uint32_t data[] = {
-    X, X, O, O, O, O, O, O, O,
-    X, O, X, X, O, O, O, O, O,
-    X, O, O, O, X, X, O, O, O,
-    X, O, O, O, O, O, X, X, O,
-    X, O, O, O, O, O, O, O, X,
-    X, O, O, O, O, O, X, X, O,
-    X, O, O, O, X, X, O, O, O,
-    X, O, X, X, O, O, O, O, O,
-    X, X, O, O, O, O, O, O, O,
-  };
-  tid._data = (const void*) data;
-  ctx->TXI()->initTextureFromData(texture.get(), tid);
-  return texture;
-}
 
 ////////////////////////////////////////////////////////////////
 
-GedSkin1::GedSkin1(ork::lev2::Context* ctx) {
+GedSkin1::GedSkin1(ork::lev2::Context* ctx)
+  : GedSkin(ctx) {
   gpuInit(ctx);
   _font   = lev2::FontMan::GetFont("i14");
   _char_w = _font->GetFontDesc().miAdvanceWidth;
   _char_h = _font->GetFontDesc().miAdvanceHeight;
   _bannerHeight = _char_h + 4;
-
-  ////////////////////////////////////////////////////////
-  _textures["downarrow"_crcu] = createDownArrowTexture(ctx);
-  _textures["uparrow"_crcu] = createUpArrowTexture(ctx);
-  _textures["rightarrow"_crcu] = createRightArrowTexture(ctx);
-  ////////////////////////////////////////////////////////
 }
 ///////////////////////////////////////////////////////////////////
 fvec4 GedSkin1::GetStyleColor(GedObject* pnode, ESTYLE ic) {
@@ -273,15 +186,15 @@ void GedSkin1::DrawCheckBox(GedObject* pnode, int ix, int iy, int iw, int ih) {
 }
 ///////////////////////////////////////////////////////////////////
 void GedSkin1::DrawDownArrow(GedObject* pnode, int ix, int iy, ESTYLE ic) {
-  DrawTexBox( pnode, ix, iy, _textures["downarrow"_crcu], GetStyleColor(pnode, ic) );
+  DrawTexBoxCrc( pnode, ix, iy, "downarrow"_crcu, ic );
 }
 ///////////////////////////////////////////////////////////////////
 void GedSkin1::DrawRightArrow(GedObject* pnode, int ix, int iy, ESTYLE ic) {
-  DrawTexBox( pnode, ix, iy, _textures["rightarrow"_crcu], GetStyleColor(pnode, ic) );
+  DrawTexBoxCrc( pnode, ix, iy, "rightarrow"_crcu, ic );
 }
 ///////////////////////////////////////////////////////////////////
 void GedSkin1::DrawUpArrow(GedObject* pnode, int ix, int iy, ESTYLE ic) {
-  DrawTexBox( pnode, ix, iy, _textures["uparrow"_crcu], GetStyleColor(pnode, ic) );
+  DrawTexBoxCrc( pnode, ix, iy, "uparrow"_crcu, ic );
 }
 ///////////////////////////////////////////////////////////////////
 void GedSkin1::DrawText(GedObject* pnode, int ix, int iy, const char* ptext) {

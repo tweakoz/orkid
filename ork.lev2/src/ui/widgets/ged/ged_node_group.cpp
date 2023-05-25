@@ -19,6 +19,14 @@ ImplementReflectionX(ork::lev2::ged::GedGroupNode, "GedGroupNode");
 namespace ork::lev2::ged {
 ////////////////////////////////////////////////////////////////
 
+struct GROUP_IMPL {
+
+  int _ix1_refactory = 0; // refactory (replace current object with factory object)
+  int _ix1_stackU    = 0; // stack up
+  int _ix1_stackL    = 0; // stack left
+  int _ix1_gedspawn  = 0; // spawn new ged
+};
+
 void GedGroupNode::describeX(class_t* clazz) {
 }
 
@@ -32,7 +40,9 @@ GedGroupNode::GedGroupNode(
     , mbCollapsed(false == is_obj_node)
     , mIsObjNode(is_obj_node) {
 
-    auto model = _container->_model;
+  auto impl = _impl.makeShared<GROUP_IMPL>();
+
+  auto model          = _container->_model;
   std::string fixname = name;
   /////////////////////////////////////////////////////////////////
   // localize collapse states to instances of properties underneath other properties
@@ -75,7 +85,7 @@ GedGroupNode::GedGroupNode(
 ///////////////////////////////////////////////////////////////////////////////
 bool GedGroupNode::OnMouseDoubleClicked(ork::ui::event_constptr_t ev) {
 
-  auto model = _container->_model;
+  auto model    = _container->_model;
   int inumitems = numChildren();
 
   bool isCTRL = ev->mbCTRL;
@@ -83,6 +93,8 @@ bool GedGroupNode::OnMouseDoubleClicked(ork::ui::event_constptr_t ev) {
   const int kdim = get_charh();
 
   printf("GedGroupNode<%p>::mouseDoubleClickEvent inumitems<%d>\n", this, inumitems);
+
+  auto impl = _impl.getShared<GROUP_IMPL>();
 
   if (inumitems) {
     int ix = ev->miX;
@@ -96,19 +108,27 @@ bool GedGroupNode::OnMouseDoubleClicked(ork::ui::event_constptr_t ev) {
     int idim = get_charh();
     int dby1 = miY + ioff;
     int dby2 = dby1 + idim;
-    int il   = miW - (idim * 2);
-    int iw   = idim - 1;
-    int ih   = idim - 2;
 
-    int il2 = il + idim + 1;
+    int iw  = idim - 1;
+    int ih  = idim - 2;
     int iy2 = dby2 - 1;
     int ihy = dby1 + (ih / 2);
-    int ihx = il + (iw / 2);
+
+    auto check_x = [&](int test_x) -> bool { //
+      int evx = ev->miRawX;
+      return (evx >= test_x) && (evx <= (test_x + idim));
+    };
 
     printf("iy<%d> KOFF<%d> KDIM<%d>\n", iy, koff, kdim);
-    if (iy >= koff && iy <= kdim) {
-      if (ix >= il && ix < il2 && mIsObjNode) {
-        if (_object) {
+    if ((iy >= koff) && //
+        (iy <= kdim)) { //
+
+      printf( "ix<%d> ix1_stackU<%d mIsObjNode<%d> _object<%p>\n", ev->miRawX, impl->_ix1_stackU, int(mIsObjNode), (void*) _object.get() );
+
+      bool handled = false;
+      if (mIsObjNode and _object) {
+        ///////////////////////////////////////////////////////////
+        if (check_x(impl->_ix1_stackU)) { //
           auto top = model->browseStackTop();
           if (top == _object) {
             model->browseStackPop();
@@ -120,15 +140,19 @@ bool GedGroupNode::OnMouseDoubleClicked(ork::ui::event_constptr_t ev) {
             model->browseStackPush(_object);
             model->attach(_object, false);
           }
+          handled = true;
         }
-
-      } else if (ix >= il2 && ix < il2 + idim && mIsObjNode) {
-        if (_object) {
+        ///////////////////////////////////////////////////////////
+        else if (check_x(impl->_ix1_gedspawn)) { //
           // spawn new window here
           model->SigSpawnNewGed(_object);
+          handled = true;
         }
-      } else if (ix >= koff && ix <= kdim) // drop down
-      {
+
+      } // if (mIsObjNode and _object) {
+      ///////////////////////////////////////////////////////////
+      if (not handled and (ix >= koff) and (ix <= kdim) ) { // drop down
+
         mbCollapsed = !mbCollapsed;
 
         ///////////////////////////////////////////
@@ -142,7 +166,7 @@ bool GedGroupNode::OnMouseDoubleClicked(ork::ui::event_constptr_t ev) {
           if (_parent) {
             int inumc = _parent->numChildren();
             for (int i = 0; i < inumc; i++) {
-              auto child    = _parent->_children[i];
+              auto child          = _parent->_children[i];
               auto child_as_group = std::dynamic_pointer_cast<GedGroupNode>(child);
               if (child_as_group) {
                 child_as_group->mbCollapsed = mbCollapsed;
@@ -185,18 +209,25 @@ int GedGroupNode::doComputeHeight() const {
 ///////////////////////////////////////////////////////////////////////////////
 void GedGroupNode::DoDraw(lev2::Context* pTARG) {
 
-  auto model = _container->_model;
-  auto skin = _container->_activeSkin;
+  auto model      = _container->_model;
+  auto skin       = _container->_activeSkin;
   int inumitems   = numChildren();
   int stack_depth = model->browseStackSize();
+  auto impl       = _impl.getShared<GROUP_IMPL>();
+
+  /////////////////
+
+  int ioff             = koff;
+  int idim             = get_charh();
+  impl->_ix1_stackL    = miX + miW - (idim * 5);
+  impl->_ix1_refactory = impl->_ix1_stackL + idim + 1;
+  impl->_ix1_stackU    = impl->_ix1_refactory + idim + 1;
+  impl->_ix1_gedspawn  = impl->_ix1_stackU + idim + 1;
 
   /////////////////
   // drop down box
   /////////////////
   int icentery = get_text_center_y();
-
-  int ioff = koff;
-  int idim = get_charh();
 
   int dbx1 = miX + ioff;
   int dbx2 = dbx1 + idim;
@@ -211,8 +242,8 @@ void GedGroupNode::DoDraw(lev2::Context* pTARG) {
   ////////////////////////////////
 
   int guide_R = miX + miW - (idim * 2);
-  int iw = idim - 1;
-  int ih = idim - 2;
+  int iw      = idim - 1;
+  int ih      = idim - 2;
 
   int il2 = guide_R + idim + 1;
   int iy2 = dby2 - 1;
@@ -220,8 +251,8 @@ void GedGroupNode::DoDraw(lev2::Context* pTARG) {
   int ihx = guide_R + (iw / 2);
 
   skin->DrawBgBox(this, miX, miY, miW, miH, GedSkin::ESTYLE_BACKGROUND_1);
-  skin->DrawText(this, labx, icentery-1, _propname.c_str());
-  skin->DrawBgBox(this, miX, miY, miW-2, skin->_bannerHeight, GedSkin::ESTYLE_BACKGROUND_GROUP_LABEL);
+  skin->DrawText(this, labx, icentery - 1, _propname.c_str());
+  skin->DrawBgBox(this, miX, miY, miW - 2, skin->_bannerHeight, GedSkin::ESTYLE_BACKGROUND_GROUP_LABEL);
 
   ////////////////////////////////
   // draw stack depth indicator on top node
@@ -231,16 +262,16 @@ void GedGroupNode::DoDraw(lev2::Context* pTARG) {
     std::string arrs;
     for (int i = 0; i < (stack_depth - 1); i++)
       arrs += "<";
-    skin->DrawText(this, guide_R - idim - ((stack_depth - 1) * get_charw()), icentery, arrs.c_str());
+    skin->DrawText(this, impl->_ix1_stackL, icentery, arrs.c_str());
   }
 
   ////////////////////////////////
 
   if (inumitems) {
     if (mbCollapsed) {
-      skin->DrawRightArrow(this, dbx1+3, dby1+3, GedSkin::ESTYLE_BUTTON_OUTLINE);
+      skin->DrawRightArrow(this, dbx1 + 3, dby1 + 3, GedSkin::ESTYLE_BUTTON_OUTLINE);
     } else {
-      skin->DrawDownArrow(this, dbx1+3, dby1+3, GedSkin::ESTYLE_BUTTON_OUTLINE);
+      skin->DrawDownArrow(this, dbx1 + 3, dby1 + 3, GedSkin::ESTYLE_BUTTON_OUTLINE);
     }
   }
 
@@ -249,13 +280,15 @@ void GedGroupNode::DoDraw(lev2::Context* pTARG) {
   ////////////////////////////////
 
   if (_object && mIsObjNode) {
-    int boxw = iw-3;
-    int boxh = ih-2;
-    skin->DrawUpArrow( this,  guide_R+4, dby1+1, GedSkin::ESTYLE_BUTTON_OUTLINE );
+    int boxw = iw - 3;
+    int boxh = ih - 2;
+    skin->DrawUpArrow(this, impl->_ix1_stackU, dby1 + 1, GedSkin::ESTYLE_BUTTON_OUTLINE);
+    skin->DrawTexBoxCrc(this, impl->_ix1_refactory, dby1 + 2, "replaceobj"_crcu, GedSkin::ESTYLE_BUTTON_OUTLINE);
+    //skin->DrawTexBoxCrc(this, impl->_ix1_gedspawn, dby1 + 2, "spawnnewged"_crcu, GedSkin::ESTYLE_BUTTON_OUTLINE);
   }
 
   ////////////////////////////////
 }
 ////////////////////////////////////////////////////////////////
-} //namespace ork::lev2::ged {
+} // namespace ork::lev2::ged
 ////////////////////////////////////////////////////////////////

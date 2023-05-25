@@ -20,6 +20,148 @@
 namespace ork::lev2::ged {
 ////////////////////////////////////////////////////////////////
 
+texture_ptr_t createDownArrowTexture(lev2::Context* ctx){
+  auto texture = std::make_shared<lev2::Texture>();
+  texture->_debugName = "ged_downarrow";
+  TextureInitData tid;
+  tid._w     = 9;
+  tid._h     = 9;
+  tid._src_format    = EBufferFormat::RGBA8;
+  tid._dst_format    = EBufferFormat::RGBA8;
+  tid._autogenmips = false;
+  uint32_t X = 0xFFFFFFFF;
+  uint32_t O = 0x00000000;
+  uint32_t data[] = {
+    X, X, X, X, X, X, X, X, X,
+    X, O, O, O, O, O, O, O, X,
+    O, X, O, O, O, O, O, X, O,
+    O, X, O, O, O, O, O, X, O,
+    O, O, X, O, O, O, X, O, O,
+    O, O, X, O, O, O, X, O, O,
+    O, O, O, X, O, X, O, O, O,
+    O, O, O, X, O, X, O, O, O,
+    O, O, O, O, X, O, O, O, O,
+  };
+  tid._data = (const void*) data;
+  ctx->TXI()->initTextureFromData(texture.get(), tid);
+  return texture;
+}
+
+texture_ptr_t createUpArrowTexture(lev2::Context* ctx){
+  auto texture = std::make_shared<lev2::Texture>();
+  texture->_debugName = "ged_uparrow";
+  TextureInitData tid;
+  tid._w     = 9;
+  tid._h     = 9;
+  tid._src_format    = EBufferFormat::RGBA8;
+  tid._dst_format    = EBufferFormat::RGBA8;
+  tid._autogenmips = false;
+  uint32_t X = 0xFFFFFFFF;
+  uint32_t O = 0x00000000;
+  uint32_t data[] = {
+
+    O, O, O, O, X, O, O, O, O,
+    O, O, O, X, X, X, O, O, O,
+    O, O, X, X, O, X, X, O, O,
+    O, X, X, O, O, O, X, X, O,
+    X, X, O, O, X, O, O, X, X,
+    O, O, O, X, X, X, O, O, O,
+    O, O, X, X, O, X, X, O, O,
+    O, X, X, O, O, O, X, X, O,
+    X, X, O, O, X, O, O, X, X,
+
+  };
+  tid._data = (const void*) data;
+  ctx->TXI()->initTextureFromData(texture.get(), tid);
+  return texture;
+}
+
+texture_ptr_t createRightArrowTexture(lev2::Context* ctx){
+  auto texture = std::make_shared<lev2::Texture>();
+  texture->_debugName = "ged_rightarrow";
+  TextureInitData tid;
+  tid._w     = 9;
+  tid._h     = 9;
+  tid._src_format    = EBufferFormat::RGBA8;
+  tid._dst_format    = EBufferFormat::RGBA8;
+  tid._autogenmips = false;
+  uint32_t X = 0xFFFFFFFF;
+  uint32_t O = 0x00000000;
+  uint32_t data[] = {
+    X, X, O, O, O, O, O, O, O,
+    X, O, X, X, O, O, O, O, O,
+    X, O, O, O, X, X, O, O, O,
+    X, O, O, O, O, O, X, X, O,
+    X, O, O, O, O, O, O, O, X,
+    X, O, O, O, O, O, X, X, O,
+    X, O, O, O, X, X, O, O, O,
+    X, O, X, X, O, O, O, O, O,
+    X, X, O, O, O, O, O, O, O,
+  };
+  tid._data = (const void*) data;
+  ctx->TXI()->initTextureFromData(texture.get(), tid);
+  return texture;
+}
+
+////////////////////////////////////////////////////////////////
+
+texture_ptr_t createReplaceObjTexture(lev2::Context* ctx){
+  auto texture = std::make_shared<lev2::Texture>();
+  texture->_debugName = "ged_rightarrow";
+  TextureInitData tid;
+  tid._w     = 9;
+  tid._h     = 9;
+  tid._src_format    = EBufferFormat::RGBA8;
+  tid._dst_format    = EBufferFormat::RGBA8;
+  tid._autogenmips = false;
+  uint32_t X = 0xFFFFFFFF;
+  uint32_t O = 0x00000000;
+  uint32_t data[] = {
+    O, O, X, X, X, X, X, O, O,
+    O, X, X, O, O, O, X, X, O,
+    X, X, O, O, O, O, O, X, X,
+    X, O, O, O, O, O, O, O, X,
+    X, O, O, O, O, O, O, O, X,
+    X, O, O, O, O, O, O, O, X,
+    X, X, O, O, O, O, O, X, X,
+    O, X, X, O, O, O, X, X, O,
+    O, O, X, X, X, X, X, O, O,
+  };
+  tid._data = (const void*) data;
+  ctx->TXI()->initTextureFromData(texture.get(), tid);
+  return texture;
+}
+
+////////////////////////////////////////////////////////////////
+
+texture_ptr_t createGedSpawnTexture(lev2::Context* ctx){
+  auto texture = std::make_shared<lev2::Texture>();
+  texture->_debugName = "ged_spawm";
+  TextureInitData tid;
+  tid._w     = 9;
+  tid._h     = 9;
+  tid._src_format    = EBufferFormat::RGBA8;
+  tid._dst_format    = EBufferFormat::RGBA8;
+  tid._autogenmips = false;
+  uint32_t X = 0xFFFFFFFF;
+  uint32_t O = 0x00000000;
+  uint32_t data[] = {
+    X, X, X, X, X, X, X, X, X,
+    X, O, O, O, O, O, O, O, X,
+    X, O, X, X, X, X, X, O, X,
+    X, O, X, X, X, X, X, O, X,
+    X, O, X, X, X, X, X, O, X,
+    X, O, X, X, X, X, X, O, X,
+    X, O, X, X, X, X, X, O, X,
+    X, O, O, O, O, O, O, O, X,
+    X, X, X, X, X, X, X, X, X,
+  };
+  tid._data = (const void*) data;
+  ctx->TXI()->initTextureFromData(texture.get(), tid);
+  return texture;
+}
+////////////////////////////////////////////////////////////////
+
 std::set<void*>& GedSkin::GetObjSet() {
   static std::set<void*> gObjSet;
   return gObjSet;
@@ -45,12 +187,21 @@ void GedSkin::popCustomColor() {
 
 ////////////////////////////////////////////////////////////////
 
-GedSkin::GedSkin()
+GedSkin::GedSkin(ork::lev2::Context* ctx)
     : _scrollY(0)
     , _gedVP(nullptr)
     , _font(nullptr)
     , _char_w(0)
     , _char_h(0) {
+
+  ////////////////////////////////////////////////////////
+  _textures["downarrow"_crcu] = createDownArrowTexture(ctx);
+  _textures["uparrow"_crcu] = createUpArrowTexture(ctx);
+  _textures["rightarrow"_crcu] = createRightArrowTexture(ctx);
+  _textures["replaceobj"_crcu] = createReplaceObjTexture(ctx);
+  //_textures["spawnnewged"_crcu] = createGedSpawnTexture(ctx);
+  ////////////////////////////////////////////////////////
+
     _timer.Start();
 }
 
@@ -146,6 +297,16 @@ void GedSkin::DrawTexBox( GedObject* pnode, int ix, int iy, texture_ptr_t tex, f
   prim._texture = tex;
   AddPrim(prim);
 
+}
+
+///////////////////////////////////////////////////////////////////
+
+void GedSkin::DrawTexBoxCrc(GedObject* pnode, int ix, int iy, uint32_t crc, ESTYLE ic ){
+  auto it = _textures.find(crc);
+  if( it != _textures.end() ){
+    auto color = GetStyleColor(pnode, ic);
+    DrawTexBox( pnode, ix, iy, it->second, color );
+  }
 }
 
 ///////////////////////////////////////////////////////////////////
