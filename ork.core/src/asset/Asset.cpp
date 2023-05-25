@@ -10,6 +10,7 @@
 
 #include <ork/asset/Asset.h>
 #include <ork/asset/AssetSetEntry.h>
+#include <ork/reflect/properties/registerX.inl>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -71,6 +72,7 @@ void LoadRequest::waitForCompletion() const { //
 
 void Asset::describeX(object::ObjectClass* clazz) {
   clazz->template annotateTyped<ConstString>("editor.ged.node.factory", "GedNodeFactoryAssetList");
+  clazz->directProperty("path", &Asset::_name);
 }
 
 Asset::Asset() {

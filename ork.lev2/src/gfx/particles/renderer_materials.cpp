@@ -131,6 +131,9 @@ void FlatMaterial::update(const RenderContextInstData& RCID) {
 void GradientMaterial::describeX(class_t* clazz) {
   clazz->directObjectProperty("gradient", &GradientMaterial::_gradient);
   clazz->directEnumProperty("blendmode", &GradientMaterial::_blending);
+  clazz->directAssetProperty("modtexture", &GradientMaterial::_modulation_texture_asset)
+      ->annotate<ConstString>("editor.asset.class", "lev2tex")
+      ->annotate<ConstString>("editor.asset.type", "lev2tex");
 }
 /////////////////////////////////////////////////////////////////////////////////////////////
 GradientMaterial::GradientMaterial() {
@@ -209,6 +212,7 @@ void GradientMaterial::gpuInit(const RenderContextInstData& RCID) {
   auto fxparameterVP      = _material->param("MatVP");
   auto fxparameterInvDim  = _material->param("Rtg_InvDim");
   auto fxparameterGradMap = _material->param("GradientMap");
+  _param_mod_texture = _material->param("ColorMap");
   _parammodcolor          = _material->param("modcolor");
   auto pipeline_cache     = _material->pipelineCache();
 
@@ -220,6 +224,21 @@ void GradientMaterial::gpuInit(const RenderContextInstData& RCID) {
   _pipeline->bindParam(fxparameterM, "RCFD_M"_crcsh);
   _pipeline->bindParam(fxparameterInvDim, "CPD_Rtg_InvDim"_crcsh);
   _pipeline->bindParam(fxparameterGradMap, _gradient_texture);
+  FxPipeline::varval_generator_t gen_tex = [=]() -> FxPipeline::varval_t {
+    auto as_tex = std::dynamic_pointer_cast<TextureAsset>(_modulation_texture_asset);
+    // TODO move to deserializer post actions
+    if(as_tex){
+      _modulation_texture = as_tex->GetTexture();
+      if( _modulation_texture->_width == 0 and as_tex->_loadAttempts < 10){
+        _modulation_texture = Texture::LoadUnManaged(as_tex->_name);
+        as_tex->_loadAttempts++;
+        as_tex->_texture = _modulation_texture;
+      }
+    }
+    FxPipeline::varval_t rval = _modulation_texture;
+    return rval;
+  };
+  _pipeline->bindParam(_param_mod_texture, gen_tex);
 
   _tek_sprites = _material->technique("tgradparticle_sprites");
   _tek_streaks = _material->technique("tgradparticle_streaks");

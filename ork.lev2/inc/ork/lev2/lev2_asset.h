@@ -43,6 +43,7 @@ public: //
   }
   void SetTexture(texture_ptr_t pt);
   texture_ptr_t _texture;
+  int _loadAttempts = 0;
 };
 
 struct StaticTexFileLoader final : public ork::asset::FileAssetLoader {

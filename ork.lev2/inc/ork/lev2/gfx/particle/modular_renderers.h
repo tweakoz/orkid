@@ -66,12 +66,14 @@ public:
   GradientMaterial();
   void update(const RenderContextInstData& RCID) final;
   void gpuInit(const RenderContextInstData& RCID) final;
-  fxparam_constptr_t _paramflatcolor;
+  fxparam_constptr_t _param_mod_texture;
   gradient_fvec4_ptr_t _gradient;
   freestyle_mtl_ptr_t _grad_render_mtl;
   fxpipeline_ptr_t _grad_render_pipeline;
   texture_ptr_t _gradient_texture;
   rtgroup_ptr_t _gradient_rtgroup;
+  asset::asset_ptr_t _modulation_texture_asset;
+  texture_ptr_t _modulation_texture;
   Blending _blending = Blending::OFF;
 };
 

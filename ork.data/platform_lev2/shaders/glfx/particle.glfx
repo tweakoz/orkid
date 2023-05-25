@@ -369,13 +369,13 @@ geometry_shader gs_streak //
   frg_uv0     = vec2(0.0, 0.0);
   EmitVertex();
   gl_Position = outp.pos1;
-  frg_uv0     = vec2(0.0, 0.0);
+  frg_uv0     = vec2(1.0, 0.0);
   EmitVertex();
   gl_Position = outp.pos3;
-  frg_uv0     = vec2(0.0, 0.0);
+  frg_uv0     = vec2(1.0, 1.0);
   EmitVertex();
   gl_Position = outp.pos2;
-  frg_uv0     = vec2(0.0, 0.0);
+  frg_uv0     = vec2(0.0, 1.0);
   EmitVertex();
   EndPrimitive();
 }
@@ -444,7 +444,10 @@ fragment_shader ps_flat : fface_psys {
 }
 fragment_shader ps_grad : fface_psys {
   float unit_age = frg_uv1.x;
-  out_clr = texture(GradientMap, vec2(unit_age, 0.0));
+  vec4 gmap = texture(GradientMap, vec2(unit_age, 0.0));
+  vec4 cmap = texture(ColorMap, frg_uv0.xy);
+  out_clr.xyz = gmap.xyz*cmap.xyz;
+  out_clr.w = gmap.w*cmap.w;
 }
 fragment_shader ps_modtexclr : fface_psys {
 
