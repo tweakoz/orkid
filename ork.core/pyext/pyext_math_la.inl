@@ -253,6 +253,7 @@ void pyinit_math_la_t(py::module& module_core, //
           .def(py::init<T, T, T, T>())
           .def(py::init<vec3_t, T>())
           .def(py::init<mat3_t>())
+          .def("toMatrix", &quat_t::toMatrix)
           .def("norm", &quat_t::norm)
           .def("fromAxisAngle", &quat_t::fromAxisAngle)
           .def("toAxisAngle", &quat_t::toAxisAngle)
