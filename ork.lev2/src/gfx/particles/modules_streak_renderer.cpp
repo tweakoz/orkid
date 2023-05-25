@@ -88,7 +88,9 @@ void StreakRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
   const auto& CPD             = RCFD->topCPD();
   const CameraMatrices* cmtcs = CPD.cameraMatrices();
   const CameraData& cdata     = cmtcs->_camdat;
-  const fmtx4& MVP            = context->MTXI()->RefMVPMatrix();
+  const fmtx4& VP            = context->MTXI()->RefVPMatrix();
+  auto M = cmtcs->MVPMONO(fmtx4());
+  auto MVP = VP*M;
 
   auto material = _srd->_material;
 
@@ -138,7 +140,8 @@ void StreakRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
         // override fetcher
         size_t ilast = (icnt - 1);
         get_particle = [=](size_t index)->const particle::BasicParticle*{
-          return the_sorter->GetItemAtIndex(ilast-index).second;
+          //return the_sorter->GetItemAtIndex(ilast-index).second;
+          return the_sorter->GetItemAtIndex(index).second;
         };
     }
     ////////////////////////////////////////////////////////////////////////////
