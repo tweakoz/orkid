@@ -175,6 +175,8 @@ ui::HandlerResult GedSurface::DoOnUiEvent(ui::event_constptr_t EV) {
   locEV->miY    = ilocy - miScrollY;
   locEV->miRawX = locEV->miX;
   locEV->miRawY = locEV->miY;
+  locEV->miScreenPosX = EV->miScreenPosX;
+  locEV->miScreenPosY = EV->miScreenPosY;
 
   if (_activeNode){
    // bool was_handled = _activeNode->OnUiEvent(locEV);

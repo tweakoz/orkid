@@ -219,7 +219,9 @@ void ObjModel::attach(
     ///////////////////////////////////////////////////////
     if (top_root_item) {
       _gedContainer->PushItemNode(top_root_item.get());
-      recurse(root_object);
+      auto iodriver = std::make_shared<NewIoDriver>();
+      iodriver->_object = root_object;
+      recurse(iodriver);
       _gedContainer->PopItemNode(top_root_item.get());
     }
     ///////////////////////////////////////////////////////
@@ -229,7 +231,9 @@ void ObjModel::attach(
       _gedContainer->GetRootItem()->_children.clear();
       if (root_object) {
         _gedContainer->PushItemNode(_gedContainer->GetRootItem().get());
-        recurse(root_object);
+        auto iodriver = std::make_shared<NewIoDriver>();
+        iodriver->_object = root_object;
+        recurse(iodriver);
         _gedContainer->PopItemNode(_gedContainer->GetRootItem().get());
       }
       detach();
@@ -304,22 +308,23 @@ void ObjModel::dump(const char* header) const {
 //////////////////////////////////////////////////////////////////////////////
 
 geditemnode_ptr_t ObjModel::recurse(
-    object_ptr_t root_object, //
+    newiodriver_ptr_t iodriver, //
     const char* pname,        //
     bool binline) {
 
-  auto cur_obj = root_object;
-  if (cur_obj) {
-    cur_obj->notifyX<ObjectGedVisitEvent>();
+  auto root_object = iodriver->_object;
+
+  if (root_object) {
+    root_object->notifyX<ObjectGedVisitEvent>();
   }
 
-  auto objclass         = cur_obj->objectClass();
+  auto objclass         = root_object->objectClass();
   const auto& classdesc = objclass->Description();
 
   geditemnode_ptr_t rval = nullptr;
 
   if (0)
-    printf("recurse<%p> obj<%p> class<%s>\n", this, cur_obj.get(), objclass->Name().c_str());
+    printf("recurse<%p> obj<%p> class<%s>\n", this, root_object.get(), objclass->Name().c_str());
 
   ///////////////////////////////////////////////////
   // editor.class
@@ -343,12 +348,13 @@ geditemnode_ptr_t ObjModel::recurse(
             pname = nodefactory_class.c_str();
 
           auto group_name = FormatString("grp-%s", pname);
+          auto iodriver   = std::make_shared<NewIoDriver>();
+          iodriver->_object = root_object;
 
           auto groupnode = std::make_shared<GedGroupNode>(
               _gedContainer,      // mdl
               group_name.c_str(), // name
-              nullptr,            // property
-              cur_obj,            // object
+              iodriver,           // iodriver
               true);              // is_obj_node
 
           _gedContainer->AddChild(groupnode);
@@ -357,9 +363,6 @@ geditemnode_ptr_t ObjModel::recurse(
           /////////////////////////////////////
           // create node with factory
           /////////////////////////////////////
-
-          auto iodriver     = std::make_shared<NewIoDriver>();
-          iodriver->_object = root_object;
 
           auto child = typed_factory->createItemNode(_gedContainer, pname, iodriver);
 
@@ -387,23 +390,25 @@ geditemnode_ptr_t ObjModel::recurse(
 
   // ConstString obj_ops = obj_ops_anno.isSet() ? obj_ops_anno.Get<ConstString>() : "";
   const char* usename          = (pname != 0) ? pname : objclass->Name().c_str();
+
+  auto io_driver = std::make_shared<NewIoDriver>();
+  io_driver->_object = root_object;
+
   gedgroupnode_ptr_t groupnode = binline       //
                                      ? nullptr //
                                      : std::make_shared<GedGroupNode>(
                                            _gedContainer, // mdl
                                            usename,       // name
-                                           nullptr,       // property
-                                           cur_obj,       // object
+                                           io_driver,     // io_driver
                                            true);         // is_obj_node
-  if (cur_obj == root_object) {
-    rval = groupnode;
-  }
+  rval = groupnode;
+
   if (groupnode) {
     _gedContainer->AddChild(groupnode);
     _gedContainer->PushItemNode(groupnode.get());
   }
   if (is_const_string || is_op_map) {
-    // OpsNode* popnode = new OpsNode(*this, "ops", 0, cur_obj);
+    // OpsNode* popnode = new OpsNode(*this, "ops", 0, root_object);
     //_gedContainer->AddChild(popnode);
   }
 
@@ -426,7 +431,10 @@ geditemnode_ptr_t ObjModel::recurse(
     gedgroupnode_ptr_t groupnode_2 = nullptr;
     if (igcount) {
       const std::string& GroupName = snode->Name;
-      groupnode_2                  = std::make_shared<GedGroupNode>(_gedContainer, GroupName.c_str(), nullptr, cur_obj);
+      auto child_iodriver                = std::make_shared<NewIoDriver>();
+      child_iodriver->_parent = iodriver;
+      child_iodriver->_object            = root_object;
+      groupnode_2                  = std::make_shared<GedGroupNode>(_gedContainer, GroupName.c_str(), child_iodriver);
       _gedContainer->AddChild(groupnode_2);
       _gedContainer->PushItemNode(groupnode_2.get());
     }
@@ -442,7 +450,7 @@ geditemnode_ptr_t ObjModel::recurse(
         if (false == IsNodeVisible(prop))
           continue;
         //////////////////////////////////////////////////
-        propnode = createObjPropNode(Name, prop, cur_obj);
+        propnode = createObjPropNode(Name, prop, root_object);
         //////////////////////////////////////////////////
         if (propnode)
           _gedContainer->AddChild(propnode);
@@ -482,7 +490,11 @@ geditemnode_ptr_t ObjModel::createAbstractNode(const std::string& Name,
     // object is not null, recurse into it.
     ///////////////////////////////////////////////////////
     if (as_obj.value()) {
-      recurse(as_obj.value(), Name.c_str());
+      auto child_io_driver = std::make_shared<NewIoDriver>();
+      child_io_driver->_object = as_obj.value();
+      child_io_driver->_par_prop = iodriver->_par_prop;
+      child_io_driver->_parent = iodriver;
+      return recurse(child_io_driver, Name.c_str());
     } 
     ///////////////////////////////////////////////////////
     // as_obj is null

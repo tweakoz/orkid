@@ -98,6 +98,8 @@ public:
   std::map<std::string, svar64_t> _typedProperties;
 };
 
+struct NewIoDriver;
+using newiodriver_ptr_t = std::shared_ptr<NewIoDriver>;
 
 struct NewIoDriver {
 
@@ -106,9 +108,9 @@ struct NewIoDriver {
   const reflect::ObjectProperty* _par_prop = nullptr;
   object_ptr_t _object = nullptr;
   svar256_t _abstract_val;
+  newiodriver_ptr_t _parent;
 };
 
-using newiodriver_ptr_t = std::shared_ptr<NewIoDriver>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -139,7 +141,9 @@ public:
   ~ObjModel() override; 
 
   void attach(object_ptr_t obj, bool bclearstack = true, geditemnode_ptr_t rootw = 0);
-  geditemnode_ptr_t recurse(object_ptr_t obj, const char* pname = 0, bool binline = false);
+  geditemnode_ptr_t recurse( newiodriver_ptr_t iodriver, //
+                             const char* pname = 0,
+                             bool binline = false); //
   void detach();
 
   void dump(const char* header) const;

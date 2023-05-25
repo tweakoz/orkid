@@ -21,26 +21,49 @@ namespace ork::lev2::ged {
 
 struct GROUP_IMPL {
 
-  int _ix1_refactory = 0; // refactory (replace current object with factory object)
-  int _ix1_stackU    = 0; // stack up
-  int _ix1_stackL    = 0; // stack left
-  int _ix1_gedspawn  = 0; // spawn new ged
+  int _ix1_refactory    = 0; // refactory (replace current object with factory object)
+  int _ix1_stackU       = 0; // stack up
+  int _ix1_stackL       = 0; // stack left
+  int _ix1_gedspawn     = 0; // spawn new ged
+  bool _factory_enabled = false;
+  std::string _factory_listbase;
 };
+
+////////////////////////////////////////////////////////////////
 
 void GedGroupNode::describeX(class_t* clazz) {
 }
 
+////////////////////////////////////////////////////////////////
+
 GedGroupNode::GedGroupNode(
     GedContainer* container, //
     const char* name,
-    const reflect::ObjectProperty* prop,
-    object_ptr_t obj,
+    newiodriver_ptr_t iodriver,
     bool is_obj_node)
-    : GedItemNode(container, name, prop, obj)
+    : GedItemNode(container, name, iodriver->_par_prop, iodriver->_object)
     , mbCollapsed(false == is_obj_node)
     , mIsObjNode(is_obj_node) {
 
+      _iodriver = iodriver;
+
   auto impl = _impl.makeShared<GROUP_IMPL>();
+
+  if(_iodriver->_parent){
+    OrkAssert(false);
+    auto prop = _iodriver->_parent->_par_prop;
+    auto obj  = _iodriver->_parent->_object;
+
+    if( prop and obj ){
+      auto anno_edclass = prop->GetAnnotation("editor.factorylistbase");
+      OrkAssert(false);
+      if (anno_edclass.length()) {
+        impl->_factory_enabled  = true;
+        impl->_factory_listbase = anno_edclass.c_str();
+      }
+    }
+
+  }
 
   auto model          = _container->_model;
   std::string fixname = name;
@@ -83,6 +106,12 @@ GedGroupNode::GedGroupNode(
   updateVisibility();
 }
 ///////////////////////////////////////////////////////////////////////////////
+object_ptr_t invokeFactoryPopup( //
+    lev2::Context* ctx,          //
+    std::string base_classname,  //
+    int sx,
+    int sy);
+///////////////////////////////////////////////////////////////////////////////
 bool GedGroupNode::OnMouseDoubleClicked(ork::ui::event_constptr_t ev) {
 
   auto model    = _container->_model;
@@ -123,7 +152,12 @@ bool GedGroupNode::OnMouseDoubleClicked(ork::ui::event_constptr_t ev) {
     if ((iy >= koff) && //
         (iy <= kdim)) { //
 
-      printf( "ix<%d> ix1_stackU<%d mIsObjNode<%d> _object<%p>\n", ev->miRawX, impl->_ix1_stackU, int(mIsObjNode), (void*) _object.get() );
+      printf(
+          "ix<%d> ix1_stackU<%d mIsObjNode<%d> _object<%p>\n",
+          ev->miRawX,
+          impl->_ix1_stackU,
+          int(mIsObjNode),
+          (void*)_object.get());
 
       bool handled = false;
       if (mIsObjNode and _object) {
@@ -148,10 +182,20 @@ bool GedGroupNode::OnMouseDoubleClicked(ork::ui::event_constptr_t ev) {
           model->SigSpawnNewGed(_object);
           handled = true;
         }
+        ///////////////////////////////////////////////////////////
+        else if (impl->_factory_enabled and check_x(impl->_ix1_refactory)) { //
+          // spawn new window here
+          int sx       = ev->miScreenPosX;
+          int sy       = ev->miScreenPosY;
+          auto new_obj = invokeFactoryPopup(_l2context(), impl->_factory_listbase, sx, sy);
+          printf("new_obj<%p>\n", (void*)new_obj.get());
+          OrkAssert(false);
+          handled = true;
+        }
 
       } // if (mIsObjNode and _object) {
       ///////////////////////////////////////////////////////////
-      if (not handled and (ix >= koff) and (ix <= kdim) ) { // drop down
+      if (not handled and (ix >= koff) and (ix <= kdim)) { // drop down
 
         mbCollapsed = !mbCollapsed;
 
@@ -283,8 +327,11 @@ void GedGroupNode::DoDraw(lev2::Context* pTARG) {
     int boxw = iw - 3;
     int boxh = ih - 2;
     skin->DrawUpArrow(this, impl->_ix1_stackU, dby1 + 1, GedSkin::ESTYLE_BUTTON_OUTLINE);
-    skin->DrawTexBoxCrc(this, impl->_ix1_refactory, dby1 + 2, "replaceobj"_crcu, GedSkin::ESTYLE_BUTTON_OUTLINE);
-    //skin->DrawTexBoxCrc(this, impl->_ix1_gedspawn, dby1 + 2, "spawnnewged"_crcu, GedSkin::ESTYLE_BUTTON_OUTLINE);
+
+    if(impl->_factory_enabled ){
+      skin->DrawTexBoxCrc(this, impl->_ix1_refactory, dby1 + 2, "replaceobj"_crcu, GedSkin::ESTYLE_BUTTON_OUTLINE);
+    }
+    // skin->DrawTexBoxCrc(this, impl->_ix1_gedspawn, dby1 + 2, "spawnnewged"_crcu, GedSkin::ESTYLE_BUTTON_OUTLINE);
   }
 
   ////////////////////////////////

@@ -186,8 +186,7 @@ struct GedGroupNode : public GedItemNode {
   GedGroupNode(
       GedContainer* container,             //
       const char* name,                    //
-      const reflect::ObjectProperty* prop, //
-      object_ptr_t obj,                    //
+      newiodriver_ptr_t iodriver,          //
       bool is_obj_node = false);
 
   void updateVisibility();

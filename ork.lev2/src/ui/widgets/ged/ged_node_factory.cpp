@@ -14,7 +14,6 @@
 #include <ork/lev2/ui/popups.inl>
 #include <ork/rtti/RTTIX.inl>
 
-
 ImplementReflectionX(ork::lev2::ged::GedFactoryNode, "GedFactoryNode");
 ImplementReflectionX(ork::lev2::ged::GedNodeFactory, "GedNodeFactory"); // yes I put this here too ;>
 
@@ -26,8 +25,8 @@ void GedNodeFactory::describeX(class_t* clazz) { // factories which create nodes
 void GedFactoryNode::describeX(class_t* clazz) { // a node which creates objects
 }
 
-GedFactoryNode::GedFactoryNode(GedContainer* c, const char* name, newiodriver_ptr_t iodriver )
-    : GedItemNode(c, name, iodriver->_par_prop, iodriver->_object){
+GedFactoryNode::GedFactoryNode(GedContainer* c, const char* name, newiodriver_ptr_t iodriver)
+    : GedItemNode(c, name, iodriver->_par_prop, iodriver->_object) {
   _iodriver = iodriver;
 }
 
@@ -48,31 +47,33 @@ void GedFactoryNode::DoDraw(lev2::Context* pTARG) {
 ////////////////////////////////////////////////////////////////
 
 bool GedFactoryNode::OnMouseDoubleClicked(ui::event_constptr_t ev) {
-  auto model = _container->_model;
-  auto skin  = _container->_activeSkin;
+  auto model      = _container->_model;
+  auto skin       = _container->_activeSkin;
   const int klabh = get_charh();
   const int kdim  = klabh - 2;
-  int ibasex = (kdim + 4) * 2 + 3;
-  int sx = ev->miScreenPosX;
-  int sy = ev->miScreenPosY; // - H*2;
+  int ibasex      = (kdim + 4) * 2 + 3;
+  int sx          = ev->miScreenPosX;
+  int sy          = ev->miScreenPosY; // - H*2;
 
-  if( not _factory_set.empty() ){
+  if (not _factory_set.empty()) {
     std::vector<std::string> factory_names;
-    for( auto f : _factory_set ){
+    for (auto f : _factory_set) {
       factory_names.push_back(f->Name());
     }
-    auto dimensions = ui::ChoiceList::computeDimensions(factory_names);
-    std::string choice = ui::popupChoiceList( _l2context(), //
-                                              sx,sy,
-                                              factory_names,
-                                              dimensions);
+    auto dimensions    = ui::ChoiceList::computeDimensions(factory_names);
+    std::string choice = ui::popupChoiceList(
+        _l2context(), //
+        sx,
+        sy,
+        factory_names,
+        dimensions);
 
-    printf( "choice<%s>\n", choice.c_str() );
-    if( choice != "" ){
-      auto clazz = rtti::Class::FindClass(choice.c_str());
+    printf("choice<%s>\n", choice.c_str());
+    if (choice != "") {
+      auto clazz     = rtti::Class::FindClass(choice.c_str());
       auto obj_clazz = dynamic_cast<object::ObjectClass*>(clazz);
-      printf( "obj_clazz<%p:%s>\n", obj_clazz, obj_clazz->Name().c_str() );
-      auto instance = obj_clazz->createShared();
+      printf("obj_clazz<%p:%s>\n", obj_clazz, obj_clazz->Name().c_str());
+      auto instance            = obj_clazz->createShared();
       _iodriver->_abstract_val = instance;
       _iodriver->_onValueChanged();
     }
@@ -82,9 +83,47 @@ bool GedFactoryNode::OnMouseDoubleClicked(ui::event_constptr_t ev) {
 
 ////////////////////////////////////////////////////////////////
 
-void enumerateFactories(const ork::Object* pdestobj, //
-                        const reflect::ObjectProperty* prop, 
-                        factory_class_set_t& factory_set) {
+object_ptr_t invokeFactoryPopup( //
+    lev2::Context* ctx,         //
+    std::string base_classname, //
+    int sx,
+    int sy) { //
+  object_ptr_t rval;
+  auto base_clazz   = rtti::Class::FindClass(base_classname.c_str());
+  auto as_obj_clazz = dynamic_cast<ork::object::ObjectClass*>(base_clazz);
+  if (as_obj_clazz) {
+    std::vector<std::string> factory_names;
+    factory_class_set_t factory_set;
+    enumerateFactories(as_obj_clazz, factory_set);
+    for (auto clazz : factory_set) {
+      auto clazz_name = clazz->Name();
+      factory_names.push_back(clazz_name);
+      printf("!!! FACTORY<%s>\n", clazz_name.c_str());
+    }
+    auto dimensions    = ui::ChoiceList::computeDimensions(factory_names);
+    std::string choice = ui::popupChoiceList(
+        ctx, //
+        sx,
+        sy,
+        factory_names,
+        dimensions);
+    printf("choice<%s>\n", choice.c_str());
+    if (choice != "") {
+      auto clazz     = rtti::Class::FindClass(choice.c_str());
+      auto obj_clazz = dynamic_cast<object::ObjectClass*>(clazz);
+      printf("obj_clazz<%p:%s>\n", obj_clazz, obj_clazz->Name().c_str());
+      rval = obj_clazz->createShared();
+    }
+  }
+  return rval;
+}
+
+////////////////////////////////////////////////////////////////
+
+void enumerateFactories(
+    const ork::Object* pdestobj, //
+    const reflect::ObjectProperty* prop,
+    factory_class_set_t& factory_set) {
 
   ConstString anno = prop->GetAnnotation("editor.factorylistbase");
 
@@ -123,10 +162,10 @@ void enumerateFactories(const ork::Object* pdestobj, //
 
           if (pdestobj) // check if also OK with the destination object
           {
-            //ObjectFactoryFilter factfilterev;
-            //factfilterev.mpClass = pclass;
-            //pdestobj->Query(&factfilterev);
-            //bok2add &= factfilterev.mbFactoryOK;
+            // ObjectFactoryFilter factfilterev;
+            // factfilterev.mpClass = pclass;
+            // pdestobj->Query(&factfilterev);
+            // bok2add &= factfilterev.mbFactoryOK;
           }
 
           if (bok2add) {
@@ -153,8 +192,7 @@ void enumerateFactories(const ork::Object* pdestobj, //
 
 ////////////////////////////////////////////////////////////////
 
-void enumerateFactories(object::ObjectClass* baseclazz, 
-                        factory_class_set_t& factory_set) {
+void enumerateFactories(object::ObjectClass* baseclazz, factory_class_set_t& factory_set) {
   OrkAssert(baseclazz);
   orkstack<object::ObjectClass*> FactoryStack;
   FactoryStack.push(baseclazz);
@@ -195,4 +233,4 @@ void enumerateFactories(object::ObjectClass* baseclazz,
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-} //namespace ork::lev2::ged {
+} // namespace ork::lev2::ged
