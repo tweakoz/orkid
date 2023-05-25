@@ -130,7 +130,7 @@ fragment_shader fs_colorwheel
 ///////////////////////////////////////////////////////////////
 fragment_shader fs_gradwalpha
 	: iface_fui {
-    out_color = vec4(frg_clr.xyz,0.01); 
+    out_color = frg_clr.xyzw; 
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader fs_picking
