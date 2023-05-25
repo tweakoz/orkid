@@ -31,29 +31,28 @@ public:
   MapType& GetMap(object_ptr_t obj) const;
   const MapType& GetMap(object_constptr_t obj) const;
 
-  bool isMultiMap(object_constptr_t obj) const override;
+  bool isMultiMap(object_constptr_t obj) const final;
 
   MapType Object::*_member;
 
 protected:
-  bool ReadElement(object_constptr_t, const key_type&, int, object_ptr_t&) const override;
-  bool WriteElement(object_ptr_t, const key_type&, int, const object_ptr_t*) const override;
-  bool EraseElement(object_ptr_t, const key_type&, int) const override;
+  bool ReadElement(object_constptr_t, const key_type&, int, object_ptr_t&) const final;
+  bool WriteElement(object_ptr_t, const key_type&, int, const object_ptr_t*) const final;
+  bool EraseElement(object_ptr_t, const key_type&, int) const final;
 
-  size_t elementCount(object_constptr_t obj) const override {
+  size_t elementCount(object_constptr_t obj) const final {
     return GetMap(obj).size();
   }
-  bool GetKey(object_constptr_t, int idx, key_type&) const override;
-  bool GetVal(object_constptr_t, const key_type& k, object_ptr_t& v) const override;
+  bool GetKey(object_constptr_t, int idx, key_type&) const final;
+  bool GetVal(object_constptr_t, const key_type& k, object_ptr_t& v) const final;
 
   // abstract interface
 
-  void insertDefaultElement(object_ptr_t obj,map_abstract_item_t key) const override;
-  void setElement(object_ptr_t obj,map_abstract_item_t key, map_abstract_item_t val) const override;
+  void insertDefaultElement(object_ptr_t obj,map_abstract_item_t key) const final;
+  void setElement(object_ptr_t obj,map_abstract_item_t key, map_abstract_item_t val) const final;
+  void removeElement(object_ptr_t obj,map_abstract_item_t key) const final;
 
 private:
-  //void deserialize(serdes::node_ptr_t) const override;
-  //void serialize(serdes::node_ptr_t sernode) const override;
 };
 
 }} // namespace ork::reflect

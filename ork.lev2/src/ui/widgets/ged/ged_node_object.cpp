@@ -12,6 +12,7 @@
 #include <ork/kernel/core_interface.h>
 #include <ork/lev2/gfx/dbgfontman.h>
 #include <ork/reflect/properties/registerX.inl>
+#include <ork/lev2/ui/popups.inl>
 
 ImplementReflectionX(ork::lev2::ged::GedObjNode, "GedObjNode");
 
@@ -39,6 +40,30 @@ void GedObjNode::DoDraw(lev2::Context* pTARG) {
     skin->DrawText(this, miX, miY, _propname.c_str());
   }
 }
+
+////////////////////////////////////////////////////////////////
+
+bool GedObjNode::OnUiEvent(ui::event_constptr_t ev) {
+    switch (ev->_eventcode) {
+      case ui::EventCode::DOUBLECLICK: {
+        auto obj = _iodriver->_object;
+        int sx = ev->miScreenPosX;
+        int sy = ev->miScreenPosY;
+        auto ctx = _l2context();
+        const int kdim  = 256;
+        int W = kdim;
+        int H = kdim;
+        auto prop    = dynamic_cast<const reflect::DirectTyped<fvec4>*>(_iodriver->_par_prop);
+        fvec4 initial_color;
+        //prop->get(initial_color,_iodriver->_object);
+        fvec4 selected = ui::popupColorEdit(ctx, sx, sy, W, H, initial_color);
+        //prop->set(selected,_iodriver->_object);
+        break;
+      }
+      default:
+        break;
+    }
+    return GedItemNode::OnUiEvent(ev);}
 
 ////////////////////////////////////////////////////////////////
 } // namespace ork::lev2::ged

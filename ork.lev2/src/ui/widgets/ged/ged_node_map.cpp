@@ -186,8 +186,6 @@ void GedMapNode::addItem(ui::event_constptr_t ev) {
   size_t num_items = mMapKeys.size();
   std::string initial_key = FormatString("item-%d", num_items);
 
-  //printf( "GedMapNode<%p> sx<%d> sy<%d> W<%d> H<%d>\n", this, sx, sy, W, H );
-
   std::string edittext = ui::popupLineEdit(_l2context(),sx,sy,W,H,initial_key);
 
   if (edittext.length()) {
@@ -195,8 +193,6 @@ void GedMapNode::addItem(ui::event_constptr_t ev) {
 
     if (isKeyPresent(kdeca)) {
       OrkAssert(false);
-      //if (false == isMultiMap())
-        //return;
     }
 
     reflect::map_abstract_item_t reflect_key = edittext;
@@ -211,24 +207,36 @@ void GedMapNode::addItem(ui::event_constptr_t ev) {
 ////////////////////////////////////////////////////////////////
 
 void GedMapNode::removeItem(ui::event_constptr_t ev) {
-  /*const int klabh = get_charh();
+  const int klabh = get_charh();
   const int kdim  = klabh - 2;
 
-  int ibasex = (kdim + 4) * 3 + 3;
+  int ibasex = (kdim + 4) * 2 + 3;
+  int sx = ev->miScreenPosX;
+  int sy = ev->miScreenPosY;
 
-  QString qstr = GedInputDialog::getText(ev, this, 0, ibasex, 0, miW - ibasex - 6, klabh);
+  int W = miW - ibasex - 6;
+  int H = klabh*2;
 
-  std::string sstr = qstr.toStdString();
-  if (sstr.length()) {
-    KeyDecoName kdec(sstr.c_str());
+  size_t num_items = mMapKeys.size();
+  std::vector<std::string> choice_names;
+  choice_names.push_back("--cancel--");
+  for( auto item : mMapKeys ){
+    choice_names.push_back( item.second.mActualKey.c_str() );
+  }
 
-    if (IsKeyPresent(kdec)) {
-      mModel.SigPreNewObject();
-      GedMapIoDriver iodriver(mModel, mMapProp, GetOrkObj());
-      iodriver.remove(kdec);
-      mModel.Attach(mModel.CurrentObject());
-    }
-  }*/
+  auto dimensions = ui::ChoiceList::computeDimensions(choice_names);
+  std::string choice = ui::popupChoiceList( _l2context(), //
+                                            sx,sy,
+                                            choice_names,
+                                            dimensions);
+  if (choice!="--cancel--") {
+
+    reflect::map_abstract_item_t reflect_key = choice;
+    mMapProp->removeElement(_object, reflect_key);
+    _container->_model->enqueueUpdateAll();
+
+  }
+
 }
 
 ////////////////////////////////////////////////////////////////

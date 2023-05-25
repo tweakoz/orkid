@@ -29,23 +29,24 @@ public:
   MapType& GetMap(object_ptr_t obj) const;
   const MapType& GetMap(object_constptr_t obj) const;
 
-  bool isMultiMap(object_constptr_t obj) const override;
+  bool isMultiMap(object_constptr_t obj) const final;
 
 protected:
-  bool ReadElement(object_constptr_t, const KeyType&, int, ValueType&) const override;
-  bool WriteElement(object_ptr_t, const KeyType&, int, const ValueType*) const override;
-  bool EraseElement(object_ptr_t, const KeyType&, int) const override;
+  bool ReadElement(object_constptr_t, const KeyType&, int, ValueType&) const final;
+  bool WriteElement(object_ptr_t, const KeyType&, int, const ValueType*) const final;
+  bool EraseElement(object_ptr_t, const KeyType&, int) const final;
 
-  size_t elementCount(object_constptr_t obj) const override {
+  size_t elementCount(object_constptr_t obj) const final {
     return int(GetMap(obj).size());
   }
-  bool GetKey(object_constptr_t, int idx, KeyType&) const override;
-  bool GetVal(object_constptr_t, const KeyType& k, ValueType& v) const override;
+  bool GetKey(object_constptr_t, int idx, KeyType&) const final;
+  bool GetVal(object_constptr_t, const KeyType& k, ValueType& v) const final;
 
   // abstract interface
   
-  void insertDefaultElement(object_ptr_t obj,map_abstract_item_t key) const override;
-  void setElement(object_ptr_t obj,map_abstract_item_t key, map_abstract_item_t val) const override;
+  void insertDefaultElement(object_ptr_t obj,map_abstract_item_t key) const final;
+  void setElement(object_ptr_t obj,map_abstract_item_t key, map_abstract_item_t val) const final;
+  void removeElement(object_ptr_t obj, map_abstract_item_t key) const final;
 
 private:
   MapType Object::*mProperty;

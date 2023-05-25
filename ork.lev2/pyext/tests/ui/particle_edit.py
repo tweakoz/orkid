@@ -34,7 +34,7 @@ class ParticlesApp(object):
 
     self.materials = set()
 
-    self.ezapp = OrkEzApp.create(self)
+    self.ezapp = OrkEzApp.create(self, left=100, top=100, width=900, height=900)
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     self.ezapp.topWidget.enableUiDraw()
     lg_group = self.ezapp.topLayoutGroup
@@ -49,8 +49,8 @@ class ParticlesApp(object):
     ################################################
 
     vguides = lg_group.vertical_guides
-    vguides[1].proportion = 0.25
-    vguides[2].proportion = 0.25
+    vguides[1].proportion = 0.35
+    vguides[2].proportion = 0.35
 
     ################################################
     # replace left viewport with particle editor

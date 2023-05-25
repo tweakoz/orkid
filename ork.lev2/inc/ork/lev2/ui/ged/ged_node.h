@@ -321,8 +321,9 @@ struct GedObjNode : public GedItemNode {
 public:
   GedObjNode(GedContainer* c, const char* name, const reflect::ObjectProperty* prop, object_ptr_t obj);
 
-  void DoDraw(lev2::Context* pTARG) final; // virtual
 private:
+  bool OnUiEvent(ork::ui::event_constptr_t ev) final;
+  void DoDraw(lev2::Context* pTARG) final; 
 
   bool mbInteractive;
   bool mbCollapse;

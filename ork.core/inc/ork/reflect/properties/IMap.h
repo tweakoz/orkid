@@ -30,6 +30,7 @@ public:
 
   virtual void insertDefaultElement(object_ptr_t obj,map_abstract_item_t key) const = 0;
   virtual void setElement(object_ptr_t obj,map_abstract_item_t key, map_abstract_item_t val) const = 0;
+  virtual void removeElement(object_ptr_t obj,map_abstract_item_t key) const = 0;
 
 protected:
   IMap() : ObjectProperty() {

@@ -51,11 +51,22 @@ void DirectObjectMap<MapType>::insertDefaultElement(object_ptr_t obj,
   OrkAssert(typed_key_attempt);
   MapType& the_map                  = obj.get()->*_member;
   the_map.insert(std::make_pair(typed_key_attempt.value(), nullptr));
-  //ork::svar64_t key64;
-  //OrkAssert( key64.canConvertFrom(key) );
-
 }
 ////////////////////////////////////////////////////////////////////////////////
+template <typename MapType> //
+void DirectObjectMap<MapType>::removeElement(object_ptr_t obj,
+                                             map_abstract_item_t key) const {
+
+  SvarDecoder<key.ksize> decoder;
+
+  auto typed_key_attempt = decoder.decode<key_type>(key);
+  OrkAssert(typed_key_attempt);
+  MapType& the_map                  = obj.get()->*_member;
+  auto it = the_map.find(typed_key_attempt.value());
+  if(it!=the_map.end()){
+    the_map.erase(it);
+  }
+}////////////////////////////////////////////////////////////////////////////////
 template <typename MapType> //
 void DirectObjectMap<MapType>::setElement(object_ptr_t obj, //
                                           map_abstract_item_t key, //
