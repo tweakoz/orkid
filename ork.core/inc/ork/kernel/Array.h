@@ -64,8 +64,8 @@ public:
 		typedef const T& const_reference;
 		typedef std::ptrdiff_t difference_type;
 
-		intptr_t mindex;
-		int mdirection;
+		intptr_t mindex = 0;
+		int mdirection = 0;
 
 		iterator_base( intptr_t idx=-1, int idir=0 );
 	};
@@ -75,7 +75,7 @@ public:
 		typedef intptr_t iter_type;
 		static const iter_type npos = -1;
 
-		fixedvector*	mpfixedary;
+		fixedvector*	mpfixedary = nullptr;
 		iterator( intptr_t idx=npos, int idir=0, fixedvector* pfm=0);
 		iterator(const iterator& oth);
 		void operator = ( const iterator& oth );
@@ -99,7 +99,7 @@ public:
 		typedef intptr_t iter_type;
 		static const iter_type npos = -1;
 
-		const fixedvector*	mpfixedary;
+		const fixedvector*	mpfixedary = nullptr;
 		const_iterator( intptr_t idx=npos, int idir=0, const fixedvector* pfm=0);
 		const_iterator(const iterator& oth);
 		const_iterator(const const_iterator& oth);
@@ -151,7 +151,7 @@ public:
 
 private:
 	T mArray[kmax];
-	size_t misize;
+	size_t misize = 0;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

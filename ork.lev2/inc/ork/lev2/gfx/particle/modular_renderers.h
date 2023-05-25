@@ -157,6 +157,7 @@ public:
   dflow::dgmoduleinst_ptr_t createInstance(dataflow::GraphInst* ginst) const final;
 
   basematerial_ptr_t _material;
+  bool _sort = false;
 };
 
 using streakmodule_ptr_t = std::shared_ptr<StreakRendererData>;

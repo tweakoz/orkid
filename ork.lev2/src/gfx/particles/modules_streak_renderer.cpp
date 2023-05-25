@@ -88,6 +88,7 @@ void StreakRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
   const auto& CPD             = RCFD->topCPD();
   const CameraMatrices* cmtcs = CPD.cameraMatrices();
   const CameraData& cdata     = cmtcs->_camdat;
+  const fmtx4& MVP            = context->MTXI()->RefMVPMatrix();
 
   auto material = _srd->_material;
 
@@ -108,20 +109,50 @@ void StreakRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
     mtx_iw.inverseOf(mtx);
     fvec3 obj_nrmz = fvec4(cdata.zNormal(), 0.0f).transform(mtx_iw).normalized();
     ////////////////////////////////////////////////////////////////////////////
+    using fetcher_t = std::function<const particle::BasicParticle*(size_t index)>;
+    auto pbase  = render_buffer->_particles;
+    bool do_sort = _srd->_sort;
+    fetcher_t get_particle = [&](size_t index)->const particle::BasicParticle*{
+        return pbase + index;
+    };
+    //if (meBlendMode >= Blending::ADDITIVE && meBlendMode <= Blending::ALPHA_SUBTRACTIVE) {
+      //bsort = false;
+    //}
+    ///////////////////////////////////////////////////////////////
+    // depth sort ?
+    ///////////////////////////////////////////////////////////////
+
+    if (do_sort) {
+      using sorter_t = ork::fixedlut<float, const particle::BasicParticle*, 32768>;
+      using sorter_ptr_t = std::shared_ptr<sorter_t>;
+        static sorter_ptr_t the_sorter = std::make_shared<sorter_t>(EKEYPOLICY_MULTILUT);
+        the_sorter->clear();
+        OrkAssert(icnt<32768);
+        for (size_t i = 0; i < icnt; i++) {
+          auto ptcl  = pbase + i;
+          fvec4 proj = ptcl->mPosition.transform(MVP);
+          proj.perspectiveDivideInPlace();
+          float fv = proj.z;
+          the_sorter->AddSorted(fv, ptcl);
+        }
+        // override fetcher
+        size_t ilast = (icnt - 1);
+        get_particle = [=](size_t index)->const particle::BasicParticle*{
+          return the_sorter->GetItemAtIndex(ilast-index).second;
+        };
+    }
+    ////////////////////////////////////////////////////////////////////////////
     streak_vertex_writer_t vw;
     vw.Lock(context, _vertexBuffer.get(), icnt);
     {
       ////////////////////////////////////////////////
       // uniform properties
       ////////////////////////////////////////////////
-
-      auto ptclbase = render_buffer->_particles;
-
       float fwidth    = _input_width->value();
       float flength   = _input_length->value();
       auto LW = ork::fvec2(flength, fwidth);
       for (int i = 0; i < icnt; i++) {
-        auto ptcl = ptclbase + i;
+        auto ptcl = get_particle(i);
         material->_vertexSetterStreak(
             vw, //
             ptcl,     //
@@ -152,6 +183,8 @@ void StreakRendererData::describeX(class_t* clazz) {
   });
   clazz->directObjectProperty("material", &StreakRendererData::_material) //
        ->annotate<ConstString>("editor.factorylistbase", "psys::MaterialBase");
+
+  clazz->directProperty("sort", &StreakRendererData::_sort);
 
   /*
   ork::reflect::RegisterProperty("DepthSort", &StreakRendererData::mbSort);
