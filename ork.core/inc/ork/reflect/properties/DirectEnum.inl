@@ -34,7 +34,7 @@ template <typename T> void DirectEnum<T>::deserialize(serdes::node_ptr_t deserno
   auto instance   = desernode->_deser_instance;
   const auto& str_val = desernode->_value.get<std::string>();
   auto it = enumtype->_str2intmap.find(str_val);
-  int int_val = it->second;
+  uint64_t int_val = it->second;
   auto as_T = static_cast<T>(int_val);
   set(as_T, instance);
 }
@@ -45,7 +45,7 @@ template <typename T> void DirectEnum<T>::serialize(serdes::node_ptr_t ser_node)
   auto instance   = ser_node->_ser_instance;
   T e_val;
   get(e_val, instance);
-  int int_val = static_cast<int>(e_val);
+  uint64_t int_val = static_cast<uint64_t>(e_val);
   auto it_s = enumtype->_int2strmap.find(int_val);
   serdes::enumvalue_ptr_t rewrite = std::make_shared<serdes::EnumValue>();
   rewrite->_name = it_s->second;
@@ -75,7 +75,7 @@ void DirectEnum<T>::setFromString( object_ptr_t obj, const std::string& str ) co
   auto enumtype  = registrar->findEnumClass<T>();
   OrkAssert(enumtype!=nullptr);
   auto item = enumtype->_str2intmap.find(str);
-  int int_val = item->second;
+  uint64_t int_val = item->second;
   auto as_T = static_cast<T>(int_val);
   set( as_T, obj);
 }
@@ -86,7 +86,7 @@ std::string DirectEnum<T>::toString( object_constptr_t obj ) const {
   OrkAssert(enumtype!=nullptr);
   T e_val;
   get(e_val, obj);
-  int int_val = static_cast<int>(e_val);
+  uint64_t int_val = static_cast<uint64_t>(e_val);
   auto it_s = enumtype->_int2strmap.find(int_val);
   return it_s->second;
 }

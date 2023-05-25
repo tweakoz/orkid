@@ -22,12 +22,9 @@ namespace ork::lev2::particle {
 
 ///////////////////////////////////////////////////////////////////////////////
 void MaterialBase::describeX(class_t* clazz) {
-    clazz->directProperty( "color", &MaterialBase::_color ) //
-         ->annotate<ConstString>("editor.ged.node.factory", "GedNodeFactoryColorV4");
 }
 ///////////////////////////////////////////////////////////////////////////////
 MaterialBase::MaterialBase() {
-  _color        = fvec4(1, .5, 0, 1);
   _vertexSetter = [](vertex_writer_t& vw,      //
                      const BasicParticle* ptc, //
                      float fang,               //
@@ -51,9 +48,13 @@ fxpipeline_ptr_t MaterialBase::pipeline(bool streaks) {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 void FlatMaterial::describeX(class_t* clazz) {
+    clazz->directProperty( "color", &FlatMaterial::_color ) //
+         ->annotate<ConstString>("editor.ged.node.factory", "GedNodeFactoryColorV4");
+    clazz->directEnumProperty( "blendmode", &FlatMaterial::_blending );
 }
 ///////////////////////////////////////////////////////////////////////////////
 FlatMaterial::FlatMaterial() {
+  _color        = fvec4(1, .5, 0, 1);
 }
 std::shared_ptr<FlatMaterial> FlatMaterial::createShared() {
   return std::make_shared<FlatMaterial>();
@@ -93,6 +94,7 @@ void FlatMaterial::update(const RenderContextInstData& RCID) {
   auto context = RCID.context();
   auto FXI     = context->FXI();
   FXI->BindParamVect4(_parammodcolor, _color);
+  _material->_rasterstate.SetBlending(_blending);
 }
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////

@@ -44,6 +44,7 @@ public:
   FlatMaterial();
   void update(const RenderContextInstData& RCID) final;
   void gpuInit(const RenderContextInstData& RCID) final;
+  Blending _blending = Blending::OFF;
 };
 
 using flatmaterial_ptr_t = std::shared_ptr<FlatMaterial>;
@@ -57,7 +58,6 @@ public:
   GradientMaterial();
   void update(const RenderContextInstData& RCID) final;
   void gpuInit(const RenderContextInstData& RCID) final;
-  fvec4 _color;
   fxparam_constptr_t _paramflatcolor;
 };
 

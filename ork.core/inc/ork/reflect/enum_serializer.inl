@@ -29,21 +29,21 @@ struct EnumType {
 
   template <typename enum_t>                                 //
   inline void addEnum(std::string name, enum_t enum_value) { //
-    _int2strmap[int(enum_value)] = name;
-    _str2intmap[name]            = int(enum_value);
+    _int2strmap[uint64_t(enum_value)] = name;
+    _str2intmap[name]            = uint64_t(enum_value);
   }
-  inline std::string findNameFromValue(int ivalue) { //
+  inline std::string findNameFromValue(uint64_t ivalue) { //
     auto it = _int2strmap.find(ivalue);
     return it->second;
   }
-  inline int findValueFromName(std::string svalue) { //
+  inline uint64_t findValueFromName(std::string svalue) { //
     auto it = _str2intmap.find(svalue);
     return it->second;
   }
 
   std::string _name;
-  std::map<int, std::string> _int2strmap;
-  std::map<std::string, int> _str2intmap;
+  std::map<uint64_t, std::string> _int2strmap;
+  std::map<std::string, uint64_t> _str2intmap;
 };
 using enumtype_ptr_t = std::shared_ptr<EnumType>;
 //////////////////////////////////////////////////////////////
@@ -93,7 +93,7 @@ struct EnumRegistrar {
     get(value, instance);                                                                                                          \
     auto registrar = ::ork::reflect::serdes::EnumRegistrar::instance();                                                            \
     auto enumtype  = registrar->findEnumClass<ENUMTYPE>();                                                                         \
-    auto enumname  = enumtype->findNameFromValue(int(value));                                                                      \
+    auto enumname  = enumtype->findNameFromValue(uint64_t(value));                                                                      \
     leafnode->_value.template set<std::string>(enumname);                                                                          \
     serializer->serializeLeaf(leafnode);                                                                                           \
   }                                                                                                                                \
@@ -103,7 +103,7 @@ struct EnumRegistrar {
     const auto& as_str = var.get<std::string>();                                                                                   \
     auto registrar     = ::ork::reflect::serdes::EnumRegistrar::instance();                                                        \
     auto enumtype      = registrar->findEnumClass<ENUMTYPE>();                                                                     \
-    int intval         = enumtype->findValueFromName(as_str);                                                                      \
+    uint64_t intval    = enumtype->findValueFromName(as_str);                                                                      \
     auto enumval       = ENUMTYPE(intval);                                                                                         \
     set(enumval, instance);                                                                                                        \
   }

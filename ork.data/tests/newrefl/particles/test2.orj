@@ -45,7 +45,7 @@
               }
              }
             },
-            "value": 0.5
+            "value": 0.0
            }
           }
          },
@@ -514,6 +514,7 @@
           "class": "psys::FlatMaterial",
           "uuid": "b7954174-6052-4d2d-bfd4-471b9698b9f9",
           "properties": {
+           "blendmode": "ALPHA_ADDITIVE",
            "color": [
             0.13410133123397827,
             0.29691213369369507,
