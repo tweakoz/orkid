@@ -13,6 +13,7 @@
 #include <ork/kernel/core_interface.h>
 #include <ork/lev2/gfx/dbgfontman.h>
 #include <ork/reflect/properties/registerX.inl>
+#include <ork/lev2/ui/popups.inl>
 
 ////////////////////////////////////////////////////////////////
 namespace ork::lev2::ged {
@@ -36,19 +37,37 @@ void GedColorNode::DoDraw(lev2::Context* pTARG) {
   auto prop    = dynamic_cast<const reflect::DirectTyped<fvec4>*>(_iodriver->_par_prop);
   fvec4 color;
   prop->get(color,_iodriver->_object);
-
-  skin->DrawColorBox(this, miX, miY, miW, miH, color, 100);
+  
+  skin->DrawColorBox(this, miX+64, miY+2, miW-68, miH-4, color, 100);
 
   if (not is_pick) {
-    //skin->DrawText(this, miX, miY, _propname.c_str());
+    skin->DrawText(this, miX, miY, _propname.c_str());
   }
 }
 
 ////////////////////////////////////////////////////////////////
 
 bool GedColorNode::OnUiEvent(ui::event_constptr_t ev) {
-  return false;
-}
+    switch (ev->_eventcode) {
+      case ui::EventCode::DOUBLECLICK: {
+        auto obj = _iodriver->_object;
+        int sx = ev->miScreenPosX;
+        int sy = ev->miScreenPosY;
+        auto ctx = _l2context();
+        const int kdim  = 256;
+        int W = kdim;
+        int H = kdim;
+        auto prop    = dynamic_cast<const reflect::DirectTyped<fvec4>*>(_iodriver->_par_prop);
+        fvec4 initial_color;
+        prop->get(initial_color,_iodriver->_object);
+        fvec4 selected = ui::popupColorEdit(ctx, sx, sy, W, H, initial_color);
+        prop->set(selected,_iodriver->_object);
+        break;
+      }
+      default:
+        break;
+    }
+    return GedItemNode::OnUiEvent(ev);}
 
 ///////////////////////////////////////////////////////////////////////////////
 geditemnode_ptr_t //

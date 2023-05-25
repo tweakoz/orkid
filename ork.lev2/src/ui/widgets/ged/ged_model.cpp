@@ -608,17 +608,12 @@ geditemnode_ptr_t ObjModel::createObjPropNode(
   }
   /////////////////////////////////////////////////////////////////////////
   else if (auto as_dobjprop = dynamic_cast<const reflect::DirectObjectBase*>(prop)) {
-    //auto iodriver       = std::make_shared<NewIoDriver>();
     object_ptr_t child_object = as_dobjprop->getObject(pobject);
-    //recurse(child_object, Name.c_str());
     auto iodriver             = std::make_shared<NewIoDriver>();
-    //auto ioimpl               = iodriver->_impl.makeShared<ArrayIoDriverImpl>();
-    //ioimpl->_node             = this;
-    //ioimpl->_array_prop       = ary_prop;
-    //ioimpl->_index            = index++;
     iodriver->_par_prop       = prop;
     iodriver->_object         = pobject;
-    iodriver->_abstract_val   = child_object;
+    iodriver->_abstract_val.set<object_ptr_t>(child_object);
+    
     iodriver->_onValueChanged = [=]() {
       // ary_prop->setElement(obj, key, iodriver->_abstract_val);
       this->enqueueUpdate();
@@ -662,6 +657,43 @@ geditemnode_ptr_t ObjModel::createObjPropNode(
                                  : (GedItemNode*)new GedIntNode<GedIoDriver<int>>(*this, Name.c_str(), intprop, pobject);
   }
   */
+  else{
+    if (auto as_nodefactory_class = prop->typedAnnotation<ConstString>("editor.ged.node.factory")) {
+      auto nodefactory_class = as_nodefactory_class.value();
+      if (nodefactory_class.length()) {
+        rtti::Class* anno_clazz = rtti::Class::FindClass(nodefactory_class.c_str());
+        if (0)
+          printf("nodefactory_class<%s> anno_clazz<%p>\n", nodefactory_class.c_str(), (void*)anno_clazz);
+        if (anno_clazz) {
+          auto object_clazz = dynamic_cast<ork::object::ObjectClass*>(anno_clazz);
+          OrkAssert(object_clazz != nullptr);
+          auto factory       = object_clazz->createShared();
+          auto typed_factory = std::dynamic_pointer_cast<GedNodeFactory>(factory);
+          OrkAssert(typed_factory != nullptr);
+          if (typed_factory) {
+
+            /////////////////////////////////////
+            // create node with factory
+            /////////////////////////////////////
+
+            auto iodriver     = std::make_shared<NewIoDriver>();
+            iodriver->_object = pobject;
+            iodriver->_par_prop = prop;
+
+            auto child = typed_factory->createItemNode(_gedContainer, prop->_name.c_str(), iodriver);
+
+            //_gedContainer->AddChild(child);
+            /////////////////////////////////////
+            //_gedContainer->PopItemNode(groupnode.get());
+            //groupnode->updateVisibility();
+            //_gedContainer->DoResize();
+            return child;
+          }
+        }
+      }
+    }
+
+  }  
   return std::make_shared<GedLabelNode>(_gedContainer, Name.c_str(), prop, pobject);
 }
 

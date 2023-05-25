@@ -1042,6 +1042,8 @@ struct PopupImpl {
     }
 
     glfwMakeContextCurrent(ctxbase->_glfwWindow);
+    glfwFocusWindow(ctxbase->_glfwWindow);
+
   }
   //////////////////////////////////////////////////
   GLFWwindow* _glfwPopupWindow = nullptr;
