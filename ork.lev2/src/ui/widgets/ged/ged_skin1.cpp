@@ -202,25 +202,8 @@ fvec4 GedSkin1::GetStyleColor(GedObject* pnode, ESTYLE ic) {
 }
 ///////////////////////////////////////////////////////////////////
 void GedSkin1::DrawBgBox(GedObject* pnode, int ix, int iy, int iw, int ih, ESTYLE ic, int isort) {
-  GedPrim prim;
-  prim.ix1 = ix;
-  prim.ix2 = ix + iw;
-  prim.iy1 = iy;
-  prim.iy2 = iy + ih;
-
-  fvec4 uobj = _gedVP->AssignPickId(pnode);
-
-  // printf( "uobj<%g %g %g %g> pnode<0x%p>\n", uobj.x, uobj.y, uobj.z, uobj.w, pnode );
-
-  if (_is_pickmode) {
-    AddToObjSet((void*)pnode);
-    // printf( "insert obj<%p>\n", (void*) pnode );
-  }
-
-  prim._ucolor   = _is_pickmode ? uobj : GetStyleColor(pnode, ic); // Default Outline
-  prim.meType    = PrimitiveType::QUADS;
-  prim.miSortKey = calcsort(isort);
-  AddPrim(prim);
+  fvec4 color = GetStyleColor(pnode, ic);
+  DrawColorBox(pnode, ix, iy, iw, ih, color, isort);
 }
 ///////////////////////////////////////////////////////////////////
 void GedSkin1::DrawOutlineBox(GedObject* pnode, int ix, int iy, int iw, int ih, ESTYLE ic, int isort) {

@@ -117,6 +117,7 @@ struct ClassToucher {
     ged::GedAssetNode::GetClassStatic();
     ged::GedPlugNode::GetClassStatic();
     ged::GedEnumNode::GetClassStatic();
+    ged::GedColorNode::GetClassStatic();
 
 
     ged::GedNodeFactory::GetClassStatic();
@@ -125,6 +126,7 @@ struct ClassToucher {
     ged::GedNodeFactoryAssetList::GetClassStatic();
     ged::GedNodeFactoryPlug::GetClassStatic();
     ged::GedNodeFactoryPlugFloatXF::GetClassStatic();
+    ged::GedNodeFactoryColorV4::GetClassStatic();
 
     ged::TestObject::GetClassStatic();
     ged::TestObjectConfiguration::GetClassStatic();
@@ -171,8 +173,6 @@ struct ClassToucher {
     particle::TextureMaterial::GetClassStatic();
     particle::TexGridMaterial::GetClassStatic();
     particle::VolTexMaterial::GetClassStatic();
-
-    /*
 
     /*
 

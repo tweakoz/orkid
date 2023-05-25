@@ -29,10 +29,16 @@ struct GedNodeFactoryPlug : public GedNodeFactory {
   DeclareConcreteX(GedNodeFactoryPlug, GedNodeFactory);
   geditemnode_ptr_t
   createItemNode(GedContainer* c, const ConstString& Name, newiodriver_ptr_t iodriver ) const final;
-  //void Recurse(GedContainer* c, const reflect::ObjectProperty* prop, ork::Object* pobj) const final;
-
 public:
   GedNodeFactoryPlug();
+};
+///////////////////////////////////////////////////////////////////////////////
+struct GedNodeFactoryColorV4 : public GedNodeFactory {
+  DeclareConcreteX(GedNodeFactoryColorV4, GedNodeFactory);
+  geditemnode_ptr_t
+  createItemNode(GedContainer* c, const ConstString& Name, newiodriver_ptr_t iodriver ) const final;
+public:
+  GedNodeFactoryColorV4();
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct GedNodeFactoryPlugFloatXF : public GedNodeFactory {

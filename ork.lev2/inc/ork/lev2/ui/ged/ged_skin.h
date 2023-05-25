@@ -83,6 +83,8 @@ public:
     ESTYLE_DONT_CARE,
   } ESTYLE;
 
+  void DrawColorBox(GedObject* pnode, int ix, int iy, int iw, int ih, fvec4 color, int isort = 0);
+
   virtual void Begin(ork::lev2::Context* pTARG, GedSurface* pgedvp)                                       = 0;
   virtual void DrawBgBox(GedObject* pnode, int ix, int iy, int iw, int ih, ESTYLE ic, int isort = 0)      = 0;
   virtual void DrawOutlineBox(GedObject* pnode, int ix, int iy, int iw, int ih, ESTYLE ic, int isort = 0) = 0;

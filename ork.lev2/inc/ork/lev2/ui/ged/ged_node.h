@@ -554,4 +554,20 @@ private:
 };
 
 ///////////////////////////////////////////////////////////////////////////////
+
+struct GedColorNode : public GedItemNode {
+  DeclareAbstractX(GedColorNode, GedItemNode);
+
+public:
+  ///////////////////////////////////////////////////
+
+  GedColorNode(GedContainer* c, const char* name, newiodriver_ptr_t iodriver);
+
+private:
+
+  void DoDraw(lev2::Context* pTARG) final;
+  bool OnUiEvent(ork::ui::event_constptr_t ev) final;
+};
+
+///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2::ged

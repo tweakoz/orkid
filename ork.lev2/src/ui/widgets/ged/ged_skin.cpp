@@ -148,6 +148,28 @@ void GedSkin::DrawTexBox( GedObject* pnode, int ix, int iy, texture_ptr_t tex, f
 
 }
 
+///////////////////////////////////////////////////////////////////
+
+void GedSkin::DrawColorBox(GedObject* pnode, int ix, int iy, int iw, int ih, fvec4 color, int isort) {
+  GedPrim prim;
+  prim.ix1 = ix;
+  prim.ix2 = ix + iw;
+  prim.iy1 = iy;
+  prim.iy2 = iy + ih;
+
+  fvec4 uobj = _gedVP->AssignPickId(pnode);
+
+  if (_is_pickmode) {
+    AddToObjSet((void*)pnode);
+    // printf( "insert obj<%p>\n", (void*) pnode );
+  }
+
+  prim._ucolor   = _is_pickmode ? uobj : color; // Default Outline
+  prim.meType    = PrimitiveType::QUADS;
+  prim.miSortKey = calcsort(isort);
+  AddPrim(prim);
+}
+
 ////////////////////////////////////////////////////////////////
 
 orkvector<GedSkin*> instantiateSkins(ork::lev2::Context* ctx) {
