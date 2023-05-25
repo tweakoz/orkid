@@ -86,7 +86,7 @@ GedMapNode::GedMapNode(
     HashCtx._property = _property;
     auto pmap         = _container->_model->persistMapForHash(HashCtx);
     ///////////////////////////////////////////
-    mbSingle = pmap->typedValueWithDefault<bool>("single",false);
+    mbSingle = pmap->typedValueWithDefault<bool>("single",true);
     mItemIndex = pmap->typedValueWithDefault<int>("index",0);
     ///////////////////////////////////////////
 
