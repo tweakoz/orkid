@@ -45,7 +45,7 @@
               }
              }
             },
-            "value": 0.25
+            "value": 0.75
            }
           }
          },
@@ -511,16 +511,32 @@
        "properties": {
         "material": {
          "object": {
-          "class": "psys::FlatMaterial",
-          "uuid": "b7954174-6052-4d2d-bfd4-471b9698b9f9",
+          "class": "psys::GradientMaterial",
+          "uuid": "74d21f01-ff54-4fef-9a81-a1ec36f53775",
           "properties": {
-           "blendmode": "ALPHA",
-           "color": [
-            0.13410133123397827,
-            0.29691213369369507,
-            0.9892263412475586,
-            1.0
-           ]
+           "blendmode": "OFF",
+           "gradient": {
+            "object": {
+             "class": "GradientV4",
+             "uuid": "36d9ab6a-95b7-4054-a303-ebcd0152ec28",
+             "properties": {
+              "points": {
+               "0": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+               ],
+               "1": [
+                1.0,
+                1.0,
+                1.0,
+                1.0
+               ]
+              }
+             }
+            }
+           }
           }
          }
         },

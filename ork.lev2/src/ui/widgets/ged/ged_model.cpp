@@ -391,15 +391,15 @@ geditemnode_ptr_t ObjModel::recurse(
   // ConstString obj_ops = obj_ops_anno.isSet() ? obj_ops_anno.Get<ConstString>() : "";
   const char* usename          = (pname != 0) ? pname : objclass->Name().c_str();
 
-  auto io_driver = std::make_shared<NewIoDriver>();
-  io_driver->_object = root_object;
+  //auto io_driver = std::make_shared<NewIoDriver>();
+  //io_driver->_object = root_object;
 
   gedgroupnode_ptr_t groupnode = binline       //
                                      ? nullptr //
                                      : std::make_shared<GedGroupNode>(
                                            _gedContainer, // mdl
                                            usename,       // name
-                                           io_driver,     // io_driver
+                                           iodriver,     // io_driver
                                            true);         // is_obj_node
   rval = groupnode;
 

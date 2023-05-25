@@ -120,26 +120,14 @@ void StreakRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
 
       float fwidth    = _input_width->value();
       float flength   = _input_length->value();
-      fvec4 color     = fvec4(1, 1, 1, 1); // mGradient.Sample(mOutDataUnitAge) * fgi;
-      uint32_t ucolor = color.vertexColorU32();
-
+      auto LW = ork::fvec2(flength, fwidth);
       for (int i = 0; i < icnt; i++) {
         auto ptcl = ptclbase + i;
-        ////////////////////////////////////////////////
-        // varying properties
-        ////////////////////////////////////////////////
-        float fage = ptcl->mfAge;
-        float unit_age = std::clamp((fage / ptcl->mfLifeSpan), 0.0f, 1.0f);
-        //
-        // fvec4 color   = mGradient.Sample(mOutDataUnitAge) * fgi;
-        ////////////////////////////////////////////////
-        vw.AddVertex(streak_vtx_t(
-            ptcl->mPosition,             //
-            obj_nrmz,                    //
-            ptcl->mVelocity,             //
-            ork::fvec2(flength, fwidth), //
-            ork::fvec2(unit_age,ptcl->mfRandom)));
-        ////////////////////////////////////////////////
+        material->_vertexSetterStreak(
+            vw, //
+            ptcl,     //
+            LW, //
+            obj_nrmz);
       }
     }
     vw.UnLock(context);

@@ -39,6 +39,21 @@ MaterialBase::MaterialBase() {
     //////////////////////////////////////////////////////
     vw.AddVertex(vertex_t(ptc->mPosition, uv0, uv1, ucolor));
   };
+  _vertexSetterStreak = [](streak_vertex_writer_t& vw, //
+                           const BasicParticle* ptcl,  //
+                           fvec2 LW,                   //
+                           fvec3 obj_nrmz) {           //
+    float fage            = ptcl->mfAge;
+    float flspan          = (ptcl->mfLifeSpan != 0.0f) ? ptcl->mfLifeSpan : 0.01f;
+    float clamped_unitage = std::clamp<float>((fage / flspan), 0, 1);
+    //////////////////////////////////////////////////////
+    vw.AddVertex(streak_vtx_t(
+        ptcl->mPosition, //
+        obj_nrmz,        //
+        ptcl->mVelocity, //
+        LW,              //
+        ork::fvec2(clamped_unitage, ptcl->mfRandom)));
+  };
 }
 fxpipeline_ptr_t MaterialBase::pipeline(bool streaks) {
   _pipeline->_technique = streaks ? _tek_streaks : _tek_sprites;
@@ -48,13 +63,14 @@ fxpipeline_ptr_t MaterialBase::pipeline(bool streaks) {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 void FlatMaterial::describeX(class_t* clazz) {
-    clazz->directProperty( "color", &FlatMaterial::_color ) //
-         ->annotate<ConstString>("editor.ged.node.factory", "GedNodeFactoryColorV4");
-    clazz->directEnumProperty( "blendmode", &FlatMaterial::_blending );
+  clazz
+      ->directProperty("color", &FlatMaterial::_color) //
+      ->annotate<ConstString>("editor.ged.node.factory", "GedNodeFactoryColorV4");
+  clazz->directEnumProperty("blendmode", &FlatMaterial::_blending);
 }
 ///////////////////////////////////////////////////////////////////////////////
 FlatMaterial::FlatMaterial() {
-  _color        = fvec4(1, .5, 0, 1);
+  _color = fvec4(1, .5, 0, 1);
 }
 std::shared_ptr<FlatMaterial> FlatMaterial::createShared() {
   return std::make_shared<FlatMaterial>();
@@ -99,6 +115,10 @@ void FlatMaterial::update(const RenderContextInstData& RCID) {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 void GradientMaterial::describeX(class_t* clazz) {
+
+  clazz->directObjectProperty("gradient", &GradientMaterial::_gradient);
+  clazz->directEnumProperty("blendmode", &GradientMaterial::_blending);
+
   /*
 
       MaterialBase* pMTLBASE      = 0;
@@ -156,7 +176,39 @@ void GradientMaterial::describeX(class_t* clazz) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 GradientMaterial::GradientMaterial() {
-  _color = fvec4(1, .5, 0, 1);
+  _color        = fvec4(1, .5, 0, 1);
+  _gradient     = std::make_shared<gradient_fvec4_t>();
+  _vertexSetter = [=](vertex_writer_t& vw,      //
+                      const BasicParticle* ptc, //
+                      float fang,               //
+                      float size,               //
+                      uint32_t ucolor) {        //
+    float fage            = ptc->mfAge;
+    float flspan          = (ptc->mfLifeSpan != 0.0f) ? ptc->mfLifeSpan : 0.01f;
+    float clamped_unitage = std::clamp<float>((fage / flspan), 0, 1);
+    //////////////////////////////////////////////////////
+    fvec4 color = _gradient->sample(clamped_unitage);
+    //////////////////////////////////////////////////////
+    fvec2 uv0(fang, size);
+    fvec2 uv1(clamped_unitage, ptc->mfRandom);
+    //////////////////////////////////////////////////////
+    vw.AddVertex(vertex_t(ptc->mPosition, uv0, uv1, color.vertexColorU32()));
+  };
+  _vertexSetterStreak = [](streak_vertex_writer_t& vw, //
+                           const BasicParticle* ptcl,  //
+                           fvec2 LW,                   //
+                           fvec3 obj_nrmz) {           //
+    float fage            = ptcl->mfAge;
+    float flspan          = (ptcl->mfLifeSpan != 0.0f) ? ptcl->mfLifeSpan : 0.01f;
+    float clamped_unitage = std::clamp<float>((fage / flspan), 0, 1);
+    //////////////////////////////////////////////////////
+    vw.AddVertex(streak_vtx_t(
+        ptcl->mPosition, //
+        obj_nrmz,        //
+        ptcl->mVelocity, //
+        LW,              //
+        ork::fvec2(clamped_unitage, ptcl->mfRandom)));
+  };
 }
 std::shared_ptr<GradientMaterial> GradientMaterial::createShared() {
   return std::make_shared<GradientMaterial>();

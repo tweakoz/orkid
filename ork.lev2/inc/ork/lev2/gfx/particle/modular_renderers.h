@@ -11,11 +11,18 @@
 namespace ork::lev2::particle {
 /////////////////////////////////////////
 
+using streak_vtx_t           = SVtxV12N12B12T16;
+  using streak_vertex_writer_t = lev2::VtxWriter<streak_vtx_t>;
+
 using vtx_set_t = std::function<void( vertex_writer_t& vw, //
                                        const BasicParticle* ptc, //
                                        float fang, //
                                        float size, //
                                        uint32_t ucolor )>;
+using vtx_set_streak_t = std::function<void( streak_vertex_writer_t& vw, //
+                                             const BasicParticle* ptc, //
+                                             fvec2 LW, 
+                                             fvec3 obj_nrmz )>;
 
 struct MaterialBase : public ork::Object {
   DeclareAbstractX(MaterialBase, ork::Object);
@@ -29,6 +36,7 @@ public:
   fxtechnique_constptr_t _tek_sprites;
   fxtechnique_constptr_t _tek_streaks;
   vtx_set_t _vertexSetter;
+  vtx_set_streak_t _vertexSetterStreak;
   fxparam_constptr_t _parammodcolor;
   fvec4 _color;
 };
@@ -59,6 +67,8 @@ public:
   void update(const RenderContextInstData& RCID) final;
   void gpuInit(const RenderContextInstData& RCID) final;
   fxparam_constptr_t _paramflatcolor;
+  gradient_fvec4_ptr_t _gradient;
+  Blending _blending = Blending::OFF;
 };
 
 using gradientmaterial_ptr_t = std::shared_ptr<GradientMaterial>;
