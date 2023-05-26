@@ -114,6 +114,10 @@ void FlatMaterial::gpuInit(const RenderContextInstData& RCID) {
   _pipeline->bindParam(fxparameterIV, "RCFD_Camera_IV_Mono"_crcsh);
   _pipeline->bindParam(fxparameterM, "RCFD_M"_crcsh);
   _pipeline->bindParam(fxparameterInvDim, "CPD_Rtg_InvDim"_crcsh);
+  FxPipeline::varval_generator_t gen_color = [=]() -> FxPipeline::varval_t {
+    return _color;
+  };
+  _pipeline->bindParam(_parammodcolor, gen_color);
 
   _tek_sprites = _material->technique("tflatparticle_sprites");
   _tek_streaks = _material->technique("tflatparticle_streaks");
@@ -121,7 +125,7 @@ void FlatMaterial::gpuInit(const RenderContextInstData& RCID) {
 void FlatMaterial::update(const RenderContextInstData& RCID) {
   auto context = RCID.context();
   auto FXI     = context->FXI();
-  FXI->BindParamVect4(_parammodcolor, _color);
+  //FXI->BindParamVect4(_parammodcolor, _color);
   _material->_rasterstate.SetBlending(_blending);
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////

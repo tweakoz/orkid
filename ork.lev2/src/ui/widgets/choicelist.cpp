@@ -72,8 +72,25 @@ void ChoiceList::setValue(const std::string& val) {
   _value = val;
 }
 ///////////////////////////////////////////////////////////////////////////////
+void ChoiceList::initialValue(const std::string& val) {
+  _value = val;
+  int index = 0;
+  int sel_index = -1;
+  for( auto it : _choices ){
+    if( it == val ){
+      sel_index = index;
+    }
+    index++;
+  }
+  if( sel_index >= 0 ){
+    _scroll_y = 0;
+    incScroll( +(MAX_H>>1)-(sel_index * CELL_H) );
+    _mouse_hover_y = y()+(height()>>1);
+  }
+}
+///////////////////////////////////////////////////////////////////////////////
 int ChoiceList::selection_index() const{
-    int actual_y = _mouse_hover_y - _scroll_y - (CELL_H>>1);
+    int actual_y = _mouse_hover_y - _scroll_y;// - (CELL_H>>1);
     int selidx = std::clamp(actual_y / CELL_H,0,int(_choices.size()-1));
   return selidx;
 }
@@ -111,6 +128,30 @@ HandlerResult ChoiceList::DoOnUiEvent(event_constptr_t cev) {
           //print_item();
           int selidx = selection_index();
           _value = _choices[selidx];
+          break;
+        }
+        case 264: { // CURS UP
+          incScroll(-32);
+          break;
+        }
+        case 265: { // CURS DOWN
+          incScroll(32);
+          break;
+        }
+        case 266: { // PG DOWN
+          incScroll(+128);
+          break;
+        }
+        case 267: { // PG UP
+          incScroll(-128);
+          break;
+        }
+        case 268: { // HOME
+          incScroll(+65536);
+          break;
+        }
+        case 269: { // END
+          incScroll(-65536);
           break;
         }
         default:

@@ -71,7 +71,8 @@ inline std::string popupChoiceList(            //
     int x,                                     //
     int y,                                     //
     const std::vector<std::string>& choices,
-    fvec2 dimensions) { //
+    fvec2 dimensions,
+    std::string cur_choice="") { //
 
   int w            = int(dimensions.x);
   int h            = int(dimensions.y);
@@ -88,6 +89,9 @@ inline std::string popupChoiceList(            //
   choicelist_layout->right()->anchorTo(root_layout->right());
   choicelist_layout->bottom()->anchorTo(root_layout->bottom());
   root_layout->updateAll();
+  if(cur_choice!=""){
+    choicelist->initialValue(cur_choice);
+  }
   popwin.mainThreadLoop();
   root->onPreDestroy();
   return choicelist->_value;
