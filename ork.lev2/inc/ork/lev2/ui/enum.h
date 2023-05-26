@@ -45,6 +45,7 @@ enum class EventCode : crc_enum_t {
   CrcEnum(MOUSE_LEAVE),
   CrcEnum(ACTION),
   CrcEnum(PASTE_TEXT),
+  CrcEnum(MIDI_CONTROLLER),
 };
 
 ///////////////////////////////////////////////////////////////////////////////

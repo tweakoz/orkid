@@ -82,6 +82,16 @@ void pyinit_ui(py::module& module_lev2) {
                 return ev->miY;
               })
           .def_property_readonly(
+              "midiController",                      //
+              [](ui::event_ptr_t ev) -> int { //
+                return ev->_midiController;
+              })
+          .def_property_readonly(
+              "midiValue",                      //
+              [](ui::event_ptr_t ev) -> int { //
+                return ev->_midiValue;
+              })
+          .def_property_readonly(
               "keycode",                      //
               [](ui::event_ptr_t ev) -> int { //
                 return ev->miKeyCode;
