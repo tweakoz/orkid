@@ -243,12 +243,16 @@ bool Interface::compilePipelineVTG(rootcontainer_ptr_t container) {
 
     //////////////////////////
 
+    bool dump_and_exit = false;
+    //if(pass->_technique->_name=="tflatparticle_streaks_stereo")
+      //dump_and_exit = true;
+
     GL_ERRORCHECK();
     glLinkProgram(prgo);
     GL_ERRORCHECK();
     GLint linkstat = 0;
     glGetProgramiv(prgo, GL_LINK_STATUS, &linkstat);
-    if (linkstat != GL_TRUE) {
+    if (linkstat != GL_TRUE or dump_and_exit) {
       if (pvtxshader)
         pvtxshader->dumpFinalText();
       if (ptecshader)
@@ -264,7 +268,7 @@ bool Interface::compilePipelineVTG(rootcontainer_ptr_t container) {
       printf("\n\n//////////////////////////////////\n");
       printf("program VTG InfoLog<%s>\n", infoLog);
       printf("//////////////////////////////////\n\n");
-      OrkAssert(false);
+      OrkAssert(not dump_and_exit);
     }
     OrkAssert(linkstat == GL_TRUE);
 

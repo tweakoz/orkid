@@ -248,7 +248,8 @@ struct FxShader {
   parambynamemap_t _parameterByName;
   paramblockbynamemap_t _parameterBlockByName;
   computebynamemap_t _computeShaderByName;
-
+  ork::varmap::VarMap _varmap;
+  
   bool mAllowCompileFailure = false;
   bool mFailedCompile       = false;
   std::string mName;

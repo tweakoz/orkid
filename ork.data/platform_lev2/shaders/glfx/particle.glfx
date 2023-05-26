@@ -17,8 +17,6 @@ uniform_set uset_vtx {
   mat4 MatIVP;
   mat4 MatMV;
   mat4 MatMVP;
-  mat4 MatMVPL;
-  mat4 MatMVPR;
   mat4 MatAux;
   vec4 modcolor;
   vec4 User0;
@@ -30,6 +28,11 @@ uniform_set uset_vtx {
   vec4 NoiseFreq;
   vec4 NoiseAmp;
   vec2 Rtg_InvDim;
+}
+
+uniform_set uset_geo_stereo {
+  mat4 MatMVPL;
+  mat4 MatMVPR;
 }
 
 uniform_set uset_frg {
@@ -59,8 +62,20 @@ fragment_interface fface_psys : uset_frg {
   }
   outputs {
     layout(location = 0) vec4 out_clr;
-    layout(location = 1) vec4 out_normal_mdl;
-    layout(location = 2) vec4 out_rufmtl;
+    //layout(location = 1) vec4 out_normal_mdl;
+    //layout(location = 2) vec4 out_rufmtl;
+  }
+}
+fragment_interface fface_psys_stereo : uset_frg {
+  inputs {
+    vec4 frg_clr;
+    vec2 frg_uv0;
+    vec2 frg_uv1;
+  }
+  outputs {
+    layout(location = 0) vec4 out_clr;
+    //layout(location = 1) vec4 out_normal_mdl;
+    //layout(location = 2) vec4 out_rufmtl;
   }
 }
 ///////////////////////////////////////////////////////////////
@@ -291,6 +306,24 @@ vertex_interface vface_streak : uset_vtx {
   }
 }
 ///////////////////////////////////////////////////////////////
+vertex_interface vface_streak_stereo {
+  inputs {
+    vec4 position : POSITION;
+    vec3 normal : NORMAL;
+    vec3 velocity : BINORMAL;
+    vec2 lw : TEXCOORD0; // length and width
+    vec2 ra : TEXCOORD1; // random and age
+  }
+  outputs {
+    vec3 geo_pos; // NOT an array
+    vec3 geo_cnrm; // NOT an array
+    vec3 geo_vel; // NOT an array
+    vec2 geo_lw; // NOT an array
+    vec2 geo_ra; // NOT an array
+    //layout(secondary_view_offset = 1) int gl_Layer;
+  }
+}
+///////////////////////////////////////////////////////////////
 vertex_shader vs_streak : vface_streak {
   gl_Position = position;
   geo_cnrm = normal;
@@ -299,9 +332,19 @@ vertex_shader vs_streak : vface_streak {
   geo_ra = ra;
 }
 ///////////////////////////////////////////////////////////////
+vertex_shader vs_streak_stereo //
+  : extension(GL_NV_stereo_view_rendering) //
+  : extension(GL_NV_viewport_array2) //
+  : vface_streak_stereo {
+  geo_pos = position.xyz;
+  geo_cnrm = normal;
+  geo_vel  = velocity;
+  geo_lw   = lw;
+  geo_ra = ra;
+}
+///////////////////////////////////////////////////////////////
 geometry_interface gface_streak //
-  : gface_base //
-{ // import vtxshader outputs
+  : gface_base { //
 
   // inputs passed from vertex shader
 
@@ -318,26 +361,52 @@ geometry_interface gface_streak //
     vec2 frg_uv1;
   }
 }
-libblock lib_streak {
+///////////////////////////////////////////////////////////////
+geometry_interface gface_streak_stereo //
+ : gface_base { //
+ 
+  inputs {
+    vec3 geo_pos[];
+    vec3 geo_cnrm[];
+    vec3 geo_vel[];
+    vec2 geo_lw[];
+    vec2 geo_ra[];
+  }
+  // TODO recursive walk up inheritance tree for attribute out->in inheritance
+  outputs {
+    vec4 frg_clr;
+    vec2 frg_uv0;
+    vec2 frg_uv1;
+    //layout(secondary_view_offset = 1) int gl_Layer;
+    int gl_ViewportMask[];
+    int gl_SecondaryViewportMaskNV[];
+  }
+}
+///////////////////////////////////////////////////////////////
+libblock lib_streak_types {
+  struct StreakInput {
+    vec3 pos;
+    vec3 vel;
+    vec3 cnrm;
+    vec2 lw;
+  };
   struct StreakOutput {
     vec4 pos0;
     vec4 pos1;
     vec4 pos2;
     vec4 pos3;
   };
-  StreakOutput Compute(mat4 mvp) {
+}
+///////////////////////////////////////////////////////////////
+libblock lib_streak //
+  : lib_streak_types {
+  ///////////////////////////////////////////
+  StreakOutput computeStreak(mat4 mvp) {
     StreakOutput outp;
     vec3 vel  = geo_vel[0].xyz;
     vec3 cnrm = geo_cnrm[0].xyz;
     float wid = geo_lw[0].y;
     float len = geo_lw[0].x;
-
-    //float sizWA = wid * Rtg_InvDim.x;
-    //float sizWB = wid * Rtg_InvDim.y;
-    //float sizLA = len * Rtg_InvDim.x;
-    //float sizLB = len * Rtg_InvDim.y;
-    //float sizW = max(sizWA,sizWB);
-    //float sizL = max(sizLA,sizLB);
 
     vec3 pos = gl_in[0].gl_Position.xyz;
 
@@ -357,65 +426,96 @@ libblock lib_streak {
     return outp;
   }
 }
+///////////////////////////////////////////////////////////////
+libblock lib_streak_stereo //
+ : lib_streak_types { //
+  StreakOutput computeStreakStereo(StreakInput inp) {
+
+    vec3 pos =  inp.pos.xyz;
+    vec3 vel  = inp.vel.xyz;
+    vec3 cnrm = inp.cnrm.xyz;
+    float wid = inp.lw.y;
+    float len = inp.lw.x;
+
+    vec3 lpos = pos - (vel * len);
+    vec3 crs = normalize(cross(vel, cnrm)) * wid;
+
+    vec3 p0 = pos + crs;
+    vec3 p1 = pos - crs;
+    vec3 p2 = lpos - crs;
+    vec3 p3 = lpos + crs;
+
+    StreakOutput outp;
+    outp.pos0 = vec4(p0, 1.0);
+    outp.pos1 = vec4(p1, 1.0);
+    outp.pos2 = vec4(p2, 1.0);
+    outp.pos3 = vec4(p3, 1.0);
+
+    return outp;
+  }
+}
+///////////////////////////////////////////////////////////////
 geometry_shader gs_streak //
   : gface_streak //
   : lib_streak
   : uset_vtx { //
-  StreakOutput outp = Compute(MatMVP);
+  StreakOutput outp = computeStreak(MatMVP);
   gl_Position       = outp.pos0;
-  //unit_age = frg_uv1.x
   frg_uv1     = geo_ra[0];
   frg_clr     = vec4(0,0,0,0);
-  frg_uv0     = vec2(0.0, 0.0);
+  frg_uv0     = vec2(0,0);
   EmitVertex();
   gl_Position = outp.pos1;
-  frg_uv0     = vec2(1.0, 0.0);
+  frg_uv0     = vec2(1,0);
   EmitVertex();
   gl_Position = outp.pos3;
-  frg_uv0     = vec2(0.0, 1.0);
+  frg_uv0     = vec2(0,1);
   EmitVertex();
   gl_Position = outp.pos2;
-  frg_uv0     = vec2(1.0, 1.0);
+  frg_uv0     = vec2(1,1);
   EmitVertex();
-  EndPrimitive();
+  //EndPrimitive();
 }
 ///////////////////////////////////////////////////////////////
-geometry_interface gface_streak_stereo //
- : gface_base //
- : vface_streak { // import vtxshader outputs
-  // TODO recursive walk up inheritance tree for attribute out->in inheritance
-  outputs {
-    vec4 frg_clr;
-    vec4 frg_uv0;
-    layout(secondary_view_offset = 1) int gl_Layer;
-  }
-}
 geometry_shader gs_streak_stereo //
+  : gface_streak_stereo //
+  : lib_streak_stereo //
+  : uset_geo_stereo //
   : extension(GL_NV_stereo_view_rendering) //
-  : extension(GL_NV_viewport_array2) //
-  : gface_streak_stereo : lib_streak { //
-  gl_Layer                      = 0;
-  gl_ViewportMask[0]            = 1;
+  : extension(GL_NV_viewport_array2) { //
+
+  StreakInput inp;
+  inp.pos  = geo_pos[0].xyz;
+  inp.vel  = geo_vel[0].xyz;
+  inp.cnrm = geo_cnrm[0].xyz;
+  inp.lw   = geo_lw[0].xy;
+
+  frg_uv1     = geo_ra[0];
+  frg_clr                       = vec4(0,0,0,0);
+
+  //gl_Layer = 0;
+  gl_ViewportMask[0] = 1;
   gl_SecondaryViewportMaskNV[0] = 2;
-  StreakOutput outpL            = Compute(MatMVPL);
-  StreakOutput outpR            = Compute(MatMVPR);
-  frg_clr                       = geo_clr[0];
-  gl_Position                   = outpL.pos0;
-  gl_SecondaryPositionNV        = outpR.pos0;
-  frg_uv0                       = vec2(0.0, 0.0);
+
+  StreakOutput outp             = computeStreakStereo(inp); // MatMVPL
+
+  gl_Position                   = MatMVPL*outp.pos0;
+  gl_SecondaryPositionNV        = MatMVPR*outp.pos0;
+  frg_uv0                       = vec2(0,0);
   EmitVertex();
-  gl_Position            = outpL.pos1;
-  gl_SecondaryPositionNV = outpR.pos1;
-  frg_uv0                = vec2(0.0, 0.0);
+  gl_Position                   = MatMVPL*outp.pos1;
+  gl_SecondaryPositionNV        = MatMVPR*outp.pos1;
+  frg_uv0                       = vec2(1,0);
   EmitVertex();
-  gl_Position            = outpL.pos3;
-  gl_SecondaryPositionNV = outpR.pos3;
-  frg_uv0                = vec2(0.0, 0.0);
+  gl_Position                   = MatMVPL*outp.pos3;
+  gl_SecondaryPositionNV        = MatMVPR*outp.pos3;
+  frg_uv0                       = vec2(0,1);
   EmitVertex();
-  gl_Position            = outpL.pos2;
-  gl_SecondaryPositionNV = outpR.pos2;
-  frg_uv0                = vec2(0.0, 0.0);
+  gl_Position                   = MatMVPL*outp.pos2;
+  gl_SecondaryPositionNV        = MatMVPR*outp.pos2;
+  frg_uv0                       = vec2(1,1);
   EmitVertex();
+
   EndPrimitive();
 }
 ///////////////////////////////////////////////////////////////
@@ -438,6 +538,12 @@ fragment_shader ps_modtex : fface_psys {
     discard;
 }
 fragment_shader ps_flat : fface_psys {
+  float unit_age = frg_uv1.x;
+  vec3 C  = modcolor.xyz*(1.0-unit_age);
+  out_clr = vec4(C, modcolor.w);
+}
+fragment_shader ps_flat_stereo 
+  : fface_psys_stereo {
   float unit_age = frg_uv1.x;
   vec3 C  = modcolor.xyz*(1.0-unit_age);
   out_clr = vec4(C, modcolor.w);
@@ -495,6 +601,15 @@ technique tflatparticle_streaks {
     vertex_shader   = vs_streak;
     geometry_shader = gs_streak;
     fragment_shader = ps_flat;
+    state_block     = sb_default;
+  }
+}
+technique tflatparticle_streaks_stereo {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_streak_stereo;
+    geometry_shader = gs_streak_stereo;
+    fragment_shader = ps_flat_stereo;
     state_block     = sb_default;
   }
 }

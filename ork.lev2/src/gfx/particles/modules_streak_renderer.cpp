@@ -166,7 +166,7 @@ void StreakRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
     vw.UnLock(context);
     _triple_buf->end_pull(render_buffer);
 
-    auto pipeline = material->pipeline(true);
+    auto pipeline = material->pipeline(RCID, true);
     material->update(RCID);
     pipeline->wrappedDrawCall(RCID, [&]() {
       context->RSI()->BindRasterState(material->_material->_rasterstate);
@@ -192,12 +192,6 @@ void StreakRendererData::describeX(class_t* clazz) {
   /*
   ork::reflect::RegisterProperty("DepthSort", &StreakRendererData::mbSort);
   ork::reflect::RegisterProperty("AlphaMux", &StreakRendererData::mAlphaMux);
-  // ork::reflect::annotatePropertyForEditor<StreakRendererData>("Gradient", "editor.class", "ged.factory.gradient" );
-
-  ork::reflect::annotatePropertyForEditor<StreakRendererData>("BlendMode", "editor.class", "ged.factory.enum");
-  ork::reflect::annotatePropertyForEditor<StreakRendererData>("Texture", "editor.class", "ged.factory.assetlist");
-  ork::reflect::annotatePropertyForEditor<StreakRendererData>("Texture", "editor.assettype", "lev2tex");
-  ork::reflect::annotatePropertyForEditor<StreakRendererData>("Texture", "editor.assetclass", "lev2tex");
   static const char* EdGrpStr =
       "grp://StreakRendererData Input DepthSort AlphaMux Length Width BlendMode Gradient GradientIntensity Texture ";
   reflect::annotateClassForEditor<StreakRendererData>("editor.prop.groups", EdGrpStr);

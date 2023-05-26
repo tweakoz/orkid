@@ -95,6 +95,7 @@ struct FreestyleMaterial final : public GfxMaterial {
   std::set<const FxShaderStorageBlock*> _storageBlocks;
   std::set<const FxComputeShader*> _computeShaders;
 #endif
+
 };
 
 ///////////////////////////////////////////////////////////////////////////////

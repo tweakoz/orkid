@@ -414,6 +414,7 @@ struct Pass {
 struct Technique {
   orkvector<Pass*> mPasses;
   std::string _name;
+  bool _dump_and_exit = false;
 
   Technique(const std::string& nam) {
     _name = nam;
