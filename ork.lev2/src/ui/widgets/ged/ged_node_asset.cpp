@@ -86,12 +86,19 @@ bool GedAssetNode::OnUiEvent(ui::event_constptr_t ev) {
       }
       fvec2 dimensions = ui::ChoiceList::computeDimensions(choices);
       printf( "dimensions<%g %g>\n", dimensions.x, dimensions.y);
+      asset::asset_ptr_t cur_asset;
+      typed_prop->get(cur_asset, instance);
+      std::string cur_choice = "";
+      if( cur_asset ){
+        cur_choice = cur_asset->_name.c_str();
+      }
       std::string choice = ui::popupChoiceList(
           this->_l2context(), //
           sx - (int(dimensions.x)>>1),
           sy - (int(dimensions.y)>>1),
           choices,
-          dimensions);
+          dimensions,
+          cur_choice);
       printf("choice<%s>\n", choice.c_str());
       auto it = choicemap.find(choice);
       if(it!=choicemap.end()){

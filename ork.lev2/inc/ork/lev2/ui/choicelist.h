@@ -25,6 +25,7 @@ public:
   void _doOnPreDestroy() final;
 
     void setValue(const std::string& val);
+    void initialValue(const std::string& val);
 
     void incScroll(int amt);
 

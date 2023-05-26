@@ -144,6 +144,12 @@ TextureAsset::TextureAsset() {
   _texture->_asset = this;
 }
 TextureAsset::~TextureAsset() {
+  if (not opq::TrackCurrent::is(opq::mainSerialQueue())){
+    auto copy_of_tex = _texture;
+    opq::mainSerialQueue()->enqueue([copy_of_tex]() mutable {
+       copy_of_tex = nullptr;
+    });
+  }
   _texture = nullptr;
 }
 
