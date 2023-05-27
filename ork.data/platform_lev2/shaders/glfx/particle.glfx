@@ -688,6 +688,15 @@ vertex_interface vface_streak_stereoCI {
     vec2 frg_age_rand;
   }
 }
+fragment_interface fface_psys_stereo : uset_frg {
+  inputs {
+    vec2 frg_uv;
+    vec2 frg_age_rand;
+  }
+  outputs {
+    layout(location = 0) vec4 out_clr;
+  }
+}
 ///////////////////////////////////////////////////////////////
 vertex_shader vs_streak_stereoCI //
   : extension(GL_NV_stereo_view_rendering) //
@@ -702,15 +711,6 @@ vertex_shader vs_streak_stereoCI //
     gl_Layer = 0;
     gl_ViewportMask[0] = 1;
     gl_SecondaryViewportMaskNV[0] = 2;
-}
-fragment_interface fface_psys_stereo : uset_frg {
-  inputs {
-    vec2 frg_uv;
-    vec2 frg_age_rand;
-  }
-  outputs {
-    layout(location = 0) vec4 out_clr;
-  }
 }
 fragment_shader ps_flat_stereo 
   : fface_psys_stereo {
