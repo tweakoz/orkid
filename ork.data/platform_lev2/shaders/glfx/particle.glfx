@@ -68,14 +68,10 @@ fragment_interface fface_psys : uset_frg {
 }
 fragment_interface fface_psys_stereo : uset_frg {
   inputs {
-    vec4 frg_clr;
-    vec2 frg_uv0;
     vec2 frg_uv1;
   }
   outputs {
     layout(location = 0) vec4 out_clr;
-    //layout(location = 1) vec4 out_normal_mdl;
-    //layout(location = 2) vec4 out_rufmtl;
   }
 }
 ///////////////////////////////////////////////////////////////
@@ -580,23 +576,80 @@ compute_shader compute_streaks
     vec3 p2 = lpos - crs;
     vec3 p3 = lpos + crs;
 
-    int o = index<<2;
+    vec4 p0L = mvp_L * vec4(p0,1);
+    vec4 p1L = mvp_L * vec4(p1,1);
+    vec4 p2L = mvp_L * vec4(p2,1);
+    vec4 p3L = mvp_L * vec4(p3,1);
 
-    out_vertex[o+0].hposL = mvp_L * vec4(p0,1);
-    out_vertex[o+0].hposR = mvp_R * vec4(p0,1);
+    vec4 p0R = mvp_R * vec4(p0,1);
+    vec4 p1R = mvp_R * vec4(p1,1);
+    vec4 p2R = mvp_R * vec4(p2,1);
+    vec4 p3R = mvp_R * vec4(p3,1);
+
+
+    int o = index*6;
+
+    // 0 2 1
+    // 0 3 2
+
+    out_vertex[o+0].hposL = p0L;
+    out_vertex[o+0].hposR = p0R;
     out_vertex[o+0].uv = vec2(0,0);
 
-    out_vertex[o+1].hposL = mvp_L * vec4(p1,1);
-    out_vertex[o+1].hposR = mvp_R * vec4(p1,1);
-    out_vertex[o+1].uv = vec2(1,0);
+    out_vertex[o+1].hposL = p2L;
+    out_vertex[o+1].hposR = p2R;
+    out_vertex[o+1].uv = vec2(0,1);
 
-    out_vertex[o+2].hposL = mvp_L * vec4(p2,1);
-    out_vertex[o+2].hposR = mvp_R * vec4(p2,1);
-    out_vertex[o+2].uv = vec2(0,1);
+    out_vertex[o+2].hposL = p1L;
+    out_vertex[o+2].hposR = p1R;
+    out_vertex[o+2].uv = vec2(1,0);
 
-    out_vertex[o+3].hposL = mvp_L * vec4(p3,1);
-    out_vertex[o+3].hposR = mvp_R * vec4(p3,1);
-    out_vertex[o+3].uv = vec2(1,1);
+    //
+
+    out_vertex[o+3].hposL = p0L;
+    out_vertex[o+3].hposR = p0R;
+    out_vertex[o+3].uv = vec2(0,0);
+
+    out_vertex[o+4].hposL = p3L;
+    out_vertex[o+4].hposR = p3R;
+    out_vertex[o+4].uv = vec2(1,1);
+
+    out_vertex[o+5].hposL = p2L;
+    out_vertex[o+5].hposR = p2R;
+    out_vertex[o+5].uv = vec2(0,1);
+}
+
+///////////////////////////////////////////////////////////////
+vertex_interface vface_streak_stereoCI {
+  storage {
+      layout(std430, binding = 0) buffer {
+          int          num_vertices;      // 128
+          mat4         mvp_L;             // 0
+          mat4         mvp_R;             // 64
+          vec3         obj_nrmz;          // 132
+          vec2         LW;                // 144
+          InputVertex  inp_vertex[16384]; // 152
+          OutputVertex out_vertex[65536]; // 152 + 16384*44
+          // total size = 152 + 16384*40 + 65536*40 = 3276952
+      } ssbo_compute;
+  }
+  outputs {
+    vec2 frg_uv1;
+  }
+}
+///////////////////////////////////////////////////////////////
+vertex_shader vs_streak_stereoCI //
+  : extension(GL_NV_stereo_view_rendering) //
+  : extension(GL_NV_viewport_array2) //
+  : typelib_compute_streaks
+  : vface_streak_stereoCI {
+
+    gl_Position = out_vertex[gl_VertexID].hposL;
+    gl_SecondaryPositionNV = out_vertex[gl_VertexID].hposR;
+    frg_uv1 = out_vertex[gl_VertexID].uv;
+    gl_Layer = 0;
+    gl_ViewportMask[0] = 1;
+    gl_SecondaryViewportMaskNV[0] = 2;
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_modclr : fface_psys {
@@ -687,8 +740,15 @@ technique tflatparticle_streaks {
 technique tflatparticle_streaks_stereo {
   fxconfig = fxcfg_default;
   pass p0 {
-    vertex_shader   = vs_streak_stereo;
-    geometry_shader = gs_streak_stereo;
+    vertex_shader   = vs_streak_stereoCI;
+    fragment_shader = ps_flat_stereo;
+    state_block     = sb_default;
+  }
+}
+technique tflatparticle_streaks_stereoCI {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_streak_stereoCI;
     fragment_shader = ps_flat_stereo;
     state_block     = sb_default;
   }

@@ -878,6 +878,43 @@ void GlGeometryBufferInterface::DrawPrimitiveEML(const VertexBufferBase& VBuf, P
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+void GlGeometryBufferInterface::DrawPrimitiveEML(
+    const FxShaderStorageBuffer* SSBO, //
+    PrimitiveType eType,
+    int ivbase,
+    int ivcount) {
+  auto ssb     = SSBO->_impl.get<glslfx::ShaderStorageBuffer*>();
+  glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssb->_glbufid);
+
+  if (ivcount) {
+    GL_ERRORCHECK();
+    switch (eType) {
+      case PrimitiveType::LINES: { 
+        glDrawArrays(GL_LINES, ivbase, ivcount );
+        break;
+      }
+      case PrimitiveType::TRIANGLES: { 
+        glDrawArrays(GL_TRIANGLES, ivbase, ivcount );
+        break;
+      }
+      case PrimitiveType::TRIANGLESTRIP: { 
+        glDrawArrays(GL_TRIANGLE_STRIP, ivbase, ivcount );
+        break;
+      }
+      case PrimitiveType::POINTS: { 
+        glEnable(GL_PROGRAM_POINT_SIZE);
+        glDrawArrays(GL_POINTS, ivbase, ivcount );
+        break;
+      }
+      default:
+        OrkAssert(false);
+        break;
+    }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // epass thru
 
 void GlGeometryBufferInterface::DrawIndexedPrimitiveEML(

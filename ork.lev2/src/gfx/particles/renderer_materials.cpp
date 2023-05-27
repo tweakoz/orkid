@@ -71,7 +71,7 @@ MaterialBase::MaterialBase() {
 
 fxpipeline_ptr_t MaterialBase::pipeline(const RenderContextInstData& RCID, bool streaks) {
   _pipeline->_technique = (RCID._RCFD->isStereo())                                    //
-                              ? (streaks ? _tek_streaks_stereo : _tek_sprites_stereo) //
+                              ? (streaks ? _tek_streaks_stereoCI : _tek_sprites_stereo) //
                               : (streaks ? _tek_streaks : _tek_sprites);
   return _pipeline;
 }
@@ -116,9 +116,9 @@ void FlatMaterial::gpuInit(const RenderContextInstData& RCID) {
   auto pipeline_cache    = _material->pipelineCache();
 
   _pipeline = pipeline_cache->findPipeline(RCID);
-  _pipeline->bindParam(fxparameterMVP, "RCFD_Camera_MVP_Mono"_crcsh);
-  _pipeline->bindParam(fxparameterMVPL, "RCFD_Camera_MVP_Left"_crcsh);
-  _pipeline->bindParam(fxparameterMVPR, "RCFD_Camera_MVP_Right"_crcsh);
+  //_pipeline->bindParam(fxparameterMVP, "RCFD_Camera_MVP_Mono"_crcsh);
+  //_pipeline->bindParam(fxparameterMVPL, "RCFD_Camera_MVP_Left"_crcsh);
+  //_pipeline->bindParam(fxparameterMVPR, "RCFD_Camera_MVP_Right"_crcsh);
   //_pipeline->bindParam(fxparameterIVP, "RCFD_Camera_IVP_Mono"_crcsh);
   //_pipeline->bindParam(fxparameterVP, "RCFD_Camera_VP_Mono"_crcsh);
   //_pipeline->bindParam(fxparameterIV, "RCFD_Camera_IV_Mono"_crcsh);
@@ -131,6 +131,8 @@ void FlatMaterial::gpuInit(const RenderContextInstData& RCID) {
   _tek_streaks        = _material->technique("tflatparticle_streaks");
   _tek_streaks_stereo = _material->technique("tflatparticle_streaks_stereo");
   _tek_sprites_stereo = _material->technique("tflatparticle_sprites_stereo");
+
+  _tek_streaks_stereoCI  = _material->technique("tflatparticle_streaks_stereoCI");
 
 #if defined(ENABLE_COMPUTE_SHADERS)
 

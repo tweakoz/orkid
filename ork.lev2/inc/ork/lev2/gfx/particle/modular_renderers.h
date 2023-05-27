@@ -36,7 +36,9 @@ public:
   fxtechnique_constptr_t _tek_sprites;
   fxtechnique_constptr_t _tek_streaks;
   fxtechnique_constptr_t _tek_sprites_stereo;
+  fxtechnique_constptr_t _tek_streaks_stereoCI;
   fxtechnique_constptr_t _tek_streaks_stereo;
+  
   vtx_set_t _vertexSetter;
   vtx_set_streak_t _vertexSetterStreak;
   fxparam_constptr_t _parammodcolor;

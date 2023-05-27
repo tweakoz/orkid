@@ -106,125 +106,139 @@ void StreakRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
   //////////////////////////////////////////
   auto render_buffer = _triple_buf->begin_pull();
   int icnt           = render_buffer->_numParticles;
-  if (icnt) {
-    ork::fmtx4 mtx_iw;
-    mtx_iw.inverseOf(mtx);
-    fvec3 obj_nrmz = fvec4(cdata.zNormal(), 0.0f).transform(mtx_iw).normalized();
-    ////////////////////////////////////////////////////////////////////////////
-    using fetcher_t        = std::function<const particle::BasicParticle*(size_t index)>;
-    auto pbase             = render_buffer->_particles;
-    bool do_sort           = _srd->_sort;
-    fetcher_t get_particle = [&](size_t index) -> const particle::BasicParticle* { return pbase + index; };
-    // if (meBlendMode >= Blending::ADDITIVE && meBlendMode <= Blending::ALPHA_SUBTRACTIVE) {
-    // bsort = false;
-    //}
-    ///////////////////////////////////////////////////////////////
-    // depth sort ?
-    ///////////////////////////////////////////////////////////////
+  if( 0 == icnt ){
+    _triple_buf->end_pull(render_buffer);
+    return;
+  }
 
-    if (do_sort) {
-      using sorter_t                 = ork::fixedlut<float, const particle::BasicParticle*, 32768>;
-      using sorter_ptr_t             = std::shared_ptr<sorter_t>;
-      static sorter_ptr_t the_sorter = std::make_shared<sorter_t>(EKEYPOLICY_MULTILUT);
-      the_sorter->clear();
-      OrkAssert(icnt < 32768);
-      for (size_t i = 0; i < icnt; i++) {
-        auto ptcl  = pbase + i;
-        fvec4 proj = ptcl->mPosition.transform(MVP);
-        proj.perspectiveDivideInPlace();
-        float fv = proj.z;
-        the_sorter->AddSorted(fv, ptcl);
-      }
-      // override fetcher
-      size_t ilast = (icnt - 1);
-      get_particle = [=](size_t index) -> const particle::BasicParticle* {
-        // return the_sorter->GetItemAtIndex(ilast-index).second;
-        return the_sorter->GetItemAtIndex(index).second;
-      };
+  //////////////////////////////////////////
+
+  ork::fmtx4 mtx_iw;
+  mtx_iw.inverseOf(mtx);
+  fvec3 obj_nrmz = fvec4(cdata.zNormal(), 0.0f).transform(mtx_iw).normalized();
+  ////////////////////////////////////////////////////////////////////////////
+  using fetcher_t        = std::function<const particle::BasicParticle*(size_t index)>;
+  auto pbase             = render_buffer->_particles;
+  bool do_sort           = _srd->_sort;
+  fetcher_t get_particle = [&](size_t index) -> const particle::BasicParticle* { return pbase + index; };
+  // if (meBlendMode >= Blending::ADDITIVE && meBlendMode <= Blending::ALPHA_SUBTRACTIVE) {
+  // bsort = false;
+  //}
+  ///////////////////////////////////////////////////////////////
+  // depth sort ?
+  ///////////////////////////////////////////////////////////////
+
+  if (do_sort) {
+    using sorter_t                 = ork::fixedlut<float, const particle::BasicParticle*, 32768>;
+    using sorter_ptr_t             = std::shared_ptr<sorter_t>;
+    static sorter_ptr_t the_sorter = std::make_shared<sorter_t>(EKEYPOLICY_MULTILUT);
+    the_sorter->clear();
+    OrkAssert(icnt < 32768);
+    for (size_t i = 0; i < icnt; i++) {
+      auto ptcl  = pbase + i;
+      fvec4 proj = ptcl->mPosition.transform(MVP);
+      proj.perspectiveDivideInPlace();
+      float fv = proj.z;
+      the_sorter->AddSorted(fv, ptcl);
     }
-    //////////////////////////////////////////////////////////////////////////////
-    float fwidth  = _input_width->value();
-    float flength = _input_length->value();
-    auto LW       = ork::fvec2(flength, fwidth);
-    //////////////////////////////////////////////////////////////////////////////
-    // compute shader path
-    //////////////////////////////////////////////////////////////////////////////
-    if (RCID._RCFD->isStereo()) {
-      auto pipeline = material->pipeline(RCID, true);
+    // override fetcher
+    size_t ilast = (icnt - 1);
+    get_particle = [=](size_t index) -> const particle::BasicParticle* {
+      // return the_sorter->GetItemAtIndex(ilast-index).second;
+      return the_sorter->GetItemAtIndex(index).second;
+    };
+  }
+  //////////////////////////////////////////////////////////////////////////////
+  float fwidth  = _input_width->value();
+  float flength = _input_length->value();
+  auto LW       = ork::fvec2(flength, fwidth);
+  //////////////////////////////////////////////////////////////////////////////
+  // compute shader path
+  //////////////////////////////////////////////////////////////////////////////
+  if (RCID._RCFD->isStereo()) {
 #if defined(ENABLE_COMPUTE_SHADERS)
-      auto FXI = context->FXI();
-      auto CI  = context->CI();
-      ///////////////////////////////////////////////////////////////
-      //auto params = material->_streakcu_param_buffer;
-      //auto mapped_params = FXI->mapParamBuffer(params);
-      //mapped_params->seek(0);
-      //mapped_params->make<fvec3>(0, 0, 0);
-      //mapped_params->unmap();
-      ///////////////////////////////////////////////////////////////
-      auto storage = material->_streakcu_vertex_io_buffer;
-      size_t mapping_size = 1<<20; 
-      auto mapped_storage = CI->mapStorageBuffer(storage, 0, mapping_size);
-      mapped_storage->seek(0);
-      mapped_storage->make<int>(icnt);
-      mapped_storage->make<fmtx4>();
-      mapped_storage->make<fmtx4>();
-      mapped_storage->make<fvec3>(obj_nrmz);
-      mapped_storage->make<fvec2>(LW);
-      //mapped_storage->seek(152);
-      for (int i = 0; i < icnt; i++) {
-        auto ptcl = get_particle(i);
-        float fage            = ptcl->mfAge;
-        float flspan          = (ptcl->mfLifeSpan != 0.0f) //
-                              ? ptcl->mfLifeSpan //
-                              : 0.01f;
-        float clamped_unitage = std::clamp<float>((fage / flspan), 0, 1);
-         mapped_storage->make<fvec3>(ptcl->mPosition);
-         mapped_storage->make<fvec3>(ptcl->mVelocity);
-         mapped_storage->make<fvec2>(clamped_unitage, ptcl->mfRandom);
-      }
-      CI->unmapStorageBuffer(mapped_storage.get());
-      ///////////////////////////////////////////////////////////////
-      CI->bindStorageBuffer(material->_streakcu_shader, 0, storage);
-      ///////////////////////////////////////////////////////////////
-      int wu_width = icnt;
-      int wu_height = 1;
-      int wu_depth = 1;
-      CI->dispatchCompute(material->_streakcu_shader, wu_width, wu_height, wu_depth);
-      ///////////////////////////////////////////////////////////////
-      material->update(RCID);
+    auto FXI = context->FXI();
+    auto CI  = context->CI();
+    ///////////////////////////////////////////////////////////////
+    //auto params = material->_streakcu_param_buffer;
+    //auto mapped_params = FXI->mapParamBuffer(params);
+    //mapped_params->seek(0);
+    //mapped_params->make<fvec3>(0, 0, 0);
+    //mapped_params->unmap();
+    ///////////////////////////////////////////////////////////////
+    auto stereocams = CPD._stereoCameraMatrices;
+    auto worldmatrix = RCID.worldMatrix();
+    ///////////////////////////////////////////////////////////////
+    auto storage = material->_streakcu_vertex_io_buffer;
+    size_t mapping_size = 1<<20; 
+    auto mapped_storage = CI->mapStorageBuffer(storage, 0, mapping_size);
+    mapped_storage->seek(0);
+    mapped_storage->make<int>(icnt);
+    mapped_storage->make<fmtx4>(stereocams->MVPL(worldmatrix));
+    mapped_storage->make<fmtx4>(stereocams->MVPR(worldmatrix));
+    mapped_storage->make<fvec3>(obj_nrmz);
+    mapped_storage->make<fvec2>(LW);
+    //mapped_storage->seek(152);
+    for (int i = 0; i < icnt; i++) {
+      auto ptcl = get_particle(i);
+      float fage            = ptcl->mfAge;
+      float flspan          = (ptcl->mfLifeSpan != 0.0f) //
+                            ? ptcl->mfLifeSpan //
+                            : 0.01f;
+      float clamped_unitage = std::clamp<float>((fage / flspan), 0, 1);
+        mapped_storage->make<fvec3>(ptcl->mPosition);
+        mapped_storage->make<fvec3>(ptcl->mVelocity);
+        mapped_storage->make<fvec2>(clamped_unitage, ptcl->mfRandom);
+    }
+    CI->unmapStorageBuffer(mapped_storage.get());
+    ///////////////////////////////////////////////////////////////
+    CI->bindStorageBuffer(material->_streakcu_shader, 0, storage);
+    ///////////////////////////////////////////////////////////////
+    int wu_width = icnt;
+    int wu_height = 1;
+    int wu_depth = 1;
+    CI->dispatchCompute(material->_streakcu_shader, wu_width, wu_height, wu_depth);
+    ///////////////////////////////////////////////////////////////
+    material->update(RCID);
+    auto pipeline = material->pipeline(RCID, true);
+    if(1)pipeline->wrappedDrawCall(RCID, [&]() {
+      context->RSI()->BindRasterState(material->_material->_rasterstate);
+      context->GBI()->DrawPrimitiveEML(storage, //
+                                       ork::lev2::PrimitiveType::TRIANGLES, //
+                                       0, icnt*6);
+    });
 ///////////////////////////////////////////////////////////////
 #endif
-    }
-    //////////////////////////////////////////////////////////////////////////////
-    else { // geometry shader path
-           //////////////////////////////////////////////////////////////////////////////
-      streak_vertex_writer_t vw;
-      vw.Lock(context, _vertexBuffer.get(), icnt);
-      {
-        ////////////////////////////////////////////////
-        // uniform properties
-        ////////////////////////////////////////////////
-        for (int i = 0; i < icnt; i++) {
-          auto ptcl = get_particle(i);
-          material->_vertexSetterStreak(
-              vw,   //
-              ptcl, //
-              LW,   //
-              obj_nrmz);
-        }
+  }
+  //////////////////////////////////////////////////////////////////////////////
+  else { // geometry shader path
+          //////////////////////////////////////////////////////////////////////////////
+    streak_vertex_writer_t vw;
+    vw.Lock(context, _vertexBuffer.get(), icnt);
+    {
+      ////////////////////////////////////////////////
+      // uniform properties
+      ////////////////////////////////////////////////
+      for (int i = 0; i < icnt; i++) {
+        auto ptcl = get_particle(i);
+        material->_vertexSetterStreak(
+            vw,   //
+            ptcl, //
+            LW,   //
+            obj_nrmz);
       }
-      vw.UnLock(context);
-      _triple_buf->end_pull(render_buffer);
-
-      auto pipeline = material->pipeline(RCID, true);
-      material->update(RCID);
-      pipeline->wrappedDrawCall(RCID, [&]() {
-        context->RSI()->BindRasterState(material->_material->_rasterstate);
-        context->GBI()->DrawPrimitiveEML(vw, ork::lev2::PrimitiveType::POINTS);
-      });
     }
+    vw.UnLock(context);
 
-  } // icnt
+    auto pipeline = material->pipeline(RCID, true);
+    material->update(RCID);
+    pipeline->wrappedDrawCall(RCID, [&]() {
+      context->RSI()->BindRasterState(material->_material->_rasterstate);
+      context->GBI()->DrawPrimitiveEML(vw, ork::lev2::PrimitiveType::POINTS);
+    });
+  }
+  _triple_buf->end_pull(render_buffer);
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////

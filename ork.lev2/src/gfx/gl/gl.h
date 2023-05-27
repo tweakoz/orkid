@@ -152,23 +152,23 @@ private:
   ///////////////////////////////////////////////////////////////////////
   // VtxBuf Interface
 
-  void* LockVB(VertexBufferBase& VBuf, int ivbase, int icount) override;
-  void UnLockVB(VertexBufferBase& VBuf) override;
+  void* LockVB(VertexBufferBase& VBuf, int ivbase, int icount) final;
+  void UnLockVB(VertexBufferBase& VBuf) final;
 
-  const void* LockVB(const VertexBufferBase& VBuf, int ivbase = 0, int icount = 0) override;
-  void UnLockVB(const VertexBufferBase& VBuf) override;
+  const void* LockVB(const VertexBufferBase& VBuf, int ivbase = 0, int icount = 0) final;
+  void UnLockVB(const VertexBufferBase& VBuf) final;
 
-  void ReleaseVB(VertexBufferBase& VBuf) override;
+  void ReleaseVB(VertexBufferBase& VBuf) final;
 
   //
 
-  void* LockIB(IndexBufferBase& VBuf, int ivbase, int icount) override;
-  void UnLockIB(IndexBufferBase& VBuf) override;
+  void* LockIB(IndexBufferBase& VBuf, int ivbase, int icount) final;
+  void UnLockIB(IndexBufferBase& VBuf) final;
 
-  const void* LockIB(const IndexBufferBase& VBuf, int ibase = 0, int icount = 0) override;
-  void UnLockIB(const IndexBufferBase& VBuf) override;
+  const void* LockIB(const IndexBufferBase& VBuf, int ibase = 0, int icount = 0) final;
+  void UnLockIB(const IndexBufferBase& VBuf) final;
 
-  void ReleaseIB(IndexBufferBase& VBuf) override;
+  void ReleaseIB(IndexBufferBase& VBuf) final;
 
   //
 
@@ -180,30 +180,36 @@ private:
       const VertexBufferBase& VBuf, //
       PrimitiveType eType,
       int ivbase,
-      int ivcount) override;
+      int ivcount) final;
+
+  void DrawPrimitiveEML(
+      const FxShaderStorageBuffer* SSBO, //
+      PrimitiveType eType = PrimitiveType::NONE,
+      int ivbase           = 0,
+      int ivcount          = 0) final;
 
   void
   DrawIndexedPrimitiveEML(const VertexBufferBase& VBuf, const IndexBufferBase& IdxBuf, PrimitiveType eType, int ivbase, int ivcount)
-      override;
+      final;
 
   void DrawInstancedIndexedPrimitiveEML(
       const VertexBufferBase& VBuf,
       const IndexBufferBase& IdxBuf,
       PrimitiveType eType,
-      size_t instance_count) override;
+      size_t instance_count) final;
 
   //////////////////////////////////////////////
   // nvidia mesh shaders
   //////////////////////////////////////////////
 
 #if defined(ENABLE_NVMESH_SHADERS)
-  void DrawMeshTasksNV(uint32_t first, uint32_t count) override;
+  void DrawMeshTasksNV(uint32_t first, uint32_t count) final;
 
-  void DrawMeshTasksIndirectNV(int32_t* indirect) override;
+  void DrawMeshTasksIndirectNV(int32_t* indirect) final;
 
-  void MultiDrawMeshTasksIndirectNV(int32_t* indirect, uint32_t drawcount, uint32_t stride) override;
+  void MultiDrawMeshTasksIndirectNV(int32_t* indirect, uint32_t drawcount, uint32_t stride) final;
 
-  void MultiDrawMeshTasksIndirectCountNV(int32_t* indirect, int32_t* drawcount, uint32_t maxdrawcount, uint32_t stride) override;
+  void MultiDrawMeshTasksIndirectCountNV(int32_t* indirect, int32_t* drawcount, uint32_t maxdrawcount, uint32_t stride) final;
 #endif
   //////////////////////////////////////////////
 
