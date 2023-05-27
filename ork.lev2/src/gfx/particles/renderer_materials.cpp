@@ -129,7 +129,7 @@ void FlatMaterial::gpuInit(const RenderContextInstData& RCID) {
 
   _tek_sprites        = _material->technique("tflatparticle_sprites");
   _tek_streaks        = _material->technique("tflatparticle_streaks");
-  _tek_streaks_stereo = _material->technique("tflatparticle_streaks_stereo");
+  //S_tek_streaks_stereo = _material->technique("tflatparticle_streaks_stereo");
   _tek_sprites_stereo = _material->technique("tflatparticle_sprites_stereo");
 
   _tek_streaks_stereoCI  = _material->technique("tflatparticle_streaks_stereoCI");
