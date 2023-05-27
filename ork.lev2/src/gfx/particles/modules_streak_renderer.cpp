@@ -162,7 +162,7 @@ void StreakRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
       mapped_params->unmap();
       ///////////////////////////////////////////////////////////////
       auto storage = material->_streakcu_vertex_io_buffer;
-      size_t mapping_size = 4<<20; 
+      size_t mapping_size = 1<<20; 
       auto mapped_storage = CI->mapStorageBuffer(storage, 0, mapping_size);
       mapped_storage->seek(0);
       mapped_storage->make<fmtx4>();
@@ -170,7 +170,7 @@ void StreakRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
       mapped_storage->make<uint32_t>(icnt);
       mapped_storage->make<fvec3>(obj_nrmz);
       mapped_storage->make<fvec2>(LW);
-      mapped_storage->seek(152);
+      //mapped_storage->seek(152);
       for (int i = 0; i < icnt; i++) {
         auto ptcl = get_particle(i);
         float fage            = ptcl->mfAge;

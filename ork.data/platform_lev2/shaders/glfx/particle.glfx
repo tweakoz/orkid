@@ -552,8 +552,9 @@ compute_interface iface_compute
             vec3         obj_nrmz;          // 132
             vec2         LW;                // 144
             InputVertex  inp_vertex[16384]; // 152
-            OutputVertex out_vertex[16384]; // 152 + 16384*32 = 524320
-        } ssbo_vertex_io_data;
+            OutputVertex out_vertex[65536]; // 152 + 16384*24
+            // total size = 152 + 16384*24 + 65536*40 = 3014808
+        } ssbo_compute;
     }
 }
 compute_shader compute_streaks
@@ -561,7 +562,11 @@ compute_shader compute_streaks
     : iface_compute {
     vec3 SUM;
     for( int i=0; i<num_vertices; i++ ){
-      SUM += inp_vertex[i].pos;
+      vec4 inp_pos = vec4(inp_vertex[i].pos, 1.0);
+      vec4 hposl = mvp_L * inp_pos;
+      vec4 hposr = mvp_R * inp_pos;
+      out_vertex[i].hposL = hposl;
+      out_vertex[i].hposR = hposr;
     }
     obj_nrmz = normalize(SUM);
 }

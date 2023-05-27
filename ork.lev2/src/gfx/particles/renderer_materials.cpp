@@ -138,7 +138,7 @@ void FlatMaterial::gpuInit(const RenderContextInstData& RCID) {
   auto CI  = context->CI();
 
   _streakcu_param_buffer     = FXI->createParamBuffer(16384);
-  _streakcu_vertex_io_buffer = CI->createStorageBuffer(4 << 20);
+  _streakcu_vertex_io_buffer = CI->createStorageBuffer(16 << 20);
   _streakcu_shader           = _material->computeShader("compute_streaks");
 
 #endif
