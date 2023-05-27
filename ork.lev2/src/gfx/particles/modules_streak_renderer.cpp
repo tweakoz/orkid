@@ -155,11 +155,11 @@ void StreakRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
       auto FXI = context->FXI();
       auto CI  = context->CI();
       ///////////////////////////////////////////////////////////////
-      auto params = material->_streakcu_param_buffer;
-      auto mapped_params = FXI->mapParamBuffer(params);
-      mapped_params->seek(0);
-      mapped_params->make<fvec3>(0, 0, 0);
-      mapped_params->unmap();
+      //auto params = material->_streakcu_param_buffer;
+      //auto mapped_params = FXI->mapParamBuffer(params);
+      //mapped_params->seek(0);
+      //mapped_params->make<fvec3>(0, 0, 0);
+      //mapped_params->unmap();
       ///////////////////////////////////////////////////////////////
       auto storage = material->_streakcu_vertex_io_buffer;
       size_t mapping_size = 1<<20; 
@@ -186,7 +186,7 @@ void StreakRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
       ///////////////////////////////////////////////////////////////
       CI->bindStorageBuffer(material->_streakcu_shader, 0, storage);
       ///////////////////////////////////////////////////////////////
-      int wu_width = 1;
+      int wu_width = icnt;
       int wu_height = 1;
       int wu_depth = 1;
       CI->dispatchCompute(material->_streakcu_shader, wu_width, wu_height, wu_depth);
