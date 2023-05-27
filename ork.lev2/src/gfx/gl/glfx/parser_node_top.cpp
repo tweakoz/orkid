@@ -230,12 +230,14 @@ void TopNode::parse() {
           auto sh = std::make_shared<FragmentShaderNode>();
           sh->parse(_parser,scanview);
           program->addBlockNode(sh);
-#if defined(ENABLE_COMPUTE_SHADERS)
         } else if (tok.text == "compute_shader") {
+#if defined(ENABLE_COMPUTE_SHADERS)
           auto sh = std::make_shared<ComputeShaderNode>();
           sh->parse(_parser,scanview);
           program->addBlockNode(sh);
+#endif
         } else if (tok.text == "compute_interface") {
+#if defined(ENABLE_COMPUTE_SHADERS)
           auto sif = std::make_shared<ComputeInterfaceNode>();
           sif->parse(_parser,scanview);
           program->addBlockNode(sif);
