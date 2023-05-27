@@ -117,7 +117,6 @@ void FlatMaterial::gpuInit(const RenderContextInstData& RCID) {
 
   _pipeline = pipeline_cache->findPipeline(RCID);
   _pipeline->bindParam(fxparameterMVP, "RCFD_Camera_MVP_Mono"_crcsh);
-<<<<<<< HEAD
   _pipeline->bindParam(fxparameterMVPL, "RCFD_Camera_MVP_Left"_crcsh);
   _pipeline->bindParam(fxparameterMVPR, "RCFD_Camera_MVP_Right"_crcsh);
   //_pipeline->bindParam(fxparameterIVP, "RCFD_Camera_IVP_Mono"_crcsh);
@@ -125,13 +124,6 @@ void FlatMaterial::gpuInit(const RenderContextInstData& RCID) {
   //_pipeline->bindParam(fxparameterIV, "RCFD_Camera_IV_Mono"_crcsh);
   //_pipeline->bindParam(fxparameterM, "RCFD_M"_crcsh);
   //_pipeline->bindParam(fxparameterInvDim, "CPD_Rtg_InvDim"_crcsh);
-=======
-  _pipeline->bindParam(fxparameterIVP, "RCFD_Camera_IVP_Mono"_crcsh);
-  _pipeline->bindParam(fxparameterVP, "RCFD_Camera_VP_Mono"_crcsh);
-  _pipeline->bindParam(fxparameterIV, "RCFD_Camera_IV_Mono"_crcsh);
-  _pipeline->bindParam(fxparameterM, "RCFD_M"_crcsh);
-  _pipeline->bindParam(fxparameterInvDim, "CPD_Rtg_InvDim"_crcsh);
->>>>>>> e1f2dfff1a066cc2aa97934744d4d1c9874debc7
   FxPipeline::varval_generator_t gen_color = [=]() -> FxPipeline::varval_t {
     return _color;
   };
@@ -144,12 +136,6 @@ void FlatMaterial::gpuInit(const RenderContextInstData& RCID) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void FlatMaterial::update(const RenderContextInstData& RCID) {
-<<<<<<< HEAD
-=======
-  auto context = RCID.context();
-  auto FXI     = context->FXI();
-  //FXI->BindParamVect4(_parammodcolor, _color);
->>>>>>> e1f2dfff1a066cc2aa97934744d4d1c9874debc7
   _material->_rasterstate.SetBlending(_blending);
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////
