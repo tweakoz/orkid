@@ -55,6 +55,7 @@ void LibraryBlockNode::parse(GlSlFxParser* parser,
       view.checktoken(i, ";");
       i++;
     } else { // must be a function
+      OrkAssert(_is_typelib == false);
       view.checktoken(i + 2, "(");
       auto returntype = ptok->text;
       i += 2; // advance to (

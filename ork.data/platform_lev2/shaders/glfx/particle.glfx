@@ -528,6 +528,11 @@ libblock typelib_compute_streaks {
     vec3 vel;
     vec2 age_rand;
   };
+  struct OutputVertex{
+    vec4 hposL;
+    vec4 hposR;
+    vec2 uv;
+  };
 }
 uniform_set compute_unis {
     //layout (binding = 1, r32ui) uimage2D img_depthclusters;
@@ -541,10 +546,13 @@ compute_interface iface_compute
     }
     storage {
         layout(std430, binding = 0) buffer {
-            uint32_t num_vertices;
-            vec3 obj_nrmz;
-            vec2 LW;
-            InputVertex inp_vertex[16384];
+            mat4         mvp_L;             // 0
+            mat4         mvp_R;             // 64
+            uint32_t     num_vertices;      // 128
+            vec3         obj_nrmz;          // 132
+            vec2         LW;                // 144
+            InputVertex  inp_vertex[16384]; // 152
+            OutputVertex out_vertex[16384]; // 152 + 16384*32 = 524320
         } ssbo_vertex_io_data;
     }
 }
