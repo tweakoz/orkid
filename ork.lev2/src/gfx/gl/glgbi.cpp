@@ -879,6 +879,8 @@ void GlGeometryBufferInterface::DrawPrimitiveEML(const VertexBufferBase& VBuf, P
 
 ///////////////////////////////////////////////////////////////////////////////
 
+#if defined(ENABLE_COMPUTE_SHADERS)
+
 void GlGeometryBufferInterface::DrawPrimitiveEML(
     const FxShaderStorageBuffer* SSBO, //
     PrimitiveType eType,
@@ -914,6 +916,7 @@ void GlGeometryBufferInterface::DrawPrimitiveEML(
   }
 }
 
+#endif
 ///////////////////////////////////////////////////////////////////////////////
 // epass thru
 

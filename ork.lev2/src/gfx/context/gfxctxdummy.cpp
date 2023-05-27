@@ -182,12 +182,17 @@ void DuGeometryBufferInterface::DrawIndexedPrimitiveEML(
 }
 void DuGeometryBufferInterface::DrawPrimitiveEML(const VertexBufferBase& VBuf, PrimitiveType eType, int ivbase, int ivcount) {
 }
+
+#if defined(ENABLE_COMPUTE_SHADERS)
+
 void DuGeometryBufferInterface::DrawPrimitiveEML(
     const FxShaderStorageBuffer* SSBO, //
     PrimitiveType eType,
     int ivbase,
     int ivcount) {
 }
+
+#endif
 
 void DuGeometryBufferInterface::DrawInstancedIndexedPrimitiveEML(
     const VertexBufferBase& VBuf,
