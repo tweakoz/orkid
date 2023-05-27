@@ -41,6 +41,15 @@ public:
   vtx_set_streak_t _vertexSetterStreak;
   fxparam_constptr_t _parammodcolor;
   fvec4 _color;
+
+#if defined(ENABLE_COMPUTE_SHADERS)
+  FxShaderParamBuffer* _streakcu_param_buffer          = nullptr;
+  FxShaderStorageBuffer* _streakcu_vertex_io_buffer    = nullptr;
+  const FxShaderStorageBlock* _streakcu_storage_block  = nullptr;
+  const FxComputeShader* _streakcu_shader              = nullptr;
+#endif
+
+
 };
 
 using basematerial_ptr_t = std::shared_ptr<MaterialBase>;

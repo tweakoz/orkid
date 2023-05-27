@@ -519,6 +519,31 @@ geometry_shader gs_streak_stereo //
   EndPrimitive();
 }
 ///////////////////////////////////////////////////////////////
+// streak compute shaders
+///////////////////////////////////////////////////////////////
+uniform_set compute_unis {
+    //layout (binding = 1, r32ui) uimage2D img_depthclusters;
+    vec3 xxx;
+}
+compute_interface iface_compute
+    //: chunklisttools
+    : compute_unis {
+    inputs {
+        layout(local_size_x = 1, local_size_y = 1, local_size_z = 1);
+    }
+    storage {
+        layout(std430, binding = 0) buffer {
+            mat4 MVP;                        // 0
+        } ssbo_vertex_io_data;
+    }
+}
+compute_shader compute_streaks
+    : extension(GL_NV_gpu_shader5)
+    : iface_compute {
+    //ivec2 imgsiz = imageSize(img_depthclusters);
+    //vec2 KTILEDIMM = vec2(imgsiz.x-1,imgsiz.y-1);
+}
+///////////////////////////////////////////////////////////////
 fragment_shader ps_modclr : fface_psys {
   out_clr        = modcolor;
   out_rufmtl     = vec4(0, 1, 0, 0);

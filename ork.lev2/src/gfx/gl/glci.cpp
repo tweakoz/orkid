@@ -118,6 +118,18 @@ PipelineCompute* ComputeInterface::createComputePipe(ComputeShader* csh) {
   GL_ERRORCHECK();
   glLinkProgram(prgo);
   GL_ERRORCHECK();
+  GLint linkstat = 0;
+  glGetProgramiv(prgo, GL_LINK_STATUS, &linkstat);
+  if (linkstat != GL_TRUE) {
+    if (csh)
+      csh->dumpFinalText();
+    char infoLog[1 << 16];
+    glGetProgramInfoLog(prgo, sizeof(infoLog), NULL, infoLog);
+    printf("\n\n//////////////////////////////////\n");
+    printf("program COMPUTE InfoLog<%s>\n", infoLog);
+    printf("//////////////////////////////////\n\n");
+    OrkAssert(false);
+  }
   csh->_computePipe = pipe;
   return pipe;
 }

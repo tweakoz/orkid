@@ -108,16 +108,30 @@ struct FxShaderParamBufferMapping {
   FxShaderParamBuffer* _buffer = nullptr;
   FxInterface* _fxi            = nullptr;
   size_t _offset               = 0;
+  size_t _cursor               = 0;
   size_t _length               = 0;
   svarp_t _impl;
-
+  ///////////////////////////////////////////////////
   template <typename T> T& ref(size_t offset) {
     size_t end = offset + sizeof(T);
     OrkAssert(end <= _length);
     auto tstar = (T*)(((char*)_mappedaddr) + offset);
     return *tstar;
   }
-
+  ///////////////////////////////////////////////////
+  template <typename T, typename ... A> T& make(A&&... args) {
+    size_t end = _cursor + sizeof(T);
+    OrkAssert(end <= _length);
+    auto tstar = (T*)(((char*)_mappedaddr) + _cursor);
+    new (tstar) T(std::forward<A>(args)...);
+    _cursor += sizeof(T);
+    return *tstar;
+  }
+  ///////////////////////////////////////////////////
+  void seek(size_t offset) {
+    _cursor = offset;
+  }
+  ///////////////////////////////////////////////////
   void* _mappedaddr = nullptr;
 };
 
@@ -140,6 +154,7 @@ struct FxShaderStorageBufferMapping {
   FxShaderStorageBuffer* _buffer = nullptr;
   ComputeInterface* _ci          = nullptr;
   size_t _offset                 = 0;
+  size_t _cursor                 = 0;
   size_t _length                 = 0;
   svarp_t _impl;
 
@@ -148,6 +163,20 @@ struct FxShaderStorageBufferMapping {
     assert(end <= _length);
     auto tstar = (T*)(((char*)_mappedaddr) + offset);
     return *tstar;
+  }
+
+  ///////////////////////////////////////////////////
+  template <typename T, typename ... A> T& make(A&&... args) {
+    size_t end = _cursor + sizeof(T);
+    OrkAssert(end <= _length);
+    auto tstar = (T*)(((char*)_mappedaddr) + _cursor);
+    new (tstar) T(std::forward<A>(args)...);
+    _cursor += sizeof(T);
+    return *tstar;
+  }
+  ///////////////////////////////////////////////////
+  void seek(size_t offset) {
+    _cursor = offset;
   }
 
   void* _mappedaddr = nullptr;

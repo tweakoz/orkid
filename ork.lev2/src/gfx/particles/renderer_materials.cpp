@@ -70,9 +70,9 @@ MaterialBase::MaterialBase() {
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 fxpipeline_ptr_t MaterialBase::pipeline(const RenderContextInstData& RCID, bool streaks) {
-  _pipeline->_technique = ( RCID._RCFD->isStereo() ) //
-                        ? (streaks ? _tek_streaks_stereo : _tek_sprites_stereo) //
-                        : (streaks ? _tek_streaks : _tek_sprites );
+  _pipeline->_technique = (RCID._RCFD->isStereo())                                    //
+                              ? (streaks ? _tek_streaks_stereo : _tek_sprites_stereo) //
+                              : (streaks ? _tek_streaks : _tek_sprites);
   return _pipeline;
 }
 
@@ -96,8 +96,8 @@ std::shared_ptr<FlatMaterial> FlatMaterial::createShared() {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void FlatMaterial::gpuInit(const RenderContextInstData& RCID) {
-  auto context = RCID.context();
-  _material    = std::make_shared<FreestyleMaterial>();
+  auto context                                       = RCID.context();
+  _material                                          = std::make_shared<FreestyleMaterial>();
   _material->_varmap["tflatparticle_streaks_stereo"] = std::string("dump_and_exit");
   _material->gpuInit(context, "orkshader://particle");
   _material->_rasterstate.SetBlending(Blending::ADDITIVE);
@@ -106,8 +106,8 @@ void FlatMaterial::gpuInit(const RenderContextInstData& RCID) {
 
   auto fxparameterM      = _material->param("MatM");
   auto fxparameterMVP    = _material->param("MatMVP");
-  auto fxparameterMVPL    = _material->param("MatMVPL");
-  auto fxparameterMVPR    = _material->param("MatMVPR");
+  auto fxparameterMVPL   = _material->param("MatMVPL");
+  auto fxparameterMVPR   = _material->param("MatMVPR");
   auto fxparameterIV     = _material->param("MatIV");
   auto fxparameterIVP    = _material->param("MatIVP");
   auto fxparameterVP     = _material->param("MatVP");
@@ -124,15 +124,24 @@ void FlatMaterial::gpuInit(const RenderContextInstData& RCID) {
   //_pipeline->bindParam(fxparameterIV, "RCFD_Camera_IV_Mono"_crcsh);
   //_pipeline->bindParam(fxparameterM, "RCFD_M"_crcsh);
   //_pipeline->bindParam(fxparameterInvDim, "CPD_Rtg_InvDim"_crcsh);
-  FxPipeline::varval_generator_t gen_color = [=]() -> FxPipeline::varval_t {
-    return _color;
-  };
+  FxPipeline::varval_generator_t gen_color = [=]() -> FxPipeline::varval_t { return _color; };
   _pipeline->bindParam(_parammodcolor, gen_color);
 
-  _tek_sprites = _material->technique("tflatparticle_sprites");
-  _tek_streaks = _material->technique("tflatparticle_streaks");
+  _tek_sprites        = _material->technique("tflatparticle_sprites");
+  _tek_streaks        = _material->technique("tflatparticle_streaks");
   _tek_streaks_stereo = _material->technique("tflatparticle_streaks_stereo");
   _tek_sprites_stereo = _material->technique("tflatparticle_sprites_stereo");
+
+#if defined(ENABLE_COMPUTE_SHADERS)
+
+  auto FXI = context->FXI();
+  auto CI  = context->CI();
+
+  _streakcu_param_buffer     = FXI->createParamBuffer(16384);
+  _streakcu_vertex_io_buffer = CI->createStorageBuffer(16 << 20);
+  _streakcu_shader           = _material->computeShader("compute_streaks");
+
+#endif
 }
 ///////////////////////////////////////////////////////////////////////////////
 void FlatMaterial::update(const RenderContextInstData& RCID) {
@@ -199,14 +208,12 @@ void GradientMaterial::gpuInit(const RenderContextInstData& RCID) {
   _grad_render_mtl = std::make_shared<FreestyleMaterial>();
   _grad_render_mtl->gpuInit(context, "orkshader://ui2");
   FxPipelinePermutation permu;
-  permu._forced_technique = _grad_render_mtl->technique("ui_gradwalpha");
-  auto grad_render_cache = _grad_render_mtl->pipelineCache();
-  _grad_render_pipeline  = grad_render_cache->findPipeline(permu);
-  auto grad_par_mvp      = _grad_render_mtl->param("mvp");
-  auto grad_par_time      = _grad_render_mtl->param("time");
-  FxPipeline::varval_generator_t gen_mtx = [=]() -> FxPipeline::varval_t {
-    return context->MTXI()->Ortho(0, 256, 0, 1, 0, 1);
-  };
+  permu._forced_technique                = _grad_render_mtl->technique("ui_gradwalpha");
+  auto grad_render_cache                 = _grad_render_mtl->pipelineCache();
+  _grad_render_pipeline                  = grad_render_cache->findPipeline(permu);
+  auto grad_par_mvp                      = _grad_render_mtl->param("mvp");
+  auto grad_par_time                     = _grad_render_mtl->param("time");
+  FxPipeline::varval_generator_t gen_mtx = [=]() -> FxPipeline::varval_t { return context->MTXI()->Ortho(0, 256, 0, 1, 0, 1); };
   _grad_render_pipeline->bindParam(grad_par_mvp, gen_mtx);
   _grad_render_pipeline->bindParam(grad_par_time, 0.0f);
   _gradient_rtgroup = std::make_shared<RtGroup>(context, 256, 1);
@@ -226,7 +233,7 @@ void GradientMaterial::gpuInit(const RenderContextInstData& RCID) {
   auto fxparameterVP      = _material->param("MatVP");
   auto fxparameterInvDim  = _material->param("Rtg_InvDim");
   auto fxparameterGradMap = _material->param("GradientMap");
-  _param_mod_texture = _material->param("ColorMap");
+  _param_mod_texture      = _material->param("ColorMap");
   _parammodcolor          = _material->param("modcolor");
   auto pipeline_cache     = _material->pipelineCache();
 
@@ -241,9 +248,9 @@ void GradientMaterial::gpuInit(const RenderContextInstData& RCID) {
   FxPipeline::varval_generator_t gen_tex = [=]() -> FxPipeline::varval_t {
     auto as_tex = std::dynamic_pointer_cast<TextureAsset>(_modulation_texture_asset);
     // TODO move to deserializer post actions
-    if(as_tex){
+    if (as_tex) {
       _modulation_texture = as_tex->GetTexture();
-      if( _modulation_texture->_width == 0 and as_tex->_loadAttempts < 10){
+      if (_modulation_texture->_width == 0 and as_tex->_loadAttempts < 10) {
         _modulation_texture = Texture::LoadUnManaged(as_tex->_name);
         as_tex->_loadAttempts++;
         as_tex->_texture = _modulation_texture;
@@ -277,7 +284,7 @@ void GradientMaterial::update(const RenderContextInstData& RCID) {
     _grad_render_mtl->_rasterstate.SetRGBAWriteMask(true, true);
     FBI->PushRtGroup(_gradient_rtgroup.get());
     _grad_render_pipeline->wrappedDrawCall(RCID, [&]() { //
-      GBI->DrawPrimitiveEML(vw, PrimitiveType::TRIANGLES); 
+      GBI->DrawPrimitiveEML(vw, PrimitiveType::TRIANGLES);
     });
     FBI->PopRtGroup();
   }

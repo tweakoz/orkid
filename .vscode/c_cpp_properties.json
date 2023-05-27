@@ -13,6 +13,8 @@
               "ORK_ARCHITECTURE_X86_64",
               "ORK_CONFIG_OPENGL",
               "ORK_CONFIG_IX",
+              "ENABLE_COMPUTE_SHADERS",
+              "ENABLE_SHADER_STORAGE",
               "LINUX",
               "GCC",
               "_REENTRANT",
