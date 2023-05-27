@@ -160,25 +160,23 @@ void StreakRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
     auto FXI = context->FXI();
     auto CI  = context->CI();
     ///////////////////////////////////////////////////////////////
-    //auto params = material->_streakcu_param_buffer;
-    //auto mapped_params = FXI->mapParamBuffer(params);
-    //mapped_params->seek(0);
-    //mapped_params->make<fvec3>(0, 0, 0);
-    //mapped_params->unmap();
-    ///////////////////////////////////////////////////////////////
     auto stereocams = CPD._stereoCameraMatrices;
     auto worldmatrix = RCID.worldMatrix();
+    auto SMM = stereocams->_mono;
+    //obj_nrmz = fvec4(SMM->_camdat.zNormal(), 0.0f).transform(mtx_iw).normalized();
+    obj_nrmz =fvec4(0,1,0,0);
     ///////////////////////////////////////////////////////////////
     auto storage = material->_streakcu_vertex_io_buffer;
     size_t mapping_size = 1<<20; 
     auto mapped_storage = CI->mapStorageBuffer(storage, 0, mapping_size);
     mapped_storage->seek(0);
-    mapped_storage->make<int>(icnt);
-    mapped_storage->make<fmtx4>(stereocams->MVPL(worldmatrix));
-    mapped_storage->make<fmtx4>(stereocams->MVPR(worldmatrix));
-    mapped_storage->make<fvec3>(obj_nrmz);
-    mapped_storage->make<fvec2>(LW);
-    //mapped_storage->seek(152);
+    mapped_storage->make<int32_t>(icnt);                        // 0
+    mapped_storage->make<fmtx4>(stereocams->MVPL(worldmatrix)); // 16
+    mapped_storage->make<fmtx4>(stereocams->MVPR(worldmatrix)); // 80
+    mapped_storage->make<fvec4>(obj_nrmz);                      // 144
+    mapped_storage->make<fvec4>(LW.x,LW.y,0,0);                 // 160
+    OrkAssert(mapped_storage->_cursor == 176);
+    mapped_storage->align(16);
     for (int i = 0; i < icnt; i++) {
       auto ptcl = get_particle(i);
       float fage            = ptcl->mfAge;
@@ -186,9 +184,9 @@ void StreakRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
                             ? ptcl->mfLifeSpan //
                             : 0.01f;
       float clamped_unitage = std::clamp<float>((fage / flspan), 0, 1);
-        mapped_storage->make<fvec3>(ptcl->mPosition);
-        mapped_storage->make<fvec3>(ptcl->mVelocity);
-        mapped_storage->make<fvec2>(clamped_unitage, ptcl->mfRandom);
+        mapped_storage->make<fvec4>(ptcl->mPosition);
+        mapped_storage->make<fvec4>(ptcl->mVelocity);
+        mapped_storage->make<fvec4>(clamped_unitage, ptcl->mfRandom,0,0);
     }
     CI->unmapStorageBuffer(mapped_storage.get());
     ///////////////////////////////////////////////////////////////

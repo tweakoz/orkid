@@ -170,6 +170,10 @@ struct FxShaderStorageBufferMapping {
   }
 
   ///////////////////////////////////////////////////
+  void align(int quanta) {
+    _cursor = alignTo(_cursor,quanta);
+  }
+  ///////////////////////////////////////////////////
   template <typename T, typename ... A> T& make(A&&... args) {
 
     switch(sizeof(T)){ // std430 layout rules

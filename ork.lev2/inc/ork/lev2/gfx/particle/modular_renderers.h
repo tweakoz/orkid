@@ -41,11 +41,9 @@ public:
   
   vtx_set_t _vertexSetter;
   vtx_set_streak_t _vertexSetterStreak;
-  fxparam_constptr_t _parammodcolor;
   fvec4 _color;
 
 #if defined(ENABLE_COMPUTE_SHADERS)
-  FxShaderParamBuffer* _streakcu_param_buffer          = nullptr;
   FxShaderStorageBuffer* _streakcu_vertex_io_buffer    = nullptr;
   const FxShaderStorageBlock* _streakcu_storage_block  = nullptr;
   const FxComputeShader* _streakcu_shader              = nullptr;
@@ -104,6 +102,7 @@ public:
   void gpuInit(const RenderContextInstData& RCID) final;
   texture_ptr_t _texture;
   fxparam_constptr_t _paramColorMap;
+  fxparam_constptr_t _parammodcolor;
 };
 
 using texturematerial_ptr_t = std::shared_ptr<TextureMaterial>;

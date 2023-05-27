@@ -563,10 +563,10 @@ technique tvolumeparticle {
 libblock typelib_compute_streaks {
   pragma_typelib;
   struct InputVertex {
-    vec3 pos;      // 12
-    vec3 nrm;      // 24
-    vec3 vel;      // 36
-    vec2 age_rand; // 44
+    vec4 pos;      // 12
+    //ec4 nrm; // 24
+    vec4 vel;      // 24
+    vec4 age_rand; // 32
   };
   struct OutputVertex {
     vec4 hposL;    // 16
@@ -590,8 +590,8 @@ compute_interface iface_compute
             int          num_vertices;      // 128
             mat4         mvp_L;             // 0
             mat4         mvp_R;             // 64
-            vec3         obj_nrmz;          // 132
-            vec2         LW;                // 144
+            vec4         obj_nrmz;          // 132
+            vec4         LW;                // 144
             InputVertex  inp_vertex[16384]; // 152
             OutputVertex out_vertex[65536]; // 152 + 16384*44
             // total size = 152 + 16384*40 + 65536*40 = 3276952
@@ -604,16 +604,16 @@ compute_shader compute_streaks
 
     int index = int(gl_WorkGroupID.x);
 
-    float wid = LW.y;
     float len = LW.x;
+    float wid = LW.y;
       
-    vec3 inp_pos  = inp_vertex[index].pos;
-    vec3 inp_vel  = inp_vertex[index].vel;
-    vec3 inp_nrm  = inp_vertex[index].nrm;
-    vec2 inp_ar   = inp_vertex[index].age_rand;
+    vec3 inp_pos  = inp_vertex[index].pos.xyz;
+    vec3 inp_vel  = inp_vertex[index].vel.xyz;
+    vec2 inp_ar   = inp_vertex[index].age_rand.xy;
+    //vec3 inp_nrm  = inp_vertex[index].nrm.xyz;
 
     vec3 lpos = inp_pos - (inp_vel * len);
-    vec3 crs = normalize(cross(inp_vel, inp_nrm)) * wid;
+    vec3 crs = normalize(cross(inp_vel, obj_nrmz.xyz)) * wid;
 
     vec3 p0 = inp_pos + crs;
     vec3 p1 = inp_pos - crs;
