@@ -234,21 +234,20 @@ void ModelDrawable::enqueueToRenderQueue(drawablebufitem_constptr_t item, lev2::
         renderable._orientation = _orientation;
         renderable._offset = _offset;
 
-        size_t umat = size_t(material.get());
-        u32 imtla   = (umat & 0xff);
-        u32 imtlb   = ((umat >> 8) & 0xff);
-        u32 imtlc   = ((umat >> 16) & 0xff);
-        u32 imtld   = ((umat >> 24) & 0xff);
-        u32 imtl    = (imtla + imtlb + imtlc + imtld) & 0xff;
+        //size_t umat = size_t(material.get());
+        //u32 imtla   = (umat & 0xff);
+        //u32 imtlb   = ((umat >> 8) & 0xff);
+        //u32 imtlc   = ((umat >> 16) & 0xff);
+        //u32 imtld   = ((umat >> 24) & 0xff);
+        //u32 imtl    = (imtla + imtlb + imtlc + imtld) & 0xff;
+        //const auto& rqsortdata = material->GetRenderQueueSortingData();
+        //int isortpass = (rqsortdata.miSortingPass + 16) & 0xff;
+        //int isortoffs = rqsortdata.miSortingOffset;
+        //int isortkey = (isortpass << 24) | (isortoffs << 16) | imtl;
 
-        const auto& rqsortdata = material->GetRenderQueueSortingData();
-
-        int isortpass = (rqsortdata.miSortingPass + 16) & 0xff;
-        int isortoffs = rqsortdata.miSortingOffset;
-
-        int isortkey = (isortpass << 24) | (isortoffs << 16) | imtl;
-
-        renderable._sortkey = isortkey;
+        renderable._sortkey = _sortkey;
+        // TODO figure out how to combine "user sort key" with "material sort key
+        
         // orkprintf( " ModelDrawable::enqueueToRenderQueue() rable<%p> \n", & renderable );
 
         if (item->_onrenderable) {

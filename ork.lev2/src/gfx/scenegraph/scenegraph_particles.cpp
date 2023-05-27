@@ -131,7 +131,7 @@ drawable_ptr_t ParticlesDrawableData::createDrawable() const {
   rval->SetRenderCallback(ParticlesDrawableInst::renderParticles);
   rval->SetUserDataA(impl);
   ptcl_context->_drawable = rval;
-  rval->_sortkey = 10;
+  rval->_sortkey = 20;
   return rval;
 }
 

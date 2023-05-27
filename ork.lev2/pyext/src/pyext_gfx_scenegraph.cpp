@@ -69,10 +69,10 @@ void pyinit_scenegraph(py::module& module_lev2) {
       py::class_<DrawableNode, Node, drawable_node_ptr_t>(sgmodule, "DrawableNode") //
           .def_property(
               "sortkey",
-              [](drawable_node_ptr_t node) -> uint32_t { //
+              [](drawable_node_ptr_t node) -> int { //
                 return node->_drawable->_sortkey;
               },
-              [](drawable_node_ptr_t node, uint32_t key) { //
+              [](drawable_node_ptr_t node, int key) { //
                 node->_drawable->_sortkey = key;
               })
           .def_property_readonly(

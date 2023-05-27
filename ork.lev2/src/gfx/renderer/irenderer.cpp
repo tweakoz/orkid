@@ -61,11 +61,13 @@ void IRenderer::drawEnqueuedRenderables() {
 
   _sortkeys.resize(renderQueueSize);
   for (size_t i = 0; i < renderQueueSize; i++) {
-    _sortkeys[i] = _sortedNodes[i]->_renderable->ComposeSortKey(this);
+    int skey = _sortedNodes[i]->_renderable->ComposeSortKey(this);
+    _sortkeys[i] = skey;
+     //printf( "skey<%d:%d>\n", i, skey );
   }
 
   ///////////////////////////////////////////////////////
-  // orkprintf( "rqsize<%d>\n", renderQueueSize );
+  //orkprintf( "rqsize<%d>\n", renderQueueSize );
 
   U32& first = (*_sortkeys.begin());
 

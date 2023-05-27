@@ -45,7 +45,7 @@
               }
              }
             },
-            "value": 0.5
+            "value": 0.25
            }
           }
          },
@@ -195,7 +195,7 @@
               }
              }
             },
-            "value": 1.0
+            "value": 1.75
            }
           }
          },
@@ -509,6 +509,22 @@
        "class": "psys::StreakRendererData",
        "uuid": "be6ca5f8-7248-4ab0-9ecd-d4b2c67e2573",
        "properties": {
+        "material": {
+         "object": {
+          "class": "psys::FlatMaterial",
+          "uuid": "2ac3a53b-2731-48fa-a0db-409d34d801e9",
+          "properties": {
+           "blendmode": "ADDITIVE",
+           "color": [
+            1.0,
+            0.5,
+            0.0,
+            1.0
+           ]
+          }
+         }
+        },
+        "sort": false,
         "inputs": [
          {
           "object": {
