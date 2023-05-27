@@ -165,8 +165,35 @@ struct FxShaderStorageBufferMapping {
     return *tstar;
   }
 
+  static int alignTo(int num, int alignment) {
+    return ((num + alignment - 1) / alignment) * alignment;
+  }
+
   ///////////////////////////////////////////////////
   template <typename T, typename ... A> T& make(A&&... args) {
+
+    switch(sizeof(T)){ // std430 layout rules
+      case 4: { // float
+        _cursor = alignTo(_cursor,4); break;
+      }
+      case 8: { // double, int, vec2
+        _cursor = alignTo(_cursor,8); break;
+      }
+      case 12: { // vec3
+        _cursor = alignTo(_cursor,16); break;
+      }
+      case 16: { // vec4
+        _cursor = alignTo(_cursor,16); break;
+      }
+      case 32: {
+        _cursor = alignTo(_cursor,16); break;
+      }
+      case 64: { // mat4
+        _cursor = alignTo(_cursor,16); break;
+      }
+      default: OrkAssert(false); break;
+    }
+
     size_t end = _cursor + sizeof(T);
     OrkAssert(end <= _length);
     auto tstar = (T*)(((char*)_mappedaddr) + _cursor);
