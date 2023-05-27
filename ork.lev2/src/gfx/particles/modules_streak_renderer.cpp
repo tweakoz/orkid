@@ -165,9 +165,9 @@ void StreakRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
       size_t mapping_size = 1<<20; 
       auto mapped_storage = CI->mapStorageBuffer(storage, 0, mapping_size);
       mapped_storage->seek(0);
+      mapped_storage->make<int>(icnt);
       mapped_storage->make<fmtx4>();
       mapped_storage->make<fmtx4>();
-      mapped_storage->make<uint32_t>(icnt);
       mapped_storage->make<fvec3>(obj_nrmz);
       mapped_storage->make<fvec2>(LW);
       //mapped_storage->seek(152);

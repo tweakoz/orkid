@@ -68,8 +68,8 @@ void ShaderBody::emit(shaderbuilder::BackEnd& backend) const {
     for (int in = 0; in < l->_indent; in++)
       codegen.incIndent();
     //////////////////////////////////////////////
-    size_t num_tokens = l->_tokens.size();
-    for( size_t i=0; i<num_tokens; i++ ) {
+    int num_tokens = l->_tokens.size();
+    for( int i=0; i<num_tokens; i++ ) {
       auto tok0 = l->_tokens[i];
       auto it_def = stddefs.find(tok0->text);
       if (it_def != stddefs.end()) {
