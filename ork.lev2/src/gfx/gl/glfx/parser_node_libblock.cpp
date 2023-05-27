@@ -36,7 +36,13 @@ void LibraryBlockNode::parse(GlSlFxParser* parser,
   for (size_t i = ist; i <= ien;) {
     auto ptok   = view.token(i);
     auto namtok = view.token(i + 1);
-    if (ptok->text == "struct") {
+    if (ptok->text == "pragma_typelib") {
+      _is_typelib = true;
+      i++;
+      view.checktoken(i, ";");
+      i++;
+    }
+    else if (ptok->text == "struct") {
       // parse struct
       view.checktoken(i + 2, "{");
       i += 2; // advance to {

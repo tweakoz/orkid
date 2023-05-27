@@ -1143,6 +1143,7 @@ struct LibraryBlockNode : public DecoBlockNode {
   // ShaderBody _body;
 
   std::vector<svar32_t> _children;
+  bool _is_typelib = false;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

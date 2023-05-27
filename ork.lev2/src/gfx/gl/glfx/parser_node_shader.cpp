@@ -340,18 +340,30 @@ void ShaderNode::emitShaderDeps(shaderbuilder::BackEnd& backend) const{
 
   codegen.formatLine("/// begin shaderdeps<%p>",this);
 
+  ////////////
   codegen.formatLine("/// shaderdeps<%p> uniblocks",this);
   for (auto node : uniblocks._collection)
     node->emit(backend);
+  ////////////
   codegen.formatLine("/// shaderdeps<%p> unisets",this);
   for (auto node : unisets._collection)
     node->emit(backend);
+  ////////////
+  codegen.formatLine("/// shaderdeps<%p> typelibblocks",this);
+  for (auto node : libblocks._collection){
+    if( node->_is_typelib)
+      node->emitLibrary(backend);
+  }
+  ////////////
   codegen.formatLine("/// shaderdeps<%p> interfaces",this);
   for (auto node : interfaces._collection)
     node->emitInterface(backend);
+  ////////////
   codegen.formatLine("/// shaderdeps<%p> libblocks",this);
   for (auto node : libblocks._collection)
-    node->emitLibrary(backend);
+    if( not node->_is_typelib)
+      node->emitLibrary(backend);
+  ////////////
 
   codegen.formatLine("/// end shaderdeps<%p>",this);
 }

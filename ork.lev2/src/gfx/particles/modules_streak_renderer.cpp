@@ -143,6 +143,10 @@ void StreakRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
       };
     }
     //////////////////////////////////////////////////////////////////////////////
+    float fwidth  = _input_width->value();
+    float flength = _input_length->value();
+    auto LW       = ork::fvec2(flength, fwidth);
+    //////////////////////////////////////////////////////////////////////////////
     // compute shader path
     //////////////////////////////////////////////////////////////////////////////
     if (RCID._RCFD->isStereo()) {
@@ -158,10 +162,31 @@ void StreakRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
       mapped_params->unmap();
       ///////////////////////////////////////////////////////////////
       auto storage = material->_streakcu_vertex_io_buffer;
-      size_t mapping_size = 32; 
+      size_t cu_input_size = ((icnt*2) * sizeof(fvec3)) //
+                           + (icnt * sizeof(fvec2)) //
+                           + sizeof(uint32_t) //
+                           + sizeof(fvec3) //
+                           + sizeof(fvec2);
+
+
+      size_t mapping_size = cu_input_size; 
+
       auto mapped_storage = CI->mapStorageBuffer(storage, 0, mapping_size);
       mapped_storage->seek(0);
-      mapped_storage->make<fvec3>(0, 0, 0);
+      mapped_storage->make<uint32_t>(icnt);
+      mapped_storage->make<fvec3>(obj_nrmz);
+       mapped_storage->make<fvec2>(LW);
+      for (int i = 0; i < icnt; i++) {
+        auto ptcl = get_particle(i);
+        float fage            = ptcl->mfAge;
+        float flspan          = (ptcl->mfLifeSpan != 0.0f) //
+                              ? ptcl->mfLifeSpan //
+                              : 0.01f;
+        float clamped_unitage = std::clamp<float>((fage / flspan), 0, 1);
+         mapped_storage->make<fvec3>(ptcl->mPosition);
+         mapped_storage->make<fvec3>(ptcl->mVelocity);
+         mapped_storage->make<fvec2>(clamped_unitage, ptcl->mfRandom);
+      }
       CI->unmapStorageBuffer(mapped_storage.get());
       ///////////////////////////////////////////////////////////////
       CI->bindStorageBuffer(material->_streakcu_shader, 0, storage);
@@ -172,9 +197,6 @@ void StreakRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
       CI->dispatchCompute(material->_streakcu_shader, wu_width, wu_height, wu_depth);
       ///////////////////////////////////////////////////////////////
       material->update(RCID);
-      for (int i = 0; i < icnt; i++) {
-        auto ptcl = get_particle(i);
-      }
 ///////////////////////////////////////////////////////////////
 #endif
     }
@@ -187,9 +209,6 @@ void StreakRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
         ////////////////////////////////////////////////
         // uniform properties
         ////////////////////////////////////////////////
-        float fwidth  = _input_width->value();
-        float flength = _input_length->value();
-        auto LW       = ork::fvec2(flength, fwidth);
         for (int i = 0; i < icnt; i++) {
           auto ptcl = get_particle(i);
           material->_vertexSetterStreak(
