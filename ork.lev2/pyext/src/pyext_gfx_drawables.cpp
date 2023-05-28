@@ -254,6 +254,10 @@ void pyinit_gfx_drawables(py::module& module_lev2) {
               [](billboard_string_drawabledata_ptr_t drw) -> std::string { return drw->_initialString; },
               [](billboard_string_drawabledata_ptr_t drw, std::string val) { drw->_initialString = val; })
           .def_property(
+              "cameraRelativeOffset",
+              [](billboard_string_drawabledata_ptr_t drw) -> bool { return drw->_cameraRelativeOffset; },
+              [](billboard_string_drawabledata_ptr_t drw, bool val) { drw->_cameraRelativeOffset = val; })
+          .def_property(
               "offset",
               [](billboard_string_drawabledata_ptr_t drw) -> fvec3 { return drw->_offset; },
               [](billboard_string_drawabledata_ptr_t drw, fvec3 val) { drw->_offset = val; })

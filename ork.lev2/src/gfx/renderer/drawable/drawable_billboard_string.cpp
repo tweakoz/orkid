@@ -148,15 +148,18 @@ BillboardStringDrawable::BillboardStringDrawable(const BillboardStringDrawableDa
 
     auto stereocams = CPD._stereoCameraMatrices;
     auto monocams   = CPD._cameraMatrices;
-
     auto renderable      = (CallbackRenderable*)RCID._irenderable;
     auto& current_string = renderable->_drawDataA.get<std::string>();
-
     auto fontman = FontMan::instance();
+
+    bool camrel = _data->_cameraRelativeOffset;
 
     if (stereocams) {
 
       auto mcammats = stereocams->_mono;
+      const auto& VMATRIX = mcammats->_vmatrix;
+      auto IVMATRIX = VMATRIX.inverse();
+      auto eyepos = IVMATRIX.translation();
 
       const auto& VPRECT = CPD.mDstRect;
       fvec2 VP(VPRECT._w>>1, VPRECT._h);
@@ -175,11 +178,21 @@ BillboardStringDrawable::BillboardStringDrawable(const BillboardStringDrawableDa
       text_rcid->_RCFD      = RCFD;
       text_rcid->_genMatrix = [&]() -> fmtx4 {
         fmtx4 text_transform;
-        float scale = pixlen_x.length() * _data->_scale;
-        text_transform.compose(_data->_offset, fquat(), fvec3(scale));
-        fmtx4 bbrotmtx = mcammats->_vmatrix.inverse();
+        if(camrel){
+          auto X = mcammats->_camdat.xNormal();
+          auto Y = mcammats->_camdat.yNormal();
+          auto Z = mcammats->_camdat.zNormal();
+          auto camrelpos = eyepos - (Z * _data->_offset.z)
+                                  + (Y * _data->_offset.x)
+                                  + (X * _data->_offset.y); // WTF ?
+            text_transform.compose(camrelpos, fquat(), _data->_scale / float(CHARW));
+        }
+        else{
+          float scale = pixlen_x.length() * _data->_scale;
+          text_transform.compose(_data->_offset, fquat(), fvec3(scale));
+        }
 
-        return text_transform * (bbrotmtx * center_transform);
+        return text_transform * (IVMATRIX * center_transform);
       };
 
       tbstate->_overrideRCID = text_rcid;

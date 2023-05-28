@@ -522,6 +522,7 @@ struct BillboardStringDrawableData : public DrawableData {
   fvec3 _upvec;
   float _scale = 1.0f;
   fvec4 _color;
+  bool _cameraRelativeOffset = false;
   lev2::font_rawconstptr_t _font = nullptr;
 };
 
