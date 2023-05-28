@@ -12,6 +12,8 @@ fxconfig fxcfg_default {
 ///////////////////////////////////////////////////////////////
 uniform_set ub_fwd_grid_vtx {
   mat4 mvp;
+  mat4 mvp_l;
+  mat4 mvp_r;
 }
 vertex_interface iface_vtx_fwd_grid_unlit : ub_fwd_grid_vtx {
   inputs {
@@ -56,7 +58,21 @@ vertex_shader vs_grid_forward_lit
     frg_camdist = 0.0;
     frg_camz = vec3(0,0,0);
     frg_clr = vec4(1,1,1,1);
-
+}
+vertex_shader vs_grid_forward_lit_stereo
+  : extension(GL_NV_stereo_view_rendering) //
+  : extension(GL_NV_viewport_array2) //
+  : iface_vtx_fwd_grid_lit {
+    gl_Position = mvp_l*position;
+    gl_SecondaryPositionNV = mvp_r*position;
+    frg_uv0 = uv0;
+    frg_wpos = position;
+    frg_camdist = 0.0;
+    frg_camz = vec3(0,0,0);
+    frg_clr = vec4(1,1,1,1);
+    gl_Layer = 0;
+    gl_ViewportMask[0] = 1;
+    gl_SecondaryViewportMaskNV[0] = 2;
 }
 ///////////////////////////////////////////////////////////////
 libblock lib_frg_grid : lib_gbuf_encode {
@@ -165,17 +181,6 @@ fragment_shader ps_grid_forward_lit_mono
   out_clr = vec4(oc.xyz,1); 
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_grid_forward_lit_stereo
-  : iface_grid_forward_lit
-  : lib_frg_grid
-  : lib_fwd_stereo
-  : ub_frg_fwd 
-  : ub_frg_fwd_lighting{
-  vec4 gout = grid_output(frg_wpos.xyz);
-  vec3 oc = forward_lighting_stereo(gout.xyz);
-  out_clr = vec4(oc.xyz,1); 
-}
-///////////////////////////////////////////////////////////////
 vertex_shader vs_rigid_gbuffer_grid
   : iface_vtx_fwd_grid_unlit {
     frg_uv0 = uv0;
@@ -231,5 +236,5 @@ technique FWD_CT_NM_RI_NI_MO {
 }
 technique FWD_CT_NM_RI_NI_ST {
 	fxconfig=fxcfg_default;
-	vf_pass={vs_grid_forward_lit,ps_grid_forward_lit_stereo,sb_forward}
+	vf_pass={vs_grid_forward_lit_stereo,ps_grid_forward_lit_mono,sb_forward}
 }
