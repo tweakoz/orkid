@@ -140,6 +140,8 @@ void FlatMaterial::update(const RenderContextInstData& RCID) {
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 void GradientMaterial::describeX(class_t* clazz) {
   clazz->directObjectProperty("gradient", &GradientMaterial::_gradient);
+  clazz->floatProperty("colorFactor", float_range{-10,10}, &GradientMaterial::_gradientColorIntensity);
+  clazz->floatProperty("alphaFactor", float_range{-10,10}, &GradientMaterial::_gradientAlphaIntensity);
   clazz->directEnumProperty("blendmode", &GradientMaterial::_blending);
   clazz->directAssetProperty("modtexture", &GradientMaterial::_modulation_texture_asset)
       ->annotate<ConstString>("editor.asset.class", "lev2tex")
@@ -217,6 +219,8 @@ void GradientMaterial::gpuInit(const RenderContextInstData& RCID) {
 
   auto fxparameterMVP     = _material->param("MatMVP");
   auto fxparameterGradMap = _material->param("GradientMap");
+  auto fxparameterColorFactor = _material->param("ColorFactor");
+  auto fxparameterAlphaFactor = _material->param("AlphaFactor");
   _param_mod_texture      = _material->param("ColorMap");
   auto pipeline_cache     = _material->pipelineCache();
 
@@ -238,7 +242,19 @@ void GradientMaterial::gpuInit(const RenderContextInstData& RCID) {
     return rval;
   };
   _pipeline->bindParam(_param_mod_texture, gen_tex);
-
+  //////////////////////////////////////////
+  FxPipeline::varval_generator_t colorfactor = [=]() -> FxPipeline::varval_t {
+    FxPipeline::varval_t rval = _gradientColorIntensity;
+    return rval;
+  };
+  _pipeline->bindParam(fxparameterColorFactor, colorfactor);
+  //////////////////////////////////////////
+  FxPipeline::varval_generator_t alphafactor = [=]() -> FxPipeline::varval_t {
+    FxPipeline::varval_t rval = _gradientAlphaIntensity;
+    return rval;
+  };
+  _pipeline->bindParam(fxparameterAlphaFactor, alphafactor);
+  //////////////////////////////////////////
   _tek_sprites = _material->technique("tgradparticle_sprites");
   _tek_streaks = _material->technique("tgradparticle_streaks");
 

@@ -41,6 +41,8 @@ uniform_set uset_frg {
   sampler2D ColorMap;
   sampler2D GradientMap;
   sampler3D VolumeMap;
+  float ColorFactor;
+  float AlphaFactor;
 }
 
 ///////////////////////////////////////////////////////////////
@@ -417,8 +419,8 @@ fragment_shader ps_grad : fface_psys {
   float unit_age = frg_uv1.x;
   vec4 gmap = texture(GradientMap, vec2(unit_age, 0.0));
   vec4 cmap = texture(ColorMap, frg_uv0.xy);
-  out_clr.xyz = gmap.xyz*cmap.xyz;
-  out_clr.w = gmap.w*cmap.w;
+  out_clr.xyz = (gmap.xyz*cmap.xyz)*ColorFactor;
+  out_clr.w = gmap.w*cmap.w*AlphaFactor;
 }
 fragment_shader ps_modtexclr : fface_psys {
 

@@ -1,0 +1,931 @@
+{
+ "root": {
+  "object": {
+   "class": "dflow/graphdata",
+   "uuid": "d0b29c8b-13b0-44f2-8e74-527d3b5dd44e",
+   "properties": {
+    "Modules": {
+     "EMITN": {
+      "object": {
+       "class": "psys::NozzleEmitterData",
+       "uuid": "237e0943-3a16-47f4-a704-741bd8648298",
+       "properties": {
+        "inputs": [
+         {
+          "object": {
+           "class": "psys::ptclbufinpplug",
+           "uuid": "b35f8ac2-29d1-4175-8859-479e9ffa1a76",
+           "properties": {}
+          }
+         },
+         {
+          "object": {
+           "class": "dflow::inplugdata<floatxf>",
+           "uuid": "7e55946c-53bd-4685-8243-3ec15b6b1786",
+           "properties": {
+            "Transform": {
+             "object": {
+              "class": "dflow::floatxfdata",
+              "uuid": "f8d27846-fa64-4d6c-a6fc-d135e6facdac",
+              "properties": {
+               "Transforms": {}
+              }
+             }
+            },
+            "value": 1269.8834228515625
+           }
+          }
+         },
+         {
+          "object": {
+           "class": "dflow::inplugdata<floatxf>",
+           "uuid": "a39c1e9f-3714-42e4-98a0-67123c73b680",
+           "properties": {
+            "Transform": {
+             "object": {
+              "class": "dflow::floatxfdata",
+              "uuid": "6bc3e9a7-efa1-45c1-9c77-226b8d06108c",
+              "properties": {
+               "Transforms": {}
+              }
+             }
+            },
+            "value": 0.0
+           }
+          }
+         },
+         {
+          "object": {
+           "class": "dflow::inplugdata<floatxf>",
+           "uuid": "e91f9cb5-6274-4db3-a78a-d705e3b3f5b9",
+           "properties": {
+            "Transform": {
+             "object": {
+              "class": "dflow::floatxfdata",
+              "uuid": "dddb6083-b6dc-41e7-9199-c66cc310ffae",
+              "properties": {
+               "Transforms": {}
+              }
+             }
+            },
+            "value": 1.0
+           }
+          }
+         },
+         {
+          "object": {
+           "class": "dflow::inplugdata<floatxf>",
+           "uuid": "5cb2bc78-7e01-43ef-8186-ebf411892140",
+           "properties": {
+            "Transform": {
+             "object": {
+              "class": "dflow::floatxfdata",
+              "uuid": "71b57874-8f30-4958-a51c-e20d7c0c5d8d",
+              "properties": {
+               "Transforms": {}
+              }
+             }
+            },
+            "value": 0.0
+           }
+          }
+         },
+         {
+          "object": {
+           "class": "dflow::inplugdata<vec3xf>",
+           "uuid": "9966ad92-5c48-4fa2-8963-d5668cdc13d9",
+           "properties": {
+            "value": [
+             0.0,
+             0.0,
+             0.0
+            ]
+           }
+          }
+         },
+         {
+          "object": {
+           "class": "dflow::inplugdata<vec3xf>",
+           "uuid": "af6bd001-1908-43d8-b18e-e890d56435cf",
+           "properties": {
+            "value": [
+             1.0,
+             2.0,
+             3.0
+            ]
+           }
+          }
+         },
+         {
+          "object": {
+           "class": "dflow::inplugdata<vec3xf>",
+           "uuid": "7afbeda0-030f-431a-baee-eef559afda64",
+           "properties": {
+            "value": [
+             0.0,
+             0.0,
+             0.0
+            ]
+           }
+          }
+         }
+        ],
+        "outputs": [
+         {
+          "object": {
+           "class": "psys::ptclbufoutplug",
+           "uuid": "53a3d195-5dae-4340-9172-b6e52af53639",
+           "properties": {}
+          }
+         }
+        ]
+       }
+      }
+     },
+     "EMITR": {
+      "object": {
+       "class": "psys::RingEmitterData",
+       "uuid": "a2668bfe-7110-41c5-8842-d3544e51758a",
+       "properties": {
+        "inputs": [
+         {
+          "object": {
+           "class": "psys::ptclbufinpplug",
+           "uuid": "b9fe3b9b-6bce-45e1-a46b-3ec21682ef29",
+           "properties": {}
+          }
+         },
+         {
+          "object": {
+           "class": "dflow::inplugdata<floatxf>",
+           "uuid": "05264098-4ef7-42ed-8570-0502b18a3798",
+           "properties": {
+            "Transform": {
+             "object": {
+              "class": "dflow::floatxfdata",
+              "uuid": "2fdee082-7319-4877-bf72-ce07c7ab8297",
+              "properties": {
+               "Transforms": {}
+              }
+             }
+            },
+            "value": 2.0
+           }
+          }
+         },
+         {
+          "object": {
+           "class": "dflow::inplugdata<floatxf>",
+           "uuid": "58f065f6-f2ad-474e-885e-61d29c090680",
+           "properties": {
+            "Transform": {
+             "object": {
+              "class": "dflow::floatxfdata",
+              "uuid": "17f2cff3-6c1b-47ba-b239-09bbc8220e3d",
+              "properties": {
+               "Transforms": {}
+              }
+             }
+            },
+            "value": 388.0596923828125
+           }
+          }
+         },
+         {
+          "object": {
+           "class": "dflow::inplugdata<floatxf>",
+           "uuid": "0092adb1-13f0-49b3-95fb-52a6a431aa1f",
+           "properties": {
+            "Transform": {
+             "object": {
+              "class": "dflow::floatxfdata",
+              "uuid": "98260d73-1ea0-4875-9b9b-2cec8a4520d1",
+              "properties": {
+               "Transforms": {}
+              }
+             }
+            },
+            "value": 0.4477611780166626
+           }
+          }
+         },
+         {
+          "object": {
+           "class": "dflow::inplugdata<floatxf>",
+           "uuid": "f8c60c73-05a1-4012-823a-653a18daa4f9",
+           "properties": {
+            "Transform": {
+             "object": {
+              "class": "dflow::floatxfdata",
+              "uuid": "3de9b825-5d6c-4a07-a562-9084f85358e8",
+              "properties": {
+               "Transforms": {}
+              }
+             }
+            },
+            "value": 0.0
+           }
+          }
+         },
+         {
+          "object": {
+           "class": "dflow::inplugdata<floatxf>",
+           "uuid": "ba19361d-82a2-4560-8c06-87912c784756",
+           "properties": {
+            "Transform": {
+             "object": {
+              "class": "dflow::floatxfdata",
+              "uuid": "b02c9bb5-dc57-41bb-a942-9022f69f3c9d",
+              "properties": {
+               "Transforms": {
+                "item-0": {
+                 "object": {
+                  "class": "dflow::floatxfmsbcurvedata",
+                  "uuid": "291c4cb1-f76a-4104-bad2-0bea8c72240f",
+                  "properties": {
+                   "Curve": {
+                    "object": {
+                     "class": "MultiCurve1D",
+                     "uuid": "51b92027-3f99-4c67-9dcb-7a32874e9bb3",
+                     "properties": {
+                      "Segs": [
+                       "LINEAR",
+                       "LINEAR"
+                      ],
+                      "Verts": {
+                       "0": 0.0,
+                       "0.586364": 1.0,
+                       "1": 0.0
+                      },
+                      "max": 1.0,
+                      "min": 0.0
+                     }
+                    }
+                   },
+                   "ModScaleBias": {
+                    "object": {
+                     "class": "dflow::modscabiasdata",
+                     "uuid": "8f2a8b75-a6f9-414f-a72d-a3dbee62c1a5",
+                     "properties": {
+                      "bias": 0.0,
+                      "mod": 3.0,
+                      "scale": 0.33000001311302185
+                     }
+                    }
+                   },
+                   "do_curve": true,
+                   "do_modscabia": true
+                  }
+                 }
+                },
+                "item-1": {
+                 "object": {
+                  "class": "dflow::floatxfmodstepdata",
+                  "uuid": "d2f484ca-7c52-4855-a35d-38a2686d911d",
+                  "properties": {
+                   "Mod": 0.0,
+                   "OutputBias": 0.0,
+                   "OutputScale": 6.0,
+                   "Step": 4
+                  }
+                 }
+                }
+               }
+              }
+             }
+            },
+            "value": 1.5
+           }
+          }
+         },
+         {
+          "object": {
+           "class": "dflow::inplugdata<floatxf>",
+           "uuid": "e10d93fb-9a06-4211-8e76-da87124289a6",
+           "properties": {
+            "Transform": {
+             "object": {
+              "class": "dflow::floatxfdata",
+              "uuid": "7ce3f97a-376f-4e70-982e-6601e6c3336a",
+              "properties": {
+               "Transforms": {}
+              }
+             }
+            },
+            "value": 91.0447769165039
+           }
+          }
+         },
+         {
+          "object": {
+           "class": "dflow::inplugdata<vec3xf>",
+           "uuid": "4c4243b3-4067-4011-aefd-969c57269d17",
+           "properties": {
+            "value": [
+             0.0,
+             0.0,
+             0.0
+            ]
+           }
+          }
+         },
+         {
+          "object": {
+           "class": "dflow::inplugdata<vec3xf>",
+           "uuid": "d1503244-ccdc-4dc9-9c8a-bce5f3b558a1",
+           "properties": {
+            "value": [
+             0.0,
+             4.0,
+             0.0
+            ]
+           }
+          }
+         }
+        ],
+        "outputs": [
+         {
+          "object": {
+           "class": "psys::ptclbufoutplug",
+           "uuid": "daaafef4-8ef1-4ad3-bcea-b509632ba3c0",
+           "properties": {}
+          }
+         }
+        ]
+       }
+      }
+     },
+     "GLOB": {
+      "object": {
+       "class": "psys::GlobalModuleData",
+       "uuid": "b7fe1671-5437-489c-8a37-c5ecaa46ba39",
+       "properties": {
+        "inputs": [
+         {
+          "object": {
+           "class": "dflow::inplugdata<float>",
+           "uuid": "63664514-3ca9-4e10-baa5-46ba2f7a51b5",
+           "properties": {}
+          }
+         },
+         {
+          "object": {
+           "class": "dflow::inplugdata<float>",
+           "uuid": "4b34e5cc-5ce4-4a10-92ef-c55ba43baa4c",
+           "properties": {}
+          }
+         }
+        ],
+        "outputs": [
+         {
+          "object": {
+           "class": "dflow::outplugdata<float>",
+           "uuid": "1428c3f0-efcf-47e5-900b-ee7ae60e4759",
+           "properties": {}
+          }
+         },
+         {
+          "object": {
+           "class": "dflow::outplugdata<float>",
+           "uuid": "f7d73a59-2421-4807-9c8e-7167a910a76b",
+           "properties": {}
+          }
+         },
+         {
+          "object": {
+           "class": "dflow::outplugdata<float>",
+           "uuid": "5c764e84-2027-4b09-a20a-43f3e8571f74",
+           "properties": {}
+          }
+         }
+        ]
+       }
+      }
+     },
+     "GRAV": {
+      "object": {
+       "class": "psys::GravityModuleData",
+       "uuid": "65ed71dc-9e0a-4753-92ef-0e9bf9de163a",
+       "properties": {
+        "inputs": [
+         {
+          "object": {
+           "class": "psys::ptclbufinpplug",
+           "uuid": "2489a1d2-0004-4439-81c0-e89f57b4daf6",
+           "properties": {}
+          }
+         },
+         {
+          "object": {
+           "class": "dflow::inplugdata<floatxf>",
+           "uuid": "a0ed56c2-18b8-4a74-afa1-6f68df086143",
+           "properties": {
+            "Transform": {
+             "object": {
+              "class": "dflow::floatxfdata",
+              "uuid": "18c831f9-c4f3-4485-9bde-541643cc30fd",
+              "properties": {
+               "Transforms": {
+                "xf-b": {
+                 "object": {
+                  "class": "dflow::floatxfmodstepdata",
+                  "uuid": "4f4cfd61-5d60-4084-9933-16a67bbc125b",
+                  "properties": {
+                   "Mod": 0.0,
+                   "OutputBias": 1.0,
+                   "OutputScale": 5.0,
+                   "Step": 14
+                  }
+                 }
+                }
+               }
+              }
+             }
+            },
+            "value": 6.0
+           }
+          }
+         },
+         {
+          "object": {
+           "class": "dflow::inplugdata<floatxf>",
+           "uuid": "6da9f336-7972-4542-9173-5ba46969a880",
+           "properties": {
+            "Transform": {
+             "object": {
+              "class": "dflow::floatxfdata",
+              "uuid": "2ccfe25d-1f4d-45ee-92b3-bbe304007331",
+              "properties": {
+               "Transforms": {}
+              }
+             }
+            },
+            "value": 1.0
+           }
+          }
+         },
+         {
+          "object": {
+           "class": "dflow::inplugdata<floatxf>",
+           "uuid": "7b126bae-b611-4db4-94d7-bd4639ad53d9",
+           "properties": {
+            "Transform": {
+             "object": {
+              "class": "dflow::floatxfdata",
+              "uuid": "d651c72a-fcdf-4600-81cd-b5ec717192d5",
+              "properties": {
+               "Transforms": {}
+              }
+             }
+            },
+            "value": 1.0
+           }
+          }
+         },
+         {
+          "object": {
+           "class": "dflow::inplugdata<floatxf>",
+           "uuid": "a4dea996-d928-47ab-8934-49d9be5a3b5c",
+           "properties": {
+            "Transform": {
+             "object": {
+              "class": "dflow::floatxfdata",
+              "uuid": "436da0c9-fbfc-44fb-ae25-ab1f0ad568f0",
+              "properties": {
+               "Transforms": {}
+              }
+             }
+            },
+            "value": 126.98834228515625
+           }
+          }
+         },
+         {
+          "object": {
+           "class": "dflow::inplugdata<vec3xf>",
+           "uuid": "de13897a-7d51-4297-bb6d-2872ba723e56",
+           "properties": {
+            "value": [
+             0.0,
+             0.0,
+             0.0
+            ]
+           }
+          }
+         }
+        ],
+        "outputs": [
+         {
+          "object": {
+           "class": "psys::ptclbufoutplug",
+           "uuid": "a984ebc2-0ade-4b89-863b-53f988498565",
+           "properties": {}
+          }
+         }
+        ]
+       }
+      }
+     },
+     "POOL": {
+      "object": {
+       "class": "psys::ParticlePoolData",
+       "uuid": "d99ea74d-debd-4764-8962-cc44132d34f4",
+       "properties": {
+        "inputs": [],
+        "outputs": [
+         {
+          "object": {
+           "class": "psys::ptclbufoutplug",
+           "uuid": "9b60a59e-bcdb-46f6-8278-8027cb951d4d",
+           "properties": {}
+          }
+         }
+        ]
+       }
+      }
+     },
+     "STRK": {
+      "object": {
+       "class": "psys::StreakRendererData",
+       "uuid": "be6ca5f8-7248-4ab0-9ecd-d4b2c67e2573",
+       "properties": {
+        "material": {
+         "object": {
+          "class": "psys::GradientMaterial",
+          "uuid": "74d21f01-ff54-4fef-9a81-a1ec36f53775",
+          "properties": {
+           "blendmode": "ALPHA",
+           "gradient": {
+            "object": {
+             "class": "GradientV4",
+             "uuid": "36d9ab6a-95b7-4054-a303-ebcd0152ec28",
+             "properties": {
+              "points": {
+               "0": [
+                0.01145083550363779,
+                0.0,
+                0.010204816237092018,
+                0.0
+               ],
+               "0.396154": [
+                0.0,
+                0.08261492103338242,
+                0.9929623603820801,
+                0.0
+               ],
+               "0.628631": [
+                0.9887511730194092,
+                0.0,
+                0.8158006072044373,
+                1.0
+               ],
+               "0.826923": [
+                0.0,
+                0.9896988272666931,
+                0.07899673283100128,
+                1.0
+               ],
+               "0.876923": [
+                0.9419283270835876,
+                0.9816089868545532,
+                0.0,
+                0.96875
+               ],
+               "0.962656": [
+                0.9709641933441162,
+                0.9908044934272766,
+                0.5,
+                1.0
+               ],
+               "1": [
+                1.0,
+                1.0,
+                1.0,
+                0.0
+               ]
+              }
+             }
+            }
+           },
+           "modtexture": {
+            "object": {
+             "class": "lev2tex",
+             "uuid": "75fdad4d-9714-4ad4-a9b8-ebe61b7a9bf4",
+             "properties": {
+              "path": "data://platform_lev2/textures/dfplug"
+             }
+            }
+           }
+          }
+         }
+        },
+        "sort": true,
+        "inputs": [
+         {
+          "object": {
+           "class": "psys::ptclbufinpplug",
+           "uuid": "36efe0fe-f808-42c5-845f-b7940bb2b2af",
+           "properties": {}
+          }
+         },
+         {
+          "object": {
+           "class": "dflow::inplugdata<floatxf>",
+           "uuid": "7ee0e5e8-52de-4a0d-9c25-2cc75a713d24",
+           "properties": {
+            "Transform": {
+             "object": {
+              "class": "dflow::floatxfdata",
+              "uuid": "ea014b0c-c1d5-4dda-845d-c2f3273fad3c",
+              "properties": {
+               "Transforms": {}
+              }
+             }
+            },
+            "value": 0.5
+           }
+          }
+         },
+         {
+          "object": {
+           "class": "dflow::inplugdata<floatxf>",
+           "uuid": "66bb60ef-9986-4e3c-abbc-a9f85be84edb",
+           "properties": {
+            "Transform": {
+             "object": {
+              "class": "dflow::floatxfdata",
+              "uuid": "e48e7689-fa7b-4703-9856-89cc218e9986",
+              "properties": {
+               "Transforms": {}
+              }
+             }
+            },
+            "value": 0.5
+           }
+          }
+         },
+         {
+          "object": {
+           "class": "dflow::inplugdata<floatxf>",
+           "uuid": "8170ca86-c78e-4d0d-83ae-d7f856d3469d",
+           "properties": {
+            "Transform": {
+             "object": {
+              "class": "dflow::floatxfdata",
+              "uuid": "22731eae-0c71-496d-a1e9-b3c8cd5d8db4",
+              "properties": {
+               "Transforms": {}
+              }
+             }
+            },
+            "value": 10.0
+           }
+          }
+         }
+        ],
+        "outputs": [
+         {
+          "object": {
+           "class": "psys::ptclbufoutplug",
+           "uuid": "92751a27-be34-4255-afcf-11ad5ca64d35",
+           "properties": {}
+          }
+         }
+        ]
+       }
+      }
+     },
+     "TURB": {
+      "object": {
+       "class": "psys::TurbulenceModuleData",
+       "uuid": "67b22e79-db0b-4bb5-bad7-a69913147ef9",
+       "properties": {
+        "inputs": [
+         {
+          "object": {
+           "class": "psys::ptclbufinpplug",
+           "uuid": "0d7dd1ce-444f-4141-87fb-76bc04373545",
+           "properties": {}
+          }
+         },
+         {
+          "object": {
+           "class": "dflow::inplugdata<vec3xf>",
+           "uuid": "2b4beeb3-8cd0-4f47-9b86-4a86673f6d8f",
+           "properties": {
+            "value": [
+             1.5,
+             1.5,
+             1.5
+            ]
+           }
+          }
+         }
+        ],
+        "outputs": [
+         {
+          "object": {
+           "class": "psys::ptclbufoutplug",
+           "uuid": "5a911b4d-dce5-4b80-9b73-fcf55b3b5df3",
+           "properties": {}
+          }
+         }
+        ]
+       }
+      }
+     },
+     "VORT": {
+      "object": {
+       "class": "psys::VortexModuleData",
+       "uuid": "3a9a5a91-7b14-4616-b872-f28b350bb5e9",
+       "properties": {
+        "inputs": [
+         {
+          "object": {
+           "class": "psys::ptclbufinpplug",
+           "uuid": "19527fdc-5423-4b55-9c35-85347991a0f1",
+           "properties": {}
+          }
+         },
+         {
+          "object": {
+           "class": "dflow::inplugdata<floatxf>",
+           "uuid": "85da5ac8-e2a1-4714-aafb-6569099c838d",
+           "properties": {
+            "Transform": {
+             "object": {
+              "class": "dflow::floatxfdata",
+              "uuid": "ee23cfdf-5f3d-40d5-a803-0e984c47cfea",
+              "properties": {
+               "Transforms": {
+                "xf-a": {
+                 "object": {
+                  "class": "dflow::floatxfmsbcurvedata",
+                  "uuid": "d91b5fb9-1bb5-4bab-a129-1a43185ba5d8",
+                  "properties": {
+                   "Curve": {
+                    "object": {
+                     "class": "MultiCurve1D",
+                     "uuid": "c75116dd-03a9-4204-aa08-c3fdfca674d3",
+                     "properties": {
+                      "Segs": [
+                       "LINEAR",
+                       "LINEAR"
+                      ],
+                      "Verts": {
+                       "0": 0.0,
+                       "0.504545": 1.0,
+                       "1": 0.0
+                      },
+                      "max": 1.0,
+                      "min": 0.0
+                     }
+                    }
+                   },
+                   "ModScaleBias": {
+                    "object": {
+                     "class": "dflow::modscabiasdata",
+                     "uuid": "fb4d9f56-763e-45ab-b7e8-2a9b410911ee",
+                     "properties": {
+                      "bias": 0.0,
+                      "mod": 1.0,
+                      "scale": 1.0
+                     }
+                    }
+                   },
+                   "do_curve": true,
+                   "do_modscabia": true
+                  }
+                 }
+                },
+                "xf-b": {
+                 "object": {
+                  "class": "dflow::floatxfmodstepdata",
+                  "uuid": "f7395c7c-dc4d-49a0-a8df-bb618eea512d",
+                  "properties": {
+                   "Mod": 0.0,
+                   "OutputBias": -0.5,
+                   "OutputScale": -5.0,
+                   "Step": 12
+                  }
+                 }
+                }
+               }
+              }
+             }
+            },
+            "value": -1.3333333730697632
+           }
+          }
+         },
+         {
+          "object": {
+           "class": "dflow::inplugdata<floatxf>",
+           "uuid": "6d25c4fc-23b3-456d-bbe8-d081e0cd1f62",
+           "properties": {
+            "Transform": {
+             "object": {
+              "class": "dflow::floatxfdata",
+              "uuid": "a976e842-6970-4272-971e-856ee97822c4",
+              "properties": {
+               "Transforms": {}
+              }
+             }
+            },
+            "value": -4.477614402770996
+           }
+          }
+         },
+         {
+          "object": {
+           "class": "dflow::inplugdata<floatxf>",
+           "uuid": "46a420a6-c830-4a98-8a66-9a64272a3590",
+           "properties": {
+            "Transform": {
+             "object": {
+              "class": "dflow::floatxfdata",
+              "uuid": "970c1cc7-1683-4c89-bc43-35af55fb3080",
+              "properties": {
+               "Transforms": {}
+              }
+             }
+            },
+            "value": 3.2835819721221924
+           }
+          }
+         }
+        ],
+        "outputs": [
+         {
+          "object": {
+           "class": "psys::ptclbufoutplug",
+           "uuid": "00969018-05f3-41bd-b539-4781dd0060f2",
+           "properties": {}
+          }
+         }
+        ]
+       }
+      }
+     }
+    },
+    "zzz_connections": {
+     "numlinks": 9,
+     "conn-0": {
+      "inp_module": "EMITN",
+      "inp_plug": "pool",
+      "out_module": "POOL",
+      "out_plug": "pool"
+     },
+     "conn-1": {
+      "inp_module": "EMITN",
+      "inp_plug": "LifeSpan",
+      "out_module": "GLOB",
+      "out_plug": "RelTime"
+     },
+     "conn-2": {
+      "inp_module": "EMITR",
+      "inp_plug": "pool",
+      "out_module": "EMITN",
+      "out_plug": "pool"
+     },
+     "conn-3": {
+      "inp_module": "EMITR",
+      "inp_plug": "EmissionRadius",
+      "out_module": "GLOB",
+      "out_plug": "RelTime"
+     },
+     "conn-4": {
+      "inp_module": "GRAV",
+      "inp_plug": "pool",
+      "out_module": "EMITR",
+      "out_plug": "pool"
+     },
+     "conn-5": {
+      "inp_module": "STRK",
+      "inp_plug": "pool",
+      "out_module": "VORT",
+      "out_plug": "pool"
+     },
+     "conn-6": {
+      "inp_module": "TURB",
+      "inp_plug": "pool",
+      "out_module": "GRAV",
+      "out_plug": "pool"
+     },
+     "conn-7": {
+      "inp_module": "VORT",
+      "inp_plug": "pool",
+      "out_module": "TURB",
+      "out_plug": "pool"
+     },
+     "conn-8": {
+      "inp_module": "VORT",
+      "inp_plug": "VortexStrength",
+      "out_module": "GLOB",
+      "out_plug": "RelTime"
+     }
+    }
+   }
+  }
+ }
+}

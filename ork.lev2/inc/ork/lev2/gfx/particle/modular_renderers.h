@@ -86,6 +86,8 @@ public:
   asset::asset_ptr_t _modulation_texture_asset;
   texture_ptr_t _modulation_texture;
   Blending _blending = Blending::OFF;
+  float _gradientAlphaIntensity = 1.0f;
+  float _gradientColorIntensity = 1.0f;
 };
 
 using gradientmaterial_ptr_t = std::shared_ptr<GradientMaterial>;
