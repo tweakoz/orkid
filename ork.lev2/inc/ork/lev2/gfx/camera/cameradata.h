@@ -130,6 +130,8 @@ struct CameraMatrices {
   void setCustomView(const ork::fmtx4& view);
   void setCustomProjection(const ork::fmtx4& proj);
   ////////////////////////////////////////////////////////////////////
+  void _updateInternal();
+  ////////////////////////////////////////////////////////////////////
   bool _explicitProjectionMatrix = false;
   bool _explicitViewMatrix       = false;
   float _aspectRatio             = 1.0f;

@@ -117,6 +117,7 @@ struct TextBlockState {
   const Font* _font    = nullptr;
   std::stack<const Font*> _fontstack;
   bool _stereo_3d_text = false;
+  rcid_ptr_t _overrideRCID;
 };
 
 using textblockstate_ptr_t = std::shared_ptr<TextBlockState>;

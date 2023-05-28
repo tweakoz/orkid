@@ -14,18 +14,42 @@ namespace ork::lev2 {
 
 void CameraMatrices::setCustomView(const ork::fmtx4& view) {
   _vmatrix = view;
-  // view.dump("setview");
   _explicitViewMatrix = true;
+  _updateInternal();
 }
 
 void CameraMatrices::setCustomProjection(const ork::fmtx4& proj) {
-  // proj.dump("setproj");
   _pmatrix                  = proj;
   _explicitProjectionMatrix = true;
   _aspectRatio              = 1.0f;
-  // mNear                     = .1f;
-  // mFar                      = 1000.f;
-  // mAper                     = 60;
+  _updateInternal();
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+void CameraMatrices::_updateInternal(){
+  if( _explicitViewMatrix ){
+
+  }
+  _vpmatrix = fmtx4::multiply_ltor(_vmatrix,_pmatrix);
+  fmtx4 ivmtx = _vmatrix.inverse();
+    float UpX    = ivmtx.elemXY(0, 0);
+  float UpY    = ivmtx.elemXY(0, 1);
+  float UpZ    = ivmtx.elemXY(0, 2);
+  float RightX = ivmtx.elemXY(1, 0);
+  float RightY = ivmtx.elemXY(1, 1);
+  float RightZ = ivmtx.elemXY(1, 2);
+
+  auto vec_billboardUp    = fvec4(UpX, UpY, UpZ);
+  auto vec_billboardRight = fvec4(RightX, RightY, RightZ);
+  auto v3up = vec_billboardUp.xyz();
+  auto v3rt = vec_billboardRight.xyz();
+  auto v3in = v3up.crossWith(v3rt);
+
+  _camdat.setXNormal(v3rt);
+  _camdat.setYNormal(v3up);
+  _camdat.setZNormal(v3in);
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -138,17 +138,26 @@ void FontMan::_endTextBlock(Context* context) {
   auto GBI        = context->GBI();
   auto RSI        = context->RSI();
   auto the_font   = currentFont();
+  auto top_state = _currentTextBlockState;
   if (bdraw) {
     if (stereocams) {
-      RenderContextInstData RCID(RCFD);
-      RCID._genMatrix = [this]() -> fmtx4 {
-        fmtx4 text_world;
-        text_world.setScale(0.1f);
-        return text_world;
-      };
+      RenderContextInstData* RCID = nullptr;
+      if( top_state ){
+        RCID = top_state->_overrideRCID.get();
+      }
+      if( nullptr == RCID ){
+        static RenderContextInstData DEFRCID(nullptr);
+        RCID = & DEFRCID;
+        DEFRCID._RCFD = RCFD;
+        RCID->_genMatrix = [this]() -> fmtx4 {
+          fmtx4 text_world;
+          text_world.setScale(0.1f);
+          return text_world;
+        };
+      }
       auto font_material = the_font->_fs_material;
       auto& RSTATE       = font_material->_rasterstate;
-      the_font->_pipe_stereo->wrappedDrawCall(RCID, [&]() { //
+      the_font->_pipe_stereo->wrappedDrawCall(*RCID, [&]() { //
         RSTATE.SetCullTest(ECullTest::OFF);
         RSTATE.SetDepthTest(EDepthTest::OFF);
         RSTATE.SetBlending(Blending::ALPHA_ADDITIVE);

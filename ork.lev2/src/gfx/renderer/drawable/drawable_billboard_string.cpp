@@ -129,8 +129,17 @@ BillboardStringDrawable::BillboardStringDrawable(const BillboardStringDrawableDa
 
   static auto tbstate = std::make_shared<TextBlockState>();
   tbstate->_font = FontMan::GetFont("i14");
+  const auto& FONTDESC = tbstate->_font->description();
+  int CHARW = FONTDESC._3d_char_width;
+  int CHARH = FONTDESC._3d_char_height;
+  int CHARUW = FONTDESC._3d_char_u_width;
+  int CHARVH = FONTDESC._3d_char_v_height;
+  
+  auto text_rcid = std::make_shared<RenderContextInstData>();
 
-  _rendercb = [this](lev2::RenderContextInstData& RCID){
+  // todo fix RCID wonkiness
+
+  _rendercb = [this,text_rcid](lev2::RenderContextInstData& RCID){
 
     auto context = RCID.context();
     auto mtxi = context->MTXI();
@@ -142,13 +151,30 @@ BillboardStringDrawable::BillboardStringDrawable(const BillboardStringDrawableDa
     auto monocams   = CPD._cameraMatrices;
 
     auto renderable = (CallbackRenderable*) RCID._irenderable;
-    auto worldmatrix = RCID.worldMatrix();
     auto& current_string = renderable->_drawDataA.get<std::string>();
-    fvec3 trans = worldmatrix.translation()+this->_offset;
 
     auto fontman = FontMan::instance();
 
     if( stereocams ){
+
+      auto mcammats = stereocams->_mono;
+
+      fvec3 pos = fvec3(0,0,0);
+      fvec2 VP(1920,1920);
+      fvec3 pixlen_x, pixlen_y;
+      mcammats->GetPixelLengthVectors(pos,VP,pixlen_x,pixlen_y);
+
+      //printf( "pixlen_x<%g %g %g>\n", pixlen_x.x, pixlen_x.y, pixlen_x.z );
+
+      text_rcid->_RCFD = RCFD;
+      text_rcid->_genMatrix = [&]()->fmtx4{
+        fmtx4 text_transform;
+        float scale = pixlen_x.length() * _data->_scale;
+        text_transform.compose(_data->_offset,fquat(),fvec3(scale));  
+        return text_transform;
+      };
+
+      tbstate->_overrideRCID = text_rcid;
 
       tbstate->_maxcharcount = 0; //current_string.size();
       tbstate->_stereo_3d_text = true;
@@ -162,6 +188,9 @@ BillboardStringDrawable::BillboardStringDrawable(const BillboardStringDrawableDa
       context->PopModColor();
     }
     else{
+
+      auto worldmatrix = RCID.worldMatrix();
+      fvec3 trans = worldmatrix.translation()+this->_offset;
 
       //////////////////////////////////////////////////////
 
