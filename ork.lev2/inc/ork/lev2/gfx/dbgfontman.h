@@ -86,6 +86,9 @@ public:
   std::string msFileName;
   std::string msFontName;
   GfxMaterial* mpMaterial;
+  freestyle_mtl_ptr_t _fs_material;
+  fxtechnique_constptr_t _tek_stereo_text;
+  fxpipeline_ptr_t _pipe_stereo;
   pbrmaterial_ptr_t _materialDeferred;
   bool _use_deferred = false;
   texture_ptr_t _texture;

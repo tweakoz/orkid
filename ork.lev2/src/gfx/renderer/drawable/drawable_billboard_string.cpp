@@ -128,49 +128,68 @@ BillboardStringDrawable::BillboardStringDrawable()
       _color = fcolor4::Yellow();
 
   _rendercb = [this](lev2::RenderContextInstData& RCID){
+
     auto context = RCID.context();
     auto mtxi = context->MTXI();
     auto RCFD = RCID._RCFD;
     const auto& CPD             = RCFD->topCPD();
     const CameraMatrices* cmtcs = CPD.cameraMatrices();
-    const CameraData& cdata     = cmtcs->_camdat;
+
+    auto stereocams = CPD._stereoCameraMatrices;
+    auto monocams   = CPD._cameraMatrices;
+
     auto renderable = (CallbackRenderable*) RCID._irenderable;
     auto worldmatrix = RCID.worldMatrix();
     auto& current_string = renderable->_drawDataA.get<std::string>();
+    fvec3 trans = worldmatrix.translation()+this->_offset;
 
-    auto PMatrix = cmtcs->GetPMatrix();
-    auto VMatrix = cmtcs->GetVMatrix();
-
-    fmtx4 bbrotmtx = VMatrix.inverse();
-    fmtx4 mtxflipy;
-    mtxflipy.setScale(1,-1,1);
-
-
-    fvec3 offset = this->_offset;
-
-    fvec3 trans = worldmatrix.translation()+offset;
-    fmtx4 bbmatrix;
-    bbmatrix.compose(trans,fquat(),_scale);
-
-
-    mtxi->PushMMatrix(fmtx4::multiply_ltor(mtxflipy,bbrotmtx,bbmatrix));
-    mtxi->PushVMatrix(VMatrix);
-    mtxi->PushPMatrix(PMatrix);
-    context->PushModColor(_color);
     FontMan::PushFont("i14");
     auto font = FontMan::currentFont();
 
-    font->_use_deferred = RCFD->_renderingmodel.isDeferredPBR();
+    if( stereocams ){
 
-    FontMan::beginTextBlock(context);
-    FontMan::DrawText(context, 0, 0, current_string.c_str());
-    FontMan::endTextBlock(context);
-    font->_use_deferred = false;
-    FontMan::PopFont();
-    context->PopModColor();
-    mtxi->PopMMatrix();
-    mtxi->PopVMatrix();
-    mtxi->PopPMatrix();
+    }
+    else{
+
+      //////////////////////////////////////////////////////
+
+      const CameraData& cdata     = cmtcs->_camdat;
+      auto PMatrix = cmtcs->GetPMatrix();
+      auto VMatrix = cmtcs->GetVMatrix();
+
+      fmtx4 bbrotmtx = VMatrix.inverse();
+      fmtx4 mtxflipy;
+      mtxflipy.setScale(1,-1,1);
+
+      fmtx4 bbmatrix;
+      bbmatrix.compose(trans,fquat(),_scale);
+
+      //////////////////////////////////////////////////////
+      font->_use_deferred = RCFD->_renderingmodel.isDeferredPBR();
+      //////////////////////////////////////////////////////
+
+      mtxi->PushMMatrix(fmtx4::multiply_ltor(mtxflipy,bbrotmtx,bbmatrix));
+      mtxi->PushVMatrix(VMatrix);
+      mtxi->PushPMatrix(PMatrix);
+
+      context->PushModColor(_color);
+
+      FontMan::beginTextBlock(context);
+      FontMan::DrawText(context, 0, 0, current_string.c_str());
+      FontMan::endTextBlock(context);
+
+      context->PopModColor();
+      mtxi->PopMMatrix();
+      mtxi->PopVMatrix();
+      mtxi->PopPMatrix();
+
+      FontMan::PopFont();
+
+      //////////////////////////////////////////////////////
+      font->_use_deferred = false;
+      //////////////////////////////////////////////////////
+    }
+
 
   };
 }

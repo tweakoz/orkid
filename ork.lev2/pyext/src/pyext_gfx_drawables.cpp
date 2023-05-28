@@ -245,7 +245,28 @@ void pyinit_gfx_drawables(py::module& module_lev2) {
                 })
               ;
   type_codec->registerStdCodec<labeled_point_drawabledata_ptr_t>(labeledpoint_drawdata_type);
-
+  /////////////////////////////////////////////////////////////////////////////////
+  auto billboard_drawdata_type = //
+      py::class_<BillboardStringDrawableData, DrawableData, billboard_string_drawabledata_ptr_t>(module_lev2, "BillboardStringDrawableData")
+          .def(py::init<>())
+          .def_property(
+              "text",
+              [](billboard_string_drawabledata_ptr_t drw) -> std::string { return drw->_initialString; },
+              [](billboard_string_drawabledata_ptr_t drw, std::string val) { drw->_initialString = val; })
+          .def_property(
+              "offset",
+              [](billboard_string_drawabledata_ptr_t drw) -> fvec3 { return drw->_offset; },
+              [](billboard_string_drawabledata_ptr_t drw, fvec3 val) { drw->_offset = val; })
+          .def_property(
+              "upvec",
+              [](billboard_string_drawabledata_ptr_t drw) -> fvec3 { return drw->_upvec; },
+              [](billboard_string_drawabledata_ptr_t drw, fvec3 val) { drw->_upvec = val; })
+          .def_property(
+              "scale",
+              [](billboard_string_drawabledata_ptr_t drw) -> float { return drw->_scale; },
+              [](billboard_string_drawabledata_ptr_t drw, float val) { drw->_scale = val; });
+  type_codec->registerStdCodec<billboard_string_drawabledata_ptr_t>(billboard_drawdata_type);
+  /////////////////////////////////////////////////////////////////////////////////
 }
 
 } //namespace ork::lev2 {

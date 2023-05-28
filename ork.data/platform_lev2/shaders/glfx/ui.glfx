@@ -6,7 +6,11 @@ fxconfig fxcfg_default { glsl_version = "150"; }
 // Interfaces
 ///////////////////////////////////////////////////////////////
 
-uniform_set ublock_vtx { mat4 mvp; }
+uniform_set ublock_vtx { //
+  mat4 mvp;
+  mat4 mvp_l;
+  mat4 mvp_r;
+}
 uniform_set ublock_frg {
   vec4 ModColor;
   sampler2D ColorMap;
@@ -68,6 +72,18 @@ vertex_shader vs_uitext : iface_vdefault {
   //frg_clr     = vtxcolor;
   frg_uv      = uv0;
 }
+vertex_shader vs_uitext_stereo //
+  : extension(GL_NV_stereo_view_rendering) //
+  : extension(GL_NV_viewport_array2) //
+ : iface_vdefault { //
+  gl_Position = mvp_l * position;
+  gl_SecondaryPositionNV = mvp_r*position;
+  //frg_clr     = vtxcolor;
+  frg_uv      = uv0;
+    gl_Layer = 0;
+    gl_ViewportMask[0] = 1;
+    gl_SecondaryViewportMaskNV[0] = 2;
+}
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_uitext : iface_fmt {
   vec4 s = texture(ColorMap, frg_uv);
@@ -96,6 +112,14 @@ technique uitext {
   fxconfig = fxcfg_default;
   pass p0 {
     vertex_shader   = vs_uitext;
+    fragment_shader = ps_uitext;
+    state_block     = sb_lerpblend;
+  }
+}
+technique uitext_stereo {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_uitext_stereo;
     fragment_shader = ps_uitext;
     state_block     = sb_lerpblend;
   }

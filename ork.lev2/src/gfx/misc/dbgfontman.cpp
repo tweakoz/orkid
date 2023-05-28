@@ -4,6 +4,7 @@
 
 #include <ork/pch.h>
 #include <ork/lev2/gfx/gfxenv.h>
+#include <ork/lev2/gfx/material_freestyle.h>
 #include <ork/lev2/gfx/gfxmaterial_ui.h>
 #include <ork/lev2/gfx/material_pbr.inl>
 #include <ork/lev2/gfx/texman.h>
@@ -85,10 +86,21 @@ void FontMan::_endTextBlock(Context* pTARG) {
   OrkAssert(pTARG->IMI()->RefTextVB().IsLocked());
   mTextWriter.UnLock(pTARG);
   bool bdraw = mTextWriter.miWriteCounter != 0;
+  auto RCFD = pTARG->topRenderContextFrameData();
+  const auto& CPD             = RCFD->topCPD();
+  auto stereocams = CPD._stereoCameraMatrices;
+
   if (bdraw) {
-    auto material = mpCurrentFont->GetMaterial();
-    mpCurrentFont->_materialDeferred->_variant = "font"_crcu;
-    pTARG->GBI()->DrawPrimitive(material, mTextWriter, ork::lev2::PrimitiveType::TRIANGLES);
+    if( stereocams ){
+      //stereocams->MVPL(vrroot*worldmatrix)
+      //stereocams->VPL()
+
+    }
+    else{
+      auto material = mpCurrentFont->GetMaterial();
+      mpCurrentFont->_materialDeferred->_variant = "font"_crcu;
+      pTARG->GBI()->DrawPrimitive(material, mTextWriter, ork::lev2::PrimitiveType::TRIANGLES);
+    }
   }
 }
 
@@ -529,25 +541,42 @@ GfxMaterial* Font::GetMaterial(void) {
   return _use_deferred ? _materialDeferred.get() : mpMaterial;
 }
 
-void Font::LoadFromDisk(Context* pTARG, const FontDesc& fdesc) {
+void Font::LoadFromDisk(Context* context, const FontDesc& fdesc) {
+
+  auto FXI = context->FXI();
+
   mpMaterial = new GfxMaterialUIText;
-  mpMaterial->gpuInit(pTARG);
+  mpMaterial->gpuInit(context);
 
   _materialDeferred = std::make_shared<PBRMaterial>();
-
+  //////////////////////////////////////////////////////////////////////
+  _fs_material = std::make_shared<FreestyleMaterial>();
+  _fs_material->gpuInit(context,"orkshader://ui");
+  _tek_stereo_text = _fs_material->technique("uitext_stereo");
+  FxPipelinePermutation permu;
+  permu._forced_technique = _tek_stereo_text;
+   auto fxcache = _fs_material->pipelineCache();
+  OrkAssert(fxcache);
+  _pipe_stereo = fxcache->findPipeline(permu);
+  OrkAssert(_pipe_stereo);
+  auto paramMVPL              = _fs_material->param("mvp_l");
+  auto paramMVPR              = _fs_material->param("mvp_r");
+  _pipe_stereo->bindParam(paramMVPL, "RCFD_Camera_MVP_Left"_crcsh);
+  _pipe_stereo->bindParam(paramMVPR, "RCFD_Camera_MVP_Right"_crcsh);
+  //////////////////////////////////////////////////////////////////////
   AssetPath apath(msFileName.c_str());
-  auto txi                                             = pTARG->TXI();
+  auto txi                                             = context->TXI();
   _texture                                            = std::make_shared<Texture>();
   _texture->_varmap.makeValueForKey<bool>("loadimmediate") = true;
   txi->LoadTexture(apath, _texture);
   mpMaterial->SetTexture(ETEXDEST_DIFFUSE, _texture.get());
   _texture->TexSamplingMode().PresetPointAndClamp();
-  pTARG->TXI()->ApplySamplingMode(_texture.get());
+  context->TXI()->ApplySamplingMode(_texture.get());
   mFontDesc = fdesc;
 
   //_materialDeferred->_asset_texcolor = asset::AssetManager<lev2::TextureAsset>::load(apath);
   _materialDeferred->_texColor = _texture; //_materialDeferred->_asset_texcolor.GetTexture();
-  _materialDeferred->gpuInit(pTARG);
+  _materialDeferred->gpuInit(context);
 
 #if defined(__APPLE__)
   /*if (_macosUseHIDPI) {
