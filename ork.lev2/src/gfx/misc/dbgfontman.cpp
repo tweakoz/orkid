@@ -760,6 +760,13 @@ void FontMan::_gpuInit(Context* pTARG) {
   Inconsolata48.miYShift        = -7;
   Inconsolata48.miAdvanceWidth  = 24;
   Inconsolata48.miAdvanceHeight = 40;
+  //
+  Inconsolata48._3d_char_width    = 48;
+  Inconsolata48._3d_char_height   = 48;
+  Inconsolata48._3d_char_u_offset = 1;
+  Inconsolata48._3d_char_v_offset = 6;
+  Inconsolata48._3d_char_u_width  = 48;
+  Inconsolata48._3d_char_v_height = 48;
 
   /////////////////////////////////////////////////////////////
 

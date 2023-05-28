@@ -128,18 +128,18 @@ BillboardStringDrawable::BillboardStringDrawable(const BillboardStringDrawableDa
   _color         = _data->_color;
 
   static auto tbstate  = std::make_shared<TextBlockState>();
-  tbstate->_font       = FontMan::GetFont("i14");
+  tbstate->_font       = FontMan::GetFont("i48");
   const auto& FONTDESC = tbstate->_font->description();
   int CHARW            = FONTDESC._3d_char_width;
   int CHARH            = FONTDESC._3d_char_height;
   int CHARUW           = FONTDESC._3d_char_u_width;
   int CHARVH           = FONTDESC._3d_char_v_height;
-
+  int ADVW             = FONTDESC.miAdvanceWidth;
   auto text_rcid = std::make_shared<RenderContextInstData>();
 
   // todo fix RCID wonkiness
 
-  _rendercb = [this, text_rcid, CHARW, CHARH](lev2::RenderContextInstData& RCID) {
+  _rendercb = [this, text_rcid, CHARW, CHARH,ADVW](lev2::RenderContextInstData& RCID) {
     auto context                = RCID.context();
     auto mtxi                   = context->MTXI();
     auto RCFD                   = RCID._RCFD;
@@ -167,7 +167,7 @@ BillboardStringDrawable::BillboardStringDrawable(const BillboardStringDrawableDa
 
       // printf( "pixlen_x<%g %g %g>\n", pixlen_x.x, pixlen_x.y, pixlen_x.z );
 
-      float str_center_x = (current_string.length() * CHARW) * (-0.5f);
+      float str_center_x = (current_string.length() * ADVW) * (-0.5f);
       float str_center_y = -0.5f * float(CHARH);
       fmtx4 center_transform;
       center_transform.setTranslation(fvec3(str_center_x, str_center_y, 0));
