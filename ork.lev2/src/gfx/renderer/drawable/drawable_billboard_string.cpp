@@ -19,14 +19,15 @@ ImplementReflectionX(ork::lev2::InstancedBillboardStringDrawableData, "Instanced
 
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
-void StringDrawableData::describeX(object::ObjectClass* clazz) {}
+void StringDrawableData::describeX(object::ObjectClass* clazz) {
+}
 ///////////////////////////////////////////////////////////////////////////////
-StringDrawableData::StringDrawableData(AssetPath path){
+StringDrawableData::StringDrawableData(AssetPath path) {
   _font = "i14";
 }
 ///////////////////////////////////////////////////////////////////////////////
 drawable_ptr_t StringDrawableData::createDrawable() const {
-  auto rval = std::make_shared<StringDrawable>(this);
+  auto rval            = std::make_shared<StringDrawable>(this);
   rval->_rendercb_user = _onRender;
   return rval;
 }
@@ -35,29 +36,28 @@ StringDrawable::StringDrawable(const StringDrawableData* data)
     : Drawable() {
   _data = data;
 
-  _rendercb = [this](lev2::RenderContextInstData& RCID){
-
+  _rendercb = [this](lev2::RenderContextInstData& RCID) {
     /////////////////////////////////////
-    if( _rendercb_user ){
+    if (_rendercb_user) {
       _rendercb_user(RCID);
     }
     /////////////////////////////////////
-    auto context = RCID.context();
-    auto mtxi = context->MTXI();
-    auto fbi = context->FBI();
-    auto RCFD = RCID._RCFD;
-    const auto& CPD             = RCFD->topCPD();
-    auto renderable = (CallbackRenderable*) RCID._irenderable;
-    auto data = renderable->_drawDataA.get<const StringDrawableData*>();
+    auto context         = RCID.context();
+    auto mtxi            = context->MTXI();
+    auto fbi             = context->FBI();
+    auto RCFD            = RCID._RCFD;
+    const auto& CPD      = RCFD->topCPD();
+    auto renderable      = (CallbackRenderable*)RCID._irenderable;
+    auto data            = renderable->_drawDataA.get<const StringDrawableData*>();
     auto& current_string = data->_initialString;
-    auto fontname = data->_font;
-    if(fontname.empty()){
+    auto fontname        = data->_font;
+    if (fontname.empty()) {
       fontname = "i14";
     }
 
     int w = fbi->GetVPW();
     int h = fbi->GetVPH();
-    mtxi->PushUIMatrix(w,h);
+    mtxi->PushUIMatrix(w, h);
 
     context->PushModColor(data->_color);
     FontMan::PushFont(fontname);
@@ -73,17 +73,16 @@ StringDrawable::StringDrawable(const StringDrawableData* data)
     FontMan::PopFont();
     context->PopModColor();
     mtxi->PopUIMatrix();
-
   };
 }
 ///////////////////////////////////////////////////////////////////////////////
-StringDrawable::~StringDrawable(){
+StringDrawable::~StringDrawable() {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void StringDrawable::enqueueToRenderQueue(drawablebufitem_constptr_t item, lev2::IRenderer* renderer) const {
   ork::opq::assertOnQueue2(opq::mainSerialQueue());
   auto& cb_renderable = renderer->enqueueCallback();
-  auto worldmatrix = item->mXfData._worldTransform->composed();
+  auto worldmatrix    = item->mXfData._worldTransform->composed();
   cb_renderable.SetMatrix(worldmatrix);
   cb_renderable.SetObject(GetOwner());
   cb_renderable.SetRenderCallback(_rendercb);
@@ -95,9 +94,10 @@ void StringDrawable::enqueueToRenderQueue(drawablebufitem_constptr_t item, lev2:
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-void BillboardStringDrawableData::describeX(object::ObjectClass* clazz) {}
+void BillboardStringDrawableData::describeX(object::ObjectClass* clazz) {
+}
 ///////////////////////////////////////////////////////////////////////////////
-BillboardStringDrawableData::BillboardStringDrawableData(AssetPath path){
+BillboardStringDrawableData::BillboardStringDrawableData(AssetPath path) {
   _color = fcolor4::Yellow();
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -108,12 +108,12 @@ drawable_ptr_t BillboardStringDrawableData::createDrawable() const {
 void BillboardStringDrawable::enqueueToRenderQueue(drawablebufitem_constptr_t item, lev2::IRenderer* renderer) const {
   ork::opq::assertOnQueue2(opq::mainSerialQueue());
   auto& cb_renderable = renderer->enqueueCallback();
-  auto worldmatrix = item->mXfData._worldTransform->composed();
+  auto worldmatrix    = item->mXfData._worldTransform->composed();
   cb_renderable.SetMatrix(worldmatrix);
   cb_renderable.SetObject(GetOwner());
   cb_renderable.SetRenderCallback(_rendercb);
   cb_renderable.SetSortKey(0x7fff);
-  cb_renderable._drawDataA.set<std::string>(_currentString);
+  cb_renderable._drawDataA.set<std::string>(_data->_initialString);
   cb_renderable.SetModColor(renderer->GetTarget()->RefModColor());
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -122,88 +122,97 @@ BillboardStringDrawable::BillboardStringDrawable(const BillboardStringDrawableDa
     , _data(data) {
 
   _currentString = _data->_initialString;
-  _offset = _data->_offset;
-  _scale = _data->_scale;
-  _upvec = _data->_upvec;
-  _color = _data->_color;
+  _offset        = _data->_offset;
+  _scale         = _data->_scale;
+  _upvec         = _data->_upvec;
+  _color         = _data->_color;
 
-  static auto tbstate = std::make_shared<TextBlockState>();
-  tbstate->_font = FontMan::GetFont("i14");
+  static auto tbstate  = std::make_shared<TextBlockState>();
+  tbstate->_font       = FontMan::GetFont("i14");
   const auto& FONTDESC = tbstate->_font->description();
-  int CHARW = FONTDESC._3d_char_width;
-  int CHARH = FONTDESC._3d_char_height;
-  int CHARUW = FONTDESC._3d_char_u_width;
-  int CHARVH = FONTDESC._3d_char_v_height;
-  
+  int CHARW            = FONTDESC._3d_char_width;
+  int CHARH            = FONTDESC._3d_char_height;
+  int CHARUW           = FONTDESC._3d_char_u_width;
+  int CHARVH           = FONTDESC._3d_char_v_height;
+
   auto text_rcid = std::make_shared<RenderContextInstData>();
 
   // todo fix RCID wonkiness
 
-  _rendercb = [this,text_rcid](lev2::RenderContextInstData& RCID){
-
-    auto context = RCID.context();
-    auto mtxi = context->MTXI();
-    auto RCFD = RCID._RCFD;
+  _rendercb = [this, text_rcid, CHARW, CHARH](lev2::RenderContextInstData& RCID) {
+    auto context                = RCID.context();
+    auto mtxi                   = context->MTXI();
+    auto RCFD                   = RCID._RCFD;
     const auto& CPD             = RCFD->topCPD();
     const CameraMatrices* cmtcs = CPD.cameraMatrices();
 
     auto stereocams = CPD._stereoCameraMatrices;
     auto monocams   = CPD._cameraMatrices;
 
-    auto renderable = (CallbackRenderable*) RCID._irenderable;
+    auto renderable      = (CallbackRenderable*)RCID._irenderable;
     auto& current_string = renderable->_drawDataA.get<std::string>();
 
     auto fontman = FontMan::instance();
 
-    if( stereocams ){
+    if (stereocams) {
 
       auto mcammats = stereocams->_mono;
 
-      fvec3 pos = fvec3(0,0,0);
-      fvec2 VP(1920,1920);
+      const auto& VPRECT = CPD.mDstRect;
+      fvec2 VP(VPRECT._w>>1, VPRECT._h);
+
+      fvec3 pos = fvec3(0, 0, 0);
       fvec3 pixlen_x, pixlen_y;
-      mcammats->GetPixelLengthVectors(pos,VP,pixlen_x,pixlen_y);
+      mcammats->GetPixelLengthVectors(pos, VP, pixlen_x, pixlen_y);
 
-      //printf( "pixlen_x<%g %g %g>\n", pixlen_x.x, pixlen_x.y, pixlen_x.z );
+      // printf( "pixlen_x<%g %g %g>\n", pixlen_x.x, pixlen_x.y, pixlen_x.z );
 
-      text_rcid->_RCFD = RCFD;
-      text_rcid->_genMatrix = [&]()->fmtx4{
+      float str_center_x = (current_string.length() * CHARW) * (-0.5f);
+      float str_center_y = -0.5f * float(CHARH);
+      fmtx4 center_transform;
+      center_transform.setTranslation(fvec3(str_center_x, str_center_y, 0));
+
+      text_rcid->_RCFD      = RCFD;
+      text_rcid->_genMatrix = [&]() -> fmtx4 {
         fmtx4 text_transform;
         float scale = pixlen_x.length() * _data->_scale;
-        text_transform.compose(_data->_offset,fquat(),fvec3(scale));  
-        return text_transform;
+        text_transform.compose(_data->_offset, fquat(), fvec3(scale));
+        fmtx4 bbrotmtx = mcammats->_vmatrix.inverse();
+
+        return text_transform * (bbrotmtx * center_transform);
       };
 
       tbstate->_overrideRCID = text_rcid;
 
-      tbstate->_maxcharcount = 0; //current_string.size();
+      tbstate->_maxcharcount   = 0; // current_string.size();
       tbstate->_stereo_3d_text = true;
       context->PushModColor(_color);
-      fontman->_beginTextBlockWithState(context,tbstate);
-      fontman->_enqueueText( 0, 0, // x, y
-                             fontman->textwriter(), // vtxwriter
-                             current_string.c_str(), // text
-                             fcolor4::White());
-      fontman->_endTextBlockWithState(context,tbstate);
+      fontman->_beginTextBlockWithState(context, tbstate);
+      fontman->_enqueueText(
+          0,
+          0,                      // x, y
+          fontman->textwriter(),  // vtxwriter
+          current_string.c_str(), // text
+          fcolor4::White());
+      fontman->_endTextBlockWithState(context, tbstate);
       context->PopModColor();
-    }
-    else{
+    } else {
 
       auto worldmatrix = RCID.worldMatrix();
-      fvec3 trans = worldmatrix.translation()+this->_offset;
+      fvec3 trans      = worldmatrix.translation() + this->_offset;
 
       //////////////////////////////////////////////////////
 
-      const CameraData& cdata     = cmtcs->_camdat;
-      auto PMatrix = cmtcs->GetPMatrix();
-      auto VMatrix = cmtcs->GetVMatrix();
+      const CameraData& cdata = cmtcs->_camdat;
+      auto PMatrix            = cmtcs->GetPMatrix();
+      auto VMatrix            = cmtcs->GetVMatrix();
 
       fmtx4 bbrotmtx = VMatrix.inverse();
       fmtx4 mtxflipy;
-      mtxflipy.setScale(1,-1,1);
+      mtxflipy.setScale(1, -1, 1);
 
       fmtx4 bbmatrix;
-      bbmatrix.compose(trans,fquat(),_scale);
+      bbmatrix.compose(trans, fquat(), _scale);
       fontman->_pushFont("i14");
       auto font = FontMan::currentFont();
 
@@ -211,7 +220,7 @@ BillboardStringDrawable::BillboardStringDrawable(const BillboardStringDrawableDa
       font->_use_deferred = RCFD->_renderingmodel.isDeferredPBR();
       //////////////////////////////////////////////////////
 
-      mtxi->PushMMatrix(fmtx4::multiply_ltor(mtxflipy,bbrotmtx,bbmatrix));
+      mtxi->PushMMatrix(fmtx4::multiply_ltor(mtxflipy, bbrotmtx, bbmatrix));
       mtxi->PushVMatrix(VMatrix);
       mtxi->PushPMatrix(PMatrix);
 
@@ -232,8 +241,6 @@ BillboardStringDrawable::BillboardStringDrawable(const BillboardStringDrawableDa
       font->_use_deferred = false;
       //////////////////////////////////////////////////////
     }
-
-
   };
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -244,35 +251,35 @@ BillboardStringDrawable::~BillboardStringDrawable() {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-void InstancedBillboardStringDrawableData::describeX(object::ObjectClass* clazz){
+void InstancedBillboardStringDrawableData::describeX(object::ObjectClass* clazz) {
 }
 
-InstancedBillboardStringDrawableData::InstancedBillboardStringDrawableData(){
+InstancedBillboardStringDrawableData::InstancedBillboardStringDrawableData() {
 }
 ///////////////////////////////////////////////////////////////////////////////
 drawable_ptr_t InstancedBillboardStringDrawableData::createDrawable() const {
-  auto drw = std::make_shared<InstancedBillboardStringDrawable>();
+  auto drw   = std::make_shared<InstancedBillboardStringDrawable>();
   drw->_data = this;
-  //drw->_currentString = _initialString;
+  // drw->_currentString = _initialString;
   drw->_offset = _offset;
-  drw->_scale = _scale;
-  drw->_upvec = _upvec;
-  //drw->bindModelAsset(_assetpath);
-  //drw->_modcolor = _modcolor;
+  drw->_scale  = _scale;
+  drw->_upvec  = _upvec;
+  // drw->bindModelAsset(_assetpath);
+  // drw->_modcolor = _modcolor;
   return drw;
 }
 /////////////////////////////////////////////////////////////////////
-InstancedBillboardStringDrawable::InstancedBillboardStringDrawable(){
-  _rendercb = [this](lev2::RenderContextInstData& RCID){
-    auto context = RCID.context();
-    auto mtxi = context->MTXI();
-    auto RCFD = RCID._RCFD;
+InstancedBillboardStringDrawable::InstancedBillboardStringDrawable() {
+  _rendercb = [this](lev2::RenderContextInstData& RCID) {
+    auto context                = RCID.context();
+    auto mtxi                   = context->MTXI();
+    auto RCFD                   = RCID._RCFD;
     const auto& CPD             = RCFD->topCPD();
     const CameraMatrices* cmtcs = CPD.cameraMatrices();
     const CameraData& cdata     = cmtcs->_camdat;
-    auto renderable = (CallbackRenderable*) RCID._irenderable;
-    auto drawable = renderable->_drawDataB.get<const InstancedBillboardStringDrawable*>();
-    auto instance_data = drawable->_instancedata;
+    auto renderable             = (CallbackRenderable*)RCID._irenderable;
+    auto drawable               = renderable->_drawDataB.get<const InstancedBillboardStringDrawable*>();
+    auto instance_data          = drawable->_instancedata;
 
     auto PMatrix = cmtcs->GetPMatrix();
     auto VMatrix = cmtcs->GetVMatrix();
@@ -280,33 +287,33 @@ InstancedBillboardStringDrawable::InstancedBillboardStringDrawable(){
     fmtx4 bbrotmtx;
     fmtx4 bbmatrix;
     fvec3 offset = this->_offset;
-    fquat rot = fquat();
+    fquat rot    = fquat();
 
     mtxi->PushVMatrix(VMatrix);
     mtxi->PushPMatrix(PMatrix);
     context->PushModColor(fcolor4::Yellow());
     FontMan::PushFont("i48");
-    auto font = FontMan::currentFont();
+    auto font           = FontMan::currentFont();
     font->_use_deferred = true;
 
     _text_items.clear();
 
-    for( size_t i=0; i<instance_data->_count; i++ ){
-        const auto& miscdata = instance_data->_miscdata[i];
-        if( auto md_as_str = miscdata.tryAs<std::string>() ){
-          const auto& string = md_as_str.value();
-          auto& out_item = _text_items.emplace_back();
+    for (size_t i = 0; i < instance_data->_count; i++) {
+      const auto& miscdata = instance_data->_miscdata[i];
+      if (auto md_as_str = miscdata.tryAs<std::string>()) {
+        const auto& string = md_as_str.value();
+        auto& out_item     = _text_items.emplace_back();
 
-          const auto& worldmatrix = instance_data->_worldmatrices[i];
-          auto wtrans = worldmatrix.translation();
-          bbrotmtx.createBillboard2(wtrans,cdata.mEye,this->_upvec);
-          fvec3 trans = wtrans+offset;
-          bbmatrix.compose(trans,rot,this->_scale);
-          out_item._wmatrix = fmtx4::multiply_ltor(bbrotmtx,bbmatrix);
-          out_item._text = string.c_str();
-        }
+        const auto& worldmatrix = instance_data->_worldmatrices[i];
+        auto wtrans             = worldmatrix.translation();
+        bbrotmtx.createBillboard2(wtrans, cdata.mEye, this->_upvec);
+        fvec3 trans = wtrans + offset;
+        bbmatrix.compose(trans, rot, this->_scale);
+        out_item._wmatrix = fmtx4::multiply_ltor(bbrotmtx, bbmatrix);
+        out_item._text    = string.c_str();
+      }
     }
-    FontMan::DrawTextItems(context,_text_items);
+    FontMan::DrawTextItems(context, _text_items);
     font->_use_deferred = false;
     FontMan::PopFont();
     context->PopModColor();
@@ -314,23 +321,22 @@ InstancedBillboardStringDrawable::InstancedBillboardStringDrawable(){
     mtxi->PopPMatrix();
   };
 }
-InstancedBillboardStringDrawable::~InstancedBillboardStringDrawable(){
-
+InstancedBillboardStringDrawable::~InstancedBillboardStringDrawable() {
 }
 /////////////////////////////////////////////////////////////////////
 void InstancedBillboardStringDrawable::enqueueToRenderQueue(drawablebufitem_constptr_t item, lev2::IRenderer* renderer) const {
   ork::opq::assertOnQueue2(opq::mainSerialQueue());
   auto& cb_renderable = renderer->enqueueCallback();
-  //auto worldmatrix = item->mXfData._worldTransform->composed();
-  //cb_renderable.SetMatrix(worldmatrix);
+  // auto worldmatrix = item->mXfData._worldTransform->composed();
+  // cb_renderable.SetMatrix(worldmatrix);
   cb_renderable.SetObject(GetOwner());
   cb_renderable.SetRenderCallback(_rendercb);
   cb_renderable.SetSortKey(0x7fff);
   cb_renderable._drawDataB.set<const InstancedBillboardStringDrawable*>(this);
-  cb_renderable.SetModColor(renderer->GetTarget()->RefModColor());  
+  cb_renderable.SetModColor(renderer->GetTarget()->RefModColor());
 }
 
 /////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-} //namespace ork::lev2 {
+} // namespace ork::lev2
