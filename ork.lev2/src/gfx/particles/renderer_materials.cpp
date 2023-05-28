@@ -102,7 +102,8 @@ void FlatMaterial::gpuInit(const RenderContextInstData& RCID) {
   _material->gpuInit(context, "orkshader://particle");
   _material->_rasterstate.SetBlending(Blending::ADDITIVE);
   _material->_rasterstate.SetCullTest(ECullTest::OFF);
-  _material->_rasterstate.SetDepthTest(EDepthTest::LESS);
+  _material->_rasterstate.SetDepthTest(EDepthTest::LEQUALS);
+  _material->_rasterstate.SetZWriteMask(false);
 
   auto fxparameterMVP      = _material->param("MatMVP");
   auto fxparameterColor  = _material->param("modcolor");
@@ -116,7 +117,6 @@ void FlatMaterial::gpuInit(const RenderContextInstData& RCID) {
   _tek_sprites        = _material->technique("tflatparticle_sprites");
   _tek_streaks        = _material->technique("tflatparticle_streaks");
   _tek_sprites_stereo = _material->technique("tflatparticle_sprites_stereo");
-  _tek_streaks_stereoCI  = _material->technique("tflatparticle_streaks_stereoCI");
 
 #if defined(ENABLE_COMPUTE_SHADERS)
 
@@ -125,6 +125,8 @@ void FlatMaterial::gpuInit(const RenderContextInstData& RCID) {
 
   _streakcu_vertex_io_buffer = CI->createStorageBuffer(8 << 20);
   _streakcu_shader           = _material->computeShader("compute_streaks");
+
+  _tek_streaks_stereoCI  = _material->technique("tflatparticle_streaks_stereoCI");
 
 #endif
 }
@@ -209,25 +211,17 @@ void GradientMaterial::gpuInit(const RenderContextInstData& RCID) {
   _material->gpuInit(context, "orkshader://particle");
   _material->_rasterstate.SetBlending(Blending::ADDITIVE);
   _material->_rasterstate.SetCullTest(ECullTest::OFF);
-  _material->_rasterstate.SetDepthTest(EDepthTest::OFF);
+  _material->_rasterstate.SetDepthTest(EDepthTest::LEQUALS);
+  _material->_rasterstate.SetZWriteMask(false);
+  //_material->_rasterstate.SetDepthTest(EDepthTest::OFF);
 
-  auto fxparameterM       = _material->param("MatM");
   auto fxparameterMVP     = _material->param("MatMVP");
-  auto fxparameterIV      = _material->param("MatIV");
-  auto fxparameterIVP     = _material->param("MatIVP");
-  auto fxparameterVP      = _material->param("MatVP");
-  auto fxparameterInvDim  = _material->param("Rtg_InvDim");
   auto fxparameterGradMap = _material->param("GradientMap");
   _param_mod_texture      = _material->param("ColorMap");
   auto pipeline_cache     = _material->pipelineCache();
 
   _pipeline = pipeline_cache->findPipeline(RCID);
   _pipeline->bindParam(fxparameterMVP, "RCFD_Camera_MVP_Mono"_crcsh);
-  _pipeline->bindParam(fxparameterIVP, "RCFD_Camera_IVP_Mono"_crcsh);
-  _pipeline->bindParam(fxparameterVP, "RCFD_Camera_VP_Mono"_crcsh);
-  _pipeline->bindParam(fxparameterIV, "RCFD_Camera_IV_Mono"_crcsh);
-  _pipeline->bindParam(fxparameterM, "RCFD_M"_crcsh);
-  _pipeline->bindParam(fxparameterInvDim, "CPD_Rtg_InvDim"_crcsh);
   _pipeline->bindParam(fxparameterGradMap, _gradient_texture);
   FxPipeline::varval_generator_t gen_tex = [=]() -> FxPipeline::varval_t {
     auto as_tex = std::dynamic_pointer_cast<TextureAsset>(_modulation_texture_asset);
@@ -247,6 +241,19 @@ void GradientMaterial::gpuInit(const RenderContextInstData& RCID) {
 
   _tek_sprites = _material->technique("tgradparticle_sprites");
   _tek_streaks = _material->technique("tgradparticle_streaks");
+
+#if defined(ENABLE_COMPUTE_SHADERS)
+
+  auto FXI = context->FXI();
+  auto CI  = context->CI();
+
+  _streakcu_vertex_io_buffer = CI->createStorageBuffer(8 << 20);
+  _streakcu_shader           = _material->computeShader("compute_streaks");
+
+  _tek_streaks_stereoCI  = _material->technique("tgradparticle_streaks_stereo");
+
+#endif
+
 }
 /////////////////////////////////////////////////////////////////////////////////////////////
 void GradientMaterial::update(const RenderContextInstData& RCID) {
@@ -266,11 +273,21 @@ void GradientMaterial::update(const RenderContextInstData& RCID) {
         256, //
         1);
     _grad_render_mtl->_rasterstate.SetRGBAWriteMask(true, true);
+    /////////////////////////////////////////
+    // ensure this operation is not stereo
+    //  as that will mess up viewport settings
+    /////////////////////////////////////////
+    auto& CPD = (CompositingPassData&) RCID._RCFD->topCPD();
+    bool prev_stereo = CPD.isStereoOnePass();
+    CPD.setStereoOnePass(false);
+    /////////////////////////////////////////
     FBI->PushRtGroup(_gradient_rtgroup.get());
     _grad_render_pipeline->wrappedDrawCall(RCID, [&]() { //
       GBI->DrawPrimitiveEML(vw, PrimitiveType::TRIANGLES);
     });
+    CPD.setStereoOnePass(prev_stereo);
     FBI->PopRtGroup();
+    /////////////////////////////////////////
   }
   ///////////////////////////////
   _material->_rasterstate.SetBlending(_blending);

@@ -712,11 +712,21 @@ vertex_shader vs_streak_stereoCI //
     gl_ViewportMask[0] = 1;
     gl_SecondaryViewportMaskNV[0] = 2;
 }
-fragment_shader ps_flat_stereo 
-  : fface_psys_stereo {
+///////////////////////////////////////////////////////////////
+fragment_shader ps_flat_stereo //
+  : fface_psys_stereo { //
   float unit_age = frg_age_rand.x;
   vec3 C  = modcolor.xyz*(1.0-unit_age);
   out_clr = vec4(C, modcolor.w);
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_grad_stereo //
+  : fface_psys_stereo { //
+  float unit_age = frg_age_rand.x;
+  vec4 gmap = texture(GradientMap, vec2(unit_age, 0.0));
+  vec4 cmap = texture(ColorMap, frg_uv.xy);
+  out_clr.xyz = gmap.xyz*cmap.xyz;
+  out_clr.w = gmap.w*cmap.w;
 }
 ///////////////////////////////////////////////////////////////
 technique tflatparticle_streaks_stereoCI {
@@ -724,6 +734,14 @@ technique tflatparticle_streaks_stereoCI {
   pass p0 {
     vertex_shader   = vs_streak_stereoCI;
     fragment_shader = ps_flat_stereo;
+    state_block     = sb_default;
+  }
+}
+technique tgradparticle_streaks_stereo {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_streak_stereoCI;
+    fragment_shader = ps_grad_stereo;
     state_block     = sb_default;
   }
 }
