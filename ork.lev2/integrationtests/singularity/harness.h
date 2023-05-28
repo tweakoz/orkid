@@ -109,7 +109,7 @@ struct SingularityBenchMarkApp final : public OrkEzApp {
   int _numiters     = 0;
   double _cur_time  = 0.0;
   double _prev_time = 0.0;
-  lev2::Font* _font;
+  lev2::font_rawconstptr_t _font = nullptr;
   int _charw             = 0;
   int _charh             = 0;
   double _underrunrate   = 0;

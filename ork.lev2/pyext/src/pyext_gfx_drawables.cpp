@@ -264,7 +264,11 @@ void pyinit_gfx_drawables(py::module& module_lev2) {
           .def_property(
               "scale",
               [](billboard_string_drawabledata_ptr_t drw) -> float { return drw->_scale; },
-              [](billboard_string_drawabledata_ptr_t drw, float val) { drw->_scale = val; });
+              [](billboard_string_drawabledata_ptr_t drw, float val) { drw->_scale = val; })
+          .def_property(
+              "color",
+              [](billboard_string_drawabledata_ptr_t drw) -> fvec4 { return drw->_color; },
+              [](billboard_string_drawabledata_ptr_t drw, fvec4 val) { drw->_color = val; });
   type_codec->registerStdCodec<billboard_string_drawabledata_ptr_t>(billboard_drawdata_type);
   /////////////////////////////////////////////////////////////////////////////////
 }

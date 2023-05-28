@@ -378,6 +378,7 @@ void CtxGLFW::Show() {
       glfwSetWindowAttrib(_glfwWindow, GLFW_FOCUS_ON_SHOW, GLFW_TRUE);
       // glfwSetInputMode(_glfwWindow, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
       // glfwSetInputMode(_glfwWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+      glfwFocusWindow(_glfwWindow);
     }
 
     glfwSetWindowRefreshCallback(_glfwWindow, _glfw_callback_refresh);

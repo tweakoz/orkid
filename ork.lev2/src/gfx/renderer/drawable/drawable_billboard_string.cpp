@@ -98,16 +98,11 @@ void StringDrawable::enqueueToRenderQueue(drawablebufitem_constptr_t item, lev2:
 void BillboardStringDrawableData::describeX(object::ObjectClass* clazz) {}
 ///////////////////////////////////////////////////////////////////////////////
 BillboardStringDrawableData::BillboardStringDrawableData(AssetPath path){
-
+  _color = fcolor4::Yellow();
 }
 ///////////////////////////////////////////////////////////////////////////////
 drawable_ptr_t BillboardStringDrawableData::createDrawable() const {
-  auto rval = std::make_shared<BillboardStringDrawable>();
-  rval->_currentString = _initialString;
-  rval->_offset = _offset;
-  rval->_scale = _scale;
-  rval->_upvec = _upvec;
-  return rval;
+  return std::make_shared<BillboardStringDrawable>(this);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void BillboardStringDrawable::enqueueToRenderQueue(drawablebufitem_constptr_t item, lev2::IRenderer* renderer) const {
@@ -122,10 +117,18 @@ void BillboardStringDrawable::enqueueToRenderQueue(drawablebufitem_constptr_t it
   cb_renderable.SetModColor(renderer->GetTarget()->RefModColor());
 }
 ///////////////////////////////////////////////////////////////////////////////
-BillboardStringDrawable::BillboardStringDrawable()
-    : Drawable() {
+BillboardStringDrawable::BillboardStringDrawable(const BillboardStringDrawableData* data)
+    : Drawable()
+    , _data(data) {
 
-      _color = fcolor4::Yellow();
+  _currentString = _data->_initialString;
+  _offset = _data->_offset;
+  _scale = _data->_scale;
+  _upvec = _data->_upvec;
+  _color = _data->_color;
+
+  static auto tbstate = std::make_shared<TextBlockState>();
+  tbstate->_font = FontMan::GetFont("i14");
 
   _rendercb = [this](lev2::RenderContextInstData& RCID){
 
@@ -143,11 +146,20 @@ BillboardStringDrawable::BillboardStringDrawable()
     auto& current_string = renderable->_drawDataA.get<std::string>();
     fvec3 trans = worldmatrix.translation()+this->_offset;
 
-    FontMan::PushFont("i14");
-    auto font = FontMan::currentFont();
+    auto fontman = FontMan::instance();
 
     if( stereocams ){
 
+      tbstate->_maxcharcount = 0; //current_string.size();
+      tbstate->_stereo_3d_text = true;
+      context->PushModColor(_color);
+      fontman->_beginTextBlockWithState(context,tbstate);
+      fontman->_enqueueText( 0, 0, // x, y
+                             fontman->textwriter(), // vtxwriter
+                             current_string.c_str(), // text
+                             fcolor4::White());
+      fontman->_endTextBlockWithState(context,tbstate);
+      context->PopModColor();
     }
     else{
 
@@ -163,6 +175,8 @@ BillboardStringDrawable::BillboardStringDrawable()
 
       fmtx4 bbmatrix;
       bbmatrix.compose(trans,fquat(),_scale);
+      fontman->_pushFont("i14");
+      auto font = FontMan::currentFont();
 
       //////////////////////////////////////////////////////
       font->_use_deferred = RCFD->_renderingmodel.isDeferredPBR();

@@ -521,6 +521,8 @@ struct BillboardStringDrawableData : public DrawableData {
   fvec3 _offset;
   fvec3 _upvec;
   float _scale = 1.0f;
+  fvec4 _color;
+  lev2::font_rawconstptr_t _font = nullptr;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -551,9 +553,12 @@ struct StringDrawable final : public Drawable {
 
 struct BillboardStringDrawable final : public Drawable {
 
-  BillboardStringDrawable();
+  BillboardStringDrawable(const BillboardStringDrawableData* data);
   ~BillboardStringDrawable();
   void enqueueToRenderQueue(drawablebufitem_constptr_t item, lev2::IRenderer* renderer) const override;
+
+  const BillboardStringDrawableData* _data = nullptr;
+
   std::string _currentString;
   fvec3 _offset;
   float _scale = 1.0f;

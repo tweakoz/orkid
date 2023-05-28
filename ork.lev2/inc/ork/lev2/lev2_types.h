@@ -43,6 +43,7 @@ using window_ptr_t           = std::shared_ptr<Window>;
 using appwindow_ptr_t        = std::shared_ptr<AppWindow>;
 using font_ptr_t = std::shared_ptr<Font>;
 using fontman_ptr_t = std::shared_ptr<FontMan>;
+using font_rawconstptr_t = const Font*;
 
 ///////////////////////////////////////////////////////////////////////////////
 

@@ -148,7 +148,7 @@ public:
   int miRejected = 0;
   int miAccepted = 0;
   GedSurface* _gedVP = nullptr;
-  ork::lev2::Font* _font = nullptr;
+  ork::lev2::font_rawconstptr_t _font = nullptr;
   int _char_w = 0;
   int _char_h = 0;
   int _bannerHeight = 0;
