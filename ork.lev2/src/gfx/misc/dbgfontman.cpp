@@ -151,7 +151,7 @@ void FontMan::_endTextBlock(Context* context) {
         DEFRCID._RCFD = RCFD;
         RCID->_genMatrix = [this]() -> fmtx4 {
           fmtx4 text_world;
-          text_world.setScale(0.1f);
+          text_world.setScale(1.1f);
           return text_world;
         };
       }

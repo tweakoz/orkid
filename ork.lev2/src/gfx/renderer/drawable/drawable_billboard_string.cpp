@@ -175,6 +175,14 @@ BillboardStringDrawable::BillboardStringDrawable(const BillboardStringDrawableDa
       fmtx4 center_transform;
       center_transform.setTranslation(fvec3(str_center_x, str_center_y, 0));
 
+      auto VL = stereocams->VL();
+      auto VR = stereocams->VR();
+      auto eyeL = VL.inverse().translation();
+      auto eyeR = VR.inverse().translation();
+      auto eyeM = (eyeL+eyeR)*0.5f;
+
+      fmtx4 IV2 = IVMATRIX;
+      IV2.setColumn(3,fvec4(0,0,0,1));
       text_rcid->_RCFD      = RCFD;
       text_rcid->_genMatrix = [&]() -> fmtx4 {
         fmtx4 text_transform;
@@ -182,17 +190,23 @@ BillboardStringDrawable::BillboardStringDrawable(const BillboardStringDrawableDa
           auto X = mcammats->_camdat.xNormal();
           auto Y = mcammats->_camdat.yNormal();
           auto Z = mcammats->_camdat.zNormal();
-          auto camrelpos = eyepos - (Z * _data->_offset.z)
+          auto camrelpos = eyeM - (Z * _data->_offset.z)
                                   + (Y * _data->_offset.x)
                                   + (X * _data->_offset.y); // WTF ?
-            text_transform.compose(camrelpos, fquat(), _data->_scale / float(CHARW));
+          fmtx4 mtxT, mtxS;
+          mtxT.setTranslation(camrelpos);
+          mtxS.setScale(_data->_scale / float(CHARW));
+          text_transform = mtxT*(IV2*mtxS*center_transform);
+
+          // * (IVMATRIX * center_transform);
         }
         else{
           float scale = pixlen_x.length() * _data->_scale;
           text_transform.compose(_data->_offset, fquat(), fvec3(scale));
+          text_transform = text_transform* (IVMATRIX * center_transform);
         }
 
-        return text_transform * (IVMATRIX * center_transform);
+        return text_transform; 
       };
 
       tbstate->_overrideRCID = text_rcid;
