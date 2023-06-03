@@ -160,7 +160,7 @@ void FontMan::_endTextBlock(Context* context) {
       the_font->_pipe_stereo->wrappedDrawCall(*RCID, [&]() { //
         RSTATE.SetCullTest(ECullTest::OFF);
         RSTATE.SetDepthTest(EDepthTest::OFF);
-        RSTATE.SetBlending(Blending::ALPHA_ADDITIVE);
+        RSTATE.SetBlending(top_state->_blending);
         RSI->BindRasterState(RSTATE);
         GBI->DrawPrimitiveEML(mTextWriter, ork::lev2::PrimitiveType::TRIANGLES);
       });

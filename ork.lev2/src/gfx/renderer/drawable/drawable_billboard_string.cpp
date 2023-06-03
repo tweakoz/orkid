@@ -210,6 +210,7 @@ BillboardStringDrawable::BillboardStringDrawable(const BillboardStringDrawableDa
       };
 
       tbstate->_overrideRCID = text_rcid;
+      tbstate->_blending = _data->_blendmode;
 
       tbstate->_maxcharcount   = 0; // current_string.size();
       tbstate->_stereo_3d_text = true;
