@@ -214,7 +214,7 @@ BillboardStringDrawable::BillboardStringDrawable(const BillboardStringDrawableDa
 
       tbstate->_maxcharcount   = 0; // current_string.size();
       tbstate->_stereo_3d_text = true;
-      context->PushModColor(_color);
+      context->PushModColor(_data->_color);
       fontman->_beginTextBlockWithState(context, tbstate);
       fontman->_enqueueText(
           0,
