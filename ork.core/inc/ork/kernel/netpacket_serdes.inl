@@ -99,4 +99,9 @@ struct Deserializer {
 	std::unordered_map<std::string,deserfn_t> _typehandlers;
 };
 
+void valueFromJson(val_t& outval, const std::string& json_str);
+void valueFromJsonFile(val_t& outval, const file::Path& json_path);
+msgpacketbase_ptr_t packetFromJson(const std::string& json);
+msgpacketbase_ptr_t packetFromJsonFile(const file::Path& json_path);
+
 } //namespace ork::net::serdes {

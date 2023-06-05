@@ -3,6 +3,10 @@
 #include <memory>
 #include <ork/kernel/netpacket_serdes.inl>
 
+#include <ork/file/file.h>
+#include <rapidjson/reader.h>
+#include <rapidjson/document.h>
+
 namespace ork {
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -207,7 +211,7 @@ Serializer::Serializer(bool std_types) {
   });
   registerType<float_vect_t>([](Serializer* ser, msgpacketbase_ref_t msg, const val_t& value) {
     const auto& the_fvect = value.get<float_vect_t>();
-  	//printf( "write array.float count<%zu>\n", the_fvect.size() );
+    // printf( "write array.float count<%zu>\n", the_fvect.size() );
     msg.writeString("array.float");
     msg.template write<size_t>(the_fvect.size());
     msg.writeData(the_fvect.data(), the_fvect.size() * sizeof(float));
@@ -354,240 +358,367 @@ void Serializer::serialize(msgpacketbase_ref_t msg, const val_t& value) {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-
 Deserializer::Deserializer(bool std_types) {
   if (not std_types)
     return;
 
-  registerType("std::string",[](Deserializer* deser, MessagePacketIteratorBase& iter, val_t& out_value, const on_fixup_t& fixupfn) {
-  	const auto& packet = iter._basepacket;
-    out_value.template set<std::string>(packet.readString(iter));
-  });
-  registerType("bool",[](Deserializer* deser, MessagePacketIteratorBase& iter, val_t& out_value, const on_fixup_t& fixupfn) {
+  registerType(
+      "std::string", [](Deserializer* deser, MessagePacketIteratorBase& iter, val_t& out_value, const on_fixup_t& fixupfn) {
+        const auto& packet = iter._basepacket;
+        out_value.template set<std::string>(packet.readString(iter));
+      });
+  registerType("bool", [](Deserializer* deser, MessagePacketIteratorBase& iter, val_t& out_value, const on_fixup_t& fixupfn) {
     const auto& packet = iter._basepacket;
-    packet.template read<bool>(out_value.template make<bool>(),iter);
+    packet.template read<bool>(out_value.template make<bool>(), iter);
   });
-  registerType("size_t",[](Deserializer* deser, MessagePacketIteratorBase& iter, val_t& out_value, const on_fixup_t& fixupfn) {
-  	const auto& packet = iter._basepacket;
-  	packet.template read<size_t>(out_value.template make<size_t>(),iter);
+  registerType("size_t", [](Deserializer* deser, MessagePacketIteratorBase& iter, val_t& out_value, const on_fixup_t& fixupfn) {
+    const auto& packet = iter._basepacket;
+    packet.template read<size_t>(out_value.template make<size_t>(), iter);
   });
-  registerType("int",[](Deserializer* deser, MessagePacketIteratorBase& iter, val_t& out_value, const on_fixup_t& fixupfn) {
-  	const auto& packet = iter._basepacket;
-  	packet.template read<int>(out_value.template make<int>(),iter);
+  registerType("int", [](Deserializer* deser, MessagePacketIteratorBase& iter, val_t& out_value, const on_fixup_t& fixupfn) {
+    const auto& packet = iter._basepacket;
+    packet.template read<int>(out_value.template make<int>(), iter);
   });
-  registerType("array.int16",[](Deserializer* deser, MessagePacketIteratorBase& iter, val_t& out_value, const on_fixup_t& fixupfn) {
-  	const auto& packet = iter._basepacket;
-  	size_t count = 0;
-  	packet.template read<size_t>(count,iter);
-  	auto& out_array = out_value.make<int16vector_t>();
-  	out_array.resize(count);
-  	packet.readData(out_array.data(), count*sizeof(int16_t),iter);
+  registerType(
+      "array.int16", [](Deserializer* deser, MessagePacketIteratorBase& iter, val_t& out_value, const on_fixup_t& fixupfn) {
+        const auto& packet = iter._basepacket;
+        size_t count       = 0;
+        packet.template read<size_t>(count, iter);
+        auto& out_array = out_value.make<int16vector_t>();
+        out_array.resize(count);
+        packet.readData(out_array.data(), count * sizeof(int16_t), iter);
+      });
+  registerType("int32", [](Deserializer* deser, MessagePacketIteratorBase& iter, val_t& out_value, const on_fixup_t& fixupfn) {
+    const auto& packet = iter._basepacket;
+    packet.template read<int32_t>(out_value.template make<int32_t>(), iter);
   });
-  registerType("int32",[](Deserializer* deser, MessagePacketIteratorBase& iter, val_t& out_value, const on_fixup_t& fixupfn) {
-  	const auto& packet = iter._basepacket;
-  	packet.template read<int32_t>(out_value.template make<int32_t>(),iter);
+  registerType(
+      "array.int32", [](Deserializer* deser, MessagePacketIteratorBase& iter, val_t& out_value, const on_fixup_t& fixupfn) {
+        const auto& packet = iter._basepacket;
+        size_t count       = 0;
+        packet.template read<size_t>(count, iter);
+        auto& out_array = out_value.make<int32vector_t>();
+        out_array.resize(count);
+        packet.readData(out_array.data(), count * sizeof(int32_t), iter);
+      });
+  registerType("int64", [](Deserializer* deser, MessagePacketIteratorBase& iter, val_t& out_value, const on_fixup_t& fixupfn) {
+    const auto& packet = iter._basepacket;
+    packet.template read<int64_t>(out_value.template make<int64_t>(), iter);
   });
-  registerType("array.int32",[](Deserializer* deser, MessagePacketIteratorBase& iter, val_t& out_value, const on_fixup_t& fixupfn) {
-  	const auto& packet = iter._basepacket;
-  	size_t count = 0;
-  	packet.template read<size_t>(count,iter);
-  	auto& out_array = out_value.make<int32vector_t>();
-  	out_array.resize(count);
-  	packet.readData(out_array.data(), count*sizeof(int32_t),iter);
+  registerType(
+      "array.int64", [](Deserializer* deser, MessagePacketIteratorBase& iter, val_t& out_value, const on_fixup_t& fixupfn) {
+        const auto& packet = iter._basepacket;
+        size_t count       = 0;
+        packet.template read<size_t>(count, iter);
+        auto& out_array = out_value.make<int64vector_t>();
+        out_array.resize(count);
+        packet.readData(out_array.data(), count * sizeof(int64_t), iter);
+      });
+  registerType("float", [](Deserializer* deser, MessagePacketIteratorBase& iter, val_t& out_value, const on_fixup_t& fixupfn) {
+    const auto& packet = iter._basepacket;
+    packet.template read<float>(out_value.template make<float>(), iter);
   });
-  registerType("int64",[](Deserializer* deser, MessagePacketIteratorBase& iter, val_t& out_value, const on_fixup_t& fixupfn) {
-  	const auto& packet = iter._basepacket;
-  	packet.template read<int64_t>(out_value.template make<int64_t>(),iter);
+  registerType(
+      "array.float", [](Deserializer* deser, MessagePacketIteratorBase& iter, val_t& out_value, const on_fixup_t& fixupfn) {
+        const auto& packet = iter._basepacket;
+        size_t count       = 0;
+        packet.template read<size_t>(count, iter);
+        auto& out_array = out_value.make<float_vect_t>();
+        out_array.resize(count);
+        // printf( "read array.float count<%zu>\n", out_array.size() );
+        packet.readData(out_array.data(), count * sizeof(float), iter);
+      });
+  registerType("double", [](Deserializer* deser, MessagePacketIteratorBase& iter, val_t& out_value, const on_fixup_t& fixupfn) {
+    const auto& packet = iter._basepacket;
+    packet.template read<double>(out_value.template make<double>(), iter);
   });
-  registerType("array.int64",[](Deserializer* deser, MessagePacketIteratorBase& iter, val_t& out_value, const on_fixup_t& fixupfn) {
-  	const auto& packet = iter._basepacket;
-  	size_t count = 0;
-  	packet.template read<size_t>(count,iter);
-  	auto& out_array = out_value.make<int64vector_t>();
-  	out_array.resize(count);
-  	packet.readData(out_array.data(), count*sizeof(int64_t),iter);
-  });
-  registerType("float",[](Deserializer* deser, MessagePacketIteratorBase& iter, val_t& out_value, const on_fixup_t& fixupfn) {
-  	const auto& packet = iter._basepacket;
-  	packet.template read<float>(out_value.template make<float>(),iter);
-  });
-  registerType("array.float",[](Deserializer* deser, MessagePacketIteratorBase& iter, val_t& out_value, const on_fixup_t& fixupfn) {
-  	const auto& packet = iter._basepacket;
-  	size_t count = 0;
-  	packet.template read<size_t>(count,iter);
-  	auto& out_array = out_value.make<float_vect_t>();
-  	out_array.resize(count);
-  	//printf( "read array.float count<%zu>\n", out_array.size() );
-  	packet.readData(out_array.data(), count*sizeof(float),iter);
-  });
-  registerType("double",[](Deserializer* deser, MessagePacketIteratorBase& iter, val_t& out_value, const on_fixup_t& fixupfn) {
-  	const auto& packet = iter._basepacket;
-  	packet.template read<double>(out_value.template make<double>(),iter);
-  });
-  registerType("array.double",[](Deserializer* deser, MessagePacketIteratorBase& iter, val_t& out_value, const on_fixup_t& fixupfn) {
-  	const auto& packet = iter._basepacket;
-  	size_t count = 0;
-  	packet.template read<size_t>(count,iter);
-  	auto& out_array = out_value.make<double_vect_t>();
-  	out_array.resize(count);
-  	packet.readData(out_array.data(), count*sizeof(double),iter);
-  });
-  registerType("fvec2",[](Deserializer* deser, MessagePacketIteratorBase& iter, val_t& out_value, const on_fixup_t& fixupfn) {
-  	const auto& packet = iter._basepacket;
-  	auto& out_f2 = out_value.make<fvec2>();
+  registerType(
+      "array.double", [](Deserializer* deser, MessagePacketIteratorBase& iter, val_t& out_value, const on_fixup_t& fixupfn) {
+        const auto& packet = iter._basepacket;
+        size_t count       = 0;
+        packet.template read<size_t>(count, iter);
+        auto& out_array = out_value.make<double_vect_t>();
+        out_array.resize(count);
+        packet.readData(out_array.data(), count * sizeof(double), iter);
+      });
+  registerType("fvec2", [](Deserializer* deser, MessagePacketIteratorBase& iter, val_t& out_value, const on_fixup_t& fixupfn) {
+    const auto& packet = iter._basepacket;
+    auto& out_f2       = out_value.make<fvec2>();
     packet.template read<float>(out_f2.x, iter);
     packet.template read<float>(out_f2.y, iter);
   });
-  registerType("array.fvec2",[](Deserializer* deser, MessagePacketIteratorBase& iter, val_t& out_value, const on_fixup_t& fixupfn) {
-  	const auto& packet = iter._basepacket;
-  	size_t count = 0;
-  	packet.template read<size_t>(count,iter);
-  	auto& out_array = out_value.make<fvec2vector_t>();
-  	out_array.resize(count);
-  	packet.readData(out_array.data(), count*sizeof(fvec2),iter);
-  });
-  registerType("fvec3",[](Deserializer* deser, MessagePacketIteratorBase& iter, val_t& out_value, const on_fixup_t& fixupfn) {
-  	const auto& packet = iter._basepacket;
-  	auto& out_f3 = out_value.make<fvec3>();
+  registerType(
+      "array.fvec2", [](Deserializer* deser, MessagePacketIteratorBase& iter, val_t& out_value, const on_fixup_t& fixupfn) {
+        const auto& packet = iter._basepacket;
+        size_t count       = 0;
+        packet.template read<size_t>(count, iter);
+        auto& out_array = out_value.make<fvec2vector_t>();
+        out_array.resize(count);
+        packet.readData(out_array.data(), count * sizeof(fvec2), iter);
+      });
+  registerType("fvec3", [](Deserializer* deser, MessagePacketIteratorBase& iter, val_t& out_value, const on_fixup_t& fixupfn) {
+    const auto& packet = iter._basepacket;
+    auto& out_f3       = out_value.make<fvec3>();
     packet.template read<float>(out_f3.x, iter);
     packet.template read<float>(out_f3.y, iter);
     packet.template read<float>(out_f3.z, iter);
   });
-  registerType("array.fvec3",[](Deserializer* deser, MessagePacketIteratorBase& iter, val_t& out_value, const on_fixup_t& fixupfn) {
-  	const auto& packet = iter._basepacket;
-  	size_t count = 0;
-  	packet.template read<size_t>(count,iter);
-  	auto& out_array = out_value.make<fvec3vector_t>();
-  	out_array.resize(count);
-  	packet.readData(out_array.data(), count*sizeof(fvec3),iter);
-  });
-  registerType("fvec4",[](Deserializer* deser, MessagePacketIteratorBase& iter, val_t& out_value, const on_fixup_t& fixupfn) {
-  	const auto& packet = iter._basepacket;
-  	auto& out_f4 = out_value.make<fvec4>();
+  registerType(
+      "array.fvec3", [](Deserializer* deser, MessagePacketIteratorBase& iter, val_t& out_value, const on_fixup_t& fixupfn) {
+        const auto& packet = iter._basepacket;
+        size_t count       = 0;
+        packet.template read<size_t>(count, iter);
+        auto& out_array = out_value.make<fvec3vector_t>();
+        out_array.resize(count);
+        packet.readData(out_array.data(), count * sizeof(fvec3), iter);
+      });
+  registerType("fvec4", [](Deserializer* deser, MessagePacketIteratorBase& iter, val_t& out_value, const on_fixup_t& fixupfn) {
+    const auto& packet = iter._basepacket;
+    auto& out_f4       = out_value.make<fvec4>();
     packet.template read<float>(out_f4.x, iter);
     packet.template read<float>(out_f4.y, iter);
     packet.template read<float>(out_f4.z, iter);
     packet.template read<float>(out_f4.w, iter);
   });
-  registerType("array.fvec4",[](Deserializer* deser, MessagePacketIteratorBase& iter, val_t& out_value, const on_fixup_t& fixupfn) {
-  	const auto& packet = iter._basepacket;
-  	size_t count = 0;
-  	packet.template read<size_t>(count,iter);
-  	auto& out_array = out_value.make<fvec4vector_t>();
-  	out_array.resize(count);
-  	packet.readData(out_array.data(), count*sizeof(fvec4),iter);
-  });
-  registerType("fquat",[](Deserializer* deser, MessagePacketIteratorBase& iter, val_t& out_value, const on_fixup_t& fixupfn) {
-  	const auto& packet = iter._basepacket;
-  	auto& out_fq = out_value.make<fquat>();
+  registerType(
+      "array.fvec4", [](Deserializer* deser, MessagePacketIteratorBase& iter, val_t& out_value, const on_fixup_t& fixupfn) {
+        const auto& packet = iter._basepacket;
+        size_t count       = 0;
+        packet.template read<size_t>(count, iter);
+        auto& out_array = out_value.make<fvec4vector_t>();
+        out_array.resize(count);
+        packet.readData(out_array.data(), count * sizeof(fvec4), iter);
+      });
+  registerType("fquat", [](Deserializer* deser, MessagePacketIteratorBase& iter, val_t& out_value, const on_fixup_t& fixupfn) {
+    const auto& packet = iter._basepacket;
+    auto& out_fq       = out_value.make<fquat>();
     packet.template read<float>(out_fq.x, iter);
     packet.template read<float>(out_fq.y, iter);
     packet.template read<float>(out_fq.z, iter);
     packet.template read<float>(out_fq.w, iter);
   });
-  registerType("array.fquat",[](Deserializer* deser, MessagePacketIteratorBase& iter, val_t& out_value, const on_fixup_t& fixupfn) {
-  	const auto& packet = iter._basepacket;
-  	size_t count = 0;
-  	packet.template read<size_t>(count,iter);
-  	auto& out_array = out_value.make<fquatvector_t>();
-  	out_array.resize(count);
-  	packet.readData(out_array.data(), count*sizeof(fquat),iter);
-  });
-  registerType("fplane3",[](Deserializer* deser, MessagePacketIteratorBase& iter, val_t& out_value, const on_fixup_t& fixupfn) {
-  	const auto& packet = iter._basepacket;
-  	auto& out_fplane = out_value.make<fplane3>();
+  registerType(
+      "array.fquat", [](Deserializer* deser, MessagePacketIteratorBase& iter, val_t& out_value, const on_fixup_t& fixupfn) {
+        const auto& packet = iter._basepacket;
+        size_t count       = 0;
+        packet.template read<size_t>(count, iter);
+        auto& out_array = out_value.make<fquatvector_t>();
+        out_array.resize(count);
+        packet.readData(out_array.data(), count * sizeof(fquat), iter);
+      });
+  registerType("fplane3", [](Deserializer* deser, MessagePacketIteratorBase& iter, val_t& out_value, const on_fixup_t& fixupfn) {
+    const auto& packet = iter._basepacket;
+    auto& out_fplane   = out_value.make<fplane3>();
     packet.template read<float>(out_fplane.n.x, iter);
     packet.template read<float>(out_fplane.n.y, iter);
     packet.template read<float>(out_fplane.n.z, iter);
     packet.template read<float>(out_fplane.d, iter);
   });
   /*registerType("array.fplane3",[](Deserializer* deser, MessagePacketIteratorBase& iter, val_t& out_value) {
-  	const auto& packet = iter._basepacket;
-  	size_t count = 0;
-  	packet.template read<size_t>(count,iter);
-  	auto& out_array = out_value.make<fplane3vector_t>();
-  	out_array.resize(count);
-  	packet.readData(out_array.data(), count*sizeof(fplane3),iter);
+    const auto& packet = iter._basepacket;
+    size_t count = 0;
+    packet.template read<size_t>(count,iter);
+    auto& out_array = out_value.make<fplane3vector_t>();
+    out_array.resize(count);
+    packet.readData(out_array.data(), count*sizeof(fplane3),iter);
   });*/
-  registerType("fmtx3",[](Deserializer* deser, MessagePacketIteratorBase& iter, val_t& out_value, const on_fixup_t& fixupfn) {
-  	const auto& packet = iter._basepacket;
-  	auto& out_fmtx3 = out_value.make<fmtx3>();
-    for( int i=0; i<9; i++){
-      int x = i%3;
-      int y = i/3;
+  registerType("fmtx3", [](Deserializer* deser, MessagePacketIteratorBase& iter, val_t& out_value, const on_fixup_t& fixupfn) {
+    const auto& packet = iter._basepacket;
+    auto& out_fmtx3    = out_value.make<fmtx3>();
+    for (int i = 0; i < 9; i++) {
+      int x         = i % 3;
+      int y         = i / 3;
       float element = 0.0f;
       packet.template read<float>(element, iter);
-      out_fmtx3.setElemXY(x,y,element);
+      out_fmtx3.setElemXY(x, y, element);
     }
   });
-  registerType("array.fmtx3",[](Deserializer* deser, MessagePacketIteratorBase& iter, val_t& out_value, const on_fixup_t& fixupfn) {
-  	const auto& packet = iter._basepacket;
-  	size_t count = 0;
-  	packet.template read<size_t>(count,iter);
-  	auto& out_array = out_value.make<fmtx3vector_t>();
-  	out_array.resize(count);
-  	packet.readData(out_array.data(), count*sizeof(fmtx3),iter);
-  });
-  registerType("fmtx4",[](Deserializer* deser, MessagePacketIteratorBase& iter, val_t& out_value, const on_fixup_t& fixupfn) {
-  	const auto& packet = iter._basepacket;
-  	auto& out_fmtx4 = out_value.make<fmtx4>();
-    for( int i=0; i<16; i++){
-      int x = i&3;
-      int y = i>>2;
+  registerType(
+      "array.fmtx3", [](Deserializer* deser, MessagePacketIteratorBase& iter, val_t& out_value, const on_fixup_t& fixupfn) {
+        const auto& packet = iter._basepacket;
+        size_t count       = 0;
+        packet.template read<size_t>(count, iter);
+        auto& out_array = out_value.make<fmtx3vector_t>();
+        out_array.resize(count);
+        packet.readData(out_array.data(), count * sizeof(fmtx3), iter);
+      });
+  registerType("fmtx4", [](Deserializer* deser, MessagePacketIteratorBase& iter, val_t& out_value, const on_fixup_t& fixupfn) {
+    const auto& packet = iter._basepacket;
+    auto& out_fmtx4    = out_value.make<fmtx4>();
+    for (int i = 0; i < 16; i++) {
+      int x         = i & 3;
+      int y         = i >> 2;
       float element = 0.0f;
       packet.template read<float>(element, iter);
-      out_fmtx4.setElemXY(x,y,element);
+      out_fmtx4.setElemXY(x, y, element);
     }
   });
-  registerType("array.fmtx4",[](Deserializer* deser, MessagePacketIteratorBase& iter, val_t& out_value, const on_fixup_t& fixupfn) {
-  	const auto& packet = iter._basepacket;
-  	size_t count = 0;
-  	packet.template read<size_t>(count,iter);
-  	auto& out_array = out_value.make<fmtx4vector_t>();
-  	out_array.resize(count);
-  	packet.readData(out_array.data(), count*sizeof(fmtx4),iter);
-  });
-  registerType("bytes_t",[](Deserializer* deser, MessagePacketIteratorBase& iter, val_t& out_value, const on_fixup_t& fixupfn) {
-  	const auto& packet = iter._basepacket;
-    size_t length = 0;
+  registerType(
+      "array.fmtx4", [](Deserializer* deser, MessagePacketIteratorBase& iter, val_t& out_value, const on_fixup_t& fixupfn) {
+        const auto& packet = iter._basepacket;
+        size_t count       = 0;
+        packet.template read<size_t>(count, iter);
+        auto& out_array = out_value.make<fmtx4vector_t>();
+        out_array.resize(count);
+        packet.readData(out_array.data(), count * sizeof(fmtx4), iter);
+      });
+  registerType("bytes_t", [](Deserializer* deser, MessagePacketIteratorBase& iter, val_t& out_value, const on_fixup_t& fixupfn) {
+    const auto& packet = iter._basepacket;
+    size_t length      = 0;
     packet.template read<size_t>(length, iter);
     auto& bytes = out_value.template make<bytes_t>();
     bytes.resize(length);
     packet.readData(bytes.data(), length, iter);
   });
-  registerType("vlist_t",[](Deserializer* deser, MessagePacketIteratorBase& iter, val_t& out_value, const on_fixup_t& fixupfn) {
-  	const auto& packet = iter._basepacket;
-    size_t num_items = 0;
+  registerType("vlist_t", [](Deserializer* deser, MessagePacketIteratorBase& iter, val_t& out_value, const on_fixup_t& fixupfn) {
+    const auto& packet = iter._basepacket;
+    size_t num_items   = 0;
     packet.template read<size_t>(num_items, iter);
     auto& out_vlist = out_value.template make<vlist_t>();
     out_vlist.resize(num_items);
-	  for (size_t i = 0; i < num_items; i++) {
-	    deser->deserialize(iter,out_vlist[i],fixupfn);
-	  }
+    for (size_t i = 0; i < num_items; i++) {
+      deser->deserialize(iter, out_vlist[i], fixupfn);
+    }
   });
-  registerType("kvmap_t",[](Deserializer* deser, MessagePacketIteratorBase& iter, val_t& out_value, const on_fixup_t& fixupfn) {
-  	const auto& packet = iter._basepacket;
-    size_t num_items = 0;
+  registerType("kvmap_t", [](Deserializer* deser, MessagePacketIteratorBase& iter, val_t& out_value, const on_fixup_t& fixupfn) {
+    const auto& packet = iter._basepacket;
+    size_t num_items   = 0;
     packet.template read<size_t>(num_items, iter);
     auto& out_kvmap = out_value.template make<kvmap_t>();
-	  for (size_t i = 0; i < num_items; i++) {
-	  	std::string key = packet.readString(iter);
-	    deser->deserialize(iter,out_kvmap[key],fixupfn);
-	  }
+    for (size_t i = 0; i < num_items; i++) {
+      std::string key = packet.readString(iter);
+      deser->deserialize(iter, out_kvmap[key], fixupfn);
+    }
   });
-
-
 }
 
-	void Deserializer::deserialize(MessagePacketIteratorBase& iter, 
-                                 val_t& out_value,
-                                 const on_fixup_t& fixupfn){
-  	const auto& packet = iter._basepacket;
-    auto typecode = packet.readString(iter);
-    auto it = _typehandlers.find(typecode);
-    OrkAssert(it!=_typehandlers.end());
-    auto deserfn = it->second;
-    deserfn(this,iter,out_value,fixupfn);
-	}
+void Deserializer::deserialize(MessagePacketIteratorBase& iter, val_t& out_value, const on_fixup_t& fixupfn) {
+  const auto& packet = iter._basepacket;
+  auto typecode      = packet.readString(iter);
+  auto it            = _typehandlers.find(typecode);
+  OrkAssert(it != _typehandlers.end());
+  auto deserfn = it->second;
+  deserfn(this, iter, out_value, fixupfn);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+
+static void __recurse_value_FromJson(val_t& outval, const rapidjson::Value& json_val) {
+  switch (json_val.GetType()) {
+    case rapidjson::kObjectType: {
+
+      auto& outmap = outval.make<kvmap_t>();
+      for (auto it = json_val.MemberBegin(); //
+           it != json_val.MemberEnd();       //
+           ++it) {                           //
+        const auto& propkey  = it->name;
+        const auto& propnode = it->value;
+        __recurse_value_FromJson(outmap[propkey.GetString()], propnode);
+      }
+      break;
+    }
+    case rapidjson::kArrayType: {
+      auto& outary = outval.make<vlist_t>();
+      for (rapidjson::SizeType i = 0; i < json_val.Size(); i++) {
+        const rapidjson::Value& element = json_val[i];
+        auto& aryitem                   = outary.emplace_back();
+        __recurse_value_FromJson(aryitem, element);
+      }
+      break;
+    }
+    case rapidjson::kStringType: {
+      outval.set<std::string>(json_val.GetString());
+      break;
+    }
+    case rapidjson::kNumberType: {
+      outval.set<double>(json_val.GetDouble());
+      break;
+    }
+    case rapidjson::kTrueType: {
+      outval.set<bool>(true);
+      break;
+    }
+    case rapidjson::kFalseType: {
+      outval.set<bool>(false);
+      break;
+    }
+    case rapidjson::kNullType: {
+      OrkAssert(false);
+      break;
+    }
+    default:
+      OrkAssert(false);
+      break;
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+
+void valueFromJson(val_t& outval, const std::string& json_str) {
+  rapidjson::Document _document;
+  _document.Parse(json_str.c_str());
+  bool is_object = _document.IsObject();
+  printf("json_str<%s>\n", json_str.c_str());
+  OrkAssert(is_object);
+  __recurse_value_FromJson(outval, _document);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+
+void valueFromJsonFile(val_t& outval, const file::Path& json_path) {
+  File json_file;
+  auto status = json_file.OpenFile(json_path, EFileMode::EFM_READ);
+  OrkAssert(status == EFileErrCode::EFEC_FILE_OK);
+  size_t length = 0;
+  json_file.GetLength(length);
+  std::string json_str;
+  json_str.resize(length);
+  status = json_file.Read(json_str.data(), length);
+  OrkAssert(status == EFileErrCode::EFEC_FILE_OK);
+  json_file.Close();
+  valueFromJson(outval, json_str);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+
+msgpacketbase_ptr_t packetFromJson(const std::string& json_str) {
+  auto packet = std::make_shared<DynamicMessagePacket>();
+
+  rapidjson::Document _document;
+  auto _allocator = &_document.GetAllocator();
+  _document.Parse(json_str.c_str());
+  bool is_object = _document.IsObject();
+  // bool has_top   = _document.HasMember("root");
+  OrkAssert(is_object);
+  val_t root_val;
+  __recurse_value_FromJson(root_val, _document);
+  Serializer ser;
+  ser.serialize(*packet, root_val);
+  // OrkAssert(has_top);
+
+  return packet;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+
+msgpacketbase_ptr_t packetFromJson(const file::Path& json_path) {
+
+  File json_file;
+  auto status = json_file.OpenFile(json_path, EFileMode::EFM_READ);
+  OrkAssert(status == EFileErrCode::EFEC_FILE_OK);
+  size_t length = 0;
+  json_file.GetLength(length);
+  std::string json_str;
+  json_str.resize(length);
+  status = json_file.Read(json_str.data(), length);
+  OrkAssert(status == EFileErrCode::EFEC_FILE_OK);
+  json_file.Close();
+  return packetFromJson(json_str);
+}
 
 } // namespace ork::net::serdes

@@ -13,6 +13,7 @@ struct CustomSerdesObject {
 
 using custom_serdes_object_ptr_t = std::shared_ptr<CustomSerdesObject>;
 
+
 TEST(NetPacketSerdes) {
 
 	using namespace ork;
@@ -148,4 +149,41 @@ TEST(NetPacketSerdes) {
 	CHECK_EQUAL(test_custom->_x, 9 );
 
   ////////////////////////////////////////////
+}
+
+TEST(JsonKVSerdes) {
+
+	using namespace ork;
+	using namespace ork::net::serdes;
+
+  printf("//////////////////////////////////////\n");
+  printf("ORK JsonKVSerdes TEST\n");
+  printf("//////////////////////////////////////\n");
+
+	std::string json_str = R"(
+	{
+    	"xyz": 0.065,
+    	"abc": 90,
+    	"123": 1.65,
+    	"subm": [ 4.3, 0.1 ]
+	}
+)";
+
+	val_t out_val;
+	valueFromJson(out_val,json_str);
+
+	constexpr double TOLERANCE = 0.0000001;
+
+	const auto& kvmap = out_val.get<kvmap_t>();
+	auto it = kvmap.find("xyz");
+	CHECK_CLOSE(it->second.get<double>(), 0.065, TOLERANCE);
+	it = kvmap.find("abc");
+	CHECK_CLOSE(it->second.get<double>(), 90, TOLERANCE);
+	it = kvmap.find("123");
+	CHECK_CLOSE(it->second.get<double>(), 1.65, TOLERANCE);
+	it = kvmap.find("subm");
+	const auto& subm = it->second.get<vlist_t>();
+	CHECK_CLOSE(subm[0].get<double>(), 4.3, TOLERANCE);
+	CHECK_CLOSE(subm[1].get<double>(), 0.1, TOLERANCE);
+
 }

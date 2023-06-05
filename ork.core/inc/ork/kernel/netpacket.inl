@@ -14,6 +14,7 @@
 #include <string.h>
 #include <ork/kernel/fixedstring.h>
 #include <ork/kernel/atomic.h>
+#include <ork/file/path.h>
 #include <zmq.hpp>
 #include <zmq_addon.hpp>
 
@@ -327,6 +328,5 @@ struct MessageInpStream : public MessageStreamBase // outof netmessage
     _basepacket.read(rval, *this);
     return rval;
   }
-
 
 } // namespace ork
