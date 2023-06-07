@@ -295,6 +295,7 @@ struct CompositingImpl {
     return _lightmgr;
   }
 
+  CompositingPassData& topCPD();
   const CompositingPassData& topCPD() const;
   const CompositingPassData& pushCPD(const CompositingPassData& cpd);
   const CompositingPassData& popCPD();

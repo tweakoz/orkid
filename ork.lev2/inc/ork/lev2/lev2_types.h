@@ -289,6 +289,8 @@ class OutputCompositingNode;
 class RtGroupOutputCompositingNode;
 class RenderCompositingNode;
 class PostCompositingNode;
+class PostFxNodeDecompBlur;
+class LambdaPostCompositingNode;
 struct AcquiredUpdateDrawBuffer;
 struct AcquiredRenderDrawBuffer;
 struct StandardCompositorFrame;
@@ -317,6 +319,9 @@ using acqdrawbuffer_lambda_t = std::function<void(acqdrawbuffer_constptr_t)>;
 using acqupdatebuffer_ptr_t = std::shared_ptr<AcquiredUpdateDrawBuffer>;
 using acqupdatebuffer_constptr_t = std::shared_ptr<const AcquiredUpdateDrawBuffer>;
 using acqupdatebuffer_lambda_t = std::function<void(acqupdatebuffer_constptr_t)>;
+
+using decompblur_postnode_ptr_t = std::shared_ptr<PostFxNodeDecompBlur>;
+using lambda_postnode_ptr_t = std::shared_ptr<LambdaPostCompositingNode>;
 
 ///////////////////////////////////////////////////////////////////////////////
 // XgmModel

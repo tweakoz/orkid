@@ -417,6 +417,16 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
   _outputNode = _compositorTechnique->tryOutputNodeAs<OutputCompositingNode>();
   _renderNode = _compositorTechnique->tryRenderNodeAs<RenderCompositingNode>();
 
+
+  if (params->hasKey("PostFxNode")){
+    auto& pfxnode = params->valueForKey("PostFxNode");
+    auto as_base = pfxnode.get<compositorpostnode_ptr_t>();
+    printf( "pfxnode<%s> %p\n", pfxnode.typestr().c_str(), (void*) as_base.get() );
+    _compositorTechnique->_postfxNode = as_base;
+    //OrkAssert(false);
+  }
+
+
   _compositorImpl = _compositorData->createImpl();
   _compositorImpl->bindLighting(_lightManager.get());
   _topCPD->addStandardLayers();

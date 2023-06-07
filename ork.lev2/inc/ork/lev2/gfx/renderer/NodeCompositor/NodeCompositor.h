@@ -90,6 +90,24 @@ private:
 };
 
 ///////////////////////////////////////////////////////////////////////////////
+/// PostCompositingNode : compositor node responsible for postprocessing effects.
+///////////////////////////////////////////////////////////////////////////////
+
+class LambdaPostCompositingNode : public PostCompositingNode {
+  DeclareAbstractX(LambdaPostCompositingNode, PostCompositingNode);
+
+public:
+  LambdaPostCompositingNode();
+  ~LambdaPostCompositingNode();
+  void gpuInit(lev2::Context* pTARG, int w, int h);
+  void Render(CompositorDrawData& drawdata);
+  lev2::rtbuffer_ptr_t GetOutput() const final;
+private:
+  void doGpuInit(lev2::Context* pTARG, int w, int h) final;
+  void DoRender(CompositorDrawData& drawdata)        final;
+};
+
+///////////////////////////////////////////////////////////////////////////////
 /// Op2CompositingNode : binary (2 in, 1 out) with a choice of operation
 ///  has scale and bias on each of the input terms (a and b)
 ///////////////////////////////////////////////////////////////////////////////

@@ -199,6 +199,10 @@ bool CompositingImpl::hasCPD() const {
 const CompositingPassData& CompositingImpl::topCPD() const {
   return _stack.top();
 }
+CompositingPassData& CompositingImpl::topCPD() {
+  auto& top = _stack.top();
+  return (CompositingPassData&)top;
+}
 const CompositingPassData& CompositingImpl::pushCPD(const CompositingPassData& cpd) {
   const CompositingPassData& prev = topCPD();
   _stack.push(cpd);

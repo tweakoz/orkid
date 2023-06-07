@@ -51,6 +51,8 @@ py::object PyCodecImpl::encode(const varval_t& val) const {
       return py::int_(as_uint64_t.value());
     } else if (auto as_str = val.tryAs<std::string>()) {
       return py::str(as_str.value());
+    } else if (auto as_np = val.tryAs<std::nullptr_t>()) {
+      return py::none();
     } else {
       printf( "UNKNOWNTYPE<%s>\n", val.typeName() );
       OrkAssert(false);
