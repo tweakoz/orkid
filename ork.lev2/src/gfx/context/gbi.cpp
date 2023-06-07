@@ -37,6 +37,12 @@ void GeometryBufferInterface::render2dQuadEML(fvec4 QuadRect, fvec4 UvRect, fvec
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void GeometryBufferInterface::render2dQuadEMLCCL(fvec4 QuadRect, fvec4 UvRect, fvec4 UvRect2, float depth) {
+  _context.DWI()->quad2DEMLCCL(QuadRect, UvRect, UvRect2, depth);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 void GeometryBufferInterface::BeginFrame() {
   miTrianglesRendered = 0;
   _doBeginFrame();

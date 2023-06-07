@@ -82,6 +82,7 @@ struct IMPL {
   void _render(CompositorDrawData& drawdata) {
     Context* target = drawdata.context();
     auto FBI = target->FBI();
+    auto DWI = target->DWI();
     auto framedata = target->topRenderContextFrameData();
     auto topcomp = framedata->topCompositor();
     bool was_stereo = framedata->isStereo();
@@ -101,9 +102,9 @@ struct IMPL {
             ViewportRect extents(0, 0, w, h);
             FBI->pushViewport(extents);
             FBI->pushScissor(extents);
-            FBI->GetThisBuffer()->Render2dQuadEML( fvec4(-1, -1, 2, 2), // pos
-                                                   fvec4(0, 0, 1, 1), // uv0
-                                                   fvec4(0, 0, 1, 1));
+            DWI->quad2DEMLCCL(fvec4(-1, -1, 2, 2), // pos
+                              fvec4(0, 0, 1, 1), // uv0
+                              fvec4(0, 0, 1, 1));
             FBI->popViewport();
             FBI->popScissor();
           };
@@ -125,7 +126,7 @@ struct IMPL {
             /////////////////////
             int smallw = _rtg_b->width();
             int smallh = _rtg_b->height();
-            printf( "smallw<%d> smallh<%d>\n", smallw, smallh );
+            //printf( "smallw<%d> smallh<%d>\n", smallw, smallh );
             _rtg_c->Resize(smallw,smallh);
             FBI->PushRtGroup(_rtg_c.get());
             _freestyle_mtl->begin(_tek_maskbright,*framedata);
@@ -171,7 +172,7 @@ struct IMPL {
             /////////////////////
             // final blit
             /////////////////////
-            printf( "finalw<%d> finalh<%d>\n", finalw, finalh );
+            //printf( "finalw<%d> finalh<%d>\n", finalw, finalh );
             _rtg_out->Resize(finalw,finalh);
             FBI->PushRtGroup(_rtg_out.get());
             _freestyle_mtl->begin(_tek_join,*framedata);

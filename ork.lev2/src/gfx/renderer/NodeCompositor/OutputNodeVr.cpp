@@ -222,14 +222,13 @@ void VrCompositingNode::composite(CompositorDrawData& drawdata) {
       auto tex = buffer->texture();
       if (tex) {
 
-        const auto& vrdev = orkidvr::device();
-        auto inp_rtg = drawdata._properties["render_outgroup"_crcu].get<rtgroup_ptr_t>();
-
-        drawdata.context()->debugPushGroup("VrCompositingNode::to_hmd");
+        //drawdata.context()->debugPushGroup("VrCompositingNode::to_hmd");
+        //const auto& vrdev = orkidvr::device();
+        //auto inp_rtg = drawdata._properties["render_outgroup"_crcu].get<rtgroup_ptr_t>();
         //fbi->PushRtGroup(impl->_rtg);
         //vrdev->__composite(context, tex);
         //fbi->PopRtGroup();
-        drawdata.context()->debugPopGroup();
+        //drawdata.context()->debugPopGroup();
         /////////////////////////////////////////////////////////////////////////////
         // be nice and composite to main screen as well...
         /////////////////////////////////////////////////////////////////////////////
