@@ -41,6 +41,12 @@ def createGridData(extent=10.0,majordim=1,minordim=0.1):
   grid_data.texturepath = "lev2://textures/gridcell_blue.png"
   return grid_data
 
+def createGroundPlaneData(extent=10.0,pbrmaterial=None, pipeline=None):
+  ground_data = GroundPlaneDrawableData()
+  ground_data.extent = extent
+  ground_data.pbrmaterial = pbrmaterial
+  ground_data.pipeline = pipeline
+  return ground_data
 
 def createParticleData( use_streaks = True ):
 

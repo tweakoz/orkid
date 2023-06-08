@@ -59,6 +59,7 @@ public:
   ////////////////////////////////////////////
 
   pbrmaterial_ptr_t clone() const;
+  void addBasicStateLambda(fxpipeline_ptr_t pipe);
 
   ////////////////////////////////////////////
 
@@ -108,6 +109,8 @@ public:
   fxparam_constptr_t _paramM             = nullptr;
   fxparam_constptr_t _paramVP            = nullptr;
   fxparam_constptr_t _paramIVP           = nullptr;
+  fxparam_constptr_t _paramVL           = nullptr;
+  fxparam_constptr_t _paramVR           = nullptr;
   fxparam_constptr_t _paramVPL           = nullptr;
   fxparam_constptr_t _paramVPR           = nullptr;
   fxparam_constptr_t _paramIVPL          = nullptr;

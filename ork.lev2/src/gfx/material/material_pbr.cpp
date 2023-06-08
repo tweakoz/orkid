@@ -115,6 +115,12 @@ static FxPipeline::statelambda_t _createBasicStateLambda(const PBRMaterial* mtl)
       auto VR = stereocams->VR();
       auto VPL = stereocams->VPL();
       auto VPR = stereocams->VPR();
+      if(mtl->_paramVL){
+        FXI->BindParamMatrix(mtl->_paramVL, VL);
+      }
+      if(mtl->_paramVR){
+        FXI->BindParamMatrix(mtl->_paramVR, VR);
+      }
       FXI->BindParamMatrix(mtl->_paramVPL, VPL);
       FXI->BindParamMatrix(mtl->_paramVPR, VPR);
       FXI->BindParamMatrix(mtl->_paramMVPL, stereocams->MVPL(vrroot*worldmatrix));
@@ -135,6 +141,13 @@ static FxPipeline::statelambda_t _createBasicStateLambda(const PBRMaterial* mtl)
     }
   };
 
+}
+
+////////////////////////////////////////////
+
+void PBRMaterial::addBasicStateLambda(fxpipeline_ptr_t pipe){
+  auto L = _createBasicStateLambda(this);
+  pipe->addStateLambda(L);
 }
 
 ////////////////////////////////////////////
@@ -808,6 +821,8 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
 
   _paramM                 = fxi->parameter(_shader, "m");
   _paramVP                = fxi->parameter(_shader, "vp");
+  _paramVL               = fxi->parameter(_shader, "v_l");
+  _paramVR               = fxi->parameter(_shader, "v_r");
   _paramVPL               = fxi->parameter(_shader, "vp_l");
   _paramVPR               = fxi->parameter(_shader, "vp_r");
   _paramIVPL              = fxi->parameter(_shader, "inv_vp_l");

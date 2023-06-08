@@ -29,6 +29,8 @@
 #include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorScaleBias.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorScreen.h>
 #include <ork/lev2/gfx/scenegraph/scenegraph.h>
+#include <ork/lev2/gfx/scenegraph/sgnode_grid.h>
+#include <ork/lev2/gfx/scenegraph/sgnode_groundplane.h>
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/lev2/gfx/particle/modular_particles2.h>
 #include <ork/lev2/gfx/particle/modular_emitters.h>
@@ -145,6 +147,9 @@ struct ClassToucher {
     InstancedModelDrawableData::GetClassStatic();
     BillboardStringDrawableData::GetClassStatic();
     InstancedBillboardStringDrawableData::GetClassStatic();
+
+    GridDrawableData::GetClassStatic();
+    GroundPlaneDrawableData::GetClassStatic();
 
     XgmAnimChannel::GetClassStatic();
     XgmFloatAnimChannel::GetClassStatic();
