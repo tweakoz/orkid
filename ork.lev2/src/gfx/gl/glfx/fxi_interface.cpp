@@ -190,6 +190,20 @@ void Interface::EndPass() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void Interface::reset() {
+ GLuint numSSBOs;
+ glGetIntegerv(GL_MAX_SHADER_STORAGE_BUFFER_BINDINGS, reinterpret_cast<GLint*>(&numSSBOs));
+ for (GLuint index = 0; index < numSSBOs; ++index) {
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, index, 0);
+ }
+ glUseProgram(0);
+  _active_effect = nullptr;
+  _activeShader = nullptr;
+  _activeTechnique = nullptr;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 void Interface::CommitParams(void) {
   if (_active_effect && _active_effect->_activePass && _active_effect->_activePass->_stateBlock) {
     const auto& items = _active_effect->_activePass->_stateBlock->mApplicators;
