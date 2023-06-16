@@ -14,10 +14,10 @@ Orkid is a C++20 flexible media presentation engine. By media, we mean games, re
 ### History
 
 Early Orkid was used for a a few games by Santa Cruz Games. 
- * Godzilla Unleashed for Nintendo DS
- * Tomb Raider Underworld for Nintendo DS
- * Igor The Game for the Wii and PC
- * Spongebob Gravjet Racing for Wii/Pc/XBox360
+ * Godzilla Unleashed for Nintendo DS (2007)
+ * Tomb Raider Underworld for Nintendo DS (2008)
+ * Igor The Game for the Wii and PC (2008)
+ * Spongebob Gravjet Racing for Wii/Pc/XBox360 (2009)
  
  
 Software Development Information
