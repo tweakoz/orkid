@@ -35,6 +35,28 @@ static logchannel_ptr_t logchan_lexer = logger()->createChannel("ORKSLLEXR",fvec
 
 using peg_parser_ptr_t = std::shared_ptr<peg::parser>;
 
+struct Matcher {
+
+};
+
+using matcher_ptr_t = std::shared_ptr<Matcher>;
+
+struct OrkslPEG{
+
+  OrkslPEG(){
+    _matcher_top = std::make_shared<Matcher>(
+
+  };
+
+  static scannerview_ptr_t match_top(const ScannerView& inp_view){
+    
+    return nullptr;
+  }
+
+  matcher_ptr_t _matcher_top;
+};
+
+
 struct _ORKSL_IMPL {
   _ORKSL_IMPL(OrkSlFunctionNode* node);
   peg_parser_ptr_t _peg_parser;
@@ -347,6 +369,7 @@ OrkSlFunctionNode::OrkSlFunctionNode(parser_rawptr_t parser)
     : AstNode(parser) {
 }
 
+
 int OrkSlFunctionNode::parse(const ScannerView& view) {
 
   auto internals = _getimpl(this).get<impl_ptr_t>();
@@ -359,7 +382,9 @@ int OrkSlFunctionNode::parse(const ScannerView& view) {
 
   try {
 
-    std::string input = view.asString(true);
+    auto top = OrkslPEG::match_top(view);
+    OrkAssert(top);
+    /*std::string input = view.asString(true);
 
     auto str_start = input.c_str();
     auto str_end   = str_start + input.size();
@@ -370,11 +395,11 @@ int OrkSlFunctionNode::parse(const ScannerView& view) {
 
     bool ret = internals->_peg_parser->parse(input);
 
-    OrkAssert(ret==true);
+    OrkAssert(ret==true);*/
 
   } catch (const std::exception& e) {
-    std::cout << e.what() << '\n';
-    OrkAssert(false);
+    //std::cout << e.what() << '\n';
+    //OrkAssert(false);
   }
   return 0;
 }

@@ -85,6 +85,7 @@ using parser_constptr_t = std::shared_ptr<const GlSlFxParser>;
 
 
 using match_results_t = FnMatchResultsWrap;
+using match_fn_t = std::function<match_ptr_t(FnParseContext)>;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -325,6 +326,13 @@ struct FnMatchResultsBas {
   bool _matched = false;
   FnParseContext _ctx;
   std::vector<match_ptr_t> _subMatches;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct FnMatchResultsSt : public FnMatchResultsBas {
+    match_ptr_t merge(match_ptr_t rhs) const final { return nullptr; }
+    ParseResult parse() final { return ParseResult(); }
 };
 
 ///////////////////////////////////////////////////////////////////////////////
