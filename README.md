@@ -13,7 +13,7 @@ Orkid is a C++20 flexible media presentation engine. By media, we mean games, re
 
 ### History
 
-Early Orkid was used for a a few games by Santa Cruz Games. 
+Early Orkid was used for a a few games by Santa Cruz Games. It was used as both a game engine and tooling infrastructure.
  * Godzilla Unleashed for Nintendo DS (2007)
  * Tomb Raider Underworld for Nintendo DS (2008)
  * Igor The Game for the Wii and PC (2008)
