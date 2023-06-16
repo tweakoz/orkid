@@ -15,6 +15,7 @@
               "ORK_CONFIG_IX",
               "ENABLE_COMPUTE_SHADERS",
               "ENABLE_SHADER_STORAGE",
+              "USE_GLFX_LANG",
               "LINUX",
               "GCC",
               "_REENTRANT",

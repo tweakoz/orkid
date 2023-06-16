@@ -20,10 +20,12 @@
 #include <regex>
 #include <stdlib.h>
 
+#if defined(USE_ORKSL_LANG)
+
 /////////////////////////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::glslfx::parser {
 /////////////////////////////////////////////////////////////////////////////////////////////////
-/*
+
 match_results_t Constant::match(FnParseContext ctx) {
   match_results_t rval;
   auto token = ctx.tokenValue(0);
@@ -289,6 +291,7 @@ void VariableDeclaration::emit(shaderbuilder::BackEnd& backend) const {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
+/*
 FnMatchResults VariableDefinitionStatement::match(const FnParseContext& ctx) {
   FnMatchResults rval;
   ////////////////////////////////////
@@ -336,7 +339,6 @@ int VariableDefinitionStatement::parse(const FnParseContext& ctx, const FnMatchR
 void VariableDefinitionStatement::emit(shaderbuilder::BackEnd& backend) const {
   assert(false);
 }
-
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 FnMatchResults VariableAssignmentStatement::match(const FnParseContext& ctx) {
@@ -367,7 +369,8 @@ void VariableAssignmentStatement::emit(shaderbuilder::BackEnd& backend) const {
 }
 */
 
-
 /////////////////////////////////////////////////////////////////////////////////////////////////
 } //namespace ork::lev2::glslfx::parser {
 /////////////////////////////////////////////////////////////////////////////////////////////////
+
+#endif

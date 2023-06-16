@@ -20,10 +20,12 @@
 #include <regex>
 #include <stdlib.h>
 
+#if defined(USE_ORKSL_LANG)
+
 /////////////////////////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::glslfx::parser {
 /////////////////////////////////////////////////////////////////////////////////////////////////
-/*
+
 match_results_t OpenCurly::match(FnParseContext ctx) {
   match_results_t rval;
   if(ctx.tokenValue(0)=="{"){
@@ -36,11 +38,6 @@ match_results_t OpenCurly::match(FnParseContext ctx) {
   return rval;
 }
 
-//parsed_t OpenCurly::parse(const match_t& match) {
-  //parsed_t rval;
-  //assert(false);
-  //return rval;
-//}
 void OpenCurly::emit(shaderbuilder::BackEnd& backend) const {
   assert(false);
 }
@@ -59,11 +56,6 @@ match_results_t CloseCurly::match(FnParseContext ctx) {
   return rval;
 }
 
-//parsed_t CloseCurly::parse(const match_t& match) {
-  //parsed_t rval;
-  //assert(false);
-  //return rval;
-//}
 void CloseCurly::emit(shaderbuilder::BackEnd& backend) const {
   assert(false);
 }
@@ -82,11 +74,6 @@ match_results_t OpenSquare::match(FnParseContext ctx) {
   return rval;
 }
 
-//parsed_t OpenSquare::parse(const match_t& match) {
-  //parsed_t rval;
-  //assert(false);
-  //return rval;
-//}
 void OpenSquare::emit(shaderbuilder::BackEnd& backend) const {
   assert(false);
 }
@@ -105,11 +92,6 @@ match_results_t CloseSquare::match(FnParseContext ctx) {
   return rval;
 }
 
-//parsed_t CloseSquare::parse(const match_t& match) {
-  //parsed_t rval;
-  //assert(false);
-  //return rval;
-//}
 void CloseSquare::emit(shaderbuilder::BackEnd& backend) const {
   assert(false);
 }
@@ -128,11 +110,6 @@ match_results_t OpenParen::match(FnParseContext ctx) {
   return rval;
 }
 
-//parsed_t OpenParen::parse(const match_t& match) {
-  //parsed_t rval;
-  //assert(false);
-  //return rval;
-//}
 void OpenParen::emit(shaderbuilder::BackEnd& backend) const {
   assert(false);
 }
@@ -151,17 +128,12 @@ match_results_t CloseParen::match(FnParseContext ctx) {
   return rval;
 }
 
-//parsed_t CloseParen::parse(const match_t& match) {
-  //parsed_t rval;
-  //assert(false);
-  //return rval;
-//}
 void CloseParen::emit(shaderbuilder::BackEnd& backend) const {
   assert(false);
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
-*/
-/////////////////////////////////////////////////////////////////////////////////////////////////
 } //namespace ork::lev2::glslfx {
 /////////////////////////////////////////////////////////////////////////////////////////////////
+
+#endif

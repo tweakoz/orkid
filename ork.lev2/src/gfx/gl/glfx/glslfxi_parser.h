@@ -272,7 +272,9 @@ struct AstNode {
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-/*
+
+#if defined(USE_ORKSL_LANG)
+
 struct FnParseContext {
   FnParseContext(GlSlFxParser* parser, const ScannerView* v);
   FnParseContext(const FnParseContext& oth);
@@ -285,9 +287,9 @@ struct FnParseContext {
   size_t _startIndex        = 0;
   const ScannerView* _view;
 };
-*/
+
 ///////////////////////////////////////////////////////////////////////////////
-/*
+
 struct ParseResult {
   size_t _numtokens = 0;
   astnode_ptr_t _node    = nullptr;
@@ -388,7 +390,9 @@ template <typename T> struct FnMatchResults : public FnMatchResultsBas {
     return rval;
   }
 };
-*/
+
+#endif
+
 ///////////////////////////////////////////////////////////////////////////////
 
 struct ShaderBodyElement : public AstNode {
@@ -407,7 +411,9 @@ struct ShaderEmittable : public AstNode {
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-/*
+
+#if defined(USE_ORKSL_LANG)
+
 #define DECLARE_STD_FNS(xxx)                                                                                                       \
   typedef FnMatchResults<xxx> match_t;                                                                                             \
   static match_results_t match(FnParseContext ctx);
@@ -448,18 +454,22 @@ struct ShaderEmittable : public AstNode {
     }                                                                                                                              \
     DECLARE_RECURSIVE_EMITTABLE_FNS(xxx)                                                                                                 \
   };
-*/
+
+#endif 
+
 ///////////////////////////////////////////////////////////////////////////////
 // good
 
-//DECLARE_STD_EMITTABLE(PrimaryExpression);
-//DECLARE_RECURSIVE_EMITTABLE(PostFixExpression);
+DECLARE_STD_EMITTABLE(PrimaryExpression);
+DECLARE_RECURSIVE_EMITTABLE(PostFixExpression);
 
 ///////////////////////////////////////////////////////////////////////////////
 // elemental types
 ///////////////////////////////////////////////////////////////////////////////
 
-/*DECLARE_STD_EMITTABLE(Constant);
+#if defined(USE_ORKSL_LANG)
+
+DECLARE_STD_EMITTABLE(Constant);
 DECLARE_STD_EMITTABLE(StringLiteral);
 DECLARE_STD_EMITTABLE(TypeName);
 DECLARE_STD_EMITTABLE(Identifier);
@@ -534,9 +544,9 @@ DECLARE_STD_EMITTABLE(AssignmentStatement);
 
 DECLARE_STD_ABSTRACT_EMITTABLE(ConditionalExpression);
 DECLARE_STD_ABSTRACT_EMITTABLE(IterationStatement);
-*/
+
 ///////////////////////////////////////////////////////////////////////////////
-/*
+
 struct FnElement : public ShaderEmittable {
   FnElement()
       : ShaderEmittable() {
@@ -561,10 +571,10 @@ struct DeclarationList : public ShaderEmittable {
   DECLARE_STD_EMITTABLE_FNS(DeclarationList);
   std::vector<vardecl_ptr_t> _children;
 };
-*/
+
 
 ///////////////////////////////////////////////////////////////////////////////
-/*
+
 struct Expression : public ShaderEmittable {
   Expression()
       : ShaderEmittable() {
@@ -601,7 +611,7 @@ struct CompoundStatement : public FnElement {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct ReturnStatement : public StatementNode {
+/*struct ReturnStatement : public StatementNode {
   ReturnStatement(TopNode* cnode)
       : StatementNode() {}
 
@@ -612,11 +622,11 @@ struct ReturnStatement : public StatementNode {
   void emit(shaderbuilder::BackEnd& backend) const final;
 
   expression_ptr_t _returnValue = nullptr;
-};
-*/
+};*/
+
 
 ///////////////////////////////////////////////////////////////////////////////
-/*
+
 struct ForLoopStatement : public IterationStatement {
   ForLoopStatement()
       : IterationStatement() {
@@ -628,7 +638,7 @@ struct ForLoopStatement : public IterationStatement {
   expression_ptr_t _condition = nullptr;
   // AssignmentNode* _advance = nullptr;
 };
-*/
+
 ///////////////////////////////////////////////////////////////////////////////
 /*
 struct WhileLoopStatement : public IterationStatement {
@@ -645,7 +655,6 @@ struct WhileLoopStatement : public IterationStatement {
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-
 struct ElseNode : public ShaderEmittable {
   ElseNode(TopNode* cnode)
       : ShaderEmittable() {}
@@ -671,6 +680,7 @@ struct ElseIfNode : public ShaderEmittable {
   expression_ptr_t _condition = nullptr;
 };
 
+
 struct IfStatement : public StatementNode {
   IfStatement(TopNode* cnode)
       : StatementNode() {}
@@ -683,8 +693,10 @@ struct IfStatement : public StatementNode {
   expression_ptr_t _condition = nullptr;
   std::vector<ElseIfNode*> _elseifs;
   ElseNode* _elseNode = nullptr;
-};
-*/
+};*/
+
+#endif 
+
 ///////////////////////////////////////////////////////////////////////////////
 
 struct OrkSlFunctionNode : public AstNode {
