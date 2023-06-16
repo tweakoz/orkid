@@ -193,10 +193,12 @@ void ScannerView::dump(const std::string& dumpid) const {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-std::string ScannerView::asString() const{
+std::string ScannerView::asString(bool use_spaces) const{
   std::string rval;
   for (int tokidx : _indices) {
-    rval += _scanner.tokens[tokidx].text + " ";
+    rval += _scanner.tokens[tokidx].text;
+    if( use_spaces )
+      rval += " ";
   }
   return rval;
 }
