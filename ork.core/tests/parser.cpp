@@ -5,13 +5,18 @@
 // see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ////////////////////////////////////////////////////////////////
 
-#include <ork/util/parser.inl>
+#include <ork/util/parser.h>
 #include <utpp/UnitTest++.h>
 #include <ork/util/crc.h>
 #include <string.h>
 #include <math.h>
 
 using namespace ork;
+
+///////////////////////////////////////////////////////////////////////////////
+constexpr const char* block_regex = "(function|yo|xxx)";
+#define MATCHER(x) auto x = p->createMatcher([=](scannerlightview_constptr_t inp_view)->scannerlightview_ptr_t
+///////////////////////////////////////////////////////////////////////////////
 
 enum class TokenClass : uint64_t {
   CrcEnum(SINGLE_LINE_COMMENT),
@@ -32,14 +37,14 @@ enum class TokenClass : uint64_t {
   CrcEnum(KW_OR_ID)
 };
 
-constexpr const char* block_regex = "(function|yo|xxx)";
+///////////////////////////////////////////////////////////////////////////////
 
 void loadScannerRules(scanner_ptr_t s) { //
   s->addRule("\\/\\*([^*]|\\*+[^/*])*\\*+\\/", uint64_t(TokenClass::MULTI_LINE_COMMENT));
   s->addRule("\\/\\/.*[\\n\\r]", uint64_t(TokenClass::SINGLE_LINE_COMMENT));
   s->addRule("\\s+", uint64_t(TokenClass::WHITESPACE));
   s->addRule("[\\n\\r]+", uint64_t(TokenClass::NEWLINE));
-  s->addRule("[a-zA-Z_]+[a-zA-Z0-9_]+", uint64_t(TokenClass::KW_OR_ID));
+  s->addRule("[a-zA-Z_][a-zA-Z0-9_]*", uint64_t(TokenClass::KW_OR_ID));
   s->addRule("=", uint64_t(TokenClass::EQUALS));
   s->addRule(",", uint64_t(TokenClass::COMMA));
   s->addRule(";", uint64_t(TokenClass::SEMICOLON));
@@ -55,29 +60,47 @@ void loadScannerRules(scanner_ptr_t s) { //
   s->buildStateMachine();
 }
 
-#define MATCHER(x) auto x = p->createMatcher([=](scannerlightview_constptr_t inp_view)->scannerlightview_ptr_t
+///////////////////////////////////////////////////////////////////////////////
 
 matcher_ptr_t loadGrammar(parser_ptr_t p) { //
-  auto equals         = p->matcherForTokenClass(TokenClass::EQUALS);
-  auto semicolon      = p->matcherForTokenClass(TokenClass::SEMICOLON);
-  auto comma          = p->matcherForTokenClass(TokenClass::COMMA);
-  auto lparen         = p->matcherForTokenClass(TokenClass::L_PAREN);
-  auto rparen         = p->matcherForTokenClass(TokenClass::R_PAREN);
-  auto lcurly         = p->matcherForTokenClass(TokenClass::L_CURLY);
-  auto rcurly         = p->matcherForTokenClass(TokenClass::R_CURLY);
-  auto floattok       = p->matcherForTokenClass(TokenClass::FLOATING_POINT);
-  auto kworid         = p->matcherForTokenClass(TokenClass::KW_OR_ID);
-  auto kw_function    = p->matcherForWord("function");
-  lcurly->_notif      = [=](scannerlightview_ptr_t inp_view) { printf("MATCHED lcurly\n"); };
-  kworid->_notif      = [=](scannerlightview_ptr_t inp_view) { printf("MATCHED kworid<%s>\n", inp_view->token(0)->text.c_str()); };
-  kw_function->_notif = [=](scannerlightview_ptr_t inp_view) { printf("MATCHED 'function'\n"); };
-  auto seq            = p->sequence({kw_function, kworid, lcurly});
-  seq->_notif         = [=](scannerlightview_ptr_t inp_view) {
-    printf("MATCHED sequence\n");
+  auto equals      = p->matcherForTokenClass(TokenClass::EQUALS, "equals");
+  auto semicolon   = p->matcherForTokenClass(TokenClass::SEMICOLON, "semicolon");
+  auto comma       = p->matcherForTokenClass(TokenClass::COMMA, "comma");
+  auto lparen      = p->matcherForTokenClass(TokenClass::L_PAREN, "lparen");
+  auto rparen      = p->matcherForTokenClass(TokenClass::R_PAREN, "rparen");
+  auto lcurly      = p->matcherForTokenClass(TokenClass::L_CURLY, "lcurly");
+  auto rcurly      = p->matcherForTokenClass(TokenClass::R_CURLY, "rcurly");
+  auto floattok    = p->matcherForTokenClass(TokenClass::FLOATING_POINT, "float");
+  auto kworid      = p->matcherForTokenClass(TokenClass::KW_OR_ID, "kw_or_id");
+  auto kw_function = p->matcherForWord("function");
+  ///////////////////////////////////////////////////////////
+  auto argument_decl = p->sequence(
+      "argument_decl",
+      {
+          //
+          kworid,
+          kworid,
+          p->optional(comma),
+      });
+  ///////////////////////////////////////////////////////////
+  auto seq = p->sequence(
+      "funcdef",
+      {//
+       kw_function,
+       kworid,
+       lparen,
+       p->zeroOrMore(argument_decl),
+       rparen});
+  ///////////////////////////////////////////////////////////
+  seq->_notif = [=](scannerlightview_ptr_t inp_view) {
+    printf("MATCHED sequence<%s>\n", seq->_name.c_str());
     inp_view->dump("seq");
   };
   return seq;
 }
+
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 
 TEST(parser1) {
 
@@ -91,7 +114,7 @@ TEST(parser1) {
         ///////////////////
         // hello world
         ///////////////////
-        function abc {
+        function abc(int x, float y) {
             b = (a+v)*7.0;
         }
     )";
@@ -104,6 +127,6 @@ TEST(parser1) {
   auto top_view = s->createTopView();
   top_view.dump("top_view");
   auto slv     = std::make_shared<ScannerLightView>(top_view);
-  auto matched = fn_matcher->match(slv);
+  bool matched = p->match(slv, fn_matcher);
   OrkAssert(matched);
 }

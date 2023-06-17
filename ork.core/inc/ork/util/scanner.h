@@ -18,10 +18,13 @@ namespace ork {
 
 struct Scanner;
 struct ScannerView;
+struct ScannerLightView;
 
 using scanner_ptr_t = std::shared_ptr<Scanner>;
 using scanner_constptr_t = std::shared_ptr<const Scanner>;
 using scannerview_ptr_t = std::shared_ptr<ScannerView>;
+using scannerlightview_ptr_t      = std::shared_ptr<ScannerLightView>;
+using scannerlightview_constptr_t = std::shared_ptr<const ScannerLightView>;
 using match_fn_t = std::function<scannerview_ptr_t(const ScannerView&)>;
 
 struct Token {
@@ -181,6 +184,21 @@ struct ScannerView {
   size_t _blockType;
   size_t _blockName;
   bool _blockOk;
+};
+
+//////////////////////////////////////////////////////////////
+
+struct ScannerLightView {
+  ScannerLightView(const ScannerView& inp_view);
+  ScannerLightView(const ScannerLightView& oth);
+  void clear();
+  int numTokens() const;
+  bool empty() const;
+  const Token* token(size_t i) const;
+  void dump(const std::string& dumpid) const;
+  const ScannerView& _input_view;
+  size_t _start = -1;
+  size_t _end   = -1;
 };
 
 /////////////////////////////////////////////////////////////////////////////////////////////////

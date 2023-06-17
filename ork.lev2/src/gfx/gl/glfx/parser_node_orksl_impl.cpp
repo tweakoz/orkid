@@ -21,7 +21,7 @@
 #include <stdlib.h>
 #include <peglib.h>
 #include <ork/util/logger.h>
-#include <ork/util/parser.inl>
+#include <ork/util/parser.h>
 #include <ork/kernel/string/string.h>
 
 #if defined(USE_ORKSL_LANG)
@@ -157,7 +157,7 @@ struct _ORKSL_IMPL : public Parser {
 
 scannerlightview_ptr_t _ORKSL_IMPL::match_fndef(const ScannerView& inp_view) {
   auto slv = std::make_shared<ScannerLightView>(inp_view);
-  return _matcher_fndef->match(slv);
+  return nullptr;// _matcher_fndef->match(slv);
 }
 
 //////////////////////////////////////////////////////////////
@@ -266,7 +266,8 @@ void _ORKSL_IMPL::loadGrammar(){
   /////////////////////////////////////////////////////
   _matcher_fndef = createMatcher([=](scannerlightview_constptr_t inp_view) -> scannerlightview_ptr_t {
     auto seq = sequence({lparen, zeroOrMore(params), rparen, lcurly, zeroOrMore(statements), rcurly});
-    return seq->match(inp_view);
+    bool matched = this->match(inp_view,seq);
+    return nullptr;
   });
 
 }
