@@ -33,8 +33,6 @@ static logchannel_ptr_t logchan = logger()->createChannel("ORKSLIMPL",fvec3(1,1,
 static logchannel_ptr_t logchan_grammar = logger()->createChannel("ORKSLGRAM",fvec3(1,1,.8),true);
 static logchannel_ptr_t logchan_lexer = logger()->createChannel("ORKSLLEXR",fvec3(1,1,.7),true);
 
-using peg_parser_ptr_t = std::shared_ptr<peg::parser>;
-
 struct ScannerLightView{
   ScannerLightView(const ScannerView& inp_view)
     : _input_view(inp_view)
@@ -79,6 +77,10 @@ using matcher_ptr_t = std::shared_ptr<Matcher>;
 
 //////////////////////////////////////////////////////////////
 
+#define MATCHER(x) auto x = createMatcher([=](scannerlightview_constptr_t inp_view)->scannerlightview_ptr_t
+
+//////////////////////////////////////////////////////////////
+
 struct OrkslPEG{
 
   OrkslPEG(){
@@ -92,12 +94,12 @@ struct OrkslPEG{
     auto rcurly = matcherForTokenClass(TokenClass::R_CURLY);
     auto lsquare = matcherForTokenClass(TokenClass::L_SQUARE);
     auto rsquare = matcherForTokenClass(TokenClass::R_SQUARE);
-
-    auto paramDeclaration = createMatcher([=](scannerlightview_constptr_t inp_view)->scannerlightview_ptr_t{
+    /////////////////////////////////////////////////////
+    MATCHER(paramDeclaration){
       return nullptr;
     });
-
-    auto params = createMatcher([=](scannerlightview_constptr_t inp_view)->scannerlightview_ptr_t{
+    /////////////////////////////////////////////////////
+    MATCHER(params){
       auto next = lparen->match(inp_view);
       if(next){
         next = paramDeclaration->match(next);
@@ -107,31 +109,30 @@ struct OrkslPEG{
       }
       return nullptr;
     });
+    /////////////////////////////////////////////////////
+    MATCHER(statements){
+      auto next = lparen->match(inp_view);
+      if(next){
+        next = paramDeclaration->match(next);
 
-    _matcher_top = createMatcher([=](scannerlightview_constptr_t inp_view)->scannerlightview_ptr_t{
-      auto m_lparen = lparen->match(inp_view);
-      if(m_lparen){
-        auto m_params = params->match(m_lparen);
-        if(m_params){
-          auto m_rparen = rparen->match(m_params);
-          if(m_rparen){
-            auto rval = std::make_shared<ScannerLightView>(*inp_view);
-            rval->_start = m_lparen->_start;
-            rval->_end = m_rparen->_start;
-            return rval;
-          }
-        }
+        OrkAssert(false);
+        return next;
       }
       return nullptr;
+    });
+    /////////////////////////////////////////////////////
+    _matcher_fndef = createMatcher([=](scannerlightview_constptr_t inp_view)->scannerlightview_ptr_t{
+      auto seq = matcherSequence({lparen,zeroOrMore(params),rparen,lcurly,zeroOrMore(statements),rcurly});
+      return seq->match(inp_view);
     });
 
   };
 
   //////////////////////////////////////////////////////////////////////
 
-  scannerlightview_ptr_t match_top(const ScannerView& inp_view){
+  scannerlightview_ptr_t match_fndef(const ScannerView& inp_view){
     auto slv = std::make_shared<ScannerLightView>(inp_view);
-    return _matcher_top->match(slv);
+    return _matcher_fndef->match(slv);
   }
 
   //////////////////////////////////////////////////////////////////////
@@ -153,12 +154,22 @@ struct OrkslPEG{
 
   matcher_ptr_t matcherSequence(std::vector<matcher_ptr_t> matchers){
     auto match_fn = [matchers](scannerlightview_constptr_t slv) -> scannerlightview_ptr_t {
-      auto slv_out = std::make_shared<ScannerLightView>(*slv);
+      auto slv_test = std::make_shared<ScannerLightView>(*slv);
+      std::vector<scannerlightview_ptr_t> items;
       for(auto m:matchers){
-        slv_out = m->match(slv_out);
-        if(nullptr==slv_out)
+        auto slv_match = m->match(slv_test);
+        if(slv_match){
+          items.push_back(slv_match);
+          slv_test->_start = slv_match->_end+1;
+        }
+        else{
           return nullptr;
+        }
       }
+      OrkAssert(items.size() );
+      auto slv_out = std::make_shared<ScannerLightView>(*slv);
+      slv_out->_start = items.front()->_start;
+      slv_out->_end = items.back()->_end;
       return slv_out;
     };
     return createMatcher(match_fn);
@@ -166,14 +177,46 @@ struct OrkslPEG{
 
   //////////////////////////////////////////////////////////////////////
 
-  matcher_ptr_t matcherOneOrMore(matcher_ptr_t matcher){
-    auto match_fn = [matcher](scannerlightview_constptr_t slv) -> scannerlightview_ptr_t {
-      auto slv_out = std::make_shared<ScannerLightView>(*slv);
-      while(true){
-        auto slv_next = matcher->match(slv_out);
-        if(nullptr==slv_next)
-          break;
-        slv_out = slv_next;
+  matcher_ptr_t oneOrMore(matcher_ptr_t matcher){
+    auto match_fn = [matcher](scannerlightview_constptr_t input_slv) -> scannerlightview_ptr_t {
+      std::vector<scannerlightview_ptr_t> items;
+      auto slv_out = std::make_shared<ScannerLightView>(*input_slv);
+      while(slv_out){
+        if(slv_out){
+          items.push_back(slv_out);
+        }
+        slv_out = matcher->match(slv_out);
+      }
+      if(items.size()){
+        auto slv_out = std::make_shared<ScannerLightView>(*input_slv);
+        slv_out->_start = items.front()->_start;
+        slv_out->_end = items.back()->_end;
+        return slv_out;
+      }
+    };
+    return createMatcher(match_fn);
+  }
+
+  //////////////////////////////////////////////////////////////////////
+
+  matcher_ptr_t zeroOrMore(matcher_ptr_t matcher){
+    auto match_fn = [matcher](scannerlightview_constptr_t input_slv) -> scannerlightview_ptr_t {
+      std::vector<scannerlightview_ptr_t> items;
+      auto slvtest = std::make_shared<ScannerLightView>(*input_slv);
+      while(slvtest){
+        auto slv_matched = matcher->match(slvtest);
+        if(slv_matched){
+          items.push_back(slv_matched);
+          slvtest->_start = slv_matched->_end+1;
+        }
+        else{
+          slvtest = nullptr;
+        }
+      }
+
+      auto slv_out = std::make_shared<ScannerLightView>(*input_slv);
+      if( items.size() ){
+        slv_out->_end = items.back()->_end;
       }
       return slv_out;
     };
@@ -190,7 +233,7 @@ struct OrkslPEG{
 
   //////////////////////////////////////////////////////////////////////
 
-  matcher_ptr_t _matcher_top;
+  matcher_ptr_t _matcher_fndef;
   std::unordered_set<matcher_ptr_t> _matchers;
 };
 
@@ -198,7 +241,6 @@ struct OrkslPEG{
 
 struct _ORKSL_IMPL {
   _ORKSL_IMPL(OrkSlFunctionNode* node);
-  peg_parser_ptr_t _peg_parser;
   OrkslPEG _newpeg;
 };
 
@@ -388,127 +430,22 @@ _ORKSL_IMPL::_ORKSL_IMPL(OrkSlFunctionNode* node) {
   peg_rules += FormatString(")\n\n");
 
   ////////////////////////////////////////////////
-  // parser initialization
-  ////////////////////////////////////////////////
-
-  logchan_grammar->log( "PEG RULES:");
-  auto grammar_lines = SplitString(peg_rules,'\n');
-  int iline = 0;
-  for( auto l : grammar_lines ){
-    logchan_grammar->log( "%03d: %s", iline, l.c_str() );
-    iline++;
-  }
-
-  logchan_grammar->log( "############################################" );
-
-  _peg_parser = std::make_shared<peg::parser>();
-
-  _peg_parser->set_logger([](size_t line,               //
-                             size_t col,                //
-                             const std::string& msg,    //
-                             const std::string& rule) { //
-    std::cerr << line << ":" << col << ": " << rule << " : " << msg << "\n";
-  });
-
-  auto& parser = *_peg_parser;
-
-  parser.load_grammar(peg_rules);
-
-  // validate rules
-
-  if( not static_cast<bool>(parser) ){
-
-    auto as_lines = SplitString(peg_rules,'\n');
-    int iline = 1;
-    for( auto l: as_lines ){
-      logchan_grammar->log( "%03d: %s", iline, l.c_str() );
-      iline++;
-    }
-    OrkAssert(false);
-
-  }
-
-  ///////////////////////////////////////////////////////////
-
-
-  auto impl_default_handler = [&parser](std::string key){
-    parser[key.c_str()] = [key](const peg::SemanticValues& vs) {
-      auto tok = vs.token_to_string(0);
-      logchan->log("%s: %s", key.c_str(), tok.c_str());
-    };
-  };
-
-  ///////////////////////////////////////////////////////////
-  // keyword / typename / identifier semantic actions
-  ///////////////////////////////////////////////////////////
-
-  impl_default_handler("KEYWORD");
-  impl_default_handler("TYPENAME");
-  //impl_default_handler("IDENTIFIER");
-
-  parser["IDENTIFIER"].predicate = [valid_typenames,valid_keywords](const peg::SemanticValues& vs, const std::any& /*dt*/, std::string& msg) {
-    auto tok = vs.token_to_string(0);
-    auto itt = valid_typenames.find(tok);
-    auto itk = valid_keywords.find(tok);
-    bool rval = (itt==valid_typenames.end()) and (itk==valid_keywords.end());
-    if(rval){
-      logchan->log("IDENTIFIER: %s", tok.c_str());
-    }
-    return rval;
-  };
-
-  ///////////////////////////////////////////////////////////
-  // hierarchy token semantic actions
-  ///////////////////////////////////////////////////////////
-
-  impl_default_handler("BUILTIN_TYPENAME");
-
-  impl_default_handler("L_PAREN");
-  impl_default_handler("R_PAREN");
-  impl_default_handler("L_CURLY");
-  impl_default_handler("R_CURLY");
-  impl_default_handler("L_SQUARE");
-  impl_default_handler("R_SQUARE");
-  impl_default_handler("DOT");
-  impl_default_handler("COMMA");
-  impl_default_handler("EQUALS");
-  impl_default_handler("SEMI_COLON");
-  //impl_default_handler("WHITESPACE");
-  //impl_default_handler("INTEGER");
-  //impl_default_handler("FLOAT");
-  
-  ///////////////////////////////////////////////////////////
-  // language construct semantic actions
-  ///////////////////////////////////////////////////////////
-
-  impl_default_handler("functionDefinition");
-
-  impl_default_handler("dataType");
-  impl_default_handler("variableDeclaration");
-  impl_default_handler("paramDeclaration");
-  impl_default_handler("params");
-  impl_default_handler("statement");
-  impl_default_handler("statements");
-  impl_default_handler("functionCall");
-  impl_default_handler("returnStatement");
-  impl_default_handler("assignment");
-  impl_default_handler("expression");
-  impl_default_handler("vecMatAccess");
-  impl_default_handler("component");
-  impl_default_handler("arguments");
-
-  ////////////////////////////////////////////////
 }
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
 
 svar16_t OrkSlFunctionNode::_getimpl(OrkSlFunctionNode* node) {
   static auto _gint = std::make_shared<_ORKSL_IMPL>(node);
   return _gint;
 }
 
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
 OrkSlFunctionNode::OrkSlFunctionNode(parser_rawptr_t parser)
     : AstNode(parser) {
 }
 
+/////////////////////////////////////////////////////////////////////////////////////////////////
 
 int OrkSlFunctionNode::parse(const ScannerView& view) {
 
@@ -520,27 +457,9 @@ int OrkSlFunctionNode::parse(const ScannerView& view) {
   OrkAssert(open_tok->text == "(");
   i++;
 
-  try {
+  internals->_newpeg.match_fndef(view);
+  OrkAssert(false);
 
-    internals->_newpeg.match_top(view);
-    OrkAssert(false);
-    /*std::string input = view.asString(true);
-
-    auto str_start = input.c_str();
-    auto str_end   = str_start + input.size();
-
-    printf("input<%s>\n", input.c_str() );
-    printf("input.st<%c>\n", *str_start);
-    printf("input.en<%c>\n", *str_end);
-
-    bool ret = internals->_peg_parser->parse(input);
-
-    OrkAssert(ret==true);*/
-
-  } catch (const std::exception& e) {
-    //std::cout << e.what() << '\n';
-    //OrkAssert(false);
-  }
   return 0;
 }
 void OrkSlFunctionNode::emit(shaderbuilder::BackEnd& backend) const {

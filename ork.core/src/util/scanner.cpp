@@ -239,11 +239,11 @@ size_t ScannerView::globalTokenIndex(size_t i) const {
   return ret;
 }
 
-void Scanner::addRule(std::string rule, int state) {
+void Scanner::addRule(std::string rule, uint64_t state) {
   _rules.push(rule, state);
 }
 void Scanner::buildStateMachine() {
-  lexertl::generator::build(_rules, _statemachine);
+  gen_t::build(_rules, _statemachine);
 }
 
 Scanner::Scanner(
@@ -263,8 +263,8 @@ void Scanner::scanString(std::string str){
 /////////////////////////////////////////
 void Scanner::scan() {
   std::string as_str = _fxbuffer.data();
-  lexertl::siterator iter(as_str.begin(), as_str.end(), _statemachine);
-  lexertl::siterator end;
+  iter_t iter(as_str.begin(), as_str.end(), _statemachine);
+  iter_t end;
 
   int index = 0;
   for (; iter != end; ++iter) {

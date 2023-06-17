@@ -80,7 +80,7 @@ struct Scanner {
       std::string blockregex, //
       size_t capacity = 64 << 10);
   /////////////////////////////////////////
-  void addRule(std::string rule, int state);
+  void addRule(std::string rule, uint64_t state);
   void buildStateMachine();
   void scan();
   void scanString(std::string str);
@@ -105,8 +105,14 @@ struct Scanner {
   scan_state ss;
   bool _quotedstrings = true;
 
-  lexertl::rules _rules;
-  lexertl::state_machine _statemachine;
+  using match_t = lexertl::match_results<std::string::const_iterator,uint64_t>;
+  using rules_t = lexertl::basic_rules<char,char,uint64_t>;
+  using statemachine_t = lexertl::basic_state_machine<char,uint64_t>;
+  using gen_t = lexertl::basic_generator<rules_t, statemachine_t>;
+  using iter_t = lexertl::iterator<std::string::const_iterator,statemachine_t,match_t>;
+
+  rules_t _rules;
+  statemachine_t _statemachine;
 };
 
 struct ScanViewFilter {
