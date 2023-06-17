@@ -21,6 +21,8 @@ enum class TokenClass : uint64_t {
   CrcEnum(SEMICOLON),
   CrcEnum(L_PAREN),
   CrcEnum(R_PAREN),
+  CrcEnum(L_CURLY),
+  CrcEnum(R_CURLY),
   CrcEnum(EQUALS),
   CrcEnum(STAR),
   CrcEnum(PLUS),
@@ -43,6 +45,8 @@ void loadScannerRules(scanner_ptr_t s) { //
   s->addRule(";", uint64_t(TokenClass::SEMICOLON));
   s->addRule("\\(", uint64_t(TokenClass::L_PAREN));
   s->addRule("\\)", uint64_t(TokenClass::R_PAREN));
+  s->addRule("\\{", uint64_t(TokenClass::L_CURLY));
+  s->addRule("\\}", uint64_t(TokenClass::R_CURLY));
   s->addRule("\\*", uint64_t(TokenClass::STAR));
   s->addRule("\\+", uint64_t(TokenClass::PLUS));
   s->addRule("\\-", uint64_t(TokenClass::MINUS));
@@ -54,22 +58,25 @@ void loadScannerRules(scanner_ptr_t s) { //
 #define MATCHER(x) auto x = p->createMatcher([=](scannerlightview_constptr_t inp_view)->scannerlightview_ptr_t
 
 matcher_ptr_t loadGrammar(parser_ptr_t p) { //
-  auto equals    = p->matcherForTokenClass(TokenClass::EQUALS);
-  auto semicolon = p->matcherForTokenClass(TokenClass::SEMICOLON);
-  auto comma     = p->matcherForTokenClass(TokenClass::COMMA);
-  auto lparen    = p->matcherForTokenClass(TokenClass::L_PAREN);
-  auto rparen    = p->matcherForTokenClass(TokenClass::R_PAREN);
-  auto floattok  = p->matcherForTokenClass(TokenClass::FLOATING_POINT);
-  auto kworid  = p->matcherForTokenClass(TokenClass::KW_OR_ID);
-  auto kw_function = p->matcherForWord("function");
-  kworid->_notif = [=](scannerlightview_ptr_t inp_view) {
-    printf("MATCHED kworid<%s>\n", inp_view->token(0)->text.c_str());
-    OrkAssert(false);
+  auto equals         = p->matcherForTokenClass(TokenClass::EQUALS);
+  auto semicolon      = p->matcherForTokenClass(TokenClass::SEMICOLON);
+  auto comma          = p->matcherForTokenClass(TokenClass::COMMA);
+  auto lparen         = p->matcherForTokenClass(TokenClass::L_PAREN);
+  auto rparen         = p->matcherForTokenClass(TokenClass::R_PAREN);
+  auto lcurly         = p->matcherForTokenClass(TokenClass::L_CURLY);
+  auto rcurly         = p->matcherForTokenClass(TokenClass::R_CURLY);
+  auto floattok       = p->matcherForTokenClass(TokenClass::FLOATING_POINT);
+  auto kworid         = p->matcherForTokenClass(TokenClass::KW_OR_ID);
+  auto kw_function    = p->matcherForWord("function");
+  lcurly->_notif      = [=](scannerlightview_ptr_t inp_view) { printf("MATCHED lcurly\n"); };
+  kworid->_notif      = [=](scannerlightview_ptr_t inp_view) { printf("MATCHED kworid<%s>\n", inp_view->token(0)->text.c_str()); };
+  kw_function->_notif = [=](scannerlightview_ptr_t inp_view) { printf("MATCHED 'function'\n"); };
+  auto seq            = p->sequence({kw_function, kworid, lcurly});
+  seq->_notif         = [=](scannerlightview_ptr_t inp_view) {
+    printf("MATCHED sequence\n");
+    inp_view->dump("seq");
   };
-  kw_function->_notif = [=](scannerlightview_ptr_t inp_view) {
-    printf("MATCHED 'function'\n");
-  };
-  return p->sequence({kw_function,kworid,lparen});
+  return seq;
 }
 
 TEST(parser1) {
@@ -96,7 +103,7 @@ TEST(parser1) {
 
   auto top_view = s->createTopView();
   top_view.dump("top_view");
-  auto slv = std::make_shared<ScannerLightView>(top_view);
+  auto slv     = std::make_shared<ScannerLightView>(top_view);
   auto matched = fn_matcher->match(slv);
   OrkAssert(matched);
 }
