@@ -23,7 +23,7 @@ using scanner_constptr_t = std::shared_ptr<const Scanner>;
 struct Token {
   int iline;
   int icol;
-  int _class = -1;
+  uint64_t _class = -1;
   std::string text;
   Token(const std::string& txt, int il, int ic)
       : iline(il)

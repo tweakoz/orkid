@@ -83,46 +83,60 @@ struct OrkslPEG{
 
   OrkslPEG(){
 
-    auto equals = createMatcherForTokenClass(TokenClass::EQUALS);
-    auto semicolon = createMatcherForTokenClass(TokenClass::SEMICOLON);
-    auto comma = createMatcherForTokenClass(TokenClass::COMMA);
-    auto lparen = createMatcherForTokenClass(TokenClass::L_PAREN);
-    auto rparen = createMatcherForTokenClass(TokenClass::R_PAREN);
-    auto lcurly = createMatcherForTokenClass(TokenClass::L_CURLY);
-    auto rcurly = createMatcherForTokenClass(TokenClass::R_CURLY);
-    auto lsquare = createMatcherForTokenClass(TokenClass::L_SQUARE);
-    auto rsquare = createMatcherForTokenClass(TokenClass::R_SQUARE);
+    auto equals = matcherForTokenClass(TokenClass::EQUALS);
+    auto semicolon = matcherForTokenClass(TokenClass::SEMICOLON);
+    auto comma = matcherForTokenClass(TokenClass::COMMA);
+    auto lparen = matcherForTokenClass(TokenClass::L_PAREN);
+    auto rparen = matcherForTokenClass(TokenClass::R_PAREN);
+    auto lcurly = matcherForTokenClass(TokenClass::L_CURLY);
+    auto rcurly = matcherForTokenClass(TokenClass::R_CURLY);
+    auto lsquare = matcherForTokenClass(TokenClass::L_SQUARE);
+    auto rsquare = matcherForTokenClass(TokenClass::R_SQUARE);
 
-    auto paramDeclaration = std::make_shared<Matcher>([=](scannerlightview_constptr_t inp_view)->scannerlightview_ptr_t{
+    auto paramDeclaration = createMatcher([=](scannerlightview_constptr_t inp_view)->scannerlightview_ptr_t{
       return nullptr;
     });
 
-    auto params = std::make_shared<Matcher>([=](scannerlightview_constptr_t inp_view)->scannerlightview_ptr_t{
+    auto params = createMatcher([=](scannerlightview_constptr_t inp_view)->scannerlightview_ptr_t{
       auto next = lparen->match(inp_view);
       if(next){
+        next = paramDeclaration->match(next);
+
         OrkAssert(false);
         return next;
       }
       return nullptr;
     });
 
-    _matcher_top = std::make_shared<Matcher>([=](scannerlightview_constptr_t inp_view)->scannerlightview_ptr_t{
-      auto next = lparen->match(inp_view);
-      if(next){
-        OrkAssert(false);
-        return next;
+    _matcher_top = createMatcher([=](scannerlightview_constptr_t inp_view)->scannerlightview_ptr_t{
+      auto m_lparen = lparen->match(inp_view);
+      if(m_lparen){
+        auto m_params = params->match(m_lparen);
+        if(m_params){
+          auto m_rparen = rparen->match(m_params);
+          if(m_rparen){
+            auto rval = std::make_shared<ScannerLightView>(*inp_view);
+            rval->_start = m_lparen->_start;
+            rval->_end = m_rparen->_start;
+            return rval;
+          }
+        }
       }
       return nullptr;
     });
 
   };
 
+  //////////////////////////////////////////////////////////////////////
+
   scannerlightview_ptr_t match_top(const ScannerView& inp_view){
     auto slv = std::make_shared<ScannerLightView>(inp_view);
     return _matcher_top->match(slv);
   }
 
-  matcher_ptr_t createMatcherForTokenClass(TokenClass tokclass){
+  //////////////////////////////////////////////////////////////////////
+
+  matcher_ptr_t matcherForTokenClass(TokenClass tokclass){
     auto match_fn = [tokclass](scannerlightview_constptr_t slv) -> scannerlightview_ptr_t {
       auto slv_tokclass = slv->token_class(0);
       if(slv_tokclass==tokclass){
@@ -132,13 +146,52 @@ struct OrkslPEG{
       }
       return nullptr;
     };
+    return createMatcher(match_fn);
+  }
+
+  //////////////////////////////////////////////////////////////////////
+
+  matcher_ptr_t matcherSequence(std::vector<matcher_ptr_t> matchers){
+    auto match_fn = [matchers](scannerlightview_constptr_t slv) -> scannerlightview_ptr_t {
+      auto slv_out = std::make_shared<ScannerLightView>(*slv);
+      for(auto m:matchers){
+        slv_out = m->match(slv_out);
+        if(nullptr==slv_out)
+          return nullptr;
+      }
+      return slv_out;
+    };
+    return createMatcher(match_fn);
+  }
+
+  //////////////////////////////////////////////////////////////////////
+
+  matcher_ptr_t matcherOneOrMore(matcher_ptr_t matcher){
+    auto match_fn = [matcher](scannerlightview_constptr_t slv) -> scannerlightview_ptr_t {
+      auto slv_out = std::make_shared<ScannerLightView>(*slv);
+      while(true){
+        auto slv_next = matcher->match(slv_out);
+        if(nullptr==slv_next)
+          break;
+        slv_out = slv_next;
+      }
+      return slv_out;
+    };
+    return createMatcher(match_fn);
+  }
+
+  //////////////////////////////////////////////////////////////////////
+  
+  matcher_ptr_t createMatcher(matcher_fn_t match_fn){
     auto matcher = std::make_shared<Matcher>(match_fn);
-    _matchers_tokclass[tokclass] = matcher;
+    _matchers.insert(matcher);
     return matcher;
   }
 
+  //////////////////////////////////////////////////////////////////////
+
   matcher_ptr_t _matcher_top;
-  std::unordered_map<TokenClass, matcher_ptr_t> _matchers_tokclass;
+  std::unordered_set<matcher_ptr_t> _matchers;
 };
 
 //////////////////////////////////////////////////////////////
