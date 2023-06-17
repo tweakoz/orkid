@@ -191,11 +191,13 @@ void Interface::EndPass() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void Interface::reset() {
+#if defined(USE_COMPUTE_SHADERS)
  GLuint numSSBOs;
  glGetIntegerv(GL_MAX_SHADER_STORAGE_BUFFER_BINDINGS, reinterpret_cast<GLint*>(&numSSBOs));
  for (GLuint index = 0; index < numSSBOs; ++index) {
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, index, 0);
  }
+#endif
  glUseProgram(0);
   _active_effect = nullptr;
   _activeShader = nullptr;

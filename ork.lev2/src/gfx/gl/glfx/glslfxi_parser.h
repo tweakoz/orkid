@@ -85,7 +85,7 @@ using parser_constptr_t = std::shared_ptr<const GlSlFxParser>;
 
 
 using match_results_t = FnMatchResultsWrap;
-using match_fn_t = std::function<match_ptr_t(FnParseContext)>;
+//using match_fn_t = std::function<match_ptr_t(FnParseContext)>;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -35,31 +35,118 @@ static logchannel_ptr_t logchan_lexer = logger()->createChannel("ORKSLLEXR",fvec
 
 using peg_parser_ptr_t = std::shared_ptr<peg::parser>;
 
-struct Matcher {
+struct ScannerLightView{
+  ScannerLightView(const ScannerView& inp_view)
+    : _input_view(inp_view)
+    , _start(inp_view._start)
+    , _end(inp_view._end)
+  {
+  }
+  ScannerLightView(const ScannerLightView& oth)
+    : _input_view(oth._input_view)
+    , _start(oth._start)
+    , _end(oth._end)
+  {
+  }
+  const Token* token(size_t i) const{
+    return _input_view.token(i);
+  }
+  TokenClass token_class(size_t i) const{
+    auto tok = token(i);
+    return (TokenClass) tok->_class;
+  }
+  const ScannerView& _input_view;
+  size_t _start = -1; 
+  size_t _end = -1;   
+};
+using scannerlightview_ptr_t = std::shared_ptr<ScannerLightView>;
+using scannerlightview_constptr_t = std::shared_ptr<const ScannerLightView>;
+using matcher_fn_t = std::function<scannerlightview_ptr_t(scannerlightview_constptr_t& inp_view)>;
 
+//////////////////////////////////////////////////////////////
+
+struct Matcher {
+  Matcher(matcher_fn_t match_fn)
+    : _match_fn(match_fn) {
+  }
+  scannerlightview_ptr_t match(scannerlightview_constptr_t inp_view) const {
+    return _match_fn(inp_view);
+  }
+  matcher_fn_t _match_fn;
 };
 
 using matcher_ptr_t = std::shared_ptr<Matcher>;
 
+//////////////////////////////////////////////////////////////
+
 struct OrkslPEG{
 
   OrkslPEG(){
-    _matcher_top = std::make_shared<Matcher>(
+
+    auto equals = createMatcherForTokenClass(TokenClass::EQUALS);
+    auto semicolon = createMatcherForTokenClass(TokenClass::SEMICOLON);
+    auto comma = createMatcherForTokenClass(TokenClass::COMMA);
+    auto lparen = createMatcherForTokenClass(TokenClass::L_PAREN);
+    auto rparen = createMatcherForTokenClass(TokenClass::R_PAREN);
+    auto lcurly = createMatcherForTokenClass(TokenClass::L_CURLY);
+    auto rcurly = createMatcherForTokenClass(TokenClass::R_CURLY);
+    auto lsquare = createMatcherForTokenClass(TokenClass::L_SQUARE);
+    auto rsquare = createMatcherForTokenClass(TokenClass::R_SQUARE);
+
+    auto paramDeclaration = std::make_shared<Matcher>([=](scannerlightview_constptr_t inp_view)->scannerlightview_ptr_t{
+      return nullptr;
+    });
+
+    auto params = std::make_shared<Matcher>([=](scannerlightview_constptr_t inp_view)->scannerlightview_ptr_t{
+      auto next = lparen->match(inp_view);
+      if(next){
+        OrkAssert(false);
+        return next;
+      }
+      return nullptr;
+    });
+
+    _matcher_top = std::make_shared<Matcher>([=](scannerlightview_constptr_t inp_view)->scannerlightview_ptr_t{
+      auto next = lparen->match(inp_view);
+      if(next){
+        OrkAssert(false);
+        return next;
+      }
+      return nullptr;
+    });
 
   };
 
-  static scannerview_ptr_t match_top(const ScannerView& inp_view){
-    
-    return nullptr;
+  scannerlightview_ptr_t match_top(const ScannerView& inp_view){
+    auto slv = std::make_shared<ScannerLightView>(inp_view);
+    return _matcher_top->match(slv);
+  }
+
+  matcher_ptr_t createMatcherForTokenClass(TokenClass tokclass){
+    auto match_fn = [tokclass](scannerlightview_constptr_t slv) -> scannerlightview_ptr_t {
+      auto slv_tokclass = slv->token_class(0);
+      if(slv_tokclass==tokclass){
+        auto slv_out = std::make_shared<ScannerLightView>(*slv);
+        slv_out->_start++;
+        return slv_out;
+      }
+      return nullptr;
+    };
+    auto matcher = std::make_shared<Matcher>(match_fn);
+    _matchers_tokclass[tokclass] = matcher;
+    return matcher;
   }
 
   matcher_ptr_t _matcher_top;
+  std::unordered_map<TokenClass, matcher_ptr_t> _matchers_tokclass;
 };
 
+//////////////////////////////////////////////////////////////
 
 struct _ORKSL_IMPL {
   _ORKSL_IMPL(OrkSlFunctionNode* node);
   peg_parser_ptr_t _peg_parser;
+  OrkslPEG _newpeg;
 };
 
 using impl_ptr_t = std::shared_ptr<_ORKSL_IMPL>;
@@ -382,8 +469,8 @@ int OrkSlFunctionNode::parse(const ScannerView& view) {
 
   try {
 
-    auto top = OrkslPEG::match_top(view);
-    OrkAssert(top);
+    internals->_newpeg.match_top(view);
+    OrkAssert(false);
     /*std::string input = view.asString(true);
 
     auto str_start = input.c_str();
