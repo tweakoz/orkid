@@ -144,7 +144,6 @@ struct _ORKSL_IMPL : public Parser {
   _ORKSL_IMPL(OrkSlFunctionNode* node);
 
   scannerlightview_ptr_t match_fndef(const ScannerView& inp_view);
-  matcher_ptr_t matcherForTokenClass(TokenClass tokclass);
   //
 
   void loadGrammar();
@@ -161,24 +160,9 @@ scannerlightview_ptr_t _ORKSL_IMPL::match_fndef(const ScannerView& inp_view) {
   return _matcher_fndef->match(slv);
 }
 
-//////////////////////////////////////////////////////////////////////
-
-matcher_ptr_t _ORKSL_IMPL::matcherForTokenClass(TokenClass tokclass) {
-  auto match_fn = [tokclass](scannerlightview_constptr_t slv) -> scannerlightview_ptr_t {
-    auto slv_tokclass = TokenClass(slv->token(0)->_class);
-    if (slv_tokclass == tokclass) {
-      auto slv_out = std::make_shared<ScannerLightView>(*slv);
-      slv_out->_start++;
-      return slv_out;
-    }
-    return nullptr;
-  };
-  return createMatcher(match_fn);
-}
-
-
-
 //////////////////////////////////////////////////////////////
+
+#define MATCHER(x) auto x = createMatcher([=](scannerlightview_constptr_t inp_view)->scannerlightview_ptr_t
 
 void _ORKSL_IMPL::loadGrammar(){
   auto equals    = matcherForTokenClass(TokenClass::EQUALS);

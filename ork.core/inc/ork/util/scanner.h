@@ -17,8 +17,12 @@ namespace ork {
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 struct Scanner;
+struct ScannerView;
+
 using scanner_ptr_t = std::shared_ptr<Scanner>;
 using scanner_constptr_t = std::shared_ptr<const Scanner>;
+using scannerview_ptr_t = std::shared_ptr<ScannerView>;
+using match_fn_t = std::function<scannerview_ptr_t(const ScannerView&)>;
 
 struct Token {
   int iline;
@@ -74,6 +78,12 @@ inline bool is_content(char ch) {
   return is_alfnum(ch) || (ch == '_') || (ch == '.');
 }
 /////////////////////////////////////////
+struct ScanViewFilter {
+  virtual bool Test(const Token& t) {
+    return true;
+  }
+};
+/////////////////////////////////////////
 
 struct Scanner {
   using id_t = uint64_t;
@@ -97,6 +107,8 @@ struct Scanner {
   /////////////////////////////////////////
   void discardTokensOfClass(uint64_t tokclass);
   /////////////////////////////////////////
+  ScannerView createTopView() const;
+  /////////////////////////////////////////
   const size_t _kcapacity;
   std::vector<char> _fxbuffer;
   size_t ifilelen;
@@ -116,11 +128,6 @@ struct Scanner {
   statemachine_t _statemachine;
 };
 
-struct ScanViewFilter {
-  virtual bool Test(const Token& t) {
-    return true;
-  }
-};
 struct ScanViewRegex : public ScanViewFilter {
   ScanViewRegex(const char*, bool inverse);
 
@@ -175,9 +182,6 @@ struct ScannerView {
   size_t _blockName;
   bool _blockOk;
 };
-
-using scannerview_ptr_t = std::shared_ptr<ScannerView>;
-using match_fn_t = std::function<scannerview_ptr_t(const ScannerView&)>;
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 } // namespace ork

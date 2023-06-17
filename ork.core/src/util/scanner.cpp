@@ -74,6 +74,7 @@ std::string ScannerView::blockName() const {
   return token(_blockName)->text;
 }
 
+
 void ScannerView::scanBlock(size_t is, bool checkterm, bool checkdecos) {
 
   size_t max_t = _scanner.tokens.size();
@@ -258,11 +259,15 @@ Scanner::Scanner(
 }
 /////////////////////////////////////////
 void Scanner::scanString(std::string str){
-  std::copy( str.begin(), str.end(), std::back_inserter(_fxbuffer));
+  resize(str.length() + 1);
+  memcpy(_fxbuffer.data(), str.c_str(), str.length());
+  _fxbuffer[str.length()] = 0;
+  scan();
 }
 /////////////////////////////////////////
 void Scanner::scan() {
   std::string as_str = _fxbuffer.data();
+  //printf( "scan<%s>\n", as_str.c_str() );
   iter_t iter(as_str.begin(), as_str.end(), _statemachine);
   iter_t end;
 
@@ -271,7 +276,7 @@ void Scanner::scan() {
     auto tok   = Token(iter->str(), 0, 0);
     tok._class = iter->id;
     tokens.push_back(tok);
-    // std::cout << "index<" << index << "> Id: " << iter->id << ", Token: '" << iter->str() << "'\n";
+   //std::cout << "index<" << index << "> Id: " << iter->id << ", Token: '" << iter->str() << "'\n";
     index++;
   }
   // OrkAssert(false);
@@ -289,6 +294,17 @@ void Scanner::discardTokensOfClass(uint64_t tokclass) {
             return tok._class == tokclass;
           }),
       tokens.end());
+}
+
+ScannerView Scanner::createTopView() const{
+  static ScanViewFilter filter;
+  ScannerView rval(*this,filter);
+  rval._start = 0;
+  rval._end   = tokens.size() - 1;
+  for( int i=0; i<tokens.size(); i++ ){
+    rval._indices.push_back(i);
+  }
+  return rval;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
