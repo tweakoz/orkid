@@ -239,7 +239,7 @@ size_t ScannerView::globalTokenIndex(size_t i) const {
   return ret;
 }
 
-void Scanner::addRule(std::string rule, uint64_t state) {
+void Scanner::addRule(std::string rule, id_t state) {
   _rules.push(rule, state);
 }
 void Scanner::buildStateMachine() {
@@ -279,7 +279,7 @@ void Scanner::scan() {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-void Scanner::discardTokensOfClass(int tokclass) {
+void Scanner::discardTokensOfClass(uint64_t tokclass) {
 
   tokens.erase(
       std::remove_if(

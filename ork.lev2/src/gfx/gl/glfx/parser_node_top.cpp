@@ -271,7 +271,7 @@ void TopNode::parse() {
         break;
       }
       default:
-        printf("Invalid TokenClass tok<%s>\n", tok.text.c_str());
+        printf("Invalid TokenClass<%zu> tok<%s>\n", tok._class, tok.text.c_str());
         OrkAssert(false);
         break;
     }

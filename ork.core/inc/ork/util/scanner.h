@@ -76,11 +76,12 @@ inline bool is_content(char ch) {
 /////////////////////////////////////////
 
 struct Scanner {
+  using id_t = uint64_t;
   Scanner(
       std::string blockregex, //
       size_t capacity = 64 << 10);
   /////////////////////////////////////////
-  void addRule(std::string rule, uint64_t state);
+  void addRule(std::string rule, id_t state);
   void buildStateMachine();
   void scan();
   void scanString(std::string str);
@@ -94,7 +95,7 @@ struct Scanner {
   /////////////////////////////////////////
   const Token* token(size_t i) const;
   /////////////////////////////////////////
-  void discardTokensOfClass(int tokclass);
+  void discardTokensOfClass(uint64_t tokclass);
   /////////////////////////////////////////
   const size_t _kcapacity;
   std::vector<char> _fxbuffer;
@@ -105,9 +106,9 @@ struct Scanner {
   scan_state ss;
   bool _quotedstrings = true;
 
-  using match_t = lexertl::match_results<std::string::const_iterator,uint64_t>;
-  using rules_t = lexertl::basic_rules<char,char,uint64_t>;
-  using statemachine_t = lexertl::basic_state_machine<char,uint64_t>;
+  using match_t = lexertl::match_results<std::string::const_iterator,id_t>;
+  using rules_t = lexertl::basic_rules<char,char,id_t>;
+  using statemachine_t = lexertl::basic_state_machine<char,id_t>;
   using gen_t = lexertl::basic_generator<rules_t, statemachine_t>;
   using iter_t = lexertl::iterator<std::string::const_iterator,statemachine_t,match_t>;
 
