@@ -266,7 +266,7 @@ _ORKSL_IMPL::_ORKSL_IMPL(OrkSlFunctionNode* node) {
   struct RR {
     RR() {
     }
-    void addRule(const char* rule, int id) {
+    void addRule(const char* rule, uint64_t id) {
       _id2rule[id] = rule;
     }
     const std::string& rule(TokenClass id) const {

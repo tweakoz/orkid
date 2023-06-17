@@ -195,63 +195,63 @@ enum class TokenClass : uint64_t {
 
 template <typename rule_receiver_t> //
 inline void loadScannerRules(rule_receiver_t& r){ //
-  r.addRule("\\/\\*([^*]|\\*+[^/*])*\\*+\\/", int(TokenClass::MULTI_LINE_COMMENT));
-  r.addRule("\\/\\/.*[\\n\\r]", int(TokenClass::SINGLE_LINE_COMMENT));
-  r.addRule("\\s+", int(TokenClass::WHITESPACE));
-  r.addRule("[\\n\\r]+", int(TokenClass::NEWLINE));
+  r.addRule("\\/\\*([^*]|\\*+[^/*])*\\*+\\/", uint64_t(TokenClass::MULTI_LINE_COMMENT));
+  r.addRule("\\/\\/.*[\\n\\r]", uint64_t(TokenClass::SINGLE_LINE_COMMENT));
+  r.addRule("\\s+", uint64_t(TokenClass::WHITESPACE));
+  r.addRule("[\\n\\r]+", uint64_t(TokenClass::NEWLINE));
   /////////
-  r.addRule("[0-9]+u", int(TokenClass::UNSIGNED_DECIMAL_INTEGER));
-  r.addRule("0x[0-9a-fA-F]+u?", int(TokenClass::HEX_INTEGER));
-  r.addRule("-?(\\d+)", int(TokenClass::MISC_INTEGER));
-  r.addRule("-?(\\d*\\.?)(\\d+)([eE][-+]?\\d+)?", int(TokenClass::FLOATING_POINT));
+  r.addRule("[0-9]+u", uint64_t(TokenClass::UNSIGNED_DECIMAL_INTEGER));
+  r.addRule("0x[0-9a-fA-F]+u?", uint64_t(TokenClass::HEX_INTEGER));
+  r.addRule("-?(\\d+)", uint64_t(TokenClass::MISC_INTEGER));
+  r.addRule("-?(\\d*\\.?)(\\d+)([eE][-+]?\\d+)?", uint64_t(TokenClass::FLOATING_POINT));
   /////////
-  r.addRule("[\"].*[\"]", int(TokenClass::STRING));
+  r.addRule("[\"].*[\"]", uint64_t(TokenClass::STRING));
   /////////
-  r.addRule("[a-zA-Z_]+[a-zA-Z0-9_]+", int(TokenClass::KW_OR_ID));
+  r.addRule("[a-zA-Z_]+[a-zA-Z0-9_]+", uint64_t(TokenClass::KW_OR_ID));
   /////////
-  r.addRule("\\{", int(TokenClass::L_CURLY));
-  r.addRule("\\}", int(TokenClass::R_CURLY));
-  r.addRule("\\(", int(TokenClass::L_PAREN));
-  r.addRule("\\)", int(TokenClass::R_PAREN));
-  r.addRule("\\[", int(TokenClass::L_SQUARE));
-  r.addRule("\\]", int(TokenClass::R_SQUARE));
+  r.addRule("\\{", uint64_t(TokenClass::L_CURLY));
+  r.addRule("\\}", uint64_t(TokenClass::R_CURLY));
+  r.addRule("\\(", uint64_t(TokenClass::L_PAREN));
+  r.addRule("\\)", uint64_t(TokenClass::R_PAREN));
+  r.addRule("\\[", uint64_t(TokenClass::L_SQUARE));
+  r.addRule("\\]", uint64_t(TokenClass::R_SQUARE));
   /////////
-  r.addRule("\\?", int(TokenClass::QUESTION_MARK));
-  r.addRule(":", int(TokenClass::COLON));
-  r.addRule(";", int(TokenClass::SEMICOLON));
-  r.addRule("<", int(TokenClass::LESS_THAN));
-  r.addRule(">", int(TokenClass::GREATER_THAN));
-  r.addRule("&", int(TokenClass::AMPERSAND));
-  r.addRule("\\|", int(TokenClass::PIPE));
-  r.addRule("\\*", int(TokenClass::STAR));
-  r.addRule("\\/", int(TokenClass::SLASH));
-  r.addRule("%", int(TokenClass::PERCENT));
-  r.addRule("!", int(TokenClass::EXCLAMATION));
-  r.addRule("\\+", int(TokenClass::PLUS));
-  r.addRule("\\-", int(TokenClass::MINUS));
-  r.addRule("=", int(TokenClass::EQUALS));
-  r.addRule(",", int(TokenClass::COMMA));
-  r.addRule(".", int(TokenClass::DOT));
-  r.addRule("\\^", int(TokenClass::CARET));
+  r.addRule("\\?", uint64_t(TokenClass::QUESTION_MARK));
+  r.addRule(":", uint64_t(TokenClass::COLON));
+  r.addRule(";", uint64_t(TokenClass::SEMICOLON));
+  r.addRule("<", uint64_t(TokenClass::LESS_THAN));
+  r.addRule(">", uint64_t(TokenClass::GREATER_THAN));
+  r.addRule("&", uint64_t(TokenClass::AMPERSAND));
+  r.addRule("\\|", uint64_t(TokenClass::PIPE));
+  r.addRule("\\*", uint64_t(TokenClass::STAR));
+  r.addRule("\\/", uint64_t(TokenClass::SLASH));
+  r.addRule("%", uint64_t(TokenClass::PERCENT));
+  r.addRule("!", uint64_t(TokenClass::EXCLAMATION));
+  r.addRule("\\+", uint64_t(TokenClass::PLUS));
+  r.addRule("\\-", uint64_t(TokenClass::MINUS));
+  r.addRule("=", uint64_t(TokenClass::EQUALS));
+  r.addRule(",", uint64_t(TokenClass::COMMA));
+  r.addRule(".", uint64_t(TokenClass::DOT));
+  r.addRule("\\^", uint64_t(TokenClass::CARET));
   /////////
-  r.addRule("<<", int(TokenClass::L_SHIFT));
-  r.addRule(">>", int(TokenClass::R_SHIFT));
-  r.addRule("<=", int(TokenClass::LESS_THAN_EQ));
-  r.addRule(">=", int(TokenClass::GREATER_THAN_EQ));
-  r.addRule("==", int(TokenClass::EQUAL_TO));
-  r.addRule("!=", int(TokenClass::NOT_EQUAL_TO));
-  r.addRule("\\+=", int(TokenClass::PLUS_EQ));
-  r.addRule("\\-=", int(TokenClass::MINUS_EQ));
-  r.addRule("\\*=", int(TokenClass::TIMES_EQ));
-  r.addRule("\\/=", int(TokenClass::DIVIDE_EQ));
-  r.addRule("\\|=", int(TokenClass::OR_EQ));
-  r.addRule("&=", int(TokenClass::AND_EQ));
+  r.addRule("<<", uint64_t(TokenClass::L_SHIFT));
+  r.addRule(">>", uint64_t(TokenClass::R_SHIFT));
+  r.addRule("<=", uint64_t(TokenClass::LESS_THAN_EQ));
+  r.addRule(">=", uint64_t(TokenClass::GREATER_THAN_EQ));
+  r.addRule("==", uint64_t(TokenClass::EQUAL_TO));
+  r.addRule("!=", uint64_t(TokenClass::NOT_EQUAL_TO));
+  r.addRule("\\+=", uint64_t(TokenClass::PLUS_EQ));
+  r.addRule("\\-=", uint64_t(TokenClass::MINUS_EQ));
+  r.addRule("\\*=", uint64_t(TokenClass::TIMES_EQ));
+  r.addRule("\\/=", uint64_t(TokenClass::DIVIDE_EQ));
+  r.addRule("\\|=", uint64_t(TokenClass::OR_EQ));
+  r.addRule("&=", uint64_t(TokenClass::AND_EQ));
   /////////
-  r.addRule("\\+\\+", int(TokenClass::INCREMENT));
-  r.addRule("--", int(TokenClass::DECREMENT));
+  r.addRule("\\+\\+", uint64_t(TokenClass::INCREMENT));
+  r.addRule("--", uint64_t(TokenClass::DECREMENT));
   /////////
-  r.addRule("\\|\\|", int(TokenClass::LOGICAL_OR));
-  r.addRule("&&", int(TokenClass::LOGICAL_AND));
+  r.addRule("\\|\\|", uint64_t(TokenClass::LOGICAL_OR));
+  r.addRule("&&", uint64_t(TokenClass::LOGICAL_AND));
   
 };
 

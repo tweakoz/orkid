@@ -45,10 +45,10 @@ void performScan(scanner_ptr_t scanner) {
 
   scanner->buildStateMachine();
   scanner->scan();
-  scanner->discardTokensOfClass(int(TokenClass::SINGLE_LINE_COMMENT));
-  scanner->discardTokensOfClass(int(TokenClass::MULTI_LINE_COMMENT));
-  scanner->discardTokensOfClass(int(TokenClass::WHITESPACE));
-  scanner->discardTokensOfClass(int(TokenClass::NEWLINE));
+  scanner->discardTokensOfClass(uint64_t(TokenClass::SINGLE_LINE_COMMENT));
+  scanner->discardTokensOfClass(uint64_t(TokenClass::MULTI_LINE_COMMENT));
+  scanner->discardTokensOfClass(uint64_t(TokenClass::WHITESPACE));
+  scanner->discardTokensOfClass(uint64_t(TokenClass::NEWLINE));
 }
 
 void checktoken(const ScannerView& view, int actual_index, std::string expected) {
