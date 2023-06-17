@@ -95,6 +95,7 @@ matcher_ptr_t loadGrammar(parser_ptr_t p) { //
   seq->_notif = [=](match_ptr_t match) {
     printf("MATCHED sequence<%s>\n", seq->_name.c_str());
     match->_view->dump("seq");
+    match->dump(0);
   };
   return seq;
 }
