@@ -143,7 +143,7 @@ static logchannel_ptr_t logchan_lexer   = logger()->createChannel("ORKSLLEXR", f
 struct _ORKSL_IMPL : public Parser {
   _ORKSL_IMPL(OrkSlFunctionNode* node);
 
-  scannerlightview_ptr_t match_fndef(const ScannerView& inp_view);
+  match_ptr_t match_fndef(const ScannerView& inp_view);
   //
 
   void loadGrammar();
@@ -155,14 +155,14 @@ struct _ORKSL_IMPL : public Parser {
 
 //////////////////////////////////////////////////////////////////////
 
-scannerlightview_ptr_t _ORKSL_IMPL::match_fndef(const ScannerView& inp_view) {
+match_ptr_t _ORKSL_IMPL::match_fndef(const ScannerView& inp_view) {
   auto slv = std::make_shared<ScannerLightView>(inp_view);
-  return nullptr;// _matcher_fndef->match(slv);
+  return match(slv,_matcher_fndef);
 }
 
 //////////////////////////////////////////////////////////////
 
-#define MATCHER(x) auto x = createMatcher([=](scannerlightview_constptr_t inp_view)->scannerlightview_ptr_t
+#define MATCHER(x) auto x = createMatcher([=](matcher_ptr_t par_matcher,scannerlightview_constptr_t inp_view)->match_ptr_t
 
 void _ORKSL_IMPL::loadGrammar(){
   auto equals    = matcherForTokenClass(TokenClass::EQUALS);
@@ -264,10 +264,10 @@ void _ORKSL_IMPL::loadGrammar(){
   /////////////////////////////////////////////////////
   auto statements = zeroOrMore(statement);
   /////////////////////////////////////////////////////
-  _matcher_fndef = createMatcher([=](scannerlightview_constptr_t inp_view) -> scannerlightview_ptr_t {
+  _matcher_fndef = createMatcher([=](matcher_ptr_t par_matcher, //
+                                     scannerlightview_constptr_t inp_view) -> match_ptr_t { //
     auto seq = sequence({lparen, zeroOrMore(params), rparen, lcurly, zeroOrMore(statements), rcurly});
-    bool matched = this->match(inp_view,seq);
-    return nullptr;
+    return match(inp_view,seq);
   });
 
 }
@@ -337,8 +337,8 @@ int OrkSlFunctionNode::parse(const ScannerView& view) {
   i++;
 
   auto impl = _getimpl(this).get<impl_ptr_t>();
-  auto matched = impl->match_fndef(view);
-  OrkAssert(matched!=nullptr);
+  auto match = impl->match_fndef(view);
+  OrkAssert(match!=nullptr);
 
   return 0;
 }

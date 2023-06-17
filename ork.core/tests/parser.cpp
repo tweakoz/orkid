@@ -92,9 +92,9 @@ matcher_ptr_t loadGrammar(parser_ptr_t p) { //
        p->zeroOrMore(argument_decl),
        rparen});
   ///////////////////////////////////////////////////////////
-  seq->_notif = [=](scannerlightview_ptr_t inp_view) {
+  seq->_notif = [=](match_ptr_t match) {
     printf("MATCHED sequence<%s>\n", seq->_name.c_str());
-    inp_view->dump("seq");
+    match->_view->dump("seq");
   };
   return seq;
 }
@@ -127,6 +127,6 @@ TEST(parser1) {
   auto top_view = s->createTopView();
   top_view.dump("top_view");
   auto slv     = std::make_shared<ScannerLightView>(top_view);
-  bool matched = p->match(slv, fn_matcher);
-  OrkAssert(matched);
+  auto match = p->match(slv, fn_matcher);
+  OrkAssert(match);
 }

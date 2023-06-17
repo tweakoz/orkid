@@ -72,7 +72,7 @@ using functionnode_ptr_t = std::shared_ptr<FunctionNode>;
 using uniformdeclnode_ptr_t = std::shared_ptr<UniformDeclNode>;
 using importnode_ptr_t = std::shared_ptr<ImportNode>;
 
-using match_ptr_t = std::shared_ptr<FnMatchResultsBas>;
+using orkslmatch_ptr_t = std::shared_ptr<FnMatchResultsBas>;
 
 using libblock_constptr_t = std::shared_ptr<const LibraryBlockNode>;
 using decoblocknode_rawconstptr_t = const DecoBlockNode*;
@@ -85,7 +85,7 @@ using parser_constptr_t = std::shared_ptr<const GlSlFxParser>;
 
 
 using match_results_t = FnMatchResultsWrap;
-//using match_fn_t = std::function<match_ptr_t(FnParseContext)>;
+//using match_fn_t = std::function<orkslmatch_ptr_t(FnParseContext)>;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -307,7 +307,7 @@ struct FnMatchResultsBas {
   operator bool() const {
     return _matched;
   }
-  virtual match_ptr_t merge(match_ptr_t rhs) const = 0;
+  virtual orkslmatch_ptr_t merge(orkslmatch_ptr_t rhs) const = 0;
 
   virtual ParseResult parse() = 0;
 
@@ -325,20 +325,20 @@ struct FnMatchResultsBas {
   }
   bool _matched = false;
   FnParseContext _ctx;
-  std::vector<match_ptr_t> _subMatches;
+  std::vector<orkslmatch_ptr_t> _subMatches;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
 struct FnMatchResultsSt : public FnMatchResultsBas {
-    match_ptr_t merge(match_ptr_t rhs) const final { return nullptr; }
+    orkslmatch_ptr_t merge(orkslmatch_ptr_t rhs) const final { return nullptr; }
     ParseResult parse() final { return ParseResult(); }
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
 struct FnMatchResultsWrap {
-  FnMatchResultsWrap(match_ptr_t p = nullptr)
+  FnMatchResultsWrap(orkslmatch_ptr_t p = nullptr)
       : _results(p) {
   }
   void dump(std::string dumpid) const {
@@ -371,7 +371,7 @@ struct FnMatchResultsWrap {
   inline FnMatchResultsBas* operator->() {
     return _results.get();
   }
-  match_ptr_t _results;
+  orkslmatch_ptr_t _results;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -389,8 +389,8 @@ template <typename T> struct FnMatchResults : public FnMatchResultsBas {
     return ParseResult(); // T::parse(*this);
   }
 
-  match_ptr_t merge(match_ptr_t rhs) const final {
-    match_ptr_t rval = std::make_shared<FnMatchResults>(*this);
+  orkslmatch_ptr_t merge(orkslmatch_ptr_t rhs) const final {
+    orkslmatch_ptr_t rval = std::make_shared<FnMatchResults>(*this);
     if (false == _matched)
       rval->_start = rhs->_start;
     rval->_count += rhs->_count;
