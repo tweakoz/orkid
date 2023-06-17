@@ -29,43 +29,143 @@
 namespace ork::lev2::glslfx::parser {
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-static logchannel_ptr_t logchan = logger()->createChannel("ORKSLIMPL",fvec3(1,1,.9),true);
-static logchannel_ptr_t logchan_grammar = logger()->createChannel("ORKSLGRAM",fvec3(1,1,.8),true);
-static logchannel_ptr_t logchan_lexer = logger()->createChannel("ORKSLLEXR",fvec3(1,1,.7),true);
+/*
+################################################
+# OrkSl TOP Level Grammar
+################################################
 
-struct ScannerLightView{
+functionDefinition <- L_PAREN params? R_PAREN L_CURLY statements? R_CURLY
+
+################################################
+# OrkSl High Level Grammar
+################################################
+
+params <- paramDeclaration (COMMA paramDeclaration)*
+
+statements <- (statement)*
+
+statement <- statement_sub? SEMI_COLON
+
+statement_sub <- assignment_statement / functionCall / variableDeclaration / returnStatement
+
+functionCall <- IDENTIFIER L_PAREN arguments? R_PAREN
+returnStatement <- 'return' expression
+assignment <- IDENTIFIER EQUALS expression
+assignment_statement <- variableDeclaration EQUALS expression 
+        
+expression <- IDENTIFIER / NNUMBER / functionCall / vecMatAccess
+
+vecMatAccess <- IDENTIFIER (L_SQUARE NNUMBER R_SQUARE / DOT component) 
+
+component <- ('x' / 'y' / 'z' / 'w' / 'r' / 'g' / 'b' / 'a')
+
+arguments <- expression (COMMA expression)*
+
+IDENTIFIER <- < [A-Za-z_][-A-Za-z_0-9]* > 
+
+dataType <- BUILTIN_TYPENAME 
+
+variableDeclaration <- dataType IDENTIFIER
+paramDeclaration <- dataType IDENTIFIER
+
+################################################
+# OrkSl Low Level Grammar
+################################################
+
+L_PAREN   <- '('
+R_PAREN   <- ')'
+L_CURLY   <- '{'
+R_CURLY   <- '}'
+L_SQUARE  <- '['
+R_SQUARE  <- ']'
+
+COMMA  <- ','
+DOT    <- '.'
+
+COLON         <- ':'
+DOUBLE_COLON  <- '::'
+SEMI_COLON    <- ';'
+QUESTION_MARK <- '?'
+
+EQUALS        <- '='
+STAR_EQUALS   <- '*='
+PLUS_EQUALS   <- '+='
+ASSIGNMENT_OP <- (EQUALS/STAR_EQUALS/PLUS_EQUALS)
+
+EQUAL_TO               <- '=='
+NOT_EQUAL_TO           <- '!='
+LESS_THAN              <- '<'
+GREATER_THAN           <- '>'
+LESS_THAN_EQUAL_TO     <- '<'
+GREATER_THAN_EQUAL_TO  <- '>'
+
+PLUS   <- '+'
+MINUS  <- '-'
+STAR   <- '*'
+SLASH  <- '/'
+CARET  <- '^'
+EXCLAMATION  <- '^'
+TILDE  <- '~'
+
+AMPERSAND    <- '&'
+PIPE         <- '|'
+LOGICAL_AND  <- '&&'
+LOGICAL_OR   <- '||'
+LEFT_SHIFT   <- '<<'
+RIGHT_SHIFT  <- '>>'
+
+PLUS_PLUS    <- '++'
+MINUS_MINUS  <- '--'
+
+INTEGER          <- (HEX_INTEGER/DEC_INTEGER)
+FLOAT            <- <MINUS? [0-9]+ '.' [0-9]*>
+DEC_INTEGER      <- <MINUS? [0-9]+ 'u'?>
+HEX_INTEGER      <- < ('x'/'0x') [0-9a-fA-F]+ 'u'? >
+NUMBER           <- (FLOAT/INTEGER)
+NNUMBER <- [0-9]+ (DOT [0-9]+)? 
+
+WHITESPACE          <- [ \t\r\n]*
+%whitespace         <- WHITESPACE
+
+TYPENAME <- (BUILTIN_TYPENAME)
+*/
+  /////////////////////////////////////////////////////////////////////////////////////////////////
+
+static logchannel_ptr_t logchan         = logger()->createChannel("ORKSLIMPL", fvec3(1, 1, .9), true);
+static logchannel_ptr_t logchan_grammar = logger()->createChannel("ORKSLGRAM", fvec3(1, 1, .8), true);
+static logchannel_ptr_t logchan_lexer   = logger()->createChannel("ORKSLLEXR", fvec3(1, 1, .7), true);
+
+struct ScannerLightView {
   ScannerLightView(const ScannerView& inp_view)
-    : _input_view(inp_view)
-    , _start(inp_view._start)
-    , _end(inp_view._end)
-  {
+      : _input_view(inp_view)
+      , _start(inp_view._start)
+      , _end(inp_view._end) {
   }
   ScannerLightView(const ScannerLightView& oth)
-    : _input_view(oth._input_view)
-    , _start(oth._start)
-    , _end(oth._end)
-  {
+      : _input_view(oth._input_view)
+      , _start(oth._start)
+      , _end(oth._end) {
   }
-  const Token* token(size_t i) const{
+  const Token* token(size_t i) const {
     return _input_view.token(i);
   }
-  TokenClass token_class(size_t i) const{
+  TokenClass token_class(size_t i) const {
     auto tok = token(i);
-    return (TokenClass) tok->_class;
+    return (TokenClass)tok->_class;
   }
   const ScannerView& _input_view;
-  size_t _start = -1; 
-  size_t _end = -1;   
+  size_t _start = -1;
+  size_t _end   = -1;
 };
-using scannerlightview_ptr_t = std::shared_ptr<ScannerLightView>;
+using scannerlightview_ptr_t      = std::shared_ptr<ScannerLightView>;
 using scannerlightview_constptr_t = std::shared_ptr<const ScannerLightView>;
-using matcher_fn_t = std::function<scannerlightview_ptr_t(scannerlightview_constptr_t& inp_view)>;
+using matcher_fn_t                = std::function<scannerlightview_ptr_t(scannerlightview_constptr_t& inp_view)>;
 
 //////////////////////////////////////////////////////////////
 
 struct Matcher {
   Matcher(matcher_fn_t match_fn)
-    : _match_fn(match_fn) {
+      : _match_fn(match_fn) {
   }
   scannerlightview_ptr_t match(scannerlightview_constptr_t inp_view) const {
     return _match_fn(inp_view);
@@ -81,187 +181,303 @@ using matcher_ptr_t = std::shared_ptr<Matcher>;
 
 //////////////////////////////////////////////////////////////
 
-struct OrkslPEG{
+struct _ORKSL_IMPL {
+  _ORKSL_IMPL(OrkSlFunctionNode* node);
 
-  OrkslPEG(){
+  scannerlightview_ptr_t match_fndef(const ScannerView& inp_view);
+  matcher_ptr_t matcherForTokenClass(TokenClass tokclass);
+  matcher_ptr_t sequence(std::vector<matcher_ptr_t> matchers);
+  matcher_ptr_t group(std::vector<matcher_ptr_t> matchers);
+  matcher_ptr_t oneOf(std::vector<matcher_ptr_t> matchers);
+  matcher_ptr_t oneOrMore(matcher_ptr_t matcher);
+  matcher_ptr_t zeroOrMore(matcher_ptr_t matcher);
+  matcher_ptr_t optional(matcher_ptr_t matcher);
+  //
+  matcher_ptr_t createMatcher(matcher_fn_t match_fn);
 
-    auto equals = matcherForTokenClass(TokenClass::EQUALS);
-    auto semicolon = matcherForTokenClass(TokenClass::SEMICOLON);
-    auto comma = matcherForTokenClass(TokenClass::COMMA);
-    auto lparen = matcherForTokenClass(TokenClass::L_PAREN);
-    auto rparen = matcherForTokenClass(TokenClass::R_PAREN);
-    auto lcurly = matcherForTokenClass(TokenClass::L_CURLY);
-    auto rcurly = matcherForTokenClass(TokenClass::R_CURLY);
-    auto lsquare = matcherForTokenClass(TokenClass::L_SQUARE);
-    auto rsquare = matcherForTokenClass(TokenClass::R_SQUARE);
-    /////////////////////////////////////////////////////
-    MATCHER(paramDeclaration){
-      return nullptr;
-    });
-    /////////////////////////////////////////////////////
-    MATCHER(params){
-      auto next = lparen->match(inp_view);
-      if(next){
-        next = paramDeclaration->match(next);
-
-        OrkAssert(false);
-        return next;
-      }
-      return nullptr;
-    });
-    /////////////////////////////////////////////////////
-    MATCHER(statements){
-      auto next = lparen->match(inp_view);
-      if(next){
-        next = paramDeclaration->match(next);
-
-        OrkAssert(false);
-        return next;
-      }
-      return nullptr;
-    });
-    /////////////////////////////////////////////////////
-    _matcher_fndef = createMatcher([=](scannerlightview_constptr_t inp_view)->scannerlightview_ptr_t{
-      auto seq = matcherSequence({lparen,zeroOrMore(params),rparen,lcurly,zeroOrMore(statements),rcurly});
-      return seq->match(inp_view);
-    });
-
-  };
-
-  //////////////////////////////////////////////////////////////////////
-
-  scannerlightview_ptr_t match_fndef(const ScannerView& inp_view){
-    auto slv = std::make_shared<ScannerLightView>(inp_view);
-    return _matcher_fndef->match(slv);
-  }
-
-  //////////////////////////////////////////////////////////////////////
-
-  matcher_ptr_t matcherForTokenClass(TokenClass tokclass){
-    auto match_fn = [tokclass](scannerlightview_constptr_t slv) -> scannerlightview_ptr_t {
-      auto slv_tokclass = slv->token_class(0);
-      if(slv_tokclass==tokclass){
-        auto slv_out = std::make_shared<ScannerLightView>(*slv);
-        slv_out->_start++;
-        return slv_out;
-      }
-      return nullptr;
-    };
-    return createMatcher(match_fn);
-  }
-
-  //////////////////////////////////////////////////////////////////////
-
-  matcher_ptr_t matcherSequence(std::vector<matcher_ptr_t> matchers){
-    auto match_fn = [matchers](scannerlightview_constptr_t slv) -> scannerlightview_ptr_t {
-      auto slv_test = std::make_shared<ScannerLightView>(*slv);
-      std::vector<scannerlightview_ptr_t> items;
-      for(auto m:matchers){
-        auto slv_match = m->match(slv_test);
-        if(slv_match){
-          items.push_back(slv_match);
-          slv_test->_start = slv_match->_end+1;
-        }
-        else{
-          return nullptr;
-        }
-      }
-      OrkAssert(items.size() );
-      auto slv_out = std::make_shared<ScannerLightView>(*slv);
-      slv_out->_start = items.front()->_start;
-      slv_out->_end = items.back()->_end;
-      return slv_out;
-    };
-    return createMatcher(match_fn);
-  }
-
-  //////////////////////////////////////////////////////////////////////
-
-  matcher_ptr_t oneOrMore(matcher_ptr_t matcher){
-    auto match_fn = [matcher](scannerlightview_constptr_t input_slv) -> scannerlightview_ptr_t {
-      std::vector<scannerlightview_ptr_t> items;
-      auto slv_out = std::make_shared<ScannerLightView>(*input_slv);
-      while(slv_out){
-        if(slv_out){
-          items.push_back(slv_out);
-        }
-        slv_out = matcher->match(slv_out);
-      }
-      if(items.size()){
-        auto slv_out = std::make_shared<ScannerLightView>(*input_slv);
-        slv_out->_start = items.front()->_start;
-        slv_out->_end = items.back()->_end;
-        return slv_out;
-      }
-    };
-    return createMatcher(match_fn);
-  }
-
-  //////////////////////////////////////////////////////////////////////
-
-  matcher_ptr_t zeroOrMore(matcher_ptr_t matcher){
-    auto match_fn = [matcher](scannerlightview_constptr_t input_slv) -> scannerlightview_ptr_t {
-      std::vector<scannerlightview_ptr_t> items;
-      auto slvtest = std::make_shared<ScannerLightView>(*input_slv);
-      while(slvtest){
-        auto slv_matched = matcher->match(slvtest);
-        if(slv_matched){
-          items.push_back(slv_matched);
-          slvtest->_start = slv_matched->_end+1;
-        }
-        else{
-          slvtest = nullptr;
-        }
-      }
-
-      auto slv_out = std::make_shared<ScannerLightView>(*input_slv);
-      if( items.size() ){
-        slv_out->_end = items.back()->_end;
-      }
-      return slv_out;
-    };
-    return createMatcher(match_fn);
-  }
-
-  //////////////////////////////////////////////////////////////////////
-  
-  matcher_ptr_t createMatcher(matcher_fn_t match_fn){
-    auto matcher = std::make_shared<Matcher>(match_fn);
-    _matchers.insert(matcher);
-    return matcher;
-  }
-
-  //////////////////////////////////////////////////////////////////////
+  void loadGrammar();
 
   matcher_ptr_t _matcher_fndef;
   std::unordered_set<matcher_ptr_t> _matchers;
+  topnode_ptr_t _topnode;
+
 };
+
+//////////////////////////////////////////////////////////////////////
+
+scannerlightview_ptr_t _ORKSL_IMPL::match_fndef(const ScannerView& inp_view) {
+  auto slv = std::make_shared<ScannerLightView>(inp_view);
+  return _matcher_fndef->match(slv);
+}
+
+//////////////////////////////////////////////////////////////////////
+
+matcher_ptr_t _ORKSL_IMPL::matcherForTokenClass(TokenClass tokclass) {
+  auto match_fn = [tokclass](scannerlightview_constptr_t slv) -> scannerlightview_ptr_t {
+    auto slv_tokclass = slv->token_class(0);
+    if (slv_tokclass == tokclass) {
+      auto slv_out = std::make_shared<ScannerLightView>(*slv);
+      slv_out->_start++;
+      return slv_out;
+    }
+    return nullptr;
+  };
+  return createMatcher(match_fn);
+}
+
+//////////////////////////////////////////////////////////////////////
+
+matcher_ptr_t _ORKSL_IMPL::optional(matcher_ptr_t matcher) {
+  return nullptr;
+}
+
+//////////////////////////////////////////////////////////////////////
+
+matcher_ptr_t _ORKSL_IMPL::sequence(std::vector<matcher_ptr_t> matchers) {
+  auto match_fn = [matchers](scannerlightview_constptr_t slv) -> scannerlightview_ptr_t {
+    auto slv_test = std::make_shared<ScannerLightView>(*slv);
+    std::vector<scannerlightview_ptr_t> items;
+    for (auto m : matchers) {
+      auto slv_match = m->match(slv_test);
+      if (slv_match) {
+        items.push_back(slv_match);
+        slv_test->_start = slv_match->_end + 1;
+      } else {
+        return nullptr;
+      }
+    }
+    OrkAssert(items.size());
+    auto slv_out    = std::make_shared<ScannerLightView>(*slv);
+    slv_out->_start = items.front()->_start;
+    slv_out->_end   = items.back()->_end;
+    return slv_out;
+  };
+  return createMatcher(match_fn);
+}
+
+//////////////////////////////////////////////////////////////////////
+
+matcher_ptr_t _ORKSL_IMPL::group(std::vector<matcher_ptr_t> matchers) {
+  auto match_fn = [matchers](scannerlightview_constptr_t slv) -> scannerlightview_ptr_t {
+    auto slv_test = std::make_shared<ScannerLightView>(*slv);
+    std::vector<scannerlightview_ptr_t> items;
+    for (auto m : matchers) {
+      auto slv_match = m->match(slv_test);
+      if (slv_match) {
+        items.push_back(slv_match);
+        slv_test->_start = slv_match->_end + 1;
+      } else {
+        return nullptr;
+      }
+    }
+    OrkAssert(items.size());
+    auto slv_out    = std::make_shared<ScannerLightView>(*slv);
+    slv_out->_start = items.front()->_start;
+    slv_out->_end   = items.back()->_end;
+    return slv_out;
+  };
+  return createMatcher(match_fn);
+}
+
+//////////////////////////////////////////////////////////////////////
+
+matcher_ptr_t _ORKSL_IMPL::oneOf(std::vector<matcher_ptr_t> matchers) {
+  auto match_fn = [matchers](scannerlightview_constptr_t slv) -> scannerlightview_ptr_t {
+    for (auto m : matchers) {
+      auto slv_match = m->match(slv);
+      if (slv_match) {
+        return slv_match;
+      }
+    }
+    return nullptr;
+  };
+  return createMatcher(match_fn);
+}
+
+//////////////////////////////////////////////////////////////////////
+
+matcher_ptr_t _ORKSL_IMPL::oneOrMore(matcher_ptr_t matcher) {
+  auto match_fn = [matcher](scannerlightview_constptr_t input_slv) -> scannerlightview_ptr_t {
+    std::vector<scannerlightview_ptr_t> items;
+    auto slv_out = std::make_shared<ScannerLightView>(*input_slv);
+    while (slv_out) {
+      if (slv_out) {
+        items.push_back(slv_out);
+      }
+      slv_out = matcher->match(slv_out);
+    }
+    if (items.size()) {
+      auto slv_out    = std::make_shared<ScannerLightView>(*input_slv);
+      slv_out->_start = items.front()->_start;
+      slv_out->_end   = items.back()->_end;
+      return slv_out;
+    }
+  };
+  return createMatcher(match_fn);
+}
+
+//////////////////////////////////////////////////////////////////////
+
+matcher_ptr_t _ORKSL_IMPL::zeroOrMore(matcher_ptr_t matcher) {
+  auto match_fn = [matcher](scannerlightview_constptr_t input_slv) -> scannerlightview_ptr_t {
+    std::vector<scannerlightview_ptr_t> items;
+    auto slvtest = std::make_shared<ScannerLightView>(*input_slv);
+    while (slvtest) {
+      auto slv_matched = matcher->match(slvtest);
+      if (slv_matched) {
+        items.push_back(slv_matched);
+        slvtest->_start = slv_matched->_end + 1;
+      } else {
+        slvtest = nullptr;
+      }
+    }
+
+    auto slv_out = std::make_shared<ScannerLightView>(*input_slv);
+    if (items.size()) {
+      slv_out->_end = items.back()->_end;
+    }
+    return slv_out;
+  };
+  return createMatcher(match_fn);
+}
+
+//////////////////////////////////////////////////////////////////////
+
+matcher_ptr_t _ORKSL_IMPL::createMatcher(matcher_fn_t match_fn) {
+  auto matcher = std::make_shared<Matcher>(match_fn);
+  _matchers.insert(matcher);
+  return matcher;
+}
 
 //////////////////////////////////////////////////////////////
 
-struct _ORKSL_IMPL {
-  _ORKSL_IMPL(OrkSlFunctionNode* node);
-  OrkslPEG _newpeg;
-};
+void _ORKSL_IMPL::loadGrammar(){
+  auto equals    = matcherForTokenClass(TokenClass::EQUALS);
+  auto semicolon = matcherForTokenClass(TokenClass::SEMICOLON);
+  auto comma     = matcherForTokenClass(TokenClass::COMMA);
+  auto lparen    = matcherForTokenClass(TokenClass::L_PAREN);
+  auto rparen    = matcherForTokenClass(TokenClass::R_PAREN);
+  auto lcurly    = matcherForTokenClass(TokenClass::L_CURLY);
+  auto rcurly    = matcherForTokenClass(TokenClass::R_CURLY);
+  auto lsquare   = matcherForTokenClass(TokenClass::L_SQUARE);
+  auto rsquare   = matcherForTokenClass(TokenClass::R_SQUARE);
+  auto udecint    = matcherForTokenClass(TokenClass::UNSIGNED_DECIMAL_INTEGER);
+  auto uhexint    = matcherForTokenClass(TokenClass::HEX_INTEGER);
+  auto miscint    = matcherForTokenClass(TokenClass::MISC_INTEGER);
+  auto floattok    = matcherForTokenClass(TokenClass::FLOATING_POINT);
+  /////////////////////////////////////////////////////
+  MATCHER(datatype) {
+    auto tok0 = inp_view->token(0);
+    auto it = _topnode->_validTypeNames.find(tok0->text);
+    if( it != _topnode->_validTypeNames.end() ){
+      OrkAssert(false);
+      return nullptr;
+    }
+    else{
+      printf( "tok0<%s> not a datatype\n", tok0->text.c_str() );
+      return nullptr;
+    }
+  });
+  MATCHER(keyword_return){
+    auto tok0 = inp_view->token(0);
+    if(tok0->text == "return"){
+      OrkAssert(false);
+      return nullptr;
+    }
+    else{
+      return nullptr;
+    }
+  });
+  /////////////////////////////////////////////////////
+  MATCHER(identifier) {
+    return nullptr;
+  });
+  /////////////////////////////////////////////////////
+  auto number = oneOf({
+    udecint,
+    uhexint,
+    miscint,
+    floattok
+  });
+  /////////////////////////////////////////////////////
+  auto paramDeclaration    = sequence({datatype, identifier});
+  auto variableDeclaration = sequence({datatype, identifier});
+  /////////////////////////////////////////////////////
+  auto params = sequence({
+       paramDeclaration,
+         zeroOrMore(
+           sequence({
+             comma, paramDeclaration
+           }) // sequence
+         ) // zeroOrMore
+     }); // sequence
+  /////////////////////////////////////////////////////
+  auto arguments = sequence({});
+       //expression,
+         //zeroOrMore(
+           //sequence({
+             //comma, expression
+           //}) // sequence
+         //) // zeroOrMore
+     //}); // sequence
+  /////////////////////////////////////////////////////
+  auto functionCall = sequence({
+    identifier,
+    lparen,
+    zeroOrMore(arguments),
+    rparen
+  }); 
+  /////////////////////////////////////////////////////
+  auto expression = oneOf({
+    identifier,
+    number,
+    functionCall //,
+    //vecMatAccess
+  });
+  /////////////////////////////////////////////////////
+  auto returnStatement = sequence({
+    keyword_return,
+    expression
+  });
+  /////////////////////////////////////////////////////
+  auto statementSub = oneOf({
+    //assignment_statement,
+    functionCall,
+    variableDeclaration,
+    returnStatement
+  });
+  /////////////////////////////////////////////////////
+  auto statement = sequence({optional(statementSub), semicolon});
+  /////////////////////////////////////////////////////
+  auto statements = zeroOrMore(statement);
+  /////////////////////////////////////////////////////
+  _matcher_fndef = createMatcher([=](scannerlightview_constptr_t inp_view) -> scannerlightview_ptr_t {
+    auto seq = sequence({lparen, zeroOrMore(params), rparen, lcurly, zeroOrMore(statements), rcurly});
+    return seq->match(inp_view);
+  });
 
+}
+
+//////////////////////////////////////////////////////////////
 using impl_ptr_t = std::shared_ptr<_ORKSL_IMPL>;
+//////////////////////////////////////////////////////////////
 
 _ORKSL_IMPL::_ORKSL_IMPL(OrkSlFunctionNode* node) {
 
   auto glfx_parser = node->_parser;
-  auto top_node    = glfx_parser->_topNode;
+  _topnode    = glfx_parser->_topNode;
 
   using str_set_t     = std::set<std::string>;
   using str_map_t     = std::map<std::string, std::string>;
   using struct_map_t  = std::map<std::string, structnode_ptr_t>;
   using import_vect_t = std::vector<importnode_ptr_t>;
 
-  str_set_t valid_typenames      = top_node->_validTypeNames;
-  str_set_t valid_keywords       = top_node->_keywords;
-  str_set_t valid_outdecos       = top_node->_validOutputDecorators;
-  struct_map_t valid_structtypes = top_node->_structTypes;
-  str_map_t valid_defines        = top_node->_stddefines;
-  import_vect_t imports          = top_node->_imports;
+  str_set_t valid_typenames      = _topnode->_validTypeNames;
+  str_set_t valid_keywords       = _topnode->_keywords;
+  str_set_t valid_outdecos       = _topnode->_validOutputDecorators;
+  struct_map_t valid_structtypes = _topnode->_structTypes;
+  str_map_t valid_defines        = _topnode->_stddefines;
+  import_vect_t imports          = _topnode->_imports;
 
   struct RR {
     RR() {
@@ -279,157 +495,8 @@ _ORKSL_IMPL::_ORKSL_IMPL(OrkSlFunctionNode* node) {
   RR _rr;
 
   loadScannerRules(_rr);
+  loadGrammar();
 
-  //////////////////////////////////////////////////////////////////////////////////
-  // always put top first
-  //////////////////////////////////////////////////////////////////////////////////
-
-  std::string peg_rules = R"(
-    ################################################
-    # OrkSl TOP Level Grammar
-    ################################################
-
-    functionDefinition <- L_PAREN params? R_PAREN L_CURLY statements? R_CURLY
-
-  )";
-    
-
-  ////////////////////////////////////////////////
-  // parser rules
-  ////////////////////////////////////////////////
-
-  peg_rules += R"(
-
-    ################################################
-    # OrkSl High Level Grammar
-    ################################################
-
-    params <- paramDeclaration (COMMA paramDeclaration)*
-
-    statements <- (statement)*
-
-    statement <- statement_sub? SEMI_COLON
-
-    statement_sub <- assignment_statement / functionCall / variableDeclaration / returnStatement
-
-    functionCall <- IDENTIFIER L_PAREN arguments? R_PAREN
-    returnStatement <- 'return' expression
-    assignment <- IDENTIFIER EQUALS expression
-    assignment_statement <- variableDeclaration EQUALS expression 
-            
-    expression <- IDENTIFIER / NNUMBER / functionCall / vecMatAccess
-
-    vecMatAccess <- IDENTIFIER (L_SQUARE NNUMBER R_SQUARE / DOT component) 
-    
-    component <- ('x' / 'y' / 'z' / 'w' / 'r' / 'g' / 'b' / 'a')
-    
-    arguments <- expression (COMMA expression)*
-
-    IDENTIFIER <- < [A-Za-z_][-A-Za-z_0-9]* > 
-
-    dataType <- BUILTIN_TYPENAME 
-
-    variableDeclaration <- dataType IDENTIFIER
-    paramDeclaration <- dataType IDENTIFIER
-
-
-    ################################################
-
-  )";
-
-  //////////////////////////////////////////////////////////////////////////////////
-
-  peg_rules += R"(
-    ################################################
-    # OrkSl Low Level Grammar
-    ################################################
-
-    L_PAREN   <- '('
-    R_PAREN   <- ')'
-    L_CURLY   <- '{'
-    R_CURLY   <- '}'
-    L_SQUARE  <- '['
-    R_SQUARE  <- ']'
-
-    COMMA  <- ','
-    DOT    <- '.'
-
-    COLON         <- ':'
-    DOUBLE_COLON  <- '::'
-    SEMI_COLON    <- ';'
-    QUESTION_MARK <- '?'
-
-    EQUALS        <- '='
-    STAR_EQUALS   <- '*='
-    PLUS_EQUALS   <- '+='
-    ASSIGNMENT_OP <- (EQUALS/STAR_EQUALS/PLUS_EQUALS)
-
-    EQUAL_TO               <- '=='
-    NOT_EQUAL_TO           <- '!='
-    LESS_THAN              <- '<'
-    GREATER_THAN           <- '>'
-    LESS_THAN_EQUAL_TO     <- '<'
-    GREATER_THAN_EQUAL_TO  <- '>'
-
-    PLUS   <- '+'
-    MINUS  <- '-'
-    STAR   <- '*'
-    SLASH  <- '/'
-    CARET  <- '^'
-    EXCLAMATION  <- '^'
-    TILDE  <- '~'
-
-    AMPERSAND    <- '&'
-    PIPE         <- '|'
-    LOGICAL_AND  <- '&&'
-    LOGICAL_OR   <- '||'
-    LEFT_SHIFT   <- '<<'
-    RIGHT_SHIFT  <- '>>'
-
-    PLUS_PLUS    <- '++'
-    MINUS_MINUS  <- '--'
-
-    INTEGER          <- (HEX_INTEGER/DEC_INTEGER)
-    FLOAT            <- <MINUS? [0-9]+ '.' [0-9]*>
-    DEC_INTEGER      <- <MINUS? [0-9]+ 'u'?>
-    HEX_INTEGER      <- < ('x'/'0x') [0-9a-fA-F]+ 'u'? >
-    NUMBER           <- (FLOAT/INTEGER)
-    NNUMBER <- [0-9]+ (DOT [0-9]+)? 
-
-    WHITESPACE          <- [ \t\r\n]*
-    %whitespace         <- WHITESPACE
-
-    TYPENAME <- (BUILTIN_TYPENAME)
-
-)";
-
-  ////////////////////////////////////////////////
-  peg_rules += "    ################################################\n\n";
-  peg_rules += FormatString("    KEYWORD <- (");
-  size_t num_keywords = valid_keywords.size();
-  int ik = 0;
-  for( auto item : valid_keywords  ){
-    bool is_last = (ik==(num_keywords-1));
-    auto format_str = is_last ? "'%s'" : "'%s'/";
-    peg_rules += FormatString(format_str, item.c_str() );
-    ik++;
-  }
-  peg_rules += FormatString(")\n\n");
-
-  ////////////////////////////////////////////////
-  peg_rules += "    ################################################\n\n";
-  peg_rules += FormatString("    BUILTIN_TYPENAME <- (");
-  size_t num_typenames = valid_typenames.size();
-  int it = 0;
-  for( auto item : valid_typenames ){
-    bool is_last = (it==(num_typenames-1));
-    auto format_str = is_last ? "'%s'" : "'%s'/";
-    peg_rules += FormatString(format_str, item.c_str() );
-    it++;
-  }
-  peg_rules += FormatString(")\n\n");
-
-  ////////////////////////////////////////////////
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
@@ -449,16 +516,15 @@ OrkSlFunctionNode::OrkSlFunctionNode(parser_rawptr_t parser)
 
 int OrkSlFunctionNode::parse(const ScannerView& view) {
 
-  auto internals = _getimpl(this).get<impl_ptr_t>();
-
   int i = 0;
   view.dump("OrkSlFunctionNode::start");
   auto open_tok = view.token(i);
   OrkAssert(open_tok->text == "(");
   i++;
 
-  internals->_newpeg.match_fndef(view);
-  OrkAssert(false);
+  auto impl = _getimpl(this).get<impl_ptr_t>();
+  auto matched = impl->match_fndef(view);
+  OrkAssert(matched!=nullptr);
 
   return 0;
 }
