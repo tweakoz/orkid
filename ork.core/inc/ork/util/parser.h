@@ -62,11 +62,15 @@ struct ZeroOrMore{
 
 struct Parser {
 
+  matcher_ptr_t declare(std::string name);
+
   matcher_ptr_t sequence(std::vector<matcher_ptr_t> matchers, std::string name="");
   matcher_ptr_t sequence(std::string name, std::vector<matcher_ptr_t> matchers);
   //
-  matcher_ptr_t group(std::vector<matcher_ptr_t> matchers,std::string name="");
   matcher_ptr_t oneOf(std::vector<matcher_ptr_t> matchers,std::string name="");
+  matcher_ptr_t oneOf(std::string name,std::vector<matcher_ptr_t> matchers);
+  //
+  matcher_ptr_t group(std::vector<matcher_ptr_t> matchers,std::string name="");
   matcher_ptr_t oneOrMore(matcher_ptr_t matcher,std::string name="");
   matcher_ptr_t zeroOrMore(matcher_ptr_t matcher,std::string name="");
   matcher_ptr_t optional(matcher_ptr_t matcher,std::string name="");

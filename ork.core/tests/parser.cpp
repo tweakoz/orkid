@@ -34,6 +34,7 @@ enum class TokenClass : uint64_t {
   CrcEnum(MINUS),
   CrcEnum(COMMA),
   CrcEnum(FLOATING_POINT),
+  CrcEnum(INTEGER),
   CrcEnum(KW_OR_ID)
 };
 
@@ -56,6 +57,7 @@ void loadScannerRules(scanner_ptr_t s) { //
   s->addRule("\\+", uint64_t(TokenClass::PLUS));
   s->addRule("\\-", uint64_t(TokenClass::MINUS));
   s->addRule("-?(\\d*\\.?)(\\d+)([eE][-+]?\\d+)?", uint64_t(TokenClass::FLOATING_POINT));
+  s->addRule("-?(\\d*)", uint64_t(TokenClass::INTEGER));
 
   s->buildStateMachine();
 }
@@ -63,6 +65,9 @@ void loadScannerRules(scanner_ptr_t s) { //
 ///////////////////////////////////////////////////////////////////////////////
 
 matcher_ptr_t loadGrammar(parser_ptr_t p) { //
+  auto plus      = p->matcherForTokenClass(TokenClass::PLUS, "plus");
+  auto minus      = p->matcherForTokenClass(TokenClass::MINUS, "minus");
+  auto star      = p->matcherForTokenClass(TokenClass::STAR, "star");
   auto equals      = p->matcherForTokenClass(TokenClass::EQUALS, "equals");
   auto semicolon   = p->matcherForTokenClass(TokenClass::SEMICOLON, "semicolon");
   auto comma       = p->matcherForTokenClass(TokenClass::COMMA, "comma");
@@ -71,8 +76,12 @@ matcher_ptr_t loadGrammar(parser_ptr_t p) { //
   auto lcurly      = p->matcherForTokenClass(TokenClass::L_CURLY, "lcurly");
   auto rcurly      = p->matcherForTokenClass(TokenClass::R_CURLY, "rcurly");
   auto floattok    = p->matcherForTokenClass(TokenClass::FLOATING_POINT, "float");
+  auto inttok      = p->matcherForTokenClass(TokenClass::INTEGER, "int");
   auto kworid      = p->matcherForTokenClass(TokenClass::KW_OR_ID, "kw_or_id");
   auto kw_function = p->matcherForWord("function");
+  ///////////////////////////////////////////////////////////
+  auto dt_float = p->matcherForWord("float");
+  auto dt_int   = p->matcherForWord("int");
   ///////////////////////////////////////////////////////////
   auto argument_decl = p->sequence(
       "argument_decl",
@@ -83,6 +92,63 @@ matcher_ptr_t loadGrammar(parser_ptr_t p) { //
           p->optional(comma),
       });
   ///////////////////////////////////////////////////////////
+  auto datatype = p->oneOf({
+      dt_float,
+      dt_int,
+  });
+  ///////////////////////////////////////////////////////////
+  auto number = p->oneOf({
+      floattok,
+      inttok,
+  });
+  ///////////////////////////////////////////////////////////
+  auto variableDeclaration = p->sequence(
+      "variableDeclaration",
+      { p->optional(datatype),
+        kworid
+      });
+  ///////////////////////////////////////////////////////////
+  auto variableReference = p->sequence(
+      "variableReference",
+      { kworid
+      });
+  ///////////////////////////////////////////////////////////
+  auto expression = p->declare( "expression" );
+  ///////////////////////////////////////////////////////////
+  auto primary = p->oneOf("primary",{
+    floattok,
+    inttok,
+    variableReference,
+    p->sequence({ lparen,expression,rparen }),
+  });
+  ///////////////////////////////////////////////////////////
+  auto multiplicative = p->oneOf("multiplicative",{
+     p->sequence({ primary,p->zeroOrMore(p->sequence({star,primary})) })
+     //p->sequence({ primary,p->optional(p->sequence({slash,primary})) }),
+  });
+  ///////////////////////////////////////////////////////////
+  auto additive = p->oneOf("additive",{
+      p->sequence({ multiplicative,plus,multiplicative }),
+      p->sequence({ multiplicative,minus,multiplicative }),
+      multiplicative
+  });
+  ///////////////////////////////////////////////////////////
+  p->sequence( "expression", { additive });
+  ///////////////////////////////////////////////////////////
+  auto assignment_statement = p->sequence(
+      "assignment_statement",
+      {
+          //
+          variableDeclaration,
+          equals,
+          expression,
+      });
+  ///////////////////////////////////////////////////////////
+  auto statement = p->sequence({
+    p->optional(assignment_statement),
+    p->optional(semicolon)
+  });
+  ///////////////////////////////////////////////////////////
   auto seq = p->sequence(
       "funcdef",
       {//
@@ -90,7 +156,10 @@ matcher_ptr_t loadGrammar(parser_ptr_t p) { //
        kworid,
        lparen,
        p->zeroOrMore(argument_decl),
-       rparen});
+       rparen,
+       lcurly,
+       p->zeroOrMore(statement),
+       rcurly,});
   ///////////////////////////////////////////////////////////
   seq->_notif = [=](match_ptr_t match) {
     printf("MATCHED sequence<%s>\n", seq->_name.c_str());
@@ -117,6 +186,9 @@ TEST(parser1) {
         ///////////////////
         function abc(int x, float y) {
             b = (a+v)*7.0;
+        }
+        function def() {
+            float X = (1.0+2.3)*7.0;
         }
     )";
   s->scanString(parse_str);
