@@ -98,25 +98,25 @@ matcher_ptr_t Parser::optional(matcher_ptr_t sub_matcher, std::string name) {
 
 //////////////////////////////////////////////////////////////////////
 
-matcher_ptr_t Parser::sequence(std::vector<matcher_ptr_t> matchers, std::string name) {
+void Parser::sequence(matcher_ptr_t matcher, std::vector<matcher_ptr_t> sub_matchers){
   auto match_fn = [=](matcher_ptr_t par_matcher, scannerlightview_constptr_t slv) -> match_ptr_t {
     match_ptr_t the_match = std::make_shared<Match>();
     the_match->_matcher   = par_matcher;
-    if(_DEBUG)printf( "sequence<%s>: beg_match len<%zu>\n", name.c_str(), matchers.size() );
+    if(_DEBUG)printf( "sequence<%s>: beg_match len<%zu>\n", matcher->_name.c_str(), sub_matchers.size() );
     auto slv_iter     = std::make_shared<ScannerLightView>(*slv);
     auto slv_match    = std::make_shared<ScannerLightView>(*slv);
     auto the_sequence = the_match->_impl.makeShared<Sequence>();
     the_match->_view  = slv_match;
-    for (auto sub_matcher : matchers) {
+    for (auto sub_matcher : sub_matchers) {
       auto match_item = _match(sub_matcher, slv_iter);
-      if(_DEBUG)printf( "sequence<%s>: SLV_match match_item<%p>\n", name.c_str(), (void*) match_item.get() );
+      if(_DEBUG)printf( "sequence<%s>: SLV_match match_item<%p>\n", matcher->_name.c_str(), (void*) match_item.get() );
       if (match_item) {
         size_t item_index = the_sequence->_items.size();
         if (match_item->_view->empty()) {
         }
         else{
           if(0)slv_iter->dump("slv_iter_pre");
-          if(_DEBUG)printf( "sequence<%s> matchitem<%zu:%s>\n", name.c_str(), item_index, match_item->_matcher->_name.c_str() );
+          if(_DEBUG)printf( "sequence<%s> matchitem<%zu:%s>\n", matcher->_name.c_str(), item_index, match_item->_matcher->_name.c_str() );
           slv_match->_end  = match_item->_view->_end;
           slv_iter->_start = match_item->_view->_end + 1;
           if(0)slv_iter->dump("slv_iter_post");
@@ -131,18 +131,24 @@ matcher_ptr_t Parser::sequence(std::vector<matcher_ptr_t> matchers, std::string 
       }
     }
     if(the_match){
-        if(_DEBUG)printf( "sequence<%s> end_match the_match<%p> st<%zu> en<%zu>\n", name.c_str(), (void*) the_match.get(), the_match->_view->_start, the_match->_view->_end );
+        if(_DEBUG)printf( "sequence<%s> end_match the_match<%p> st<%zu> en<%zu>\n", matcher->_name.c_str(), (void*) the_match.get(), the_match->_view->_start, the_match->_view->_end );
     }
     else{
-        if(_DEBUG)printf( "sequence<%s> end_match NO_MATCH\n", name.c_str() );
+        if(_DEBUG)printf( "sequence<%s> end_match NO_MATCH\n", matcher->_name.c_str() );
     }
     return the_match;
   };
+  matcher->_notif = [=](match_ptr_t the_match) { printf("MATCHED SEQ<%s>\n", matcher->_name.c_str()); };
+}
+
+//////////////////////////////////////////////////////////////////////
+
+matcher_ptr_t Parser::sequence(std::vector<matcher_ptr_t> sub_matchers, std::string name) {
   if (name == "") {
     name = "sequence";
   }
-  auto matcher = createMatcher(match_fn, name);
-  matcher->_notif = [name](match_ptr_t the_match) { printf("MATCHED SEQ<%s>\n", name.c_str()); };
+  auto matcher = declare(name);
+  sequence(matcher, sub_matchers);
   return matcher;
 }
 
@@ -278,21 +284,9 @@ matcher_ptr_t Parser::declare(std::string name) {
 //////////////////////////////////////////////////////////////////////
 
 matcher_ptr_t Parser::createMatcher(matcher_fn_t match_fn, std::string name) {
-  matcher_ptr_t rval = nullptr;
-  if (name != "") {
-    for (auto m : _matchers) {
-      if (m->_name == name) {
-        rval         = m;
-        break;
-      }
-    }
-  }
-  if(rval==nullptr){
-    rval = std::make_shared<Matcher>(match_fn);
-    _matchers.insert(rval);
-    rval->_name = name;
-  }
-  rval->_match_fn = match_fn;
+  auto rval = std::make_shared<Matcher>(match_fn);
+  _matchers.insert(rval);
+  rval->_name = name;
   return rval;
 }
 

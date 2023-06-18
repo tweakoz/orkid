@@ -41,23 +41,23 @@ enum class TokenClass : uint64_t {
 ///////////////////////////////////////////////////////////////////////////////
 
 void loadScannerRules(scanner_ptr_t s) { //
-  s->addRule("\\/\\*([^*]|\\*+[^/*])*\\*+\\/", uint64_t(TokenClass::MULTI_LINE_COMMENT));
-  s->addRule("\\/\\/.*[\\n\\r]", uint64_t(TokenClass::SINGLE_LINE_COMMENT));
-  s->addRule("\\s+", uint64_t(TokenClass::WHITESPACE));
-  s->addRule("[\\n\\r]+", uint64_t(TokenClass::NEWLINE));
-  s->addRule("[a-zA-Z_][a-zA-Z0-9_]*", uint64_t(TokenClass::KW_OR_ID));
-  s->addRule("=", uint64_t(TokenClass::EQUALS));
-  s->addRule(",", uint64_t(TokenClass::COMMA));
-  s->addRule(";", uint64_t(TokenClass::SEMICOLON));
-  s->addRule("\\(", uint64_t(TokenClass::L_PAREN));
-  s->addRule("\\)", uint64_t(TokenClass::R_PAREN));
-  s->addRule("\\{", uint64_t(TokenClass::L_CURLY));
-  s->addRule("\\}", uint64_t(TokenClass::R_CURLY));
-  s->addRule("\\*", uint64_t(TokenClass::STAR));
-  s->addRule("\\+", uint64_t(TokenClass::PLUS));
-  s->addRule("\\-", uint64_t(TokenClass::MINUS));
-  s->addRule("-?(\\d*\\.?)(\\d+)([eE][-+]?\\d+)?", uint64_t(TokenClass::FLOATING_POINT));
-  s->addRule("-?(\\d+)", uint64_t(TokenClass::INTEGER));
+  s->addEnumClass("\\/\\*([^*]|\\*+[^/*])*\\*+\\/", TokenClass::MULTI_LINE_COMMENT);
+  s->addEnumClass("\\/\\/.*[\\n\\r]", TokenClass::SINGLE_LINE_COMMENT);
+  s->addEnumClass("\\s+", TokenClass::WHITESPACE);
+  s->addEnumClass("[\\n\\r]+", TokenClass::NEWLINE);
+  s->addEnumClass("[a-zA-Z_][a-zA-Z0-9_]*", TokenClass::KW_OR_ID);
+  s->addEnumClass("=", TokenClass::EQUALS);
+  s->addEnumClass(",", TokenClass::COMMA);
+  s->addEnumClass(";", TokenClass::SEMICOLON);
+  s->addEnumClass("\\(", TokenClass::L_PAREN);
+  s->addEnumClass("\\)", TokenClass::R_PAREN);
+  s->addEnumClass("\\{", TokenClass::L_CURLY);
+  s->addEnumClass("\\}", TokenClass::R_CURLY);
+  s->addEnumClass("\\*", TokenClass::STAR);
+  s->addEnumClass("\\+", TokenClass::PLUS);
+  s->addEnumClass("\\-", TokenClass::MINUS);
+  s->addEnumClass("-?(\\d*\\.?)(\\d+)([eE][-+]?\\d+)?", TokenClass::FLOATING_POINT);
+  s->addEnumClass("-?(\\d+)", TokenClass::INTEGER);
 
   s->buildStateMachine();
 }
@@ -65,6 +65,7 @@ void loadScannerRules(scanner_ptr_t s) { //
 ///////////////////////////////////////////////////////////////////////////////
 
 matcher_ptr_t loadGrammar(parser_ptr_t p) { //
+printf( "A\n" );
   auto plus      = p->matcherForTokenClass(TokenClass::PLUS, "plus");
   auto minus      = p->matcherForTokenClass(TokenClass::MINUS, "minus");
   auto star      = p->matcherForTokenClass(TokenClass::STAR, "star");
@@ -83,6 +84,7 @@ matcher_ptr_t loadGrammar(parser_ptr_t p) { //
   auto dt_float = p->matcherForWord("float");
   auto dt_int   = p->matcherForWord("int");
   ///////////////////////////////////////////////////////////
+printf( "B\n" );
   auto datatype = p->oneOf({
       dt_float,
       dt_int,
@@ -107,12 +109,12 @@ matcher_ptr_t loadGrammar(parser_ptr_t p) { //
       { datatype,
         kworid
       });
+printf( "C\n" );
   ///////////////////////////////////////////////////////////
   auto variableReference = p->sequence(
       "variableReference",
       { kworid
       });
-  printf("G\n");
   ///////////////////////////////////////////////////////////
   auto expression = p->declare( "expression" );
   ///////////////////////////////////////////////////////////
@@ -127,6 +129,7 @@ matcher_ptr_t loadGrammar(parser_ptr_t p) { //
      p->sequence({ primary,p->zeroOrMore(p->sequence({star,primary})) })
      //p->sequence({ primary,p->optional(p->sequence({slash,primary})) }),
   });
+printf( "D\n" );
   ///////////////////////////////////////////////////////////
   auto additive = p->oneOf("additive",{
       p->sequence({ multiplicative,plus,multiplicative }),
@@ -134,7 +137,7 @@ matcher_ptr_t loadGrammar(parser_ptr_t p) { //
       multiplicative
   });
   ///////////////////////////////////////////////////////////
-  p->sequence( "expression", { additive });
+  p->sequence( expression, { additive });
   ///////////////////////////////////////////////////////////
   auto assignment_statement = p->sequence(
       "assignment_statement",
@@ -144,6 +147,7 @@ matcher_ptr_t loadGrammar(parser_ptr_t p) { //
           equals,
           expression
       });
+printf( "E\n" );
   ///////////////////////////////////////////////////////////
   auto statement = p->sequence({
     p->optional(assignment_statement),
@@ -161,6 +165,7 @@ matcher_ptr_t loadGrammar(parser_ptr_t p) { //
        lcurly,
        p->zeroOrMore(statement,"fnd_statements"),
        rcurly,});
+printf( "F\n" );
   ///////////////////////////////////////////////////////////
   seq->_notif = [=](match_ptr_t match) {
     printf("MATCHED sequence<%s>\n", seq->_name.c_str());

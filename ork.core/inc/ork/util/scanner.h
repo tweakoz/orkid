@@ -95,6 +95,12 @@ struct Scanner {
       size_t capacity = 64 << 10);
   /////////////////////////////////////////
   void addRule(std::string rule, id_t state);
+  /////////////////////////////////////////
+  template <typename enum_t>
+  void addEnumClass(std::string rule, enum_t state){
+    addRule(rule, static_cast<id_t>(state));
+  }
+  /////////////////////////////////////////
   void buildStateMachine();
   void scan();
   void scanString(std::string str);
