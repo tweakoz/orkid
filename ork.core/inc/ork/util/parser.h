@@ -14,6 +14,7 @@ struct Group;
 struct Matcher;
 struct Parser;
 struct NOrMore;
+struct Optional;
 
 using match_ptr_t                 = std::shared_ptr<Match>;
 using matcher_ptr_t               = std::shared_ptr<Matcher>;
@@ -24,6 +25,7 @@ using parser_ptr_t                = std::shared_ptr<Parser>;
 using sequence_ptr_t              = std::shared_ptr<Sequence>;
 using group_ptr_t                 = std::shared_ptr<Group>;
 using n_or_more_ptr_t             = std::shared_ptr<NOrMore>;
+using optional_ptr_t              = std::shared_ptr<Optional>;
 
 //////////////////////////////////////////////////////////////
 
@@ -52,6 +54,9 @@ struct Group{
 struct NOrMore{
   std::vector<match_ptr_t> _items;
   size_t _minmatches = 0;
+};
+struct Optional{
+  match_ptr_t _subitem;
 };
 
 //////////////////////////////////////////////////////////////

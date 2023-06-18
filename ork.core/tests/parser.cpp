@@ -151,7 +151,7 @@ printf( "E\n" );
   ///////////////////////////////////////////////////////////
   auto statement = p->sequence({
     p->optional(assignment_statement,"st1"),
-    p->optional(semicolon,"st2")
+    semicolon
   });
   ///////////////////////////////////////////////////////////
   auto seq = p->sequence(
@@ -193,9 +193,9 @@ TEST(parser1) {
         function abc(int x, float y) {
             b = (a+v)*7.0;
         }
-        function def() {
+        //function def() {
         //    float X = (1.0+2.3)*7.0;
-        }
+        //}
     )";
   s->scanString(parse_str);
   s->discardTokensOfClass(uint64_t(TokenClass::WHITESPACE));

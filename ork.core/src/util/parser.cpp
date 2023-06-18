@@ -55,6 +55,14 @@ void Match::dump(int indent) const {
     for (auto i : grp->_items) {
       i->dump(indent + 3);
     }
+  } else if (auto as_opt = _impl.tryAs<optional_ptr_t>()) {
+    auto opt = as_opt.value();
+    printf("%s   OPT<%p>\n", indentstr.c_str(), (void*)opt.get());
+    if(opt->_subitem)
+      opt->_subitem->dump(indent + 3);
+    else{
+      printf("%s     EMPTY\n", indentstr.c_str());
+    }
   }
 }
 
@@ -69,6 +77,7 @@ matcher_ptr_t Parser::optional(matcher_ptr_t sub_matcher, std::string name) {
                       scannerlightview_constptr_t slv) -> match_ptr_t { //
     auto the_match      = std::make_shared<Match>();
     the_match->_matcher = par_matcher;
+    auto the_opt        = the_match->_impl.makeShared<Optional>();
     ////////////////////////////////////////////////////
     // if sub_matcher matches, return the match
     ////////////////////////////////////////////////////
@@ -79,6 +88,7 @@ matcher_ptr_t Parser::optional(matcher_ptr_t sub_matcher, std::string name) {
         log("OPT<%s> %s sub<%s>", name.c_str(), match_str.c_str(), sub_match->_matcher->_name.c_str());
         the_match->_view = sub_match->_view;
         the_match->_view->validate();
+        the_opt->_subitem = sub_match;
         return the_match;
       }
     }
@@ -117,7 +127,7 @@ void Parser::sequence(matcher_ptr_t matcher, std::vector<matcher_ptr_t> sub_matc
     size_t num_iter   = sub_matchers.size();
     for (auto sub_matcher : sub_matchers) {
       auto match_item = _match(sub_matcher, slv_iter);
-      log_begin("SEQ<%s> : match_item<%s> iter<%zu/%zu> ", matcher->_name.c_str(), sub_matcher->_name.c_str(), iter, num_iter);
+      log_begin("SEQ<%s> : match_item<%s> iter<%zu/%zu> st<%d> end<%d> ", matcher->_name.c_str(), sub_matcher->_name.c_str(), iter, num_iter, slv_iter->_start, slv_iter->_end);
       if (match_item) {
         size_t item_index = the_sequence->_items.size();
         if (match_item->_view->empty()) {
@@ -158,6 +168,15 @@ void Parser::sequence(matcher_ptr_t matcher, std::vector<matcher_ptr_t> sub_matc
       }
       if (num_emptys == num_matches) {
         the_match->_view->clear();
+      }
+      else{
+        auto slv_out = std::make_shared<ScannerLightView>(*slv);
+        for (auto match : the_sequence->_items) {
+            if (not match->_view->empty()) {
+                slv_out->_end = match->_view->_end;
+            }
+        }
+        the_match->_view = slv_out;
       }
       /////////////////////////////////////////////////
       if (0)
@@ -267,6 +286,7 @@ matcher_ptr_t Parser::nOrMore(matcher_ptr_t sub_matcher, size_t minMatches, std:
     auto slv_iter         = std::make_shared<ScannerLightView>(*input_slv);
     int item_index        = 0;
     log("NOM%zu<%s>: beg_match sub_matcher<%s>", minMatches, name.c_str(), sub_matcher->_name.c_str());
+    ////////////////////////////////////////////////////////////////
     while (keep_going) {
       auto sub_match = _match(sub_matcher, slv_iter);
       keep_going     = false;
@@ -293,6 +313,7 @@ matcher_ptr_t Parser::nOrMore(matcher_ptr_t sub_matcher, size_t minMatches, std:
         log_continue("%s\n", nomatch_str.c_str());
       }
     }
+    ////////////////////////////////////////////////////////////////
     if (the_nom->_items.size() >= minMatches) {
       auto slv_out = std::make_shared<ScannerLightView>(*input_slv);
       if (minMatches == 0 and the_nom->_items.size() == 0) {
@@ -303,7 +324,8 @@ matcher_ptr_t Parser::nOrMore(matcher_ptr_t sub_matcher, size_t minMatches, std:
         slv_out->validate();
       }
       the_match->_view = slv_out;
-      // log( "NOM%zu<%s>: end_match count<%zu>", minMatches, name.c_str(), the_nom->_items.size() );
+      auto match_str = deco::string("MATCH", 0, 255, 0);
+      log( "NOM%zu<%s>: %s count<%zu> st<%zu> en<%zu>", minMatches, name.c_str(), match_str.c_str(), the_nom->_items.size(), slv_out->_start, slv_out->_end );
       return the_match;
     } else if (minMatches == 0) {
       auto slv_out = std::make_shared<ScannerLightView>(*input_slv);
