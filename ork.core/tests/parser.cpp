@@ -63,6 +63,31 @@ void loadScannerRules(scanner_ptr_t s) { //
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// AST
+///////////////////////////////////////////////////////////////////////////////
+
+struct AstNode {
+    virtual ~AstNode() {}
+};
+
+struct Statement : public AstNode {
+
+};
+
+struct AssignmentStatement : public Statement{
+
+};
+struct Additive : public AstNode {
+
+};
+struct Multiplicative : public AstNode {
+
+};
+struct Primary : public AstNode {
+
+};
+
+///////////////////////////////////////////////////////////////////////////////
 
 matcher_ptr_t loadGrammar(parser_ptr_t p) { //
   auto plus      = p->matcherForTokenClass(TokenClass::PLUS, "plus");
@@ -121,17 +146,34 @@ matcher_ptr_t loadGrammar(parser_ptr_t p) { //
     variableReference,
     p->sequence({ lparen,expression,rparen },"term"),
   });
+  primary->_notif = [=](match_ptr_t match) {
+    auto ast_node = match->_user.makeShared<Primary>();
+
+    auto selected = match->_impl.get<oneof_ptr_t>()->_subitem;
+  };
   ///////////////////////////////////////////////////////////
   auto multiplicative = p->oneOf("multiplicative",{
      p->sequence({ primary,p->zeroOrMore(p->sequence({star,primary},"mul1sp"),"mul1zom") }, "mul1")
      //p->sequence({ primary,p->optional(p->sequence({slash,primary})) }),
   });
+  multiplicative->_notif = [=](match_ptr_t match) {
+    auto ast_node = match->_user.makeShared<Multiplicative>();
+
+    auto selected = match->_impl.get<oneof_ptr_t>()->_subitem;
+    auto sel_seq = selected->_impl.get<sequence_ptr_t>();
+    auto primary = sel_seq->_items[0]->_user.getShared<Primary>();
+  };
   ///////////////////////////////////////////////////////////
   auto additive = p->oneOf("additive",{
       p->sequence({ multiplicative,plus,multiplicative }, "add1"),
       p->sequence({ multiplicative,minus,multiplicative }, "add2"),
       multiplicative
   });
+  additive->_notif = [=](match_ptr_t match) {
+    auto ast_node = match->_user.makeShared<Additive>();
+
+    auto selected = match->_impl.get<oneof_ptr_t>()->_subitem;
+  };
   ///////////////////////////////////////////////////////////
   p->sequence( expression, { additive });
   ///////////////////////////////////////////////////////////
@@ -148,6 +190,25 @@ matcher_ptr_t loadGrammar(parser_ptr_t p) { //
     p->optional(assignment_statement,"st1"),
     semicolon
   });
+  statement->_notif = [=](match_ptr_t match) {
+    auto the_seq = match->_impl.get<sequence_ptr_t>();
+    auto the_opt = the_seq->_items[0]->_impl.get<optional_ptr_t>();
+    auto assignment_statement = the_opt->_subitem->_impl.get<sequence_ptr_t>();
+    if(assignment_statement){
+        auto ast_node = match->_user.makeShared<AssignmentStatement>();
+
+        auto expr = assignment_statement->_items[2]->_impl.get<sequence_ptr_t>();
+
+        auto var = assignment_statement->_items[0]->_impl.get<oneof_ptr_t>()->_subitem;
+        if(var->_matcher == variableDeclaration){
+        }
+        else if( var->_matcher == variableReference){
+        }
+        else{
+            OrkAssert(false);
+        }
+    }
+  };
   ///////////////////////////////////////////////////////////
   auto funcdef = p->sequence(
       "funcdef",

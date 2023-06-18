@@ -39,6 +39,7 @@ struct Match {
   matcher_ptr_t _matcher;
   scannerlightview_ptr_t _view;
   svar32_t _impl;
+  svar32_t _user;
   void dump(int indent) const;
 };
 
