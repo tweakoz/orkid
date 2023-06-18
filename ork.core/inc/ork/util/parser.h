@@ -87,6 +87,12 @@ struct Parser {
   void _log_valist(const char *pMsgFormat, va_list args) const;
   void log(const char *pMsgFormat, ...) const;
 
+  void _log_valist_continue(const char *pMsgFormat, va_list args) const;
+  void log_continue(const char *pMsgFormat, ...) const;
+
+  void _log_valist_begin(const char *pMsgFormat, va_list args) const;
+  void log_begin(const char *pMsgFormat, ...) const;
+
   std::stack<matcher_ptr_t> _matcherstack;
   std::stack<const Match*> _matchstack;
   std::unordered_set<matcher_ptr_t> _matchers;

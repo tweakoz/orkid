@@ -126,7 +126,7 @@ printf( "C\n" );
   });
   ///////////////////////////////////////////////////////////
   auto multiplicative = p->oneOf("multiplicative",{
-     p->sequence({ primary,p->zeroOrMore(p->sequence({star,primary})) }, "mul1")
+     p->sequence({ primary,p->zeroOrMore(p->sequence({star,primary},"mul1sp"),"mul1zom") }, "mul1")
      //p->sequence({ primary,p->optional(p->sequence({slash,primary})) }),
   });
 printf( "D\n" );
