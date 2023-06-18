@@ -99,7 +99,7 @@ matcher_ptr_t Parser::optional(matcher_ptr_t sub_matcher, std::string name) {
 //////////////////////////////////////////////////////////////////////
 
 void Parser::sequence(matcher_ptr_t matcher, std::vector<matcher_ptr_t> sub_matchers){
-  auto match_fn = [=](matcher_ptr_t par_matcher, scannerlightview_constptr_t slv) -> match_ptr_t {
+  matcher->_match_fn = [=](matcher_ptr_t par_matcher, scannerlightview_constptr_t slv) -> match_ptr_t {
     match_ptr_t the_match = std::make_shared<Match>();
     the_match->_matcher   = par_matcher;
     if(_DEBUG)printf( "sequence<%s>: beg_match len<%zu>\n", matcher->_name.c_str(), sub_matchers.size() );
@@ -275,21 +275,6 @@ matcher_ptr_t Parser::zeroOrMore(matcher_ptr_t matcher,std::string name){
   return nOrMore(matcher,0,name);
 }
 
-//////////////////////////////////////////////////////////////////////
-
-matcher_ptr_t Parser::declare(std::string name) {
-  return createMatcher(nullptr, name);
-}
-
-//////////////////////////////////////////////////////////////////////
-
-matcher_ptr_t Parser::createMatcher(matcher_fn_t match_fn, std::string name) {
-  auto rval = std::make_shared<Matcher>(match_fn);
-  _matchers.insert(rval);
-  rval->_name = name;
-  return rval;
-}
-
 //////////////////////////////////////////////////////////////
 
 matcher_ptr_t Parser::matcherForTokenClassID(uint64_t tokclass, std::string name) {
@@ -341,6 +326,7 @@ matcher_ptr_t Parser::matcherForWord(std::string word) {
 match_ptr_t Parser::_match(matcher_ptr_t matcher, scannerlightview_constptr_t inp_view) {
   _matcherstack.push(matcher);
   inp_view->validate();
+  OrkAssert(matcher->_match_fn);
   auto match = matcher->_match_fn(matcher, inp_view);
   if (match and matcher->_notif) {
     matcher->_notif(match);
@@ -353,6 +339,21 @@ match_ptr_t Parser::_match(matcher_ptr_t matcher, scannerlightview_constptr_t in
 
 match_ptr_t Parser::match(scannerlightview_constptr_t inp_view, matcher_ptr_t top) {
   return _match(top, inp_view);
+}
+
+//////////////////////////////////////////////////////////////////////
+
+matcher_ptr_t Parser::declare(std::string name) {
+  return createMatcher(nullptr, name);
+}
+
+//////////////////////////////////////////////////////////////////////
+
+matcher_ptr_t Parser::createMatcher(matcher_fn_t match_fn, std::string name) {
+  auto rval = std::make_shared<Matcher>(match_fn);
+  _matchers.insert(rval);
+  rval->_name = name;
+  return rval;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
