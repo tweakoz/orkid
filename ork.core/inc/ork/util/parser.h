@@ -17,6 +17,7 @@ struct NOrMore;
 struct Optional;
 struct WordMatch;
 struct ClassMatch;
+struct OneOf;
 
 using match_ptr_t                 = std::shared_ptr<Match>;
 using matcher_ptr_t               = std::shared_ptr<Matcher>;
@@ -30,6 +31,7 @@ using n_or_more_ptr_t             = std::shared_ptr<NOrMore>;
 using optional_ptr_t              = std::shared_ptr<Optional>;
 using wordmatch_ptr_t             = std::shared_ptr<WordMatch>;
 using classmatch_ptr_t            = std::shared_ptr<ClassMatch>;
+using oneof_ptr_t                 = std::shared_ptr<OneOf>;
 
 //////////////////////////////////////////////////////////////
 
@@ -68,6 +70,9 @@ struct WordMatch{
 struct ClassMatch{
   uint64_t _tokclass = 0;
   const Token* _token = nullptr;
+};
+struct OneOf{
+  match_ptr_t _subitem;
 };
 
 //////////////////////////////////////////////////////////////

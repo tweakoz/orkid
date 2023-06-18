@@ -174,7 +174,22 @@ matcher_ptr_t loadGrammar(parser_ptr_t p) { //
            fn_name->_token->text.c_str(), //
            args->_items.size(), //
            stas->_items.size() );
+    
+    for( auto arg : args->_items ) {
+      auto argseq = arg->_impl.get<sequence_ptr_t>();
+      auto argtype = argseq->_items[0]->_impl.get<oneof_ptr_t>();
+      auto argtypeval = argtype->_subitem->_impl.get<wordmatch_ptr_t>();
+      auto argname = argseq->_items[1]->_impl.get<classmatch_ptr_t>();
+      printf("  ARG<%s> TYPE<%s>\n",argname->_token->text.c_str(),argtypeval->_token->text.c_str());
+    }
 
+    int i = 0;
+    for( auto sta : stas->_items ) {
+      auto staseq = sta->_impl.get<sequence_ptr_t>();
+      size_t stalen = staseq->_items.size();
+      printf("  STATEMENT<%d> SEQLEN<%zu>\n",i, stalen);
+      i++;
+    }
   };
   ///////////////////////////////////////////////////////////
   auto seq = p->zeroOrMore(funcdef,"funcdefs");

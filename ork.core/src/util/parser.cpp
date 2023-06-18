@@ -256,7 +256,13 @@ matcher_ptr_t Parser::oneOf(std::vector<matcher_ptr_t> matchers, std::string nam
       if (sub_match) {
         auto match_str = deco::string("MATCH", 0, 255, 0);
         log("1OF<%s>: %s sub_matcher<%s>", name.c_str(), match_str.c_str(), sub_matcher->_name.c_str());
-        return sub_match;
+
+        auto the_match = std::make_shared<Match>();
+        the_match->_matcher = par_matcher;
+        the_match->_view    = sub_match->_view;
+        auto the_oo = the_match->_impl.makeShared<OneOf>();
+        the_oo->_subitem = sub_match;
+        return the_match;
       }
     }
     auto match_str = deco::string("NO-MATCH", 255, 0, 0);
