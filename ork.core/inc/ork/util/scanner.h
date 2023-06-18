@@ -192,8 +192,10 @@ struct ScannerLightView {
   ScannerLightView(const ScannerView& inp_view);
   ScannerLightView(const ScannerLightView& oth);
   void clear();
+  void validate() const;
   int numTokens() const;
   bool empty() const;
+  void advanceTo(size_t i);
   const Token* token(size_t i) const;
   void dump(const std::string& dumpid) const;
   const ScannerView& _input_view;

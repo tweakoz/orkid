@@ -57,7 +57,7 @@ void loadScannerRules(scanner_ptr_t s) { //
   s->addRule("\\+", uint64_t(TokenClass::PLUS));
   s->addRule("\\-", uint64_t(TokenClass::MINUS));
   s->addRule("-?(\\d*\\.?)(\\d+)([eE][-+]?\\d+)?", uint64_t(TokenClass::FLOATING_POINT));
-  s->addRule("-?(\\d*)", uint64_t(TokenClass::INTEGER));
+  s->addRule("-?(\\d+)", uint64_t(TokenClass::INTEGER));
 
   s->buildStateMachine();
 }
@@ -83,19 +83,19 @@ matcher_ptr_t loadGrammar(parser_ptr_t p) { //
   auto dt_float = p->matcherForWord("float");
   auto dt_int   = p->matcherForWord("int");
   ///////////////////////////////////////////////////////////
-  auto argument_decl = p->sequence(
-      "argument_decl",
-      {
-          //
-          kworid,
-          kworid,
-          p->optional(comma),
-      });
-  ///////////////////////////////////////////////////////////
   auto datatype = p->oneOf({
       dt_float,
       dt_int,
   });
+  ///////////////////////////////////////////////////////////
+  auto argument_decl = p->sequence(
+      "argument_decl",
+      {
+          //
+          datatype,
+          kworid,
+          p->optional(comma),
+      });
   ///////////////////////////////////////////////////////////
   auto number = p->oneOf({
       floattok,
@@ -104,7 +104,7 @@ matcher_ptr_t loadGrammar(parser_ptr_t p) { //
   ///////////////////////////////////////////////////////////
   auto variableDeclaration = p->sequence(
       "variableDeclaration",
-      { p->optional(datatype),
+      { datatype,
         kworid
       });
   ///////////////////////////////////////////////////////////
@@ -112,6 +112,7 @@ matcher_ptr_t loadGrammar(parser_ptr_t p) { //
       "variableReference",
       { kworid
       });
+  printf("G\n");
   ///////////////////////////////////////////////////////////
   auto expression = p->declare( "expression" );
   ///////////////////////////////////////////////////////////
@@ -139,9 +140,9 @@ matcher_ptr_t loadGrammar(parser_ptr_t p) { //
       "assignment_statement",
       {
           //
-          variableDeclaration,
+          p->oneOf({variableDeclaration,variableReference}),
           equals,
-          expression,
+          expression
       });
   ///////////////////////////////////////////////////////////
   auto statement = p->sequence({
@@ -155,10 +156,10 @@ matcher_ptr_t loadGrammar(parser_ptr_t p) { //
        kw_function,
        kworid,
        lparen,
-       p->zeroOrMore(argument_decl),
+       p->zeroOrMore(argument_decl,"fnd_args"),
        rparen,
        lcurly,
-       p->zeroOrMore(statement),
+       p->zeroOrMore(statement,"fnd_statements"),
        rcurly,});
   ///////////////////////////////////////////////////////////
   seq->_notif = [=](match_ptr_t match) {
@@ -185,11 +186,11 @@ TEST(parser1) {
         // hello world
         ///////////////////
         function abc(int x, float y) {
-            b = (a+v)*7.0;
+            //b = (a+v)*7.0;
         }
-        function def() {
-            float X = (1.0+2.3)*7.0;
-        }
+        //function def() {
+        //    float X = (1.0+2.3)*7.0;
+        //}
     )";
   s->scanString(parse_str);
   s->discardTokensOfClass(uint64_t(TokenClass::WHITESPACE));

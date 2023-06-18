@@ -311,6 +311,20 @@ void ScannerLightView::dump(const std::string& dumpid) const {
   }
 }
 
+void ScannerLightView::validate() const{
+  if( not empty() ){
+    OrkAssert(_start>=0);
+    OrkAssert(_end>=0);
+    OrkAssert(_start<=_end);
+  }
+}
+
+void ScannerLightView::advanceTo(size_t i){
+  _start = (i>=_end) ? _end : i;
+}
+
+
+
 /////////////////////////////////////////////////////////////////////////////////////////////////
 } //namespace ork {
 /////////////////////////////////////////////////////////////////////////////////////////////////

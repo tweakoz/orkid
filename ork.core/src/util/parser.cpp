@@ -16,6 +16,8 @@
 namespace ork {
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
+static constexpr bool _DEBUG = true;
+
 void Match::dump(int indent) const {
 
   auto indentstr = std::string(indent, ' ');
@@ -40,16 +42,10 @@ void Match::dump(int indent) const {
     for (auto i : seq->_items) {
       i->dump(indent + 3);
     }
-  } else if (auto as_zom = _impl.tryAs<zero_or_more_ptr_t>()) {
-    auto zom = as_zom.value();
-    printf("%s   ZOM<%p>\n", indentstr.c_str(), (void*)zom.get());
-    for (auto i : zom->_items) {
-      i->dump(indent + 3);
-    }
-  } else if (auto as_oom = _impl.tryAs<one_or_more_ptr_t>()) {
-    auto oom = as_oom.value();
-    printf("%s   OOM<%p>\n", indentstr.c_str(), (void*)oom.get());
-    for (auto i : oom->_items) {
+  } else if (auto as_nom = _impl.tryAs<n_or_more_ptr_t>()) {
+    auto nom = as_nom.value();
+    printf("%s   NOM%zu<%p>\n", indentstr.c_str(), nom->_minmatches, (void*)nom.get());
+    for (auto i : nom->_items) {
       i->dump(indent + 3);
     }
   } else if (auto as_grp = _impl.tryAs<group_ptr_t>()) {
@@ -75,13 +71,16 @@ matcher_ptr_t Parser::optional(matcher_ptr_t sub_matcher, std::string name) {
     ////////////////////////////////////////////////////
     // if sub_matcher matches, return the match
     ////////////////////////////////////////////////////
-    auto sub_match = _match(sub_matcher, slv);
-    if (sub_match) {
-      // printf( "OPTIONAL sub_match<%p>\n", (void*) sub_match.get() );
-      the_match->_view = sub_match->_view;
-      return the_match;
+    if(not slv->empty()){
+      auto sub_match = _match(sub_matcher, slv);
+      if (sub_match) {
+        if(_DEBUG)printf( "optional sub_match<%p>\n", (void*) sub_match.get() );
+        the_match->_view = sub_match->_view;
+        the_match->_view->validate();
+        return the_match;
+      }
     }
-    // printf( "OPTIONAL NO sub_match\n" );
+    if(_DEBUG)printf( "optional NO sub_match\n" );
     ////////////////////////////////////////////////////
     //  otherwise return "empty" but valid match (start=end=-1)
     ////////////////////////////////////////////////////
@@ -92,7 +91,9 @@ matcher_ptr_t Parser::optional(matcher_ptr_t sub_matcher, std::string name) {
   if (name == "") {
     name = "optional";
   }
-  return createMatcher(match_fn, name);
+  auto matcher = createMatcher(match_fn, name);
+  matcher->_notif = [name](match_ptr_t the_match) { printf("MATCHED OPT<%s>\n", name.c_str()); };
+  return matcher;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -101,36 +102,48 @@ matcher_ptr_t Parser::sequence(std::vector<matcher_ptr_t> matchers, std::string 
   auto match_fn = [=](matcher_ptr_t par_matcher, scannerlightview_constptr_t slv) -> match_ptr_t {
     match_ptr_t the_match = std::make_shared<Match>();
     the_match->_matcher   = par_matcher;
-    // printf( "beg_match sequence<%s> len<%zu>\n", name.c_str(), matchers.size() );
-    auto slv_temp     = std::make_shared<ScannerLightView>(*slv);
+    if(_DEBUG)printf( "sequence<%s>: beg_match len<%zu>\n", name.c_str(), matchers.size() );
+    auto slv_iter     = std::make_shared<ScannerLightView>(*slv);
     auto slv_match    = std::make_shared<ScannerLightView>(*slv);
     auto the_sequence = the_match->_impl.makeShared<Sequence>();
     the_match->_view  = slv_match;
     for (auto sub_matcher : matchers) {
-      auto match_item = _match(sub_matcher, slv_temp);
-      // printf( "SLV_match sequence<%s> match_item<%p>\n", name.c_str(), (void*) match_item.get() );
+      auto match_item = _match(sub_matcher, slv_iter);
+      if(_DEBUG)printf( "sequence<%s>: SLV_match match_item<%p>\n", name.c_str(), (void*) match_item.get() );
       if (match_item) {
-        if (not match_item->_view->empty()) {
+        size_t item_index = the_sequence->_items.size();
+        if (match_item->_view->empty()) {
+        }
+        else{
+          if(0)slv_iter->dump("slv_iter_pre");
+          if(_DEBUG)printf( "sequence<%s> matchitem<%zu:%s>\n", name.c_str(), item_index, match_item->_matcher->_name.c_str() );
           slv_match->_end  = match_item->_view->_end;
-          slv_temp->_start = match_item->_view->_end + 1;
+          slv_iter->_start = match_item->_view->_end + 1;
+          if(0)slv_iter->dump("slv_iter_post");
+          slv_iter->validate();
+          slv_match->validate();
         }
         the_sequence->_items.push_back(match_item);
-        // slv_temp->dump("slv_temp");
         OrkAssert(match_item->_view);
-        // printf( "end_match sequence<%s> the_match<%p> st<%zu> en<%zu>\n", name.c_str(), (void*) the_match.get(),
-        // the_match->_view->_start, the_match->_view->_end );
       } else {
         the_match = nullptr;
-        // printf( "end_match sequence<%s> NO_MATCH\n", name.c_str() );
         break;
       }
+    }
+    if(the_match){
+        if(_DEBUG)printf( "sequence<%s> end_match the_match<%p> st<%zu> en<%zu>\n", name.c_str(), (void*) the_match.get(), the_match->_view->_start, the_match->_view->_end );
+    }
+    else{
+        if(_DEBUG)printf( "sequence<%s> end_match NO_MATCH\n", name.c_str() );
     }
     return the_match;
   };
   if (name == "") {
     name = "sequence";
   }
-  return createMatcher(match_fn, name);
+  auto matcher = createMatcher(match_fn, name);
+  matcher->_notif = [name](match_ptr_t the_match) { printf("MATCHED SEQ<%s>\n", name.c_str()); };
+  return matcher;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -160,6 +173,7 @@ matcher_ptr_t Parser::group(std::vector<matcher_ptr_t> matchers, std::string nam
     auto slv_out     = std::make_shared<ScannerLightView>(*slv_inp);
     slv_out->_start  = the_group->_items.front()->_view->_start;
     slv_out->_end    = the_group->_items.back()->_view->_end;
+    slv_out->validate();
     the_match->_view = slv_out;
     return the_match;
   };
@@ -192,84 +206,67 @@ matcher_ptr_t Parser::oneOf(std::vector<matcher_ptr_t> matchers, std::string nam
 matcher_ptr_t Parser::oneOf(std::string name, std::vector<matcher_ptr_t> matchers) {
   return oneOf(matchers, name);
 }
-
 //////////////////////////////////////////////////////////////////////
 
-matcher_ptr_t Parser::oneOrMore(matcher_ptr_t sub_matcher, std::string name) {
+matcher_ptr_t Parser::nOrMore(matcher_ptr_t sub_matcher, size_t minMatches, std::string name) {
   auto match_fn = [=](matcher_ptr_t par_matcher, scannerlightview_constptr_t input_slv) -> match_ptr_t {
     match_ptr_t the_match = std::make_shared<Match>();
     the_match->_matcher   = par_matcher;
-    auto the_oom          = the_match->_impl.makeShared<OneOrMore>();
+    auto the_nom          = the_match->_impl.makeShared<NOrMore>();
+    the_nom->_minmatches = minMatches;
     bool keep_going       = true;
     auto slv_iter         = std::make_shared<ScannerLightView>(*input_slv);
+    int item_index = 0;
+      if(_DEBUG)printf( "nom%zu<%s>: beg_match\n", minMatches, name.c_str() );
     while (keep_going) {
       auto sub_match = _match(sub_matcher, slv_iter);
       keep_going     = false;
       if (sub_match) {
-        the_oom->_items.push_back(sub_match);
+        the_nom->_items.push_back(sub_match);
+        item_index++;
         slv_iter->_start = sub_match->_view->_end + 1;
         keep_going       = slv_iter->_start <= slv_iter->_end;
+        if(_DEBUG)printf( "nom%d<%s> match<%d:%s> start<%zu> end<%zu>\n", 
+                int(minMatches), 
+                name.c_str(), 
+                item_index, 
+                sub_match->_matcher->_name.c_str(), 
+                sub_match->_view->_start, 
+                sub_match->_view->_end );
       }
     }
-    if (the_oom->_items.size()) {
+    if (the_nom->_items.size() >= minMatches) {
       auto slv_out     = std::make_shared<ScannerLightView>(*input_slv);
-      slv_out->_start  = the_oom->_items.front()->_view->_start;
-      slv_out->_end    = the_oom->_items.back()->_view->_end;
+      slv_out->_start  = the_nom->_items.front()->_view->_start;
+      slv_out->_end    = the_nom->_items.back()->_view->_end;
       the_match->_view = slv_out;
+      slv_out->validate();
+      if(_DEBUG)printf( "nom%zu<%s>: end_match count<%zu>\n", minMatches, name.c_str(), the_nom->_items.size() );
       return the_match;
-    }
-    return nullptr;
-  };
-  if (name == "") {
-    name = "oneOrMore";
-  }
-  return createMatcher(match_fn, name);
-}
-
-//////////////////////////////////////////////////////////////////////
-
-matcher_ptr_t Parser::zeroOrMore(matcher_ptr_t sub_matcher, std::string name) {
-  auto match_fn = [=](matcher_ptr_t par_matcher, scannerlightview_constptr_t input_slv) -> match_ptr_t {
-    match_ptr_t the_match = std::make_shared<Match>();
-    the_match->_matcher   = par_matcher;
-    auto the_zom          = the_match->_impl.makeShared<ZeroOrMore>();
-    bool keep_going       = true;
-    auto slv_iter         = std::make_shared<ScannerLightView>(*input_slv);
-    // printf( "ZOM input_slv_st<%zu> input_slv_end<%zu>>\n", input_slv->_start, input_slv->_end );
-    while (keep_going) {
-      auto sub_match = _match(sub_matcher, slv_iter);
-      keep_going     = false;
-      if (sub_match) {
-        // printf( "ZOM MATCH iter_st<%zu> iter_end<%zu> sub_st<%zu> sub_end<%zu>\n", //
-        //         slv_iter->_start, slv_iter->_end, sub_match->_view->_start, sub_match->_view->_end );
-        the_zom->_items.push_back(sub_match);
-        keep_going = slv_iter->_start < slv_iter->_end;
-        if (keep_going) {
-          OrkAssert(slv_iter);
-          slv_iter->_start = sub_match->_view->_end + 1;
-        }
-      } else {
-        // printf( "ZOM NO_MATCH iter_st<%zu> iter_end<%zu>\n", //
-        //         slv_iter->_start, slv_iter->_end );
-      }
-    }
-    if (the_zom->_items.size()) {
-      auto slv_out     = std::make_shared<ScannerLightView>(*input_slv);
-      slv_out->_start  = the_zom->_items.front()->_view->_start;
-      slv_out->_end    = the_zom->_items.back()->_view->_end;
-      the_match->_view = slv_out;
-      return the_match;
-    } else {
+    } else if (minMatches == 0) {
       auto slv_out = std::make_shared<ScannerLightView>(*input_slv);
       slv_out->clear();
       the_match->_view = slv_out;
+      if(_DEBUG)printf( "nom%zu<%s>: end_match count<0>\n", minMatches, name.c_str() );
       return the_match;
     }
+    OrkAssert(false); // should never get here?
+    if(_DEBUG)printf( "nom%zu<%s>: end_match (NOMATCH)\n", minMatches, name.c_str() );
+    return nullptr;
   };
   if (name == "") {
-    name = "zeroOrMore";
+    name = FormatString("nOrMore<%d>", minMatches);
   }
-  return createMatcher(match_fn, name);
+  auto matcher = createMatcher(match_fn, name);
+  matcher->_notif = [name](match_ptr_t the_match) { printf("MATCHED NOM<%s>\n", name.c_str()); };
+  return matcher;
+}
+
+matcher_ptr_t Parser::oneOrMore(matcher_ptr_t matcher,std::string name){
+  return nOrMore(matcher,1,name);
+}
+matcher_ptr_t Parser::zeroOrMore(matcher_ptr_t matcher,std::string name){
+  return nOrMore(matcher,0,name);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -310,6 +307,7 @@ matcher_ptr_t Parser::matcherForTokenClassID(uint64_t tokclass, std::string name
       auto slv_out          = std::make_shared<ScannerLightView>(*slv);
       slv_out->_end         = slv_out->_start;
       the_match->_view      = slv_out;
+      slv_out->validate();
       return the_match;
     }
     return nullptr;
@@ -333,6 +331,7 @@ matcher_ptr_t Parser::matcherForWord(std::string word) {
       auto the_match      = std::make_shared<Match>();
       the_match->_matcher = par_matcher;
       the_match->_view    = slv;
+      slv->validate();
       return the_match;
     } else {
       return nullptr;
@@ -347,6 +346,7 @@ matcher_ptr_t Parser::matcherForWord(std::string word) {
 
 match_ptr_t Parser::_match(matcher_ptr_t matcher, scannerlightview_constptr_t inp_view) {
   _matcherstack.push(matcher);
+  inp_view->validate();
   auto match = matcher->_match_fn(matcher, inp_view);
   if (match and matcher->_notif) {
     matcher->_notif(match);
