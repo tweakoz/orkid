@@ -117,7 +117,7 @@ void Parser::sequence(matcher_ptr_t matcher, std::vector<matcher_ptr_t> sub_matc
     size_t num_iter   = sub_matchers.size();
     for (auto sub_matcher : sub_matchers) {
       auto match_item = _match(sub_matcher, slv_iter);
-      log_begin("SEQ<%s> : match_item iter<%zu/%zu> ", matcher->_name.c_str(), iter, num_iter);
+      log_begin("SEQ<%s> : match_item<%s> iter<%zu/%zu> ", matcher->_name.c_str(), sub_matcher->_name.c_str(), iter, num_iter);
       if (match_item) {
         size_t item_index = the_sequence->_items.size();
         if (match_item->_view->empty()) {
