@@ -65,7 +65,6 @@ void loadScannerRules(scanner_ptr_t s) { //
 ///////////////////////////////////////////////////////////////////////////////
 
 matcher_ptr_t loadGrammar(parser_ptr_t p) { //
-printf( "A\n" );
   auto plus      = p->matcherForTokenClass(TokenClass::PLUS, "plus");
   auto minus      = p->matcherForTokenClass(TokenClass::MINUS, "minus");
   auto star      = p->matcherForTokenClass(TokenClass::STAR, "star");
@@ -84,7 +83,6 @@ printf( "A\n" );
   auto dt_float = p->matcherForWord("float");
   auto dt_int   = p->matcherForWord("int");
   ///////////////////////////////////////////////////////////
-printf( "B\n" );
   auto datatype = p->oneOf({
       dt_float,
       dt_int,
@@ -109,7 +107,6 @@ printf( "B\n" );
       { datatype,
         kworid
       });
-printf( "C\n" );
   ///////////////////////////////////////////////////////////
   auto variableReference = p->sequence(
       "variableReference",
@@ -129,7 +126,6 @@ printf( "C\n" );
      p->sequence({ primary,p->zeroOrMore(p->sequence({star,primary},"mul1sp"),"mul1zom") }, "mul1")
      //p->sequence({ primary,p->optional(p->sequence({slash,primary})) }),
   });
-printf( "D\n" );
   ///////////////////////////////////////////////////////////
   auto additive = p->oneOf("additive",{
       p->sequence({ multiplicative,plus,multiplicative }, "add1"),
@@ -147,14 +143,13 @@ printf( "D\n" );
           equals,
           expression
       });
-printf( "E\n" );
   ///////////////////////////////////////////////////////////
   auto statement = p->sequence({
     p->optional(assignment_statement,"st1"),
     semicolon
   });
   ///////////////////////////////////////////////////////////
-  auto seq = p->sequence(
+  auto funcdef = p->sequence(
       "funcdef",
       {//
        kw_function,
@@ -165,13 +160,29 @@ printf( "E\n" );
        lcurly,
        p->zeroOrMore(statement,"fnd_statements"),
        rcurly});
-printf( "F\n" );
   ///////////////////////////////////////////////////////////
-  seq->_notif = [=](match_ptr_t match) {
-    printf("MATCHED sequence<%s>\n", seq->_name.c_str());
-    match->_view->dump("seq");
-    match->dump(0);
+  funcdef->_notif = [=](match_ptr_t match) {
+    //match->_view->dump("funcdef");
+    //match->dump(0);
+
+    auto seq = match->_impl.get<sequence_ptr_t>();
+    auto fn_name = seq->_items[1]->_impl.get<classmatch_ptr_t>();
+    auto args = seq->_items[3]->_impl.get<n_or_more_ptr_t>();
+    auto stas = seq->_items[6]->_impl.get<n_or_more_ptr_t>();
+    printf("MATCHED funcdef<%s> function<%s> numargs<%d> numstatements<%d>\n", //
+           funcdef->_name.c_str(), // 
+           fn_name->_token->text.c_str(), //
+           args->_items.size(), //
+           stas->_items.size() );
+
   };
+  ///////////////////////////////////////////////////////////
+  auto seq = p->zeroOrMore(funcdef,"funcdefs");
+  ///////////////////////////////////////////////////////////
+
+
+
+  ///////////////////////////////////////////////////////////
   return seq;
 }
 
@@ -191,11 +202,13 @@ TEST(parser1) {
         // hello world
         ///////////////////
         function abc(int x, float y) {
-            b = (a+v)*7.0;
+            float a = 1.0;
+            float v = 2.0;
+            float b = (a+v)*7.0;
         }
-        //function def() {
-        //    float X = (1.0+2.3)*7.0;
-        //}
+        function def() {
+            float X = (1.0+2.3)*7.0;
+        }
     )";
   s->scanString(parse_str);
   s->discardTokensOfClass(uint64_t(TokenClass::WHITESPACE));

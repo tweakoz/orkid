@@ -15,6 +15,8 @@ struct Matcher;
 struct Parser;
 struct NOrMore;
 struct Optional;
+struct WordMatch;
+struct ClassMatch;
 
 using match_ptr_t                 = std::shared_ptr<Match>;
 using matcher_ptr_t               = std::shared_ptr<Matcher>;
@@ -26,6 +28,8 @@ using sequence_ptr_t              = std::shared_ptr<Sequence>;
 using group_ptr_t                 = std::shared_ptr<Group>;
 using n_or_more_ptr_t             = std::shared_ptr<NOrMore>;
 using optional_ptr_t              = std::shared_ptr<Optional>;
+using wordmatch_ptr_t             = std::shared_ptr<WordMatch>;
+using classmatch_ptr_t            = std::shared_ptr<ClassMatch>;
 
 //////////////////////////////////////////////////////////////
 
@@ -57,6 +61,13 @@ struct NOrMore{
 };
 struct Optional{
   match_ptr_t _subitem;
+};
+struct WordMatch{
+  const Token* _token = nullptr;
+};
+struct ClassMatch{
+  uint64_t _tokclass = 0;
+  const Token* _token = nullptr;
 };
 
 //////////////////////////////////////////////////////////////

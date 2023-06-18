@@ -17,7 +17,7 @@
 namespace ork {
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-static constexpr bool _DEBUG = true;
+static constexpr bool _DEBUG = false;
 
 void Match::dump(int indent) const {
 
@@ -361,10 +361,14 @@ matcher_ptr_t Parser::zeroOrMore(matcher_ptr_t matcher, std::string name) {
 
 matcher_ptr_t Parser::matcherForTokenClassID(uint64_t tokclass, std::string name) {
   auto match_fn = [tokclass](matcher_ptr_t par_matcher, scannerlightview_constptr_t slv) -> match_ptr_t {
-    auto slv_tokclass = slv->token(0)->_class;
+    auto tok0 = slv->token(0);
+    auto slv_tokclass = tok0->_class;
     if (slv_tokclass == tokclass) {
       match_ptr_t the_match = std::make_shared<Match>();
+      auto the_classmatch = the_match->_impl.makeShared<ClassMatch>();
       the_match->_matcher   = par_matcher;
+      the_classmatch->_tokclass = tokclass;
+      the_classmatch->_token = tok0;
       auto slv_out          = std::make_shared<ScannerLightView>(*slv);
       slv_out->_end         = slv_out->_start;
       the_match->_view      = slv_out;
@@ -391,6 +395,8 @@ matcher_ptr_t Parser::matcherForWord(std::string word) {
       auto slv            = std::make_shared<ScannerLightView>(*inp_view);
       slv->_end           = slv->_start;
       auto the_match      = std::make_shared<Match>();
+      auto the_wordmatch = the_match->_impl.makeShared<WordMatch>();
+      the_wordmatch->_token = tok0;
       the_match->_matcher = par_matcher;
       the_match->_view    = slv;
       slv->validate();
