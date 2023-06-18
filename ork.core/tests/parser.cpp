@@ -122,18 +122,18 @@ printf( "C\n" );
     floattok,
     inttok,
     variableReference,
-    p->sequence({ lparen,expression,rparen }),
+    p->sequence({ lparen,expression,rparen },"term"),
   });
   ///////////////////////////////////////////////////////////
   auto multiplicative = p->oneOf("multiplicative",{
-     p->sequence({ primary,p->zeroOrMore(p->sequence({star,primary})) })
+     p->sequence({ primary,p->zeroOrMore(p->sequence({star,primary})) }, "mul1")
      //p->sequence({ primary,p->optional(p->sequence({slash,primary})) }),
   });
 printf( "D\n" );
   ///////////////////////////////////////////////////////////
   auto additive = p->oneOf("additive",{
-      p->sequence({ multiplicative,plus,multiplicative }),
-      p->sequence({ multiplicative,minus,multiplicative }),
+      p->sequence({ multiplicative,plus,multiplicative }, "add1"),
+      p->sequence({ multiplicative,minus,multiplicative }, "add2"),
       multiplicative
   });
   ///////////////////////////////////////////////////////////
@@ -143,15 +143,15 @@ printf( "D\n" );
       "assignment_statement",
       {
           //
-          p->oneOf({variableDeclaration,variableReference}),
+          p->oneOf({variableDeclaration,variableReference},"ass1of"),
           equals,
           expression
       });
 printf( "E\n" );
   ///////////////////////////////////////////////////////////
   auto statement = p->sequence({
-    p->optional(assignment_statement),
-    p->optional(semicolon)
+    p->optional(assignment_statement,"st1"),
+    p->optional(semicolon,"st2")
   });
   ///////////////////////////////////////////////////////////
   auto seq = p->sequence(

@@ -84,6 +84,9 @@ struct Parser {
   match_ptr_t match(scannerlightview_constptr_t inp_view, matcher_ptr_t top);
   match_ptr_t _match(matcher_ptr_t matcher, scannerlightview_constptr_t inp_view);
 
+  void _log_valist(const char *pMsgFormat, va_list args) const;
+  void log(const char *pMsgFormat, ...) const;
+
   std::stack<matcher_ptr_t> _matcherstack;
   std::stack<const Match*> _matchstack;
   std::unordered_set<matcher_ptr_t> _matchers;

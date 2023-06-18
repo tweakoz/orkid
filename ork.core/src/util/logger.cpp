@@ -1,9 +1,5 @@
 #include <ork/util/logger.h>
 
-#if !defined( WIN32)
-#define vsnprintf_s vsnprintf
-#endif
-
 namespace ork {
 
     bool _ENABLE_LOGGING = true;
