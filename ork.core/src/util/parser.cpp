@@ -213,12 +213,15 @@ matcher_ptr_t Parser::group(std::vector<matcher_ptr_t> matchers, std::string nam
 
 matcher_ptr_t Parser::oneOf(std::vector<matcher_ptr_t> matchers, std::string name) {
   auto match_fn = [=](matcher_ptr_t par_matcher, scannerlightview_constptr_t slv) -> match_ptr_t {
+    if(_DEBUG)printf( "oneOf<%s>: begin num_subs<%zu>\n", name.c_str(), matchers.size() );
     for (auto sub_matcher : matchers) {
       auto sub_match = _match(sub_matcher, slv);
       if (sub_match) {
+        if(_DEBUG)printf( "oneOf<%s>: MATCH sub_matcher<%s>\n", name.c_str(), sub_matcher->_name.c_str() );
         return sub_match;
       }
     }
+    if(_DEBUG)printf( "oneOf<%s>: NOMATCH\n", name.c_str() );
     return nullptr;
   };
   if (name == "") {

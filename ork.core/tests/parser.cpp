@@ -191,7 +191,7 @@ TEST(parser1) {
         // hello world
         ///////////////////
         function abc(int x, float y) {
-            //b = (a+v)*7.0;
+            b = (a+v)*7.0;
         }
         function def() {
         //    float X = (1.0+2.3)*7.0;
