@@ -109,10 +109,11 @@ void Parser::sequence(matcher_ptr_t matcher, std::vector<matcher_ptr_t> sub_matc
     the_match->_view  = slv_match;
     for (auto sub_matcher : sub_matchers) {
       auto match_item = _match(sub_matcher, slv_iter);
-      if(_DEBUG)printf( "sequence<%s>: SLV_match match_item<%p>\n", matcher->_name.c_str(), (void*) match_item.get() );
+      //if(_DEBUG)printf( "sequence<%s>: SLV_match match_item<%p>\n", matcher->_name.c_str(), (void*) match_item.get() );
       if (match_item) {
         size_t item_index = the_sequence->_items.size();
         if (match_item->_view->empty()) {
+          if(_DEBUG)printf( "sequence<%s> matchitem<%zu:EMPTY>\n", matcher->_name.c_str(), item_index );
         }
         else{
           if(0)slv_iter->dump("slv_iter_pre");
@@ -120,8 +121,8 @@ void Parser::sequence(matcher_ptr_t matcher, std::vector<matcher_ptr_t> sub_matc
           slv_match->_end  = match_item->_view->_end;
           slv_iter->_start = match_item->_view->_end + 1;
           if(0)slv_iter->dump("slv_iter_post");
-          slv_iter->validate();
-          slv_match->validate();
+          //slv_iter->validate();
+          //slv_match->validate();
         }
         the_sequence->_items.push_back(match_item);
         OrkAssert(match_item->_view);
@@ -131,7 +132,26 @@ void Parser::sequence(matcher_ptr_t matcher, std::vector<matcher_ptr_t> sub_matc
       }
     }
     if(the_match){
-        if(_DEBUG)printf( "sequence<%s> end_match the_match<%p> st<%zu> en<%zu>\n", matcher->_name.c_str(), (void*) the_match.get(), the_match->_view->_start, the_match->_view->_end );
+      /////////////////////////////////////////////////
+      // prune
+      /////////////////////////////////////////////////
+      int num_matches = the_sequence->_items.size();
+      int num_emptys = 0;
+      for (auto match : the_sequence->_items) {
+        if(match->_view->empty()){
+          num_emptys++;
+        }
+      }
+      if(num_emptys == num_matches){
+        the_match->_view->clear();
+      }
+      /////////////////////////////////////////////////
+        if(_DEBUG)printf( "sequence<%s> end_match the_match<%p> st<%zu> en<%zu> count<%zu>\n", //
+                          matcher->_name.c_str(), //
+                          (void*) the_match.get(), // 
+                          the_match->_view->_start, // 
+                          the_match->_view->_end, // 
+                          the_sequence->_items.size() );
     }
     else{
         if(_DEBUG)printf( "sequence<%s> end_match NO_MATCH\n", matcher->_name.c_str() );
@@ -232,13 +252,23 @@ matcher_ptr_t Parser::nOrMore(matcher_ptr_t sub_matcher, size_t minMatches, std:
         item_index++;
         slv_iter->_start = sub_match->_view->_end + 1;
         keep_going       = slv_iter->_start <= slv_iter->_end;
-        if(_DEBUG)printf( "nom%d<%s> match<%d:%s> start<%zu> end<%zu>\n", 
-                int(minMatches), 
-                name.c_str(), 
-                item_index, 
-                sub_match->_matcher->_name.c_str(), 
-                sub_match->_view->_start, 
-                sub_match->_view->_end );
+        if(sub_match->_view->empty()){
+          keep_going = false;
+          if(_DEBUG)printf( "nom%d<%s> match<%d:%s> EMPTY\n", // 
+                  int(minMatches), 
+                  name.c_str(), 
+                  item_index, 
+                  sub_match->_matcher->_name.c_str());
+        }
+        else{
+          if(_DEBUG)printf( "nom%d<%s> match<%d:%s> start<%zu> end<%zu>\n", 
+                  int(minMatches), 
+                  name.c_str(), 
+                  item_index, 
+                  sub_match->_matcher->_name.c_str(), 
+                  sub_match->_view->_start, 
+                  sub_match->_view->_end );
+        }
       }
     }
     if (the_nom->_items.size() >= minMatches) {
