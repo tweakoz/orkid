@@ -17,7 +17,7 @@
 namespace ork {
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-static constexpr bool _DEBUG = false;
+static constexpr bool _DEBUG = true;
 
 void Match::dump(int indent) const {
 
@@ -282,11 +282,12 @@ matcher_ptr_t Parser::oneOf(std::string name, std::vector<matcher_ptr_t> matcher
 }
 //////////////////////////////////////////////////////////////////////
 
-matcher_ptr_t Parser::nOrMore(matcher_ptr_t sub_matcher, size_t minMatches, std::string name) {
+matcher_ptr_t Parser::nOrMore(matcher_ptr_t sub_matcher, size_t minMatches, std::string name,bool mustConsumeAll) {
   auto match_fn = [=](matcher_ptr_t par_matcher, scannerlightview_constptr_t input_slv) -> match_ptr_t {
     match_ptr_t the_match = std::make_shared<Match>();
     the_match->_matcher   = par_matcher;
     auto the_nom          = the_match->_impl.makeShared<NOrMore>();
+    the_nom->_mustConsumeAll = mustConsumeAll;
     the_nom->_minmatches  = minMatches;
     bool keep_going       = true;
     auto slv_iter         = std::make_shared<ScannerLightView>(*input_slv);
@@ -330,8 +331,15 @@ matcher_ptr_t Parser::nOrMore(matcher_ptr_t sub_matcher, size_t minMatches, std:
         slv_out->validate();
       }
       the_match->_view = slv_out;
-      auto match_str = deco::string("MATCH", 0, 255, 0);
-      log( "NOM%zu<%s>: %s count<%zu> st<%zu> en<%zu>", minMatches, name.c_str(), match_str.c_str(), the_nom->_items.size(), slv_out->_start, slv_out->_end );
+      if((slv_out->_end < input_slv->_end) and the_nom->_mustConsumeAll){
+        auto no_match_str = deco::string("NO-MATCH (not all tokens consumed)", 255, 0, 0);
+        log("NOM%zu<%s>: %s count<%zu>", minMatches, name.c_str(), no_match_str.c_str(), the_nom->_items.size());
+        return nullptr;
+      }
+      else{
+        auto match_str = deco::string("MATCH", 0, 255, 0);
+        log( "NOM%zu<%s>: %s count<%zu> st<%zu> en<%zu> slen<%d>", minMatches, name.c_str(), match_str.c_str(), the_nom->_items.size(), slv_out->_start, slv_out->_end, input_slv->_end );
+      }
       return the_match;
     } else if (minMatches == 0) {
       auto slv_out = std::make_shared<ScannerLightView>(*input_slv);
@@ -359,8 +367,8 @@ matcher_ptr_t Parser::nOrMore(matcher_ptr_t sub_matcher, size_t minMatches, std:
 matcher_ptr_t Parser::oneOrMore(matcher_ptr_t matcher, std::string name) {
   return nOrMore(matcher, 1, name);
 }
-matcher_ptr_t Parser::zeroOrMore(matcher_ptr_t matcher, std::string name) {
-  return nOrMore(matcher, 0, name);
+matcher_ptr_t Parser::zeroOrMore(matcher_ptr_t matcher, std::string name,bool mustConsumeAll) {
+  return nOrMore(matcher, 0, name, mustConsumeAll);
 }
 
 //////////////////////////////////////////////////////////////

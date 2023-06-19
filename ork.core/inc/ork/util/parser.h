@@ -61,6 +61,7 @@ struct Group{
 struct NOrMore{
   std::vector<match_ptr_t> _items;
   size_t _minmatches = 0;
+  bool _mustConsumeAll = false;
 };
 struct Optional{
   match_ptr_t _subitem;
@@ -91,8 +92,8 @@ struct Parser {
   //
   matcher_ptr_t group(std::vector<matcher_ptr_t> sub_matchers,std::string name="");
   matcher_ptr_t oneOrMore(matcher_ptr_t matcher,std::string name="");
-  matcher_ptr_t zeroOrMore(matcher_ptr_t matcher,std::string name="");
-  matcher_ptr_t nOrMore(matcher_ptr_t sub_matcher, size_t minMatches, std::string name="");
+  matcher_ptr_t zeroOrMore(matcher_ptr_t matcher,std::string name="",bool mustConsumeAll=false);
+  matcher_ptr_t nOrMore(matcher_ptr_t sub_matcher, size_t minMatches, std::string name="",bool mustConsumeAll=false);
   matcher_ptr_t optional(matcher_ptr_t matcher,std::string name="");
   //
   matcher_ptr_t createMatcher(matcher_fn_t match_fn,std::string name="");

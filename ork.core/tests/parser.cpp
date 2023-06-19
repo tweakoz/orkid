@@ -215,9 +215,12 @@ struct MyParser : public Parser {
          equals,
          expression});
     ///////////////////////////////////////////////////////////
-    auto statement    = sequence({optional(assignment_statement, "st1"), semicolon});
+    auto statement    = oneOf({
+        sequence({assignment_statement, semicolon}),
+        semicolon});
+
     statement->_notif = [=](match_ptr_t match) {
-      auto the_seq              = match->_impl.get<sequence_ptr_t>();
+      /*auto the_seq              = match->_impl.get<sequence_ptr_t>();
       auto the_opt              = the_seq->_items[0]->_impl.get<optional_ptr_t>();
       auto assignment_statement = the_opt->_subitem->_impl.get<sequence_ptr_t>();
       if (assignment_statement) {
@@ -229,7 +232,7 @@ struct MyParser : public Parser {
         } else {
           OrkAssert(false);
         }
-      }
+      }*/
     };
     ///////////////////////////////////////////////////////////
     auto funcdef = sequence(
@@ -269,14 +272,14 @@ struct MyParser : public Parser {
 
       int i = 0;
       for (auto sta : stas->_items) {
-        auto staseq   = sta->_impl.get<sequence_ptr_t>();
-        size_t stalen = staseq->_items.size();
-        printf("  STATEMENT<%d> SEQLEN<%zu>\n", i, stalen);
+        //auto staseq   = sta->_impl.get<sequence_ptr_t>();
+        //size_t stalen = staseq->_items.size();
+        //printf("  STATEMENT<%d> SEQLEN<%zu>\n", i, stalen);
         i++;
       }
     };
     ///////////////////////////////////////////////////////////
-    _fn_matcher = zeroOrMore(funcdef, "funcdefs");
+    _fn_matcher = zeroOrMore(funcdef, "funcdefs",true);
     ///////////////////////////////////////////////////////////
   }
 
