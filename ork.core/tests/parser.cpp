@@ -134,7 +134,7 @@ matcher_ptr_t loadGrammar(parser_ptr_t p) { //
   ///////////////////////////////////////////////////////////
   auto expression = p->declare("expression");
   ///////////////////////////////////////////////////////////
-  auto term = p->sequence({lparen, expression, rparen}, "term");
+  auto term    = p->sequence({lparen, expression, rparen}, "term");
   term->_notif = [=](match_ptr_t match) {
     auto ast_node = match->_user.makeShared<Term>();
     auto selected = match->_impl.get<sequence_ptr_t>()->_items[1];
@@ -146,11 +146,13 @@ matcher_ptr_t loadGrammar(parser_ptr_t p) { //
   auto primary = p->oneOf(
       "primary",
       {
+          //
           floattok,
           inttok,
           variableReference,
           term,
       });
+  //
   primary->_notif = [=](match_ptr_t match) {
     auto ast_node = match->_user.makeShared<Primary>();
     auto selected = match->_impl.get<oneof_ptr_t>()->_subitem;
@@ -165,15 +167,17 @@ matcher_ptr_t loadGrammar(parser_ptr_t p) { //
     }
   };
   ///////////////////////////////////////////////////////////
+  auto mul1sp         = p->sequence({star, primary}, "mul1sp");
+  auto mul1zom        = p->zeroOrMore(mul1sp, "mul1zom");
   auto multiplicative = p->oneOf(
       "multiplicative",
       {
-          p->sequence({primary, p->zeroOrMore(p->sequence({star, primary}, "mul1sp"), "mul1zom")}, "mul1")
+          p->sequence({primary, mul1zom}, "mul1")
           // p->sequence({ primary,p->optional(p->sequence({slash,primary})) }),
       });
+  //
   multiplicative->_notif = [=](match_ptr_t match) {
     auto ast_node = match->_user.makeShared<Multiplicative>();
-
     auto selected = match->_impl.get<oneof_ptr_t>()->_subitem;
     auto sel_seq  = selected->_impl.get<sequence_ptr_t>();
     auto primary  = sel_seq->_items[0]->_user.getShared<Primary>();
@@ -181,17 +185,20 @@ matcher_ptr_t loadGrammar(parser_ptr_t p) { //
   ///////////////////////////////////////////////////////////
   auto additive = p->oneOf(
       "additive",
-      {p->sequence({multiplicative, plus, multiplicative}, "add1"),
+      {//
+       p->sequence({multiplicative, plus, multiplicative}, "add1"),
        p->sequence({multiplicative, minus, multiplicative}, "add2"),
        multiplicative});
+  //
   additive->_notif = [=](match_ptr_t match) {
     auto ast_node = match->_user.makeShared<Additive>();
-
     auto selected = match->_impl.get<oneof_ptr_t>()->_subitem;
   };
   ///////////////////////////////////////////////////////////
   p->sequence(expression, {additive});
-  expression->_notif = [=](match_ptr_t match) { match->_user.makeShared<Expression>(); };
+  expression->_notif = [=](match_ptr_t match) { //
+    match->_user.makeShared<Expression>();
+  };
   ///////////////////////////////////////////////////////////
   auto assignment_statement = p->sequence(
       "assignment_statement",
@@ -207,10 +214,8 @@ matcher_ptr_t loadGrammar(parser_ptr_t p) { //
     auto assignment_statement = the_opt->_subitem->_impl.get<sequence_ptr_t>();
     if (assignment_statement) {
       auto ast_node = match->_user.makeShared<AssignmentStatement>();
-
-      auto expr = assignment_statement->_items[2]->_impl.get<sequence_ptr_t>();
-
-      auto var = assignment_statement->_items[0]->_impl.get<oneof_ptr_t>()->_subitem;
+      auto expr     = assignment_statement->_items[2]->_impl.get<sequence_ptr_t>();
+      auto var      = assignment_statement->_items[0]->_impl.get<oneof_ptr_t>()->_subitem;
       if (var->_matcher == variableDeclaration) {
       } else if (var->_matcher == variableReference) {
       } else {
