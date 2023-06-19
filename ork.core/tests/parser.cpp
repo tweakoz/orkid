@@ -66,6 +66,7 @@ void loadScannerRules(scanner_ptr_t s) { //
 // AST
 ///////////////////////////////////////////////////////////////////////////////
 
+namespace AST {
 struct AstNode {
   virtual ~AstNode() {
   }
@@ -84,6 +85,7 @@ struct FloatLiteral : public NumericLiteral {};
 struct IntegerLiteral : public NumericLiteral {};
 struct Term : public AstNode {};
 
+} // namespace AST
 ///////////////////////////////////////////////////////////////////////////////
 
 struct MyParser : public Parser {
@@ -111,8 +113,8 @@ struct MyParser : public Parser {
     auto dt_float = matcherForWord("float");
     auto dt_int   = matcherForWord("int");
     ///////////////////////////////////////////////////////////
-    dt_float->_notif = [=](match_ptr_t match) { auto ast_node = match->_user.makeShared<FloatLiteral>(); };
-    dt_int->_notif   = [=](match_ptr_t match) { auto ast_node = match->_user.makeShared<IntegerLiteral>(); };
+    dt_float->_notif = [=](match_ptr_t match) { auto ast_node = match->_user.makeShared<AST::FloatLiteral>(); };
+    dt_int->_notif   = [=](match_ptr_t match) { auto ast_node = match->_user.makeShared<AST::IntegerLiteral>(); };
     ///////////////////////////////////////////////////////////
     auto datatype = oneOf({
         dt_float,
@@ -136,16 +138,16 @@ struct MyParser : public Parser {
     auto variableDeclaration = sequence("variableDeclaration", {datatype, kworid});
     ///////////////////////////////////////////////////////////
     auto variableReference    = sequence("variableReference", {kworid});
-    variableReference->_notif = [=](match_ptr_t match) { match->_user.makeShared<VariableReference>(); };
+    variableReference->_notif = [=](match_ptr_t match) { match->_user.makeShared<AST::VariableReference>(); };
     ///////////////////////////////////////////////////////////
     auto expression = declare("expression");
     ///////////////////////////////////////////////////////////
     auto term    = sequence({lparen, expression, rparen}, "term");
     term->_notif = [=](match_ptr_t match) {
-      auto ast_node = match->_user.makeShared<Term>();
+      auto ast_node = match->_user.makeShared<AST::Term>();
       auto selected = match->_impl.get<sequence_ptr_t>()->_items[1];
       if (selected->_matcher == expression) {
-        auto ast_expr = selected->_user.getShared<Expression>();
+        auto ast_expr = selected->_user.getShared<AST::Expression>();
       }
     };
     ///////////////////////////////////////////////////////////
@@ -160,16 +162,16 @@ struct MyParser : public Parser {
         });
     //
     primary->_notif = [=](match_ptr_t match) {
-      auto ast_node = match->_user.makeShared<Primary>();
+      auto ast_node = match->_user.makeShared<AST::Primary>();
       auto selected = match->_impl.get<oneof_ptr_t>()->_subitem;
       if (selected->_matcher == floattok) {
-        auto ast_float = selected->_user.getShared<FloatLiteral>();
+        auto ast_float = selected->_user.getShared<AST::FloatLiteral>();
       } else if (selected->_matcher == inttok) {
-        auto ast_int = selected->_user.getShared<IntegerLiteral>();
+        auto ast_int = selected->_user.getShared<AST::IntegerLiteral>();
       } else if (selected->_matcher == variableReference) {
-        auto ast_varref = selected->_user.getShared<VariableReference>();
+        auto ast_varref = selected->_user.getShared<AST::VariableReference>();
       } else if (selected->_matcher == term) {
-        auto ast_term = selected->_user.getShared<Term>();
+        auto ast_term = selected->_user.getShared<AST::Term>();
       }
     };
     ///////////////////////////////////////////////////////////
@@ -183,10 +185,10 @@ struct MyParser : public Parser {
         });
     //
     multiplicative->_notif = [=](match_ptr_t match) {
-      auto ast_node = match->_user.makeShared<Multiplicative>();
+      auto ast_node = match->_user.makeShared<AST::Multiplicative>();
       auto selected = match->_impl.get<oneof_ptr_t>()->_subitem;
       auto sel_seq  = selected->_impl.get<sequence_ptr_t>();
-      auto primary  = sel_seq->_items[0]->_user.getShared<Primary>();
+      auto primary  = sel_seq->_items[0]->_user.getShared<AST::Primary>();
     };
     ///////////////////////////////////////////////////////////
     auto additive = oneOf(
@@ -197,13 +199,13 @@ struct MyParser : public Parser {
          multiplicative});
     //
     additive->_notif = [=](match_ptr_t match) {
-      auto ast_node = match->_user.makeShared<Additive>();
+      auto ast_node = match->_user.makeShared<AST::Additive>();
       auto selected = match->_impl.get<oneof_ptr_t>()->_subitem;
     };
     ///////////////////////////////////////////////////////////
     sequence(expression, {additive});
     expression->_notif = [=](match_ptr_t match) { //
-      match->_user.makeShared<Expression>();
+      match->_user.makeShared<AST::Expression>();
     };
     ///////////////////////////////////////////////////////////
     auto assignment_statement = sequence(
@@ -219,7 +221,7 @@ struct MyParser : public Parser {
       auto the_opt              = the_seq->_items[0]->_impl.get<optional_ptr_t>();
       auto assignment_statement = the_opt->_subitem->_impl.get<sequence_ptr_t>();
       if (assignment_statement) {
-        auto ast_node = match->_user.makeShared<AssignmentStatement>();
+        auto ast_node = match->_user.makeShared<AST::AssignmentStatement>();
         auto expr     = assignment_statement->_items[2]->_impl.get<sequence_ptr_t>();
         auto var      = assignment_statement->_items[0]->_impl.get<oneof_ptr_t>()->_subitem;
         if (var->_matcher == variableDeclaration) {
