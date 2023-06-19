@@ -67,32 +67,29 @@ void loadScannerRules(scanner_ptr_t s) { //
 ///////////////////////////////////////////////////////////////////////////////
 
 struct AstNode {
-    virtual ~AstNode() {}
+  virtual ~AstNode() {
+  }
 };
 
-struct Statement : public AstNode {
-
-};
-
-struct AssignmentStatement : public Statement{
-
-};
-struct Additive : public AstNode {
-
-};
-struct Multiplicative : public AstNode {
-
-};
-struct Primary : public AstNode {
-
-};
+struct Statement : public AstNode {};
+struct VariableReference : public AstNode {};
+struct AssignmentStatement : public Statement {};
+struct Expression : public AstNode {};
+struct Additive : public AstNode {};
+struct Multiplicative : public AstNode {};
+struct Primary : public AstNode {};
+struct Literal : public AstNode {};
+struct NumericLiteral : public AstNode {};
+struct FloatLiteral : public NumericLiteral {};
+struct IntegerLiteral : public NumericLiteral {};
+struct Term : public AstNode {};
 
 ///////////////////////////////////////////////////////////////////////////////
 
 matcher_ptr_t loadGrammar(parser_ptr_t p) { //
-  auto plus      = p->matcherForTokenClass(TokenClass::PLUS, "plus");
-  auto minus      = p->matcherForTokenClass(TokenClass::MINUS, "minus");
-  auto star      = p->matcherForTokenClass(TokenClass::STAR, "star");
+  auto plus        = p->matcherForTokenClass(TokenClass::PLUS, "plus");
+  auto minus       = p->matcherForTokenClass(TokenClass::MINUS, "minus");
+  auto star        = p->matcherForTokenClass(TokenClass::STAR, "star");
   auto equals      = p->matcherForTokenClass(TokenClass::EQUALS, "equals");
   auto semicolon   = p->matcherForTokenClass(TokenClass::SEMICOLON, "semicolon");
   auto comma       = p->matcherForTokenClass(TokenClass::COMMA, "comma");
@@ -107,6 +104,9 @@ matcher_ptr_t loadGrammar(parser_ptr_t p) { //
   ///////////////////////////////////////////////////////////
   auto dt_float = p->matcherForWord("float");
   auto dt_int   = p->matcherForWord("int");
+  ///////////////////////////////////////////////////////////
+  dt_float->_notif = [=](match_ptr_t match) { auto ast_node = match->_user.makeShared<FloatLiteral>(); };
+  dt_int->_notif   = [=](match_ptr_t match) { auto ast_node = match->_user.makeShared<IntegerLiteral>(); };
   ///////////////////////////////////////////////////////////
   auto datatype = p->oneOf({
       dt_float,
@@ -127,86 +127,95 @@ matcher_ptr_t loadGrammar(parser_ptr_t p) { //
       inttok,
   });
   ///////////////////////////////////////////////////////////
-  auto variableDeclaration = p->sequence(
-      "variableDeclaration",
-      { datatype,
-        kworid
-      });
+  auto variableDeclaration = p->sequence("variableDeclaration", {datatype, kworid});
   ///////////////////////////////////////////////////////////
-  auto variableReference = p->sequence(
-      "variableReference",
-      { kworid
-      });
+  auto variableReference    = p->sequence("variableReference", {kworid});
+  variableReference->_notif = [=](match_ptr_t match) { match->_user.makeShared<VariableReference>(); };
   ///////////////////////////////////////////////////////////
-  auto expression = p->declare( "expression" );
+  auto expression = p->declare("expression");
   ///////////////////////////////////////////////////////////
-  auto primary = p->oneOf("primary",{
-    floattok,
-    inttok,
-    variableReference,
-    p->sequence({ lparen,expression,rparen },"term"),
-  });
-  primary->_notif = [=](match_ptr_t match) {
-    auto ast_node = match->_user.makeShared<Primary>();
-
-    auto selected = match->_impl.get<oneof_ptr_t>()->_subitem;
+  auto term = p->sequence({lparen, expression, rparen}, "term");
+  term->_notif = [=](match_ptr_t match) {
+    auto ast_node = match->_user.makeShared<Term>();
+    auto selected = match->_impl.get<sequence_ptr_t>()->_items[1];
+    if (selected->_matcher == expression) {
+      auto ast_expr = selected->_user.getShared<Expression>();
+    }
   };
   ///////////////////////////////////////////////////////////
-  auto multiplicative = p->oneOf("multiplicative",{
-     p->sequence({ primary,p->zeroOrMore(p->sequence({star,primary},"mul1sp"),"mul1zom") }, "mul1")
-     //p->sequence({ primary,p->optional(p->sequence({slash,primary})) }),
-  });
+  auto primary = p->oneOf(
+      "primary",
+      {
+          floattok,
+          inttok,
+          variableReference,
+          term,
+      });
+  primary->_notif = [=](match_ptr_t match) {
+    auto ast_node = match->_user.makeShared<Primary>();
+    auto selected = match->_impl.get<oneof_ptr_t>()->_subitem;
+    if (selected->_matcher == floattok) {
+      auto ast_float = selected->_user.getShared<FloatLiteral>();
+    } else if (selected->_matcher == inttok) {
+      auto ast_int = selected->_user.getShared<IntegerLiteral>();
+    } else if (selected->_matcher == variableReference) {
+      auto ast_varref = selected->_user.getShared<VariableReference>();
+    } else if (selected->_matcher == term) {
+      auto ast_term = selected->_user.getShared<Term>();
+    }
+  };
+  ///////////////////////////////////////////////////////////
+  auto multiplicative = p->oneOf(
+      "multiplicative",
+      {
+          p->sequence({primary, p->zeroOrMore(p->sequence({star, primary}, "mul1sp"), "mul1zom")}, "mul1")
+          // p->sequence({ primary,p->optional(p->sequence({slash,primary})) }),
+      });
   multiplicative->_notif = [=](match_ptr_t match) {
     auto ast_node = match->_user.makeShared<Multiplicative>();
 
     auto selected = match->_impl.get<oneof_ptr_t>()->_subitem;
-    auto sel_seq = selected->_impl.get<sequence_ptr_t>();
-    auto primary = sel_seq->_items[0]->_user.getShared<Primary>();
+    auto sel_seq  = selected->_impl.get<sequence_ptr_t>();
+    auto primary  = sel_seq->_items[0]->_user.getShared<Primary>();
   };
   ///////////////////////////////////////////////////////////
-  auto additive = p->oneOf("additive",{
-      p->sequence({ multiplicative,plus,multiplicative }, "add1"),
-      p->sequence({ multiplicative,minus,multiplicative }, "add2"),
-      multiplicative
-  });
+  auto additive = p->oneOf(
+      "additive",
+      {p->sequence({multiplicative, plus, multiplicative}, "add1"),
+       p->sequence({multiplicative, minus, multiplicative}, "add2"),
+       multiplicative});
   additive->_notif = [=](match_ptr_t match) {
     auto ast_node = match->_user.makeShared<Additive>();
 
     auto selected = match->_impl.get<oneof_ptr_t>()->_subitem;
   };
   ///////////////////////////////////////////////////////////
-  p->sequence( expression, { additive });
+  p->sequence(expression, {additive});
+  expression->_notif = [=](match_ptr_t match) { match->_user.makeShared<Expression>(); };
   ///////////////////////////////////////////////////////////
   auto assignment_statement = p->sequence(
       "assignment_statement",
-      {
-          //
-          p->oneOf({variableDeclaration,variableReference},"ass1of"),
-          equals,
-          expression
-      });
+      {//
+       p->oneOf({variableDeclaration, variableReference}, "ass1of"),
+       equals,
+       expression});
   ///////////////////////////////////////////////////////////
-  auto statement = p->sequence({
-    p->optional(assignment_statement,"st1"),
-    semicolon
-  });
+  auto statement    = p->sequence({p->optional(assignment_statement, "st1"), semicolon});
   statement->_notif = [=](match_ptr_t match) {
-    auto the_seq = match->_impl.get<sequence_ptr_t>();
-    auto the_opt = the_seq->_items[0]->_impl.get<optional_ptr_t>();
+    auto the_seq              = match->_impl.get<sequence_ptr_t>();
+    auto the_opt              = the_seq->_items[0]->_impl.get<optional_ptr_t>();
     auto assignment_statement = the_opt->_subitem->_impl.get<sequence_ptr_t>();
-    if(assignment_statement){
-        auto ast_node = match->_user.makeShared<AssignmentStatement>();
+    if (assignment_statement) {
+      auto ast_node = match->_user.makeShared<AssignmentStatement>();
 
-        auto expr = assignment_statement->_items[2]->_impl.get<sequence_ptr_t>();
+      auto expr = assignment_statement->_items[2]->_impl.get<sequence_ptr_t>();
 
-        auto var = assignment_statement->_items[0]->_impl.get<oneof_ptr_t>()->_subitem;
-        if(var->_matcher == variableDeclaration){
-        }
-        else if( var->_matcher == variableReference){
-        }
-        else{
-            OrkAssert(false);
-        }
+      auto var = assignment_statement->_items[0]->_impl.get<oneof_ptr_t>()->_subitem;
+      if (var->_matcher == variableDeclaration) {
+      } else if (var->_matcher == variableReference) {
+      } else {
+        OrkAssert(false);
+      }
     }
   };
   ///////////////////////////////////////////////////////////
@@ -216,47 +225,46 @@ matcher_ptr_t loadGrammar(parser_ptr_t p) { //
        kw_function,
        kworid,
        lparen,
-       p->zeroOrMore(argument_decl,"fnd_args"),
+       p->zeroOrMore(argument_decl, "fnd_args"),
        rparen,
        lcurly,
-       p->zeroOrMore(statement,"fnd_statements"),
+       p->zeroOrMore(statement, "fnd_statements"),
        rcurly});
   ///////////////////////////////////////////////////////////
   funcdef->_notif = [=](match_ptr_t match) {
-    //match->_view->dump("funcdef");
-    //match->dump(0);
+    // match->_view->dump("funcdef");
+    // match->dump(0);
 
-    auto seq = match->_impl.get<sequence_ptr_t>();
+    auto seq     = match->_impl.get<sequence_ptr_t>();
     auto fn_name = seq->_items[1]->_impl.get<classmatch_ptr_t>();
-    auto args = seq->_items[3]->_impl.get<n_or_more_ptr_t>();
-    auto stas = seq->_items[6]->_impl.get<n_or_more_ptr_t>();
-    printf("MATCHED funcdef<%s> function<%s> numargs<%d> numstatements<%d>\n", //
-           funcdef->_name.c_str(), // 
-           fn_name->_token->text.c_str(), //
-           args->_items.size(), //
-           stas->_items.size() );
-    
-    for( auto arg : args->_items ) {
-      auto argseq = arg->_impl.get<sequence_ptr_t>();
-      auto argtype = argseq->_items[0]->_impl.get<oneof_ptr_t>();
+    auto args    = seq->_items[3]->_impl.get<n_or_more_ptr_t>();
+    auto stas    = seq->_items[6]->_impl.get<n_or_more_ptr_t>();
+    printf(
+        "MATCHED funcdef<%s> function<%s> numargs<%d> numstatements<%d>\n", //
+        funcdef->_name.c_str(),                                             //
+        fn_name->_token->text.c_str(),                                      //
+        args->_items.size(),                                                //
+        stas->_items.size());
+
+    for (auto arg : args->_items) {
+      auto argseq     = arg->_impl.get<sequence_ptr_t>();
+      auto argtype    = argseq->_items[0]->_impl.get<oneof_ptr_t>();
       auto argtypeval = argtype->_subitem->_impl.get<wordmatch_ptr_t>();
-      auto argname = argseq->_items[1]->_impl.get<classmatch_ptr_t>();
-      printf("  ARG<%s> TYPE<%s>\n",argname->_token->text.c_str(),argtypeval->_token->text.c_str());
+      auto argname    = argseq->_items[1]->_impl.get<classmatch_ptr_t>();
+      printf("  ARG<%s> TYPE<%s>\n", argname->_token->text.c_str(), argtypeval->_token->text.c_str());
     }
 
     int i = 0;
-    for( auto sta : stas->_items ) {
-      auto staseq = sta->_impl.get<sequence_ptr_t>();
+    for (auto sta : stas->_items) {
+      auto staseq   = sta->_impl.get<sequence_ptr_t>();
       size_t stalen = staseq->_items.size();
-      printf("  STATEMENT<%d> SEQLEN<%zu>\n",i, stalen);
+      printf("  STATEMENT<%d> SEQLEN<%zu>\n", i, stalen);
       i++;
     }
   };
   ///////////////////////////////////////////////////////////
-  auto seq = p->zeroOrMore(funcdef,"funcdefs");
+  auto seq = p->zeroOrMore(funcdef, "funcdefs");
   ///////////////////////////////////////////////////////////
-
-
 
   ///////////////////////////////////////////////////////////
   return seq;
@@ -294,7 +302,7 @@ TEST(parser1) {
 
   auto top_view = s->createTopView();
   top_view.dump("top_view");
-  auto slv     = std::make_shared<ScannerLightView>(top_view);
+  auto slv   = std::make_shared<ScannerLightView>(top_view);
   auto match = p->match(slv, fn_matcher);
   OrkAssert(match);
 }
