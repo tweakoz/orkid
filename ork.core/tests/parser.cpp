@@ -67,23 +67,77 @@ void loadScannerRules(scanner_ptr_t s) { //
 ///////////////////////////////////////////////////////////////////////////////
 
 namespace AST {
+
+struct VariableReference;
+struct Expression;
+struct Primary;
+struct Product;
+struct Sum;
+struct DataType;
+
+using expression_ptr_t = std::shared_ptr<Expression>;
+using varref_ptr_t = std::shared_ptr<VariableReference>;
+using primary_ptr_t = std::shared_ptr<Primary>;
+using product_ptr_t = std::shared_ptr<Product>;
+using sum_ptr_t = std::shared_ptr<Sum>;
+using datatype_ptr_t = std::shared_ptr<DataType>;
+
+///////////////////// 
+
 struct AstNode {
   virtual ~AstNode() {
   }
 };
 
 struct Statement : public AstNode {};
-struct VariableReference : public AstNode {};
-struct AssignmentStatement : public Statement {};
-struct Expression : public AstNode {};
-struct Additive : public AstNode {};
-struct Multiplicative : public AstNode {};
-struct Primary : public AstNode {};
+//
+struct DataType : public AstNode {
+    std::string _name;
+};
+//
+struct VariableReference : public AstNode { //
+  std::string _name;
+};
+//
+struct AssignmentStatement : public Statement {
+    std::string _name;
+    datatype_ptr_t _datatype;
+    expression_ptr_t _expression;
+};
+//
+struct Expression : public AstNode { //
+    sum_ptr_t _sum;
+};
+//
+struct Sum : public AstNode {
+    product_ptr_t _left;
+    product_ptr_t _right;
+    char _op = 0;
+};
+//
+struct Product : public AstNode {
+    std::vector<primary_ptr_t> _primaries;
+};
+//
+struct Primary : public AstNode { //
+    svar64_t _impl;
+};
+//
 struct Literal : public AstNode {};
+//
 struct NumericLiteral : public AstNode {};
-struct FloatLiteral : public NumericLiteral {};
-struct IntegerLiteral : public NumericLiteral {};
-struct Term : public AstNode {};
+//
+struct FloatLiteral : public NumericLiteral { //
+  float _value = 0.0f;
+};
+//
+struct IntegerLiteral : public NumericLiteral { //
+  int _value = 0;
+};
+//
+struct Term : public AstNode { //
+    expression_ptr_t _subexpression;
+};
 
 } // namespace AST
 ///////////////////////////////////////////////////////////////////////////////
@@ -113,13 +167,27 @@ struct MyParser : public Parser {
     auto dt_float = matcherForWord("float");
     auto dt_int   = matcherForWord("int");
     ///////////////////////////////////////////////////////////
-    dt_float->_notif = [=](match_ptr_t match) { auto ast_node = match->_user.makeShared<AST::FloatLiteral>(); };
-    dt_int->_notif   = [=](match_ptr_t match) { auto ast_node = match->_user.makeShared<AST::IntegerLiteral>(); };
+    floattok->_notif = [=](match_ptr_t match) { //
+        auto ast_node = match->_user.makeShared<AST::FloatLiteral>();
+        auto impl = match->_impl.get<classmatch_ptr_t>();
+        ast_node->_value = std::stof(impl->_token->text);
+    };
+    inttok->_notif   = [=](match_ptr_t match) { //
+        auto ast_node = match->_user.makeShared<AST::IntegerLiteral>(); 
+        auto impl = match->_impl.get<classmatch_ptr_t>();
+        ast_node->_value = std::stoi(impl->_token->text);
+    };
     ///////////////////////////////////////////////////////////
     auto datatype = oneOf({
         dt_float,
         dt_int,
     });
+    //
+    datatype->_notif = [=](match_ptr_t match) { //
+        auto selected = match->_impl.getShared<OneOf>()->_selected;
+        auto ast_node = match->_user.makeShared<AST::DataType>();
+        ast_node->_name = selected->_impl.get<wordmatch_ptr_t>()->_token->text;
+    };
     ///////////////////////////////////////////////////////////
     auto argument_decl = sequence(
         "argument_decl",
@@ -138,7 +206,12 @@ struct MyParser : public Parser {
     auto variableDeclaration = sequence("variableDeclaration", {datatype, kworid});
     ///////////////////////////////////////////////////////////
     auto variableReference    = sequence("variableReference", {kworid});
-    variableReference->_notif = [=](match_ptr_t match) { match->_user.makeShared<AST::VariableReference>(); };
+    variableReference->_notif = [=](match_ptr_t match) { //
+        auto seq = match->_impl.get<sequence_ptr_t>();
+        auto kwid = seq->_items[0]->_impl.getShared<ClassMatch>()->_token->text;
+        auto var_ref = match->_user.makeShared<AST::VariableReference>(); 
+        var_ref->_name = kwid;
+    };
     ///////////////////////////////////////////////////////////
     auto expression = declare("expression");
     ///////////////////////////////////////////////////////////
@@ -147,7 +220,7 @@ struct MyParser : public Parser {
       auto ast_node = match->_user.makeShared<AST::Term>();
       auto selected = match->_impl.get<sequence_ptr_t>()->_items[1];
       if (selected->_matcher == expression) {
-        auto ast_expr = selected->_user.getShared<AST::Expression>();
+        ast_node->_subexpression = selected->_user.getShared<AST::Expression>();
       }
     };
     ///////////////////////////////////////////////////////////
@@ -163,49 +236,72 @@ struct MyParser : public Parser {
     //
     primary->_notif = [=](match_ptr_t match) {
       auto ast_node = match->_user.makeShared<AST::Primary>();
-      auto selected = match->_impl.get<oneof_ptr_t>()->_subitem;
-      if (selected->_matcher == floattok) {
-        auto ast_float = selected->_user.getShared<AST::FloatLiteral>();
-      } else if (selected->_matcher == inttok) {
-        auto ast_int = selected->_user.getShared<AST::IntegerLiteral>();
-      } else if (selected->_matcher == variableReference) {
-        auto ast_varref = selected->_user.getShared<AST::VariableReference>();
-      } else if (selected->_matcher == term) {
-        auto ast_term = selected->_user.getShared<AST::Term>();
-      }
+      auto selected = match->_impl.get<oneof_ptr_t>()->_selected;
+      ast_node->_impl = selected->_user;
     };
     ///////////////////////////////////////////////////////////
     auto mul1sp         = sequence({star, primary}, "mul1sp");
     auto mul1zom        = zeroOrMore(mul1sp, "mul1zom");
-    auto multiplicative = oneOf(
-        "multiplicative",
+    auto product = oneOf(
+        "product",
         {
             sequence({primary, mul1zom}, "mul1")
             // sequence({ primary,optional(sequence({slash,primary})) }),
         });
     //
-    multiplicative->_notif = [=](match_ptr_t match) {
-      auto ast_node = match->_user.makeShared<AST::Multiplicative>();
-      auto selected = match->_impl.get<oneof_ptr_t>()->_subitem;
+    product->_notif = [=](match_ptr_t match) {
+      auto ast_node = match->_user.makeShared<AST::Product>();
+      auto selected = match->_impl.get<oneof_ptr_t>()->_selected;
       auto sel_seq  = selected->_impl.get<sequence_ptr_t>();
       auto primary  = sel_seq->_items[0]->_user.getShared<AST::Primary>();
+      auto m1zom  = sel_seq->_items[1]->_impl.get<n_or_more_ptr_t>();
+      ast_node->_primaries.push_back(primary);
+      if(m1zom->_items.size()){
+        for( auto i : m1zom->_items ){
+            auto seq = i->_impl.get<sequence_ptr_t>();
+            // star is implied...
+            primary = seq->_items[1]->_user.getShared<AST::Primary>();
+            ast_node->_primaries.push_back(primary);
+        }
+      }
     };
     ///////////////////////////////////////////////////////////
-    auto additive = oneOf(
-        "additive",
+    auto sum = oneOf(
+        "sum",
         {//
-         sequence({multiplicative, plus, multiplicative}, "add1"),
-         sequence({multiplicative, minus, multiplicative}, "add2"),
-         multiplicative});
+         sequence({product, plus, product}, "add1"),
+         sequence({product, minus, product}, "add2"),
+         product});
     //
-    additive->_notif = [=](match_ptr_t match) {
-      auto ast_node = match->_user.makeShared<AST::Additive>();
-      auto selected = match->_impl.get<oneof_ptr_t>()->_subitem;
+    sum->_notif = [=](match_ptr_t match) {
+      auto ast_node = match->_user.makeShared<AST::Sum>();
+      auto selected = match->_impl.get<oneof_ptr_t>()->_selected;
+      if( selected->_matcher == product ){
+        ast_node->_left = selected->_user.getShared<AST::Product>();
+        ast_node->_op = '_';
+      }
+      else if( selected->_matcher->_name == "add1" ){
+        auto seq = selected->_impl.get<sequence_ptr_t>();
+        ast_node->_left = seq->_items[0]->_user.getShared<AST::Product>();
+        ast_node->_right =  seq->_items[2]->_user.getShared<AST::Product>();
+        ast_node->_op = '+';
+      }
+      else if( selected->_matcher->_name == "add2" ){
+        auto seq = selected->_impl.get<sequence_ptr_t>();
+        ast_node->_left = seq->_items[0]->_user.getShared<AST::Product>();
+        ast_node->_right =  seq->_items[2]->_user.getShared<AST::Product>();
+        ast_node->_op = '-';
+      }
+      else{
+        OrkAssert(false);
+      }
     };
     ///////////////////////////////////////////////////////////
-    sequence(expression, {additive});
+    sequence(expression, {sum});
     expression->_notif = [=](match_ptr_t match) { //
-      match->_user.makeShared<AST::Expression>();
+      auto ast_node = match->_user.makeShared<AST::Expression>();
+      auto seq = match->_impl.get<sequence_ptr_t>();
+      ast_node->_sum = seq->_items[0]->_user.getShared<AST::Sum>();
     };
     ///////////////////////////////////////////////////////////
     auto assignment_statement = sequence(
@@ -214,26 +310,32 @@ struct MyParser : public Parser {
          oneOf({variableDeclaration, variableReference}, "ass1of"),
          equals,
          expression});
-    ///////////////////////////////////////////////////////////
-    auto statement    = oneOf({
-        sequence({assignment_statement, semicolon}),
-        semicolon});
-
-    statement->_notif = [=](match_ptr_t match) {
-      /*auto the_seq              = match->_impl.get<sequence_ptr_t>();
-      auto the_opt              = the_seq->_items[0]->_impl.get<optional_ptr_t>();
-      auto assignment_statement = the_opt->_subitem->_impl.get<sequence_ptr_t>();
-      if (assignment_statement) {
+    //
+    assignment_statement->_notif = [=](match_ptr_t match) { //
         auto ast_node = match->_user.makeShared<AST::AssignmentStatement>();
-        auto expr     = assignment_statement->_items[2]->_impl.get<sequence_ptr_t>();
-        auto var      = assignment_statement->_items[0]->_impl.get<oneof_ptr_t>()->_subitem;
-        if (var->_matcher == variableDeclaration) {
-        } else if (var->_matcher == variableReference) {
-        } else {
-          OrkAssert(false);
+        auto ass1of = match->_impl.get<sequence_ptr_t>()->_items[0]->_impl.get<oneof_ptr_t>();
+        if( ass1of->_selected->_matcher == variableDeclaration ){
+            auto seq = ass1of->_selected->_impl.get<sequence_ptr_t>();
+            auto datatype = seq->_items[0]->_user.getShared<AST::DataType>();
+            //auto kwid = seq->_items[1]->_user.getShared<AST::KwOrId>();
+            auto expr = match->_impl.get<sequence_ptr_t>()->_items[2]->_user.getShared<AST::Expression>();
+            //ast_node->_datatype = datatype;
+            //ast_node->_name = kwid;
+            //ast_node->_expression = expr;
         }
-      }*/
+        else if( ass1of->_selected->_matcher == variableReference ){
+            //auto kwid = ass1of->_selected->_impl.get<sequence_ptr_t>()->_items[0]->_user.getShared<AST::KwOrId>();
+            auto expr = match->_impl.get<sequence_ptr_t>()->_items[2]->_user.getShared<AST::Expression>();
+            ast_node->_datatype = nullptr;
+            //ast_node->_name = kwid;
+            ast_node->_expression = expr;
+        }
+        else{
+            OrkAssert(false);
+        }
     };
+    ///////////////////////////////////////////////////////////
+    auto statement = oneOf({sequence({assignment_statement, semicolon}), semicolon});
     ///////////////////////////////////////////////////////////
     auto funcdef = sequence(
         "funcdef",
@@ -265,21 +367,30 @@ struct MyParser : public Parser {
       for (auto arg : args->_items) {
         auto argseq     = arg->_impl.get<sequence_ptr_t>();
         auto argtype    = argseq->_items[0]->_impl.get<oneof_ptr_t>();
-        auto argtypeval = argtype->_subitem->_impl.get<wordmatch_ptr_t>();
+        auto argtypeval = argtype->_selected->_impl.get<wordmatch_ptr_t>();
         auto argname    = argseq->_items[1]->_impl.get<classmatch_ptr_t>();
         printf("  ARG<%s> TYPE<%s>\n", argname->_token->text.c_str(), argtypeval->_token->text.c_str());
       }
 
       int i = 0;
       for (auto sta : stas->_items) {
-        //auto staseq   = sta->_impl.get<sequence_ptr_t>();
-        //size_t stalen = staseq->_items.size();
-        //printf("  STATEMENT<%d> SEQLEN<%zu>\n", i, stalen);
+        auto stasel   = sta->_impl.get<oneof_ptr_t>()->_selected;
+        if( auto as_seq = stasel->_impl.tryAs<sequence_ptr_t>()){
+            auto staseq0 = as_seq.value()->_items[0];
+            if( staseq0->_matcher == assignment_statement ){
+            }
+            else if( staseq0->_matcher == semicolon ){
+            }
+            else{
+                OrkAssert(false);
+            }
+
+        }
         i++;
       }
     };
     ///////////////////////////////////////////////////////////
-    _fn_matcher = zeroOrMore(funcdef, "funcdefs",true);
+    _fn_matcher = zeroOrMore(funcdef, "funcdefs", true);
     ///////////////////////////////////////////////////////////
   }
 

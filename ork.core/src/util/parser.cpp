@@ -261,7 +261,7 @@ matcher_ptr_t Parser::oneOf(std::vector<matcher_ptr_t> matchers, std::string nam
         the_match->_matcher = par_matcher;
         the_match->_view    = sub_match->_view;
         auto the_oo = the_match->_impl.makeShared<OneOf>();
-        the_oo->_subitem = sub_match;
+        the_oo->_selected = sub_match;
         return the_match;
       }
     }

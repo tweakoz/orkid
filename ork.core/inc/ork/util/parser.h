@@ -74,7 +74,7 @@ struct ClassMatch{
   const Token* _token = nullptr;
 };
 struct OneOf{
-  match_ptr_t _subitem;
+  match_ptr_t _selected;
 };
 
 //////////////////////////////////////////////////////////////
