@@ -29,7 +29,7 @@ std::string scanner_spec = R"xxx(
     INTEGER             <- "-?(\d+)"
     FUNCTION            <- "function"
     DT_FLOAT            <- "float"
-    DT_INT              <- "int
+    DT_INT              <- "int"
 )xxx";
 
 ///////////////////////////////////////////////////////////////////////////////

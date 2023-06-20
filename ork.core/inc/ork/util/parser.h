@@ -5,6 +5,7 @@
 #include <ork/util/scanner.h>
 #include <unordered_set>
 #include <unordered_map>
+#include <ork/util/crc.h>
 
 namespace ork {
 
@@ -28,10 +29,10 @@ using parser_ptr_t                = std::shared_ptr<Parser>;
 using sequence_ptr_t              = std::shared_ptr<Sequence>;
 using group_ptr_t                 = std::shared_ptr<Group>;
 using n_or_more_ptr_t             = std::shared_ptr<NOrMore>;
+using oneof_ptr_t                 = std::shared_ptr<OneOf>;
 using optional_ptr_t              = std::shared_ptr<Optional>;
 using wordmatch_ptr_t             = std::shared_ptr<WordMatch>;
 using classmatch_ptr_t            = std::shared_ptr<ClassMatch>;
-using oneof_ptr_t                 = std::shared_ptr<OneOf>;
 
 //////////////////////////////////////////////////////////////
 
@@ -48,6 +49,8 @@ struct Matcher {
   matcher_fn_t _match_fn;
   matcher_notif_t _notif;
   std::string _name;
+  uint64_t hash(scannerlightview_constptr_t slv) const; // packrat hash
+  void _hash(boost::Crc64& crc_out) const; // packrat hash
 };
 
 //////////////////////////////////////////////////////////////
@@ -126,6 +129,7 @@ struct Parser {
   std::stack<const Match*> _matchstack;
   std::unordered_set<matcher_ptr_t> _matchers;
   std::unordered_map<std::string,matcher_ptr_t> _matchers_by_name;
+  std::unordered_map<uint64_t,match_ptr_t> _packrat_cache;
 };
 
 //////////////////////////////////////////////////////////////

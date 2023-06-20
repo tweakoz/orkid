@@ -324,6 +324,15 @@ void ScannerLightView::advanceTo(size_t i){
 }
 
 
+uint64_t ScannerLightView::hash() const{
+  boost::Crc64 the_crc;
+  the_crc.init();
+  the_crc.accumulateItem<uint64_t>((uint64_t)&_input_view._scanner);
+  the_crc.accumulateItem<size_t>(_start);
+  the_crc.accumulateItem<size_t>(_end);
+  the_crc.finish();
+  return the_crc.result();
+}
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 } //namespace ork {

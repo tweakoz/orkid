@@ -207,6 +207,7 @@ struct ScannerLightView {
   const Token* token(size_t i) const;
   void dump(const std::string& dumpid) const;
   const ScannerView& _input_view;
+  uint64_t hash() const;
   size_t _start = -1;
   size_t _end   = -1;
 };

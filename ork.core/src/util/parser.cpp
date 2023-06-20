@@ -16,8 +16,8 @@
 /////////////////////////////////////////////////////////////////////////////////////////////////
 namespace ork {
 /////////////////////////////////////////////////////////////////////////////////////////////////
-
 static constexpr bool _DEBUG = true;
+//////////////////////////////////////////////////////////////////////
 
 void Match::dump(int indent) const {
 
@@ -58,13 +58,90 @@ void Match::dump(int indent) const {
   } else if (auto as_opt = _impl.tryAs<optional_ptr_t>()) {
     auto opt = as_opt.value();
     printf("%s   OPT<%p>\n", indentstr.c_str(), (void*)opt.get());
-    if(opt->_subitem)
+    if (opt->_subitem)
       opt->_subitem->dump(indent + 3);
-    else{
+    else {
       printf("%s     EMPTY\n", indentstr.c_str());
     }
   }
 }
+
+//////////////////////////////////////////////////////////////////////
+// packrat support
+//////////////////////////////////////////////////////////////////////
+
+uint64_t Matcher::hash(scannerlightview_constptr_t slv) const {
+  boost::Crc64 the_crc;
+  the_crc.init();
+  _hash(the_crc);
+  the_crc.finish();
+  return the_crc.result();
+}
+
+void Matcher::_hash(boost::Crc64& crc_out) const {
+  #if 0
+  ////////////////////////////////////////////////////
+  if (auto as_seq = _impl.tryAs<sequence_ptr_t>()) {
+    auto seq = as_seq.value();
+    crc_out.accumulateItem<uint64_t>("BEGSEQ"_crcu);
+    for (auto i : seq->_items) {
+      i->_hash(crc_out);
+    }
+    crc_out.accumulateItem<uint64_t>("ENDSEQ"_crcu);
+  }
+  ////////////////////////////////////////////////////
+  else if (auto as_grp = _impl.tryAs<group_ptr_t>()) {
+    auto grp = as_grp.value();
+    crc_out.accumulateItem<uint64_t>("BEGGRP"_crcu);
+    for (auto i : grp->_items) {
+      i->_hash(crc_out);
+    }
+    crc_out.accumulateItem<uint64_t>("BEGGRP"_crcu);
+  }
+  ////////////////////////////////////////////////////
+  else if (auto as_nom = _impl.tryAs<n_or_more_ptr_t>()) {
+    auto nom = as_nom.value();
+    crc_out.accumulateItem<uint64_t>("BEGNOM"_crcu);
+    for (auto i : nom->_items) {
+      crc_out.accumulateItem<uint64_t>(nom->_minmatches);
+      crc_out.accumulateItem<uint64_t>(nom->_mustConsumeAll);
+      i->_hash(crc_out);
+    }
+    crc_out.accumulateItem<uint64_t>("ENDNOM"_crcu);
+  }
+  ////////////////////////////////////////////////////
+  else if (auto as_oo = _impl.tryAs<oneof_ptr_t>()) {
+    auto oo = as_oo.value();
+    crc_out.accumulateItem<uint64_t>("BEGOOF"_crcu);
+    crc_out.accumulateItem<uint64_t>("ENDOOF"_crcu);
+
+  }
+  ////////////////////////////////////////////////////
+  else if (auto as_opt = _impl.tryAs<optional_ptr_t>()) {
+    auto opt = as_opt.value();
+    crc_out.accumulateItem<uint64_t>("BEGOPT"_crcu);
+    if (opt->_subitem){
+      opt->_subitem->_hash(crc_out);
+    }
+    crc_out.accumulateItem<uint64_t>("ENDOPT"_crcu);
+  }
+  ////////////////////////////////////////////////////
+  else if (auto as_wm = _impl.tryAs<wordmatch_ptr_t>()) {
+    auto wm = as_wm.value();
+    crc_out.accumulateItem<uint64_t>("WORDMATCH"_crcu);
+    crc_out.accumulateItem<uint64_t>(uint64_t(wm->_token));
+  }
+  ////////////////////////////////////////////////////
+  else if (auto as_cm = _impl.tryAs<classmatch_ptr_t>()) {
+    auto cm = as_cm.value();
+    crc_out.accumulateItem<uint64_t>("CLASSMATCH"_crcu);
+    crc_out.accumulateItem<uint64_t>(cm->_tokclass);
+    crc_out.accumulateItem<uint64_t>(uint64_t(cm->_token));
+  }
+  #endif
+}
+
+//////////////////////////////////////////////////////////////////////
 
 Matcher::Matcher(matcher_fn_t match_fn)
     : _match_fn(match_fn) {
@@ -127,7 +204,14 @@ void Parser::sequence(matcher_ptr_t matcher, std::vector<matcher_ptr_t> sub_matc
     size_t num_iter   = sub_matchers.size();
     for (auto sub_matcher : sub_matchers) {
       auto match_item = _match(sub_matcher, slv_iter);
-      log_begin("SEQ<%s> : match_item<%s> iter<%zu/%zu> st<%d> end<%d> ", matcher->_name.c_str(), sub_matcher->_name.c_str(), iter, num_iter, slv_iter->_start, slv_iter->_end);
+      log_begin(
+          "SEQ<%s> : match_item<%s> iter<%zu/%zu> st<%d> end<%d> ",
+          matcher->_name.c_str(),
+          sub_matcher->_name.c_str(),
+          iter,
+          num_iter,
+          slv_iter->_start,
+          slv_iter->_end);
       if (match_item) {
         size_t item_index = the_sequence->_items.size();
         if (match_item->_view->empty()) {
@@ -168,13 +252,12 @@ void Parser::sequence(matcher_ptr_t matcher, std::vector<matcher_ptr_t> sub_matc
       }
       if (num_emptys == num_matches) {
         the_match->_view->clear();
-      }
-      else{
+      } else {
         auto slv_out = std::make_shared<ScannerLightView>(*slv);
         for (auto match : the_sequence->_items) {
-            if (not match->_view->empty()) {
-                slv_out->_end = match->_view->_end;
-            }
+          if (not match->_view->empty()) {
+            slv_out->_end = match->_view->_end;
+          }
         }
         the_match->_view = slv_out;
       }
@@ -257,11 +340,11 @@ matcher_ptr_t Parser::oneOf(std::vector<matcher_ptr_t> matchers, std::string nam
         auto match_str = deco::string("MATCH", 0, 255, 0);
         log("1OF<%s>: %s sub_matcher<%s>", name.c_str(), match_str.c_str(), sub_matcher->_name.c_str());
 
-        auto the_match = std::make_shared<Match>();
+        auto the_match      = std::make_shared<Match>();
         the_match->_matcher = par_matcher;
         the_match->_view    = sub_match->_view;
-        auto the_oo = the_match->_impl.makeShared<OneOf>();
-        the_oo->_selected = sub_match;
+        auto the_oo         = the_match->_impl.makeShared<OneOf>();
+        the_oo->_selected   = sub_match;
         return the_match;
       }
     }
@@ -282,16 +365,16 @@ matcher_ptr_t Parser::oneOf(std::string name, std::vector<matcher_ptr_t> matcher
 }
 //////////////////////////////////////////////////////////////////////
 
-matcher_ptr_t Parser::nOrMore(matcher_ptr_t sub_matcher, size_t minMatches, std::string name,bool mustConsumeAll) {
+matcher_ptr_t Parser::nOrMore(matcher_ptr_t sub_matcher, size_t minMatches, std::string name, bool mustConsumeAll) {
   auto match_fn = [=](matcher_ptr_t par_matcher, scannerlightview_constptr_t input_slv) -> match_ptr_t {
-    match_ptr_t the_match = std::make_shared<Match>();
-    the_match->_matcher   = par_matcher;
-    auto the_nom          = the_match->_impl.makeShared<NOrMore>();
+    match_ptr_t the_match    = std::make_shared<Match>();
+    the_match->_matcher      = par_matcher;
+    auto the_nom             = the_match->_impl.makeShared<NOrMore>();
     the_nom->_mustConsumeAll = mustConsumeAll;
-    the_nom->_minmatches  = minMatches;
-    bool keep_going       = true;
-    auto slv_iter         = std::make_shared<ScannerLightView>(*input_slv);
-    int item_index        = 0;
+    the_nom->_minmatches     = minMatches;
+    bool keep_going          = true;
+    auto slv_iter            = std::make_shared<ScannerLightView>(*input_slv);
+    int item_index           = 0;
     log("NOM%zu<%s>: beg_match sub_matcher<%s>", minMatches, name.c_str(), sub_matcher->_name.c_str());
     ////////////////////////////////////////////////////////////////
     while (keep_going) {
@@ -331,14 +414,20 @@ matcher_ptr_t Parser::nOrMore(matcher_ptr_t sub_matcher, size_t minMatches, std:
         slv_out->validate();
       }
       the_match->_view = slv_out;
-      if((slv_out->_end < input_slv->_end) and the_nom->_mustConsumeAll){
+      if ((slv_out->_end < input_slv->_end) and the_nom->_mustConsumeAll) {
         auto no_match_str = deco::string("NO-MATCH (not all tokens consumed)", 255, 0, 0);
         log("NOM%zu<%s>: %s count<%zu>", minMatches, name.c_str(), no_match_str.c_str(), the_nom->_items.size());
         return nullptr;
-      }
-      else{
+      } else {
         auto match_str = deco::string("MATCH", 0, 255, 0);
-        log( "NOM%zu<%s>: %s count<%zu> st<%zu> en<%zu> slen<%d>", minMatches, name.c_str(), match_str.c_str(), the_nom->_items.size(), slv_out->_start, slv_out->_end, input_slv->_end );
+        log("NOM%zu<%s>: %s count<%zu> st<%zu> en<%zu> slen<%d>",
+            minMatches,
+            name.c_str(),
+            match_str.c_str(),
+            the_nom->_items.size(),
+            slv_out->_start,
+            slv_out->_end,
+            input_slv->_end);
       }
       return the_match;
     } else if (minMatches == 0) {
@@ -367,7 +456,7 @@ matcher_ptr_t Parser::nOrMore(matcher_ptr_t sub_matcher, size_t minMatches, std:
 matcher_ptr_t Parser::oneOrMore(matcher_ptr_t matcher, std::string name) {
   return nOrMore(matcher, 1, name);
 }
-matcher_ptr_t Parser::zeroOrMore(matcher_ptr_t matcher, std::string name,bool mustConsumeAll) {
+matcher_ptr_t Parser::zeroOrMore(matcher_ptr_t matcher, std::string name, bool mustConsumeAll) {
   return nOrMore(matcher, 0, name, mustConsumeAll);
 }
 
@@ -375,17 +464,17 @@ matcher_ptr_t Parser::zeroOrMore(matcher_ptr_t matcher, std::string name,bool mu
 
 matcher_ptr_t Parser::matcherForTokenClassID(uint64_t tokclass, std::string name) {
   auto match_fn = [tokclass](matcher_ptr_t par_matcher, scannerlightview_constptr_t slv) -> match_ptr_t {
-    auto tok0 = slv->token(0);
+    auto tok0         = slv->token(0);
     auto slv_tokclass = tok0->_class;
     if (slv_tokclass == tokclass) {
-      match_ptr_t the_match = std::make_shared<Match>();
-      auto the_classmatch = the_match->_impl.makeShared<ClassMatch>();
-      the_match->_matcher   = par_matcher;
+      match_ptr_t the_match     = std::make_shared<Match>();
+      auto the_classmatch       = the_match->_impl.makeShared<ClassMatch>();
+      the_match->_matcher       = par_matcher;
       the_classmatch->_tokclass = tokclass;
-      the_classmatch->_token = tok0;
-      auto slv_out          = std::make_shared<ScannerLightView>(*slv);
-      slv_out->_end         = slv_out->_start;
-      the_match->_view      = slv_out;
+      the_classmatch->_token    = tok0;
+      auto slv_out              = std::make_shared<ScannerLightView>(*slv);
+      slv_out->_end             = slv_out->_start;
+      the_match->_view          = slv_out;
       slv_out->validate();
       return the_match;
     }
@@ -406,13 +495,13 @@ matcher_ptr_t Parser::matcherForWord(std::string word) {
   auto match_fn = [word](matcher_ptr_t par_matcher, scannerlightview_constptr_t inp_view) -> match_ptr_t {
     auto tok0 = inp_view->token(0);
     if (tok0->text == word) {
-      auto slv            = std::make_shared<ScannerLightView>(*inp_view);
-      slv->_end           = slv->_start;
-      auto the_match      = std::make_shared<Match>();
-      auto the_wordmatch = the_match->_impl.makeShared<WordMatch>();
+      auto slv              = std::make_shared<ScannerLightView>(*inp_view);
+      slv->_end             = slv->_start;
+      auto the_match        = std::make_shared<Match>();
+      auto the_wordmatch    = the_match->_impl.makeShared<WordMatch>();
       the_wordmatch->_token = tok0;
-      the_match->_matcher = par_matcher;
-      the_match->_view    = slv;
+      the_match->_matcher   = par_matcher;
+      the_match->_view      = slv;
       slv->validate();
       return the_match;
     } else {
@@ -430,13 +519,32 @@ matcher_ptr_t Parser::matcherForWord(std::string word) {
 //////////////////////////////////////////////////////////////////////
 
 match_ptr_t Parser::_match(matcher_ptr_t matcher, scannerlightview_constptr_t inp_view) {
+  OrkAssert(matcher->_match_fn);
   _matcherstack.push(matcher);
   inp_view->validate();
-  OrkAssert(matcher->_match_fn);
-  auto match = matcher->_match_fn(matcher, inp_view);
+  match_ptr_t match;
+  //////////////////////////////////
+  // check packrat cache
+  //////////////////////////////////
+  uint64_t hash = matcher->hash(inp_view);
+  auto it = _packrat_cache.find(hash);
+  if(it==_packrat_cache.end()){
+    match = it->second;
+  }
+  //////////////////////////////////
+  // not in cache, perform match operations, and cache it
+  //////////////////////////////////
+  else{
+    match = matcher->_match_fn(matcher, inp_view);
+    _packrat_cache[hash] = match;
+  }
+  //////////////////////////////////
+  // notify if matched
+  //////////////////////////////////
   if (match and matcher->_notif) {
     matcher->_notif(match);
   }
+  //////////////////////////////////
   _matcherstack.pop();
   return match;
 }
