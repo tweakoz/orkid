@@ -118,6 +118,8 @@ struct Scanner {
   /////////////////////////////////////////
   ScannerView createTopView() const;
   /////////////////////////////////////////
+  void clear();
+  /////////////////////////////////////////
   const size_t _kcapacity;
   std::vector<char> _fxbuffer;
   size_t ifilelen;

@@ -49,6 +49,15 @@ Scanner::Scanner(
   _fxbuffer.resize(capacity);
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////
+void Scanner::clear() {
+  ifilelen = 0;
+  tokens.clear();
+  _fxbuffer.clear();
+  _fxbuffer.resize(_kcapacity);
+  ss = ESTA_NONE;
+  cur_token = Token("", 0, 0);
+}
+/////////////////////////////////////////////////////////////////////////////////////////////////
 void Scanner::scanString(std::string str) {
   resize(str.length() + 1);
   memcpy(_fxbuffer.data(), str.c_str(), str.length());

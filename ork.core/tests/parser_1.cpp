@@ -5,147 +5,37 @@
 // see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ////////////////////////////////////////////////////////////////
 
-#include <ork/util/parser.h>
-#include <utpp/UnitTest++.h>
-#include <ork/util/crc.h>
-#include <string.h>
-#include <math.h>
+#include "parser_lang.inl"
 
-using namespace ork;
-
-///////////////////////////////////////////////////////////////////////////////
-constexpr const char* block_regex = "(function|yo|xxx)";
-#define MATCHER(x) auto x = p->createMatcher([=](scannerlightview_constptr_t inp_view)->scannerlightview_ptr_t
-///////////////////////////////////////////////////////////////////////////////
-
-enum class TokenClass : uint64_t {
-  CrcEnum(SINGLE_LINE_COMMENT),
-  CrcEnum(MULTI_LINE_COMMENT),
-  CrcEnum(WHITESPACE),
-  CrcEnum(NEWLINE),
-  CrcEnum(SEMICOLON),
-  CrcEnum(L_PAREN),
-  CrcEnum(R_PAREN),
-  CrcEnum(L_CURLY),
-  CrcEnum(R_CURLY),
-  CrcEnum(EQUALS),
-  CrcEnum(STAR),
-  CrcEnum(PLUS),
-  CrcEnum(MINUS),
-  CrcEnum(COMMA),
-  CrcEnum(FLOATING_POINT),
-  CrcEnum(INTEGER),
-  CrcEnum(KW_OR_ID)
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
-void loadScannerRules(scanner_ptr_t s) { //
-  s->addEnumClass("\\/\\*([^*]|\\*+[^/*])*\\*+\\/", TokenClass::MULTI_LINE_COMMENT);
-  s->addEnumClass("\\/\\/.*[\\n\\r]", TokenClass::SINGLE_LINE_COMMENT);
-  s->addEnumClass("\\s+", TokenClass::WHITESPACE);
-  s->addEnumClass("[\\n\\r]+", TokenClass::NEWLINE);
-  s->addEnumClass("[a-zA-Z_][a-zA-Z0-9_]*", TokenClass::KW_OR_ID);
-  s->addEnumClass("=", TokenClass::EQUALS);
-  s->addEnumClass(",", TokenClass::COMMA);
-  s->addEnumClass(";", TokenClass::SEMICOLON);
-  s->addEnumClass("\\(", TokenClass::L_PAREN);
-  s->addEnumClass("\\)", TokenClass::R_PAREN);
-  s->addEnumClass("\\{", TokenClass::L_CURLY);
-  s->addEnumClass("\\}", TokenClass::R_CURLY);
-  s->addEnumClass("\\*", TokenClass::STAR);
-  s->addEnumClass("\\+", TokenClass::PLUS);
-  s->addEnumClass("\\-", TokenClass::MINUS);
-  s->addEnumClass("-?(\\d*\\.?)(\\d+)([eE][-+]?\\d+)?", TokenClass::FLOATING_POINT);
-  s->addEnumClass("-?(\\d+)", TokenClass::INTEGER);
-
-  s->buildStateMachine();
-}
-
-///////////////////////////////////////////////////////////////////////////////
-// AST
-///////////////////////////////////////////////////////////////////////////////
-
-namespace AST {
-
-struct VariableReference;
-struct Expression;
-struct Primary;
-struct Product;
-struct Sum;
-struct DataType;
-
-using expression_ptr_t = std::shared_ptr<Expression>;
-using varref_ptr_t = std::shared_ptr<VariableReference>;
-using primary_ptr_t = std::shared_ptr<Primary>;
-using product_ptr_t = std::shared_ptr<Product>;
-using sum_ptr_t = std::shared_ptr<Sum>;
-using datatype_ptr_t = std::shared_ptr<DataType>;
-
-///////////////////// 
-
-struct AstNode {
-  virtual ~AstNode() {
-  }
-};
-
-struct Statement : public AstNode {};
-//
-struct DataType : public AstNode {
-    std::string _name;
-};
-//
-struct VariableReference : public AstNode { //
-  std::string _name;
-};
-//
-struct AssignmentStatement : public Statement {
-    std::string _name;
-    datatype_ptr_t _datatype;
-    expression_ptr_t _expression;
-};
-//
-struct Expression : public AstNode { //
-    sum_ptr_t _sum;
-};
-//
-struct Sum : public AstNode {
-    product_ptr_t _left;
-    product_ptr_t _right;
-    char _op = 0;
-};
-//
-struct Product : public AstNode {
-    std::vector<primary_ptr_t> _primaries;
-};
-//
-struct Primary : public AstNode { //
-    svar64_t _impl;
-};
-//
-struct Literal : public AstNode {};
-//
-struct NumericLiteral : public AstNode {};
-//
-struct FloatLiteral : public NumericLiteral { //
-  float _value = 0.0f;
-};
-//
-struct IntegerLiteral : public NumericLiteral { //
-  int _value = 0;
-};
-//
-struct Term : public AstNode { //
-    expression_ptr_t _subexpression;
-};
-
-} // namespace AST
 ///////////////////////////////////////////////////////////////////////////////
 
 struct MyParser : public Parser {
 
   MyParser() {
+    loadScannerRules();
     loadGrammar();
+  }
+
+  void loadScannerRules() { //
+    _scanner = std::make_shared<Scanner>(block_regex);
+    _scanner->addEnumClass("\\/\\*([^*]|\\*+[^/*])*\\*+\\/", TokenClass::MULTI_LINE_COMMENT);
+    _scanner->addEnumClass("\\/\\/.*[\\n\\r]", TokenClass::SINGLE_LINE_COMMENT);
+    _scanner->addEnumClass("\\s+", TokenClass::WHITESPACE);
+    _scanner->addEnumClass("[\\n\\r]+", TokenClass::NEWLINE);
+    _scanner->addEnumClass("[a-zA-Z_][a-zA-Z0-9_]*", TokenClass::KW_OR_ID);
+    _scanner->addEnumClass("=", TokenClass::EQUALS);
+    _scanner->addEnumClass(",", TokenClass::COMMA);
+    _scanner->addEnumClass(";", TokenClass::SEMICOLON);
+    _scanner->addEnumClass("\\(", TokenClass::L_PAREN);
+    _scanner->addEnumClass("\\)", TokenClass::R_PAREN);
+    _scanner->addEnumClass("\\{", TokenClass::L_CURLY);
+    _scanner->addEnumClass("\\}", TokenClass::R_CURLY);
+    _scanner->addEnumClass("\\*", TokenClass::STAR);
+    _scanner->addEnumClass("\\+", TokenClass::PLUS);
+    _scanner->addEnumClass("\\-", TokenClass::MINUS);
+    _scanner->addEnumClass("-?(\\d*\\.?)(\\d+)([eE][-+]?\\d+)?", TokenClass::FLOATING_POINT);
+    _scanner->addEnumClass("-?(\\d+)", TokenClass::INTEGER);
+    _scanner->buildStateMachine();
   }
 
   void loadGrammar() { //
@@ -395,8 +285,7 @@ struct MyParser : public Parser {
   }
 
   match_ptr_t parseString(std::string parse_str) {
-    _scanner = std::make_shared<Scanner>(block_regex);
-    loadScannerRules(_scanner);
+    _scanner->clear();
     _scanner->scanString(parse_str);
     _scanner->discardTokensOfClass(uint64_t(TokenClass::WHITESPACE));
     _scanner->discardTokensOfClass(uint64_t(TokenClass::SINGLE_LINE_COMMENT));
