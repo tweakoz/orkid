@@ -130,6 +130,9 @@ struct Parser {
   std::unordered_set<matcher_ptr_t> _matchers;
   std::unordered_map<std::string,matcher_ptr_t> _matchers_by_name;
   std::unordered_map<uint64_t,match_ptr_t> _packrat_cache;
+
+  size_t _cache_misses = 0;
+  size_t _cache_hits = 0;
 };
 
 //////////////////////////////////////////////////////////////

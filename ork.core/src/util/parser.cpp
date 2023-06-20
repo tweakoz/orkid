@@ -73,72 +73,14 @@ void Match::dump(int indent) const {
 uint64_t Matcher::hash(scannerlightview_constptr_t slv) const {
   boost::Crc64 the_crc;
   the_crc.init();
+  the_crc.accumulateItem<uint64_t>(slv->hash());
   _hash(the_crc);
   the_crc.finish();
   return the_crc.result();
 }
 
 void Matcher::_hash(boost::Crc64& crc_out) const {
-  #if 0
-  ////////////////////////////////////////////////////
-  if (auto as_seq = _impl.tryAs<sequence_ptr_t>()) {
-    auto seq = as_seq.value();
-    crc_out.accumulateItem<uint64_t>("BEGSEQ"_crcu);
-    for (auto i : seq->_items) {
-      i->_hash(crc_out);
-    }
-    crc_out.accumulateItem<uint64_t>("ENDSEQ"_crcu);
-  }
-  ////////////////////////////////////////////////////
-  else if (auto as_grp = _impl.tryAs<group_ptr_t>()) {
-    auto grp = as_grp.value();
-    crc_out.accumulateItem<uint64_t>("BEGGRP"_crcu);
-    for (auto i : grp->_items) {
-      i->_hash(crc_out);
-    }
-    crc_out.accumulateItem<uint64_t>("BEGGRP"_crcu);
-  }
-  ////////////////////////////////////////////////////
-  else if (auto as_nom = _impl.tryAs<n_or_more_ptr_t>()) {
-    auto nom = as_nom.value();
-    crc_out.accumulateItem<uint64_t>("BEGNOM"_crcu);
-    for (auto i : nom->_items) {
-      crc_out.accumulateItem<uint64_t>(nom->_minmatches);
-      crc_out.accumulateItem<uint64_t>(nom->_mustConsumeAll);
-      i->_hash(crc_out);
-    }
-    crc_out.accumulateItem<uint64_t>("ENDNOM"_crcu);
-  }
-  ////////////////////////////////////////////////////
-  else if (auto as_oo = _impl.tryAs<oneof_ptr_t>()) {
-    auto oo = as_oo.value();
-    crc_out.accumulateItem<uint64_t>("BEGOOF"_crcu);
-    crc_out.accumulateItem<uint64_t>("ENDOOF"_crcu);
-
-  }
-  ////////////////////////////////////////////////////
-  else if (auto as_opt = _impl.tryAs<optional_ptr_t>()) {
-    auto opt = as_opt.value();
-    crc_out.accumulateItem<uint64_t>("BEGOPT"_crcu);
-    if (opt->_subitem){
-      opt->_subitem->_hash(crc_out);
-    }
-    crc_out.accumulateItem<uint64_t>("ENDOPT"_crcu);
-  }
-  ////////////////////////////////////////////////////
-  else if (auto as_wm = _impl.tryAs<wordmatch_ptr_t>()) {
-    auto wm = as_wm.value();
-    crc_out.accumulateItem<uint64_t>("WORDMATCH"_crcu);
-    crc_out.accumulateItem<uint64_t>(uint64_t(wm->_token));
-  }
-  ////////////////////////////////////////////////////
-  else if (auto as_cm = _impl.tryAs<classmatch_ptr_t>()) {
-    auto cm = as_cm.value();
-    crc_out.accumulateItem<uint64_t>("CLASSMATCH"_crcu);
-    crc_out.accumulateItem<uint64_t>(cm->_tokclass);
-    crc_out.accumulateItem<uint64_t>(uint64_t(cm->_token));
-  }
-  #endif
+  crc_out.accumulateItem<uint64_t>((uint64_t)this);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -528,8 +470,9 @@ match_ptr_t Parser::_match(matcher_ptr_t matcher, scannerlightview_constptr_t in
   //////////////////////////////////
   uint64_t hash = matcher->hash(inp_view);
   auto it = _packrat_cache.find(hash);
-  if(it==_packrat_cache.end()){
+  if(it!=_packrat_cache.end()){
     match = it->second;
+    _cache_hits++;
   }
   //////////////////////////////////
   // not in cache, perform match operations, and cache it
@@ -537,6 +480,7 @@ match_ptr_t Parser::_match(matcher_ptr_t matcher, scannerlightview_constptr_t in
   else{
     match = matcher->_match_fn(matcher, inp_view);
     _packrat_cache[hash] = match;
+    _cache_misses++;
   }
   //////////////////////////////////
   // notify if matched

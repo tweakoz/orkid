@@ -326,4 +326,8 @@ TEST(parser1) {
   MyParser the_parser;
   auto match = the_parser.parseString(parse_str);
   CHECK(match != nullptr);
+
+  printf( "PARSER PACKRAT cache_hits<%zu> cache_misses<%zu>\n", //
+          the_parser._cache_hits,                                //
+          the_parser._cache_misses);                             //
 }
