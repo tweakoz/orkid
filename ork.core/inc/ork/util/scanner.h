@@ -95,6 +95,7 @@ struct Scanner {
       size_t capacity = 64 << 10);
   /////////////////////////////////////////
   void addRule(std::string rule, id_t state);
+  void addMacro(std::string macro, std::string value);
   /////////////////////////////////////////
   template <typename enum_t>
   void addEnumClass(std::string rule, enum_t state){
@@ -131,11 +132,14 @@ struct Scanner {
 
   using match_t = lexertl::match_results<std::string::const_iterator,id_t>;
   using rules_t = lexertl::basic_rules<char,char,id_t>;
+  using macros_t = std::vector<std::pair<std::string,std::string>>;
   using statemachine_t = lexertl::basic_state_machine<char,id_t>;
   using gen_t = lexertl::basic_generator<rules_t, statemachine_t>;
   using iter_t = lexertl::iterator<std::string::const_iterator,statemachine_t,match_t>;
 
   rules_t _rules;
+  macros_t _macros;
+  std::vector<std::string> _str_hold;
   statemachine_t _statemachine;
 };
 

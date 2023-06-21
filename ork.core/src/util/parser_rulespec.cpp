@@ -13,7 +13,7 @@
 #include <ork/util/parser.h>
 #include <ork/kernel/string/deco.inl>
 #include <ork/util/crc.h>
-
+#include <csignal>
 /////////////////////////////////////////////////////////////////////////////////////////////////
 namespace ork {
 /////////////////////////////////////////////////////////////////////////////////////////////////
@@ -90,35 +90,35 @@ struct RuleSpecImpl : public Parser {
   }
   /////////////////////////////////////////////////////////
   void loadScannerRules() { //
-    printf("A\n");
-    _scanner = std::make_shared<Scanner>(block_regex);
-    _scanner->addEnumClass("\\s+", TokenClass::WHITESPACE);
-    _scanner->addEnumClass("[\\n\\r]+", TokenClass::NEWLINE);
-    _scanner->addEnumClass("[a-zA-Z_][a-zA-Z0-9_]*", TokenClass::KW_OR_ID);
-    printf("A2\n");
-    _scanner->addEnumClass("=", TokenClass::EQUALS);
-    _scanner->addEnumClass(",", TokenClass::COMMA);
-    _scanner->addEnumClass(":", TokenClass::COLON);
-    _scanner->addEnumClass(";", TokenClass::SEMICOLON);
-    _scanner->addEnumClass("\\(", TokenClass::L_PAREN);
-    _scanner->addEnumClass("\\)", TokenClass::R_PAREN);
-    printf("A3\n");
-    _scanner->addEnumClass("\\[", TokenClass::L_SQUARE);
-    _scanner->addEnumClass("\\]", TokenClass::R_SQUARE);
-    _scanner->addEnumClass("\\{", TokenClass::L_CURLY);
-    _scanner->addEnumClass("\\}", TokenClass::R_CURLY);
-    _scanner->addEnumClass("\\*", TokenClass::STAR);
-    printf("A4\n");
-    _scanner->addEnumClass("\\+", TokenClass::PLUS);
-    _scanner->addEnumClass("\\-", TokenClass::MINUS);
-    _scanner->addEnumClass("-?(\\d+)", TokenClass::INTEGER);
-    printf("A5\n");
-    _scanner->addEnumClass("\"(\\\\.|[^\"])*\"", TokenClass::QUOTED_REGEX);
-    printf("A5A\n");
-    _scanner->addEnumClass("<-", TokenClass::LEFT_ARROW);
-    printf("A6\n");
-    _scanner->buildStateMachine();
-    printf("B\n");
+    try {
+      _scanner = std::make_shared<Scanner>(block_regex);
+      _scanner->addEnumClass("\\s+", TokenClass::WHITESPACE);
+      _scanner->addEnumClass("[\\n\\r]+", TokenClass::NEWLINE);
+      _scanner->addEnumClass("[a-zA-Z_][a-zA-Z0-9_]*", TokenClass::KW_OR_ID);
+      _scanner->addEnumClass("=", TokenClass::EQUALS);
+      _scanner->addEnumClass(",", TokenClass::COMMA);
+      _scanner->addEnumClass(":", TokenClass::COLON);
+      _scanner->addEnumClass(";", TokenClass::SEMICOLON);
+      _scanner->addEnumClass("\\(", TokenClass::L_PAREN);
+      _scanner->addEnumClass("\\)", TokenClass::R_PAREN);
+      _scanner->addEnumClass("\\[", TokenClass::L_SQUARE);
+      _scanner->addEnumClass("\\]", TokenClass::R_SQUARE);
+      _scanner->addEnumClass("\\{", TokenClass::L_CURLY);
+      _scanner->addEnumClass("\\}", TokenClass::R_CURLY);
+      _scanner->addEnumClass("\\*", TokenClass::STAR);
+      _scanner->addEnumClass("\\+", TokenClass::PLUS);
+      _scanner->addEnumClass("\\-", TokenClass::MINUS);
+      _scanner->addEnumClass("-?(\\d+)", TokenClass::INTEGER);
+      _scanner->addMacro("ESCAPED_CHAR", "\\\\[\"\\\\]");
+      _scanner->addMacro("ANY_ESCAPED", "\\\\.");
+      _scanner->addMacro("ASCII", "[\\\\x00-\\\\x21\\\\x23-\\\\x5B\\\\x5D-\\\\x7F]");
+      _scanner->addEnumClass("\"({ASCII}|{ESCAPED_CHAR}|{ANY_ESCAPED})*\"", TokenClass::QUOTED_REGEX);
+      _scanner->addEnumClass("<-", TokenClass::LEFT_ARROW);
+      _scanner->buildStateMachine();
+    } catch (std::exception& e) {
+      printf("EXCEPTION<%s>\n", e.what());
+      OrkAssert(false);
+    }
   }
   /////////////////////////////////////////////////////////
   void loadGrammar() { //
@@ -126,22 +126,22 @@ struct RuleSpecImpl : public Parser {
     ////////////////////
     // primitives
     ////////////////////
-    auto plus          = matcherForTokenClass(TokenClass::PLUS, "plus");
-    auto minus         = matcherForTokenClass(TokenClass::MINUS, "minus");
-    auto star          = matcherForTokenClass(TokenClass::STAR, "star");
-    auto equals        = matcherForTokenClass(TokenClass::EQUALS, "equals");
-    auto colon         = matcherForTokenClass(TokenClass::COLON, "colon");
-    auto semicolon     = matcherForTokenClass(TokenClass::SEMICOLON, "semicolon");
-    auto comma         = matcherForTokenClass(TokenClass::COMMA, "comma");
-    auto lparen        = matcherForTokenClass(TokenClass::L_PAREN, "lparen");
-    auto rparen        = matcherForTokenClass(TokenClass::R_PAREN, "rparen");
-    auto lsquare       = matcherForTokenClass(TokenClass::L_SQUARE, "lsquare");
-    auto rsquare       = matcherForTokenClass(TokenClass::R_SQUARE, "rsquare");
-    auto lcurly        = matcherForTokenClass(TokenClass::L_CURLY, "lcurly");
-    auto rcurly        = matcherForTokenClass(TokenClass::R_CURLY, "rcurly");
-    auto inttok        = matcherForTokenClass(TokenClass::INTEGER, "int");
-    auto kworid        = matcherForTokenClass(TokenClass::KW_OR_ID, "kw_or_id");
-    auto left_arrow    = matcherForTokenClass(TokenClass::LEFT_ARROW, "left_arrow");
+    auto plus         = matcherForTokenClass(TokenClass::PLUS, "plus");
+    auto minus        = matcherForTokenClass(TokenClass::MINUS, "minus");
+    auto star         = matcherForTokenClass(TokenClass::STAR, "star");
+    auto equals       = matcherForTokenClass(TokenClass::EQUALS, "equals");
+    auto colon        = matcherForTokenClass(TokenClass::COLON, "colon");
+    auto semicolon    = matcherForTokenClass(TokenClass::SEMICOLON, "semicolon");
+    auto comma        = matcherForTokenClass(TokenClass::COMMA, "comma");
+    auto lparen       = matcherForTokenClass(TokenClass::L_PAREN, "lparen");
+    auto rparen       = matcherForTokenClass(TokenClass::R_PAREN, "rparen");
+    auto lsquare      = matcherForTokenClass(TokenClass::L_SQUARE, "lsquare");
+    auto rsquare      = matcherForTokenClass(TokenClass::R_SQUARE, "rsquare");
+    auto lcurly       = matcherForTokenClass(TokenClass::L_CURLY, "lcurly");
+    auto rcurly       = matcherForTokenClass(TokenClass::R_CURLY, "rcurly");
+    auto inttok       = matcherForTokenClass(TokenClass::INTEGER, "int");
+    auto kworid       = matcherForTokenClass(TokenClass::KW_OR_ID, "kw_or_id");
+    auto left_arrow   = matcherForTokenClass(TokenClass::LEFT_ARROW, "left_arrow");
     auto quoted_regex = matcherForTokenClass(TokenClass::QUOTED_REGEX, "quoted_regex");
     ////////////////////
     auto oneof = matcherForWord("oneOf");
@@ -185,11 +185,15 @@ struct RuleSpecImpl : public Parser {
   }
   /////////////////////////////////////////////////////////
   match_ptr_t parseScannerSpec(std::string inp_string) {
-    _scanner->clear();
-    _scanner->scanString(inp_string);
-    _scanner->discardTokensOfClass(uint64_t(TokenClass::WHITESPACE));
-    _scanner->discardTokensOfClass(uint64_t(TokenClass::NEWLINE));
-
+    try {
+      _scanner->clear();
+      _scanner->scanString(inp_string);
+      _scanner->discardTokensOfClass(uint64_t(TokenClass::WHITESPACE));
+      _scanner->discardTokensOfClass(uint64_t(TokenClass::NEWLINE));
+    } catch (std::exception& e) {
+      printf("EXCEPTION<%s>\n", e.what());
+      OrkAssert(false);
+    }
     auto top_view = _scanner->createTopView();
     top_view.dump("top_view");
     auto slv   = std::make_shared<ScannerLightView>(top_view);
@@ -198,11 +202,15 @@ struct RuleSpecImpl : public Parser {
   }
   /////////////////////////////////////////////////////////
   match_ptr_t parseParserSpec(std::string inp_string) {
-    _scanner->clear();
-    _scanner->scanString(inp_string);
-    _scanner->discardTokensOfClass(uint64_t(TokenClass::WHITESPACE));
-    _scanner->discardTokensOfClass(uint64_t(TokenClass::NEWLINE));
-
+    try {
+      _scanner->clear();
+      _scanner->scanString(inp_string);
+      _scanner->discardTokensOfClass(uint64_t(TokenClass::WHITESPACE));
+      _scanner->discardTokensOfClass(uint64_t(TokenClass::NEWLINE));
+    } catch (std::exception& e) {
+      printf("EXCEPTION<%s>\n", e.what());
+      OrkAssert(false);
+    }
     auto top_view = _scanner->createTopView();
     top_view.dump("top_view");
     auto slv   = std::make_shared<ScannerLightView>(top_view);

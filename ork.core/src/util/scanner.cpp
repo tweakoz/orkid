@@ -27,7 +27,16 @@ const Token* Scanner::token(size_t i) const {
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 void Scanner::addRule(std::string rule, id_t state) {
-  _rules.push(rule, state);
+  auto& r = _str_hold.emplace_back(rule);
+  _rules.push(r.c_str(), state);
+}
+
+void Scanner::addMacro(std::string macro, std::string value) {
+  auto pr = std::pair(macro,value);
+  auto& item = _macros.emplace_back(pr);
+
+  _rules.insert_macro(item.first.c_str(), item.second.c_str());
+
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
