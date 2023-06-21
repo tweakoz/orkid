@@ -202,6 +202,28 @@ struct RuleSpecImpl : public Parser {
       }
     };
     _rsi_scanner_matcher = zeroOrMore(scanner_rule, "scanner_rules");
+    _rsi_scanner_matcher->_notif = [=](match_ptr_t match) {
+      std::string _current_rule_name = "";
+      try{
+        _user_scanner = std::make_shared<Scanner>(block_regex);
+        for( auto item : _user_scanner_macros ){
+          auto macro = item.second;
+          _current_rule_name = macro->_name;
+          _user_scanner->addMacro(macro->_name, macro->_regex);
+        }
+        for( auto item : _user_scanner_rules ){
+          auto rule = item.second;
+          uint64_t crc_id = CrcString(macro->_name.c_str()).hashed();
+          _current_rule_name = rule->_name;
+          _user_scanner->addEnumClass(rule->_regex, crc_id);
+        }
+        _scanner->buildStateMachine();
+      }
+      catch(std::exception& e){
+        printf( "EXCEPTION cur_rule<%s>  cause<%s>\n", _current_rule_name.c_str(), e.what() );
+        OrkAssert(false);
+      }
+    };
     ////////////////////
     // parser rules
     ////////////////////
@@ -266,6 +288,7 @@ struct RuleSpecImpl : public Parser {
   /////////////////////////////////////////////////////////
 
   scanner_ptr_t _scanner;
+  scanner_ptr_t _user_scanner;
   matcher_ptr_t _rsi_scanner_matcher;
   matcher_ptr_t _rsi_parser_matcher;
 
