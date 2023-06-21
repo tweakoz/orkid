@@ -486,6 +486,14 @@ public:
   //////////////////////////////////////////////////////////////
   //
   //////////////////////////////////////////////////////////////
+  template <typename T> attempt_cast<std::shared_ptr<T>> tryAsShared() {
+    static_assert(sizeof(std::shared_ptr<T>) <= ksize, "static_variant size violation");
+    bool type_ok = (_mtinfo != nullptr) ? (typeid(std::shared_ptr<T>) == *_mtinfo) : false;
+    return attempt_cast<std::shared_ptr<T>>((std::shared_ptr<T>*)(type_ok ? &_buffer[0] : nullptr));
+  }
+  //////////////////////////////////////////////////////////////
+  //
+  //////////////////////////////////////////////////////////////
   template <typename T> attempt_cast_const<T> tryAs() const {
     static_assert(sizeof(T) <= ksize, "static_variant size violation");
     bool type_ok = (_mtinfo != nullptr) ? (typeid(T) == *_mtinfo) : false;

@@ -10,8 +10,9 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 std::string scanner_spec = R"xxx(
-    MULTI_LINE_COMMENT <- "\/\*([^*]|\\*+[^/*])*\*+\/"
-    SINGLE_LINE_COMMENT <- "\/\/.*[\n\r]"
+    macro(M1)           <- "xyz"
+    MULTI_LINE_COMMENT  <- "/\*([^*]|\*+[^/*])*\*+/"
+    SINGLE_LINE_COMMENT <- "//.*[\n\r]"
     WHITESPACE          <- "\s+"
     NEWLINE             <- "[\n\r]+"
     KW_OR_ID            <- "[a-zA-Z_][a-zA-Z0-9_]*"

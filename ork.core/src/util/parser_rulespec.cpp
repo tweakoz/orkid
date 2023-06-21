@@ -76,9 +76,23 @@ struct AstNode {
   }
 };
 
+struct ScannerRule{
+  std::string _name;
+  std::string _regex;
+};
+struct ScannerMacro{
+  std::string _name;
+  std::string _regex;
+};
+
+using scanner_rule_ptr_t = std::shared_ptr<ScannerRule>;
+using scanner_macro_ptr_t = std::shared_ptr<ScannerMacro>;
+
 } // namespace AST
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
+
+
 
 static constexpr const char* block_regex = "(function|yo|xxx)";
 
@@ -148,18 +162,44 @@ struct RuleSpecImpl : public Parser {
     auto zom   = matcherForWord("zom");
     auto oom   = matcherForWord("oom");
     auto opt   = matcherForWord("opt");
+    auto macro   = matcherForWord("macro");
     ////////////////////
     // scanner rules
     ////////////////////
-    auto scanner_rule    = sequence({kworid, left_arrow, quoted_regex}, "scanner_rule");
+    auto macro_item = sequence({macro, lparen, kworid, rparen }, "macro_item");
+    auto scanner_key    = oneOf({macro_item,kworid}, "scanner_key");
+    auto scanner_rule    = sequence({scanner_key, left_arrow, quoted_regex}, "scanner_rule");
     scanner_rule->_notif = [=](match_ptr_t match) {
       auto seq = match->_impl.getShared<Sequence>();
-      auto rule_name = seq->_items[0]->_impl.getShared<ClassMatch>()->_token->text;
+      auto rule_key_item = seq->_items[0]->_impl.getShared<OneOf>()->_selected;
       auto qrx = seq->_items[2]->_impl.getShared<ClassMatch>()->_token->text;
       auto rx = qrx.substr(1, qrx.size() - 2); // remove surrounding quotes
-      auto rule = std::pair(rule_name,rx);
-      _user_scanner_rules.push_back(rule);
-      printf( "ADDED SCANNER RULE<%s> <- %s\n", rule_name.c_str(), rx.c_str() );
+      if( auto as_classmatch = rule_key_item->_impl.tryAsShared<ClassMatch>()){
+        auto rule_name = as_classmatch.value()->_token->text;
+        auto rule = std::make_shared<AST::ScannerRule>();
+        rule->_name = rule_name;
+        rule->_regex = rx;
+        auto it = _user_scanner_rules.find(rule_name);
+        OrkAssert(it==_user_scanner_rules.end());
+        printf( "ADDING SCANNER RULE<%s> <- %s\n", rule_name.c_str(), rx.c_str() );
+        _user_scanner_rules[rule_name] = rule;
+      }
+      else if( auto as_seq = rule_key_item->_impl.tryAsShared<Sequence>() ){
+        auto sub_seq = as_seq.value();
+        auto macro_str = sub_seq->_items[0]->_impl.getShared<WordMatch>()->_token->text;
+        OrkAssert(macro_str=="macro");
+        auto macro_name = sub_seq->_items[2]->_impl.getShared<ClassMatch>()->_token->text;
+        auto macro = std::make_shared<AST::ScannerMacro>();
+        macro->_name = macro_name;
+        macro->_regex = rx;
+        auto it = _user_scanner_macros.find(macro_name);
+        OrkAssert(it==_user_scanner_macros.end());
+        printf( "ADDING SCANNER MACRO<%s> <- %s\n", macro_name.c_str(), rx.c_str() );
+        _user_scanner_macros[macro_name] = macro;
+      }
+      else{
+        OrkAssert(false);
+      }
     };
     _rsi_scanner_matcher = zeroOrMore(scanner_rule, "scanner_rules");
     ////////////////////
@@ -229,8 +269,8 @@ struct RuleSpecImpl : public Parser {
   matcher_ptr_t _rsi_scanner_matcher;
   matcher_ptr_t _rsi_parser_matcher;
 
-  using user_scanner_rule_t = std::pair<std::string, std::string>;
-  std::vector<user_scanner_rule_t> _user_scanner_rules;
+  std::map<std::string,AST::scanner_rule_ptr_t> _user_scanner_rules;
+  std::map<std::string,AST::scanner_macro_ptr_t> _user_scanner_macros;
 };
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
