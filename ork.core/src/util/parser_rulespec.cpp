@@ -109,10 +109,11 @@ struct RuleSpecImpl : public Parser {
       _scanner->addEnumClass("\\+", TokenClass::PLUS);
       _scanner->addEnumClass("\\-", TokenClass::MINUS);
       _scanner->addEnumClass("-?(\\d+)", TokenClass::INTEGER);
-      _scanner->addMacro("ESCAPED_CHAR", "\\\\[\"\\\\]");
-      _scanner->addMacro("ANY_ESCAPED", "\\\\.");
-      _scanner->addMacro("ASCII", "[\\\\x00-\\\\x21\\\\x23-\\\\x5B\\\\x5D-\\\\x7F]");
-      _scanner->addEnumClass("\"({ASCII}|{ESCAPED_CHAR}|{ANY_ESCAPED})*\"", TokenClass::QUOTED_REGEX);
+      //_scanner->addMacro("ESCAPED_CHAR", "\\\\[\"\\\\]");
+      //_scanner->addMacro("ANY_ESCAPED", "\\\\.");
+      //_scanner->addMacro("ASCII", "[\\\\x00-\\\\x21\\\\x23-\\\\x5B\\\\x5D-\\\\x7F]");
+      //_scanner->addMacro("ASCII_WITHOUT_DBLQUOTE", "[\\\\x00-\\\\x21\\\\x23-\\\\x7F]");
+      _scanner->addEnumClass(R"(\"[^\"]*\")", TokenClass::QUOTED_REGEX);
       _scanner->addEnumClass("<-", TokenClass::LEFT_ARROW);
       _scanner->buildStateMachine();
     } catch (std::exception& e) {
@@ -122,7 +123,6 @@ struct RuleSpecImpl : public Parser {
   }
   /////////////////////////////////////////////////////////
   void loadGrammar() { //
-    printf("C\n");
     ////////////////////
     // primitives
     ////////////////////
@@ -151,13 +151,20 @@ struct RuleSpecImpl : public Parser {
     ////////////////////
     // scanner rules
     ////////////////////
-    printf("D\n");
     auto scanner_rule    = sequence({kworid, left_arrow, quoted_regex}, "scanner_rule");
+    scanner_rule->_notif = [=](match_ptr_t match) {
+      auto seq = match->_impl.getShared<Sequence>();
+      auto rule_name = seq->_items[0]->_impl.getShared<ClassMatch>()->_token->text;
+      auto qrx = seq->_items[2]->_impl.getShared<ClassMatch>()->_token->text;
+      auto rx = qrx.substr(1, qrx.size() - 2); // remove surrounding quotes
+      auto rule = std::pair(rule_name,rx);
+      _user_scanner_rules.push_back(rule);
+      printf( "ADDED SCANNER RULE<%s> <- %s\n", rule_name.c_str(), rx.c_str() );
+    };
     _rsi_scanner_matcher = zeroOrMore(scanner_rule, "scanner_rules");
     ////////////////////
     // parser rules
     ////////////////////
-    printf("E\n");
     auto rule_expression = declare("rule_expression");
     //
     auto rule_zom      = sequence({zom, lcurly, rule_expression, rcurly}, "rule_zom");
@@ -181,7 +188,6 @@ struct RuleSpecImpl : public Parser {
         });
     auto parser_rule    = sequence({kworid, left_arrow, rule_expression}, "parser_rule");
     _rsi_parser_matcher = zeroOrMore(parser_rule, "parser_rules");
-    printf("F\n");
   }
   /////////////////////////////////////////////////////////
   match_ptr_t parseScannerSpec(std::string inp_string) {
@@ -222,6 +228,9 @@ struct RuleSpecImpl : public Parser {
   scanner_ptr_t _scanner;
   matcher_ptr_t _rsi_scanner_matcher;
   matcher_ptr_t _rsi_parser_matcher;
+
+  using user_scanner_rule_t = std::pair<std::string, std::string>;
+  std::vector<user_scanner_rule_t> _user_scanner_rules;
 };
 
 /////////////////////////////////////////////////////////////////////////////////////////////////

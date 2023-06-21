@@ -91,6 +91,7 @@ struct MyParser2 : public Parser {
 
   MyParser2() {
     this->loadScannerSpec(scanner_spec);
+    OrkAssert(false);
     this->loadParserSpec(parser_spec);
     ///////////////////////////////////////////////////////////
     auto expression = rule("expression");
