@@ -11,21 +11,21 @@
 
 std::string scanner_spec = R"xxx(
     macro(M1)           <- "xyz"
-    MULTI_LINE_COMMENT  <- "/\*([^*]|\*+[^/*])*\*+/"
-    SINGLE_LINE_COMMENT <- "//.*[\n\r]"
+    MULTI_LINE_COMMENT  <- "\/\*([^*]|\*+[^/*])*\*+\/"
+    SINGLE_LINE_COMMENT <- "\/\/.*[\n\r]"
     WHITESPACE          <- "\s+"
     NEWLINE             <- "[\n\r]+"
     KW_OR_ID            <- "[a-zA-Z_][a-zA-Z0-9_]*"
     EQUALS              <- "="
     COMMA               <- ","
     SEMICOLON           <- ";"
-    L_PAREN             <- "("
-    R_PAREN             <- ")"
-    L_CURLY             <- "{"
-    R_CURLY             <- "}"
-    STAR                <- "*"
-    PLUS                <- "+"
-    MINUS               <- "-"
+    L_PAREN             <- "\("
+    R_PAREN             <- "\)"
+    L_CURLY             <- "\{"
+    R_CURLY             <- "\}"
+    STAR                <- "\*"
+    PLUS                <- "\+"
+    MINUS               <- "\-"
     FLOATING_POINT      <- "-?(\d*\.?)(\d+)([eE][-+]?\d+)?"
     INTEGER             <- "-?(\d+)"
     FUNCTION            <- "function"
@@ -92,8 +92,8 @@ struct MyParser2 : public Parser {
 
   MyParser2() {
     this->loadScannerSpec(scanner_spec);
-    OrkAssert(false);
     this->loadParserSpec(parser_spec);
+    OrkAssert(false);
     ///////////////////////////////////////////////////////////
     auto expression = rule("expression");
     auto product    = rule("product");

@@ -129,7 +129,9 @@ struct RuleSpecImpl : public Parser {
       //_scanner->addMacro("ASCII_WITHOUT_DBLQUOTE", "[\\\\x00-\\\\x21\\\\x23-\\\\x7F]");
       _scanner->addEnumClass(R"(\"[^\"]*\")", TokenClass::QUOTED_REGEX);
       _scanner->addEnumClass("<-", TokenClass::LEFT_ARROW);
+        printf( "Building state machine\n");
       _scanner->buildStateMachine();
+        printf( "done...\n");
     } catch (std::exception& e) {
       printf("EXCEPTION<%s>\n", e.what());
       OrkAssert(false);
@@ -137,6 +139,7 @@ struct RuleSpecImpl : public Parser {
   }
   /////////////////////////////////////////////////////////
   void loadGrammar() { //
+    printf( "Loading Grammar\n");
     ////////////////////
     // primitives
     ////////////////////
@@ -209,12 +212,14 @@ struct RuleSpecImpl : public Parser {
         for( auto item : _user_scanner_macros ){
           auto macro = item.second;
           _current_rule_name = macro->_name;
+          printf( "IMPLEMENT MACRO <%s : %s>\n", macro->_name.c_str(), macro->_regex.c_str() );
           _user_scanner->addMacro(macro->_name, macro->_regex);
         }
         for( auto item : _user_scanner_rules ){
           auto rule = item.second;
-          uint64_t crc_id = CrcString(macro->_name.c_str()).hashed();
+          uint64_t crc_id = CrcString(rule->_name.c_str()).hashed();
           _current_rule_name = rule->_name;
+          printf( "IMPLEMENT EnumClass <%s : %zu : %s>\n", rule->_name.c_str(), crc_id, rule->_regex.c_str() );
           _user_scanner->addEnumClass(rule->_regex, crc_id);
         }
         _scanner->buildStateMachine();
