@@ -55,6 +55,7 @@ enum class TokenClass : uint64_t {
   CrcEnum(PLUS),
   CrcEnum(MINUS),
   CrcEnum(COMMA),
+  CrcEnum(PIPE),
   CrcEnum(INTEGER),
   CrcEnum(KW_OR_ID),
   CrcEnum(QUOTED_REGEX),
@@ -122,6 +123,7 @@ struct RuleSpecImpl : public Parser {
       _scanner->addEnumClass("\\*", TokenClass::STAR);
       _scanner->addEnumClass("\\+", TokenClass::PLUS);
       _scanner->addEnumClass("\\-", TokenClass::MINUS);
+      _scanner->addEnumClass("\\|", TokenClass::PIPE);
       _scanner->addEnumClass("-?(\\d+)", TokenClass::INTEGER);
       //_scanner->addMacro("ESCAPED_CHAR", "\\\\[\"\\\\]");
       //_scanner->addMacro("ANY_ESCAPED", "\\\\.");
@@ -156,12 +158,13 @@ struct RuleSpecImpl : public Parser {
     auto rsquare      = matcherForTokenClass(TokenClass::R_SQUARE, "rsquare");
     auto lcurly       = matcherForTokenClass(TokenClass::L_CURLY, "lcurly");
     auto rcurly       = matcherForTokenClass(TokenClass::R_CURLY, "rcurly");
+    auto pipe         = matcherForTokenClass(TokenClass::PIPE, "pipe");
     auto inttok       = matcherForTokenClass(TokenClass::INTEGER, "int");
     auto kworid       = matcherForTokenClass(TokenClass::KW_OR_ID, "kw_or_id");
     auto left_arrow   = matcherForTokenClass(TokenClass::LEFT_ARROW, "left_arrow");
     auto quoted_regex = matcherForTokenClass(TokenClass::QUOTED_REGEX, "quoted_regex");
     ////////////////////
-    auto oneof = matcherForWord("oneOf");
+    auto sel = matcherForWord("sel");
     auto zom   = matcherForWord("zom");
     auto oom   = matcherForWord("oom");
     auto opt   = matcherForWord("opt");
@@ -232,11 +235,14 @@ struct RuleSpecImpl : public Parser {
     ////////////////////
     // parser rules
     ////////////////////
+
+
     auto rule_expression = declare("rule_expression");
     //
-    auto rule_zom      = sequence({zom, lcurly, rule_expression, rcurly}, "rule_zom");
+    //
+    auto rule_zom      = sequence({zom, lcurly, zeroOrMore(rule_expression), rcurly}, "rule_zom");
     auto rule_oom      = sequence({oom, lcurly, rule_expression, rcurly}, "rule_oom");
-    auto rule_1of      = sequence({oneof, lcurly, rule_expression, rcurly}, "rule_oneof");
+    auto rule_sel     = sequence({sel, lcurly, oneOrMore(rule_expression), rcurly }, "rule_sel");
     auto rule_opt      = sequence({opt, lcurly, rule_expression, rcurly}, "rule_opt");
     auto rule_sequence = sequence({lsquare, zeroOrMore(rule_expression), rsquare}, "rule_sequence");
     auto rule_grp      = sequence({lparen, zeroOrMore(rule_expression), rparen}, "rule_grp");
@@ -247,14 +253,27 @@ struct RuleSpecImpl : public Parser {
             oneOf({// load previously declared rule_expression
                    rule_zom,
                    rule_oom,
-                   rule_1of,
+                   rule_sel,
                    rule_opt,
                    rule_sequence,
-                   rule_grp}),
+                   rule_grp,
+                   kworid,
+            }),
             optional(sequence({colon, quoted_regex}), "expr_name"),
         });
     auto parser_rule    = sequence({kworid, left_arrow, rule_expression}, "parser_rule");
+
+    parser_rule->_notif = [=](match_ptr_t match) {
+      auto rulename = match->_impl.getShared<Sequence>()->_items[0]->_impl.getShared<ClassMatch>()->_token->text;
+
+      printf( "ADD PARSER RULE<%s>\n", rulename.c_str());
+    };
+
     _rsi_parser_matcher = zeroOrMore(parser_rule, "parser_rules");
+
+    _rsi_parser_matcher->_notif = [=](match_ptr_t match) {
+      printf( "IMPLEMENT PARSER RULES\n");
+    };
   }
   /////////////////////////////////////////////////////////
   match_ptr_t parseScannerSpec(std::string inp_string) {
@@ -271,6 +290,9 @@ struct RuleSpecImpl : public Parser {
     top_view.dump("top_view");
     auto slv   = std::make_shared<ScannerLightView>(top_view);
     auto match = this->match(slv, _rsi_scanner_matcher);
+    OrkAssert(match);
+    OrkAssert(match->_view->_start == top_view._start);
+    OrkAssert(match->_view->_end == top_view._end);
     return match;
   }
   /////////////////////////////////////////////////////////
@@ -288,6 +310,9 @@ struct RuleSpecImpl : public Parser {
     top_view.dump("top_view");
     auto slv   = std::make_shared<ScannerLightView>(top_view);
     auto match = this->match(slv, _rsi_parser_matcher);
+    OrkAssert(match);
+    OrkAssert(match->_view->_start == top_view._start);
+    OrkAssert(match->_view->_end == top_view._end);
     return match;
   }
   /////////////////////////////////////////////////////////

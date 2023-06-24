@@ -16,7 +16,7 @@
 /////////////////////////////////////////////////////////////////////////////////////////////////
 namespace ork {
 /////////////////////////////////////////////////////////////////////////////////////////////////
-static constexpr bool _DEBUG = true;
+static constexpr bool _DEBUG = false;
 //////////////////////////////////////////////////////////////////////
 
 void Match::dump(int indent) const {
@@ -145,6 +145,19 @@ void Parser::sequence(matcher_ptr_t matcher, std::vector<matcher_ptr_t> sub_matc
     size_t iter       = 0;
     size_t num_iter   = sub_matchers.size();
     for (auto sub_matcher : sub_matchers) {
+      if(0)log_begin(
+          "SEQSS<%s> : match_item<%s> iter<%zu/%zu> itrst<%d> itren<%d> slvst<%d> slvend<%d> ",
+          matcher->_name.c_str(),
+          sub_matcher->_name.c_str(),
+          iter,
+          num_iter,
+          slv_iter->_start,
+          slv_iter->_end,
+          slv->_start,
+          slv->_end);
+      if(slv_iter->_start>slv_iter->_end){
+        break;
+      }
       auto match_item = _match(sub_matcher, slv_iter);
       log_begin(
           "SEQ<%s> : match_item<%s> iter<%zu/%zu> st<%d> end<%d> ",

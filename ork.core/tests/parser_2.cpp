@@ -36,15 +36,15 @@ std::string scanner_spec = R"xxx(
 ///////////////////////////////////////////////////////////////////////////////
 
 std::string parser_spec = R"xxx(
-    datatype <- DT_FLOAT | DT_INT
-    argument_decl <- [ datatype KW_OR_ID {COMMA} ]
-    number <- FLOATING_POINT | INTEGER
+    datatype <- sel{DT_FLOAT DT_INT}
+    argument_decl <- [ datatype KW_OR_ID opt{COMMA} ]
+    number <- sel{FLOATING_POINT INTEGER}
     variableDeclaration <- [datatype KW_OR_ID]
     variableReference <- KW_OR_ID
 
-    product <- [ primary zom{ [STAR primary] } ]
+    product <- [ primary opt{ [STAR primary] } ]
 
-    sum <- oneOf {
+    sum <- sel{
         [ product PLUS product ] : "add"
         [ product MINUS product ] : "sub"
         product : "pro"
@@ -54,19 +54,19 @@ std::string parser_spec = R"xxx(
 
     term <- [ L_PAREN expression R_PAREN ]
 
-    primary <- oneOf { FLOATING_POINT
-                       INTEGER
-                       variableReference
-                       term
+    primary <- sel{ FLOATING_POINT
+                    INTEGER
+                    variableReference
+                    term
     }
 
     assignment_statement <- [
-        oneOf { variableDeclaration variableReference } : "ass1of"
+        sel { variableDeclaration variableReference } : "ass1of"
         EQUALS
         expression
     ]
 
-    statement <- oneOf { 
+    statement <- sel{ 
         [ assignment_statement SEMICOLON ]
         SEMICOLON
     }
@@ -78,11 +78,11 @@ std::string parser_spec = R"xxx(
         argument_decl : "args"
         R_PAREN
         L_CURLY
-        zom{ statement } : "statements"
+        zom{statement} : "statements"
         R_CURLY
     ]
     
-    funcdefs <- zom{ funcdef }
+    funcdefs <- zom{funcdef}
 
 )xxx";
 
@@ -93,7 +93,6 @@ struct MyParser2 : public Parser {
   MyParser2() {
     this->loadScannerSpec(scanner_spec);
     this->loadParserSpec(parser_spec);
-    OrkAssert(false);
     ///////////////////////////////////////////////////////////
     auto expression = rule("expression");
     auto product    = rule("product");
