@@ -146,8 +146,8 @@ struct RuleSpecImpl : public Parser {
     auto indentstr = std::string(indent * 2, ' ');
     printf("%s_onOOM<%s>\n", indentstr.c_str(), match->_matcher->_name.c_str());
     for (auto item : nom->_items) {
-      auto exp = item->_impl.getShared<Sequence>()->_items[2];
-      _onExpression(exp);
+      printf( "%s oom subitem<%s>\n", indentstr.c_str(), item->_matcher->_name.c_str() );
+      _onExpression(item);
     }
   }
   /////////////////////////////////////////////////////////
@@ -157,17 +157,21 @@ struct RuleSpecImpl : public Parser {
     auto indentstr = std::string(indent * 2, ' ');
     printf("%s_onZOM<%s>\n", indentstr.c_str(), match->_matcher->_name.c_str());
     for (auto item : nom->_items) {
-      auto exp = item->_impl.getShared<Sequence>()->_items[2];
-      _onExpression(exp);
+      printf( "%s zom subitem<%s>\n", indentstr.c_str(), item->_matcher->_name.c_str() );
+      _onExpression(item);
     }
   }
   /////////////////////////////////////////////////////////
   void _onSEL(match_ptr_t match) {
-    auto sel       = match->_impl.getShared<OneOf>();
+    auto nom = match->_impl.getShared<NOrMore>();
+    OrkAssert(nom->_minmatches == 1);
+    OrkAssert(nom->_items.size() >= 1);
     auto indentstr = std::string(indent * 2, ' ');
     printf("%s_onSEL<%s>\n", indentstr.c_str(), match->_matcher->_name.c_str());
-    auto exp = sel->_selected->_impl.getShared<Sequence>()->_items[2];
-    _onExpression(exp);
+    for (auto item : nom->_items) {
+      printf( "%s sel subitem<%s>\n", indentstr.c_str(), item->_matcher->_name.c_str() );
+      _onExpression(item);
+    }
   }
   /////////////////////////////////////////////////////////
   void _onOPT(match_ptr_t match) {
@@ -175,19 +179,31 @@ struct RuleSpecImpl : public Parser {
     auto indentstr = std::string(indent * 2, ' ');
     printf("%s_onOPT<%s>\n", indentstr.c_str(), match->_matcher->_name.c_str());
     if (opt->_subitem) {
-      auto exp = opt->_subitem->_impl.getShared<Sequence>()->_items[2];
-      _onExpression(exp);
+      printf( "%s opt subitem<%s>\n", indentstr.c_str(), opt->_subitem->_matcher->_name.c_str() );
+      _onExpression(opt->_subitem);
     }
   }
   /////////////////////////////////////////////////////////
   void _onExpression(match_ptr_t match, std::string named = "") {
-    indent++;
     auto indentstr = std::string(indent * 2, ' ');
-    printf("%s_onExpression<%s>\n", indentstr.c_str(), match->_matcher->_name.c_str());
+
+    indent++;
     auto expression_seq  = match->_impl.getShared<Sequence>();
     auto expression_sel  = expression_seq->_items[0]->_impl.getShared<OneOf>()->_selected;
     auto expression_name = expression_seq->_items[1]->_impl.getShared<Optional>()->_subitem;
+
+    if( expression_name ){
+      expression_name = expression_name->_impl.getShared<Sequence>()->_items[1];
+      auto xname = expression_name->_impl.getShared<ClassMatch>()->_token->text;
+      printf("%s_onExpression<%s> named<%s>\n", indentstr.c_str(), match->_matcher->_name.c_str(), xname.c_str() );
+    }
+    else{
+      printf("%s_onExpression<%s>\n", indentstr.c_str(), match->_matcher->_name.c_str() );
+    }
+
+
     if (expression_sel) {
+
       if (auto as_seq = expression_sel->_impl.tryAsShared<Sequence>()) {
         auto subseq       = as_seq.value();
         auto subseq0      = subseq->_items[0];
@@ -216,7 +232,7 @@ struct RuleSpecImpl : public Parser {
           auto token      = classmatch->_token;
           if (classmatch->_tokclass == uint64_t(TokenClass::L_SQUARE)) {
           } else if (classmatch->_tokclass == uint64_t(TokenClass::L_PAREN)) {
-            printf("IMPLEMENT STRING\n");
+            printf("%s IMPLEMENT STRING <%s>\n", indentstr.c_str(), token->text.c_str() );
           } else {
             OrkAssert(false);
           }
@@ -227,7 +243,8 @@ struct RuleSpecImpl : public Parser {
         }
       } else { // kworid
         OrkAssert(expression_sel->_impl.isShared<ClassMatch>());
-        printf("IMPLEMENT ID\n");
+        auto classmatch = expression_sel->_impl.getShared<ClassMatch>();
+        printf("%s IMPLEMENT ID <%s>\n", indentstr.c_str(), classmatch->_token->text.c_str() );
       }
     }
     indent--;
