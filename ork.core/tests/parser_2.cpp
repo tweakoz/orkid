@@ -56,7 +56,7 @@ std::string parser_spec = R"xxx(
 
     primary <- sel{ FLOATING_POINT
                     INTEGER
-                    variableReference **
+                    variableReference
                     term
     }
 
