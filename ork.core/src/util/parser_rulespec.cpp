@@ -34,9 +34,9 @@ void Parser::on(const std::string& rule_name, matcher_notif_t fn) {
   if (it != _matchers_by_name.end()) {
     matcher_ptr_t matcher = it->second;
     matcher->_notif       = fn;
-    printf( "matcher<%s> notif assigned\n", rule_name.c_str() );
+    printf("matcher<%s> notif assigned\n", rule_name.c_str());
   } else {
-    logerrchannel()->log( "matcher<%s> not found", rule_name.c_str() );
+    logerrchannel()->log("matcher<%s> not found", rule_name.c_str());
     OrkAssert(false);
   }
 }
@@ -92,44 +92,56 @@ struct Sequence;
 struct Group;
 struct ExprKWID;
 //
-using astnode_ptr_t = std::shared_ptr<AstNode>;
+using astnode_ptr_t    = std::shared_ptr<AstNode>;
 using expression_ptr_t = std::shared_ptr<Expression>;
-using oneormore_ptr_t = std::shared_ptr<OneOrMore>;
+using oneormore_ptr_t  = std::shared_ptr<OneOrMore>;
 using zeroormore_ptr_t = std::shared_ptr<ZeroOrMore>;
-using select_ptr_t = std::shared_ptr<Select>;
-using optional_ptr_t = std::shared_ptr<Optional>;
-using sequence_ptr_t = std::shared_ptr<Sequence>;
-using group_ptr_t = std::shared_ptr<Group>;
-using expr_kwid_ptr_t = std::shared_ptr<ExprKWID>;
+using select_ptr_t     = std::shared_ptr<Select>;
+using optional_ptr_t   = std::shared_ptr<Optional>;
+using sequence_ptr_t   = std::shared_ptr<Sequence>;
+using group_ptr_t      = std::shared_ptr<Group>;
+using expr_kwid_ptr_t  = std::shared_ptr<ExprKWID>;
 //
 struct AstNode {
   std::string _name;
   virtual ~AstNode() {
   }
-  virtual matcher_fn_t genMatcherFunction() const {
-    OrkAssert(false);
-    return nullptr;
+  match_ptr_t match(matcher_ptr_t par_matcher, scannerlightview_constptr_t& inp_view) {
+    OrkAssert(this);
+    OrkAssert(_match_fn);
+    return _match_fn(par_matcher, inp_view);
   }
+  matcher_fn_t _match_fn;
 };
 //
 struct Expression : public AstNode {
-  matcher_fn_t genMatcherFunction() const final {
-    return [=](matcher_ptr_t par_matcher, scannerlightview_constptr_t slv) -> match_ptr_t {
-      printf( "GOT USER EXPR MATCHER<%s> slv.st<%zu> slv.en<%zu>\n", par_matcher->_name.c_str(), slv->_start, slv->_end );
+  Expression(Parser* user_parser, std::string name = "") {
+
+    _name = "Expression";
+
+    if (name != "") {
+      _name = name;
+    }
+
+    _match_fn = [=](matcher_ptr_t par_matcher, scannerlightview_constptr_t slv) -> match_ptr_t {
+      printf("GOT USER EXPR MATCHER<%s> slv.st<%zu> slv.en<%zu>\n", par_matcher->_name.c_str(), slv->_start, slv->_end);
       OrkAssert(_expr_selected);
-      auto submatcher_fn = _expr_selected->genMatcherFunction();
-      return submatcher_fn(par_matcher, slv);
+      return _expr_selected->match(par_matcher, slv);
     };
+
+    _user_matcher        = std::make_shared<Matcher>(_match_fn);
+    _user_matcher->_name = name;
   }
+  matcher_ptr_t _user_matcher;
   astnode_ptr_t _expr_selected;
   std::string _expr_name;
 };
 struct ExprKWID : public AstNode {
-  matcher_fn_t genMatcherFunction() const final {
-    OrkAssert(false);
-    return [=](matcher_ptr_t par_matcher, scannerlightview_constptr_t slv) -> match_ptr_t {
-      printf( "GOT USER ExprKWID MATCHER<%s> slv.st<%zu> slv.en<%zu>\n", par_matcher->_name.c_str(), slv->_start, slv->_end );
-      OrkAssert(false); 
+  ExprKWID(Parser* user_parser) {
+    _name     = "ExprKWID";
+    _match_fn = [=](matcher_ptr_t par_matcher, scannerlightview_constptr_t slv) -> match_ptr_t {
+      printf("GOT USER ExprKWID MATCHER<%s> slv.st<%zu> slv.en<%zu>\n", par_matcher->_name.c_str(), slv->_start, slv->_end);
+      OrkAssert(false);
       return nullptr;
     };
   }
@@ -138,66 +150,68 @@ struct ExprKWID : public AstNode {
 };
 
 struct OneOrMore : public AstNode {
-  matcher_fn_t genMatcherFunction() const final {
-    OrkAssert(false);
-    return [=](matcher_ptr_t par_matcher, scannerlightview_constptr_t slv) -> match_ptr_t {
-      printf( "GOT USER OOM MATCHER<%s> slv.st<%zu> slv.en<%zu>\n", par_matcher->_name.c_str(), slv->_start, slv->_end );
-      OrkAssert(false); 
+  OneOrMore(Parser* user_parser) {
+    _name     = "OneOrMore";
+    _match_fn = [=](matcher_ptr_t par_matcher, scannerlightview_constptr_t slv) -> match_ptr_t {
+      printf("GOT USER OOM MATCHER<%s> slv.st<%zu> slv.en<%zu>\n", par_matcher->_name.c_str(), slv->_start, slv->_end);
+      OrkAssert(false);
       return nullptr;
     };
   }
   std::vector<expression_ptr_t> _subexpressions;
 };
 struct ZeroOrMore : public AstNode {
-  matcher_fn_t genMatcherFunction() const final {
-    OrkAssert(false);
-    return [=](matcher_ptr_t par_matcher, scannerlightview_constptr_t slv) -> match_ptr_t {
-      printf( "GOT USER ZOM MATCHER<%s> slv.st<%zu> slv.en<%zu>\n", par_matcher->_name.c_str(), slv->_start, slv->_end );
-      OrkAssert(false); 
+  ZeroOrMore(Parser* user_parser) {
+    _name = "ZeroOrMore";
+    //_ZOM = user_parser->nOrMore(matcher, 0, name, false);
+    _match_fn = [=](matcher_ptr_t par_matcher, scannerlightview_constptr_t slv) -> match_ptr_t {
+      printf("GOT USER ZOM MATCHER<%s> slv.st<%zu> slv.en<%zu>\n", par_matcher->_name.c_str(), slv->_start, slv->_end);
+      OrkAssert(false);
       return nullptr;
     };
   }
   std::vector<expression_ptr_t> _subexpressions;
+  matcher_ptr_t _ZOM;
 };
 struct Select : public AstNode {
-  matcher_fn_t genMatcherFunction() const final {
-    OrkAssert(false);
-    return [=](matcher_ptr_t par_matcher, scannerlightview_constptr_t slv) -> match_ptr_t {
-      printf( "GOT USER SEL MATCHER<%s> slv.st<%zu> slv.en<%zu>\n", par_matcher->_name.c_str(), slv->_start, slv->_end );
-      OrkAssert(false); 
+  Select(Parser* user_parser) {
+    _name     = "Select";
+    _match_fn = [=](matcher_ptr_t par_matcher, scannerlightview_constptr_t slv) -> match_ptr_t {
+      printf("GOT USER SEL MATCHER<%s> slv.st<%zu> slv.en<%zu>\n", par_matcher->_name.c_str(), slv->_start, slv->_end);
+      OrkAssert(false);
       return nullptr;
     };
   }
   std::vector<expression_ptr_t> _subexpressions;
 };
 struct Optional : public AstNode {
-  matcher_fn_t genMatcherFunction() const final {
-    OrkAssert(false);
-    return [=](matcher_ptr_t par_matcher, scannerlightview_constptr_t slv) -> match_ptr_t {
-      printf( "GOT USER OPT MATCHER<%s> slv.st<%zu> slv.en<%zu>\n", par_matcher->_name.c_str(), slv->_start, slv->_end );
-      OrkAssert(false); 
+  Optional(Parser* user_parser) {
+    _name     = "Optional";
+    _match_fn = [=](matcher_ptr_t par_matcher, scannerlightview_constptr_t slv) -> match_ptr_t {
+      printf("GOT USER OPT MATCHER<%s> slv.st<%zu> slv.en<%zu>\n", par_matcher->_name.c_str(), slv->_start, slv->_end);
+      OrkAssert(false);
       return nullptr;
     };
   }
   expression_ptr_t _subexpression;
 };
 struct Sequence : public AstNode {
-  matcher_fn_t genMatcherFunction() const final {
-    OrkAssert(false);
-    return [=](matcher_ptr_t par_matcher, scannerlightview_constptr_t slv) -> match_ptr_t {
-      printf( "GOT USER SEQ MATCHER<%s> slv.st<%zu> slv.en<%zu>\n", par_matcher->_name.c_str(), slv->_start, slv->_end );
-      OrkAssert(false); 
+  Sequence(Parser* user_parser) {
+    _name     = "Sequence";
+    _match_fn = [=](matcher_ptr_t par_matcher, scannerlightview_constptr_t slv) -> match_ptr_t {
+      printf("GOT USER SEQ MATCHER<%s> slv.st<%zu> slv.en<%zu>\n", par_matcher->_name.c_str(), slv->_start, slv->_end);
+      OrkAssert(false);
       return nullptr;
     };
   }
   std::vector<expression_ptr_t> _subexpressions;
 };
 struct Group : public AstNode {
-  matcher_fn_t genMatcherFunction() const final {
-    OrkAssert(false);
-    return [=](matcher_ptr_t par_matcher, scannerlightview_constptr_t slv) -> match_ptr_t {
-      printf( "GOT USER GRP MATCHER<%s> slv.st<%zu> slv.en<%zu>\n", par_matcher->_name.c_str(), slv->_start, slv->_end );
-      OrkAssert(false); 
+  Group(Parser* user_parser) {
+    _name     = "Group";
+    _match_fn = [=](matcher_ptr_t par_matcher, scannerlightview_constptr_t slv) -> match_ptr_t {
+      printf("GOT USER GRP MATCHER<%s> slv.st<%zu> slv.en<%zu>\n", par_matcher->_name.c_str(), slv->_start, slv->_end);
+      OrkAssert(false);
       return nullptr;
     };
   }
@@ -255,88 +269,95 @@ struct RuleSpecImpl : public Parser {
   size_t indent = 0;
   /////////////////////////////////////////////////////////
   AST::oneormore_ptr_t _onOOM(match_ptr_t match) {
-    auto oom_out = std::make_shared<AST::OneOrMore>();
+    auto oom_out   = std::make_shared<AST::OneOrMore>(this);
     auto indentstr = std::string(indent * 2, ' ');
     printf("%s_onOOM<%s>\n", indentstr.c_str(), match->_matcher->_name.c_str());
     _onExpression(match);
+    _user_astnodes.insert(oom_out);
     return oom_out;
   }
   /////////////////////////////////////////////////////////
   AST::zeroormore_ptr_t _onZOM(match_ptr_t match) {
-    auto zom_out = std::make_shared<AST::ZeroOrMore>();
-    auto nom = match->_impl.getShared<NOrMore>();
+    auto zom_out = std::make_shared<AST::ZeroOrMore>(this);
+    auto nom     = match->_impl.getShared<NOrMore>();
     OrkAssert(nom->_minmatches == 0);
     auto indentstr = std::string(indent * 2, ' ');
     printf("%s_onZOM<%s>\n", indentstr.c_str(), match->_matcher->_name.c_str());
     for (auto item : nom->_items) {
-      printf( "%s zom subitem<%s>\n", indentstr.c_str(), item->_matcher->_name.c_str() );
+      printf("%s zom subitem<%s>\n", indentstr.c_str(), item->_matcher->_name.c_str());
       _onExpression(item);
     }
+    _user_astnodes.insert(zom_out);
     return zom_out;
   }
   /////////////////////////////////////////////////////////
   AST::select_ptr_t _onSEL(match_ptr_t match) {
-    auto sel_out = std::make_shared<AST::Select>();
-    auto nom = match->_impl.getShared<NOrMore>();
+    auto sel_out = std::make_shared<AST::Select>(this);
+    auto nom     = match->_impl.getShared<NOrMore>();
     OrkAssert(nom->_minmatches == 1);
     OrkAssert(nom->_items.size() >= 1);
     auto indentstr = std::string(indent * 2, ' ');
     printf("%s_onSEL<%s>\n", indentstr.c_str(), match->_matcher->_name.c_str());
     for (auto item : nom->_items) {
-      printf( "%s sel subitem<%s>\n", indentstr.c_str(), item->_matcher->_name.c_str() );
+      printf("%s sel subitem<%s>\n", indentstr.c_str(), item->_matcher->_name.c_str());
       _onExpression(item);
     }
+    _user_astnodes.insert(sel_out);
     return sel_out;
   }
   /////////////////////////////////////////////////////////
   AST::optional_ptr_t _onOPT(match_ptr_t match) {
-    auto opt_out = std::make_shared<AST::Optional>();
+    auto opt_out   = std::make_shared<AST::Optional>(this);
     auto indentstr = std::string(indent * 2, ' ');
     printf("%s_onOPT<%s>\n", indentstr.c_str(), match->_matcher->_name.c_str());
     _onExpression(match);
+    _user_astnodes.insert(opt_out);
     return opt_out;
   }
   /////////////////////////////////////////////////////////
   AST::sequence_ptr_t _onSEQ(match_ptr_t match) {
-    auto seq_out = std::make_shared<AST::Sequence>();
-    auto nom = match->_impl.getShared<NOrMore>();
+    auto seq_out = std::make_shared<AST::Sequence>(this);
+    auto nom     = match->_impl.getShared<NOrMore>();
     OrkAssert(nom->_minmatches == 0);
     OrkAssert(nom->_items.size() >= 1);
     auto indentstr = std::string(indent * 2, ' ');
     printf("%s_onSEQ<%s>\n", indentstr.c_str(), match->_matcher->_name.c_str());
     for (auto item : nom->_items) {
-      printf( "%s seq subitem<%s>\n", indentstr.c_str(), item->_matcher->_name.c_str() );
+      printf("%s seq subitem<%s>\n", indentstr.c_str(), item->_matcher->_name.c_str());
       _onExpression(item);
     }
+    _user_astnodes.insert(seq_out);
     return seq_out;
   }
   /////////////////////////////////////////////////////////
   AST::group_ptr_t _onGRP(match_ptr_t match) {
-    auto grp_out = std::make_shared<AST::Group>();
-    auto nom = match->_impl.getShared<NOrMore>();
+    auto grp_out = std::make_shared<AST::Group>(this);
+    auto nom     = match->_impl.getShared<NOrMore>();
     OrkAssert(nom->_minmatches == 0);
     OrkAssert(nom->_items.size() >= 1);
     auto indentstr = std::string(indent * 2, ' ');
     printf("%s_onGRP<%s>\n", indentstr.c_str(), match->_matcher->_name.c_str());
     for (auto item : nom->_items) {
-      printf( "%s grp subitem<%s>\n", indentstr.c_str(), item->_matcher->_name.c_str() );
+      printf("%s grp subitem<%s>\n", indentstr.c_str(), item->_matcher->_name.c_str());
       _onExpression(item);
     }
+    _user_astnodes.insert(grp_out);
     return grp_out;
   }
   /////////////////////////////////////////////////////////
-  AST::expr_kwid_ptr_t _onEXPRKWID(match_ptr_t match){
-    auto kwid_out = std::make_shared<AST::ExprKWID>();
-    auto indentstr = std::string(indent * 2, ' ');
+  AST::expr_kwid_ptr_t _onEXPRKWID(match_ptr_t match) {
+    auto kwid_out   = std::make_shared<AST::ExprKWID>(this);
+    auto indentstr  = std::string(indent * 2, ' ');
     auto classmatch = match->_impl.getShared<ClassMatch>();
-    auto token = classmatch->_token->text;
+    auto token      = classmatch->_token->text;
     kwid_out->_kwid = classmatch->_token->text;
     printf("%s_onEXPRKWID<%s> KWID<%s>\n", indentstr.c_str(), match->_matcher->_name.c_str(), kwid_out->_kwid.c_str());
+    _user_astnodes.insert(kwid_out);
     return kwid_out;
   }
   /////////////////////////////////////////////////////////
   AST::expression_ptr_t _onExpression(match_ptr_t match, std::string named = "") {
-    auto expr_out = std::make_shared<AST::Expression>();
+    auto expr_out  = std::make_shared<AST::Expression>(this);
     auto indentstr = std::string(indent * 2, ' ');
 
     indent++;
@@ -344,15 +365,13 @@ struct RuleSpecImpl : public Parser {
     auto expression_sel  = expression_seq->_items[0]->_impl.getShared<OneOf>()->_selected;
     auto expression_name = expression_seq->_items[1]->_impl.getShared<Optional>()->_subitem;
 
-    if( expression_name ){
+    if (expression_name) {
       expression_name = expression_name->_impl.getShared<Sequence>()->_items[1];
-      auto xname = expression_name->_impl.getShared<ClassMatch>()->_token->text;
-      printf("%s_onExpression<%s> named<%s>\n", indentstr.c_str(), match->_matcher->_name.c_str(), xname.c_str() );
+      auto xname      = expression_name->_impl.getShared<ClassMatch>()->_token->text;
+      printf("%s_onExpression<%s> named<%s>\n", indentstr.c_str(), match->_matcher->_name.c_str(), xname.c_str());
+    } else {
+      printf("%s_onExpression<%s>\n", indentstr.c_str(), match->_matcher->_name.c_str());
     }
-    else{
-      printf("%s_onExpression<%s>\n", indentstr.c_str(), match->_matcher->_name.c_str() );
-    }
-
 
     if (expression_sel) {
       if (auto as_seq = expression_sel->_impl.tryAsShared<Sequence>()) {
@@ -366,16 +385,16 @@ struct RuleSpecImpl : public Parser {
           auto wordmatch = as_wordmatch.value();
           auto word      = wordmatch->_token->text;
           if (word == "zom") {
-            auto zom = subseq->_items[2];
+            auto zom                 = subseq->_items[2];
             expr_out->_expr_selected = _onZOM(zom);
           } else if (word == "oom") {
-            auto oom = subseq->_items[2];
+            auto oom                 = subseq->_items[2];
             expr_out->_expr_selected = _onOOM(oom);
           } else if (word == "sel") {
-            auto sel = subseq->_items[2];
+            auto sel                 = subseq->_items[2];
             expr_out->_expr_selected = _onSEL(sel);
           } else if (word == "opt") {
-            auto opt = subseq->_items[2];
+            auto opt                 = subseq->_items[2];
             expr_out->_expr_selected = _onOPT(opt);
           } else {
             OrkAssert(false);
@@ -405,12 +424,13 @@ struct RuleSpecImpl : public Parser {
       ////////////////////////////////////////////////////////////////////////////
       else { // kworid
         OrkAssert(expression_sel->_impl.isShared<ClassMatch>());
-        auto classmatch = expression_sel->_impl.getShared<ClassMatch>();
+        auto classmatch          = expression_sel->_impl.getShared<ClassMatch>();
         expr_out->_expr_selected = _onEXPRKWID(expression_sel);
       }
     }
     indent--;
-    OrkAssert(expr_out->_expr_selected!=nullptr);
+    OrkAssert(expr_out->_expr_selected != nullptr);
+    _user_astnodes.insert(expr_out);
     return expr_out;
   }
   /////////////////////////////////////////////////////////
@@ -535,15 +555,9 @@ struct RuleSpecImpl : public Parser {
     auto parser_rule = sequence({kworid, left_arrow, rule_expression}, "parser_rule");
 
     parser_rule->_notif = [=](match_ptr_t match) {
-       auto rulename = match->_impl.getShared<Sequence>()->_items[0]->_impl.getShared<ClassMatch>()->_token->text;
-      auto expr_ast_node = _onExpression(match->_impl.getShared<Sequence>()->_items[2]);
-      auto expr_matcher_fn  = expr_ast_node->genMatcherFunction();
-      auto user_matcher = std::make_shared<Matcher>([=](matcher_ptr_t par_matcher, scannerlightview_constptr_t slv) -> match_ptr_t {
-        auto match = expr_matcher_fn(par_matcher,slv);
-        return match;
-      });
-      user_matcher->_name = rulename;
-      this->_user_parser->_matchers_by_name[rulename] = user_matcher;
+      auto rulename      = match->_impl.getShared<Sequence>()->_items[0]->_impl.getShared<ClassMatch>()->_token->text;
+      auto expr_ast_node = _onExpression(match->_impl.getShared<Sequence>()->_items[2], rulename);
+      this->_user_parser->_matchers_by_name[rulename] = expr_ast_node->_user_matcher;
     };
 
     _rsi_parser_matcher = zeroOrMore(parser_rule, "parser_rules");
@@ -587,12 +601,12 @@ struct RuleSpecImpl : public Parser {
     auto match = this->match(slv, _rsi_parser_matcher);
     OrkAssert(match);
     OrkAssert(match->_view->_start == top_view._start);
-    if(match->_view->_end != top_view._end){
-      logerrchannel()->log( "Parser :: RULESPEC :: SYNTAX ERROR");
-      logerrchannel()->log( "  input text num tokens<%zu>", top_view._end );
-      logerrchannel()->log( "  parse cursor<%zu>", match->_view->_end );
+    if (match->_view->_end != top_view._end) {
+      logerrchannel()->log("Parser :: RULESPEC :: SYNTAX ERROR");
+      logerrchannel()->log("  input text num tokens<%zu>", top_view._end);
+      logerrchannel()->log("  parse cursor<%zu>", match->_view->_end);
       auto token = _scanner->token(match->_view->_end);
-      logerrchannel()->log( "  parse token<%s> line<%d>", token->text.c_str(), token->iline+1 );
+      logerrchannel()->log("  parse token<%s> line<%d>", token->text.c_str(), token->iline + 1);
       OrkAssert(false);
     }
     return match;
@@ -600,7 +614,7 @@ struct RuleSpecImpl : public Parser {
   /////////////////////////////////////////////////////////
 
   void attachUser(Parser* user_parser) {
-    _user_parser = user_parser;
+    _user_parser  = user_parser;
     _user_scanner = user_parser->_scanner;
   }
 
@@ -610,6 +624,7 @@ struct RuleSpecImpl : public Parser {
   Parser* _user_parser = nullptr;
   matcher_ptr_t _rsi_scanner_matcher;
   matcher_ptr_t _rsi_parser_matcher;
+  std::unordered_set<AST::astnode_ptr_t> _user_astnodes;
 
   std::map<std::string, AST::scanner_rule_ptr_t> _user_scanner_rules;
   std::map<std::string, AST::scanner_macro_ptr_t> _user_scanner_macros;
@@ -627,7 +642,7 @@ rulespec_impl_ptr_t getRuleSpecImpl() {
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 void Parser::loadScannerSpec(const std::string& spec) {
-  auto rsi   = getRuleSpecImpl();
+  auto rsi = getRuleSpecImpl();
   rsi->attachUser(this);
   auto match = rsi->parseScannerSpec(spec);
   OrkAssert(match);
