@@ -81,10 +81,13 @@ void Scanner::scan() {
   iter_t end;
 
   int index = 0;
+  int iline = 0;
   for (; iter != end; ++iter) {
-    auto tok   = Token(iter->str(), 0, 0);
+    auto tok   = Token(iter->str(), iline, 0);
     tok._class = iter->id;
     tokens.push_back(tok);
+    int line_count = std::count(tok.text.begin(), tok.text.end(), '\n');
+    iline+=line_count;
     // std::cout << "index<" << index << "> Id: " << iter->id << ", Token: '" << iter->str() << "'\n";
     index++;
   }

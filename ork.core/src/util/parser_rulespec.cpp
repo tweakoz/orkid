@@ -14,6 +14,8 @@
 #include <ork/kernel/string/deco.inl>
 #include <ork/util/crc.h>
 #include <csignal>
+#include <ork/util/logger.h>
+
 /////////////////////////////////////////////////////////////////////////////////////////////////
 namespace ork {
 /////////////////////////////////////////////////////////////////////////////////////////////////
@@ -411,7 +413,7 @@ struct RuleSpecImpl : public Parser {
       _scanner->discardTokensOfClass(uint64_t(TokenClass::WHITESPACE));
       _scanner->discardTokensOfClass(uint64_t(TokenClass::NEWLINE));
     } catch (std::exception& e) {
-      printf("EXCEPTION<%s>\n", e.what());
+      logerrchannel()->log("EXCEPTION<%s>\n", e.what());
       OrkAssert(false);
     }
     auto top_view = _scanner->createTopView();
@@ -440,7 +442,14 @@ struct RuleSpecImpl : public Parser {
     auto match = this->match(slv, _rsi_parser_matcher);
     OrkAssert(match);
     OrkAssert(match->_view->_start == top_view._start);
-    OrkAssert(match->_view->_end == top_view._end);
+    if(match->_view->_end != top_view._end){
+      logerrchannel()->log( "Parser :: RULESPEC :: SYNTAX ERROR");
+      logerrchannel()->log( "  input text num tokens<%zu>", top_view._end );
+      logerrchannel()->log( "  parse cursor<%zu>", match->_view->_end );
+      auto token = _scanner->token(match->_view->_end);
+      logerrchannel()->log( "  parse token<%s> line<%d>", token->text.c_str(), token->iline+1 );
+      OrkAssert(false);
+    }
     return match;
   }
   /////////////////////////////////////////////////////////
