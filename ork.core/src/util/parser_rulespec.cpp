@@ -140,15 +140,9 @@ struct RuleSpecImpl : public Parser {
   size_t indent = 0;
   /////////////////////////////////////////////////////////
   void _onOOM(match_ptr_t match) {
-    auto nom = match->_impl.getShared<NOrMore>();
-    OrkAssert(nom->_minmatches == 1);
-    OrkAssert(nom->_items.size() >= 1);
     auto indentstr = std::string(indent * 2, ' ');
     printf("%s_onOOM<%s>\n", indentstr.c_str(), match->_matcher->_name.c_str());
-    for (auto item : nom->_items) {
-      printf( "%s oom subitem<%s>\n", indentstr.c_str(), item->_matcher->_name.c_str() );
-      _onExpression(item);
-    }
+    _onExpression(match);
   }
   /////////////////////////////////////////////////////////
   void _onZOM(match_ptr_t match) {
@@ -175,12 +169,32 @@ struct RuleSpecImpl : public Parser {
   }
   /////////////////////////////////////////////////////////
   void _onOPT(match_ptr_t match) {
-    auto opt       = match->_impl.getShared<Optional>();
     auto indentstr = std::string(indent * 2, ' ');
     printf("%s_onOPT<%s>\n", indentstr.c_str(), match->_matcher->_name.c_str());
-    if (opt->_subitem) {
-      printf( "%s opt subitem<%s>\n", indentstr.c_str(), opt->_subitem->_matcher->_name.c_str() );
-      _onExpression(opt->_subitem);
+    _onExpression(match);
+  }
+  /////////////////////////////////////////////////////////
+  void _onSEQ(match_ptr_t match) {
+    auto nom = match->_impl.getShared<NOrMore>();
+    OrkAssert(nom->_minmatches == 0);
+    OrkAssert(nom->_items.size() >= 1);
+    auto indentstr = std::string(indent * 2, ' ');
+    printf("%s_onSEQ<%s>\n", indentstr.c_str(), match->_matcher->_name.c_str());
+    for (auto item : nom->_items) {
+      printf( "%s seq subitem<%s>\n", indentstr.c_str(), item->_matcher->_name.c_str() );
+      _onExpression(item);
+    }
+  }
+  /////////////////////////////////////////////////////////
+  void _onGRP(match_ptr_t match) {
+    auto nom = match->_impl.getShared<NOrMore>();
+    OrkAssert(nom->_minmatches == 0);
+    OrkAssert(nom->_items.size() >= 1);
+    auto indentstr = std::string(indent * 2, ' ');
+    printf("%s_onGRP<%s>\n", indentstr.c_str(), match->_matcher->_name.c_str());
+    for (auto item : nom->_items) {
+      printf( "%s grp subitem<%s>\n", indentstr.c_str(), item->_matcher->_name.c_str() );
+      _onExpression(item);
     }
   }
   /////////////////////////////////////////////////////////
@@ -203,11 +217,13 @@ struct RuleSpecImpl : public Parser {
 
 
     if (expression_sel) {
-
       if (auto as_seq = expression_sel->_impl.tryAsShared<Sequence>()) {
         auto subseq       = as_seq.value();
         auto subseq0      = subseq->_items[0];
         auto expr_matcher = expression_sel->_matcher;
+        ////////////////////////////////////////////////////////////////////////////
+        // zom, oom, sel, opt
+        ////////////////////////////////////////////////////////////////////////////
         if (auto as_wordmatch = subseq0->_impl.tryAsShared<WordMatch>()) {
           auto wordmatch = as_wordmatch.value();
           auto word      = wordmatch->_token->text;
@@ -222,29 +238,37 @@ struct RuleSpecImpl : public Parser {
             _onSEL(sel);
           } else if (word == "opt") {
             auto opt = subseq->_items[2];
-            _onSEL(opt);
+            _onOPT(opt);
           } else {
             OrkAssert(false);
           }
         } // wordmatch ?
+        ////////////////////////////////////////////////////////////////////////////
+        // seq, grp
+        ////////////////////////////////////////////////////////////////////////////
         else if (auto as_classmatch = subseq0->_impl.tryAsShared<ClassMatch>()) {
           auto classmatch = as_classmatch.value();
           auto token      = classmatch->_token;
           if (classmatch->_tokclass == uint64_t(TokenClass::L_SQUARE)) {
+            _onSEQ(subseq->_items[1]);
           } else if (classmatch->_tokclass == uint64_t(TokenClass::L_PAREN)) {
-            printf("%s IMPLEMENT STRING <%s>\n", indentstr.c_str(), token->text.c_str() );
+            _onGRP(subseq->_items[1]);
           } else {
             OrkAssert(false);
           }
         } // classmatch ?
         else {
-          printf("ERR<subseq0 not wordmatch or classmatch> view start<%d>\n", expression_sel->_view->_start);
+          printf("ERR<subseq0 not wordmatch or classmatch> view start<%zu>\n", expression_sel->_view->_start);
           OrkAssert(false);
         }
-      } else { // kworid
+      }
+      ////////////////////////////////////////////////////////////////////////////
+      // single keyword or identifier
+      ////////////////////////////////////////////////////////////////////////////
+      else { // kworid
         OrkAssert(expression_sel->_impl.isShared<ClassMatch>());
         auto classmatch = expression_sel->_impl.getShared<ClassMatch>();
-        printf("%s IMPLEMENT ID <%s>\n", indentstr.c_str(), classmatch->_token->text.c_str() );
+        printf("%s EXPR_IMPLEMENT SINGLE_IDENTIFIER <%s>\n", indentstr.c_str(), classmatch->_token->text.c_str() );
       }
     }
     indent--;
