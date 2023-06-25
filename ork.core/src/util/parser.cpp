@@ -11,12 +11,13 @@
 #include <ork/pch.h>
 #include <ork/file/file.h>
 #include <ork/util/parser.h>
+#include <ork/util/logger.h>
 #include <ork/kernel/string/deco.inl>
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 namespace ork {
 /////////////////////////////////////////////////////////////////////////////////////////////////
-static constexpr bool _DEBUG = false;
+static constexpr bool _DEBUG = true;
 //////////////////////////////////////////////////////////////////////
 
 void Match::dump(int indent) const {
@@ -145,17 +146,18 @@ void Parser::sequence(matcher_ptr_t matcher, std::vector<matcher_ptr_t> sub_matc
     size_t iter       = 0;
     size_t num_iter   = sub_matchers.size();
     for (auto sub_matcher : sub_matchers) {
-      if(0)log_begin(
-          "SEQSS<%s> : match_item<%s> iter<%zu/%zu> itrst<%d> itren<%d> slvst<%d> slvend<%d> ",
-          matcher->_name.c_str(),
-          sub_matcher->_name.c_str(),
-          iter,
-          num_iter,
-          slv_iter->_start,
-          slv_iter->_end,
-          slv->_start,
-          slv->_end);
-      if(slv_iter->_start>slv_iter->_end){
+      if (0)
+        log_begin(
+            "SEQSS<%s> : match_item<%s> iter<%zu/%zu> itrst<%d> itren<%d> slvst<%d> slvend<%d> ",
+            matcher->_name.c_str(),
+            sub_matcher->_name.c_str(),
+            iter,
+            num_iter,
+            slv_iter->_start,
+            slv_iter->_end,
+            slv->_start,
+            slv->_end);
+      if (slv_iter->_start > slv_iter->_end) {
         break;
       }
       auto match_item = _match(sub_matcher, slv_iter);
@@ -447,34 +449,45 @@ matcher_ptr_t Parser::matcherForTokenClassID(uint64_t tokclass, std::string name
 //////////////////////////////////////////////////////////////
 
 matcher_ptr_t Parser::matcherForWord(std::string word) {
-  auto match_fn = [word](matcher_ptr_t par_matcher, scannerlightview_constptr_t inp_view) -> match_ptr_t {
-    auto tok0 = inp_view->token(0);
-    if (tok0->text == word) {
-      auto slv              = std::make_shared<ScannerLightView>(*inp_view);
-      slv->_end             = slv->_start;
-      auto the_match        = std::make_shared<Match>();
-      auto the_wordmatch    = the_match->_impl.makeShared<WordMatch>();
-      the_wordmatch->_token = tok0;
-      the_match->_matcher   = par_matcher;
-      the_match->_view      = slv;
-      slv->validate();
-      return the_match;
-    } else {
-      return nullptr;
-    }
-  };
-  auto matcher    = createMatcher(match_fn, word);
-  matcher->_notif = [=](match_ptr_t the_match) { //
-    auto match_str = deco::format(255, 0, 255, "MATCHED word<%s>", word.c_str());
-    log("%s", match_str.c_str());
-  };
-  return matcher;
+  matcher_ptr_t rval = nullptr;
+  auto it            = _matchers_by_name.find(word);
+  if (it == _matchers_by_name.end()) {
+    auto match_fn = [word](matcher_ptr_t par_matcher, scannerlightview_constptr_t inp_view) -> match_ptr_t {
+      auto tok0 = inp_view->token(0);
+      if (tok0->text == word) {
+        auto slv              = std::make_shared<ScannerLightView>(*inp_view);
+        slv->_end             = slv->_start;
+        auto the_match        = std::make_shared<Match>();
+        auto the_wordmatch    = the_match->_impl.makeShared<WordMatch>();
+        the_wordmatch->_token = tok0;
+        the_match->_matcher   = par_matcher;
+        the_match->_view      = slv;
+        slv->validate();
+        return the_match;
+      } else {
+        return nullptr;
+      }
+    };
+    rval         = createMatcher(match_fn, word);
+    rval->_notif = [=](match_ptr_t the_match) { //
+      auto match_str = deco::format(255, 0, 255, "MATCHED word<%s>", word.c_str());
+      log("%s", match_str.c_str());
+    };
+    _matchers_by_name[word] = rval;
+  } else {
+    rval = it->second;
+  }
+  return rval;
 }
 
 //////////////////////////////////////////////////////////////////////
 
 match_ptr_t Parser::_match(matcher_ptr_t matcher, scannerlightview_constptr_t inp_view) {
-  OrkAssert(matcher->_match_fn);
+  OrkAssert(matcher);
+  if(matcher->_match_fn==nullptr){
+    logerrchannel()->log( "matcher<%s> has no match function", matcher->_name.c_str());
+    OrkAssert(false);
+  }
   _matcherstack.push(matcher);
   inp_view->validate();
   match_ptr_t match;
@@ -482,16 +495,16 @@ match_ptr_t Parser::_match(matcher_ptr_t matcher, scannerlightview_constptr_t in
   // check packrat cache
   //////////////////////////////////
   uint64_t hash = matcher->hash(inp_view);
-  auto it = _packrat_cache.find(hash);
-  if(it!=_packrat_cache.end()){
+  auto it       = _packrat_cache.find(hash);
+  if (it != _packrat_cache.end()) {
     match = it->second;
     _cache_hits++;
   }
   //////////////////////////////////
   // not in cache, perform match operations, and cache it
   //////////////////////////////////
-  else{
-    match = matcher->_match_fn(matcher, inp_view);
+  else {
+    match                = matcher->_match_fn(matcher, inp_view);
     _packrat_cache[hash] = match;
     _cache_misses++;
   }
@@ -509,6 +522,10 @@ match_ptr_t Parser::_match(matcher_ptr_t matcher, scannerlightview_constptr_t in
 //////////////////////////////////////////////////////////////
 
 match_ptr_t Parser::match(scannerlightview_constptr_t inp_view, matcher_ptr_t top) {
+  if(top==nullptr){
+    logerrchannel()->log( "Parser<%p> no top match function", this );
+    OrkAssert(false);
+  }
   return _match(top, inp_view);
 }
 
@@ -577,6 +594,20 @@ void Parser::log_continue(const char* pMsgFormat, ...) const {
     _log_valist_continue(pMsgFormat, args);
     va_end(args);
   }
+}
+
+
+Parser::Parser(){
+  static constexpr const char* block_regex = "(function|yo|xxx)";
+  _scanner = std::make_shared<Scanner>(block_regex);
+}
+
+matcher_ptr_t Parser::findMatcherByName(const std::string& name) const{
+  auto it = _matchers_by_name.find(name);
+  if(it!=_matchers_by_name.end()){
+    return it->second;
+  }
+  return nullptr;
 }
 
 //////////////////////////////////////////////////////////////////////

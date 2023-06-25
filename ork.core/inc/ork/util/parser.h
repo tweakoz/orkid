@@ -84,6 +84,8 @@ struct OneOf{
 
 struct Parser {
 
+  Parser();
+
   matcher_ptr_t declare(std::string name);
 
   matcher_ptr_t sequence(std::vector<matcher_ptr_t> matchers, std::string name="");
@@ -102,6 +104,8 @@ struct Parser {
   matcher_ptr_t createMatcher(matcher_fn_t match_fn,std::string name="");
   matcher_ptr_t matcherForTokenClassID(uint64_t tokclass,std::string name="");
   matcher_ptr_t matcherForWord(std::string word);
+
+  matcher_ptr_t findMatcherByName(const std::string& name) const;
 
   template <typename T> matcher_ptr_t matcherForTokenClass(T tokclass,std::string name="") {
     return matcherForTokenClassID(uint64_t(tokclass),name);
@@ -125,12 +129,15 @@ struct Parser {
   void loadScannerSpec(const std::string& spec);
   void loadParserSpec(const std::string& spec);
 
+
+
   std::stack<matcher_ptr_t> _matcherstack;
   std::stack<const Match*> _matchstack;
   std::unordered_set<matcher_ptr_t> _matchers;
   std::unordered_map<std::string,matcher_ptr_t> _matchers_by_name;
   std::unordered_map<uint64_t,match_ptr_t> _packrat_cache;
 
+  scanner_ptr_t _scanner;
   size_t _cache_misses = 0;
   size_t _cache_hits = 0;
 };

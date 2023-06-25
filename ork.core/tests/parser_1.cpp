@@ -17,7 +17,7 @@ struct MyParser : public Parser {
   }
 
   void loadScannerRules() { //
-    _scanner = std::make_shared<Scanner>(block_regex);
+
     _scanner->addEnumClass("\\/\\*([^*]|\\*+[^/*])*\\*+\\/", TokenClass::MULTI_LINE_COMMENT);
     _scanner->addEnumClass("\\/\\/.*[\\n\\r]", TokenClass::SINGLE_LINE_COMMENT);
     _scanner->addEnumClass("\\s+", TokenClass::WHITESPACE);
@@ -300,7 +300,6 @@ struct MyParser : public Parser {
   }
 
   matcher_ptr_t _fn_matcher;
-  scanner_ptr_t _scanner;
 }; // struct MyParser
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -241,6 +241,10 @@ struct MyParser2 : public Parser {
       }
     });
     ///////////////////////////////////////////////////////////
+    on("funcdefs", [=](match_ptr_t match) {
+      OrkAssert(false);
+    });
+    ///////////////////////////////////////////////////////////
   }
   match_ptr_t parseString(std::string parse_str) {
 
@@ -253,19 +257,20 @@ struct MyParser2 : public Parser {
     auto top_view = _scanner->createTopView();
     top_view.dump("top_view");
     auto slv   = std::make_shared<ScannerLightView>(top_view);
-    auto match = this->match(slv, _fn_matcher);
+    _fns_matcher = findMatcherByName("funcdefs");
+    OrkAssert(_fns_matcher);
+    auto match = this->match(slv, _fns_matcher);
     return match;
   }
 
-  matcher_ptr_t _fn_matcher;
-  scanner_ptr_t _scanner;
+  matcher_ptr_t _fns_matcher;
 }; // struct MyParser
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
 TEST(parser2) {
-
+  printf( "P2.TOP.A\n");
   auto parse_str =
       R"(
         ///////////////////
@@ -280,8 +285,8 @@ TEST(parser2) {
             float X = (1.0+2.3)*7.0;
         }
     )";
-
   MyParser2 the_parser;
   auto match = the_parser.parseString(parse_str);
+  printf( "P2.TOP.B match<%p>\n", match.get() );
   CHECK(match != nullptr);
 }

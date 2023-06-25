@@ -34,7 +34,9 @@ void Parser::on(const std::string& rule_name, matcher_notif_t fn) {
   if (it != _matchers_by_name.end()) {
     matcher_ptr_t matcher = it->second;
     matcher->_notif       = fn;
+    printf( "matcher<%s> notif assigned\n", rule_name.c_str() );
   } else {
+    logerrchannel()->log( "matcher<%s> not found", rule_name.c_str() );
     OrkAssert(false);
   }
 }
@@ -106,7 +108,7 @@ struct RuleSpecImpl : public Parser {
   /////////////////////////////////////////////////////////
   void loadScannerRules() { //
     try {
-      _scanner = std::make_shared<Scanner>(block_regex);
+
       _scanner->addEnumClass("\\s+", TokenClass::WHITESPACE);
       _scanner->addEnumClass("[\\n\\r]+", TokenClass::NEWLINE);
       _scanner->addEnumClass("[a-zA-Z_][a-zA-Z0-9_]*", TokenClass::KW_OR_ID);
@@ -321,10 +323,11 @@ struct RuleSpecImpl : public Parser {
         auto rule      = std::make_shared<AST::ScannerRule>();
         rule->_name    = rule_name;
         rule->_regex   = rx;
-        auto it        = _user_scanner_rules.find(rule_name);
-        OrkAssert(it == _user_scanner_rules.end());
+        auto it        = this->_user_scanner_rules.find(rule_name);
+        OrkAssert(it == this->_user_scanner_rules.end());
         printf("ADDING SCANNER RULE<%s> <- %s\n", rule_name.c_str(), rx.c_str());
-        _user_scanner_rules[rule_name] = rule;
+        this->_user_scanner_rules[rule_name] = rule;
+        this->_user_parser->matcherForWord(rule_name);
       } else if (auto as_seq = rule_key_item->_impl.tryAsShared<Sequence>()) {
         auto sub_seq   = as_seq.value();
         auto macro_str = sub_seq->_items[0]->_impl.getShared<WordMatch>()->_token->text;
@@ -333,10 +336,10 @@ struct RuleSpecImpl : public Parser {
         auto macro      = std::make_shared<AST::ScannerMacro>();
         macro->_name    = macro_name;
         macro->_regex   = rx;
-        auto it         = _user_scanner_macros.find(macro_name);
-        OrkAssert(it == _user_scanner_macros.end());
+        auto it         = this->_user_scanner_macros.find(macro_name);
+        OrkAssert(it == this->_user_scanner_macros.end());
         printf("ADDING SCANNER MACRO<%s> <- %s\n", macro_name.c_str(), rx.c_str());
-        _user_scanner_macros[macro_name] = macro;
+        this->_user_scanner_macros[macro_name] = macro;
       } else {
         OrkAssert(false);
       }
@@ -345,21 +348,20 @@ struct RuleSpecImpl : public Parser {
     _rsi_scanner_matcher->_notif = [=](match_ptr_t match) {
       std::string _current_rule_name = "";
       try {
-        _user_scanner = std::make_shared<Scanner>(block_regex);
-        for (auto item : _user_scanner_macros) {
+        for (auto item : this->_user_scanner_macros) {
           auto macro         = item.second;
           _current_rule_name = macro->_name;
           printf("IMPLEMENT MACRO <%s : %s>\n", macro->_name.c_str(), macro->_regex.c_str());
-          _user_scanner->addMacro(macro->_name, macro->_regex);
+          this->_user_scanner->addMacro(macro->_name, macro->_regex);
         }
-        for (auto item : _user_scanner_rules) {
+        for (auto item : this->_user_scanner_rules) {
           auto rule          = item.second;
           uint64_t crc_id    = CrcString(rule->_name.c_str()).hashed();
           _current_rule_name = rule->_name;
           printf("IMPLEMENT EnumClass <%s : %zu : %s>\n", rule->_name.c_str(), crc_id, rule->_regex.c_str());
-          _user_scanner->addEnumClass(rule->_regex, crc_id);
+          this->_user_scanner->addEnumClass(rule->_regex, crc_id);
         }
-        _scanner->buildStateMachine();
+        this->_user_scanner->buildStateMachine();
       } catch (std::exception& e) {
         printf("EXCEPTION cur_rule<%s>  cause<%s>\n", _current_rule_name.c_str(), e.what());
         OrkAssert(false);
@@ -397,8 +399,13 @@ struct RuleSpecImpl : public Parser {
     auto parser_rule = sequence({kworid, left_arrow, rule_expression}, "parser_rule");
 
     parser_rule->_notif = [=](match_ptr_t match) {
-      // auto rulename = match->_impl.getShared<Sequence>()->_items[0]->_impl.getShared<ClassMatch>()->_token->text;
+       auto rulename = match->_impl.getShared<Sequence>()->_items[0]->_impl.getShared<ClassMatch>()->_token->text;
       _onExpression(match->_impl.getShared<Sequence>()->_items[2]);
+
+      auto user_matcher = std::make_shared<Matcher>([=](matcher_ptr_t par_matcher, scannerlightview_constptr_t slv) -> match_ptr_t {
+        return nullptr;
+      });
+      this->_user_parser->_matchers_by_name[rulename] = user_matcher;
     };
 
     _rsi_parser_matcher = zeroOrMore(parser_rule, "parser_rules");
@@ -454,8 +461,15 @@ struct RuleSpecImpl : public Parser {
   }
   /////////////////////////////////////////////////////////
 
-  scanner_ptr_t _scanner;
+  void attachUser(Parser* user_parser) {
+    _user_parser = user_parser;
+    _user_scanner = user_parser->_scanner;
+  }
+
+  /////////////////////////////////////////////////////////
+
   scanner_ptr_t _user_scanner;
+  Parser* _user_parser = nullptr;
   matcher_ptr_t _rsi_scanner_matcher;
   matcher_ptr_t _rsi_parser_matcher;
 
@@ -476,6 +490,7 @@ rulespec_impl_ptr_t getRuleSpecImpl() {
 
 void Parser::loadScannerSpec(const std::string& spec) {
   auto rsi   = getRuleSpecImpl();
+  rsi->attachUser(this);
   auto match = rsi->parseScannerSpec(spec);
   OrkAssert(match);
 }
