@@ -82,7 +82,7 @@ std::string parser_spec = R"xxx(
         R_CURLY
     ]
     
-    funcdefs <- zom{funcdef}
+    funcdefs <- zom{funcdef} : "xxx"
 
 )xxx";
 

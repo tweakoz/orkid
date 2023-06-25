@@ -77,23 +77,21 @@ struct AstNode {
   }
 };
 
-struct ScannerRule{
+struct ScannerRule {
   std::string _name;
   std::string _regex;
 };
-struct ScannerMacro{
+struct ScannerMacro {
   std::string _name;
   std::string _regex;
 };
 
-using scanner_rule_ptr_t = std::shared_ptr<ScannerRule>;
+using scanner_rule_ptr_t  = std::shared_ptr<ScannerRule>;
 using scanner_macro_ptr_t = std::shared_ptr<ScannerMacro>;
 
 } // namespace AST
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
-
-
 
 static constexpr const char* block_regex = "(function|yo|xxx)";
 
@@ -131,17 +129,112 @@ struct RuleSpecImpl : public Parser {
       //_scanner->addMacro("ASCII_WITHOUT_DBLQUOTE", "[\\\\x00-\\\\x21\\\\x23-\\\\x7F]");
       _scanner->addEnumClass(R"(\"[^\"]*\")", TokenClass::QUOTED_REGEX);
       _scanner->addEnumClass("<-", TokenClass::LEFT_ARROW);
-        printf( "Building state machine\n");
+      printf("Building state machine\n");
       _scanner->buildStateMachine();
-        printf( "done...\n");
+      printf("done...\n");
     } catch (std::exception& e) {
       printf("EXCEPTION<%s>\n", e.what());
       OrkAssert(false);
     }
   }
+  size_t indent = 0;
+  /////////////////////////////////////////////////////////
+  void _onOOM(match_ptr_t match) {
+    auto nom = match->_impl.getShared<NOrMore>();
+    OrkAssert(nom->_minmatches == 1);
+    OrkAssert(nom->_items.size() >= 1);
+    auto indentstr = std::string(indent * 2, ' ');
+    printf("%s_onOOM<%s>\n", indentstr.c_str(), match->_matcher->_name.c_str());
+    for (auto item : nom->_items) {
+      auto exp = item->_impl.getShared<Sequence>()->_items[2];
+      _onExpression(exp);
+    }
+  }
+  /////////////////////////////////////////////////////////
+  void _onZOM(match_ptr_t match) {
+    auto nom = match->_impl.getShared<NOrMore>();
+    OrkAssert(nom->_minmatches == 0);
+    auto indentstr = std::string(indent * 2, ' ');
+    printf("%s_onZOM<%s>\n", indentstr.c_str(), match->_matcher->_name.c_str());
+    for (auto item : nom->_items) {
+      auto exp = item->_impl.getShared<Sequence>()->_items[2];
+      _onExpression(exp);
+    }
+  }
+  /////////////////////////////////////////////////////////
+  void _onSEL(match_ptr_t match) {
+    auto sel       = match->_impl.getShared<OneOf>();
+    auto indentstr = std::string(indent * 2, ' ');
+    printf("%s_onSEL<%s>\n", indentstr.c_str(), match->_matcher->_name.c_str());
+    auto exp = sel->_selected->_impl.getShared<Sequence>()->_items[2];
+    _onExpression(exp);
+  }
+  /////////////////////////////////////////////////////////
+  void _onOPT(match_ptr_t match) {
+    auto opt       = match->_impl.getShared<Optional>();
+    auto indentstr = std::string(indent * 2, ' ');
+    printf("%s_onOPT<%s>\n", indentstr.c_str(), match->_matcher->_name.c_str());
+    if (opt->_subitem) {
+      auto exp = opt->_subitem->_impl.getShared<Sequence>()->_items[2];
+      _onExpression(exp);
+    }
+  }
+  /////////////////////////////////////////////////////////
+  void _onExpression(match_ptr_t match, std::string named = "") {
+    indent++;
+    auto indentstr = std::string(indent * 2, ' ');
+    printf("%s_onExpression<%s>\n", indentstr.c_str(), match->_matcher->_name.c_str());
+    auto expression_seq  = match->_impl.getShared<Sequence>();
+    auto expression_sel  = expression_seq->_items[0]->_impl.getShared<OneOf>()->_selected;
+    auto expression_name = expression_seq->_items[1]->_impl.getShared<Optional>()->_subitem;
+    if (expression_sel) {
+      if (auto as_seq = expression_sel->_impl.tryAsShared<Sequence>()) {
+        auto subseq       = as_seq.value();
+        auto subseq0      = subseq->_items[0];
+        auto expr_matcher = expression_sel->_matcher;
+        if (auto as_wordmatch = subseq0->_impl.tryAsShared<WordMatch>()) {
+          auto wordmatch = as_wordmatch.value();
+          auto word      = wordmatch->_token->text;
+          if (word == "zom") {
+            auto zom = subseq->_items[2];
+            _onZOM(zom);
+          } else if (word == "oom") {
+            auto oom = subseq->_items[2];
+            _onOOM(oom);
+          } else if (word == "sel") {
+            auto sel = subseq->_items[2];
+            _onSEL(sel);
+          } else if (word == "opt") {
+            auto opt = subseq->_items[2];
+            _onSEL(opt);
+          } else {
+            OrkAssert(false);
+          }
+        } // wordmatch ?
+        else if (auto as_classmatch = subseq0->_impl.tryAsShared<ClassMatch>()) {
+          auto classmatch = as_classmatch.value();
+          auto token      = classmatch->_token;
+          if (classmatch->_tokclass == uint64_t(TokenClass::L_SQUARE)) {
+          } else if (classmatch->_tokclass == uint64_t(TokenClass::L_PAREN)) {
+            printf("IMPLEMENT STRING\n");
+          } else {
+            OrkAssert(false);
+          }
+        } // classmatch ?
+        else {
+          printf("ERR<subseq0 not wordmatch or classmatch> view start<%d>\n", expression_sel->_view->_start);
+          OrkAssert(false);
+        }
+      } else { // kworid
+        OrkAssert(expression_sel->_impl.isShared<ClassMatch>());
+        printf("IMPLEMENT ID\n");
+      }
+    }
+    indent--;
+  }
   /////////////////////////////////////////////////////////
   void loadGrammar() { //
-    printf( "Loading Grammar\n");
+    printf("Loading Grammar\n");
     ////////////////////
     // primitives
     ////////////////////
@@ -164,71 +257,68 @@ struct RuleSpecImpl : public Parser {
     auto left_arrow   = matcherForTokenClass(TokenClass::LEFT_ARROW, "left_arrow");
     auto quoted_regex = matcherForTokenClass(TokenClass::QUOTED_REGEX, "quoted_regex");
     ////////////////////
-    auto sel = matcherForWord("sel");
+    auto sel   = matcherForWord("sel");
     auto zom   = matcherForWord("zom");
     auto oom   = matcherForWord("oom");
     auto opt   = matcherForWord("opt");
-    auto macro   = matcherForWord("macro");
+    auto macro = matcherForWord("macro");
     ////////////////////
     // scanner rules
     ////////////////////
-    auto macro_item = sequence({macro, lparen, kworid, rparen }, "macro_item");
-    auto scanner_key    = oneOf({macro_item,kworid}, "scanner_key");
+    auto macro_item      = sequence({macro, lparen, kworid, rparen}, "macro_item");
+    auto scanner_key     = oneOf({macro_item, kworid}, "scanner_key");
     auto scanner_rule    = sequence({scanner_key, left_arrow, quoted_regex}, "scanner_rule");
     scanner_rule->_notif = [=](match_ptr_t match) {
-      auto seq = match->_impl.getShared<Sequence>();
+      auto seq           = match->_impl.getShared<Sequence>();
       auto rule_key_item = seq->_items[0]->_impl.getShared<OneOf>()->_selected;
-      auto qrx = seq->_items[2]->_impl.getShared<ClassMatch>()->_token->text;
-      auto rx = qrx.substr(1, qrx.size() - 2); // remove surrounding quotes
-      if( auto as_classmatch = rule_key_item->_impl.tryAsShared<ClassMatch>()){
+      auto qrx           = seq->_items[2]->_impl.getShared<ClassMatch>()->_token->text;
+      auto rx            = qrx.substr(1, qrx.size() - 2); // remove surrounding quotes
+      if (auto as_classmatch = rule_key_item->_impl.tryAsShared<ClassMatch>()) {
         auto rule_name = as_classmatch.value()->_token->text;
-        auto rule = std::make_shared<AST::ScannerRule>();
-        rule->_name = rule_name;
-        rule->_regex = rx;
-        auto it = _user_scanner_rules.find(rule_name);
-        OrkAssert(it==_user_scanner_rules.end());
-        printf( "ADDING SCANNER RULE<%s> <- %s\n", rule_name.c_str(), rx.c_str() );
+        auto rule      = std::make_shared<AST::ScannerRule>();
+        rule->_name    = rule_name;
+        rule->_regex   = rx;
+        auto it        = _user_scanner_rules.find(rule_name);
+        OrkAssert(it == _user_scanner_rules.end());
+        printf("ADDING SCANNER RULE<%s> <- %s\n", rule_name.c_str(), rx.c_str());
         _user_scanner_rules[rule_name] = rule;
-      }
-      else if( auto as_seq = rule_key_item->_impl.tryAsShared<Sequence>() ){
-        auto sub_seq = as_seq.value();
+      } else if (auto as_seq = rule_key_item->_impl.tryAsShared<Sequence>()) {
+        auto sub_seq   = as_seq.value();
         auto macro_str = sub_seq->_items[0]->_impl.getShared<WordMatch>()->_token->text;
-        OrkAssert(macro_str=="macro");
+        OrkAssert(macro_str == "macro");
         auto macro_name = sub_seq->_items[2]->_impl.getShared<ClassMatch>()->_token->text;
-        auto macro = std::make_shared<AST::ScannerMacro>();
-        macro->_name = macro_name;
-        macro->_regex = rx;
-        auto it = _user_scanner_macros.find(macro_name);
-        OrkAssert(it==_user_scanner_macros.end());
-        printf( "ADDING SCANNER MACRO<%s> <- %s\n", macro_name.c_str(), rx.c_str() );
+        auto macro      = std::make_shared<AST::ScannerMacro>();
+        macro->_name    = macro_name;
+        macro->_regex   = rx;
+        auto it         = _user_scanner_macros.find(macro_name);
+        OrkAssert(it == _user_scanner_macros.end());
+        printf("ADDING SCANNER MACRO<%s> <- %s\n", macro_name.c_str(), rx.c_str());
         _user_scanner_macros[macro_name] = macro;
-      }
-      else{
+      } else {
         OrkAssert(false);
       }
     };
-    _rsi_scanner_matcher = zeroOrMore(scanner_rule, "scanner_rules");
+    _rsi_scanner_matcher         = zeroOrMore(scanner_rule, "scanner_rules");
     _rsi_scanner_matcher->_notif = [=](match_ptr_t match) {
       std::string _current_rule_name = "";
-      try{
+      try {
         _user_scanner = std::make_shared<Scanner>(block_regex);
-        for( auto item : _user_scanner_macros ){
-          auto macro = item.second;
+        for (auto item : _user_scanner_macros) {
+          auto macro         = item.second;
           _current_rule_name = macro->_name;
-          printf( "IMPLEMENT MACRO <%s : %s>\n", macro->_name.c_str(), macro->_regex.c_str() );
+          printf("IMPLEMENT MACRO <%s : %s>\n", macro->_name.c_str(), macro->_regex.c_str());
           _user_scanner->addMacro(macro->_name, macro->_regex);
         }
-        for( auto item : _user_scanner_rules ){
-          auto rule = item.second;
-          uint64_t crc_id = CrcString(rule->_name.c_str()).hashed();
+        for (auto item : _user_scanner_rules) {
+          auto rule          = item.second;
+          uint64_t crc_id    = CrcString(rule->_name.c_str()).hashed();
           _current_rule_name = rule->_name;
-          printf( "IMPLEMENT EnumClass <%s : %zu : %s>\n", rule->_name.c_str(), crc_id, rule->_regex.c_str() );
+          printf("IMPLEMENT EnumClass <%s : %zu : %s>\n", rule->_name.c_str(), crc_id, rule->_regex.c_str());
           _user_scanner->addEnumClass(rule->_regex, crc_id);
         }
         _scanner->buildStateMachine();
-      }
-      catch(std::exception& e){
-        printf( "EXCEPTION cur_rule<%s>  cause<%s>\n", _current_rule_name.c_str(), e.what() );
+      } catch (std::exception& e) {
+        printf("EXCEPTION cur_rule<%s>  cause<%s>\n", _current_rule_name.c_str(), e.what());
         OrkAssert(false);
       }
     };
@@ -236,13 +326,12 @@ struct RuleSpecImpl : public Parser {
     // parser rules
     ////////////////////
 
-
     auto rule_expression = declare("rule_expression");
     //
     //
     auto rule_zom      = sequence({zom, lcurly, zeroOrMore(rule_expression), rcurly}, "rule_zom");
     auto rule_oom      = sequence({oom, lcurly, rule_expression, rcurly}, "rule_oom");
-    auto rule_sel     = sequence({sel, lcurly, oneOrMore(rule_expression), rcurly }, "rule_sel");
+    auto rule_sel      = sequence({sel, lcurly, oneOrMore(rule_expression), rcurly}, "rule_sel");
     auto rule_opt      = sequence({opt, lcurly, rule_expression, rcurly}, "rule_opt");
     auto rule_sequence = sequence({lsquare, zeroOrMore(rule_expression), rsquare}, "rule_sequence");
     auto rule_grp      = sequence({lparen, zeroOrMore(rule_expression), rparen}, "rule_grp");
@@ -250,30 +339,28 @@ struct RuleSpecImpl : public Parser {
     sequence(
         rule_expression,
         {
-            oneOf({// load previously declared rule_expression
-                   rule_zom,
-                   rule_oom,
-                   rule_sel,
-                   rule_opt,
-                   rule_sequence,
-                   rule_grp,
-                   kworid,
+            oneOf({
+                // load previously declared rule_expression
+                rule_zom,
+                rule_oom,
+                rule_sel,
+                rule_opt,
+                rule_sequence,
+                rule_grp,
+                kworid,
             }),
             optional(sequence({colon, quoted_regex}), "expr_name"),
         });
-    auto parser_rule    = sequence({kworid, left_arrow, rule_expression}, "parser_rule");
+    auto parser_rule = sequence({kworid, left_arrow, rule_expression}, "parser_rule");
 
     parser_rule->_notif = [=](match_ptr_t match) {
-      auto rulename = match->_impl.getShared<Sequence>()->_items[0]->_impl.getShared<ClassMatch>()->_token->text;
-
-      printf( "ADD PARSER RULE<%s>\n", rulename.c_str());
+      // auto rulename = match->_impl.getShared<Sequence>()->_items[0]->_impl.getShared<ClassMatch>()->_token->text;
+      _onExpression(match->_impl.getShared<Sequence>()->_items[2]);
     };
 
     _rsi_parser_matcher = zeroOrMore(parser_rule, "parser_rules");
 
-    _rsi_parser_matcher->_notif = [=](match_ptr_t match) {
-      printf( "IMPLEMENT PARSER RULES\n");
-    };
+    _rsi_parser_matcher->_notif = [=](match_ptr_t match) { printf("IMPLEMENT PARSER RULES\n"); };
   }
   /////////////////////////////////////////////////////////
   match_ptr_t parseScannerSpec(std::string inp_string) {
@@ -322,8 +409,8 @@ struct RuleSpecImpl : public Parser {
   matcher_ptr_t _rsi_scanner_matcher;
   matcher_ptr_t _rsi_parser_matcher;
 
-  std::map<std::string,AST::scanner_rule_ptr_t> _user_scanner_rules;
-  std::map<std::string,AST::scanner_macro_ptr_t> _user_scanner_macros;
+  std::map<std::string, AST::scanner_rule_ptr_t> _user_scanner_rules;
+  std::map<std::string, AST::scanner_macro_ptr_t> _user_scanner_macros;
 };
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
