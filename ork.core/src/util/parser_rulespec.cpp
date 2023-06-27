@@ -83,6 +83,7 @@ using scanner_rule_ptr_t  = std::shared_ptr<ScannerRule>;
 using scanner_macro_ptr_t = std::shared_ptr<ScannerMacro>;
 //
 struct AstNode;
+struct ParserRule;
 struct Expression;
 struct OneOrMore;
 struct ZeroOrMore;
@@ -93,6 +94,7 @@ struct Group;
 struct ExprKWID;
 //
 using astnode_ptr_t    = std::shared_ptr<AstNode>;
+using rule_ptr_t = std::shared_ptr<ParserRule>;
 using expression_ptr_t = std::shared_ptr<Expression>;
 using oneormore_ptr_t  = std::shared_ptr<OneOrMore>;
 using zeroormore_ptr_t = std::shared_ptr<ZeroOrMore>;
@@ -101,7 +103,12 @@ using optional_ptr_t   = std::shared_ptr<Optional>;
 using sequence_ptr_t   = std::shared_ptr<Sequence>;
 using group_ptr_t      = std::shared_ptr<Group>;
 using expr_kwid_ptr_t  = std::shared_ptr<ExprKWID>;
-//
+////////////////////////////////////////////////////////////////////////
+struct DumpContext{
+  size_t _indent = 0;
+};
+using dumpctx_ptr_t = std::shared_ptr<DumpContext>;
+////////////////////////////////////////////////////////////////////////
 struct AstNode {
   std::string _name;
   virtual ~AstNode() {
@@ -111,9 +118,28 @@ struct AstNode {
     OrkAssert(_match_fn);
     return _match_fn(par_matcher, inp_view);
   }
+  virtual void dump(dumpctx_ptr_t dctx) {
+    dctx->_indent++;
+    auto indentstr = std::string(dctx->_indent * 2, ' ');
+    printf("%s%s\n", indentstr.c_str(), _name.c_str());
+    dctx->_indent--;
+  }
+  
+  
   matcher_fn_t _match_fn;
+
 };
-//
+////////////////////////////////////////////////////////////////////////
+struct ParserRule : public AstNode {
+  ParserRule(Parser* user_parser, std::string name = "") {
+    _name = "ParserRule";
+    if (name != "") {
+      _name = name;
+    }
+  }
+  expression_ptr_t _expression;
+};
+////////////////////////////////////////////////////////////////////////
 struct Expression : public AstNode {
   Expression(Parser* user_parser, std::string name = "") {
 
@@ -132,10 +158,16 @@ struct Expression : public AstNode {
     _user_matcher        = std::make_shared<Matcher>(_match_fn);
     _user_matcher->_name = name;
   }
+  void dump(dumpctx_ptr_t dctx) final {
+    dctx->_indent++;
+    _expr_selected->dump(dctx);
+    dctx->_indent--;
+  }
   matcher_ptr_t _user_matcher;
   astnode_ptr_t _expr_selected;
   std::string _expr_name;
 };
+////////////////////////////////////////////////////////////////////////
 struct ExprKWID : public AstNode {
   ExprKWID(Parser* user_parser) {
     _name     = "ExprKWID";
@@ -148,7 +180,7 @@ struct ExprKWID : public AstNode {
   std::string _kwid;
   std::string _expr_name;
 };
-
+////////////////////////////////////////////////////////////////////////
 struct OneOrMore : public AstNode {
   OneOrMore(Parser* user_parser) {
     _name     = "OneOrMore";
@@ -160,20 +192,19 @@ struct OneOrMore : public AstNode {
   }
   std::vector<expression_ptr_t> _subexpressions;
 };
+////////////////////////////////////////////////////////////////////////
 struct ZeroOrMore : public AstNode {
-  ZeroOrMore(Parser* user_parser, n_or_more_ptr_t nom) {
+  ZeroOrMore(Parser* user_parser) {
     _name = "ZeroOrMore";
-    _impl_zom = nom;
     _match_fn = [=](matcher_ptr_t par_matcher, scannerlightview_constptr_t slv) -> match_ptr_t {
-      //auto nom = par_matcher->asShared<NOrMore>();
-      printf("GOT USER ZOM MATCHER<%s> nom<%p> slv.st<%zu> slv.en<%zu>\n", par_matcher->_name.c_str(), nom.get(), slv->_start, slv->_end);
+      printf("GOT USER ZOM MATCHER<%s> slv.st<%zu> slv.en<%zu>\n", par_matcher->_name.c_str(), slv->_start, slv->_end);
       OrkAssert(false);
       return nullptr;
     };
   }
   std::vector<expression_ptr_t> _subexpressions;
-  n_or_more_ptr_t _impl_zom;
 };
+////////////////////////////////////////////////////////////////////////
 struct Select : public AstNode {
   Select(Parser* user_parser) {
     _name     = "Select";
@@ -185,6 +216,7 @@ struct Select : public AstNode {
   }
   std::vector<expression_ptr_t> _subexpressions;
 };
+////////////////////////////////////////////////////////////////////////
 struct Optional : public AstNode {
   Optional(Parser* user_parser) {
     _name     = "Optional";
@@ -196,6 +228,7 @@ struct Optional : public AstNode {
   }
   expression_ptr_t _subexpression;
 };
+////////////////////////////////////////////////////////////////////////
 struct Sequence : public AstNode {
   Sequence(Parser* user_parser) {
     _name     = "Sequence";
@@ -207,6 +240,7 @@ struct Sequence : public AstNode {
   }
   std::vector<expression_ptr_t> _subexpressions;
 };
+////////////////////////////////////////////////////////////////////////
 struct Group : public AstNode {
   Group(Parser* user_parser) {
     _name     = "Group";
@@ -218,7 +252,7 @@ struct Group : public AstNode {
   }
   std::vector<expression_ptr_t> _subexpressions;
 };
-
+////////////////////////////////////////////////////////////////////////
 } // namespace AST
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
@@ -270,49 +304,66 @@ struct RuleSpecImpl : public Parser {
   size_t indent = 0;
   /////////////////////////////////////////////////////////
   AST::oneormore_ptr_t _onOOM(match_ptr_t match) {
-    auto oom_out   = std::make_shared<AST::OneOrMore>(this);
     auto indentstr = std::string(indent * 2, ' ');
-    printf("%s_onOOM<%s>\n", indentstr.c_str(), match->_matcher->_name.c_str());
-    _onExpression(match);
-    _user_astnodes.insert(oom_out);
+    // our output AST node
+    auto oom_out   = std::make_shared<AST::OneOrMore>(this);
+    // our parser DSL input node (containing user language spec)
+    //  in this case it is just match
+    // rule_oom <- sequence({oom, lcurly, rule_expression, rcurly}, "rule_oom");
+    auto oom_inp     = match;
+    printf("%s_onOOM<%s>\n", indentstr.c_str(), oom_inp->_matcher->_name.c_str());
+    auto sub = _onExpression(oom_inp);
+    oom_out->_subexpressions.push_back(sub);
+    _retain_astnodes.insert(oom_out);
     return oom_out;
   }
   /////////////////////////////////////////////////////////
   AST::zeroormore_ptr_t _onZOM(match_ptr_t match) {
-    auto nom     = match->asShared<NOrMore>();
-    auto zom_out = std::make_shared<AST::ZeroOrMore>(this,nom);
-    OrkAssert(nom->_minmatches == 0);
     auto indentstr = std::string(indent * 2, ' ');
+    // our output AST node
+    auto zom_out = std::make_shared<AST::ZeroOrMore>(this);
+    // our parser DSL input node (containing user language spec)
+    auto nom_inp     = match->asShared<NOrMore>();
+    OrkAssert(nom_inp->_minmatches == 0);
     printf("%s_onZOM<%s>\n", indentstr.c_str(), match->_matcher->_name.c_str());
-    for (auto item : nom->_items) {
-      printf("%s zom subitem<%s>\n", indentstr.c_str(), item->_matcher->_name.c_str());
-      _onExpression(item);
+    for (auto sub_item : nom_inp->_items) {
+      printf("%s zom subitem<%s>\n", indentstr.c_str(), sub_item->_matcher->_name.c_str());
+      auto subexpr_out = _onExpression(sub_item);
+      zom_out->_subexpressions.push_back(subexpr_out);
     }
-    _user_astnodes.insert(zom_out);
+    _retain_astnodes.insert(zom_out);
     return zom_out;
   }
   /////////////////////////////////////////////////////////
   AST::select_ptr_t _onSEL(match_ptr_t match) {
-    auto sel_out = std::make_shared<AST::Select>(this);
-    auto nom     = match->asShared<NOrMore>();
-    OrkAssert(nom->_minmatches == 1);
-    OrkAssert(nom->_items.size() >= 1);
     auto indentstr = std::string(indent * 2, ' ');
-    printf("%s_onSEL<%s>\n", indentstr.c_str(), match->_matcher->_name.c_str());
-    for (auto item : nom->_items) {
-      printf("%s sel subitem<%s>\n", indentstr.c_str(), item->_matcher->_name.c_str());
-      _onExpression(item);
+    // our output AST node
+    auto sel_out = std::make_shared<AST::Select>(this);
+    // our parser DSL input node (containing user language spec)
+    auto nom_inp     = match->asShared<NOrMore>();
+    printf("%s _onSEL<%s> nom_inp<%p>\n", indentstr.c_str(), match->_matcher->_name.c_str(), (void*) nom_inp.get() );
+    // for each user language spec subexpression
+    //   add an AST subexpression
+    for (auto sub_item : nom_inp->_items) {
+      printf("%s sel subitem<%s>\n", indentstr.c_str(), sub_item->_matcher->_name.c_str());
+      auto subexpr_out = _onExpression(sub_item);
+      sel_out->_subexpressions.push_back(subexpr_out);
     }
-    _user_astnodes.insert(sel_out);
+    _retain_astnodes.insert(sel_out);
     return sel_out;
   }
   /////////////////////////////////////////////////////////
   AST::optional_ptr_t _onOPT(match_ptr_t match) {
-    auto opt_out   = std::make_shared<AST::Optional>(this);
     auto indentstr = std::string(indent * 2, ' ');
+    // our output AST node
+    auto opt_out   = std::make_shared<AST::Optional>(this);
+    // our parser DSL input node (containing user language spec)
+    //  in this case it is just match
+    // rule_opt <- sequence({oom, lcurly, rule_expression, rcurly}, "rule_oom");
+    auto opt_inp = match;
     printf("%s_onOPT<%s>\n", indentstr.c_str(), match->_matcher->_name.c_str());
-    _onExpression(match);
-    _user_astnodes.insert(opt_out);
+    opt_out->_subexpression = _onExpression(opt_inp);
+    _retain_astnodes.insert(opt_out);
     return opt_out;
   }
   /////////////////////////////////////////////////////////
@@ -323,11 +374,12 @@ struct RuleSpecImpl : public Parser {
     OrkAssert(nom->_items.size() >= 1);
     auto indentstr = std::string(indent * 2, ' ');
     printf("%s_onSEQ<%s>\n", indentstr.c_str(), match->_matcher->_name.c_str());
-    for (auto item : nom->_items) {
-      printf("%s seq subitem<%s>\n", indentstr.c_str(), item->_matcher->_name.c_str());
-      _onExpression(item);
+    for (auto sub_item : nom->_items) {
+      printf("%s seq subitem<%s>\n", indentstr.c_str(), sub_item->_matcher->_name.c_str());
+      auto subexpr = _onExpression(sub_item);
+      seq_out->_subexpressions.push_back(subexpr);
     }
-    _user_astnodes.insert(seq_out);
+    _retain_astnodes.insert(seq_out);
     return seq_out;
   }
   /////////////////////////////////////////////////////////
@@ -340,9 +392,10 @@ struct RuleSpecImpl : public Parser {
     printf("%s_onGRP<%s>\n", indentstr.c_str(), match->_matcher->_name.c_str());
     for (auto item : nom->_items) {
       printf("%s grp subitem<%s>\n", indentstr.c_str(), item->_matcher->_name.c_str());
-      _onExpression(item);
+      auto subexpr = _onExpression(item);
+      grp_out->_subexpressions.push_back(subexpr);
     }
-    _user_astnodes.insert(grp_out);
+    _retain_astnodes.insert(grp_out);
     return grp_out;
   }
   /////////////////////////////////////////////////////////
@@ -353,7 +406,7 @@ struct RuleSpecImpl : public Parser {
     auto token      = classmatch->_token->text;
     kwid_out->_kwid = classmatch->_token->text;
     printf("%s_onEXPRKWID<%s> KWID<%s>\n", indentstr.c_str(), match->_matcher->_name.c_str(), kwid_out->_kwid.c_str());
-    _user_astnodes.insert(kwid_out);
+    _retain_astnodes.insert(kwid_out);
     return kwid_out;
   }
   /////////////////////////////////////////////////////////
@@ -366,12 +419,13 @@ struct RuleSpecImpl : public Parser {
     auto expression_sel  = expression_seq->itemAsShared<OneOf>(0)->_selected;
     auto expression_name = expression_seq->itemAsShared<Optional>(1)->_subitem;
 
+    size_t expression_len = expression_seq->_items.size();
     if (expression_name) {
       expression_name = expression_name->asShared<Sequence>()->_items[1];
       auto xname      = expression_name->asShared<ClassMatch>()->_token->text;
-      printf("%s_onExpression<%s> named<%s>\n", indentstr.c_str(), match->_matcher->_name.c_str(), xname.c_str());
+      printf("%s_onExpression<%s> len%zu>  named<%s>\n", indentstr.c_str(), match->_matcher->_name.c_str(), expression_len, xname.c_str());
     } else {
-      printf("%s_onExpression<%s>\n", indentstr.c_str(), match->_matcher->_name.c_str());
+      printf("%s_onExpression<%s> len%zu>\n", indentstr.c_str(), match->_matcher->_name.c_str(), expression_len);
     }
 
     if (expression_sel) {
@@ -431,7 +485,7 @@ struct RuleSpecImpl : public Parser {
     }
     indent--;
     OrkAssert(expr_out->_expr_selected != nullptr);
-    _user_astnodes.insert(expr_out);
+    _retain_astnodes.insert(expr_out);
     return expr_out;
   }
   /////////////////////////////////////////////////////////
@@ -559,11 +613,24 @@ struct RuleSpecImpl : public Parser {
       auto rulename      = match->asShared<Sequence>()->_items[0]->asShared<ClassMatch>()->_token->text;
       auto expr_ast_node = _onExpression(match->asShared<Sequence>()->_items[2], rulename);
       this->_user_parser->_matchers_by_name[rulename] = expr_ast_node->_user_matcher;
+      auto ast_rule = std::make_shared<AST::ParserRule>(this,rulename);
+      ast_rule->_expression = expr_ast_node;
+      _user_parser_rules[rulename] = ast_rule;
     };
 
     _rsi_parser_matcher = zeroOrMore(parser_rule, "parser_rules");
 
-    _rsi_parser_matcher->_notif = [=](match_ptr_t match) { printf("IMPLEMENT PARSER RULES\n"); };
+    _rsi_parser_matcher->_notif = [=](match_ptr_t match) { 
+      for( auto rule : _user_parser_rules ){
+        auto rule_name = rule.first;
+        auto ast_rule = rule.second;
+        printf("IMPLEMENT PARSER RULE<%s>\n", rule_name.c_str());
+        auto dctx = std::make_shared<AST::DumpContext>();
+        ast_rule->dump(dctx);
+        //_user_parser->matcherForWord(ast_rule->_name);
+      }
+      
+      printf("IMPLEMENT PARSER RULES\n"); };
   }
   /////////////////////////////////////////////////////////
   match_ptr_t parseScannerSpec(std::string inp_string) {
@@ -625,7 +692,9 @@ struct RuleSpecImpl : public Parser {
   Parser* _user_parser = nullptr;
   matcher_ptr_t _rsi_scanner_matcher;
   matcher_ptr_t _rsi_parser_matcher;
-  std::unordered_set<AST::astnode_ptr_t> _user_astnodes;
+  std::unordered_set<AST::astnode_ptr_t> _retain_astnodes;
+
+  std::map<std::string, AST::rule_ptr_t> _user_parser_rules;
 
   std::map<std::string, AST::scanner_rule_ptr_t> _user_scanner_rules;
   std::map<std::string, AST::scanner_macro_ptr_t> _user_scanner_macros;
