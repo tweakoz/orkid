@@ -161,17 +161,18 @@ struct OneOrMore : public AstNode {
   std::vector<expression_ptr_t> _subexpressions;
 };
 struct ZeroOrMore : public AstNode {
-  ZeroOrMore(Parser* user_parser) {
+  ZeroOrMore(Parser* user_parser, n_or_more_ptr_t nom) {
     _name = "ZeroOrMore";
-    //_ZOM = user_parser->nOrMore(matcher, 0, name, false);
+    _impl_zom = nom;
     _match_fn = [=](matcher_ptr_t par_matcher, scannerlightview_constptr_t slv) -> match_ptr_t {
-      printf("GOT USER ZOM MATCHER<%s> slv.st<%zu> slv.en<%zu>\n", par_matcher->_name.c_str(), slv->_start, slv->_end);
+      //auto nom = par_matcher->asShared<NOrMore>();
+      printf("GOT USER ZOM MATCHER<%s> nom<%p> slv.st<%zu> slv.en<%zu>\n", par_matcher->_name.c_str(), nom.get(), slv->_start, slv->_end);
       OrkAssert(false);
       return nullptr;
     };
   }
   std::vector<expression_ptr_t> _subexpressions;
-  matcher_ptr_t _ZOM;
+  n_or_more_ptr_t _impl_zom;
 };
 struct Select : public AstNode {
   Select(Parser* user_parser) {
@@ -278,8 +279,8 @@ struct RuleSpecImpl : public Parser {
   }
   /////////////////////////////////////////////////////////
   AST::zeroormore_ptr_t _onZOM(match_ptr_t match) {
-    auto zom_out = std::make_shared<AST::ZeroOrMore>(this);
-    auto nom     = match->_impl.getShared<NOrMore>();
+    auto nom     = match->asShared<NOrMore>();
+    auto zom_out = std::make_shared<AST::ZeroOrMore>(this,nom);
     OrkAssert(nom->_minmatches == 0);
     auto indentstr = std::string(indent * 2, ' ');
     printf("%s_onZOM<%s>\n", indentstr.c_str(), match->_matcher->_name.c_str());
@@ -293,7 +294,7 @@ struct RuleSpecImpl : public Parser {
   /////////////////////////////////////////////////////////
   AST::select_ptr_t _onSEL(match_ptr_t match) {
     auto sel_out = std::make_shared<AST::Select>(this);
-    auto nom     = match->_impl.getShared<NOrMore>();
+    auto nom     = match->asShared<NOrMore>();
     OrkAssert(nom->_minmatches == 1);
     OrkAssert(nom->_items.size() >= 1);
     auto indentstr = std::string(indent * 2, ' ');
@@ -317,7 +318,7 @@ struct RuleSpecImpl : public Parser {
   /////////////////////////////////////////////////////////
   AST::sequence_ptr_t _onSEQ(match_ptr_t match) {
     auto seq_out = std::make_shared<AST::Sequence>(this);
-    auto nom     = match->_impl.getShared<NOrMore>();
+    auto nom     = match->asShared<NOrMore>();
     OrkAssert(nom->_minmatches == 0);
     OrkAssert(nom->_items.size() >= 1);
     auto indentstr = std::string(indent * 2, ' ');
@@ -332,7 +333,7 @@ struct RuleSpecImpl : public Parser {
   /////////////////////////////////////////////////////////
   AST::group_ptr_t _onGRP(match_ptr_t match) {
     auto grp_out = std::make_shared<AST::Group>(this);
-    auto nom     = match->_impl.getShared<NOrMore>();
+    auto nom     = match->asShared<NOrMore>();
     OrkAssert(nom->_minmatches == 0);
     OrkAssert(nom->_items.size() >= 1);
     auto indentstr = std::string(indent * 2, ' ');
@@ -348,7 +349,7 @@ struct RuleSpecImpl : public Parser {
   AST::expr_kwid_ptr_t _onEXPRKWID(match_ptr_t match) {
     auto kwid_out   = std::make_shared<AST::ExprKWID>(this);
     auto indentstr  = std::string(indent * 2, ' ');
-    auto classmatch = match->_impl.getShared<ClassMatch>();
+    auto classmatch = match->asShared<ClassMatch>();
     auto token      = classmatch->_token->text;
     kwid_out->_kwid = classmatch->_token->text;
     printf("%s_onEXPRKWID<%s> KWID<%s>\n", indentstr.c_str(), match->_matcher->_name.c_str(), kwid_out->_kwid.c_str());
@@ -361,27 +362,27 @@ struct RuleSpecImpl : public Parser {
     auto indentstr = std::string(indent * 2, ' ');
 
     indent++;
-    auto expression_seq  = match->_impl.getShared<Sequence>();
-    auto expression_sel  = expression_seq->_items[0]->_impl.getShared<OneOf>()->_selected;
-    auto expression_name = expression_seq->_items[1]->_impl.getShared<Optional>()->_subitem;
+    auto expression_seq  = match->asShared<Sequence>();
+    auto expression_sel  = expression_seq->itemAsShared<OneOf>(0)->_selected;
+    auto expression_name = expression_seq->itemAsShared<Optional>(1)->_subitem;
 
     if (expression_name) {
-      expression_name = expression_name->_impl.getShared<Sequence>()->_items[1];
-      auto xname      = expression_name->_impl.getShared<ClassMatch>()->_token->text;
+      expression_name = expression_name->asShared<Sequence>()->_items[1];
+      auto xname      = expression_name->asShared<ClassMatch>()->_token->text;
       printf("%s_onExpression<%s> named<%s>\n", indentstr.c_str(), match->_matcher->_name.c_str(), xname.c_str());
     } else {
       printf("%s_onExpression<%s>\n", indentstr.c_str(), match->_matcher->_name.c_str());
     }
 
     if (expression_sel) {
-      if (auto as_seq = expression_sel->_impl.tryAsShared<Sequence>()) {
+      if (auto as_seq = expression_sel->tryAsShared<Sequence>()) {
         auto subseq       = as_seq.value();
         auto subseq0      = subseq->_items[0];
         auto expr_matcher = expression_sel->_matcher;
         ////////////////////////////////////////////////////////////////////////////
         // zom, oom, sel, opt
         ////////////////////////////////////////////////////////////////////////////
-        if (auto as_wordmatch = subseq0->_impl.tryAsShared<WordMatch>()) {
+        if (auto as_wordmatch = subseq0->tryAsShared<WordMatch>()) {
           auto wordmatch = as_wordmatch.value();
           auto word      = wordmatch->_token->text;
           if (word == "zom") {
@@ -403,7 +404,7 @@ struct RuleSpecImpl : public Parser {
         ////////////////////////////////////////////////////////////////////////////
         // seq, grp
         ////////////////////////////////////////////////////////////////////////////
-        else if (auto as_classmatch = subseq0->_impl.tryAsShared<ClassMatch>()) {
+        else if (auto as_classmatch = subseq0->tryAsShared<ClassMatch>()) {
           auto classmatch = as_classmatch.value();
           auto token      = classmatch->_token;
           if (classmatch->_tokclass == uint64_t(TokenClass::L_SQUARE)) {
@@ -423,8 +424,8 @@ struct RuleSpecImpl : public Parser {
       // single keyword or identifier
       ////////////////////////////////////////////////////////////////////////////
       else { // kworid
-        OrkAssert(expression_sel->_impl.isShared<ClassMatch>());
-        auto classmatch          = expression_sel->_impl.getShared<ClassMatch>();
+        OrkAssert(expression_sel->isShared<ClassMatch>());
+        auto classmatch          = expression_sel->asShared<ClassMatch>();
         expr_out->_expr_selected = _onEXPRKWID(expression_sel);
       }
     }
@@ -470,11 +471,11 @@ struct RuleSpecImpl : public Parser {
     auto scanner_key     = oneOf({macro_item, kworid}, "scanner_key");
     auto scanner_rule    = sequence({scanner_key, left_arrow, quoted_regex}, "scanner_rule");
     scanner_rule->_notif = [=](match_ptr_t match) {
-      auto seq           = match->_impl.getShared<Sequence>();
-      auto rule_key_item = seq->_items[0]->_impl.getShared<OneOf>()->_selected;
-      auto qrx           = seq->_items[2]->_impl.getShared<ClassMatch>()->_token->text;
+      auto seq           = match->asShared<Sequence>();
+      auto rule_key_item = seq->_items[0]->asShared<OneOf>()->_selected;
+      auto qrx           = seq->_items[2]->asShared<ClassMatch>()->_token->text;
       auto rx            = qrx.substr(1, qrx.size() - 2); // remove surrounding quotes
-      if (auto as_classmatch = rule_key_item->_impl.tryAsShared<ClassMatch>()) {
+      if (auto as_classmatch = rule_key_item->tryAsShared<ClassMatch>()) {
         auto rule_name = as_classmatch.value()->_token->text;
         auto rule      = std::make_shared<AST::ScannerRule>();
         rule->_name    = rule_name;
@@ -484,11 +485,11 @@ struct RuleSpecImpl : public Parser {
         printf("ADDING SCANNER RULE<%s> <- %s\n", rule_name.c_str(), rx.c_str());
         this->_user_scanner_rules[rule_name] = rule;
         this->_user_parser->matcherForWord(rule_name);
-      } else if (auto as_seq = rule_key_item->_impl.tryAsShared<Sequence>()) {
+      } else if (auto as_seq = rule_key_item->tryAsShared<Sequence>()) {
         auto sub_seq   = as_seq.value();
-        auto macro_str = sub_seq->_items[0]->_impl.getShared<WordMatch>()->_token->text;
+        auto macro_str = sub_seq->_items[0]->asShared<WordMatch>()->_token->text;
         OrkAssert(macro_str == "macro");
-        auto macro_name = sub_seq->_items[2]->_impl.getShared<ClassMatch>()->_token->text;
+        auto macro_name = sub_seq->_items[2]->asShared<ClassMatch>()->_token->text;
         auto macro      = std::make_shared<AST::ScannerMacro>();
         macro->_name    = macro_name;
         macro->_regex   = rx;
@@ -555,8 +556,8 @@ struct RuleSpecImpl : public Parser {
     auto parser_rule = sequence({kworid, left_arrow, rule_expression}, "parser_rule");
 
     parser_rule->_notif = [=](match_ptr_t match) {
-      auto rulename      = match->_impl.getShared<Sequence>()->_items[0]->_impl.getShared<ClassMatch>()->_token->text;
-      auto expr_ast_node = _onExpression(match->_impl.getShared<Sequence>()->_items[2], rulename);
+      auto rulename      = match->asShared<Sequence>()->_items[0]->asShared<ClassMatch>()->_token->text;
+      auto expr_ast_node = _onExpression(match->asShared<Sequence>()->_items[2], rulename);
       this->_user_parser->_matchers_by_name[rulename] = expr_ast_node->_user_matcher;
     };
 

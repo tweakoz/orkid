@@ -38,25 +38,25 @@ void Match::dump(int indent) const {
         _view->_end);
   }
 
-  if (auto as_seq = _impl.tryAs<sequence_ptr_t>()) {
+  if (auto as_seq = tryAs<sequence_ptr_t>()) {
     auto seq = as_seq.value();
     printf("%s   SEQ<%p>\n", indentstr.c_str(), (void*)seq.get());
     for (auto i : seq->_items) {
       i->dump(indent + 3);
     }
-  } else if (auto as_nom = _impl.tryAs<n_or_more_ptr_t>()) {
+  } else if (auto as_nom = tryAs<n_or_more_ptr_t>()) {
     auto nom = as_nom.value();
     printf("%s   NOM%zu<%p>\n", indentstr.c_str(), nom->_minmatches, (void*)nom.get());
     for (auto i : nom->_items) {
       i->dump(indent + 3);
     }
-  } else if (auto as_grp = _impl.tryAs<group_ptr_t>()) {
+  } else if (auto as_grp = tryAs<group_ptr_t>()) {
     auto grp = as_grp.value();
     printf("%s   GRP<%p>\n", indentstr.c_str(), (void*)grp.get());
     for (auto i : grp->_items) {
       i->dump(indent + 3);
     }
-  } else if (auto as_opt = _impl.tryAs<optional_ptr_t>()) {
+  } else if (auto as_opt = tryAs<optional_ptr_t>()) {
     auto opt = as_opt.value();
     printf("%s   OPT<%p>\n", indentstr.c_str(), (void*)opt.get());
     if (opt->_subitem)

@@ -42,6 +42,24 @@ struct Match {
   svar32_t _impl;
   svar32_t _user;
   void dump(int indent) const;
+  template <typename impl_t> std::shared_ptr<impl_t> asShared(){
+    return _impl.getShared<impl_t>();
+  }
+  template <typename impl_t> attempt_cast<std::shared_ptr<impl_t>> tryAsShared(){
+    return _impl.tryAsShared<impl_t>();
+  }
+  template <typename impl_t> attempt_cast<impl_t> tryAs(){
+    return _impl.tryAs<impl_t>();
+  }
+  //template <typename impl_t> attempt_cast_const<std::shared_ptr<impl_t>> tryAsShared() const {
+    //return _impl.tryAsShared<impl_t>();
+  //}
+  template <typename impl_t> attempt_cast_const<impl_t> tryAs() const {
+    return _impl.tryAs<impl_t>();
+  }
+  template <typename impl_t> bool isShared() const{
+    return _impl.isShared<impl_t>();
+  }
 };
 
 struct Matcher {
@@ -56,17 +74,29 @@ struct Matcher {
 //////////////////////////////////////////////////////////////
 
 struct Sequence{
+  template <typename impl_t> std::shared_ptr<impl_t> itemAsShared(int index){
+    return _items[index]->asShared<impl_t>();
+  }
   std::vector<match_ptr_t> _items;
 };
 struct Group{
+  template <typename impl_t> std::shared_ptr<impl_t> itemAsShared(int index){
+    return _items[index]->asShared<impl_t>();
+  }
   std::vector<match_ptr_t> _items;
 };
 struct NOrMore{
+  template <typename impl_t> std::shared_ptr<impl_t> itemAsShared(int index){
+    return _items[index]->asShared<impl_t>();
+  }
   std::vector<match_ptr_t> _items;
   size_t _minmatches = 0;
   bool _mustConsumeAll = false;
 };
 struct Optional{
+  template <typename impl_t> std::shared_ptr<impl_t> asShared(){
+    return _subitem->asShared<impl_t>();
+  }
   match_ptr_t _subitem;
 };
 struct WordMatch{
@@ -77,6 +107,9 @@ struct ClassMatch{
   const Token* _token = nullptr;
 };
 struct OneOf{
+  template <typename impl_t> std::shared_ptr<impl_t> asShared(){
+    return _selected->asShared<impl_t>();
+  }
   match_ptr_t _selected;
 };
 
