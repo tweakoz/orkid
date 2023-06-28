@@ -29,14 +29,14 @@ std::string scanner_spec = R"xxx(
     FLOATING_POINT      <- "-?(\d*\.?)(\d+)([eE][-+]?\d+)?"
     INTEGER             <- "-?(\d+)"
     FUNCTION            <- "function"
-    DT_FLOAT            <- "float"
-    DT_INT              <- "int"
+    KW_FLOAT            <- "float"
+    KW_INT              <- "int"
 )xxx";
 
 ///////////////////////////////////////////////////////////////////////////////
 
 std::string parser_spec = R"xxx(
-    datatype <- sel{DT_FLOAT DT_INT}
+    datatype <- sel{KW_FLOAT KW_INT}
     argument_decl <- [ datatype KW_OR_ID opt{COMMA} ]
     number <- sel{FLOATING_POINT INTEGER}
     variableDeclaration <- [datatype KW_OR_ID]
