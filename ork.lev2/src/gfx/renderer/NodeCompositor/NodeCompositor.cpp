@@ -27,6 +27,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 ImplementReflectionX(ork::lev2::RenderCompositingNode, "RenderCompositingNode");
 ImplementReflectionX(ork::lev2::PostCompositingNode, "PostCompositingNode");
+ImplementReflectionX(ork::lev2::LambdaPostCompositingNode, "LambdaPostCompositingNode");
 ImplementReflectionX(ork::lev2::OutputCompositingNode, "OutputCompositingNode");
 ImplementReflectionX(ork::lev2::NodeCompositingTechnique, "NodeCompositingTechnique");
 ///////////////////////////////////////////////////////////////////////////////
@@ -75,9 +76,9 @@ bool NodeCompositingTechnique::assemble(CompositorDrawData& drawdata) {
     //  otherwise it is render_out
     ////////////////////////////////////////////////////////////////////////////
     rtgroup_ptr_t render_outg = _renderNode ? _renderNode->GetOutputGroup() : nullptr;
-    RtBuffer* render_out = _renderNode ? _renderNode->GetOutput().get() : nullptr;
-    RtBuffer* postfx_out = _postfxNode ? _postfxNode->GetOutput().get() : nullptr;
-    RtBuffer* final_out  = postfx_out ? postfx_out : render_out;
+    RtBuffer* render_out      = _renderNode ? _renderNode->GetOutput().get() : nullptr;
+    RtBuffer* postfx_out      = _postfxNode ? _postfxNode->GetOutput().get() : nullptr;
+    RtBuffer* final_out       = postfx_out ? postfx_out : render_out;
     drawdata._properties["render_out"_crcu].set<RtBuffer*>(render_out);
     drawdata._properties["render_outgroup"_crcu].set<rtgroup_ptr_t>(render_outg);
     // todo - techinically only the 'root' postfx node should get input
@@ -88,7 +89,7 @@ bool NodeCompositingTechnique::assemble(CompositorDrawData& drawdata) {
     _outputNode->beginAssemble(drawdata);
     _renderNode->Render(drawdata);
     _outputNode->endAssemble(drawdata);
-    if (_postfxNode){
+    if (_postfxNode) {
       _postfxNode->Render(drawdata);
     }
   }
@@ -115,8 +116,8 @@ CompositingBuffer::~CompositingBuffer() {
 ///////////////////////////////////////////////////////////////////////////////
 void RenderCompositingNode::describeX(class_t* c) {
 }
-RenderCompositingNode::RenderCompositingNode() 
-  : _layers("All") {
+RenderCompositingNode::RenderCompositingNode()
+    : _layers("All") {
 }
 RenderCompositingNode::~RenderCompositingNode() {
 }
@@ -143,7 +144,35 @@ void PostCompositingNode::Render(CompositorDrawData& drawdata) {
   DoRender(drawdata);
   drawdata.context()->debugPopGroup();
 }
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+void LambdaPostCompositingNode::describeX(class_t* c) {
+}
+LambdaPostCompositingNode::LambdaPostCompositingNode() {
+}
+LambdaPostCompositingNode::~LambdaPostCompositingNode() {
+  OrkAssert(false);
+}
+void LambdaPostCompositingNode::gpuInit(lev2::Context* pTARG, int w, int h) {
+  OrkAssert(false);
+}
+void LambdaPostCompositingNode::Render(CompositorDrawData& drawdata) {
+  OrkAssert(false);
+}
+lev2::rtbuffer_ptr_t LambdaPostCompositingNode::GetOutput() const {
+  return nullptr;
+}
+void LambdaPostCompositingNode::doGpuInit(lev2::Context* pTARG, int w, int h) {
+  OrkAssert(false);
+}
+void LambdaPostCompositingNode::DoRender(CompositorDrawData& drawdata) {
+  OrkAssert(false);
+}
 
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 void OutputCompositingNode::describeX(class_t* c) {
 }
 OutputCompositingNode::OutputCompositingNode() {

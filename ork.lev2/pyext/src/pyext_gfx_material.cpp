@@ -247,6 +247,7 @@ void pyinit_gfx_material(py::module& module_lev2) {
               [](const freestyle_mtl_ptr_t m) -> fxshaderasset_ptr_t { //
                 return fxshaderasset_ptr_t(m->_shaderasset);
               })
+          .def("technique", [](freestyle_mtl_ptr_t m, std::string name) -> pyfxtechnique_ptr_t { return pyfxtechnique_ptr_t(m->technique(name)); })
           .def("param", [](freestyle_mtl_ptr_t m, std::string name) -> pyfxparam_ptr_t { return pyfxparam_ptr_t(m->param(name)); })
           .def("bindParamFloat", [](freestyle_mtl_ptr_t m, pyfxparam_ptr_t& p, float value) { m->bindParamFloat(p.get(), value); })
           .def(
@@ -284,6 +285,9 @@ void pyinit_gfx_material(py::module& module_lev2) {
           })
           .def("clone", [](pbrmaterial_ptr_t m) -> pbrmaterial_ptr_t {
             return m->clone();
+          })
+          .def("addBasicStateLambdaToPipeline", [](pbrmaterial_ptr_t m, fxpipeline_ptr_t pipe) {
+            m->addBasicStateLambda(pipe);
           })
           .def_property_readonly(
               "fxcache",                                    //

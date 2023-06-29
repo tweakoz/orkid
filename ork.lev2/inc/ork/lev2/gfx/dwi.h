@@ -16,6 +16,10 @@ void line2DEML(const fvec2& v0, const fvec2& v1, const fvec4& vertex_color, floa
                  const fvec4& UvRect, //
                  const fvec4& UvRect2, //
                  float depth = 0.0f);
+  void quad2DEMLCCL(const fvec4& QuadRect, //
+                 const fvec4& UvRect, //
+                 const fvec4& UvRect2, //
+                 float depth = 0.0f);
 
   void quad2DEML(const fvec2& v0,   const fvec2& v1,   const fvec2& v2,   const fvec2& v3,   //
                  const fvec2& uva0, const fvec2& uva1, const fvec2& uva2, const fvec2& uva3, //

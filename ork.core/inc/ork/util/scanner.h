@@ -17,13 +17,20 @@ namespace ork {
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 struct Scanner;
+struct ScannerView;
+struct ScannerLightView;
+
 using scanner_ptr_t = std::shared_ptr<Scanner>;
 using scanner_constptr_t = std::shared_ptr<const Scanner>;
+using scannerview_ptr_t = std::shared_ptr<ScannerView>;
+using scannerlightview_ptr_t      = std::shared_ptr<ScannerLightView>;
+using scannerlightview_constptr_t = std::shared_ptr<const ScannerLightView>;
+using match_fn_t = std::function<scannerview_ptr_t(const ScannerView&)>;
 
 struct Token {
   int iline;
   int icol;
-  int _class = -1;
+  uint64_t _class = -1;
   std::string text;
   Token(const std::string& txt, int il, int ic)
       : iline(il)
@@ -74,13 +81,27 @@ inline bool is_content(char ch) {
   return is_alfnum(ch) || (ch == '_') || (ch == '.');
 }
 /////////////////////////////////////////
+struct ScanViewFilter {
+  virtual bool Test(const Token& t) {
+    return true;
+  }
+};
+/////////////////////////////////////////
 
 struct Scanner {
+  using id_t = uint64_t;
   Scanner(
       std::string blockregex, //
       size_t capacity = 64 << 10);
   /////////////////////////////////////////
-  void addRule(std::string rule, int state);
+  void addRule(std::string rule, id_t state);
+  void addMacro(std::string macro, std::string value);
+  /////////////////////////////////////////
+  template <typename enum_t>
+  void addEnumClass(std::string rule, enum_t state){
+    addRule(rule, static_cast<id_t>(state));
+  }
+  /////////////////////////////////////////
   void buildStateMachine();
   void scan();
   void scanString(std::string str);
@@ -94,7 +115,11 @@ struct Scanner {
   /////////////////////////////////////////
   const Token* token(size_t i) const;
   /////////////////////////////////////////
-  void discardTokensOfClass(int tokclass);
+  void discardTokensOfClass(uint64_t tokclass);
+  /////////////////////////////////////////
+  ScannerView createTopView() const;
+  /////////////////////////////////////////
+  void clear();
   /////////////////////////////////////////
   const size_t _kcapacity;
   std::vector<char> _fxbuffer;
@@ -105,15 +130,19 @@ struct Scanner {
   scan_state ss;
   bool _quotedstrings = true;
 
-  lexertl::rules _rules;
-  lexertl::state_machine _statemachine;
+  using match_t = lexertl::match_results<std::string::const_iterator,id_t>;
+  using rules_t = lexertl::basic_rules<char,char,id_t>;
+  using macros_t = std::vector<std::pair<std::string,std::string>>;
+  using statemachine_t = lexertl::basic_state_machine<char,id_t>;
+  using gen_t = lexertl::basic_generator<rules_t, statemachine_t>;
+  using iter_t = lexertl::iterator<std::string::const_iterator,statemachine_t,match_t>;
+
+  rules_t _rules;
+  macros_t _macros;
+  std::vector<std::string> _str_hold;
+  statemachine_t _statemachine;
 };
 
-struct ScanViewFilter {
-  virtual bool Test(const Token& t) {
-    return true;
-  }
-};
 struct ScanViewRegex : public ScanViewFilter {
   ScanViewRegex(const char*, bool inverse);
 
@@ -147,7 +176,7 @@ struct ScannerView {
   size_t blockEnd() const;
   std::string blockName() const;
 
-  std::string asString() const;
+  std::string asString(bool use_spaces=true) const;
 
   const int numBlockDecorators() const {
     return _blockDecorators.size();
@@ -168,6 +197,25 @@ struct ScannerView {
   size_t _blockName;
   bool _blockOk;
 };
+
+//////////////////////////////////////////////////////////////
+
+struct ScannerLightView {
+  ScannerLightView(const ScannerView& inp_view);
+  ScannerLightView(const ScannerLightView& oth);
+  void clear();
+  void validate() const;
+  int numTokens() const;
+  bool empty() const;
+  void advanceTo(size_t i);
+  const Token* token(size_t i) const;
+  void dump(const std::string& dumpid) const;
+  const ScannerView& _input_view;
+  uint64_t hash() const;
+  size_t _start = -1;
+  size_t _end   = -1;
+};
+
 /////////////////////////////////////////////////////////////////////////////////////////////////
 } // namespace ork
 /////////////////////////////////////////////////////////////////////////////////////////////////

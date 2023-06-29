@@ -142,7 +142,7 @@ void TopNode::parse() {
 
   while (itokidx < tokens.size()) {
     const Token& tok = tokens[itokidx];
-     //printf("token<%d> iline<%d> col<%d> text<%s>\n", itokidx, tok.iline + 1, tok.icol + 1, tok.text.c_str());
+     printf("token<%d> iline<%d> col<%d> text<%s>\n", itokidx, tok.iline + 1, tok.icol + 1, tok.text.c_str());
 
     ScannerView scanview(*_scanner, r);
     scanview.scanBlock(itokidx);
@@ -271,7 +271,7 @@ void TopNode::parse() {
         break;
       }
       default:
-        printf("Invalid TokenClass tok<%s>\n", tok.text.c_str());
+        printf("Invalid TokenClass<%zu> tok<%s>\n", tok._class, tok.text.c_str());
         OrkAssert(false);
         break;
     }

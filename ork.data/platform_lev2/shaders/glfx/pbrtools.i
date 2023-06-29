@@ -10,6 +10,8 @@ uniform_set ub_vtx {
   mat4 m;
   mat4 mv;
   mat4 vp;
+  mat4 v_l;
+  mat4 v_r;
   mat4 vp_l;
   mat4 vp_r;
   mat4 inv_vp;
@@ -39,6 +41,8 @@ uniform_set ub_frg {
 uniform_set ub_frg_fwd {
 
   mat4 vp;
+  mat4 v_l;
+  mat4 v_r;
   mat4 vp_l;
   mat4 vp_r;
   mat4 inv_vp;

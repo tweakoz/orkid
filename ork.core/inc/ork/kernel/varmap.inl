@@ -19,6 +19,7 @@ template <typename val_t> struct TVarMap {
   using value_type = val_t;
   using str_transformer_t = std::function<std::string(const val_t&)>;
   using str_transformer_map_t = std::unordered_map<ork::TypeId::hashtype_t, str_transformer_t>;
+  using map_t = std::map<key_t, value_type>;
   ///////////////////////////////////////////////////////////////////////////
   static const val_t& nill() {
     static const val_t noval = nullptr;

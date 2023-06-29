@@ -258,6 +258,7 @@ fragment_shader ps_hdr_join : iface_fmt {
   //vec3 full = mix(base.xyz, glow.xyz, EffectAmount).xyz;
   vec3 full = base.xyz+glow.xyz*EffectAmount;
   out_clr   = vec4(full.xyz, 1.0);
+  //out_clr = vec4(glow.xyz,1);
 }
 ///////////////////////////////////////////////////////////////
 uniform_set ub_ghost {

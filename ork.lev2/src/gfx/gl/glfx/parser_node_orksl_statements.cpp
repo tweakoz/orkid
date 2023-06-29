@@ -20,11 +20,13 @@
 #include <regex>
 #include <stdlib.h>
 
+#if defined(USE_ORKSL_LANG)
+
 /////////////////////////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::glslfx::parser {
 /////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////
-/*
+
 match_results_t Statement::match(FnParseContext ctx) {
   match_results_t rval;;
   if (auto mvi = IterationStatement::match(ctx)) {
@@ -42,11 +44,6 @@ match_results_t Statement::match(FnParseContext ctx) {
   return rval;
 }
 
-//parsed_t Statement::parse(const match_t& match) {
-  //parsed_t rval;
-  //assert(false);
-  //return rval;
-//}
 void Statement::emit(shaderbuilder::BackEnd& backend) const {
   assert(false);
 }
@@ -72,11 +69,6 @@ match_results_t InstantiationStatement::match(FnParseContext ctx) {
   return rval;
 }
 
-//parsed_t InstantiationStatement::parse(const match_t& match) {
-  //parsed_t rval;
-  //assert(false);
-  //return rval;
-//}
 void InstantiationStatement::emit(shaderbuilder::BackEnd& backend) const {
   assert(false);
 }
@@ -118,11 +110,6 @@ match_results_t ExpressionStatement::match(FnParseContext ctx) {
   return rval;
 }
 
-//parsed_t ExpressionStatement::parse(const match_t& match) {
-  //parsed_t rval;
-  //assert(false);
-  //return rval;
-//}
 void ExpressionStatement::emit(shaderbuilder::BackEnd& backend) const {
   assert(false);
 }
@@ -138,12 +125,6 @@ match_results_t IterationStatement::match(FnParseContext ctx) {
   rval.dump("sta-iter");
   return rval;
 }
-
-//parsed_t IterationStatement::parse(const match_t& match) {
-  //parsed_t rval;
-  //assert(false);
-  //return rval;
-//}
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -219,11 +200,6 @@ match_results_t ForLoopStatement::match(FnParseContext ctx) {
   return rval;
 }
 
-//parsed_t ForLoopStatement::parse(const match_t& match) {
-  //parsed_t rval;
-  //assert(false);
-  //return rval;
-//}
 void ForLoopStatement::emit(shaderbuilder::BackEnd& backend) const {
   assert(false);
 }
@@ -257,11 +233,6 @@ match_results_t StatementList::match(FnParseContext ctx) {
   return rval;
 }
 
-//parsed_t StatementList::parse(const match_t& match) {
-  //parsed_t rval;
-  //assert(false);
-  //return rval;
-//}
 void StatementList::emit(shaderbuilder::BackEnd& backend) const {
   assert(false);
 }
@@ -334,21 +305,13 @@ match_results_t ReturnStatement::match(FnParseContext ctx) {
   return rval;
 }
 
-//int ReturnStatement::parse(const FnParseContext& ctx, const FnMatchResults& r) {
-//  assert(false);
-  //return 0;
-//}
 //void ReturnStatement::emit(shaderbuilder::BackEnd& backend) const {
   //assert(false);
 //}
 
 
-
 /////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-/////////////////////////////////////////////////////////////////////////////////////////////////
-
+/*
 FnMatchResults WhileLoopStatement::match(const FnParseContext& ctx) {
   FnMatchResults rval;
   rval._matched = ctx.tokenValue(0) == "while";
@@ -377,8 +340,10 @@ int IfStatement::parse(const FnParseContext& ctx, const FnMatchResults& r) {
 }
 void IfStatement::emit(shaderbuilder::BackEnd& backend) const {
   assert(false);
-}*/
-
+}
+*/
 /////////////////////////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2::glslfx
 /////////////////////////////////////////////////////////////////////////////////////////////////
+
+#endif

@@ -215,7 +215,7 @@ struct DrawableCache;
 struct DrawableData;
 struct DrawBufContext;
 struct GridDrawableData;
-struct GridDrawableInst;
+struct GroundPlaneDrawableData;
 struct StringDrawable;
 struct StringDrawableData;
 struct InstancedBillboardStringDrawable;
@@ -243,8 +243,8 @@ using drawablecache_ptr_t           = std::shared_ptr<DrawableCache>;
 using drawabledata_ptr_t            = std::shared_ptr<DrawableData>;
 using drawablebufitem_ptr_t = std::shared_ptr<DrawableBufItem>;
 using drawablebufitem_constptr_t = std::shared_ptr<const DrawableBufItem>;
-using griddrawableinstptr_t = std::shared_ptr<GridDrawableInst> ;
 using griddrawabledataptr_t = std::shared_ptr<GridDrawableData> ;
+using groundplane_drawabledataptr_t = std::shared_ptr<GroundPlaneDrawableData> ;
 using modeldrawabledata_ptr_t = std::shared_ptr<ModelDrawableData>;
 using instanceddrawinstancedata_ptr_t       = std::shared_ptr<InstancedDrawableInstanceData>;
 using instancedmodeldrawabledata_ptr_t = std::shared_ptr<InstancedModelDrawableData>;
@@ -289,6 +289,8 @@ class OutputCompositingNode;
 class RtGroupOutputCompositingNode;
 class RenderCompositingNode;
 class PostCompositingNode;
+class PostFxNodeDecompBlur;
+class LambdaPostCompositingNode;
 struct AcquiredUpdateDrawBuffer;
 struct AcquiredRenderDrawBuffer;
 struct StandardCompositorFrame;
@@ -317,6 +319,9 @@ using acqdrawbuffer_lambda_t = std::function<void(acqdrawbuffer_constptr_t)>;
 using acqupdatebuffer_ptr_t = std::shared_ptr<AcquiredUpdateDrawBuffer>;
 using acqupdatebuffer_constptr_t = std::shared_ptr<const AcquiredUpdateDrawBuffer>;
 using acqupdatebuffer_lambda_t = std::function<void(acqupdatebuffer_constptr_t)>;
+
+using decompblur_postnode_ptr_t = std::shared_ptr<PostFxNodeDecompBlur>;
+using lambda_postnode_ptr_t = std::shared_ptr<LambdaPostCompositingNode>;
 
 ///////////////////////////////////////////////////////////////////////////////
 // XgmModel

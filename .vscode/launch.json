@@ -48,5 +48,20 @@
                 }
             ]
         }
+        {
+            "name": "(lldb) debug core.test",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/../.staging-may08/bin/ork.test.core.exe",
+            "MIMode": "lldb",
+            "args": ["parser2"],
+            "cwd": "${workspaceFolder}",
+            "setupCommands": [
+                {
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        }
     ]
 }

@@ -98,5 +98,7 @@ struct FreestyleMaterial final : public GfxMaterial {
 
 };
 
+freestyle_mtl_ptr_t createShaderFromFile(lev2::Context* ctx, std::string debugname, file::Path shader_path);
+
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2

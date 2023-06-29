@@ -72,7 +72,7 @@ using functionnode_ptr_t = std::shared_ptr<FunctionNode>;
 using uniformdeclnode_ptr_t = std::shared_ptr<UniformDeclNode>;
 using importnode_ptr_t = std::shared_ptr<ImportNode>;
 
-using match_ptr_t = std::shared_ptr<FnMatchResultsBas>;
+using orkslmatch_ptr_t = std::shared_ptr<FnMatchResultsBas>;
 
 using libblock_constptr_t = std::shared_ptr<const LibraryBlockNode>;
 using decoblocknode_rawconstptr_t = const DecoBlockNode*;
@@ -85,6 +85,7 @@ using parser_constptr_t = std::shared_ptr<const GlSlFxParser>;
 
 
 using match_results_t = FnMatchResultsWrap;
+//using match_fn_t = std::function<orkslmatch_ptr_t(FnParseContext)>;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -137,120 +138,120 @@ struct Program {
 
 void performScan(scanner_ptr_t scanner);
 
-enum class TokenClass : int {
-  SINGLE_LINE_COMMENT = 1,
-  MULTI_LINE_COMMENT,
-  WHITESPACE,
-  NEWLINE,
-  UNSIGNED_DECIMAL_INTEGER,
-  HEX_INTEGER,
-  MISC_INTEGER,
-  FLOATING_POINT,
-  STRING,
-  KW_OR_ID,
-  L_CURLY,
-  R_CURLY,
-  L_SQUARE,
-  R_SQUARE,
-  L_PAREN,
-  R_PAREN,
-  COLON,
-  SEMICOLON,
-  L_SHIFT,
-  R_SHIFT,
-  LESS_THAN,
-  GREATER_THAN,
-  LESS_THAN_EQ,
-  GREATER_THAN_EQ,
-  EQUAL_TO,
-  NOT_EQUAL_TO,
-  PLUS_EQ,
-  MINUS_EQ,
-  TIMES_EQ,
-  DIVIDE_EQ,
-  OR_EQ,
-  AND_EQ,
-  LOGICAL_OR,
-  LOGICAL_AND,
-  INCREMENT,
-  DECREMENT,
+enum class TokenClass : uint64_t {
+  CrcEnum(SINGLE_LINE_COMMENT),  
+  CrcEnum(MULTI_LINE_COMMENT),
+  CrcEnum(WHITESPACE),
+  CrcEnum(NEWLINE),
+  CrcEnum(UNSIGNED_DECIMAL_INTEGER),
+  CrcEnum(HEX_INTEGER),
+  CrcEnum(MISC_INTEGER),
+  CrcEnum(FLOATING_POINT),
+  CrcEnum(STRING),
+  CrcEnum(KW_OR_ID),
+  CrcEnum(L_CURLY),
+  CrcEnum(R_CURLY),
+  CrcEnum(L_SQUARE),
+  CrcEnum(R_SQUARE),
+  CrcEnum(L_PAREN),
+  CrcEnum(R_PAREN),
+  CrcEnum(COLON),
+  CrcEnum(SEMICOLON),
+  CrcEnum(L_SHIFT),
+  CrcEnum(R_SHIFT),
+  CrcEnum(LESS_THAN),
+  CrcEnum(GREATER_THAN),
+  CrcEnum(LESS_THAN_EQ),
+  CrcEnum(GREATER_THAN_EQ),
+  CrcEnum(EQUAL_TO),
+  CrcEnum(NOT_EQUAL_TO),
+  CrcEnum(PLUS_EQ),
+  CrcEnum(MINUS_EQ),
+  CrcEnum(TIMES_EQ),
+  CrcEnum(DIVIDE_EQ),
+  CrcEnum(OR_EQ),
+  CrcEnum(AND_EQ),
+  CrcEnum(LOGICAL_OR),
+  CrcEnum(LOGICAL_AND),
+  CrcEnum(INCREMENT),
+  CrcEnum(DECREMENT),
 
-  EQUALS,
-  COMMA,
-  DOT,
-  QUESTION_MARK,
-  STAR,
-  SLASH,
-  PERCENT,
-  EXCLAMATION,
-  AMPERSAND,
-  CARET,
-  PIPE,
-  PLUS,
-  MINUS
+  CrcEnum(EQUALS),
+  CrcEnum(COMMA),
+  CrcEnum(DOT),
+  CrcEnum(QUESTION_MARK),
+  CrcEnum(STAR),
+  CrcEnum(SLASH),
+  CrcEnum(PERCENT),
+  CrcEnum(EXCLAMATION),
+  CrcEnum(AMPERSAND),
+  CrcEnum(CARET),
+  CrcEnum(PIPE),
+  CrcEnum(PLUS),
+  CrcEnum(MINUS)
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename rule_receiver_t> //
 inline void loadScannerRules(rule_receiver_t& r){ //
-  r.addRule("\\/\\*([^*]|\\*+[^/*])*\\*+\\/", int(TokenClass::MULTI_LINE_COMMENT));
-  r.addRule("\\/\\/.*[\\n\\r]", int(TokenClass::SINGLE_LINE_COMMENT));
-  r.addRule("\\s+", int(TokenClass::WHITESPACE));
-  r.addRule("[\\n\\r]+", int(TokenClass::NEWLINE));
+  r.addRule("\\/\\*([^*]|\\*+[^/*])*\\*+\\/", uint64_t(TokenClass::MULTI_LINE_COMMENT));
+  r.addRule("\\/\\/.*[\\n\\r]", uint64_t(TokenClass::SINGLE_LINE_COMMENT));
+  r.addRule("\\s+", uint64_t(TokenClass::WHITESPACE));
+  r.addRule("[\\n\\r]+", uint64_t(TokenClass::NEWLINE));
   /////////
-  r.addRule("[0-9]+u", int(TokenClass::UNSIGNED_DECIMAL_INTEGER));
-  r.addRule("0x[0-9a-fA-F]+u?", int(TokenClass::HEX_INTEGER));
-  r.addRule("-?(\\d+)", int(TokenClass::MISC_INTEGER));
-  r.addRule("-?(\\d*\\.?)(\\d+)([eE][-+]?\\d+)?", int(TokenClass::FLOATING_POINT));
+  r.addRule("[0-9]+u", uint64_t(TokenClass::UNSIGNED_DECIMAL_INTEGER));
+  r.addRule("0x[0-9a-fA-F]+u?", uint64_t(TokenClass::HEX_INTEGER));
+  r.addRule("-?(\\d+)", uint64_t(TokenClass::MISC_INTEGER));
+  r.addRule("-?(\\d*\\.?)(\\d+)([eE][-+]?\\d+)?", uint64_t(TokenClass::FLOATING_POINT));
   /////////
-  r.addRule("[\"].*[\"]", int(TokenClass::STRING));
+  r.addRule("[\"].*[\"]", uint64_t(TokenClass::STRING));
   /////////
-  r.addRule("[a-zA-Z_]+[a-zA-Z0-9_]+", int(TokenClass::KW_OR_ID));
+  r.addRule("[a-zA-Z_]+[a-zA-Z0-9_]+", uint64_t(TokenClass::KW_OR_ID));
   /////////
-  r.addRule("\\{", int(TokenClass::L_CURLY));
-  r.addRule("\\}", int(TokenClass::R_CURLY));
-  r.addRule("\\(", int(TokenClass::L_PAREN));
-  r.addRule("\\)", int(TokenClass::R_PAREN));
-  r.addRule("\\[", int(TokenClass::L_SQUARE));
-  r.addRule("\\]", int(TokenClass::R_SQUARE));
+  r.addRule("\\{", uint64_t(TokenClass::L_CURLY));
+  r.addRule("\\}", uint64_t(TokenClass::R_CURLY));
+  r.addRule("\\(", uint64_t(TokenClass::L_PAREN));
+  r.addRule("\\)", uint64_t(TokenClass::R_PAREN));
+  r.addRule("\\[", uint64_t(TokenClass::L_SQUARE));
+  r.addRule("\\]", uint64_t(TokenClass::R_SQUARE));
   /////////
-  r.addRule("\\?", int(TokenClass::QUESTION_MARK));
-  r.addRule(":", int(TokenClass::COLON));
-  r.addRule(";", int(TokenClass::SEMICOLON));
-  r.addRule("<", int(TokenClass::LESS_THAN));
-  r.addRule(">", int(TokenClass::GREATER_THAN));
-  r.addRule("&", int(TokenClass::AMPERSAND));
-  r.addRule("\\|", int(TokenClass::PIPE));
-  r.addRule("\\*", int(TokenClass::STAR));
-  r.addRule("\\/", int(TokenClass::SLASH));
-  r.addRule("%", int(TokenClass::PERCENT));
-  r.addRule("!", int(TokenClass::EXCLAMATION));
-  r.addRule("\\+", int(TokenClass::PLUS));
-  r.addRule("\\-", int(TokenClass::MINUS));
-  r.addRule("=", int(TokenClass::EQUALS));
-  r.addRule(",", int(TokenClass::COMMA));
-  r.addRule(".", int(TokenClass::DOT));
-  r.addRule("\\^", int(TokenClass::CARET));
+  r.addRule("\\?", uint64_t(TokenClass::QUESTION_MARK));
+  r.addRule(":", uint64_t(TokenClass::COLON));
+  r.addRule(";", uint64_t(TokenClass::SEMICOLON));
+  r.addRule("<", uint64_t(TokenClass::LESS_THAN));
+  r.addRule(">", uint64_t(TokenClass::GREATER_THAN));
+  r.addRule("&", uint64_t(TokenClass::AMPERSAND));
+  r.addRule("\\|", uint64_t(TokenClass::PIPE));
+  r.addRule("\\*", uint64_t(TokenClass::STAR));
+  r.addRule("\\/", uint64_t(TokenClass::SLASH));
+  r.addRule("%", uint64_t(TokenClass::PERCENT));
+  r.addRule("!", uint64_t(TokenClass::EXCLAMATION));
+  r.addRule("\\+", uint64_t(TokenClass::PLUS));
+  r.addRule("\\-", uint64_t(TokenClass::MINUS));
+  r.addRule("=", uint64_t(TokenClass::EQUALS));
+  r.addRule(",", uint64_t(TokenClass::COMMA));
+  r.addRule(".", uint64_t(TokenClass::DOT));
+  r.addRule("\\^", uint64_t(TokenClass::CARET));
   /////////
-  r.addRule("<<", int(TokenClass::L_SHIFT));
-  r.addRule(">>", int(TokenClass::R_SHIFT));
-  r.addRule("<=", int(TokenClass::LESS_THAN_EQ));
-  r.addRule(">=", int(TokenClass::GREATER_THAN_EQ));
-  r.addRule("==", int(TokenClass::EQUAL_TO));
-  r.addRule("!=", int(TokenClass::NOT_EQUAL_TO));
-  r.addRule("\\+=", int(TokenClass::PLUS_EQ));
-  r.addRule("\\-=", int(TokenClass::MINUS_EQ));
-  r.addRule("\\*=", int(TokenClass::TIMES_EQ));
-  r.addRule("\\/=", int(TokenClass::DIVIDE_EQ));
-  r.addRule("\\|=", int(TokenClass::OR_EQ));
-  r.addRule("&=", int(TokenClass::AND_EQ));
+  r.addRule("<<", uint64_t(TokenClass::L_SHIFT));
+  r.addRule(">>", uint64_t(TokenClass::R_SHIFT));
+  r.addRule("<=", uint64_t(TokenClass::LESS_THAN_EQ));
+  r.addRule(">=", uint64_t(TokenClass::GREATER_THAN_EQ));
+  r.addRule("==", uint64_t(TokenClass::EQUAL_TO));
+  r.addRule("!=", uint64_t(TokenClass::NOT_EQUAL_TO));
+  r.addRule("\\+=", uint64_t(TokenClass::PLUS_EQ));
+  r.addRule("\\-=", uint64_t(TokenClass::MINUS_EQ));
+  r.addRule("\\*=", uint64_t(TokenClass::TIMES_EQ));
+  r.addRule("\\/=", uint64_t(TokenClass::DIVIDE_EQ));
+  r.addRule("\\|=", uint64_t(TokenClass::OR_EQ));
+  r.addRule("&=", uint64_t(TokenClass::AND_EQ));
   /////////
-  r.addRule("\\+\\+", int(TokenClass::INCREMENT));
-  r.addRule("--", int(TokenClass::DECREMENT));
+  r.addRule("\\+\\+", uint64_t(TokenClass::INCREMENT));
+  r.addRule("--", uint64_t(TokenClass::DECREMENT));
   /////////
-  r.addRule("\\|\\|", int(TokenClass::LOGICAL_OR));
-  r.addRule("&&", int(TokenClass::LOGICAL_AND));
+  r.addRule("\\|\\|", uint64_t(TokenClass::LOGICAL_OR));
+  r.addRule("&&", uint64_t(TokenClass::LOGICAL_AND));
   
 };
 
@@ -272,7 +273,9 @@ struct AstNode {
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-/*
+
+#if defined(USE_ORKSL_LANG)
+
 struct FnParseContext {
   FnParseContext(GlSlFxParser* parser, const ScannerView* v);
   FnParseContext(const FnParseContext& oth);
@@ -285,9 +288,9 @@ struct FnParseContext {
   size_t _startIndex        = 0;
   const ScannerView* _view;
 };
-*/
+
 ///////////////////////////////////////////////////////////////////////////////
-/*
+
 struct ParseResult {
   size_t _numtokens = 0;
   astnode_ptr_t _node    = nullptr;
@@ -304,7 +307,7 @@ struct FnMatchResultsBas {
   operator bool() const {
     return _matched;
   }
-  virtual match_ptr_t merge(match_ptr_t rhs) const = 0;
+  virtual orkslmatch_ptr_t merge(orkslmatch_ptr_t rhs) const = 0;
 
   virtual ParseResult parse() = 0;
 
@@ -322,13 +325,20 @@ struct FnMatchResultsBas {
   }
   bool _matched = false;
   FnParseContext _ctx;
-  std::vector<match_ptr_t> _subMatches;
+  std::vector<orkslmatch_ptr_t> _subMatches;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct FnMatchResultsSt : public FnMatchResultsBas {
+    orkslmatch_ptr_t merge(orkslmatch_ptr_t rhs) const final { return nullptr; }
+    ParseResult parse() final { return ParseResult(); }
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
 struct FnMatchResultsWrap {
-  FnMatchResultsWrap(match_ptr_t p = nullptr)
+  FnMatchResultsWrap(orkslmatch_ptr_t p = nullptr)
       : _results(p) {
   }
   void dump(std::string dumpid) const {
@@ -361,7 +371,7 @@ struct FnMatchResultsWrap {
   inline FnMatchResultsBas* operator->() {
     return _results.get();
   }
-  match_ptr_t _results;
+  orkslmatch_ptr_t _results;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -379,8 +389,8 @@ template <typename T> struct FnMatchResults : public FnMatchResultsBas {
     return ParseResult(); // T::parse(*this);
   }
 
-  match_ptr_t merge(match_ptr_t rhs) const final {
-    match_ptr_t rval = std::make_shared<FnMatchResults>(*this);
+  orkslmatch_ptr_t merge(orkslmatch_ptr_t rhs) const final {
+    orkslmatch_ptr_t rval = std::make_shared<FnMatchResults>(*this);
     if (false == _matched)
       rval->_start = rhs->_start;
     rval->_count += rhs->_count;
@@ -388,7 +398,9 @@ template <typename T> struct FnMatchResults : public FnMatchResultsBas {
     return rval;
   }
 };
-*/
+
+#endif
+
 ///////////////////////////////////////////////////////////////////////////////
 
 struct ShaderBodyElement : public AstNode {
@@ -407,7 +419,9 @@ struct ShaderEmittable : public AstNode {
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-/*
+
+#if defined(USE_ORKSL_LANG)
+
 #define DECLARE_STD_FNS(xxx)                                                                                                       \
   typedef FnMatchResults<xxx> match_t;                                                                                             \
   static match_results_t match(FnParseContext ctx);
@@ -448,18 +462,22 @@ struct ShaderEmittable : public AstNode {
     }                                                                                                                              \
     DECLARE_RECURSIVE_EMITTABLE_FNS(xxx)                                                                                                 \
   };
-*/
+
+#endif 
+
 ///////////////////////////////////////////////////////////////////////////////
 // good
 
-//DECLARE_STD_EMITTABLE(PrimaryExpression);
-//DECLARE_RECURSIVE_EMITTABLE(PostFixExpression);
+DECLARE_STD_EMITTABLE(PrimaryExpression);
+DECLARE_RECURSIVE_EMITTABLE(PostFixExpression);
 
 ///////////////////////////////////////////////////////////////////////////////
 // elemental types
 ///////////////////////////////////////////////////////////////////////////////
 
-/*DECLARE_STD_EMITTABLE(Constant);
+#if defined(USE_ORKSL_LANG)
+
+DECLARE_STD_EMITTABLE(Constant);
 DECLARE_STD_EMITTABLE(StringLiteral);
 DECLARE_STD_EMITTABLE(TypeName);
 DECLARE_STD_EMITTABLE(Identifier);
@@ -534,9 +552,9 @@ DECLARE_STD_EMITTABLE(AssignmentStatement);
 
 DECLARE_STD_ABSTRACT_EMITTABLE(ConditionalExpression);
 DECLARE_STD_ABSTRACT_EMITTABLE(IterationStatement);
-*/
+
 ///////////////////////////////////////////////////////////////////////////////
-/*
+
 struct FnElement : public ShaderEmittable {
   FnElement()
       : ShaderEmittable() {
@@ -561,10 +579,10 @@ struct DeclarationList : public ShaderEmittable {
   DECLARE_STD_EMITTABLE_FNS(DeclarationList);
   std::vector<vardecl_ptr_t> _children;
 };
-*/
+
 
 ///////////////////////////////////////////////////////////////////////////////
-/*
+
 struct Expression : public ShaderEmittable {
   Expression()
       : ShaderEmittable() {
@@ -601,7 +619,7 @@ struct CompoundStatement : public FnElement {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct ReturnStatement : public StatementNode {
+/*struct ReturnStatement : public StatementNode {
   ReturnStatement(TopNode* cnode)
       : StatementNode() {}
 
@@ -612,11 +630,11 @@ struct ReturnStatement : public StatementNode {
   void emit(shaderbuilder::BackEnd& backend) const final;
 
   expression_ptr_t _returnValue = nullptr;
-};
-*/
+};*/
+
 
 ///////////////////////////////////////////////////////////////////////////////
-/*
+
 struct ForLoopStatement : public IterationStatement {
   ForLoopStatement()
       : IterationStatement() {
@@ -628,7 +646,7 @@ struct ForLoopStatement : public IterationStatement {
   expression_ptr_t _condition = nullptr;
   // AssignmentNode* _advance = nullptr;
 };
-*/
+
 ///////////////////////////////////////////////////////////////////////////////
 /*
 struct WhileLoopStatement : public IterationStatement {
@@ -645,7 +663,6 @@ struct WhileLoopStatement : public IterationStatement {
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-
 struct ElseNode : public ShaderEmittable {
   ElseNode(TopNode* cnode)
       : ShaderEmittable() {}
@@ -671,6 +688,7 @@ struct ElseIfNode : public ShaderEmittable {
   expression_ptr_t _condition = nullptr;
 };
 
+
 struct IfStatement : public StatementNode {
   IfStatement(TopNode* cnode)
       : StatementNode() {}
@@ -683,8 +701,10 @@ struct IfStatement : public StatementNode {
   expression_ptr_t _condition = nullptr;
   std::vector<ElseIfNode*> _elseifs;
   ElseNode* _elseNode = nullptr;
-};
-*/
+};*/
+
+#endif 
+
 ///////////////////////////////////////////////////////////////////////////////
 
 struct OrkSlFunctionNode : public AstNode {

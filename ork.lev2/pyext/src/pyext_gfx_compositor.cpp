@@ -43,7 +43,7 @@ void pyinit_gfx_compositor(py::module& module_lev2) {
   py::class_<RenderPresetContext>(module_lev2, "RenderPresetContext");
   /////////////////////////////////////////////////////////////////////////////////
   auto rendernode_type = //
-      py::class_<RenderCompositingNode, compositorrendernode_ptr_t>(module_lev2, "RenderCompositingNode")
+      py::class_<RenderCompositingNode, ::ork::Object, compositorrendernode_ptr_t>(module_lev2, "RenderCompositingNode")
           .def_property("layers",
             [](compositorrendernode_ptr_t rnode) -> std::string {
               return rnode->_layers;
@@ -59,8 +59,10 @@ void pyinit_gfx_compositor(py::module& module_lev2) {
           });
   type_codec->registerStdCodec<compositorrendernode_ptr_t>(rendernode_type);
   /////////////////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////////
   auto postnode_type = //
-      py::class_<PostCompositingNode, compositorpostnode_ptr_t>(module_lev2, "PostCompositingNode")
+      py::class_<PostCompositingNode, ::ork::Object, compositorpostnode_ptr_t>(module_lev2, "PostFxNode")
           .def("__repr__", [](compositorpostnode_ptr_t d) -> std::string {
             fxstring<64> fxs;
             fxs.format("PostCompositingNode(%p)", d.get());
@@ -68,8 +70,70 @@ void pyinit_gfx_compositor(py::module& module_lev2) {
           });
   type_codec->registerStdCodec<compositorpostnode_ptr_t>(postnode_type);
   /////////////////////////////////////////////////////////////////////////////////
+  auto lambdapostnode_type = //
+      py::class_<LambdaPostCompositingNode, PostCompositingNode, lambda_postnode_ptr_t>(module_lev2, "LambdaPostFxNode")
+          .def(py::init<>())
+          .def("__repr__", [](lambda_postnode_ptr_t d) -> std::string {
+            fxstring<64> fxs;
+            fxs.format("LambdaPostCompositingNode(%p)", d.get());
+            return fxs.c_str();
+          });
+  type_codec->registerStdCodec<lambda_postnode_ptr_t>(lambdapostnode_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  auto dcblurpostnode_type = //
+      py::class_<PostFxNodeDecompBlur, PostCompositingNode, decompblur_postnode_ptr_t>(module_lev2, "DecompBlurPostFxNode")
+          .def(py::init<>())
+          .def("gpuInit",[](decompblur_postnode_ptr_t dcnode, ctx_t ctx, int w, int h) {
+            dcnode->gpuInit(ctx.get(), w, h);
+          })
+          .def("addToVarMap",[](decompblur_postnode_ptr_t dcnode, varmap::varmap_ptr_t vm, const std::string& key) {
+            OrkAssert(typeid(compositorpostnode_ptr_t)!=typeid(decompblur_postnode_ptr_t));
+            auto as_postnode = std::dynamic_pointer_cast<PostCompositingNode>(dcnode);
+            vm->makeValueForKey<compositorpostnode_ptr_t>(key,as_postnode);
+          })
+          .def_property("threshold",
+            [](decompblur_postnode_ptr_t dcnode) -> float {
+              return dcnode->_threshold;
+            },
+            [](decompblur_postnode_ptr_t dcnode, float threshold){
+              dcnode->_threshold = threshold;
+            }
+          )
+          .def_property("blurwidth",
+            [](decompblur_postnode_ptr_t dcnode) -> float {
+              return dcnode->_blurwidth;
+            },
+            [](decompblur_postnode_ptr_t dcnode, float blurwidth){
+              dcnode->_blurwidth = blurwidth;
+            }
+          )
+          .def_property("blurfactor",
+            [](decompblur_postnode_ptr_t dcnode) -> float {
+              return dcnode->_blurfactor;
+            },
+            [](decompblur_postnode_ptr_t dcnode, float blurfactor){
+              dcnode->_blurfactor = blurfactor;
+            }
+          )
+          .def_property("amount",
+            [](decompblur_postnode_ptr_t dcnode) -> float {
+              return dcnode->_amount;
+            },
+            [](decompblur_postnode_ptr_t dcnode, float amount){
+              dcnode->_amount = amount;
+            }
+          )
+          .def("__repr__", [](decompblur_postnode_ptr_t d) -> std::string {
+            fxstring<64> fxs;
+            fxs.format("DecompBlurPostFxNode(%p)", d.get());
+            return fxs.c_str();
+          });
+  type_codec->registerStdCodec<decompblur_postnode_ptr_t>(dcblurpostnode_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////////
   auto outputnode_type = //
-      py::class_<OutputCompositingNode, compositoroutnode_ptr_t>(module_lev2, "OutputCompositingNode")
+      py::class_<OutputCompositingNode, ::ork::Object, compositoroutnode_ptr_t>(module_lev2, "OutputCompositingNode")
           .def("__repr__", [](compositoroutnode_ptr_t d) -> std::string {
             fxstring<64> fxs;
             fxs.format("OutputCompositingNode(%p)", d.get());
@@ -249,6 +313,30 @@ void pyinit_gfx_compositor(py::module& module_lev2) {
 
   /////////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////
+  using fwdpbrnode_ptr_t = std::shared_ptr<pbr::ForwardNode>;
+  auto fwdpbrnode_type = //
+      py::class_<pbr::ForwardNode, RenderCompositingNode, fwdpbrnode_ptr_t>(module_lev2, "PbrForwardNode")
+          .def(py::init([]() -> fwdpbrnode_ptr_t { //
+            return std::make_shared<pbr::ForwardNode>();
+          }))
+          .def_property_readonly("pbr_common", [](fwdpbrnode_ptr_t node) -> pbr::commonstuff_ptr_t { //
+            return node->_pbrcommon;
+          })
+          //.def_property_readonly("context", [](fwdpbrnode_ptr_t node) -> pbr_deferred_context_ptr_t { //
+            //return node->deferredContext();
+          //})
+          //.def("overrideShader", [](fwdpbrnode_ptr_t node, std::string shaderpath)  { //
+            //return node->overrideShader(shaderpath);
+          //})
+          .def("__repr__", [](fwdpbrnode_ptr_t node) -> std::string {
+            fxstring<64> fxs;
+            fxs.format("PbrForwardNode(%p)", node.get());
+            return fxs.c_str();
+          });
+  type_codec->registerStdCodec<fwdpbrnode_ptr_t>(fwdpbrnode_type);
+
+  /////////////////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////////
   using scroutnode_ptr_t = std::shared_ptr<ScreenOutputCompositingNode>;
   auto scroutnode_type = //
       py::class_<ScreenOutputCompositingNode, OutputCompositingNode, scroutnode_ptr_t>(module_lev2, "ScreenOutputNode")
@@ -262,6 +350,20 @@ void pyinit_gfx_compositor(py::module& module_lev2) {
           });
   type_codec->registerStdCodec<scroutnode_ptr_t>(scroutnode_type);
 
+  /////////////////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////////
+  using vroutnode_ptr_t = std::shared_ptr<VrCompositingNode>;
+  auto vroutnode_type = //
+      py::class_<VrCompositingNode, OutputCompositingNode, vroutnode_ptr_t>(module_lev2, "VrOutputNode")
+          .def(py::init([]() -> vroutnode_ptr_t { //
+            return std::make_shared<VrCompositingNode>();
+          }))
+          .def("__repr__", [](vroutnode_ptr_t i) -> std::string {
+            fxstring<64> fxs;
+            fxs.format("VrCompositingNode(%p)", i.get());
+            return fxs.c_str();
+          });
+  type_codec->registerStdCodec<vroutnode_ptr_t>(vroutnode_type);
 
 
   /////////////////////////////////////////////////////////////////////////////////

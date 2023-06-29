@@ -151,6 +151,11 @@ void pyinit_math_la_t(py::module& module_core, //
           .def(py::self - py::self)
           .def(py::self * py::self)
           .def(py::self * T())
+          .def("hsv2rgb", [](const vec3_t& hsv) -> vec3_t { //
+            vec3_t RGB;
+            RGB.setHSV(hsv.x, hsv.y, hsv.z);
+            return RGB;
+          })
           .def("set", [](vec3_t& me, const vec3_t& other) { me = other; })
           .def(
               "__str__",

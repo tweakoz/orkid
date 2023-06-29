@@ -540,6 +540,8 @@ void GlFrameBufferInterface::blit(rtgroup_ptr_t src, rtgroup_ptr_t dst) {
 
 void GlFrameBufferInterface::downsample2x2(rtgroup_ptr_t src, rtgroup_ptr_t dst) {
 
+  auto DWI = _target.DWI();
+
   int w = src->width();
   int h = src->height();
   int wd2 = w/2;
@@ -564,7 +566,7 @@ void GlFrameBufferInterface::downsample2x2(rtgroup_ptr_t src, rtgroup_ptr_t dst)
   ViewportRect extents(0, 0, wd2, hd2);
   this->pushViewport(extents);
   this->pushScissor(extents);
-  this_buf->Render2dQuadEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 1, 1));
+  DWI->quad2DEMLCCL(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 1, 1));
   this->popViewport();
   this->popScissor();
   shader->end(*framedata);

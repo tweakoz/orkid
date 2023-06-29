@@ -28,12 +28,12 @@ namespace ork::lev2::glslfx::parser {
 
 void performScan(scanner_ptr_t scanner) {
 
-  int tokclass = 1;
+  using id_t = Scanner::id_t;
 
   struct RR {
     RR(scanner_ptr_t s) : _scanner(s){}
 
-    void addRule(const char* rule, int id){
+    void addRule(const char* rule, id_t id){
       _scanner->addRule(rule,id);
     }
     scanner_ptr_t _scanner;
@@ -45,10 +45,10 @@ void performScan(scanner_ptr_t scanner) {
 
   scanner->buildStateMachine();
   scanner->scan();
-  scanner->discardTokensOfClass(int(TokenClass::SINGLE_LINE_COMMENT));
-  scanner->discardTokensOfClass(int(TokenClass::MULTI_LINE_COMMENT));
-  scanner->discardTokensOfClass(int(TokenClass::WHITESPACE));
-  scanner->discardTokensOfClass(int(TokenClass::NEWLINE));
+  scanner->discardTokensOfClass(id_t(TokenClass::SINGLE_LINE_COMMENT));
+  scanner->discardTokensOfClass(id_t(TokenClass::MULTI_LINE_COMMENT));
+  scanner->discardTokensOfClass(id_t(TokenClass::WHITESPACE));
+  scanner->discardTokensOfClass(id_t(TokenClass::NEWLINE));
 }
 
 void checktoken(const ScannerView& view, int actual_index, std::string expected) {

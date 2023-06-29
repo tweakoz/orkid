@@ -82,7 +82,11 @@ struct IMPL {
   void _render(CompositorDrawData& drawdata) {
     Context* target = drawdata.context();
     auto FBI = target->FBI();
+    auto DWI = target->DWI();
     auto framedata = target->topRenderContextFrameData();
+    auto topcomp = framedata->topCompositor();
+    bool was_stereo = framedata->isStereo();
+    topcomp->topCPD()._stereo1pass = false;
     //////////////////////////////////////////////////////
     FBI->SetAutoClear(false);
     //////////////////////////////////////////////////////
@@ -98,9 +102,9 @@ struct IMPL {
             ViewportRect extents(0, 0, w, h);
             FBI->pushViewport(extents);
             FBI->pushScissor(extents);
-            FBI->GetThisBuffer()->Render2dQuadEML( fvec4(-1, -1, 2, 2), // pos
-                                                   fvec4(0, 0, 1, 1), // uv0
-                                                   fvec4(0, 0, 1, 1));
+            DWI->quad2DEMLCCL(fvec4(-1, -1, 2, 2), // pos
+                              fvec4(0, 0, 1, 1), // uv0
+                              fvec4(0, 0, 1, 1));
             FBI->popViewport();
             FBI->popScissor();
           };
@@ -109,7 +113,7 @@ struct IMPL {
 
             auto final_rtg = try_final.value();
             int finalw = final_rtg->width();
-            int finalh = final_rtg->width();
+            int finalh = final_rtg->height();
             target->beginFrame();
             /////////////////////
             // downsample 2x2
@@ -117,10 +121,12 @@ struct IMPL {
             FBI->downsample2x2(final_rtg,_rtg_b);
             //FBI->downsample2x2(_rtg_a,_rtg_b);
             /////////////////////
+            /////////////////////
             // brightness mask
             /////////////////////
             int smallw = _rtg_b->width();
             int smallh = _rtg_b->height();
+            //printf( "smallw<%d> smallh<%d>\n", smallw, smallh );
             _rtg_c->Resize(smallw,smallh);
             FBI->PushRtGroup(_rtg_c.get());
             _freestyle_mtl->begin(_tek_maskbright,*framedata);
@@ -166,6 +172,7 @@ struct IMPL {
             /////////////////////
             // final blit
             /////////////////////
+            //printf( "finalw<%d> finalh<%d>\n", finalw, finalh );
             _rtg_out->Resize(finalw,finalh);
             FBI->PushRtGroup(_rtg_out.get());
             _freestyle_mtl->begin(_tek_join,*framedata);
@@ -185,7 +192,7 @@ struct IMPL {
         }
       }
     }
-
+    topcomp->topCPD()._stereo1pass = was_stereo;
   }
   ///////////////////////////////////////
   CompositingMaterial _material;

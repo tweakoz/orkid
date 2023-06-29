@@ -100,28 +100,15 @@ vec4 grid_output(vec3 pos){
 
 	float gMajor = filteredGrid(paramMajor,dpdxMajor,dpdyMajor,0.02);	
 	float gMinor = filteredGrid(paramMinor,dpdxMinor,dpdyMinor,0.02);	
-	vec3 basecolor = vec3(0.1,0.1,0.1);
-	vec3 majorcolor = vec3(1,1,1);
-	vec3 minorcolor = vec3(0.5,0.5,0.5);
+	
+  vec3 basecolor = vec3(.48,.62,.90)*0.95;
+	vec3 majorcolor = basecolor*1.1;
+	vec3 minorcolor = basecolor*1.05;
 
 	vec3 color = mix(minorcolor,basecolor,gMinor);
 	vec4 oc =  vec4(mix(majorcolor,color,gMajor),1.0-gMajor);
 
-  float xlerp = clamp(1-pow(abs(pos.x*10),2),0,1);
-  float zlerp = clamp(1-pow(abs(pos.z*10),2),0,1);
-
-  if(pos.x<0)
-    zlerp = 0.0;
-
-  if(pos.z<0)
-    xlerp = 0.0;
-
-  vec3 col_x = mix(vec3(1,1,1),vec3(0,0,1),xlerp);
-  vec3 col_z = mix(vec3(1,1,1),vec3(1,0,0),zlerp);
-  //oc.y *= clamp(1-pow(abs(pos.y),10),0,1);
-  vec3 color2 = oc.xyz*col_x*col_z;
-
-  return vec4(color2,1);
+  return vec4(oc.xyz,1);
 }
 
 }
@@ -189,7 +176,7 @@ fragment_shader ps_grid_forward_lit_stereo
   : ub_frg_fwd_lighting{
   vec4 gout = grid_output(frg_wpos.xyz);
   vec3 oc = forward_lighting_stereo(gout.xyz);
-  out_clr = vec4(oc.xyz,1); 
+  out_clr = vec4(gout.xyz,1);
 }
 ///////////////////////////////////////////////////////////////
 vertex_shader vs_rigid_gbuffer_grid

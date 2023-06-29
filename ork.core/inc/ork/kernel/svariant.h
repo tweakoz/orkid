@@ -434,6 +434,21 @@ public:
     return (*pval);
   }
   //////////////////////////////////////////////////////////////
+  // return the type T object by const reference, assert if the types dont match
+  //////////////////////////////////////////////////////////////
+  template <typename T> void setShared(std::shared_ptr<T> ptr) const {
+    typedef std::shared_ptr<T> sharedptr_t;
+    static_assert(sizeof(std::shared_ptr<T>) <= ksize, "static_variant size violation");
+    _destroy();
+    auto pval = (sharedptr_t*)&_buffer[0];
+    new (pval) sharedptr_t;
+    (*pval) = ptr;
+    _mtinfo = &typeid(sharedptr_t);
+    assignDescriptor<sharedptr_t>();
+    assert(typeid(sharedptr_t) == *_mtinfo);
+    return (*pval);
+  }
+  //////////////////////////////////////////////////////////////
   // construct a T and return by reference
   //////////////////////////////////////////////////////////////
   template <typename T, typename... A> T& make(A&&... args) {
@@ -467,6 +482,14 @@ public:
     static_assert(sizeof(T) <= ksize, "static_variant size violation");
     bool type_ok = (_mtinfo != nullptr) ? (typeid(T) == *_mtinfo) : false;
     return attempt_cast<T>((T*)(type_ok ? &_buffer[0] : nullptr));
+  }
+  //////////////////////////////////////////////////////////////
+  //
+  //////////////////////////////////////////////////////////////
+  template <typename T> attempt_cast<std::shared_ptr<T>> tryAsShared() {
+    static_assert(sizeof(std::shared_ptr<T>) <= ksize, "static_variant size violation");
+    bool type_ok = (_mtinfo != nullptr) ? (typeid(std::shared_ptr<T>) == *_mtinfo) : false;
+    return attempt_cast<std::shared_ptr<T>>((std::shared_ptr<T>*)(type_ok ? &_buffer[0] : nullptr));
   }
   //////////////////////////////////////////////////////////////
   //

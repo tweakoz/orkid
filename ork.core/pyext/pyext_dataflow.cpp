@@ -301,6 +301,11 @@ void pyinit_dataflow(py::module& module_core) {
           ///////////////////////////////
           .def("addModule", [](graphdata_ptr_t g, dgmoduledata_ptr_t m, std::string named) { GraphData::addModule(g, named, m); })
           ///////////////////////////////
+          .def("findModule", [](graphdata_ptr_t g, std::string named) -> dgmoduledata_ptr_t { // 
+            return g->module(named);
+          })
+          ///////////////////////////////
+          ///////////////////////////////
           .def(
               "create",
               [type_codec](graphdata_ptr_t g, std::string named, py::object module_clazz) -> dgmoduledata_ptr_t {

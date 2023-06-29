@@ -330,4 +330,19 @@ const FxComputeShader* FreestyleMaterial::computeShader(std::string named) {
 }
 #endif
 ///////////////////////////////////////////////////////////////////////////////
+lev2::freestyle_mtl_ptr_t createShaderFromFile(lev2::Context* ctx, std::string debugname, file::Path shader_path) {
+  ork::File shader_file(shader_path, ork::EFM_READ);
+  size_t length = 0;
+  shader_file.GetLength(length);
+  std::string shader_text;
+  shader_text.resize(length + 1);
+  shader_file.Read(shader_text.data(), length);
+  shader_text.data()[length] = 0;
+
+  auto mtl = std::make_shared<FreestyleMaterial>();
+  mtl->gpuInitFromShaderText(ctx, debugname, shader_text);
+
+  return mtl;
+}
+///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2

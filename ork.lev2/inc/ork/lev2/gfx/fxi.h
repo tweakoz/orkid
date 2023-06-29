@@ -26,7 +26,7 @@ public:
   virtual void EndPass()                 = 0;
   virtual void EndBlock()                = 0;
   virtual void CommitParams(void)        = 0;
-
+  virtual void reset() {}
   virtual const FxShaderTechnique* technique(FxShader* hfx, const std::string& name)       = 0;
   virtual const FxShaderParam* parameter(FxShader* hfx, const std::string& name)           = 0;
   virtual const FxShaderParamBlock* parameterBlock(FxShader* hfx, const std::string& name) = 0;

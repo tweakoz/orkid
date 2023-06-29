@@ -8,6 +8,7 @@
 #include <ork/hdl/vcd.h>
 #include <ork/file/file.h>
 #include <stack>
+#include <ork/util/crc.h>
 
 
 namespace ork::hdl::vcd {
@@ -16,19 +17,19 @@ File::File()
     : _scanner("") {
 }
 ////////////////////////////////////////////////////////////////////////////////
-enum class TokenClass {
-  SECTION = 1,
-  IDENTIFIER,
-  TIMESTAMP,
-  BITVECTOR,
-  NUMBER,
-  OPENBRACKET,
-  CLOSEBRACKET,
-  COLON,
-  WHITESPACE,
-  NEWLINE,
-  PRINTABLE,
-  UNKNOWN = 65535,
+enum class TokenClass : uint64_t {
+  CrcEnum(SECTION),
+  CrcEnum(IDENTIFIER),
+  CrcEnum(TIMESTAMP),
+  CrcEnum(BITVECTOR),
+  CrcEnum(NUMBER),
+  CrcEnum(OPENBRACKET),
+  CrcEnum(CLOSEBRACKET),
+  CrcEnum(COLON),
+  CrcEnum(WHITESPACE),
+  CrcEnum(NEWLINE),
+  CrcEnum(PRINTABLE),
+  CrcEnum(UNKNOWN),
 };
 ////////////////////////////////////////////////////////////////////////////////
 enum class ParseState {
@@ -55,17 +56,17 @@ void File::parse(ork::file::Path& inppath) {
   _scanner.ifilelen                 = length;
   _scanner._quotedstrings           = false;
 
-  _scanner.addRule("$[a-z]+", int(TokenClass::SECTION));
-  _scanner.addRule("[bB][0-1xz]+", int(TokenClass::BITVECTOR));
-  _scanner.addRule("#[0-9]+", int(TokenClass::TIMESTAMP));
-  _scanner.addRule("\\s+", int(TokenClass::WHITESPACE));
-  _scanner.addRule("\\n+", int(TokenClass::NEWLINE));
-  //_scanner.addRule("[a-zA-Z_]+[a-zA-Z0-9_]+", int(TokenClass::IDENTIFIER));
-  _scanner.addRule("[!-~]+", int(TokenClass::PRINTABLE));
-  _scanner.addRule("[0-9]+", int(TokenClass::NUMBER));
-  _scanner.addRule("\\[", int(TokenClass::OPENBRACKET));
-  _scanner.addRule("\\]", int(TokenClass::CLOSEBRACKET));
-  _scanner.addRule(":", int(TokenClass::COLON));
+  _scanner.addRule("$[a-z]+", uint64_t(TokenClass::SECTION));
+  _scanner.addRule("[bB][0-1xz]+", uint64_t(TokenClass::BITVECTOR));
+  _scanner.addRule("#[0-9]+", uint64_t(TokenClass::TIMESTAMP));
+  _scanner.addRule("\\s+", uint64_t(TokenClass::WHITESPACE));
+  _scanner.addRule("\\n+", uint64_t(TokenClass::NEWLINE));
+  //_scanner.addRule("[a-zA-Z_]+[a-zA-Z0-9_]+", uint64_t(TokenClass::IDENTIFIER));
+  _scanner.addRule("[!-~]+", uint64_t(TokenClass::PRINTABLE));
+  _scanner.addRule("[0-9]+", uint64_t(TokenClass::NUMBER));
+  _scanner.addRule("\\[", uint64_t(TokenClass::OPENBRACKET));
+  _scanner.addRule("\\]", uint64_t(TokenClass::CLOSEBRACKET));
+  _scanner.addRule(":", uint64_t(TokenClass::COLON));
   _scanner.buildStateMachine();
 
   _scanner.scan();

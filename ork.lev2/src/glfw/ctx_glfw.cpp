@@ -20,8 +20,10 @@
 #include <ork/kernel/msgrouter.inl>
 #include <ork/math/basicfilters.h>
 #include <ork/lev2/gfx/dbgfontman.h>
+#include <ork/util/logger.h>
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2 {
+static logchannel_ptr_t logchan_glfw = logger()->createChannel("GLFW", fvec3(0.8, 0.2, 0.6), true);
 void setAlwaysOnTop(GLFWwindow* window);
 ///////////////////////////////////////////////////////////////////////////////
 float content_scale_x = 1.0f;
@@ -106,6 +108,12 @@ static void _glfw_callback_winresized(GLFWwindow* window, int w, int h) {
   }
 #endif
 
+int x, y;
+glfwGetWindowPos(window, &x, &y);
+
+logchan_glfw->log("WIN RESIZED x<%d> y<%d> w<%d> h<%d>", x, y, w, h );
+
+
   auto sink = (EventSinkGLFW*)glfwGetWindowUserPointer(window);
   if (nullptr == sink)
     return;
@@ -126,7 +134,7 @@ static void _glfw_callback_fbresized(GLFWwindow* window, int w, int h) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 static void _glfw_callback_contentScaleChanged(GLFWwindow* window, float sw, float sh) {
-  // printf("fb contentscale<%p %f %f>\n", window, sw, sh);
+  logchan_glfw->log("fb contentscale<%p %f %f>", window, sw, sh);
 }
 ///////////////////////////////////////////////////////////////////////////////
 static void _glfw_callback_focusChanged(GLFWwindow* window, int focus) {
@@ -136,7 +144,7 @@ static void _glfw_callback_focusChanged(GLFWwindow* window, int focus) {
   ////////////////////////
   // ImGui_ImplGlfw_WindowFocusCallback(window, focus);
   ////////////////////////
-  // printf("fb focus<%p %d>\n", window, focus);
+  // printf("fb focus<%p %d>", window, focus);
 }
 ///////////////////////////////////////////////////////////////////////////////
 static void _glfw_callback_keyboard(GLFWwindow* window, int key, int scancode, int action, int modifiers) {
@@ -277,7 +285,7 @@ CtxGLFW::CtxGLFW(Window* ork_win)
   _eventSINK->_on_callback_scroll = [=](double xoffset, double yoffset) { _on_callback_scroll(xoffset, yoffset); };
   _eventSINK->_on_callback_cursor = [=](double xoffset, double yoffset) { _on_callback_cursor(xoffset, yoffset); };
 
-  // printf("CtxGLFW created<%p> glfw_win<%p> isglobal<%d>\n", this, _glfwWindow, int(isGlobal()));
+  // printf("CtxGLFW created<%p> glfw_win<%p> isglobal<%d>", this, _glfwWindow, int(isGlobal()));
 }
 ///////////////////////////////////////////////////////////////////////////////
 void CtxGLFW::initWithData(appinitdata_ptr_t aid) {
@@ -294,12 +302,13 @@ void CtxGLFW::Show() {
   if (_orkwindow) {
     _orkwindow->SetDirty(true);
 
+    int l = _appinitdata->_left;
+    int t = _appinitdata->_top;
+
     if (_appinitdata->_fullscreen) {
 
       fullscreen_monitor = glfwGetPrimaryMonitor();
 
-      int l = _appinitdata->_left;
-      int t = _appinitdata->_top;
 
       int monitor_count = 0;
       auto monitors     = glfwGetMonitors(&monitor_count);
@@ -321,7 +330,8 @@ void CtxGLFW::Show() {
         if (d < idiff) {
           fullscreen_monitor = monitor;
           idiff              = d;
-          // printf( "USING MONITOR<%p> \n", fullscreen_monitor );
+          const char* monitorName = glfwGetMonitorName(fullscreen_monitor);
+          logchan_glfw->log( "USING FULLSCREEN MONITOR<%p:%s> ", fullscreen_monitor, monitorName );
         }
 
         /////////////////////////////////
@@ -335,11 +345,12 @@ void CtxGLFW::Show() {
       glfwWindowHint(GLFW_GREEN_BITS, mode->greenBits);
       glfwWindowHint(GLFW_BLUE_BITS, mode->blueBits);
       glfwWindowHint(GLFW_REFRESH_RATE, mode->refreshRate);
+      glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
       _width  = mode->width;
       _height = mode->height;
-      printf("USING GLFW_REFRESH_RATE<%d> \n", int(mode->refreshRate));
-      printf("USING GLFW _width<%d> \n", _width);
-      printf("USING GLFW _height<%d> \n", _height);
+      logchan_glfw->log("USING GLFW_REFRESH_RATE<%d> ", int(mode->refreshRate));
+      logchan_glfw->log("USING GLFW _width<%d> ", _width);
+      logchan_glfw->log("USING GLFW _height<%d> ", _height);
       //////////////////////////////////////
       selected_monitor = fullscreen_monitor;
     }
@@ -356,7 +367,7 @@ void CtxGLFW::Show() {
       glfwWindowHint(GLFW_AUTO_ICONIFY, GLFW_FALSE);
     } else {
       glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
-      glfwWindowHint(GLFW_VISIBLE, GLFW_TRUE);
+      glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
       glfwWindowHint(GLFW_AUTO_ICONIFY, GLFW_FALSE);
     }
 
@@ -395,9 +406,16 @@ void CtxGLFW::Show() {
 
   if (_appinitdata->_fullscreen) {
 
+    _glfw_callback_winresized(_glfwWindow, _width, _height);
     _glfw_callback_fbresized(_glfwWindow, _width, _height);
 
   } else {
+    logchan_glfw->log("WINDOWEDMODE T<%d> L<%d> W<%d> H<%d>", //
+                      _appinitdata->_top, //
+                      _appinitdata->_left, //
+                      _appinitdata->_width, //
+                      _appinitdata->_height);
+
     glfwSetWindowPos(
         _glfwWindow,
         _appinitdata->_left, //
@@ -409,7 +427,7 @@ void CtxGLFW::Show() {
   }
 
   if (_needsInitialize) {
-    // printf("CreateCONTEXT\n");
+    // printf("CreateCONTEXT");
     _orkwindow->initContext();
     _orkwindow->OnShow();
     _needsInitialize = false;
@@ -420,7 +438,7 @@ void CtxGLFW::Show() {
 
   if (selected_monitor == nullptr) {
     selected_monitor = monitorForWindow(_glfwWindow);
-    OrkAssert(selected_monitor != nullptr);
+    //OrkAssert(selected_monitor != nullptr);
   }
 
   _glfwMonitor = selected_monitor;
@@ -437,12 +455,13 @@ CtxGLFW::~CtxGLFW() {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void CtxGLFW::makeCurrent() {
-  // printf( "CtxGLFW makeCurrent<%p> glfw_win<%p> isglobal<%d>\n", this, _glfwWindow, int(isGlobal()) );
+  // printf( "CtxGLFW makeCurrent<%p> glfw_win<%p> isglobal<%d>", this, _glfwWindow, int(isGlobal()) );
   glfwMakeContextCurrent(_glfwWindow);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void CtxGLFW::swapBuffers() {
   glfwSwapBuffers(_glfwWindow);
+  usleep(5000);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void CtxGLFW::SetAlwaysRun(bool brun) {
@@ -564,7 +583,7 @@ void CtxGLFW::SlotRepaint() {
 
   // this->mDrawLock++;
   // if (this->mDrawLock == 1) {
-  //  printf( "CtxGLFW::SlotRepaint() _target<%p>\n", _target );
+  //  printf( "CtxGLFW::SlotRepaint() _target<%p>", _target );
   if (this->_target) {
     _target->makeCurrentContext();
     auto gfxwin        = _uievent->mpGfxWin;
@@ -603,7 +622,7 @@ void CtxGLFW::_setRefreshPolicy(RefreshPolicyItem newpolicy) { // final
 }
 ///////////////////////////////////////////////////////////////////////////////
 void error_callback(int error, const char* msg) {
-  printf("GLFW ERROR<%d:%s>\n", error, msg);
+  logchan_glfw->log("GLFW ERROR<%d:%s>", error, msg);
 }
 ///////////////////////////////////////////////////////////////////////////////
 CtxGLFW* CtxGLFW::globalOffscreenContext() {
@@ -621,12 +640,12 @@ CtxGLFW* CtxGLFW::globalOffscreenContext() {
     if (primary_monitor) {
       const GLFWvidmode* mode = glfwGetVideoMode(primary_monitor);
 
-      // printf( "primary_monitor<%p>\n", primary_monitor );
-      // printf( "mode<%p>\n", mode );
-      // printf( "mode redbits<%d>\n", mode->redBits );
-      // printf( "mode grnbits<%d>\n", mode->greenBits );
-      // printf( "mode blubits<%d>\n", mode->blueBits );
-      // printf( "mode refreshRate<%d>\n", mode->refreshRate );
+      // printf( "primary_monitor<%p>", primary_monitor );
+      // printf( "mode<%p>", mode );
+      // printf( "mode redbits<%d>", mode->redBits );
+      // printf( "mode grnbits<%d>", mode->greenBits );
+      // printf( "mode blubits<%d>", mode->blueBits );
+      // printf( "mode refreshRate<%d>", mode->refreshRate );
       // glfwWindowHint(GLFW_RED_BITS, mode->redBits);
       // glfwWindowHint(GLFW_GREEN_BITS, mode->greenBits);
       // glfwWindowHint(GLFW_BLUE_BITS, mode->blueBits);
@@ -685,15 +704,15 @@ CtxGLFW* CtxGLFW::globalOffscreenContext() {
       done |= (offscreen_window != nullptr);
       done |= (it_minor == _try_minors.rend());
 
-      printf("try<%d> done<%d>\n", this_minor, int(done));
+      logchan_glfw->log("try<%d> done<%d>", this_minor, int(done));
     }
 
     gctx->_vars       = ctx_vars;
     gctx->_glfwWindow = offscreen_window;
 
     int minor_api_version = gctx->_vars->typedValueForKey<int>("GL_API_MINOR_VERSION").value();
-    printf("offscreen_window<%p>\n", offscreen_window);
-    printf("global_ctxbase<%p> vars<%p> minor version<%d : %d>\n", gctx, (void*)ctx_vars.get(), MINOR, minor_api_version);
+    logchan_glfw->log("offscreen_window<%p>", offscreen_window);
+    logchan_glfw->log("global_ctxbase<%p> vars<%p> minor version<%d : %d>", gctx, (void*)ctx_vars.get(), MINOR, minor_api_version);
     OrkAssert(offscreen_window != nullptr);
     glfwSetWindowAttrib(offscreen_window, GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwSetWindowUserPointer(offscreen_window, (void*)gctx);
@@ -703,7 +722,7 @@ CtxGLFW* CtxGLFW::globalOffscreenContext() {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void CtxGLFW::_on_callback_mousebuttons(int button, int action, int modifiers) {
-  // printf("_glfw_callback_mousebuttons<%p>\n", window);
+  // printf("_glfw_callback_mousebuttons<%p>", window);
 
   ////////////////////////
   // TODO - resolve where to send input, IMGUI - or ork::lev2::ui ?
@@ -792,7 +811,7 @@ void CtxGLFW::_on_callback_cursor(double xoffset, double yoffset) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void CtxGLFW::_on_callback_enterleave(int entered) {
-  // printf("_glfw_callback_enterleave<%p> entered<%d>\n", window, entered);
+  // printf("_glfw_callback_enterleave<%p> entered<%d>", window, entered);
 
   // ImGui_ImplGlfw_CursorEnterCallback(window, entered);
 

@@ -539,43 +539,44 @@ struct RootContainer {
 
 class Interface final : public FxInterface {
 public:
-  void _doBeginFrame() override;
+  void _doBeginFrame() final;
 
-  int BeginBlock(fxtechnique_constptr_t tek, const RenderContextInstData& data) override;
-  bool BindPass(int ipass) override;
-  void EndPass() override;
-  void EndBlock() override;
-  void CommitParams(void) override;
+  int BeginBlock(fxtechnique_constptr_t tek, const RenderContextInstData& data) final;
+  bool BindPass(int ipass) final;
+  void EndPass() final;
+  void EndBlock() final;
+  void CommitParams(void) final;
+  void reset() final;
 
-  const FxShaderTechnique* technique(FxShader* hfx, const std::string& name) override;
-  const FxShaderParam* parameter(FxShader* hfx, const std::string& name) override;
-  const FxShaderParamBlock* parameterBlock(FxShader* hfx, const std::string& name) override;
+  const FxShaderTechnique* technique(FxShader* hfx, const std::string& name) final;
+  const FxShaderParam* parameter(FxShader* hfx, const std::string& name) final;
+  const FxShaderParamBlock* parameterBlock(FxShader* hfx, const std::string& name) final;
 #if defined(ENABLE_COMPUTE_SHADERS)
-  const FxComputeShader* computeShader(FxShader* hfx, const std::string& name) override;
+  const FxComputeShader* computeShader(FxShader* hfx, const std::string& name) final;
 #endif
 #if defined(ENABLE_SHADER_STORAGE)
-  const FxShaderStorageBlock* storageBlock(FxShader* hfx, const std::string& name) override;
+  const FxShaderStorageBlock* storageBlock(FxShader* hfx, const std::string& name) final;
 #endif
 
-  void BindParamBool(const FxShaderParam* hpar, const bool bval) override;
-  void BindParamInt(const FxShaderParam* hpar, const int ival) override;
-  void BindParamVect2(const FxShaderParam* hpar, const fvec2& Vec) override;
-  void BindParamVect3(const FxShaderParam* hpar, const fvec3& Vec) override;
-  void BindParamVect4(const FxShaderParam* hpar, const fvec4& Vec) override;
-  void BindParamVect2Array(const FxShaderParam* hpar, const fvec2* Vec, const int icount) override;
-  void BindParamVect3Array(const FxShaderParam* hpar, const fvec3* Vec, const int icount) override;
-  void BindParamVect4Array(const FxShaderParam* hpar, const fvec4* Vec, const int icount) override;
-  void BindParamFloatArray(const FxShaderParam* hpar, const float* pfA, const int icnt) override;
-  void BindParamFloat(const FxShaderParam* hpar, float fA) override;
-  void BindParamMatrix(const FxShaderParam* hpar, const fmtx4& Mat) override;
-  void BindParamMatrix(const FxShaderParam* hpar, const fmtx3& Mat) override;
-  void BindParamMatrixArray(const FxShaderParam* hpar, const fmtx4* MatArray, int iCount) override;
-  void BindParamU32(const FxShaderParam* hpar, uint32_t uval) override;
-  void BindParamCTex(const FxShaderParam* hpar, const Texture* pTex) override;
-  void BindParamU64(const FxShaderParam* hpar, uint64_t uval) override;
+  void BindParamBool(const FxShaderParam* hpar, const bool bval) final;
+  void BindParamInt(const FxShaderParam* hpar, const int ival) final;
+  void BindParamVect2(const FxShaderParam* hpar, const fvec2& Vec) final;
+  void BindParamVect3(const FxShaderParam* hpar, const fvec3& Vec) final;
+  void BindParamVect4(const FxShaderParam* hpar, const fvec4& Vec) final;
+  void BindParamVect2Array(const FxShaderParam* hpar, const fvec2* Vec, const int icount) final;
+  void BindParamVect3Array(const FxShaderParam* hpar, const fvec3* Vec, const int icount) final;
+  void BindParamVect4Array(const FxShaderParam* hpar, const fvec4* Vec, const int icount) final;
+  void BindParamFloatArray(const FxShaderParam* hpar, const float* pfA, const int icnt) final;
+  void BindParamFloat(const FxShaderParam* hpar, float fA) final;
+  void BindParamMatrix(const FxShaderParam* hpar, const fmtx4& Mat) final;
+  void BindParamMatrix(const FxShaderParam* hpar, const fmtx3& Mat) final;
+  void BindParamMatrixArray(const FxShaderParam* hpar, const fmtx4* MatArray, int iCount) final;
+  void BindParamU32(const FxShaderParam* hpar, uint32_t uval) final;
+  void BindParamCTex(const FxShaderParam* hpar, const Texture* pTex) final;
+  void BindParamU64(const FxShaderParam* hpar, uint64_t uval) final;
 
-  bool LoadFxShader(const AssetPath& pth, FxShader* ptex) override;
-  FxShader* shaderFromShaderText(const std::string& name, const std::string& shadertext) override;
+  bool LoadFxShader(const AssetPath& pth, FxShader* ptex) final;
+  FxShader* shaderFromShaderText(const std::string& name, const std::string& shadertext) final;
 
   Interface(ContextGL& glctx);
 

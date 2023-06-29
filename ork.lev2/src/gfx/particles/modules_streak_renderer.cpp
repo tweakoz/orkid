@@ -204,6 +204,7 @@ void StreakRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
       context->GBI()->DrawPrimitiveEML(storage, //
                                        ork::lev2::PrimitiveType::TRIANGLES, //
                                        0, icnt*6);
+    FXI->reset();
     });
 ///////////////////////////////////////////////////////////////
 #endif

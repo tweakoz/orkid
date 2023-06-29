@@ -37,6 +37,8 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 
+#define USE_ORKSL_LANG
+
 #if 0 // defined( _DEBUG )
 #define GL_ERRORCHECK()                                                                                                            \
   {                                                                                                                                \

@@ -10,6 +10,7 @@
 #include <ork/lev2/gfx/terrain/terrain_drawable.h>
 #include <ork/lev2/gfx/camera/cameradata.h>
 #include <ork/lev2/gfx/scenegraph/sgnode_grid.h>
+#include <ork/lev2/gfx/scenegraph/sgnode_groundplane.h>
 #include <ork/lev2/gfx/particle/drawable_data.h>
 #include <ork/lev2/gfx/renderer/drawable.h>
 
@@ -118,6 +119,23 @@ void pyinit_gfx_drawables(py::module& module_lev2) {
               [](griddrawabledataptr_t drw) -> float { return drw->_minorTileDim; },
               [](griddrawabledataptr_t drw, float val) { drw->_minorTileDim = val; });
   type_codec->registerStdCodec<griddrawabledataptr_t>(griddrawdata_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  auto groundplanedrawdata_type = //
+      py::class_<GroundPlaneDrawableData, groundplane_drawabledataptr_t>(module_lev2, "GroundPlaneDrawableData")
+          .def(py::init<>())
+          .def_property(
+              "extent",
+              [](groundplane_drawabledataptr_t drw) -> float { return drw->_extent; },
+              [](groundplane_drawabledataptr_t drw, float val) { drw->_extent = val; })
+          .def_property(
+              "pbrmaterial",
+              [](groundplane_drawabledataptr_t drw) -> pbrmaterial_ptr_t { return drw->_material; },
+              [](groundplane_drawabledataptr_t drw, pbrmaterial_ptr_t mtl) { drw->_material = mtl; })
+          .def_property(
+              "pipeline",
+              [](groundplane_drawabledataptr_t drw) -> fxpipeline_ptr_t { return drw->_pipeline; },
+              [](groundplane_drawabledataptr_t drw, fxpipeline_ptr_t pipe) { drw->_pipeline = pipe; });
+  type_codec->registerStdCodec<groundplane_drawabledataptr_t>(groundplanedrawdata_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto stringdrawdata_type = //
       py::class_<StringDrawableData, DrawableData, string_drawabledata_ptr_t>(module_lev2, "StringDrawableData")
