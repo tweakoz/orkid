@@ -176,8 +176,7 @@ struct ExprKWID : public AstNode {
     dctx->_indent--;
   }
   matcher_ptr_t createMatcher() final {
-    OrkAssert(false);
-    return nullptr;
+    return _user_parser->matcherForWord(_kwid);
   }
   std::string _kwid;
   std::string _expr_name;
@@ -202,9 +201,8 @@ struct OneOrMore : public AstNode {
     dctx->_indent--;
   }
   matcher_ptr_t createMatcher() final {
-   // auto expr0 = _subexpressions[0];
-    //return _user_parser->oneOrMore(expr0->createMatcher());
-    return nullptr;
+    auto expr0 = _subexpressions[0];
+    return _user_parser->oneOrMore(expr0->createMatcher());
   }
   std::vector<expression_ptr_t> _subexpressions;
 };
@@ -222,16 +220,13 @@ struct ZeroOrMore : public AstNode {
     dctx->_indent++;
     auto indentstr = std::string(dctx->_indent * 2, ' ');
     printf("%s ZOM(%s)\n", indentstr.c_str(), _name.c_str() );
-    for( auto e : _subexpressions ){
-      e->dump(dctx);
-    }
+    _subexpression->dump(dctx);
     dctx->_indent--;
   }
   matcher_ptr_t createMatcher() final {
-    OrkAssert(false);
-    return nullptr;
+    return _user_parser->zeroOrMore(_subexpression->createMatcher());
   }
-  std::vector<expression_ptr_t> _subexpressions;
+  expression_ptr_t _subexpression;
 };
 ////////////////////////////////////////////////////////////////////////
 struct Select : public AstNode {
@@ -253,8 +248,11 @@ struct Select : public AstNode {
     dctx->_indent--;
   }
   matcher_ptr_t createMatcher() final {
-    OrkAssert(false);
-    return nullptr;
+    std::vector<matcher_ptr_t> sub_matchers;
+    for( auto subexp : _subexpressions ){
+      sub_matchers.push_back(subexp->createMatcher());
+    }
+    return _user_parser->oneOf(sub_matchers);
   }
   std::vector<expression_ptr_t> _subexpressions;
 };
@@ -276,8 +274,8 @@ struct Optional : public AstNode {
     dctx->_indent--;
   }
   matcher_ptr_t createMatcher() final {
-    OrkAssert(false);
-    return nullptr;
+    auto subexp = _subexpression->createMatcher();
+    return _user_parser->optional(subexp);
   }
   expression_ptr_t _subexpression;
 };
@@ -301,8 +299,11 @@ struct Sequence : public AstNode {
     dctx->_indent--;
   }
   matcher_ptr_t createMatcher() final {
-    OrkAssert(false);
-    return nullptr;
+    std::vector<matcher_ptr_t> sub_matchers;
+    for( auto subexp : _subexpressions ){
+      sub_matchers.push_back(subexp->createMatcher());
+    }
+    return _user_parser->sequence(sub_matchers);
   }
   std::vector<expression_ptr_t> _subexpressions;
 };
@@ -326,8 +327,11 @@ struct Group : public AstNode {
     dctx->_indent--;
   }
   matcher_ptr_t createMatcher() final {
-    OrkAssert(false);
-    return nullptr;
+    std::vector<matcher_ptr_t> sub_matchers;
+    for( auto subexp : _subexpressions ){
+      sub_matchers.push_back(subexp->createMatcher());
+    }
+    return _user_parser->group(sub_matchers);
   }
   std::vector<expression_ptr_t> _subexpressions;
 };
@@ -425,11 +429,11 @@ struct RuleSpecImpl : public Parser {
     auto nom_inp     = match->asShared<NOrMore>();
     OrkAssert(nom_inp->_minmatches == 0);
     printf("%s_onZOM<%s>\n", indentstr.c_str(), match->_matcher->_name.c_str());
-    for (auto sub_item : nom_inp->_items) {
-      printf("%s zom subitem<%s>\n", indentstr.c_str(), sub_item->_matcher->_name.c_str());
-      auto subexpr_out = _onExpression(sub_item);
-      zom_out->_subexpressions.push_back(subexpr_out);
-    }
+    OrkAssert(nom_inp->_items.size() == 1);
+    auto sub_item = nom_inp->_items[0];
+    printf("%s zom subitem<%s>\n", indentstr.c_str(), sub_item->_matcher->_name.c_str());
+    auto subexpr_out = _onExpression(sub_item);
+    zom_out->_subexpression = subexpr_out;
     _retain_astnodes.insert(zom_out);
     return zom_out;
   }
@@ -731,7 +735,6 @@ struct RuleSpecImpl : public Parser {
         auto it = _user_matchers_by_name.find(rule_name);
         OrkAssert(it==_user_matchers_by_name.end());
         _user_matchers_by_name[rule_name] = matcher;
-        //_user_parser->matcherForWord(ast_rule->_name);
       }
       
       printf("IMPLEMENT PARSER RULES\n"); };
