@@ -66,7 +66,7 @@ void LibraryBlockNode::parse(GlSlFxParser* parser,
       int j = fnnode->parse(parser,fnview);
       _children.push_back(fnnode);
 
-      #if defined(XX_USE_ORKSL_LANG)
+      #if defined(_USE_ORKSL_LANG)
 
       /////////////////////////////////
       // parsedfnnode (testing, wip...)
