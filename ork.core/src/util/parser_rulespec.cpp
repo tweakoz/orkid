@@ -115,15 +115,9 @@ struct AstNode {
   }
   virtual ~AstNode() {
   }
-  match_ptr_t match(matcher_ptr_t par_matcher, scannerlightview_constptr_t& inp_view) {
-    OrkAssert(this);
-    OrkAssert(_match_fn);
-    return _match_fn(par_matcher, inp_view);
-  }
   virtual void dump(dumpctx_ptr_t dctx) = 0;  
   virtual matcher_ptr_t createMatcher() = 0;
 
-  matcher_fn_t _match_fn;
   Parser* _user_parser = nullptr;
 };
 ////////////////////////////////////////////////////////////////////////
@@ -135,15 +129,6 @@ struct Expression : public AstNode {
     if (name != "") {
       _name = name;
     }
-
-    _match_fn = [=](matcher_ptr_t par_matcher, scannerlightview_constptr_t slv) -> match_ptr_t {
-      printf("GOT USER EXPR MATCHER<%s> slv.st<%zu> slv.en<%zu>\n", par_matcher->_name.c_str(), slv->_start, slv->_end);
-      OrkAssert(_expr_selected);
-      return _expr_selected->match(par_matcher, slv);
-    };
-
-    _user_matcher        = std::make_shared<Matcher>(_match_fn);
-    _user_matcher->_name = name;
   }
   void dump(dumpctx_ptr_t dctx) final {
     dctx->_indent++;
@@ -155,7 +140,6 @@ struct Expression : public AstNode {
   matcher_ptr_t createMatcher() final {
     return _expr_selected->createMatcher();
   }
-  matcher_ptr_t _user_matcher;
   astnode_ptr_t _expr_selected;
   std::string _expr_name;
 };
@@ -163,11 +147,6 @@ struct Expression : public AstNode {
 struct ExprKWID : public AstNode {
   ExprKWID(Parser* user_parser) : AstNode(user_parser) {
     _name     = "ExprKWID";
-    _match_fn = [=](matcher_ptr_t par_matcher, scannerlightview_constptr_t slv) -> match_ptr_t {
-      printf("GOT USER ExprKWID MATCHER<%s> slv.st<%zu> slv.en<%zu>\n", par_matcher->_name.c_str(), slv->_start, slv->_end);
-      OrkAssert(false);
-      return nullptr;
-    };
   }
   void dump(dumpctx_ptr_t dctx) final {
     dctx->_indent++;
@@ -185,11 +164,6 @@ struct ExprKWID : public AstNode {
 struct OneOrMore : public AstNode {
   OneOrMore(Parser* user_parser) : AstNode(user_parser) {
     _name     = "OneOrMore";
-    _match_fn = [=](matcher_ptr_t par_matcher, scannerlightview_constptr_t slv) -> match_ptr_t {
-      printf("GOT USER OOM MATCHER<%s> slv.st<%zu> slv.en<%zu>\n", par_matcher->_name.c_str(), slv->_start, slv->_end);
-      OrkAssert(false);
-      return nullptr;
-    };
   }
   void dump(dumpctx_ptr_t dctx) final {
     dctx->_indent++;
@@ -210,11 +184,6 @@ struct OneOrMore : public AstNode {
 struct ZeroOrMore : public AstNode {
   ZeroOrMore(Parser* user_parser) : AstNode(user_parser) {
     _name = "ZeroOrMore";
-    _match_fn = [=](matcher_ptr_t par_matcher, scannerlightview_constptr_t slv) -> match_ptr_t {
-      printf("GOT USER ZOM MATCHER<%s> slv.st<%zu> slv.en<%zu>\n", par_matcher->_name.c_str(), slv->_start, slv->_end);
-      OrkAssert(false);
-      return nullptr;
-    };
   }
   void dump(dumpctx_ptr_t dctx) final {
     dctx->_indent++;
@@ -232,11 +201,6 @@ struct ZeroOrMore : public AstNode {
 struct Select : public AstNode {
   Select(Parser* user_parser) : AstNode(user_parser) {
     _name     = "Select";
-    _match_fn = [=](matcher_ptr_t par_matcher, scannerlightview_constptr_t slv) -> match_ptr_t {
-      printf("GOT USER SEL MATCHER<%s> slv.st<%zu> slv.en<%zu>\n", par_matcher->_name.c_str(), slv->_start, slv->_end);
-      OrkAssert(false);
-      return nullptr;
-    };
   }
   void dump(dumpctx_ptr_t dctx) final {
     dctx->_indent++;
@@ -260,11 +224,6 @@ struct Select : public AstNode {
 struct Optional : public AstNode {
   Optional(Parser* user_parser) : AstNode(user_parser) {
     _name     = "Optional";
-    _match_fn = [=](matcher_ptr_t par_matcher, scannerlightview_constptr_t slv) -> match_ptr_t {
-      printf("GOT USER OPT MATCHER<%s> slv.st<%zu> slv.en<%zu>\n", par_matcher->_name.c_str(), slv->_start, slv->_end);
-      OrkAssert(false);
-      return nullptr;
-    };
   }
   void dump(dumpctx_ptr_t dctx) final {
     dctx->_indent++;
@@ -283,11 +242,6 @@ struct Optional : public AstNode {
 struct Sequence : public AstNode {
   Sequence(Parser* user_parser) : AstNode(user_parser) {
     _name     = "Sequence";
-    _match_fn = [=](matcher_ptr_t par_matcher, scannerlightview_constptr_t slv) -> match_ptr_t {
-      printf("GOT USER SEQ MATCHER<%s> slv.st<%zu> slv.en<%zu>\n", par_matcher->_name.c_str(), slv->_start, slv->_end);
-      OrkAssert(false);
-      return nullptr;
-    };
   }
   void dump(dumpctx_ptr_t dctx) final {
     dctx->_indent++;
@@ -311,11 +265,6 @@ struct Sequence : public AstNode {
 struct Group : public AstNode {
   Group(Parser* user_parser) : AstNode(user_parser) {
     _name     = "Group";
-    _match_fn = [=](matcher_ptr_t par_matcher, scannerlightview_constptr_t slv) -> match_ptr_t {
-      printf("GOT USER GRP MATCHER<%s> slv.st<%zu> slv.en<%zu>\n", par_matcher->_name.c_str(), slv->_start, slv->_end);
-      OrkAssert(false);
-      return nullptr;
-    };
   }
   void dump(dumpctx_ptr_t dctx) final {
     dctx->_indent++;
@@ -715,7 +664,7 @@ struct RuleSpecImpl : public Parser {
     parser_rule->_notif = [=](match_ptr_t match) {
       auto rulename      = match->asShared<Sequence>()->_items[0]->asShared<ClassMatch>()->_token->text;
       auto expr_ast_node = _onExpression(match->asShared<Sequence>()->_items[2], rulename);
-      this->_user_parser->_matchers_by_name[rulename] = expr_ast_node->_user_matcher;
+      this->_user_parser->_matchers_by_name[rulename] = expr_ast_node->createMatcher();
       auto ast_rule = std::make_shared<AST::ParserRule>(this,rulename);
       ast_rule->_expression = expr_ast_node;
       _user_parser_rules[rulename] = ast_rule;

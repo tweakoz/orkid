@@ -106,18 +106,21 @@ struct MyParser2 : public Parser {
       auto ast_node    = match->_user.makeShared<AST::FloatLiteral>();
       auto impl        = match->asShared<ClassMatch>();
       ast_node->_value = std::stof(impl->_token->text);
+      printf("ON FLOATING_POINT<%g>\n", ast_node->_value);
     });
     ///////////////////////////////////////////////////////////
     on("INTEGER", [=](match_ptr_t match) { //
       auto ast_node    = match->_user.makeShared<AST::IntegerLiteral>();
       auto impl        = match->asShared<ClassMatch>();
       ast_node->_value = std::stoi(impl->_token->text);
+      printf("ON INTEGER<%d>\n", ast_node->_value);
     });
     ///////////////////////////////////////////////////////////
     on("datatype", [=](match_ptr_t match) { //
       auto selected   = match->asShared<OneOf>()->_selected;
       auto ast_node   = match->_user.makeShared<AST::DataType>();
       ast_node->_name = selected->_impl.get<wordmatch_ptr_t>()->_token->text;
+      printf("ON datatype<%s>\n", ast_node->_name.c_str());
     });
     ///////////////////////////////////////////////////////////
     on("variableReference", [=](match_ptr_t match) { //
@@ -125,11 +128,13 @@ struct MyParser2 : public Parser {
       auto kwid      = seq->_items[0]->asShared<ClassMatch>()->_token->text;
       auto var_ref   = match->_user.makeShared<AST::VariableReference>();
       var_ref->_name = kwid;
+      printf("ON variableReference<%s>\n", var_ref->_name.c_str());
     });
     ///////////////////////////////////////////////////////////
     on("term", [=](match_ptr_t match) {
       auto ast_node = match->_user.makeShared<AST::Term>();
       auto selected = match->asShared<Sequence>()->_items[1];
+      printf("ON term<%s>\n", selected->_matcher->_name.c_str());
       if (selected->_matcher == expression) {
         ast_node->_subexpression = selected->_user.getShared<AST::Expression>();
       }
@@ -139,6 +144,7 @@ struct MyParser2 : public Parser {
       auto ast_node   = match->_user.makeShared<AST::Primary>();
       auto selected   = match->asShared<OneOf>()->_selected;
       ast_node->_impl = selected->_user;
+      printf("ON primary<%s>\n", selected->_matcher->_name.c_str());
     });
     ///////////////////////////////////////////////////////////
     on("product", [=](match_ptr_t match) {
@@ -148,6 +154,7 @@ struct MyParser2 : public Parser {
       auto primary  = sel_seq->_items[0]->_user.getShared<AST::Primary>();
       auto m1zom    = sel_seq->itemAsShared<NOrMore>(1);
       ast_node->_primaries.push_back(primary);
+      printf("ON product<%s>\n", selected->_matcher->_name.c_str());
       if (m1zom->_items.size()) {
         for (auto i : m1zom->_items) {
           auto seq = i->asShared<Sequence>();
@@ -161,6 +168,7 @@ struct MyParser2 : public Parser {
     on("sum", [=](match_ptr_t match) {
       auto ast_node = match->_user.makeShared<AST::Sum>();
       auto selected = match->asShared<OneOf>()->_selected;
+      printf("ON sum<%s>\n", selected->_matcher->_name.c_str());
       if (selected->_matcher == product) {
         ast_node->_left = selected->_user.getShared<AST::Product>();
         ast_node->_op   = '_';
@@ -183,11 +191,13 @@ struct MyParser2 : public Parser {
       auto ast_node  = match->_user.makeShared<AST::Expression>();
       auto seq       = match->asShared<Sequence>();
       ast_node->_sum = seq->_items[0]->_user.getShared<AST::Sum>();
+      printf("ON expression<%s>\n", match->_matcher->_name.c_str());
     });
     ///////////////////////////////////////////////////////////
     on("assignment_statement", [=](match_ptr_t match) { //
       auto ast_node = match->_user.makeShared<AST::AssignmentStatement>();
       auto ass1of   = match->asShared<Sequence>()->itemAsShared<OneOf>(0);
+      printf("ON assignment_statement<%s>\n", match->_matcher->_name.c_str());
       if (ass1of->_selected->_matcher == variableDeclaration) {
         auto seq      = ass1of->_selected->asShared<Sequence>();
         auto datatype = seq->_items[0]->_user.getShared<AST::DataType>();
@@ -213,7 +223,7 @@ struct MyParser2 : public Parser {
       auto args    = seq->itemAsShared<NOrMore>(3);
       auto stas    = seq->itemAsShared<NOrMore>(6);
       printf(
-          "MATCHED funcdef<%s> function<%s> numargs<%d> numstatements<%d>\n", //
+          "ON funcdef<%s> function<%s> numargs<%d> numstatements<%d>\n", //
           funcdef->_name.c_str(),                                             //
           fn_name->_token->text.c_str(),                                      //
           args->_items.size(),                                                //
@@ -242,7 +252,7 @@ struct MyParser2 : public Parser {
     });
     ///////////////////////////////////////////////////////////
     on("funcdefs", [=](match_ptr_t match) {
-      OrkAssert(false);
+      printf( "ON funcdefs\n");
     });
     ///////////////////////////////////////////////////////////
   }
