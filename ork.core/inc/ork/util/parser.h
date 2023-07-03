@@ -160,8 +160,8 @@ struct Parser {
   matcher_ptr_t rule(const std::string& rule_name);
   void on(const std::string& rule_name, matcher_notif_t fn);
 
-  void loadScannerSpec(const std::string& spec);
-  void loadParserSpec(const std::string& spec);
+  match_ptr_t loadScannerSpec(const std::string& spec);
+  match_ptr_t loadParserSpec(const std::string& spec);
 
 
 

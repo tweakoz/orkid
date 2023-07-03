@@ -21,6 +21,7 @@ matcher_ptr_t Parser::rule(const std::string& rule_name) {
 }
 
 void Parser::on(const std::string& rule_name, matcher_notif_t fn) {
+  
   auto it = _matchers_by_name.find(rule_name);
   if (it != _matchers_by_name.end()) {
     matcher_ptr_t matcher = it->second;
@@ -627,13 +628,24 @@ void RuleSpecImpl::loadGrammar() { //
   _rsi_parser_matcher->_notif = [=](match_ptr_t match) {
     // TODO : defer ExprKWID matcher creation until all parser rule top matchers created..
 
+    printf("///////////////////////////////////////////////////////////\n");
+    printf("// DUMPING PARSER RULES..\n");
+    printf("///////////////////////////////////////////////////////////\n");
     for (auto rule : _user_parser_rules) {
       auto rule_name = rule.first;
       auto ast_rule  = rule.second;
-      printf("///////////////////////////////////////////////////////////\n");
-      printf("IMPLEMENT PARSER RULE<%s>\n", rule_name.c_str());
+      printf("// DUMP PARSER RULE<%s>\n", rule_name.c_str());
       auto dctx = std::make_shared<AST::DumpContext>();
       ast_rule->dump(dctx);
+    }
+
+    printf("///////////////////////////////////////////////////////////\n");
+    printf("// IMPLEMENTING PARSER RULES..\n");
+    printf("///////////////////////////////////////////////////////////\n");
+    for (auto rule : _user_parser_rules) {
+      auto rule_name = rule.first;
+      auto ast_rule  = rule.second;
+      printf("// IMPLEMENT PARSER RULE<%s>\n", rule_name.c_str());
       auto matcher = ast_rule->createMatcher(rule_name);
       auto it      = _user_matchers_by_name.find(rule_name);
       OrkAssert(it == _user_matchers_by_name.end());
@@ -641,7 +653,16 @@ void RuleSpecImpl::loadGrammar() { //
       _user_parser_matchers_by_name[rule_name] = matcher;
     }
     printf("///////////////////////////////////////////////////////////\n");
-    printf("IMPLEMENTED PARSER RULES..\n");
+    printf("// LINKING PARSER RULES..\n");
+    printf("///////////////////////////////////////////////////////////\n");
+    for (auto rule : _user_parser_rules) {
+      auto rule_name = rule.first;
+      auto ast_rule  = rule.second;
+      if( ast_rule->_on_link ){
+        printf("// LINK PARSER RULE<%s>\n", rule_name.c_str());
+        ast_rule->_on_link();
+      }
+    }
   };
   printf("///////////////////////////////////////////////////////////\n");
 }
@@ -737,19 +758,19 @@ rulespec_impl_ptr_t getRuleSpecImpl() {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-void Parser::loadScannerSpec(const std::string& spec) {
+match_ptr_t Parser::loadScannerSpec(const std::string& spec) {
   auto rsi = getRuleSpecImpl();
   rsi->attachUser(this);
   auto match = rsi->parseScannerSpec(spec);
-  OrkAssert(match);
+  return match;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-void Parser::loadParserSpec(const std::string& spec) {
+match_ptr_t Parser::loadParserSpec(const std::string& spec) {
   auto rsi   = getRuleSpecImpl();
   auto match = rsi->parseParserSpec(spec);
-  OrkAssert(match);
+  return match;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////

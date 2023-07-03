@@ -91,8 +91,12 @@ std::string parser_spec = R"xxx(
 struct MyParser2 : public Parser {
 
   MyParser2() {
-    this->loadScannerSpec(scanner_spec);
-    this->loadParserSpec(parser_spec);
+    auto scanner_match = this->loadScannerSpec(scanner_spec);
+    OrkAssert(scanner_match);
+    auto parser_match = this->loadParserSpec(parser_spec);
+    OrkAssert(parser_match);
+    ///////////////////////////////////////////////////////////
+    // parser should be compiled and linked at this point
     ///////////////////////////////////////////////////////////
     auto expression = rule("expression");
     auto product    = rule("product");

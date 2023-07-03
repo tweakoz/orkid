@@ -81,6 +81,7 @@ struct AstNode {
   virtual void dump(dumpctx_ptr_t dctx) = 0;
   virtual matcher_ptr_t createMatcher(std::string named) = 0;
   Parser* _user_parser                  = nullptr;
+  void_lambda_t _on_link;
 };
 ////////////////////////////////////////////////////////////////////////
 struct Expression : public AstNode {
@@ -183,10 +184,11 @@ struct RuleSpecImpl { // {: public Parser {
 
   std::unordered_set<AST::astnode_ptr_t> _retain_astnodes;
 
-  std::map<std::string, AST::rule_ptr_t> _user_parser_rules;
+  std::unordered_map<std::string, AST::rule_ptr_t> _user_parser_rules;
 
-  std::map<std::string, AST::scanner_rule_ptr_t> _user_scanner_rules;
-  std::map<std::string, AST::scanner_macro_ptr_t> _user_scanner_macros;
+  std::unordered_map<std::string, AST::scanner_rule_ptr_t> _user_scanner_rules;
+  std::unordered_map<std::string, AST::scanner_macro_ptr_t> _user_scanner_macros;
+  std::unordered_map<std::string, matcher_notif_t> _user_deferred_notifs;
 
   std::vector<void_lambda_t> _link_ops;
 };
