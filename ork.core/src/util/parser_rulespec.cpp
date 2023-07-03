@@ -26,9 +26,9 @@ void Parser::on(const std::string& rule_name, matcher_notif_t fn) {
   if (it != _matchers_by_name.end()) {
     matcher_ptr_t matcher = it->second;
     matcher->_notif       = fn;
-    printf("matcher<%s> notif assigned\n", rule_name.c_str());
+    printf("IMPLEMENT rulenotif<%s> matcher<%p:%s> notif assigned\n", rule_name.c_str(), (void*) matcher.get(), matcher->_name.c_str() );
   } else {
-    logerrchannel()->log("matcher<%s> not found", rule_name.c_str());
+    logerrchannel()->log("IMPLEMENT matcher<%s> not found", rule_name.c_str());
     OrkAssert(false);
   }
 }
@@ -523,9 +523,9 @@ void RuleSpecImpl::loadGrammar() { //
   auto oom   = _dsl_parser->matcherForWord("oom");
   auto opt   = _dsl_parser->matcherForWord("opt");
   auto macro = _dsl_parser->matcherForWord("macro");
-  ////////////////////
+  /////////////////////////////////////////////////////////////////////////////////////////////////////
   // user scanner rules
-  ////////////////////
+  /////////////////////////////////////////////////////////////////////////////////////////////////////
   auto macro_item      = _dsl_parser->sequence({macro, lparen, kworid, rparen}, "macro_item");
   auto scanner_key     = _dsl_parser->oneOf({macro_item, kworid}, "scanner_key");
   auto scanner_rule    = _dsl_parser->sequence({scanner_key, left_arrow, quoted_regex}, "scanner_rule");
@@ -535,15 +535,16 @@ void RuleSpecImpl::loadGrammar() { //
     auto qrx           = seq->_items[2]->asShared<ClassMatch>()->_token->text;
     auto rx            = qrx.substr(1, qrx.size() - 2); // remove surrounding quotes
     if (auto as_classmatch = rule_key_item->tryAsShared<ClassMatch>()) {
-      auto rule_name = as_classmatch.value()->_token->text;
+      auto match_str = as_classmatch.value()->_token->text;
+      auto rule_name = match_str + "_scrule";
       auto rule      = std::make_shared<AST::ScannerRule>();
       rule->_name    = rule_name;
       rule->_regex   = rx;
       auto it        = this->_user_scanner_rules.find(rule_name);
       OrkAssert(it == this->_user_scanner_rules.end());
-      printf("ADDING SCANNER RULE<%s> <- %s\n", rule_name.c_str(), rx.c_str());
       this->_user_scanner_rules[rule_name] = rule;
-      this->_user_parser->matcherForWord(rule_name);
+      auto matcher = this->_user_parser->matcherForWord(match_str,rule_name);
+      printf("IMPLEMENT SCANNER->PARSER RULE literal<%s> matcher<%p:%s>\n", match_str.c_str(), (void*) matcher.get(), matcher->_name.c_str());
     } else if (auto as_seq = rule_key_item->tryAsShared<Sequence>()) {
       auto sub_seq   = as_seq.value();
       auto macro_str = sub_seq->_items[0]->asShared<WordMatch>()->_token->text;
@@ -554,7 +555,7 @@ void RuleSpecImpl::loadGrammar() { //
       macro->_regex   = rx;
       auto it         = this->_user_scanner_macros.find(macro_name);
       OrkAssert(it == this->_user_scanner_macros.end());
-      printf("ADDING SCANNER MACRO<%s> <- %s\n", macro_name.c_str(), rx.c_str());
+      printf("ADDING SCANNER->PARSER MACRO literal<%s> <- %s\n", macro_name.c_str(), rx.c_str());
       this->_user_scanner_macros[macro_name] = macro;
     } else {
       OrkAssert(false);
@@ -567,15 +568,17 @@ void RuleSpecImpl::loadGrammar() { //
       for (auto item : this->_user_scanner_macros) {
         auto macro         = item.second;
         _current_rule_name = macro->_name;
-        printf("IMPLEMENT MACRO <%s : %s>\n", macro->_name.c_str(), macro->_regex.c_str());
+        printf("IMPLEMENT SCANNER MACRO <%s : %s>\n", macro->_name.c_str(), macro->_regex.c_str());
         this->_user_scanner->addMacro(macro->_name, macro->_regex);
       }
       for (auto item : this->_user_scanner_rules) {
         auto rule          = item.second;
         uint64_t crc_id    = CrcString(rule->_name.c_str()).hashed();
         _current_rule_name = rule->_name;
-        printf("IMPLEMENT EnumClass <%s : %zu : %s>\n", rule->_name.c_str(), crc_id, rule->_regex.c_str());
         this->_user_scanner->addEnumClass(rule->_regex, crc_id);
+        printf("IMPLEMENT SCANNER EnumClass<%s : %zu> regex \"%s\" \n", //
+               rule->_name.c_str(), crc_id, 
+               rule->_regex.c_str());
       }
       this->_user_scanner->buildStateMachine();
     } catch (std::exception& e) {
@@ -583,9 +586,9 @@ void RuleSpecImpl::loadGrammar() { //
       OrkAssert(false);
     }
   };
-  ////////////////////
+  /////////////////////////////////////////////////////////////////////////////////////////////////////
   // parser rules
-  ////////////////////
+  /////////////////////////////////////////////////////////////////////////////////////////////////////
 
   auto rule_expression = _dsl_parser->declare("rule_expression");
   //
@@ -645,8 +648,8 @@ void RuleSpecImpl::loadGrammar() { //
     for (auto rule : _user_parser_rules) {
       auto rule_name = rule.first;
       auto ast_rule  = rule.second;
-      printf("// IMPLEMENT PARSER RULE<%s>\n", rule_name.c_str());
       auto matcher = ast_rule->createMatcher(rule_name);
+      printf("// IMPLEMENT PARSER RULE<%s> matcher<%p:%s>\n", rule_name.c_str(), (void*) matcher.get(), matcher->_name.c_str() );
       auto it      = _user_matchers_by_name.find(rule_name);
       OrkAssert(it == _user_matchers_by_name.end());
       _user_matchers_by_name[rule_name]        = matcher;
@@ -696,12 +699,13 @@ match_ptr_t RuleSpecImpl::parseParserSpec(std::string inp_string) {
   for (auto item : this->_user_scanner_rules) {
     auto rule       = item.second;
     uint64_t crc_id = CrcString(rule->_name.c_str()).hashed();
-    auto matcher    = _user_parser->matcherForTokenClass(crc_id, rule->_name);
-    auto it         = _user_matchers_by_name.find(rule->_name);
+    auto tcname = rule->_name;
+    auto matcher    = _user_parser->matcherForTokenClass(crc_id, tcname);
+    auto it         = _user_matchers_by_name.find(tcname);
     OrkAssert(it == _user_matchers_by_name.end());
-    // printf( "IMPLEMENT PARSER<-SCANNER RULE<%s>\n", rule->_name.c_str() );
-    _user_matchers_by_name[rule->_name]         = matcher;
-    _user_scanner_matchers_by_name[rule->_name] = matcher;
+    printf( "IMPLEMENT matcherForScannerTokClass RULE<%s> matcher<%p:%s>\n", rule->_name.c_str(), (void*) matcher.get(), matcher->_name.c_str() );
+    _user_matchers_by_name[tcname]         = matcher;
+    _user_scanner_matchers_by_name[tcname] = matcher;
   }
   /////////////////////////////////////////////////
   // prepare parser-DSL scanner and scan parser-DSL

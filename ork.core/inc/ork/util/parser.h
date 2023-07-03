@@ -137,7 +137,7 @@ struct Parser {
   //
   matcher_ptr_t createMatcher(matcher_fn_t match_fn,std::string name="");
   matcher_ptr_t matcherForTokenClassID(uint64_t tokclass,std::string name="");
-  matcher_ptr_t matcherForWord(std::string word);
+  matcher_ptr_t matcherForWord(std::string word, std::string name="");
 
   matcher_ptr_t findMatcherByName(const std::string& name) const;
 

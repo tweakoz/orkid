@@ -17,9 +17,10 @@
 /////////////////////////////////////////////////////////////////////////////////////////////////
 namespace ork {
 /////////////////////////////////////////////////////////////////////////////////////////////////
-static constexpr bool _DEBUG = true;
+static constexpr bool _DEBUG = false;
 //////////////////////////////////////////////////////////////////////
 
+static std::atomic<int> g_matcher_id(0);
 void Match::dump(int indent) const {
 
   auto indentstr = std::string(indent, ' ');
@@ -122,7 +123,7 @@ matcher_ptr_t Parser::optional(matcher_ptr_t sub_matcher, std::string name) {
     return the_match;
   };
   if (name == "") {
-    name = "optional";
+    name = FormatString("optional-%d", g_matcher_id++);
   }
   auto matcher    = createMatcher(match_fn, name);
   matcher->_notif = [=](match_ptr_t the_match) { //
@@ -242,7 +243,7 @@ void Parser::sequence(matcher_ptr_t matcher, std::vector<matcher_ptr_t> sub_matc
 
 matcher_ptr_t Parser::sequence(std::vector<matcher_ptr_t> sub_matchers, std::string name) {
   if (name == "") {
-    name = "sequence";
+    name = FormatString("sequence-%d", g_matcher_id++);
   }
   auto matcher = declare(name);
   sequence(matcher, sub_matchers);
@@ -281,7 +282,7 @@ matcher_ptr_t Parser::group(std::vector<matcher_ptr_t> matchers, std::string nam
     return the_match;
   };
   if (name == "") {
-    name = "group";
+    name = FormatString("group-%d", g_matcher_id++);
   }
   return createMatcher(match_fn, name);
 }
@@ -310,7 +311,7 @@ matcher_ptr_t Parser::oneOf(std::vector<matcher_ptr_t> matchers, std::string nam
     return nullptr;
   };
   if (name == "") {
-    name = "oneOf";
+    name = FormatString("oneof-%d", g_matcher_id++);
   }
   return createMatcher(match_fn, name);
 }
@@ -400,7 +401,7 @@ matcher_ptr_t Parser::nOrMore(matcher_ptr_t sub_matcher, size_t minMatches, std:
     return nullptr;
   };
   if (name == "") {
-    name = FormatString("nOrMore<%d>", minMatches);
+    name = FormatString("nOrMore<%d>-%d", minMatches, g_matcher_id++);
   }
   auto matcher    = createMatcher(match_fn, name);
   matcher->_notif = [=](match_ptr_t the_match) {
@@ -454,7 +455,10 @@ matcher_ptr_t Parser::matcherForTokenClassID(uint64_t tokclass, std::string name
 
 //////////////////////////////////////////////////////////////
 
-matcher_ptr_t Parser::matcherForWord(std::string word) {
+matcher_ptr_t Parser::matcherForWord(std::string word, std::string name) {
+  if(name==""){
+    name = word;
+  }
   matcher_ptr_t rval = nullptr;
   auto it            = _matchers_by_name.find(word);
   if (it == _matchers_by_name.end()) {
@@ -479,7 +483,6 @@ matcher_ptr_t Parser::matcherForWord(std::string word) {
       auto match_str = deco::format(255, 0, 255, "MATCHED word<%s>", word.c_str());
       log("%s", match_str.c_str());
     };
-    _matchers_by_name[word] = rval;
   } else {
     rval = it->second;
   }
@@ -547,6 +550,14 @@ matcher_ptr_t Parser::createMatcher(matcher_fn_t match_fn, std::string name) {
   auto rval = std::make_shared<Matcher>(match_fn);
   _matchers.insert(rval);
   rval->_name = name;
+  if(name!=""){
+    auto it = _matchers_by_name.find(name);
+    if( it != _matchers_by_name.end() ){
+      printf( "MATCHER<%s> already registered\n", name.c_str() );
+      OrkAssert(false);
+    }
+    _matchers_by_name[name] = rval;
+  }
   return rval;
 }
 
