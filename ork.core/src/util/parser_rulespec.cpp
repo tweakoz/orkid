@@ -74,8 +74,8 @@ void Expression::dump(dumpctx_ptr_t dctx) { // final
   _expr_selected->dump(dctx);
   dctx->_indent--;
 }
-matcher_ptr_t Expression::createMatcher() { // final
-  return _expr_selected->createMatcher();
+matcher_ptr_t Expression::createMatcher(std::string named) { // final
+  return _expr_selected->createMatcher(named);
 }
 ////////////////////////////////////////////////////////////////////////
 ExprKWID::ExprKWID(Parser* user_parser)
@@ -88,31 +88,40 @@ void ExprKWID::dump(dumpctx_ptr_t dctx) { // final
   printf("%s ExprKWID(%s) _kwid<%s>\n", indentstr.c_str(), _name.c_str(), _kwid.c_str());
   dctx->_indent--;
 }
-matcher_ptr_t ExprKWID::createMatcher() { // final
+matcher_ptr_t ExprKWID::createMatcher(std::string named) { // final
   auto rulespecimpl = _user_parser->_user.get<RuleSpecImpl*>();
   auto match_fn = [=](matcher_ptr_t par_matcher, //
                      scannerlightview_constptr_t& inp_view) -> match_ptr_t {
     // TODO : defer matcher creation until all parser rule top matchers created..
     auto it = rulespecimpl->_user_matchers_by_name.find(_kwid);
     if (it == rulespecimpl->_user_matchers_by_name.end()) {
-      printf("ExprKWID(%s) _kwid<%s> NO SUBMATCHER\n", _name.c_str(), _kwid.c_str());
+      printf("ExprKWIDProxy(%s) _kwid<%s> NO SUBMATCHER\n", named.c_str(), _kwid.c_str());
       OrkAssert(false);
     }
     auto submatcher = it->second;
-    printf("ExprKWID(%s) _kwid<%s> subm<%p:%s>\n", _name.c_str(), _kwid.c_str(), submatcher.get(), submatcher->_name.c_str());
+    printf("ExprKWIDProxy(%s) _kwid<%s> subm<%p:%s>\n", named.c_str(), _kwid.c_str(), submatcher.get(), submatcher->_name.c_str());
     OrkAssert(submatcher->_match_fn != nullptr);
     return submatcher->_match_fn(par_matcher, inp_view);
   };
   auto matcher_proxy  = std::make_shared<Matcher>(match_fn);
-  matcher_proxy->_name = FormatString("ExprKWIDProxy(%s)", _kwid.c_str());
+  matcher_proxy->_name = FormatString("ExprKWIDProxy(%s) kwid<%s>", named.c_str(), _kwid.c_str());
   matcher_proxy->_notif = [=](match_ptr_t match) {
     auto it            = rulespecimpl->_user_matchers_by_name.find(_kwid);
+    printf("ExprKWIDProxy(%s) _kwid<%s> MATCH ", named.c_str(), _kwid.c_str());
     if (it != rulespecimpl->_user_matchers_by_name.end()) {
       auto submatcher = it->second;
       OrkAssert(submatcher);
+
       if(submatcher->_notif){
+        printf("HAS-notif\n" );
         submatcher->_notif(match);
       }
+      else{
+        printf("NO-notif\n" );
+      }
+    }
+    else{
+        printf("NOT-reigistered\n" );
     }
   };
   return matcher_proxy;
@@ -131,9 +140,9 @@ void OneOrMore::dump(dumpctx_ptr_t dctx) { // final
   }
   dctx->_indent--;
 }
-matcher_ptr_t OneOrMore::createMatcher() { // final
+matcher_ptr_t OneOrMore::createMatcher(std::string named) { // final
   auto expr0 = _subexpressions[0];
-  return _user_parser->oneOrMore(expr0->createMatcher());
+  return _user_parser->oneOrMore(expr0->createMatcher(named));
 }
 ////////////////////////////////////////////////////////////////////////
 ZeroOrMore::ZeroOrMore(Parser* user_parser)
@@ -147,8 +156,8 @@ void ZeroOrMore::dump(dumpctx_ptr_t dctx) { // final
   _subexpression->dump(dctx);
   dctx->_indent--;
 }
-matcher_ptr_t ZeroOrMore::createMatcher() { // final
-  return _user_parser->zeroOrMore(_subexpression->createMatcher());
+matcher_ptr_t ZeroOrMore::createMatcher(std::string named) { // final
+  return _user_parser->zeroOrMore(_subexpression->createMatcher(named));
 }
 ////////////////////////////////////////////////////////////////////////
 Select::Select(Parser* user_parser)
@@ -164,10 +173,10 @@ void Select::dump(dumpctx_ptr_t dctx) { // final
   }
   dctx->_indent--;
 }
-matcher_ptr_t Select::createMatcher() { // final
+matcher_ptr_t Select::createMatcher(std::string named) { // final
   std::vector<matcher_ptr_t> sub_matchers;
   for (auto subexp : _subexpressions) {
-    sub_matchers.push_back(subexp->createMatcher());
+    sub_matchers.push_back(subexp->createMatcher(named));
   }
   return _user_parser->oneOf(sub_matchers);
 }
@@ -183,8 +192,8 @@ void Optional::dump(dumpctx_ptr_t dctx) { // final
   _subexpression->dump(dctx);
   dctx->_indent--;
 }
-matcher_ptr_t Optional::createMatcher() { // final
-  auto subexp = _subexpression->createMatcher();
+matcher_ptr_t Optional::createMatcher(std::string named) { // final
+  auto subexp = _subexpression->createMatcher(named);
   return _user_parser->optional(subexp);
 }
 ////////////////////////////////////////////////////////////////////////
@@ -201,10 +210,10 @@ void Sequence::dump(dumpctx_ptr_t dctx) { // final
   }
   dctx->_indent--;
 }
-matcher_ptr_t Sequence::createMatcher() { // final
+matcher_ptr_t Sequence::createMatcher(std::string named) { // final
   std::vector<matcher_ptr_t> sub_matchers;
   for (auto subexp : _subexpressions) {
-    sub_matchers.push_back(subexp->createMatcher());
+    sub_matchers.push_back(subexp->createMatcher(named));
   }
   return _user_parser->sequence(sub_matchers);
 }
@@ -222,10 +231,10 @@ void Group::dump(dumpctx_ptr_t dctx) { // final
   }
   dctx->_indent--;
 }
-matcher_ptr_t Group::createMatcher() { // final
+matcher_ptr_t Group::createMatcher(std::string named) { // final
   std::vector<matcher_ptr_t> sub_matchers;
   for (auto subexp : _subexpressions) {
-    sub_matchers.push_back(subexp->createMatcher());
+    sub_matchers.push_back(subexp->createMatcher(named));
   }
   return _user_parser->group(sub_matchers);
 }
@@ -240,8 +249,8 @@ ParserRule::ParserRule(Parser* user_parser, std::string name)
 void ParserRule::dump(dumpctx_ptr_t dctx) { // final
   _expression->dump(dctx);
 }
-matcher_ptr_t ParserRule::createMatcher() { // final
-  return _expression->createMatcher();
+matcher_ptr_t ParserRule::createMatcher(std::string named) { // final
+  return _expression->createMatcher(named);
 }
 ////////////////////////////////////////////////////////////////////////
 } // namespace AST
@@ -607,7 +616,7 @@ void RuleSpecImpl::loadGrammar() { //
   parser_rule->_notif = [=](match_ptr_t match) {
     auto rulename                                   = match->asShared<Sequence>()->_items[0]->asShared<ClassMatch>()->_token->text;
     auto expr_ast_node                              = _onExpression(match->asShared<Sequence>()->_items[2], rulename);
-    this->_user_parser->_matchers_by_name[rulename] = expr_ast_node->createMatcher();
+    this->_user_parser->_matchers_by_name[rulename] = expr_ast_node->createMatcher(rulename);
     auto ast_rule                                   = std::make_shared<AST::ParserRule>(_user_parser, rulename);
     ast_rule->_expression                           = expr_ast_node;
     _user_parser_rules[rulename]                    = ast_rule;
@@ -625,7 +634,7 @@ void RuleSpecImpl::loadGrammar() { //
       printf("IMPLEMENT PARSER RULE<%s>\n", rule_name.c_str());
       auto dctx = std::make_shared<AST::DumpContext>();
       ast_rule->dump(dctx);
-      auto matcher = ast_rule->createMatcher();
+      auto matcher = ast_rule->createMatcher(rule_name);
       auto it      = _user_matchers_by_name.find(rule_name);
       OrkAssert(it == _user_matchers_by_name.end());
       _user_matchers_by_name[rule_name]        = matcher;

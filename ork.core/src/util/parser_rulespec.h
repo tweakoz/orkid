@@ -79,14 +79,14 @@ struct AstNode {
   AstNode(Parser* user_parser);
   virtual ~AstNode();
   virtual void dump(dumpctx_ptr_t dctx) = 0;
-  virtual matcher_ptr_t createMatcher() = 0;
+  virtual matcher_ptr_t createMatcher(std::string named) = 0;
   Parser* _user_parser                  = nullptr;
 };
 ////////////////////////////////////////////////////////////////////////
 struct Expression : public AstNode {
   Expression(Parser* user_parser, std::string name = "");
   void dump(dumpctx_ptr_t dctx) final;
-  matcher_ptr_t createMatcher() final;
+  matcher_ptr_t createMatcher(std::string named) final;
   astnode_ptr_t _expr_selected;
   std::string _expr_name;
 };
@@ -94,7 +94,7 @@ struct Expression : public AstNode {
 struct ExprKWID : public AstNode {
   ExprKWID(Parser* user_parser);
   void dump(dumpctx_ptr_t dctx) final;
-  matcher_ptr_t createMatcher() final;
+  matcher_ptr_t createMatcher(std::string named) final;
   std::string _kwid;
   std::string _expr_name;
 };
@@ -102,49 +102,49 @@ struct ExprKWID : public AstNode {
 struct OneOrMore : public AstNode {
   OneOrMore(Parser* user_parser);
   void dump(dumpctx_ptr_t dctx) final;
-  matcher_ptr_t createMatcher() final;
+  matcher_ptr_t createMatcher(std::string named) final;
   std::vector<expression_ptr_t> _subexpressions;
 };
 ////////////////////////////////////////////////////////////////////////
 struct ZeroOrMore : public AstNode {
   ZeroOrMore(Parser* user_parser);
   void dump(dumpctx_ptr_t dctx) final;
-  matcher_ptr_t createMatcher() final;
+  matcher_ptr_t createMatcher(std::string named) final;
   expression_ptr_t _subexpression;
 };
 ////////////////////////////////////////////////////////////////////////
 struct Select : public AstNode {
   Select(Parser* user_parser);
   void dump(dumpctx_ptr_t dctx) final;
-  matcher_ptr_t createMatcher() final;
+  matcher_ptr_t createMatcher(std::string named) final;
   std::vector<expression_ptr_t> _subexpressions;
 };
 ////////////////////////////////////////////////////////////////////////
 struct Optional : public AstNode {
   Optional(Parser* user_parser);
   void dump(dumpctx_ptr_t dctx) final;
-  matcher_ptr_t createMatcher() final;
+  matcher_ptr_t createMatcher(std::string named) final;
   expression_ptr_t _subexpression;
 };
 ////////////////////////////////////////////////////////////////////////
 struct Sequence : public AstNode {
   Sequence(Parser* user_parser);
   void dump(dumpctx_ptr_t dctx) final;
-  matcher_ptr_t createMatcher() final;
+  matcher_ptr_t createMatcher(std::string named) final;
   std::vector<expression_ptr_t> _subexpressions;
 };
 ////////////////////////////////////////////////////////////////////////
 struct Group : public AstNode {
   Group(Parser* user_parser);
   void dump(dumpctx_ptr_t dctx) final;
-  matcher_ptr_t createMatcher() final;
+  matcher_ptr_t createMatcher(std::string named) final;
   std::vector<expression_ptr_t> _subexpressions;
 };
 ////////////////////////////////////////////////////////////////////////
 struct ParserRule : public AstNode {
   ParserRule(Parser* user_parser, std::string name = "");
   void dump(dumpctx_ptr_t dctx) final;
-  matcher_ptr_t createMatcher() final;
+  matcher_ptr_t createMatcher(std::string named) final;
   expression_ptr_t _expression;
 };
 } // namespace AST

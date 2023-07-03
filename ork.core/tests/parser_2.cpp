@@ -201,16 +201,10 @@ struct MyParser2 : public Parser {
       if (ass1of->_selected->_matcher == variableDeclaration) {
         auto seq      = ass1of->_selected->asShared<Sequence>();
         auto datatype = seq->_items[0]->_user.getShared<AST::DataType>();
-        // auto kwid = seq->_items[1]->_user.getShared<AST::KwOrId>();
         auto expr = match->asShared<Sequence>()->itemAsShared<AST::Expression>(2);
-        // ast_node->_datatype = datatype;
-        // ast_node->_name = kwid;
-        // ast_node->_expression = expr;
       } else if (ass1of->_selected->_matcher == variableReference) {
-        // auto kwid = ass1of->_selected->asShared<Sequence>()->_items[0]->_user.getShared<AST::KwOrId>();
         auto expr           = match->asShared<Sequence>()->itemAsShared<AST::Expression>(2);
         ast_node->_datatype = nullptr;
-        // ast_node->_name = kwid;
         ast_node->_expression = expr;
       } else {
         OrkAssert(false);
@@ -218,6 +212,7 @@ struct MyParser2 : public Parser {
     });
     ///////////////////////////////////////////////////////////
     on("funcdef", [=](match_ptr_t match) {
+      OrkAssert(false);
       auto seq     = match->asShared<Sequence>();
       auto fn_name = seq->itemAsShared<ClassMatch>(1);
       auto args    = seq->itemAsShared<NOrMore>(3);
