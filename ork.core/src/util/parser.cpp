@@ -19,6 +19,7 @@ namespace ork {
 /////////////////////////////////////////////////////////////////////////////////////////////////
 static constexpr bool _DEBUG = false;
 //////////////////////////////////////////////////////////////////////
+static logchannel_ptr_t logchan_parser = logger()->createChannel("RULESPEC", fvec3(0.5, 0.7, 0.5), false);
 
 static std::atomic<int> g_matcher_id(0);
 void Match::dump(int indent) const {
@@ -26,11 +27,11 @@ void Match::dump(int indent) const {
   auto indentstr = std::string(indent, ' ');
 
   if (_view->empty()) {
-    printf(
-        "%s DUMP Match<%p> matcher<%p:%s> view (empty)\n", indentstr.c_str(), this, (void*)_matcher.get(), _matcher->_name.c_str());
+    logchan_parser->log(
+        "%s DUMP Match<%p> matcher<%p:%s> view (empty)", indentstr.c_str(), this, (void*)_matcher.get(), _matcher->_name.c_str());
   } else {
-    printf(
-        "%s DUMP Match<%p> matcher<%p:%s> view [%zu..%zu]\n",
+    logchan_parser->log(
+        "%s DUMP Match<%p> matcher<%p:%s> view [%zu..%zu]",
         indentstr.c_str(),
         this,
         (void*)_matcher.get(),
@@ -41,29 +42,29 @@ void Match::dump(int indent) const {
 
   if (auto as_seq = tryAs<sequence_ptr_t>()) {
     auto seq = as_seq.value();
-    printf("%s   SEQ<%p>\n", indentstr.c_str(), (void*)seq.get());
+    logchan_parser->log("%s   SEQ<%p>", indentstr.c_str(), (void*)seq.get());
     for (auto i : seq->_items) {
       i->dump(indent + 3);
     }
   } else if (auto as_nom = tryAs<n_or_more_ptr_t>()) {
     auto nom = as_nom.value();
-    printf("%s   NOM%zu<%p>\n", indentstr.c_str(), nom->_minmatches, (void*)nom.get());
+    logchan_parser->log("%s   NOM%zu<%p>", indentstr.c_str(), nom->_minmatches, (void*)nom.get());
     for (auto i : nom->_items) {
       i->dump(indent + 3);
     }
   } else if (auto as_grp = tryAs<group_ptr_t>()) {
     auto grp = as_grp.value();
-    printf("%s   GRP<%p>\n", indentstr.c_str(), (void*)grp.get());
+    logchan_parser->log("%s   GRP<%p>", indentstr.c_str(), (void*)grp.get());
     for (auto i : grp->_items) {
       i->dump(indent + 3);
     }
   } else if (auto as_opt = tryAs<optional_ptr_t>()) {
     auto opt = as_opt.value();
-    printf("%s   OPT<%p>\n", indentstr.c_str(), (void*)opt.get());
+    logchan_parser->log("%s   OPT<%p>", indentstr.c_str(), (void*)opt.get());
     if (opt->_subitem)
       opt->_subitem->dump(indent + 3);
     else {
-      printf("%s     EMPTY\n", indentstr.c_str());
+      logchan_parser->log("%s     EMPTY", indentstr.c_str());
     }
   }
 }
@@ -401,7 +402,7 @@ matcher_ptr_t Parser::nOrMore(matcher_ptr_t sub_matcher, size_t minMatches, std:
     return nullptr;
   };
   if (name == "") {
-    name = FormatString("nOrMore<%d>-%d", minMatches, g_matcher_id++);
+    name = FormatString("(%d)OrMore-%d", minMatches, g_matcher_id++);
   }
   auto matcher    = createMatcher(match_fn, name);
   matcher->_notif = [=](match_ptr_t the_match) {
@@ -421,6 +422,11 @@ matcher_ptr_t Parser::zeroOrMore(matcher_ptr_t matcher, std::string name, bool m
 //////////////////////////////////////////////////////////////
 
 matcher_ptr_t Parser::matcherForTokenClassID(uint64_t tokclass, std::string name) {
+  auto it = _matchers_by_name.find(name);
+  if (it != _matchers_by_name.end()) {
+    return it->second;
+  }
+  
   auto match_fn = [tokclass,this](matcher_ptr_t par_matcher, scannerlightview_constptr_t slv) -> match_ptr_t {
     auto tok0         = slv->token(0);
     auto slv_tokclass = tok0->_class;
@@ -460,7 +466,7 @@ matcher_ptr_t Parser::matcherForWord(std::string word, std::string name) {
     name = word;
   }
   matcher_ptr_t rval = nullptr;
-  auto it            = _matchers_by_name.find(word);
+  auto it            = _matchers_by_name.find(name);
   if (it == _matchers_by_name.end()) {
     auto match_fn = [word](matcher_ptr_t par_matcher, scannerlightview_constptr_t inp_view) -> match_ptr_t {
       auto tok0 = inp_view->token(0);
@@ -478,7 +484,7 @@ matcher_ptr_t Parser::matcherForWord(std::string word, std::string name) {
         return nullptr;
       }
     };
-    rval         = createMatcher(match_fn, word);
+    rval         = createMatcher(match_fn, name);
     rval->_notif = [=](match_ptr_t the_match) { //
       auto match_str = deco::format(255, 0, 255, "MATCHED word<%s>", word.c_str());
       log("%s", match_str.c_str());
