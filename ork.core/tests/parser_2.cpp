@@ -75,7 +75,7 @@ std::string parser_spec = R"xxx(
         FUNCTION
         KW_OR_ID
         L_PAREN
-        argument_decl : "args"
+        zom{argument_decl} : "args"
         R_PAREN
         L_CURLY
         zom{statement} : "statements"
