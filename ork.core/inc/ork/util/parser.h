@@ -171,6 +171,7 @@ struct Parser {
   std::unordered_map<uint64_t,match_ptr_t> _packrat_cache;
 
   scanner_ptr_t _scanner;
+  svar64_t _user;
   size_t _cache_misses = 0;
   size_t _cache_hits = 0;
 };
