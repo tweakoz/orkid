@@ -223,7 +223,7 @@ struct MyParser2 : public Parser {
       auto args    = seq->itemAsShared<NOrMore>(3);
       auto stas    = seq->itemAsShared<NOrMore>(6);
       printf(
-          "ON funcdef<%s> function<%s> numargs<%d> numstatements<%d>\n", //
+          "ON funcdef<%s> function<%s> numargs<%zu> numstatements<%zu>\n", //
           funcdef->_name.c_str(),                                             //
           fn_name->_token->text.c_str(),                                      //
           args->_items.size(),                                                //
@@ -297,6 +297,12 @@ TEST(parser2) {
     )";
   MyParser2 the_parser;
   auto match = the_parser.parseString(parse_str);
-  printf( "P2.TOP.B match<%p>\n", match.get() );
+  printf( "P2.TOP.B match<%p> matcher<%p:%s> st<%zu> en<%zu>\n", //
+          match.get(), //
+          match->_matcher.get(), //
+          match->_matcher->_name.c_str(), //
+          match->_view->_start, //
+          match->_view->_end); //
+
   CHECK(match != nullptr);
 }

@@ -151,7 +151,9 @@ struct ExprKWID : public AstNode {
   void dump(dumpctx_ptr_t dctx) final {
     dctx->_indent++;
     auto indentstr = std::string(dctx->_indent * 2, ' ');
-    printf("%s ExprKWID(%s) _kwid<%s>\n", indentstr.c_str(), _name.c_str(), _kwid.c_str());
+    // TODO : need RuleSpecImpl::user_scanner rules here...
+    auto submatcher = _user_parser->matcherForWord(_kwid);
+    printf("%s ExprKWID(%s) _kwid<%s> subm<%p:%s>\n", indentstr.c_str(), _name.c_str(), _kwid.c_str(), submatcher.get(), submatcher->_name.c_str() );
     dctx->_indent--;
   }
   matcher_ptr_t createMatcher() final {
@@ -293,11 +295,7 @@ struct ParserRule : public AstNode {
     }
   }
   void dump(dumpctx_ptr_t dctx) final {
-    //dctx->_indent++;
-    //auto indentstr = std::string(dctx->_indent * 2, ' ');
-    //printf("%s PRULE(%s)\n", indentstr.c_str(), _name.c_str() );
     _expression->dump(dctx);
-    //dctx->_indent--;
   }
   matcher_ptr_t createMatcher() final {
     return _expression->createMatcher();
@@ -685,8 +683,9 @@ struct RuleSpecImpl : public Parser {
         OrkAssert(it==_user_matchers_by_name.end());
         _user_matchers_by_name[rule_name] = matcher;
       }
-      
-      printf("IMPLEMENT PARSER RULES\n"); };
+      printf("///////////////////////////////////////////////////////////\n" );
+      printf("IMPLEMENTED PARSER RULES..\n"); };
+      printf("///////////////////////////////////////////////////////////\n" );
   }
   /////////////////////////////////////////////////////////
   match_ptr_t parseScannerSpec(std::string inp_string) {
@@ -719,6 +718,7 @@ struct RuleSpecImpl : public Parser {
       auto matcher = _user_parser->matcherForTokenClass(crc_id, rule->_name);
       auto it = _user_matchers_by_name.find(rule->_name);
       OrkAssert(it==_user_matchers_by_name.end());
+      //printf( "IMPLEMENT PARSER<-SCANNER RULE<%s>\n", rule->_name.c_str() );
       _user_matchers_by_name[rule->_name] = matcher;
     }
     /////////////////////////////////////////////////
@@ -800,6 +800,9 @@ void Parser::loadScannerSpec(const std::string& spec) {
   auto match = rsi->parseScannerSpec(spec);
   OrkAssert(match);
 }
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
 void Parser::loadParserSpec(const std::string& spec) {
   auto rsi   = getRuleSpecImpl();
   auto match = rsi->parseParserSpec(spec);

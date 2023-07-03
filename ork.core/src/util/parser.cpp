@@ -17,7 +17,7 @@
 /////////////////////////////////////////////////////////////////////////////////////////////////
 namespace ork {
 /////////////////////////////////////////////////////////////////////////////////////////////////
-static constexpr bool _DEBUG = false;
+static constexpr bool _DEBUG = true;
 //////////////////////////////////////////////////////////////////////
 
 void Match::dump(int indent) const {
@@ -420,9 +420,15 @@ matcher_ptr_t Parser::zeroOrMore(matcher_ptr_t matcher, std::string name, bool m
 //////////////////////////////////////////////////////////////
 
 matcher_ptr_t Parser::matcherForTokenClassID(uint64_t tokclass, std::string name) {
-  auto match_fn = [tokclass](matcher_ptr_t par_matcher, scannerlightview_constptr_t slv) -> match_ptr_t {
+  auto match_fn = [tokclass,this](matcher_ptr_t par_matcher, scannerlightview_constptr_t slv) -> match_ptr_t {
     auto tok0         = slv->token(0);
     auto slv_tokclass = tok0->_class;
+    log(
+        "MATCHER.CLASSID<%zu> matcher_name<%s> tok<%s> tokclass<%zu>", //
+        tokclass,
+        par_matcher->_name.c_str(),
+        tok0->text.c_str(),
+        slv_tokclass );
     if (slv_tokclass == tokclass) {
       match_ptr_t the_match     = std::make_shared<Match>();
       auto the_classmatch       = the_match->_impl.makeShared<ClassMatch>();
