@@ -57,6 +57,7 @@ AstNode::AstNode(Parser* user_parser)
 AstNode::~AstNode() {
 }
 ////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////
 Expression::Expression(Parser* user_parser, std::string name)
     : AstNode(user_parser) {
 
@@ -83,26 +84,38 @@ ExprKWID::ExprKWID(Parser* user_parser)
 }
 void ExprKWID::dump(dumpctx_ptr_t dctx) { // final
   dctx->_indent++;
-  auto indentstr    = std::string(dctx->_indent * 2, ' ');
+  auto indentstr = std::string(dctx->_indent * 2, ' ');
   printf("%s ExprKWID(%s) _kwid<%s>\n", indentstr.c_str(), _name.c_str(), _kwid.c_str());
   dctx->_indent--;
 }
 matcher_ptr_t ExprKWID::createMatcher() { // final
   auto rulespecimpl = _user_parser->_user.get<RuleSpecImpl*>();
-  // TODO : defer matcher creation until all parser rule top matchers created..
-  auto it = rulespecimpl->_user_matchers_by_name.find(_kwid);
-  if (it == rulespecimpl->_user_matchers_by_name.end()) {
-    printf("ExprKWID(%s) _kwid<%s> NO SUBMATCHER\n", _name.c_str(), _kwid.c_str());
-    OrkAssert(false);
-  }
-  auto submatcher = it->second;
-  printf(
-      "ExprKWID(%s) _kwid<%s> subm<%p:%s>\n",
-      _name.c_str(),
-      _kwid.c_str(),
-      submatcher.get(),
-      submatcher->_name.c_str());
-  return submatcher;
+  auto match_fn = [=](matcher_ptr_t par_matcher, //
+                     scannerlightview_constptr_t& inp_view) -> match_ptr_t {
+    // TODO : defer matcher creation until all parser rule top matchers created..
+    auto it = rulespecimpl->_user_matchers_by_name.find(_kwid);
+    if (it == rulespecimpl->_user_matchers_by_name.end()) {
+      printf("ExprKWID(%s) _kwid<%s> NO SUBMATCHER\n", _name.c_str(), _kwid.c_str());
+      OrkAssert(false);
+    }
+    auto submatcher = it->second;
+    printf("ExprKWID(%s) _kwid<%s> subm<%p:%s>\n", _name.c_str(), _kwid.c_str(), submatcher.get(), submatcher->_name.c_str());
+    OrkAssert(submatcher->_match_fn != nullptr);
+    return submatcher->_match_fn(par_matcher, inp_view);
+  };
+  auto matcher_proxy  = std::make_shared<Matcher>(match_fn);
+  matcher_proxy->_name = FormatString("ExprKWIDProxy(%s)", _kwid.c_str());
+  matcher_proxy->_notif = [=](match_ptr_t match) {
+    auto it            = rulespecimpl->_user_matchers_by_name.find(_kwid);
+    if (it != rulespecimpl->_user_matchers_by_name.end()) {
+      auto submatcher = it->second;
+      OrkAssert(submatcher);
+      if(submatcher->_notif){
+        submatcher->_notif(match);
+      }
+    }
+  };
+  return matcher_proxy;
 }
 ////////////////////////////////////////////////////////////////////////
 OneOrMore::OneOrMore(Parser* user_parser)
@@ -603,7 +616,6 @@ void RuleSpecImpl::loadGrammar() { //
   _rsi_parser_matcher = _dsl_parser->zeroOrMore(parser_rule, "parser_rules");
 
   _rsi_parser_matcher->_notif = [=](match_ptr_t match) {
-
     // TODO : defer ExprKWID matcher creation until all parser rule top matchers created..
 
     for (auto rule : _user_parser_rules) {
