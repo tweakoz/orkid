@@ -16,8 +16,6 @@
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 namespace ork {
-/////////////////////////////////////////////////////////////////////////////////////////////////
-static constexpr bool _DEBUG = false;
 //////////////////////////////////////////////////////////////////////
 static logchannel_ptr_t logchan_parser = logger()->createChannel("RULESPEC", fvec3(0.5, 0.7, 0.5), false);
 
@@ -162,11 +160,13 @@ void Parser::sequence(matcher_ptr_t matcher, std::vector<matcher_ptr_t> sub_matc
       if (slv_iter->_start > slv_iter->_end) {
         break;
       }
+      auto tok0         = slv_iter->token(0);
       auto match_item = _match(sub_matcher, slv_iter);
       log_begin(
-          "SEQ<%s> : match_item<%s> iter<%zu/%zu> st<%d> end<%d> ",
+          "SEQ<%s> : match_item<%s> tok0<%s> iter<%zu/%zu> st<%d> end<%d> ",
           matcher->_name.c_str(),
           sub_matcher->_name.c_str(),
+          tok0->text.c_str(),
           iter,
           num_iter,
           slv_iter->_start,

@@ -11,7 +11,7 @@
 namespace ork {
 /////////////////////////////////////////////////////////////////////////////////////////////////
 static logchannel_ptr_t logchan_rulespec = logger()->createChannel("RULESPEC1", fvec3(0.5, 0.8, 0.5), false);
-static logchannel_ptr_t logchan_rulespec2 = logger()->createChannel("RULESPEC2", fvec3(0.5, 0.8, 0.5), true);
+static logchannel_ptr_t logchan_rulespec2 = logger()->createChannel("RULESPEC2", fvec3(0.5, 0.8, 0.5), false);
 
 matcher_ptr_t Parser::rule(const std::string& rule_name) {
   auto it = _matchers_by_name.find(rule_name);
@@ -89,7 +89,7 @@ ExprKWID::ExprKWID(Parser* user_parser)
 void ExprKWID::dump(dumpctx_ptr_t dctx) { // final
   dctx->_indent++;
   auto indentstr = std::string(dctx->_indent * 2, ' ');
-  logchan_rulespec->log("%s ExprKWID(%s) _kwid<%s>", indentstr.c_str(), _name.c_str(), _kwid.c_str());
+  logchan_rulespec->log("%s EKWID(%s) _kwid<%s>", indentstr.c_str(), _name.c_str(), _kwid.c_str());
   dctx->_indent--;
 }
 matcher_ptr_t ExprKWID::createMatcher(std::string named) { // final
@@ -99,34 +99,34 @@ matcher_ptr_t ExprKWID::createMatcher(std::string named) { // final
     // TODO : defer matcher creation until all parser rule top matchers created..
     auto it = rulespecimpl->_user_matchers_by_name.find(_kwid);
     if (it == rulespecimpl->_user_matchers_by_name.end()) {
-      logchan_rulespec->log("ExprKWIDProxy(%s) _kwid<%s> NO SUBMATCHER", named.c_str(), _kwid.c_str());
+      logchan_rulespec2->log("EKWIDPXY(%s) _kwid<%s> NO SUBMATCHER", named.c_str(), _kwid.c_str());
       OrkAssert(false);
     }
     auto submatcher = it->second;
     OrkAssert(submatcher->_match_fn != nullptr);
     auto match = submatcher->_match_fn(par_matcher, inp_view);
-    logchan_rulespec->log("ExprKWIDProxy(%s) _kwid<%s> subm<%p:%s> match<%p>", named.c_str(), _kwid.c_str(), (void*) submatcher.get(), submatcher->_name.c_str(), (void*) match.get() );
+    logchan_rulespec2->log("EKWIDPXY(%s) _kwid<%s> subm<%p:%s> match<%p>", named.c_str(), _kwid.c_str(), (void*) submatcher.get(), submatcher->_name.c_str(), (void*) match.get() );
     return match;
   };
   auto matcher_proxy  = std::make_shared<Matcher>(match_fn);
-  matcher_proxy->_name = FormatString("ExprKWIDProxy(%s) kwid<%s>", named.c_str(), _kwid.c_str());
+  matcher_proxy->_name = FormatString("EKWIDPXY(%s) kwid<%s>", named.c_str(), _kwid.c_str());
   matcher_proxy->_notif = [=](match_ptr_t match) {
     auto it            = rulespecimpl->_user_matchers_by_name.find(_kwid);
-    logchan_rulespec->log("ExprKWIDProxy(%s) _kwid<%s> MATCH ", named.c_str(), _kwid.c_str());
+    logchan_rulespec2->log("EKWIDPXY(%s) _kwid<%s> MATCH ", named.c_str(), _kwid.c_str());
     if (it != rulespecimpl->_user_matchers_by_name.end()) {
       auto submatcher = it->second;
       OrkAssert(submatcher);
 
       if(submatcher->_notif){
-        logchan_rulespec->log("HAS-notif" );
+        logchan_rulespec2->log("HAS-notif" );
         submatcher->_notif(match);
       }
       else{
-        logchan_rulespec->log("NO-notif" );
+        logchan_rulespec2->log("NO-notif" );
       }
     }
     else{
-        logchan_rulespec->log("NOT-reigistered" );
+        logchan_rulespec2->log("NOT-reigistered" );
     }
   };
   return matcher_proxy;
@@ -547,8 +547,8 @@ void RuleSpecImpl::loadGrammar() { //
       auto it        = this->_user_scanner_rules.find(rule_name);
       OrkAssert(it == this->_user_scanner_rules.end());
       this->_user_scanner_rules[rule_name] = rule;
-      auto matcher = this->_user_parser->matcherForWord(match_str,rule_name);
-      logchan_rulespec->log("IMPLEMENT SCANNER->PARSER RULE literal<%s> matcher<%p:%s>", match_str.c_str(), (void*) matcher.get(), matcher->_name.c_str());
+      //auto matcher = this->_user_parser->matcherForWord(match_str,rule_name);
+      //logchan_rulespec2->log("IMPLEMENT SCANNER->PARSER RULE literal<%s> matcher<%p:%s>", match_str.c_str(), (void*) matcher.get(), matcher->_name.c_str());
     } else if (auto as_seq = rule_key_item->tryAsShared<Sequence>()) {
       auto sub_seq   = as_seq.value();
       auto macro_str = sub_seq->_items[0]->asShared<WordMatch>()->_token->text;
@@ -559,7 +559,7 @@ void RuleSpecImpl::loadGrammar() { //
       macro->_regex   = rx;
       auto it         = this->_user_scanner_macros.find(macro_name);
       OrkAssert(it == this->_user_scanner_macros.end());
-      logchan_rulespec->log("ADDING SCANNER->PARSER MACRO literal<%s> <- %s", macro_name.c_str(), rx.c_str());
+      logchan_rulespec2->log("ADDING SCANNER->PARSER MACRO literal<%s> <- %s", macro_name.c_str(), rx.c_str());
       this->_user_scanner_macros[macro_name] = macro;
     } else {
       OrkAssert(false);
@@ -572,7 +572,7 @@ void RuleSpecImpl::loadGrammar() { //
       for (auto item : this->_user_scanner_macros) {
         auto macro         = item.second;
         _current_rule_name = macro->_name;
-        logchan_rulespec->log("IMPLEMENT SCANNER MACRO <%s : %s>", macro->_name.c_str(), macro->_regex.c_str());
+        logchan_rulespec2->log("IMPLEMENT SCANNER MACRO <%s : %s>", macro->_name.c_str(), macro->_regex.c_str());
         this->_user_scanner->addMacro(macro->_name, macro->_regex);
       }
       for (auto item : this->_user_scanner_rules) {
@@ -580,13 +580,13 @@ void RuleSpecImpl::loadGrammar() { //
         uint64_t crc_id    = CrcString(rule->_name.c_str()).hashed();
         _current_rule_name = rule->_name;
         this->_user_scanner->addEnumClass(rule->_regex, crc_id);
-        logchan_rulespec->log("IMPLEMENT SCANNER EnumClass<%s : %zu> regex \"%s\" ", //
+        logchan_rulespec2->log("IMPLEMENT SCANNER EnumClass<%s : %zu> regex \"%s\" ", //
                rule->_name.c_str(), crc_id, 
                rule->_regex.c_str());
       }
       this->_user_scanner->buildStateMachine();
     } catch (std::exception& e) {
-      logchan_rulespec->log("EXCEPTION cur_rule<%s>  cause<%s>", _current_rule_name.c_str(), e.what());
+      logchan_rulespec2->log("EXCEPTION cur_rule<%s>  cause<%s>", _current_rule_name.c_str(), e.what());
       OrkAssert(false);
     }
   };
@@ -624,16 +624,29 @@ void RuleSpecImpl::loadGrammar() { //
   parser_rule->_notif = [=](match_ptr_t match) {
     auto rulename                                   = match->asShared<Sequence>()->_items[0]->asShared<ClassMatch>()->_token->text;
     auto expr_ast_node                              = _onExpression(match->asShared<Sequence>()->_items[2], rulename);
-    this->_user_parser->_matchers_by_name[rulename] = expr_ast_node->createMatcher(rulename);
+    //auto matcher                                    = expr_ast_node->createMatcher(rulename);
+    //this->_user_parser->_matchers_by_name[rulename] = matcher;
     auto ast_rule                                   = std::make_shared<AST::ParserRule>(_user_parser, rulename);
     ast_rule->_expression                           = expr_ast_node;
     _user_parser_rules[rulename]                    = ast_rule;
+    printf( "CREATED PARSER RULE<%s>\n", rulename.c_str() );
   };
 
   _rsi_parser_matcher = _dsl_parser->zeroOrMore(parser_rule, "parser_rules");
 
   _rsi_parser_matcher->_notif = [=](match_ptr_t match) {
     // TODO : defer ExprKWID matcher creation until all parser rule top matchers created..
+
+    if(1){
+      logchan_rulespec2->log("///////////////////////////////////////////////////////////");
+      logchan_rulespec2->log("// DUMPING MATCHERS");
+      logchan_rulespec2->log("///////////////////////////////////////////////////////////");
+      for (auto mitem : this->_user_parser->_matchers_by_name ) {
+        auto matcher_key = mitem.first;
+        auto matcher  = mitem.second;
+        logchan_rulespec2->log("// DUMP MATCHER KEY<%s> NAME<%s> _info<%s>", matcher_key.c_str(), matcher->_name.c_str(), matcher->_info.c_str() );
+      }
+    }
 
     if(0){
       logchan_rulespec->log("///////////////////////////////////////////////////////////");
@@ -648,31 +661,34 @@ void RuleSpecImpl::loadGrammar() { //
       }
     }
 
-    logchan_rulespec->log("///////////////////////////////////////////////////////////");
-    logchan_rulespec->log("// IMPLEMENTING PARSER RULES..");
-    logchan_rulespec->log("///////////////////////////////////////////////////////////");
+    if(1){
+    logchan_rulespec2->log("///////////////////////////////////////////////////////////");
+    logchan_rulespec2->log("// IMPLEMENTING PARSER RULES..");
+    logchan_rulespec2->log("///////////////////////////////////////////////////////////");
     for (auto rule : _user_parser_rules) {
       auto rule_name = rule.first;
       auto ast_rule  = rule.second;
-      auto matcher = ast_rule->createMatcher(rule_name);
-      logchan_rulespec->log("// IMPLEMENT PARSER RULE<%s> matcher<%p:%s>", rule_name.c_str(), (void*) matcher.get(), matcher->_name.c_str() );
+      auto matcher = ast_rule->createMatcher(rule_name);      
+      logchan_rulespec2->log("// IMPLEMENT PARSER RULE<%s> matcher<%p:%s>", rule_name.c_str(), (void*) matcher.get(), matcher->_name.c_str() );
+      this->_user_parser->_matchers_by_name[rule_name] = matcher;
       auto it      = _user_matchers_by_name.find(rule_name);
       OrkAssert(it == _user_matchers_by_name.end());
       _user_matchers_by_name[rule_name]        = matcher;
       _user_parser_matchers_by_name[rule_name] = matcher;
     }
-    logchan_rulespec->log("///////////////////////////////////////////////////////////");
-    logchan_rulespec->log("// LINKING PARSER RULES..");
-    logchan_rulespec->log("///////////////////////////////////////////////////////////");
+    }
+    logchan_rulespec2->log("///////////////////////////////////////////////////////////");
+    logchan_rulespec2->log("// LINKING PARSER RULES..");
+    logchan_rulespec2->log("///////////////////////////////////////////////////////////");
     for (auto rule : _user_parser_rules) {
       auto rule_name = rule.first;
       auto ast_rule  = rule.second;
       if( ast_rule->_on_link ){
-        logchan_rulespec->log("// LINK PARSER RULE<%s>", rule_name.c_str());
+        logchan_rulespec2->log("// LINK PARSER RULE<%s>", rule_name.c_str());
         ast_rule->_on_link();
       }
     }
-    logchan_rulespec->log("///////////////////////////////////////////////////////////");
+    logchan_rulespec2->log("///////////////////////////////////////////////////////////");
   };
 }
 /////////////////////////////////////////////////////////
@@ -688,7 +704,7 @@ match_ptr_t RuleSpecImpl::parseScannerSpec(std::string inp_string) {
     OrkAssert(false);
   }
   auto top_view = dsl_scanner->createTopView();
-  top_view.dump("top_view");
+  //top_view.dump("top_view");
   auto slv   = std::make_shared<ScannerLightView>(top_view);
   auto match = _dsl_parser->match(slv, _rsi_scanner_matcher);
   OrkAssert(match);
@@ -729,7 +745,7 @@ match_ptr_t RuleSpecImpl::parseParserSpec(std::string inp_string) {
   // parse parser-DSL
   /////////////////////////////////////////////////
   auto top_view = dsl_scanner->createTopView();
-  top_view.dump("top_view");
+  //top_view.dump("top_view");
   auto slv   = std::make_shared<ScannerLightView>(top_view);
   auto match = _dsl_parser->match(slv, _rsi_parser_matcher);
   OrkAssert(match);

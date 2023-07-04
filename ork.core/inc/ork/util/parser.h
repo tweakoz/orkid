@@ -67,6 +67,7 @@ struct Matcher {
   matcher_fn_t _match_fn;
   matcher_notif_t _notif;
   std::string _name;
+  std::string _info;
   matcher_gen_t _impl;
   uint64_t hash(scannerlightview_constptr_t slv) const; // packrat hash
   void _hash(boost::Crc64& crc_out) const; // packrat hash
@@ -175,6 +176,7 @@ struct Parser {
   svar64_t _user;
   size_t _cache_misses = 0;
   size_t _cache_hits = 0;
+  bool _DEBUG = false;
 };
 
 //////////////////////////////////////////////////////////////

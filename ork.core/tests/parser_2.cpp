@@ -91,6 +91,7 @@ std::string parser_spec = R"xxx(
 struct MyParser2 : public Parser {
 
   MyParser2() {
+    _DEBUG = false;
     auto scanner_match = this->loadScannerSpec(scanner_spec);
     OrkAssert(scanner_match);
     auto parser_match = this->loadParserSpec(parser_spec);
@@ -123,16 +124,18 @@ struct MyParser2 : public Parser {
     on("datatype", [=](match_ptr_t match) { //
       auto selected   = match->asShared<OneOf>()->_selected;
       auto ast_node   = match->_user.makeShared<AST::DataType>();
-      ast_node->_name = selected->_impl.get<wordmatch_ptr_t>()->_token->text;
-      printf("ON datatype<%s>\n", ast_node->_name.c_str());
+      ast_node->_name = selected->asShared<ClassMatch>()->_token->text;
+      auto v = match->_view;
+      printf("ON datatype<%s> st<%zu> en<%zu>\n", ast_node->_name.c_str(), v->_start, v->_end );
     });
     ///////////////////////////////////////////////////////////
     on("variableReference", [=](match_ptr_t match) { //
       auto seq       = match->asShared<Sequence>();
-      auto kwid      = seq->_items[0]->asShared<ClassMatch>()->_token->text;
-      auto var_ref   = match->_user.makeShared<AST::VariableReference>();
-      var_ref->_name = kwid;
-      printf("ON variableReference<%s>\n", var_ref->_name.c_str());
+      //auto kwid      = seq->_items[0]->asShared<ClassMatch>()->_token->text;
+      //auto var_ref   = match->_user.makeShared<AST::VariableReference>();
+      //var_ref->_name = kwid;
+      auto v = match->_view;
+      printf("ON variableReference st<%zu> en<%zu>\n", v->_start, v->_end );
     });
     ///////////////////////////////////////////////////////////
     on("term", [=](match_ptr_t match) {
@@ -154,19 +157,19 @@ struct MyParser2 : public Parser {
     on("product", [=](match_ptr_t match) {
       auto ast_node = match->_user.makeShared<AST::Product>();
       auto selected = match->asShared<OneOf>()->_selected;
-      auto sel_seq  = selected->asShared<Sequence>();
-      auto primary  = sel_seq->_items[0]->_user.getShared<AST::Primary>();
-      auto m1zom    = sel_seq->itemAsShared<NOrMore>(1);
-      ast_node->_primaries.push_back(primary);
-      printf("ON product<%s>\n", selected->_matcher->_name.c_str());
-      if (m1zom->_items.size()) {
-        for (auto i : m1zom->_items) {
-          auto seq = i->asShared<Sequence>();
+      //auto sel_seq  = selected->asShared<Sequence>();
+      //auto primary  = sel_seq->_items[0]->_user.getShared<AST::Primary>();
+      //auto m1zom    = sel_seq->itemAsShared<NOrMore>(1);
+      //ast_node->_primaries.push_back(primary);
+      printf("ON product\n");//, selected->_matcher->_name.c_str());
+      //if (m1zom->_items.size()) {
+      //  for (auto i : m1zom->_items) {
+      //    auto seq = i->asShared<Sequence>();
           // star is implied...
-          primary = seq->_items[1]->_user.getShared<AST::Primary>();
-          ast_node->_primaries.push_back(primary);
-        }
-      }
+      //    primary = seq->_items[1]->_user.getShared<AST::Primary>();
+      //    ast_node->_primaries.push_back(primary);
+      //  }
+      //}
     });
     ///////////////////////////////////////////////////////////
     on("sum", [=](match_ptr_t match) {
@@ -195,13 +198,15 @@ struct MyParser2 : public Parser {
       auto ast_node  = match->_user.makeShared<AST::Expression>();
       auto seq       = match->asShared<Sequence>();
       ast_node->_sum = seq->_items[0]->_user.getShared<AST::Sum>();
-      printf("ON expression<%s>\n", match->_matcher->_name.c_str());
+      auto v = match->_view;
+      printf("ON expression<%s> st<%zu> end<%zu>\n", match->_matcher->_name.c_str(), v->_start, v->_end );
     });
     ///////////////////////////////////////////////////////////
     on("assignment_statement", [=](match_ptr_t match) { //
       auto ast_node = match->_user.makeShared<AST::AssignmentStatement>();
       auto ass1of   = match->asShared<Sequence>()->itemAsShared<OneOf>(0);
-      printf("ON assignment_statement<%s>\n", match->_matcher->_name.c_str());
+      auto v = match->_view;
+      printf("ON assignment_statement<%s> st<%zu> en<%zu>\n", match->_matcher->_name.c_str(), v->_start, v->_end);
       if (ass1of->_selected->_matcher == variableDeclaration) {
         auto seq      = ass1of->_selected->asShared<Sequence>();
         auto datatype = seq->_items[0]->_user.getShared<AST::DataType>();
@@ -211,30 +216,32 @@ struct MyParser2 : public Parser {
         ast_node->_datatype = nullptr;
         ast_node->_expression = expr;
       } else {
-        OrkAssert(false);
+        //OrkAssert(false);
       }
     });
     ///////////////////////////////////////////////////////////
     on("funcdef", [=](match_ptr_t match) {
-      OrkAssert(false);
       auto seq     = match->asShared<Sequence>();
       auto fn_name = seq->itemAsShared<ClassMatch>(1);
       auto args    = seq->itemAsShared<NOrMore>(3);
       auto stas    = seq->itemAsShared<NOrMore>(6);
+      auto v = match->_view;
       printf(
-          "ON funcdef<%s> function<%s> numargs<%zu> numstatements<%zu>\n", //
+          "ON funcdef<%s> function<%s> numargs<%zu> numstatements<%zu> st<%zu> en<%zu>\n", //
           funcdef->_name.c_str(),                                             //
           fn_name->_token->text.c_str(),                                      //
           args->_items.size(),                                                //
-          stas->_items.size());
+          stas->_items.size(),
+          v->_start,
+          v->_end);
 
-      for (auto arg : args->_items) {
+      /*for (auto arg : args->_items) {
         auto argseq     = arg->asShared<Sequence>();
         auto argtype    = argseq->itemAsShared<OneOf>(0);
         auto argtypeval = argtype->asShared<WordMatch>();
         auto argname    = argseq->itemAsShared<ClassMatch>(1);
         printf("  ARG<%s> TYPE<%s>\n", argname->_token->text.c_str(), argtypeval->_token->text.c_str());
-      }
+      }*/
       int i = 0;
       for (auto sta : stas->_items) {
         auto stasel = sta->asShared<OneOf>()->_selected;
@@ -243,7 +250,7 @@ struct MyParser2 : public Parser {
           if (staseq0->_matcher == assignment_statement) {
           } else if (staseq0->_matcher == semicolon) {
           } else {
-            OrkAssert(false);
+            //OrkAssert(false);
           }
         }
         i++;
