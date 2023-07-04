@@ -131,11 +131,11 @@ struct MyParser2 : public Parser {
     ///////////////////////////////////////////////////////////
     on("variableReference", [=](match_ptr_t match) { //
       auto seq       = match->asShared<Sequence>();
-      //auto kwid      = seq->_items[0]->asShared<ClassMatch>()->_token->text;
-      //auto var_ref   = match->_user.makeShared<AST::VariableReference>();
-      //var_ref->_name = kwid;
+      auto kwid      = match->asShared<ClassMatch>()->_token->text;
+      auto var_ref   = match->_user.makeShared<AST::VariableReference>();
+      var_ref->_name = kwid;
       auto v = match->_view;
-      printf("ON variableReference st<%zu> en<%zu>\n", v->_start, v->_end );
+      printf("ON variableReference var<%s> st<%zu> en<%zu>\n", kwid.c_str(), v->_start, v->_end );
     });
     ///////////////////////////////////////////////////////////
     on("term", [=](match_ptr_t match) {
@@ -156,20 +156,27 @@ struct MyParser2 : public Parser {
     ///////////////////////////////////////////////////////////
     on("product", [=](match_ptr_t match) {
       auto ast_node = match->_user.makeShared<AST::Product>();
-      auto selected = match->asShared<OneOf>()->_selected;
-      //auto sel_seq  = selected->asShared<Sequence>();
-      //auto primary  = sel_seq->_items[0]->_user.getShared<AST::Primary>();
-      //auto m1zom    = sel_seq->itemAsShared<NOrMore>(1);
-      //ast_node->_primaries.push_back(primary);
-      printf("ON product\n");//, selected->_matcher->_name.c_str());
-      //if (m1zom->_items.size()) {
-      //  for (auto i : m1zom->_items) {
-      //    auto seq = i->asShared<Sequence>();
-          // star is implied...
-      //    primary = seq->_items[1]->_user.getShared<AST::Primary>();
-      //    ast_node->_primaries.push_back(primary);
-      //  }
-      //}
+      auto seq = match->asShared<Sequence>();
+      auto primary1 = seq->_items[0];
+      auto primary1_ast = primary1->_user.getShared<AST::Primary>();
+      auto opt    = seq->itemAsShared<Optional>(1);
+      auto primary2 = opt->_subitem;
+
+
+      ast_node->_primaries.push_back(primary1_ast);
+
+      if(primary2){
+        auto primary2_ast = primary2->_user.getShared<AST::Primary>();
+        ast_node->_primaries.push_back(primary2_ast);
+        
+        printf("ON product pri1<%s> * pri2<%s>\n", //
+               primary1->_matcher->_name.c_str(),
+               primary2->_matcher->_name.c_str() );
+      }
+      else{
+        printf("ON product pri1<%s>\n", //
+               primary1->_matcher->_name.c_str() );
+      }
     });
     ///////////////////////////////////////////////////////////
     on("sum", [=](match_ptr_t match) {
@@ -235,23 +242,43 @@ struct MyParser2 : public Parser {
           v->_start,
           v->_end);
 
-      /*for (auto arg : args->_items) {
+      for (auto arg : args->_items) {
         auto argseq     = arg->asShared<Sequence>();
         auto argtype    = argseq->itemAsShared<OneOf>(0);
-        auto argtypeval = argtype->asShared<WordMatch>();
+        auto argtypeval = argtype->asShared<ClassMatch>();
         auto argname    = argseq->itemAsShared<ClassMatch>(1);
         printf("  ARG<%s> TYPE<%s>\n", argname->_token->text.c_str(), argtypeval->_token->text.c_str());
-      }*/
+      }
       int i = 0;
       for (auto sta : stas->_items) {
         auto stasel = sta->asShared<OneOf>()->_selected;
         if (auto as_seq = stasel->tryAsShared<Sequence>()) {
           auto staseq0 = as_seq.value()->_items[0];
-          if (staseq0->_matcher == assignment_statement) {
-          } else if (staseq0->_matcher == semicolon) {
-          } else {
-            //OrkAssert(false);
+          auto staseq0_matcher = staseq0->_matcher;
+          if(staseq0_matcher->_proxy_target){
+            staseq0_matcher = staseq0_matcher->_proxy_target;
           }
+
+            printf("staseq0 <%p> matcher<%p:%s>\n", //
+                   (void*) staseq0.get(),
+                   staseq0_matcher.get(),
+                   staseq0_matcher->_name.c_str() );
+          
+          if (staseq0_matcher == assignment_statement) {
+            printf( "GOT ASSIGNMENT STATEMENT\n");
+          } else {
+            auto statype = staseq0->_impl.typestr();
+            printf("unknown staseq0 subtype<%s>\n", statype.c_str() );
+            OrkAssert(false);
+          }
+        }
+        else if( auto as_semi = stasel->tryAsShared<Sequence>()){
+
+        }
+        else{
+          auto statype = stasel->_impl.typestr();
+          printf("unknown statement item type<%s>\n", statype.c_str() );
+          OrkAssert(false);
         }
         i++;
       }

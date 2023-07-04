@@ -25,7 +25,7 @@ using matcher_ptr_t               = std::shared_ptr<Matcher>;
 using matcher_fn_t                = std::function<match_ptr_t(matcher_ptr_t par_matcher,scannerlightview_constptr_t& inp_view)>;
 using matcher_notif_t             = std::function<void(match_ptr_t)>;
 using parser_ptr_t                = std::shared_ptr<Parser>;
-using matcher_gen_t = std::function<matcher_ptr_t()>;
+//using matcher_gen_t = std::function<matcher_ptr_t()>;
 using sequence_ptr_t              = std::shared_ptr<Sequence>;
 using group_ptr_t                 = std::shared_ptr<Group>;
 using n_or_more_ptr_t             = std::shared_ptr<NOrMore>;
@@ -68,7 +68,7 @@ struct Matcher {
   matcher_notif_t _notif;
   std::string _name;
   std::string _info;
-  matcher_gen_t _impl;
+  matcher_ptr_t _proxy_target;
   uint64_t hash(scannerlightview_constptr_t slv) const; // packrat hash
   void _hash(boost::Crc64& crc_out) const; // packrat hash
 };

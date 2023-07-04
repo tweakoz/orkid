@@ -118,6 +118,7 @@ matcher_ptr_t ExprKWID::createMatcher(std::string named) { // final
       OrkAssert(submatcher);
 
       if(submatcher->_notif){
+        matcher_proxy->_proxy_target = submatcher;
         logchan_rulespec2->log("HAS-notif" );
         submatcher->_notif(match);
       }
