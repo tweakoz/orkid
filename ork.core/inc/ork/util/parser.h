@@ -51,14 +51,17 @@ struct Match {
   template <typename impl_t> attempt_cast<impl_t> tryAs(){
     return _impl.tryAs<impl_t>();
   }
-  //template <typename impl_t> attempt_cast_const<std::shared_ptr<impl_t>> tryAsShared() const {
-    //return _impl.tryAsShared<impl_t>();
-  //}
   template <typename impl_t> attempt_cast_const<impl_t> tryAs() const {
     return _impl.tryAs<impl_t>();
   }
   template <typename impl_t> bool isShared() const{
     return _impl.isShared<impl_t>();
+  }
+  template <typename user_t> std::shared_ptr<user_t> userAsShared(){
+    return _user.getShared<user_t>();
+  }
+  template <typename user_t> std::shared_ptr<user_t> userMakeShared(){
+    return _user.makeShared<user_t>();
   }
 };
 

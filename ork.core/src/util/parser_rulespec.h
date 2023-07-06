@@ -177,18 +177,22 @@ struct RuleSpecImpl { // {: public Parser {
   matcher_ptr_t _rsi_scanner_matcher;
   matcher_ptr_t _rsi_parser_matcher;
 
-  std::unordered_map<std::string, matcher_ptr_t> _user_matchers_by_name;
+  using scanner_rule_pair_t = std::pair<std::string, AST::scanner_rule_ptr_t>;
+  using matcher_pair_t = std::pair<std::string, matcher_ptr_t>;
 
-  std::unordered_map<std::string, matcher_ptr_t> _user_scanner_matchers_by_name;
-  std::unordered_map<std::string, matcher_ptr_t> _user_parser_matchers_by_name;
+  std::map<std::string, matcher_ptr_t> _user_matchers_by_name;
 
-  std::unordered_set<AST::astnode_ptr_t> _retain_astnodes;
+  std::vector<matcher_pair_t> _user_scanner_matchers_by_name;
+  std::map<std::string, matcher_ptr_t> _user_parser_matchers_by_name;
 
-  std::unordered_map<std::string, AST::rule_ptr_t> _user_parser_rules;
+  std::set<AST::astnode_ptr_t> _retain_astnodes;
 
-  std::unordered_map<std::string, AST::scanner_rule_ptr_t> _user_scanner_rules;
-  std::unordered_map<std::string, AST::scanner_macro_ptr_t> _user_scanner_macros;
-  std::unordered_map<std::string, matcher_notif_t> _user_deferred_notifs;
+  std::map<std::string, AST::rule_ptr_t> _user_parser_rules;
+
+
+  std::vector<scanner_rule_pair_t> _user_scanner_rules;
+  std::map<std::string, AST::scanner_macro_ptr_t> _user_scanner_macros;
+  std::map<std::string, matcher_notif_t> _user_deferred_notifs;
 
   std::vector<void_lambda_t> _link_ops;
 };

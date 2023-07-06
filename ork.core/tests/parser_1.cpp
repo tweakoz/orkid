@@ -58,12 +58,12 @@ struct MyParser : public Parser {
     auto dt_int   = matcherForWord("int");
     ///////////////////////////////////////////////////////////
     floattok->_notif = [=](match_ptr_t match) { //
-        auto ast_node = match->_user.makeShared<AST::FloatLiteral>();
+        auto ast_node = match->_user.makeShared<MYAST::FloatLiteral>();
         auto impl = match->_impl.get<classmatch_ptr_t>();
         ast_node->_value = std::stof(impl->_token->text);
     };
     inttok->_notif   = [=](match_ptr_t match) { //
-        auto ast_node = match->_user.makeShared<AST::IntegerLiteral>(); 
+        auto ast_node = match->_user.makeShared<MYAST::IntegerLiteral>(); 
         auto impl = match->_impl.get<classmatch_ptr_t>();
         ast_node->_value = std::stoi(impl->_token->text);
     };
@@ -75,7 +75,7 @@ struct MyParser : public Parser {
     //
     datatype->_notif = [=](match_ptr_t match) { //
         auto selected = match->_impl.getShared<OneOf>()->_selected;
-        auto ast_node = match->_user.makeShared<AST::DataType>();
+        auto ast_node = match->_user.makeShared<MYAST::DataType>();
         ast_node->_name = selected->_impl.get<wordmatch_ptr_t>()->_token->text;
     };
     ///////////////////////////////////////////////////////////
@@ -99,7 +99,7 @@ struct MyParser : public Parser {
     variableReference->_notif = [=](match_ptr_t match) { //
         auto seq = match->_impl.get<sequence_ptr_t>();
         auto kwid = seq->_items[0]->_impl.getShared<ClassMatch>()->_token->text;
-        auto var_ref = match->_user.makeShared<AST::VariableReference>(); 
+        auto var_ref = match->_user.makeShared<MYAST::VariableReference>(); 
         var_ref->_name = kwid;
     };
     ///////////////////////////////////////////////////////////
@@ -107,10 +107,10 @@ struct MyParser : public Parser {
     ///////////////////////////////////////////////////////////
     auto term    = sequence({lparen, expression, rparen}, "term");
     term->_notif = [=](match_ptr_t match) {
-      auto ast_node = match->_user.makeShared<AST::Term>();
+      auto ast_node = match->_user.makeShared<MYAST::Term>();
       auto selected = match->_impl.get<sequence_ptr_t>()->_items[1];
       if (selected->_matcher == expression) {
-        ast_node->_subexpression = selected->_user.getShared<AST::Expression>();
+        ast_node->_subexpression = selected->_user.getShared<MYAST::Expression>();
       }
     };
     ///////////////////////////////////////////////////////////
@@ -125,7 +125,7 @@ struct MyParser : public Parser {
         });
     //
     primary->_notif = [=](match_ptr_t match) {
-      auto ast_node = match->_user.makeShared<AST::Primary>();
+      auto ast_node = match->_user.makeShared<MYAST::Primary>();
       auto selected = match->_impl.get<oneof_ptr_t>()->_selected;
       ast_node->_impl = selected->_user;
     };
@@ -140,17 +140,17 @@ struct MyParser : public Parser {
         });
     //
     product->_notif = [=](match_ptr_t match) {
-      auto ast_node = match->_user.makeShared<AST::Product>();
+      auto ast_node = match->_user.makeShared<MYAST::Product>();
       auto selected = match->_impl.get<oneof_ptr_t>()->_selected;
       auto sel_seq  = selected->_impl.get<sequence_ptr_t>();
-      auto primary  = sel_seq->_items[0]->_user.getShared<AST::Primary>();
+      auto primary  = sel_seq->_items[0]->_user.getShared<MYAST::Primary>();
       auto m1zom  = sel_seq->_items[1]->_impl.get<n_or_more_ptr_t>();
       ast_node->_primaries.push_back(primary);
       if(m1zom->_items.size()){
         for( auto i : m1zom->_items ){
             auto seq = i->_impl.get<sequence_ptr_t>();
             // star is implied...
-            primary = seq->_items[1]->_user.getShared<AST::Primary>();
+            primary = seq->_items[1]->_user.getShared<MYAST::Primary>();
             ast_node->_primaries.push_back(primary);
         }
       }
@@ -164,22 +164,22 @@ struct MyParser : public Parser {
          product});
     //
     sum->_notif = [=](match_ptr_t match) {
-      auto ast_node = match->_user.makeShared<AST::Sum>();
+      auto ast_node = match->_user.makeShared<MYAST::Sum>();
       auto selected = match->_impl.get<oneof_ptr_t>()->_selected;
       if( selected->_matcher == product ){
-        ast_node->_left = selected->_user.getShared<AST::Product>();
+        ast_node->_left = selected->_user.getShared<MYAST::Product>();
         ast_node->_op = '_';
       }
       else if( selected->_matcher->_name == "add1" ){
         auto seq = selected->_impl.get<sequence_ptr_t>();
-        ast_node->_left = seq->_items[0]->_user.getShared<AST::Product>();
-        ast_node->_right =  seq->_items[2]->_user.getShared<AST::Product>();
+        ast_node->_left = seq->_items[0]->_user.getShared<MYAST::Product>();
+        ast_node->_right =  seq->_items[2]->_user.getShared<MYAST::Product>();
         ast_node->_op = '+';
       }
       else if( selected->_matcher->_name == "add2" ){
         auto seq = selected->_impl.get<sequence_ptr_t>();
-        ast_node->_left = seq->_items[0]->_user.getShared<AST::Product>();
-        ast_node->_right =  seq->_items[2]->_user.getShared<AST::Product>();
+        ast_node->_left = seq->_items[0]->_user.getShared<MYAST::Product>();
+        ast_node->_right =  seq->_items[2]->_user.getShared<MYAST::Product>();
         ast_node->_op = '-';
       }
       else{
@@ -189,9 +189,9 @@ struct MyParser : public Parser {
     ///////////////////////////////////////////////////////////
     sequence(expression, {sum});
     expression->_notif = [=](match_ptr_t match) { //
-      auto ast_node = match->_user.makeShared<AST::Expression>();
+      auto ast_node = match->_user.makeShared<MYAST::Expression>();
       auto seq = match->_impl.get<sequence_ptr_t>();
-      ast_node->_sum = seq->_items[0]->_user.getShared<AST::Sum>();
+      ast_node->_sum = seq->_items[0]->_user.getShared<MYAST::Sum>();
     };
     ///////////////////////////////////////////////////////////
     auto assignment_statement = sequence(
@@ -202,20 +202,20 @@ struct MyParser : public Parser {
          expression});
     //
     assignment_statement->_notif = [=](match_ptr_t match) { //
-        auto ast_node = match->_user.makeShared<AST::AssignmentStatement>();
+        auto ast_node = match->_user.makeShared<MYAST::AssignmentStatement>();
         auto ass1of = match->_impl.get<sequence_ptr_t>()->_items[0]->_impl.get<oneof_ptr_t>();
         if( ass1of->_selected->_matcher == variableDeclaration ){
             auto seq = ass1of->_selected->_impl.get<sequence_ptr_t>();
-            auto datatype = seq->_items[0]->_user.getShared<AST::DataType>();
-            //auto kwid = seq->_items[1]->_user.getShared<AST::KwOrId>();
-            auto expr = match->_impl.get<sequence_ptr_t>()->_items[2]->_user.getShared<AST::Expression>();
+            auto datatype = seq->_items[0]->_user.getShared<MYAST::DataType>();
+            //auto kwid = seq->_items[1]->_user.getShared<MYAST::KwOrId>();
+            auto expr = match->_impl.get<sequence_ptr_t>()->_items[2]->_user.getShared<MYAST::Expression>();
             //ast_node->_datatype = datatype;
             //ast_node->_name = kwid;
             //ast_node->_expression = expr;
         }
         else if( ass1of->_selected->_matcher == variableReference ){
-            //auto kwid = ass1of->_selected->_impl.get<sequence_ptr_t>()->_items[0]->_user.getShared<AST::KwOrId>();
-            auto expr = match->_impl.get<sequence_ptr_t>()->_items[2]->_user.getShared<AST::Expression>();
+            //auto kwid = ass1of->_selected->_impl.get<sequence_ptr_t>()->_items[0]->_user.getShared<MYAST::KwOrId>();
+            auto expr = match->_impl.get<sequence_ptr_t>()->_items[2]->_user.getShared<MYAST::Expression>();
             ast_node->_datatype = nullptr;
             //ast_node->_name = kwid;
             ast_node->_expression = expr;

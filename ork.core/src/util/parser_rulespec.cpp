@@ -105,7 +105,11 @@ matcher_ptr_t ExprKWID::createMatcher(std::string named) { // final
     auto submatcher = it->second;
     OrkAssert(submatcher->_match_fn != nullptr);
     auto match = submatcher->_match_fn(par_matcher, inp_view);
-    logchan_rulespec2->log("EKWIDPXY(%s) _kwid<%s> subm<%p:%s> match<%p>", named.c_str(), _kwid.c_str(), (void*) submatcher.get(), submatcher->_name.c_str(), (void*) match.get() );
+    auto tok0 = inp_view->token(0)->text;
+    logchan_rulespec2->log("EKWIDPXY(%s) _kwid<%s> subm<%p:%s> tok0<%s> match<%p>", //
+                           named.c_str(), _kwid.c_str(), //
+                           (void*) submatcher.get(), submatcher->_name.c_str(), //
+                           tok0.c_str(), (void*) match.get() );
     return match;
   };
   auto matcher_proxy  = std::make_shared<Matcher>(match_fn);
@@ -545,11 +549,14 @@ void RuleSpecImpl::loadGrammar() { //
       auto rule      = std::make_shared<AST::ScannerRule>();
       rule->_name    = rule_name;
       rule->_regex   = rx;
-      auto it        = this->_user_scanner_rules.find(rule_name);
-      OrkAssert(it == this->_user_scanner_rules.end());
-      this->_user_scanner_rules[rule_name] = rule;
-      //auto matcher = this->_user_parser->matcherForWord(match_str,rule_name);
-      //logchan_rulespec2->log("IMPLEMENT SCANNER->PARSER RULE literal<%s> matcher<%p:%s>", match_str.c_str(), (void*) matcher.get(), matcher->_name.c_str());
+      //auto it        = this->_user_scanner_rules.find(rule_name);
+      //OrkAssert(it == this->_user_scanner_rules.end());
+      auto item = std::pair(rule_name, rule);
+      this->_user_scanner_rules.push_back(item);
+      logchan_rulespec2->log("RECORD SCANNER->PARSER RULE<%s> literal<%s>", //
+                             rule_name.c_str(), //
+                             match_str.c_str());
+
     } else if (auto as_seq = rule_key_item->tryAsShared<Sequence>()) {
       auto sub_seq   = as_seq.value();
       auto macro_str = sub_seq->_items[0]->asShared<WordMatch>()->_token->text;
@@ -726,9 +733,10 @@ match_ptr_t RuleSpecImpl::parseParserSpec(std::string inp_string) {
     auto matcher    = _user_parser->matcherForTokenClass(crc_id, tcname);
     auto it         = _user_matchers_by_name.find(tcname);
     OrkAssert(it == _user_matchers_by_name.end());
-    logchan_rulespec->log( "IMPLEMENT matcherForScannerTokClass RULE<%s> matcher<%p:%s>", rule->_name.c_str(), (void*) matcher.get(), matcher->_name.c_str() );
+    logchan_rulespec2->log( "IMPLEMENT matcherForScannerTokClass RULE<%s> matcher<%p:%s>", rule->_name.c_str(), (void*) matcher.get(), matcher->_name.c_str() );
     _user_matchers_by_name[tcname]         = matcher;
-    _user_scanner_matchers_by_name[tcname] = matcher;
+    auto out_item = std::pair(tcname, matcher);
+    _user_scanner_matchers_by_name.push_back(out_item);
   }
   /////////////////////////////////////////////////
   // prepare parser-DSL scanner and scan parser-DSL

@@ -34,7 +34,7 @@ enum class TokenClass : uint64_t {
 // AST
 ///////////////////////////////////////////////////////////////////////////////
 
-namespace AST {
+namespace MYAST {
 
 struct VariableReference;
 struct Expression;
