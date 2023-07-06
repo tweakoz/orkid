@@ -1,6 +1,7 @@
 #pragma once
 
 #include <ork/util/parser.h>
+#include <ork/file/path.h>
 #include <utpp/UnitTest++.h>
 #include <ork/util/crc.h>
 #include <string.h>
@@ -36,19 +37,25 @@ enum class TokenClass : uint64_t {
 
 namespace MYAST {
 
+struct AstNode;
 struct VariableReference;
 struct Expression;
 struct Primary;
 struct Product;
 struct Sum;
 struct DataType;
+struct ArgumentDeclaration;
+struct AssignmentStatement;
 
+using astnode_ptr_t = std::shared_ptr<AstNode>;
 using expression_ptr_t = std::shared_ptr<Expression>;
 using varref_ptr_t = std::shared_ptr<VariableReference>;
 using primary_ptr_t = std::shared_ptr<Primary>;
 using product_ptr_t = std::shared_ptr<Product>;
 using sum_ptr_t = std::shared_ptr<Sum>;
 using datatype_ptr_t = std::shared_ptr<DataType>;
+using argument_decl_ptr_t = std::shared_ptr<ArgumentDeclaration>;
+using assignment_stmt_ptr_t = std::shared_ptr<AssignmentStatement>;
 
 ///////////////////// 
 
@@ -71,6 +78,8 @@ struct AssignmentStatement : public Statement {
     std::string _name;
     datatype_ptr_t _datatype;
     expression_ptr_t _expression;
+};
+struct EmptyStatement : public Statement{
 };
 //
 struct Expression : public AstNode { //
@@ -106,5 +115,23 @@ struct IntegerLiteral : public NumericLiteral { //
 struct Term : public AstNode { //
     expression_ptr_t _subexpression;
 };
+//
+struct ArgumentDeclaration : public AstNode{
+    std::string _variable_name;
+    datatype_ptr_t _datatype;
+};
+//
+struct FunctionDef : public AstNode { //
+  std::string _name;
+  datatype_ptr_t _returntype;
+  std::vector<argument_decl_ptr_t> _arguments;
+  std::vector<assignment_stmt_ptr_t> _statements;
+
+  void createDotFile(file::Path outpath) const;
+};
+
+inline void FunctionDef::createDotFile(file::Path outpath) const {
+
+}
 
 } // namespace AST

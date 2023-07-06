@@ -123,7 +123,7 @@ struct MyParser2 : public Parser {
     ///////////////////////////////////////////////////////////
     on("datatype", [=](match_ptr_t match) { //
       auto selected   = match->asShared<OneOf>()->_selected;
-      auto ast_node   = match->_user.makeShared<MYAST::DataType>();
+      auto ast_node   = match->userMakeShared<MYAST::DataType>();
       ast_node->_name = selected->asShared<ClassMatch>()->_token->text;
       auto v = match->_view;
       printf("ON datatype<%s> st<%zu> en<%zu>\n", ast_node->_name.c_str(), v->_start, v->_end );
@@ -238,12 +238,24 @@ struct MyParser2 : public Parser {
       }
     });
     ///////////////////////////////////////////////////////////
+    on("argument_decl", [=](match_ptr_t match) {
+      auto ast_node   = match->_user.makeShared<MYAST::ArgumentDeclaration>();
+      auto seq   = match->asShared<Sequence>();
+      ast_node->_variable_name = seq->_items[1]->asShared<ClassMatch>()->_token->text;
+      ast_node->_datatype = seq->_items[0]->userAsShared<MYAST::DataType>();
+      printf("ON argdecl name<%s> dt<%s>\n", ast_node->_variable_name.c_str(), ast_node->_datatype->_name.c_str() );
+    });
+    ///////////////////////////////////////////////////////////
     on("funcdef", [=](match_ptr_t match) {
       auto seq     = match->asShared<Sequence>();
+      auto funcdef = match->userMakeShared<MYAST::FunctionDef>();
       auto fn_name = seq->itemAsShared<ClassMatch>(1);
       auto args    = seq->itemAsShared<NOrMore>(3);
       auto stas    = seq->itemAsShared<NOrMore>(6);
       auto v = match->_view;
+
+      funcdef->_name = fn_name->_token->text;
+
       printf(
           "ON funcdef<%s> function<%s> numargs<%zu> numstatements<%zu> st<%zu> en<%zu>\n", //
           funcdef->_name.c_str(),                                             //
@@ -255,10 +267,11 @@ struct MyParser2 : public Parser {
 
       for (auto arg : args->_items) {
         auto argseq     = arg->asShared<Sequence>();
-        auto argtype    = argseq->itemAsShared<OneOf>(0);
-        auto argtypeval = argtype->asShared<ClassMatch>();
-        auto argname    = argseq->itemAsShared<ClassMatch>(1);
-        printf("  ARG<%s> TYPE<%s>\n", argname->_token->text.c_str(), argtypeval->_token->text.c_str());
+        auto arg_decl = arg->userAsShared<MYAST::ArgumentDeclaration>();
+        funcdef->_arguments.push_back(arg_decl);
+        auto argtype    = arg_decl->_datatype->_name;
+        auto argname    = arg_decl->_variable_name;
+        printf("  ARG<%s> TYPE<%s>\n", argname.c_str(), argtype.c_str());
       }
       int i = 0;
       for (auto sta : stas->_items) {
@@ -297,6 +310,11 @@ struct MyParser2 : public Parser {
     ///////////////////////////////////////////////////////////
     on("funcdefs", [=](match_ptr_t match) {
       printf( "ON funcdefs\n");
+      auto fndefs_inp    = match->asShared<NOrMore>();
+      for( auto item : fndefs_inp->_items ){
+        auto funcdef = item->userAsShared<MYAST::FunctionDef>();
+        printf( "GOT FUNCDEF<%s>\n", funcdef->_name.c_str() );
+      }
     });
     ///////////////////////////////////////////////////////////
   }
