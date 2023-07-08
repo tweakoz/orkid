@@ -130,13 +130,13 @@ struct MyParser2 : public Parser {
       printf("ON datatype<%s> st<%zu> en<%zu>\n", ast_node->_name.c_str(), v->_start, v->_end );
     });
     ///////////////////////////////////////////////////////////
-    /*on("variableReference", [=](match_ptr_t match) { //
+    on("variableReference", [=](match_ptr_t match) { //
       auto kwid      = match->asShared<ClassMatch>()->_token->text;
       auto var_ref   = match->_user.makeShared<MYAST::VariableReference>();
       var_ref->_name = kwid;
       auto v = match->_view;
       printf("ON variableReference var<%s> st<%zu> en<%zu>\n", kwid.c_str(), v->_start, v->_end );
-    });*/
+    });
     ///////////////////////////////////////////////////////////
     on("term", [=](match_ptr_t match) {
       auto ast_node = match->_user.makeShared<MYAST::Term>();
@@ -242,13 +242,12 @@ struct MyParser2 : public Parser {
     on("argument_decl", [=](match_ptr_t match) {
       auto ast_node   = match->_user.makeShared<MYAST::ArgumentDeclaration>();
       auto seq   = match->asShared<Sequence>();
+      printf("adecl impltype<%s>\n", match->_impl.typestr().c_str() );
       ast_node->_variable_name = seq->_items[1]->asShared<ClassMatch>()->_token->text;
       auto seq0 = seq->_items[0]->asShared<OneOf>()->_selected;
       auto tok = seq0->asShared<ClassMatch>()->_token;
-     // printf("varname<%s> seq0 type<%s tok<%s>\n", ast_node->_variable_name.c_str(), seq0->_impl.typestr().c_str(),tok->text.c_str() );
       ast_node->_datatype = std::make_shared<MYAST::DataType>();
       ast_node->_datatype->_name = tok->text;
-      //printf("ON argdecl name<%s> dt<%s>\n", ast_node->_variable_name.c_str(), ast_node->_datatype->_name.c_str() );
     });
     ///////////////////////////////////////////////////////////
     on("funcdef", [=](match_ptr_t match) {

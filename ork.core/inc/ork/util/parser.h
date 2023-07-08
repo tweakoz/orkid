@@ -35,12 +35,15 @@ using optional_ptr_t              = std::shared_ptr<Optional>;
 using wordmatch_ptr_t             = std::shared_ptr<WordMatch>;
 using classmatch_ptr_t            = std::shared_ptr<ClassMatch>;
 
+using matcher_filterfn_t          = std::function<bool(match_ptr_t top_match)>;
+
 //////////////////////////////////////////////////////////////
 
 struct Match {
   matcher_ptr_t _matcher;
   scannerlightview_ptr_t _view;
   svar32_t _impl;
+  svar32_t _impl2;
   svar32_t _user;
   void dump(int indent) const;
   template <typename impl_t> std::shared_ptr<impl_t> asShared(){
@@ -69,11 +72,16 @@ struct Match {
 struct Matcher {
   Matcher(matcher_fn_t match_fn);
   matcher_fn_t _match_fn;
+  matcher_filterfn_t _match_filter;
   matcher_notif_t _notif;
   std::string _name;
   std::string _info;
   matcher_ptr_t _proxy_target;
   void_lambda_t _on_link;
+  svar32_t _user;
+  Matcher* resolve(){
+    return _proxy_target ? _proxy_target.get() : this;
+  }
   uint64_t hash(scannerlightview_constptr_t slv) const; // packrat hash
   void _hash(boost::Crc64& crc_out) const; // packrat hash
 };

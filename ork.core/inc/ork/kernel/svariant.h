@@ -436,7 +436,7 @@ public:
   //////////////////////////////////////////////////////////////
   // return the type T object by const reference, assert if the types dont match
   //////////////////////////////////////////////////////////////
-  template <typename T> void setShared(std::shared_ptr<T> ptr) const {
+  template <typename T> void setShared(std::shared_ptr<T> ptr) {
     typedef std::shared_ptr<T> sharedptr_t;
     static_assert(sizeof(std::shared_ptr<T>) <= ksize, "static_variant size violation");
     _destroy();
@@ -446,7 +446,6 @@ public:
     _mtinfo = &typeid(sharedptr_t);
     assignDescriptor<sharedptr_t>();
     assert(typeid(sharedptr_t) == *_mtinfo);
-    return (*pval);
   }
   //////////////////////////////////////////////////////////////
   // construct a T and return by reference

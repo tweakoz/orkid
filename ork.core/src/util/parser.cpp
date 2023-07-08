@@ -92,6 +92,23 @@ Matcher::Matcher(matcher_fn_t match_fn)
 
 //////////////////////////////////////////////////////////////////////
 
+match_ptr_t filtered_match(matcher_ptr_t matcher, match_ptr_t the_match){
+  if( the_match ){
+    auto filter = matcher->_match_filter;
+    if(filter){
+      bool good = filter(the_match);
+      if( not good ){
+        the_match = nullptr;
+      }
+    }
+  }
+  return the_match;
+}
+
+
+
+//////////////////////////////////////////////////////////////////////
+
 matcher_ptr_t Parser::optional(matcher_ptr_t sub_matcher, std::string name) {
   if (name == "") {
     name = FormatString("optional-%d", g_matcher_id++);
@@ -123,7 +140,7 @@ matcher_ptr_t Parser::optional(matcher_ptr_t sub_matcher, std::string name) {
     ////////////////////////////////////////////////////
     the_match->_view = std::make_shared<ScannerLightView>(*slv);
     the_match->_view->clear();
-    return the_match;
+    return filtered_match(par_matcher,the_match);
   };
   matcher->_on_link = [=]() {
     if (matcher->_notif == nullptr) {
@@ -236,7 +253,7 @@ void Parser::_sequence(matcher_ptr_t matcher, std::vector<matcher_ptr_t> sub_mat
       if (0)
         log_match("SEQ<%s> end NO_MATCH", matcher->_name.c_str());
     }
-    return the_match;
+    return filtered_match(par_matcher,the_match);
   };
   matcher->_on_link = [=]() {
     if (matcher->_notif == nullptr) {
@@ -292,7 +309,7 @@ matcher_ptr_t Parser::group(std::vector<matcher_ptr_t> matchers, std::string nam
     slv_out->_end   = the_group->_items.back()->_view->_end;
     slv_out->validate();
     the_match->_view = slv_out;
-    return the_match;
+    return filtered_match(par_matcher,the_match);
   };
   matcher->_on_link = [=]() {};
   return matcher;
@@ -318,7 +335,7 @@ matcher_ptr_t Parser::oneOf(std::vector<matcher_ptr_t> matchers, std::string nam
         the_match->_view    = sub_match->_view;
         auto the_oo         = the_match->_impl.makeShared<OneOf>();
         the_oo->_selected   = sub_match;
-        return the_match;
+        return filtered_match(par_matcher,the_match);
       }
     }
     auto match_str = deco::string("NO-MATCH", 255, 0, 0);
@@ -403,14 +420,14 @@ matcher_ptr_t Parser::nOrMore(matcher_ptr_t sub_matcher, size_t minMatches, std:
             slv_out->_end,
             input_slv->_end);
       }
-      return the_match;
+      return filtered_match(par_matcher,the_match);
     } else if (minMatches == 0) {
       auto slv_out = std::make_shared<ScannerLightView>(*input_slv);
       slv_out->clear();
       the_match->_view  = slv_out;
       auto no_match_str = deco::string("NO-MATCH", 255, 0, 0);
       log_match("NOM%zu<%s>: %s count<0>", minMatches, name.c_str(), no_match_str.c_str());
-      return the_match;
+      return filtered_match(par_matcher,the_match);
     }
     OrkAssert(false); // should never get here?
     // log_match( "NOM%zu<%s>: end_match (NOMATCH)", minMatches, name.c_str() );
@@ -456,7 +473,7 @@ matcher_ptr_t Parser::matcherForTokenClassID(uint64_t tokclass, std::string name
       slv_out->_end             = slv_out->_start;
       the_match->_view          = slv_out;
       slv_out->validate();
-      return the_match;
+      return filtered_match(par_matcher,the_match);
     }
     return nullptr;
   };
@@ -490,7 +507,7 @@ matcher_ptr_t Parser::matcherForWord(std::string word, std::string name) {
       the_match->_matcher   = par_matcher;
       the_match->_view      = slv;
       slv->validate();
-      return the_match;
+      return filtered_match(par_matcher,the_match);
     } else {
       return nullptr;
     }
