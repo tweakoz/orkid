@@ -5,13 +5,13 @@
 // see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ////////////////////////////////////////////////////////////////
 
-#include "parser_rulespec.h"
+#include "parser_pegimpl.h"
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 namespace ork {
 /////////////////////////////////////////////////////////////////////////////////////////////////
-static logchannel_ptr_t logchan_rulespec = logger()->createChannel("RULESPEC1", fvec3(0.5, 0.8, 0.5), true);
-static logchannel_ptr_t logchan_rulespec2 = logger()->createChannel("RULESPEC2", fvec3(0.5, 0.8, 0.5), true);
+static logchannel_ptr_t logchan_rulespec = logger()->createChannel("PEGSPEC1", fvec3(0.5, 0.8, 0.5), true);
+static logchannel_ptr_t logchan_rulespec2 = logger()->createChannel("PEGSPEC2", fvec3(0.5, 0.8, 0.5), true);
 
 matcher_ptr_t Parser::rule(const std::string& rule_name) {
   auto it = _matchers_by_name.find(rule_name);
@@ -38,7 +38,7 @@ void Parser::on(const std::string& rule_name, matcher_notif_t fn) {
 /////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////
-
+namespace peg {
 namespace AST {
 
 struct ScannerRule {
@@ -94,11 +94,11 @@ void ExprKWID::dump(dumpctx_ptr_t dctx) { // final
 }
 matcher_ptr_t ExprKWID::createMatcher(std::string named) { // final
   auto matcher = _user_parser->declare(_kwid);
-  auto rulespecimpl = _user_parser->_user.get<RuleSpecImpl*>();
+  auto pegimpl = _user_parser->_user.get<PegImpl*>();
   matcher->_on_link = [=](){
 
-    auto it = rulespecimpl->_user_matchers_by_name.find(_kwid);
-    if (it == rulespecimpl->_user_matchers_by_name.end()) {
+    auto it = pegimpl->_user_matchers_by_name.find(_kwid);
+    if (it == pegimpl->_user_matchers_by_name.end()) {
       logchan_rulespec2->log("EKWIDPXY(%s) _kwid<%s> NO SUBMATCHER", named.c_str(), _kwid.c_str());
       OrkAssert(false);
     }
@@ -248,16 +248,16 @@ matcher_ptr_t ParserRule::createMatcher(std::string named) { // final
 
 static constexpr const char* block_regex = "(function|yo|xxx)";
 
-RuleSpecImpl::RuleSpecImpl() {
-  _dsl_parser = std::make_shared<Parser>();
-  _dsl_parser->_name = "gramr";
+PegImpl::PegImpl() {
+  _peg_parser = std::make_shared<Parser>();
+  _peg_parser->_name = "gramr";
   loadScannerRules();
   loadGrammar();
 }
 /////////////////////////////////////////////////////////
-void RuleSpecImpl::loadScannerRules() { //
+void PegImpl::loadScannerRules() { //
   try {
-    auto dsl_scanner = _dsl_parser->_scanner;
+    auto dsl_scanner = _peg_parser->_scanner;
     dsl_scanner->addEnumClass("\\s+", TokenClass::WHITESPACE);
     dsl_scanner->addEnumClass("[\\n\\r]+", TokenClass::NEWLINE);
     dsl_scanner->addEnumClass("[a-zA-Z_][a-zA-Z0-9_]*", TokenClass::KW_OR_ID);
@@ -292,7 +292,7 @@ void RuleSpecImpl::loadScannerRules() { //
 }
 size_t indent = 0;
 /////////////////////////////////////////////////////////
-AST::oneormore_ptr_t RuleSpecImpl::_onOOM(match_ptr_t match) {
+AST::oneormore_ptr_t PegImpl::_onOOM(match_ptr_t match) {
   auto indentstr = std::string(indent * 2, ' ');
   // our output AST node
   auto oom_out = std::make_shared<AST::OneOrMore>(_user_parser);
@@ -307,7 +307,7 @@ AST::oneormore_ptr_t RuleSpecImpl::_onOOM(match_ptr_t match) {
   return oom_out;
 }
 /////////////////////////////////////////////////////////
-AST::zeroormore_ptr_t RuleSpecImpl::_onZOM(match_ptr_t match) {
+AST::zeroormore_ptr_t PegImpl::_onZOM(match_ptr_t match) {
   auto indentstr = std::string(indent * 2, ' ');
   // our output AST node
   auto zom_out = std::make_shared<AST::ZeroOrMore>(_user_parser);
@@ -324,7 +324,7 @@ AST::zeroormore_ptr_t RuleSpecImpl::_onZOM(match_ptr_t match) {
   return zom_out;
 }
 /////////////////////////////////////////////////////////
-AST::select_ptr_t RuleSpecImpl::_onSEL(match_ptr_t match) {
+AST::select_ptr_t PegImpl::_onSEL(match_ptr_t match) {
   auto indentstr = std::string(indent * 2, ' ');
   // our output AST node
   auto sel_out = std::make_shared<AST::Select>(_user_parser);
@@ -342,7 +342,7 @@ AST::select_ptr_t RuleSpecImpl::_onSEL(match_ptr_t match) {
   return sel_out;
 }
 /////////////////////////////////////////////////////////
-AST::optional_ptr_t RuleSpecImpl::_onOPT(match_ptr_t match) {
+AST::optional_ptr_t PegImpl::_onOPT(match_ptr_t match) {
   auto indentstr = std::string(indent * 2, ' ');
   // our output AST node
   auto opt_out = std::make_shared<AST::Optional>(_user_parser);
@@ -356,7 +356,7 @@ AST::optional_ptr_t RuleSpecImpl::_onOPT(match_ptr_t match) {
   return opt_out;
 }
 /////////////////////////////////////////////////////////
-AST::sequence_ptr_t RuleSpecImpl::_onSEQ(match_ptr_t match) {
+AST::sequence_ptr_t PegImpl::_onSEQ(match_ptr_t match) {
   auto seq_out = std::make_shared<AST::Sequence>(_user_parser);
   auto nom     = match->asShared<NOrMore>();
   OrkAssert(nom->_minmatches == 0);
@@ -372,7 +372,7 @@ AST::sequence_ptr_t RuleSpecImpl::_onSEQ(match_ptr_t match) {
   return seq_out;
 }
 /////////////////////////////////////////////////////////
-AST::group_ptr_t RuleSpecImpl::_onGRP(match_ptr_t match) {
+AST::group_ptr_t PegImpl::_onGRP(match_ptr_t match) {
   auto grp_out = std::make_shared<AST::Group>(_user_parser);
   auto nom     = match->asShared<NOrMore>();
   OrkAssert(nom->_minmatches == 0);
@@ -388,7 +388,7 @@ AST::group_ptr_t RuleSpecImpl::_onGRP(match_ptr_t match) {
   return grp_out;
 }
 /////////////////////////////////////////////////////////
-AST::expr_kwid_ptr_t RuleSpecImpl::_onEXPRKWID(match_ptr_t match) {
+AST::expr_kwid_ptr_t PegImpl::_onEXPRKWID(match_ptr_t match) {
   auto kwid_out   = std::make_shared<AST::ExprKWID>(_user_parser);
   auto indentstr  = std::string(indent * 2, ' ');
   auto classmatch = match->asShared<ClassMatch>();
@@ -399,7 +399,7 @@ AST::expr_kwid_ptr_t RuleSpecImpl::_onEXPRKWID(match_ptr_t match) {
   return kwid_out;
 }
 /////////////////////////////////////////////////////////
-AST::expression_ptr_t RuleSpecImpl::_onExpression(match_ptr_t match, std::string named) {
+AST::expression_ptr_t PegImpl::_onExpression(match_ptr_t match, std::string named) {
   auto expr_out  = std::make_shared<AST::Expression>(_user_parser);
   auto indentstr = std::string(indent * 2, ' ');
 
@@ -483,41 +483,41 @@ AST::expression_ptr_t RuleSpecImpl::_onExpression(match_ptr_t match, std::string
   return expr_out;
 }
 /////////////////////////////////////////////////////////
-void RuleSpecImpl::loadGrammar() { //
+void PegImpl::loadGrammar() { //
   logchan_rulespec->log("Loading Grammar");
   ////////////////////
   // primitives
   ////////////////////
-  auto plus         = _dsl_parser->matcherForTokenClass(TokenClass::PLUS, "plus");
-  auto minus        = _dsl_parser->matcherForTokenClass(TokenClass::MINUS, "minus");
-  auto star         = _dsl_parser->matcherForTokenClass(TokenClass::STAR, "star");
-  auto equals       = _dsl_parser->matcherForTokenClass(TokenClass::EQUALS, "equals");
-  auto colon        = _dsl_parser->matcherForTokenClass(TokenClass::COLON, "colon");
-  auto semicolon    = _dsl_parser->matcherForTokenClass(TokenClass::SEMICOLON, "semicolon");
-  auto comma        = _dsl_parser->matcherForTokenClass(TokenClass::COMMA, "comma");
-  auto lparen       = _dsl_parser->matcherForTokenClass(TokenClass::L_PAREN, "lparen");
-  auto rparen       = _dsl_parser->matcherForTokenClass(TokenClass::R_PAREN, "rparen");
-  auto lsquare      = _dsl_parser->matcherForTokenClass(TokenClass::L_SQUARE, "lsquare");
-  auto rsquare      = _dsl_parser->matcherForTokenClass(TokenClass::R_SQUARE, "rsquare");
-  auto lcurly       = _dsl_parser->matcherForTokenClass(TokenClass::L_CURLY, "lcurly");
-  auto rcurly       = _dsl_parser->matcherForTokenClass(TokenClass::R_CURLY, "rcurly");
-  auto pipe         = _dsl_parser->matcherForTokenClass(TokenClass::PIPE, "pipe");
-  auto inttok       = _dsl_parser->matcherForTokenClass(TokenClass::INTEGER, "int");
-  auto kworid       = _dsl_parser->matcherForTokenClass(TokenClass::KW_OR_ID, "kw_or_id");
-  auto left_arrow   = _dsl_parser->matcherForTokenClass(TokenClass::LEFT_ARROW, "left_arrow");
-  auto quoted_regex = _dsl_parser->matcherForTokenClass(TokenClass::QUOTED_REGEX, "quoted_regex");
+  auto plus         = _peg_parser->matcherForTokenClass(TokenClass::PLUS, "plus");
+  auto minus        = _peg_parser->matcherForTokenClass(TokenClass::MINUS, "minus");
+  auto star         = _peg_parser->matcherForTokenClass(TokenClass::STAR, "star");
+  auto equals       = _peg_parser->matcherForTokenClass(TokenClass::EQUALS, "equals");
+  auto colon        = _peg_parser->matcherForTokenClass(TokenClass::COLON, "colon");
+  auto semicolon    = _peg_parser->matcherForTokenClass(TokenClass::SEMICOLON, "semicolon");
+  auto comma        = _peg_parser->matcherForTokenClass(TokenClass::COMMA, "comma");
+  auto lparen       = _peg_parser->matcherForTokenClass(TokenClass::L_PAREN, "lparen");
+  auto rparen       = _peg_parser->matcherForTokenClass(TokenClass::R_PAREN, "rparen");
+  auto lsquare      = _peg_parser->matcherForTokenClass(TokenClass::L_SQUARE, "lsquare");
+  auto rsquare      = _peg_parser->matcherForTokenClass(TokenClass::R_SQUARE, "rsquare");
+  auto lcurly       = _peg_parser->matcherForTokenClass(TokenClass::L_CURLY, "lcurly");
+  auto rcurly       = _peg_parser->matcherForTokenClass(TokenClass::R_CURLY, "rcurly");
+  auto pipe         = _peg_parser->matcherForTokenClass(TokenClass::PIPE, "pipe");
+  auto inttok       = _peg_parser->matcherForTokenClass(TokenClass::INTEGER, "int");
+  auto kworid       = _peg_parser->matcherForTokenClass(TokenClass::KW_OR_ID, "kw_or_id");
+  auto left_arrow   = _peg_parser->matcherForTokenClass(TokenClass::LEFT_ARROW, "left_arrow");
+  auto quoted_regex = _peg_parser->matcherForTokenClass(TokenClass::QUOTED_REGEX, "quoted_regex");
   ////////////////////
-  auto sel   = _dsl_parser->matcherForWord("sel");
-  auto zom   = _dsl_parser->matcherForWord("zom");
-  auto oom   = _dsl_parser->matcherForWord("oom");
-  auto opt   = _dsl_parser->matcherForWord("opt");
-  auto macro = _dsl_parser->matcherForWord("macro");
+  auto sel   = _peg_parser->matcherForWord("sel");
+  auto zom   = _peg_parser->matcherForWord("zom");
+  auto oom   = _peg_parser->matcherForWord("oom");
+  auto opt   = _peg_parser->matcherForWord("opt");
+  auto macro = _peg_parser->matcherForWord("macro");
   /////////////////////////////////////////////////////////////////////////////////////////////////////
   // user scanner rules
   /////////////////////////////////////////////////////////////////////////////////////////////////////
-  auto macro_item      = _dsl_parser->sequence({macro, lparen, kworid, rparen}, "macro_item");
-  auto scanner_key     = _dsl_parser->oneOf({macro_item, kworid}, "scanner_key");
-  auto scanner_rule    = _dsl_parser->sequence({scanner_key, left_arrow, quoted_regex}, "scanner_rule");
+  auto macro_item      = _peg_parser->sequence({macro, lparen, kworid, rparen}, "macro_item");
+  auto scanner_key     = _peg_parser->oneOf({macro_item, kworid}, "scanner_key");
+  auto scanner_rule    = _peg_parser->sequence({scanner_key, left_arrow, quoted_regex}, "scanner_rule");
   scanner_rule->_notif = [=](match_ptr_t match) {
     auto seq           = match->asShared<Sequence>();
     auto rule_key_item = seq->_items[0]->asShared<OneOf>()->_selected;
@@ -553,7 +553,7 @@ void RuleSpecImpl::loadGrammar() { //
       OrkAssert(false);
     }
   };
-  _rsi_scanner_matcher         = _dsl_parser->zeroOrMore(scanner_rule, "scanner_rules");
+  _rsi_scanner_matcher         = _peg_parser->zeroOrMore(scanner_rule, "scanner_rules");
   _rsi_scanner_matcher->_notif = [=](match_ptr_t match) {
     std::string _current_rule_name = "";
     try {
@@ -582,20 +582,20 @@ void RuleSpecImpl::loadGrammar() { //
   // parser rules
   /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  auto rule_expression = _dsl_parser->declare("rule_expression");
+  auto rule_expression = _peg_parser->declare("rule_expression");
   //
   //
-  auto rule_zom      = _dsl_parser->sequence({zom, lcurly, _dsl_parser->zeroOrMore(rule_expression), rcurly}, "rule_zom");
-  auto rule_oom      = _dsl_parser->sequence({oom, lcurly, rule_expression, rcurly}, "rule_oom");
-  auto rule_sel      = _dsl_parser->sequence({sel, lcurly, _dsl_parser->oneOrMore(rule_expression), rcurly}, "rule_sel");
-  auto rule_opt      = _dsl_parser->sequence({opt, lcurly, rule_expression, rcurly}, "rule_opt");
-  auto rule_sequence = _dsl_parser->sequence({lsquare, _dsl_parser->zeroOrMore(rule_expression), rsquare}, "rule_sequence");
-  auto rule_grp      = _dsl_parser->sequence({lparen, _dsl_parser->zeroOrMore(rule_expression), rparen}, "rule_grp");
+  auto rule_zom      = _peg_parser->sequence({zom, lcurly, _peg_parser->zeroOrMore(rule_expression), rcurly}, "rule_zom");
+  auto rule_oom      = _peg_parser->sequence({oom, lcurly, rule_expression, rcurly}, "rule_oom");
+  auto rule_sel      = _peg_parser->sequence({sel, lcurly, _peg_parser->oneOrMore(rule_expression), rcurly}, "rule_sel");
+  auto rule_opt      = _peg_parser->sequence({opt, lcurly, rule_expression, rcurly}, "rule_opt");
+  auto rule_sequence = _peg_parser->sequence({lsquare, _peg_parser->zeroOrMore(rule_expression), rsquare}, "rule_sequence");
+  auto rule_grp      = _peg_parser->sequence({lparen, _peg_parser->zeroOrMore(rule_expression), rparen}, "rule_grp");
   //
-  _dsl_parser->_sequence(
+  _peg_parser->_sequence(
       rule_expression,
       {
-          _dsl_parser->oneOf({
+          _peg_parser->oneOf({
               // load previously declared rule_expression
               rule_zom,
               rule_oom,
@@ -605,9 +605,9 @@ void RuleSpecImpl::loadGrammar() { //
               rule_grp,
               kworid,
           }),
-          _dsl_parser->optional(_dsl_parser->sequence({colon, quoted_regex}), "expr_name"),
+          _peg_parser->optional(_peg_parser->sequence({colon, quoted_regex}), "expr_name"),
       });
-  auto parser_rule = _dsl_parser->sequence({kworid, left_arrow, rule_expression}, "parser_rule");
+  auto parser_rule = _peg_parser->sequence({kworid, left_arrow, rule_expression}, "parser_rule");
 
   parser_rule->_notif = [=](match_ptr_t match) {
     auto rulename                                   = match->asShared<Sequence>()->_items[0]->asShared<ClassMatch>()->_token->text;
@@ -618,37 +618,37 @@ void RuleSpecImpl::loadGrammar() { //
     printf( "CREATED PARSER RULE<%s>\n", rulename.c_str() );
   };
 
-  _rsi_parser_matcher = _dsl_parser->zeroOrMore(parser_rule, "parser_rules");
+  _rsi_parser_matcher = _peg_parser->zeroOrMore(parser_rule, "parser_rules");
 
   _rsi_parser_matcher->_notif = [=](match_ptr_t match) {
     printf( "MATCHED parser_rules\n" );
   };
-  _dsl_parser->link();
+  _peg_parser->link();
 }
 /////////////////////////////////////////////////////////
-match_ptr_t RuleSpecImpl::parseUserScannerSpec(std::string inp_string) {
-  auto dsl_scanner = _dsl_parser->_scanner;
+match_ptr_t PegImpl::parseUserScannerSpec(std::string inp_string) {
+  auto peg_scanner = _peg_parser->_scanner;
   try {
-    dsl_scanner->clear();
-    dsl_scanner->scanString(inp_string);
-    dsl_scanner->discardTokensOfClass(uint64_t(TokenClass::WHITESPACE));
-    dsl_scanner->discardTokensOfClass(uint64_t(TokenClass::NEWLINE));
+    peg_scanner->clear();
+    peg_scanner->scanString(inp_string);
+    peg_scanner->discardTokensOfClass(uint64_t(TokenClass::WHITESPACE));
+    peg_scanner->discardTokensOfClass(uint64_t(TokenClass::NEWLINE));
   } catch (std::exception& e) {
     logerrchannel()->log("EXCEPTION<%s>", e.what());
     OrkAssert(false);
   }
-  auto top_view = dsl_scanner->createTopView();
+  auto top_view = peg_scanner->createTopView();
   top_view.dump("top_view");
   auto slv   = std::make_shared<ScannerLightView>(top_view);
-  auto match = _dsl_parser->match(slv, _rsi_scanner_matcher);
+  auto match = _peg_parser->match(slv, _rsi_scanner_matcher);
   OrkAssert(match);
   OrkAssert(match->_view->_start == top_view._start);
   OrkAssert(match->_view->_end == top_view._end);
   return match;
 }
 /////////////////////////////////////////////////////////
-match_ptr_t RuleSpecImpl::parseUserParserSpec(std::string inp_string) {
-  auto dsl_scanner = _dsl_parser->_scanner;
+match_ptr_t PegImpl::parseUserParserSpec(std::string inp_string) {
+  auto peg_scanner = _peg_parser->_scanner;
   /////////////////////////////////////////////////
   // add user scanner matchers to user matcher
   /////////////////////////////////////////////////
@@ -668,10 +668,10 @@ match_ptr_t RuleSpecImpl::parseUserParserSpec(std::string inp_string) {
   // prepare parser-DSL scanner and scan parser-DSL
   /////////////////////////////////////////////////
   try {
-    dsl_scanner->clear();
-    dsl_scanner->scanString(inp_string);
-    dsl_scanner->discardTokensOfClass(uint64_t(TokenClass::WHITESPACE));
-    dsl_scanner->discardTokensOfClass(uint64_t(TokenClass::NEWLINE));
+    peg_scanner->clear();
+    peg_scanner->scanString(inp_string);
+    peg_scanner->discardTokensOfClass(uint64_t(TokenClass::WHITESPACE));
+    peg_scanner->discardTokensOfClass(uint64_t(TokenClass::NEWLINE));
   } catch (std::exception& e) {
     logchan_rulespec->log("EXCEPTION<%s>", e.what());
     OrkAssert(false);
@@ -679,10 +679,10 @@ match_ptr_t RuleSpecImpl::parseUserParserSpec(std::string inp_string) {
   /////////////////////////////////////////////////
   // parse parser-DSL
   /////////////////////////////////////////////////
-  auto top_view = dsl_scanner->createTopView();
+  auto top_view = peg_scanner->createTopView();
   top_view.dump("top_view");
   auto slv   = std::make_shared<ScannerLightView>(top_view);
-  auto match = _dsl_parser->match(slv, _rsi_parser_matcher);
+  auto match = _peg_parser->match(slv, _rsi_parser_matcher);
   OrkAssert(match);
   OrkAssert(match->_view->_start == top_view._start);
   this->implementUserLanguage();
@@ -691,7 +691,7 @@ match_ptr_t RuleSpecImpl::parseUserParserSpec(std::string inp_string) {
     logerrchannel()->log("Parser :: RULESPEC :: SYNTAX ERROR");
     logerrchannel()->log("  input text num tokens<%zu>", top_view._end);
     logerrchannel()->log("  parse cursor<%zu>", match->_view->_end);
-    auto token = dsl_scanner->token(match->_view->_end);
+    auto token = peg_scanner->token(match->_view->_end);
     logerrchannel()->log("  parse token<%s> line<%d>", token->text.c_str(), token->iline + 1);
     OrkAssert(false);
   }
@@ -699,21 +699,21 @@ match_ptr_t RuleSpecImpl::parseUserParserSpec(std::string inp_string) {
 }
 /////////////////////////////////////////////////////////
 
-void RuleSpecImpl::attachUser(Parser* user_parser) {
+void PegImpl::attachUser(Parser* user_parser) {
   _user_parser  = user_parser;
   _user_scanner = user_parser->_scanner;
-  _user_parser->_user.set<RuleSpecImpl*>(this);
+  _user_parser->_user.set<PegImpl*>(this);
 }
 
 /////////////////////////////////////////////////////////
 
-svar64_t RuleSpecImpl::findKWORID(std::string kworid) {
+svar64_t PegImpl::findKWORID(std::string kworid) {
   return svar64_t();
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-void RuleSpecImpl::implementUserLanguage(){
+void PegImpl::implementUserLanguage(){
     if(1){
       logchan_rulespec2->log("///////////////////////////////////////////////////////////");
       logchan_rulespec2->log("// DUMPING USER MATCHERS");
@@ -764,25 +764,27 @@ void RuleSpecImpl::implementUserLanguage(){
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-rulespec_impl_ptr_t getRuleSpecImpl() {
-  static auto rsi = std::make_shared<RuleSpecImpl>();
-  return rsi;
+pegimpl_ptr_t getIMPL() {
+  static auto the_peg = std::make_shared<PegImpl>();
+  return the_peg;
 }
+
+} // namespace peg
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-match_ptr_t Parser::loadUserScannerSpec(const std::string& spec) {
-  auto rsi = getRuleSpecImpl();
-  rsi->attachUser(this);
-  auto match = rsi->parseUserScannerSpec(spec);
+match_ptr_t Parser::loadPEGScannerSpec(const std::string& spec) {
+  auto the_peg = peg::getIMPL();
+  the_peg->attachUser(this);
+  auto match = the_peg->parseUserScannerSpec(spec);
   return match;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-match_ptr_t Parser::loadUserParserSpec(const std::string& spec) {
-  auto rsi   = getRuleSpecImpl();
-  auto match = rsi->parseUserParserSpec(spec);
+match_ptr_t Parser::loadPEGParserSpec(const std::string& spec) {
+  auto the_peg   = peg::getIMPL();
+  auto match = the_peg->parseUserParserSpec(spec);
   return match;
 }
 

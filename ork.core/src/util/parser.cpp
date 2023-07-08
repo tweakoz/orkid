@@ -109,7 +109,7 @@ matcher_ptr_t Parser::optional(matcher_ptr_t sub_matcher, std::string name) {
       auto sub_match = _match(sub_matcher, slv);
       if (sub_match) {
         auto match_str = deco::string("MATCH", 0, 255, 0);
-        log("OPT<%s> %s sub<%s>", name.c_str(), match_str.c_str(), sub_match->_matcher->_name.c_str());
+        log_match("OPT<%s> %s sub<%s>", name.c_str(), match_str.c_str(), sub_match->_matcher->_name.c_str());
         the_match->_view = sub_match->_view;
         the_match->_view->validate();
         the_opt->_subitem = sub_match;
@@ -117,7 +117,7 @@ matcher_ptr_t Parser::optional(matcher_ptr_t sub_matcher, std::string name) {
       }
     }
     auto empty_str = deco::string("EMPTY", 255, 255, 0);
-    log("OPT<%s> %s", name.c_str(), empty_str.c_str());
+    log_match("OPT<%s> %s", name.c_str(), empty_str.c_str());
     ////////////////////////////////////////////////////
     //  otherwise return "empty" but valid match (start=end=-1)
     ////////////////////////////////////////////////////
@@ -129,7 +129,7 @@ matcher_ptr_t Parser::optional(matcher_ptr_t sub_matcher, std::string name) {
     if (matcher->_notif == nullptr) {
       matcher->_notif = [=](match_ptr_t the_match) { //
         auto match_str = deco::format(255, 0, 255, "MATCHED OPT<%s>", name.c_str());
-        log("%s", match_str.c_str());
+        log_match("%s", match_str.c_str());
       };
     }
   }; // _on_link
@@ -142,7 +142,7 @@ void Parser::_sequence(matcher_ptr_t matcher, std::vector<matcher_ptr_t> sub_mat
   matcher->_match_fn = [=](matcher_ptr_t par_matcher, scannerlightview_constptr_t slv) -> match_ptr_t {
     match_ptr_t the_match = std::make_shared<Match>();
     the_match->_matcher   = par_matcher;
-    log("SEQ<%s>: beg_match len<%zu>", matcher->_name.c_str(), sub_matchers.size());
+    log_match("SEQ<%s>: beg_match len<%zu>", matcher->_name.c_str(), sub_matchers.size());
     auto slv_iter     = std::make_shared<ScannerLightView>(*slv);
     auto slv_match    = std::make_shared<ScannerLightView>(*slv);
     auto the_sequence = the_match->_impl.makeShared<Sequence>();
@@ -151,7 +151,7 @@ void Parser::_sequence(matcher_ptr_t matcher, std::vector<matcher_ptr_t> sub_mat
     size_t num_iter   = sub_matchers.size();
     for (auto sub_matcher : sub_matchers) {
       if (0)
-        log_begin(
+        log_match_begin(
             "SEQSS<%s> : match_item<%s> iter<%zu/%zu> itrst<%d> itren<%d> slvst<%d> slvend<%d> ",
             matcher->_name.c_str(),
             sub_matcher->_name.c_str(),
@@ -166,7 +166,7 @@ void Parser::_sequence(matcher_ptr_t matcher, std::vector<matcher_ptr_t> sub_mat
       }
       auto tok0       = slv_iter->token(0);
       auto match_item = _match(sub_matcher, slv_iter);
-      log_begin(
+      log_match_begin(
           "SEQ<%s> : match_item<%s> tok0<%s> iter<%zu/%zu> st<%d> end<%d> ",
           matcher->_name.c_str(),
           sub_matcher->_name.c_str(),
@@ -179,12 +179,12 @@ void Parser::_sequence(matcher_ptr_t matcher, std::vector<matcher_ptr_t> sub_mat
         size_t item_index = the_sequence->_items.size();
         if (match_item->_view->empty()) {
           auto empty_str = deco::string("MATCH: EMPTY", 0, 255, 255);
-          log_continue("%s\n", empty_str.c_str());
+          log_match_continue("%s\n", empty_str.c_str());
         } else {
           if (0)
             slv_iter->dump("slv_iter_pre");
           auto match_str = deco::string("MATCH", 0, 255, 0);
-          log_continue("%s\n", match_str.c_str());
+          log_match_continue("%s\n", match_str.c_str());
           slv_match->_end  = match_item->_view->_end;
           slv_iter->_start = match_item->_view->_end + 1;
           if (0)
@@ -196,7 +196,7 @@ void Parser::_sequence(matcher_ptr_t matcher, std::vector<matcher_ptr_t> sub_mat
         OrkAssert(match_item->_view);
       } else {
         auto match_str = deco::string("NO-MATCH", 255, 0, 0);
-        log_continue("%s\n", match_str.c_str());
+        log_match_continue("%s\n", match_str.c_str());
         the_match = nullptr;
         break;
       }
@@ -226,7 +226,7 @@ void Parser::_sequence(matcher_ptr_t matcher, std::vector<matcher_ptr_t> sub_mat
       }
       /////////////////////////////////////////////////
       if (0)
-        log("SEQ<%s> end the_match<%p> st<%zu> en<%zu> count<%zu>", //
+        log_match("SEQ<%s> end the_match<%p> st<%zu> en<%zu> count<%zu>", //
             matcher->_name.c_str(),                                 //
             (void*)the_match.get(),                                 //
             the_match->_view->_start,                               //
@@ -234,7 +234,7 @@ void Parser::_sequence(matcher_ptr_t matcher, std::vector<matcher_ptr_t> sub_mat
             the_sequence->_items.size());
     } else {
       if (0)
-        log("SEQ<%s> end NO_MATCH", matcher->_name.c_str());
+        log_match("SEQ<%s> end NO_MATCH", matcher->_name.c_str());
     }
     return the_match;
   };
@@ -242,7 +242,7 @@ void Parser::_sequence(matcher_ptr_t matcher, std::vector<matcher_ptr_t> sub_mat
     if (matcher->_notif == nullptr) {
       matcher->_notif = [=](match_ptr_t the_match) { //
         auto match_str = deco::format(255, 0, 255, "MATCHED SEQ<%s>", matcher->_name.c_str());
-        log("%s", match_str.c_str());
+        log_match("%s", match_str.c_str());
       };
     }
   };
@@ -306,12 +306,12 @@ matcher_ptr_t Parser::oneOf(std::vector<matcher_ptr_t> matchers, std::string nam
   }
   auto matcher       = declare(name);
   matcher->_match_fn = [=](matcher_ptr_t par_matcher, scannerlightview_constptr_t slv) -> match_ptr_t {
-    // log( "oneOf<%s>: begin num_subs<%zu>\n", name.c_str(), matchers.size() );
+    // log_match( "oneOf<%s>: begin num_subs<%zu>\n", name.c_str(), matchers.size() );
     for (auto sub_matcher : matchers) {
       auto sub_match = _match(sub_matcher, slv);
       if (sub_match) {
         auto match_str = deco::string("MATCH", 0, 255, 0);
-        log("1OF<%s>: %s sub_matcher<%s>", name.c_str(), match_str.c_str(), sub_matcher->_name.c_str());
+        log_match("1OF<%s>: %s sub_matcher<%s>", name.c_str(), match_str.c_str(), sub_matcher->_name.c_str());
 
         auto the_match      = std::make_shared<Match>();
         the_match->_matcher = par_matcher;
@@ -322,7 +322,7 @@ matcher_ptr_t Parser::oneOf(std::vector<matcher_ptr_t> matchers, std::string nam
       }
     }
     auto match_str = deco::string("NO-MATCH", 255, 0, 0);
-    log("1OF<%s>: %s", name.c_str(), match_str.c_str());
+    log_match("1OF<%s>: %s", name.c_str(), match_str.c_str());
     return nullptr;
   };
   return matcher;
@@ -349,12 +349,12 @@ matcher_ptr_t Parser::nOrMore(matcher_ptr_t sub_matcher, size_t minMatches, std:
     bool keep_going          = true;
     auto slv_iter            = std::make_shared<ScannerLightView>(*input_slv);
     int item_index           = 0;
-    log("NOM%zu<%s>: beg_match sub_matcher<%s>", minMatches, name.c_str(), sub_matcher->_name.c_str());
+    log_match("NOM%zu<%s>: beg_match sub_matcher<%s>", minMatches, name.c_str(), sub_matcher->_name.c_str());
     ////////////////////////////////////////////////////////////////
     while (keep_going) {
       auto sub_match = _match(sub_matcher, slv_iter);
       keep_going     = false;
-      log_begin(
+      log_match_begin(
           "NOM%d<%s> try_match iter<%d> ", //
           int(minMatches),
           name.c_str(),
@@ -367,14 +367,14 @@ matcher_ptr_t Parser::nOrMore(matcher_ptr_t sub_matcher, size_t minMatches, std:
         if (sub_match->_view->empty()) {
           keep_going     = false;
           auto empty_str = deco::string("EMPTY", 0, 255, 255);
-          log_continue("%s\n", empty_str.c_str());
+          log_match_continue("%s\n", empty_str.c_str());
         } else {
           auto match_str = deco::string("MATCH", 0, 255, 0);
-          log_continue("%s start<%zu> end<%zu>\n", match_str.c_str(), sub_match->_view->_start, sub_match->_view->_end);
+          log_match_continue("%s start<%zu> end<%zu>\n", match_str.c_str(), sub_match->_view->_start, sub_match->_view->_end);
         }
       } else {
         auto nomatch_str = deco::string("NO-MATCH", 255, 0, 0);
-        log_continue("%s\n", nomatch_str.c_str());
+        log_match_continue("%s\n", nomatch_str.c_str());
       }
     }
     ////////////////////////////////////////////////////////////////
@@ -390,11 +390,11 @@ matcher_ptr_t Parser::nOrMore(matcher_ptr_t sub_matcher, size_t minMatches, std:
       the_match->_view = slv_out;
       if ((slv_out->_end < input_slv->_end) and the_nom->_mustConsumeAll) {
         auto no_match_str = deco::string("NO-MATCH (not all tokens consumed)", 255, 0, 0);
-        log("NOM%zu<%s>: %s count<%zu>", minMatches, name.c_str(), no_match_str.c_str(), the_nom->_items.size());
+        log_match("NOM%zu<%s>: %s count<%zu>", minMatches, name.c_str(), no_match_str.c_str(), the_nom->_items.size());
         return nullptr;
       } else {
         auto match_str = deco::string("MATCH", 0, 255, 0);
-        log("NOM%zu<%s>: %s count<%zu> st<%zu> en<%zu> slen<%d>",
+        log_match("NOM%zu<%s>: %s count<%zu> st<%zu> en<%zu> slen<%d>",
             minMatches,
             name.c_str(),
             match_str.c_str(),
@@ -409,18 +409,18 @@ matcher_ptr_t Parser::nOrMore(matcher_ptr_t sub_matcher, size_t minMatches, std:
       slv_out->clear();
       the_match->_view  = slv_out;
       auto no_match_str = deco::string("NO-MATCH", 255, 0, 0);
-      log("NOM%zu<%s>: %s count<0>", minMatches, name.c_str(), no_match_str.c_str());
+      log_match("NOM%zu<%s>: %s count<0>", minMatches, name.c_str(), no_match_str.c_str());
       return the_match;
     }
     OrkAssert(false); // should never get here?
-    // log( "NOM%zu<%s>: end_match (NOMATCH)", minMatches, name.c_str() );
+    // log_match( "NOM%zu<%s>: end_match (NOMATCH)", minMatches, name.c_str() );
     return nullptr;
   };
   matcher->_on_link = [=]() {
     if (matcher->_notif == nullptr) {
       matcher->_notif = [=](match_ptr_t the_match) {
         auto match_str = deco::format(255, 0, 255, "MATCHED NOM<%s>", name.c_str());
-        log("%s", match_str.c_str());
+        log_match("%s", match_str.c_str());
       };
     }
   };
@@ -441,7 +441,7 @@ matcher_ptr_t Parser::matcherForTokenClassID(uint64_t tokclass, std::string name
   matcher->_match_fn = [tokclass, this](matcher_ptr_t par_matcher, scannerlightview_constptr_t slv) -> match_ptr_t {
     auto tok0         = slv->token(0);
     auto slv_tokclass = tok0->_class;
-    log("MATCHER.CLASSID<%zu> matcher_name<%s> tok<%s> tokclass<%zu>", //
+    log_match("MATCHER.CLASSID<%zu> matcher_name<%s> tok<%s> tokclass<%zu>", //
         tokclass,
         par_matcher->_name.c_str(),
         tok0->text.c_str(),
@@ -465,7 +465,7 @@ matcher_ptr_t Parser::matcherForTokenClassID(uint64_t tokclass, std::string name
       matcher->_notif = [=](match_ptr_t the_match) {
         auto tok       = the_match->_view->token(0);
         auto match_str = deco::format(255, 0, 255, "MATCHED tok<%s> mname<%s>", tok->text.c_str(), name.c_str());
-        log("%s", match_str.c_str());
+        log_match("%s", match_str.c_str());
       };
     }
   };
@@ -499,7 +499,7 @@ matcher_ptr_t Parser::matcherForWord(std::string word, std::string name) {
     if (matcher->_notif == nullptr) {
       matcher->_notif = [=](match_ptr_t the_match) { //
         auto match_str = deco::format(255, 0, 255, "MATCHED word<%s>", word.c_str());
-        log("%s", match_str.c_str());
+        log_match("%s", match_str.c_str());
       };
     }
   };
@@ -597,8 +597,8 @@ void Parser::_log_valist(const char* pMsgFormat, va_list args) const {
   auto indentstr = std::string(indent * 2, ' ');
   printf("[PARSER] %s%s\n", indentstr.c_str(), buf);
 }
-void Parser::log(const char* pMsgFormat, ...) const {
-  if (_DEBUG) {
+void Parser::log_match(const char* pMsgFormat, ...) const {
+  if (_DEBUG_MATCH) {
     va_list args;
     va_start(args, pMsgFormat);
     _log_valist(pMsgFormat, args);
@@ -615,8 +615,8 @@ void Parser::_log_valist_begin(const char* pMsgFormat, va_list args) const {
   auto indentstr = std::string(indent * 2, ' ');
   printf("[PARSER] %s%s", indentstr.c_str(), buf);
 }
-void Parser::log_begin(const char* pMsgFormat, ...) const {
-  if (_DEBUG) {
+void Parser::log_match_begin(const char* pMsgFormat, ...) const {
+  if (_DEBUG_MATCH) {
     va_list args;
     va_start(args, pMsgFormat);
     _log_valist_begin(pMsgFormat, args);
@@ -631,8 +631,8 @@ void Parser::_log_valist_continue(const char* pMsgFormat, va_list args) const {
   vsnprintf_s(buf, sizeof(buf), pMsgFormat, args);
   printf("%s", buf);
 }
-void Parser::log_continue(const char* pMsgFormat, ...) const {
-  if (_DEBUG) {
+void Parser::log_match_continue(const char* pMsgFormat, ...) const {
+  if (_DEBUG_MATCH) {
     va_list args;
     va_start(args, pMsgFormat);
     _log_valist_continue(pMsgFormat, args);

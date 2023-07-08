@@ -155,19 +155,19 @@ struct Parser {
   match_ptr_t _match(matcher_ptr_t matcher, scannerlightview_constptr_t inp_view);
 
   void _log_valist(const char *pMsgFormat, va_list args) const;
-  void log(const char *pMsgFormat, ...) const;
+  void log_match(const char *pMsgFormat, ...) const;
 
   void _log_valist_continue(const char *pMsgFormat, va_list args) const;
-  void log_continue(const char *pMsgFormat, ...) const;
+  void log_match_continue(const char *pMsgFormat, ...) const;
 
   void _log_valist_begin(const char *pMsgFormat, va_list args) const;
-  void log_begin(const char *pMsgFormat, ...) const;
+  void log_match_begin(const char *pMsgFormat, ...) const;
 
   matcher_ptr_t rule(const std::string& rule_name);
   void on(const std::string& rule_name, matcher_notif_t fn);
 
-  match_ptr_t loadUserScannerSpec(const std::string& spec);
-  match_ptr_t loadUserParserSpec(const std::string& spec);
+  match_ptr_t loadPEGScannerSpec(const std::string& spec);
+  match_ptr_t loadPEGParserSpec(const std::string& spec);
 
   void link();
 
@@ -181,7 +181,7 @@ struct Parser {
   svar64_t _user;
   size_t _cache_misses = 0;
   size_t _cache_hits = 0;
-  bool _DEBUG = false;
+  bool _DEBUG_MATCH = false;
   std::string _name;
 };
 

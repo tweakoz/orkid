@@ -92,10 +92,10 @@ struct MyParser2 : public Parser {
 
   MyParser2() {
     _name = "p2";
-    _DEBUG = true;
-    auto scanner_match = this->loadUserScannerSpec(scanner_spec);
+    _DEBUG_MATCH = false;
+    auto scanner_match = this->loadPEGScannerSpec(scanner_spec);
     OrkAssert(scanner_match);
-    auto parser_match = this->loadUserParserSpec(parser_spec);
+    auto parser_match = this->loadPEGParserSpec(parser_spec);
     OrkAssert(parser_match);
     ///////////////////////////////////////////////////////////
     // parser should be compiled and linked at this point
