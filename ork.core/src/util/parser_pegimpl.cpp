@@ -123,9 +123,10 @@ matcher_ptr_t ExprKWID::createMatcher(std::string named) { // final
     if( rule ){
       matcher->_user.setShared<ParserRule>(rule);
       matcher->_match_filter = [=](match_ptr_t topmatch) -> bool { //
-        logchan_rulespec2->log("EKWIDPXY(%s) _kwid<%s> filter-rule", named.c_str(), _kwid.c_str());
+        logchan_rulespec2->log("EKWIDPXY(%s) _kwid<%s> filter-rule<%s>", named.c_str(), _kwid.c_str(), _kwid.c_str() );
         //OrkAssert(false);
         topmatch->_impl2.setShared<ParserRule>(rule);
+        topmatch->dump(0);
         return true;
       };
     }

@@ -17,7 +17,7 @@
 /////////////////////////////////////////////////////////////////////////////////////////////////
 namespace ork {
 //////////////////////////////////////////////////////////////////////
-static logchannel_ptr_t logchan_parser = logger()->createChannel("RULESPEC", fvec3(0.5, 0.7, 0.5), false);
+static logchannel_ptr_t logchan_parser = logger()->createChannel("RULESPEC", fvec3(0.5, 0.7, 0.5), true);
 
 static std::atomic<int> g_matcher_id(0);
 void Match::dump(int indent) const {
@@ -65,6 +65,17 @@ void Match::dump(int indent) const {
       logchan_parser->log("%s     EMPTY", indentstr.c_str());
     }
   }
+}
+
+bool Match::matcherInStack(matcher_ptr_t matcher) const{
+  bool rval = false;
+  for( auto m : _matcherstack ){
+    if( m == matcher ){
+      rval = true;
+      break;
+    }
+  }
+  return rval;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -531,7 +542,7 @@ match_ptr_t Parser::_match(matcher_ptr_t matcher, scannerlightview_constptr_t in
     logerrchannel()->log("matcher<%s> has no match function", matcher->_name.c_str());
     OrkAssert(false);
   }
-  _matcherstack.push(matcher);
+  _matcherstack.push_back(matcher);
   inp_view->validate();
   match_ptr_t match;
   //////////////////////////////////
@@ -548,6 +559,9 @@ match_ptr_t Parser::_match(matcher_ptr_t matcher, scannerlightview_constptr_t in
   //////////////////////////////////
   else {
     match                = matcher->_match_fn(matcher, inp_view);
+    if(match){
+      match->_matcherstack = _matcherstack;
+    }
     _packrat_cache[hash] = match;
     _cache_misses++;
   }
@@ -558,7 +572,7 @@ match_ptr_t Parser::_match(matcher_ptr_t matcher, scannerlightview_constptr_t in
     matcher->_notif(match);
   }
   //////////////////////////////////
-  _matcherstack.pop();
+  _matcherstack.pop_back();
   return match;
 }
 

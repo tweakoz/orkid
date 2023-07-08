@@ -42,10 +42,12 @@ using matcher_filterfn_t          = std::function<bool(match_ptr_t top_match)>;
 struct Match {
   matcher_ptr_t _matcher;
   scannerlightview_ptr_t _view;
+  std::vector<matcher_ptr_t> _matcherstack;
   svar32_t _impl;
   svar32_t _impl2;
   svar32_t _user;
   void dump(int indent) const;
+  bool matcherInStack(matcher_ptr_t matcher) const;
   template <typename impl_t> std::shared_ptr<impl_t> asShared(){
     return _impl.getShared<impl_t>();
   }
@@ -179,7 +181,7 @@ struct Parser {
 
   void link();
 
-  std::stack<matcher_ptr_t> _matcherstack;
+  std::vector<matcher_ptr_t> _matcherstack;
   std::stack<const Match*> _matchstack;
   std::unordered_set<matcher_ptr_t> _matchers;
   std::unordered_map<std::string,matcher_ptr_t> _matchers_by_name;

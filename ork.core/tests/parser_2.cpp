@@ -102,6 +102,7 @@ struct MyParser2 : public Parser {
     ///////////////////////////////////////////////////////////
     auto expression = rule("expression");
     auto product    = rule("product");
+    auto primary    = rule("primary");
     auto variableDeclaration = rule("variableDeclaration");
     auto variableReference = rule("variableReference");
     auto funcdef = rule("funcdef");
@@ -135,7 +136,12 @@ struct MyParser2 : public Parser {
       auto var_ref   = match->_user.makeShared<MYAST::VariableReference>();
       var_ref->_name = kwid;
       auto v = match->_view;
-      printf("ON variableReference var<%s> st<%zu> en<%zu>\n", kwid.c_str(), v->_start, v->_end );
+      bool has_primary = match->matcherInStack(primary);
+      bool has_assignmentstatement = match->matcherInStack(assignment_statement);
+      printf("ON variableReference var<%s> st<%zu> en<%zu> has_primary<%d> has_assignmentstatement<%d> \n", //
+              kwid.c_str(), v->_start, v->_end, //
+              int(has_primary), //
+              int(has_assignmentstatement) );
     });
     ///////////////////////////////////////////////////////////
     on("term", [=](match_ptr_t match) {
