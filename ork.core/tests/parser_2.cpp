@@ -50,7 +50,7 @@ std::string parser_spec = R"xxx(
         product : "pro"
     }
 
-    expression <- sum
+    expression <- [ sum ]
 
     term <- [ L_PAREN expression R_PAREN ]
 
@@ -91,10 +91,11 @@ std::string parser_spec = R"xxx(
 struct MyParser2 : public Parser {
 
   MyParser2() {
-    _DEBUG = false;
-    auto scanner_match = this->loadScannerSpec(scanner_spec);
+    _name = "p2";
+    _DEBUG = true;
+    auto scanner_match = this->loadUserScannerSpec(scanner_spec);
     OrkAssert(scanner_match);
-    auto parser_match = this->loadParserSpec(parser_spec);
+    auto parser_match = this->loadUserParserSpec(parser_spec);
     OrkAssert(parser_match);
     ///////////////////////////////////////////////////////////
     // parser should be compiled and linked at this point
@@ -129,13 +130,13 @@ struct MyParser2 : public Parser {
       printf("ON datatype<%s> st<%zu> en<%zu>\n", ast_node->_name.c_str(), v->_start, v->_end );
     });
     ///////////////////////////////////////////////////////////
-    on("variableReference", [=](match_ptr_t match) { //
+    /*on("variableReference", [=](match_ptr_t match) { //
       auto kwid      = match->asShared<ClassMatch>()->_token->text;
       auto var_ref   = match->_user.makeShared<MYAST::VariableReference>();
       var_ref->_name = kwid;
       auto v = match->_view;
       printf("ON variableReference var<%s> st<%zu> en<%zu>\n", kwid.c_str(), v->_start, v->_end );
-    });
+    });*/
     ///////////////////////////////////////////////////////////
     on("term", [=](match_ptr_t match) {
       auto ast_node = match->_user.makeShared<MYAST::Term>();
@@ -207,8 +208,8 @@ struct MyParser2 : public Parser {
       auto v = match->_view;
       auto ast_node  = match->userMakeShared<MYAST::Expression>();
       auto impltype = match->_impl.typestr();
-      auto oneof = match->asShared<OneOf>();
-      auto selected = oneof->_selected;
+      auto seq = match->asShared<Sequence>();
+      auto selected = seq->_items[0];
       // since expression is a sum, then expression match points to sum
 
       printf("ON expression<%s> st<%zu> end<%zu> impltype<%s>\n", //
@@ -242,8 +243,12 @@ struct MyParser2 : public Parser {
       auto ast_node   = match->_user.makeShared<MYAST::ArgumentDeclaration>();
       auto seq   = match->asShared<Sequence>();
       ast_node->_variable_name = seq->_items[1]->asShared<ClassMatch>()->_token->text;
-      ast_node->_datatype = seq->_items[0]->userAsShared<MYAST::DataType>();
-      printf("ON argdecl name<%s> dt<%s>\n", ast_node->_variable_name.c_str(), ast_node->_datatype->_name.c_str() );
+      auto seq0 = seq->_items[0]->asShared<OneOf>()->_selected;
+      auto tok = seq0->asShared<ClassMatch>()->_token;
+     // printf("varname<%s> seq0 type<%s tok<%s>\n", ast_node->_variable_name.c_str(), seq0->_impl.typestr().c_str(),tok->text.c_str() );
+      ast_node->_datatype = std::make_shared<MYAST::DataType>();
+      ast_node->_datatype->_name = tok->text;
+      //printf("ON argdecl name<%s> dt<%s>\n", ast_node->_variable_name.c_str(), ast_node->_datatype->_name.c_str() );
     });
     ///////////////////////////////////////////////////////////
     on("funcdef", [=](match_ptr_t match) {

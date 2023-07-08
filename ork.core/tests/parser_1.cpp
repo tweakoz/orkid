@@ -187,7 +187,7 @@ struct MyParser : public Parser {
       }
     };
     ///////////////////////////////////////////////////////////
-    sequence(expression, {sum});
+    _sequence(expression, {sum});
     expression->_notif = [=](match_ptr_t match) { //
       auto ast_node = match->_user.makeShared<MYAST::Expression>();
       auto seq = match->_impl.get<sequence_ptr_t>();
@@ -282,6 +282,7 @@ struct MyParser : public Parser {
     ///////////////////////////////////////////////////////////
     _fn_matcher = zeroOrMore(funcdef, "funcdefs", true);
     ///////////////////////////////////////////////////////////
+    link();
   }
 
   match_ptr_t parseString(std::string parse_str) {

@@ -179,7 +179,7 @@ void _ORKSL_IMPL::loadGrammar(){
   auto miscint    = matcherForTokenClass(TokenClass::MISC_INTEGER);
   auto floattok    = matcherForTokenClass(TokenClass::FLOATING_POINT);
   /////////////////////////////////////////////////////
-  MATCHER(datatype) {
+  /*MATCHER(datatype) {
     auto tok0 = inp_view->token(0);
     auto it = _topnode->_validTypeNames.find(tok0->text);
     if( it != _topnode->_validTypeNames.end() ){
@@ -269,6 +269,7 @@ void _ORKSL_IMPL::loadGrammar(){
     auto seq = sequence({lparen, zeroOrMore(params), rparen, lcurly, zeroOrMore(statements), rcurly});
     return match(inp_view,seq);
   });
+  */
 
 }
 

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <ork/orktypes.h>
 #include <ork/orkstd.h>
 #include <ork/kernel/svariant.h>
 #include <ork/util/scanner.h>
@@ -72,6 +73,7 @@ struct Matcher {
   std::string _name;
   std::string _info;
   matcher_ptr_t _proxy_target;
+  void_lambda_t _on_link;
   uint64_t hash(scannerlightview_constptr_t slv) const; // packrat hash
   void _hash(boost::Crc64& crc_out) const; // packrat hash
 };
@@ -128,7 +130,7 @@ struct Parser {
 
   matcher_ptr_t sequence(std::vector<matcher_ptr_t> matchers, std::string name="");
   matcher_ptr_t sequence(std::string name, std::vector<matcher_ptr_t> sub_matchers);
-  void sequence(matcher_ptr_t matcher, std::vector<matcher_ptr_t> sub_matchers);
+  void _sequence(matcher_ptr_t matcher, std::vector<matcher_ptr_t> sub_matchers);
   //
   matcher_ptr_t oneOf(std::vector<matcher_ptr_t> sub_matchers,std::string name="");
   matcher_ptr_t oneOf(std::string name,std::vector<matcher_ptr_t> sub_matchers);
@@ -139,7 +141,7 @@ struct Parser {
   matcher_ptr_t nOrMore(matcher_ptr_t sub_matcher, size_t minMatches, std::string name="",bool mustConsumeAll=false);
   matcher_ptr_t optional(matcher_ptr_t matcher,std::string name="");
   //
-  matcher_ptr_t createMatcher(matcher_fn_t match_fn,std::string name="");
+  //matcher_ptr_t createMatcher(matcher_fn_t match_fn,std::string name="");
   matcher_ptr_t matcherForTokenClassID(uint64_t tokclass,std::string name="");
   matcher_ptr_t matcherForWord(std::string word, std::string name="");
 
@@ -164,10 +166,10 @@ struct Parser {
   matcher_ptr_t rule(const std::string& rule_name);
   void on(const std::string& rule_name, matcher_notif_t fn);
 
-  match_ptr_t loadScannerSpec(const std::string& spec);
-  match_ptr_t loadParserSpec(const std::string& spec);
+  match_ptr_t loadUserScannerSpec(const std::string& spec);
+  match_ptr_t loadUserParserSpec(const std::string& spec);
 
-
+  void link();
 
   std::stack<matcher_ptr_t> _matcherstack;
   std::stack<const Match*> _matchstack;
@@ -180,6 +182,7 @@ struct Parser {
   size_t _cache_misses = 0;
   size_t _cache_hits = 0;
   bool _DEBUG = false;
+  std::string _name;
 };
 
 //////////////////////////////////////////////////////////////

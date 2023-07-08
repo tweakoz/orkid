@@ -156,6 +156,8 @@ struct RuleSpecImpl { // {: public Parser {
   void loadScannerRules();
   void loadGrammar();
 
+  void implementUserLanguage();
+
   AST::oneormore_ptr_t _onOOM(match_ptr_t match);
   AST::zeroormore_ptr_t _onZOM(match_ptr_t match);
   AST::select_ptr_t _onSEL(match_ptr_t match);
@@ -165,8 +167,8 @@ struct RuleSpecImpl { // {: public Parser {
   AST::expr_kwid_ptr_t _onEXPRKWID(match_ptr_t match);
   AST::expression_ptr_t _onExpression(match_ptr_t match, std::string named = "");
 
-  match_ptr_t parseScannerSpec(std::string inp_string);
-  match_ptr_t parseParserSpec(std::string inp_string);
+  match_ptr_t parseUserScannerSpec(std::string inp_string);
+  match_ptr_t parseUserParserSpec(std::string inp_string);
   void attachUser(Parser* user_parser);
   svar64_t findKWORID(std::string kworid);
 
