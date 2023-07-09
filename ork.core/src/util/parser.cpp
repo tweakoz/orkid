@@ -589,9 +589,10 @@ match_ptr_t Parser::match(scannerlightview_constptr_t inp_view, matcher_ptr_t to
 //////////////////////////////////////////////////////////////////////
 
 matcher_ptr_t Parser::declare(std::string name) {
-  printf("Parser<%s> DECLARE MATCHER<%s>\n", this->_name.c_str(), name.c_str());
+  log_info_begin("DECLARE MATCHER<%s> ", name.c_str());
   auto it = _matchers_by_name.find(name);
   if (it != _matchers_by_name.end()) {
+    log_match_continue( "pre-exists<%p>\n", (void*)it->second.get() );
     return it->second;
   }
   ///////////////////////////////////////////////
@@ -603,6 +604,7 @@ matcher_ptr_t Parser::declare(std::string name) {
   _matchers.insert(rval);
   rval->_name             = name;
   _matchers_by_name[name] = rval;
+    log_match_continue( "new<%p>\n", (void*) rval.get() );
   ///////////////////////////////////////////////
   return rval;
 }
@@ -613,7 +615,7 @@ void Parser::link() {
   for (auto matcher : _matchers) {
     auto matcher_name = matcher->_name;
     if (matcher->_on_link) {
-      printf("[PARSER : %s] LINK MATCHER<%s>\n", _name.c_str(), matcher_name.c_str());
+      log_info("LINK MATCHER<%s>", matcher_name.c_str());
       matcher->_on_link();
     }
   }
@@ -626,8 +628,23 @@ void Parser::_log_valist(const char* pMsgFormat, va_list args) const {
   vsnprintf_s(buf, sizeof(buf), pMsgFormat, args);
   size_t indent  = _matcherstack.size();
   auto indentstr = std::string(indent * 2, ' ');
-  printf("[PARSER] %s%s\n", indentstr.c_str(), buf);
+  printf("[PARSER : %s] %s%s\n", _name.c_str(), indentstr.c_str(), buf);
 }
+void Parser::_log_valist_begin(const char* pMsgFormat, va_list args) const {
+  char buf[1024];
+  vsnprintf_s(buf, sizeof(buf), pMsgFormat, args);
+  size_t indent  = _matcherstack.size();
+  auto indentstr = std::string(indent * 2, ' ');
+  printf("[PARSER] %s%s", indentstr.c_str(), buf);
+}
+void Parser::_log_valist_continue(const char* pMsgFormat, va_list args) const {
+  char buf[1024];
+  vsnprintf_s(buf, sizeof(buf), pMsgFormat, args);
+  printf("%s", buf);
+}
+
+//////////////////////////////////////////////////////////////////////
+
 void Parser::log_match(const char* pMsgFormat, ...) const {
   if (_DEBUG_MATCH) {
     va_list args;
@@ -635,16 +652,6 @@ void Parser::log_match(const char* pMsgFormat, ...) const {
     _log_valist(pMsgFormat, args);
     va_end(args);
   }
-}
-
-//////////////////////////////////////////////////////////////////////
-
-void Parser::_log_valist_begin(const char* pMsgFormat, va_list args) const {
-  char buf[1024];
-  vsnprintf_s(buf, sizeof(buf), pMsgFormat, args);
-  size_t indent  = _matcherstack.size();
-  auto indentstr = std::string(indent * 2, ' ');
-  printf("[PARSER] %s%s", indentstr.c_str(), buf);
 }
 void Parser::log_match_begin(const char* pMsgFormat, ...) const {
   if (_DEBUG_MATCH) {
@@ -654,14 +661,6 @@ void Parser::log_match_begin(const char* pMsgFormat, ...) const {
     va_end(args);
   }
 }
-
-//////////////////////////////////////////////////////////////////////
-
-void Parser::_log_valist_continue(const char* pMsgFormat, va_list args) const {
-  char buf[1024];
-  vsnprintf_s(buf, sizeof(buf), pMsgFormat, args);
-  printf("%s", buf);
-}
 void Parser::log_match_continue(const char* pMsgFormat, ...) const {
   if (_DEBUG_MATCH) {
     va_list args;
@@ -670,6 +669,36 @@ void Parser::log_match_continue(const char* pMsgFormat, ...) const {
     va_end(args);
   }
 }
+
+//////////////////////////////////////////////////////////////////////
+
+void Parser::log_info(const char* pMsgFormat, ...) const {
+  if (_DEBUG_INFO) {
+    va_list args;
+    va_start(args, pMsgFormat);
+    _log_valist(pMsgFormat, args);
+    va_end(args);
+  }
+}
+void Parser::log_info_begin(const char* pMsgFormat, ...) const {
+  if (_DEBUG_INFO) {
+    va_list args;
+    va_start(args, pMsgFormat);
+    _log_valist_begin(pMsgFormat, args);
+    va_end(args);
+  }
+}
+void Parser::log_info_continue(const char* pMsgFormat, ...) const {
+  if (_DEBUG_INFO) {
+    va_list args;
+    va_start(args, pMsgFormat);
+    _log_valist_continue(pMsgFormat, args);
+    va_end(args);
+  }
+}
+
+//////////////////////////////////////////////////////////////////////
+
 
 Parser::Parser() {
   _name                                    = FormatString("%p", (void*)this);

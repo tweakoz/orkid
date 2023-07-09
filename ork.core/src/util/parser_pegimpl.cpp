@@ -60,6 +60,12 @@ AstNode::AstNode(Parser* user_parser)
 }
 AstNode::~AstNode() {
 }
+void AstNode::visit(astnode_ptr_t node, astvisitctx_ptr_t visitctx) {
+  visitctx->_visit_stack.push_back(node);
+  visitctx->_visitor(node);
+  node->do_visit(visitctx);
+  visitctx->_visit_stack.pop_back();
+}
 
 ////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////
@@ -79,6 +85,9 @@ void Expression::dump(dumpctx_ptr_t dctx) { // final
   _expr_selected->dump(dctx);
   dctx->_indent--;
 }
+void Expression::do_visit(astvisitctx_ptr_t visitctx) { // final
+  visit(_expr_selected, visitctx);
+}
 matcher_ptr_t Expression::createMatcher(std::string named) { // final
   return _expr_selected->createMatcher(named);
 }
@@ -93,16 +102,19 @@ void ExprKWID::dump(dumpctx_ptr_t dctx) { // final
   logchan_rulespec->log("%s EKWID(%s) _kwid<%s>", indentstr.c_str(), _name.c_str(), _kwid.c_str());
   dctx->_indent--;
 }
+void ExprKWID::do_visit(astvisitctx_ptr_t visitctx) { // final
+  // visitctx(_expr_selected);
+}
 matcher_ptr_t ExprKWID::createMatcher(std::string named) { // final
   auto matcher      = _user_parser->declare(_kwid);
   matcher->_on_link = [=]() {
-    auto pegimpl      = _user_parser->_user.get<PegImpl*>();
+    auto pegimpl = _user_parser->_user.get<PegImpl*>();
     /////////////////////////////////////////////////////////
     rule_ptr_t rule;
     auto it_rule = pegimpl->_user_parser_rules.find(_kwid);
     if (it_rule != pegimpl->_user_parser_rules.end()) {
       rule = it_rule->second;
-      logchan_rulespec2->log("EKWIDPXY(%s) _kwid<%s> HAS RULE<%p>", named.c_str(), _kwid.c_str(), (void*) rule.get() );
+      logchan_rulespec2->log("EKWIDPXY(%s) _kwid<%s> HAS RULE<%p>", named.c_str(), _kwid.c_str(), (void*)rule.get());
     }
     /////////////////////////////////////////////////////////
     auto it_matcher = pegimpl->_user_matchers_by_name.find(_kwid);
@@ -120,11 +132,11 @@ matcher_ptr_t ExprKWID::createMatcher(std::string named) { // final
     matcher->_match_fn     = submatcher->_match_fn;
     matcher->_notif        = submatcher->_notif;
     matcher->_proxy_target = submatcher;
-    if( rule ){
+    if (rule) {
       matcher->_user.setShared<ParserRule>(rule);
       matcher->_match_filter = [=](match_ptr_t topmatch) -> bool { //
-        logchan_rulespec2->log("EKWIDPXY(%s) _kwid<%s> filter-rule<%s>", named.c_str(), _kwid.c_str(), _kwid.c_str() );
-        //OrkAssert(false);
+        logchan_rulespec2->log("EKWIDPXY(%s) _kwid<%s> filter-rule<%s>", named.c_str(), _kwid.c_str(), _kwid.c_str());
+        // OrkAssert(false);
         topmatch->_impl2.setShared<ParserRule>(rule);
         topmatch->dump(0);
         return true;
@@ -147,6 +159,11 @@ void OneOrMore::dump(dumpctx_ptr_t dctx) { // final
   }
   dctx->_indent--;
 }
+void OneOrMore::do_visit(astvisitctx_ptr_t visitctx) { // final
+  for (auto e : _subexpressions) {
+    visit(e, visitctx);
+  }
+}
 matcher_ptr_t OneOrMore::createMatcher(std::string named) { // final
   auto expr0 = _subexpressions[0];
   return _user_parser->oneOrMore(expr0->createMatcher(named));
@@ -162,6 +179,9 @@ void ZeroOrMore::dump(dumpctx_ptr_t dctx) { // final
   logchan_rulespec->log("%s ZOM(%s)", indentstr.c_str(), _name.c_str());
   _subexpression->dump(dctx);
   dctx->_indent--;
+}
+void ZeroOrMore::do_visit(astvisitctx_ptr_t visitctx) { // final
+  visit(_subexpression, visitctx);
 }
 matcher_ptr_t ZeroOrMore::createMatcher(std::string named) { // final
   return _user_parser->zeroOrMore(_subexpression->createMatcher(named));
@@ -179,6 +199,11 @@ void Select::dump(dumpctx_ptr_t dctx) { // final
     e->dump(dctx);
   }
   dctx->_indent--;
+}
+void Select::do_visit(astvisitctx_ptr_t visitctx) { // final
+  for (auto e : _subexpressions) {
+    visit(e, visitctx);
+  }
 }
 matcher_ptr_t Select::createMatcher(std::string named) { // final
   std::vector<matcher_ptr_t> sub_matchers;
@@ -199,6 +224,9 @@ void Optional::dump(dumpctx_ptr_t dctx) { // final
   _subexpression->dump(dctx);
   dctx->_indent--;
 }
+void Optional::do_visit(astvisitctx_ptr_t visitctx) { // final
+  visit(_subexpression, visitctx);
+}
 matcher_ptr_t Optional::createMatcher(std::string named) { // final
   auto subexp = _subexpression->createMatcher(named);
   return _user_parser->optional(subexp);
@@ -216,6 +244,11 @@ void Sequence::dump(dumpctx_ptr_t dctx) { // final
     e->dump(dctx);
   }
   dctx->_indent--;
+}
+void Sequence::do_visit(astvisitctx_ptr_t visitctx) { // final
+  for (auto e : _subexpressions) {
+    visit(e, visitctx);
+  }
 }
 matcher_ptr_t Sequence::createMatcher(std::string named) { // final
   std::vector<matcher_ptr_t> sub_matchers;
@@ -238,6 +271,11 @@ void Group::dump(dumpctx_ptr_t dctx) { // final
   }
   dctx->_indent--;
 }
+void Group::do_visit(astvisitctx_ptr_t visitctx) { // final
+  for (auto e : _subexpressions) {
+    visit(e, visitctx);
+  }
+}
 matcher_ptr_t Group::createMatcher(std::string named) { // final
   std::vector<matcher_ptr_t> sub_matchers;
   for (auto subexp : _subexpressions) {
@@ -256,6 +294,9 @@ ParserRule::ParserRule(Parser* user_parser, std::string name)
 void ParserRule::dump(dumpctx_ptr_t dctx) { // final
   _expression->dump(dctx);
 }
+void ParserRule::do_visit(astvisitctx_ptr_t visitctx) { // final
+  visit(_expression, visitctx);
+}
 matcher_ptr_t ParserRule::createMatcher(std::string named) { // final
   return _expression->createMatcher(named);
 }
@@ -269,11 +310,11 @@ static constexpr const char* block_regex = "(function|yo|xxx)";
 PegImpl::PegImpl() {
   _peg_parser        = std::make_shared<Parser>();
   _peg_parser->_name = "gramr";
-  loadScannerRules();
-  loadGrammar();
+  loadPEGScannerRules();
+  loadPEGGrammar();
 }
 /////////////////////////////////////////////////////////
-void PegImpl::loadScannerRules() { //
+void PegImpl::loadPEGScannerRules() { //
   try {
     auto dsl_scanner = _peg_parser->_scanner;
     dsl_scanner->addEnumClass("\\s+", TokenClass::WHITESPACE);
@@ -497,7 +538,7 @@ AST::expression_ptr_t PegImpl::_onExpression(match_ptr_t match, std::string name
   return expr_out;
 }
 /////////////////////////////////////////////////////////
-void PegImpl::loadGrammar() { //
+void PegImpl::loadPEGGrammar() { //
   logchan_rulespec->log("Loading Grammar");
   ////////////////////
   // primitives
@@ -628,11 +669,12 @@ void PegImpl::loadGrammar() { //
 
   parser_rule->_notif = [=](match_ptr_t match) {
     auto rulename                = match->asShared<Sequence>()->_items[0]->asShared<ClassMatch>()->_token->text;
-    auto expr_ast_node           = _onExpression(match->asShared<Sequence>()->_items[2], rulename);
     auto ast_rule                = std::make_shared<AST::ParserRule>(_user_parser, rulename);
+    _current_rule                = ast_rule;
+    auto expr_ast_node           = _onExpression(match->asShared<Sequence>()->_items[2], rulename);
     ast_rule->_expression        = expr_ast_node;
     _user_parser_rules[rulename] = ast_rule;
-    printf("CREATED PARSER RULE<%s>\n", rulename.c_str());
+    printf("CREATED AST-RULE<%s>\n", rulename.c_str());
   };
 
   _rsi_parser_matcher = _peg_parser->zeroOrMore(parser_rule, "parser_rules");
@@ -733,6 +775,9 @@ svar64_t PegImpl::findKWORID(std::string kworid) {
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 void PegImpl::implementUserLanguage() {
+  /////////////////////////////////////////////////////////
+  // dump matcher phase
+  /////////////////////////////////////////////////////////
   if (1) {
     logchan_rulespec2->log("///////////////////////////////////////////////////////////");
     logchan_rulespec2->log("// DUMPING USER MATCHERS");
@@ -744,10 +789,12 @@ void PegImpl::implementUserLanguage() {
           "// DUMP USER MATCHER KEY<%s> NAME<%s> _info<%s>", matcher_key.c_str(), matcher->_name.c_str(), matcher->_info.c_str());
     }
   }
-
+  /////////////////////////////////////////////////////////
+  // dump ast rule phase
+  /////////////////////////////////////////////////////////
   if (0) {
     logchan_rulespec->log("///////////////////////////////////////////////////////////");
-    logchan_rulespec->log("// DUMPING USER PARSER RULES..");
+    logchan_rulespec->log("// DUMPING USER AST-RULES..");
     logchan_rulespec->log("///////////////////////////////////////////////////////////");
     for (auto rule : _user_parser_rules) {
       auto rule_name = rule.first;
@@ -757,17 +804,56 @@ void PegImpl::implementUserLanguage() {
       ast_rule->dump(dctx);
     }
   }
-
+  /////////////////////////////////////////////////////////
+  // visit phase
+  /////////////////////////////////////////////////////////
   if (1) {
     logchan_rulespec2->log("///////////////////////////////////////////////////////////");
-    logchan_rulespec2->log("// IMPLEMENTING USER PARSER RULES..");
+    logchan_rulespec2->log("// VISITING USER AST-RULES..");
+    logchan_rulespec2->log("///////////////////////////////////////////////////////////");
+    auto visit_ctx = std::make_shared<AST::VisitContext>();
+    visit_ctx->_visitor = [this,visit_ctx](AST::astnode_ptr_t the_node) {
+      auto top_rule = visit_ctx->_top_rule;
+      auto top_rule_name = top_rule->_name;
+      if (auto as_rule = std::dynamic_pointer_cast<AST::ParserRule>(the_node)) {
+        if( as_rule != top_rule ){
+          auto rule_name = as_rule->_name;
+          printf("top_rule<%s> nodesubrule<%s>\n", top_rule_name.c_str(), rule_name.c_str());
+        }
+      } else if (auto as_kwid = std::dynamic_pointer_cast<AST::ExprKWID>(the_node)) {
+        auto top_rule_name = top_rule->_name;
+        size_t stacklen = visit_ctx->_visit_stack.size();
+        printf("top_rule<%s> stklen<%zu> kwid<%s>", top_rule_name.c_str(), stacklen, as_kwid->_kwid.c_str());
+        auto it = _user_parser_rules.find(as_kwid->_kwid);
+        if (it != _user_parser_rules.end()) {
+          auto rule = it->second;
+          printf( " subrule<%p>", (void*)rule.get() );
+        }
+        printf("\n");
+      }
+    };
+
+    for (auto rule_item : _user_parser_rules) {
+      auto rule     = rule_item.second;
+      visit_ctx->_top_rule = rule;
+      AST::AstNode::visit(rule,visit_ctx);
+      // rule->_expression->dump();
+    }
+    OrkAssert(false);
+  }
+  /////////////////////////////////////////////////////////
+  // implement phase
+  /////////////////////////////////////////////////////////
+  if (1) {
+    logchan_rulespec2->log("///////////////////////////////////////////////////////////");
+    logchan_rulespec2->log("// IMPLEMENTING USER AST-RULES..");
     logchan_rulespec2->log("///////////////////////////////////////////////////////////");
     for (auto rule : _user_parser_rules) {
       auto rule_name = rule.first;
       auto ast_rule  = rule.second;
       auto matcher   = ast_rule->createMatcher(rule_name);
       logchan_rulespec2->log(
-          "// IMPLEMENT PARSER RULE<%s> matcher<%p:%s>", rule_name.c_str(), (void*)matcher.get(), matcher->_name.c_str());
+          "// IMPLEMENT AST-RULE<%s> matcher<%p:%s>", rule_name.c_str(), (void*)matcher.get(), matcher->_name.c_str());
       this->_user_parser->_matchers_by_name[rule_name] = matcher;
       auto it                                          = _user_matchers_by_name.find(rule_name);
       OrkAssert(it == _user_matchers_by_name.end());
@@ -775,8 +861,11 @@ void PegImpl::implementUserLanguage() {
       _user_parser_matchers_by_name[rule_name] = matcher;
     }
   }
+  /////////////////////////////////////////////////////////
+  // link phase
+  /////////////////////////////////////////////////////////
   logchan_rulespec2->log("///////////////////////////////////////////////////////////");
-  logchan_rulespec2->log("// LINKING USER MATCHERS");
+  logchan_rulespec2->log("// LINKING USER PARSER");
   logchan_rulespec2->log("///////////////////////////////////////////////////////////");
   _user_parser->link();
   logchan_rulespec2->log("///////////////////////////////////////////////////////////");

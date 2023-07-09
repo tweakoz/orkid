@@ -36,6 +36,7 @@ using wordmatch_ptr_t             = std::shared_ptr<WordMatch>;
 using classmatch_ptr_t            = std::shared_ptr<ClassMatch>;
 
 using matcher_filterfn_t          = std::function<bool(match_ptr_t top_match)>;
+using matcher_pair_t = std::pair<std::string, matcher_ptr_t>;
 
 //////////////////////////////////////////////////////////////
 
@@ -150,8 +151,7 @@ struct Parser {
   matcher_ptr_t zeroOrMore(matcher_ptr_t matcher,std::string name="",bool mustConsumeAll=false);
   matcher_ptr_t nOrMore(matcher_ptr_t sub_matcher, size_t minMatches, std::string name="",bool mustConsumeAll=false);
   matcher_ptr_t optional(matcher_ptr_t matcher,std::string name="");
-  //
-  //matcher_ptr_t createMatcher(matcher_fn_t match_fn,std::string name="");
+
   matcher_ptr_t matcherForTokenClassID(uint64_t tokclass,std::string name="");
   matcher_ptr_t matcherForWord(std::string word, std::string name="");
 
@@ -165,13 +165,16 @@ struct Parser {
   match_ptr_t _match(matcher_ptr_t matcher, scannerlightview_constptr_t inp_view);
 
   void _log_valist(const char *pMsgFormat, va_list args) const;
-  void log_match(const char *pMsgFormat, ...) const;
-
   void _log_valist_continue(const char *pMsgFormat, va_list args) const;
-  void log_match_continue(const char *pMsgFormat, ...) const;
-
   void _log_valist_begin(const char *pMsgFormat, va_list args) const;
+
+  void log_info(const char *pMsgFormat, ...) const;
+  void log_info_begin(const char *pMsgFormat, ...) const;
+  void log_info_continue(const char *pMsgFormat, ...) const;
+
+  void log_match(const char *pMsgFormat, ...) const;
   void log_match_begin(const char *pMsgFormat, ...) const;
+  void log_match_continue(const char *pMsgFormat, ...) const;
 
   matcher_ptr_t rule(const std::string& rule_name);
   void on(const std::string& rule_name, matcher_notif_t fn);
@@ -192,6 +195,7 @@ struct Parser {
   size_t _cache_misses = 0;
   size_t _cache_hits = 0;
   bool _DEBUG_MATCH = false;
+  bool _DEBUG_INFO = false;
   std::string _name;
 };
 

@@ -92,7 +92,8 @@ struct MyParser2 : public Parser {
 
   MyParser2() {
     _name = "p2";
-    _DEBUG_MATCH = false;
+    _DEBUG_MATCH = true;
+    _DEBUG_INFO = true;
     auto scanner_match = this->loadPEGScannerSpec(scanner_spec);
     OrkAssert(scanner_match);
     auto parser_match = this->loadPEGParserSpec(parser_spec);
@@ -108,6 +109,21 @@ struct MyParser2 : public Parser {
     auto funcdef = rule("funcdef");
     auto semicolon = rule("SEMICOLON");
     auto assignment_statement = rule("assignment_statement");
+    ///////////////////////////////////////////////////////////
+    if(0) variableReference->_match_filter = [=](match_ptr_t top_match) ->bool { //
+      auto kwid      = top_match->asShared<ClassMatch>()->_token->text;
+      auto var_ref   = top_match->_user.makeShared<MYAST::VariableReference>();
+      var_ref->_name = kwid;
+      auto v = top_match->_view;
+      bool has_primary = top_match->matcherInStack(primary);
+      bool has_assignmentstatement = top_match->matcherInStack(assignment_statement);
+      if(0)printf("TEST variableReference var<%s> st<%zu> en<%zu> matcher<%s> has_primary<%d> has_assignmentstatement<%d> \n", //
+              kwid.c_str(), v->_start, v->_end, //
+              top_match->_matcher->_name.c_str(), //
+              int(has_primary), //
+              int(has_assignmentstatement) );
+      return has_primary or has_assignmentstatement;
+    };
     ///////////////////////////////////////////////////////////
     on("FLOATING_POINT", [=](match_ptr_t match) { //
       auto ast_node    = match->_user.makeShared<MYAST::FloatLiteral>();
@@ -138,10 +154,12 @@ struct MyParser2 : public Parser {
       auto v = match->_view;
       bool has_primary = match->matcherInStack(primary);
       bool has_assignmentstatement = match->matcherInStack(assignment_statement);
-      printf("ON variableReference var<%s> st<%zu> en<%zu> has_primary<%d> has_assignmentstatement<%d> \n", //
+      printf("ON variableReference var<%s> st<%zu> en<%zu> matcher<%s> has_primary<%d> has_assignmentstatement<%d> \n", //
               kwid.c_str(), v->_start, v->_end, //
+              match->_matcher->_name.c_str(), //
               int(has_primary), //
               int(has_assignmentstatement) );
+      OrkAssert(false);
     });
     ///////////////////////////////////////////////////////////
     on("term", [=](match_ptr_t match) {
