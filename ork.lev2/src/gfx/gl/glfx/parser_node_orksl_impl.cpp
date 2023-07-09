@@ -157,7 +157,7 @@ struct _ORKSL_IMPL : public Parser {
 
 match_ptr_t _ORKSL_IMPL::match_fndef(const ScannerView& inp_view) {
   auto slv = std::make_shared<ScannerLightView>(inp_view);
-  return match(slv,_matcher_fndef);
+  return match(_matcher_fndef,slv);
 }
 
 //////////////////////////////////////////////////////////////

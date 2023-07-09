@@ -134,7 +134,8 @@ matcher_ptr_t Parser::optional(matcher_ptr_t sub_matcher, std::string name) {
     // if sub_matcher matches, return the match
     ////////////////////////////////////////////////////
     if (not slv->empty()) {
-      auto sub_match = _match(sub_matcher, slv);
+      MatchContextItem mci { sub_matcher, slv };
+      auto sub_match = _match(mci);
       if (sub_match) {
         auto match_str = deco::string("MATCH", 0, 255, 0);
         log_match("OPT<%s> %s sub<%s>", name.c_str(), match_str.c_str(), sub_match->_matcher->_name.c_str());
@@ -193,7 +194,8 @@ void Parser::_sequence(matcher_ptr_t matcher, std::vector<matcher_ptr_t> sub_mat
         break;
       }
       auto tok0       = slv_iter->token(0);
-      auto match_item = _match(sub_matcher, slv_iter);
+      MatchContextItem mci { sub_matcher, slv_iter };
+      auto match_item = _match(mci);
       log_match_begin(
           "SEQ<%s> : match_item<%s> tok0<%s> iter<%zu/%zu> st<%d> end<%d> ",
           matcher->_name.c_str(),
@@ -306,7 +308,8 @@ matcher_ptr_t Parser::group(std::vector<matcher_ptr_t> matchers, std::string nam
     auto slv_iter         = std::make_shared<ScannerLightView>(*slv_inp);
     auto the_group        = the_match->_impl.makeShared<Group>();
     for (auto sub_matcher : matchers) {
-      auto sub_match = _match(sub_matcher, slv_iter);
+      MatchContextItem mci { sub_matcher, slv_iter };
+      auto sub_match = _match(mci);
       if (sub_match) {
         the_group->_items.push_back(sub_match);
         slv_iter->_start = sub_match->_view->_end + 1;
@@ -336,7 +339,8 @@ matcher_ptr_t Parser::oneOf(std::vector<matcher_ptr_t> matchers, std::string nam
   matcher->_match_fn = [=](matcher_ptr_t par_matcher, scannerlightview_constptr_t slv) -> match_ptr_t {
     // log_match( "oneOf<%s>: begin num_subs<%zu>\n", name.c_str(), matchers.size() );
     for (auto sub_matcher : matchers) {
-      auto sub_match = _match(sub_matcher, slv);
+      MatchContextItem mci { sub_matcher, slv };
+      auto sub_match = _match(mci);
       if (sub_match) {
         auto match_str = deco::string("MATCH", 0, 255, 0);
         log_match("1OF<%s>: %s sub_matcher<%s>", name.c_str(), match_str.c_str(), sub_matcher->_name.c_str());
@@ -380,7 +384,8 @@ matcher_ptr_t Parser::nOrMore(matcher_ptr_t sub_matcher, size_t minMatches, std:
     log_match("NOM%zu<%s>: beg_match sub_matcher<%s>", minMatches, name.c_str(), sub_matcher->_name.c_str());
     ////////////////////////////////////////////////////////////////
     while (keep_going) {
-      auto sub_match = _match(sub_matcher, slv_iter);
+      MatchContextItem mci { sub_matcher, slv_iter };
+      auto sub_match = _match(mci);
       keep_going     = false;
       log_match_begin(
           "NOM%d<%s> try_match iter<%d> ", //
@@ -536,13 +541,17 @@ matcher_ptr_t Parser::matcherForWord(std::string word, std::string name) {
 
 //////////////////////////////////////////////////////////////////////
 
-match_ptr_t Parser::_match(matcher_ptr_t matcher, scannerlightview_constptr_t inp_view) {
+match_ptr_t Parser::_match(MatchContextItem& mci) {
+
+  auto matcher  = mci._matcher;
+  auto inp_view = mci._view;
+
   OrkAssert(matcher);
   if (matcher->_match_fn == nullptr) {
     logerrchannel()->log("matcher<%s> has no match function", matcher->_name.c_str());
     OrkAssert(false);
   }
-  _matcherstack.push_back(matcher);
+  _matchctx._stack.push_back(mci);
   inp_view->validate();
   match_ptr_t match;
   //////////////////////////////////
@@ -560,7 +569,7 @@ match_ptr_t Parser::_match(matcher_ptr_t matcher, scannerlightview_constptr_t in
   else {
     match                = matcher->_match_fn(matcher, inp_view);
     if(match){
-      match->_matcherstack = _matcherstack;
+      //match->_matcherstack = _matcherstack;
     }
     _packrat_cache[hash] = match;
     _cache_misses++;
@@ -572,18 +581,23 @@ match_ptr_t Parser::_match(matcher_ptr_t matcher, scannerlightview_constptr_t in
     matcher->_notif(match);
   }
   //////////////////////////////////
-  _matcherstack.pop_back();
+  _matchctx._stack.pop_back();
   return match;
 }
 
 //////////////////////////////////////////////////////////////
 
-match_ptr_t Parser::match(scannerlightview_constptr_t inp_view, matcher_ptr_t top) {
-  if (top == nullptr) {
+match_ptr_t Parser::match(matcher_ptr_t topmatcher, scannerlightview_constptr_t topview) {
+  if (topmatcher == nullptr) {
     logerrchannel()->log("Parser<%p> no top match function", this);
     OrkAssert(false);
   }
-  return _match(top, inp_view);
+  _matchctx._stack.clear();
+  _matchctx._topmatcher = topmatcher;
+  _matchctx._topview    = topview;
+  MatchContextItem mci { topmatcher, topview };
+  auto match = _match(mci);
+  return match;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -626,14 +640,14 @@ void Parser::link() {
 void Parser::_log_valist(const char* pMsgFormat, va_list args) const {
   char buf[1024];
   vsnprintf_s(buf, sizeof(buf), pMsgFormat, args);
-  size_t indent  = _matcherstack.size();
+  size_t indent  = _matchctx._stack.size();
   auto indentstr = std::string(indent * 2, ' ');
   printf("[PARSER : %s] %s%s\n", _name.c_str(), indentstr.c_str(), buf);
 }
 void Parser::_log_valist_begin(const char* pMsgFormat, va_list args) const {
   char buf[1024];
   vsnprintf_s(buf, sizeof(buf), pMsgFormat, args);
-  size_t indent  = _matcherstack.size();
+  size_t indent  = _matchctx._stack.size();
   auto indentstr = std::string(indent * 2, ' ');
   printf("[PARSER] %s%s", indentstr.c_str(), buf);
 }

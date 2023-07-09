@@ -11,6 +11,7 @@
 namespace ork {
 
 struct Match;
+struct MatchContext;
 struct Sequence;
 struct Group;
 struct Matcher;
@@ -34,6 +35,7 @@ using oneof_ptr_t                 = std::shared_ptr<OneOf>;
 using optional_ptr_t              = std::shared_ptr<Optional>;
 using wordmatch_ptr_t             = std::shared_ptr<WordMatch>;
 using classmatch_ptr_t            = std::shared_ptr<ClassMatch>;
+using matchctx_ptr_t              = std::shared_ptr<MatchContext>;
 
 using matcher_filterfn_t          = std::function<bool(match_ptr_t top_match)>;
 using matcher_pair_t = std::pair<std::string, matcher_ptr_t>;
@@ -87,6 +89,17 @@ struct Matcher {
   }
   uint64_t hash(scannerlightview_constptr_t slv) const; // packrat hash
   void _hash(boost::Crc64& crc_out) const; // packrat hash
+};
+
+struct MatchContextItem {
+  matcher_ptr_t _matcher;
+  scannerlightview_constptr_t _view;
+};
+
+struct MatchContext {
+  matcher_ptr_t _topmatcher;
+  scannerlightview_constptr_t _topview;
+  std::vector<MatchContextItem> _stack;
 };
 
 //////////////////////////////////////////////////////////////
@@ -161,8 +174,9 @@ struct Parser {
     return matcherForTokenClassID(uint64_t(tokclass),name);
   }
 
-  match_ptr_t match(scannerlightview_constptr_t inp_view, matcher_ptr_t top);
-  match_ptr_t _match(matcher_ptr_t matcher, scannerlightview_constptr_t inp_view);
+
+  match_ptr_t match( matcher_ptr_t topmatcher, scannerlightview_constptr_t topview );
+  match_ptr_t _match(MatchContextItem& mci);
 
   void _log_valist(const char *pMsgFormat, va_list args) const;
   void _log_valist_continue(const char *pMsgFormat, va_list args) const;
@@ -184,7 +198,6 @@ struct Parser {
 
   void link();
 
-  std::vector<matcher_ptr_t> _matcherstack;
   std::stack<const Match*> _matchstack;
   std::unordered_set<matcher_ptr_t> _matchers;
   std::unordered_map<std::string,matcher_ptr_t> _matchers_by_name;
@@ -197,6 +210,7 @@ struct Parser {
   bool _DEBUG_MATCH = false;
   bool _DEBUG_INFO = false;
   std::string _name;
+  MatchContext _matchctx;
 };
 
 //////////////////////////////////////////////////////////////

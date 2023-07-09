@@ -296,7 +296,7 @@ struct MyParser : public Parser {
     auto top_view = _scanner->createTopView();
     top_view.dump("top_view");
     auto slv   = std::make_shared<ScannerLightView>(top_view);
-    auto match = this->match(slv, _fn_matcher);
+    auto match = this->match(_fn_matcher,slv);
     return match;
   }
 

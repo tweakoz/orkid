@@ -72,7 +72,7 @@ void AstNode::visit(astnode_ptr_t node, astvisitctx_ptr_t visitctx) {
 Expression::Expression(Parser* user_parser, std::string name)
     : AstNode(user_parser) {
 
-  _name = "Expression";
+  _name = "PEGExpression";
 
   if (name != "") {
     _name = name;
@@ -94,7 +94,7 @@ matcher_ptr_t Expression::createMatcher(std::string named) { // final
 ////////////////////////////////////////////////////////////////////////
 ExprKWID::ExprKWID(Parser* user_parser)
     : AstNode(user_parser) {
-  _name = "ExprKWID";
+  _name = "PEGExprKWID";
 }
 void ExprKWID::dump(dumpctx_ptr_t dctx) { // final
   dctx->_indent++;
@@ -148,7 +148,7 @@ matcher_ptr_t ExprKWID::createMatcher(std::string named) { // final
 ////////////////////////////////////////////////////////////////////////
 OneOrMore::OneOrMore(Parser* user_parser)
     : AstNode(user_parser) {
-  _name = "OneOrMore";
+  _name = "PEGOneOrMore";
 }
 void OneOrMore::dump(dumpctx_ptr_t dctx) { // final
   dctx->_indent++;
@@ -171,7 +171,7 @@ matcher_ptr_t OneOrMore::createMatcher(std::string named) { // final
 ////////////////////////////////////////////////////////////////////////
 ZeroOrMore::ZeroOrMore(Parser* user_parser)
     : AstNode(user_parser) {
-  _name = "ZeroOrMore";
+  _name = "PEGZeroOrMore";
 }
 void ZeroOrMore::dump(dumpctx_ptr_t dctx) { // final
   dctx->_indent++;
@@ -189,7 +189,7 @@ matcher_ptr_t ZeroOrMore::createMatcher(std::string named) { // final
 ////////////////////////////////////////////////////////////////////////
 Select::Select(Parser* user_parser)
     : AstNode(user_parser) {
-  _name = "Select";
+  _name = "PEGSelect";
 }
 void Select::dump(dumpctx_ptr_t dctx) { // final
   dctx->_indent++;
@@ -215,7 +215,7 @@ matcher_ptr_t Select::createMatcher(std::string named) { // final
 ////////////////////////////////////////////////////////////////////////
 Optional::Optional(Parser* user_parser)
     : AstNode(user_parser) {
-  _name = "Optional";
+  _name = "PEGOptional";
 }
 void Optional::dump(dumpctx_ptr_t dctx) { // final
   dctx->_indent++;
@@ -234,7 +234,7 @@ matcher_ptr_t Optional::createMatcher(std::string named) { // final
 ////////////////////////////////////////////////////////////////////////
 Sequence::Sequence(Parser* user_parser)
     : AstNode(user_parser) {
-  _name = "Sequence";
+  _name = "PEGSequence";
 }
 void Sequence::dump(dumpctx_ptr_t dctx) { // final
   dctx->_indent++;
@@ -260,7 +260,7 @@ matcher_ptr_t Sequence::createMatcher(std::string named) { // final
 ////////////////////////////////////////////////////////////////////////
 Group::Group(Parser* user_parser)
     : AstNode(user_parser) {
-  _name = "Group";
+  _name = "PEGGroup";
 }
 void Group::dump(dumpctx_ptr_t dctx) { // final
   dctx->_indent++;
@@ -286,7 +286,7 @@ matcher_ptr_t Group::createMatcher(std::string named) { // final
 ////////////////////////////////////////////////////////////////////////
 ParserRule::ParserRule(Parser* user_parser, std::string name)
     : AstNode(user_parser) {
-  _name = "ParserRule";
+  _name = "PEGParserRule";
   if (name != "") {
     _name = name;
   }
@@ -697,7 +697,7 @@ match_ptr_t PegImpl::parseUserScannerSpec(std::string inp_string) {
   auto top_view = peg_scanner->createTopView();
   top_view.dump("top_view");
   auto slv   = std::make_shared<ScannerLightView>(top_view);
-  auto match = _peg_parser->match(slv, _rsi_scanner_matcher);
+  auto match = _peg_parser->match(_rsi_scanner_matcher,slv);
   OrkAssert(match);
   OrkAssert(match->_view->_start == top_view._start);
   OrkAssert(match->_view->_end == top_view._end);
@@ -743,7 +743,7 @@ match_ptr_t PegImpl::parseUserParserSpec(std::string inp_string) {
   auto top_view = peg_scanner->createTopView();
   top_view.dump("top_view");
   auto slv   = std::make_shared<ScannerLightView>(top_view);
-  auto match = _peg_parser->match(slv, _rsi_parser_matcher);
+  auto match = _peg_parser->match(_rsi_parser_matcher,slv);
   OrkAssert(match);
   OrkAssert(match->_view->_start == top_view._start);
   this->implementUserLanguage();
@@ -815,27 +815,32 @@ void PegImpl::implementUserLanguage() {
     visit_ctx->_visitor = [this,visit_ctx](AST::astnode_ptr_t the_node) {
       auto top_rule = visit_ctx->_top_rule;
       auto top_rule_name = top_rule->_name;
+      size_t stacklen = visit_ctx->_visit_stack.size();
+      auto indent = std::string(stacklen * 2, ' ');
       if (auto as_rule = std::dynamic_pointer_cast<AST::ParserRule>(the_node)) {
         if( as_rule != top_rule ){
           auto rule_name = as_rule->_name;
-          printf("top_rule<%s> nodesubrule<%s>\n", top_rule_name.c_str(), rule_name.c_str());
+          printf("nodesubrule<%s>\n", rule_name.c_str());
         }
       } else if (auto as_kwid = std::dynamic_pointer_cast<AST::ExprKWID>(the_node)) {
         auto top_rule_name = top_rule->_name;
-        size_t stacklen = visit_ctx->_visit_stack.size();
-        printf("top_rule<%s> stklen<%zu> kwid<%s>", top_rule_name.c_str(), stacklen, as_kwid->_kwid.c_str());
+        printf("%s kwid<%p:%s>", indent.c_str(), (void*) as_kwid.get(), as_kwid->_kwid.c_str());
         auto it = _user_parser_rules.find(as_kwid->_kwid);
         if (it != _user_parser_rules.end()) {
           auto rule = it->second;
-          printf( " subrule<%p>", (void*)rule.get() );
+          printf( " subrule<%s>", rule->_name.c_str() );
         }
         printf("\n");
+      }
+      else{
+        printf("%s node<%p:%s>\n", indent.c_str(), (void*) the_node.get(), the_node->_name.c_str() );
       }
     };
 
     for (auto rule_item : _user_parser_rules) {
       auto rule     = rule_item.second;
       visit_ctx->_top_rule = rule;
+      printf( "/////////// VISITING RULE<%p:%s> ///////////\n", (void*) rule.get(), rule->_name.c_str() );
       AST::AstNode::visit(rule,visit_ctx);
       // rule->_expression->dump();
     }

@@ -359,7 +359,7 @@ struct MyParser2 : public Parser {
     auto slv   = std::make_shared<ScannerLightView>(top_view);
     _fns_matcher = findMatcherByName("funcdefs");
     OrkAssert(_fns_matcher);
-    auto match = this->match(slv, _fns_matcher);
+    auto match = this->match(_fns_matcher,slv);
     return match;
   }
 
