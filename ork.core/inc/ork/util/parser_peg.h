@@ -60,6 +60,7 @@ struct Group;
 struct ExprKWID;
 struct DumpContext;
 struct VisitContext;
+struct RuleRef;
 //
 using scanner_rule_ptr_t  = std::shared_ptr<ScannerRule>;
 using scanner_macro_ptr_t = std::shared_ptr<ScannerMacro>;
@@ -75,14 +76,20 @@ using group_ptr_t         = std::shared_ptr<Group>;
 using expr_kwid_ptr_t     = std::shared_ptr<ExprKWID>;
 using dumpctx_ptr_t       = std::shared_ptr<DumpContext>;
 using scanner_rule_pair_t = std::pair<std::string, scanner_rule_ptr_t>;
-using rule_list_t = std::vector<rule_ptr_t>;
 using astvisitctx_ptr_t = std::shared_ptr<VisitContext>;
 using node_visitor_t = std::function<void(astnode_ptr_t)>;
+using ruleref_ptr_t = std::shared_ptr<RuleRef>;
+using ruleref_list_t = std::vector<ruleref_ptr_t>;
 
 struct VisitContext{
   rule_ptr_t _top_rule;
   node_visitor_t _visitor;
   std::vector<astnode_ptr_t> _visit_stack;
+};
+
+struct RuleRef {
+  rule_ptr_t _referenced_rule;
+  astnode_ptr_t _node;
 };
 
 struct AstNode {
@@ -93,8 +100,10 @@ struct AstNode {
   static void visit(astnode_ptr_t node, astvisitctx_ptr_t ctx);
   virtual void do_visit(astvisitctx_ptr_t ctx) = 0;
   virtual matcher_ptr_t createMatcher(std::string named) = 0;
+  std::string path() const;
   Parser* _user_parser                  = nullptr;
   void_lambda_t _on_link;
+  astnode_ptr_t _parent;
 };
 ////////////////////////////////////////////////////////////////////////
 struct Expression : public AstNode {
@@ -169,7 +178,8 @@ struct ParserRule : public AstNode {
   void do_visit(astvisitctx_ptr_t ctx) final;
   matcher_ptr_t createMatcher(std::string named) final;
   expression_ptr_t _expression;
-  rule_list_t _rules_referenced;
+  ruleref_list_t _references;
+  ruleref_list_t _referenced_by;
 };
 } // namespace AST
 

@@ -57,6 +57,7 @@ struct PegImpl {
 
   std::vector<void_lambda_t> _link_ops;
   AST::rule_ptr_t _current_rule;
+  std::vector<AST::astnode_ptr_t> _ast_buildstack;
 };
 
 using pegimpl_ptr_t = std::shared_ptr<PegImpl>;

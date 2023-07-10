@@ -159,7 +159,7 @@ struct MyParser2 : public Parser {
               match->_matcher->_name.c_str(), //
               int(has_primary), //
               int(has_assignmentstatement) );
-      OrkAssert(false);
+      OrkAssert(has_primary or has_assignmentstatement);
     });
     ///////////////////////////////////////////////////////////
     on("term", [=](match_ptr_t match) {
