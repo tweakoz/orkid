@@ -58,12 +58,12 @@ struct MyParser : public Parser {
     auto dt_int   = matcherForWord("int");
     ///////////////////////////////////////////////////////////
     floattok->_notif = [=](match_ptr_t match) { //
-      auto ast_node    = match->_user.makeShared<MYAST::FloatLiteral>();
+      auto ast_node    = match->makeSharedForKey<MYAST::FloatLiteral>("astnode");
       auto impl        = match->_impl.get<classmatch_ptr_t>();
       ast_node->_value = std::stof(impl->_token->text);
     };
     inttok->_notif = [=](match_ptr_t match) { //
-      auto ast_node    = match->_user.makeShared<MYAST::IntegerLiteral>();
+      auto ast_node    = match->makeSharedForKey<MYAST::IntegerLiteral>("astnode");
       auto impl        = match->_impl.get<classmatch_ptr_t>();
       ast_node->_value = std::stoi(impl->_token->text);
     };
@@ -75,7 +75,7 @@ struct MyParser : public Parser {
     //
     datatype->_notif = [=](match_ptr_t match) { //
       auto selected   = match->_impl.getShared<OneOf>()->_selected;
-      auto ast_node   = match->_user.makeShared<MYAST::DataType>();
+      auto ast_node   = match->makeSharedForKey<MYAST::DataType>("astnode");
       ast_node->_name = selected->_impl.get<wordmatch_ptr_t>()->_token->text;
     };
     ///////////////////////////////////////////////////////////
@@ -99,7 +99,7 @@ struct MyParser : public Parser {
     variableReference->_notif = [=](match_ptr_t match) { //
       auto seq       = match->_impl.get<sequence_ptr_t>();
       auto kwid      = seq->_items[0]->_impl.getShared<ClassMatch>()->_token->text;
-      auto var_ref   = match->_user.makeShared<MYAST::VariableReference>();
+      auto var_ref   = match->makeSharedForKey<MYAST::VariableReference>("astnode");
       var_ref->_name = kwid;
     };
     ///////////////////////////////////////////////////////////
@@ -107,10 +107,10 @@ struct MyParser : public Parser {
     ///////////////////////////////////////////////////////////
     auto term    = sequence({lparen, expression, rparen}, "term");
     term->_notif = [=](match_ptr_t match) {
-      auto ast_node = match->_user.makeShared<MYAST::Term>();
+      auto ast_node = match->makeSharedForKey<MYAST::Term>("astnode");
       auto selected = match->_impl.get<sequence_ptr_t>()->_items[1];
       if (selected->_matcher == expression) {
-        ast_node->_subexpression = selected->_user.getShared<MYAST::Expression>();
+        ast_node->_subexpression = selected->sharedForKey<MYAST::Expression>("astnode");
       }
     };
     ///////////////////////////////////////////////////////////
@@ -125,9 +125,9 @@ struct MyParser : public Parser {
         });
     //
     primary->_notif = [=](match_ptr_t match) {
-      auto ast_node   = match->_user.makeShared<MYAST::Primary>();
+      auto ast_node   = match->makeSharedForKey<MYAST::Primary>("astnode");
       auto selected   = match->_impl.get<oneof_ptr_t>()->_selected;
-      ast_node->_impl = selected->_user;
+      //ast_node->_impl = selected->_user;
     };
     ///////////////////////////////////////////////////////////
     auto mul1sp  = sequence({star, primary}, "mul1sp");
@@ -140,17 +140,17 @@ struct MyParser : public Parser {
         });
     //
     product->_notif = [=](match_ptr_t match) {
-      auto ast_node = match->_user.makeShared<MYAST::Product>();
+      auto ast_node = match->makeSharedForKey<MYAST::Product>("astnode");
       auto selected = match->_impl.get<oneof_ptr_t>()->_selected;
       auto sel_seq  = selected->_impl.get<sequence_ptr_t>();
-      auto primary  = sel_seq->_items[0]->_user.getShared<MYAST::Primary>();
+      auto primary  = sel_seq->_items[0]->sharedForKey<MYAST::Primary>("astnode");
       auto m1zom    = sel_seq->_items[1]->_impl.get<n_or_more_ptr_t>();
       ast_node->_primaries.push_back(primary);
       if (m1zom->_items.size()) {
         for (auto i : m1zom->_items) {
           auto seq = i->_impl.get<sequence_ptr_t>();
           // star is implied...
-          primary = seq->_items[1]->_user.getShared<MYAST::Primary>();
+          primary = seq->_items[1]->sharedForKey<MYAST::Primary>("astnode");
           ast_node->_primaries.push_back(primary);
         }
       }
@@ -164,20 +164,20 @@ struct MyParser : public Parser {
          product});
     //
     sum->_notif = [=](match_ptr_t match) {
-      auto ast_node = match->_user.makeShared<MYAST::Sum>();
+      auto ast_node = match->makeSharedForKey<MYAST::Sum>("astnode");
       auto selected = match->_impl.get<oneof_ptr_t>()->_selected;
       if (selected->_matcher == product) {
-        ast_node->_left = selected->_user.getShared<MYAST::Product>();
+        ast_node->_left = selected->sharedForKey<MYAST::Product>("astnode");
         ast_node->_op   = '_';
       } else if (selected->_matcher->_name == "add1") {
         auto seq         = selected->_impl.get<sequence_ptr_t>();
-        ast_node->_left  = seq->_items[0]->_user.getShared<MYAST::Product>();
-        ast_node->_right = seq->_items[2]->_user.getShared<MYAST::Product>();
+        ast_node->_left  = seq->_items[0]->sharedForKey<MYAST::Product>("astnode");
+        ast_node->_right = seq->_items[2]->sharedForKey<MYAST::Product>("astnode");
         ast_node->_op    = '+';
       } else if (selected->_matcher->_name == "add2") {
         auto seq         = selected->_impl.get<sequence_ptr_t>();
-        ast_node->_left  = seq->_items[0]->_user.getShared<MYAST::Product>();
-        ast_node->_right = seq->_items[2]->_user.getShared<MYAST::Product>();
+        ast_node->_left  = seq->_items[0]->sharedForKey<MYAST::Product>("astnode");
+        ast_node->_right = seq->_items[2]->sharedForKey<MYAST::Product>("astnode");
         ast_node->_op    = '-';
       } else {
         OrkAssert(false);
@@ -186,9 +186,9 @@ struct MyParser : public Parser {
     ///////////////////////////////////////////////////////////
     _sequence(expression, {sum});
     expression->_notif = [=](match_ptr_t match) { //
-      auto ast_node  = match->_user.makeShared<MYAST::Expression>();
+      auto ast_node  = match->makeSharedForKey<MYAST::Expression>("astnode");
       auto seq       = match->_impl.get<sequence_ptr_t>();
-      ast_node->_sum = seq->_items[0]->_user.getShared<MYAST::Sum>();
+      ast_node->_sum = seq->_items[0]->sharedForKey<MYAST::Sum>("astnode");
     };
     ///////////////////////////////////////////////////////////
     auto assignment_statement = sequence(
@@ -199,19 +199,19 @@ struct MyParser : public Parser {
          expression});
     //
     assignment_statement->_notif = [=](match_ptr_t match) { //
-      auto ast_node = match->_user.makeShared<MYAST::AssignmentStatement>();
+      auto ast_node = match->makeSharedForKey<MYAST::AssignmentStatement>("astnode");
       auto ass1of   = match->_impl.get<sequence_ptr_t>()->_items[0]->_impl.get<oneof_ptr_t>();
       if (ass1of->_selected->_matcher == variableDeclaration) {
         auto seq      = ass1of->_selected->_impl.get<sequence_ptr_t>();
-        auto datatype = seq->_items[0]->_user.getShared<MYAST::DataType>();
-        // auto kwid = seq->_items[1]->_user.getShared<MYAST::KwOrId>();
-        auto expr = match->_impl.get<sequence_ptr_t>()->_items[2]->_user.getShared<MYAST::Expression>();
+        auto datatype = seq->_items[0]->sharedForKey<MYAST::DataType>("astnode");
+        // auto kwid = seq->_items[1]->sharedForKey<MYAST::KwOrId>("astnode");
+        auto expr = match->_impl.get<sequence_ptr_t>()->_items[2]->sharedForKey<MYAST::Expression>("astnode");
         // ast_node->_datatype = datatype;
         // ast_node->_name = kwid;
         // ast_node->_expression = expr;
       } else if (ass1of->_selected->_matcher == variableReference) {
-        // auto kwid = ass1of->_selected->_impl.get<sequence_ptr_t>()->_items[0]->_user.getShared<MYAST::KwOrId>();
-        auto expr           = match->_impl.get<sequence_ptr_t>()->_items[2]->_user.getShared<MYAST::Expression>();
+        // auto kwid = ass1of->_selected->_impl.get<sequence_ptr_t>()->_items[0]->sharedForKey<MYAST::KwOrId>("astnode");
+        auto expr           = match->_impl.get<sequence_ptr_t>()->_items[2]->sharedForKey<MYAST::Expression>("astnode");
         ast_node->_datatype = nullptr;
         // ast_node->_name = kwid;
         ast_node->_expression = expr;

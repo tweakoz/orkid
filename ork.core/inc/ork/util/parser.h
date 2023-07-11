@@ -51,7 +51,7 @@ struct Match {
   std::vector<matcher_ptr_t> _matcherstack;
   svar32_t _impl;
   svar32_t _impl2;
-  svar32_t _user;
+  varmap::VarMap _uservars;
   void dump(int indent) const;
   bool matcherInStack(matcher_ptr_t matcher) const;
   template <typename impl_t> std::shared_ptr<impl_t> asShared() {
@@ -69,11 +69,12 @@ struct Match {
   template <typename impl_t> bool isShared() const {
     return _impl.isShared<impl_t>();
   }
-  template <typename user_t> std::shared_ptr<user_t> userAsShared() {
-    return _user.getShared<user_t>();
+  template <typename user_t> std::shared_ptr<user_t> sharedForKey(std::string named) {
+    using ptr_t = std::shared_ptr<user_t>;
+    return _uservars.typedValueForKey<ptr_t>(named).value();
   }
-  template <typename user_t> std::shared_ptr<user_t> userMakeShared() {
-    return _user.makeShared<user_t>();
+  template <typename user_t> std::shared_ptr<user_t> makeSharedForKey(std::string named) {
+    return _uservars.makeSharedForKey<user_t>(named);
   }
 };
 

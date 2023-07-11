@@ -125,7 +125,7 @@ struct MyParser2 : public Parser {
     if (1)
       on("variableReference", [=](match_ptr_t match) { //
         auto kwid                    = match->asShared<ClassMatch>()->_token->text;
-        auto var_ref                 = match->_user.makeShared<MYAST::VariableReference>();
+        auto var_ref                 = match->makeSharedForKey<MYAST::VariableReference>("astnode");
         var_ref->_name               = kwid;
         auto v                       = match->_view;
         printf(
@@ -137,7 +137,7 @@ struct MyParser2 : public Parser {
       });
     ///////////////////////////////////////////////////////////
     on("FLOATING_POINT", [=](match_ptr_t match) { //
-      auto ast_node    = match->_user.makeShared<MYAST::FloatLiteral>();
+      auto ast_node    = match->makeSharedForKey<MYAST::FloatLiteral>("astnode");
       auto impl        = match->asShared<ClassMatch>();
       ast_node->_value = std::stof(impl->_token->text);
       auto v                       = match->_view;
@@ -149,7 +149,7 @@ struct MyParser2 : public Parser {
     });
     ///////////////////////////////////////////////////////////
     on("INTEGER", [=](match_ptr_t match) { //
-      auto ast_node    = match->_user.makeShared<MYAST::IntegerLiteral>();
+      auto ast_node    = match->makeSharedForKey<MYAST::IntegerLiteral>("astnode");
       auto impl        = match->asShared<ClassMatch>();
       ast_node->_value = std::stoi(impl->_token->text);
       auto v                       = match->_view;
@@ -162,35 +162,35 @@ struct MyParser2 : public Parser {
     ///////////////////////////////////////////////////////////
     on("datatype", [=](match_ptr_t match) { //
       auto selected   = match->asShared<OneOf>()->_selected;
-      auto ast_node   = match->userMakeShared<MYAST::DataType>();
+      auto ast_node   = match->makeSharedForKey<MYAST::DataType>("astnode");
       ast_node->_name = selected->asShared<ClassMatch>()->_token->text;
       auto v          = match->_view;
       printf("ON datatype<%s> st<%zu> en<%zu>\n", ast_node->_name.c_str(), v->_start, v->_end);
     });
     ///////////////////////////////////////////////////////////
     on("term", [=](match_ptr_t match) {
-      auto ast_node = match->_user.makeShared<MYAST::Term>();
+      auto ast_node = match->makeSharedForKey<MYAST::Term>("astnode");
       auto selected = match->asShared<Sequence>()->_items[1];
       auto v          = match->_view;
       printf("ON term<%s> st<%zu> en<%zu> \n", selected->_matcher->_name.c_str(), v->_start, v->_end);
       if (selected->_matcher == expression) {
-        ast_node->_subexpression = selected->_user.getShared<MYAST::Expression>();
+        ast_node->_subexpression = selected->sharedForKey<MYAST::Expression>("astnode");
       }
     });
     ///////////////////////////////////////////////////////////
     on("primary", [=](match_ptr_t match) {
-      auto ast_node   = match->_user.makeShared<MYAST::Primary>();
+      auto ast_node   = match->makeSharedForKey<MYAST::Primary>("astnode");
       auto selected   = match->asShared<OneOf>()->_selected;
-      ast_node->_impl = selected->_user;
+      //ast_node->_impl = selected->_user;
       auto v                       = match->_view;
       printf("ON primary<%s> st<%zu> en<%zu> \n", selected->_matcher->_name.c_str(), v->_start, v->_end);
     });
     ///////////////////////////////////////////////////////////
     on("product", [=](match_ptr_t match) {
-      auto ast_node     = match->_user.makeShared<MYAST::Product>();
+      auto ast_node     = match->makeSharedForKey<MYAST::Product>("astnode");
       auto seq          = match->asShared<Sequence>();
       auto primary1     = seq->_items[0];
-      auto primary1_ast = primary1->userAsShared<MYAST::Primary>();
+      auto primary1_ast = primary1->sharedForKey<MYAST::Primary>("astnode");
       auto opt          = seq->itemAsShared<Optional>(1);
       auto primary2     = opt->_subitem;
 
@@ -206,7 +206,7 @@ struct MyParser2 : public Parser {
         auto seq = primary2->asShared<Sequence>();
         primary2 = seq->_items[1];
 
-        auto primary2_ast = primary2->userAsShared<MYAST::Primary>();
+        auto primary2_ast = primary2->makeSharedForKey<MYAST::Primary>("astnode");
         ast_node->_primaries.push_back(primary2_ast);
 
       } else {
@@ -218,22 +218,22 @@ struct MyParser2 : public Parser {
     });
     ///////////////////////////////////////////////////////////
     on("sum", [=](match_ptr_t match) {
-      auto ast_node = match->userMakeShared<MYAST::Sum>();
+      auto ast_node = match->makeSharedForKey<MYAST::Sum>("astnode");
       auto selected = match->asShared<OneOf>()->_selected;
       auto v                       = match->_view;
       printf("ON sum<%s> st<%zu> en<%zu>\n", selected->_matcher->_name.c_str(), v->_start, v->_end);
       if (selected->_matcher == product) {
-        ast_node->_left = selected->_user.getShared<MYAST::Product>();
+        ast_node->_left = selected->sharedForKey<MYAST::Product>("astnode");
         ast_node->_op   = '_';
       } else if (selected->_matcher->_name == "add1") {
         auto seq         = selected->asShared<Sequence>();
-        ast_node->_left  = seq->_items[0]->_user.getShared<MYAST::Product>();
-        ast_node->_right = seq->_items[2]->_user.getShared<MYAST::Product>();
+        ast_node->_left  = seq->_items[0]->sharedForKey<MYAST::Product>("astnode");
+        ast_node->_right = seq->_items[2]->sharedForKey<MYAST::Product>("astnode");
         ast_node->_op    = '+';
       } else if (selected->_matcher->_name == "add2") {
         auto seq         = selected->asShared<Sequence>();
-        ast_node->_left  = seq->_items[0]->_user.getShared<MYAST::Product>();
-        ast_node->_right = seq->_items[2]->_user.getShared<MYAST::Product>();
+        ast_node->_left  = seq->_items[0]->sharedForKey<MYAST::Product>("astnode");
+        ast_node->_right = seq->_items[2]->sharedForKey<MYAST::Product>("astnode");
         ast_node->_op    = '-';
       } else {
         OrkAssert(false);
@@ -242,7 +242,7 @@ struct MyParser2 : public Parser {
     ///////////////////////////////////////////////////////////
     on("expression", [=](match_ptr_t match) { //
       auto v        = match->_view;
-      auto ast_node = match->userMakeShared<MYAST::Expression>();
+      auto ast_node = match->makeSharedForKey<MYAST::Expression>("astnode");
       auto impltype = match->_impl.typestr();
       auto seq      = match->asShared<Sequence>();
       auto selected = seq->_items[0];
@@ -258,12 +258,12 @@ struct MyParser2 : public Parser {
     ///////////////////////////////////////////////////////////
     on("assignment_statement", [=](match_ptr_t match) { //
       auto v        = match->_view;
-      auto ast_node = match->_user.makeShared<MYAST::AssignmentStatement>();
+      auto ast_node = match->makeSharedForKey<MYAST::AssignmentStatement>("astnode");
       auto ass1of   = match->asShared<Sequence>()->itemAsShared<OneOf>(0);
       printf("ON assignment_statement<%s> st<%zu> en<%zu>\n", match->_matcher->_name.c_str(), v->_start, v->_end);
       if (ass1of->_selected->_matcher == variableDeclaration) {
         auto seq      = ass1of->_selected->asShared<Sequence>();
-        auto datatype = seq->_items[0]->_user.getShared<MYAST::DataType>();
+        auto datatype = seq->_items[0]->sharedForKey<MYAST::DataType>("astnode");
         auto expr     = match->asShared<Sequence>()->itemAsShared<MYAST::Expression>(2);
       } else if (ass1of->_selected->_matcher == variableReference) {
         auto expr             = match->asShared<Sequence>()->itemAsShared<MYAST::Expression>(2);
@@ -276,7 +276,7 @@ struct MyParser2 : public Parser {
     ///////////////////////////////////////////////////////////
     on("argument_decl", [=](match_ptr_t match) {
       auto v                       = match->_view;
-      auto ast_node = match->_user.makeShared<MYAST::ArgumentDeclaration>();
+      auto ast_node = match->makeSharedForKey<MYAST::ArgumentDeclaration>("astnode");
       auto seq      = match->asShared<Sequence>();
       printf("adecl impltype<%s>\n", match->_impl.typestr().c_str());
       ast_node->_variable_name   = seq->_items[1]->asShared<ClassMatch>()->_token->text;
@@ -288,7 +288,7 @@ struct MyParser2 : public Parser {
     ///////////////////////////////////////////////////////////
     on("funcdef", [=](match_ptr_t match) {
       auto seq     = match->asShared<Sequence>();
-      auto funcdef = match->userMakeShared<MYAST::FunctionDef>();
+      auto funcdef = match->makeSharedForKey<MYAST::FunctionDef>("astnode");
       auto fn_name = seq->itemAsShared<ClassMatch>(1);
       auto args    = seq->itemAsShared<NOrMore>(3);
       auto stas    = seq->itemAsShared<NOrMore>(6);
@@ -307,7 +307,7 @@ struct MyParser2 : public Parser {
 
       for (auto arg : args->_items) {
         auto argseq   = arg->asShared<Sequence>();
-        auto arg_decl = arg->userAsShared<MYAST::ArgumentDeclaration>();
+        auto arg_decl = arg->sharedForKey<MYAST::ArgumentDeclaration>("astnode");
         funcdef->_arguments.push_back(arg_decl);
         auto argtype = arg_decl->_datatype->_name;
         auto argname = arg_decl->_variable_name;
@@ -351,7 +351,7 @@ struct MyParser2 : public Parser {
       printf("ON funcdefs\n");
       auto fndefs_inp = match->asShared<NOrMore>();
       for (auto item : fndefs_inp->_items) {
-        auto funcdef = item->userAsShared<MYAST::FunctionDef>();
+        auto funcdef = item->sharedForKey<MYAST::FunctionDef>("astnode");
         printf("GOT FUNCDEF<%s>\n", funcdef->_name.c_str());
       }
     });
