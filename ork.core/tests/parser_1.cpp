@@ -58,14 +58,14 @@ struct MyParser : public Parser {
     auto dt_int   = matcherForWord("int");
     ///////////////////////////////////////////////////////////
     floattok->_notif = [=](match_ptr_t match) { //
-        auto ast_node = match->_user.makeShared<MYAST::FloatLiteral>();
-        auto impl = match->_impl.get<classmatch_ptr_t>();
-        ast_node->_value = std::stof(impl->_token->text);
+      auto ast_node    = match->_user.makeShared<MYAST::FloatLiteral>();
+      auto impl        = match->_impl.get<classmatch_ptr_t>();
+      ast_node->_value = std::stof(impl->_token->text);
     };
-    inttok->_notif   = [=](match_ptr_t match) { //
-        auto ast_node = match->_user.makeShared<MYAST::IntegerLiteral>(); 
-        auto impl = match->_impl.get<classmatch_ptr_t>();
-        ast_node->_value = std::stoi(impl->_token->text);
+    inttok->_notif = [=](match_ptr_t match) { //
+      auto ast_node    = match->_user.makeShared<MYAST::IntegerLiteral>();
+      auto impl        = match->_impl.get<classmatch_ptr_t>();
+      ast_node->_value = std::stoi(impl->_token->text);
     };
     ///////////////////////////////////////////////////////////
     auto datatype = oneOf({
@@ -74,9 +74,9 @@ struct MyParser : public Parser {
     });
     //
     datatype->_notif = [=](match_ptr_t match) { //
-        auto selected = match->_impl.getShared<OneOf>()->_selected;
-        auto ast_node = match->_user.makeShared<MYAST::DataType>();
-        ast_node->_name = selected->_impl.get<wordmatch_ptr_t>()->_token->text;
+      auto selected   = match->_impl.getShared<OneOf>()->_selected;
+      auto ast_node   = match->_user.makeShared<MYAST::DataType>();
+      ast_node->_name = selected->_impl.get<wordmatch_ptr_t>()->_token->text;
     };
     ///////////////////////////////////////////////////////////
     auto argument_decl = sequence(
@@ -97,10 +97,10 @@ struct MyParser : public Parser {
     ///////////////////////////////////////////////////////////
     auto variableReference    = sequence("variableReference", {kworid});
     variableReference->_notif = [=](match_ptr_t match) { //
-        auto seq = match->_impl.get<sequence_ptr_t>();
-        auto kwid = seq->_items[0]->_impl.getShared<ClassMatch>()->_token->text;
-        auto var_ref = match->_user.makeShared<MYAST::VariableReference>(); 
-        var_ref->_name = kwid;
+      auto seq       = match->_impl.get<sequence_ptr_t>();
+      auto kwid      = seq->_items[0]->_impl.getShared<ClassMatch>()->_token->text;
+      auto var_ref   = match->_user.makeShared<MYAST::VariableReference>();
+      var_ref->_name = kwid;
     };
     ///////////////////////////////////////////////////////////
     auto expression = declare("expression");
@@ -125,13 +125,13 @@ struct MyParser : public Parser {
         });
     //
     primary->_notif = [=](match_ptr_t match) {
-      auto ast_node = match->_user.makeShared<MYAST::Primary>();
-      auto selected = match->_impl.get<oneof_ptr_t>()->_selected;
+      auto ast_node   = match->_user.makeShared<MYAST::Primary>();
+      auto selected   = match->_impl.get<oneof_ptr_t>()->_selected;
       ast_node->_impl = selected->_user;
     };
     ///////////////////////////////////////////////////////////
-    auto mul1sp         = sequence({star, primary}, "mul1sp");
-    auto mul1zom        = zeroOrMore(mul1sp, "mul1zom");
+    auto mul1sp  = sequence({star, primary}, "mul1sp");
+    auto mul1zom = zeroOrMore(mul1sp, "mul1zom");
     auto product = oneOf(
         "product",
         {
@@ -144,14 +144,14 @@ struct MyParser : public Parser {
       auto selected = match->_impl.get<oneof_ptr_t>()->_selected;
       auto sel_seq  = selected->_impl.get<sequence_ptr_t>();
       auto primary  = sel_seq->_items[0]->_user.getShared<MYAST::Primary>();
-      auto m1zom  = sel_seq->_items[1]->_impl.get<n_or_more_ptr_t>();
+      auto m1zom    = sel_seq->_items[1]->_impl.get<n_or_more_ptr_t>();
       ast_node->_primaries.push_back(primary);
-      if(m1zom->_items.size()){
-        for( auto i : m1zom->_items ){
-            auto seq = i->_impl.get<sequence_ptr_t>();
-            // star is implied...
-            primary = seq->_items[1]->_user.getShared<MYAST::Primary>();
-            ast_node->_primaries.push_back(primary);
+      if (m1zom->_items.size()) {
+        for (auto i : m1zom->_items) {
+          auto seq = i->_impl.get<sequence_ptr_t>();
+          // star is implied...
+          primary = seq->_items[1]->_user.getShared<MYAST::Primary>();
+          ast_node->_primaries.push_back(primary);
         }
       }
     };
@@ -166,31 +166,28 @@ struct MyParser : public Parser {
     sum->_notif = [=](match_ptr_t match) {
       auto ast_node = match->_user.makeShared<MYAST::Sum>();
       auto selected = match->_impl.get<oneof_ptr_t>()->_selected;
-      if( selected->_matcher == product ){
+      if (selected->_matcher == product) {
         ast_node->_left = selected->_user.getShared<MYAST::Product>();
-        ast_node->_op = '_';
-      }
-      else if( selected->_matcher->_name == "add1" ){
-        auto seq = selected->_impl.get<sequence_ptr_t>();
-        ast_node->_left = seq->_items[0]->_user.getShared<MYAST::Product>();
-        ast_node->_right =  seq->_items[2]->_user.getShared<MYAST::Product>();
-        ast_node->_op = '+';
-      }
-      else if( selected->_matcher->_name == "add2" ){
-        auto seq = selected->_impl.get<sequence_ptr_t>();
-        ast_node->_left = seq->_items[0]->_user.getShared<MYAST::Product>();
-        ast_node->_right =  seq->_items[2]->_user.getShared<MYAST::Product>();
-        ast_node->_op = '-';
-      }
-      else{
+        ast_node->_op   = '_';
+      } else if (selected->_matcher->_name == "add1") {
+        auto seq         = selected->_impl.get<sequence_ptr_t>();
+        ast_node->_left  = seq->_items[0]->_user.getShared<MYAST::Product>();
+        ast_node->_right = seq->_items[2]->_user.getShared<MYAST::Product>();
+        ast_node->_op    = '+';
+      } else if (selected->_matcher->_name == "add2") {
+        auto seq         = selected->_impl.get<sequence_ptr_t>();
+        ast_node->_left  = seq->_items[0]->_user.getShared<MYAST::Product>();
+        ast_node->_right = seq->_items[2]->_user.getShared<MYAST::Product>();
+        ast_node->_op    = '-';
+      } else {
         OrkAssert(false);
       }
     };
     ///////////////////////////////////////////////////////////
     _sequence(expression, {sum});
     expression->_notif = [=](match_ptr_t match) { //
-      auto ast_node = match->_user.makeShared<MYAST::Expression>();
-      auto seq = match->_impl.get<sequence_ptr_t>();
+      auto ast_node  = match->_user.makeShared<MYAST::Expression>();
+      auto seq       = match->_impl.get<sequence_ptr_t>();
       ast_node->_sum = seq->_items[0]->_user.getShared<MYAST::Sum>();
     };
     ///////////////////////////////////////////////////////////
@@ -202,27 +199,25 @@ struct MyParser : public Parser {
          expression});
     //
     assignment_statement->_notif = [=](match_ptr_t match) { //
-        auto ast_node = match->_user.makeShared<MYAST::AssignmentStatement>();
-        auto ass1of = match->_impl.get<sequence_ptr_t>()->_items[0]->_impl.get<oneof_ptr_t>();
-        if( ass1of->_selected->_matcher == variableDeclaration ){
-            auto seq = ass1of->_selected->_impl.get<sequence_ptr_t>();
-            auto datatype = seq->_items[0]->_user.getShared<MYAST::DataType>();
-            //auto kwid = seq->_items[1]->_user.getShared<MYAST::KwOrId>();
-            auto expr = match->_impl.get<sequence_ptr_t>()->_items[2]->_user.getShared<MYAST::Expression>();
-            //ast_node->_datatype = datatype;
-            //ast_node->_name = kwid;
-            //ast_node->_expression = expr;
-        }
-        else if( ass1of->_selected->_matcher == variableReference ){
-            //auto kwid = ass1of->_selected->_impl.get<sequence_ptr_t>()->_items[0]->_user.getShared<MYAST::KwOrId>();
-            auto expr = match->_impl.get<sequence_ptr_t>()->_items[2]->_user.getShared<MYAST::Expression>();
-            ast_node->_datatype = nullptr;
-            //ast_node->_name = kwid;
-            ast_node->_expression = expr;
-        }
-        else{
-            OrkAssert(false);
-        }
+      auto ast_node = match->_user.makeShared<MYAST::AssignmentStatement>();
+      auto ass1of   = match->_impl.get<sequence_ptr_t>()->_items[0]->_impl.get<oneof_ptr_t>();
+      if (ass1of->_selected->_matcher == variableDeclaration) {
+        auto seq      = ass1of->_selected->_impl.get<sequence_ptr_t>();
+        auto datatype = seq->_items[0]->_user.getShared<MYAST::DataType>();
+        // auto kwid = seq->_items[1]->_user.getShared<MYAST::KwOrId>();
+        auto expr = match->_impl.get<sequence_ptr_t>()->_items[2]->_user.getShared<MYAST::Expression>();
+        // ast_node->_datatype = datatype;
+        // ast_node->_name = kwid;
+        // ast_node->_expression = expr;
+      } else if (ass1of->_selected->_matcher == variableReference) {
+        // auto kwid = ass1of->_selected->_impl.get<sequence_ptr_t>()->_items[0]->_user.getShared<MYAST::KwOrId>();
+        auto expr           = match->_impl.get<sequence_ptr_t>()->_items[2]->_user.getShared<MYAST::Expression>();
+        ast_node->_datatype = nullptr;
+        // ast_node->_name = kwid;
+        ast_node->_expression = expr;
+      } else {
+        OrkAssert(false);
+      }
     };
     ///////////////////////////////////////////////////////////
     auto statement = oneOf({sequence({assignment_statement, semicolon}), semicolon});
@@ -264,17 +259,14 @@ struct MyParser : public Parser {
 
       int i = 0;
       for (auto sta : stas->_items) {
-        auto stasel   = sta->_impl.get<oneof_ptr_t>()->_selected;
-        if( auto as_seq = stasel->_impl.tryAs<sequence_ptr_t>()){
-            auto staseq0 = as_seq.value()->_items[0];
-            if( staseq0->_matcher == assignment_statement ){
-            }
-            else if( staseq0->_matcher == semicolon ){
-            }
-            else{
-                OrkAssert(false);
-            }
-
+        auto stasel = sta->_impl.get<oneof_ptr_t>()->_selected;
+        if (auto as_seq = stasel->_impl.tryAs<sequence_ptr_t>()) {
+          auto staseq0 = as_seq.value()->_items[0];
+          if (staseq0->_matcher == assignment_statement) {
+          } else if (staseq0->_matcher == semicolon) {
+          } else {
+            OrkAssert(false);
+          }
         }
         i++;
       }
@@ -296,7 +288,7 @@ struct MyParser : public Parser {
     auto top_view = _scanner->createTopView();
     top_view.dump("top_view");
     auto slv   = std::make_shared<ScannerLightView>(top_view);
-    auto match = this->match(_fn_matcher,slv);
+    auto match = this->match(_fn_matcher, slv);
     return match;
   }
 
@@ -327,7 +319,8 @@ TEST(parser1) {
   auto match = the_parser.parseString(parse_str);
   CHECK(match != nullptr);
 
-  printf( "PARSER PACKRAT cache_hits<%zu> cache_misses<%zu>\n", //
-          the_parser._cache_hits,                                //
-          the_parser._cache_misses);                             //
+  printf(
+      "PARSER PACKRAT cache_hits<%zu> cache_misses<%zu>\n", //
+      the_parser._cache_hits,                               //
+      the_parser._cache_misses);                            //
 }

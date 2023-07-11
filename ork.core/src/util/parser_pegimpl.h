@@ -11,7 +11,7 @@
 namespace ork::peg {
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-struct PegImpl { 
+struct PegImpl {
 
   PegImpl();
   void loadPEGScannerRules();
@@ -40,7 +40,6 @@ struct PegImpl {
   matcher_ptr_t _rsi_scanner_matcher;
   matcher_ptr_t _rsi_parser_matcher;
 
-
   std::map<std::string, matcher_ptr_t> _user_matchers_by_name;
 
   std::vector<matcher_pair_t> _user_scanner_matchers_by_name;
@@ -50,7 +49,6 @@ struct PegImpl {
 
   std::map<std::string, AST::rule_ptr_t> _user_parser_rules;
 
-
   std::vector<AST::scanner_rule_pair_t> _user_scanner_rules;
   std::map<std::string, AST::scanner_macro_ptr_t> _user_scanner_macros;
   std::map<std::string, matcher_notif_t> _user_deferred_notifs;
@@ -58,10 +56,13 @@ struct PegImpl {
   std::vector<void_lambda_t> _link_ops;
   AST::rule_ptr_t _current_rule;
   std::vector<AST::astnode_ptr_t> _ast_buildstack;
+
+  std::set<std::string> _parser_rule_names;
+  std::set<std::string> _scanner_rule_names;
 };
 
 using pegimpl_ptr_t = std::shared_ptr<PegImpl>;
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
-} // namespace ork
+} // namespace ork::peg
 /////////////////////////////////////////////////////////////////////////////////////////////////

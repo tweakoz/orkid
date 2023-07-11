@@ -91,9 +91,9 @@ std::string parser_spec = R"xxx(
 struct MyParser2 : public Parser {
 
   MyParser2() {
-    _name = "p2";
-    _DEBUG_MATCH = true;
-    _DEBUG_INFO = true;
+    _name              = "p2";
+    _DEBUG_MATCH       = true;
+    _DEBUG_INFO        = true;
     auto scanner_match = this->loadPEGScannerSpec(scanner_spec);
     OrkAssert(scanner_match);
     auto parser_match = this->loadPEGParserSpec(parser_spec);
@@ -101,29 +101,53 @@ struct MyParser2 : public Parser {
     ///////////////////////////////////////////////////////////
     // parser should be compiled and linked at this point
     ///////////////////////////////////////////////////////////
-    auto expression = rule("expression");
-    auto product    = rule("product");
-    auto primary    = rule("primary");
-    auto variableDeclaration = rule("variableDeclaration");
-    auto variableReference = rule("variableReference");
-    auto funcdef = rule("funcdef");
-    auto semicolon = rule("SEMICOLON");
+    auto expression           = rule("expression");
+    auto product              = rule("product");
+    auto primary              = rule("primary");
+    auto variableDeclaration  = rule("variableDeclaration");
+    auto variableReference    = rule("variableReference");
+    auto funcdef              = rule("funcdef");
+    auto semicolon            = rule("SEMICOLON");
     auto assignment_statement = rule("assignment_statement");
     ///////////////////////////////////////////////////////////
-    if(0) variableReference->_match_filter = [=](match_ptr_t top_match) ->bool { //
-      auto kwid      = top_match->asShared<ClassMatch>()->_token->text;
-      auto var_ref   = top_match->_user.makeShared<MYAST::VariableReference>();
-      var_ref->_name = kwid;
-      auto v = top_match->_view;
-      bool has_primary = top_match->matcherInStack(primary);
-      bool has_assignmentstatement = top_match->matcherInStack(assignment_statement);
-      if(0)printf("TEST variableReference var<%s> st<%zu> en<%zu> matcher<%s> has_primary<%d> has_assignmentstatement<%d> \n", //
-              kwid.c_str(), v->_start, v->_end, //
+    if (0)
+      variableReference->_match_filter = [=](match_ptr_t top_match) -> bool { //
+        auto kwid                    = top_match->asShared<ClassMatch>()->_token->text;
+        auto var_ref                 = top_match->_user.makeShared<MYAST::VariableReference>();
+        var_ref->_name               = kwid;
+        auto v                       = top_match->_view;
+        bool has_primary             = top_match->matcherInStack(primary);
+        bool has_assignmentstatement = top_match->matcherInStack(assignment_statement);
+        if (0)
+          printf(
+              "TEST variableReference var<%s> st<%zu> en<%zu> matcher<%s> has_primary<%d> has_assignmentstatement<%d> \n", //
+              kwid.c_str(),
+              v->_start,
+              v->_end,                            //
               top_match->_matcher->_name.c_str(), //
-              int(has_primary), //
-              int(has_assignmentstatement) );
-      return has_primary or has_assignmentstatement;
-    };
+              int(has_primary),                   //
+              int(has_assignmentstatement));
+        return has_primary or has_assignmentstatement;
+      };
+    ///////////////////////////////////////////////////////////
+    if (1)
+      on("variableReference", [=](match_ptr_t match) { //
+        auto kwid                    = match->asShared<ClassMatch>()->_token->text;
+        auto var_ref                 = match->_user.makeShared<MYAST::VariableReference>();
+        var_ref->_name               = kwid;
+        auto v                       = match->_view;
+        bool has_primary             = match->matcherInStack(primary);
+        bool has_assignmentstatement = match->matcherInStack(assignment_statement);
+        printf(
+            "ON variableReference var<%s> st<%zu> en<%zu> matcher<%s> has_primary<%d> has_assignmentstatement<%d> \n", //
+            kwid.c_str(),
+            v->_start,
+            v->_end,                        //
+            match->_matcher->_name.c_str(), //
+            int(has_primary),               //
+            int(has_assignmentstatement));
+        OrkAssert(has_primary or has_assignmentstatement);
+      });
     ///////////////////////////////////////////////////////////
     on("FLOATING_POINT", [=](match_ptr_t match) { //
       auto ast_node    = match->_user.makeShared<MYAST::FloatLiteral>();
@@ -143,23 +167,8 @@ struct MyParser2 : public Parser {
       auto selected   = match->asShared<OneOf>()->_selected;
       auto ast_node   = match->userMakeShared<MYAST::DataType>();
       ast_node->_name = selected->asShared<ClassMatch>()->_token->text;
-      auto v = match->_view;
-      printf("ON datatype<%s> st<%zu> en<%zu>\n", ast_node->_name.c_str(), v->_start, v->_end );
-    });
-    ///////////////////////////////////////////////////////////
-    on("variableReference", [=](match_ptr_t match) { //
-      auto kwid      = match->asShared<ClassMatch>()->_token->text;
-      auto var_ref   = match->_user.makeShared<MYAST::VariableReference>();
-      var_ref->_name = kwid;
-      auto v = match->_view;
-      bool has_primary = match->matcherInStack(primary);
-      bool has_assignmentstatement = match->matcherInStack(assignment_statement);
-      printf("ON variableReference var<%s> st<%zu> en<%zu> matcher<%s> has_primary<%d> has_assignmentstatement<%d> \n", //
-              kwid.c_str(), v->_start, v->_end, //
-              match->_matcher->_name.c_str(), //
-              int(has_primary), //
-              int(has_assignmentstatement) );
-      OrkAssert(has_primary or has_assignmentstatement);
+      auto v          = match->_view;
+      printf("ON datatype<%s> st<%zu> en<%zu>\n", ast_node->_name.c_str(), v->_start, v->_end);
     });
     ///////////////////////////////////////////////////////////
     on("term", [=](match_ptr_t match) {
@@ -179,30 +188,30 @@ struct MyParser2 : public Parser {
     });
     ///////////////////////////////////////////////////////////
     on("product", [=](match_ptr_t match) {
-      auto ast_node = match->_user.makeShared<MYAST::Product>();
-      auto seq = match->asShared<Sequence>();
-      auto primary1 = seq->_items[0];
+      auto ast_node     = match->_user.makeShared<MYAST::Product>();
+      auto seq          = match->asShared<Sequence>();
+      auto primary1     = seq->_items[0];
       auto primary1_ast = primary1->userAsShared<MYAST::Primary>();
-      auto opt    = seq->itemAsShared<Optional>(1);
-      auto primary2 = opt->_subitem;
-
+      auto opt          = seq->itemAsShared<Optional>(1);
+      auto primary2     = opt->_subitem;
 
       ast_node->_primaries.push_back(primary1_ast);
 
-      if(primary2){
-        printf("ON product pri1<%s> * pri2<%s>\n", //
-               primary1->_matcher->_name.c_str(),
-               primary2->_matcher->_name.c_str() );
+      if (primary2) {
+        printf(
+            "ON product pri1<%s> * pri2<%s>\n", //
+            primary1->_matcher->_name.c_str(),
+            primary2->_matcher->_name.c_str());
         auto seq = primary2->asShared<Sequence>();
         primary2 = seq->_items[1];
 
         auto primary2_ast = primary2->userAsShared<MYAST::Primary>();
         ast_node->_primaries.push_back(primary2_ast);
-        
-      }
-      else{
-        printf("ON product pri1<%s>\n", //
-               primary1->_matcher->_name.c_str() );
+
+      } else {
+        printf(
+            "ON product pri1<%s>\n", //
+            primary1->_matcher->_name.c_str());
       }
     });
     ///////////////////////////////////////////////////////////
@@ -229,48 +238,50 @@ struct MyParser2 : public Parser {
     });
     ///////////////////////////////////////////////////////////
     on("expression", [=](match_ptr_t match) { //
-      auto v = match->_view;
-      auto ast_node  = match->userMakeShared<MYAST::Expression>();
+      auto v        = match->_view;
+      auto ast_node = match->userMakeShared<MYAST::Expression>();
       auto impltype = match->_impl.typestr();
-      auto seq = match->asShared<Sequence>();
+      auto seq      = match->asShared<Sequence>();
       auto selected = seq->_items[0];
       // since expression is a sum, then expression match points to sum
 
-      printf("ON expression<%s> st<%zu> end<%zu> impltype<%s>\n", //
-              match->_matcher->_name.c_str(), //
-              v->_start, v->_end, //
-              impltype.c_str() );
-      //auto seq       = match->asShared<Sequence>();
-      //printf( "seq<%p> numitems<%zu>\n", (void*) seq.get(), seq->_items.size() );
-      //ast_node->_sum = seq->_items[0]->userAsShared<MYAST::Sum>();
+      printf(
+          "ON expression<%s> st<%zu> end<%zu> impltype<%s>\n", //
+          match->_matcher->_name.c_str(),                      //
+          v->_start,
+          v->_end, //
+          impltype.c_str());
+      // auto seq       = match->asShared<Sequence>();
+      // printf( "seq<%p> numitems<%zu>\n", (void*) seq.get(), seq->_items.size() );
+      // ast_node->_sum = seq->_items[0]->userAsShared<MYAST::Sum>();
     });
     ///////////////////////////////////////////////////////////
     on("assignment_statement", [=](match_ptr_t match) { //
-      auto v = match->_view;
+      auto v        = match->_view;
       auto ast_node = match->_user.makeShared<MYAST::AssignmentStatement>();
       auto ass1of   = match->asShared<Sequence>()->itemAsShared<OneOf>(0);
       printf("ON assignment_statement<%s> st<%zu> en<%zu>\n", match->_matcher->_name.c_str(), v->_start, v->_end);
       if (ass1of->_selected->_matcher == variableDeclaration) {
         auto seq      = ass1of->_selected->asShared<Sequence>();
         auto datatype = seq->_items[0]->_user.getShared<MYAST::DataType>();
-        auto expr = match->asShared<Sequence>()->itemAsShared<MYAST::Expression>(2);
+        auto expr     = match->asShared<Sequence>()->itemAsShared<MYAST::Expression>(2);
       } else if (ass1of->_selected->_matcher == variableReference) {
-        auto expr           = match->asShared<Sequence>()->itemAsShared<MYAST::Expression>(2);
-        ast_node->_datatype = nullptr;
+        auto expr             = match->asShared<Sequence>()->itemAsShared<MYAST::Expression>(2);
+        ast_node->_datatype   = nullptr;
         ast_node->_expression = expr;
       } else {
-        //OrkAssert(false);
+        // OrkAssert(false);
       }
     });
     ///////////////////////////////////////////////////////////
     on("argument_decl", [=](match_ptr_t match) {
-      auto ast_node   = match->_user.makeShared<MYAST::ArgumentDeclaration>();
-      auto seq   = match->asShared<Sequence>();
-      printf("adecl impltype<%s>\n", match->_impl.typestr().c_str() );
-      ast_node->_variable_name = seq->_items[1]->asShared<ClassMatch>()->_token->text;
-      auto seq0 = seq->_items[0]->asShared<OneOf>()->_selected;
-      auto tok = seq0->asShared<ClassMatch>()->_token;
-      ast_node->_datatype = std::make_shared<MYAST::DataType>();
+      auto ast_node = match->_user.makeShared<MYAST::ArgumentDeclaration>();
+      auto seq      = match->asShared<Sequence>();
+      printf("adecl impltype<%s>\n", match->_impl.typestr().c_str());
+      ast_node->_variable_name   = seq->_items[1]->asShared<ClassMatch>()->_token->text;
+      auto seq0                  = seq->_items[0]->asShared<OneOf>()->_selected;
+      auto tok                   = seq0->asShared<ClassMatch>()->_token;
+      ast_node->_datatype        = std::make_shared<MYAST::DataType>();
       ast_node->_datatype->_name = tok->text;
     });
     ///////////////////////////////////////////////////////////
@@ -280,56 +291,55 @@ struct MyParser2 : public Parser {
       auto fn_name = seq->itemAsShared<ClassMatch>(1);
       auto args    = seq->itemAsShared<NOrMore>(3);
       auto stas    = seq->itemAsShared<NOrMore>(6);
-      auto v = match->_view;
+      auto v       = match->_view;
 
       funcdef->_name = fn_name->_token->text;
 
       printf(
           "ON funcdef<%s> function<%s> numargs<%zu> numstatements<%zu> st<%zu> en<%zu>\n", //
-          funcdef->_name.c_str(),                                             //
-          fn_name->_token->text.c_str(),                                      //
-          args->_items.size(),                                                //
+          funcdef->_name.c_str(),                                                          //
+          fn_name->_token->text.c_str(),                                                   //
+          args->_items.size(),                                                             //
           stas->_items.size(),
           v->_start,
           v->_end);
 
       for (auto arg : args->_items) {
-        auto argseq     = arg->asShared<Sequence>();
+        auto argseq   = arg->asShared<Sequence>();
         auto arg_decl = arg->userAsShared<MYAST::ArgumentDeclaration>();
         funcdef->_arguments.push_back(arg_decl);
-        auto argtype    = arg_decl->_datatype->_name;
-        auto argname    = arg_decl->_variable_name;
+        auto argtype = arg_decl->_datatype->_name;
+        auto argname = arg_decl->_variable_name;
         printf("  ARG<%s> TYPE<%s>\n", argname.c_str(), argtype.c_str());
       }
       int i = 0;
       for (auto sta : stas->_items) {
         auto stasel = sta->asShared<OneOf>()->_selected;
         if (auto as_seq = stasel->tryAsShared<Sequence>()) {
-          auto staseq0 = as_seq.value()->_items[0];
+          auto staseq0         = as_seq.value()->_items[0];
           auto staseq0_matcher = staseq0->_matcher;
-          if(staseq0_matcher->_proxy_target){
+          if (staseq0_matcher->_proxy_target) {
             staseq0_matcher = staseq0_matcher->_proxy_target;
           }
 
-            printf("staseq0 <%p> matcher<%p:%s>\n", //
-                   (void*) staseq0.get(),
-                   staseq0_matcher.get(),
-                   staseq0_matcher->_name.c_str() );
-          
+          printf(
+              "staseq0 <%p> matcher<%p:%s>\n", //
+              (void*)staseq0.get(),
+              staseq0_matcher.get(),
+              staseq0_matcher->_name.c_str());
+
           if (staseq0_matcher == assignment_statement) {
-            printf( "GOT ASSIGNMENT STATEMENT\n");
+            printf("GOT ASSIGNMENT STATEMENT\n");
           } else {
             auto statype = staseq0->_impl.typestr();
-            printf("unknown staseq0 subtype<%s>\n", statype.c_str() );
+            printf("unknown staseq0 subtype<%s>\n", statype.c_str());
             OrkAssert(false);
           }
-        }
-        else if( auto as_semi = stasel->tryAsShared<Sequence>()){
+        } else if (auto as_semi = stasel->tryAsShared<Sequence>()) {
 
-        }
-        else{
+        } else {
           auto statype = stasel->_impl.typestr();
-          printf("unknown statement item type<%s>\n", statype.c_str() );
+          printf("unknown statement item type<%s>\n", statype.c_str());
           OrkAssert(false);
         }
         i++;
@@ -337,11 +347,11 @@ struct MyParser2 : public Parser {
     });
     ///////////////////////////////////////////////////////////
     on("funcdefs", [=](match_ptr_t match) {
-      printf( "ON funcdefs\n");
-      auto fndefs_inp    = match->asShared<NOrMore>();
-      for( auto item : fndefs_inp->_items ){
+      printf("ON funcdefs\n");
+      auto fndefs_inp = match->asShared<NOrMore>();
+      for (auto item : fndefs_inp->_items) {
         auto funcdef = item->userAsShared<MYAST::FunctionDef>();
-        printf( "GOT FUNCDEF<%s>\n", funcdef->_name.c_str() );
+        printf("GOT FUNCDEF<%s>\n", funcdef->_name.c_str());
       }
     });
     ///////////////////////////////////////////////////////////
@@ -356,10 +366,10 @@ struct MyParser2 : public Parser {
 
     auto top_view = _scanner->createTopView();
     top_view.dump("top_view");
-    auto slv   = std::make_shared<ScannerLightView>(top_view);
+    auto slv     = std::make_shared<ScannerLightView>(top_view);
     _fns_matcher = findMatcherByName("funcdefs");
     OrkAssert(_fns_matcher);
-    auto match = this->match(_fns_matcher,slv);
+    auto match = this->match(_fns_matcher, slv);
     return match;
   }
 
@@ -370,7 +380,7 @@ struct MyParser2 : public Parser {
 ///////////////////////////////////////////////////////////////////////////////
 
 TEST(parser2) {
-  printf( "P2.TOP.A\n");
+  printf("P2.TOP.A\n");
   auto parse_str =
       R"(
         ///////////////////
@@ -387,12 +397,13 @@ TEST(parser2) {
     )";
   MyParser2 the_parser;
   auto match = the_parser.parseString(parse_str);
-  printf( "P2.TOP.B match<%p> matcher<%p:%s> st<%zu> en<%zu>\n", //
-          match.get(), //
-          match->_matcher.get(), //
-          match->_matcher->_name.c_str(), //
-          match->_view->_start, //
-          match->_view->_end); //
+  printf(
+      "P2.TOP.B match<%p> matcher<%p:%s> st<%zu> en<%zu>\n", //
+      match.get(),                                           //
+      match->_matcher.get(),                                 //
+      match->_matcher->_name.c_str(),                        //
+      match->_view->_start,                                  //
+      match->_view->_end);                                   //
 
   CHECK(match != nullptr);
 }
