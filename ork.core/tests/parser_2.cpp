@@ -41,6 +41,7 @@ std::string parser_spec = R"xxx(
     number <- sel{FLOATING_POINT INTEGER}
     variableDeclaration <- [datatype KW_OR_ID]
     variableReference <- KW_OR_ID
+    funcname <- KW_OR_ID
 
     product <- [ primary opt{ [STAR primary] } ]
 
@@ -54,8 +55,7 @@ std::string parser_spec = R"xxx(
 
     term <- [ L_PAREN expression R_PAREN ]
 
-    primary <- sel{ FLOATING_POINT
-                    INTEGER
+    primary <- sel{ number
                     variableReference
                     term
     }
@@ -73,7 +73,7 @@ std::string parser_spec = R"xxx(
 
     funcdef <- [
         FUNCTION
-        KW_OR_ID
+        funcname
         L_PAREN
         zom{argument_decl} : "args"
         R_PAREN

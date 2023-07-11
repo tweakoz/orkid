@@ -2,7 +2,7 @@
 
 #include <ork/orktypes.h>
 #include <ork/orkstd.h>
-#include <ork/kernel/svariant.h>
+#include <ork/kernel/varmap.inl>
 #include <ork/util/scanner.h>
 #include <unordered_set>
 #include <unordered_map>
@@ -88,7 +88,7 @@ struct Matcher {
   std::string _info;
   matcher_ptr_t _proxy_target;
   void_lambda_t _on_link;
-  svar32_t _user;
+  varmap::VarMap _uservars;
   Matcher* resolve() {
     return _proxy_target ? _proxy_target.get() : this;
   }
