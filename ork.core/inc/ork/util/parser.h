@@ -87,7 +87,7 @@ struct Matcher {
   std::string _name;
   std::string _info;
   matcher_ptr_t _proxy_target;
-  void_lambda_t _on_link;
+  std::function<bool()> _on_link;
   varmap::VarMap _uservars;
   Matcher* resolve() {
     return _proxy_target ? _proxy_target.get() : this;

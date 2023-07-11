@@ -183,6 +183,7 @@ struct ParserRule : public AstNode {
   expression_ptr_t _expression;
   ruleref_list_t _references;
   ruleref_list_t _referenced_by;
+  matcher_ptr_t _matcher;
 };
 ////////////////////////////////////////////////////////////////////////
 } // namespace AST

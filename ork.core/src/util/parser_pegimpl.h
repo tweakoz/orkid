@@ -42,14 +42,16 @@ struct PegImpl {
 
   std::map<std::string, matcher_ptr_t> _user_matchers_by_name;
 
-  std::vector<matcher_pair_t> _user_scanner_matchers_by_name;
+  std::vector<matcher_pair_t> _user_scanner_matchers_ordered;
   std::map<std::string, matcher_ptr_t> _user_parser_matchers_by_name;
+  std::map<std::string, matcher_ptr_t> _user_scanner_matchers_by_name;
 
   std::set<AST::astnode_ptr_t> _retain_astnodes;
 
   std::map<std::string, AST::rule_ptr_t> _user_parser_rules;
+  std::map<std::string, AST::rule_ptr_t> _user_scanner_rules_by_name;
 
-  std::vector<AST::scanner_rule_pair_t> _user_scanner_rules;
+  std::vector<AST::scanner_rule_pair_t> _user_scanner_rules_ordered;
   std::map<std::string, AST::scanner_macro_ptr_t> _user_scanner_macros;
   std::map<std::string, matcher_notif_t> _user_deferred_notifs;
 

@@ -37,23 +37,35 @@ std::string scanner_spec = R"xxx(
 
 std::string parser_spec = R"xxx(
     datatype <- sel{KW_FLOAT KW_INT}
-    argument_decl <- [ datatype KW_OR_ID opt{COMMA} ]
     number <- sel{FLOATING_POINT INTEGER}
-    variableDeclaration <- [datatype KW_OR_ID]
-    variableReference <- KW_OR_ID
-    funcname <- KW_OR_ID
+    kw_or_id <- KW_OR_ID
+    l_paren <- L_PAREN
+    r_paren <- R_PAREN
+    plus <- PLUS
+    minus <- MINUS
+    star <- STAR
+    l_curly <- L_CURLY
+    r_curly <- R_CURLY
+    semicolon <- SEMICOLON
+    equals <- EQUALS
+    function <- FUNCTION
+        
+    argument_decl <- [ datatype kw_or_id opt{COMMA} ]
+    variableDeclaration <- [datatype kw_or_id]
+    variableReference <- kw_or_id
+    funcname <- kw_or_id
 
-    product <- [ primary opt{ [STAR primary] } ]
+    product <- [ primary opt{ [star primary] } ]
 
     sum <- sel{
-        [ product PLUS product ] : "add"
-        [ product MINUS product ] : "sub"
+        [ product plus product ] : "add"
+        [ product minus product ] : "sub"
         product : "pro"
     }
 
     expression <- [ sum ]
 
-    term <- [ L_PAREN expression R_PAREN ]
+    term <- [ l_paren expression r_paren ]
 
     primary <- sel{ number
                     variableReference
@@ -62,24 +74,24 @@ std::string parser_spec = R"xxx(
 
     assignment_statement <- [
         sel { variableDeclaration variableReference } : "ass1of"
-        EQUALS
+        equals
         expression
     ]
 
     statement <- sel{ 
-        [ assignment_statement SEMICOLON ]
-        SEMICOLON
+        [ assignment_statement semicolon ]
+        semicolon
     }
 
     funcdef <- [
-        FUNCTION
+        function
         funcname
-        L_PAREN
+        l_paren
         zom{argument_decl} : "args"
-        R_PAREN
-        L_CURLY
+        r_paren
+        l_curly
         zom{statement} : "statements"
-        R_CURLY
+        r_curly
     ]
     
     funcdefs <- zom{funcdef} : "xxx"
@@ -92,8 +104,8 @@ struct MyParser2 : public Parser {
 
   MyParser2() {
     _name              = "p2";
-    _DEBUG_MATCH       = true;
-    _DEBUG_INFO        = true;
+    _DEBUG_MATCH       = false;
+    _DEBUG_INFO        = false;
     auto scanner_match = this->loadPEGScannerSpec(scanner_spec);
     OrkAssert(scanner_match);
     auto parser_match = this->loadPEGParserSpec(parser_spec);
@@ -110,57 +122,42 @@ struct MyParser2 : public Parser {
     auto semicolon            = rule("SEMICOLON");
     auto assignment_statement = rule("assignment_statement");
     ///////////////////////////////////////////////////////////
-    if (0)
-      variableReference->_match_filter = [=](match_ptr_t top_match) -> bool { //
-        auto kwid                    = top_match->asShared<ClassMatch>()->_token->text;
-        auto var_ref                 = top_match->_user.makeShared<MYAST::VariableReference>();
-        var_ref->_name               = kwid;
-        auto v                       = top_match->_view;
-        bool has_primary             = top_match->matcherInStack(primary);
-        bool has_assignmentstatement = top_match->matcherInStack(assignment_statement);
-        if (0)
-          printf(
-              "TEST variableReference var<%s> st<%zu> en<%zu> matcher<%s> has_primary<%d> has_assignmentstatement<%d> \n", //
-              kwid.c_str(),
-              v->_start,
-              v->_end,                            //
-              top_match->_matcher->_name.c_str(), //
-              int(has_primary),                   //
-              int(has_assignmentstatement));
-        return has_primary or has_assignmentstatement;
-      };
-    ///////////////////////////////////////////////////////////
     if (1)
       on("variableReference", [=](match_ptr_t match) { //
         auto kwid                    = match->asShared<ClassMatch>()->_token->text;
         auto var_ref                 = match->_user.makeShared<MYAST::VariableReference>();
         var_ref->_name               = kwid;
         auto v                       = match->_view;
-        bool has_primary             = match->matcherInStack(primary);
-        bool has_assignmentstatement = match->matcherInStack(assignment_statement);
         printf(
-            "ON variableReference var<%s> st<%zu> en<%zu> matcher<%s> has_primary<%d> has_assignmentstatement<%d> \n", //
+            "ON variableReference var<%s> st<%zu> en<%zu> matcher<%s>\n", //
             kwid.c_str(),
             v->_start,
             v->_end,                        //
-            match->_matcher->_name.c_str(), //
-            int(has_primary),               //
-            int(has_assignmentstatement));
-        OrkAssert(has_primary or has_assignmentstatement);
+            match->_matcher->_name.c_str());
       });
     ///////////////////////////////////////////////////////////
     on("FLOATING_POINT", [=](match_ptr_t match) { //
       auto ast_node    = match->_user.makeShared<MYAST::FloatLiteral>();
       auto impl        = match->asShared<ClassMatch>();
       ast_node->_value = std::stof(impl->_token->text);
-      printf("ON FLOATING_POINT<%g>\n", ast_node->_value);
+      auto v                       = match->_view;
+      printf("ON FLOATING_POINT<%g> st<%zu> en<%zu> \n", //
+          ast_node->_value,
+          v->_start,
+          v->_end );
+
     });
     ///////////////////////////////////////////////////////////
     on("INTEGER", [=](match_ptr_t match) { //
       auto ast_node    = match->_user.makeShared<MYAST::IntegerLiteral>();
       auto impl        = match->asShared<ClassMatch>();
       ast_node->_value = std::stoi(impl->_token->text);
-      printf("ON INTEGER<%d>\n", ast_node->_value);
+      auto v                       = match->_view;
+      printf("ON INTEGER<%d> st<%zu> en<%zu> \n", //
+        ast_node->_value,
+        v->_start,
+        v->_end);
+
     });
     ///////////////////////////////////////////////////////////
     on("datatype", [=](match_ptr_t match) { //
@@ -174,7 +171,8 @@ struct MyParser2 : public Parser {
     on("term", [=](match_ptr_t match) {
       auto ast_node = match->_user.makeShared<MYAST::Term>();
       auto selected = match->asShared<Sequence>()->_items[1];
-      printf("ON term<%s>\n", selected->_matcher->_name.c_str());
+      auto v          = match->_view;
+      printf("ON term<%s> st<%zu> en<%zu> \n", selected->_matcher->_name.c_str(), v->_start, v->_end);
       if (selected->_matcher == expression) {
         ast_node->_subexpression = selected->_user.getShared<MYAST::Expression>();
       }
@@ -184,7 +182,8 @@ struct MyParser2 : public Parser {
       auto ast_node   = match->_user.makeShared<MYAST::Primary>();
       auto selected   = match->asShared<OneOf>()->_selected;
       ast_node->_impl = selected->_user;
-      printf("ON primary<%s>\n", selected->_matcher->_name.c_str());
+      auto v                       = match->_view;
+      printf("ON primary<%s> st<%zu> en<%zu> \n", selected->_matcher->_name.c_str(), v->_start, v->_end);
     });
     ///////////////////////////////////////////////////////////
     on("product", [=](match_ptr_t match) {
@@ -196,12 +195,14 @@ struct MyParser2 : public Parser {
       auto primary2     = opt->_subitem;
 
       ast_node->_primaries.push_back(primary1_ast);
+      auto v                       = match->_view;
 
       if (primary2) {
         printf(
-            "ON product pri1<%s> * pri2<%s>\n", //
+            "ON product pri1<%s> * pri2<%s> st<%zu> en<%zu> \n", //
             primary1->_matcher->_name.c_str(),
-            primary2->_matcher->_name.c_str());
+            primary2->_matcher->_name.c_str(),
+            v->_start, v->_end);
         auto seq = primary2->asShared<Sequence>();
         primary2 = seq->_items[1];
 
@@ -210,15 +211,17 @@ struct MyParser2 : public Parser {
 
       } else {
         printf(
-            "ON product pri1<%s>\n", //
-            primary1->_matcher->_name.c_str());
+            "ON product pri1<%s> st<%zu> en<%zu> \n", //
+            primary1->_matcher->_name.c_str(),
+            v->_start, v->_end);
       }
     });
     ///////////////////////////////////////////////////////////
     on("sum", [=](match_ptr_t match) {
       auto ast_node = match->userMakeShared<MYAST::Sum>();
       auto selected = match->asShared<OneOf>()->_selected;
-      printf("ON sum<%s>\n", selected->_matcher->_name.c_str());
+      auto v                       = match->_view;
+      printf("ON sum<%s> st<%zu> en<%zu>\n", selected->_matcher->_name.c_str(), v->_start, v->_end);
       if (selected->_matcher == product) {
         ast_node->_left = selected->_user.getShared<MYAST::Product>();
         ast_node->_op   = '_';
@@ -251,9 +254,6 @@ struct MyParser2 : public Parser {
           v->_start,
           v->_end, //
           impltype.c_str());
-      // auto seq       = match->asShared<Sequence>();
-      // printf( "seq<%p> numitems<%zu>\n", (void*) seq.get(), seq->_items.size() );
-      // ast_node->_sum = seq->_items[0]->userAsShared<MYAST::Sum>();
     });
     ///////////////////////////////////////////////////////////
     on("assignment_statement", [=](match_ptr_t match) { //
@@ -275,6 +275,7 @@ struct MyParser2 : public Parser {
     });
     ///////////////////////////////////////////////////////////
     on("argument_decl", [=](match_ptr_t match) {
+      auto v                       = match->_view;
       auto ast_node = match->_user.makeShared<MYAST::ArgumentDeclaration>();
       auto seq      = match->asShared<Sequence>();
       printf("adecl impltype<%s>\n", match->_impl.typestr().c_str());

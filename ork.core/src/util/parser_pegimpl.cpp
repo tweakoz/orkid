@@ -11,8 +11,8 @@
 namespace ork {
 match_ptr_t filtered_match(matcher_ptr_t matcher, match_ptr_t the_match);
 /////////////////////////////////////////////////////////////////////////////////////////////////
-static logchannel_ptr_t logchan_rulespec  = logger()->createChannel("PEGSPEC1", fvec3(0.5, 0.8, 0.5), true);
-static logchannel_ptr_t logchan_rulespec2 = logger()->createChannel("PEGSPEC2", fvec3(0.5, 0.8, 0.5), true);
+static logchannel_ptr_t logchan_rulespec  = logger()->createChannel("PEGSPEC1", fvec3(0.5, 0.8, 0.5), false);
+static logchannel_ptr_t logchan_rulespec2 = logger()->createChannel("PEGSPEC2", fvec3(0.5, 0.8, 0.5), false);
 
 matcher_ptr_t Parser::rule(const std::string& rule_name) {
   auto it = _matchers_by_name.find(rule_name);
@@ -136,136 +136,70 @@ void ExprKWID::do_visit(astvisitctx_ptr_t visitctx) { // final
   // visitctx(_expr_selected);
 }
 matcher_ptr_t ExprKWID::createMatcher(std::string named) { // final
+  auto pth      = this->path();
+  auto top_rule = std::dynamic_pointer_cast<ParserRule>(root());
+  OrkAssert(top_rule != nullptr);
+  auto pegimpl = _user_parser->_user.get<PegImpl*>();
+  /////////////////////////////////////////////////////////
+  logchan_rulespec2->log("CREATE EKWIDPXY(%s) kwid<%s> astnode<%p> toprule<%s>", named.c_str(), _kwid.c_str(), this, top_rule->_name.c_str() );
+  /////////////////////////////////////////////////////////
+
+  auto it_scanner = pegimpl->_user_scanner_matchers_by_name.find(_kwid);
+  if(it_scanner!=pegimpl->_user_scanner_matchers_by_name.end()){
+    auto submatcher = it_scanner->second;
+    logchan_rulespec2->log("  from SCANNER matcher<%s:%p>", _kwid.c_str(), (void*) submatcher.get() );
+    return submatcher;
+  }
+
+  auto it_parser = pegimpl->_user_parser->_matchers_by_name.find(_kwid);
+  if(it_parser!=pegimpl->_user_parser->_matchers_by_name.end()){
+    auto submatcher = it_parser->second;
+    logchan_rulespec2->log("  from PARSER matcher<%s:%p>", _kwid.c_str(), (void*) submatcher.get() );
+    return submatcher;
+  }
+
   auto matcher = _user_parser->declare(_kwid);
 
-  matcher->_on_link = [=]() {
-    auto pegimpl = _user_parser->_user.get<PegImpl*>();
+  matcher->_on_link = [=]() ->bool {
+    static int DEPTH = 0;
     /////////////////////////////////////////////////////////
-    auto it_matcher = pegimpl->_user_matchers_by_name.find(_kwid);
-    if (it_matcher == pegimpl->_user_matchers_by_name.end()) {
-      logchan_rulespec2->log("EKWIDPXY(%s) _kwid<%s> NO SUBMATCHER", named.c_str(), _kwid.c_str());
-      OrkAssert(false);
+    logchan_rulespec2->log("EKWIDPXY(%s) _kwid<%s> astnode<%p> top_rule<%s> ON-LINK", named.c_str(), _kwid.c_str(), this, top_rule->_name.c_str() );
+    /////////////////////////////////////////////////////////
+    matcher_ptr_t submatcher;
+    auto it_matcher = pegimpl->_user_parser->_matchers_by_name.find(_kwid);
+    if (it_matcher != pegimpl->_user_parser->_matchers_by_name.end()) {
+      submatcher = it_matcher->second;
+      logchan_rulespec2->log("  SUBMATCHER<%p:%s>", (void*) submatcher.get(), submatcher->_name.c_str() );
     }
-    auto submatcher = it_matcher->second;
+    else {
+      logchan_rulespec2->log("  NO SUBMATCHER" );
+      return false;
+    }
     if (submatcher->_match_fn == nullptr) {
       logchan_rulespec2->log(
-          "EKWIDPXY(%s) _kwid<%s> submatcher<%s> NO SUBMATCHER MATCHFN", named.c_str(), _kwid.c_str(), submatcher->_name.c_str());
-      OrkAssert(false);
+          "  submatcher<%s> NO SUBMATCHER MATCHFN", named.c_str(), _kwid.c_str(), submatcher->_name.c_str());
+      return false;
     }
+    matcher->_match_fn = [=](matcher_ptr_t par_matcher,                        //
+                           scannerlightview_constptr_t slv) -> match_ptr_t { //
+     DEPTH++;
+     auto indentstr = std::string(DEPTH * 2, ' ');
+     auto tok0 = slv->token(0);
+
+     logchan_rulespec2->log(
+          "%s try_match tok<%s> astnamed<%s> astkwid<%s> submatcher<%s> ", indentstr.c_str(), tok0->text.c_str(), named.c_str(), _kwid.c_str(), submatcher->_name.c_str());
+
+     auto match = submatcher->_match_fn(par_matcher, slv);
+     DEPTH--;
+     return match;
+    };
 
     matcher->_notif        = submatcher->_notif;
     matcher->_proxy_target = submatcher;
 
-    auto pth      = this->path();
-    auto top_rule = std::dynamic_pointer_cast<ParserRule>(root());
-    OrkAssert(top_rule != nullptr);
-
-    auto it_scanner = pegimpl->_scanner_rule_names.find(_kwid);
-    auto it_parser  = pegimpl->_parser_rule_names.find(_kwid);
-
-    //////////////////////////////////////////////////////////
-    // KWID is a scanner rule
     //////////////////////////////////////////////////////////
 
-    if (it_scanner != pegimpl->_scanner_rule_names.end()) {
-      uint64_t tokclass = CrcString(_kwid.c_str()).hashed();
-
-      matcher->_match_fn = [=](matcher_ptr_t par_matcher, scannerlightview_constptr_t slv) -> match_ptr_t {
-        auto tok0         = slv->token(0);
-        auto slv_tokclass = tok0->_class;
-
-        printf(
-            "top_rule<%s> try tok<%s> kwid<%s> ast_path<%s>\n",
-            top_rule->_name.c_str(),
-            tok0->text.c_str(),
-            _kwid.c_str(),
-            pth.c_str());
-
-        for (auto item : top_rule->_references) {
-          auto ref_rule = item->_referenced_rule;
-          printf("  top_rule<%s> ref_rule<%s>\n", top_rule->_name.c_str(), ref_rule->_name.c_str());
-        }
-
-        std::set<rule_ptr_t> topnodes;
-        for (auto item : _user_parser->_matchctx._stack) {
-          auto m                = item._matcher;
-          auto name             = m->_name;
-          auto view             = item._view;
-          AstNode* matcher_node = nullptr;
-          if (auto as_n = m->_uservars.typedValueForKey<AstNode*>("astnode")) {
-            matcher_node = as_n.value();
-          }
-          OrkAssert(matcher_node != nullptr);
-          auto mnode_top = std::dynamic_pointer_cast<ParserRule>(matcher_node->root());
-          if (mnode_top != top_rule) {
-            topnodes.insert(mnode_top);
-          }
-          printf(
-              "  match<%s> st<%zu> en<%zu> troot<%p:%s>\n",
-              name.c_str(),
-              view->_start,
-              view->_end,
-              (void*)mnode_top.get(),
-              mnode_top->path().c_str());
-        }
-        OrkAssert(topnodes.size() == 1);
-        auto ref_top_node = *topnodes.begin();
-
-        printf("  ref_top_node<%p:%s>\n", (void*)ref_top_node.get(), ref_top_node->path().c_str());
-
-        bool is_top_rule_in_ref_top_refs = false;
-        for (auto item : ref_top_node->_references) {
-          auto ref_rule = item->_referenced_rule;
-          printf("  ref_top_node<%s> ref_rule<%s>\n", ref_top_node->_name.c_str(), ref_rule->_name.c_str());
-          if (ref_rule == top_rule) {
-            is_top_rule_in_ref_top_refs = true;
-          }
-        }
-        // TODO: compare match branch to ast branch to filter out non-matching branches
-
-        if (is_top_rule_in_ref_top_refs and (slv_tokclass == tokclass)) {
-          match_ptr_t the_match     = std::make_shared<Match>();
-          auto the_classmatch       = the_match->_impl.makeShared<ClassMatch>();
-          the_match->_matcher       = par_matcher;
-          the_classmatch->_tokclass = tokclass;
-          the_classmatch->_token    = tok0;
-          auto slv_out              = std::make_shared<ScannerLightView>(*slv);
-          slv_out->_end             = slv_out->_start;
-          the_match->_view          = slv_out;
-          slv_out->validate();
-          return filtered_match(par_matcher, the_match);
-        }
-        return nullptr;
-      };
-
-      logchan_rulespec2->log(
-          "KWID::SCANNER RULE kwid<%s> named<%s> ast_path<%s> tokclass<%zu>", _kwid.c_str(), named.c_str(), pth.c_str(), tokclass);
-
-    }
-
-    //////////////////////////////////////////////////////////
-    // KWID is a parser rule
-    //////////////////////////////////////////////////////////
-    else if (it_parser != pegimpl->_parser_rule_names.end()) {
-      logchan_rulespec2->log("KWID::FOUNDPARSER RULE kwid<%s> named<%s> ast_path<%s> ", _kwid.c_str(), named.c_str(), pth.c_str());
-      OrkAssert(false);
-    }
-
-    //////////////////////////////////////////////////////////
-    // use pre-existing rule match_fn
-    //////////////////////////////////////////////////////////
-
-    else {
-      matcher->_match_fn = submatcher->_match_fn;
-      logchan_rulespec2->log(
-          "KWID::FOUNDSM<%s> found kwid<%s> named<%s> ast_path<%s> ",
-          submatcher->_name.c_str(),
-          _kwid.c_str(),
-          named.c_str(),
-          pth.c_str());
-    }
-
-    //////////////////////////////////////////////////////////
+    return true;
   };
   matcher->_uservars.set<AstNode*>("astnode", this);
   return matcher;
@@ -608,7 +542,6 @@ AST::expr_kwid_ptr_t PegImpl::_onEXPRKWID(match_ptr_t match) {
 
   auto indentstr  = std::string(indent * 2, ' ');
   auto classmatch = match->asShared<ClassMatch>();
-  auto token      = classmatch->_token->text;
   kwid_out->_kwid = classmatch->_token->text;
   logchan_rulespec->log("%s_onEXPRKWID<%s> KWID<%s>", indentstr.c_str(), match->_matcher->_name.c_str(), kwid_out->_kwid.c_str());
   _retain_astnodes.insert(kwid_out);
@@ -745,10 +678,8 @@ void PegImpl::loadPEGGrammar() { //
       auto rule      = std::make_shared<AST::ScannerRule>();
       rule->_name    = rule_name;
       rule->_regex   = rx;
-      // auto it        = this->_user_scanner_rules.find(rule_name);
-      // OrkAssert(it == this->_user_scanner_rules.end());
       auto item = std::pair(rule_name, rule);
-      this->_user_scanner_rules.push_back(item);
+      this->_user_scanner_rules_ordered.push_back(item);
       logchan_rulespec2->log(
           "RECORD SCANNER->PARSER RULE<%s> literal<%s>", //
           rule_name.c_str(),                             //
@@ -780,7 +711,7 @@ void PegImpl::loadPEGGrammar() { //
         logchan_rulespec2->log("IMPLEMENT SCANNER MACRO <%s : %s>", macro->_name.c_str(), macro->_regex.c_str());
         this->_user_scanner->addMacro(macro->_name, macro->_regex);
       }
-      for (auto item : this->_user_scanner_rules) {
+      for (auto item : this->_user_scanner_rules_ordered) {
         auto rule          = item.second;
         uint64_t crc_id    = CrcString(rule->_name.c_str()).hashed();
         _current_rule_name = rule->_name;
@@ -872,22 +803,23 @@ match_ptr_t PegImpl::parseUserParserSpec(std::string inp_string) {
   /////////////////////////////////////////////////
   // add user scanner matchers to user matcher
   /////////////////////////////////////////////////
-  for (auto item : this->_user_scanner_rules) {
-    auto rule       = item.second;
-    uint64_t crc_id = CrcString(rule->_name.c_str()).hashed();
-    auto tcname     = rule->_name;
+  for (auto item : this->_user_scanner_rules_ordered) {
+    auto scanner_rule       = item.second;
+    uint64_t crc_id = CrcString(scanner_rule->_name.c_str()).hashed();
+    auto tcname     = scanner_rule->_name;
     _scanner_rule_names.insert(tcname);
     auto matcher = _user_parser->matcherForTokenClass(crc_id, tcname);
     auto it      = _user_matchers_by_name.find(tcname);
     OrkAssert(it == _user_matchers_by_name.end());
     logchan_rulespec2->log(
         "IMPLEMENT matcherForScannerTokClass RULE<%s> matcher<%p:%s>",
-        rule->_name.c_str(),
+        scanner_rule->_name.c_str(),
         (void*)matcher.get(),
         matcher->_name.c_str());
     _user_matchers_by_name[tcname] = matcher;
     auto out_item                  = std::pair(tcname, matcher);
-    _user_scanner_matchers_by_name.push_back(out_item);
+    _user_scanner_matchers_ordered.push_back(out_item);
+    _user_scanner_matchers_by_name[tcname] = matcher;
   }
   /////////////////////////////////////////////////
   // prepare parser-DSL scanner and scan parser-DSL
@@ -1066,6 +998,7 @@ void PegImpl::implementUserLanguage() {
       auto rule_name = rule.first;
       auto ast_rule  = rule.second;
       auto matcher   = ast_rule->createMatcher(rule_name);
+      ast_rule->_matcher = matcher;
       logchan_rulespec2->log(
           "// IMPLEMENT AST-RULE<%s> matcher<%p:%s>", rule_name.c_str(), (void*)matcher.get(), matcher->_name.c_str());
       this->_user_parser->_matchers_by_name[rule_name] = matcher;

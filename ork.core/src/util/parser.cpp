@@ -154,13 +154,14 @@ matcher_ptr_t Parser::optional(matcher_ptr_t sub_matcher, std::string name) {
     the_match->_view->clear();
     return filtered_match(par_matcher,the_match);
   };
-  matcher->_on_link = [=]() {
+  matcher->_on_link = [=]() -> bool {
     if (matcher->_notif == nullptr) {
       matcher->_notif = [=](match_ptr_t the_match) { //
         auto match_str = deco::format(255, 0, 255, "MATCHED OPT<%s>", name.c_str());
         log_match("%s", match_str.c_str());
       };
     }
+    return true;
   }; // _on_link
   return matcher;
 }
@@ -268,13 +269,14 @@ void Parser::_sequence(matcher_ptr_t matcher, std::vector<matcher_ptr_t> sub_mat
     }
     return filtered_match(par_matcher,the_match);
   };
-  matcher->_on_link = [=]() {
+  matcher->_on_link = [=]() -> bool {
     if (matcher->_notif == nullptr) {
       matcher->_notif = [=](match_ptr_t the_match) { //
         auto match_str = deco::format(255, 0, 255, "MATCHED SEQ<%s>", matcher->_name.c_str());
         log_match("%s", match_str.c_str());
       };
     }
+    return true;
   };
 }
 
@@ -325,7 +327,7 @@ matcher_ptr_t Parser::group(std::vector<matcher_ptr_t> matchers, std::string nam
     the_match->_view = slv_out;
     return filtered_match(par_matcher,the_match);
   };
-  matcher->_on_link = [=]() {};
+  matcher->_on_link = [=]() -> bool { return true; };
   return matcher;
 }
 
@@ -449,13 +451,14 @@ matcher_ptr_t Parser::nOrMore(matcher_ptr_t sub_matcher, size_t minMatches, std:
     // log_match( "NOM%zu<%s>: end_match (NOMATCH)", minMatches, name.c_str() );
     return nullptr;
   };
-  matcher->_on_link = [=]() {
+  matcher->_on_link = [=]() -> bool {
     if (matcher->_notif == nullptr) {
       matcher->_notif = [=](match_ptr_t the_match) {
         auto match_str = deco::format(255, 0, 255, "MATCHED NOM<%s>", name.c_str());
         log_match("%s", match_str.c_str());
       };
     }
+    return true;
   };
   return matcher;
 }
@@ -493,7 +496,7 @@ matcher_ptr_t Parser::matcherForTokenClassID(uint64_t tokclass, std::string name
     }
     return nullptr;
   };
-  matcher->_on_link = [=]() {
+  matcher->_on_link = [=]() -> bool {
     if (matcher->_notif == nullptr) {
       matcher->_notif = [=](match_ptr_t the_match) {
         auto tok       = the_match->_view->token(0);
@@ -501,6 +504,7 @@ matcher_ptr_t Parser::matcherForTokenClassID(uint64_t tokclass, std::string name
         log_match("%s", match_str.c_str());
       };
     }
+    return true;
   };
   return matcher;
 }
@@ -528,13 +532,14 @@ matcher_ptr_t Parser::matcherForWord(std::string word, std::string name) {
       return nullptr;
     }
   };
-  matcher->_on_link = [=]() {
+  matcher->_on_link = [=]() -> bool {
     if (matcher->_notif == nullptr) {
       matcher->_notif = [=](match_ptr_t the_match) { //
         auto match_str = deco::format(255, 0, 255, "MATCHED word<%s>", word.c_str());
         log_match("%s", match_str.c_str());
       };
     }
+    return true;
   };
   return matcher;
 }
@@ -626,12 +631,29 @@ matcher_ptr_t Parser::declare(std::string name) {
 //////////////////////////////////////////////////////////////////////
 
 void Parser::link() {
+  std::vector<matcher_ptr_t> unlinked;
   for (auto matcher : _matchers) {
+    unlinked.push_back(matcher);
+  }
+  int bad_iters = 0;
+  while(unlinked.size()){
+    auto it = unlinked.begin();
+    unlinked.erase(it);
+    auto matcher = *it;
     auto matcher_name = matcher->_name;
+    bool OK = true;
     if (matcher->_on_link) {
-      log_info("LINK MATCHER<%s>", matcher_name.c_str());
-      matcher->_on_link();
+      OK = matcher->_on_link();
     }
+    if( OK ){
+      log_info("MATCHER<%s> LINKED...", matcher_name.c_str());
+    }
+    else{
+      log_info("MATCHER<%s> LINK FAILED, will reattempt..", matcher_name.c_str());
+      unlinked.push_back(matcher);
+      bad_iters++;
+    }
+    OrkAssert(bad_iters<1000);
   }
 }
 
