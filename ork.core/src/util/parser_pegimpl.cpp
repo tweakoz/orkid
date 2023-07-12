@@ -11,8 +11,8 @@
 namespace ork {
 match_ptr_t filtered_match(matcher_ptr_t matcher, match_ptr_t the_match);
 /////////////////////////////////////////////////////////////////////////////////////////////////
-static logchannel_ptr_t logchan_rulespec  = logger()->createChannel("PEGSPEC1", fvec3(0.5, 0.8, 0.5), false);
-static logchannel_ptr_t logchan_rulespec2 = logger()->createChannel("PEGSPEC2", fvec3(0.5, 0.8, 0.5), false);
+static logchannel_ptr_t logchan_rulespec  = logger()->createChannel("PEGSPEC1", fvec3(0.5, 0.8, 0.5), true);
+static logchannel_ptr_t logchan_rulespec2 = logger()->createChannel("PEGSPEC2", fvec3(0.5, 0.8, 0.5), true);
 
 matcher_ptr_t Parser::rule(const std::string& rule_name) {
   auto it = _matchers_by_name.find(rule_name);
@@ -201,7 +201,7 @@ matcher_ptr_t ExprKWID::createMatcher(std::string named) { // final
 
     return true;
   };
-  matcher->_uservars.set<AstNode*>("astnode", this);
+  matcher->_uservars.set<AstNode*>("impl.astnode", this);
   return matcher;
 }
 ////////////////////////////////////////////////////////////////////////
@@ -226,7 +226,7 @@ void OneOrMore::do_visit(astvisitctx_ptr_t visitctx) { // final
 matcher_ptr_t OneOrMore::createMatcher(std::string named) { // final
   auto expr0   = _subexpressions[0];
   auto matcher = _user_parser->oneOrMore(expr0->createMatcher(named));
-  matcher->_uservars.set<AstNode*>("astnode", this);
+  matcher->_uservars.set<AstNode*>("impl.astnode", this);
   return matcher;
 }
 ////////////////////////////////////////////////////////////////////////
@@ -246,7 +246,7 @@ void ZeroOrMore::do_visit(astvisitctx_ptr_t visitctx) { // final
 }
 matcher_ptr_t ZeroOrMore::createMatcher(std::string named) { // final
   auto matcher = _user_parser->zeroOrMore(_subexpression->createMatcher(named));
-  matcher->_uservars.set<AstNode*>("astnode", this);
+  matcher->_uservars.set<AstNode*>("impl.astnode", this);
   return matcher;
 }
 ////////////////////////////////////////////////////////////////////////
@@ -293,7 +293,7 @@ void Optional::do_visit(astvisitctx_ptr_t visitctx) { // final
 matcher_ptr_t Optional::createMatcher(std::string named) { // final
   auto subexp  = _subexpression->createMatcher(named);
   auto matcher = _user_parser->optional(subexp);
-  matcher->_uservars.set<AstNode*>("astnode", this);
+  matcher->_uservars.set<AstNode*>("impl.astnode", this);
   return matcher;
 }
 ////////////////////////////////////////////////////////////////////////
@@ -321,7 +321,7 @@ matcher_ptr_t Sequence::createMatcher(std::string named) { // final
     sub_matchers.push_back(subexp->createMatcher(named));
   }
   auto matcher = _user_parser->sequence(sub_matchers);
-  matcher->_uservars.set<AstNode*>("astnode", this);
+  matcher->_uservars.set<AstNode*>("impl.astnode", this);
   return matcher;
 }
 ////////////////////////////////////////////////////////////////////////
@@ -349,7 +349,7 @@ matcher_ptr_t Group::createMatcher(std::string named) { // final
     sub_matchers.push_back(subexp->createMatcher(named));
   }
   auto matcher = _user_parser->group(sub_matchers);
-  matcher->_uservars.set<AstNode*>("astnode", this);
+  matcher->_uservars.set<AstNode*>("impl.astnode", this);
   return matcher;
 }
 ////////////////////////////////////////////////////////////////////////

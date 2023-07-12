@@ -46,13 +46,18 @@ using matcher_pair_t     = std::pair<std::string, matcher_ptr_t>;
 //////////////////////////////////////////////////////////////
 
 struct Match {
+  match_ptr_t _parent;
+  std::vector<match_ptr_t> _children;
   matcher_ptr_t _matcher;
   scannerlightview_ptr_t _view;
   std::vector<matcher_ptr_t> _matcherstack;
   svar32_t _impl;
   svar32_t _impl2;
   varmap::VarMap _uservars;
-  void dump(int indent) const;
+  void dump1(int indent) const;
+  void dump2(int indent) const;
+  using visit_fn_t = std::function<void(int, const Match*)>;
+  void visit(int level, visit_fn_t) const;
   bool matcherInStack(matcher_ptr_t matcher) const;
   template <typename impl_t> std::shared_ptr<impl_t> asShared() {
     return _impl.getShared<impl_t>();
@@ -75,6 +80,9 @@ struct Match {
   }
   template <typename user_t> std::shared_ptr<user_t> makeSharedForKey(std::string named) {
     return _uservars.makeSharedForKey<user_t>(named);
+  }
+  template <typename user_t> void setSharedForKey(std::string named,std::shared_ptr<user_t> ptr) {
+    return _uservars.set<std::shared_ptr<user_t>>(named);
   }
 };
 
@@ -206,10 +214,14 @@ struct Parser {
   match_ptr_t loadPEGParserSpec(const std::string& spec);
 
   void link();
+  match_ptr_t pushMatch();
+  match_ptr_t leafMatch();
+  void popMatch();
 
   std::unordered_set<matcher_ptr_t> _matchers;
   std::unordered_map<std::string, matcher_ptr_t> _matchers_by_name;
   std::unordered_map<uint64_t, match_ptr_t> _packrat_cache;
+  std::vector<match_ptr_t> _match_stack;
 
   scanner_ptr_t _scanner;
   svar64_t _user;

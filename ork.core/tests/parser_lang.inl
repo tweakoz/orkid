@@ -60,6 +60,7 @@ using assignment_stmt_ptr_t = std::shared_ptr<AssignmentStatement>;
 ///////////////////// 
 
 struct AstNode {
+  std::string _name;
   virtual ~AstNode() {
   }
 };
@@ -67,15 +68,12 @@ struct AstNode {
 struct Statement : public AstNode {};
 //
 struct DataType : public AstNode {
-    std::string _name;
 };
 //
 struct VariableReference : public AstNode { //
-  std::string _name;
 };
 //
 struct AssignmentStatement : public Statement {
-    std::string _name;
     datatype_ptr_t _datatype;
     expression_ptr_t _expression;
 };
@@ -122,7 +120,6 @@ struct ArgumentDeclaration : public AstNode{
 };
 //
 struct FunctionDef : public AstNode { //
-  std::string _name;
   datatype_ptr_t _returntype;
   std::vector<argument_decl_ptr_t> _arguments;
   std::vector<assignment_stmt_ptr_t> _statements;
