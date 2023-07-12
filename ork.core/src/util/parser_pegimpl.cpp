@@ -11,8 +11,8 @@
 namespace ork {
 match_ptr_t filtered_match(matcher_ptr_t matcher, match_ptr_t the_match);
 /////////////////////////////////////////////////////////////////////////////////////////////////
-static logchannel_ptr_t logchan_rulespec  = logger()->createChannel("PEGSPEC1", fvec3(0.5, 0.8, 0.5), true);
-static logchannel_ptr_t logchan_rulespec2 = logger()->createChannel("PEGSPEC2", fvec3(0.5, 0.8, 0.5), true);
+static logchannel_ptr_t logchan_rulespec  = logger()->createChannel("PEGSPEC1", fvec3(0.5, 0.8, 0.5), false);
+static logchannel_ptr_t logchan_rulespec2 = logger()->createChannel("PEGSPEC2", fvec3(0.5, 0.8, 0.5), false);
 
 matcher_ptr_t Parser::rule(const std::string& rule_name) {
   auto it = _matchers_by_name.find(rule_name);
@@ -917,15 +917,15 @@ void PegImpl::implementUserLanguage() {
       if (auto as_rule = std::dynamic_pointer_cast<AST::ParserRule>(the_node)) {
         if (as_rule != top_rule) {
           auto rule_name = as_rule->_name;
-          printf("nodesubrule<%s>\n", rule_name.c_str());
+          logchan_rulespec2->log("nodesubrule<%s>\n", rule_name.c_str());
         }
       } else if (auto as_kwid = std::dynamic_pointer_cast<AST::ExprKWID>(the_node)) {
         auto top_rule_name = top_rule->_name;
-        printf("%s kwid<%p:%s>", indent.c_str(), (void*)as_kwid.get(), as_kwid->_kwid.c_str());
+        logchan_rulespec2->log("%s kwid<%p:%s>", indent.c_str(), (void*)as_kwid.get(), as_kwid->_kwid.c_str());
         auto it = _user_parser_rules.find(as_kwid->_kwid);
         if (it != _user_parser_rules.end()) {
           auto rule = it->second;
-          printf(" subrule<%s>", rule->_name.c_str());
+          logchan_rulespec2->log(" subrule<%s>", rule->_name.c_str());
 
           auto reference              = std::make_shared<AST::RuleRef>();
           reference->_referenced_rule = rule;
@@ -937,16 +937,16 @@ void PegImpl::implementUserLanguage() {
           reference->_node            = the_node;
           rule->_referenced_by.push_back(reference);
         }
-        printf("\n");
+        logchan_rulespec2->log("\n");
       } else {
-        printf("%s node<%p:%s>\n", indent.c_str(), (void*)the_node.get(), the_node->_name.c_str());
+        logchan_rulespec2->log("%s node<%p:%s>\n", indent.c_str(), (void*)the_node.get(), the_node->_name.c_str());
       }
     };
 
     for (auto rule_item : _user_parser_rules) {
       auto rule            = rule_item.second;
       visit_ctx->_top_rule = rule;
-      printf("/////////// VISITING RULE<%p:%s> ///////////\n", (void*)rule.get(), rule->_name.c_str());
+      logchan_rulespec2->log("/////////// VISITING RULE<%p:%s> ///////////\n", (void*)rule.get(), rule->_name.c_str());
       AST::AstNode::visit(rule, visit_ctx);
       // rule->_expression->dump();
     }
@@ -960,13 +960,13 @@ void PegImpl::implementUserLanguage() {
     logchan_rulespec2->log("///////////////////////////////////////////////////////////");
     for (auto rule_item : _user_parser_rules) {
       auto rule = rule_item.second;
-      printf("rule<%s> referenced by [\n", rule->_name.c_str());
+      logchan_rulespec2->log("rule<%s> referenced by [\n", rule->_name.c_str());
       for (auto ref : rule->_referenced_by) {
         auto rule = ref->_referenced_rule;
         auto node = ref->_node;
-        printf("  rule(%s) : node(%p)\n", rule->_name.c_str(), (void*)node.get());
+        logchan_rulespec2->log("  rule(%s) : node(%p)\n", rule->_name.c_str(), (void*)node.get());
       }
-      printf("]\n");
+      logchan_rulespec2->log("]\n");
     }
   }
   /////////////////////////////////////////////////////////
@@ -978,13 +978,13 @@ void PegImpl::implementUserLanguage() {
     logchan_rulespec2->log("///////////////////////////////////////////////////////////");
     for (auto rule_item : _user_parser_rules) {
       auto rule = rule_item.second;
-      printf("rule<%s> references [\n", rule->_name.c_str());
+      logchan_rulespec2->log("rule<%s> references [\n", rule->_name.c_str());
       for (auto ref : rule->_references) {
         auto rule = ref->_referenced_rule;
         auto node = ref->_node;
-        printf("  rule(%s) : node(%p)\n", rule->_name.c_str(), (void*)node.get());
+        logchan_rulespec2->log("  rule(%s) : node(%p)\n", rule->_name.c_str(), (void*)node.get());
       }
-      printf("]\n");
+      logchan_rulespec2->log("]\n");
     }
   }
   /////////////////////////////////////////////////////////
