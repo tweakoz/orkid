@@ -40,6 +40,7 @@ struct OneOf;
 
 using match_ptr_t     = std::shared_ptr<Match>;
 using match_attempt_ptr_t     = std::shared_ptr<MatchAttempt>;
+using match_attempt_constptr_t     = std::shared_ptr<MatchAttempt>;
 using matcher_ptr_t   = std::shared_ptr<Matcher>;
 using matcher_fn_t    = std::function<match_attempt_ptr_t(matcher_ptr_t par_matcher, scannerlightview_constptr_t& inp_view)>;
 using matcher_notif_t = std::function<void(match_ptr_t)>;
@@ -61,6 +62,10 @@ using genmatch_fn_t = std::function<match_ptr_t(match_attempt_ptr_t)>;
 
 //////////////////////////////////////////////////////////////
 
+match_attempt_ptr_t filtered_match(matcher_ptr_t matcher, match_attempt_ptr_t the_match);
+
+//////////////////////////////////////////////////////////////
+
 struct MatchAttempt {
   matcher_ptr_t _matcher;
   match_attempt_ptr_t _parent;
@@ -70,8 +75,12 @@ struct MatchAttempt {
   bool _terminal = false;
   void dump1(int indent);
   void dump2(int indent);
+ 
   template <typename impl_t> std::shared_ptr<impl_t> asShared() {
     return _impl.getShared<impl_t>();
+  }
+  template <typename impl_t> std::shared_ptr<impl_t> makeShared() {
+    return _impl.makeShared<impl_t>();
   }
   template <typename impl_t> attempt_cast<std::shared_ptr<impl_t>> tryAsShared() {
     return _impl.tryAsShared<impl_t>();
@@ -89,8 +98,8 @@ struct MatchAttempt {
 };
 
 struct Match {
-  Match( const MatchAttempt& attempt );
-  match_attempt_ptr_t _attempt;
+  Match( match_attempt_constptr_t attempt );
+  match_attempt_constptr_t _attempt;
   match_ptr_t _parent;
   std::vector<match_ptr_t> _children;
   matcher_ptr_t _matcher;
@@ -105,6 +114,9 @@ struct Match {
   bool matcherInStack(matcher_ptr_t matcher) const;
   template <typename impl_t> std::shared_ptr<impl_t> asShared() {
     return _impl.getShared<impl_t>();
+  }
+  template <typename impl_t> std::shared_ptr<impl_t> makeShared() {
+    return _impl.makeShared<impl_t>();
   }
   template <typename impl_t> attempt_cast<std::shared_ptr<impl_t>> tryAsShared() {
     return _impl.tryAsShared<impl_t>();
@@ -143,6 +155,7 @@ struct Matcher {
   matcher_ptr_t _proxy_target;
   std::function<bool()> _on_link;
   varmap::VarMap _uservars;
+  static match_ptr_t genmatch( match_attempt_constptr_t attempt );
   Matcher* resolve() {
     return _proxy_target ? _proxy_target.get() : this;
   }
