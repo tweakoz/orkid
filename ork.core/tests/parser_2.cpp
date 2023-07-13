@@ -117,8 +117,8 @@ struct MyParser2 : public Parser {
 
   MyParser2() {
     _name              = "p2";
-    _DEBUG_MATCH       = false;
-    _DEBUG_INFO        = false;
+    _DEBUG_MATCH       = true;
+    _DEBUG_INFO        = true;
     auto scanner_match = this->loadPEGScannerSpec(scanner_spec);
     OrkAssert(scanner_match);
     auto parser_match = this->loadPEGParserSpec(parser_spec);
@@ -396,7 +396,7 @@ TEST(parser2) {
         function abc(int x, float y) {
             float a = 1.0;
             float v = 2.0;
-            float b = (a+v)*7.0;
+            float b = (x+y)*7.0;
         }
         function def() {
             float X = (1.0+2.3)*7.0;

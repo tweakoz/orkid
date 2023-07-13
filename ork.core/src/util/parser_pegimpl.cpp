@@ -11,8 +11,8 @@
 namespace ork {
 match_ptr_t filtered_match(matcher_ptr_t matcher, match_ptr_t the_match);
 /////////////////////////////////////////////////////////////////////////////////////////////////
-static logchannel_ptr_t logchan_rulespec  = logger()->createChannel("PEGSPEC1", fvec3(0.5, 0.8, 0.5), false);
-static logchannel_ptr_t logchan_rulespec2 = logger()->createChannel("PEGSPEC2", fvec3(0.5, 0.8, 0.5), false);
+static logchannel_ptr_t logchan_rulespec  = logger()->createChannel("PEGSPEC1", fvec3(0.5, 0.8, 0.5), true);
+static logchannel_ptr_t logchan_rulespec2 = logger()->createChannel("PEGSPEC2", fvec3(0.5, 0.8, 0.5), true);
 
 matcher_ptr_t Parser::rule(const std::string& rule_name) {
   auto it = _matchers_by_name.find(rule_name);
@@ -175,13 +175,17 @@ matcher_ptr_t ExprKWID::createMatcher(std::string named) { // final
       logchan_rulespec2->log("  NO SUBMATCHER" );
       return false;
     }
-    if (submatcher->_match_fn == nullptr) {
+    if (submatcher->_attempt_match_fn == nullptr) {
       logchan_rulespec2->log(
           "  submatcher<%s> NO SUBMATCHER MATCHFN", named.c_str(), _kwid.c_str(), submatcher->_name.c_str());
       return false;
     }
-    matcher->_match_fn = [=](matcher_ptr_t par_matcher,                        //
-                           scannerlightview_constptr_t slv) -> match_ptr_t { //
+    matcher->_genmatch_fn = [=](match_attempt_ptr_t attempt) -> match_ptr_t {
+      OrkAssert(false);
+      return submatcher->_genmatch_fn(attempt);
+    };
+    matcher->_attempt_match_fn = [=](matcher_ptr_t par_matcher,                        //
+                           scannerlightview_constptr_t slv) -> match_attempt_ptr_t { //
      DEPTH++;
      auto indentstr = std::string(DEPTH * 2, ' ');
      auto tok0 = slv->token(0);
@@ -189,9 +193,9 @@ matcher_ptr_t ExprKWID::createMatcher(std::string named) { // final
      logchan_rulespec2->log(
           "%s try_match tok<%s> astnamed<%s> astkwid<%s> submatcher<%s> ", indentstr.c_str(), tok0->text.c_str(), named.c_str(), _kwid.c_str(), submatcher->_name.c_str());
 
-     auto match = submatcher->_match_fn(par_matcher, slv);
+     auto match_attempt = submatcher->_attempt_match_fn(par_matcher, slv);
      DEPTH--;
-     return match;
+     return match_attempt;
     };
 
     matcher->_notif        = submatcher->_notif;

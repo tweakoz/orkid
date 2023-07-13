@@ -12,8 +12,20 @@
 namespace ork {
 ///////////////////////////////////////////////////////////////////////////////
 
+struct MatchAttempt;
 struct Match;
-struct MatchContext;
+struct MatchAttemptContext;
+
+struct SequenceAttempt;
+struct GroupAttempt;
+struct MatcherAttempt;
+struct ParserAttempt;
+struct NOrMoreAttempt;
+struct OptionalAttempt;
+struct WordMatchAttempt;
+struct ClassMatchAttempt;
+struct OneOfAttempt;
+
 struct Sequence;
 struct Group;
 struct Matcher;
@@ -27,10 +39,12 @@ struct OneOf;
 ///////////////////////////////////////////////////////////////////////////////
 
 using match_ptr_t     = std::shared_ptr<Match>;
+using match_attempt_ptr_t     = std::shared_ptr<MatchAttempt>;
 using matcher_ptr_t   = std::shared_ptr<Matcher>;
-using matcher_fn_t    = std::function<match_ptr_t(matcher_ptr_t par_matcher, scannerlightview_constptr_t& inp_view)>;
+using matcher_fn_t    = std::function<match_attempt_ptr_t(matcher_ptr_t par_matcher, scannerlightview_constptr_t& inp_view)>;
 using matcher_notif_t = std::function<void(match_ptr_t)>;
 using parser_ptr_t    = std::shared_ptr<Parser>;
+
 using sequence_ptr_t   = std::shared_ptr<Sequence>;
 using group_ptr_t      = std::shared_ptr<Group>;
 using n_or_more_ptr_t  = std::shared_ptr<NOrMore>;
@@ -38,14 +52,45 @@ using oneof_ptr_t      = std::shared_ptr<OneOf>;
 using optional_ptr_t   = std::shared_ptr<Optional>;
 using wordmatch_ptr_t  = std::shared_ptr<WordMatch>;
 using classmatch_ptr_t = std::shared_ptr<ClassMatch>;
-using matchctx_ptr_t   = std::shared_ptr<MatchContext>;
+using matchctx_ptr_t   = std::shared_ptr<MatchAttemptContext>;
 
-using matcher_filterfn_t = std::function<bool(match_ptr_t top_match)>;
+using matcher_filterfn_t = std::function<bool(match_attempt_ptr_t top_match)>;
 using matcher_pair_t     = std::pair<std::string, matcher_ptr_t>;
+
+using genmatch_fn_t = std::function<match_ptr_t(match_attempt_ptr_t)>;
 
 //////////////////////////////////////////////////////////////
 
+struct MatchAttempt {
+  matcher_ptr_t _matcher;
+  match_attempt_ptr_t _parent;
+  std::vector<match_attempt_ptr_t> _children;
+  scannerlightview_ptr_t _view;
+  svar32_t _impl;
+  bool _terminal = false;
+  void dump1(int indent);
+  void dump2(int indent);
+  template <typename impl_t> std::shared_ptr<impl_t> asShared() {
+    return _impl.getShared<impl_t>();
+  }
+  template <typename impl_t> attempt_cast<std::shared_ptr<impl_t>> tryAsShared() {
+    return _impl.tryAsShared<impl_t>();
+  }
+  template <typename impl_t> attempt_cast<impl_t> tryAs() {
+    return _impl.tryAs<impl_t>();
+  }
+  template <typename impl_t> attempt_cast_const<impl_t> tryAs() const {
+    return _impl.tryAs<impl_t>();
+  }
+  template <typename impl_t> bool isShared() const {
+    return _impl.isShared<impl_t>();
+  }
+
+};
+
 struct Match {
+  Match( const MatchAttempt& attempt );
+  match_attempt_ptr_t _attempt;
   match_ptr_t _parent;
   std::vector<match_ptr_t> _children;
   matcher_ptr_t _matcher;
@@ -53,9 +98,8 @@ struct Match {
   std::vector<matcher_ptr_t> _matcherstack;
   svar32_t _impl;
   svar32_t _impl2;
+  bool _terminal = false;
   varmap::VarMap _uservars;
-  void dump1(int indent) const;
-  void dump2(int indent) const;
   using visit_fn_t = std::function<void(int, const Match*)>;
   void visit(int level, visit_fn_t) const;
   bool matcherInStack(matcher_ptr_t matcher) const;
@@ -90,7 +134,8 @@ struct Match {
 
 struct Matcher {
   Matcher(matcher_fn_t match_fn);
-  matcher_fn_t _match_fn;
+  matcher_fn_t _attempt_match_fn;
+  genmatch_fn_t _genmatch_fn;
   matcher_filterfn_t _match_filter;
   matcher_notif_t _notif;
   std::string _name;
@@ -107,17 +152,59 @@ struct Matcher {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct MatchContextItem {
+struct MatchAttemptContextItem {
   matcher_ptr_t _matcher;
   scannerlightview_constptr_t _view;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct MatchContext {
+struct MatchAttemptContext {
   matcher_ptr_t _topmatcher;
   scannerlightview_constptr_t _topview;
-  std::vector<MatchContextItem> _stack;
+  std::vector<MatchAttemptContextItem> _stack;
+};
+
+//////////////////////////////////////////////////////////////
+
+struct SequenceAttempt {
+  template <typename impl_t> std::shared_ptr<impl_t> itemAsShared(int index) {
+    return _items[index]->asShared<impl_t>();
+  }
+  std::vector<match_attempt_ptr_t> _items;
+};
+struct GroupAttempt {
+  template <typename impl_t> std::shared_ptr<impl_t> itemAsShared(int index) {
+    return _items[index]->asShared<impl_t>();
+  }
+  std::vector<match_attempt_ptr_t> _items;
+};
+struct NOrMoreAttempt {
+  template <typename impl_t> std::shared_ptr<impl_t> itemAsShared(int index) {
+    return _items[index]->asShared<impl_t>();
+  }
+  std::vector<match_attempt_ptr_t> _items;
+  size_t _minmatches   = 0;
+  bool _mustConsumeAll = false;
+};
+struct OptionalAttempt {
+  template <typename impl_t> std::shared_ptr<impl_t> asShared() {
+    return _subitem->asShared<impl_t>();
+  }
+  match_attempt_ptr_t _subitem;
+};
+struct WordMatchAttempt {
+  const Token* _token = nullptr;
+};
+struct ClassMatchAttempt {
+  uint64_t _tokclass  = 0;
+  const Token* _token = nullptr;
+};
+struct OneOfAttempt {
+  template <typename impl_t> std::shared_ptr<impl_t> asShared() {
+    return _selected->asShared<impl_t>();
+  }
+  match_attempt_ptr_t _selected;
 };
 
 //////////////////////////////////////////////////////////////
@@ -193,7 +280,7 @@ struct Parser {
   }
 
   match_ptr_t match(matcher_ptr_t topmatcher, scannerlightview_constptr_t topview);
-  match_ptr_t _match(MatchContextItem& mci);
+  match_attempt_ptr_t _tryMatch(MatchAttemptContextItem& mci);
 
   void _log_valist(const char* pMsgFormat, va_list args) const;
   void _log_valist_continue(const char* pMsgFormat, va_list args) const;
@@ -214,14 +301,13 @@ struct Parser {
   match_ptr_t loadPEGParserSpec(const std::string& spec);
 
   void link();
-  match_ptr_t pushMatch();
-  match_ptr_t leafMatch();
+  match_attempt_ptr_t pushMatch();
+  match_attempt_ptr_t leafMatch();
   void popMatch();
 
   std::unordered_set<matcher_ptr_t> _matchers;
   std::unordered_map<std::string, matcher_ptr_t> _matchers_by_name;
-  std::unordered_map<uint64_t, match_ptr_t> _packrat_cache;
-  std::vector<match_ptr_t> _match_stack;
+  std::vector<match_attempt_ptr_t> _match_stack;
 
   scanner_ptr_t _scanner;
   svar64_t _user;
@@ -230,7 +316,7 @@ struct Parser {
   bool _DEBUG_MATCH    = false;
   bool _DEBUG_INFO     = false;
   std::string _name;
-  MatchContext _matchctx;
+  MatchAttemptContext _matchattemptctx;
 };
 
 //////////////////////////////////////////////////////////////
