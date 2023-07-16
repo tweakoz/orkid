@@ -14,7 +14,7 @@ To bootstrap on MacOs Ventura (13.0)+
 * install / update XCode via AppStore.
 * Install Ork Build Tools (OBT)
   * ```pip3 install --user --upgrade ork.build```
-  * Alternatively you should be able to do this in an python virtualenv if you prefer.
+  * Alternatively you should be able to do this in an python virtualenv if you prefer. Adjust instructions accordingly.
 * You may need to add user python bin to path.
   * ```export PATH="$PATH:~/Library/Python/3.11/bin"```
   * now obt.* commands are in your path (obt tab-tab to list them)
@@ -36,7 +36,7 @@ To bootstrap on MacOs Ventura (13.0)+
 * Run a c++ example
   * ```ork.example.lev2.gfx.minimal3D.exe```
 * Run a python example
-* ```${ORKID_LEV2_EXAMPLES_DIR}/python/scenegraph/minimal.py```
+  * ```${ORKID_LEV2_EXAMPLES_DIR}/python/scenegraph/minimal.py```
 * The Orkid Source Tree will be at ${ORKID_WORKSPACE_DIR}
 * Create an XCode Project if that is more your style (or just for easier debugging).
   * first build via the standard commandline method, so that all deps are built.
@@ -55,8 +55,8 @@ To bootstrap on Ubuntu22.04 x86/64
   * ```sudo update-alternatives --install /usr/bin/python python /usr/bin/python3 1``` 
 * Install Ork Build Tools (OBT)
   * ```pip3 install --user --upgrade ork.build```
-  * Alternatively you should be able to do this in an python virtualenv if you prefer.
-* now obt.* commands are in your path (obt tab-tab to list them)
+  * Alternatively you should be able to do this in an python virtualenv if you prefer. Adjust instructions accordingly.
+  * now obt.* commands are in your path (obt tab-tab to list them)
 * Install System Dependencies (Once per machine, requires sudo)
   * ```obt.ix.installdeps.ubuntu_x86_64.py``` 
 * Create an ork.build (OBT) *staging* environment/container.
@@ -75,7 +75,7 @@ To bootstrap on Ubuntu22.04 x86/64
 * Run a c++ example
   * ```ork.example.lev2.gfx.minimal3D.exe```
 * Run a python example
-* ```${ORKID_LEV2_EXAMPLES_DIR}/python/scenegraph/minimal.py``` 
+  * ```${ORKID_LEV2_EXAMPLES_DIR}/python/scenegraph/minimal.py``` 
 * The Orkid Source Tree will be at ${ORKID_WORKSPACE_DIR}
 * Leave The OBT environment/shell (This will returrn you to your parent shell)
   * ```exit``` 
@@ -88,7 +88,7 @@ Miscellaneous OBT Commands
   * ```obt.dep.list.py```
 * list info about a specific dependency
   * ```obt.dep.info.py <depname>```
-*  list build status of a specific dependency
+* list build status of a specific dependency
   * ```obt.dep.status.py <depname>```
 * search source folders for a quoted phrase - the quotes are optional for simple single word seaches
   * ```obt.dep.find.py --dep <depname> "phrase"```

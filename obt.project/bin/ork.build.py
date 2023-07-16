@@ -124,7 +124,7 @@ with buildtrace.NestedBuildTrace({ "op": "obt.build.py"}) as nested:
   cmd += ["-DBUILDING_ORKID=ON"]
 
   cmd += ["-DCMAKE_CXX_COMPILER=%s"%clangdep.bin_clangpp]
-  cmd += ["-DCMAKE_CC_COMPILER=%s"%clangdep.bin_clang]
+  cmd += ["-DCMAKE_C_COMPILER=%s"%clangdep.bin_clang]
 
   if obt.host.IsAARCH64:
     cmd += ["-DARCHITECTURE=AARCH64"]
