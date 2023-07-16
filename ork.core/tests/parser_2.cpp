@@ -123,6 +123,7 @@ struct MyParser2 : public Parser {
     OrkAssert(scanner_match);
     auto parser_match = this->loadPEGParserSpec(parser_spec);
     OrkAssert(parser_match);
+    OrkAssert(_DEBUG_MATCH);
     ///////////////////////////////////////////////////////////
     // parser should be compiled and linked at this point
     ///////////////////////////////////////////////////////////
@@ -402,8 +403,8 @@ TEST(parser2) {
             float X = (1.0+2.3)*7.0;
         }
     )";
-  MyParser2 the_parser;
-  auto match = the_parser.parseString(parse_str);
+  auto the_parser = std::make_shared<MyParser2>();
+  auto match = the_parser->parseString(parse_str);
   printf(
       "P2.TOP.B match<%p> matcher<%p:%s> st<%zu> en<%zu>\n", //
       match.get(),                                           //

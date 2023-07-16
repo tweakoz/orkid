@@ -382,6 +382,8 @@ static constexpr const char* block_regex = "(function|yo|xxx)";
 
 PegImpl::PegImpl() {
   _peg_parser        = std::make_shared<Parser>();
+  _peg_parser->_DEBUG_MATCH = true;
+  _peg_parser->_DEBUG_INFO = true;
   _peg_parser->_name = "gramr";
   loadPEGScannerRules();
   loadPEGGrammar();

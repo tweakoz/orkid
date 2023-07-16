@@ -19,6 +19,10 @@ namespace ork {
 //////////////////////////////////////////////////////////////////////
 static logchannel_ptr_t logchan_parser = logger()->createChannel("RULESPEC", fvec3(0.5, 0.7, 0.5), true);
 
+//////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////
+
 void MatchAttempt::dump1(int indent) {
 
   auto indentstr = std::string(indent, ' ');
@@ -66,6 +70,8 @@ void MatchAttempt::dump1(int indent) {
   }
 }
 
+//////////////////////////////////////////////////////////////////////
+
 void MatchAttempt::dump2(int indent) {
   auto indentstr = std::string(indent*2, ' ');
   std::string name = "anon";
@@ -78,6 +84,24 @@ void MatchAttempt::dump2(int indent) {
   }
 }
 
+//////////////////////////////////////////////////////////////////////
+
+match_ptr_t MatchAttempt::genmatch(match_attempt_constptr_t attempt){
+  OrkAssert(attempt);
+  OrkAssert(attempt->_matcher);
+  auto fn = attempt->_matcher->_genmatch_fn;
+  OrkAssert(fn);
+  if (fn== nullptr) {
+    logerrchannel()->log("matcher<%s> has no _genmatch_fn function", attempt->_matcher->_name.c_str());
+    OrkAssert(false);
+  }
+  return fn(attempt);
+}
+
+//////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////
+
 void Match::visit(int level, visit_fn_t vfn) const {
   vfn(level,this);
   for( auto c : _children ){
@@ -85,6 +109,7 @@ void Match::visit(int level, visit_fn_t vfn) const {
   }
 }
 
+//////////////////////////////////////////////////////////////////////
 
 bool Match::matcherInStack(matcher_ptr_t matcher) const{
   bool rval = false;
@@ -96,6 +121,8 @@ bool Match::matcherInStack(matcher_ptr_t matcher) const{
   }
   return rval;
 }
+
+//////////////////////////////////////////////////////////////////////
 
 Match::Match(match_attempt_constptr_t attempt)
     : _attempt(attempt)
@@ -127,14 +154,6 @@ uint64_t Matcher::hash(scannerlightview_constptr_t slv) const { // packrat suppo
 
 void Matcher::_hash(boost::Crc64& crc_out) const { // packrat support
   crc_out.accumulateItem<uint64_t>((uint64_t)this);
-}
-
-//////////////////////////////////////////////////////////////////////
-
-match_ptr_t Matcher::genmatch(match_attempt_constptr_t attempt){
-  auto fn = attempt->_matcher->_genmatch_fn;
-  OrkAssert(fn);
-  return fn(attempt);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -257,31 +276,25 @@ match_ptr_t Parser::match(matcher_ptr_t topmatcher, scannerlightview_constptr_t 
   auto root_match_attempt = _tryMatch(mci);
 
   if(root_match_attempt) {
-    std::stack<match_attempt_ptr_t> dfs_stack;
-    std::unordered_map<match_attempt_ptr_t, match_ptr_t> match_map;
+    auto root_match = MatchAttempt::genmatch(root_match_attempt);
 
-    dfs_stack.push(root_match_attempt);
-    
-    match_map[root_match_attempt] = Matcher::genmatch(root_match_attempt);
+    /////////////////////////////////////
+    // visit match tree
+    /////////////////////////////////////
 
+    std::stack<match_ptr_t> dfs_stack;
+    dfs_stack.push(root_match);
     while(!dfs_stack.empty()) {
-      auto current_attempt = dfs_stack.top();
+      auto current_match = dfs_stack.top();
+      printf( "current_match<%p>\n", (void*) current_match.get() );
       dfs_stack.pop();
-
-      auto current_match = match_map[current_attempt];
-
-      // Create matches for all children and add them to the current match
-      for(auto& child_attempt : current_attempt->_children) {
-        auto child_match = Matcher::genmatch(child_attempt);
-        match_map[child_attempt] = child_match;
-        current_match->_children.push_back(child_match); // Assuming addChild() method exists
-
-        dfs_stack.push(child_attempt);
+      for(auto& child_match : current_match->_children) {
+        dfs_stack.push(child_match);
       }
     }
 
-    // The match for the entire input is now available
-    return match_map[root_match_attempt];
+    /////////////////////////////////////
+    return root_match;
   }
 
   return nullptr;
@@ -290,21 +303,21 @@ match_ptr_t Parser::match(matcher_ptr_t topmatcher, scannerlightview_constptr_t 
 //////////////////////////////////////////////////////////////////////
 
 void Parser::_log_valist(const char* pMsgFormat, va_list args) const {
-  char buf[1024];
+  char buf[256];
   vsnprintf_s(buf, sizeof(buf), pMsgFormat, args);
   size_t indent  = _matchattemptctx._stack.size();
   auto indentstr = std::string(indent * 2, ' ');
   printf("[PARSER : %s] %s%s\n", _name.c_str(), indentstr.c_str(), buf);
 }
 void Parser::_log_valist_begin(const char* pMsgFormat, va_list args) const {
-  char buf[1024];
+  char buf[256];
   vsnprintf_s(buf, sizeof(buf), pMsgFormat, args);
   size_t indent  = _matchattemptctx._stack.size();
   auto indentstr = std::string(indent * 2, ' ');
   printf("[PARSER] %s%s", indentstr.c_str(), buf);
 }
 void Parser::_log_valist_continue(const char* pMsgFormat, va_list args) const {
-  char buf[1024];
+  char buf[256];
   vsnprintf_s(buf, sizeof(buf), pMsgFormat, args);
   printf("%s", buf);
 }

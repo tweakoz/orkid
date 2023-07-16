@@ -75,6 +75,7 @@ struct MatchAttempt {
   bool _terminal = false;
   void dump1(int indent);
   void dump2(int indent);
+  static match_ptr_t genmatch( match_attempt_constptr_t attempt );
  
   template <typename impl_t> std::shared_ptr<impl_t> asShared() {
     return _impl.getShared<impl_t>();
@@ -96,6 +97,8 @@ struct MatchAttempt {
   }
 
 };
+
+//////////////////////////////////////////////////////////////
 
 struct Match {
   Match( match_attempt_constptr_t attempt );
@@ -155,7 +158,6 @@ struct Matcher {
   matcher_ptr_t _proxy_target;
   std::function<bool()> _on_link;
   varmap::VarMap _uservars;
-  static match_ptr_t genmatch( match_attempt_constptr_t attempt );
   Matcher* resolve() {
     return _proxy_target ? _proxy_target.get() : this;
   }
@@ -178,6 +180,8 @@ struct MatchAttemptContext {
   std::vector<MatchAttemptContextItem> _stack;
 };
 
+//////////////////////////////////////////////////////////////
+// match attempt structures
 //////////////////////////////////////////////////////////////
 
 struct SequenceAttempt {
@@ -221,6 +225,8 @@ struct OneOfAttempt {
 };
 
 //////////////////////////////////////////////////////////////
+// match structures
+//////////////////////////////////////////////////////////////
 
 struct Sequence {
   template <typename impl_t> std::shared_ptr<impl_t> itemAsShared(int index) {
@@ -263,10 +269,13 @@ struct OneOf {
 };
 
 //////////////////////////////////////////////////////////////
+// the parser
+//////////////////////////////////////////////////////////////
 
 struct Parser {
 
   Parser();
+  virtual ~Parser() {}
 
   matcher_ptr_t declare(std::string name);
 

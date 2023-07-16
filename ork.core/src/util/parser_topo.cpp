@@ -40,20 +40,25 @@ matcher_ptr_t Parser::optional(matcher_ptr_t sub_matcher, std::string name) {
   if (name == "") {
     name = FormatString("optional-%d", g_matcher_id++);
   }
+  ///////////////////////////////////////////////////////
   auto matcher       = declare(name);
+  ///////////////////////////////////////////////////////
   matcher->_genmatch_fn = [=](match_attempt_ptr_t attempt) -> match_ptr_t {
     auto the_opt_attempt = attempt->asShared<OptionalAttempt>();
     auto the_match = std::make_shared<Match>(attempt);
     auto the_opt_inst = the_match->makeShared<Optional>();
-    the_opt_inst->_subitem = Matcher::genmatch(the_opt_attempt->_subitem);
+    if( the_opt_attempt->_subitem ){
+      the_opt_inst->_subitem = MatchAttempt::genmatch(the_opt_attempt->_subitem);
+    }
     return the_match;
   };
+  ///////////////////////////////////////////////////////
   matcher->_attempt_match_fn = [=](matcher_ptr_t par_matcher,                        //
                            scannerlightview_constptr_t slv) -> match_attempt_ptr_t { //
     auto match_attempt      = pushMatch();
     match_attempt->_matcher = par_matcher;
-    auto the_opt        = match_attempt->_impl.makeShared<OptionalAttempt>();
-    ////////////////////////////////////////////////////
+    auto the_opt        = match_attempt->makeShared<OptionalAttempt>();
+  /////////////////////////////////////
     // if sub_matcher matches, return the match
     ////////////////////////////////////////////////////
     if (not slv->empty()) {
@@ -80,31 +85,32 @@ matcher_ptr_t Parser::optional(matcher_ptr_t sub_matcher, std::string name) {
     popMatch();
     return rval;
   };
-  
+  ///////////////////////////////////////////////////////
   return matcher;
 }
 
 //////////////////////////////////////////////////////////////////////
 
 void Parser::_sequence(matcher_ptr_t matcher, std::vector<matcher_ptr_t> sub_matchers) {
-
+  ///////////////////////////////////////////////////////
   matcher->_genmatch_fn = [=](match_attempt_ptr_t attempt) -> match_ptr_t {
     auto the_seq_attempt = attempt->asShared<SequenceAttempt>();
     auto the_match = std::make_shared<Match>(attempt);
     auto the_seq_inst = the_match->makeShared<Sequence>();
     for( auto item : the_seq_attempt->_items ){
-      auto sub_match = Matcher::genmatch(item);
+      auto sub_match = MatchAttempt::genmatch(item);
       the_seq_inst->_items.push_back(sub_match);
     }
     return the_match;
   };
+  ///////////////////////////////////////////////////////
   matcher->_attempt_match_fn = [=](matcher_ptr_t par_matcher, scannerlightview_constptr_t slv) -> match_attempt_ptr_t {
     auto match_attempt      = pushMatch();
     match_attempt->_matcher   = par_matcher;
     log_match("SEQ<%s>: beg_match len<%zu>", matcher->_name.c_str(), sub_matchers.size());
     auto slv_iter     = std::make_shared<ScannerLightView>(*slv);
     auto slv_match    = std::make_shared<ScannerLightView>(*slv);
-    auto the_sequence = match_attempt->_impl.makeShared<SequenceAttempt>();
+    auto the_sequence = match_attempt->makeShared<SequenceAttempt>();
     match_attempt->_view  = slv_match;
     size_t iter       = 0;
     size_t num_iter   = sub_matchers.size();
@@ -200,6 +206,7 @@ void Parser::_sequence(matcher_ptr_t matcher, std::vector<matcher_ptr_t> sub_mat
     popMatch();
     return rval;
   };
+  ///////////////////////////////////////////////////////
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -208,8 +215,11 @@ matcher_ptr_t Parser::sequence(std::vector<matcher_ptr_t> sub_matchers, std::str
   if (name == "") {
     name = FormatString("sequence-%d", g_matcher_id++);
   }
+  ///////////////////////////////////////////////////////
   auto matcher = declare(name);
+  ///////////////////////////////////////////////////////
   _sequence(matcher, sub_matchers);
+  ///////////////////////////////////////////////////////
   return matcher;
 }
 
@@ -225,23 +235,25 @@ matcher_ptr_t Parser::group(std::vector<matcher_ptr_t> matchers, std::string nam
   if (name == "") {
     name = FormatString("group-%d", g_matcher_id++);
   }
+  ///////////////////////////////////////////////////////
   auto matcher       = declare(name);
+  ///////////////////////////////////////////////////////
   matcher->_genmatch_fn = [=](match_attempt_ptr_t attempt) -> match_ptr_t {
     auto the_grp_attempt = attempt->asShared<GroupAttempt>();
     auto the_match = std::make_shared<Match>(attempt);
     auto the_grp_inst = the_match->makeShared<Group>();
     for( auto item : the_grp_attempt->_items ){
-      auto sub_match = Matcher::genmatch(item);
+      auto sub_match = MatchAttempt::genmatch(item);
       the_grp_inst->_items.push_back(sub_match);
     }
     return the_match;
   };
-
+  ///////////////////////////////////////////////////////
   matcher->_attempt_match_fn = [=](matcher_ptr_t par_matcher, scannerlightview_constptr_t slv_inp) -> match_attempt_ptr_t {
     auto match_attempt      = pushMatch();
     match_attempt->_matcher   = par_matcher;
     auto slv_iter         = std::make_shared<ScannerLightView>(*slv_inp);
-    auto the_group        = match_attempt->_impl.makeShared<GroupAttempt>();
+    auto the_group        = match_attempt->makeShared<GroupAttempt>();
     for (auto sub_matcher : matchers) {
       MatchAttemptContextItem mci { sub_matcher, slv_iter };
       auto sub_match = _tryMatch(mci);
@@ -263,7 +275,7 @@ matcher_ptr_t Parser::group(std::vector<matcher_ptr_t> matchers, std::string nam
     popMatch();
     return rval;
   };
-  matcher->_on_link = [=]() -> bool { return true; };
+  ///////////////////////////////////////////////////////
   return matcher;
 }
 
@@ -273,14 +285,17 @@ matcher_ptr_t Parser::oneOf(std::vector<matcher_ptr_t> matchers, std::string nam
   if (name == "") {
     name = FormatString("oneof-%d", g_matcher_id++);
   }
+  ///////////////////////////////////////////////////////
   auto matcher       = declare(name);
+  ///////////////////////////////////////////////////////
   matcher->_genmatch_fn = [=](match_attempt_ptr_t attempt) -> match_ptr_t {
     auto the_oof_attempt = attempt->asShared<OneOfAttempt>();
     auto the_match = std::make_shared<Match>(attempt);
     auto the_oof_inst = the_match->makeShared<OneOf>();
-    the_oof_inst->_selected = Matcher::genmatch(the_oof_attempt->_selected);
+    the_oof_inst->_selected = MatchAttempt::genmatch(the_oof_attempt->_selected);
     return the_match;
   };
+  ///////////////////////////////////////////////////////
   matcher->_attempt_match_fn = [=](matcher_ptr_t par_matcher, scannerlightview_constptr_t slv) -> match_attempt_ptr_t {
     auto match_attempt      = pushMatch();
     // log_match( "oneOf<%s>: begin num_subs<%zu>\n", name.c_str(), matchers.size() );
@@ -304,6 +319,7 @@ matcher_ptr_t Parser::oneOf(std::vector<matcher_ptr_t> matchers, std::string nam
     popMatch();
     return nullptr;
   };
+  ///////////////////////////////////////////////////////
   return matcher;
 }
 
@@ -328,7 +344,7 @@ matcher_ptr_t Parser::nOrMore(matcher_ptr_t sub_matcher, size_t minMatches, std:
     the_nom_inst->_minmatches = the_nom_attempt->_minmatches;
     the_nom_inst->_mustConsumeAll = the_nom_attempt->_mustConsumeAll;
     for( auto item : the_nom_attempt->_items ){
-      auto sub_match = Matcher::genmatch(item);
+      auto sub_match = MatchAttempt::genmatch(item);
       the_nom_inst->_items.push_back(sub_match);
     }
     return the_match;
@@ -431,6 +447,7 @@ matcher_ptr_t Parser::zeroOrMore(matcher_ptr_t matcher, std::string name, bool m
 
 matcher_ptr_t Parser::matcherForTokenClassID(uint64_t tokclass, std::string name) {
   auto matcher       = declare(name);
+  ///////////////////////////////////////////////////////
   matcher->_genmatch_fn = [=](match_attempt_ptr_t attempt) -> match_ptr_t {
     auto class_match_attempt = attempt->asShared<ClassMatchAttempt>();
     auto the_match = std::make_shared<Match>(attempt);
@@ -439,6 +456,7 @@ matcher_ptr_t Parser::matcherForTokenClassID(uint64_t tokclass, std::string name
     cm_inst->_token = class_match_attempt->_token;
     return the_match;
   };
+  ///////////////////////////////////////////////////////
   matcher->_attempt_match_fn = [tokclass, this](matcher_ptr_t par_matcher, scannerlightview_constptr_t slv) -> match_attempt_ptr_t {
     auto tok0         = slv->token(0);
     auto slv_tokclass = tok0->_class;
@@ -449,7 +467,7 @@ matcher_ptr_t Parser::matcherForTokenClassID(uint64_t tokclass, std::string name
         slv_tokclass);
     if (slv_tokclass == tokclass) {
       auto match_attempt     = leafMatch();
-      auto the_classmatch       = match_attempt->_impl.makeShared<ClassMatchAttempt>();
+      auto the_classmatch       = match_attempt->makeShared<ClassMatchAttempt>();
       match_attempt->_matcher       = par_matcher;
       the_classmatch->_tokclass = tokclass;
       the_classmatch->_token    = tok0;
@@ -462,6 +480,7 @@ matcher_ptr_t Parser::matcherForTokenClassID(uint64_t tokclass, std::string name
     }
     return nullptr;
   };
+  ///////////////////////////////////////////////////////
   return matcher;
 }
 
@@ -471,21 +490,24 @@ matcher_ptr_t Parser::matcherForWord(std::string word, std::string name) {
   if (name == "") {
     name = word;
   }
+  ///////////////////////////////////////////////////////
   auto matcher       = declare(name);
+  ///////////////////////////////////////////////////////
   matcher->_genmatch_fn = [=](match_attempt_ptr_t attempt) -> match_ptr_t {
-    auto word_match_attempt = attempt->asShared<ClassMatchAttempt>();
+    auto word_match_attempt = attempt->asShared<WordMatchAttempt>();
     auto the_match = std::make_shared<Match>(attempt);
     auto wm_inst = the_match->makeShared<WordMatch>();
     wm_inst->_token = word_match_attempt->_token;
     return the_match;
   };
+  ///////////////////////////////////////////////////////
   matcher->_attempt_match_fn = [=](matcher_ptr_t par_matcher, scannerlightview_constptr_t inp_view) -> match_attempt_ptr_t {
     auto tok0 = inp_view->token(0);
     if (tok0->text == word) {
       auto slv              = std::make_shared<ScannerLightView>(*inp_view);
       slv->_end             = slv->_start;
       auto match_attempt     = leafMatch();
-      auto the_wordmatch    = match_attempt->_impl.makeShared<WordMatchAttempt>();
+      auto the_wordmatch    = match_attempt->makeShared<WordMatchAttempt>();
       the_wordmatch->_token = tok0;
       match_attempt->_matcher   = par_matcher;
       match_attempt->_view      = slv;
@@ -495,6 +517,7 @@ matcher_ptr_t Parser::matcherForWord(std::string word, std::string name) {
       return nullptr;
     }
   };
+  ///////////////////////////////////////////////////////
   return matcher;
 }
 
