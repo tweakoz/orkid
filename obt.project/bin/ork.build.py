@@ -2,12 +2,12 @@
 
 import sys
 import os, argparse
-import ork.host
-import ork.dep
-from ork.path import Path
-from ork.command import Command, run
-from ork import buildtrace
-import ork._globals as _glob
+import obt.host
+import obt.dep
+from obt.path import Path
+from obt.command import Command, run
+from obt import buildtrace
+import obt._globals as _glob
 
 parser = argparse.ArgumentParser(description='orkid build')
 parser.add_argument('--clean', action="store_true", help='force clean build' )
@@ -31,18 +31,18 @@ this_dir = os.path.dirname(this_dir)
 
 ############################################################################
 
-PYTHON = ork.dep.instance("python")
-BOOST = ork.dep.instance("boost")
-ORKID_DEPMODULE = ork.dep.instance("orkid") # fetch from orkid depper to reduce code bloat
+PYTHON = obt.dep.instance("python")
+BOOST = obt.dep.instance("boost")
+ORKID_DEPMODULE = obt.dep.instance("orkid") # fetch from orkid depper to reduce code bloat
 
 #print(PYTHON)
-#ork.env.set("PYTHONHOME",PYTHON.home_dir)
+#obt.env.set("PYTHONHOME",PYTHON.home_dir)
 
 ############################################################################
 
 os.environ["ORKID_WORKSPACE_DIR"] = this_dir
 
-stage_dir = Path(os.path.abspath(str(ork.path.stage())))
+stage_dir = Path(os.path.abspath(str(obt.path.stage())))
 
 build_dest = ORKID_DEPMODULE.builddir
 
@@ -54,12 +54,12 @@ profiler = _args["profiler"]!=False
 do_cmakeenv = _args["cmakeenv"]!=False
 
 if _args["xcode"]!=False:
-    build_dest = ork.path.stage()/"orkid-xcode"
+    build_dest = obt.path.stage()/"orkid-xcode"
 
 if _args["obttrace"]==True:
   _glob.enableBuildTracing()
 
-with buildtrace.NestedBuildTrace({ "op": "ork.build.py"}) as nested:
+with buildtrace.NestedBuildTrace({ "op": "obt.build.py"}) as nested:
 
   build_dest.mkdir(parents=True,exist_ok=True)
   build_dest.chdir()
@@ -79,7 +79,7 @@ with buildtrace.NestedBuildTrace({ "op": "ork.build.py"}) as nested:
   dep_list = ORKID_DEPMODULE.deplist
 
   l = list()
-  chain = ork.dep.Chain(dep_list)
+  chain = obt.dep.Chain(dep_list)
   for item in chain._list:
     l += [item._name]
 
@@ -87,7 +87,7 @@ with buildtrace.NestedBuildTrace({ "op": "ork.build.py"}) as nested:
   #print(l)
   #assert(False)
 
-  ork.dep.require(dep_list)
+  obt.dep.require(dep_list)
 
 
   ######################################################################
@@ -119,14 +119,14 @@ with buildtrace.NestedBuildTrace({ "op": "ork.build.py"}) as nested:
   #cmd += ["-DPYTHON_HEADER_PATH=%s"%PYTHON.include_dir]
   #cmd += ["-DPYTHON_LIBRARY_PATH=%s"%PYTHON.library_file]
 
-  clangdep = ork.dep.instance("clang")
+  clangdep = obt.dep.instance("clang")
 
   cmd += ["-DBUILDING_ORKID=ON"]
 
   cmd += ["-DCMAKE_CXX_COMPILER=%s"%clangdep.bin_clangpp]
   cmd += ["-DCMAKE_CC_COMPILER=%s"%clangdep.bin_clang]
 
-  if ork.host.IsAARCH64:
+  if obt.host.IsAARCH64:
     cmd += ["-DARCHITECTURE=AARCH64"]
   else:
     cmd += ["-DARCHITECTURE=x86_64"]
@@ -171,13 +171,13 @@ with buildtrace.NestedBuildTrace({ "op": "ork.build.py"}) as nested:
     cmd += ["VERBOSE=1"]
 
   if _args["serial"]!=True:
-    cmd += ["-j",ork.host.NumCores]
+    cmd += ["-j",obt.host.NumCores]
 
   cmd += ["install"]
 
   rval = Command(cmd).exec()
 
-  if rval==0 and ork.host.IsDarwin:
+  if rval==0 and obt.host.IsDarwin:
     rval = Command(["obt.osx.macho.fixup.libs.py","--orklibs", "--orkpymods"]).exec()
 
 sys.exit(rval)
