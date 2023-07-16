@@ -1,76 +1,108 @@
-At one time or another Orkid has been ported to the PS2, NintendoDS, Wii, XBox360, Osx, Linux and Windows.
+At one time or another Orkid has been ported to the PS2, NintendoDS, Wii, XBox360, MacOs, Linux and Windows.
 
-Unfortunately, with my job and family, I have had only the bandwidth to maintain the Linux and Osx builds.
+Unfortunately, with my job and family, I have had only the bandwidth to maintain the Linux and MacOs builds.
 
-If you want to minimize any pain, right now I would recommend Linux (Ubuntu 19.04 x86/64). The MacOsx build is only tested with Xcode11 on Catalina..
+If you want to minimize any pain, right now I would recommend Linux (Ubuntu 22.04 x86/64). The MacOs build is only tested with Xcode on Ventura (Both Intel And Apple Silicon)..
 
-I do not currently test on Intel gfx chips. If you have an NVidia or AMD/ATI card that should be fine. I also recommend proprietary drivers over the open source ones. Open source is great and all, but I find the open source video drivers are still not up to par with their proprietary counterparts.
-[UPDATE] - Since GL3 has been merged to master - Intel 4000 Graphics (Macbook Air 2011) on Osx 10.8 has been confirmed as working.
+
 
 In general building will require a bunch of dependencies which are not included. There is a script included that automates the downloading, building and installation of these dependencies.
 
-To bootstrap on MacOs BigSur (11.0)+
+To bootstrap on MacOs Ventura (13.0)+
 ==================================
-* install homebrew, and with install deps listed in ork.installdeps.ubuntu19.py
-* ```git clone https://github.com/tweakoz/orkid```
-* ```cd orkid```
-* ```git submodule init```
-* ```git submodule update```
-* ```git lfs update```
-* ```git lfs pull```
-* ```./ork.build/bin/obt.osx.installdeps.py``` <- install system deps (requires homebrew already setup)
-* ```./ork.build/bin/init_env.py --create .stage``` <- this creates a staging 'container' folder and launches an environment
-* ```./build.py --ez``` <- builds deps and orkid (into staging folder)
-* ```ork.asset.buildall.py``` <- builds assets (using built orkid executable)
-* ```ork.test.buildtestassets.py``` <- build test assets (using built orkid executable)
-* ```exit``` <- After an --ez build exit and reload the environment
-* ```.stage/.launch_env```
-* ```ork.example.lev2.gfx.minimal3D.exe``` <- run a c++ example
-* ```./ork.lev2/examples/python/window.py``` <- run a python example
+* install / update [homebrew](http://brew.sh)
+* install / update XCode via AppStore.
+* Install Ork Build Tools (OBT)
+  * ```pip3 install --user --upgrade ork.build```
+  * Alternatively you should be able to do this in an python virtualenv if you prefer.
+* You may need to add user python bin to path.
+  * ```export PATH="$PATH:~/Library/Python/3.11/bin"```
+  * now obt.* commands are in your path (obt tab-tab to list them)
+  * you may want to add this to .bashrc
+* Install System Dependencies (Once per machine)
+  * ```obt.osx.installdeps.py``` 
+* Create an ork.build (OBT) *staging* environment/container.
+  * ```obt.create.env.py --stagedir ~/.staging-xxx --wipe```
+  * This can take a bit, it will be building a container scoped python and a few other deps which are required for consistent OBT operation.
+* Launch the staging environment
+  * ```~/.staging-xxx/.launch_env```
+  * ~/.staging-xxx/bin will now be in your $PATH
+* Check which deps will be built for orkid
+  * ```obt.dep.info.py orkid```
+* Build orkid (clean)
+  * ```obt.dep.build.py orkid --force --wipe```
+* Build orkid (incremental)
+  * ```obt.dep.build.py orkid --incremental```
+* Run a c++ example
+  * ```ork.example.lev2.gfx.minimal3D.exe```
+* Run a python example
+* ```${ORKID_LEV2_EXAMPLES_DIR}/python/scenegraph/minimal.py```
+* The Orkid Source Tree will be at ${ORKID_WORKSPACE_DIR}
+* Create an XCode Project if that is more your style (or just for easier debugging).
+  * first build via the standard commandline method, so that all deps are built.
+  * ${ORKID_WORKSPACE_DIR}/obt.project/bin/ork.build.py --xcode
+  * ```open ${ORKID_WORKSPACE_DIR}/.build/orkid.xcworkspace```
+* Leave The OBT environment
+  * ```exit``` 
 
-To bootstrap on Ubuntu19.10/Ubuntu20.04 x86/64
+
+To bootstrap on Ubuntu22.04 x86/64
 ==================================
-* ```sudo update-alternatives --install /usr/bin/python python /usr/bin/python3 1``` <- set python3 as default
-* ```sudo apt install python3-pip python3-yarl``` <- we need python3-pip and a few packages to bootstrap
-* ```sudo apt install cmake wget curl git-lfs``` <- we need a few packages to bootstrap
-* ```sudo apt install libreadline-dev libxcb-xfixes0-dev``` <- packages not yet added to installdeps script.
-* ```git clone http://github.com/tweakoz/orkid```
-* ```cd orkid```
-* ```git submodule init```
-* ```git submodule update```
-* ```git lfs update```
-* ```git lfs pull```
-* ```./ork.build/bin/obt.ix.installdeps.ubuntu19.py``` <- install obt system deps (this will ask for sudo password)
-* ```./ork.build/bin/init_env.py --create .stage``` <- this creates a staging folder and launches an environment
-* ```ork.installdeps.ubuntu19.py``` <- install orkid system deps (this will ask for sudo password)
-* ```.stage/.launch_env``` <- reload the environment (to get updated environment variables)
-* ```ork,build.py``` <- build all deps, and orkid (will take a while)
-* ```ork.example.lev2.gfx.minimal3D.exe``` <- run a c++ example
-* ```./ork.lev2/examples/python/window.py``` <- run a python example
-
-everything will be built and installed into the staging folder.
-the ```<stage>/bin``` and ```<stage>/lib``` paths were added to your environment variables already when you launched the environment'.
-
-Build issues, notes for later fixes
-==================================
-There are a few bugs in the build process from a new working copy.
-* ```qt5 environment not initialized properly before qt5 built. just exit the environment session and re-enter it after qt5 built.```
-* ```ork.tuio not installed properly. This is an issue in the ork.tuio/CMakeLists.txt - to fix:```
-     ```cd <staging>/orkid/ork.tuio; make install .```
-     ```more specifically - ./build.py does do a multi-project install. Apparently in nested cmake projects, installs are deferred until all subprojects are built, as opposed to when the individual subprojects are finished building. The probably fix for this is to just make ork.tuio an external dependency```
+* update your machine
+  * ```sudo apt update```
+  * ```sudo apt dist-upgrade```
+* set python3 as default
+  * ```sudo update-alternatives --install /usr/bin/python python /usr/bin/python3 1``` 
+* Install Ork Build Tools (OBT)
+  * ```pip3 install --user --upgrade ork.build```
+  * Alternatively you should be able to do this in an python virtualenv if you prefer.
+* now obt.* commands are in your path (obt tab-tab to list them)
+* Install System Dependencies (Once per machine, requires sudo)
+  * ```obt.ix.installdeps.ubuntu_x86_64.py``` 
+* Create an ork.build (OBT) *staging* environment/container.
+  * ```obt.create.env.py --stagedir ~/.staging-xxx --wipe```
+  * This can take a bit, it will be building a container scoped python and a few other deps which are required for consistent OBT operation.
+* Launch the staging environment
+  * ```~/.staging-xxx/.launch_env```
+  * ~/.staging-xxx/bin will now be in your $PATH
+  * ~/.staging-xxx/lib will now be in your $LD_LIBRARY_PATH
+* Check which deps will be built for orkid
+  * ```obt.dep.info.py orkid```
+* Build orkid (clean)
+  * ```obt.dep.build.py orkid --force --wipe```
+* Build orkid (incremental)
+  * ```obt.dep.build.py orkid --incremental```
+* Run a c++ example
+  * ```ork.example.lev2.gfx.minimal3D.exe```
+* Run a python example
+* ```${ORKID_LEV2_EXAMPLES_DIR}/python/scenegraph/minimal.py``` 
+* The Orkid Source Tree will be at ${ORKID_WORKSPACE_DIR}
+* Leave The OBT environment/shell (This will returrn you to your parent shell)
+  * ```exit``` 
      
-misc
-=====
-* ```<staging_folder>/.launch_env``` <- relaunch previously made environment container.
-* ```obt.find.py "phrase"``` - search source folders for a quoted phrase - the quotes are optional for simple single word seaches
-* ```obt.replace.py "findphrase" "replace"``` - search source folders for a quoted phrase - the quotes are optional for simple single word seaches
-* ```ork.doxygen.py``` <- regenerate doxygen docs
+Miscellaneous OBT Commands
+==================================
+* relaunch a previously created environment container
+  * ```~/.staging-xxx/.launch_env```
+* list dependencies known by OBT
+  * ```obt.dep.list.py```
+* list info about a specific dependency
+  * ```obt.dep.info.py <depname>```
+*  list build status of a specific dependency
+  * ```obt.dep.status.py <depname>```
+* search source folders for a quoted phrase - the quotes are optional for simple single word seaches
+  * ```obt.dep.find.py --dep <depname> "phrase"```
+* search source folders for a quoted phrase - the quotes are optional for simple single word seaches
+  * ```obt.find.py "phrase"``` - 
+* search source folders for a quoted phrase - the quotes are optional for simple single word seaches
+  * ```obt.replace.py "findphrase" "replace"```
+* regenerate doxygen docs
+  * ```ork.doxygen.py```
 
+Build Debugging
+==================================
 * to generate JSON dump of all top level actions (relative to the current staging folder state) that will be taken to perform an orkid build (which will also execute the actions). Actions which execute commandlines will include working folder and environment variable data. The output from this theoretically should be enough for an externally managed process to complete a build *entirely without OBT*. TODO - can we generate the trace without executing ?
-
-```
-ork.build.py --obttrace
-```
+  * ```ork.build.py --obttrace```
 
 This will generate a dump like the below much abbreviated snippet:
 
