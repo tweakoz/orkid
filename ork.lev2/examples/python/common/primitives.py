@@ -16,7 +16,7 @@ def createCubePrim( ctx=None, size=1.0 ):
 
 
 def createFrustumPrim( ctx=None, vmatrix=None, pmatrix=None, alpha = 1.0 ):
-  frustum = Frustum()
+  frustum = dfrustum()
   frustum.set(vmatrix,pmatrix)
   frustum_prim = primitives.FrustumPrimitive()
   frustum_prim.topColor = dvec4(0.2,1.0,0.2,alpha)

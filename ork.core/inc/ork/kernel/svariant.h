@@ -40,14 +40,14 @@
 #include <ork/orkstd.h>
 #include <ork/util/crc64.h>
 #include <cxxabi.h>
-//#if !defined(__APPLE__)
+// #if !defined(__APPLE__)
 #define SVAR_DEBUG
-//#endif
+// #endif
 
-//#define HAS_CONCEPTS
+// #define HAS_CONCEPTS
 
 #if defined(HAS_CONCEPTS)
-  #include <concepts>
+#include <concepts>
 #endif
 
 namespace ork {
@@ -56,7 +56,7 @@ template <typename T> inline std::string demangled_typename() {
   auto typestr          = typeid(T).name();
   int status            = 0;
   const char* demangled = abi::__cxa_demangle(typestr, 0, 0, &status);
-  auto rval = std::string(demangled);
+  auto rval             = std::string(demangled);
   free((void*)demangled);
   return rval;
 }
@@ -134,60 +134,57 @@ namespace __svartraits {
 #if defined(HAS_CONCEPTS)
 
 template <typename T>
-concept equality_comparable = requires (T obj) {
+concept equality_comparable = requires(T obj) {
   { obj == obj } -> std::same_as<bool>;
   { obj != obj } -> std::same_as<bool>;
 };
 
-template <typename T, typename T2>  //
+template <typename T, typename T2> //
 struct __equal_to {
-  static bool compare(const T& lhs, const T2& rhs) { requires equality_comparable<T> {
-    return bool(lhs == rhs);
-  }
-  static bool compare(const T& lhs, const T2& rhs) requires( not equality_comparable<T> ) {
-    OrkAssert(false);
-    return false;
-  }
+  static bool compare(const T& lhs, const T2& rhs){requires equality_comparable<T>{return bool(lhs == rhs);
+} static bool compare(const T& lhs, const T2& rhs)
+  requires(not equality_comparable<T>)
+{
+  OrkAssert(false);
+  return false;
+}
 };
 
 //////////////////////////////////////////////////
 #else // non concept methods
 //////////////////////////////////////////////////
 
-template<typename T>
-class IsEqualityComparable
-{
-  private:
-  static void* conv(bool);  // to check convertibility to bool
-  template<typename U>
-  static std::true_type test(decltype(conv(std::declval<U const&>() ==
-                                           std::declval<U const&>())),
-                             decltype(conv(!(std::declval<U const&>() ==
-                                           std::declval<U const&>()))));
+template <typename T> class IsEqualityComparable {
+private:
+  static void* conv(bool); // to check convertibility to bool
+  template <typename U>
+  static std::true_type test(
+      decltype(conv(std::declval<U const&>() == std::declval<U const&>())),
+      decltype(conv(!(std::declval<U const&>() == std::declval<U const&>()))));
   // fallback:
-  template<typename U>
-  static std::false_type test(...);
-  public:
+  template <typename U> static std::false_type test(...);
+
+public:
   static constexpr bool value = decltype(test<T>(nullptr, nullptr))::value;
 };
 
 struct __equal_to {
-  template <typename T, typename T2,typename std::enable_if<not std::is_same<T,T2>::value, void>::type* = nullptr>  //
-  static bool compare(const T& lhs, const T2& rhs) { 
+  template <typename T, typename T2, typename std::enable_if<not std::is_same<T, T2>::value, void>::type* = nullptr> //
+  static bool compare(const T& lhs, const T2& rhs) {
     return false;
   }
-template <typename T,typename std::enable_if<IsEqualityComparable<T>::value, void>::type* = nullptr>  //
-  static bool compare(const T& lhs, const T& rhs) { 
+  template <typename T, typename std::enable_if<IsEqualityComparable<T>::value, void>::type* = nullptr> //
+  static bool compare(const T& lhs, const T& rhs) {
     return bool(lhs == rhs);
   }
-template <typename T,typename std::enable_if<not IsEqualityComparable<T>::value, void>::type* = nullptr>  //
-  static bool compare(const T& lhs, const T& rhs) { 
+  template <typename T, typename std::enable_if<not IsEqualityComparable<T>::value, void>::type* = nullptr> //
+  static bool compare(const T& lhs, const T& rhs) {
     return bool(false);
   }
 };
 
 //////////////////////////////////////////////////
-#endif 
+#endif
 //////////////////////////////////////////////////
 
 } // namespace __svartraits
@@ -212,33 +209,32 @@ template <int tsize> struct SvarDescriptor : public SvarDescriptorBase {
 
   template <typename T> void assign() {
 
-      _destroyer = [](static_variant<tsize>& var) {
+    _destroyer = [](static_variant<tsize>& var) {
+      if (var._assert_on_destroy) {
+        OrkAssert(false);
+      }
 
-        if(var._assert_on_destroy){
-          OrkAssert(false);
-        }
+      // just call T's destructor, as opposed to delete
+      //  because the variant owns the memory.
+      //  aka 'placement delete'
+      var.template get<T>().~T();
+    };
 
-        // just call T's destructor, as opposed to delete
-        //  because the variant owns the memory.
-        //  aka 'placement delete'
-        var.template get<T>().~T();
-      };
+    _copier = [](static_variant<tsize>& lhs, const static_variant<tsize>& rhs) {
+      const T& typed_right = rhs.template get<T>();
+      lhs.template set<T>(typed_right);
+    };
 
-      _copier = [](static_variant<tsize>& lhs, const static_variant<tsize>& rhs) {
-        const T& typed_right = rhs.template get<T>();
-        lhs.template set<T>(typed_right);
-      };
+    _equals = [](const static_variant<tsize>& lhs, const static_variant<tsize>& rhs) -> bool {
+      return __svartraits::__equal_to::compare<T>(lhs.template get<T>(), rhs.template get<T>());
+    };
 
-      _equals = [](const static_variant<tsize>& lhs, const static_variant<tsize>& rhs) -> bool {
-        return __svartraits::__equal_to::compare<T>(lhs.template get<T>(), rhs.template get<T>());
-      };
+    _curlength = sizeof(T);
 
-      _curlength = sizeof(T);
-
-  #if defined(SVAR_DEBUG)
-      _typestr = demangled_typename<T>();
-  #endif
-    }
+#if defined(SVAR_DEBUG)
+    _typestr = demangled_typename<T>();
+#endif
+  }
 
   /////////////////////////////////////////
 
@@ -259,16 +255,17 @@ template <int tsize, typename T> struct SvarDescriptorFactory {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct static_variant_base{
+struct static_variant_base {
 
-  template<int size> friend struct SvarDescriptor;
+  template <int size> friend struct SvarDescriptor;
 
-  virtual size_t capacity() const = 0;
-  virtual size_t size() const = 0;
+  virtual size_t capacity() const                                   = 0;
+  virtual size_t size() const                                       = 0;
   virtual bool canConvertFrom(const static_variant_base& oth) const = 0;
 
 protected:
-  static_variant_base() : _mtinfo(nullptr) {
+  static_variant_base()
+      : _mtinfo(nullptr) {
   }
   virtual ~static_variant_base() = default;
   const std::type_info* _mtinfo; // TODO: should this go into _descriptorFactory ?
@@ -286,15 +283,15 @@ public:
   //////////////////////////////////////////////////////////////
 
   size_t capacity() const final {
-    return ksize; 
+    return ksize;
   }
   size_t size() const final {
     auto descriptor = (_descriptorFactory.load())();
-    return descriptor._curlength; 
+    return descriptor._curlength;
   }
 
   bool canConvertFrom(const static_variant_base& oth) const {
-    return capacity()>=oth.size();
+    return capacity() >= oth.size();
   }
 
   //////////////////////////////////////////////////////////////
@@ -489,6 +486,20 @@ public:
     static_assert(sizeof(std::shared_ptr<T>) <= ksize, "static_variant size violation");
     bool type_ok = (_mtinfo != nullptr) ? (typeid(std::shared_ptr<T>) == *_mtinfo) : false;
     return attempt_cast<std::shared_ptr<T>>((std::shared_ptr<T>*)(type_ok ? &_buffer[0] : nullptr));
+  }
+  //////////////////////////////////////////////////////////////
+  //
+  //////////////////////////////////////////////////////////////
+  template <typename T> attempt_cast_const<std::shared_ptr<T>> tryAsShared() const {
+    using ptr_t = std::shared_ptr<T>;
+    static_assert(sizeof(ptr_t) <= ksize, "static_variant size violation");
+    bool type_ok = (_mtinfo != nullptr) ? (typeid(ptr_t) == *_mtinfo) : false;
+    if (type_ok) {
+      auto as_mut   = (ptr_t*)&_buffer[0];
+      return attempt_cast_const<ptr_t>(as_mut);
+    } else {
+      return attempt_cast_const<ptr_t>(nullptr);
+    }
   }
   //////////////////////////////////////////////////////////////
   //

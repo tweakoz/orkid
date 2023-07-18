@@ -14,29 +14,6 @@ match_ptr_t filtered_match(matcher_ptr_t matcher, match_ptr_t the_match);
 static logchannel_ptr_t logchan_rulespec  = logger()->createChannel("PEGSPEC1", fvec3(0.5, 0.8, 0.5), true);
 static logchannel_ptr_t logchan_rulespec2 = logger()->createChannel("PEGSPEC2", fvec3(0.5, 0.8, 0.5), true);
 
-matcher_ptr_t Parser::rule(const std::string& rule_name) {
-  auto it = _matchers_by_name.find(rule_name);
-  matcher_ptr_t rval;
-  if (it != _matchers_by_name.end()) {
-    rval = it->second;
-  }
-  return rval;
-}
-
-void Parser::on(const std::string& rule_name, matcher_notif_t fn) {
-
-  auto it = _matchers_by_name.find(rule_name);
-  if (it != _matchers_by_name.end()) {
-    matcher_ptr_t matcher = it->second;
-    matcher->_notif       = fn;
-    logchan_rulespec2->log(
-        "IMPLEMENT rulenotif<%s> matcher<%p:%s> notif assigned", rule_name.c_str(), (void*)matcher.get(), matcher->_name.c_str());
-  } else {
-    logerrchannel()->log("IMPLEMENT matcher<%s> not found", rule_name.c_str());
-    OrkAssert(false);
-  }
-}
-
 /////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////
@@ -674,6 +651,7 @@ void PegImpl::loadPEGGrammar() { //
   auto scanner_key     = _peg_parser->oneOf({macro_item, kworid}, "scanner_key");
   auto scanner_rule    = _peg_parser->sequence({scanner_key, left_arrow, quoted_regex}, "scanner_rule");
   scanner_rule->_notif = [=](match_ptr_t match) {
+    OrkAssert(false);
     auto seq           = match->asShared<Sequence>();
     auto rule_key_item = seq->_items[0]->asShared<OneOf>()->_selected;
     auto qrx           = seq->_items[2]->asShared<ClassMatch>()->_token->text;

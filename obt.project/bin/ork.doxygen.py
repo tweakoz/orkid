@@ -6,11 +6,11 @@
 import os, string, pathlib
 
 from pathlib import Path
-from ork import template, command, path
+from obt import template, command, path
 
-doxy_output_dir = path.stage()/"orkid"/"doxygen"
-src_doxyfile = path.project_root()/"ork.dox"/"Doxyfile"
-dst_doxyfile = path.stage()/"orkid"/"Doxyfile"
+doxy_output_dir = path.builds()/"orkid"/"doxygen"
+src_doxyfile = path.orkid()/"ork.dox"/"Doxyfile"
+dst_doxyfile = path.builds()/"orkid"/"Doxyfile"
 
 command.run(["ork.createunionedsource.py"]) # first we definitely need unioned src (for ease...)
 
