@@ -57,12 +57,12 @@ struct MyParser : public Parser {
     auto dt_float = matcherForWord("float");
     auto dt_int   = matcherForWord("int");
     ///////////////////////////////////////////////////////////
-    floattok->_notif = [=](match_ptr_t match) { //
+    floattok->_post_notif = [=](match_ptr_t match) { //
       auto ast_node    = match->makeSharedForKey<MYAST::FloatLiteral>("astnode");
       auto impl        = match->_impl.get<classmatch_ptr_t>();
       ast_node->_value = std::stof(impl->_token->text);
     };
-    inttok->_notif = [=](match_ptr_t match) { //
+    inttok->_post_notif = [=](match_ptr_t match) { //
       auto ast_node    = match->makeSharedForKey<MYAST::IntegerLiteral>("astnode");
       auto impl        = match->_impl.get<classmatch_ptr_t>();
       ast_node->_value = std::stoi(impl->_token->text);
@@ -73,7 +73,7 @@ struct MyParser : public Parser {
         dt_int,
     });
     //
-    datatype->_notif = [=](match_ptr_t match) { //
+    datatype->_post_notif = [=](match_ptr_t match) { //
       auto selected   = match->_impl.getShared<OneOf>()->_selected;
       auto ast_node   = match->makeSharedForKey<MYAST::DataType>("astnode");
       ast_node->_name = selected->_impl.get<wordmatch_ptr_t>()->_token->text;
@@ -96,7 +96,7 @@ struct MyParser : public Parser {
     auto variableDeclaration = sequence("variableDeclaration", {datatype, kworid});
     ///////////////////////////////////////////////////////////
     auto variableReference    = sequence("variableReference", {kworid});
-    variableReference->_notif = [=](match_ptr_t match) { //
+    variableReference->_post_notif = [=](match_ptr_t match) { //
       auto seq       = match->_impl.get<sequence_ptr_t>();
       auto kwid      = seq->_items[0]->_impl.getShared<ClassMatch>()->_token->text;
       auto var_ref   = match->makeSharedForKey<MYAST::VariableReference>("astnode");
@@ -106,7 +106,7 @@ struct MyParser : public Parser {
     auto expression = declare("expression");
     ///////////////////////////////////////////////////////////
     auto term    = sequence({lparen, expression, rparen}, "term");
-    term->_notif = [=](match_ptr_t match) {
+    term->_post_notif = [=](match_ptr_t match) {
       auto ast_node = match->makeSharedForKey<MYAST::Term>("astnode");
       auto selected = match->_impl.get<sequence_ptr_t>()->_items[1];
       if (selected->_matcher == expression) {
@@ -124,7 +124,7 @@ struct MyParser : public Parser {
             term,
         });
     //
-    primary->_notif = [=](match_ptr_t match) {
+    primary->_post_notif = [=](match_ptr_t match) {
       auto ast_node   = match->makeSharedForKey<MYAST::Primary>("astnode");
       auto selected   = match->_impl.get<oneof_ptr_t>()->_selected;
       //ast_node->_impl = selected->_user;
@@ -139,7 +139,7 @@ struct MyParser : public Parser {
             // sequence({ primary,optional(sequence({slash,primary})) }),
         });
     //
-    product->_notif = [=](match_ptr_t match) {
+    product->_post_notif = [=](match_ptr_t match) {
       auto ast_node = match->makeSharedForKey<MYAST::Product>("astnode");
       auto selected = match->_impl.get<oneof_ptr_t>()->_selected;
       auto sel_seq  = selected->_impl.get<sequence_ptr_t>();
@@ -163,7 +163,7 @@ struct MyParser : public Parser {
          sequence({product, minus, product}, "add2"),
          product});
     //
-    sum->_notif = [=](match_ptr_t match) {
+    sum->_post_notif = [=](match_ptr_t match) {
       auto ast_node = match->makeSharedForKey<MYAST::Sum>("astnode");
       auto selected = match->_impl.get<oneof_ptr_t>()->_selected;
       if (selected->_matcher == product) {
@@ -185,7 +185,7 @@ struct MyParser : public Parser {
     };
     ///////////////////////////////////////////////////////////
     _sequence(expression, {sum});
-    expression->_notif = [=](match_ptr_t match) { //
+    expression->_post_notif = [=](match_ptr_t match) { //
       auto ast_node  = match->makeSharedForKey<MYAST::Expression>("astnode");
       auto seq       = match->_impl.get<sequence_ptr_t>();
       ast_node->_sum = seq->_items[0]->sharedForKey<MYAST::Sum>("astnode");
@@ -198,7 +198,7 @@ struct MyParser : public Parser {
          equals,
          expression});
     //
-    assignment_statement->_notif = [=](match_ptr_t match) { //
+    assignment_statement->_post_notif = [=](match_ptr_t match) { //
       auto ast_node = match->makeSharedForKey<MYAST::AssignmentStatement>("astnode");
       auto ass1of   = match->_impl.get<sequence_ptr_t>()->_items[0]->_impl.get<oneof_ptr_t>();
       if (ass1of->_selected->_matcher == variableDeclaration) {
@@ -234,7 +234,7 @@ struct MyParser : public Parser {
          zeroOrMore(statement, "fnd_statements"),
          rcurly});
     ///////////////////////////////////////////////////////////
-    funcdef->_notif = [=](match_ptr_t match) {
+    funcdef->_post_notif = [=](match_ptr_t match) {
       // match->_view->dump("funcdef");
       // match->dump(0);
 

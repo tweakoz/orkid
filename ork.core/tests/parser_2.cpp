@@ -137,33 +137,33 @@ struct MyParser2 : public Parser {
     auto semicolon            = rule("SEMICOLON");
     auto assignment_statement = rule("assignment_statement");
     ///////////////////////////////////////////////////////////
-    on("variableReference", [=](match_ptr_t match) { //
+    onPost("variableReference", [=](match_ptr_t match) { //
         auto kwid      = match->asShared<ClassMatch>()->_token->text;
         auto var_ref   = ast_create<MYAST::VariableReference>(match);
         var_ref->_name = FormatString("VarRef<%s>", kwid.c_str() );
     });
     ///////////////////////////////////////////////////////////
-    on("FLOATING_POINT", [=](match_ptr_t match) { //
+    onPost("FLOATING_POINT", [=](match_ptr_t match) { //
       auto ast_node    = ast_create<MYAST::FloatLiteral>(match);
       auto impl        = match->asShared<ClassMatch>();
       ast_node->_value = std::stof(impl->_token->text);
       ast_node->_name = FormatString("FloatLiteral<%s>", impl->_token->text.c_str() );
     });
     ///////////////////////////////////////////////////////////
-    on("INTEGER", [=](match_ptr_t match) { //
+    onPost("INTEGER", [=](match_ptr_t match) { //
       auto ast_node    = ast_create<MYAST::IntegerLiteral>(match);
       auto impl        = match->asShared<ClassMatch>();
       ast_node->_value = std::stoi(impl->_token->text);
       ast_node->_name = FormatString("IntLiteral<%s>", impl->_token->text.c_str() );
     });
     ///////////////////////////////////////////////////////////
-    on("datatype", [=](match_ptr_t match) { //
+    onPost("datatype", [=](match_ptr_t match) { //
       auto selected   = match->asShared<OneOf>()->_selected;
       auto ast_node   = ast_create<MYAST::DataType>(match);
       ast_node->_name = FormatString("Datatype<%s>", selected->asShared<ClassMatch>()->_token->text.c_str() );
     });
     ///////////////////////////////////////////////////////////
-    on("term", [=](match_ptr_t match) {
+    onPost("term", [=](match_ptr_t match) {
       auto ast_node = ast_create<MYAST::Term>(match);
       ast_node->_name = "term";
       printf( "ON term\n");
@@ -174,13 +174,13 @@ struct MyParser2 : public Parser {
      // }
     });
     ///////////////////////////////////////////////////////////
-    on("primary", [=](match_ptr_t match) {
+    onPost("primary", [=](match_ptr_t match) {
       auto ast_node = ast_create<MYAST::Primary>(match);
       ast_node->_name = "primary";
       auto selected = match->asShared<OneOf>()->_selected;
     });
     ///////////////////////////////////////////////////////////
-    on("product", [=](match_ptr_t match) {
+    onPost("product", [=](match_ptr_t match) {
       auto ast_node     = ast_create<MYAST::Product>(match);
       ast_node->_name = "product";
       auto seq          = match->asShared<Sequence>();
@@ -201,7 +201,7 @@ struct MyParser2 : public Parser {
       }
     });
     ///////////////////////////////////////////////////////////
-    on("sum", [=](match_ptr_t match) {
+    onPost("sum", [=](match_ptr_t match) {
       auto ast_node     = ast_create<MYAST::Sum>(match);
       auto selected = match->asShared<OneOf>()->_selected;
       if (selected->_matcher == product) {
@@ -222,7 +222,7 @@ struct MyParser2 : public Parser {
       }
     });
     ///////////////////////////////////////////////////////////
-    on("expression", [=](match_ptr_t match) { //
+    onPost("expression", [=](match_ptr_t match) { //
       auto ast_node = ast_create<MYAST::Expression>(match);
       auto impltype = match->_impl.typestr();
       auto seq      = match->asShared<Sequence>();
@@ -230,7 +230,7 @@ struct MyParser2 : public Parser {
       // since expression is a sum, then expression match points to sum
     });
     ///////////////////////////////////////////////////////////
-    on("assignment_statement", [=](match_ptr_t match) { //
+    onPost("assignment_statement", [=](match_ptr_t match) { //
       auto ast_node = ast_create<MYAST::AssignmentStatement>(match);
       auto ass1of   = match->asShared<Sequence>()->itemAsShared<OneOf>(0);
       if (ass1of->_selected->_matcher == variableDeclaration) {
@@ -246,7 +246,7 @@ struct MyParser2 : public Parser {
       }
     });
     ///////////////////////////////////////////////////////////
-    on("argument_decl", [=](match_ptr_t match) {
+    onPost("argument_decl", [=](match_ptr_t match) {
       auto ast_node = ast_create<MYAST::ArgumentDeclaration>(match);
       auto seq      = match->asShared<Sequence>();
       ast_node->_variable_name   = seq->_items[1]->asShared<ClassMatch>()->_token->text;
@@ -257,7 +257,7 @@ struct MyParser2 : public Parser {
       ast_node->_name = FormatString("ArgDecl<%s %s>", tok->text.c_str(), ast_node->_variable_name.c_str() );
     });
     ///////////////////////////////////////////////////////////
-    on("funcdef", [=](match_ptr_t match) {
+    onPost("funcdef", [=](match_ptr_t match) {
       auto seq     = match->asShared<Sequence>();
       auto funcdef = ast_create<MYAST::FunctionDef>(match);
       auto fn_name = seq->itemAsShared<ClassMatch>(1);
@@ -307,7 +307,7 @@ struct MyParser2 : public Parser {
       }
     });
     ///////////////////////////////////////////////////////////
-    on("funcdefs", [=](match_ptr_t match) {
+    onPost("funcdefs", [=](match_ptr_t match) {
       auto ast_node = ast_create<MYAST::FunctionDefs>(match);
       auto fndefs_inp = match->asShared<NOrMore>();
       for (auto item : fndefs_inp->_items) {

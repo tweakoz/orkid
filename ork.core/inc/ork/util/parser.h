@@ -152,7 +152,8 @@ struct Matcher {
   matcher_fn_t _attempt_match_fn;
   genmatch_fn_t _genmatch_fn;
   matcher_filterfn_t _match_filter;
-  matcher_notif_t _notif;
+  matcher_notif_t _pre_notif;
+  matcher_notif_t _post_notif;
   std::string _name;
   std::string _info;
   matcher_ptr_t _proxy_target;
@@ -317,14 +318,15 @@ struct Parser {
   void log_match_continue(const char* pMsgFormat, ...) const;
 
   matcher_ptr_t rule(const std::string& rule_name);
-  void on(const std::string& rule_name, matcher_notif_t fn);
+  void onPre(const std::string& rule_name, matcher_notif_t fn);
+  void onPost(const std::string& rule_name, matcher_notif_t fn);
 
   match_ptr_t loadPEGScannerSpec(const std::string& spec);
   match_ptr_t loadPEGParserSpec(const std::string& spec);
 
   void link();
-  match_attempt_ptr_t pushMatch();
-  match_attempt_ptr_t leafMatch();
+  match_attempt_ptr_t pushMatch(matcher_ptr_t matcher);
+  match_attempt_ptr_t leafMatch(matcher_ptr_t matcher);
   void popMatch();
 
   std::unordered_set<matcher_ptr_t> _matchers;

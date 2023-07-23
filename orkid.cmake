@@ -194,7 +194,8 @@ function(ork_std_target_set_defs the_target)
   ELSEIF( "${ARCHITECTURE}" STREQUAL "AARCH64" )
     list(APPEND def_list -DORK_ARCHITECTURE_ARM_64)
     list(APPEND def_list -DKLEIN_ARCHITECTURE_ARM)
-
+  ELSE()
+    MESSAGE( FATAL_ERROR "unsupported architecture ${ARCHITECTURE}")
   ENDIF()
 
   if(${APPLE})

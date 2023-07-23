@@ -23,14 +23,28 @@ matcher_ptr_t Parser::rule(const std::string& rule_name) {
   return rval;
 }
 
-void Parser::on(const std::string& rule_name, matcher_notif_t fn) {
+void Parser::onPre(const std::string& rule_name, matcher_notif_t fn) {
 
   auto it = _matchers_by_name.find(rule_name);
   if (it != _matchers_by_name.end()) {
     matcher_ptr_t matcher = it->second;
-    matcher->_notif       = fn;
+    matcher->_pre_notif       = fn;
     logchan_rulespec2->log(
-        "IMPLEMENT rulenotif<%s> matcher<%p:%s> notif assigned", rule_name.c_str(), (void*)matcher.get(), matcher->_name.c_str());
+        "IMPLEMENT rulenotif<%s> matcher<%p:%s> pre-notif assigned", rule_name.c_str(), (void*)matcher.get(), matcher->_name.c_str());
+  } else {
+    logerrchannel()->log("IMPLEMENT matcher<%s> not found", rule_name.c_str());
+    OrkAssert(false);
+  }
+}
+
+void Parser::onPost(const std::string& rule_name, matcher_notif_t fn) {
+
+  auto it = _matchers_by_name.find(rule_name);
+  if (it != _matchers_by_name.end()) {
+    matcher_ptr_t matcher = it->second;
+    matcher->_post_notif       = fn;
+    logchan_rulespec2->log(
+        "IMPLEMENT rulenotif<%s> matcher<%p:%s> post-notif assigned", rule_name.c_str(), (void*)matcher.get(), matcher->_name.c_str());
   } else {
     logerrchannel()->log("IMPLEMENT matcher<%s> not found", rule_name.c_str());
     OrkAssert(false);
@@ -198,7 +212,7 @@ matcher_ptr_t ExprKWID::createMatcher(std::string named) { // final
      return match_attempt;
     };
 
-    matcher->_notif        = submatcher->_notif;
+    matcher->_pre_notif        = submatcher->_pre_notif;
     matcher->_proxy_target = submatcher;
 
     //////////////////////////////////////////////////////////
@@ -673,7 +687,7 @@ void PegImpl::loadPEGGrammar() { //
   auto macro_item      = _peg_parser->sequence({macro, lparen, kworid, rparen}, "macro_item");
   auto scanner_key     = _peg_parser->oneOf({macro_item, kworid}, "scanner_key");
   auto scanner_rule    = _peg_parser->sequence({scanner_key, left_arrow, quoted_regex}, "scanner_rule");
-  scanner_rule->_notif = [=](match_ptr_t match) {
+  scanner_rule->_post_notif = [=](match_ptr_t match) {
     auto seq           = match->asShared<Sequence>();
     auto rule_key_item = seq->_items[0]->asShared<OneOf>()->_selected;
     auto qrx           = seq->_items[2]->asShared<ClassMatch>()->_token->text;
@@ -708,7 +722,7 @@ void PegImpl::loadPEGGrammar() { //
     }
   };
   _rsi_scanner_matcher         = _peg_parser->zeroOrMore(scanner_rule, "scanner_rules");
-  _rsi_scanner_matcher->_notif = [=](match_ptr_t match) {
+  _rsi_scanner_matcher->_post_notif = [=](match_ptr_t match) {
     std::string _current_rule_name = "";
     try {
       for (auto item : this->_user_scanner_macros) {
@@ -765,7 +779,7 @@ void PegImpl::loadPEGGrammar() { //
       });
   auto parser_rule = _peg_parser->sequence({kworid, left_arrow, rule_expression}, "parser_rule");
 
-  parser_rule->_notif = [=](match_ptr_t match) {
+  parser_rule->_post_notif = [=](match_ptr_t match) {
     auto rulename = match->asShared<Sequence>()->_items[0]->asShared<ClassMatch>()->_token->text;
     auto ast_rule = std::make_shared<AST::ParserRule>(_user_parser, rulename);
     _current_rule = ast_rule;
@@ -779,7 +793,7 @@ void PegImpl::loadPEGGrammar() { //
 
   _rsi_parser_matcher = _peg_parser->zeroOrMore(parser_rule, "parser_rules");
 
-  _rsi_parser_matcher->_notif = [=](match_ptr_t match) { printf("MATCHED parser_rules\n"); };
+  _rsi_parser_matcher->_post_notif = [=](match_ptr_t match) { printf("MATCHED parser_rules\n"); };
   _peg_parser->link();
 }
 /////////////////////////////////////////////////////////

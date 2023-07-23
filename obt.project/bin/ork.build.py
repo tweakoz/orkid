@@ -4,7 +4,7 @@ import sys
 import os, argparse
 import obt.host
 import obt.dep
-from obt.path import Path
+import obt.path
 from obt.command import Command, run
 from obt import buildtrace
 import obt._globals as _glob
@@ -42,12 +42,12 @@ ORKID_DEPMODULE = obt.dep.instance("orkid") # fetch from orkid depper to reduce 
 
 os.environ["ORKID_WORKSPACE_DIR"] = this_dir
 
-stage_dir = Path(os.path.abspath(str(obt.path.stage())))
+stage_dir = obt.path.Path(os.path.abspath(str(obt.path.stage())))
 
 build_dest = ORKID_DEPMODULE.builddir
 
 if _args["builddir"]!=None:
-    build_dest = Path(_args["builddir"])
+    build_dest = obt.path.Path(_args["builddir"])
 
 debug = _args["debug"]!=False
 profiler = _args["profiler"]!=False
@@ -66,7 +66,7 @@ with buildtrace.NestedBuildTrace({ "op": "obt.build.py"}) as nested:
 
   os.environ["ORKID_BUILD_DEST"]=str(build_dest)
 
-  prj_root = Path(os.environ["ORKID_WORKSPACE_DIR"])
+  prj_root = obt.path.Path(os.environ["ORKID_WORKSPACE_DIR"])
   ork_root = prj_root
   ok = True
 
@@ -131,7 +131,10 @@ with buildtrace.NestedBuildTrace({ "op": "obt.build.py"}) as nested:
   else:
     cmd += ["-DARCHITECTURE=x86_64"]
 
+  cmd += ["-DCMAKE_INSTALL_PREFIX=%s"%obt.path.stage()]
+  cmd += ["-DCMAKE_MODULE_PATH=%s"%(obt.path.libs()/"cmake")]
 
+  cmd += ["-Wno-dev"]
   ###################################################
 
   BOOST_FLAGS = BOOST.cmake_additional_flags()

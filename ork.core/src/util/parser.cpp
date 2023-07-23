@@ -212,15 +212,21 @@ void Parser::link() {
 
 //////////////////////////////////////////////////////////////////////
 
-match_attempt_ptr_t Parser::leafMatch(){
+match_attempt_ptr_t Parser::leafMatch(matcher_ptr_t matcher){
+
   match_attempt_ptr_t parent;
   if(not  _match_stack.empty() ){
     parent = _match_stack.back();
   }
   auto rval = std::make_shared<MatchAttempt>();
   rval->_parent = parent;
+  rval->_matcher = matcher;
   if(parent){
     parent->_children.push_back(rval);
+    printf( "xxx : LEAFMATCH parent<%p:%s> rval<%p:%s>\n", (void*)parent.get(), parent->_matcher->_name.c_str(), (void*)rval.get(), matcher->_name.c_str() );
+  }
+  else{
+    printf( "xxx : LEAFMATCH noparent rval<%p:%s>\n", (void*)rval.get(), matcher->_name.c_str() );
   }
   rval->_terminal = true;
   return rval;
@@ -228,10 +234,31 @@ match_attempt_ptr_t Parser::leafMatch(){
 
 //////////////////////////////////////////////////////////////////////
 
-match_attempt_ptr_t Parser::pushMatch(){
-  auto rval = leafMatch();
+match_attempt_ptr_t Parser::pushMatch(matcher_ptr_t matcher){
+
+  match_attempt_ptr_t parent;
+  if(not  _match_stack.empty() ){
+    parent = _match_stack.back();
+  }
+
+  //////////////////////////////////////////////////////
+
+  auto rval = std::make_shared<MatchAttempt>();
+  rval->_matcher = matcher;
+  rval->_parent = parent;
+  if(parent){
+    parent->_children.push_back(rval);
+    printf( "xxx : PUSHMATCH parent<%p:%s> rval<%p:%s>\n", (void*)parent.get(), parent->_matcher->_name.c_str(), (void*)rval.get(), matcher->_name.c_str() );
+  }
+  else{
+    printf( "xxx : PUSHMATCH noparent rval<%p:%s>\n", (void*)rval.get(), matcher->_name.c_str() );
+  }
+
+  //////////////////////////////////////////////////////
+
   rval->_terminal = false;
   _match_stack.push_back(rval);
+
   return rval;
 }
 
@@ -279,19 +306,68 @@ match_ptr_t Parser::match(matcher_ptr_t topmatcher, scannerlightview_constptr_t 
     auto root_match = MatchAttempt::genmatch(root_match_attempt);
 
     /////////////////////////////////////
+    // visit matchattempt tree
+    /////////////////////////////////////
+
+    printf( "xxx : #############################################################\n" );
+    printf( "xxx : matchattempt tree\n" );
+    printf( "xxx : #############################################################\n" );
+
+    std::stack<match_attempt_ptr_t> ma_stack;
+    std::stack<int> depth_stack;
+    ma_stack.push(root_match_attempt);
+    depth_stack.push(0);
+    while(!ma_stack.empty()) {
+      auto current_ma = ma_stack.top();
+      int current_depth = depth_stack.top();
+      auto indentstr = std::string(current_depth * 2, ' ');
+      printf( "xxx : %s current_ma_attempt<%p:%s> numc<%zu>\n", indentstr.c_str(), (void*) current_ma.get(), current_ma->_matcher->_name.c_str(), current_ma->_children.size() );
+      ma_stack.pop();
+      depth_stack.pop();
+      for(auto& child_ma : current_ma->_children) {
+        ma_stack.push(child_ma);
+        depth_stack.push(current_depth+1);
+      }
+    }
+
+    /////////////////////////////////////
     // visit match tree
     /////////////////////////////////////
 
+    printf( "xxx : #############################################################\n" );
+    printf( "xxx : match tree\n" );
+    printf( "xxx : #############################################################\n" );
+
+
     std::stack<match_ptr_t> dfs_stack;
     dfs_stack.push(root_match);
+    depth_stack.push(0);
     while(!dfs_stack.empty()) {
       auto current_match = dfs_stack.top();
-      printf( "current_match<%p>\n", (void*) current_match.get() );
+      int current_depth = depth_stack.top();
+      auto indentstr = std::string(current_depth * 2, ' ');
+      std::string suffix;
+      if(current_match->_matcher->_pre_notif) {
+        suffix += " HAS_PRE_NOTIF ";
+        current_match->_matcher->_pre_notif(current_match);
+      }
+      if(current_match->_matcher->_post_notif) {
+        suffix += " HAS_POST_NOTIF ";
+      }
+      printf( "xxx : %s current_match<%p:%s> numc<%zu> %s\n", indentstr.c_str(), (void*) current_match.get(), current_match->_matcher->_name.c_str(), current_match->_children.size(), suffix.c_str() );
       dfs_stack.pop();
+      depth_stack.pop();
       for(auto& child_match : current_match->_children) {
         dfs_stack.push(child_match);
+        depth_stack.push(current_depth+1);
+      }
+      if(current_match->_matcher->_post_notif) {
+        current_match->_matcher->_post_notif(current_match);
       }
     }
+
+    printf( "xxx : #############################################################\n" );
+
 
     /////////////////////////////////////
     return root_match;
