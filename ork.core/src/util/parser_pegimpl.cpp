@@ -186,54 +186,7 @@ matcher_ptr_t ExprKWID::createMatcher(std::string named) { // final
           "  KWID submatcher<%s> NO SUBMATCHER MATCHFN", named.c_str(), _kwid.c_str(), submatcher->_name.c_str());
       return false;
     }
-    /////////////////////////////////
-    matcher->_genmatch_fn = [=](match_attempt_ptr_t attempt) -> match_ptr_t {
-      auto the_proxy_attempt        = attempt->asShared<ProxyAttempt>();
-      if( the_proxy_attempt->_selected ){
-        auto the_match = std::make_shared<Match>(attempt);
-        auto the_proxy_inst = the_match->makeShared<Proxy>();
-        the_proxy_inst->_selected = MatchAttempt::genmatch(the_proxy_attempt->_selected);
-        the_match->_children.push_back(the_proxy_inst->_selected);
-        return the_match;
-      }
-      return nullptr;
-      //return submatcher->_genmatch_fn(attempt);
-    };
-    /////////////////////////////////
-    matcher->_attempt_match_fn = [=](matcher_ptr_t par_matcher,                        //
-                           scannerlightview_constptr_t slv) -> match_attempt_ptr_t { //
-     DEPTH++;
-     auto indentstr = std::string(DEPTH * 2, ' ');
-     auto tok0 = slv->token(0);
-
-     logchan_rulespec2->log(
-          "%s try_match tok<%s> astnamed<%s> astkwid<%s> submatcher<%s> ", indentstr.c_str(), tok0->text.c_str(), named.c_str(), _kwid.c_str(), submatcher->_name.c_str());
-
-    auto match_attempt      = pegimpl->_user_parser->pushMatch(matcher);
-    auto the_proxy        = match_attempt->makeShared<ProxyAttempt>();
-
-     //auto sub_match_attempt = submatcher->_attempt_match_fn(par_matcher, slv);
-    MatchAttemptContextItem mci { submatcher, slv };
-    auto sub_match = pegimpl->_user_parser->_tryMatch(mci);
-    if (sub_match) {
-      auto match_str = deco::string("MATCH", 0, 255, 0);
-      logchan_rulespec2->log("EKWIDPXY<%s> %s sub<%s>", named.c_str(), match_str.c_str(), sub_match->_matcher->_name.c_str());
-      match_attempt->_view = sub_match->_view;
-      match_attempt->_view->validate();
-      the_proxy->_selected = sub_match;
-    }
-    else{
-      match_attempt = nullptr;
-    }
-     DEPTH--;
-     pegimpl->_user_parser->popMatch();
-     return match_attempt;
-    };
-    /////////////////////////////////
-
-    matcher->_pre_notif        = submatcher->_pre_notif;
-    matcher->_post_notif        = submatcher->_post_notif;
-
+    _user_parser->_proxy(matcher,submatcher);
     //////////////////////////////////////////////////////////
 
     return true;

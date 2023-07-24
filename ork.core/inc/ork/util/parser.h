@@ -301,6 +301,7 @@ struct Parser {
   matcher_ptr_t zeroOrMore(matcher_ptr_t matcher, std::string name = "", bool mustConsumeAll = false);
   matcher_ptr_t nOrMore(matcher_ptr_t sub_matcher, size_t minMatches, std::string name = "", bool mustConsumeAll = false);
   matcher_ptr_t optional(matcher_ptr_t matcher, std::string name = "");
+  void _proxy(matcher_ptr_t par_matcher, matcher_ptr_t sub_matcher);
 
   matcher_ptr_t matcherForTokenClassID(uint64_t tokclass, std::string name = "");
   matcher_ptr_t matcherForWord(std::string word, std::string name = "");
