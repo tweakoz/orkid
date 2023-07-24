@@ -219,20 +219,6 @@ matcher_ptr_t Parser::rule(const std::string& rule_name) {
   return rval;
 }
 
-void Parser::on(const std::string& rule_name, matcher_notif_t fn) {
-
-  auto it = _matchers_by_name.find(rule_name);
-  if (it != _matchers_by_name.end()) {
-    matcher_ptr_t matcher = it->second;
-    matcher->_notif       = fn;
-    log_info(
-        "Parser<%s>::on rule<%s> matcher<%p:%s> notif assigned", _name.c_str(), rule_name.c_str(), (void*)matcher.get(), matcher->_name.c_str());
-  } else {
-    logerrchannel()->log("Parser<%s>::on rule<%s> not found", _name.c_str(), rule_name.c_str());
-    OrkAssert(false);
-  }
-}
-
 matcher_ptr_t Parser::declare(std::string name) {
   log_info_begin("DECLARE MATCHER<%s> ", name.c_str());
   auto it = _matchers_by_name.find(name);

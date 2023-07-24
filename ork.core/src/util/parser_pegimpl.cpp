@@ -14,15 +14,6 @@ match_ptr_t filtered_match(matcher_ptr_t matcher, match_ptr_t the_match);
 static logchannel_ptr_t logchan_rulespec  = logger()->createChannel("PEGSPEC1", fvec3(0.5, 0.8, 0.5), true);
 static logchannel_ptr_t logchan_rulespec2 = logger()->createChannel("PEGSPEC2", fvec3(0.5, 0.8, 0.5), true);
 
-matcher_ptr_t Parser::rule(const std::string& rule_name) {
-  auto it = _matchers_by_name.find(rule_name);
-  matcher_ptr_t rval;
-  if (it != _matchers_by_name.end()) {
-    rval = it->second;
-  }
-  return rval;
-}
-
 void Parser::onPre(const std::string& rule_name, matcher_notif_t fn) {
 
   auto it = _matchers_by_name.find(rule_name);
