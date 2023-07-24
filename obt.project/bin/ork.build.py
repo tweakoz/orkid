@@ -35,9 +35,6 @@ PYTHON = obt.dep.instance("python")
 BOOST = obt.dep.instance("boost")
 ORKID_DEPMODULE = obt.dep.instance("orkid") # fetch from orkid depper to reduce code bloat
 
-#print(PYTHON)
-#obt.env.set("PYTHONHOME",PYTHON.home_dir)
-
 ############################################################################
 
 os.environ["ORKID_WORKSPACE_DIR"] = this_dir
@@ -70,6 +67,9 @@ with buildtrace.NestedBuildTrace({ "op": "obt.build.py"}) as nested:
   ork_root = prj_root
   ok = True
 
+  print("PRJ_ROOT: %s " % prj_root)
+  print("BUILD_DEST: %s" % build_dest)
+
 
   ######################################################################
   # ensure deps present
@@ -84,11 +84,8 @@ with buildtrace.NestedBuildTrace({ "op": "obt.build.py"}) as nested:
     l += [item._name]
 
   l.reverse()
-  #print(l)
-  #assert(False)
 
   obt.dep.require(dep_list)
-
 
   ######################################################################
   # prep for build

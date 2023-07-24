@@ -46,11 +46,11 @@ class MinimalSceneGraphApp(object):
     # create frustum primitive / sgnode
     ###################################
 
-    pmatrix = ctx.perspective(45,1,0.25,3)
+    pmatrix = fmtx4_to_dmtx4(ctx.perspective(45,1,0.25,3))
 
-    vmatrix = mtx4.lookAt(vec3(0, 0, 0),  # eye
-                          vec3(0, 0, -1), # tgt
-                          vec3(0, 1, 0))  # up
+    vmatrix = dmtx4.lookAt(dvec3(0, 0, 0),  # eye
+                          dvec3(0, 0, -1), # tgt
+                          dvec3(0, 1, 0))  # up
 
     frustum_prim = createFrustumPrim(ctx=ctx,vmatrix=vmatrix,pmatrix=pmatrix)
 
@@ -92,7 +92,7 @@ class MinimalSceneGraphApp(object):
                                   vec3(0, 0, 0),  # tgt
                                   vec3(0, 1, 0))  # up
 
-    m_view_to_world =  m_world_to_view.inverse()
+    m_view_to_world =  m_world_to_view.inverse
 
     self.primnode.worldTransform.directMatrix = m_view_to_world
 

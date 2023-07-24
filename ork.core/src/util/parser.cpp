@@ -29,10 +29,10 @@ void MatchAttempt::dump1(int indent) {
 
   if (_view->empty()) {
     logchan_parser->log(
-        "%s DUMP Match<%p> matcher<%p:%s> view (empty)", indentstr.c_str(), this, (void*)_matcher.get(), _matcher->_name.c_str());
+        "%s DUMP MatchAttempt<%p> matcher<%p:%s> view (empty)", indentstr.c_str(), this, (void*)_matcher.get(), _matcher->_name.c_str());
   } else {
     logchan_parser->log(
-        "%s DUMP Match<%p> matcher<%p:%s> view [%zu..%zu]",
+        "%s DUMP MatchAttempt<%p> matcher<%p:%s> view [%zu..%zu]",
         indentstr.c_str(),
         this,
         (void*)_matcher.get(),
@@ -78,7 +78,7 @@ void MatchAttempt::dump2(int indent) {
   if( _matcher ){
     name = _matcher->_name;
   }
-  logchan_parser->log("%d %s   match<%p> matcher<%s>", indent,indentstr.c_str(), (void*) this, name.c_str() );
+  logchan_parser->log("%d %s   MatchAttempt<%p> matcher<%s>", indent,indentstr.c_str(), (void*) this, name.c_str() );
   for( auto c : _children ){
     c->dump2(indent+1);
   }
@@ -106,6 +106,53 @@ void Match::visit(int level, visit_fn_t vfn) const {
   vfn(level,this);
   for( auto c : _children ){
     c->visit(level+1,vfn);
+  }
+}
+
+void Match::dump1(int indent) const {
+
+  auto indentstr = std::string(indent, ' ');
+
+  if (_view->empty()) {
+    logchan_parser->log(
+        "%s DUMP Match<%p> matcher<%p:%s> view (empty)", indentstr.c_str(), this, (void*)_matcher.get(), _matcher->_name.c_str());
+  } else {
+    logchan_parser->log(
+        "%s DUMP Match<%p> matcher<%p:%s> view [%zu..%zu]",
+        indentstr.c_str(),
+        this,
+        (void*)_matcher.get(),
+        _matcher->_name.c_str(),
+        _view->_start,
+        _view->_end);
+  }
+
+  if (auto as_seq = tryAsShared<Sequence>()) {
+    auto seq = as_seq.value();
+    logchan_parser->log("%s   SEQ<%p>", indentstr.c_str(), (void*)seq.get());
+    for (auto i : seq->_items) {
+      i->dump1(indent + 3);
+    }
+  } else if (auto as_nom = tryAsShared<NOrMore>()) {
+    auto nom = as_nom.value();
+    logchan_parser->log("%s   NOM%zu<%p>", indentstr.c_str(), nom->_minmatches, (void*)nom.get());
+    for (auto i : nom->_items) {
+      i->dump1(indent + 3);
+    }
+  } else if (auto as_grp = tryAsShared<Group>()) {
+    auto grp = as_grp.value();
+    logchan_parser->log("%s   GRP<%p>", indentstr.c_str(), (void*)grp.get());
+    for (auto i : grp->_items) {
+      i->dump1(indent + 3);
+    }
+  } else if (auto as_opt = tryAsShared<Optional>()) {
+    auto opt = as_opt.value();
+    logchan_parser->log("%s   OPT<%p>", indentstr.c_str(), (void*)opt.get());
+    if (opt->_subitem)
+      opt->_subitem->dump1(indent + 3);
+    else {
+      logchan_parser->log("%s     EMPTY", indentstr.c_str());
+    }
   }
 }
 
@@ -159,6 +206,32 @@ void Matcher::_hash(boost::Crc64& crc_out) const { // packrat support
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
+
+matcher_ptr_t Parser::rule(const std::string& rule_name) {
+  auto it = _matchers_by_name.find(rule_name);
+  matcher_ptr_t rval;
+  if (it != _matchers_by_name.end()) {
+    rval = it->second;
+  }
+  else{
+    OrkAssert(false);
+  }
+  return rval;
+}
+
+void Parser::on(const std::string& rule_name, matcher_notif_t fn) {
+
+  auto it = _matchers_by_name.find(rule_name);
+  if (it != _matchers_by_name.end()) {
+    matcher_ptr_t matcher = it->second;
+    matcher->_notif       = fn;
+    log_info(
+        "Parser<%s>::on rule<%s> matcher<%p:%s> notif assigned", _name.c_str(), rule_name.c_str(), (void*)matcher.get(), matcher->_name.c_str());
+  } else {
+    logerrchannel()->log("Parser<%s>::on rule<%s> not found", _name.c_str(), rule_name.c_str());
+    OrkAssert(false);
+  }
+}
 
 matcher_ptr_t Parser::declare(std::string name) {
   log_info_begin("DECLARE MATCHER<%s> ", name.c_str());

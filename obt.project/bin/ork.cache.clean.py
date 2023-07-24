@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from ork import path, command
+from obt import path, command
 
 command.system([
     "rm",

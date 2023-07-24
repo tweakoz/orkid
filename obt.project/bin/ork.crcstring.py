@@ -6,7 +6,7 @@
 ###############################################33
 import sys
 from orkengine.core import CrcStringProxy
-from ork.deco import Deco
+from obt.deco import Deco
 ###############################################33
 deco = Deco();
 token = CrcStringProxy()

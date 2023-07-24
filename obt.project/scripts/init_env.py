@@ -6,9 +6,9 @@
 # orkid as project initialization
 
 import os
-import ork.deco
-import ork.env
-import ork.path
+import obt.deco
+import obt.env
+import obt.path
 
 def setup():
 
@@ -16,9 +16,9 @@ def setup():
   # compute paths
   ##############################################
 
-  deco = ork.deco.Deco()
+  deco = obt.deco.Deco()
   file_path = os.path.realpath(__file__)
-  scripts_dir = ork.path.Path(os.path.dirname(file_path))
+  scripts_dir = obt.path.Path(os.path.dirname(file_path))
   obtprj_dir = scripts_dir/".."
   orkid_dir = (obtprj_dir/"..").resolve()
   orkbin_dir = obtprj_dir/"bin"
@@ -29,39 +29,39 @@ def setup():
   # mark ORKID as project
   ##############################################
 
-  ork.env.set("ORKID_WORKSPACE_DIR",orkid_dir)
-  ork.env.set("ORKID_IS_MAIN_PROJECT","1")
+  obt.env.set("ORKID_WORKSPACE_DIR",orkid_dir)
+  obt.env.set("ORKID_IS_MAIN_PROJECT","1")
 
   ##############################################
   # add orkid scripts to enviromment PATH
   ##############################################
 
-  ork.env.prepend("PATH",orkbin_dir)
+  obt.env.prepend("PATH",orkbin_dir)
 
   ##############################################
   # add search paths
   #  for obt.find.py
   ##############################################
 
-  ork.env.append("OBT_SEARCH_PATH",orkid_dir/"obt.project")
-  ork.env.append("OBT_SEARCH_PATH",orkid_dir/"ork.dox")
-  ork.env.append("OBT_SEARCH_PATH",orkid_dir/"ork.data")
-  ork.env.append("OBT_SEARCH_PATH",orkid_dir/"ork.core")
-  ork.env.append("OBT_SEARCH_PATH",orkid_dir/"ork.lev2")
-  ork.env.append("OBT_SEARCH_PATH",orkid_dir/"ork.eda")
-  ork.env.append("OBT_SEARCH_PATH",orkid_dir/"ork.ecs")
-  ork.env.append("OBT_SEARCH_PATH",orkid_dir/"ork.tool")
-  ork.env.append("OBT_SEARCH_PATH",orkid_dir/"ork.tuio")
-  ork.env.append("LUA_PATH",orkid_dir/"ork.data"/"src"/"scripts"/"?.lua")
+  obt.env.append("OBT_SEARCH_PATH",orkid_dir/"obt.project")
+  obt.env.append("OBT_SEARCH_PATH",orkid_dir/"ork.dox")
+  obt.env.append("OBT_SEARCH_PATH",orkid_dir/"ork.data")
+  obt.env.append("OBT_SEARCH_PATH",orkid_dir/"ork.core")
+  obt.env.append("OBT_SEARCH_PATH",orkid_dir/"ork.lev2")
+  obt.env.append("OBT_SEARCH_PATH",orkid_dir/"ork.eda")
+  obt.env.append("OBT_SEARCH_PATH",orkid_dir/"ork.ecs")
+  obt.env.append("OBT_SEARCH_PATH",orkid_dir/"ork.tool")
+  obt.env.append("OBT_SEARCH_PATH",orkid_dir/"ork.tuio")
+  obt.env.append("LUA_PATH",orkid_dir/"ork.data"/"src"/"scripts"/"?.lua")
 
   ##############################################
   # add search extensions
   #  for obt.find.py
   ##############################################
 
-  ork.env.append("OBT_SEARCH_EXTLIST", ".cpp:.c:.cc:.h:.hpp:.inl")
-  ork.env.append("OBT_SEARCH_EXTLIST", ".qml:.m:.mm:.py")
-  ork.env.append("OBT_SEARCH_EXTLIST", ".txt:.md:.glfx:.ini")
+  obt.env.append("OBT_SEARCH_EXTLIST", ".cpp:.c:.cc:.h:.hpp:.inl")
+  obt.env.append("OBT_SEARCH_EXTLIST", ".qml:.m:.mm:.py")
+  obt.env.append("OBT_SEARCH_EXTLIST", ".txt:.md:.glfx:.ini")
 
   ##############################################
 

@@ -1,3 +1,0 @@
-[submodule "ork.build"]
-	path = ork.build
-	url = ../ork.build.git

@@ -114,6 +114,7 @@ struct Match {
   varmap::VarMap _uservars;
   using visit_fn_t = std::function<void(int, const Match*)>;
   void visit(int level, visit_fn_t) const;
+  void dump1(int indent) const;
   bool matcherInStack(matcher_ptr_t matcher) const;
   template <typename impl_t> std::shared_ptr<impl_t> asShared() {
     return _impl.getShared<impl_t>();
@@ -121,7 +122,7 @@ struct Match {
   template <typename impl_t> std::shared_ptr<impl_t> makeShared() {
     return _impl.makeShared<impl_t>();
   }
-  template <typename impl_t> attempt_cast<std::shared_ptr<impl_t>> tryAsShared() {
+  template <typename impl_t> attempt_cast_const<std::shared_ptr<impl_t>> tryAsShared() const {
     return _impl.tryAsShared<impl_t>();
   }
   template <typename impl_t> attempt_cast<impl_t> tryAs() {
