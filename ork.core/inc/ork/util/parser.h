@@ -157,12 +157,8 @@ struct Matcher {
   matcher_notif_t _post_notif;
   std::string _name;
   std::string _info;
-  matcher_ptr_t _proxy_target;
   std::function<bool()> _on_link;
   varmap::VarMap _uservars;
-  Matcher* resolve() {
-    return _proxy_target ? _proxy_target.get() : this;
-  }
   uint64_t hash(scannerlightview_constptr_t slv) const; // packrat hash
   void _hash(boost::Crc64& crc_out) const;              // packrat hash
 };
@@ -225,6 +221,12 @@ struct OneOfAttempt {
   }
   match_attempt_ptr_t _selected;
 };
+struct ProxyAttempt {
+  template <typename impl_t> std::shared_ptr<impl_t> asShared() {
+    return _selected->asShared<impl_t>();
+  }
+  match_attempt_ptr_t _selected;
+};
 
 //////////////////////////////////////////////////////////////
 // match structures
@@ -264,6 +266,12 @@ struct ClassMatch {
   const Token* _token = nullptr;
 };
 struct OneOf {
+  template <typename impl_t> std::shared_ptr<impl_t> asShared() {
+    return _selected->asShared<impl_t>();
+  }
+  match_ptr_t _selected;
+};
+struct Proxy {
   template <typename impl_t> std::shared_ptr<impl_t> asShared() {
     return _selected->asShared<impl_t>();
   }

@@ -167,7 +167,7 @@ struct MyParser2 : public Parser {
       auto ast_node = ast_create<MYAST::Term>(match);
       ast_node->_name = "term";
       printf( "ON term\n");
-      OrkAssert(false);
+      //OrkAssert(false);
       //auto selected = match->asShared<Sequence>()->_items[1];
       //if (selected->_matcher == expression) {
         //ast_node->_subexpression = ast_get<MYAST::Expression>(selected);
@@ -218,7 +218,7 @@ struct MyParser2 : public Parser {
         ast_node->_right = ast_get<MYAST::Product>(seq->_items[2]);
         ast_node->_op    = '-';
       } else {
-        OrkAssert(false);
+        //OrkAssert(false);
       }
     });
     ///////////////////////////////////////////////////////////
@@ -249,18 +249,18 @@ struct MyParser2 : public Parser {
     onPost("argument_decl", [=](match_ptr_t match) {
       auto ast_node = ast_create<MYAST::ArgumentDeclaration>(match);
       auto seq      = match->asShared<Sequence>();
-      ast_node->_variable_name   = seq->_items[1]->asShared<ClassMatch>()->_token->text;
-      auto seq0                  = seq->_items[0]->asShared<OneOf>()->_selected;
-      auto tok                   = seq0->asShared<ClassMatch>()->_token;
-      ast_node->_datatype        = std::make_shared<MYAST::DataType>();
-      ast_node->_datatype->_name = tok->text;
-      ast_node->_name = FormatString("ArgDecl<%s %s>", tok->text.c_str(), ast_node->_variable_name.c_str() );
+      //ast_node->_variable_name   = seq->_items[1]->asShared<ClassMatch>()->_token->text;
+      //auto seq0                  = seq->_items[0]->asShared<OneOf>()->_selected;
+      //auto tok                   = seq0->asShared<ClassMatch>()->_token;
+      //ast_node->_datatype        = std::make_shared<MYAST::DataType>();
+      //ast_node->_datatype->_name = tok->text;
+      //ast_node->_name = FormatString("ArgDecl<%s %s>", tok->text.c_str(), ast_node->_variable_name.c_str() );
     });
     ///////////////////////////////////////////////////////////
     onPost("funcdef", [=](match_ptr_t match) {
       auto seq     = match->asShared<Sequence>();
       auto funcdef = ast_create<MYAST::FunctionDef>(match);
-      auto fn_name = seq->itemAsShared<ClassMatch>(1);
+      /*auto fn_name = seq->itemAsShared<ClassMatch>(1);
       auto args    = seq->itemAsShared<NOrMore>(3);
       auto stas    = seq->itemAsShared<NOrMore>(6);
 
@@ -279,9 +279,6 @@ struct MyParser2 : public Parser {
         if (auto as_seq = stasel->tryAsShared<Sequence>()) {
           auto staseq0         = as_seq.value()->_items[0];
           auto staseq0_matcher = staseq0->_matcher;
-          if (staseq0_matcher->_proxy_target) {
-            staseq0_matcher = staseq0_matcher->_proxy_target;
-          }
 
           printf(
               "staseq0 <%p> matcher<%p:%s>\n", //
@@ -305,6 +302,7 @@ struct MyParser2 : public Parser {
         }
         i++;
       }
+      */
     });
     ///////////////////////////////////////////////////////////
     onPost("funcdefs", [=](match_ptr_t match) {
