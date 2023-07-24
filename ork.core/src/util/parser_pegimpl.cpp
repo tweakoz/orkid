@@ -164,6 +164,7 @@ matcher_ptr_t ExprKWID::createMatcher(std::string named) { // final
   }
 
   auto matcher = _user_parser->declare(_kwid);
+  matcher->_info = FormatString("KWID<%s>", _kwid.c_str());
 
   matcher->_on_link = [=]() ->bool {
     static int DEPTH = 0;

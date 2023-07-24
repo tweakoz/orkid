@@ -369,8 +369,8 @@ match_ptr_t Parser::match(matcher_ptr_t topmatcher, scannerlightview_constptr_t 
     /////////////////////////////////////
 
     printf( "xxx : #############################################################\n" );
-    printf( "xxx : matchattempt tree\n" );
-    printf( "xxx : #############################################################\n" );
+    //printf( "xxx : matchattempt tree\n" );
+    //printf( "xxx : #############################################################\n" );
 
     std::stack<match_attempt_ptr_t> ma_stack;
     std::stack<int> depth_stack;
@@ -380,7 +380,7 @@ match_ptr_t Parser::match(matcher_ptr_t topmatcher, scannerlightview_constptr_t 
       auto current_ma = ma_stack.top();
       int current_depth = depth_stack.top();
       auto indentstr = std::string(current_depth * 2, ' ');
-      printf( "xxx : %s current_ma_attempt<%p:%s> numc<%zu>\n", indentstr.c_str(), (void*) current_ma.get(), current_ma->_matcher->_name.c_str(), current_ma->_children.size() );
+      //printf( "xxx : %s current_ma_attempt<%p:%s> numc<%zu>\n", indentstr.c_str(), (void*) current_ma.get(), current_ma->_matcher->_name.c_str(), current_ma->_children.size() );
       ma_stack.pop();
       depth_stack.pop();
       for(auto& child_ma : current_ma->_children) {
@@ -393,43 +393,7 @@ match_ptr_t Parser::match(matcher_ptr_t topmatcher, scannerlightview_constptr_t 
     // visit match tree
     /////////////////////////////////////
 
-    printf( "xxx : #############################################################\n" );
-    printf( "xxx : match tree\n" );
-    printf( "xxx : #############################################################\n" );
-
-    std::stack<match_ptr_t> dfs_stack;
-    std::stack<match_ptr_t> post_notif_stack;
-    dfs_stack.push(root_match);
-    depth_stack.push(0);
-    while(!dfs_stack.empty()) {
-      auto current_match = dfs_stack.top();
-      int current_depth = depth_stack.top();
-      auto indentstr = std::string(current_depth * 2, ' ');
-      std::string suffix;
-      if(current_match->_matcher->_pre_notif) {
-        suffix += " HAS_PRE_NOTIF ";
-        current_match->_matcher->_pre_notif(current_match);
-      }
-      if(current_match->_matcher->_post_notif) {
-        suffix += " HAS_POST_NOTIF ";
-      }
-      printf("xxx : %s current_match<%p:%s> numc<%zu> %s\n", indentstr.c_str(), (void*) current_match.get(), current_match->_matcher->_name.c_str(), current_match->_children.size(), suffix.c_str());
-      dfs_stack.pop();
-      depth_stack.pop();
-      for(auto& child_match : current_match->_children) {
-        dfs_stack.push(child_match);
-        depth_stack.push(current_depth+1);
-      }
-      if(current_match->_matcher->_post_notif) {
-        post_notif_stack.push(current_match);
-      }
-    }
-    while (!post_notif_stack.empty()) {
-      auto current_match = post_notif_stack.top();
-      current_match->_matcher->_post_notif(current_match);
-      post_notif_stack.pop();
-    }
-
+    _visitMatch(root_match);
 
     printf( "xxx : #############################################################\n" );
 
@@ -440,6 +404,41 @@ match_ptr_t Parser::match(matcher_ptr_t topmatcher, scannerlightview_constptr_t 
 
   return nullptr;
 }
+
+//////////////////////////////////////////////////////////////////////
+
+void Parser::_visitMatch(match_ptr_t m){
+
+  auto indentstr = std::string(_visit_depth * 2, ' ');
+  std::string suffix;
+  if(m->_matcher->_pre_notif) {
+    suffix = " prenotif ";
+  }
+  if(m->_matcher->_post_notif) {
+    suffix = " postnotif ";
+  }
+
+  printf( "xxx : %s match<%p:%s:%s> numc<%zu> %s\n", //
+          indentstr.c_str(), //
+          (void*) m.get(), //
+          m->_matcher->_name.c_str(), //
+          m->_matcher->_info.c_str(), //
+          m->_children.size(), //
+          suffix.c_str() );
+
+  _visit_depth++;
+  if(m->_matcher->_pre_notif) {
+    m->_matcher->_pre_notif(m);
+  }
+  for(auto& child_match : m->_children) {
+    _visitMatch(child_match);
+  }
+  if(m->_matcher->_post_notif) {
+    m->_matcher->_post_notif(m);
+  }
+  _visit_depth--;
+}
+
 
 //////////////////////////////////////////////////////////////////////
 

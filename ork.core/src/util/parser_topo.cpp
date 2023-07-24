@@ -42,6 +42,7 @@ matcher_ptr_t Parser::optional(matcher_ptr_t sub_matcher, std::string name) {
   }
   ///////////////////////////////////////////////////////
   auto matcher       = declare(name);
+  matcher->_info = FormatString("OPT");
   ///////////////////////////////////////////////////////
   matcher->_genmatch_fn = [=](match_attempt_ptr_t attempt) -> match_ptr_t {
     auto the_opt_attempt = attempt->asShared<OptionalAttempt>();
@@ -217,6 +218,7 @@ matcher_ptr_t Parser::sequence(std::vector<matcher_ptr_t> sub_matchers, std::str
   }
   ///////////////////////////////////////////////////////
   auto matcher = declare(name);
+  matcher->_info = FormatString("SEQ");
   ///////////////////////////////////////////////////////
   _sequence(matcher, sub_matchers);
   ///////////////////////////////////////////////////////
@@ -237,6 +239,7 @@ matcher_ptr_t Parser::group(std::vector<matcher_ptr_t> matchers, std::string nam
   }
   ///////////////////////////////////////////////////////
   auto matcher       = declare(name);
+  matcher->_info = FormatString("GRP");
   ///////////////////////////////////////////////////////
   matcher->_genmatch_fn = [=](match_attempt_ptr_t attempt) -> match_ptr_t {
     auto the_grp_attempt = attempt->asShared<GroupAttempt>();
@@ -287,6 +290,7 @@ matcher_ptr_t Parser::oneOf(std::vector<matcher_ptr_t> matchers, std::string nam
   }
   ///////////////////////////////////////////////////////
   auto matcher       = declare(name);
+  matcher->_info = FormatString("1OF");
   ///////////////////////////////////////////////////////
   matcher->_genmatch_fn = [=](match_attempt_ptr_t attempt) -> match_ptr_t {
     auto the_oof_attempt = attempt->asShared<OneOfAttempt>();
@@ -336,6 +340,7 @@ matcher_ptr_t Parser::nOrMore(matcher_ptr_t sub_matcher, size_t minMatches, std:
   }
   //////////////////////////////////////////////////////
   auto matcher       = declare(name);
+  matcher->_info = FormatString("NOM%zu", minMatches);
   //////////////////////////////////////////////////////
   matcher->_genmatch_fn = [=](match_attempt_ptr_t attempt) -> match_ptr_t {
     auto the_nom_attempt = attempt->asShared<NOrMoreAttempt>();
@@ -447,6 +452,7 @@ matcher_ptr_t Parser::zeroOrMore(matcher_ptr_t matcher, std::string name, bool m
 
 matcher_ptr_t Parser::matcherForTokenClassID(uint64_t tokclass, std::string name) {
   auto matcher       = declare(name);
+  matcher->_info = FormatString("TOKCLASS<%zx>", tokclass);
   ///////////////////////////////////////////////////////
   matcher->_genmatch_fn = [=](match_attempt_ptr_t attempt) -> match_ptr_t {
     auto class_match_attempt = attempt->asShared<ClassMatchAttempt>();
@@ -491,6 +497,7 @@ matcher_ptr_t Parser::matcherForWord(std::string word, std::string name) {
   }
   ///////////////////////////////////////////////////////
   auto matcher       = declare(name);
+  matcher->_info = FormatString("WORD<%s>", word.c_str());
   ///////////////////////////////////////////////////////
   matcher->_genmatch_fn = [=](match_attempt_ptr_t attempt) -> match_ptr_t {
     auto word_match_attempt = attempt->asShared<WordMatchAttempt>();

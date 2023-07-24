@@ -330,6 +330,8 @@ struct Parser {
   match_attempt_ptr_t leafMatch(matcher_ptr_t matcher);
   void popMatch();
 
+  void _visitMatch(match_ptr_t m);
+
   std::unordered_set<matcher_ptr_t> _matchers;
   std::unordered_map<std::string, matcher_ptr_t> _matchers_by_name;
   std::vector<match_attempt_ptr_t> _match_stack;
@@ -342,6 +344,7 @@ struct Parser {
   bool _DEBUG_INFO     = false;
   std::string _name;
   MatchAttemptContext _matchattemptctx;
+  size_t _visit_depth = 0;
 };
 
 //////////////////////////////////////////////////////////////
