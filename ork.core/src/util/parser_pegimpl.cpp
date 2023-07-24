@@ -186,7 +186,6 @@ matcher_ptr_t ExprKWID::createMatcher(std::string named) { // final
       return false;
     }
     matcher->_genmatch_fn = [=](match_attempt_ptr_t attempt) -> match_ptr_t {
-      OrkAssert(false);
       return submatcher->_genmatch_fn(attempt);
     };
     matcher->_attempt_match_fn = [=](matcher_ptr_t par_matcher,                        //

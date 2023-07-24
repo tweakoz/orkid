@@ -397,8 +397,8 @@ match_ptr_t Parser::match(matcher_ptr_t topmatcher, scannerlightview_constptr_t 
     printf( "xxx : match tree\n" );
     printf( "xxx : #############################################################\n" );
 
-
     std::stack<match_ptr_t> dfs_stack;
+    std::stack<match_ptr_t> post_notif_stack;
     dfs_stack.push(root_match);
     depth_stack.push(0);
     while(!dfs_stack.empty()) {
@@ -413,7 +413,7 @@ match_ptr_t Parser::match(matcher_ptr_t topmatcher, scannerlightview_constptr_t 
       if(current_match->_matcher->_post_notif) {
         suffix += " HAS_POST_NOTIF ";
       }
-      printf( "xxx : %s current_match<%p:%s> numc<%zu> %s\n", indentstr.c_str(), (void*) current_match.get(), current_match->_matcher->_name.c_str(), current_match->_children.size(), suffix.c_str() );
+      printf("xxx : %s current_match<%p:%s> numc<%zu> %s\n", indentstr.c_str(), (void*) current_match.get(), current_match->_matcher->_name.c_str(), current_match->_children.size(), suffix.c_str());
       dfs_stack.pop();
       depth_stack.pop();
       for(auto& child_match : current_match->_children) {
@@ -421,9 +421,15 @@ match_ptr_t Parser::match(matcher_ptr_t topmatcher, scannerlightview_constptr_t 
         depth_stack.push(current_depth+1);
       }
       if(current_match->_matcher->_post_notif) {
-        current_match->_matcher->_post_notif(current_match);
+        post_notif_stack.push(current_match);
       }
     }
+    while (!post_notif_stack.empty()) {
+      auto current_match = post_notif_stack.top();
+      current_match->_matcher->_post_notif(current_match);
+      post_notif_stack.pop();
+    }
+
 
     printf( "xxx : #############################################################\n" );
 
