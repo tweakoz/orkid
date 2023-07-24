@@ -751,12 +751,19 @@ void PegImpl::loadPEGGrammar() { //
       });
   auto parser_rule = _peg_parser->sequence({kworid, left_arrow, rule_expression}, "parser_rule");
 
+  parser_rule->_pre_notif = [=](match_ptr_t match) {
+    auto rulename = match->asShared<Sequence>()->_items[0]->asShared<ClassMatch>()->_token->text;
+    auto ruleseq = match->asShared<Sequence>()->_items[2];
+  };
+
   parser_rule->_post_notif = [=](match_ptr_t match) {
     auto rulename = match->asShared<Sequence>()->_items[0]->asShared<ClassMatch>()->_token->text;
+    auto ruleseq = match->asShared<Sequence>()->_items[2];
+
     auto ast_rule = std::make_shared<AST::ParserRule>(_user_parser, rulename);
     _current_rule = ast_rule;
     _ast_buildstack.push_back(ast_rule);
-    auto expr_ast_node = _onExpression(match->asShared<Sequence>()->_items[2], rulename);
+    auto expr_ast_node = _onExpression(ruleseq, rulename);
     _ast_buildstack.pop_back();
     ast_rule->_expression        = expr_ast_node;
     _user_parser_rules[rulename] = ast_rule;
