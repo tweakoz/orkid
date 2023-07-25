@@ -79,8 +79,9 @@ std::string parser_spec = R"xxx(
     argument_decl <- [ datatype kw_or_id opt{COMMA} ]
     variableDeclaration <- [datatype kw_or_id]
     variableReference <- kw_or_id
-    funcname <- kw_or_idnamespace impl {
+    funcname <- kw_or_id
 
+    product <- [ primary opt{ [star primary] } ]
 
     sum <- sel{
         [ product plus product ] : "add"
@@ -139,7 +140,7 @@ template <typename T> std::shared_ptr<T> ast_get(match_ptr_t m) {
 struct ShadLangParser : public Parser {
 
   ShadLangParser() {
-    _name              = "p2";
+    _name              = "shadlang";
     _DEBUG_MATCH       = true;
     _DEBUG_INFO        = true;
     auto scanner_match = this->loadPEGScannerSpec(scanner_spec);
@@ -374,7 +375,7 @@ struct ShadLangParser : public Parser {
 
   /////////////////////////////////////////////////////////////////
 
-  match_ptr_t parseString(std::string parse_str) {
+  SHAST::fndefs_ptr_t parseString(std::string parse_str) {
 
     _scanner->scanString(parse_str);
     _scanner->discardTokensOfClass(uint64_t(TokenClass::WHITESPACE));
@@ -396,7 +397,7 @@ struct ShadLangParser : public Parser {
     printf( "///////////////////////////////\n");
     _dumpAstTreeVisitor(ast_top, 0);
     printf( "///////////////////////////////\n");
-    return match;
+    return std::dynamic_pointer_cast<SHAST::FunctionDefs>(ast_top);
   }
 
   /////////////////////////////////////////////////////////////////
@@ -409,7 +410,8 @@ struct ShadLangParser : public Parser {
 
 SHAST::fndefs_ptr_t parse_fndefs( const std::string& shader_text ){
     auto parser = std::make_shared<impl::ShadLangParser>();
-    auto match = parser->parseString(shader_text);
+    auto topast = parser->parseString(shader_text);
+    return topast;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////

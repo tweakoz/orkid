@@ -155,6 +155,8 @@ matcher_ptr_t ExprKWID::createMatcher(std::string named) { // final
   logchan_rulespec2->log("CREATE EKWIDPXY(%s) kwid<%s> astnode<%p> toprule<%s>", named.c_str(), _kwid.c_str(), this, top_rule->_name.c_str() );
   /////////////////////////////////////////////////////////
 
+  OrkAssert(_kwid != "kw_or_idnamespace");
+
   auto it_scanner = pegimpl->_user_scanner_matchers_by_name.find(_kwid);
   if(it_scanner!=pegimpl->_user_scanner_matchers_by_name.end()){
     auto submatcher = it_scanner->second;
@@ -551,6 +553,8 @@ AST::expr_kwid_ptr_t PegImpl::_onEXPRKWID(match_ptr_t match) {
   auto indentstr  = std::string(indent * 2, ' ');
   auto classmatch = match->asShared<ClassMatch>();
   kwid_out->_kwid = classmatch->_token->text;
+  OrkAssert(kwid_out->_kwid != "kw_or_idnamespace");
+
   logchan_rulespec->log("%s_onEXPRKWID<%s> KWID<%s>", indentstr.c_str(), match->_matcher->_name.c_str(), kwid_out->_kwid.c_str());
   _retain_astnodes.insert(kwid_out);
   _ast_buildstack.pop_back();
