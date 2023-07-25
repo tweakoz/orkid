@@ -124,6 +124,12 @@ void Expression::do_visit(astvisitctx_ptr_t visitctx) { // final
   visit(_expr_selected, visitctx);
 }
 matcher_ptr_t Expression::createMatcher(std::string named) { // final
+
+  if(_expr_name!=""){
+    printf( "XYZ named<%s> exprname<%s>\n", named.c_str(), _expr_name.c_str() );
+    named = _expr_name;
+  }
+
   return _expr_selected->createMatcher(named);
 }
 ////////////////////////////////////////////////////////////////////////
@@ -163,7 +169,7 @@ matcher_ptr_t ExprKWID::createMatcher(std::string named) { // final
     return submatcher;
   }
 
-  auto matcher = _user_parser->declare(_kwid);
+  auto matcher = _user_parser->declare(_kwid+".proxy");
   matcher->_info = FormatString("EKWIDPXY<%s>", _kwid.c_str());
 
   matcher->_on_link = [=]() ->bool {
@@ -176,6 +182,7 @@ matcher_ptr_t ExprKWID::createMatcher(std::string named) { // final
     if (it_matcher != pegimpl->_user_parser->_matchers_by_name.end()) {
       submatcher = it_matcher->second;
       logchan_rulespec2->log("  KWID SUBMATCHER<%p:%s>", (void*) submatcher.get(), submatcher->_name.c_str() );
+      OrkAssert(submatcher != matcher);
     }
     else {
       logchan_rulespec2->log("  KWID NO SUBMATCHER" );
@@ -215,7 +222,7 @@ void OneOrMore::do_visit(astvisitctx_ptr_t visitctx) { // final
 }
 matcher_ptr_t OneOrMore::createMatcher(std::string named) { // final
   auto expr0   = _subexpressions[0];
-  auto matcher = _user_parser->oneOrMore(expr0->createMatcher(named));
+  auto matcher = _user_parser->oneOrMore(expr0->createMatcher(named+".sub"),named);
   matcher->_uservars.set<AstNode*>("impl.astnode", this);
   return matcher;
 }
@@ -235,7 +242,7 @@ void ZeroOrMore::do_visit(astvisitctx_ptr_t visitctx) { // final
   visit(_subexpression, visitctx);
 }
 matcher_ptr_t ZeroOrMore::createMatcher(std::string named) { // final
-  auto matcher = _user_parser->zeroOrMore(_subexpression->createMatcher(named));
+  auto matcher = _user_parser->zeroOrMore(_subexpression->createMatcher(named+".sub"),named);
   matcher->_uservars.set<AstNode*>("impl.astnode", this);
   return matcher;
 }
@@ -260,10 +267,13 @@ void Select::do_visit(astvisitctx_ptr_t visitctx) { // final
 }
 matcher_ptr_t Select::createMatcher(std::string named) { // final
   std::vector<matcher_ptr_t> sub_matchers;
+  size_t index = 0;
   for (auto subexp : _subexpressions) {
-    sub_matchers.push_back(subexp->createMatcher(named));
+    auto subname = FormatString("%s.sub.%zu",named.c_str(),index);
+    sub_matchers.push_back(subexp->createMatcher(subname));
+    index++;
   }
-  return _user_parser->oneOf(sub_matchers);
+  return _user_parser->oneOf(sub_matchers,named);
 }
 ////////////////////////////////////////////////////////////////////////
 Optional::Optional(Parser* user_parser)
@@ -281,8 +291,8 @@ void Optional::do_visit(astvisitctx_ptr_t visitctx) { // final
   visit(_subexpression, visitctx);
 }
 matcher_ptr_t Optional::createMatcher(std::string named) { // final
-  auto subexp  = _subexpression->createMatcher(named);
-  auto matcher = _user_parser->optional(subexp);
+  auto subexp  = _subexpression->createMatcher(named+".sub");
+  auto matcher = _user_parser->optional(subexp,named);
   matcher->_uservars.set<AstNode*>("impl.astnode", this);
   return matcher;
 }
@@ -307,10 +317,13 @@ void Sequence::do_visit(astvisitctx_ptr_t visitctx) { // final
 }
 matcher_ptr_t Sequence::createMatcher(std::string named) { // final
   std::vector<matcher_ptr_t> sub_matchers;
+  size_t index = 0;
   for (auto subexp : _subexpressions) {
-    sub_matchers.push_back(subexp->createMatcher(named));
+    auto subname = FormatString("%s.sub%d",named.c_str(),index);
+    sub_matchers.push_back(subexp->createMatcher(subname));
+    index++;
   }
-  auto matcher = _user_parser->sequence(sub_matchers);
+  auto matcher = _user_parser->sequence(sub_matchers,named);
   matcher->_uservars.set<AstNode*>("impl.astnode", this);
   return matcher;
 }
@@ -335,10 +348,13 @@ void Group::do_visit(astvisitctx_ptr_t visitctx) { // final
 }
 matcher_ptr_t Group::createMatcher(std::string named) { // final
   std::vector<matcher_ptr_t> sub_matchers;
+  size_t index = 0;
   for (auto subexp : _subexpressions) {
-    sub_matchers.push_back(subexp->createMatcher(named));
+    auto subname = FormatString("%s.sub%d",named.c_str(),index);
+    sub_matchers.push_back(subexp->createMatcher(subname));
+    index++;
   }
-  auto matcher = _user_parser->group(sub_matchers);
+  auto matcher = _user_parser->group(sub_matchers,named);
   matcher->_uservars.set<AstNode*>("impl.astnode", this);
   return matcher;
 }
@@ -556,6 +572,7 @@ AST::expression_ptr_t PegImpl::_onExpression(match_ptr_t match, std::string name
   if (expression_name) {
     expression_name = expression_name->asShared<Sequence>()->_items[1];
     auto xname      = expression_name->asShared<ClassMatch>()->_token->text;
+    expr_out->_expr_name = xname;
     logchan_rulespec->log(
         "%s_onExpression<%s> len%zu>  named<%s>", indentstr.c_str(), match->_matcher->_name.c_str(), expression_len, xname.c_str());
   } else {

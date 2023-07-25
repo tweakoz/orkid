@@ -67,10 +67,11 @@ void Parser::_proxy(matcher_ptr_t par_matcher, matcher_ptr_t sub_matcher){
     } else {
       match_attempt = nullptr;
     }
+    popMatch();
     return match_attempt;
   };
-  par_matcher->_pre_notif        = sub_matcher->_pre_notif;
-  par_matcher->_post_notif        = sub_matcher->_post_notif;
+  //par_matcher->_pre_notif        = sub_matcher->_pre_notif;
+  //par_matcher->_post_notif        = sub_matcher->_post_notif;
 }
 
 //////////////////////////////////////////////////////////////////////

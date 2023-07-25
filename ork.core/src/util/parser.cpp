@@ -307,6 +307,18 @@ match_attempt_ptr_t Parser::pushMatch(matcher_ptr_t matcher){
   rval->_parent = parent;
   if(parent){
     parent->_children.push_back(rval);
+    if(parent->_matcher->_name == "sequence-6"){
+      printf( "xxx : YO\n");
+      //OrkBreak();
+    }
+    if(parent->_matcher->_name == "datatype"){
+      printf( "xxx : YO\n");
+      static int icount = 0;
+      icount++;
+      if(icount==2){
+        OrkBreak();
+      }
+    }
     printf( "xxx : PUSHMATCH parent<%p:%s> rval<%p:%s>\n", (void*)parent.get(), parent->_matcher->_name.c_str(), (void*)rval.get(), matcher->_name.c_str() );
   }
   else{
@@ -412,10 +424,10 @@ void Parser::_visitMatch(match_ptr_t m){
   auto indentstr = std::string(_visit_depth * 2, ' ');
   std::string suffix;
   if(m->_matcher->_pre_notif) {
-    suffix = " prenotif ";
+    suffix += " prenotif";
   }
   if(m->_matcher->_post_notif) {
-    suffix = " postnotif ";
+    suffix += " postnotif";
   }
 
   printf( "xxx : %s match<%p:%s:%s> numc<%zu> %s\n", //
