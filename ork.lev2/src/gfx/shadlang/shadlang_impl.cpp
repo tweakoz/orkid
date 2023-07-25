@@ -57,16 +57,28 @@ std::string scanner_spec = R"xxx(
     FUNCTION            -< "function" >-
     KW_FLOAT            -< "float" >-
     KW_INT              -< "int" >-
+    KW_VEC2             -< "vec2" >-
+    KW_VEC3             -< "vec3" >-
+    KW_VEC4             -< "vec4" >-
+    KW_MAT2             -< "mat2" >-
+    KW_MAT3             -< "mat3" >-
+    KW_MAT4             -< "mat4" >-
     KW_VTXSHADER        -< "vertex_shader" >-
     KW_FRGSHADER        -< "fragment_shader" >-
     KW_COMSHADER        -< "compute_shader" >-
+    KW_UNISET           -< "uniform_set" >-
+    KW_UNIBLK           -< "uniform_block" >-
+    KW_VTXIFACE         -< "vertex_interface" >-
+    KW_INPUTS           -< "inputs" >-
+    KW_OUTPUTS          -< "outputs" >-
+    KW_SAMP2D           -< "sampler2D" >-
     KW_OR_ID            -< "[a-zA-Z_][a-zA-Z0-9_]*" >-
 )xxx";
 
 ///////////////////////////////////////////////////////////////////////////////
 
 std::string parser_spec = R"xxx(
-    datatype -< sel{KW_FLOAT KW_INT} >-
+    datatype -< sel{KW_FLOAT KW_INT KW_VEC2 KW_VEC3 KW_VEC4 KW_MAT2 KW_MAT3 KW_MAT4 KW_SAMP2D} >-
     number -< sel{FLOATING_POINT INTEGER} >-
     kw_or_id -< KW_OR_ID >-
     l_paren -< L_PAREN >-
@@ -83,11 +95,17 @@ std::string parser_spec = R"xxx(
     kw_vtxshader -< KW_VTXSHADER >-
     kw_frgshader -< KW_FRGSHADER >-
     kw_comshader -< KW_COMSHADER >-
+    kw_uniset    -< KW_UNISET >-
+    kw_uniblk    -< KW_UNIBLK >-
+    kw_vtxiface  -< KW_VTXIFACE >-
+    kw_inputs    -< KW_INPUTS >-
+    kw_outputs   -< KW_OUTPUTS >-
         
     argumentDeclaration -< [ datatype kw_or_id opt{COMMA} ] >-
     variableDeclaration -< [datatype kw_or_id] >-
-    variableReference -< kw_or_id >-
+    uniformDeclaration -< [datatype kw_or_id semicolon] >-
     funcname -< kw_or_id >-
+    variableReference -< kw_or_id >-
     inh_list_item -< [ colon kw_or_id ] >-
     inh_list -< zom{ inh_list_item } >-
 
@@ -119,14 +137,17 @@ std::string parser_spec = R"xxx(
         semicolon
     } >-
 
+    arg_list -< zom{ argumentDeclaration } >-
+    statement_list -< zom{ statement } >-
+
     fn_def -< [
         kw_function
         funcname
         l_paren
-        zom{argumentDeclaration} : "args"
+        arg_list : "args"
         r_paren
         l_curly
-        zom{statement} : "fn_statements"
+        statement_list : "fn_statements"
         r_curly
     ] >-
     
@@ -135,7 +156,7 @@ std::string parser_spec = R"xxx(
         funcname
         zom{inh_list_item} : "vtx_dependencies"
         l_curly
-        zom{statement} : "vtx_statements"
+        statement_list : "vtx_statements"
         r_curly
     ] >-
 
@@ -144,7 +165,7 @@ std::string parser_spec = R"xxx(
         funcname
         zom{ inh_list_item } : "frg_dependencies"
         l_curly
-        zom{ statement } : "frg_statements"
+        statement_list : "frg_statements"
         r_curly
     ] >-
 
@@ -153,11 +174,54 @@ std::string parser_spec = R"xxx(
         funcname
         zom{ inh_list_item } : "com_dependencies"
         l_curly
-        zom{ statement } : "com_statements"
+        statement_list : "com_statements"
         r_curly
     ] >-
 
-    translatable -< [ sel{ fn_def vtx_shader frg_shader com_shader } ] >-
+    uni_set -< [
+      kw_uniset
+      kw_or_id
+      l_curly
+      zom{ uniformDeclaration } : "uniset_decls"
+      r_curly
+    ] >-
+
+    uni_blk -< [
+      kw_uniblk
+      kw_or_id
+      l_curly
+      zom{ uniformDeclaration } : "uniblk_decls"
+      r_curly
+    ] >-
+
+    iface_input -< [ datatype kw_or_id opt{ [colon kw_or_id] } semicolon ] >-
+    iface_output -< [ datatype kw_or_id semicolon ] >-
+
+    iface_inputs -< [
+      kw_inputs
+      l_curly
+      zom{ iface_input } : "inputlist"
+      r_curly
+    ] >-
+
+    iface_outputs -< [
+      kw_outputs
+      l_curly
+      zom{ iface_output } : "outputlist"
+      r_curly
+    ] >-
+
+    vtx_iface -< [
+      kw_vtxiface
+      kw_or_id
+      zom{ inh_list_item } : "com_dependencies"
+      l_curly
+      iface_inputs
+      iface_outputs
+      r_curly
+    ] >-
+
+    translatable -< sel{ fn_def vtx_shader frg_shader com_shader uni_set uni_blk vtx_iface } >-
 
     translation_unit -< zom{ translatable } >-
 
@@ -333,6 +397,16 @@ struct ShadLangParser : public Parser {
       ast_node->_name = FormatString("ArgDecl<%s %s>", tok->text.c_str(), ast_node->_variable_name.c_str() );
     });
     ///////////////////////////////////////////////////////////
+    onPost("arg_list", [=](match_ptr_t match) {
+      auto seq     = match->asShared<Sequence>();
+      auto funcdef = ast_create<SHAST::ArgumentList>(match);
+    });
+    ///////////////////////////////////////////////////////////
+    onPost("statement_list", [=](match_ptr_t match) {
+      auto seq     = match->asShared<Sequence>();
+      auto funcdef = ast_create<SHAST::StatementList>(match);
+    });
+    ///////////////////////////////////////////////////////////
     onPost("fn_def", [=](match_ptr_t match) {
       auto seq     = match->asShared<Sequence>();
       auto funcdef = ast_create<SHAST::FunctionDef>(match);
@@ -343,7 +417,7 @@ struct ShadLangParser : public Parser {
       //auto fn_name = fn_name_proxy->followAsShared<ClassMatch>();
       funcdef->_name = fn_name->_token->text; //FormatString("FnDef<%s>", fn_name->_token->text.c_str() );
 
-      auto args    = seq->itemAsShared<NOrMore>(3);
+      /*auto args    = seq->itemAsShared<NOrMore>(3);
       auto stas    = seq->itemAsShared<NOrMore>(6);
 
       args->dump("args");
@@ -387,11 +461,75 @@ struct ShadLangParser : public Parser {
         }
         i++;
       }
+      */
       
     });
     ///////////////////////////////////////////////////////////
     onPost("vtx_shader", [=](match_ptr_t match) {
       auto ast_node = ast_create<SHAST::VertexShader>(match);
+      auto seq     = match->asShared<Sequence>();
+      auto fn_name = seq->_items[1]->followImplAsShared<ClassMatch>();
+      ast_node->_name = fn_name->_token->text;
+    });
+    ///////////////////////////////////////////////////////////
+    onPost("uniformDeclaration", [=](match_ptr_t match) {
+      auto ast_node = ast_create<SHAST::UniformDecl>(match);
+      auto seq     = match->asShared<Sequence>();
+      auto fn_name = seq->_items[1]->followImplAsShared<ClassMatch>();
+      ast_node->_name = fn_name->_token->text;
+    });
+    ///////////////////////////////////////////////////////////
+    onPost("uni_set", [=](match_ptr_t match) {
+      auto ast_node = ast_create<SHAST::UniformSet>(match);
+      auto seq     = match->asShared<Sequence>();
+      auto fn_name = seq->_items[1]->followImplAsShared<ClassMatch>();
+      ast_node->_name = fn_name->_token->text;
+    });
+    ///////////////////////////////////////////////////////////
+    onPost("uni_blk", [=](match_ptr_t match) {
+      auto ast_node = ast_create<SHAST::UniformBlk>(match);
+      auto seq     = match->asShared<Sequence>();
+      auto fn_name = seq->_items[1]->followImplAsShared<ClassMatch>();
+      ast_node->_name = fn_name->_token->text;
+    });
+    ///////////////////////////////////////////////////////////
+    onPost("iface_input", [=](match_ptr_t match) {
+      auto ast_node = ast_create<SHAST::InterfaceInput>(match);
+      auto seq     = match->asShared<Sequence>();
+      auto fn_name = seq->_items[1]->followImplAsShared<ClassMatch>();
+      ast_node->_name = fn_name->_token->text;
+    });
+    ///////////////////////////////////////////////////////////
+    onPost("iface_output", [=](match_ptr_t match) {
+      auto ast_node = ast_create<SHAST::InterfaceOutput>(match);
+      auto seq     = match->asShared<Sequence>();
+      auto fn_name = seq->_items[1]->followImplAsShared<ClassMatch>();
+      ast_node->_name = fn_name->_token->text;
+    });
+    ///////////////////////////////////////////////////////////
+    onPost("iface_inputs", [=](match_ptr_t match) {
+      auto ast_node = ast_create<SHAST::InterfaceInputs>(match);
+      auto seq     = match->asShared<Sequence>();
+      auto fn_name = seq->_items[1]->followImplAsShared<ClassMatch>();
+      ast_node->_name = fn_name->_token->text;
+    });
+    ///////////////////////////////////////////////////////////
+    onPost("iface_outputs", [=](match_ptr_t match) {
+      auto ast_node = ast_create<SHAST::InterfaceOutputs>(match);
+      auto seq     = match->asShared<Sequence>();
+      auto fn_name = seq->_items[1]->followImplAsShared<ClassMatch>();
+      ast_node->_name = fn_name->_token->text;
+    });
+    ///////////////////////////////////////////////////////////
+    onPost("vtx_iface", [=](match_ptr_t match) {
+      auto ast_node = ast_create<SHAST::VertexInterface>(match);
+      auto seq     = match->asShared<Sequence>();
+      auto fn_name = seq->_items[1]->followImplAsShared<ClassMatch>();
+      ast_node->_name = fn_name->_token->text;
+    });
+    ///////////////////////////////////////////////////////////
+    onPost("inh_list_item", [=](match_ptr_t match) {
+      auto ast_node = ast_create<SHAST::Dependency>(match);
       auto seq     = match->asShared<Sequence>();
       auto fn_name = seq->_items[1]->followImplAsShared<ClassMatch>();
       ast_node->_name = fn_name->_token->text;

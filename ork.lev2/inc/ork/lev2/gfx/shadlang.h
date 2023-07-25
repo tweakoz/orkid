@@ -188,6 +188,61 @@ struct TranslationUnit : public AstNode { //
   }
   std::map<std::string,translatable_ptr_t> _translatables;
 };
+struct UniformDecl : public AstNode { //
+  std::string desc() const final {
+    return FormatString("UniformDecl(%s)", _name.c_str() );
+  }
+};
+struct UniformSet : public AstNode { //
+  std::string desc() const final {
+    return FormatString("UniformSet(%s)", _name.c_str() );
+  }
+};
+struct UniformBlk : public AstNode { //
+  std::string desc() const final {
+    return FormatString("UniformBlk(%s)", _name.c_str() );
+  }
+};
+struct ArgumentList : public AstNode { //
+  std::string desc() const final {
+    return FormatString("ArgumentList(%s)", _name.c_str() );
+  }
+};
+struct StatementList : public AstNode { //
+  std::string desc() const final {
+    return FormatString("StatementList(%s)", _name.c_str() );
+  }
+};
+struct InterfaceInput : public AstNode { //
+  std::string desc() const final {
+    return FormatString("InterfaceInput(%s)", _name.c_str() );
+  }
+};
+struct InterfaceOutput : public AstNode { //
+  std::string desc() const final {
+    return FormatString("InterfaceOutput(%s)", _name.c_str() );
+  }
+};
+struct InterfaceInputs : public AstNode { //
+  std::string desc() const final {
+    return FormatString("InterfaceInputs(%s)", _name.c_str() );
+  }
+};
+struct InterfaceOutputs : public AstNode { //
+  std::string desc() const final {
+    return FormatString("InterfaceOutputs(%s)", _name.c_str() );
+  }
+};
+struct VertexInterface : public AstNode { //
+  std::string desc() const final {
+    return FormatString("VertexInterface(%s)", _name.c_str() );
+  }
+};
+struct Dependency : public AstNode { //
+  std::string desc() const final {
+    return FormatString("Dependency(%s)", _name.c_str() );
+  }
+};
 struct Shader : public Translatable { //
 };
 struct VertexShader : public Shader { //

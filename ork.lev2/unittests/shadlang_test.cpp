@@ -14,6 +14,28 @@ TEST(shlang1) {
 
   auto shader_text =
       R"(
+        uniform_set ublock_vtx { //
+          mat4 mvp;
+          mat4 mvp_l;
+          mat4 mvp_r;
+        }
+        uniform_block ublock_frg {
+          vec4 ModColor;
+          sampler2D ColorMap;
+        }
+
+        vertex_interface iface_vdefault : ublock_vtx {
+          inputs {
+            vec4 position : POSITION;
+            vec4 vtxcolor : COLOR0;
+            vec2 uv0 : TEXCOORD0;
+            vec2 uv1 : TEXCOORD1;
+          }
+          outputs {
+            vec4 frg_clr;
+            vec2 frg_uv;
+          }
+        }
         ///////////////////
         // hello world
         ///////////////////
