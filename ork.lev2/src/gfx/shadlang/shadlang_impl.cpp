@@ -69,16 +69,19 @@ std::string scanner_spec = R"xxx(
     KW_UNISET           -< "uniform_set" >-
     KW_UNIBLK           -< "uniform_block" >-
     KW_VTXIFACE         -< "vertex_interface" >-
+    KW_FRGIFACE         -< "fragment_interface" >-
     KW_INPUTS           -< "inputs" >-
     KW_OUTPUTS          -< "outputs" >-
+    KW_SAMP1D           -< "sampler1D" >-
     KW_SAMP2D           -< "sampler2D" >-
+    KW_SAMP3D           -< "sampler3D" >-
     KW_OR_ID            -< "[a-zA-Z_][a-zA-Z0-9_]*" >-
 )xxx";
 
 ///////////////////////////////////////////////////////////////////////////////
 
 std::string parser_spec = R"xxx(
-    datatype -< sel{KW_FLOAT KW_INT KW_VEC2 KW_VEC3 KW_VEC4 KW_MAT2 KW_MAT3 KW_MAT4 KW_SAMP2D} >-
+    datatype -< sel{KW_FLOAT KW_INT KW_VEC2 KW_VEC3 KW_VEC4 KW_MAT2 KW_MAT3 KW_MAT4 KW_SAMP1D KW_SAMP2D KW_SAMP3D} >-
     number -< sel{FLOATING_POINT INTEGER} >-
     kw_or_id -< KW_OR_ID >-
     l_paren -< L_PAREN >-
@@ -98,6 +101,7 @@ std::string parser_spec = R"xxx(
     kw_uniset    -< KW_UNISET >-
     kw_uniblk    -< KW_UNIBLK >-
     kw_vtxiface  -< KW_VTXIFACE >-
+    kw_frgiface  -< KW_FRGIFACE >-
     kw_inputs    -< KW_INPUTS >-
     kw_outputs   -< KW_OUTPUTS >-
         
@@ -221,7 +225,17 @@ std::string parser_spec = R"xxx(
       r_curly
     ] >-
 
-    translatable -< sel{ fn_def vtx_shader frg_shader com_shader uni_set uni_blk vtx_iface } >-
+    frg_iface -< [
+      kw_frgiface
+      kw_or_id
+      zom{ inh_list_item } : "com_dependencies"
+      l_curly
+      iface_inputs
+      iface_outputs
+      r_curly
+    ] >-
+
+    translatable -< sel{ fn_def vtx_shader frg_shader com_shader uni_set uni_blk vtx_iface frg_iface } >-
 
     translation_unit -< zom{ translatable } >-
 
@@ -472,6 +486,20 @@ struct ShadLangParser : public Parser {
       ast_node->_name = fn_name->_token->text;
     });
     ///////////////////////////////////////////////////////////
+    onPost("frg_shader", [=](match_ptr_t match) {
+      auto ast_node = ast_create<SHAST::FragmentShader>(match);
+      auto seq     = match->asShared<Sequence>();
+      auto fn_name = seq->_items[1]->followImplAsShared<ClassMatch>();
+      ast_node->_name = fn_name->_token->text;
+    });
+    ///////////////////////////////////////////////////////////
+    onPost("com_shader", [=](match_ptr_t match) {
+      auto ast_node = ast_create<SHAST::ComputeShader>(match);
+      auto seq     = match->asShared<Sequence>();
+      auto fn_name = seq->_items[1]->followImplAsShared<ClassMatch>();
+      ast_node->_name = fn_name->_token->text;
+    });
+    ///////////////////////////////////////////////////////////
     onPost("uniformDeclaration", [=](match_ptr_t match) {
       auto ast_node = ast_create<SHAST::UniformDecl>(match);
       auto seq     = match->asShared<Sequence>();
@@ -523,6 +551,13 @@ struct ShadLangParser : public Parser {
     ///////////////////////////////////////////////////////////
     onPost("vtx_iface", [=](match_ptr_t match) {
       auto ast_node = ast_create<SHAST::VertexInterface>(match);
+      auto seq     = match->asShared<Sequence>();
+      auto fn_name = seq->_items[1]->followImplAsShared<ClassMatch>();
+      ast_node->_name = fn_name->_token->text;
+    });
+    ///////////////////////////////////////////////////////////
+    onPost("frg_iface", [=](match_ptr_t match) {
+      auto ast_node = ast_create<SHAST::FragmentInterface>(match);
       auto seq     = match->asShared<Sequence>();
       auto fn_name = seq->_items[1]->followImplAsShared<ClassMatch>();
       ast_node->_name = fn_name->_token->text;

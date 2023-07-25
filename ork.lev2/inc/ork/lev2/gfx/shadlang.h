@@ -225,17 +225,22 @@ struct InterfaceOutput : public AstNode { //
 };
 struct InterfaceInputs : public AstNode { //
   std::string desc() const final {
-    return FormatString("InterfaceInputs(%s)", _name.c_str() );
+    return FormatString("InterfaceInputs" );
   }
 };
 struct InterfaceOutputs : public AstNode { //
   std::string desc() const final {
-    return FormatString("InterfaceOutputs(%s)", _name.c_str() );
+    return FormatString("InterfaceOutputs" );
   }
 };
 struct VertexInterface : public AstNode { //
   std::string desc() const final {
     return FormatString("VertexInterface(%s)", _name.c_str() );
+  }
+};
+struct FragmentInterface : public AstNode { //
+  std::string desc() const final {
+    return FormatString("FragmentInterface(%s)", _name.c_str() );
   }
 };
 struct Dependency : public AstNode { //
