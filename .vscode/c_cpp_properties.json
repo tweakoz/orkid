@@ -24,6 +24,7 @@
               "ENABLE_PORTAUDIO",
               "ENABLE_IGL",
               "ENABLE_OPENVR",
+              "USE_ORKSL_LANG",
             ],
             "compilerPath": "/usr/bin/clang",
             "cStandard": "c17",

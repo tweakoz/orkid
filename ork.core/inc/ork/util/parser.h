@@ -87,6 +87,37 @@ struct MatchAttempt {
   bool _terminal = false;
 };
 
+//////////////////////////////////////////////////////////////
+
+struct Match {
+  Match(match_attempt_constptr_t attempt);
+  using visit_fn_t = std::function<void(int, const Match*)>;
+  void visit(int level, visit_fn_t) const;
+  void dump1(int indent) const;
+  bool matcherInStack(matcher_ptr_t matcher) const;
+  template <typename impl_t> std::shared_ptr<impl_t> asShared();
+  template <typename impl_t> std::shared_ptr<impl_t> makeShared();
+  template <typename impl_t> attempt_cast_const<std::shared_ptr<impl_t>> tryAsShared() const;
+  template <typename impl_t> attempt_cast<impl_t> tryAs();
+  template <typename impl_t> attempt_cast_const<impl_t> tryAs() const;
+  template <typename impl_t> bool isShared() const;
+  template <typename user_t> std::shared_ptr<user_t> sharedForKey(std::string named);
+  template <typename user_t> std::shared_ptr<user_t> makeSharedForKey(std::string named);
+  template <typename user_t> void setSharedForKey(std::string named, std::shared_ptr<user_t> ptr);
+  template <typename impl_t> std::shared_ptr<impl_t> followImplAsShared();
+
+  match_attempt_constptr_t _attempt;
+  match_ptr_t _parent;
+  std::vector<match_ptr_t> _children;
+  matcher_ptr_t _matcher;
+  scannerlightview_ptr_t _view;
+  std::vector<matcher_ptr_t> _matcherstack;
+  svar32_t _impl;
+  svar32_t _impl2;
+  bool _terminal = false;
+  varmap::VarMap _uservars;
+};
+
 ///////////////////////////////////////////////////////////////////////////////
 
 struct Matcher {
@@ -125,29 +156,21 @@ struct MatchAttemptContext {
 //////////////////////////////////////////////////////////////
 
 struct SequenceAttempt {
-  template <typename impl_t> std::shared_ptr<impl_t> itemAsShared(int index) {
-    return _items[index]->asShared<impl_t>();
-  }
+  template <typename impl_t> std::shared_ptr<impl_t> itemAsShared(int index);
   std::vector<match_attempt_ptr_t> _items;
 };
 struct GroupAttempt {
-  template <typename impl_t> std::shared_ptr<impl_t> itemAsShared(int index) {
-    return _items[index]->asShared<impl_t>();
-  }
+  template <typename impl_t> std::shared_ptr<impl_t> itemAsShared(int index);
   std::vector<match_attempt_ptr_t> _items;
 };
 struct NOrMoreAttempt {
-  template <typename impl_t> std::shared_ptr<impl_t> itemAsShared(int index) {
-    return _items[index]->asShared<impl_t>();
-  }
+  template <typename impl_t> std::shared_ptr<impl_t> itemAsShared(int index);
   std::vector<match_attempt_ptr_t> _items;
   size_t _minmatches   = 0;
   bool _mustConsumeAll = false;
 };
 struct OptionalAttempt {
-  template <typename impl_t> std::shared_ptr<impl_t> asShared() {
-    return _subitem->asShared<impl_t>();
-  }
+  template <typename impl_t> std::shared_ptr<impl_t> asShared();
   match_attempt_ptr_t _subitem;
 };
 struct WordMatchAttempt {
@@ -158,15 +181,11 @@ struct ClassMatchAttempt {
   const Token* _token = nullptr;
 };
 struct OneOfAttempt {
-  template <typename impl_t> std::shared_ptr<impl_t> asShared() {
-    return _selected->asShared<impl_t>();
-  }
+  template <typename impl_t> std::shared_ptr<impl_t> asShared();
   match_attempt_ptr_t _selected;
 };
 struct ProxyAttempt {
-  template <typename impl_t> std::shared_ptr<impl_t> asShared() {
-    return _selected->asShared<impl_t>();
-  }
+  template <typename impl_t> std::shared_ptr<impl_t> asShared();
   match_attempt_ptr_t _selected;
 };
 
@@ -232,126 +251,6 @@ struct Proxy : public MatchItem {
 };
 
 //////////////////////////////////////////////////////////////
-
-struct Match {
-  Match(match_attempt_constptr_t attempt);
-  using visit_fn_t = std::function<void(int, const Match*)>;
-  void visit(int level, visit_fn_t) const;
-  void dump1(int indent) const;
-  bool matcherInStack(matcher_ptr_t matcher) const;
-  template <typename impl_t> std::shared_ptr<impl_t> asShared();
-  template <typename impl_t> std::shared_ptr<impl_t> makeShared();
-  template <typename impl_t> attempt_cast_const<std::shared_ptr<impl_t>> tryAsShared() const;
-  template <typename impl_t> attempt_cast<impl_t> tryAs();
-  template <typename impl_t> attempt_cast_const<impl_t> tryAs() const;
-  template <typename impl_t> bool isShared() const;
-  template <typename user_t> std::shared_ptr<user_t> sharedForKey(std::string named);
-  template <typename user_t> std::shared_ptr<user_t> makeSharedForKey(std::string named);
-  template <typename user_t> void setSharedForKey(std::string named, std::shared_ptr<user_t> ptr);
-  template <typename impl_t> std::shared_ptr<impl_t> followImplAsShared();
-
-  match_attempt_constptr_t _attempt;
-  match_ptr_t _parent;
-  std::vector<match_ptr_t> _children;
-  matcher_ptr_t _matcher;
-  scannerlightview_ptr_t _view;
-  std::vector<matcher_ptr_t> _matcherstack;
-  svar32_t _impl;
-  svar32_t _impl2;
-  bool _terminal = false;
-  varmap::VarMap _uservars;
-};
-
-//////////////////////////////////////////////////////////////
-
-template <typename impl_t> std::shared_ptr<impl_t> MatchAttempt::asShared() {
-  return _impl.getShared<impl_t>();
-}
-template <typename impl_t> std::shared_ptr<impl_t> MatchAttempt::makeShared() {
-  return _impl.makeShared<impl_t>();
-}
-template <typename impl_t> attempt_cast<std::shared_ptr<impl_t>> MatchAttempt::tryAsShared() {
-  return _impl.tryAsShared<impl_t>();
-}
-template <typename impl_t> attempt_cast<impl_t> MatchAttempt::tryAs() {
-  return _impl.tryAs<impl_t>();
-}
-template <typename impl_t> attempt_cast_const<impl_t> MatchAttempt::tryAs() const {
-  return _impl.tryAs<impl_t>();
-}
-template <typename impl_t> bool MatchAttempt::isShared() const {
-  return _impl.isShared<impl_t>();
-}
-
-//////////////////////////////////////////////////////////////
-
-template <typename impl_t> std::shared_ptr<impl_t> Match::asShared() {
-  return _impl.getShared<impl_t>();
-}
-template <typename impl_t> std::shared_ptr<impl_t> Match::makeShared() {
-  return _impl.makeShared<impl_t>();
-}
-template <typename impl_t> attempt_cast_const<std::shared_ptr<impl_t>> Match::tryAsShared() const {
-  return _impl.tryAsShared<impl_t>();
-}
-template <typename impl_t> attempt_cast<impl_t> Match::tryAs() {
-  return _impl.tryAs<impl_t>();
-}
-template <typename impl_t> attempt_cast_const<impl_t> Match::tryAs() const {
-  return _impl.tryAs<impl_t>();
-}
-template <typename impl_t> bool Match::isShared() const {
-  return _impl.isShared<impl_t>();
-}
-template <typename user_t> std::shared_ptr<user_t> Match::sharedForKey(std::string named) {
-  using ptr_t = std::shared_ptr<user_t>;
-  return _uservars.typedValueForKey<ptr_t>(named).value();
-}
-template <typename user_t> std::shared_ptr<user_t> Match::makeSharedForKey(std::string named) {
-  return _uservars.makeSharedForKey<user_t>(named);
-}
-template <typename user_t> void Match::setSharedForKey(std::string named, std::shared_ptr<user_t> ptr) {
-  return _uservars.set<std::shared_ptr<user_t>>(named);
-}
-
-template <typename impl_t> std::shared_ptr<impl_t> Match::followImplAsShared() {
-  if (auto as_proxy = _impl.tryAsShared<Proxy>()) {
-    return as_proxy.value()->followAsShared<impl_t>();
-  }
-  return _impl.tryAsShared<impl_t>().value();
-}
-
-//////////////////////////////////////////////////////////////
-
-template <typename impl_t> std::shared_ptr<impl_t> Sequence::itemAsShared(int index) {
-  return _items[index]->asShared<impl_t>();
-}
-
-template <typename impl_t> std::shared_ptr<impl_t> Group::itemAsShared(int index) {
-  return _items[index]->asShared<impl_t>();
-}
-
-template <typename impl_t> std::shared_ptr<impl_t> NOrMore::itemAsShared(int index) {
-  return _items[index]->asShared<impl_t>();
-}
-
-template <typename impl_t> std::shared_ptr<impl_t> Optional::asShared() {
-  return _subitem->asShared<impl_t>();
-}
-template <typename impl_t> std::shared_ptr<impl_t> OneOf::asShared() {
-  return _selected->asShared<impl_t>();
-}
-template <typename impl_t> std::shared_ptr<impl_t> Proxy::asShared() {
-  return _selected->asShared<impl_t>();
-}
-template <typename impl_t> std::shared_ptr<impl_t> Proxy::followAsShared() {
-  if (auto as_proxy = _selected->tryAsShared<Proxy>()) {
-    return as_proxy.value()->followAsShared<impl_t>();
-  }
-  return _selected->asShared<impl_t>();
-}
-
-//////////////////////////////////////////////////////////////
 // the parser
 //////////////////////////////////////////////////////////////
 
@@ -382,9 +281,7 @@ struct Parser {
 
   matcher_ptr_t findMatcherByName(const std::string& name) const;
 
-  template <typename T> matcher_ptr_t matcherForTokenClass(T tokclass, std::string name = "") {
-    return matcherForTokenClassID(uint64_t(tokclass), name);
-  }
+  template <typename T> matcher_ptr_t matcherForTokenClass(T tokclass, std::string name = "");
 
   match_ptr_t match(matcher_ptr_t topmatcher, scannerlightview_constptr_t topview);
   match_attempt_ptr_t _tryMatch(MatchAttemptContextItem& mci);

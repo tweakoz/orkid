@@ -10,7 +10,7 @@
 #include <stdarg.h>
 #include <ork/pch.h>
 #include <ork/file/file.h>
-#include <ork/util/parser.h>
+#include <ork/util/parser.inl>
 #include <ork/util/logger.h>
 #include <ork/kernel/string/deco.inl>
 
