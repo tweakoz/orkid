@@ -43,6 +43,7 @@ enum class TokenClass : uint64_t {
   CrcEnum(QUOTED_REGEX),
   CrcEnum(QUOTED_STRING),
   CrcEnum(LEFT_ARROW),
+  CrcEnum(RIGHT_ARROW),
 };
 
 ////////////////////////////////////////////////////////////////////////

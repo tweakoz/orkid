@@ -12,80 +12,80 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 std::string scanner_spec = R"xxx(
-    macro(M1)           <- "xyz"
-    MULTI_LINE_COMMENT  <- "\/\*([^*]|\*+[^/*])*\*+\/"
-    SINGLE_LINE_COMMENT <- "\/\/.*[\n\r]"
-    WHITESPACE          <- "\s+"
-    NEWLINE             <- "[\n\r]+"
-    EQUALS              <- "="
-    COMMA               <- ","
-    SEMICOLON           <- ";"
-    L_PAREN             <- "\("
-    R_PAREN             <- "\)"
-    L_CURLY             <- "\{"
-    R_CURLY             <- "\}"
-    STAR                <- "\*"
-    PLUS                <- "\+"
-    MINUS               <- "\-"
-    FLOATING_POINT      <- "-?(\d*\.?)(\d+)([eE][-+]?\d+)?"
-    INTEGER             <- "-?(\d+)"
-    FUNCTION            <- "function"
-    KW_FLOAT            <- "float"
-    KW_INT              <- "int"
-    KW_OR_ID            <- "[a-zA-Z_][a-zA-Z0-9_]*"
+    macro(M1)           -< "xyz" >-
+    MULTI_LINE_COMMENT  -< "\/\*([^*]|\*+[^/*])*\*+\/" >-
+    SINGLE_LINE_COMMENT -< "\/\/.*[\n\r]" >-
+    WHITESPACE          -< "\s+" >-
+    NEWLINE             -< "[\n\r]+" >-
+    EQUALS              -< "=" >-
+    COMMA               -< "," >-
+    SEMICOLON           -< ";" >-
+    L_PAREN             -< "\(" >-
+    R_PAREN             -< "\)" >-
+    L_CURLY             -< "\{" >-
+    R_CURLY             -< "\}" >-
+    STAR                -< "\*" >-
+    PLUS                -< "\+" >-
+    MINUS               -< "\-" >-
+    FLOATING_POINT      -< "-?(\d*\.?)(\d+)([eE][-+]?\d+)?" >-
+    INTEGER             -< "-?(\d+)" >-
+    FUNCTION            -< "function" >-
+    KW_FLOAT            -< "float" >-
+    KW_INT              -< "int" >-
+    KW_OR_ID            -< "[a-zA-Z_][a-zA-Z0-9_]*" >-
 )xxx";
 
 ///////////////////////////////////////////////////////////////////////////////
 
 std::string parser_spec = R"xxx(
-    datatype <- sel{KW_FLOAT KW_INT}
-    number <- sel{FLOATING_POINT INTEGER}
-    kw_or_id <- KW_OR_ID
-    l_paren <- L_PAREN
-    r_paren <- R_PAREN
-    plus <- PLUS
-    minus <- MINUS
-    star <- STAR
-    l_curly <- L_CURLY
-    r_curly <- R_CURLY
-    semicolon <- SEMICOLON
-    equals <- EQUALS
-    function <- FUNCTION
+    datatype -< sel{KW_FLOAT KW_INT} >-
+    number -< sel{FLOATING_POINT INTEGER} >-
+    kw_or_id -< KW_OR_ID >-
+    l_paren -< L_PAREN >-
+    r_paren -< R_PAREN >-
+    plus -< PLUS >-
+    minus -< MINUS >-
+    star -< STAR >-
+    l_curly -< L_CURLY >-
+    r_curly -< R_CURLY >-
+    semicolon -< SEMICOLON >-
+    equals -< EQUALS >-
+    function -< FUNCTION >-
         
-    argument_decl <- [ datatype kw_or_id opt{COMMA} ]
-    variableDeclaration <- [datatype kw_or_id]
-    variableReference <- kw_or_id
-    funcname <- kw_or_id
+    argument_decl -< [ datatype kw_or_id opt{COMMA} ] >-
+    variableDeclaration -< [datatype kw_or_id] >-
+    variableReference -< kw_or_id >-
+    funcname -< kw_or_id >-
 
-    product <- [ primary opt{ [star primary] } ]
+    product -< [ primary opt{ [star primary] } ] >-
 
-    sum <- sel{
+    sum -< sel{
         [ product plus product ] : "add"
         [ product minus product ] : "sub"
         product : "pro"
-    }
+    } >- 
 
-    expression <- [ sum ]
+    expression -< [ sum ] >-
 
-    term <- [ l_paren expression r_paren ]
+    term -< [ l_paren expression r_paren ] >-
 
-    primary <- sel{ number
+    primary -< sel{ number
                     variableReference
                     term
-    }
+    } >-
 
-    assignment_statement <- [
+    assignment_statement -< [
         sel { variableDeclaration variableReference } : "ass1of"
         equals
         expression
-    ]
+    ] >-
 
-    statement <- sel{ 
+    statement -< sel{ 
         [ assignment_statement semicolon ]
         semicolon
-    }
+    } >-
 
-    funcdef <- [
+    funcdef -< [
         function
         funcname
         l_paren
@@ -94,9 +94,9 @@ std::string parser_spec = R"xxx(
         l_curly
         zom{statement} : "statements"
         r_curly
-    ]
+    ] >-
     
-    funcdefs <- zom{funcdef} : "xxx"
+    funcdefs -< zom{funcdef} : "xxx" >-
 
 )xxx";
 

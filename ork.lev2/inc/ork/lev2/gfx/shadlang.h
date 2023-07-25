@@ -46,6 +46,10 @@ struct ArgumentDeclaration;
 struct AssignmentStatement;
 struct FunctionDef;
 struct FunctionDefs;
+struct Shader;
+struct VertexShader;
+struct FragmentShader;
+struct ComputeShader;
 
 using astnode_ptr_t = std::shared_ptr<AstNode>;
 using expression_ptr_t = std::shared_ptr<Expression>;
@@ -58,6 +62,10 @@ using argument_decl_ptr_t = std::shared_ptr<ArgumentDeclaration>;
 using assignment_stmt_ptr_t = std::shared_ptr<AssignmentStatement>;
 using fndef_ptr_t = std::shared_ptr<FunctionDef>;
 using fndefs_ptr_t = std::shared_ptr<FunctionDefs>;
+using shader_ptr_t = std::shared_ptr<Shader>;
+using vtxshader_ptr_t = std::shared_ptr<VertexShader>;
+using frgshader_ptr_t = std::shared_ptr<FragmentShader>;
+using comshader_ptr_t = std::shared_ptr<ComputeShader>;
 ///////////////////// 
 
 struct AstNode {
@@ -169,6 +177,14 @@ struct FunctionDef : public AstNode { //
 struct FunctionDefs : public AstNode { //
   inline FunctionDefs() { _name = "FunctionDefs"; }
   std::map<std::string,fndef_ptr_t> _fndefs;
+};
+struct Shader : public AstNode { //
+};
+struct VertexShader : public Shader { //
+};
+struct FragmentShader : public Shader { //
+};
+struct ComputeShader : public Shader { //
 };
 
 

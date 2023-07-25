@@ -420,7 +420,8 @@ void PegImpl::loadPEGScannerRules() { //
     // dsl_scanner->addMacro("ASCII", "[\\\\x00-\\\\x21\\\\x23-\\\\x5B\\\\x5D-\\\\x7F]");
     // dsl_scanner->addMacro("ASCII_WITHOUT_DBLQUOTE", "[\\\\x00-\\\\x21\\\\x23-\\\\x7F]");
     dsl_scanner->addEnumClass(R"(\"[^\"]*\")", TokenClass::QUOTED_REGEX);
-    dsl_scanner->addEnumClass("<-", TokenClass::LEFT_ARROW);
+    dsl_scanner->addEnumClass("-<", TokenClass::LEFT_ARROW);
+    dsl_scanner->addEnumClass(">-", TokenClass::RIGHT_ARROW);
     logchan_rulespec->log("Building state machine");
     dsl_scanner->buildStateMachine();
     logchan_rulespec->log("done...");
@@ -670,6 +671,7 @@ void PegImpl::loadPEGGrammar() { //
   auto inttok       = _peg_parser->matcherForTokenClass(TokenClass::INTEGER, "int");
   auto kworid       = _peg_parser->matcherForTokenClass(TokenClass::KW_OR_ID, "kw_or_id");
   auto left_arrow   = _peg_parser->matcherForTokenClass(TokenClass::LEFT_ARROW, "left_arrow");
+  auto right_arrow   = _peg_parser->matcherForTokenClass(TokenClass::RIGHT_ARROW, "right_arrow");
   auto quoted_regex = _peg_parser->matcherForTokenClass(TokenClass::QUOTED_REGEX, "quoted_regex");
   ////////////////////
   auto sel   = _peg_parser->matcherForWord("sel");
@@ -682,7 +684,7 @@ void PegImpl::loadPEGGrammar() { //
   /////////////////////////////////////////////////////////////////////////////////////////////////////
   auto macro_item      = _peg_parser->sequence({macro, lparen, kworid, rparen}, "macro_item");
   auto scanner_key     = _peg_parser->oneOf({macro_item, kworid}, "scanner_key");
-  auto scanner_rule    = _peg_parser->sequence({scanner_key, left_arrow, quoted_regex}, "scanner_rule");
+  auto scanner_rule    = _peg_parser->sequence({scanner_key, left_arrow, quoted_regex, right_arrow}, "scanner_rule");
   scanner_rule->_post_notif = [=](match_ptr_t match) {
     auto seq           = match->asShared<Sequence>();
     auto rule_key_item = seq->_items[0]->asShared<OneOf>()->_selected;
@@ -773,7 +775,7 @@ void PegImpl::loadPEGGrammar() { //
           }),
           _peg_parser->optional(_peg_parser->sequence({colon, quoted_regex}), "expr_name"),
       });
-  auto parser_rule = _peg_parser->sequence({kworid, left_arrow, rule_expression}, "parser_rule");
+  auto parser_rule = _peg_parser->sequence({kworid, left_arrow, rule_expression, right_arrow}, "parser_rule");
 
   parser_rule->_pre_notif = [=](match_ptr_t match) {
     auto rulename = match->asShared<Sequence>()->_items[0]->asShared<ClassMatch>()->_token->text;
@@ -1001,13 +1003,13 @@ void PegImpl::implementUserLanguage() {
     logchan_rulespec2->log("///////////////////////////////////////////////////////////");
     for (auto rule_item : _user_parser_rules) {
       auto rule = rule_item.second;
-      logchan_rulespec2->log("rule<%s> references [\n", rule->_name.c_str());
+      logchan_rulespec2->log("rule<%s> references [", rule->_name.c_str());
       for (auto ref : rule->_references) {
         auto rule = ref->_referenced_rule;
         auto node = ref->_node;
-        logchan_rulespec2->log("  rule(%s) : node(%p)\n", rule->_name.c_str(), (void*)node.get());
+        logchan_rulespec2->log("  rule(%s) : node(%p)", rule->_name.c_str(), (void*)node.get());
       }
-      logchan_rulespec2->log("]\n");
+      logchan_rulespec2->log("]");
     }
   }
   /////////////////////////////////////////////////////////

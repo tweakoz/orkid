@@ -36,91 +36,121 @@ static logchannel_ptr_t logchan_lexer   = logger()->createChannel("ORKSLLEXR", f
 ///////////////////////////////////////////////////////////////////////////////
 
 std::string scanner_spec = R"xxx(
-    macro(M1)           <- "xyz"
-    MULTI_LINE_COMMENT  <- "\/\*([^*]|\*+[^/*])*\*+\/"
-    SINGLE_LINE_COMMENT <- "\/\/.*[\n\r]"
-    WHITESPACE          <- "\s+"
-    NEWLINE             <- "[\n\r]+"
-    EQUALS              <- "="
-    COMMA               <- ","
-    SEMICOLON           <- ";"
-    L_PAREN             <- "\("
-    R_PAREN             <- "\)"
-    L_CURLY             <- "\{"
-    R_CURLY             <- "\}"
-    STAR                <- "\*"
-    PLUS                <- "\+"
-    MINUS               <- "\-"
-    FLOATING_POINT      <- "-?(\d*\.?)(\d+)([eE][-+]?\d+)?"
-    INTEGER             <- "-?(\d+)"
-    FUNCTION            <- "function"
-    KW_FLOAT            <- "float"
-    KW_INT              <- "int"
-    KW_OR_ID            <- "[a-zA-Z_][a-zA-Z0-9_]*"
+    macro(M1)           -< "xyz" >-
+    MULTI_LINE_COMMENT  -< "\/\*([^*]|\*+[^/*])*\*+\/" >-
+    SINGLE_LINE_COMMENT -< "\/\/.*[\n\r]" >-
+    WHITESPACE          -< "\s+" >-
+    NEWLINE             -< "[\n\r]+" >-
+    EQUALS              -< "=" >-
+    COMMA               -< "," >-
+    COLON               -< ":" >-
+    SEMICOLON           -< ";" >-
+    L_PAREN             -< "\(" >-
+    R_PAREN             -< "\)" >-
+    L_CURLY             -< "\{" >-
+    R_CURLY             -< "\}" >-
+    STAR                -< "\*" >-
+    PLUS                -< "\+" >-
+    MINUS               -< "\-" >-
+    FLOATING_POINT      -< "-?(\d*\.?)(\d+)([eE][-+]?\d+)?" >-
+    INTEGER             -< "-?(\d+)" >-
+    FUNCTION            -< "function" >-
+    KW_FLOAT            -< "float" >-
+    KW_INT              -< "int" >-
+    KW_VTXSHADER        -< "vertex_shader" >-
+    KW_FRGSHADER        -< "fragment_shader" >-
+    KW_OR_ID            -< "[a-zA-Z_][a-zA-Z0-9_]*" >-
 )xxx";
 
 ///////////////////////////////////////////////////////////////////////////////
 
 std::string parser_spec = R"xxx(
-    datatype <- sel{KW_FLOAT KW_INT}
-    number <- sel{FLOATING_POINT INTEGER}
-    kw_or_id <- KW_OR_ID
-    l_paren <- L_PAREN
-    r_paren <- R_PAREN
-    plus <- PLUS
-    minus <- MINUS
-    star <- STAR
-    l_curly <- L_CURLY
-    r_curly <- R_CURLY
-    semicolon <- SEMICOLON
-    equals <- EQUALS
-    function <- FUNCTION
+    datatype -< sel{KW_FLOAT KW_INT} >-
+    number -< sel{FLOATING_POINT INTEGER} >-
+    kw_or_id -< KW_OR_ID >-
+    l_paren -< L_PAREN >-
+    r_paren -< R_PAREN >-
+    plus -< PLUS >-
+    minus -< MINUS >-
+    star -< STAR >-
+    l_curly -< L_CURLY >-
+    r_curly -< R_CURLY >-
+    semicolon -< SEMICOLON >-
+    colon -< COLON >-
+    equals -< EQUALS >-
+    function -< FUNCTION >-
+    kw_vtxshader -< KW_VTXSHADER >-
+    kw_frgshader -< KW_FRGSHADER >-
         
-    argument_decl <- [ datatype kw_or_id opt{COMMA} ]
-    variableDeclaration <- [datatype kw_or_id]
-    variableReference <- kw_or_id
-    funcname <- kw_or_id
+    argumentDeclaration -< [ datatype kw_or_id opt{COMMA} ] >-
+    variableDeclaration -< [datatype kw_or_id] >-
+    variableReference -< kw_or_id >-
+    funcname -< kw_or_id >-
+    inh_list_item -< [ colon kw_or_id ] >-
+    inh_list -< zom{inh_list_item} >-
 
-    product <- [ primary opt{ [star primary] } ]
+    product -< [ primary opt{ [star primary] } ] >-
 
-    sum <- sel{
+    sum -< sel{
         [ product plus product ] : "add"
         [ product minus product ] : "sub"
         product : "pro"
-    }
+    } >-
 
-    expression <- [ sum ]
+    expression -< [ sum ] >-
 
-    term <- [ l_paren expression r_paren ]
+    term -< [ l_paren expression r_paren ] >-
 
-    primary <- sel{ number
+    primary -< sel{ number
                     variableReference
                     term
-    }
+    } >-
 
-    assignment_statement <- [
+    assignment_statement -< [
         sel { variableDeclaration variableReference } : "ass1of"
         equals
         expression
-    ]
+    ] >-
 
-    statement <- sel{ 
+    statement -< sel{ 
         [ assignment_statement semicolon ]
         semicolon
-    }
+    } >-
 
-    funcdef <- [
+    funcdef -< [
         function
         funcname
         l_paren
-        zom{argument_decl} : "args"
+        zom{argumentDeclaration} : "args"
         r_paren
         l_curly
-        zom{statement} : "statements"
+        zom{statement} : "fn_statements"
         r_curly
-    ]
+    ] >-
     
-    funcdefs <- zom{funcdef} : "xxx"
+    funcdefs -< zom{funcdef} >-
+
+    vertex_shader -< [
+        kw_vtxshader
+        kw_or_id
+        l_paren
+        zom{inh_list_item} : "inheritances"
+        r_paren
+        l_curly
+        zom{statement} : "vtx_statements"
+        r_curly
+    ] >-
+
+    fragment_shader -< [
+        kw_frgshader
+        kw_or_id
+        l_paren
+        zom{inh_list_item} : "inheritances"
+        r_paren
+        l_curly
+        zom{statement} : "frg_statements"
+        r_curly
+    ] >-
 
 )xxx";
 
@@ -270,10 +300,10 @@ struct ShadLangParser : public Parser {
       }
     });
     ///////////////////////////////////////////////////////////
-    onPost("argument_decl", [=](match_ptr_t match) {
+    onPost("argumentDeclaration", [=](match_ptr_t match) {
       auto ast_node = ast_create<SHAST::ArgumentDeclaration>(match);
       auto seq      = match->asShared<Sequence>();
-      seq->dump("argument_decl");
+      seq->dump("argumentDeclaration");
 
       auto dtype_sel = seq->_items[0]->followImplAsShared<OneOf>()->_selected;
       auto varname = seq->_items[1]->followImplAsShared<ClassMatch>();
