@@ -1,14 +1,16 @@
-#pragma once
+#pragma once 
 
-#include <ork/util/parser.h>
-#include <ork/file/path.h>
+#include <vector>
+#include <map>
+#include <unordered_map>
+#include <memory>
 #include <ork/util/crc.h>
-#include <string.h>
-#include <math.h>
+#include <ork/kernel/varmap.inl>
+#include <ork/lev2/config.h>
 
-using namespace ork;
-
+#if defined(USE_ORKSL_LANG)
 ///////////////////////////////////////////////////////////////////////////////
+namespace ork::lev2::shadlang {
 
 enum class TokenClass : uint64_t {
   CrcEnum(SINGLE_LINE_COMMENT),
@@ -30,11 +32,8 @@ enum class TokenClass : uint64_t {
   CrcEnum(KW_OR_ID)
 };
 
+namespace SHAST {
 ///////////////////////////////////////////////////////////////////////////////
-// AST
-///////////////////////////////////////////////////////////////////////////////
-
-namespace MYAST {
 
 struct AstNode;
 struct VariableReference;
@@ -46,6 +45,7 @@ struct DataType;
 struct ArgumentDeclaration;
 struct AssignmentStatement;
 struct FunctionDef;
+struct FunctionDefs;
 
 using astnode_ptr_t = std::shared_ptr<AstNode>;
 using expression_ptr_t = std::shared_ptr<Expression>;
@@ -57,7 +57,7 @@ using datatype_ptr_t = std::shared_ptr<DataType>;
 using argument_decl_ptr_t = std::shared_ptr<ArgumentDeclaration>;
 using assignment_stmt_ptr_t = std::shared_ptr<AssignmentStatement>;
 using fndef_ptr_t = std::shared_ptr<FunctionDef>;
-
+using fndefs_ptr_t = std::shared_ptr<FunctionDefs>;
 ///////////////////// 
 
 struct AstNode {
@@ -143,14 +143,19 @@ struct FunctionDef : public AstNode { //
   std::vector<argument_decl_ptr_t> _arguments;
   std::vector<assignment_stmt_ptr_t> _statements;
 
-  void createDotFile(file::Path outpath) const;
+  //void createDotFile(file::Path outpath) const;
 };
 struct FunctionDefs : public AstNode { //
   inline FunctionDefs() { _name = "FunctionDefs"; }
   std::vector<fndef_ptr_t> _fndefs;
 };
-inline void FunctionDef::createDotFile(file::Path outpath) const {
 
-}
 
-} // namespace AST
+///////////////////////////////////////////////////////////////////////////////
+} // namespace SHAST {
+
+SHAST::fndefs_ptr_t parse_fndefs( const std::string& shader_text );
+
+} // namespace ork::lev2::shadlang {
+///////////////////////////////////////////////////////////////////////////////
+#endif

@@ -5,8 +5,33 @@
 // see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ////////////////////////////////////////////////////////////////
 
-#include "parser_lang.inl"
-#include <utpp/UnitTest++.h>
+//////////////////////////////////////////////////////////////////////////////////
+//  Scanner/Parser
+//  this replaces CgFx for OpenGL 3.x and OpenGL ES 2.x
+////////////////////////////////////////////////////////////////
+
+#include <ork/lev2/gfx/shadlang.h>
+#include <ork/file/file.h>
+#include <ork/lev2/gfx/gfxenv.h>
+#include <ork/pch.h>
+#include <ork/util/crc.h>
+#include <regex>
+#include <stdlib.h>
+#include <peglib.h>
+#include <ork/util/logger.h>
+#include <ork/util/parser.h>
+#include <ork/kernel/string/string.h>
+
+#if defined(USE_ORKSL_LANG)
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+namespace ork::lev2::shadlang {
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
+namespace impl {
+static logchannel_ptr_t logchan         = logger()->createChannel("ORKSLIMPL", fvec3(1, 1, .9), true);
+static logchannel_ptr_t logchan_grammar = logger()->createChannel("ORKSLGRAM", fvec3(1, 1, .8), true);
+static logchannel_ptr_t logchan_lexer   = logger()->createChannel("ORKSLLEXR", fvec3(1, 1, .7), true);
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -54,9 +79,8 @@ std::string parser_spec = R"xxx(
     argument_decl <- [ datatype kw_or_id opt{COMMA} ]
     variableDeclaration <- [datatype kw_or_id]
     variableReference <- kw_or_id
-    funcname <- kw_or_id
+    funcname <- kw_or_idnamespace impl {
 
-    product <- [ primary opt{ [star primary] } ]
 
     sum <- sel{
         [ product plus product ] : "add"
@@ -103,20 +127,18 @@ std::string parser_spec = R"xxx(
 
 template <typename T> std::shared_ptr<T> ast_create(match_ptr_t m) {
   auto sh = std::make_shared<T>();
-  m->_uservars.set<MYAST::astnode_ptr_t>("astnode", sh);
+  m->_uservars.set<SHAST::astnode_ptr_t>("astnode", sh);
   return sh;
 }
 
 template <typename T> std::shared_ptr<T> ast_get(match_ptr_t m) {
-  auto sh = m->_uservars.typedValueForKey<MYAST::astnode_ptr_t>("astnode").value();
+  auto sh = m->_uservars.typedValueForKey<SHAST::astnode_ptr_t>("astnode").value();
   return std::dynamic_pointer_cast<T>(sh);
 }
 
-///////////////////////////////////////////////////////////////////////////////
+struct ShadLangParser : public Parser {
 
-struct MyParser2 : public Parser {
-
-  MyParser2() {
+  ShadLangParser() {
     _name              = "p2";
     _DEBUG_MATCH       = true;
     _DEBUG_INFO        = true;
@@ -140,19 +162,19 @@ struct MyParser2 : public Parser {
     ///////////////////////////////////////////////////////////
     onPost("variableReference", [=](match_ptr_t match) { //
         auto kwid      = match->asShared<ClassMatch>()->_token->text;
-        auto var_ref   = ast_create<MYAST::VariableReference>(match);
+        auto var_ref   = ast_create<SHAST::VariableReference>(match);
         var_ref->_name = FormatString("VarRef<%s>", kwid.c_str() );
     });
     ///////////////////////////////////////////////////////////
     onPost("FLOATING_POINT", [=](match_ptr_t match) { //
-      auto ast_node    = ast_create<MYAST::FloatLiteral>(match);
+      auto ast_node    = ast_create<SHAST::FloatLiteral>(match);
       auto impl        = match->asShared<ClassMatch>();
       ast_node->_value = std::stof(impl->_token->text);
       ast_node->_name = FormatString("FloatLiteral<%s>", impl->_token->text.c_str() );
     });
     ///////////////////////////////////////////////////////////
     onPost("INTEGER", [=](match_ptr_t match) { //
-      auto ast_node    = ast_create<MYAST::IntegerLiteral>(match);
+      auto ast_node    = ast_create<SHAST::IntegerLiteral>(match);
       auto impl        = match->asShared<ClassMatch>();
       ast_node->_value = std::stoi(impl->_token->text);
       ast_node->_name = FormatString("IntLiteral<%s>", impl->_token->text.c_str() );
@@ -160,33 +182,33 @@ struct MyParser2 : public Parser {
     ///////////////////////////////////////////////////////////
     onPost("datatype", [=](match_ptr_t match) { //
       auto selected   = match->asShared<OneOf>()->_selected;
-      auto ast_node   = ast_create<MYAST::DataType>(match);
+      auto ast_node   = ast_create<SHAST::DataType>(match);
       ast_node->_name = FormatString("Datatype<%s>", selected->asShared<ClassMatch>()->_token->text.c_str() );
     });
     ///////////////////////////////////////////////////////////
     onPost("term", [=](match_ptr_t match) {
-      auto ast_node = ast_create<MYAST::Term>(match);
+      auto ast_node = ast_create<SHAST::Term>(match);
       ast_node->_name = "term";
       printf( "ON term\n");
       //OrkAssert(false);
       //auto selected = match->asShared<Sequence>()->_items[1];
       //if (selected->_matcher == expression) {
-        //ast_node->_subexpression = ast_get<MYAST::Expression>(selected);
+        //ast_node->_subexpression = ast_get<SHAST::Expression>(selected);
      // }
     });
     ///////////////////////////////////////////////////////////
     onPost("primary", [=](match_ptr_t match) {
-      auto ast_node = ast_create<MYAST::Primary>(match);
+      auto ast_node = ast_create<SHAST::Primary>(match);
       ast_node->_name = "primary";
       auto selected = match->asShared<OneOf>()->_selected;
     });
     ///////////////////////////////////////////////////////////
     onPost("product", [=](match_ptr_t match) {
-      auto ast_node     = ast_create<MYAST::Product>(match);
+      auto ast_node     = ast_create<SHAST::Product>(match);
       ast_node->_name = "product";
       auto seq          = match->asShared<Sequence>();
       auto primary1     = seq->_items[0];
-      auto primary1_ast = ast_get<MYAST::Primary>(primary1);
+      auto primary1_ast = ast_get<SHAST::Primary>(primary1);
       auto opt          = seq->itemAsShared<Optional>(1);
       auto primary2     = opt->_subitem;
 
@@ -194,7 +216,7 @@ struct MyParser2 : public Parser {
       if (primary2) {
         auto seq = primary2->asShared<Sequence>();
         primary2 = seq->_items[1];
-        auto primary2_ast = ast_get<MYAST::Primary>(primary2);
+        auto primary2_ast = ast_get<SHAST::Primary>(primary2);
         ast_node->_primaries.push_back(primary2_ast);
 
       } else { // "prI1" 
@@ -203,20 +225,20 @@ struct MyParser2 : public Parser {
     });
     ///////////////////////////////////////////////////////////
     onPost("sum", [=](match_ptr_t match) {
-      auto ast_node     = ast_create<MYAST::Sum>(match);
+      auto ast_node     = ast_create<SHAST::Sum>(match);
       auto selected = match->asShared<OneOf>()->_selected;
       if (selected->_matcher == product) {
-        ast_node->_left = ast_get<MYAST::Product>(selected);
+        ast_node->_left = ast_get<SHAST::Product>(selected);
         ast_node->_op   = '_';
       } else if (selected->_matcher->_name == "add1") {
         auto seq         = selected->asShared<Sequence>();
-        ast_node->_left = ast_get<MYAST::Product>(seq->_items[0]);
-        ast_node->_right = ast_get<MYAST::Product>(seq->_items[2]);
+        ast_node->_left = ast_get<SHAST::Product>(seq->_items[0]);
+        ast_node->_right = ast_get<SHAST::Product>(seq->_items[2]);
         ast_node->_op    = '+';
       } else if (selected->_matcher->_name == "add2") {
         auto seq         = selected->asShared<Sequence>();
-        ast_node->_left = ast_get<MYAST::Product>(seq->_items[0]);
-        ast_node->_right = ast_get<MYAST::Product>(seq->_items[2]);
+        ast_node->_left = ast_get<SHAST::Product>(seq->_items[0]);
+        ast_node->_right = ast_get<SHAST::Product>(seq->_items[2]);
         ast_node->_op    = '-';
       } else {
         //OrkAssert(false);
@@ -224,7 +246,7 @@ struct MyParser2 : public Parser {
     });
     ///////////////////////////////////////////////////////////
     onPost("expression", [=](match_ptr_t match) { //
-      auto ast_node = ast_create<MYAST::Expression>(match);
+      auto ast_node = ast_create<SHAST::Expression>(match);
       auto impltype = match->_impl.typestr();
       auto seq      = match->asShared<Sequence>();
       auto selected = seq->_items[0];
@@ -232,14 +254,14 @@ struct MyParser2 : public Parser {
     });
     ///////////////////////////////////////////////////////////
     onPost("assignment_statement", [=](match_ptr_t match) { //
-      auto ast_node = ast_create<MYAST::AssignmentStatement>(match);
+      auto ast_node = ast_create<SHAST::AssignmentStatement>(match);
       auto ass1of   = match->asShared<Sequence>()->itemAsShared<OneOf>(0);
       if (ass1of->_selected->_matcher == variableDeclaration) {
         auto seq      = ass1of->_selected->asShared<Sequence>();
-        auto datatype = ast_get<MYAST::Product>(seq->_items[0]);
-        //auto expr     = match->asShared<Sequence>()->itemAsShared<MYAST::Expression>(2);
+        auto datatype = ast_get<SHAST::Product>(seq->_items[0]);
+        //auto expr     = match->asShared<Sequence>()->itemAsShared<SHAST::Expression>(2);
       } else if (ass1of->_selected->_matcher == variableReference) {
-        auto expr             = match->asShared<Sequence>()->itemAsShared<MYAST::Expression>(2);
+        auto expr             = match->asShared<Sequence>()->itemAsShared<SHAST::Expression>(2);
         ast_node->_datatype   = nullptr;
         ast_node->_expression = expr;
       } else {
@@ -248,19 +270,19 @@ struct MyParser2 : public Parser {
     });
     ///////////////////////////////////////////////////////////
     onPost("argument_decl", [=](match_ptr_t match) {
-      auto ast_node = ast_create<MYAST::ArgumentDeclaration>(match);
+      auto ast_node = ast_create<SHAST::ArgumentDeclaration>(match);
       auto seq      = match->asShared<Sequence>();
       //ast_node->_variable_name   = seq->_items[1]->asShared<ClassMatch>()->_token->text;
       //auto seq0                  = seq->_items[0]->asShared<OneOf>()->_selected;
       //auto tok                   = seq0->asShared<ClassMatch>()->_token;
-      //ast_node->_datatype        = std::make_shared<MYAST::DataType>();
+      //ast_node->_datatype        = std::make_shared<SHAST::DataType>();
       //ast_node->_datatype->_name = tok->text;
       //ast_node->_name = FormatString("ArgDecl<%s %s>", tok->text.c_str(), ast_node->_variable_name.c_str() );
     });
     ///////////////////////////////////////////////////////////
     onPost("funcdef", [=](match_ptr_t match) {
       auto seq     = match->asShared<Sequence>();
-      auto funcdef = ast_create<MYAST::FunctionDef>(match);
+      auto funcdef = ast_create<SHAST::FunctionDef>(match);
       /*auto fn_name = seq->itemAsShared<ClassMatch>(1);
       auto args    = seq->itemAsShared<NOrMore>(3);
       auto stas    = seq->itemAsShared<NOrMore>(6);
@@ -269,7 +291,7 @@ struct MyParser2 : public Parser {
 
       for (auto arg : args->_items) {
         auto argseq   = arg->asShared<Sequence>();
-        auto arg_decl = ast_get<MYAST::ArgumentDeclaration>(arg);
+        auto arg_decl = ast_get<SHAST::ArgumentDeclaration>(arg);
         funcdef->_arguments.push_back(arg_decl);
         auto argtype = arg_decl->_datatype->_name;
         auto argname = arg_decl->_variable_name;
@@ -307,10 +329,10 @@ struct MyParser2 : public Parser {
     });
     ///////////////////////////////////////////////////////////
     onPost("funcdefs", [=](match_ptr_t match) {
-      auto ast_node = ast_create<MYAST::FunctionDefs>(match);
+      auto ast_node = ast_create<SHAST::FunctionDefs>(match);
       auto fndefs_inp = match->asShared<NOrMore>();
       for (auto item : fndefs_inp->_items) {
-        auto funcdef = ast_get<MYAST::FunctionDef>(item);
+        auto funcdef = ast_get<SHAST::FunctionDef>(item);
         ast_node->_fndefs.push_back(funcdef);
       }
     });
@@ -322,7 +344,7 @@ struct MyParser2 : public Parser {
   void _buildAstTreeVisitor(match_ptr_t the_match) {
     bool has_ast = the_match->_uservars.hasKey("astnode");
     if (has_ast){
-      auto ast = the_match->_uservars.typedValueForKey<MYAST::astnode_ptr_t>("astnode").value();
+      auto ast = the_match->_uservars.typedValueForKey<SHAST::astnode_ptr_t>("astnode").value();
 
       if(_astnodestack.size()>0){
         auto parent = _astnodestack.back();
@@ -342,7 +364,7 @@ struct MyParser2 : public Parser {
 
   /////////////////////////////////////////////////////////////////
 
-  void _dumpAstTreeVisitor(MYAST::astnode_ptr_t node, int indent) {
+  void _dumpAstTreeVisitor(SHAST::astnode_ptr_t node, int indent) {
     auto indentstr = std::string(indent*2, ' ');
     printf("%s%s\n", indentstr.c_str(), node->_name.c_str());
     for (auto c : node->_children) {
@@ -368,7 +390,7 @@ struct MyParser2 : public Parser {
     auto match = this->match(_fns_matcher, slv);
     OrkAssert(match);
     _buildAstTreeVisitor(match);
-    auto ast_top = match->_uservars.typedValueForKey<MYAST::astnode_ptr_t>("astnode").value();
+    auto ast_top = match->_uservars.typedValueForKey<SHAST::astnode_ptr_t>("astnode").value();
     printf( "///////////////////////////////\n");
     printf( "// AST TREE\n");
     printf( "///////////////////////////////\n");
@@ -380,38 +402,18 @@ struct MyParser2 : public Parser {
   /////////////////////////////////////////////////////////////////
 
   matcher_ptr_t _fns_matcher;
-  std::vector<MYAST::astnode_ptr_t> _astnodestack;
-}; // struct MyParser
+  std::vector<SHAST::astnode_ptr_t> _astnodestack;
+}; // struct ShadLangParser
 
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
+} //namespace impl {
 
-TEST(parser2) {
-  printf("P2.TOP.A\n");
-  auto parse_str =
-      R"(
-        ///////////////////
-        // hello world
-        ///////////////////
-        function abc(int x, float y) {
-            float a = 1.0;
-            float v = 2.0;
-            float b = (x+y)*7.0;
-            v = v*2.0;
-        }
-        function def() {
-            float X = (1.0+2.3)*7.0;
-        }
-    )";
-  auto the_parser = std::make_shared<MyParser2>();
-  auto match = the_parser->parseString(parse_str);
-  printf(
-      "P2.TOP.B match<%p> matcher<%p:%s> st<%zu> en<%zu>\n", //
-      match.get(),                                           //
-      match->_matcher.get(),                                 //
-      match->_matcher->_name.c_str(),                        //
-      match->_view->_start,                                  //
-      match->_view->_end);                                   //
-
-  CHECK(match != nullptr);
+SHAST::fndefs_ptr_t parse_fndefs( const std::string& shader_text ){
+    auto parser = std::make_shared<impl::ShadLangParser>();
+    auto match = parser->parseString(shader_text);
 }
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+} // namespace ork::lev2::glslfx::parser
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
+#endif

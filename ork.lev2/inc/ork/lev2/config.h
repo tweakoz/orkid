@@ -8,6 +8,7 @@
 #pragma once 
 
 //#define ENABLE_IGL
+#define USE_ORKSL_LANG
 
 #if defined(ORK_ARCHITECTURE_X86_64)
   #if defined(LINUX)
