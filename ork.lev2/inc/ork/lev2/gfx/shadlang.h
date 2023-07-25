@@ -147,7 +147,7 @@ struct FunctionDef : public AstNode { //
 };
 struct FunctionDefs : public AstNode { //
   inline FunctionDefs() { _name = "FunctionDefs"; }
-  std::vector<fndef_ptr_t> _fndefs;
+  std::map<std::string,fndef_ptr_t> _fndefs;
 };
 
 

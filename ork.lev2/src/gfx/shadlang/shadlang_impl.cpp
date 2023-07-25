@@ -273,8 +273,13 @@ struct ShadLangParser : public Parser {
     onPost("argument_decl", [=](match_ptr_t match) {
       auto ast_node = ast_create<SHAST::ArgumentDeclaration>(match);
       auto seq      = match->asShared<Sequence>();
-      //ast_node->_variable_name   = seq->_items[1]->asShared<ClassMatch>()->_token->text;
-      //auto seq0                  = seq->_items[0]->asShared<OneOf>()->_selected;
+      seq->dump("argument_decl");
+
+      auto varname_proxy = seq->itemAsShared<Proxy>(1);
+      auto varname = varname_proxy->followAsShared<ClassMatch>();
+
+      //ast_node->_variable_name   = varname->_token->text;
+      //auto seq0                  = seq->itemAsShared<OneOf>(0)->_selected;
       //auto tok                   = seq0->asShared<ClassMatch>()->_token;
       //ast_node->_datatype        = std::make_shared<SHAST::DataType>();
       //ast_node->_datatype->_name = tok->text;
@@ -284,22 +289,31 @@ struct ShadLangParser : public Parser {
     onPost("funcdef", [=](match_ptr_t match) {
       auto seq     = match->asShared<Sequence>();
       auto funcdef = ast_create<SHAST::FunctionDef>(match);
-      /*auto fn_name = seq->itemAsShared<ClassMatch>(1);
+
+      seq->dump("funcdef");
+
+      auto fn_name = seq->_items[1]->followImplAsShared<ClassMatch>();
+      //auto fn_name = fn_name_proxy->followAsShared<ClassMatch>();
+      funcdef->_name = fn_name->_token->text; //FormatString("FnDef<%s>", fn_name->_token->text.c_str() );
+
       auto args    = seq->itemAsShared<NOrMore>(3);
       auto stas    = seq->itemAsShared<NOrMore>(6);
 
-      funcdef->_name = FormatString("FnDef<%s>", fn_name->_token->text.c_str() );
+      args->dump("args");
 
       for (auto arg : args->_items) {
         auto argseq   = arg->asShared<Sequence>();
         auto arg_decl = ast_get<SHAST::ArgumentDeclaration>(arg);
         funcdef->_arguments.push_back(arg_decl);
-        auto argtype = arg_decl->_datatype->_name;
-        auto argname = arg_decl->_variable_name;
+        //auto argtype = arg_decl->_datatype->_name;
+        //auto argname = arg_decl->_variable_name;
       }
+
+      stas->dump("stas");
+
       int i = 0;
       for (auto sta : stas->_items) {
-        auto stasel = sta->asShared<OneOf>()->_selected;
+        auto stasel = sta->followImplAsShared<OneOf>()->_selected;
         if (auto as_seq = stasel->tryAsShared<Sequence>()) {
           auto staseq0         = as_seq.value()->_items[0];
           auto staseq0_matcher = staseq0->_matcher;
@@ -326,7 +340,7 @@ struct ShadLangParser : public Parser {
         }
         i++;
       }
-      */
+      
     });
     ///////////////////////////////////////////////////////////
     onPost("funcdefs", [=](match_ptr_t match) {
@@ -334,7 +348,9 @@ struct ShadLangParser : public Parser {
       auto fndefs_inp = match->asShared<NOrMore>();
       for (auto item : fndefs_inp->_items) {
         auto funcdef = ast_get<SHAST::FunctionDef>(item);
-        ast_node->_fndefs.push_back(funcdef);
+        auto it = ast_node->_fndefs.find(funcdef->_name);
+        OrkAssert(it==ast_node->_fndefs.end());
+        ast_node->_fndefs[funcdef->_name] = funcdef;
       }
     });
     ///////////////////////////////////////////////////////////

@@ -12,6 +12,14 @@ using namespace ork::lev2;
 
 TEST(shlang1) {
 
+  auto a = R"(
+    vertex_shader vs_uitext : iface_vdefault {
+      gl_Position = mvp * position;
+      //frg_clr     = vtxcolor;
+      frg_uv      = uv0;
+    }
+  )";
+
   auto shader_text =
       R"(
         ///////////////////

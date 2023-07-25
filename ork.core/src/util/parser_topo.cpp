@@ -21,6 +21,58 @@ static logchannel_ptr_t logchan_parser_topo = logger()->createChannel("PARSER_TO
 static std::atomic<int> g_matcher_id(0);
 //////////////////////////////////////////////////////////////////////
 
+void Sequence::dump(std::string header) const {
+
+  logchan_parser_topo->log( "SEQUENCE<%p:%s> items<%zu>", this, header.c_str(), _items.size() );
+
+  size_t index = 0;
+  for( match_ptr_t item : _items ){
+    std::string item_desc = item->_impl.typestr();
+    if( auto as_proxy = item->_impl.tryAsShared<Proxy>() ){
+      auto subitem = as_proxy.value()->_selected;
+      auto subdesc = subitem->_impl.typestr();
+      item_desc = FormatString("proxy %p sub<desc:%s matcher: %s>", (void*) as_proxy.value().get(), subdesc.c_str(), subitem->_matcher->_name.c_str()); 
+    }
+    else if( auto as_nom = item->_impl.tryAsShared<NOrMore>() ){
+      auto subcount = as_nom.value()->_items.size();
+      auto mincount = as_nom.value()->_minmatches;
+      //auto subdesc = subitem->_impl.typestr();
+      item_desc = FormatString("%zuormore: count<%zu>", mincount, subcount );
+    }
+
+    logchan_parser_topo->log( "   item<%zu:%s>", index, item_desc.c_str() );
+    index++;
+  }
+
+}
+
+void NOrMore::dump(std::string header) const {
+
+  logchan_parser_topo->log( "NOM<%p:%s> items<%zu>", this, header.c_str(), _items.size() );
+
+  size_t index = 0;
+  for( match_ptr_t item : _items ){
+    std::string item_desc = item->_impl.typestr();
+    if( auto as_proxy = item->_impl.tryAsShared<Proxy>() ){
+      auto subitem = as_proxy.value()->_selected;
+      auto subdesc = subitem->_impl.typestr();
+      item_desc = FormatString("proxy %p sub<desc:%s matcher: %s>", (void*) as_proxy.value().get(), subdesc.c_str(), subitem->_matcher->_name.c_str()); 
+    }
+    else if( auto as_nom = item->_impl.tryAsShared<NOrMore>() ){
+      auto subcount = as_nom.value()->_items.size();
+      auto mincount = as_nom.value()->_minmatches;
+      //auto subdesc = subitem->_impl.typestr();
+      item_desc = FormatString("%zuormore: count<%zu>", mincount, subcount );
+    }
+
+    logchan_parser_topo->log( "   item<%zu:%s>", index, item_desc.c_str() );
+    index++;
+  }
+
+}
+
+//////////////////////////////////////////////////////////////////////
+
 match_attempt_ptr_t filtered_match(matcher_ptr_t matcher, match_attempt_ptr_t the_match) {
   if (the_match) {
     auto filter = matcher->_match_filter;
