@@ -23,13 +23,13 @@ TEST(shlang1) {
             float b = (x+y)*7.0;
             v = v*2.0;
         }
-        function def() {
-            float X = (1.0+2.3)*7.0;
-        }
         vertex_shader vs_uitext : iface_vdefault {
           gl_Position = mvp * position;
           //frg_clr     = vtxcolor;
           frg_uv      = uv0;
+        }
+        function def() {
+            float X = (1.0+2.3)*7.0;
         }
     )";
   auto tunit = shadlang::parse(shader_text);

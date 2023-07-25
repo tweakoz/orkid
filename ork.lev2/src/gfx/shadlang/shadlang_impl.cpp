@@ -79,7 +79,7 @@ std::string parser_spec = R"xxx(
     semicolon -< SEMICOLON >-
     colon -< COLON >-
     equals -< EQUALS >-
-    function -< FUNCTION >-
+    kw_function -< FUNCTION >-
     kw_vtxshader -< KW_VTXSHADER >-
     kw_frgshader -< KW_FRGSHADER >-
     kw_comshader -< KW_COMSHADER >-
@@ -119,8 +119,8 @@ std::string parser_spec = R"xxx(
         semicolon
     } >-
 
-    funcdef -< [
-        function
+    fn_def -< [
+        kw_function
         funcname
         l_paren
         zom{argumentDeclaration} : "args"
@@ -130,40 +130,34 @@ std::string parser_spec = R"xxx(
         r_curly
     ] >-
     
-    vertex_shader -< [
+    vtx_shader -< [
         kw_vtxshader
         funcname
-        l_paren
         zom{inh_list_item} : "vtx_dependencies"
-        r_paren
         l_curly
         zom{statement} : "vtx_statements"
         r_curly
     ] >-
 
-    fragment_shader -< [
+    frg_shader -< [
         kw_frgshader
         funcname
-        l_paren
         zom{ inh_list_item } : "frg_dependencies"
-        r_paren
         l_curly
         zom{ statement } : "frg_statements"
         r_curly
     ] >-
 
-    compute_shader -< [
+    com_shader -< [
         kw_comshader
         funcname
-        l_paren
         zom{ inh_list_item } : "com_dependencies"
-        r_paren
         l_curly
         zom{ statement } : "com_statements"
         r_curly
     ] >-
 
-    translatable -< sel{ funcdef vertex_shader fragment_shader compute_shader } >-
+    translatable -< [ sel{ fn_def vtx_shader frg_shader com_shader } ] >-
 
     translation_unit -< zom{ translatable } >-
 
@@ -212,7 +206,6 @@ struct ShadLangParser : public Parser {
     auto primary              = rule("primary");
     auto variableDeclaration  = rule("variableDeclaration");
     auto variableReference    = rule("variableReference");
-    auto funcdef              = rule("funcdef");
     auto semicolon            = rule("SEMICOLON");
     auto assignment_statement = rule("assignment_statement");
     ///////////////////////////////////////////////////////////
@@ -340,7 +333,7 @@ struct ShadLangParser : public Parser {
       ast_node->_name = FormatString("ArgDecl<%s %s>", tok->text.c_str(), ast_node->_variable_name.c_str() );
     });
     ///////////////////////////////////////////////////////////
-    onPost("funcdef", [=](match_ptr_t match) {
+    onPost("fn_def", [=](match_ptr_t match) {
       auto seq     = match->asShared<Sequence>();
       auto funcdef = ast_create<SHAST::FunctionDef>(match);
 
@@ -397,7 +390,7 @@ struct ShadLangParser : public Parser {
       
     });
     ///////////////////////////////////////////////////////////
-    onPost("vertex_shader", [=](match_ptr_t match) {
+    onPost("vtx_shader", [=](match_ptr_t match) {
       auto ast_node = ast_create<SHAST::VertexShader>(match);
       auto seq     = match->asShared<Sequence>();
       auto fn_name = seq->_items[1]->followImplAsShared<ClassMatch>();

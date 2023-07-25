@@ -120,7 +120,7 @@ struct Sum : public AstNode {
     product_ptr_t _right;
     char _op = 0;
   virtual std::string desc() const{
-    return FormatString("BinOp(%c)", _op);
+    return FormatString("Sum(%c)", _op);
   }
 };
 //
