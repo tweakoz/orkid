@@ -435,7 +435,7 @@ size_t indent = 0;
 AST::oneormore_ptr_t PegImpl::_onOOM(match_ptr_t match) {
   auto indentstr = std::string(indent * 2, ' ');
   // our output AST node
-  auto oom_out     = std::make_shared<AST::OneOrMore>(_user_parser);
+  auto oom_out     = createAstNode<AST::OneOrMore>(_user_parser);
   oom_out->_parent = _ast_buildstack.back();
   _ast_buildstack.push_back(oom_out);
 
@@ -446,7 +446,6 @@ AST::oneormore_ptr_t PegImpl::_onOOM(match_ptr_t match) {
   logchan_rulespec->log("%s_onOOM<%s>", indentstr.c_str(), oom_inp->_matcher->_name.c_str());
   auto sub = _onExpression(oom_inp);
   oom_out->_subexpressions.push_back(sub);
-  _retain_astnodes.insert(oom_out);
   _ast_buildstack.pop_back();
   return oom_out;
 }
@@ -454,7 +453,7 @@ AST::oneormore_ptr_t PegImpl::_onOOM(match_ptr_t match) {
 AST::zeroormore_ptr_t PegImpl::_onZOM(match_ptr_t match) {
   auto indentstr = std::string(indent * 2, ' ');
   // our output AST node
-  auto zom_out     = std::make_shared<AST::ZeroOrMore>(_user_parser);
+  auto zom_out     = createAstNode<AST::ZeroOrMore>(_user_parser);
   zom_out->_parent = _ast_buildstack.back();
   _ast_buildstack.push_back(zom_out);
   // our parser DSL input node (containing user language spec)
@@ -466,7 +465,6 @@ AST::zeroormore_ptr_t PegImpl::_onZOM(match_ptr_t match) {
   logchan_rulespec->log("%s zom subitem<%s>", indentstr.c_str(), sub_item->_matcher->_name.c_str());
   auto subexpr_out        = _onExpression(sub_item);
   zom_out->_subexpression = subexpr_out;
-  _retain_astnodes.insert(zom_out);
   _ast_buildstack.pop_back();
   return zom_out;
 }
@@ -474,7 +472,7 @@ AST::zeroormore_ptr_t PegImpl::_onZOM(match_ptr_t match) {
 AST::select_ptr_t PegImpl::_onSEL(match_ptr_t match) {
   auto indentstr = std::string(indent * 2, ' ');
   // our output AST node
-  auto sel_out     = std::make_shared<AST::Select>(_user_parser);
+  auto sel_out     = createAstNode<AST::Select>(_user_parser);
   sel_out->_parent = _ast_buildstack.back();
   _ast_buildstack.push_back(sel_out);
   // our parser DSL input node (containing user language spec)
@@ -487,7 +485,6 @@ AST::select_ptr_t PegImpl::_onSEL(match_ptr_t match) {
     auto subexpr_out = _onExpression(sub_item);
     sel_out->_subexpressions.push_back(subexpr_out);
   }
-  _retain_astnodes.insert(sel_out);
   _ast_buildstack.pop_back();
   return sel_out;
 }
@@ -495,7 +492,7 @@ AST::select_ptr_t PegImpl::_onSEL(match_ptr_t match) {
 AST::optional_ptr_t PegImpl::_onOPT(match_ptr_t match) {
   auto indentstr = std::string(indent * 2, ' ');
   // our output AST node
-  auto opt_out     = std::make_shared<AST::Optional>(_user_parser);
+  auto opt_out     = createAstNode<AST::Optional>(_user_parser);
   opt_out->_parent = _ast_buildstack.back();
   _ast_buildstack.push_back(opt_out);
   // our parser DSL input node (containing user language spec)
@@ -504,13 +501,12 @@ AST::optional_ptr_t PegImpl::_onOPT(match_ptr_t match) {
   auto opt_inp = match;
   logchan_rulespec->log("%s_onOPT<%s>", indentstr.c_str(), match->_matcher->_name.c_str());
   opt_out->_subexpression = _onExpression(opt_inp);
-  _retain_astnodes.insert(opt_out);
   _ast_buildstack.pop_back();
   return opt_out;
 }
 /////////////////////////////////////////////////////////
 AST::sequence_ptr_t PegImpl::_onSEQ(match_ptr_t match) {
-  auto seq_out     = std::make_shared<AST::Sequence>(_user_parser);
+  auto seq_out     = createAstNode<AST::Sequence>(_user_parser);
   seq_out->_parent = _ast_buildstack.back();
   _ast_buildstack.push_back(seq_out);
   auto nom = match->asShared<NOrMore>();
@@ -523,13 +519,12 @@ AST::sequence_ptr_t PegImpl::_onSEQ(match_ptr_t match) {
     auto subexpr = _onExpression(sub_item);
     seq_out->_subexpressions.push_back(subexpr);
   }
-  _retain_astnodes.insert(seq_out);
   _ast_buildstack.pop_back();
   return seq_out;
 }
 /////////////////////////////////////////////////////////
 AST::group_ptr_t PegImpl::_onGRP(match_ptr_t match) {
-  auto grp_out     = std::make_shared<AST::Group>(_user_parser);
+  auto grp_out     = createAstNode<AST::Group>(_user_parser);
   grp_out->_parent = _ast_buildstack.back();
   _ast_buildstack.push_back(grp_out);
   auto nom = match->asShared<NOrMore>();
@@ -542,13 +537,12 @@ AST::group_ptr_t PegImpl::_onGRP(match_ptr_t match) {
     auto subexpr = _onExpression(item);
     grp_out->_subexpressions.push_back(subexpr);
   }
-  _retain_astnodes.insert(grp_out);
   _ast_buildstack.pop_back();
   return grp_out;
 }
 /////////////////////////////////////////////////////////
 AST::expr_kwid_ptr_t PegImpl::_onEXPRKWID(match_ptr_t match) {
-  auto kwid_out     = std::make_shared<AST::ExprKWID>(_user_parser);
+  auto kwid_out     = createAstNode<AST::ExprKWID>(_user_parser);
   kwid_out->_parent = _ast_buildstack.back();
   _ast_buildstack.push_back(kwid_out);
 
@@ -558,13 +552,12 @@ AST::expr_kwid_ptr_t PegImpl::_onEXPRKWID(match_ptr_t match) {
   OrkAssert(kwid_out->_kwid != "kw_or_idnamespace");
 
   logchan_rulespec->log("%s_onEXPRKWID<%s> KWID<%s>", indentstr.c_str(), match->_matcher->_name.c_str(), kwid_out->_kwid.c_str());
-  _retain_astnodes.insert(kwid_out);
   _ast_buildstack.pop_back();
   return kwid_out;
 }
 /////////////////////////////////////////////////////////
 AST::expression_ptr_t PegImpl::_onExpression(match_ptr_t match, std::string named) {
-  auto expr_out     = std::make_shared<AST::Expression>(_user_parser);
+  auto expr_out     = createAstNode<AST::Expression>(_user_parser);
   expr_out->_parent = _ast_buildstack.back();
   _ast_buildstack.push_back(expr_out);
   auto indentstr = std::string(indent * 2, ' ');
@@ -644,7 +637,6 @@ AST::expression_ptr_t PegImpl::_onExpression(match_ptr_t match, std::string name
   }
   indent--;
   OrkAssert(expr_out->_expr_selected != nullptr);
-  _retain_astnodes.insert(expr_out);
   _ast_buildstack.pop_back();
   return expr_out;
 }
@@ -786,7 +778,7 @@ void PegImpl::loadPEGGrammar() { //
     auto rulename = match->asShared<Sequence>()->_items[0]->asShared<ClassMatch>()->_token->text;
     auto ruleseq = match->asShared<Sequence>()->_items[2];
 
-    auto ast_rule = std::make_shared<AST::ParserRule>(_user_parser, rulename);
+    auto ast_rule = createAstNode<AST::ParserRule>(_user_parser, rulename);
     _current_rule = ast_rule;
     _ast_buildstack.push_back(ast_rule);
     auto expr_ast_node = _onExpression(ruleseq, rulename);

@@ -32,7 +32,7 @@ TEST(shlang1) {
           frg_uv      = uv0;
         }
     )";
-  auto fndefs = shadlang::parse_fndefs(shader_text);
-  CHECK(fndefs != nullptr);
+  auto tunit = shadlang::parse(shader_text);
+  CHECK(tunit != nullptr);
 
 }

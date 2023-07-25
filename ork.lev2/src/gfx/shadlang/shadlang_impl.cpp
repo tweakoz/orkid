@@ -132,7 +132,7 @@ std::string parser_spec = R"xxx(
     
     vertex_shader -< [
         kw_vtxshader
-        kw_or_id
+        funcname
         l_paren
         zom{inh_list_item} : "vtx_dependencies"
         r_paren
@@ -143,7 +143,7 @@ std::string parser_spec = R"xxx(
 
     fragment_shader -< [
         kw_frgshader
-        kw_or_id
+        funcname
         l_paren
         zom{ inh_list_item } : "frg_dependencies"
         r_paren
@@ -154,7 +154,7 @@ std::string parser_spec = R"xxx(
 
     compute_shader -< [
         kw_comshader
-        kw_or_id
+        funcname
         l_paren
         zom{ inh_list_item } : "com_dependencies"
         r_paren
@@ -163,10 +163,9 @@ std::string parser_spec = R"xxx(
         r_curly
     ] >-
 
-    shitem -< sel{ funcdef,vertex_shader,fragment_shader,compute_shader } >-
+    translatable -< sel{ funcdef vertex_shader fragment_shader compute_shader } >-
 
-    funcdefs -< zom{ funcdef } >-
-    shitems -< zom{ shitem } >-
+    translation_unit -< zom{ translatable } >-
 
 )xxx";
 
@@ -182,6 +181,15 @@ template <typename T> std::shared_ptr<T> ast_get(match_ptr_t m) {
   auto sh = m->_uservars.typedValueForKey<SHAST::astnode_ptr_t>("astnode").value();
   return std::dynamic_pointer_cast<T>(sh);
 }
+template <typename T> std::shared_ptr<T> try_ast_get(match_ptr_t m) {
+  auto sh = m->_uservars.typedValueForKey<SHAST::astnode_ptr_t>("astnode");
+  if( sh ){
+    return std::dynamic_pointer_cast<T>(sh.value());
+  }
+  return nullptr;
+}
+
+///////////////////////////////////////////////////////////////////////////////
 
 struct ShadLangParser : public Parser {
 
@@ -191,6 +199,7 @@ struct ShadLangParser : public Parser {
     _DEBUG_INFO        = true;
     auto scanner_match = this->loadPEGScannerSpec(scanner_spec);
     OrkAssert(scanner_match);
+
     auto parser_match = this->loadPEGParserSpec(parser_spec);
     OrkAssert(parser_match);
     OrkAssert(_DEBUG_MATCH);
@@ -388,14 +397,32 @@ struct ShadLangParser : public Parser {
       
     });
     ///////////////////////////////////////////////////////////
-    onPost("funcdefs", [=](match_ptr_t match) {
-      auto ast_node = ast_create<SHAST::FunctionDefs>(match);
-      auto fndefs_inp = match->asShared<NOrMore>();
-      for (auto item : fndefs_inp->_items) {
-        auto funcdef = ast_get<SHAST::FunctionDef>(item);
-        auto it = ast_node->_fndefs.find(funcdef->_name);
-        OrkAssert(it==ast_node->_fndefs.end());
-        ast_node->_fndefs[funcdef->_name] = funcdef;
+    onPost("vertex_shader", [=](match_ptr_t match) {
+      auto ast_node = ast_create<SHAST::VertexShader>(match);
+      auto seq     = match->asShared<Sequence>();
+      auto fn_name = seq->_items[1]->followImplAsShared<ClassMatch>();
+      ast_node->_name = fn_name->_token->text;
+    });
+    ///////////////////////////////////////////////////////////
+    onPost("translation_unit", [=](match_ptr_t match) {
+      auto ast_node = ast_create<SHAST::TranslationUnit>(match);
+      auto the_nom = match->asShared<NOrMore>();
+      for (auto item : the_nom->_items) {
+
+        SHAST::translatable_ptr_t translatable;
+
+        std::string ast_name;
+
+        if( auto as_fndef = try_ast_get<SHAST::Translatable>(item) ){
+          translatable = as_fndef;
+        }
+
+        if( translatable ){
+          auto it = ast_node->_translatables.find(translatable->_name);
+          OrkAssert(it==ast_node->_translatables.end());
+          ast_node->_translatables[translatable->_name] = translatable;
+        }
+
       }
     });
     ///////////////////////////////////////////////////////////
@@ -436,7 +463,7 @@ struct ShadLangParser : public Parser {
 
   /////////////////////////////////////////////////////////////////
 
-  SHAST::fndefs_ptr_t parseString(std::string parse_str) {
+  SHAST::translationunit_ptr_t parseString(std::string parse_str) {
 
     _scanner->scanString(parse_str);
     _scanner->discardTokensOfClass(uint64_t(TokenClass::WHITESPACE));
@@ -447,9 +474,9 @@ struct ShadLangParser : public Parser {
     auto top_view = _scanner->createTopView();
     top_view.dump("top_view");
     auto slv     = std::make_shared<ScannerLightView>(top_view);
-    _fns_matcher = findMatcherByName("funcdefs");
-    OrkAssert(_fns_matcher);
-    auto match = this->match(_fns_matcher, slv);
+    _tu_matcher = findMatcherByName("translation_unit");
+    OrkAssert(_tu_matcher);
+    auto match = this->match(_tu_matcher, slv);
     OrkAssert(match);
     _buildAstTreeVisitor(match);
     auto ast_top = match->_uservars.typedValueForKey<SHAST::astnode_ptr_t>("astnode").value();
@@ -458,18 +485,18 @@ struct ShadLangParser : public Parser {
     printf( "///////////////////////////////\n");
     _dumpAstTreeVisitor(ast_top, 0);
     printf( "///////////////////////////////\n");
-    return std::dynamic_pointer_cast<SHAST::FunctionDefs>(ast_top);
+    return std::dynamic_pointer_cast<SHAST::TranslationUnit>(ast_top);
   }
 
   /////////////////////////////////////////////////////////////////
 
-  matcher_ptr_t _fns_matcher;
+  matcher_ptr_t _tu_matcher;
   std::vector<SHAST::astnode_ptr_t> _astnodestack;
 }; // struct ShadLangParser
 
 } //namespace impl {
 
-SHAST::fndefs_ptr_t parse_fndefs( const std::string& shader_text ){
+SHAST::translationunit_ptr_t parse( const std::string& shader_text ){
     auto parser = std::make_shared<impl::ShadLangParser>();
     auto topast = parser->parseString(shader_text);
     return topast;

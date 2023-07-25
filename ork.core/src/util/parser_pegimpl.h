@@ -33,6 +33,8 @@ struct PegImpl {
   void attachUser(Parser* user_parser);
   svar64_t findKWORID(std::string kworid);
 
+  template <typename T, typename... A> std::shared_ptr<T> createAstNode(A&&... args);
+
   size_t indent = 0;
   scanner_ptr_t _user_scanner;
   Parser* _user_parser = nullptr;
@@ -64,6 +66,12 @@ struct PegImpl {
 };
 
 using pegimpl_ptr_t = std::shared_ptr<PegImpl>;
+
+template <typename T, typename... A> std::shared_ptr<T> PegImpl::createAstNode(A&&... args){
+  auto rval = std::make_shared<T>(std::forward<A>(args)...);
+  _retain_astnodes.insert(rval);
+  return rval;
+}
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 } // namespace ork::peg

@@ -45,11 +45,12 @@ struct DataType;
 struct ArgumentDeclaration;
 struct AssignmentStatement;
 struct FunctionDef;
-struct FunctionDefs;
 struct Shader;
 struct VertexShader;
 struct FragmentShader;
 struct ComputeShader;
+struct Translatable;
+struct TranslationUnit;
 
 using astnode_ptr_t = std::shared_ptr<AstNode>;
 using expression_ptr_t = std::shared_ptr<Expression>;
@@ -61,11 +62,12 @@ using datatype_ptr_t = std::shared_ptr<DataType>;
 using argument_decl_ptr_t = std::shared_ptr<ArgumentDeclaration>;
 using assignment_stmt_ptr_t = std::shared_ptr<AssignmentStatement>;
 using fndef_ptr_t = std::shared_ptr<FunctionDef>;
-using fndefs_ptr_t = std::shared_ptr<FunctionDefs>;
 using shader_ptr_t = std::shared_ptr<Shader>;
 using vtxshader_ptr_t = std::shared_ptr<VertexShader>;
 using frgshader_ptr_t = std::shared_ptr<FragmentShader>;
 using comshader_ptr_t = std::shared_ptr<ComputeShader>;
+using translatable_ptr_t = std::shared_ptr<Translatable>;
+using translationunit_ptr_t = std::shared_ptr<TranslationUnit>;
 ///////////////////// 
 
 struct AstNode {
@@ -165,33 +167,50 @@ struct ArgumentDeclaration : public AstNode{
     std::string _variable_name;
     datatype_ptr_t _datatype;
 };
+
+struct Translatable : public AstNode {
+};
+
 //
-struct FunctionDef : public AstNode { //
-  inline FunctionDef() { _name = "FunctionDef"; }
+struct FunctionDef : public Translatable { //
   datatype_ptr_t _returntype;
   std::vector<argument_decl_ptr_t> _arguments;
   std::vector<assignment_stmt_ptr_t> _statements;
+  std::string desc() const final {
+    return FormatString("FunctionDef(%s)", _name.c_str() );
+  }
 
   //void createDotFile(file::Path outpath) const;
 };
-struct FunctionDefs : public AstNode { //
-  inline FunctionDefs() { _name = "FunctionDefs"; }
-  std::map<std::string,fndef_ptr_t> _fndefs;
+struct TranslationUnit : public AstNode { //
+  std::string desc() const final {
+    return FormatString("TranslationUnit()");
+  }
+  std::map<std::string,translatable_ptr_t> _translatables;
 };
-struct Shader : public AstNode { //
+struct Shader : public Translatable { //
 };
 struct VertexShader : public Shader { //
+  std::string desc() const final {
+    return FormatString("VertexShader(%s)", _name.c_str() );
+  }
 };
 struct FragmentShader : public Shader { //
+  std::string desc() const final {
+    return FormatString("FragmentShader(%s)", _name.c_str() );
+  }
 };
 struct ComputeShader : public Shader { //
+  std::string desc() const final {
+    return FormatString("ComputeShader(%s)", _name.c_str() );
+  }
 };
 
 
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace SHAST {
 
-SHAST::fndefs_ptr_t parse_fndefs( const std::string& shader_text );
+SHAST::translationunit_ptr_t parse( const std::string& shader_text );
 
 } // namespace ork::lev2::shadlang {
 ///////////////////////////////////////////////////////////////////////////////
