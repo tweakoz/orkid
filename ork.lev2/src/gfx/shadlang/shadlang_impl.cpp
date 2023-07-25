@@ -164,27 +164,26 @@ struct ShadLangParser : public Parser {
     onPost("variableReference", [=](match_ptr_t match) { //
         auto kwid      = match->asShared<ClassMatch>()->_token->text;
         auto var_ref   = ast_create<SHAST::VariableReference>(match);
-        var_ref->_name = FormatString("VarRef<%s>", kwid.c_str() );
+        var_ref->_varname = kwid;
     });
     ///////////////////////////////////////////////////////////
     onPost("FLOATING_POINT", [=](match_ptr_t match) { //
       auto ast_node    = ast_create<SHAST::FloatLiteral>(match);
       auto impl        = match->asShared<ClassMatch>();
       ast_node->_value = std::stof(impl->_token->text);
-      ast_node->_name = FormatString("FloatLiteral<%s>", impl->_token->text.c_str() );
+      ast_node->_strval = impl->_token->text;
     });
     ///////////////////////////////////////////////////////////
     onPost("INTEGER", [=](match_ptr_t match) { //
       auto ast_node    = ast_create<SHAST::IntegerLiteral>(match);
       auto impl        = match->asShared<ClassMatch>();
       ast_node->_value = std::stoi(impl->_token->text);
-      ast_node->_name = FormatString("IntLiteral<%s>", impl->_token->text.c_str() );
     });
     ///////////////////////////////////////////////////////////
     onPost("datatype", [=](match_ptr_t match) { //
       auto selected   = match->asShared<OneOf>()->_selected;
       auto ast_node   = ast_create<SHAST::DataType>(match);
-      ast_node->_name = FormatString("Datatype<%s>", selected->asShared<ClassMatch>()->_token->text.c_str() );
+      ast_node->_datatype = selected->asShared<ClassMatch>()->_token->text;
     });
     ///////////////////////////////////////////////////////////
     onPost("term", [=](match_ptr_t match) {
@@ -383,7 +382,7 @@ struct ShadLangParser : public Parser {
 
   void _dumpAstTreeVisitor(SHAST::astnode_ptr_t node, int indent) {
     auto indentstr = std::string(indent*2, ' ');
-    printf("%s%s\n", indentstr.c_str(), node->_name.c_str());
+    printf("%s%s\n", indentstr.c_str(), node->desc().c_str());
     for (auto c : node->_children) {
       _dumpAstTreeVisitor(c, indent+1);
     }

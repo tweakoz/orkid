@@ -66,6 +66,9 @@ struct AstNode {
   }
   std::vector<astnode_ptr_t> _children;
   astnode_ptr_t _parent;
+  virtual std::string desc() const{
+    return _name;
+  }
 };
 
 struct Statement : public AstNode {
@@ -74,10 +77,18 @@ struct Statement : public AstNode {
 //
 struct DataType : public AstNode {
   inline DataType() { _name = "DataType"; }
+  std::string _datatype;
+  virtual std::string desc() const{
+    return FormatString("DataType(%s)",_datatype.c_str());
+  }
 };
 //
 struct VariableReference : public AstNode { //
   inline VariableReference() { _name = "VariableReference"; }
+  std::string _varname;
+  virtual std::string desc() const{
+    return FormatString("VarRef(%s)",_varname.c_str());
+  }
 };
 //
 struct AssignmentStatement : public Statement {
@@ -98,6 +109,9 @@ struct Sum : public AstNode {
     product_ptr_t _left;
     product_ptr_t _right;
     char _op = 0;
+  virtual std::string desc() const{
+    return FormatString("BinOp(%c)", _op);
+  }
 };
 //
 struct Product : public AstNode {
@@ -119,11 +133,18 @@ struct NumericLiteral : public AstNode {
 struct FloatLiteral : public NumericLiteral { //
   inline FloatLiteral() { _name = "FloatLiteral"; }
   float _value = 0.0f;
+  std::string _strval;
+  virtual std::string desc() const{
+    return FormatString("FloatLiteral(%s)", _strval.c_str());
+  }
 };
 //
 struct IntegerLiteral : public NumericLiteral { //
   inline IntegerLiteral() { _name = "IntegerLiteral"; }
   int _value = 0;
+  virtual std::string desc() const{
+    return FormatString("IntegerLiteral(%d)", _value);
+  }
 };
 //
 struct Term : public AstNode { //
