@@ -870,6 +870,7 @@ match_ptr_t PegImpl::parseUserParserSpec(std::string inp_string) {
   this->implementUserLanguage();
   /////////////////////////////////////////////////
   if (match->_view->_end != top_view._end) {
+    top_view.dump("err_view");
     logerrchannel()->log("Parser :: RULESPEC :: SYNTAX ERROR");
     logerrchannel()->log("  input text num tokens<%zu>", top_view._end);
     logerrchannel()->log("  parse cursor<%zu>", match->_view->_end);
@@ -942,7 +943,7 @@ void PegImpl::implementUserLanguage() {
       if (auto as_rule = std::dynamic_pointer_cast<AST::ParserRule>(the_node)) {
         if (as_rule != top_rule) {
           auto rule_name = as_rule->_name;
-          logchan_rulespec2->log("nodesubrule<%s>\n", rule_name.c_str());
+          logchan_rulespec2->log("nodesubrule<%s>", rule_name.c_str());
         }
       } else if (auto as_kwid = std::dynamic_pointer_cast<AST::ExprKWID>(the_node)) {
         auto top_rule_name = top_rule->_name;
@@ -962,9 +963,9 @@ void PegImpl::implementUserLanguage() {
           reference->_node            = the_node;
           rule->_referenced_by.push_back(reference);
         }
-        logchan_rulespec2->log("\n");
+        logchan_rulespec2->log("");
       } else {
-        logchan_rulespec2->log("%s node<%p:%s>\n", indent.c_str(), (void*)the_node.get(), the_node->_name.c_str());
+        logchan_rulespec2->log("%s node<%p:%s>", indent.c_str(), (void*)the_node.get(), the_node->_name.c_str());
       }
     };
 

@@ -59,6 +59,7 @@ std::string scanner_spec = R"xxx(
     KW_INT              -< "int" >-
     KW_VTXSHADER        -< "vertex_shader" >-
     KW_FRGSHADER        -< "fragment_shader" >-
+    KW_COMSHADER        -< "compute_shader" >-
     KW_OR_ID            -< "[a-zA-Z_][a-zA-Z0-9_]*" >-
 )xxx";
 
@@ -81,13 +82,14 @@ std::string parser_spec = R"xxx(
     function -< FUNCTION >-
     kw_vtxshader -< KW_VTXSHADER >-
     kw_frgshader -< KW_FRGSHADER >-
+    kw_comshader -< KW_COMSHADER >-
         
     argumentDeclaration -< [ datatype kw_or_id opt{COMMA} ] >-
     variableDeclaration -< [datatype kw_or_id] >-
     variableReference -< kw_or_id >-
     funcname -< kw_or_id >-
     inh_list_item -< [ colon kw_or_id ] >-
-    inh_list -< zom{inh_list_item} >-
+    inh_list -< zom{ inh_list_item } >-
 
     product -< [ primary opt{ [star primary] } ] >-
 
@@ -128,13 +130,11 @@ std::string parser_spec = R"xxx(
         r_curly
     ] >-
     
-    funcdefs -< zom{funcdef} >-
-
     vertex_shader -< [
         kw_vtxshader
         kw_or_id
         l_paren
-        zom{inh_list_item} : "inheritances"
+        zom{inh_list_item} : "vtx_dependencies"
         r_paren
         l_curly
         zom{statement} : "vtx_statements"
@@ -145,12 +145,28 @@ std::string parser_spec = R"xxx(
         kw_frgshader
         kw_or_id
         l_paren
-        zom{inh_list_item} : "inheritances"
+        zom{ inh_list_item } : "frg_dependencies"
         r_paren
         l_curly
-        zom{statement} : "frg_statements"
+        zom{ statement } : "frg_statements"
         r_curly
     ] >-
+
+    compute_shader -< [
+        kw_comshader
+        kw_or_id
+        l_paren
+        zom{ inh_list_item } : "com_dependencies"
+        r_paren
+        l_curly
+        zom{ statement } : "com_statements"
+        r_curly
+    ] >-
+
+    shitem -< sel{ funcdef,vertex_shader,fragment_shader,compute_shader } >-
+
+    funcdefs -< zom{ funcdef } >-
+    shitems -< zom{ shitem } >-
 
 )xxx";
 
