@@ -94,6 +94,7 @@ struct Match {
   using visit_fn_t = std::function<void(int, const Match*)>;
   void visit(int level, visit_fn_t) const;
   void dump1(int indent) const;
+  std::string ldump() const;
   bool matcherInStack(matcher_ptr_t matcher) const;
   template <typename impl_t> std::shared_ptr<impl_t> asShared();
   template <typename impl_t> std::shared_ptr<impl_t> makeShared();
@@ -105,6 +106,7 @@ struct Match {
   template <typename user_t> std::shared_ptr<user_t> makeSharedForKey(std::string named);
   template <typename user_t> void setSharedForKey(std::string named, std::shared_ptr<user_t> ptr);
   template <typename impl_t> std::shared_ptr<impl_t> followImplAsShared();
+  static match_ptr_t followThroughProxy( match_ptr_t start );
 
   match_attempt_constptr_t _attempt;
   match_ptr_t _parent;
@@ -238,6 +240,8 @@ struct ClassMatch : public MatchItem {
 };
 
 struct OneOf : public MatchItem {
+
+  void dump(std::string header) const;
   template <typename impl_t> std::shared_ptr<impl_t> asShared();
 
   match_ptr_t _selected;

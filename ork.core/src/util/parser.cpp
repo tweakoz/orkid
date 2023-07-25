@@ -109,13 +109,68 @@ void Match::visit(int level, visit_fn_t vfn) const {
   }
 }
 
+match_ptr_t Match::followThroughProxy( match_ptr_t start ){
+  if (auto as_pxy = start->tryAsShared<Proxy>()) {
+    auto pxy = as_pxy.value();
+    if (pxy->_selected){
+      return followThroughProxy(pxy->_selected);
+    }
+    else {
+      return nullptr;
+    }
+  }
+  else {
+    return start;
+  }
+}
+
+std::string Match::ldump() const{
+  std::string rval;
+  if (auto as_seq = tryAsShared<Sequence>()) {
+    auto seq = as_seq.value();
+    rval = FormatString("MATCH<%s>.SEQ<%p> cnt<%zu>", _matcher->_name.c_str(), (void*)seq.get(), seq->_items.size() );
+    //for (auto i : seq->_items) {
+      //i->dump1(indent + 3);
+    //}
+  } else if (auto as_nom = tryAsShared<NOrMore>()) {
+    auto nom = as_nom.value();
+    rval = FormatString("MATCH<%s>.NOM%zu<%p> cnt<%zu>", _matcher->_name.c_str(), nom->_minmatches, (void*)nom.get(), nom->_items.size() );
+    //for (auto i : nom->_items) {
+      //i->dump1(indent + 3);
+    //}
+  } else if (auto as_grp = tryAsShared<Group>()) {
+    auto grp = as_grp.value();
+    rval = FormatString("MATCH<%s>.GRP<%p> cnt<%zu>", _matcher->_name.c_str(), (void*)grp.get(), grp->_items.size() );
+    //for (auto i : grp->_items) {
+      //i->dump1(indent + 3);
+    //}
+  } else if (auto as_opt = tryAsShared<Optional>()) {
+    auto opt = as_opt.value();
+    if (opt->_subitem)
+      rval = FormatString("MATCH<%s>.OPT<%p>", _matcher->_name.c_str(), (void*)opt.get());
+    else {
+      rval = FormatString("MATCH<%s>.OPT<%p>.EMPTY", _matcher->_name.c_str(), (void*)opt.get());
+    }
+  } else if (auto as_pxy = tryAsShared<Proxy>()) {
+    auto pxy = as_pxy.value();
+    if (pxy->_selected){
+      auto pxyldump = pxy->_selected->ldump();
+      rval = FormatString("MATCH<%s>.PXY<%p:%s>", _matcher->_name.c_str(), (void*)pxy.get(), pxyldump.c_str() );
+    }
+    else {
+      rval = FormatString("MATCH<%s>.PXY<%p>.EMPTY", _matcher->_name.c_str(), (void*)pxy.get());
+    }
+  }
+  return rval;  
+}
+
 void Match::dump1(int indent) const {
 
   auto indentstr = std::string(indent, ' ');
 
   if (_view->empty()) {
     logchan_parser->log(
-        "%s DUMP Match<%p> matcher<%p:%s> view (empty)", indentstr.c_str(), this, (void*)_matcher.get(), _matcher->_name.c_str());
+        "%s DUMP Match<%p> matcher<%p:%s> view (empty)", this, (void*)_matcher.get(), _matcher->_name.c_str());
   } else {
     logchan_parser->log(
         "%s DUMP Match<%p> matcher<%p:%s> view [%zu..%zu]",

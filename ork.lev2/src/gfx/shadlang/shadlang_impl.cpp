@@ -228,21 +228,22 @@ struct ShadLangParser : public Parser {
     onPost("sum", [=](match_ptr_t match) {
       auto ast_node     = ast_create<SHAST::Sum>(match);
       auto selected = match->asShared<OneOf>()->_selected;
+      match->asShared<OneOf>()->dump("sum");
       if (selected->_matcher == product) {
         ast_node->_left = ast_get<SHAST::Product>(selected);
         ast_node->_op   = '_';
-      } else if (selected->_matcher->_name == "add1") {
+      } else if (selected->_matcher->_name == "add") {
         auto seq         = selected->asShared<Sequence>();
         ast_node->_left = ast_get<SHAST::Product>(seq->_items[0]);
         ast_node->_right = ast_get<SHAST::Product>(seq->_items[2]);
         ast_node->_op    = '+';
-      } else if (selected->_matcher->_name == "add2") {
+      } else if (selected->_matcher->_name == "sub") {
         auto seq         = selected->asShared<Sequence>();
         ast_node->_left = ast_get<SHAST::Product>(seq->_items[0]);
         ast_node->_right = ast_get<SHAST::Product>(seq->_items[2]);
         ast_node->_op    = '-';
       } else {
-        //OrkAssert(false);
+        OrkAssert(false);
       }
     });
     ///////////////////////////////////////////////////////////
@@ -275,15 +276,14 @@ struct ShadLangParser : public Parser {
       auto seq      = match->asShared<Sequence>();
       seq->dump("argument_decl");
 
-      auto varname_proxy = seq->itemAsShared<Proxy>(1);
-      auto varname = varname_proxy->followAsShared<ClassMatch>();
+      auto dtype_sel = seq->_items[0]->followImplAsShared<OneOf>()->_selected;
+      auto varname = seq->_items[1]->followImplAsShared<ClassMatch>();
 
-      //ast_node->_variable_name   = varname->_token->text;
-      //auto seq0                  = seq->itemAsShared<OneOf>(0)->_selected;
-      //auto tok                   = seq0->asShared<ClassMatch>()->_token;
-      //ast_node->_datatype        = std::make_shared<SHAST::DataType>();
-      //ast_node->_datatype->_name = tok->text;
-      //ast_node->_name = FormatString("ArgDecl<%s %s>", tok->text.c_str(), ast_node->_variable_name.c_str() );
+      ast_node->_variable_name   = varname->_token->text;
+      auto tok                   = dtype_sel->asShared<ClassMatch>()->_token;
+      ast_node->_datatype        = std::make_shared<SHAST::DataType>();
+      ast_node->_datatype->_name = tok->text;
+      ast_node->_name = FormatString("ArgDecl<%s %s>", tok->text.c_str(), ast_node->_variable_name.c_str() );
     });
     ///////////////////////////////////////////////////////////
     onPost("funcdef", [=](match_ptr_t match) {
@@ -305,8 +305,8 @@ struct ShadLangParser : public Parser {
         auto argseq   = arg->asShared<Sequence>();
         auto arg_decl = ast_get<SHAST::ArgumentDeclaration>(arg);
         funcdef->_arguments.push_back(arg_decl);
-        //auto argtype = arg_decl->_datatype->_name;
-        //auto argname = arg_decl->_variable_name;
+        auto argtype = arg_decl->_datatype->_name;
+        auto argname = arg_decl->_variable_name;
       }
 
       stas->dump("stas");

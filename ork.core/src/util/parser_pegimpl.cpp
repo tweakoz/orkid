@@ -577,7 +577,9 @@ AST::expression_ptr_t PegImpl::_onExpression(match_ptr_t match, std::string name
   if (expression_name) {
     expression_name = expression_name->asShared<Sequence>()->_items[1];
     auto xname      = expression_name->asShared<ClassMatch>()->_token->text;
-    expr_out->_expr_name = xname;
+    OrkAssert( xname.front() == '"' );
+    OrkAssert( xname.back() == '"' );
+    expr_out->_expr_name = xname.substr(1,xname.length()-2);
     logchan_rulespec->log(
         "%s_onExpression<%s> len%zu>  named<%s>", indentstr.c_str(), match->_matcher->_name.c_str(), expression_len, xname.c_str());
   } else {
