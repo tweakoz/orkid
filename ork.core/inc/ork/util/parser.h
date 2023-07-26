@@ -326,6 +326,8 @@ struct Parser {
   std::unordered_map<std::string, matcher_ptr_t> _matchers_by_name;
   std::vector<match_attempt_ptr_t> _match_stack;
 
+  std::unordered_map<uint64_t,match_attempt_ptr_t> _packrat_cache;
+
   scanner_ptr_t _scanner;
   svar64_t _user;
   size_t _cache_misses = 0;

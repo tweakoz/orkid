@@ -436,6 +436,18 @@ match_attempt_ptr_t Parser::_tryMatch(MatchAttemptContextItem& mci) {
   auto matcher  = mci._matcher;
   auto inp_view = mci._view;
 
+  uint64_t hash = matcher->hash(inp_view);
+  auto it_hash = _packrat_cache.find(hash);
+  if( it_hash != _packrat_cache.end() ){
+    auto cached_match_attempt = it_hash->second;
+    if(cached_match_attempt->_view->_end == inp_view->_end){
+      _cache_hits = 0;
+      return cached_match_attempt;
+    }
+  }
+  
+  _cache_misses++;
+
   OrkAssert(matcher);
   if (matcher->_attempt_match_fn == nullptr) {
     logerrchannel()->log("matcher<%s> has no match function", matcher->_name.c_str());
@@ -447,6 +459,9 @@ match_attempt_ptr_t Parser::_tryMatch(MatchAttemptContextItem& mci) {
   //////////////////////////////////
   _matchattemptctx._stack.pop_back();
   //////////////////////////////////
+  if( match_attempt ){
+    _packrat_cache[hash] = match_attempt;
+  }
   return match_attempt;
 }
 
@@ -455,6 +470,10 @@ match_attempt_ptr_t Parser::_tryMatch(MatchAttemptContextItem& mci) {
 match_ptr_t Parser::match(matcher_ptr_t topmatcher, //
                           scannerlightview_constptr_t topview,
                           match_notif_t prelink_notif ) {
+
+  _cache_misses = 0;
+  _cache_hits = 0;
+
   if (topmatcher == nullptr) {
     logerrchannel()->log("Parser<%p> no top match function", this);
     OrkAssert(false);
@@ -512,6 +531,9 @@ match_ptr_t Parser::match(matcher_ptr_t topmatcher, //
       prelink_notif(root_match);
     }
     _visitLinkMatch(root_match);
+
+    printf( "xxx : CACHE_HITS<%zU> CACHE_MISSES<%zu>\n", _cache_hits, _cache_misses );
+
     return root_match;
   }
 
