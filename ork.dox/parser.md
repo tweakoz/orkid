@@ -2,7 +2,7 @@
 
 ## It can take a scanner grammar (example):
 
-```
+```python
     macro(M1)           <| "xyz" |>
     MULTI_LINE_COMMENT  <| "\/\*([^*]|\*+[^/*])*\*+\/" |>
     SINGLE_LINE_COMMENT <| "\/\/.*[\n\r]" |>
@@ -50,7 +50,7 @@
 
 ## A parser grammar (example):
 
-```
+```python
     datatype       <| sel{ KW_FLOAT KW_INT 
                            KW_VEC2 KW_VEC3 KW_VEC4 
                            KW_MAT2 KW_MAT3 KW_MAT4 
@@ -239,7 +239,7 @@
 ```
 
 ## A string or file to parse (example):
-```
+```glsl
         ///////////////////////////////////////////////////////////////
         uniform_set ublock_vtx { 
           mat4 mvp;
@@ -316,7 +316,7 @@
 
 ## And generate an AST tree (example):
 
-```
+```python
 TranslationUnit()
   UniformSet(ublock_vtx)
     ObjectName(ublock_vtx)
