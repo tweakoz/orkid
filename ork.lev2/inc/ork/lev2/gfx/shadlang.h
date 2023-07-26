@@ -190,6 +190,11 @@ struct FunctionInvokation : public AstNode { //
 struct Translatable : public AstNode {
 };
 
+struct FunctionName : public Translatable { //
+  std::string desc() const final {
+    return FormatString("FunctionName(%s)", _name.c_str() );
+  }
+};
 //
 struct FunctionDef : public Translatable { //
   datatype_ptr_t _returntype;

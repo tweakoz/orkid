@@ -126,12 +126,20 @@ void Expression::do_visit(astvisitctx_ptr_t visitctx) { // final
 }
 matcher_ptr_t Expression::createMatcher(std::string named) { // final
 
+  printf( "XYZ expr named<%s> exprname<%s>\n", named.c_str(), _expr_name.c_str() );
+
   if(_expr_name!=""){
-    printf( "XYZ named<%s> exprname<%s>\n", named.c_str(), _expr_name.c_str() );
     named = _expr_name;
+    if(_expr_name=="fn_name"){
+      OrkAssert(false);
+    }
   }
 
-  return _expr_selected->createMatcher(named);
+  matcher_ptr_t out = _expr_selected->createMatcher(named);
+  printf( "XYZ expr out matcher<%s>\n", out->_name.c_str() );
+  auto it = _user_parser->_matchers_by_name.find(named);
+  OrkAssert(it!=_user_parser->_matchers_by_name.end());
+  return out;
 }
 ////////////////////////////////////////////////////////////////////////
 ExprKWID::ExprKWID(Parser* user_parser)

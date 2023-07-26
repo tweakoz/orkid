@@ -158,7 +158,7 @@ std::string parser_spec = R"xxx(
 
     fn_def -< [
         kw_function
-        funcname
+        kw_or_id : "fn_name"
         l_paren
         arg_list : "args"
         r_paren
@@ -447,13 +447,21 @@ struct ShadLangParser : public Parser {
       auto funcdef = ast_create<SHAST::StatementList>(match);
     });
     ///////////////////////////////////////////////////////////
+    onPost("fn_name", [=](match_ptr_t match) {
+      auto funcname = ast_create<SHAST::FunctionName>(match);
+      auto seq     = match->asShared<Sequence>();
+      auto fn_name = seq->_items[0]->followImplAsShared<ClassMatch>();
+      funcname->_name = fn_name->_token->text;
+    });
+    ///////////////////////////////////////////////////////////
     onPost("fn_def", [=](match_ptr_t match) {
       auto seq     = match->asShared<Sequence>();
       auto funcdef = ast_create<SHAST::FunctionDef>(match);
 
       seq->dump("funcdef");
 
-      auto fn_name = seq->_items[1]->followImplAsShared<ClassMatch>();
+      auto fn_name_seq = seq->_items[1]->followImplAsShared<Sequence>();
+      auto fn_name = fn_name_seq->_items[0]->followImplAsShared<ClassMatch>();
       //auto fn_name = fn_name_proxy->followAsShared<ClassMatch>();
       funcdef->_name = fn_name->_token->text; //FormatString("FnDef<%s>", fn_name->_token->text.c_str() );
 
