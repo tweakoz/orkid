@@ -55,9 +55,7 @@ struct PegImpl {
 
   std::vector<AST::scanner_rule_pair_t> _user_scanner_rules_ordered;
   std::map<std::string, AST::scanner_macro_ptr_t> _user_scanner_macros;
-  std::map<std::string, matcher_notif_t> _user_deferred_notifs;
 
-  std::vector<void_lambda_t> _link_ops;
   AST::rule_ptr_t _current_rule;
   std::vector<AST::astnode_ptr_t> _ast_buildstack;
 

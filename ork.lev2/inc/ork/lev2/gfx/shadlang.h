@@ -80,6 +80,13 @@ struct AstNode {
   virtual std::string desc() const{
     return _name;
   }
+  template <typename T> std::shared_ptr<T> childAs(size_t index){
+    OrkAssert(index<_children.size());
+    auto ch = _children[index];
+    auto ret = std::dynamic_pointer_cast<T>(ch);
+    OrkAssert(ret);
+    return ret;
+  }
 };
 
 struct Statement : public AstNode {
@@ -195,8 +202,10 @@ struct FunctionInvokation : public AstNode { //
 
 struct DataDeclaration : public AstNode { //
   std::string desc() const final {
-    return FormatString("DataDeclaration" );
+    return FormatString("DataDeclaration dt<%s> id<%s>", _datatype.c_str(), _identifier.c_str() );
   }
+  std::string _datatype;
+  std::string _identifier;
 };
 struct DataDeclarations : public AstNode { //
   std::string desc() const final {

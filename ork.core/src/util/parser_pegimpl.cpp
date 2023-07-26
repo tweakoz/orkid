@@ -15,7 +15,7 @@ match_ptr_t filtered_match(matcher_ptr_t matcher, match_ptr_t the_match);
 static logchannel_ptr_t logchan_rulespec  = logger()->createChannel("PEGSPEC1", fvec3(0.5, 0.8, 0.5), true);
 static logchannel_ptr_t logchan_rulespec2 = logger()->createChannel("PEGSPEC2", fvec3(0.5, 0.8, 0.5), true);
 
-void Parser::onPre(const std::string& rule_name, matcher_notif_t fn) {
+void Parser::onPre(const std::string& rule_name, match_notif_t fn) {
 
   auto it = _matchers_by_name.find(rule_name);
   if (it != _matchers_by_name.end()) {
@@ -29,12 +29,26 @@ void Parser::onPre(const std::string& rule_name, matcher_notif_t fn) {
   }
 }
 
-void Parser::onPost(const std::string& rule_name, matcher_notif_t fn) {
+void Parser::onPost(const std::string& rule_name, match_notif_t fn) {
 
   auto it = _matchers_by_name.find(rule_name);
   if (it != _matchers_by_name.end()) {
     matcher_ptr_t matcher = it->second;
     matcher->_post_notif       = fn;
+    logchan_rulespec2->log(
+        "IMPLEMENT rulenotif<%s> matcher<%p:%s> post-notif assigned", rule_name.c_str(), (void*)matcher.get(), matcher->_name.c_str());
+  } else {
+    logerrchannel()->log("IMPLEMENT matcher<%s> not found", rule_name.c_str());
+    OrkAssert(false);
+  }
+}
+
+void Parser::onLink(const std::string& rule_name, match_notif_t fn) {
+
+  auto it = _matchers_by_name.find(rule_name);
+  if (it != _matchers_by_name.end()) {
+    matcher_ptr_t matcher = it->second;
+    matcher->_link_notif       = fn;
     logchan_rulespec2->log(
         "IMPLEMENT rulenotif<%s> matcher<%p:%s> post-notif assigned", rule_name.c_str(), (void*)matcher.get(), matcher->_name.c_str());
   } else {

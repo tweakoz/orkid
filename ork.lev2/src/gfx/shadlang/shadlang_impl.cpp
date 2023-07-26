@@ -384,8 +384,9 @@ struct ShadLangParser : public Parser {
     ///////////////////////////////////////////////////////////
     onPost("fn_invok", [=](match_ptr_t match) {
       auto ast_node = ast_create<SHAST::FunctionInvokation>(match);
-        auto kwid      = match->asShared<ClassMatch>()->_token->text;
-        ast_node->_name = kwid;
+      auto seq = match->asShared<Sequence>();
+      //auto kwid      = match->asShared<ClassMatch>()->_token->text;
+        //ast_node->_name = kwid;
     });
     ///////////////////////////////////////////////////////////
     onPost("primary", [=](match_ptr_t match) {
@@ -479,14 +480,24 @@ struct ShadLangParser : public Parser {
     });
     ///////////////////////////////////////////////////////////
     onPost("arg_list", [=](match_ptr_t match) {
-      auto funcdef = ast_create<SHAST::ArgumentList>(match);
-      auto seq     = match->asShared<Sequence>();
+      auto arg_list = ast_create<SHAST::ArgumentList>(match);
+      auto nom     = match->asShared<NOrMore>();
+      for( auto item : nom->_items ){
+        auto seq = item->asShared<Sequence>();
+        //auto tid = ast_get<SHAST::TypedIdentifier>(seq->_items[0]);
+        //arg_list->_arguments.push_back(tid);
+      }
       
     });
     ///////////////////////////////////////////////////////////
     onPost("statement_list", [=](match_ptr_t match) {
-      auto seq     = match->asShared<Sequence>();
-      auto funcdef = ast_create<SHAST::StatementList>(match);
+      auto statement_list = ast_create<SHAST::StatementList>(match);
+      auto nom     = match->asShared<NOrMore>();
+      for( auto item : nom->_items ){
+        auto seq = item->asShared<Sequence>();
+        //auto statement = ast_get<SHAST::Stat>(seq->_items[0]);
+        //arg_list->_arguments.push_back(tid);
+      }
     });
     ///////////////////////////////////////////////////////////
     onPost("fn_def", [=](match_ptr_t match) {
@@ -568,11 +579,18 @@ struct ShadLangParser : public Parser {
     onPost("data_decl", [=](match_ptr_t match) {
       auto ast_node = ast_create<SHAST::DataDeclaration>(match);
       auto seq     = match->asShared<Sequence>();
-      seq->dump("data_decl");
+      seq->dump("POST:data_decl");
       auto dtsel = seq->_items[0]->asShared<Proxy>()->_selected;
       auto dt = ast_get<SHAST::DataType>(dtsel);
       auto kwid = seq->_items[1]->followImplAsShared<ClassMatch>();
       ast_node->_name = kwid->_token->text;
+    });
+    onLink("data_decl", [=](match_ptr_t match) {
+      auto data_decl = ast_get<SHAST::DataDeclaration>(match);
+      auto tid = data_decl->childAs<SHAST::TypedIdentifier>(0);
+      data_decl->_datatype = tid->_datatype;
+      data_decl->_identifier = tid->_identifier;
+      data_decl->_descend = false;
     });
     ///////////////////////////////////////////////////////////
     onPost("data_decls", [=](match_ptr_t match) {
@@ -728,6 +746,9 @@ struct ShadLangParser : public Parser {
     auto match = this->match(_tu_matcher, slv);
     OrkAssert(match);
     _buildAstTreeVisitor(match);
+    _visitLinkMatch(match);
+
+
     auto ast_top = match->_uservars.typedValueForKey<SHAST::astnode_ptr_t>("astnode").value();
     printf( "///////////////////////////////\n");
     printf( "// AST TREE\n");

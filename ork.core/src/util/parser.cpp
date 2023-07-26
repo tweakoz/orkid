@@ -126,40 +126,74 @@ match_ptr_t Match::followThroughProxy( match_ptr_t start ){
 
 std::string Match::ldump() const{
   std::string rval;
+  auto st = _view->_start;
+  auto en = _view->_end;
   if (auto as_seq = tryAsShared<Sequence>()) {
     auto seq = as_seq.value();
-    rval = FormatString("MATCH<%s>.SEQ<%p> cnt<%zu>", _matcher->_name.c_str(), (void*)seq.get(), seq->_items.size() );
+    rval = FormatString("MATCH<%s>.SEQ<%p> cnt<%zu> view<%zu:%zu>", //
+                        _matcher->_name.c_str(), //
+                        (void*)seq.get(), // 
+                        seq->_items.size(), //
+                        st, en );
     //for (auto i : seq->_items) {
-      //i->dump1(indent + 3);
-    //}
-  } else if (auto as_nom = tryAsShared<NOrMore>()) {
-    auto nom = as_nom.value();
-    rval = FormatString("MATCH<%s>.NOM%zu<%p> cnt<%zu>", _matcher->_name.c_str(), nom->_minmatches, (void*)nom.get(), nom->_items.size() );
-    //for (auto i : nom->_items) {
       //i->dump1(indent + 3);
     //}
   } else if (auto as_grp = tryAsShared<Group>()) {
     auto grp = as_grp.value();
-    rval = FormatString("MATCH<%s>.GRP<%p> cnt<%zu>", _matcher->_name.c_str(), (void*)grp.get(), grp->_items.size() );
+    rval = FormatString("MATCH<%s>.GRP<%p> cnt<%zu> view<%zu:%zu>", //
+                        _matcher->_name.c_str(), //
+                        (void*)grp.get(), //
+                        grp->_items.size(), //
+                        st, en );
     //for (auto i : grp->_items) {
+      //i->dump1(indent + 3);
+    //}
+  } else if (auto as_nom = tryAsShared<NOrMore>()) {
+    auto nom = as_nom.value();
+    rval = FormatString("MATCH<%s>.NOM%zu<%p> cnt<%zu> view<%zu:%zu>",  //
+                        _matcher->_name.c_str(), //
+                        nom->_minmatches, //
+                        (void*)nom.get(), //
+                        nom->_items.size(), //
+                        st, en );
+    //for (auto i : nom->_items) {
       //i->dump1(indent + 3);
     //}
   } else if (auto as_opt = tryAsShared<Optional>()) {
     auto opt = as_opt.value();
     if (opt->_subitem)
-      rval = FormatString("MATCH<%s>.OPT<%p>", _matcher->_name.c_str(), (void*)opt.get());
+      rval = FormatString("MATCH<%s>.OPT<%p> view<%zu:%zu>", //
+                          _matcher->_name.c_str(), //
+                          (void*)opt.get(), //
+                          st, en );
     else {
-      rval = FormatString("MATCH<%s>.OPT<%p>.EMPTY", _matcher->_name.c_str(), (void*)opt.get());
+      rval = FormatString("MATCH<%s>.OPT<%p>.EMPTY view<%zu:%zu>", //
+                          _matcher->_name.c_str(), //
+                          (void*)opt.get(),
+                          st, en );
     }
   } else if (auto as_pxy = tryAsShared<Proxy>()) {
     auto pxy = as_pxy.value();
     if (pxy->_selected){
       auto pxyldump = pxy->_selected->ldump();
-      rval = FormatString("MATCH<%s>.PXY<%p:%s>", _matcher->_name.c_str(), (void*)pxy.get(), pxyldump.c_str() );
+      rval = FormatString("MATCH<%s>.PXY<%p:%s> view<%zu:%zu>", //
+                          _matcher->_name.c_str(), //
+                          (void*)pxy.get(), //
+                          pxyldump.c_str(), //
+                          st, en );
     }
     else {
-      rval = FormatString("MATCH<%s>.PXY<%p>.EMPTY", _matcher->_name.c_str(), (void*)pxy.get());
+      rval = FormatString("MATCH<%s>.PXY<%p>.EMPTY view<%zu:%zu>", //
+                          _matcher->_name.c_str(), //
+                          (void*)pxy.get(), //
+                          st, en);
     }
+  } else if (auto as_sel = tryAsShared<OneOf>()) {
+    auto sel = as_sel.value();
+      rval = FormatString("MATCH<%s>.SEL<%p> view<%zu:%zu>", //
+                          _matcher->_name.c_str(), //
+                          (void*)sel.get(), //
+                          st, en );
   }
   return rval;  
 }
@@ -461,7 +495,8 @@ match_ptr_t Parser::match(matcher_ptr_t topmatcher, scannerlightview_constptr_t 
     // visit match tree
     /////////////////////////////////////
 
-    _visitMatch(root_match);
+    _visitComposeMatch(root_match);
+    //_visitLinkMatch(root_match);
 
     printf( "xxx : #############################################################\n" );
 
@@ -475,23 +510,27 @@ match_ptr_t Parser::match(matcher_ptr_t topmatcher, scannerlightview_constptr_t 
 
 //////////////////////////////////////////////////////////////////////
 
-void Parser::_visitMatch(match_ptr_t m){
+void Parser::_visitComposeMatch(match_ptr_t m){
 
   auto indentstr = std::string(_visit_depth * 2, ' ');
   std::string suffix;
   if(m->_matcher->_pre_notif) {
-    suffix += " prenotif";
+    suffix += " PRE";
   }
   if(m->_matcher->_post_notif) {
-    suffix += " postnotif";
+    suffix += " POST";
+  }
+  if(m->_matcher->_link_notif) {
+    suffix += " LINK";
   }
 
-  printf( "xxx : %s match<%p:%s:%s> numc<%zu> %s\n", //
+  printf( "xxx : %s match<%p:%s:%s> numc<%zu> view<%zu:%zu> %s\n", //
           indentstr.c_str(), //
           (void*) m.get(), //
           m->_matcher->_name.c_str(), //
           m->_matcher->_info.c_str(), //
           m->_children.size(), //
+          m->_view->_start, m->_view->_end, //
           suffix.c_str() );
 
   _visit_depth++;
@@ -499,7 +538,7 @@ void Parser::_visitMatch(match_ptr_t m){
     m->_matcher->_pre_notif(m);
   }
   for(auto& child_match : m->_children) {
-    _visitMatch(child_match);
+    _visitComposeMatch(child_match);
   }
   if(m->_matcher->_post_notif) {
     m->_matcher->_post_notif(m);
@@ -507,7 +546,22 @@ void Parser::_visitMatch(match_ptr_t m){
   _visit_depth--;
 }
 
+//////////////////////////////////////////////////////////////////////
 
+void Parser::_visitLinkMatch(match_ptr_t m){
+
+  auto indentstr = std::string(_visit_depth * 2, ' ');
+  std::string suffix;
+
+  _visit_depth++;
+  for(auto& child_match : m->_children) {
+    _visitLinkMatch(child_match);
+  }
+  if(m->_matcher->_link_notif) {
+    m->_matcher->_link_notif(m);
+  }
+  _visit_depth--;
+}
 //////////////////////////////////////////////////////////////////////
 
 void Parser::_log_valist(const char* pMsgFormat, va_list args) const {

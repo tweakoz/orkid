@@ -43,7 +43,7 @@ using match_attempt_ptr_t      = std::shared_ptr<MatchAttempt>;
 using match_attempt_constptr_t = std::shared_ptr<MatchAttempt>;
 using matcher_ptr_t            = std::shared_ptr<Matcher>;
 using matcher_fn_t    = std::function<match_attempt_ptr_t(matcher_ptr_t par_matcher, scannerlightview_constptr_t& inp_view)>;
-using matcher_notif_t = std::function<void(match_ptr_t)>;
+using match_notif_t = std::function<void(match_ptr_t)>;
 using parser_ptr_t    = std::shared_ptr<Parser>;
 
 using sequence_ptr_t   = std::shared_ptr<Sequence>;
@@ -130,8 +130,9 @@ struct Matcher {
   matcher_fn_t _attempt_match_fn;
   genmatch_fn_t _genmatch_fn;
   matcher_filterfn_t _match_filter;
-  matcher_notif_t _pre_notif;
-  matcher_notif_t _post_notif;
+  match_notif_t _pre_notif;
+  match_notif_t _post_notif;
+  match_notif_t _link_notif;
   std::string _name;
   std::string _info;
   std::function<bool()> _on_link;
@@ -303,8 +304,9 @@ struct Parser {
   void log_match_continue(const char* pMsgFormat, ...) const;
 
   matcher_ptr_t rule(const std::string& rule_name);
-  void onPre(const std::string& rule_name, matcher_notif_t fn);
-  void onPost(const std::string& rule_name, matcher_notif_t fn);
+  void onPre(const std::string& rule_name, match_notif_t fn);
+  void onPost(const std::string& rule_name, match_notif_t fn);
+  void onLink(const std::string& rule_name, match_notif_t fn);
 
   match_ptr_t loadPEGScannerSpec(const std::string& spec);
   match_ptr_t loadPEGParserSpec(const std::string& spec);
@@ -314,7 +316,8 @@ struct Parser {
   match_attempt_ptr_t leafMatch(matcher_ptr_t matcher);
   void popMatch();
 
-  void _visitMatch(match_ptr_t m);
+  void _visitComposeMatch(match_ptr_t m);
+  void _visitLinkMatch(match_ptr_t m);
 
   std::unordered_set<matcher_ptr_t> _matchers;
   std::unordered_map<std::string, matcher_ptr_t> _matchers_by_name;
