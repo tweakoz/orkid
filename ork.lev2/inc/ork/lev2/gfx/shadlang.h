@@ -163,9 +163,28 @@ struct Term : public AstNode { //
 };
 //
 struct ArgumentDeclaration : public AstNode{
-  inline ArgumentDeclaration() { _name = "ArgumentDeclaration"; }
     std::string _variable_name;
     datatype_ptr_t _datatype;
+    std::string desc() const final {
+    return FormatString("ArgumentDeclaration(%s)", _variable_name.c_str() );
+  }
+};
+
+struct FunctionInvokationArgument : public AstNode { //
+  std::string desc() const final {
+    return FormatString("FunctionInvokationArgument()");
+  }
+};
+struct FunctionInvokationArguments : public AstNode { //
+  std::string desc() const final {
+    return FormatString("FunctionInvokationArguments()");
+  }
+};
+
+struct FunctionInvokation : public AstNode { //
+  std::string desc() const final {
+    return FormatString("FunctionInvokation()");
+  }
 };
 
 struct Translatable : public AstNode {

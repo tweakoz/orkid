@@ -67,18 +67,18 @@ TEST(shlang1) {
         ///////////////////////////////////////////////////////////////
         vertex_shader vs_uitext : iface_vdefault {
           gl_Position = mvp * position;
-          //frg_clr     = vtxcolor;
+          frg_clr     = vtxcolor;
           frg_uv      = uv0;
         }
         ///////////////////////////////////////////////////////////////
         fragment_shader ps_uitext : iface_fmt {
-          //vec4 s = texture(ColorMap, frg_uv);
+          vec4 s = texture(ColorMap, frg_uv);
           //float texa = pow(s.a*s.r,0.75);
           //out_clr = vec4(ModColor.xyz, texa*ModColor.w);
         }
         ///////////////////////////////////////////////////////////////
         compute_shader cu_xxx {
-          //vec4 s = texture(ColorMap, frg_uv);
+          vec4 s = myFunction(ColorMap, frg_uv);
           //float texa = pow(s.a*s.r,0.75);
           //out_clr = vec4(ModColor.xyz, texa*ModColor.w);
         }

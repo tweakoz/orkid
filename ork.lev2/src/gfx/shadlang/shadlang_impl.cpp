@@ -113,6 +113,16 @@ std::string parser_spec = R"xxx(
     inh_list_item -< [ colon kw_or_id ] >-
     inh_list -< zom{ inh_list_item } >-
 
+    fn_arg -< [ expression opt{COMMA} ] >-
+    fn_args -< zom{ fn_arg } >-
+
+    fn_invok -< [
+        funcname
+        l_paren
+        fn_args
+        r_paren
+    ] >-
+
     product -< [ primary opt{ [star primary] } ] >-
 
     sum -< sel{
@@ -125,10 +135,11 @@ std::string parser_spec = R"xxx(
 
     term -< [ l_paren expression r_paren ] >-
 
-    primary -< sel{ number
-                    variableReference
+    primary -< sel{ fn_invok
+                    number
                     term
-    } >-
+                    variableReference
+                  } >-
 
     assignment_statement -< [
         sel { variableDeclaration variableReference } : "ass1of"
@@ -138,6 +149,7 @@ std::string parser_spec = R"xxx(
 
     statement -< sel{ 
         [ assignment_statement semicolon ]
+        [ fn_invok semicolon ]
         semicolon
     } >-
 
@@ -321,6 +333,20 @@ struct ShadLangParser : public Parser {
       //if (selected->_matcher == expression) {
         //ast_node->_subexpression = ast_get<SHAST::Expression>(selected);
      // }
+    });
+    ///////////////////////////////////////////////////////////
+    onPost("fn_arg", [=](match_ptr_t match) {
+      auto ast_node = ast_create<SHAST::FunctionInvokationArgument>(match);
+    });
+    ///////////////////////////////////////////////////////////
+    onPost("fn_args", [=](match_ptr_t match) {
+      auto ast_node = ast_create<SHAST::FunctionInvokationArguments>(match);
+    });
+    ///////////////////////////////////////////////////////////
+    onPost("fn_invok", [=](match_ptr_t match) {
+      auto ast_node = ast_create<SHAST::FunctionInvokation>(match);
+        auto kwid      = match->asShared<ClassMatch>()->_token->text;
+        ast_node->_name = kwid;
     });
     ///////////////////////////////////////////////////////////
     onPost("primary", [=](match_ptr_t match) {
