@@ -36,141 +36,141 @@ static logchannel_ptr_t logchan_lexer   = logger()->createChannel("ORKSLLEXR", f
 ///////////////////////////////////////////////////////////////////////////////
 
 std::string scanner_spec = R"xxx(
-    macro(M1)           -< "xyz" >-
-    MULTI_LINE_COMMENT  -< "\/\*([^*]|\*+[^/*])*\*+\/" >-
-    SINGLE_LINE_COMMENT -< "\/\/.*[\n\r]" >-
-    WHITESPACE          -< "\s+" >-
-    NEWLINE             -< "[\n\r]+" >-
-    EQUALS              -< "=" >-
-    COMMA               -< "," >-
-    COLON               -< ":" >-
-    SEMICOLON           -< ";" >-
-    L_SQUARE            -< "\[" >-
-    R_SQUARE            -< "\]" >-
-    L_PAREN             -< "\(" >-
-    R_PAREN             -< "\)" >-
-    L_CURLY             -< "\{" >-
-    R_CURLY             -< "\}" >-
-    DOT                 -< "\." >-
-    STAR                -< "\*" >-
-    PLUS                -< "\+" >-
-    MINUS               -< "\-" >-
-    INTEGER             -< "-?(\d+)" >-
-    FLOATING_POINT      -< "-?(\d*\.?)(\d+)([eE][-+]?\d+)?" >-
-    FUNCTION            -< "function" >-
-    KW_FLOAT            -< "float" >-
-    KW_INT              -< "int" >-
-    KW_VEC2             -< "vec2" >-
-    KW_VEC3             -< "vec3" >-
-    KW_VEC4             -< "vec4" >-
-    KW_MAT2             -< "mat2" >-
-    KW_MAT3             -< "mat3" >-
-    KW_MAT4             -< "mat4" >-
-    KW_VTXSHADER        -< "vertex_shader" >-
-    KW_FRGSHADER        -< "fragment_shader" >-
-    KW_COMSHADER        -< "compute_shader" >-
-    KW_UNISET           -< "uniform_set" >-
-    KW_UNIBLK           -< "uniform_block" >-
-    KW_VTXIFACE         -< "vertex_interface" >-
-    KW_FRGIFACE         -< "fragment_interface" >-
-    KW_INPUTS           -< "inputs" >-
-    KW_OUTPUTS          -< "outputs" >-
-    KW_SAMP1D           -< "sampler1D" >-
-    KW_SAMP2D           -< "sampler2D" >-
-    KW_SAMP3D           -< "sampler3D" >-
-    KW_OR_ID            -< "[a-zA-Z_][a-zA-Z0-9_]*" >-
+    macro(M1)           <| "xyz" |>
+    MULTI_LINE_COMMENT  <| "\/\*([^*]|\*+[^/*])*\*+\/" |>
+    SINGLE_LINE_COMMENT <| "\/\/.*[\n\r]" |>
+    WHITESPACE          <| "\s+" |>
+    NEWLINE             <| "[\n\r]+" |>
+    EQUALS              <| "=" |>
+    COMMA               <| "," |>
+    COLON               <| ":" |>
+    SEMICOLON           <| ";" |>
+    L_SQUARE            <| "\[" |>
+    R_SQUARE            <| "\]" |>
+    L_PAREN             <| "\(" |>
+    R_PAREN             <| "\)" |>
+    L_CURLY             <| "\{" |>
+    R_CURLY             <| "\}" |>
+    DOT                 <| "\." |>
+    STAR                <| "\*" |>
+    PLUS                <| "\+" |>
+    MINUS               <| "\-" |>
+    INTEGER             <| "-?(\d+)" |>
+    FLOATING_POINT      <| "-?(\d*\.?)(\d+)([eE][-+]?\d+)?" |>
+    FUNCTION            <| "function" |>
+    KW_FLOAT            <| "float" |>
+    KW_INT              <| "int" |>
+    KW_VEC2             <| "vec2" |>
+    KW_VEC3             <| "vec3" |>
+    KW_VEC4             <| "vec4" |>
+    KW_MAT2             <| "mat2" |>
+    KW_MAT3             <| "mat3" |>
+    KW_MAT4             <| "mat4" |>
+    KW_VTXSHADER        <| "vertex_shader" |>
+    KW_FRGSHADER        <| "fragment_shader" |>
+    KW_COMSHADER        <| "compute_shader" |>
+    KW_UNISET           <| "uniform_set" |>
+    KW_UNIBLK           <| "uniform_block" |>
+    KW_VTXIFACE         <| "vertex_interface" |>
+    KW_FRGIFACE         <| "fragment_interface" |>
+    KW_INPUTS           <| "inputs" |>
+    KW_OUTPUTS          <| "outputs" |>
+    KW_SAMP1D           <| "sampler1D" |>
+    KW_SAMP2D           <| "sampler2D" |>
+    KW_SAMP3D           <| "sampler3D" |>
+    KW_OR_ID            <| "[a-zA-Z_][a-zA-Z0-9_]*" |>
 )xxx";
 
 ///////////////////////////////////////////////////////////////////////////////
 
 std::string parser_spec = R"xxx(
-    datatype       -< sel{ KW_FLOAT KW_INT 
+    datatype       <| sel{ KW_FLOAT KW_INT 
                            KW_VEC2 KW_VEC3 KW_VEC4 
                            KW_MAT2 KW_MAT3 KW_MAT4 
-                           KW_SAMP1D KW_SAMP2D KW_SAMP3D } >-
-    number         -< sel{INTEGER FLOATING_POINT} >-
-    kw_or_id       -< KW_OR_ID >-
-    dot            -< DOT >-
-    l_square       -< L_SQUARE >-
-    r_square       -< R_SQUARE >-
-    l_paren        -< L_PAREN >-
-    r_paren        -< R_PAREN >-
-    plus           -< PLUS >-
-    minus          -< MINUS >-
-    star           -< STAR >-
-    l_curly        -< L_CURLY >-
-    r_curly        -< R_CURLY >-
-    semicolon      -< SEMICOLON >-
-    colon          -< COLON >-
-    equals         -< EQUALS >-
-    kw_function    -< FUNCTION >-
-    kw_vtxshader   -< KW_VTXSHADER >-
-    kw_frgshader   -< KW_FRGSHADER >-
-    kw_comshader   -< KW_COMSHADER >-
-    kw_uniset      -< KW_UNISET >-
-    kw_uniblk      -< KW_UNIBLK >-
-    kw_vtxiface    -< KW_VTXIFACE >-
-    kw_frgiface    -< KW_FRGIFACE >-
-    kw_inputs      -< KW_INPUTS >-
-    kw_outputs     -< KW_OUTPUTS >-
+                           KW_SAMP1D KW_SAMP2D KW_SAMP3D } |>
+    number         <| sel{INTEGER FLOATING_POINT} |>
+    kw_or_id       <| KW_OR_ID |>
+    dot            <| DOT |>
+    l_square       <| L_SQUARE |>
+    r_square       <| R_SQUARE |>
+    l_paren        <| L_PAREN |>
+    r_paren        <| R_PAREN |>
+    plus           <| PLUS |>
+    minus          <| MINUS |>
+    star           <| STAR |>
+    l_curly        <| L_CURLY |>
+    r_curly        <| R_CURLY |>
+    semicolon      <| SEMICOLON |>
+    colon          <| COLON |>
+    equals         <| EQUALS |>
+    kw_function    <| FUNCTION |>
+    kw_vtxshader   <| KW_VTXSHADER |>
+    kw_frgshader   <| KW_FRGSHADER |>
+    kw_comshader   <| KW_COMSHADER |>
+    kw_uniset      <| KW_UNISET |>
+    kw_uniblk      <| KW_UNIBLK |>
+    kw_vtxiface    <| KW_VTXIFACE |>
+    kw_frgiface    <| KW_FRGIFACE |>
+    kw_inputs      <| KW_INPUTS |>
+    kw_outputs     <| KW_OUTPUTS |>
 
-    member_ref     -< [ dot kw_or_id ] >-
-    array_ref      -< [ l_square expression r_square ] >-
+    member_ref     <| [ dot kw_or_id ] |>
+    array_ref      <| [ l_square expression r_square ] |>
 
-    object_subref  -< sel{ member_ref array_ref } >-
+    object_subref  <| sel{ member_ref array_ref } |>
 
-    inh_list_item  -< [ colon kw_or_id ] >-
-    inh_list       -< zom{ inh_list_item } >-
+    inh_list_item  <| [ colon kw_or_id ] |>
+    inh_list       <| zom{ inh_list_item } |>
 
-    fn_arg         -< [ expression opt{COMMA} ] >-
-    fn_args        -< zom{ fn_arg } >-
+    fn_arg         <| [ expression opt{COMMA} ] |>
+    fn_args        <| zom{ fn_arg } |>
 
-    fn_invok -< [
+    fn_invok <| [
         [ kw_or_id ] : "fni_name"
         l_paren
         fn_args
         r_paren
-    ] >-
+    ] |>
 
-    product -< [ primary opt{ [star primary] } ] >-
+    product <| [ primary opt{ [star primary] } ] |>
 
-    sum -< sel{
+    sum <| sel{
         [ product plus product ] : "add"
         [ product minus product ] : "sub"
         product : "pro"
-    } >-
+    } |>
 
-    expression -< [ sum ] >-
+    expression <| [ sum ] |>
 
-    term -< [ l_paren expression r_paren ] >-
+    term <| [ l_paren expression r_paren ] |>
 
-    typed_identifier -< [datatype kw_or_id] >-
+    typed_identifier <| [datatype kw_or_id] |>
 
-    primary -< sel{ fn_invok
+    primary <| sel{ fn_invok
                     number
                     term
                     [ kw_or_id zom{object_subref} ] : "primary_var_ref"
-                  } >-
+                  } |>
 
-    assignment_statement -< [
+    assignment_statement <| [
         sel { 
           [ typed_identifier ] : "astatement_vardecl"
           [ kw_or_id ] : "astatement_varref"
         }
         equals
         expression
-    ] >-
+    ] |>
 
-    statement -< sel{ 
+    statement <| sel{ 
         [ assignment_statement semicolon ]
         [ fn_invok semicolon ]
         semicolon
-    } >-
+    } |>
 
-    arg_list -< zom{ [ typed_identifier opt{COMMA} ] } >-
-    statement_list -< zom{ statement } >-
+    arg_list <| zom{ [ typed_identifier opt{COMMA} ] } |>
+    statement_list <| zom{ statement } |>
 
-    fn_def -< [
+    fn_def <| [
         kw_function
         [ kw_or_id ] : "fn_name"
         l_paren
@@ -179,74 +179,74 @@ std::string parser_spec = R"xxx(
         l_curly
         statement_list : "fn_statements"
         r_curly
-    ] >-
+    ] |>
     
-    vtx_shader -< [
+    vtx_shader <| [
         kw_vtxshader
         [ kw_or_id ] : "vtx_name"
         zom{inh_list_item} : "vtx_dependencies"
         l_curly
         statement_list : "vtx_statements"
         r_curly
-    ] >-
+    ] |>
 
-    frg_shader -< [
+    frg_shader <| [
         kw_frgshader
         [ kw_or_id ] : "frg_name"
         zom{ inh_list_item } : "frg_dependencies"
         l_curly
         statement_list : "frg_statements"
         r_curly
-    ] >-
+    ] |>
 
-    com_shader -< [
+    com_shader <| [
         kw_comshader
         [ kw_or_id ] : "com_name"
         zom{ inh_list_item } : "com_dependencies"
         l_curly
         statement_list : "com_statements"
         r_curly
-    ] >-
+    ] |>
 
-    data_decl -< [typed_identifier semicolon] >-
+    data_decl <| [typed_identifier semicolon] |>
 
-    data_decls -< zom{ data_decl } >-
+    data_decls <| zom{ data_decl } |>
 
-    uniset -< [
+    uniset <| [
       kw_uniset
       [ kw_or_id ] : "uniset_name"
       l_curly
       data_decls : "uniset_decls"
       r_curly
-    ] >-
+    ] |>
 
-    uniblk -< [
+    uniblk <| [
       kw_uniblk
       [ kw_or_id ] : "uniblk_name"
       l_curly
       data_decls : "uniblk_decls"
       r_curly
-    ] >-
+    ] |>
 
-    iface_input -< [ typed_identifier opt{ [colon kw_or_id] } semicolon ] >-
+    iface_input <| [ typed_identifier opt{ [colon kw_or_id] } semicolon ] |>
 
-    iface_inputs -< [
+    iface_inputs <| [
       kw_inputs
       l_curly
       zom{ iface_input } : "inputlist"
       r_curly
-    ] >-
+    ] |>
 
-    iface_outputs -< [
+    iface_outputs <| [
       kw_outputs
       l_curly
       zom{ 
         [ data_decl ] : "output_decl"
       }
       r_curly
-    ] >-
+    ] |>
 
-    vtx_iface -< [
+    vtx_iface <| [
       kw_vtxiface
       [ kw_or_id ] : "vif_name"
       zom{ inh_list_item } : "vif_dependencies"
@@ -254,9 +254,9 @@ std::string parser_spec = R"xxx(
       iface_inputs
       iface_outputs
       r_curly
-    ] >-
+    ] |>
 
-    frg_iface -< [
+    frg_iface <| [
       kw_frgiface
       [ kw_or_id ] : "fif_name"
       zom{ inh_list_item } : "fif_dependencies"
@@ -264,11 +264,11 @@ std::string parser_spec = R"xxx(
       iface_inputs
       iface_outputs
       r_curly
-    ] >-
+    ] |>
 
-    translatable -< sel{ fn_def vtx_shader frg_shader com_shader uniset uniblk vtx_iface frg_iface } >-
+    translatable <| sel{ fn_def vtx_shader frg_shader com_shader uniset uniblk vtx_iface frg_iface } |>
 
-    translation_unit -< zom{ translatable } >-
+    translation_unit <| zom{ translatable } |>
 
 )xxx";
 

@@ -443,8 +443,8 @@ void PegImpl::loadPEGScannerRules() { //
     // dsl_scanner->addMacro("ASCII", "[\\\\x00-\\\\x21\\\\x23-\\\\x5B\\\\x5D-\\\\x7F]");
     // dsl_scanner->addMacro("ASCII_WITHOUT_DBLQUOTE", "[\\\\x00-\\\\x21\\\\x23-\\\\x7F]");
     dsl_scanner->addEnumClass(R"(\"[^\"]*\")", TokenClass::QUOTED_REGEX);
-    dsl_scanner->addEnumClass("-<", TokenClass::LEFT_ARROW);
-    dsl_scanner->addEnumClass(">-", TokenClass::RIGHT_ARROW);
+    dsl_scanner->addEnumClass("<\\|", TokenClass::LEFT_ARROW);
+    dsl_scanner->addEnumClass("\\|>", TokenClass::RIGHT_ARROW);
     logchan_rulespec->log("Building state machine");
     dsl_scanner->buildStateMachine();
     logchan_rulespec->log("done...");
