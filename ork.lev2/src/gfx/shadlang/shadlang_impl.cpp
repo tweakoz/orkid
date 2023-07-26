@@ -230,7 +230,7 @@ std::string parser_spec = R"xxx(
     vtx_iface -< [
       kw_vtxiface
       kw_or_id
-      zom{ inh_list_item } : "com_dependencies"
+      zom{ inh_list_item } : "vif_dependencies"
       l_curly
       iface_inputs
       iface_outputs
@@ -240,7 +240,7 @@ std::string parser_spec = R"xxx(
     frg_iface -< [
       kw_frgiface
       kw_or_id
-      zom{ inh_list_item } : "com_dependencies"
+      zom{ inh_list_item } : "fif_dependencies"
       l_curly
       iface_inputs
       iface_outputs
@@ -449,8 +449,7 @@ struct ShadLangParser : public Parser {
     ///////////////////////////////////////////////////////////
     onPost("fn_name", [=](match_ptr_t match) {
       auto funcname = ast_create<SHAST::FunctionName>(match);
-      auto seq     = match->asShared<Sequence>();
-      auto fn_name = seq->_items[0]->followImplAsShared<ClassMatch>();
+      auto fn_name     = match->asShared<ClassMatch>();
       funcname->_name = fn_name->_token->text;
     });
     ///////////////////////////////////////////////////////////
@@ -460,8 +459,7 @@ struct ShadLangParser : public Parser {
 
       seq->dump("funcdef");
 
-      auto fn_name_seq = seq->_items[1]->followImplAsShared<Sequence>();
-      auto fn_name = fn_name_seq->_items[0]->followImplAsShared<ClassMatch>();
+      auto fn_name = seq->_items[1]->followImplAsShared<ClassMatch>();
       //auto fn_name = fn_name_proxy->followAsShared<ClassMatch>();
       funcdef->_name = fn_name->_token->text; //FormatString("FnDef<%s>", fn_name->_token->text.c_str() );
 

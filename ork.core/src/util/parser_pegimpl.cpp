@@ -126,19 +126,20 @@ void Expression::do_visit(astvisitctx_ptr_t visitctx) { // final
 }
 matcher_ptr_t Expression::createMatcher(std::string named) { // final
 
-  printf( "XYZ expr named<%s> exprname<%s>\n", named.c_str(), _expr_name.c_str() );
-
+  matcher_ptr_t out = _expr_selected->createMatcher(named);
   if(_expr_name!=""){
-    named = _expr_name;
-    if(_expr_name=="fn_name"){
+    printf( "XYZ expr out exprname<%s> matcher<%s>\n", _expr_name.c_str(), out->_name.c_str() );
+    auto it = _user_parser->_matchers_by_name.find(_expr_name);
+    if(it==_user_parser->_matchers_by_name.end()){
+      _user_parser->_matchers_by_name[_expr_name] = out;
+      out->_name = _expr_name;
+    }
+    else{
       OrkAssert(false);
     }
   }
 
-  matcher_ptr_t out = _expr_selected->createMatcher(named);
-  printf( "XYZ expr out matcher<%s>\n", out->_name.c_str() );
-  auto it = _user_parser->_matchers_by_name.find(named);
-  OrkAssert(it!=_user_parser->_matchers_by_name.end());
+
   return out;
 }
 ////////////////////////////////////////////////////////////////////////
