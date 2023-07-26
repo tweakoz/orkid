@@ -79,7 +79,7 @@ TEST(shlang1) {
         ///////////////////////////////////////////////////////////////
         compute_shader cu_xxx {
           vec4 s = myFunction(ColorMap, frg_uv);
-          float texa = pow(object.param.A,0.75);
+          float texa = pow(object.param.A[3],0.75);
           //out_clr = vec4(ModColor.xyz, texa*ModColor.w);
         }
         ///////////////////////////////////////////////////////////////

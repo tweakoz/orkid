@@ -45,6 +45,8 @@ std::string scanner_spec = R"xxx(
     COMMA               -< "," >-
     COLON               -< ":" >-
     SEMICOLON           -< ";" >-
+    L_SQUARE            -< "\[" >-
+    R_SQUARE            -< "\]" >-
     L_PAREN             -< "\(" >-
     R_PAREN             -< "\)" >-
     L_CURLY             -< "\{" >-
@@ -53,8 +55,8 @@ std::string scanner_spec = R"xxx(
     STAR                -< "\*" >-
     PLUS                -< "\+" >-
     MINUS               -< "\-" >-
-    FLOATING_POINT      -< "-?(\d*\.?)(\d+)([eE][-+]?\d+)?" >-
     INTEGER             -< "-?(\d+)" >-
+    FLOATING_POINT      -< "-?(\d*\.?)(\d+)([eE][-+]?\d+)?" >-
     FUNCTION            -< "function" >-
     KW_FLOAT            -< "float" >-
     KW_INT              -< "int" >-
@@ -86,9 +88,11 @@ std::string parser_spec = R"xxx(
                            KW_VEC2 KW_VEC3 KW_VEC4 
                            KW_MAT2 KW_MAT3 KW_MAT4 
                            KW_SAMP1D KW_SAMP2D KW_SAMP3D } >-
-    number         -< sel{FLOATING_POINT INTEGER} >-
+    number         -< sel{INTEGER FLOATING_POINT} >-
     kw_or_id       -< KW_OR_ID >-
     dot            -< DOT >-
+    l_square       -< L_SQUARE >-
+    r_square       -< R_SQUARE >-
     l_paren        -< L_PAREN >-
     r_paren        -< R_PAREN >-
     plus           -< PLUS >-
@@ -111,6 +115,9 @@ std::string parser_spec = R"xxx(
     kw_outputs     -< KW_OUTPUTS >-
 
     member_ref     -< [ dot kw_or_id ] >-
+    array_ref      -< [ l_square expression r_square ] >-
+
+    object_subref  -< sel{ member_ref array_ref } >-
 
     inh_list_item  -< [ colon kw_or_id ] >-
     inh_list       -< zom{ inh_list_item } >-
@@ -142,7 +149,7 @@ std::string parser_spec = R"xxx(
     primary -< sel{ fn_invok
                     number
                     term
-                    [ kw_or_id zom{member_ref} ] : "primary_var_ref"
+                    [ kw_or_id zom{object_subref} ] : "primary_var_ref"
                   } >-
 
     assignment_statement -< [
@@ -342,6 +349,12 @@ struct ShadLangParser : public Parser {
       auto member_ref = ast_create<SHAST::MemberRef>(match); 
       auto seq        = match->asShared<Sequence>();
       member_ref->_member = seq->_items[1]->followImplAsShared<ClassMatch>()->_token->text;
+    });
+    ///////////////////////////////////////////////////////////
+    onPost("array_ref", [=](match_ptr_t match) { //
+      auto array_ref = ast_create<SHAST::ArrayRef>(match); 
+      auto seq        = match->asShared<Sequence>();
+      //array_ref->_member = seq->_items[1]->followImplAsShared<ClassMatch>()->_token->text;
     });
     ///////////////////////////////////////////////////////////
     onPost("FLOATING_POINT", [=](match_ptr_t match) { //

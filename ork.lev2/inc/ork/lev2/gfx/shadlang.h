@@ -95,6 +95,11 @@ struct MemberRef : public AstNode {
   }
   std::string _member;
 };
+struct ArrayRef : public AstNode {
+  virtual std::string desc() const {
+    return FormatString("ArrayRef");
+  }
+};
 
 struct Statement : public AstNode {
   inline Statement() {
