@@ -366,27 +366,24 @@ struct ShadLangParser : public Parser {
     ///////////////////////////////////////////////////////////
     onPost("datatype", [=](match_ptr_t match) { //
       auto selected   = match->asShared<OneOf>()->_selected;
-      auto ast_node   = ast_create<SHAST::DataType>(match);
-      ast_node->_datatype = selected->asShared<ClassMatch>()->_token->text;
+      auto datatype   = ast_create<SHAST::DataType>(match);
+      datatype->_datatype = selected->asShared<ClassMatch>()->_token->text;
     });
     ///////////////////////////////////////////////////////////
     onPost("term", [=](match_ptr_t match) {
-      auto ast_node = ast_create<SHAST::Term>(match);
+      auto term = ast_create<SHAST::Term>(match);
     });
     ///////////////////////////////////////////////////////////
     onPost("fn_arg", [=](match_ptr_t match) {
-      auto ast_node = ast_create<SHAST::FunctionInvokationArgument>(match);
+      auto fn_arg = ast_create<SHAST::FunctionInvokationArgument>(match);
     });
     ///////////////////////////////////////////////////////////
     onPost("fn_args", [=](match_ptr_t match) {
-      auto ast_node = ast_create<SHAST::FunctionInvokationArguments>(match);
+      auto fn_args = ast_create<SHAST::FunctionInvokationArguments>(match);
     });
     ///////////////////////////////////////////////////////////
     onPost("fn_invok", [=](match_ptr_t match) {
-      auto ast_node = ast_create<SHAST::FunctionInvokation>(match);
-      auto seq = match->asShared<Sequence>();
-      //auto kwid      = match->asShared<ClassMatch>()->_token->text;
-        //ast_node->_name = kwid;
+      auto fn_invok = ast_create<SHAST::FunctionInvokation>(match);
     });
     ///////////////////////////////////////////////////////////
     onPost("primary", [=](match_ptr_t match) {
@@ -447,7 +444,14 @@ struct ShadLangParser : public Parser {
     });
     ///////////////////////////////////////////////////////////
     onPost("astatement_vardecl", [=](match_ptr_t match) { //
-      auto ast_node = ast_create<SHAST::AssignmentStatementVarDecl>(match);
+      auto var_decl = ast_create<SHAST::AssignmentStatementVarDecl>(match);
+    });
+    onLink("astatement_vardecl", [=](match_ptr_t match) { //
+      auto var_decl = ast_get<SHAST::AssignmentStatementVarDecl>(match);
+      auto tid = var_decl->childAs<SHAST::TypedIdentifier>(0);
+      var_decl->_datatype = tid->_datatype;
+      var_decl->_identifier = tid->_identifier;
+      var_decl->_descend = false;
     });
     ///////////////////////////////////////////////////////////
     onPost("astatement_varref", [=](match_ptr_t match) { //
@@ -743,11 +747,10 @@ struct ShadLangParser : public Parser {
     auto slv     = std::make_shared<ScannerLightView>(top_view);
     _tu_matcher = findMatcherByName("translation_unit");
     OrkAssert(_tu_matcher);
-    auto match = this->match(_tu_matcher, slv);
+    auto match = this->match(_tu_matcher, slv, [this](match_ptr_t m){
+      _buildAstTreeVisitor(m);
+    });
     OrkAssert(match);
-    _buildAstTreeVisitor(match);
-    _visitLinkMatch(match);
-
 
     auto ast_top = match->_uservars.typedValueForKey<SHAST::astnode_ptr_t>("astnode").value();
     printf( "///////////////////////////////\n");

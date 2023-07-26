@@ -107,9 +107,11 @@ struct AssignmentStatementVarRef : public AstNode {
   }
 };
 struct AssignmentStatementVarDecl : public AstNode {
-  virtual std::string desc() const{
-    return FormatString("AssignmentStatementVarDecl");
+  std::string desc() const final {
+    return FormatString("AssignmentStatementVarDecl dt<%s> id<%s>", _datatype.c_str(), _identifier.c_str() );
   }
+  std::string _datatype;
+  std::string _identifier;
 };
 //
 struct AssignmentStatement : public Statement {

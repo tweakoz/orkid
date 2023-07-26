@@ -288,7 +288,10 @@ struct Parser {
 
   template <typename T> matcher_ptr_t matcherForTokenClass(T tokclass, std::string name = "");
 
-  match_ptr_t match(matcher_ptr_t topmatcher, scannerlightview_constptr_t topview);
+  match_ptr_t match(matcher_ptr_t topmatcher, //
+                    scannerlightview_constptr_t topview,
+                    match_notif_t prelink_notif = nullptr );
+                    
   match_attempt_ptr_t _tryMatch(MatchAttemptContextItem& mci);
 
   void _log_valist(const char* pMsgFormat, va_list args) const;

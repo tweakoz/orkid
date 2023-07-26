@@ -452,7 +452,9 @@ match_attempt_ptr_t Parser::_tryMatch(MatchAttemptContextItem& mci) {
 
 //////////////////////////////////////////////////////////////
 
-match_ptr_t Parser::match(matcher_ptr_t topmatcher, scannerlightview_constptr_t topview) {
+match_ptr_t Parser::match(matcher_ptr_t topmatcher, //
+                          scannerlightview_constptr_t topview,
+                          match_notif_t prelink_notif ) {
   if (topmatcher == nullptr) {
     logerrchannel()->log("Parser<%p> no top match function", this);
     OrkAssert(false);
@@ -465,43 +467,12 @@ match_ptr_t Parser::match(matcher_ptr_t topmatcher, scannerlightview_constptr_t 
 
   if(root_match_attempt) {
     auto root_match = MatchAttempt::genmatch(root_match_attempt);
-
-    /////////////////////////////////////
-    // visit matchattempt tree
-    /////////////////////////////////////
-
-    printf( "xxx : #############################################################\n" );
-    //printf( "xxx : matchattempt tree\n" );
-    //printf( "xxx : #############################################################\n" );
-
-    std::stack<match_attempt_ptr_t> ma_stack;
-    std::stack<int> depth_stack;
-    ma_stack.push(root_match_attempt);
-    depth_stack.push(0);
-    while(!ma_stack.empty()) {
-      auto current_ma = ma_stack.top();
-      int current_depth = depth_stack.top();
-      auto indentstr = std::string(current_depth * 2, ' ');
-      //printf( "xxx : %s current_ma_attempt<%p:%s> numc<%zu>\n", indentstr.c_str(), (void*) current_ma.get(), current_ma->_matcher->_name.c_str(), current_ma->_children.size() );
-      ma_stack.pop();
-      depth_stack.pop();
-      for(auto& child_ma : current_ma->_children) {
-        ma_stack.push(child_ma);
-        depth_stack.push(current_depth+1);
-      }
-    }
-
-    /////////////////////////////////////
-    // visit match tree
-    /////////////////////////////////////
-
+    OrkAssert(root_match);
     _visitComposeMatch(root_match);
-    //_visitLinkMatch(root_match);
-
-    printf( "xxx : #############################################################\n" );
-
-
-    /////////////////////////////////////
+    if(prelink_notif){
+      prelink_notif(root_match);
+    }
+    _visitLinkMatch(root_match);
     return root_match;
   }
 
@@ -512,26 +483,28 @@ match_ptr_t Parser::match(matcher_ptr_t topmatcher, scannerlightview_constptr_t 
 
 void Parser::_visitComposeMatch(match_ptr_t m){
 
-  auto indentstr = std::string(_visit_depth * 2, ' ');
-  std::string suffix;
-  if(m->_matcher->_pre_notif) {
-    suffix += " PRE";
-  }
-  if(m->_matcher->_post_notif) {
-    suffix += " POST";
-  }
-  if(m->_matcher->_link_notif) {
-    suffix += " LINK";
-  }
+  if(true){
+    auto indentstr = std::string(_visit_depth * 2, ' ');
+    std::string suffix;
+    if(m->_matcher->_pre_notif) {
+      suffix += " PRE";
+    }
+    if(m->_matcher->_post_notif) {
+      suffix += " POST";
+    }
+    if(m->_matcher->_link_notif) {
+      suffix += " LINK";
+    }
 
-  printf( "xxx : %s match<%p:%s:%s> numc<%zu> view<%zu:%zu> %s\n", //
-          indentstr.c_str(), //
-          (void*) m.get(), //
-          m->_matcher->_name.c_str(), //
-          m->_matcher->_info.c_str(), //
-          m->_children.size(), //
-          m->_view->_start, m->_view->_end, //
-          suffix.c_str() );
+    printf( "xxx : %s match<%p:%s:%s> numc<%zu> view<%zu:%zu> %s\n", //
+            indentstr.c_str(), //
+            (void*) m.get(), //
+            m->_matcher->_name.c_str(), //
+            m->_matcher->_info.c_str(), //
+            m->_children.size(), //
+            m->_view->_start, m->_view->_end, //
+            suffix.c_str() );
+  }
 
   _visit_depth++;
   if(m->_matcher->_pre_notif) {
@@ -562,6 +535,7 @@ void Parser::_visitLinkMatch(match_ptr_t m){
   }
   _visit_depth--;
 }
+
 //////////////////////////////////////////////////////////////////////
 
 void Parser::_log_valist(const char* pMsgFormat, va_list args) const {
