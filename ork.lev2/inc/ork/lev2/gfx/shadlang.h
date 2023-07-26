@@ -72,6 +72,7 @@ using translationunit_ptr_t = std::shared_ptr<TranslationUnit>;
 
 struct AstNode {
   std::string _name;
+  bool _descend = true;
   virtual ~AstNode() {
   }
   std::vector<astnode_ptr_t> _children;
@@ -194,13 +195,24 @@ struct FunctionInvokation : public AstNode { //
 
 struct DataDeclaration : public AstNode { //
   std::string desc() const final {
-    return FormatString("DataDeclaration(%s)", _name.c_str() );
+    return FormatString("DataDeclaration" );
   }
 };
 struct DataDeclarations : public AstNode { //
   std::string desc() const final {
     return FormatString("DataDeclarations" );
   }
+};
+struct TypedIdentifier : public AstNode { //
+  TypedIdentifier() {
+    _descend = false;
+  }
+  std::string desc() const final {
+    return FormatString("TypedIdentifier dt<%s> id<%s>", _datatype.c_str(), _identifier.c_str() );
+  }
+  std::string _datatype;
+  std::string _identifier;
+  
 };
 struct Translatable : public AstNode {
 };
@@ -248,15 +260,25 @@ struct StatementList : public AstNode { //
   }
 };
 struct InterfaceInput : public AstNode { //
+  InterfaceInput() {
+    _descend = false;
+  }
   std::string desc() const final {
-    return FormatString("InterfaceInput name<%s> semantic<%s>" , _name.c_str(),  _semantic.c_str() );
+    return FormatString("InterfaceInput id<%s> sem<%s> dt<%s>" , _identifier.c_str(),  _semantic.c_str(), _datatype.c_str() );
   }
   std::string _semantic;
+  std::string _identifier;
+  std::string _datatype;
 };
 struct InterfaceOutput : public AstNode { //
-  std::string desc() const final {
-    return FormatString("InterfaceOutput" );
+  InterfaceOutput() {
+    _descend = false;
   }
+  std::string desc() const final {
+    return FormatString("InterfaceOutput id<%s> dt<%s>" , _identifier.c_str(),  _datatype.c_str() );
+  }
+  std::string _identifier;
+  std::string _datatype;
 };
 struct InterfaceInputs : public AstNode { //
   std::string desc() const final {

@@ -130,6 +130,8 @@ std::string parser_spec = R"xxx(
 
     term -< [ l_paren expression r_paren ] >-
 
+    typed_identifier -< [datatype kw_or_id] >-
+
     primary -< sel{ fn_invok
                     number
                     term
@@ -138,7 +140,7 @@ std::string parser_spec = R"xxx(
 
     assignment_statement -< [
         sel { 
-          [datatype kw_or_id] : "astatement_vardecl"
+          [ typed_identifier ] : "astatement_vardecl"
           [ kw_or_id ] : "astatement_varref"
         }
         equals
@@ -151,7 +153,7 @@ std::string parser_spec = R"xxx(
         semicolon
     } >-
 
-    arg_list -< zom{ [ datatype kw_or_id opt{COMMA} ] } >-
+    arg_list -< zom{ [ typed_identifier opt{COMMA} ] } >-
     statement_list -< zom{ statement } >-
 
     fn_def -< [
@@ -192,7 +194,7 @@ std::string parser_spec = R"xxx(
         r_curly
     ] >-
 
-    data_decl -< [datatype kw_or_id semicolon] >-
+    data_decl -< [typed_identifier semicolon] >-
 
     data_decls -< zom{ data_decl } >-
 
@@ -212,7 +214,7 @@ std::string parser_spec = R"xxx(
       r_curly
     ] >-
 
-    iface_input -< [ datatype kw_or_id opt{ [colon kw_or_id] } semicolon ] >-
+    iface_input -< [ typed_identifier opt{ [colon kw_or_id] } semicolon ] >-
 
     iface_inputs -< [
       kw_inputs
@@ -224,7 +226,9 @@ std::string parser_spec = R"xxx(
     iface_outputs -< [
       kw_outputs
       l_curly
-      data_decls : "outputlist"
+      zom{ 
+        [ data_decl ] : "output_decl"
+      }
       r_curly
     ] >-
 
@@ -343,6 +347,10 @@ struct ShadLangParser : public Parser {
       objectNameAst(match);
     });
     ///////////////////////////////////////////////////////////
+    onPost("primary_varref", [=](match_ptr_t match) {
+      objectNameAst(match);
+    });
+    ///////////////////////////////////////////////////////////
     onPost("FLOATING_POINT", [=](match_ptr_t match) { //
       auto ast_node    = ast_create<SHAST::FloatLiteral>(match);
       auto impl        = match->asShared<ClassMatch>();
@@ -364,13 +372,6 @@ struct ShadLangParser : public Parser {
     ///////////////////////////////////////////////////////////
     onPost("term", [=](match_ptr_t match) {
       auto ast_node = ast_create<SHAST::Term>(match);
-      ast_node->_name = "term";
-      printf( "ON term\n");
-      //OrkAssert(false);
-      //auto selected = match->asShared<Sequence>()->_items[1];
-      //if (selected->_matcher == expression) {
-        //ast_node->_subexpression = ast_get<SHAST::Expression>(selected);
-     // }
     });
     ///////////////////////////////////////////////////////////
     onPost("fn_arg", [=](match_ptr_t match) {
@@ -468,9 +469,19 @@ struct ShadLangParser : public Parser {
       }*/
     });
     ///////////////////////////////////////////////////////////
-    onPost("arg_list", [=](match_ptr_t match) {
+    onPost("typed_identifier", [=](match_ptr_t match) {
+      auto astnode = ast_create<SHAST::TypedIdentifier>(match);
       auto seq     = match->asShared<Sequence>();
+      auto dt      = ast_get<SHAST::DataType>(seq->_items[0]);
+      astnode->_datatype = dt->_datatype;
+      auto kwid = seq->_items[1]->followImplAsShared<ClassMatch>();
+      astnode->_identifier = kwid->_token->text;
+    });
+    ///////////////////////////////////////////////////////////
+    onPost("arg_list", [=](match_ptr_t match) {
       auto funcdef = ast_create<SHAST::ArgumentList>(match);
+      auto seq     = match->asShared<Sequence>();
+      
     });
     ///////////////////////////////////////////////////////////
     onPost("statement_list", [=](match_ptr_t match) {
@@ -585,13 +596,15 @@ struct ShadLangParser : public Parser {
     onPost("iface_input", [=](match_ptr_t match) {
       auto ast_node = ast_create<SHAST::InterfaceInput>(match);
       auto seq     = match->asShared<Sequence>();
-      auto name = seq->_items[1]->followImplAsShared<ClassMatch>();
-      if(auto try_semantic = seq->_items[2]->asShared<Optional>()->_subitem){
+      seq->dump("iface_input");
+      auto tid     = ast_get<SHAST::TypedIdentifier>(seq->_items[0]->asShared<Proxy>()->_selected);
+      ast_node->_identifier = tid->_identifier;
+      ast_node->_datatype = tid->_datatype;
+      if(auto try_semantic = seq->_items[1]->asShared<Optional>()->_subitem){
         auto semantic_seq = try_semantic->asShared<Sequence>();
         auto semantic = semantic_seq->_items[1]->followImplAsShared<ClassMatch>();
         ast_node->_semantic = semantic->_token->text;
       }
-      ast_node->_name = name->_token->text;
     });
     ///////////////////////////////////////////////////////////
     onPost("iface_inputs", [=](match_ptr_t match) {
@@ -599,6 +612,15 @@ struct ShadLangParser : public Parser {
       auto seq     = match->asShared<Sequence>();
       auto fn_name = seq->_items[1]->followImplAsShared<ClassMatch>();
       ast_node->_name = fn_name->_token->text;
+    });
+    ///////////////////////////////////////////////////////////
+    onPost("output_decl", [=](match_ptr_t match) {
+      auto ast_node = ast_create<SHAST::InterfaceOutput>(match);
+      auto seq = match->asShared<Sequence>();
+      auto ddecl_seq = seq->_items[0]->followImplAsShared<Sequence>();
+      auto tid     = ast_get<SHAST::TypedIdentifier>(ddecl_seq->_items[0]->asShared<Proxy>()->_selected);
+      ast_node->_identifier = tid->_identifier;
+      ast_node->_datatype = tid->_datatype;
     });
     ///////////////////////////////////////////////////////////
     onPost("iface_outputs", [=](match_ptr_t match) {
@@ -681,8 +703,10 @@ struct ShadLangParser : public Parser {
   void _dumpAstTreeVisitor(SHAST::astnode_ptr_t node, int indent) {
     auto indentstr = std::string(indent*2, ' ');
     printf("%s%s\n", indentstr.c_str(), node->desc().c_str());
-    for (auto c : node->_children) {
-      _dumpAstTreeVisitor(c, indent+1);
+    if(node->_descend){
+      for (auto c : node->_children) {
+        _dumpAstTreeVisitor(c, indent+1);
+      }
     }
   }
 
