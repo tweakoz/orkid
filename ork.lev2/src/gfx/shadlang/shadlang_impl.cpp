@@ -105,11 +105,6 @@ std::string parser_spec = R"xxx(
     kw_inputs    -< KW_INPUTS >-
     kw_outputs   -< KW_OUTPUTS >-
         
-    argumentDeclaration -< [ datatype kw_or_id opt{COMMA} ] >-
-    variableDeclaration -< [datatype kw_or_id] >-
-    uniformDeclaration -< [datatype kw_or_id semicolon] >-
-    funcname -< kw_or_id >-
-    variableReference -< kw_or_id >-
     inh_list_item -< [ colon kw_or_id ] >-
     inh_list -< zom{ inh_list_item } >-
 
@@ -117,7 +112,7 @@ std::string parser_spec = R"xxx(
     fn_args -< zom{ fn_arg } >-
 
     fn_invok -< [
-        funcname
+        [ kw_or_id ] : "fni_name"
         l_paren
         fn_args
         r_paren
@@ -138,11 +133,14 @@ std::string parser_spec = R"xxx(
     primary -< sel{ fn_invok
                     number
                     term
-                    variableReference
+                    [ kw_or_id ] : "primary_varref"
                   } >-
 
     assignment_statement -< [
-        sel { variableDeclaration variableReference } : "ass1of"
+        sel { 
+          [datatype kw_or_id] : "astatement_vardecl"
+          [ kw_or_id ] : "astatement_varref"
+        }
         equals
         expression
     ] >-
@@ -153,12 +151,12 @@ std::string parser_spec = R"xxx(
         semicolon
     } >-
 
-    arg_list -< zom{ argumentDeclaration } >-
+    arg_list -< zom{ [ datatype kw_or_id opt{COMMA} ] } >-
     statement_list -< zom{ statement } >-
 
     fn_def -< [
         kw_function
-        kw_or_id : "fn_name"
+        [ kw_or_id ] : "fn_name"
         l_paren
         arg_list : "args"
         r_paren
@@ -169,7 +167,7 @@ std::string parser_spec = R"xxx(
     
     vtx_shader -< [
         kw_vtxshader
-        funcname
+        [ kw_or_id ] : "vtx_name"
         zom{inh_list_item} : "vtx_dependencies"
         l_curly
         statement_list : "vtx_statements"
@@ -178,7 +176,7 @@ std::string parser_spec = R"xxx(
 
     frg_shader -< [
         kw_frgshader
-        funcname
+        [ kw_or_id ] : "frg_name"
         zom{ inh_list_item } : "frg_dependencies"
         l_curly
         statement_list : "frg_statements"
@@ -187,31 +185,34 @@ std::string parser_spec = R"xxx(
 
     com_shader -< [
         kw_comshader
-        funcname
+        [ kw_or_id ] : "com_name"
         zom{ inh_list_item } : "com_dependencies"
         l_curly
         statement_list : "com_statements"
         r_curly
     ] >-
 
-    uni_set -< [
+    data_decl -< [datatype kw_or_id semicolon] >-
+
+    data_decls -< zom{ data_decl } >-
+
+    uniset -< [
       kw_uniset
-      kw_or_id
+      [ kw_or_id ] : "uniset_name"
       l_curly
-      zom{ uniformDeclaration } : "uniset_decls"
+      data_decls : "uniset_decls"
       r_curly
     ] >-
 
-    uni_blk -< [
+    uniblk -< [
       kw_uniblk
-      kw_or_id
+      [ kw_or_id ] : "uniblk_name"
       l_curly
-      zom{ uniformDeclaration } : "uniblk_decls"
+      data_decls : "uniblk_decls"
       r_curly
     ] >-
 
     iface_input -< [ datatype kw_or_id opt{ [colon kw_or_id] } semicolon ] >-
-    iface_output -< [ datatype kw_or_id semicolon ] >-
 
     iface_inputs -< [
       kw_inputs
@@ -223,13 +224,13 @@ std::string parser_spec = R"xxx(
     iface_outputs -< [
       kw_outputs
       l_curly
-      zom{ iface_output } : "outputlist"
+      data_decls : "outputlist"
       r_curly
     ] >-
 
     vtx_iface -< [
       kw_vtxiface
-      kw_or_id
+      [ kw_or_id ] : "vif_name"
       zom{ inh_list_item } : "vif_dependencies"
       l_curly
       iface_inputs
@@ -239,7 +240,7 @@ std::string parser_spec = R"xxx(
 
     frg_iface -< [
       kw_frgiface
-      kw_or_id
+      [ kw_or_id ] : "fif_name"
       zom{ inh_list_item } : "fif_dependencies"
       l_curly
       iface_inputs
@@ -247,7 +248,7 @@ std::string parser_spec = R"xxx(
       r_curly
     ] >-
 
-    translatable -< sel{ fn_def vtx_shader frg_shader com_shader uni_set uni_blk vtx_iface frg_iface } >-
+    translatable -< sel{ fn_def vtx_shader frg_shader com_shader uniset uniblk vtx_iface frg_iface } >-
 
     translation_unit -< zom{ translatable } >-
 
@@ -294,15 +295,52 @@ struct ShadLangParser : public Parser {
     auto product              = rule("product");
     auto term                 = rule("term");
     auto primary              = rule("primary");
-    auto variableDeclaration  = rule("variableDeclaration");
-    auto variableReference    = rule("variableReference");
     auto semicolon            = rule("SEMICOLON");
     auto assignment_statement = rule("assignment_statement");
+
     ///////////////////////////////////////////////////////////
-    onPost("variableReference", [=](match_ptr_t match) { //
-        auto kwid      = match->asShared<ClassMatch>()->_token->text;
-        auto var_ref   = ast_create<SHAST::VariableReference>(match);
-        var_ref->_varname = kwid;
+
+    auto objectNameAst = [&](match_ptr_t match) {
+      auto objname = ast_create<SHAST::ObjectName>(match);
+      auto fn_name_seq = match->asShared<Sequence>();
+      auto fn_name = fn_name_seq->_items[0]->followImplAsShared<ClassMatch>();
+      objname->_name = fn_name->_token->text;
+    };
+    ///////////////////////////////////////////////////////////
+    onPost("fn_name", [=](match_ptr_t match) {
+      objectNameAst(match);
+    });
+    ///////////////////////////////////////////////////////////
+    onPost("fni_name", [=](match_ptr_t match) {
+      objectNameAst(match);
+    });
+    ///////////////////////////////////////////////////////////
+    onPost("vtx_name", [=](match_ptr_t match) {
+      objectNameAst(match);
+    });
+    ///////////////////////////////////////////////////////////
+    onPost("frg_name", [=](match_ptr_t match) {
+      objectNameAst(match);
+    });
+    ///////////////////////////////////////////////////////////
+    onPost("com_name", [=](match_ptr_t match) {
+      objectNameAst(match);
+    });
+    ///////////////////////////////////////////////////////////
+    onPost("uniset_name", [=](match_ptr_t match) {
+      objectNameAst(match);
+    });
+    ///////////////////////////////////////////////////////////
+    onPost("uniblk_name", [=](match_ptr_t match) {
+      objectNameAst(match);
+    });
+    ///////////////////////////////////////////////////////////
+    onPost("vif_name", [=](match_ptr_t match) {
+      objectNameAst(match);
+    });
+    ///////////////////////////////////////////////////////////
+    onPost("fif_name", [=](match_ptr_t match) {
+      objectNameAst(match);
     });
     ///////////////////////////////////////////////////////////
     onPost("FLOATING_POINT", [=](match_ptr_t match) { //
@@ -406,9 +444,17 @@ struct ShadLangParser : public Parser {
       // since expression is a sum, then expression match points to sum
     });
     ///////////////////////////////////////////////////////////
+    onPost("astatement_vardecl", [=](match_ptr_t match) { //
+      auto ast_node = ast_create<SHAST::AssignmentStatementVarDecl>(match);
+    });
+    ///////////////////////////////////////////////////////////
+    onPost("astatement_varref", [=](match_ptr_t match) { //
+      auto ast_node = ast_create<SHAST::AssignmentStatementVarRef>(match);
+    });
+    ///////////////////////////////////////////////////////////
     onPost("assignment_statement", [=](match_ptr_t match) { //
       auto ast_node = ast_create<SHAST::AssignmentStatement>(match);
-      auto ass1of   = match->asShared<Sequence>()->itemAsShared<OneOf>(0);
+      /*auto ass1of   = match->asShared<Sequence>()->itemAsShared<OneOf>(0);
       if (ass1of->_selected->_matcher == variableDeclaration) {
         auto seq      = ass1of->_selected->asShared<Sequence>();
         auto datatype = ast_get<SHAST::Product>(seq->_items[0]);
@@ -419,22 +465,7 @@ struct ShadLangParser : public Parser {
         ast_node->_expression = expr;
       } else {
         // OrkAssert(false);
-      }
-    });
-    ///////////////////////////////////////////////////////////
-    onPost("argumentDeclaration", [=](match_ptr_t match) {
-      auto ast_node = ast_create<SHAST::ArgumentDeclaration>(match);
-      auto seq      = match->asShared<Sequence>();
-      seq->dump("argumentDeclaration");
-
-      auto dtype_sel = seq->_items[0]->followImplAsShared<OneOf>()->_selected;
-      auto varname = seq->_items[1]->followImplAsShared<ClassMatch>();
-
-      ast_node->_variable_name   = varname->_token->text;
-      auto tok                   = dtype_sel->asShared<ClassMatch>()->_token;
-      ast_node->_datatype        = std::make_shared<SHAST::DataType>();
-      ast_node->_datatype->_name = tok->text;
-      ast_node->_name = FormatString("ArgDecl<%s %s>", tok->text.c_str(), ast_node->_variable_name.c_str() );
+      }*/
     });
     ///////////////////////////////////////////////////////////
     onPost("arg_list", [=](match_ptr_t match) {
@@ -447,21 +478,12 @@ struct ShadLangParser : public Parser {
       auto funcdef = ast_create<SHAST::StatementList>(match);
     });
     ///////////////////////////////////////////////////////////
-    onPost("fn_name", [=](match_ptr_t match) {
-      auto funcname = ast_create<SHAST::FunctionName>(match);
-      auto fn_name     = match->asShared<ClassMatch>();
-      funcname->_name = fn_name->_token->text;
-    });
-    ///////////////////////////////////////////////////////////
     onPost("fn_def", [=](match_ptr_t match) {
       auto seq     = match->asShared<Sequence>();
       auto funcdef = ast_create<SHAST::FunctionDef>(match);
-
+      auto objname = ast_get<SHAST::ObjectName>(seq->_items[1]);
       seq->dump("funcdef");
-
-      auto fn_name = seq->_items[1]->followImplAsShared<ClassMatch>();
-      //auto fn_name = fn_name_proxy->followAsShared<ClassMatch>();
-      funcdef->_name = fn_name->_token->text; //FormatString("FnDef<%s>", fn_name->_token->text.c_str() );
+      funcdef->_name = objname->_name; 
 
       /*auto args    = seq->itemAsShared<NOrMore>(3);
       auto stas    = seq->itemAsShared<NOrMore>(6);
@@ -514,57 +536,62 @@ struct ShadLangParser : public Parser {
     onPost("vtx_shader", [=](match_ptr_t match) {
       auto ast_node = ast_create<SHAST::VertexShader>(match);
       auto seq     = match->asShared<Sequence>();
-      auto fn_name = seq->_items[1]->followImplAsShared<ClassMatch>();
-      ast_node->_name = fn_name->_token->text;
+      auto objname = ast_get<SHAST::ObjectName>(seq->_items[1]);
+      ast_node->_name = objname->_name;
     });
     ///////////////////////////////////////////////////////////
     onPost("frg_shader", [=](match_ptr_t match) {
       auto ast_node = ast_create<SHAST::FragmentShader>(match);
       auto seq     = match->asShared<Sequence>();
-      auto fn_name = seq->_items[1]->followImplAsShared<ClassMatch>();
-      ast_node->_name = fn_name->_token->text;
+      auto objname = ast_get<SHAST::ObjectName>(seq->_items[1]);
+      ast_node->_name = objname->_name;
     });
     ///////////////////////////////////////////////////////////
     onPost("com_shader", [=](match_ptr_t match) {
       auto ast_node = ast_create<SHAST::ComputeShader>(match);
       auto seq     = match->asShared<Sequence>();
-      auto fn_name = seq->_items[1]->followImplAsShared<ClassMatch>();
-      ast_node->_name = fn_name->_token->text;
+      auto objname = ast_get<SHAST::ObjectName>(seq->_items[1]);
+      ast_node->_name = objname->_name;
     });
     ///////////////////////////////////////////////////////////
-    onPost("uniformDeclaration", [=](match_ptr_t match) {
-      auto ast_node = ast_create<SHAST::UniformDecl>(match);
+    onPost("data_decl", [=](match_ptr_t match) {
+      auto ast_node = ast_create<SHAST::DataDeclaration>(match);
       auto seq     = match->asShared<Sequence>();
-      auto fn_name = seq->_items[1]->followImplAsShared<ClassMatch>();
-      ast_node->_name = fn_name->_token->text;
+      seq->dump("data_decl");
+      auto dtsel = seq->_items[0]->asShared<Proxy>()->_selected;
+      auto dt = ast_get<SHAST::DataType>(dtsel);
+      auto kwid = seq->_items[1]->followImplAsShared<ClassMatch>();
+      ast_node->_name = kwid->_token->text;
     });
     ///////////////////////////////////////////////////////////
-    onPost("uni_set", [=](match_ptr_t match) {
+    onPost("data_decls", [=](match_ptr_t match) {
+      auto ast_node = ast_create<SHAST::DataDeclarations>(match);
+    });
+    ///////////////////////////////////////////////////////////
+    onPost("uniset", [=](match_ptr_t match) {
       auto ast_node = ast_create<SHAST::UniformSet>(match);
       auto seq     = match->asShared<Sequence>();
-      auto fn_name = seq->_items[1]->followImplAsShared<ClassMatch>();
-      ast_node->_name = fn_name->_token->text;
+      auto objname = ast_get<SHAST::ObjectName>(seq->_items[1]);
+      ast_node->_name = objname->_name;
     });
     ///////////////////////////////////////////////////////////
-    onPost("uni_blk", [=](match_ptr_t match) {
+    onPost("uniblk", [=](match_ptr_t match) {
       auto ast_node = ast_create<SHAST::UniformBlk>(match);
       auto seq     = match->asShared<Sequence>();
-      auto fn_name = seq->_items[1]->followImplAsShared<ClassMatch>();
-      ast_node->_name = fn_name->_token->text;
+      auto objname = ast_get<SHAST::ObjectName>(seq->_items[1]);
+      ast_node->_name = objname->_name;
     });
     ///////////////////////////////////////////////////////////
     onPost("iface_input", [=](match_ptr_t match) {
       auto ast_node = ast_create<SHAST::InterfaceInput>(match);
       auto seq     = match->asShared<Sequence>();
-      auto fn_name = seq->_items[1]->followImplAsShared<ClassMatch>();
-      ast_node->_name = fn_name->_token->text;
-    });
-    ///////////////////////////////////////////////////////////
-    onPost("iface_output", [=](match_ptr_t match) {
-      auto ast_node = ast_create<SHAST::InterfaceOutput>(match);
-      auto seq     = match->asShared<Sequence>();
-      auto fn_name = seq->_items[1]->followImplAsShared<ClassMatch>();
-      ast_node->_name = fn_name->_token->text;
+      auto name = seq->_items[1]->followImplAsShared<ClassMatch>();
+      if(auto try_semantic = seq->_items[2]->asShared<Optional>()->_subitem){
+        auto semantic_seq = try_semantic->asShared<Sequence>();
+        auto semantic = semantic_seq->_items[1]->followImplAsShared<ClassMatch>();
+        ast_node->_semantic = semantic->_token->text;
+      }
+      ast_node->_name = name->_token->text;
     });
     ///////////////////////////////////////////////////////////
     onPost("iface_inputs", [=](match_ptr_t match) {
@@ -584,15 +611,15 @@ struct ShadLangParser : public Parser {
     onPost("vtx_iface", [=](match_ptr_t match) {
       auto ast_node = ast_create<SHAST::VertexInterface>(match);
       auto seq     = match->asShared<Sequence>();
-      auto fn_name = seq->_items[1]->followImplAsShared<ClassMatch>();
-      ast_node->_name = fn_name->_token->text;
+      auto objname = ast_get<SHAST::ObjectName>(seq->_items[1]);
+      ast_node->_name = objname->_name;
     });
     ///////////////////////////////////////////////////////////
     onPost("frg_iface", [=](match_ptr_t match) {
       auto ast_node = ast_create<SHAST::FragmentInterface>(match);
       auto seq     = match->asShared<Sequence>();
-      auto fn_name = seq->_items[1]->followImplAsShared<ClassMatch>();
-      ast_node->_name = fn_name->_token->text;
+      auto objname = ast_get<SHAST::ObjectName>(seq->_items[1]);
+      ast_node->_name = objname->_name;
     });
     ///////////////////////////////////////////////////////////
     onPost("inh_list_item", [=](match_ptr_t match) {

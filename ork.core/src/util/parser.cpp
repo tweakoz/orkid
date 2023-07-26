@@ -269,6 +269,7 @@ matcher_ptr_t Parser::rule(const std::string& rule_name) {
     rval = it->second;
   }
   else{
+    printf( "Rule<%s> Not Found!\n", rule_name.c_str() );
     OrkAssert(false);
   }
   return rval;

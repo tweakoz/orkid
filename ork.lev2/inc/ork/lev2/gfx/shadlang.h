@@ -93,18 +93,23 @@ struct DataType : public AstNode {
   }
 };
 //
-struct VariableReference : public AstNode { //
-  inline VariableReference() { _name = "VariableReference"; }
-  std::string _varname;
+struct AssignmentStatementVarRef : public AstNode {
   virtual std::string desc() const{
-    return FormatString("VarRef(%s)",_varname.c_str());
+    return FormatString("AssignmentStatementVarRef");
+  }
+};
+struct AssignmentStatementVarDecl : public AstNode {
+  virtual std::string desc() const{
+    return FormatString("AssignmentStatementVarDecl");
   }
 };
 //
 struct AssignmentStatement : public Statement {
-  inline AssignmentStatement() { _name = "AssignmentStatement"; }
     datatype_ptr_t _datatype;
     expression_ptr_t _expression;
+  virtual std::string desc() const{
+    return FormatString("AssignmentStatement");
+  }
 };
 struct EmptyStatement : public Statement{
 };
@@ -187,12 +192,22 @@ struct FunctionInvokation : public AstNode { //
   }
 };
 
+struct DataDeclaration : public AstNode { //
+  std::string desc() const final {
+    return FormatString("DataDeclaration(%s)", _name.c_str() );
+  }
+};
+struct DataDeclarations : public AstNode { //
+  std::string desc() const final {
+    return FormatString("DataDeclarations" );
+  }
+};
 struct Translatable : public AstNode {
 };
 
-struct FunctionName : public Translatable { //
+struct ObjectName : public Translatable { //
   std::string desc() const final {
-    return FormatString("FunctionName(%s)", _name.c_str() );
+    return FormatString("ObjectName(%s)", _name.c_str() );
   }
 };
 //
@@ -211,11 +226,6 @@ struct TranslationUnit : public AstNode { //
     return FormatString("TranslationUnit()");
   }
   std::map<std::string,translatable_ptr_t> _translatables;
-};
-struct UniformDecl : public AstNode { //
-  std::string desc() const final {
-    return FormatString("UniformDecl(%s)", _name.c_str() );
-  }
 };
 struct UniformSet : public AstNode { //
   std::string desc() const final {
@@ -239,12 +249,13 @@ struct StatementList : public AstNode { //
 };
 struct InterfaceInput : public AstNode { //
   std::string desc() const final {
-    return FormatString("InterfaceInput(%s)", _name.c_str() );
+    return FormatString("InterfaceInput name<%s> semantic<%s>" , _name.c_str(),  _semantic.c_str() );
   }
+  std::string _semantic;
 };
 struct InterfaceOutput : public AstNode { //
   std::string desc() const final {
-    return FormatString("InterfaceOutput(%s)", _name.c_str() );
+    return FormatString("InterfaceOutput" );
   }
 };
 struct InterfaceInputs : public AstNode { //
