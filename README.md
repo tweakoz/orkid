@@ -32,6 +32,7 @@ Software Development Information
 [EngineLibraryTopology](ork.dox/engine_layout.md)
    * [Ork.Core.Reflection](ork.dox/reflection.md)
    * [Ork.Core.Datablocks](ork.dox/datablocks.md)
+   * [Ork.Core.Parser](ork.dox/parser.md)
    * [Ork.Lev2.Graphics](ork.dox/lev2-graphics.md)
    * [Ork.ECS](ork.dox/ecs.md)
 
