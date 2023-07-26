@@ -17,6 +17,7 @@
   - Threading / low-level concurrency
   - DataBlocks / DataCache - cache output of processed data.
   - Asset managers with on the fly (and cached) conversion
+  - Scanner (Lexer) / PEG Parser
   - Includes python bindings
     + easy to use type-codec for shuttling engine data to/from python
   - Notable dependencies (License):
