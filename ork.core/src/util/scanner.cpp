@@ -91,7 +91,14 @@ void Scanner::scan() {
     // std::cout << "index<" << index << "> Id: " << iter->id << ", Token: '" << iter->str() << "'\n";
     index++;
   }
-  // OrkAssert(false);
+
+  std::istringstream iss(as_str);
+  std::string line;
+
+  while (std::getline(iss, line)) {
+     _lines.push_back(line);
+  }
+
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////

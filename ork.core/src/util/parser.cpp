@@ -465,6 +465,45 @@ match_ptr_t Parser::match(matcher_ptr_t topmatcher, //
   MatchAttemptContextItem mci { topmatcher, topview };
   auto root_match_attempt = _tryMatch(mci);
 
+  auto rm_view = root_match_attempt->_view;
+  bool start_match = (rm_view->_start == topview->_start);
+  bool end_match = (rm_view->_end == topview->_end);
+
+  if( (not start_match) or (not end_match) ){
+
+    auto end = rm_view->token(rm_view->_end);
+    size_t end_lineno = end->iline;
+    size_t end_colno = end->icol;
+    topview->dump( "topview" );
+
+    printf( "xxx : FULL MATCH FAILED\n" );
+    printf( "xxx: topview<%zu:%zu>\n", topview->_start, topview->_end );
+    printf( "xxx: rmview<%zu:%zu>\n", rm_view->_start, rm_view->_end );
+    printf( "xxx: end_linenum<%zu> end_columnnum<%zu>\n", end_lineno, end_colno );
+
+    printf( "xxx: ////////////////////// CURRENT POS (succeeded) ////////////////////// \n" );
+
+    size_t st_line = std::max((end_lineno-3),size_t(0));
+    size_t en_line = st_line+7;
+    for( size_t cu_line = st_line; cu_line<en_line; cu_line++ ){
+      auto dbg_line = _scanner->_lines[cu_line];
+      std::string str;
+      if(cu_line==end_lineno){
+        str = deco::format( 255,255,64, "xxx: line<%zu>: ",cu_line );
+        str += deco::format(255,255,192,"%s", dbg_line.c_str());
+      }
+      else{
+        str = deco::format( 255,64,255, "xxx: line<%zu>: ",cu_line );
+        str += deco::format(255,192,255,"%s", dbg_line.c_str());
+      }
+      printf( "%s\n", str.c_str() );
+    }
+
+    printf( "xxx: ///////////////////////////////////////////////////////////////////// \n" );
+
+    OrkAssert(false);
+  }
+
   if(root_match_attempt) {
     auto root_match = MatchAttempt::genmatch(root_match_attempt);
     OrkAssert(root_match);

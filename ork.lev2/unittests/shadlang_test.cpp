@@ -73,7 +73,7 @@ TEST(shlang1) {
         ///////////////////////////////////////////////////////////////
         fragment_shader ps_uitext : iface_fmt {
           vec4 s = texture(ColorMap, frg_uv);
-          //float texa = pow(s.a*s.r,0.75);
+          float texa = pow(s.a*s.r,0.75);
           //out_clr = vec4(ModColor.xyz, texa*ModColor.w);
         }
         ///////////////////////////////////////////////////////////////

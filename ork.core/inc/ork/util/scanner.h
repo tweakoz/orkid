@@ -140,6 +140,7 @@ struct Scanner {
   rules_t _rules;
   macros_t _macros;
   std::vector<std::string> _str_hold;
+  std::vector<std::string> _lines;
   statemachine_t _statemachine;
 };
 
