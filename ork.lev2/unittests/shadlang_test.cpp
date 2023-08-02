@@ -86,6 +86,23 @@ TEST(shlang1) {
         function def() {
             float X = (1.0+2.3)*7.0;
         }
+        ///////////////////////////////////////////////////////////////
+        // StateBlocks
+        ///////////////////////////////////////////////////////////////
+        state_block sb_default : default {
+          DepthTest = OFF;
+          CullTest  = OFF;
+        }
+        ///////////////////////////////////////////////////////////////
+        state_block sb_lerpblend : sb_default {
+          BlendMode = ALPHA;
+          CullTest  = OFF;
+        }
+        ///////////////////////////////////////////////////////////////
+        state_block sb_additive : sb_default {
+          BlendMode = ADDITIVE;
+          CullTest  = OFF;
+        }
     )";
   auto tunit = shadlang::parse(shader_text);
   CHECK(tunit != nullptr);

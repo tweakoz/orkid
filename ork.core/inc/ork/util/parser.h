@@ -137,6 +137,7 @@ struct Matcher {
   std::string _info;
   std::function<bool()> _on_link;
   varmap::VarMap _uservars;
+  int _linkattempts = 0;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

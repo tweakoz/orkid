@@ -748,6 +748,9 @@ void PegImpl::loadPEGGrammar() { //
         auto rule          = item.second;
         uint64_t crc_id    = CrcString(rule->_name.c_str()).hashed();
         _current_rule_name = rule->_name;
+        if( rule->_name == "QUOTED_STRING"){
+          rule->_regex = R"(\"[^\"]*\")";
+        }
         this->_user_scanner->addEnumClass(rule->_regex, crc_id);
         logchan_rulespec2->log(
             "IMPLEMENT SCANNER EnumClass<%s : %zu> regex \"%s\" ", //

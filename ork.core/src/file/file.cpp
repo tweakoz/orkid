@@ -13,6 +13,62 @@
 namespace ork {
 ///////////////////////////////////////////////////////////////////////////////
 
+strfilereadresult_ptr_t File::readAsString(const file::Path& input_path){
+
+  strfilereadresult_ptr_t rval = nullptr;
+
+  auto input_file = std::make_shared<File>();
+  auto ecode = input_file->OpenFile(input_path, EFM_READ);
+  if( ecode == EFEC_FILE_OK ){
+    size_t len = 0;
+    input_file->GetLength(len);
+    rval = std::make_shared<StringFileReadResult>();
+    if(len>0){
+      rval->_data.resize(len+1);
+      input_file->Read( (void*)rval->_data.data(), len );
+      rval->_data[len] = 0;
+    }
+  }
+  return rval;
+}
+
+binfilereadresult_ptr_t File::readAsBinary(const file::Path& input_path){
+
+  binfilereadresult_ptr_t rval = nullptr;
+
+  auto input_file = std::make_shared<File>();
+  auto ecode = input_file->OpenFile(input_path, EFM_READ);
+  if( ecode == EFEC_FILE_OK ){
+    size_t len = 0;
+    input_file->GetLength(len);
+    rval = std::make_shared<BinaryFileReadResult>();
+    if(len>0){
+      rval->_data.resize(len);
+      input_file->Read( (void*)rval->_data.data(), len );
+    }
+  }
+  return rval;
+}
+
+bool File::writeString(const file::Path& output_path, std::string data){
+  auto output_file = std::make_shared<File>();
+  auto ecode = output_file->OpenFile(output_path, EFM_WRITE);
+  OrkAssert( ecode == EFEC_FILE_OK );
+
+  EFileErrCode OK = output_file->Write( (void*)data.data(), data.length() );
+  OrkAssert( OK == EFEC_FILE_OK );
+  return true;
+}
+bool File::writeBinary(const file::Path& input_path, std::vector<uint8_t> data){
+  auto output_file = std::make_shared<File>();
+  auto ecode = output_file->OpenFile(input_path, EFM_WRITE);
+  OrkAssert( ecode == EFEC_FILE_OK );
+
+  EFileErrCode OK = output_file->Write( (void*)data.data(), data.size() );
+  OrkAssert( OK == EFEC_FILE_OK );
+  return true;
+}
+
 File::File(FileDev* pdev)
     : mpDevice(pdev)
     , msFileName("NoFile")

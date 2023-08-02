@@ -178,8 +178,8 @@ void Parser::_sequence(matcher_ptr_t matcher, std::vector<matcher_ptr_t> sub_mat
   };
   ///////////////////////////////////////////////////////
   matcher->_attempt_match_fn = [=](matcher_ptr_t par_matcher, scannerlightview_constptr_t slv) -> match_attempt_ptr_t {
-    auto match_attempt = pushMatch(par_matcher);
     log_match("SEQ<%s>: beg_match len<%zu>", matcher->_name.c_str(), sub_matchers.size());
+    auto match_attempt = pushMatch(par_matcher);
     auto slv_iter        = std::make_shared<ScannerLightView>(*slv);
     auto slv_match       = std::make_shared<ScannerLightView>(*slv);
     auto the_sequence    = match_attempt->makeShared<SequenceAttempt>();

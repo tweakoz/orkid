@@ -78,7 +78,16 @@ std::string scanner_spec = R"xxx(
     KW_SAMP1D           <| "sampler1D" |>
     KW_SAMP2D           <| "sampler2D" |>
     KW_SAMP3D           <| "sampler3D" |>
+    KW_STATEBLOCK       <| "state_block" |>
+    KW_PASS             <| "pass" |>
+    KW_TECHNIQUE        <| "technique" |>
+    KW_BLENDMODE        <| "BlendMode" |>
+    KW_CULLTEST         <| "CullTest" |>
+    KW_DEPTHTEST        <| "DepthTest" |>
+    KW_FXCONFIG         <| "fxconfig" |>
     KW_OR_ID            <| "[a-zA-Z_][a-zA-Z0-9_]*" |>
+    QUOTED_STRING       <| "" |>
+
 )xxx";
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -113,26 +122,34 @@ std::string parser_spec = R"xxx(
     kw_frgiface    <| KW_FRGIFACE |>
     kw_inputs      <| KW_INPUTS |>
     kw_outputs     <| KW_OUTPUTS |>
+    kw_stateblock  <| KW_STATEBLOCK |>
+    kw_blandmode   <| KW_BLENDMODE |>
+    kw_culltest    <| KW_CULLTEST |>
+    kw_depthtest   <| KW_DEPTHTEST |>
+    kw_technique   <| KW_TECHNIQUE |>
+    kw_fxconfig    <| KW_FXCONFIG |>
+    kw_pass        <| KW_PASS |>
+
 
     member_ref     <| [ dot kw_or_id ] |>
     array_ref      <| [ l_square expression r_square ] |>
 
     object_subref  <| sel{ member_ref array_ref } |>
 
-    inh_list_item  <| [ colon kw_or_id ] |>
+    inh_list_item  <| [ colon kw_or_id opt{ [l_paren kw_or_id r_paren] } ] |>
     inh_list       <| zom{ inh_list_item } |>
 
     fn_arg         <| [ expression opt{COMMA} ] |>
     fn_args        <| zom{ fn_arg } |>
 
-    fn_invok <| [
+    fn_invok <|[
         [ kw_or_id ] : "fni_name"
         l_paren
         fn_args
         r_paren
-    ] |>
+    ]|>
 
-    product <| [ primary opt{ [star primary] } ] |>
+    product <|[ primary opt{ [star primary] } ]|>
 
     sum <| sel{
         [ product plus product ] : "add"
@@ -142,24 +159,36 @@ std::string parser_spec = R"xxx(
 
     expression <| [ sum ] |>
 
-    term <| [ l_paren expression r_paren ] |>
+    term <|[ l_paren expression r_paren ]|>
 
-    typed_identifier <| [datatype kw_or_id] |>
+    typed_identifier <|[ datatype kw_or_id ]|>
+
+    rvalue_constructor <|[
+        datatype
+        l_paren
+        fn_args
+        r_paren
+    ]|>
 
     primary <| sel{ fn_invok
                     number
                     term
+                    rvalue_constructor
                     [ kw_or_id zom{object_subref} ] : "primary_var_ref"
                   } |>
 
-    assignment_statement <| [
+    lvalue <|  
+      [ kw_or_id zom{object_subref} ] : "lvalue_var_ref" 
+    |>
+
+    assignment_statement <|[
         sel { 
           [ typed_identifier ] : "astatement_vardecl"
-          [ kw_or_id ] : "astatement_varref"
+          [ lvalue ] : "astatement_varref"
         }
         equals
         expression
-    ] |>
+    ]|>
 
     statement <| sel{ 
         [ assignment_statement semicolon ]
@@ -170,7 +199,7 @@ std::string parser_spec = R"xxx(
     arg_list <| zom{ [ typed_identifier opt{COMMA} ] } |>
     statement_list <| zom{ statement } |>
 
-    fn_def <| [
+    fn_def <|[
         kw_function
         [ kw_or_id ] : "fn_name"
         l_paren
@@ -179,74 +208,74 @@ std::string parser_spec = R"xxx(
         l_curly
         statement_list : "fn_statements"
         r_curly
-    ] |>
+    ]|>
     
-    vtx_shader <| [
+    vtx_shader <|[
         kw_vtxshader
         [ kw_or_id ] : "vtx_name"
         zom{inh_list_item} : "vtx_dependencies"
         l_curly
         statement_list : "vtx_statements"
         r_curly
-    ] |>
+    ]|>
 
-    frg_shader <| [
+    frg_shader <|[
         kw_frgshader
         [ kw_or_id ] : "frg_name"
         zom{ inh_list_item } : "frg_dependencies"
         l_curly
         statement_list : "frg_statements"
         r_curly
-    ] |>
+    ]|>
 
-    com_shader <| [
+    com_shader <|[
         kw_comshader
         [ kw_or_id ] : "com_name"
         zom{ inh_list_item } : "com_dependencies"
         l_curly
         statement_list : "com_statements"
         r_curly
-    ] |>
+    ]|>
 
     data_decl <| [typed_identifier semicolon] |>
 
     data_decls <| zom{ data_decl } |>
 
-    uniset <| [
+    uniset <|[
       kw_uniset
       [ kw_or_id ] : "uniset_name"
       l_curly
       data_decls : "uniset_decls"
       r_curly
-    ] |>
+    ]|>
 
-    uniblk <| [
+    uniblk <|[
       kw_uniblk
       [ kw_or_id ] : "uniblk_name"
       l_curly
       data_decls : "uniblk_decls"
       r_curly
-    ] |>
+    ]|>
 
-    iface_input <| [ typed_identifier opt{ [colon kw_or_id] } semicolon ] |>
+    iface_input <|[ typed_identifier opt{ [colon kw_or_id] } semicolon ]|>
 
-    iface_inputs <| [
+    iface_inputs <|[
       kw_inputs
       l_curly
       zom{ iface_input } : "inputlist"
       r_curly
-    ] |>
+    ]|>
 
-    iface_outputs <| [
+    iface_outputs <|[
       kw_outputs
       l_curly
       zom{ 
         [ data_decl ] : "output_decl"
       }
       r_curly
-    ] |>
+    ]|>
 
-    vtx_iface <| [
+    vtx_iface <|[
       kw_vtxiface
       [ kw_or_id ] : "vif_name"
       zom{ inh_list_item } : "vif_dependencies"
@@ -254,9 +283,9 @@ std::string parser_spec = R"xxx(
       iface_inputs
       iface_outputs
       r_curly
-    ] |>
+    ]|>
 
-    frg_iface <| [
+    frg_iface <|[
       kw_frgiface
       [ kw_or_id ] : "fif_name"
       zom{ inh_list_item } : "fif_dependencies"
@@ -264,11 +293,87 @@ std::string parser_spec = R"xxx(
       iface_inputs
       iface_outputs
       r_curly
-    ] |>
+    ]|>
 
-    translatable <| sel{ fn_def vtx_shader frg_shader com_shader uniset uniblk vtx_iface frg_iface } |>
+    sb_key <| sel{ KW_BLENDMODE KW_CULLTEST KW_DEPTHTEST } |>
 
-    translation_unit <| zom{ translatable } |>
+    sb_item <|[
+      [ sb_key equals kw_or_id semicolon ] : "stateblock_item"
+    ]|>
+
+    stateblock <|[
+      kw_stateblock
+      [ kw_or_id ] : "sb_name"
+      zom{ inh_list_item } : "sb_dependencies"
+      l_curly
+      zom{ sb_item }
+      r_curly
+    ]|>
+
+    pass_binding_key <| sel{  kw_vtxshader kw_frgshader kw_stateblock } |>
+
+    pass_binding <|[
+      pass_binding_key equals kw_or_id semicolon
+    ]|>
+
+    pass <|[
+      kw_pass
+      [ kw_or_id ] : "pass_name"
+      l_curly
+      zom{ 
+        pass_binding : "pass_item"
+      }
+      r_curly
+    ]|>
+
+    fxconfig_ref <|[
+      kw_fxconfig
+      equals
+      [ kw_or_id ] : "fxconfigref_name"
+      semicolon
+    ]|>
+
+    fxconfig_decl <|[
+      kw_fxconfig
+      [ kw_or_id ] : "fxconfigdecl_name"
+      l_curly
+      zom{[
+        [ kw_or_id ] : "fxconfigdecl_key"
+        equals
+        [ QUOTED_STRING ] : "fxconfigdecl_val"
+        semicolon
+      ]}
+      r_curly
+    ]|>
+
+    technique <|[
+      kw_technique
+      [ kw_or_id ] : "technique_name"
+      l_curly
+      opt{ fxconfig_ref }
+      oom{ pass }
+      r_curly
+    ]|>
+
+    translatable <| 
+      sel{ 
+        fn_def 
+        vtx_shader 
+        frg_shader 
+        com_shader 
+        uniset 
+        uniblk 
+        vtx_iface 
+        frg_iface 
+        stateblock
+        technique
+        fxconfig_decl 
+      }
+    |>
+
+    translation_unit <|
+      zom{ translatable } 
+    |>
 
 )xxx";
 
@@ -372,8 +477,8 @@ struct ShadLangParser : public Parser {
     ///////////////////////////////////////////////////////////
     onPost("datatype", [=](match_ptr_t match) { //
       auto selected       = match->asShared<OneOf>()->_selected;
-      auto datatype       = ast_create<SHAST::DataType>(match);
-      datatype->_datatype = selected->asShared<ClassMatch>()->_token->text;
+      auto ast_dt       = ast_create<SHAST::DataType>(match);
+      ast_dt->_datatype = selected->asShared<ClassMatch>()->_token->text;
     });
     ///////////////////////////////////////////////////////////
     onPost("term", [=](match_ptr_t match) { auto term = ast_create<SHAST::Term>(match); });
@@ -434,6 +539,39 @@ struct ShadLangParser : public Parser {
     onPost("expression", [=](match_ptr_t match) { //
       auto expression = ast_create<SHAST::Expression>(match);
     });
+    onLink("expression", [=](match_ptr_t match) { //
+      auto expression = ast_get<SHAST::Expression>(match);
+      /////////////////////////
+      // try to collapse expr->sum->product->primary chains
+      /////////////////////////
+      SHAST::astnode_ptr_t collapse_node;
+      auto sum = std::dynamic_pointer_cast<SHAST::Sum>(expression->_children[0]);
+      if(sum->_op=='_'){
+        auto product_node = std::dynamic_pointer_cast<SHAST::Product>(sum->_left);
+        if(product_node){
+          if( product_node->_primaries.size()==1){
+            auto primary_node = product_node->_primaries[0];
+            collapse_node = primary_node->_children[0];
+          }
+          else{
+            collapse_node = product_node;
+          }
+        }
+      }
+      /////////////////////////
+      if(collapse_node){
+        auto expr_par = expression->_parent;
+        size_t index = 0;
+        size_t numc = expr_par->_children.size();
+        for( size_t ic=0; ic<numc; ++ic){
+          if( expr_par->_children[ic] == expression){
+            expr_par->_children[ic] = collapse_node;
+            break;
+          }
+        }
+      }
+      /////////////////////////
+    });
     ///////////////////////////////////////////////////////////
     onPost("astatement_vardecl", [=](match_ptr_t match) { //
       auto var_decl = ast_create<SHAST::AssignmentStatementVarDecl>(match);
@@ -446,8 +584,20 @@ struct ShadLangParser : public Parser {
       var_decl->_descend    = false;
     });
     ///////////////////////////////////////////////////////////
+    onPost("lvalue", [=](match_ptr_t match) { //
+      auto ast_lvalue = ast_create<SHAST::LValue>(match);
+      auto seq   = match->asShared<Sequence>();
+      auto identifier = seq->_items[0]->followImplAsShared<ClassMatch>();
+      ast_lvalue->_identifier = identifier->_token->text;
+    });
+    ///////////////////////////////////////////////////////////
     onPost("astatement_varref", [=](match_ptr_t match) { //
-      auto varref = ast_create<SHAST::AssignmentStatementVarRef>(match);
+      auto ast_varref = ast_create<SHAST::AssignmentStatementVarRef>(match);
+      auto seq   = match->asShared<Sequence>();
+      auto var_item   = seq->_items[0];
+      auto var_seq = var_item->followImplAsShared<Sequence>();
+      
+      //ast_varref->_identifier = var->_token->text;
     });
     ///////////////////////////////////////////////////////////
     onPost("assignment_statement", [=](match_ptr_t match) { //
@@ -464,6 +614,14 @@ struct ShadLangParser : public Parser {
       } else {
         // OrkAssert(false);
       }*/
+    });
+    ///////////////////////////////////////////////////////////
+    onPost("rvalue_constructor", [=](match_ptr_t match) {
+      auto ast_rvc    = ast_create<SHAST::RValueConstructor>(match);
+      auto seq       = match->asShared<Sequence>();
+      auto ast_dt          = ast_get<SHAST::DataType>(seq->_items[0]);
+      ast_rvc->_datatype   = ast_dt->_datatype;
+      ast_dt->_showDOT = false;
     });
     ///////////////////////////////////////////////////////////
     onPost("typed_identifier", [=](match_ptr_t match) {
@@ -489,7 +647,7 @@ struct ShadLangParser : public Parser {
       auto statement_list = ast_create<SHAST::StatementList>(match);
       auto nom            = match->asShared<NOrMore>();
       for (auto item : nom->_items) {
-        auto seq = item->asShared<Sequence>();
+        //auto seq = item->asShared<Sequence>();
         // auto statement = ast_get<SHAST::Stat>(seq->_items[0]);
         // arg_list->_arguments.push_back(tid);
       }
@@ -584,6 +742,7 @@ struct ShadLangParser : public Parser {
       auto tid               = data_decl->childAs<SHAST::TypedIdentifier>(0);
       data_decl->_datatype   = tid->_datatype;
       data_decl->_identifier = tid->_identifier;
+      tid->_showDOT          = false;
       data_decl->_descend    = false;
     });
     ///////////////////////////////////////////////////////////
@@ -625,26 +784,26 @@ struct ShadLangParser : public Parser {
     });
     ///////////////////////////////////////////////////////////
     onPost("output_decl", [=](match_ptr_t match) {
-      auto output_decl         = ast_create<SHAST::InterfaceOutput>(match);
+      auto ast_output_decl         = ast_create<SHAST::InterfaceOutput>(match);
       auto seq                 = match->asShared<Sequence>();
       auto ddecl_seq           = seq->_items[0]->followImplAsShared<Sequence>();
       auto tid                 = ast_get<SHAST::TypedIdentifier>(ddecl_seq->_items[0]->asShared<Proxy>()->_selected);
-      output_decl->_identifier = tid->_identifier;
-      output_decl->_datatype   = tid->_datatype;
+      ast_output_decl->_identifier = tid->_identifier;
+      ast_output_decl->_datatype   = tid->_datatype;
     });
     ///////////////////////////////////////////////////////////
     onPost("iface_outputs", [=](match_ptr_t match) {
-      auto iface_outputs   = ast_create<SHAST::InterfaceOutputs>(match);
+      auto ast_iface_outputs   = ast_create<SHAST::InterfaceOutputs>(match);
       auto seq             = match->asShared<Sequence>();
       auto fn_name         = seq->_items[1]->followImplAsShared<ClassMatch>();
-      iface_outputs->_name = fn_name->_token->text;
+      ast_iface_outputs->_name = fn_name->_token->text;
     });
     ///////////////////////////////////////////////////////////
     onPost("vtx_iface", [=](match_ptr_t match) {
-      auto vtx_iface   = ast_create<SHAST::VertexInterface>(match);
+      auto ast_vtx_iface   = ast_create<SHAST::VertexInterface>(match);
       auto seq         = match->asShared<Sequence>();
       auto objname     = ast_get<SHAST::ObjectName>(seq->_items[1]);
-      vtx_iface->_name = objname->_name;
+      ast_vtx_iface->_name = objname->_name;
     });
     ///////////////////////////////////////////////////////////
     onPost("frg_iface", [=](match_ptr_t match) {
@@ -654,11 +813,38 @@ struct ShadLangParser : public Parser {
       frg_iface->_name = objname->_name;
     });
     ///////////////////////////////////////////////////////////
+    onPost("stateblock_item", [=](match_ptr_t match) {
+      auto ast_sb_item    = ast_create<SHAST::StateBlockItem>(match);
+      auto seq        = match->asShared<Sequence>();
+      auto key_item   = seq->_items[0]->followImplAsShared<OneOf>()->_selected;
+      ast_sb_item->_key   = key_item->followImplAsShared<ClassMatch>()->_token->text;
+      ast_sb_item->_value = seq->_items[2]->followImplAsShared<ClassMatch>()->_token->text;
+    });
+    ///////////////////////////////////////////////////////////
+    onPost("stateblock", [=](match_ptr_t match) {
+      auto ast_sb    = ast_create<SHAST::StateBlock>(match);
+      auto seq       = match->asShared<Sequence>();
+      auto name_seq  = seq->_items[1]->asShared<Sequence>();
+      auto sb_name   = name_seq->_items[0]->followImplAsShared<ClassMatch>();
+      ast_sb->_name  = sb_name->_token->text;
+    });
+    ///////////////////////////////////////////////////////////
     onPost("inh_list_item", [=](match_ptr_t match) {
-      auto inh_list_item   = ast_create<SHAST::Dependency>(match);
       auto seq             = match->asShared<Sequence>();
       auto fn_name         = seq->_items[1]->followImplAsShared<ClassMatch>();
-      inh_list_item->_name = fn_name->_token->text;
+      if( fn_name->_token->text == "extension"){
+        auto opt         = seq->_items[2]->asShared<Optional>();
+        auto opt_seq     = opt->_subitem->asShared<Sequence>();
+        auto ext_name = opt_seq->_items[1]->followImplAsShared<ClassMatch>()->_token->text;
+        auto inh_list_item   = ast_create<SHAST::Extension>(match);
+        inh_list_item->_extension_name = ext_name;
+        inh_list_item->_name = fn_name->_token->text;
+      }
+      else
+      {
+        auto inh_list_item   = ast_create<SHAST::Dependency>(match);
+        inh_list_item->_name = fn_name->_token->text;
+      }
     });
     ///////////////////////////////////////////////////////////
     onPost("translation_unit", [=](match_ptr_t match) {
@@ -675,9 +861,10 @@ struct ShadLangParser : public Parser {
         }
 
         if (translatable) {
-          auto it = translation_unit->_translatables.find(translatable->_name);
-          OrkAssert(it == translation_unit->_translatables.end());
-          translation_unit->_translatables[translatable->_name] = translatable;
+          auto it = translation_unit->_translatables_by_name.find(translatable->_name);
+          OrkAssert(it == translation_unit->_translatables_by_name.end());
+          translation_unit->_translatables_by_name[translatable->_name] = translatable;
+          translation_unit->_translatable_by_order.push_back(translatable);
         }
       }
     });
@@ -709,18 +896,6 @@ struct ShadLangParser : public Parser {
 
   /////////////////////////////////////////////////////////////////
 
-  void _dumpAstTreeVisitor(SHAST::astnode_ptr_t node, int indent) {
-    auto indentstr = std::string(indent * 2, ' ');
-    printf("%s%s\n", indentstr.c_str(), node->desc().c_str());
-    if (node->_descend) {
-      for (auto c : node->_children) {
-        _dumpAstTreeVisitor(c, indent + 1);
-      }
-    }
-  }
-
-  /////////////////////////////////////////////////////////////////
-
   SHAST::translationunit_ptr_t parseString(std::string parse_str) {
 
     _scanner->scanString(parse_str);
@@ -741,7 +916,8 @@ struct ShadLangParser : public Parser {
     printf("///////////////////////////////\n");
     printf("// AST TREE\n");
     printf("///////////////////////////////\n");
-    _dumpAstTreeVisitor(ast_top, 0);
+    std::string ast_str = toASTstring(ast_top);
+    printf( "%s\n", ast_str.c_str() );
     printf("///////////////////////////////\n");
     return std::dynamic_pointer_cast<SHAST::TranslationUnit>(ast_top);
   }
@@ -758,6 +934,36 @@ SHAST::translationunit_ptr_t parse(const std::string& shader_text) {
   auto parser = std::make_shared<impl::ShadLangParser>();
   auto topast = parser->parseString(shader_text);
   return topast;
+}
+
+void SHAST::_dumpAstTreeVisitor(SHAST::astnode_ptr_t node, int indent, std::string& out_str) {
+  auto indentstr = std::string(indent * 2, ' ');
+  out_str += FormatString("%s%s\n", indentstr.c_str(), node->desc().c_str());
+  if (node->_descend) {
+    for (auto c : node->_children) {
+      _dumpAstTreeVisitor(c, indent + 1, out_str);
+    }
+  }
+}
+
+std::string toASTstring(SHAST::astnode_ptr_t node){
+  std::string rval;
+  SHAST::_dumpAstTreeVisitor(node, 0, rval);
+  return rval;
+}
+
+void visitAST(SHAST::astnode_ptr_t node, SHAST::visitor_ptr_t visitor){
+  if( visitor->_on_pre ){
+    visitor->_on_pre(node);
+  }
+  visitor->_nodestack.push(node);
+  for( auto c : node->_children ){
+    visitAST(c,visitor);
+  }
+  visitor->_nodestack.pop();
+  if( visitor->_on_post ){
+    visitor->_on_post(node);
+  }
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////

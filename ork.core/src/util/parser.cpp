@@ -333,29 +333,44 @@ matcher_ptr_t Parser::declare(std::string name) {
 //////////////////////////////////////////////////////////////////////
 
 void Parser::link() {
-  std::vector<matcher_ptr_t> unlinked;
+  std::set<matcher_ptr_t> unlinked;
   for (auto matcher : _matchers) {
-    unlinked.push_back(matcher);
+    unlinked.insert(matcher);
   }
-  int bad_iters = 0;
-  while(unlinked.size()){
-    auto it = unlinked.begin();
-    unlinked.erase(it);
-    auto matcher = *it;
-    auto matcher_name = matcher->_name;
-    bool OK = true;
-    if (matcher->_on_link) {
-      OK = matcher->_on_link();
+  bool keep_going = true;
+  int none_linked_count = 0;
+  while(keep_going){
+    ////////////////////////////////////////////////
+    std::set<matcher_ptr_t> pass_linked;
+    ////////////////////////////////////////////////
+    for( auto matcher : unlinked ){
+      auto matcher_name = matcher->_name;
+      bool OK = true;
+      if (matcher->_on_link) {
+        OK = matcher->_on_link();
+      }
+      if( OK ){
+        log_info("MATCHER<%s> LINKED...", matcher_name.c_str());
+        pass_linked.insert(matcher);
+      }
+      else{
+        log_info("MATCHER<%s> LINK FAILED, will reattempt..", matcher_name.c_str());
+        matcher->_linkattempts++;
+      }
     }
-    if( OK ){
-      log_info("MATCHER<%s> LINKED...", matcher_name.c_str());
+    ////////////////////////////////////////////////
+    for( auto linked_item : pass_linked ){
+      unlinked.erase(linked_item);
+    }
+    ////////////////////////////////////////////////
+    if( pass_linked.size() == 0 ){
+      none_linked_count++;
     }
     else{
-      log_info("MATCHER<%s> LINK FAILED, will reattempt..", matcher_name.c_str());
-      unlinked.push_back(matcher);
-      bad_iters++;
+      none_linked_count = 0;
     }
-    OrkAssert(bad_iters<1000);
+    ////////////////////////////////////////////////
+    keep_going = (none_linked_count>=2);
   }
 }
 
@@ -385,6 +400,8 @@ match_attempt_ptr_t Parser::leafMatch(matcher_ptr_t matcher){
 
 match_attempt_ptr_t Parser::pushMatch(matcher_ptr_t matcher){
 
+  OrkAssert(matcher);
+
   match_attempt_ptr_t parent;
   if(not  _match_stack.empty() ){
     parent = _match_stack.back();
@@ -396,19 +413,8 @@ match_attempt_ptr_t Parser::pushMatch(matcher_ptr_t matcher){
   rval->_matcher = matcher;
   rval->_parent = parent;
   if(parent){
+    OrkAssert(parent->_matcher);
     parent->_children.push_back(rval);
-    if(parent->_matcher->_name == "sequence-6"){
-      printf( "xxx : YO\n");
-      //OrkBreak();
-    }
-    if(parent->_matcher->_name == "datatype"){
-      printf( "xxx : YO\n");
-      static int icount = 0;
-      icount++;
-      if(icount==2){
-        OrkBreak();
-      }
-    }
     printf( "xxx : PUSHMATCH parent<%p:%s> rval<%p:%s>\n", (void*)parent.get(), parent->_matcher->_name.c_str(), (void*)rval.get(), matcher->_name.c_str() );
   }
   else{
