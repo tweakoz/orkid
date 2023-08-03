@@ -93,7 +93,7 @@ void Spawner::spawn()
             const std::string& v = item.second;
             std::string VAR = k + "=" + v;
             env_vars[icounter] = strdup(VAR.c_str());
-            printf( "SETENV<%s>\n", env_vars[icounter] );
+            //printf( "SETENV<%s>\n", env_vars[icounter] );
             icounter++;
         }
         env_vars[icounter] = 0; // terminate envvar array

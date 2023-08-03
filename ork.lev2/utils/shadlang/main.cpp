@@ -45,7 +45,6 @@ int main(int argc, char** argv, char** envp) {
     }
     if( dot_output_path.length() ){
         auto dot = shadlang::toDotFile(tunit);
-        printf( "DOT<%s>\n", dot.c_str());
         bool OK = File::writeString(dot_output_path, dot);
         OrkAssert(OK);
         auto spawner = std::make_shared<Spawner>();

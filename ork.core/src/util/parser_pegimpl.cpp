@@ -12,8 +12,8 @@
 namespace ork {
 match_ptr_t filtered_match(matcher_ptr_t matcher, match_ptr_t the_match);
 /////////////////////////////////////////////////////////////////////////////////////////////////
-static logchannel_ptr_t logchan_rulespec  = logger()->createChannel("PEGSPEC1", fvec3(0.5, 0.8, 0.5), true);
-static logchannel_ptr_t logchan_rulespec2 = logger()->createChannel("PEGSPEC2", fvec3(0.5, 0.8, 0.5), true);
+static logchannel_ptr_t logchan_rulespec  = logger()->createChannel("PEGSPEC1", fvec3(0.5, 0.8, 0.5), false);
+static logchannel_ptr_t logchan_rulespec2 = logger()->createChannel("PEGSPEC2", fvec3(0.5, 0.8, 0.5), false);
 
 void Parser::onPre(const std::string& rule_name, match_notif_t fn) {
 
@@ -142,13 +142,15 @@ matcher_ptr_t Expression::createMatcher(std::string named) { // final
 
   matcher_ptr_t out = _expr_selected->createMatcher(named);
   if(_expr_name!=""){
-    printf( "XYZ expr out exprname<%s> matcher<%s>\n", _expr_name.c_str(), out->_name.c_str() );
+    //printf( "XYZ expr out exprname<%s> matcher<%s>\n", _expr_name.c_str(), out->_name.c_str() );
     auto it = _user_parser->_matchers_by_name.find(_expr_name);
     if(it==_user_parser->_matchers_by_name.end()){
       _user_parser->_matchers_by_name[_expr_name] = out;
       out->_name = _expr_name;
     }
     else{
+      // duplicate rule name
+      logerrchannel()->log( "expr out exprname<%s> matcher<%s> DUPLICATE!!", _expr_name.c_str(), out->_name.c_str() );
       OrkAssert(false);
     }
   }
@@ -811,7 +813,7 @@ void PegImpl::loadPEGGrammar() { //
     _ast_buildstack.pop_back();
     ast_rule->_expression        = expr_ast_node;
     _user_parser_rules[rulename] = ast_rule;
-    printf("CREATED AST-RULE<%s>\n", rulename.c_str());
+    //printf("CREATED AST-RULE<%s>\n", rulename.c_str());
   };
 
   _rsi_parser_matcher = _peg_parser->zeroOrMore(parser_rule, "parser_rules");

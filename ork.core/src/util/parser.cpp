@@ -17,7 +17,7 @@
 /////////////////////////////////////////////////////////////////////////////////////////////////
 namespace ork {
 //////////////////////////////////////////////////////////////////////
-static logchannel_ptr_t logchan_parser = logger()->createChannel("RULESPEC", fvec3(0.5, 0.7, 0.5), true);
+static logchannel_ptr_t logchan_parser = logger()->createChannel("RULESPEC", fvec3(0.5, 0.7, 0.5), false);
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
@@ -387,10 +387,10 @@ match_attempt_ptr_t Parser::leafMatch(matcher_ptr_t matcher){
   rval->_matcher = matcher;
   if(parent){
     parent->_children.push_back(rval);
-    printf( "xxx : LEAFMATCH parent<%p:%s> rval<%p:%s>\n", (void*)parent.get(), parent->_matcher->_name.c_str(), (void*)rval.get(), matcher->_name.c_str() );
+    //printf( "xxx : LEAFMATCH parent<%p:%s> rval<%p:%s>\n", (void*)parent.get(), parent->_matcher->_name.c_str(), (void*)rval.get(), matcher->_name.c_str() );
   }
   else{
-    printf( "xxx : LEAFMATCH noparent rval<%p:%s>\n", (void*)rval.get(), matcher->_name.c_str() );
+    //printf( "xxx : LEAFMATCH noparent rval<%p:%s>\n", (void*)rval.get(), matcher->_name.c_str() );
   }
   rval->_terminal = true;
   return rval;
@@ -415,10 +415,10 @@ match_attempt_ptr_t Parser::pushMatch(matcher_ptr_t matcher){
   if(parent){
     OrkAssert(parent->_matcher);
     parent->_children.push_back(rval);
-    printf( "xxx : PUSHMATCH parent<%p:%s> rval<%p:%s>\n", (void*)parent.get(), parent->_matcher->_name.c_str(), (void*)rval.get(), matcher->_name.c_str() );
+    //printf( "xxx : PUSHMATCH parent<%p:%s> rval<%p:%s>\n", (void*)parent.get(), parent->_matcher->_name.c_str(), (void*)rval.get(), matcher->_name.c_str() );
   }
   else{
-    printf( "xxx : PUSHMATCH noparent rval<%p:%s>\n", (void*)rval.get(), matcher->_name.c_str() );
+    //printf( "xxx : PUSHMATCH noparent rval<%p:%s>\n", (void*)rval.get(), matcher->_name.c_str() );
   }
 
   //////////////////////////////////////////////////////
@@ -538,7 +538,7 @@ match_ptr_t Parser::match(matcher_ptr_t topmatcher, //
     }
     _visitLinkMatch(root_match);
 
-    printf( "xxx : CACHE_HITS<%zU> CACHE_MISSES<%zu>\n", _cache_hits, _cache_misses );
+    log_info( "CACHE_HITS<%zu> CACHE_MISSES<%zu>\n", _cache_hits, _cache_misses );
 
     return root_match;
   }
@@ -563,7 +563,7 @@ void Parser::_visitComposeMatch(match_ptr_t m){
       suffix += " LINK";
     }
 
-    printf( "xxx : %s match<%p:%s:%s> numc<%zu> view<%zu:%zu> %s\n", //
+    if(0)printf( "xxx : %s match<%p:%s:%s> numc<%zu> view<%zu:%zu> %s\n", //
             indentstr.c_str(), //
             (void*) m.get(), //
             m->_matcher->_name.c_str(), //

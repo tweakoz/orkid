@@ -29,18 +29,20 @@ namespace ork::lev2::shadlang {
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 namespace impl {
-static logchannel_ptr_t logchan         = logger()->createChannel("ORKSLIMPL", fvec3(1, 1, .9), true);
-static logchannel_ptr_t logchan_grammar = logger()->createChannel("ORKSLGRAM", fvec3(1, 1, .8), true);
-static logchannel_ptr_t logchan_lexer   = logger()->createChannel("ORKSLLEXR", fvec3(1, 1, .7), true);
+static logchannel_ptr_t logchan         = logger()->createChannel("ORKSLIMPL", fvec3(1, 1, .9), false);
+static logchannel_ptr_t logchan_grammar = logger()->createChannel("ORKSLGRAM", fvec3(1, 1, .8), false);
+static logchannel_ptr_t logchan_lexer   = logger()->createChannel("ORKSLLEXR", fvec3(1, 1, .7), false);
 
 ///////////////////////////////////////////////////////////////////////////////
 
 std::string scanner_spec = R"xxx(
     macro(M1)           <| "xyz" |>
+
     MULTI_LINE_COMMENT  <| "\/\*([^*]|\*+[^/*])*\*+\/" |>
     SINGLE_LINE_COMMENT <| "\/\/.*[\n\r]" |>
     WHITESPACE          <| "\s+" |>
     NEWLINE             <| "[\n\r]+" |>
+
     EQUALS              <| "=" |>
     COMMA               <| "," |>
     COLON               <| ":" |>
@@ -51,41 +53,89 @@ std::string scanner_spec = R"xxx(
     R_PAREN             <| "\)" |>
     L_CURLY             <| "\{" |>
     R_CURLY             <| "\}" |>
+    L_ANGLE             <| "\<" |>
+    R_ANGLE             <| "\>" |>
     DOT                 <| "\." |>
     STAR                <| "\*" |>
     PLUS                <| "\+" |>
     MINUS               <| "\-" |>
+    SLASH               <| "\/" |>
+
+    STAREQ              <| "\*=" |>
+    PLUSEQ              <| "\+=" |>
+    MINUSEQ             <| "\-=" |>
+    SLASHEQ             <| "\/=" |>
+
+    IS_EQ_TO            <| "==" |>
+    IS_NEQ_TO           <| "!=" |>
+    IS_GEQ_TO           <| ">=" |>
+    IS_LEQ_TO           <| "<=" |>
+
     INTEGER             <| "-?(\d+)" |>
     FLOATING_POINT      <| "-?(\d*\.?)(\d+)([eE][-+]?\d+)?" |>
-    FUNCTION            <| "function" |>
+
     KW_FLOAT            <| "float" |>
     KW_INT              <| "int" |>
+
     KW_VEC2             <| "vec2" |>
     KW_VEC3             <| "vec3" |>
     KW_VEC4             <| "vec4" |>
     KW_MAT2             <| "mat2" |>
     KW_MAT3             <| "mat3" |>
     KW_MAT4             <| "mat4" |>
+    KW_SAMP1D           <| "sampler1D" |>
+    KW_SAMP2D           <| "sampler2D" |>
+    KW_SAMP3D           <| "sampler3D" |>
+
+    KW_IVEC2            <| "ivec2" |>
+    KW_IVEC3            <| "ivec3" |>
+    KW_IVEC4            <| "ivec4" |>
+    KW_IMAT2            <| "imat2" |>
+    KW_IMAT3            <| "imat3" |>
+    KW_IMAT4            <| "imat4" |>
+    KW_ISAMP1D          <| "isampler1D" |>
+    KW_ISAMP2D          <| "isampler2D" |>
+    KW_ISAMP3D          <| "isampler3D" |>
+
+    KW_UVEC2            <| "uvec2" |>
+    KW_UVEC3            <| "uvec3" |>
+    KW_UVEC4            <| "uvec4" |>
+    KW_UMAT2            <| "umat2" |>
+    KW_UMAT3            <| "umat3" |>
+    KW_UMAT4            <| "umat4" |>
+    KW_USAMP1D          <| "usampler1D" |>
+    KW_USAMP2D          <| "usampler2D" |>
+    KW_USAMP3D          <| "usampler3D" |>
+
     KW_VTXSHADER        <| "vertex_shader" |>
     KW_FRGSHADER        <| "fragment_shader" |>
     KW_COMSHADER        <| "compute_shader" |>
+
     KW_UNISET           <| "uniform_set" |>
     KW_UNIBLK           <| "uniform_block" |>
     KW_VTXIFACE         <| "vertex_interface" |>
     KW_FRGIFACE         <| "fragment_interface" |>
     KW_INPUTS           <| "inputs" |>
     KW_OUTPUTS          <| "outputs" |>
-    KW_SAMP1D           <| "sampler1D" |>
-    KW_SAMP2D           <| "sampler2D" |>
-    KW_SAMP3D           <| "sampler3D" |>
+
     KW_STATEBLOCK       <| "state_block" |>
     KW_PASS             <| "pass" |>
     KW_TECHNIQUE        <| "technique" |>
     KW_BLENDMODE        <| "BlendMode" |>
     KW_CULLTEST         <| "CullTest" |>
     KW_DEPTHTEST        <| "DepthTest" |>
+    KW_DEPTHMASK        <| "DepthMask" |>
     KW_FXCONFIG         <| "fxconfig" |>
-    KW_OR_ID            <| "[a-zA-Z_][a-zA-Z0-9_]*" |>
+    KW_LIBBLOCK         <| "libblock" |>
+
+    KW_FUNCTION         <| "function" |>
+    KW_LAYOUT           <| "layout" |>
+    KW_FOR              <| "for" |>
+    KW_IF               <| "if" |>
+    KW_ELSE             <| "else" |>
+    KW_RETURN           <| "return" |>
+
+    IDENTIFIER          <| "[a-zA-Z_][a-zA-Z0-9_]*" |>
     QUOTED_STRING       <| "" |>
 
 )xxx";
@@ -93,92 +143,90 @@ std::string scanner_spec = R"xxx(
 ///////////////////////////////////////////////////////////////////////////////
 
 std::string parser_spec = R"xxx(
-    datatype       <| sel{ KW_FLOAT KW_INT 
-                           KW_VEC2 KW_VEC3 KW_VEC4 
-                           KW_MAT2 KW_MAT3 KW_MAT4 
-                           KW_SAMP1D KW_SAMP2D KW_SAMP3D } |>
+
+    datatype       <| sel{ KW_FLOAT   KW_INT 
+                           KW_VEC2    KW_VEC3    KW_VEC4 
+                           KW_MAT2    KW_MAT3    KW_MAT4 
+                           KW_SAMP1D  KW_SAMP2D  KW_SAMP3D
+                           KW_UVEC2   KW_UVEC3   KW_UVEC4 
+                           KW_UMAT2   KW_UMAT3   KW_UMAT4 
+                           KW_USAMP1D KW_USAMP2D KW_USAMP3D
+                           KW_IVEC2   KW_IVEC3   KW_IVEC4 
+                           KW_IMAT2   KW_IMAT3   KW_IMAT4 
+                           KW_ISAMP1D KW_ISAMP2D KW_ISAMP3D
+                   }|>
+
     number         <| sel{INTEGER FLOATING_POINT} |>
-    kw_or_id       <| KW_OR_ID |>
-    dot            <| DOT |>
-    l_square       <| L_SQUARE |>
-    r_square       <| R_SQUARE |>
-    l_paren        <| L_PAREN |>
-    r_paren        <| R_PAREN |>
-    plus           <| PLUS |>
-    minus          <| MINUS |>
-    star           <| STAR |>
-    l_curly        <| L_CURLY |>
-    r_curly        <| R_CURLY |>
-    semicolon      <| SEMICOLON |>
-    colon          <| COLON |>
-    equals         <| EQUALS |>
-    kw_function    <| FUNCTION |>
-    kw_vtxshader   <| KW_VTXSHADER |>
-    kw_frgshader   <| KW_FRGSHADER |>
-    kw_comshader   <| KW_COMSHADER |>
-    kw_uniset      <| KW_UNISET |>
-    kw_uniblk      <| KW_UNIBLK |>
-    kw_vtxiface    <| KW_VTXIFACE |>
-    kw_frgiface    <| KW_FRGIFACE |>
-    kw_inputs      <| KW_INPUTS |>
-    kw_outputs     <| KW_OUTPUTS |>
-    kw_stateblock  <| KW_STATEBLOCK |>
-    kw_blandmode   <| KW_BLENDMODE |>
-    kw_culltest    <| KW_CULLTEST |>
-    kw_depthtest   <| KW_DEPTHTEST |>
-    kw_technique   <| KW_TECHNIQUE |>
-    kw_fxconfig    <| KW_FXCONFIG |>
-    kw_pass        <| KW_PASS |>
 
-
-    member_ref     <| [ dot kw_or_id ] |>
-    array_ref      <| [ l_square expression r_square ] |>
+    member_ref     <| [ DOT IDENTIFIER ] |>
+    array_ref      <| [ L_SQUARE expression R_SQUARE ] |>
 
     object_subref  <| sel{ member_ref array_ref } |>
 
-    inh_list_item  <| [ colon kw_or_id opt{ [l_paren kw_or_id r_paren] } ] |>
+    inh_list_item  <| [ COLON IDENTIFIER opt{ [L_PAREN IDENTIFIER R_PAREN] } ] |>
     inh_list       <| zom{ inh_list_item } |>
 
-    fn_arg         <| [ expression opt{COMMA} ] |>
-    fn_args        <| zom{ fn_arg } |>
+    exec_arg         <| [ expression opt{COMMA} ] |>
+    exec_arglist     <| zom{ exec_arg } |>
+    decl_arglist     <| zom{ [ typed_identifier opt{COMMA} ] } |>
 
     fn_invok <|[
-        [ kw_or_id ] : "fni_name"
-        l_paren
-        fn_args
-        r_paren
+        [ IDENTIFIER ] : "fni_name"
+        L_PAREN
+        exec_arglist
+        R_PAREN
     ]|>
 
-    product <|[ primary opt{ [star primary] } ]|>
+    boolean_comparison <|[
+      expression
+      sel{ 
+        IS_EQ_TO
+      }
+      expression
+    ]|>
 
-    sum <| sel{
-        [ product plus product ] : "add"
-        [ product minus product ] : "sub"
-        product : "pro"
-    } |>
+    term <|[ L_PAREN expression R_PAREN ]|>
+
+    primary <|[
+      sel{ fn_invok
+           number
+           term
+           rvalue_constructor
+           [ IDENTIFIER zom{object_subref} ] : "primary_var_ref"
+      }
+    ]|>
+
+    product <|[ 
+        primary 
+        opt{[
+          sel{ STAR SLASH }
+          primary
+        ]} 
+    ]|>
+
+    sum <|[ 
+      sel{
+        [ product PLUS product ]  : "add"
+        [ product MINUS product ] : "sub"
+        [ opt{MINUS} product ]    : "pro"
+        
+      } 
+    ]|>
 
     expression <| [ sum ] |>
 
-    term <|[ l_paren expression r_paren ]|>
-
-    typed_identifier <|[ datatype kw_or_id ]|>
+    typed_identifier <|[ datatype IDENTIFIER ]|>
 
     rvalue_constructor <|[
         datatype
-        l_paren
-        fn_args
-        r_paren
+        L_PAREN
+        exec_arglist
+        R_PAREN
     ]|>
 
-    primary <| sel{ fn_invok
-                    number
-                    term
-                    rvalue_constructor
-                    [ kw_or_id zom{object_subref} ] : "primary_var_ref"
-                  } |>
 
     lvalue <|  
-      [ kw_or_id zom{object_subref} ] : "lvalue_var_ref" 
+      [ IDENTIFIER zom{object_subref} ] : "lvalue_var_ref" 
     |>
 
     assignment_statement <|[
@@ -186,173 +234,254 @@ std::string parser_spec = R"xxx(
           [ typed_identifier ] : "astatement_vardecl"
           [ lvalue ] : "astatement_varref"
         }
-        equals
+        EQUALS
         expression
+        SEMICOLON
+    ]|>
+
+    opeq_statement <|[
+      sel { 
+        [ typed_identifier ] : "opeq_astatement_vardecl"
+        [ lvalue ] : "opeq_astatement_varref"
+      }
+      sel{ STAREQ PLUSEQ MINUSEQ SLASHEQ }
+      expression
+      SEMICOLON
+    ]|>
+
+    for_statement <|[
+        KW_FOR
+        L_PAREN
+        expression_statement
+        expression_statement
+        expression
+        R_PAREN
+        statement
+    ]|>
+
+    selection_statement <|[
+        KW_IF
+        L_PAREN
+        expression
+        R_PAREN
+        statement
+        opt{[
+          KW_ELSE
+          statement
+        ]}
+    ]|>
+
+    return_statement <|[
+        KW_RETURN
+        expression
+        SEMICOLON
+    ]|>
+
+    expression_statement <|[
+        expression SEMICOLON
+    ]|>
+
+    compound_statement <|[
+        L_CURLY
+        zom{ statement }
+        R_CURLY
     ]|>
 
     statement <| sel{ 
-        [ assignment_statement semicolon ]
-        [ fn_invok semicolon ]
-        semicolon
+        [ assignment_statement ]
+        [ opeq_statement ]
+        [ compound_statement ]
+        [ for_statement]
+        [ selection_statement]
+        [ return_statement ]
+        [ expression_statement]
+        [ SEMICOLON ]
     } |>
 
-    arg_list <| zom{ [ typed_identifier opt{COMMA} ] } |>
     statement_list <| zom{ statement } |>
 
     fn_def <|[
-        kw_function
-        [ kw_or_id ] : "fn_name"
-        l_paren
-        arg_list : "args"
-        r_paren
-        l_curly
+        KW_FUNCTION
+        [ IDENTIFIER ] : "fn_name"
+        L_PAREN
+        decl_arglist : "fn_args"
+        R_PAREN
+        L_CURLY
         statement_list : "fn_statements"
-        r_curly
+        R_CURLY
+    ]|>
+    fn2_def <|[
+        datatype
+        [ IDENTIFIER ] : "fn2_name"
+        L_PAREN
+        decl_arglist : "fn2_args"
+        R_PAREN
+        L_CURLY
+        statement_list : "fn2_statements"
+        R_CURLY
     ]|>
     
+    libblock <|[
+        KW_LIBBLOCK
+        [ IDENTIFIER ] : "lib_name"
+        zom{inh_list_item} : "lib_dependencies"
+        L_CURLY
+        zom{fn2_def}
+        R_CURLY
+    ]|>
+
     vtx_shader <|[
-        kw_vtxshader
-        [ kw_or_id ] : "vtx_name"
+        KW_VTXSHADER
+        [ IDENTIFIER ] : "vtx_name"
         zom{inh_list_item} : "vtx_dependencies"
-        l_curly
+        L_CURLY
         statement_list : "vtx_statements"
-        r_curly
+        R_CURLY
     ]|>
 
     frg_shader <|[
-        kw_frgshader
-        [ kw_or_id ] : "frg_name"
+        KW_FRGSHADER
+        [ IDENTIFIER ] : "frg_name"
         zom{ inh_list_item } : "frg_dependencies"
-        l_curly
+        L_CURLY
         statement_list : "frg_statements"
-        r_curly
+        R_CURLY
     ]|>
 
     com_shader <|[
-        kw_comshader
-        [ kw_or_id ] : "com_name"
+        KW_COMSHADER
+        [ IDENTIFIER ] : "com_name"
         zom{ inh_list_item } : "com_dependencies"
-        l_curly
+        L_CURLY
         statement_list : "com_statements"
-        r_curly
+        R_CURLY
     ]|>
 
-    data_decl <| [typed_identifier semicolon] |>
+    data_decl <| [typed_identifier SEMICOLON] |>
 
     data_decls <| zom{ data_decl } |>
 
     uniset <|[
-      kw_uniset
-      [ kw_or_id ] : "uniset_name"
-      l_curly
+      KW_UNISET
+      [ IDENTIFIER ] : "uniset_name"
+      L_CURLY
       data_decls : "uniset_decls"
-      r_curly
+      R_CURLY
     ]|>
 
     uniblk <|[
-      kw_uniblk
-      [ kw_or_id ] : "uniblk_name"
-      l_curly
+      KW_UNIBLK
+      [ IDENTIFIER ] : "uniblk_name"
+      L_CURLY
       data_decls : "uniblk_decls"
-      r_curly
+      R_CURLY
     ]|>
 
-    iface_input <|[ typed_identifier opt{ [colon kw_or_id] } semicolon ]|>
+    iface_input <|[ typed_identifier opt{ [COLON IDENTIFIER] } SEMICOLON ]|>
 
     iface_inputs <|[
-      kw_inputs
-      l_curly
+      KW_INPUTS
+      L_CURLY
       zom{ iface_input } : "inputlist"
-      r_curly
+      R_CURLY
+    ]|>
+
+    iface_layout  <|[
+       KW_LAYOUT 
+       L_PAREN 
+       IDENTIFIER 
+       EQUALS 
+       INTEGER 
+       R_PAREN
     ]|>
 
     iface_outputs <|[
-      kw_outputs
-      l_curly
+      KW_OUTPUTS
+      L_CURLY
       zom{ 
-        [ data_decl ] : "output_decl"
+        [ opt{iface_layout} data_decl ] : "output_decl"
       }
-      r_curly
+      R_CURLY
     ]|>
 
     vtx_iface <|[
-      kw_vtxiface
-      [ kw_or_id ] : "vif_name"
+      KW_VTXIFACE
+      [ IDENTIFIER ] : "vif_name"
       zom{ inh_list_item } : "vif_dependencies"
-      l_curly
+      L_CURLY
       iface_inputs
       iface_outputs
-      r_curly
+      R_CURLY
     ]|>
 
     frg_iface <|[
-      kw_frgiface
-      [ kw_or_id ] : "fif_name"
+      KW_FRGIFACE
+      [ IDENTIFIER ] : "fif_name"
       zom{ inh_list_item } : "fif_dependencies"
-      l_curly
+      L_CURLY
       iface_inputs
       iface_outputs
-      r_curly
+      R_CURLY
     ]|>
 
-    sb_key <| sel{ KW_BLENDMODE KW_CULLTEST KW_DEPTHTEST } |>
+    sb_key <| sel{ KW_BLENDMODE KW_CULLTEST KW_DEPTHTEST KW_DEPTHMASK } |>
 
     sb_item <|[
-      [ sb_key equals kw_or_id semicolon ] : "stateblock_item"
+      [ sb_key EQUALS IDENTIFIER SEMICOLON ] : "stateblock_item"
     ]|>
 
     stateblock <|[
-      kw_stateblock
-      [ kw_or_id ] : "sb_name"
+      KW_STATEBLOCK
+      [ IDENTIFIER ] : "sb_name"
       zom{ inh_list_item } : "sb_dependencies"
-      l_curly
+      L_CURLY
       zom{ sb_item }
-      r_curly
+      R_CURLY
     ]|>
 
-    pass_binding_key <| sel{  kw_vtxshader kw_frgshader kw_stateblock } |>
+    pass_binding_key <| sel{  KW_VTXSHADER KW_FRGSHADER KW_STATEBLOCK } |>
 
     pass_binding <|[
-      pass_binding_key equals kw_or_id semicolon
+      pass_binding_key EQUALS IDENTIFIER SEMICOLON
     ]|>
 
     pass <|[
-      kw_pass
-      [ kw_or_id ] : "pass_name"
-      l_curly
+      KW_PASS
+      [ IDENTIFIER ] : "pass_name"
+      L_CURLY
       zom{ 
         pass_binding : "pass_item"
       }
-      r_curly
+      R_CURLY
     ]|>
 
     fxconfig_ref <|[
-      kw_fxconfig
-      equals
-      [ kw_or_id ] : "fxconfigref_name"
-      semicolon
+      KW_FXCONFIG
+      EQUALS
+      [ IDENTIFIER ] : "fxconfigref_name"
+      SEMICOLON
     ]|>
 
     fxconfig_decl <|[
-      kw_fxconfig
-      [ kw_or_id ] : "fxconfigdecl_name"
-      l_curly
+      KW_FXCONFIG
+      [ IDENTIFIER ] : "fxconfigdecl_name"
+      L_CURLY
       zom{[
-        [ kw_or_id ] : "fxconfigdecl_key"
-        equals
+        [ IDENTIFIER ] : "fxconfigdecl_key"
+        EQUALS
         [ QUOTED_STRING ] : "fxconfigdecl_val"
-        semicolon
+        SEMICOLON
       ]}
-      r_curly
+      R_CURLY
     ]|>
 
     technique <|[
-      kw_technique
-      [ kw_or_id ] : "technique_name"
-      l_curly
+      KW_TECHNIQUE
+      [ IDENTIFIER ] : "technique_name"
+      L_CURLY
       opt{ fxconfig_ref }
       oom{ pass }
-      r_curly
+      R_CURLY
     ]|>
 
     translatable <| 
@@ -368,6 +497,7 @@ std::string parser_spec = R"xxx(
         stateblock
         technique
         fxconfig_decl 
+        libblock
       }
     |>
 
@@ -403,14 +533,13 @@ struct ShadLangParser : public Parser {
 
   ShadLangParser() {
     _name              = "shadlang";
-    _DEBUG_MATCH       = true;
-    _DEBUG_INFO        = true;
+    //_DEBUG_MATCH       = true;
+    //_DEBUG_INFO        = true;
     auto scanner_match = this->loadPEGScannerSpec(scanner_spec);
     OrkAssert(scanner_match);
 
     auto parser_match = this->loadPEGParserSpec(parser_spec);
     OrkAssert(parser_match);
-    OrkAssert(_DEBUG_MATCH);
     ///////////////////////////////////////////////////////////
     // parser should be compiled and linked at this point
     ///////////////////////////////////////////////////////////
@@ -431,23 +560,21 @@ struct ShadLangParser : public Parser {
     };
     ///////////////////////////////////////////////////////////
     onPost("fn_name", [=](match_ptr_t match) { objectNameAst(match); });
-    ///////////////////////////////////////////////////////////
+    onPost("fn2_name", [=](match_ptr_t match) { objectNameAst(match); });
     onPost("fni_name", [=](match_ptr_t match) { objectNameAst(match); });
-    ///////////////////////////////////////////////////////////
     onPost("vtx_name", [=](match_ptr_t match) { objectNameAst(match); });
-    ///////////////////////////////////////////////////////////
     onPost("frg_name", [=](match_ptr_t match) { objectNameAst(match); });
-    ///////////////////////////////////////////////////////////
     onPost("com_name", [=](match_ptr_t match) { objectNameAst(match); });
-    ///////////////////////////////////////////////////////////
     onPost("uniset_name", [=](match_ptr_t match) { objectNameAst(match); });
-    ///////////////////////////////////////////////////////////
     onPost("uniblk_name", [=](match_ptr_t match) { objectNameAst(match); });
-    ///////////////////////////////////////////////////////////
     onPost("vif_name", [=](match_ptr_t match) { objectNameAst(match); });
-    ///////////////////////////////////////////////////////////
     onPost("fif_name", [=](match_ptr_t match) { objectNameAst(match); });
-    ///////////////////////////////////////////////////////////
+    onPost("lib_name", [=](match_ptr_t match) { objectNameAst(match); });
+    onPost("sb_name", [=](match_ptr_t match) { objectNameAst(match); });
+    onPost("pass_name", [=](match_ptr_t match) { objectNameAst(match); });
+    onPost("fxconfigdecl_name", [=](match_ptr_t match) { objectNameAst(match); });
+    onPost("fxconfigref_name", [=](match_ptr_t match) { objectNameAst(match); });
+    onPost("technique_name", [=](match_ptr_t match) { objectNameAst(match); });
     onPost("primary_var_ref", [=](match_ptr_t match) { objectNameAst(match); });
     ///////////////////////////////////////////////////////////
     onPost("member_ref", [=](match_ptr_t match) { //
@@ -483,9 +610,9 @@ struct ShadLangParser : public Parser {
     ///////////////////////////////////////////////////////////
     onPost("term", [=](match_ptr_t match) { auto term = ast_create<SHAST::Term>(match); });
     ///////////////////////////////////////////////////////////
-    onPost("fn_arg", [=](match_ptr_t match) { auto fn_arg = ast_create<SHAST::FunctionInvokationArgument>(match); });
+    onPost("exec_arg", [=](match_ptr_t match) { auto fn_arg = ast_create<SHAST::FunctionInvokationArgument>(match); });
     ///////////////////////////////////////////////////////////
-    onPost("fn_args", [=](match_ptr_t match) { auto fn_args = ast_create<SHAST::FunctionInvokationArguments>(match); });
+    onPost("exec_arglist", [=](match_ptr_t match) { auto fn_args = ast_create<SHAST::FunctionInvokationArguments>(match); });
     ///////////////////////////////////////////////////////////
     onPost("fn_invok", [=](match_ptr_t match) { auto fn_invok = ast_create<SHAST::FunctionInvokation>(match); });
     ///////////////////////////////////////////////////////////
@@ -509,27 +636,25 @@ struct ShadLangParser : public Parser {
         primary2          = seq->_items[1];
         auto primary2_ast = ast_get<SHAST::Primary>(primary2);
         product->_primaries.push_back(primary2_ast);
-
       } else { // "prI1"
       }
     });
     ///////////////////////////////////////////////////////////
     onPost("sum", [=](match_ptr_t match) {
       auto sum      = ast_create<SHAST::Sum>(match);
-      auto selected = match->asShared<OneOf>()->_selected;
-      match->asShared<OneOf>()->dump("sum");
-      if (selected->_matcher == product) {
-        sum->_left = ast_get<SHAST::Product>(selected);
+      auto seq      = match->asShared<Sequence>();
+      auto selected = seq->_items[0]->asShared<OneOf>()->_selected;
+      auto seq2      = selected->asShared<Sequence>();
+      if (selected->_matcher->_name == "pro") {
+        sum->_left = ast_get<SHAST::Product>(seq2->_items[1]);
         sum->_op   = '_';
       } else if (selected->_matcher->_name == "add") {
-        auto seq    = selected->asShared<Sequence>();
-        sum->_left  = ast_get<SHAST::Product>(seq->_items[0]);
-        sum->_right = ast_get<SHAST::Product>(seq->_items[2]);
+        sum->_left  = ast_get<SHAST::Product>(seq2->_items[0]);
+        sum->_right = ast_get<SHAST::Product>(seq2->_items[2]);
         sum->_op    = '+';
       } else if (selected->_matcher->_name == "sub") {
-        auto seq    = selected->asShared<Sequence>();
-        sum->_left  = ast_get<SHAST::Product>(seq->_items[0]);
-        sum->_right = ast_get<SHAST::Product>(seq->_items[2]);
+        sum->_left  = ast_get<SHAST::Product>(seq2->_items[0]);
+        sum->_right = ast_get<SHAST::Product>(seq2->_items[2]);
         sum->_op    = '-';
       } else {
         OrkAssert(false);
@@ -633,8 +758,8 @@ struct ShadLangParser : public Parser {
       tid->_identifier = kwid->_token->text;
     });
     ///////////////////////////////////////////////////////////
-    onPost("arg_list", [=](match_ptr_t match) {
-      auto arg_list = ast_create<SHAST::ArgumentList>(match);
+    onPost("decl_arglist", [=](match_ptr_t match) {
+      auto arg_list = ast_create<SHAST::DeclArgumentList>(match);
       auto nom      = match->asShared<NOrMore>();
       for (auto item : nom->_items) {
         auto seq = item->asShared<Sequence>();
@@ -651,6 +776,13 @@ struct ShadLangParser : public Parser {
         // auto statement = ast_get<SHAST::Stat>(seq->_items[0]);
         // arg_list->_arguments.push_back(tid);
       }
+    });
+    ///////////////////////////////////////////////////////////
+    onPost( "libblock", [=]( match_ptr_t match ) {
+      auto libblock = ast_create<SHAST::LibraryBlock>(match);
+      auto seq      = match->asShared<Sequence>();
+      auto objname  = ast_get<SHAST::ObjectName>(seq->_items[1]);
+      libblock->_name = objname->_name;
     });
     ///////////////////////////////////////////////////////////
     onPost("fn_def", [=](match_ptr_t match) {
@@ -786,7 +918,8 @@ struct ShadLangParser : public Parser {
     onPost("output_decl", [=](match_ptr_t match) {
       auto ast_output_decl         = ast_create<SHAST::InterfaceOutput>(match);
       auto seq                 = match->asShared<Sequence>();
-      auto ddecl_seq           = seq->_items[0]->followImplAsShared<Sequence>();
+      auto ddecl_layout        = seq->_items[0]->followImplAsShared<Optional>();
+      auto ddecl_seq           = seq->_items[1]->followImplAsShared<Sequence>();
       auto tid                 = ast_get<SHAST::TypedIdentifier>(ddecl_seq->_items[0]->asShared<Proxy>()->_selected);
       ast_output_decl->_identifier = tid->_identifier;
       ast_output_decl->_datatype   = tid->_datatype;

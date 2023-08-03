@@ -302,9 +302,9 @@ struct UniformBlk : public AstNode { //
     return FormatString("UniformBlk(%s) {}", _name.c_str());
   }
 };
-struct ArgumentList : public AstNode { //
+struct DeclArgumentList : public AstNode { //
   std::string desc() const final {
-    return FormatString("ArgumentList(%s) []", _name.c_str());
+    return FormatString("DeclArgumentList(%s) []", _name.c_str());
   }
 };
 struct StatementList : public AstNode { //
@@ -353,6 +353,11 @@ struct Extension : public Dependency { //
     return FormatString("Extension(%s)", _extension_name.c_str());
   }
   std::string _extension_name;
+};
+struct LibraryBlock : public Translatable { //
+  std::string desc() const final {
+    return FormatString("LibraryBlock(%s)", _name.c_str());
+  }
 };
 struct Shader : public Translatable { //
 };
