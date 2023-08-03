@@ -12,8 +12,8 @@
 namespace ork {
 match_ptr_t filtered_match(matcher_ptr_t matcher, match_ptr_t the_match);
 /////////////////////////////////////////////////////////////////////////////////////////////////
-static logchannel_ptr_t logchan_rulespec  = logger()->createChannel("PEGSPEC1", fvec3(0.5, 0.8, 0.5), false);
-static logchannel_ptr_t logchan_rulespec2 = logger()->createChannel("PEGSPEC2", fvec3(0.5, 0.8, 0.5), false);
+static logchannel_ptr_t logchan_rulespec  = logger()->createChannel("PEGSPEC1", fvec3(0.5, 0.8, 0.5), true);
+static logchannel_ptr_t logchan_rulespec2 = logger()->createChannel("PEGSPEC2", fvec3(0.5, 0.8, 0.5), true);
 
 void Parser::onPre(const std::string& rule_name, match_notif_t fn) {
 
@@ -762,7 +762,7 @@ void PegImpl::loadPEGGrammar() { //
       }
       this->_user_scanner->buildStateMachine();
     } catch (std::exception& e) {
-      logchan_rulespec2->log("EXCEPTION cur_rule<%s>  cause<%s>", _current_rule_name.c_str(), e.what());
+      logerrchannel()->log("EXCEPTION cur_rule<%s>  cause<%s>", _current_rule_name.c_str(), e.what());
       OrkAssert(false);
     }
   };

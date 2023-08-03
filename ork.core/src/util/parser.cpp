@@ -17,7 +17,7 @@
 /////////////////////////////////////////////////////////////////////////////////////////////////
 namespace ork {
 //////////////////////////////////////////////////////////////////////
-static logchannel_ptr_t logchan_parser = logger()->createChannel("RULESPEC", fvec3(0.5, 0.7, 0.5), false);
+static logchannel_ptr_t logchan_parser = logger()->createChannel("RULESPEC", fvec3(0.5, 0.7, 0.5), true);
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
@@ -499,14 +499,14 @@ match_ptr_t Parser::match(matcher_ptr_t topmatcher, //
     auto end = rm_view->token(rm_view->_end);
     size_t end_lineno = end->iline;
     size_t end_colno = end->icol;
-    topview->dump( "topview" );
+    //topview->dump( "topview" );
 
-    printf( "xxx : FULL MATCH FAILED\n" );
-    printf( "xxx: topview<%zu:%zu>\n", topview->_start, topview->_end );
-    printf( "xxx: rmview<%zu:%zu>\n", rm_view->_start, rm_view->_end );
-    printf( "xxx: end_linenum<%zu> end_columnnum<%zu>\n", end_lineno, end_colno );
+    logerrchannel()->log( "FULL MATCH FAILED" );
+    logerrchannel()->log( "topview<%zu:%zu>", topview->_start, topview->_end );
+    logerrchannel()->log( "rmview<%zu:%zu>", rm_view->_start, rm_view->_end );
+    logerrchannel()->log( "end_linenum<%zu> end_columnnum<%zu>", end_lineno, end_colno );
 
-    printf( "xxx: ////////////////////// CURRENT POS (succeeded) ////////////////////// \n" );
+    logerrchannel()->log( "////////////////////// CURRENT POS (succeeded) ////////////////////// " );
 
     size_t st_line = std::max((end_lineno-3),size_t(0));
     size_t en_line = st_line+7;
@@ -514,17 +514,17 @@ match_ptr_t Parser::match(matcher_ptr_t topmatcher, //
       auto dbg_line = _scanner->_lines[cu_line];
       std::string str;
       if(cu_line==end_lineno){
-        str = deco::format( 255,255,64, "xxx: line<%zu>: ",cu_line );
+        str = deco::format( 255,255,64, "line<%zu>: ",cu_line );
         str += deco::format(255,255,192,"%s", dbg_line.c_str());
       }
       else{
-        str = deco::format( 255,64,255, "xxx: line<%zu>: ",cu_line );
+        str = deco::format( 255,64,255, "line<%zu>: ",cu_line );
         str += deco::format(255,192,255,"%s", dbg_line.c_str());
       }
       printf( "%s\n", str.c_str() );
     }
 
-    printf( "xxx: ///////////////////////////////////////////////////////////////////// \n" );
+    logerrchannel()->log( "///////////////////////////////////////////////////////////////////// " );
 
     OrkAssert(false);
   }
