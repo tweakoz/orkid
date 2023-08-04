@@ -23,42 +23,44 @@ struct DotBackend {
   ////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////
   DotBackend(){
-    addThemeItem<SHAST::TranslationUnit>("#000000", "yellow");
-    addThemeItem<SHAST::PipelineInterface>("#1f1f3f", "yellow");
-    addThemeItem<SHAST::Shader>("#1f3f1f", "yellow");
-    addThemeItem<SHAST::StateBlock>("#3f1f1f", "yellow");
-    addThemeItem<SHAST::StateBlockItem>("#5f1f1f", "white");
-    addThemeItem<SHAST::UniformSet>("#3f3f1f", "yellow");
-    addThemeItem<SHAST::UniformBlk>("#3f1f3f", "yellow");
-    addThemeItem<SHAST::FunctionDef>("#1f3f3f", "yellow");
-    addThemeItem<SHAST::Technique>("#3f3f3f", "yellow");
-    addThemeItem<SHAST::Extension>("#3f4f5f", "white");
-    addThemeItem<SHAST::Dependency>("#5f7f7f", "white");
-    addThemeItem<SHAST::ObjectName>("#8f4f4f", "white", 1);
-    addThemeItem<SHAST::DataDeclarations>("#5f3f5f", "white");
-    addThemeItem<SHAST::DataDeclaration>("#7f3f7f", "white", 1);
+    using namespace SHAST;
+    addThemeItem<TranslationUnit>("#000000", "yellow");
+    addThemeItem<PipelineInterface>("#1f1f3f", "yellow");
+    addThemeItem<Shader>("#1f3f1f", "yellow");
+    addThemeItem<StateBlock>("#3f1f1f", "yellow");
+    addThemeItem<StateBlockItem>("#5f1f1f", "white");
+    addThemeItem<UniformSet>("#3f3f1f", "yellow");
+    addThemeItem<UniformBlk>("#3f1f3f", "yellow");
+    addThemeItem<FunctionDef1>("#1f3f3f", "yellow");
+    addThemeItem<FunctionDef2>("#1f3f3f", "yellow");
+    addThemeItem<Technique>("#3f3f3f", "yellow");
+    addThemeItem<Extension>("#3f4f5f", "white");
+    addThemeItem<Dependency>("#5f7f7f", "white");
+    addThemeItem<ObjectName>("#8f4f4f", "white", 1);
+    addThemeItem<DataDeclarations>("#5f3f5f", "white");
+    addThemeItem<DataDeclaration>("#7f3f7f", "white", 1);
     //
-    addThemeItem<SHAST::StatementList>("#5f5faf", "white", 1);
-    addThemeItem<SHAST::AssignmentStatementVarRef>("#bfbfef", "black", 1);
-    addThemeItem<SHAST::IfStatement>("#cfcfff", "black", 1);
-    addThemeItem<SHAST::WhileStatement>("#cfcfff", "black", 1);
-    addThemeItem<SHAST::ReturnStatement>("#cfcfff", "black", 1);
-    addThemeItem<SHAST::CompoundStatement>("#cfcfff", "black", 1);
-    addThemeItem<SHAST::ExpressionStatement>("#cfcfff", "black", 1);
-    addThemeItem<SHAST::MemberRef>("#1fcfcf", "black", 1);
-    addThemeItem<SHAST::ArrayRef>("#1fdfdf", "black", 1);
-    addThemeItem<SHAST::Expression>("#ffdfff", "black", 1);
-    addThemeItem<SHAST::AdditiveExpression>("#eebfee", "black", 1);
-    addThemeItem<SHAST::MultiplicativeExpression>("#eebfee", "black", 1);
-    addThemeItem<SHAST::PrimaryExpression>("#eebfee", "black", 1);
-    addThemeItem<SHAST::Literal>("#df7fdf", "black", 1);
-    addThemeItem<SHAST::RValueConstructor>("#ef8fef", "black", 1);
-    addThemeItem<SHAST::FunctionInvokation>("#ffdfcf", "black", 1);
-    addThemeItem<SHAST::FunctionInvokationArguments>("#efcfbf", "black", 1);
-    addThemeItem<SHAST::FunctionInvokationArgument>("#dfbfaf", "black", 1);
+    addThemeItem<StatementList>("#5f5faf", "white", 1);
+    addThemeItem<AssignmentStatementVarRef>("#bfbfef", "black", 1);
+    addThemeItem<IfStatement>("#cfcfff", "black", 1);
+    addThemeItem<WhileStatement>("#cfcfff", "black", 1);
+    addThemeItem<ReturnStatement>("#cfcfff", "black", 1);
+    addThemeItem<CompoundStatement>("#cfcfff", "black", 1);
+    addThemeItem<ExpressionStatement>("#cfcfff", "black", 1);
+    addThemeItem<MemberRef>("#1fcfcf", "black", 1);
+    addThemeItem<ArrayRef>("#1fdfdf", "black", 1);
+    addThemeItem<Expression>("#ffdfff", "black", 1);
+    addThemeItem<AdditiveExpression>("#eebfee", "black", 1);
+    addThemeItem<MultiplicativeExpression>("#eebfee", "black", 1);
+    addThemeItem<PrimaryExpression>("#eebfee", "black", 1);
+    addThemeItem<Literal>("#df7fdf", "black", 1);
+    addThemeItem<RValueConstructor>("#ef8fef", "black", 1);
+    addThemeItem<FunctionInvokation>("#ffdfcf", "black", 1);
+    addThemeItem<FunctionInvokationArguments>("#efcfbf", "black", 1);
+    addThemeItem<FunctionInvokationArgument>("#dfbfaf", "black", 1);
     // default
-    addThemeItem<SHAST::LanguageElement>("#cfcfcf", "black", 1);
-    addThemeItem<SHAST::AstNode>("#cfcfcf", "black");
+    addThemeItem<LanguageElement>("#cfcfcf", "black", 1);
+    addThemeItem<AstNode>("#cfcfcf", "black");
   }
   ////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////

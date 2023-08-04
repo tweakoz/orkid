@@ -194,7 +194,6 @@ struct ShadLangParser : public Parser {
     ///////////////////////////////////////////////////////////
     //onPost("exec_arglist", [=](match_ptr_t match) { auto fn_args = ast_create<SHAST::FunctionInvokationArguments>(match); });
     ///////////////////////////////////////////////////////////
-    onPost("fn_invok", [=](match_ptr_t match) { auto fn_invok = ast_create<SHAST::FunctionInvokation>(match); });
     onLink("Expression", [=](match_ptr_t match) { //
       auto expression = ast_get<SHAST::Expression>(match);
       /*
@@ -240,9 +239,9 @@ struct ShadLangParser : public Parser {
       }
     });
     ///////////////////////////////////////////////////////////
-    onPost("fn_def", [=](match_ptr_t match) {
+    onPost("FunctionDef1", [=](match_ptr_t match) {
       auto seq     = match->asShared<Sequence>();
-      auto fn_def  = ast_create<SHAST::FunctionDef>(match);
+      auto fn_def  = ast_create<SHAST::FunctionDef1>(match);
       auto objname = ast_get<SHAST::ObjectName>(seq->_items[1]);
       seq->dump("fn_def");
       fn_def->_name = objname->_name;

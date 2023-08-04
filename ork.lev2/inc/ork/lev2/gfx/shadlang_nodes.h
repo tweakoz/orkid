@@ -120,7 +120,8 @@ DECLARE_STD_AST_CLASS(Translatable,Shader);
 DECLARE_STD_AST_CLASS(Translatable,PipelineInterface);
 DECLARE_STD_AST_CLASS(Translatable,StateBlock);
 DECLARE_STD_AST_CLASS(Translatable,Technique);
-DECLARE_STD_AST_CLASS(Translatable,FunctionDef);
+DECLARE_STD_AST_CLASS(Translatable,FunctionDef1);
+DECLARE_STD_AST_CLASS(Translatable,FunctionDef2);
 //
 DECLARE_STD_AST_CLASS(Shader,VertexShader);
 DECLARE_STD_AST_CLASS(Shader,FragmentShader);

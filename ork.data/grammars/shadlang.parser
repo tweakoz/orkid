@@ -320,7 +320,7 @@ StatementList <| zom{ statement } |>
 
 ///////////////////////////////////////////////////////////
 
-fn_def <|[
+FunctionDef1 <|[
     KW_FUNCTION
     [ IDENTIFIER ] : "fn_name"
     L_PAREN
@@ -558,7 +558,7 @@ Technique <|[
 
 Translatable <| 
   sel{ 
-    fn_def 
+    FunctionDef1 
     VertexShader 
     GeometryShader 
     FragmentShader 
