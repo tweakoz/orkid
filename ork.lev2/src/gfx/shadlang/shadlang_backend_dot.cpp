@@ -54,6 +54,9 @@ struct DotBackend {
     addThemeItem<MultiplicativeExpression>("#eebfee", "black", 1);
     addThemeItem<PrimaryExpression>("#eebfee", "black", 1);
     addThemeItem<Literal>("#df7fdf", "black", 1);
+    addThemeItem<FloatLiteral>("#df7fdf", "black", 1);
+    addThemeItem<NumericLiteral>("#df7fdf", "black", 1);
+    addThemeItem<IntegerLiteral>("#df7fdf", "black", 1);
     addThemeItem<RValueConstructor>("#ef8fef", "black", 1);
     addThemeItem<FunctionInvokation>("#ffdfcf", "black", 1);
     addThemeItem<FunctionInvokationArguments>("#efcfbf", "black", 1);
