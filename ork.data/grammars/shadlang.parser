@@ -10,21 +10,21 @@ datatype       <| sel{ KW_FLOAT   KW_INT
                        KW_ISAMP1D KW_ISAMP2D KW_ISAMP3D
                }|>
 
-typed_identifier <|[ sel { datatype IDENTIFIER } IDENTIFIER ]|>
+TypedIdentifier <|[ sel { datatype IDENTIFIER } IDENTIFIER ]|>
 
 constant       <| sel{INTEGER FLOATING_POINT} |>
 
-member_ref     <| [ DOT IDENTIFIER ] |>
-array_ref      <| [ L_SQUARE expression R_SQUARE ] |>
+MemberRef     <| [ DOT IDENTIFIER ] |>
+ArrayRef      <| [ L_SQUARE Expression R_SQUARE ] |>
 
-object_subref  <| sel{ member_ref array_ref } |>
+object_subref  <| sel{ MemberRef ArrayRef } |>
 
 inh_list_item  <| [ COLON IDENTIFIER opt{ [L_PAREN IDENTIFIER R_PAREN] } ] |>
 inh_list       <| zom{ inh_list_item } |>
 
-exec_arg         <| [ expression opt{COMMA} ] |>
+exec_arg         <| [ Expression opt{COMMA} ] |>
 exec_arglist     <| zom{ exec_arg } |>
-decl_arglist     <| zom{ [ typed_identifier opt{COMMA} ] } |>
+decl_arglist     <| zom{ [ TypedIdentifier opt{COMMA} ] } |>
 
 fn_invok <|[
     [ IDENTIFIER ] : "fni_name"
@@ -74,8 +74,8 @@ PostfixExpression <|[
 ]|>
 
 PostfixExpressionTail <| sel{
-    [ L_SQUARE expression R_SQUARE ]
-    [ L_PAREN expression R_PAREN ]
+    [ L_SQUARE Expression R_SQUARE ]
+    [ L_PAREN Expression R_PAREN ]
     [ L_PAREN R_PAREN ]
     [ DOT IDENTIFIER ]
     [ PLUSPLUS ]
@@ -85,7 +85,7 @@ PostfixExpressionTail <| sel{
 PrimaryExpression <| sel{ 
   [ constant ]
   [ RValueConstructor ]
-  [ L_PAREN expression R_PAREN ]
+  [ L_PAREN Expression R_PAREN ]
   [ IDENTIFIER ] 
   // [ QUOTED_STRING ] // no strings in shadlang yet..
 }|>
@@ -171,17 +171,18 @@ ArgumentExpressionList <|[
     zom{ [ COMMA AssignmentExpression ] }
 ]|>
 
-expression <|[
-    AssignmentExpression
-    zom{[ COMMA AssignmentExpression ]}
-]|>
-
 ConstantExpression <|[
     ConditionalExpression
 ]|>
 
+Expression <|[
+    AssignmentExpression
+    zom{[ COMMA AssignmentExpression ]}
+]|>
+
 ///////////////////////////////////////////////////////////
 
+/*
 IdentifierList <|[
     IDENTIFIER
     zom{[ COMMA IDENTIFIER ]}
@@ -239,15 +240,15 @@ InitDeclaratorList <|[
 
 InitDeclarator <|[
     Declarator
-    opt{[ EQU Initializer ]}
+    opt{[ EQUALS Initializer ]}
 ]|>
-
+*/
 ///////////////////////////////////////////////////////////
 
 IfStatement <|[
     KW_IF
     L_PAREN
-    expression
+    Expression
     R_PAREN
     statement
     opt{[
@@ -259,7 +260,7 @@ IfStatement <|[
 WhileStatement <|[
     KW_WHILE
     L_PAREN
-    expression
+    Expression
     R_PAREN
     statement
 ]|>
@@ -269,7 +270,7 @@ ForStatement <|[
     L_PAREN
     opt{ExpressionStatement}
     opt{ExpressionStatement}
-    opt{expression}
+    opt{Expression}
     R_PAREN
     statement
 ]|>
@@ -277,14 +278,14 @@ ForStatement <|[
 ReturnStatement <|[
     KW_RETURN
     opt{[
-        expression
+        Expression
     ]}
     SEMICOLON
 ]|>
 
 CompoundStatementItem <| sel{
     statement
-    Declaration
+    //Declaration
 }|>
 
 CompoundStatement <|[
@@ -294,7 +295,7 @@ CompoundStatement <|[
 ]|>
 
 ExpressionStatement <| sel{ 
-    [ expression SEMICOLON ]
+    [ Expression SEMICOLON ]
     [ SEMICOLON ]
 } |>
 
@@ -312,7 +313,7 @@ statement <| sel{
     [ ReturnStatement ]
 } |>
 
-statement_list <| zom{ statement } |>
+StatementList <| zom{ statement } |>
 
 ///////////////////////////////////////////////////////////
 
@@ -323,7 +324,7 @@ fn_def <|[
     decl_arglist : "fn_args"
     R_PAREN
     L_CURLY
-    statement_list : "fn_statements"
+    StatementList : "fn_statements"
     R_CURLY
 ]|>
 
@@ -334,7 +335,7 @@ FunctionDef2 <|[
     decl_arglist : "fn2_args"
     R_PAREN
     L_CURLY
-    statement_list : "fn2_statements"
+    StatementList : "fn2_statements"
     R_CURLY
 ]|>
 
@@ -352,28 +353,28 @@ LibraryBlock <|[
     R_CURLY
 ]|>
 
-vtx_shader <|[
+VertexShader <|[
     KW_VTXSHADER
     [ IDENTIFIER ] : "vtx_name"
     zom{inh_list_item} : "vtx_dependencies"
     CompoundStatement : "vtx_statements"
 ]|>
 
-geo_shader <|[
+GeometryShader <|[
     KW_GEOSHADER
     [ IDENTIFIER ] : "geo_name"
     zom{inh_list_item} : "geo_dependencies"
     CompoundStatement : "geo_statements"
 ]|>
 
-frg_shader <|[
+FragmentShader <|[
     KW_FRGSHADER
     [ IDENTIFIER ] : "frg_name"
     zom{ inh_list_item } : "frg_dependencies"
     CompoundStatement : "frg_statements"
 ]|>
 
-com_shader <|[
+ComputeShader <|[
     KW_COMSHADER
     [ IDENTIFIER ] : "com_name"
     zom{ inh_list_item } : "com_dependencies"
@@ -381,17 +382,17 @@ com_shader <|[
 ]|>
 
 data_decl <| sel {
-  [typed_identifier] 
-  [typed_identifier L_SQUARE INTEGER R_SQUARE] 
+  [TypedIdentifier] 
+  [TypedIdentifier L_SQUARE INTEGER R_SQUARE] 
 }|>
 
-data_decls <| zom{ [ data_decl SEMICOLON ] } |>
+DataDeclarations <| zom{ [ data_decl SEMICOLON ] } |>
 
 UniformSet <|[
   KW_UNISET
   [ IDENTIFIER ] : "uniset_name"
   L_CURLY
-  data_decls : "uniset_decls"
+  DataDeclarations : "uniset_decls"
   R_CURLY
 ]|>
 
@@ -399,7 +400,7 @@ UniformBlk <|[
   KW_UNIBLK
   [ IDENTIFIER ] : "uniblk_name"
   L_CURLY
-  data_decls : "uniblk_decls"
+  DataDeclarations : "uniblk_decls"
   R_CURLY
 ]|>
 
@@ -418,30 +419,30 @@ InterfaceLayout  <|[
    R_PAREN
 ]|>
 
-iface_input <| sel{
-    [ typed_identifier COLON IDENTIFIER ]
-    [ typed_identifier L_SQUARE R_SQUARE ]
-    [ opt{ InterfaceLayout } typed_identifier ]
+InterfaceInput <| sel{
+    [ TypedIdentifier COLON IDENTIFIER ]
+    [ TypedIdentifier L_SQUARE R_SQUARE ]
+    [ opt{ InterfaceLayout } TypedIdentifier ]
     [ InterfaceLayout ]
 }|>
 
-iface_inputs <|[
+InterfaceInputs <|[
   KW_INPUTS
   L_CURLY
-  zom{ [ iface_input SEMICOLON ] } : "inputlist"
+  zom{ [ InterfaceInput SEMICOLON ] } : "inputlist"
   R_CURLY
 ]|>
 
-iface_output <| sel {
-    [ opt{InterfaceLayout} typed_identifier SEMICOLON ]
+InterfaceOutput <| sel {
+    [ opt{InterfaceLayout} TypedIdentifier SEMICOLON ]
     [ InterfaceLayout SEMICOLON ]
 }|>
 
-iface_outputs <|[
+InterfaceOutputs <|[
   KW_OUTPUTS
   L_CURLY
   zom{ 
-      iface_output
+      InterfaceOutput
   }
   R_CURLY
 ]|>
@@ -450,7 +451,7 @@ StructDecl <|[
     KW_STRUCT
     [ IDENTIFIER ] : "struct_name"
     L_CURLY
-    [ data_decls ] : "struct_decls"
+    [ DataDeclarations ] : "struct_decls"
     R_CURLY
     SEMICOLON
 ]|>
@@ -460,8 +461,8 @@ VertexInterface <|[
   [ IDENTIFIER ] : "vif_name"
   zom{ inh_list_item } : "vif_dependencies"
   L_CURLY
-  opt{iface_inputs}
-  opt{iface_outputs}
+  opt{InterfaceInputs}
+  opt{InterfaceOutputs}
   R_CURLY
 ]|>
 
@@ -470,8 +471,8 @@ GeometryInterface <|[
   [ IDENTIFIER ] : "gif_name"
   zom{ inh_list_item } : "gif_dependencies"
   L_CURLY
-  opt{iface_inputs}
-  opt{iface_outputs}
+  opt{InterfaceInputs}
+  opt{InterfaceOutputs}
   R_CURLY
 ]|>
 
@@ -480,8 +481,8 @@ FragmentInterface <|[
   [ IDENTIFIER ] : "fif_name"
   zom{ inh_list_item } : "fif_dependencies"
   L_CURLY
-  opt{iface_inputs}
-  opt{iface_outputs}
+  opt{InterfaceInputs}
+  opt{InterfaceOutputs}
   R_CURLY
 ]|>
 
@@ -562,10 +563,10 @@ Technique <|[
 Translatable <| 
   sel{ 
     fn_def 
-    vtx_shader 
-    geo_shader 
-    frg_shader 
-    com_shader 
+    VertexShader 
+    GeometryShader 
+    FragmentShader 
+    ComputeShader 
     UniformSet 
     UniformBlk 
     VertexInterface 

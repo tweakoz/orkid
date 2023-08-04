@@ -60,6 +60,15 @@ template <typename T> std::shared_ptr<T> try_ast_get(match_ptr_t m) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+#define DECLARE_STD_AST_NODE(x) \
+onPre(#x, [=](match_ptr_t match) { \
+  auto ast_node = ast_create<SHAST::x>(match); \
+});
+#define DECLARE_OBJNAME_AST_NODE(x) \
+onPre(x, [=](match_ptr_t match) { objectNameAst(match); });
+
+///////////////////////////////////////////////////////////////////////////////
+
 struct ShadLangParser : public Parser {
 
   ShadLangParser() {
@@ -93,40 +102,80 @@ struct ShadLangParser : public Parser {
       objname->_name   = fn_name->_token->text;
     };
     ///////////////////////////////////////////////////////////
-    onPost("fn_name", [=](match_ptr_t match) { objectNameAst(match); });
-    onPost("fn2_name", [=](match_ptr_t match) { objectNameAst(match); });
-    onPost("fni_name", [=](match_ptr_t match) { objectNameAst(match); });
-    onPost("vtx_name", [=](match_ptr_t match) { objectNameAst(match); });
-    onPost("frg_name", [=](match_ptr_t match) { objectNameAst(match); });
-    onPost("com_name", [=](match_ptr_t match) { objectNameAst(match); });
-    onPost("uniset_name", [=](match_ptr_t match) { objectNameAst(match); });
-    onPost("uniblk_name", [=](match_ptr_t match) { objectNameAst(match); });
-    onPost("vif_name", [=](match_ptr_t match) { objectNameAst(match); });
-    onPost("gif_name", [=](match_ptr_t match) { objectNameAst(match); });
-    onPost("fif_name", [=](match_ptr_t match) { objectNameAst(match); });
-    onPost("lib_name", [=](match_ptr_t match) { objectNameAst(match); });
-    onPost("sb_name", [=](match_ptr_t match) { objectNameAst(match); });
-    onPost("pass_name", [=](match_ptr_t match) { objectNameAst(match); });
-    onPost("fxconfigdecl_name", [=](match_ptr_t match) { objectNameAst(match); });
-    onPost("fxconfigref_name", [=](match_ptr_t match) { objectNameAst(match); });
-    onPost("technique_name", [=](match_ptr_t match) { objectNameAst(match); });
-    // onPost("primary_var_ref", [=](match_ptr_t match) { objectNameAst(match); });
+    DECLARE_OBJNAME_AST_NODE("fn_name");
+    DECLARE_OBJNAME_AST_NODE("fn2_name");
+
+    DECLARE_OBJNAME_AST_NODE("fni_name");
+    DECLARE_OBJNAME_AST_NODE("vtx_name");
+    DECLARE_OBJNAME_AST_NODE("frg_name");
+    DECLARE_OBJNAME_AST_NODE("com_name");
+
+    DECLARE_OBJNAME_AST_NODE("uniset_name");
+    DECLARE_OBJNAME_AST_NODE("uniblk_name");
+    DECLARE_OBJNAME_AST_NODE("vif_name");
+    DECLARE_OBJNAME_AST_NODE("gif_name");
+    DECLARE_OBJNAME_AST_NODE("fif_name");
+    DECLARE_OBJNAME_AST_NODE("lib_name");
+    DECLARE_OBJNAME_AST_NODE("sb_name");
+
+    DECLARE_OBJNAME_AST_NODE("pass_name");
+    DECLARE_OBJNAME_AST_NODE("fxconfigdecl_name");
+    DECLARE_OBJNAME_AST_NODE("fxconfigref_name");
+    DECLARE_OBJNAME_AST_NODE("technique_name");
     ///////////////////////////////////////////////////////////
-    onPost("ImportDirective", [=](match_ptr_t match) { //
-      auto member_ref     = ast_create<SHAST::ImportDirective>(match);
-    });
+    DECLARE_STD_AST_NODE(MemberRef);
+    DECLARE_STD_AST_NODE(ArrayRef);
+    DECLARE_STD_AST_NODE(RValueConstructor);
+    DECLARE_STD_AST_NODE(TypedIdentifier);
     ///////////////////////////////////////////////////////////
-    onPost("member_ref", [=](match_ptr_t match) { //
-      auto member_ref     = ast_create<SHAST::MemberRef>(match);
-      auto seq            = match->asShared<Sequence>();
-      member_ref->_member = seq->_items[1]->followImplAsShared<ClassMatch>()->_token->text;
-    });
+    DECLARE_STD_AST_NODE(PrimaryExpression);
+    DECLARE_STD_AST_NODE(MultiplicativeExpression);
+    DECLARE_STD_AST_NODE(AdditiveExpression);
+    DECLARE_STD_AST_NODE(UnaryExpression);
+    DECLARE_STD_AST_NODE(PostfixExpression);
+    DECLARE_STD_AST_NODE(PrimaryExpression);
+    DECLARE_STD_AST_NODE(ConditionalExpression);
+    DECLARE_STD_AST_NODE(AssignmentExpression);
+    DECLARE_STD_AST_NODE(ArgumentExpressionList);
+    DECLARE_STD_AST_NODE(LogicalAndExpression);
+    DECLARE_STD_AST_NODE(LogicalOrExpression);
+    DECLARE_STD_AST_NODE(InclusiveOrExpression);
+    DECLARE_STD_AST_NODE(ExclusiveOrExpression);
+    DECLARE_STD_AST_NODE(AndExpression);
+    DECLARE_STD_AST_NODE(EqualityExpression);
+    DECLARE_STD_AST_NODE(RelationalExpression);
+    DECLARE_STD_AST_NODE(ShiftExpression);
+    DECLARE_STD_AST_NODE(Expression);
     ///////////////////////////////////////////////////////////
-    onPost("array_ref", [=](match_ptr_t match) { //
-      auto array_ref = ast_create<SHAST::ArrayRef>(match);
-      auto seq       = match->asShared<Sequence>();
-      // array_ref->_member = seq->_items[1]->followImplAsShared<ClassMatch>()->_token->text;
-    });
+    DECLARE_STD_AST_NODE(IfStatement);
+    DECLARE_STD_AST_NODE(WhileStatement);
+    DECLARE_STD_AST_NODE(ReturnStatement);
+    DECLARE_STD_AST_NODE(CompoundStatement);
+    DECLARE_STD_AST_NODE(ExpressionStatement);
+    DECLARE_STD_AST_NODE(DiscardStatement);
+    DECLARE_STD_AST_NODE(StatementList);
+    ///////////////////////////////////////////////////////////
+    DECLARE_STD_AST_NODE(InterfaceLayout);
+    DECLARE_STD_AST_NODE(InterfaceOutputs);
+    DECLARE_STD_AST_NODE(InterfaceInputs);
+    DECLARE_STD_AST_NODE(InterfaceInput);
+    DECLARE_STD_AST_NODE(InterfaceOutput);
+    DECLARE_STD_AST_NODE(DataDeclarations);
+    DECLARE_STD_AST_NODE(DataDeclarations);
+    DECLARE_STD_AST_NODE(ImportDirective);
+    ///////////////////////////////////////////////////////////
+    DECLARE_STD_AST_NODE(VertexInterface);
+    DECLARE_STD_AST_NODE(FragmentInterface);
+    DECLARE_STD_AST_NODE(StateBlock);
+    DECLARE_STD_AST_NODE(StateBlockItem);
+    DECLARE_STD_AST_NODE(FxConfigDecl);
+    DECLARE_STD_AST_NODE(UniformSet);
+    DECLARE_STD_AST_NODE(UniformBlk);
+    DECLARE_STD_AST_NODE(LibraryBlock);
+    DECLARE_STD_AST_NODE(VertexShader);
+    DECLARE_STD_AST_NODE(GeometryShader);
+    DECLARE_STD_AST_NODE(FragmentShader);
+    DECLARE_STD_AST_NODE(ComputeShader);
     ///////////////////////////////////////////////////////////
     onPost("FLOATING_POINT", [=](match_ptr_t match) { //
       auto ast_node     = ast_create<SHAST::FloatLiteral>(match);
@@ -152,112 +201,7 @@ struct ShadLangParser : public Parser {
     //onPost("exec_arglist", [=](match_ptr_t match) { auto fn_args = ast_create<SHAST::FunctionInvokationArguments>(match); });
     ///////////////////////////////////////////////////////////
     onPost("fn_invok", [=](match_ptr_t match) { auto fn_invok = ast_create<SHAST::FunctionInvokation>(match); });
-    ///////////////////////////////////////////////////////////
-    onPost("PrimaryExpression", [=](match_ptr_t match) {
-      auto primary   = ast_create<SHAST::PrimaryExpression>(match);
-      primary->_name = "primary";
-    });
-    ///////////////////////////////////////////////////////////
-    onPost("MultiplicativeExpression", [=](match_ptr_t match) {
-      auto product      = ast_create<SHAST::MultiplicativeExpression>(match);
-      auto seq          = match->asShared<Sequence>();
-      auto primary1     = seq->_items[0];
-      /*auto primary1_ast = ast_get<SHAST::Primary>(primary1);
-      auto opt          = seq->itemAsShared<Optional>(1);
-      auto primary2     = opt->_subitem;
-
-      product->_primaries.push_back(primary1_ast);
-      if (primary2) {
-        auto seq          = primary2->asShared<Sequence>();
-        primary2          = seq->_items[1];
-        auto primary2_ast = ast_get<SHAST::Primary>(primary2);
-        product->_primaries.push_back(primary2_ast);
-      } else { // "prI1"
-      }*/
-    });
-    ///////////////////////////////////////////////////////////
-    onPost("AdditiveExpression", [=](match_ptr_t match) {
-      auto unary = ast_create<SHAST::AdditiveExpression>(match);
-      /*auto sum      = ast_create<SHAST::Sum>(match);
-      auto seq      = match->asShared<Sequence>();
-      auto selected = seq->_items[0]->asShared<OneOf>()->_selected;
-      auto seq2     = selected->asShared<Sequence>();
-      if (selected->_matcher->_name == "pro") {
-        sum->_left = ast_get<SHAST::Product>(seq2->_items[1]);
-        sum->_op   = '_';
-      } else if (selected->_matcher->_name == "add") {
-        sum->_left  = ast_get<SHAST::Product>(seq2->_items[0]);
-        sum->_right = ast_get<SHAST::Product>(seq2->_items[2]);
-        sum->_op    = '+';
-      } else if (selected->_matcher->_name == "sub") {
-        sum->_left  = ast_get<SHAST::Product>(seq2->_items[0]);
-        sum->_right = ast_get<SHAST::Product>(seq2->_items[2]);
-        sum->_op    = '-';
-      } else {
-        OrkAssert(false);
-      }*/
-    });
-    ///////////////////////////////////////////////////////////
-    onPost("UnaryExpression", [=](match_ptr_t match) {
-      auto unary = ast_create<SHAST::UnaryExpression>(match);
-    });
-    ///////////////////////////////////////////////////////////
-    onPost("PostfixExpression", [=](match_ptr_t match) {
-      auto unary = ast_create<SHAST::PostfixExpression>(match);
-    });
-    ///////////////////////////////////////////////////////////
-    onPost("PrimaryExpression", [=](match_ptr_t match) {
-      auto unary = ast_create<SHAST::PrimaryExpression>(match);
-    });
-    ///////////////////////////////////////////////////////////
-    onPost("ConditionalExpression", [=](match_ptr_t match) {
-      auto unary = ast_create<SHAST::ConditionalExpression>(match);
-    });
-    ///////////////////////////////////////////////////////////
-    onPost("AssignmentExpression", [=](match_ptr_t match) {
-      auto unary = ast_create<SHAST::AssignmentExpression>(match);
-    });
-    ///////////////////////////////////////////////////////////
-    onPost("ArgumentExpressionList", [=](match_ptr_t match) {
-      auto unary = ast_create<SHAST::ArgumentExpressionList>(match);
-    });
-    ///////////////////////////////////////////////////////////
-    onPost("LogicalAndExpression", [=](match_ptr_t match) {
-      auto unary = ast_create<SHAST::LogicalAndExpression>(match);
-    });
-    ///////////////////////////////////////////////////////////
-    onPost("LogicalOrExpression", [=](match_ptr_t match) {
-      auto unary = ast_create<SHAST::LogicalOrExpression>(match);
-    });
-    ///////////////////////////////////////////////////////////
-    onPost("InclusiveOrExpression", [=](match_ptr_t match) {
-      auto unary = ast_create<SHAST::InclusiveOrExpression>(match);
-    });
-    ///////////////////////////////////////////////////////////
-    onPost("ExclusiveOrExpression", [=](match_ptr_t match) {
-      auto unary = ast_create<SHAST::ExclusiveOrExpression>(match);
-    });
-    ///////////////////////////////////////////////////////////
-    onPost("AndExpression", [=](match_ptr_t match) {
-      auto unary = ast_create<SHAST::AndExpression>(match);
-    });
-    ///////////////////////////////////////////////////////////
-    onPost("EqualityExpression", [=](match_ptr_t match) {
-      auto unary = ast_create<SHAST::EqualityExpression>(match);
-    });
-    ///////////////////////////////////////////////////////////
-    onPost("RelationalExpression", [=](match_ptr_t match) {
-      auto unary = ast_create<SHAST::RelationalExpression>(match);
-    });
-    ///////////////////////////////////////////////////////////
-    onPost("ShiftExpression", [=](match_ptr_t match) {
-      auto unary = ast_create<SHAST::ShiftExpression>(match);
-    });
-    ///////////////////////////////////////////////////////////
-    onPost("expression", [=](match_ptr_t match) { //
-      auto expression = ast_create<SHAST::Expression>(match);
-    });
-    onLink("expression", [=](match_ptr_t match) { //
+    onLink("Expression", [=](match_ptr_t match) { //
       auto expression = ast_get<SHAST::Expression>(match);
       /*
       /////////////////////////
@@ -292,47 +236,6 @@ struct ShadLangParser : public Parser {
       */
     });
     ///////////////////////////////////////////////////////////
-    onPost("IfStatement", [=](match_ptr_t match) {
-      auto unary = ast_create<SHAST::IfStatement>(match);
-    });
-    ///////////////////////////////////////////////////////////
-    onPost("WhileStatement", [=](match_ptr_t match) {
-      auto unary = ast_create<SHAST::WhileStatement>(match);
-    });
-    ///////////////////////////////////////////////////////////
-    onPost("ReturnStatement", [=](match_ptr_t match) {
-      auto unary = ast_create<SHAST::ReturnStatement>(match);
-    });
-    ///////////////////////////////////////////////////////////
-    onPost("CompoundStatement", [=](match_ptr_t match) {
-      auto unary = ast_create<SHAST::CompoundStatement>(match);
-    });
-    ///////////////////////////////////////////////////////////
-    onPost("ExpressionStatement", [=](match_ptr_t match) {
-      auto unary = ast_create<SHAST::ExpressionStatement>(match);
-    });
-    ///////////////////////////////////////////////////////////
-    onPost("DiscardStatement", [=](match_ptr_t match) {
-      auto unary = ast_create<SHAST::DiscardStatement>(match);
-    });
-    ///////////////////////////////////////////////////////////
-    onPost("RValueConstructor", [=](match_ptr_t match) {
-      auto ast_rvc       = ast_create<SHAST::RValueConstructor>(match);
-      auto seq           = match->asShared<Sequence>();
-      //auto ast_dt        = ast_get<SHAST::DataType>(seq->_items[0]);
-      //ast_rvc->_datatype = ast_dt->_datatype;
-      //ast_dt->_showDOT   = false;
-    });
-    ///////////////////////////////////////////////////////////
-    onPost("typed_identifier", [=](match_ptr_t match) {
-      auto tid         = ast_create<SHAST::TypedIdentifier>(match);
-      auto seq         = match->asShared<Sequence>();
-      auto dt          = ast_get<SHAST::DataType>(seq->_items[0]);
-      tid->_datatype   = dt->_datatype;
-      auto kwid        = seq->_items[1]->followImplAsShared<ClassMatch>();
-      tid->_identifier = kwid->_token->text;
-    });
-    ///////////////////////////////////////////////////////////
     onPost("decl_arglist", [=](match_ptr_t match) {
       auto arg_list = ast_create<SHAST::DeclArgumentList>(match);
       auto nom      = match->asShared<NOrMore>();
@@ -341,23 +244,6 @@ struct ShadLangParser : public Parser {
         // auto tid = ast_get<SHAST::TypedIdentifier>(seq->_items[0]);
         // arg_list->_arguments.push_back(tid);
       }
-    });
-    ///////////////////////////////////////////////////////////
-    onPost("statement_list", [=](match_ptr_t match) {
-      auto statement_list = ast_create<SHAST::StatementList>(match);
-      auto nom            = match->asShared<NOrMore>();
-      for (auto item : nom->_items) {
-        // auto seq = item->asShared<Sequence>();
-        //  auto statement = ast_get<SHAST::Stat>(seq->_items[0]);
-        //  arg_list->_arguments.push_back(tid);
-      }
-    });
-    ///////////////////////////////////////////////////////////
-    onPost("LibraryBlock", [=](match_ptr_t match) {
-      auto libblock   = ast_create<SHAST::LibraryBlock>(match);
-      auto seq        = match->asShared<Sequence>();
-      auto objname    = ast_get<SHAST::ObjectName>(seq->_items[1]);
-      libblock->_name = objname->_name;
     });
     ///////////////////////////////////////////////////////////
     onPost("fn_def", [=](match_ptr_t match) {
@@ -414,34 +300,6 @@ struct ShadLangParser : public Parser {
       */
     });
     ///////////////////////////////////////////////////////////
-    onPost("vtx_shader", [=](match_ptr_t match) {
-      auto vtx_shader   = ast_create<SHAST::VertexShader>(match);
-      auto seq          = match->asShared<Sequence>();
-      auto objname      = ast_get<SHAST::ObjectName>(seq->_items[1]);
-      vtx_shader->_name = objname->_name;
-    });
-    ///////////////////////////////////////////////////////////
-    onPost("geo_shader", [=](match_ptr_t match) {
-      auto vtx_shader   = ast_create<SHAST::GeometryShader>(match);
-      auto seq          = match->asShared<Sequence>();
-      auto objname      = ast_get<SHAST::ObjectName>(seq->_items[1]);
-      vtx_shader->_name = objname->_name;
-    });
-    ///////////////////////////////////////////////////////////
-    onPost("frg_shader", [=](match_ptr_t match) {
-      auto frg_shader   = ast_create<SHAST::FragmentShader>(match);
-      auto seq          = match->asShared<Sequence>();
-      auto objname      = ast_get<SHAST::ObjectName>(seq->_items[1]);
-      frg_shader->_name = objname->_name;
-    });
-    ///////////////////////////////////////////////////////////
-    onPost("com_shader", [=](match_ptr_t match) {
-      auto com_shader   = ast_create<SHAST::ComputeShader>(match);
-      auto seq          = match->asShared<Sequence>();
-      auto objname      = ast_get<SHAST::ObjectName>(seq->_items[1]);
-      com_shader->_name = objname->_name;
-    });
-    ///////////////////////////////////////////////////////////
     onPost("data_decl", [=](match_ptr_t match) {
       auto data_decl = ast_create<SHAST::DataDeclaration>(match);
       /*auto seq       = match->asShared<Sequence>();
@@ -463,46 +321,6 @@ struct ShadLangParser : public Parser {
       */
     });
     ///////////////////////////////////////////////////////////
-    onPost("data_decls", [=](match_ptr_t match) { auto data_decls = ast_create<SHAST::DataDeclarations>(match); });
-    ///////////////////////////////////////////////////////////
-    onPost("UniformSet", [=](match_ptr_t match) {
-      auto uniset   = ast_create<SHAST::UniformSet>(match);
-      auto seq      = match->asShared<Sequence>();
-      auto objname  = ast_get<SHAST::ObjectName>(seq->_items[1]);
-      uniset->_name = objname->_name;
-    });
-    ///////////////////////////////////////////////////////////
-    onPost("UniformBlk", [=](match_ptr_t match) {
-      auto uniblk   = ast_create<SHAST::UniformBlk>(match);
-      /*auto seq      = match->asShared<Sequence>();
-      auto objname  = ast_get<SHAST::ObjectName>(seq->_items[1]);
-      uniblk->_name = objname->_name;
-      */
-    });
-    ///////////////////////////////////////////////////////////
-    onPost("iface_input", [=](match_ptr_t match) {
-      auto iface_input = ast_create<SHAST::InterfaceInput>(match);
-      /*
-      auto seq         = match->asShared<Sequence>();
-      seq->dump("iface_input");
-      auto tid                 = ast_get<SHAST::TypedIdentifier>(seq->_items[0]->asShared<Proxy>()->_selected);
-      iface_input->_identifier = tid->_identifier;
-      iface_input->_datatype   = tid->_datatype;
-      if (auto try_semantic = seq->_items[1]->asShared<Optional>()->_subitem) {
-        auto semantic_seq      = try_semantic->asShared<Sequence>();
-        auto semantic          = semantic_seq->_items[1]->followImplAsShared<ClassMatch>();
-        iface_input->_semantic = semantic->_token->text;
-      }
-      */
-    });
-    ///////////////////////////////////////////////////////////
-    onPost("iface_inputs", [=](match_ptr_t match) {
-      auto iface_inputs   = ast_create<SHAST::InterfaceInputs>(match);
-      //auto seq            = match->asShared<Sequence>();
-      //auto fn_name        = seq->_items[1]->followImplAsShared<ClassMatch>();
-      //iface_inputs->_name = fn_name->_token->text;
-    });
-    ///////////////////////////////////////////////////////////
     if(0)onPost("output_decl", [=](match_ptr_t match) {
       auto ast_output_decl         = ast_create<SHAST::InterfaceOutput>(match);
       /*
@@ -513,51 +331,6 @@ struct ShadLangParser : public Parser {
       ast_output_decl->_identifier = tid->_identifier;
       ast_output_decl->_datatype   = tid->_datatype;
       */
-    });
-    ///////////////////////////////////////////////////////////
-    onPost("InterfaceLayout", [=](match_ptr_t match) {
-      auto ast_layout   = ast_create<SHAST::InterfaceLayout>(match);
-    });
-    ///////////////////////////////////////////////////////////
-    onPost("iface_outputs", [=](match_ptr_t match) {
-      auto ast_iface_outputs   = ast_create<SHAST::InterfaceOutputs>(match);
-      //auto seq                 = match->asShared<Sequence>();
-      //auto fn_name             = seq->_items[1]->followImplAsShared<ClassMatch>();
-      //ast_iface_outputs->_name = fn_name->_token->text;
-    });
-    ///////////////////////////////////////////////////////////
-    onPost("VertexInterface", [=](match_ptr_t match) {
-      auto ast_vtx_iface   = ast_create<SHAST::VertexInterface>(match);
-      //auto seq             = match->asShared<Sequence>();
-      //auto objname         = ast_get<SHAST::ObjectName>(seq->_items[1]);
-      //ast_vtx_iface->_name = objname->_name;
-    });
-    ///////////////////////////////////////////////////////////
-    onPost("FragmentInterface", [=](match_ptr_t match) {
-      auto frg_iface   = ast_create<SHAST::FragmentInterface>(match);
-      //auto seq         = match->asShared<Sequence>();
-      //auto objname     = ast_get<SHAST::ObjectName>(seq->_items[1]);
-      //frg_iface->_name = objname->_name;
-    });
-    ///////////////////////////////////////////////////////////
-    onPost("StateBlockItem", [=](match_ptr_t match) {
-      auto ast_sb_item    = ast_create<SHAST::StateBlockItem>(match);
-      //auto seq            = match->asShared<Sequence>();
-      //auto key_item       = seq->_items[0]->followImplAsShared<OneOf>()->_selected;
-      //ast_sb_item->_key   = key_item->followImplAsShared<ClassMatch>()->_token->text;
-      //ast_sb_item->_value = seq->_items[2]->followImplAsShared<ClassMatch>()->_token->text;
-    });
-    ///////////////////////////////////////////////////////////
-    onPost("StateBlock", [=](match_ptr_t match) {
-      auto ast_sb   = ast_create<SHAST::StateBlock>(match);
-      //auto seq      = match->asShared<Sequence>();
-      //auto name_seq = seq->_items[1]->asShared<Sequence>();
-      //auto sb_name  = name_seq->_items[0]->followImplAsShared<ClassMatch>();
-      //ast_sb->_name = sb_name->_token->text;
-    });
-    ///////////////////////////////////////////////////////////
-    onPost("FxConfigDecl", [=](match_ptr_t match) {
-      auto ast_sb   = ast_create<SHAST::FxConfigDecl>(match);
     });
     ///////////////////////////////////////////////////////////
     onPost("inh_list_item", [=](match_ptr_t match) {
