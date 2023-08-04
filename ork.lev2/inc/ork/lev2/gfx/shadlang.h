@@ -36,36 +36,18 @@ namespace SHAST {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct AstNode;
-struct VariableReference;
-struct Expression;
-struct Primary;
-struct Product;
-struct Sum;
 struct DataType;
 struct ArgumentDeclaration;
 struct AssignmentStatement;
 struct FunctionDef;
-struct Shader;
-struct VertexShader;
-struct FragmentShader;
-struct ComputeShader;
 struct Translatable;
 struct TranslationUnit;
 
 using astnode_ptr_t         = std::shared_ptr<AstNode>;
-using expression_ptr_t      = std::shared_ptr<Expression>;
-using varref_ptr_t          = std::shared_ptr<VariableReference>;
-using primary_ptr_t         = std::shared_ptr<Primary>;
-using product_ptr_t         = std::shared_ptr<Product>;
-using sum_ptr_t             = std::shared_ptr<Sum>;
 using datatype_ptr_t        = std::shared_ptr<DataType>;
 using argument_decl_ptr_t   = std::shared_ptr<ArgumentDeclaration>;
 using assignment_stmt_ptr_t = std::shared_ptr<AssignmentStatement>;
 using fndef_ptr_t           = std::shared_ptr<FunctionDef>;
-using shader_ptr_t          = std::shared_ptr<Shader>;
-using vtxshader_ptr_t       = std::shared_ptr<VertexShader>;
-using frgshader_ptr_t       = std::shared_ptr<FragmentShader>;
-using comshader_ptr_t       = std::shared_ptr<ComputeShader>;
 using translatable_ptr_t    = std::shared_ptr<Translatable>;
 using translationunit_ptr_t = std::shared_ptr<TranslationUnit>;
 /////////////////////
@@ -74,6 +56,7 @@ struct AstNode {
   AstNode() {
     static int gid = 0;
     _nodeID = gid++;
+    svar64_t _impl;
   }
   virtual ~AstNode() {
   }
@@ -150,47 +133,95 @@ struct AssignmentStatementVarDecl : public LanguageElement {
   std::string _datatype;
   std::string _identifier;
 };
-//
-struct AssignmentStatement : public Statement {
-  datatype_ptr_t _datatype;
-  expression_ptr_t _expression;
+struct IfStatement : public Statement {
   virtual std::string desc() const {
-    return FormatString("AssignmentStatement");
+    return FormatString("IfStatement");
   }
 };
+struct WhileStatement : public Statement {
+  virtual std::string desc() const {
+    return FormatString("WhileStatement");
+  }
+};
+struct ReturnStatement : public Statement {
+  virtual std::string desc() const {
+    return FormatString("ReturnStatement");
+  }
+};
+struct CompoundStatement : public Statement {
+  virtual std::string desc() const {
+    return FormatString("CompoundStatement");
+  }
+};
+struct ExpressionStatement : public Statement {
+  virtual std::string desc() const {
+    return FormatString("ExpressionStatement");
+  }
+};
+struct DiscardStatement : public Statement {};
 struct EmptyStatement : public Statement {};
 //
 struct Expression : public LanguageElement { //
   inline Expression() {
     _name = "Expression";
   }
-  sum_ptr_t _sum;
 };
-//
-struct Sum : public LanguageElement {
-  inline Sum() {
-    _name = "Sum";
-  }
-  product_ptr_t _left;
-  product_ptr_t _right;
-  char _op = 0;
+struct ImportDirective : public AstNode {
   virtual std::string desc() const {
-    return FormatString("Sum(%c)", _op);
+    return FormatString("ImportDirective");
   }
 };
 //
-struct Product : public LanguageElement {
-  inline Product() {
-    _name = "Product";
+struct AdditiveExpression : public LanguageElement {
+  inline AdditiveExpression() {
+    _name = "AdditiveExpression";
   }
-  std::vector<primary_ptr_t> _primaries;
 };
 //
-struct Primary : public LanguageElement { //
-  inline Primary() {
-    _name = "Primary";
+struct MultiplicativeExpression : public LanguageElement {
+  inline MultiplicativeExpression() {
+    _name = "MultiplicativeExpression";
   }
-  svar64_t _impl;
+};
+struct UnaryExpression : public LanguageElement {
+  inline UnaryExpression() {
+    _name = "UnaryExpression";
+  }
+};
+struct PostfixExpression : public LanguageElement {
+  inline PostfixExpression() {
+    _name = "PostfixExpression";
+  }
+};
+//
+struct PrimaryExpression : public LanguageElement { //
+  inline PrimaryExpression() {
+    _name = "PrimaryExpression";
+  }
+};
+//
+struct AssignmentExpression : public LanguageElement { //
+  inline AssignmentExpression() {
+    _name = "AssignmentExpression";
+  }
+};
+//
+struct ArgumentExpressionList : public LanguageElement { //
+  inline ArgumentExpressionList() {
+    _name = "ArgumentExpressionList";
+  }
+};
+//
+struct ConditionalExpression : public LanguageElement { //
+  inline ConditionalExpression() {
+    _name = "ConditionalExpression";
+  }
+};
+//
+struct ShiftExpression : public LanguageElement { //
+  inline ShiftExpression() {
+    _name = "ShiftExpression";
+  }
 };
 //
 struct Literal : public LanguageElement {};
@@ -198,6 +229,48 @@ struct Literal : public LanguageElement {};
 struct NumericLiteral : public Literal {
   inline NumericLiteral() {
     _name = "NumericLiteral";
+  }
+};
+//
+struct LogicalAndExpression : public LanguageElement { //
+  inline LogicalAndExpression() {
+    _name = "LogicalAndExpression";
+  }
+};
+//
+struct LogicalOrExpression : public LanguageElement { //
+  inline LogicalOrExpression() {
+    _name = "LogicalOrExpression";
+  }
+};
+//
+struct InclusiveOrExpression : public LanguageElement { //
+  inline InclusiveOrExpression() {
+    _name = "InclusiveOrExpression";
+  }
+};
+//
+struct ExclusiveOrExpression : public LanguageElement { //
+  inline ExclusiveOrExpression() {
+    _name = "ExclusiveOrExpression";
+  }
+};
+//
+struct AndExpression : public LanguageElement { //
+  inline AndExpression() {
+    _name = "AndExpression";
+  }
+};
+//
+struct EqualityExpression : public LanguageElement { //
+  inline EqualityExpression() {
+    _name = "EqualityExpression";
+  }
+};
+//
+struct RelationalExpression : public LanguageElement { //
+  inline RelationalExpression() {
+    _name = "RelationalExpression";
   }
 };
 //
@@ -220,13 +293,6 @@ struct IntegerLiteral : public NumericLiteral { //
   virtual std::string desc() const {
     return FormatString("IntegerLiteral(%d)", _value);
   }
-};
-//
-struct Term : public LanguageElement { //
-  inline Term() {
-    _name = "Term";
-  }
-  expression_ptr_t _subexpression;
 };
 //
 struct ArgumentDeclaration : public LanguageElement {
@@ -312,6 +378,11 @@ struct StatementList : public AstNode { //
     return FormatString("StatementList[]");
   }
 };
+struct InterfaceLayout : public AstNode { //
+  InterfaceLayout() {
+    _name = "InterfaceLayout";
+  }
+};
 struct InterfaceInput : public AstNode { //
   InterfaceInput() {
     _descend = false;
@@ -359,6 +430,11 @@ struct LibraryBlock : public Translatable { //
     return FormatString("LibraryBlock(%s)", _name.c_str());
   }
 };
+struct FxConfigDecl : public Translatable { //
+  std::string desc() const final {
+    return FormatString("FxConfigDecl(%s)", _name.c_str());
+  }
+};
 struct Shader : public Translatable { //
 };
 struct VertexShader : public Shader { //
@@ -369,6 +445,11 @@ struct VertexShader : public Shader { //
 struct FragmentShader : public Shader { //
   std::string desc() const final {
     return FormatString("FragmentShader(%s) {}", _name.c_str());
+  }
+};
+struct GeometryShader : public Shader { //
+  std::string desc() const final {
+    return FormatString("GeometryShader(%s) {}", _name.c_str());
   }
 };
 struct ComputeShader : public Shader { //
@@ -410,6 +491,11 @@ struct PipelineInterface : public Translatable { //
 struct VertexInterface : public PipelineInterface { //
   std::string desc() const final {
     return FormatString("VertexInterface(%s) {}", _name.c_str());
+  }
+};
+struct GeometryInterface : public PipelineInterface { //
+  std::string desc() const final {
+    return FormatString("GeometryInterface(%s) {}", _name.c_str());
   }
 };
 struct FragmentInterface : public PipelineInterface { //

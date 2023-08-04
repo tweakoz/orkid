@@ -39,15 +39,18 @@ struct DotBackend {
     addThemeItem<SHAST::DataDeclaration>("#7f3f7f", "white", 1);
     //
     addThemeItem<SHAST::StatementList>("#5f5faf", "white", 1);
-    addThemeItem<SHAST::AssignmentStatement>("#cfcfff", "black", 1);
     addThemeItem<SHAST::AssignmentStatementVarRef>("#bfbfef", "black", 1);
+    addThemeItem<SHAST::IfStatement>("#cfcfff", "black", 1);
+    addThemeItem<SHAST::WhileStatement>("#cfcfff", "black", 1);
+    addThemeItem<SHAST::ReturnStatement>("#cfcfff", "black", 1);
+    addThemeItem<SHAST::CompoundStatement>("#cfcfff", "black", 1);
+    addThemeItem<SHAST::ExpressionStatement>("#cfcfff", "black", 1);
     addThemeItem<SHAST::MemberRef>("#1fcfcf", "black", 1);
     addThemeItem<SHAST::ArrayRef>("#1fdfdf", "black", 1);
     addThemeItem<SHAST::Expression>("#ffdfff", "black", 1);
-    addThemeItem<SHAST::Sum>("#eebfee", "black", 1);
-    addThemeItem<SHAST::Product>("#eebfee", "black", 1);
-    addThemeItem<SHAST::Primary>("#eebfee", "black", 1);
-    addThemeItem<SHAST::Term>("#eebfee", "black", 1);
+    addThemeItem<SHAST::AdditiveExpression>("#eebfee", "black", 1);
+    addThemeItem<SHAST::MultiplicativeExpression>("#eebfee", "black", 1);
+    addThemeItem<SHAST::PrimaryExpression>("#eebfee", "black", 1);
     addThemeItem<SHAST::Literal>("#df7fdf", "black", 1);
     addThemeItem<SHAST::RValueConstructor>("#ef8fef", "black", 1);
     addThemeItem<SHAST::FunctionInvokation>("#ffdfcf", "black", 1);

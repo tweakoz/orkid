@@ -1,0 +1,126 @@
+
+macro(M1)           <| "xyz" |>
+
+MULTI_LINE_COMMENT  <| "\/\*([^*]|\*+[^/*])*\*+\/" |>
+SINGLE_LINE_COMMENT <| "\/\/.*[\n\r]" |>
+WHITESPACE          <| "\s+" |>
+NEWLINE             <| "[\n\r]+" |>
+
+STAREQ              <| "\*=" |>
+PLUSEQ              <| "\+=" |>
+MINUSEQ             <| "\-=" |>
+SLASHEQ             <| "\/=" |>
+
+PLUSPLUS            <| "\+\+" |>
+MINUSMINUS          <| "\-\-" |>
+
+IS_EQ_TO            <| "==" |>
+IS_NEQ_TO           <| "!=" |>
+IS_GEQ_TO           <| ">=" |>
+IS_LEQ_TO           <| "<=" |>
+
+L_SHIFT             <| "\<\<" |>
+R_SHIFT             <| "\>\>" |>
+
+LOGICAL_OR          <| "\|\|" |>
+LOGICAL_AND         <| "&&" |>
+
+BITWISE_OR          <| "\|" |>
+BITWISE_AND         <| "&" |>
+
+EQUALS              <| "=" |>
+COMMA               <| "," |>
+COLON               <| ":" |>
+SEMICOLON           <| ";" |>
+L_SQUARE            <| "\[" |>
+R_SQUARE            <| "\]" |>
+L_PAREN             <| "\(" |>
+R_PAREN             <| "\)" |>
+L_CURLY             <| "\{" |>
+R_CURLY             <| "\}" |>
+L_ANGLE             <| "\<" |>
+R_ANGLE             <| "\>" |>
+DOT                 <| "\." |>
+STAR                <| "\*" |>
+PLUS                <| "\+" |>
+MINUS               <| "\-" |>
+SLASH               <| "\/" |>
+NOT                 <| "!" |>
+TILDE               <| "~" |>
+PERCENT             <| "%" |>
+CARET               <| "\^" |>
+
+INTEGER             <| "-?(\d+)" |>
+FLOATING_POINT      <| "-?(\d*\.?)(\d+)([eE][-+]?\d+)?" |>
+
+KW_FLOAT            <| "float" |>
+KW_INT              <| "int" |>
+
+KW_VEC2             <| "vec2" |>
+KW_VEC3             <| "vec3" |>
+KW_VEC4             <| "vec4" |>
+KW_MAT2             <| "mat2" |>
+KW_MAT3             <| "mat3" |>
+KW_MAT4             <| "mat4" |>
+KW_SAMP1D           <| "sampler1D" |>
+KW_SAMP2D           <| "sampler2D" |>
+KW_SAMP3D           <| "sampler3D" |>
+
+KW_IVEC2            <| "ivec2" |>
+KW_IVEC3            <| "ivec3" |>
+KW_IVEC4            <| "ivec4" |>
+KW_IMAT2            <| "imat2" |>
+KW_IMAT3            <| "imat3" |>
+KW_IMAT4            <| "imat4" |>
+KW_ISAMP1D          <| "isampler1D" |>
+KW_ISAMP2D          <| "isampler2D" |>
+KW_ISAMP3D          <| "isampler3D" |>
+
+KW_UVEC2            <| "uvec2" |>
+KW_UVEC3            <| "uvec3" |>
+KW_UVEC4            <| "uvec4" |>
+KW_UMAT2            <| "umat2" |>
+KW_UMAT3            <| "umat3" |>
+KW_UMAT4            <| "umat4" |>
+KW_USAMP1D          <| "usampler1D" |>
+KW_USAMP2D          <| "usampler2D" |>
+KW_USAMP3D          <| "usampler3D" |>
+
+KW_VTXSHADER        <| "vertex_shader" |>
+KW_GEOSHADER        <| "geometry_shader" |>
+KW_FRGSHADER        <| "fragment_shader" |>
+KW_COMSHADER        <| "compute_shader" |>
+KW_MSHSHADER        <| "mesh_shader" |>
+
+KW_UNISET           <| "uniform_set" |>
+KW_UNIBLK           <| "uniform_block" |>
+KW_VTXIFACE         <| "vertex_interface" |>
+KW_GEOIFACE         <| "geometry_interface" |>
+KW_FRGIFACE         <| "fragment_interface" |>
+KW_MSHIFACE         <| "mesh_interface" |>
+KW_INPUTS           <| "inputs" |>
+KW_OUTPUTS          <| "outputs" |>
+
+KW_STATEBLOCK       <| "state_block" |>
+KW_PASS             <| "pass" |>
+KW_TECHNIQUE        <| "technique" |>
+KW_BLENDMODE        <| "BlendMode" |>
+KW_CULLTEST         <| "CullTest" |>
+KW_DEPTHTEST        <| "DepthTest" |>
+KW_DEPTHMASK        <| "DepthMask" |>
+KW_FXCONFIG         <| "fxconfig" |>
+KW_LIBBLOCK         <| "libblock" |>
+KW_IMPORT           <| "import" |>
+
+KW_FUNCTION         <| "function" |>
+KW_LAYOUT           <| "layout" |>
+KW_FOR              <| "for" |>
+KW_IF               <| "if" |>
+KW_ELSE             <| "else" |>
+KW_RETURN           <| "return" |>
+KW_WHILE            <| "while" |>
+KW_STRUCT           <| "struct" |>
+KW_DISCARD          <| "discard" |>
+
+IDENTIFIER          <| "[a-zA-Z_][a-zA-Z0-9_]*" |>
+QUOTED_STRING       <| "" |> // rule replaced by pegimpl

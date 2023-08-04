@@ -3,7 +3,10 @@
 from obt import command, path
 
 items = [
-    "ui", "ui2", "compositor"
+    #"ui", 
+    #"ui2", "compositor", 
+    #"basic", 
+    "particle"
 ]
 
 for item in items:

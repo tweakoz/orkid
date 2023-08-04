@@ -1,0 +1,548 @@
+datatype       <| sel{ KW_FLOAT   KW_INT 
+                       KW_VEC2    KW_VEC3    KW_VEC4 
+                       KW_MAT2    KW_MAT3    KW_MAT4 
+                       KW_SAMP1D  KW_SAMP2D  KW_SAMP3D
+                       KW_UVEC2   KW_UVEC3   KW_UVEC4 
+                       KW_UMAT2   KW_UMAT3   KW_UMAT4 
+                       KW_USAMP1D KW_USAMP2D KW_USAMP3D
+                       KW_IVEC2   KW_IVEC3   KW_IVEC4 
+                       KW_IMAT2   KW_IMAT3   KW_IMAT4 
+                       KW_ISAMP1D KW_ISAMP2D KW_ISAMP3D
+               }|>
+
+typed_identifier <|[ sel { datatype IDENTIFIER } IDENTIFIER ]|>
+
+constant       <| sel{INTEGER FLOATING_POINT} |>
+
+member_ref     <| [ DOT IDENTIFIER ] |>
+array_ref      <| [ L_SQUARE expression R_SQUARE ] |>
+
+object_subref  <| sel{ member_ref array_ref } |>
+
+inh_list_item  <| [ COLON IDENTIFIER opt{ [L_PAREN IDENTIFIER R_PAREN] } ] |>
+inh_list       <| zom{ inh_list_item } |>
+
+exec_arg         <| [ expression opt{COMMA} ] |>
+exec_arglist     <| zom{ exec_arg } |>
+decl_arglist     <| zom{ [ typed_identifier opt{COMMA} ] } |>
+
+fn_invok <|[
+    [ IDENTIFIER ] : "fni_name"
+    L_PAREN ArgumentExpressionList R_PAREN
+]|>
+
+RValueConstructor <|[
+    datatype
+    L_PAREN
+    exec_arglist
+    R_PAREN
+]|>
+
+///////////////////////////////////////////////////////////
+
+wronly_operator <| EQUALS |>
+rdwr_operator <| sel{ PLUSEQ MINUSEQ STAREQ SLASHEQ } |>
+
+unary_operator <| sel{
+  PLUS
+  MINUS
+  NOT
+  TILDE
+  STAR
+  BITWISE_AND
+}|>
+
+///////////////////////////////////////////////////////////
+
+expression <|[
+    AssignmentExpression
+    zom{[ COMMA AssignmentExpression ]}
+]|>
+
+datatype_wuser <| sel {
+    datatype
+    IDENTIFIER
+}|>
+
+AssignmentExpression <| sel{
+    [ opt{datatype} UnaryExpression wronly_operator AssignmentExpression ]
+    [ opt{datatype_wuser} UnaryExpression wronly_operator AssignmentExpression ]
+    [ opt{datatype_wuser} UnaryExpression ]
+    [ UnaryExpression rdwr_operator AssignmentExpression ]
+    [ ConditionalExpression ]
+}|>
+
+UnaryExpression <| sel{
+    [ PostfixExpression ]
+    [ unary_operator UnaryExpression ]
+}|>
+
+PostfixExpression <|[
+    PrimaryExpression
+    PostfixExpressionTail
+]|>
+
+PostfixExpressionTail <|[
+    opt{[
+        sel{
+            [ L_SQUARE expression R_SQUARE PostfixExpressionTail ]
+            [ L_PAREN expression R_PAREN PostfixExpressionTail ]
+            [ L_PAREN R_PAREN PostfixExpressionTail ]
+            [ DOT IDENTIFIER PostfixExpressionTail ]
+            [ PLUSPLUS PostfixExpressionTail ]
+            [ MINUSMINUS PostfixExpressionTail ]
+        }
+    ]}
+]|>
+
+PrimaryExpression <| sel{ 
+  [ L_PAREN expression R_PAREN ]
+  [ IDENTIFIER ] 
+  [ constant ]
+  [ RValueConstructor ]
+  // [ QUOTED_STRING ] // no strings in shadlang yet..
+}|>
+
+ArgumentExpressionList <|[
+    AssignmentExpression
+    zom{ [ COMMA AssignmentExpression ] }
+]|>
+
+
+ConditionalExpression <|[
+    LogicalOrExpression
+]|>
+
+LogicalOrExpression <|[
+    LogicalAndExpression
+    zom{[ LOGICAL_OR LogicalAndExpression ]}
+]|>
+
+LogicalAndExpression <|[
+    InclusiveOrExpression
+    zom{[ LOGICAL_AND InclusiveOrExpression ]}
+]|>
+
+InclusiveOrExpression <|[
+    ExclusiveOrExpression
+    zom{[ LOGICAL_OR ExclusiveOrExpression ]}
+]|>
+
+ExclusiveOrExpression <|[
+    AndExpression
+    zom{[ CARET AndExpression ]}
+]|>
+
+AndExpression <|[
+    EqualityExpression
+    //AndExpression_tail
+    zom{[ BITWISE_AND EqualityExpression ]}
+]|>
+
+EqualityExpression <|[
+    RelationalExpression
+    EqualityExpressionTail
+]|>
+
+EqualityExpressionTail <|[
+    opt{
+        sel{
+            [ IS_EQ_TO RelationalExpression EqualityExpressionTail ]
+            [ IS_NEQ_TO RelationalExpression EqualityExpressionTail ]
+        }
+    }
+]|>
+
+RelationalExpression <|[
+    ShiftExpression
+    RelationalExpressionTail
+]|>
+
+RelationalExpressionTail <|[
+    opt{
+        sel{
+            [ L_ANGLE ShiftExpression RelationalExpressionTail ]
+            [ R_ANGLE ShiftExpression RelationalExpressionTail ]
+            [ IS_LEQ_TO ShiftExpression RelationalExpressionTail ]
+            [ IS_GEQ_TO ShiftExpression RelationalExpressionTail ]
+        }
+    }
+]|>
+
+ShiftExpression <|[
+    AdditiveExpression
+    ShiftExpressionTail
+]|>
+
+ShiftExpressionTail <|[
+    opt{
+        sel{
+            [ L_SHIFT AdditiveExpression ShiftExpressionTail ]
+            [ R_SHIFT AdditiveExpression ShiftExpressionTail ]
+        }
+    }
+]|>
+
+AdditiveExpression <|[
+    MultiplicativeExpression
+    AdditiveExpressionTail
+]|>
+
+AdditiveExpressionTail <|[
+    opt{
+        sel{
+            [ PLUS MultiplicativeExpression AdditiveExpressionTail ]
+            [ MINUS MultiplicativeExpression AdditiveExpressionTail ]
+        }
+    }
+]|>
+
+MultiplicativeExpression <|[
+    UnaryExpression
+    MultiplicativeExpressionTail
+]|>
+
+MultiplicativeExpressionTail <|[
+    opt{
+        sel{
+            [ STAR UnaryExpression MultiplicativeExpressionTail ]
+            [ SLASH UnaryExpression MultiplicativeExpressionTail ]
+            [ PERCENT UnaryExpression MultiplicativeExpressionTail ]
+        }
+    }
+]|>
+
+///////////////////////////////////////////////////////////
+
+IfStatement <|[
+    KW_IF
+    L_PAREN
+    expression
+    R_PAREN
+    statement
+    opt{[
+        KW_ELSE
+        statement
+    ]}
+]|>
+
+WhileStatement <|[
+    KW_WHILE
+    L_PAREN
+    expression
+    R_PAREN
+    statement
+]|>
+
+ForStatement <|[
+    KW_FOR
+    L_PAREN
+    opt{ExpressionStatement}
+    opt{ExpressionStatement}
+    opt{expression}
+    R_PAREN
+    statement
+]|>
+
+ReturnStatement <|[
+    KW_RETURN
+    opt{[
+        expression
+    ]}
+    SEMICOLON
+]|>
+
+CompoundStatement <|[
+    L_CURLY
+    statement_list
+    R_CURLY
+]|>
+
+ExpressionStatement <| sel{ 
+    [ expression SEMICOLON ]
+    [ SEMICOLON ]
+} |>
+
+DiscardStatement <|[
+    KW_DISCARD SEMICOLON
+]|>
+
+statement <| sel{ 
+    [ DiscardStatement ]
+    [ ExpressionStatement ]
+    [ CompoundStatement ]
+    [ IfStatement]
+    [ WhileStatement]
+    [ ForStatement ]
+    [ ReturnStatement ]
+} |>
+
+statement_list <| zom{ statement } |>
+
+///////////////////////////////////////////////////////////
+
+fn_def <|[
+    KW_FUNCTION
+    [ IDENTIFIER ] : "fn_name"
+    L_PAREN
+    decl_arglist : "fn_args"
+    R_PAREN
+    L_CURLY
+    statement_list : "fn_statements"
+    R_CURLY
+]|>
+
+FunctionDef2 <|[
+    sel { datatype IDENTIFIER } : "fn2_return_type"
+    [ IDENTIFIER ] : "fn2_name"
+    L_PAREN
+    decl_arglist : "fn2_args"
+    R_PAREN
+    L_CURLY
+    statement_list : "fn2_statements"
+    R_CURLY
+]|>
+
+LibraryBlock <|[
+    KW_LIBBLOCK
+    [ IDENTIFIER ] : "lib_name"
+    zom{inh_list_item} : "lib_dependencies"
+    L_CURLY
+    zom{ 
+        sel{
+            StructDecl
+            FunctionDef2
+        }
+    }
+    R_CURLY
+]|>
+
+vtx_shader <|[
+    KW_VTXSHADER
+    [ IDENTIFIER ] : "vtx_name"
+    zom{inh_list_item} : "vtx_dependencies"
+    CompoundStatement : "vtx_statements"
+]|>
+
+geo_shader <|[
+    KW_GEOSHADER
+    [ IDENTIFIER ] : "geo_name"
+    zom{inh_list_item} : "geo_dependencies"
+    CompoundStatement : "geo_statements"
+]|>
+
+frg_shader <|[
+    KW_FRGSHADER
+    [ IDENTIFIER ] : "frg_name"
+    zom{ inh_list_item } : "frg_dependencies"
+    CompoundStatement : "frg_statements"
+]|>
+
+com_shader <|[
+    KW_COMSHADER
+    [ IDENTIFIER ] : "com_name"
+    zom{ inh_list_item } : "com_dependencies"
+    CompoundStatement : "com_statements"
+]|>
+
+data_decl <| sel {
+  [typed_identifier] 
+  [typed_identifier L_SQUARE INTEGER R_SQUARE] 
+}|>
+
+data_decls <| zom{ [ data_decl SEMICOLON ] } |>
+
+UniformSet <|[
+  KW_UNISET
+  [ IDENTIFIER ] : "uniset_name"
+  L_CURLY
+  data_decls : "uniset_decls"
+  R_CURLY
+]|>
+
+UniformBlk <|[
+  KW_UNIBLK
+  [ IDENTIFIER ] : "uniblk_name"
+  L_CURLY
+  data_decls : "uniblk_decls"
+  R_CURLY
+]|>
+
+InterfaceLayoutItem <| sel{
+    [IDENTIFIER EQUALS INTEGER]
+    [IDENTIFIER]
+}|>
+
+InterfaceLayout  <|[
+   KW_LAYOUT 
+   L_PAREN 
+   [ 
+      InterfaceLayoutItem 
+      zom{ [COMMA InterfaceLayoutItem] } 
+   ]
+   R_PAREN
+]|>
+
+iface_input <| sel{
+    [ typed_identifier COLON IDENTIFIER ]
+    [ typed_identifier L_SQUARE R_SQUARE ]
+    [ opt{ InterfaceLayout } typed_identifier ]
+    [ InterfaceLayout ]
+}|>
+
+iface_inputs <|[
+  KW_INPUTS
+  L_CURLY
+  zom{ [ iface_input SEMICOLON ] } : "inputlist"
+  R_CURLY
+]|>
+
+iface_output <| sel {
+    [ opt{InterfaceLayout} typed_identifier SEMICOLON ]
+    [ InterfaceLayout SEMICOLON ]
+}|>
+
+iface_outputs <|[
+  KW_OUTPUTS
+  L_CURLY
+  zom{ 
+      iface_output
+  }
+  R_CURLY
+]|>
+
+StructDecl <|[
+    KW_STRUCT
+    [ IDENTIFIER ] : "struct_name"
+    L_CURLY
+    [ data_decls ] : "struct_decls"
+    R_CURLY
+    SEMICOLON
+]|>
+
+VertexInterface <|[
+  KW_VTXIFACE
+  [ IDENTIFIER ] : "vif_name"
+  zom{ inh_list_item } : "vif_dependencies"
+  L_CURLY
+  opt{iface_inputs}
+  opt{iface_outputs}
+  R_CURLY
+]|>
+
+GeometryInterface <|[
+  KW_GEOIFACE
+  [ IDENTIFIER ] : "gif_name"
+  zom{ inh_list_item } : "gif_dependencies"
+  L_CURLY
+  opt{iface_inputs}
+  opt{iface_outputs}
+  R_CURLY
+]|>
+
+FragmentInterface <|[
+  KW_FRGIFACE
+  [ IDENTIFIER ] : "fif_name"
+  zom{ inh_list_item } : "fif_dependencies"
+  L_CURLY
+  opt{iface_inputs}
+  opt{iface_outputs}
+  R_CURLY
+]|>
+
+sb_key <| sel{ KW_BLENDMODE KW_CULLTEST KW_DEPTHTEST KW_DEPTHMASK } |>
+
+StateBlockItem <|[
+    [ sb_key EQUALS IDENTIFIER SEMICOLON ] : "stateblock_item"
+]|>
+
+StateBlock <|[
+  KW_STATEBLOCK
+  [ IDENTIFIER ] : "sb_name"
+  zom{ inh_list_item } : "sb_dependencies"
+  L_CURLY
+  zom{ StateBlockItem }
+  R_CURLY
+]|>
+
+pass_binding_key <| sel{  KW_VTXSHADER KW_FRGSHADER KW_STATEBLOCK } |>
+
+pass_binding <|[
+  pass_binding_key EQUALS IDENTIFIER SEMICOLON
+]|>
+
+pass <|[
+  KW_PASS
+  [ IDENTIFIER ] : "pass_name"
+  L_CURLY
+  zom{ 
+      pass_binding : "pass_item"
+  }
+  R_CURLY
+]|>
+
+
+fxconfig_ref <|[
+  KW_FXCONFIG
+  EQUALS
+  [ IDENTIFIER ] : "fxconfigref_name"
+  SEMICOLON
+]|>
+
+FxConfigKvPair <|[
+  [ IDENTIFIER ] : "fxconfigkvpair_key"
+  EQUALS
+  [ QUOTED_STRING ] : "fxconfigkvpair_val"
+  SEMICOLON
+]|>
+
+ImportDirective <|[
+  KW_IMPORT
+  [ QUOTED_STRING ] : "import_id"
+  SEMICOLON
+]|>
+
+FxConfigDecl <|[
+  KW_FXCONFIG
+  [ IDENTIFIER ] : "fxconfigdecl_name"
+  L_CURLY
+  zom{ 
+    FxConfigKvPair
+  }
+  zom{ 
+    ImportDirective
+  }
+  R_CURLY
+]|>
+
+Technique <|[
+  KW_TECHNIQUE
+  [ IDENTIFIER ] : "technique_name"
+  L_CURLY
+  opt{ fxconfig_ref }
+  oom{ pass }
+  R_CURLY
+]|>
+
+Translatable <| 
+  sel{ 
+    fn_def 
+    vtx_shader 
+    geo_shader 
+    frg_shader 
+    com_shader 
+    UniformSet 
+    UniformBlk 
+    VertexInterface 
+    GeometryInterface
+    FragmentInterface 
+    StateBlock
+    Technique
+    FxConfigDecl 
+    LibraryBlock
+  }
+|>
+
+TranslationUnit <|
+  zom{ Translatable } 
+|>
