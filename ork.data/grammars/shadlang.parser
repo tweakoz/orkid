@@ -40,10 +40,9 @@ RValueConstructor <|[
 
 ///////////////////////////////////////////////////////////
 
-wronly_operator <| EQUALS |>
-rdwr_operator <| sel{ PLUSEQ MINUSEQ STAREQ SLASHEQ } |>
-
-unary_operator <| sel{
+WrOnlyOperator <| EQUALS |>
+RdWrOperator   <| sel{ PLUSEQ MINUSEQ STAREQ SLASHEQ } |>
+UnaryOperator  <| sel{
   PLUS
   MINUS
   NOT
@@ -54,78 +53,80 @@ unary_operator <| sel{
 
 ///////////////////////////////////////////////////////////
 
-expression <|[
-    AssignmentExpression
-    zom{[ COMMA AssignmentExpression ]}
-]|>
-
 datatype_wuser <| sel {
     datatype
     IDENTIFIER
 }|>
 
-AssignmentExpression <| sel{
-    [ opt{datatype} UnaryExpression wronly_operator AssignmentExpression ]
-    [ opt{datatype_wuser} UnaryExpression wronly_operator AssignmentExpression ]
-    [ opt{datatype_wuser} UnaryExpression ]
-    [ UnaryExpression rdwr_operator AssignmentExpression ]
-    [ ConditionalExpression ]
-}|>
-
 UnaryExpression <| sel{
     [ PostfixExpression ]
-    [ unary_operator UnaryExpression ]
+    [ UnaryOperator CastExpression ]
+}|>
+
+CastExpression <| sel {
+    [L_PAREN datatype R_PAREN CastExpression] 
+    UnaryExpression
 }|>
 
 PostfixExpression <|[
     PrimaryExpression
-    PostfixExpressionTail
+    zom { PostfixExpressionTail }
 ]|>
 
-PostfixExpressionTail <|[
-    opt{[
-        sel{
-            [ L_SQUARE expression R_SQUARE PostfixExpressionTail ]
-            [ L_PAREN expression R_PAREN PostfixExpressionTail ]
-            [ L_PAREN R_PAREN PostfixExpressionTail ]
-            [ DOT IDENTIFIER PostfixExpressionTail ]
-            [ PLUSPLUS PostfixExpressionTail ]
-            [ MINUSMINUS PostfixExpressionTail ]
-        }
-    ]}
-]|>
+PostfixExpressionTail <| sel{
+    [ L_SQUARE expression R_SQUARE ]
+    [ L_PAREN expression R_PAREN ]
+    [ L_PAREN R_PAREN ]
+    [ DOT IDENTIFIER ]
+    [ PLUSPLUS ]
+    [ MINUSMINUS ] 
+}|>
 
 PrimaryExpression <| sel{ 
-  [ L_PAREN expression R_PAREN ]
-  [ IDENTIFIER ] 
   [ constant ]
   [ RValueConstructor ]
+  [ L_PAREN expression R_PAREN ]
+  [ IDENTIFIER ] 
   // [ QUOTED_STRING ] // no strings in shadlang yet..
 }|>
 
-ArgumentExpressionList <|[
-    AssignmentExpression
-    zom{ [ COMMA AssignmentExpression ] }
+MultiplicativeOperation <| sel{ STAR SLASH PERCENT } |> 
+
+MultiplicativeExpression <|[
+    CastExpression
+    zom{[ MultiplicativeOperation CastExpression ]}
 ]|>
 
+AdditiveOperation <| sel{ PLUS MINUS } |> 
 
-ConditionalExpression <|[
-    LogicalOrExpression
+AdditiveExpression <|[
+    MultiplicativeExpression
+    zom{ [ AdditiveOperation MultiplicativeExpression ] }
 ]|>
 
-LogicalOrExpression <|[
-    LogicalAndExpression
-    zom{[ LOGICAL_OR LogicalAndExpression ]}
+ShiftOperation <| sel{ L_SHIFT R_SHIFT } |>
+
+ShiftExpression <|[
+    AdditiveExpression
+    zom{[ ShiftOperation AdditiveExpression ]}
 ]|>
 
-LogicalAndExpression <|[
-    InclusiveOrExpression
-    zom{[ LOGICAL_AND InclusiveOrExpression ]}
+RelationalOperation <| sel{ L_ANGLE R_ANGLE IS_LEQ_TO IS_GEQ_TO } |>
+
+RelationalExpression <|[
+    ShiftExpression
+    zom{[ ShiftOperation ShiftExpression ]}
 ]|>
 
-InclusiveOrExpression <|[
-    ExclusiveOrExpression
-    zom{[ LOGICAL_OR ExclusiveOrExpression ]}
+EqualityOperation <| sel{ IS_EQ_TO IS_NEQ_TO } |>
+EqualityExpression <|[
+    RelationalExpression 
+    zom{ [ EqualityOperation RelationalExpression ] }
+]|>
+
+AndExpression <|[
+    EqualityExpression
+    zom{[ BITWISE_AND EqualityExpression ]}
 ]|>
 
 ExclusiveOrExpression <|[
@@ -133,83 +134,112 @@ ExclusiveOrExpression <|[
     zom{[ CARET AndExpression ]}
 ]|>
 
-AndExpression <|[
-    EqualityExpression
-    //AndExpression_tail
-    zom{[ BITWISE_AND EqualityExpression ]}
+InclusiveOrExpression <|[
+    ExclusiveOrExpression
+    zom{[ BITWISE_OR ExclusiveOrExpression ]}
 ]|>
 
-EqualityExpression <|[
-    RelationalExpression
-    EqualityExpressionTail
+LogicalAndExpression <|[
+    InclusiveOrExpression
+    zom{[ LOGICAL_AND InclusiveOrExpression ]}
 ]|>
 
-EqualityExpressionTail <|[
-    opt{
-        sel{
-            [ IS_EQ_TO RelationalExpression EqualityExpressionTail ]
-            [ IS_NEQ_TO RelationalExpression EqualityExpressionTail ]
-        }
+LogicalOrExpression <|[
+    LogicalAndExpression
+    zom{[ LOGICAL_OR LogicalAndExpression ]}
+]|>
+
+ConditionalExpression <|[
+    LogicalOrExpression
+]|>
+
+AssignmentOperator <| sel{ 
+    EQUALS 
+    PLUSEQ 
+    MINUSEQ 
+    STAREQ 
+    SLASHEQ 
+}|>
+
+AssignmentExpression <| sel{
+    [ UnaryExpression AssignmentOperator AssignmentExpression ]
+    [ ConditionalExpression ]
+}|> 
+
+ArgumentExpressionList <|[
+    AssignmentExpression
+    zom{ [ COMMA AssignmentExpression ] }
+]|>
+
+expression <|[
+    AssignmentExpression
+    zom{[ COMMA AssignmentExpression ]}
+]|>
+
+ConstantExpression <|[
+    ConditionalExpression
+]|>
+
+///////////////////////////////////////////////////////////
+
+IdentifierList <|[
+    IDENTIFIER
+    zom{[ COMMA IDENTIFIER ]}
+]|>
+
+ParameterDeclaration <|[
+    DeclarationSpecifiers
+    opt{ Declarator }
+]|>
+
+ParameterList <|[
+    ParameterDeclaration
+    zom{[ COMMA ParameterDeclaration ]}
+]|>
+
+ParameterTypeList <|[
+    ParameterList
+    opt{[ COMMA ELLIPSIS ]}
+]|>
+
+DirectDeclarator <|[
+   sel{ 
+       [ IDENTIFIER ]
+       [ L_PAREN Declarator R_PAREN ]
+   }
+   zom{
+    sel{
+        [ L_SQUARE AssignmentExpression R_SQUARE ]
+        [ L_SQUARE R_SQUARE ]
+        [ L_PAREN ParameterTypeList R_PAREN ]
+        [ L_PAREN IdentifierList R_PAREN ]
+    }
+   }
+]|>
+
+Declarator <|[ DirectDeclarator ]|>
+
+DeclarationSpecifiers <|[
+    sel{
+        [ datatype ]
+        [ datatype_wuser ]
     }
 ]|>
+      
+Declaration <|[
+  DeclarationSpecifiers 
+  opt { InitDeclaratorList }
+  SEMICOLON
+]|> 
 
-RelationalExpression <|[
-    ShiftExpression
-    RelationalExpressionTail
+InitDeclaratorList <|[
+    InitDeclarator
+    zom{[ COMMA InitDeclarator ]}
 ]|>
 
-RelationalExpressionTail <|[
-    opt{
-        sel{
-            [ L_ANGLE ShiftExpression RelationalExpressionTail ]
-            [ R_ANGLE ShiftExpression RelationalExpressionTail ]
-            [ IS_LEQ_TO ShiftExpression RelationalExpressionTail ]
-            [ IS_GEQ_TO ShiftExpression RelationalExpressionTail ]
-        }
-    }
-]|>
-
-ShiftExpression <|[
-    AdditiveExpression
-    ShiftExpressionTail
-]|>
-
-ShiftExpressionTail <|[
-    opt{
-        sel{
-            [ L_SHIFT AdditiveExpression ShiftExpressionTail ]
-            [ R_SHIFT AdditiveExpression ShiftExpressionTail ]
-        }
-    }
-]|>
-
-AdditiveExpression <|[
-    MultiplicativeExpression
-    AdditiveExpressionTail
-]|>
-
-AdditiveExpressionTail <|[
-    opt{
-        sel{
-            [ PLUS MultiplicativeExpression AdditiveExpressionTail ]
-            [ MINUS MultiplicativeExpression AdditiveExpressionTail ]
-        }
-    }
-]|>
-
-MultiplicativeExpression <|[
-    UnaryExpression
-    MultiplicativeExpressionTail
-]|>
-
-MultiplicativeExpressionTail <|[
-    opt{
-        sel{
-            [ STAR UnaryExpression MultiplicativeExpressionTail ]
-            [ SLASH UnaryExpression MultiplicativeExpressionTail ]
-            [ PERCENT UnaryExpression MultiplicativeExpressionTail ]
-        }
-    }
+InitDeclarator <|[
+    Declarator
+    opt{[ EQU Initializer ]}
 ]|>
 
 ///////////////////////////////////////////////////////////
@@ -252,9 +282,14 @@ ReturnStatement <|[
     SEMICOLON
 ]|>
 
+CompoundStatementItem <| sel{
+    statement
+    Declaration
+}|>
+
 CompoundStatement <|[
     L_CURLY
-    statement_list
+    zom { CompoundStatementItem }
     R_CURLY
 ]|>
 
