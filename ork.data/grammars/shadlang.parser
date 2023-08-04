@@ -320,8 +320,6 @@ statement <| sel{
     [ ReturnStatement ]
 } |>
 
-StatementList <| zom{ statement } |>
-
 ///////////////////////////////////////////////////////////
 
 FunctionDef1 <|[
@@ -330,9 +328,7 @@ FunctionDef1 <|[
     L_PAREN
     decl_arglist : "fn_args"
     R_PAREN
-    L_CURLY
-    StatementList : "fn_statements"
-    R_CURLY
+    CompoundStatement : "fn_statements"
 ]|>
 
 FunctionDef2 <|[
@@ -341,9 +337,7 @@ FunctionDef2 <|[
     L_PAREN
     decl_arglist : "fn2_args"
     R_PAREN
-    L_CURLY
-    StatementList : "fn2_statements"
-    R_CURLY
+    CompoundStatement : "fn2_statements"
 ]|>
 
 LibraryBlock <|[
@@ -507,7 +501,7 @@ pass_binding <|[
   pass_binding_key EQUALS IDENTIFIER SEMICOLON
 ]|>
 
-pass <|[
+Pass <|[
   KW_PASS
   [ IDENTIFIER ] : "pass_name"
   L_CURLY
@@ -518,7 +512,7 @@ pass <|[
 ]|>
 
 
-fxconfig_ref <|[
+FxConfigRef <|[
   KW_FXCONFIG
   EQUALS
   [ IDENTIFIER ] : "fxconfigref_name"
@@ -555,14 +549,15 @@ Technique <|[
   KW_TECHNIQUE
   [ IDENTIFIER ] : "technique_name"
   L_CURLY
-  opt{ fxconfig_ref }
-  oom{ pass }
+  opt{ FxConfigRef }
+  oom{ Pass }
   R_CURLY
 ]|>
 
 Translatable <| 
   sel{ 
     FunctionDef1 
+    FunctionDef2
     VertexShader 
     GeometryShader 
     FragmentShader 

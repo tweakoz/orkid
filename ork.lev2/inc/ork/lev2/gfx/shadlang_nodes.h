@@ -55,7 +55,6 @@ DECLARE_STD_AST_CLASS(AstNode,Translatable);
 DECLARE_STD_AST_CLASS(AstNode,UniformSet);
 DECLARE_STD_AST_CLASS(AstNode,UniformBlk);
 DECLARE_STD_AST_CLASS(AstNode,DeclArgumentList);
-DECLARE_STD_AST_CLASS(AstNode,StatementList);
 DECLARE_STD_AST_CLASS(AstNode,InterfaceLayout);
 DECLARE_STD_AST_CLASS(AstNode,InterfaceInput);
 DECLARE_STD_AST_CLASS(AstNode,InterfaceOutput);
@@ -84,6 +83,7 @@ DECLARE_STD_AST_CLASS(LanguageElement,FunctionInvokationArgument);
 DECLARE_STD_AST_CLASS(LanguageElement,FunctionInvokationArguments);
 DECLARE_STD_AST_CLASS(LanguageElement,FunctionInvokation);
 DECLARE_STD_AST_CLASS(LanguageElement,DataDeclarations);
+DECLARE_STD_AST_CLASS(LanguageElement,StructDecl);
 //
 DECLARE_STD_AST_CLASS(Expression,AdditiveExpression);
 DECLARE_STD_AST_CLASS(Expression,MultiplicativeExpression);
@@ -122,6 +122,9 @@ DECLARE_STD_AST_CLASS(Translatable,StateBlock);
 DECLARE_STD_AST_CLASS(Translatable,Technique);
 DECLARE_STD_AST_CLASS(Translatable,FunctionDef1);
 DECLARE_STD_AST_CLASS(Translatable,FunctionDef2);
+//
+DECLARE_STD_AST_CLASS(AstNode,Pass);
+DECLARE_STD_AST_CLASS(AstNode,FxConfigRef);
 //
 DECLARE_STD_AST_CLASS(Shader,VertexShader);
 DECLARE_STD_AST_CLASS(Shader,FragmentShader);

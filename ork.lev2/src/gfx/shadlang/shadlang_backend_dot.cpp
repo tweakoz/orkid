@@ -40,12 +40,11 @@ struct DotBackend {
     addThemeItem<DataDeclarations>("#5f3f5f", "white");
     addThemeItem<DataDeclaration>("#7f3f7f", "white", 1);
     //
-    addThemeItem<StatementList>("#5f5faf", "white", 1);
+    addThemeItem<CompoundStatement>("#5f5faf", "white", 1);
     addThemeItem<AssignmentStatementVarRef>("#bfbfef", "black", 1);
     addThemeItem<IfStatement>("#cfcfff", "black", 1);
     addThemeItem<WhileStatement>("#cfcfff", "black", 1);
     addThemeItem<ReturnStatement>("#cfcfff", "black", 1);
-    addThemeItem<CompoundStatement>("#cfcfff", "black", 1);
     addThemeItem<ExpressionStatement>("#cfcfff", "black", 1);
     addThemeItem<MemberRef>("#1fcfcf", "black", 1);
     addThemeItem<ArrayRef>("#1fdfdf", "black", 1);

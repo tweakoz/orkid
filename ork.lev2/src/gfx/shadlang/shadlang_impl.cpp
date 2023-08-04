@@ -245,7 +245,6 @@ struct ShadLangParser : public Parser {
     DECLARE_STD_AST_NODE(CompoundStatement);
     DECLARE_STD_AST_NODE(ExpressionStatement);
     DECLARE_STD_AST_NODE(DiscardStatement);
-    DECLARE_STD_AST_NODE(StatementList);
     ///////////////////////////////////////////////////////////
     DECLARE_STD_AST_NODE(InterfaceLayout);
     DECLARE_STD_AST_NODE(InterfaceOutputs);
@@ -257,6 +256,8 @@ struct ShadLangParser : public Parser {
     DECLARE_STD_AST_NODE(ImportDirective);
     DECLARE_STD_AST_NODE(InheritList);
     DECLARE_STD_AST_NODE(InheritListItem);
+    DECLARE_STD_AST_NODE(Pass);
+    DECLARE_STD_AST_NODE(FxConfigRef);
     ///////////////////////////////////////////////////////////
     DECLARE_STD_AST_NODE(VertexInterface);
     DECLARE_STD_AST_NODE(FragmentInterface);
@@ -270,6 +271,10 @@ struct ShadLangParser : public Parser {
     DECLARE_STD_AST_NODE(GeometryShader);
     DECLARE_STD_AST_NODE(FragmentShader);
     DECLARE_STD_AST_NODE(ComputeShader);
+    DECLARE_STD_AST_NODE(FunctionDef1);
+    DECLARE_STD_AST_NODE(FunctionDef2);
+    DECLARE_STD_AST_NODE(StructDecl);
+    DECLARE_STD_AST_NODE(Technique);
     ///////////////////////////////////////////////////////////
     onPost("FLOATING_POINT", [=](match_ptr_t match) { //
       auto ast_node = ast_create<SHAST::FloatLiteral>(match);
