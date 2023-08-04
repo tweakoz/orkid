@@ -65,7 +65,12 @@ onPre(#x, [=](match_ptr_t match) { \
   auto ast_node = ast_create<SHAST::x>(match); \
 });
 #define DECLARE_OBJNAME_AST_NODE(x) \
-onPre(x, [=](match_ptr_t match) { objectNameAst(match); });
+onPre(x, [=](match_ptr_t match) { \
+  auto objname     = ast_create<SHAST::ObjectName>(match);\
+  auto fn_name_seq = match->asShared<Sequence>();\
+  auto fn_name     = fn_name_seq->_items[0]->followImplAsShared<ClassMatch>();\
+  objname->_name   = fn_name->_token->text;\
+});
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -95,17 +100,8 @@ struct ShadLangParser : public Parser {
     ///////////////////////////////////////////////////////////
     // parser should be compiled and linked at this point
     ///////////////////////////////////////////////////////////
-    auto objectNameAst = [&](match_ptr_t match) {
-      auto objname     = ast_create<SHAST::ObjectName>(match);
-      auto fn_name_seq = match->asShared<Sequence>();
-      auto fn_name     = fn_name_seq->_items[0]->followImplAsShared<ClassMatch>();
-      objname->_name   = fn_name->_token->text;
-    };
-    ///////////////////////////////////////////////////////////
     DECLARE_OBJNAME_AST_NODE("fn_name");
     DECLARE_OBJNAME_AST_NODE("fn2_name");
-
-    DECLARE_OBJNAME_AST_NODE("fni_name");
     DECLARE_OBJNAME_AST_NODE("vtx_name");
     DECLARE_OBJNAME_AST_NODE("frg_name");
     DECLARE_OBJNAME_AST_NODE("com_name");
@@ -123,10 +119,12 @@ struct ShadLangParser : public Parser {
     DECLARE_OBJNAME_AST_NODE("fxconfigref_name");
     DECLARE_OBJNAME_AST_NODE("technique_name");
     ///////////////////////////////////////////////////////////
+    DECLARE_STD_AST_NODE(DataType);
     DECLARE_STD_AST_NODE(MemberRef);
     DECLARE_STD_AST_NODE(ArrayRef);
     DECLARE_STD_AST_NODE(RValueConstructor);
     DECLARE_STD_AST_NODE(TypedIdentifier);
+    DECLARE_STD_AST_NODE(DataDeclaration);
     ///////////////////////////////////////////////////////////
     DECLARE_STD_AST_NODE(PrimaryExpression);
     DECLARE_STD_AST_NODE(MultiplicativeExpression);
@@ -163,6 +161,8 @@ struct ShadLangParser : public Parser {
     DECLARE_STD_AST_NODE(DataDeclarations);
     DECLARE_STD_AST_NODE(DataDeclarations);
     DECLARE_STD_AST_NODE(ImportDirective);
+    DECLARE_STD_AST_NODE(InheritList);
+    DECLARE_STD_AST_NODE(InheritListItem);
     ///////////////////////////////////////////////////////////
     DECLARE_STD_AST_NODE(VertexInterface);
     DECLARE_STD_AST_NODE(FragmentInterface);
@@ -180,20 +180,14 @@ struct ShadLangParser : public Parser {
     onPost("FLOATING_POINT", [=](match_ptr_t match) { //
       auto ast_node     = ast_create<SHAST::FloatLiteral>(match);
       auto impl         = match->asShared<ClassMatch>();
-      ast_node->_value  = std::stof(impl->_token->text);
-      ast_node->_strval = impl->_token->text;
+      //ast_node->_value  = std::stof(impl->_token->text);
+      //ast_node->_strval = impl->_token->text;
     });
     ///////////////////////////////////////////////////////////
     onPost("INTEGER", [=](match_ptr_t match) { //
       auto integer    = ast_create<SHAST::IntegerLiteral>(match);
-      auto impl       = match->asShared<ClassMatch>();
-      integer->_value = std::stoi(impl->_token->text);
-    });
-    ///////////////////////////////////////////////////////////
-    onPost("datatype", [=](match_ptr_t match) { //
-      auto selected     = match->asShared<OneOf>()->_selected;
-      auto ast_dt       = ast_create<SHAST::DataType>(match);
-      ast_dt->_datatype = selected->asShared<ClassMatch>()->_token->text;
+      //auto impl       = match->asShared<ClassMatch>();
+      //integer->_value = std::stoi(impl->_token->text);
     });
     ///////////////////////////////////////////////////////////
     onPost("exec_arg", [=](match_ptr_t match) { auto fn_arg = ast_create<SHAST::FunctionInvokationArgument>(match); });
@@ -300,27 +294,6 @@ struct ShadLangParser : public Parser {
       */
     });
     ///////////////////////////////////////////////////////////
-    onPost("data_decl", [=](match_ptr_t match) {
-      auto data_decl = ast_create<SHAST::DataDeclaration>(match);
-      /*auto seq       = match->asShared<Sequence>();
-      seq->dump("POST:data_decl");
-      auto dtsel       = seq->_items[0]->asShared<Proxy>()->_selected;
-      auto dt          = ast_get<SHAST::DataType>(dtsel);
-      auto kwid        = seq->_items[1]->followImplAsShared<ClassMatch>();
-      data_decl->_name = kwid->_token->text;
-      */
-    });
-    onLink("data_decl", [=](match_ptr_t match) {
-      auto data_decl         = ast_get<SHAST::DataDeclaration>(match);
-      /*
-      auto tid               = data_decl->childAs<SHAST::TypedIdentifier>(0);
-      data_decl->_datatype   = tid->_datatype;
-      data_decl->_identifier = tid->_identifier;
-      tid->_showDOT          = false;
-      data_decl->_descend    = false;
-      */
-    });
-    ///////////////////////////////////////////////////////////
     if(0)onPost("output_decl", [=](match_ptr_t match) {
       auto ast_output_decl         = ast_create<SHAST::InterfaceOutput>(match);
       /*
@@ -331,22 +304,6 @@ struct ShadLangParser : public Parser {
       ast_output_decl->_identifier = tid->_identifier;
       ast_output_decl->_datatype   = tid->_datatype;
       */
-    });
-    ///////////////////////////////////////////////////////////
-    onPost("inh_list_item", [=](match_ptr_t match) {
-      auto seq     = match->asShared<Sequence>();
-      /*auto fn_name = seq->_items[1]->followImplAsShared<ClassMatch>();
-      if (fn_name->_token->text == "extension") {
-        auto opt                       = seq->_items[2]->asShared<Optional>();
-        auto opt_seq                   = opt->_subitem->asShared<Sequence>();
-        auto ext_name                  = opt_seq->_items[1]->followImplAsShared<ClassMatch>()->_token->text;
-        auto inh_list_item             = ast_create<SHAST::Extension>(match);
-        inh_list_item->_extension_name = ext_name;
-        inh_list_item->_name           = fn_name->_token->text;
-      } else {
-        auto inh_list_item   = ast_create<SHAST::Dependency>(match);
-        inh_list_item->_name = fn_name->_token->text;
-      }*/
     });
     ///////////////////////////////////////////////////////////
     onPost("TranslationUnit", [=](match_ptr_t match) {
