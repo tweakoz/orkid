@@ -44,6 +44,28 @@ SINGLE_LINE_COMMENT <| "\/\/.*[\n\r]" |>
 WHITESPACE          <| "\s+" |>
 NEWLINE             <| "[\n\r]+" |>
 
+STAREQ              <| "\*=" |>
+PLUSEQ              <| "\+=" |>
+MINUSEQ             <| "\-=" |>
+SLASHEQ             <| "\/=" |>
+
+PLUSPLUS            <| "\+\+" |>
+MINUSMINUS          <| "\-\-" |>
+
+IS_EQ_TO            <| "==" |>
+IS_NEQ_TO           <| "!=" |>
+IS_GEQ_TO           <| ">=" |>
+IS_LEQ_TO           <| "<=" |>
+
+L_SHIFT             <| "\<\<" |>
+R_SHIFT             <| "\>\>" |>
+
+LOGICAL_OR          <| "\|\|" |>
+LOGICAL_AND         <| "&&" |>
+
+BITWISE_OR          <| "\|" |>
+BITWISE_AND         <| "&" |>
+
 EQUALS              <| "=" |>
 COMMA               <| "," |>
 COLON               <| ":" |>
@@ -63,20 +85,8 @@ MINUS               <| "\-" |>
 SLASH               <| "\/" |>
 NOT                 <| "!" |>
 TILDE               <| "~" |>
-AMPERSAND           <| "&" |>
-
-STAREQ              <| "\*=" |>
-PLUSEQ              <| "\+=" |>
-MINUSEQ             <| "\-=" |>
-SLASHEQ             <| "\/=" |>
-
-IS_EQ_TO            <| "==" |>
-IS_NEQ_TO           <| "!=" |>
-IS_GEQ_TO           <| ">=" |>
-IS_LEQ_TO           <| "<=" |>
-
-LOGICAL_OR          <| "\|\|" |>
-LOGICAL_AND         <| "&&" |>
+PERCENT             <| "%" |>
+CARET               <| "\^" |>
 
 INTEGER             <| "-?(\d+)" |>
 FLOATING_POINT      <| "-?(\d*\.?)(\d+)([eE][-+]?\d+)?" |>
@@ -166,7 +176,7 @@ datatype       <| sel{ KW_FLOAT   KW_INT
 
 typed_identifier <|[ datatype IDENTIFIER ]|>
 
-number         <| sel{INTEGER FLOATING_POINT} |>
+constant       <| sel{INTEGER FLOATING_POINT} |>
 
 member_ref     <| [ DOT IDENTIFIER ] |>
 array_ref      <| [ L_SQUARE expression R_SQUARE ] |>
@@ -183,50 +193,21 @@ decl_arglist     <| zom{ [ typed_identifier opt{COMMA} ] } |>
 fn_invok <|[
     [ IDENTIFIER ] : "fni_name"
     L_PAREN
-    exec_arglist
+    L_PAREN argument_expression_list R_PAREN
     R_PAREN
 ]|>
 
 rvalue_constructor <|[
     datatype
     L_PAREN
-    exec_arglist
+    argument_expression_list
     R_PAREN
 ]|>
 
-compound_statement <|[
-    L_CURLY
-    statement_list
-    R_CURLY
-]|>
+///////////////////////////////////////////////////////////
 
-statement_list <| zom{ statement } |>
-
-statement <| sel{ 
-    [ expression_statement ]
-    [ compound_statement ]
-    [ if_statement]
-    [ while_statement]
-    [ for_statement ]
-    [ return_statement ]
-} |>
-
-expression_statement <| sel{ 
-    [ expression SEMICOLON ]
-    [ SEMICOLON ]
-} |>
-
-expression <|[
-    assignment_expression
-    zom{[ COMMA assignment_expression ]}
-]|>
-
-assignment_expression <| sel{
-    [ unary_expression assignment_operator assignment_expression ]
-    [ conditional_expression ]
-}|>
-
-assignment_operator <| sel{ EQUALS PLUSEQ MINUSEQ STAREQ SLASHEQ } |>
+wronly_operator <| EQUALS |>
+rdwr_operator <| sel{ PLUSEQ MINUSEQ STAREQ SLASHEQ } |>
 
 unary_operator <| sel{
   PLUS
@@ -234,7 +215,20 @@ unary_operator <| sel{
   NOT
   TILDE
   STAR
-  AMPERSAND
+  BITWISE_AND
+}|>
+
+///////////////////////////////////////////////////////////
+
+expression <|[
+    assignment_expression
+    zom{[ COMMA assignment_expression ]}
+]|>
+
+assignment_expression <| sel{
+    [ opt{datatype} unary_expression wronly_operator assignment_expression ]
+    [ unary_expression rdwr_operator assignment_expression ]
+    [ conditional_expression ]
 }|>
 
 unary_expression <| sel{
@@ -247,24 +241,12 @@ postfix_expression <|[
     postfix_expression_tail
 ]|>
 
-postfix_expression_tail <|[
-    opt{[
-        sel{
-            [ L_SQUARE expression R_SQUARE postfix_expression_tail ]
-            [ L_PAREN argument_expression_list R_PAREN postfix_expression_tail ]
-            [ DOT IDENTIFIER postfix_expression_tail ]
-            [ ARROW IDENTIFIER postfix_expression_tail ]
-            [ PLUSPLUS postfix_expression_tail ]
-            [ MINUSMINUS postfix_expression_tail ]
-        }
-    ]}
-]|>
-
 primary_expression <| sel{ 
-  IDENTIFIER 
-  CONSTANT 
-  QUOTED_STRING 
-  [L_PAREN expression R_PAREN]
+  [ L_PAREN expression R_PAREN ]
+  [ IDENTIFIER ] 
+  [ constant ]
+  [ rvalue_constructor ]
+  // [ QUOTED_STRING ] // no strings in shadlang yet..
 }|>
 
 argument_expression_list <|[
@@ -272,42 +254,16 @@ argument_expression_list <|[
     zom{ [ COMMA assignment_expression ] }
 ]|>
 
-if_statement <|[
-    KW_IF
-    L_PAREN
-    expression
-    R_PAREN
-    statement
+postfix_expression_tail <|[
     opt{[
-        KW_ELSE
-        statement
+        sel{
+            [ L_SQUARE expression R_SQUARE postfix_expression_tail ]
+            [ L_PAREN argument_expression_list R_PAREN postfix_expression_tail ]
+            [ DOT IDENTIFIER postfix_expression_tail ]
+            [ PLUSPLUS postfix_expression_tail ]
+            [ MINUSMINUS postfix_expression_tail ]
+        }
     ]}
-]|>
-
-while_statement <|[
-    KW_WHILE
-    L_PAREN
-    expression
-    R_PAREN
-    statement
-]|>
-
-for_statement <|[
-    KW_FOR
-    L_PAREN
-    opt{expression_statement}
-    opt{expression_statement}
-    opt{expression}
-    R_PAREN
-    statement
-]|>
-
-return_statement <|[
-    KW_RETURN
-    opt{[
-        expression
-    ]}
-    SEMICOLON
 ]|>
 
 conditional_expression <|[
@@ -316,17 +272,17 @@ conditional_expression <|[
 
 logical_or_expression <|[
     logical_and_expression
-    zom{[ OR logical_and_expression ]}
+    zom{[ LOGICAL_OR logical_and_expression ]}
 ]|>
 
 logical_and_expression <|[
     inclusive_or_expression
-    zom{[ AND inclusive_or_expression ]}
+    zom{[ LOGICAL_AND inclusive_or_expression ]}
 ]|>
 
 inclusive_or_expression <|[
     exclusive_or_expression
-    zom{[ BITWISE_OR exclusive_or_expression ]}
+    zom{[ LOGICAL_OR exclusive_or_expression ]}
 ]|>
 
 exclusive_or_expression <|[
@@ -337,7 +293,7 @@ exclusive_or_expression <|[
 and_expression <|[
     equality_expression
     //and_expression_tail
-    zom{[ AMPERSAND equality_expression ]}
+    zom{[ BITWISE_AND equality_expression ]}
 ]|>
 
 equality_expression <|[
@@ -378,8 +334,8 @@ shift_expression <|[
 shift_expression_tail <|[
     opt{
         sel{
-            [ LSHIFT additive_expression shift_expression_tail ]
-            [ RSHIFT additive_expression shift_expression_tail ]
+            [ L_SHIFT additive_expression shift_expression_tail ]
+            [ R_SHIFT additive_expression shift_expression_tail ]
         }
     }
 ]|>
@@ -412,6 +368,70 @@ multiplicative_expression_tail <|[
         }
     }
 ]|>
+
+///////////////////////////////////////////////////////////
+
+if_statement <|[
+    KW_IF
+    L_PAREN
+    expression
+    R_PAREN
+    statement
+    opt{[
+        KW_ELSE
+        statement
+    ]}
+]|>
+
+while_statement <|[
+    KW_WHILE
+    L_PAREN
+    expression
+    R_PAREN
+    statement
+]|>
+
+for_statement <|[
+    KW_FOR
+    L_PAREN
+    opt{expression_statement}
+    opt{expression_statement}
+    opt{expression}
+    R_PAREN
+    statement
+]|>
+
+return_statement <|[
+    KW_RETURN
+    opt{[
+        expression
+    ]}
+    SEMICOLON
+]|>
+
+compound_statement <|[
+    L_CURLY
+    statement_list
+    R_CURLY
+]|>
+
+expression_statement <| sel{ 
+    [ expression SEMICOLON ]
+    [ SEMICOLON ]
+} |>
+
+statement <| sel{ 
+    [ expression_statement ]
+    [ compound_statement ]
+    [ if_statement]
+    [ while_statement]
+    [ for_statement ]
+    [ return_statement ]
+} |>
+
+statement_list <| zom{ statement } |>
+
+///////////////////////////////////////////////////////////
 
 fn_def <|[
     KW_FUNCTION
@@ -485,7 +505,11 @@ uniblk <|[
   R_CURLY
 ]|>
 
-iface_input <|[ typed_identifier opt{ [COLON IDENTIFIER] } SEMICOLON ]|>
+iface_input <|[ 
+  typed_identifier 
+  opt{ [COLON IDENTIFIER] }
+  SEMICOLON 
+]|>
 
 iface_inputs <|[
   KW_INPUTS
@@ -562,6 +586,7 @@ pass <|[
   }
   R_CURLY
 ]|>
+
 
 fxconfig_ref <|[
   KW_FXCONFIG
@@ -711,7 +736,7 @@ struct ShadLangParser : public Parser {
     ///////////////////////////////////////////////////////////
     onPost("exec_arg", [=](match_ptr_t match) { auto fn_arg = ast_create<SHAST::FunctionInvokationArgument>(match); });
     ///////////////////////////////////////////////////////////
-    onPost("exec_arglist", [=](match_ptr_t match) { auto fn_args = ast_create<SHAST::FunctionInvokationArguments>(match); });
+    //onPost("exec_arglist", [=](match_ptr_t match) { auto fn_args = ast_create<SHAST::FunctionInvokationArguments>(match); });
     ///////////////////////////////////////////////////////////
     onPost("fn_invok", [=](match_ptr_t match) { auto fn_invok = ast_create<SHAST::FunctionInvokation>(match); });
     ///////////////////////////////////////////////////////////
@@ -725,7 +750,7 @@ struct ShadLangParser : public Parser {
       product->_name    = "product";
       auto seq          = match->asShared<Sequence>();
       auto primary1     = seq->_items[0];
-      auto primary1_ast = ast_get<SHAST::Primary>(primary1);
+      /*auto primary1_ast = ast_get<SHAST::Primary>(primary1);
       auto opt          = seq->itemAsShared<Optional>(1);
       auto primary2     = opt->_subitem;
 
@@ -736,11 +761,11 @@ struct ShadLangParser : public Parser {
         auto primary2_ast = ast_get<SHAST::Primary>(primary2);
         product->_primaries.push_back(primary2_ast);
       } else { // "prI1"
-      }
+      }*/
     });
     ///////////////////////////////////////////////////////////
     onPost("additive_expression", [=](match_ptr_t match) {
-      auto sum      = ast_create<SHAST::Sum>(match);
+      /*auto sum      = ast_create<SHAST::Sum>(match);
       auto seq      = match->asShared<Sequence>();
       auto selected = seq->_items[0]->asShared<OneOf>()->_selected;
       auto seq2     = selected->asShared<Sequence>();
@@ -757,7 +782,7 @@ struct ShadLangParser : public Parser {
         sum->_op    = '-';
       } else {
         OrkAssert(false);
-      }
+      }*/
     });
     ///////////////////////////////////////////////////////////
     onPost("expression", [=](match_ptr_t match) { //
@@ -765,6 +790,7 @@ struct ShadLangParser : public Parser {
     });
     onLink("expression", [=](match_ptr_t match) { //
       auto expression = ast_get<SHAST::Expression>(match);
+      /*
       /////////////////////////
       // try to collapse expr->sum->product->primary chains
       /////////////////////////
@@ -794,6 +820,7 @@ struct ShadLangParser : public Parser {
         }
       }
       /////////////////////////
+      */
     });
     ///////////////////////////////////////////////////////////
     if (0) {

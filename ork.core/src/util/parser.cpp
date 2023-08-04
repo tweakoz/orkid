@@ -509,7 +509,8 @@ match_ptr_t Parser::match(matcher_ptr_t topmatcher, //
     logerrchannel()->log( "////////////////////// CURRENT POS (succeeded) ////////////////////// " );
 
     size_t st_line = std::max((end_lineno-3),size_t(0));
-    size_t en_line = st_line+7;
+    size_t en_line = st_line+3+3+1;
+ 
     for( size_t cu_line = st_line; cu_line<en_line; cu_line++ ){
       auto dbg_line = _scanner->_lines[cu_line];
       std::string str;
@@ -520,6 +521,25 @@ match_ptr_t Parser::match(matcher_ptr_t topmatcher, //
       else{
         str = deco::format( 255,64,255, "line<%zu>: ",cu_line );
         str += deco::format(255,192,255,"%s", dbg_line.c_str());
+      }
+      printf( "%s\n", str.c_str() );
+    }
+
+    logerrchannel()->log( "////////////////////// CURRENT POS (succeeded) ////////////////////// " );
+
+    size_t st_tok = std::max((rm_view->_end-9),size_t(0));
+    size_t en_tok = st_tok+9+9+1;
+
+   for( size_t cu_tok = st_tok; cu_tok<en_tok; cu_tok++ ){
+      auto dbg_tok = _scanner->token(cu_tok);
+      std::string str;
+      if(cu_tok==rm_view->_end){
+        str = deco::format( 255,255,64, "tok<%zu>: ",cu_tok );
+        str += deco::format(255,255,192,"%s", dbg_tok->text.c_str());
+      }
+      else{
+        str = deco::format( 255,64,255, "tok<%zu>: ",cu_tok );
+        str += deco::format(255,192,255,"%s", dbg_tok->text.c_str());
       }
       printf( "%s\n", str.c_str() );
     }

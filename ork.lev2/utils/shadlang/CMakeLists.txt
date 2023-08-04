@@ -19,8 +19,7 @@ set(CMAKE_BUILD_WITH_INSTALL_RPATH ON)
 file(GLOB srcs ./*.cpp)
 add_executable (ork.shadlang.exe ${srcs} )
 
-target_link_libraries(ork.shadlang.exe LINK_PRIVATE EGL GL)
-target_link_libraries(ork.shadlang.exe LINK_PRIVATE drm ork_core ork_lev2)
+target_link_libraries(ork.shadlang.exe LINK_PRIVATE ork_core ork_lev2)
 
 set_target_properties(ork.shadlang.exe PROPERTIES LINKER_LANGUAGE CXX)
 target_include_directories (ork.shadlang.exe PRIVATE ${ORKROOT}/ork.core/inc )
