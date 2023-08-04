@@ -165,6 +165,7 @@ AssignmentOperator <| sel{
 }|>
 
 AssignmentExpression <| sel{
+    [ DataTypeWithUserTypes UnaryExpression AssignmentOperator AssignmentExpression ]
     [ UnaryExpression AssignmentOperator AssignmentExpression ]
     [ ConditionalExpression ]
 }|> 
