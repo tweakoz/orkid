@@ -31,9 +31,10 @@ static logchannel_ptr_t logchan         = logger()->createChannel("ORKSLIMPL", f
 static logchannel_ptr_t logchan_grammar = logger()->createChannel("ORKSLGRAM", fvec3(1, 1, .8), false);
 static logchannel_ptr_t logchan_lexer   = logger()->createChannel("ORKSLLEXR", fvec3(1, 1, .7), false);
 /////////////////////////////////////////////////////////////////////////////////////////////////
-void SHAST::_dumpAstTreeVisitor(SHAST::astnode_ptr_t node, //
-                                int indent, //
-                                std::string& out_str) { //
+void SHAST::_dumpAstTreeVisitor(
+    SHAST::astnode_ptr_t node, //
+    int indent,                //
+    std::string& out_str) {    //
   auto indentstr = std::string(indent * 2, ' ');
   out_str += FormatString("%s%s\n", indentstr.c_str(), node->desc().c_str());
   if (node->_descend) {
@@ -49,8 +50,9 @@ std::string toASTstring(SHAST::astnode_ptr_t node) {
   return rval;
 }
 //////////////////////////////
-void visitAST(SHAST::astnode_ptr_t node, //
-              SHAST::visitor_ptr_t visitor) { //
+void visitAST(
+    SHAST::astnode_ptr_t node,      //
+    SHAST::visitor_ptr_t visitor) { //
   if (visitor->_on_pre) {
     visitor->_on_pre(node);
   }
@@ -66,14 +68,14 @@ void visitAST(SHAST::astnode_ptr_t node, //
 //////////////////////////////
 using expression_chain_t = std::vector<SHAST::expression_ptr_t>;
 //////////////////////////////
-bool reduceExpressionChain(expression_chain_t& chain){
-  for( auto item : chain ){
-    //printf( "%s ", item->_name.c_str() );
+bool reduceExpressionChain(expression_chain_t& chain) {
+  for (auto item : chain) {
+    // printf( "%s ", item->_name.c_str() );
   }
-  //printf("\n");
-  if( chain.size() > 2){
+  // printf("\n");
+  if (chain.size() > 2) {
     auto first = *chain.begin();
-    auto last = *chain.rbegin();
+    auto last  = *chain.rbegin();
     last->_children.clear();
     last->_children.push_back(first);
     first->_parent = last;
@@ -82,58 +84,46 @@ bool reduceExpressionChain(expression_chain_t& chain){
   return false;
 }
 //////////////////////////////
-void reduceASTexpressions(SHAST::astnode_ptr_t top){
-  std::vector<SHAST::astnode_ptr_t> candidate_nodes;
-  /////////////
-  auto collect_leafs = std::make_shared<SHAST::Visitor>();
-  collect_leafs->_on_pre = [&](SHAST::astnode_ptr_t node){
-    auto node_as_primary = std::dynamic_pointer_cast<SHAST::PrimaryExpression>(node);
-    bool is_leaf = node->_children.size()==0;
-    if(is_leaf or node_as_primary ){
-        candidate_nodes.push_back(node);
-    }
-    auto as_literal = std::dynamic_pointer_cast<SHAST::Literal>(node);
-    //OrkAssert(as_literal==nullptr);
-  };
-  /////////////
-  auto collect_intermeds = std::make_shared<SHAST::Visitor>();
-  collect_intermeds->_on_pre = [&](SHAST::astnode_ptr_t node){
-    if(auto node_as_expr = std::dynamic_pointer_cast<SHAST::Expression>(node)){
-      if(node_as_expr->_children.size()==1){
-        auto ch0 = node_as_expr->_children[0];
-        if(ch0->_children.size()>=2){
-          if(auto as_expr = std::dynamic_pointer_cast<SHAST::Expression>(ch0)){
-            candidate_nodes.push_back(as_expr);
-          }
+void reduceASTexpressions(SHAST::astnode_ptr_t top) {
+
+  std::set<SHAST::astnode_ptr_t> expression_nodes;
+  auto collect_expressions     = std::make_shared<SHAST::Visitor>();
+  //////////////////////////////////////////////////
+  collect_expressions->_on_pre = [&](SHAST::astnode_ptr_t node) {
+    if (auto node_as_expression = std::dynamic_pointer_cast<SHAST::Expression>(node)) {
+      if (node_as_expression->_children.size() == 1) {
+        auto parent               = node_as_expression->_parent;
+        if (auto parent_as_expression = std::dynamic_pointer_cast<SHAST::Expression>(parent)) {
+          //if (parent_as_expression->_children.size() == 1) {
+            expression_nodes.insert(node_as_expression);
+          //}
         }
       }
     }
   };
-  /////////////
-  visitAST( top, collect_leafs );
-  visitAST( top, collect_intermeds );
-  /////////////
-  for( auto candidate : candidate_nodes ){
-    printf( "candidate<%s> : ", candidate->_name.c_str() );
-    expression_chain_t expression_chain;
-    //////////
-    auto cur_expr = std::dynamic_pointer_cast<SHAST::Expression>(candidate);
-    if(nullptr==cur_expr) continue;
-    auto par_expr = std::dynamic_pointer_cast<SHAST::Expression>(cur_expr->_parent);
-    while(par_expr){
-      expression_chain.push_back(cur_expr);
-      if(par_expr and par_expr->_children.size()==1){
-        OrkAssert(par_expr->_children[0]==cur_expr);
-        par_expr = std::dynamic_pointer_cast<SHAST::Expression>(par_expr->_parent);
-        cur_expr = std::dynamic_pointer_cast<SHAST::Expression>(cur_expr->_parent);
-      }
-      else{
-        par_expr = nullptr;
+  //////////////////////////////////////////////////
+  visitAST(top, collect_expressions);
+  //////////////////////////////////////////////////
+  printf( "reduceASTexpressions::expression_nodes count<%zu>\n", expression_nodes.size() );
+  while (expression_nodes.size()) {
+    auto it                   = expression_nodes.begin();
+    auto node                 = *it;
+    auto parent_as_expression = std::dynamic_pointer_cast<SHAST::Expression>(node->_parent);
+    auto node_as_expression   = std::dynamic_pointer_cast<SHAST::Expression>(node);
+    OrkAssert(parent_as_expression);
+    OrkAssert(node_as_expression);
+    OrkAssert(node_as_expression->_children.size() == 1);
+    //OrkAssert(parent_as_expression->_children.size() == 1);
+    auto new_child                         = node_as_expression->_children[0];
+    new_child->_parent = parent_as_expression;
+    for( size_t index=0; index<parent_as_expression->_children.size(); index++ ){
+      auto prev_child = parent_as_expression->_children[index];
+      if( prev_child == node ){
+        parent_as_expression->_children[index] = new_child;
       }
     }
-    //////////
-    reduceExpressionChain(expression_chain);
-    //////////
+    expression_nodes.erase(it);
+    printf( "reduceASTexpressions reduce<%s>\n", node->_name.c_str() );
   }
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////
@@ -141,7 +131,7 @@ namespace impl {
 ///////////////////////////////////////////////////////////////////////////////
 
 std::string scanner_spec = "";
-std::string parser_spec = "";
+std::string parser_spec  = "";
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -165,17 +155,14 @@ template <typename T> std::shared_ptr<T> try_ast_get(match_ptr_t m) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-#define DECLARE_STD_AST_NODE(x) \
-onPre(#x, [=](match_ptr_t match) { \
-  auto ast_node = ast_create<SHAST::x>(match); \
-});
-#define DECLARE_OBJNAME_AST_NODE(x) \
-onPre(x, [=](match_ptr_t match) { \
-  auto objname     = ast_create<SHAST::ObjectName>(match);\
-  auto fn_name_seq = match->asShared<Sequence>();\
-  auto fn_name     = fn_name_seq->_items[0]->followImplAsShared<ClassMatch>();\
-  objname->_name   = fn_name->_token->text;\
-});
+#define DECLARE_STD_AST_NODE(x) onPre(#x, [=](match_ptr_t match) { auto ast_node = ast_create<SHAST::x>(match); });
+#define DECLARE_OBJNAME_AST_NODE(x)                                                                                                \
+  onPre(x, [=](match_ptr_t match) {                                                                                                \
+    auto objname     = ast_create<SHAST::ObjectName>(match);                                                                       \
+    auto fn_name_seq = match->asShared<Sequence>();                                                                                \
+    auto fn_name     = fn_name_seq->_items[0]->followImplAsShared<ClassMatch>();                                                   \
+    objname->_name   = fn_name->_token->text;                                                                                      \
+  });
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -186,15 +173,15 @@ struct ShadLangParser : public Parser {
     //_DEBUG_MATCH       = true;
     //_DEBUG_INFO        = true;
 
-    if(0==scanner_spec.length()){
-      auto scanner_path = ork::file::Path::data_dir()/"grammars"/"shadlang.scanner";
-      auto read_result = ork::File::readAsString(scanner_path);
-      scanner_spec = read_result->_data;
+    if (0 == scanner_spec.length()) {
+      auto scanner_path = ork::file::Path::data_dir() / "grammars" / "shadlang.scanner";
+      auto read_result  = ork::File::readAsString(scanner_path);
+      scanner_spec      = read_result->_data;
     }
-    if(0==parser_spec.length()){
-      auto parser_path = ork::file::Path::data_dir()/"grammars"/"shadlang.parser";
+    if (0 == parser_spec.length()) {
+      auto parser_path = ork::file::Path::data_dir() / "grammars" / "shadlang.parser";
       auto read_result = ork::File::readAsString(parser_path);
-      parser_spec = read_result->_data;
+      parser_spec      = read_result->_data;
     }
 
     auto scanner_match = this->loadPEGScannerSpec(scanner_spec);
@@ -285,21 +272,21 @@ struct ShadLangParser : public Parser {
     DECLARE_STD_AST_NODE(ComputeShader);
     ///////////////////////////////////////////////////////////
     onPost("FLOATING_POINT", [=](match_ptr_t match) { //
-      auto ast_node     = ast_create<SHAST::FloatLiteral>(match);
-      auto impl         = match->asShared<ClassMatch>();
-      //ast_node->_value  = std::stof(impl->_token->text);
-      //ast_node->_strval = impl->_token->text;
+      auto ast_node = ast_create<SHAST::FloatLiteral>(match);
+      auto impl     = match->asShared<ClassMatch>();
+      // ast_node->_value  = std::stof(impl->_token->text);
+      // ast_node->_strval = impl->_token->text;
     });
     ///////////////////////////////////////////////////////////
     onPost("INTEGER", [=](match_ptr_t match) { //
-      auto integer    = ast_create<SHAST::IntegerLiteral>(match);
-      //auto impl       = match->asShared<ClassMatch>();
-      //integer->_value = std::stoi(impl->_token->text);
+      auto integer = ast_create<SHAST::IntegerLiteral>(match);
+      // auto impl       = match->asShared<ClassMatch>();
+      // integer->_value = std::stoi(impl->_token->text);
     });
     ///////////////////////////////////////////////////////////
     onPost("exec_arg", [=](match_ptr_t match) { auto fn_arg = ast_create<SHAST::FunctionInvokationArgument>(match); });
     ///////////////////////////////////////////////////////////
-    //onPost("exec_arglist", [=](match_ptr_t match) { auto fn_args = ast_create<SHAST::FunctionInvokationArguments>(match); });
+    // onPost("exec_arglist", [=](match_ptr_t match) { auto fn_args = ast_create<SHAST::FunctionInvokationArguments>(match); });
     ///////////////////////////////////////////////////////////
     onLink("Expression", [=](match_ptr_t match) { //
       auto expression = ast_get<SHAST::Expression>(match);
@@ -400,17 +387,18 @@ struct ShadLangParser : public Parser {
       */
     });
     ///////////////////////////////////////////////////////////
-    if(0)onPost("output_decl", [=](match_ptr_t match) {
-      auto ast_output_decl         = ast_create<SHAST::InterfaceOutput>(match);
-      /*
-      auto seq                     = match->asShared<Sequence>();
-      auto ddecl_layout            = seq->_items[0]->followImplAsShared<Optional>();
-      auto ddecl_seq               = seq->_items[1]->followImplAsShared<Sequence>();
-      auto tid                     = ast_get<SHAST::TypedIdentifier>(ddecl_seq->_items[0]->asShared<Proxy>()->_selected);
-      ast_output_decl->_identifier = tid->_identifier;
-      ast_output_decl->_datatype   = tid->_datatype;
-      */
-    });
+    if (0)
+      onPost("output_decl", [=](match_ptr_t match) {
+        auto ast_output_decl = ast_create<SHAST::InterfaceOutput>(match);
+        /*
+        auto seq                     = match->asShared<Sequence>();
+        auto ddecl_layout            = seq->_items[0]->followImplAsShared<Optional>();
+        auto ddecl_seq               = seq->_items[1]->followImplAsShared<Sequence>();
+        auto tid                     = ast_get<SHAST::TypedIdentifier>(ddecl_seq->_items[0]->asShared<Proxy>()->_selected);
+        ast_output_decl->_identifier = tid->_identifier;
+        ast_output_decl->_datatype   = tid->_datatype;
+        */
+      });
     ///////////////////////////////////////////////////////////
     onPost("TranslationUnit", [=](match_ptr_t match) {
       auto translation_unit = ast_create<SHAST::TranslationUnit>(match);
@@ -471,7 +459,7 @@ struct ShadLangParser : public Parser {
     _scanner->discardTokensOfClass(uint64_t(TokenClass::NEWLINE));
 
     auto top_view = _scanner->createTopView();
-    //top_view.dump("top_view");
+    // top_view.dump("top_view");
     auto slv    = std::make_shared<ScannerLightView>(top_view);
     _tu_matcher = findMatcherByName("TranslationUnit");
     OrkAssert(_tu_matcher);
