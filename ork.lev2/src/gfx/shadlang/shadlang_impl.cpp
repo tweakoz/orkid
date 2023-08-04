@@ -27,12 +27,117 @@
 /////////////////////////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::shadlang {
 /////////////////////////////////////////////////////////////////////////////////////////////////
-
-namespace impl {
 static logchannel_ptr_t logchan         = logger()->createChannel("ORKSLIMPL", fvec3(1, 1, .9), false);
 static logchannel_ptr_t logchan_grammar = logger()->createChannel("ORKSLGRAM", fvec3(1, 1, .8), false);
 static logchannel_ptr_t logchan_lexer   = logger()->createChannel("ORKSLLEXR", fvec3(1, 1, .7), false);
-
+/////////////////////////////////////////////////////////////////////////////////////////////////
+void SHAST::_dumpAstTreeVisitor(SHAST::astnode_ptr_t node, //
+                                int indent, //
+                                std::string& out_str) { //
+  auto indentstr = std::string(indent * 2, ' ');
+  out_str += FormatString("%s%s\n", indentstr.c_str(), node->desc().c_str());
+  if (node->_descend) {
+    for (auto c : node->_children) {
+      _dumpAstTreeVisitor(c, indent + 1, out_str);
+    }
+  }
+}
+//////////////////////////////
+std::string toASTstring(SHAST::astnode_ptr_t node) {
+  std::string rval;
+  SHAST::_dumpAstTreeVisitor(node, 0, rval);
+  return rval;
+}
+//////////////////////////////
+void visitAST(SHAST::astnode_ptr_t node, //
+              SHAST::visitor_ptr_t visitor) { //
+  if (visitor->_on_pre) {
+    visitor->_on_pre(node);
+  }
+  visitor->_nodestack.push(node);
+  for (auto c : node->_children) {
+    visitAST(c, visitor);
+  }
+  visitor->_nodestack.pop();
+  if (visitor->_on_post) {
+    visitor->_on_post(node);
+  }
+}
+//////////////////////////////
+using expression_chain_t = std::vector<SHAST::expression_ptr_t>;
+//////////////////////////////
+bool reduceExpressionChain(expression_chain_t& chain){
+  for( auto item : chain ){
+    //printf( "%s ", item->_name.c_str() );
+  }
+  //printf("\n");
+  if( chain.size() > 2){
+    auto first = *chain.begin();
+    auto last = *chain.rbegin();
+    last->_children.clear();
+    last->_children.push_back(first);
+    first->_parent = last;
+    return true;
+  }
+  return false;
+}
+//////////////////////////////
+void reduceASTexpressions(SHAST::astnode_ptr_t top){
+  std::vector<SHAST::astnode_ptr_t> candidate_nodes;
+  /////////////
+  auto collect_leafs = std::make_shared<SHAST::Visitor>();
+  collect_leafs->_on_pre = [&](SHAST::astnode_ptr_t node){
+    auto node_as_primary = std::dynamic_pointer_cast<SHAST::PrimaryExpression>(node);
+    bool is_leaf = node->_children.size()==0;
+    if(is_leaf or node_as_primary ){
+        candidate_nodes.push_back(node);
+    }
+    auto as_literal = std::dynamic_pointer_cast<SHAST::Literal>(node);
+    //OrkAssert(as_literal==nullptr);
+  };
+  /////////////
+  auto collect_intermeds = std::make_shared<SHAST::Visitor>();
+  collect_intermeds->_on_pre = [&](SHAST::astnode_ptr_t node){
+    if(auto node_as_expr = std::dynamic_pointer_cast<SHAST::Expression>(node)){
+      if(node_as_expr->_children.size()==1){
+        auto ch0 = node_as_expr->_children[0];
+        if(ch0->_children.size()>=2){
+          if(auto as_expr = std::dynamic_pointer_cast<SHAST::Expression>(ch0)){
+            candidate_nodes.push_back(as_expr);
+          }
+        }
+      }
+    }
+  };
+  /////////////
+  visitAST( top, collect_leafs );
+  visitAST( top, collect_intermeds );
+  /////////////
+  for( auto candidate : candidate_nodes ){
+    printf( "candidate<%s> : ", candidate->_name.c_str() );
+    expression_chain_t expression_chain;
+    //////////
+    auto cur_expr = std::dynamic_pointer_cast<SHAST::Expression>(candidate);
+    if(nullptr==cur_expr) continue;
+    auto par_expr = std::dynamic_pointer_cast<SHAST::Expression>(cur_expr->_parent);
+    while(par_expr){
+      expression_chain.push_back(cur_expr);
+      if(par_expr and par_expr->_children.size()==1){
+        OrkAssert(par_expr->_children[0]==cur_expr);
+        par_expr = std::dynamic_pointer_cast<SHAST::Expression>(par_expr->_parent);
+        cur_expr = std::dynamic_pointer_cast<SHAST::Expression>(cur_expr->_parent);
+      }
+      else{
+        par_expr = nullptr;
+      }
+    }
+    //////////
+    reduceExpressionChain(expression_chain);
+    //////////
+  }
+}
+/////////////////////////////////////////////////////////////////////////////////////////////////
+namespace impl {
 ///////////////////////////////////////////////////////////////////////////////
 
 std::string scanner_spec = "";
@@ -144,6 +249,8 @@ struct ShadLangParser : public Parser {
     DECLARE_STD_AST_NODE(RelationalExpression);
     DECLARE_STD_AST_NODE(ShiftExpression);
     DECLARE_STD_AST_NODE(Expression);
+    DECLARE_STD_AST_NODE(Literal);
+    DECLARE_STD_AST_NODE(NumericLiteral);
     ///////////////////////////////////////////////////////////
     DECLARE_STD_AST_NODE(IfStatement);
     DECLARE_STD_AST_NODE(WhileStatement);
@@ -370,8 +477,10 @@ struct ShadLangParser : public Parser {
     OrkAssert(_tu_matcher);
     auto match = this->match(_tu_matcher, slv, [this](match_ptr_t m) { _buildAstTreeVisitor(m); });
     OrkAssert(match);
-
     auto ast_top = match->_uservars.typedValueForKey<SHAST::astnode_ptr_t>("astnode").value();
+    ///////////////////////////////////////////
+    reduceASTexpressions(ast_top);
+    ///////////////////////////////////////////
     printf("///////////////////////////////\n");
     printf("// AST TREE\n");
     printf("///////////////////////////////\n");
@@ -393,36 +502,6 @@ SHAST::translationunit_ptr_t parse(const std::string& shader_text) {
   auto parser = std::make_shared<impl::ShadLangParser>();
   auto topast = parser->parseString(shader_text);
   return topast;
-}
-
-void SHAST::_dumpAstTreeVisitor(SHAST::astnode_ptr_t node, int indent, std::string& out_str) {
-  auto indentstr = std::string(indent * 2, ' ');
-  out_str += FormatString("%s%s\n", indentstr.c_str(), node->desc().c_str());
-  if (node->_descend) {
-    for (auto c : node->_children) {
-      _dumpAstTreeVisitor(c, indent + 1, out_str);
-    }
-  }
-}
-
-std::string toASTstring(SHAST::astnode_ptr_t node) {
-  std::string rval;
-  SHAST::_dumpAstTreeVisitor(node, 0, rval);
-  return rval;
-}
-
-void visitAST(SHAST::astnode_ptr_t node, SHAST::visitor_ptr_t visitor) {
-  if (visitor->_on_pre) {
-    visitor->_on_pre(node);
-  }
-  visitor->_nodestack.push(node);
-  for (auto c : node->_children) {
-    visitAST(c, visitor);
-  }
-  visitor->_nodestack.pop();
-  if (visitor->_on_post) {
-    visitor->_on_post(node);
-  }
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////

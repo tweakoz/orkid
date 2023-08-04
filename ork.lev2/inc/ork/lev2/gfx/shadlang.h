@@ -36,6 +36,8 @@ namespace SHAST {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct AstNode;
+struct Expression;
+struct PrimaryExpression;
 struct DataType;
 struct ArgumentDeclaration;
 struct AssignmentStatement;
@@ -43,13 +45,15 @@ struct FunctionDef;
 struct Translatable;
 struct TranslationUnit;
 
-using astnode_ptr_t         = std::shared_ptr<AstNode>;
-using datatype_ptr_t        = std::shared_ptr<DataType>;
-using argument_decl_ptr_t   = std::shared_ptr<ArgumentDeclaration>;
-using assignment_stmt_ptr_t = std::shared_ptr<AssignmentStatement>;
-using fndef_ptr_t           = std::shared_ptr<FunctionDef>;
-using translatable_ptr_t    = std::shared_ptr<Translatable>;
-using translationunit_ptr_t = std::shared_ptr<TranslationUnit>;
+using astnode_ptr_t           = std::shared_ptr<AstNode>;
+using expression_ptr_t        = std::shared_ptr<Expression>;
+using primaryexpression_ptr_t = std::shared_ptr<PrimaryExpression>;
+using datatype_ptr_t          = std::shared_ptr<DataType>;
+using argument_decl_ptr_t     = std::shared_ptr<ArgumentDeclaration>;
+using assignment_stmt_ptr_t   = std::shared_ptr<AssignmentStatement>;
+using fndef_ptr_t             = std::shared_ptr<FunctionDef>;
+using translatable_ptr_t      = std::shared_ptr<Translatable>;
+using translationunit_ptr_t   = std::shared_ptr<TranslationUnit>;
 /////////////////////
 
 

@@ -10,21 +10,24 @@ DataType       <| sel{ KW_FLOAT   KW_INT
                        KW_ISAMP1D KW_ISAMP2D KW_ISAMP3D
                }|>
 
-TypedIdentifier <|[ sel { DataType IDENTIFIER } IDENTIFIER ]|>
+TypedIdentifier      <|[ sel { DataType IDENTIFIER } IDENTIFIER ]|>
 
-constant       <| sel{INTEGER FLOATING_POINT} |>
+FloatLiteral         <| [ FLOATING_POINT ] |>
+IntegerLiteral       <| [ INTEGER ] |>
+NumericLiteral       <| sel{IntegerLiteral FloatLiteral} |>
+Literal              <| [ NumericLiteral ] |>
 
-MemberRef     <| [ DOT IDENTIFIER ] |>
-ArrayRef      <| [ L_SQUARE Expression R_SQUARE ] |>
+MemberRef            <| [ DOT IDENTIFIER ] |>
+ArrayRef             <| [ L_SQUARE Expression R_SQUARE ] |>
 
-InheritListItem  <| [ COLON IDENTIFIER opt{ [L_PAREN IDENTIFIER R_PAREN] } ] |>
-InheritList       <| zom{ InheritListItem } |>
+InheritListItem      <| [ COLON IDENTIFIER opt{ [L_PAREN IDENTIFIER R_PAREN] } ] |>
+InheritList          <| zom{ InheritListItem } |>
 
-exec_arg         <| [ Expression opt{COMMA} ] |>
-exec_arglist     <| zom{ exec_arg } |>
-decl_arglist     <| zom{ [ TypedIdentifier opt{COMMA} ] } |>
+exec_arg             <| [ Expression opt{COMMA} ] |>
+exec_arglist         <| zom{ exec_arg } |>
+decl_arglist         <| zom{ [ TypedIdentifier opt{COMMA} ] } |>
 
-RValueConstructor <|[
+RValueConstructor    <|[
     DataType
     L_PAREN
     exec_arglist
@@ -86,7 +89,7 @@ PostfixExpressionTail <| sel{
 }|>
 
 PrimaryExpression <| sel{ 
-  [ constant ]
+  [ NumericLiteral ]
   [ RValueConstructor ]
   [ L_PAREN Expression R_PAREN ]
   [ IDENTIFIER ] 
