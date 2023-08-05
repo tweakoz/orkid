@@ -5,16 +5,20 @@ from obt import command, path
 items = [
     "ui", "ui2",
     "compositor", 
-    #"basic", 
-    #"particle"
+    "basic", 
+    "particle"
 ]
 
+OK = True
 for item in items:
-  cmdlist = ["ork.shadlang.exe",
-             "--in",
-             "shaders://%s.glfx"% str(item),
-             "--dotout",
-             path.temp()/("%s.dot" % str(item))]
+  if OK:
+    cmdlist = ["ork.shadlang.exe",
+               "--in",
+               "shaders://%s.glfx"% str(item),
+               "--dotout",
+               path.temp()/("%s.dot" % str(item))]
   
-  command.run(cmdlist,do_log=True)
-
+    OK = (command.run(cmdlist,do_log=True)==0)
+    if not OK:
+      print("FAILED: %s" % str(item))
+      break

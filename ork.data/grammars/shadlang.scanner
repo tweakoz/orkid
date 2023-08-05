@@ -100,9 +100,11 @@ KW_UNIBLK           <| "uniform_block" |>
 KW_VTXIFACE         <| "vertex_interface" |>
 KW_GEOIFACE         <| "geometry_interface" |>
 KW_FRGIFACE         <| "fragment_interface" |>
+KW_COMIFACE         <| "compute_interface" |>
 KW_MSHIFACE         <| "mesh_interface" |>
 KW_INPUTS           <| "inputs" |>
 KW_OUTPUTS          <| "outputs" |>
+KW_STORAGE          <| "storage" |>
 
 KW_STATEBLOCK       <| "state_block" |>
 KW_PASS             <| "pass" |>
@@ -114,6 +116,7 @@ KW_DEPTHMASK        <| "DepthMask" |>
 KW_FXCONFIG         <| "fxconfig" |>
 KW_LIBBLOCK         <| "libblock" |>
 KW_IMPORT           <| "import" |>
+KW_PRAGMA_TYPELIB   <| "pragma_typelib" |>
 
 KW_FUNCTION         <| "function" |>
 KW_LAYOUT           <| "layout" |>

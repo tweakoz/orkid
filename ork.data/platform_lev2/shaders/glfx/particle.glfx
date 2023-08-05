@@ -183,9 +183,10 @@ libblock lib_billboard {
     vec4 pos3;
   };
   Output Compute(Input inp) {
-
+ 
     Output outp;
 
+  
     float ang         = inp.inp_ang_siz.x;
     float size_pixels = inp.inp_ang_siz.y;
 
@@ -200,6 +201,7 @@ libblock lib_billboard {
     vec3 p1 = dpos.xyz + vec3(+sizX, -sizY, 0);
     vec3 p2 = dpos.xyz + vec3(+sizX, +sizY, 0);
     vec3 p3 = dpos.xyz + vec3(-sizX, +sizY, 0);
+
 
     outp.pos0 = vec4(p0, 1.0);
     outp.pos1 = vec4(p1, 1.0);

@@ -66,65 +66,145 @@ void visitAST(
   }
 }
 //////////////////////////////
-using expression_chain_t = std::vector<SHAST::expression_ptr_t>;
-//////////////////////////////
-bool reduceExpressionChain(expression_chain_t& chain) {
-  for (auto item : chain) {
-    // printf( "%s ", item->_name.c_str() );
-  }
-  // printf("\n");
-  if (chain.size() > 2) {
-    auto first = *chain.begin();
-    auto last  = *chain.rbegin();
-    last->_children.clear();
-    last->_children.push_back(first);
-    first->_parent = last;
-    return true;
-  }
-  return false;
-}
-//////////////////////////////
-void reduceASTexpressions(SHAST::astnode_ptr_t top) {
+void reduceAST(SHAST::astnode_ptr_t top) {
 
-  std::set<SHAST::astnode_ptr_t> expression_nodes;
-  auto collect_expressions     = std::make_shared<SHAST::Visitor>();
   //////////////////////////////////////////////////
-  collect_expressions->_on_pre = [&](SHAST::astnode_ptr_t node) {
-    if (auto node_as_expression = std::dynamic_pointer_cast<SHAST::Expression>(node)) {
-      if (node_as_expression->_children.size() == 1) {
-        auto parent               = node_as_expression->_parent;
-        if (auto parent_as_expression = std::dynamic_pointer_cast<SHAST::Expression>(parent)) {
-          //if (parent_as_expression->_children.size() == 1) {
-            expression_nodes.insert(node_as_expression);
-          //}
+  std::set<SHAST::astnode_ptr_t> nodes_to_reduce;
+  auto collect_nodes     = std::make_shared<SHAST::Visitor>();
+  //////////////////////////////////////////////////
+  auto reduce_operation = [&](){
+    while (nodes_to_reduce.size()) {
+      auto it                   = nodes_to_reduce.begin();
+      auto node                 = *it;
+      OrkAssert(node);
+      auto parent = node->_parent;
+      ////////////////////////////////////////////
+      if(node->_children.size() == 1){
+        auto new_child                         = node->_children[0];
+        new_child->_parent = parent;
+        for( size_t index=0; index<parent->_children.size(); index++ ){
+          auto prev_child = parent->_children[index];
+          if( prev_child == node ){
+            parent->_children[index] = new_child;
+          }
         }
       }
+      ////////////////////////////////////////////
+      else if(node->_children.size() == 0){
+        size_t do_index = 9999999;
+        for( size_t index=0; index<parent->_children.size(); index++ ){
+          auto prev_child = parent->_children[index];
+          if( prev_child == node ){
+            do_index = index;
+            break;
+          }
+        }
+        if(do_index != 9999999){
+          parent->_children.erase(parent->_children.begin()+do_index);
+        }
+      }
+      ////////////////////////////////////////////
+      nodes_to_reduce.erase(it);
     }
   };
   //////////////////////////////////////////////////
-  visitAST(top, collect_expressions);
+  // remove expression chain nodes
   //////////////////////////////////////////////////
-  printf( "reduceASTexpressions::expression_nodes count<%zu>\n", expression_nodes.size() );
-  while (expression_nodes.size()) {
-    auto it                   = expression_nodes.begin();
-    auto node                 = *it;
-    auto parent_as_expression = std::dynamic_pointer_cast<SHAST::Expression>(node->_parent);
-    auto node_as_expression   = std::dynamic_pointer_cast<SHAST::Expression>(node);
-    OrkAssert(parent_as_expression);
-    OrkAssert(node_as_expression);
-    OrkAssert(node_as_expression->_children.size() == 1);
-    //OrkAssert(parent_as_expression->_children.size() == 1);
-    auto new_child                         = node_as_expression->_children[0];
-    new_child->_parent = parent_as_expression;
-    for( size_t index=0; index<parent_as_expression->_children.size(); index++ ){
-      auto prev_child = parent_as_expression->_children[index];
-      if( prev_child == node ){
-        parent_as_expression->_children[index] = new_child;
+  if(1){
+    collect_nodes->_on_pre = [&](SHAST::astnode_ptr_t node) {
+      if (auto node_as_expression = std::dynamic_pointer_cast<SHAST::Expression>(node)) {
+        if (node_as_expression->_children.size() == 1) {
+          auto parent               = node_as_expression->_parent;
+          if (auto parent_as_expression = std::dynamic_pointer_cast<SHAST::Expression>(parent)) {
+            //if (parent_as_expression->_children.size() == 1) {
+              nodes_to_reduce.insert(node_as_expression);
+            //}
+          }
+        }
       }
-    }
-    expression_nodes.erase(it);
-    printf( "reduceASTexpressions reduce<%s>\n", node->_name.c_str() );
+    };
+    visitAST(top, collect_nodes);
+    reduce_operation();
   }
+  //////////////////////////////////////////////////
+  // remove expression base classes
+  //////////////////////////////////////////////////
+  if(1){
+    nodes_to_reduce.clear();
+    collect_nodes->_on_pre = [&](SHAST::astnode_ptr_t node) {
+      if (node->_name == "Expression") {
+        nodes_to_reduce.insert(node);
+      }
+    };
+    visitAST(top, collect_nodes);
+    reduce_operation();
+  }
+  //////////////////////////////////////////////////
+  // remove statement base classes
+  //////////////////////////////////////////////////
+  if(1){
+    nodes_to_reduce.clear();
+    collect_nodes->_on_pre = [&](SHAST::astnode_ptr_t node) {
+      if (node->_name == "Statement") {
+        nodes_to_reduce.insert(node);
+      }
+    };
+    visitAST(top, collect_nodes);
+    reduce_operation();
+  }
+  //////////////////////////////////////////////////
+  // remove DataTypeWithUserTypes->DataType leaf nodes
+  //////////////////////////////////////////////////
+  if(1){
+    nodes_to_reduce.clear();
+    collect_nodes->_on_pre = [&](SHAST::astnode_ptr_t node) {
+      if (node->_name == "DataTypeWithUserTypes") {
+        if(node->_children.size() == 1){
+          auto child = node->_children[0];
+          OrkAssert(child->_name == "DataType");
+          nodes_to_reduce.insert(child);
+        }
+      }
+    };
+    visitAST(top, collect_nodes);
+    reduce_operation();
+  }
+  //////////////////////////////////////////////////
+  // remove TypedIdentifier->DataType leaf nodes
+  //////////////////////////////////////////////////
+  if(1){
+    nodes_to_reduce.clear();
+    collect_nodes->_on_pre = [&](SHAST::astnode_ptr_t node) {
+      if (node->_name == "TypedIdentifier") {
+        if(node->_children.size() == 1){
+          auto child = node->_children[0];
+          OrkAssert(child->_name == "DataType");
+          nodes_to_reduce.insert(child);
+        }
+      }
+    };
+    visitAST(top, collect_nodes);
+    reduce_operation();
+  }
+  //////////////////////////////////////////////////
+  // DataDeclaration->ArrayDeclaration >>> ArrayDeclaration
+  //////////////////////////////////////////////////
+  if(1){
+    nodes_to_reduce.clear();
+    collect_nodes->_on_pre = [&](SHAST::astnode_ptr_t node) {
+      if (node->_name == "DataDeclaration") {
+        if(node->_children.size() == 1){
+          auto child = node->_children[0];
+          if(child->_name == "ArrayDeclaration"){
+            nodes_to_reduce.insert(node);
+          }
+        }
+      }
+    };
+    visitAST(top, collect_nodes);
+    reduce_operation();
+  }
+  //////////////////////////////////////////////////
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////
 namespace impl {
@@ -184,14 +264,24 @@ struct ShadLangParser : public Parser {
       parser_spec      = read_result->_data;
     }
 
+    ///////////////////////////////////////////////////////////
+    // forced matcher declarations
+    ///////////////////////////////////////////////////////////
+
+    //declare("ExpressionList");
+
+    ///////////////////////////////////////////////////////////
+
     auto scanner_match = this->loadPEGScannerSpec(scanner_spec);
     OrkAssert(scanner_match);
 
     auto parser_match = this->loadPEGParserSpec(parser_spec);
     OrkAssert(parser_match);
+
     ///////////////////////////////////////////////////////////
     // parser should be compiled and linked at this point
     ///////////////////////////////////////////////////////////
+
     DECLARE_OBJNAME_AST_NODE("fn_name");
     DECLARE_OBJNAME_AST_NODE("fn2_name");
     DECLARE_OBJNAME_AST_NODE("vtx_name");
@@ -212,13 +302,33 @@ struct ShadLangParser : public Parser {
     DECLARE_OBJNAME_AST_NODE("technique_name");
     ///////////////////////////////////////////////////////////
     DECLARE_STD_AST_NODE(DataType);
+    DECLARE_STD_AST_NODE(DataTypeWithUserTypes);
     DECLARE_STD_AST_NODE(MemberRef);
     DECLARE_STD_AST_NODE(ArrayRef);
     DECLARE_STD_AST_NODE(RValueConstructor);
     DECLARE_STD_AST_NODE(TypedIdentifier);
     DECLARE_STD_AST_NODE(DataDeclaration);
+    DECLARE_STD_AST_NODE(DataDeclarations);
+    DECLARE_STD_AST_NODE(ArrayDeclaration);
+    DECLARE_STD_AST_NODE(ParensExpression);
     ///////////////////////////////////////////////////////////
-    DECLARE_STD_AST_NODE(PrimaryExpression);
+    DECLARE_STD_AST_NODE(Directive);
+    DECLARE_STD_AST_NODE(ImportDirective);
+    ///////////////////////////////////////////////////////////
+    DECLARE_STD_AST_NODE(Operator);
+    DECLARE_STD_AST_NODE(AssignmentOperator);
+    DECLARE_STD_AST_NODE(MultiplicativeOperator);
+    DECLARE_STD_AST_NODE(AdditiveOperator);
+    DECLARE_STD_AST_NODE(ShiftOperator);
+    DECLARE_STD_AST_NODE(RelationalOperator);
+    DECLARE_STD_AST_NODE(EqualityOperator);
+    DECLARE_STD_AST_NODE(ArrayIndexOperator);
+    DECLARE_STD_AST_NODE(MemberAccessOperator);
+    DECLARE_STD_AST_NODE(UnaryOperator);
+    DECLARE_STD_AST_NODE(IncrementOperator);
+    DECLARE_STD_AST_NODE(DecrementOperator);
+    DECLARE_STD_AST_NODE(PrimaryIdentifier);
+    ///////////////////////////////////////////////////////////
     DECLARE_STD_AST_NODE(MultiplicativeExpression);
     DECLARE_STD_AST_NODE(AdditiveExpression);
     DECLARE_STD_AST_NODE(UnaryExpression);
@@ -226,7 +336,6 @@ struct ShadLangParser : public Parser {
     DECLARE_STD_AST_NODE(PrimaryExpression);
     DECLARE_STD_AST_NODE(ConditionalExpression);
     DECLARE_STD_AST_NODE(AssignmentExpression);
-    DECLARE_STD_AST_NODE(ArgumentExpressionList);
     DECLARE_STD_AST_NODE(LogicalAndExpression);
     DECLARE_STD_AST_NODE(LogicalOrExpression);
     DECLARE_STD_AST_NODE(InclusiveOrExpression);
@@ -238,22 +347,29 @@ struct ShadLangParser : public Parser {
     DECLARE_STD_AST_NODE(Expression);
     DECLARE_STD_AST_NODE(Literal);
     DECLARE_STD_AST_NODE(NumericLiteral);
+    DECLARE_STD_AST_NODE(FloatLiteral);
+    DECLARE_STD_AST_NODE(IntegerLiteral);
+    DECLARE_STD_AST_NODE(AssignmentExpression1);
+    DECLARE_STD_AST_NODE(AssignmentExpression2);
+    DECLARE_STD_AST_NODE(AssignmentExpression3);
+    DECLARE_STD_AST_NODE(CastExpression);
+    DECLARE_STD_AST_NODE(CastExpression1);
+    DECLARE_STD_AST_NODE(ExpressionList);
     ///////////////////////////////////////////////////////////
+    DECLARE_STD_AST_NODE(Statement);
+    DECLARE_STD_AST_NODE(DiscardStatement);
+    DECLARE_STD_AST_NODE(ExpressionStatement);
+    DECLARE_STD_AST_NODE(CompoundStatement);
     DECLARE_STD_AST_NODE(IfStatement);
     DECLARE_STD_AST_NODE(WhileStatement);
+    DECLARE_STD_AST_NODE(ForStatement);
     DECLARE_STD_AST_NODE(ReturnStatement);
-    DECLARE_STD_AST_NODE(CompoundStatement);
-    DECLARE_STD_AST_NODE(ExpressionStatement);
-    DECLARE_STD_AST_NODE(DiscardStatement);
     ///////////////////////////////////////////////////////////
     DECLARE_STD_AST_NODE(InterfaceLayout);
     DECLARE_STD_AST_NODE(InterfaceOutputs);
     DECLARE_STD_AST_NODE(InterfaceInputs);
     DECLARE_STD_AST_NODE(InterfaceInput);
     DECLARE_STD_AST_NODE(InterfaceOutput);
-    DECLARE_STD_AST_NODE(DataDeclarations);
-    DECLARE_STD_AST_NODE(DataDeclarations);
-    DECLARE_STD_AST_NODE(ImportDirective);
     DECLARE_STD_AST_NODE(InheritList);
     DECLARE_STD_AST_NODE(InheritListItem);
     DECLARE_STD_AST_NODE(Pass);
@@ -472,7 +588,7 @@ struct ShadLangParser : public Parser {
     OrkAssert(match);
     auto ast_top = match->_uservars.typedValueForKey<SHAST::astnode_ptr_t>("astnode").value();
     ///////////////////////////////////////////
-    reduceASTexpressions(ast_top);
+    reduceAST(ast_top);
     ///////////////////////////////////////////
     printf("///////////////////////////////\n");
     printf("// AST TREE\n");
@@ -493,6 +609,9 @@ struct ShadLangParser : public Parser {
 
 SHAST::translationunit_ptr_t parse(const std::string& shader_text) {
   auto parser = std::make_shared<impl::ShadLangParser>();
+  OrkAssert(parser);
+  printf( "shader_text<%s>\n", shader_text.c_str() );
+  OrkAssert(shader_text.length());
   auto topast = parser->parseString(shader_text);
   return topast;
 }

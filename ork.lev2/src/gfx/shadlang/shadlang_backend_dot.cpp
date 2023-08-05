@@ -39,28 +39,37 @@ struct DotBackend {
     addThemeItem<ObjectName>("#8f4f4f", "white", 1);
     addThemeItem<DataDeclarations>("#5f3f5f", "white");
     addThemeItem<DataDeclaration>("#7f3f7f", "white", 1);
+    addThemeItem<ArrayDeclaration>("#7f3f7f", "white", 1);
+    addThemeItem<TypedIdentifier>("#ffff7f", "black", 1);
+    addThemeItem<DataType>("#efef7f", "black", 1);
+    addThemeItem<DataTypeWithUserTypes>("#efef7f", "black", 1);
     //
-    addThemeItem<CompoundStatement>("#5f5faf", "white", 1);
+    addThemeItem<IfStatement>("#8f8fcf", "black", 1);
+    addThemeItem<WhileStatement>("#8f8fcf", "black", 1);
+    addThemeItem<ReturnStatement>("#8f8fcf", "black", 1);
+    addThemeItem<ExpressionStatement>("#8f8fcf", "black", 1);
+    addThemeItem<DiscardStatement>("#8f8fcf", "black", 1);
     addThemeItem<AssignmentStatementVarRef>("#bfbfef", "black", 1);
-    addThemeItem<IfStatement>("#cfcfff", "black", 1);
-    addThemeItem<WhileStatement>("#cfcfff", "black", 1);
-    addThemeItem<ReturnStatement>("#cfcfff", "black", 1);
-    addThemeItem<ExpressionStatement>("#cfcfff", "black", 1);
+    //
     addThemeItem<MemberRef>("#1fcfcf", "black", 1);
     addThemeItem<ArrayRef>("#1fdfdf", "black", 1);
-    addThemeItem<Expression>("#ffdfff", "black", 1);
     addThemeItem<AdditiveExpression>("#eebfee", "black", 1);
     addThemeItem<MultiplicativeExpression>("#eebfee", "black", 1);
-    addThemeItem<PrimaryExpression>("#eebfee", "black", 1);
-    addThemeItem<Literal>("#df7fdf", "black", 1);
-    addThemeItem<FloatLiteral>("#df7fdf", "black", 1);
-    addThemeItem<NumericLiteral>("#df7fdf", "black", 1);
-    addThemeItem<IntegerLiteral>("#df7fdf", "black", 1);
+    addThemeItem<PrimaryExpression>("#c080c0", "black", 1);
+    addThemeItem<FloatLiteral>("#6f006f", "white", 1);
+    addThemeItem<NumericLiteral>("#6f006f", "white", 1);
+    addThemeItem<IntegerLiteral>("#6f006f", "white", 1);
     addThemeItem<RValueConstructor>("#ef8fef", "black", 1);
     addThemeItem<FunctionInvokation>("#ffdfcf", "black", 1);
     addThemeItem<FunctionInvokationArguments>("#efcfbf", "black", 1);
     addThemeItem<FunctionInvokationArgument>("#dfbfaf", "black", 1);
     // default
+    addThemeItem<Directive>("#4f9f9f", "white", 1);
+    addThemeItem<Operator>("#6f6f2f", "white", 1);
+    addThemeItem<CompoundStatement>("#4f4f9f", "white", 1);
+    addThemeItem<Statement>("#5f5faf", "white", 1);
+    addThemeItem<Literal>("#6f006f", "white", 1);
+    addThemeItem<Expression>("#ffdfff", "black", 1);
     addThemeItem<LanguageElement>("#cfcfcf", "black", 1);
     addThemeItem<AstNode>("#cfcfcf", "black");
   }

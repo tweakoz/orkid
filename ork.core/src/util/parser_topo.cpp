@@ -506,8 +506,7 @@ matcher_ptr_t Parser::nOrMore(matcher_ptr_t sub_matcher, size_t minMatches, std:
       popMatch();
       return rval;
     }
-    OrkAssert(false); // should never get here?
-    // log_match( "NOM%zu<%s>: end_match (NOMATCH)", minMatches, name.c_str() );
+    logerrchannel()->log( "NOM%zu<%s>: invalid matchcount<%zu>", minMatches, name.c_str(), the_nom->_items.size() );
     popMatch();
     return nullptr;
   };

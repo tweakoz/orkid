@@ -29,10 +29,15 @@ decl_arglist         <| zom{ [ TypedIdentifier opt{COMMA} ] } |>
 
 RValueConstructor    <|[
     DataType
-    L_PAREN
-    exec_arglist
-    R_PAREN
+    ParensExpression
 ]|>
+
+Directive <| sel{
+ImportDirective 
+}|>
+Operator <| sel{
+  AssignmentOperator 
+}|>
 
 ///////////////////////////////////////////////////////////
 
@@ -42,8 +47,8 @@ DataTypeWithUserTypes <| sel {
 }|>
 
 DataDeclaration <| sel {
+  [TypedIdentifier L_SQUARE INTEGER R_SQUARE] : "ArrayDeclaration"
   [TypedIdentifier] 
-  [TypedIdentifier L_SQUARE INTEGER R_SQUARE] 
 }|>
 
 ///////////////////////////////////////////////////////////
@@ -70,9 +75,13 @@ UnaryExpression <| sel{
 }|>
 
 CastExpression <| sel {
-    [L_PAREN DataType R_PAREN CastExpression] 
+    [L_PAREN DataType R_PAREN CastExpression] : "CastExpression1"
     UnaryExpression
 }|>
+
+ParensExpression <|[
+    [ L_PAREN Expression R_PAREN ]
+]|>
 
 PostfixExpression <|[
     PrimaryExpression
@@ -80,54 +89,54 @@ PostfixExpression <|[
 ]|>
 
 PostfixExpressionTail <| sel{
-    [ L_SQUARE Expression R_SQUARE ]
-    [ L_PAREN Expression R_PAREN ]
+    [ L_SQUARE Expression R_SQUARE ] : "ArrayIndexOperator"
+    [ ParensExpression ]
     [ L_PAREN R_PAREN ]
-    [ DOT IDENTIFIER ]
-    [ PLUSPLUS ]
-    [ MINUSMINUS ] 
+    [ DOT IDENTIFIER ] : "MemberAccessOperator"
+    [ PLUSPLUS ] : "IncrementOperator"
+    [ MINUSMINUS ] : "DecrementOperator"
 }|>
 
 PrimaryExpression <| sel{ 
-  [ NumericLiteral ]
+  [ Literal ]
   [ RValueConstructor ]
-  [ L_PAREN Expression R_PAREN ]
-  [ IDENTIFIER ] 
+  [ ParensExpression ]
+  [ IDENTIFIER ] : "PrimaryIdentifier"
   // [ QUOTED_STRING ] // no strings in shadlang yet..
 }|>
 
-MultiplicativeOperation <| sel{ STAR SLASH PERCENT } |> 
+MultiplicativeOperator <| sel{ STAR SLASH PERCENT } |> 
 
 MultiplicativeExpression <|[
     CastExpression
-    zom{[ MultiplicativeOperation CastExpression ]}
+    zom{[ MultiplicativeOperator CastExpression ]}
 ]|>
 
-AdditiveOperation <| sel{ PLUS MINUS } |> 
+AdditiveOperator <| sel{ PLUS MINUS } |> 
 
 AdditiveExpression <|[
     MultiplicativeExpression
-    zom{ [ AdditiveOperation MultiplicativeExpression ] }
+    zom{ [ AdditiveOperator MultiplicativeExpression ] }
 ]|>
 
-ShiftOperation <| sel{ L_SHIFT R_SHIFT } |>
+ShiftOperator <| sel{ L_SHIFT R_SHIFT } |>
 
 ShiftExpression <|[
     AdditiveExpression
-    zom{[ ShiftOperation AdditiveExpression ]}
+    zom{[ ShiftOperator AdditiveExpression ]}
 ]|>
 
-RelationalOperation <| sel{ L_ANGLE R_ANGLE IS_LEQ_TO IS_GEQ_TO } |>
+RelationalOperator <| sel{ L_ANGLE R_ANGLE IS_LEQ_TO IS_GEQ_TO } |>
 
 RelationalExpression <|[
     ShiftExpression
-    zom{[ ShiftOperation ShiftExpression ]}
+    zom{[ RelationalOperator ShiftExpression ]}
 ]|>
 
-EqualityOperation <| sel{ IS_EQ_TO IS_NEQ_TO } |>
+EqualityOperator <| sel{ IS_EQ_TO IS_NEQ_TO } |>
 EqualityExpression <|[
     RelationalExpression 
-    zom{ [ EqualityOperation RelationalExpression ] }
+    zom{ [ EqualityOperator RelationalExpression ] }
 ]|>
 
 AndExpression <|[
@@ -168,24 +177,24 @@ AssignmentOperator <| sel{
 }|>
 
 AssignmentExpression <| sel{
-    [ DataTypeWithUserTypes UnaryExpression AssignmentOperator AssignmentExpression ]
-    [ UnaryExpression AssignmentOperator AssignmentExpression ]
-    [ ConditionalExpression ]
+    [ DataTypeWithUserTypes UnaryExpression AssignmentOperator AssignmentExpression ] : "AssignmentExpression1"
+    [ UnaryExpression AssignmentOperator AssignmentExpression ] : "AssignmentExpression2"
+    [ ConditionalExpression ] : "AssignmentExpression3"
 }|> 
-
-ArgumentExpressionList <|[
-    AssignmentExpression
-    zom{ [ COMMA AssignmentExpression ] }
-]|>
 
 ConstantExpression <|[
     ConditionalExpression
 ]|>
 
-Expression <|[
-    AssignmentExpression
-    zom{[ COMMA AssignmentExpression ]}
-]|>
+Expression <| sel{
+    [ AssignmentExpression oom{[ COMMA AssignmentExpression ]} ] : "ExpressionList"
+    [ AssignmentExpression ]
+}|>
+
+//Expression <|[
+//    AssignmentExpression
+//    zom{[ COMMA AssignmentExpression ]}
+//]|>
 
 ///////////////////////////////////////////////////////////
 
@@ -257,10 +266,10 @@ IfStatement <|[
     L_PAREN
     Expression
     R_PAREN
-    statement
+    Statement
     opt{[
         KW_ELSE
-        statement
+        Statement
     ]}
 ]|>
 
@@ -269,7 +278,7 @@ WhileStatement <|[
     L_PAREN
     Expression
     R_PAREN
-    statement
+    Statement
 ]|>
 
 ForStatement <|[
@@ -279,7 +288,7 @@ ForStatement <|[
     opt{ExpressionStatement}
     opt{Expression}
     R_PAREN
-    statement
+    Statement
 ]|>
 
 ReturnStatement <|[
@@ -291,7 +300,7 @@ ReturnStatement <|[
 ]|>
 
 CompoundStatementItem <| sel{
-    statement
+    Statement
     //Declaration
 }|>
 
@@ -310,7 +319,12 @@ DiscardStatement <|[
     KW_DISCARD SEMICOLON
 ]|>
 
-statement <| sel{ 
+DeclarationStatement <|[
+    DataDeclaration SEMICOLON
+]|>
+
+Statement <| sel{ 
+    [ DeclarationStatement ]
     [ DiscardStatement ]
     [ ExpressionStatement ]
     [ CompoundStatement ]
@@ -349,6 +363,7 @@ LibraryBlock <|[
         sel{
             StructDecl
             FunctionDef2
+            [KW_PRAGMA_TYPELIB SEMICOLON]
         }
     }
     R_CURLY
@@ -414,16 +429,18 @@ InterfaceLayout  <|[
 ]|>
 
 InterfaceInput <| sel{
-    [ TypedIdentifier COLON IDENTIFIER ]
-    [ TypedIdentifier L_SQUARE R_SQUARE ]
-    [ opt{ InterfaceLayout } TypedIdentifier ]
-    [ InterfaceLayout ]
+    [ opt{ InterfaceLayout } TypedIdentifier SEMICOLON ]
+    [ TypedIdentifier COLON IDENTIFIER SEMICOLON ]
+    [ TypedIdentifier L_SQUARE R_SQUARE SEMICOLON ]
+    [ InterfaceLayout SEMICOLON ]
 }|>
 
 InterfaceInputs <|[
   KW_INPUTS
   L_CURLY
-  zom{ [ InterfaceInput SEMICOLON ] } : "inputlist"
+  zom{ 
+    InterfaceInput
+  }                : "inputlist"
   R_CURLY
 ]|>
 
@@ -441,6 +458,29 @@ InterfaceOutputs <|[
   R_CURLY
 ]|>
 
+InterfaceStorage <|[
+   InterfaceLayout
+    [ IDENTIFIER ] : "storage_class"
+    L_CURLY
+    DataDeclarations : "storage_decls"
+    R_CURLY
+    [ IDENTIFIER ] : "storage_name"
+    SEMICOLON
+ ]|>
+
+InterfaceStorages <|[
+    KW_STORAGE
+    L_CURLY
+    zom{ InterfaceStorage }
+    R_CURLY
+]|>
+
+InterfaceItem <| sel{
+    InterfaceInputs
+    InterfaceOutputs
+    InterfaceStorages
+}|>
+
 StructDecl <|[
     KW_STRUCT
     [ IDENTIFIER ] : "struct_name"
@@ -455,8 +495,7 @@ VertexInterface <|[
   [ IDENTIFIER ] : "vif_name"
   zom{ InheritListItem } : "vif_dependencies"
   L_CURLY
-  opt{InterfaceInputs}
-  opt{InterfaceOutputs}
+  zom{ InterfaceItem }
   R_CURLY
 ]|>
 
@@ -465,8 +504,7 @@ GeometryInterface <|[
   [ IDENTIFIER ] : "gif_name"
   zom{ InheritListItem } : "gif_dependencies"
   L_CURLY
-  opt{InterfaceInputs}
-  opt{InterfaceOutputs}
+  zom{ InterfaceItem }
   R_CURLY
 ]|>
 
@@ -475,8 +513,16 @@ FragmentInterface <|[
   [ IDENTIFIER ] : "fif_name"
   zom{ InheritListItem } : "fif_dependencies"
   L_CURLY
-  opt{InterfaceInputs}
-  opt{InterfaceOutputs}
+  zom{ InterfaceItem }
+  R_CURLY
+]|>
+
+ComputeInterface <|[
+  KW_COMIFACE
+  [ IDENTIFIER ] : "cif_name"
+  zom{ InheritListItem } : "cif_dependencies"
+  L_CURLY
+  zom{ InterfaceItem }
   R_CURLY
 ]|>
 
@@ -495,7 +541,7 @@ StateBlock <|[
   R_CURLY
 ]|>
 
-pass_binding_key <| sel{  KW_VTXSHADER KW_FRGSHADER KW_STATEBLOCK } |>
+pass_binding_key <| sel{  KW_VTXSHADER KW_GEOSHADER KW_FRGSHADER KW_STATEBLOCK } |>
 
 pass_binding <|[
   pass_binding_key EQUALS IDENTIFIER SEMICOLON
@@ -567,6 +613,7 @@ Translatable <|
     VertexInterface 
     GeometryInterface
     FragmentInterface 
+    ComputeInterface
     StateBlock
     Technique
     FxConfigDecl 
