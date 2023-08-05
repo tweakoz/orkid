@@ -1,5 +1,7 @@
 #pragma once
 
+#include <ork/util/parser.h>
+
 ///////////////////////////////////////////////////////////
 
 #define DECLARE_STD_AST_CLASS(baseclass,x)\
@@ -19,7 +21,7 @@ struct AstNode {
   AstNode() {
     static int gid = 0;
     _nodeID = gid++;
-    svar64_t _impl;
+    _user = std::make_shared<varmap::VarMap>();
   }
   virtual ~AstNode() {
   }
@@ -34,13 +36,16 @@ struct AstNode {
     return ret;
   }
   ///////////////////////////
+  static void replaceInParent( astnode_ptr_t oldnode, //
+                               astnode_ptr_t newnode);
+  ///////////////////////////
   std::string _name;
   bool _descend = true;
   bool _showDOT = true;
   int _nodeID = -1;
   astnode_ptr_t _parent;
   std::vector<astnode_ptr_t> _children;
-  svar64_t _impl;
+  varmap::varmap_ptr_t _user;
 
 };
 
@@ -82,9 +87,6 @@ DECLARE_STD_AST_CLASS(LanguageElement,AssignmentStatementVarRef);
 DECLARE_STD_AST_CLASS(LanguageElement,AssignmentStatementVarDecl);
 DECLARE_STD_AST_CLASS(LanguageElement,Expression);
 DECLARE_STD_AST_CLASS(LanguageElement,Statement);
-DECLARE_STD_AST_CLASS(LanguageElement,FunctionInvokationArgument);
-DECLARE_STD_AST_CLASS(LanguageElement,FunctionInvokationArguments);
-DECLARE_STD_AST_CLASS(LanguageElement,FunctionInvokation);
 DECLARE_STD_AST_CLASS(LanguageElement,DataDeclarations);
 DECLARE_STD_AST_CLASS(LanguageElement,StructDecl);
 //
@@ -119,6 +121,16 @@ DECLARE_STD_AST_CLASS(Expression,AndExpression);
 DECLARE_STD_AST_CLASS(Expression,EqualityExpression);
 DECLARE_STD_AST_CLASS(Expression,RelationalExpression);
 DECLARE_STD_AST_CLASS(Expression,CastExpression);
+//
+DECLARE_STD_AST_CLASS(LanguageElement,SemaExpression);
+DECLARE_STD_AST_CLASS(SemaExpression,SemaMemberAccess);
+DECLARE_STD_AST_CLASS(SemaExpression,SemaFunctionArguments);
+DECLARE_STD_AST_CLASS(SemaExpression,SemaFunctionInvokation);
+DECLARE_STD_AST_CLASS(SemaExpression,SemaFunctionName);
+DECLARE_STD_AST_CLASS(SemaExpression,SemaConstructorType);
+DECLARE_STD_AST_CLASS(SemaExpression,SemaConstructorInvokation);
+DECLARE_STD_AST_CLASS(SemaExpression,SemaConstructorArguments);
+//
 DECLARE_STD_AST_CLASS(Expression,ExpressionList);
 //
 DECLARE_STD_AST_CLASS(Expression,Literal);

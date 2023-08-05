@@ -28,8 +28,115 @@
 /////////////////////////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::shadlang {
 /////////////////////////////////////////////////////////////////////////////////////////////////
+using namespace SHAST;
 
-void reduceAST(std::set<SHAST::astnode_ptr_t> nodes_to_reduce) {
+///////////////////////////////////////////////////////////////////////////////////////////
+// prune expression chain nodes
+///////////////////////////////////////////////////////////////////////////////////////////
+
+void _pruneExpressionChainNodes(impl::ShadLangParser* slp, astnode_ptr_t top) {
+  std::set<astnode_ptr_t> nodes_to_reduce;
+  auto collect_nodes     = std::make_shared<Visitor>();
+  collect_nodes->_on_pre = [&](astnode_ptr_t node) {
+    if (auto node_as_expression = std::dynamic_pointer_cast<Expression>(node)) {
+      if (node_as_expression->_children.size() == 1) {
+        auto parent = node_as_expression->_parent;
+        if (auto parent_as_expression = std::dynamic_pointer_cast<Expression>(parent)) {
+          nodes_to_reduce.insert(node_as_expression);
+        }
+      }
+    }
+  };
+  slp->visitAST(top, collect_nodes);
+  slp->reduceAST(nodes_to_reduce);
+}
+//////////////////////////////////////////////////
+// prune expression base classes
+//////////////////////////////////////////////////
+
+void _pruneExpressionBaseNodes(impl::ShadLangParser* slp, astnode_ptr_t top) {
+  std::set<astnode_ptr_t> nodes_to_reduce;
+  auto collect_nodes     = std::make_shared<Visitor>();
+  collect_nodes->_on_pre = [&](astnode_ptr_t node) {
+    if (node->_name == "Expression") {
+      nodes_to_reduce.insert(node);
+    }
+  };
+  slp->visitAST(top, collect_nodes);
+  slp->reduceAST(nodes_to_reduce);
+}
+
+//////////////////////////////////////////////////
+// prune statement base classes
+//////////////////////////////////////////////////
+
+void _pruneStatementBaseNodes(impl::ShadLangParser* slp, astnode_ptr_t top) {
+  std::set<astnode_ptr_t> nodes_to_reduce;
+  auto collect_nodes     = std::make_shared<Visitor>();
+  collect_nodes->_on_pre = [&](astnode_ptr_t node) {
+    if (node->_name == "Statement") {
+      nodes_to_reduce.insert(node);
+    }
+  };
+  slp->visitAST(top, collect_nodes);
+  slp->reduceAST(nodes_to_reduce);
+}
+
+//////////////////////////////////////////////////
+// prune DataType nodes 
+//  that are children of TypedIdentifier or DataTypeWithUserTypes
+//////////////////////////////////////////////////
+
+void _pruneDataTypeNodes(impl::ShadLangParser* slp, astnode_ptr_t top) {
+  std::set<astnode_ptr_t> nodes_to_reduce;
+  auto collect_nodes     = std::make_shared<Visitor>();
+  collect_nodes->_on_pre = [&](astnode_ptr_t node) {
+    if (node->_name == "DataTypeWithUserTypes") {
+      if (node->_children.size() == 1) {
+        auto child = node->_children[0];
+        OrkAssert(child->_name == "DataType");
+        nodes_to_reduce.insert(child);
+      }
+    }
+  };
+  slp->visitAST(top, collect_nodes);
+  slp->reduceAST(nodes_to_reduce);
+  nodes_to_reduce.clear();
+  collect_nodes->_on_pre = [&](astnode_ptr_t node) {
+    if (node->_name == "TypedIdentifier") {
+      if (node->_children.size() == 1) {
+        auto child = node->_children[0];
+        OrkAssert(child->_name == "DataType");
+        nodes_to_reduce.insert(child);
+      }
+    }
+  };
+  slp->visitAST(top, collect_nodes);
+  slp->reduceAST(nodes_to_reduce);
+}
+
+//////////////////////////////////////////////////
+// prune DataDeclaration (that have an ArrayDeclaration child)
+//////////////////////////////////////////////////
+
+void _pruneDataDeclarationNodes(impl::ShadLangParser* slp, astnode_ptr_t top) {
+  std::set<astnode_ptr_t> nodes_to_reduce;
+  auto collect_nodes     = std::make_shared<Visitor>();
+  collect_nodes->_on_pre = [&](astnode_ptr_t node) {
+    if (node->_name == "DataDeclaration") {
+      if (node->_children.size() == 1) {
+        auto child = node->_children[0];
+        if (child->_name == "ArrayDeclaration") {
+          nodes_to_reduce.insert(node);
+        }
+      }
+    }
+  };
+  slp->visitAST(top, collect_nodes);
+  slp->reduceAST(nodes_to_reduce);
+}
+
+void impl::ShadLangParser::reduceAST(std::set<astnode_ptr_t> nodes_to_reduce) {
   while (nodes_to_reduce.size()) {
     auto it   = nodes_to_reduce.begin();
     auto node = *it;
@@ -66,120 +173,15 @@ void reduceAST(std::set<SHAST::astnode_ptr_t> nodes_to_reduce) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////
-// prune expression chain nodes
-///////////////////////////////////////////////////////////////////////////////////////////
 
-void pruneExpressionChainNodes(SHAST::astnode_ptr_t top) {
-  std::set<SHAST::astnode_ptr_t> nodes_to_reduce;
-  auto collect_nodes     = std::make_shared<SHAST::Visitor>();
-  collect_nodes->_on_pre = [&](SHAST::astnode_ptr_t node) {
-    if (auto node_as_expression = std::dynamic_pointer_cast<SHAST::Expression>(node)) {
-      if (node_as_expression->_children.size() == 1) {
-        auto parent = node_as_expression->_parent;
-        if (auto parent_as_expression = std::dynamic_pointer_cast<SHAST::Expression>(parent)) {
-          nodes_to_reduce.insert(node_as_expression);
-        }
-      }
-    }
-  };
-  visitAST(top, collect_nodes);
-  reduceAST(nodes_to_reduce);
-}
-//////////////////////////////////////////////////
-// prune expression base classes
-//////////////////////////////////////////////////
-
-void pruneExpressionBaseNodes(SHAST::astnode_ptr_t top) {
-  std::set<SHAST::astnode_ptr_t> nodes_to_reduce;
-  auto collect_nodes     = std::make_shared<SHAST::Visitor>();
-  collect_nodes->_on_pre = [&](SHAST::astnode_ptr_t node) {
-    if (node->_name == "Expression") {
-      nodes_to_reduce.insert(node);
-    }
-  };
-  visitAST(top, collect_nodes);
-  reduceAST(nodes_to_reduce);
+void impl::ShadLangParser::pruneAST(astnode_ptr_t top) {
+  _pruneExpressionChainNodes(this,top);
+  _pruneExpressionBaseNodes(this,top);
+  _pruneStatementBaseNodes(this,top);
+  _pruneDataTypeNodes(this,top);
+  _pruneDataDeclarationNodes(this,top);
 }
 
-//////////////////////////////////////////////////
-// prune statement base classes
-//////////////////////////////////////////////////
-
-void pruneStatementBaseNodes(SHAST::astnode_ptr_t top) {
-  std::set<SHAST::astnode_ptr_t> nodes_to_reduce;
-  auto collect_nodes     = std::make_shared<SHAST::Visitor>();
-  collect_nodes->_on_pre = [&](SHAST::astnode_ptr_t node) {
-    if (node->_name == "Statement") {
-      nodes_to_reduce.insert(node);
-    }
-  };
-  visitAST(top, collect_nodes);
-  reduceAST(nodes_to_reduce);
-}
-
-//////////////////////////////////////////////////
-// prune DataType nodes 
-//  that are children of TypedIdentifier or DataTypeWithUserTypes
-//////////////////////////////////////////////////
-
-void pruneDataTypeNodes(SHAST::astnode_ptr_t top) {
-  std::set<SHAST::astnode_ptr_t> nodes_to_reduce;
-  auto collect_nodes     = std::make_shared<SHAST::Visitor>();
-  collect_nodes->_on_pre = [&](SHAST::astnode_ptr_t node) {
-    if (node->_name == "DataTypeWithUserTypes") {
-      if (node->_children.size() == 1) {
-        auto child = node->_children[0];
-        OrkAssert(child->_name == "DataType");
-        nodes_to_reduce.insert(child);
-      }
-    }
-  };
-  visitAST(top, collect_nodes);
-  reduceAST(nodes_to_reduce);
-  nodes_to_reduce.clear();
-  collect_nodes->_on_pre = [&](SHAST::astnode_ptr_t node) {
-    if (node->_name == "TypedIdentifier") {
-      if (node->_children.size() == 1) {
-        auto child = node->_children[0];
-        OrkAssert(child->_name == "DataType");
-        nodes_to_reduce.insert(child);
-      }
-    }
-  };
-  visitAST(top, collect_nodes);
-  reduceAST(nodes_to_reduce);
-}
-
-//////////////////////////////////////////////////
-// prune DataDeclaration (that have an ArrayDeclaration child)
-//////////////////////////////////////////////////
-
-void pruneDataDeclarationNodes(SHAST::astnode_ptr_t top) {
-  std::set<SHAST::astnode_ptr_t> nodes_to_reduce;
-  auto collect_nodes     = std::make_shared<SHAST::Visitor>();
-  collect_nodes->_on_pre = [&](SHAST::astnode_ptr_t node) {
-    if (node->_name == "DataDeclaration") {
-      if (node->_children.size() == 1) {
-        auto child = node->_children[0];
-        if (child->_name == "ArrayDeclaration") {
-          nodes_to_reduce.insert(node);
-        }
-      }
-    }
-  };
-  visitAST(top, collect_nodes);
-  reduceAST(nodes_to_reduce);
-}
-
-///////////////////////////////////////////////////////////////////////////////////////////
-
-void pruneAST(SHAST::astnode_ptr_t top) {
-  pruneExpressionChainNodes(top);
-  pruneExpressionBaseNodes(top);
-  pruneStatementBaseNodes(top);
-  pruneDataTypeNodes(top);
-  pruneDataDeclarationNodes(top);
-}
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2::shadlang

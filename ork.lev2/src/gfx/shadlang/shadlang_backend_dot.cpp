@@ -53,6 +53,7 @@ struct DotBackend {
     //
     addThemeItem<MemberRef>("#1fcfcf", "black", 1);
     addThemeItem<ArrayRef>("#1fdfdf", "black", 1);
+    addThemeItem<ParensExpression>("#eebfee", "black", 1);
     addThemeItem<AdditiveExpression>("#eebfee", "black", 1);
     addThemeItem<MultiplicativeExpression>("#eebfee", "black", 1);
     addThemeItem<PrimaryExpression>("#c080c0", "black", 1);
@@ -60,9 +61,14 @@ struct DotBackend {
     addThemeItem<NumericLiteral>("#6f006f", "white", 1);
     addThemeItem<IntegerLiteral>("#6f006f", "white", 1);
     addThemeItem<RValueConstructor>("#ef8fef", "black", 1);
-    addThemeItem<FunctionInvokation>("#ffdfcf", "black", 1);
-    addThemeItem<FunctionInvokationArguments>("#efcfbf", "black", 1);
-    addThemeItem<FunctionInvokationArgument>("#dfbfaf", "black", 1);
+    addThemeItem<SemaFunctionInvokation>("#ffdfcf", "black", 1);
+    addThemeItem<SemaConstructorInvokation>("#ffdfcf", "black", 1);
+    addThemeItem<SemaConstructorArguments>("#ffdfcf", "black", 1);
+    addThemeItem<SemaConstructorType>("#ffdfcf", "black", 1);
+    addThemeItem<SemaFunctionName>("#ffdfcf", "black", 1);
+    addThemeItem<SemaFunctionArguments>("#efcfbf", "black", 1);
+    addThemeItem<SemaConstructorArguments>("#dfbfaf", "black", 1);
+    addThemeItem<SemaMemberAccess>("#dfbfaf", "black", 1);
     // default
     addThemeItem<Directive>("#4f9f9f", "white", 1);
     addThemeItem<Operator>("#6f6f2f", "white", 1);

@@ -39,6 +39,7 @@ struct OneOf;
 ///////////////////////////////////////////////////////////////////////////////
 
 using match_ptr_t              = std::shared_ptr<Match>;
+using match_rawptr_t           = Match*;
 using match_attempt_ptr_t      = std::shared_ptr<MatchAttempt>;
 using match_attempt_constptr_t = std::shared_ptr<MatchAttempt>;
 using matcher_ptr_t            = std::shared_ptr<Matcher>;

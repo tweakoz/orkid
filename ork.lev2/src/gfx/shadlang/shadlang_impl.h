@@ -37,45 +37,74 @@ void SHAST::_dumpAstTreeVisitor( //
 
 std::string toASTstring(SHAST::astnode_ptr_t node);
 
-void visitAST(                 //
-    SHAST::astnode_ptr_t node, //
-    SHAST::visitor_ptr_t visitor);
-
-void pruneAST(SHAST::astnode_ptr_t top);
-void semaAST(SHAST::astnode_ptr_t top);
-void reduceAST(std::set<SHAST::astnode_ptr_t> nodes_to_reduce);
-
 /////////////////////////////////////////////////////////////////////////////////////////////////
 namespace impl {
 ///////////////////////////////////////////////////////////////////////////////
-template <typename T> std::shared_ptr<T> ast_create(match_ptr_t m) {
-  auto sh = std::make_shared<T>();
-  m->_uservars.set<SHAST::astnode_ptr_t>("astnode", sh);
-  return sh;
-}
-
-template <typename T> std::shared_ptr<T> ast_get(match_ptr_t m) {
-  auto sh = m->_uservars.typedValueForKey<SHAST::astnode_ptr_t>("astnode").value();
-  return std::dynamic_pointer_cast<T>(sh);
-}
-template <typename T> std::shared_ptr<T> try_ast_get(match_ptr_t m) {
-  auto sh = m->_uservars.typedValueForKey<SHAST::astnode_ptr_t>("astnode");
-  if (sh) {
-    return std::dynamic_pointer_cast<T>(sh.value());
-  }
-  return nullptr;
-}
 struct ShadLangParser : public Parser {
 
   ShadLangParser();
-
-  void _buildAstTreeVisitor(match_ptr_t the_match);
+  ////////////////////////////////////////////
   SHAST::translationunit_ptr_t parseString(std::string parse_str);
+  ////////////////////////////////////////////
+  void preDeclareAstNodes();
   void declareAstNodes();
   void defineAstHandlers();
+  ////////////////////////////////////////////
+  void pruneAST(SHAST::astnode_ptr_t top);
+  void reduceAST(std::set<SHAST::astnode_ptr_t> nodes_to_reduce);
+  void semaAST(SHAST::astnode_ptr_t top);
+  void visitAST(                 //
+    SHAST::astnode_ptr_t node,   //
+    SHAST::visitor_ptr_t visitor);
+  ////////////////////////////////////////////
+  SHAST::astnode_ptr_t astNodeForMatch(match_ptr_t match) const;
+  match_ptr_t matchForAstNode(SHAST::astnode_ptr_t astnode) const;
+  ////////////////////////////////////////////
+  template <typename T> std::shared_ptr<T> ast_create(match_ptr_t m) {
+    auto sh = std::make_shared<T>();
+    m->_uservars.set<SHAST::astnode_ptr_t>("astnode", sh);
+    _match2astnode[m] = sh;
+    _astnode2match[sh] = m;
+    return sh;
+  }
+  ////////////////////////////////////////////
+  template <typename T> //
+  std::shared_ptr<T> ast_get(match_ptr_t m) {
+    auto sh = m->_uservars.typedValueForKey<SHAST::astnode_ptr_t>("astnode").value();
+    return std::dynamic_pointer_cast<T>(sh);
+  }
+  ////////////////////////////////////////////
+  template <typename T> //
+  std::shared_ptr<T> try_ast_get(match_ptr_t m) {
+    auto sh = m->_uservars.typedValueForKey<SHAST::astnode_ptr_t>("astnode");
+    if (sh) {
+      return std::dynamic_pointer_cast<T>(sh.value());
+    }
+    return nullptr;
+  }
+  ////////////////////////////////////////////
+  template <typename T> //
+  std::set<SHAST::astnode_ptr_t> //
+  collectNodesOfType(SHAST::astnode_ptr_t top){ //
+    std::set<SHAST::astnode_ptr_t> nodes;
+    auto collect_nodes     = std::make_shared<SHAST::Visitor>();
+    collect_nodes->_on_pre = [&](SHAST::astnode_ptr_t node) {
+      if (auto as_typed = std::dynamic_pointer_cast<T>(node)) {
+        nodes.insert(as_typed);
+      }
+    };
+    visitAST(top, collect_nodes);
+    return nodes;
+  }
+  ////////////////////////////////////////////
+  void _buildAstTreeVisitor(match_ptr_t the_match);
+  ////////////////////////////////////////////
 
   matcher_ptr_t _tu_matcher;
   std::vector<SHAST::astnode_ptr_t> _astnodestack;
+  std::unordered_map<match_ptr_t, SHAST::astnode_ptr_t> _match2astnode;
+  std::unordered_map<SHAST::astnode_ptr_t, match_ptr_t> _astnode2match;
+
 }; // struct ShadLangParser
 
 } // namespace impl
@@ -85,6 +114,7 @@ struct ShadLangParser : public Parser {
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 #define DECLARE_STD_AST_NODE(x) onPre(#x, [=](match_ptr_t match) { auto ast_node = ast_create<SHAST::x>(match); });
+
 #define DECLARE_OBJNAME_AST_NODE(x)                                                                                                \
   onPre(x, [=](match_ptr_t match) {                                                                                                \
     auto objname     = ast_create<SHAST::ObjectName>(match);                                                                       \

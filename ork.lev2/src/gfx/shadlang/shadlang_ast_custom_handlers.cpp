@@ -43,7 +43,7 @@ void ShadLangParser::defineAstHandlers() {
     // integer->_value = std::stoi(impl->_token->text);
   });
   ///////////////////////////////////////////////////////////
-  onPost("exec_arg", [=](match_ptr_t match) { auto fn_arg = ast_create<SHAST::FunctionInvokationArgument>(match); });
+  //onPost("exec_arg", [=](match_ptr_t match) { auto fn_arg = ast_create<SHAST::SemaFunctionInvokationArgument>(match); });
   ///////////////////////////////////////////////////////////
   // onPost("exec_arglist", [=](match_ptr_t match) { auto fn_args = ast_create<SHAST::FunctionInvokationArguments>(match); });
   ///////////////////////////////////////////////////////////

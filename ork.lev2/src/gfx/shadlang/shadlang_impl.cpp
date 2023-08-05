@@ -57,25 +57,6 @@ std::string toASTstring(SHAST::astnode_ptr_t node) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void visitAST(                      //
-    SHAST::astnode_ptr_t node,      //
-    SHAST::visitor_ptr_t visitor) { //
-
-  if (visitor->_on_pre) {
-    visitor->_on_pre(node);
-  }
-  visitor->_nodestack.push(node);
-  for (auto c : node->_children) {
-    visitAST(c, visitor);
-  }
-  visitor->_nodestack.pop();
-  if (visitor->_on_post) {
-    visitor->_on_post(node);
-  }
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
 SHAST::translationunit_ptr_t parse(const std::string& shader_text) {
   auto parser = std::make_shared<impl::ShadLangParser>();
   OrkAssert(parser);
@@ -111,10 +92,8 @@ ShadLangParser::ShadLangParser() {
   }
 
   ///////////////////////////////////////////////////////////
-  // forced matcher declarations
-  ///////////////////////////////////////////////////////////
 
-  // declare("ExpressionList");
+  preDeclareAstNodes();
 
   ///////////////////////////////////////////////////////////
 
@@ -137,6 +116,19 @@ ShadLangParser::ShadLangParser() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+SHAST::astnode_ptr_t ShadLangParser::astNodeForMatch(match_ptr_t match) const{
+  auto it = _match2astnode.find(match);
+  OrkAssert(it != _match2astnode.end());
+  return it->second;
+}
+match_ptr_t ShadLangParser::matchForAstNode(SHAST::astnode_ptr_t astnode) const{
+  auto it = _astnode2match.find(astnode);
+  OrkAssert(it != _astnode2match.end());
+  return it->second;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 void ShadLangParser::_buildAstTreeVisitor(match_ptr_t the_match) {
   bool has_ast = the_match->_uservars.hasKey("astnode");
   if (has_ast) {
@@ -155,6 +147,25 @@ void ShadLangParser::_buildAstTreeVisitor(match_ptr_t the_match) {
   }
   if (has_ast) {
     _astnodestack.pop_back();
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void ShadLangParser::visitAST(      //
+    SHAST::astnode_ptr_t node,      //
+    SHAST::visitor_ptr_t visitor) { //
+
+  if (visitor->_on_pre) {
+    visitor->_on_pre(node);
+  }
+  visitor->_nodestack.push(node);
+  for (auto c : node->_children) {
+    visitAST(c, visitor);
+  }
+  visitor->_nodestack.pop();
+  if (visitor->_on_post) {
+    visitor->_on_post(node);
   }
 }
 

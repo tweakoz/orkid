@@ -345,6 +345,13 @@ nearestItem(
 
 ///////////////////////////////////////////////////////////////////////////////
 
+template <typename T>
+void vector_append( std::vector<T>& A, const std::vector<T>& B ) {
+    A.insert( A.end(), B.begin(), B.end() );
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 #define OldStlSchoolForEachInset(Set, Type, it)                                                                                    \
   for (typename std::set<Type>::const_iterator it = Set.begin(); it != Set.end(); ++it)
 
