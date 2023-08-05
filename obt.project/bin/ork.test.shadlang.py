@@ -18,7 +18,7 @@ for item in items:
     cmdlist = ["ork.shadlang.exe",
                "--in",
                "shaders://%s.glfx"% str(item),
-               "--dotout",
+               "--dot",
                path.temp()/("%s.dot" % str(item))]
   
     OK = (command.run(cmdlist,do_log=True)==0)

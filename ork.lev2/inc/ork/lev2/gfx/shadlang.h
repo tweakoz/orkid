@@ -76,7 +76,7 @@ using visitor_ptr_t = std::shared_ptr<Visitor>;
 
 SHAST::translationunit_ptr_t parse(const std::string& shader_text);
 std::string toASTstring(SHAST::astnode_ptr_t);
-std::string toGL4SL(SHAST::translationunit_ptr_t top);
+std::string toGLFX1(SHAST::translationunit_ptr_t top);
 std::string toDotFile(SHAST::translationunit_ptr_t top);
 
 } // namespace ork::lev2::shadlang

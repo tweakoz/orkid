@@ -22,18 +22,21 @@ int main(int argc, char** argv, char** envp) {
   auto rval       = desc->add_options() //
       ("help", "produce help message") //
       ("in", po::value<std::string>()->default_value(""), "input shader file path") //
-      ("astout", po::value<std::string>()->default_value(""), "output shader AST file path")
-      ("dotout", po::value<std::string>()->default_value(""), "output shader DOT file path");
+      ("ast", po::value<std::string>()->default_value(""), "output shader AST file path")
+      ("dot", po::value<std::string>()->default_value(""), "output shader DOT file path")
+      ("glfx", po::value<std::string>()->default_value(""), "output shader glfx file path");
   auto opts = init_data->parse();
 
   auto incdir     = file::Path::orkroot_dir() / "ork.data" / "platform_lev2" / "shaders" / "glfx";
   auto fdevctx    = FileEnv::createContextForUriBase("shaders://", incdir);
   auto input_path = init_data->commandLineOption("in").as<std::string>();
-  auto ast_output_path = init_data->commandLineOption("astout").as<std::string>();
-  auto dot_output_path = init_data->commandLineOption("dotout").as<std::string>();
+  auto ast_output_path = init_data->commandLineOption("ast").as<std::string>();
+  auto dot_output_path = init_data->commandLineOption("dot").as<std::string>();
+  auto glfx_output_path = init_data->commandLineOption("glfx").as<std::string>();
   printf( "input_path<%s>\n", input_path.c_str());
   printf( "ast_output_path<%s>\n", ast_output_path.c_str());
   printf( "dot_output_path<%s>\n", dot_output_path.c_str());
+  printf( "glfx_output_path<%s>\n", glfx_output_path.c_str());
   auto shader_data = File::readAsString(input_path);
   auto tunit      = shadlang::parse(shader_data->_data);
   if(tunit){
@@ -50,6 +53,12 @@ int main(int argc, char** argv, char** envp) {
         auto spawner = std::make_shared<Spawner>();
         spawner->mCommandLine = std::string("dot -Tpng -o ") + dot_output_path + ".png " + dot_output_path;
         spawner->spawnSynchronous();
+
+    }
+    if( glfx_output_path.length() ){
+        auto dot = shadlang::toGLFX1(tunit);
+        bool OK = File::writeString(glfx_output_path, dot);
+        OrkAssert(OK);
 
     }
   }

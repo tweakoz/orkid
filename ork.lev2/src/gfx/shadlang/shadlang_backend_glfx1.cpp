@@ -8,11 +8,12 @@
 #include <ork/lev2/gfx/shadlang.h>
 
 namespace ork::lev2::shadlang {
+using namespace SHAST;
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-struct GL4SLBackend {
+struct GLFX1Backend {
   ////////////////////////////////////////////////////////////////
-  void _visit(SHAST::astnode_ptr_t node) {
+  void _visit(astnode_ptr_t node) {
     _node_stack.push(node);
     ///////////////////////////////////////////////
     // pre-visit
@@ -28,19 +29,18 @@ struct GL4SLBackend {
     _node_stack.pop();
   }
   ////////////////////////////////////////////////////////////////
-  std::string generate(SHAST::translationunit_ptr_t top) {
+  void generate(translationunit_ptr_t top) {
     _visit(top);
   }
   ////////////////////////////////////////////////////////////////
   std::string _outstr;
-  std::stack<SHAST::astnode_ptr_t> _node_stack;
+  std::stack<astnode_ptr_t> _node_stack;
 };
-using gl4slbackend_ptr_t = std::shared_ptr<GL4SLBackend>;
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-std::string toGL4SL(SHAST::translationunit_ptr_t top) {
-  auto backend = std::make_shared<GL4SLBackend>();
+std::string toGLFX1(translationunit_ptr_t top) {
+  auto backend = std::make_shared<GLFX1Backend>();
   backend->generate(top);
   return backend->_outstr;
 }
