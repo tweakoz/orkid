@@ -3,9 +3,9 @@
 ///////////////////////////////////////////////////////////////
 fxconfig fxcfg_default {
 	glsl_version = "410";
-	//import "mathtools.i"
-	import "gbuftools.i"
-	//import "misctools.i" todo - figure out multiple import issues.
+	//import "mathtools.i";
+	import "gbuftools.i";
+	//import "misctools.i";
 }
 ///////////////////////////////////////////////////////////////
 // Interfaces

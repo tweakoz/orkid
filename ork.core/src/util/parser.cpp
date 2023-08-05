@@ -497,14 +497,22 @@ match_ptr_t Parser::match(matcher_ptr_t topmatcher, //
   if( (not start_match) or (not end_match) ){
 
     auto end = rm_view->token(rm_view->_end);
-    size_t end_lineno = end->iline;
-    size_t end_colno = end->icol;
     //topview->dump( "topview" );
 
     logerrchannel()->log( "FULL MATCH FAILED" );
     logerrchannel()->log( "topview<%zu:%zu>", topview->_start, topview->_end );
     logerrchannel()->log( "rmview<%zu:%zu>", rm_view->_start, rm_view->_end );
-    logerrchannel()->log( "end_linenum<%zu> end_columnnum<%zu>", end_lineno, end_colno );
+    size_t end_lineno = 0;
+    size_t end_colno = 0;
+    if(end){
+      end_lineno = end->iline;
+      end_colno = end->icol;
+      logerrchannel()->log( "end_linenum<%zu> end_columnnum<%zu>", end_lineno, end_colno );
+    }
+    else{
+      logerrchannel()->log( "NO END");
+      exit(-1);
+    }
 
     logerrchannel()->log( "////////////////////// CURRENT POS (succeeded) ////////////////////// " );
 

@@ -54,6 +54,7 @@ PERCENT             <| "%" |>
 CARET               <| "\^" |>
 
 INTEGER             <| "-?(\d+)" |>
+UNSIGNED_INTEGER    <| "-?(\d+)u" |>
 FLOATING_POINT      <| "-?(\d*\.?)(\d+)([eE][-+]?\d+)?" |>
 
 KW_FLOAT            <| "float" |>
@@ -117,6 +118,8 @@ KW_FXCONFIG         <| "fxconfig" |>
 KW_LIBBLOCK         <| "libblock" |>
 KW_IMPORT           <| "import" |>
 KW_PRAGMA_TYPELIB   <| "pragma_typelib" |>
+KW_CONST            <| "const" |>
+KW_IN               <| "in" |>
 
 KW_FUNCTION         <| "function" |>
 KW_LAYOUT           <| "layout" |>

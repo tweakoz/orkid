@@ -4,9 +4,9 @@ from obt import command, path
 
 items = [
     "ui", "ui2",
-    "compositor", 
-    "basic", 
-    "particle"
+    "compositor", "basic", "particle",
+    "noise",
+    "deferred"
 ]
 
 OK = True

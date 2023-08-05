@@ -292,7 +292,9 @@ bool ScannerLightView::empty() const{
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 const Token* ScannerLightView::token(size_t i) const {
-  OrkAssert(not empty());
+  if(empty()){
+    return nullptr;
+  }
   return _input_view.token(i + _start);
 }
 

@@ -1,19 +1,23 @@
-DataType       <| sel{ KW_FLOAT   KW_INT 
-                       KW_VEC2    KW_VEC3    KW_VEC4 
-                       KW_MAT2    KW_MAT3    KW_MAT4 
-                       KW_SAMP1D  KW_SAMP2D  KW_SAMP3D
-                       KW_UVEC2   KW_UVEC3   KW_UVEC4 
-                       KW_UMAT2   KW_UMAT3   KW_UMAT4 
-                       KW_USAMP1D KW_USAMP2D KW_USAMP3D
-                       KW_IVEC2   KW_IVEC3   KW_IVEC4 
-                       KW_IMAT2   KW_IMAT3   KW_IMAT4 
-                       KW_ISAMP1D KW_ISAMP2D KW_ISAMP3D
-               }|>
+DataType       <|[
+    opt{ KW_IN }
+    opt{ KW_CONST }
+    sel{ KW_FLOAT   KW_INT 
+         KW_VEC2    KW_VEC3    KW_VEC4 
+         KW_MAT2    KW_MAT3    KW_MAT4 
+         KW_SAMP1D  KW_SAMP2D  KW_SAMP3D
+         KW_UVEC2   KW_UVEC3   KW_UVEC4 
+         KW_UMAT2   KW_UMAT3   KW_UMAT4 
+         KW_USAMP1D KW_USAMP2D KW_USAMP3D
+         KW_IVEC2   KW_IVEC3   KW_IVEC4 
+         KW_IMAT2   KW_IMAT3   KW_IMAT4 
+         KW_ISAMP1D KW_ISAMP2D KW_ISAMP3D
+    }
+]|>
 
 TypedIdentifier      <|[ sel { DataType IDENTIFIER } IDENTIFIER ]|>
 
 FloatLiteral         <| [ FLOATING_POINT ] |>
-IntegerLiteral       <| [ INTEGER ] |>
+IntegerLiteral       <| sel{ UNSIGNED_INTEGER INTEGER } |>
 NumericLiteral       <| sel{IntegerLiteral FloatLiteral} |>
 Literal              <| [ NumericLiteral ] |>
 
