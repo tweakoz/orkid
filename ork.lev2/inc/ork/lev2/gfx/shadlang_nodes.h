@@ -21,7 +21,7 @@ struct AstNode {
   AstNode() {
     static int gid = 0;
     _nodeID = gid++;
-    _user = std::make_shared<varmap::VarMap>();
+    _uservars = std::make_shared<varmap::VarMap>();
   }
   virtual ~AstNode() {
   }
@@ -39,15 +39,40 @@ struct AstNode {
   static void replaceInParent( astnode_ptr_t oldnode, //
                                astnode_ptr_t newnode);
   ///////////////////////////
+  template <typename user_t> user_t typedValueForKey(std::string named);
+  template <typename user_t> void setValueForKey(std::string named, user_t value );
+  template <typename user_t> std::shared_ptr<user_t> sharedForKey(std::string named);
+  template <typename user_t> std::shared_ptr<user_t> makeSharedForKey(std::string named);
+  template <typename user_t> void setSharedForKey(std::string named, std::shared_ptr<user_t> ptr);
+  ///////////////////////////
   std::string _name;
   bool _descend = true;
   bool _showDOT = true;
   int _nodeID = -1;
   astnode_ptr_t _parent;
   std::vector<astnode_ptr_t> _children;
-  varmap::varmap_ptr_t _user;
+  varmap::varmap_ptr_t _uservars;
 
 };
+
+///////////////////////////////////////////////////////////
+
+template <typename user_t> user_t AstNode::typedValueForKey(std::string named) {
+  return _uservars->typedValueForKey<user_t>(named).value();
+}
+template <typename user_t> void AstNode::setValueForKey(std::string named, user_t value ) {
+  return _uservars->set<user_t>(named,value);
+}
+template <typename user_t> std::shared_ptr<user_t> AstNode::sharedForKey(std::string named) {
+  using ptr_t = std::shared_ptr<user_t>;
+  return _uservars->typedValueForKey<ptr_t>(named).value();
+}
+template <typename user_t> std::shared_ptr<user_t> AstNode::makeSharedForKey(std::string named) {
+  return _uservars->makeSharedForKey<user_t>(named);
+}
+template <typename user_t> void AstNode::setSharedForKey(std::string named, std::shared_ptr<user_t> ptr) {
+  return _uservars->set<std::shared_ptr<user_t>>(named,ptr);
+}
 
 ///////////////////////////////////////////////////////////
 

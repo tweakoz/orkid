@@ -38,7 +38,7 @@ void _semaNamePrimaryIdentifers(impl::ShadLangParser* slp, astnode_ptr_t top) {
     auto cm          = seq->itemAsShared<ClassMatch>(0);
     auto name        = cm->_token->text;
     prim_node->_name = FormatString("PID: %s", name.c_str());
-    prim_node->_user->makeValueForKey<std::string>("identifier_name", name);
+    prim_node->setValueForKey<std::string>("identifier_name", name);
   }
 }
 
@@ -52,7 +52,7 @@ void _semaNameMemberAccessOperators(impl::ShadLangParser* slp, astnode_ptr_t top
     auto cm         = seq->itemAsShared<ClassMatch>(1);
     auto name       = cm->_token->text;
     mao_node->_name = FormatString("MemberAccess: %s", name.c_str());
-    mao_node->_user->makeValueForKey<std::string>("member_name", name);
+    mao_node->setValueForKey<std::string>("member_name", name);
   }
 }
 
@@ -67,7 +67,7 @@ void _semaNameDataTypes(impl::ShadLangParser* slp, astnode_ptr_t top) {
     auto cm         = sel->asShared<ClassMatch>();
     auto name       = cm->_token->text;
     dt_node->_name = FormatString("DataType: %s", name.c_str());
-    dt_node->_user->makeValueForKey<std::string>("data_type", name);
+    dt_node->setValueForKey<std::string>("data_type", name);
   }
 }
 
@@ -239,7 +239,7 @@ void _semaResolvePostfixExpressions(impl::ShadLangParser* slp, astnode_ptr_t top
   for (auto item : resolve_list) {
     auto ast_pfx  = slp->astNodeForMatch(item._pfx);
     auto ast_pid  = slp->astNodeForMatch(item._pid);
-    auto pid_name = ast_pid->_user->typedValueForKey<std::string>("identifier_name").value();
+    auto pid_name = ast_pid->typedValueForKey<std::string>("identifier_name");
     if (item._parens) {
       auto ast_parens    = slp->astNodeForMatch(item._parens);
       auto match_primary = slp->matchForAstNode(ast_pid);
@@ -258,7 +258,7 @@ void _semaResolvePostfixExpressions(impl::ShadLangParser* slp, astnode_ptr_t top
       }
     } else if (item._memberacc) {
       auto ast_membacc = slp->astNodeForMatch(item._memberacc);
-      auto member_name = ast_membacc->_user->typedValueForKey<std::string>("member_name").value();
+      auto member_name = ast_membacc->typedValueForKey<std::string>("member_name");
       item._memberacc->dump1(0);
       auto maexp   = std::make_shared<SemaMemberAccess>();
       maexp->_name = FormatString("SemaMemberAccess: %s.%s", pid_name.c_str(), member_name.c_str());
@@ -297,7 +297,7 @@ void _semaResolveConstructors(impl::ShadLangParser* slp, astnode_ptr_t top) {
     auto parens = std::dynamic_pointer_cast<ParensExpression>(n->_children[1]);
     OrkAssert(dtype_node);
     OrkAssert(parens);
-    auto dtype_name = dtype_node->_user->typedValueForKey<std::string>("data_type").value();
+    auto dtype_name = dtype_node->typedValueForKey<std::string>("data_type");
     //
     auto constructor_call = std::make_shared<SemaConstructorInvokation>();
     auto cons_type = std::make_shared<SemaConstructorType>();
