@@ -55,6 +55,9 @@ using assignment_stmt_ptr_t   = std::shared_ptr<AssignmentStatement>;
 using fndef_ptr_t             = std::shared_ptr<FunctionDef>;
 using translatable_ptr_t      = std::shared_ptr<Translatable>;
 using translationunit_ptr_t   = std::shared_ptr<TranslationUnit>;
+
+using import_map_t = std::map<std::string, translationunit_ptr_t>;
+
 /////////////////////
 
 

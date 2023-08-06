@@ -309,6 +309,58 @@ void Match::dump1(int indent) const {
 
 //////////////////////////////////////////////////////////////////////
 
+bool Match::related( match_ptr_t start, match_ptr_t end ){
+
+  using check_t = std::function<bool(match_ptr_t start, match_ptr_t end)>;
+
+  check_t chk = [&](match_ptr_t start, match_ptr_t end) -> bool {
+    if( start == end ){
+      return true;
+    }
+    else if( start->_parent ){
+      return chk( start->_parent, end );
+    }
+    return false;
+  };
+
+  bool rval = chk( start, end );
+  if( not rval ){
+    rval = chk( end, start );
+  }
+  return rval;
+}
+
+//////////////////////////////////////////////////////////////////////
+// traverse up from start to end and return the distance
+//////////////////////////////////////////////////////////////////////
+
+size_t Match::branchDistance( match_ptr_t start, match_ptr_t end ){
+
+  if( related( start, end ) ){
+    size_t rval = 0;
+
+    using check_t = std::function<bool(match_ptr_t start, match_ptr_t end)>;
+
+    check_t chk = [&](match_ptr_t start, match_ptr_t end) -> bool {
+      if( start == end ){
+        return true;
+      }
+      else if( start->_parent ){
+        rval++;
+        return chk( start->_parent, end );
+      }
+      return false;
+    };
+
+    bool check_ok = chk( start, end );
+    OrkAssert(check_ok);
+    return rval;
+  }
+  else return -1;
+}
+
+//////////////////////////////////////////////////////////////////////
+
 bool Match::matcherInStack(matcher_ptr_t matcher) const {
   bool rval = false;
   for (auto m : _matcherstack) {
@@ -318,6 +370,18 @@ bool Match::matcherInStack(matcher_ptr_t matcher) const {
     }
   }
   return rval;
+}
+
+match_ptr_t Match::findFirstDescendanttWithMatcher(matcher_ptr_t mchr) const {
+  for (auto ch : _children) {
+    if( ch->_matcher == mchr ){
+      return ch;
+    }
+    else{
+      return ch->findFirstDescendanttWithMatcher(mchr);
+    }
+  }
+  return nullptr;
 }
 
 //////////////////////////////////////////////////////////////////////

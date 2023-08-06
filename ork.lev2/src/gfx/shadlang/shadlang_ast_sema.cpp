@@ -39,6 +39,8 @@ void _semaNormalizeDataTypes(impl::ShadLangParser* slp, astnode_ptr_t top) {
       auto sel_ast = slp->astNodeForMatch(sel);
       sel_ast->setValueForKey<bool>("is_builtin", true);
       sel_ast->setValueForKey<bool>("is_user", false);
+      auto as_dt = std::dynamic_pointer_cast<DataType>(sel_ast);
+      OrkAssert(as_dt)
       AstNode::replaceInParent(dtu_node, sel_ast);
     }
     //////////////////////////////////////////
@@ -146,6 +148,7 @@ void _mangleFunctionDef2(
     mangled_name += ")";
     printf("mangled_name<%s>\n", mangled_name.c_str());
     fn2_node->setValueForKey<std::string>("mangled_name", mangled_name);
+    fn2_node->setValueForKey<std::string>("unmangled_name", named);
   } else {
     slp->walkDownAST(fn2_node, [&](astnode_ptr_t node) -> bool {
       printf("mangle walkdown - argsnode : %s - no dt_node\n", node->_name.c_str());
@@ -200,7 +203,13 @@ void _semaCollectNamedOfType(
       auto it = outmap.find(the_name);
       if (it != outmap.end()) {
         logerrchannel()->log("duplicate named object<%s> mangled_name<%s>", the_name.c_str(), mangled_name.c_str());
-        OrkAssert(false);
+        if( mangled_name != "" ){
+          the_name = mangled_name;
+          it = outmap.find(the_name);
+        }
+        else{
+          OrkAssert(false);
+        }
       }
       outmap[the_name] = n;
       if constexpr (std::is_same<node_t, FragmentShader>::value) {
@@ -251,6 +260,7 @@ void _semaProcNamedOfType(
 
 void _semaPerformImports(impl::ShadLangParser* slp, astnode_ptr_t top) {
   auto nodes = slp->collectNodesOfType<ImportDirective>(top);
+  import_map_t import_map;
   for (auto n : nodes) {
     //
     file::Path::NameType a, b;
@@ -282,11 +292,11 @@ void _semaPerformImports(impl::ShadLangParser* slp, astnode_ptr_t top) {
       fxs.format("%s://%s", a.c_str(), rpath.c_str());
       proc_import_path = fxs.c_str();
     }
+    
     printf("Import ProcPath<%s>\n", proc_import_path.c_str());
     auto sub_tunit = shadlang::parseFromFile(proc_import_path);
     OrkAssert(sub_tunit);
-    OrkAssert(false);
-    // AstNode::replaceInParent(n, constructor_call);
+    import_map[proc_import_path.c_str()] = sub_tunit;
   }
 }
 
@@ -315,27 +325,6 @@ void _semaNameMemberAccessOperators(impl::ShadLangParser* slp, astnode_ptr_t top
     auto name       = cm->_token->text;
     mao_node->_name = FormatString("MemberAccess: %s", name.c_str());
     mao_node->setValueForKey<std::string>("member_name", name);
-  }
-}
-
-/////////////////////////////////////////////////////////////////////////////////////////////////
-
-void _semaNameDataUserTypes(impl::ShadLangParser* slp, astnode_ptr_t top) {
-  auto nodes = slp->collectNodesOfType<DataTypeWithUserTypes>(top);
-  for (auto dtype_node : nodes) {
-    OrkAssert(false);
-    auto match = slp->matchForAstNode(dtype_node);
-    auto sel   = match->asShared<OneOf>()->_selected;
-    if (auto as_cm = sel->tryAsShared<ClassMatch>()) {
-      auto name         = as_cm.value()->_token->text;
-      dtype_node->_name = FormatString("DTWU: %s", name.c_str());
-    } else { // its a DataTypeNode
-      auto seq          = sel->asShared<Sequence>();
-      auto sel2         = seq->itemAsShared<OneOf>(2)->_selected;
-      auto cm           = sel2->asShared<ClassMatch>();
-      auto name         = cm->_token->text;
-      dtype_node->_name = FormatString("DTWU: %s", name.c_str());
-    }
   }
 }
 
@@ -404,7 +393,10 @@ void _semaResolvePostfixExpressions(impl::ShadLangParser* slp, astnode_ptr_t top
     match_ptr_t _memberacc;
   };
   //////////////////////////////////////////
+  auto LITERAL           = slp->findMatcherByName("Literal");
+  auto RVC_EXPRESSION    = slp->findMatcherByName("RValueConstructor");
   auto PARENS_EXPRESSION = slp->findMatcherByName("ParensExpression");
+  auto IDENTIFIER        = slp->findMatcherByName("IDENTIFIER");
   auto PRIMARY_IDENTIFER = slp->findMatcherByName("PrimaryIdentifier");
   auto MEMBER_ACCESS     = slp->findMatcherByName("MemberAccess");
   auto DOT               = slp->findMatcherByName("DOT");
@@ -413,12 +405,18 @@ void _semaResolvePostfixExpressions(impl::ShadLangParser* slp, astnode_ptr_t top
   //////////////////////////////////////////
   for (auto pfx_node : nodes) {
     auto match       = slp->matchForAstNode(pfx_node);
+
     auto seq         = match->asShared<Sequence>();
     auto match_tails = seq->itemAsShared<NOrMore>(1);
     if (match_tails->_items.size() == 1) {
 
       auto match_primary = Match::followThroughProxy(seq->_items[0]);
       match_primary      = match_primary->asShared<OneOf>()->_selected;
+
+      auto child_literal = match_primary->findFirstDescendanttWithMatcher(LITERAL);
+      auto child_rvc = match_primary->findFirstDescendanttWithMatcher(RVC_EXPRESSION);
+      auto child_parens = match_primary->findFirstDescendanttWithMatcher(PARENS_EXPRESSION);
+      auto child_ident = match_primary->findFirstDescendanttWithMatcher(IDENTIFIER);
 
       /////////////////////////////////////////////////////////////
       // descend into PostfixExpressionTail.[ ParensExpression ]
@@ -428,6 +426,14 @@ void _semaResolvePostfixExpressions(impl::ShadLangParser* slp, astnode_ptr_t top
       match_pfx_tail         = match_pfx_tail->asShared<OneOf>()->_selected;
       auto match_pfxtail_seq = match_pfx_tail->asShared<Sequence>();
 
+      if (match_pfxtail_seq->_items[0]->_matcher == RVC_EXPRESSION) {
+        PfxToResolve res;
+        res._pfx    = match;
+        res._pid    = match_primary;
+        res._parens = match_pfxtail_seq->_items[0];
+        resolve_list.push_back(res);
+        OrkAssert(false);
+      }
       if (match_pfxtail_seq->_items[0]->_matcher == PARENS_EXPRESSION) {
         PfxToResolve res;
         res._pfx    = match;
@@ -441,8 +447,9 @@ void _semaResolvePostfixExpressions(impl::ShadLangParser* slp, astnode_ptr_t top
         res._memberacc = match_pfx_tail;
         resolve_list.push_back(res);
       } else {
+        printf( "// CANNOT RESOLVE ///////////////////\n");
         match_pfx_tail->dump1(0);
-        // OrkAssert(false);
+        printf( "/////////////////////////////////////\n");
       }
 
       /////////////////////////////////////////////////////////////
@@ -450,6 +457,12 @@ void _semaResolvePostfixExpressions(impl::ShadLangParser* slp, astnode_ptr_t top
   }
   //////////////////////////////////////////
   for (auto item : resolve_list) {
+    printf( "// RESOLVE ///////////////////\n");
+    item._pfx->dump1(0);
+    printf( "//////////////////////////////\n");
+    item._pid->dump1(0);
+    printf( "// branchDistance<%zx>\n", Match::branchDistance(item._pfx, item._pid) );
+    printf( "//////////////////////////////\n");
     auto ast_pfx  = slp->astNodeForMatch(item._pfx);
     auto ast_pid  = slp->astNodeForMatch(item._pid);
     auto pid_name = ast_pid->typedValueForKey<std::string>("identifier_name").value();
@@ -764,7 +777,6 @@ void impl::ShadLangParser::semaAST(astnode_ptr_t top) {
 
   _semaNamePrimaryIdentifers(this, top);
   _semaNameMemberAccessOperators(this, top);
-  _semaNameDataUserTypes(this, top);
   _semaNameAdditiveOperators(this, top);
   _semaNameMultiplicativeOperators(this, top);
   _semaNameAssignmentOperators(this, top);
