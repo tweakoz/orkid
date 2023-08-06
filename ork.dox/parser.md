@@ -552,3 +552,8 @@ TranslationUnit()
               primary
                 FloatLiteral(7.0)
 ```
+
+A more complex AST (From the shader language parser)
+
+![ParticleShaderAST:1](particle.dot.png)
+
