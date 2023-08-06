@@ -19,7 +19,9 @@ for item in items:
                "--in",
                "shaders://%s.glfx"% str(item),
                "--dot",
-               path.temp()/("%s.dot" % str(item))]
+               path.temp()/("%s.dot" % str(item)),
+               "--glfx",
+               path.temp()/("%s.glfx" % str(item))]
   
     OK = (command.run(cmdlist,do_log=True)==0)
     if not OK:

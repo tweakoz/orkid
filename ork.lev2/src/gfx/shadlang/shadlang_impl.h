@@ -56,6 +56,12 @@ struct ShadLangParser : public Parser {
   void visitAST(                 //
     SHAST::astnode_ptr_t node,   //
     SHAST::visitor_ptr_t visitor);
+  bool walkUpAST(                 //
+    SHAST::astnode_ptr_t node,   //
+    SHAST::walk_visitor_fn_t visitor);
+  bool walkDownAST(                 //
+    SHAST::astnode_ptr_t node,   //
+    SHAST::walk_visitor_fn_t visitor);
   ////////////////////////////////////////////
   SHAST::astnode_ptr_t astNodeForMatch(match_ptr_t match) const;
   match_ptr_t matchForAstNode(SHAST::astnode_ptr_t astnode) const;
@@ -104,7 +110,24 @@ struct ShadLangParser : public Parser {
   std::vector<SHAST::astnode_ptr_t> _astnodestack;
   std::unordered_map<match_ptr_t, SHAST::astnode_ptr_t> _match2astnode;
   std::unordered_map<SHAST::astnode_ptr_t, match_ptr_t> _astnode2match;
+  SHAST::astnode_map_t _symboltable;
+  SHAST::astnode_map_t _translatables;
 
+  SHAST::astnode_map_t _uniform_sets;
+  SHAST::astnode_map_t _uniform_blocks;
+  SHAST::astnode_map_t _library_blocks;
+
+  SHAST::astnode_map_t _vertex_interfaces;
+  SHAST::astnode_map_t _fragment_interfaces;
+  SHAST::astnode_map_t _geometry_interfaces;
+  SHAST::astnode_map_t _compute_interfaces;
+
+  SHAST::astnode_map_t _vertex_shaders;
+  SHAST::astnode_map_t _fragment_shaders;
+  SHAST::astnode_map_t _geometry_shaders;
+  SHAST::astnode_map_t _compute_shaders;
+
+  SHAST::astnode_map_t _structs;
 }; // struct ShadLangParser
 
 } // namespace impl

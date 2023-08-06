@@ -61,6 +61,7 @@ struct DotBackend {
     addThemeItem<NumericLiteral>("#6f006f", "white", 1);
     addThemeItem<IntegerLiteral>("#6f006f", "white", 1);
     addThemeItem<RValueConstructor>("#ef8fef", "black", 1);
+    // post-semantic-analysis
     addThemeItem<SemaFunctionInvokation>("#ffdfcf", "black", 1);
     addThemeItem<SemaConstructorInvokation>("#ffdfcf", "black", 1);
     addThemeItem<SemaConstructorArguments>("#ffdfcf", "black", 1);
@@ -69,6 +70,15 @@ struct DotBackend {
     addThemeItem<SemaFunctionArguments>("#efcfbf", "black", 1);
     addThemeItem<SemaConstructorArguments>("#dfbfaf", "black", 1);
     addThemeItem<SemaMemberAccess>("#dfbfaf", "black", 1);
+    addThemeItem<SemaInheritLibrary>("#f0c040", "black", 1);
+    addThemeItem<SemaInheritVertexInterface>("#f0c040", "black", 1);
+    addThemeItem<SemaInheritFragmentInterface>("#f0c040", "black", 1);
+    addThemeItem<SemaInheritGeometryInterface>("#f0c040", "black", 1);
+    addThemeItem<SemaInheritComputeInterface>("#f0c040", "black", 1);
+    addThemeItem<SemaInheritUniformSet>("#f0c040", "black", 1);
+    addThemeItem<SemaInheritUniformBlock>("#f0c040", "black", 1);
+    addThemeItem<SemaInheritStateBlock>("#f0c040", "black", 1);
+    addThemeItem<SemaInheritExtension>("#f0c040", "black", 1);
     // default
     addThemeItem<Directive>("#4f9f9f", "white", 1);
     addThemeItem<Operator>("#6f6f2f", "white", 1);

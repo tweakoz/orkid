@@ -155,6 +155,15 @@ DECLARE_STD_AST_CLASS(SemaExpression,SemaFunctionName);
 DECLARE_STD_AST_CLASS(SemaExpression,SemaConstructorType);
 DECLARE_STD_AST_CLASS(SemaExpression,SemaConstructorInvokation);
 DECLARE_STD_AST_CLASS(SemaExpression,SemaConstructorArguments);
+DECLARE_STD_AST_CLASS(SemaExpression,SemaInheritLibrary);
+DECLARE_STD_AST_CLASS(SemaExpression,SemaInheritVertexInterface);
+DECLARE_STD_AST_CLASS(SemaExpression,SemaInheritFragmentInterface);
+DECLARE_STD_AST_CLASS(SemaExpression,SemaInheritGeometryInterface);
+DECLARE_STD_AST_CLASS(SemaExpression,SemaInheritComputeInterface);
+DECLARE_STD_AST_CLASS(SemaExpression,SemaInheritUniformSet);
+DECLARE_STD_AST_CLASS(SemaExpression,SemaInheritUniformBlock);
+DECLARE_STD_AST_CLASS(SemaExpression,SemaInheritStateBlock);
+DECLARE_STD_AST_CLASS(SemaExpression,SemaInheritExtension);
 //
 DECLARE_STD_AST_CLASS(Expression,ExpressionList);
 //
@@ -198,6 +207,7 @@ DECLARE_STD_AST_CLASS(Shader,ComputeShader);
 DECLARE_STD_AST_CLASS(PipelineInterface,VertexInterface);
 DECLARE_STD_AST_CLASS(PipelineInterface,GeometryInterface);
 DECLARE_STD_AST_CLASS(PipelineInterface,FragmentInterface);
+DECLARE_STD_AST_CLASS(PipelineInterface,ComputeInterface);
 
 ///////////////////////////////////////////////////////////
 

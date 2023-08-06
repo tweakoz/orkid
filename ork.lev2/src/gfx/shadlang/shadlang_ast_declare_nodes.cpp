@@ -41,17 +41,19 @@ void ShadLangParser::preDeclareAstNodes() {
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 void ShadLangParser::declareAstNodes() {
+
   DECLARE_OBJNAME_AST_NODE("fn_name");
   DECLARE_OBJNAME_AST_NODE("fn2_name");
   DECLARE_OBJNAME_AST_NODE("vtx_name");
+  DECLARE_OBJNAME_AST_NODE("geo_name");
   DECLARE_OBJNAME_AST_NODE("frg_name");
   DECLARE_OBJNAME_AST_NODE("com_name");
-
   DECLARE_OBJNAME_AST_NODE("uniset_name");
   DECLARE_OBJNAME_AST_NODE("uniblk_name");
   DECLARE_OBJNAME_AST_NODE("vif_name");
   DECLARE_OBJNAME_AST_NODE("gif_name");
   DECLARE_OBJNAME_AST_NODE("fif_name");
+  DECLARE_OBJNAME_AST_NODE("cif_name");
   DECLARE_OBJNAME_AST_NODE("lib_name");
   DECLARE_OBJNAME_AST_NODE("sb_name");
 
@@ -136,6 +138,8 @@ void ShadLangParser::declareAstNodes() {
   ///////////////////////////////////////////////////////////
   DECLARE_STD_AST_NODE(VertexInterface);
   DECLARE_STD_AST_NODE(FragmentInterface);
+  DECLARE_STD_AST_NODE(GeometryInterface);
+  DECLARE_STD_AST_NODE(ComputeInterface);
   DECLARE_STD_AST_NODE(StateBlock);
   DECLARE_STD_AST_NODE(StateBlockItem);
   DECLARE_STD_AST_NODE(FxConfigDecl);

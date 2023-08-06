@@ -60,6 +60,7 @@ using translationunit_ptr_t   = std::shared_ptr<TranslationUnit>;
 void _dumpAstTreeVisitor(astnode_ptr_t node, int indent, std::string& out_str);
 
 using visitor_fn_t = std::function<void(astnode_ptr_t)>;
+using walk_visitor_fn_t = std::function<bool(astnode_ptr_t)>;
 
 struct Visitor{
   visitor_fn_t _on_pre;
@@ -69,6 +70,7 @@ struct Visitor{
 };
 
 using visitor_ptr_t = std::shared_ptr<Visitor>;
+using astnode_map_t = std::unordered_map<std::string, astnode_ptr_t>;
 
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace SHAST

@@ -116,12 +116,12 @@ ShadLangParser::ShadLangParser() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-SHAST::astnode_ptr_t ShadLangParser::astNodeForMatch(match_ptr_t match) const{
+SHAST::astnode_ptr_t ShadLangParser::astNodeForMatch(match_ptr_t match) const {
   auto it = _match2astnode.find(match);
   OrkAssert(it != _match2astnode.end());
   return it->second;
 }
-match_ptr_t ShadLangParser::matchForAstNode(SHAST::astnode_ptr_t astnode) const{
+match_ptr_t ShadLangParser::matchForAstNode(SHAST::astnode_ptr_t astnode) const {
   auto it = _astnode2match.find(astnode);
   OrkAssert(it != _astnode2match.end());
   return it->second;
@@ -167,6 +167,38 @@ void ShadLangParser::visitAST(      //
   if (visitor->_on_post) {
     visitor->_on_post(node);
   }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+bool ShadLangParser::walkUpAST( //
+    SHAST::astnode_ptr_t node,  //
+    SHAST::walk_visitor_fn_t visitor) {
+  bool up = visitor(node);
+  if (up and node->_parent) {
+    bool cont = walkUpAST(node->_parent, visitor);
+    if( not cont ){
+      return false;
+    }
+  }
+  return up;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+bool ShadLangParser::walkDownAST( //
+    SHAST::astnode_ptr_t node,    //
+    SHAST::walk_visitor_fn_t visitor) {
+  bool down = visitor(node);
+  if (down) {
+    for (auto c : node->_children) {
+      bool cont = walkDownAST(c, visitor);
+      if( not cont ){
+        return false;
+      }
+    }
+  }
+  return down;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
