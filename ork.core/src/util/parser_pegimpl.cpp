@@ -142,13 +142,15 @@ matcher_ptr_t Expression::createMatcher(std::string named) { // final
 
   matcher_ptr_t out = _expr_selected->createMatcher(named);
   if(_expr_name!=""){
-    printf( "XYZ expr out exprname<%s> matcher<%s>\n", _expr_name.c_str(), out->_name.c_str() );
+    //printf( "XYZ expr out exprname<%s> matcher<%s>\n", _expr_name.c_str(), out->_name.c_str() );
     auto it = _user_parser->_matchers_by_name.find(_expr_name);
     if(it==_user_parser->_matchers_by_name.end()){
       _user_parser->_matchers_by_name[_expr_name] = out;
       out->_name = _expr_name;
     }
     else{
+      // duplicate rule name
+      logerrchannel()->log( "expr out exprname<%s> matcher<%s> DUPLICATE!!", _expr_name.c_str(), out->_name.c_str() );
       OrkAssert(false);
     }
   }
@@ -420,6 +422,8 @@ PegImpl::PegImpl() {
 void PegImpl::loadPEGScannerRules() { //
   try {
     auto dsl_scanner = _peg_parser->_scanner;
+    dsl_scanner->addEnumClass("\\/\\*([^*]|\\*+[^/*])*\\*+\\/", TokenClass::MULTI_LINE_COMMENT);
+    dsl_scanner->addEnumClass("\\/\\/.*[\\n\\r]", TokenClass::SINGLE_LINE_COMMENT);
     dsl_scanner->addEnumClass("\\s+", TokenClass::WHITESPACE);
     dsl_scanner->addEnumClass("[\\n\\r]+", TokenClass::NEWLINE);
     dsl_scanner->addEnumClass("[a-zA-Z_][a-zA-Z0-9_]*", TokenClass::KW_OR_ID);
@@ -748,6 +752,9 @@ void PegImpl::loadPEGGrammar() { //
         auto rule          = item.second;
         uint64_t crc_id    = CrcString(rule->_name.c_str()).hashed();
         _current_rule_name = rule->_name;
+        if( rule->_name == "QUOTED_STRING"){
+          rule->_regex = R"(\"[^\"]*\")";
+        }
         this->_user_scanner->addEnumClass(rule->_regex, crc_id);
         logchan_rulespec2->log(
             "IMPLEMENT SCANNER EnumClass<%s : %zu> regex \"%s\" ", //
@@ -757,7 +764,7 @@ void PegImpl::loadPEGGrammar() { //
       }
       this->_user_scanner->buildStateMachine();
     } catch (std::exception& e) {
-      logchan_rulespec2->log("EXCEPTION cur_rule<%s>  cause<%s>", _current_rule_name.c_str(), e.what());
+      logerrchannel()->log("EXCEPTION cur_rule<%s>  cause<%s>", _current_rule_name.c_str(), e.what());
       OrkAssert(false);
     }
   };
@@ -808,7 +815,7 @@ void PegImpl::loadPEGGrammar() { //
     _ast_buildstack.pop_back();
     ast_rule->_expression        = expr_ast_node;
     _user_parser_rules[rulename] = ast_rule;
-    printf("CREATED AST-RULE<%s>\n", rulename.c_str());
+    //printf("CREATED AST-RULE<%s>\n", rulename.c_str());
   };
 
   _rsi_parser_matcher = _peg_parser->zeroOrMore(parser_rule, "parser_rules");
@@ -823,6 +830,8 @@ match_ptr_t PegImpl::parseUserScannerSpec(std::string inp_string) {
     peg_scanner->clear();
     peg_scanner->scanString(inp_string);
     peg_scanner->discardTokensOfClass(uint64_t(TokenClass::WHITESPACE));
+    peg_scanner->discardTokensOfClass(uint64_t(TokenClass::SINGLE_LINE_COMMENT));
+    peg_scanner->discardTokensOfClass(uint64_t(TokenClass::MULTI_LINE_COMMENT));
     peg_scanner->discardTokensOfClass(uint64_t(TokenClass::NEWLINE));
   } catch (std::exception& e) {
     logerrchannel()->log("EXCEPTION<%s>", e.what());
@@ -868,6 +877,8 @@ match_ptr_t PegImpl::parseUserParserSpec(std::string inp_string) {
     peg_scanner->clear();
     peg_scanner->scanString(inp_string);
     peg_scanner->discardTokensOfClass(uint64_t(TokenClass::WHITESPACE));
+    peg_scanner->discardTokensOfClass(uint64_t(TokenClass::SINGLE_LINE_COMMENT));
+    peg_scanner->discardTokensOfClass(uint64_t(TokenClass::MULTI_LINE_COMMENT));
     peg_scanner->discardTokensOfClass(uint64_t(TokenClass::NEWLINE));
   } catch (std::exception& e) {
     logchan_rulespec->log("EXCEPTION<%s>", e.what());
@@ -1001,11 +1012,11 @@ void PegImpl::implementUserLanguage() {
     logchan_rulespec2->log("///////////////////////////////////////////////////////////");
     for (auto rule_item : _user_parser_rules) {
       auto rule = rule_item.second;
-      logchan_rulespec2->log("rule<%s> referenced by [\n", rule->_name.c_str());
+      logchan_rulespec2->log("rule<%s> referenced by [", rule->_name.c_str());
       for (auto ref : rule->_referenced_by) {
         auto rule = ref->_referenced_rule;
         auto node = ref->_node;
-        logchan_rulespec2->log("  rule(%s) : node(%p)\n", rule->_name.c_str(), (void*)node.get());
+        logchan_rulespec2->log("  rule(%s) : node(%p)", rule->_name.c_str(), (void*)node.get());
       }
       logchan_rulespec2->log("]\n");
     }

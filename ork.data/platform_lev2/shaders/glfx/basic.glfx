@@ -5,9 +5,11 @@ fxconfig fxcfg_default {
   glsl_version = "150";
   import "skintools.i";
 }
+
 ///////////////////////////////////////////////////////////////
 // Interfaces
 ///////////////////////////////////////////////////////////////
+
 
 uniform_set ub_vtx {
   mat4 mvp;
@@ -25,6 +27,7 @@ uniform_set ub_vtx {
   vec3 WCamLoc;
   float SpecularPower;
 }
+
 vertex_interface iface_rigid : ub_vtx {
   inputs {
     vec4 position : POSITION;
@@ -147,6 +150,8 @@ state_block sb_additive : sb_default { BlendMode = ADDITIVE; }
 ///////////////////////////////////////////////////////////////
 // shaders
 ///////////////////////////////////////////////////////////////
+
+/*
 vertex_shader vs_vtxtexcolor : iface_rigid {
   gl_Position = WVPMatrix * position;
   frg_clr     = vec4(1.0f, 1.0f, 1.0f, 1.0f); // vtxcolor.bgra;
@@ -408,4 +413,5 @@ technique tek_lamberttex_skinned_stereo {
     state_block     = sb_default;
   }
 }
+*/
 ///////////////////////////////////////////////////////////////

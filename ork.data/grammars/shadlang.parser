@@ -1,0 +1,630 @@
+DataType       <|[
+    opt{ KW_IN }
+    opt{ KW_CONST }
+    sel{ KW_FLOAT   KW_INT 
+         KW_VEC2    KW_VEC3    KW_VEC4 
+         KW_MAT2    KW_MAT3    KW_MAT4 
+         KW_SAMP1D  KW_SAMP2D  KW_SAMP3D
+         KW_UVEC2   KW_UVEC3   KW_UVEC4 
+         KW_UMAT2   KW_UMAT3   KW_UMAT4 
+         KW_USAMP1D KW_USAMP2D KW_USAMP3D
+         KW_IVEC2   KW_IVEC3   KW_IVEC4 
+         KW_IMAT2   KW_IMAT3   KW_IMAT4 
+         KW_ISAMP1D KW_ISAMP2D KW_ISAMP3D
+    }
+]|>
+
+TypedIdentifier      <|[ sel { DataType IDENTIFIER } IDENTIFIER ]|>
+
+FloatLiteral         <| [ FLOATING_POINT ] |>
+IntegerLiteral       <| sel{ UNSIGNED_INTEGER INTEGER } |>
+NumericLiteral       <| sel{IntegerLiteral FloatLiteral} |>
+Literal              <| [ NumericLiteral ] |>
+
+MemberRef            <| [ DOT IDENTIFIER ] |>
+ArrayRef             <| [ L_SQUARE Expression R_SQUARE ] |>
+
+InheritListItem      <| [ COLON IDENTIFIER opt{ [L_PAREN IDENTIFIER R_PAREN] } ] |>
+InheritList          <| zom{ InheritListItem } |>
+
+exec_arg             <| [ Expression opt{COMMA} ] |>
+exec_arglist         <| zom{ exec_arg } |>
+decl_arglist         <| zom{ [ TypedIdentifier opt{COMMA} ] } |>
+
+RValueConstructor    <|[
+    DataType
+    ParensExpression
+]|>
+
+Directive <| sel{
+ImportDirective 
+}|>
+Operator <| sel{
+  AssignmentOperator 
+}|>
+
+///////////////////////////////////////////////////////////
+
+DataTypeWithUserTypes <| sel {
+    DataType
+    IDENTIFIER
+}|>
+
+DataDeclaration <| sel {
+  [TypedIdentifier L_SQUARE INTEGER R_SQUARE] : "ArrayDeclaration"
+  [TypedIdentifier] 
+}|>
+
+///////////////////////////////////////////////////////////
+
+WrOnlyOperator <| EQUALS |>
+RdWrOperator   <| sel{ PLUSEQ MINUSEQ STAREQ SLASHEQ } |>
+UnaryOperator  <| sel{
+  PLUS
+  MINUS
+  NOT
+  TILDE
+  STAR
+  BITWISE_AND
+}|>
+
+///////////////////////////////////////////////////////////
+
+DataDeclarations <| zom{ [ DataDeclaration SEMICOLON ] } |>
+
+
+UnaryExpression <| sel{
+    [ PostfixExpression ]
+    [ UnaryOperator CastExpression ]
+}|>
+
+CastExpression <| sel {
+    [L_PAREN DataType R_PAREN CastExpression] : "CastExpression1"
+    UnaryExpression
+}|>
+
+ParensExpression <|[
+    [ L_PAREN Expression R_PAREN ]
+]|>
+
+PostfixExpression <|[
+    PrimaryExpression
+    zom { PostfixExpressionTail }
+]|>
+
+PostfixExpressionTail <| sel{
+    [ L_SQUARE Expression R_SQUARE ] : "ArrayIndexOperator"
+    [ ParensExpression ]
+    [ L_PAREN R_PAREN ]
+    [ DOT IDENTIFIER ] : "MemberAccessOperator"
+    [ PLUSPLUS ] : "IncrementOperator"
+    [ MINUSMINUS ] : "DecrementOperator"
+}|>
+
+PrimaryExpression <| sel{ 
+  [ Literal ]
+  [ RValueConstructor ]
+  [ ParensExpression ]
+  [ IDENTIFIER ] : "PrimaryIdentifier"
+  // [ QUOTED_STRING ] // no strings in shadlang yet..
+}|>
+
+MultiplicativeOperator <| sel{ STAR SLASH PERCENT } |> 
+
+MultiplicativeExpression <|[
+    CastExpression
+    zom{[ MultiplicativeOperator CastExpression ]}
+]|>
+
+AdditiveOperator <| sel{ PLUS MINUS } |> 
+
+AdditiveExpression <|[
+    MultiplicativeExpression
+    zom{ [ AdditiveOperator MultiplicativeExpression ] }
+]|>
+
+ShiftOperator <| sel{ L_SHIFT R_SHIFT } |>
+
+ShiftExpression <|[
+    AdditiveExpression
+    zom{[ ShiftOperator AdditiveExpression ]}
+]|>
+
+RelationalOperator <| sel{ L_ANGLE R_ANGLE IS_LEQ_TO IS_GEQ_TO } |>
+
+RelationalExpression <|[
+    ShiftExpression
+    zom{[ RelationalOperator ShiftExpression ]}
+]|>
+
+EqualityOperator <| sel{ IS_EQ_TO IS_NEQ_TO } |>
+EqualityExpression <|[
+    RelationalExpression 
+    zom{ [ EqualityOperator RelationalExpression ] }
+]|>
+
+AndExpression <|[
+    EqualityExpression
+    zom{[ BITWISE_AND EqualityExpression ]}
+]|>
+
+ExclusiveOrExpression <|[
+    AndExpression
+    zom{[ CARET AndExpression ]}
+]|>
+
+InclusiveOrExpression <|[
+    ExclusiveOrExpression
+    zom{[ BITWISE_OR ExclusiveOrExpression ]}
+]|>
+
+LogicalAndExpression <|[
+    InclusiveOrExpression
+    zom{[ LOGICAL_AND InclusiveOrExpression ]}
+]|>
+
+LogicalOrExpression <|[
+    LogicalAndExpression
+    zom{[ LOGICAL_OR LogicalAndExpression ]}
+]|>
+
+ConditionalExpression <|[
+    LogicalOrExpression
+]|>
+
+AssignmentOperator <| sel{ 
+    EQUALS 
+    PLUSEQ 
+    MINUSEQ 
+    STAREQ 
+    SLASHEQ 
+}|>
+
+AssignmentExpression <| sel{
+    [ DataTypeWithUserTypes UnaryExpression AssignmentOperator AssignmentExpression ] : "AssignmentExpression1"
+    [ UnaryExpression AssignmentOperator AssignmentExpression ] : "AssignmentExpression2"
+    [ ConditionalExpression ] : "AssignmentExpression3"
+}|> 
+
+ConstantExpression <|[
+    ConditionalExpression
+]|>
+
+Expression <| sel{
+    [ AssignmentExpression oom{[ COMMA AssignmentExpression ]} ] : "ExpressionList"
+    [ AssignmentExpression ]
+}|>
+
+//Expression <|[
+//    AssignmentExpression
+//    zom{[ COMMA AssignmentExpression ]}
+//]|>
+
+///////////////////////////////////////////////////////////
+
+/*
+IdentifierList <|[
+    IDENTIFIER
+    zom{[ COMMA IDENTIFIER ]}
+]|>
+
+ParameterDeclaration <|[
+    DeclarationSpecifiers
+    opt{ Declarator }
+]|>
+
+ParameterList <|[
+    ParameterDeclaration
+    zom{[ COMMA ParameterDeclaration ]}
+]|>
+
+ParameterTypeList <|[
+    ParameterList
+    opt{[ COMMA ELLIPSIS ]}
+]|>
+
+DirectDeclarator <|[
+   sel{ 
+       [ IDENTIFIER ]
+       [ L_PAREN Declarator R_PAREN ]
+   }
+   zom{
+    sel{
+        [ L_SQUARE AssignmentExpression R_SQUARE ]
+        [ L_SQUARE R_SQUARE ]
+        [ L_PAREN ParameterTypeList R_PAREN ]
+        [ L_PAREN IdentifierList R_PAREN ]
+    }
+   }
+]|>
+
+Declarator <|[ DirectDeclarator ]|>
+
+DeclarationSpecifiers <|[
+    sel{
+        [ DataType ]
+        [ DataTypeWithUserTypes ]
+    }
+]|>
+      
+Declaration <|[
+  DeclarationSpecifiers 
+  opt { InitDeclaratorList }
+  SEMICOLON
+]|> 
+
+InitDeclaratorList <|[
+    InitDeclarator
+    zom{[ COMMA InitDeclarator ]}
+]|>
+
+InitDeclarator <|[
+    Declarator
+    opt{[ EQUALS Initializer ]}
+]|>
+*/
+///////////////////////////////////////////////////////////
+
+IfStatement <|[
+    KW_IF
+    L_PAREN
+    Expression
+    R_PAREN
+    Statement
+    opt{[
+        KW_ELSE
+        Statement
+    ]}
+]|>
+
+WhileStatement <|[
+    KW_WHILE
+    L_PAREN
+    Expression
+    R_PAREN
+    Statement
+]|>
+
+ForStatement <|[
+    KW_FOR
+    L_PAREN
+    opt{ExpressionStatement}
+    opt{ExpressionStatement}
+    opt{Expression}
+    R_PAREN
+    Statement
+]|>
+
+ReturnStatement <|[
+    KW_RETURN
+    opt{[
+        Expression
+    ]}
+    SEMICOLON
+]|>
+
+CompoundStatementItem <| sel{
+    Statement
+    //Declaration
+}|>
+
+CompoundStatement <|[
+    L_CURLY
+    zom { CompoundStatementItem }
+    R_CURLY
+]|>
+
+ExpressionStatement <| sel{ 
+    [ Expression SEMICOLON ]
+    [ SEMICOLON ]
+} |>
+
+DiscardStatement <|[
+    KW_DISCARD SEMICOLON
+]|>
+
+DeclarationStatement <|[
+    DataDeclaration SEMICOLON
+]|>
+
+Statement <| sel{ 
+    [ DeclarationStatement ]
+    [ DiscardStatement ]
+    [ ExpressionStatement ]
+    [ CompoundStatement ]
+    [ IfStatement]
+    [ WhileStatement]
+    [ ForStatement ]
+    [ ReturnStatement ]
+} |>
+
+///////////////////////////////////////////////////////////
+
+FunctionDef1 <|[
+    KW_FUNCTION
+    [ IDENTIFIER ] : "fn_name"
+    L_PAREN
+    decl_arglist : "fn_args"
+    R_PAREN
+    CompoundStatement : "fn_statements"
+]|>
+
+FunctionDef2 <|[
+    sel { DataType IDENTIFIER } : "fn2_return_type"
+    [ IDENTIFIER ] : "fn2_name"
+    L_PAREN
+    decl_arglist : "fn2_args"
+    R_PAREN
+    CompoundStatement : "fn2_statements"
+]|>
+
+LibraryBlock <|[
+    KW_LIBBLOCK
+    [ IDENTIFIER ] : "lib_name"
+    zom{InheritListItem} : "lib_dependencies"
+    L_CURLY
+    zom{ 
+        sel{
+            StructDecl
+            FunctionDef2
+            [KW_PRAGMA_TYPELIB SEMICOLON]
+        }
+    }
+    R_CURLY
+]|>
+
+VertexShader <|[
+    KW_VTXSHADER
+    [ IDENTIFIER ] : "vtx_name"
+    zom{InheritListItem} : "vtx_dependencies"
+    CompoundStatement : "vtx_statements"
+]|>
+
+GeometryShader <|[
+    KW_GEOSHADER
+    [ IDENTIFIER ] : "geo_name"
+    zom{InheritListItem} : "geo_dependencies"
+    CompoundStatement : "geo_statements"
+]|>
+
+FragmentShader <|[
+    KW_FRGSHADER
+    [ IDENTIFIER ] : "frg_name"
+    zom{ InheritListItem } : "frg_dependencies"
+    CompoundStatement : "frg_statements"
+]|>
+
+ComputeShader <|[
+    KW_COMSHADER
+    [ IDENTIFIER ] : "com_name"
+    zom{ InheritListItem } : "com_dependencies"
+    CompoundStatement : "com_statements"
+]|>
+
+UniformSet <|[
+  KW_UNISET
+  [ IDENTIFIER ] : "uniset_name"
+  L_CURLY
+  DataDeclarations : "uniset_decls"
+  R_CURLY
+]|>
+
+UniformBlk <|[
+  KW_UNIBLK
+  [ IDENTIFIER ] : "uniblk_name"
+  L_CURLY
+  DataDeclarations : "uniblk_decls"
+  R_CURLY
+]|>
+
+InterfaceLayoutItem <| sel{
+    [IDENTIFIER EQUALS INTEGER]
+    [IDENTIFIER]
+}|>
+
+InterfaceLayout  <|[
+   KW_LAYOUT 
+   L_PAREN 
+   [ 
+      InterfaceLayoutItem 
+      zom{ [COMMA InterfaceLayoutItem] } 
+   ]
+   R_PAREN
+]|>
+
+InterfaceInput <| sel{
+    [ opt{ InterfaceLayout } TypedIdentifier SEMICOLON ]
+    [ TypedIdentifier COLON IDENTIFIER SEMICOLON ]
+    [ TypedIdentifier L_SQUARE R_SQUARE SEMICOLON ]
+    [ InterfaceLayout SEMICOLON ]
+}|>
+
+InterfaceInputs <|[
+  KW_INPUTS
+  L_CURLY
+  zom{ 
+    InterfaceInput
+  }                : "inputlist"
+  R_CURLY
+]|>
+
+InterfaceOutput <| sel {
+    [ opt{InterfaceLayout} TypedIdentifier SEMICOLON ]
+    [ InterfaceLayout SEMICOLON ]
+}|>
+
+InterfaceOutputs <|[
+  KW_OUTPUTS
+  L_CURLY
+  zom{ 
+      InterfaceOutput
+  }
+  R_CURLY
+]|>
+
+InterfaceStorage <|[
+   InterfaceLayout
+    [ IDENTIFIER ] : "storage_class"
+    L_CURLY
+    DataDeclarations : "storage_decls"
+    R_CURLY
+    [ IDENTIFIER ] : "storage_name"
+    SEMICOLON
+ ]|>
+
+InterfaceStorages <|[
+    KW_STORAGE
+    L_CURLY
+    zom{ InterfaceStorage }
+    R_CURLY
+]|>
+
+InterfaceItem <| sel{
+    InterfaceInputs
+    InterfaceOutputs
+    InterfaceStorages
+}|>
+
+StructDecl <|[
+    KW_STRUCT
+    [ IDENTIFIER ] : "struct_name"
+    L_CURLY
+    [ DataDeclarations ] : "struct_decls"
+    R_CURLY
+    SEMICOLON
+]|>
+
+VertexInterface <|[
+  KW_VTXIFACE
+  [ IDENTIFIER ] : "vif_name"
+  zom{ InheritListItem } : "vif_dependencies"
+  L_CURLY
+  zom{ InterfaceItem }
+  R_CURLY
+]|>
+
+GeometryInterface <|[
+  KW_GEOIFACE
+  [ IDENTIFIER ] : "gif_name"
+  zom{ InheritListItem } : "gif_dependencies"
+  L_CURLY
+  zom{ InterfaceItem }
+  R_CURLY
+]|>
+
+FragmentInterface <|[
+  KW_FRGIFACE
+  [ IDENTIFIER ] : "fif_name"
+  zom{ InheritListItem } : "fif_dependencies"
+  L_CURLY
+  zom{ InterfaceItem }
+  R_CURLY
+]|>
+
+ComputeInterface <|[
+  KW_COMIFACE
+  [ IDENTIFIER ] : "cif_name"
+  zom{ InheritListItem } : "cif_dependencies"
+  L_CURLY
+  zom{ InterfaceItem }
+  R_CURLY
+]|>
+
+sb_key <| sel{ KW_BLENDMODE KW_CULLTEST KW_DEPTHTEST KW_DEPTHMASK } |>
+
+StateBlockItem <|[
+    [ sb_key EQUALS IDENTIFIER SEMICOLON ] : "stateblock_item"
+]|>
+
+StateBlock <|[
+  KW_STATEBLOCK
+  [ IDENTIFIER ] : "sb_name"
+  zom{ InheritListItem } : "sb_dependencies"
+  L_CURLY
+  zom{ StateBlockItem }
+  R_CURLY
+]|>
+
+pass_binding_key <| sel{  KW_VTXSHADER KW_GEOSHADER KW_FRGSHADER KW_STATEBLOCK } |>
+
+pass_binding <|[
+  pass_binding_key EQUALS IDENTIFIER SEMICOLON
+]|>
+
+Pass <|[
+  KW_PASS
+  [ IDENTIFIER ] : "pass_name"
+  L_CURLY
+  zom{ 
+      pass_binding : "pass_item"
+  }
+  R_CURLY
+]|>
+
+
+FxConfigRef <|[
+  KW_FXCONFIG
+  EQUALS
+  [ IDENTIFIER ] : "fxconfigref_name"
+  SEMICOLON
+]|>
+
+FxConfigKvPair <|[
+  [ IDENTIFIER ] : "fxconfigkvpair_key"
+  EQUALS
+  [ QUOTED_STRING ] : "fxconfigkvpair_val"
+  SEMICOLON
+]|>
+
+ImportDirective <|[
+  KW_IMPORT
+  [ QUOTED_STRING ] : "import_id"
+  SEMICOLON
+]|>
+
+FxConfigDecl <|[
+  KW_FXCONFIG
+  [ IDENTIFIER ] : "fxconfigdecl_name"
+  L_CURLY
+  zom{ 
+    FxConfigKvPair
+  }
+  zom{ 
+    ImportDirective
+  }
+  R_CURLY
+]|>
+
+Technique <|[
+  KW_TECHNIQUE
+  [ IDENTIFIER ] : "technique_name"
+  L_CURLY
+  opt{ FxConfigRef }
+  oom{ Pass }
+  R_CURLY
+]|>
+
+Translatable <| 
+  sel{ 
+    FunctionDef1 
+    FunctionDef2
+    VertexShader 
+    GeometryShader 
+    FragmentShader 
+    ComputeShader 
+    UniformSet 
+    UniformBlk 
+    VertexInterface 
+    GeometryInterface
+    FragmentInterface 
+    ComputeInterface
+    StateBlock
+    Technique
+    FxConfigDecl 
+    LibraryBlock
+  }
+|>
+
+TranslationUnit <|
+  zom{ Translatable } 
+|>

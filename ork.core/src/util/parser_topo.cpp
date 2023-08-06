@@ -17,7 +17,7 @@
 /////////////////////////////////////////////////////////////////////////////////////////////////
 namespace ork {
 //////////////////////////////////////////////////////////////////////
-static logchannel_ptr_t logchan_parser_topo = logger()->createChannel("PARSER_TOPO", fvec3(0.5, 0.7, 0.5), true);
+static logchannel_ptr_t logchan_parser_topo = logger()->createChannel("PARSER_TOPO", fvec3(0.5, 0.7, 0.5), false);
 static std::atomic<int> g_matcher_id(0);
 //////////////////////////////////////////////////////////////////////
 
@@ -178,8 +178,8 @@ void Parser::_sequence(matcher_ptr_t matcher, std::vector<matcher_ptr_t> sub_mat
   };
   ///////////////////////////////////////////////////////
   matcher->_attempt_match_fn = [=](matcher_ptr_t par_matcher, scannerlightview_constptr_t slv) -> match_attempt_ptr_t {
-    auto match_attempt = pushMatch(par_matcher);
     log_match("SEQ<%s>: beg_match len<%zu>", matcher->_name.c_str(), sub_matchers.size());
+    auto match_attempt = pushMatch(par_matcher);
     auto slv_iter        = std::make_shared<ScannerLightView>(*slv);
     auto slv_match       = std::make_shared<ScannerLightView>(*slv);
     auto the_sequence    = match_attempt->makeShared<SequenceAttempt>();
@@ -506,8 +506,7 @@ matcher_ptr_t Parser::nOrMore(matcher_ptr_t sub_matcher, size_t minMatches, std:
       popMatch();
       return rval;
     }
-    OrkAssert(false); // should never get here?
-    // log_match( "NOM%zu<%s>: end_match (NOMATCH)", minMatches, name.c_str() );
+    logerrchannel()->log( "NOM%zu<%s>: invalid matchcount<%zu>", minMatches, name.c_str(), the_nom->_items.size() );
     popMatch();
     return nullptr;
   };

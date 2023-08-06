@@ -21,6 +21,18 @@
 namespace ork {
 ///////////////////////////////////////////////////////////////////////////////
 
+struct StringFileReadResult{
+  file::Path _path;
+  std::string _data;
+};
+struct BinaryFileReadResult{
+  file::Path _path;
+  std::vector<uint8_t> _data;
+};
+
+using strfilereadresult_ptr_t = std::shared_ptr<StringFileReadResult>;
+using binfilereadresult_ptr_t = std::shared_ptr<BinaryFileReadResult>;
+
 class File {
 
 public:
@@ -37,6 +49,11 @@ public:
   File(const char* sFileName, EFileMode eMode, FileDev* pdev = NULL);
   File(const file::Path& sFileName, EFileMode eMode, FileDev* pdev = NULL);
   ~File();
+
+  static strfilereadresult_ptr_t readAsString(const file::Path& input_path);
+  static binfilereadresult_ptr_t readAsBinary(const file::Path& input_path);
+  static bool writeString(const file::Path& input_path, std::string data);
+  static bool writeBinary(const file::Path& input_path, std::vector<uint8_t> data);
 
   EFileErrCode OpenFile(const file::Path& sFileName, EFileMode eMode);
   EFileErrCode Open();

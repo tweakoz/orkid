@@ -479,7 +479,7 @@ libblock lib_deferred
   /////////////////////////////////////////////////////////
   float opRep( in vec3 p, in vec3 rep_freq )
   {
-    vec3 q = mod(p+0.5*rep_freq,rep_freq)-0.5*rep_freq;
+    vec3 q = mod(p+0.5*rep_freq,rep_freq)-(0.5*rep_freq);
     return distance_from_sphere( q, vec3(1), 1 );
   }
   /////////////////////////////////////////////////////////
@@ -506,6 +506,7 @@ libblock lib_deferred
   }
   /////////////////////////////////////////////////////////
   vec3 pbrEnvironmentLightingSDF(WPosData wpd){
+
     GBufData gbd = decodeGBUF(wpd);
     float depth_fogval = saturateF(pow(gbd._fogZ*DepthFogDistance,DepthFogPower));
     if(depth_fogval>=1.0) depth_fogval= 0.0;
@@ -525,7 +526,7 @@ libblock lib_deferred
 
     float total_distance_traveled = 0.0;
 
-    for (int i = 0; i < MAX_NUM_STEPS; ++i)
+    for (int i = 0; i < MAX_NUM_STEPS; i++)
     {
       vec3 vec_d = VIEW_N*total_distance_traveled;
       vec3 current_position = view_epos0 + vec_d;
@@ -667,7 +668,6 @@ libblock lib_deferred
     //return vec3(alpha*(1-atmos));
 
   } // vec3 environmentLighting(){
-
 
 ///////////////////////////////////////////////////////////////
 } // libblock lib_deferred : ub_light : ub_frg {

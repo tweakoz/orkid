@@ -62,7 +62,7 @@ template <typename user_t> std::shared_ptr<user_t> Match::makeSharedForKey(std::
   return _uservars.makeSharedForKey<user_t>(named);
 }
 template <typename user_t> void Match::setSharedForKey(std::string named, std::shared_ptr<user_t> ptr) {
-  return _uservars.set<std::shared_ptr<user_t>>(named);
+  return _uservars.set<std::shared_ptr<user_t>>(named,ptr);
 }
 
 template <typename impl_t> std::shared_ptr<impl_t> Match::followImplAsShared() {

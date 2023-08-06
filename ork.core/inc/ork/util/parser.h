@@ -39,6 +39,7 @@ struct OneOf;
 ///////////////////////////////////////////////////////////////////////////////
 
 using match_ptr_t              = std::shared_ptr<Match>;
+using match_rawptr_t           = Match*;
 using match_attempt_ptr_t      = std::shared_ptr<MatchAttempt>;
 using match_attempt_constptr_t = std::shared_ptr<MatchAttempt>;
 using matcher_ptr_t            = std::shared_ptr<Matcher>;
@@ -92,6 +93,8 @@ struct MatchAttempt {
 struct Match {
   Match(match_attempt_constptr_t attempt);
   using visit_fn_t = std::function<void(int, const Match*)>;
+  using walk_fn_t = std::function<bool(const Match*)>;
+
   void visit(int level, visit_fn_t) const;
   void dump1(int indent) const;
   std::string ldump() const;
@@ -108,6 +111,8 @@ struct Match {
   template <typename impl_t> std::shared_ptr<impl_t> followImplAsShared();
   static match_ptr_t followThroughProxy( match_ptr_t start );
 
+  bool walkDown(walk_fn_t) const;
+  const Match* traverseDownPath(std::string path) const;
   match_attempt_constptr_t _attempt;
   match_ptr_t _parent;
   std::vector<match_ptr_t> _children;
@@ -137,6 +142,7 @@ struct Matcher {
   std::string _info;
   std::function<bool()> _on_link;
   varmap::VarMap _uservars;
+  int _linkattempts = 0;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -325,6 +331,8 @@ struct Parser {
   std::unordered_set<matcher_ptr_t> _matchers;
   std::unordered_map<std::string, matcher_ptr_t> _matchers_by_name;
   std::vector<match_attempt_ptr_t> _match_stack;
+
+  std::unordered_map<uint64_t,match_attempt_ptr_t> _packrat_cache;
 
   scanner_ptr_t _scanner;
   svar64_t _user;

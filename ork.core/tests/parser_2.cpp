@@ -9,9 +9,10 @@
 #include <utpp/UnitTest++.h>
 #include <ork/util/parser.inl>
 
+namespace ork::unittest::parser2 {
 ///////////////////////////////////////////////////////////////////////////////
 
-std::string scanner_spec = R"xxx(
+static std::string scanner_spec = R"xxx(
     macro(M1)           <| "xyz" |>
     MULTI_LINE_COMMENT  <| "\/\*([^*]|\*+[^/*])*\*+\/" |>
     SINGLE_LINE_COMMENT <| "\/\/.*[\n\r]" |>
@@ -37,7 +38,7 @@ std::string scanner_spec = R"xxx(
 
 ///////////////////////////////////////////////////////////////////////////////
 
-std::string parser_spec = R"xxx(
+static std::string parser_spec = R"xxx(
     datatype <| sel{KW_FLOAT KW_INT} |>
     number <| sel{FLOATING_POINT INTEGER} |>
     kw_or_id <| KW_OR_ID |>
@@ -115,9 +116,9 @@ template <typename T> std::shared_ptr<T> ast_get(match_ptr_t m) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct MyParser2 : public Parser {
+struct Parser : public ::ork::Parser {
 
-  MyParser2() {
+  Parser() {
     _name              = "p2";
     _DEBUG_MATCH       = true;
     _DEBUG_INFO        = true;
@@ -382,10 +383,12 @@ struct MyParser2 : public Parser {
 
   matcher_ptr_t _fns_matcher;
   std::vector<MYAST::astnode_ptr_t> _astnodestack;
-}; // struct MyParser
+}; // struct Parser
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
+
+} //namespace ork::unittest::parser2 {
 
 TEST(parser2) {
   printf("P2.TOP.A\n");
@@ -404,7 +407,7 @@ TEST(parser2) {
             float X = (1.0+2.3)*7.0;
         }
     )";
-  auto the_parser = std::make_shared<MyParser2>();
+  auto the_parser = std::make_shared<ork::unittest::parser2::Parser>();
   auto match = the_parser->parseString(parse_str);
   printf(
       "P2.TOP.B match<%p> matcher<%p:%s> st<%zu> en<%zu>\n", //
