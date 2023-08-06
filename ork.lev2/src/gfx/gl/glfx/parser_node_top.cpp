@@ -136,7 +136,7 @@ void TopNode::parse() {
 
   itokidx = 0;
 
-  ScanViewRegex r("(\n)", true);
+  auto filter_regex = std::make_shared<ScanViewRegex>("(\n)", true);
 
   auto program = _parser->_program;
 
@@ -144,7 +144,7 @@ void TopNode::parse() {
     const Token& tok = tokens[itokidx];
      //printf("token<%d> iline<%d> col<%d> text<%s>\n", itokidx, tok.iline + 1, tok.icol + 1, tok.text.c_str());
 
-    ScannerView scanview(*_scanner, r);
+    ScannerView scanview(*_scanner, filter_regex);
     scanview.scanBlock(itokidx);
 
     bool advance_block = true;

@@ -32,7 +32,6 @@ struct AstNode {
     OrkAssert(index < _children.size());
     auto ch  = _children[index];
     auto ret = std::dynamic_pointer_cast<T>(ch);
-    OrkAssert(ret);
     return ret;
   }
   ///////////////////////////
@@ -60,6 +59,10 @@ struct AstNode {
     }
     return nullptr;
   }
+
+  using key_t = varmap::key_t;
+  bool hasKey(const key_t& key) const;
+
   ///////////////////////////
   std::string _name;
   bool _descend = true;

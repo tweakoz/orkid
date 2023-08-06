@@ -53,11 +53,12 @@ TILDE               <| "~" |>
 PERCENT             <| "%" |>
 CARET               <| "\^" |>
 
-INTEGER             <| "-?(\d+)" |>
-UNSIGNED_INTEGER    <| "-?(\d+)u" |>
+HEX_INTEGER         <| "[0][x|X][a-fA-F\d]+[u?]" |>
+INTEGER             <| "-?(\d+)u?" |>
 FLOATING_POINT      <| "-?(\d*\.?)(\d+)([eE][-+]?\d+)?" |>
 
 KW_FLOAT            <| "float" |>
+KW_UINT             <| "uint" |>
 KW_INT              <| "int" |>
 
 KW_VEC2             <| "vec2" |>

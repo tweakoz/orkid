@@ -13,7 +13,7 @@ namespace ork::peg {
 
 struct PegImpl {
 
-  PegImpl();
+  PegImpl(Parser* user_parser);
   void loadPEGScannerRules();
   void loadPEGGrammar();
 
@@ -30,7 +30,6 @@ struct PegImpl {
 
   match_ptr_t parseUserScannerSpec(std::string inp_string);
   match_ptr_t parseUserParserSpec(std::string inp_string);
-  void attachUser(Parser* user_parser);
   svar64_t findKWORID(std::string kworid);
 
   template <typename T, typename... A> std::shared_ptr<T> createAstNode(A&&... args);

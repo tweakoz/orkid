@@ -69,6 +69,18 @@ libblock shq_tools
 	const float epsilon = 0.001;
 	const float dmax = 0.5;
 
+	interface Intersectable {
+
+	};
+
+	class Sphere : Intersectable {
+
+
+
+		vec3 center;
+		float radius;
+	};
+
 	vec2 buffersize()
 	{
 		return vec2(User0.w,User0.w);

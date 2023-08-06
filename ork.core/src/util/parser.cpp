@@ -17,7 +17,8 @@
 /////////////////////////////////////////////////////////////////////////////////////////////////
 namespace ork {
 //////////////////////////////////////////////////////////////////////
-static logchannel_ptr_t logchan_parser = logger()->createChannel("RULESPEC", fvec3(0.5, 0.7, 0.5), true);
+static logchannel_ptr_t logchan_parser = logger()->createChannel("RULESPEC", fvec3(0.5, 0.7, 0.5), false);
+static logchannel_ptr_t logchan_dump   = logger()->createChannel("PARSER-DUMP", fvec3(0.5, 0.7, 0.5), true);
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
@@ -28,14 +29,14 @@ void MatchAttempt::dump1(int indent) {
   auto indentstr = std::string(indent, ' ');
 
   if (_view->empty()) {
-    logchan_parser->log(
+    logchan_dump->log(
         "%s DUMP MatchAttempt<%p> matcher<%p:%s> view (empty)",
         indentstr.c_str(),
         this,
         (void*)_matcher.get(),
         _matcher->_name.c_str());
   } else {
-    logchan_parser->log(
+    logchan_dump->log(
         "%s DUMP MatchAttempt<%p> matcher<%p:%s> view [%zu..%zu]",
         indentstr.c_str(),
         this,
@@ -47,29 +48,29 @@ void MatchAttempt::dump1(int indent) {
 
   if (auto as_seq = tryAsShared<SequenceAttempt>()) {
     auto seq = as_seq.value();
-    logchan_parser->log("%s   SEQ<%p>", indentstr.c_str(), (void*)seq.get());
+    logchan_dump->log("%s   SEQ<%p>", indentstr.c_str(), (void*)seq.get());
     for (auto i : seq->_items) {
       i->dump1(indent + 3);
     }
   } else if (auto as_nom = tryAsShared<NOrMoreAttempt>()) {
     auto nom = as_nom.value();
-    logchan_parser->log("%s   NOM%zu<%p>", indentstr.c_str(), nom->_minmatches, (void*)nom.get());
+    logchan_dump->log("%s   NOM%zu<%p>", indentstr.c_str(), nom->_minmatches, (void*)nom.get());
     for (auto i : nom->_items) {
       i->dump1(indent + 3);
     }
   } else if (auto as_grp = tryAsShared<GroupAttempt>()) {
     auto grp = as_grp.value();
-    logchan_parser->log("%s   GRP<%p>", indentstr.c_str(), (void*)grp.get());
+    logchan_dump->log("%s   GRP<%p>", indentstr.c_str(), (void*)grp.get());
     for (auto i : grp->_items) {
       i->dump1(indent + 3);
     }
   } else if (auto as_opt = tryAsShared<OptionalAttempt>()) {
     auto opt = as_opt.value();
-    logchan_parser->log("%s   OPT<%p>", indentstr.c_str(), (void*)opt.get());
+    logchan_dump->log("%s   OPT<%p>", indentstr.c_str(), (void*)opt.get());
     if (opt->_subitem)
       opt->_subitem->dump1(indent + 3);
     else {
-      logchan_parser->log("%s     EMPTY", indentstr.c_str());
+      logchan_dump->log("%s     EMPTY", indentstr.c_str());
     }
   }
 }
@@ -82,7 +83,7 @@ void MatchAttempt::dump2(int indent) {
   if (_matcher) {
     name = _matcher->_name;
   }
-  logchan_parser->log("%d %s   MatchAttempt<%p> matcher<%s>", indent, indentstr.c_str(), (void*)this, name.c_str());
+  logchan_dump->log("%d %s   MatchAttempt<%p> matcher<%s>", indent, indentstr.c_str(), (void*)this, name.c_str());
   for (auto c : _children) {
     c->dump2(indent + 1);
   }
@@ -119,21 +120,21 @@ const Match* Match::traverseDownPath(std::string path) const {
   const Match* rval = nullptr;
   std::vector<std::string> path_segments;
   SplitString(path, '/', path_segments);
-  size_t current_token_index = 0;
+  size_t current_token_index                     = 0;
   std::function<bool(const ork::Match*)> visitor = [&](const ork::Match* m) -> bool {
     if (current_token_index >= path_segments.size())
       return false;
 
     if (m->_matcher->_name == path_segments[current_token_index]) {
-      current_token_index++; 
+      current_token_index++;
       if (current_token_index == path_segments.size()) {
         rval = m;
         return false;
       }
       m->walkDown(visitor);
-      return false; 
+      return false;
     }
-    return true; 
+    return true;
   };
 
   this->walkDown(visitor);
@@ -169,60 +170,67 @@ match_ptr_t Match::followThroughProxy(match_ptr_t start) {
   }
 }
 
-std::string Match::ldump() const {
+std::string Match::ldump(int indent) const {
+  auto indentstr = std::string(indent, ' ');
   std::string rval;
   auto st = _view->_start;
   auto en = _view->_end;
   if (auto as_seq = tryAsShared<Sequence>()) {
     auto seq = as_seq.value();
     rval     = FormatString(
-        "MATCH<%s>.SEQ<%p> cnt<%zu> view<%zu:%zu>", //
-        _matcher->_name.c_str(),                    //
-        (void*)seq.get(),                           //
-        seq->_items.size(),                         //
+        "%s MATCH<%s>.SEQ<%p> cnt<%zu> view<%zu:%zu>\n", //
+        indentstr.c_str(),
+        _matcher->_name.c_str(), //
+        (void*)seq.get(),        //
+        seq->_items.size(),      //
         st,
         en);
-    // for (auto i : seq->_items) {
-    // i->dump1(indent + 3);
-    //}
+    for (auto i : seq->_items) {
+      rval += i->ldump(indent + 1);
+    }
   } else if (auto as_grp = tryAsShared<Group>()) {
     auto grp = as_grp.value();
     rval     = FormatString(
-        "MATCH<%s>.GRP<%p> cnt<%zu> view<%zu:%zu>", //
-        _matcher->_name.c_str(),                    //
-        (void*)grp.get(),                           //
-        grp->_items.size(),                         //
+        "%s MATCH<%s>.GRP<%p> cnt<%zu> view<%zu:%zu>\n", //
+        indentstr.c_str(),
+        _matcher->_name.c_str(), //
+        (void*)grp.get(),        //
+        grp->_items.size(),      //
         st,
         en);
-    // for (auto i : grp->_items) {
-    // i->dump1(indent + 3);
-    //}
+    for (auto i : grp->_items) {
+      rval += i->ldump(indent + 1);
+    }
   } else if (auto as_nom = tryAsShared<NOrMore>()) {
     auto nom = as_nom.value();
     rval     = FormatString(
-        "MATCH<%s>.NOM%zu<%p> cnt<%zu> view<%zu:%zu>", //
-        _matcher->_name.c_str(),                       //
-        nom->_minmatches,                              //
-        (void*)nom.get(),                              //
-        nom->_items.size(),                            //
+        "%s MATCH<%s>.NOM%zu<%p> cnt<%zu> view<%zu:%zu>\n", //
+        indentstr.c_str(),
+        _matcher->_name.c_str(), //
+        nom->_minmatches,        //
+        (void*)nom.get(),        //
+        nom->_items.size(),      //
         st,
         en);
-    // for (auto i : nom->_items) {
-    // i->dump1(indent + 3);
-    //}
+    for (auto i : nom->_items) {
+      rval += i->ldump(indent + 1);
+    }
   } else if (auto as_opt = tryAsShared<Optional>()) {
     auto opt = as_opt.value();
-    if (opt->_subitem)
+    if (opt->_subitem) {
       rval = FormatString(
-          "MATCH<%s>.OPT<%p> view<%zu:%zu>", //
-          _matcher->_name.c_str(),           //
-          (void*)opt.get(),                  //
+          "%s MATCH<%s>.OPT<%p> view<%zu:%zu>\n", //
+          indentstr.c_str(),
+          _matcher->_name.c_str(), //
+          (void*)opt.get(),        //
           st,
           en);
-    else {
+      rval += opt->_subitem->ldump(indent + 1);
+    } else {
       rval = FormatString(
-          "MATCH<%s>.OPT<%p>.EMPTY view<%zu:%zu>", //
-          _matcher->_name.c_str(),                 //
+          "%s MATCH<%s>.OPT<%p>.EMPTY view<%zu:%zu>\n", //
+          indentstr.c_str(),
+          _matcher->_name.c_str(),                      //
           (void*)opt.get(),
           st,
           en);
@@ -230,78 +238,52 @@ std::string Match::ldump() const {
   } else if (auto as_pxy = tryAsShared<Proxy>()) {
     auto pxy = as_pxy.value();
     if (pxy->_selected) {
-      auto pxyldump = pxy->_selected->ldump();
-      rval          = FormatString(
-          "MATCH<%s>.PXY<%p:%s> view<%zu:%zu>", //
-          _matcher->_name.c_str(),              //
-          (void*)pxy.get(),                     //
-          pxyldump.c_str(),                     //
+      rval = FormatString(
+          "%s MATCH<%s>.PXY<%p> view<%zu:%zu>\n", //
+          indentstr.c_str(),
+          _matcher->_name.c_str(), //
+          (void*)pxy.get(),        //
           st,
           en);
+      rval += pxy->_selected->ldump(indent + 1);
     } else {
       rval = FormatString(
-          "MATCH<%s>.PXY<%p>.EMPTY view<%zu:%zu>", //
-          _matcher->_name.c_str(),                 //
-          (void*)pxy.get(),                        //
+          "%s MATCH<%s>.PXY<%p>.EMPTY view<%zu:%zu>\n", //
+          indentstr.c_str(),
+          _matcher->_name.c_str(), //
+          (void*)pxy.get(),        //
           st,
           en);
     }
   } else if (auto as_sel = tryAsShared<OneOf>()) {
     auto sel = as_sel.value();
-    rval     = FormatString(
-        "MATCH<%s>.SEL<%p> view<%zu:%zu>", //
-        _matcher->_name.c_str(),           //
-        (void*)sel.get(),                  //
-        st,
-        en);
+    if (sel->_selected) {
+      rval = FormatString(
+          "%s MATCH<%s>.SEL<%p> view<%zu:%zu>\n", //
+          indentstr.c_str(),
+          _matcher->_name.c_str(), //
+          (void*)sel.get(),        //
+          st,
+          en);
+      rval += sel->_selected->ldump(indent + 1);
+    } else {
+      rval = FormatString(
+          "%s MATCH<%s>.SEL<%p>.EMPTY view<%zu:%zu>\n", //
+          indentstr.c_str(),
+          _matcher->_name.c_str(), //
+          (void*)sel.get(),        //
+          st,
+          en);
+    }
   }
   return rval;
 }
 
+//////////////////////////////////////////////////////////////////////
+
 void Match::dump1(int indent) const {
-
-  auto indentstr = std::string(indent, ' ');
-
-  if (_view->empty()) {
-    logchan_parser->log("%s DUMP Match<%p> matcher<%p:%s> view (empty)", this, (void*)_matcher.get(), _matcher->_name.c_str());
-  } else {
-    logchan_parser->log(
-        "%s DUMP Match<%p> matcher<%p:%s> view [%zu..%zu]",
-        indentstr.c_str(),
-        this,
-        (void*)_matcher.get(),
-        _matcher->_name.c_str(),
-        _view->_start,
-        _view->_end);
-  }
-
-  if (auto as_seq = tryAsShared<Sequence>()) {
-    auto seq = as_seq.value();
-    logchan_parser->log("%s   SEQ<%p>", indentstr.c_str(), (void*)seq.get());
-    for (auto i : seq->_items) {
-      i->dump1(indent + 3);
-    }
-  } else if (auto as_nom = tryAsShared<NOrMore>()) {
-    auto nom = as_nom.value();
-    logchan_parser->log("%s   NOM%zu<%p>", indentstr.c_str(), nom->_minmatches, (void*)nom.get());
-    for (auto i : nom->_items) {
-      i->dump1(indent + 3);
-    }
-  } else if (auto as_grp = tryAsShared<Group>()) {
-    auto grp = as_grp.value();
-    logchan_parser->log("%s   GRP<%p>", indentstr.c_str(), (void*)grp.get());
-    for (auto i : grp->_items) {
-      i->dump1(indent + 3);
-    }
-  } else if (auto as_opt = tryAsShared<Optional>()) {
-    auto opt = as_opt.value();
-    logchan_parser->log("%s   OPT<%p>", indentstr.c_str(), (void*)opt.get());
-    if (opt->_subitem)
-      opt->_subitem->dump1(indent + 3);
-    else {
-      logchan_parser->log("%s     EMPTY", indentstr.c_str());
-    }
-  }
+  std::string dstr = ldump(indent);
+  logchan_dump->log("%s", dstr.c_str());
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -554,7 +536,7 @@ match_ptr_t Parser::match(
   if ((not start_match) or (not end_match)) {
 
     auto end = rm_view->token(rm_view->_end);
-    // topview->dump( "topview" );
+    topview->dump("topview");
 
     logerrchannel()->log("FULL MATCH FAILED");
     logerrchannel()->log("topview<%zu:%zu>", topview->_start, topview->_end);

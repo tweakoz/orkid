@@ -7,6 +7,7 @@
 #include <ork/util/crc.h>
 #include <ork/kernel/varmap.inl>
 #include <ork/lev2/config.h>
+#include <ork/file/file.h>
 
 #if defined(USE_ORKSL_LANG)
 ///////////////////////////////////////////////////////////////////////////////
@@ -76,7 +77,8 @@ using astnode_map_t = std::unordered_map<std::string, astnode_ptr_t>;
 } // namespace SHAST
 
 
-SHAST::translationunit_ptr_t parse(const std::string& shader_text);
+SHAST::translationunit_ptr_t parseFromString(const std::string& shader_text);
+SHAST::translationunit_ptr_t parseFromFile(file::Path shader_path);
 std::string toASTstring(SHAST::astnode_ptr_t);
 std::string toGLFX1(SHAST::translationunit_ptr_t top);
 std::string toDotFile(SHAST::translationunit_ptr_t top);

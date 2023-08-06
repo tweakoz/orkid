@@ -122,11 +122,8 @@ struct Parser : public ::ork::Parser {
     _name              = "p2";
     _DEBUG_MATCH       = true;
     _DEBUG_INFO        = true;
-    auto scanner_match = this->loadPEGScannerSpec(scanner_spec);
-    OrkAssert(scanner_match);
-    auto parser_match = this->loadPEGParserSpec(parser_spec);
-    OrkAssert(parser_match);
-    OrkAssert(_DEBUG_MATCH);
+    bool OK = this->loadPEGSpec(scanner_spec,parser_spec);
+    OrkAssert(OK);
     ///////////////////////////////////////////////////////////
     // parser should be compiled and linked at this point
     ///////////////////////////////////////////////////////////

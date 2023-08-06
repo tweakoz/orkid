@@ -23,7 +23,7 @@ ScanViewRegex::ScanViewRegex(const char* pr, bool inverse)
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-bool ScanViewRegex::Test(const Token& t) {
+bool ScanViewRegex::Test(const Token& t) const {
   bool match = std::regex_match(t.text, mRegex);
   return match xor mInverse;
 }
@@ -31,7 +31,7 @@ bool ScanViewRegex::Test(const Token& t) {
 /////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-ScannerView::ScannerView(const Scanner& s, ScanViewFilter& f)
+ScannerView::ScannerView(const Scanner& s, scanviewfilter_ptr_t f)
     : _filter(f)
     , _scanner(s)
     , _blockTerminators(s._blockregex.c_str())
@@ -148,8 +148,13 @@ void ScannerView::scanBlock(size_t is, bool checkterm, bool checkdecos) {
           assert(false == is_close);
           if (is_term)
             assert(i > is);
-          if (_filter.Test(t))
+          if( _filter ){
+            if (_filter->Test(t))
+              _indices.push_back(i);
+          }
+          else{
             _indices.push_back(i);
+          }
         }
         break;
       }
@@ -166,8 +171,13 @@ void ScannerView::scanBlock(size_t is, bool checkterm, bool checkdecos) {
             return;
           }
         } else {
-          if (_filter.Test(t))
+          if( _filter ){
+            if (_filter->Test(t))
+              _indices.push_back(i);
+          }
+          else{
             _indices.push_back(i);
+          }
         }
         break;
     }

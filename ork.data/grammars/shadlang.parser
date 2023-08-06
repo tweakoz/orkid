@@ -1,7 +1,7 @@
 DataType       <|[
     opt{ KW_IN }
     opt{ KW_CONST }
-    sel{ KW_FLOAT   KW_INT 
+    sel{ KW_FLOAT   KW_UINT KW_INT 
          KW_VEC2    KW_VEC3    KW_VEC4 
          KW_MAT2    KW_MAT3    KW_MAT4 
          KW_SAMP1D  KW_SAMP2D  KW_SAMP3D
@@ -17,7 +17,7 @@ DataType       <|[
 TypedIdentifier      <|[ sel { DataType IDENTIFIER } IDENTIFIER ]|>
 
 FloatLiteral         <| [ FLOATING_POINT ] |>
-IntegerLiteral       <| sel{ UNSIGNED_INTEGER INTEGER } |>
+IntegerLiteral       <| sel{ HEX_INTEGER INTEGER } |>
 NumericLiteral       <| sel{IntegerLiteral FloatLiteral} |>
 Literal              <| [ NumericLiteral ] |>
 
@@ -51,7 +51,7 @@ DataTypeWithUserTypes <| sel {
 }|>
 
 DataDeclaration <| sel {
-  [TypedIdentifier L_SQUARE INTEGER R_SQUARE] : "ArrayDeclaration"
+  [TypedIdentifier L_SQUARE IntegerLiteral R_SQUARE] : "ArrayDeclaration"
   [TypedIdentifier] 
 }|>
 
@@ -350,7 +350,7 @@ FunctionDef1 <|[
 ]|>
 
 FunctionDef2 <|[
-    sel { DataType IDENTIFIER } : "fn2_return_type"
+    DataTypeWithUserTypes
     [ IDENTIFIER ] : "fn2_name"
     L_PAREN
     decl_arglist : "fn2_args"
@@ -418,7 +418,7 @@ UniformBlk <|[
 ]|>
 
 InterfaceLayoutItem <| sel{
-    [IDENTIFIER EQUALS INTEGER]
+    [IDENTIFIER EQUALS IntegerLiteral]
     [IDENTIFIER]
 }|>
 

@@ -97,7 +97,7 @@ struct Match {
 
   void visit(int level, visit_fn_t) const;
   void dump1(int indent) const;
-  std::string ldump() const;
+  std::string ldump(int indent=0) const;
   bool matcherInStack(matcher_ptr_t matcher) const;
   template <typename impl_t> std::shared_ptr<impl_t> asShared();
   template <typename impl_t> std::shared_ptr<impl_t> makeShared();
@@ -317,8 +317,8 @@ struct Parser {
   void onPost(const std::string& rule_name, match_notif_t fn);
   void onLink(const std::string& rule_name, match_notif_t fn);
 
-  match_ptr_t loadPEGScannerSpec(const std::string& spec);
-  match_ptr_t loadPEGParserSpec(const std::string& spec);
+  bool loadPEGSpec(const std::string& scanner_spec, //
+                   const std::string& parser_spec);
 
   void link();
   match_attempt_ptr_t pushMatch(matcher_ptr_t matcher);
@@ -343,6 +343,7 @@ struct Parser {
   std::string _name;
   MatchAttemptContext _matchattemptctx;
   size_t _visit_depth = 0;
+  varmap::VarMap _uservars;
 };
 
 //////////////////////////////////////////////////////////////

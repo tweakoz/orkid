@@ -104,6 +104,6 @@ TEST(shlang1) {
           CullTest  = OFF;
         }
     )";
-  auto tunit = shadlang::parse(shader_text);
+  auto tunit = shadlang::parseFromString(shader_text);
   CHECK(tunit != nullptr);
 }

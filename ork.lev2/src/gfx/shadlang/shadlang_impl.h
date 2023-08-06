@@ -5,19 +5,12 @@
 // see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ////////////////////////////////////////////////////////////////
 
-//////////////////////////////////////////////////////////////////////////////////
-//  Scanner/Parser
-//  this replaces CgFx for OpenGL 3.x and OpenGL ES 2.x
-////////////////////////////////////////////////////////////////
-
 #include <ork/lev2/gfx/shadlang.h>
-#include <ork/file/file.h>
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/pch.h>
 #include <ork/util/crc.h>
 #include <regex>
 #include <stdlib.h>
-#include <peglib.h>
 #include <ork/util/logger.h>
 #include <ork/kernel/string/string.h>
 #include <ork/util/parser.inl>
@@ -27,8 +20,6 @@
 /////////////////////////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::shadlang {
 /////////////////////////////////////////////////////////////////////////////////////////////////
-
-SHAST::translationunit_ptr_t parse(const std::string& shader_text);
 
 void SHAST::_dumpAstTreeVisitor( //
     SHAST::astnode_ptr_t node,   //
@@ -134,8 +125,12 @@ struct ShadLangParser : public Parser {
   SHAST::astnode_map_t _fndef2s;
 
   SHAST::astnode_map_t _fxconfig_decls;
+  SHAST::astnode_map_t _import_directives;
 
   SHAST::astnode_map_t _structs;
+
+  file::Path _shader_path;
+
 }; // struct ShadLangParser
 
 } // namespace impl

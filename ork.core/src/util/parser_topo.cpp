@@ -506,7 +506,6 @@ matcher_ptr_t Parser::nOrMore(matcher_ptr_t sub_matcher, size_t minMatches, std:
       popMatch();
       return rval;
     }
-    logerrchannel()->log( "NOM%zu<%s>: invalid matchcount<%zu>", minMatches, name.c_str(), the_nom->_items.size() );
     popMatch();
     return nullptr;
   };

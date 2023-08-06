@@ -70,6 +70,10 @@ template <typename val_t> struct TVarMap {
     return _themap[key].template makeShared<T>(std::forward<A>(args)...);
   }
   ///////////////////////////////////////////////////////////////////////////
+  template <typename T, typename... A> inline std::shared_ptr<T> getSharedForKey(const key_t& key) {
+    return _themap[key].template getShared<T>();
+  }
+  ///////////////////////////////////////////////////////////////////////////
   template <typename T> inline void set(const key_t& key, const T& val) {
     _themap[key].template set<T>(val);
   }

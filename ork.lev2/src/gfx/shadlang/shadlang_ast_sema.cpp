@@ -25,6 +25,108 @@ namespace ork::lev2::shadlang {
 /////////////////////////////////////////////////////////////////////////////////////////////////
 using namespace SHAST;
 
+void _semaDataTypeWithUserTypes(impl::ShadLangParser* slp, astnode_ptr_t top) {
+  auto nodes = slp->collectNodesOfType<DataTypeWithUserTypes>(top);
+  for (auto dtu_node : nodes) {
+    auto match     = slp->matchForAstNode(dtu_node);
+    auto sel       = match->asShared<OneOf>()->_selected;
+    sel->dump1(0);
+    OrkAssert(false);
+  }
+}
+
+void _semaNameDataTypes(impl::ShadLangParser* slp, astnode_ptr_t top) {
+  auto nodes = slp->collectNodesOfType<DataType>(top);
+  for (auto dt_node : nodes) {
+    auto match     = slp->matchForAstNode(dt_node);
+    auto seq       = match->asShared<Sequence>();
+    auto sel       = seq->itemAsShared<OneOf>(2)->_selected;
+    auto cm        = sel->asShared<ClassMatch>();
+    auto name      = cm->_token->text;
+    dt_node->_name = FormatString("DataType: %s", name.c_str());
+    dt_node->setValueForKey<std::string>("data_type", name);
+  }
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
+void _semaNameTypedIdentifers(impl::ShadLangParser* slp, astnode_ptr_t top) {
+  auto nodes = slp->collectNodesOfType<TypedIdentifier>(top);
+  for (auto tid_node : nodes) {
+
+    tid_node->_name = "TID: ";
+
+    auto match = slp->matchForAstNode(tid_node);
+
+    auto seq = match->asShared<Sequence>();
+
+    ////////////////////
+    // item 0 (type)
+    ////////////////////
+
+    auto sel = seq->itemAsShared<OneOf>(0)->_selected;
+    if (auto as_cm = sel->tryAsShared<ClassMatch>()) {
+      auto name = as_cm.value()->_token->text;
+      tid_node->_name += name;
+      tid_node->setValueForKey<std::string>("data_type", name);
+    } else { // its a DataTypeNode
+      auto seq  = sel->asShared<Sequence>();
+      auto sel2 = seq->itemAsShared<OneOf>(2)->_selected;
+      auto cm   = sel2->asShared<ClassMatch>();
+      auto name = cm->_token->text;
+      tid_node->_name += name;
+      tid_node->setValueForKey<std::string>("data_type", name);
+    }
+
+    ////////////////////
+    // item 1 (identifier)
+    ////////////////////
+
+    auto cm1 = seq->itemAsShared<ClassMatch>(1);
+    tid_node->_name += " " + cm1->_token->text;
+      tid_node->setValueForKey<std::string>("identifier", cm1->_token->text);
+  }
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
+void _mangleFunctionDef2( impl::ShadLangParser* slp, //
+                          std::shared_ptr<FunctionDef2> fn2_node, //
+                          std::string named ){ //
+
+  ORK_CONFIG_OPENGL(fn2_node);
+  auto dt_node = fn2_node->childAs<DataType>(0);
+  if( dt_node ){
+    auto return_type = dt_node->typedValueForKey<std::string>("data_type").value();
+    printf( "mangle function<%s> return type: %s \n", named.c_str(), return_type.c_str() );
+    auto decl_args = fn2_node->findFirstChildOfType<DeclArgumentList>();
+    OrkAssert(decl_args);
+    auto mangled_name = named + "<" + return_type + ">(";
+    slp->walkDownAST(decl_args, [&](astnode_ptr_t node) -> bool {
+      if( decl_args != node ){
+        auto tid_node = std::dynamic_pointer_cast<TypedIdentifier>(node);
+        OrkAssert(tid_node);
+        auto arg_dt = tid_node->typedValueForKey<std::string>("data_type").value();
+        mangled_name += arg_dt + ",";
+        //printf( "mangle walkdown - argsnode : %s\n", node->_name.c_str() );
+      }
+      return true;
+    });
+    mangled_name += ")";
+    printf( "mangled_name<%s>\n", mangled_name.c_str() );
+    fn2_node-> setValueForKey<std::string>("mangled_name",mangled_name);
+  }
+  else{
+    slp->walkDownAST(fn2_node, [&](astnode_ptr_t node) -> bool {
+      printf( "mangle walkdown - argsnode : %s - no dt_node\n", node->_name.c_str() );
+      return true;
+    });
+    OrkAssert(false);
+  }
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
 template <typename node_t> //
 void _semaCollectNamedOfType(
     impl::ShadLangParser* slp, //
@@ -36,7 +138,7 @@ void _semaCollectNamedOfType(
     astnode_ptr_t obj_name;
     slp->walkDownAST(n, [&](astnode_ptr_t node) -> bool {
       auto as_objname = std::dynamic_pointer_cast<ObjectName>(node);
-      printf( "walkdown<%s> as_objname<%s>\n", node->_name.c_str(), as_objname ? "true" : "false" );
+      //printf( "walkdown<%s> as_objname<%s>\n", node->_name.c_str(), as_objname ? "true" : "false" );
       if (as_objname) {
         obj_name = as_objname;
         return false;
@@ -45,22 +147,43 @@ void _semaCollectNamedOfType(
     });
     if (obj_name) {
       auto the_name = obj_name->_name;
+
+      ////////////////////////////////////////////////////////////
+      // name mangling?
+      ////////////////////////////////////////////////////////////
+
+      if constexpr ( std::is_same<node_t, FunctionDef2>::value ) {
+        auto as_fn2 = std::dynamic_pointer_cast<FunctionDef2>(n);
+        _mangleFunctionDef2(slp,as_fn2,the_name);
+      }
+      else if constexpr (std::is_same<node_t, FunctionDef1>::value) {
+        OrkAssert(false);
+      }
+
+      std::string mangled_name;
+
+      if( n->hasKey("mangled_name") ){
+        mangled_name = n->template typedValueForKey<std::string>("mangled_name").value();
+      }
+
+      ////////////////////////////////////////////////////////////
+
       auto it       = outmap.find(the_name);
       if (it != outmap.end()) {
-        logerrchannel()->log("duplicate named object<%s>", the_name.c_str());
+        logerrchannel()->log("duplicate named object<%s> mangled_name<%s>", the_name.c_str(), mangled_name.c_str() );
         OrkAssert(false);
       }
       outmap[the_name] = n;
       if constexpr (std::is_same<node_t, FragmentShader>::value) {
-        printf("found fragshader<%s>\n", the_name.c_str());
+        //printf("found fragshader<%s>\n", the_name.c_str());
         // OrkAssert(false);
       }
       else if constexpr (std::is_same<node_t, LibraryBlock>::value) {
-        printf("found libblock<%s>\n", the_name.c_str());
+        //printf("found libblock<%s>\n", the_name.c_str());
         //OrkAssert(false);
       }
       else if constexpr (std::is_same<node_t, UniformSet>::value) {
-        printf("found uniset<%s>\n", the_name.c_str());
+        //printf("found uniset<%s>\n", the_name.c_str());
       }
       n->template setValueForKey<std::string>("object_name", the_name);
     } else {
@@ -68,6 +191,8 @@ void _semaCollectNamedOfType(
     }
   }
 }
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
 
 template <typename node_t> //
 void _semaProcNamedOfType(
@@ -79,7 +204,7 @@ void _semaProcNamedOfType(
     astnode_ptr_t obj_name;
     slp->walkDownAST(n, [&](astnode_ptr_t node) -> bool {
       auto as_objname = std::dynamic_pointer_cast<ObjectName>(node);
-      printf( "walkdown<%s> as_objname<%s>\n", node->_name.c_str(), as_objname ? "true" : "false" );
+      //printf( "walkdown<%s> as_objname<%s>\n", node->_name.c_str(), as_objname ? "true" : "false" );
       if (as_objname) {
         obj_name = as_objname;
         return false;
@@ -92,6 +217,49 @@ void _semaProcNamedOfType(
     } else {
       // OrkAssert(false);
     }
+  }
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
+void _semaPerformImports(impl::ShadLangParser* slp, astnode_ptr_t top) {
+  auto nodes = slp->collectNodesOfType<ImportDirective>(top);
+  for (auto n : nodes) {
+    //
+    file::Path::NameType a, b;
+    file::Path proc_import_path;
+    //
+    auto raw_import_path = n->template typedValueForKey<std::string>("object_name").value();
+    printf( "Import RawPath<%s>\n", raw_import_path.c_str() );
+    
+    ////////////////////////////////////////////////////
+    // if string has enclosing quotes, remove them
+    ////////////////////////////////////////////////////
+
+    if( raw_import_path.front() == '"' )
+      raw_import_path.erase(0,1);
+    if( raw_import_path.back() == '"' )
+      raw_import_path.pop_back();
+
+    ////////////////////////////////////////////////////
+
+    auto rpath = file::Path(raw_import_path);
+    rpath.split(a, b, ':');
+    if (b.length() != 0) { // use from import
+      proc_import_path = rpath;
+    } else { // infer from container
+      proc_import_path = slp->_shader_path;
+      //printf( "parent_parser<%s> imppath1<%s>\n", parent_parser->_name.c_str(), imppath.c_str());
+      proc_import_path.split(a, b, ':');
+      ork::FixedString<256> fxs;
+      fxs.format("%s://%s", a.c_str(), rpath.c_str());
+      proc_import_path = fxs.c_str();
+    }
+    printf( "Import ProcPath<%s>\n", proc_import_path.c_str() );
+    auto sub_tunit = shadlang::parseFromFile(proc_import_path);
+    OrkAssert(sub_tunit);
+    OrkAssert(false);
+    //AstNode::replaceInParent(n, constructor_call);
   }
 }
 
@@ -125,21 +293,6 @@ void _semaNameMemberAccessOperators(impl::ShadLangParser* slp, astnode_ptr_t top
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-void _semaNameDataTypes(impl::ShadLangParser* slp, astnode_ptr_t top) {
-  auto nodes = slp->collectNodesOfType<DataType>(top);
-  for (auto dt_node : nodes) {
-    auto match     = slp->matchForAstNode(dt_node);
-    auto seq       = match->asShared<Sequence>();
-    auto sel       = seq->itemAsShared<OneOf>(2)->_selected;
-    auto cm        = sel->asShared<ClassMatch>();
-    auto name      = cm->_token->text;
-    dt_node->_name = FormatString("DataType: %s", name.c_str());
-    dt_node->setValueForKey<std::string>("data_type", name);
-  }
-}
-
-/////////////////////////////////////////////////////////////////////////////////////////////////
-
 void _semaNameDataUserTypes(impl::ShadLangParser* slp, astnode_ptr_t top) {
   auto nodes = slp->collectNodesOfType<DataTypeWithUserTypes>(top);
   for (auto dtype_node : nodes) {
@@ -155,43 +308,6 @@ void _semaNameDataUserTypes(impl::ShadLangParser* slp, astnode_ptr_t top) {
       auto name         = cm->_token->text;
       dtype_node->_name = FormatString("DTWU: %s", name.c_str());
     }
-  }
-}
-
-/////////////////////////////////////////////////////////////////////////////////////////////////
-
-void _semaNameTypedIdentifers(impl::ShadLangParser* slp, astnode_ptr_t top) {
-  auto nodes = slp->collectNodesOfType<TypedIdentifier>(top);
-  for (auto tid_node : nodes) {
-
-    tid_node->_name = "TID: ";
-
-    auto match = slp->matchForAstNode(tid_node);
-
-    auto seq = match->asShared<Sequence>();
-
-    ////////////////////
-    // item 0 (type)
-    ////////////////////
-
-    auto sel = seq->itemAsShared<OneOf>(0)->_selected;
-    if (auto as_cm = sel->tryAsShared<ClassMatch>()) {
-      auto name = as_cm.value()->_token->text;
-      tid_node->_name += name;
-    } else { // its a DataTypeNode
-      auto seq  = sel->asShared<Sequence>();
-      auto sel2 = seq->itemAsShared<OneOf>(2)->_selected;
-      auto cm   = sel2->asShared<ClassMatch>();
-      auto name = cm->_token->text;
-      tid_node->_name += name;
-    }
-
-    ////////////////////
-    // item 1 (identifier)
-    ////////////////////
-
-    auto cm1 = seq->itemAsShared<ClassMatch>(1);
-    tid_node->_name += " " + cm1->_token->text;
   }
 }
 
@@ -245,7 +361,7 @@ void _semaNameInheritListItems(impl::ShadLangParser* slp, astnode_ptr_t top) {
     auto name       = cm->_token->text;
     ili_node->_name = FormatString("Inherits: %s", name.c_str());
     ili_node->setValueForKey<std::string>("inherited_object", name);
-    printf("inh_name set<%s>\n", name.c_str());
+    //printf("inh_name set<%s>\n", name.c_str());
   }
 }
 
@@ -408,7 +524,7 @@ int _semaProcessInheritances(
       if (as_inh_item) {
         inh_item      = as_inh_item;
         auto inh_name = inh_item->typedValueForKey<std::string>("inherited_object").value();
-        printf("%s<%s> inh_name<%s>\n", n->_name.c_str(), objname.c_str(), inh_name.c_str());
+        //printf("%s<%s> inh_name<%s>\n", n->_name.c_str(), objname.c_str(), inh_name.c_str());
         /////////////////////////////////
         // check if extension
         /////////////////////////////////
@@ -569,6 +685,10 @@ void _semaMoveNames(impl::ShadLangParser* slp, astnode_ptr_t top) {
 
 void impl::ShadLangParser::semaAST(astnode_ptr_t top) {
 
+  _semaDataTypeWithUserTypes(this, top);
+  _semaNameTypedIdentifers(this, top);
+  _semaNameDataTypes(this, top);
+
   //////////////////////////////////
   // Pass 1 : Build Symbol Tables
   //////////////////////////////////
@@ -595,22 +715,29 @@ void impl::ShadLangParser::semaAST(astnode_ptr_t top) {
   _semaCollectNamedOfType<FunctionDef2>(this, top, _fndef2s);
 
   _semaCollectNamedOfType<FxConfigDecl>(this, top, _fxconfig_decls);
+  _semaCollectNamedOfType<ImportDirective>(this, top, _import_directives);
+
   _semaProcNamedOfType<FxConfigRef>(this, top);
   _semaProcNamedOfType<Pass>(this, top);
 
   _semaMoveNames<Translatable>(this, top);
   _semaMoveNames<FxConfigRef>(this, top);
   _semaMoveNames<Pass>(this, top);
+  _semaMoveNames<ImportDirective>(this, top);
 
   //////////////////////////////////
-  // Pass 2
+  // Pass 2 - Imports
+  //////////////////////////////////
+
+  _semaPerformImports(this, top);
+
+  //////////////////////////////////
+  // Pass 3
   //////////////////////////////////
 
   _semaNamePrimaryIdentifers(this, top);
   _semaNameMemberAccessOperators(this, top);
-  _semaNameDataTypes(this, top);
   _semaNameDataUserTypes(this, top);
-  _semaNameTypedIdentifers(this, top);
   _semaNameAdditiveOperators(this, top);
   _semaNameMultiplicativeOperators(this, top);
   _semaNameAssignmentOperators(this, top);
@@ -620,7 +747,7 @@ void impl::ShadLangParser::semaAST(astnode_ptr_t top) {
   _semaResolveConstructors(this, top);
 
   //////////////////////////////////
-  // Pass 3
+  // Pass 4..
   //////////////////////////////////
 
   bool keep_going = true;

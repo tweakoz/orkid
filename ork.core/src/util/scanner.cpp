@@ -118,8 +118,7 @@ void Scanner::discardTokensOfClass(uint64_t tokclass) {
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 ScannerView Scanner::createTopView() const {
-  static ScanViewFilter filter;
-  ScannerView rval(*this, filter);
+  ScannerView rval(*this, nullptr);
   rval._start = 0;
   rval._end   = tokens.size() - 1;
   for (int i = 0; i < tokens.size(); i++) {

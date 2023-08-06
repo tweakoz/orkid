@@ -57,21 +57,49 @@ std::string toASTstring(SHAST::astnode_ptr_t node) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-SHAST::translationunit_ptr_t parse(const std::string& shader_text) {
+SHAST::translationunit_ptr_t parseFromString(const std::string& shader_text) {
   auto parser = std::make_shared<impl::ShadLangParser>();
-  OrkAssert(parser);
-  printf("shader_text<%s>\n", shader_text.c_str());
   OrkAssert(shader_text.length());
-  auto topast = parser->parseString(shader_text);
-  return topast;
+  return parser->parseString(shader_text);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+SHAST::translationunit_ptr_t parseFromFile(file::Path shader_path) {
+  auto shader_data = File::readAsString(shader_path);
+  if(shader_data == nullptr){
+    printf( "ShaderFile not found<%s>\n", shader_path.c_str() );
+    OrkAssert(false);
+    return nullptr;
+  }
+  auto parser = std::make_shared<impl::ShadLangParser>();
+  OrkAssert(shader_data->_data.length());
+  parser->_shader_path = shader_path;
+  return parser->parseString(shader_data->_data);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace impl {
 ///////////////////////////////////////////////////////////////////////////////
 
-static std::string scanner_spec = "";
-static std::string parser_spec  = "";
+struct Private{
+
+  Private(){
+    auto grammars_dir = ork::file::Path::data_dir() / "grammars"; 
+    auto scanner_path = grammars_dir / "shadlang.scanner";
+    auto parser_path = grammars_dir / "shadlang.parser";
+    auto scanner_read_result  = ork::File::readAsString(scanner_path);
+    auto parser_read_result = ork::File::readAsString(parser_path);
+    _scanner_spec      = scanner_read_result->_data;
+    _parser_spec      = parser_read_result->_data;
+  }
+
+  std::string _scanner_spec;
+  std::string _parser_spec;
+
+};
+
+using private_ptr_t = std::shared_ptr<const Private>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -80,16 +108,7 @@ ShadLangParser::ShadLangParser() {
   //_DEBUG_MATCH       = true;
   //_DEBUG_INFO        = true;
 
-  if (0 == scanner_spec.length()) {
-    auto scanner_path = ork::file::Path::data_dir() / "grammars" / "shadlang.scanner";
-    auto read_result  = ork::File::readAsString(scanner_path);
-    scanner_spec      = read_result->_data;
-  }
-  if (0 == parser_spec.length()) {
-    auto parser_path = ork::file::Path::data_dir() / "grammars" / "shadlang.parser";
-    auto read_result = ork::File::readAsString(parser_path);
-    parser_spec      = read_result->_data;
-  }
+  static private_ptr_t _private = std::make_shared<Private>();
 
   ///////////////////////////////////////////////////////////
 
@@ -97,10 +116,8 @@ ShadLangParser::ShadLangParser() {
 
   ///////////////////////////////////////////////////////////
 
-  auto scanner_match = this->loadPEGScannerSpec(scanner_spec);
-  OrkAssert(scanner_match);
-  auto parser_match = this->loadPEGParserSpec(parser_spec);
-  OrkAssert(parser_match);
+  bool OK = this->loadPEGSpec(_private->_scanner_spec,_private->_parser_spec);
+  OrkAssert(OK);
 
   ///////////////////////////////////////////////////////////
   // parser should be compiled and linked at this point

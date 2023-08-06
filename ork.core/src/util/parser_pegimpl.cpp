@@ -12,8 +12,8 @@
 namespace ork {
 match_ptr_t filtered_match(matcher_ptr_t matcher, match_ptr_t the_match);
 /////////////////////////////////////////////////////////////////////////////////////////////////
-static logchannel_ptr_t logchan_rulespec  = logger()->createChannel("PEGSPEC1", fvec3(0.5, 0.8, 0.5), true);
-static logchannel_ptr_t logchan_rulespec2 = logger()->createChannel("PEGSPEC2", fvec3(0.5, 0.8, 0.5), true);
+static logchannel_ptr_t logchan_rulespec  = logger()->createChannel("PEGSPEC1", fvec3(0.5, 0.8, 0.5), false);
+static logchannel_ptr_t logchan_rulespec2 = logger()->createChannel("PEGSPEC2", fvec3(0.5, 0.8, 0.5), false);
 
 void Parser::onPre(const std::string& rule_name, match_notif_t fn) {
 
@@ -201,7 +201,6 @@ matcher_ptr_t ExprKWID::createMatcher(std::string named) { // final
   matcher->_info = FormatString("EKWIDPXY<%s>", _kwid.c_str());
 
   matcher->_on_link = [=]() ->bool {
-    static int DEPTH = 0;
     /////////////////////////////////////////////////////////
     logchan_rulespec2->log("EKWIDPXY(%s) _kwid<%s> astnode<%p> top_rule<%s> ON-LINK", named.c_str(), _kwid.c_str(), this, top_rule->_name.c_str() );
     /////////////////////////////////////////////////////////
@@ -410,10 +409,15 @@ matcher_ptr_t ParserRule::createMatcher(std::string named) { // final
 
 static constexpr const char* block_regex = "(function|yo|xxx)";
 
-PegImpl::PegImpl() {
+PegImpl::PegImpl(Parser* user_parser) {
+
+  _user_parser = user_parser;
+  _user_scanner = user_parser->_scanner;
+  _user_parser->_user.set<PegImpl*>(this);
+
   _peg_parser        = std::make_shared<Parser>();
-  _peg_parser->_DEBUG_MATCH = true;
-  _peg_parser->_DEBUG_INFO = true;
+  _peg_parser->_DEBUG_MATCH = false;
+  _peg_parser->_DEBUG_INFO = false;
   _peg_parser->_name = "gramr";
   loadPEGScannerRules();
   loadPEGGrammar();
@@ -838,7 +842,9 @@ match_ptr_t PegImpl::parseUserScannerSpec(std::string inp_string) {
     OrkAssert(false);
   }
   auto top_view = peg_scanner->createTopView();
-  top_view.dump("top_view");
+  if(_peg_parser->_DEBUG_INFO){
+    top_view.dump("top_view");
+  }
   auto slv   = std::make_shared<ScannerLightView>(top_view);
   auto match = _peg_parser->match(_rsi_scanner_matcher, slv);
   OrkAssert(match);
@@ -888,7 +894,9 @@ match_ptr_t PegImpl::parseUserParserSpec(std::string inp_string) {
   // parse parser-DSL
   /////////////////////////////////////////////////
   auto top_view = peg_scanner->createTopView();
-  top_view.dump("top_view");
+  if(_peg_parser->_DEBUG_INFO){
+    top_view.dump("top_view");
+  }
   auto slv   = std::make_shared<ScannerLightView>(top_view);
   auto match = _peg_parser->match(_rsi_parser_matcher, slv);
   OrkAssert(match);
@@ -906,13 +914,6 @@ match_ptr_t PegImpl::parseUserParserSpec(std::string inp_string) {
   }
   return match;
 }
-/////////////////////////////////////////////////////////
-
-void PegImpl::attachUser(Parser* user_parser) {
-  _user_parser  = user_parser;
-  _user_scanner = user_parser->_scanner;
-  _user_parser->_user.set<PegImpl*>(this);
-}
 
 /////////////////////////////////////////////////////////
 
@@ -923,10 +924,11 @@ svar64_t PegImpl::findKWORID(std::string kworid) {
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 void PegImpl::implementUserLanguage() {
+  constexpr bool _DEBUGOUT = false;
   /////////////////////////////////////////////////////////
   // dump matcher phase
   /////////////////////////////////////////////////////////
-  if (1) {
+  if (_DEBUGOUT) {
     logchan_rulespec2->log("///////////////////////////////////////////////////////////");
     logchan_rulespec2->log("// DUMPING USER MATCHERS");
     logchan_rulespec2->log("///////////////////////////////////////////////////////////");
@@ -938,27 +940,18 @@ void PegImpl::implementUserLanguage() {
     }
   }
   /////////////////////////////////////////////////////////
-  // dump ast rule phase
+  // assign rules
   /////////////////////////////////////////////////////////
-  if (0) {
-    logchan_rulespec->log("///////////////////////////////////////////////////////////");
-    logchan_rulespec->log("// DUMPING USER AST-RULES..");
-    logchan_rulespec->log("///////////////////////////////////////////////////////////");
-    for (auto rule : _user_parser_rules) {
-      auto rule_name = rule.first;
-      _parser_rule_names.insert(rule_name);
-      auto ast_rule = rule.second;
-      logchan_rulespec->log("// DUMP USER PARSER RULE<%s>", rule_name.c_str());
-      auto dctx = std::make_shared<AST::DumpContext>();
-      ast_rule->dump(dctx);
-    }
+  for (auto rule : _user_parser_rules) {
+    auto rule_name = rule.first;
+    _parser_rule_names.insert(rule_name);
   }
   /////////////////////////////////////////////////////////
-  // visit phase
+  // prelink phase
   /////////////////////////////////////////////////////////
-  if (1) {
+  {
     logchan_rulespec2->log("///////////////////////////////////////////////////////////");
-    logchan_rulespec2->log("// LINKING USER AST-RULES..");
+    logchan_rulespec2->log("// PRELINKING USER AST-RULES..");
     logchan_rulespec2->log("///////////////////////////////////////////////////////////");
     auto visit_ctx      = std::make_shared<AST::VisitContext>();
     visit_ctx->_visitor = [this, visit_ctx](AST::astnode_ptr_t the_node) {
@@ -1004,9 +997,9 @@ void PegImpl::implementUserLanguage() {
     }
   }
   /////////////////////////////////////////////////////////
-  // visit phase
+  // dump phase
   /////////////////////////////////////////////////////////
-  if (1) {
+  if (_DEBUGOUT) {
     logchan_rulespec2->log("///////////////////////////////////////////////////////////");
     logchan_rulespec2->log("// DUMP RULE REFERENCED_BY LIST..");
     logchan_rulespec2->log("///////////////////////////////////////////////////////////");
@@ -1022,9 +1015,9 @@ void PegImpl::implementUserLanguage() {
     }
   }
   /////////////////////////////////////////////////////////
-  // visit phase
+  // dump phase
   /////////////////////////////////////////////////////////
-  if (1) {
+  if (_DEBUGOUT) {
     logchan_rulespec2->log("///////////////////////////////////////////////////////////");
     logchan_rulespec2->log("// DUMP RULE REFERENCES LIST..");
     logchan_rulespec2->log("///////////////////////////////////////////////////////////");
@@ -1042,7 +1035,7 @@ void PegImpl::implementUserLanguage() {
   /////////////////////////////////////////////////////////
   // implement phase
   /////////////////////////////////////////////////////////
-  if (1) {
+  {
     logchan_rulespec2->log("///////////////////////////////////////////////////////////");
     logchan_rulespec2->log("// IMPLEMENTING USER AST-RULES..");
     logchan_rulespec2->log("///////////////////////////////////////////////////////////");
@@ -1061,39 +1054,27 @@ void PegImpl::implementUserLanguage() {
     }
   }
   /////////////////////////////////////////////////////////
-  // link phase
+  // post-link phase
   /////////////////////////////////////////////////////////
   logchan_rulespec2->log("///////////////////////////////////////////////////////////");
-  logchan_rulespec2->log("// LINKING USER PARSER");
+  logchan_rulespec2->log("// POST-LINKING USER PARSER");
   logchan_rulespec2->log("///////////////////////////////////////////////////////////");
   _user_parser->link();
   logchan_rulespec2->log("///////////////////////////////////////////////////////////");
-}
-
-/////////////////////////////////////////////////////////////////////////////////////////////////
-
-pegimpl_ptr_t getIMPL() {
-  static auto the_peg = std::make_shared<PegImpl>();
-  return the_peg;
 }
 
 } // namespace peg
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-match_ptr_t Parser::loadPEGScannerSpec(const std::string& spec) {
-  auto the_peg = peg::getIMPL();
-  the_peg->attachUser(this);
-  auto match = the_peg->parseUserScannerSpec(spec);
-  return match;
-}
-
-/////////////////////////////////////////////////////////////////////////////////////////////////
-
-match_ptr_t Parser::loadPEGParserSpec(const std::string& spec) {
-  auto the_peg = peg::getIMPL();
-  auto match   = the_peg->parseUserParserSpec(spec);
-  return match;
+bool Parser::loadPEGSpec(const std::string& scanner_spec,  //
+                         const std::string& parser_spec) { //
+  auto the_peg = _uservars.makeSharedForKey<peg::PegImpl>("peg_impl",this);
+  auto scanner_match = the_peg->parseUserScannerSpec(scanner_spec);
+  auto parser_match = the_peg->parseUserParserSpec(parser_spec);
+  OrkAssert(scanner_match);
+  OrkAssert(parser_match);
+  return scanner_match and parser_match;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////

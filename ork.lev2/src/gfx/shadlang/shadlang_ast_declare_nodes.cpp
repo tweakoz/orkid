@@ -60,6 +60,7 @@ void ShadLangParser::declareAstNodes() {
   DECLARE_OBJNAME_AST_NODE("cif_name");
   DECLARE_OBJNAME_AST_NODE("lib_name");
   DECLARE_OBJNAME_AST_NODE("sb_name");
+  DECLARE_OBJNAME_AST_NODE("import_id");
 
   DECLARE_OBJNAME_AST_NODE("pass_name");
   DECLARE_OBJNAME_AST_NODE("fxconfigdecl_name");

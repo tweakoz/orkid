@@ -82,10 +82,14 @@ inline bool is_content(char ch) {
 }
 /////////////////////////////////////////
 struct ScanViewFilter {
-  virtual bool Test(const Token& t) {
+  virtual ~ScanViewFilter() {
+  }
+  virtual bool Test(const Token& t) const {
     return true;
   }
 };
+using scanviewfilter_ptr_t = std::shared_ptr<const ScanViewFilter>;
+
 /////////////////////////////////////////
 
 struct Scanner {
@@ -142,12 +146,13 @@ struct Scanner {
   std::vector<std::string> _str_hold;
   std::vector<std::string> _lines;
   statemachine_t _statemachine;
+  scanviewfilter_ptr_t _topviewfilter;
 };
 
 struct ScanViewRegex : public ScanViewFilter {
   ScanViewRegex(const char*, bool inverse);
 
-  bool Test(const Token& t) override;
+  bool Test(const Token& t) const final;
 
   std::regex mRegex;
   bool mInverse;
@@ -163,7 +168,7 @@ struct ScanRange {
 };
 
 struct ScannerView {
-  ScannerView(const Scanner& s, ScanViewFilter& f);
+  ScannerView(const Scanner& s, scanviewfilter_ptr_t f=nullptr);
   ScannerView(const ScannerView& oth, int start_offset);
 
   size_t numTokens() const {
@@ -187,7 +192,7 @@ struct ScannerView {
   void checktoken(int actual_index, std::string expected) const;
 
   std::vector<int> _indices;
-  ScanViewFilter& _filter;
+  scanviewfilter_ptr_t _filter;
   const Scanner& _scanner;
   std::regex _blockTerminators;
 
