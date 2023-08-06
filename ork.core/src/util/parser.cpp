@@ -178,8 +178,8 @@ std::string Match::ldump(int indent) const {
   if (auto as_seq = tryAsShared<Sequence>()) {
     auto seq = as_seq.value();
     rval     = FormatString(
-        "%s MATCH<%s>.SEQ<%p> cnt<%zu> view<%zu:%zu>\n", //
-        indentstr.c_str(),
+        "%s MATCH<%s> SEQ<%p> cnt<%zu> view<%zu:%zu>\n", //
+        indentstr.c_str(),       //
         _matcher->_name.c_str(), //
         (void*)seq.get(),        //
         seq->_items.size(),      //
@@ -191,8 +191,8 @@ std::string Match::ldump(int indent) const {
   } else if (auto as_grp = tryAsShared<Group>()) {
     auto grp = as_grp.value();
     rval     = FormatString(
-        "%s MATCH<%s>.GRP<%p> cnt<%zu> view<%zu:%zu>\n", //
-        indentstr.c_str(),
+        "%s MATCH<%s> GRP<%p> cnt<%zu> view<%zu:%zu>\n", //
+        indentstr.c_str(),       //
         _matcher->_name.c_str(), //
         (void*)grp.get(),        //
         grp->_items.size(),      //
@@ -204,8 +204,8 @@ std::string Match::ldump(int indent) const {
   } else if (auto as_nom = tryAsShared<NOrMore>()) {
     auto nom = as_nom.value();
     rval     = FormatString(
-        "%s MATCH<%s>.NOM%zu<%p> cnt<%zu> view<%zu:%zu>\n", //
-        indentstr.c_str(),
+        "%s MATCH<%s> NOM%zu<%p> cnt<%zu> view<%zu:%zu>\n", //
+        indentstr.c_str(),       //
         _matcher->_name.c_str(), //
         nom->_minmatches,        //
         (void*)nom.get(),        //
@@ -219,8 +219,8 @@ std::string Match::ldump(int indent) const {
     auto opt = as_opt.value();
     if (opt->_subitem) {
       rval = FormatString(
-          "%s MATCH<%s>.OPT<%p> view<%zu:%zu>\n", //
-          indentstr.c_str(),
+          "%s MATCH<%s> OPT<%p> view<%zu:%zu>\n", //
+          indentstr.c_str(),       //
           _matcher->_name.c_str(), //
           (void*)opt.get(),        //
           st,
@@ -228,9 +228,9 @@ std::string Match::ldump(int indent) const {
       rval += opt->_subitem->ldump(indent + 1);
     } else {
       rval = FormatString(
-          "%s MATCH<%s>.OPT<%p>.EMPTY view<%zu:%zu>\n", //
-          indentstr.c_str(),
-          _matcher->_name.c_str(),                      //
+          "%s MATCH<%s> OPT<%p>.EMPTY view<%zu:%zu>\n", //
+          indentstr.c_str(),       //
+          _matcher->_name.c_str(), //
           (void*)opt.get(),
           st,
           en);
@@ -239,8 +239,8 @@ std::string Match::ldump(int indent) const {
     auto pxy = as_pxy.value();
     if (pxy->_selected) {
       rval = FormatString(
-          "%s MATCH<%s>.PXY<%p> view<%zu:%zu>\n", //
-          indentstr.c_str(),
+          "%s MATCH<%s> PXY<%p> view<%zu:%zu>\n", //
+          indentstr.c_str(),       //
           _matcher->_name.c_str(), //
           (void*)pxy.get(),        //
           st,
@@ -248,33 +248,54 @@ std::string Match::ldump(int indent) const {
       rval += pxy->_selected->ldump(indent + 1);
     } else {
       rval = FormatString(
-          "%s MATCH<%s>.PXY<%p>.EMPTY view<%zu:%zu>\n", //
-          indentstr.c_str(),
+          "%s MATCH<%s> PXY<%p>.EMPTY view<%zu:%zu>\n", //
+          indentstr.c_str(),       //
           _matcher->_name.c_str(), //
           (void*)pxy.get(),        //
           st,
           en);
     }
   } else if (auto as_sel = tryAsShared<OneOf>()) {
-    auto sel = as_sel.value();
-    if (sel->_selected) {
+    auto oneof = as_sel.value();
+    if (oneof->_selected) {
       rval = FormatString(
-          "%s MATCH<%s>.SEL<%p> view<%zu:%zu>\n", //
-          indentstr.c_str(),
+          "%s MATCH<%s> SEL<%p> view<%zu:%zu>\n", //
+          indentstr.c_str(),       //
           _matcher->_name.c_str(), //
-          (void*)sel.get(),        //
+          (void*)oneof.get(),        //
           st,
           en);
-      rval += sel->_selected->ldump(indent + 1);
+      rval += oneof->_selected->ldump(indent + 1);
     } else {
       rval = FormatString(
-          "%s MATCH<%s>.SEL<%p>.EMPTY view<%zu:%zu>\n", //
-          indentstr.c_str(),
+          "%s MATCH<%s> SEL<%p>.EMPTY view<%zu:%zu>\n", //
+          indentstr.c_str(),       //
           _matcher->_name.c_str(), //
-          (void*)sel.get(),        //
+          (void*)oneof.get(),        //
           st,
           en);
     }
+  } else if (auto as_cm = tryAsShared<ClassMatch>()) {
+    auto classmatch = as_cm.value();
+    rval            = FormatString(
+        "%s MATCH<%s> CLASS<0x%zx> text<%s> view<%zu:%zu>\n", //
+        indentstr.c_str(),                //
+        _matcher->_name.c_str(),          //
+        classmatch->_tokclass,            //
+        classmatch->_token->text.c_str(), //
+        st,
+        en);
+  } else if (auto as_wm = tryAsShared<WordMatch>()) {
+    auto wordmatch = as_wm.value();
+    rval           = FormatString(
+        "%s MATCH<%s> WORD<%s> view<%zu:%zu>\n", //
+        indentstr.c_str(),               //
+        _matcher->_name.c_str(),         //
+        wordmatch->_token->text.c_str(), //
+        st,
+        en);
+  } else {
+    OrkAssert(false);
   }
   return rval;
 }
