@@ -46,6 +46,20 @@ void AstNode::replaceInParent( astnode_ptr_t oldnode, //
   }
 }
 
+void AstNode::removeFromParent( astnode_ptr_t oldnode ){
+  auto parent = oldnode->_parent;
+  if (parent) {
+    auto& children = parent->_children;
+    auto it        = std::find(children.begin(), children.end(), oldnode);
+    if( it!=children.end() ){
+      children.erase(it);
+    }
+    else{
+      logerrchannel()->log("AstNode::removeFromParent failed to find child to remove");
+    }
+  }
+}
+
 } // namespace ork::lev2::shadlang::SHAST
 
 #endif 

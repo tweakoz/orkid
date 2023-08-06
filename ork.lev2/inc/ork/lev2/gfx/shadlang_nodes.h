@@ -39,11 +39,27 @@ struct AstNode {
   static void replaceInParent( astnode_ptr_t oldnode, //
                                astnode_ptr_t newnode);
   ///////////////////////////
-  template <typename user_t> user_t typedValueForKey(std::string named);
+  static void removeFromParent( astnode_ptr_t oldnode );
+  ///////////////////////////
+  template <typename user_t> attempt_cast<user_t> typedValueForKey(std::string named);
   template <typename user_t> void setValueForKey(std::string named, user_t value );
   template <typename user_t> std::shared_ptr<user_t> sharedForKey(std::string named);
   template <typename user_t> std::shared_ptr<user_t> makeSharedForKey(std::string named);
   template <typename user_t> void setSharedForKey(std::string named, std::shared_ptr<user_t> ptr);
+
+  template <typename child_t> astnode_ptr_t findFirstChildOfType() const {
+    for (auto ch : _children) {
+      auto typed = std::dynamic_pointer_cast<child_t>(ch);
+      if (typed)
+        return typed;
+      else{
+        auto ret = ch->findFirstChildOfType<child_t>();
+        if(ret)
+          return ret;
+      }
+    }
+    return nullptr;
+  }
   ///////////////////////////
   std::string _name;
   bool _descend = true;
@@ -57,8 +73,8 @@ struct AstNode {
 
 ///////////////////////////////////////////////////////////
 
-template <typename user_t> user_t AstNode::typedValueForKey(std::string named) {
-  return _uservars->typedValueForKey<user_t>(named).value();
+template <typename user_t> attempt_cast<user_t> AstNode::typedValueForKey(std::string named) {
+  return _uservars->typedValueForKey<user_t>(named);
 }
 template <typename user_t> void AstNode::setValueForKey(std::string named, user_t value ) {
   return _uservars->set<user_t>(named,value);
@@ -82,8 +98,6 @@ DECLARE_STD_AST_CLASS(AstNode,LanguageElement);
 DECLARE_STD_AST_CLASS(AstNode,TranslationUnit);
 DECLARE_STD_AST_CLASS(AstNode,Translatable);
 
-DECLARE_STD_AST_CLASS(AstNode,UniformSet);
-DECLARE_STD_AST_CLASS(AstNode,UniformBlk);
 DECLARE_STD_AST_CLASS(AstNode,DeclArgumentList);
 DECLARE_STD_AST_CLASS(AstNode,InterfaceLayout);
 DECLARE_STD_AST_CLASS(AstNode,InterfaceInput);
@@ -195,6 +209,8 @@ DECLARE_STD_AST_CLASS(Translatable,StateBlock);
 DECLARE_STD_AST_CLASS(Translatable,Technique);
 DECLARE_STD_AST_CLASS(Translatable,FunctionDef1);
 DECLARE_STD_AST_CLASS(Translatable,FunctionDef2);
+DECLARE_STD_AST_CLASS(Translatable,UniformSet);
+DECLARE_STD_AST_CLASS(Translatable,UniformBlk);
 //
 DECLARE_STD_AST_CLASS(AstNode,Pass);
 DECLARE_STD_AST_CLASS(AstNode,FxConfigRef);
@@ -203,6 +219,11 @@ DECLARE_STD_AST_CLASS(Shader,VertexShader);
 DECLARE_STD_AST_CLASS(Shader,FragmentShader);
 DECLARE_STD_AST_CLASS(Shader,GeometryShader);
 DECLARE_STD_AST_CLASS(Shader,ComputeShader);
+//
+DECLARE_STD_AST_CLASS(AstNode,VertexShaderRef);
+DECLARE_STD_AST_CLASS(AstNode,FragmentShaderRef);
+DECLARE_STD_AST_CLASS(AstNode,GeometryShaderRef);
+DECLARE_STD_AST_CLASS(AstNode,StateBlockRef);
 //
 DECLARE_STD_AST_CLASS(PipelineInterface,VertexInterface);
 DECLARE_STD_AST_CLASS(PipelineInterface,GeometryInterface);

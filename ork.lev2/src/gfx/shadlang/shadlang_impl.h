@@ -127,6 +127,14 @@ struct ShadLangParser : public Parser {
   SHAST::astnode_map_t _geometry_shaders;
   SHAST::astnode_map_t _compute_shaders;
 
+  SHAST::astnode_map_t _stateblocks;
+  SHAST::astnode_map_t _techniques;
+
+  SHAST::astnode_map_t _fndef1s;
+  SHAST::astnode_map_t _fndef2s;
+
+  SHAST::astnode_map_t _fxconfig_decls;
+
   SHAST::astnode_map_t _structs;
 }; // struct ShadLangParser
 

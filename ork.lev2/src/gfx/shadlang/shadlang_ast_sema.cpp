@@ -55,10 +55,39 @@ void _semaCollectNamedOfType(
         printf("found fragshader<%s>\n", the_name.c_str());
         // OrkAssert(false);
       }
-      if constexpr (std::is_same<node_t, LibraryBlock>::value) {
+      else if constexpr (std::is_same<node_t, LibraryBlock>::value) {
         printf("found libblock<%s>\n", the_name.c_str());
         //OrkAssert(false);
       }
+      else if constexpr (std::is_same<node_t, UniformSet>::value) {
+        printf("found uniset<%s>\n", the_name.c_str());
+      }
+      n->template setValueForKey<std::string>("object_name", the_name);
+    } else {
+      // OrkAssert(false);
+    }
+  }
+}
+
+template <typename node_t> //
+void _semaProcNamedOfType(
+    impl::ShadLangParser* slp, //
+    astnode_ptr_t top) {   //
+
+  auto nodes = slp->collectNodesOfType<node_t>(top);
+  for (auto n : nodes) {
+    astnode_ptr_t obj_name;
+    slp->walkDownAST(n, [&](astnode_ptr_t node) -> bool {
+      auto as_objname = std::dynamic_pointer_cast<ObjectName>(node);
+      printf( "walkdown<%s> as_objname<%s>\n", node->_name.c_str(), as_objname ? "true" : "false" );
+      if (as_objname) {
+        obj_name = as_objname;
+        return false;
+      }
+      return true;
+    });
+    if (obj_name) {
+      auto the_name = obj_name->_name;
       n->template setValueForKey<std::string>("object_name", the_name);
     } else {
       // OrkAssert(false);
@@ -279,7 +308,7 @@ void _semaResolvePostfixExpressions(impl::ShadLangParser* slp, astnode_ptr_t top
   for (auto item : resolve_list) {
     auto ast_pfx  = slp->astNodeForMatch(item._pfx);
     auto ast_pid  = slp->astNodeForMatch(item._pid);
-    auto pid_name = ast_pid->typedValueForKey<std::string>("identifier_name");
+    auto pid_name = ast_pid->typedValueForKey<std::string>("identifier_name").value();
     if (item._parens) {
       auto ast_parens    = slp->astNodeForMatch(item._parens);
       auto match_primary = slp->matchForAstNode(ast_pid);
@@ -298,7 +327,7 @@ void _semaResolvePostfixExpressions(impl::ShadLangParser* slp, astnode_ptr_t top
       }
     } else if (item._memberacc) {
       auto ast_membacc = slp->astNodeForMatch(item._memberacc);
-      auto member_name = ast_membacc->typedValueForKey<std::string>("member_name");
+      auto member_name = ast_membacc->typedValueForKey<std::string>("member_name").value();
       item._memberacc->dump1(0);
       auto maexp   = std::make_shared<SemaMemberAccess>();
       maexp->_name = FormatString("SemaMemberAccess: %s.%s", pid_name.c_str(), member_name.c_str());
@@ -337,7 +366,7 @@ void _semaResolveConstructors(impl::ShadLangParser* slp, astnode_ptr_t top) {
     auto parens     = std::dynamic_pointer_cast<ParensExpression>(n->_children[1]);
     OrkAssert(dtype_node);
     OrkAssert(parens);
-    auto dtype_name = dtype_node->typedValueForKey<std::string>("data_type");
+    auto dtype_name = dtype_node->typedValueForKey<std::string>("data_type").value();
     //
     auto constructor_call = std::make_shared<SemaConstructorInvokation>();
     auto cons_type        = std::make_shared<SemaConstructorType>();
@@ -367,7 +396,7 @@ int _semaProcessInheritances(
   auto nodes = slp->collectNodesOfType<node_t>(top);
   for (auto n : nodes) {
     astnode_ptr_t inh_item;
-    auto objname = n->template typedValueForKey<std::string>("object_name");
+    auto objname = n->template typedValueForKey<std::string>("object_name").value();
     /////////////////////////////////
     auto check_inheritance = [](std::string inh_name, SHAST::astnode_map_t& in_map) -> bool { //
       auto it = in_map.find(inh_name);
@@ -378,7 +407,7 @@ int _semaProcessInheritances(
       auto as_inh_item = std::dynamic_pointer_cast<InheritListItem>(node);
       if (as_inh_item) {
         inh_item      = as_inh_item;
-        auto inh_name = inh_item->typedValueForKey<std::string>("inherited_object");
+        auto inh_name = inh_item->typedValueForKey<std::string>("inherited_object").value();
         printf("%s<%s> inh_name<%s>\n", n->_name.c_str(), objname.c_str(), inh_name.c_str());
         /////////////////////////////////
         // check if extension
@@ -395,13 +424,14 @@ int _semaProcessInheritances(
           return false;
         }
         /////////////////////////////////
-        bool check_lib_blocks = false;
-        bool check_uni_sets   = false;
-        bool check_uni_blks   = false;
-        bool check_vtx_iface  = false;
-        bool check_geo_iface  = false;
-        bool check_frg_iface  = false;
-        bool check_com_iface  = false;
+        bool check_lib_blocks  = false;
+        bool check_uni_sets    = false;
+        bool check_uni_blks    = false;
+        bool check_vtx_iface   = false;
+        bool check_geo_iface   = false;
+        bool check_frg_iface   = false;
+        bool check_com_iface   = false;
+        bool check_stateblocks = false;
         /////////////////////////////////
         // LibraryBlocks
         /////////////////////////////////
@@ -464,6 +494,7 @@ int _semaProcessInheritances(
         // StateBlocks
         /////////////////////////////////
         else if constexpr (std::is_same<node_t, StateBlock>::value) {
+          check_stateblocks = true;
         }
         /////////////////////////////////
         if (check_lib_blocks and check_inheritance(inh_name, slp->_library_blocks)) {
@@ -501,12 +532,37 @@ int _semaProcessInheritances(
           semalib->_name = FormatString("SemaInheritComputeInterface: %s", inh_name.c_str());
           AstNode::replaceInParent(inh_item, semalib);
           count++;
+        } else if (check_stateblocks and check_inheritance(inh_name, slp->_stateblocks)) {
+          auto semalib   = std::make_shared<SemaInheritStateBlock>();
+          semalib->_name = FormatString("SemaInheritStateBlock: %s", inh_name.c_str());
+          AstNode::replaceInParent(inh_item, semalib);
+          count++;
         }
       } // if (as_inh_item) {
       return true;
     });
   }
   return count;
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
+template <typename T>
+void _semaMoveNames(impl::ShadLangParser* slp, astnode_ptr_t top) {
+  auto nodes = slp->collectNodesOfType<T>(top);
+  for (auto tnode : nodes) {
+    
+    if (auto as_objname = tnode->template typedValueForKey<std::string>("object_name")) {
+      auto objname = as_objname.value();
+      if( not objname.empty() ){
+        auto child = tnode->template findFirstChildOfType<ObjectName>();
+        if(child){
+          AstNode::removeFromParent(child);
+        }
+        tnode->_name += "\n" + objname;
+      }
+    }
+  }
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
@@ -532,6 +588,19 @@ void impl::ShadLangParser::semaAST(astnode_ptr_t top) {
   _semaCollectNamedOfType<LibraryBlock>(this, top, _library_blocks);
 
   _semaCollectNamedOfType<StructDecl>(this, top, _structs);
+  _semaCollectNamedOfType<StateBlock>(this, top, _stateblocks);
+  _semaCollectNamedOfType<Technique>(this, top, _techniques);
+
+  _semaCollectNamedOfType<FunctionDef1>(this, top, _fndef1s);
+  _semaCollectNamedOfType<FunctionDef2>(this, top, _fndef2s);
+
+  _semaCollectNamedOfType<FxConfigDecl>(this, top, _fxconfig_decls);
+  _semaProcNamedOfType<FxConfigRef>(this, top);
+  _semaProcNamedOfType<Pass>(this, top);
+
+  _semaMoveNames<Translatable>(this, top);
+  _semaMoveNames<FxConfigRef>(this, top);
+  _semaMoveNames<Pass>(this, top);
 
   //////////////////////////////////
   // Pass 2
@@ -569,7 +638,7 @@ void impl::ShadLangParser::semaAST(astnode_ptr_t top) {
     count += _semaProcessInheritances<GeometryShader>(this, top);
     count += _semaProcessInheritances<ComputeShader>(this, top);
 
-    // count += _semaProcessInheritances<StateBlock>(this, top);
+    count += _semaProcessInheritances<StateBlock>(this, top);
     keep_going = (count>0);
   }
 

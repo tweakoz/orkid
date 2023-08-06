@@ -25,6 +25,8 @@ struct DotBackend {
   DotBackend(){
     using namespace SHAST;
     addThemeItem<TranslationUnit>("#000000", "yellow");
+    addThemeItem<FxConfigDecl>("#101010", "white");
+    addThemeItem<FxConfigRef>("#202020", "#ffd0ff");
     addThemeItem<PipelineInterface>("#1f1f3f", "yellow");
     addThemeItem<Shader>("#1f3f1f", "yellow");
     addThemeItem<StateBlock>("#3f1f1f", "yellow");
@@ -79,6 +81,12 @@ struct DotBackend {
     addThemeItem<SemaInheritUniformBlock>("#f0c040", "black", 1);
     addThemeItem<SemaInheritStateBlock>("#f0c040", "black", 1);
     addThemeItem<SemaInheritExtension>("#f0c040", "black", 1);
+    //
+    addThemeItem<Pass>("#bf4f4f", "white", 1);
+    addThemeItem<VertexShaderRef>("#7f3f3f", "white", 1);
+    addThemeItem<FragmentShaderRef>("#7f3f3f", "white", 1);
+    addThemeItem<GeometryShaderRef>("#7f3f3f", "white", 1);
+    addThemeItem<StateBlockRef>("#7f3f3f", "white", 1);
     // default
     addThemeItem<Directive>("#4f9f9f", "white", 1);
     addThemeItem<Operator>("#6f6f2f", "white", 1);

@@ -36,6 +36,10 @@ void ShadLangParser::preDeclareAstNodes() {
   declare("SemaFunctionInvokation");
   declare("SemaConstructorInvokation");
   declare("SemaMemberAccess");
+  declare("VertexShaderRef");
+  declare("FragmentShaderRef");
+  declare("GeometryShaderRef");
+  declare("StateBlockRef");
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
