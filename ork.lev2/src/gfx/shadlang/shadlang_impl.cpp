@@ -220,6 +220,31 @@ bool ShadLangParser::walkDownAST( //
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void ShadLangParser::removeFromParent(SHAST::astnode_ptr_t node){
+    auto it1 = _astnode2match.find(node);
+  OrkAssert(it1!=_astnode2match.end());
+  auto match = it1->second;
+  _astnode2match.erase(it1);
+  auto it2 = _match2astnode.find(match);
+  OrkAssert(it2!=_match2astnode.end());
+  _match2astnode.erase(it2);
+
+  SHAST::AstNode::treeops::removeFromParent(node);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void ShadLangParser::replaceInParent(SHAST::astnode_ptr_t oldnode, SHAST::astnode_ptr_t newnode){
+  auto it1 = _astnode2match.find(oldnode);
+  OrkAssert(it1!=_astnode2match.end());
+  auto match = it1->second;
+  _astnode2match[ newnode ] = match;
+  _match2astnode[ match ] = newnode;
+  SHAST::AstNode::treeops::replaceInParent(oldnode,newnode);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 SHAST::translationunit_ptr_t ShadLangParser::parseString(std::string parse_str) {
 
   _scanner->scanString(parse_str);

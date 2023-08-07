@@ -96,6 +96,8 @@ struct ShadLangParser : public Parser {
   ////////////////////////////////////////////
   void _buildAstTreeVisitor(match_ptr_t the_match);
   ////////////////////////////////////////////
+  void replaceInParent(SHAST::astnode_ptr_t oldnode, SHAST::astnode_ptr_t newnode);
+  void removeFromParent(SHAST::astnode_ptr_t node);
 
   matcher_ptr_t _tu_matcher;
   std::vector<SHAST::astnode_ptr_t> _astnodestack;
