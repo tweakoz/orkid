@@ -34,6 +34,8 @@ struct AstNode {
     return _name;
   }
   ///////////////////////////
+  bool hasKey(const key_t& key) const;
+  ///////////////////////////
   template <typename T> std::shared_ptr<T> childAs(size_t index) {
     return treeops(this).childAs<T>(index);
   }
@@ -43,20 +45,11 @@ struct AstNode {
     return tree_constops(this).findFirstChildOfType<child_t>();
   }
   ///////////////////////////
-  static void replaceInParent( astnode_ptr_t oldnode, //
-                               astnode_ptr_t newnode);
-  ///////////////////////////
-  static void removeFromParent( astnode_ptr_t oldnode );
-  ///////////////////////////
   template <typename user_t> attempt_cast<user_t> typedValueForKey(key_t named);
   template <typename user_t> void setValueForKey(key_t named, user_t value );
   template <typename user_t> std::shared_ptr<user_t> sharedForKey(key_t named);
   template <typename user_t> std::shared_ptr<user_t> makeSharedForKey(key_t named);
   template <typename user_t> void setSharedForKey(key_t named, std::shared_ptr<user_t> ptr);
-
-
-  bool hasKey(const key_t& key) const;
-
   ///////////////////////////
   std::string _name;
   bool _descend = true;

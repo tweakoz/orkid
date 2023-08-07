@@ -115,9 +115,6 @@ struct Match {
   template <typename user_t> void setSharedForKey(std::string named, std::shared_ptr<user_t> ptr);
   template <typename impl_t> std::shared_ptr<impl_t> followImplAsShared();
   static match_ptr_t followThroughProxy( match_ptr_t start );
-  static size_t branchDistance( match_ptr_t start, match_ptr_t end );
-  static bool related( match_ptr_t start, match_ptr_t end );
-
   match_ptr_t findFirstDescendanttWithMatcher(matcher_ptr_t mchr) const;
 
   bool walkDown(walk_fn_t) const;

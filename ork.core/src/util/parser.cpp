@@ -113,12 +113,6 @@ void Match::visit(int level, visit_fn_t vfn) const {
 bool Match::walkDown(walk_fn_t walk_fn) const {
   return tree_constops(this).walkDown(walk_fn);
 }
-bool Match::related( match_ptr_t start, match_ptr_t end ){
-  return tree_constops::related( start, end );
-}
-size_t Match::branchDistance( match_ptr_t start, match_ptr_t end ){
-  return tree_constops::branchDistance( start, end );
-}
 
 //////////////////////////////////////////////////////////////////////
 

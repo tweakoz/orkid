@@ -29,18 +29,6 @@
 namespace ork::lev2::shadlang::SHAST {
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-void AstNode::replaceInParent(
-    astnode_ptr_t oldnode,   //
-    astnode_ptr_t newnode) { //
-  treeops::replaceInParent(oldnode, newnode);
-}
-
-void AstNode::removeFromParent(astnode_ptr_t oldnode) {
-  treeops::removeFromParent(oldnode);
-} 
-
-///////////////////////////////////////////////////////////////////////////
-
 bool AstNode::hasKey(const key_t& key) const {
   return _uservars->hasKey(key);
 }

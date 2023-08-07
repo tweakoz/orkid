@@ -41,7 +41,7 @@ void _semaNormalizeDataTypes(impl::ShadLangParser* slp, astnode_ptr_t top) {
       sel_ast->setValueForKey<bool>("is_user", false);
       auto as_dt = std::dynamic_pointer_cast<DataType>(sel_ast);
       OrkAssert(as_dt)
-      AstNode::replaceInParent(dtu_node, sel_ast);
+      AstNode::treeops::replaceInParent(dtu_node, sel_ast);
     }
     //////////////////////////////////////////
     // user datatype ?
@@ -54,7 +54,7 @@ void _semaNormalizeDataTypes(impl::ShadLangParser* slp, astnode_ptr_t top) {
       new_dt_node->setValueForKey<bool>("is_builtin", false);
       new_dt_node->setValueForKey<bool>("is_user", true);
       new_dt_node->setValueForKey<std::string>("data_type", dt_name);
-      AstNode::replaceInParent(dtu_node, new_dt_node);
+      AstNode::treeops::replaceInParent(dtu_node, new_dt_node);
     } else {
       printf( "sel<%p>\n", sel.get() );
       sel->dump1(0);
@@ -461,7 +461,7 @@ void _semaResolvePostfixExpressions(impl::ShadLangParser* slp, astnode_ptr_t top
     item._pfx->dump1(0);
     printf( "//////////////////////////////\n");
     item._pid->dump1(0);
-    printf( "// branchDistance<%zx>\n", Match::branchDistance(item._pfx, item._pid) );
+    printf( "// branchDistance<%zx>\n", Match::tree_constops::branchDistance(item._pfx, item._pid) );
     printf( "//////////////////////////////\n");
     auto ast_pfx  = slp->astNodeForMatch(item._pfx);
     auto ast_pid  = slp->astNodeForMatch(item._pid);
@@ -480,7 +480,7 @@ void _semaResolvePostfixExpressions(impl::ShadLangParser* slp, astnode_ptr_t top
         auto expr_list = std::dynamic_pointer_cast<ExpressionList>(ast_parens->_children[0]);
         func_inv_args->_children.push_back(expr_list ? expr_list : ast_parens);
         //////////////////////////////////////////////////
-        AstNode::replaceInParent(ast_pfx, func_inv);
+        AstNode::treeops::replaceInParent(ast_pfx, func_inv);
       }
     } else if (item._memberacc) {
       auto ast_membacc = slp->astNodeForMatch(item._memberacc);
@@ -488,7 +488,7 @@ void _semaResolvePostfixExpressions(impl::ShadLangParser* slp, astnode_ptr_t top
       item._memberacc->dump1(0);
       auto maexp   = std::make_shared<SemaMemberAccess>();
       maexp->_name = FormatString("SemaMemberAccess: %s.%s", pid_name.c_str(), member_name.c_str());
-      AstNode::replaceInParent(ast_pfx, maexp);
+      AstNode::treeops::replaceInParent(ast_pfx, maexp);
     } else {
       OrkAssert(false);
     }
@@ -539,7 +539,7 @@ void _semaResolveConstructors(impl::ShadLangParser* slp, astnode_ptr_t top) {
     } else {
       cons_args->_children = parens->_children[0]->_children;
     }
-    AstNode::replaceInParent(n, constructor_call);
+    AstNode::treeops::replaceInParent(n, constructor_call);
   }
 }
 
@@ -576,7 +576,7 @@ int _semaProcessInheritances(
           auto id_name   = ext_id->tryAsShared<ClassMatch>().value()->_token->text;
           auto semalib   = std::make_shared<SemaInheritExtension>();
           semalib->_name = FormatString("SemaInheritExtension\n%s", id_name.c_str());
-          AstNode::replaceInParent(inh_item, semalib);
+          AstNode::treeops::replaceInParent(inh_item, semalib);
           count++;
           return false;
         }
@@ -657,42 +657,42 @@ int _semaProcessInheritances(
         if (check_lib_blocks and check_inheritance(inh_name, slp->_library_blocks)) {
           auto semalib   = std::make_shared<SemaInheritLibrary>();
           semalib->_name = FormatString("SemaInheritLibrary: %s", inh_name.c_str());
-          AstNode::replaceInParent(inh_item, semalib);
+          AstNode::treeops::replaceInParent(inh_item, semalib);
           count++;
         } else if (check_uni_sets and check_inheritance(inh_name, slp->_uniform_sets)) {
           auto semalib   = std::make_shared<SemaInheritUniformSet>();
           semalib->_name = FormatString("SemaInheritUniformSet: %s", inh_name.c_str());
-          AstNode::replaceInParent(inh_item, semalib);
+          AstNode::treeops::replaceInParent(inh_item, semalib);
           count++;
         } else if (check_uni_blks and check_inheritance(inh_name, slp->_uniform_blocks)) {
           auto semalib   = std::make_shared<SemaInheritUniformBlock>();
           semalib->_name = FormatString("SemaInheritUniformBlock: %s", inh_name.c_str());
-          AstNode::replaceInParent(inh_item, semalib);
+          AstNode::treeops::replaceInParent(inh_item, semalib);
           count++;
         } else if (check_vtx_iface and check_inheritance(inh_name, slp->_vertex_interfaces)) {
           auto semalib   = std::make_shared<SemaInheritVertexInterface>();
           semalib->_name = FormatString("SemaInheritVertexInterface: %s", inh_name.c_str());
-          AstNode::replaceInParent(inh_item, semalib);
+          AstNode::treeops::replaceInParent(inh_item, semalib);
           count++;
         } else if (check_geo_iface and check_inheritance(inh_name, slp->_geometry_interfaces)) {
           auto semalib   = std::make_shared<SemaInheritGeometryInterface>();
           semalib->_name = FormatString("SemaInheritGeometryInterface: %s", inh_name.c_str());
-          AstNode::replaceInParent(inh_item, semalib);
+          AstNode::treeops::replaceInParent(inh_item, semalib);
           count++;
         } else if (check_frg_iface and check_inheritance(inh_name, slp->_fragment_interfaces)) {
           auto semalib   = std::make_shared<SemaInheritFragmentInterface>();
           semalib->_name = FormatString("SemaInheritFragmentInterface: %s", inh_name.c_str());
-          AstNode::replaceInParent(inh_item, semalib);
+          AstNode::treeops::replaceInParent(inh_item, semalib);
           count++;
         } else if (check_com_iface and check_inheritance(inh_name, slp->_compute_interfaces)) {
           auto semalib   = std::make_shared<SemaInheritComputeInterface>();
           semalib->_name = FormatString("SemaInheritComputeInterface: %s", inh_name.c_str());
-          AstNode::replaceInParent(inh_item, semalib);
+          AstNode::treeops::replaceInParent(inh_item, semalib);
           count++;
         } else if (check_stateblocks and check_inheritance(inh_name, slp->_stateblocks)) {
           auto semalib   = std::make_shared<SemaInheritStateBlock>();
           semalib->_name = FormatString("SemaInheritStateBlock: %s", inh_name.c_str());
-          AstNode::replaceInParent(inh_item, semalib);
+          AstNode::treeops::replaceInParent(inh_item, semalib);
           count++;
         }
       } // if (as_inh_item) {
@@ -713,7 +713,7 @@ template <typename T> void _semaMoveNames(impl::ShadLangParser* slp, astnode_ptr
       if (not objname.empty()) {
         auto child = tnode->template findFirstChildOfType<ObjectName>();
         if (child) {
-          AstNode::removeFromParent(child);
+          AstNode::treeops::removeFromParent(child);
         }
         tnode->_name += "\n" + objname;
       }
