@@ -3,6 +3,7 @@
 #include <ork/orktypes.h>
 #include <ork/orkstd.h>
 #include <ork/kernel/varmap.inl>
+#include <ork/kernel/treeops.inl>
 #include <ork/util/scanner.h>
 #include <unordered_set>
 #include <unordered_map>
@@ -91,6 +92,10 @@ struct MatchAttempt {
 //////////////////////////////////////////////////////////////
 
 struct Match {
+
+  using treeops = tree::Ops<Match>;
+  using tree_constops = tree::ConstOps<Match>;
+
   Match(match_attempt_constptr_t attempt);
   using visit_fn_t = std::function<void(int, const Match*)>;
   using walk_fn_t = std::function<bool(const Match*)>;

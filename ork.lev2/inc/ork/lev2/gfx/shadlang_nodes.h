@@ -1,6 +1,7 @@
 #pragma once
 
 #include <ork/util/parser.h>
+#include <ork/kernel/treeops.inl>
 
 ///////////////////////////////////////////////////////////
 
@@ -18,6 +19,10 @@ namespace ork::lev2::shadlang::SHAST {
 ///////////////////////////////////////////////////////////
 
 struct AstNode {
+  using treeops = tree::Ops<AstNode>;
+  using tree_constops = tree::ConstOps<AstNode>;
+  using key_t = varmap::key_t;
+
   AstNode() {
     static int gid = 0;
     _nodeID = gid++;
@@ -28,11 +33,14 @@ struct AstNode {
   virtual std::string desc() const {
     return _name;
   }
+  ///////////////////////////
   template <typename T> std::shared_ptr<T> childAs(size_t index) {
-    OrkAssert(index < _children.size());
-    auto ch  = _children[index];
-    auto ret = std::dynamic_pointer_cast<T>(ch);
-    return ret;
+    return treeops(this).childAs<T>(index);
+  }
+  ///////////////////////////
+  template <typename child_t> //
+  astnode_ptr_t findFirstChildOfType() const {
+    return tree_constops(this).findFirstChildOfType<child_t>();
   }
   ///////////////////////////
   static void replaceInParent( astnode_ptr_t oldnode, //
@@ -40,27 +48,13 @@ struct AstNode {
   ///////////////////////////
   static void removeFromParent( astnode_ptr_t oldnode );
   ///////////////////////////
-  template <typename user_t> attempt_cast<user_t> typedValueForKey(std::string named);
-  template <typename user_t> void setValueForKey(std::string named, user_t value );
-  template <typename user_t> std::shared_ptr<user_t> sharedForKey(std::string named);
-  template <typename user_t> std::shared_ptr<user_t> makeSharedForKey(std::string named);
-  template <typename user_t> void setSharedForKey(std::string named, std::shared_ptr<user_t> ptr);
+  template <typename user_t> attempt_cast<user_t> typedValueForKey(key_t named);
+  template <typename user_t> void setValueForKey(key_t named, user_t value );
+  template <typename user_t> std::shared_ptr<user_t> sharedForKey(key_t named);
+  template <typename user_t> std::shared_ptr<user_t> makeSharedForKey(key_t named);
+  template <typename user_t> void setSharedForKey(key_t named, std::shared_ptr<user_t> ptr);
 
-  template <typename child_t> astnode_ptr_t findFirstChildOfType() const {
-    for (auto ch : _children) {
-      auto typed = std::dynamic_pointer_cast<child_t>(ch);
-      if (typed)
-        return typed;
-      else{
-        auto ret = ch->findFirstChildOfType<child_t>();
-        if(ret)
-          return ret;
-      }
-    }
-    return nullptr;
-  }
 
-  using key_t = varmap::key_t;
   bool hasKey(const key_t& key) const;
 
   ///////////////////////////
@@ -76,20 +70,20 @@ struct AstNode {
 
 ///////////////////////////////////////////////////////////
 
-template <typename user_t> attempt_cast<user_t> AstNode::typedValueForKey(std::string named) {
+template <typename user_t> attempt_cast<user_t> AstNode::typedValueForKey(key_t named) {
   return _uservars->typedValueForKey<user_t>(named);
 }
-template <typename user_t> void AstNode::setValueForKey(std::string named, user_t value ) {
+template <typename user_t> void AstNode::setValueForKey(key_t named, user_t value ) {
   return _uservars->set<user_t>(named,value);
 }
-template <typename user_t> std::shared_ptr<user_t> AstNode::sharedForKey(std::string named) {
+template <typename user_t> std::shared_ptr<user_t> AstNode::sharedForKey(key_t named) {
   using ptr_t = std::shared_ptr<user_t>;
   return _uservars->typedValueForKey<ptr_t>(named).value();
 }
-template <typename user_t> std::shared_ptr<user_t> AstNode::makeSharedForKey(std::string named) {
+template <typename user_t> std::shared_ptr<user_t> AstNode::makeSharedForKey(key_t named) {
   return _uservars->makeSharedForKey<user_t>(named);
 }
-template <typename user_t> void AstNode::setSharedForKey(std::string named, std::shared_ptr<user_t> ptr) {
+template <typename user_t> void AstNode::setSharedForKey(key_t named, std::shared_ptr<user_t> ptr) {
   return _uservars->set<std::shared_ptr<user_t>>(named,ptr);
 }
 

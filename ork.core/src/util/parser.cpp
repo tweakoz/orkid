@@ -108,10 +108,16 @@ match_ptr_t MatchAttempt::genmatch(match_attempt_constptr_t attempt) {
 //////////////////////////////////////////////////////////////////////
 
 void Match::visit(int level, visit_fn_t vfn) const {
-  vfn(level, this);
-  for (auto c : _children) {
-    c->visit(level + 1, vfn);
-  }
+  tree_constops(this).visit(level, vfn);
+}
+bool Match::walkDown(walk_fn_t walk_fn) const {
+  return tree_constops(this).walkDown(walk_fn);
+}
+bool Match::related( match_ptr_t start, match_ptr_t end ){
+  return tree_constops::related( start, end );
+}
+size_t Match::branchDistance( match_ptr_t start, match_ptr_t end ){
+  return tree_constops::branchDistance( start, end );
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -139,20 +145,6 @@ const Match* Match::traverseDownPath(std::string path) const {
 
   this->walkDown(visitor);
   return rval;
-}
-
-//////////////////////////////////////////////////////////////////////
-
-bool Match::walkDown(walk_fn_t walk_fn) const {
-  bool bret = walk_fn(this);
-  if (bret) {
-    for (auto c : _children) {
-      bret = c->walkDown(walk_fn);
-      if (bret == false)
-        break;
-    }
-  }
-  return bret;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -305,58 +297,6 @@ std::string Match::ldump(int indent) const {
 void Match::dump1(int indent) const {
   std::string dstr = ldump(indent);
   logchan_dump->log("%s", dstr.c_str());
-}
-
-//////////////////////////////////////////////////////////////////////
-
-bool Match::related( match_ptr_t start, match_ptr_t end ){
-
-  using check_t = std::function<bool(match_ptr_t start, match_ptr_t end)>;
-
-  check_t chk = [&](match_ptr_t start, match_ptr_t end) -> bool {
-    if( start == end ){
-      return true;
-    }
-    else if( start->_parent ){
-      return chk( start->_parent, end );
-    }
-    return false;
-  };
-
-  bool rval = chk( start, end );
-  if( not rval ){
-    rval = chk( end, start );
-  }
-  return rval;
-}
-
-//////////////////////////////////////////////////////////////////////
-// traverse up from start to end and return the distance
-//////////////////////////////////////////////////////////////////////
-
-size_t Match::branchDistance( match_ptr_t start, match_ptr_t end ){
-
-  if( related( start, end ) ){
-    size_t rval = 0;
-
-    using check_t = std::function<bool(match_ptr_t start, match_ptr_t end)>;
-
-    check_t chk = [&](match_ptr_t start, match_ptr_t end) -> bool {
-      if( start == end ){
-        return true;
-      }
-      else if( start->_parent ){
-        rval++;
-        return chk( start->_parent, end );
-      }
-      return false;
-    };
-
-    bool check_ok = chk( start, end );
-    OrkAssert(check_ok);
-    return rval;
-  }
-  else return -1;
 }
 
 //////////////////////////////////////////////////////////////////////
