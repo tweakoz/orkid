@@ -288,6 +288,77 @@ std::string Match::ldump(int indent) const {
 
 //////////////////////////////////////////////////////////////////////
 
+void Match::implVisit( match_ptr_t top, implvisitctx_ptr_t visitctx ){
+
+  using recurse_fn_t = std::function<void(match_ptr_t)>;
+
+  visitctx->_depth = 0;
+  recurse_fn_t recurse = [&](match_ptr_t match){
+    visitctx->_visitfn(match);
+    if (auto as_seq = match->tryAsShared<Sequence>()) {
+      visitctx->_depth++;
+      auto seq = as_seq.value();
+      for (auto i : seq->_items) {
+        recurse(i);
+      }
+      visitctx->_depth--;
+    } else if (auto as_grp = match->tryAsShared<Group>()) {
+      visitctx->_depth++;
+      auto grp = as_grp.value();
+      for (auto i : grp->_items) {
+        recurse(i);
+      }
+      visitctx->_depth--;
+    } else if (auto as_nom = match->tryAsShared<NOrMore>()) {
+      visitctx->_depth++;
+      auto nom = as_nom.value();
+      for (auto i : nom->_items) {
+        recurse(i);
+      }
+      visitctx->_depth--;
+    } else if (auto as_opt = match->tryAsShared<Optional>()) {
+      visitctx->_depth++;
+      auto opt = as_opt.value();
+      if (opt->_subitem) {
+        recurse(opt->_subitem);
+      }
+      visitctx->_depth--;
+    } else if (auto as_pxy = match->tryAsShared<Proxy>()) {
+      visitctx->_depth++;
+      auto pxy = as_pxy.value();
+      if (pxy->_selected) {
+        recurse(pxy->_selected);
+      }
+      visitctx->_depth--;
+    } else if (auto as_sel = match->tryAsShared<OneOf>()) {
+      visitctx->_depth++;
+      auto oneof = as_sel.value();
+      if (oneof->_selected) {
+        recurse(oneof->_selected);
+      }
+      visitctx->_depth--;
+    } 
+  };
+  recurse(top);
+}
+
+//////////////////////////////////////////////////////////////////////
+
+size_t Match::implDistance( match_ptr_t a, match_ptr_t b ){
+  auto vctx = std::make_shared<ImplVisitCtx>();
+  size_t depth = -1;
+  vctx->_visitfn = [&](match_ptr_t m){
+    if( m == b ){
+      depth = vctx->_depth;
+    }
+  };
+  implVisit(a,vctx);
+  return depth;
+}
+
+
+//////////////////////////////////////////////////////////////////////
+
 void Match::dump1(int indent) const {
   std::string dstr = ldump(indent);
   logchan_dump->log("%s", dstr.c_str());

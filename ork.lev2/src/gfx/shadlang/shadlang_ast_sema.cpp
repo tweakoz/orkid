@@ -461,7 +461,7 @@ void _semaResolvePostfixExpressions(impl::ShadLangParser* slp, astnode_ptr_t top
     item._pfx->dump1(0);
     printf( "//////////////////////////////\n");
     item._pid->dump1(0);
-    printf( "// branchDistance<%zx>\n", Match::tree_constops::branchDistance(item._pfx, item._pid) );
+    printf( "// branchDistance<%zx>\n", Match::implDistance(item._pfx, item._pid) );
     printf( "//////////////////////////////\n");
     auto ast_pfx  = slp->astNodeForMatch(item._pfx);
     auto ast_pid  = slp->astNodeForMatch(item._pid);

@@ -63,7 +63,6 @@ template <typename treenode_type> struct Ops {
     }
   }
 
-
   node_rawptr_t _root;
 };
 
@@ -84,7 +83,7 @@ template <typename treenode_type> struct ConstOps {
       : _root(root) {
   }
 
-  using walk_fn_t = std::function<bool(rootref_t)>;
+  using walk_fn_t  = std::function<bool(rootref_t)>;
   using visit_fn_t = std::function<void(int, rootref_t)>;
 
   /////////////////////////////////////////////////////////////////////////////
@@ -92,11 +91,11 @@ template <typename treenode_type> struct ConstOps {
   inline bool walkDown(walk_fn_t walk_fn) const {
     bool bret = walk_fn(_root);
     if (bret) {
-        for (auto c : _root->_children) {
+      for (auto c : _root->_children) {
         bret = c->walkDown(walk_fn);
         if (bret == false)
-            break;
-        }
+          break;
+      }
     }
     return bret;
   }
@@ -106,7 +105,7 @@ template <typename treenode_type> struct ConstOps {
   inline void visit(int level, visit_fn_t vfn) const {
     vfn(level, _root);
     for (auto c : _root->_children) {
-        c->visit(level + 1, vfn);
+      c->visit(level + 1, vfn);
     }
   }
 
@@ -130,51 +129,42 @@ template <typename treenode_type> struct ConstOps {
   /////////////////////////////////////////////////////////////////////////////
 
   static inline bool related(node_ptr_t start, node_ptr_t end) {
-
-    using check_t = std::function<bool(node_ptr_t start, node_ptr_t end)>;
-
-    check_t chk = [&](node_ptr_t start, node_ptr_t end) -> bool {
-      if (start == end) {
-        return true;
-      } else if (start->_parent) {
-        return chk(start->_parent, end);
+    auto check = [](node_ptr_t child, node_ptr_t candidate) {
+      while (child) {
+        if (child == candidate)
+          return true;
+        child = child->_parent;
       }
       return false;
     };
-
-    bool rval = chk(start, end);
-    if (not rval) {
-      rval = chk(end, start);
-    }
-    return rval;
+    return check(start, end) or check(end, start);
   }
 
   //////////////////////////////////////////////////////////////////////
   // traverse up from start to end and return the distance
   //////////////////////////////////////////////////////////////////////
 
-  static inline size_t branchDistance(node_ptr_t start, node_ptr_t end) {
-
-    if (related(start, end)) {
-      size_t rval = 0;
-
-      using check_t = std::function<bool(node_ptr_t start, node_ptr_t end)>;
-
-      check_t chk = [&](node_ptr_t start, node_ptr_t end) -> bool {
-        if (start == end) {
+  static inline size_t _branchDistance(node_ptr_t start, node_ptr_t end) {
+      size_t counter = 0;
+      auto check = [&](node_ptr_t child, node_ptr_t candidate) {
+      while (child) {
+        counter++;
+        if (child == candidate)
           return true;
-        } else if (start->_parent) {
-          rval++;
-          return chk(start->_parent, end);
-        }
-        return false;
-      };
-
-      bool check_ok = chk(start, end);
-      OrkAssert(check_ok);
-      return rval;
-    } else
-      return -1;
+        child = child->_parent;
+      }
+      return false;
+    };
+    bool met = check(start, end);
+    return met ? counter : -1;
+  }
+  /////////////////////////////////////////////////////////////////////////////
+  static inline size_t branchDistance(node_ptr_t start, node_ptr_t end) {
+    size_t dist = _branchDistance(start, end);
+    if(dist==-1){
+      dist = _branchDistance(end,start);
+    }
+    return dist;
   }
   /////////////////////////////////////////////////////////////////////////////
 

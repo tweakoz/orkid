@@ -97,8 +97,17 @@ struct Match {
   using tree_constops = tree::ConstOps<Match>;
 
   Match(match_attempt_constptr_t attempt);
+
   using visit_fn_t = std::function<void(int, const Match*)>;
+  using impl_visit_fn_t = std::function<void(match_ptr_t)>;
   using walk_fn_t = std::function<bool(const Match*)>;
+
+  struct ImplVisitCtx {
+      size_t _depth = -1;
+      impl_visit_fn_t _visitfn;
+  };
+
+  using implvisitctx_ptr_t = std::shared_ptr<ImplVisitCtx>;
 
   void visit(int level, visit_fn_t) const;
   void dump1(int indent) const;
@@ -119,6 +128,10 @@ struct Match {
 
   bool walkDown(walk_fn_t) const;
   const Match* traverseDownPath(std::string path) const;
+
+  static void implVisit( match_ptr_t top, implvisitctx_ptr_t );
+  static size_t implDistance( match_ptr_t a, match_ptr_t b );
+
   match_attempt_constptr_t _attempt;
   match_ptr_t _parent;
   std::vector<match_ptr_t> _children;
