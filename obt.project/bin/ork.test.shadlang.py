@@ -4,12 +4,12 @@ from obt import command, path
 
 items = [
     "ui",
-    #"ui2",
-    #"basic",
-    #"particle",
-    #"compositor", 
-    #"noise",
-    #"deferred"
+    "ui2",
+    "basic",
+    "particle",
+    "compositor", 
+    "noise",
+    "deferred"
 ]
 
 OK = True

@@ -582,11 +582,11 @@ void Parser::popAttempt(match_attempt_ptr_t attempt, matcher_ptr_t matcher, scan
       track->_matcher = matcher;
       track->_view    = view;
       _trackcontig    = track;
-      printf("_trackcontig<%p>\n", (void*)_trackcontig.get());
+      //printf("_trackcontig<%p>\n", (void*)_trackcontig.get());
     }
 
     if (_attempt_prev == nullptr and attempt == nullptr) {
-      printf("POP NOMATCH matcher<%s> view st<%zu> en<%zu>\n", matcher->_name.c_str(), view->_start, view->_end);
+      //printf("POP NOMATCH matcher<%s> view st<%zu> en<%zu>\n", matcher->_name.c_str(), view->_start, view->_end);
     }
 
   }
