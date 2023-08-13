@@ -44,9 +44,9 @@ using match_rawptr_t           = Match*;
 using match_attempt_ptr_t      = std::shared_ptr<MatchAttempt>;
 using match_attempt_constptr_t = std::shared_ptr<MatchAttempt>;
 using matcher_ptr_t            = std::shared_ptr<Matcher>;
-using matcher_fn_t    = std::function<match_attempt_ptr_t(matcher_ptr_t par_matcher, scannerlightview_constptr_t& inp_view)>;
+using matcher_fn_t  = std::function<match_attempt_ptr_t(matcher_ptr_t par_matcher, scannerlightview_constptr_t& inp_view)>;
 using match_notif_t = std::function<void(match_ptr_t)>;
-using parser_ptr_t    = std::shared_ptr<Parser>;
+using parser_ptr_t  = std::shared_ptr<Parser>;
 
 using sequence_ptr_t   = std::shared_ptr<Sequence>;
 using group_ptr_t      = std::shared_ptr<Group>;
@@ -93,25 +93,25 @@ struct MatchAttempt {
 
 struct Match {
 
-  using treeops = tree::Ops<Match>;
+  using treeops       = tree::Ops<Match>;
   using tree_constops = tree::ConstOps<Match>;
 
   Match(match_attempt_constptr_t attempt);
 
-  using visit_fn_t = std::function<void(int, const Match*)>;
+  using visit_fn_t      = std::function<void(int, const Match*)>;
   using impl_visit_fn_t = std::function<void(match_ptr_t)>;
-  using walk_fn_t = std::function<bool(const Match*)>;
+  using walk_fn_t       = std::function<bool(const Match*)>;
 
   struct ImplVisitCtx {
-      size_t _depth = -1;
-      impl_visit_fn_t _visitfn;
+    size_t _depth = -1;
+    impl_visit_fn_t _visitfn;
   };
 
   using implvisitctx_ptr_t = std::shared_ptr<ImplVisitCtx>;
 
   void visit(int level, visit_fn_t) const;
   void dump1(int indent) const;
-  std::string ldump(int indent=0) const;
+  std::string ldump(int indent = 0) const;
   bool matcherInStack(matcher_ptr_t matcher) const;
   template <typename impl_t> std::shared_ptr<impl_t> asShared();
   template <typename impl_t> std::shared_ptr<impl_t> makeShared();
@@ -123,14 +123,14 @@ struct Match {
   template <typename user_t> std::shared_ptr<user_t> makeSharedForKey(std::string named);
   template <typename user_t> void setSharedForKey(std::string named, std::shared_ptr<user_t> ptr);
   template <typename impl_t> std::shared_ptr<impl_t> followImplAsShared();
-  static match_ptr_t followThroughProxy( match_ptr_t start );
+  static match_ptr_t followThroughProxy(match_ptr_t start);
   match_ptr_t findFirstDescendanttWithMatcher(matcher_ptr_t mchr) const;
 
   bool walkDown(walk_fn_t) const;
   const Match* traverseDownPath(std::string path) const;
 
-  static void implVisit( match_ptr_t top, implvisitctx_ptr_t );
-  static size_t implDistance( match_ptr_t a, match_ptr_t b );
+  static void implVisit(match_ptr_t top, implvisitctx_ptr_t);
+  static size_t implDistance(match_ptr_t a, match_ptr_t b);
 
   match_attempt_constptr_t _attempt;
   match_ptr_t _parent;
@@ -280,6 +280,13 @@ struct Proxy : public MatchItem {
   match_ptr_t _selected;
 };
 
+struct MatchAttemptTrackItem {
+  matcher_ptr_t _matcher;
+  scannerlightview_constptr_t _view;
+};
+
+using matchattempt_trackitem_ptr_t = std::shared_ptr<MatchAttemptTrackItem>;
+
 //////////////////////////////////////////////////////////////
 // the parser
 //////////////////////////////////////////////////////////////
@@ -313,10 +320,11 @@ struct Parser {
 
   template <typename T> matcher_ptr_t matcherForTokenClass(T tokclass, std::string name = "");
 
-  match_ptr_t match(matcher_ptr_t topmatcher, //
-                    scannerlightview_constptr_t topview,
-                    match_notif_t prelink_notif = nullptr );
-                    
+  match_ptr_t match(
+      matcher_ptr_t topmatcher, //
+      scannerlightview_constptr_t topview,
+      match_notif_t prelink_notif = nullptr);
+
   match_attempt_ptr_t _tryMatch(MatchAttemptContextItem& mci);
 
   void _log_valist(const char* pMsgFormat, va_list args) const;
@@ -336,13 +344,18 @@ struct Parser {
   void onPost(const std::string& rule_name, match_notif_t fn);
   void onLink(const std::string& rule_name, match_notif_t fn);
 
-  bool loadPEGSpec(const std::string& scanner_spec, //
-                   const std::string& parser_spec);
+  bool loadPEGSpec(
+      const std::string& scanner_spec, //
+      const std::string& parser_spec);
 
   void link();
-  match_attempt_ptr_t pushMatch(matcher_ptr_t matcher);
-  match_attempt_ptr_t leafMatch(matcher_ptr_t matcher);
-  void popMatch();
+  match_attempt_ptr_t pushAttempt(matcher_ptr_t matcher);
+  match_attempt_ptr_t leafAttempt(matcher_ptr_t matcher);
+  void popAttempt( match_attempt_ptr_t attempt,
+                   matcher_ptr_t matcher,
+                   scannerlightview_constptr_t view);
+
+  match_ptr_t createMatch(match_attempt_ptr_t ma);
 
   void _visitComposeMatch(match_ptr_t m);
   void _visitLinkMatch(match_ptr_t m);
@@ -351,7 +364,13 @@ struct Parser {
   std::unordered_map<std::string, matcher_ptr_t> _matchers_by_name;
   std::vector<match_attempt_ptr_t> _match_stack;
 
-  std::unordered_map<uint64_t,match_attempt_ptr_t> _packrat_cache;
+  std::unordered_map<uint64_t, match_attempt_ptr_t> _packrat_cache;
+
+  match_ptr_t _last_match;
+  matchattempt_trackitem_ptr_t _trackcontig;
+  size_t _track_depth;
+  size_t _high_track_depth;
+  match_attempt_ptr_t _attempt_prev;
 
   scanner_ptr_t _scanner;
   svar64_t _user;

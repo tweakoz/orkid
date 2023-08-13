@@ -165,10 +165,10 @@ std::string Match::ldump(int indent) const {
     auto seq = as_seq.value();
     rval     = FormatString(
         "%s MATCH<%s> SEQ<%p> cnt<%zu> view<%zu:%zu>\n", //
-        indentstr.c_str(),       //
-        _matcher->_name.c_str(), //
-        (void*)seq.get(),        //
-        seq->_items.size(),      //
+        indentstr.c_str(),                               //
+        _matcher->_name.c_str(),                         //
+        (void*)seq.get(),                                //
+        seq->_items.size(),                              //
         st,
         en);
     for (auto i : seq->_items) {
@@ -178,10 +178,10 @@ std::string Match::ldump(int indent) const {
     auto grp = as_grp.value();
     rval     = FormatString(
         "%s MATCH<%s> GRP<%p> cnt<%zu> view<%zu:%zu>\n", //
-        indentstr.c_str(),       //
-        _matcher->_name.c_str(), //
-        (void*)grp.get(),        //
-        grp->_items.size(),      //
+        indentstr.c_str(),                               //
+        _matcher->_name.c_str(),                         //
+        (void*)grp.get(),                                //
+        grp->_items.size(),                              //
         st,
         en);
     for (auto i : grp->_items) {
@@ -191,11 +191,11 @@ std::string Match::ldump(int indent) const {
     auto nom = as_nom.value();
     rval     = FormatString(
         "%s MATCH<%s> NOM%zu<%p> cnt<%zu> view<%zu:%zu>\n", //
-        indentstr.c_str(),       //
-        _matcher->_name.c_str(), //
-        nom->_minmatches,        //
-        (void*)nom.get(),        //
-        nom->_items.size(),      //
+        indentstr.c_str(),                                  //
+        _matcher->_name.c_str(),                            //
+        nom->_minmatches,                                   //
+        (void*)nom.get(),                                   //
+        nom->_items.size(),                                 //
         st,
         en);
     for (auto i : nom->_items) {
@@ -206,17 +206,17 @@ std::string Match::ldump(int indent) const {
     if (opt->_subitem) {
       rval = FormatString(
           "%s MATCH<%s> OPT<%p> view<%zu:%zu>\n", //
-          indentstr.c_str(),       //
-          _matcher->_name.c_str(), //
-          (void*)opt.get(),        //
+          indentstr.c_str(),                      //
+          _matcher->_name.c_str(),                //
+          (void*)opt.get(),                       //
           st,
           en);
       rval += opt->_subitem->ldump(indent + 1);
     } else {
       rval = FormatString(
           "%s MATCH<%s> OPT<%p>.EMPTY view<%zu:%zu>\n", //
-          indentstr.c_str(),       //
-          _matcher->_name.c_str(), //
+          indentstr.c_str(),                            //
+          _matcher->_name.c_str(),                      //
           (void*)opt.get(),
           st,
           en);
@@ -226,18 +226,18 @@ std::string Match::ldump(int indent) const {
     if (pxy->_selected) {
       rval = FormatString(
           "%s MATCH<%s> PXY<%p> view<%zu:%zu>\n", //
-          indentstr.c_str(),       //
-          _matcher->_name.c_str(), //
-          (void*)pxy.get(),        //
+          indentstr.c_str(),                      //
+          _matcher->_name.c_str(),                //
+          (void*)pxy.get(),                       //
           st,
           en);
       rval += pxy->_selected->ldump(indent + 1);
     } else {
       rval = FormatString(
           "%s MATCH<%s> PXY<%p>.EMPTY view<%zu:%zu>\n", //
-          indentstr.c_str(),       //
-          _matcher->_name.c_str(), //
-          (void*)pxy.get(),        //
+          indentstr.c_str(),                            //
+          _matcher->_name.c_str(),                      //
+          (void*)pxy.get(),                             //
           st,
           en);
     }
@@ -246,18 +246,18 @@ std::string Match::ldump(int indent) const {
     if (oneof->_selected) {
       rval = FormatString(
           "%s MATCH<%s> SEL<%p> view<%zu:%zu>\n", //
-          indentstr.c_str(),       //
-          _matcher->_name.c_str(), //
-          (void*)oneof.get(),        //
+          indentstr.c_str(),                      //
+          _matcher->_name.c_str(),                //
+          (void*)oneof.get(),                     //
           st,
           en);
       rval += oneof->_selected->ldump(indent + 1);
     } else {
       rval = FormatString(
           "%s MATCH<%s> SEL<%p>.EMPTY view<%zu:%zu>\n", //
-          indentstr.c_str(),       //
-          _matcher->_name.c_str(), //
-          (void*)oneof.get(),        //
+          indentstr.c_str(),                            //
+          _matcher->_name.c_str(),                      //
+          (void*)oneof.get(),                           //
           st,
           en);
     }
@@ -265,19 +265,19 @@ std::string Match::ldump(int indent) const {
     auto classmatch = as_cm.value();
     rval            = FormatString(
         "%s MATCH<%s> CLASS<0x%zx> text<%s> view<%zu:%zu>\n", //
-        indentstr.c_str(),                //
-        _matcher->_name.c_str(),          //
-        classmatch->_tokclass,            //
-        classmatch->_token->text.c_str(), //
+        indentstr.c_str(),                                    //
+        _matcher->_name.c_str(),                              //
+        classmatch->_tokclass,                                //
+        classmatch->_token->text.c_str(),                     //
         st,
         en);
   } else if (auto as_wm = tryAsShared<WordMatch>()) {
     auto wordmatch = as_wm.value();
     rval           = FormatString(
         "%s MATCH<%s> WORD<%s> view<%zu:%zu>\n", //
-        indentstr.c_str(),               //
-        _matcher->_name.c_str(),         //
-        wordmatch->_token->text.c_str(), //
+        indentstr.c_str(),                       //
+        _matcher->_name.c_str(),                 //
+        wordmatch->_token->text.c_str(),         //
         st,
         en);
   } else {
@@ -288,12 +288,12 @@ std::string Match::ldump(int indent) const {
 
 //////////////////////////////////////////////////////////////////////
 
-void Match::implVisit( match_ptr_t top, implvisitctx_ptr_t visitctx ){
+void Match::implVisit(match_ptr_t top, implvisitctx_ptr_t visitctx) {
 
   using recurse_fn_t = std::function<void(match_ptr_t)>;
 
-  visitctx->_depth = 0;
-  recurse_fn_t recurse = [&](match_ptr_t match){
+  visitctx->_depth     = 0;
+  recurse_fn_t recurse = [&](match_ptr_t match) {
     visitctx->_visitfn(match);
     if (auto as_seq = match->tryAsShared<Sequence>()) {
       visitctx->_depth++;
@@ -337,25 +337,24 @@ void Match::implVisit( match_ptr_t top, implvisitctx_ptr_t visitctx ){
         recurse(oneof->_selected);
       }
       visitctx->_depth--;
-    } 
+    }
   };
   recurse(top);
 }
 
 //////////////////////////////////////////////////////////////////////
 
-size_t Match::implDistance( match_ptr_t a, match_ptr_t b ){
-  auto vctx = std::make_shared<ImplVisitCtx>();
-  size_t depth = -1;
-  vctx->_visitfn = [&](match_ptr_t m){
-    if( m == b ){
+size_t Match::implDistance(match_ptr_t a, match_ptr_t b) {
+  auto vctx      = std::make_shared<ImplVisitCtx>();
+  size_t depth   = -1;
+  vctx->_visitfn = [&](match_ptr_t m) {
+    if (m == b) {
       depth = vctx->_depth;
     }
   };
-  implVisit(a,vctx);
+  implVisit(a, vctx);
   return depth;
 }
-
 
 //////////////////////////////////////////////////////////////////////
 
@@ -379,10 +378,9 @@ bool Match::matcherInStack(matcher_ptr_t matcher) const {
 
 match_ptr_t Match::findFirstDescendanttWithMatcher(matcher_ptr_t mchr) const {
   for (auto ch : _children) {
-    if( ch->_matcher == mchr ){
+    if (ch->_matcher == mchr) {
       return ch;
-    }
-    else{
+    } else {
       return ch->findFirstDescendanttWithMatcher(mchr);
     }
   }
@@ -438,6 +436,8 @@ matcher_ptr_t Parser::rule(const std::string& rule_name) {
   }
   return rval;
 }
+
+//////////////////////////////////////////////////////////////////////
 
 matcher_ptr_t Parser::declare(std::string name) {
   log_info_begin("DECLARE MATCHER<%s> ", name.c_str());
@@ -504,7 +504,7 @@ void Parser::link() {
 
 //////////////////////////////////////////////////////////////////////
 
-match_attempt_ptr_t Parser::leafMatch(matcher_ptr_t matcher) {
+match_attempt_ptr_t Parser::leafAttempt(matcher_ptr_t matcher) {
 
   match_attempt_ptr_t parent;
   if (not _match_stack.empty()) {
@@ -526,8 +526,16 @@ match_attempt_ptr_t Parser::leafMatch(matcher_ptr_t matcher) {
 
 //////////////////////////////////////////////////////////////////////
 
-match_attempt_ptr_t Parser::pushMatch(matcher_ptr_t matcher) {
+match_ptr_t Parser::createMatch(match_attempt_ptr_t ma) {
+  _last_match = std::make_shared<Match>(ma);
+  return _last_match;
+}
 
+//////////////////////////////////////////////////////////////////////
+
+match_attempt_ptr_t Parser::pushAttempt(matcher_ptr_t matcher) {
+
+  _track_depth++;
   OrkAssert(matcher);
 
   match_attempt_ptr_t parent;
@@ -559,8 +567,34 @@ match_attempt_ptr_t Parser::pushMatch(matcher_ptr_t matcher) {
 
 //////////////////////////////////////////////////////////////////////
 
-void Parser::popMatch() {
+void Parser::popAttempt(match_attempt_ptr_t attempt, matcher_ptr_t matcher, scannerlightview_constptr_t view) {
+
+  //////////////////////////////////
+  // parse track (for diagnostics)
+  //////////////////////////////////
+  if (attempt) {
+    //_trackcontig = nullptr;
+  } else {
+
+    if(_track_depth > _high_track_depth){
+      _high_track_depth = _track_depth;
+      auto track      = std::make_shared<MatchAttemptTrackItem>();
+      track->_matcher = matcher;
+      track->_view    = view;
+      _trackcontig    = track;
+      printf("_trackcontig<%p>\n", (void*)_trackcontig.get());
+    }
+
+    if (_attempt_prev == nullptr and attempt == nullptr) {
+      printf("POP NOMATCH matcher<%s> view st<%zu> en<%zu>\n", matcher->_name.c_str(), view->_start, view->_end);
+    }
+
+  }
+  _attempt_prev = attempt;
+
   _match_stack.pop_back();
+
+  _track_depth--;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -593,9 +627,12 @@ match_attempt_ptr_t Parser::_tryMatch(MatchAttemptContextItem& mci) {
   //////////////////////////////////
   _matchattemptctx._stack.pop_back();
   //////////////////////////////////
+  // packrat cache
+  //////////////////////////////////
   if (match_attempt) {
     _packrat_cache[hash] = match_attempt;
   }
+  //////////////////////////////////
   return match_attempt;
 }
 
@@ -606,8 +643,10 @@ match_ptr_t Parser::match(
     scannerlightview_constptr_t topview,
     match_notif_t prelink_notif) {
 
-  _cache_misses = 0;
-  _cache_hits   = 0;
+  _cache_misses     = 0;
+  _cache_hits       = 0;
+  _track_depth      = 0;
+  _high_track_depth = 0;
 
   if (topmatcher == nullptr) {
     logerrchannel()->log("Parser<%p> no top match function", this);
@@ -619,24 +658,30 @@ match_ptr_t Parser::match(
   MatchAttemptContextItem mci{topmatcher, topview};
   auto root_match_attempt = _tryMatch(mci);
 
-  auto rm_view     = root_match_attempt->_view;
-  bool start_match = (rm_view->_start == topview->_start);
-  bool end_match   = (rm_view->_end == topview->_end);
+  scannerlightview_constptr_t rm_view = root_match_attempt->_view;
+  bool start_match                    = (rm_view->_start == topview->_start);
+  bool end_match                      = (rm_view->_end == topview->_end);
 
   if ((not start_match) or (not end_match)) {
 
-    auto end = rm_view->token(rm_view->_end);
+    scannerlightview_constptr_t errview;
+
+    if (_trackcontig) {
+      errview = _trackcontig->_view;
+    }
+    OrkAssert(errview);
     topview->dump("topview");
+    auto errtok = topview->token(errview->_start);
 
     logerrchannel()->log("FULL MATCH FAILED");
     logerrchannel()->log("topview<%zu:%zu>", topview->_start, topview->_end);
-    logerrchannel()->log("rmview<%zu:%zu>", rm_view->_start, rm_view->_end);
-    size_t end_lineno = 0;
-    size_t end_colno  = 0;
-    if (end) {
-      end_lineno = end->iline;
-      end_colno  = end->icol;
-      logerrchannel()->log("end_linenum<%zu> end_columnnum<%zu>", end_lineno, end_colno);
+    logerrchannel()->log("errview<%zu:%zu>", errview->_start, errview->_end);
+    size_t errtok_lineno = 0;
+    size_t errtok_colno  = 0;
+    if (errtok) {
+      errtok_lineno = errtok->iline;
+      errtok_colno  = errtok->icol;
+      logerrchannel()->log("errtok<%s> errtok_linenum<%zu> errtok_columnnum<%zu>", errtok->text.c_str(), errtok_lineno, errtok_colno);
     } else {
       logerrchannel()->log("NO END");
       exit(-1);
@@ -644,13 +689,13 @@ match_ptr_t Parser::match(
 
     logerrchannel()->log("////////////////////// CURRENT POS (succeeded) ////////////////////// ");
 
-    size_t st_line = std::max((end_lineno - 3), size_t(0));
+    size_t st_line = std::max((errtok_lineno - 3), size_t(0));
     size_t en_line = st_line + 3 + 3 + 1;
 
     for (size_t cu_line = st_line; cu_line < en_line; cu_line++) {
       auto dbg_line = _scanner->_lines[cu_line];
       std::string str;
-      if (cu_line == end_lineno) {
+      if (cu_line == errtok_lineno) {
         str = deco::format(255, 255, 64, "line<%zu>: ", cu_line);
         str += deco::format(255, 255, 192, "%s", dbg_line.c_str());
       } else {
@@ -662,13 +707,13 @@ match_ptr_t Parser::match(
 
     logerrchannel()->log("////////////////////// CURRENT POS (succeeded) ////////////////////// ");
 
-    size_t st_tok = std::max((rm_view->_end - 9), size_t(0));
+    size_t st_tok = std::max((errview->_start - 9), size_t(0));
     size_t en_tok = st_tok + 9 + 9 + 1;
 
     for (size_t cu_tok = st_tok; cu_tok < en_tok; cu_tok++) {
       auto dbg_tok = _scanner->token(cu_tok);
       std::string str;
-      if (cu_tok == rm_view->_end) {
+      if (cu_tok == errview->_start) {
         str = deco::format(255, 255, 64, "tok<%zu>: ", cu_tok);
         str += deco::format(255, 255, 192, "%s", dbg_tok->text.c_str());
       } else {

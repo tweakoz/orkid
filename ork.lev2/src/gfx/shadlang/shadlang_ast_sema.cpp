@@ -736,6 +736,8 @@ template <typename T> void _semaMoveNames(impl::ShadLangParser* slp, astnode_ptr
 
 void impl::ShadLangParser::semaAST(astnode_ptr_t top) {
 
+  return;
+
   _semaNormalizeDataTypes(this, top);
   _semaNameTypedIdentifers(this, top);
   _semaNameDataTypes(this, top);

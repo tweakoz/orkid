@@ -319,7 +319,7 @@ void ScannerLightView::dump(const std::string& dumpid) const {
   int i = 0;
   for (int tokidx = _start; tokidx <= _end; ++tokidx) {
     auto t = _input_view.token(tokidx);
-    printf("tok<%d> val<%s>\n", tokidx, t->text.c_str());
+    printf("tok<%d> val<%s> line<%zu>\n", tokidx, t->text.c_str(), t->iline );
   }
 }
 

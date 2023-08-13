@@ -68,10 +68,12 @@ state_block sb_additive : sb_default {
 // shaders
 ///////////////////////////////////////////////////////////////
 vertex_shader vs_uitext : iface_vdefault {
-  gl_Position = mvp * position;
+  gl_Position ={ mvp * position;
   //frg_clr     = vtxcolor;
-  frg_uv      = uv0;
+  frg_uv      = uv0;  
+
 }
+///////////////////////////////////////////////////////////////
 vertex_shader vs_uitext_stereo //
   : extension(GL_NV_stereo_view_rendering) //
   : extension(GL_NV_viewport_array2) //
