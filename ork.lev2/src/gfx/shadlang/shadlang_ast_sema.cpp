@@ -303,6 +303,7 @@ void _semaPerformImports(impl::ShadLangParser* slp, astnode_ptr_t top) {
       ork::FixedString<256> fxs;
       fxs.format("%s://%s", a.c_str(), rpath.c_str());
       proc_import_path = fxs.c_str();
+      printf("Import ProcPath3<%s>\n", proc_import_path.c_str());
       OrkAssert(false);
     }
     
