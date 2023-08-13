@@ -9,7 +9,9 @@
 struct x : public baseclass {\
   inline x() {\
     _name = #x;\
+    _type_name = #x;\
   }\
+  static constexpr const char* _static_type_name = #x;\
 };
 
 ///////////////////////////////////////////////////////////
@@ -52,13 +54,13 @@ struct AstNode {
   template <typename user_t> void setSharedForKey(key_t named, std::shared_ptr<user_t> ptr);
   ///////////////////////////
   std::string _name;
+  std::string _type_name;
   bool _descend = true;
   bool _showDOT = true;
   int _nodeID = -1;
   astnode_ptr_t _parent;
   std::vector<astnode_ptr_t> _children;
   varmap::varmap_ptr_t _uservars;
-
 };
 
 ///////////////////////////////////////////////////////////

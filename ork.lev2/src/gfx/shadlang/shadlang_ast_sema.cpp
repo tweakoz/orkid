@@ -295,16 +295,17 @@ void _semaPerformImports(impl::ShadLangParser* slp, astnode_ptr_t top) {
     rpath.split(a, b, ':');
     if (b.length() != 0) { // use from import
       proc_import_path = rpath;
+      printf("Import ProcPath1<%s>\n", proc_import_path.c_str());
     } else { // infer from container
       proc_import_path = slp->_shader_path;
-      // printf( "parent_parser<%s> imppath1<%s>\n", parent_parser->_name.c_str(), imppath.c_str());
+      printf("Import ProcPath2<%s>\n", proc_import_path.c_str());
       proc_import_path.split(a, b, ':');
       ork::FixedString<256> fxs;
       fxs.format("%s://%s", a.c_str(), rpath.c_str());
       proc_import_path = fxs.c_str();
+      OrkAssert(false);
     }
     
-    printf("Import ProcPath<%s>\n", proc_import_path.c_str());
     auto sub_tunit = shadlang::parseFromFile(proc_import_path);
     OrkAssert(sub_tunit);
     import_map[proc_import_path.c_str()] = sub_tunit;
@@ -715,9 +716,13 @@ int _semaProcessInheritances(
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void _semaMoveNames(impl::ShadLangParser* slp, astnode_ptr_t top) {
-  auto nodes = slp->collectNodesOfType<T>(top);
+template <typename node_t> void _semaMoveNames(impl::ShadLangParser* slp, astnode_ptr_t top) {
+  auto nodes = slp->collectNodesOfType<node_t>(top);
   for (auto tnode : nodes) {
+
+    if constexpr (std::is_same<node_t, ImportDirective>::value) {
+      //OrkAssert(false);
+    }
 
     if (auto as_objname = tnode->template typedValueForKey<std::string>("object_name")) {
       auto objname = as_objname.value();
@@ -735,8 +740,6 @@ template <typename T> void _semaMoveNames(impl::ShadLangParser* slp, astnode_ptr
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 void impl::ShadLangParser::semaAST(astnode_ptr_t top) {
-
-  return;
 
   _semaNormalizeDataTypes(this, top);
   _semaNameTypedIdentifers(this, top);
