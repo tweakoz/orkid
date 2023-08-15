@@ -28,7 +28,7 @@ using namespace SHAST;
 
 void _fixdatatype(impl::ShadLangParser* slp, astnode_ptr_t dt_node){
     if( not dt_node->hasKey("data_type") ){
-      printf( "dt_node: name<%s>\n", dt_node->_name.c_str() );
+      //printf( "dt_node: name<%s>\n", dt_node->_name.c_str() );
       auto match     = slp->matchForAstNode(dt_node);
       auto seq       = match->asShared<Sequence>();
       auto sel       = seq->itemAsShared<OneOf>(2)->_selected;
@@ -65,7 +65,7 @@ void _semaNormalizeDataTypes(impl::ShadLangParser* slp, astnode_ptr_t top) {
     // user datatype ?
     //////////////////////////////////////////
     else if (sel->_matcher == matcher_ident) {
-      sel->dump1(0);
+      //sel->dump1(0);
       auto classmatch = sel->asShared<ClassMatch>();
       auto dt_name = classmatch->_token->text;
       auto new_dt_node = std::make_shared<DataType>();
@@ -213,12 +213,12 @@ void _semaCollectNamedOfType(
 
       auto it = outmap.find(the_name);
       if (it != outmap.end()) {
-        logerrchannel()->log("duplicate named object<%s> mangled_name<%s>", the_name.c_str(), mangled_name.c_str());
         if( mangled_name != "" ){
           the_name = mangled_name;
           it = outmap.find(the_name);
         }
         else{
+          logerrchannel()->log("duplicate named object<%s> mangled_name<%s>", the_name.c_str(), mangled_name.c_str());
           OrkAssert(false);
         }
       }
@@ -304,7 +304,7 @@ void _semaPerformImports(impl::ShadLangParser* slp, astnode_ptr_t top) {
       fxs.format("%s://%s", a.c_str(), rpath.c_str());
       proc_import_path = fxs.c_str();
       printf("Import ProcPath3<%s>\n", proc_import_path.c_str());
-      OrkAssert(false);
+      //OrkAssert(false);
     }
     
     auto sub_tunit = shadlang::parseFromFile(proc_import_path);
@@ -412,7 +412,7 @@ void _semaResolvePostfixExpressions(impl::ShadLangParser* slp, astnode_ptr_t top
   auto IDENTIFIER        = slp->findMatcherByName("IDENTIFIER");
   auto PRIMARY_IDENTIFER = slp->findMatcherByName("PrimaryIdentifier");
   auto MEMBER_ACCESS     = slp->findMatcherByName("MemberAccess");
-  auto DOT               = slp->findMatcherByName("DOT");
+  auto DOT               = slp->findMatcherByName("MemberDot");
   auto nodes             = slp->collectNodesOfType<PostfixExpression>(top);
   std::vector<PfxToResolve> resolve_list;
   //////////////////////////////////////////
@@ -438,6 +438,10 @@ void _semaResolvePostfixExpressions(impl::ShadLangParser* slp, astnode_ptr_t top
       auto match_pfx_tail    = Match::followThroughProxy(match_tails->_items[0]);
       match_pfx_tail         = match_pfx_tail->asShared<OneOf>()->_selected;
       auto match_pfxtail_seq = match_pfx_tail->asShared<Sequence>();
+
+      size_t index = resolve_list.size();
+
+      printf( "XXX<%zu:%s>\n", index, match_pfxtail_seq->_items[0]->_matcher->_name.c_str() );
 
       if (match_pfxtail_seq->_items[0]->_matcher == RVC_EXPRESSION) {
         PfxToResolve res;
@@ -469,17 +473,28 @@ void _semaResolvePostfixExpressions(impl::ShadLangParser* slp, astnode_ptr_t top
     }
   }
   //////////////////////////////////////////
-  for (auto item : resolve_list) {
-    printf( "// RESOLVE ///////////////////\n");
-    item._pfx->dump1(0);
-    printf( "//////////////////////////////\n");
-    item._pid->dump1(0);
-    printf( "// branchDistance<%zx>\n", Match::implDistance(item._pfx, item._pid) );
-    printf( "//////////////////////////////\n");
+  for (size_t index = 0; index<resolve_list.size(); index++ ) {
+    auto item = resolve_list[index];
+    //printf( "// RESOLVE ///////////////////\n");
+    //item._pfx->dump1(0);
+    //printf( "//////////////////////////////\n");
+    //item._pid->dump1(0);
+    //printf( "// branchDistance<%zx>\n", Match::implDistance(item._pfx, item._pid) );
+    //printf( "//////////////////////////////\n");
     auto ast_pfx  = slp->astNodeForMatch(item._pfx);
     auto ast_pid  = slp->astNodeForMatch(item._pid);
-    auto pid_name = ast_pid->typedValueForKey<std::string>("identifier_name").value();
+    if(nullptr==ast_pfx){
+      OrkAssert(false);
+      continue;
+    }
+    if(nullptr==ast_pid){
+      printf( "no AST for match %zu\n", index );
+      OrkAssert(false);
+      continue;
+    }
+
     if (item._parens) {
+      auto pid_name = ast_pid->typedValueForKey<std::string>("identifier_name").value();
       auto ast_parens    = slp->astNodeForMatch(item._parens);
       auto match_primary = slp->matchForAstNode(ast_pid);
       if (match_primary->_matcher == PRIMARY_IDENTIFER) {
@@ -496,9 +511,10 @@ void _semaResolvePostfixExpressions(impl::ShadLangParser* slp, astnode_ptr_t top
         slp->replaceInParent(ast_pfx, func_inv);
       }
     } else if (item._memberacc) {
+      auto pid_name = ast_pid->typedValueForKey<std::string>("identifier_name").value();
       auto ast_membacc = slp->astNodeForMatch(item._memberacc);
       auto member_name = ast_membacc->typedValueForKey<std::string>("member_name").value();
-      item._memberacc->dump1(0);
+      //item._memberacc->dump1(0);
       auto maexp   = std::make_shared<SemaMemberAccess>();
       maexp->_name = FormatString("SemaMemberAccess: %s.%s", pid_name.c_str(), member_name.c_str());
       slp->replaceInParent(ast_pfx, maexp);
@@ -584,7 +600,7 @@ int _semaProcessInheritances(
         /////////////////////////////////
         if (inh_name == "extension") {
           auto inh_match = slp->matchForAstNode(inh_item);
-          inh_match->dump1(0);
+          //inh_match->dump1(0);
           auto ext_id    = inh_match->traverseDownPath("InheritListItem.sub2.sub/IDENTIFIER");
           auto id_name   = ext_id->tryAsShared<ClassMatch>().value()->_token->text;
           auto semalib   = std::make_shared<SemaInheritExtension>();
@@ -799,14 +815,14 @@ void impl::ShadLangParser::semaAST(astnode_ptr_t top) {
   _semaNameAssignmentOperators(this, top);
   _semaNameInheritListItems(this, top);
   _semaResolvePostfixExpressions(this, top);
-  _semaResolveSemaFunctionArguments(this, top);
-  _semaResolveConstructors(this, top);
+  //_semaResolveSemaFunctionArguments(this, top);
+  //_semaResolveConstructors(this, top);
 
   //////////////////////////////////
   // Pass 4..
   //////////////////////////////////
 
-  bool keep_going = true;
+  bool keep_going = false;
   while (keep_going) {
     int count = 0;
     count += _semaProcessInheritances<LibraryBlock>(this, top);

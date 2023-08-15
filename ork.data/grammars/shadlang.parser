@@ -92,11 +92,13 @@ PostfixExpression <|[
     zom { PostfixExpressionTail }
 ]|>
 
+MemberDot <| [ DOT ] |>
+
 PostfixExpressionTail <| sel{
     [ L_SQUARE Expression R_SQUARE ] : "ArrayIndexOperator"
     [ ParensExpression ]
     [ L_PAREN R_PAREN ]
-    [ DOT IDENTIFIER ] : "MemberAccessOperator"
+    [ MemberDot IDENTIFIER ] : "MemberAccessOperator"
     [ PLUSPLUS ] : "IncrementOperator"
     [ MINUSMINUS ] : "DecrementOperator"
 }|>

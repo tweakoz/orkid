@@ -135,7 +135,15 @@ ShadLangParser::ShadLangParser() {
 
 SHAST::astnode_ptr_t ShadLangParser::astNodeForMatch(match_ptr_t match) const {
   auto it = _match2astnode.find(match);
-  OrkAssert(it != _match2astnode.end());
+  if(it == _match2astnode.end()){
+    match->dump1(0);
+    printf( "Cannot find AST for match<%p> matcher<%s>\n", (void*) match.get(), match->_matcher->_name.c_str() ); 
+    //OrkAssert(false);
+    if( match->_children.size() == 1 ){
+      return astNodeForMatch(match->_children[0]);
+    }
+    return nullptr;
+  }
   return it->second;
 }
 match_ptr_t ShadLangParser::matchForAstNode(SHAST::astnode_ptr_t astnode) const {
@@ -265,12 +273,14 @@ SHAST::translationunit_ptr_t ShadLangParser::parseString(std::string parse_str) 
   pruneAST(ast_top);
   semaAST(ast_top);
   ///////////////////////////////////////////
-  printf("///////////////////////////////\n");
-  printf("// AST TREE\n");
-  printf("///////////////////////////////\n");
-  std::string ast_str = toASTstring(ast_top);
-  printf("%s\n", ast_str.c_str());
-  printf("///////////////////////////////\n");
+  if(0){
+    printf("///////////////////////////////\n");
+    printf("// AST TREE\n");
+    printf("///////////////////////////////\n");
+    std::string ast_str = toASTstring(ast_top);
+    printf("%s\n", ast_str.c_str());
+    printf("///////////////////////////////\n");
+  }
   return std::dynamic_pointer_cast<SHAST::TranslationUnit>(ast_top);
 }
 
