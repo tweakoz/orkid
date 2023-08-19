@@ -211,23 +211,6 @@ bool ShadLangParser::walkUpAST( //
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool ShadLangParser::walkDownAST( //
-    SHAST::astnode_ptr_t node,    //
-    SHAST::walk_visitor_fn_t visitor) {
-  bool down = visitor(node);
-  if (down) {
-    for (auto c : node->_children) {
-      bool cont = walkDownAST(c, visitor);
-      if( not cont ){
-        return false;
-      }
-    }
-  }
-  return down;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
 void ShadLangParser::removeFromParent(SHAST::astnode_ptr_t node){
     auto it1 = _astnode2match.find(node);
   OrkAssert(it1!=_astnode2match.end());

@@ -16,6 +16,12 @@ struct x : public baseclass {\
 
 ///////////////////////////////////////////////////////////
 
+#define DECLARE_STD_AST_CLASS_WPTR(baseclass,x,ptr_t)\
+DECLARE_STD_AST_CLASS(baseclass,x)\
+using ptr_t = std::shared_ptr<x>;
+
+///////////////////////////////////////////////////////////
+
 namespace ork::lev2::shadlang::SHAST {
 
 ///////////////////////////////////////////////////////////
@@ -25,11 +31,7 @@ struct AstNode {
   using tree_constops = tree::ConstOps<AstNode>;
   using key_t = varmap::key_t;
 
-  AstNode() {
-    static int gid = 0;
-    _nodeID = gid++;
-    _uservars = std::make_shared<varmap::VarMap>();
-  }
+  AstNode();
   virtual ~AstNode() {
   }
   virtual std::string desc() const {
@@ -53,11 +55,17 @@ struct AstNode {
   template <typename user_t> std::shared_ptr<user_t> makeSharedForKey(key_t named);
   template <typename user_t> void setSharedForKey(key_t named, std::shared_ptr<user_t> ptr);
   ///////////////////////////
+  static bool walkDownAST(                 //
+    SHAST::astnode_ptr_t node,   //
+    SHAST::walk_visitor_fn_t visitor);
+  ///////////////////////////
   std::string _name;
   std::string _type_name;
   bool _descend = true;
   bool _showDOT = true;
   int _nodeID = -1;
+  bool _should_indent = false;
+  bool _should_emit = true;
   astnode_ptr_t _parent;
   std::vector<astnode_ptr_t> _children;
   varmap::varmap_ptr_t _uservars;
@@ -110,7 +118,7 @@ DECLARE_STD_AST_CLASS(LanguageElement,ArrayRef);
 DECLARE_STD_AST_CLASS(LanguageElement,ArgumentDeclaration);
 DECLARE_STD_AST_CLASS(LanguageElement,DataDeclaration);
 DECLARE_STD_AST_CLASS(LanguageElement,ArrayDeclaration);
-DECLARE_STD_AST_CLASS(LanguageElement,TypedIdentifier);
+DECLARE_STD_AST_CLASS_WPTR(LanguageElement,TypedIdentifier, tid_ptr_t);
 DECLARE_STD_AST_CLASS(LanguageElement,ObjectName);
 DECLARE_STD_AST_CLASS(LanguageElement,RValueConstructor);
 DECLARE_STD_AST_CLASS(LanguageElement,StateBlockItem);
@@ -178,7 +186,7 @@ DECLARE_STD_AST_CLASS(Literal,NumericLiteral);
 DECLARE_STD_AST_CLASS(NumericLiteral,FloatLiteral);
 DECLARE_STD_AST_CLASS(NumericLiteral,IntegerLiteral);
 //
-DECLARE_STD_AST_CLASS(AssignmentExpression,AssignmentExpression1);
+DECLARE_STD_AST_CLASS_WPTR(AssignmentExpression,AssignmentExpression1, asnexp1_ptr_t );
 DECLARE_STD_AST_CLASS(AssignmentExpression,AssignmentExpression2);
 DECLARE_STD_AST_CLASS(AssignmentExpression,AssignmentExpression3);
 //
@@ -200,7 +208,7 @@ DECLARE_STD_AST_CLASS(Translatable,PipelineInterface);
 DECLARE_STD_AST_CLASS(Translatable,StateBlock);
 DECLARE_STD_AST_CLASS(Translatable,Technique);
 DECLARE_STD_AST_CLASS(Translatable,FunctionDef1);
-DECLARE_STD_AST_CLASS(Translatable,FunctionDef2);
+DECLARE_STD_AST_CLASS_WPTR(Translatable,FunctionDef2, fndef2_ptr_t);
 DECLARE_STD_AST_CLASS(Translatable,UniformSet);
 DECLARE_STD_AST_CLASS(Translatable,UniformBlk);
 //
@@ -221,6 +229,11 @@ DECLARE_STD_AST_CLASS(PipelineInterface,VertexInterface);
 DECLARE_STD_AST_CLASS(PipelineInterface,GeometryInterface);
 DECLARE_STD_AST_CLASS(PipelineInterface,FragmentInterface);
 DECLARE_STD_AST_CLASS(PipelineInterface,ComputeInterface);
+
+///////////////////////////////////////////////////////////
+
+DECLARE_STD_AST_CLASS(SemaExpression,SemaFloatLiteral);
+DECLARE_STD_AST_CLASS(SemaExpression,SemaIntegerLiteral);
 
 ///////////////////////////////////////////////////////////
 

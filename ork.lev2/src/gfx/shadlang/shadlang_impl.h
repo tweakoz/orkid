@@ -50,9 +50,6 @@ struct ShadLangParser : public Parser {
   bool walkUpAST(                 //
     SHAST::astnode_ptr_t node,   //
     SHAST::walk_visitor_fn_t visitor);
-  bool walkDownAST(                 //
-    SHAST::astnode_ptr_t node,   //
-    SHAST::walk_visitor_fn_t visitor);
   ////////////////////////////////////////////
   SHAST::astnode_ptr_t astNodeForMatch(match_ptr_t match) const;
   match_ptr_t matchForAstNode(SHAST::astnode_ptr_t astnode) const;

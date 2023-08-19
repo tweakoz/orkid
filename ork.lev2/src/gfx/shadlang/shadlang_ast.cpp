@@ -29,8 +29,35 @@
 namespace ork::lev2::shadlang::SHAST {
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
+///////////////////////////////////////////////////////////////////////////////
+
+AstNode::AstNode(){
+  static int gid = 0;
+  _nodeID = gid++;
+  _uservars = std::make_shared<varmap::VarMap>();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 bool AstNode::hasKey(const key_t& key) const {
   return _uservars->hasKey(key);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+bool AstNode::walkDownAST( //
+    SHAST::astnode_ptr_t node,    //
+    SHAST::walk_visitor_fn_t visitor) {
+  bool down = visitor(node);
+  if (down) {
+    for (auto c : node->_children) {
+      bool cont = walkDownAST(c, visitor);
+      if( not cont ){
+        return false;
+      }
+    }
+  }
+  return down;
 }
 
 } // namespace ork::lev2::shadlang::SHAST

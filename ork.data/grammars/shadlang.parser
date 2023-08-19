@@ -104,9 +104,9 @@ PostfixExpressionTail <| sel{
 }|>
 
 PrimaryExpression <| sel{ 
-  [ Literal ]
-  [ RValueConstructor ]
-  [ ParensExpression ]
+  [ Literal ] : "PrimaryLiteral"
+  [ RValueConstructor ] : "PrimaryRvalueConstructor"
+  [ ParensExpression ] : "PrimaryParensExpression"
   [ IDENTIFIER ] : "PrimaryIdentifier"
   // [ QUOTED_STRING ] // no strings in shadlang yet..
 }|>
@@ -115,59 +115,98 @@ MultiplicativeOperator <| sel{ STAR SLASH PERCENT } |>
 
 MultiplicativeExpression <|[
     CastExpression
-    zom{[ MultiplicativeOperator CastExpression ]}
+    zom{[ MultiplicativeExpressionTail ]}
+]|>
+MultiplicativeExpressionTail <|[
+    MultiplicativeOperator CastExpression
 ]|>
 
 AdditiveOperator <| sel{ PLUS MINUS } |> 
 
 AdditiveExpression <|[
     MultiplicativeExpression
-    zom{ [ AdditiveOperator MultiplicativeExpression ] }
+    zom{ [ AdditiveExpressionTail ] }
+]|>
+
+AdditiveExpressionTail <|[
+    AdditiveOperator MultiplicativeExpression
 ]|>
 
 ShiftOperator <| sel{ L_SHIFT R_SHIFT } |>
 
 ShiftExpression <|[
     AdditiveExpression
-    zom{[ ShiftOperator AdditiveExpression ]}
+    zom{[ ShiftExpressionTail ]}
+]|>
+
+ShiftExpressionTail <|[
+    ShiftOperator AdditiveExpression
 ]|>
 
 RelationalOperator <| sel{ L_ANGLE R_ANGLE IS_LEQ_TO IS_GEQ_TO } |>
 
 RelationalExpression <|[
     ShiftExpression
-    zom{[ RelationalOperator ShiftExpression ]}
+    zom{[ RelationalExpressionTail ]}
+]|>
+
+RelationalExpressionTail <|[
+    RelationalOperator ShiftExpression
 ]|>
 
 EqualityOperator <| sel{ IS_EQ_TO IS_NEQ_TO } |>
 EqualityExpression <|[
     RelationalExpression 
-    zom{ [ EqualityOperator RelationalExpression ] }
+    zom{ [ EqualityExpressionTail ] }
+]|>
+
+EqualityExpressionTail <|[
+    EqualityOperator RelationalExpression
 ]|>
 
 AndExpression <|[
     EqualityExpression
-    zom{[ BITWISE_AND EqualityExpression ]}
+    zom{[ AndExpressionTail ]}
+]|>
+
+AndExpressionTail <|[
+    BITWISE_AND EqualityExpression
 ]|>
 
 ExclusiveOrExpression <|[
     AndExpression
-    zom{[ CARET AndExpression ]}
+    zom{[ ExclusiveOrExpressionTail ]}
+]|>
+
+ExclusiveOrExpressionTail <|[
+    CARET AndExpression
 ]|>
 
 InclusiveOrExpression <|[
     ExclusiveOrExpression
-    zom{[ BITWISE_OR ExclusiveOrExpression ]}
+    zom{[ InclusiveOrExpressionTail ]}
+]|>
+
+InclusiveOrExpressionTail <|[
+    BITWISE_OR ExclusiveOrExpression
 ]|>
 
 LogicalAndExpression <|[
     InclusiveOrExpression
-    zom{[ LOGICAL_AND InclusiveOrExpression ]}
+    zom{[ LogicalAndExpressionTail ]}
 ]|>
+
+LogicalAndExpressionTail <|[
+    LOGICAL_AND InclusiveOrExpression
+]|>
+
 
 LogicalOrExpression <|[
     LogicalAndExpression
-    zom{[ LOGICAL_OR LogicalAndExpression ]}
+    zom{[ LogicalOrExpressionTail ]}
+]|>
+LogicalOrExpressionTail <|[
+    LOGICAL_OR LogicalAndExpression
 ]|>
 
 ConditionalExpression <|[
