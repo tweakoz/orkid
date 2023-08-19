@@ -102,7 +102,8 @@ libblock lib_cellnoise {
 
     // clamp the domain
     Pi.xyz       = Pi.xyz - floor(Pi.xyz * (1.0 / 69.0)) * 69.0;
-    vec3 Pi_inc1 = step(Pi, vec3(69.0 - 1.5)) * (Pi + 1.0);
+      vec3 Pi_inc1 = step(Pi, vec3(69.0 - 1.5)) * (Pi + 1.0);
+    //vec3 Pi_inc1 = step(Pi, vec3(69.0,  - , 1.5)) * (Pi + 1.0); 
 
     // calculate the hash ( over -1.0->1.0 range )
     vec4 Pt = vec4(Pi.xy, Pi_inc1.xy) + vec2(50.0, 161.0).xyxy;

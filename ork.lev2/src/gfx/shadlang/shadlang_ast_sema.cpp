@@ -25,15 +25,6 @@ namespace ork::lev2::shadlang {
 /////////////////////////////////////////////////////////////////////////////////////////////////
 using namespace SHAST;
 
-template <typename T> 
-void _semaShouldIdent(impl::ShadLangParser* slp, astnode_ptr_t top){
-  auto nodes         = slp-> template collectNodesOfType<T>(top);
-  for (auto n : nodes) {
-    n->_should_indent = true;
-  }
-}
-
-
 void _procdatatype(
     impl::ShadLangParser* slp, //
     astnode_ptr_t dt_node,
@@ -46,12 +37,32 @@ void _procdatatype(
   dt_node->setValueForKey<bool>("is_user", not built_in);
 }
 
-std::string _dt_extract_type(match_ptr_t dt_node) {
-  auto seq = dt_node->asShared<Sequence>();
-  auto sel = seq->itemAsShared<OneOf>(2)->_selected;
-  auto cm  = sel->asShared<ClassMatch>();
-  return cm->_token->text;
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
+std::string _dt_extract_type(dt_ptr_t dt_node, match_ptr_t dt_match) {
+  auto seq = dt_match->asShared<Sequence>();
+  auto _inp = seq->itemAsShared<Optional>(0)->_subitem;
+  auto _const = seq->itemAsShared<Optional>(1)->_subitem;
+  auto dt_name = seq->itemAsShared<OneOf>(2)->_selected;
+  auto dt_cm  = dt_name->asShared<ClassMatch>();
+
+  auto type_name = dt_cm->_token->text;
+  dt_node->setValueForKey<bool>("has_attr_inp", (_inp!=nullptr));
+  dt_node->setValueForKey<bool>("has_attr_const", (_const!=nullptr));
+  dt_node->setValueForKey<std::string>("base_type", type_name);
+  if( _inp ){
+    type_name = "in " + type_name;
+  }
+  if( _const ){
+    type_name = "const " + type_name;
+  }
+  else{
+  }
+
+
+  return type_name;
 }
+
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 void _semaNormalizeDtUserTypes(impl::ShadLangParser* slp, astnode_ptr_t top) {
@@ -67,7 +78,8 @@ void _semaNormalizeDtUserTypes(impl::ShadLangParser* slp, astnode_ptr_t top) {
     if (sel_match->_matcher == matcher_dtype) {
       auto sel_ast                        = slp->astNodeForMatch(sel_match);
       auto sel_as_dt                      = std::dynamic_pointer_cast<DataType>(sel_ast);
-      OrkAssert(sel_as_dt) auto type_name = _dt_extract_type(sel_match);
+      OrkAssert(sel_as_dt) 
+      auto type_name = _dt_extract_type(sel_as_dt, sel_match);
       _procdatatype(slp, sel_as_dt, type_name, true);
       slp->replaceInParent(dtu_node, sel_as_dt);
     }
@@ -96,7 +108,7 @@ void _semaNameBuiltInDataTypes(impl::ShadLangParser* slp, astnode_ptr_t top) {
   auto nodes = slp->collectNodesOfType<DataType>(top);
   for (auto dt_node : nodes) {
     auto dt_match = slp->matchForAstNode(dt_node);
-    auto type_name = _dt_extract_type(dt_match);
+    auto type_name = _dt_extract_type(dt_node, dt_match);
     _procdatatype(slp, dt_node, type_name, true);
   }
 }
@@ -606,17 +618,20 @@ void _semaResolveConstructors(impl::ShadLangParser* slp, astnode_ptr_t top) {
     auto cons_type        = std::make_shared<SemaConstructorType>();
     auto cons_args        = std::make_shared<SemaConstructorArguments>();
     constructor_call->_children.push_back(cons_type);
-    constructor_call->_children.push_back(cons_args);
+    //constructor_call->_children.push_back(cons_args);
     //
     cons_type->_name = FormatString("SemaConstructorType: %s", dtype_name.c_str());
     constructor_call->setValueForKey<std::string>("data_type", dtype_name);
+
+    constructor_call->_children.push_back(parens);
+
     //
-    auto expr_list = std::dynamic_pointer_cast<ExpressionList>(parens->_children[0]);
-    if (expr_list) {
-      cons_args->_children = expr_list->_children;
-    } else {
-      cons_args->_children = parens->_children[0]->_children;
-    }
+    //auto expr_list = std::dynamic_pointer_cast<ExpressionList>(parens->_children[0]);
+    //if (expr_list) {
+      //cons_args->_children = expr_list->_children;
+    //} else {
+      //cons_args->_children = parens->_children[0]->_children;
+    //}
     slp->replaceInParent(n, constructor_call);
   }
 }

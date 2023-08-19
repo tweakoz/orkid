@@ -78,9 +78,9 @@ struct ShadLangParser : public Parser {
   }
   ////////////////////////////////////////////
   template <typename T> //
-  std::set<SHAST::astnode_ptr_t> //
+  std::set<std::shared_ptr<T>> //
   collectNodesOfType(SHAST::astnode_ptr_t top){ //
-    std::set<SHAST::astnode_ptr_t> nodes;
+    std::set<std::shared_ptr<T>> nodes;
     auto collect_nodes     = std::make_shared<SHAST::Visitor>();
     collect_nodes->_on_pre = [&](SHAST::astnode_ptr_t node) {
       if (auto as_typed = std::dynamic_pointer_cast<T>(node)) {

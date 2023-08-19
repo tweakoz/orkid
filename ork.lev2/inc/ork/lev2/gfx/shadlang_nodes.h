@@ -111,7 +111,7 @@ DECLARE_STD_AST_CLASS(AstNode,Directive);
 DECLARE_STD_AST_CLASS(Directive,ImportDirective);
 //
 DECLARE_STD_AST_CLASS(LanguageElement,LValue);
-DECLARE_STD_AST_CLASS(LanguageElement,DataType);
+DECLARE_STD_AST_CLASS_WPTR(LanguageElement,DataType, dt_ptr_t );
 DECLARE_STD_AST_CLASS(LanguageElement,DataTypeWithUserTypes);
 DECLARE_STD_AST_CLASS(LanguageElement,MemberRef);
 DECLARE_STD_AST_CLASS(LanguageElement,ArrayRef);
