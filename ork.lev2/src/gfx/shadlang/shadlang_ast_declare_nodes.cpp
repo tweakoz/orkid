@@ -107,6 +107,7 @@ void ShadLangParser::declareAstNodes() {
   DECLARE_STD_AST_NODE(InclusiveOrExpression);
   DECLARE_STD_AST_NODE(ExclusiveOrExpression);
   DECLARE_STD_AST_NODE(AndExpression);
+  DECLARE_STD_AST_NODE(AndExpressionTail);  
   DECLARE_STD_AST_NODE(EqualityExpression);
   DECLARE_STD_AST_NODE(RelationalExpression);
   DECLARE_STD_AST_NODE(ShiftExpression);
@@ -121,6 +122,8 @@ void ShadLangParser::declareAstNodes() {
   DECLARE_STD_AST_NODE(CastExpression);
   DECLARE_STD_AST_NODE(CastExpression1);
   DECLARE_STD_AST_NODE(ExpressionList);
+  ///////////////////////////////////////////////////////////
+  DECLARE_STD_AST_NODE(WTFExp);  
   ///////////////////////////////////////////////////////////
   DECLARE_STD_AST_NODE(Statement);
   DECLARE_STD_AST_NODE(DiscardStatement);

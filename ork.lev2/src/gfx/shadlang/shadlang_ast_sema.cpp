@@ -395,6 +395,20 @@ void _semaNameRelationalOperators(impl::ShadLangParser* slp, astnode_ptr_t top) 
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
+void _semaNameShiftOperators(impl::ShadLangParser* slp, astnode_ptr_t top) {
+  auto nodes = slp->collectNodesOfType<ShiftOperator>(top);
+  for (auto so_node : nodes) {
+    auto match     = slp->matchForAstNode(so_node);
+    auto sel       = match->asShared<OneOf>()->_selected;
+    auto cm        = sel->asShared<ClassMatch>();
+    auto name      = cm->_token->text;
+    so_node->_name = FormatString("ShiftOperator: %s", name.c_str());
+    so_node->setValueForKey<std::string>("operator", name);
+  }
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
 void _semaNameAssignmentOperators(impl::ShadLangParser* slp, astnode_ptr_t top) {
   auto nodes = slp->collectNodesOfType<AssignmentOperator>(top);
   for (auto ao_node : nodes) {
@@ -794,10 +808,20 @@ template <typename node_t> void _semaMoveNames(impl::ShadLangParser* slp, astnod
 void _semaIntegerLiterals(impl::ShadLangParser* slp, astnode_ptr_t top) {
   auto nodes = slp->collectNodesOfType<IntegerLiteral>(top);
   for (auto node : nodes) {
+    std::string out_str;
+    SHAST::_dumpAstTreeVisitor(node,0,out_str);
+    printf("AST: %s\n", out_str.c_str());
     auto match = slp->matchForAstNode(node);
+    match = match->asShared<OneOf>()->_selected;
+    match->dump1(0);
     auto cm    = match->asShared<ClassMatch>();
+    printf("cm<%p>\n", (void*) cm.get() );
     auto literal_value  = cm->_token->text;
+    if(literal_value==""){
+      OrkAssert(false);
+    }
     auto sema_node = std::make_shared<SemaIntegerLiteral>();
+    sema_node->_name = FormatString("SemaIntegerLiteral<%s>", literal_value.c_str() );
     sema_node->setValueForKey<std::string>("literal_value", literal_value);
     slp->replaceInParent(node, sema_node);
   }
@@ -809,7 +833,9 @@ void _semaFloatLiterals(impl::ShadLangParser* slp, astnode_ptr_t top) {
   auto nodes = slp->collectNodesOfType<FloatLiteral>(top);
   for (auto node : nodes) {
     auto match = slp->matchForAstNode(node);
-    auto cm    = match->asShared<ClassMatch>();
+    match->dump1(0);
+    auto seq    = match->asShared<Sequence>();
+    auto cm    = seq->itemAsShared<ClassMatch>(0);
     auto literal_value  = cm->_token->text;
     auto sema_node = std::make_shared<SemaFloatLiteral>();
     sema_node->setValueForKey<std::string>("literal_value", literal_value);
@@ -882,6 +908,7 @@ void impl::ShadLangParser::semaAST(astnode_ptr_t top) {
   _semaNameAdditiveOperators(this, top);
   _semaNameMultiplicativeOperators(this, top);
   _semaNameRelationalOperators(this, top);
+  _semaNameShiftOperators(this, top);
   _semaNameAssignmentOperators(this, top);
   _semaNameInheritListItems(this, top);
   //_semaResolvePostfixExpressions(this, top);

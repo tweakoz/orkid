@@ -307,6 +307,14 @@ GLFX1Backend::GLFX1Backend(){
       }
     }
   });
+  registerAstPostChildCB<AndExpression>([=](auto andexp, astnode_ptr_t child){
+    size_t num_children = andexp->_children.size();
+    if(num_children>1){
+      if( child != andexp->_children.back() ){
+        emitContinueLine( " & " );
+      }
+    }
+  });
   /////////////////////////////////////////////////////////////////////
   // operators
   /////////////////////////////////////////////////////////////////////
@@ -323,6 +331,10 @@ GLFX1Backend::GLFX1Backend(){
     emitContinueLine( " %s ", oper.c_str() );
   });
   registerAstPreCB<RelationalOperator>([=](auto ro_node){
+    auto oper = ro_node-> template typedValueForKey<std::string>("operator").value();
+    emitContinueLine( " %s ", oper.c_str() );
+  });
+  registerAstPreCB<ShiftOperator>([=](auto ro_node){
     auto oper = ro_node-> template typedValueForKey<std::string>("operator").value();
     emitContinueLine( " %s ", oper.c_str() );
   });
@@ -360,6 +372,20 @@ GLFX1Backend::GLFX1Backend(){
     auto literal_value = float_node-> template typedValueForKey<std::string>("literal_value").value();
     emitContinueLine( "%s", literal_value.c_str() );
   });
+  //registerAstPreCB<AndExpression>([=](auto tail_node){
+    //OrkAssert(false);
+  //});
+  registerAstPreCB<AndExpressionTail>([=](auto tail_node){
+    OrkAssert(false);
+  });
+  registerAstPostCB<AndExpressionTail>([=](auto tail_node){
+    OrkAssert(false);
+  });
+  registerAstPreCB<WTFExp>([=](auto tail_node){
+    OrkAssert(false);
+  });
+
+  
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////

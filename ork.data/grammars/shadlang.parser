@@ -75,7 +75,7 @@ DataDeclarations <| zom{ [ DataDeclaration SEMICOLON ] } |>
 
 UnaryExpression <| sel{
     [ PostfixExpression ]
-    [ UnaryOperator CastExpression ]
+    [ UnaryOperator CastExpression ] : "WTFExp"
 }|>
 
 CastExpression <| sel {

@@ -157,9 +157,13 @@ DECLARE_STD_AST_CLASS(Expression,LogicalOrExpression);
 DECLARE_STD_AST_CLASS(Expression,InclusiveOrExpression);
 DECLARE_STD_AST_CLASS(Expression,ExclusiveOrExpression);
 DECLARE_STD_AST_CLASS(Expression,AndExpression);
+DECLARE_STD_AST_CLASS(Expression,AndExpressionTail);
 DECLARE_STD_AST_CLASS(Expression,EqualityExpression);
 DECLARE_STD_AST_CLASS(Expression,RelationalExpression);
 DECLARE_STD_AST_CLASS(Expression,CastExpression);
+
+DECLARE_STD_AST_CLASS(Expression,WTFExp);
+
 //
 DECLARE_STD_AST_CLASS(LanguageElement,SemaExpression);
 DECLARE_STD_AST_CLASS(SemaExpression,SemaMemberAccess);

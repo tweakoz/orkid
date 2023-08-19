@@ -35,14 +35,6 @@ void ShadLangParser::defineAstHandlers() {
     auto translation_unit = ast_create<SHAST::TranslationUnit>(match);
   });
   ///////////////////////////////////////////////////////////
-  onPost("FLOATING_POINT", [=](match_ptr_t match) { //
-    auto ast_node = ast_create<SHAST::FloatLiteral>(match);
-  });
-  ///////////////////////////////////////////////////////////
-  onPost("INTEGER", [=](match_ptr_t match) { //
-    auto integer = ast_create<SHAST::IntegerLiteral>(match);
-  });
-  ///////////////////////////////////////////////////////////
   onPost("decl_arglist", [=](match_ptr_t match) {
     auto arg_list = ast_create<SHAST::DeclArgumentList>(match);
   });
