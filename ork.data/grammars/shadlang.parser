@@ -306,15 +306,22 @@ InitDeclarator <|[
 */
 ///////////////////////////////////////////////////////////
 
+IfStatementBody <|[
+    Statement
+]|>
+ElseStatementBody <|[
+    Statement
+]|>
+
 IfStatement <|[
     KW_IF
     L_PAREN
     Expression
     R_PAREN
-    Statement
+    IfStatementBody
     opt{[
         KW_ELSE
-        Statement
+        ElseStatementBody
     ]}
 ]|>
 

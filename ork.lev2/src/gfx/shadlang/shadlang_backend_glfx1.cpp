@@ -279,6 +279,18 @@ GLFX1Backend::GLFX1Backend(){
       emitContinueLine( ") " );
     }
   });
+  registerAstPreCB<IfStatement>([=](auto ifstmt){
+      emitContinueLine( "if(" );
+  });
+  registerAstPostChildCB<IfStatement>([=](auto ifstmt, astnode_ptr_t child){
+    OrkAssert(ifstmt->_children.size()>=2);
+    if( child == ifstmt->_children[0] ){
+      emitContinueLine( ") " );
+    }
+  });
+  registerAstPreCB<ElseStatementBody>([=](auto ifstmt){
+      emitBeginLine( "else " );
+  });
   registerAstPreCB<ReturnStatement>([=](auto retstmt){
       emitContinueLine( "return " );
   });
@@ -331,6 +343,10 @@ GLFX1Backend::GLFX1Backend(){
     emitContinueLine( " %s ", oper.c_str() );
   });
   registerAstPreCB<RelationalOperator>([=](auto ro_node){
+    auto oper = ro_node-> template typedValueForKey<std::string>("operator").value();
+    emitContinueLine( " %s ", oper.c_str() );
+  });
+  registerAstPreCB<EqualityOperator>([=](auto ro_node){
     auto oper = ro_node-> template typedValueForKey<std::string>("operator").value();
     emitContinueLine( " %s ", oper.c_str() );
   });

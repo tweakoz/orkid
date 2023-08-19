@@ -197,6 +197,9 @@ DECLARE_STD_AST_CLASS(AssignmentExpression,AssignmentExpression3);
 DECLARE_STD_AST_CLASS(CastExpression,CastExpression1);
 //
 DECLARE_STD_AST_CLASS(Statement,IfStatement);
+DECLARE_STD_AST_CLASS(Statement,IfStatementBody);
+DECLARE_STD_AST_CLASS(Statement,ElseStatement);
+DECLARE_STD_AST_CLASS(Statement,ElseStatementBody);
 DECLARE_STD_AST_CLASS(Statement,WhileStatement);
 DECLARE_STD_AST_CLASS(Statement,ForStatement);
 DECLARE_STD_AST_CLASS(Statement,ReturnStatement);

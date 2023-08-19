@@ -130,6 +130,8 @@ void ShadLangParser::declareAstNodes() {
   DECLARE_STD_AST_NODE(ExpressionStatement);
   DECLARE_STD_AST_NODE(CompoundStatement);
   DECLARE_STD_AST_NODE(IfStatement);
+  DECLARE_STD_AST_NODE(IfStatementBody);
+  DECLARE_STD_AST_NODE(ElseStatementBody);
   DECLARE_STD_AST_NODE(WhileStatement);
   DECLARE_STD_AST_NODE(ForStatement);
   DECLARE_STD_AST_NODE(ReturnStatement);

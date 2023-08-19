@@ -407,6 +407,20 @@ void _semaNameRelationalOperators(impl::ShadLangParser* slp, astnode_ptr_t top) 
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
+void _semaNameEqualityOperators(impl::ShadLangParser* slp, astnode_ptr_t top) {
+  auto nodes = slp->collectNodesOfType<EqualityOperator>(top);
+  for (auto ao_node : nodes) {
+    auto match     = slp->matchForAstNode(ao_node);
+    auto sel       = match->asShared<OneOf>()->_selected;
+    auto cm        = sel->asShared<ClassMatch>();
+    auto name      = cm->_token->text;
+    ao_node->_name = FormatString("EqualityOperator: %s", name.c_str());
+    ao_node->setValueForKey<std::string>("operator", name);
+  }
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
 void _semaNameShiftOperators(impl::ShadLangParser* slp, astnode_ptr_t top) {
   auto nodes = slp->collectNodesOfType<ShiftOperator>(top);
   for (auto so_node : nodes) {
@@ -923,6 +937,7 @@ void impl::ShadLangParser::semaAST(astnode_ptr_t top) {
   _semaNameAdditiveOperators(this, top);
   _semaNameMultiplicativeOperators(this, top);
   _semaNameRelationalOperators(this, top);
+  _semaNameEqualityOperators(this, top);
   _semaNameShiftOperators(this, top);
   _semaNameAssignmentOperators(this, top);
   _semaNameInheritListItems(this, top);
