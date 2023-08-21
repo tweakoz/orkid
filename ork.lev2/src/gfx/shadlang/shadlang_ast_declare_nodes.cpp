@@ -142,8 +142,10 @@ void ShadLangParser::declareAstNodes() {
   DECLARE_STD_AST_NODE(InterfaceLayout);
   DECLARE_STD_AST_NODE(InterfaceOutputs);
   DECLARE_STD_AST_NODE(InterfaceInputs);
+  DECLARE_STD_AST_NODE(InterfaceStorages);
   DECLARE_STD_AST_NODE(InterfaceInput);
   DECLARE_STD_AST_NODE(InterfaceOutput);
+  DECLARE_STD_AST_NODE(InterfaceStorage);
   DECLARE_STD_AST_NODE(InheritList);
   DECLARE_STD_AST_NODE(InheritListItem);
   DECLARE_STD_AST_NODE(Pass);

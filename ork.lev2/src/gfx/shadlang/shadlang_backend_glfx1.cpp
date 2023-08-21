@@ -190,28 +190,236 @@ GLFX1Backend::GLFX1Backend() {
     // OrkAssert(false);
   });
   /////////////////////////////////////////////////////////////////////
-  registerAstPreCB<LibraryBlock>([=](auto libblock) {
-    auto the_name = libblock->template typedValueForKey<std::string>("object_name").value();
-    emitLine("libblock %s {", the_name.c_str() );
-    _indent++;
-  });
-  registerAstPostCB<LibraryBlock>([=](auto libblock) {
-    _indent--;
-    auto the_name = libblock->template typedValueForKey<std::string>("object_name").value();
-    emitLine("");
-    emitLine("} // %s", the_name.c_str() );
-    emitLine("");
-  });
-  registerAstPreChildCB<LibraryBlock>([=](auto da_node, astnode_ptr_t child) {
-    emitEndLine("");
-  });
   registerAstPreCB<InheritListItem>([=](auto inhlistitem) {
     emitBeginLine(": " );
   });
   registerAstPostCB<InheritListItem>([=](auto inhlistitem) {
     emitEndLine("");
   });
- 
+  /////////////////////////////////////////////////////////////////////
+  auto named_item_pre_child_cb = [=](auto node, astnode_ptr_t child) {
+    auto as_inhi = std::dynamic_pointer_cast<InheritListItem>(child);
+    if( not as_inhi ){
+      if( not node->_xxx ){
+        emitLine("{");
+        _indent++;
+        node->_indented = true;
+        node->_xxx = true;
+      }
+    }
+    emitEndLine("");
+  };
+  /////////////////////////////////////////////////////////////////////
+  auto named_precb = [=](auto node, std::string ID) {
+    auto the_name = node->template typedValueForKey<std::string>("object_name").value();
+    emitLine("%s %s", ID.c_str(), the_name.c_str() );
+  };
+  /////////////////////////////////////////////////////////////////////
+  auto named_postcb = [=](auto node) {
+    if( node->_indented ){
+      _indent--;
+    }
+    else{
+      emitLine("{");
+    }
+    auto the_name = node->template typedValueForKey<std::string>("object_name").value();
+    emitLine("");
+    emitLine("} // %s", the_name.c_str() );
+    emitLine("");
+  };
+  /////////////////////////////////////////////////////////////////////
+  registerAstPreCB<LibraryBlock>([=](auto libblock) { named_precb( libblock, "libblock" ); });
+  registerAstPostCB<LibraryBlock>([=](auto libblock) { named_postcb(libblock); });
+  registerAstPreChildCB<LibraryBlock>(named_item_pre_child_cb);
+  /////////////////////////////////////////////////////////////////////
+  registerAstPreCB<UniformSet>([=](auto uni_set) { named_precb( uni_set, "uniform_set" ); });
+  registerAstPostCB<UniformSet>([=](auto uni_set) { named_postcb(uni_set); });
+  registerAstPreChildCB<UniformSet>(named_item_pre_child_cb);
+  registerAstPreCB<DataDeclaration>([=](auto ddecl) {
+    emitBeginLine("");
+  });
+  registerAstPostCB<DataDeclaration>([=](auto ddecl) {
+    emitEndLine(";");
+  });
+  registerAstPreCB<ArrayDeclaration>([=](auto adecl) {
+    emitBeginLine("");
+  });
+  registerAstPostCB<ArrayDeclaration>([=](auto adecl) {
+    emitEndLine(";");
+  });
+  registerAstPreChildCB<ArrayDeclaration>([=](auto adecl, astnode_ptr_t child) {
+    OrkAssert(adecl->_children.size()==2);
+    if (child == adecl->_children[1]) {
+      emitContinueLine("[");
+    }
+  });
+  registerAstPostChildCB<ArrayDeclaration>([=](auto adecl, astnode_ptr_t child) {
+    OrkAssert(adecl->_children.size()==2);
+    if (child == adecl->_children[1]) {
+      emitContinueLine("]");
+    }
+  });
+  /////////////////////////////////////////////////////////////////////
+  registerAstPreCB<StateBlock>([=](auto stateblock) { named_precb( stateblock, "stateblock" ); });
+  registerAstPostCB<StateBlock>([=](auto stateblock) { named_postcb(stateblock); });
+  registerAstPreChildCB<StateBlock>(named_item_pre_child_cb);
+  registerAstPreCB<StateBlockItem>([=](auto stateblockitem) { 
+    emitBeginLine("StateBlockItem : ");
+  });
+  registerAstPostCB<StateBlockItem>([=](auto stateblockitem) {
+    emitEndLine(";");
+  });
+  /////////////////////////////////////////////////////////////////////
+  registerAstPreCB<InterfaceInputs>([=](auto ii_node){
+    emitLine("inputs {" );
+    _indent++;
+  });
+  registerAstPostCB<InterfaceInputs>([=](auto ii_node){
+    _indent--;
+    emitLine("}" );
+  });
+  registerAstPreCB<InterfaceInput>([=](auto ii_node){
+    emitBeginLine("");
+  });
+  registerAstPostCB<InterfaceInput>([=](auto ii_node){
+    emitEndLine(";");
+  });
+  registerAstPreCB<InterfaceOutputs>([=](auto ii_node){
+    emitLine("outputs {" );
+    _indent++;
+  });
+  registerAstPostCB<InterfaceOutputs>([=](auto ii_node){
+    _indent--;
+    emitLine("}" );
+  });
+  registerAstPreCB<InterfaceOutput>([=](auto ii_node){
+    emitBeginLine("");
+  });
+  registerAstPostCB<InterfaceOutput>([=](auto ii_node){
+    emitEndLine(";");
+  });
+  registerAstPreCB<InterfaceLayout>([=](auto il_node){
+    emitContinueLine("layout(");
+  });
+  registerAstPostCB<InterfaceLayout>([=](auto il_node){
+    emitContinueLine(") ");
+  });
+  registerAstPostChildCB<InterfaceLayout>([=](auto il_node, astnode_ptr_t child){
+    size_t num_children = il_node->_children.size();
+    size_t index = 0;
+    for( auto item : il_node->_children ){
+      if( item == child ){
+        break;
+      }
+      index++;
+    }
+    if(index&1){
+      if( index != (num_children-1) )
+        emitContinueLine(", ");
+    }
+    else{
+      emitContinueLine("=");
+    }
+  });
+  registerAstPreCB<InterfaceStorages>([=](auto is_node){
+    emitLine("storage {" );
+    _indent++;
+  });
+  registerAstPostCB<InterfaceStorages>([=](auto is_node){
+    _indent--;
+    emitLine("}" );
+  });
+  registerAstPreCB<InterfaceStorage>([=](auto is_node){
+    emitBeginLine("" );
+    _indent++;
+  });
+  registerAstPostCB<InterfaceStorage>([=](auto is_node){
+    emitEndLine("" );
+  });
+  registerAstPostChildCB<InterfaceStorage>([=](auto is_node, astnode_ptr_t child){
+    OrkAssert(is_node->_children.size()==4);
+    if (child == is_node->_children[1]) { // storage_class
+      emitEndLine(" {");
+    }
+    else if (child == is_node->_children[2]) { // storage_decls
+      _indent--;
+      emitBeginLine("} ");
+    }
+    else if (child == is_node->_children[3]) { // storage_name
+      emitContinueLine(";");
+    }
+  });
+  
+  /////////////////////////////////////////////////////////////////////
+  registerAstPreCB<FragmentInterface>([=](auto frg_if) { named_precb( frg_if, "fragment_interface" ); });
+  registerAstPostCB<FragmentInterface>([=](auto frg_if) { named_postcb(frg_if); });
+  registerAstPreChildCB<FragmentInterface>(named_item_pre_child_cb);
+  /////////////////////////////////////////////////////////////////////
+  registerAstPreCB<VertexInterface>([=](auto vtx_if) { named_precb( vtx_if, "vertex_interface" ); });
+  registerAstPostCB<VertexInterface>([=](auto vtx_if) { named_postcb(vtx_if); });
+  registerAstPreChildCB<VertexInterface>(named_item_pre_child_cb);
+  /////////////////////////////////////////////////////////////////////
+  registerAstPreCB<GeometryInterface>([=](auto geo_if) { named_precb( geo_if, "geometry_interface" ); });
+  registerAstPostCB<GeometryInterface>([=](auto geo_if) { named_postcb(geo_if); });
+  registerAstPreChildCB<GeometryInterface>(named_item_pre_child_cb);
+  /////////////////////////////////////////////////////////////////////
+  registerAstPreCB<ComputeInterface>([=](auto com_if) { named_precb( com_if, "compute_interface" ); });
+  registerAstPostCB<ComputeInterface>([=](auto com_if) { named_postcb(com_if); });
+  registerAstPreChildCB<ComputeInterface>(named_item_pre_child_cb);
+  /////////////////////////////////////////////////////////////////////
+  registerAstPreCB<VertexShader>([=](auto vtx_sh) { named_precb( vtx_sh, "vertex_shader" ); });
+  registerAstPreCB<FragmentShader>([=](auto frg_sh) { named_precb( frg_sh, "fragment_shader" ); });
+  registerAstPreCB<GeometryShader>([=](auto geo_sh) { named_precb( geo_sh, "geometry_shader" ); });
+  registerAstPreCB<ComputeShader>([=](auto com_sh) { named_precb( com_sh, "compute_shader" ); });
+  /////////////////////////////////////////////////////////////////////
+  registerAstPreCB<Technique>([=](auto tek) { 
+    auto the_name = tek->template typedValueForKey<std::string>("object_name").value();
+    emitLine("technique %s {", the_name.c_str() );
+    _indent++;
+  });
+  registerAstPostCB<Technique>([=](auto tek) { 
+    _indent--;
+    emitLine( "}");
+  });
+  /////////////////////////////////////////////////////////////////////
+  registerAstPreCB<Pass>([=](auto pass) { 
+    auto the_name = pass->template typedValueForKey<std::string>("object_name").value();
+    emitLine("pass %s {", the_name.c_str() );
+    _indent++;
+  });
+  registerAstPostCB<Pass>([=](auto pass) { 
+    _indent--;
+    emitLine( "}");
+  });
+  /////////////////////////////////////////////////////////////////////
+  registerAstPreCB<FxConfigRef>([=](auto ref) { 
+    emitLine( "FxConfigRef : " );
+  });
+  /////////////////////////////////////////////////////////////////////
+  registerAstPreCB<VertexShaderRef>([=](auto ref) { 
+    emitBeginLine( "VertexShaderRef : " );
+  });
+  registerAstPostCB<VertexShaderRef>([=](auto ref) { 
+    emitEndLine( ";" );
+  });
+  registerAstPreCB<FragmentShaderRef>([=](auto ref) { 
+    emitBeginLine( "FragmentShaderRef : " );
+  });
+  registerAstPostCB<FragmentShaderRef>([=](auto ref) { 
+    emitEndLine( ";" );
+  });
+  registerAstPreCB<GeometryShaderRef>([=](auto ref) { 
+    emitBeginLine( "GeometryShaderRef : " );
+  });
+  registerAstPostCB<GeometryShaderRef>([=](auto ref) { 
+    emitEndLine( ";" );
+  });
+  registerAstPreCB<StateBlockRef>([=](auto ref) { 
+    emitBeginLine( "StateBlockRef : " );
+  });
+  registerAstPostCB<StateBlockRef>([=](auto ref) { 
+    emitEndLine( ";" );
+  });
   /////////////////////////////////////////////////////////////////////
   // functions
   /////////////////////////////////////////////////////////////////////
@@ -224,6 +432,12 @@ GLFX1Backend::GLFX1Backend() {
   });
   registerAstPreCB<DeclArgumentList>([=](auto da_node) { emitContinueLine("("); });
   registerAstPostCB<DeclArgumentList>([=](auto da_node) { emitContinueLine(")"); });
+  registerAstPostChildCB<DeclArgumentList>([=](auto da_node, astnode_ptr_t child) { //
+    size_t num_children = da_node->_children.size();
+    if (child != da_node->_children.back()) {
+      emitContinueLine(", ");
+    }
+  });
   /////////////////////////////////////////////////////////////////////
   registerAstPreCB<SemaConstructorInvokation>([=](auto fd2) {
     auto fn_name = fd2->template typedValueForKey<std::string>("data_type").value();

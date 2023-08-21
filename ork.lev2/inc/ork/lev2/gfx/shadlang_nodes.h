@@ -73,6 +73,8 @@ struct AstNode {
   astnode_ptr_t _parent;
   std::vector<astnode_ptr_t> _children;
   varmap::varmap_ptr_t _uservars;
+  bool _xxx = false;
+  bool _indented = false;
 };
 
 ///////////////////////////////////////////////////////////
@@ -111,6 +113,8 @@ DECLARE_STD_AST_CLASS(AstNode,InterfaceInput);
 DECLARE_STD_AST_CLASS(AstNode,InterfaceOutput);
 DECLARE_STD_AST_CLASS(AstNode,InterfaceInputs);
 DECLARE_STD_AST_CLASS(AstNode,InterfaceOutputs);
+DECLARE_STD_AST_CLASS(AstNode,InterfaceStorage);
+DECLARE_STD_AST_CLASS(AstNode,InterfaceStorages);
 DECLARE_STD_AST_CLASS(AstNode,Dependency);
 DECLARE_STD_AST_CLASS(Dependency,Extension);
 //
