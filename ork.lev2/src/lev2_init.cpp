@@ -290,7 +290,7 @@ ork::lev2::context_ptr_t gloadercontext;
 void GfxInit(const std::string& gfxlayer) {
 
 #if defined(ENABLE_VULKAN)
-  // vk::init();
+  vk::init();
 #endif
 
   if (gfxlayer != "dummy") {

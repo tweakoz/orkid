@@ -24,6 +24,7 @@
               "ENABLE_PORTAUDIO",
               "ENABLE_IGL",
               "ENABLE_OPENVR",
+              "ENABLE_VULKAN",
               "USE_ORKSL_LANG",
             ],
             "compilerPath": "/usr/bin/clang",
