@@ -260,6 +260,20 @@ GLFX1Backend::GLFX1Backend() {
     }
   });
   /////////////////////////////////////////////////////////////////////
+  registerAstPreCB<StructDecl>([=](auto struct_node){
+    emitBeginLine("struct ");
+  });
+  registerAstPostCB<StructDecl>([=](auto struct_node){
+    _indent--;
+    emitLine("};");
+  });
+  registerAstPostChildCB<StructDecl>([=](auto struct_node, astnode_ptr_t child){
+    if( child == struct_node->_children[0] ) { // struct_name
+        emitEndLine("{");
+        _indent++;
+    }
+  });
+  /////////////////////////////////////////////////////////////////////
   registerAstPreCB<StateBlock>([=](auto stateblock) { named_precb( stateblock, "stateblock" ); });
   registerAstPostCB<StateBlock>([=](auto stateblock) { named_postcb(stateblock); });
   registerAstPreChildCB<StateBlock>(named_item_pre_child_cb);
