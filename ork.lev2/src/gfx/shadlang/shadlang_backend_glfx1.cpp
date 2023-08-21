@@ -118,7 +118,6 @@ struct GLFX1Backend {
 
   std::map<std::string, child_cb_t> _postchildcb_map;
   std::map<std::string, child_cb_t> _prechildcb_map;
-
   size_t _indent       = 0;
   size_t _lineoutindex = 0;
 };
@@ -193,18 +192,24 @@ GLFX1Backend::GLFX1Backend() {
   /////////////////////////////////////////////////////////////////////
   registerAstPreCB<LibraryBlock>([=](auto libblock) {
     auto the_name = libblock->template typedValueForKey<std::string>("object_name").value();
-    emitBeginLine("// BEGIN NAMESPACE %s", the_name.c_str() );
+    emitLine("libblock %s {", the_name.c_str() );
+    _indent++;
   });
   registerAstPostCB<LibraryBlock>([=](auto libblock) {
+    _indent--;
     auto the_name = libblock->template typedValueForKey<std::string>("object_name").value();
-    emitLine("// END NAMESPACE %s", the_name.c_str() );
+    emitLine("");
+    emitLine("} // %s", the_name.c_str() );
     emitLine("");
   });
   registerAstPreChildCB<LibraryBlock>([=](auto da_node, astnode_ptr_t child) {
     emitEndLine("");
   });
   registerAstPreCB<InheritListItem>([=](auto inhlistitem) {
-    emitBeginLine("// inherits " );
+    emitBeginLine(": " );
+  });
+  registerAstPostCB<InheritListItem>([=](auto inhlistitem) {
+    emitEndLine("");
   });
  
   /////////////////////////////////////////////////////////////////////
