@@ -125,16 +125,16 @@ struct VkTextureObject {
 
 struct VkDrawingInterface final : public DrawingInterface {
   VkDrawingInterface(vkcontext_ptr_t ctx);
+  vkcontext_ptr_t _contextVK;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
 struct VkImiInterface final : public ImmInterface {
+  VkImiInterface(vkcontext_ptr_t ctx);
   void _doBeginFrame() final;
   void _doEndFrame() final;
-
-public:
-  VkImiInterface(vkcontext_ptr_t ctx);
+  vkcontext_ptr_t _contextVK;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -172,6 +172,8 @@ struct VkMatrixStackInterface final : public MatrixStackInterface {
 struct VkGeometryBufferInterface final : public GeometryBufferInterface {
 
   VkGeometryBufferInterface(vkcontext_ptr_t ctx);
+
+  void _doBeginFrame() final;
 
   ///////////////////////////////////////////////////////////////////////
   // VtxBuf Interface
@@ -238,12 +240,8 @@ struct VkGeometryBufferInterface final : public GeometryBufferInterface {
 
   //////////////////////////////////////////////
 
-  void _doBeginFrame() final {
-    mLastComponentMask = 0;
-  }
-
   vkcontext_ptr_t _contextVK;
-  uint32_t mLastComponentMask;
+  uint32_t _lastComponentMask = 0xFFFFFFFF;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

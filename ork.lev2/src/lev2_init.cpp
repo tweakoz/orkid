@@ -65,7 +65,7 @@ namespace lev2 {
 
 appinitdata_ptr_t _ginitdata;
 
-#if !defined(ORK_OSX)
+#if defined(ENABLE_VULKAN)
 namespace vk {
 void init();
 }
