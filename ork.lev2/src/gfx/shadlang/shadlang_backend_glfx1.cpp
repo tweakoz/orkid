@@ -506,14 +506,6 @@ GLFX1Backend::GLFX1Backend() {
       }
     }
   });
-  registerAstPostChildCB<AndExpression>([=](auto andexp, astnode_ptr_t child) {
-    size_t num_children = andexp->_children.size();
-    if (num_children > 1) {
-      if (child != andexp->_children.back()) {
-        emitContinueLine(" & ");
-      }
-    }
-  });
   registerAstPreChildCB<IdentifierCall>([=](auto idcall, astnode_ptr_t child) {
     size_t num_children = idcall->_children.size();
     OrkAssert(num_children == 2);
@@ -574,6 +566,46 @@ GLFX1Backend::GLFX1Backend() {
   });
   registerAstPreCB<IncrementOperator>([=](auto inc_node) { emitContinueLine("++"); });
   registerAstPreCB<DecrementOperator>([=](auto inc_node) { emitContinueLine("--"); });
+  registerAstPostChildCB<AndExpression>([=](auto andexp, astnode_ptr_t child) {
+    size_t num_children = andexp->_children.size();
+    if (num_children > 1) {
+      if (child != andexp->_children.back()) {
+        emitContinueLine(" & ");
+      }
+    }
+  });
+  registerAstPostChildCB<InclusiveOrExpression>([=](auto or_node, astnode_ptr_t child) {
+    size_t num_children = or_node->_children.size();
+    if (num_children > 1) {
+      if (child != or_node->_children.back()) {
+        emitContinueLine(" | ");
+      }
+    }
+  });
+  registerAstPostChildCB<ExclusiveOrExpression>([=](auto xor_node, astnode_ptr_t child) {
+    size_t num_children = xor_node->_children.size();
+    if (num_children > 1) {
+      if (child != xor_node->_children.back()) {
+        emitContinueLine(" ^ ");
+      }
+    }
+  });
+  registerAstPostChildCB<LogicalAndExpression>([=](auto and_node, astnode_ptr_t child) {
+    size_t num_children = and_node->_children.size();
+    if (num_children > 1) {
+      if (child != and_node->_children.back()) {
+        emitContinueLine(" && ");
+      }
+    }
+  });
+  registerAstPostChildCB<LogicalOrExpression>([=](auto or_node, astnode_ptr_t child) {
+    size_t num_children = or_node->_children.size();
+    if (num_children > 1) {
+      if (child != or_node->_children.back()) {
+        emitContinueLine(" || ");
+      }
+    }
+  });
   /////////////////////////////////////////////////////////////////////
   // misc prims
   /////////////////////////////////////////////////////////////////////
@@ -595,14 +627,6 @@ GLFX1Backend::GLFX1Backend() {
   registerAstPreCB<SemaFloatLiteral>([=](auto float_node) {
     auto literal_value = float_node->template typedValueForKey<std::string>("literal_value").value();
     emitContinueLine("%s", literal_value.c_str());
-  });
-  // registerAstPreCB<AndExpression>([=](auto tail_node){
-  // OrkAssert(false);
-  //});
-  registerAstPreCB<AndExpressionTail>([=](auto tail_node) { OrkAssert(false); });
-  registerAstPostCB<AndExpressionTail>([=](auto tail_node) { OrkAssert(false); });
-  registerAstPreCB<WTFExp>([=](auto tail_node) {
-    // OrkAssert(false);
   });
 }
 

@@ -54,7 +54,7 @@ PERCENT             <| "%" |>
 CARET               <| "\^" |>
 QUESTION_MARK       <| "\?" |>
 
-HEX_INTEGER         <| "[0][x|X][a-fA-F\d]+[u?]" |>
+HEX_INTEGER         <| "0[xX][a-fA-F\d]+(u?)" |>
 INTEGER             <| "-?(\d+)u?" |>
 FLOATING_POINT      <| "-?(\d*\.?)(\d+)([eE][-+]?\d+)?" |>
 

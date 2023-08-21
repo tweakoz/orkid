@@ -112,8 +112,11 @@ libblock lib_gbuf_decode {
     uint ur = (gbuf.x)&0xfffu; // 12 bits
     uint ug = (gbuf.x>>12)&0xfffu; // 12 bits (24)
     uint ub = (gbuf.y)&0xfffu;  // 12 bits (36)
-    float nx = float(gbuf.z&0xffffu)*inverse_nrm-1.0; // 16 bits (52)
-    float ny = float((gbuf.z>>16)&0xffffu)*inverse_nrm-1.0; // 16 bits (68)
+    float nx = float(gbuf.z&0xffffu)*inverse_nrm;
+          nx -= 1.0; // 16 bits (52)
+    float ny = float((gbuf.z>>16)&0xffffu)*inverse_nrm;
+    ny -= 1.0; // 16 bits (68)
+
     float nz = sqrt(abs(1-nx*nx-ny*ny)); // rebuild normal z component
     uint uruf = uint(gbuf.y>>12)&0xffu; // 8 bits (76)
     uint umtl = uint(gbuf.y>>24)&0xffu; // 8 bits (84)
@@ -123,7 +126,6 @@ libblock lib_gbuf_decode {
     if(signof_nz)
       nz = -nz;
     vec3 nn      = vec3(nx,ny,nz);
-
     ///////////////////////////////
     // multiple normal samples
     //  (for filtered specular)
@@ -139,8 +141,10 @@ libblock lib_gbuf_decode {
       for( int y=-1; y<2; y++ ){
         vec2 uv_sample = (vec2(x,y)+gl_FragCoord.xy)* InvViewportSize;
         uvec4 gbuf = textureLod(MapGBuffer, uv_sample,0);
-        float nx = float(gbuf.z&0xffffu)*inverse_nrm-1.0; // 16 bits (52)
-        float ny = float((gbuf.z>>16)&0xffffu)*inverse_nrm-1.0; // 16 bits (68)
+         float nx = float(gbuf.z&0xffffu)*inverse_nrm;
+         nx -= 1.0; // 16 bits (52)
+        float ny = float((gbuf.z>>16)&0xffffu)*inverse_nrm;
+        ny -= 1.0; // 16 bits (68)
         float nz = sqrt(abs(1-nx*nx-ny*ny)); // rebuild normal z component
         bool signof_nz = bool((gbuf.x>>25)&1u);  // 1 bit (61)
         if(signof_nz)
