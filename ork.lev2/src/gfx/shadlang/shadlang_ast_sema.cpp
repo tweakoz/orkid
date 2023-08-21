@@ -40,25 +40,23 @@ void _procdatatype(
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 std::string _dt_extract_type(dt_ptr_t dt_node, match_ptr_t dt_match) {
-  auto seq = dt_match->asShared<Sequence>();
-  auto _inp = seq->itemAsShared<Optional>(0)->_subitem;
-  auto _const = seq->itemAsShared<Optional>(1)->_subitem;
+  auto seq     = dt_match->asShared<Sequence>();
+  auto _inp    = seq->itemAsShared<Optional>(0)->_subitem;
+  auto _const  = seq->itemAsShared<Optional>(1)->_subitem;
   auto dt_name = seq->itemAsShared<OneOf>(2)->_selected;
-  auto dt_cm  = dt_name->asShared<ClassMatch>();
+  auto dt_cm   = dt_name->asShared<ClassMatch>();
 
   auto type_name = dt_cm->_token->text;
-  dt_node->setValueForKey<bool>("has_attr_inp", (_inp!=nullptr));
-  dt_node->setValueForKey<bool>("has_attr_const", (_const!=nullptr));
+  dt_node->setValueForKey<bool>("has_attr_inp", (_inp != nullptr));
+  dt_node->setValueForKey<bool>("has_attr_const", (_const != nullptr));
   dt_node->setValueForKey<std::string>("base_type", type_name);
-  if( _inp ){
+  if (_inp) {
     type_name = "in " + type_name;
   }
-  if( _const ){
+  if (_const) {
     type_name = "const " + type_name;
+  } else {
   }
-  else{
-  }
-
 
   return type_name;
 }
@@ -66,6 +64,7 @@ std::string _dt_extract_type(dt_ptr_t dt_node, match_ptr_t dt_match) {
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 void _semaNormalizeDtUserTypes(impl::ShadLangParser* slp, astnode_ptr_t top) {
+
   auto matcher_dtype = slp->findMatcherByName("DataType");
   auto matcher_ident = slp->findMatcherByName("IDENTIFIER");
   auto nodes         = slp->collectNodesOfType<DataTypeWithUserTypes>(top);
@@ -78,8 +77,7 @@ void _semaNormalizeDtUserTypes(impl::ShadLangParser* slp, astnode_ptr_t top) {
     if (sel_match->_matcher == matcher_dtype) {
       auto sel_ast                        = slp->astNodeForMatch(sel_match);
       auto sel_as_dt                      = std::dynamic_pointer_cast<DataType>(sel_ast);
-      OrkAssert(sel_as_dt) 
-      auto type_name = _dt_extract_type(sel_as_dt, sel_match);
+      OrkAssert(sel_as_dt) auto type_name = _dt_extract_type(sel_as_dt, sel_match);
       _procdatatype(slp, sel_as_dt, type_name, true);
       slp->replaceInParent(dtu_node, sel_as_dt);
     }
@@ -107,9 +105,37 @@ void _semaNormalizeDtUserTypes(impl::ShadLangParser* slp, astnode_ptr_t top) {
 void _semaNameBuiltInDataTypes(impl::ShadLangParser* slp, astnode_ptr_t top) {
   auto nodes = slp->collectNodesOfType<DataType>(top);
   for (auto dt_node : nodes) {
-    auto dt_match = slp->matchForAstNode(dt_node);
+    auto dt_match  = slp->matchForAstNode(dt_node);
     auto type_name = _dt_extract_type(dt_node, dt_match);
     _procdatatype(slp, dt_node, type_name, true);
+  }
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
+void _semaNameIdentifers(impl::ShadLangParser* slp, astnode_ptr_t top) {
+  auto nodes = slp->collectNodesOfType<IDENTIFIER>(top);
+  for (auto id_node : nodes) {
+    auto match = slp->matchForAstNode(id_node);
+    auto sema_id = slp->ast_create<SemaIdentifier>(match);
+    sema_id->_name = "SemaId: ";
+    auto cm1 = match->asShared<ClassMatch>();
+    sema_id->_name += " " + cm1->_token->text;
+    sema_id->setValueForKey<std::string>("identifier_name", cm1->_token->text);
+    slp->replaceInParent(id_node, sema_id);
+  }
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
+void _semaNameIdentiferCalls(impl::ShadLangParser* slp, astnode_ptr_t top) {
+  auto nodes = slp->collectNodesOfType<IdentifierCall>(top);
+  for (auto id_node : nodes) {
+    id_node->_name = "IDCALL: ";
+    auto match = slp->matchForAstNode(id_node);
+    auto cm1 = match->asShared<ClassMatch>();
+    id_node->_name += " " + cm1->_token->text;
+    id_node->setValueForKey<std::string>("identifier_name", cm1->_token->text);
   }
 }
 
@@ -119,7 +145,7 @@ void _semaNameTypedIdentifers(impl::ShadLangParser* slp, astnode_ptr_t top) {
   auto nodes = slp->collectNodesOfType<TypedIdentifier>(top);
   for (auto tid_node : nodes) {
 
-    tid_node->_name = "TID: ";
+    tid_node->_name = "TypedIdentifier\n";
 
     auto match = slp->matchForAstNode(tid_node);
 
@@ -130,26 +156,27 @@ void _semaNameTypedIdentifers(impl::ShadLangParser* slp, astnode_ptr_t top) {
     ////////////////////
 
     auto sel = seq->itemAsShared<OneOf>(0)->_selected;
+    std::string type_name;
     if (auto as_cm = sel->tryAsShared<ClassMatch>()) {
-      auto name = as_cm.value()->_token->text;
-      tid_node->_name += name;
-      tid_node->setValueForKey<std::string>("data_type", name);
+      type_name = as_cm.value()->_token->text;
     } else { // its a DataTypeNode
       auto seq  = sel->asShared<Sequence>();
       auto sel2 = seq->itemAsShared<OneOf>(2)->_selected;
       auto cm   = sel2->asShared<ClassMatch>();
-      auto name = cm->_token->text;
-      tid_node->_name += name;
-      tid_node->setValueForKey<std::string>("data_type", name);
+      type_name = cm->_token->text;
     }
+
+    tid_node->_name += FormatString("type: %s\n", type_name.c_str());
+    tid_node->setValueForKey<std::string>("data_type", type_name);
 
     ////////////////////
     // item 1 (identifier)
     ////////////////////
 
     auto cm1 = seq->itemAsShared<ClassMatch>(1);
-    tid_node->_name += " " + cm1->_token->text;
-    tid_node->setValueForKey<std::string>("identifier_name", cm1->_token->text);
+    auto id_name = cm1->_token->text;
+    tid_node->_name += FormatString("id: %s", id_name.c_str());
+    tid_node->setValueForKey<std::string>("identifier_name", id_name);
   }
 }
 
@@ -161,28 +188,34 @@ void _mangleFunctionDef2(
     std::string named) {                    //
 
   ORK_CONFIG_OPENGL(fn2_node);
-  auto dt_node = fn2_node->childAs<DataType>(0);
+  auto dt_node             = fn2_node->childAs<DataType>(0);
+  auto decl_args           = fn2_node->findFirstChildOfType<DeclArgumentList>();
+  std::string mangled_name = named;
   if (dt_node) {
     auto return_type = dt_node->typedValueForKey<std::string>("data_type").value();
+    mangled_name += "<" + return_type + ">";
     printf("mangle function<%s> return type: %s \n", named.c_str(), return_type.c_str());
-    auto decl_args = fn2_node->findFirstChildOfType<DeclArgumentList>();
-    OrkAssert(decl_args);
-    auto mangled_name = named + "<" + return_type + ">(";
-    AstNode::walkDownAST(decl_args, [&](astnode_ptr_t node) -> bool {
-      if (decl_args != node) {
-        auto tid_node = std::dynamic_pointer_cast<TypedIdentifier>(node);
-        OrkAssert(tid_node);
+  }
+  if (decl_args) {
+    mangled_name += "(";
+    AstNode::visitChildren(decl_args, [&](astnode_ptr_t node) {
+      auto tid_node = std::dynamic_pointer_cast<TypedIdentifier>(node);
+      if (tid_node != nullptr) {
         auto arg_dt = tid_node->typedValueForKey<std::string>("data_type").value();
         mangled_name += arg_dt + ",";
-        // printf( "mangle walkdown - argsnode : %s\n", node->_name.c_str() );
+      } else {
+        dumpAstNode(node);
+        OrkAssert(false);
       }
-      return true;
+      // printf( "mangle walkdown - argsnode : %s\n", node->_name.c_str() );
     });
     mangled_name += ")";
     printf("mangled_name<%s>\n", mangled_name.c_str());
+    //////////////////////////////////////////////////////////////////////
     fn2_node->setValueForKey<std::string>("function_name", named);
-    fn2_node->setValueForKey<std::string>("mangled_name", mangled_name);
     fn2_node->setValueForKey<std::string>("unmangled_name", named);
+    fn2_node->setValueForKey<std::string>("mangled_name", mangled_name);
+    //////////////////////////////////////////////////////////////////////
   } else {
     AstNode::walkDownAST(fn2_node, [&](astnode_ptr_t node) -> bool {
       printf("mangle walkdown - argsnode : %s - no dt_node\n", node->_name.c_str());
@@ -346,6 +379,7 @@ void _semaNamePrimaryIdentifers(impl::ShadLangParser* slp, astnode_ptr_t top) {
     auto name        = cm->_token->text;
     prim_node->_name = FormatString("PID: %s", name.c_str());
     prim_node->setValueForKey<std::string>("identifier_name", name);
+    prim_node->_children.clear();
   }
 }
 
@@ -476,7 +510,7 @@ void _semaResolvePostfixExpressions(impl::ShadLangParser* slp, astnode_ptr_t top
   auto LITERAL           = slp->findMatcherByName("Literal");
   auto RVC_EXPRESSION    = slp->findMatcherByName("RValueConstructor");
   auto PARENS_EXPRESSION = slp->findMatcherByName("ParensExpression");
-  auto IDENTIFIER        = slp->findMatcherByName("IDENTIFIER");
+  auto IDENTIFIER        = slp->findMatcherByName("Identif");
   auto PRIMARY_IDENTIFER = slp->findMatcherByName("PrimaryIdentifier");
   auto MEMBER_ACCESS     = slp->findMatcherByName("MemberAccess");
   auto DOT               = slp->findMatcherByName("MemberDot");
@@ -619,6 +653,7 @@ void _semaResolveSemaFunctionArguments(impl::ShadLangParser* slp, astnode_ptr_t 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 void _semaResolveConstructors(impl::ShadLangParser* slp, astnode_ptr_t top) {
+#if 0
   auto nodes = slp->collectNodesOfType<RValueConstructor>(top);
   for (auto n : nodes) {
     //
@@ -632,7 +667,7 @@ void _semaResolveConstructors(impl::ShadLangParser* slp, astnode_ptr_t top) {
     auto cons_type        = std::make_shared<SemaConstructorType>();
     auto cons_args        = std::make_shared<SemaConstructorArguments>();
     constructor_call->_children.push_back(cons_type);
-    //constructor_call->_children.push_back(cons_args);
+    // constructor_call->_children.push_back(cons_args);
     //
     cons_type->_name = FormatString("SemaConstructorType: %s", dtype_name.c_str());
     constructor_call->setValueForKey<std::string>("data_type", dtype_name);
@@ -640,14 +675,15 @@ void _semaResolveConstructors(impl::ShadLangParser* slp, astnode_ptr_t top) {
     constructor_call->_children.push_back(parens);
 
     //
-    //auto expr_list = std::dynamic_pointer_cast<ExpressionList>(parens->_children[0]);
-    //if (expr_list) {
-      //cons_args->_children = expr_list->_children;
+    // auto expr_list = std::dynamic_pointer_cast<ExpressionList>(parens->_children[0]);
+    // if (expr_list) {
+    // cons_args->_children = expr_list->_children;
     //} else {
-      //cons_args->_children = parens->_children[0]->_children;
+    // cons_args->_children = parens->_children[0]->_children;
     //}
     slp->replaceInParent(n, constructor_call);
   }
+#endif
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
@@ -838,19 +874,19 @@ void _semaIntegerLiterals(impl::ShadLangParser* slp, astnode_ptr_t top) {
   auto nodes = slp->collectNodesOfType<IntegerLiteral>(top);
   for (auto node : nodes) {
     std::string out_str;
-    SHAST::_dumpAstTreeVisitor(node,0,out_str);
+    SHAST::_dumpAstTreeVisitor(node, 0, out_str);
     printf("AST: %s\n", out_str.c_str());
     auto match = slp->matchForAstNode(node);
-    match = match->asShared<OneOf>()->_selected;
+    match      = match->asShared<OneOf>()->_selected;
     match->dump1(0);
-    auto cm    = match->asShared<ClassMatch>();
-    printf("cm<%p>\n", (void*) cm.get() );
-    auto literal_value  = cm->_token->text;
-    if(literal_value==""){
+    auto cm = match->asShared<ClassMatch>();
+    printf("cm<%p>\n", (void*)cm.get());
+    auto literal_value = cm->_token->text;
+    if (literal_value == "") {
       OrkAssert(false);
     }
-    auto sema_node = std::make_shared<SemaIntegerLiteral>();
-    sema_node->_name = FormatString("SemaIntegerLiteral<%s>", literal_value.c_str() );
+    auto sema_node   = std::make_shared<SemaIntegerLiteral>();
+    sema_node->_name = FormatString("SemaIntegerLiteral<%s>", literal_value.c_str());
     sema_node->setValueForKey<std::string>("literal_value", literal_value);
     slp->replaceInParent(node, sema_node);
   }
@@ -863,10 +899,10 @@ void _semaFloatLiterals(impl::ShadLangParser* slp, astnode_ptr_t top) {
   for (auto node : nodes) {
     auto match = slp->matchForAstNode(node);
     match->dump1(0);
-    auto seq    = match->asShared<Sequence>();
-    auto cm    = seq->itemAsShared<ClassMatch>(0);
-    auto literal_value  = cm->_token->text;
-    auto sema_node = std::make_shared<SemaFloatLiteral>();
+    auto seq           = match->asShared<Sequence>();
+    auto cm            = seq->itemAsShared<ClassMatch>(0);
+    auto literal_value = cm->_token->text;
+    auto sema_node     = std::make_shared<SemaFloatLiteral>();
     sema_node->setValueForKey<std::string>("literal_value", literal_value);
     slp->replaceInParent(node, sema_node);
   }
@@ -877,73 +913,86 @@ void impl::ShadLangParser::semaAST(astnode_ptr_t top) {
 
   //////////////////////////////////
 
-  _semaNameBuiltInDataTypes(this, top);
-  _semaNormalizeDtUserTypes(this, top);
-  _semaNameTypedIdentifers(this, top);
+  if (1) {
+    _semaNameBuiltInDataTypes(this, top);
+    _semaNormalizeDtUserTypes(this, top);
+
+    _semaNameIdentifers(this, top);
+
+    //_semaNameIdentiferCalls(this, top);
+    _semaNameTypedIdentifers(this, top);
+  }
 
   //////////////////////////////////
 
-  _semaIntegerLiterals(this, top);
-  _semaFloatLiterals(this, top);
+  if (1) {
+    _semaIntegerLiterals(this, top);
+    _semaFloatLiterals(this, top);
+  }
 
   //////////////////////////////////
   // Pass 1 : Build Symbol Tables
   //////////////////////////////////
 
-  _semaCollectNamedOfType<VertexInterface>(this, top, _vertex_interfaces);
-  _semaCollectNamedOfType<FragmentInterface>(this, top, _fragment_interfaces);
-  _semaCollectNamedOfType<GeometryInterface>(this, top, _geometry_interfaces);
-  _semaCollectNamedOfType<ComputeInterface>(this, top, _compute_interfaces);
+  if (1) {
+    _semaCollectNamedOfType<VertexInterface>(this, top, _vertex_interfaces);
+    _semaCollectNamedOfType<FragmentInterface>(this, top, _fragment_interfaces);
+    _semaCollectNamedOfType<GeometryInterface>(this, top, _geometry_interfaces);
+    _semaCollectNamedOfType<ComputeInterface>(this, top, _compute_interfaces);
 
-  _semaCollectNamedOfType<VertexShader>(this, top, _vertex_shaders);
-  _semaCollectNamedOfType<FragmentShader>(this, top, _fragment_shaders);
-  _semaCollectNamedOfType<GeometryShader>(this, top, _geometry_shaders);
-  _semaCollectNamedOfType<ComputeShader>(this, top, _compute_shaders);
+    _semaCollectNamedOfType<VertexShader>(this, top, _vertex_shaders);
+    _semaCollectNamedOfType<FragmentShader>(this, top, _fragment_shaders);
+    _semaCollectNamedOfType<GeometryShader>(this, top, _geometry_shaders);
+    _semaCollectNamedOfType<ComputeShader>(this, top, _compute_shaders);
 
-  _semaCollectNamedOfType<UniformSet>(this, top, _uniform_sets);
-  _semaCollectNamedOfType<UniformBlk>(this, top, _uniform_blocks);
-  _semaCollectNamedOfType<LibraryBlock>(this, top, _library_blocks);
+    _semaCollectNamedOfType<UniformSet>(this, top, _uniform_sets);
+    _semaCollectNamedOfType<UniformBlk>(this, top, _uniform_blocks);
+    _semaCollectNamedOfType<LibraryBlock>(this, top, _library_blocks);
 
-  _semaCollectNamedOfType<StructDecl>(this, top, _structs);
-  _semaCollectNamedOfType<StateBlock>(this, top, _stateblocks);
-  _semaCollectNamedOfType<Technique>(this, top, _techniques);
+    _semaCollectNamedOfType<StructDecl>(this, top, _structs);
+    _semaCollectNamedOfType<StateBlock>(this, top, _stateblocks);
+    _semaCollectNamedOfType<Technique>(this, top, _techniques);
 
-  _semaCollectNamedOfType<FunctionDef1>(this, top, _fndef1s);
-  _semaCollectNamedOfType<FunctionDef2>(this, top, _fndef2s);
+    _semaCollectNamedOfType<FunctionDef1>(this, top, _fndef1s);
+    _semaCollectNamedOfType<FunctionDef2>(this, top, _fndef2s);
 
-  _semaCollectNamedOfType<FxConfigDecl>(this, top, _fxconfig_decls);
-  _semaCollectNamedOfType<ImportDirective>(this, top, _import_directives);
+    _semaCollectNamedOfType<FxConfigDecl>(this, top, _fxconfig_decls);
+    _semaCollectNamedOfType<ImportDirective>(this, top, _import_directives);
 
-  _semaProcNamedOfType<FxConfigRef>(this, top);
-  _semaProcNamedOfType<Pass>(this, top);
+    _semaProcNamedOfType<FxConfigRef>(this, top);
+    _semaProcNamedOfType<Pass>(this, top);
 
-  _semaMoveNames<Translatable>(this, top);
-  _semaMoveNames<FxConfigRef>(this, top);
-  _semaMoveNames<Pass>(this, top);
-  _semaMoveNames<ImportDirective>(this, top);
+    _semaMoveNames<Translatable>(this, top);
+    _semaMoveNames<FxConfigRef>(this, top);
+    _semaMoveNames<Pass>(this, top);
+    _semaMoveNames<ImportDirective>(this, top);
+  }
 
   //////////////////////////////////
   // Pass 2 - Imports
   //////////////////////////////////
 
-  _semaPerformImports(this, top);
-
+  if (1) {
+    _semaPerformImports(this, top);
+  }
   //////////////////////////////////
   // Pass 3
   //////////////////////////////////
 
-  _semaNamePrimaryIdentifers(this, top);
-  _semaNameMemberAccessOperators(this, top);
-  _semaNameAdditiveOperators(this, top);
-  _semaNameMultiplicativeOperators(this, top);
-  _semaNameRelationalOperators(this, top);
-  _semaNameEqualityOperators(this, top);
-  _semaNameShiftOperators(this, top);
-  _semaNameAssignmentOperators(this, top);
-  _semaNameInheritListItems(this, top);
-  //_semaResolvePostfixExpressions(this, top);
-  _semaResolveSemaFunctionArguments(this, top);
-  _semaResolveConstructors(this, top);
+  if (1) {
+    _semaNamePrimaryIdentifers(this, top);
+    _semaNameMemberAccessOperators(this, top);
+    _semaNameAdditiveOperators(this, top);
+    _semaNameMultiplicativeOperators(this, top);
+    _semaNameRelationalOperators(this, top);
+    _semaNameEqualityOperators(this, top);
+    _semaNameShiftOperators(this, top);
+    _semaNameAssignmentOperators(this, top);
+    _semaNameInheritListItems(this, top);
+    // //_semaResolvePostfixExpressions(this, top);
+    _semaResolveSemaFunctionArguments(this, top);
+    _semaResolveConstructors(this, top);
+  }
 
   //////////////////////////////////
   // Pass 4..

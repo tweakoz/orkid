@@ -29,16 +29,16 @@ InheritList          <| zom{ InheritListItem } |>
 
 exec_arg             <| [ Expression opt{COMMA} ] |>
 exec_arglist         <| zom{ exec_arg } |>
-decl_arglist         <| zom{ [ TypedIdentifier opt{COMMA} ] } |>
+DeclArgumentList     <| zom{ [ TypedIdentifier opt{COMMA} ] } |>
 
-RValueConstructor    <|[
-    DataType
-    ParensExpression
-]|>
+///////////////////////////////////////////////////////////
 
 Directive <| sel{
-ImportDirective 
+    ImportDirective 
 }|>
+
+///////////////////////////////////////////////////////////
+
 Operator <| sel{
   AssignmentOperator 
 }|>
@@ -103,11 +103,16 @@ PostfixExpressionTail <| sel{
     [ MINUSMINUS ] : "DecrementOperator"
 }|>
 
+TernaryExpression <|[
+    QUESTION_MARK Expression COLON Expression
+]|>
+
 PrimaryExpression <| sel{ 
-  [ Literal ] : "PrimaryLiteral"
-  [ RValueConstructor ] : "PrimaryRvalueConstructor"
+  [ DataType ParensExpression ]
+  [ IDENTIFIER ParensExpression ] : "IdentifierCall"
   [ ParensExpression ] : "PrimaryParensExpression"
   [ IDENTIFIER ] : "PrimaryIdentifier"
+  [ Literal ] : "PrimaryLiteral"
   // [ QUOTED_STRING ] // no strings in shadlang yet..
 }|>
 
@@ -125,7 +130,7 @@ AdditiveOperator <| sel{ PLUS MINUS } |>
 
 AdditiveExpression <|[
     MultiplicativeExpression
-    zom{ [ AdditiveExpressionTail ] }
+    zom{ AdditiveExpressionTail }
 ]|>
 
 AdditiveExpressionTail <|[
@@ -136,7 +141,7 @@ ShiftOperator <| sel{ L_SHIFT R_SHIFT } |>
 
 ShiftExpression <|[
     AdditiveExpression
-    zom{[ ShiftExpressionTail ]}
+    zom{ ShiftExpressionTail }
 ]|>
 
 ShiftExpressionTail <|[
@@ -147,7 +152,7 @@ RelationalOperator <| sel{ L_ANGLE R_ANGLE IS_LEQ_TO IS_GEQ_TO } |>
 
 RelationalExpression <|[
     ShiftExpression
-    zom{[ RelationalExpressionTail ]}
+    zom{ RelationalExpressionTail }
 ]|>
 
 RelationalExpressionTail <|[
@@ -157,7 +162,7 @@ RelationalExpressionTail <|[
 EqualityOperator <| sel{ IS_EQ_TO IS_NEQ_TO } |>
 EqualityExpression <|[
     RelationalExpression 
-    zom{ [ EqualityExpressionTail ] }
+    zom{ EqualityExpressionTail }
 ]|>
 
 EqualityExpressionTail <|[
@@ -166,7 +171,7 @@ EqualityExpressionTail <|[
 
 AndExpression <|[
     EqualityExpression
-    zom{[ AndExpressionTail ]}
+    zom{AndExpressionTail }
 ]|>
 
 AndExpressionTail <|[
@@ -175,7 +180,7 @@ AndExpressionTail <|[
 
 ExclusiveOrExpression <|[
     AndExpression
-    zom{[ ExclusiveOrExpressionTail ]}
+    zom{ ExclusiveOrExpressionTail }
 ]|>
 
 ExclusiveOrExpressionTail <|[
@@ -184,7 +189,7 @@ ExclusiveOrExpressionTail <|[
 
 InclusiveOrExpression <|[
     ExclusiveOrExpression
-    zom{[ InclusiveOrExpressionTail ]}
+    zom{ InclusiveOrExpressionTail }
 ]|>
 
 InclusiveOrExpressionTail <|[
@@ -193,7 +198,7 @@ InclusiveOrExpressionTail <|[
 
 LogicalAndExpression <|[
     InclusiveOrExpression
-    zom{[ LogicalAndExpressionTail ]}
+    zom{ LogicalAndExpressionTail }
 ]|>
 
 LogicalAndExpressionTail <|[
@@ -203,14 +208,14 @@ LogicalAndExpressionTail <|[
 
 LogicalOrExpression <|[
     LogicalAndExpression
-    zom{[ LogicalOrExpressionTail ]}
+    zom{ LogicalOrExpressionTail }
 ]|>
 LogicalOrExpressionTail <|[
     LOGICAL_OR LogicalAndExpression
 ]|>
 
 ConditionalExpression <|[
-    LogicalOrExpression
+    LogicalOrExpression opt{ TernaryExpression }
 ]|>
 
 AssignmentOperator <| sel{ 
@@ -236,74 +241,6 @@ Expression <| sel{
     [ AssignmentExpression ]
 }|>
 
-//Expression <|[
-//    AssignmentExpression
-//    zom{[ COMMA AssignmentExpression ]}
-//]|>
-
-///////////////////////////////////////////////////////////
-
-/*
-IdentifierList <|[
-    IDENTIFIER
-    zom{[ COMMA IDENTIFIER ]}
-]|>
-
-ParameterDeclaration <|[
-    DeclarationSpecifiers
-    opt{ Declarator }
-]|>
-
-ParameterList <|[
-    ParameterDeclaration
-    zom{[ COMMA ParameterDeclaration ]}
-]|>
-
-ParameterTypeList <|[
-    ParameterList
-    opt{[ COMMA ELLIPSIS ]}
-]|>
-
-DirectDeclarator <|[
-   sel{ 
-       [ IDENTIFIER ]
-       [ L_PAREN Declarator R_PAREN ]
-   }
-   zom{
-    sel{
-        [ L_SQUARE AssignmentExpression R_SQUARE ]
-        [ L_SQUARE R_SQUARE ]
-        [ L_PAREN ParameterTypeList R_PAREN ]
-        [ L_PAREN IdentifierList R_PAREN ]
-    }
-   }
-]|>
-
-Declarator <|[ DirectDeclarator ]|>
-
-DeclarationSpecifiers <|[
-    sel{
-        [ DataType ]
-        [ DataTypeWithUserTypes ]
-    }
-]|>
-      
-Declaration <|[
-  DeclarationSpecifiers 
-  opt { InitDeclaratorList }
-  SEMICOLON
-]|> 
-
-InitDeclaratorList <|[
-    InitDeclarator
-    zom{[ COMMA InitDeclarator ]}
-]|>
-
-InitDeclarator <|[
-    Declarator
-    opt{[ EQUALS Initializer ]}
-]|>
-*/
 ///////////////////////////////////////////////////////////
 
 IfStatementBody <|[
@@ -392,7 +329,7 @@ FunctionDef1 <|[
     KW_FUNCTION
     [ IDENTIFIER ] : "fn_name"
     L_PAREN
-    decl_arglist : "fn_args"
+    DeclArgumentList : "fn_args"
     R_PAREN
     CompoundStatement : "fn_statements"
 ]|>
@@ -401,7 +338,7 @@ FunctionDef2 <|[
     DataTypeWithUserTypes
     [ IDENTIFIER ] : "fn2_name"
     L_PAREN
-    decl_arglist : "fn2_args"
+    DeclArgumentList : "fn2_args"
     R_PAREN
     CompoundStatement : "fn2_statements"
 ]|>

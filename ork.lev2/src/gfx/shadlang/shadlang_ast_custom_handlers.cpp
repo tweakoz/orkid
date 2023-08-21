@@ -35,10 +35,6 @@ void ShadLangParser::defineAstHandlers() {
     auto translation_unit = ast_create<SHAST::TranslationUnit>(match);
   });
   ///////////////////////////////////////////////////////////
-  onPost("decl_arglist", [=](match_ptr_t match) {
-    auto arg_list = ast_create<SHAST::DeclArgumentList>(match);
-  });
-  ///////////////////////////////////////////////////////////
   //onPost("exec_arg", [=](match_ptr_t match) { auto fn_arg = ast_create<SHAST::SemaFunctionArgument>(match); });
   ///////////////////////////////////////////////////////////
   onLink("Expression", [=](match_ptr_t match) { //

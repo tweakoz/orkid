@@ -29,6 +29,19 @@
 namespace ork::lev2::shadlang::SHAST {
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
+std::string toASTstring(astnode_ptr_t node) {
+  std::string rval;
+  _dumpAstTreeVisitor(node, 0, rval);
+  return rval;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void dumpAstNode(astnode_ptr_t node){
+  auto ast_str = toASTstring(node);
+  printf( "AST<%s>\n", ast_str.c_str());
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 AstNode::AstNode(){
@@ -58,6 +71,14 @@ bool AstNode::walkDownAST( //
     }
   }
   return down;
+}
+
+void AstNode::visitChildren( //
+    SHAST::astnode_ptr_t node,    //
+    SHAST::visitor_fn_t visitor) {
+  for( auto c : node->_children ){
+    visitor(c);
+  }
 }
 
 } // namespace ork::lev2::shadlang::SHAST

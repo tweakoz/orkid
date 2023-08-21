@@ -76,13 +76,15 @@ struct Visitor{
 using visitor_ptr_t = std::shared_ptr<Visitor>;
 using astnode_map_t = std::unordered_map<std::string, astnode_ptr_t>;
 
+void dumpAstNode(astnode_ptr_t);
+std::string toASTstring(astnode_ptr_t);
+
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace SHAST
 
 
 SHAST::translationunit_ptr_t parseFromString(const std::string& shader_text);
 SHAST::translationunit_ptr_t parseFromFile(file::Path shader_path);
-std::string toASTstring(SHAST::astnode_ptr_t);
 std::string toGLFX1(SHAST::translationunit_ptr_t top);
 std::string toDotFile(SHAST::translationunit_ptr_t top);
 

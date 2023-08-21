@@ -138,7 +138,7 @@ matcher_ptr_t Parser::optional(matcher_ptr_t sub_matcher, std::string name) {
       auto sub_match = _tryMatch(mci);
       if (sub_match) {
         auto match_str = deco::string("MATCH", 0, 255, 0);
-        log_match("OPT<%s> %s sub<%s>", name.c_str(), match_str.c_str(), sub_match->_matcher->_name.c_str());
+        log_match( slv,"OPT<%s> %s sub<%s>", name.c_str(), match_str.c_str(), sub_match->_matcher->_name.c_str());
         match_attempt->_view = sub_match->_view;
         match_attempt->_view->validate();
         the_opt->_subitem = sub_match;
@@ -147,7 +147,7 @@ matcher_ptr_t Parser::optional(matcher_ptr_t sub_matcher, std::string name) {
       }
     }
     auto empty_str = deco::string("EMPTY", 255, 255, 0);
-    log_match("OPT<%s> %s", name.c_str(), empty_str.c_str());
+    log_match( slv,"OPT<%s> %s", name.c_str(), empty_str.c_str());
     ////////////////////////////////////////////////////
     //  otherwise return "empty" but valid match (start=end=-1)
     ////////////////////////////////////////////////////
@@ -178,7 +178,7 @@ void Parser::_sequence(matcher_ptr_t matcher, std::vector<matcher_ptr_t> sub_mat
   };
   ///////////////////////////////////////////////////////
   matcher->_attempt_match_fn = [=](matcher_ptr_t par_matcher, scannerlightview_constptr_t slv) -> match_attempt_ptr_t {
-    log_match("SEQ<%s>: beg_match len<%zu>", matcher->_name.c_str(), sub_matchers.size());
+    log_match( slv,"SEQ<%s>: beg_match len<%zu>", matcher->_name.c_str(), sub_matchers.size());
     auto match_attempt = pushAttempt(par_matcher);
     auto slv_iter        = std::make_shared<ScannerLightView>(*slv);
     auto slv_match       = std::make_shared<ScannerLightView>(*slv);
@@ -188,7 +188,7 @@ void Parser::_sequence(matcher_ptr_t matcher, std::vector<matcher_ptr_t> sub_mat
     size_t num_iter      = sub_matchers.size();
     for (auto sub_matcher : sub_matchers) {
       if (0)
-        log_match_begin(
+        log_match_begin( slv_iter,
             "SEQSS<%s> : match_item<%s> iter<%zu/%zu> itrst<%d> itren<%d> slvst<%d> slvend<%d> ",
             matcher->_name.c_str(),
             sub_matcher->_name.c_str(),
@@ -204,7 +204,7 @@ void Parser::_sequence(matcher_ptr_t matcher, std::vector<matcher_ptr_t> sub_mat
       auto tok0 = slv_iter->token(0);
       MatchAttemptContextItem mci{sub_matcher, slv_iter};
       auto match_item = _tryMatch(mci);
-      log_match_begin(
+      log_match_begin( slv_iter,
           "SEQ<%s> : match_item<%s> tok0<%s> iter<%zu/%zu> st<%d> end<%d> ",
           matcher->_name.c_str(),
           sub_matcher->_name.c_str(),
@@ -264,7 +264,7 @@ void Parser::_sequence(matcher_ptr_t matcher, std::vector<matcher_ptr_t> sub_mat
       }
       /////////////////////////////////////////////////
       if (0)
-        log_match(
+        log_match( match_attempt->_view,
             "SEQ<%s> end match_attempt<%p> st<%zu> en<%zu> count<%zu>", //
             matcher->_name.c_str(),                                     //
             (void*)match_attempt.get(),                                 //
@@ -273,7 +273,7 @@ void Parser::_sequence(matcher_ptr_t matcher, std::vector<matcher_ptr_t> sub_mat
             the_sequence->_items.size());
     } else {
       if (0)
-        log_match("SEQ<%s> end NO_MATCH", matcher->_name.c_str());
+        log_match( nullptr,"SEQ<%s> end NO_MATCH", matcher->_name.c_str());
     }
     auto rval = filtered_match(par_matcher, match_attempt);
     popAttempt(match_attempt,par_matcher,slv_match);
@@ -381,7 +381,7 @@ matcher_ptr_t Parser::oneOf(std::vector<matcher_ptr_t> matchers, std::string nam
       auto sub_match = _tryMatch(mci);
       if (sub_match) {
         auto match_str = deco::string("MATCH", 0, 255, 0);
-        log_match("1OF<%s>: %s sub_matcher<%s>", name.c_str(), match_str.c_str(), sub_matcher->_name.c_str());
+        log_match( sub_match->_view,"1OF<%s>: %s sub_matcher<%s>", name.c_str(), match_str.c_str(), sub_matcher->_name.c_str());
 
         auto the_oo          = match_attempt->makeShared<OneOfAttempt>();
         the_oo->_selected    = sub_match;
@@ -393,7 +393,7 @@ matcher_ptr_t Parser::oneOf(std::vector<matcher_ptr_t> matchers, std::string nam
       }
     }
     auto match_str = deco::string("NO-MATCH", 255, 0, 0);
-    log_match("1OF<%s>: %s", name.c_str(), match_str.c_str());
+    log_match( slv,"1OF<%s>: %s", name.c_str(), match_str.c_str());
     popAttempt(nullptr,par_matcher,slv);
     return nullptr;
   };
@@ -437,23 +437,27 @@ matcher_ptr_t Parser::nOrMore(matcher_ptr_t sub_matcher, size_t minMatches, std:
     the_nom->_minmatches     = minMatches;
     bool keep_going          = true;
     auto slv_iter            = std::make_shared<ScannerLightView>(*input_slv);
+    slv_iter->_start = input_slv->_start;
+    slv_iter->_end = input_slv->_end;
     int item_index           = 0;
-    log_match("NOM%zu<%s>: beg_match sub_matcher<%s>", minMatches, name.c_str(), sub_matcher->_name.c_str());
+    log_match( input_slv,"NOM%zu<%s>: beg_match sub_matcher<%s>", minMatches, name.c_str(), sub_matcher->_name.c_str());
     ////////////////////////////////////////////////////////////////
     while (keep_going) {
       MatchAttemptContextItem mci{sub_matcher, slv_iter};
       auto sub_match = _tryMatch(mci);
       keep_going     = false;
-      log_match_begin(
-          "NOM%d<%s> try_match iter<%d> ", //
-          int(minMatches),
-          name.c_str(),
-          item_index);
       if (sub_match) {
         the_nom->_items.push_back(sub_match);
         item_index++;
         slv_iter->_start = sub_match->_view->_end + 1;
         keep_going       = slv_iter->_start <= slv_iter->_end;
+
+      log_match_begin( slv_iter,
+          "NOM%d<%s> try_match iter<%d> ", //
+          int(minMatches),
+          name.c_str(),
+          item_index);
+
         if (sub_match->_view->empty()) {
           keep_going     = false;
           auto empty_str = deco::string("EMPTY", 0, 255, 255);
@@ -464,6 +468,13 @@ matcher_ptr_t Parser::nOrMore(matcher_ptr_t sub_matcher, size_t minMatches, std:
         }
       } else {
         auto nomatch_str = deco::string("NO-MATCH", 255, 0, 0);
+
+      log_match_begin( input_slv,
+          "NOM%d<%s> try_match iter<%d> ", //
+          int(minMatches),
+          name.c_str(),
+          item_index);
+
         log_match_continue("%s\n", nomatch_str.c_str());
       }
     }
@@ -480,12 +491,12 @@ matcher_ptr_t Parser::nOrMore(matcher_ptr_t sub_matcher, size_t minMatches, std:
       match_attempt->_view = slv_out;
       if ((slv_out->_end < input_slv->_end) and the_nom->_mustConsumeAll) {
         auto no_match_str = deco::string("NO-MATCH (not all tokens consumed)", 255, 0, 0);
-        log_match("NOM%zu<%s>: %s count<%zu>", minMatches, name.c_str(), no_match_str.c_str(), the_nom->_items.size());
+        log_match( input_slv,"NOM%zu<%s>A: %s count<%zu>", minMatches, name.c_str(), no_match_str.c_str(), the_nom->_items.size());
         popAttempt(nullptr,par_matcher,slv_out);
         return nullptr;
       } else {
         auto match_str = deco::string("MATCH", 0, 255, 0);
-        log_match(
+        log_match( match_attempt->_view,
             "NOM%zu<%s>: %s count<%zu> st<%zu> en<%zu> slen<%d>",
             minMatches,
             name.c_str(),
@@ -503,7 +514,7 @@ matcher_ptr_t Parser::nOrMore(matcher_ptr_t sub_matcher, size_t minMatches, std:
       slv_out->clear();
       match_attempt->_view = slv_out;
       auto no_match_str    = deco::string("NO-MATCH", 255, 0, 0);
-      log_match("NOM%zu<%s>: %s count<0>", minMatches, name.c_str(), no_match_str.c_str());
+      log_match( input_slv,"NOM%zu<%s>B: %s count<0>", minMatches, name.c_str(), no_match_str.c_str());
       auto rval = filtered_match(par_matcher, match_attempt);
       popAttempt(rval,par_matcher,slv_out);
       return rval;
@@ -539,12 +550,6 @@ matcher_ptr_t Parser::matcherForTokenClassID(uint64_t tokclass, std::string name
   matcher->_attempt_match_fn = [tokclass, this](matcher_ptr_t par_matcher, scannerlightview_constptr_t slv) -> match_attempt_ptr_t {
     auto tok0         = slv->token(0);
     auto slv_tokclass = tok0->_class;
-    log_match(
-        "MATCHER.CLASSID<%zu> matcher_name<%s> tok<%s> tokclass<%zu>", //
-        tokclass,
-        par_matcher->_name.c_str(),
-        tok0->text.c_str(),
-        slv_tokclass);
     if (slv_tokclass == tokclass) {
       auto match_attempt        = leafAttempt(par_matcher);
       auto the_classmatch       = match_attempt->makeShared<ClassMatchAttempt>();
@@ -555,8 +560,17 @@ matcher_ptr_t Parser::matcherForTokenClassID(uint64_t tokclass, std::string name
       match_attempt->_view      = slv_out;
       slv_out->validate();
       auto rval = filtered_match(par_matcher, match_attempt);
+
+      log_match( slv_out,
+          "TOKCLASS<%zu> matcher_name<%s> tok<%s> slv_tokclass<%zu>", //
+          tokclass,
+          par_matcher->_name.c_str(),
+          tok0->text.c_str(),
+          slv_tokclass);
+
       return rval;
     }
+
     return nullptr;
   };
   ///////////////////////////////////////////////////////
@@ -584,6 +598,8 @@ matcher_ptr_t Parser::matcherForWord(std::string word, std::string name) {
   matcher->_attempt_match_fn = [=](matcher_ptr_t par_matcher, scannerlightview_constptr_t inp_view) -> match_attempt_ptr_t {
     auto tok0 = inp_view->token(0);
     if (tok0->text == word) {
+
+
       auto slv              = std::make_shared<ScannerLightView>(*inp_view);
       slv->_end             = slv->_start;
       auto match_attempt    = leafAttempt(par_matcher);
@@ -591,6 +607,10 @@ matcher_ptr_t Parser::matcherForWord(std::string word, std::string name) {
       the_wordmatch->_token = tok0;
       match_attempt->_view  = slv;
       slv->validate();
+
+      log_match( slv,"WORD<%s>", word.c_str());
+
+
       return filtered_match(par_matcher, match_attempt);
     } else {
       return nullptr;

@@ -327,16 +327,16 @@ struct Parser {
 
   match_attempt_ptr_t _tryMatch(MatchAttemptContextItem& mci);
 
-  void _log_valist(const char* pMsgFormat, va_list args) const;
+  void _log_valist(scannerlightview_constptr_t view, const char* pMsgFormat, va_list args) const;
+  void _log_valist_begin(scannerlightview_constptr_t view, const char* pMsgFormat, va_list args) const;
   void _log_valist_continue(const char* pMsgFormat, va_list args) const;
-  void _log_valist_begin(const char* pMsgFormat, va_list args) const;
 
   void log_info(const char* pMsgFormat, ...) const;
   void log_info_begin(const char* pMsgFormat, ...) const;
   void log_info_continue(const char* pMsgFormat, ...) const;
 
-  void log_match(const char* pMsgFormat, ...) const;
-  void log_match_begin(const char* pMsgFormat, ...) const;
+  void log_match( scannerlightview_constptr_t view, const char* pMsgFormat, ...) const;
+  void log_match_begin(scannerlightview_constptr_t view, const char* pMsgFormat, ...) const;
   void log_match_continue(const char* pMsgFormat, ...) const;
 
   matcher_ptr_t rule(const std::string& rule_name);

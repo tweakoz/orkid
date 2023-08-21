@@ -67,11 +67,12 @@ void ShadLangParser::declareAstNodes() {
   DECLARE_OBJNAME_AST_NODE("fxconfigref_name");
   DECLARE_OBJNAME_AST_NODE("technique_name");
   ///////////////////////////////////////////////////////////
+  DECLARE_STD_AST_NODE(IDENTIFIER);
   DECLARE_STD_AST_NODE(DataType);
   DECLARE_STD_AST_NODE(DataTypeWithUserTypes);
   DECLARE_STD_AST_NODE(MemberRef);
   DECLARE_STD_AST_NODE(ArrayRef);
-  DECLARE_STD_AST_NODE(RValueConstructor);
+  DECLARE_STD_AST_NODE(DeclArgumentList);
   DECLARE_STD_AST_NODE(TypedIdentifier);
   DECLARE_STD_AST_NODE(DataDeclaration);
   DECLARE_STD_AST_NODE(DataDeclarations);
@@ -122,6 +123,8 @@ void ShadLangParser::declareAstNodes() {
   DECLARE_STD_AST_NODE(CastExpression);
   DECLARE_STD_AST_NODE(CastExpression1);
   DECLARE_STD_AST_NODE(ExpressionList);
+  DECLARE_STD_AST_NODE(TernaryExpression);
+  DECLARE_STD_AST_NODE(IdentifierCall);
   ///////////////////////////////////////////////////////////
   DECLARE_STD_AST_NODE(WTFExp);  
   ///////////////////////////////////////////////////////////

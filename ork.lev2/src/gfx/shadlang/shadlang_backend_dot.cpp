@@ -62,7 +62,7 @@ struct DotBackend {
     addThemeItem<FloatLiteral>("#6f006f", "white", 1);
     addThemeItem<NumericLiteral>("#6f006f", "white", 1);
     addThemeItem<IntegerLiteral>("#6f006f", "white", 1);
-    addThemeItem<RValueConstructor>("#ef8fef", "black", 1);
+    //addThemeItem<RValueConstructor>("#ef8fef", "black", 1);
     // post-semantic-analysis
     addThemeItem<SemaFunctionInvokation>("#ffdfcf", "black", 1);
     addThemeItem<SemaConstructorInvokation>("#ffdfcf", "black", 1);
@@ -81,6 +81,8 @@ struct DotBackend {
     addThemeItem<SemaInheritUniformBlock>("#f0c040", "black", 1);
     addThemeItem<SemaInheritStateBlock>("#f0c040", "black", 1);
     addThemeItem<SemaInheritExtension>("#f0c040", "black", 1);
+    addThemeItem<SemaIdentifier>("#f0c040", "black", 1);
+    
     //
     addThemeItem<Pass>("#bf4f4f", "white", 1);
     addThemeItem<VertexShaderRef>("#7f3f3f", "white", 1);

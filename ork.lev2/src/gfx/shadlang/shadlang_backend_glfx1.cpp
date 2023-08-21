@@ -19,13 +19,11 @@ struct GLFX1Backend {
   void _visit(astnode_ptr_t node);
   void generate(translationunit_ptr_t top);
 
-  template <typename T>
-  std::shared_ptr<T> as(astnode_ptr_t node) {
+  template <typename T> std::shared_ptr<T> as(astnode_ptr_t node) {
     return std::dynamic_pointer_cast<T>(node);
   }
 
-  template <typename T>
-  void registerAstPreCB(std::function<void(std::shared_ptr<T>)> tcb) {
+  template <typename T> void registerAstPreCB(std::function<void(std::shared_ptr<T>)> tcb) {
     auto cb = [=](astnode_ptr_t node) {
       auto tnode = as<T>(node);
       if (tnode) {
@@ -34,8 +32,7 @@ struct GLFX1Backend {
     };
     _precb_map[T::_static_type_name] = cb;
   }
-  template <typename T>
-  void registerAstPostCB(std::function<void(std::shared_ptr<T>)> tcb) {
+  template <typename T> void registerAstPostCB(std::function<void(std::shared_ptr<T>)> tcb) {
     auto cb = [=](astnode_ptr_t node) {
       auto tnode = as<T>(node);
       if (tnode) {
@@ -45,22 +42,20 @@ struct GLFX1Backend {
     _postcb_map[T::_static_type_name] = cb;
   }
 
-  template <typename T>
-  void registerAstPreChildCB(std::function<void(std::shared_ptr<T>,astnode_ptr_t)> tcb) {
+  template <typename T> void registerAstPreChildCB(std::function<void(std::shared_ptr<T>, astnode_ptr_t)> tcb) {
     auto cb = [=](astnode_ptr_t node, astnode_ptr_t child) {
       auto tnode = as<T>(node);
       if (tnode) {
-        tcb(tnode,child);
+        tcb(tnode, child);
       }
     };
     _prechildcb_map[T::_static_type_name] = cb;
   }
-  template <typename T>
-  void registerAstPostChildCB(std::function<void(std::shared_ptr<T>,astnode_ptr_t)> tcb) {
+  template <typename T> void registerAstPostChildCB(std::function<void(std::shared_ptr<T>, astnode_ptr_t)> tcb) {
     auto cb = [=](astnode_ptr_t node, astnode_ptr_t child) {
       auto tnode = as<T>(node);
       if (tnode) {
-        tcb(tnode,child);
+        tcb(tnode, child);
       }
     };
     _postchildcb_map[T::_static_type_name] = cb;
@@ -73,7 +68,7 @@ struct GLFX1Backend {
     va_start(args, formatstring);
     vsnprintf(&formatbuffer[0], sizeof(formatbuffer), formatstring, args);
     va_end(args);
-    emitContinueLine( "/* %04d */ ", _lineoutindex );
+    emitContinueLine("/* %04d */ ", _lineoutindex);
     _outstr += std::string(_indent * 2, ' ');
     _outstr += std::string(formatbuffer);
   }
@@ -104,7 +99,7 @@ struct GLFX1Backend {
     va_start(args, formatstring);
     vsnprintf(&formatbuffer[0], sizeof(formatbuffer), formatstring, args);
     va_end(args);
-    emitContinueLine( "/* %04d */ ", _lineoutindex );
+    emitContinueLine("/* %04d */ ", _lineoutindex);
     _outstr += std::string(_indent * 2, ' ');
     _outstr += std::string(formatbuffer);
     _outstr += "\n";
@@ -112,14 +107,13 @@ struct GLFX1Backend {
   }
   //////////////////////////////////////////////////////////////////////////////////
 
-  void emitFunctionDef2( fndef2_ptr_t fd2 );
-  void emitAssignmentExpression1( asnexp1_ptr_t ae1 );
+  void emitFunctionDef2(fndef2_ptr_t fd2);
+  void emitAssignmentExpression1(asnexp1_ptr_t ae1);
 
   //////////////////////////////////////////////////////////////////////////////////
 
-
-  using base_cb_t = std::function<void(astnode_ptr_t)>;
-  using child_cb_t = std::function<void(astnode_ptr_t,astnode_ptr_t)>;
+  using base_cb_t  = std::function<void(astnode_ptr_t)>;
+  using child_cb_t = std::function<void(astnode_ptr_t, astnode_ptr_t)>;
 
   std::string _outstr;
   std::stack<astnode_ptr_t> _node_stack;
@@ -129,9 +123,8 @@ struct GLFX1Backend {
   std::map<std::string, child_cb_t> _postchildcb_map;
   std::map<std::string, child_cb_t> _prechildcb_map;
 
-  size_t _indent = 0;
+  size_t _indent       = 0;
   size_t _lineoutindex = 0;
-
 };
 
 ////////////////////////////////////////////////////////////////
@@ -148,9 +141,9 @@ void GLFX1Backend::_visit(astnode_ptr_t node) {
   ///////////////////////////////////////////////
 
   auto it_pre = _precb_map.find(node->_type_name);
-  if( it_pre != _precb_map.end() ){
+  if (it_pre != _precb_map.end()) {
     auto precb = it_pre->second;
-    if(node->_should_emit)
+    if (node->_should_emit)
       precb(node);
   }
 
@@ -160,19 +153,18 @@ void GLFX1Backend::_visit(astnode_ptr_t node) {
   for (auto c : node->_children) {
 
     auto it_chipre = _prechildcb_map.find(node->_type_name);
-    if( it_chipre != _prechildcb_map.end() ){
+    if (it_chipre != _prechildcb_map.end()) {
       auto prechicb = it_chipre->second;
-      prechicb(node,c);
+      prechicb(node, c);
     }
 
     _visit(c);
 
     auto it_chipost = _postchildcb_map.find(node->_type_name);
-    if( it_chipost != _postchildcb_map.end() ){
+    if (it_chipost != _postchildcb_map.end()) {
       auto postchicb = it_chipost->second;
-      postchicb(node,c);
+      postchicb(node, c);
     }
-
   }
   _node_stack.pop();
   ///////////////////////////////////////////////
@@ -180,14 +172,13 @@ void GLFX1Backend::_visit(astnode_ptr_t node) {
   ///////////////////////////////////////////////
 
   auto it_post = _postcb_map.find(node->_type_name);
-  if( it_post != _postcb_map.end() ){
+  if (it_post != _postcb_map.end()) {
     auto postcb = it_post->second;
-    if(node->_should_emit)
+    if (node->_should_emit)
       postcb(node);
   }
 
   ///////////////////////////////////////////////
-
 }
 
 ////////////////////////////////////////////////////////////////
@@ -198,215 +189,211 @@ void GLFX1Backend::generate(translationunit_ptr_t top) {
 
 ////////////////////////////////////////////////////////////////
 
-GLFX1Backend::GLFX1Backend(){
+GLFX1Backend::GLFX1Backend() {
 
-  registerAstPreCB<TranslationUnit>([](auto tu){
-    //OrkAssert(false);
+  registerAstPreCB<TranslationUnit>([](auto tu) {
+    // OrkAssert(false);
   });
+  /////////////////////////////////////////////////////////////////////
+  registerAstPreCB<LibraryBlock>([=](auto libblock) {
+    auto the_name = libblock->template typedValueForKey<std::string>("object_name").value();
+    emitBeginLine("// BEGIN NAMESPACE %s", the_name.c_str() );
+  });
+  registerAstPostCB<LibraryBlock>([=](auto libblock) {
+    auto the_name = libblock->template typedValueForKey<std::string>("object_name").value();
+    emitLine("// END NAMESPACE %s", the_name.c_str() );
+    emitLine("");
+  });
+  registerAstPreChildCB<LibraryBlock>([=](auto da_node, astnode_ptr_t child) {
+    emitEndLine("");
+  });
+  registerAstPreCB<InheritListItem>([=](auto inhlistitem) {
+    emitBeginLine("// inherits " );
+  });
+ 
   /////////////////////////////////////////////////////////////////////
   // functions
   /////////////////////////////////////////////////////////////////////
-  registerAstPreCB<FunctionDef2>([=](auto fd2){
-    auto fn_name = fd2-> template typedValueForKey<std::string>("function_name").value();
-    auto dt_node = fd2-> template childAs<DataType>(0);
+  registerAstPreCB<FunctionDef2>([=](auto fd2) {
+    auto fn_name          = fd2->template typedValueForKey<std::string>("function_name").value();
+    auto dt_node          = fd2->template childAs<DataType>(0);
     dt_node->_should_emit = false;
-    auto return_type = dt_node-> template typedValueForKey<std::string>("data_type").value();
-    emitBeginLine( "%s %s", return_type.c_str(), fn_name.c_str() );
+    auto return_type      = dt_node->template typedValueForKey<std::string>("data_type").value();
+    emitBeginLine("%s %s", return_type.c_str(), fn_name.c_str());
   });
-  registerAstPreCB<DeclArgumentList>([=](auto da_node){
-    emitContinueLine( "(" );
-  });
-  registerAstPostCB<DeclArgumentList>([=](auto da_node){
-    emitContinueLine( ")" );
-  });
-  registerAstPostChildCB<DeclArgumentList>([=](auto da_node, astnode_ptr_t child){
-    size_t num_children = da_node->_children.size();
-    if(num_children>1){
-      if( child != da_node->_children.back() ){
-        emitContinueLine( ", " );
-      }
-    }
+  registerAstPreCB<DeclArgumentList>([=](auto da_node) { emitContinueLine("("); });
+  registerAstPostCB<DeclArgumentList>([=](auto da_node) { emitContinueLine(")"); });
+  /////////////////////////////////////////////////////////////////////
+  registerAstPreCB<SemaConstructorInvokation>([=](auto fd2) {
+    auto fn_name = fd2->template typedValueForKey<std::string>("data_type").value();
+    emitContinueLine("%s", fn_name.c_str());
   });
   /////////////////////////////////////////////////////////////////////
-  registerAstPreCB<SemaConstructorInvokation>([=](auto fd2){
-    auto fn_name = fd2-> template typedValueForKey<std::string>("data_type").value();
-    emitContinueLine( "%s", fn_name.c_str() );
-  });
-  /////////////////////////////////////////////////////////////////////
-  registerAstPreCB<SemaConstructorArguments>([=](auto sca_node){
-    emitContinueLine( "(" );
-  });
-  registerAstPostCB<SemaConstructorArguments>([=](auto sca_node){
-    emitContinueLine( ")" );
-  });
-  registerAstPostChildCB<SemaConstructorArguments>([=](auto sca_node, astnode_ptr_t child){
+  registerAstPreCB<SemaConstructorArguments>([=](auto sca_node) { emitContinueLine("("); });
+  registerAstPostCB<SemaConstructorArguments>([=](auto sca_node) { emitContinueLine(")"); });
+  registerAstPostChildCB<SemaConstructorArguments>([=](auto sca_node, astnode_ptr_t child) {
     size_t num_children = sca_node->_children.size();
-    if(num_children>1){
-      if( child != sca_node->_children.back() ){
-        emitContinueLine( ", " );
+    if (num_children > 1) {
+      if (child != sca_node->_children.back()) {
+        emitContinueLine(", ");
       }
     }
   });
   /////////////////////////////////////////////////////////////////////
   // statements
   /////////////////////////////////////////////////////////////////////
-  registerAstPreCB<CompoundStatement>([=](auto expstmt){
-      emitEndLine( "{" );
-      _indent++;
+  registerAstPreCB<CompoundStatement>([=](auto expstmt) {
+    emitEndLine("{");
+    _indent++;
   });
-  registerAstPostCB<CompoundStatement>([=](auto expstmt){
-      _indent--;
-      emitLine( "}" );
+  registerAstPostCB<CompoundStatement>([=](auto expstmt) {
+    _indent--;
+    emitLine("}");
   });
-  registerAstPreChildCB<CompoundStatement>([=](auto compstmt, astnode_ptr_t child){
-      emitBeginLine( "" );
+  registerAstPreChildCB<CompoundStatement>([=](auto compstmt, astnode_ptr_t child) { emitBeginLine(""); });
+  registerAstPostChildCB<CompoundStatement>([=](auto compstmt, astnode_ptr_t child) { emitEndLine(""); });
+  registerAstPreCB<ExpressionStatement>([=](auto expstmt) {
+    // emitBeginLine( "" );
   });
-  registerAstPostChildCB<CompoundStatement>([=](auto compstmt, astnode_ptr_t child){
-      emitEndLine( "" );
-  });
-  registerAstPreCB<ExpressionStatement>([=](auto expstmt){
-      //emitBeginLine( "" );
-  });
-  registerAstPostCB<ExpressionStatement>([=](auto expstmt){
-      emitContinueLine( "; ");
-  });
-  registerAstPreCB<ForStatement>([=](auto forstmt){
-      emitContinueLine( "for(" );
-  });
-  registerAstPostChildCB<ForStatement>([=](auto forstmt, astnode_ptr_t child){
+  registerAstPostCB<ExpressionStatement>([=](auto expstmt) { emitContinueLine("; "); });
+  registerAstPreCB<ForStatement>([=](auto forstmt) { emitContinueLine("for("); });
+  registerAstPostChildCB<ForStatement>([=](auto forstmt, astnode_ptr_t child) {
     size_t num_children = forstmt->_children.size();
-    if( child == forstmt->_children[num_children-2] ){
-      emitContinueLine( ") " );
+    if (child == forstmt->_children[num_children - 2]) {
+      emitContinueLine(") ");
     }
   });
-  registerAstPreCB<IfStatement>([=](auto ifstmt){
-      emitContinueLine( "if(" );
-  });
-  registerAstPostChildCB<IfStatement>([=](auto ifstmt, astnode_ptr_t child){
-    OrkAssert(ifstmt->_children.size()>=2);
-    if( child == ifstmt->_children[0] ){
-      emitContinueLine( ") " );
+  registerAstPreCB<IfStatement>([=](auto ifstmt) { emitContinueLine("if("); });
+  registerAstPostChildCB<IfStatement>([=](auto ifstmt, astnode_ptr_t child) {
+    OrkAssert(ifstmt->_children.size() >= 2);
+    if (child == ifstmt->_children[0]) {
+      emitContinueLine(") ");
     }
   });
-  registerAstPreCB<ElseStatementBody>([=](auto ifstmt){
-      emitBeginLine( "else " );
-  });
-  registerAstPreCB<ReturnStatement>([=](auto retstmt){
-      emitContinueLine( "return " );
-  });
-  registerAstPostCB<ReturnStatement>([=](auto retstmt){
-      emitContinueLine( ";");
-  });
+  registerAstPreCB<ElseStatementBody>([=](auto ifstmt) { emitBeginLine("else "); });
+  registerAstPreCB<ReturnStatement>([=](auto retstmt) { emitContinueLine("return "); });
+  registerAstPostCB<ReturnStatement>([=](auto retstmt) { emitContinueLine(";"); });
   /////////////////////////////////////////////////////////////////////
   // expressions
   /////////////////////////////////////////////////////////////////////
-  registerAstPreCB<ParensExpression>([=](auto mo_node){
-    emitContinueLine( "(" );
-  });
-  registerAstPostCB<ParensExpression>([=](auto mo_node){
-    emitContinueLine( ")" );
-  });
-  registerAstPostChildCB<AssignmentExpression1>([=](auto ae_node, astnode_ptr_t child){
-    if( child == ae_node->_children[0] ){
-      emitContinueLine( " " );
+  registerAstPreCB<ParensExpression>([=](auto mo_node) { emitContinueLine("("); });
+  registerAstPostCB<ParensExpression>([=](auto mo_node) { emitContinueLine(")"); });
+  registerAstPostChildCB<AssignmentExpression1>([=](auto ae_node, astnode_ptr_t child) {
+    if (child == ae_node->_children[0]) {
+      emitContinueLine(" ");
     }
   });
-  registerAstPostChildCB<ExpressionList>([=](auto exprlist, astnode_ptr_t child){
+  registerAstPostChildCB<ExpressionList>([=](auto exprlist, astnode_ptr_t child) {
     size_t num_children = exprlist->_children.size();
-    if(num_children>1){
-      if( child != exprlist->_children.back() ){
-        emitContinueLine( ", " );
+    if (num_children > 1) {
+      if (child != exprlist->_children.back()) {
+        emitContinueLine(", ");
       }
     }
   });
-  registerAstPostChildCB<AndExpression>([=](auto andexp, astnode_ptr_t child){
+  registerAstPostChildCB<AndExpression>([=](auto andexp, astnode_ptr_t child) {
     size_t num_children = andexp->_children.size();
-    if(num_children>1){
-      if( child != andexp->_children.back() ){
-        emitContinueLine( " & " );
+    if (num_children > 1) {
+      if (child != andexp->_children.back()) {
+        emitContinueLine(" & ");
       }
+    }
+  });
+  registerAstPreChildCB<IdentifierCall>([=](auto idcall, astnode_ptr_t child) {
+    size_t num_children = idcall->_children.size();
+    OrkAssert(num_children == 2);
+    auto ident  = idcall->template childAs<SemaIdentifier>(0);
+    auto parens = idcall->template childAs<ParensExpression>(1);
+    auto ident_name = ident->template typedValueForKey<std::string>("identifier_name").value();
+    //emitContinueLine("%s", ident_name.c_str());
+  });
+  registerAstPreCB<SemaIdentifier>([=](auto ident) {
+    auto ident_name = ident->template typedValueForKey<std::string>("identifier_name").value();
+    emitContinueLine("%s", ident_name.c_str());
+  });
+  registerAstPreCB<TernaryExpression>([=](auto ternary) {
+    emitContinueLine(" ? ");
+  });
+  registerAstPostChildCB<TernaryExpression>([=](auto ternary, astnode_ptr_t child) {
+    size_t num_children = ternary->_children.size();
+    OrkAssert(num_children == 2);
+    if( child == ternary->_children[0] ){
+      emitContinueLine(" : ");
     }
   });
   /////////////////////////////////////////////////////////////////////
   // operators
   /////////////////////////////////////////////////////////////////////
-  registerAstPreCB<AssignmentOperator>([=](auto ao_node){
-    auto oper = ao_node-> template typedValueForKey<std::string>("operator").value();
-    emitContinueLine( " %s ", oper.c_str() );
+  registerAstPreCB<AssignmentOperator>([=](auto ao_node) {
+    auto oper = ao_node->template typedValueForKey<std::string>("operator").value();
+    emitContinueLine(" %s ", oper.c_str());
   });
-  registerAstPreCB<AdditiveOperator>([=](auto ao_node){
-    auto oper = ao_node-> template typedValueForKey<std::string>("operator").value();
-    emitContinueLine( " %s ", oper.c_str() );
+  registerAstPreCB<AdditiveOperator>([=](auto ao_node) {
+    auto oper = ao_node->template typedValueForKey<std::string>("operator").value();
+    emitContinueLine(" %s ", oper.c_str());
   });
-  registerAstPreCB<MultiplicativeOperator>([=](auto mo_node){
-    auto oper = mo_node-> template typedValueForKey<std::string>("operator").value();
-    emitContinueLine( " %s ", oper.c_str() );
+  registerAstPreCB<MultiplicativeOperator>([=](auto mo_node) {
+    auto oper = mo_node->template typedValueForKey<std::string>("operator").value();
+    emitContinueLine(" %s ", oper.c_str());
   });
-  registerAstPreCB<RelationalOperator>([=](auto ro_node){
-    auto oper = ro_node-> template typedValueForKey<std::string>("operator").value();
-    emitContinueLine( " %s ", oper.c_str() );
+  registerAstPreCB<RelationalOperator>([=](auto ro_node) {
+    auto oper = ro_node->template typedValueForKey<std::string>("operator").value();
+    emitContinueLine(" %s ", oper.c_str());
   });
-  registerAstPreCB<EqualityOperator>([=](auto ro_node){
-    auto oper = ro_node-> template typedValueForKey<std::string>("operator").value();
-    emitContinueLine( " %s ", oper.c_str() );
+  registerAstPreCB<EqualityOperator>([=](auto ro_node) {
+    auto oper = ro_node->template typedValueForKey<std::string>("operator").value();
+    emitContinueLine(" %s ", oper.c_str());
   });
-  registerAstPreCB<ShiftOperator>([=](auto ro_node){
-    auto oper = ro_node-> template typedValueForKey<std::string>("operator").value();
-    emitContinueLine( " %s ", oper.c_str() );
+  registerAstPreCB<ShiftOperator>([=](auto ro_node) {
+    auto oper = ro_node->template typedValueForKey<std::string>("operator").value();
+    emitContinueLine(" %s ", oper.c_str());
   });
-  registerAstPreCB<MemberAccessOperator>([=](auto mo_node){
-    auto membname = mo_node-> template typedValueForKey<std::string>("member_name").value();
-    emitContinueLine( ".%s", membname.c_str() );
+  registerAstPreCB<MemberAccessOperator>([=](auto mo_node) {
+    emitContinueLine(".");
   });
-  registerAstPreCB<IncrementOperator>([=](auto inc_node){
-    emitContinueLine( "++" );
+  registerAstPreCB<ArrayIndexOperator>([=](auto mo_node) {
+    emitContinueLine("[");
   });
-  registerAstPreCB<DecrementOperator>([=](auto inc_node){
-    emitContinueLine( "--" );
+  registerAstPostCB<ArrayIndexOperator>([=](auto mo_node) {
+    emitContinueLine("]");
   });
+  registerAstPreCB<IncrementOperator>([=](auto inc_node) { emitContinueLine("++"); });
+  registerAstPreCB<DecrementOperator>([=](auto inc_node) { emitContinueLine("--"); });
   /////////////////////////////////////////////////////////////////////
   // misc prims
   /////////////////////////////////////////////////////////////////////
-  registerAstPreCB<DataType>([=](auto dt_node){
-    auto dt_type = dt_node-> template typedValueForKey<std::string>("data_type").value();
-    emitContinueLine( "%s", dt_type.c_str() );
+  registerAstPreCB<DataType>([=](auto dt_node) {
+    auto dt_type = dt_node->template typedValueForKey<std::string>("data_type").value();
+    emitContinueLine("%s", dt_type.c_str());
   });
-  registerAstPreCB<PrimaryIdentifier>([=](auto pid_node){
-    auto ident = pid_node-> template typedValueForKey<std::string>("identifier_name").value();
-    emitContinueLine( "%s", ident.c_str() );
+  registerAstPreCB<PrimaryIdentifier>([=](auto pid_node) {
+    auto ident = pid_node->template typedValueForKey<std::string>("identifier_name").value();
+    emitContinueLine("%s", ident.c_str());
   });
-  registerAstPreCB<TypedIdentifier>([=](auto tid_node){
-    auto dt_type = tid_node-> template typedValueForKey<std::string>("data_type").value();
-    auto ident = tid_node-> template typedValueForKey<std::string>("identifier_name").value();
-    emitContinueLine( "%s %s", dt_type.c_str(), ident.c_str() );
+  registerAstPostChildCB<TypedIdentifier>([=](auto tid_node, astnode_ptr_t child) {
+    emitContinueLine(" ");
   });
-  registerAstPreCB<SemaIntegerLiteral>([=](auto int_node){
-    auto literal_value = int_node-> template typedValueForKey<std::string>("literal_value").value();
-    emitContinueLine( "%s", literal_value.c_str() );
+  registerAstPreCB<SemaIntegerLiteral>([=](auto int_node) {
+    auto literal_value = int_node->template typedValueForKey<std::string>("literal_value").value();
+    emitContinueLine("%s", literal_value.c_str());
   });
-  registerAstPreCB<SemaFloatLiteral>([=](auto float_node){
-    auto literal_value = float_node-> template typedValueForKey<std::string>("literal_value").value();
-    emitContinueLine( "%s", literal_value.c_str() );
+  registerAstPreCB<SemaFloatLiteral>([=](auto float_node) {
+    auto literal_value = float_node->template typedValueForKey<std::string>("literal_value").value();
+    emitContinueLine("%s", literal_value.c_str());
   });
-  //registerAstPreCB<AndExpression>([=](auto tail_node){
-    //OrkAssert(false);
+  // registerAstPreCB<AndExpression>([=](auto tail_node){
+  // OrkAssert(false);
   //});
-  registerAstPreCB<AndExpressionTail>([=](auto tail_node){
-    OrkAssert(false);
+  registerAstPreCB<AndExpressionTail>([=](auto tail_node) { OrkAssert(false); });
+  registerAstPostCB<AndExpressionTail>([=](auto tail_node) { OrkAssert(false); });
+  registerAstPreCB<WTFExp>([=](auto tail_node) {
+    // OrkAssert(false);
   });
-  registerAstPostCB<AndExpressionTail>([=](auto tail_node){
-    OrkAssert(false);
-  });
-  registerAstPreCB<WTFExp>([=](auto tail_node){
-    OrkAssert(false);
-  });
-
-  
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-void GLFX1Backend::emitFunctionDef2( fndef2_ptr_t fd2 ){
+void GLFX1Backend::emitFunctionDef2(fndef2_ptr_t fd2) {
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
@@ -416,7 +403,6 @@ std::string toGLFX1(translationunit_ptr_t top) {
   backend->generate(top);
   return backend->_outstr;
 }
-
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2::shadlang

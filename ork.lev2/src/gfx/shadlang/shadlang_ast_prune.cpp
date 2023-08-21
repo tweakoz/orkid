@@ -175,11 +175,13 @@ void impl::ShadLangParser::reduceAST(std::set<astnode_ptr_t> nodes_to_reduce) {
 ///////////////////////////////////////////////////////////////////////////////////////////
 
 void impl::ShadLangParser::pruneAST(astnode_ptr_t top) {
-  _pruneExpressionChainNodes(this,top);
-  _pruneExpressionBaseNodes(this,top);
-  _pruneStatementBaseNodes(this,top);
-  _pruneDataTypeNodes(this,top);
-  _pruneDataDeclarationNodes(this,top);
+  if(1){
+    _pruneExpressionChainNodes(this,top);
+    _pruneExpressionBaseNodes(this,top);
+    _pruneStatementBaseNodes(this,top);
+    //_pruneDataTypeNodes(this,top);
+    _pruneDataDeclarationNodes(this,top);
+  }
 }
 
 

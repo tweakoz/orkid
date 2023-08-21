@@ -19,6 +19,7 @@ namespace ork {
 //////////////////////////////////////////////////////////////////////
 static logchannel_ptr_t logchan_parser = logger()->createChannel("RULESPEC", fvec3(0.5, 0.7, 0.5), false);
 static logchannel_ptr_t logchan_dump   = logger()->createChannel("PARSER-DUMP", fvec3(0.5, 0.7, 0.5), true);
+static logchannel_ptr_t logchan_matchattempt   = logger()->createChannel("MATCHATTEMPT", fvec3(0.5, 0.7, 0.5), true);
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
@@ -28,49 +29,53 @@ void MatchAttempt::dump1(int indent) {
 
   auto indentstr = std::string(indent, ' ');
 
+  std::string log_str;
+
   if (_view->empty()) {
-    logchan_dump->log(
-        "%s DUMP MatchAttempt<%p> matcher<%p:%s> view (empty)",
+    log_str += FormatString("[e] matcher<%p:%s>) ",
         indentstr.c_str(),
-        this,
         (void*)_matcher.get(),
         _matcher->_name.c_str());
   } else {
-    logchan_dump->log(
-        "%s DUMP MatchAttempt<%p> matcher<%p:%s> view [%zu..%zu]",
+        log_str += FormatString("[%zu..%zu] matcher<%p:%s> ",
         indentstr.c_str(),
-        this,
-        (void*)_matcher.get(),
-        _matcher->_name.c_str(),
         _view->_start,
-        _view->_end);
+        _view->_end,
+        (void*)_matcher.get(),
+        _matcher->_name.c_str());
   }
 
   if (auto as_seq = tryAsShared<SequenceAttempt>()) {
     auto seq = as_seq.value();
-    logchan_dump->log("%s   SEQ<%p>", indentstr.c_str(), (void*)seq.get());
+    log_str += FormatString("SEQ<%p>", (void*)seq.get());
+    logchan_matchattempt->log("%s", log_str.c_str());
     for (auto i : seq->_items) {
       i->dump1(indent + 3);
     }
   } else if (auto as_nom = tryAsShared<NOrMoreAttempt>()) {
     auto nom = as_nom.value();
-    logchan_dump->log("%s   NOM%zu<%p>", indentstr.c_str(), nom->_minmatches, (void*)nom.get());
+    log_str += FormatString("NOM%zu<%p>", nom->_minmatches, (void*)nom.get());
+    logchan_matchattempt->log("%s", log_str.c_str());
     for (auto i : nom->_items) {
       i->dump1(indent + 3);
     }
   } else if (auto as_grp = tryAsShared<GroupAttempt>()) {
     auto grp = as_grp.value();
-    logchan_dump->log("%s   GRP<%p>", indentstr.c_str(), (void*)grp.get());
+     log_str += FormatString("GRP<%p>", (void*)grp.get());
+    logchan_matchattempt->log("%s", log_str.c_str());
     for (auto i : grp->_items) {
       i->dump1(indent + 3);
     }
   } else if (auto as_opt = tryAsShared<OptionalAttempt>()) {
     auto opt = as_opt.value();
-    logchan_dump->log("%s   OPT<%p>", indentstr.c_str(), (void*)opt.get());
-    if (opt->_subitem)
+     log_str += FormatString("OPT<%p>", (void*)opt.get());
+    if (opt->_subitem){
+      logchan_matchattempt->log("%s", log_str.c_str());
       opt->_subitem->dump1(indent + 3);
+    }
     else {
-      logchan_dump->log("%s     EMPTY", indentstr.c_str());
+      log_str += FormatString("OPT<EMPTY>");
+      logchan_matchattempt->log("%s", log_str.c_str());
     }
   }
 }
@@ -440,10 +445,10 @@ matcher_ptr_t Parser::rule(const std::string& rule_name) {
 //////////////////////////////////////////////////////////////////////
 
 matcher_ptr_t Parser::declare(std::string name) {
-  log_info_begin("DECLARE MATCHER<%s> ", name.c_str());
+  //log_info_begin("DECLARE MATCHER<%s> ", name.c_str());
   auto it = _matchers_by_name.find(name);
   if (it != _matchers_by_name.end()) {
-    log_match_continue("pre-exists<%p>\n", (void*)it->second.get());
+    //log_match_continue("pre-exists<%p>\n", (void*)it->second.get());
     return it->second;
   }
   ///////////////////////////////////////////////
@@ -455,7 +460,7 @@ matcher_ptr_t Parser::declare(std::string name) {
   _matchers.insert(rval);
   rval->_name             = name;
   _matchers_by_name[name] = rval;
-  log_match_continue("new<%p>\n", (void*)rval.get());
+  //log_match_continue("new<%p>\n", (void*)rval.get());
   ///////////////////////////////////////////////
   return rval;
 }
@@ -573,17 +578,32 @@ void Parser::popAttempt(match_attempt_ptr_t attempt, matcher_ptr_t matcher, scan
   // parse track (for diagnostics)
   //////////////////////////////////
   if (attempt) {
-    //_trackcontig = nullptr;
-  } else {
 
-    if(_track_depth > _high_track_depth){
-      _high_track_depth = _track_depth;
       auto track      = std::make_shared<MatchAttemptTrackItem>();
       track->_matcher = matcher;
       track->_view    = view;
-      _trackcontig    = track;
+
+      if( _trackcontig ){
+        if(view->_start!=-1 and view->_end!=-1){
+          if( view->_start > _trackcontig->_view->_start ){
+            _trackcontig    = track;
+          }
+        }
+      }
+      else{
+        _trackcontig    = track;
+      }
+
+  } else {
+
+    //if(_track_depth > _high_track_depth){
+      //_high_track_depth = _track_depth;
+      //auto track      = std::make_shared<MatchAttemptTrackItem>();
+      //track->_matcher = matcher;
+      //track->_view    = view;
+      //_trackcontig    = track;
       //printf("_trackcontig<%p>\n", (void*)_trackcontig.get());
-    }
+    //}
 
     if (_attempt_prev == nullptr and attempt == nullptr) {
       //printf("POP NOMATCH matcher<%s> view st<%zu> en<%zu>\n", matcher->_name.c_str(), view->_start, view->_end);
@@ -671,6 +691,9 @@ match_ptr_t Parser::match(
     }
     OrkAssert(errview);
     topview->dump("topview");
+
+    root_match_attempt->dump1(0);
+
     auto errtok = topview->token(errview->_start);
 
     logerrchannel()->log("FULL MATCH FAILED");
@@ -724,6 +747,7 @@ match_ptr_t Parser::match(
     }
 
     logerrchannel()->log("///////////////////////////////////////////////////////////////////// ");
+
 
     OrkAssert(false);
   }
@@ -807,18 +831,38 @@ void Parser::_visitLinkMatch(match_ptr_t m) {
 
 //////////////////////////////////////////////////////////////////////
 
-void Parser::_log_valist(const char* pMsgFormat, va_list args) const {
+static constexpr size_t KVIEWLEN = 16;
+
+void Parser::_log_valist(scannerlightview_constptr_t view, const char* pMsgFormat, va_list args) const {
   char buf[256];
   vsnprintf_s(buf, sizeof(buf), pMsgFormat, args);
   size_t indent  = _matchattemptctx._stack.size();
-  auto indentstr = std::string(indent * 2, ' ');
-  printf("[PARSER : %s] %s%s\n", _name.c_str(), indentstr.c_str(), buf);
+  std::string indentstr;
+  if( view ){
+    auto viewstr = FormatString("view<%zd:%zd>", view->_start, view->_end);
+    size_t vlen = std::max(viewstr.length(), KVIEWLEN);
+    indent = KVIEWLEN+indent-vlen;
+    indentstr = viewstr+std::string(indent, ' ');
+  }
+  else{
+    indentstr = std::string(indent, ' ');
+  }
+  printf("[PARSER] %s%s\n", indentstr.c_str(), buf);
 }
-void Parser::_log_valist_begin(const char* pMsgFormat, va_list args) const {
+void Parser::_log_valist_begin(scannerlightview_constptr_t view, const char* pMsgFormat, va_list args) const {
   char buf[256];
   vsnprintf_s(buf, sizeof(buf), pMsgFormat, args);
   size_t indent  = _matchattemptctx._stack.size();
-  auto indentstr = std::string(indent * 2, ' ');
+  std::string indentstr;
+  if( view ){
+    auto viewstr = FormatString("view<%zd:%zd>", view->_start, view->_end);
+    size_t vlen = std::max(viewstr.length(), KVIEWLEN);
+    indent = KVIEWLEN+indent-vlen;
+    indentstr = viewstr+std::string(indent, ' ');
+  }
+  else{
+    indentstr = std::string(indent, ' ');
+  }
   printf("[PARSER] %s%s", indentstr.c_str(), buf);
 }
 void Parser::_log_valist_continue(const char* pMsgFormat, va_list args) const {
@@ -829,19 +873,19 @@ void Parser::_log_valist_continue(const char* pMsgFormat, va_list args) const {
 
 //////////////////////////////////////////////////////////////////////
 
-void Parser::log_match(const char* pMsgFormat, ...) const {
+void Parser::log_match(scannerlightview_constptr_t view, const char* pMsgFormat, ...) const {
   if (_DEBUG_MATCH) {
     va_list args;
     va_start(args, pMsgFormat);
-    _log_valist(pMsgFormat, args);
+    _log_valist(view, pMsgFormat, args);
     va_end(args);
   }
 }
-void Parser::log_match_begin(const char* pMsgFormat, ...) const {
+void Parser::log_match_begin(scannerlightview_constptr_t view, const char* pMsgFormat, ...) const {
   if (_DEBUG_MATCH) {
     va_list args;
     va_start(args, pMsgFormat);
-    _log_valist_begin(pMsgFormat, args);
+    _log_valist_begin(view, pMsgFormat, args);
     va_end(args);
   }
 }
@@ -860,7 +904,7 @@ void Parser::log_info(const char* pMsgFormat, ...) const {
   if (_DEBUG_INFO) {
     va_list args;
     va_start(args, pMsgFormat);
-    _log_valist(pMsgFormat, args);
+    _log_valist(nullptr, pMsgFormat, args);
     va_end(args);
   }
 }
@@ -868,7 +912,7 @@ void Parser::log_info_begin(const char* pMsgFormat, ...) const {
   if (_DEBUG_INFO) {
     va_list args;
     va_start(args, pMsgFormat);
-    _log_valist_begin(pMsgFormat, args);
+    _log_valist_begin(nullptr, pMsgFormat, args);
     va_end(args);
   }
 }

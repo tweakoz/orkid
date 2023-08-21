@@ -49,14 +49,6 @@ void SHAST::_dumpAstTreeVisitor( //
 
 ///////////////////////////////////////////////////////////////////////////////
 
-std::string toASTstring(SHAST::astnode_ptr_t node) {
-  std::string rval;
-  SHAST::_dumpAstTreeVisitor(node, 0, rval);
-  return rval;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
 SHAST::translationunit_ptr_t parseFromString(const std::string& shader_text) {
   auto parser = std::make_shared<impl::ShadLangParser>();
   OrkAssert(shader_text.length());
@@ -105,8 +97,8 @@ using private_ptr_t = std::shared_ptr<const Private>;
 
 ShadLangParser::ShadLangParser() {
   _name = "shadlang";
-  //_DEBUG_MATCH       = true;
-  //_DEBUG_INFO        = true;
+  _DEBUG_MATCH       = false;
+  _DEBUG_INFO        = false;
 
   static private_ptr_t _private = std::make_shared<Private>();
 
@@ -260,7 +252,7 @@ SHAST::translationunit_ptr_t ShadLangParser::parseString(std::string parse_str) 
     printf("///////////////////////////////\n");
     printf("// AST TREE\n");
     printf("///////////////////////////////\n");
-    std::string ast_str = toASTstring(ast_top);
+    std::string ast_str = SHAST::toASTstring(ast_top);
     printf("%s\n", ast_str.c_str());
     printf("///////////////////////////////\n");
   }

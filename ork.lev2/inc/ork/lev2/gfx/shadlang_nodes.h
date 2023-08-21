@@ -59,6 +59,10 @@ struct AstNode {
     SHAST::astnode_ptr_t node,   //
     SHAST::walk_visitor_fn_t visitor);
   ///////////////////////////
+  static void visitChildren(                 //
+    SHAST::astnode_ptr_t node,   //
+    SHAST::visitor_fn_t visitor);
+  ///////////////////////////
   std::string _name;
   std::string _type_name;
   bool _descend = true;
@@ -92,6 +96,9 @@ template <typename user_t> void AstNode::setSharedForKey(key_t named, std::share
 
 ///////////////////////////////////////////////////////////
 
+DECLARE_STD_AST_CLASS(AstNode,IDENTIFIER);
+DECLARE_STD_AST_CLASS_WPTR(AstNode,SemaIdentifier, semaid_ptr_t);
+
 DECLARE_STD_AST_CLASS(AstNode,InheritList);
 DECLARE_STD_AST_CLASS(AstNode,InheritListItem);
 DECLARE_STD_AST_CLASS(AstNode,LanguageElement);
@@ -120,7 +127,7 @@ DECLARE_STD_AST_CLASS(LanguageElement,DataDeclaration);
 DECLARE_STD_AST_CLASS(LanguageElement,ArrayDeclaration);
 DECLARE_STD_AST_CLASS_WPTR(LanguageElement,TypedIdentifier, tid_ptr_t);
 DECLARE_STD_AST_CLASS(LanguageElement,ObjectName);
-DECLARE_STD_AST_CLASS(LanguageElement,RValueConstructor);
+//DECLARE_STD_AST_CLASS(LanguageElement,RValueConstructor);
 DECLARE_STD_AST_CLASS(LanguageElement,StateBlockItem);
 DECLARE_STD_AST_CLASS(LanguageElement,AssignmentStatementVarRef);
 DECLARE_STD_AST_CLASS(LanguageElement,AssignmentStatementVarDecl);
@@ -161,6 +168,8 @@ DECLARE_STD_AST_CLASS(Expression,AndExpressionTail);
 DECLARE_STD_AST_CLASS(Expression,EqualityExpression);
 DECLARE_STD_AST_CLASS(Expression,RelationalExpression);
 DECLARE_STD_AST_CLASS(Expression,CastExpression);
+DECLARE_STD_AST_CLASS(Expression,TernaryExpression);
+DECLARE_STD_AST_CLASS(Expression,IdentifierCall);
 
 DECLARE_STD_AST_CLASS(Expression,WTFExp);
 
