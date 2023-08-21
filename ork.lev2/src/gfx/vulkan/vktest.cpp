@@ -2,6 +2,7 @@
 #include <ork/kernel/string/deco.inl>
 #if defined(ENABLE_VULKAN)
 #include <vulkan/vulkan.hpp>
+#include "vulkan_impl.h"
 
 namespace ork::lev2::vk {
 
