@@ -149,16 +149,46 @@ void VkFxInterface::BindParamU64(const FxShaderParam* hpar, uint64_t uval) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool VkFxInterface::LoadFxShader(const AssetPath& pth, FxShader* pshader) {
+bool VkFxInterface::LoadFxShader(const AssetPath& input_path, FxShader* pshader) {
 
-  auto it = _GVI->_shared_fxshaders.find(pth);
+  auto it = _GVI->_shared_fxshaders.find(input_path);
   vkfxsobj_ptr_t sh;
   if( it == _GVI->_shared_fxshaders.end() ) {
-    sh = std::make_shared<VkFxShaderObject>();
-    sh->_trans_unit = shadlang::parseFromFile(pth);
-    _GVI->_shared_fxshaders[pth] = sh;
+    ////////////////////////////////////////////
+    // first check precompiled shader cache
+    ////////////////////////////////////////////
+    auto str_read = ork::File::readAsString(input_path);
+    OrkAssert(str_read != nullptr);
+    auto basehasher = DataBlock::createHasher();
+    basehasher->accumulateString("vkfxshader-1.0");
+    basehasher->accumulateString(str_read->_data);
+    uint64_t hashkey   = basehasher->result();
+    auto vkfx_datablock = DataBlockCache::findDataBlock(hashkey);
+    ////////////////////////////////////////////
+    // shader binary already cached
+    ////////////////////////////////////////////
+    if( vkfx_datablock ){
+        OrkAssert(false);
+    }
+    ////////////////////////////////////////////
+    // shader binary not cached, compile and cache
+    ////////////////////////////////////////////
+    else {
+        sh = std::make_shared<VkFxShaderObject>();
+        sh->_trans_unit = shadlang::parseFromString(str_read->_data);
+        _GVI->_shared_fxshaders[input_path] = sh;
+        // MoltenVKShaderConverter
+        // -gi <glsl input>
+        // -so <spirv out>
+        // -si <spirv input>
+        // -mv <metal version> [2, 2.1, or 2.1.0]
+        // -mp <metal platform> [macos, ios, or ios-simulator]
+        // -mo <metal output>
+        // -t <shader type> [v, f, c]
+    }
+
   }
-  else{
+  else{ // shader already loaded...
     sh = it->second;
   }
   OrkAssert(sh != nullptr);
