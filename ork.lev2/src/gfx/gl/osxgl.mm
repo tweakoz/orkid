@@ -160,7 +160,7 @@ context_ptr_t OpenGlContextInit() {
   auto clazz = dynamic_cast<object::ObjectClass*>(ContextGL::GetClassStatic());
 	GfxEnv::setContextClass(clazz);
   ContextGL::GLinit();
-  auto target = std::make_shared<ContextGL>();
+  auto target = ContextGL::makeShared();
   target->initializeLoaderContext();
   GfxEnv::initializeWithContext(target);
   return target;

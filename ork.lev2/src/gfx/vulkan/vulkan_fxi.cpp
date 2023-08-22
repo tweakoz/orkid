@@ -149,7 +149,9 @@ void VkFxInterface::BindParamU64(const FxShaderParam* hpar, uint64_t uval) {
 ///////////////////////////////////////////////////////////////////////////////
 
 bool VkFxInterface::LoadFxShader(const AssetPath& pth, FxShader* ptex) {
-  OrkAssert(false);
+
+  auto it = _GVI->_shared_fxshaders.find(pth);
+  OrkAssert(it != _GVI->_shared_fxshaders.end());
   return false;
 }
 

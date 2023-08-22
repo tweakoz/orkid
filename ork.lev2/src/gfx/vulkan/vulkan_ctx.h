@@ -25,6 +25,7 @@
 #include <ork/kernel/svariant.h>
 #include <ork/kernel/concurrent_queue.h>
 #include <ork/kernel/datablock.h>
+#include <ork/kernel/datacache.h>
 #include <ork/file/chunkfile.inl>
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -34,6 +35,7 @@
 #include <ork/lev2/gfx/rtgroup.h>
 #include <ork/lev2/gfx/texman.h>
 #include <ork/lev2/gfx/image.h>
+#include <ork/lev2/gfx/shadlang.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -63,6 +65,7 @@ struct VkComputeInterface;
 #endif 
 //
 struct VkTextureObject;
+struct VkFxShaderObject;
 struct VkFboObject;
 struct VklRtBufferImpl;
 struct VkRtGroupImpl;
@@ -88,6 +91,7 @@ using vkci_ptr_t = std::shared_ptr<VkComputeInterface>;
 #endif 
 //
 using vktexobj_ptr_t = std::shared_ptr<VkTextureObject>;
+using vkfxsobj_ptr_t = std::shared_ptr<VkFxShaderObject>;
 using vkfbobj_ptr_t = std::shared_ptr<VkFboObject>;
 using vkrtbufimpl_ptr_t = std::shared_ptr<VklRtBufferImpl>;
 using vkrtgrpimpl_ptr_t = std::shared_ptr<VkRtGroupImpl>;
@@ -137,6 +141,8 @@ struct VulkanInstance{
   std::vector<vkdevice_ptr_t> _devices;
   uint32_t _numgpus = 0;
   uint32_t _numgroups = 0;
+
+  std::map<AssetPath, vkfxsobj_ptr_t> _shared_fxshaders;
 
 };
 
@@ -197,6 +203,10 @@ struct VkTextureObject {
   vktxi_ptr_t _txi;
 
   static std::atomic<size_t> _vkto_count;
+};
+
+struct VkFxShaderObject {
+
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -610,5 +620,7 @@ private:
     VkContext();
 
 };
+
+extern vkinstance_ptr_t _GVI;
 
 } //namespace ork::lev2::vulkan {

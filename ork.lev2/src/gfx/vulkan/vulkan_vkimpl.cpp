@@ -5,6 +5,8 @@
 
 namespace ork::lev2::vulkan {
 
+vkinstance_ptr_t _GVI = nullptr;
+
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
 VulkanInstance::VulkanInstance() {
@@ -139,7 +141,7 @@ VulkanInstance::~VulkanInstance() {
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
 context_ptr_t ContextInit() {
-  static vkinstance_ptr_t _GVI = std::make_shared<VulkanInstance>();
+  _GVI = std::make_shared<VulkanInstance>();
   auto clazz                   = dynamic_cast<object::ObjectClass*>(VkContext::GetClassStatic());
   GfxEnv::setContextClass(clazz);
   auto target = VkContext::makeShared();
