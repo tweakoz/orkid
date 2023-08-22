@@ -7,6 +7,7 @@
 
 #pragma once
 
+
 ///////////////////////////////////////////////////////////////////////////////
 #include <functional>
 #include <map>
@@ -14,6 +15,10 @@
 #include <string>
 #include <vector>
 #include <memory>
+
+///////////////////////////////////////////////////////////////////////////////
+
+#include <vulkan/vulkan.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -210,11 +215,13 @@ struct VkGeometryBufferInterface final : public GeometryBufferInterface {
       int ivcount) final;
 
 #if defined(ENABLE_COMPUTE_SHADERS)
+
   void DrawPrimitiveEML(
       const FxShaderStorageBuffer* SSBO, //
       PrimitiveType eType = PrimitiveType::NONE,
       int ivbase           = 0,
       int ivcount          = 0) final;
+
 #endif
 
   void
@@ -262,9 +269,7 @@ struct VkFrameBufferInterface final : public FrameBufferInterface {
   void _doEndFrame(void) final;
 
   void capture(const RtBuffer* inpbuf, const file::Path& pth) final;
-  bool captureToTexture(const CaptureBuffer& capbuf, Texture& tex) final {
-    return false;
-  }
+  bool captureToTexture(const CaptureBuffer& capbuf, Texture& tex) final;
   bool captureAsFormat(const RtBuffer* inpbuf, CaptureBuffer* buffer, EBufferFormat destfmt) final;
 
   void GetPixel(const fvec4& rAt, PixelFetchContext& ctx) final;
@@ -305,12 +310,6 @@ struct VkTextureInterface final : public TextureInterface {
 
   void TexManInit(void) final;
 
-  //pboptr_t _getPBO(size_t isize);
-  //void _returnPBO(pboptr_t pbo);
-
-  //void bindTextureToUnit(const Texture* tex, GLenum tex_target, int tex_unit);
-
-private:
   bool _loadImageTexture(texture_ptr_t ptex, datablock_ptr_t inpdata);
   bool _loadXTXTexture(texture_ptr_t ptex, datablock_ptr_t inpdata);
   bool _loadDDSTexture(const AssetPath& fname, texture_ptr_t ptex);
@@ -335,6 +334,90 @@ private:
 };
 
 ///////////////////////////////////////////////////////////////////////////////
+
+struct VkFxInterface final : public FxInterface {
+
+  VkFxInterface(vkcontext_ptr_t ctx);
+
+  void _doBeginFrame() final;
+
+  int BeginBlock(fxtechnique_constptr_t tek, const RenderContextInstData& data) final;
+  bool BindPass(int ipass) final;
+  void EndPass() final;
+  void EndBlock() final;
+  void CommitParams(void) final;
+  void reset() final;
+
+  const FxShaderTechnique* technique(FxShader* hfx, const std::string& name) final;
+  const FxShaderParam* parameter(FxShader* hfx, const std::string& name) final;
+  const FxShaderParamBlock* parameterBlock(FxShader* hfx, const std::string& name) final;
+
+#if defined(ENABLE_COMPUTE_SHADERS)
+  const FxComputeShader* computeShader(FxShader* hfx, const std::string& name) final;
+  const FxShaderStorageBlock* storageBlock(FxShader* hfx, const std::string& name) final;
+#endif
+
+  void BindParamBool(const FxShaderParam* hpar, const bool bval) final;
+  void BindParamInt(const FxShaderParam* hpar, const int ival) final;
+  void BindParamVect2(const FxShaderParam* hpar, const fvec2& Vec) final;
+  void BindParamVect3(const FxShaderParam* hpar, const fvec3& Vec) final;
+  void BindParamVect4(const FxShaderParam* hpar, const fvec4& Vec) final;
+  void BindParamVect2Array(const FxShaderParam* hpar, const fvec2* Vec, const int icount) final;
+  void BindParamVect3Array(const FxShaderParam* hpar, const fvec3* Vec, const int icount) final;
+  void BindParamVect4Array(const FxShaderParam* hpar, const fvec4* Vec, const int icount) final;
+  void BindParamFloatArray(const FxShaderParam* hpar, const float* pfA, const int icnt) final;
+  void BindParamFloat(const FxShaderParam* hpar, float fA) final;
+  void BindParamMatrix(const FxShaderParam* hpar, const fmtx4& Mat) final;
+  void BindParamMatrix(const FxShaderParam* hpar, const fmtx3& Mat) final;
+  void BindParamMatrixArray(const FxShaderParam* hpar, const fmtx4* MatArray, int iCount) final;
+  void BindParamU32(const FxShaderParam* hpar, uint32_t uval) final;
+  void BindParamCTex(const FxShaderParam* hpar, const Texture* pTex) final;
+  void BindParamU64(const FxShaderParam* hpar, uint64_t uval) final;
+
+  bool LoadFxShader(const AssetPath& pth, FxShader* ptex) final;
+  FxShader* shaderFromShaderText(const std::string& name, const std::string& shadertext) final;
+
+  // ubo
+  FxShaderParamBuffer* createParamBuffer(size_t length) final;
+  parambuffermappingptr_t mapParamBuffer(FxShaderParamBuffer* b, size_t base, size_t length) final;
+  void unmapParamBuffer(FxShaderParamBufferMapping* mapping) final;
+  void bindParamBlockBuffer(const FxShaderParamBlock* block, FxShaderParamBuffer* buffer) final;
+
+  FxShaderTechnique* _currentTEK = nullptr;
+  vkcontext_ptr_t _contextVK;
+
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+#if defined(ENABLE_COMPUTE_SHADERS)
+
+struct VkComputeInterface : public ComputeInterface {
+
+  VkComputeInterface(vkcontext_ptr_t ctx);
+
+
+  void dispatchCompute(const FxComputeShader* shader, uint32_t numgroups_x, uint32_t numgroups_y, uint32_t numgroups_z) final;
+
+  void dispatchComputeIndirect(const FxComputeShader* shader, int32_t* indirect) final;
+
+  FxShaderStorageBuffer* createStorageBuffer(size_t length) final;
+  storagebuffermappingptr_t mapStorageBuffer(FxShaderStorageBuffer* b, size_t base = 0, size_t length = 0) final;
+  void unmapStorageBuffer(FxShaderStorageBufferMapping* mapping) final;
+  void bindStorageBuffer(const FxComputeShader* shader, uint32_t binding_index, FxShaderStorageBuffer* buffer) final;
+  void bindImage(const FxComputeShader* shader, uint32_t binding_index, Texture* tex, ImageBindAccess access) final;
+
+  PipelineCompute* createComputePipe(ComputeShader* csh);
+  void bindComputeShader(ComputeShader* csh);
+
+  Interface* _fxi                          = nullptr;
+  PipelineCompute* _currentComputePipeline = nullptr;
+  vkcontext_ptr_t _contextVK;
+
+};
+
+#endif
+///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
 
@@ -342,6 +425,9 @@ struct VkContext : public Context {
 
   DeclareConcreteX(VkContext, Context);
 public:
+
+  static void VKinit();
+  static bool HaveExtension(const std::string& extname);
 
   static const CClass* gpClass;
 
@@ -355,44 +441,24 @@ public:
   ///////////////////////////////////////////////////////////////////////
 
   void _doResizeMainSurface(int iw, int ih) final;
-  void _doBeginFrame(void) final {
-  }
-  void _doEndFrame(void) final {
-  }
+  void _doBeginFrame() final;
+  void _doEndFrame() final;
   void* _doClonePlatformHandle() const final;
 
   //////////////////////////////////////////////
   // Interfaces
 
-  FxInterface* FXI() final {
-    return nullptr;
-  }
-  ImmInterface* IMI() final {
-    return nullptr;
-  }
-  RasterStateInterface* RSI() final {
-    return nullptr;
-  }
-  MatrixStackInterface* MTXI() final {
-    return nullptr;
-  }
-  GeometryBufferInterface* GBI() final {
-    return nullptr;
-  }
-  FrameBufferInterface* FBI() final {
-    return nullptr;
-  }
-  TextureInterface* TXI() final {
-    return nullptr;
-  }
+  FxInterface* FXI() final;
+  ImmInterface* IMI() final;
+  RasterStateInterface* RSI() final;
+  MatrixStackInterface* MTXI() final;
+  GeometryBufferInterface* GBI() final;
+  FrameBufferInterface* FBI() final;
+  TextureInterface* TXI() final;
 #if defined(ENABLE_COMPUTE_SHADERS)
-  ComputeInterface* CI() final {
-    return nullptr;
-  };
+  ComputeInterface* CI() final;
 #endif
-  DrawingInterface* DWI() final {
-    return nullptr;
-  }
+  DrawingInterface* DWI() final;
   //GlFrameBufferInterface& GLFBI() {
     //return mFbI;
   //}
@@ -405,8 +471,6 @@ public:
 
   //////////////////////////////////////////////
 
-  static void VKinit();
-  static bool HaveExtension(const std::string& extname);
 
   //////////////////////////////////////////////
 

@@ -1,83 +1,8 @@
-#include "vulkan_impl.h"
+#include "vulkan_ctx.h"
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
-
-VkFboObject::VkFboObject() {
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-VkTextureAsyncTask::VkTextureAsyncTask() {
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-VkTextureObject::VkTextureObject(vktxi_ptr_t txi) {
-}
-
-VkTextureObject::~VkTextureObject() {
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-VkDrawingInterface::VkDrawingInterface(vkcontext_ptr_t ctx)
-    : DrawingInterface(*ctx.get())
-    , _contextVK(ctx) {
-  }
-
-  ///////////////////////////////////////////////////////////////////////////////
-
-  VkImiInterface::VkImiInterface(vkcontext_ptr_t ctx)
-      : ImmInterface(*ctx.get())
-      , _contextVK(ctx) {
-  }
-  void VkImiInterface::_doBeginFrame() {
-  }
-  void VkImiInterface::_doEndFrame() {
-  }
-
-  ///////////////////////////////////////////////////////////////////////////////
-
-  VkRasterStateInterface::VkRasterStateInterface(vkcontext_ptr_t ctx)
-      : RasterStateInterface(*ctx.get())
-      , _contextVK(ctx) {
-  }
-  void VkRasterStateInterface::BindRasterState(const SRasterState& rState, bool bForce) {
-  }
-
-  void VkRasterStateInterface::SetZWriteMask(bool bv) {
-  }
-  void VkRasterStateInterface::SetRGBAWriteMask(bool rgb, bool a) {
-  }
-  RGBAMask VkRasterStateInterface::SetRGBAWriteMask(const RGBAMask& newmask) {
-    return RGBAMask();
-  }
-  void VkRasterStateInterface::SetBlending(Blending eVal) {
-  }
-  void VkRasterStateInterface::SetDepthTest(EDepthTest eVal) {
-  }
-  void VkRasterStateInterface::SetCullTest(ECullTest eVal) {
-  }
-  void VkRasterStateInterface::setScissorTest(EScissorTest eVal) {
-  }
-
-  ///////////////////////////////////////////////////////////////////////////////
-
-  VkMatrixStackInterface::VkMatrixStackInterface(vkcontext_ptr_t ctx)
-      : MatrixStackInterface(*ctx.get())
-      , _contextVK(ctx) {
-  }
-
-  fmtx4 VkMatrixStackInterface::Ortho(float left, float right, float top, float bottom, float fnear, float ffar) {
-    return fmtx4();
-  }
-  fmtx4 VkMatrixStackInterface::Frustum(float left, float right, float top, float bottom, float zn, float zf) {
-    return fmtx4();
-  }
-
-  ///////////////////////////////////////////////////////////////////////
 
   VkGeometryBufferInterface::VkGeometryBufferInterface(vkcontext_ptr_t ctx)
       : GeometryBufferInterface(*ctx.get())
@@ -173,6 +98,6 @@ VkDrawingInterface::VkDrawingInterface(vkcontext_ptr_t ctx)
   void VkGeometryBufferInterface::_doBeginFrame() {
 
   }
-  ///////////////////////////////////////////////////////////////////////////////
-} // namespace ork::lev2::vulkan
+///////////////////////////////////////////////////////////////////////////////
+} //namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////

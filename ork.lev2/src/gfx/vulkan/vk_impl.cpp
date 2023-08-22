@@ -1,8 +1,7 @@
 #include <ork/pch.h>
 #include <ork/kernel/string/deco.inl>
 #if defined(ENABLE_VULKAN)
-#include <vulkan/vulkan.hpp>
-#include "vulkan_impl.h"
+#include "vulkan_ctx.h"
 
 namespace ork::lev2::vk {
 
