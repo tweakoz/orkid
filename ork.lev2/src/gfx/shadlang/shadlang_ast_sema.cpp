@@ -875,12 +875,12 @@ void _semaIntegerLiterals(impl::ShadLangParser* slp, astnode_ptr_t top) {
   for (auto node : nodes) {
     std::string out_str;
     SHAST::_dumpAstTreeVisitor(node, 0, out_str);
-    printf("AST: %s\n", out_str.c_str());
+    //printf("AST: %s\n", out_str.c_str());
     auto match = slp->matchForAstNode(node);
     match      = match->asShared<OneOf>()->_selected;
     match->dump1(0);
     auto cm = match->asShared<ClassMatch>();
-    printf("cm<%p>\n", (void*)cm.get());
+    //printf("cm<%p>\n", (void*)cm.get());
     auto literal_value = cm->_token->text;
     if (literal_value == "") {
       OrkAssert(false);
