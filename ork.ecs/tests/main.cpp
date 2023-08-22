@@ -24,7 +24,7 @@
 using namespace ork;
 namespace ork::lev2 {
 void ClassInit();
-void GfxInit(const std::string& gfxlayer);
+void GfxInit();
 } // namespace ork::lev2
 namespace ork::ecs {
 void ClassInit();
@@ -43,7 +43,7 @@ struct TestApplication {
     ecstest::ClassInit();
 
     rtti::Class::InitializeClasses();
-    lev2::GfxInit("");
+    lev2::GfxInit();
   }
 
   ~TestApplication() {

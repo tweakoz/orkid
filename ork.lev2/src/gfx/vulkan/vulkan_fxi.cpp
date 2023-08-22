@@ -4,7 +4,7 @@
 namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
 
-VkFxInterface::VkFxInterface(vkcontext_ptr_t ctx)
+VkFxInterface::VkFxInterface(vkcontext_rawptr_t ctx)
     : _contextVK(ctx) {
 }
 
@@ -48,18 +48,21 @@ void VkFxInterface::reset() {
 ///////////////////////////////////////////////////////////////////////////////
 
 const FxShaderTechnique* VkFxInterface::technique(FxShader* hfx, const std::string& name) {
+  OrkAssert(false);
   return nullptr;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 const FxShaderParam* VkFxInterface::parameter(FxShader* hfx, const std::string& name) {
+  OrkAssert(false);
   return nullptr;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 const FxShaderParamBlock* VkFxInterface::parameterBlock(FxShader* hfx, const std::string& name) {
+  OrkAssert(false);
   return nullptr;
 }
 
@@ -146,12 +149,14 @@ void VkFxInterface::BindParamU64(const FxShaderParam* hpar, uint64_t uval) {
 ///////////////////////////////////////////////////////////////////////////////
 
 bool VkFxInterface::LoadFxShader(const AssetPath& pth, FxShader* ptex) {
+  OrkAssert(false);
   return false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 FxShader* VkFxInterface::shaderFromShaderText(const std::string& name, const std::string& shadertext) {
+  OrkAssert(false);
   return nullptr;
 }
 
@@ -160,12 +165,14 @@ FxShader* VkFxInterface::shaderFromShaderText(const std::string& name, const std
 ///////////////////////////////////////////////////////////////////////////////
 
 FxShaderParamBuffer* VkFxInterface::createParamBuffer(size_t length) {
+  OrkAssert(false);
   return nullptr;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 parambuffermappingptr_t VkFxInterface::mapParamBuffer(FxShaderParamBuffer* b, size_t base, size_t length) {
+  OrkAssert(false);
   return nullptr;
 }
 
@@ -177,15 +184,18 @@ void VkFxInterface::unmapParamBuffer(FxShaderParamBufferMapping* mapping) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkFxInterface::bindParamBlockBuffer(const FxShaderParamBlock* block, FxShaderParamBuffer* buffer) {
+  OrkAssert(false);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 #if defined(ENABLE_COMPUTE_SHADERS)
 ///////////////////////////////////////////////////////////////////////////////
 const FxComputeShader* VkFxInterface::computeShader(FxShader* hfx, const std::string& name) {
+  OrkAssert(false);
   return nullptr;
 }
 const FxShaderStorageBlock* VkFxInterface::storageBlock(FxShader* hfx, const std::string& name) {
+  OrkAssert(false);
   return nullptr;
 }
 ///////////////////////////////////////////////////////////////////////////////

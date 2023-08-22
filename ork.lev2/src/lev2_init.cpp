@@ -65,11 +65,6 @@ namespace lev2 {
 
 appinitdata_ptr_t _ginitdata;
 
-#if defined(ENABLE_VULKAN)
-namespace vk {
-void init();
-}
-#endif
 
 #if defined(_WIN32)
 static bool gbPREFEROPENGL = false;
@@ -78,6 +73,11 @@ static bool gbPREFEROPENGL = true;
 #endif
 
 context_ptr_t OpenGlContextInit();
+#if defined(ENABLE_VULKAN)
+namespace vulkan{
+  lev2::context_ptr_t ContextInit();
+};
+#endif
 void DummyContextInit();
 
 void PreferOpenGL() {
@@ -285,22 +285,26 @@ void ClassInit() {
   static ClassToucher toucher;
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
 ork::lev2::context_ptr_t gloadercontext;
 
-void GfxInit(const std::string& gfxlayer) {
+void GfxInit() {
 
-#if defined(ENABLE_VULKAN)
-  vk::init();
-#endif
-
-  if (gfxlayer != "dummy") {
-#if defined(ORK_CONFIG_OPENGL)
-    gloadercontext = OpenGlContextInit();
-    // FontMan::gpuInit(gloadercontext.get());
-#endif
+  if(1){
+    #if defined(ENABLE_VULKAN)
+    gloadercontext = vulkan::ContextInit();
+    #endif
   }
+  if( nullptr == gloadercontext ){
+    gloadercontext = OpenGlContextInit();
+  }
+  OrkAssert(gloadercontext);
   opq::init();
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
 struct ModuleInit {
 
   ModuleInit(ork::appinitdata_ptr_t init_data) {

@@ -6,8 +6,8 @@
 namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
 
-VkComputeInterface::VkComputeInterface(vkcontext_ptr_t ctx)
-    : ComputeInterface(*ctx.get())
+VkComputeInterface::VkComputeInterface(vkcontext_rawptr_t ctx)
+    : ComputeInterface()
     , _contextVK(ctx) {
 
 }
@@ -55,14 +55,14 @@ void VkComputeInterface::bindImage(const FxComputeShader* shader, uint32_t bindi
 
 ///////////////////////////////////////////////////////////////////////////////
 
-PipelineCompute* VkComputeInterface::createComputePipe(ComputeShader* csh) {
-  return nullptr;
-}
+//PipelineCompute* VkComputeInterface::createComputePipe(ComputeShader* csh) {
+  //return nullptr;
+//}
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void VkComputeInterface::bindComputeShader(ComputeShader* csh) {
-}
+//void VkComputeInterface::bindComputeShader(ComputeShader* csh) {
+//}
 
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2::vulkan

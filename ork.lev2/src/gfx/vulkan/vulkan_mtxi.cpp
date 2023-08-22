@@ -4,8 +4,8 @@
 namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
 
-VkMatrixStackInterface::VkMatrixStackInterface(vkcontext_ptr_t ctx)
-    : MatrixStackInterface(*ctx.get())
+VkMatrixStackInterface::VkMatrixStackInterface(vkcontext_rawptr_t ctx)
+    : MatrixStackInterface(*ctx)
     , _contextVK(ctx) {
 }
 

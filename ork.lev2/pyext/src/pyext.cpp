@@ -33,7 +33,7 @@ void pyinit_gfx_camera(py::module& module_lev2);
 void pyinit_vr(py::module& module_lev2);
 
 void ClassInit();
-void GfxInit(const std::string& gfxlayer);
+void GfxInit();
 
 extern context_ptr_t gloadercontext;
 
@@ -91,7 +91,7 @@ orkezapp_ptr_t lev2appinit() {
 
   lev2::ClassInit();
   rtti::Class::InitializeClasses();
-  lev2::GfxInit("");
+  lev2::GfxInit();
   lev2::FontMan::GetRef();
 
   _gthreadgfxctx = std::make_shared<lev2::ThreadGfxContext>(gloadercontext.get());

@@ -70,6 +70,8 @@ class GlslFxInterface;
 struct GLTextureObject;
 using gltexobj_ptr_t = std::shared_ptr<GLTextureObject>;
 
+using glcontext_ptr_t = std::shared_ptr<ContextGL>;
+
 struct GlFboObject {
   static const int kmaxrt = RtGroup::kmaxmrts;
   GLuint _fbo = 0;
@@ -467,7 +469,7 @@ void Set3DC(
 //////////////////////////////////////////////////////////////////////
 
 class ContextGL : public Context {
-  DeclareConcreteX(ContextGL, Context);
+  DeclareAbstractX(ContextGL, Context);
   friend class GfxEnv;
 
   static const CClass* gpClass;
@@ -475,7 +477,6 @@ class ContextGL : public Context {
   ///////////////////////////////////////////////////////////////////////
 
 public:
-  ContextGL();
 
   void FxInit();
 
@@ -600,6 +601,12 @@ public:
 #endif
 
   bool mTargetDrawableSizeDirty;
+
+  static glcontext_ptr_t makeShared();
+
+private:
+  ContextGL();
+
 };
 
 }} // namespace ork::lev2

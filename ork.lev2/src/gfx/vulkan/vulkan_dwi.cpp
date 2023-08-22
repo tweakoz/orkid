@@ -4,15 +4,15 @@
 namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
 
-VkDrawingInterface::VkDrawingInterface(vkcontext_ptr_t ctx)
-    : DrawingInterface(*ctx.get())
+VkDrawingInterface::VkDrawingInterface(vkcontext_rawptr_t ctx)
+    : DrawingInterface(*ctx)
     , _contextVK(ctx) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-VkImiInterface::VkImiInterface(vkcontext_ptr_t ctx)
-    : ImmInterface(*ctx.get())
+VkImiInterface::VkImiInterface(vkcontext_rawptr_t ctx)
+    : ImmInterface(*ctx)
     , _contextVK(ctx) {
 }
 

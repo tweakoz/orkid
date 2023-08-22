@@ -20,7 +20,20 @@ std::atomic<int> __FIND_IT;
 
 void ContextGL::describeX(class_t* clazz) {
   __FIND_IT.store(0);
+  clazz->annotateTyped<int>("context_factory", 1);
 }
+
+///////////////////////////////////////////////////////////////////////////////////////////////
+
+glcontext_ptr_t ContextGL::makeShared(){
+  struct ContextGL_X : public ContextGL {
+    ContextGL_X() : ContextGL() {}
+  };
+  auto ctx = std::make_shared<ContextGL_X>();
+  return ctx;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////
 
 std::string indent(int count) {
   std::string rval = "";

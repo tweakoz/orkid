@@ -4,8 +4,8 @@
 namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
 
-  VkGeometryBufferInterface::VkGeometryBufferInterface(vkcontext_ptr_t ctx)
-      : GeometryBufferInterface(*ctx.get())
+  VkGeometryBufferInterface::VkGeometryBufferInterface(vkcontext_rawptr_t ctx)
+      : GeometryBufferInterface(*ctx)
       , _contextVK(ctx) {
   }
 
@@ -63,7 +63,7 @@ namespace ork::lev2::vulkan {
 #if defined(ENABLE_COMPUTE_SHADERS)
   void VkGeometryBufferInterface::DrawPrimitiveEML(
       const FxShaderStorageBuffer* SSBO, //
-      PrimitiveType eType = PrimitiveType::NONE,
+      PrimitiveType eType,
       int ivbase,
       int ivcount) {
   }

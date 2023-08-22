@@ -9,8 +9,8 @@ VkFboObject::VkFboObject() {
 
 ///////////////////////////////////////////////////////
 
-VkFrameBufferInterface::VkFrameBufferInterface(vkcontext_ptr_t ctx)
-    : FrameBufferInterface(*ctx.get())
+VkFrameBufferInterface::VkFrameBufferInterface(vkcontext_rawptr_t ctx)
+    : FrameBufferInterface(*ctx)
     , _contextVK(ctx) {
 }
 

@@ -4,8 +4,8 @@
 namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
 
-  VkRasterStateInterface::VkRasterStateInterface(vkcontext_ptr_t ctx)
-      : RasterStateInterface(*ctx.get())
+  VkRasterStateInterface::VkRasterStateInterface(vkcontext_rawptr_t ctx)
+      : RasterStateInterface(*ctx)
       , _contextVK(ctx) {
   }
   void VkRasterStateInterface::BindRasterState(const SRasterState& rState, bool bForce) {

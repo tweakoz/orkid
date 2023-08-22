@@ -45,9 +45,22 @@ namespace ork::dds {
 namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
 
+struct VulkanInstance;
+struct VulkanDevice;
+struct VulkanDeviceGroup;
+//
 struct VkContext;
-struct VkFxInterface;
+struct VkDrawingInterface;
+struct VkImiInterface;
+struct VkRasterStateInterface;
+struct VkMatrixStackInterface;
+struct VkFrameBufferInterface;
+struct VkGeometryBufferInterface;
 struct VkTextureInterface;
+struct VkFxInterface;
+#if defined(ENABLE_COMPUTE_SHADERS)
+struct VkComputeInterface;
+#endif 
 //
 struct VkTextureObject;
 struct VkFboObject;
@@ -56,9 +69,23 @@ struct VkRtGroupImpl;
 struct VkTextureAsyncTask;
 struct VkTexLoadReq;
 //
+using vkinstance_ptr_t = std::shared_ptr<VulkanInstance>;
+using vkdevice_ptr_t = std::shared_ptr<VulkanDevice>;
+using vkdevgrp_ptr_t = std::shared_ptr<VulkanDeviceGroup>;
 using vkcontext_ptr_t = std::shared_ptr<VkContext>;
-using vkfxi_ptr_t = std::shared_ptr<VkFxInterface>;
+using vkcontext_rawptr_t = VkContext*;
+//
+using vkdwi_ptr_t = std::shared_ptr<VkDrawingInterface>;
+using vkimi_ptr_t = std::shared_ptr<VkImiInterface>;
+using vkrsi_ptr_t = std::shared_ptr<VkRasterStateInterface>;
+using vkmsi_ptr_t = std::shared_ptr<VkMatrixStackInterface>;
+using vkfbi_ptr_t = std::shared_ptr<VkFrameBufferInterface>;
+using vkgbi_ptr_t = std::shared_ptr<VkGeometryBufferInterface>;
 using vktxi_ptr_t = std::shared_ptr<VkTextureInterface>;
+using vkfxi_ptr_t = std::shared_ptr<VkFxInterface>;
+#if defined(ENABLE_COMPUTE_SHADERS)
+using vkci_ptr_t = std::shared_ptr<VkComputeInterface>;
+#endif 
 //
 using vktexobj_ptr_t = std::shared_ptr<VkTextureObject>;
 using vkfbobj_ptr_t = std::shared_ptr<VkFboObject>;
@@ -66,6 +93,52 @@ using vkrtbufimpl_ptr_t = std::shared_ptr<VklRtBufferImpl>;
 using vkrtgrpimpl_ptr_t = std::shared_ptr<VkRtGroupImpl>;
 using vktexasynctask_ptr_t = std::shared_ptr<VkTextureAsyncTask>;
 using vktexloadreq_ptr_t = std::shared_ptr<VkTexLoadReq>;
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct VulkanDevice{
+
+  VkPhysicalDevice _phydev;
+  VkPhysicalDeviceProperties _devprops;
+  VkPhysicalDeviceFeatures _devfeatures;
+  VkPhysicalDeviceMemoryProperties _devmemprops;
+  std::vector<VkExtensionProperties> _extensions;
+  std::vector<VkMemoryHeap> _heaps;
+  std::vector<VkQueueFamilyProperties> _queueprops;
+  std::set<std::string> _extension_set;
+
+  bool _is_discrete = false;
+  size_t _maxWkgCountX = 0;
+  size_t _maxWkgCountY = 0;
+  size_t _maxWkgCountZ = 0;
+
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct VulkanDeviceGroup{
+  size_t _deviceCount = 0;
+  std::vector<vkdevice_ptr_t> _devices;
+
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct VulkanInstance{
+
+  VulkanInstance();
+  ~VulkanInstance();
+
+  VkApplicationInfo _appdata;
+  VkInstanceCreateInfo _instancedata;
+  VkInstance _instance;
+  std::vector<VkPhysicalDeviceGroupProperties> _phygroups;
+  std::vector<vkdevgrp_ptr_t> _devgroups;
+  std::vector<vkdevice_ptr_t> _devices;
+  uint32_t _numgpus = 0;
+  uint32_t _numgroups = 0;
+
+};
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -129,24 +202,24 @@ struct VkTextureObject {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct VkDrawingInterface final : public DrawingInterface {
-  VkDrawingInterface(vkcontext_ptr_t ctx);
-  vkcontext_ptr_t _contextVK;
+  VkDrawingInterface(vkcontext_rawptr_t ctx);
+  vkcontext_rawptr_t _contextVK;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
 struct VkImiInterface final : public ImmInterface {
-  VkImiInterface(vkcontext_ptr_t ctx);
+  VkImiInterface(vkcontext_rawptr_t ctx);
   void _doBeginFrame() final;
   void _doEndFrame() final;
-  vkcontext_ptr_t _contextVK;
+  vkcontext_rawptr_t _contextVK;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
 struct VkRasterStateInterface final : public RasterStateInterface {
 
-  VkRasterStateInterface(vkcontext_ptr_t ctx);
+  VkRasterStateInterface(vkcontext_rawptr_t ctx);
   void BindRasterState(const SRasterState& rState, bool bForce) final;
 
   void SetZWriteMask(bool bv) final;
@@ -157,26 +230,26 @@ struct VkRasterStateInterface final : public RasterStateInterface {
   void SetCullTest(ECullTest eVal) final;
   void setScissorTest(EScissorTest eVal) final;
 
-  vkcontext_ptr_t _contextVK;
+  vkcontext_rawptr_t _contextVK;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
 struct VkMatrixStackInterface final : public MatrixStackInterface {
 
-  VkMatrixStackInterface(vkcontext_ptr_t ctx);
+  VkMatrixStackInterface(vkcontext_rawptr_t ctx);
 
   fmtx4 Ortho(float left, float right, float top, float bottom, float fnear, float ffar); // virtual
   fmtx4 Frustum(float left, float right, float top, float bottom, float zn, float zf);    // virtual
 
-  vkcontext_ptr_t _contextVK;
+  vkcontext_rawptr_t _contextVK;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
 struct VkGeometryBufferInterface final : public GeometryBufferInterface {
 
-  VkGeometryBufferInterface(vkcontext_ptr_t ctx);
+  VkGeometryBufferInterface(vkcontext_rawptr_t ctx);
 
   void _doBeginFrame() final;
 
@@ -247,7 +320,7 @@ struct VkGeometryBufferInterface final : public GeometryBufferInterface {
 
   //////////////////////////////////////////////
 
-  vkcontext_ptr_t _contextVK;
+  vkcontext_rawptr_t _contextVK;
   uint32_t _lastComponentMask = 0xFFFFFFFF;
 };
 
@@ -255,7 +328,7 @@ struct VkGeometryBufferInterface final : public GeometryBufferInterface {
 
 struct VkFrameBufferInterface final : public FrameBufferInterface {
 
-  VkFrameBufferInterface(vkcontext_ptr_t ctx);
+  VkFrameBufferInterface(vkcontext_rawptr_t ctx);
   ~VkFrameBufferInterface();
 
   ///////////////////////////////////////////////////////
@@ -295,7 +368,7 @@ protected:
   const FxShaderParam*     _fxpMVP = nullptr;
   const FxShaderParam*     _fxpColorMap = nullptr;
 
-  vkcontext_ptr_t _contextVK;
+  vkcontext_rawptr_t _contextVK;
   int miCurScissorX;
   int miCurScissorY;
   int miCurScissorW;
@@ -306,7 +379,7 @@ protected:
 
 struct VkTextureInterface final : public TextureInterface {
 
-  VkTextureInterface(vkcontext_ptr_t ctx);
+  VkTextureInterface(vkcontext_rawptr_t ctx);
 
   void TexManInit(void) final;
 
@@ -330,14 +403,14 @@ struct VkTextureInterface final : public TextureInterface {
   Texture* createFromMipChain(MipChain* from_chain) final;
 
   //std::map<size_t, pbosetptr_t> _pbosets;
-  vkcontext_ptr_t _contextVK;
+  vkcontext_rawptr_t _contextVK;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
 struct VkFxInterface final : public FxInterface {
 
-  VkFxInterface(vkcontext_ptr_t ctx);
+  VkFxInterface(vkcontext_rawptr_t ctx);
 
   void _doBeginFrame() final;
 
@@ -384,7 +457,7 @@ struct VkFxInterface final : public FxInterface {
   void bindParamBlockBuffer(const FxShaderParamBlock* block, FxShaderParamBuffer* buffer) final;
 
   FxShaderTechnique* _currentTEK = nullptr;
-  vkcontext_ptr_t _contextVK;
+  vkcontext_rawptr_t _contextVK;
 
 };
 
@@ -394,7 +467,7 @@ struct VkFxInterface final : public FxInterface {
 
 struct VkComputeInterface : public ComputeInterface {
 
-  VkComputeInterface(vkcontext_ptr_t ctx);
+  VkComputeInterface(vkcontext_rawptr_t ctx);
 
 
   void dispatchCompute(const FxComputeShader* shader, uint32_t numgroups_x, uint32_t numgroups_y, uint32_t numgroups_z) final;
@@ -407,12 +480,12 @@ struct VkComputeInterface : public ComputeInterface {
   void bindStorageBuffer(const FxComputeShader* shader, uint32_t binding_index, FxShaderStorageBuffer* buffer) final;
   void bindImage(const FxComputeShader* shader, uint32_t binding_index, Texture* tex, ImageBindAccess access) final;
 
-  PipelineCompute* createComputePipe(ComputeShader* csh);
-  void bindComputeShader(ComputeShader* csh);
+  //PipelineCompute* createComputePipe(ComputeShader* csh);
+  //void bindComputeShader(ComputeShader* csh);
 
-  Interface* _fxi                          = nullptr;
-  PipelineCompute* _currentComputePipeline = nullptr;
-  vkcontext_ptr_t _contextVK;
+  //PipelineCompute* _currentComputePipeline = nullptr;
+  vkcontext_rawptr_t _contextVK;
+  vkfxi_ptr_t _fxi;
 
 };
 
@@ -423,17 +496,15 @@ struct VkComputeInterface : public ComputeInterface {
 
 struct VkContext : public Context {
 
-  DeclareConcreteX(VkContext, Context);
+  DeclareAbstractX(VkContext, Context);
 public:
 
-  static void VKinit();
   static bool HaveExtension(const std::string& extname);
 
   static const CClass* gpClass;
 
   ///////////////////////////////////////////////////////////////////////
 
-  VkContext();
   ~VkContext();
 
   void FxInit();
@@ -518,20 +589,26 @@ public:
 
   ///////////////////////////////////////////////////////////////////////////
 
-  //GlImiInterface mImI;
-  //glslfx::Interface mFxI;
-  //GlRasterStateInterface mRsI;
-  //GlMatrixStackInterface mMtxI;
-  //GlGeometryBufferInterface mGbI;
-  //GlFrameBufferInterface mFbI;
-  //GlTextureInterface mTxI;
-  //GlDrawingInterface mDWI;
+  vkdwi_ptr_t _dwi;
+  vkimi_ptr_t _imi;
+  vkrsi_ptr_t _rsi;
+  vkmsi_ptr_t _msi;
+  vkfbi_ptr_t _fbi;
+  vkgbi_ptr_t _gbi;
+  vktxi_ptr_t _txi;
+  vkfxi_ptr_t _fxi;
 
 #if defined(ENABLE_COMPUTE_SHADERS)
-  //glslfx::ComputeInterface mCI;
+  vkci_ptr_t _ci;
 #endif
 
   bool mTargetDrawableSizeDirty;
+
+  static vkcontext_ptr_t makeShared();
+
+private:
+    VkContext();
+
 };
 
 } //namespace ork::lev2::vulkan {

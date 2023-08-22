@@ -23,7 +23,7 @@ void initModule(appinitdata_ptr_t initdata) {
 namespace ork::lev2 {
 extern bool g_allow_HIDPI;
 void ClassInit();
-void GfxInit(const std::string& gfxlayer);
+void GfxInit();
 
 static logchannel_ptr_t logchan_ezapp = logger()->createChannel("ezapp", fvec3(0.7, 0.7, 0.9));
 
@@ -50,7 +50,7 @@ EzAppContext::EzAppContext(appinitdata_ptr_t initdata)
     item();
   /////////////////////////////////////////////
   ork::rtti::Class::InitializeClasses();
-  ork::lev2::GfxInit("");
+  ork::lev2::GfxInit();
   /////////////////////////////////////////////
 }
 ///////////////////////////////////////////////////////////////////////////////

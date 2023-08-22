@@ -8,9 +8,7 @@ namespace ork::lev2::vulkan {
 
 void VkContext::describeX(class_t* clazz) {
 
-}
-
-void VkContext::VKinit() {
+  clazz->annotateTyped<int>("context_factory", 1);
 }
 
 ///////////////////////////////////////////////////////
@@ -19,9 +17,30 @@ bool VkContext::HaveExtension(const std::string& extname) {
   return false;
 }
 
+///////////////////////////////////////////////////////////////////////////////////////////////
+
+vkcontext_ptr_t VkContext::makeShared(){
+  struct VkContextX : public VkContext {
+    VkContextX() : VkContext() {}
+  };
+  auto ctx = std::make_shared<VkContextX>();
+  return ctx;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 VkContext::VkContext() {
+  _dwi = std::make_shared<VkDrawingInterface>(this);
+  _imi = std::make_shared<VkImiInterface>(this);
+  _rsi = std::make_shared<VkRasterStateInterface>(this);
+  _msi = std::make_shared<VkMatrixStackInterface>(this);
+  _fbi = std::make_shared<VkFrameBufferInterface>(this);
+  _gbi = std::make_shared<VkGeometryBufferInterface>(this);
+  _txi = std::make_shared<VkTextureInterface>(this);
+  _fxi = std::make_shared<VkFxInterface>(this);
+#if defined(ENABLE_COMPUTE_SHADERS)
+  _ci = std::make_shared<VkComputeInterface>(this);
+#endif 
 }
 
 ///////////////////////////////////////////////////////
@@ -58,55 +77,52 @@ void* VkContext::_doClonePlatformHandle() const {
 // Interfaces
 
 FxInterface* VkContext::FXI() {
-  return nullptr;
+  return _fxi.get();
 }
 
 ///////////////////////////////////////////////////////
 
 ImmInterface* VkContext::IMI() {
-  return nullptr;
+  return _imi.get();
 }
 
 ///////////////////////////////////////////////////////
 RasterStateInterface* VkContext::RSI() {
 
-  return nullptr;
+  return _rsi.get();
 }
 ///////////////////////////////////////////////////////
 
 MatrixStackInterface* VkContext::MTXI() {
-  return nullptr;
+  return _msi.get();
 }
 ///////////////////////////////////////////////////////
 
 GeometryBufferInterface* VkContext::GBI() {
-  return nullptr;
+  return _gbi.get();
 }
 ///////////////////////////////////////////////////////
 
 FrameBufferInterface* VkContext::FBI() {
-  return nullptr;
+  return _fbi.get();
 }
 ///////////////////////////////////////////////////////
 
 TextureInterface* VkContext::TXI() {
-  return nullptr;
+  return _txi.get();
 }
 ///////////////////////////////////////////////////////
 
 #if defined(ENABLE_COMPUTE_SHADERS)
 ComputeInterface* VkContext::CI() {
-  return nullptr;
+  return _ci.get();
 };
 #endif
 ///////////////////////////////////////////////////////
 
 DrawingInterface* VkContext::DWI() {
-  return nullptr;
+  return _dwi.get();
 }
-// GlFrameBufferInterface& GLFBI() {
-// return mFbI;
-//}
 
 ///////////////////////////////////////////////////////////////////////
 
