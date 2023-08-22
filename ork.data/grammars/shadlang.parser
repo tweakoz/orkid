@@ -585,7 +585,7 @@ Technique <|[
   [ IDENTIFIER ] : "technique_name"
   L_CURLY
   opt{ FxConfigRef }
-  oom{ Pass }
+  zom{ Pass }
   R_CURLY
 ]|>
 

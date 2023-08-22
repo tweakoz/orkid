@@ -80,6 +80,10 @@ namespace vulkan{
 #endif
 void DummyContextInit();
 
+void PreferVulkan() {
+  static auto ctx = ork::lev2::vulkan::ContextInit();
+  gbPREFEROPENGL  = false;
+}
 void PreferOpenGL() {
   static auto ctx = ork::lev2::OpenGlContextInit();
   gbPREFEROPENGL  = true;
@@ -93,7 +97,8 @@ struct ClassToucher {
 
     Context::GetClassStatic();
 
-    PreferOpenGL();
+    PreferVulkan();
+    //PreferOpenGL();
 
     GfxEnv::GetRef();
     GfxPrimitives::GetRef();

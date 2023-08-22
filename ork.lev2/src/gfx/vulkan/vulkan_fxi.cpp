@@ -1,4 +1,5 @@
 #include "vulkan_ctx.h"
+#include <ork/lev2/gfx/shadman.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::vulkan {
@@ -148,18 +149,21 @@ void VkFxInterface::BindParamU64(const FxShaderParam* hpar, uint64_t uval) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool VkFxInterface::LoadFxShader(const AssetPath& pth, FxShader* ptex) {
+bool VkFxInterface::LoadFxShader(const AssetPath& pth, FxShader* pshader) {
 
   auto it = _GVI->_shared_fxshaders.find(pth);
+  vkfxsobj_ptr_t sh;
   if( it == _GVI->_shared_fxshaders.end() ) {
-
-    auto sh = std::make_shared<VkFxShaderObject>();
+    sh = std::make_shared<VkFxShaderObject>();
     sh->_trans_unit = shadlang::parseFromFile(pth);
     _GVI->_shared_fxshaders[pth] = sh;
-
   }
-  OrkAssert(it != _GVI->_shared_fxshaders.end());
-  return false;
+  else{
+    sh = it->second;
+  }
+  OrkAssert(sh != nullptr);
+  pshader->_internalHandle.set<vkfxsobj_ptr_t>(sh);
+  return true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
