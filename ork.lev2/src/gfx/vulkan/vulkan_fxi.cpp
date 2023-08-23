@@ -191,6 +191,11 @@ bool VkFxInterface::LoadFxShader(const AssetPath& input_path, FxShader* pshader)
         printf( "num_vtx_shaders<%zu>\n", num_vtx_shaders );
         printf( "num_frg_shaders<%zu>\n", num_frg_shaders );
         printf( "num_cu_shaders<%zu>\n", num_cu_shaders );
+
+        for( auto v : vtx_shaders ){
+            auto as_glsl = shadlang::toGLFX1(v);
+            printf( "vtx_shader<%s>\n", as_glsl.c_str() );
+        }
         OrkAssert(false);
 
         // MoltenVKShaderConverter
