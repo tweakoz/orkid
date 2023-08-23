@@ -57,6 +57,7 @@ bool File::writeString(const file::Path& output_path, std::string data){
 
   EFileErrCode OK = output_file->Write( (void*)data.data(), data.length() );
   OrkAssert( OK == EFEC_FILE_OK );
+  output_file->Close();
   return true;
 }
 bool File::writeBinary(const file::Path& input_path, std::vector<uint8_t> data){

@@ -498,139 +498,128 @@ void _semaNameInheritListItems(impl::ShadLangParser* slp, astnode_ptr_t top) {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-void _semaResolvePostfixExpressions(impl::ShadLangParser* slp, astnode_ptr_t top) {
-  //////////////////////////////////////////
-  struct PfxToResolve {
-    match_ptr_t _pfx;
-    match_ptr_t _pid;
-    match_ptr_t _parens;
-    match_ptr_t _memberacc;
-  };
-  //////////////////////////////////////////
-  auto LITERAL           = slp->findMatcherByName("Literal");
-  auto RVC_EXPRESSION    = slp->findMatcherByName("RValueConstructor");
-  auto PARENS_EXPRESSION = slp->findMatcherByName("ParensExpression");
-  auto IDENTIFIER        = slp->findMatcherByName("Identif");
-  auto PRIMARY_IDENTIFER = slp->findMatcherByName("PrimaryIdentifier");
-  auto MEMBER_ACCESS     = slp->findMatcherByName("MemberAccess");
-  auto DOT               = slp->findMatcherByName("MemberDot");
-
-  auto PRVC = slp->findMatcherByName("PrimaryRvalueConstructor");
-  auto PPAR = slp->findMatcherByName("PrimaryParensExpression");
-  auto PLIT = slp->findMatcherByName("PrimaryLiteral");
-
-  auto nodes = AstNode::collectNodesOfType<PostfixExpression>(top);
-  std::vector<PfxToResolve> resolve_list;
-  //////////////////////////////////////////
-  for (auto pfx_node : nodes) {
-    auto match = slp->matchForAstNode(pfx_node);
-
-    auto seq         = match->asShared<Sequence>();
-    auto match_tails = seq->itemAsShared<NOrMore>(1);
-    if (match_tails->_items.size() == 1) {
-
-      auto match_primary = Match::followThroughProxy(seq->_items[0]);
-      match_primary      = match_primary->asShared<OneOf>()->_selected;
-
-      auto child_literal = match_primary->findFirstDescendanttWithMatcher(LITERAL);
-      auto child_rvc     = match_primary->findFirstDescendanttWithMatcher(RVC_EXPRESSION);
-      auto child_parens  = match_primary->findFirstDescendanttWithMatcher(PARENS_EXPRESSION);
-      auto child_ident   = match_primary->findFirstDescendanttWithMatcher(IDENTIFIER);
-
-      /////////////////////////////////////////////////////////////
-      // descend into PostfixExpressionTail.[ ParensExpression ]
-      /////////////////////////////////////////////////////////////
-
-      auto match_pfx_tail    = Match::followThroughProxy(match_tails->_items[0]);
-      match_pfx_tail         = match_pfx_tail->asShared<OneOf>()->_selected;
-      auto match_pfxtail_seq = match_pfx_tail->asShared<Sequence>();
-
-      size_t index = resolve_list.size();
-
-      printf("XXX<%zu:%s>\n", index, match_pfxtail_seq->_items[0]->_matcher->_name.c_str());
-
-      if (match_primary->_matcher == PRVC) {
-        OrkAssert(false);
-      } else if (match_pfxtail_seq->_items[0]->_matcher == RVC_EXPRESSION) {
-        PfxToResolve res;
-        res._pfx    = match;
-        res._pid    = match_primary;
-        res._parens = match_pfxtail_seq->_items[0];
-        resolve_list.push_back(res);
-        OrkAssert(false);
-      } else if (match_pfxtail_seq->_items[0]->_matcher == PARENS_EXPRESSION) {
-        PfxToResolve res;
-        res._pfx    = match;
-        res._pid    = match_primary;
-        res._parens = match_pfxtail_seq->_items[0];
-        resolve_list.push_back(res);
-      } else if (match_pfxtail_seq->_items[0]->_matcher == DOT) {
-        PfxToResolve res;
-        res._pfx       = match;
-        res._pid       = match_primary;
-        res._memberacc = match_pfx_tail;
-        resolve_list.push_back(res);
-      } else {
-        printf("// CANNOT RESOLVE ///////////////////\n");
-        match_pfx_tail->dump1(0);
-        printf("/////////////////////////////////////\n");
-      }
-
-      /////////////////////////////////////////////////////////////
+bool _isBuiltInDataType(impl::ShadLangParser* slp, astnode_ptr_t astnode){
+  bool builtin = false;
+    match_ptr_t id_match = slp->matchForAstNode(astnode);
+    scannerlightview_constptr_t id_view = id_match->_view;
+    const Token* id_tok = id_view->token(0);
+    uint64_t id_class = id_tok->_class;
+    switch( id_class ){
+      case "KW_FLOAT"_crcu:
+      case "KW_INT"_crcu:
+      case "KW_UINT"_crcu:
+      case "KW_VEC2"_crcu:
+      case "KW_VEC3"_crcu:
+      case "KW_VEC4"_crcu:
+      case "KW_IVEC2"_crcu:
+      case "KW_IVEC3"_crcu:
+      case "KW_IVEC4"_crcu:
+      case "KW_UVEC2"_crcu:
+      case "KW_UVEC3"_crcu:
+      case "KW_UVEC4"_crcu:
+      case "KW_SAMP1D"_crcu:
+      case "KW_SAMP2D"_crcu:
+      case "KW_SAMP3D"_crcu:
+      case "KW_ISAMP1D"_crcu:
+      case "KW_ISAMP2D"_crcu:
+      case "KW_ISAMP3D"_crcu:
+      case "KW_USAMP1D"_crcu:
+      case "KW_USAMP2D"_crcu:
+      case "KW_USAMP3D"_crcu:
+        builtin = true;
+        break;
+      default:
+        break;
     }
-  }
-  //////////////////////////////////////////
-  for (size_t index = 0; index < resolve_list.size(); index++) {
-    auto item = resolve_list[index];
-    // printf( "// RESOLVE ///////////////////\n");
-    // item._pfx->dump1(0);
-    // printf( "//////////////////////////////\n");
-    // item._pid->dump1(0);
-    // printf( "// branchDistance<%zx>\n", Match::implDistance(item._pfx, item._pid) );
-    // printf( "//////////////////////////////\n");
-    auto ast_pfx = slp->astNodeForMatch(item._pfx);
-    auto ast_pid = slp->astNodeForMatch(item._pid);
-    if (nullptr == ast_pfx) {
-      OrkAssert(false);
+  printf( "id<%s> builtin<%d> vst<%zu> ven<%zu>\n", id_tok->text.c_str(), int(builtin), id_view->_start, id_view->_end );
+  return builtin;
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
+bool _isConstructableBuiltInDataType(impl::ShadLangParser* slp, astnode_ptr_t astnode){
+  bool builtin = false;
+    match_ptr_t id_match = slp->matchForAstNode(astnode);
+    scannerlightview_constptr_t id_view = id_match->_view;
+    const Token* id_tok = id_view->token(0);
+    uint64_t id_class = id_tok->_class;
+    switch( id_class ){
+      case "KW_FLOAT"_crcu:
+      case "KW_INT"_crcu:
+      case "KW_UINT"_crcu:
+      case "KW_VEC2"_crcu:
+      case "KW_VEC3"_crcu:
+      case "KW_VEC4"_crcu:
+      case "KW_IVEC2"_crcu:
+      case "KW_IVEC3"_crcu:
+      case "KW_IVEC4"_crcu:
+      case "KW_UVEC2"_crcu:
+      case "KW_UVEC3"_crcu:
+      case "KW_UVEC4"_crcu:
+        builtin = true;
+        break;
+      default:
+        break;
+    }
+  printf( "id<%s> builtin<%d> class<%zx> vst<%zu> ven<%zu>\n", id_tok->text.c_str(), int(builtin), id_tok->_class, id_view->_start, id_view->_end );
+  return builtin;
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
+void _semaResolvePrimaryExpressions(impl::ShadLangParser* slp, astnode_ptr_t top) {
+  auto nodes = AstNode::collectNodesOfType<PrimaryExpression>(top);
+  for( auto pe_node : nodes ){
+    ////////////////////////////////////
+    size_t num_children = pe_node->_children.size();
+    if( 2 != num_children )
       continue;
-    }
-    if (nullptr == ast_pid) {
-      printf("no AST for match %zu\n", index);
-      OrkAssert(false);
+    ////////////////////////////////////
+    if( nullptr == pe_node )
       continue;
-    }
+    auto dt_node = pe_node->childAs<DataType>(0);
+    ////////////////////////////////////
+    if( nullptr == dt_node )
+      continue;
+    auto type_name = dt_node->typedValueForKey<std::string>("data_type").value();
+    ////////////////////////////////////
+    auto parens_exp = pe_node->childAs<ParensExpression>(1);
+    if( nullptr == parens_exp )
+      continue;
+    ////////////////////////////////////
+    bool is_builtin = _isConstructableBuiltInDataType(slp, pe_node);
+    if( not is_builtin )
+      continue;
+    ////////////////////////////////////
+    // technically, since is_builtin is true
+    //  this is a 'constructor call', 
+    //  not just a method call..
+    ////////////////////////////////////
+    auto dt_match = slp->matchForAstNode(dt_node);
+    auto sema_id = slp->ast_create<SemaIdentifier>(dt_match);
+    sema_id->_name = "SemaId: ";
+    sema_id->_name += " " + type_name;
+    sema_id->setValueForKey<std::string>("identifier_name", type_name);
+    slp->replaceInParent(dt_node, sema_id);
+    ////////////////////////////////////
+    auto pe_match = slp->matchForAstNode(pe_node);
+    auto id_call = slp->ast_create<IdentifierCall>(pe_match);
+    id_call->_children = pe_node->_children;
+    slp->replaceInParent(pe_node, id_call);
 
-    if (item._parens) {
-      auto pid_name      = ast_pid->typedValueForKey<std::string>("identifier_name").value();
-      auto ast_parens    = slp->astNodeForMatch(item._parens);
-      auto match_primary = slp->matchForAstNode(ast_pid);
-      if (match_primary->_matcher == PRIMARY_IDENTIFER) {
-        auto func_inv      = std::make_shared<SemaFunctionInvokation>();
-        auto func_inv_args = std::make_shared<SemaFunctionArguments>();
-        auto func_name     = std::make_shared<SemaFunctionName>();
-        func_name->_name   = FormatString("SemaFunctionName: %s", pid_name.c_str());
-        func_inv->_children.push_back(func_name);
-        func_inv->_children.push_back(func_inv_args);
-        //////////////////////////////////////////////////
-        auto expr_list = std::dynamic_pointer_cast<ExpressionList>(ast_parens->_children[0]);
-        func_inv_args->_children.push_back(expr_list ? expr_list : ast_parens);
-        //////////////////////////////////////////////////
-        slp->replaceInParent(ast_pfx, func_inv);
-      }
-    } else if (item._memberacc) {
-      item._pid->dump1(0);
-      auto pid_name    = ast_pid->typedValueForKey<std::string>("identifier_name").value();
-      auto ast_membacc = slp->astNodeForMatch(item._memberacc);
-      auto member_name = ast_membacc->typedValueForKey<std::string>("member_name").value();
-      // item._memberacc->dump1(0);
-      auto maexp   = std::make_shared<SemaMemberAccess>();
-      maexp->_name = FormatString("SemaMemberAccess: %s.%s", pid_name.c_str(), member_name.c_str());
-      slp->replaceInParent(ast_pfx, maexp);
-    } else {
-      OrkAssert(false);
-    }
   }
-  //////////////////////////////////////////
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
+void _semaResolveIdentifierCalls(impl::ShadLangParser* slp, astnode_ptr_t top) {
+  auto nodes = AstNode::collectNodesOfType<IdentifierCall>(top);
+  for( auto id_call : nodes ){
+    auto sema_id = id_call->childAs<SemaIdentifier>(0);
+    OrkAssert(sema_id);
+    auto id_name = sema_id->typedValueForKey<std::string>("identifier_name").value();
+    bool is_builtin = _isConstructableBuiltInDataType(slp, sema_id);
+  }
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
@@ -648,42 +637,6 @@ void _semaResolveSemaFunctionArguments(impl::ShadLangParser* slp, astnode_ptr_t 
       n->_children = n->_children[0]->_children;
     }
   }
-}
-
-/////////////////////////////////////////////////////////////////////////////////////////////////
-
-void _semaResolveConstructors(impl::ShadLangParser* slp, astnode_ptr_t top) {
-#if 0
-  auto nodes = AstNode::collectNodesOfType<RValueConstructor>(top);
-  for (auto n : nodes) {
-    //
-    auto dtype_node = std::dynamic_pointer_cast<DataType>(n->_children[0]);
-    auto parens     = std::dynamic_pointer_cast<ParensExpression>(n->_children[1]);
-    OrkAssert(dtype_node);
-    OrkAssert(parens);
-    auto dtype_name = dtype_node->typedValueForKey<std::string>("data_type").value();
-    //
-    auto constructor_call = std::make_shared<SemaConstructorInvokation>();
-    auto cons_type        = std::make_shared<SemaConstructorType>();
-    auto cons_args        = std::make_shared<SemaConstructorArguments>();
-    constructor_call->_children.push_back(cons_type);
-    // constructor_call->_children.push_back(cons_args);
-    //
-    cons_type->_name = FormatString("SemaConstructorType: %s", dtype_name.c_str());
-    constructor_call->setValueForKey<std::string>("data_type", dtype_name);
-
-    constructor_call->_children.push_back(parens);
-
-    //
-    // auto expr_list = std::dynamic_pointer_cast<ExpressionList>(parens->_children[0]);
-    // if (expr_list) {
-    // cons_args->_children = expr_list->_children;
-    //} else {
-    // cons_args->_children = parens->_children[0]->_children;
-    //}
-    slp->replaceInParent(n, constructor_call);
-  }
-#endif
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
@@ -989,16 +942,16 @@ void impl::ShadLangParser::semaAST(astnode_ptr_t top) {
     _semaNameShiftOperators(this, top);
     _semaNameAssignmentOperators(this, top);
     _semaNameInheritListItems(this, top);
-    // //_semaResolvePostfixExpressions(this, top);
+    _semaResolvePrimaryExpressions(this, top);
+    _semaResolveIdentifierCalls(this, top);
     _semaResolveSemaFunctionArguments(this, top);
-    _semaResolveConstructors(this, top);
   }
 
   //////////////////////////////////
   // Pass 4..
   //////////////////////////////////
 
-  bool keep_going = false;
+  bool keep_going = true;
   while (keep_going) {
     int count = 0;
     count += _semaProcessInheritances<LibraryBlock>(this, top);
@@ -1016,6 +969,9 @@ void impl::ShadLangParser::semaAST(astnode_ptr_t top) {
     count += _semaProcessInheritances<StateBlock>(this, top);
     keep_going = (count > 0);
   }
+
+  auto as_tu = std::dynamic_pointer_cast<TranslationUnit>(top);
+  as_tu->_translatables_by_name = _translatables;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////

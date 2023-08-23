@@ -116,13 +116,24 @@ template <typename user_t> void AstNode::setSharedForKey(key_t named, std::share
 
 ///////////////////////////////////////////////////////////
 
+struct TranslationUnit : public AstNode {
+  static constexpr const char* _static_type_name = "TranslationUnit";
+  inline TranslationUnit() {
+    _name = _static_type_name;
+    _type_name = _static_type_name;
+  }
+  astnode_map_t _translatables_by_name;
+};
+using transunit_ptr_t = std::shared_ptr<TranslationUnit>;
+
+///////////////////////////////////////////////////////////
+
 DECLARE_STD_AST_CLASS(AstNode,IDENTIFIER);
 DECLARE_STD_AST_CLASS_WPTR(AstNode,SemaIdentifier, semaid_ptr_t);
 
 DECLARE_STD_AST_CLASS(AstNode,InheritList);
 DECLARE_STD_AST_CLASS(AstNode,InheritListItem);
 DECLARE_STD_AST_CLASS(AstNode,LanguageElement);
-DECLARE_STD_AST_CLASS(AstNode,TranslationUnit);
 DECLARE_STD_AST_CLASS(AstNode,Translatable);
 
 DECLARE_STD_AST_CLASS(AstNode,DeclArgumentList);
@@ -149,7 +160,6 @@ DECLARE_STD_AST_CLASS(LanguageElement,DataDeclaration);
 DECLARE_STD_AST_CLASS(LanguageElement,ArrayDeclaration);
 DECLARE_STD_AST_CLASS_WPTR(LanguageElement,TypedIdentifier, tid_ptr_t);
 DECLARE_STD_AST_CLASS(LanguageElement,ObjectName);
-//DECLARE_STD_AST_CLASS(LanguageElement,RValueConstructor);
 DECLARE_STD_AST_CLASS(LanguageElement,StateBlockItem);
 DECLARE_STD_AST_CLASS(LanguageElement,AssignmentStatementVarRef);
 DECLARE_STD_AST_CLASS(LanguageElement,AssignmentStatementVarDecl);

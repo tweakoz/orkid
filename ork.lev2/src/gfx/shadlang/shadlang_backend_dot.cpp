@@ -118,6 +118,11 @@ struct DotBackend {
 
       int node_id = node->_nodeID;
       std::string label = node->desc();
+      
+      // fix unprintable characters
+      //std::replace( label.begin(), label.end(), '\n', '_');
+      std::replace( label.begin(), label.end(), '\"', '\'');
+
       // remove surrounding quotes
       if( label.length() > 2 && label[0] == '"' && label[label.length()-1] == '"' ){
         label = label.substr(1,label.length()-2);
