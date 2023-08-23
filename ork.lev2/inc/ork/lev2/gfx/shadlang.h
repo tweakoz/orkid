@@ -85,7 +85,7 @@ std::string toASTstring(astnode_ptr_t);
 
 SHAST::translationunit_ptr_t parseFromString(const std::string& shader_text);
 SHAST::translationunit_ptr_t parseFromFile(file::Path shader_path);
-std::string toGLFX1(SHAST::translationunit_ptr_t top);
+std::string toGLFX1(SHAST::astnode_ptr_t top);
 std::string toDotFile(SHAST::translationunit_ptr_t top);
 
 } // namespace ork::lev2::shadlang

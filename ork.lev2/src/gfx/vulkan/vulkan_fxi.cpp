@@ -174,9 +174,25 @@ bool VkFxInterface::LoadFxShader(const AssetPath& input_path, FxShader* pshader)
     // shader binary not cached, compile and cache
     ////////////////////////////////////////////
     else {
+
+        using namespace shadlang::SHAST;
+
         sh = std::make_shared<VkFxShaderObject>();
         sh->_trans_unit = shadlang::parseFromString(str_read->_data);
         _GVI->_shared_fxshaders[input_path] = sh;
+        auto vtx_shaders = AstNode::collectNodesOfType<VertexShader>(sh->_trans_unit);
+        auto frg_shaders = AstNode::collectNodesOfType<FragmentShader>(sh->_trans_unit);
+        auto cu_shaders = AstNode::collectNodesOfType<ComputeShader>(sh->_trans_unit);
+        
+        size_t num_vtx_shaders = vtx_shaders.size();
+        size_t num_frg_shaders = frg_shaders.size();
+        size_t num_cu_shaders = cu_shaders.size();
+
+        printf( "num_vtx_shaders<%zu>\n", num_vtx_shaders );
+        printf( "num_frg_shaders<%zu>\n", num_frg_shaders );
+        printf( "num_cu_shaders<%zu>\n", num_cu_shaders );
+        OrkAssert(false);
+
         // MoltenVKShaderConverter
         // -gi <glsl input>
         // -so <spirv out>

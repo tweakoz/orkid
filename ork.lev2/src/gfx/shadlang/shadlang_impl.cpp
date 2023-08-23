@@ -169,25 +169,6 @@ void ShadLangParser::_buildAstTreeVisitor(match_ptr_t the_match) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ShadLangParser::visitAST(      //
-    SHAST::astnode_ptr_t node,      //
-    SHAST::visitor_ptr_t visitor) { //
-
-  if (visitor->_on_pre) {
-    visitor->_on_pre(node);
-  }
-  visitor->_nodestack.push(node);
-  for (auto c : node->_children) {
-    visitAST(c, visitor);
-  }
-  visitor->_nodestack.pop();
-  if (visitor->_on_post) {
-    visitor->_on_post(node);
-  }
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
 bool ShadLangParser::walkUpAST( //
     SHAST::astnode_ptr_t node,  //
     SHAST::walk_visitor_fn_t visitor) {

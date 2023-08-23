@@ -11,6 +11,7 @@
 ////////////////////////////////////////////////////////////////
 
 #include <ork/lev2/gfx/shadlang.h>
+#include <ork/lev2/gfx/shadlang_nodes.h>
 #include <ork/file/file.h>
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/pch.h>
@@ -21,6 +22,7 @@
 #include <ork/util/logger.h>
 #include <ork/kernel/string/string.h>
 #include <ork/util/parser.inl>
+
 #include "shadlang_impl.h"
 
 #if defined(USE_ORKSL_LANG)
@@ -47,7 +49,7 @@ void _pruneExpressionChainNodes(impl::ShadLangParser* slp, astnode_ptr_t top) {
       }
     }
   };
-  slp->visitAST(top, collect_nodes);
+  AstNode::visitNode(top, collect_nodes);
   slp->reduceAST(nodes_to_reduce);
 }
 //////////////////////////////////////////////////
@@ -62,7 +64,7 @@ void _pruneExpressionBaseNodes(impl::ShadLangParser* slp, astnode_ptr_t top) {
       nodes_to_reduce.insert(node);
     }
   };
-  slp->visitAST(top, collect_nodes);
+  AstNode::visitNode(top, collect_nodes);
   slp->reduceAST(nodes_to_reduce);
 }
 
@@ -78,7 +80,7 @@ void _pruneStatementBaseNodes(impl::ShadLangParser* slp, astnode_ptr_t top) {
       nodes_to_reduce.insert(node);
     }
   };
-  slp->visitAST(top, collect_nodes);
+  AstNode::visitNode(top, collect_nodes);
   slp->reduceAST(nodes_to_reduce);
 }
 
@@ -99,7 +101,7 @@ void _pruneDataTypeNodes(impl::ShadLangParser* slp, astnode_ptr_t top) {
       }
     }
   };
-  slp->visitAST(top, collect_nodes);
+  AstNode::visitNode(top, collect_nodes);
   slp->reduceAST(nodes_to_reduce);
   nodes_to_reduce.clear();
   collect_nodes->_on_pre = [&](astnode_ptr_t node) {
@@ -111,7 +113,7 @@ void _pruneDataTypeNodes(impl::ShadLangParser* slp, astnode_ptr_t top) {
       }
     }
   };
-  slp->visitAST(top, collect_nodes);
+  AstNode::visitNode(top, collect_nodes);
   slp->reduceAST(nodes_to_reduce);
 }
 
@@ -132,7 +134,7 @@ void _pruneDataDeclarationNodes(impl::ShadLangParser* slp, astnode_ptr_t top) {
       }
     }
   };
-  slp->visitAST(top, collect_nodes);
+  AstNode::visitNode(top, collect_nodes);
   slp->reduceAST(nodes_to_reduce);
 }
 

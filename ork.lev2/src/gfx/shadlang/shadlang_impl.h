@@ -44,9 +44,6 @@ struct ShadLangParser : public Parser {
   void pruneAST(SHAST::astnode_ptr_t top);
   void reduceAST(std::set<SHAST::astnode_ptr_t> nodes_to_reduce);
   void semaAST(SHAST::astnode_ptr_t top);
-  void visitAST(                 //
-    SHAST::astnode_ptr_t node,   //
-    SHAST::visitor_ptr_t visitor);
   bool walkUpAST(                 //
     SHAST::astnode_ptr_t node,   //
     SHAST::walk_visitor_fn_t visitor);
@@ -75,20 +72,6 @@ struct ShadLangParser : public Parser {
       return std::dynamic_pointer_cast<T>(sh.value());
     }
     return nullptr;
-  }
-  ////////////////////////////////////////////
-  template <typename T> //
-  std::set<std::shared_ptr<T>> //
-  collectNodesOfType(SHAST::astnode_ptr_t top){ //
-    std::set<std::shared_ptr<T>> nodes;
-    auto collect_nodes     = std::make_shared<SHAST::Visitor>();
-    collect_nodes->_on_pre = [&](SHAST::astnode_ptr_t node) {
-      if (auto as_typed = std::dynamic_pointer_cast<T>(node)) {
-        nodes.insert(as_typed);
-      }
-    };
-    visitAST(top, collect_nodes);
-    return nodes;
   }
   ////////////////////////////////////////////
   void _buildAstTreeVisitor(match_ptr_t the_match);

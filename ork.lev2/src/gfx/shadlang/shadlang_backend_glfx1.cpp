@@ -17,7 +17,7 @@ struct GLFX1Backend {
   GLFX1Backend();
 
   void _visit(astnode_ptr_t node);
-  void generate(translationunit_ptr_t top);
+  void generate(astnode_ptr_t top);
 
   template <typename T> std::shared_ptr<T> as(astnode_ptr_t node) {
     return std::dynamic_pointer_cast<T>(node);
@@ -178,7 +178,7 @@ void GLFX1Backend::_visit(astnode_ptr_t node) {
 
 ////////////////////////////////////////////////////////////////
 
-void GLFX1Backend::generate(translationunit_ptr_t top) {
+void GLFX1Backend::generate(astnode_ptr_t top) {
   _visit(top);
 }
 
@@ -646,11 +646,12 @@ GLFX1Backend::GLFX1Backend() {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-std::string toGLFX1(translationunit_ptr_t top) {
+std::string toGLFX1(astnode_ptr_t top) {
   auto backend = std::make_shared<GLFX1Backend>();
   backend->generate(top);
   return backend->_outstr;
 }
+
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2::shadlang

@@ -59,8 +59,8 @@ bool AstNode::hasKey(const key_t& key) const {
 ///////////////////////////////////////////////////////////////////////////////
 
 bool AstNode::walkDownAST( //
-    SHAST::astnode_ptr_t node,    //
-    SHAST::walk_visitor_fn_t visitor) {
+    astnode_ptr_t node,    //
+    walk_visitor_fn_t visitor) {
   bool down = visitor(node);
   if (down) {
     for (auto c : node->_children) {
@@ -74,10 +74,29 @@ bool AstNode::walkDownAST( //
 }
 
 void AstNode::visitChildren( //
-    SHAST::astnode_ptr_t node,    //
-    SHAST::visitor_fn_t visitor) {
+    astnode_ptr_t node,    //
+    visitor_fn_t visitor) {
   for( auto c : node->_children ){
     visitor(c);
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void AstNode::visitNode(      //
+    astnode_ptr_t node,      //
+    visitor_ptr_t visitor) { //
+
+  if (visitor->_on_pre) {
+    visitor->_on_pre(node);
+  }
+  visitor->_nodestack.push(node);
+  for (auto c : node->_children) {
+    visitNode(c, visitor);
+  }
+  visitor->_nodestack.pop();
+  if (visitor->_on_post) {
+    visitor->_on_post(node);
   }
 }
 

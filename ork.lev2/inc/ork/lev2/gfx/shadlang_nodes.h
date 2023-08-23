@@ -48,6 +48,20 @@ struct AstNode {
   astnode_ptr_t findFirstChildOfType() const {
     return tree_constops(this).findFirstChildOfType<child_t>();
   }
+  ////////////////////////////////////////////
+  template <typename T> //
+  std::set<std::shared_ptr<T>> //
+  static collectNodesOfType(astnode_ptr_t top){ //
+    std::set<std::shared_ptr<T>> nodes;
+    auto collect_nodes     = std::make_shared<Visitor>();
+    collect_nodes->_on_pre = [&](astnode_ptr_t node) {
+      if (auto as_typed = std::dynamic_pointer_cast<T>(node)) {
+        nodes.insert(as_typed);
+      }
+    };
+    visitNode(top, collect_nodes);
+    return nodes;
+  }
   ///////////////////////////
   template <typename user_t> attempt_cast<user_t> typedValueForKey(key_t named);
   template <typename user_t> void setValueForKey(key_t named, user_t value );
@@ -56,12 +70,16 @@ struct AstNode {
   template <typename user_t> void setSharedForKey(key_t named, std::shared_ptr<user_t> ptr);
   ///////////////////////////
   static bool walkDownAST(                 //
-    SHAST::astnode_ptr_t node,   //
-    SHAST::walk_visitor_fn_t visitor);
+    astnode_ptr_t node,   //
+    walk_visitor_fn_t visitor);
   ///////////////////////////
   static void visitChildren(                 //
-    SHAST::astnode_ptr_t node,   //
-    SHAST::visitor_fn_t visitor);
+    astnode_ptr_t node,   //
+    visitor_fn_t visitor);
+  ///////////////////////////
+  static void visitNode(                 //
+    astnode_ptr_t node,   //
+    visitor_ptr_t visitor);
   ///////////////////////////
   std::string _name;
   std::string _type_name;

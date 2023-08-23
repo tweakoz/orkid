@@ -67,7 +67,7 @@ void _semaNormalizeDtUserTypes(impl::ShadLangParser* slp, astnode_ptr_t top) {
 
   auto matcher_dtype = slp->findMatcherByName("DataType");
   auto matcher_ident = slp->findMatcherByName("IDENTIFIER");
-  auto nodes         = slp->collectNodesOfType<DataTypeWithUserTypes>(top);
+  auto nodes         = AstNode::collectNodesOfType<DataTypeWithUserTypes>(top);
   for (auto dtu_node : nodes) {
     auto dtu_match = slp->matchForAstNode(dtu_node);
     auto sel_match = dtu_match->asShared<OneOf>()->_selected;
@@ -103,7 +103,7 @@ void _semaNormalizeDtUserTypes(impl::ShadLangParser* slp, astnode_ptr_t top) {
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 void _semaNameBuiltInDataTypes(impl::ShadLangParser* slp, astnode_ptr_t top) {
-  auto nodes = slp->collectNodesOfType<DataType>(top);
+  auto nodes = AstNode::collectNodesOfType<DataType>(top);
   for (auto dt_node : nodes) {
     auto dt_match  = slp->matchForAstNode(dt_node);
     auto type_name = _dt_extract_type(dt_node, dt_match);
@@ -114,7 +114,7 @@ void _semaNameBuiltInDataTypes(impl::ShadLangParser* slp, astnode_ptr_t top) {
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 void _semaNameIdentifers(impl::ShadLangParser* slp, astnode_ptr_t top) {
-  auto nodes = slp->collectNodesOfType<IDENTIFIER>(top);
+  auto nodes = AstNode::collectNodesOfType<IDENTIFIER>(top);
   for (auto id_node : nodes) {
     auto match = slp->matchForAstNode(id_node);
     auto sema_id = slp->ast_create<SemaIdentifier>(match);
@@ -129,7 +129,7 @@ void _semaNameIdentifers(impl::ShadLangParser* slp, astnode_ptr_t top) {
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 void _semaNameIdentiferCalls(impl::ShadLangParser* slp, astnode_ptr_t top) {
-  auto nodes = slp->collectNodesOfType<IdentifierCall>(top);
+  auto nodes = AstNode::collectNodesOfType<IdentifierCall>(top);
   for (auto id_node : nodes) {
     id_node->_name = "IDCALL: ";
     auto match = slp->matchForAstNode(id_node);
@@ -142,7 +142,7 @@ void _semaNameIdentiferCalls(impl::ShadLangParser* slp, astnode_ptr_t top) {
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 void _semaNameTypedIdentifers(impl::ShadLangParser* slp, astnode_ptr_t top) {
-  auto nodes = slp->collectNodesOfType<TypedIdentifier>(top);
+  auto nodes = AstNode::collectNodesOfType<TypedIdentifier>(top);
   for (auto tid_node : nodes) {
 
     tid_node->_name = "TypedIdentifier\n";
@@ -233,7 +233,7 @@ void _semaCollectNamedOfType(
     astnode_ptr_t top,         //
     astnode_map_t& outmap) {   //
 
-  auto nodes = slp->collectNodesOfType<node_t>(top);
+  auto nodes = AstNode::collectNodesOfType<node_t>(top);
   for (auto n : nodes) {
     astnode_ptr_t obj_name;
     AstNode::walkDownAST(n, [&](astnode_ptr_t node) -> bool {
@@ -301,7 +301,7 @@ void _semaProcNamedOfType(
     impl::ShadLangParser* slp, //
     astnode_ptr_t top) {       //
 
-  auto nodes = slp->collectNodesOfType<node_t>(top);
+  auto nodes = AstNode::collectNodesOfType<node_t>(top);
   for (auto n : nodes) {
     astnode_ptr_t obj_name;
     AstNode::walkDownAST(n, [&](astnode_ptr_t node) -> bool {
@@ -325,7 +325,7 @@ void _semaProcNamedOfType(
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 void _semaPerformImports(impl::ShadLangParser* slp, astnode_ptr_t top) {
-  auto nodes = slp->collectNodesOfType<ImportDirective>(top);
+  auto nodes = AstNode::collectNodesOfType<ImportDirective>(top);
   import_map_t import_map;
   for (auto n : nodes) {
     //
@@ -371,7 +371,7 @@ void _semaPerformImports(impl::ShadLangParser* slp, astnode_ptr_t top) {
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 void _semaNamePrimaryIdentifers(impl::ShadLangParser* slp, astnode_ptr_t top) {
-  auto nodes = slp->collectNodesOfType<PrimaryIdentifier>(top);
+  auto nodes = AstNode::collectNodesOfType<PrimaryIdentifier>(top);
   for (auto prim_node : nodes) {
     auto match       = slp->matchForAstNode(prim_node);
     auto seq         = match->asShared<Sequence>();
@@ -386,7 +386,7 @@ void _semaNamePrimaryIdentifers(impl::ShadLangParser* slp, astnode_ptr_t top) {
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 void _semaNameMemberAccessOperators(impl::ShadLangParser* slp, astnode_ptr_t top) {
-  auto nodes = slp->collectNodesOfType<MemberAccessOperator>(top);
+  auto nodes = AstNode::collectNodesOfType<MemberAccessOperator>(top);
   for (auto mao_node : nodes) {
     auto match      = slp->matchForAstNode(mao_node);
     auto seq        = match->asShared<Sequence>();
@@ -400,7 +400,7 @@ void _semaNameMemberAccessOperators(impl::ShadLangParser* slp, astnode_ptr_t top
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 void _semaNameAdditiveOperators(impl::ShadLangParser* slp, astnode_ptr_t top) {
-  auto nodes = slp->collectNodesOfType<AdditiveOperator>(top);
+  auto nodes = AstNode::collectNodesOfType<AdditiveOperator>(top);
   for (auto ao_node : nodes) {
     auto match     = slp->matchForAstNode(ao_node);
     auto sel       = match->asShared<OneOf>()->_selected;
@@ -414,7 +414,7 @@ void _semaNameAdditiveOperators(impl::ShadLangParser* slp, astnode_ptr_t top) {
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 void _semaNameMultiplicativeOperators(impl::ShadLangParser* slp, astnode_ptr_t top) {
-  auto nodes = slp->collectNodesOfType<MultiplicativeOperator>(top);
+  auto nodes = AstNode::collectNodesOfType<MultiplicativeOperator>(top);
   for (auto ao_node : nodes) {
     auto match     = slp->matchForAstNode(ao_node);
     auto sel       = match->asShared<OneOf>()->_selected;
@@ -428,7 +428,7 @@ void _semaNameMultiplicativeOperators(impl::ShadLangParser* slp, astnode_ptr_t t
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 void _semaNameRelationalOperators(impl::ShadLangParser* slp, astnode_ptr_t top) {
-  auto nodes = slp->collectNodesOfType<RelationalOperator>(top);
+  auto nodes = AstNode::collectNodesOfType<RelationalOperator>(top);
   for (auto ao_node : nodes) {
     auto match     = slp->matchForAstNode(ao_node);
     auto sel       = match->asShared<OneOf>()->_selected;
@@ -442,7 +442,7 @@ void _semaNameRelationalOperators(impl::ShadLangParser* slp, astnode_ptr_t top) 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 void _semaNameEqualityOperators(impl::ShadLangParser* slp, astnode_ptr_t top) {
-  auto nodes = slp->collectNodesOfType<EqualityOperator>(top);
+  auto nodes = AstNode::collectNodesOfType<EqualityOperator>(top);
   for (auto ao_node : nodes) {
     auto match     = slp->matchForAstNode(ao_node);
     auto sel       = match->asShared<OneOf>()->_selected;
@@ -456,7 +456,7 @@ void _semaNameEqualityOperators(impl::ShadLangParser* slp, astnode_ptr_t top) {
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 void _semaNameShiftOperators(impl::ShadLangParser* slp, astnode_ptr_t top) {
-  auto nodes = slp->collectNodesOfType<ShiftOperator>(top);
+  auto nodes = AstNode::collectNodesOfType<ShiftOperator>(top);
   for (auto so_node : nodes) {
     auto match     = slp->matchForAstNode(so_node);
     auto sel       = match->asShared<OneOf>()->_selected;
@@ -470,7 +470,7 @@ void _semaNameShiftOperators(impl::ShadLangParser* slp, astnode_ptr_t top) {
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 void _semaNameAssignmentOperators(impl::ShadLangParser* slp, astnode_ptr_t top) {
-  auto nodes = slp->collectNodesOfType<AssignmentOperator>(top);
+  auto nodes = AstNode::collectNodesOfType<AssignmentOperator>(top);
   for (auto ao_node : nodes) {
     auto match     = slp->matchForAstNode(ao_node);
     auto sel       = match->asShared<OneOf>()->_selected;
@@ -484,7 +484,7 @@ void _semaNameAssignmentOperators(impl::ShadLangParser* slp, astnode_ptr_t top) 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 void _semaNameInheritListItems(impl::ShadLangParser* slp, astnode_ptr_t top) {
-  auto nodes = slp->collectNodesOfType<InheritListItem>(top);
+  auto nodes = AstNode::collectNodesOfType<InheritListItem>(top);
   for (auto ili_node : nodes) {
     auto match      = slp->matchForAstNode(ili_node);
     auto seq        = match->asShared<Sequence>();
@@ -519,7 +519,7 @@ void _semaResolvePostfixExpressions(impl::ShadLangParser* slp, astnode_ptr_t top
   auto PPAR = slp->findMatcherByName("PrimaryParensExpression");
   auto PLIT = slp->findMatcherByName("PrimaryLiteral");
 
-  auto nodes = slp->collectNodesOfType<PostfixExpression>(top);
+  auto nodes = AstNode::collectNodesOfType<PostfixExpression>(top);
   std::vector<PfxToResolve> resolve_list;
   //////////////////////////////////////////
   for (auto pfx_node : nodes) {
@@ -636,7 +636,7 @@ void _semaResolvePostfixExpressions(impl::ShadLangParser* slp, astnode_ptr_t top
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 void _semaResolveSemaFunctionArguments(impl::ShadLangParser* slp, astnode_ptr_t top) {
-  auto nodes = slp->collectNodesOfType<SemaFunctionArguments>(top);
+  auto nodes = AstNode::collectNodesOfType<SemaFunctionArguments>(top);
   for (auto n : nodes) {
     auto expr_list = std::dynamic_pointer_cast<ExpressionList>(n->_children[0]);
     if (expr_list) {
@@ -654,7 +654,7 @@ void _semaResolveSemaFunctionArguments(impl::ShadLangParser* slp, astnode_ptr_t 
 
 void _semaResolveConstructors(impl::ShadLangParser* slp, astnode_ptr_t top) {
 #if 0
-  auto nodes = slp->collectNodesOfType<RValueConstructor>(top);
+  auto nodes = AstNode::collectNodesOfType<RValueConstructor>(top);
   for (auto n : nodes) {
     //
     auto dtype_node = std::dynamic_pointer_cast<DataType>(n->_children[0]);
@@ -693,7 +693,7 @@ int _semaProcessInheritances(
     impl::ShadLangParser* slp, //
     astnode_ptr_t top) {       //
   int count  = 0;
-  auto nodes = slp->collectNodesOfType<node_t>(top);
+  auto nodes = AstNode::collectNodesOfType<node_t>(top);
   for (auto n : nodes) {
     astnode_ptr_t inh_item;
     auto objname = n->template typedValueForKey<std::string>("object_name").value();
@@ -848,7 +848,7 @@ int _semaProcessInheritances(
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 template <typename node_t> void _semaMoveNames(impl::ShadLangParser* slp, astnode_ptr_t top) {
-  auto nodes = slp->collectNodesOfType<node_t>(top);
+  auto nodes = AstNode::collectNodesOfType<node_t>(top);
   for (auto tnode : nodes) {
 
     if constexpr (std::is_same<node_t, ImportDirective>::value) {
@@ -871,7 +871,7 @@ template <typename node_t> void _semaMoveNames(impl::ShadLangParser* slp, astnod
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 void _semaIntegerLiterals(impl::ShadLangParser* slp, astnode_ptr_t top) {
-  auto nodes = slp->collectNodesOfType<IntegerLiteral>(top);
+  auto nodes = AstNode::collectNodesOfType<IntegerLiteral>(top);
   for (auto node : nodes) {
     std::string out_str;
     SHAST::_dumpAstTreeVisitor(node, 0, out_str);
@@ -895,7 +895,7 @@ void _semaIntegerLiterals(impl::ShadLangParser* slp, astnode_ptr_t top) {
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 void _semaFloatLiterals(impl::ShadLangParser* slp, astnode_ptr_t top) {
-  auto nodes = slp->collectNodesOfType<FloatLiteral>(top);
+  auto nodes = AstNode::collectNodesOfType<FloatLiteral>(top);
   for (auto node : nodes) {
     auto match = slp->matchForAstNode(node);
     match->dump1(0);
