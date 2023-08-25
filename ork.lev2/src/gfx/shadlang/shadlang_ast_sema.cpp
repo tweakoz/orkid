@@ -278,6 +278,24 @@ void _semaCollectNamedOfType(
         }
       }
       outmap[the_name] = n;
+
+
+      auto it2 = slp->_translatables.find(the_name);
+      if (it != slp->_translatables.end()) {
+        if (mangled_name != "") {
+          the_name = mangled_name;
+          it       = slp->_translatables.find(the_name);
+        } else {
+          logerrchannel()->log("duplicate named object<%s> mangled_name<%s>", the_name.c_str(), mangled_name.c_str());
+          OrkAssert(false);
+        }
+      }
+      slp->_translatables[the_name] = n;
+
+
+
+
+
       if constexpr (std::is_same<node_t, FragmentShader>::value) {
         // printf("found fragshader<%s>\n", the_name.c_str());
         //  OrkAssert(false);
@@ -325,14 +343,15 @@ void _semaProcNamedOfType(
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 void _semaPerformImports(impl::ShadLangParser* slp, astnode_ptr_t top) {
+  auto top_tunit = std::dynamic_pointer_cast<TranslationUnit>(top);
   auto nodes = AstNode::collectNodesOfType<ImportDirective>(top);
   import_map_t import_map;
-  for (auto n : nodes) {
+  for (auto import_node : nodes) {
     //
     file::Path::NameType a, b;
     file::Path proc_import_path;
     //
-    auto raw_import_path = n->template typedValueForKey<std::string>("object_name").value();
+    auto raw_import_path = import_node->template typedValueForKey<std::string>("object_name").value();
     printf("Import RawPath<%s>\n", raw_import_path.c_str());
 
     ////////////////////////////////////////////////////
@@ -362,10 +381,33 @@ void _semaPerformImports(impl::ShadLangParser* slp, astnode_ptr_t top) {
       // OrkAssert(false);
     }
 
+    ////////////////////////////////////////////////////////
+
     auto sub_tunit = shadlang::parseFromFile(proc_import_path);
     OrkAssert(sub_tunit);
     import_map[proc_import_path.c_str()] = sub_tunit;
+
+    ////////////////////////////////////////////////////////
+
+    size_t num_trans_by_name = sub_tunit->_translatables_by_name.size();
+    printf("Import NumTranslatablesByName<%zu>\n", num_trans_by_name );
+
+    import_node->_children.push_back(sub_tunit);
+
+    if(0) for( auto item : sub_tunit->_translatables_by_name ){
+      auto name = item.first;
+      auto translatable = item.second;
+
+      //auto it = slp->_translatables.find(name);
+      //OrkAssert(it==slp->_translatables.end());
+      //slp->_translatables[name] = translatable;
+      import_node->_children.push_back(translatable);
+    }
+
   }
+
+  ///////////////////////////////////////////////////////////////
+
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
@@ -531,7 +573,7 @@ bool _isBuiltInDataType(impl::ShadLangParser* slp, astnode_ptr_t astnode){
       default:
         break;
     }
-  printf( "id<%s> builtin<%d> vst<%zu> ven<%zu>\n", id_tok->text.c_str(), int(builtin), id_view->_start, id_view->_end );
+  //printf( "id<%s> builtin<%d> vst<%zu> ven<%zu>\n", id_tok->text.c_str(), int(builtin), id_view->_start, id_view->_end );
   return builtin;
 }
 
@@ -561,7 +603,7 @@ bool _isConstructableBuiltInDataType(impl::ShadLangParser* slp, astnode_ptr_t as
       default:
         break;
     }
-  printf( "id<%s> builtin<%d> class<%zx> vst<%zu> ven<%zu>\n", id_tok->text.c_str(), int(builtin), id_tok->_class, id_view->_start, id_view->_end );
+  //printf( "id<%s> builtin<%d> class<%zx> vst<%zu> ven<%zu>\n", id_tok->text.c_str(), int(builtin), id_tok->_class, id_view->_start, id_view->_end );
   return builtin;
 }
 
@@ -864,6 +906,8 @@ void _semaFloatLiterals(impl::ShadLangParser* slp, astnode_ptr_t top) {
 
 void impl::ShadLangParser::semaAST(astnode_ptr_t top) {
 
+  printf( "ShadLangParser<%p> semaAST\n", this );
+
   //////////////////////////////////
 
   if (1) {
@@ -922,13 +966,6 @@ void impl::ShadLangParser::semaAST(astnode_ptr_t top) {
   }
 
   //////////////////////////////////
-  // Pass 2 - Imports
-  //////////////////////////////////
-
-  if (1) {
-    _semaPerformImports(this, top);
-  }
-  //////////////////////////////////
   // Pass 3
   //////////////////////////////////
 
@@ -945,6 +982,14 @@ void impl::ShadLangParser::semaAST(astnode_ptr_t top) {
     _semaResolvePrimaryExpressions(this, top);
     _semaResolveIdentifierCalls(this, top);
     _semaResolveSemaFunctionArguments(this, top);
+  }
+
+  //////////////////////////////////
+  // Pass 2 - Imports
+  //////////////////////////////////
+
+  if (1) {
+    _semaPerformImports(this, top);
   }
 
   //////////////////////////////////

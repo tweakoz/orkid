@@ -123,6 +123,7 @@ struct TranslationUnit : public AstNode {
     _type_name = _static_type_name;
   }
   astnode_map_t _translatables_by_name;
+  astnode_map_t _imported_translatables_by_name;
 };
 using transunit_ptr_t = std::shared_ptr<TranslationUnit>;
 

@@ -237,6 +237,15 @@ SHAST::translationunit_ptr_t ShadLangParser::parseString(std::string parse_str) 
     printf("%s\n", ast_str.c_str());
     printf("///////////////////////////////\n");
   }
+  if(1){
+    printf("///////////////////////////////\n");
+    printf("// TU LIST\n");
+    printf("///////////////////////////////\n");
+    for( auto item : _translatables ){
+      
+    }
+    printf("///////////////////////////////\n");
+  }
   return std::dynamic_pointer_cast<SHAST::TranslationUnit>(ast_top);
 }
 
