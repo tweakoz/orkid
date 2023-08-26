@@ -129,6 +129,35 @@ using transunit_ptr_t = std::shared_ptr<TranslationUnit>;
 
 ///////////////////////////////////////////////////////////
 
+struct InsertLine : public AstNode {
+  static constexpr const char* _static_type_name = "InsertLine";
+  inline InsertLine(std::string text) {
+    _name = _static_type_name;
+    _type_name = _static_type_name;
+    setValueForKey<std::string>("line_text", text);
+  }
+};
+
+///////////////////////////////////////////////////////////
+
+struct MiscGroupNode : public AstNode {
+  static constexpr const char* _static_type_name = "MiscGroupNode";
+  inline MiscGroupNode() {
+    _name = _static_type_name;
+    _type_name = _static_type_name;
+  }
+  template <typename T, typename... A> std::shared_ptr<T> addChild(A&&... args) {
+    auto ptr = std::make_shared<T>(std::forward<A>(args)...);
+    _children.push_back(ptr);
+    return ptr;
+  }
+  void appendChildrenFrom(astnode_ptr_t other){
+    _children.insert( _children.end(), other->_children.begin(), other->_children.end() );
+  }
+};
+
+///////////////////////////////////////////////////////////
+
 DECLARE_STD_AST_CLASS(AstNode,IDENTIFIER);
 DECLARE_STD_AST_CLASS_WPTR(AstNode,SemaIdentifier, semaid_ptr_t);
 
@@ -145,6 +174,7 @@ DECLARE_STD_AST_CLASS(AstNode,InterfaceInputs);
 DECLARE_STD_AST_CLASS(AstNode,InterfaceOutputs);
 DECLARE_STD_AST_CLASS(AstNode,InterfaceStorage);
 DECLARE_STD_AST_CLASS(AstNode,InterfaceStorages);
+
 DECLARE_STD_AST_CLASS(AstNode,Dependency);
 DECLARE_STD_AST_CLASS(Dependency,Extension);
 //

@@ -228,6 +228,7 @@ SHAST::translationunit_ptr_t ShadLangParser::parseString(std::string parse_str) 
   ///////////////////////////////////////////
   pruneAST(ast_top);
   semaAST(ast_top);
+  auto top_as_tunit = std::dynamic_pointer_cast<SHAST::TranslationUnit>(ast_top);
   ///////////////////////////////////////////
   if(0){
     printf("///////////////////////////////\n");
@@ -242,11 +243,15 @@ SHAST::translationunit_ptr_t ShadLangParser::parseString(std::string parse_str) 
     printf("// TU LIST\n");
     printf("///////////////////////////////\n");
     for( auto item : _translatables ){
-      
+      auto name = item.first;
+      auto node = item.second;
+      auto raw_name = node->template typedValueForKey<std::string>("raw_name").value();
+      printf( "  name<%s> raw_name<%s>\n", name.c_str(), raw_name.c_str() );
+
     }
     printf("///////////////////////////////\n");
   }
-  return std::dynamic_pointer_cast<SHAST::TranslationUnit>(ast_top);
+  return top_as_tunit;
 }
 
 } // namespace impl

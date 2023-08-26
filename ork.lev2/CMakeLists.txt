@@ -84,7 +84,7 @@ IF(${APPLE})
     list(APPEND libs "-framework Carbon" "-framework Foundation" )
     list(APPEND libs "-framework ApplicationServices" "-framework AppKit" )
     list(APPEND libs glfw.3 MoltenVK)
-    target_compile_definitions( ork_lev2 PRIVATE ENABLE_VULKAN )
+    target_compile_definitions( ork_lev2 PRIVATE ENABLE_VULKAN ENABLE_GLFW )
     target_include_directories (ork_lev2 PRIVATE $ENV{OBT_VULKAN_ROOT}/include)
 ELSEIF(${UNIX})
 
@@ -95,7 +95,7 @@ ELSEIF(${UNIX})
       set(ENV{LD_LIBRARY_PATH}=$ENV{LD_LIBRARY_PATH}:${OBT_VULKAN_ROOT}/lib)
       set(ENV{VK_LAYER_PATH}=$ENV{OBT_VULKAN_ROOT}/etc/vulkan/explicit_layer.d)
       list(APPEND libs openvr_api )
-      target_compile_definitions( ork_lev2 PRIVATE ENABLE_VULKAN )
+      target_compile_definitions( ork_lev2 PRIVATE ENABLE_VULKAN ENABLE_GLFW )
       target_include_directories (ork_lev2 PRIVATE $ENV{OBT_VULKAN_ROOT}/include)
       list(APPEND libs vulkan )
     ENDIF()
@@ -109,14 +109,17 @@ ENDIF()
 
 list(APPEND libs  mpfr gmp )
 
+target_include_directories (ork_lev2 PRIVATE $ENV{VULKAN_SDK} )
+
 target_include_directories (ork_lev2 PRIVATE ${INCD} )
 target_include_directories (ork_lev2 PRIVATE ${COREINCD} )
 target_include_directories (ork_lev2 PRIVATE ${CGAL_INCLUDE_DIR} )
 target_include_directories (ork_lev2 PRIVATE $ENV{OBT_STAGE}/include/bullet )
+target_link_directories (ork_lev2 PRIVATE $ENV{VULKAN_SDK}/lib )
 
 
 target_link_libraries(ork_lev2 PUBLIC ${libs} )
-target_link_libraries(ork_lev2 PRIVATE assimp audiofile )
+target_link_libraries(ork_lev2 PRIVATE assimp audiofile shaderc_shared )
 
 target_link_libraries(ork_lev2 LINK_PRIVATE boost_filesystem  )
 

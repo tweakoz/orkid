@@ -98,6 +98,8 @@ using vkrtgrpimpl_ptr_t = std::shared_ptr<VkRtGroupImpl>;
 using vktexasynctask_ptr_t = std::shared_ptr<VkTextureAsyncTask>;
 using vktexloadreq_ptr_t = std::shared_ptr<VkTexLoadReq>;
 
+extern vkinstance_ptr_t _GVI;
+
 ///////////////////////////////////////////////////////////////////////////////
 
 struct VulkanDevice{

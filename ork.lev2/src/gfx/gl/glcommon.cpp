@@ -20,7 +20,9 @@ std::atomic<int> __FIND_IT;
 
 void ContextGL::describeX(class_t* clazz) {
   __FIND_IT.store(0);
-  clazz->annotateTyped<int>("context_factory", 1);
+  clazz->annotateTyped<context_factory_t>("context_factory", [](){
+    return ContextGL::makeShared();
+  });
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////

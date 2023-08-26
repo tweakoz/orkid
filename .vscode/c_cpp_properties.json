@@ -25,6 +25,7 @@
               "ENABLE_IGL",
               "ENABLE_OPENVR",
               "ENABLE_VULKAN",
+              "ENABLE_GLFW",
               "USE_ORKSL_LANG",
             ],
             "compilerPath": "/usr/bin/clang",

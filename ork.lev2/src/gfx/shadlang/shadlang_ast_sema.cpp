@@ -265,6 +265,8 @@ void _semaCollectNamedOfType(
         mangled_name = n->template typedValueForKey<std::string>("mangled_name").value();
       }
 
+      n->template setValueForKey<std::string>("raw_name", the_name);
+
       ////////////////////////////////////////////////////////////
 
       auto it = outmap.find(the_name);
@@ -292,19 +294,6 @@ void _semaCollectNamedOfType(
       }
       slp->_translatables[the_name] = n;
 
-
-
-
-
-      if constexpr (std::is_same<node_t, FragmentShader>::value) {
-        // printf("found fragshader<%s>\n", the_name.c_str());
-        //  OrkAssert(false);
-      } else if constexpr (std::is_same<node_t, LibraryBlock>::value) {
-        // printf("found libblock<%s>\n", the_name.c_str());
-        // OrkAssert(false);
-      } else if constexpr (std::is_same<node_t, UniformSet>::value) {
-        // printf("found uniset<%s>\n", the_name.c_str());
-      }
       n->template setValueForKey<std::string>("object_name", the_name);
     } else {
       // OrkAssert(false);

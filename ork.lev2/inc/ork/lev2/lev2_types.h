@@ -45,6 +45,7 @@ using font_ptr_t = std::shared_ptr<Font>;
 using fontman_ptr_t = std::shared_ptr<FontMan>;
 using font_rawconstptr_t = const Font*;
 
+using context_factory_t = std::function<context_ptr_t()>;
 ///////////////////////////////////////////////////////////////////////////////
 
 struct Texture;

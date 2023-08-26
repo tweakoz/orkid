@@ -642,6 +642,10 @@ GLFX1Backend::GLFX1Backend() {
     auto literal_value = float_node->template typedValueForKey<std::string>("literal_value").value();
     emitContinueLine("%s", literal_value.c_str());
   });
+  registerAstPreCB<InsertLine>([=](auto line_node) {
+    auto line_text = line_node->template typedValueForKey<std::string>("line_text").value();
+     emitLine(line_text.c_str());
+  });
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////

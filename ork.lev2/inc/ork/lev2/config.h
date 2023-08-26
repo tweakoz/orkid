@@ -9,6 +9,8 @@
 
 //#define ENABLE_IGL
 #define USE_ORKSL_LANG
+// #define ENABLE_VULKAN from CMakeLists.txt
+// #define ENABLE_GLFW from CMakeLists.txt
 
 #if defined(ORK_ARCHITECTURE_X86_64)
   #if defined(LINUX)

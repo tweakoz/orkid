@@ -108,10 +108,9 @@ void DisplayBuffer::initContext() {
 
 void Window::initContext() {
   auto ctxclazz  = GfxEnv::GetRef().contextClass();
-  int factory = ctxclazz->annotationTyped<int>("context_factory").value();
-  OrkAssert(factory==1);
-  OrkAssert(false);
-  _sharedcontext = std::dynamic_pointer_cast<Context>(ctxclazz->createShared());
+  auto factory = ctxclazz->annotationTyped<context_factory_t>("context_factory").value();
+  OrkAssert(factory!=nullptr);
+  _sharedcontext = factory();
   if (mpCTXBASE) {
     mpCTXBASE->setContext(_sharedcontext.get());
   }

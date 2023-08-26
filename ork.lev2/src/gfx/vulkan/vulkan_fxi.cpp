@@ -1,5 +1,8 @@
 #include "vulkan_ctx.h"
 #include <ork/lev2/gfx/shadman.h>
+#include <ork/lev2/gfx/shadlang.h>
+#include <ork/lev2/gfx/shadlang_nodes.h>
+#include <shaderc/shaderc.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::vulkan {
@@ -193,8 +196,40 @@ bool VkFxInterface::LoadFxShader(const AssetPath& input_path, FxShader* pshader)
         printf( "num_cu_shaders<%zu>\n", num_cu_shaders );
 
         for( auto v : vtx_shaders ){
-            auto as_glsl = shadlang::toGLFX1(v);
-            printf( "vtx_shader<%s>\n", as_glsl.c_str() );
+
+            ///////////////////////////////////////////////////////
+            // final prep for shaderc
+            ///////////////////////////////////////////////////////
+
+            auto grpnode = std::make_shared<MiscGroupNode>();
+            // version line
+            grpnode->addChild<InsertLine>("#version 140");
+            grpnode->addChild<InsertLine>("void main()");
+            // shader body (should be a compount statement, with {} included...)
+            grpnode->appendChildrenFrom(v);
+
+            ///////////////////////////////////////////////////////
+            //emit
+            ///////////////////////////////////////////////////////
+
+            auto as_glsl = shadlang::toGLFX1(grpnode);
+            printf( "vtx_shader:\n%s\n", as_glsl.c_str() );
+
+            ///////////////////////////////////////////////////////
+
+            shaderc::Compiler compiler;
+            shaderc::CompileOptions options;
+            shaderc::SpvCompilationResult result = compiler.CompileGlslToSpv( //
+                as_glsl.c_str(),             // glsl source (string)
+                as_glsl.length(),            // glsl source length
+                shaderc_glsl_vertex_shader,  // shader type
+                "main",                      // entry point name
+                options);
+
+            if (result.GetCompilationStatus() != shaderc_compilation_status_success) {
+              std::cerr << result.GetErrorMessage();
+              OrkAssert(false);
+            }                
         }
         OrkAssert(false);
 

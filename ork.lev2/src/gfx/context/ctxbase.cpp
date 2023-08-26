@@ -10,7 +10,6 @@
 #include <ork/lev2/gfx/renderer/drawable.h>
 #include <ork/lev2/gfx/dbgfontman.h>
 #include <ork/object/AutoConnector.h>
-//#include <ork/reflect/Functor.inl>
 INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::CTXBASE, "Lev2CTXBASE");
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2 {

@@ -21,6 +21,11 @@
 #include <ork/math/basicfilters.h>
 #include <ork/lev2/gfx/dbgfontman.h>
 #include <ork/util/logger.h>
+#if defined(ENABLE_GLFW)
+///////////////////////////////////////////////////////////////////////////////
+#if defined(ENABLE_VULKAN)
+#include "../gfx/vulkan/vulkan_ctx.h"
+#endif
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2 {
 static logchannel_ptr_t logchan_glfw = logger()->createChannel("GLFW", fvec3(0.8, 0.2, 0.6), true);
@@ -34,7 +39,14 @@ const int GLFW_MODIFIER_OSCTRL = GLFW_MOD_SUPER;
 #else
 const int GLFW_MODIFIER_OSCTRL = GLFW_MOD_CONTROL;
 #endif
-
+static CtxGLFW* _gctx = nullptr;
+///////////////////////////////////////////////////////////////////////////////
+struct ApiImpl {};
+using apiimpl_ptr_t = std::shared_ptr<ApiImpl>;
+///////////////////////////////////////////////////////////////////////////////
+struct ApiImpl_GL : public ApiImpl {};
+///////////////////////////////////////////////////////////////////////////////
+struct ApiImpl_VK : public ApiImpl {};
 ///////////////////////////////////////////////////////////////////////////////
 static fvec2 gpos;
 ///////////////////////////////////////////////////////////////////////////////
@@ -108,11 +120,10 @@ static void _glfw_callback_winresized(GLFWwindow* window, int w, int h) {
   }
 #endif
 
-int x, y;
-glfwGetWindowPos(window, &x, &y);
+  int x, y;
+  glfwGetWindowPos(window, &x, &y);
 
-logchan_glfw->log("WIN RESIZED x<%d> y<%d> w<%d> h<%d>", x, y, w, h );
-
+  logchan_glfw->log("WIN RESIZED x<%d> y<%d> w<%d> h<%d>", x, y, w, h);
 
   auto sink = (EventSinkGLFW*)glfwGetWindowUserPointer(window);
   if (nullptr == sink)
@@ -309,7 +320,6 @@ void CtxGLFW::Show() {
 
       fullscreen_monitor = glfwGetPrimaryMonitor();
 
-
       int monitor_count = 0;
       auto monitors     = glfwGetMonitors(&monitor_count);
 
@@ -328,10 +338,10 @@ void CtxGLFW::Show() {
         int d = abs(mon_x - l);
 
         if (d < idiff) {
-          fullscreen_monitor = monitor;
-          idiff              = d;
+          fullscreen_monitor      = monitor;
+          idiff                   = d;
           const char* monitorName = glfwGetMonitorName(fullscreen_monitor);
-          logchan_glfw->log( "USING FULLSCREEN MONITOR<%p:%s> ", fullscreen_monitor, monitorName );
+          logchan_glfw->log("USING FULLSCREEN MONITOR<%p:%s> ", fullscreen_monitor, monitorName);
         }
 
         /////////////////////////////////
@@ -410,11 +420,12 @@ void CtxGLFW::Show() {
     _glfw_callback_fbresized(_glfwWindow, _width, _height);
 
   } else {
-    logchan_glfw->log("WINDOWEDMODE T<%d> L<%d> W<%d> H<%d>", //
-                      _appinitdata->_top, //
-                      _appinitdata->_left, //
-                      _appinitdata->_width, //
-                      _appinitdata->_height);
+    logchan_glfw->log(
+        "WINDOWEDMODE T<%d> L<%d> W<%d> H<%d>", //
+        _appinitdata->_top,                     //
+        _appinitdata->_left,                    //
+        _appinitdata->_width,                   //
+        _appinitdata->_height);
 
     glfwSetWindowPos(
         _glfwWindow,
@@ -438,7 +449,7 @@ void CtxGLFW::Show() {
 
   if (selected_monitor == nullptr) {
     selected_monitor = monitorForWindow(_glfwWindow);
-    //OrkAssert(selected_monitor != nullptr);
+    // OrkAssert(selected_monitor != nullptr);
   }
 
   _glfwMonitor = selected_monitor;
@@ -625,13 +636,99 @@ void error_callback(int error, const char* msg) {
   logchan_glfw->log("GLFW ERROR<%d:%s>", error, msg);
 }
 ///////////////////////////////////////////////////////////////////////////////
+
+GLFWwindow* CtxGLFW::_apiInitGL() {
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+
+  std::set<int> _try_minors;
+  _try_minors.insert(0);
+
+#if defined(OPENGL_46)
+  _try_minors.insert(6);
+  _try_minors.insert(5);
+  _try_minors.insert(3);
+#elif defined(OPENGL_41)
+  _try_minors.insert(1);
+#endif
+
+  glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
+  glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_API);
+  glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
+  // this can fail on nvidia aarch64 devices
+  //  see: https://github.com/isl-org/Open3D/issues/2549
+
+  GLFWwindow* offscreen_window = nullptr;
+
+  bool done = false;
+
+  auto it_minor = _try_minors.rbegin();
+
+  auto ctx_vars = std::make_shared<varmap::VarMap>();
+
+  int MINOR = 0;
+
+  while (not done) {
+
+    int this_minor = *it_minor;
+
+    ctx_vars->makeValueForKey<int>("GL_API_MAJOR_VERSION") = 4;
+    ctx_vars->makeValueForKey<int>("GL_API_MINOR_VERSION") = this_minor;
+
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, this_minor);
+    MINOR = this_minor;
+
+    offscreen_window = glfwCreateWindow(
+        32,      //
+        32,      //
+        "",      //
+        nullptr, //
+        nullptr);
+
+    it_minor++;
+    done |= (offscreen_window != nullptr);
+    done |= (it_minor == _try_minors.rend());
+
+    logchan_glfw->log("try<%d> done<%d>", this_minor, int(done));
+  }
+
+  _gctx->_vars       = ctx_vars;
+  _gctx->_glfwWindow = offscreen_window;
+
+  int minor_api_version = _gctx->_vars->typedValueForKey<int>("GL_API_MINOR_VERSION").value();
+  logchan_glfw->log("GL: offscreen_window<%p>", offscreen_window);
+  logchan_glfw->log("GL: global_ctxbase<%p> vars<%p> minor version<%d : %d>", _gctx, (void*)ctx_vars.get(), MINOR, minor_api_version);
+  OrkAssert(offscreen_window != nullptr);
+  glfwSetWindowAttrib(offscreen_window, GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+  return offscreen_window;
+}
+///////////////////////////////////////////////////////////////////////////////
+
+#if defined(ENABLE_VULKAN)
+GLFWwindow* CtxGLFW::_apiInitVK() {
+  OrkAssert(glfwVulkanSupported());
+  OrkAssert(vulkan::_GVI);
+  auto ctx_vars = std::make_shared<varmap::VarMap>();
+  glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+  GLFWwindow* offscreen_window = glfwCreateWindow(
+      32,      //
+      32,      //
+      "",      //
+      nullptr, //
+      nullptr);
+  logchan_glfw->log("VK: offscreen_window<%p>", offscreen_window);
+  return offscreen_window;
+}
+#endif
+
+///////////////////////////////////////////////////////////////////////////////
+
 CtxGLFW* CtxGLFW::globalOffscreenContext() {
-  static CtxGLFW* gctx = nullptr;
-  if (nullptr == gctx) {
+  if (nullptr == _gctx) {
 
     glfwSetErrorCallback(error_callback);
 
-    gctx = new CtxGLFW(nullptr);
+    _gctx = new CtxGLFW(nullptr);
 
     bool ok = glfwInit();
     assert(ok);
@@ -653,72 +750,17 @@ CtxGLFW* CtxGLFW::globalOffscreenContext() {
     }
 
     glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-
-    std::set<int> _try_minors;
-    _try_minors.insert(0);
-
-#if defined(OPENGL_46)
-    _try_minors.insert(6);
-    _try_minors.insert(5);
-    _try_minors.insert(3);
-#elif defined(OPENGL_41)
-    _try_minors.insert(1);
-#endif
-
-    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
-    glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_API);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-
-    // this can fail on nvidia aarch64 devices
-    //  see: https://github.com/isl-org/Open3D/issues/2549
 
     GLFWwindow* offscreen_window = nullptr;
+    // offscreen_window = _gctx->_apiInitGL();
+#if defined(ENABLE_VULKAN)
+    offscreen_window = _gctx->_apiInitVK();
+#endif
 
-    bool done = false;
-
-    auto it_minor = _try_minors.rbegin();
-
-    auto ctx_vars = std::make_shared<varmap::VarMap>();
-
-    int MINOR = 0;
-
-    while (not done) {
-
-      int this_minor = *it_minor;
-
-      ctx_vars->makeValueForKey<int>("GL_API_MAJOR_VERSION") = 4;
-      ctx_vars->makeValueForKey<int>("GL_API_MINOR_VERSION") = this_minor;
-
-      glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, this_minor);
-      MINOR = this_minor;
-
-      offscreen_window = glfwCreateWindow(
-          32,      //
-          32,      //
-          "",      //
-          nullptr, //
-          nullptr);
-
-      it_minor++;
-      done |= (offscreen_window != nullptr);
-      done |= (it_minor == _try_minors.rend());
-
-      logchan_glfw->log("try<%d> done<%d>", this_minor, int(done));
-    }
-
-    gctx->_vars       = ctx_vars;
-    gctx->_glfwWindow = offscreen_window;
-
-    int minor_api_version = gctx->_vars->typedValueForKey<int>("GL_API_MINOR_VERSION").value();
-    logchan_glfw->log("offscreen_window<%p>", offscreen_window);
-    logchan_glfw->log("global_ctxbase<%p> vars<%p> minor version<%d : %d>", gctx, (void*)ctx_vars.get(), MINOR, minor_api_version);
-    OrkAssert(offscreen_window != nullptr);
-    glfwSetWindowAttrib(offscreen_window, GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    glfwSetWindowUserPointer(offscreen_window, (void*)gctx);
+    glfwSetWindowUserPointer(offscreen_window, (void*)_gctx);
     glfwSwapInterval(0);
   }
-  return gctx;
+  return _gctx;
 }
 ///////////////////////////////////////////////////////////////////////////////
 void CtxGLFW::_on_callback_mousebuttons(int button, int action, int modifiers) {
@@ -1016,15 +1058,15 @@ struct PopupImpl {
 
     ork::Timer timer;
     timer.Start();
-    double prev_time = timer.SecsSinceStart();
+    double prev_time            = timer.SecsSinceStart();
     ui::updatedata_ptr_t updata = std::make_shared<ui::UpdateData>();
 
     while (not _terminate) {
 
       double this_time = timer.SecsSinceStart();
       double dt        = this_time - prev_time;
-      prev_time = this_time;
-      updata->_dt = dt;
+      prev_time        = this_time;
+      updata->_dt      = dt;
       updata->_abstime = this_time;
 
       glfwPollEvents();
@@ -1063,7 +1105,6 @@ struct PopupImpl {
 
     glfwMakeContextCurrent(ctxbase->_glfwWindow);
     glfwFocusWindow(ctxbase->_glfwWindow);
-
   }
   //////////////////////////////////////////////////
   GLFWwindow* _glfwPopupWindow = nullptr;
@@ -1108,3 +1149,4 @@ PopupWindow::~PopupWindow() {
 
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2
+#endif // #if defined(ENABLE_GLFW)

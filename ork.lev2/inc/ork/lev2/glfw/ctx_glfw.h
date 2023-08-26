@@ -58,6 +58,11 @@ using eventsink_glfw_ptr_t = std::shared_ptr<EventSinkGLFW>;
 
 struct CtxGLFW : public CTXBASE {
 
+  GLFWwindow* _apiInitGL();
+#if defined(ENABLE_VULKAN)
+  GLFWwindow* _apiInitVK();
+#endif
+
   static CtxGLFW* globalOffscreenContext();
 
   void SlotRepaint() final;
@@ -111,6 +116,7 @@ struct CtxGLFW : public CTXBASE {
   std::function<void(Context*)> _onGpuExit;
   GLFWmonitor* _glfwMonitor = nullptr;
   eventsink_glfw_ptr_t _eventSINK;
+  svar64_t _apiIMPL;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -8,7 +8,9 @@ namespace ork::lev2::vulkan {
 
 void VkContext::describeX(class_t* clazz) {
 
-  clazz->annotateTyped<int>("context_factory", 1);
+  clazz->annotateTyped<context_factory_t>("context_factory", [](){
+    return VkContext::makeShared();
+  });
 }
 
 ///////////////////////////////////////////////////////
