@@ -145,7 +145,7 @@ void _semaNameTypedIdentifers(impl::ShadLangParser* slp, astnode_ptr_t top) {
   auto nodes = AstNode::collectNodesOfType<TypedIdentifier>(top);
   for (auto tid_node : nodes) {
 
-    tid_node->_name = "TypedIdentifier\n";
+    tid_node->_name = "TypedIdentifier";
 
     auto match = slp->matchForAstNode(tid_node);
 
@@ -166,7 +166,7 @@ void _semaNameTypedIdentifers(impl::ShadLangParser* slp, astnode_ptr_t top) {
       type_name = cm->_token->text;
     }
 
-    tid_node->_name += FormatString("type: %s\n", type_name.c_str());
+    //tid_node->_name += FormatString("type: %s\n", type_name.c_str());
     tid_node->setValueForKey<std::string>("data_type", type_name);
 
     ////////////////////
@@ -175,7 +175,7 @@ void _semaNameTypedIdentifers(impl::ShadLangParser* slp, astnode_ptr_t top) {
 
     auto cm1 = seq->itemAsShared<ClassMatch>(1);
     auto id_name = cm1->_token->text;
-    tid_node->_name += FormatString("id: %s", id_name.c_str());
+    //tid_node->_name += FormatString("id: %s", id_name.c_str());
     tid_node->setValueForKey<std::string>("identifier_name", id_name);
   }
 }
@@ -784,36 +784,43 @@ int _semaProcessInheritances(
         if (check_lib_blocks and check_inheritance(inh_name, slp->_library_blocks)) {
           auto semalib   = std::make_shared<SemaInheritLibrary>();
           semalib->_name = FormatString("SemaInheritLibrary: %s", inh_name.c_str());
+          semalib->setValueForKey<std::string>("inherit_id", inh_name);
           slp->replaceInParent(inh_item, semalib);
           count++;
         } else if (check_uni_sets and check_inheritance(inh_name, slp->_uniform_sets)) {
           auto semalib   = std::make_shared<SemaInheritUniformSet>();
           semalib->_name = FormatString("SemaInheritUniformSet: %s", inh_name.c_str());
+          semalib->setValueForKey<std::string>("inherit_id", inh_name);
           slp->replaceInParent(inh_item, semalib);
           count++;
         } else if (check_uni_blks and check_inheritance(inh_name, slp->_uniform_blocks)) {
           auto semalib   = std::make_shared<SemaInheritUniformBlock>();
           semalib->_name = FormatString("SemaInheritUniformBlock: %s", inh_name.c_str());
+          semalib->setValueForKey<std::string>("inherit_id", inh_name);
           slp->replaceInParent(inh_item, semalib);
           count++;
         } else if (check_vtx_iface and check_inheritance(inh_name, slp->_vertex_interfaces)) {
           auto semalib   = std::make_shared<SemaInheritVertexInterface>();
           semalib->_name = FormatString("SemaInheritVertexInterface: %s", inh_name.c_str());
+          semalib->setValueForKey<std::string>("inherit_id", inh_name);
           slp->replaceInParent(inh_item, semalib);
           count++;
         } else if (check_geo_iface and check_inheritance(inh_name, slp->_geometry_interfaces)) {
           auto semalib   = std::make_shared<SemaInheritGeometryInterface>();
           semalib->_name = FormatString("SemaInheritGeometryInterface: %s", inh_name.c_str());
+          semalib->setValueForKey<std::string>("inherit_id", inh_name);
           slp->replaceInParent(inh_item, semalib);
           count++;
         } else if (check_frg_iface and check_inheritance(inh_name, slp->_fragment_interfaces)) {
           auto semalib   = std::make_shared<SemaInheritFragmentInterface>();
           semalib->_name = FormatString("SemaInheritFragmentInterface: %s", inh_name.c_str());
+          semalib->setValueForKey<std::string>("inherit_id", inh_name);
           slp->replaceInParent(inh_item, semalib);
           count++;
         } else if (check_com_iface and check_inheritance(inh_name, slp->_compute_interfaces)) {
           auto semalib   = std::make_shared<SemaInheritComputeInterface>();
           semalib->_name = FormatString("SemaInheritComputeInterface: %s", inh_name.c_str());
+          semalib->setValueForKey<std::string>("inherit_id", inh_name);
           slp->replaceInParent(inh_item, semalib);
           count++;
         } else if (check_stateblocks and check_inheritance(inh_name, slp->_stateblocks)) {

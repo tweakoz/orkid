@@ -50,13 +50,13 @@ struct AstNode {
   }
   ////////////////////////////////////////////
   template <typename T> //
-  std::set<std::shared_ptr<T>> //
+  std::vector<std::shared_ptr<T>> //
   static collectNodesOfType(astnode_ptr_t top){ //
-    std::set<std::shared_ptr<T>> nodes;
+    std::vector<std::shared_ptr<T>> nodes;
     auto collect_nodes     = std::make_shared<Visitor>();
     collect_nodes->_on_pre = [&](astnode_ptr_t node) {
       if (auto as_typed = std::dynamic_pointer_cast<T>(node)) {
-        nodes.insert(as_typed);
+        nodes.push_back(as_typed);
       }
     };
     visitNode(top, collect_nodes);
@@ -122,6 +122,15 @@ struct TranslationUnit : public AstNode {
     _name = _static_type_name;
     _type_name = _static_type_name;
   }
+  template <typename T>
+  std::shared_ptr<T> find(std::string named){
+    astnode_ptr_t rval;
+    auto it = _translatables_by_name.find(named);
+    if( it != _translatables_by_name.end() ){
+      rval = it->second;
+    }
+    return std::dynamic_pointer_cast<T>(rval);
+  }
   astnode_map_t _translatables_by_name;
   astnode_map_t _imported_translatables_by_name;
 };
@@ -162,7 +171,7 @@ DECLARE_STD_AST_CLASS(AstNode,IDENTIFIER);
 DECLARE_STD_AST_CLASS_WPTR(AstNode,SemaIdentifier, semaid_ptr_t);
 
 DECLARE_STD_AST_CLASS(AstNode,InheritList);
-DECLARE_STD_AST_CLASS(AstNode,InheritListItem);
+DECLARE_STD_AST_CLASS_WPTR(AstNode,InheritListItem,inhitem_ptr_t);
 DECLARE_STD_AST_CLASS(AstNode,LanguageElement);
 DECLARE_STD_AST_CLASS(AstNode,Translatable);
 
@@ -282,7 +291,7 @@ DECLARE_STD_AST_CLASS(Statement,EmptyStatement);
 //
 DECLARE_STD_AST_CLASS(Translatable,LibraryBlock);
 DECLARE_STD_AST_CLASS(Translatable,FxConfigDecl);
-DECLARE_STD_AST_CLASS(Translatable,Shader);
+DECLARE_STD_AST_CLASS_WPTR(Translatable,Shader, shader_ptr_t);
 DECLARE_STD_AST_CLASS(Translatable,PipelineInterface);
 DECLARE_STD_AST_CLASS(Translatable,StateBlock);
 DECLARE_STD_AST_CLASS(Translatable,Technique);
