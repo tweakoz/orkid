@@ -201,13 +201,13 @@ struct shader_proc_context {
     /* 0009 */   vec4 s = texture(ColorMap, frg_uv); 
     /* 0010 */   float texa = pow(s.a * s.r, 0.75); 
     /* 0011 */ }
-
-    // todo move samplers to standalone uniform binding.
-    
-#endif
-
     main:6: error: 'ColorMap' : member of block cannot be or contain a sampler, image, or atomic_uint type
     main:6: error: 'binding' : sampler/texture/image requires layout(binding=X)
+
+    // todo move samplers to standalone uniform binding.
+
+#endif
+
   void process_uniformsets(astnode_ptr_t par_node) {
     auto inh_semausets = AstNode::collectNodesOfType<SemaInheritUniformSet>(par_node);
     for (auto inh_uset : inh_semausets) {
