@@ -58,4 +58,23 @@ inline void hexdumpbytes(std::vector<uint8_t> bytes) {
   }
 }
 
+inline void hexdumpu32s(std::vector<uint32_t> words) {
+  size_t index = 0;
+  for( auto w : words ){
+    switch( index%4 ){
+      case 0: 
+        printf("%zx: ", index*4);
+        printf("%08x ", w);
+        break;
+      case 3: 
+        printf("\n");
+        break;
+      default: 
+        printf("%08x ", w);
+        break;
+    }
+    index++;
+  }
+  printf("\n");
+}
 } // namespace ork

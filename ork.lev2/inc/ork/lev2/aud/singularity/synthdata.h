@@ -12,7 +12,6 @@
 #include "modulation.h"
 #include <ork/kernel/svariant.h>
 #include <ork/file/path.h>
-#include <ork/util/hexdump.inl>
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunknown-pragmas"

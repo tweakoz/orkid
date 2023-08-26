@@ -2,6 +2,7 @@
 #include <ork/lev2/gfx/shadman.h>
 #include <ork/lev2/gfx/shadlang.h>
 #include <ork/lev2/gfx/shadlang_nodes.h>
+#include <ork/util/hexdump.inl>
 #include <shaderc/shaderc.hpp>
 
 #if defined(__APPLE__)
@@ -305,7 +306,7 @@ struct shader_proc_context {
     }
 
     std::vector<uint32_t> spirv_binary(result.cbegin(), result.cend());
-
+    hexdumpu32s(spirv_binary);
 #if 0 // defined( __APPLE__ )
             mvk::SPIRVToMSLConverter converter;
             mvk::SPIRVToMSLConversionConfiguration config;

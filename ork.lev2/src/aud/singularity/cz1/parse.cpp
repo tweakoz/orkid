@@ -19,6 +19,7 @@
 #include <ork/lev2/aud/singularity/dsp_ringmod.h>
 #include <ork/lev2/aud/singularity/sampler.h>
 #include <ork/math/multicurve.h>
+#include <ork/util/hexdump.inl>
 
 using namespace ork;
 
