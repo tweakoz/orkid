@@ -5,7 +5,7 @@
 #include <shaderc/shaderc.hpp>
 
 #if defined( __APPLE__ )
-#include <MoltenVK/mvk_vulkan.h>
+//#include <MoltenVK/mvk_vulkan.h>
 #endif
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -298,7 +298,7 @@ bool VkFxInterface::LoadFxShader(const AssetPath& input_path, FxShader* pshader)
 
             std::vector<uint32_t> spirv_binary(result.cbegin(), result.cend());
 
-            #if defined( __APPLE__ )
+            #if 0 //defined( __APPLE__ )
             mvk::SPIRVToMSLConverter converter;
             mvk::SPIRVToMSLConversionConfiguration config;
             // You can customize the `config` if needed.

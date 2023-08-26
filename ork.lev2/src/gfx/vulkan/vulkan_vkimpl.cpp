@@ -19,7 +19,7 @@ VulkanInstance::VulkanInstance() {
   _appdata.applicationVersion = 1;
   _appdata.pEngineName        = "Orkid";
   _appdata.engineVersion      = 1;
-  _appdata.apiVersion         = VK_API_VERSION_1_1;
+  _appdata.apiVersion         = VK_API_VERSION_1_2;
 
   _instancedata.sType                   = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
   _instancedata.pNext                   = NULL;
@@ -29,6 +29,18 @@ VulkanInstance::VulkanInstance() {
   _instancedata.ppEnabledExtensionNames = NULL;
   _instancedata.enabledLayerCount       = 0;
   _instancedata.ppEnabledLayerNames     = NULL;
+
+  static std::vector<const char*> instanceExtensions;
+
+#if defined(__APPLE__)
+  instanceExtensions.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
+  instanceExtensions.push_back(VK_MVK_MACOS_SURFACE_EXTENSION_NAME);
+  //instanceExtensions.push_back("VK_KHR_portability_subset");
+  _instancedata.flags |= VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
+#endif
+
+  _instancedata.enabledExtensionCount = instanceExtensions.size();
+  _instancedata.ppEnabledExtensionNames = instanceExtensions.data();
 
   VkResult res = vkCreateInstance(&_instancedata, NULL, &_instance);
   OrkAssert(res == 0);
