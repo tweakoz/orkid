@@ -199,23 +199,44 @@ bool VkFxInterface::LoadFxShader(const AssetPath& input_path, FxShader* pshader)
 
         using namespace shadlang::SHAST;
 
-        /////////////////////////////////////////////////////////////////////////////
+        struct shader_proc_context {
+          transunit_ptr_t _transu;
+          shader_ptr_t _shader;
+          miscgroupnode_ptr_t _group;
+          void appendText(const char* formatstring, ...) {
+            char formatbuffer[512];
+            va_list args;
+            va_start(args, formatstring);
+            vsnprintf(&formatbuffer[0], sizeof(formatbuffer), formatstring, args);
+            va_end(args);
+            _group->appendChild<InsertLine>(formatbuffer);
+          }
 
-        auto process_inhuset = [&](transunit_ptr_t transu, shader_ptr_t shader, astnode_ptr_t semainhnode){
-            auto INHID = semainhnode->typedValueForKey<std::string>("inherit_id").value();
-            auto USET = transu->find<UniformSet>(INHID);
-            auto decls = AstNode::collectNodesOfType<DataDeclaration>(USET);
-            for( auto d : decls ){
-              auto tid = d->childAs<TypedIdentifier>(0);
-              OrkAssert(tid);
-              dumpAstNode(tid);
-            }
-          OrkAssert(false);
         };
 
         /////////////////////////////////////////////////////////////////////////////
 
-        auto process_ios = [&](transunit_ptr_t transu, shader_ptr_t shader, astnode_ptr_t interface_node){
+        auto process_inh_uset = [&](shader_proc_context& SPC, astnode_ptr_t semainhnode){
+            auto INHID = semainhnode->typedValueForKey<std::string>("inherit_id").value();
+            auto USET = SPC._transu->find<UniformSet>(INHID);
+            auto decls = AstNode::collectNodesOfType<DataDeclaration>(USET);
+            SPC.appendText("layout(set=0, binding=0) uniform %s {", INHID.c_str() );
+            //SPC.appendText("layout(set=0) uniform %s {", INHID.c_str() );
+            for( auto d : decls ){
+              auto tid = d->childAs<TypedIdentifier>(0);
+              OrkAssert(tid);
+              dumpAstNode(tid);
+              auto dt = tid->typedValueForKey<std::string>("data_type").value();
+              auto id = tid->typedValueForKey<std::string>("identifier_name").value();
+              printf( "  dt<%s> id<%s>\n", dt.c_str(), id.c_str() );
+              SPC.appendText("%s %s;", dt.c_str(), id.c_str());
+            }
+            SPC.appendText("};");
+        };
+
+        /////////////////////////////////////////////////////////////////////////////
+
+        auto process_ios = [&](shader_proc_context& SPC, astnode_ptr_t interface_node){
             auto input_groups = AstNode::collectNodesOfType<InterfaceInputs>(interface_node);
             auto output_groups = AstNode::collectNodesOfType<InterfaceOutputs>(interface_node);
             printf( "  num_input_groups<%zu>\n", input_groups.size() );
@@ -229,53 +250,76 @@ bool VkFxInterface::LoadFxShader(const AssetPath& input_path, FxShader* pshader)
             auto outputs = AstNode::collectNodesOfType<InterfaceOutput>(output_group);
             printf( "  num_inputs<%zu>\n", inputs.size() );
             printf( "  num_outputs<%zu>\n", outputs.size() );
-
-        };
-
-        /////////////////////////////////////////////////////////////////////////////
-
-        auto process_vtx_inhlist = [&](transunit_ptr_t transu, shader_ptr_t shader ){
-
             //
-            auto inh_vifs = AstNode::collectNodesOfType<SemaInheritVertexInterface>(shader);
-            printf( "inh_vifs<%zu>\n", inh_vifs.size() );
-            OrkAssert(inh_vifs.size() == 1);
-            auto INHVIF = inh_vifs[0];
-            auto INHID = INHVIF->typedValueForKey<std::string>("inherit_id").value();
-            printf( "  inh_vif<%s> INHID<%s>\n", INHVIF->_name.c_str(), INHID.c_str() );
-            auto VIF = transu->find<VertexInterface>(INHID);
-            OrkAssert(VIF);
-            process_ios(transu,shader,VIF);
-            //dumpAstNode(VIF);
+            size_t input_index = 0;
+            for( auto input : inputs ){
+              auto tid = input->childAs<TypedIdentifier>(0);
+              OrkAssert(tid);
+              dumpAstNode(tid);
+              auto dt = tid->typedValueForKey<std::string>("data_type").value();
+              auto id = tid->typedValueForKey<std::string>("identifier_name").value();
+              SPC.appendText("layout(location=%zu) in %s %s;", input_index, dt.c_str(), id.c_str());
+              input_index++;
+            }
             //
-            auto inh_semausets = AstNode::collectNodesOfType<SemaInheritUniformSet>(VIF);
-            for( auto inh_uset : inh_semausets ){
-              process_inhuset(transu,shader,inh_uset);
+            size_t output_index = 0;
+            for( auto output : outputs ){
+              auto tid = output->childAs<TypedIdentifier>(0);
+              OrkAssert(tid);
+              dumpAstNode(tid);
+              auto dt = tid->typedValueForKey<std::string>("data_type").value();
+              auto id = tid->typedValueForKey<std::string>("identifier_name").value();
+              SPC.appendText("layout(location=%zu) out %s %s;", output_index, dt.c_str(), id.c_str());
+              output_index++;
             }
 
         };
 
         /////////////////////////////////////////////////////////////////////////////
 
-        auto compile_shader = [](shader_ptr_t shader, shaderc_shader_kind shader_type){
+        auto process_vtx_inhlist = [&](shader_proc_context& SPC){
+
+            //
+            auto inh_vifs = AstNode::collectNodesOfType<SemaInheritVertexInterface>(SPC._shader);
+            printf( "inh_vifs<%zu>\n", inh_vifs.size() );
+            OrkAssert(inh_vifs.size() == 1);
+            auto INHVIF = inh_vifs[0];
+            auto INHID = INHVIF->typedValueForKey<std::string>("inherit_id").value();
+            printf( "  inh_vif<%s> INHID<%s>\n", INHVIF->_name.c_str(), INHID.c_str() );
+            auto VIF = SPC._transu->find<VertexInterface>(INHID);
+            OrkAssert(VIF);
+            process_ios(SPC,VIF);
+            //dumpAstNode(VIF);
+            //
+            auto inh_semausets = AstNode::collectNodesOfType<SemaInheritUniformSet>(VIF);
+            for( auto inh_uset : inh_semausets ){
+              process_inh_uset(SPC,inh_uset);
+            }
+
+        };
+
+        /////////////////////////////////////////////////////////////////////////////
+
+        auto compile_shader = [](shader_proc_context& SPC, shaderc_shader_kind shader_type){
 
             ///////////////////////////////////////////////////////
             // final prep for shaderc
             ///////////////////////////////////////////////////////
 
-            auto grpnode = std::make_shared<MiscGroupNode>();
+            auto grpnode = SPC._group;
+
             // version line
-            grpnode->addChild<InsertLine>("#version 140");
-            grpnode->addChild<InsertLine>("void main()");
+            grpnode->insertChildAt<InsertLine>(0, "#version 450");
+            grpnode->appendChild<InsertLine>("void main()");
             // shader body (should be a compount statement, with {} included...)
-            grpnode->appendChildrenFrom(shader);
+            grpnode->appendChildrenFrom(SPC._shader);
 
             ///////////////////////////////////////////////////////
             //emit
             ///////////////////////////////////////////////////////
 
             auto as_glsl = shadlang::toGLFX1(grpnode);
-            auto obj_name = shader->typedValueForKey<std::string>("object_name").value();
+            auto obj_name = SPC._shader->typedValueForKey<std::string>("object_name").value();
             printf( "// shader<%s>:\n%s\n", obj_name.c_str(), as_glsl.c_str() );
 
             ///////////////////////////////////////////////////////
@@ -331,20 +375,29 @@ bool VkFxInterface::LoadFxShader(const AssetPath& input_path, FxShader* pshader)
         printf( "num_frg_shaders<%zu>\n", num_frg_shaders );
         printf( "num_cu_shaders<%zu>\n", num_cu_shaders );
 
+        shader_proc_context SPC;
+        SPC._transu = sh->_trans_unit;
+
         // vertex shaders
         for( auto vshader : vtx_shaders ){
-          process_vtx_inhlist(sh->_trans_unit,vshader);
-          compile_shader(vshader,shaderc_glsl_vertex_shader);
+          SPC._shader = vshader;
+          SPC._group = std::make_shared<MiscGroupNode>();
+          process_vtx_inhlist(SPC);
+          compile_shader(SPC,shaderc_glsl_vertex_shader);
         }
 
         // fragment shaders
-        for( auto f : frg_shaders ){
-          compile_shader(f,shaderc_glsl_fragment_shader);
+        for( auto fshader : frg_shaders ){
+          SPC._shader = fshader;
+          SPC._group = std::make_shared<MiscGroupNode>();
+          compile_shader(SPC,shaderc_glsl_fragment_shader);
         }
 
         // compute shaders
-        for( auto c : cu_shaders ){
-          compile_shader(c,shaderc_glsl_compute_shader);
+        for( auto cshader : cu_shaders ){
+          SPC._shader = cshader;
+          SPC._group = std::make_shared<MiscGroupNode>();
+          compile_shader(SPC,shaderc_glsl_compute_shader);
         }
 
         /////////////////////////////////////////////////////////////////////////////

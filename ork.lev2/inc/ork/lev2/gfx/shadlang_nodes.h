@@ -155,15 +155,21 @@ struct MiscGroupNode : public AstNode {
     _name = _static_type_name;
     _type_name = _static_type_name;
   }
-  template <typename T, typename... A> std::shared_ptr<T> addChild(A&&... args) {
+  template <typename T, typename... A> std::shared_ptr<T> appendChild(A&&... args) {
     auto ptr = std::make_shared<T>(std::forward<A>(args)...);
     _children.push_back(ptr);
+    return ptr;
+  }
+  template <typename T, typename... A> std::shared_ptr<T> insertChildAt(size_t index, A&&... args) {
+    auto ptr = std::make_shared<T>(std::forward<A>(args)...);
+    _children.insert(_children.begin()+index,ptr);
     return ptr;
   }
   void appendChildrenFrom(astnode_ptr_t other){
     _children.insert( _children.end(), other->_children.begin(), other->_children.end() );
   }
 };
+using miscgroupnode_ptr_t = std::shared_ptr<MiscGroupNode>;
 
 ///////////////////////////////////////////////////////////
 
