@@ -703,6 +703,7 @@ int _semaProcessInheritances(
           auto id_name   = ext_id->tryAsShared<ClassMatch>().value()->_token->text;
           auto semalib   = std::make_shared<SemaInheritExtension>();
           semalib->_name = FormatString("SemaInheritExtension\n%s", id_name.c_str());
+          semalib->setValueForKey<std::string>("extension_name", id_name);
           slp->replaceInParent(inh_item, semalib);
           count++;
           return false;
