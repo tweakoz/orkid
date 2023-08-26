@@ -188,6 +188,26 @@ struct shader_proc_context {
     _group->appendChild<InsertLine>(formatbuffer);
   }
   ////////////////////////////////////////////////////////
+#if 0
+    /* 0000 */ #version 450
+    /* 0001 */ layout(location=0) in vec2 frg_uv;
+    /* 0002 */ layout(location=0) out vec4 out_clr;
+    /* 0003 */ layout(set=0, binding=0) uniform ublock_frg {
+    /* 0004 */ vec4 ModColor;
+    /* 0005 */ sampler2D ColorMap;
+    /* 0006 */ };
+    /* 0007 */ void main()
+    {
+    /* 0009 */   vec4 s = texture(ColorMap, frg_uv); 
+    /* 0010 */   float texa = pow(s.a * s.r, 0.75); 
+    /* 0011 */ }
+
+    // todo move samplers to standalone uniform binding.
+    
+#endif
+
+    main:6: error: 'ColorMap' : member of block cannot be or contain a sampler, image, or atomic_uint type
+    main:6: error: 'binding' : sampler/texture/image requires layout(binding=X)
   void process_uniformsets(astnode_ptr_t par_node) {
     auto inh_semausets = AstNode::collectNodesOfType<SemaInheritUniformSet>(par_node);
     for (auto inh_uset : inh_semausets) {
@@ -390,6 +410,7 @@ bool VkFxInterface::LoadFxShader(const AssetPath& input_path, FxShader* pshader)
         SPC._shader = fshader;
         SPC._group  = std::make_shared<MiscGroupNode>();
         SPC.process_extensions();
+        SPC.process_interface_inheritances<SemaInheritFragmentInterface, FragmentInterface>();
         SPC.compile_shader(shaderc_glsl_fragment_shader);
       }
 
