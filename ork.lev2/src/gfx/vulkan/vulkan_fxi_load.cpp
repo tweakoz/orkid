@@ -51,7 +51,7 @@ struct shader_proc_context {
   }
   ////////////////////////////////////////////////////////
 
-  void process_uniformsets(astnode_ptr_t par_node) {
+  void process_inh_unisets(astnode_ptr_t par_node) {
     auto inh_semausets = AstNode::collectNodesOfType<SemaInheritUniformSet>(par_node);
     size_t binding_id  = 0;
     for (auto inh_uset : inh_semausets) {
@@ -92,7 +92,7 @@ struct shader_proc_context {
     }
   }
   ////////////////////////////////////////////////////////
-  void process_ios(astnode_ptr_t interface_node) {
+  void process_inh_ios(astnode_ptr_t interface_node) {
     auto input_groups  = AstNode::collectNodesOfType<InterfaceInputs>(interface_node);
     auto output_groups = AstNode::collectNodesOfType<InterfaceOutputs>(interface_node);
     printf("  num_input_groups<%zu>\n", input_groups.size());
@@ -130,7 +130,7 @@ struct shader_proc_context {
     }
   }
   ////////////////////////////////////////////////////////
-  void process_extensions() {
+  void process_inh_extensions() {
     auto inh_exts = AstNode::collectNodesOfType<SemaInheritExtension>(_shader);
     for (auto extension_node : inh_exts) {
       auto ext_name = extension_node->typedValueForKey<std::string>("extension_name").value();
@@ -138,7 +138,7 @@ struct shader_proc_context {
     }
   }
   ////////////////////////////////////////////////////////
-  template <typename T, typename U> void process_interface_inheritances() {
+  template <typename T, typename U> void process_inh_interfaces() {
     auto inh_vifs = AstNode::collectNodesOfType<T>(_shader);
     printf("inh_vifs<%zu>\n", inh_vifs.size());
     OrkAssert(inh_vifs.size() == 1);
@@ -147,8 +147,8 @@ struct shader_proc_context {
     printf("  inh_vif<%s> INHID<%s>\n", INHVIF->_name.c_str(), INHID.c_str());
     auto VIF = _transu->template find<U>(INHID);
     OrkAssert(VIF);
-    process_ios(VIF);
-    process_uniformsets(VIF);
+    process_inh_ios(VIF);
+    process_inh_unisets(VIF);
   }
   ////////////////////////////////////////////////////////
   void compile_shader(shaderc_shader_kind shader_type) {
@@ -326,8 +326,8 @@ bool VkFxInterface::LoadFxShader(const AssetPath& input_path, FxShader* pshader)
     for (auto vshader : vtx_shaders) {
       SPC._shader = vshader;
       SPC._group  = std::make_shared<MiscGroupNode>();
-      SPC.process_extensions();
-      SPC.process_interface_inheritances<SemaInheritVertexInterface, shadlang::SHAST::VertexInterface>();
+      SPC.process_inh_extensions();
+      SPC.process_inh_interfaces<SemaInheritVertexInterface, shadlang::SHAST::VertexInterface>();
       SPC.compile_shader(shaderc_glsl_vertex_shader);
       auto vulkan_shobj                                      = std::make_shared<VkFxShaderObject>(_contextVK, SPC._spirv_binary);
       vulkan_shobj->_astnode                                 = vshader;
@@ -346,8 +346,8 @@ bool VkFxInterface::LoadFxShader(const AssetPath& input_path, FxShader* pshader)
     for (auto fshader : frg_shaders) {
       SPC._shader = fshader;
       SPC._group  = std::make_shared<MiscGroupNode>();
-      SPC.process_extensions();
-      SPC.process_interface_inheritances<SemaInheritFragmentInterface, shadlang::SHAST::FragmentInterface>();
+      SPC.process_inh_extensions();
+      SPC.process_inh_interfaces<SemaInheritFragmentInterface, shadlang::SHAST::FragmentInterface>();
       SPC.compile_shader(shaderc_glsl_fragment_shader);
       auto vulkan_shobj                                      = std::make_shared<VkFxShaderObject>(_contextVK, SPC._spirv_binary);
       vulkan_shobj->_astnode                                 = fshader;
@@ -366,8 +366,8 @@ bool VkFxInterface::LoadFxShader(const AssetPath& input_path, FxShader* pshader)
     for (auto cshader : cu_shaders) {
       SPC._shader = cshader;
       SPC._group  = std::make_shared<MiscGroupNode>();
-      SPC.process_extensions();
-      SPC.process_interface_inheritances<SemaInheritComputeInterface, shadlang::SHAST::ComputeInterface>();
+      SPC.process_inh_extensions();
+      SPC.process_inh_interfaces<SemaInheritComputeInterface, shadlang::SHAST::ComputeInterface>();
       SPC.compile_shader(shaderc_glsl_compute_shader);
       auto vulkan_shobj                                      = std::make_shared<VkFxShaderObject>(_contextVK, SPC._spirv_binary);
       vulkan_shobj->_astnode                                 = cshader;
