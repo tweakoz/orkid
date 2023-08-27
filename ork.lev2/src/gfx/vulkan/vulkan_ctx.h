@@ -153,8 +153,6 @@ struct VulkanInstance{
   uint32_t _numgpus = 0;
   uint32_t _numgroups = 0;
 
-  std::map<AssetPath, vkfxsfile_ptr_t> _shared_fxshaderfiles;
-
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -226,10 +224,14 @@ struct VkFxShaderFile {
 struct VkFxShaderObject {
 
   VkFxShaderObject(vkcontext_rawptr_t ctx, vkfxshader_bin_t bin);
+  ~VkFxShaderObject();
+
+  vkcontext_rawptr_t _contextVK;
   vkfxshader_bin_t _spirv_binary;
   VkShaderModuleCreateInfo _shadermoduleinfo;
   VkShaderModule _shadermodule;
   shadlang::SHAST::astnode_ptr_t _astnode; // debug only
+
 };
 
 struct VkFxShaderProgram {
@@ -453,6 +455,7 @@ struct VkTextureInterface final : public TextureInterface {
 struct VkFxInterface final : public FxInterface {
 
   VkFxInterface(vkcontext_rawptr_t ctx);
+  ~VkFxInterface();
 
   void _doBeginFrame() final;
 
@@ -500,6 +503,7 @@ struct VkFxInterface final : public FxInterface {
 
   FxShaderTechnique* _currentTEK = nullptr;
   vkcontext_rawptr_t _contextVK;
+  std::map<AssetPath, vkfxsfile_ptr_t> _fxshaderfiles;
 
 };
 

@@ -209,29 +209,34 @@ struct shader_proc_context {
 ///////////////////////////////////////////////////////////////////////////////
 
 VkFxShaderObject::VkFxShaderObject(vkcontext_rawptr_t ctx, vkfxshader_bin_t bin) //
-    : _spirv_binary(bin) {                                                       //
+    : _contextVK(ctx)                                                            // 
+    , _spirv_binary(bin) {                                                       //
 
   _shadermoduleinfo.sType    = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
   _shadermoduleinfo.codeSize = bin.size() * sizeof(uint32_t);
   _shadermoduleinfo.pCode    = bin.data();
    VkResult result = vkCreateShaderModule( //
-      ctx->_vkdevice,      //
-      &_shadermoduleinfo,  //
-      nullptr,             //
-      &_shadermodule);     //
+      _contextVK->_vkdevice, //
+      &_shadermoduleinfo,    //
+      nullptr,               //
+      &_shadermodule);       //
   OrkAssert(result == VK_SUCCESS);
+}
+
+VkFxShaderObject::~VkFxShaderObject(){
+  vkDestroyShaderModule( _contextVK->_vkdevice, _shadermodule, nullptr );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 bool VkFxInterface::LoadFxShader(const AssetPath& input_path, FxShader* pshader) {
 
-  auto it = _GVI->_shared_fxshaderfiles.find(input_path);
+  auto it = _fxshaderfiles.find(input_path);
   vkfxsfile_ptr_t vulkan_shaderfile;
   ////////////////////////////////////////////
   // if not yet loaded, load...
   ////////////////////////////////////////////
-  if (it == _GVI->_shared_fxshaderfiles.end()) {
+  if (it == _fxshaderfiles.end()) {
 
     ////////////////////////////////////////////
     // first check precompiled shader cache
@@ -260,7 +265,7 @@ bool VkFxInterface::LoadFxShader(const AssetPath& input_path, FxShader* pshader)
 
       vulkan_shaderfile                       = std::make_shared<VkFxShaderFile>();
       vulkan_shaderfile->_trans_unit          = shadlang::parseFromString(str_read->_data);
-      _GVI->_shared_fxshaderfiles[input_path] = vulkan_shaderfile;
+      _fxshaderfiles[input_path] = vulkan_shaderfile;
       auto vtx_shaders                        = AstNode::collectNodesOfType<VertexShader>(vulkan_shaderfile->_trans_unit);
       auto frg_shaders                        = AstNode::collectNodesOfType<FragmentShader>(vulkan_shaderfile->_trans_unit);
       auto cu_shaders                         = AstNode::collectNodesOfType<ComputeShader>(vulkan_shaderfile->_trans_unit);
