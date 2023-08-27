@@ -11,28 +11,23 @@
 namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
 
-VkDrawingInterface::VkDrawingInterface(vkcontext_rawptr_t ctx)
-    : DrawingInterface(*ctx)
-    , _contextVK(ctx) {
+FxShaderParamBuffer* VkFxInterface::createParamBuffer(size_t length) {
+  OrkAssert(false);
+  return nullptr;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-VkImiInterface::VkImiInterface(vkcontext_rawptr_t ctx)
-    : ImmInterface(*ctx)
-    , _contextVK(ctx) {
+parambuffermappingptr_t VkFxInterface::mapParamBuffer(FxShaderParamBuffer* b, size_t base, size_t length) {
+  OrkAssert(false);
+  return nullptr;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void VkImiInterface::_doBeginFrame() {
+void VkFxInterface::unmapParamBuffer(FxShaderParamBufferMapping* mapping) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
-void VkImiInterface::_doEndFrame() {
-}
-
-///////////////////////////////////////////////////////////////////////////////
-} // namespace ork::lev2::vulkan
+} //namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////

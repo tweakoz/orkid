@@ -1,9 +1,11 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2023, Michael T. Mayers.
+// Distributed under the MIT License.
+// see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
+////////////////////////////////////////////////////////////////
+
 #include "vulkan_ctx.h"
-#include <ork/lev2/gfx/shadman.h>
-#include <ork/lev2/gfx/shadlang.h>
-#include <ork/lev2/gfx/shadlang_nodes.h>
-#include <ork/util/hexdump.inl>
-#include <shaderc/shaderc.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::vulkan {
@@ -87,6 +89,12 @@ void VkFxInterface::BindParamCTex(const FxShaderParam* hpar, const Texture* pTex
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkFxInterface::BindParamU64(const FxShaderParam* hpar, uint64_t uval) {
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void VkFxInterface::bindParamBlockBuffer(const FxShaderParamBlock* block, FxShaderParamBuffer* buffer) {
+  OrkAssert(false);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -238,11 +238,9 @@ struct VkFxShaderUniformSetSampler {
 struct VkFxShaderUniformSet {
   static size_t descriptor_set_counter;
   size_t _descriptor_set_id = 0;
-  //size_t _binding_id = 0;
   std::unordered_map<std::string, vkfxsunisetsamp_ptr_t> _samplers_by_name;
   std::unordered_map<std::string, vkfxsunisetitem_ptr_t> _items_by_name;
   std::vector<vkfxsunisetitem_ptr_t> _items_by_order;
-  //std::vector<std::string> _lines;
 };
 
 struct VkFxShaderFile {
@@ -263,6 +261,8 @@ struct VkFxShaderObject {
   VkShaderModule _vk_shadermodule;
   VkPipelineShaderStageCreateInfo _shaderstageinfo;
   shadlang::SHAST::astnode_ptr_t _astnode; // debug only
+  std::unordered_map<std::string, vkfxsuniset_ptr_t> _vk_uniformsets;
+  uint64_t _STAGE = 0;
 
 };
 

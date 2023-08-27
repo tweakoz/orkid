@@ -40,6 +40,8 @@ struct shader_proc_context {
   miscgroupnode_ptr_t _group;
   vkfxshader_bin_t _spirv_binary;
   std::string _shader_name;
+  std::unordered_map<std::string, vkfxsuniset_ptr_t> _vk_uniformsets;
+
   ////////////////////////////////////////////////////////
   void appendText(const char* formatstring, ...) {
     char formatbuffer[512];
@@ -59,6 +61,7 @@ struct shader_proc_context {
       auto it_uset = _shaderfile->_vk_uniformsets.find(INHID);
       OrkAssert(it_uset != _shaderfile->_vk_uniformsets.end());
       auto vk_uniset = it_uset->second;
+      _vk_uniformsets[it_uset->first] = vk_uniset;
       vk_uniset->_descriptor_set_id = VkFxShaderUniformSet::descriptor_set_counter++;
       /////////////////////
       // loose unis
@@ -152,6 +155,7 @@ struct shader_proc_context {
   }
   ////////////////////////////////////////////////////////
   void compile_shader(shaderc_shader_kind shader_type) {
+
     ///////////////////////////////////////////////////////
     // final prep for shaderc
     ///////////////////////////////////////////////////////
@@ -286,7 +290,6 @@ bool VkFxInterface::LoadFxShader(const AssetPath& input_path, FxShader* pshader)
       shader_proc_context SPC;
       SPC._shaderfile = vulkan_shaderfile;
       SPC._transu     = vulkan_shaderfile->_trans_unit;
-
       //////////////////
       // uniformsets
       //////////////////
@@ -324,6 +327,7 @@ bool VkFxInterface::LoadFxShader(const AssetPath& input_path, FxShader* pshader)
     //////////////////
 
     for (auto vshader : vtx_shaders) {
+      SPC._vk_uniformsets.clear();
       SPC._shader = vshader;
       SPC._group  = std::make_shared<MiscGroupNode>();
       SPC.process_inh_extensions();
@@ -331,6 +335,8 @@ bool VkFxInterface::LoadFxShader(const AssetPath& input_path, FxShader* pshader)
       SPC.compile_shader(shaderc_glsl_vertex_shader);
       auto vulkan_shobj                                      = std::make_shared<VkFxShaderObject>(_contextVK, SPC._spirv_binary);
       vulkan_shobj->_astnode                                 = vshader;
+      vulkan_shobj->_vk_uniformsets                          = SPC._vk_uniformsets;
+      vulkan_shobj->_STAGE                                   = "vertex"_crcu;
       vulkan_shaderfile->_vk_shaderobjects[SPC._shader_name] = vulkan_shobj;
       auto& STGIV                                            = vulkan_shobj->_shaderstageinfo;
       STGIV.sType                                            = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -344,6 +350,7 @@ bool VkFxInterface::LoadFxShader(const AssetPath& input_path, FxShader* pshader)
     //////////////////
 
     for (auto fshader : frg_shaders) {
+      SPC._vk_uniformsets.clear();
       SPC._shader = fshader;
       SPC._group  = std::make_shared<MiscGroupNode>();
       SPC.process_inh_extensions();
@@ -351,6 +358,8 @@ bool VkFxInterface::LoadFxShader(const AssetPath& input_path, FxShader* pshader)
       SPC.compile_shader(shaderc_glsl_fragment_shader);
       auto vulkan_shobj                                      = std::make_shared<VkFxShaderObject>(_contextVK, SPC._spirv_binary);
       vulkan_shobj->_astnode                                 = fshader;
+      vulkan_shobj->_vk_uniformsets                          = SPC._vk_uniformsets;
+      vulkan_shobj->_STAGE                                   = "fragment"_crcu;
       vulkan_shaderfile->_vk_shaderobjects[SPC._shader_name] = vulkan_shobj;
       auto& STGIF                                            = vulkan_shobj->_shaderstageinfo;
       STGIF.sType                                            = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -364,6 +373,7 @@ bool VkFxInterface::LoadFxShader(const AssetPath& input_path, FxShader* pshader)
     //////////////////
 
     for (auto cshader : cu_shaders) {
+      SPC._vk_uniformsets.clear();
       SPC._shader = cshader;
       SPC._group  = std::make_shared<MiscGroupNode>();
       SPC.process_inh_extensions();
@@ -371,6 +381,8 @@ bool VkFxInterface::LoadFxShader(const AssetPath& input_path, FxShader* pshader)
       SPC.compile_shader(shaderc_glsl_compute_shader);
       auto vulkan_shobj                                      = std::make_shared<VkFxShaderObject>(_contextVK, SPC._spirv_binary);
       vulkan_shobj->_astnode                                 = cshader;
+      vulkan_shobj->_vk_uniformsets                          = SPC._vk_uniformsets;
+      vulkan_shobj->_STAGE                                   = "compute"_crcu;
       vulkan_shaderfile->_vk_shaderobjects[SPC._shader_name] = vulkan_shobj;
       auto& STCIF                                            = vulkan_shobj->_shaderstageinfo;
       STCIF.sType                                            = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -414,10 +426,6 @@ bool VkFxInterface::LoadFxShader(const AssetPath& input_path, FxShader* pshader)
         vk_tek->_vk_passes.push_back(vk_pass);
       }
     }
-
-    /////////////////////////////////////////////////////////////////////////////
-
-    OrkAssert(false);
 
     /////////////////////////////////////////////////////////////////////////////
 
