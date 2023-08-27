@@ -15,6 +15,8 @@ namespace ork::lev2::vulkan {
 using namespace shadlang::SHAST;
 ///////////////////////////////////////////////////////////////////////////////
 
+size_t VkFxShaderUniformSet::descriptor_set_counter = 0;
+
 #if 0
 VkPipelineCache pipelineCache;
 VkPipelineCacheCreateInfo cacheInfo = {};
@@ -50,46 +52,17 @@ struct shader_proc_context {
   ////////////////////////////////////////////////////////
 
   void process_uniformsets(astnode_ptr_t par_node) {
-    auto inh_semausets              = AstNode::collectNodesOfType<SemaInheritUniformSet>(par_node);
-    static size_t descriptor_set_id = 0;
-    size_t binding_id               = 0;
+    auto inh_semausets = AstNode::collectNodesOfType<SemaInheritUniformSet>(par_node);
+    size_t binding_id  = 0;
     for (auto inh_uset : inh_semausets) {
       auto INHID = inh_uset->typedValueForKey<std::string>("inherit_id").value();
-      auto USET  = _transu->find<UniformSet>(INHID);
-      auto decls = AstNode::collectNodesOfType<DataDeclaration>(USET);
-      appendText(
-          "layout(set=%zu, binding=%zu) uniform %s {", //
-          descriptor_set_id,                           //
-          binding_id,                                  //
-          INHID.c_str());
-      std::vector<tid_ptr_t> _samplers;
-      for (auto d : decls) {
-        auto tid = d->childAs<TypedIdentifier>(0);
-        OrkAssert(tid);
-        dumpAstNode(tid);
-        auto dt = tid->typedValueForKey<std::string>("data_type").value();
-        auto id = tid->typedValueForKey<std::string>("identifier_name").value();
-        if (dt.find("sampler") == 0) {
-          _samplers.push_back(tid);
-        } else {
-          appendText("%s %s;", dt.c_str(), id.c_str());
-        }
-      }
-      appendText("};");
-      binding_id++;
-      for (auto s : _samplers) {
-        auto dt = s->typedValueForKey<std::string>("data_type").value();
-        auto id = s->typedValueForKey<std::string>("identifier_name").value();
-        appendText(
-            "layout(set=%zu, binding=%zu) uniform %s %s;", //
-            descriptor_set_id,                             //
-            binding_id,                                    //
-            dt.c_str(),                                    //
-            id.c_str());
-        binding_id++;
+      auto it_uset = _shaderfile->_vk_uniformsets.find(INHID);
+      OrkAssert(it_uset != _shaderfile->_vk_uniformsets.end());
+      auto uset = it_uset->second;
+      for( auto line : uset->_lines ){
+        appendText(line.c_str());
       }
     }
-    descriptor_set_id++;
   }
   ////////////////////////////////////////////////////////
   void process_ios(astnode_ptr_t interface_node) {
@@ -166,10 +139,9 @@ struct shader_proc_context {
     // emit
     ///////////////////////////////////////////////////////
 
-    auto as_glsl  = shadlang::toGLFX1(_group);
+    auto as_glsl = shadlang::toGLFX1(_group);
     _shader_name = _shader->typedValueForKey<std::string>("object_name").value();
     printf("// shader<%s>:\n%s\n", _shader_name.c_str(), as_glsl.c_str());
-    
 
     ///////////////////////////////////////////////////////
     // compile with shaderc
@@ -209,22 +181,22 @@ struct shader_proc_context {
 ///////////////////////////////////////////////////////////////////////////////
 
 VkFxShaderObject::VkFxShaderObject(vkcontext_rawptr_t ctx, vkfxshader_bin_t bin) //
-    : _contextVK(ctx)                                                            // 
+    : _contextVK(ctx)                                                            //
     , _spirv_binary(bin) {                                                       //
 
-  _shadermoduleinfo.sType    = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-  _shadermoduleinfo.codeSize = bin.size() * sizeof(uint32_t);
-  _shadermoduleinfo.pCode    = bin.data();
-   VkResult result = vkCreateShaderModule( //
-      _contextVK->_vkdevice, //
-      &_shadermoduleinfo,    //
-      nullptr,               //
-      &_shadermodule);       //
+  _vk_shadermoduleinfo.sType    = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+  _vk_shadermoduleinfo.codeSize = bin.size() * sizeof(uint32_t);
+  _vk_shadermoduleinfo.pCode    = bin.data();
+  VkResult result               = vkCreateShaderModule( //
+      _contextVK->_vkdevice,              //
+      &_vk_shadermoduleinfo,              //
+      nullptr,                            //
+      &_vk_shadermodule);                 //
   OrkAssert(result == VK_SUCCESS);
 }
 
-VkFxShaderObject::~VkFxShaderObject(){
-  vkDestroyShaderModule( _contextVK->_vkdevice, _shadermodule, nullptr );
+VkFxShaderObject::~VkFxShaderObject() {
+  vkDestroyShaderModule(_contextVK->_vkdevice, _vk_shadermodule, nullptr);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -263,87 +235,201 @@ bool VkFxInterface::LoadFxShader(const AssetPath& input_path, FxShader* pshader)
       // compile all shaders from translation unit
       /////////////////////////////////////////////////////////////////////////////
 
-      vulkan_shaderfile                       = std::make_shared<VkFxShaderFile>();
-      vulkan_shaderfile->_trans_unit          = shadlang::parseFromString(str_read->_data);
-      _fxshaderfiles[input_path] = vulkan_shaderfile;
-      auto vtx_shaders                        = AstNode::collectNodesOfType<VertexShader>(vulkan_shaderfile->_trans_unit);
-      auto frg_shaders                        = AstNode::collectNodesOfType<FragmentShader>(vulkan_shaderfile->_trans_unit);
-      auto cu_shaders                         = AstNode::collectNodesOfType<ComputeShader>(vulkan_shaderfile->_trans_unit);
+      vulkan_shaderfile              = std::make_shared<VkFxShaderFile>();
+      vulkan_shaderfile->_trans_unit = shadlang::parseFromString(str_read->_data);
+      _fxshaderfiles[input_path]     = vulkan_shaderfile;
+      auto vtx_shaders               = AstNode::collectNodesOfType<VertexShader>(vulkan_shaderfile->_trans_unit);
+      auto frg_shaders               = AstNode::collectNodesOfType<FragmentShader>(vulkan_shaderfile->_trans_unit);
+      auto cu_shaders                = AstNode::collectNodesOfType<ComputeShader>(vulkan_shaderfile->_trans_unit);
+      auto techniques                = AstNode::collectNodesOfType<Technique>(vulkan_shaderfile->_trans_unit);
+      auto unisets                   = AstNode::collectNodesOfType<UniformSet>(vulkan_shaderfile->_trans_unit);
 
       size_t num_vtx_shaders = vtx_shaders.size();
       size_t num_frg_shaders = frg_shaders.size();
       size_t num_cu_shaders  = cu_shaders.size();
+      size_t num_techniques  = techniques.size();
+      size_t num_unisets     = unisets.size();
 
       printf("num_vtx_shaders<%zu>\n", num_vtx_shaders);
       printf("num_frg_shaders<%zu>\n", num_frg_shaders);
       printf("num_cu_shaders<%zu>\n", num_cu_shaders);
+      printf("num_techniques<%zu>\n", num_techniques);
+      printf("num_unisets<%zu>\n", num_unisets);
 
       shader_proc_context SPC;
       SPC._shaderfile = vulkan_shaderfile;
       SPC._transu     = vulkan_shaderfile->_trans_unit;
-      //////////////////
-      // vertex shaders
-      //////////////////
-      for (auto vshader : vtx_shaders) {
-        SPC._shader = vshader;
-        SPC._group  = std::make_shared<MiscGroupNode>();
-        SPC.process_extensions();
-        SPC.process_interface_inheritances<SemaInheritVertexInterface, VertexInterface>();
-        SPC.compile_shader(shaderc_glsl_vertex_shader);
-        auto vulkan_shobj = std::make_shared<VkFxShaderObject>(_contextVK,SPC._spirv_binary);
-        vulkan_shobj->_astnode = vshader;
-        vulkan_shaderfile->_shaderobjects[SPC._shader_name] = vulkan_shobj;
-      }
 
       //////////////////
-      // fragment shaders
+      // uniformsets
       //////////////////
-      for (auto fshader : frg_shaders) {
-        SPC._shader = fshader;
-        SPC._group  = std::make_shared<MiscGroupNode>();
-        SPC.process_extensions();
-        SPC.process_interface_inheritances<SemaInheritFragmentInterface, FragmentInterface>();
-        SPC.compile_shader(shaderc_glsl_fragment_shader);
-        auto vulkan_shobj = std::make_shared<VkFxShaderObject>(_contextVK,SPC._spirv_binary);
-        vulkan_shobj->_astnode = fshader;
-        vulkan_shaderfile->_shaderobjects[SPC._shader_name] = vulkan_shobj;
-      }
 
-      //////////////////
-      // compute shaders
-      //////////////////
-      for (auto cshader : cu_shaders) {
-        SPC._shader = cshader;
-        SPC._group  = std::make_shared<MiscGroupNode>();
-        SPC.process_extensions();
-        SPC.compile_shader(shaderc_glsl_compute_shader);
-        auto vulkan_shobj = std::make_shared<VkFxShaderObject>(_contextVK,SPC._spirv_binary);
-        vulkan_shobj->_astnode = cshader;
-        vulkan_shaderfile->_shaderobjects[SPC._shader_name] = vulkan_shobj;
-      }
+      for (auto uni_set : unisets) {
+        //////////////////////////////////////
+        auto uni_name = uni_set->typedValueForKey<std::string>("object_name").value();
+        auto vk_uniset = std::make_shared<VkFxShaderUniformSet>();
+        vk_uniset->_descriptor_set_id = VkFxShaderUniformSet::descriptor_set_counter++;
+        vulkan_shaderfile->_vk_uniformsets[uni_name] = vk_uniset;
+        auto decls = AstNode::collectNodesOfType<DataDeclaration>(uni_set);
+        auto line  = FormatString(
+            "layout(set=%zu, binding=%zu) uniform %s {", //
+            vk_uniset->_descriptor_set_id,           //
+            vk_uniset->_binding_count,                   //
+            uni_name.c_str());
+        vk_uniset->_lines.push_back(line);
+        std::vector<tid_ptr_t> _samplers;
+        //////////////////////////////////////
+        for (auto d : decls) {
+          auto tid = d->childAs<TypedIdentifier>(0);
+          OrkAssert(tid);
+          dumpAstNode(tid);
+          auto dt = tid->typedValueForKey<std::string>("data_type").value();
+          auto id = tid->typedValueForKey<std::string>("identifier_name").value();
+          if (dt.find("sampler") == 0) {
+            _samplers.push_back(tid); // deferred to after uniformset
+          } else {
+            vk_uniset->_lines.push_back(dt+" "+id+";");
+          }
+        }
+        //////////////////////////////////////
+        vk_uniset->_lines.push_back("};");
+        vk_uniset->_binding_count++; // 1 binding for loose uniforms
+        //////////////////////////////////////
+        // samplers
+        //////////////////////////////////////
+        for (auto s : _samplers) {
+          auto dt   = s->typedValueForKey<std::string>("data_type").value();
+          auto id   = s->typedValueForKey<std::string>("identifier_name").value();
+          line = FormatString(
+              "layout(set=%zu, binding=%zu) uniform %s %s;", //
+              vk_uniset->_descriptor_set_id,             //
+              vk_uniset->_binding_count,                     //
+              dt.c_str(),                                    //
+              id.c_str());
+          vk_uniset->_lines.push_back(line);
+          vk_uniset->_binding_count++; // 1 binding per sampler
+        }
+        //////////////////////////////////////
+    }
+    
+    //////////////////
+    // vertex shaders
+    //////////////////
 
-      /////////////////////////////////////////////////////////////////////////////
-
-      OrkAssert(false);
-
-      /////////////////////////////////////////////////////////////////////////////
-
-      // MoltenVKShaderConverter
-      // -gi <glsl input>
-      // -so <spirv out>
-      // -si <spirv input>
-      // -mv <metal version> [2, 2.1, or 2.1.0]
-      // -mp <metal platform> [macos, ios, or ios-simulator]
-      // -mo <metal output>
-      // -t <shader type> [v, f, c]
+    for (auto vshader : vtx_shaders) {
+      SPC._shader = vshader;
+      SPC._group  = std::make_shared<MiscGroupNode>();
+      SPC.process_extensions();
+      SPC.process_interface_inheritances<SemaInheritVertexInterface, shadlang::SHAST::VertexInterface>();
+      SPC.compile_shader(shaderc_glsl_vertex_shader);
+      auto vulkan_shobj                                      = std::make_shared<VkFxShaderObject>(_contextVK, SPC._spirv_binary);
+      vulkan_shobj->_astnode                                 = vshader;
+      vulkan_shaderfile->_vk_shaderobjects[SPC._shader_name] = vulkan_shobj;
+      auto& STGIV                                            = vulkan_shobj->_shaderstageinfo;
+      STGIV.sType                                            = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+      STGIV.stage                                            = VK_SHADER_STAGE_VERTEX_BIT;
+      STGIV.module                                           = vulkan_shobj->_vk_shadermodule;
+      STGIV.pName                                            = "main";
     }
 
-  } else { // shader already loaded...
-    vulkan_shaderfile = it->second;
+    //////////////////
+    // fragment shaders
+    //////////////////
+
+    for (auto fshader : frg_shaders) {
+      SPC._shader = fshader;
+      SPC._group  = std::make_shared<MiscGroupNode>();
+      SPC.process_extensions();
+      SPC.process_interface_inheritances<SemaInheritFragmentInterface, shadlang::SHAST::FragmentInterface>();
+      SPC.compile_shader(shaderc_glsl_fragment_shader);
+      auto vulkan_shobj                                      = std::make_shared<VkFxShaderObject>(_contextVK, SPC._spirv_binary);
+      vulkan_shobj->_astnode                                 = fshader;
+      vulkan_shaderfile->_vk_shaderobjects[SPC._shader_name] = vulkan_shobj;
+      auto& STGIF                                            = vulkan_shobj->_shaderstageinfo;
+      STGIF.sType                                            = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+      STGIF.stage                                            = VK_SHADER_STAGE_FRAGMENT_BIT;
+      STGIF.module                                           = vulkan_shobj->_vk_shadermodule;
+      STGIF.pName                                            = "main";
+    }
+
+    //////////////////
+    // compute shaders
+    //////////////////
+
+    for (auto cshader : cu_shaders) {
+      SPC._shader = cshader;
+      SPC._group  = std::make_shared<MiscGroupNode>();
+      SPC.process_extensions();
+      SPC.process_interface_inheritances<SemaInheritComputeInterface, shadlang::SHAST::ComputeInterface>();
+      SPC.compile_shader(shaderc_glsl_compute_shader);
+      auto vulkan_shobj                                      = std::make_shared<VkFxShaderObject>(_contextVK, SPC._spirv_binary);
+      vulkan_shobj->_astnode                                 = cshader;
+      vulkan_shaderfile->_vk_shaderobjects[SPC._shader_name] = vulkan_shobj;
+      auto& STCIF                                            = vulkan_shobj->_shaderstageinfo;
+      STCIF.sType                                            = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+      STCIF.stage                                            = VK_SHADER_STAGE_COMPUTE_BIT;
+      STCIF.module                                           = vulkan_shobj->_vk_shadermodule;
+      STCIF.pName                                            = "main";
+    }
+
+    //////////////////
+    // techniques (always VTG for now)
+    //////////////////
+
+    for (auto tek : techniques) {
+      auto passes                                 = AstNode::collectNodesOfType<Pass>(tek);
+      auto tek_name                               = tek->typedValueForKey<std::string>("object_name").value();
+      auto vk_tek                                 = std::make_shared<VkFxShaderTechnique>();
+      vulkan_shaderfile->_vk_techniques[tek_name] = vk_tek;
+      for (auto p : passes) {
+        auto vk_pass    = std::make_shared<VkFxShaderPass>();
+        auto vk_program = std::make_shared<VkFxShaderProgram>();
+
+        auto vtx_shader_ref = p->findFirstChildOfType<VertexShaderRef>();
+        auto frg_shader_ref = p->findFirstChildOfType<FragmentShaderRef>();
+        auto stateblock_ref = p->findFirstChildOfType<StateBlockRef>();
+        OrkAssert(vtx_shader_ref);
+        OrkAssert(frg_shader_ref);
+        auto vtx_sema_id = vtx_shader_ref->findFirstChildOfType<SemaIdentifier>();
+        auto frg_sema_id = frg_shader_ref->findFirstChildOfType<SemaIdentifier>();
+        OrkAssert(vtx_sema_id);
+        OrkAssert(frg_sema_id);
+        auto vtx_name = vtx_sema_id->typedValueForKey<std::string>("identifier_name").value();
+        auto frg_name = frg_sema_id->typedValueForKey<std::string>("identifier_name").value();
+        auto vtx_obj  = vulkan_shaderfile->_vk_shaderobjects[vtx_name];
+        auto frg_obj  = vulkan_shaderfile->_vk_shaderobjects[frg_name];
+        OrkAssert(vtx_obj);
+        OrkAssert(frg_obj);
+
+        vk_program->_vtxshader = vtx_obj;
+        vk_program->_frgshader = frg_obj;
+        vk_pass->_vk_program   = vk_program;
+        vk_tek->_vk_passes.push_back(vk_pass);
+      }
+    }
+
+    /////////////////////////////////////////////////////////////////////////////
+
+    OrkAssert(false);
+
+    /////////////////////////////////////////////////////////////////////////////
+
+    // MoltenVKShaderConverter
+    // -gi <glsl input>
+    // -so <spirv out>
+    // -si <spirv input>
+    // -mv <metal version> [2, 2.1, or 2.1.0]
+    // -mp <metal platform> [macos, ios, or ios-simulator]
+    // -mo <metal output>
+    // -t <shader type> [v, f, c]
   }
-  OrkAssert(vulkan_shaderfile != nullptr);
-  pshader->_internalHandle.set<vkfxsfile_ptr_t>(vulkan_shaderfile);
-  return true;
+}
+else { // shader already loaded...
+  vulkan_shaderfile = it->second;
+}
+OrkAssert(vulkan_shaderfile != nullptr);
+pshader->_internalHandle.set<vkfxsfile_ptr_t>(vulkan_shaderfile);
+return true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

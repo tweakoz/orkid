@@ -72,6 +72,9 @@ struct VkTextureObject;
 struct VkFxShaderObject;
 struct VkFxShaderFile;
 struct VkFxShaderProgram;
+struct VkFxShaderPass;
+struct VkFxShaderTechnique;
+struct VkFxShaderUniformSet;
 struct VkFboObject;
 struct VklRtBufferImpl;
 struct VkRtGroupImpl;
@@ -100,6 +103,9 @@ using vktexobj_ptr_t = std::shared_ptr<VkTextureObject>;
 using vkfxsfile_ptr_t = std::shared_ptr<VkFxShaderFile>;
 using vkfxsobj_ptr_t = std::shared_ptr<VkFxShaderObject>;
 using vkfxsprg_ptr_t = std::shared_ptr<VkFxShaderProgram>;
+using vkfxspass_ptr_t = std::shared_ptr<VkFxShaderPass>;
+using vkfxstek_ptr_t = std::shared_ptr<VkFxShaderTechnique>;
+using vkfxsuniset_ptr_t = std::shared_ptr<VkFxShaderUniformSet>;
 using vkfbobj_ptr_t = std::shared_ptr<VkFboObject>;
 using vkrtbufimpl_ptr_t = std::shared_ptr<VklRtBufferImpl>;
 using vkrtgrpimpl_ptr_t = std::shared_ptr<VkRtGroupImpl>;
@@ -216,9 +222,18 @@ struct VkTextureObject {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+struct VkFxShaderUniformSet {
+  static size_t descriptor_set_counter;
+  size_t _descriptor_set_id = 0;
+  size_t _binding_count = 0;
+  std::vector<std::string> _lines;
+};
+
 struct VkFxShaderFile {
   shadlang::SHAST::translationunit_ptr_t _trans_unit;
-  std::unordered_map<std::string, vkfxsobj_ptr_t> _shaderobjects;
+  std::unordered_map<std::string, vkfxsobj_ptr_t> _vk_shaderobjects;
+  std::unordered_map<std::string, vkfxstek_ptr_t> _vk_techniques;
+  std::unordered_map<std::string, vkfxsuniset_ptr_t> _vk_uniformsets;
 };
 
 struct VkFxShaderObject {
@@ -228,8 +243,9 @@ struct VkFxShaderObject {
 
   vkcontext_rawptr_t _contextVK;
   vkfxshader_bin_t _spirv_binary;
-  VkShaderModuleCreateInfo _shadermoduleinfo;
-  VkShaderModule _shadermodule;
+  VkShaderModuleCreateInfo _vk_shadermoduleinfo;
+  VkShaderModule _vk_shadermodule;
+  VkPipelineShaderStageCreateInfo _shaderstageinfo;
   shadlang::SHAST::astnode_ptr_t _astnode; // debug only
 
 };
@@ -241,6 +257,13 @@ struct VkFxShaderProgram {
   vkfxsobj_ptr_t _tevshader;
   vkfxsobj_ptr_t _frgshader;
   vkfxsobj_ptr_t _comshader;
+};
+
+struct VkFxShaderPass {
+  vkfxsprg_ptr_t _vk_program;
+};
+struct VkFxShaderTechnique {
+  std::vector<vkfxspass_ptr_t> _vk_passes;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
