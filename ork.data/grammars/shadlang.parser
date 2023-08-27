@@ -546,6 +546,17 @@ Pass <|[
   R_CURLY
 ]|>
 
+VtxFrgPass <|[
+    KW_VFPASS
+    EQUALS
+    L_CURLY
+    [ IDENTIFIER ] : "vfpass_vtx_name"
+    COMMA 
+    [ IDENTIFIER ] : "vfpass_frg_name"
+    COMMA 
+    [ IDENTIFIER ] : "vfpass_sb_name"
+    R_CURLY
+]|>
 
 FxConfigRef <|[
   KW_FXCONFIG
@@ -585,7 +596,7 @@ Technique <|[
   [ IDENTIFIER ] : "technique_name"
   L_CURLY
   opt{ FxConfigRef }
-  zom{ Pass }
+  zom{ sel{ Pass VtxFrgPass } }
   R_CURLY
 ]|>
 

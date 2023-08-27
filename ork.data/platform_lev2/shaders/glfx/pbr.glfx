@@ -2,7 +2,7 @@
 // FxConfigs
 ///////////////////////////////////////////////////////////////
 fxconfig fxcfg_default {
-  import "mathtools.i";
+	import "mathtools.i";
 	import "pbrtools.i";
 	import "envtools.i";
 }

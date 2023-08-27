@@ -606,7 +606,7 @@ PBRMaterial::PBRMaterial()
   _rasterstate.SetZWriteMask(true);
   _rasterstate.SetCullTest(ECullTest::PASS_FRONT);
   miNumPasses = 1;
-  _shaderpath = "orkshader://pbr";
+  _shaderpath = "orkshader://pbr.glfx";
 }
 
 ////////////////////////////////////////////

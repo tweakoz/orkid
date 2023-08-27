@@ -111,6 +111,7 @@ KW_STORAGE          <| "storage" |>
 
 KW_STATEBLOCK       <| "state_block" |>
 KW_PASS             <| "pass" |>
+KW_VFPASS           <| "vf_pass" |>
 KW_TECHNIQUE        <| "technique" |>
 KW_BLENDMODE        <| "BlendMode" |>
 KW_CULLTEST         <| "CullTest" |>
