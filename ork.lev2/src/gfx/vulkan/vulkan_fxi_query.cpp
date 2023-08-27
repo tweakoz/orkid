@@ -6,26 +6,30 @@
 ////////////////////////////////////////////////////////////////
 
 #include "vulkan_ctx.h"
+#include <ork/lev2/gfx/shadman.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
 
-const FxShaderTechnique* VkFxInterface::technique(FxShader* hfx, const std::string& name) {
+const FxShaderTechnique* VkFxInterface::technique(FxShader* pshader, const std::string& name) {
+  auto vkshfile = pshader->_internalHandle.get<vkfxsfile_ptr_t>();
   OrkAssert(false);
   return nullptr;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const FxShaderParam* VkFxInterface::parameter(FxShader* hfx, const std::string& name) {
+const FxShaderParam* VkFxInterface::parameter(FxShader* pshader, const std::string& name) {
+  auto vkshfile = pshader->_internalHandle.get<vkfxsfile_ptr_t>();
   OrkAssert(false);
   return nullptr;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const FxShaderParamBlock* VkFxInterface::parameterBlock(FxShader* hfx, const std::string& name) {
+const FxShaderParamBlock* VkFxInterface::parameterBlock(FxShader* pshader, const std::string& name) {
+  auto vkshfile = pshader->_internalHandle.get<vkfxsfile_ptr_t>();
   OrkAssert(false);
   return nullptr;
 }
@@ -33,11 +37,13 @@ const FxShaderParamBlock* VkFxInterface::parameterBlock(FxShader* hfx, const std
 ///////////////////////////////////////////////////////////////////////////////
 #if defined(ENABLE_COMPUTE_SHADERS)
 ///////////////////////////////////////////////////////////////////////////////
-const FxComputeShader* VkFxInterface::computeShader(FxShader* hfx, const std::string& name) {
+const FxComputeShader* VkFxInterface::computeShader(FxShader* pshader, const std::string& name) {
+  auto vkshfile = pshader->_internalHandle.get<vkfxsfile_ptr_t>();
   OrkAssert(false);
   return nullptr;
 }
-const FxShaderStorageBlock* VkFxInterface::storageBlock(FxShader* hfx, const std::string& name) {
+const FxShaderStorageBlock* VkFxInterface::storageBlock(FxShader* pshader, const std::string& name) {
+  auto vkshfile = pshader->_internalHandle.get<vkfxsfile_ptr_t>();
   OrkAssert(false);
   return nullptr;
 }

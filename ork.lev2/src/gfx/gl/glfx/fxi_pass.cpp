@@ -26,7 +26,7 @@ bool Pass::hasUniformInstance(UniformInstance* puni) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const UniformInstance* Pass::uniformInstance(Uniform* puni) const {
+const UniformInstance* Pass::uniformInstance(const Uniform* puni) const {
   auto it = _uniformInstances.find(puni->_name);
   return (it != _uniformInstances.end()) ? it->second : nullptr;
 }

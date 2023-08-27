@@ -55,16 +55,13 @@ struct FxShaderPass {
 struct FxShaderTechnique {
 
   std::string mTechniqueName;
-  const void* mInternalHandle;
   orkvector<FxShaderPass*> mPasses;
   bool mbValidated;
   fxshader_ptr_t _shader = nullptr;
+  svarp_t _impl;
 
-  FxShaderTechnique(void* ih = 0);
+  FxShaderTechnique();
 
-  const void* GetPlatformHandle(void) const {
-    return mInternalHandle;
-  }
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -74,20 +71,18 @@ struct FxShaderParamInBlockInfo {
 };
 
 struct FxShaderParam {
+
+  FxShaderParam();
+
   std::string _name;
   std::string mParameterSemantic;
   std::string mParameterType;
   EPropType meParamType;
-  void* mInternalHandle;
   bool mBindable;
   FxShaderParamInBlockInfo* _blockinfo = nullptr;
   FxShaderParam* mChildParam;
-
   orklut<std::string, std::string> _annotations;
-  FxShaderParam(void* ih = 0);
-  void* GetPlatformHandle(void) const {
-    return mInternalHandle;
-  }
+  svarp_t _impl;
 };
 
 struct FxShaderParamBlock {

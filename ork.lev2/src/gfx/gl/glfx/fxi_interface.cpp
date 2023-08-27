@@ -87,7 +87,8 @@ FxShader* Interface::shaderFromShaderText(const std::string& name, const std::st
 void Interface::BindContainerToAbstract(rootcontainer_ptr_t container, FxShader* fxh) {
   for (const auto& ittek : container->_techniqueMap) {
     Technique* ptek         = ittek.second;
-    auto ork_tek            = new FxShaderTechnique((void*)ptek);
+    auto ork_tek            = new FxShaderTechnique();
+    ork_tek->_impl.set<const Technique*>(ptek);
     ork_tek->_shader        = fxh;
     ork_tek->mTechniqueName = ittek.first;
     // pabstek->mPasses = ittek->first;
@@ -100,7 +101,7 @@ void Interface::BindContainerToAbstract(rootcontainer_ptr_t container, FxShader*
     ork_parm->_name              = itp.first;
     ork_parm->mParameterSemantic = puni->_semantic;
     ork_parm->mParameterType     = puni->_typeName;
-    ork_parm->mInternalHandle    = (void*)puni;
+    ork_parm->_impl.set<const Uniform*>(puni);
     fxh->addParameter(ork_parm);
   }
 #if defined(ENABLE_COMPUTE_SHADERS)
@@ -137,7 +138,7 @@ int Interface::BeginBlock(const FxShaderTechnique* tek, const RenderContextInstD
   if (nullptr == tek){
     return 0;
   }
-  auto tek_cont = static_cast<const Technique*>(tek->GetPlatformHandle());
+  auto tek_cont = tek->_impl.get<const Technique*>();
   OrkAssert(tek_cont != nullptr);
   _activeTechnique = tek;
   _activeShader    = tek->_shader;
@@ -345,7 +346,7 @@ const FxShaderParamBlock* Interface::parameterBlock(FxShader* hfx, const std::st
       auto p                         = new FxShaderParam;
       p->_blockinfo                  = new FxShaderParamInBlockInfo;
       p->_blockinfo->_parent         = fxsblock;
-      p->mInternalHandle             = (void*)u;
+      p->_impl.set<const Uniform*>(u);
       p->_name                       = u->_name;
       fxsblock->_subparams[p->_name] = p;
     }

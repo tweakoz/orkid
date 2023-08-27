@@ -400,7 +400,7 @@ struct Pass {
   void postProc(rootcontainer_ptr_t c);
 
   bool hasUniformInstance(UniformInstance* puni) const;
-  const UniformInstance* uniformInstance(Uniform* puni) const;
+  const UniformInstance* uniformInstance(const Uniform* puni) const;
 
   UniformBlockBinding* uniformBlockBinding(UniformBlock* block);
 

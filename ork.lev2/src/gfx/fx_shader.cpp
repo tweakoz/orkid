@@ -34,14 +34,12 @@ FxShaderPass::FxShaderPass(void* ih)
     , mbRestorePass(false) {
 }
 
-FxShaderTechnique::FxShaderTechnique(void* ih)
-    : mInternalHandle(ih)
-    , mbValidated(false) {
+FxShaderTechnique::FxShaderTechnique()
+    : mbValidated(false) {
 }
 
-FxShaderParam::FxShaderParam(void* ih)
+FxShaderParam::FxShaderParam()
     : meParamType(EPROPTYPE_END)
-    , mInternalHandle(ih)
     , mBindable(true)
     , mChildParam(0) {
 }
