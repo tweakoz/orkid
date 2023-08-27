@@ -352,6 +352,7 @@ void _semaPerformImports(impl::ShadLangParser* slp, astnode_ptr_t top) {
     if (raw_import_path.back() == '"')
       raw_import_path.pop_back();
 
+    import_node->setValueForKey<std::string>("raw_import_path", raw_import_path);
     ////////////////////////////////////////////////////
 
     auto rpath = file::Path(raw_import_path);
@@ -369,14 +370,17 @@ void _semaPerformImports(impl::ShadLangParser* slp, astnode_ptr_t top) {
       printf("Import ProcPath3<%s>\n", proc_import_path.c_str());
       // OrkAssert(false);
     }
+    import_node->setValueForKey<std::string>("proc_import_path", proc_import_path.c_str());
 
     ////////////////////////////////////////////////////////
 
     auto sub_tunit = shadlang::parseFromFile(proc_import_path);
     OrkAssert(sub_tunit);
     import_map[proc_import_path.c_str()] = sub_tunit;
+    import_node->setValueForKey<transunit_ptr_t>("transunit", sub_tunit);
 
     ////////////////////////////////////////////////////////
+
 
     size_t num_trans_by_name = sub_tunit->_translatables_by_name.size();
     printf("Import NumTranslatablesByName<%zu>\n", num_trans_by_name );

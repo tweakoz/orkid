@@ -51,15 +51,26 @@ struct AstNode {
   ////////////////////////////////////////////
   template <typename T> //
   std::vector<std::shared_ptr<T>> //
-  static collectNodesOfType(astnode_ptr_t top){ //
+  static collectNodesOfType(astnode_ptr_t top, //
+                            bool recurse=true){ //
     std::vector<std::shared_ptr<T>> nodes;
-    auto collect_nodes     = std::make_shared<Visitor>();
-    collect_nodes->_on_pre = [&](astnode_ptr_t node) {
-      if (auto as_typed = std::dynamic_pointer_cast<T>(node)) {
-        nodes.push_back(as_typed);
+    if(recurse){
+      auto collect_nodes     = std::make_shared<Visitor>();
+      collect_nodes->_on_pre = [&](astnode_ptr_t node) {
+        if (auto as_typed = std::dynamic_pointer_cast<T>(node)) {
+          nodes.push_back(as_typed);
+        }
+      };
+      visitNode(top, collect_nodes);
+
+    }
+    else{
+      for( auto c : top->_children ){
+        if (auto as_typed = std::dynamic_pointer_cast<T>(c)) {
+          nodes.push_back(as_typed);
+        }
       }
-    };
-    visitNode(top, collect_nodes);
+    }
     return nodes;
   }
   ///////////////////////////
@@ -194,7 +205,7 @@ DECLARE_STD_AST_CLASS(AstNode,Dependency);
 DECLARE_STD_AST_CLASS(Dependency,Extension);
 //
 DECLARE_STD_AST_CLASS(AstNode,Directive);
-DECLARE_STD_AST_CLASS(Directive,ImportDirective);
+DECLARE_STD_AST_CLASS_WPTR(Directive,ImportDirective, importdirective_ptr_t);
 //
 DECLARE_STD_AST_CLASS(LanguageElement,LValue);
 DECLARE_STD_AST_CLASS_WPTR(LanguageElement,DataType, dt_ptr_t );
@@ -295,7 +306,7 @@ DECLARE_STD_AST_CLASS(Statement,ExpressionStatement);
 DECLARE_STD_AST_CLASS(Statement,DiscardStatement);
 DECLARE_STD_AST_CLASS(Statement,EmptyStatement);
 //
-DECLARE_STD_AST_CLASS(Translatable,LibraryBlock);
+DECLARE_STD_AST_CLASS_WPTR(Translatable,LibraryBlock, libblock_ptr_t);
 DECLARE_STD_AST_CLASS(Translatable,FxConfigDecl);
 DECLARE_STD_AST_CLASS_WPTR(Translatable,Shader, shader_ptr_t);
 DECLARE_STD_AST_CLASS(Translatable,PipelineInterface);

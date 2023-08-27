@@ -32,10 +32,6 @@ void* pData = malloc(cacheSize);
 vkGetPipelineCacheData(device, pipelineCache, &cacheSize, pData);
 #endif
 
-// TODO
-// process ImportDirectives at top of translation unit.
-// and flyweight imports
-
 struct shader_proc_context {
 
   vkfxsfile_ptr_t _shaderfile;
@@ -55,6 +51,54 @@ struct shader_proc_context {
     va_end(args);
     _group->appendChild<InsertLine>(formatbuffer);
   }
+  ////////////////////////////////////////////////////////
+  void process_imports() {
+    auto imports = AstNode::collectNodesOfType<ImportDirective>(_transu);
+    for( auto import : imports ){
+      auto import_path = import->typedValueForKey<std::string>("raw_import_path").value();
+      printf("import_path<%s>\n", import_path.c_str());
+      auto trans_unit = import->typedValueForKey<transunit_ptr_t>("transunit").value();
+      auto it = _shaderfile->_imported_units.find(import_path);
+      OrkAssert(it==_shaderfile->_imported_units.end());
+      _shaderfile->_imported_units[import_path] = trans_unit;
+    }
+  }
+  ////////////////////////////////////////////////////////
+  void process_libblocks() {
+    auto lib_blocks = AstNode::collectNodesOfType<LibraryBlock>(_transu);
+    for( auto item : _shaderfile->_imported_units ){
+      auto import_name = item.first;
+      auto import_unit = item.second;
+      auto import_lib_blocks = AstNode::collectNodesOfType<LibraryBlock>(import_unit);
+      vector_append(lib_blocks, import_lib_blocks);
+    }
+
+    for( auto lib_block : lib_blocks ){
+      auto name = lib_block->typedValueForKey<std::string>("object_name").value();
+      auto it = _shaderfile->_lib_blocks.find(name);
+      if(it!=_shaderfile->_lib_blocks.end()){
+        printf( "dupe libblock<%s>\n", name.c_str());
+        //OrkAssert(false);
+      }
+      _shaderfile->_lib_blocks[name] = lib_block;
+    }
+  }
+  ////////////////////////////////////////////////////////
+
+  void process_inh_libraries(astnode_ptr_t par_node) {
+    auto inh_libs = AstNode::collectNodesOfType<SemaInheritLibrary>(par_node);
+    for (auto inh_lib : inh_libs) {
+      auto INHID = inh_lib->typedValueForKey<std::string>("inherit_id").value();
+      auto it_lib = _shaderfile->_lib_blocks.find(INHID);
+      OrkAssert(it_lib != _shaderfile->_lib_blocks.end());
+      auto lib_block = it_lib->second;
+      auto lib_children = lib_block->_children;
+      // inline lib block into shader
+      //  todo BEFORE shader
+      inh_lib->_children = lib_children;
+    }
+  }
+
   ////////////////////////////////////////////////////////
 
   void process_inh_unisets(astnode_ptr_t par_node) {
@@ -153,6 +197,20 @@ struct shader_proc_context {
     auto INHID  = INHVIF->template typedValueForKey<std::string>("inherit_id").value();
     printf("  inh_vif<%s> INHID<%s>\n", INHVIF->_name.c_str(), INHID.c_str());
     auto VIF = _transu->template find<U>(INHID);
+    ///////////////////////////////////////////////
+    // search imported units for interface
+    ///////////////////////////////////////////////
+    if(nullptr==VIF){
+      for( auto import_unit_item : _shaderfile->_imported_units ){
+        auto import_name = import_unit_item.first;
+        auto import_unit = import_unit_item.second;
+        VIF = import_unit->template find<U>(INHID);
+        if(VIF){
+          break;
+        }
+      }
+    }
+    ///////////////////////////////////////////////
     OrkAssert(VIF);
     process_inh_ios(VIF);
     process_inh_unisets(VIF);
@@ -273,6 +331,7 @@ bool VkFxInterface::LoadFxShader(const AssetPath& input_path, FxShader* pshader)
       vulkan_shaderfile              = std::make_shared<VkFxShaderFile>();
       vulkan_shaderfile->_trans_unit = shadlang::parseFromString(str_read->_data);
       _fxshaderfiles[input_path]     = vulkan_shaderfile;
+
       auto vtx_shaders               = AstNode::collectNodesOfType<VertexShader>(vulkan_shaderfile->_trans_unit);
       auto frg_shaders               = AstNode::collectNodesOfType<FragmentShader>(vulkan_shaderfile->_trans_unit);
       auto cu_shaders                = AstNode::collectNodesOfType<ComputeShader>(vulkan_shaderfile->_trans_unit);
@@ -291,9 +350,24 @@ bool VkFxInterface::LoadFxShader(const AssetPath& input_path, FxShader* pshader)
       printf("num_techniques<%zu>\n", num_techniques);
       printf("num_unisets<%zu>\n", num_unisets);
 
+      //////////////////
+
       shader_proc_context SPC;
       SPC._shaderfile = vulkan_shaderfile;
       SPC._transu     = vulkan_shaderfile->_trans_unit;
+
+      //////////////////
+      // Imports
+      //////////////////
+
+      SPC.process_imports();
+
+      //////////////////
+      // Library Blocks
+      //////////////////
+
+      SPC.process_libblocks();
+
       //////////////////
       // uniformsets
       //////////////////
@@ -310,7 +384,8 @@ bool VkFxInterface::LoadFxShader(const AssetPath& input_path, FxShader* pshader)
           OrkAssert(tid);
           auto dt = tid->typedValueForKey<std::string>("data_type").value();
           auto id = tid->typedValueForKey<std::string>("identifier_name").value();
-          if (dt.find("sampler") == 0) {
+          bool is_sampler = (dt.find("sampler")!= std::string::npos);
+          if (is_sampler) {
             auto vk_samp = std::make_shared<VkFxShaderUniformSetSampler>();
             vk_samp->_datatype   = dt;
             vk_samp->_identifier = id;
@@ -339,6 +414,7 @@ bool VkFxInterface::LoadFxShader(const AssetPath& input_path, FxShader* pshader)
       SPC._shader = vshader;
       SPC._group  = std::make_shared<MiscGroupNode>();
       SPC.process_inh_extensions();
+      SPC.process_inh_libraries(vshader);
       SPC.process_inh_interfaces<SemaInheritVertexInterface, shadlang::SHAST::VertexInterface>();
       SPC.compile_shader(shaderc_glsl_vertex_shader);
       auto vulkan_shobj                                      = std::make_shared<VkFxShaderObject>(_contextVK, SPC._spirv_binary);
@@ -362,6 +438,7 @@ bool VkFxInterface::LoadFxShader(const AssetPath& input_path, FxShader* pshader)
       SPC._shader = fshader;
       SPC._group  = std::make_shared<MiscGroupNode>();
       SPC.process_inh_extensions();
+      SPC.process_inh_libraries(fshader);
       SPC.process_inh_interfaces<SemaInheritFragmentInterface, shadlang::SHAST::FragmentInterface>();
       SPC.compile_shader(shaderc_glsl_fragment_shader);
       auto vulkan_shobj                                      = std::make_shared<VkFxShaderObject>(_contextVK, SPC._spirv_binary);
@@ -385,6 +462,7 @@ bool VkFxInterface::LoadFxShader(const AssetPath& input_path, FxShader* pshader)
       SPC._shader = cshader;
       SPC._group  = std::make_shared<MiscGroupNode>();
       SPC.process_inh_extensions();
+      SPC.process_inh_libraries(cshader);
       SPC.process_inh_interfaces<SemaInheritComputeInterface, shadlang::SHAST::ComputeInterface>();
       SPC.compile_shader(shaderc_glsl_compute_shader);
       auto vulkan_shobj                                      = std::make_shared<VkFxShaderObject>(_contextVK, SPC._spirv_binary);
