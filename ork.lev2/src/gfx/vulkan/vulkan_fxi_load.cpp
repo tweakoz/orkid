@@ -111,7 +111,7 @@ struct shader_proc_context {
     for (auto input : inputs) {
       auto tid = input->childAs<TypedIdentifier>(0);
       OrkAssert(tid);
-      dumpAstNode(tid);
+      //dumpAstNode(tid);
       auto dt = tid->typedValueForKey<std::string>("data_type").value();
       auto id = tid->typedValueForKey<std::string>("identifier_name").value();
       appendText("layout(location=%zu) in %s %s;", input_index, dt.c_str(), id.c_str());
@@ -122,7 +122,7 @@ struct shader_proc_context {
     for (auto output : outputs) {
       auto tid = output->childAs<TypedIdentifier>(0);
       OrkAssert(tid);
-      dumpAstNode(tid);
+      //dumpAstNode(tid);
       auto dt = tid->typedValueForKey<std::string>("data_type").value();
       auto id = tid->typedValueForKey<std::string>("identifier_name").value();
       appendText("layout(location=%zu) out %s %s;", output_index, dt.c_str(), id.c_str());
@@ -189,7 +189,7 @@ struct shader_proc_context {
     }
 
     _spirv_binary = vkfxshader_bin_t(result.cbegin(), result.cend());
-    hexdumpu32s(_spirv_binary);
+    //hexdumpu32s(_spirv_binary);
 #if 0 // defined( __APPLE__ )
             mvk::SPIRVToMSLConverter converter;
             mvk::SPIRVToMSLConversionConfiguration config;
