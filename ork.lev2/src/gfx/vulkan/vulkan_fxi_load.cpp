@@ -58,9 +58,36 @@ struct shader_proc_context {
       auto INHID = inh_uset->typedValueForKey<std::string>("inherit_id").value();
       auto it_uset = _shaderfile->_vk_uniformsets.find(INHID);
       OrkAssert(it_uset != _shaderfile->_vk_uniformsets.end());
-      auto uset = it_uset->second;
-      for( auto line : uset->_lines ){
+      auto vk_uniset = it_uset->second;
+      vk_uniset->_descriptor_set_id = VkFxShaderUniformSet::descriptor_set_counter++;
+      /////////////////////
+      // loose unis
+      /////////////////////
+      auto line = FormatString("layout(set=%zu, binding=%zu) uniform %s {", //
+                                vk_uniset->_descriptor_set_id,                     //
+                                binding_id,                                   //
+                                INHID.c_str());
+      appendText(line.c_str());
+      for( auto item : vk_uniset->_items_by_order ){
+        auto dt = item->_datatype;
+        auto id = item->_identifier;
+        appendText((dt+" "+id+";").c_str());
+      }
+      appendText("};");
+      binding_id++;
+      /////////////////////
+      // samplers
+      /////////////////////
+      for( auto item : vk_uniset->_samplers_by_name ){
+        auto dt = item.second->_datatype;
+        auto id = item.second->_identifier;
+        auto line = FormatString("layout(set=%zu, binding=%zu) uniform %s %s;", //
+                                  vk_uniset->_descriptor_set_id,                     //
+                                  binding_id,                                   //
+                                  dt.c_str(),                                   //
+                                  id.c_str());
         appendText(line.c_str());
+        binding_id++;
       }
     }
   }
@@ -268,46 +295,26 @@ bool VkFxInterface::LoadFxShader(const AssetPath& input_path, FxShader* pshader)
         //////////////////////////////////////
         auto uni_name = uni_set->typedValueForKey<std::string>("object_name").value();
         auto vk_uniset = std::make_shared<VkFxShaderUniformSet>();
-        vk_uniset->_descriptor_set_id = VkFxShaderUniformSet::descriptor_set_counter++;
         vulkan_shaderfile->_vk_uniformsets[uni_name] = vk_uniset;
         auto decls = AstNode::collectNodesOfType<DataDeclaration>(uni_set);
-        auto line  = FormatString(
-            "layout(set=%zu, binding=%zu) uniform %s {", //
-            vk_uniset->_descriptor_set_id,           //
-            vk_uniset->_binding_count,                   //
-            uni_name.c_str());
-        vk_uniset->_lines.push_back(line);
-        std::vector<tid_ptr_t> _samplers;
         //////////////////////////////////////
         for (auto d : decls) {
           auto tid = d->childAs<TypedIdentifier>(0);
           OrkAssert(tid);
-          dumpAstNode(tid);
           auto dt = tid->typedValueForKey<std::string>("data_type").value();
           auto id = tid->typedValueForKey<std::string>("identifier_name").value();
           if (dt.find("sampler") == 0) {
-            _samplers.push_back(tid); // deferred to after uniformset
+            auto vk_samp = std::make_shared<VkFxShaderUniformSetSampler>();
+            vk_samp->_datatype   = dt;
+            vk_samp->_identifier = id;
+            vk_uniset->_samplers_by_name[id] = vk_samp;
           } else {
-            vk_uniset->_lines.push_back(dt+" "+id+";");
+            auto vk_item = std::make_shared<VkFxShaderUniformSetItem>();
+            vk_item->_datatype   = dt;
+            vk_item->_identifier = id;
+            vk_uniset->_items_by_name[id] = vk_item;
+            vk_uniset->_items_by_order.push_back(vk_item);
           }
-        }
-        //////////////////////////////////////
-        vk_uniset->_lines.push_back("};");
-        vk_uniset->_binding_count++; // 1 binding for loose uniforms
-        //////////////////////////////////////
-        // samplers
-        //////////////////////////////////////
-        for (auto s : _samplers) {
-          auto dt   = s->typedValueForKey<std::string>("data_type").value();
-          auto id   = s->typedValueForKey<std::string>("identifier_name").value();
-          line = FormatString(
-              "layout(set=%zu, binding=%zu) uniform %s %s;", //
-              vk_uniset->_descriptor_set_id,             //
-              vk_uniset->_binding_count,                     //
-              dt.c_str(),                                    //
-              id.c_str());
-          vk_uniset->_lines.push_back(line);
-          vk_uniset->_binding_count++; // 1 binding per sampler
         }
         //////////////////////////////////////
     }

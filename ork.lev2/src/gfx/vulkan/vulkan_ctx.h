@@ -75,6 +75,8 @@ struct VkFxShaderProgram;
 struct VkFxShaderPass;
 struct VkFxShaderTechnique;
 struct VkFxShaderUniformSet;
+struct VkFxShaderUniformSetItem;
+struct VkFxShaderUniformSetSampler;
 struct VkFboObject;
 struct VklRtBufferImpl;
 struct VkRtGroupImpl;
@@ -106,6 +108,8 @@ using vkfxsprg_ptr_t = std::shared_ptr<VkFxShaderProgram>;
 using vkfxspass_ptr_t = std::shared_ptr<VkFxShaderPass>;
 using vkfxstek_ptr_t = std::shared_ptr<VkFxShaderTechnique>;
 using vkfxsuniset_ptr_t = std::shared_ptr<VkFxShaderUniformSet>;
+using vkfxsunisetitem_ptr_t = std::shared_ptr<VkFxShaderUniformSetItem>;
+using vkfxsunisetsamp_ptr_t = std::shared_ptr<VkFxShaderUniformSetSampler>;
 using vkfbobj_ptr_t = std::shared_ptr<VkFboObject>;
 using vkrtbufimpl_ptr_t = std::shared_ptr<VklRtBufferImpl>;
 using vkrtgrpimpl_ptr_t = std::shared_ptr<VkRtGroupImpl>;
@@ -221,12 +225,24 @@ struct VkTextureObject {
 };
 
 ///////////////////////////////////////////////////////////////////////////////
+struct VkFxShaderUniformSetItem {
+  std::string _datatype;
+  std::string _identifier;
+};
+struct VkFxShaderUniformSetSampler {
+  size_t _binding_id = -1;
+  std::string _datatype;
+  std::string _identifier;
+};
 
 struct VkFxShaderUniformSet {
   static size_t descriptor_set_counter;
   size_t _descriptor_set_id = 0;
-  size_t _binding_count = 0;
-  std::vector<std::string> _lines;
+  //size_t _binding_id = 0;
+  std::unordered_map<std::string, vkfxsunisetsamp_ptr_t> _samplers_by_name;
+  std::unordered_map<std::string, vkfxsunisetitem_ptr_t> _items_by_name;
+  std::vector<vkfxsunisetitem_ptr_t> _items_by_order;
+  //std::vector<std::string> _lines;
 };
 
 struct VkFxShaderFile {
