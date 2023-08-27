@@ -32,6 +32,9 @@ void* pData = malloc(cacheSize);
 vkGetPipelineCacheData(device, pipelineCache, &cacheSize, pData);
 #endif
 
+// TODO
+// process ImportDirectives at top of translation unit.
+
 struct shader_proc_context {
 
   vkfxsfile_ptr_t _shaderfile;

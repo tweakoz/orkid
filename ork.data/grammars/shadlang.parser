@@ -621,6 +621,7 @@ Translatable <|
   }
 |>
 
-TranslationUnit <|
+TranslationUnit <|[
+  zom{ ImportDirective }
   zom{ Translatable } 
-|>
+]|>
