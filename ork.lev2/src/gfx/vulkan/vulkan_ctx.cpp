@@ -32,6 +32,16 @@ vkcontext_ptr_t VkContext::makeShared(){
 ///////////////////////////////////////////////////////////////////////////////
 
 VkContext::VkContext() {
+
+  ///////////////////////////////////////////////////////////////
+  OrkAssert(_GVI != nullptr);
+  auto vk_devinfo = _GVI->_device_infos[0];
+  VkDeviceCreateInfo DCI = {};
+  DCI.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+  vkCreateDevice(vk_devinfo->_phydev, &DCI, nullptr, &_vkdevice);
+
+  ///////////////////////////////////////////////////////////////
+
   _dwi = std::make_shared<VkDrawingInterface>(this);
   _imi = std::make_shared<VkImiInterface>(this);
   _rsi = std::make_shared<VkRasterStateInterface>(this);

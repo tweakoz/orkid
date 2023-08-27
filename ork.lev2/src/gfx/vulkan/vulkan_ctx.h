@@ -52,7 +52,7 @@ namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct VulkanInstance;
-struct VulkanDevice;
+struct VulkanDeviceInfo;
 struct VulkanDeviceGroup;
 //
 struct VkContext;
@@ -70,6 +70,8 @@ struct VkComputeInterface;
 //
 struct VkTextureObject;
 struct VkFxShaderObject;
+struct VkFxShaderFile;
+struct VkFxShaderProgram;
 struct VkFboObject;
 struct VklRtBufferImpl;
 struct VkRtGroupImpl;
@@ -77,7 +79,7 @@ struct VkTextureAsyncTask;
 struct VkTexLoadReq;
 //
 using vkinstance_ptr_t = std::shared_ptr<VulkanInstance>;
-using vkdevice_ptr_t = std::shared_ptr<VulkanDevice>;
+using vkdeviceinfo_ptr_t = std::shared_ptr<VulkanDeviceInfo>;
 using vkdevgrp_ptr_t = std::shared_ptr<VulkanDeviceGroup>;
 using vkcontext_ptr_t = std::shared_ptr<VkContext>;
 using vkcontext_rawptr_t = VkContext*;
@@ -95,18 +97,21 @@ using vkci_ptr_t = std::shared_ptr<VkComputeInterface>;
 #endif 
 //
 using vktexobj_ptr_t = std::shared_ptr<VkTextureObject>;
+using vkfxsfile_ptr_t = std::shared_ptr<VkFxShaderFile>;
 using vkfxsobj_ptr_t = std::shared_ptr<VkFxShaderObject>;
+using vkfxsprg_ptr_t = std::shared_ptr<VkFxShaderProgram>;
 using vkfbobj_ptr_t = std::shared_ptr<VkFboObject>;
 using vkrtbufimpl_ptr_t = std::shared_ptr<VklRtBufferImpl>;
 using vkrtgrpimpl_ptr_t = std::shared_ptr<VkRtGroupImpl>;
 using vktexasynctask_ptr_t = std::shared_ptr<VkTextureAsyncTask>;
 using vktexloadreq_ptr_t = std::shared_ptr<VkTexLoadReq>;
+using vkfxshader_bin_t = std::vector<uint32_t>;
 
 extern vkinstance_ptr_t _GVI;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct VulkanDevice{
+struct VulkanDeviceInfo{
 
   VkPhysicalDevice _phydev;
   VkPhysicalDeviceProperties _devprops;
@@ -128,7 +133,7 @@ struct VulkanDevice{
 
 struct VulkanDeviceGroup{
   size_t _deviceCount = 0;
-  std::vector<vkdevice_ptr_t> _devices;
+  std::vector<vkdeviceinfo_ptr_t> _device_infos;
 
 };
 
@@ -144,11 +149,11 @@ struct VulkanInstance{
   VkInstance _instance;
   std::vector<VkPhysicalDeviceGroupProperties> _phygroups;
   std::vector<vkdevgrp_ptr_t> _devgroups;
-  std::vector<vkdevice_ptr_t> _devices;
+  std::vector<vkdeviceinfo_ptr_t> _device_infos;
   uint32_t _numgpus = 0;
   uint32_t _numgroups = 0;
 
-  std::map<AssetPath, vkfxsobj_ptr_t> _shared_fxshaders;
+  std::map<AssetPath, vkfxsfile_ptr_t> _shared_fxshaderfiles;
 
 };
 
@@ -213,8 +218,27 @@ struct VkTextureObject {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct VkFxShaderObject {
+struct VkFxShaderFile {
   shadlang::SHAST::translationunit_ptr_t _trans_unit;
+  std::unordered_map<std::string, vkfxsobj_ptr_t> _shaderobjects;
+};
+
+struct VkFxShaderObject {
+
+  VkFxShaderObject(vkcontext_rawptr_t ctx, vkfxshader_bin_t bin);
+  vkfxshader_bin_t _spirv_binary;
+  VkShaderModuleCreateInfo _shadermoduleinfo;
+  VkShaderModule _shadermodule;
+  shadlang::SHAST::astnode_ptr_t _astnode; // debug only
+};
+
+struct VkFxShaderProgram {
+  vkfxsobj_ptr_t _vtxshader;
+  vkfxsobj_ptr_t _geoshader;
+  vkfxsobj_ptr_t _tctshader;
+  vkfxsobj_ptr_t _tevshader;
+  vkfxsobj_ptr_t _frgshader;
+  vkfxsobj_ptr_t _comshader;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -515,11 +539,16 @@ struct VkComputeInterface : public ComputeInterface {
 struct VkContext : public Context {
 
   DeclareAbstractX(VkContext, Context);
+private:
+    VkContext();
 public:
 
+  static vkcontext_ptr_t makeShared();
   static bool HaveExtension(const std::string& extname);
-
   static const CClass* gpClass;
+  static ork::MpMcBoundedQueue<void*> _loadTokens;
+  //static orkvector<std::string> gVKExtensions;
+  //static orkset<std::string> gVKExtensionSet;
 
   ///////////////////////////////////////////////////////////////////////
 
@@ -548,26 +577,10 @@ public:
   ComputeInterface* CI() final;
 #endif
   DrawingInterface* DWI() final;
-  //GlFrameBufferInterface& GLFBI() {
-    //return mFbI;
-  //}
 
   ///////////////////////////////////////////////////////////////////////
 
   void makeCurrentContext(void) final;
-
-  //void debugLabel(GLenum target, GLuint object, std::string name);
-
-  //////////////////////////////////////////////
-
-
-  //////////////////////////////////////////////
-
-  //void AttachGLContext(CTXBASE* pCTFL);
-  //void SwapGLContext(CTXBASE* pCTFL);
-
-  
-
   void swapBuffers(CTXBASE* ctxbase) final;
 
   void initializeWindowContext(Window* pWin, CTXBASE* pctxbase) final; // make a window
@@ -583,28 +596,17 @@ public:
   void* _doBeginLoad() final;
   void _doEndLoad(void* ploadtok) final; // virtual
 
+  //////////////////////////////////////////////
+  VkDevice _vkdevice;
+  //////////////////////////////////////////////
   void* mhHWND;
-  void* mGLXContext;
   vkcontext_ptr_t _parentTarget;
-
   std::stack<void*> mDCStack;
   std::stack<void*> mGLRCStack;
+  EDepthTest meCurDepthTest;
+  bool mTargetDrawableSizeDirty;
 
   //////////////////////////////////////////////
-
-  static ork::MpMcBoundedQueue<void*> _loadTokens;
-
-  ///////////////////////////////////////////////////////////////////////////
-  // Rendering State Info
-
-  EDepthTest meCurDepthTest;
-
-  ////////////////////////////////////////////////////////////////////
-  // Rendering Path Variables
-
-  static orkvector<std::string> gGLExtensions;
-  static orkset<std::string> gGLExtensionSet;
-
   ///////////////////////////////////////////////////////////////////////////
 
   vkdwi_ptr_t _dwi;
@@ -619,13 +621,6 @@ public:
 #if defined(ENABLE_COMPUTE_SHADERS)
   vkci_ptr_t _ci;
 #endif
-
-  bool mTargetDrawableSizeDirty;
-
-  static vkcontext_ptr_t makeShared();
-
-private:
-    VkContext();
 
 };
 

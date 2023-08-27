@@ -1,34 +1,9 @@
 #include "vulkan_ctx.h"
 #include <ork/lev2/gfx/shadman.h>
-#include <ork/lev2/gfx/shadlang.h>
-#include <ork/lev2/gfx/shadlang_nodes.h>
-#include <ork/util/hexdump.inl>
-#include <shaderc/shaderc.hpp>
-
-#if defined(__APPLE__)
-//#include <MoltenVK/mvk_vulkan.h>
-#endif
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
-
-#if 0
-VkPipelineCache pipelineCache;
-VkPipelineCacheCreateInfo cacheInfo = {};
-cacheInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO;
-// if you have a previously saved cache:
-cacheInfo.initialDataSize = savedCacheSize;  
-cacheInfo.pInitialData = pSavedCacheData;
-vkCreatePipelineCache(device, &cacheInfo, NULL, &pipelineCache);
-
-size_t cacheSize;
-vkGetPipelineCacheData(device, pipelineCache, &cacheSize, NULL);
-void* pData = malloc(cacheSize);
-vkGetPipelineCacheData(device, pipelineCache, &cacheSize, pData);
-#endif
-
-using namespace shadlang::SHAST;
 
 VkFxInterface::VkFxInterface(vkcontext_rawptr_t ctx)
     : _contextVK(ctx) {

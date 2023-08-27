@@ -63,19 +63,19 @@ VulkanInstance::VulkanInstance() {
     dev_group_out->_deviceCount = group.physicalDeviceCount;
     deco::printf(yel, "vulkan::_init grp<%d> numgpus<%zu>\n", igroup, dev_group_out->_deviceCount);
     for (int idev = 0; idev < dev_group_out->_deviceCount; idev++) {
-      auto out_device = std::make_shared<VulkanDevice>();
-      dev_group_out->_devices.push_back(out_device);
-      _devices.push_back(out_device);
-      out_device->_phydev = group.physicalDevices[idev];
-      vkGetPhysicalDeviceProperties(out_device->_phydev, &out_device->_devprops);
-      out_device->_is_discrete = (out_device->_devprops.deviceType == VkPhysicalDeviceType::VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU);
+      auto device_info = std::make_shared<VulkanDeviceInfo>();
+      dev_group_out->_device_infos.push_back(device_info);
+      _device_infos.push_back(device_info);
+      device_info->_phydev = group.physicalDevices[idev];
+      vkGetPhysicalDeviceProperties(device_info->_phydev, &device_info->_devprops);
+      device_info->_is_discrete = (device_info->_devprops.deviceType == VkPhysicalDeviceType::VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU);
       deco::printf(
           yel,
           "    gouup<%d> gpu<%d:%s> is_discrete<%d>\n",
           igroup,
-          out_device->_devprops.deviceID,
-          out_device->_devprops.deviceName,
-          int(out_device->_is_discrete));
+          device_info->_devprops.deviceID,
+          device_info->_devprops.deviceName,
+          int(device_info->_is_discrete));
     }
     igroup++;
   }
@@ -83,25 +83,25 @@ VulkanInstance::VulkanInstance() {
   /////////////////////////////////////////////////////////////////////////////
 
   res              = vkEnumeratePhysicalDevices(_instance, &_numgpus, nullptr);
-  OrkAssert(_devices.size() == _numgpus);
+  OrkAssert(_device_infos.size() == _numgpus);
   
   //std::vector<VkPhysicalDevice> phydevs(_numgpus);
   //vkEnumeratePhysicalDevices(_instance, &_numgpus, phydevs.data());
 
   deco::printf(yel, "vulkan::_init numgpus<%u>\n", _numgpus);
-  for (auto out_device : _devices) {
+  for (auto device_info : _device_infos) {
 
-    const auto& phy = out_device->_phydev;
-    auto& dev_props = out_device->_devprops;
-    auto& dev_feats = out_device->_devfeatures;
-    auto& dev_memprops = out_device->_devmemprops;
+    const auto& phy = device_info->_phydev;
+    auto& dev_props = device_info->_devprops;
+    auto& dev_feats = device_info->_devfeatures;
+    auto& dev_memprops = device_info->_devmemprops;
 
     vkGetPhysicalDeviceProperties(phy, &dev_props);
     vkGetPhysicalDeviceFeatures(phy, &dev_feats);
     bool is_discrete = (dev_props.deviceType == VkPhysicalDeviceType::VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU);
-    out_device->_maxWkgCountX    = dev_props.limits.maxComputeWorkGroupCount[0];
-    out_device->_maxWkgCountY    = dev_props.limits.maxComputeWorkGroupCount[1];
-    out_device->_maxWkgCountZ    = dev_props.limits.maxComputeWorkGroupCount[2];
+    device_info->_maxWkgCountX    = dev_props.limits.maxComputeWorkGroupCount[0];
+    device_info->_maxWkgCountY    = dev_props.limits.maxComputeWorkGroupCount[1];
+    device_info->_maxWkgCountZ    = dev_props.limits.maxComputeWorkGroupCount[2];
 
     deco::printf(
         yel, "vulkan::_init gpu<%d:%s> is_discrete<%d>\n", dev_props.deviceID, dev_props.deviceName, int(is_discrete));
@@ -113,7 +113,7 @@ VulkanInstance::VulkanInstance() {
     deco::printf(yel, "         maxcolorattachments<%u>\n", dev_props.limits.maxColorAttachments);
     deco::printf(yel, "         maxcomputeshmsize<%u>\n", dev_props.limits.maxComputeSharedMemorySize);
     deco::printf(yel, "         maxcomputewkgsize<%u>\n", dev_props.limits.maxComputeWorkGroupSize);
-    deco::printf(yel, "         maxcomputewkgcount<%u,%u,%u>\n", out_device->_maxWkgCountX, out_device->_maxWkgCountY, out_device->_maxWkgCountZ);
+    deco::printf(yel, "         maxcomputewkgcount<%u,%u,%u>\n", device_info->_maxWkgCountX, device_info->_maxWkgCountY, device_info->_maxWkgCountZ);
     deco::printf(yel, "         feat.fragmentStoresAndAtomics<%u>\n", int(dev_feats.fragmentStoresAndAtomics));
     deco::printf(yel, "         feat.shaderFloat64<%u>\n", int(dev_feats.shaderFloat64));
     deco::printf(yel, "         feat.sparseBinding<%u>\n", int(dev_feats.sparseBinding));
@@ -130,16 +130,16 @@ VulkanInstance::VulkanInstance() {
     }
     uint32_t numqfamilies = 0;
     vkGetPhysicalDeviceQueueFamilyProperties(phy, &numqfamilies, nullptr);
-    out_device->_queueprops.resize(numqfamilies);
-    vkGetPhysicalDeviceQueueFamilyProperties(phy, &numqfamilies, out_device->_queueprops.data());
+    device_info->_queueprops.resize(numqfamilies);
+    vkGetPhysicalDeviceQueueFamilyProperties(phy, &numqfamilies, device_info->_queueprops.data());
 
     uint32_t numextensions = 0;
     vkEnumerateDeviceExtensionProperties(phy, nullptr, &numextensions, nullptr);
-    out_device->_extensions.resize(numextensions);
-    vkEnumerateDeviceExtensionProperties(phy, nullptr, &numextensions, out_device->_extensions.data());
-    for (auto ext : out_device->_extensions) {
+    device_info->_extensions.resize(numextensions);
+    vkEnumerateDeviceExtensionProperties(phy, nullptr, &numextensions, device_info->_extensions.data());
+    for (auto ext : device_info->_extensions) {
        deco::printf(yel,"         extension: <%s>\n", ext.extensionName);
-       out_device->_extension_set.insert(ext.extensionName);
+       device_info->_extension_set.insert(ext.extensionName);
     }
   } // for(auto& phy : phydevs){
 }
