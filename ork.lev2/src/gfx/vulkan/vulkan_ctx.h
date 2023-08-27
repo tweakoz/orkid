@@ -279,7 +279,10 @@ struct VkFxShaderPass {
   vkfxsprg_ptr_t _vk_program;
 };
 struct VkFxShaderTechnique {
+  VkFxShaderTechnique();
+  ~VkFxShaderTechnique();
   std::vector<vkfxspass_ptr_t> _vk_passes;
+  std::shared_ptr<FxShaderTechnique> _orktechnique;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

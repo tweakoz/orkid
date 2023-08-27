@@ -6,6 +6,7 @@
 ////////////////////////////////////////////////////////////////
 
 #include "vulkan_ctx.h"
+#include <ork/lev2/gfx/shadman.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::vulkan {
@@ -56,6 +57,22 @@ void VkFxInterface::CommitParams(void) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkFxInterface::reset() {
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+VkFxShaderTechnique::VkFxShaderTechnique(){
+  _orktechnique = std::make_shared<FxShaderTechnique>();
+  _orktechnique->_impl.set<VkFxShaderTechnique*>(this);
+}
+
+VkFxShaderTechnique::~VkFxShaderTechnique(){
+  _orktechnique->_impl.set<void*>(nullptr);
+  _orktechnique->_techniqueName = "destroyed";
+  _orktechnique->_passes.clear();
+  _orktechnique->_shader = nullptr;
+  _orktechnique->_validated = false;
+  _orktechnique = nullptr;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

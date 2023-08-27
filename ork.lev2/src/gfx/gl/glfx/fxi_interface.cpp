@@ -90,9 +90,9 @@ void Interface::BindContainerToAbstract(rootcontainer_ptr_t container, FxShader*
     auto ork_tek            = new FxShaderTechnique();
     ork_tek->_impl.set<const Technique*>(ptek);
     ork_tek->_shader        = fxh;
-    ork_tek->mTechniqueName = ittek.first;
+    ork_tek->_techniqueName = ittek.first;
     // pabstek->mPasses = ittek->first;
-    ork_tek->mbValidated = fxh != nullptr;
+    ork_tek->_validated = fxh != nullptr;
     fxh->addTechnique(ork_tek);
   }
   for (const auto& itp : container->_uniforms) {

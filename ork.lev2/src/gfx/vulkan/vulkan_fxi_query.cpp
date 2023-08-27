@@ -14,8 +14,10 @@ namespace ork::lev2::vulkan {
 
 const FxShaderTechnique* VkFxInterface::technique(FxShader* pshader, const std::string& name) {
   auto vkshfile = pshader->_internalHandle.get<vkfxsfile_ptr_t>();
-  OrkAssert(false);
-  return nullptr;
+  auto it_tek = vkshfile->_vk_techniques.find(name);
+  OrkAssert(it_tek!=vkshfile->_vk_techniques.end());
+  vkfxstek_ptr_t tek = it_tek->second;
+  return tek->_orktechnique.get();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

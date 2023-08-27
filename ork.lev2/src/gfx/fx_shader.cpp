@@ -34,10 +34,6 @@ FxShaderPass::FxShaderPass(void* ih)
     , mbRestorePass(false) {
 }
 
-FxShaderTechnique::FxShaderTechnique()
-    : mbValidated(false) {
-}
-
 FxShaderParam::FxShaderParam()
     : meParamType(EPROPTYPE_END)
     , mBindable(true)
@@ -63,7 +59,7 @@ void FxShaderParamBufferMapping::unmap() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void FxShader::addTechnique(const FxShaderTechnique* tek) {
-  _techniques[tek->mTechniqueName] = tek;
+  _techniques[tek->_techniqueName] = tek;
 }
 
 void FxShader::addParameter(const FxShaderParam* param) {

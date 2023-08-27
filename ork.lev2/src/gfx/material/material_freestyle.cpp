@@ -80,7 +80,7 @@ void FreestyleMaterial::dump() const {
 
     auto name = item.first;
     auto tek  = item.second;
-    printf("tek<%p:%s> valid<%d>\n", (void*) tek, name.c_str(), int(tek->mbValidated));
+    printf("tek<%p:%s> valid<%d>\n", (void*) tek, name.c_str(), int(tek->_validated));
   }
   for (auto item : _shader->_parameterByName) {
     auto name = item.first;

@@ -399,7 +399,11 @@ bool VkFxInterface::LoadFxShader(const AssetPath& input_path, FxShader* pshader)
       auto passes                                 = AstNode::collectNodesOfType<Pass>(tek);
       auto tek_name                               = tek->typedValueForKey<std::string>("object_name").value();
       auto vk_tek                                 = std::make_shared<VkFxShaderTechnique>();
-      vulkan_shaderfile->_vk_techniques[tek_name] = vk_tek;
+      //
+      auto ork_tek                                = vk_tek->_orktechnique;
+      ork_tek->_shader = pshader;
+      ork_tek->_techniqueName = tek_name;
+      //
       for (auto p : passes) {
         auto vk_pass    = std::make_shared<VkFxShaderPass>();
         auto vk_program = std::make_shared<VkFxShaderProgram>();
@@ -425,6 +429,7 @@ bool VkFxInterface::LoadFxShader(const AssetPath& input_path, FxShader* pshader)
         vk_pass->_vk_program   = vk_program;
         vk_tek->_vk_passes.push_back(vk_pass);
       }
+      vulkan_shaderfile->_vk_techniques[tek_name] = vk_tek;
     }
 
     /////////////////////////////////////////////////////////////////////////////
