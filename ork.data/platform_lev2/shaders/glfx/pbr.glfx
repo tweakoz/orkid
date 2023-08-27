@@ -2,9 +2,9 @@
 // FxConfigs
 ///////////////////////////////////////////////////////////////
 fxconfig fxcfg_default {
-	import "mathtools.i";
-	import "pbrtools.i";
-	import "envtools.i";
+	import "orkshader://mathtools.i";
+	import "orkshader://pbrtools.i";
+	import "orkshader://envtools.i";
 }
 ///////////////////////////////////////////////////////////////
 technique PIK_RI_NI {
