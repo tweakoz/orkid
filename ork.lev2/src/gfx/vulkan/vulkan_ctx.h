@@ -228,11 +228,13 @@ struct VkTextureObject {
 struct VkFxShaderUniformSetItem {
   std::string _datatype;
   std::string _identifier;
+  std::shared_ptr<FxShaderParam> _orkparam;
 };
 struct VkFxShaderUniformSetSampler {
   size_t _binding_id = -1;
   std::string _datatype;
   std::string _identifier;
+  std::shared_ptr<FxShaderParam> _orkparam;
 };
 
 struct VkFxShaderUniformSet {

@@ -23,9 +23,26 @@ const FxShaderTechnique* VkFxInterface::technique(FxShader* pshader, const std::
 ///////////////////////////////////////////////////////////////////////////////
 
 const FxShaderParam* VkFxInterface::parameter(FxShader* pshader, const std::string& name) {
+  const FxShaderParam* rval = nullptr;
   auto vkshfile = pshader->_internalHandle.get<vkfxsfile_ptr_t>();
-  OrkAssert(false);
-  return nullptr;
+  for( auto item : vkshfile->_vk_uniformsets ) {
+    auto uniset_name = item.first;
+    auto uniset = item.second;
+    auto it_item = uniset->_items_by_name.find(name);
+    if( it_item != uniset->_items_by_name.end() ) {
+      auto item = it_item->second;
+      rval = item->_orkparam.get();
+      break;
+    }
+    auto it_samp = uniset->_samplers_by_name.find(name);
+    if( it_samp != uniset->_samplers_by_name.end() ) {
+      auto samp = it_samp->second;
+      rval = samp->_orkparam.get();
+      break;
+    }
+  }
+  OrkAssert(rval!=nullptr);
+  return rval;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

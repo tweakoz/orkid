@@ -311,12 +311,16 @@ bool VkFxInterface::LoadFxShader(const AssetPath& input_path, FxShader* pshader)
             vk_samp->_datatype   = dt;
             vk_samp->_identifier = id;
             vk_uniset->_samplers_by_name[id] = vk_samp;
+            vk_samp->_orkparam = std::make_shared<FxShaderParam>();
+            vk_samp->_orkparam->_impl.set<VkFxShaderUniformSetSampler*>(vk_samp.get());
           } else {
             auto vk_item = std::make_shared<VkFxShaderUniformSetItem>();
             vk_item->_datatype   = dt;
             vk_item->_identifier = id;
             vk_uniset->_items_by_name[id] = vk_item;
             vk_uniset->_items_by_order.push_back(vk_item);
+            vk_item->_orkparam = std::make_shared<FxShaderParam>();
+            vk_item->_orkparam->_impl.set<VkFxShaderUniformSetItem*>(vk_item.get());
           }
         }
         //////////////////////////////////////
