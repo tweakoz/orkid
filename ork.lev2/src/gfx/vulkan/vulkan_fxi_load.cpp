@@ -34,6 +34,7 @@ vkGetPipelineCacheData(device, pipelineCache, &cacheSize, pData);
 
 // TODO
 // process ImportDirectives at top of translation unit.
+// and flyweight imports
 
 struct shader_proc_context {
 
