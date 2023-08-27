@@ -92,6 +92,23 @@ struct AstNode {
     astnode_ptr_t node,   //
     visitor_ptr_t visitor);
   ///////////////////////////
+  void appendChild(astnode_ptr_t child) {
+    _children.push_back(child);
+  }
+  template <typename T, typename... A> std::shared_ptr<T> appendTypedChild(A&&... args) {
+    auto ptr = std::make_shared<T>(std::forward<A>(args)...);
+    _children.push_back(ptr);
+    return ptr;
+  }
+  template <typename T, typename... A> std::shared_ptr<T> insertTypedChildAt(size_t index, A&&... args) {
+    auto ptr = std::make_shared<T>(std::forward<A>(args)...);
+    _children.insert(_children.begin()+index,ptr);
+    return ptr;
+  }
+  void appendChildrenFrom(astnode_ptr_t other){
+    _children.insert( _children.end(), other->_children.begin(), other->_children.end() );
+  }
+  ///////////////////////////
   std::string _name;
   std::string _type_name;
   bool _descend = true;
@@ -165,19 +182,6 @@ struct MiscGroupNode : public AstNode {
   inline MiscGroupNode() {
     _name = _static_type_name;
     _type_name = _static_type_name;
-  }
-  template <typename T, typename... A> std::shared_ptr<T> appendChild(A&&... args) {
-    auto ptr = std::make_shared<T>(std::forward<A>(args)...);
-    _children.push_back(ptr);
-    return ptr;
-  }
-  template <typename T, typename... A> std::shared_ptr<T> insertChildAt(size_t index, A&&... args) {
-    auto ptr = std::make_shared<T>(std::forward<A>(args)...);
-    _children.insert(_children.begin()+index,ptr);
-    return ptr;
-  }
-  void appendChildrenFrom(astnode_ptr_t other){
-    _children.insert( _children.end(), other->_children.begin(), other->_children.end() );
   }
 };
 using miscgroupnode_ptr_t = std::shared_ptr<MiscGroupNode>;
