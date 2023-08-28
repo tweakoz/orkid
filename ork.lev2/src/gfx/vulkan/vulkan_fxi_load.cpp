@@ -30,6 +30,16 @@ struct shader_proc_context {
   vkfxshader_bin_t _spirv_binary;
   std::string _shader_name;
   std::unordered_map<std::string, vkfxsuniset_ptr_t> _vk_uniformsets;
+  std::unordered_map<std::string,size_t> _data_sizes;
+
+  shader_proc_context(){
+    _data_sizes["float"] = 1;
+    _data_sizes["vec2"] = 1;
+    _data_sizes["vec3"] = 1;
+    _data_sizes["vec4"] = 1;
+    _data_sizes["mat3"] = 4;
+    _data_sizes["mat4"] = 4;
+  }
 
   ////////////////////////////////////////////////////////
   void beginShader(shader_ptr_t shader) {
@@ -143,6 +153,9 @@ struct shader_proc_context {
   }
   ////////////////////////////////////////////////////////
   void process_inh_ios(astnode_ptr_t interface_node) {
+    //
+    // TODO inherited interfaces
+    //
     auto input_groups  = AstNode::collectNodesOfType<InterfaceInputs>(interface_node);
     auto output_groups = AstNode::collectNodesOfType<InterfaceOutputs>(interface_node);
     printf("  num_input_groups<%zu>\n", input_groups.size());
@@ -157,6 +170,7 @@ struct shader_proc_context {
     printf("  num_inputs<%zu>\n", inputs.size());
     printf("  num_outputs<%zu>\n", outputs.size());
     //
+    //
     size_t input_index = 0;
     for (auto input : inputs) {
       auto tid = input->childAs<TypedIdentifier>(0);
@@ -165,7 +179,9 @@ struct shader_proc_context {
       auto dt = tid->typedValueForKey<std::string>("data_type").value();
       auto id = tid->typedValueForKey<std::string>("identifier_name").value();
       appendText(_interface_group,"layout(location=%zu) in %s %s;", input_index, dt.c_str(), id.c_str());
-      input_index++;
+      auto it = _data_sizes.find(dt);
+      OrkAssert(it!=_data_sizes.end());
+      input_index += it->second;
     }
     //
     size_t output_index = 0;
@@ -176,7 +192,9 @@ struct shader_proc_context {
       auto dt = tid->typedValueForKey<std::string>("data_type").value();
       auto id = tid->typedValueForKey<std::string>("identifier_name").value();
       appendText(_interface_group,"layout(location=%zu) out %s %s;", output_index, dt.c_str(), id.c_str());
-      output_index++;
+      auto it = _data_sizes.find(dt);
+      OrkAssert(it!=_data_sizes.end());
+      output_index += it->second;
     }
   }
   ////////////////////////////////////////////////////////
