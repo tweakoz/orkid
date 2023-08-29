@@ -246,12 +246,11 @@ struct VkFxShaderUniformSet {
 };
 
 struct VkFxShaderFile {
+  std::string _shader_name;
   shadlang::SHAST::translationunit_ptr_t _trans_unit;
   std::unordered_map<std::string, vkfxsobj_ptr_t> _vk_shaderobjects;
   std::unordered_map<std::string, vkfxstek_ptr_t> _vk_techniques;
   std::unordered_map<std::string, vkfxsuniset_ptr_t> _vk_uniformsets;
-  //std::unordered_map<std::string, shadlang::SHAST::transunit_ptr_t> _imported_units;
-  //std::unordered_map<std::string, shadlang::SHAST::libblock_ptr_t> _lib_blocks;
 };
 
 struct VkFxShaderObject {

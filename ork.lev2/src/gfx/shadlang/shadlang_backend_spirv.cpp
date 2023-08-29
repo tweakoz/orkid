@@ -19,9 +19,9 @@ SpirvCompiler::SpirvCompiler(transunit_ptr_t transu) {
   _data_sizes["mat3"]  = 4;
   _data_sizes["mat4"]  = 4;
   _transu              = transu;
-  collectUnisets();
   process_imports();
   process_libblocks();
+  collectUnisets();
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////

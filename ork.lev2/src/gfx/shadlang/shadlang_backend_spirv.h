@@ -76,12 +76,12 @@ using spirv_compiler_ptr_t = std::shared_ptr<SpirvCompiler>;
 /////////////////////////////////////////////////////////////////////////////////////////////////
 template <typename T, typename U> //
 void SpirvCompiler::process_inh_interfaces() {
-  auto inh_vifs = AstNode::collectNodesOfType<T>(_shader);
-  printf("inh_vifs<%zu>\n", inh_vifs.size());
-  OrkAssert(inh_vifs.size() == 1);
-  auto INHVIF = inh_vifs[0];
+  auto inh_interfaces = AstNode::collectNodesOfType<T>(_shader);
+  printf("inh_interfaces<%zu>\n", inh_interfaces.size());
+  OrkAssert(inh_interfaces.size() == 1);
+  auto INHVIF = inh_interfaces[0];
   auto INHID  = INHVIF->template typedValueForKey<std::string>("inherit_id").value();
-  printf("  inh_vif<%s> INHID<%s>\n", INHVIF->_name.c_str(), INHID.c_str());
+  printf("  inh_iface<%s> INHID<%s>\n", INHVIF->_name.c_str(), INHID.c_str());
   auto VIF = _transu->template find<U>(INHID);
   ///////////////////////////////////////////////
   // search imported units for interface

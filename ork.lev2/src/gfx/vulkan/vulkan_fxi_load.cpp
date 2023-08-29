@@ -50,6 +50,7 @@ bool VkFxInterface::LoadFxShader(const AssetPath& input_path, FxShader* pshader)
   } 
   bool OK = (vulkan_shaderfile != nullptr);
   if(OK){
+    vulkan_shaderfile->_shader_name = input_path.c_str();
     pshader->_internalHandle.set<vkfxsfile_ptr_t>(vulkan_shaderfile);
   }
   return OK;
@@ -63,6 +64,7 @@ FxShader* VkFxInterface::shaderFromShaderText(const std::string& name, const std
   if (vulkan_shaderfile) {
     shader->_internalHandle.set<vkfxsfile_ptr_t>(vulkan_shaderfile);
     _fxshaderfiles[name]     = vulkan_shaderfile;
+    vulkan_shaderfile->_shader_name = name;
   } else {
     delete shader;
     shader = nullptr;
@@ -121,7 +123,7 @@ vkfxsfile_ptr_t VkFxInterface::_loadShaderFromShaderText(FxShader* shader, const
     // uniformsets
     //////////////////
 
-    auto convert_unisets = [](std::unordered_map<std::string, spirv::uniset_ptr_t>& unisets) //
+    auto convert_unisets = [&](std::unordered_map<std::string, spirv::uniset_ptr_t>& unisets) //
         -> std::unordered_map<std::string, vkfxsuniset_ptr_t> {                              //
       std::unordered_map<std::string, vkfxsuniset_ptr_t> rval;
       for (auto item : unisets) {
@@ -130,6 +132,7 @@ vkfxsfile_ptr_t VkFxInterface::_loadShaderFromShaderText(FxShader* shader, const
         /////////////////////////////////////////////
         auto vk_uniset = std::make_shared<VkFxShaderUniformSet>();
         rval[name]     = vk_uniset;
+        vulkan_shaderfile->_vk_uniformsets[name] = vk_uniset;
         /////////////////////////////////////////////
         vk_uniset->_descriptor_set_id = uniset->_descriptor_set_id;
         /////////////////////////////////////////////
@@ -139,9 +142,10 @@ vkfxsfile_ptr_t VkFxInterface::_loadShaderFromShaderText(FxShader* shader, const
           auto vk_samp                             = std::make_shared<VkFxShaderUniformSetSampler>();
           vk_samp->_datatype                       = item.second->_datatype;
           vk_samp->_identifier                     = item.second->_identifier;
-          vk_uniset->_samplers_by_name[item.first] = vk_samp;
-          vk_samp->_orkparam               = std::make_shared<FxShaderParam>();
+          vk_samp->_orkparam = std::make_shared<FxShaderParam>();
           vk_samp->_orkparam->_impl.set<VkFxShaderUniformSetSampler*>(vk_samp.get());
+          vk_uniset->_samplers_by_name[item.first] = vk_samp;
+          printf( "uniset<%s> ADDING Sampler PARAM<%s>\n", name.c_str(), item.second->_identifier.c_str());
         }
         /////////////////////////////////////////////
         // rebuild _items_by_name
@@ -150,9 +154,10 @@ vkfxsfile_ptr_t VkFxInterface::_loadShaderFromShaderText(FxShader* shader, const
           auto vk_item                          = std::make_shared<VkFxShaderUniformSetItem>();
           vk_item->_datatype                    = item.second->_datatype;
           vk_item->_identifier                  = item.second->_identifier;
-          vk_uniset->_items_by_name[item.first] = vk_item;
           vk_item->_orkparam = std::make_shared<FxShaderParam>();
           vk_item->_orkparam->_impl.set<VkFxShaderUniformSetItem*>(vk_item.get());
+          vk_uniset->_items_by_name[item.first] = vk_item;
+          printf( "uniset<%s> ADDING Item PARAM<%s>\n", name.c_str(), item.second->_identifier.c_str());
         }
         /////////////////////////////////////////////
         // rebuild items_by_order
@@ -165,8 +170,6 @@ vkfxsfile_ptr_t VkFxInterface::_loadShaderFromShaderText(FxShader* shader, const
               vk_uniset->_items_by_order.push_back(vk_item);
             }
           }
-          auto vk_item = vk_uniset->_items_by_name[item->_identifier];
-          vk_uniset->_items_by_order.push_back(vk_item);
         }
       }
       return rval;

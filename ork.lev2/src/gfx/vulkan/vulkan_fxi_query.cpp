@@ -27,6 +27,7 @@ const FxShaderParam* VkFxInterface::parameter(FxShader* pshader, const std::stri
   auto vkshfile = pshader->_internalHandle.get<vkfxsfile_ptr_t>();
   for( auto item : vkshfile->_vk_uniformsets ) {
     auto uniset_name = item.first;
+    printf( "search uniset<%s>\n", uniset_name.c_str() );
     auto uniset = item.second;
     auto it_item = uniset->_items_by_name.find(name);
     if( it_item != uniset->_items_by_name.end() ) {
@@ -40,6 +41,11 @@ const FxShaderParam* VkFxInterface::parameter(FxShader* pshader, const std::stri
       rval = samp->_orkparam.get();
       break;
     }
+  }
+  if(rval==nullptr){
+    auto vkshfile = pshader->_internalHandle.get<vkfxsfile_ptr_t>();
+    auto shader_name = vkshfile->_shader_name;
+    printf( "VkFxInterface shader<%s> parameter<%s> not found\n", shader_name.c_str(), name.c_str() );
   }
   OrkAssert(rval!=nullptr);
   return rval;
