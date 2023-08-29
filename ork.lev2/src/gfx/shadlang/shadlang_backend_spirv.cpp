@@ -143,33 +143,44 @@ void SpirvCompiler::_collectLibBlocks() {
 void SpirvCompiler::_procInheritances(astnode_ptr_t parent_node) {
   _binding_id = 0;
   for (auto c : parent_node->_children) {
+    //////////////////////////////////////////////////////////////////////
     if (auto as_lib = std::dynamic_pointer_cast<SemaInheritLibrary>(c)) {
       auto INHID = as_lib->typedValueForKey<std::string>("inherit_id").value();
       auto LIB = _transu->find<LibraryBlock>(INHID);
       _procInheritances(LIB);
       _inheritLibrary(LIB);
-    } else if (auto as_vif = std::dynamic_pointer_cast<SemaInheritVertexInterface>(c)) {
+    }
+    //////////////////////////////////////////////////////////////////////
+    else if (auto as_vif = std::dynamic_pointer_cast<SemaInheritVertexInterface>(c)) {
       auto INHID = as_vif->typedValueForKey<std::string>("inherit_id").value();
       auto IFACE = _transu->find<VertexInterface>(INHID);
       _procInheritances(IFACE);
       _inheritIO(IFACE);
-    } else if (auto as_fif = std::dynamic_pointer_cast<SemaInheritFragmentInterface>(c)) {
-      auto INHID = as_vif->typedValueForKey<std::string>("inherit_id").value();
+    }
+    //////////////////////////////////////////////////////////////////////
+    else if (auto as_fif = std::dynamic_pointer_cast<SemaInheritFragmentInterface>(c)) {
+      auto INHID = as_fif->typedValueForKey<std::string>("inherit_id").value();
       auto IFACE = _transu->find<FragmentInterface>(INHID);
       _procInheritances(IFACE);
       _inheritIO(IFACE);
-    } else if (auto as_gif = std::dynamic_pointer_cast<SemaInheritGeometryInterface>(c)) {
-      auto INHID = as_vif->typedValueForKey<std::string>("inherit_id").value();
+    }
+    //////////////////////////////////////////////////////////////////////
+    else if (auto as_gif = std::dynamic_pointer_cast<SemaInheritGeometryInterface>(c)) {
+      auto INHID = as_gif->typedValueForKey<std::string>("inherit_id").value();
       auto IFACE = _transu->find<GeometryInterface>(INHID);
       _procInheritances(IFACE);
       _inheritIO(IFACE);
-    } else if (auto as_cif = std::dynamic_pointer_cast<SemaInheritComputeInterface>(c)) {
-      auto INHID = as_vif->typedValueForKey<std::string>("inherit_id").value();
+    }
+    //////////////////////////////////////////////////////////////////////
+    else if (auto as_cif = std::dynamic_pointer_cast<SemaInheritComputeInterface>(c)) {
+      auto INHID = as_cif->typedValueForKey<std::string>("inherit_id").value();
       auto IFACE = _transu->find<ComputeInterface>(INHID);
       _procInheritances(IFACE);
       _inheritIO(IFACE);
-    } else if (auto as_uset = std::dynamic_pointer_cast<SemaInheritUniformSet>(c)) {
-      auto INHID = as_lib->typedValueForKey<std::string>("inherit_id").value();
+    }
+    //////////////////////////////////////////////////////////////////////
+    else if (auto as_uset = std::dynamic_pointer_cast<SemaInheritUniformSet>(c)) {
+      auto INHID = as_uset->typedValueForKey<std::string>("inherit_id").value();
       auto ast_uset = _transu->find<SHAST::UniformSet>(INHID);
       auto it_uset = _spirvuniformsets.find(INHID);
       OrkAssert(it_uset != _spirvuniformsets.end());
@@ -177,9 +188,15 @@ void SpirvCompiler::_procInheritances(astnode_ptr_t parent_node) {
       //_uniformsets[it_uset->first] = vk_uniset;
       _procInheritances(ast_uset);
       _inheritUniformSet(INHID,spirvuniset);
-    } else if (auto as_ublk = std::dynamic_pointer_cast<SemaInheritUniformBlock>(c)) {
-    } else if (auto as_sb = std::dynamic_pointer_cast<SemaInheritStateBlock>(c)) {
-    } else if (auto as_ext = std::dynamic_pointer_cast<SemaInheritExtension>(c)) {
+    }
+    //////////////////////////////////////////////////////////////////////
+    else if (auto as_ublk = std::dynamic_pointer_cast<SemaInheritUniformBlock>(c)) {
+    }
+    //////////////////////////////////////////////////////////////////////
+    else if (auto as_sb = std::dynamic_pointer_cast<SemaInheritStateBlock>(c)) {
+    }
+    //////////////////////////////////////////////////////////////////////
+    else if (auto as_ext = std::dynamic_pointer_cast<SemaInheritExtension>(c)) {
       _inheritExtension(as_ext);
     }
   }
