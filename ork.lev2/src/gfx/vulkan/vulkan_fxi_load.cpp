@@ -45,7 +45,7 @@ bool VkFxInterface::LoadFxShader(const AssetPath& input_path, FxShader* pshader)
   else { // load
     auto str_read = ork::File::readAsString(input_path);
     OrkAssert(str_read != nullptr);
-    vulkan_shaderfile = _loadShaderFromShaderText(pshader, str_read->_data);
+    vulkan_shaderfile = _loadShaderFromShaderText(pshader, input_path.c_str(), str_read->_data);
     _fxshaderfiles[input_path]     = vulkan_shaderfile;
   } 
   bool OK = (vulkan_shaderfile != nullptr);
@@ -60,7 +60,7 @@ bool VkFxInterface::LoadFxShader(const AssetPath& input_path, FxShader* pshader)
 
 FxShader* VkFxInterface::shaderFromShaderText(const std::string& name, const std::string& shadertext) {
   FxShader* shader = new FxShader;
-  vkfxsfile_ptr_t vulkan_shaderfile = _loadShaderFromShaderText(shader, shadertext);
+  vkfxsfile_ptr_t vulkan_shaderfile = _loadShaderFromShaderText(shader, name, shadertext);
   if (vulkan_shaderfile) {
     shader->_internalHandle.set<vkfxsfile_ptr_t>(vulkan_shaderfile);
     _fxshaderfiles[name]     = vulkan_shaderfile;
@@ -74,7 +74,9 @@ FxShader* VkFxInterface::shaderFromShaderText(const std::string& name, const std
 
 ///////////////////////////////////////////////////////////////////////////////
 
-vkfxsfile_ptr_t VkFxInterface::_loadShaderFromShaderText(FxShader* shader, const std::string& shadertext) {
+vkfxsfile_ptr_t VkFxInterface::_loadShaderFromShaderText(FxShader* shader, //
+                                                         const std::string& parser_name, //
+                                                         const std::string& shadertext) { //
   auto basehasher = DataBlock::createHasher();
   basehasher->accumulateString("vkfxshader-1.0");
   basehasher->accumulateString(shadertext);
@@ -98,26 +100,36 @@ vkfxsfile_ptr_t VkFxInterface::_loadShaderFromShaderText(FxShader* shader, const
     /////////////////////////////////////////////////////////////////////////////
 
     vulkan_shaderfile              = std::make_shared<VkFxShaderFile>();
-    vulkan_shaderfile->_trans_unit = shadlang::parseFromString(shadertext);
+    vulkan_shaderfile->_trans_unit = shadlang::parseFromString(parser_name, shadertext);
 
     auto vtx_shaders = SHAST::AstNode::collectNodesOfType<SHAST::VertexShader>(vulkan_shaderfile->_trans_unit);
     auto frg_shaders = SHAST::AstNode::collectNodesOfType<SHAST::FragmentShader>(vulkan_shaderfile->_trans_unit);
     auto cu_shaders  = SHAST::AstNode::collectNodesOfType<SHAST::ComputeShader>(vulkan_shaderfile->_trans_unit);
     auto techniques  = SHAST::AstNode::collectNodesOfType<SHAST::Technique>(vulkan_shaderfile->_trans_unit);
+    auto unisets     = SHAST::AstNode::collectNodesOfType<SHAST::UniformSet>(vulkan_shaderfile->_trans_unit);
+    auto imports     = SHAST::AstNode::collectNodesOfType<SHAST::ImportDirective>(vulkan_shaderfile->_trans_unit);
 
     size_t num_vtx_shaders = vtx_shaders.size();
     size_t num_frg_shaders = frg_shaders.size();
     size_t num_cu_shaders  = cu_shaders.size();
     size_t num_techniques  = techniques.size();
+    size_t num_unisets     = unisets.size();
+    size_t num_imports     = imports.size();
 
     printf("num_vtx_shaders<%zu>\n", num_vtx_shaders);
     printf("num_frg_shaders<%zu>\n", num_frg_shaders);
     printf("num_cu_shaders<%zu>\n", num_cu_shaders);
     printf("num_techniques<%zu>\n", num_techniques);
+    printf("num_unisets<%zu>\n", num_unisets);
+    printf("num_imports<%zu>\n", num_imports);
 
     //////////////////
 
     auto SPC = std::make_shared<spirv::SpirvCompiler>(vulkan_shaderfile->_trans_unit,true);
+
+    for( auto uniset : SPC->_uniformsets ){
+      printf( "uniset<%s>\n", uniset.first.c_str() );
+    }
 
     //////////////////
     // uniformsets

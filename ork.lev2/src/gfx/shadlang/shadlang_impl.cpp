@@ -49,9 +49,16 @@ void SHAST::_dumpAstTreeVisitor( //
 ///////////////////////////////////////////////////////////////////////////////
 
 SHAST::translationunit_ptr_t parseFromString(const std::string& shader_text) {
+  return parseFromString("---",shader_text);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+SHAST::translationunit_ptr_t parseFromString(const std::string& name, const std::string& shader_text) {
   auto parser = std::make_shared<impl::ShadLangParser>();
+  parser->_name = name;
   OrkAssert(shader_text.length());
-  return parser->parseString(shader_text);
+  return parser->parseString(name, shader_text);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -66,7 +73,7 @@ SHAST::translationunit_ptr_t parseFromFile(file::Path shader_path) {
   auto parser = std::make_shared<impl::ShadLangParser>();
   OrkAssert(shader_data->_data.length());
   parser->_shader_path = shader_path;
-  return parser->parseString(shader_data->_data);
+  return parser->parseString(shader_path.c_str(), shader_data->_data);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -208,7 +215,9 @@ void ShadLangParser::replaceInParent(SHAST::astnode_ptr_t oldnode, SHAST::astnod
 
 ///////////////////////////////////////////////////////////////////////////////
 
-SHAST::translationunit_ptr_t ShadLangParser::parseString(std::string parse_str) {
+SHAST::translationunit_ptr_t ShadLangParser::parseString(std::string name, std::string parse_str) {
+
+  _name = name;
 
   _scanner->scanString(parse_str);
   _scanner->discardTokensOfClass(uint64_t(TokenClass::WHITESPACE));
@@ -231,7 +240,7 @@ SHAST::translationunit_ptr_t ShadLangParser::parseString(std::string parse_str) 
   ///////////////////////////////////////////
   if(0){
     printf("///////////////////////////////\n");
-    printf("// AST TREE\n");
+    printf("// AST TREE parser<%s>\n", _name.c_str() );
     printf("///////////////////////////////\n");
     std::string ast_str = SHAST::toASTstring(ast_top);
     printf("%s\n", ast_str.c_str());
@@ -239,7 +248,7 @@ SHAST::translationunit_ptr_t ShadLangParser::parseString(std::string parse_str) 
   }
   if(1){
     printf("///////////////////////////////\n");
-    printf("// TU LIST\n");
+    printf("// TU LIST parser<%s>\n", _name.c_str() );
     printf("///////////////////////////////\n");
     auto sorted_translatables = sorted_vector_from_map( _translatables );
     for( auto item : sorted_translatables ){

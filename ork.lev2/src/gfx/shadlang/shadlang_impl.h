@@ -35,7 +35,7 @@ struct ShadLangParser : public Parser {
 
   ShadLangParser();
   ////////////////////////////////////////////
-  SHAST::translationunit_ptr_t parseString(std::string parse_str);
+  SHAST::translationunit_ptr_t parseString(std::string name, std::string parse_str);
   ////////////////////////////////////////////
   void preDeclareAstNodes();
   void declareAstNodes();

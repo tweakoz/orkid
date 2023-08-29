@@ -91,10 +91,10 @@ using spirv_compiler_ptr_t = std::shared_ptr<SpirvCompiler>;
 template <typename T, typename U> //
 void SpirvCompiler::_inheritInterfaces(astnode_ptr_t parent_node) {
   auto inh_interfaces = AstNode::collectNodesOfType<T>(parent_node);
-  printf("inh_interfaces<%zu>\n", inh_interfaces.size());
+  //printf("inh_interfaces<%zu>\n", inh_interfaces.size());
   for (auto INHVIF : inh_interfaces) {
     auto INHID  = INHVIF->template typedValueForKey<std::string>("inherit_id").value();
-    printf("  inh_iface<%s> INHID<%s>\n", INHVIF->_name.c_str(), INHID.c_str());
+    //printf("  inh_iface<%s> INHID<%s>\n", INHVIF->_name.c_str(), INHID.c_str());
     auto IFACE = _transu->template find<U>(INHID);
     ///////////////////////////////////////////////
     // search imported units for interface
@@ -130,6 +130,9 @@ void SpirvCompiler::processShader(shader_ptr_t sh){
   _inheritInterfaces<T, U>();
   if constexpr (std::is_same<U, SHAST::VertexInterface>::value) {
     _compileShader(shaderc_glsl_vertex_shader);
+  }
+  else if constexpr (std::is_same<U, SHAST::GeometryInterface>::value) {
+    _compileShader(shaderc_glsl_geometry_shader);
   }
   else if constexpr (std::is_same<U, SHAST::FragmentInterface>::value) {
     _compileShader(shaderc_glsl_fragment_shader);

@@ -540,7 +540,9 @@ struct VkFxInterface final : public FxInterface {
   bool LoadFxShader(const AssetPath& pth, FxShader* ptex) final;
   FxShader* shaderFromShaderText(const std::string& name, const std::string& shadertext) final;
 
-  vkfxsfile_ptr_t _loadShaderFromShaderText(FxShader* shader, const std::string& shadertext);
+  vkfxsfile_ptr_t _loadShaderFromShaderText(FxShader* shader, //
+                                            const std::string& parser_name, //
+                                            const std::string& shadertext);
 
   // ubo
   FxShaderParamBuffer* createParamBuffer(size_t length) final;

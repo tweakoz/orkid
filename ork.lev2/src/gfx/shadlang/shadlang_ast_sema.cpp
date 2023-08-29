@@ -194,7 +194,7 @@ void _mangleFunctionDef2(
   if (dt_node) {
     auto return_type = dt_node->typedValueForKey<std::string>("data_type").value();
     mangled_name += "<" + return_type + ">";
-    printf("mangle function<%s> return type: %s \n", named.c_str(), return_type.c_str());
+    //printf("mangle function<%s> return type: %s \n", named.c_str(), return_type.c_str());
   }
   if (decl_args) {
     mangled_name += "(";
@@ -210,7 +210,7 @@ void _mangleFunctionDef2(
       // printf( "mangle walkdown - argsnode : %s\n", node->_name.c_str() );
     });
     mangled_name += ")";
-    printf("mangled_name<%s>\n", mangled_name.c_str());
+    //printf("mangled_name<%s>\n", mangled_name.c_str());
     //////////////////////////////////////////////////////////////////////
     fn2_node->setValueForKey<std::string>("function_name", named);
     fn2_node->setValueForKey<std::string>("unmangled_name", named);
@@ -347,7 +347,7 @@ void _semaPerformImports(impl::ShadLangParser* slp, astnode_ptr_t top) {
     file::Path proc_import_path;
     //
     auto raw_import_path = import_node->template typedValueForKey<std::string>("import_path").value();
-    printf("Import RawPath<%s>\n", raw_import_path.c_str());
+    //printf("Import RawPath<%s>\n", raw_import_path.c_str());
 
     ////////////////////////////////////////////////////
     // if string has enclosing quotes, remove them
@@ -365,21 +365,22 @@ void _semaPerformImports(impl::ShadLangParser* slp, astnode_ptr_t top) {
     rpath.split(a, b, ':');
     if (b.length() != 0) { // use from import
       proc_import_path = rpath;
-      printf("Import ProcPath1<%s>\n", proc_import_path.c_str());
+      //printf("Import ProcPath1<%s>\n", proc_import_path.c_str());
     } else { // infer from container
       proc_import_path = slp->_shader_path;
-      printf("Import ProcPath2<%s>\n", proc_import_path.c_str());
+      //printf("Import ProcPath2<%s>\n", proc_import_path.c_str());
       proc_import_path.split(a, b, ':');
       ork::FixedString<256> fxs;
       fxs.format("%s://%s", a.c_str(), rpath.c_str());
       proc_import_path = fxs.c_str();
-      printf("Import ProcPath3<%s>\n", proc_import_path.c_str());
+      //printf("Import ProcPath3<%s>\n", proc_import_path.c_str());
       // OrkAssert(false);
     }
     import_node->setValueForKey<std::string>("proc_import_path", proc_import_path.c_str());
 
     ////////////////////////////////////////////////////////
 
+    printf("Importing<%s>\n", proc_import_path.c_str());
     auto sub_tunit = shadlang::parseFromFile(proc_import_path);
     OrkAssert(sub_tunit);
     import_map[proc_import_path.c_str()] = sub_tunit;
@@ -387,8 +388,8 @@ void _semaPerformImports(impl::ShadLangParser* slp, astnode_ptr_t top) {
 
     ////////////////////////////////////////////////////////
 
-    size_t num_trans_by_name = sub_tunit->_translatables_by_name.size();
-    printf("Import NumTranslatablesByName<%zu>\n", num_trans_by_name);
+    //size_t num_trans_by_name = sub_tunit->_translatables_by_name.size();
+    ////printf("Import NumTranslatablesByName<%zu>\n", num_trans_by_name);
 
     if (1) { // inline imported translatables ?
       for (auto item : sub_tunit->_translatables_by_name) {
@@ -735,7 +736,7 @@ void _semaResolveSemaFunctionArguments(impl::ShadLangParser* slp, astnode_ptr_t 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 template <typename node_t> //
-int _semaProcessInheritances(
+int _semaLinkToInheritances(
     impl::ShadLangParser* slp, //
     astnode_ptr_t top) {       //
   int count  = 0;
@@ -747,9 +748,6 @@ int _semaProcessInheritances(
     auto check_inheritance = [](std::string inh_name, SHAST::astnode_map_t& in_map) -> bool { //
       auto it    = in_map.find(inh_name);
       bool found = (it != in_map.end());
-      if (inh_name == "skin_tools") {
-        printf("skin_tools is_found<%d>\n", int(found));
-      }
       return found;
     };
     /////////////////////////////////
@@ -758,7 +756,7 @@ int _semaProcessInheritances(
       if (as_inh_item) {
         inh_item      = as_inh_item;
         auto inh_name = inh_item->typedValueForKey<std::string>("inherited_object").value();
-        printf("XXX %s<%s> inh_name<%s>\n", n->_name.c_str(), objname.c_str(), inh_name.c_str());
+        //printf("XXX %s<%s> inh_name<%s>\n", n->_name.c_str(), objname.c_str(), inh_name.c_str());
         /////////////////////////////////
         // check if extension
         /////////////////////////////////
@@ -969,7 +967,14 @@ void _semaFloatLiterals(impl::ShadLangParser* slp, astnode_ptr_t top) {
 
 void impl::ShadLangParser::semaAST(astnode_ptr_t top) {
 
-  printf("ShadLangParser<%p> semaAST\n", this);
+  printf("ShadLangParser<%p:%s> semaAST\n", this, _name.c_str() );
+
+  //////////////////////////////////
+  // Pass 2 - Imports
+  //////////////////////////////////
+
+  _semaCollectNamedOfType<ImportDirective>(this, top, _import_directives);
+  _semaPerformImports(this, top);
 
   //////////////////////////////////
 
@@ -1017,7 +1022,6 @@ void impl::ShadLangParser::semaAST(astnode_ptr_t top) {
     _semaCollectNamedOfType<FunctionDef2>(this, top, _fndef2s);
 
     _semaCollectNamedOfType<FxConfigDecl>(this, top, _fxconfig_decls);
-    _semaCollectNamedOfType<ImportDirective>(this, top, _import_directives);
 
     _semaProcNamedOfType<FxConfigRef>(this, top);
     _semaProcNamedOfType<Pass>(this, top);
@@ -1025,7 +1029,6 @@ void impl::ShadLangParser::semaAST(astnode_ptr_t top) {
     _semaMoveNames<Translatable>(this, top);
     _semaMoveNames<FxConfigRef>(this, top);
     _semaMoveNames<Pass>(this, top);
-    _semaMoveNames<ImportDirective>(this, top);
   }
 
   //////////////////////////////////
@@ -1048,33 +1051,25 @@ void impl::ShadLangParser::semaAST(astnode_ptr_t top) {
   }
 
   //////////////////////////////////
-  // Pass 2 - Imports
-  //////////////////////////////////
-
-  if (1) {
-    _semaPerformImports(this, top);
-  }
-
-  //////////////////////////////////
   // Pass 4..
   //////////////////////////////////
 
   bool keep_going = true;
   while (keep_going) {
     int count = 0;
-    count += _semaProcessInheritances<LibraryBlock>(this, top);
+    count += _semaLinkToInheritances<LibraryBlock>(this, top);
 
-    count += _semaProcessInheritances<VertexInterface>(this, top);
-    count += _semaProcessInheritances<GeometryInterface>(this, top);
-    count += _semaProcessInheritances<FragmentInterface>(this, top);
-    count += _semaProcessInheritances<ComputeInterface>(this, top);
+    count += _semaLinkToInheritances<VertexInterface>(this, top);
+    count += _semaLinkToInheritances<GeometryInterface>(this, top);
+    count += _semaLinkToInheritances<FragmentInterface>(this, top);
+    count += _semaLinkToInheritances<ComputeInterface>(this, top);
 
-    count += _semaProcessInheritances<VertexShader>(this, top);
-    count += _semaProcessInheritances<FragmentShader>(this, top);
-    count += _semaProcessInheritances<GeometryShader>(this, top);
-    count += _semaProcessInheritances<ComputeShader>(this, top);
+    count += _semaLinkToInheritances<VertexShader>(this, top);
+    count += _semaLinkToInheritances<FragmentShader>(this, top);
+    count += _semaLinkToInheritances<GeometryShader>(this, top);
+    count += _semaLinkToInheritances<ComputeShader>(this, top);
 
-    count += _semaProcessInheritances<StateBlock>(this, top);
+    count += _semaLinkToInheritances<StateBlock>(this, top);
     keep_going = (count > 0);
   }
 

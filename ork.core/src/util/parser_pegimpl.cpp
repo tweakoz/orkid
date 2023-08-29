@@ -824,7 +824,9 @@ void PegImpl::loadPEGGrammar() { //
 
   _rsi_parser_matcher = _peg_parser->zeroOrMore(parser_rule, "parser_rules");
 
-  _rsi_parser_matcher->_post_notif = [=](match_ptr_t match) { printf("MATCHED parser_rules\n"); };
+  _rsi_parser_matcher->_post_notif = [=](match_ptr_t match) { 
+    //printf("MATCHED parser_rules\n");
+  };
   _peg_parser->link();
 }
 /////////////////////////////////////////////////////////
