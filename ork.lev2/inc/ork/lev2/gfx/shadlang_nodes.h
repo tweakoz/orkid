@@ -275,15 +275,16 @@ DECLARE_STD_AST_CLASS(SemaExpression,SemaFunctionName);
 DECLARE_STD_AST_CLASS(SemaExpression,SemaConstructorType);
 DECLARE_STD_AST_CLASS(SemaExpression,SemaConstructorInvokation);
 DECLARE_STD_AST_CLASS(SemaExpression,SemaConstructorArguments);
-DECLARE_STD_AST_CLASS(SemaExpression,SemaInheritLibrary);
-DECLARE_STD_AST_CLASS(SemaExpression,SemaInheritVertexInterface);
-DECLARE_STD_AST_CLASS(SemaExpression,SemaInheritFragmentInterface);
-DECLARE_STD_AST_CLASS(SemaExpression,SemaInheritGeometryInterface);
-DECLARE_STD_AST_CLASS(SemaExpression,SemaInheritComputeInterface);
-DECLARE_STD_AST_CLASS(SemaExpression,SemaInheritUniformSet);
-DECLARE_STD_AST_CLASS(SemaExpression,SemaInheritUniformBlock);
-DECLARE_STD_AST_CLASS(SemaExpression,SemaInheritStateBlock);
-DECLARE_STD_AST_CLASS(SemaExpression,SemaInheritExtension);
+DECLARE_STD_AST_CLASS_WPTR(SemaExpression,SemaInheritLibrary, semainhlib_ptr_t);
+DECLARE_STD_AST_CLASS_WPTR(SemaExpression,SemaInheritInterface, semainhif_ptr_t);
+DECLARE_STD_AST_CLASS_WPTR(SemaInheritInterface,SemaInheritVertexInterface, semainhvif_ptr_t);
+DECLARE_STD_AST_CLASS_WPTR(SemaInheritInterface,SemaInheritFragmentInterface, semainhfif_ptr_t);
+DECLARE_STD_AST_CLASS_WPTR(SemaInheritInterface,SemaInheritGeometryInterface, semainhgif_ptr_t);
+DECLARE_STD_AST_CLASS_WPTR(SemaInheritInterface,SemaInheritComputeInterface, semainhcif_ptr_t);
+DECLARE_STD_AST_CLASS_WPTR(SemaExpression,SemaInheritUniformSet, semainhuniset_ptr_t);
+DECLARE_STD_AST_CLASS_WPTR(SemaExpression,SemaInheritUniformBlock, semainhuniblk_ptr_t);
+DECLARE_STD_AST_CLASS_WPTR(SemaExpression,SemaInheritStateBlock, semainhstblk_ptr_t);
+DECLARE_STD_AST_CLASS_WPTR(SemaExpression,SemaInheritExtension, semainhext_ptr_t);
 //
 DECLARE_STD_AST_CLASS(Expression,ExpressionList);
 //
@@ -318,7 +319,7 @@ DECLARE_STD_AST_CLASS(Translatable,StateBlock);
 DECLARE_STD_AST_CLASS(Translatable,Technique);
 DECLARE_STD_AST_CLASS(Translatable,FunctionDef1);
 DECLARE_STD_AST_CLASS_WPTR(Translatable,FunctionDef2, fndef2_ptr_t);
-DECLARE_STD_AST_CLASS(Translatable,UniformSet);
+DECLARE_STD_AST_CLASS_WPTR(Translatable,UniformSet,uniset_ptr_t);
 DECLARE_STD_AST_CLASS(Translatable,UniformBlk);
 //
 DECLARE_STD_AST_CLASS(AstNode,Pass);
