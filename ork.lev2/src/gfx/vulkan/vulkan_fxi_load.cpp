@@ -117,7 +117,7 @@ vkfxsfile_ptr_t VkFxInterface::_loadShaderFromShaderText(FxShader* shader, const
 
     //////////////////
 
-    auto SPC = std::make_shared<spirv::SpirvCompiler>(vulkan_shaderfile->_trans_unit);
+    auto SPC = std::make_shared<spirv::SpirvCompiler>(vulkan_shaderfile->_trans_unit,true);
 
     //////////////////
     // uniformsets
@@ -180,9 +180,8 @@ vkfxsfile_ptr_t VkFxInterface::_loadShaderFromShaderText(FxShader* shader, const
     //////////////////
 
     for (auto vshader : vtx_shaders) {
-      SPC->beginShader(vshader);
-      SPC->process_inh_interfaces<SHAST::SemaInheritVertexInterface, SHAST::VertexInterface>();
-      SPC->compile_shader(shaderc_glsl_vertex_shader);
+      SPC->processShader<SHAST::SemaInheritVertexInterface, //
+                         SHAST::VertexInterface>(vshader);
       auto vulkan_shobj                                       = std::make_shared<VkFxShaderObject>(_contextVK, SPC->_spirv_binary);
       vulkan_shobj->_astnode                                  = vshader;
       vulkan_shobj->_vk_uniformsets                           = convert_unisets(SPC->_uniformsets);
@@ -200,9 +199,8 @@ vkfxsfile_ptr_t VkFxInterface::_loadShaderFromShaderText(FxShader* shader, const
     //////////////////
 
     for (auto fshader : frg_shaders) {
-      SPC->beginShader(fshader);
-      SPC->process_inh_interfaces<SHAST::SemaInheritFragmentInterface, SHAST::FragmentInterface>();
-      SPC->compile_shader(shaderc_glsl_fragment_shader);
+      SPC->processShader<SHAST::SemaInheritFragmentInterface, //
+                         SHAST::FragmentInterface>(fshader);
       auto vulkan_shobj                                       = std::make_shared<VkFxShaderObject>(_contextVK, SPC->_spirv_binary);
       vulkan_shobj->_astnode                                  = fshader;
       vulkan_shobj->_vk_uniformsets                           = convert_unisets(SPC->_uniformsets);
@@ -220,9 +218,8 @@ vkfxsfile_ptr_t VkFxInterface::_loadShaderFromShaderText(FxShader* shader, const
     //////////////////
 
     for (auto cshader : cu_shaders) {
-      SPC->beginShader(cshader);
-      SPC->process_inh_interfaces<SHAST::SemaInheritComputeInterface, SHAST::ComputeInterface>();
-      SPC->compile_shader(shaderc_glsl_compute_shader);
+      SPC->processShader<SHAST::SemaInheritComputeInterface, 
+                         SHAST::ComputeInterface>(cshader); //
       auto vulkan_shobj                                       = std::make_shared<VkFxShaderObject>(_contextVK, SPC->_spirv_binary);
       vulkan_shobj->_astnode                                  = cshader;
       vulkan_shobj->_vk_uniformsets                           = convert_unisets(SPC->_uniformsets);

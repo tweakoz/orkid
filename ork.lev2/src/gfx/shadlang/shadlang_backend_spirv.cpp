@@ -11,7 +11,9 @@
 namespace ork::lev2::shadlang::spirv {
 using namespace SHAST;
 /////////////////////////////////////////////////////////////////////////////////////////////////
-SpirvCompiler::SpirvCompiler(transunit_ptr_t transu) {
+SpirvCompiler::SpirvCompiler(transunit_ptr_t transu,bool vulkan) 
+  : _transu(transu)
+  , _vulkan(vulkan) {
   _data_sizes["int"]   = 1;
   _data_sizes["float"] = 1;
   _data_sizes["vec2"]  = 1;
@@ -20,16 +22,18 @@ SpirvCompiler::SpirvCompiler(transunit_ptr_t transu) {
   _data_sizes["mat3"]  = 4;
   _data_sizes["mat4"]  = 4;
 
+  if(_vulkan){
   _id_renames["gl_InstanceID"] = "gl_InstanceIndex";
-  _transu                      = transu;
-  process_imports();
-  process_libblocks();
-  processGlobalRenames();
-  collectUnisets();
+
+  }
+  _collectImports();
+  _collectLibBlocks();
+  _processGlobalRenames();
+  _collectUnisets();
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
-void SpirvCompiler::beginShader(shader_ptr_t shader) {
+void SpirvCompiler::_beginShader(shader_ptr_t shader) {
   _shader          = shader;
   _shader_group    = std::make_shared<MiscGroupNode>();
   _interface_group = std::make_shared<MiscGroupNode>();
@@ -39,11 +43,11 @@ void SpirvCompiler::beginShader(shader_ptr_t shader) {
   _input_index     = 0;
   _output_index    = 0;
 
-  process_inh_extensions();
-  process_inh_libraries(shader);
+  _inheritExtensions();
+  _inheritLibraries(shader);
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////
-void SpirvCompiler::appendText(miscgroupnode_ptr_t grp, const char* formatstring, ...) {
+void SpirvCompiler::_appendText(miscgroupnode_ptr_t grp, const char* formatstring, ...) {
   char formatbuffer[512];
   va_list args;
   va_start(args, formatstring);
@@ -52,7 +56,7 @@ void SpirvCompiler::appendText(miscgroupnode_ptr_t grp, const char* formatstring
   grp->appendTypedChild<InsertLine>(formatbuffer);
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////
-void SpirvCompiler::processGlobalRenames() {
+void SpirvCompiler::_processGlobalRenames() {
   auto sema_identifiers = SHAST::AstNode::collectNodesOfType<SHAST::SemaIdentifier>(_transu);
   for( auto it : sema_identifiers ) {
     auto id = it->typedValueForKey<std::string>("identifier_name").value();
@@ -73,7 +77,7 @@ void SpirvCompiler::processGlobalRenames() {
   }
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////
-void SpirvCompiler::collectUnisets() {
+void SpirvCompiler::_collectUnisets() {
   auto unisets = SHAST::AstNode::collectNodesOfType<SHAST::UniformSet>(_transu);
   for (auto uni_set : unisets) {
     //////////////////////////////////////
@@ -106,7 +110,7 @@ void SpirvCompiler::collectUnisets() {
   }
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////
-void SpirvCompiler::process_imports() {
+void SpirvCompiler::_collectImports() {
   auto imports = AstNode::collectNodesOfType<ImportDirective>(_transu);
   for (auto import : imports) {
     auto import_path = import->typedValueForKey<std::string>("raw_import_path").value();
@@ -118,7 +122,7 @@ void SpirvCompiler::process_imports() {
   }
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////
-void SpirvCompiler::process_libblocks() {
+void SpirvCompiler::_collectLibBlocks() {
   auto lib_blocks = AstNode::collectNodesOfType<LibraryBlock>(_transu);
   for (auto item : _imported_units) {
     auto import_name       = item.first;
@@ -129,15 +133,16 @@ void SpirvCompiler::process_libblocks() {
   for (auto lib_block : lib_blocks) {
     auto name = lib_block->typedValueForKey<std::string>("object_name").value();
     auto it   = _lib_blocks.find(name);
-    if (it != _lib_blocks.end()) {
-      printf("dupe libblock<%s>\n", name.c_str());
-      // OrkAssert(false);
+    if (it == _lib_blocks.end()) {
+      _lib_blocks[name] = lib_block;
     }
-    _lib_blocks[name] = lib_block;
+    else{
+      printf("dupe libblock<%s>\n", name.c_str());
+    }
   }
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////
-void SpirvCompiler::process_inh_libraries(astnode_ptr_t par_node) {
+void SpirvCompiler::_inheritLibraries(astnode_ptr_t par_node) {
   auto inh_libs = AstNode::collectNodesOfType<SemaInheritLibrary>(par_node);
   for (auto inh_lib : inh_libs) {
     auto INHID  = inh_lib->typedValueForKey<std::string>("inherit_id").value();
@@ -151,7 +156,7 @@ void SpirvCompiler::process_inh_libraries(astnode_ptr_t par_node) {
   }
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////
-void SpirvCompiler::process_inh_unisets(astnode_ptr_t par_node) {
+void SpirvCompiler::_inheritUniformSets(astnode_ptr_t par_node) {
   auto inh_semausets = AstNode::collectNodesOfType<SemaInheritUniformSet>(par_node);
   size_t binding_id  = 0;
   for (auto inh_uset : inh_semausets) {
@@ -160,42 +165,47 @@ void SpirvCompiler::process_inh_unisets(astnode_ptr_t par_node) {
     OrkAssert(it_uset != _uniformsets.end());
     auto vk_uniset                = it_uset->second;
     _uniformsets[it_uset->first]  = vk_uniset;
-    vk_uniset->_descriptor_set_id = _descriptor_set_counter++;
-    /////////////////////
-    // loose unis
-    /////////////////////
-    auto line = FormatString(
-        "layout(set=%zu, binding=%zu) uniform %s {", //
-        vk_uniset->_descriptor_set_id,               //
-        binding_id,                                  //
-        INHID.c_str());
-    appendText(_uniforms_group, line.c_str());
-    for (auto item : vk_uniset->_items_by_order) {
-      auto dt    = item->_datatype;
-      auto id    = item->_identifier;
-      appendText(_uniforms_group, (dt + " " + id + ";").c_str());
-    }
-    appendText(_uniforms_group, "};");
-    binding_id++;
-    /////////////////////
-    // samplers
-    /////////////////////
-    for (auto item : vk_uniset->_samplers_by_name) {
-      auto dt   = item.second->_datatype;
-      auto id   = item.second->_identifier;
+    if(_vulkan){
+      vk_uniset->_descriptor_set_id = _descriptor_set_counter++;
+      /////////////////////
+      // loose unis
+      /////////////////////
       auto line = FormatString(
-          "layout(set=%zu, binding=%zu) uniform %s %s;", //
-          vk_uniset->_descriptor_set_id,                 //
-          binding_id,                                    //
-          dt.c_str(),                                    //
-          id.c_str());
-      appendText(_uniforms_group, line.c_str());
+          "layout(set=%zu, binding=%zu) uniform %s {", //
+          vk_uniset->_descriptor_set_id,               //
+          binding_id,                                  //
+          INHID.c_str());
+      _appendText(_uniforms_group, line.c_str());
+      for (auto item : vk_uniset->_items_by_order) {
+        auto dt    = item->_datatype;
+        auto id    = item->_identifier;
+        _appendText(_uniforms_group, (dt + " " + id + ";").c_str());
+      }
+      _appendText(_uniforms_group, "};");
       binding_id++;
+      /////////////////////
+      // samplers
+      /////////////////////
+      for (auto item : vk_uniset->_samplers_by_name) {
+        auto dt   = item.second->_datatype;
+        auto id   = item.second->_identifier;
+        auto line = FormatString(
+            "layout(set=%zu, binding=%zu) uniform %s %s;", //
+            vk_uniset->_descriptor_set_id,                 //
+            binding_id,                                    //
+            dt.c_str(),                                    //
+            id.c_str());
+        _appendText(_uniforms_group, line.c_str());
+        binding_id++;
+      }
+    }
+    else{ // opengl
+      OrkAssert(false);
     }
   }
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////
-void SpirvCompiler::process_inh_ios(astnode_ptr_t interface_node) {
+void SpirvCompiler::_inheritIO(astnode_ptr_t interface_node) {
   //
   // TODO inherited interfaces
   //
@@ -213,7 +223,7 @@ void SpirvCompiler::process_inh_ios(astnode_ptr_t interface_node) {
       // dumpAstNode(tid);
       auto dt = tid->typedValueForKey<std::string>("data_type").value();
       auto id = tid->typedValueForKey<std::string>("identifier_name").value();
-      appendText(_interface_group, "layout(location=%zu) in %s %s;", _input_index, dt.c_str(), id.c_str());
+      _appendText(_interface_group, "layout(location=%zu) in %s %s;", _input_index, dt.c_str(), id.c_str());
       auto it = _data_sizes.find(dt);
       OrkAssert(it != _data_sizes.end());
       _input_index += it->second;
@@ -230,7 +240,7 @@ void SpirvCompiler::process_inh_ios(astnode_ptr_t interface_node) {
       auto dt = tid->typedValueForKey<std::string>("data_type").value();
       auto id = tid->typedValueForKey<std::string>("identifier_name").value();
       if (id.find("gl_") != 0) {
-        appendText(_interface_group, "layout(location=%zu) out %s %s;", _output_index, dt.c_str(), id.c_str());
+        _appendText(_interface_group, "layout(location=%zu) out %s %s;", _output_index, dt.c_str(), id.c_str());
         auto it = _data_sizes.find(dt);
         OrkAssert(it != _data_sizes.end());
         _output_index += it->second;
@@ -240,15 +250,15 @@ void SpirvCompiler::process_inh_ios(astnode_ptr_t interface_node) {
   /////////////////////////////////////////
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////
-void SpirvCompiler::process_inh_extensions() {
+void SpirvCompiler::_inheritExtensions() {
   auto inh_exts = AstNode::collectNodesOfType<SemaInheritExtension>(_shader);
   for (auto extension_node : inh_exts) {
     auto ext_name = extension_node->typedValueForKey<std::string>("extension_name").value();
-    appendText(_extension_group, "#extension %s : enable", ext_name.c_str());
+    _appendText(_extension_group, "#extension %s : enable", ext_name.c_str());
   }
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////
-void SpirvCompiler::compile_shader(shaderc_shader_kind shader_type) {
+void SpirvCompiler::_compileShader(shaderc_shader_kind shader_type) {
 
   ///////////////////////////////////////////////////////
   // final prep for shaderc

@@ -42,6 +42,25 @@ struct UniformSet {
 
 struct SpirvCompiler {
 
+  SpirvCompiler(transunit_ptr_t _transu, bool vulkan);
+  template <typename T, typename U> void processShader(shader_ptr_t sh);
+  
+private:
+
+  void _collectUnisets();
+  void _appendText(miscgroupnode_ptr_t grp, const char* formatstring, ...);
+  void _collectImports();
+  void _collectLibBlocks();
+  void _processGlobalRenames();
+  void _inheritLibraries(astnode_ptr_t par_node);
+  void _inheritUniformSets(astnode_ptr_t par_node);
+  void _inheritIO(astnode_ptr_t interface_node);
+  void _inheritExtensions();
+  template <typename T, typename U> void _inheritInterfaces(astnode_ptr_t parent_node);
+  template <typename T, typename U> void _inheritInterfaces();
+  void _beginShader(shader_ptr_t sh);
+  void _compileShader(shaderc_shader_kind shader_type);
+
   transunit_ptr_t _transu;
   shader_ptr_t _shader;
   miscgroupnode_ptr_t _shader_group;
@@ -49,38 +68,28 @@ struct SpirvCompiler {
   miscgroupnode_ptr_t _extension_group;
   miscgroupnode_ptr_t _uniforms_group;
   miscgroupnode_ptr_t _libraries_group;
-  shader_bin_t _spirv_binary;
-  std::string _shader_name;
-  std::unordered_map<std::string, uniset_ptr_t> _uniformsets;
   std::unordered_map<std::string, size_t> _data_sizes;
   std::unordered_map<std::string, std::string> _id_renames;
-  size_t _descriptor_set_counter;
   std::unordered_map<std::string, transunit_ptr_t> _imported_units;
   std::unordered_map<std::string, libblock_ptr_t> _lib_blocks;
   size_t _input_index = 0;
   size_t _output_index = 0;
+  size_t _descriptor_set_counter = 0;
+  bool _vulkan = true;
 
-  SpirvCompiler(transunit_ptr_t _transu);
-  void collectUnisets();
-  void beginShader(shader_ptr_t sh);
-  void appendText(miscgroupnode_ptr_t grp, const char* formatstring, ...);
-  void process_imports();
-  void process_libblocks();
-  void processGlobalRenames();
-  void process_inh_libraries(astnode_ptr_t par_node);
-  void process_inh_unisets(astnode_ptr_t par_node);
-  void process_inh_ios(astnode_ptr_t interface_node);
-  void process_inh_extensions();
-  template <typename T, typename U> void _process_inh_interface(astnode_ptr_t parent_node);
-  template <typename T, typename U> void process_inh_interfaces();
-  void compile_shader(shaderc_shader_kind shader_type);
+public:
+
+  shader_bin_t _spirv_binary;
+  std::string _shader_name;
+  std::unordered_map<std::string, uniset_ptr_t> _uniformsets;
+
 };
 
 using spirv_compiler_ptr_t = std::shared_ptr<SpirvCompiler>;
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 template <typename T, typename U> //
-void SpirvCompiler::_process_inh_interface(astnode_ptr_t parent_node) {
+void SpirvCompiler::_inheritInterfaces(astnode_ptr_t parent_node) {
   auto inh_interfaces = AstNode::collectNodesOfType<T>(parent_node);
   printf("inh_interfaces<%zu>\n", inh_interfaces.size());
   for (auto INHVIF : inh_interfaces) {
@@ -103,16 +112,35 @@ void SpirvCompiler::_process_inh_interface(astnode_ptr_t parent_node) {
     ///////////////////////////////////////////////
     OrkAssert(IFACE);
     ///////////////////////////////////////////////
-    _process_inh_interface<T, U>(IFACE);
+    _inheritInterfaces<T, U>(IFACE);
     ///////////////////////////////////////////////
-    process_inh_ios(IFACE);
-    process_inh_unisets(IFACE);
+    _inheritIO(IFACE);
+    _inheritUniformSets(IFACE);
   }
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////
 template <typename T, typename U> //
-void SpirvCompiler::process_inh_interfaces() {
-  _process_inh_interface<T, U>(_shader);
+void SpirvCompiler::_inheritInterfaces() {
+  _inheritInterfaces<T, U>(_shader);
 }
+/////////////////////////////////////////////////////////////////////////////////////////////////
+template <typename T, typename U> //
+void SpirvCompiler::processShader(shader_ptr_t sh){
+  _beginShader(sh);
+  _inheritInterfaces<T, U>();
+  if constexpr (std::is_same<U, SHAST::VertexInterface>::value) {
+    _compileShader(shaderc_glsl_vertex_shader);
+  }
+  else if constexpr (std::is_same<U, SHAST::FragmentInterface>::value) {
+    _compileShader(shaderc_glsl_fragment_shader);
+  }
+  else if constexpr (std::is_same<U, SHAST::ComputeInterface>::value) {
+    _compileShader(shaderc_glsl_compute_shader);
+  }
+  else {
+    OrkAssert(false);
+  }
+}
+/////////////////////////////////////////////////////////////////////////////////////////////////
 
 } // namespace ork::lev2::shadlang::spirv
