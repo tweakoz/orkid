@@ -78,7 +78,7 @@ struct DotBackend {
     addThemeItem<SemaInheritGeometryInterface>("#f0c040", "black", 1);
     addThemeItem<SemaInheritComputeInterface>("#f0c040", "black", 1);
     addThemeItem<SemaInheritUniformSet>("#f0c040", "black", 1);
-    addThemeItem<SemaInheritUniformBlock>("#f0c040", "black", 1);
+    addThemeItem<SemaInheritUniformBlk>("#f0c040", "black", 1);
     addThemeItem<SemaInheritStateBlock>("#f0c040", "black", 1);
     addThemeItem<SemaInheritExtension>("#f0c040", "black", 1);
     addThemeItem<SemaIdentifier>("#f0c040", "black", 1);

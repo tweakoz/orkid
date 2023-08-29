@@ -217,8 +217,12 @@ DECLARE_STD_AST_CLASS(LanguageElement,DataTypeWithUserTypes);
 DECLARE_STD_AST_CLASS(LanguageElement,MemberRef);
 DECLARE_STD_AST_CLASS(LanguageElement,ArrayRef);
 DECLARE_STD_AST_CLASS(LanguageElement,ArgumentDeclaration);
-DECLARE_STD_AST_CLASS(LanguageElement,DataDeclaration);
-DECLARE_STD_AST_CLASS(LanguageElement,ArrayDeclaration);
+
+//
+DECLARE_STD_AST_CLASS(LanguageElement,DataDeclarationBase);
+DECLARE_STD_AST_CLASS(DataDeclarationBase,DataDeclaration);
+DECLARE_STD_AST_CLASS(DataDeclarationBase,ArrayDeclaration);
+//
 DECLARE_STD_AST_CLASS_WPTR(LanguageElement,TypedIdentifier, tid_ptr_t);
 DECLARE_STD_AST_CLASS(LanguageElement,ObjectName);
 DECLARE_STD_AST_CLASS(LanguageElement,StateBlockItem);
@@ -279,7 +283,7 @@ DECLARE_STD_AST_CLASS(SemaExpression,SemaConstructorArguments);
 DECLARE_STD_AST_CLASS_WPTR(SemaExpression,SemaInherit,semainh_ptr_t);
 DECLARE_STD_AST_CLASS_WPTR(SemaInherit,SemaInheritLibrary, semainhlib_ptr_t);
 DECLARE_STD_AST_CLASS_WPTR(SemaInherit,SemaInheritUniformSet, semainhuniset_ptr_t);
-DECLARE_STD_AST_CLASS_WPTR(SemaInherit,SemaInheritUniformBlock, semainhuniblk_ptr_t);
+DECLARE_STD_AST_CLASS_WPTR(SemaInherit,SemaInheritUniformBlk, semainhuniblk_ptr_t);
 DECLARE_STD_AST_CLASS_WPTR(SemaInherit,SemaInheritStateBlock, semainhstblk_ptr_t);
 DECLARE_STD_AST_CLASS_WPTR(SemaInherit,SemaInheritExtension, semainhext_ptr_t);
 DECLARE_STD_AST_CLASS_WPTR(SemaInherit,SemaInheritInterface, semainhif_ptr_t);

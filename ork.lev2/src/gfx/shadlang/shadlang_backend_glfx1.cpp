@@ -235,6 +235,11 @@ GLFX1Backend::GLFX1Backend() {
   registerAstPreCB<UniformSet>([=](auto uni_set) { named_precb( uni_set, "uniform_set" ); });
   registerAstPostCB<UniformSet>([=](auto uni_set) { named_postcb(uni_set); });
   registerAstPreChildCB<UniformSet>(named_item_pre_child_cb);
+  /////////////////////////////////////////////////////////////////////
+  registerAstPreCB<UniformBlk>([=](auto uni_blk) { named_precb( uni_blk, "uniform_blk" ); });
+  registerAstPostCB<UniformBlk>([=](auto uni_blk) { named_postcb(uni_blk); });
+  registerAstPreChildCB<UniformBlk>(named_item_pre_child_cb);
+  /////////////////////////////////////////////////////////////////////
   registerAstPreCB<DataDeclaration>([=](auto ddecl) {
     emitBeginLine("");
   });

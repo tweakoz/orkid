@@ -19,7 +19,8 @@ SpirvCompiler::SpirvCompiler(transunit_ptr_t transu, bool vulkan)
   _data_sizes["vec2"]  = 1;
   _data_sizes["vec3"]  = 1;
   _data_sizes["vec4"]  = 1;
-  _data_sizes["mat3"]  = 4;
+  _data_sizes["mat2"]  = 2;
+  _data_sizes["mat3"]  = 3;
   _data_sizes["mat4"]  = 4;
 
   if (_vulkan) {
@@ -102,7 +103,7 @@ void SpirvCompiler::_processGlobalRenames() {
 void SpirvCompiler::_convertUniformSets() {
   auto ast_unisets = SHAST::AstNode::collectNodesOfType<SHAST::UniformSet>(_transu);
   for (auto ast_uniset : ast_unisets) {
-    auto decls             = SHAST::AstNode::collectNodesOfType<SHAST::DataDeclaration>(ast_uniset);
+    auto decls             = SHAST::AstNode::collectNodesOfType<SHAST::DataDeclarationBase>(ast_uniset);
     //////////////////////////////////////
     auto uni_name          = ast_uniset->typedValueForKey<std::string>("object_name").value();
     auto uniset            = std::make_shared<SpirvUniformSet>();
@@ -126,6 +127,14 @@ void SpirvCompiler::_convertUniformSets() {
         item->_identifier          = id;
         uniset->_items_by_name[id] = item;
         uniset->_items_by_order.push_back(item);
+
+        if( auto as_array = std::dynamic_pointer_cast<ArrayDeclaration>(d) ){
+          auto len_node = as_array->childAs<SHAST::SemaIntegerLiteral>(1);
+          item->_is_array = true;
+          auto ary_len_str = len_node->typedValueForKey<std::string>("literal_value").value();
+          item->_array_length = atoi(ary_len_str.c_str());
+          dumpAstNode(as_array);
+        }
       }
     }
     //////////////////////////////////////
@@ -135,7 +144,7 @@ void SpirvCompiler::_convertUniformSets() {
 void SpirvCompiler::_convertUniformBlocks() {
   auto ast_uniblks = SHAST::AstNode::collectNodesOfType<SHAST::UniformBlk>(_transu);
   for (auto ast_uniblk : ast_uniblks) {
-    auto decls             = SHAST::AstNode::collectNodesOfType<SHAST::DataDeclaration>(ast_uniblk);
+    auto decls             = SHAST::AstNode::collectNodesOfType<SHAST::DataDeclarationBase>(ast_uniblk);
     //////////////////////////////////////
     auto uni_name          = ast_uniblk->typedValueForKey<std::string>("object_name").value();
     auto uniblk            = std::make_shared<SpirvUniformBlock>();
@@ -152,6 +161,15 @@ void SpirvCompiler::_convertUniformBlocks() {
       item->_identifier          = id;
       uniblk->_items_by_name[id] = item;
       uniblk->_items_by_order.push_back(item);
+
+      if( auto as_array = std::dynamic_pointer_cast<ArrayDeclaration>(d) ){
+        auto len_node = as_array->childAs<SHAST::SemaIntegerLiteral>(1);
+        item->_is_array = true;
+        auto ary_len_str = len_node->typedValueForKey<std::string>("literal_value").value();
+        item->_array_length = atoi(ary_len_str.c_str());
+        dumpAstNode(as_array);
+      }
+
     }
   }
 }
@@ -219,7 +237,7 @@ void SpirvCompiler::_procInheritances(astnode_ptr_t parent_node) {
       _inheritUniformSet(INHID,spirvuniset);
     }
     //////////////////////////////////////////////////////////////////////
-    else if (auto as_ublk = std::dynamic_pointer_cast<SemaInheritUniformBlock>(c)) {
+    else if (auto as_ublk = std::dynamic_pointer_cast<SemaInheritUniformBlk>(c)) {
       auto INHID = as_ublk->typedValueForKey<std::string>("inherit_id").value();
       auto ast_ublk = _transu->find<SHAST::UniformBlk>(INHID);
       auto it_ublk = _spirvuniformblks.find(INHID);
@@ -260,7 +278,14 @@ void SpirvCompiler::_inheritUniformSet(std::string unisetname, //
     for (auto item : spirvuset->_items_by_order) {
       auto dt = item->_datatype;
       auto id = item->_identifier;
-      _appendText(_uniforms_group, (dt + " " + id + ";").c_str());
+      if( item->_is_array ){
+        size_t array_len = item->_array_length;
+        auto str = FormatString("%s %s[%zu];", dt.c_str(), id.c_str(), array_len);
+        _appendText(_uniforms_group, str.c_str());
+      }
+      else{
+        _appendText(_uniforms_group, (dt + " " + id + ";").c_str());
+      }
     }
     _appendText(_uniforms_group, "};");
     _binding_id++;
@@ -300,7 +325,14 @@ void SpirvCompiler::_inheritUniformBlk(std::string uniblkname, //
     for (auto item : spirvublk->_items_by_order) {
       auto dt = item->_datatype;
       auto id = item->_identifier;
-      _appendText(_uniforms_group, (dt + " " + id + ";").c_str());
+      if( item->_is_array ){
+        size_t array_len = item->_array_length;
+        auto str = FormatString("%s %s[%zu];", dt.c_str(), id.c_str(), array_len);
+        _appendText(_uniforms_group, str.c_str());
+      }
+      else{
+        _appendText(_uniforms_group, (dt + " " + id + ";").c_str());
+      }
     }
     _appendText(_uniforms_group, "};");
     _binding_id++;

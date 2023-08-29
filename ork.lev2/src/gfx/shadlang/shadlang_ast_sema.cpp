@@ -859,8 +859,8 @@ int _semaLinkToInheritances(
           slp->replaceInParent(inh_item, semalib);
           count++;
         } else if (check_uni_blks and check_inheritance(inh_name, slp->_uniform_blocks)) {
-          auto semalib   = std::make_shared<SemaInheritUniformBlock>();
-          semalib->_name = FormatString("SemaInheritUniformBlock: %s", inh_name.c_str());
+          auto semalib   = std::make_shared<SemaInheritUniformBlk>();
+          semalib->_name = FormatString("SemaInheritUniformBlk: %s", inh_name.c_str());
           semalib->setValueForKey<std::string>("inherit_id", inh_name);
           slp->replaceInParent(inh_item, semalib);
           count++;
@@ -963,6 +963,14 @@ void _semaFloatLiterals(impl::ShadLangParser* slp, astnode_ptr_t top) {
     slp->replaceInParent(node, sema_node);
   }
 }
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+void _semaDecorateArrayDeclarations(impl::ShadLangParser* slp, astnode_ptr_t top) {
+  auto arrays = AstNode::collectNodesOfType<ArrayDeclaration>(top);
+  for (auto array : arrays) {
+    
+  }
+}
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 void impl::ShadLangParser::semaAST(astnode_ptr_t top) {
@@ -1048,6 +1056,7 @@ void impl::ShadLangParser::semaAST(astnode_ptr_t top) {
     _semaResolvePrimaryExpressions(this, top);
     _semaResolveIdentifierCalls(this, top);
     _semaResolveSemaFunctionArguments(this, top);
+    _semaDecorateArrayDeclarations(this, top);
   }
 
   //////////////////////////////////

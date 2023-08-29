@@ -31,6 +31,8 @@ using shader_bin_t     = std::vector<uint32_t>;
 struct SpirvUniformSetItem {
   std::string _datatype;
   std::string _identifier;
+  bool _is_array = false;
+  size_t _array_length = 0;
 };
 struct SpirvUniformSetSampler {
   size_t _binding_id = -1;
@@ -49,6 +51,8 @@ struct SpirvUniformSet {
 struct SpirvUniformBlockItem {
   std::string _datatype;
   std::string _identifier;
+  bool _is_array = false;
+  size_t _array_length = 0;
 };
 struct SpirvUniformBlock {
   std::string _name;
