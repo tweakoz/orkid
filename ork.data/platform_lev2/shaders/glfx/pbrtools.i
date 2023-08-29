@@ -545,7 +545,7 @@ vertex_shader vs_forward_skinned_stereo //
   gl_SecondaryViewportMaskNV[0] = 2;
 }
 //////////////////////////////////////
-fragment_shader ps_forward_test : iface_forward : lib_math : lib_brdf : lib_def : lib_fwd {
+fragment_shader ps_forward_test : iface_forward : lib_fwd {
   out_color = vec4(forward_lighting_mono(ModColor.xyz), 1);
 }
 fragment_shader ps_forward_test_instanced_mono : iface_forward : lib_math : lib_brdf : lib_def : lib_fwd {

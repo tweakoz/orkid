@@ -93,11 +93,15 @@ struct AstNode {
     visitor_ptr_t visitor);
   ///////////////////////////
   void appendChild(astnode_ptr_t child) {
+    if(1){
+      auto it = std::find(_children.begin(), _children.end(), child);
+      OrkAssert(it == _children.end());
+    }
     _children.push_back(child);
   }
   template <typename T, typename... A> std::shared_ptr<T> appendTypedChild(A&&... args) {
     auto ptr = std::make_shared<T>(std::forward<A>(args)...);
-    _children.push_back(ptr);
+    appendChild(ptr);
     return ptr;
   }
   template <typename T, typename... A> std::shared_ptr<T> insertTypedChildAt(size_t index, A&&... args) {
@@ -106,6 +110,12 @@ struct AstNode {
     return ptr;
   }
   void appendChildrenFrom(astnode_ptr_t other){
+    if(1){
+      for( auto child : other->_children ){
+        auto it = std::find(_children.begin(), _children.end(), child);
+        OrkAssert(it == _children.end());
+      }
+    }
     _children.insert( _children.end(), other->_children.begin(), other->_children.end() );
   }
   ///////////////////////////

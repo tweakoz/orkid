@@ -455,7 +455,7 @@ void _semaPerformImports(impl::ShadLangParser* slp, astnode_ptr_t top) {
       }
     } else {
       // place under import node
-      import_node->_children.push_back(sub_tunit);
+      import_node->appendChild(sub_tunit);
     }
   }
 
@@ -968,7 +968,7 @@ void _semaFloatLiterals(impl::ShadLangParser* slp, astnode_ptr_t top) {
 void _semaDecorateArrayDeclarations(impl::ShadLangParser* slp, astnode_ptr_t top) {
   auto arrays = AstNode::collectNodesOfType<ArrayDeclaration>(top);
   for (auto array : arrays) {
-    
+
   }
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1089,7 +1089,7 @@ void impl::ShadLangParser::semaAST(astnode_ptr_t top) {
     auto trans = trans_item.second;
     auto it = std::find(as_tu->_children.begin(), as_tu->_children.end(),trans);
     if(it==as_tu->_children.end()){
-      as_tu->_children.push_back(trans);
+      as_tu->appendChild(trans);
     }
   }
 

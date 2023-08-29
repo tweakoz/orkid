@@ -159,7 +159,7 @@ void ShadLangParser::_buildAstTreeVisitor(match_ptr_t the_match) {
 
     if (_astnodestack.size() > 0) {
       auto parent = _astnodestack.back();
-      parent->_children.push_back(ast);
+      parent->appendChild(ast);
       ast->_parent = parent;
     }
     _astnodestack.push_back(ast);
