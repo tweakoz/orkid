@@ -49,7 +49,6 @@ private:
 
   void _collectUnisets();
   void _appendText(miscgroupnode_ptr_t grp, const char* formatstring, ...);
-  void _collectImports();
   void _collectLibBlocks();
   void _processGlobalRenames();
   void _inheritLibraries(astnode_ptr_t par_node);
@@ -70,7 +69,6 @@ private:
   miscgroupnode_ptr_t _libraries_group;
   std::unordered_map<std::string, size_t> _data_sizes;
   std::unordered_map<std::string, std::string> _id_renames;
-  std::unordered_map<std::string, transunit_ptr_t> _imported_units;
   std::unordered_map<std::string, libblock_ptr_t> _lib_blocks;
   size_t _input_index = 0;
   size_t _output_index = 0;
@@ -96,19 +94,6 @@ void SpirvCompiler::_inheritInterfaces(astnode_ptr_t parent_node) {
     auto INHID  = INHVIF->template typedValueForKey<std::string>("inherit_id").value();
     //printf("  inh_iface<%s> INHID<%s>\n", INHVIF->_name.c_str(), INHID.c_str());
     auto IFACE = _transu->template find<U>(INHID);
-    ///////////////////////////////////////////////
-    // search imported units for interface
-    ///////////////////////////////////////////////
-    if (nullptr == IFACE) {
-      for (auto import_unit_item : _imported_units) {
-        auto import_name = import_unit_item.first;
-        auto import_unit = import_unit_item.second;
-        IFACE            = import_unit->template find<U>(INHID);
-        if (IFACE) {
-          break;
-        }
-      }
-    }
     ///////////////////////////////////////////////
     OrkAssert(IFACE);
     ///////////////////////////////////////////////

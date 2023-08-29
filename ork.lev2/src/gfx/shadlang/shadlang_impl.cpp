@@ -248,7 +248,7 @@ SHAST::translationunit_ptr_t ShadLangParser::parseString(std::string name, std::
   }
   if(1){
     printf("///////////////////////////////\n");
-    printf("// TU LIST parser<%s>\n", _name.c_str() );
+    printf("// TU<%p> LIST parser<%s>\n", (void*) top_as_tunit.get(), _name.c_str() );
     printf("///////////////////////////////\n");
     auto sorted_translatables = sorted_vector_from_map( _translatables );
     for( auto item : sorted_translatables ){

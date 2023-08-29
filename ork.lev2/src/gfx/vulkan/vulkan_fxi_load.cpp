@@ -100,14 +100,15 @@ vkfxsfile_ptr_t VkFxInterface::_loadShaderFromShaderText(FxShader* shader, //
     /////////////////////////////////////////////////////////////////////////////
 
     vulkan_shaderfile              = std::make_shared<VkFxShaderFile>();
-    vulkan_shaderfile->_trans_unit = shadlang::parseFromString(parser_name, shadertext);
+    auto transunit                 = shadlang::parseFromString(parser_name, shadertext);
+    vulkan_shaderfile->_trans_unit = transunit;
 
-    auto vtx_shaders = SHAST::AstNode::collectNodesOfType<SHAST::VertexShader>(vulkan_shaderfile->_trans_unit);
-    auto frg_shaders = SHAST::AstNode::collectNodesOfType<SHAST::FragmentShader>(vulkan_shaderfile->_trans_unit);
-    auto cu_shaders  = SHAST::AstNode::collectNodesOfType<SHAST::ComputeShader>(vulkan_shaderfile->_trans_unit);
-    auto techniques  = SHAST::AstNode::collectNodesOfType<SHAST::Technique>(vulkan_shaderfile->_trans_unit);
-    auto unisets     = SHAST::AstNode::collectNodesOfType<SHAST::UniformSet>(vulkan_shaderfile->_trans_unit);
-    auto imports     = SHAST::AstNode::collectNodesOfType<SHAST::ImportDirective>(vulkan_shaderfile->_trans_unit);
+    auto vtx_shaders = SHAST::AstNode::collectNodesOfType<SHAST::VertexShader>(transunit);
+    auto frg_shaders = SHAST::AstNode::collectNodesOfType<SHAST::FragmentShader>(transunit);
+    auto cu_shaders  = SHAST::AstNode::collectNodesOfType<SHAST::ComputeShader>(transunit);
+    auto techniques  = SHAST::AstNode::collectNodesOfType<SHAST::Technique>(transunit);
+    auto unisets     = SHAST::AstNode::collectNodesOfType<SHAST::UniformSet>(transunit);
+    auto imports     = SHAST::AstNode::collectNodesOfType<SHAST::ImportDirective>(transunit);
 
     size_t num_vtx_shaders = vtx_shaders.size();
     size_t num_frg_shaders = frg_shaders.size();
@@ -125,7 +126,7 @@ vkfxsfile_ptr_t VkFxInterface::_loadShaderFromShaderText(FxShader* shader, //
 
     //////////////////
 
-    auto SPC = std::make_shared<spirv::SpirvCompiler>(vulkan_shaderfile->_trans_unit,true);
+    auto SPC = std::make_shared<spirv::SpirvCompiler>(transunit,true);
 
     for( auto uniset : SPC->_uniformsets ){
       printf( "uniset<%s>\n", uniset.first.c_str() );

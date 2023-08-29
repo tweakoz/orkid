@@ -25,7 +25,6 @@ SpirvCompiler::SpirvCompiler(transunit_ptr_t transu, bool vulkan)
   if (_vulkan) {
     _id_renames["gl_InstanceID"] = "gl_InstanceIndex";
   }
-  _collectImports();
   _collectLibBlocks();
   _processGlobalRenames();
   _collectUnisets();
@@ -106,18 +105,6 @@ void SpirvCompiler::_collectUnisets() {
       }
     }
     //////////////////////////////////////
-  }
-}
-/////////////////////////////////////////////////////////////////////////////////////////////////
-void SpirvCompiler::_collectImports() {
-  auto imports = AstNode::collectNodesOfType<ImportDirective>(_transu);
-  for (auto import : imports) {
-    auto import_path = import->typedValueForKey<std::string>("raw_import_path").value();
-    //printf("import_path<%s>\n", import_path.c_str());
-    auto trans_unit = import->typedValueForKey<transunit_ptr_t>("transunit").value();
-    auto it         = _imported_units.find(import_path);
-    OrkAssert(it == _imported_units.end());
-    _imported_units[import_path] = trans_unit;
   }
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////

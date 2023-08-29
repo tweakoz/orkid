@@ -1075,6 +1075,15 @@ void impl::ShadLangParser::semaAST(astnode_ptr_t top) {
 
   auto as_tu                    = std::dynamic_pointer_cast<TranslationUnit>(top);
   as_tu->_translatables_by_name = _translatables;
+
+  for( auto trans_item : _translatables ){
+    auto trans = trans_item.second;
+    auto it = std::find(as_tu->_children.begin(), as_tu->_children.end(),trans);
+    if(it==as_tu->_children.end()){
+      as_tu->_children.push_back(trans);
+    }
+  }
+
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
