@@ -77,6 +77,8 @@ struct VkFxShaderTechnique;
 struct VkFxShaderUniformSet;
 struct VkFxShaderUniformSetItem;
 struct VkFxShaderUniformSetSampler;
+struct VkFxShaderUniformBlk;
+struct VkFxShaderUniformBlkItem;
 struct VkFboObject;
 struct VklRtBufferImpl;
 struct VkRtGroupImpl;
@@ -107,9 +109,14 @@ using vkfxsobj_ptr_t = std::shared_ptr<VkFxShaderObject>;
 using vkfxsprg_ptr_t = std::shared_ptr<VkFxShaderProgram>;
 using vkfxspass_ptr_t = std::shared_ptr<VkFxShaderPass>;
 using vkfxstek_ptr_t = std::shared_ptr<VkFxShaderTechnique>;
+
 using vkfxsuniset_ptr_t = std::shared_ptr<VkFxShaderUniformSet>;
 using vkfxsunisetitem_ptr_t = std::shared_ptr<VkFxShaderUniformSetItem>;
 using vkfxsunisetsamp_ptr_t = std::shared_ptr<VkFxShaderUniformSetSampler>;
+
+using vkfxsuniblk_ptr_t = std::shared_ptr<VkFxShaderUniformBlk>;
+using vkfxsuniblkitem_ptr_t = std::shared_ptr<VkFxShaderUniformBlkItem>;
+
 using vkfbobj_ptr_t = std::shared_ptr<VkFboObject>;
 using vkrtbufimpl_ptr_t = std::shared_ptr<VklRtBufferImpl>;
 using vkrtgrpimpl_ptr_t = std::shared_ptr<VkRtGroupImpl>;
@@ -244,13 +251,26 @@ struct VkFxShaderUniformSet {
   std::unordered_map<std::string, vkfxsunisetitem_ptr_t> _items_by_name;
   std::vector<vkfxsunisetitem_ptr_t> _items_by_order;
 };
-
+///////////////////////////////////////////////////////////////////////////////
+struct VkFxShaderUniformBlkItem {
+  std::string _datatype;
+  std::string _identifier;
+  std::shared_ptr<FxShaderParam> _orkparam;
+};
+struct VkFxShaderUniformBlk {
+  static size_t descriptor_set_counter;
+  size_t _descriptor_set_id = 0;
+  std::unordered_map<std::string, vkfxsuniblkitem_ptr_t> _items_by_name;
+  std::vector<vkfxsuniblkitem_ptr_t> _items_by_order;
+};
+///////////////////////////////////////////////////////////////////////////////
 struct VkFxShaderFile {
   std::string _shader_name;
   shadlang::SHAST::translationunit_ptr_t _trans_unit;
   std::unordered_map<std::string, vkfxsobj_ptr_t> _vk_shaderobjects;
   std::unordered_map<std::string, vkfxstek_ptr_t> _vk_techniques;
   std::unordered_map<std::string, vkfxsuniset_ptr_t> _vk_uniformsets;
+  std::unordered_map<std::string, vkfxsuniblk_ptr_t> _vk_uniformblks;
 };
 
 struct VkFxShaderObject {
@@ -265,6 +285,7 @@ struct VkFxShaderObject {
   VkPipelineShaderStageCreateInfo _shaderstageinfo;
   shadlang::SHAST::astnode_ptr_t _astnode; // debug only
   std::unordered_map<std::string, vkfxsuniset_ptr_t> _vk_uniformsets;
+  std::unordered_map<std::string, vkfxsuniblk_ptr_t> _vk_uniformblks;
   uint64_t _STAGE = 0;
 
 };

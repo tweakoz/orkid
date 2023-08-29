@@ -108,6 +108,7 @@ vkfxsfile_ptr_t VkFxInterface::_loadShaderFromShaderText(FxShader* shader, //
     auto cu_shaders  = SHAST::AstNode::collectNodesOfType<SHAST::ComputeShader>(transunit);
     auto techniques  = SHAST::AstNode::collectNodesOfType<SHAST::Technique>(transunit);
     auto unisets     = SHAST::AstNode::collectNodesOfType<SHAST::UniformSet>(transunit);
+    auto uniblks     = SHAST::AstNode::collectNodesOfType<SHAST::UniformBlk>(transunit);
     auto imports     = SHAST::AstNode::collectNodesOfType<SHAST::ImportDirective>(transunit);
 
     size_t num_vtx_shaders = vtx_shaders.size();
@@ -115,6 +116,7 @@ vkfxsfile_ptr_t VkFxInterface::_loadShaderFromShaderText(FxShader* shader, //
     size_t num_cu_shaders  = cu_shaders.size();
     size_t num_techniques  = techniques.size();
     size_t num_unisets     = unisets.size();
+    size_t num_uniblks     = uniblks.size();
     size_t num_imports     = imports.size();
 
     printf("num_vtx_shaders<%zu>\n", num_vtx_shaders);
@@ -122,6 +124,7 @@ vkfxsfile_ptr_t VkFxInterface::_loadShaderFromShaderText(FxShader* shader, //
     printf("num_cu_shaders<%zu>\n", num_cu_shaders);
     printf("num_techniques<%zu>\n", num_techniques);
     printf("num_unisets<%zu>\n", num_unisets);
+    printf("num_uniblks<%zu>\n", num_uniblks);
     printf("num_imports<%zu>\n", num_imports);
 
     //////////////////
@@ -130,6 +133,9 @@ vkfxsfile_ptr_t VkFxInterface::_loadShaderFromShaderText(FxShader* shader, //
 
     for( auto spirvuniset : SPC->_spirvuniformsets ){
       printf( "spirvuniset<%s>\n", spirvuniset.first.c_str() );
+    }
+    for( auto spirvuniblk : SPC->_spirvuniformblks ){
+      printf( "spirvuniblk<%s>\n", spirvuniblk.first.c_str() );
     }
 
     //////////////////
@@ -189,6 +195,50 @@ vkfxsfile_ptr_t VkFxInterface::_loadShaderFromShaderText(FxShader* shader, //
     };
 
     //////////////////
+    // uniformblks
+    //////////////////
+
+    auto convert_uniblks = [&](std::unordered_map<std::string, spirv::spirvuniblk_ptr_t>& spirv_uniblks) //
+        -> std::unordered_map<std::string, vkfxsuniblk_ptr_t> {                              //
+      std::unordered_map<std::string, vkfxsuniblk_ptr_t> rval;
+      for (auto spirv_item : spirv_uniblks) {
+        std::string name = spirv_item.first;
+        auto spirv_uniblk      = spirv_item.second;
+        /////////////////////////////////////////////
+        auto vk_uniblk = std::make_shared<VkFxShaderUniformBlk>();
+        rval[name]     = vk_uniblk;
+        vulkan_shaderfile->_vk_uniformblks[name] = vk_uniblk;
+        /////////////////////////////////////////////
+        vk_uniblk->_descriptor_set_id = spirv_uniblk->_descriptor_set_id;
+        /////////////////////////////////////////////
+        // rebuild _items_by_name
+        /////////////////////////////////////////////
+        for (auto item : spirv_uniblk->_items_by_name) {
+          auto vk_item                          = std::make_shared<VkFxShaderUniformBlkItem>();
+          vk_item->_datatype                    = item.second->_datatype;
+          vk_item->_identifier                  = item.second->_identifier;
+          vk_item->_orkparam = std::make_shared<FxShaderParam>();
+          vk_item->_orkparam->_impl.set<VkFxShaderUniformBlkItem*>(vk_item.get());
+          vk_uniblk->_items_by_name[item.first] = vk_item;
+          //printf( "uniset<%s> ADDING Item PARAM<%s>\n", name.c_str(), item.second->_identifier.c_str());
+        }
+        /////////////////////////////////////////////
+        // rebuild items_by_order
+        /////////////////////////////////////////////
+        vk_uniblk->_items_by_order.clear();
+        for (auto item : spirv_uniblk->_items_by_order) {
+          for (auto t : spirv_uniblk->_items_by_name) {
+            if (t.second == item) {
+              auto vk_item = vk_uniblk->_items_by_name[t.first];
+              vk_uniblk->_items_by_order.push_back(vk_item);
+            }
+          }
+        }
+      }
+      return rval;
+    };
+
+    //////////////////
     // vertex shaders
     //////////////////
 
@@ -197,6 +247,7 @@ vkfxsfile_ptr_t VkFxInterface::_loadShaderFromShaderText(FxShader* shader, //
       auto vulkan_shobj                                       = std::make_shared<VkFxShaderObject>(_contextVK, SPC->_spirv_binary);
       vulkan_shobj->_astnode                                  = vshader;
       vulkan_shobj->_vk_uniformsets                           = convert_unisets(SPC->_spirvuniformsets);
+      vulkan_shobj->_vk_uniformblks                           = convert_uniblks(SPC->_spirvuniformblks);
       vulkan_shobj->_STAGE                                    = "vertex"_crcu;
       vulkan_shaderfile->_vk_shaderobjects[SPC->_shader_name] = vulkan_shobj;
       auto& STGIV                                             = vulkan_shobj->_shaderstageinfo;
@@ -215,6 +266,7 @@ vkfxsfile_ptr_t VkFxInterface::_loadShaderFromShaderText(FxShader* shader, //
       auto vulkan_shobj                                       = std::make_shared<VkFxShaderObject>(_contextVK, SPC->_spirv_binary);
       vulkan_shobj->_astnode                                  = fshader;
       vulkan_shobj->_vk_uniformsets                           = convert_unisets(SPC->_spirvuniformsets);
+      vulkan_shobj->_vk_uniformblks                           = convert_uniblks(SPC->_spirvuniformblks);
       vulkan_shobj->_STAGE                                    = "fragment"_crcu;
       vulkan_shaderfile->_vk_shaderobjects[SPC->_shader_name] = vulkan_shobj;
       auto& STGIF                                             = vulkan_shobj->_shaderstageinfo;
@@ -233,6 +285,7 @@ vkfxsfile_ptr_t VkFxInterface::_loadShaderFromShaderText(FxShader* shader, //
       auto vulkan_shobj                                       = std::make_shared<VkFxShaderObject>(_contextVK, SPC->_spirv_binary);
       vulkan_shobj->_astnode                                  = cshader;
       vulkan_shobj->_vk_uniformsets                           = convert_unisets(SPC->_spirvuniformsets);
+      vulkan_shobj->_vk_uniformblks                           = convert_uniblks(SPC->_spirvuniformblks);
       vulkan_shobj->_STAGE                                    = "compute"_crcu;
       vulkan_shaderfile->_vk_shaderobjects[SPC->_shader_name] = vulkan_shobj;
       auto& STCIF                                             = vulkan_shobj->_shaderstageinfo;

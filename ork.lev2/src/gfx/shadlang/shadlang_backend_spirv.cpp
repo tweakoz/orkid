@@ -32,7 +32,8 @@ SpirvCompiler::SpirvCompiler(transunit_ptr_t transu, bool vulkan)
   }
   _collectLibBlocks();
   _processGlobalRenames();
-  _convertUnisets();
+  _convertUniformSets();
+  _convertUniformBlocks();
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
@@ -98,7 +99,7 @@ void SpirvCompiler::_processGlobalRenames() {
   }
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////
-void SpirvCompiler::_convertUnisets() {
+void SpirvCompiler::_convertUniformSets() {
   auto ast_unisets = SHAST::AstNode::collectNodesOfType<SHAST::UniformSet>(_transu);
   for (auto ast_uniset : ast_unisets) {
     auto decls             = SHAST::AstNode::collectNodesOfType<SHAST::DataDeclaration>(ast_uniset);
@@ -128,6 +129,30 @@ void SpirvCompiler::_convertUnisets() {
       }
     }
     //////////////////////////////////////
+  }
+}
+/////////////////////////////////////////////////////////////////////////////////////////////////
+void SpirvCompiler::_convertUniformBlocks() {
+  auto ast_uniblks = SHAST::AstNode::collectNodesOfType<SHAST::UniformBlk>(_transu);
+  for (auto ast_uniblk : ast_uniblks) {
+    auto decls             = SHAST::AstNode::collectNodesOfType<SHAST::DataDeclaration>(ast_uniblk);
+    //////////////////////////////////////
+    auto uni_name          = ast_uniblk->typedValueForKey<std::string>("object_name").value();
+    auto uniblk            = std::make_shared<SpirvUniformBlock>();
+    _spirvuniformblks[uni_name] = uniblk;
+    uniblk->_name          = uni_name;
+    //////////////////////////////////////
+    for (auto d : decls) {
+      auto tid = d->childAs<SHAST::TypedIdentifier>(0);
+      OrkAssert(tid);
+      auto dt         = tid->typedValueForKey<std::string>("data_type").value();
+      auto id         = tid->typedValueForKey<std::string>("identifier_name").value();
+      auto item                  = std::make_shared<SpirvUniformBlockItem>();
+      item->_datatype            = dt;
+      item->_identifier          = id;
+      uniblk->_items_by_name[id] = item;
+      uniblk->_items_by_order.push_back(item);
+    }
   }
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////
@@ -190,12 +215,18 @@ void SpirvCompiler::_procInheritances(astnode_ptr_t parent_node) {
       auto it_uset = _spirvuniformsets.find(INHID);
       OrkAssert(it_uset != _spirvuniformsets.end());
       auto spirvuniset = it_uset->second;
-      //_uniformsets[it_uset->first] = vk_uniset;
       _procInheritances(ast_uset);
       _inheritUniformSet(INHID,spirvuniset);
     }
     //////////////////////////////////////////////////////////////////////
     else if (auto as_ublk = std::dynamic_pointer_cast<SemaInheritUniformBlock>(c)) {
+      auto INHID = as_ublk->typedValueForKey<std::string>("inherit_id").value();
+      auto ast_ublk = _transu->find<SHAST::UniformBlk>(INHID);
+      auto it_ublk = _spirvuniformblks.find(INHID);
+      OrkAssert(it_ublk != _spirvuniformblks.end());
+      auto spirvuniblk = it_ublk->second;
+      _procInheritances(ast_ublk);
+      _inheritUniformBlk(INHID,spirvuniblk);
     }
     //////////////////////////////////////////////////////////////////////
     else if (auto as_sb = std::dynamic_pointer_cast<SemaInheritStateBlock>(c)) {
@@ -248,6 +279,31 @@ void SpirvCompiler::_inheritUniformSet(std::string unisetname, //
       _appendText(_uniforms_group, line.c_str());
       _binding_id++;
     }
+  } else { // opengl
+    OrkAssert(false);
+  }
+}
+/////////////////////////////////////////////////////////////////////////////////////////////////
+void SpirvCompiler::_inheritUniformBlk(std::string uniblkname, //
+                                       spirvuniblk_ptr_t spirvublk) { //
+  if (_vulkan) {
+    spirvublk->_descriptor_set_id = _descriptor_set_counter++;
+    /////////////////////
+    // loose unis
+    /////////////////////
+    auto line = FormatString(
+        "layout(set=%zu, binding=%zu) uniform %s {", //
+        spirvublk->_descriptor_set_id,               //
+        _binding_id,                                  //
+        uniblkname.c_str());
+    _appendText(_uniforms_group, line.c_str());
+    for (auto item : spirvublk->_items_by_order) {
+      auto dt = item->_datatype;
+      auto id = item->_identifier;
+      _appendText(_uniforms_group, (dt + " " + id + ";").c_str());
+    }
+    _appendText(_uniforms_group, "};");
+    _binding_id++;
   } else { // opengl
     OrkAssert(false);
   }
