@@ -51,7 +51,11 @@ const FxShaderParam* VkFxInterface::parameter(FxShader* pshader, const std::stri
   if(rval==nullptr){
     auto vkshfile = pshader->_internalHandle.get<vkfxsfile_ptr_t>();
     auto shader_name = vkshfile->_shader_name;
-    printf( "VkFxInterface shader<%s> parameter<%s> not found\n", shader_name.c_str(), name.c_str() );
+    size_t num_unisets = vkshfile->_vk_uniformsets.size();
+    printf( "VkFxInterface shader<%s> parameter<%s> not found numunisets<%zu>\n", //
+            shader_name.c_str(), //
+            name.c_str(), //
+            num_unisets );
   }
   return rval;
 }

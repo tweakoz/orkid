@@ -255,8 +255,16 @@ void _semaCollectNamedOfType(
       if constexpr (std::is_same<node_t, FunctionDef2>::value) {
         auto as_fn2 = std::dynamic_pointer_cast<FunctionDef2>(n);
         _mangleFunctionDef2(slp, as_fn2, the_name);
+        n->template setValueForKey<std::string>("raw_name", the_name);
       } else if constexpr (std::is_same<node_t, FunctionDef1>::value) {
         OrkAssert(false);
+      } else if constexpr (std::is_same<node_t, ImportDirective>::value) {
+        n->template setValueForKey<std::string>("import_path", the_name);
+        n->template setValueForKey<std::string>("raw_name", the_name);
+        the_name = FormatString("ImportDirective<%s>", the_name.c_str());
+      }
+      else{
+        n->template setValueForKey<std::string>("raw_name", the_name);
       }
 
       std::string mangled_name;
@@ -265,7 +273,6 @@ void _semaCollectNamedOfType(
         mangled_name = n->template typedValueForKey<std::string>("mangled_name").value();
       }
 
-      n->template setValueForKey<std::string>("raw_name", the_name);
 
       ////////////////////////////////////////////////////////////
 
@@ -339,7 +346,7 @@ void _semaPerformImports(impl::ShadLangParser* slp, astnode_ptr_t top) {
     file::Path::NameType a, b;
     file::Path proc_import_path;
     //
-    auto raw_import_path = import_node->template typedValueForKey<std::string>("object_name").value();
+    auto raw_import_path = import_node->template typedValueForKey<std::string>("import_path").value();
     printf("Import RawPath<%s>\n", raw_import_path.c_str());
 
     ////////////////////////////////////////////////////
@@ -905,7 +912,7 @@ template <typename node_t> void _semaMoveNames(impl::ShadLangParser* slp, astnod
     if constexpr (std::is_same<node_t, ImportDirective>::value) {
       // OrkAssert(false);
     }
-
+    else
     if (auto as_objname = tnode->template typedValueForKey<std::string>("object_name")) {
       auto objname = as_objname.value();
       if (not objname.empty()) {

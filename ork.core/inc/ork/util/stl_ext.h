@@ -5,7 +5,6 @@
 // see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ////////////////////////////////////////////////////////////////
 
-
 #ifndef _STL_EXT_H
 #define _STL_EXT_H
 
@@ -345,9 +344,30 @@ nearestItem(
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T>
-void vector_append( std::vector<T>& A, const std::vector<T>& B ) {
-    A.insert( A.end(), B.begin(), B.end() );
+template <typename T> void vector_append(std::vector<T>& A, const std::vector<T>& B) {
+  A.insert(A.end(), B.begin(), B.end());
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <typename map_t>
+std::vector<std::pair<typename map_t::key_type, typename map_t::mapped_type>> sorted_vector_from_map(const map_t& the_map) {
+    using key_t = typename map_t::key_type;
+    using val_t = typename map_t::mapped_type;
+    using pair_t = std::pair<key_t, val_t>;
+
+    std::vector<pair_t> out_vector;
+    out_vector.reserve(the_map.size());
+
+    for(const auto& pair : the_map) {
+        out_vector.emplace_back(pair_t(pair.first, pair.second));
+    }
+
+    if constexpr (std::is_same_v<map_t, std::unordered_map<key_t, val_t>>) {
+        std::sort(out_vector.begin(), out_vector.end(), [](const auto& a, const auto& b) { return a.first < b.first; });
+    }
+
+    return out_vector;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

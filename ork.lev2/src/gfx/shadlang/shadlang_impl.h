@@ -85,6 +85,9 @@ struct ShadLangParser : public Parser {
     auto it = the_map.find(name);
     OrkAssert(it==the_map.end());
     the_map[name] = translatable;
+    auto it2 = _translatables.find(name);
+    OrkAssert(it2==_translatables.end());
+    _translatables[name] = translatable;
   }
   ////////////////////////////////////////////
   matcher_ptr_t _tu_matcher;

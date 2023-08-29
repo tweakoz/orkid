@@ -11,7 +11,7 @@ vertex_interface iface_skintools : ub_vtx_boneblock {
   }
 }
 
-libblock skin_tools {
+libblock lib_skin_tools {
   vec3 SkinPosition(vec3 objpos) {
     ivec4 idcsi = ivec4(boneindices);
     vec4 pos4   = vec4(objpos, 1.0);

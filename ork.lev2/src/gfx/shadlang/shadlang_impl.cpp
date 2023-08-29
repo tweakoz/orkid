@@ -1,4 +1,3 @@
-////////////////////////////////////////////////////////////////
 // Orkid Media Engine
 // Copyright 1996-2023, Michael T. Mayers.
 // Distributed under the MIT License.
@@ -242,7 +241,8 @@ SHAST::translationunit_ptr_t ShadLangParser::parseString(std::string parse_str) 
     printf("///////////////////////////////\n");
     printf("// TU LIST\n");
     printf("///////////////////////////////\n");
-    for( auto item : _translatables ){
+    auto sorted_translatables = sorted_vector_from_map( _translatables );
+    for( auto item : sorted_translatables ){
       auto name = item.first;
       auto node = item.second;
       auto raw_name = node->template typedValueForKey<std::string>("raw_name").value();
