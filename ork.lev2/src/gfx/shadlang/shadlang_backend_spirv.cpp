@@ -29,8 +29,22 @@ SpirvCompiler::SpirvCompiler(transunit_ptr_t transu, bool vulkan)
   else{
     _id_renames["ofx_depth"] = "gl_FragDepth";
     _id_renames["ofx_instanceID"] = "gl_InstanceID";
-    
   }
+  _id_renames["PI"]          = "3.141592654";
+  _id_renames["PI2"]         = "6.283185307";
+  _id_renames["INV_PI"]      = "0.3183098861837907";
+  _id_renames["INV_PI2"]     = "0.15915494309189535";
+  _id_renames["PIDIV2"]      = "1.5707963267949";
+  _id_renames["DEGTORAD"]    = "0.017453";
+  _id_renames["RADTODEG"]    = "57.29578";
+  _id_renames["E"]           = "2.718281828459";
+  _id_renames["SQRT2"]       = "1.4142135623730951";
+  _id_renames["GOLDENRATIO"] = "1.6180339887498948482";
+  _id_renames["EPSILON"]     = "0.0000001";
+  _id_renames["DTOR"]     = "0.017453292519943295";
+  _id_renames["RTOD"]     = "57.29577951308232";
+
+
   _collectLibBlocks();
   _processGlobalRenames();
   _convertUniformSets();
@@ -392,6 +406,15 @@ void SpirvCompiler::_inheritExtension(semainhext_ptr_t extension_node) {
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////
 void SpirvCompiler::_compileShader(shaderc_shader_kind shader_type) {
+
+  ///////////////////////////////////////////////////////
+  // shut up InheritListItem's
+  ///////////////////////////////////////////////////////
+
+  auto inhs = AstNode::collectNodesOfType<SHAST::InheritListItem>(_transu);
+  for( auto inh : inhs ){
+    AstNode::treeops::removeFromParent(inh);
+  }
 
   ///////////////////////////////////////////////////////
   // final prep for shaderc
