@@ -53,6 +53,7 @@ struct SpirvCompiler {
   std::string _shader_name;
   std::unordered_map<std::string, uniset_ptr_t> _uniformsets;
   std::unordered_map<std::string, size_t> _data_sizes;
+  std::unordered_map<std::string, std::string> _id_renames;
   size_t _descriptor_set_counter;
   std::unordered_map<std::string, transunit_ptr_t> _imported_units;
   std::unordered_map<std::string, libblock_ptr_t> _lib_blocks;
@@ -65,6 +66,7 @@ struct SpirvCompiler {
   void appendText(miscgroupnode_ptr_t grp, const char* formatstring, ...);
   void process_imports();
   void process_libblocks();
+  void processGlobalRenames();
   void process_inh_libraries(astnode_ptr_t par_node);
   void process_inh_unisets(astnode_ptr_t par_node);
   void process_inh_ios(astnode_ptr_t interface_node);

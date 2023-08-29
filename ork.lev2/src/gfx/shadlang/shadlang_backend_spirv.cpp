@@ -12,15 +12,19 @@ namespace ork::lev2::shadlang::spirv {
 using namespace SHAST;
 /////////////////////////////////////////////////////////////////////////////////////////////////
 SpirvCompiler::SpirvCompiler(transunit_ptr_t transu) {
+  _data_sizes["int"]   = 1;
   _data_sizes["float"] = 1;
   _data_sizes["vec2"]  = 1;
   _data_sizes["vec3"]  = 1;
   _data_sizes["vec4"]  = 1;
   _data_sizes["mat3"]  = 4;
   _data_sizes["mat4"]  = 4;
-  _transu              = transu;
+
+  _id_renames["gl_InstanceID"] = "gl_InstanceIndex";
+  _transu                      = transu;
   process_imports();
   process_libblocks();
+  processGlobalRenames();
   collectUnisets();
 }
 
@@ -46,6 +50,27 @@ void SpirvCompiler::appendText(miscgroupnode_ptr_t grp, const char* formatstring
   vsnprintf(&formatbuffer[0], sizeof(formatbuffer), formatstring, args);
   va_end(args);
   grp->appendTypedChild<InsertLine>(formatbuffer);
+}
+/////////////////////////////////////////////////////////////////////////////////////////////////
+void SpirvCompiler::processGlobalRenames() {
+  auto sema_identifiers = SHAST::AstNode::collectNodesOfType<SHAST::SemaIdentifier>(_transu);
+  for( auto it : sema_identifiers ) {
+    auto id = it->typedValueForKey<std::string>("identifier_name").value();
+    auto it_ren = _id_renames.find(id);
+    if( it_ren != _id_renames.end() ) {
+      auto newid = it_ren->second;
+      it->setValueForKey<std::string>("identifier_name", newid);
+    }
+  }
+  auto prim_identifiers = SHAST::AstNode::collectNodesOfType<SHAST::PrimaryIdentifier>(_transu);
+  for( auto it : prim_identifiers ) {
+    auto id = it->typedValueForKey<std::string>("identifier_name").value();
+    auto it_ren = _id_renames.find(id);
+    if( it_ren != _id_renames.end() ) {
+      auto newid = it_ren->second;
+      it->setValueForKey<std::string>("identifier_name", newid);
+    }
+  }
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////
 void SpirvCompiler::collectUnisets() {
@@ -146,8 +171,8 @@ void SpirvCompiler::process_inh_unisets(astnode_ptr_t par_node) {
         INHID.c_str());
     appendText(_uniforms_group, line.c_str());
     for (auto item : vk_uniset->_items_by_order) {
-      auto dt = item->_datatype;
-      auto id = item->_identifier;
+      auto dt    = item->_datatype;
+      auto id    = item->_identifier;
       appendText(_uniforms_group, (dt + " " + id + ";").c_str());
     }
     appendText(_uniforms_group, "};");
@@ -199,15 +224,17 @@ void SpirvCompiler::process_inh_ios(astnode_ptr_t interface_node) {
     auto outputs = AstNode::collectNodesOfType<InterfaceOutput>(output_group);
     printf("  num_outputs<%zu>\n", outputs.size());
     for (auto output : outputs) {
-      auto tid = output->childAs<TypedIdentifier>(0);
+      dumpAstNode(output);
+      auto tid = output->findFirstChildOfType<TypedIdentifier>();
       OrkAssert(tid);
-      // dumpAstNode(tid);
       auto dt = tid->typedValueForKey<std::string>("data_type").value();
       auto id = tid->typedValueForKey<std::string>("identifier_name").value();
-      appendText(_interface_group, "layout(location=%zu) out %s %s;", _output_index, dt.c_str(), id.c_str());
-      auto it = _data_sizes.find(dt);
-      OrkAssert(it != _data_sizes.end());
-      _output_index += it->second;
+      if (id.find("gl_") != 0) {
+        appendText(_interface_group, "layout(location=%zu) out %s %s;", _output_index, dt.c_str(), id.c_str());
+        auto it = _data_sizes.find(dt);
+        OrkAssert(it != _data_sizes.end());
+        _output_index += it->second;
+      }
     }
   }
   /////////////////////////////////////////
