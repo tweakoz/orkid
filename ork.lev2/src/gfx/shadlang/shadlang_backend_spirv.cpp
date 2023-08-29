@@ -32,6 +32,8 @@ void SpirvCompiler::beginShader(shader_ptr_t shader) {
   _extension_group = std::make_shared<MiscGroupNode>();
   _uniforms_group  = std::make_shared<MiscGroupNode>();
   _libraries_group = std::make_shared<MiscGroupNode>();
+  _input_index     = 0;
+  _output_index    = 0;
 
   process_inh_extensions();
   process_inh_libraries(shader);
@@ -176,42 +178,39 @@ void SpirvCompiler::process_inh_ios(astnode_ptr_t interface_node) {
   auto output_groups = AstNode::collectNodesOfType<InterfaceOutputs>(interface_node);
   printf("  num_input_groups<%zu>\n", input_groups.size());
   printf("  num_output_groups<%zu>\n", output_groups.size());
-  OrkAssert(input_groups.size() == 1);
-  OrkAssert(output_groups.size() == 1);
-  auto input_group  = input_groups[0];
-  auto output_group = output_groups[0];
-  //
-  auto inputs  = AstNode::collectNodesOfType<InterfaceInput>(input_group);
-  auto outputs = AstNode::collectNodesOfType<InterfaceOutput>(output_group);
-  printf("  num_inputs<%zu>\n", inputs.size());
-  printf("  num_outputs<%zu>\n", outputs.size());
-  //
-  //
-  size_t input_index = 0;
-  for (auto input : inputs) {
-    auto tid = input->childAs<TypedIdentifier>(0);
-    OrkAssert(tid);
-    // dumpAstNode(tid);
-    auto dt = tid->typedValueForKey<std::string>("data_type").value();
-    auto id = tid->typedValueForKey<std::string>("identifier_name").value();
-    appendText(_interface_group, "layout(location=%zu) in %s %s;", input_index, dt.c_str(), id.c_str());
-    auto it = _data_sizes.find(dt);
-    OrkAssert(it != _data_sizes.end());
-    input_index += it->second;
+  /////////////////////////////////////////
+  for (auto input_group : input_groups) {
+    auto inputs = AstNode::collectNodesOfType<InterfaceInput>(input_group);
+    printf("  num_inputs<%zu>\n", inputs.size());
+    for (auto input : inputs) {
+      auto tid = input->childAs<TypedIdentifier>(0);
+      OrkAssert(tid);
+      // dumpAstNode(tid);
+      auto dt = tid->typedValueForKey<std::string>("data_type").value();
+      auto id = tid->typedValueForKey<std::string>("identifier_name").value();
+      appendText(_interface_group, "layout(location=%zu) in %s %s;", _input_index, dt.c_str(), id.c_str());
+      auto it = _data_sizes.find(dt);
+      OrkAssert(it != _data_sizes.end());
+      _input_index += it->second;
+    }
   }
-  //
-  size_t output_index = 0;
-  for (auto output : outputs) {
-    auto tid = output->childAs<TypedIdentifier>(0);
-    OrkAssert(tid);
-    // dumpAstNode(tid);
-    auto dt = tid->typedValueForKey<std::string>("data_type").value();
-    auto id = tid->typedValueForKey<std::string>("identifier_name").value();
-    appendText(_interface_group, "layout(location=%zu) out %s %s;", output_index, dt.c_str(), id.c_str());
-    auto it = _data_sizes.find(dt);
-    OrkAssert(it != _data_sizes.end());
-    output_index += it->second;
+  /////////////////////////////////////////
+  for (auto output_group : output_groups) {
+    auto outputs = AstNode::collectNodesOfType<InterfaceOutput>(output_group);
+    printf("  num_outputs<%zu>\n", outputs.size());
+    for (auto output : outputs) {
+      auto tid = output->childAs<TypedIdentifier>(0);
+      OrkAssert(tid);
+      // dumpAstNode(tid);
+      auto dt = tid->typedValueForKey<std::string>("data_type").value();
+      auto id = tid->typedValueForKey<std::string>("identifier_name").value();
+      appendText(_interface_group, "layout(location=%zu) out %s %s;", _output_index, dt.c_str(), id.c_str());
+      auto it = _data_sizes.find(dt);
+      OrkAssert(it != _data_sizes.end());
+      _output_index += it->second;
+    }
   }
+  /////////////////////////////////////////
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////
 void SpirvCompiler::process_inh_extensions() {
