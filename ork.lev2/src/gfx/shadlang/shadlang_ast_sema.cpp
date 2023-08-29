@@ -116,10 +116,10 @@ void _semaNameBuiltInDataTypes(impl::ShadLangParser* slp, astnode_ptr_t top) {
 void _semaNameIdentifers(impl::ShadLangParser* slp, astnode_ptr_t top) {
   auto nodes = AstNode::collectNodesOfType<IDENTIFIER>(top);
   for (auto id_node : nodes) {
-    auto match = slp->matchForAstNode(id_node);
-    auto sema_id = slp->ast_create<SemaIdentifier>(match);
+    auto match     = slp->matchForAstNode(id_node);
+    auto sema_id   = slp->ast_create<SemaIdentifier>(match);
     sema_id->_name = "SemaId: ";
-    auto cm1 = match->asShared<ClassMatch>();
+    auto cm1       = match->asShared<ClassMatch>();
     sema_id->_name += " " + cm1->_token->text;
     sema_id->setValueForKey<std::string>("identifier_name", cm1->_token->text);
     slp->replaceInParent(id_node, sema_id);
@@ -132,8 +132,8 @@ void _semaNameIdentiferCalls(impl::ShadLangParser* slp, astnode_ptr_t top) {
   auto nodes = AstNode::collectNodesOfType<IdentifierCall>(top);
   for (auto id_node : nodes) {
     id_node->_name = "IDCALL: ";
-    auto match = slp->matchForAstNode(id_node);
-    auto cm1 = match->asShared<ClassMatch>();
+    auto match     = slp->matchForAstNode(id_node);
+    auto cm1       = match->asShared<ClassMatch>();
     id_node->_name += " " + cm1->_token->text;
     id_node->setValueForKey<std::string>("identifier_name", cm1->_token->text);
   }
@@ -166,16 +166,16 @@ void _semaNameTypedIdentifers(impl::ShadLangParser* slp, astnode_ptr_t top) {
       type_name = cm->_token->text;
     }
 
-    //tid_node->_name += FormatString("type: %s\n", type_name.c_str());
+    // tid_node->_name += FormatString("type: %s\n", type_name.c_str());
     tid_node->setValueForKey<std::string>("data_type", type_name);
 
     ////////////////////
     // item 1 (identifier)
     ////////////////////
 
-    auto cm1 = seq->itemAsShared<ClassMatch>(1);
+    auto cm1     = seq->itemAsShared<ClassMatch>(1);
     auto id_name = cm1->_token->text;
-    //tid_node->_name += FormatString("id: %s", id_name.c_str());
+    // tid_node->_name += FormatString("id: %s", id_name.c_str());
     tid_node->setValueForKey<std::string>("identifier_name", id_name);
   }
 }
@@ -281,7 +281,6 @@ void _semaCollectNamedOfType(
       }
       outmap[the_name] = n;
 
-
       auto it2 = slp->_translatables.find(the_name);
       if (it != slp->_translatables.end()) {
         if (mangled_name != "") {
@@ -333,7 +332,7 @@ void _semaProcNamedOfType(
 
 void _semaPerformImports(impl::ShadLangParser* slp, astnode_ptr_t top) {
   auto top_tunit = std::dynamic_pointer_cast<TranslationUnit>(top);
-  auto nodes = AstNode::collectNodesOfType<ImportDirective>(top);
+  auto nodes     = AstNode::collectNodesOfType<ImportDirective>(top);
   import_map_t import_map;
   for (auto import_node : nodes) {
     //
@@ -381,26 +380,78 @@ void _semaPerformImports(impl::ShadLangParser* slp, astnode_ptr_t top) {
 
     ////////////////////////////////////////////////////////
 
-
     size_t num_trans_by_name = sub_tunit->_translatables_by_name.size();
-    printf("Import NumTranslatablesByName<%zu>\n", num_trans_by_name );
+    printf("Import NumTranslatablesByName<%zu>\n", num_trans_by_name);
 
-    import_node->_children.push_back(sub_tunit);
-
-    if(0) for( auto item : sub_tunit->_translatables_by_name ){
-      auto name = item.first;
-      auto translatable = item.second;
-
-      //auto it = slp->_translatables.find(name);
-      //OrkAssert(it==slp->_translatables.end());
-      //slp->_translatables[name] = translatable;
-      import_node->_children.push_back(translatable);
+    if (1) { // inline imported translatables ?
+      for (auto item : sub_tunit->_translatables_by_name) {
+        auto name         = item.first;
+        auto translatable = item.second;
+        ////////////////////////////////////////////////////////////////////////////////////////
+        if (auto as_lib_block = std::dynamic_pointer_cast<LibraryBlock>(translatable)) {
+          slp->importTranslatable<LibraryBlock>(name, as_lib_block, slp->_library_blocks);
+        } 
+        ////////////////////////////////////////////////////////////////////////////////////////
+        else if (auto as_uniset = std::dynamic_pointer_cast<UniformSet>(translatable)) {
+          slp->importTranslatable<UniformSet>(name, as_uniset, slp->_uniform_sets);
+        }
+        ////////////////////////////////////////////////////////////////////////////////////////
+        else if (auto as_uniblk = std::dynamic_pointer_cast<UniformBlk>(translatable)) {
+          slp->importTranslatable<UniformBlk>(name, as_uniblk, slp->_uniform_blocks);
+        }
+        ////////////////////////////////////////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////////////////////////////////////////
+        else if (auto as_vif = std::dynamic_pointer_cast<VertexInterface>(translatable)) {
+          slp->importTranslatable<VertexInterface>(name, as_vif, slp->_vertex_interfaces);
+        }
+        ////////////////////////////////////////////////////////////////////////////////////////
+        else if (auto as_fif = std::dynamic_pointer_cast<FragmentInterface>(translatable)) {
+          slp->importTranslatable<FragmentInterface>(name, as_fif, slp->_fragment_interfaces);
+        }
+        ////////////////////////////////////////////////////////////////////////////////////////
+        else if (auto as_gif = std::dynamic_pointer_cast<GeometryInterface>(translatable)) {
+          slp->importTranslatable<GeometryInterface>(name, as_gif, slp->_geometry_interfaces);
+        }
+        ////////////////////////////////////////////////////////////////////////////////////////
+        else if (auto as_cif = std::dynamic_pointer_cast<ComputeInterface>(translatable)) {
+          slp->importTranslatable<ComputeInterface>(name, as_cif, slp->_compute_interfaces);
+        }
+        ////////////////////////////////////////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////////////////////////////////////////
+        else if (auto as_vsh = std::dynamic_pointer_cast<VertexShader>(translatable)) {
+          slp->importTranslatable<VertexShader>(name, as_vsh, slp->_vertex_shaders);
+        }
+        ////////////////////////////////////////////////////////////////////////////////////////
+        else if (auto as_fsh = std::dynamic_pointer_cast<FragmentShader>(translatable)) {
+          slp->importTranslatable<FragmentShader>(name, as_fsh, slp->_fragment_shaders);
+        }
+        ////////////////////////////////////////////////////////////////////////////////////////
+        else if (auto as_gsh = std::dynamic_pointer_cast<GeometryShader>(translatable)) {
+          slp->importTranslatable<GeometryShader>(name, as_gsh, slp->_geometry_shaders);
+        }
+        ////////////////////////////////////////////////////////////////////////////////////////
+        else if (auto as_csh = std::dynamic_pointer_cast<ComputeShader>(translatable)) {
+          slp->importTranslatable<ComputeShader>(name, as_csh, slp->_compute_shaders);
+        }
+        ////////////////////////////////////////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////////////////////////////////////////
+        else if (auto as_sb = std::dynamic_pointer_cast<StateBlock>(translatable)) {
+          slp->importTranslatable<StateBlock>(name, as_sb, slp->_stateblocks);
+        }
+        ////////////////////////////////////////////////////////////////////////////////////////
+        else if (auto as_tek = std::dynamic_pointer_cast<Technique>(translatable)) {
+          slp->importTranslatable<Technique>(name, as_tek, slp->_techniques);
+        }
+      }
+    } else {
+      // place under import node
+      import_node->_children.push_back(sub_tunit);
     }
-
   }
 
   ///////////////////////////////////////////////////////////////
-
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
@@ -533,70 +584,71 @@ void _semaNameInheritListItems(impl::ShadLangParser* slp, astnode_ptr_t top) {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-bool _isBuiltInDataType(impl::ShadLangParser* slp, astnode_ptr_t astnode){
-  bool builtin = false;
-    match_ptr_t id_match = slp->matchForAstNode(astnode);
-    scannerlightview_constptr_t id_view = id_match->_view;
-    const Token* id_tok = id_view->token(0);
-    uint64_t id_class = id_tok->_class;
-    switch( id_class ){
-      case "KW_FLOAT"_crcu:
-      case "KW_INT"_crcu:
-      case "KW_UINT"_crcu:
-      case "KW_VEC2"_crcu:
-      case "KW_VEC3"_crcu:
-      case "KW_VEC4"_crcu:
-      case "KW_IVEC2"_crcu:
-      case "KW_IVEC3"_crcu:
-      case "KW_IVEC4"_crcu:
-      case "KW_UVEC2"_crcu:
-      case "KW_UVEC3"_crcu:
-      case "KW_UVEC4"_crcu:
-      case "KW_SAMP1D"_crcu:
-      case "KW_SAMP2D"_crcu:
-      case "KW_SAMP3D"_crcu:
-      case "KW_ISAMP1D"_crcu:
-      case "KW_ISAMP2D"_crcu:
-      case "KW_ISAMP3D"_crcu:
-      case "KW_USAMP1D"_crcu:
-      case "KW_USAMP2D"_crcu:
-      case "KW_USAMP3D"_crcu:
-        builtin = true;
-        break;
-      default:
-        break;
-    }
-  //printf( "id<%s> builtin<%d> vst<%zu> ven<%zu>\n", id_tok->text.c_str(), int(builtin), id_view->_start, id_view->_end );
+bool _isBuiltInDataType(impl::ShadLangParser* slp, astnode_ptr_t astnode) {
+  bool builtin                        = false;
+  match_ptr_t id_match                = slp->matchForAstNode(astnode);
+  scannerlightview_constptr_t id_view = id_match->_view;
+  const Token* id_tok                 = id_view->token(0);
+  uint64_t id_class                   = id_tok->_class;
+  switch (id_class) {
+    case "KW_FLOAT"_crcu:
+    case "KW_INT"_crcu:
+    case "KW_UINT"_crcu:
+    case "KW_VEC2"_crcu:
+    case "KW_VEC3"_crcu:
+    case "KW_VEC4"_crcu:
+    case "KW_IVEC2"_crcu:
+    case "KW_IVEC3"_crcu:
+    case "KW_IVEC4"_crcu:
+    case "KW_UVEC2"_crcu:
+    case "KW_UVEC3"_crcu:
+    case "KW_UVEC4"_crcu:
+    case "KW_SAMP1D"_crcu:
+    case "KW_SAMP2D"_crcu:
+    case "KW_SAMP3D"_crcu:
+    case "KW_ISAMP1D"_crcu:
+    case "KW_ISAMP2D"_crcu:
+    case "KW_ISAMP3D"_crcu:
+    case "KW_USAMP1D"_crcu:
+    case "KW_USAMP2D"_crcu:
+    case "KW_USAMP3D"_crcu:
+      builtin = true;
+      break;
+    default:
+      break;
+  }
+  // printf( "id<%s> builtin<%d> vst<%zu> ven<%zu>\n", id_tok->text.c_str(), int(builtin), id_view->_start, id_view->_end );
   return builtin;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-bool _isConstructableBuiltInDataType(impl::ShadLangParser* slp, astnode_ptr_t astnode){
-  bool builtin = false;
-    match_ptr_t id_match = slp->matchForAstNode(astnode);
-    scannerlightview_constptr_t id_view = id_match->_view;
-    const Token* id_tok = id_view->token(0);
-    uint64_t id_class = id_tok->_class;
-    switch( id_class ){
-      case "KW_FLOAT"_crcu:
-      case "KW_INT"_crcu:
-      case "KW_UINT"_crcu:
-      case "KW_VEC2"_crcu:
-      case "KW_VEC3"_crcu:
-      case "KW_VEC4"_crcu:
-      case "KW_IVEC2"_crcu:
-      case "KW_IVEC3"_crcu:
-      case "KW_IVEC4"_crcu:
-      case "KW_UVEC2"_crcu:
-      case "KW_UVEC3"_crcu:
-      case "KW_UVEC4"_crcu:
-        builtin = true;
-        break;
-      default:
-        break;
-    }
-  //printf( "id<%s> builtin<%d> class<%zx> vst<%zu> ven<%zu>\n", id_tok->text.c_str(), int(builtin), id_tok->_class, id_view->_start, id_view->_end );
+bool _isConstructableBuiltInDataType(impl::ShadLangParser* slp, astnode_ptr_t astnode) {
+  bool builtin                        = false;
+  match_ptr_t id_match                = slp->matchForAstNode(astnode);
+  scannerlightview_constptr_t id_view = id_match->_view;
+  const Token* id_tok                 = id_view->token(0);
+  uint64_t id_class                   = id_tok->_class;
+  switch (id_class) {
+    case "KW_FLOAT"_crcu:
+    case "KW_INT"_crcu:
+    case "KW_UINT"_crcu:
+    case "KW_VEC2"_crcu:
+    case "KW_VEC3"_crcu:
+    case "KW_VEC4"_crcu:
+    case "KW_IVEC2"_crcu:
+    case "KW_IVEC3"_crcu:
+    case "KW_IVEC4"_crcu:
+    case "KW_UVEC2"_crcu:
+    case "KW_UVEC3"_crcu:
+    case "KW_UVEC4"_crcu:
+      builtin = true;
+      break;
+    default:
+      break;
+  }
+  // printf( "id<%s> builtin<%d> class<%zx> vst<%zu> ven<%zu>\n", id_tok->text.c_str(), int(builtin), id_tok->_class,
+  // id_view->_start, id_view->_end );
   return builtin;
 }
 
@@ -604,44 +656,43 @@ bool _isConstructableBuiltInDataType(impl::ShadLangParser* slp, astnode_ptr_t as
 
 void _semaResolvePrimaryExpressions(impl::ShadLangParser* slp, astnode_ptr_t top) {
   auto nodes = AstNode::collectNodesOfType<PrimaryExpression>(top);
-  for( auto pe_node : nodes ){
+  for (auto pe_node : nodes) {
     ////////////////////////////////////
     size_t num_children = pe_node->_children.size();
-    if( 2 != num_children )
+    if (2 != num_children)
       continue;
     ////////////////////////////////////
-    if( nullptr == pe_node )
+    if (nullptr == pe_node)
       continue;
     auto dt_node = pe_node->childAs<DataType>(0);
     ////////////////////////////////////
-    if( nullptr == dt_node )
+    if (nullptr == dt_node)
       continue;
     auto type_name = dt_node->typedValueForKey<std::string>("data_type").value();
     ////////////////////////////////////
     auto parens_exp = pe_node->childAs<ParensExpression>(1);
-    if( nullptr == parens_exp )
+    if (nullptr == parens_exp)
       continue;
     ////////////////////////////////////
     bool is_builtin = _isConstructableBuiltInDataType(slp, pe_node);
-    if( not is_builtin )
+    if (not is_builtin)
       continue;
     ////////////////////////////////////
     // technically, since is_builtin is true
-    //  this is a 'constructor call', 
+    //  this is a 'constructor call',
     //  not just a method call..
     ////////////////////////////////////
-    auto dt_match = slp->matchForAstNode(dt_node);
-    auto sema_id = slp->ast_create<SemaIdentifier>(dt_match);
+    auto dt_match  = slp->matchForAstNode(dt_node);
+    auto sema_id   = slp->ast_create<SemaIdentifier>(dt_match);
     sema_id->_name = "SemaId: ";
     sema_id->_name += " " + type_name;
     sema_id->setValueForKey<std::string>("identifier_name", type_name);
     slp->replaceInParent(dt_node, sema_id);
     ////////////////////////////////////
-    auto pe_match = slp->matchForAstNode(pe_node);
-    auto id_call = slp->ast_create<IdentifierCall>(pe_match);
+    auto pe_match      = slp->matchForAstNode(pe_node);
+    auto id_call       = slp->ast_create<IdentifierCall>(pe_match);
     id_call->_children = pe_node->_children;
     slp->replaceInParent(pe_node, id_call);
-
   }
 }
 
@@ -649,10 +700,10 @@ void _semaResolvePrimaryExpressions(impl::ShadLangParser* slp, astnode_ptr_t top
 
 void _semaResolveIdentifierCalls(impl::ShadLangParser* slp, astnode_ptr_t top) {
   auto nodes = AstNode::collectNodesOfType<IdentifierCall>(top);
-  for( auto id_call : nodes ){
+  for (auto id_call : nodes) {
     auto sema_id = id_call->childAs<SemaIdentifier>(0);
     OrkAssert(sema_id);
-    auto id_name = sema_id->typedValueForKey<std::string>("identifier_name").value();
+    auto id_name    = sema_id->typedValueForKey<std::string>("identifier_name").value();
     bool is_builtin = _isConstructableBuiltInDataType(slp, sema_id);
   }
 }
@@ -687,8 +738,12 @@ int _semaProcessInheritances(
     auto objname = n->template typedValueForKey<std::string>("object_name").value();
     /////////////////////////////////
     auto check_inheritance = [](std::string inh_name, SHAST::astnode_map_t& in_map) -> bool { //
-      auto it = in_map.find(inh_name);
-      return (it != in_map.end());
+      auto it    = in_map.find(inh_name);
+      bool found = (it != in_map.end());
+      if (inh_name == "skin_tools") {
+        printf("skin_tools is_found<%d>\n", int(found));
+      }
+      return found;
     };
     /////////////////////////////////
     AstNode::walkDownAST(n, [&](astnode_ptr_t node) -> bool {
@@ -696,7 +751,7 @@ int _semaProcessInheritances(
       if (as_inh_item) {
         inh_item      = as_inh_item;
         auto inh_name = inh_item->typedValueForKey<std::string>("inherited_object").value();
-        // printf("%s<%s> inh_name<%s>\n", n->_name.c_str(), objname.c_str(), inh_name.c_str());
+        printf("XXX %s<%s> inh_name<%s>\n", n->_name.c_str(), objname.c_str(), inh_name.c_str());
         /////////////////////////////////
         // check if extension
         /////////////////////////////////
@@ -871,12 +926,12 @@ void _semaIntegerLiterals(impl::ShadLangParser* slp, astnode_ptr_t top) {
   for (auto node : nodes) {
     std::string out_str;
     SHAST::_dumpAstTreeVisitor(node, 0, out_str);
-    //printf("AST: %s\n", out_str.c_str());
+    // printf("AST: %s\n", out_str.c_str());
     auto match = slp->matchForAstNode(node);
     match      = match->asShared<OneOf>()->_selected;
     match->dump1(0);
     auto cm = match->asShared<ClassMatch>();
-    //printf("cm<%p>\n", (void*)cm.get());
+    // printf("cm<%p>\n", (void*)cm.get());
     auto literal_value = cm->_token->text;
     if (literal_value == "") {
       OrkAssert(false);
@@ -907,7 +962,7 @@ void _semaFloatLiterals(impl::ShadLangParser* slp, astnode_ptr_t top) {
 
 void impl::ShadLangParser::semaAST(astnode_ptr_t top) {
 
-  printf( "ShadLangParser<%p> semaAST\n", this );
+  printf("ShadLangParser<%p> semaAST\n", this);
 
   //////////////////////////////////
 
@@ -1016,7 +1071,7 @@ void impl::ShadLangParser::semaAST(astnode_ptr_t top) {
     keep_going = (count > 0);
   }
 
-  auto as_tu = std::dynamic_pointer_cast<TranslationUnit>(top);
+  auto as_tu                    = std::dynamic_pointer_cast<TranslationUnit>(top);
   as_tu->_translatables_by_name = _translatables;
 }
 

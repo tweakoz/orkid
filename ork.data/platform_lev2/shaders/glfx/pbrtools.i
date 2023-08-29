@@ -1,8 +1,8 @@
-import "gbuftools.i";
-import "brdftools.i";
-import "deftools.i";
-import "fwdtools.i";
-import "skintools.i";
+import "orkshader://gbuftools.i";
+import "orkshader://brdftools.i";
+import "orkshader://deftools.i";
+import "orkshader://fwdtools.i";
+import "orkshader://skintools.i";
 ///////////////////////////////////////////////////////////////
 // Interfaces
 ///////////////////////////////////////////////////////////////

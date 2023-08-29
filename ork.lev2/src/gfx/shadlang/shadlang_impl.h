@@ -78,7 +78,15 @@ struct ShadLangParser : public Parser {
   ////////////////////////////////////////////
   void replaceInParent(SHAST::astnode_ptr_t oldnode, SHAST::astnode_ptr_t newnode);
   void removeFromParent(SHAST::astnode_ptr_t node);
-
+  ////////////////////////////////////////////
+  template <typename T> void importTranslatable(std::string name, //
+                                                SHAST::translatable_ptr_t translatable, //
+                                                SHAST::astnode_map_t& the_map){ //
+    auto it = the_map.find(name);
+    OrkAssert(it==the_map.end());
+    the_map[name] = translatable;
+  }
+  ////////////////////////////////////////////
   matcher_ptr_t _tu_matcher;
   std::vector<SHAST::astnode_ptr_t> _astnodestack;
   std::unordered_map<match_ptr_t, SHAST::astnode_ptr_t> _match2astnode;

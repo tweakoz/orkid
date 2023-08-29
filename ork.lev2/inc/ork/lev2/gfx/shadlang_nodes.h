@@ -194,7 +194,7 @@ DECLARE_STD_AST_CLASS_WPTR(AstNode,SemaIdentifier, semaid_ptr_t);
 DECLARE_STD_AST_CLASS(AstNode,InheritList);
 DECLARE_STD_AST_CLASS_WPTR(AstNode,InheritListItem,inhitem_ptr_t);
 DECLARE_STD_AST_CLASS(AstNode,LanguageElement);
-DECLARE_STD_AST_CLASS(AstNode,Translatable);
+DECLARE_STD_AST_CLASS_WPTR(AstNode,Translatable,translatable_ptr_t);
 
 DECLARE_STD_AST_CLASS(AstNode,DeclArgumentList);
 DECLARE_STD_AST_CLASS(AstNode,InterfaceLayout);

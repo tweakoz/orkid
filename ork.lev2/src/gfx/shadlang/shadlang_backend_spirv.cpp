@@ -146,6 +146,7 @@ void SpirvCompiler::_inheritLibraries(astnode_ptr_t par_node) {
   auto inh_libs = AstNode::collectNodesOfType<SemaInheritLibrary>(par_node);
   for (auto inh_lib : inh_libs) {
     auto INHID  = inh_lib->typedValueForKey<std::string>("inherit_id").value();
+    printf( "Inherited Library<%s>\n", INHID.c_str() );
     auto it_lib = _lib_blocks.find(INHID);
     OrkAssert(it_lib != _lib_blocks.end());
     auto lib_block    = it_lib->second;
@@ -153,6 +154,9 @@ void SpirvCompiler::_inheritLibraries(astnode_ptr_t par_node) {
     // inline lib block into shader
     auto libgroup       = _libraries_group->appendTypedChild<MiscGroupNode>();
     libgroup->_children = lib_children;
+    //AstNode::treeops::replaceInParent(oldnode,newnode);
+    AstNode::treeops::removeFromParent(inh_lib);
+    //OrkAssert(false);
   }
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////
@@ -211,12 +215,12 @@ void SpirvCompiler::_inheritIO(astnode_ptr_t interface_node) {
   //
   auto input_groups  = AstNode::collectNodesOfType<InterfaceInputs>(interface_node);
   auto output_groups = AstNode::collectNodesOfType<InterfaceOutputs>(interface_node);
-  printf("  num_input_groups<%zu>\n", input_groups.size());
-  printf("  num_output_groups<%zu>\n", output_groups.size());
+  //printf("  num_input_groups<%zu>\n", input_groups.size());
+  //printf("  num_output_groups<%zu>\n", output_groups.size());
   /////////////////////////////////////////
   for (auto input_group : input_groups) {
     auto inputs = AstNode::collectNodesOfType<InterfaceInput>(input_group);
-    printf("  num_inputs<%zu>\n", inputs.size());
+    //printf("  num_inputs<%zu>\n", inputs.size());
     for (auto input : inputs) {
       auto tid = input->childAs<TypedIdentifier>(0);
       OrkAssert(tid);
@@ -232,9 +236,9 @@ void SpirvCompiler::_inheritIO(astnode_ptr_t interface_node) {
   /////////////////////////////////////////
   for (auto output_group : output_groups) {
     auto outputs = AstNode::collectNodesOfType<InterfaceOutput>(output_group);
-    printf("  num_outputs<%zu>\n", outputs.size());
+    //printf("  num_outputs<%zu>\n", outputs.size());
     for (auto output : outputs) {
-      dumpAstNode(output);
+      //dumpAstNode(output);
       auto tid = output->findFirstChildOfType<TypedIdentifier>();
       OrkAssert(tid);
       auto dt = tid->typedValueForKey<std::string>("data_type").value();

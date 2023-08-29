@@ -145,7 +145,7 @@ vkfxsfile_ptr_t VkFxInterface::_loadShaderFromShaderText(FxShader* shader, const
           vk_samp->_orkparam = std::make_shared<FxShaderParam>();
           vk_samp->_orkparam->_impl.set<VkFxShaderUniformSetSampler*>(vk_samp.get());
           vk_uniset->_samplers_by_name[item.first] = vk_samp;
-          printf( "uniset<%s> ADDING Sampler PARAM<%s>\n", name.c_str(), item.second->_identifier.c_str());
+          //printf( "uniset<%s> ADDING Sampler PARAM<%s>\n", name.c_str(), item.second->_identifier.c_str());
         }
         /////////////////////////////////////////////
         // rebuild _items_by_name
@@ -157,7 +157,7 @@ vkfxsfile_ptr_t VkFxInterface::_loadShaderFromShaderText(FxShader* shader, const
           vk_item->_orkparam = std::make_shared<FxShaderParam>();
           vk_item->_orkparam->_impl.set<VkFxShaderUniformSetItem*>(vk_item.get());
           vk_uniset->_items_by_name[item.first] = vk_item;
-          printf( "uniset<%s> ADDING Item PARAM<%s>\n", name.c_str(), item.second->_identifier.c_str());
+          //printf( "uniset<%s> ADDING Item PARAM<%s>\n", name.c_str(), item.second->_identifier.c_str());
         }
         /////////////////////////////////////////////
         // rebuild items_by_order

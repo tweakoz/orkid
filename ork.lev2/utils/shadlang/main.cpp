@@ -28,7 +28,7 @@ int main(int argc, char** argv, char** envp) {
   auto opts = init_data->parse();
 
   auto incdir     = file::Path::orkroot_dir() / "ork.data" / "platform_lev2" / "shaders" / "glfx";
-  auto fdevctx    = FileEnv::createContextForUriBase("shaders://", incdir);
+  auto fdevctx    = FileEnv::createContextForUriBase("orkshader://", incdir);
   auto input_path = init_data->commandLineOption("in").as<std::string>();
   auto ast_output_path = init_data->commandLineOption("ast").as<std::string>();
   auto dot_output_path = init_data->commandLineOption("dot").as<std::string>();
