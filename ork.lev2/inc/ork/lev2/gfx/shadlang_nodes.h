@@ -275,16 +275,18 @@ DECLARE_STD_AST_CLASS(SemaExpression,SemaFunctionName);
 DECLARE_STD_AST_CLASS(SemaExpression,SemaConstructorType);
 DECLARE_STD_AST_CLASS(SemaExpression,SemaConstructorInvokation);
 DECLARE_STD_AST_CLASS(SemaExpression,SemaConstructorArguments);
-DECLARE_STD_AST_CLASS_WPTR(SemaExpression,SemaInheritLibrary, semainhlib_ptr_t);
-DECLARE_STD_AST_CLASS_WPTR(SemaExpression,SemaInheritInterface, semainhif_ptr_t);
+
+DECLARE_STD_AST_CLASS_WPTR(SemaExpression,SemaInherit,semainh_ptr_t);
+DECLARE_STD_AST_CLASS_WPTR(SemaInherit,SemaInheritLibrary, semainhlib_ptr_t);
+DECLARE_STD_AST_CLASS_WPTR(SemaInherit,SemaInheritUniformSet, semainhuniset_ptr_t);
+DECLARE_STD_AST_CLASS_WPTR(SemaInherit,SemaInheritUniformBlock, semainhuniblk_ptr_t);
+DECLARE_STD_AST_CLASS_WPTR(SemaInherit,SemaInheritStateBlock, semainhstblk_ptr_t);
+DECLARE_STD_AST_CLASS_WPTR(SemaInherit,SemaInheritExtension, semainhext_ptr_t);
+DECLARE_STD_AST_CLASS_WPTR(SemaInherit,SemaInheritInterface, semainhif_ptr_t);
 DECLARE_STD_AST_CLASS_WPTR(SemaInheritInterface,SemaInheritVertexInterface, semainhvif_ptr_t);
 DECLARE_STD_AST_CLASS_WPTR(SemaInheritInterface,SemaInheritFragmentInterface, semainhfif_ptr_t);
 DECLARE_STD_AST_CLASS_WPTR(SemaInheritInterface,SemaInheritGeometryInterface, semainhgif_ptr_t);
 DECLARE_STD_AST_CLASS_WPTR(SemaInheritInterface,SemaInheritComputeInterface, semainhcif_ptr_t);
-DECLARE_STD_AST_CLASS_WPTR(SemaExpression,SemaInheritUniformSet, semainhuniset_ptr_t);
-DECLARE_STD_AST_CLASS_WPTR(SemaExpression,SemaInheritUniformBlock, semainhuniblk_ptr_t);
-DECLARE_STD_AST_CLASS_WPTR(SemaExpression,SemaInheritStateBlock, semainhstblk_ptr_t);
-DECLARE_STD_AST_CLASS_WPTR(SemaExpression,SemaInheritExtension, semainhext_ptr_t);
 //
 DECLARE_STD_AST_CLASS(Expression,ExpressionList);
 //

@@ -23,7 +23,12 @@ SpirvCompiler::SpirvCompiler(transunit_ptr_t transu, bool vulkan)
   _data_sizes["mat4"]  = 4;
 
   if (_vulkan) {
-    _id_renames["gl_InstanceID"] = "gl_InstanceIndex";
+    _id_renames["ofx_instanceID"] = "gl_InstanceIndex";
+  }
+  else{
+    _id_renames["ofx_depth"] = "gl_FragDepth";
+    _id_renames["ofx_instanceID"] = "gl_InstanceID";
+    
   }
   _collectLibBlocks();
   _processGlobalRenames();

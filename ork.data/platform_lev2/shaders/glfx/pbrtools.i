@@ -216,8 +216,8 @@ libblock lib_pbr_vtx_instanced {
     frg_camz    = wnormal.xyz;
     frg_camdist = -cpos.z;
     ////////////////////////////////
-    int modcolor_u = (gl_InstanceID & 0xfff);
-    int modcolor_v = (gl_InstanceID >> 12);
+    int modcolor_u = (ofx_instanceID & 0xfff);
+    int modcolor_v = (ofx_instanceID >> 12);
     frg_modcolor   = texelFetch(InstanceColors, ivec2(modcolor_u, modcolor_v), 0);
     ////////////////////////////////
   }
@@ -271,8 +271,8 @@ vertex_shader vs_rigid_gbuffer_stereo : extension(GL_NV_stereo_view_rendering)
 // vs-instanced-rigid
 ///////////////////////////////////////////////////////////////
 vertex_shader vs_rigid_gbuffer_instanced : iface_vgbuffer_instanced : lib_pbr_vtx_instanced {
-  int matrix_v     = (gl_InstanceID >> 10);
-  int matrix_u     = (gl_InstanceID & 0x3ff) << 2;
+  int matrix_v     = (ofx_instanceID >> 10);
+  int matrix_u     = (ofx_instanceID & 0x3ff) << 2;
   mat4 instancemtx = mat4(
       texelFetch(InstanceMatrices, ivec2(matrix_u + 0, matrix_v), 0),
       texelFetch(InstanceMatrices, ivec2(matrix_u + 1, matrix_v), 0),
@@ -289,8 +289,8 @@ vertex_shader vs_rigid_gbuffer_instanced_stereo : extension(GL_NV_stereo_view_re
     : extension(GL_NV_viewport_array2)
     : iface_vgbuffer_stereo_instanced : lib_pbr_vtx_instanced {
   ////////////////////////////////
-  int matrix_v     = (gl_InstanceID >> 10);
-  int matrix_u     = (gl_InstanceID & 0x3ff) << 2;
+  int matrix_v     = (ofx_instanceID >> 10);
+  int matrix_u     = (ofx_instanceID & 0x3ff) << 2;
   mat4 instancemtx = mat4(
       texelFetch(InstanceMatrices, ivec2(matrix_u + 0, matrix_v), 0),
       texelFetch(InstanceMatrices, ivec2(matrix_u + 1, matrix_v), 0),
@@ -435,7 +435,7 @@ vertex_interface iface_vdprepass : ub_vtx {
     vec4 position : POSITION;
   }
   outputs {
-    float frg_depth;
+    float ofx_depth;
   }
 }
 
@@ -446,11 +446,11 @@ vertex_interface iface_vdprepass : ub_vtx {
 vertex_shader vs_forward_depthprepass_mono : iface_vdprepass {
   vec4 hpos    = mvp * position;
   gl_Position  = hpos;
-  gl_FragDepth = hpos.z / hpos.w;
+  ofx_depth = hpos.z / hpos.w;
 }
 vertex_shader vs_forward_depthprepass_mono_instanced : iface_vdprepass {
-  int matrix_v     = (gl_InstanceID >> 10);
-  int matrix_u     = (gl_InstanceID & 0x3ff) << 2;
+  int matrix_v     = (ofx_instanceID >> 10);
+  int matrix_u     = (ofx_instanceID & 0x3ff) << 2;
   mat4 instancemtx = mat4(
       texelFetch(InstanceMatrices, ivec2(matrix_u + 0, matrix_v), 0),
       texelFetch(InstanceMatrices, ivec2(matrix_u + 1, matrix_v), 0),
@@ -460,12 +460,12 @@ vertex_shader vs_forward_depthprepass_mono_instanced : iface_vdprepass {
   vec4 instanced_pos = (instancemtx * position);
   vec4 hpos          = mvp * instanced_pos;
   gl_Position        = hpos;
-  // gl_FragDepth = hpos.z/hpos.w;
+  // ofx_depth = hpos.z/hpos.w;
 }
 fragment_shader vs_forward_depthprepass_stereo : iface_fdprepass {
   vec4 hpos    = mvp * position;
   gl_Position  = hpos;
-  gl_FragDepth = hpos.z / hpos.w;
+  ofx_depth = hpos.z / hpos.w;
 }
 fragment_shader ps_forward_depthprepass : iface_fdprepass {
 }
@@ -493,8 +493,8 @@ vertex_shader vs_forward_test_stereo : iface_vgbuffer_stereo : lib_pbr_vtx : ext
   gl_SecondaryViewportMaskNV[0] = 2;
 }
 vertex_shader vs_forward_instanced : iface_vgbuffer_instanced : lib_pbr_vtx_instanced {
-  int matrix_v     = (gl_InstanceID >> 10);
-  int matrix_u     = (gl_InstanceID & 0x3ff) << 2;
+  int matrix_v     = (ofx_instanceID >> 10);
+  int matrix_u     = (ofx_instanceID & 0x3ff) << 2;
   mat4 instancemtx = mat4(
       texelFetch(InstanceMatrices, ivec2(matrix_u + 0, matrix_v), 0),
       texelFetch(InstanceMatrices, ivec2(matrix_u + 1, matrix_v), 0),
@@ -510,8 +510,8 @@ vertex_shader vs_forward_instanced_stereo : iface_forward_stereo_instanced : lib
     : extension(GL_NV_stereo_view_rendering)
     : extension(GL_NV_viewport_array2) {
 
-  int matrix_v     = (gl_InstanceID >> 10);
-  int matrix_u     = (gl_InstanceID & 0x3ff) << 2;
+  int matrix_v     = (ofx_instanceID >> 10);
+  int matrix_u     = (ofx_instanceID & 0x3ff) << 2;
   mat4 instancemtx = mat4(
       texelFetch(InstanceMatrices, ivec2(matrix_u + 0, matrix_v), 0),
       texelFetch(InstanceMatrices, ivec2(matrix_u + 1, matrix_v), 0),
