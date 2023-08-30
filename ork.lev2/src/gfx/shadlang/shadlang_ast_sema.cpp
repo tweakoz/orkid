@@ -343,6 +343,11 @@ void _semaPerformImports(impl::ShadLangParser* slp, astnode_ptr_t top) {
   auto top_tunit = std::dynamic_pointer_cast<TranslationUnit>(top);
   auto nodes     = AstNode::collectNodesOfType<ImportDirective>(top);
 
+  printf( "ShadLangParser<%p:%s> ImportCount<%zu>\n", //
+          (void*) slp, //
+          slp->_name.c_str(), //
+          nodes.size() );
+
   for (auto import_node : nodes) {
     //
     file::Path::NameType a, b;
@@ -396,8 +401,7 @@ void _semaPerformImports(impl::ShadLangParser* slp, astnode_ptr_t top) {
     else{
       printf("Parser<%s> Importing<%s> already cached\n", slp->_name.c_str(), proc_import_path.c_str());
       import_node->setValueForKey<transunit_ptr_t>("transunit", sub_tunit);
-      sub_tunit = it_imp->second;
-      return;
+      continue;
     }
 
     ////////////////////////////////////////////////////////
@@ -767,7 +771,6 @@ int _semaLinkToInheritances(
       if (as_inh_item) {
         inh_item      = as_inh_item;
         auto inh_name = inh_item->typedValueForKey<std::string>("inherited_object").value();
-        printf("XXX %s |  %s << %s\n", n->_type_name.c_str(), objname.c_str(), inh_name.c_str());
         /////////////////////////////////
         // check if extension
         /////////////////////////////////
@@ -859,7 +862,11 @@ int _semaLinkToInheritances(
         /////////////////////////////////
         if constexpr (std::is_same<node_t, LibraryBlock>::value) {
           bool check = check_inheritance(inh_name, slp->_slp_cache->_library_blocks);
-          OrkAssert(check);
+          if(check==false){
+            printf("XXX cannot find %s |  %s << %s\n", n->_type_name.c_str(), objname.c_str(), inh_name.c_str());
+            impl::implStackDump(slp->_slp_cache);
+            OrkAssert(false);
+          }
         }
         /////////////////////////////////
         if (check_lib_blocks and check_inheritance(inh_name, slp->_slp_cache->_library_blocks)) {
@@ -991,7 +998,7 @@ void _semaDecorateArrayDeclarations(impl::ShadLangParser* slp, astnode_ptr_t top
 
 void impl::ShadLangParser::semaAST(astnode_ptr_t top) {
 
-  printf("ShadLangParser<%p:%s> semaAST\n", this, _name.c_str() );
+  printf("ShadLangParser<%p:%s> semaAST CP-A\n", this, _name.c_str() );
 
   //////////////////////////////////
   // Pass 2 - Imports
@@ -999,6 +1006,8 @@ void impl::ShadLangParser::semaAST(astnode_ptr_t top) {
 
   _semaCollectNamedOfType<ImportDirective>(this, top, _import_directives);
   _semaPerformImports(this, top);
+
+  printf("ShadLangParser<%p:%s> semaAST CP-B\n", this, _name.c_str() );
 
   //////////////////////////////////
 
@@ -1012,12 +1021,16 @@ void impl::ShadLangParser::semaAST(astnode_ptr_t top) {
     _semaNameTypedIdentifers(this, top);
   }
 
+  printf("ShadLangParser<%p:%s> semaAST CP-C\n", this, _name.c_str() );
+
   //////////////////////////////////
 
   if (1) {
     _semaIntegerLiterals(this, top);
     _semaFloatLiterals(this, top);
   }
+
+  printf("ShadLangParser<%p:%s> semaAST CP-D\n", this, _name.c_str() );
 
   //////////////////////////////////
   // Pass 1 : Build Symbol Tables
@@ -1056,6 +1069,8 @@ void impl::ShadLangParser::semaAST(astnode_ptr_t top) {
     _semaMoveNames<Pass>(this, top);
   }
 
+  printf("ShadLangParser<%p:%s> semaAST CP-E\n", this, _name.c_str() );
+
   //////////////////////////////////
   // Pass 3
   //////////////////////////////////
@@ -1075,6 +1090,8 @@ void impl::ShadLangParser::semaAST(astnode_ptr_t top) {
     _semaResolveSemaFunctionArguments(this, top);
     _semaDecorateArrayDeclarations(this, top);
   }
+
+  printf("ShadLangParser<%p:%s> semaAST CP-F\n", this, _name.c_str() );
 
   //////////////////////////////////
   // Pass 4..
@@ -1098,6 +1115,8 @@ void impl::ShadLangParser::semaAST(astnode_ptr_t top) {
     count += _semaLinkToInheritances<StateBlock>(this, top);
     keep_going = (count > 0);
   }
+
+  printf("ShadLangParser<%p:%s> semaAST CP-G\n", this, _name.c_str() );
 
   auto as_tu                    = std::dynamic_pointer_cast<TranslationUnit>(top);
   as_tu->_translatables_by_name = _translatables;

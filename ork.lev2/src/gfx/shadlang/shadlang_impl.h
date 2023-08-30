@@ -130,6 +130,8 @@ struct ShadLangParser : public Parser {
 
 }; // struct ShadLangParser
 
+void implStackDump(slpcache_ptr_t cache);
+
 } // namespace impl
 
 /////////////////////////////////////////////////////////////////////////////////////////////////

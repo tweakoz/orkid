@@ -59,9 +59,12 @@ SHAST::translationunit_ptr_t parseFromString(slpcache_ptr_t slpcache, //
                                              const std::string& name, //
                                              const std::string& shader_text) { //
   auto parser = std::make_shared<impl::ShadLangParser>(slpcache);
+  slpcache->_impl_stack.push_back(parser);
   parser->_name = name;
   OrkAssert(shader_text.length());
-  return parser->parseString(name, shader_text);
+  auto rval = parser->parseString(name, shader_text);
+  slpcache->_impl_stack.pop_back();
+  return rval;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -75,9 +78,12 @@ SHAST::translationunit_ptr_t parseFromFile(slpcache_ptr_t slpcache, //
     return nullptr;
   }
   auto parser = std::make_shared<impl::ShadLangParser>(slpcache);
+  slpcache->_impl_stack.push_back(parser);
   OrkAssert(shader_data->_data.length());
   parser->_shader_path = shader_path;
-  return parser->parseString(shader_path.c_str(), shader_data->_data);
+  auto rval = parser->parseString(shader_path.c_str(), shader_data->_data);
+  slpcache->_impl_stack.pop_back();
+  return rval;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -102,6 +108,18 @@ struct Private{
 };
 
 using private_ptr_t = std::shared_ptr<const Private>;
+
+
+///////////////////////////////////////////////////////////////////////////////
+
+void implStackDump(slpcache_ptr_t cache){
+  size_t index = 0;
+  for( auto item : cache->_impl_stack ){
+    auto impl = item.get<std::shared_ptr<ShadLangParser>>();
+    printf( "stack<%zu> impl<%p:%s>\n", index, (void*) impl.get(), impl->_name.c_str() );
+    index++;
+  }
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 

@@ -167,6 +167,9 @@ struct TranslationUnit : public AstNode {
     if( it != _translatables_by_name.end() ){
       rval = it->second;
     }
+    else{
+      printf( "find translatable<%s> not found\n", named.c_str() );
+    }
     return std::dynamic_pointer_cast<T>(rval);
   }
   astnode_map_t _translatables_by_name;
