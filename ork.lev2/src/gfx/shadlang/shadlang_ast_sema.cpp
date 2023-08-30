@@ -384,12 +384,13 @@ void _semaPerformImports(impl::ShadLangParser* slp, astnode_ptr_t top) {
 
     printf("Parser<%s> Importing<%s>\n", slp->_name.c_str(), proc_import_path.c_str());
 
+    auto cache = slp->_slp_cache;
     translationunit_ptr_t sub_tunit;
-    auto it_imp = slp->_import_cache.find(proc_import_path.c_str());
-    if( it_imp == slp->_import_cache.end() ){
+    auto it_imp = cache->_import_cache.find(proc_import_path.c_str());
+    if( it_imp == cache->_import_cache.end() ){
       sub_tunit = shadlang::parseFromFile(slp->_slp_cache, proc_import_path);
       OrkAssert(sub_tunit);
-      slp->_import_cache[proc_import_path.c_str()] = sub_tunit;
+      cache->_import_cache[proc_import_path.c_str()] = sub_tunit;
     }
     else{
       sub_tunit = it_imp->second;
