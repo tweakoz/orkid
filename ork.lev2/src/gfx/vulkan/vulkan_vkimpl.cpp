@@ -37,6 +37,8 @@ VulkanInstance::VulkanInstance() {
   _instancedata.enabledLayerCount       = 0;
   _instancedata.ppEnabledLayerNames     = NULL;
 
+  _slp_cache = std::make_shared<shadlang::ShadLangParserCache>();
+
   static std::vector<const char*> instanceExtensions;
 
 #if defined(__APPLE__)

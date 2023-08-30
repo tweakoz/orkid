@@ -387,7 +387,7 @@ void _semaPerformImports(impl::ShadLangParser* slp, astnode_ptr_t top) {
     translationunit_ptr_t sub_tunit;
     auto it_imp = slp->_import_cache.find(proc_import_path.c_str());
     if( it_imp == slp->_import_cache.end() ){
-      sub_tunit = shadlang::parseFromFile(proc_import_path);
+      sub_tunit = shadlang::parseFromFile(slp->_slp_cache, proc_import_path);
       OrkAssert(sub_tunit);
       slp->_import_cache[proc_import_path.c_str()] = sub_tunit;
     }
@@ -797,8 +797,8 @@ int _semaLinkToInheritances(
         /////////////////////////////////
         if constexpr (std::is_same<node_t, LibraryBlock>::value) {
           check_lib_blocks = true;
-          check_uni_sets   = true;
-          check_uni_blks   = true;
+          //check_uni_sets   = true;
+          //check_uni_blks   = true;
         }
         /////////////////////////////////
         // VertexShaders
@@ -855,6 +855,11 @@ int _semaLinkToInheritances(
         /////////////////////////////////
         else if constexpr (std::is_same<node_t, StateBlock>::value) {
           check_stateblocks = true;
+        }
+        /////////////////////////////////
+        if constexpr (std::is_same<node_t, LibraryBlock>::value) {
+          bool check = check_inheritance(inh_name, slp->_library_blocks);
+          OrkAssert(check);
         }
         /////////////////////////////////
         if (check_lib_blocks and check_inheritance(inh_name, slp->_library_blocks)) {

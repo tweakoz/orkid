@@ -33,7 +33,7 @@ namespace impl {
 ///////////////////////////////////////////////////////////////////////////////
 struct ShadLangParser : public Parser {
 
-  ShadLangParser();
+  ShadLangParser(slpcache_ptr_t slp_cache);
   ////////////////////////////////////////////
   SHAST::translationunit_ptr_t parseString(std::string name, std::string parse_str);
   ////////////////////////////////////////////
@@ -124,6 +124,7 @@ struct ShadLangParser : public Parser {
   SHAST::import_map_t _import_cache;
 
   file::Path _shader_path;
+  slpcache_ptr_t _slp_cache;
 
 }; // struct ShadLangParser
 

@@ -100,7 +100,7 @@ vkfxsfile_ptr_t VkFxInterface::_loadShaderFromShaderText(FxShader* shader, //
     /////////////////////////////////////////////////////////////////////////////
 
     vulkan_shaderfile              = std::make_shared<VkFxShaderFile>();
-    auto transunit                 = shadlang::parseFromString(parser_name, shadertext);
+    auto transunit                 = shadlang::parseFromString(_slp_cache, parser_name, shadertext);
     vulkan_shaderfile->_trans_unit = transunit;
 
     auto vtx_shaders = SHAST::AstNode::collectNodesOfType<SHAST::VertexShader>(transunit);

@@ -169,6 +169,7 @@ struct VulkanInstance{
   std::vector<vkdeviceinfo_ptr_t> _device_infos;
   uint32_t _numgpus = 0;
   uint32_t _numgroups = 0;
+  shadlang::slpcache_ptr_t _slp_cache;
 
 };
 
@@ -574,6 +575,7 @@ struct VkFxInterface final : public FxInterface {
   FxShaderTechnique* _currentTEK = nullptr;
   vkcontext_rawptr_t _contextVK;
   std::map<AssetPath, vkfxsfile_ptr_t> _fxshaderfiles;
+  shadlang::slpcache_ptr_t _slp_cache;
 
 };
 

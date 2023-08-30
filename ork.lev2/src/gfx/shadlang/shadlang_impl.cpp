@@ -48,14 +48,17 @@ void SHAST::_dumpAstTreeVisitor( //
 
 ///////////////////////////////////////////////////////////////////////////////
 
-SHAST::translationunit_ptr_t parseFromString(const std::string& shader_text) {
-  return parseFromString("---",shader_text);
+SHAST::translationunit_ptr_t parseFromString(slpcache_ptr_t slpcache, //
+                                             const std::string& shader_text) { //
+  return parseFromString(slpcache,"---",shader_text);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-SHAST::translationunit_ptr_t parseFromString(const std::string& name, const std::string& shader_text) {
-  auto parser = std::make_shared<impl::ShadLangParser>();
+SHAST::translationunit_ptr_t parseFromString(slpcache_ptr_t slpcache, //
+                                             const std::string& name, //
+                                             const std::string& shader_text) { //
+  auto parser = std::make_shared<impl::ShadLangParser>(slpcache);
   parser->_name = name;
   OrkAssert(shader_text.length());
   return parser->parseString(name, shader_text);
@@ -63,14 +66,15 @@ SHAST::translationunit_ptr_t parseFromString(const std::string& name, const std:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-SHAST::translationunit_ptr_t parseFromFile(file::Path shader_path) {
+SHAST::translationunit_ptr_t parseFromFile(slpcache_ptr_t slpcache, //
+                                           file::Path shader_path) { //
   auto shader_data = File::readAsString(shader_path);
   if(shader_data == nullptr){
     printf( "ShaderFile not found<%s>\n", shader_path.c_str() );
     OrkAssert(false);
     return nullptr;
   }
-  auto parser = std::make_shared<impl::ShadLangParser>();
+  auto parser = std::make_shared<impl::ShadLangParser>(slpcache);
   OrkAssert(shader_data->_data.length());
   parser->_shader_path = shader_path;
   return parser->parseString(shader_path.c_str(), shader_data->_data);
@@ -101,7 +105,8 @@ using private_ptr_t = std::shared_ptr<const Private>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ShadLangParser::ShadLangParser() {
+ShadLangParser::ShadLangParser(slpcache_ptr_t cache) 
+  : _slp_cache(cache) {
   _name = "shadlang";
   _DEBUG_MATCH       = false;
   _DEBUG_INFO        = false;

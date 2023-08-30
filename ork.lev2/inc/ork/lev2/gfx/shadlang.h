@@ -82,10 +82,21 @@ std::string toASTstring(astnode_ptr_t);
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace SHAST
 
+///////////////////////////////////////////////////////////////////////////////
+// ShadLangParserCache
+//  data to share across multiple shader parses
+//  cache, etc..
+///////////////////////////////////////////////////////////////////////////////
+struct ShadLangParserCache{
 
-SHAST::translationunit_ptr_t parseFromString(const std::string& shader_text);
-SHAST::translationunit_ptr_t parseFromString(const std::string& name, const std::string& shader_text);
-SHAST::translationunit_ptr_t parseFromFile(file::Path shader_path);
+};
+///////////////////////////////////////////////////////////////////////////////
+
+using slpcache_ptr_t = std::shared_ptr<ShadLangParserCache>;
+
+SHAST::translationunit_ptr_t parseFromString(slpcache_ptr_t slp, const std::string& shader_text);
+SHAST::translationunit_ptr_t parseFromString(slpcache_ptr_t slp, const std::string& name, const std::string& shader_text);
+SHAST::translationunit_ptr_t parseFromFile(slpcache_ptr_t slp, file::Path shader_path);
 std::string toGLFX1(SHAST::astnode_ptr_t top);
 std::string toDotFile(SHAST::translationunit_ptr_t top);
 

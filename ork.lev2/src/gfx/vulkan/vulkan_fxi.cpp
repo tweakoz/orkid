@@ -14,6 +14,7 @@ namespace ork::lev2::vulkan {
 
 VkFxInterface::VkFxInterface(vkcontext_rawptr_t ctx)
     : _contextVK(ctx) {
+    _slp_cache = _GVI->_slp_cache;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

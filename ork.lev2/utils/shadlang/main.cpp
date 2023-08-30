@@ -37,7 +37,8 @@ int main(int argc, char** argv, char** envp) {
   printf( "ast_output_path<%s>\n", ast_output_path.c_str());
   printf( "dot_output_path<%s>\n", dot_output_path.c_str());
   printf( "glfx_output_path<%s>\n", glfx_output_path.c_str());
-  auto tunit      = shadlang::parseFromFile(input_path);
+  auto slp_cache = std::make_shared<shadlang::ShadLangParserCache>();
+  auto tunit      = shadlang::parseFromFile(slp_cache, input_path);
   if(tunit){
     if( ast_output_path.length() ){
         auto ast = shadlang::SHAST::toASTstring(tunit);

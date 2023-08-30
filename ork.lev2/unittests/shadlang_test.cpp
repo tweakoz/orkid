@@ -104,6 +104,7 @@ TEST(shlang1) {
           CullTest  = OFF;
         }
     )";
-  auto tunit = shadlang::parseFromString(shader_text);
+  auto cache = std::make_shared<shadlang::ShadLangParserCache>();
+  auto tunit = shadlang::parseFromString(cache, shader_text);
   CHECK(tunit != nullptr);
 }
