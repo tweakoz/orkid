@@ -1,3 +1,5 @@
+import "orkshader://mathtools.i";
+
 libblock lib_brdf : lib_math {
 
   vec3 importanceSampleGGX(vec2 e, float roughness) {

@@ -83,11 +83,15 @@ struct ShadLangParser : public Parser {
                                                 SHAST::translatable_ptr_t translatable, //
                                                 SHAST::astnode_map_t& the_map){ //
     auto it = the_map.find(name);
-    OrkAssert(it==the_map.end());
-    the_map[name] = translatable;
-    auto it2 = _translatables.find(name);
-    OrkAssert(it2==_translatables.end());
-    _translatables[name] = translatable;
+    if( it != the_map.end() ){
+      printf( "translatable<%s> already found!\n", name.c_str() );
+    }
+    else{
+      the_map[name] = translatable;
+      auto it2 = _translatables.find(name);
+      OrkAssert(it2==_translatables.end());
+      _translatables[name] = translatable;
+    }
   }
   ////////////////////////////////////////////
   matcher_ptr_t _tu_matcher;
@@ -99,7 +103,6 @@ struct ShadLangParser : public Parser {
 
   SHAST::astnode_map_t _uniform_sets;
   SHAST::astnode_map_t _uniform_blocks;
-  SHAST::astnode_map_t _library_blocks;
 
   SHAST::astnode_map_t _vertex_interfaces;
   SHAST::astnode_map_t _fragment_interfaces;

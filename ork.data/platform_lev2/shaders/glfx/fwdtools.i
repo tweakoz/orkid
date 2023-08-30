@@ -1,3 +1,8 @@
+import "orkshader://mathtools.i";
+import "orkshader://brdftools.i";
+import "orkshader://envtools.i";
+import "orkshader://deftools.i";
+
 ///////////////////////////////////////////////////////////////
 libblock lib_fwd 
 	: lib_math

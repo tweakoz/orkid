@@ -382,26 +382,25 @@ void _semaPerformImports(impl::ShadLangParser* slp, astnode_ptr_t top) {
 
     ////////////////////////////////////////////////////////
 
-    printf("Parser<%s> Importing<%s>\n", slp->_name.c_str(), proc_import_path.c_str());
 
     auto cache = slp->_slp_cache;
     translationunit_ptr_t sub_tunit;
     auto it_imp = cache->_import_cache.find(proc_import_path.c_str());
     if( it_imp == cache->_import_cache.end() ){
+      printf("Parser<%s> Importing<%s>\n", slp->_name.c_str(), proc_import_path.c_str());
       sub_tunit = shadlang::parseFromFile(slp->_slp_cache, proc_import_path);
       OrkAssert(sub_tunit);
       cache->_import_cache[proc_import_path.c_str()] = sub_tunit;
+      import_node->setValueForKey<transunit_ptr_t>("transunit", sub_tunit);
     }
     else{
+      printf("Parser<%s> Importing<%s> already cached\n", slp->_name.c_str(), proc_import_path.c_str());
+      import_node->setValueForKey<transunit_ptr_t>("transunit", sub_tunit);
       sub_tunit = it_imp->second;
-      OrkAssert(false);
+      return;
     }
-    import_node->setValueForKey<transunit_ptr_t>("transunit", sub_tunit);
 
     ////////////////////////////////////////////////////////
-
-    //size_t num_trans_by_name = sub_tunit->_translatables_by_name.size();
-    ////printf("Import NumTranslatablesByName<%zu>\n", num_trans_by_name);
 
     if (1) { // inline imported translatables ?
       for (auto item : sub_tunit->_translatables_by_name) {
@@ -409,7 +408,7 @@ void _semaPerformImports(impl::ShadLangParser* slp, astnode_ptr_t top) {
         auto translatable = item.second;
         ////////////////////////////////////////////////////////////////////////////////////////
         if (auto as_lib_block = std::dynamic_pointer_cast<LibraryBlock>(translatable)) {
-          slp->importTranslatable<LibraryBlock>(name, as_lib_block, slp->_library_blocks);
+          slp->importTranslatable<LibraryBlock>(name, as_lib_block, slp->_slp_cache->_library_blocks);
         } 
         ////////////////////////////////////////////////////////////////////////////////////////
         else if (auto as_uniset = std::dynamic_pointer_cast<UniformSet>(translatable)) {
@@ -859,11 +858,11 @@ int _semaLinkToInheritances(
         }
         /////////////////////////////////
         if constexpr (std::is_same<node_t, LibraryBlock>::value) {
-          bool check = check_inheritance(inh_name, slp->_library_blocks);
+          bool check = check_inheritance(inh_name, slp->_slp_cache->_library_blocks);
           OrkAssert(check);
         }
         /////////////////////////////////
-        if (check_lib_blocks and check_inheritance(inh_name, slp->_library_blocks)) {
+        if (check_lib_blocks and check_inheritance(inh_name, slp->_slp_cache->_library_blocks)) {
           auto semalib   = std::make_shared<SemaInheritLibrary>();
           semalib->_name = FormatString("SemaInheritLibrary: %s", inh_name.c_str());
           semalib->setValueForKey<std::string>("inherit_id", inh_name);
@@ -1024,6 +1023,7 @@ void impl::ShadLangParser::semaAST(astnode_ptr_t top) {
   // Pass 1 : Build Symbol Tables
   //////////////////////////////////
 
+
   if (1) {
     _semaCollectNamedOfType<VertexInterface>(this, top, _vertex_interfaces);
     _semaCollectNamedOfType<FragmentInterface>(this, top, _fragment_interfaces);
@@ -1037,7 +1037,7 @@ void impl::ShadLangParser::semaAST(astnode_ptr_t top) {
 
     _semaCollectNamedOfType<UniformSet>(this, top, _uniform_sets);
     _semaCollectNamedOfType<UniformBlk>(this, top, _uniform_blocks);
-    _semaCollectNamedOfType<LibraryBlock>(this, top, _library_blocks);
+    _semaCollectNamedOfType<LibraryBlock>(this, top, _slp_cache->_library_blocks);
 
     _semaCollectNamedOfType<StructDecl>(this, top, _structs);
     _semaCollectNamedOfType<StateBlock>(this, top, _stateblocks);
