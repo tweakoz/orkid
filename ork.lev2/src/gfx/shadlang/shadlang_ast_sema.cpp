@@ -273,36 +273,29 @@ void _semaCollectNamedOfType(
 
       if (n->hasKey("mangled_name")) {
         mangled_name = n->template typedValueForKey<std::string>("mangled_name").value();
+        the_name = mangled_name;
       }
-
 
       ////////////////////////////////////////////////////////////
 
+      n->template setValueForKey<std::string>("object_name", the_name);
+
       auto it = outmap.find(the_name);
       if (it != outmap.end()) {
-        if (mangled_name != "") {
-          the_name = mangled_name;
-          it       = outmap.find(the_name);
-        } else {
-          logerrchannel()->log("duplicate named object<%s> mangled_name<%s>", the_name.c_str(), mangled_name.c_str());
-          OrkAssert(false);
-        }
+        logerrchannel()->log("A: duplicate named object<%s> mangled_name<%s>", the_name.c_str(), mangled_name.c_str());
+        continue; 
       }
+
       outmap[the_name] = n;
 
-      auto it2 = slp->_translatables.find(the_name);
-      if (it != slp->_translatables.end()) {
-        if (mangled_name != "") {
-          the_name = mangled_name;
-          it       = slp->_translatables.find(the_name);
-        } else {
-          logerrchannel()->log("duplicate named object<%s> mangled_name<%s>", the_name.c_str(), mangled_name.c_str());
-          OrkAssert(false);
-        }
+      auto it2 = slp->_slp_cache->_translatables.find(the_name);
+      if (it != slp->_slp_cache->_translatables.end()) {
+         logerrchannel()->log("B: duplicate named object<%s> mangled_name<%s>", the_name.c_str(), mangled_name.c_str());
+         OrkAssert(false);
       }
-      slp->_translatables[the_name] = n;
 
-      n->template setValueForKey<std::string>("object_name", the_name);
+      slp->_slp_cache->_translatables[the_name] = n;
+
     } else {
       // OrkAssert(false);
     }
@@ -421,46 +414,46 @@ void _semaPerformImports(impl::ShadLangParser* slp, astnode_ptr_t top) {
         } 
         ////////////////////////////////////////////////////////////////////////////////////////
         else if (auto as_uniset = std::dynamic_pointer_cast<UniformSet>(translatable)) {
-          slp->importTranslatable<UniformSet>(name, as_uniset, slp->_uniform_sets);
+          slp->importTranslatable<UniformSet>(name, as_uniset, slp->_slp_cache->_uniform_sets);
         }
         ////////////////////////////////////////////////////////////////////////////////////////
         else if (auto as_uniblk = std::dynamic_pointer_cast<UniformBlk>(translatable)) {
-          slp->importTranslatable<UniformBlk>(name, as_uniblk, slp->_uniform_blocks);
+          slp->importTranslatable<UniformBlk>(name, as_uniblk, slp->_slp_cache->_uniform_blocks);
         }
         ////////////////////////////////////////////////////////////////////////////////////////
         ////////////////////////////////////////////////////////////////////////////////////////
         else if (auto as_vif = std::dynamic_pointer_cast<VertexInterface>(translatable)) {
-          slp->importTranslatable<VertexInterface>(name, as_vif, slp->_vertex_interfaces);
+          slp->importTranslatable<VertexInterface>(name, as_vif, slp->_slp_cache->_vertex_interfaces);
         }
         ////////////////////////////////////////////////////////////////////////////////////////
         else if (auto as_fif = std::dynamic_pointer_cast<FragmentInterface>(translatable)) {
-          slp->importTranslatable<FragmentInterface>(name, as_fif, slp->_fragment_interfaces);
+          slp->importTranslatable<FragmentInterface>(name, as_fif, slp->_slp_cache->_fragment_interfaces);
         }
         ////////////////////////////////////////////////////////////////////////////////////////
         else if (auto as_gif = std::dynamic_pointer_cast<GeometryInterface>(translatable)) {
-          slp->importTranslatable<GeometryInterface>(name, as_gif, slp->_geometry_interfaces);
+          slp->importTranslatable<GeometryInterface>(name, as_gif, slp->_slp_cache->_geometry_interfaces);
         }
         ////////////////////////////////////////////////////////////////////////////////////////
         else if (auto as_cif = std::dynamic_pointer_cast<ComputeInterface>(translatable)) {
-          slp->importTranslatable<ComputeInterface>(name, as_cif, slp->_compute_interfaces);
+          slp->importTranslatable<ComputeInterface>(name, as_cif, slp->_slp_cache->_compute_interfaces);
         }
         ////////////////////////////////////////////////////////////////////////////////////////
         ////////////////////////////////////////////////////////////////////////////////////////
         ////////////////////////////////////////////////////////////////////////////////////////
         else if (auto as_vsh = std::dynamic_pointer_cast<VertexShader>(translatable)) {
-          slp->importTranslatable<VertexShader>(name, as_vsh, slp->_vertex_shaders);
+          slp->importTranslatable<VertexShader>(name, as_vsh, slp->_slp_cache->_vertex_shaders);
         }
         ////////////////////////////////////////////////////////////////////////////////////////
         else if (auto as_fsh = std::dynamic_pointer_cast<FragmentShader>(translatable)) {
-          slp->importTranslatable<FragmentShader>(name, as_fsh, slp->_fragment_shaders);
+          slp->importTranslatable<FragmentShader>(name, as_fsh, slp->_slp_cache->_fragment_shaders);
         }
         ////////////////////////////////////////////////////////////////////////////////////////
         else if (auto as_gsh = std::dynamic_pointer_cast<GeometryShader>(translatable)) {
-          slp->importTranslatable<GeometryShader>(name, as_gsh, slp->_geometry_shaders);
+          slp->importTranslatable<GeometryShader>(name, as_gsh, slp->_slp_cache->_geometry_shaders);
         }
         ////////////////////////////////////////////////////////////////////////////////////////
         else if (auto as_csh = std::dynamic_pointer_cast<ComputeShader>(translatable)) {
-          slp->importTranslatable<ComputeShader>(name, as_csh, slp->_compute_shaders);
+          slp->importTranslatable<ComputeShader>(name, as_csh, slp->_slp_cache->_compute_shaders);
         }
         ////////////////////////////////////////////////////////////////////////////////////////
         ////////////////////////////////////////////////////////////////////////////////////////
@@ -880,37 +873,37 @@ int _semaLinkToInheritances(
           semalib->setValueForKey<std::string>("inherit_id", inh_name);
           slp->replaceInParent(inh_item, semalib);
           count++;
-        } else if (check_uni_sets and check_inheritance(inh_name, slp->_uniform_sets)) {
+        } else if (check_uni_sets and check_inheritance(inh_name, slp->_slp_cache->_uniform_sets)) {
           auto semalib   = std::make_shared<SemaInheritUniformSet>();
           semalib->_name = FormatString("SemaInheritUniformSet: %s", inh_name.c_str());
           semalib->setValueForKey<std::string>("inherit_id", inh_name);
           slp->replaceInParent(inh_item, semalib);
           count++;
-        } else if (check_uni_blks and check_inheritance(inh_name, slp->_uniform_blocks)) {
+        } else if (check_uni_blks and check_inheritance(inh_name, slp->_slp_cache->_uniform_blocks)) {
           auto semalib   = std::make_shared<SemaInheritUniformBlk>();
           semalib->_name = FormatString("SemaInheritUniformBlk: %s", inh_name.c_str());
           semalib->setValueForKey<std::string>("inherit_id", inh_name);
           slp->replaceInParent(inh_item, semalib);
           count++;
-        } else if (check_vtx_iface and check_inheritance(inh_name, slp->_vertex_interfaces)) {
+        } else if (check_vtx_iface and check_inheritance(inh_name, slp->_slp_cache->_vertex_interfaces)) {
           auto semalib   = std::make_shared<SemaInheritVertexInterface>();
           semalib->_name = FormatString("SemaInheritVertexInterface: %s", inh_name.c_str());
           semalib->setValueForKey<std::string>("inherit_id", inh_name);
           slp->replaceInParent(inh_item, semalib);
           count++;
-        } else if (check_geo_iface and check_inheritance(inh_name, slp->_geometry_interfaces)) {
+        } else if (check_geo_iface and check_inheritance(inh_name, slp->_slp_cache->_geometry_interfaces)) {
           auto semalib   = std::make_shared<SemaInheritGeometryInterface>();
           semalib->_name = FormatString("SemaInheritGeometryInterface: %s", inh_name.c_str());
           semalib->setValueForKey<std::string>("inherit_id", inh_name);
           slp->replaceInParent(inh_item, semalib);
           count++;
-        } else if (check_frg_iface and check_inheritance(inh_name, slp->_fragment_interfaces)) {
+        } else if (check_frg_iface and check_inheritance(inh_name, slp->_slp_cache->_fragment_interfaces)) {
           auto semalib   = std::make_shared<SemaInheritFragmentInterface>();
           semalib->_name = FormatString("SemaInheritFragmentInterface: %s", inh_name.c_str());
           semalib->setValueForKey<std::string>("inherit_id", inh_name);
           slp->replaceInParent(inh_item, semalib);
           count++;
-        } else if (check_com_iface and check_inheritance(inh_name, slp->_compute_interfaces)) {
+        } else if (check_com_iface and check_inheritance(inh_name, slp->_slp_cache->_compute_interfaces)) {
           auto semalib   = std::make_shared<SemaInheritComputeInterface>();
           semalib->_name = FormatString("SemaInheritComputeInterface: %s", inh_name.c_str());
           semalib->setValueForKey<std::string>("inherit_id", inh_name);
@@ -1043,18 +1036,18 @@ void impl::ShadLangParser::semaAST(astnode_ptr_t top) {
 
 
   if (1) {
-    _semaCollectNamedOfType<VertexInterface>(this, top, _vertex_interfaces);
-    _semaCollectNamedOfType<FragmentInterface>(this, top, _fragment_interfaces);
-    _semaCollectNamedOfType<GeometryInterface>(this, top, _geometry_interfaces);
-    _semaCollectNamedOfType<ComputeInterface>(this, top, _compute_interfaces);
+    _semaCollectNamedOfType<VertexInterface>(this, top, _slp_cache->_vertex_interfaces);
+    _semaCollectNamedOfType<FragmentInterface>(this, top, _slp_cache->_fragment_interfaces);
+    _semaCollectNamedOfType<GeometryInterface>(this, top, _slp_cache->_geometry_interfaces);
+    _semaCollectNamedOfType<ComputeInterface>(this, top, _slp_cache->_compute_interfaces);
 
-    _semaCollectNamedOfType<VertexShader>(this, top, _vertex_shaders);
-    _semaCollectNamedOfType<FragmentShader>(this, top, _fragment_shaders);
-    _semaCollectNamedOfType<GeometryShader>(this, top, _geometry_shaders);
-    _semaCollectNamedOfType<ComputeShader>(this, top, _compute_shaders);
+    _semaCollectNamedOfType<VertexShader>(this, top, _slp_cache->_vertex_shaders);
+    _semaCollectNamedOfType<FragmentShader>(this, top, _slp_cache->_fragment_shaders);
+    _semaCollectNamedOfType<GeometryShader>(this, top, _slp_cache->_geometry_shaders);
+    _semaCollectNamedOfType<ComputeShader>(this, top, _slp_cache->_compute_shaders);
 
-    _semaCollectNamedOfType<UniformSet>(this, top, _uniform_sets);
-    _semaCollectNamedOfType<UniformBlk>(this, top, _uniform_blocks);
+    _semaCollectNamedOfType<UniformSet>(this, top, _slp_cache->_uniform_sets);
+    _semaCollectNamedOfType<UniformBlk>(this, top, _slp_cache->_uniform_blocks);
     _semaCollectNamedOfType<LibraryBlock>(this, top, _slp_cache->_library_blocks);
 
     _semaCollectNamedOfType<StructDecl>(this, top, _structs);
@@ -1124,12 +1117,18 @@ void impl::ShadLangParser::semaAST(astnode_ptr_t top) {
   printf("ShadLangParser<%p:%s> semaAST CP-G\n", this, _name.c_str() );
 
   auto as_tu                    = std::dynamic_pointer_cast<TranslationUnit>(top);
-  as_tu->_translatables_by_name = _translatables;
 
-  for( auto trans_item : _translatables ){
+  for( auto trans_item : _slp_cache->_translatables ){
+    auto name = trans_item.first;
     auto trans = trans_item.second;
-    auto it = std::find(as_tu->_children.begin(), as_tu->_children.end(),trans);
-    if(it==as_tu->_children.end()){
+
+    auto it1 = as_tu->_translatables_by_name.find(name);
+    if( it1 == as_tu->_translatables_by_name.end() ){
+      as_tu->_translatables_by_name[name] = trans;
+    }
+
+    auto it2 = std::find(as_tu->_children.begin(), as_tu->_children.end(),trans);
+    if(it2==as_tu->_children.end()){
       as_tu->appendChild(trans);
     }
   }

@@ -83,15 +83,17 @@ struct ShadLangParser : public Parser {
                                                 SHAST::translatable_ptr_t translatable, //
                                                 SHAST::astnode_map_t& the_map){ //
     auto it = the_map.find(name);
-    if( it != the_map.end() ){
-      printf( "translatable<%s> already found!\n", name.c_str() );
+    if( it == the_map.end() ){
+      the_map[name] = translatable;
     }
     else{
-      the_map[name] = translatable;
-      auto it2 = _translatables.find(name);
-      OrkAssert(it2==_translatables.end());
-      _translatables[name] = translatable;
+      printf( "translatable<%s> already found!\n", name.c_str() );
     }
+    auto it2 = _slp_cache->_translatables.find(name);
+    if( it2 != _slp_cache->_translatables.end() ){
+      _slp_cache->_translatables[name] = translatable;
+    }
+
   }
   ////////////////////////////////////////////
   matcher_ptr_t _tu_matcher;
@@ -99,20 +101,6 @@ struct ShadLangParser : public Parser {
   std::unordered_map<match_ptr_t, SHAST::astnode_ptr_t> _match2astnode;
   std::unordered_map<SHAST::astnode_ptr_t, match_ptr_t> _astnode2match;
   SHAST::astnode_map_t _symboltable;
-  SHAST::astnode_map_t _translatables;
-
-  SHAST::astnode_map_t _uniform_sets;
-  SHAST::astnode_map_t _uniform_blocks;
-
-  SHAST::astnode_map_t _vertex_interfaces;
-  SHAST::astnode_map_t _fragment_interfaces;
-  SHAST::astnode_map_t _geometry_interfaces;
-  SHAST::astnode_map_t _compute_interfaces;
-
-  SHAST::astnode_map_t _vertex_shaders;
-  SHAST::astnode_map_t _fragment_shaders;
-  SHAST::astnode_map_t _geometry_shaders;
-  SHAST::astnode_map_t _compute_shaders;
 
   SHAST::astnode_map_t _stateblocks;
   SHAST::astnode_map_t _techniques;

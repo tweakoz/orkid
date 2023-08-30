@@ -228,7 +228,9 @@ GLFX1Backend::GLFX1Backend() {
     emitLine("");
   };
   /////////////////////////////////////////////////////////////////////
-  registerAstPreCB<LibraryBlock>([=](auto libblock) { named_precb( libblock, "libblock" ); });
+  registerAstPreCB<LibraryBlock>([=](auto libblock) { 
+    named_precb( libblock, "libblock" );
+  });
   registerAstPostCB<LibraryBlock>([=](auto libblock) { named_postcb(libblock); });
   registerAstPreChildCB<LibraryBlock>(named_item_pre_child_cb);
   /////////////////////////////////////////////////////////////////////

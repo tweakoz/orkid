@@ -273,7 +273,7 @@ SHAST::translationunit_ptr_t ShadLangParser::parseString(std::string name, std::
     printf("///////////////////////////////\n");
     printf("// TU<%p> LIST parser<%s>\n", (void*) top_as_tunit.get(), _name.c_str() );
     printf("///////////////////////////////\n");
-    auto sorted_translatables = sorted_vector_from_map( _translatables );
+    auto sorted_translatables = sorted_vector_from_map( _slp_cache->_translatables );
     for( auto item : sorted_translatables ){
       auto name = item.first;
       auto node = item.second;

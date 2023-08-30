@@ -291,9 +291,18 @@ void SpirvCompiler::_procInheritances(astnode_ptr_t parent_node) {
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////
 void SpirvCompiler::_inheritLibrary(libblock_ptr_t lib_block) {
+
+    auto libname = lib_block->typedValueForKey<std::string>("object_name").value();
+    auto decorator = FormatString( "// begin library<%s>", libname.c_str() );
+    _appendText(_libraries_group, decorator.c_str());
+
     auto lib_children = lib_block->_children;
     auto libgroup       = _libraries_group->appendTypedChild<MiscGroupNode>();
     libgroup->_children = lib_children;  
+
+    decorator = FormatString( "// end library<%s>", libname.c_str() );
+    _appendText(_libraries_group, decorator.c_str());
+
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////
 void SpirvCompiler::_inheritUniformSet(std::string unisetname, //
@@ -379,6 +388,11 @@ void SpirvCompiler::_inheritIO(astnode_ptr_t interface_node) {
   //
   // TODO inherited interfaces
   //
+
+  auto ifname = interface_node->typedValueForKey<std::string>("object_name").value();
+  auto decorator = FormatString( "// begin interface<%s>", ifname.c_str() );
+  _appendText(_interface_group, decorator.c_str());
+
   auto input_groups  = AstNode::collectNodesOfType<InterfaceInputs>(interface_node);
   auto output_groups = AstNode::collectNodesOfType<InterfaceOutputs>(interface_node);
   // printf("  num_input_groups<%zu>\n", input_groups.size());
@@ -421,6 +435,8 @@ void SpirvCompiler::_inheritIO(astnode_ptr_t interface_node) {
     }
   }
   /////////////////////////////////////////
+  decorator = FormatString( "// end interface<%s>", ifname.c_str() );
+  _appendText(_interface_group, decorator.c_str());
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////
 void SpirvCompiler::_inheritExtension(semainhext_ptr_t extension_node) {
