@@ -22,6 +22,18 @@ SpirvCompiler::SpirvCompiler(transunit_ptr_t transu, bool vulkan)
   _data_sizes["mat2"]  = 2;
   _data_sizes["mat3"]  = 3;
   _data_sizes["mat4"]  = 4;
+  _data_sizes["ivec2"]  = 1;
+  _data_sizes["ivec3"]  = 1;
+  _data_sizes["ivec4"]  = 1;
+  _data_sizes["imat2"]  = 2;
+  _data_sizes["imat3"]  = 3;
+  _data_sizes["imat4"]  = 4;
+  _data_sizes["uvec2"]  = 1;
+  _data_sizes["uvec3"]  = 1;
+  _data_sizes["uvec4"]  = 1;
+  _data_sizes["umat2"]  = 2;
+  _data_sizes["umat3"]  = 3;
+  _data_sizes["umat4"]  = 4;
 
   if (_vulkan) {
     _id_renames["ofx_instanceID"] = "gl_InstanceIndex";
@@ -392,7 +404,10 @@ void SpirvCompiler::_inheritIO(astnode_ptr_t interface_node) {
       if (id.find("gl_") != 0) {
         _appendText(_interface_group, "layout(location=%zu) out %s %s;", _output_index, dt.c_str(), id.c_str());
         auto it = _data_sizes.find(dt);
-        OrkAssert(it != _data_sizes.end());
+        if( it == _data_sizes.end() ){
+          printf("dt<%s> has no sizespec\n", dt.c_str());
+          OrkAssert(false);
+        }
         _output_index += it->second;
       }
     }
