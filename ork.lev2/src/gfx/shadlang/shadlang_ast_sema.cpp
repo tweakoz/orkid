@@ -342,7 +342,7 @@ void _semaProcNamedOfType(
 void _semaPerformImports(impl::ShadLangParser* slp, astnode_ptr_t top) {
   auto top_tunit = std::dynamic_pointer_cast<TranslationUnit>(top);
   auto nodes     = AstNode::collectNodesOfType<ImportDirective>(top);
-  import_map_t import_map;
+
   for (auto import_node : nodes) {
     //
     file::Path::NameType a, b;
@@ -382,10 +382,19 @@ void _semaPerformImports(impl::ShadLangParser* slp, astnode_ptr_t top) {
 
     ////////////////////////////////////////////////////////
 
-    printf("Importing<%s>\n", proc_import_path.c_str());
-    auto sub_tunit = shadlang::parseFromFile(proc_import_path);
-    OrkAssert(sub_tunit);
-    import_map[proc_import_path.c_str()] = sub_tunit;
+    printf("Parser<%s> Importing<%s>\n", slp->_name.c_str(), proc_import_path.c_str());
+
+    translationunit_ptr_t sub_tunit;
+    auto it_imp = slp->_import_cache.find(proc_import_path.c_str());
+    if( it_imp == slp->_import_cache.end() ){
+      sub_tunit = shadlang::parseFromFile(proc_import_path);
+      OrkAssert(sub_tunit);
+      slp->_import_cache[proc_import_path.c_str()] = sub_tunit;
+    }
+    else{
+      sub_tunit = it_imp->second;
+      OrkAssert(false);
+    }
     import_node->setValueForKey<transunit_ptr_t>("transunit", sub_tunit);
 
     ////////////////////////////////////////////////////////

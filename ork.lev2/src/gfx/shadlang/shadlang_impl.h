@@ -121,6 +121,7 @@ struct ShadLangParser : public Parser {
   SHAST::astnode_map_t _import_directives;
 
   SHAST::astnode_map_t _structs;
+  SHAST::import_map_t _import_cache;
 
   file::Path _shader_path;
 
