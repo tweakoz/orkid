@@ -28,6 +28,7 @@
 #endif
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2 {
+extern bool gbPREFEROPENGL;
 static logchannel_ptr_t logchan_glfw = logger()->createChannel("GLFW", fvec3(0.8, 0.2, 0.6), true);
 void setAlwaysOnTop(GLFWwindow* window);
 ///////////////////////////////////////////////////////////////////////////////
@@ -752,9 +753,13 @@ CtxGLFW* CtxGLFW::globalOffscreenContext() {
     glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
 
     GLFWwindow* offscreen_window = nullptr;
-    // offscreen_window = _gctx->_apiInitGL();
+    if( gbPREFEROPENGL ){
+      offscreen_window = _gctx->_apiInitGL();
+    }
 #if defined(ENABLE_VULKAN)
-    offscreen_window = _gctx->_apiInitVK();
+    if( not gbPREFEROPENGL ){
+      offscreen_window = _gctx->_apiInitVK();
+    }
 #endif
 
     glfwSetWindowUserPointer(offscreen_window, (void*)_gctx);

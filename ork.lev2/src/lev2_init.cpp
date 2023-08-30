@@ -67,9 +67,9 @@ appinitdata_ptr_t _ginitdata;
 
 
 #if defined(_WIN32)
-static bool gbPREFEROPENGL = false;
+bool gbPREFEROPENGL = false;
 #else
-static bool gbPREFEROPENGL = true;
+bool gbPREFEROPENGL = true;
 #endif
 
 context_ptr_t OpenGlContextInit();
@@ -97,8 +97,8 @@ struct ClassToucher {
 
     Context::GetClassStatic();
 
-    PreferVulkan();
-    //PreferOpenGL();
+    //PreferVulkan();
+    PreferOpenGL();
 
     GfxEnv::GetRef();
     GfxPrimitives::GetRef();
@@ -298,7 +298,9 @@ void GfxInit() {
 
   if(1){
     #if defined(ENABLE_VULKAN)
-    gloadercontext = vulkan::ContextInit();
+    if( not gbPREFEROPENGL ){
+      gloadercontext = vulkan::ContextInit();
+    }
     #endif
   }
   if( nullptr == gloadercontext ){
