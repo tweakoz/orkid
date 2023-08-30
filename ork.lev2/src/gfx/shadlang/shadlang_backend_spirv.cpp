@@ -159,7 +159,7 @@ void SpirvCompiler::_convertUniformSets() {
           item->_is_array = true;
           auto ary_len_str = len_node->typedValueForKey<std::string>("literal_value").value();
           item->_array_length = atoi(ary_len_str.c_str());
-          dumpAstNode(as_array);
+          //dumpAstNode(as_array);
         }
       }
     }
@@ -193,7 +193,7 @@ void SpirvCompiler::_convertUniformBlocks() {
         item->_is_array = true;
         auto ary_len_str = len_node->typedValueForKey<std::string>("literal_value").value();
         item->_array_length = atoi(ary_len_str.c_str());
-        dumpAstNode(as_array);
+        //dumpAstNode(as_array);
       }
 
     }

@@ -386,24 +386,29 @@ void _semaPerformImports(impl::ShadLangParser* slp, astnode_ptr_t top) {
     import_node->setValueForKey<std::string>("proc_import_path", proc_import_path.c_str());
 
     ////////////////////////////////////////////////////////
-
+    // fetch translation unit
+    ////////////////////////////////////////////////////////
 
     auto cache = slp->_slp_cache;
     translationunit_ptr_t sub_tunit;
     auto it_imp = cache->_import_cache.find(proc_import_path.c_str());
-    if( it_imp == cache->_import_cache.end() ){
+    // CACHED ?
+    if( it_imp != cache->_import_cache.end() ) {
+      sub_tunit = it_imp->second;
+      printf("Parser<%s> Importing<%s> already cached\n", slp->_name.c_str(), proc_import_path.c_str());
+      import_node->setValueForKey<transunit_ptr_t>("transunit", sub_tunit);
+    }
+    // NOT CACHED..
+    else{
       printf("Parser<%s> Importing<%s>\n", slp->_name.c_str(), proc_import_path.c_str());
       sub_tunit = shadlang::parseFromFile(slp->_slp_cache, proc_import_path);
       OrkAssert(sub_tunit);
       cache->_import_cache[proc_import_path.c_str()] = sub_tunit;
       import_node->setValueForKey<transunit_ptr_t>("transunit", sub_tunit);
     }
-    else{
-      printf("Parser<%s> Importing<%s> already cached\n", slp->_name.c_str(), proc_import_path.c_str());
-      import_node->setValueForKey<transunit_ptr_t>("transunit", sub_tunit);
-      continue;
-    }
 
+    ////////////////////////////////////////////////////////
+    // hoist translatables from sub tunit into parent tunit
     ////////////////////////////////////////////////////////
 
     if (1) { // inline imported translatables ?
