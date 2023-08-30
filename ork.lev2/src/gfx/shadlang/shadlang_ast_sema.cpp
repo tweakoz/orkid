@@ -18,6 +18,8 @@
 #include <ork/util/parser.inl>
 #include "shadlang_impl.h"
 
+// TODO - flyweighted import
+
 #if defined(USE_ORKSL_LANG)
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
@@ -756,7 +758,7 @@ int _semaLinkToInheritances(
       if (as_inh_item) {
         inh_item      = as_inh_item;
         auto inh_name = inh_item->typedValueForKey<std::string>("inherited_object").value();
-        //printf("XXX %s<%s> inh_name<%s>\n", n->_name.c_str(), objname.c_str(), inh_name.c_str());
+        printf("XXX %s |  %s << %s\n", n->_type_name.c_str(), objname.c_str(), inh_name.c_str());
         /////////////////////////////////
         // check if extension
         /////////////////////////////////
