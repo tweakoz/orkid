@@ -1,10 +1,8 @@
-import "orkshader://gbuftools.i";
-import "orkshader://brdftools.i";
-import "orkshader://deftools.i";
-import "orkshader://fwdtools.i";
-import "orkshader://skintools.i";
-import "orkshader://mathtools.i";
-import "orkshader://envtools.i";
+import "gbuftools.i";
+import "brdftools.i";
+import "deftools.i";
+import "fwdtools.i";
+import "skintools.i";
 ///////////////////////////////////////////////////////////////
 // Interfaces
 ///////////////////////////////////////////////////////////////
@@ -218,8 +216,8 @@ libblock lib_pbr_vtx_instanced {
     frg_camz    = wnormal.xyz;
     frg_camdist = -cpos.z;
     ////////////////////////////////
-    int modcolor_u = (ofx_instanceID & 0xfff);
-    int modcolor_v = (ofx_instanceID >> 12);
+    int modcolor_u = (gl_InstanceID & 0xfff);
+    int modcolor_v = (gl_InstanceID >> 12);
     frg_modcolor   = texelFetch(InstanceColors, ivec2(modcolor_u, modcolor_v), 0);
     ////////////////////////////////
   }
@@ -273,8 +271,8 @@ vertex_shader vs_rigid_gbuffer_stereo : extension(GL_NV_stereo_view_rendering)
 // vs-instanced-rigid
 ///////////////////////////////////////////////////////////////
 vertex_shader vs_rigid_gbuffer_instanced : iface_vgbuffer_instanced : lib_pbr_vtx_instanced {
-  int matrix_v     = (ofx_instanceID >> 10);
-  int matrix_u     = (ofx_instanceID & 0x3ff) << 2;
+  int matrix_v     = (gl_InstanceID >> 10);
+  int matrix_u     = (gl_InstanceID & 0x3ff) << 2;
   mat4 instancemtx = mat4(
       texelFetch(InstanceMatrices, ivec2(matrix_u + 0, matrix_v), 0),
       texelFetch(InstanceMatrices, ivec2(matrix_u + 1, matrix_v), 0),
@@ -291,8 +289,8 @@ vertex_shader vs_rigid_gbuffer_instanced_stereo : extension(GL_NV_stereo_view_re
     : extension(GL_NV_viewport_array2)
     : iface_vgbuffer_stereo_instanced : lib_pbr_vtx_instanced {
   ////////////////////////////////
-  int matrix_v     = (ofx_instanceID >> 10);
-  int matrix_u     = (ofx_instanceID & 0x3ff) << 2;
+  int matrix_v     = (gl_InstanceID >> 10);
+  int matrix_u     = (gl_InstanceID & 0x3ff) << 2;
   mat4 instancemtx = mat4(
       texelFetch(InstanceMatrices, ivec2(matrix_u + 0, matrix_v), 0),
       texelFetch(InstanceMatrices, ivec2(matrix_u + 1, matrix_v), 0),
@@ -312,10 +310,7 @@ vertex_shader vs_rigid_gbuffer_instanced_stereo : extension(GL_NV_stereo_view_re
 ///////////////////////////////////////////////////////////////
 // vs-non-instanced-skinned
 ///////////////////////////////////////////////////////////////
-vertex_shader vs_skinned_gbuffer //
-  : iface_vgbuffer_skinned // 
-  : lib_skin_tools // 
-  : lib_pbr_vtx { //
+vertex_shader vs_skinned_gbuffer : iface_vgbuffer_skinned : skin_tools : lib_pbr_vtx {
   vec4 skn_pos = vec4(SkinPosition(position.xyz), 1);
   vec3 skn_nrm = SkinNormal(normal);
   vec3 skn_bit = SkinNormal(binormal); // // technically binormal is a bitangent
@@ -437,7 +432,7 @@ vertex_interface iface_vdprepass : ub_vtx {
     vec4 position : POSITION;
   }
   outputs {
-    float ofx_depth;
+    float frg_depth;
   }
 }
 
@@ -448,11 +443,11 @@ vertex_interface iface_vdprepass : ub_vtx {
 vertex_shader vs_forward_depthprepass_mono : iface_vdprepass {
   vec4 hpos    = mvp * position;
   gl_Position  = hpos;
-  ofx_depth = hpos.z / hpos.w;
+  gl_FragDepth = hpos.z / hpos.w;
 }
 vertex_shader vs_forward_depthprepass_mono_instanced : iface_vdprepass {
-  int matrix_v     = (ofx_instanceID >> 10);
-  int matrix_u     = (ofx_instanceID & 0x3ff) << 2;
+  int matrix_v     = (gl_InstanceID >> 10);
+  int matrix_u     = (gl_InstanceID & 0x3ff) << 2;
   mat4 instancemtx = mat4(
       texelFetch(InstanceMatrices, ivec2(matrix_u + 0, matrix_v), 0),
       texelFetch(InstanceMatrices, ivec2(matrix_u + 1, matrix_v), 0),
@@ -462,12 +457,12 @@ vertex_shader vs_forward_depthprepass_mono_instanced : iface_vdprepass {
   vec4 instanced_pos = (instancemtx * position);
   vec4 hpos          = mvp * instanced_pos;
   gl_Position        = hpos;
-  // ofx_depth = hpos.z/hpos.w;
+  // gl_FragDepth = hpos.z/hpos.w;
 }
-vertex_shader vs_forward_depthprepass_stereo : iface_vdprepass {
+fragment_shader vs_forward_depthprepass_stereo : iface_fdprepass {
   vec4 hpos    = mvp * position;
   gl_Position  = hpos;
-  ofx_depth = hpos.z / hpos.w;
+  gl_FragDepth = hpos.z / hpos.w;
 }
 fragment_shader ps_forward_depthprepass : iface_fdprepass {
 }
@@ -495,8 +490,8 @@ vertex_shader vs_forward_test_stereo : iface_vgbuffer_stereo : lib_pbr_vtx : ext
   gl_SecondaryViewportMaskNV[0] = 2;
 }
 vertex_shader vs_forward_instanced : iface_vgbuffer_instanced : lib_pbr_vtx_instanced {
-  int matrix_v     = (ofx_instanceID >> 10);
-  int matrix_u     = (ofx_instanceID & 0x3ff) << 2;
+  int matrix_v     = (gl_InstanceID >> 10);
+  int matrix_u     = (gl_InstanceID & 0x3ff) << 2;
   mat4 instancemtx = mat4(
       texelFetch(InstanceMatrices, ivec2(matrix_u + 0, matrix_v), 0),
       texelFetch(InstanceMatrices, ivec2(matrix_u + 1, matrix_v), 0),
@@ -512,8 +507,8 @@ vertex_shader vs_forward_instanced_stereo : iface_forward_stereo_instanced : lib
     : extension(GL_NV_stereo_view_rendering)
     : extension(GL_NV_viewport_array2) {
 
-  int matrix_v     = (ofx_instanceID >> 10);
-  int matrix_u     = (ofx_instanceID & 0x3ff) << 2;
+  int matrix_v     = (gl_InstanceID >> 10);
+  int matrix_u     = (gl_InstanceID & 0x3ff) << 2;
   mat4 instancemtx = mat4(
       texelFetch(InstanceMatrices, ivec2(matrix_u + 0, matrix_v), 0),
       texelFetch(InstanceMatrices, ivec2(matrix_u + 1, matrix_v), 0),
@@ -529,12 +524,8 @@ vertex_shader vs_forward_instanced_stereo : iface_forward_stereo_instanced : lib
   gl_ViewportMask[0]            = 1;
   gl_SecondaryViewportMaskNV[0] = 2;
 }
-vertex_shader vs_forward_skinned_stereo //
-    : iface_vgbuffer_skinned // 
-    : lib_skin_tools // 
-    : lib_pbr_vtx // 
-    : extension(GL_NV_stereo_view_rendering) //
-    : extension(GL_NV_viewport_array2) { //
+vertex_shader vs_forward_skinned_stereo : iface_vgbuffer_skinned : skin_tools : lib_pbr_vtx : extension(GL_NV_stereo_view_rendering)
+    : extension(GL_NV_viewport_array2) {
   vec4 skn_pos = vec4(SkinPosition(position.xyz), 1);
   vec3 skn_nrm = SkinNormal(normal);
   vec3 skn_bit = SkinNormal(binormal); // // technically binormal is a bitangent
@@ -547,7 +538,7 @@ vertex_shader vs_forward_skinned_stereo //
   gl_SecondaryViewportMaskNV[0] = 2;
 }
 //////////////////////////////////////
-fragment_shader ps_forward_test : iface_forward : lib_fwd {
+fragment_shader ps_forward_test : iface_forward : lib_math : lib_brdf : lib_def : lib_fwd {
   out_color = vec4(forward_lighting_mono(ModColor.xyz), 1);
 }
 fragment_shader ps_forward_test_instanced_mono : iface_forward : lib_math : lib_brdf : lib_def : lib_fwd {
