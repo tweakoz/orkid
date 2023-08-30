@@ -464,7 +464,7 @@ vertex_shader vs_forward_depthprepass_mono_instanced : iface_vdprepass {
   gl_Position        = hpos;
   // ofx_depth = hpos.z/hpos.w;
 }
-fragment_shader vs_forward_depthprepass_stereo : iface_fdprepass {
+vertex_shader vs_forward_depthprepass_stereo : iface_vdprepass {
   vec4 hpos    = mvp * position;
   gl_Position  = hpos;
   ofx_depth = hpos.z / hpos.w;

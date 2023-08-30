@@ -22,24 +22,23 @@ SpirvCompiler::SpirvCompiler(transunit_ptr_t transu, bool vulkan)
   _data_sizes["mat2"]  = 2;
   _data_sizes["mat3"]  = 3;
   _data_sizes["mat4"]  = 4;
-  _data_sizes["ivec2"]  = 1;
-  _data_sizes["ivec3"]  = 1;
-  _data_sizes["ivec4"]  = 1;
-  _data_sizes["imat2"]  = 2;
-  _data_sizes["imat3"]  = 3;
-  _data_sizes["imat4"]  = 4;
-  _data_sizes["uvec2"]  = 1;
-  _data_sizes["uvec3"]  = 1;
-  _data_sizes["uvec4"]  = 1;
-  _data_sizes["umat2"]  = 2;
-  _data_sizes["umat3"]  = 3;
-  _data_sizes["umat4"]  = 4;
+  _data_sizes["ivec2"] = 1;
+  _data_sizes["ivec3"] = 1;
+  _data_sizes["ivec4"] = 1;
+  _data_sizes["imat2"] = 2;
+  _data_sizes["imat3"] = 3;
+  _data_sizes["imat4"] = 4;
+  _data_sizes["uvec2"] = 1;
+  _data_sizes["uvec3"] = 1;
+  _data_sizes["uvec4"] = 1;
+  _data_sizes["umat2"] = 2;
+  _data_sizes["umat3"] = 3;
+  _data_sizes["umat4"] = 4;
 
   if (_vulkan) {
     _id_renames["ofx_instanceID"] = "gl_InstanceIndex";
-  }
-  else{
-    _id_renames["ofx_depth"] = "gl_FragDepth";
+  } else {
+    _id_renames["ofx_depth"]      = "gl_FragDepth";
     _id_renames["ofx_instanceID"] = "gl_InstanceID";
   }
   _id_renames["PI"]          = "3.141592654";
@@ -53,11 +52,9 @@ SpirvCompiler::SpirvCompiler(transunit_ptr_t transu, bool vulkan)
   _id_renames["SQRT2"]       = "1.4142135623730951";
   _id_renames["GOLDENRATIO"] = "1.6180339887498948482";
   _id_renames["EPSILON"]     = "0.0000001";
-  _id_renames["DTOR"]     = "0.017453292519943295";
-  _id_renames["RTOD"]     = "57.29577951308232";
+  _id_renames["DTOR"]        = "0.017453292519943295";
+  _id_renames["RTOD"]        = "57.29577951308232";
 
-
-  _collectLibBlocks();
   _processGlobalRenames();
   _convertUniformSets();
   _convertUniformBlocks();
@@ -74,24 +71,21 @@ void SpirvCompiler::_beginShader(shader_ptr_t shader) {
   _input_index     = 0;
   _output_index    = 0;
 
-  _procInheritances(shader);
+  InheritanceTracker tracker;
+  _procInheritances(tracker, shader);
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////
-void SpirvCompiler::processShader(shader_ptr_t sh){
+void SpirvCompiler::processShader(shader_ptr_t sh) {
   _beginShader(sh);
-  if( auto as_vsh = std::dynamic_pointer_cast<VertexShader>(sh) ){
+  if (auto as_vsh = std::dynamic_pointer_cast<VertexShader>(sh)) {
     _compileShader(shaderc_glsl_vertex_shader);
-  }
-  else if( auto as_gsh = std::dynamic_pointer_cast<GeometryShader>(sh) ){
+  } else if (auto as_gsh = std::dynamic_pointer_cast<GeometryShader>(sh)) {
     _compileShader(shaderc_glsl_geometry_shader);
-  }
-  else if( auto as_fsh = std::dynamic_pointer_cast<FragmentShader>(sh) ){
+  } else if (auto as_fsh = std::dynamic_pointer_cast<FragmentShader>(sh)) {
     _compileShader(shaderc_glsl_fragment_shader);
-  }
-  else if( auto as_csh = std::dynamic_pointer_cast<ComputeShader>(sh) ){
+  } else if (auto as_csh = std::dynamic_pointer_cast<ComputeShader>(sh)) {
     _compileShader(shaderc_glsl_compute_shader);
-  }
-  else {
+  } else {
     OrkAssert(false);
   }
 }
@@ -129,12 +123,12 @@ void SpirvCompiler::_processGlobalRenames() {
 void SpirvCompiler::_convertUniformSets() {
   auto ast_unisets = SHAST::AstNode::collectNodesOfType<SHAST::UniformSet>(_transu);
   for (auto ast_uniset : ast_unisets) {
-    auto decls             = SHAST::AstNode::collectNodesOfType<SHAST::DataDeclarationBase>(ast_uniset);
+    auto decls = SHAST::AstNode::collectNodesOfType<SHAST::DataDeclarationBase>(ast_uniset);
     //////////////////////////////////////
-    auto uni_name          = ast_uniset->typedValueForKey<std::string>("object_name").value();
-    auto uniset            = std::make_shared<SpirvUniformSet>();
+    auto uni_name               = ast_uniset->typedValueForKey<std::string>("object_name").value();
+    auto uniset                 = std::make_shared<SpirvUniformSet>();
     _spirvuniformsets[uni_name] = uniset;
-    uniset->_name          = uni_name;
+    uniset->_name               = uni_name;
     //////////////////////////////////////
     for (auto d : decls) {
       auto tid = d->childAs<SHAST::TypedIdentifier>(0);
@@ -154,12 +148,12 @@ void SpirvCompiler::_convertUniformSets() {
         uniset->_items_by_name[id] = item;
         uniset->_items_by_order.push_back(item);
 
-        if( auto as_array = std::dynamic_pointer_cast<ArrayDeclaration>(d) ){
-          auto len_node = as_array->childAs<SHAST::SemaIntegerLiteral>(1);
-          item->_is_array = true;
-          auto ary_len_str = len_node->typedValueForKey<std::string>("literal_value").value();
+        if (auto as_array = std::dynamic_pointer_cast<ArrayDeclaration>(d)) {
+          auto len_node       = as_array->childAs<SHAST::SemaIntegerLiteral>(1);
+          item->_is_array     = true;
+          auto ary_len_str    = len_node->typedValueForKey<std::string>("literal_value").value();
           item->_array_length = atoi(ary_len_str.c_str());
-          //dumpAstNode(as_array);
+          // dumpAstNode(as_array);
         }
       }
     }
@@ -170,67 +164,53 @@ void SpirvCompiler::_convertUniformSets() {
 void SpirvCompiler::_convertUniformBlocks() {
   auto ast_uniblks = SHAST::AstNode::collectNodesOfType<SHAST::UniformBlk>(_transu);
   for (auto ast_uniblk : ast_uniblks) {
-    auto decls             = SHAST::AstNode::collectNodesOfType<SHAST::DataDeclarationBase>(ast_uniblk);
+    auto decls = SHAST::AstNode::collectNodesOfType<SHAST::DataDeclarationBase>(ast_uniblk);
     //////////////////////////////////////
-    auto uni_name          = ast_uniblk->typedValueForKey<std::string>("object_name").value();
-    auto uniblk            = std::make_shared<SpirvUniformBlock>();
+    auto uni_name               = ast_uniblk->typedValueForKey<std::string>("object_name").value();
+    auto uniblk                 = std::make_shared<SpirvUniformBlock>();
     _spirvuniformblks[uni_name] = uniblk;
-    uniblk->_name          = uni_name;
+    uniblk->_name               = uni_name;
     //////////////////////////////////////
     for (auto d : decls) {
       auto tid = d->childAs<SHAST::TypedIdentifier>(0);
       OrkAssert(tid);
-      auto dt         = tid->typedValueForKey<std::string>("data_type").value();
-      auto id         = tid->typedValueForKey<std::string>("identifier_name").value();
+      auto dt                    = tid->typedValueForKey<std::string>("data_type").value();
+      auto id                    = tid->typedValueForKey<std::string>("identifier_name").value();
       auto item                  = std::make_shared<SpirvUniformBlockItem>();
       item->_datatype            = dt;
       item->_identifier          = id;
       uniblk->_items_by_name[id] = item;
       uniblk->_items_by_order.push_back(item);
 
-      if( auto as_array = std::dynamic_pointer_cast<ArrayDeclaration>(d) ){
-        auto len_node = as_array->childAs<SHAST::SemaIntegerLiteral>(1);
-        item->_is_array = true;
-        auto ary_len_str = len_node->typedValueForKey<std::string>("literal_value").value();
+      if (auto as_array = std::dynamic_pointer_cast<ArrayDeclaration>(d)) {
+        auto len_node       = as_array->childAs<SHAST::SemaIntegerLiteral>(1);
+        item->_is_array     = true;
+        auto ary_len_str    = len_node->typedValueForKey<std::string>("literal_value").value();
         item->_array_length = atoi(ary_len_str.c_str());
-        //dumpAstNode(as_array);
+        // dumpAstNode(as_array);
       }
+    }
+  }
+}
+/////////////////////////////////////////////////////////////////////////////////////////////////
+void SpirvCompiler::_procInheritances(InheritanceTracker& tracker, astnode_ptr_t parent_node) {
 
-    }
-  }
-}
-/////////////////////////////////////////////////////////////////////////////////////////////////
-void SpirvCompiler::_collectLibBlocks() {
-  auto lib_blocks = AstNode::collectNodesOfType<LibraryBlock>(_transu);
-  for (auto lib_block : lib_blocks) {
-    auto name = lib_block->typedValueForKey<std::string>("object_name").value();
-    auto it   = _lib_blocks.find(name);
-    if (it == _lib_blocks.end()) {
-      _lib_blocks[name] = lib_block;
-    } else {
-      printf("dupe libblock<%s>\n", name.c_str());
-      OrkAssert(false);
-    }
-  }
-}
-/////////////////////////////////////////////////////////////////////////////////////////////////
-void SpirvCompiler::_procInheritances(astnode_ptr_t parent_node) {
   _binding_id = 0;
   for (auto c : parent_node->_children) {
     //////////////////////////////////////////////////////////////////////
     if (auto as_lib = std::dynamic_pointer_cast<SemaInheritLibrary>(c)) {
       auto INHID = as_lib->typedValueForKey<std::string>("inherit_id").value();
-      auto LIB = _transu->find<LibraryBlock>(INHID);
+      auto LIB   = _transu->find<LibraryBlock>(INHID);
       OrkAssert(LIB);
-      _procInheritances(LIB);
-      _inheritLibrary(LIB);
+      _procInheritances(tracker, LIB);
+      _inheritLibrary(tracker, LIB);
     }
     //////////////////////////////////////////////////////////////////////
     else if (auto as_vif = std::dynamic_pointer_cast<SemaInheritVertexInterface>(c)) {
       auto INHID = as_vif->typedValueForKey<std::string>("inherit_id").value();
       auto IFACE = _transu->find<VertexInterface>(INHID);
       OrkAssert(IFACE);
-      _procInheritances(IFACE);
+      _procInheritances(tracker, IFACE);
       _inheritIO(IFACE);
     }
     //////////////////////////////////////////////////////////////////////
@@ -238,7 +218,7 @@ void SpirvCompiler::_procInheritances(astnode_ptr_t parent_node) {
       auto INHID = as_fif->typedValueForKey<std::string>("inherit_id").value();
       auto IFACE = _transu->find<FragmentInterface>(INHID);
       OrkAssert(IFACE);
-      _procInheritances(IFACE);
+      _procInheritances(tracker, IFACE);
       _inheritIO(IFACE);
     }
     //////////////////////////////////////////////////////////////////////
@@ -246,7 +226,7 @@ void SpirvCompiler::_procInheritances(astnode_ptr_t parent_node) {
       auto INHID = as_gif->typedValueForKey<std::string>("inherit_id").value();
       auto IFACE = _transu->find<GeometryInterface>(INHID);
       OrkAssert(IFACE);
-      _procInheritances(IFACE);
+      _procInheritances(tracker, IFACE);
       _inheritIO(IFACE);
     }
     //////////////////////////////////////////////////////////////////////
@@ -254,30 +234,30 @@ void SpirvCompiler::_procInheritances(astnode_ptr_t parent_node) {
       auto INHID = as_cif->typedValueForKey<std::string>("inherit_id").value();
       auto IFACE = _transu->find<ComputeInterface>(INHID);
       OrkAssert(IFACE);
-      _procInheritances(IFACE);
+      _procInheritances(tracker, IFACE);
       _inheritIO(IFACE);
     }
     //////////////////////////////////////////////////////////////////////
     else if (auto as_uset = std::dynamic_pointer_cast<SemaInheritUniformSet>(c)) {
-      auto INHID = as_uset->typedValueForKey<std::string>("inherit_id").value();
+      auto INHID    = as_uset->typedValueForKey<std::string>("inherit_id").value();
       auto ast_uset = _transu->find<SHAST::UniformSet>(INHID);
-      auto it_uset = _spirvuniformsets.find(INHID);
+      auto it_uset  = _spirvuniformsets.find(INHID);
       OrkAssert(it_uset != _spirvuniformsets.end());
       auto spirvuniset = it_uset->second;
       OrkAssert(ast_uset);
-      _procInheritances(ast_uset);
-      _inheritUniformSet(INHID,spirvuniset);
+      _procInheritances(tracker, ast_uset);
+      _inheritUniformSet(INHID, spirvuniset);
     }
     //////////////////////////////////////////////////////////////////////
     else if (auto as_ublk = std::dynamic_pointer_cast<SemaInheritUniformBlk>(c)) {
-      auto INHID = as_ublk->typedValueForKey<std::string>("inherit_id").value();
+      auto INHID    = as_ublk->typedValueForKey<std::string>("inherit_id").value();
       auto ast_ublk = _transu->find<SHAST::UniformBlk>(INHID);
-      auto it_ublk = _spirvuniformblks.find(INHID);
+      auto it_ublk  = _spirvuniformblks.find(INHID);
       OrkAssert(it_ublk != _spirvuniformblks.end());
       auto spirvuniblk = it_ublk->second;
       OrkAssert(ast_ublk);
-      _procInheritances(ast_ublk);
-      _inheritUniformBlk(INHID,spirvuniblk);
+      _procInheritances(tracker, ast_ublk);
+      _inheritUniformBlk(INHID, spirvuniblk);
     }
     //////////////////////////////////////////////////////////////////////
     else if (auto as_sb = std::dynamic_pointer_cast<SemaInheritStateBlock>(c)) {
@@ -290,23 +270,31 @@ void SpirvCompiler::_procInheritances(astnode_ptr_t parent_node) {
   }
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////
-void SpirvCompiler::_inheritLibrary(libblock_ptr_t lib_block) {
+void SpirvCompiler::_inheritLibrary(InheritanceTracker& tracker, libblock_ptr_t lib_block) {
 
-    auto libname = lib_block->typedValueForKey<std::string>("object_name").value();
-    auto decorator = FormatString( "// begin library<%s>", libname.c_str() );
-    _appendText(_libraries_group, decorator.c_str());
+  auto libname = lib_block->typedValueForKey<std::string>("object_name").value();
 
-    auto lib_children = lib_block->_children;
-    auto libgroup       = _libraries_group->appendTypedChild<MiscGroupNode>();
-    libgroup->_children = lib_children;  
+  auto it = tracker._inherited_libs.find(libname);
+  if (it != tracker._inherited_libs.end()) {
+    printf("ALREADY INHERITED LIBRARY<%s>\n", libname.c_str());
+    return;
+  }
+  tracker._inherited_libs.insert(libname);
 
-    decorator = FormatString( "// end library<%s>", libname.c_str() );
-    _appendText(_libraries_group, decorator.c_str());
+  auto decorator = FormatString("// begin library<%s>", libname.c_str());
+  _appendText(_libraries_group, decorator.c_str());
 
+  auto lib_children   = lib_block->_children;
+  auto libgroup       = _libraries_group->appendTypedChild<MiscGroupNode>();
+  libgroup->_children = lib_children;
+
+  decorator = FormatString("// end library<%s>", libname.c_str());
+  _appendText(_libraries_group, decorator.c_str());
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////
-void SpirvCompiler::_inheritUniformSet(std::string unisetname, //
-                                       spirvuniset_ptr_t spirvuset) { //
+void SpirvCompiler::_inheritUniformSet(
+    std::string unisetname,        //
+    spirvuniset_ptr_t spirvuset) { //
   if (_vulkan) {
     spirvuset->_descriptor_set_id = _descriptor_set_counter++;
     /////////////////////
@@ -315,18 +303,17 @@ void SpirvCompiler::_inheritUniformSet(std::string unisetname, //
     auto line = FormatString(
         "layout(set=%zu, binding=%zu) uniform %s {", //
         spirvuset->_descriptor_set_id,               //
-        _binding_id,                                  //
+        _binding_id,                                 //
         unisetname.c_str());
     _appendText(_uniforms_group, line.c_str());
     for (auto item : spirvuset->_items_by_order) {
       auto dt = item->_datatype;
       auto id = item->_identifier;
-      if( item->_is_array ){
+      if (item->_is_array) {
         size_t array_len = item->_array_length;
-        auto str = FormatString("%s %s[%zu];", dt.c_str(), id.c_str(), array_len);
+        auto str         = FormatString("%s %s[%zu];", dt.c_str(), id.c_str(), array_len);
         _appendText(_uniforms_group, str.c_str());
-      }
-      else{
+      } else {
         _appendText(_uniforms_group, (dt + " " + id + ";").c_str());
       }
     }
@@ -341,7 +328,7 @@ void SpirvCompiler::_inheritUniformSet(std::string unisetname, //
       auto line = FormatString(
           "layout(set=%zu, binding=%zu) uniform %s %s;", //
           spirvuset->_descriptor_set_id,                 //
-          _binding_id,                                    //
+          _binding_id,                                   //
           dt.c_str(),                                    //
           id.c_str());
       _appendText(_uniforms_group, line.c_str());
@@ -352,8 +339,9 @@ void SpirvCompiler::_inheritUniformSet(std::string unisetname, //
   }
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////
-void SpirvCompiler::_inheritUniformBlk(std::string uniblkname, //
-                                       spirvuniblk_ptr_t spirvublk) { //
+void SpirvCompiler::_inheritUniformBlk(
+    std::string uniblkname,        //
+    spirvuniblk_ptr_t spirvublk) { //
   if (_vulkan) {
     spirvublk->_descriptor_set_id = _descriptor_set_counter++;
     /////////////////////
@@ -362,18 +350,17 @@ void SpirvCompiler::_inheritUniformBlk(std::string uniblkname, //
     auto line = FormatString(
         "layout(set=%zu, binding=%zu) uniform %s {", //
         spirvublk->_descriptor_set_id,               //
-        _binding_id,                                  //
+        _binding_id,                                 //
         uniblkname.c_str());
     _appendText(_uniforms_group, line.c_str());
     for (auto item : spirvublk->_items_by_order) {
       auto dt = item->_datatype;
       auto id = item->_identifier;
-      if( item->_is_array ){
+      if (item->_is_array) {
         size_t array_len = item->_array_length;
-        auto str = FormatString("%s %s[%zu];", dt.c_str(), id.c_str(), array_len);
+        auto str         = FormatString("%s %s[%zu];", dt.c_str(), id.c_str(), array_len);
         _appendText(_uniforms_group, str.c_str());
-      }
-      else{
+      } else {
         _appendText(_uniforms_group, (dt + " " + id + ";").c_str());
       }
     }
@@ -389,8 +376,8 @@ void SpirvCompiler::_inheritIO(astnode_ptr_t interface_node) {
   // TODO inherited interfaces
   //
 
-  auto ifname = interface_node->typedValueForKey<std::string>("object_name").value();
-  auto decorator = FormatString( "// begin interface<%s>", ifname.c_str() );
+  auto ifname    = interface_node->typedValueForKey<std::string>("object_name").value();
+  auto decorator = FormatString("// begin interface<%s>", ifname.c_str());
   _appendText(_interface_group, decorator.c_str());
 
   auto input_groups  = AstNode::collectNodesOfType<InterfaceInputs>(interface_node);
@@ -426,7 +413,7 @@ void SpirvCompiler::_inheritIO(astnode_ptr_t interface_node) {
       if (id.find("gl_") != 0) {
         _appendText(_interface_group, "layout(location=%zu) out %s %s;", _output_index, dt.c_str(), id.c_str());
         auto it = _data_sizes.find(dt);
-        if( it == _data_sizes.end() ){
+        if (it == _data_sizes.end()) {
           printf("dt<%s> has no sizespec\n", dt.c_str());
           OrkAssert(false);
         }
@@ -435,7 +422,7 @@ void SpirvCompiler::_inheritIO(astnode_ptr_t interface_node) {
     }
   }
   /////////////////////////////////////////
-  decorator = FormatString( "// end interface<%s>", ifname.c_str() );
+  decorator = FormatString("// end interface<%s>", ifname.c_str());
   _appendText(_interface_group, decorator.c_str());
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////
@@ -451,7 +438,7 @@ void SpirvCompiler::_compileShader(shaderc_shader_kind shader_type) {
   ///////////////////////////////////////////////////////
 
   auto inhs = AstNode::collectNodesOfType<SHAST::InheritListItem>(_transu);
-  for( auto inh : inhs ){
+  for (auto inh : inhs) {
     AstNode::treeops::removeFromParent(inh);
   }
 
