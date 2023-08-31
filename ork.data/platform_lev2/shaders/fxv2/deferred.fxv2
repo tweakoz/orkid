@@ -1,0 +1,1001 @@
+///////////////////////////////////////////////////////////////
+// FxConfigs
+///////////////////////////////////////////////////////////////
+fxconfig fxcfg_default {
+  import "mathtools.i";
+  import "misctools.i";
+  import "envtools.i";
+  import "brdftools.i";
+  import "deftools.i";
+  import "gbuftools.i";
+///////////////////////////////////////////////////////////////
+}
+// Interfaces
+///////////////////////////////////////////////////////////////
+uniform_set ub_vtx {
+  mat4 MVPC;
+  mat4 MVPL;
+  mat4 MVPR;
+}
+///////////////////////////////////////////////////////////////
+vertex_interface iface_v2uv : ub_vtx {
+  inputs {
+    vec4 position : POSITION;
+    vec2 uv0 : TEXCOORD0;
+    vec2 uv1 : TEXCOORD1;
+  }
+  outputs {
+    vec2 frg_uva;
+    vec2 frg_uvb;
+  }
+}
+///////////////////////////////////////////////////////////////
+uniform_set ub_frg {
+  mat4 IVPArray[2];
+  mat4 VArray[2];
+  mat4 PArray[2];
+  //sampler2D MapAlbedoAo;
+  //sampler2D MapNormalL;
+  //sampler2D MapRufMtlAlpha;
+  usampler2D MapGBuffer;
+  sampler2D MapDepthCluster;
+  sampler2D MapDepth;
+  sampler2D MapSpecularEnv;
+  sampler2D MapDiffuseEnv;
+  sampler2D MapBrdfIntegration;
+  sampler2D MapLightingCookie;
+  sampler2D MapShadowDepth;
+  sampler3D MapVolTexA;
+  vec3 EyePostion;
+  vec2 InvViewportSize; // inverse target size
+  float Time;
+  vec2 NearFar;
+  int NumLights;
+  int TileDim;
+  vec2 Zndc2eye;
+  float SkyboxLevel;
+  float SpecularLevel;
+  float DiffuseLevel;
+  vec3 AmbientLevel;
+  float SpecularMipBias;
+  float EnvironmentMipBias;
+  float EnvironmentMipScale;
+  float DepthFogDistance;
+  float DepthFogPower;
+  vec4 ShadowParams;
+}
+///////////////////////////////////////////////////////////////
+uniform_block ub_light {
+  vec4 LightColorD[256];
+  mat4 LightMatrix[256];
+  mat4 ShadowMatrix[256];
+  float LightRadius[256];
+}
+///////////////////////////////////////////////////////////////
+fragment_interface iface_f2uv {
+  inputs {
+    vec2 frg_uva;
+    vec2 frg_uvb;
+  }
+  outputs { vec4 out_clr; }
+}
+///////////////////////////////////////////////////////////////
+libblock lib_deferred
+  : ub_light
+  : ub_frg
+  : lib_math
+  : lib_envmapping
+  : lib_cellnoise
+  : lib_brdf
+  : lib_gbuf_decode
+  : lib_def
+  : lib_mmnoise {
+  /////////////////////////////////////////////////////////
+  vec3 gammaCorrect(vec3 inp){
+    return inp;
+    //return pow(inp, vec3(1.0/1.6));
+  }
+  /////////////////////////////////////////////////////////
+  vec3 baselighting(WPosData wpd) {
+    GBufData gbd = decodeGBUF(wpd);
+    // sunlight ///////////////
+    vec3 l = vec3((0.5 + dot(gbd._wnrm, vec3(0, 1, 0)) * 0.5)) * 0.25;
+    ///////////////////////////
+    return gbd._albedo * l;
+  }
+  /////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////
+  LightCtx lcalc1(WPosData wpd,GBufData gbd){
+    LightCtx plc;
+    const vec3 metalbase = vec3(0.04);
+    float metallic = clamp(pow(gbd._metallic,0.65),0.02,0.99);
+    float roughnessL = pow(gbd._roughness,0.65);
+    float roughness = clamp(roughnessL,0.01,1.0);
+    vec3 basecolor = gbd._albedo;
+    vec3 diffcolor = mix(basecolor,vec3(0),metallic);
+    /////////////////////////
+    vec3 wpos = gbd._wpos;
+    vec3 epos = posatdepth(wpd,0.0);
+    /////////////////////////
+    plc._viewdir = normalize(wpos-epos);
+    plc._metallic = metallic;
+    plc._roughness = roughness;
+    plc._normal = gbd._wnrm;
+    plc._F0 = mix(metalbase,basecolor,metallic);
+    return plc;
+  }
+  /////////////////////////////////////////////////////////
+  vec3 plcalc2(LightCtx plc,GBufData gbd){
+      if( gbd._emissive==1 )
+        return vec3(0,0,0);
+
+      vec3 eye_dir = - plc._viewdir;
+
+      float dist2lightsq = plc._lightdel.x*plc._lightdel.x
+                         + plc._lightdel.y*plc._lightdel.y
+                         + plc._lightdel.z*plc._lightdel.z;
+      float atten = 1.0 / max(.05,dist2lightsq);
+      vec3 lightdir = normalize(plc._lightdel);
+      vec3 halfdir = normalize(eye_dir + lightdir);
+      vec3 F = fresnelSchlickRoughness(satdot(halfdir,eye_dir), plc._F0,plc._roughness);
+      vec3 diffusel = vec3(1) - F;
+      diffusel *= (1 - plc._metallic);
+      vec3 diffuse_term = (diffusel*gbd._albedo*INV_PI)*DiffuseLevel;
+
+      //////////////////////////
+      // filtered specular (WIP)
+      //////////////////////////
+
+      vec3 N = gbd._wnrm; //_samples[4];
+      float ggx = computeGGX(N, halfdir, plc._roughness);
+      float geo = geometrySmith(N, eye_dir, lightdir, plc._roughness);
+      float denominator = 4 * satdot(N,eye_dir) * satdot(N, lightdir) + EPSILON;
+      vec3 numerator  = min(ggx * geo * SpecularLevel, 16)*F;
+      vec3 specular_term = (numerator / max(.0625, denominator)) * gbd._specscale[4];
+      float ndotl = satdot(N,lightdir);
+
+    //////////////////////////
+    return (diffuse_term + specular_term) * atten * ndotl;
+  }
+  /////////////////////////////////////////////////////////
+  vec3 plcalc2_aa(LightCtx plc,GBufData gbd){
+      if( gbd._emissive==1 )
+        return vec3(0,0,0);
+      float dist2lightsq = plc._lightdel.x*plc._lightdel.x
+                         + plc._lightdel.y*plc._lightdel.y
+                         + plc._lightdel.z*plc._lightdel.z;
+      float atten = 1.0 / max(.05,dist2lightsq);
+      vec3 lightdir = normalize(plc._lightdel);
+      vec3 halfdir = normalize(plc._viewdir + lightdir);
+      vec3 fres = fresnelSchlickRoughness(satdot(halfdir,plc._viewdir), plc._F0,plc._roughness);
+      vec3 diffusel = vec3(1) - fres;
+      diffusel *= (1 - plc._metallic);
+      vec3 diffuse_term = (diffusel*gbd._albedo*INV_PI)*DiffuseLevel;
+
+      //////////////////////////
+      // filtered specular (WIP)
+      //////////////////////////
+
+      float ggx = 0.0;
+      float geo = 0.0;
+      float denominator = 0.0;
+      float ndotl = 0.0;
+      vec3 specular_term = vec3(0,0,0);
+      float zbase = gbd._z_samples[4];
+      vec3 Nbase = gbd._wnrm_samples[4];
+
+      float sdiv = 0.0;
+
+      float nd = 0.0;
+
+      for( int i=0; i<9; i++){
+
+        vec3 N = gbd._wnrm_samples[i];
+        float ztest = gbd._z_samples[i];
+        float dZ = abs(ztest-zbase);
+
+        nd += pow(clamp(1.0-dot(Nbase,N),0,1),2);
+
+        if(dZ<.01){
+          sdiv += 1.0;
+          float ggx = computeGGX(N, halfdir, plc._roughness);
+          float geo = geometrySmith(N, plc._viewdir, lightdir, plc._roughness);
+          float denominator = 4 * satdot(N,plc._viewdir) * satdot(N, lightdir) + EPSILON;
+          vec3 numerator  = min(ggx * geo * SpecularLevel, 16)*fres;
+          specular_term += (numerator / max(.0625, denominator)) * gbd._specscale[i];
+          ndotl += satdot(N,lightdir);
+        }
+      }
+     specular_term /= sdiv;
+     ndotl /= sdiv;
+
+    //////////////////////////
+    return (diffuse_term + specular_term*(9.0-nd)/9.0) * atten * ndotl;
+  }
+  /////////////////////////////////////////////////////////
+  vec3 pntlighting_clustered(WPosData wpd,GBufData gbd) {
+    int lbas     = int(frg_uvb.x);
+    int numl     = int(frg_uvb.y);
+    vec3 l       = vec3(0, 0, 0);
+    if( gbd._mask==1 ){
+      LightCtx plc = lcalc1(wpd,gbd);
+      for (int i = 0; i < numl; i++) {
+        int lidx                     = lbas + i;
+        float lightcamdepth          = LightColorD[lidx].w;
+        bool sphere_intersects_depth = (gbd._zeye - lightcamdepth) < LightRadius[lidx];
+        if (sphere_intersects_depth){
+          vec3 lightpos = LightMatrix[lidx][3].xyz;
+          vec3 lightdel = lightpos - gbd._wpos;
+          plc._lightdel = lightdel;
+          vec3 lightn = normalize(lightdel)*mat3(LightMatrix[lidx]);
+          vec3 lighttex = env_equirectangularFlipV(lightn,MapLightingCookie,0);
+          vec3 lightcol = LightColorD[lidx].xyz;
+          l += plcalc2(plc,gbd)*lighttex*lightcol;
+        }
+      }
+    }
+    return l;
+  }
+  /////////////////////////////////////////////////////////
+  vec3 pntlighting_textured_simple(WPosData wpd,GBufData gbd) {
+    vec3 l       = vec3(0, 0, 0);
+    if( gbd._mask==1 ){
+      LightCtx plc = lcalc1(wpd,gbd);
+      int lbeg = int(frg_uvb.x);
+      int lend = lbeg+int(frg_uvb.y);
+      for (int lidx = lbeg; lidx<lend; lidx++) {
+        vec3 lightpos = LightMatrix[lidx][3].xyz;
+        plc._lightdel = lightpos - gbd._wpos;
+        vec3 lightn = normalize(plc._lightdel)*mat3(LightMatrix[lidx]);
+        vec3 lighttex = env_equirectangularFlipV(lightn,MapLightingCookie,0);
+        vec3 lightcol = LightColorD[lidx].xyz;
+        l += plcalc2(plc,gbd)*lighttex*lightcol;
+      }
+    }
+    float depth_fogval = 1.0-clamp(pow(gbd._fogZ*DepthFogDistance,DepthFogPower),0,1);
+    return l*depth_fogval;
+  }
+  /////////////////////////////////////////////////////////
+  vec3 TEST(WPosData wpd,GBufData gbd){
+    LightCtx plc = lcalc1(wpd,gbd);
+    return vec3(mod(gbd._linZ*0.1,1));
+  }
+  /////////////////////////////////////////////////////////
+  vec3 pntlighting_untextured_simple(WPosData wpd,GBufData gbd) {
+    //if( gbd._mask==1 ){
+      //return TEST(wpd,gbd);
+    //}
+    vec3 l       = vec3(0, 0, 0);
+    if( gbd._mask==1 ){
+      LightCtx plc = lcalc1(wpd,gbd);
+      int lbeg = int(frg_uvb.x);
+      int lend = lbeg+int(frg_uvb.y);
+      for (int lidx = lbeg; lidx<lend; lidx++) {
+        vec3 lightpos = LightMatrix[lidx][3].xyz;
+        plc._lightdel = lightpos - gbd._wpos;
+        vec3 lightcol = LightColorD[lidx].xyz;
+        l += plcalc2(plc,gbd)*lightcol;
+      }
+    }
+    float depth_fogval = 1.0-clamp(pow(gbd._fogZ*DepthFogDistance,DepthFogPower),0,1);
+    return l*depth_fogval;
+  }
+  /////////////////////////////////////////////////////////
+  struct SpotLightCalc2{
+    vec3 _lightoutput;
+    vec2 _lightuv;
+    bool _mask;
+    float _lightz;
+    vec3 _lightdel;
+  };
+  SpotLightCalc2 slcalc(GBufData gbd,int lidx){
+    SpotLightCalc2 slc;
+    mat4 lmtx = LightMatrix[lidx];
+    mat4 shmtx = ShadowMatrix[lidx];
+    vec3 lightpos = (lmtx)[3].xyz;
+    slc._lightdel = lightpos-gbd._wpos;
+    float lightrange = LightRadius[lidx];
+    vec4 light_hpos = (shmtx)*vec4(gbd._wpos,1);
+    vec3 light_ndc = (light_hpos.xyz / light_hpos.w);
+    slc._lightz = light_ndc.z;
+    slc._lightuv = light_ndc.xy*0.5+vec2(0.5);
+    slc._mask = bool(light_ndc.x>=-1 && light_ndc.x<1) &&
+                 bool(light_ndc.y>=-1 && light_ndc.y<1) &&
+                 bool(light_hpos.z>=0.0 && light_hpos.z<=lightrange) ;
+    vec3 lightcol = LightColorD[lidx].xyz;
+    vec3 lighttex = texture(MapLightingCookie,slc._lightuv).xyz;
+    slc._lightoutput = lightcol*lighttex*float(slc._mask);
+    if( gbd._emissive==1 )
+      slc._lightoutput = vec3(0,0,0);
+    return slc;
+  }
+  /////////////////////////////////////////////////////////
+  vec3 spotlighting_textured_simple(WPosData wpd,GBufData gbd) {
+    vec3 l       = vec3(0, 0, 0);
+    if( gbd._mask==1 ){
+      LightCtx plc = lcalc1(wpd,gbd);
+      int lbeg = int(frg_uvb.x);
+      int lend = lbeg+int(frg_uvb.y);
+      for (int lidx = lbeg; lidx<lend; lidx++) {
+        SpotLightCalc2 slc = slcalc(gbd,lidx);
+        plc._lightdel = slc._lightdel;
+        l += plcalc2(plc,gbd)*slc._lightoutput;
+      }
+    }
+    float depth_fogval = 1.0-clamp(pow(gbd._fogZ*DepthFogDistance,DepthFogPower),0,1);
+    return l*depth_fogval;
+  }
+  /////////////////////////////////////////////////////////
+  // non-pcf shadows
+  /////////////////////////////////////////////////////////
+  vec3 spotlighting_textured_shadowed(WPosData wpd,GBufData gbd) {
+    vec3 l       = vec3(0, 0, 0);
+    if( gbd._mask==1 ){
+      LightCtx plc = lcalc1(wpd,gbd);
+      int lbeg = int(frg_uvb.x);
+      int lend = lbeg+int(frg_uvb.y);
+      for (int lidx = lbeg; lidx<lend; lidx++) {
+        SpotLightCalc2 slc = slcalc(gbd,lidx);
+        plc._lightdel = slc._lightdel;
+        /////////////////////////////////////////
+        // simple box filtered shadow
+        /////////////////////////////////////////
+        float shadow = 0.0;
+        for( int ys=-1; ys<2; ys++ ){
+          for( int xs=-1; xs<2; xs++ ){
+            vec2 uvd = vec2(xs,ys)*ShadowParams.x;
+            vec2 uvx = slc._lightuv+uvd;
+            float shadow_depth = textureLod(MapShadowDepth,uvx,0).r+ShadowParams.z;
+            float shadow_sample = float(shadow_depth>=slc._lightz);
+            shadow += mix(1,shadow_sample,float(slc._mask));
+          }
+        }
+        shadow *= ShadowParams.y;
+        /////////////////////////////////////////
+        l += plcalc2(plc,gbd)*slc._lightoutput*shadow;
+      }
+    }
+    float depth_fogval = 1.0-clamp(pow(gbd._fogZ*DepthFogDistance,DepthFogPower),0,1);
+    return l*depth_fogval;
+  }
+  /////////////////////////////////////////////////////////
+  vec4 spotdecaling_textured_simple(WPosData wpd,GBufData gbd) {
+    vec4 l       = vec4(0, 0, 0,0);
+    if( gbd._mask==1 ){
+      int lbeg = int(frg_uvb.x);
+      int lend = lbeg+int(frg_uvb.y);
+      for (int lidx = lbeg; lidx<lend; lidx++) {
+        float lightrange = LightRadius[lidx];
+        vec4 light_hpos = ShadowMatrix[lidx]*vec4(gbd._wpos,1);
+        vec3 light_ndc = (light_hpos.xyz / light_hpos.w);
+        vec2 light_uv = light_ndc.xy*0.5+vec2(0.5);
+        float mask = float(light_ndc.x>=-1 && light_ndc.x<1) *
+                     float(light_ndc.y>=-1 && light_ndc.y<1) *
+                     float(light_hpos.z>=0.0 && light_hpos.z<=lightrange) ;
+        vec3 lightcol = LightColorD[lidx].xyz;
+        vec3 lighttex = texture(MapLightingCookie,light_uv).xyz;
+        vec3 lightoutput = lightcol*lighttex;
+        l += vec4(lightoutput,mask);
+      }
+    }
+    return l;
+  }
+  /////////////////////////////////////////////////////////
+  vec3 spotlighting_untextured_simple(WPosData wpd,GBufData gbd) {
+    vec3 l       = vec3(0, 0, 0);
+    if( gbd._mask==1 ){
+      LightCtx plc = lcalc1(wpd,gbd);
+      int lbeg = int(frg_uvb.x);
+      int lend = lbeg+int(frg_uvb.y);
+      for (int lidx = lbeg; lidx<lend; lidx++) {
+        vec3 lightpos = inverse(LightMatrix[lidx])[3].xyz;
+        plc._lightdel = lightpos - gbd._wpos;
+        vec3 lightcol = LightColorD[lidx].xyz;
+        l += plcalc2(plc,gbd)*lightcol;
+      }
+    }
+    float depth_fogval = 1.0-clamp(pow(gbd._fogZ*DepthFogDistance,DepthFogPower),0,1);
+    return l*depth_fogval;
+  }
+  /////////////////////////////////////////////////////////
+  XXX environSDF(WPosData wpd, GBufData gbd) {
+    XXX rval;
+    if( gbd._mask==1 ){
+      vec3 wpos = gbd._wpos;
+      vec3 metalbase = vec3(0.04);
+      /////////////////////////
+      //vec3 albedo = gbd._wnrm;
+      vec3 albedo = gbd._albedo;
+      /////////////////////////
+      vec3 rawn = gbd._wnrm;
+      /////////////////////////
+      if( gbd._emissive==1 ){
+        rval._finallitcolor = albedo;
+        rval._depth_fogval = 0.0;
+        return rval;
+      }
+      /////////////////////////
+      // pixel was written to in the gbuffer
+      float metallic = clamp(gbd._metallic,0.02,0.99);
+      float roughness = gbd._roughness;
+      float roughnessE = roughness;//*roughness;
+      float roughnessL = max(.01,roughnessE);
+      float dialetric = 1.0-metallic;
+      /////////////////////////
+      vec3 basecolor = albedo;
+      vec3 diffcolor = mix(basecolor,vec3(0),metallic);
+      /////////////////////////
+      vec3 epos = posatdepth(wpd,0.0);
+      vec3 edir = normalize(wpos-epos);
+      vec3 n    = rawn; //normalize(rawn*2-vec3(1));
+      vec3 refl = normalize(reflect(edir,n));
+      /////////////////////////
+      float costheta = clamp(dot(n, edir),0.01,1.0);
+      vec2 brdf  = textureLod(MapBrdfIntegration, vec2(costheta,pow(roughnessL,0.25)),0).rg;
+      ///////////////////////////
+      // somethings wrong with the brdf output here
+      //   we get speckled black noise
+      //   the following 2 lines and the clamp above on
+      //   costheta are a temporary fix
+      ///////////////////////////
+      //brdf = vec2(pow(brdf.x,1),pow(brdf.y,1));
+      brdf = clamp(brdf,vec2(.001),vec2(1));
+      /////////////////////////
+      vec3 F0 = mix(metalbase,basecolor,metallic);
+      vec3 F        = fresnelSchlickRoughness(costheta, F0, roughnessL);
+      vec3 invF     = (vec3(1)-F);
+      vec3 diffn = vec3(n.x,-n.y,n.z);
+      /////////////////////////
+      float ambocc = 1.0;
+      float ambientshade = ambocc*clamp(dot(n,-edir),0,1)*0.3+0.7;
+      vec3 ambient = AmbientLevel*ambientshade;
+      vec3 diffuse_env = env_equirectangular(diffn,MapDiffuseEnv,0)*DiffuseLevel;
+      vec3 diffuse_light = ambient+diffuse_env;
+      /////////////////////////
+      vec3 diffuse = clamp(basecolor*diffuse_light*dialetric*ambocc,0,10000);
+      //vec3 diffuse = clamp(basecolor*dialetric*ambocc,0,10000);
+      /////////////////////////
+      float spec_miplevel = clamp(EnvironmentMipBias + (roughnessL * EnvironmentMipScale), 0, 10);
+      refl = vec3(refl.x,-refl.y,refl.z);
+      vec3 spec_env = env_equirectangularFlipV(refl,MapSpecularEnv,spec_miplevel);
+      vec3 specular_light = ambient+spec_env;
+      vec3 specular = (F*brdf.x+brdf.y)*specular_light*F0*SpecularLevel;
+      //vec3 ambient = invF*AmbientLevel;
+      /////////////////////////
+      rval._finallitcolor = saturateV(diffuse+specular);
+      rval._depth_fogval = saturateF(pow(gbd._fogZ*DepthFogDistance,DepthFogPower));
+    }
+    else {
+      rval._finallitcolor = vec3(0,0,0);
+      rval._depth_fogval = 1.0;
+    }
+    return rval;
+  }
+  /////////////////////////////////////////////////////////
+  float distance_from_sphere(in vec3 p, in vec3 c, float r)
+  {
+    return length(p - c) - r;
+  }
+  /////////////////////////////////////////////////////////
+  float opRep( in vec3 p, in vec3 rep_freq )
+  {
+    vec3 q = mod(p+0.5*rep_freq,rep_freq)-(0.5*rep_freq);
+    return distance_from_sphere( q, vec3(1), 1 );
+  }
+  /////////////////////////////////////////////////////////
+  float worldSDF(in vec3 p)
+  {
+    float t = Time*3;
+
+    float displacement = sin(5.0 * p.x + t) * sin(5.0 * p.y) * sin(5.0 * p.z) * 0.25;
+    float sphere_0 = opRep(p, vec3(5,5,5));
+    return sphere_0 + displacement;
+  }
+  /////////////////////////////////////////////////////////
+  vec3 worldNormalSDF(in vec3 p)
+  {
+    const vec3 small_step = vec3(0.01, 0.0, 0.0);
+
+    float gradient_x = worldSDF(p + small_step.xyy) - worldSDF(p - small_step.xyy);
+    float gradient_y = worldSDF(p + small_step.yxy) - worldSDF(p - small_step.yxy);
+    float gradient_z = worldSDF(p + small_step.yyx) - worldSDF(p - small_step.yyx);
+
+    vec3 normal = vec3(gradient_x, gradient_y, gradient_z);
+
+    return normalize(normal);
+  }
+  /////////////////////////////////////////////////////////
+  vec3 pbrEnvironmentLightingSDF(WPosData wpd){
+
+    GBufData gbd = decodeGBUF(wpd);
+    float depth_fogval = saturateF(pow(gbd._fogZ*DepthFogDistance,DepthFogPower));
+    if(depth_fogval>=1.0) depth_fogval= 0.0;
+    else 
+    depth_fogval = pow(1.0-depth_fogval,10);
+
+    XXX the_xxx = environSDF(wpd,gbd);
+
+    vec2 uv   = wpd._muv;
+    vec3 view_epos0 = posatdepth(wpd,0.0);
+    vec3 view_epos1 = posatdepth(wpd,1.0);
+    vec3 VIEW_N = normalize(view_epos1-view_epos0);
+
+  
+    const float SDF_EPSILON = 0.01;
+    const int MAX_NUM_STEPS = 9999;
+
+    float total_distance_traveled = 0.0;
+
+    for (int i = 0; i < MAX_NUM_STEPS; i++)
+    {
+      vec3 vec_d = VIEW_N*total_distance_traveled;
+      vec3 current_position = view_epos0 + vec_d;
+
+      float distance_SDF = worldSDF(current_position);
+
+      ////////////////////////////////////////////////
+
+      if (distance_SDF < SDF_EPSILON) { // hit
+          vec3 normal = worldNormalSDF(current_position);
+          vec3 light_position = vec3(2.0, -5.0, 3.0);
+          vec3 direction_to_light = normalize(current_position - light_position);
+          float diffuse_intensity = max(0.0, dot(normal, direction_to_light));
+
+          float nze = octavenoise(MapVolTexA,current_position*1.0,vec3(0,1,0),Time,8);
+          float roughness = 1.0-nze;
+          nze = pow(nze,2.5);
+
+          vec3 edir = normalize(current_position-view_epos0);
+          vec3 diffn = vec3(normal.x,-normal.y,normal.z);
+          float ambocc = 1.0;
+          float ambientshade = ambocc*clamp(dot(normal,-edir),0,1)*0.3+0.7;
+          vec3 ambient = AmbientLevel*ambientshade;
+          vec3 diffuse_env = env_equirectangular(diffn,MapDiffuseEnv,0)*DiffuseLevel;
+          vec3 diffuse_light = ambient+diffuse_env*nze;
+          vec3 refl = normalize(reflect(edir,normal));
+          refl = vec3(refl.x,-refl.y,refl.z);
+          float spec_miplevel = clamp(EnvironmentMipBias + (roughness * EnvironmentMipScale), 0, 10);
+          vec3 spec_env = env_equirectangularFlipV(refl,MapSpecularEnv,spec_miplevel);
+          vec3 specular_light = ambient+spec_env*nze;
+
+          return diffuse_light+specular_light; //normal*diffuse_intensity;
+      }
+
+      ////////////////////////////////////////////////
+      // check for misses
+      ////////////////////////////////////////////////
+
+      total_distance_traveled += distance_SDF*0.1;    
+
+      if( total_distance_traveled > gbd._linZ ) { // miss
+        break;
+      }
+
+    }
+
+    vec3 skybox_n = vec3(VIEW_N.x,-VIEW_N.y,VIEW_N.z);
+    vec3 skyboxColor = env_equirectangularFlipV(skybox_n,MapSpecularEnv,EnvironmentMipBias)*SkyboxLevel;
+    vec3 out1 = mix(the_xxx._finallitcolor,skyboxColor,1.0-depth_fogval);
+    return out1;
+  }
+  /////////////////////////////////////////////////////////
+  vec3 pbrEnvironmentLighting(WPosData wpd){
+
+    GBufData gbd = decodeGBUF(wpd);
+
+    vec2 uv   = wpd._muv;
+    vec3 view_epos0 = posatdepth(wpd,0.0);
+    vec3 view_epos1 = posatdepth(wpd,1.0);
+    vec3 VIEW_N = normalize(view_epos1-view_epos0);
+    vec3 skybox_n = vec3(VIEW_N.x,-VIEW_N.y,VIEW_N.z);
+    vec3 skyboxColor = env_equirectangularFlipV(skybox_n,MapSpecularEnv,EnvironmentMipBias)*SkyboxLevel;
+
+    vec3 out_color;
+
+    if( gbd._mask==1 ){
+      vec3 albedo = gbd._albedo;
+      albedo.x = pow(albedo.x,1.25);
+      albedo.y = pow(albedo.y,1.25);
+      albedo.z = pow(albedo.z,1.25);
+      /////////////////////////
+      if( gbd._emissive==1 )
+        return albedo;
+      /////////////////////////
+      // pixel was written to in the gbuffer
+      /////////////////////////
+      vec3 wpos = gbd._wpos;
+      vec3 rawn = gbd._wnrm;
+      /////////////////////////
+      vec3 metalbase = vec3(0.04);
+      float metallic = clamp(gbd._metallic,0.02,0.99);
+      float roughness = gbd._roughness;
+      float roughnessE = roughness;//*roughness;
+      float roughnessL = clamp(roughnessE,0.01,1.0);
+      float dialetric = 1.0-metallic;
+      /////////////////////////
+      vec3 basecolor = albedo;
+      vec3 diffcolor = mix(basecolor,vec3(0),metallic);
+      /////////////////////////
+      vec3 epos = posatdepth(wpd,-1.0);
+      /////////////////////////
+      vec3 edir = normalize(wpos-epos);
+      vec3 n    = rawn; 
+      vec3 refl = normalize(reflect(edir,n));
+      /////////////////////////
+      float costheta = clamp(dot(n, edir),0.01,1.0);
+      vec2 brdf  = textureLod(MapBrdfIntegration, vec2(costheta,pow(roughnessL,0.25)),0).rg;
+      brdf = clamp(brdf,vec2(.001),vec2(1));
+      /////////////////////////
+      vec3 F0 = mix(metalbase,basecolor,metallic);
+      vec3 G0 = mix(metalbase,basecolor,1.0-metallic);
+      vec3 F        = fresnelSchlickRoughness(costheta, F0, roughnessL);
+      vec3 invF     = (vec3(1)-F);
+      vec3 diffn = vec3(n.x,n.y,n.z);
+      /////////////////////////
+      float ambocc = 1.0;
+      float ambientshade = ambocc*clamp(dot(n,-edir),0,1)*0.3+0.7;
+      vec3 ambient = AmbientLevel*ambientshade;
+      vec3 diffuse_env = env_equirectangular(diffn,MapDiffuseEnv,0)*DiffuseLevel*SkyboxLevel;
+      vec3 diffuse_light = ambient+diffuse_env;
+      /////////////////////////
+      vec3 diffuse = clamp(basecolor*diffuse_light*dialetric*ambocc,0,10000);
+      /////////////////////////
+      float spec_miplevel = clamp(SpecularMipBias + (roughnessL * EnvironmentMipScale), 0, 13);
+      refl = vec3(refl.x,-refl.y,refl.z);
+      vec3 spec_env = env_equirectangularFlipV(refl,MapSpecularEnv,spec_miplevel);
+      vec3 specular_light = ambient+spec_env*SkyboxLevel;
+      vec3 specularC = specular_light*F0*SpecularLevel*SkyboxLevel;
+      vec3 specularMask = (F*brdf.x+brdf.y);
+      vec3 specular = specularMask*specularC;
+      /////////////////////////
+      // final outputs
+      /////////////////////////
+      vec3 finallitcolor = saturateV(diffuse+specular);
+      float depth_fogval = saturateF(pow(gbd._fogZ*DepthFogDistance,DepthFogPower));
+      vec3 skybox_n = vec3(0,0,1);
+      vec3 skyboxColor = env_equirectangularFlipV(skybox_n,MapSpecularEnv,0)*SkyboxLevel;
+      //out_color = specular;
+      out_color = mix(finallitcolor,skyboxColor,depth_fogval);
+    }
+    else {
+      out_color = skyboxColor;
+    }
+    float atmos = gbd._atmos;
+    float alpha = clamp(gbd._alpha,0,1);
+    
+    return mix(out_color,vec3(atmos),clamp(alpha,0,1));
+    
+    //return vec3(alpha*(1-atmos));
+
+  } // vec3 environmentLighting(){
+
+///////////////////////////////////////////////////////////////
+} // libblock lib_deferred : ub_light : ub_frg {
+///////////////////////////////////////////////////////////////
+vertex_shader vs_passthru2uv : iface_v2uv {
+  frg_uva     = uv0;
+  frg_uvb     = uv1;
+  gl_Position = position;
+}
+///////////////////////////////////////////////////////////////
+fragment_interface iface_fdownsampledepthcluster {
+  inputs {
+    vec2 frg_uva;
+    vec2 frg_uvb;
+  }
+  outputs { uint out_depthclusters; }
+}
+fragment_shader ps_downsampledepthcluster : iface_fdownsampledepthcluster : lib_deferred {
+  vec2 base       = (gl_FragCoord.xy - vec2(0.5, 0.5)) * float(TileDim);
+  uint clusterset = 0;
+  for (int iy = 0; iy < TileDim; iy++) {
+    for (int ix = 0; ix < TileDim; ix++) {
+      vec2 uv              = base + vec2(ix, iy);
+      uv                   = uv * InvViewportSize;
+      float depthtex       = texture(MapDepth, uv).x;
+      float ndc            = depthtex * 2.0 - 1.0;
+      float zeye           = Zndc2eye.x / (ndc - Zndc2eye.y);
+      uint clusterbitindex = uint(log2(zeye));
+      clusterset           = clusterset | (1u << clusterbitindex);
+    }
+  }
+  out_depthclusters = clusterset;
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_baselight : iface_f2uv : lib_deferred {
+  WPosData wpd = monoWPD();
+ vec3 c = baselighting(wpd);
+  out_clr    = vec4(0,0,0,0);//vec4(c*1.0/25.0, 1);
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_baselight_stereo : iface_f2uv : lib_deferred {
+  WPosData wpd = stereoWPD();
+  vec3 c       = baselighting(wpd);
+  out_clr      = vec4(0,0,0,0);//vec4(c, 1);
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_pointlight_textured : iface_f2uv : lib_deferred {
+  WPosData wpd = monoWPD();
+  GBufData gbd = decodeGBUF(wpd);
+  out_clr = vec4(pntlighting_textured_simple(wpd,gbd), 1);
+  /////////////////////////////////////////
+  // show lighting tiles
+  /////////////////////////////////////////
+  //float dp5  = distance(frg_uva, vec2(.5, .5));
+  //c += vec3(pow(dp5, 17) * 256.0);
+  /////////////////////////////////////////
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_pointlight_untextured : iface_f2uv : lib_deferred {
+  WPosData wpd = monoWPD();
+  GBufData gbd = decodeGBUF(wpd);
+  vec3 lcolor = pntlighting_untextured_simple(wpd,gbd);
+  out_clr = vec4(lcolor,0);
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_pointlight_textured_stereo : iface_f2uv : lib_deferred {
+  WPosData wpd = stereoWPD();
+  GBufData gbd = decodeGBUF(wpd);
+  out_clr = vec4(pntlighting_textured_simple(wpd,gbd), 1);
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_pointlight_untextured_stereo : iface_f2uv : lib_deferred {
+  WPosData wpd = stereoWPD();
+  GBufData gbd = decodeGBUF(wpd);
+  out_clr = vec4(pntlighting_untextured_simple(wpd,gbd), 1);
+}
+///////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////
+fragment_shader ps_spotlight_untextured : iface_f2uv : lib_deferred {
+  WPosData wpd = monoWPD();
+  GBufData gbd = decodeGBUF(wpd);
+  out_clr = vec4(spotlighting_untextured_simple(wpd,gbd), 1);
+  /////////////////////////////////////////
+  // show lighting tiles
+  /////////////////////////////////////////
+  //float dp5  = distance(frg_uva, vec2(.5, .5));
+  //c += vec3(pow(dp5, 17) * 256.0);
+  /////////////////////////////////////////
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_spotlight_untextured_stereo : iface_f2uv : lib_deferred {
+  WPosData wpd = stereoWPD();
+  GBufData gbd = decodeGBUF(wpd);
+  out_clr = vec4(spotlighting_untextured_simple(wpd,gbd), 1);
+}
+///////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////
+fragment_shader ps_spotlight_textured : iface_f2uv : lib_deferred {
+  WPosData wpd = monoWPD();
+  GBufData gbd = decodeGBUF(wpd);
+  out_clr = vec4(spotlighting_textured_simple(wpd,gbd), 1);
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_spotlight_textured_stereo : iface_f2uv : lib_deferred {
+  WPosData wpd = stereoWPD();
+  GBufData gbd = decodeGBUF(wpd);
+  out_clr = vec4(spotlighting_textured_simple(wpd,gbd), 1);
+}
+///////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////
+fragment_shader ps_spotlight_textured_shadowed : iface_f2uv : lib_deferred {
+  WPosData wpd = monoWPD();
+  GBufData gbd = decodeGBUF(wpd);
+  out_clr = vec4(spotlighting_textured_shadowed(wpd,gbd), 1);
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_spotlight_textured_shadowed_stereo : iface_f2uv : lib_deferred {
+  WPosData wpd = stereoWPD();
+  GBufData gbd = decodeGBUF(wpd);
+  out_clr = vec4(spotlighting_textured_simple(wpd,gbd), 1);
+}
+///////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////
+fragment_shader ps_spotdecal_textured : iface_f2uv : lib_deferred {
+  WPosData wpd = monoWPD();
+  GBufData gbd = decodeGBUF(wpd);
+  vec4 oc = spotdecaling_textured_simple(wpd,gbd);
+  out_clr = vec4(oc.xyz,1);
+  if( oc.w < 0.5)
+    discard;
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_spotdecal_textured_stereo : iface_f2uv : lib_deferred {
+  WPosData wpd = stereoWPD();
+  GBufData gbd = decodeGBUF(wpd);
+  out_clr = vec4(1,1,0,1);
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_environment : iface_f2uv : lib_deferred  {
+  WPosData wpd = monoWPD();
+  out_clr = vec4(pbrEnvironmentLighting(wpd),1);
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_environmentSDF : iface_f2uv : lib_deferred  {
+  WPosData wpd = monoWPD();
+  out_clr = vec4(pbrEnvironmentLightingSDF(wpd),1);
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_environment_stereo : iface_f2uv : lib_deferred  {
+  WPosData wpd = stereoWPD();
+  vec3 c = pbrEnvironmentLighting(wpd);
+  out_clr = vec4(c,1);
+}
+///////////////////////////////////////////////////////////////
+// StateBlocks
+///////////////////////////////////////////////////////////////
+state_block sb_default : default {}
+///////////////////////////////////////////////////////////////
+technique baselight {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_passthru2uv;
+    fragment_shader = ps_baselight;
+    state_block     = sb_default;
+  }
+}
+///////////////////////////////////////////////////////////////
+technique baselight_stereo {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_passthru2uv;
+    fragment_shader = ps_baselight_stereo;
+    state_block     = sb_default;
+  }
+}
+///////////////////////////////////////////////////////////////
+technique pointlight_textured {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_passthru2uv;
+    fragment_shader = ps_pointlight_textured;
+    state_block     = sb_default;
+  }
+}
+///////////////////////////////////////////////////////////////
+technique pointlight_untextured {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_passthru2uv;
+    fragment_shader = ps_pointlight_untextured;
+    state_block     = sb_default;
+  }
+}
+///////////////////////////////////////////////////////////////
+technique pointlight_textured_stereo {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_passthru2uv;
+    fragment_shader = ps_pointlight_textured_stereo;
+    state_block     = sb_default;
+  }
+}
+///////////////////////////////////////////////////////////////
+technique pointlight_untextured_stereo {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_passthru2uv;
+    fragment_shader = ps_pointlight_untextured_stereo;
+    state_block     = sb_default;
+  }
+}
+///////////////////////////////////////////////////////////////
+technique spotlight_untextured {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_passthru2uv;
+    fragment_shader = ps_spotlight_untextured;
+    state_block     = sb_default;
+  }
+}
+///////////////////////////////////////////////////////////////
+technique spotlight_untextured_stereo {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_passthru2uv;
+    fragment_shader = ps_spotlight_untextured_stereo;
+    state_block     = sb_default;
+  }
+}
+///////////////////////////////////////////////////////////////
+technique spotlight_textured {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_passthru2uv;
+    fragment_shader = ps_spotlight_textured;
+    state_block     = sb_default;
+  }
+}
+///////////////////////////////////////////////////////////////
+technique spotlight_textured_stereo {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_passthru2uv;
+    fragment_shader = ps_spotlight_textured_stereo;
+    state_block     = sb_default;
+  }
+}
+///////////////////////////////////////////////////////////////
+technique spotlight_textured_shadowed {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_passthru2uv;
+    fragment_shader = ps_spotlight_textured_shadowed;
+    state_block     = sb_default;
+  }
+}
+///////////////////////////////////////////////////////////////
+technique spotlight_textured_shadowed_stereo {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_passthru2uv;
+    fragment_shader = ps_spotlight_textured_shadowed_stereo;
+    state_block     = sb_default;
+  }
+}
+///////////////////////////////////////////////////////////////
+technique spotdecal_textured {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_passthru2uv;
+    fragment_shader = ps_spotdecal_textured;
+    state_block     = sb_default;
+  }
+}
+///////////////////////////////////////////////////////////////
+technique spotdecal_textured_stereo {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_passthru2uv;
+    fragment_shader = ps_spotdecal_textured_stereo;
+    state_block     = sb_default;
+  }
+}
+///////////////////////////////////////////////////////////////
+technique downsampledepthcluster {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_passthru2uv;
+    fragment_shader = ps_downsampledepthcluster;
+    state_block     = sb_default;
+  }
+}
+///////////////////////////////////////////////////////////////
+technique environmentlighting {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_passthru2uv;
+    fragment_shader = ps_environment;
+    state_block     = sb_default;
+  }
+}
+///////////////////////////////////////////////////////////////
+technique environmentlighting_stereo {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_passthru2uv;
+    fragment_shader = ps_environment_stereo;
+    state_block     = sb_default;
+  }
+}
+///////////////////////////////////////////////////////////////
+technique environmentlightingSDF {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_passthru2uv;
+    fragment_shader = ps_environmentSDF;
+    state_block     = sb_default;
+  }
+}
+///////////////////////////////////////////////////////////////
+technique environmentlightingSDF_stereo {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_passthru2uv;
+    fragment_shader = ps_environment_stereo;
+    state_block     = sb_default;
+  }
+}

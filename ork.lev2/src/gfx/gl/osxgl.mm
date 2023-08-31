@@ -151,12 +151,13 @@ void ContextGL::GLinit()
 ///////////////////////////////////////////////////////////////////////////////
 
 std::string GetGlErrorString( void );
+void _shaderloadercommon();
 
 context_ptr_t OpenGlContextInit() {
 	///////////////////////////////////////////////////////////
 	NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
 	///////////////////////////////////////////////////////////
-
+  _shaderloadercommon();
   auto clazz = dynamic_cast<object::ObjectClass*>(ContextGL::GetClassStatic());
 	GfxEnv::setContextClass(clazz);
   ContextGL::GLinit();

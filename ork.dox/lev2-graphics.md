@@ -18,8 +18,9 @@
   * NVidia Single Pass Stereo support.
   * OpenGL 4.1-core (MacOs) 
   * OpenGL 4.6-core (Linux)
+  * Vulkan (Linux, MacOs-MoltenVK)
   * Pipeline object support pending.
-  * Vulkan and Metal pending.
+  * Metal pending.
   
 2. Mid level renderer building blocks
   * Natively supports update and render on separate threads via async *drawbuffers*.
@@ -84,6 +85,11 @@
    * Integrates with ECS via SceneGraphComponent/SceneGraphSystem 
    * Also works standalone with C++ or python
    
+---
+
+### Selecting Graphics API
+
+The environment variable "ORKID_GRAPHICS_API" can be set to "VULKAN" to select the vulkan graphics device at runtime.
 
 ---
 

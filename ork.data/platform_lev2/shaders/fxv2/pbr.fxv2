@@ -1,0 +1,125 @@
+///////////////////////////////////////////////////////////////
+// FxConfigs
+///////////////////////////////////////////////////////////////
+fxconfig fxcfg_default {
+	import "orkshader://pbrtools.i";
+}
+///////////////////////////////////////////////////////////////
+technique PIK_RI_NI {
+	fxconfig=fxcfg_default;
+	vf_pass={vs_forward_test,ps_forward_test,sb_default}
+}
+///////////////////////////////////////////////////////////////
+technique PIK_RI_IN {
+	fxconfig=fxcfg_default;
+	vf_pass={vs_forward_instanced,ps_forward_test,sb_default}
+}
+///////////////////////////////////////////////////////////////
+technique FWD_SKYBOX_MO {
+	fxconfig=fxcfg_default;
+	vf_pass={vs_forward_skybox_mono,ps_forward_skybox_mono,sb_default}
+}
+///////////////////////////////////////////////////////////////
+technique FWD_SKYBOX_ST {
+	fxconfig=fxcfg_default;
+	vf_pass={vs_forward_skybox_stereo,ps_forward_skybox_stereo,sb_default}
+}
+///////////////////////////////////////////////////////////////
+technique FWD_UNLIT_NI_MO {
+	fxconfig=fxcfg_default;
+	vf_pass={vs_forward_unlit,ps_forward_unlit,sb_default}
+}
+///////////////////////////////////////////////////////////////
+technique FWD_CV_EMI_RI_NI_MO {
+	fxconfig=fxcfg_default;
+	vf_pass={vs_forward_rigid_vtxcolor,ps_forward_frgcolor,sb_default}
+}
+///////////////////////////////////////////////////////////////
+technique FWD_DEPTHPREPASS_IN_MO {
+	fxconfig=fxcfg_default;
+	vf_pass={vs_forward_depthprepass_mono_instanced,ps_forward_depthprepass,sb_default}
+}
+///////////////////////////////////////////////////////////////
+technique FWD_CT_NM_RI_NI_MO {
+	fxconfig=fxcfg_default;
+	vf_pass={vs_forward_test,ps_forward_test,sb_default}
+}
+///////////////////////////////////////////////////////////////
+technique FWD_CT_NM_RI_IN_MO {
+	fxconfig=fxcfg_default;
+	vf_pass={vs_forward_instanced,ps_forward_test_instanced_mono,sb_default}
+}
+///////////////////////////////////////////////////////////////
+technique FWD_CT_NM_RI_NI_ST {
+  fxconfig=fxcfg_default;
+  vf_pass={vs_forward_test_stereo,ps_forward_test_stereo,sb_default}
+}
+///////////////////////////////////////////////////////////////
+technique FWD_CT_NM_RI_IN_ST {
+  fxconfig=fxcfg_default;
+  vf_pass={vs_forward_instanced_stereo,ps_forward_test_instanced_stereo,sb_default}
+}
+///////////////////////////////////////////////////////////////
+technique FWD_CT_NM_SK_NI_ST {
+  fxconfig=fxcfg_default;
+  vf_pass={vs_forward_skinned_stereo,ps_forward_test_stereo,sb_default}
+}
+///////////////////////////////////////////////////////////////
+technique GBU_CT_VN_RI_NI_MO {
+	fxconfig=fxcfg_default;
+	vf_pass={vs_rigid_gbuffer,ps_gbuffer,sb_default}
+}
+///////////////////////////////////////////////////////////////
+technique GBU_CV_EMI_RI_NI_MO {
+	fxconfig=fxcfg_default;
+	vf_pass={vs_rigid_gbuffer_vtxcolor,ps_gbuffer_vtxcolor,sb_default}
+}
+///////////////////////////////////////////////////////////////
+technique GBU_CF_NI_MO { // deferred font non-instanced
+	fxconfig=fxcfg_default;
+	vf_pass={vs_rigid_gbuffer_font,ps_gbuffer_font,sb_default}
+}
+///////////////////////////////////////////////////////////////
+technique GBU_CF_IN_MO { // deferred font instanced
+	fxconfig=fxcfg_default;
+	vf_pass={vs_rigid_gbuffer_font_instanced,ps_gbuffer_font,sb_default}
+}
+///////////////////////////////////////////////////////////////
+technique GBU_DB_NM_NI_MO {
+	fxconfig=fxcfg_default;
+	vf_pass={vs_rigid_gbuffer,ps_gbuffer_vizn,sb_default}
+}
+///////////////////////////////////////////////////////////////
+technique GBU_CT_NM_RI_NI_MO {
+	fxconfig=fxcfg_default;
+	vf_pass={vs_rigid_gbuffer,ps_gbuffer_n,sb_default}
+}
+///////////////////////////////////////////////////////////////
+technique GBU_CM_NM_RI_NI_MO {
+	fxconfig=fxcfg_default;
+	vf_pass={vs_rigid_gbuffer,ps_gbuffer_n,sb_default}
+}
+technique GBU_CM_NM_RI_NI_ST {
+	fxconfig=fxcfg_default;
+	vf_pass={vs_rigid_gbuffer_stereo,ps_gbuffer_n_stereo,sb_default}
+}
+technique GBU_CT_NM_RI_NI_ST {
+	fxconfig=fxcfg_default;
+	vf_pass={vs_rigid_gbuffer_stereo,ps_gbuffer_n_tex_stereo,sb_default}
+}
+///////////////////////////////////////////////////////////////
+technique GBU_CT_NM_SK_NI_MO {
+	fxconfig=fxcfg_default;
+	vf_pass={vs_skinned_gbuffer,ps_gbuffer_n,sb_default}
+}
+///////////////////////////////////////////////////////////////
+technique GBU_CT_NM_RI_IN_MO {
+	fxconfig=fxcfg_default;
+	vf_pass={vs_rigid_gbuffer_instanced,ps_gbuffer_n_instanced,sb_default}
+}
+technique GBU_CT_NM_RI_IN_ST {
+	fxconfig=fxcfg_default;
+	vf_pass={vs_rigid_gbuffer_instanced_stereo,ps_gbuffer_n_stereo_instanced,sb_default}
+}
+///////////////////////////////////////////////////////////////
+

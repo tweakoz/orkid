@@ -8,6 +8,7 @@
 #include <ork/pch.h>
 #include <ork/kernel/timer.h>
 #include <ork/kernel/opq.h>
+#include <ork/kernel/environment.h>
 #include <ork/dataflow/all.h>
 #include <ork/lev2/init.h>
 #include <ork/lev2/gfx/gfxenv.h>
@@ -66,11 +67,7 @@ namespace lev2 {
 appinitdata_ptr_t _ginitdata;
 
 
-#if defined(_WIN32)
-bool gbPREFEROPENGL = false;
-#else
-bool gbPREFEROPENGL = true;
-#endif
+uint64_t GRAPHICS_API = "OPENGL"_crcu;
 
 context_ptr_t OpenGlContextInit();
 #if defined(ENABLE_VULKAN)
@@ -80,15 +77,6 @@ namespace vulkan{
 #endif
 void DummyContextInit();
 
-void PreferVulkan() {
-  static auto ctx = ork::lev2::vulkan::ContextInit();
-  gbPREFEROPENGL  = false;
-}
-void PreferOpenGL() {
-  static auto ctx = ork::lev2::OpenGlContextInit();
-  gbPREFEROPENGL  = true;
-}
-
 void registerEnums();
 
 struct ClassToucher {
@@ -97,8 +85,30 @@ struct ClassToucher {
 
     Context::GetClassStatic();
 
-    //PreferVulkan();
-    PreferOpenGL();
+    ////////////////////////////////////////
+
+    std::string gfx_api_str;
+    if( genviron.get("ORKID_GRAPHICS_API",gfx_api_str) ){
+      if(gfx_api_str=="VULKAN"){
+        GRAPHICS_API  = "VULKAN"_crcu;
+      }     
+    }
+
+    ////////////////////////////////////////
+
+    switch(GRAPHICS_API){
+      case "VULKAN"_crcu:{
+        static auto ctx = ork::lev2::vulkan::ContextInit();
+        break;
+      }
+      case "OPENGL"_crcu:
+      default: {
+        static auto ctx = ork::lev2::OpenGlContextInit();
+        break;
+      }
+    }
+
+    ////////////////////////////////////////
 
     GfxEnv::GetRef();
     GfxPrimitives::GetRef();
@@ -296,16 +306,18 @@ ork::lev2::context_ptr_t gloadercontext;
 
 void GfxInit() {
 
-  if(1){
-    #if defined(ENABLE_VULKAN)
-    if( not gbPREFEROPENGL ){
+  switch(GRAPHICS_API){
+    case "VULKAN"_crcu:{
       gloadercontext = vulkan::ContextInit();
+      break;
     }
-    #endif
+    case "OPENGL"_crcu:
+    default: {
+      gloadercontext = OpenGlContextInit();
+      break;
+    }
   }
-  if( nullptr == gloadercontext ){
-    gloadercontext = OpenGlContextInit();
-  }
+
   OrkAssert(gloadercontext);
   opq::init();
 }

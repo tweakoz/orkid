@@ -7,6 +7,8 @@
 
 #include <ork/pch.h>
 #include <ork/kernel/string/deco.inl>
+#include <ork/lev2/lev2_asset.h>
+#include <ork/asset/Asset.inl>
 #if defined(ENABLE_VULKAN)
 #include "vulkan_ctx.h"
 
@@ -17,7 +19,7 @@ vkinstance_ptr_t _GVI = nullptr;
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
 VulkanInstance::VulkanInstance() {
-
+  
   auto yel = fvec3::Yellow();
 
   _appdata.sType              = VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -162,6 +164,21 @@ VulkanInstance::~VulkanInstance() {
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
 context_ptr_t ContextInit() {
+
+	///////////////////////////////////////////////////////////
+  auto loader = std::make_shared<FxShaderLoader>();
+  FxShader::RegisterLoaders("shaders/glfx/", "fxv2");
+  auto shadctx = FileEnv::contextForUriProto("orkshader://");
+  auto democtx = FileEnv::contextForUriProto("demo://");
+  loader->addLocation(shadctx, ".fxv2"); // for glsl targets
+  loader->addLocation(shadctx, ".fxml"); // for the dummy target
+  if( democtx ){
+    loader->addLocation(democtx, ".fxv2"); // for glsl targets
+  }
+	///////////////////////////////////////////////////////////
+
+  asset::registerLoader<FxShaderAsset>(loader);
+
   _GVI = std::make_shared<VulkanInstance>();
   auto clazz                   = dynamic_cast<object::ObjectClass*>(VkContext::GetClassStatic());
   GfxEnv::setContextClass(clazz);

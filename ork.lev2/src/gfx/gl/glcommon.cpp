@@ -8,6 +8,8 @@
 #include <ork/pch.h>
 
 #include <ork/lev2/gfx/gfxenv.h>
+#include <ork/lev2/lev2_asset.h>
+#include <ork/asset/Asset.inl>
 #include "gl.h"
 
 ImplementReflectionX(ork::lev2::ContextGL, "ContextGL");
@@ -23,6 +25,21 @@ void ContextGL::describeX(class_t* clazz) {
   clazz->annotateTyped<context_factory_t>("context_factory", [](){
     return ContextGL::makeShared();
   });
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////
+
+void _shaderloadercommon(){
+  auto loader = std::make_shared<FxShaderLoader>();
+  FxShader::RegisterLoaders("shaders/glfx/", "glfx");
+  auto shadctx = FileEnv::contextForUriProto("orkshader://");
+  auto democtx = FileEnv::contextForUriProto("demo://");
+  loader->addLocation(shadctx, ".glfx"); // for glsl targets
+  loader->addLocation(shadctx, ".fxml"); // for the dummy target
+  if( democtx ){
+    loader->addLocation(democtx, ".glfx"); // for glsl targets
+  }
+  asset::registerLoader<FxShaderAsset>(loader);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////

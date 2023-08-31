@@ -227,33 +227,12 @@ FxShaderAsset::~FxShaderAsset() {
   if (_shader)
     delete _shader;
 }
-class FxShaderLoader final : public FileAssetLoader {
-public:
-  FxShaderLoader();
 
-  asset_ptr_t _doLoadAsset(asset::loadrequest_ptr_t loadreq) override;
-  void destroy(asset_ptr_t asset) override {
-    auto shader_asset = std::dynamic_pointer_cast<FxShaderAsset>(asset);
-  }
-};
 
 ///////////////////////////////////////////////////////////////////////////////
 
 FxShaderLoader::FxShaderLoader()
     : FileAssetLoader(FxShaderAsset::GetClassStatic()) {
-  /////////////////////
-  // hmm, this wants to be target dependant, hence dynamically switchable
-  /////////////////////
-  FxShader::RegisterLoaders("shaders/glfx/", "glfx");
-  auto shadctx = FileEnv::contextForUriProto("orkshader://");
-  auto democtx = FileEnv::contextForUriProto("demo://");
-
-  addLocation(shadctx, ".glfx"); // for glsl targets
-  addLocation(shadctx, ".fxml"); // for the dummy target
-
-  if( democtx ){
-    addLocation(democtx, ".glfx"); // for glsl targets
-  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -270,11 +249,13 @@ asset_ptr_t FxShaderLoader::_doLoadAsset(asset::loadrequest_ptr_t loadreq) {
   return pshader;
 }
 
+  void FxShaderLoader::destroy(asset_ptr_t asset) {
+    auto shader_asset = std::dynamic_pointer_cast<FxShaderAsset>(asset);
+  }
+
 ///////////////////////////////////////////////////////////////////////////////
 
 void FxShaderAsset::describeX(class_t* clazz) {
-  auto loader = std::make_shared<FxShaderLoader>();
-  registerLoader<FxShaderAsset>(loader);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -1,0 +1,336 @@
+///////////////////////////////////////////////////////////////
+// FxConfigs
+///////////////////////////////////////////////////////////////
+fxconfig fxcfg_default {
+  glsl_version = "330";
+  import "misctools.i";
+  import "gbuftools.i";
+}
+///////////////////////////////////////////////////////////////
+// Interfaces
+///////////////////////////////////////////////////////////////
+uniform_set ublock_vtx {
+  mat4 MatMVPL;
+  mat4 MatMVPC;
+  mat4 MatMVPR;
+  vec3 CamPos;
+  float Time;
+  sampler2D HFAMap; // technically a heightmap
+  sampler2D HFBMap; // technically a heightmap
+}
+uniform_set ublock_frg {
+  sampler2D EnvMap;
+  float testxxx;
+  vec4 ModColor;
+  vec3 FogColor;
+  vec3 GrassColor;
+  vec3 SnowColor;
+  vec3 Rock1Color;
+  vec3 Rock2Color;
+  float GBlendYScale;
+  float GBlendYBias;
+  float GBlendStepLo;
+  float GBlendStepHi;
+}
+///////////////////////////////////////////////////////////////
+vertex_interface iface_vdefault : ublock_vtx {
+  inputs {
+    vec4 position : POSITION;
+    vec4 vtxcolor : COLOR0;
+    vec2 uv0 : TEXCOORD0;
+  }
+  outputs {
+    vec3 frg_nrm;
+    vec2 frg_uvxp;
+    vec2 frg_uvyp;
+    vec2 frg_uvzp;
+    vec3 frg_wpos;
+    float frg_camdist;
+  }
+}
+fragment_interface iface_fdefault : ublock_frg {
+  inputs {
+    vec3 frg_nrm;
+    vec2 frg_uvxp;
+    vec2 frg_uvyp;
+    vec2 frg_uvzp;
+    vec3 frg_wpos;
+    float frg_camdist;
+  }
+  outputs {
+    layout(location = 0) vec4 out_clr;
+  }
+}
+libblock lib_terrain_vtx {
+
+  struct TerOut {
+    vec3 wpos;
+    vec3 wpossh;
+    vec3 wnrm;
+    float wdepth;
+    vec2 uv_lowmip;
+    vec2 uvxplane;
+    vec2 uvyplane;
+    vec2 uvzplane;
+  };
+
+  vec2 quantize(vec2 inp, float quantum) {
+    return round(inp * (1.0 / quantum)) * quantum;
+  }
+  float max2(vec2 inp) { return (inp.x > inp.y) ? inp.x : inp.y; }
+
+  TerOut computeTerrain(vec3 campos) {
+    TerOut rval;
+
+    /////////////////////////////////
+    // constants
+    /////////////////////////////////
+    const float metersPerTexel = 2;
+    const float texelsPerMeter = 1.0 / metersPerTexel;
+    const float HFDIM = 2048;
+    const float INVHFDIM = 1.0 / HFDIM;
+    const float UVDIM = 256.0;
+    const float INVUVDIM = 1.0/UVDIM;
+    const float hfHeightScale = 1500;
+    const float hfHeightBias = 0;
+    /////////////////////////////////
+    // mipcalc
+    /////////////////////////////////
+    float vtxlod = floor(position.y);
+    float loddis = exp2(vtxlod);
+    /////////////////////////////////
+    // compute snapped object/worldspace
+    /////////////////////////////////
+    float d2c = max(abs(position.x), abs(position.z));
+    vec2 o2w = campos.xz;
+    vec2 o2wo = mod(campos.xz *INVUVDIM, 1) * UVDIM;
+    vec2 oq = campos.xz - o2wo;
+    vec2 w_xz = position.xz * metersPerTexel + oq;
+    vec3 w_xzq3 = vec3(w_xz.x, 0, w_xz.y);
+    vec2 opos = (w_xz - o2w);
+    /////////////////////////////////
+    // uvgen
+    /////////////////////////////////
+    vec2 uv_xz = position.xz * metersPerTexel + oq.xy;
+    vec2 uvd = uv_xz * 0.5 * texelsPerMeter * INVHFDIM;
+    uvd += vec2(0.5, 0.5);
+    /////////////////////////////////
+    float invBaseGridTexelDim = 1 / (32.0 * (8 - vtxlod));
+    float size = max(0.5, max2(abs(opos * 2.0 * invBaseGridTexelDim)));
+    float llod = max(log2(size) - 2.75, 0.0);
+    float hires_mip = floor(llod);
+    //float lores_mip = hires_mip + 1;
+    //float lerpindex = (llod - hires_mip);
+    //lerpindex = pow(lerpindex, 2);
+    /////////////////////////////////
+    vec4 hires_sample = textureLod(HFBMap, uvd, hires_mip);
+    //vec4 lores_sample = textureLod(HFBMap, uvd, lores_mip);
+    /////////////////////////////////
+    float h = hires_sample.x; //mix(hires_sample.x, lores_sample.x, lerpindex);
+    h = (h * hfHeightScale) + hfHeightBias;
+    /////////////////////////////////
+    vec3 n = hires_sample.yzw; //mix(hires_sample.yzw, lores_sample.yzw, lerpindex);
+    /////////////////////////////////
+    w_xzq3.y = h;
+    /////////////////////////////////
+    rval.wpos = w_xzq3;
+    rval.wpossh = w_xzq3;
+    rval.uvxplane = w_xzq3.zy;
+    rval.uvyplane = w_xzq3.xz;
+    rval.uvzplane = w_xzq3.xy;
+    rval.wnrm = n;
+    //rval.wdepth = distance(rval.wpos, vec3(0, 0, 0));
+    rval.uv_lowmip = vec2(0, 0);
+
+    return rval;
+  }
+  void applyTerrain(TerOut tero, vec3 campos) {
+    frg_nrm = tero.wnrm;
+    frg_camdist = distance(tero.wpos, campos);
+    frg_uvxp = tero.uvxplane;
+    frg_uvyp = tero.uvyplane;
+    frg_uvzp = tero.uvzplane;
+    frg_wpos = tero.wpossh;
+  }
+}
+///////////////////////////////////////////////////////////////
+// shaders
+///////////////////////////////////////////////////////////////
+vertex_shader vs_terrain : iface_vdefault : lib_terrain_vtx {
+  TerOut tero = computeTerrain(CamPos);
+  applyTerrain(tero, CamPos);
+  gl_Position = MatMVPC * vec4(tero.wpos, 1);
+}
+///////////////////////////////////////////////////////////////
+// stereo1pass
+///////////////////////////////////////////////////////////////
+vertex_interface iface_vstereo : iface_vdefault {
+  outputs {
+    layout(secondary_view_offset = 1) int gl_Layer;
+  }
+}
+vertex_shader vs_terrain_stereo : extension(GL_NV_stereo_view_rendering)
+    : extension(GL_NV_viewport_array2) : iface_vdefault : lib_terrain_vtx {
+  TerOut tero = computeTerrain(CamPos);
+  applyTerrain(tero, CamPos);
+  ///////////////////////////
+  gl_Position = MatMVPL * vec4(tero.wpos, 1);
+  gl_SecondaryPositionNV = MatMVPR * vec4(tero.wpos, 1);
+  gl_Layer = 0;
+  gl_ViewportMask[0] = 1;
+  gl_SecondaryViewportMaskNV[0] = 2;
+  ///////////////////////////
+}
+///////////////////////////////////////////////////////////////
+libblock lib_terrain_frg {
+
+  vec2 encode_nsphenv(vec3 raw) {
+    vec2 n2ch = raw.xy * (sqrt(-raw.z * 0.5 + 0.5));
+    return (n2ch * 0.5) + 0.5;
+  }
+
+  vec3 decode_nsphenv(vec2 encoded) {
+    vec4 nn = vec4(encoded, 0, 0) * vec4(2, 2, 0, 0) + vec4(-1, -1, 1, -1);
+    float l = dot(nn.xyz, -nn.xyw);
+    nn.z = l;
+    nn.xy *= sqrt(l);
+    return nn.xyz * 2 + vec3(0, 0, -1);
+  }
+  vec3 albedo(vec3 n) {
+    /*float ddd1 = clamp(1.0 - frg_camdist * 0.0012, 0, 1);
+    float ddd2 = clamp(1.0 - frg_camdist * 0.002, 0, 1);
+    float ddd3 = clamp(1.0 - frg_camdist * 0.003, 0, 1);
+    vec3 tpw = abs(n);
+    tpw /= (tpw.x + tpw.y + tpw.z);
+
+    const vec3 grass = vec3(0.5, 0.5, 0.7);
+    const vec3 snow = vec3(1, 1, 1);
+    const vec3 rock1 = vec3(0.6, .6, 0.8);
+    const vec3 rock2 = vec3(0.6, .6, 0.7);
+
+    float gsblend = clamp(GBlendYBias + frg_wpos.y * GBlendYScale, 0, 1);
+    gsblend = smoothstep(GBlendStepLo, GBlendStepHi, gsblend);
+    vec3 hor = mix(GrassColor, SnowColor, gsblend);
+
+    vec3 c = hor * pow(tpw.y, testxxx) + Rock1Color * pow(tpw.x, testxxx) +
+             Rock2Color * pow(tpw.z, testxxx);*/
+    return vec3(1,1,1);
+  }
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_terrain : iface_fdefault : lib_terrain_frg {
+  vec3 n = normalize(frg_nrm);
+  vec3 c = albedo(n);
+  const vec3 ambient = vec3(0.4);
+  const vec3 side = vec3(0.2, 0.2, 0.25);
+  const vec3 top = vec3(0.3, 0.3, 0.3);
+  vec3 lightcol = ambient + mix(side, top, dot(n, vec3(0, 1, 0)));
+  c = lightcol * mix(FogColor, c, ddd1);
+  out_clr = vec4(c, 1);
+}
+///////////////////////////////////////////////////////////////
+fragment_interface iface_deferred : ublock_frg {
+  inputs {
+    vec3 frg_nrm;
+    vec2 frg_uvxp;
+    vec2 frg_uvyp;
+    vec2 frg_uvzp;
+    vec3 frg_wpos;
+    float frg_camdist;
+  }
+  outputs {
+    layout(location = 0) uvec4 out_gbuffer;
+  }
+}
+fragment_shader ps_terrain_gbuf1
+  : iface_deferred
+  : lib_terrain_frg
+  : lib_gbuf_encode {
+  vec3 n = normalize(frg_nrm);
+  vec3 c = albedo(n);
+  out_gbuffer = packGbuffer(c, n, 1, 0, false);
+}
+///////////////////////////////////////////////////////////////
+// pick
+///////////////////////////////////////////////////////////////
+vertex_interface iface_vpick : ublock_vtx {
+  inputs {
+    vec4 position : POSITION;
+  }
+  outputs {
+    vec3 frg_nrm;
+    vec2 frg_uvxp;
+    vec2 frg_uvyp;
+    vec2 frg_uvzp;
+    vec3 frg_wpos;
+    float frg_camdist;
+  }
+}
+fragment_interface iface_fpick : ublock_frg {
+  inputs {
+    vec3 frg_nrm;
+    vec2 frg_uvxp;
+    vec2 frg_uvyp;
+    vec2 frg_uvzp;
+    vec3 frg_wpos;
+    float frg_camdist;
+  }
+  outputs {
+    layout(location = 0) vec4 out_pickbuffer_objid;
+    layout(location = 1) vec4 out_pickbuffer_normd;
+  }
+}
+vertex_shader vs_pick : iface_vpick : lib_terrain_vtx {
+  TerOut tero = computeTerrain(CamPos);
+  applyTerrain(tero, CamPos);
+  gl_Position = MatMVPC * vec4(tero.wpos, 1);
+}
+fragment_shader ps_pick : iface_fpick {
+  out_pickbuffer_objid = ModColor;
+  out_pickbuffer_normd = vec4(frg_nrm,frg_camdist);
+}
+///////////////////////////////////////////////////////////////
+// StateBlocks
+///////////////////////////////////////////////////////////////
+state_block sb_default : default {  }
+///////////////////////////////////////////////////////////////
+technique terrain {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader = vs_terrain;
+    fragment_shader = ps_terrain;
+    state_block = sb_default;
+  }
+}
+technique terrain_stereo {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader = vs_terrain_stereo;
+    fragment_shader = ps_terrain;
+    state_block = sb_default;
+  }
+}
+technique terrain_gbuf1 {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader = vs_terrain;
+    fragment_shader = ps_terrain_gbuf1;
+    state_block = sb_default;
+  }
+}
+technique terrain_gbuf1_stereo {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader = vs_terrain_stereo;
+    fragment_shader = ps_terrain_gbuf1;
+    state_block = sb_default;
+  }
+}
+technique pick {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader = vs_pick;
+    fragment_shader = ps_pick;
+    state_block = sb_default;
+  }
+}

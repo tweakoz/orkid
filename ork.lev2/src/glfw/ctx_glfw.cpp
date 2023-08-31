@@ -28,7 +28,7 @@
 #endif
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2 {
-extern bool gbPREFEROPENGL;
+extern uint64_t GRAPHICS_API;
 static logchannel_ptr_t logchan_glfw = logger()->createChannel("GLFW", fvec3(0.8, 0.2, 0.6), true);
 void setAlwaysOnTop(GLFWwindow* window);
 ///////////////////////////////////////////////////////////////////////////////
@@ -656,6 +656,11 @@ GLFWwindow* CtxGLFW::_apiInitGL() {
   glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_API);
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
+#if defined(__APPLE__)
+  // wtf ?
+  glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+#endif
+
   // this can fail on nvidia aarch64 devices
   //  see: https://github.com/isl-org/Open3D/issues/2549
 
@@ -690,7 +695,7 @@ GLFWwindow* CtxGLFW::_apiInitGL() {
     done |= (offscreen_window != nullptr);
     done |= (it_minor == _try_minors.rend());
 
-    logchan_glfw->log("try<%d> done<%d>", this_minor, int(done));
+    logchan_glfw->log("try<OpenGL-Core-4.%d> done<%d>", this_minor, int(done));
   }
 
   _gctx->_vars       = ctx_vars;
@@ -753,14 +758,18 @@ CtxGLFW* CtxGLFW::globalOffscreenContext() {
     glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
 
     GLFWwindow* offscreen_window = nullptr;
-    if( gbPREFEROPENGL ){
-      offscreen_window = _gctx->_apiInitGL();
+
+    switch(GRAPHICS_API){
+      case "VULKAN"_crcu:{
+        offscreen_window = _gctx->_apiInitVK();
+        break;
+      }
+      case "OPENGL"_crcu:
+      default: {
+        offscreen_window = _gctx->_apiInitGL();
+        break;
+      }
     }
-#if defined(ENABLE_VULKAN)
-    if( not gbPREFEROPENGL ){
-      offscreen_window = _gctx->_apiInitVK();
-    }
-#endif
 
     glfwSetWindowUserPointer(offscreen_window, (void*)_gctx);
     glfwSwapInterval(0);

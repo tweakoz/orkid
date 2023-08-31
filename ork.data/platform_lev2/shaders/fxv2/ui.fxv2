@@ -1,0 +1,163 @@
+///////////////////////////////////////////////////////////////
+// FxConfigs
+///////////////////////////////////////////////////////////////
+fxconfig fxcfg_default { glsl_version = "150"; }
+///////////////////////////////////////////////////////////////
+// Interfaces
+///////////////////////////////////////////////////////////////
+
+uniform_set ublock_vtx { //
+  mat4 mvp;
+  mat4 mvp_l;
+  mat4 mvp_r;
+}
+uniform_set ublock_frg {
+  vec4 ModColor;
+  sampler2D ColorMap;
+}
+
+vertex_interface iface_vdefault : ublock_vtx {
+  inputs {
+    vec4 position : POSITION;
+    vec4 vtxcolor : COLOR0;
+    vec2 uv0 : TEXCOORD0;
+    vec2 uv1 : TEXCOORD1;
+  }
+  outputs {
+    vec4 frg_clr;
+    vec2 frg_uv;
+  }
+}
+///////////////////////////////////////////////////////////////
+fragment_interface iface_fdefault {
+  inputs {
+    vec4 frg_clr;
+    vec2 frg_uv;
+  }
+  outputs {
+    vec4 out_clr;
+  }
+}
+///////////////////////////////////////////////////////////////
+fragment_interface iface_fmt : ublock_frg {
+  inputs {
+    vec2 frg_uv;
+  }
+  outputs {
+    vec4 out_clr;
+  }
+}
+///////////////////////////////////////////////////////////////
+// StateBlocks
+///////////////////////////////////////////////////////////////
+state_block sb_default : default {
+  DepthTest = OFF;
+  CullTest  = OFF;
+}
+///////////////////////////////////////////////////////////////
+state_block sb_lerpblend : sb_default {
+  BlendMode = ALPHA;
+  CullTest  = OFF;
+}
+///////////////////////////////////////////////////////////////
+state_block sb_additive : sb_default {
+  BlendMode = ADDITIVE;
+  CullTest  = OFF;
+}
+///////////////////////////////////////////////////////////////
+// shaders
+///////////////////////////////////////////////////////////////
+vertex_shader vs_uitext : iface_vdefault {
+  gl_Position = mvp * position;
+  //frg_clr     = vtxcolor;
+  frg_uv      = uv0;  
+
+}
+///////////////////////////////////////////////////////////////
+vertex_shader vs_uitext_stereo //
+  : extension(GL_NV_stereo_view_rendering) //
+  : extension(GL_NV_viewport_array2) //
+ : iface_vdefault { //
+  gl_Position = mvp_l * position;
+  gl_SecondaryPositionNV = mvp_r*position;
+  //frg_clr     = vtxcolor;
+  frg_uv      = uv0;
+    gl_Layer = 0;
+    gl_ViewportMask[0] = 1;
+    gl_SecondaryViewportMaskNV[0] = 2;
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_uitext : iface_fmt {
+  vec4 s = texture(ColorMap, frg_uv);
+  float texa = pow(s.a*s.r,0.75);
+  //out_clr = vec4(ModColor.xyz, texa*ModColor.w);
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_uitext_stereo : iface_fmt {
+  vec4 s = texture(ColorMap, frg_uv);
+  float texa = s.r; //ow(s.a*s.r,0.75);
+  //out_clr = vec4(ModColor.xyz, texa);
+  //if(texa < 0.005) discard;
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_uitextured : iface_fmt {
+  vec4 texc = texture(ColorMap, frg_uv);
+  //out_clr   = vec4(texc.xyz, 1);
+}
+///////////////////////////////////////////////////////////////
+vertex_shader vs_vtxcolor : iface_vdefault {
+  gl_Position = mvp * position;
+  frg_clr     = vtxcolor;
+  frg_uv      = uv0;
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_fragclr : iface_fdefault {
+  out_clr = frg_clr;
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_modclr : iface_fmt { out_clr = ModColor; }
+///////////////////////////////////////////////////////////////
+technique uitext {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_uitext;
+    fragment_shader = ps_uitext;
+    state_block     = sb_lerpblend;
+  }
+}
+technique uitext_stereo {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_uitext_stereo;
+    fragment_shader = ps_uitext_stereo;
+    state_block     = sb_lerpblend;
+  }
+}
+///////////////////////////////////////////////////////////////
+technique uitextured {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_uitext;
+    fragment_shader = ps_uitextured;
+    state_block     = sb_default;
+  }
+}
+///////////////////////////////////////////////////////////////
+technique ui_vtx {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_vtxcolor;
+    fragment_shader = ps_fragclr;
+    state_block     = sb_default;
+  }
+}
+///////////////////////////////////////////////////////////////
+technique uidev_modcolor {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_vtxcolor;
+    fragment_shader = ps_modclr;
+    state_block     = sb_default;
+  }
+}
+///////////////////////////////////////////////////////////////

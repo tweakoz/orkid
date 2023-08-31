@@ -139,6 +139,14 @@ public: //
   FxShader* _shader;
 };
 
+class FxShaderLoader final : public ork::asset::FileAssetLoader {
+public:
+  FxShaderLoader();
+  asset::asset_ptr_t _doLoadAsset(asset::loadrequest_ptr_t loadreq) final;
+  void destroy(asset::asset_ptr_t asset) override;
+};
+using shaderloader_ptr_t = std::shared_ptr<FxShaderLoader>;
+
 ///////////////////////////////////////////////////////////////////////////////
 void autoloadAssets(bool wait);
 ///////////////////////////////////////////////////////////////////////////////

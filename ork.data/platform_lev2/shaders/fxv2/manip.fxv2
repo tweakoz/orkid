@@ -1,0 +1,187 @@
+///////////////////////////////////////////////////////////////
+// FxConfigs
+///////////////////////////////////////////////////////////////
+fxconfig fxcfg_default
+{
+	glsl_version = "130";
+	import "gbuftools.i"
+}
+///////////////////////////////////////////////////////////////
+// Interfaces
+///////////////////////////////////////////////////////////////
+uniform_set ub_vtx
+{
+	mat4        mvp;
+	mat4        mvpL;
+	mat4        mvpR;
+	vec4        modcolor;
+
+}
+vertex_interface iface_v_mono
+	: ub_vtx
+{
+    inputs {
+	    vec4 position : POSITION;
+        vec4 vtxcolor : COLOR0;
+	    vec2 uv0 : TEXCOORD0;
+	    vec2 uv1 : TEXCOORD1;
+	}
+    outputs {
+        vec4 frg_clr;
+	    vec2 frg_uv;
+	}
+}
+vertex_interface iface_v_stereo : iface_v_mono {
+  outputs {
+    layout(secondary_view_offset=1) int gl_Layer;
+  }
+}
+///////////////////////////////////////////////////////////////
+uniform_set ub_frg
+{
+	vec4 modcolor;
+}
+fragment_interface iface_fmt
+	: ub_frg
+{
+    inputs {
+	    vec4 frg_clr;
+	}
+	outputs {
+	    vec4 out_clr;
+	}
+}
+///////////////////////////////////////////////////////////////
+// StateBlocks
+///////////////////////////////////////////////////////////////
+state_block sb_default : default
+{
+}
+///////////////////////////////////////////////////////////////
+// shaders
+///////////////////////////////////////////////////////////////
+vertex_shader vs_vtxcolor_mono
+	: iface_v_mono
+{
+	gl_Position = mvp*position;
+	frg_clr = vtxcolor;
+	frg_uv = uv0;
+}
+vertex_shader vs_vtxcolor_stereo
+	: iface_v_stereo
+	: extension(GL_NV_stereo_view_rendering)
+  : extension(GL_NV_viewport_array2) {
+	gl_Position = mvpL*position;
+	gl_SecondaryPositionNV = mvpR*position;
+	frg_clr = vtxcolor;
+	frg_uv = uv0;
+  gl_Layer = 0;
+	gl_ViewportMask[0] = 1;
+	gl_SecondaryViewportMaskNV[0] = 2;
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_modclr
+	: iface_fmt
+{
+	out_clr = modcolor;
+}
+fragment_shader ps_modclrd2
+	: iface_fmt
+{
+	out_clr = vec4(modcolor.xyz*0.5,0.5);
+}
+fragment_shader ps_modclrd3
+	: iface_fmt
+{
+	out_clr = vec4(modcolor.xyz*0.3,1.0);
+}
+
+fragment_shader ps_vtxcolor
+  : iface_fmt
+{
+  out_clr = frg_clr;
+}
+
+///////////////////////////////////////////////////////////////
+fragment_interface iface_pbr_deferred
+	: ub_frg
+{
+    inputs {
+        vec4 frg_clr;
+	    vec2 frg_uv;
+	}
+	outputs {
+		layout(location = 0) uvec4 out_gbuf;
+	}
+}
+fragment_shader ps_deferred_emissive_fragclr
+  : iface_pbr_deferred
+  : lib_gbuf_encode {
+	out_gbuf = packGbuffer_unlit(frg_clr.xyz);
+}
+
+///////////////////////////////////////////////////////////////
+state_block sb_m1 : sb_default
+{
+	DepthTest=OFF;
+	DepthMask=true;
+	CullTest=OFF;
+	BlendMode = OFF;
+}
+
+state_block sb_pick : sb_default
+{
+	DepthTest=OFF;
+	DepthMask=true;
+	CullTest=OFF;
+	BlendMode = OFF;
+}
+
+///////////////////////////////////////////////////////////////
+
+technique std_mono
+{
+	fxconfig=fxcfg_default;
+	pass p0
+	{	vertex_shader=vs_vtxcolor_mono;
+		fragment_shader=ps_deferred_emissive_fragclr;
+		state_block=sb_m1;
+	}
+}
+technique std_mono_deferred
+{
+  fxconfig=fxcfg_default;
+  pass p0
+  { vertex_shader=vs_vtxcolor_mono;
+    fragment_shader=ps_deferred_emissive_fragclr;
+    state_block=sb_m1;
+  }
+}
+technique std_mono_fwd
+{
+  fxconfig=fxcfg_default;
+  pass p0
+  { vertex_shader=vs_vtxcolor_mono;
+    fragment_shader=ps_vtxcolor;
+    state_block=sb_m1;
+  }
+}
+technique std_stereo
+{
+	fxconfig=fxcfg_default;
+	pass p0
+	{	vertex_shader=vs_vtxcolor_stereo;
+		fragment_shader=ps_deferred_emissive_fragclr;
+		state_block=sb_m1;
+	}
+}
+technique pick {
+	fxconfig=fxcfg_default;
+	pass p0
+	{	vertex_shader=vs_vtxcolor_mono;
+		fragment_shader=ps_modclr;
+		state_block=sb_pick;
+	}
+}
+
+///////////////////////////////////////////////////////////////
