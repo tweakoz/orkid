@@ -163,15 +163,18 @@ VulkanInstance::~VulkanInstance() {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
-context_ptr_t ContextInit() {
+void touchClasses() {
+  VkContext::GetClassStatic();
+}
+
+context_ptr_t createLoaderContext() {
 
 	///////////////////////////////////////////////////////////
   auto loader = std::make_shared<FxShaderLoader>();
-  FxShader::RegisterLoaders("shaders/glfx/", "fxv2");
+  FxShader::RegisterLoaders("shaders/fxv2/", "fxv2");
   auto shadctx = FileEnv::contextForUriProto("orkshader://");
   auto democtx = FileEnv::contextForUriProto("demo://");
   loader->addLocation(shadctx, ".fxv2"); // for glsl targets
-  loader->addLocation(shadctx, ".fxml"); // for the dummy target
   if( democtx ){
     loader->addLocation(democtx, ".fxv2"); // for glsl targets
   }

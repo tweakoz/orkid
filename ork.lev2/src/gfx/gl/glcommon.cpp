@@ -30,16 +30,42 @@ void ContextGL::describeX(class_t* clazz) {
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
 void _shaderloadercommon(){
+  static int counter = 0;
+  printf( "SLCCOUNTER<%d>\n", counter );
+  OrkAssert(counter==0);
   auto loader = std::make_shared<FxShaderLoader>();
   FxShader::RegisterLoaders("shaders/glfx/", "glfx");
   auto shadctx = FileEnv::contextForUriProto("orkshader://");
   auto democtx = FileEnv::contextForUriProto("demo://");
   loader->addLocation(shadctx, ".glfx"); // for glsl targets
-  loader->addLocation(shadctx, ".fxml"); // for the dummy target
   if( democtx ){
     loader->addLocation(democtx, ".glfx"); // for glsl targets
   }
   asset::registerLoader<FxShaderAsset>(loader);
+  counter++;
+}
+#if defined(__APPLE__)
+void AppleOpenGlContextInit();
+#endif
+
+
+namespace opengl{
+void touchClasses(){
+  ContextGL::GetClassStatic();
+}
+context_ptr_t createLoaderContext() {
+  #if defined(__APPLE__)
+  AppleOpenGlContextInit();
+  #endif
+  _shaderloadercommon();
+  auto clazz = dynamic_cast<object::ObjectClass*>(ContextGL::GetClassStatic());
+	GfxEnv::setContextClass(clazz);
+  ContextGL::GLinit();
+  auto target = ContextGL::makeShared();
+  target->initializeLoaderContext();
+  GfxEnv::initializeWithContext(target);
+  return target;
+}
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////

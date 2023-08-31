@@ -70,20 +70,32 @@ appinitdata_ptr_t _ginitdata;
 uint64_t GRAPHICS_API = "OPENGL"_crcu;
 
 context_ptr_t OpenGlContextInit();
-#if defined(ENABLE_VULKAN)
 namespace vulkan{
-  lev2::context_ptr_t ContextInit();
+  lev2::context_ptr_t createLoaderContext();
+  void touchClasses();
 };
-#endif
-void DummyContextInit();
+namespace opengl{
+  lev2::context_ptr_t createLoaderContext();
+  void touchClasses();
+}
+namespace dummy{
+  lev2::context_ptr_t createLoaderContext();
+  void touchClasses();
+}
 
 void registerEnums();
+void DummyContextInit();
+
+ork::lev2::context_ptr_t gloadercontext;
 
 struct ClassToucher {
   ClassToucher() {
     AllocationLabel label("ork::lev2::Init");
 
     Context::GetClassStatic();
+    opengl::touchClasses();
+    vulkan::touchClasses();
+    dummy::touchClasses();
 
     ////////////////////////////////////////
 
@@ -92,26 +104,28 @@ struct ClassToucher {
       if(gfx_api_str=="VULKAN"){
         GRAPHICS_API  = "VULKAN"_crcu;
       }     
+      else if(gfx_api_str=="DUMMY"){
+        GRAPHICS_API  = "DUMMY"_crcu;
+      }     
     }
 
     ////////////////////////////////////////
 
     switch(GRAPHICS_API){
+      case "DUMMY"_crcu:{
+        gloadercontext = dummy::createLoaderContext();
+        break;
+      }
       case "VULKAN"_crcu:{
-        static auto ctx = ork::lev2::vulkan::ContextInit();
+        gloadercontext = vulkan::createLoaderContext();
         break;
       }
       case "OPENGL"_crcu:
       default: {
-        static auto ctx = ork::lev2::OpenGlContextInit();
+        gloadercontext = opengl::createLoaderContext();
         break;
       }
     }
-
-    ////////////////////////////////////////
-
-    GfxEnv::GetRef();
-    GfxPrimitives::GetRef();
 
     //////////////////////////////////////////
     // touch of class
@@ -286,27 +300,21 @@ struct ClassToucher {
     RegisterClassX(audio::singularity::PMXMixData);
     RegisterClassX(audio::singularity::MonoInStereoOutData);
 
-    //////////////////////////////////////////
-    // register lev2 graphics target classes
-    //////////////////////////////////////////
-
-    DummyContextInit();
-
-    //////////////////////////////////////////
+     //////////////////////////////////////////
   }
 };
 
 void ClassInit() {
   static ClassToucher toucher;
+  printf("LEV2 CLASSES TOUCHED!\n");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ork::lev2::context_ptr_t gloadercontext;
 
 void GfxInit() {
 
-  switch(GRAPHICS_API){
+  /*switch(GRAPHICS_API){
     case "VULKAN"_crcu:{
       gloadercontext = vulkan::ContextInit();
       break;
@@ -316,10 +324,12 @@ void GfxInit() {
       gloadercontext = OpenGlContextInit();
       break;
     }
-  }
+  }*/
 
   OrkAssert(gloadercontext);
   opq::init();
+  //GfxEnv::GetRef();
+  //GfxPrimitives::GetRef();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

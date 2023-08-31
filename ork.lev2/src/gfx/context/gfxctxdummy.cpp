@@ -11,6 +11,8 @@
 #include <ork/lev2/gfx/gfxctxdummy.h>
 #include <ork/lev2/gfx/texman.h>
 #include <ork/lev2/gfx/shadman.h>
+#include <ork/lev2/lev2_asset.h>
+#include <ork/asset/Asset.inl>
 
 /////////////////////////////////////////////////////////////////////////
 bool LoadIL(const ork::AssetPath& pth, ork::lev2::Texture* ptex);
@@ -21,13 +23,37 @@ ImplementReflectionX(ork::lev2::ContextDummy, "ContextDummy");
 namespace ork { namespace lev2 {
 
 void ContextDummy::describeX(class_t* clazz) {
+  clazz->annotateTyped<context_factory_t>("context_factory", [](){
+    return std::make_shared<ContextDummy>();
+  });
 }
 /////////////////////////////////////////////////////////////////////////
 
-void DummyContextInit() {
+namespace dummy{
+  void touchClasses(){
+    ContextDummy::GetClassStatic();
+  }
+context_ptr_t createLoaderContext() {
   auto clazz = dynamic_cast<const object::ObjectClass*>(ContextDummy::GetClassStatic());
   GfxEnv::setContextClass(clazz);
+
+  auto loader = std::make_shared<FxShaderLoader>();
+  FxShader::RegisterLoaders("shaders/dummy/", "fxml");
+  auto shadctx = FileEnv::contextForUriProto("orkshader://");
+  auto democtx = FileEnv::contextForUriProto("demo://");
+  loader->addLocation(shadctx, ".fxml"); // for glsl targets
+  if( democtx ){
+    loader->addLocation(democtx, ".fxml"); // for glsl targets
+  }
+  asset::registerLoader<FxShaderAsset>(loader);
+
+
+
+  auto ctx = std::make_shared<ContextDummy>();
+ // FxShader::RegisterLoaders("shaders/dummy/", "fxml");
+  return ctx;
 }
+};
 
 DuRasterStateInterface::DuRasterStateInterface(Context& target)
     : RasterStateInterface(target) {
@@ -80,12 +106,11 @@ ContextDummy::ContextDummy()
     , mGbI(*this)
     , mFbI(*this)
     , mDWI(*this) {
-  DummyContextInit();
+
   static bool binit = true;
 
   if (true == binit) {
     binit = false;
-    // FxShader::RegisterLoaders("shaders/dummy/", "fxml");
   }
 }
 

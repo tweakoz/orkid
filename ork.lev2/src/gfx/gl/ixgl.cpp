@@ -209,24 +209,6 @@ void ContextGL::GLinit() {
 
 std::string GetGlErrorString(void);
 
-void _shaderloadercommon();
-
-context_ptr_t OpenGlContextInit() {
-
-	///////////////////////////////////////////////////////////
-  _shaderloadercommon();
-	///////////////////////////////////////////////////////////
-
-
-  auto clazz = dynamic_cast<object::ObjectClass*>(ContextGL::GetClassStatic());
-  GfxEnv::setContextClass(clazz);
-  ContextGL::GLinit();
-  auto target = ContextGL::makeShared();
-  target->initializeLoaderContext();
-  GfxEnv::initializeWithContext(target);
-  return target;
-}
-
 /////////////////////////////////////////////////////////////////////////
 
 ContextGL::ContextGL()

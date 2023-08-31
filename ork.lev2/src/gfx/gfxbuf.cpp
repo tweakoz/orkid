@@ -108,6 +108,9 @@ void DisplayBuffer::initContext() {
 
 void Window::initContext() {
   auto ctxclazz  = GfxEnv::GetRef().contextClass();
+  OrkAssert(ctxclazz);
+  auto class_name = ctxclazz->Name();
+  printf( "CLASSNAME<%s>\n", class_name.c_str() );
   auto factory = ctxclazz->annotationTyped<context_factory_t>("context_factory").value();
   OrkAssert(factory!=nullptr);
   _sharedcontext = factory();
