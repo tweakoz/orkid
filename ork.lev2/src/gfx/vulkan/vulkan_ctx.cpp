@@ -17,9 +17,7 @@ namespace ork::lev2::vulkan {
 
 void VkContext::describeX(class_t* clazz) {
 
-  clazz->annotateTyped<context_factory_t>("context_factory", [](){
-    return VkContext::makeShared();
-  });
+  clazz->annotateTyped<context_factory_t>("context_factory", []() { return VkContext::makeShared(); });
 }
 
 ///////////////////////////////////////////////////////
@@ -30,9 +28,11 @@ bool VkContext::HaveExtension(const std::string& extname) {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
-vkcontext_ptr_t VkContext::makeShared(){
+vkcontext_ptr_t VkContext::makeShared() {
   struct VkContextX : public VkContext {
-    VkContextX() : VkContext() {}
+    VkContextX()
+        : VkContext() {
+    }
   };
   auto ctx = std::make_shared<VkContextX>();
   return ctx;
@@ -45,39 +45,68 @@ VkContext::VkContext() {
   ///////////////////////////////////////////////////////////////
   OrkAssert(_GVI != nullptr);
   auto vk_devinfo = _GVI->_device_infos[0];
-
-  VkDeviceQueueCreateInfo DQCI = {};
-  initializeVkStruct(DQCI,VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO);
+  _vkphysicaldevice = vk_devinfo->_phydev;
+  _device_info      = vk_devinfo;
 
   ////////////////////////////
-  // get graphics queue index
+  // get queue indices
   ////////////////////////////
+
+  using qset_t = std::set<uint32_t>;
 
   size_t num_q_types = vk_devinfo->_queueprops.size();
-  int gfx_q_index = -1;
+  std::map<int, qset_t> qids;
   for (size_t i = 0; i < num_q_types; i++) {
-    if (vk_devinfo->_queueprops[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) {
-        gfx_q_index = i;
-        break;
+    auto& qprops = vk_devinfo->_queueprops[i];
+    auto qflags = qprops.queueFlags;
+    if (qflags & VK_QUEUE_GRAPHICS_BIT) {
+      if(qprops.queueCount>0){
+        qids[i].insert(VK_QUEUE_GRAPHICS_BIT);
+        _vkq_graphics = i;
+      }
+    }
+    if (qflags & VK_QUEUE_COMPUTE_BIT) {
+      if(qprops.queueCount>0){
+        //qids[i].insert(VK_QUEUE_COMPUTE_BIT);
+        //_vkq_compute = i;
+      }
+    }
+    if (qflags & VK_QUEUE_TRANSFER_BIT) {
+      if(qprops.queueCount>0){
+        //qids[i].insert(VK_QUEUE_TRANSFER_BIT);
+        //_vkq_transfer = i;
+      }
     }
   }
-  float queuePriority = 1.0f;
-  DQCI.queueFamilyIndex = gfx_q_index; 
-  DQCI.queueCount = 1;
-  DQCI.pQueuePriorities = &queuePriority;
+
+  OrkAssert(_vkq_graphics!=NO_QUEUE);
+  //OrkAssert(_vkq_compute!=NO_QUEUE);
+  //OrkAssert(_vkq_transfer!=NO_QUEUE);
+
+  _queuePriorities.push_back(1.0f);
+
+  _DQCIs.reserve(qids.size());
+  for (auto item : qids) {
+    int q_index = item.first;
+    for (auto q_type : item.second) {
+      VkDeviceQueueCreateInfo& DQCI = _DQCIs.emplace_back();
+      initializeVkStruct(DQCI, VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO);
+      DQCI.queueFamilyIndex = q_index;
+      DQCI.queueCount       = 1;
+      DQCI.pQueuePriorities = _queuePriorities.data();
+    }
+  }
 
   ////////////////////////////
   // create device
   ////////////////////////////
 
   VkDeviceCreateInfo DCI = {};
-  initializeVkStruct(DCI,VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO);
-  DCI.queueCreateInfoCount = 1;
-  DCI.pQueueCreateInfos = &DQCI;
-  vkCreateDevice(vk_devinfo->_phydev, &DCI, nullptr, &_vkdevice);
-  _vkphysicaldevice = vk_devinfo->_phydev;
-  _device_info = vk_devinfo;
-  
+  initializeVkStruct(DCI, VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO);
+  DCI.queueCreateInfoCount = _DQCIs.size();
+  DCI.pQueueCreateInfos    = _DQCIs.data();
+  vkCreateDevice(_vkphysicaldevice, &DCI, nullptr, &_vkdevice);
+
   ////////////////////////////
   // create child interfaces
   ////////////////////////////
@@ -92,7 +121,7 @@ VkContext::VkContext() {
   _fxi = std::make_shared<VkFxInterface>(this);
 #if defined(ENABLE_COMPUTE_SHADERS)
   _ci = std::make_shared<VkComputeInterface>(this);
-#endif 
+#endif
 }
 
 ///////////////////////////////////////////////////////
@@ -108,7 +137,7 @@ uint32_t VkContext::_findMemoryType(    //
   VkPhysicalDeviceMemoryProperties memProperties;
   initializeVkStruct(memProperties);
   vkGetPhysicalDeviceMemoryProperties(_vkphysicaldevice, &memProperties);
-  for (uint32_t i=0; i<memProperties.memoryTypeCount; i++) {
+  for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
     if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {
       return i;
     }
@@ -267,15 +296,15 @@ load_token_t VkContext::_doBeginLoad() {
   auto save_data = rval.getShared<VkLoadContext>();
 
   GLFWwindow* current_window = glfwGetCurrentContext();
-  save_data->_pushedWindow = current_window;
+  save_data->_pushedWindow   = current_window;
   // todo make global loading ctx current..
-  //loadctx->makeCurrentContext();
+  // loadctx->makeCurrentContext();
   return rval;
 }
 ///////////////////////////////////////////////////////
 void VkContext::_doEndLoad(load_token_t ploadtok) {
   auto loadctx = ploadtok.getShared<VkLoadContext>();
-  auto pushed = loadctx->_pushedWindow;
+  auto pushed  = loadctx->_pushedWindow;
   glfwMakeContextCurrent(pushed);
   _GVI->_loadTokens.push(loadctx);
 }

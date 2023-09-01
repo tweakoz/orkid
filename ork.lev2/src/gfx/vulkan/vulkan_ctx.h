@@ -732,6 +732,13 @@ public:
   VkPhysicalDevice _vkphysicaldevice;
   vkdeviceinfo_ptr_t _device_info;
 
+  std::vector<float> _queuePriorities; 
+  std::vector<VkDeviceQueueCreateInfo> _DQCIs;
+  static constexpr uint32_t NO_QUEUE = 0xffffffff;
+  uint32_t _vkq_graphics = NO_QUEUE;
+  uint32_t _vkq_compute = NO_QUEUE;
+  uint32_t _vkq_transfer = NO_QUEUE;
+
   //////////////////////////////////////////////
   void* mhHWND;
   vkcontext_ptr_t _parentTarget;
