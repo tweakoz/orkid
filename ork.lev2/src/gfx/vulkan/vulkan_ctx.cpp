@@ -227,17 +227,17 @@ bool VkContext::SetDisplayMode(DisplayMode* mode) {
 }
 ///////////////////////////////////////////////////////
 load_token_t VkContext::_doBeginLoad() {
-  vkloadctx_ptr_t save_data = nullptr;
+  load_token_t rval = nullptr;
 
-  while (false == _GVI->_loadTokens.try_pop(save_data)) {
+  while (false == _GVI->_loadTokens.try_pop(rval)) {
     usleep(1 << 10);
   }
+  auto save_data = rval.getShared<VkLoadContext>();
+
   GLFWwindow* current_window = glfwGetCurrentContext();
   save_data->_pushedWindow = current_window;
   // todo make global loading ctx current..
   //loadctx->makeCurrentContext();
-  load_token_t rval;
-  rval.setShared<VkLoadContext>(save_data);
   return rval;
 }
 ///////////////////////////////////////////////////////

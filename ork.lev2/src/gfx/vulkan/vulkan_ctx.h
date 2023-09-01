@@ -178,7 +178,7 @@ struct VulkanInstance{
   uint32_t _numgpus = 0;
   uint32_t _numgroups = 0;
   shadlang::slpcache_ptr_t _slp_cache;
-  MpMcBoundedQueue<vkloadctx_ptr_t> _loadTokens;
+  MpMcBoundedQueue<load_token_t> _loadTokens;
 
 };
 
@@ -656,7 +656,6 @@ public:
   static vkcontext_ptr_t makeShared();
   static bool HaveExtension(const std::string& extname);
   static const CClass* gpClass;
-  static ork::MpMcBoundedQueue<void*> _loadTokens;
   //static orkvector<std::string> gVKExtensions;
   //static orkset<std::string> gVKExtensionSet;
 

@@ -155,7 +155,7 @@ void ContextGL::GLinit()
 std::string GetGlErrorString( void );
 void _shaderloadercommon();
 
-context_ptr_t AppleOpenGlContextInit() {
+void AppleOpenGlContextInit() {
 	static NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
 }
 
