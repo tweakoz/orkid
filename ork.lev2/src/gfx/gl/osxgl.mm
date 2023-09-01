@@ -50,8 +50,8 @@ bool g_allow_HIDPI = false;
 
 struct GlOsxPlatformObject
 {
-  static GlOsxPlatformObject* _global_plato;
-  static GlOsxPlatformObject* _current;
+  static std::shared_ptr<GlOsxPlatformObject> _global_plato;
+  static std::shared_ptr<GlOsxPlatformObject> _current;
   /////////////////////////////////////
 	ContextGL*		_context = nullptr;
   CtxGLFW* _ctxbase = nullptr;
@@ -189,10 +189,10 @@ void ContextGL::initializeWindowContext( Window *pWin, CTXBASE* pctxbase  ) {
   auto glfw_container = (CtxGLFW*)pctxbase;
   auto glfw_window    = glfw_container->_glfwWindow;
   ///////////////////////
-  GlOsxPlatformObject* plato = new GlOsxPlatformObject;
+  auto plato = std::make_shared<GlOsxPlatformObject>();
   plato->_ctxbase       = glfw_container;
   mCtxBase                  = pctxbase;
-  mPlatformHandle           = (void*)plato;
+  _impl.setShared<GlOsxPlatformObject>(plato);
   ///////////////////////
   miW = pWin->GetBufferW();
   miH = pWin->GetBufferH();
@@ -214,8 +214,8 @@ void ContextGL::initializeOffscreenContext( DisplayBuffer *pBuf )
 
   mCtxBase = 0;
 
-  GlOsxPlatformObject* plato = new GlOsxPlatformObject;
-  mPlatformHandle           = (void*)plato;
+  auto plato = std::make_shared<GlOsxPlatformObject>();
+  _impl.setShared<GlOsxPlatformObject>(plato);
   mFbI.SetThisBuffer(pBuf);
 
   auto global_plato = GlOsxPlatformObject::_global_plato;

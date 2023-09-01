@@ -120,6 +120,7 @@ struct DisplayMode {
 ///////////////////////////////////////////////////////////////////////////////
 
 using load_token_t = svar32_t;
+using ctx_platform_handle_t = svar32_t;
 
 struct Context : public ork::Object {
   DeclareAbstractX(Context, ork::Object);
@@ -276,16 +277,10 @@ public:
   bool SetDisplayMode(unsigned int index);
   virtual bool SetDisplayMode(DisplayMode* mode) = 0;
 
-  void* GetPlatformHandle() const {
-    return mPlatformHandle;
-  }
-  void SetPlatformHandle(void* ph) {
-    mPlatformHandle = ph;
-  }
-  void* clonePlatformHandle() const {
+  ctx_platform_handle_t clonePlatformHandle() const {
     return _doClonePlatformHandle();
   }
-  virtual void* _doClonePlatformHandle() const {
+  virtual ctx_platform_handle_t _doClonePlatformHandle() const {
     return nullptr;
   }
   virtual void TakeThreadOwnership() {
@@ -297,7 +292,7 @@ public:
   static const int kiModColorStackMax = 8;
 
   CTXBASE* mCtxBase                                   = nullptr;
-  void* mPlatformHandle                               = nullptr;
+  ctx_platform_handle_t _impl;
   const RenderContextInstData* mRenderContextInstData = nullptr;
   const ork::rtti::ICastable* mpCurrentObject         = nullptr;
   RtGroup* _defaultRTG                                = nullptr;

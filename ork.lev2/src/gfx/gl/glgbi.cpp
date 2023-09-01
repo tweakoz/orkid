@@ -731,7 +731,7 @@ bool GlGeometryBufferInterface::BindVertexStreamSource(const VertexBufferBase& V
   OrkAssert(hBuf);  
   GL_ERRORCHECK();
 
-  void* plat_h = (void*)mTargetGL.GetPlatformHandle();
+  void* plat_h = (void*) mTargetGL._impl.uid();
   auto vao_key = (void*)pfxpass;
 
   GLVaoHandle* vao_obj = hBuf->BindVao(plat_h, vao_key);
@@ -772,7 +772,7 @@ bool GlGeometryBufferInterface::BindStreamSources(const VertexBufferBase& VBuf, 
   OrkAssert(hBuf);  
   GL_ERRORCHECK();
 
-  void* plat_h = mTargetGL.GetPlatformHandle();
+  void* plat_h = (void*) mTargetGL._impl.uid();
 
   const auto ph = (const GLIdxBufHandle*) IdxBuf._impl.getShared<GLIdxBufHandle>().get();
   OrkAssert(ph != 0);

@@ -590,7 +590,7 @@ void CtxGLFW::SlotRepaint() {
   // auto lamb = [&]() {
   if (not GfxEnv::initialized())
     return;
-
+  
   ork::PerfMarkerPush("ork.viewport.draw.begin");
 
   // this->mDrawLock++;
@@ -603,8 +603,9 @@ void CtxGLFW::SlotRepaint() {
     auto drwev         = std::make_shared<ui::DrawEvent>(this->_target);
 
     auto widget = gfxwin ? gfxwin->GetRootWidget() : nullptr;
-    if (widget)
+    if (widget){
       widget->draw(drwev);
+    }
   }
   //}
   // this->mDrawLock--;
@@ -1093,9 +1094,9 @@ struct PopupImpl {
       _parent_context->FBI()->PushRtGroup(_rtgroup.get());
       glfwMakeContextCurrent(_glfwPopupWindow);
 
-      void* plato = (void*)_parent_context->GetPlatformHandle();
+      auto plato_saved = _parent_context->_impl;
 
-      _parent_context->SetPlatformHandle(_cloned_plato);
+      _parent_context->_impl = _cloned_plato;
 
       _uicontext->tick(updata);
 
@@ -1104,7 +1105,7 @@ struct PopupImpl {
         _uicontext->draw(drwev);
       }
 
-      _parent_context->SetPlatformHandle(plato);
+      _parent_context->_impl = plato_saved;
 
       _parent_context->FBI()->PopRtGroup();
       _parent_context->FBI()->popScissor();
@@ -1129,7 +1130,7 @@ struct PopupImpl {
   rtgroup_ptr_t _rtgroup;
   int _x, _y, _w, _h;
   bool _terminate     = false;
-  void* _cloned_plato = nullptr;
+  ctx_platform_handle_t _cloned_plato;
   int _buttonState    = 0;
   int _mouseX         = 0;
   int _mouseY         = 0;

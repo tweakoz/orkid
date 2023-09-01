@@ -487,7 +487,7 @@ public:
   }
   void _doEndFrame(void) final {
   }
-  void* _doClonePlatformHandle() const final;
+  ctx_platform_handle_t _doClonePlatformHandle() const final;
 
 public:
   //////////////////////////////////////////////

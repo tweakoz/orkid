@@ -126,17 +126,18 @@ struct GlxLoadContext {
 
 /////////////////////////////////////////////////////////////////////////
 
-void* ContextGL::_doClonePlatformHandle() const {
-  auto plato = (GlIxPlatformObject*)mPlatformHandle;
-  auto new_plato = new GlIxPlatformObject;
+ctx_platform_handle_t ContextGL::_doClonePlatformHandle() const {
+  auto plato = _impl.getShared<GlIxPlatformObject>();
+  auto new_plato = std::make_shared<GlIxPlatformObject>();
   new_plato->_ctxbase = nullptr; //plato->_ctxbase;
   //new_plato->_context = plato->_context;
   new_plato->_needsInit   = false;
   //new_plato->_bindop = plato->_bindop;
 
   // TODO : https://github.com/tweakoz/orkid/issues/139
-  
-  return new_plato;
+  ctx_platform_handle_t rval;
+  rval.setShared<GlIxPlatformObject>(new_plato);
+  return rval;
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -242,10 +243,10 @@ void ContextGL::initializeWindowContext(Window* pWin, CTXBASE* pctxbase) {
   auto glfw_container = (CtxGLFW*)pctxbase;
   auto glfw_window    = glfw_container->_glfwWindow;
   ///////////////////////
-  GlIxPlatformObject* plato = new GlIxPlatformObject;
+  auto plato = std::make_shared<GlIxPlatformObject>();
   plato->_ctxbase       = glfw_container;
   mCtxBase                  = pctxbase;
-  mPlatformHandle           = (void*)plato;
+  _impl.setShared<GlIxPlatformObject>(plato);
   ///////////////////////
   plato->makeCurrent();
   mFbI.SetThisBuffer(pWin);
@@ -264,7 +265,7 @@ void recomputeHIDPI(Context* ctx) {
       return;
   }
 
-  auto ixplato = (GlIxPlatformObject*)ctx->mPlatformHandle;
+  auto ixplato = ctx->_impl.getShared<GlIxPlatformObject>();
   ///////////////////////
   auto glfw_container     = (CtxGLFW*)ctx->GetCtxBase();
   GLFWwindow* glfw_window = glfw_container->_glfwWindow;
@@ -388,20 +389,20 @@ float _currentDPI() {
 }
 /////////////////////////////////////////////////////////////////////////
 
-void ContextGL::initializeOffscreenContext(DisplayBuffer* pBuf) {
+void ContextGL::initializeOffscreenContext(DisplayBuffer* pbuffer) {
 
   meTargetType = TargetType::OFFSCREEN;
 
   ///////////////////////
 
-  miW = pBuf->GetBufferW();
-  miH = pBuf->GetBufferH();
+  miW = pbuffer->GetBufferW();
+  miH = pbuffer->GetBufferH();
 
   mCtxBase = 0;
 
-  GlIxPlatformObject* plato = new GlIxPlatformObject;
-  mPlatformHandle           = (void*)plato;
-  mFbI.SetThisBuffer(pBuf);
+  auto plato = std::make_shared<GlIxPlatformObject>();
+  _impl.setShared<GlIxPlatformObject>(plato);
+  mFbI.SetThisBuffer(pbuffer);
 
   auto global_plato = GlIxPlatformObject::_global_plato;
 
@@ -425,8 +426,8 @@ void ContextGL::initializeLoaderContext() {
 
   mCtxBase = 0;
 
-  GlIxPlatformObject* plato = new GlIxPlatformObject;
-  mPlatformHandle           = (void*)plato;
+  auto plato = std::make_shared<GlIxPlatformObject>();
+  _impl.setShared<GlIxPlatformObject>(plato);
 
   auto global_plato   = GlIxPlatformObject::_global_plato;
   plato->_ctxbase = global_plato->_ctxbase;
@@ -451,22 +452,22 @@ void ContextGL::initializeLoaderContext() {
 /////////////////////////////////////////////////////////////////////////
 
 void ContextGL::makeCurrentContext(void) {
-  auto plato = (GlIxPlatformObject*)mPlatformHandle;
-  OrkAssert(plato);
-  if (plato) {
-    plato->makeCurrent();
-    plato->_bindop();
+  auto ixplato = _impl.getShared<GlIxPlatformObject>();
+  OrkAssert(ixplato);
+  if (ixplato) {
+    ixplato->makeCurrent();
+    ixplato->_bindop();
   }
 }
 
 /////////////////////////////////////////////////////////////////////////
 
 void ContextGL::SwapGLContext(CTXBASE* pCTFL) {
-  GlIxPlatformObject* plato = (GlIxPlatformObject*)mPlatformHandle;
-  OrkAssert(plato);
-  if (plato && (plato->getXwindowID() > 0)) {
-    plato->makeCurrent();
-    plato->swapBuffers();
+  auto ixplato = _impl.getShared<GlIxPlatformObject>();
+  OrkAssert(ixplato);
+  if (ixplato && (ixplato->getXwindowID() > 0)) {
+    ixplato->makeCurrent();
+    ixplato->swapBuffers();
   }
 }
 

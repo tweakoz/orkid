@@ -686,7 +686,7 @@ public:
   void _doResizeMainSurface(int iw, int ih) final;
   void _doBeginFrame() final;
   void _doEndFrame() final;
-  void* _doClonePlatformHandle() const final;
+  ctx_platform_handle_t _doClonePlatformHandle() const final;
 
   //////////////////////////////////////////////
   // Interfaces

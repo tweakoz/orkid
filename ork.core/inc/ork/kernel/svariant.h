@@ -559,6 +559,10 @@ public:
     return TypeId::fromStdTypeInfo(_mtinfo);
   }
   //////////////////////////////////////////////////////////////
+  uint64_t uid() const {
+    return uint64_t(_buffer);
+  }
+  //////////////////////////////////////////////////////////////
 private:
   char _buffer[ksize];
   ork::atomic<descriptor_factory_t> _descriptorFactory;

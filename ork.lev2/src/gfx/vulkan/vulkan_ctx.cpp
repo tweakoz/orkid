@@ -44,7 +44,7 @@ VkContext::VkContext() {
 
   ///////////////////////////////////////////////////////////////
   OrkAssert(_GVI != nullptr);
-  auto vk_devinfo = _GVI->_device_infos[0];
+  auto vk_devinfo   = _GVI->_device_infos[0];
   _vkphysicaldevice = vk_devinfo->_phydev;
   _device_info      = vk_devinfo;
 
@@ -58,30 +58,30 @@ VkContext::VkContext() {
   std::map<int, qset_t> qids;
   for (size_t i = 0; i < num_q_types; i++) {
     auto& qprops = vk_devinfo->_queueprops[i];
-    auto qflags = qprops.queueFlags;
+    auto qflags  = qprops.queueFlags;
     if (qflags & VK_QUEUE_GRAPHICS_BIT) {
-      if(qprops.queueCount>0){
+      if (qprops.queueCount > 0) {
         qids[i].insert(VK_QUEUE_GRAPHICS_BIT);
         _vkq_graphics = i;
       }
     }
     if (qflags & VK_QUEUE_COMPUTE_BIT) {
-      if(qprops.queueCount>0){
-        //qids[i].insert(VK_QUEUE_COMPUTE_BIT);
+      if (qprops.queueCount > 0) {
+        // qids[i].insert(VK_QUEUE_COMPUTE_BIT);
         //_vkq_compute = i;
       }
     }
     if (qflags & VK_QUEUE_TRANSFER_BIT) {
-      if(qprops.queueCount>0){
-        //qids[i].insert(VK_QUEUE_TRANSFER_BIT);
+      if (qprops.queueCount > 0) {
+        // qids[i].insert(VK_QUEUE_TRANSFER_BIT);
         //_vkq_transfer = i;
       }
     }
   }
 
-  OrkAssert(_vkq_graphics!=NO_QUEUE);
-  //OrkAssert(_vkq_compute!=NO_QUEUE);
-  //OrkAssert(_vkq_transfer!=NO_QUEUE);
+  OrkAssert(_vkq_graphics != NO_QUEUE);
+  // OrkAssert(_vkq_compute!=NO_QUEUE);
+  // OrkAssert(_vkq_transfer!=NO_QUEUE);
 
   _queuePriorities.push_back(1.0f);
 
@@ -170,9 +170,9 @@ void VkContext::_doEndFrame() {
 
 ///////////////////////////////////////////////////////
 
-void* VkContext::_doClonePlatformHandle() const {
+ctx_platform_handle_t VkContext::_doClonePlatformHandle() const {
   OrkAssert(false);
-  return nullptr;
+  return ctx_platform_handle_t();
 }
 
 //////////////////////////////////////////////
@@ -227,39 +227,135 @@ DrawingInterface* VkContext::DWI() {
 }
 
 ///////////////////////////////////////////////////////////////////////
+struct VkPlatformObject;
+using vkplatformobject_ptr_t = std::shared_ptr<VkPlatformObject>;
 
-void VkContext::makeCurrentContext(void) {
+struct VkPlatformObject {
+  CtxGLFW* _ctxbase = nullptr;
+  bool _needsInit   = true;
+  void_lambda_t _bindop;
+};
+struct VkOneTimeInit{
+
+  VkOneTimeInit(){
+    _gplato = std::make_shared<VkPlatformObject>();
+     auto global_ctxbase = CtxGLFW::globalOffscreenContext();
+    _gplato->_ctxbase = global_ctxbase;
+    global_ctxbase->makeCurrent();
+  }
+  vkplatformobject_ptr_t _gplato;
+};
+
+static vkplatformobject_ptr_t global_plato(){
+  static VkOneTimeInit _ginit;
+  return _ginit._gplato;
+}
+static vkplatformobject_ptr_t _current_plato;
+static void platoMakeCurrent(vkplatformobject_ptr_t plato) {
+  _current_plato = plato;
+  if (plato->_ctxbase) {
+    plato->_ctxbase->makeCurrent();
+  }
+  if(plato->_bindop)
+    plato->_bindop();
+}
+static void platoSwapBuffers(vkplatformobject_ptr_t plato) {
+  platoMakeCurrent(plato);
+  if (plato->_ctxbase) {
+    plato->_ctxbase->swapBuffers();
+  }
 }
 
-// void debugLabel(GLenum target, GLuint object, std::string name);
+///////////////////////////////////////////////////////////////////////
 
-//////////////////////////////////////////////
-
-//////////////////////////////////////////////
-
-// void AttachGLContext(CTXBASE* pCTFL);
-// void SwapGLContext(CTXBASE* pCTFL);
+void VkContext::makeCurrentContext() {
+  auto plato = _impl.getShared<VkPlatformObject>();
+  platoMakeCurrent(plato);
+}
 
 ///////////////////////////////////////////////////////
 
 void VkContext::swapBuffers(CTXBASE* ctxbase) {
+  auto plato = _impl.getShared<VkPlatformObject>();
+  platoSwapBuffers(plato);
 }
 
 ///////////////////////////////////////////////////////
 
-void VkContext::initializeWindowContext(Window* pWin, CTXBASE* pctxbase) {
-
+void VkContext::initializeWindowContext(
+    Window* pWin,        //
+    CTXBASE* pctxbase) { //
+  meTargetType = TargetType::WINDOW;
+  ///////////////////////
+  auto glfw_container = (CtxGLFW*)pctxbase;
+  auto glfw_window    = glfw_container->_glfwWindow;
+  ///////////////////////
+  vkplatformobject_ptr_t plato = std::make_shared<VkPlatformObject>();
+  plato->_ctxbase              = glfw_container;
+  mCtxBase                     = pctxbase;
+  _impl.setShared<VkPlatformObject>(plato);
+  ///////////////////////
+  platoMakeCurrent(plato);
+  _fbi->SetThisBuffer(pWin);
 } // make a window
 
 ///////////////////////////////////////////////////////
 
-void VkContext::initializeOffscreenContext(DisplayBuffer* pBuf) {
+void VkContext::initializeOffscreenContext(DisplayBuffer* pbuffer) {
+  meTargetType = TargetType::OFFSCREEN;
+  miW = pbuffer->GetBufferW();
+  miH = pbuffer->GetBufferH();
+  ///////////////////////
+  auto glfw_container = (CtxGLFW*) global_plato()->_ctxbase;
+  auto glfw_window    = glfw_container->_glfwWindow;
+  ///////////////////////
+  vkplatformobject_ptr_t plato = std::make_shared<VkPlatformObject>();
+  plato->_ctxbase              = glfw_container;
+  mCtxBase                     = glfw_container;
+  _impl.setShared<VkPlatformObject>(plato);
+  ///////////////////////
+  platoMakeCurrent(plato);
+  _fbi->SetThisBuffer(pbuffer);
+  ///////////////////////
+  plato->_ctxbase = global_plato()->_ctxbase;
+  plato->_needsInit   = false;
+  _defaultRTG  = new RtGroup(this, miW, miH, MsaaSamples::MSAA_1X);
+  auto rtb     = _defaultRTG->createRenderTarget(EBufferFormat::RGBA8);
+  auto texture = rtb->texture();
+  _fbi->SetBufferTexture(texture);
+  ///////////////////////
 
 } // make a pbuffer
 
 ///////////////////////////////////////////////////////
 void VkContext::initializeLoaderContext() {
-}
+  meTargetType = TargetType::LOADING;
+
+  miW = 8;
+  miH = 8;
+
+  mCtxBase = 0;
+
+  auto plato = std::make_shared<VkPlatformObject>();
+  _impl.setShared<VkPlatformObject>(plato);
+
+  plato->_ctxbase = global_plato()->_ctxbase;
+  plato->_needsInit   = false;
+
+  _defaultRTG  = new RtGroup(this, miW, miH, MsaaSamples::MSAA_1X);
+  auto rtb     = _defaultRTG->createRenderTarget(EBufferFormat::RGBA8);
+  auto texture = rtb->texture();
+  FBI()->SetBufferTexture(texture);
+
+  plato->_bindop = [=]() {
+    if (this->mTargetDrawableSizeDirty) {
+      int w = mainSurfaceWidth();
+      int h = mainSurfaceHeight();
+      // printf("resizing defaultRTG<%p>\n", _defaultRTG);
+      _defaultRTG->Resize(w, h);
+      mTargetDrawableSizeDirty = false;
+    }
+  };}
 
 ///////////////////////////////////////////////////////
 
