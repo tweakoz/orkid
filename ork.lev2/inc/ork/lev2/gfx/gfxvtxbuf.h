@@ -21,16 +21,20 @@ class GeometryBufferInterface;
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
+using buffer_impl_t = svar64_t;
+
 class IndexBufferBase {
 protected:
   int miNumIndices;
-  mutable void* mhIndexBuf;
   void* mpIndices;
   bool mbLocked;
 
   void Release(void);
 
 public:
+
+  buffer_impl_t _impl;
+
   int GetNumIndices() const {
     return miNumIndices;
   }
@@ -40,12 +44,6 @@ public:
 
   IndexBufferBase();
   virtual ~IndexBufferBase();
-  void* GetHandle(void) const {
-    return (mhIndexBuf);
-  }
-  void SetHandle(void* ph) const {
-    mhIndexBuf = ph;
-  }
 
   virtual int GetIndexSize() const = 0;
   virtual bool IsStatic() const    = 0;
@@ -107,12 +105,6 @@ public:
   int GetVtxSize(void) const {
     return int(miVtxSize);
   }
-  void SetHandle(void* hVB) {
-    _IMPL = hVB;
-  }
-  void* GetHandle(void) const {
-    return _IMPL;
-  }
 
   void Reset(void) {
     miNumVerts = 0;
@@ -154,9 +146,10 @@ public:
 
   virtual bool IsStatic() const = 0;
 
+  buffer_impl_t _impl;
+
 protected:
   void* _vertices = nullptr;
-  void* _IMPL     = nullptr;
 
   int miNumVerts;
   int miMaxVerts;

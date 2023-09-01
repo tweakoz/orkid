@@ -84,6 +84,8 @@ struct VklRtBufferImpl;
 struct VkRtGroupImpl;
 struct VkTextureAsyncTask;
 struct VkTexLoadReq;
+struct VulkanVertexBuffer;
+struct VulkanIndexBuffer;
 //
 using vkinstance_ptr_t = std::shared_ptr<VulkanInstance>;
 using vkdeviceinfo_ptr_t = std::shared_ptr<VulkanDeviceInfo>;
@@ -123,6 +125,8 @@ using vkrtgrpimpl_ptr_t = std::shared_ptr<VkRtGroupImpl>;
 using vktexasynctask_ptr_t = std::shared_ptr<VkTextureAsyncTask>;
 using vktexloadreq_ptr_t = std::shared_ptr<VkTexLoadReq>;
 using vkfxshader_bin_t = std::vector<uint32_t>;
+using vkvtxbuf_ptr_t = std::shared_ptr<VulkanVertexBuffer>;
+using vkidxbuf_ptr_t = std::shared_ptr<VulkanIndexBuffer>;
 
 extern vkinstance_ptr_t _GVI;
 
@@ -309,6 +313,13 @@ struct VkFxShaderTechnique {
   ~VkFxShaderTechnique();
   std::vector<vkfxspass_ptr_t> _vk_passes;
   std::shared_ptr<FxShaderTechnique> _orktechnique;
+};
+
+struct VulkanVertexBuffer{
+
+};
+struct VulkanIndexBuffer{
+
 };
 
 ///////////////////////////////////////////////////////////////////////////////

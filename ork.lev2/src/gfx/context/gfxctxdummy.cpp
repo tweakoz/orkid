@@ -130,54 +130,75 @@ void ContextDummy::_doResizeMainSurface(int iw, int ih) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+using vbo_t = void*;
+using ibo_t = void*;
+
+///////////////////////////////////////////////////////////////////////////////
+
 DuGeometryBufferInterface::DuGeometryBufferInterface(ContextDummy& ctx)
     : GeometryBufferInterface(ctx)
     , _ducontext(ctx) {
 }
 
-void* DuGeometryBufferInterface::LockIB(IndexBufferBase& IdxBuf, int ibase, int icount) {
-  if (0 == IdxBuf.GetHandle()) {
-    IdxBuf.SetHandle((void*)std::malloc(IdxBuf.GetNumIndices() * IdxBuf.GetIndexSize()));
+///////////////////////////////////////////////////////////////////////////////
+
+void* DuGeometryBufferInterface::LockIB(IndexBufferBase& idx_buf, int ibase, int icount) {
+  ibo_t du_buffer = nullptr;
+  if (auto try_du_buf = idx_buf._impl.tryAs<ibo_t>()) {
+    du_buffer = try_du_buf.value();
+  } else {
+    du_buffer = (ibo_t) std::malloc(idx_buf.GetNumIndices() * idx_buf.GetIndexSize());
+    idx_buf._impl.set<ibo_t>(du_buffer);
   }
-  char* pch = (char*)IdxBuf.GetHandle();
+  char* pch = (char*)du_buffer;
   return (void*)(pch + ibase);
 }
-void DuGeometryBufferInterface::UnLockIB(IndexBufferBase& IdxBuf) {
+void DuGeometryBufferInterface::UnLockIB(IndexBufferBase& idx_buf) {
 }
 
-const void* DuGeometryBufferInterface::LockIB(const IndexBufferBase& IdxBuf, int ibase, int icount) {
-  if (0 == IdxBuf.GetHandle()) {
-    IdxBuf.SetHandle((void*)std::malloc(IdxBuf.GetNumIndices() * IdxBuf.GetIndexSize()));
+///////////////////////////////////////////////////////////////////////////////
+
+const void* DuGeometryBufferInterface::LockIB(const IndexBufferBase& idx_buf, int ibase, int icount) {
+  ibo_t du_buffer = nullptr;
+  if (auto try_du_buf = idx_buf._impl.tryAs<ibo_t>()) {
+    du_buffer = try_du_buf.value();
+  } else {
+    du_buffer = (ibo_t) std::malloc(idx_buf.GetNumIndices() * idx_buf.GetIndexSize());
+    auto& as_mutable = const_cast<IndexBufferBase&>(idx_buf);
+    as_mutable._impl.set<ibo_t>(du_buffer);
   }
-  const char* pch = (const char*)IdxBuf.GetHandle();
-  return (const void*)(pch + ibase);
+  char* pch = (char*)du_buffer;
+  return (void*)(pch + ibase);
 }
-void DuGeometryBufferInterface::UnLockIB(const IndexBufferBase& IdxBuf) {
+void DuGeometryBufferInterface::UnLockIB(const IndexBufferBase& idx_buf) {
 }
 
-void DuGeometryBufferInterface::ReleaseIB(IndexBufferBase& IdxBuf) {
-  std::free(IdxBuf.GetHandle());
-  IdxBuf.SetHandle(0);
+void DuGeometryBufferInterface::ReleaseIB(IndexBufferBase& idx_buf) {
+  ibo_t du_buffer = idx_buf._impl.get<ibo_t>();
+  std::free(du_buffer);
+  idx_buf._impl.clear();
 }
+
+///////////////////////////////////////////////////////////////////////////////
 
 void* DuGeometryBufferInterface::LockVB(VertexBufferBase& VBuf, int ibase, int icount) {
   OrkAssert(false == VBuf.IsLocked());
   int iVBlen = VBuf.GetVtxSize() * VBuf.GetMax();
-  if (0 == VBuf.GetHandle()) {
+  if (not VBuf._impl.isSet()) {
     void* pdata = std::malloc(iVBlen);
     // orkprintf( "DuGeometryBufferInterface::LockVB() malloc_vblen<%d>\n", iVBlen );
-    VBuf.SetHandle(pdata);
+    VBuf._impl.set<void*>(pdata);
   }
   VBuf.Lock();
   // VBuf.Reset();
-  return VBuf.GetHandle();
+  return VBuf._impl.get<void*>();
 }
 
 const void* DuGeometryBufferInterface::LockVB(const VertexBufferBase& VBuf, int ibase, int icount) {
   OrkAssert(false == VBuf.IsLocked());
   int iVBlen = VBuf.GetVtxSize() * VBuf.GetMax();
   VBuf.Lock();
-  const void* pdata = VBuf.GetHandle();
+  const void* pdata = VBuf._impl.get<void*>();
   OrkAssert(pdata != 0);
   return pdata;
 }
@@ -191,7 +212,8 @@ void DuGeometryBufferInterface::UnLockVB(const VertexBufferBase& VBuf) {
   VBuf.Unlock();
 }
 void DuGeometryBufferInterface::ReleaseVB(VertexBufferBase& VBuf) {
-  std::free((void*)VBuf.GetHandle());
+  std::free((void*)VBuf._impl.get<void*>());
+  VBuf._impl = svar32_t();
 }
 
 bool ContextDummy::SetDisplayMode(DisplayMode* mode) {

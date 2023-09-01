@@ -125,7 +125,15 @@ struct GLIdxBufHandle {
       , mMinIndex(0)
       , mMaxIndex(0){
   }
+
+  ~GLIdxBufHandle() {
+    if (mIBO) {
+      glDeleteBuffers(1, &mIBO);
+    }
+  }
 };
+
+using glidxbuf_ptr_t = std::shared_ptr<GLIdxBufHandle>;
 
 struct GLVaoHandle {
   const GLIdxBufHandle* mIBO = nullptr;
@@ -247,7 +255,7 @@ struct GLVtxBufHandle {
     OrkAssert(mBufSize > 0);
   }
 };
-
+using glvtxbuf_ptr_t = std::shared_ptr<GLVtxBufHandle>;
 ///////////////////////////////////////////////////////////////////////////////
 
 GlGeometryBufferInterface::GlGeometryBufferInterface(ContextGL& target)
@@ -271,18 +279,23 @@ void* GlGeometryBufferInterface::LockVB(VertexBufferBase& VBuf, int ibase, int i
 
   OrkAssert(false == VBuf.IsLocked());
 
-  void* rVal           = 0;
-  GLVtxBufHandle* hBuf = reinterpret_cast<GLVtxBufHandle*>(VBuf.GetHandle());
+  void* vertex_memory           = nullptr;
 
   //////////////////////////////////////////////////////////
-  // create the vbo ?
+  // create or reference the vbo
   //////////////////////////////////////////////////////////
-  if (0 == hBuf) {
-    hBuf = new GLVtxBufHandle;
-    VBuf.SetHandle(reinterpret_cast<void*>(hBuf));
 
-    hBuf->CreateVbo(VBuf);
+  glvtxbuf_ptr_t hBuf;
+  if( auto try_hbuf = VBuf._impl.tryAsShared<GLVtxBufHandle>() ){
+    hBuf = try_hbuf.value();
   }
+  else{
+    hBuf = std::make_shared<GLVtxBufHandle>();
+    hBuf->CreateVbo(VBuf);
+    VBuf._impl.setShared(hBuf);
+  }
+  
+  //////////////////////////////////////////////////////////
 
   int iMax = VBuf.GetMax();
 
@@ -303,8 +316,8 @@ void* GlGeometryBufferInterface::LockVB(VertexBufferBase& VBuf, int ibase, int i
 
   if (VBuf.IsStatic()) {
     if (isizebytes) {
-      rVal = glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
-      OrkAssert(rVal);
+      vertex_memory = glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
+      OrkAssert(vertex_memory);
     }
   } else {
     // printf( "LOCKVB<WRITE> VB<%p> vboid<%d> ibase<%d> icount<%d> isizebytes<%d> mBufSize<%d>\n", & VBuf, int(hBuf->mVBO), ibase,
@@ -327,9 +340,9 @@ void* GlGeometryBufferInterface::LockVB(VertexBufferBase& VBuf, int ibase, int i
           break;
 #endif
         case EVB_MAP_BUFFER_RANGE:
-          // rVal = glMapBuffer( GL_ARRAY_BUFFER, GL_WRITE_ONLY|GL_MAP_UNSYNCHRONIZED_BIT|GL_MAP_FLUSH_EXPLICIT_BIT ); //
+          // vertex_memory = glMapBuffer( GL_ARRAY_BUFFER, GL_WRITE_ONLY|GL_MAP_UNSYNCHRONIZED_BIT|GL_MAP_FLUSH_EXPLICIT_BIT ); //
           // MAP_UNSYNCHRONIZED_BIT?
-          rVal = glMapBufferRange(
+          vertex_memory = glMapBufferRange(
               GL_ARRAY_BUFFER,
               ibasebytes,
               isizebytes,
@@ -337,16 +350,16 @@ void* GlGeometryBufferInterface::LockVB(VertexBufferBase& VBuf, int ibase, int i
               GL_MAP_INVALIDATE_RANGE_BIT | 
               GL_MAP_FLUSH_EXPLICIT_BIT |
               GL_MAP_UNSYNCHRONIZED_BIT); // MAP_UNSYNCHRONIZED_BIT?
-          // rVal = glMapBufferRange( GL_ARRAY_BUFFER, ibasebytes, isizebytes, GL_MAP_WRITE_BIT ); // MAP_UNSYNCHRONIZED_BIT?
+          // vertex_memory = glMapBufferRange( GL_ARRAY_BUFFER, ibasebytes, isizebytes, GL_MAP_WRITE_BIT ); // MAP_UNSYNCHRONIZED_BIT?
           GL_ERRORCHECK();
-          OrkAssert(rVal);
-          // rVal = (void*) (((char*)rVal)+ibasebytes);
+          OrkAssert(vertex_memory);
+          // vertex_memory = (void*) (((char*)vertex_memory)+ibasebytes);
           break;
         case EVB_BUFFER_SUBDATA: {
           GlVtxBufMapPool* pool = GetBufMapPool();
           hBuf->mMappedRegion   = pool->GetVbmd(isizebytes);
           assert(hBuf->mMappedRegion != nullptr);
-          rVal = hBuf->mMappedRegion->mpData;
+          vertex_memory = hBuf->mMappedRegion->mpData;
           RetBufMapPool(pool);
           break;
         }
@@ -362,7 +375,7 @@ void* GlGeometryBufferInterface::LockVB(VertexBufferBase& VBuf, int ibase, int i
 
   //////////////////////////////////////////////////////////
 
-  return rVal;
+  return vertex_memory;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -371,8 +384,9 @@ const void* GlGeometryBufferInterface::LockVB(const VertexBufferBase& VBuf, int 
   OrkAssert(false == VBuf.IsLocked());
 
   void* rVal           = 0;
-  GLVtxBufHandle* hBuf = reinterpret_cast<GLVtxBufHandle*>(VBuf.GetHandle());
-
+  
+  auto hBuf = VBuf._impl.getShared<GLVtxBufHandle>();
+  
   OrkAssert(hBuf != 0);
 
   int iMax = VBuf.GetMax();
@@ -421,8 +435,9 @@ const void* GlGeometryBufferInterface::LockVB(const VertexBufferBase& VBuf, int 
 void GlGeometryBufferInterface::UnLockVB(VertexBufferBase& VBuf) {
   OrkAssert(VBuf.IsLocked());
 
-  GLVtxBufHandle* hBuf = reinterpret_cast<GLVtxBufHandle*>(VBuf.GetHandle());
-
+  
+  auto hBuf = VBuf._impl.getShared<GLVtxBufHandle>();
+  
   if (VBuf.IsStatic()) {
     GL_ERRORCHECK();
 
@@ -472,8 +487,9 @@ void GlGeometryBufferInterface::UnLockVB(VertexBufferBase& VBuf) {
 
 void GlGeometryBufferInterface::UnLockVB(const VertexBufferBase& VBuf) {
   OrkAssert(VBuf.IsLocked());
-  GLVtxBufHandle* hBuf = reinterpret_cast<GLVtxBufHandle*>(VBuf.GetHandle());
-  GL_ERRORCHECK();
+  
+  auto hBuf = VBuf._impl.getShared<GLVtxBufHandle>();
+  GL_ERRORCHECK();  
 
   GL_ERRORCHECK();
   glBindBuffer(GL_ARRAY_BUFFER, hBuf->mVBO);
@@ -490,11 +506,11 @@ void GlGeometryBufferInterface::UnLockVB(const VertexBufferBase& VBuf) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void GlGeometryBufferInterface::ReleaseVB(VertexBufferBase& VBuf) {
-  GLVtxBufHandle* hBuf = reinterpret_cast<GLVtxBufHandle*>(VBuf.GetHandle());
-
+  
+  auto hBuf = VBuf._impl.getShared<GLVtxBufHandle>();
+  
   if (hBuf) {
-    delete hBuf;
-    VBuf.SetHandle(nullptr);
+    VBuf._impl.clear();
   }
   
 }
@@ -710,8 +726,9 @@ bool GlGeometryBufferInterface::BindVertexStreamSource(const VertexBufferBase& V
   evb_priv.set<const glslfx::Pass*>(pfxpass);
   ////////////////////////////////////////////////////////////////////
   // setup VBO or DL
-  GLVtxBufHandle* hBuf = reinterpret_cast<GLVtxBufHandle*>(VBuf.GetHandle());
-  OrkAssert(hBuf);
+  
+  auto hBuf = VBuf._impl.getShared<GLVtxBufHandle>();
+  OrkAssert(hBuf);  
   GL_ERRORCHECK();
 
   void* plat_h = (void*)mTargetGL.GetPlatformHandle();
@@ -750,13 +767,14 @@ bool GlGeometryBufferInterface::BindStreamSources(const VertexBufferBase& VBuf, 
 
   ////////////////////////////////////////////////////////////////////
 
-  GLVtxBufHandle* hBuf = reinterpret_cast<GLVtxBufHandle*>(VBuf.GetHandle());
-  OrkAssert(hBuf);
+  
+  auto hBuf = VBuf._impl.getShared<GLVtxBufHandle>();
+  OrkAssert(hBuf);  
   GL_ERRORCHECK();
 
   void* plat_h = mTargetGL.GetPlatformHandle();
 
-  const auto ph = (const GLIdxBufHandle*)IdxBuf.GetHandle();
+  const auto ph = (const GLIdxBufHandle*) IdxBuf._impl.getShared<GLIdxBufHandle>().get();
   OrkAssert(ph != 0);
 
   size_t k1    = size_t(ph);
@@ -933,7 +951,7 @@ void GlGeometryBufferInterface::DrawIndexedPrimitiveEML(
 
   int iNum = IdxBuf.GetNumIndices();
 
-  auto plat_handle = static_cast<const GLIdxBufHandle*>(IdxBuf.GetHandle());
+  auto plat_handle = (const GLIdxBufHandle*) IdxBuf._impl.getShared<GLIdxBufHandle>().get();
 
   int imin = plat_handle->mMinIndex;
   int imax = plat_handle->mMaxIndex;
@@ -992,7 +1010,7 @@ void GlGeometryBufferInterface::DrawInstancedIndexedPrimitiveEML(
   ////////////////////////////////////////////////////////////////////
   BindStreamSources(VBuf, IdxBuf);
   int iNum          = IdxBuf.GetNumIndices();
-  auto plat_handle  = static_cast<const GLIdxBufHandle*>(IdxBuf.GetHandle());
+  auto plat_handle  = static_cast<const GLIdxBufHandle*>(IdxBuf._impl.getShared<GLIdxBufHandle>().get());
   int imin          = plat_handle->mMinIndex;
   int imax          = plat_handle->mMaxIndex;
   GLenum glprimtype = 0;
@@ -1029,35 +1047,38 @@ void GlGeometryBufferInterface::DrawInstancedIndexedPrimitiveEML(
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void* GlGeometryBufferInterface::LockIB(IndexBufferBase& IdxBuf, int ibase, int icount) {
+void* GlGeometryBufferInterface::LockIB(IndexBufferBase& idx_buf, int ibase, int icount) {
   void* rval = nullptr;
   assert(ibase == 0);
 
   if (icount == 0)
-    icount = IdxBuf.GetNumIndices();
+    icount = idx_buf.GetNumIndices();
 
-  if (nullptr == IdxBuf.GetHandle()) {
-
-    GLIdxBufHandle* plat_handle = new GLIdxBufHandle;
-
-    auto p16                 = new U16[icount];
-    plat_handle->mBuffer     = p16;
-    rval                     = (void*)p16;
-    plat_handle->mNumIndices = icount;
-
-    IdxBuf.SetHandle((void*)plat_handle);
-
+  glidxbuf_ptr_t gl_buf;
+  if (auto try_gl_buf = idx_buf._impl.tryAsShared<GLIdxBufHandle>()) {
+    OrkAssert(false);
   } else {
-    assert(false);
+    gl_buf = std::make_shared<GLIdxBufHandle>();
+    idx_buf._impl.setShared(gl_buf);
+
+    auto p16        = new U16[icount];
+    rval            = (void*) p16;
+    gl_buf->mBuffer = p16;
+    gl_buf->mNumIndices = icount;
   }
   return rval;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GlGeometryBufferInterface::UnLockIB(IndexBufferBase& IdxBuf) {
-  auto plat_handle = (GLIdxBufHandle*)IdxBuf.GetHandle();
-  assert(plat_handle != nullptr);
+void GlGeometryBufferInterface::UnLockIB(IndexBufferBase& idx_buf) {
+  GLIdxBufHandle* plat_handle = nullptr;
+
+  if (auto try_gl_buf = idx_buf._impl.tryAsShared<GLIdxBufHandle>()) {
+    plat_handle = try_gl_buf.value().get();
+  }
+
+  OrkAssert(plat_handle != nullptr);
   {
     const void* src_data = plat_handle->mBuffer;
     int iblen            = plat_handle->mNumIndices * sizeof(U16);
@@ -1088,34 +1109,25 @@ void GlGeometryBufferInterface::UnLockIB(IndexBufferBase& IdxBuf) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const void* GlGeometryBufferInterface::LockIB(const IndexBufferBase& IdxBuf, int ibase, int icount) {
-  auto ph = (GLIdxBufHandle*)IdxBuf.GetHandle();
-  assert(ph != nullptr);
-  const void* rval = ph->mBuffer;
+const void* GlGeometryBufferInterface::LockIB(const IndexBufferBase& idx_buf, int ibase, int icount) {
+  GLIdxBufHandle* plat_handle = nullptr;
+  if (auto try_gl_buf = idx_buf._impl.tryAsShared<GLIdxBufHandle>()) {
+    plat_handle = try_gl_buf.value().get();
+  }
+  OrkAssert(plat_handle != nullptr);
+  const void* rval = plat_handle->mBuffer;
   return rval;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GlGeometryBufferInterface::UnLockIB(const IndexBufferBase& IdxBuf) {
+void GlGeometryBufferInterface::UnLockIB(const IndexBufferBase& idx_buf) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GlGeometryBufferInterface::ReleaseIB(IndexBufferBase& IdxBuf) {
-  auto plat_handle = (GLIdxBufHandle*)IdxBuf.GetHandle();
-
-  if (plat_handle){
-
-    uint32_t ibo = plat_handle->mIBO;
-    if(ibo){
-      glDeleteBuffers(1,&ibo);
-    }
-
-    delete plat_handle;
-  }
-
-  IdxBuf.SetHandle(0);
+void GlGeometryBufferInterface::ReleaseIB(IndexBufferBase& idx_buf) {
+  idx_buf._impl.clear();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -189,7 +189,7 @@ XgmPrimGroup::XgmPrimGroup(XgmPrimGroup* pgrp)
     , mePrimType(pgrp->mePrimType) {
   if (miNumIndices) {
     mpIndices = new StaticIndexBuffer<U16>(miNumIndices);
-    mpIndices->SetHandle(pgrp->mpIndices->GetHandle());
+    mpIndices->_impl = pgrp->mpIndices->_impl;
   }
 }
 

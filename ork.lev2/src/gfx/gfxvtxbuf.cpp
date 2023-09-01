@@ -15,7 +15,6 @@ namespace ork { namespace lev2 {
 
 IndexBufferBase::IndexBufferBase()
     : miNumIndices(0)
-    , mhIndexBuf(0)
     , mpIndices(0) {
 }
 
