@@ -302,7 +302,16 @@ CtxGLFW::CtxGLFW(Window* ork_win)
 ///////////////////////////////////////////////////////////////////////////////
 void CtxGLFW::initWithData(appinitdata_ptr_t aid) {
   _appinitdata = aid;
-  glfwSwapInterval(aid->_swap_interval);
+    switch(GRAPHICS_API){
+      case "VULKAN"_crcu:{
+        break;
+      }
+      case "OPENGL"_crcu:
+      default: {
+        glfwSwapInterval(aid->_swap_interval);
+        break;
+      }
+    }
   glfwWindowHint(GLFW_SAMPLES, aid->_msaa_samples);
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -394,7 +403,18 @@ void CtxGLFW::Show() {
 
     OrkAssert(_glfwWindow != nullptr);
     glfwSetWindowUserPointer(_glfwWindow, (void*)_eventSINK.get());
-    glfwSetWindowAttrib(_glfwWindow, GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
+    switch(GRAPHICS_API){
+      case "VULKAN"_crcu:{
+        break;
+      }
+      case "OPENGL"_crcu:
+      default: {
+        glfwSetWindowAttrib(_glfwWindow, GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+        break;
+      }
+    }
+
 
     if (not _appinitdata->_offscreen) {
       glfwSetWindowAttrib(_glfwWindow, GLFW_FOCUS_ON_SHOW, GLFW_TRUE);
@@ -636,6 +656,7 @@ void CtxGLFW::_setRefreshPolicy(RefreshPolicyItem newpolicy) { // final
 ///////////////////////////////////////////////////////////////////////////////
 void error_callback(int error, const char* msg) {
   logchan_glfw->log("GLFW ERROR<%d:%s>", error, msg);
+  OrkAssert(false);
 }
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -768,12 +789,12 @@ CtxGLFW* CtxGLFW::globalOffscreenContext() {
       case "OPENGL"_crcu:
       default: {
         offscreen_window = _gctx->_apiInitGL();
+        glfwSwapInterval(0);
         break;
       }
     }
 
     glfwSetWindowUserPointer(offscreen_window, (void*)_gctx);
-    glfwSwapInterval(0);
   }
   return _gctx;
 }

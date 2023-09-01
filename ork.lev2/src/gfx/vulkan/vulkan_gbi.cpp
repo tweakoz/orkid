@@ -284,7 +284,7 @@ void VkGeometryBufferInterface::MultiDrawMeshTasksIndirectCountNV(
 //////////////////////////////////////////////
 
 void VkGeometryBufferInterface::_doBeginFrame() {
-  OrkAssert(false);
+  //OrkAssert(false);
 }
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2::vulkan

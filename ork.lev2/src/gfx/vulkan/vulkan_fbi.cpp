@@ -35,7 +35,7 @@ void VkFrameBufferInterface::SetRtGroup(RtGroup* Base) {
 ///////////////////////////////////////////////////////
 
 void VkFrameBufferInterface::Clear(const fcolor4& rCol, float fdepth) {
-  OrkAssert(false);
+  //OrkAssert(false);
 }
 
 ///////////////////////////////////////////////////////
@@ -47,24 +47,24 @@ void VkFrameBufferInterface::clearDepth(float fdepth) {
 ///////////////////////////////////////////////////////
 
 void VkFrameBufferInterface::_setViewport(int iX, int iY, int iW, int iH) {
-  OrkAssert(false);
+  //OrkAssert(false);
 }
 
 ///////////////////////////////////////////////////////
 
 void VkFrameBufferInterface::_setScissor(int iX, int iY, int iW, int iH) {
-  OrkAssert(false);
+  //OrkAssert(false);
 }
 
 ///////////////////////////////////////////////////////
 void VkFrameBufferInterface::_doBeginFrame() {
-  OrkAssert(false);
+  //OrkAssert(false);
 }
 
 ///////////////////////////////////////////////////////
 
 void VkFrameBufferInterface::_doEndFrame() {
-  OrkAssert(false);
+  //OrkAssert(false);
 }
 
 ///////////////////////////////////////////////////////

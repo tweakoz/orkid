@@ -160,12 +160,10 @@ void VkContext::_doResizeMainSurface(int iw, int ih) {
 
 void VkContext::_doBeginFrame() {
   makeCurrentContext();
-  OrkAssert(false);
 }
 
 ///////////////////////////////////////////////////////
 void VkContext::_doEndFrame() {
-  OrkAssert(false);
 }
 
 ///////////////////////////////////////////////////////
@@ -233,7 +231,7 @@ using vkplatformobject_ptr_t = std::shared_ptr<VkPlatformObject>;
 struct VkPlatformObject {
   CtxGLFW* _ctxbase = nullptr;
   bool _needsInit   = true;
-  void_lambda_t _bindop;
+  void_lambda_t _bindop = [](){};
 };
 struct VkOneTimeInit{
 
@@ -256,8 +254,7 @@ static void platoMakeCurrent(vkplatformobject_ptr_t plato) {
   if (plato->_ctxbase) {
     plato->_ctxbase->makeCurrent();
   }
-  if(plato->_bindop)
-    plato->_bindop();
+  plato->_bindop();
 }
 static void platoSwapBuffers(vkplatformobject_ptr_t plato) {
   platoMakeCurrent(plato);
