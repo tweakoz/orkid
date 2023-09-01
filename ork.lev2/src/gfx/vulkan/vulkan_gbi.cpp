@@ -11,6 +11,32 @@
 namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
 
+VulkanVertexBuffer::VulkanVertexBuffer(vkcontext_rawptr_t ctx, size_t length){
+  _ctx = ctx;
+  _vkbufinfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+  _vkbufinfo.size = length;
+  _vkbufinfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+  _vkbufinfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+  vkCreateBuffer(ctx->_vkdevice, &_vkbufinfo, nullptr, &_vkbuf);
+}
+VulkanVertexBuffer::~VulkanVertexBuffer(){
+  vkDestroyBuffer(_ctx->_vkdevice, _vkbuf, nullptr);
+}
+VulkanIndexBuffer::VulkanIndexBuffer(vkcontext_rawptr_t ctx, size_t length){
+  _ctx = ctx;
+  _vkbufinfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+  _vkbufinfo.size = length;
+  _vkbufinfo.usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+  _vkbufinfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+  vkCreateBuffer(ctx->_vkdevice, &_vkbufinfo, nullptr, &_vkbuf);
+}
+VulkanIndexBuffer::~VulkanIndexBuffer(){
+  vkDestroyBuffer(_ctx->_vkdevice, _vkbuf, nullptr);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+
 VkGeometryBufferInterface::VkGeometryBufferInterface(vkcontext_rawptr_t ctx)
     : GeometryBufferInterface(*ctx)
     , _contextVK(ctx) {
@@ -19,22 +45,23 @@ VkGeometryBufferInterface::VkGeometryBufferInterface(vkcontext_rawptr_t ctx)
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-void* VkGeometryBufferInterface::LockVB(VertexBufferBase& vtx_buf, int ivbase, int icount) {
+void* VkGeometryBufferInterface::LockVB(VertexBufferBase& vtx_buf, int ivbase, int ivcount) {
   _contextVK->makeCurrentContext(); // TODO probably dont need this with queues
   OrkAssert(false == vtx_buf.IsLocked());
+  size_t ibasebytes = ivbase * vtx_buf.GetVtxSize();
+  size_t isizebytes = ivcount * vtx_buf.GetVtxSize();
   //////////////////////////////////////////////////////////
   // create or reference the vbo
   //////////////////////////////////////////////////////////
-
   vkvtxbuf_ptr_t vk_buf;
   if (auto try_vk_buf = vtx_buf._impl.tryAsShared<VulkanVertexBuffer>()) {
     vk_buf = try_vk_buf.value();
   } else {
-    vk_buf = std::make_shared<VulkanVertexBuffer>();
-    // vk_buf->CreateVbo(vtx_buf);
+    vk_buf = std::make_shared<VulkanVertexBuffer>(_contextVK,isizebytes);
     vtx_buf._impl.setShared(vk_buf);
   }
   OrkAssert(false);
+  //////////////////////////////////////////////////////////
   return nullptr;
 }
 
@@ -89,7 +116,8 @@ void* VkGeometryBufferInterface::LockIB(IndexBufferBase& idx_buf, int ivbase, in
   if (auto try_vk_buf = idx_buf._impl.tryAsShared<VulkanIndexBuffer>()) {
     vk_buf = try_vk_buf.value();
   } else {
-    vk_buf = std::make_shared<VulkanIndexBuffer>();
+    size_t size_in_bytes = icount * idx_buf.GetIndexSize();
+    vk_buf = std::make_shared<VulkanIndexBuffer>(_contextVK,size_in_bytes);
     idx_buf._impl.setShared(vk_buf);
   }
   OrkAssert(false);

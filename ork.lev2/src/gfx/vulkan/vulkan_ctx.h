@@ -316,10 +316,18 @@ struct VkFxShaderTechnique {
 };
 
 struct VulkanVertexBuffer{
-
+  VulkanVertexBuffer(vkcontext_rawptr_t ctx, size_t length);
+  ~VulkanVertexBuffer();
+  VkBufferCreateInfo _vkbufinfo;
+  VkBuffer _vkbuf;
+  vkcontext_rawptr_t _ctx;
 };
 struct VulkanIndexBuffer{
-
+  VulkanIndexBuffer(vkcontext_rawptr_t ctx, size_t length);
+  ~VulkanIndexBuffer();
+  VkBufferCreateInfo _vkbufinfo;
+  VkBuffer _vkbuf;
+  vkcontext_rawptr_t _ctx;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
