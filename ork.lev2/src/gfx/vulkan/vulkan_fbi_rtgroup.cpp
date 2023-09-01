@@ -13,6 +13,15 @@ namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
 static logchannel_ptr_t logchan_rtgroup = logger()->createChannel("VKRTG", fvec3(0.8, 0.2, 0.5), true);
 
+///////////////////////////////////////////////////////////////////////////////
+
+VkFboObject::VkFboObject() {
+}
+VkRtGroupImpl::VkRtGroupImpl(){
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 void VkFrameBufferInterface::_setAsRenderTarget() { // _main_rtg
   _currentRtGroup = _main_rtg.get();
   _active_rtgroup = _main_rtg.get();
@@ -26,11 +35,23 @@ void VkContext::_doResizeMainSurface(int iw, int ih) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-vkfbobj_ptr_t VkFrameBufferInterface::_createRtGroupImpl(RtGroup* rtg) {
-  vkfbobj_ptr_t FBOIMPL = std::make_shared<VkFboObject>();
-  FBOIMPL->_width       = rtg->width();
-  FBOIMPL->_height      = rtg->height();
-  return FBOIMPL;
+vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(RtGroup* rtgroup) {
+  vkrtgrpimpl_ptr_t RTGIMPL = std::make_shared<VkRtGroupImpl>();
+  RTGIMPL->_width       = rtgroup->width();
+  RTGIMPL->_height      = rtgroup->height();
+  if (rtgroup->_needsDepth) {
+
+  } else {
+    //RTGIMPL->_depthbuffer = nullptr;
+  }
+  int inumtargets = rtgroup->GetNumTargets();
+  for (int it = 0; it < inumtargets; it++) {
+    rtbuffer_ptr_t rtbuffer = rtgroup->GetMrt(it);
+    //auto bufferimpl    = rtbuffer->_impl.tryAs<VkFboObject*>();
+  }
+
+
+  return RTGIMPL;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -61,23 +82,23 @@ void VkFrameBufferInterface::SetRtGroup(RtGroup* rtgroup) {
   int numsamples  = msaaEnumToInt(_active_rtgroup->_msaa_samples);
   // printf( "inumtargets<%d> numsamples<%d>\n", inumtargets, numsamples );
   // auto texture_target_2D = (numsamples==1) ? GL_TEXTURE_2D : GL_TEXTURE_2D_MULTISAMPLE;
-  vkfbobj_ptr_t FBOIMPL;
-  if (auto as_impl = _active_rtgroup->_impl.tryAsShared<VkFboObject>()) {
-    FBOIMPL = as_impl.value();
+  vkrtgrpimpl_ptr_t RTGIMPL;
+  if (auto as_impl = _active_rtgroup->_impl.tryAsShared<VkRtGroupImpl>()) {
+    RTGIMPL = as_impl.value();
   } else {
-    FBOIMPL = _createRtGroupImpl(_active_rtgroup);
-    _active_rtgroup->_impl.setShared<VkFboObject>(FBOIMPL);
+    RTGIMPL = _createRtGroupImpl(_active_rtgroup);
+    _active_rtgroup->_impl.setShared<VkRtGroupImpl>(RTGIMPL);
   }
   /////////////////////////////////////////
-  int fbow       = FBOIMPL->_width;
-  int fboh       = FBOIMPL->_height;
-  int rtgw       = _active_rtgroup->width();
-  int rtgh       = _active_rtgroup->height();
-  bool size_diff = (rtgw != fbow) || (rtgh != fboh);
+  int implw       = RTGIMPL->_width;
+  int implh       = RTGIMPL->_height;
+  int rtgw        = _active_rtgroup->width();
+  int rtgh        = _active_rtgroup->height();
+  bool size_diff  = (rtgw != implw) || (rtgh != implh);
   if (size_diff) {
     logchan_rtgroup->log("resize FBO iw<%d> ih<%d>", iw, ih);
-    FBOIMPL = _createRtGroupImpl(_active_rtgroup);
-    _active_rtgroup->_impl.setShared<VkFboObject>(FBOIMPL);
+    RTGIMPL = _createRtGroupImpl(_active_rtgroup);
+    _active_rtgroup->_impl.setShared<VkRtGroupImpl>(RTGIMPL);
     _active_rtgroup->SetSizeDirty(false);
   }
   /////////////////////////////////////////

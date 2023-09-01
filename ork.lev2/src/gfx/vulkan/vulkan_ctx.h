@@ -220,6 +220,8 @@ struct VkRtGroupImpl {
   VkRtGroupImpl();
   vkfbobj_ptr_t _standard;
   vkfbobj_ptr_t _depthonly;
+  int _width = 0;
+  int _height = 0;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -524,7 +526,7 @@ struct VkFrameBufferInterface final : public FrameBufferInterface {
 
   freestyle_mtl_ptr_t utilshader();
 
-  vkfbobj_ptr_t _createRtGroupImpl(RtGroup* rtg);
+  vkrtgrpimpl_ptr_t _createRtGroupImpl(RtGroup* rtg);
 
   RtGroup* _active_rtgroup = nullptr;
   freestyle_mtl_ptr_t _freestyle_mtl;

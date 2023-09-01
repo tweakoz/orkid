@@ -11,11 +11,6 @@
 namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
 
-VkFboObject::VkFboObject() {
-}
-
-///////////////////////////////////////////////////////
-
 VkFrameBufferInterface::VkFrameBufferInterface(vkcontext_rawptr_t ctx)
     : FrameBufferInterface(*ctx)
     , _contextVK(ctx) {
