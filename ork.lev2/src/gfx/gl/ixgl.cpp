@@ -74,8 +74,6 @@ bool _hakHIDPI       = false;
 bool _hakMixedDPI    = false;
 float _hakCurrentDPI = 95.0f;
 
-ork::MpMcBoundedQueue<void*> ContextGL::_loadTokens;
-
 struct GlIxPlatformObject {
   static GlIxPlatformObject* _global_plato;
   static GlIxPlatformObject* _current;
@@ -169,6 +167,8 @@ void check_debug_log() {
   }
 }
 
+ork::MpMcBoundedQueue<load_token_t> ContextGL::_loadTokens;
+
 void ContextGL::GLinit() {
 
   int iinit = atomic_init++;
@@ -199,9 +199,11 @@ void ContextGL::GLinit() {
 
   ////////////////////////////////////
   for (int i = 0; i < 1; i++) {
-    GlxLoadContext* loadctx = new GlxLoadContext;
+    auto loadctx = std::make_shared<GlxLoadContext>();
     loadctx->_global_plato  = GlIxPlatformObject::_global_plato;
-    _loadTokens.push((void*)loadctx);
+    load_token_t token;
+    token.setShared<GlxLoadContext>(loadctx);
+    _loadTokens.push(token);
   }
 }
 
@@ -475,28 +477,26 @@ void ContextGL::swapBuffers(CTXBASE* ctxbase) {
 
 /////////////////////////////////////////////////////////////////////////
 
-void* ContextGL::_doBeginLoad() {
-  void* pvoiddat = nullptr;
+load_token_t ContextGL::_doBeginLoad() {
+  load_token_t token = nullptr;
 
-  while (false == _loadTokens.try_pop(pvoiddat)) {
-    ork::usleep(1000);
+  while (false == _loadTokens.try_pop(token)) {
+    usleep(1 << 10);
   }
-  GlxLoadContext* loadctx    = (GlxLoadContext*)pvoiddat;
+  auto loadctx = token.getShared<GlxLoadContext>();
   GLFWwindow* current_window = glfwGetCurrentContext();
-
   loadctx->_pushedContext = current_window;
   loadctx->_global_plato->makeCurrent();
-  return pvoiddat;
+  return token;
 }
 
 /////////////////////////////////////////////////////////////////////////
 
-void ContextGL::_doEndLoad(void* ploadtok) {
-  GlxLoadContext* loadctx = (GlxLoadContext*)ploadtok;
-
+void ContextGL::_doEndLoad(load_token_t token) {
+  auto loadctx = token.getShared<GlxLoadContext>();
   auto pushed = loadctx->_pushedContext;
   glfwMakeContextCurrent(pushed);
-  _loadTokens.push(ploadtok);
+  _loadTokens.push(token);
 }
 
 /////////////////////////////////////////////////////////////////////////

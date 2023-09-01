@@ -48,8 +48,6 @@ void setAlwaysOnTop(GLFWwindow *window) {
 bool _macosUseHIDPI = false;
 bool g_allow_HIDPI = false;
 
-ork::MpMcBoundedQueue<load_token_t> ContextGL::_loadTokens;
-
 struct GlOsxPlatformObject
 {
   static GlOsxPlatformObject* _global_plato;
@@ -116,6 +114,8 @@ void check_debug_log()
 ///////////////////////////////////////////////////////////////////////////////
 
 static ork::atomic<int> atomic_init;
+
+ork::MpMcBoundedQueue<load_token_t> ContextGL::_loadTokens;
 
 void ContextGL::GLinit()
 {

@@ -168,6 +168,7 @@ struct VulkanInstance{
 
   VulkanInstance();
   ~VulkanInstance();
+  void _setupDebugMessenger();
 
   VkApplicationInfo _appdata;
   VkInstanceCreateInfo _instancedata;
@@ -179,6 +180,7 @@ struct VulkanInstance{
   uint32_t _numgroups = 0;
   shadlang::slpcache_ptr_t _slp_cache;
   MpMcBoundedQueue<load_token_t> _loadTokens;
+  bool _debugEnabled = false;
 
 };
 

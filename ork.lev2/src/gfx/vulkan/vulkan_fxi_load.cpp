@@ -18,6 +18,8 @@ VkFxShaderObject::VkFxShaderObject(vkcontext_rawptr_t ctx, vkfxshader_bin_t bin)
   _vk_shadermoduleinfo.sType    = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
   _vk_shadermoduleinfo.codeSize = bin.size() * sizeof(uint32_t);
   _vk_shadermoduleinfo.pCode    = bin.data();
+  _vk_shadermoduleinfo.pNext    = nullptr;
+  _vk_shadermoduleinfo.flags    = 0;
   VkResult result               = vkCreateShaderModule( //
       _contextVK->_vkdevice,              //
       &_vk_shadermoduleinfo,              //
