@@ -208,6 +208,7 @@ vkfxsfile_ptr_t VkFxInterface::_loadShaderFromShaderText(FxShader* shader, //
         auto vk_uniblk = std::make_shared<VkFxShaderUniformBlk>();
         rval[name]     = vk_uniblk;
         vulkan_shaderfile->_vk_uniformblks[name] = vk_uniblk;
+        vk_uniblk->_orkparamblock = std::make_shared<FxShaderParamBlock>();
         /////////////////////////////////////////////
         vk_uniblk->_descriptor_set_id = spirv_uniblk->_descriptor_set_id;
         /////////////////////////////////////////////

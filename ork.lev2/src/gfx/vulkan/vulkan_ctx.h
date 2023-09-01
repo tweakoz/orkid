@@ -261,6 +261,7 @@ struct VkFxShaderUniformBlkItem {
 struct VkFxShaderUniformBlk {
   static size_t descriptor_set_counter;
   size_t _descriptor_set_id = 0;
+  std::shared_ptr<FxShaderParamBlock> _orkparamblock;
   std::unordered_map<std::string, vkfxsuniblkitem_ptr_t> _items_by_name;
   std::vector<vkfxsuniblkitem_ptr_t> _items_by_order;
 };
