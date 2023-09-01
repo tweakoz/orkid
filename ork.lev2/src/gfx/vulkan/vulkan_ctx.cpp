@@ -46,7 +46,7 @@ VkContext::VkContext() {
   VkDeviceCreateInfo DCI = {};
   DCI.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
   vkCreateDevice(vk_devinfo->_phydev, &DCI, nullptr, &_vkdevice);
-
+  _vkphysicaldevice = vk_devinfo->_phydev;
   ///////////////////////////////////////////////////////////////
 
   _dwi = std::make_shared<VkDrawingInterface>(this);
@@ -65,6 +65,22 @@ VkContext::VkContext() {
 ///////////////////////////////////////////////////////
 
 VkContext::~VkContext() {
+}
+
+///////////////////////////////////////////////////////
+
+uint32_t VkContext::_findMemoryType(    //
+    uint32_t typeFilter,                //
+    VkMemoryPropertyFlags properties) { //
+  VkPhysicalDeviceMemoryProperties memProperties;
+  vkGetPhysicalDeviceMemoryProperties(_vkphysicaldevice, &memProperties);
+  for (uint32_t i=0; i<memProperties.memoryTypeCount; i++) {
+    if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {
+      return i;
+    }
+  }
+  OrkAssert(false);
+  return 0;
 }
 
 ///////////////////////////////////////////////////////

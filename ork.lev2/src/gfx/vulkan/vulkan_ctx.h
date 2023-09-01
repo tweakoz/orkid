@@ -320,6 +320,7 @@ struct VulkanVertexBuffer{
   ~VulkanVertexBuffer();
   VkBufferCreateInfo _vkbufinfo;
   VkBuffer _vkbuf;
+  VkDeviceMemory _vkmem;
   vkcontext_rawptr_t _ctx;
 };
 struct VulkanIndexBuffer{
@@ -327,6 +328,8 @@ struct VulkanIndexBuffer{
   ~VulkanIndexBuffer();
   VkBufferCreateInfo _vkbufinfo;
   VkBuffer _vkbuf;
+  VkMemoryPropertyFlags _vkmemflags;
+  VkDeviceMemory _vkmem;
   vkcontext_rawptr_t _ctx;
 };
 
@@ -693,7 +696,14 @@ public:
   void _doEndLoad(void* ploadtok) final; // virtual
 
   //////////////////////////////////////////////
+
+  uint32_t _findMemoryType( //
+    uint32_t typeFilter,    //            
+    VkMemoryPropertyFlags properties);
+
+  //////////////////////////////////////////////
   VkDevice _vkdevice;
+  VkPhysicalDevice _vkphysicaldevice;
   //////////////////////////////////////////////
   void* mhHWND;
   vkcontext_ptr_t _parentTarget;

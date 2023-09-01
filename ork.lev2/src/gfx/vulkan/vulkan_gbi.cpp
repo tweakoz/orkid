@@ -11,26 +11,47 @@
 namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
 
-VulkanVertexBuffer::VulkanVertexBuffer(vkcontext_rawptr_t ctx, size_t length){
-  _ctx = ctx;
-  _vkbufinfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-  _vkbufinfo.size = length;
-  _vkbufinfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+VulkanVertexBuffer::VulkanVertexBuffer(vkcontext_rawptr_t ctx, size_t length) {
+  _ctx                   = ctx;
+  _vkbufinfo.sType       = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+  _vkbufinfo.size        = length;
+  _vkbufinfo.usage       = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
   _vkbufinfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
   vkCreateBuffer(ctx->_vkdevice, &_vkbufinfo, nullptr, &_vkbuf);
 }
-VulkanVertexBuffer::~VulkanVertexBuffer(){
+VulkanVertexBuffer::~VulkanVertexBuffer() {
+  vkFreeMemory(_ctx->_vkdevice, _vkmem, nullptr);
   vkDestroyBuffer(_ctx->_vkdevice, _vkbuf, nullptr);
 }
-VulkanIndexBuffer::VulkanIndexBuffer(vkcontext_rawptr_t ctx, size_t length){
-  _ctx = ctx;
-  _vkbufinfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-  _vkbufinfo.size = length;
-  _vkbufinfo.usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+
+///////////////////////////////////////////////////////////////////////////////
+
+VulkanIndexBuffer::VulkanIndexBuffer(vkcontext_rawptr_t ctx, size_t length) {
+  _ctx                   = ctx;
+  _vkbufinfo.sType       = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+  _vkbufinfo.size        = length;
+  _vkbufinfo.usage       = VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
   _vkbufinfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
   vkCreateBuffer(ctx->_vkdevice, &_vkbufinfo, nullptr, &_vkbuf);
+  //////////////////
+  VkMemoryRequirements memRequirements;
+  vkGetBufferMemoryRequirements(ctx->_vkdevice, _vkbuf, &memRequirements);
+  //////////////////
+  VkMemoryAllocateInfo allocInfo = {};
+  allocInfo.sType                = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+  allocInfo.allocationSize       = memRequirements.size;
+  //////////////////
+  _vkmemflags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT 
+              | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT; // do not need flush...
+  //////////////////
+  allocInfo.memoryTypeIndex = ctx->_findMemoryType(memRequirements.memoryTypeBits, _vkmemflags);
+  //////////////////
+  vkAllocateMemory(ctx->_vkdevice, &allocInfo, nullptr, &_vkmem);
+  vkBindBufferMemory(ctx->_vkdevice, _vkbuf, _vkmem, 0);
 }
-VulkanIndexBuffer::~VulkanIndexBuffer(){
+///////////////////////////////////////////////////////////////////////////////
+VulkanIndexBuffer::~VulkanIndexBuffer() {
+  vkFreeMemory(_ctx->_vkdevice, _vkmem, nullptr);
   vkDestroyBuffer(_ctx->_vkdevice, _vkbuf, nullptr);
 }
 
@@ -57,7 +78,7 @@ void* VkGeometryBufferInterface::LockVB(VertexBufferBase& vtx_buf, int ivbase, i
   if (auto try_vk_buf = vtx_buf._impl.tryAsShared<VulkanVertexBuffer>()) {
     vk_buf = try_vk_buf.value();
   } else {
-    vk_buf = std::make_shared<VulkanVertexBuffer>(_contextVK,isizebytes);
+    vk_buf = std::make_shared<VulkanVertexBuffer>(_contextVK, isizebytes);
     vtx_buf._impl.setShared(vk_buf);
   }
   OrkAssert(false);
@@ -117,7 +138,7 @@ void* VkGeometryBufferInterface::LockIB(IndexBufferBase& idx_buf, int ivbase, in
     vk_buf = try_vk_buf.value();
   } else {
     size_t size_in_bytes = icount * idx_buf.GetIndexSize();
-    vk_buf = std::make_shared<VulkanIndexBuffer>(_contextVK,size_in_bytes);
+    vk_buf               = std::make_shared<VulkanIndexBuffer>(_contextVK, size_in_bytes);
     idx_buf._impl.setShared(vk_buf);
   }
   OrkAssert(false);
@@ -125,7 +146,7 @@ void* VkGeometryBufferInterface::LockIB(IndexBufferBase& idx_buf, int ivbase, in
 }
 void VkGeometryBufferInterface::UnLockIB(IndexBufferBase& idx_buf) {
   auto vk_buf = idx_buf._impl.getShared<VulkanIndexBuffer>();
-  //OrkAssert(idx_buf.IsLocked());
+  // OrkAssert(idx_buf.IsLocked());
   OrkAssert(false);
 }
 
@@ -135,7 +156,7 @@ const void* VkGeometryBufferInterface::LockIB(const IndexBufferBase& idx_buf, in
 }
 void VkGeometryBufferInterface::UnLockIB(const IndexBufferBase& idx_buf) {
   auto vk_buf = idx_buf._impl.getShared<VulkanIndexBuffer>();
-  //OrkAssert(idx_buf.IsLocked());
+  // OrkAssert(idx_buf.IsLocked());
   OrkAssert(false);
 }
 
