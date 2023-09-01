@@ -53,6 +53,20 @@ namespace ork::dds {
 namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
 
+inline VkDeviceSize vkAlignUp(VkDeviceSize value, //
+                              VkDeviceSize alignment) { //
+    return (value + alignment - 1) & ~(alignment - 1);
+}
+
+template <typename T>
+void initializeVkStruct(T& s, VkStructureType s_type){
+  memset(&s, 0, sizeof(T));
+  s.sType = s_type;
+}
+template <typename T>
+void initializeVkStruct(T& s){
+  memset(&s, 0, sizeof(T));
+}
 struct VulkanInstance;
 struct VulkanDeviceInfo;
 struct VulkanDeviceGroup;
@@ -716,6 +730,8 @@ public:
   //////////////////////////////////////////////
   VkDevice _vkdevice;
   VkPhysicalDevice _vkphysicaldevice;
+  vkdeviceinfo_ptr_t _device_info;
+
   //////////////////////////////////////////////
   void* mhHWND;
   vkcontext_ptr_t _parentTarget;

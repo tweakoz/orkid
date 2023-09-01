@@ -13,24 +13,36 @@ namespace ork::lev2::vulkan {
 
 VulkanVertexBuffer::VulkanVertexBuffer(vkcontext_rawptr_t ctx, size_t length) {
   _ctx                   = ctx;
+  initializeVkStruct(_vkmem);
+  initializeVkStruct(_vkbuf);
+
+  printf( "length<%zu>\n", length );
+
+  initializeVkStruct(_vkbufinfo,VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO);
   _vkbufinfo.sType       = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
   _vkbufinfo.size        = length;
   _vkbufinfo.usage       = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
   _vkbufinfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-  vkCreateBuffer(ctx->_vkdevice, &_vkbufinfo, nullptr, &_vkbuf);
+
+  VkResult ok = vkCreateBuffer(ctx->_vkdevice, &_vkbufinfo, nullptr, &_vkbuf);
+  OrkAssert( ok == VK_SUCCESS );
   //////////////////
   VkMemoryRequirements memRequirements;
+  initializeVkStruct(memRequirements);
   vkGetBufferMemoryRequirements(ctx->_vkdevice, _vkbuf, &memRequirements);
+  printf( "alignment<%zu>\n", memRequirements.alignment );
   //////////////////
   VkMemoryAllocateInfo allocInfo = {};
-  allocInfo.sType                = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+  initializeVkStruct(allocInfo,VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO);
   allocInfo.allocationSize       = memRequirements.size;
   //////////////////
   _vkmemflags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT 
               | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT; // do not need flush...
   //////////////////
   allocInfo.memoryTypeIndex = ctx->_findMemoryType(memRequirements.memoryTypeBits, _vkmemflags);
+  printf( "memtypeindex = %u\n", allocInfo.memoryTypeIndex );
   //////////////////
+
   vkAllocateMemory(ctx->_vkdevice, &allocInfo, nullptr, &_vkmem);
   vkBindBufferMemory(ctx->_vkdevice, _vkbuf, _vkmem, 0);
 }
@@ -43,17 +55,19 @@ VulkanVertexBuffer::~VulkanVertexBuffer() {
 
 VulkanIndexBuffer::VulkanIndexBuffer(vkcontext_rawptr_t ctx, size_t length) {
   _ctx                   = ctx;
-  _vkbufinfo.sType       = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+
+  initializeVkStruct(_vkbufinfo,VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO);
   _vkbufinfo.size        = length;
   _vkbufinfo.usage       = VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
   _vkbufinfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
   vkCreateBuffer(ctx->_vkdevice, &_vkbufinfo, nullptr, &_vkbuf);
   //////////////////
   VkMemoryRequirements memRequirements;
+  initializeVkStruct(memRequirements);
   vkGetBufferMemoryRequirements(ctx->_vkdevice, _vkbuf, &memRequirements);
   //////////////////
   VkMemoryAllocateInfo allocInfo = {};
-  allocInfo.sType                = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+  initializeVkStruct(allocInfo,VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO);
   allocInfo.allocationSize       = memRequirements.size;
   //////////////////
   _vkmemflags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT 

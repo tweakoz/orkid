@@ -15,7 +15,7 @@
 namespace ork::lev2::vulkan {
 
 vkinstance_ptr_t _GVI = nullptr;
-
+constexpr bool _enable_debug = true;
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
 using layer_props_t = std::vector<VkLayerProperties>;
@@ -56,9 +56,11 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL vk_debug_callback(       //
 void VulkanInstance::_setupDebugMessenger() {
 
   VkDebugUtilsMessengerEXT debugMessenger;
+  initializeVkStruct(debugMessenger);
 
   VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo = {};
-  debugCreateInfo.sType             = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+  initializeVkStruct(debugCreateInfo,VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT);
+
   debugCreateInfo.messageSeverity   = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT //
                                     | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT                  //
                                     | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
@@ -83,27 +85,24 @@ VulkanInstance::VulkanInstance() {
 
   auto yel = fvec3::Yellow();
 
-  std::vector<const char*> validation_layers = {"VK_LAYER_KHRONOS_validation"};
+  std::vector<const char*> validation_layers = { //
+    "VK_LAYER_KHRONOS_validation" //
+  };
 
   auto layer_props = _layerProperties();
-  _debugEnabled    = _hasLayer(layer_props, validation_layers[0]);
+  _debugEnabled    = _enable_debug and _hasLayer(layer_props, validation_layers[0]);
 
-  _appdata.sType              = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-  _appdata.pNext              = nullptr;
+  initializeVkStruct(_appdata,VK_STRUCTURE_TYPE_APPLICATION_INFO);
   _appdata.pApplicationName   = "Orkid";
   _appdata.applicationVersion = 1;
   _appdata.pEngineName        = "Orkid";
   _appdata.engineVersion      = 1;
   _appdata.apiVersion         = VK_API_VERSION_1_2;
 
-  _instancedata.sType                   = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-  _instancedata.pNext                   = nullptr;
-  _instancedata.flags                   = 0;
+  initializeVkStruct(_instancedata,VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO);
   _instancedata.pApplicationInfo        = &_appdata;
-  _instancedata.enabledExtensionCount   = 0;
-  _instancedata.ppEnabledExtensionNames = nullptr;
 
-  if(_debugEnabled){
+  if(_debugEnabled ){
   _instancedata.enabledLayerCount       = uint32_t(validation_layers.size());
   _instancedata.ppEnabledLayerNames     = validation_layers.data();
   }
@@ -114,6 +113,9 @@ VulkanInstance::VulkanInstance() {
   _slp_cache = std::make_shared<shadlang::ShadLangParserCache>();
 
   static std::vector<const char*> instanceExtensions;
+  if(_debugEnabled){
+    instanceExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+  }
 
 #if defined(__APPLE__)
   instanceExtensions.push_back(VK_KHR_SURFACE_EXTENSION_NAME);

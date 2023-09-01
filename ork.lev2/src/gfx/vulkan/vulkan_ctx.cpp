@@ -45,11 +45,42 @@ VkContext::VkContext() {
   ///////////////////////////////////////////////////////////////
   OrkAssert(_GVI != nullptr);
   auto vk_devinfo = _GVI->_device_infos[0];
+
+  VkDeviceQueueCreateInfo DQCI = {};
+  initializeVkStruct(DQCI,VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO);
+
+  ////////////////////////////
+  // get graphics queue index
+  ////////////////////////////
+
+  size_t num_q_types = vk_devinfo->_queueprops.size();
+  int gfx_q_index = -1;
+  for (size_t i = 0; i < num_q_types; i++) {
+    if (vk_devinfo->_queueprops[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) {
+        gfx_q_index = i;
+        break;
+    }
+  }
+  float queuePriority = 1.0f;
+  DQCI.queueFamilyIndex = gfx_q_index; 
+  DQCI.queueCount = 1;
+  DQCI.pQueuePriorities = &queuePriority;
+
+  ////////////////////////////
+  // create device
+  ////////////////////////////
+
   VkDeviceCreateInfo DCI = {};
-  DCI.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+  initializeVkStruct(DCI,VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO);
+  DCI.queueCreateInfoCount = 1;
+  DCI.pQueueCreateInfos = &DQCI;
   vkCreateDevice(vk_devinfo->_phydev, &DCI, nullptr, &_vkdevice);
   _vkphysicaldevice = vk_devinfo->_phydev;
-  ///////////////////////////////////////////////////////////////
+  _device_info = vk_devinfo;
+  
+  ////////////////////////////
+  // create child interfaces
+  ////////////////////////////
 
   _dwi = std::make_shared<VkDrawingInterface>(this);
   _imi = std::make_shared<VkImiInterface>(this);
@@ -75,6 +106,7 @@ uint32_t VkContext::_findMemoryType(    //
     uint32_t typeFilter,                //
     VkMemoryPropertyFlags properties) { //
   VkPhysicalDeviceMemoryProperties memProperties;
+  initializeVkStruct(memProperties);
   vkGetPhysicalDeviceMemoryProperties(_vkphysicaldevice, &memProperties);
   for (uint32_t i=0; i<memProperties.memoryTypeCount; i++) {
     if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {
