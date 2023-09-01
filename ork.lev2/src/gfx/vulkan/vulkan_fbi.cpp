@@ -19,17 +19,15 @@ VkFboObject::VkFboObject() {
 VkFrameBufferInterface::VkFrameBufferInterface(vkcontext_rawptr_t ctx)
     : FrameBufferInterface(*ctx)
     , _contextVK(ctx) {
+
+  _main_rtg = std::make_shared<RtGroup>(ctx, 8, 8, MsaaSamples::MSAA_1X);
+  _main_rtb_color = _main_rtg->createRenderTarget(EBufferFormat::RGBA8);
+  _main_rtb_depth = _main_rtg->createRenderTarget(EBufferFormat::Z32);
 }
 
 ///////////////////////////////////////////////////////
 
 VkFrameBufferInterface::~VkFrameBufferInterface() {
-}
-
-///////////////////////////////////////////////////////
-
-void VkFrameBufferInterface::SetRtGroup(RtGroup* Base) {
-  OrkAssert(false);
 }
 
 ///////////////////////////////////////////////////////
@@ -58,12 +56,33 @@ void VkFrameBufferInterface::_setScissor(int iX, int iY, int iW, int iH) {
 
 ///////////////////////////////////////////////////////
 void VkFrameBufferInterface::_doBeginFrame() {
-  //OrkAssert(false);
+  RtGroup* rtg = _currentRtGroup;
+  float fx = 0.0f; 
+  float fy = 0.0f; 
+  float fw = 0.0f;
+  float fh = 0.0f;
+  SetRtGroup(rtg);
+  if (_main_rtg and (rtg == nullptr)) {
+    rtg = _main_rtg.get();
+  }
+  if (rtg) {
+    fw = rtg->width();
+    fh = rtg->height();
+    //glDepthRange(0.0, 1.0f);
+  }
+  ViewportRect extents(fx, fy, fw, fh);
+  pushViewport(extents);
+  pushScissor(extents);
+  if(rtg and rtg->_autoclear) {
+    rtGroupClear(rtg);
+  }
 }
 
 ///////////////////////////////////////////////////////
 
 void VkFrameBufferInterface::_doEndFrame() {
+  popViewport();
+  popScissor();
   //OrkAssert(false);
 }
 
@@ -96,7 +115,7 @@ void VkFrameBufferInterface::GetPixel(const fvec4& rAt, PixelFetchContext& ctx) 
 ///////////////////////////////////////////////////////
 
 void VkFrameBufferInterface::rtGroupClear(RtGroup* rtg) {
-  OrkAssert(false);
+  //OrkAssert(false);
 }
 
 ///////////////////////////////////////////////////////
@@ -119,12 +138,6 @@ void VkFrameBufferInterface::blit(rtgroup_ptr_t src, rtgroup_ptr_t dst) {
 
 ///////////////////////////////////////////////////////
 void VkFrameBufferInterface::downsample2x2(rtgroup_ptr_t src, rtgroup_ptr_t dst) {
-  OrkAssert(false);
-}
-
-//////////////////////////////////////////////
-
-void VkFrameBufferInterface::_setAsRenderTarget() {
   OrkAssert(false);
 }
 

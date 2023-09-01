@@ -151,11 +151,6 @@ uint32_t VkContext::_findMemoryType(    //
 void VkContext::FxInit() {
 }
 
-///////////////////////////////////////////////////////////////////////
-
-void VkContext::_doResizeMainSurface(int iw, int ih) {
-}
-
 ///////////////////////////////////////////////////////
 
 void VkContext::_doBeginFrame() {

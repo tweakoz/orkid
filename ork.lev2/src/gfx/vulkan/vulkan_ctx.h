@@ -203,6 +203,8 @@ struct VulkanInstance{
 struct VkFboObject {
   static const int kmaxrt = RtGroup::kmaxmrts;
   VkFboObject();
+  int _width = 0;
+  int _height = 0;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -215,6 +217,7 @@ struct VklRtBufferImpl {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct VkRtGroupImpl {
+  VkRtGroupImpl();
   vkfbobj_ptr_t _standard;
   vkfbobj_ptr_t _depthonly;
 };
@@ -521,8 +524,9 @@ struct VkFrameBufferInterface final : public FrameBufferInterface {
 
   freestyle_mtl_ptr_t utilshader();
 
-protected:
+  vkfbobj_ptr_t _createRtGroupImpl(RtGroup* rtg);
 
+  RtGroup* _active_rtgroup = nullptr;
   freestyle_mtl_ptr_t _freestyle_mtl;
   const FxShaderTechnique* _tek_downsample2x2 = nullptr;
   const FxShaderTechnique* _tek_blit = nullptr;
@@ -530,6 +534,9 @@ protected:
   const FxShaderParam*     _fxpColorMap = nullptr;
 
   vkcontext_rawptr_t _contextVK;
+  rtgroup_ptr_t _main_rtg;
+  rtbuffer_ptr_t _main_rtb_color;
+  rtbuffer_ptr_t _main_rtb_depth;
   int miCurScissorX;
   int miCurScissorY;
   int miCurScissorW;
@@ -738,7 +745,6 @@ public:
   uint32_t _vkq_graphics = NO_QUEUE;
   uint32_t _vkq_compute = NO_QUEUE;
   uint32_t _vkq_transfer = NO_QUEUE;
-
   //////////////////////////////////////////////
   void* mhHWND;
   vkcontext_ptr_t _parentTarget;
