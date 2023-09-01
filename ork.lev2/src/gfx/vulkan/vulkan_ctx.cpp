@@ -6,6 +6,8 @@
 ////////////////////////////////////////////////////////////////
 
 #include "vulkan_ctx.h"
+#import <ork/lev2/glfw/ctx_glfw.h>
+#include <GLFW/glfw3native.h>
 
 ImplementReflectionX(ork::lev2::vulkan::VkContext, "VkContext");
 
@@ -96,15 +98,19 @@ void VkContext::_doResizeMainSurface(int iw, int ih) {
 ///////////////////////////////////////////////////////
 
 void VkContext::_doBeginFrame() {
+  makeCurrentContext();
+  OrkAssert(false);
 }
 
 ///////////////////////////////////////////////////////
 void VkContext::_doEndFrame() {
+  OrkAssert(false);
 }
 
 ///////////////////////////////////////////////////////
 
 void* VkContext::_doClonePlatformHandle() const {
+  OrkAssert(false);
   return nullptr;
 }
 
@@ -220,11 +226,26 @@ bool VkContext::SetDisplayMode(DisplayMode* mode) {
   return false;
 }
 ///////////////////////////////////////////////////////
-void* VkContext::_doBeginLoad() {
-  return nullptr;
+load_token_t VkContext::_doBeginLoad() {
+  vkloadctx_ptr_t save_data = nullptr;
+
+  while (false == _GVI->_loadTokens.try_pop(save_data)) {
+    usleep(1 << 10);
+  }
+  GLFWwindow* current_window = glfwGetCurrentContext();
+  save_data->_pushedWindow = current_window;
+  // todo make global loading ctx current..
+  //loadctx->makeCurrentContext();
+  load_token_t rval;
+  rval.setShared<VkLoadContext>(save_data);
+  return rval;
 }
 ///////////////////////////////////////////////////////
-void VkContext::_doEndLoad(void* ploadtok) {
+void VkContext::_doEndLoad(load_token_t ploadtok) {
+  auto loadctx = ploadtok.getShared<VkLoadContext>();
+  auto pushed = loadctx->_pushedWindow;
+  glfwMakeContextCurrent(pushed);
+  _GVI->_loadTokens.push(loadctx);
 }
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2::vulkan

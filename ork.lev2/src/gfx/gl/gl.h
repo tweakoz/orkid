@@ -560,8 +560,8 @@ public:
 
   void TakeThreadOwnership() final;
   bool SetDisplayMode(DisplayMode* mode) final;
-  void* _doBeginLoad() final;
-  void _doEndLoad(void* ploadtok) final; // virtual
+  load_token_t _doBeginLoad() final;
+  void _doEndLoad(load_token_t ploadtok) final; // virtual
 
   void* mhHWND;
   void* mGLXContext;
@@ -572,7 +572,7 @@ public:
 
   //////////////////////////////////////////////
 
-  static ork::MpMcBoundedQueue<void*> _loadTokens;
+  static ork::MpMcBoundedQueue<load_token_t> _loadTokens;
 
   ///////////////////////////////////////////////////////////////////////////
   // Rendering State Info

@@ -119,6 +119,8 @@ struct DisplayMode {
 ///   IMI : ImmediateMode interface. convenience methods for oldschool type gfx
 ///////////////////////////////////////////////////////////////////////////////
 
+using load_token_t = svar32_t;
+
 struct Context : public ork::Object {
   DeclareAbstractX(Context, ork::Object);
 
@@ -289,8 +291,8 @@ public:
   virtual void TakeThreadOwnership() {
   }
 
-  void* BeginLoad();
-  void EndLoad(void* ploadtok);
+  load_token_t BeginLoad();
+  void EndLoad(load_token_t ploadtok);
 
   static const int kiModColorStackMax = 8;
 
@@ -333,10 +335,10 @@ private:
 
   virtual void _doBeginFrame(void) = 0;
   virtual void _doEndFrame(void)   = 0;
-  virtual void* _doBeginLoad() {
+  virtual load_token_t _doBeginLoad() {
     return nullptr;
   }
-  virtual void _doEndLoad(void* ploadtok) {
+  virtual void _doEndLoad(load_token_t ploadtok) {
   }
 
   virtual void _doResizeMainSurface(int iw, int ih) = 0;

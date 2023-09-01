@@ -18,6 +18,8 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 
+struct GLFWwindow;
+
 #if defined(__APPLE__)
 #define VK_USE_PLATFORM_MACOS_MVK
 #endif
@@ -86,6 +88,7 @@ struct VkTextureAsyncTask;
 struct VkTexLoadReq;
 struct VulkanVertexBuffer;
 struct VulkanIndexBuffer;
+struct VkLoadContext;
 //
 using vkinstance_ptr_t = std::shared_ptr<VulkanInstance>;
 using vkdeviceinfo_ptr_t = std::shared_ptr<VulkanDeviceInfo>;
@@ -127,6 +130,7 @@ using vktexloadreq_ptr_t = std::shared_ptr<VkTexLoadReq>;
 using vkfxshader_bin_t = std::vector<uint32_t>;
 using vkvtxbuf_ptr_t = std::shared_ptr<VulkanVertexBuffer>;
 using vkidxbuf_ptr_t = std::shared_ptr<VulkanIndexBuffer>;
+using vkloadctx_ptr_t = std::shared_ptr<VkLoadContext>;
 
 extern vkinstance_ptr_t _GVI;
 
@@ -174,6 +178,7 @@ struct VulkanInstance{
   uint32_t _numgpus = 0;
   uint32_t _numgroups = 0;
   shadlang::slpcache_ptr_t _slp_cache;
+  MpMcBoundedQueue<vkloadctx_ptr_t> _loadTokens;
 
 };
 
@@ -332,6 +337,11 @@ struct VulkanIndexBuffer{
   VkMemoryPropertyFlags _vkmemflags;
   VkDeviceMemory _vkmem;
   vkcontext_rawptr_t _ctx;
+};
+
+struct VkLoadContext {
+  VkContext* _vkcontext      = nullptr;
+  GLFWwindow* _pushedWindow  = nullptr;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -693,8 +703,8 @@ public:
 
   void TakeThreadOwnership() final;
   bool SetDisplayMode(DisplayMode* mode) final;
-  void* _doBeginLoad() final;
-  void _doEndLoad(void* ploadtok) final; // virtual
+  load_token_t _doBeginLoad() final;
+  void _doEndLoad(load_token_t ploadtok) final; // virtual
 
   //////////////////////////////////////////////
 

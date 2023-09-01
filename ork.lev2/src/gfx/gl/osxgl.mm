@@ -48,7 +48,7 @@ void setAlwaysOnTop(GLFWwindow *window) {
 bool _macosUseHIDPI = false;
 bool g_allow_HIDPI = false;
 
-ork::MpMcBoundedQueue<void*> ContextGL::_loadTokens;
+ork::MpMcBoundedQueue<load_token_t> ContextGL::_loadTokens;
 
 struct GlOsxPlatformObject
 {
@@ -139,9 +139,11 @@ void ContextGL::GLinit()
 
   ////////////////////////////////////
   for (int i = 0; i < 1; i++) {
-    GlOsxLoadContext* loadctx = new GlOsxLoadContext;
+    auto loadctx = std::make_shared<GlOsxLoadContext>();
     loadctx->_global_plato  = GlOsxPlatformObject::_global_plato;
-    _loadTokens.push((void*)loadctx);
+    load_token_t token;
+    token.setShared<GlOsxLoadContext>(loadctx);
+    _loadTokens.push(token);
   }
 }
 
@@ -307,27 +309,27 @@ void ContextGL::SwapGLContext( CTXBASE *pCTFL )
 
 /////////////////////////////////////////////////////////////////////////
 
-void* ContextGL::_doBeginLoad()
+load_token_t ContextGL::_doBeginLoad()
 {
-  void* pvoiddat = nullptr;
+  load_token_t token = nullptr;
 
-  while (false == _loadTokens.try_pop(pvoiddat)) {
+  while (false == _loadTokens.try_pop(token)) {
     usleep(1 << 10);
   }
-  GlOsxLoadContext* loadctx    = (GlOsxLoadContext*)pvoiddat;
+  auto loadctx = token.getShared<GlOsxLoadContext>();
   GLFWwindow* current_window = glfwGetCurrentContext();
 
   loadctx->_pushedContext = current_window;
   loadctx->_global_plato->makeCurrent();
-  return pvoiddat;
+
+  return token;
 }
 
-void ContextGL::_doEndLoad(void*ploadtok)
-{
-  GlOsxLoadContext* loadctx = (GlOsxLoadContext*)ploadtok;
+void ContextGL::_doEndLoad(load_token_t token) {
+  auto loadctx = token.getShared<GlOsxLoadContext>();
   auto pushed = loadctx->_pushedContext;
   glfwMakeContextCurrent(pushed);
-  _loadTokens.push(ploadtok);
+  _loadTokens.push(token);
 }
 
 void recomputeHIDPI(Context* ctx){

@@ -153,6 +153,15 @@ VulkanInstance::VulkanInstance() {
        device_info->_extension_set.insert(ext.extensionName);
     }
   } // for(auto& phy : phydevs){
+
+  for (int i = 0; i < 1; i++) {
+    auto loadctx = std::make_shared<VkLoadContext>();
+    //loadctx->_global_plato  = GlOsxPlatformObject::_global_plato;
+    load_token_t token;
+    token.setShared<VkLoadContext>(loadctx);
+    _loadTokens.push(token);
+  }
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////

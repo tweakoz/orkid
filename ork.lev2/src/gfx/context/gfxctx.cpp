@@ -123,10 +123,10 @@ bool Context::SetDisplayMode(unsigned int index) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void* Context::BeginLoad() {
+load_token_t Context::BeginLoad() {
   return _doBeginLoad();
 }
-void Context::EndLoad(void* ploadtok) {
+void Context::EndLoad(load_token_t ploadtok) {
   _doEndLoad(ploadtok);
 }
 
