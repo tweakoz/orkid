@@ -100,6 +100,7 @@ void* VkGeometryBufferInterface::LockVB(VertexBufferBase& vtx_buf, int ivbase, i
   OrkAssert(false == vtx_buf.IsLocked());
   size_t ibasebytes = ivbase * vtx_buf.GetVtxSize();
   size_t isizebytes = ivcount * vtx_buf.GetVtxSize();
+  bool is_static = vtx_buf.IsStatic();
   //////////////////////////////////////////////////////////
   // create or reference the vbo
   //////////////////////////////////////////////////////////
@@ -107,19 +108,32 @@ void* VkGeometryBufferInterface::LockVB(VertexBufferBase& vtx_buf, int ivbase, i
   if (auto try_vk_impl = vtx_buf._impl.tryAsShared<VulkanVertexBuffer>()) {
     vk_impl = try_vk_impl.value();
   } else {
-    vk_impl = std::make_shared<VulkanVertexBuffer>(_contextVK, isizebytes);
+    size_t alloc_size = vtx_buf.GetVtxSize() * vtx_buf.GetMax();
+    vk_impl = std::make_shared<VulkanVertexBuffer>(_contextVK, alloc_size);
     vtx_buf._impl.setShared(vk_impl);
   }
-  void* rval = nullptr;
-  vkMapMemory( _contextVK->_vkdevice, //
-               vk_impl->_vkmem, // 
-               ibasebytes, // 
-               isizebytes, // 
-               0, // 
-               &rval);
+  void* vertex_memory = nullptr;
+  if(is_static){
+    OrkAssert(ibasebytes==0); // TODO change api to not require offset for static buffers
+    vkMapMemory( _contextVK->_vkdevice, // vulkan device
+                 vk_impl->_vkmem,       // vulkan memory 
+                 0,                     // offset
+                 isizebytes,            // size   
+                 0,                     // flags 
+                 &vertex_memory);
+  }
+  else{
+    vkMapMemory( _contextVK->_vkdevice, // vulkan device
+                 vk_impl->_vkmem,       // vulkan memory
+                 ibasebytes,            // offset 
+                 isizebytes,            // size 
+                 0,                     // flags 
+                 &vertex_memory);
+  }
   //////////////////////////////////////////////////////////
   vtx_buf.Lock();
-  return rval;
+  OrkAssert(vertex_memory != nullptr);
+  return vertex_memory;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

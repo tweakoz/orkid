@@ -143,7 +143,7 @@ void Layout::updateAll() {
 }
 /////////////////////////////////////////////////////////////////////////
 void Layout::_doUpdateAll(visit_set& vset) {
-  bool log = true;
+  bool log = false;
   if(log)printf( "  layout<%p>::_doUpdateAll  ", this );
   if (_top){
     if(log)printf( "  _top<%p>  ", _top.get() );

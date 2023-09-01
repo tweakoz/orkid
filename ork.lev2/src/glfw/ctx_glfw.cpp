@@ -302,16 +302,16 @@ CtxGLFW::CtxGLFW(Window* ork_win)
 ///////////////////////////////////////////////////////////////////////////////
 void CtxGLFW::initWithData(appinitdata_ptr_t aid) {
   _appinitdata = aid;
-    switch(GRAPHICS_API){
-      case "VULKAN"_crcu:{
-        break;
-      }
-      case "OPENGL"_crcu:
-      default: {
-        glfwSwapInterval(aid->_swap_interval);
-        break;
-      }
+  switch (GRAPHICS_API) {
+    case "VULKAN"_crcu: {
+      break;
     }
+    case "OPENGL"_crcu:
+    default: {
+      glfwSwapInterval(aid->_swap_interval);
+      break;
+    }
+  }
   glfwWindowHint(GLFW_SAMPLES, aid->_msaa_samples);
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -404,8 +404,8 @@ void CtxGLFW::Show() {
     OrkAssert(_glfwWindow != nullptr);
     glfwSetWindowUserPointer(_glfwWindow, (void*)_eventSINK.get());
 
-    switch(GRAPHICS_API){
-      case "VULKAN"_crcu:{
+    switch (GRAPHICS_API) {
+      case "VULKAN"_crcu: {
         break;
       }
       case "OPENGL"_crcu:
@@ -414,7 +414,6 @@ void CtxGLFW::Show() {
         break;
       }
     }
-
 
     if (not _appinitdata->_offscreen) {
       glfwSetWindowAttrib(_glfwWindow, GLFW_FOCUS_ON_SHOW, GLFW_TRUE);
@@ -488,12 +487,30 @@ CtxGLFW::~CtxGLFW() {
 ///////////////////////////////////////////////////////////////////////////////
 void CtxGLFW::makeCurrent() {
   // printf( "CtxGLFW makeCurrent<%p> glfw_win<%p> isglobal<%d>", this, _glfwWindow, int(isGlobal()) );
-  glfwMakeContextCurrent(_glfwWindow);
+  switch (GRAPHICS_API) {
+    case "VULKAN"_crcu: {
+      break;
+    }
+    case "OPENGL"_crcu:
+    default: {
+      glfwMakeContextCurrent(_glfwWindow);
+      break;
+    }
+  }
 }
 ///////////////////////////////////////////////////////////////////////////////
 void CtxGLFW::swapBuffers() {
-  glfwSwapBuffers(_glfwWindow);
-  usleep(5000);
+  switch (GRAPHICS_API) {
+    case "VULKAN"_crcu: {
+      break;
+    }
+    case "OPENGL"_crcu:
+    default: {
+      glfwSwapBuffers(_glfwWindow);
+      usleep(5000);
+      break;
+    }
+  }
 }
 ///////////////////////////////////////////////////////////////////////////////
 void CtxGLFW::SetAlwaysRun(bool brun) {
@@ -610,7 +627,7 @@ void CtxGLFW::SlotRepaint() {
   // auto lamb = [&]() {
   if (not GfxEnv::initialized())
     return;
-  
+
   ork::PerfMarkerPush("ork.viewport.draw.begin");
 
   // this->mDrawLock++;
@@ -623,7 +640,7 @@ void CtxGLFW::SlotRepaint() {
     auto drwev         = std::make_shared<ui::DrawEvent>(this->_target);
 
     auto widget = gfxwin ? gfxwin->GetRootWidget() : nullptr;
-    if (widget){
+    if (widget) {
       widget->draw(drwev);
     }
   }
@@ -725,7 +742,8 @@ GLFWwindow* CtxGLFW::_apiInitGL() {
 
   int minor_api_version = _gctx->_vars->typedValueForKey<int>("GL_API_MINOR_VERSION").value();
   logchan_glfw->log("GL: offscreen_window<%p>", offscreen_window);
-  logchan_glfw->log("GL: global_ctxbase<%p> vars<%p> minor version<%d : %d>", _gctx, (void*)ctx_vars.get(), MINOR, minor_api_version);
+  logchan_glfw->log(
+      "GL: global_ctxbase<%p> vars<%p> minor version<%d : %d>", _gctx, (void*)ctx_vars.get(), MINOR, minor_api_version);
   OrkAssert(offscreen_window != nullptr);
   glfwSetWindowAttrib(offscreen_window, GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
   return offscreen_window;
@@ -781,8 +799,8 @@ CtxGLFW* CtxGLFW::globalOffscreenContext() {
 
     GLFWwindow* offscreen_window = nullptr;
 
-    switch(GRAPHICS_API){
-      case "VULKAN"_crcu:{
+    switch (GRAPHICS_API) {
+      case "VULKAN"_crcu: {
         offscreen_window = _gctx->_apiInitVK();
         break;
       }
@@ -1097,6 +1115,8 @@ struct PopupImpl {
     double prev_time            = timer.SecsSinceStart();
     ui::updatedata_ptr_t updata = std::make_shared<ui::UpdateData>();
 
+    bool is_opengl = (GRAPHICS_API == "OPENGL"_crcu);
+
     while (not _terminate) {
 
       double this_time = timer.SecsSinceStart();
@@ -1106,14 +1126,16 @@ struct PopupImpl {
       updata->_abstime = this_time;
 
       glfwPollEvents();
-      glfwMakeContextCurrent(_glfwPopupWindow);
+      if (is_opengl)
+        glfwMakeContextCurrent(_glfwPopupWindow);
 
       _rtgroup->_clearColor = fvec4(0, 0, 0, 0);
 
       _parent_context->FBI()->pushViewport(0, 0, _w, _h);
       _parent_context->FBI()->pushScissor(0, 0, _w, _h);
       _parent_context->FBI()->PushRtGroup(_rtgroup.get());
-      glfwMakeContextCurrent(_glfwPopupWindow);
+      if (is_opengl)
+        glfwMakeContextCurrent(_glfwPopupWindow);
 
       auto plato_saved = _parent_context->_impl;
 
@@ -1131,15 +1153,18 @@ struct PopupImpl {
       _parent_context->FBI()->PopRtGroup();
       _parent_context->FBI()->popScissor();
       _parent_context->FBI()->popViewport();
-      glfwMakeContextCurrent(_glfwPopupWindow);
-
-      glFinish();
-      glfwSwapBuffers(_glfwPopupWindow);
+      if (is_opengl) {
+        glfwMakeContextCurrent(_glfwPopupWindow);
+        glFinish();
+        glfwSwapBuffers(_glfwPopupWindow);
+      }
 
       usleep(1000 * 16);
     }
 
-    glfwMakeContextCurrent(ctxbase->_glfwWindow);
+    if (is_opengl) {
+      glfwMakeContextCurrent(ctxbase->_glfwWindow);
+    }
     glfwFocusWindow(ctxbase->_glfwWindow);
   }
   //////////////////////////////////////////////////
@@ -1150,11 +1175,11 @@ struct PopupImpl {
   ui::context_ptr_t _uicontext;
   rtgroup_ptr_t _rtgroup;
   int _x, _y, _w, _h;
-  bool _terminate     = false;
+  bool _terminate = false;
   ctx_platform_handle_t _cloned_plato;
-  int _buttonState    = 0;
-  int _mouseX         = 0;
-  int _mouseY         = 0;
+  int _buttonState = 0;
+  int _mouseX      = 0;
+  int _mouseY      = 0;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
