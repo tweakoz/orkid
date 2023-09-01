@@ -320,6 +320,7 @@ struct VulkanVertexBuffer{
   ~VulkanVertexBuffer();
   VkBufferCreateInfo _vkbufinfo;
   VkBuffer _vkbuf;
+  VkMemoryPropertyFlags _vkmemflags;
   VkDeviceMemory _vkmem;
   vkcontext_rawptr_t _ctx;
 };

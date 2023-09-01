@@ -18,6 +18,21 @@ VulkanVertexBuffer::VulkanVertexBuffer(vkcontext_rawptr_t ctx, size_t length) {
   _vkbufinfo.usage       = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
   _vkbufinfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
   vkCreateBuffer(ctx->_vkdevice, &_vkbufinfo, nullptr, &_vkbuf);
+  //////////////////
+  VkMemoryRequirements memRequirements;
+  vkGetBufferMemoryRequirements(ctx->_vkdevice, _vkbuf, &memRequirements);
+  //////////////////
+  VkMemoryAllocateInfo allocInfo = {};
+  allocInfo.sType                = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+  allocInfo.allocationSize       = memRequirements.size;
+  //////////////////
+  _vkmemflags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT 
+              | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT; // do not need flush...
+  //////////////////
+  allocInfo.memoryTypeIndex = ctx->_findMemoryType(memRequirements.memoryTypeBits, _vkmemflags);
+  //////////////////
+  vkAllocateMemory(ctx->_vkdevice, &allocInfo, nullptr, &_vkmem);
+  vkBindBufferMemory(ctx->_vkdevice, _vkbuf, _vkmem, 0);
 }
 VulkanVertexBuffer::~VulkanVertexBuffer() {
   vkFreeMemory(_ctx->_vkdevice, _vkmem, nullptr);
@@ -74,50 +89,54 @@ void* VkGeometryBufferInterface::LockVB(VertexBufferBase& vtx_buf, int ivbase, i
   //////////////////////////////////////////////////////////
   // create or reference the vbo
   //////////////////////////////////////////////////////////
-  vkvtxbuf_ptr_t vk_buf;
-  if (auto try_vk_buf = vtx_buf._impl.tryAsShared<VulkanVertexBuffer>()) {
-    vk_buf = try_vk_buf.value();
+  vkvtxbuf_ptr_t vk_impl;
+  if (auto try_vk_impl = vtx_buf._impl.tryAsShared<VulkanVertexBuffer>()) {
+    vk_impl = try_vk_impl.value();
   } else {
-    vk_buf = std::make_shared<VulkanVertexBuffer>(_contextVK, isizebytes);
-    vtx_buf._impl.setShared(vk_buf);
+    vk_impl = std::make_shared<VulkanVertexBuffer>(_contextVK, isizebytes);
+    vtx_buf._impl.setShared(vk_impl);
   }
-  OrkAssert(false);
+  void* rval = nullptr;
+  vkMapMemory( _contextVK->_vkdevice, //
+               vk_impl->_vkmem, // 
+               ibasebytes, // 
+               isizebytes, // 
+               0, // 
+               &rval);
   //////////////////////////////////////////////////////////
-  return nullptr;
+  vtx_buf.Lock();
+  return rval;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkGeometryBufferInterface::UnLockVB(VertexBufferBase& vtx_buf) {
-  auto vk_buf = vtx_buf._impl.getShared<VulkanVertexBuffer>();
+  auto vk_impl = vtx_buf._impl.getShared<VulkanVertexBuffer>();
   OrkAssert(vtx_buf.IsLocked());
-  OrkAssert(false);
+  vkUnmapMemory(_contextVK->_vkdevice, vk_impl->_vkmem);
+  vtx_buf.Unlock();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const void* VkGeometryBufferInterface::LockVB(const VertexBufferBase& vtx_buf, int ivbase, int icount) {
-  _contextVK->makeCurrentContext(); // TODO probably dont need this with queues
-  auto vk_buf = vtx_buf._impl.getShared<VulkanVertexBuffer>();
-  OrkAssert(false == vtx_buf.IsLocked());
-  OrkAssert(false);
-  return nullptr;
+const void* VkGeometryBufferInterface::LockVB(const VertexBufferBase& vtx_buf, int ivbase, int ivcount) {
+  auto& mutable_vtx_buf = const_cast<VertexBufferBase&>(vtx_buf);
+  return LockVB(mutable_vtx_buf, ivbase, ivcount);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkGeometryBufferInterface::UnLockVB(const VertexBufferBase& vtx_buf) {
-  auto vk_buf = vtx_buf._impl.getShared<VulkanVertexBuffer>();
-  OrkAssert(vtx_buf.IsLocked());
-  OrkAssert(false);
+  auto& mutable_vtx_buf = const_cast<VertexBufferBase&>(vtx_buf);
+  UnLockVB(mutable_vtx_buf);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkGeometryBufferInterface::ReleaseVB(VertexBufferBase& vtx_buf) {
-  auto vk_buf = vtx_buf._impl.getShared<VulkanVertexBuffer>();
+  auto vk_impl = vtx_buf._impl.getShared<VulkanVertexBuffer>();
 
-  if (vk_buf) {
+  if (vk_impl) {
     vtx_buf._impl = buffer_impl_t();
   }
   OrkAssert(false);
@@ -173,11 +192,13 @@ void VkGeometryBufferInterface::ReleaseIB(IndexBufferBase& idx_buf) {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-bool VkGeometryBufferInterface::BindStreamSources(const VertexBufferBase& VBuf, const IndexBufferBase& IBuf) {
+bool VkGeometryBufferInterface::BindStreamSources(const VertexBufferBase& vtx_buf, const IndexBufferBase& IBuf) {
   OrkAssert(false);
+  auto vk_impl = vtx_buf._impl.getShared<VulkanVertexBuffer>();
+  //vkCmdBindVertexBuffers(cmd_buffer, 0, 1, &vk_impl->_vkbuf, offsets);
   return false;
 }
-bool VkGeometryBufferInterface::BindVertexStreamSource(const VertexBufferBase& VBuf) {
+bool VkGeometryBufferInterface::BindVertexStreamSource(const VertexBufferBase& vtx_buf) {
   OrkAssert(false);
   return false;
 }
@@ -189,7 +210,7 @@ void VkGeometryBufferInterface::BindVertexDeclaration(EVtxStreamFormat efmt) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkGeometryBufferInterface::DrawPrimitiveEML(
-    const VertexBufferBase& VBuf, //
+    const VertexBufferBase& vtx_buf, //
     PrimitiveType eType,
     int ivbase,
     int ivcount) {
@@ -207,7 +228,7 @@ void VkGeometryBufferInterface::DrawPrimitiveEML(
 #endif
 
 void VkGeometryBufferInterface::DrawIndexedPrimitiveEML(
-    const VertexBufferBase& VBuf,
+    const VertexBufferBase& vtx_buf,
     const IndexBufferBase& IdxBuf,
     PrimitiveType eType,
     int ivbase,
@@ -216,7 +237,7 @@ void VkGeometryBufferInterface::DrawIndexedPrimitiveEML(
 }
 
 void VkGeometryBufferInterface::DrawInstancedIndexedPrimitiveEML(
-    const VertexBufferBase& VBuf,
+    const VertexBufferBase& vtx_buf,
     const IndexBufferBase& IdxBuf,
     PrimitiveType eType,
     size_t instance_count) {
