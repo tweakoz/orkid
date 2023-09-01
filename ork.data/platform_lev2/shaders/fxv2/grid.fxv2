@@ -1,8 +1,8 @@
-  import "mathtools.i";
-  import "misctools.i";
-  import "envtools.i";
-  import "picktools.i";
-  import "pbrtools.i";
+  import "mathtools.i2";
+  import "misctools.i2";
+  import "envtools.i2";
+  import "picktools.i2";
+  import "pbrtools.i2";
 ///////////////////////////////////////////////////////////////
 // FxConfigs
 ///////////////////////////////////////////////////////////////

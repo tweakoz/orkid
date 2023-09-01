@@ -1,6 +1,6 @@
-import "orkshader://mathtools.i";
-import "orkshader://brdftools.i";
-import "orkshader://envtools.i";
+import "orkshader://mathtools.i2";
+import "orkshader://brdftools.i2";
+import "orkshader://envtools.i2";
 
 ///////////////////////////////////////////////////////////////
 libblock lib_def 

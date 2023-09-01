@@ -2,12 +2,12 @@
 // FxConfigs
 ///////////////////////////////////////////////////////////////
 fxconfig fxcfg_default {
-  import "mathtools.i";
-  import "misctools.i";
-  import "envtools.i";
-  import "brdftools.i";
-  import "deftools.i";
-  import "gbuftools.i";
+  import "mathtools.i2";
+  import "misctools.i2";
+  import "envtools.i2";
+  import "brdftools.i2";
+  import "deftools.i2";
+  import "gbuftools.i2";
 ///////////////////////////////////////////////////////////////
 }
 // Interfaces

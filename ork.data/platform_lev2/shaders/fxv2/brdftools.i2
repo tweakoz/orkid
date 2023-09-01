@@ -1,4 +1,4 @@
-import "orkshader://mathtools.i";
+import "orkshader://mathtools.i2";
 
 libblock lib_brdf : lib_math {
 

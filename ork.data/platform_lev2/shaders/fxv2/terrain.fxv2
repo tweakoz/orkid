@@ -3,8 +3,8 @@
 ///////////////////////////////////////////////////////////////
 fxconfig fxcfg_default {
   glsl_version = "330";
-  import "misctools.i";
-  import "gbuftools.i";
+  import "misctools.i2";
+  import "gbuftools.i2";
 }
 ///////////////////////////////////////////////////////////////
 // Interfaces

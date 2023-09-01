@@ -1,10 +1,10 @@
-import "orkshader://gbuftools.i";
-import "orkshader://brdftools.i";
-import "orkshader://deftools.i";
-import "orkshader://fwdtools.i";
-import "orkshader://skintools.i";
-import "orkshader://mathtools.i";
-import "orkshader://envtools.i";
+import "orkshader://gbuftools.i2";
+import "orkshader://brdftools.i2";
+import "orkshader://deftools.i2";
+import "orkshader://fwdtools.i2";
+import "orkshader://skintools.i2";
+import "orkshader://mathtools.i2";
+import "orkshader://envtools.i2";
 ///////////////////////////////////////////////////////////////
 // Interfaces
 ///////////////////////////////////////////////////////////////
@@ -326,7 +326,7 @@ vertex_shader vs_skinned_gbuffer //
 // fragment shaders
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_gbuffer : iface_fgbuffer : lib_pbr_frg {
-  ps_common_n(ModColor, vec3(0, 0, 1), frg_uv0);
+  ps_common_n(ModColor, vec3(0, 0, 1), frg_uv0,false);
 }
 ///////////////////////////////////////////////////////////////
 // vs-non-instanced-rigid
