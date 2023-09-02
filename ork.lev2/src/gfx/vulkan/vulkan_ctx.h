@@ -7,7 +7,6 @@
 
 #pragma once
 
-
 ///////////////////////////////////////////////////////////////////////////////
 #include <functional>
 #include <map>
@@ -46,25 +45,24 @@ struct GLFWwindow;
 ///////////////////////////////////////////////////////////////////////////////
 
 namespace ork::dds {
-  struct DDS_HEADER;
+struct DDS_HEADER;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
 
-inline VkDeviceSize vkAlignUp(VkDeviceSize value, //
-                              VkDeviceSize alignment) { //
-    return (value + alignment - 1) & ~(alignment - 1);
+inline VkDeviceSize vkAlignUp(
+    VkDeviceSize value,       //
+    VkDeviceSize alignment) { //
+  return (value + alignment - 1) & ~(alignment - 1);
 }
 
-template <typename T>
-void initializeVkStruct(T& s, VkStructureType s_type){
+template <typename T> void initializeVkStruct(T& s, VkStructureType s_type) {
   memset(&s, 0, sizeof(T));
   s.sType = s_type;
 }
-template <typename T>
-void initializeVkStruct(T& s){
+template <typename T> void initializeVkStruct(T& s) {
   memset(&s, 0, sizeof(T));
 }
 struct VulkanInstance;
@@ -82,7 +80,7 @@ struct VkTextureInterface;
 struct VkFxInterface;
 #if defined(ENABLE_COMPUTE_SHADERS)
 struct VkComputeInterface;
-#endif 
+#endif
 //
 struct VkTextureObject;
 struct VkFxShaderObject;
@@ -95,7 +93,6 @@ struct VkFxShaderUniformSetItem;
 struct VkFxShaderUniformSetSampler;
 struct VkFxShaderUniformBlk;
 struct VkFxShaderUniformBlkItem;
-struct VkFboObject;
 struct VklRtBufferImpl;
 struct VkRtGroupImpl;
 struct VkTextureAsyncTask;
@@ -104,10 +101,10 @@ struct VulkanVertexBuffer;
 struct VulkanIndexBuffer;
 struct VkLoadContext;
 //
-using vkinstance_ptr_t = std::shared_ptr<VulkanInstance>;
+using vkinstance_ptr_t   = std::shared_ptr<VulkanInstance>;
 using vkdeviceinfo_ptr_t = std::shared_ptr<VulkanDeviceInfo>;
-using vkdevgrp_ptr_t = std::shared_ptr<VulkanDeviceGroup>;
-using vkcontext_ptr_t = std::shared_ptr<VkContext>;
+using vkdevgrp_ptr_t     = std::shared_ptr<VulkanDeviceGroup>;
+using vkcontext_ptr_t    = std::shared_ptr<VkContext>;
 using vkcontext_rawptr_t = VkContext*;
 //
 using vkdwi_ptr_t = std::shared_ptr<VkDrawingInterface>;
@@ -120,37 +117,36 @@ using vktxi_ptr_t = std::shared_ptr<VkTextureInterface>;
 using vkfxi_ptr_t = std::shared_ptr<VkFxInterface>;
 #if defined(ENABLE_COMPUTE_SHADERS)
 using vkci_ptr_t = std::shared_ptr<VkComputeInterface>;
-#endif 
+#endif
 //
-using vktexobj_ptr_t = std::shared_ptr<VkTextureObject>;
+using vktexobj_ptr_t  = std::shared_ptr<VkTextureObject>;
 using vkfxsfile_ptr_t = std::shared_ptr<VkFxShaderFile>;
-using vkfxsobj_ptr_t = std::shared_ptr<VkFxShaderObject>;
-using vkfxsprg_ptr_t = std::shared_ptr<VkFxShaderProgram>;
+using vkfxsobj_ptr_t  = std::shared_ptr<VkFxShaderObject>;
+using vkfxsprg_ptr_t  = std::shared_ptr<VkFxShaderProgram>;
 using vkfxspass_ptr_t = std::shared_ptr<VkFxShaderPass>;
-using vkfxstek_ptr_t = std::shared_ptr<VkFxShaderTechnique>;
+using vkfxstek_ptr_t  = std::shared_ptr<VkFxShaderTechnique>;
 
-using vkfxsuniset_ptr_t = std::shared_ptr<VkFxShaderUniformSet>;
+using vkfxsuniset_ptr_t     = std::shared_ptr<VkFxShaderUniformSet>;
 using vkfxsunisetitem_ptr_t = std::shared_ptr<VkFxShaderUniformSetItem>;
 using vkfxsunisetsamp_ptr_t = std::shared_ptr<VkFxShaderUniformSetSampler>;
 
-using vkfxsuniblk_ptr_t = std::shared_ptr<VkFxShaderUniformBlk>;
+using vkfxsuniblk_ptr_t     = std::shared_ptr<VkFxShaderUniformBlk>;
 using vkfxsuniblkitem_ptr_t = std::shared_ptr<VkFxShaderUniformBlkItem>;
 
-using vkfbobj_ptr_t = std::shared_ptr<VkFboObject>;
-using vkrtbufimpl_ptr_t = std::shared_ptr<VklRtBufferImpl>;
-using vkrtgrpimpl_ptr_t = std::shared_ptr<VkRtGroupImpl>;
+using vkrtbufimpl_ptr_t    = std::shared_ptr<VklRtBufferImpl>;
+using vkrtgrpimpl_ptr_t    = std::shared_ptr<VkRtGroupImpl>;
 using vktexasynctask_ptr_t = std::shared_ptr<VkTextureAsyncTask>;
-using vktexloadreq_ptr_t = std::shared_ptr<VkTexLoadReq>;
-using vkfxshader_bin_t = std::vector<uint32_t>;
-using vkvtxbuf_ptr_t = std::shared_ptr<VulkanVertexBuffer>;
-using vkidxbuf_ptr_t = std::shared_ptr<VulkanIndexBuffer>;
-using vkloadctx_ptr_t = std::shared_ptr<VkLoadContext>;
+using vktexloadreq_ptr_t   = std::shared_ptr<VkTexLoadReq>;
+using vkfxshader_bin_t     = std::vector<uint32_t>;
+using vkvtxbuf_ptr_t       = std::shared_ptr<VulkanVertexBuffer>;
+using vkidxbuf_ptr_t       = std::shared_ptr<VulkanIndexBuffer>;
+using vkloadctx_ptr_t      = std::shared_ptr<VkLoadContext>;
 
 extern vkinstance_ptr_t _GVI;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct VulkanDeviceInfo{
+struct VulkanDeviceInfo {
 
   VkPhysicalDevice _phydev;
   VkPhysicalDeviceProperties _devprops;
@@ -161,24 +157,22 @@ struct VulkanDeviceInfo{
   std::vector<VkQueueFamilyProperties> _queueprops;
   std::set<std::string> _extension_set;
 
-  bool _is_discrete = false;
+  bool _is_discrete    = false;
   size_t _maxWkgCountX = 0;
   size_t _maxWkgCountY = 0;
   size_t _maxWkgCountZ = 0;
-
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct VulkanDeviceGroup{
+struct VulkanDeviceGroup {
   size_t _deviceCount = 0;
   std::vector<vkdeviceinfo_ptr_t> _device_infos;
-
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct VulkanInstance{
+struct VulkanInstance {
 
   VulkanInstance();
   ~VulkanInstance();
@@ -190,43 +184,40 @@ struct VulkanInstance{
   std::vector<VkPhysicalDeviceGroupProperties> _phygroups;
   std::vector<vkdevgrp_ptr_t> _devgroups;
   std::vector<vkdeviceinfo_ptr_t> _device_infos;
-  uint32_t _numgpus = 0;
+  uint32_t _numgpus   = 0;
   uint32_t _numgroups = 0;
   shadlang::slpcache_ptr_t _slp_cache;
   MpMcBoundedQueue<load_token_t> _loadTokens;
   bool _debugEnabled = false;
-
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
-struct VkFboObject {
-  static const int kmaxrt = RtGroup::kmaxmrts;
-  VkFboObject();
-  int _width = 0;
-  int _height = 0;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
 struct VklRtBufferImpl {
+  VklRtBufferImpl(VkRtGroupImpl* par, RtBuffer* rtb);
+  VkRtGroupImpl* _parent = nullptr;
+  RtBuffer* _rtb         = nullptr;
+  bool _init             = true;
+  VkImage _vkimg;
+  VkDeviceMemory _vkmem;
   svar64_t _teximpl;
-  bool _init                = true;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
 struct VkRtGroupImpl {
-  VkRtGroupImpl();
-  vkfbobj_ptr_t _standard;
-  vkfbobj_ptr_t _depthonly;
-  int _width = 0;
+  VkRtGroupImpl(RtGroup* _rtg);
+  RtGroup* _rtg = nullptr;
+  vkrtbufimpl_ptr_t _standard;
+  vkrtbufimpl_ptr_t _depthonly;
+  int _width  = 0;
   int _height = 0;
+  VkFramebuffer _vkfb;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct VkTextureAsyncTask{
+struct VkTextureAsyncTask {
   VkTextureAsyncTask();
   std::atomic<int> _lock;
   std::queue<void_lambda_t> _onFinished;
@@ -250,11 +241,11 @@ struct VkTextureObject {
   VkTextureObject(vktxi_ptr_t txi);
   ~VkTextureObject();
 
-  //GLuint mObject;
-  //GLuint mFbo;
-  //GLuint mDbo;
-  //GLenum mTarget;
-  
+  // GLuint mObject;
+  // GLuint mFbo;
+  // GLuint mDbo;
+  // GLenum mTarget;
+
   int _maxmip = 0;
   vktexasynctask_ptr_t _async;
   vktxi_ptr_t _txi;
@@ -319,7 +310,6 @@ struct VkFxShaderObject {
   std::unordered_map<std::string, vkfxsuniset_ptr_t> _vk_uniformsets;
   std::unordered_map<std::string, vkfxsuniblk_ptr_t> _vk_uniformblks;
   uint64_t _STAGE = 0;
-
 };
 
 struct VkFxShaderProgram {
@@ -341,7 +331,7 @@ struct VkFxShaderTechnique {
   std::shared_ptr<FxShaderTechnique> _orktechnique;
 };
 
-struct VulkanVertexBuffer{
+struct VulkanVertexBuffer {
   VulkanVertexBuffer(vkcontext_rawptr_t ctx, size_t length);
   ~VulkanVertexBuffer();
   VkBufferCreateInfo _vkbufinfo;
@@ -350,7 +340,7 @@ struct VulkanVertexBuffer{
   VkDeviceMemory _vkmem;
   vkcontext_rawptr_t _ctx;
 };
-struct VulkanIndexBuffer{
+struct VulkanIndexBuffer {
   VulkanIndexBuffer(vkcontext_rawptr_t ctx, size_t length);
   ~VulkanIndexBuffer();
   VkBufferCreateInfo _vkbufinfo;
@@ -361,8 +351,8 @@ struct VulkanIndexBuffer{
 };
 
 struct VkLoadContext {
-  VkContext* _vkcontext      = nullptr;
-  GLFWwindow* _pushedWindow  = nullptr;
+  VkContext* _vkcontext     = nullptr;
+  GLFWwindow* _pushedWindow = nullptr;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -458,8 +448,8 @@ struct VkGeometryBufferInterface final : public GeometryBufferInterface {
   void DrawPrimitiveEML(
       const FxShaderStorageBuffer* SSBO, //
       PrimitiveType eType = PrimitiveType::NONE,
-      int ivbase           = 0,
-      int ivcount          = 0) final;
+      int ivbase          = 0,
+      int ivcount         = 0) final;
 
 #endif
 
@@ -531,9 +521,9 @@ struct VkFrameBufferInterface final : public FrameBufferInterface {
   RtGroup* _active_rtgroup = nullptr;
   freestyle_mtl_ptr_t _freestyle_mtl;
   const FxShaderTechnique* _tek_downsample2x2 = nullptr;
-  const FxShaderTechnique* _tek_blit = nullptr;
-  const FxShaderParam*     _fxpMVP = nullptr;
-  const FxShaderParam*     _fxpColorMap = nullptr;
+  const FxShaderTechnique* _tek_blit          = nullptr;
+  const FxShaderParam* _fxpMVP                = nullptr;
+  const FxShaderParam* _fxpColorMap           = nullptr;
 
   vkcontext_rawptr_t _contextVK;
   rtgroup_ptr_t _main_rtg;
@@ -572,7 +562,7 @@ struct VkTextureInterface final : public TextureInterface {
   void generateMipMaps(Texture* ptex) final;
   Texture* createFromMipChain(MipChain* from_chain) final;
 
-  //std::map<size_t, pbosetptr_t> _pbosets;
+  // std::map<size_t, pbosetptr_t> _pbosets;
   vkcontext_rawptr_t _contextVK;
 };
 
@@ -621,9 +611,10 @@ struct VkFxInterface final : public FxInterface {
   bool LoadFxShader(const AssetPath& pth, FxShader* ptex) final;
   FxShader* shaderFromShaderText(const std::string& name, const std::string& shadertext) final;
 
-  vkfxsfile_ptr_t _loadShaderFromShaderText(FxShader* shader, //
-                                            const std::string& parser_name, //
-                                            const std::string& shadertext);
+  vkfxsfile_ptr_t _loadShaderFromShaderText(
+      FxShader* shader,               //
+      const std::string& parser_name, //
+      const std::string& shadertext);
 
   // ubo
   FxShaderParamBuffer* createParamBuffer(size_t length) final;
@@ -635,7 +626,6 @@ struct VkFxInterface final : public FxInterface {
   vkcontext_rawptr_t _contextVK;
   std::map<AssetPath, vkfxsfile_ptr_t> _fxshaderfiles;
   shadlang::slpcache_ptr_t _slp_cache;
-
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -645,7 +635,6 @@ struct VkFxInterface final : public FxInterface {
 struct VkComputeInterface : public ComputeInterface {
 
   VkComputeInterface(vkcontext_rawptr_t ctx);
-
 
   void dispatchCompute(const FxComputeShader* shader, uint32_t numgroups_x, uint32_t numgroups_y, uint32_t numgroups_z) final;
 
@@ -657,13 +646,12 @@ struct VkComputeInterface : public ComputeInterface {
   void bindStorageBuffer(const FxComputeShader* shader, uint32_t binding_index, FxShaderStorageBuffer* buffer) final;
   void bindImage(const FxComputeShader* shader, uint32_t binding_index, Texture* tex, ImageBindAccess access) final;
 
-  //PipelineCompute* createComputePipe(ComputeShader* csh);
-  //void bindComputeShader(ComputeShader* csh);
+  // PipelineCompute* createComputePipe(ComputeShader* csh);
+  // void bindComputeShader(ComputeShader* csh);
 
-  //PipelineCompute* _currentComputePipeline = nullptr;
+  // PipelineCompute* _currentComputePipeline = nullptr;
   vkcontext_rawptr_t _contextVK;
   vkfxi_ptr_t _fxi;
-
 };
 
 #endif
@@ -674,15 +662,16 @@ struct VkComputeInterface : public ComputeInterface {
 struct VkContext : public Context {
 
   DeclareAbstractX(VkContext, Context);
-private:
-    VkContext();
-public:
 
+private:
+  VkContext();
+
+public:
   static vkcontext_ptr_t makeShared();
   static bool HaveExtension(const std::string& extname);
   static const CClass* gpClass;
-  //static orkvector<std::string> gVKExtensions;
-  //static orkset<std::string> gVKExtensionSet;
+  // static orkvector<std::string> gVKExtensions;
+  // static orkset<std::string> gVKExtensionSet;
 
   ///////////////////////////////////////////////////////////////////////
 
@@ -718,7 +707,7 @@ public:
   void swapBuffers(CTXBASE* ctxbase) final;
 
   void initializeWindowContext(Window* pWin, CTXBASE* pctxbase) final; // make a window
-  void initializeOffscreenContext(DisplayBuffer* pBuf) final;        // make a pbuffer
+  void initializeOffscreenContext(DisplayBuffer* pBuf) final;          // make a pbuffer
   void initializeLoaderContext() final;
 
   void debugPushGroup(const std::string str) final;
@@ -733,20 +722,22 @@ public:
   //////////////////////////////////////////////
 
   uint32_t _findMemoryType( //
-    uint32_t typeFilter,    //            
-    VkMemoryPropertyFlags properties);
+      uint32_t typeFilter,  //
+      VkMemoryPropertyFlags properties);
 
   //////////////////////////////////////////////
   VkDevice _vkdevice;
   VkPhysicalDevice _vkphysicaldevice;
-  vkdeviceinfo_ptr_t _device_info;
+  vkdeviceinfo_ptr_t _vkdeviceinfo;
+  VkSurfaceKHR _vkpresentationsurface;
+  //////////////////////////////////////////////
 
-  std::vector<float> _queuePriorities; 
+  std::vector<float> _queuePriorities;
   std::vector<VkDeviceQueueCreateInfo> _DQCIs;
   static constexpr uint32_t NO_QUEUE = 0xffffffff;
-  uint32_t _vkq_graphics = NO_QUEUE;
-  uint32_t _vkq_compute = NO_QUEUE;
-  uint32_t _vkq_transfer = NO_QUEUE;
+  uint32_t _vkq_graphics             = NO_QUEUE;
+  uint32_t _vkq_compute              = NO_QUEUE;
+  uint32_t _vkq_transfer             = NO_QUEUE;
   //////////////////////////////////////////////
   void* mhHWND;
   vkcontext_ptr_t _parentTarget;
@@ -770,9 +761,8 @@ public:
 #if defined(ENABLE_COMPUTE_SHADERS)
   vkci_ptr_t _ci;
 #endif
-
 };
 
 extern vkinstance_ptr_t _GVI;
 
-} //namespace ork::lev2::vulkan {
+} // namespace ork::lev2::vulkan

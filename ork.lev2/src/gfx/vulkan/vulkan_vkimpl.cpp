@@ -113,6 +113,9 @@ VulkanInstance::VulkanInstance() {
   _slp_cache = std::make_shared<shadlang::ShadLangParserCache>();
 
   static std::vector<const char*> instanceExtensions;
+
+
+
   if(_debugEnabled){
     instanceExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
   }
@@ -122,6 +125,8 @@ VulkanInstance::VulkanInstance() {
   instanceExtensions.push_back(VK_MVK_MACOS_SURFACE_EXTENSION_NAME);
   // instanceExtensions.push_back("VK_KHR_portability_subset");
   _instancedata.flags |= VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
+#else 
+  instanceExtensions.push_back("VK_KHR_xcb_surface");
 #endif
 
   _instancedata.enabledExtensionCount   = instanceExtensions.size();

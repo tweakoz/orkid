@@ -46,7 +46,7 @@ VkContext::VkContext() {
   OrkAssert(_GVI != nullptr);
   auto vk_devinfo   = _GVI->_device_infos[0];
   _vkphysicaldevice = vk_devinfo->_phydev;
-  _device_info      = vk_devinfo;
+  _vkdeviceinfo     = vk_devinfo;
 
   ////////////////////////////
   // get queue indices
@@ -289,6 +289,12 @@ void VkContext::initializeWindowContext(
   ///////////////////////
   platoMakeCurrent(plato);
   _fbi->SetThisBuffer(pWin);
+  VkResult OK = glfwCreateWindowSurface(_GVI->_instance, 
+                                        glfw_window, 
+                                        nullptr, 
+                                        &_vkpresentationsurface);
+  OrkAssert(OK == VK_SUCCESS);
+
 } // make a window
 
 ///////////////////////////////////////////////////////

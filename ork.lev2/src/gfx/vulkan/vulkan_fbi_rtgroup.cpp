@@ -15,9 +15,11 @@ static logchannel_ptr_t logchan_rtgroup = logger()->createChannel("VKRTG", fvec3
 
 ///////////////////////////////////////////////////////////////////////////////
 
-VkFboObject::VkFboObject() {
+VklRtBufferImpl::VklRtBufferImpl(VkRtGroupImpl* par, RtBuffer* rtb) //
+  : _parent(par)
+  , _rtb(rtb) { //
 }
-VkRtGroupImpl::VkRtGroupImpl(){
+VkRtGroupImpl::VkRtGroupImpl(RtGroup* rtg) : _rtg(rtg) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -30,26 +32,26 @@ void VkFrameBufferInterface::_setAsRenderTarget() { // _main_rtg
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkContext::_doResizeMainSurface(int iw, int ih) {
-    _fbi->_main_rtg->Resize(iw, ih);
+  _fbi->_main_rtg->Resize(iw, ih);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(RtGroup* rtgroup) {
-  vkrtgrpimpl_ptr_t RTGIMPL = std::make_shared<VkRtGroupImpl>();
-  RTGIMPL->_width       = rtgroup->width();
-  RTGIMPL->_height      = rtgroup->height();
+  vkrtgrpimpl_ptr_t RTGIMPL = std::make_shared<VkRtGroupImpl>(rtgroup);
+  RTGIMPL->_width           = rtgroup->width();
+  RTGIMPL->_height          = rtgroup->height();
   if (rtgroup->_needsDepth) {
 
   } else {
-    //RTGIMPL->_depthbuffer = nullptr;
+    // RTGIMPL->_depthbuffer = nullptr;
   }
   int inumtargets = rtgroup->GetNumTargets();
   for (int it = 0; it < inumtargets; it++) {
     rtbuffer_ptr_t rtbuffer = rtgroup->GetMrt(it);
-    //auto bufferimpl    = rtbuffer->_impl.tryAs<VkFboObject*>();
+    auto bufferimpl = std::make_shared<VklRtBufferImpl>(RTGIMPL.get(), rtbuffer.get());
+    rtbuffer->_impl.setShared<VklRtBufferImpl>(bufferimpl);
   }
-
 
   return RTGIMPL;
 }
@@ -90,11 +92,11 @@ void VkFrameBufferInterface::SetRtGroup(RtGroup* rtgroup) {
     _active_rtgroup->_impl.setShared<VkRtGroupImpl>(RTGIMPL);
   }
   /////////////////////////////////////////
-  int implw       = RTGIMPL->_width;
-  int implh       = RTGIMPL->_height;
-  int rtgw        = _active_rtgroup->width();
-  int rtgh        = _active_rtgroup->height();
-  bool size_diff  = (rtgw != implw) || (rtgh != implh);
+  int implw      = RTGIMPL->_width;
+  int implh      = RTGIMPL->_height;
+  int rtgw       = _active_rtgroup->width();
+  int rtgh       = _active_rtgroup->height();
+  bool size_diff = (rtgw != implw) || (rtgh != implh);
   if (size_diff) {
     logchan_rtgroup->log("resize FBO iw<%d> ih<%d>", iw, ih);
     RTGIMPL = _createRtGroupImpl(_active_rtgroup);
