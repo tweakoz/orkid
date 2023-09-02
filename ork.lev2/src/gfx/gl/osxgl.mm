@@ -48,38 +48,61 @@ void setAlwaysOnTop(GLFWwindow *window) {
 bool _macosUseHIDPI = false;
 bool g_allow_HIDPI = false;
 
-struct GlOsxPlatformObject
-{
-  static std::shared_ptr<GlOsxPlatformObject> _global_plato;
-  static std::shared_ptr<GlOsxPlatformObject> _current;
-  /////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
+
+
+/////////////////////////////////////////////////////////////////////////
+
+struct GlOsxPlatformObject {
+	GlOsxPlatformObject()
+		: _bindop([=](){}) {
+	}
 	ContextGL*		_context = nullptr;
   CtxGLFW* _ctxbase = nullptr;
   bool _needsInit       = true;
   void_lambda_t _bindop;
-
-	GlOsxPlatformObject()
-		: _bindop([=](){}) {
-	}
-  /////////////////////////////////////
-  void makeCurrent() {
-    _current = this;
-    if(_ctxbase)
-      _ctxbase->makeCurrent();
-  }
-  void swapBuffers() {
-    if(_ctxbase)
-      _ctxbase->swapBuffers();
-  }
-  /////////////////////////////////////
 };
-GlOsxPlatformObject* GlOsxPlatformObject::_global_plato = nullptr;
-GlOsxPlatformObject* GlOsxPlatformObject::_current      = nullptr;
+
+using glosxplatformobject_ptr_t = std::shared_ptr<GlOsxPlatformObject>;
+static glosxplatformobject_ptr_t _current;
+
+/////////////////////////////////////////////////////////////////////////
+
+struct GlOsxOneTimeInit{
+  GlOsxOneTimeInit(){
+    _gplato = std::make_shared<GlOsxPlatformObject>();
+     auto global_ctxbase = CtxGLFW::globalOffscreenContext();
+    _gplato->_ctxbase = global_ctxbase;
+    global_ctxbase->makeCurrent();
+  }
+  glosxplatformobject_ptr_t _gplato;
+};
+
+/////////////////////////////////////////////////////////////////////////
+
+static glosxplatformobject_ptr_t global_plato(){
+  static GlOsxOneTimeInit _ginit;
+  return _ginit._gplato;
+}
+
+/////////////////////////////////////////////////////////////////////////
+
+static void platoOsxMakeCurrent(glosxplatformobject_ptr_t plato) {
+  _current = plato;
+  if(plato->_ctxbase)
+    plato->_ctxbase->makeCurrent();
+}
+
+/////////////////////////////////////////////////////////////////////////
+
+static void platoOsxSwapBuffers(glosxplatformobject_ptr_t plato) {
+  if(plato->_ctxbase)
+    plato->_ctxbase->swapBuffers();
+}
 
 /////////////////////////////////////////////////////////////////////////
 
 struct GlOsxLoadContext {
-  GlOsxPlatformObject* _global_plato = nullptr;
   GLFWwindow* _pushedContext        = nullptr;
 };
 
@@ -127,8 +150,7 @@ void ContextGL::GLinit()
 
   auto global_ctxbase = CtxGLFW::globalOffscreenContext();
 
-  GlOsxPlatformObject::_global_plato               = new GlOsxPlatformObject;
-  GlOsxPlatformObject::_global_plato->_ctxbase = global_ctxbase;
+  global_plato()->_ctxbase = global_ctxbase;
 
   ////////////////////////////////////
   // load extensions
@@ -140,7 +162,6 @@ void ContextGL::GLinit()
   ////////////////////////////////////
   for (int i = 0; i < 1; i++) {
     auto loadctx = std::make_shared<GlOsxLoadContext>();
-    loadctx->_global_plato  = GlOsxPlatformObject::_global_plato;
     load_token_t token;
     token.setShared<GlOsxLoadContext>(loadctx);
     _loadTokens.push(token);
@@ -197,7 +218,7 @@ void ContextGL::initializeWindowContext( Window *pWin, CTXBASE* pctxbase  ) {
   miW = pWin->GetBufferW();
   miH = pWin->GetBufferH();
   ///////////////////////
-  plato->makeCurrent();
+  platoOsxMakeCurrent(plato);
   mFbI.SetThisBuffer(pWin);
 }
 
@@ -218,9 +239,7 @@ void ContextGL::initializeOffscreenContext( DisplayBuffer *pBuf )
   _impl.setShared<GlOsxPlatformObject>(plato);
   mFbI.SetThisBuffer(pBuf);
 
-  auto global_plato = GlOsxPlatformObject::_global_plato;
-
-  plato->_ctxbase = global_plato->_ctxbase;
+  plato->_ctxbase = global_plato()->_ctxbase;
   plato->_needsInit   = false;
 
   _defaultRTG  = new RtGroup(this, miW, miH, MsaaSamples::MSAA_1X);
@@ -246,11 +265,9 @@ void ContextGL::initializeLoaderContext() {
 
   mCtxBase = 0;
 
-  GlOsxPlatformObject* plato = new GlOsxPlatformObject;
-  mPlatformHandle           = (void*)plato;
+  auto plato = _impl.makeShared<GlOsxPlatformObject>();
 
-  auto global_plato   = GlOsxPlatformObject::_global_plato;
-  plato->_ctxbase = global_plato->_ctxbase;
+  plato->_ctxbase = global_plato()->_ctxbase;
   plato->_needsInit   = false;
 
   _defaultRTG  = new RtGroup(this, miW, miH, MsaaSamples::MSAA_1X);
@@ -272,38 +289,37 @@ void ContextGL::initializeLoaderContext() {
 /////////////////////////////////////////////////////////////////////////
 
 void ContextGL::makeCurrentContext( void ){
-  auto plato = (GlOsxPlatformObject*)mPlatformHandle;
-  OrkAssert(plato);
+  auto plato = _impl.getShared<GlOsxPlatformObject>();
   if (plato) {
-    plato->makeCurrent();
+    platoOsxMakeCurrent(plato);
     plato->_bindop();
   }
 }
 
 /////////////////////////////////////////////////////////////////////////
 
-void* ContextGL::_doClonePlatformHandle() const {
-  auto plato = (GlOsxPlatformObject*)mPlatformHandle;
-  auto new_plato = new GlOsxPlatformObject;
+ctx_platform_handle_t ContextGL::_doClonePlatformHandle() const {
+  auto plato = _impl.getShared<GlOsxPlatformObject>();
+  auto new_plato = std::make_shared<GlOsxPlatformObject>();
   new_plato->_ctxbase = nullptr; //plato->_ctxbase;
   new_plato->_context = plato->_context;
   new_plato->_needsInit   = false;
-  //new_plato->_bindop = plato->_bindop;
+  ctx_platform_handle_t rval;
+  rval.setShared<GlOsxPlatformObject>(new_plato);
 
   // TODO : https://github.com/tweakoz/orkid/issues/139
 
-  return new_plato;
+  return rval;
 }
 
 /////////////////////////////////////////////////////////////////////////
 
-void ContextGL::SwapGLContext( CTXBASE *pCTFL )
-{
-  GlOsxPlatformObject* plato = (GlOsxPlatformObject*)mPlatformHandle;
+void ContextGL::SwapGLContext( CTXBASE *pCTFL ) {
+  auto plato = _impl.getShared<GlOsxPlatformObject>();
   OrkAssert(plato);
   if (plato) {
-    plato->makeCurrent();
-    plato->swapBuffers();
+    platoOsxMakeCurrent(plato);
+    platoOsxSwapBuffers(plato);
   }
 }
 
@@ -320,7 +336,7 @@ load_token_t ContextGL::_doBeginLoad()
   GLFWwindow* current_window = glfwGetCurrentContext();
 
   loadctx->_pushedContext = current_window;
-  loadctx->_global_plato->makeCurrent();
+  platoOsxMakeCurrent(global_plato());
 
   return token;
 }

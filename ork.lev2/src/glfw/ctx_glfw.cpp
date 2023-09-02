@@ -410,7 +410,7 @@ void CtxGLFW::Show() {
       }
       case "OPENGL"_crcu:
       default: {
-        glfwSetWindowAttrib(_glfwWindow, GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+        //glfwSetWindowAttrib(_glfwWindow, GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
         break;
       }
     }
@@ -745,7 +745,7 @@ GLFWwindow* CtxGLFW::_apiInitGL() {
   logchan_glfw->log(
       "GL: global_ctxbase<%p> vars<%p> minor version<%d : %d>", _gctx, (void*)ctx_vars.get(), MINOR, minor_api_version);
   OrkAssert(offscreen_window != nullptr);
-  glfwSetWindowAttrib(offscreen_window, GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+  //glfwSetWindowAttrib(offscreen_window, GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
   return offscreen_window;
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -807,7 +807,7 @@ CtxGLFW* CtxGLFW::globalOffscreenContext() {
       case "OPENGL"_crcu:
       default: {
         offscreen_window = _gctx->_apiInitGL();
-        glfwSwapInterval(0);
+        //glfwSwapInterval(0);
         break;
       }
     }
