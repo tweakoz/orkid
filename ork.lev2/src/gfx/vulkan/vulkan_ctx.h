@@ -199,6 +199,7 @@ struct VklRtBufferImpl {
   RtBuffer* _rtb         = nullptr;
   bool _init             = true;
   VkImage _vkimg;
+  VkMemoryPropertyFlags _vkmemflags;
   VkDeviceMemory _vkmem;
   svar64_t _teximpl;
 };

@@ -47,10 +47,63 @@ vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(RtGroup* rtgroup) {
     // RTGIMPL->_depthbuffer = nullptr;
   }
   int inumtargets = rtgroup->GetNumTargets();
+  int w = rtgroup->width();
+  int h = rtgroup->height();
   for (int it = 0; it < inumtargets; it++) {
     rtbuffer_ptr_t rtbuffer = rtgroup->GetMrt(it);
     auto bufferimpl = std::make_shared<VklRtBufferImpl>(RTGIMPL.get(), rtbuffer.get());
     rtbuffer->_impl.setShared<VklRtBufferImpl>(bufferimpl);
+
+    VkImageCreateInfo imginf = {};
+    initializeVkStruct(imginf, VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO);
+    imginf.imageType = VK_IMAGE_TYPE_2D; // Regular 2D texture
+    imginf.format = VK_FORMAT_R8G8B8A8_UNORM; // RGBA8 format
+    imginf.extent.width = w;
+    imginf.extent.height = h;
+    imginf.extent.depth = 1;
+    imginf.mipLevels = 1; 
+    imginf.arrayLayers = 1; 
+    imginf.samples = VK_SAMPLE_COUNT_1_BIT; 
+    imginf.tiling = VK_IMAGE_TILING_OPTIMAL; 
+    imginf.usage = VK_IMAGE_USAGE_SAMPLED_BIT //
+                 | VK_IMAGE_USAGE_TRANSFER_DST_BIT; // Use as texture and allow data transfer to it
+    imginf.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    imginf.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    ///////////////////////////////////////////////////
+    VkResult OK = vkCreateImage(_contextVK->_vkdevice, 
+                                &imginf, 
+                                nullptr, 
+                                &bufferimpl->_vkimg);
+    OrkAssert(OK == VK_SUCCESS);
+    ///////////////////////////////////////////////////
+    bufferimpl->_vkmemflags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+                            //| VK_MEMORY_PROPERTY_HOST_COHERENT_BIT; // do not need flush...
+    ///////////////////////////////////////////////////
+    VkMemoryRequirements memRequirements;
+    initializeVkStruct(memRequirements);
+    vkGetImageMemoryRequirements(_contextVK->_vkdevice, 
+                                 bufferimpl->_vkimg, 
+                                 &memRequirements);
+    ///////////////////////////////////////////////////
+    VkMemoryAllocateInfo allocInfo = {};
+    initializeVkStruct(allocInfo, VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO);
+    allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    allocInfo.allocationSize = memRequirements.size;
+    allocInfo.memoryTypeIndex = _contextVK->_findMemoryType(memRequirements.memoryTypeBits, //
+                                                            bufferimpl->_vkmemflags);
+    ///////////////////////////////////////////////////
+    VkDeviceMemory imageMemory;
+    initializeVkStruct(bufferimpl->_vkmem);
+    OK = vkAllocateMemory(_contextVK->_vkdevice, //
+                          &allocInfo, //
+                          nullptr, //
+                          &bufferimpl->_vkmem);
+    OrkAssert(OK == VK_SUCCESS);
+    ///////////////////////////////////////////////////
+    vkBindImageMemory(_contextVK->_vkdevice, //
+                       bufferimpl->_vkimg, //
+                       bufferimpl->_vkmem, 0);
+    ///////////////////////////////////////////////////
   }
 
   return RTGIMPL;
