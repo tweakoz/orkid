@@ -37,29 +37,14 @@ void VkContext::_doResizeMainSurface(int iw, int ih) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(RtGroup* rtgroup) {
-  vkrtgrpimpl_ptr_t RTGIMPL = std::make_shared<VkRtGroupImpl>(rtgroup);
-  RTGIMPL->_width           = rtgroup->width();
-  RTGIMPL->_height          = rtgroup->height();
-  if (rtgroup->_needsDepth) {
-
-  } else {
-    // RTGIMPL->_depthbuffer = nullptr;
-  }
-  int inumtargets = rtgroup->GetNumTargets();
-  int w = rtgroup->width();
-  int h = rtgroup->height();
-  for (int it = 0; it < inumtargets; it++) {
-    rtbuffer_ptr_t rtbuffer = rtgroup->GetMrt(it);
-    auto bufferimpl = std::make_shared<VklRtBufferImpl>(RTGIMPL.get(), rtbuffer.get());
-    rtbuffer->_impl.setShared<VklRtBufferImpl>(bufferimpl);
-
+static void _vkCreateImageForBuffer(vkcontext_rawptr_t ctxVK, //
+                                    vkrtbufimpl_ptr_t bufferimpl) { //
     VkImageCreateInfo imginf = {};
     initializeVkStruct(imginf, VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO);
     imginf.imageType = VK_IMAGE_TYPE_2D; // Regular 2D texture
-    imginf.format = VK_FORMAT_R8G8B8A8_UNORM; // RGBA8 format
-    imginf.extent.width = w;
-    imginf.extent.height = h;
+    imginf.format = bufferimpl->_vkfmt; 
+    imginf.extent.width = bufferimpl->_parent->_width;
+    imginf.extent.height = bufferimpl->_parent->_height;
     imginf.extent.depth = 1;
     imginf.mipLevels = 1; 
     imginf.arrayLayers = 1; 
@@ -70,7 +55,7 @@ vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(RtGroup* rtgroup) {
     imginf.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     imginf.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     ///////////////////////////////////////////////////
-    VkResult OK = vkCreateImage(_contextVK->_vkdevice, 
+    VkResult OK = vkCreateImage(ctxVK->_vkdevice, 
                                 &imginf, 
                                 nullptr, 
                                 &bufferimpl->_vkimg);
@@ -81,7 +66,7 @@ vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(RtGroup* rtgroup) {
     ///////////////////////////////////////////////////
     VkMemoryRequirements memRequirements;
     initializeVkStruct(memRequirements);
-    vkGetImageMemoryRequirements(_contextVK->_vkdevice, 
+    vkGetImageMemoryRequirements(ctxVK->_vkdevice, 
                                  bufferimpl->_vkimg, 
                                  &memRequirements);
     ///////////////////////////////////////////////////
@@ -89,20 +74,64 @@ vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(RtGroup* rtgroup) {
     initializeVkStruct(allocInfo, VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO);
     allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
     allocInfo.allocationSize = memRequirements.size;
-    allocInfo.memoryTypeIndex = _contextVK->_findMemoryType(memRequirements.memoryTypeBits, //
+    allocInfo.memoryTypeIndex = ctxVK->_findMemoryType(memRequirements.memoryTypeBits, //
                                                             bufferimpl->_vkmemflags);
     ///////////////////////////////////////////////////
     VkDeviceMemory imageMemory;
     initializeVkStruct(bufferimpl->_vkmem);
-    OK = vkAllocateMemory(_contextVK->_vkdevice, //
+    OK = vkAllocateMemory(ctxVK->_vkdevice, //
                           &allocInfo, //
                           nullptr, //
                           &bufferimpl->_vkmem);
     OrkAssert(OK == VK_SUCCESS);
     ///////////////////////////////////////////////////
-    vkBindImageMemory(_contextVK->_vkdevice, //
+    vkBindImageMemory( ctxVK->_vkdevice, //
                        bufferimpl->_vkimg, //
                        bufferimpl->_vkmem, 0);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+static struct VkFormatConverter{
+
+    VkFormatConverter(){
+        _fmtmap[EBufferFormat::RGBA8] = VK_FORMAT_R8G8B8A8_UNORM;
+        _fmtmap[EBufferFormat::Z32] = VK_FORMAT_D32_SFLOAT;
+    }
+    VkFormat convert(EBufferFormat fmt_in) const {
+        auto it = _fmtmap.find(fmt_in);
+        OrkAssert(it!=_fmtmap.end());
+        return it->second;
+    }
+    std::unordered_map<EBufferFormat,VkFormat> _fmtmap;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+static const VkFormatConverter _vkFormatConverter;
+
+vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(RtGroup* rtgroup) {
+  vkrtgrpimpl_ptr_t RTGIMPL = std::make_shared<VkRtGroupImpl>(rtgroup);
+  RTGIMPL->_width           = rtgroup->width();
+  RTGIMPL->_height          = rtgroup->height();
+  int inumtargets = rtgroup->GetNumTargets();
+  int w = rtgroup->width();
+  int h = rtgroup->height();
+  if (rtgroup->_depthBuffer) {
+    auto rtbuffer = rtgroup->_depthBuffer;
+    auto bufferimpl = std::make_shared<VklRtBufferImpl>(RTGIMPL.get(), rtbuffer.get());
+    rtbuffer->_impl.setShared<VklRtBufferImpl>(bufferimpl);
+    bufferimpl->_vkfmt = _vkFormatConverter.convert(rtbuffer->mFormat);
+    _vkCreateImageForBuffer(_contextVK, bufferimpl);
+  }
+  // other buffers
+  for (int it = 0; it < inumtargets; it++) {
+    rtbuffer_ptr_t rtbuffer = rtgroup->GetMrt(it);
+    auto bufferimpl = std::make_shared<VklRtBufferImpl>(RTGIMPL.get(), rtbuffer.get());
+    rtbuffer->_impl.setShared<VklRtBufferImpl>(bufferimpl);
+    bufferimpl->_vkfmt = _vkFormatConverter.convert(rtbuffer->mFormat);
+    _vkCreateImageForBuffer(_contextVK, bufferimpl);
+
     ///////////////////////////////////////////////////
   }
 

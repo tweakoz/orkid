@@ -55,7 +55,11 @@ struct RtBuffer final {
 struct RtGroup final {
 
   /////////////////////////////////////////
-  RtGroup(Context* partarg, int iW, int iH, MsaaSamples msaa_samples = MsaaSamples::MSAA_1X);
+  RtGroup(Context* partarg, 
+          int iW, 
+          int iH, 
+          MsaaSamples msaa_samples = MsaaSamples::MSAA_1X,
+          bool needs_depth = true);
   ~RtGroup();
   /////////////////////////////////////////
   rtgroup_ptr_t clone() const;
@@ -96,7 +100,7 @@ struct RtGroup final {
 
   Context* _parentTarget;
   rtbuffer_ptr_t mMrt[kmaxmrts];
-  DisplayBuffer* mDepth;
+  rtbuffer_ptr_t _depthBuffer;
   Texture* _depthTexture = nullptr;
   int mNumMrts;
   int miW;

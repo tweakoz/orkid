@@ -28,14 +28,17 @@ RtBuffer::RtBuffer(const RtGroup* rtg, int slot, EBufferFormat efmt, int iW, int
 
 ///////////////////////////////////////////////////////////////////////////////
 
-RtGroup::RtGroup(Context* ptgt, int iW, int iH, MsaaSamples msaa_samples)
+RtGroup::RtGroup(Context* ptgt, int iW, int iH, MsaaSamples msaa_samples, bool needs_depth)
     : _parentTarget(ptgt)
-    , mDepth(0)
     , mNumMrts(0)
     , miW(iW)
     , miH(iH)
     , _msaa_samples(msaa_samples)
-    , mbSizeDirty(true) {
+    , mbSizeDirty(true)
+    , _needsDepth(needs_depth) {
+    if(_needsDepth){
+      _depthBuffer = std::make_shared<RtBuffer>(this, 0, EBufferFormat::Z32, iW, iH);
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -51,7 +54,6 @@ rtgroup_ptr_t RtGroup::clone() const {
   auto rval = std::make_shared<RtGroup>(_parentTarget, miW, miH, _msaa_samples);
   for (int i = 0; i < kmaxmrts; i++)
     rval->mMrt[i] = _this->mMrt[i];
-  rval->mDepth      = _this->mDepth;
   rval->mNumMrts    = _this->mNumMrts;
   rval->mbSizeDirty = _this->mbSizeDirty;
   rval->_impl       = _this->_impl;

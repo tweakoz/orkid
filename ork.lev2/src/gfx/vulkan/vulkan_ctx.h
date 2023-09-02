@@ -201,6 +201,7 @@ struct VklRtBufferImpl {
   VkImage _vkimg;
   VkMemoryPropertyFlags _vkmemflags;
   VkDeviceMemory _vkmem;
+  VkFormat _vkfmt;
   svar64_t _teximpl;
 };
 
