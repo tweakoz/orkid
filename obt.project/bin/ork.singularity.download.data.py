@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 ################################################################################
-from ork import path, command
-from ork.pathtools import ensureDirectoryExists
-from ork.wget import batch_wget
+from obt import path, command
+from obt.pathtools import ensureDirectoryExists
+from obt.wget import batch_wget
 from yarl import URL
 ################################################################################
 dest_path = path.stage()/"share"/"singularity"
@@ -44,15 +44,15 @@ batch_wget({
 
 })
 ################################################################################
-base_soundfont = URL("ftp://ftp.lysator.liu.se/pub/awe32/soundfonts")
-ensureDirectoryExists(dest_path/"soundfont")
-batch_wget({
- base_soundfont/"Fender2.sf2": (dest_path/"soundfont"/"fender2.sf2","4b59fa284e460c16ce1077ce6ade8f0e"),
- base_soundfont/"Psr-27.sf2": (dest_path/"soundfont"/"psr27.sf2","c29c727802841d73fac517d67eb00a8e"),
- base_soundfont/"aahhs.sf2": (dest_path/"soundfont"/"aahhs.sf2","d8a52312c5d331c0ee929f6dd362a7e7"),
- base_soundfont/"org_harp.sf2": (dest_path/"soundfont"/"org_harp.sf2","e166472f6299a8e2fc539b3309b2fffc"),
- base_soundfont/"Cadenza.syx": (dest_path/"soundfont"/"cadenza.syx","d41d8cd98f00b204e9800998ecf8427e"),
-})
+#base_soundfont = URL("ftp://ftp.lysator.liu.se/pub/awe32/soundfonts")
+#ensureDirectoryExists(dest_path/"soundfont")
+#batch_wget({
+# base_soundfont/"Fender2.sf2": (dest_path/"soundfont"/"fender2.sf2","4b59fa284e460c16ce1077ce6ade8f0e"),
+# base_soundfont/"Psr-27.sf2": (dest_path/"soundfont"/"psr27.sf2","c29c727802841d73fac517d67eb00a8e"),
+# base_soundfont/"aahhs.sf2": (dest_path/"soundfont"/"aahhs.sf2","d8a52312c5d331c0ee929f6dd362a7e7"),
+# base_soundfont/"org_harp.sf2": (dest_path/"soundfont"/"org_harp.sf2","e166472f6299a8e2fc539b3309b2fffc"),
+# base_soundfont/"Cadenza.syx": (dest_path/"soundfont"/"cadenza.syx","d41d8cd98f00b204e9800998ecf8427e"),
+#})
 ################################################################################
 base_k2000man = base_manuals/"kurzweil"/"k2000"
 base_kurzweil = URL("https://media.sweetwater.com/k2000/ftp-files/files")

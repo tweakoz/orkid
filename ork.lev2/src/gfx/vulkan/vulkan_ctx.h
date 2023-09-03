@@ -202,6 +202,8 @@ struct VklRtBufferImpl {
   VkMemoryPropertyFlags _vkmemflags;
   VkDeviceMemory _vkmem;
   VkFormat _vkfmt;
+  VkImageView _vkimgview;
+  VkAttachmentDescription _attachmentDesc;
   svar64_t _teximpl;
 };
 
@@ -212,6 +214,7 @@ struct VkRtGroupImpl {
   RtGroup* _rtg = nullptr;
   vkrtbufimpl_ptr_t _standard;
   vkrtbufimpl_ptr_t _depthonly;
+  std::vector<VkImageView> _vkattachments;
   int _width  = 0;
   int _height = 0;
   VkFramebuffer _vkfb;

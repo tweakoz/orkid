@@ -37,8 +37,51 @@ void VkContext::_doResizeMainSurface(int iw, int ih) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+static struct VkFormatConverter{
+
+    VkFormatConverter(){
+        _fmtmap[EBufferFormat::RGBA8] = VK_FORMAT_R8G8B8A8_UNORM;
+        _fmtmap[EBufferFormat::Z32] = VK_FORMAT_D32_SFLOAT;
+
+        _layoutmap["depth"_crcu] = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+        _layoutmap["color"_crcu] = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        // VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL
+        // VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+        // VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL
+        // VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
+        // VK_IMAGE_LAYOUT_PREINITIALIZED
+        // VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
+
+        _aspectmap["depth"_crcu] = VK_IMAGE_ASPECT_DEPTH_BIT;
+        _aspectmap["color"_crcu] = VK_IMAGE_ASPECT_COLOR_BIT;
+    }
+    VkFormat convertBufferFormat(EBufferFormat fmt_in) const {
+        auto it = _fmtmap.find(fmt_in);
+        OrkAssert(it!=_fmtmap.end());
+        return it->second;
+    }
+    VkImageLayout layoutForUsage(uint64_t usage) const {
+        auto it = _layoutmap.find(usage);
+        OrkAssert(it!=_layoutmap.end());
+        return it->second;
+    }
+    VkImageAspectFlagBits aspectForUsage(uint64_t usage) const {
+        auto it = _aspectmap.find(usage);
+        OrkAssert(it!=_aspectmap.end());
+        return it->second;
+    }
+    std::unordered_map<EBufferFormat,VkFormat> _fmtmap;
+    std::unordered_map<uint64_t,VkImageLayout> _layoutmap;
+    std::unordered_map<uint64_t,VkImageAspectFlagBits> _aspectmap;
+};
+
+static const VkFormatConverter _vkFormatConverter;
+
+///////////////////////////////////////////////////////////////////////////////
+
 static void _vkCreateImageForBuffer(vkcontext_rawptr_t ctxVK, //
-                                    vkrtbufimpl_ptr_t bufferimpl) { //
+                                    vkrtbufimpl_ptr_t bufferimpl,
+                                    uint64_t usage ) { //
     VkImageCreateInfo imginf = {};
     initializeVkStruct(imginf, VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO);
     imginf.imageType = VK_IMAGE_TYPE_2D; // Regular 2D texture
@@ -88,27 +131,26 @@ static void _vkCreateImageForBuffer(vkcontext_rawptr_t ctxVK, //
     vkBindImageMemory( ctxVK->_vkdevice, //
                        bufferimpl->_vkimg, //
                        bufferimpl->_vkmem, 0);
+    ///////////////////////////////////////////////////
+    VkImageViewCreateInfo viewInfo = {};
+    initializeVkStruct(viewInfo, VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO);
+    viewInfo.image = bufferimpl->_vkimg;
+    viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D; // This is typical for a color buffer. Other types include 3D, cube maps, etc.
+    viewInfo.format = bufferimpl->_vkfmt; // This is a typical format. Adjust as needed.
+    viewInfo.subresourceRange.aspectMask = _vkFormatConverter.aspectForUsage(usage);
+    viewInfo.subresourceRange.baseMipLevel = 0;
+    viewInfo.subresourceRange.levelCount = 1;
+    viewInfo.subresourceRange.baseArrayLayer = 0;
+    viewInfo.subresourceRange.layerCount = 1;
+    OK = vkCreateImageView(ctxVK->_vkdevice, 
+                           &viewInfo, 
+                           nullptr, 
+                           &bufferimpl->_vkimgview);
+    OrkAssert(OK == VK_SUCCESS);
+    ///////////////////////////////////////////////////
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
-static struct VkFormatConverter{
-
-    VkFormatConverter(){
-        _fmtmap[EBufferFormat::RGBA8] = VK_FORMAT_R8G8B8A8_UNORM;
-        _fmtmap[EBufferFormat::Z32] = VK_FORMAT_D32_SFLOAT;
-    }
-    VkFormat convert(EBufferFormat fmt_in) const {
-        auto it = _fmtmap.find(fmt_in);
-        OrkAssert(it!=_fmtmap.end());
-        return it->second;
-    }
-    std::unordered_map<EBufferFormat,VkFormat> _fmtmap;
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
-static const VkFormatConverter _vkFormatConverter;
 
 vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(RtGroup* rtgroup) {
   vkrtgrpimpl_ptr_t RTGIMPL = std::make_shared<VkRtGroupImpl>(rtgroup);
@@ -121,17 +163,41 @@ vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(RtGroup* rtgroup) {
     auto rtbuffer = rtgroup->_depthBuffer;
     auto bufferimpl = std::make_shared<VklRtBufferImpl>(RTGIMPL.get(), rtbuffer.get());
     rtbuffer->_impl.setShared<VklRtBufferImpl>(bufferimpl);
-    bufferimpl->_vkfmt = _vkFormatConverter.convert(rtbuffer->mFormat);
-    _vkCreateImageForBuffer(_contextVK, bufferimpl);
+    bufferimpl->_vkfmt = _vkFormatConverter.convertBufferFormat(rtbuffer->mFormat);
+
+    uint64_t USAGE = "depth"_crcu;
+    _vkCreateImageForBuffer(_contextVK, bufferimpl, USAGE);
+
+    auto& adesc = bufferimpl->_attachmentDesc;
+    initializeVkStruct(adesc);
+    adesc.format = bufferimpl->_vkfmt;
+    adesc.samples = VK_SAMPLE_COUNT_1_BIT;
+    adesc.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    adesc.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    adesc.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    adesc.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    adesc.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    adesc.finalLayout = _vkFormatConverter.layoutForUsage(USAGE);
+
   }
   // other buffers
   for (int it = 0; it < inumtargets; it++) {
     rtbuffer_ptr_t rtbuffer = rtgroup->GetMrt(it);
     auto bufferimpl = std::make_shared<VklRtBufferImpl>(RTGIMPL.get(), rtbuffer.get());
     rtbuffer->_impl.setShared<VklRtBufferImpl>(bufferimpl);
-    bufferimpl->_vkfmt = _vkFormatConverter.convert(rtbuffer->mFormat);
-    _vkCreateImageForBuffer(_contextVK, bufferimpl);
-
+    bufferimpl->_vkfmt = _vkFormatConverter.convertBufferFormat(rtbuffer->mFormat);
+    uint64_t USAGE = "color"_crcu;
+    _vkCreateImageForBuffer(_contextVK, bufferimpl, USAGE);
+    auto& adesc = bufferimpl->_attachmentDesc;
+    initializeVkStruct(adesc);
+    adesc.format = bufferimpl->_vkfmt;
+    adesc.samples = VK_SAMPLE_COUNT_1_BIT;
+    adesc.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    adesc.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    adesc.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    adesc.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    adesc.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    adesc.finalLayout = _vkFormatConverter.layoutForUsage(USAGE);
     ///////////////////////////////////////////////////
   }
 
