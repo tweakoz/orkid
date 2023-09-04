@@ -18,8 +18,6 @@
 #include <ork/lev2/aud/singularity/fxgen.h>
 #include <ork/util/logger.h>
 
-extern int WTF;
-
 namespace ork::audio::singularity {
 static logchannel_ptr_t logchan_synth = logger()->createChannel("singul.syn", fvec3(1, 0.6, .8), true);
 ///////////////////////////////////////////////////////////////////////////////
@@ -180,6 +178,9 @@ void synth::_tick(eventmap_t& emap, float elapsed_this_tick) {
     if (it != emap.end() and //
         it->first <= _timeaccum) {
       auto& event = it->second;
+
+      //logchan_synth->log("event @ time<%g>", it->first);
+
       event();
       done = false;
       it   = emap.erase(it);
@@ -281,7 +282,6 @@ void synth::prevProgram() {
 static int GNOTE = 0;
 programInst* synth::liveKeyOn(int note, int velocity, prgdata_constptr_t pdata) {
   GNOTE = note;
-  WTF = note;
   if (not pdata)
     return nullptr;
   programInst* pi = nullptr;

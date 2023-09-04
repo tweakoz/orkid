@@ -52,6 +52,7 @@ endfunction()
 orkid_find_python()
 
 find_package(ObtOpenBlas REQUIRED)
+find_package(ObtPipewire REQUIRED)
 
 ################################################################################
 # enable python for a given target

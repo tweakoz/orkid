@@ -88,16 +88,19 @@ IF(${APPLE})
     target_include_directories (ork_lev2 PRIVATE $ENV{OBT_VULKAN_ROOT}/include)
 ELSEIF(${UNIX})
 
-    list(APPEND libs GL Xrandr glfw )
+    list(APPEND libs GL Xrandr glfw vulkan )
 
     IF( "${ARCHITECTURE}" STREQUAL "x86_64" )
       set(ENV{PATH}=$ENV{PATH}:${OBT_VULKAN_ROOT}/bin)
       set(ENV{LD_LIBRARY_PATH}=$ENV{LD_LIBRARY_PATH}:${OBT_VULKAN_ROOT}/lib)
       set(ENV{VK_LAYER_PATH}=$ENV{OBT_VULKAN_ROOT}/etc/vulkan/explicit_layer.d)
-      list(APPEND libs openvr_api )
+      list(APPEND libs openvr_api vulkan )
       target_compile_definitions( ork_lev2 PRIVATE ENABLE_VULKAN ENABLE_GLFW )
       target_include_directories (ork_lev2 PRIVATE $ENV{OBT_VULKAN_ROOT}/include)
-      list(APPEND libs vulkan )
+      target_include_directories (ork_lev2 PRIVATE ${ObtPipewire_INCLUDE_DIRS} )
+
+      find_library( PIPEWIRE_LIB NAMES libpipewire-0.3.so.0 HINTS "/usr/lib/x86_64-linux-gnu/" )
+      list(APPEND libs ${ObtPipewire_LIBRARIES} )
     ENDIF()
 
 

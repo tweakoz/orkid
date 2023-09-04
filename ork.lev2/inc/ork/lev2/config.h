@@ -29,7 +29,8 @@
 
 #if defined(LINUX)
 //#define ENABLE_ALSA
- #define ENABLE_PORTAUDIO 
+ //#define ENABLE_PORTAUDIO 
+ #define ENABLE_PIPEWIRE 
 #else 
 #define ENABLE_PORTAUDIO
 #endif

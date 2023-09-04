@@ -22,12 +22,19 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 #include "null/audiodevice_null.h"
+///////////////////////////////////////
 #if defined(ENABLE_ALSA)
 #include "alsa/audiodevice_alsa.h"
 #define NativeDevice AudioDeviceAlsa
+///////////////////////////////////////
 #elif defined(ENABLE_PORTAUDIO)
 #include "portaudio/audiodevice_pa.h"
 #define NativeDevice AudioDevicePa
+///////////////////////////////////////
+#elif defined(ENABLE_PIPEWIRE)
+#include "pipewire/audiodevice_pipewire.h"
+#define NativeDevice pipewire::AudioDevicePipeWire
+///////////////////////////////////////
 #endif
 
 bool gb_audio_filter = false;
@@ -45,7 +52,7 @@ namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
 audiodevice_ptr_t AudioDevice::instance(void) {
-  static audiodevice_ptr_t device = std::make_shared<NativeDevice>();
+  static auto device = std::make_shared<NativeDevice>();
   return device;
 }
 

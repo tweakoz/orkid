@@ -22,6 +22,7 @@
               "_LARGEFILE64_SOURCE",
               "_LARGEFILE_SOURCE",
               "ENABLE_PORTAUDIO",
+              "ENABLE_PIPEWIRE",
               "ENABLE_IGL",
               "ENABLE_OPENVR",
               "ENABLE_VULKAN",

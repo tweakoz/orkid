@@ -13,7 +13,7 @@ int main(int argc, char** argv,char**envp) {
   auto initdata = std::make_shared<ork::AppInitData>(argc,argv,envp);
   auto app                       = createEZapp(initdata);
   auto basepath                  = basePath() / "casioCZ";
-  synth::instance()->_masterGain = decibel_to_linear_amp_ratio(0.0f);
+  synth::instance()->_masterGain = decibel_to_linear_amp_ratio(-6.0f);
   ////////////////////////////////////////////////
   // main bus effect
   ////////////////////////////////////////////////

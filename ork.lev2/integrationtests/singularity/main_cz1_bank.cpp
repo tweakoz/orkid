@@ -15,7 +15,7 @@ int main(int argc, char** argv,char**envp) {
   ////////////////////////////////////////////////
   // main bus effect
   ////////////////////////////////////////////////
-  synth::instance()->_masterGain = decibel_to_linear_amp_ratio(0.0f);
+  synth::instance()->_masterGain = decibel_to_linear_amp_ratio(-6.0f);
   auto mainbus      = synth::instance()->outputBus("main");
   auto bussource    = mainbus->createScopeSource();
   //auto fxprog       = std::make_shared<ProgramData>();
