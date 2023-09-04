@@ -71,6 +71,7 @@ struct Context {
   Event _prevevent;
   event_ptr_t _tempevent;
   Timer _uitimer;
+  lev2::renderpass_ptr_t _renderpass;
   double _prevtime = 0.0;
   double _prev_click_time = 0.0;
   double _prev_dbl_click_time = 0.0;

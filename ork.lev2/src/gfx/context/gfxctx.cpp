@@ -88,6 +88,21 @@ void Context::endFrame(void) {
 
 /////////////////////////////////////////////////////////////////////////
 
+void Context::beginRenderPass(renderpass_ptr_t pass){
+  _beginRenderPass(pass);
+}
+void Context::endRenderPass(renderpass_ptr_t pass){
+  _endRenderPass(pass);
+}
+void Context::beginSubPass(rendersubpass_ptr_t pass){
+  _beginSubPass(pass);
+}
+void Context::endSubPass(rendersubpass_ptr_t pass){
+  _endSubPass(pass);
+}
+
+/////////////////////////////////////////////////////////////////////////
+
 Context::Context()
     : meTargetType(TargetType::NONE)
     , miW(0)

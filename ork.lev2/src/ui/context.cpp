@@ -7,6 +7,7 @@ Context::Context() {
   _tempevent = std::make_shared<Event>();
   _uitimer.Start();
   _prevtime = 0.0;
+  _renderpass = std::make_shared<lev2::RenderPass>();
 }
 /////////////////////////////////////////////////////////////////////////
 void Context::tick(updatedata_ptr_t updata){
@@ -152,10 +153,13 @@ bool Context::hasMouseFocus(const Widget* w) const {
 }
 //////////////////////////////////////
 void Context::draw(drawevent_constptr_t drwev) {
+  auto gfx_ctx = drwev->GetTarget();
+  gfx_ctx->beginRenderPass(_renderpass);
   _top->draw(drwev);
   if (_overlayWidget) {
     _overlayWidget->draw(drwev);
   }
+  gfx_ctx->endRenderPass(_renderpass);
 }
 /////////////////////////////////////////////////////////////////////////
 void Context::dumpWidgets(std::string label) const{

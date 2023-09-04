@@ -207,6 +207,7 @@ void VkContext::_doBeginFrame() {
 
   vkResetCommandBuffer(_cmdbufcurframe_gfx_pri->_vkcmdbuf, 0);
   vkBeginCommandBuffer(_cmdbufcurframe_gfx_pri->_vkcmdbuf, &CBBI_GFX);
+
 }
 
 ///////////////////////////////////////////////////////
@@ -329,6 +330,25 @@ static void platoSwapBuffers(vkplatformobject_ptr_t plato) {
 void VkContext::makeCurrentContext() {
   auto plato = _impl.getShared<VkPlatformObject>();
   platoMakeCurrent(plato);
+}
+
+///////////////////////////////////////////////////////
+
+void VkContext::_beginRenderPass(renderpass_ptr_t) {
+  OrkAssert(false);
+}
+
+void VkContext::_endRenderPass(renderpass_ptr_t) {
+  OrkAssert(false);
+
+}
+void VkContext::_beginSubPass(rendersubpass_ptr_t) {
+  OrkAssert(false);
+}
+
+void VkContext::_endSubPass(rendersubpass_ptr_t) {
+  OrkAssert(false);
+
 }
 
 ///////////////////////////////////////////////////////

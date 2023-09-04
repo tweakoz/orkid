@@ -56,10 +56,8 @@ public:
 
   ///////////////////////////////////////////////////////
 
-  virtual void SetRtGroup(RtGroup* Base) = 0;
-  RtGroup* GetRtGroup() const {
-    return _currentRtGroup;
-  }
+  virtual void _pushRtGroup(RtGroup* Base) = 0;
+  virtual RtGroup* _popRtGroup() = 0;
 
   void PushRtGroup(RtGroup* Base);
   void PopRtGroup();

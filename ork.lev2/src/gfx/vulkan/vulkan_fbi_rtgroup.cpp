@@ -211,7 +211,30 @@ vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(RtGroup* rtgroup) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void VkFrameBufferInterface::SetRtGroup(RtGroup* rtgroup) {
+RtGroup* VkFrameBufferInterface::_popRtGroup() {
+  return _active_rtgroup;
+}
+
+/*
+  float fx = 0.0f; 
+  float fy = 0.0f; 
+  float fw = 0.0f;
+  float fh = 0.0f;
+  if (rtg) {
+    fw = rtg->width();
+    fh = rtg->height();
+    //glDepthRange(0.0, 1.0f);
+  }
+  ViewportRect extents(fx, fy, fw, fh);
+  pushViewport(extents);
+  pushScissor(extents);
+  if(rtg and rtg->_autoclear) {
+    rtGroupClear(rtg);
+  }
+*/
+///////////////////////////////////////////////////////////////////////////////
+
+void VkFrameBufferInterface::_pushRtGroup(RtGroup* rtgroup) {
   auto prev_rtgroup = _active_rtgroup;
   if (nullptr == rtgroup) {
     _setAsRenderTarget();
@@ -255,6 +278,30 @@ void VkFrameBufferInterface::SetRtGroup(RtGroup* rtgroup) {
     RTGIMPL = _createRtGroupImpl(_active_rtgroup);
     _active_rtgroup->_impl.setShared<VkRtGroupImpl>(RTGIMPL);
     _active_rtgroup->SetSizeDirty(false);
+  }
+  /////////////////////////////////////////
+  // main (present) rtgroup?
+  /////////////////////////////////////////
+  if( _active_rtgroup == _main_rtg.get() ){
+
+    VkRenderPassBeginInfo RPI = {};
+    initializeVkStruct(RPI, VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO);
+    //RPI.renderPass = renderPass; // Render pass you created earlier.
+    //RPI.framebuffer = framebuffer; // Framebuffer you created earlier.
+    //RPI.renderArea.offset = {0, 0};
+    //RPI.renderArea.extent = extent; // VkExtent2D of your swapchain image, for example.
+    
+    VkClearValue clearColor = {0.0f, 0.0f, 0.0f, 1.0f};  // RGBA black.
+    VkClearValue clearDepth = {1.0f, 0};                 // Clear depth 1.0 and stencil 0.
+    VkClearValue clearValues[2] = {clearColor, clearDepth};
+
+    //RPI.clearValueCount = 2;
+    //RPI.pClearValues = clearValues;
+
+    //vkCmdBeginRenderPass( commandBuffer, //
+    //                      &renderPassInfo, // 
+    //                      VK_SUBPASS_CONTENTS_INLINE);
+    
   }
   /////////////////////////////////////////
 }

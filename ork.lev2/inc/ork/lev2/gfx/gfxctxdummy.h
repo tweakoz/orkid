@@ -203,8 +203,8 @@ public:
   DuFrameBufferInterface(Context& target);
   ~DuFrameBufferInterface();
 
-  void SetRtGroup(RtGroup* Base) final {
-  }
+  void _pushRtGroup(RtGroup* Base) final {}
+  RtGroup* _popRtGroup() final { return nullptr;}
 
   ///////////////////////////////////////////////////////
 

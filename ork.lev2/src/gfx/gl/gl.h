@@ -237,7 +237,8 @@ public:
 
   ///////////////////////////////////////////////////////
 
-  void SetRtGroup(RtGroup* Base) final;
+  void _pushRtGroup(RtGroup* Base) final;
+  RtGroup* _popRtGroup() final;
   void Clear(const fcolor4& rCol, float fdepth) final;
   void clearDepth(float fdepth) final;
   void _setViewport(int iX, int iY, int iW, int iH) final;
@@ -265,6 +266,7 @@ public:
   void _initializeContext(DisplayBuffer* pBuf);
 
   freestyle_mtl_ptr_t utilshader();
+  void _postPushRtGroup(RtGroup* rtgroup);
 
 protected:
 
@@ -279,6 +281,7 @@ protected:
   int miCurScissorY;
   int miCurScissorW;
   int miCurScissorH;
+  bool _should_pop_rtg_on_endframe = false;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

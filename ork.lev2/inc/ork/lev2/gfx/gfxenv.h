@@ -200,6 +200,17 @@ public:
 
   void beginFrame(void);
   void endFrame(void);
+  void beginRenderPass(renderpass_ptr_t);
+  void endRenderPass(renderpass_ptr_t);
+  void beginSubPass(rendersubpass_ptr_t);
+  void endSubPass(rendersubpass_ptr_t);
+
+  ///////////////////////////////////////////////////////////////////////
+
+  virtual void _beginRenderPass(renderpass_ptr_t) {}
+  virtual void _endRenderPass(renderpass_ptr_t) {}
+  virtual void _beginSubPass(rendersubpass_ptr_t) {}
+  virtual void _endSubPass(rendersubpass_ptr_t) {}
 
   ///////////////////////////////////////////////////////////////////////
 
@@ -685,6 +696,14 @@ public:
 private:
   Context* mTarget;
   int mCameraNumber;
+};
+
+struct RenderPass{
+  svarp_t _impl;
+};
+
+struct RenderSubPass{
+  svarp_t _impl;
 };
 
 /// ////////////////////////////////////////////////////////////////////////////

@@ -79,20 +79,21 @@ void GlFrameBufferInterface::_doBeginFrame(void) {
   // glFinish();
   GL_ERRORCHECK();
 
-  RtGroup* rtg = mTargetGL.FBI()->GetRtGroup();
+  RtGroup* rtg = mTargetGL.FBI()->_currentRtGroup;
 
   if (mTargetGL._defaultRTG and (rtg != nullptr)) {
-    SetRtGroup(mTargetGL._defaultRTG);
+    _pushRtGroup(mTargetGL._defaultRTG);
     rtGroupClear(mTargetGL._defaultRTG);
     rtg = mTargetGL._defaultRTG;
+    _should_pop_rtg_on_endframe = true;
   }
 
   if (rtg) {
     glDepthRange(0.0, 1.0f);
-    float fx = 0.0f; // mTargetGL.FBI()->GetRtGroup()->x;
-    float fy = 0.0f; // mTargetGL.FBI()->GetRtGroup()->y;
-    float fw = GetRtGroup()->width();
-    float fh = GetRtGroup()->height();
+    float fx = 0.0f; // mTargetGL.FBI()->_currentRtGroup->x;
+    float fy = 0.0f; // mTargetGL.FBI()->_currentRtGroup->y;
+    float fw = _currentRtGroup->width();
+    float fh = _currentRtGroup->height();
     // printf("RTGroup begin x<%f> y<%f> w<%f> h<%f>\n", fx, fy, fw, fh);
     ViewportRect extents(fx, fy, fw, fh);
     // SRect extents( _target.x, _target.y, _target.width(), _target.height() );
@@ -166,10 +167,13 @@ void GlFrameBufferInterface::_doEndFrame(void) {
   // release all resources for this frame
   ///////////////////////////////////////////
 
-  // glFinish();
+  if(_should_pop_rtg_on_endframe){
+    _popRtGroup();
+    _should_pop_rtg_on_endframe = false;
+  }
 
   ////////////////////////////////
-  auto rtg = mTargetGL.FBI()->GetRtGroup();
+  auto rtg = mTargetGL.FBI()->_currentRtGroup;
 
   if (rtg) {
     int inumtargets     = rtg->GetNumTargets();

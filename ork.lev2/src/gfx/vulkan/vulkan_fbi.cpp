@@ -40,24 +40,9 @@ void VkFrameBufferInterface::_setScissor(int iX, int iY, int iW, int iH) {
 ///////////////////////////////////////////////////////
 void VkFrameBufferInterface::_doBeginFrame() {
   RtGroup* rtg = _currentRtGroup;
-  float fx = 0.0f; 
-  float fy = 0.0f; 
-  float fw = 0.0f;
-  float fh = 0.0f;
-  SetRtGroup(rtg);
+  _pushRtGroup(rtg);
   if (_main_rtg and (rtg == nullptr)) {
     rtg = _main_rtg.get();
-  }
-  if (rtg) {
-    fw = rtg->width();
-    fh = rtg->height();
-    //glDepthRange(0.0, 1.0f);
-  }
-  ViewportRect extents(fx, fy, fw, fh);
-  pushViewport(extents);
-  pushScissor(extents);
-  if(rtg and rtg->_autoclear) {
-    rtGroupClear(rtg);
   }
 }
 

@@ -11,7 +11,7 @@ namespace ork::lev2::vulkan {
 using namespace shadlang;
 ///////////////////////////////////////////////////////////////////////////////
 
-VkFxShaderObject::VkFxShaderObject(vkcontext_rawptr_t ctx, vkfxshader_bin_t bin) //
+VulkanFxShaderObject::VulkanFxShaderObject(vkcontext_rawptr_t ctx, vkfxshader_bin_t bin) //
     : _contextVK(ctx)                                                            //
     , _spirv_binary(bin) {                                                       //
 
@@ -28,7 +28,7 @@ VkFxShaderObject::VkFxShaderObject(vkcontext_rawptr_t ctx, vkfxshader_bin_t bin)
   OrkAssert(result == VK_SUCCESS);
 }
 
-VkFxShaderObject::~VkFxShaderObject() {
+VulkanFxShaderObject::~VulkanFxShaderObject() {
   vkDestroyShaderModule(_contextVK->_vkdevice, _vk_shadermodule, nullptr);
 }
 
@@ -251,7 +251,7 @@ vkfxsfile_ptr_t VkFxInterface::_loadShaderFromShaderText(FxShader* shader, //
 
     for (auto vshader : vtx_shaders) {
       SPC->processShader(vshader);
-      auto vulkan_shobj                                       = std::make_shared<VkFxShaderObject>(_contextVK, SPC->_spirv_binary);
+      auto vulkan_shobj                                       = std::make_shared<VulkanFxShaderObject>(_contextVK, SPC->_spirv_binary);
       vulkan_shobj->_astnode                                  = vshader;
       vulkan_shobj->_vk_uniformsets                           = convert_unisets(SPC->_spirvuniformsets);
       vulkan_shobj->_vk_uniformblks                           = convert_uniblks(SPC->_spirvuniformblks);
@@ -270,7 +270,7 @@ vkfxsfile_ptr_t VkFxInterface::_loadShaderFromShaderText(FxShader* shader, //
 
     for (auto fshader : frg_shaders) {
       SPC->processShader(fshader);
-      auto vulkan_shobj                                       = std::make_shared<VkFxShaderObject>(_contextVK, SPC->_spirv_binary);
+      auto vulkan_shobj                                       = std::make_shared<VulkanFxShaderObject>(_contextVK, SPC->_spirv_binary);
       vulkan_shobj->_astnode                                  = fshader;
       vulkan_shobj->_vk_uniformsets                           = convert_unisets(SPC->_spirvuniformsets);
       vulkan_shobj->_vk_uniformblks                           = convert_uniblks(SPC->_spirvuniformblks);
@@ -289,7 +289,7 @@ vkfxsfile_ptr_t VkFxInterface::_loadShaderFromShaderText(FxShader* shader, //
 
     for (auto cshader : cu_shaders) {
       SPC->processShader(cshader); //
-      auto vulkan_shobj                                       = std::make_shared<VkFxShaderObject>(_contextVK, SPC->_spirv_binary);
+      auto vulkan_shobj                                       = std::make_shared<VulkanFxShaderObject>(_contextVK, SPC->_spirv_binary);
       vulkan_shobj->_astnode                                  = cshader;
       vulkan_shobj->_vk_uniformsets                           = convert_unisets(SPC->_spirvuniformsets);
       vulkan_shobj->_vk_uniformblks                           = convert_uniblks(SPC->_spirvuniformblks);

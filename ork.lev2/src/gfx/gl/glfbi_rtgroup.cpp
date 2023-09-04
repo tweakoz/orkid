@@ -30,7 +30,34 @@ GlFboObject::GlFboObject() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GlFrameBufferInterface::SetRtGroup(RtGroup* rtgroup) {
+RtGroup* GlFrameBufferInterface::_popRtGroup() {
+
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void GlFrameBufferInterface::_postPushRtGroup(RtGroup* rtgroup) {
+  int iw = _target.mainSurfaceWidth();
+  int ih = _target.mainSurfaceHeight();
+
+  if (rtgroup != nullptr) {
+    iw = rtgroup->width();
+    ih = rtgroup->height();
+  }
+
+  ViewportRect r(0, 0, iw, ih);
+
+  pushScissor(r);
+  pushViewport(r);
+
+  if (rtgroup->_autoclear) {
+    rtGroupClear(rtgroup);
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void GlFrameBufferInterface::_pushRtGroup(RtGroup* rtgroup) {
 
   // printf("FBI<%p> SetRTG<%p>\n", this, rtgroup );
 
@@ -45,6 +72,7 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* rtgroup) {
     ////////////////////////////////////////////////
     _setAsRenderTarget();
     _currentRtGroup = nullptr;
+    _postPushRtGroup(rtgroup);
     return;
   }
 
@@ -69,6 +97,7 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* rtgroup) {
       rtGroupClear(rtgroup);
     }
     GL_ERRORCHECK();
+    _postPushRtGroup(rtgroup);
     return;
   }
 
@@ -428,6 +457,7 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* rtgroup) {
   _target.RSI()->BindRasterState(defstate, true);
 
   _currentRtGroup = rtgroup;
+  _postPushRtGroup(rtgroup);
 
 }
 

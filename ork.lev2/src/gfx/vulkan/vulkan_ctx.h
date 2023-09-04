@@ -83,8 +83,8 @@ struct VkFxInterface;
 struct VkComputeInterface;
 #endif
 //
-struct VkTextureObject;
-struct VkFxShaderObject;
+struct VulkanTextureObject;
+struct VulkanFxShaderObject;
 struct VkFxShaderFile;
 struct VkFxShaderProgram;
 struct VkFxShaderPass;
@@ -102,6 +102,8 @@ struct VulkanVertexBuffer;
 struct VulkanIndexBuffer;
 struct VkLoadContext;
 struct VkCommandBufferImpl;
+struct VulkanRenderPass;
+struct VulkanRenderSubPass;
 //
 using vkinstance_ptr_t   = std::shared_ptr<VulkanInstance>;
 using vkdeviceinfo_ptr_t = std::shared_ptr<VulkanDeviceInfo>;
@@ -121,9 +123,9 @@ using vkfxi_ptr_t = std::shared_ptr<VkFxInterface>;
 using vkci_ptr_t = std::shared_ptr<VkComputeInterface>;
 #endif
 //
-using vktexobj_ptr_t  = std::shared_ptr<VkTextureObject>;
+using vktexobj_ptr_t  = std::shared_ptr<VulkanTextureObject>;
 using vkfxsfile_ptr_t = std::shared_ptr<VkFxShaderFile>;
-using vkfxsobj_ptr_t  = std::shared_ptr<VkFxShaderObject>;
+using vkfxsobj_ptr_t  = std::shared_ptr<VulkanFxShaderObject>;
 using vkfxsprg_ptr_t  = std::shared_ptr<VkFxShaderProgram>;
 using vkfxspass_ptr_t = std::shared_ptr<VkFxShaderPass>;
 using vkfxstek_ptr_t  = std::shared_ptr<VkFxShaderTechnique>;
@@ -144,6 +146,9 @@ using vkvtxbuf_ptr_t       = std::shared_ptr<VulkanVertexBuffer>;
 using vkidxbuf_ptr_t       = std::shared_ptr<VulkanIndexBuffer>;
 using vkloadctx_ptr_t      = std::shared_ptr<VkLoadContext>;
 using vkcmdbufimpl_ptr_t   = std::shared_ptr<VkCommandBufferImpl>;
+using vkrenderpass_ptr_t   = std::shared_ptr<VulkanRenderPass>;
+using vksubpass_ptr_t      = std::shared_ptr<VulkanRenderSubPass>;
+
 extern vkinstance_ptr_t _GVI;
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -199,6 +204,13 @@ struct VkCommandBufferImpl{
   VkCommandBuffer _vkcmdbuf;
 };
 
+struct VulkanRenderPass{
+
+};
+struct VulkanRenderSubPass{
+
+};
+
 ///////////////////////////////////////////////////////////////////////////////
 
 struct VklRtBufferImpl {
@@ -249,10 +261,10 @@ struct VkTexLoadReq {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct VkTextureObject {
+struct VulkanTextureObject {
 
-  VkTextureObject(vktxi_ptr_t txi);
-  ~VkTextureObject();
+  VulkanTextureObject(vktxi_ptr_t txi);
+  ~VulkanTextureObject();
 
   // GLuint mObject;
   // GLuint mFbo;
@@ -309,10 +321,10 @@ struct VkFxShaderFile {
   std::unordered_map<std::string, vkfxsuniblk_ptr_t> _vk_uniformblks;
 };
 
-struct VkFxShaderObject {
+struct VulkanFxShaderObject {
 
-  VkFxShaderObject(vkcontext_rawptr_t ctx, vkfxshader_bin_t bin);
-  ~VkFxShaderObject();
+  VulkanFxShaderObject(vkcontext_rawptr_t ctx, vkfxshader_bin_t bin);
+  ~VulkanFxShaderObject();
 
   vkcontext_rawptr_t _contextVK;
   vkfxshader_bin_t _spirv_binary;
@@ -502,13 +514,8 @@ struct VkFrameBufferInterface final : public FrameBufferInterface {
 
   ///////////////////////////////////////////////////////
 
-  void SetRtGroup(RtGroup* Base) final;
   void Clear(const fcolor4& rCol, float fdepth) final;
   void clearDepth(float fdepth) final;
-  void _setViewport(int iX, int iY, int iW, int iH) final;
-  void _setScissor(int iX, int iY, int iW, int iH) final;
-  void _doBeginFrame(void) final;
-  void _doEndFrame(void) final;
 
   void capture(const RtBuffer* inpbuf, const file::Path& pth) final;
   bool captureToTexture(const CaptureBuffer& capbuf, Texture& tex) final;
@@ -524,8 +531,16 @@ struct VkFrameBufferInterface final : public FrameBufferInterface {
 
   //////////////////////////////////////////////
 
-  void _setAsRenderTarget();
   void _initializeContext(DisplayBuffer* pBuf);
+  void _setViewport(int iX, int iY, int iW, int iH) final;
+  void _setScissor(int iX, int iY, int iW, int iH) final;
+  void _doBeginFrame(void) final;
+  void _doEndFrame(void) final;
+  void _setAsRenderTarget();
+  void _pushRtGroup(RtGroup* Base) final;
+  RtGroup* _popRtGroup() final;
+
+  //////////////////////////////////////////////
 
   freestyle_mtl_ptr_t utilshader();
 
@@ -698,6 +713,10 @@ public:
   void _doBeginFrame() final;
   void _doEndFrame() final;
   ctx_platform_handle_t _doClonePlatformHandle() const final;
+  void _beginRenderPass(renderpass_ptr_t) final;
+  void _endRenderPass(renderpass_ptr_t) final;
+  void _beginSubPass(rendersubpass_ptr_t) final;
+  void _endSubPass(rendersubpass_ptr_t) final;
 
   //////////////////////////////////////////////
   // Interfaces

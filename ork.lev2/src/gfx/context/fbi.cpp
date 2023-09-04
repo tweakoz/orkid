@@ -71,33 +71,15 @@ PickBuffer* FrameBufferInterface::currentPickBuffer() const {
 void FrameBufferInterface::PushRtGroup(RtGroup* Base) {
 
   bool first = mRtGroupStack.empty();
-
   mRtGroupStack.push(_currentRtGroup);
-  SetRtGroup(Base);
-
-  int iw = _target.mainSurfaceWidth();
-  int ih = _target.mainSurfaceHeight();
-
-  if (Base != nullptr) {
-    iw = Base->width();
-    ih = Base->height();
-  }
-
-  ViewportRect r(0, 0, iw, ih);
-
-  pushScissor(r);
-  pushViewport(r);
-
-  if (Base->_autoclear) {
-    rtGroupClear(Base);
-  }
-  // BeginFrame();
+  _pushRtGroup(Base);
 }
 void FrameBufferInterface::PopRtGroup() {
   RtGroup* prev = mRtGroupStack.top();
   mRtGroupStack.pop();
   // EndFrame();
-  SetRtGroup(prev); // Enable Mrt
+  auto popped = _popRtGroup();
+  OrkAssert(popped == prev);
   popViewport();
   popScissor();
 }
