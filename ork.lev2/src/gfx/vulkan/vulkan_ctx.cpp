@@ -49,7 +49,7 @@ VkContext::VkContext() {
   _vkdeviceinfo     = vk_devinfo;
 
   ////////////////////////////
-  // get queue indices
+  // get queue families
   ////////////////////////////
 
   using qset_t = std::set<uint32_t>;
@@ -62,24 +62,24 @@ VkContext::VkContext() {
     if (qflags & VK_QUEUE_GRAPHICS_BIT) {
       if (qprops.queueCount > 0) {
         qids[i].insert(VK_QUEUE_GRAPHICS_BIT);
-        _vkq_graphics = i;
+        _vkqfid_graphics = i;
       }
     }
     if (qflags & VK_QUEUE_COMPUTE_BIT) {
       if (qprops.queueCount > 0) {
         // qids[i].insert(VK_QUEUE_COMPUTE_BIT);
-        //_vkq_compute = i;
+        //_vkqfid_compute = i;
       }
     }
     if (qflags & VK_QUEUE_TRANSFER_BIT) {
       if (qprops.queueCount > 0) {
         // qids[i].insert(VK_QUEUE_TRANSFER_BIT);
-        //_vkq_transfer = i;
+        //_vkqfid_transfer = i;
       }
     }
   }
 
-  OrkAssert(_vkq_graphics != NO_QUEUE);
+  OrkAssert(_vkqfid_graphics != NO_QUEUE);
   // OrkAssert(_vkq_compute!=NO_QUEUE);
   // OrkAssert(_vkq_transfer!=NO_QUEUE);
 
@@ -106,6 +106,47 @@ VkContext::VkContext() {
   DCI.queueCreateInfoCount = _DQCIs.size();
   DCI.pQueueCreateInfos    = _DQCIs.data();
   vkCreateDevice(_vkphysicaldevice, &DCI, nullptr, &_vkdevice);
+
+  vkGetDeviceQueue(_vkdevice, //
+                   _vkqfid_graphics, //
+                   0, //
+                   &_vkqueue_graphics);
+
+  ////////////////////////////
+  // create command pools
+  ////////////////////////////
+
+  VkCommandPoolCreateInfo CPCI_GFX = {};
+  initializeVkStruct(CPCI_GFX, VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO);
+  CPCI_GFX.queueFamilyIndex = _vkqfid_graphics;
+  CPCI_GFX.flags            = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT //
+                            | VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
+
+  VkResult OK = vkCreateCommandPool(_vkdevice,
+                                    &CPCI_GFX,
+                                    nullptr,
+                                    &_vkcmdpool_graphics);
+
+  OrkAssert(OK == VK_SUCCESS);
+
+  ////////////////////////////
+  // create command buffers
+  ////////////////////////////
+
+  VkCommandBufferAllocateInfo CBAI_GFX = {};
+  initializeVkStruct(CBAI_GFX, VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO);
+  CBAI_GFX.commandPool        = _vkcmdpool_graphics;
+  CBAI_GFX.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+  CBAI_GFX.commandBufferCount = 1;
+
+  _cmdbuf_pool.reset_size(4);
+  for( size_t i=0; i<4; i++ ){
+    auto& cmdbufimpl = _cmdbuf_pool.direct_access(i);
+    OK = vkAllocateCommandBuffers( _vkdevice, //
+                                   &CBAI_GFX, //
+                                   &cmdbufimpl._vkcmdbuf );
+    OrkAssert(OK == VK_SUCCESS);
+  }
 
   ////////////////////////////
   // create child interfaces
@@ -155,10 +196,35 @@ void VkContext::FxInit() {
 
 void VkContext::_doBeginFrame() {
   makeCurrentContext();
+  VkCommandBufferBeginInfo CBBI_GFX = {};
+  initializeVkStruct(CBBI_GFX, VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
+  CBBI_GFX.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT
+                 | VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT; 
+  CBBI_GFX.pInheritanceInfo = nullptr;  
+
+  _cmdbufcurframe_gfx_pri = _cmdbuf_pool.allocate();
+
+
+  vkResetCommandBuffer(_cmdbufcurframe_gfx_pri->_vkcmdbuf, 0);
+  vkBeginCommandBuffer(_cmdbufcurframe_gfx_pri->_vkcmdbuf, &CBBI_GFX);
 }
 
 ///////////////////////////////////////////////////////
 void VkContext::_doEndFrame() {
+  vkEndCommandBuffer(_cmdbufcurframe_gfx_pri->_vkcmdbuf);
+
+  VkSubmitInfo SI = {};
+  initializeVkStruct(SI, VK_STRUCTURE_TYPE_SUBMIT_INFO);
+  SI.commandBufferCount = 1;
+  SI.pCommandBuffers    = &_cmdbufcurframe_gfx_pri->_vkcmdbuf;
+  
+  vkQueueSubmit(_vkqueue_graphics, 1, &SI, nullptr);
+  vkQueueWaitIdle(_vkqueue_graphics);
+
+
+
+  _cmdbuf_pool.deallocate(_cmdbufcurframe_gfx_pri);
+  _cmdbufcurframe_gfx_pri = nullptr;
 }
 
 ///////////////////////////////////////////////////////

@@ -27,7 +27,7 @@ namespace ork { namespace lev2 {
 struct RtBuffer final {
   enum EMipGen { EMG_NONE, EMG_AUTOCOMPUTE, EMG_USER };
 
-  RtBuffer(const RtGroup* rtg, int slot, EBufferFormat efmt, int iW, int iH);
+  RtBuffer(const RtGroup* rtg, int slot, EBufferFormat efmt, int iW, int iH, uint32_t usage = 0);
 
   Texture* texture() const {
     return _texture.get();
@@ -44,11 +44,11 @@ struct RtBuffer final {
   int _width, _height;
   int _slot;
   texture_ptr_t _texture;
-  //RtgSlot mType;
   EBufferFormat mFormat;
   svarp_t _impl;
   bool mSizeDirty;
   EMipGen _mipgen;
+  uint64_t _usage = 0;
   std::string _debugName;
 };
 
@@ -69,7 +69,7 @@ struct RtGroup final {
     return mMrt[idx];
   }
   /////////////////////////////////////////
-  rtbuffer_ptr_t createRenderTarget(EBufferFormat efmt);
+  rtbuffer_ptr_t createRenderTarget(EBufferFormat efmt, uint64_t usage = 0);
   /////////////////////////////////////////
   void SetMrt(int idx, rtbuffer_ptr_t buffer);
   int GetNumTargets(void) const {

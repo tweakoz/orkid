@@ -31,6 +31,7 @@ struct GLFWwindow;
 #include <ork/kernel/concurrent_queue.h>
 #include <ork/kernel/datablock.h>
 #include <ork/kernel/datacache.h>
+#include <ork/kernel/orkpool.h>
 #include <ork/file/chunkfile.inl>
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -100,6 +101,7 @@ struct VkTexLoadReq;
 struct VulkanVertexBuffer;
 struct VulkanIndexBuffer;
 struct VkLoadContext;
+struct VkCommandBufferImpl;
 //
 using vkinstance_ptr_t   = std::shared_ptr<VulkanInstance>;
 using vkdeviceinfo_ptr_t = std::shared_ptr<VulkanDeviceInfo>;
@@ -141,7 +143,7 @@ using vkfxshader_bin_t     = std::vector<uint32_t>;
 using vkvtxbuf_ptr_t       = std::shared_ptr<VulkanVertexBuffer>;
 using vkidxbuf_ptr_t       = std::shared_ptr<VulkanIndexBuffer>;
 using vkloadctx_ptr_t      = std::shared_ptr<VkLoadContext>;
-
+using vkcmdbufimpl_ptr_t   = std::shared_ptr<VkCommandBufferImpl>;
 extern vkinstance_ptr_t _GVI;
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -189,6 +191,12 @@ struct VulkanInstance {
   shadlang::slpcache_ptr_t _slp_cache;
   MpMcBoundedQueue<load_token_t> _loadTokens;
   bool _debugEnabled = false;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct VkCommandBufferImpl{
+  VkCommandBuffer _vkcmdbuf;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -740,9 +748,14 @@ public:
   std::vector<float> _queuePriorities;
   std::vector<VkDeviceQueueCreateInfo> _DQCIs;
   static constexpr uint32_t NO_QUEUE = 0xffffffff;
-  uint32_t _vkq_graphics             = NO_QUEUE;
-  uint32_t _vkq_compute              = NO_QUEUE;
-  uint32_t _vkq_transfer             = NO_QUEUE;
+  uint32_t _vkqfid_graphics             = NO_QUEUE;
+  uint32_t _vkqfid_compute              = NO_QUEUE;
+  uint32_t _vkqfid_transfer             = NO_QUEUE;
+  VkQueue  _vkqueue_graphics;
+  VkCommandPool _vkcmdpool_graphics;
+
+  pool<VkCommandBufferImpl> _cmdbuf_pool;
+  VkCommandBufferImpl* _cmdbufcurframe_gfx_pri = nullptr;
   //////////////////////////////////////////////
   void* mhHWND;
   vkcontext_ptr_t _parentTarget;

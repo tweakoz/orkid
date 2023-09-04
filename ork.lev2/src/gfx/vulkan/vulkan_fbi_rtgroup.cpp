@@ -45,6 +45,7 @@ static struct VkFormatConverter{
 
         _layoutmap["depth"_crcu] = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
         _layoutmap["color"_crcu] = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        _layoutmap["present"_crcu] = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
         // VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL
         // VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
         // VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL
@@ -54,6 +55,7 @@ static struct VkFormatConverter{
 
         _aspectmap["depth"_crcu] = VK_IMAGE_ASPECT_DEPTH_BIT;
         _aspectmap["color"_crcu] = VK_IMAGE_ASPECT_COLOR_BIT;
+        _aspectmap["present"_crcu] = VK_IMAGE_ASPECT_COLOR_BIT;
     }
     VkFormat convertBufferFormat(EBufferFormat fmt_in) const {
         auto it = _fmtmap.find(fmt_in);
@@ -187,6 +189,9 @@ vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(RtGroup* rtgroup) {
     rtbuffer->_impl.setShared<VklRtBufferImpl>(bufferimpl);
     bufferimpl->_vkfmt = _vkFormatConverter.convertBufferFormat(rtbuffer->mFormat);
     uint64_t USAGE = "color"_crcu;
+    if(rtbuffer->_usage != 0){
+      USAGE = rtbuffer->_usage;
+    }
     _vkCreateImageForBuffer(_contextVK, bufferimpl, USAGE);
     auto& adesc = bufferimpl->_attachmentDesc;
     initializeVkStruct(adesc);
@@ -252,6 +257,23 @@ void VkFrameBufferInterface::SetRtGroup(RtGroup* rtgroup) {
     _active_rtgroup->SetSizeDirty(false);
   }
   /////////////////////////////////////////
+}
+
+///////////////////////////////////////////////////////
+
+void VkFrameBufferInterface::Clear(const fcolor4& rCol, float fdepth) {
+  auto cmdbuf = _contextVK->_cmdbufcurframe_gfx_pri;
+  auto rtgimpl = _active_rtgroup->_impl.getShared<VkRtGroupImpl>();
+  int inumtargets = _active_rtgroup->GetNumTargets();
+  int w = _active_rtgroup->width();
+  int h = _active_rtgroup->height();
+  printf( "clearing rtg<%p> w<%d> h<%d>\n", (void*) rtgimpl.get(), w, h );
+}
+
+///////////////////////////////////////////////////////
+
+void VkFrameBufferInterface::clearDepth(float fdepth) {
+  OrkAssert(false);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

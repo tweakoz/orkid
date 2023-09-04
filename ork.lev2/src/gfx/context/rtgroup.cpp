@@ -16,13 +16,18 @@
 namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
-RtBuffer::RtBuffer(const RtGroup* rtg, int slot, EBufferFormat efmt, int iW, int iH)
-    : _rtgroup(rtg)
-    , _width(iW)
-    , _height(iH)
-    , _slot(slot)
-    , mFormat(efmt)
-    , _mipgen(EMG_NONE) {
+RtBuffer::RtBuffer(const RtGroup* rtg, //
+                   int slot, // 
+                   EBufferFormat efmt, //
+                   int iW, int iH, // 
+                   uint32_t usage) //
+    : _rtgroup(rtg) //
+    , _width(iW) //
+    , _height(iH) //
+    , _slot(slot) //
+    , mFormat(efmt) //
+    , _mipgen(EMG_NONE) //
+    , _usage(0) { //
   _texture = std::make_shared<Texture>();
 }
 
@@ -66,11 +71,11 @@ rtgroup_ptr_t RtGroup::clone() const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-rtbuffer_ptr_t RtGroup::createRenderTarget(EBufferFormat efmt) {
+rtbuffer_ptr_t RtGroup::createRenderTarget(EBufferFormat efmt, uint64_t usage) {
 
   int islot = mNumMrts++;
 
-  rtbuffer_ptr_t rtb = std::make_shared<RtBuffer>(this, islot, efmt, miW, miH);
+  rtbuffer_ptr_t rtb = std::make_shared<RtBuffer>(this, islot, efmt, miW, miH,usage);
   OrkAssert(islot < kmaxmrts);
   mMrt[islot] = rtb;
   return rtb;
