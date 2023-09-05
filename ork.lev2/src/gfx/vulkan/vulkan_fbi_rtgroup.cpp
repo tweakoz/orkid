@@ -215,23 +215,25 @@ RtGroup* VkFrameBufferInterface::_popRtGroup() {
   return _active_rtgroup;
 }
 
-/*
+void VkFrameBufferInterface::_postPushRtGroup(RtGroup* rtgroup) {
+
   float fx = 0.0f; 
   float fy = 0.0f; 
   float fw = 0.0f;
   float fh = 0.0f;
-  if (rtg) {
-    fw = rtg->width();
-    fh = rtg->height();
+  if (rtgroup) {
+    fw = rtgroup->width();
+    fh = rtgroup->height();
     //glDepthRange(0.0, 1.0f);
   }
   ViewportRect extents(fx, fy, fw, fh);
   pushViewport(extents);
   pushScissor(extents);
-  if(rtg and rtg->_autoclear) {
-    rtGroupClear(rtg);
+  if(rtgroup and rtgroup->_autoclear) {
+    rtGroupClear(rtgroup);
   }
-*/
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkFrameBufferInterface::_pushRtGroup(RtGroup* rtgroup) {
@@ -304,6 +306,7 @@ void VkFrameBufferInterface::_pushRtGroup(RtGroup* rtgroup) {
     
   }
   /////////////////////////////////////////
+  _postPushRtGroup(rtgroup);
 }
 
 ///////////////////////////////////////////////////////

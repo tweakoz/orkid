@@ -130,25 +130,6 @@ VkContext::VkContext() {
   OrkAssert(OK == VK_SUCCESS);
 
   ////////////////////////////
-  // create command buffers
-  ////////////////////////////
-
-  VkCommandBufferAllocateInfo CBAI_GFX = {};
-  initializeVkStruct(CBAI_GFX, VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO);
-  CBAI_GFX.commandPool        = _vkcmdpool_graphics;
-  CBAI_GFX.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-  CBAI_GFX.commandBufferCount = 1;
-
-  _cmdbuf_pool.reset_size(4);
-  for( size_t i=0; i<4; i++ ){
-    auto& cmdbufimpl = _cmdbuf_pool.direct_access(i);
-    OK = vkAllocateCommandBuffers( _vkdevice, //
-                                   &CBAI_GFX, //
-                                   &cmdbufimpl._vkcmdbuf );
-    OrkAssert(OK == VK_SUCCESS);
-  }
-
-  ////////////////////////////
   // create child interfaces
   ////////////////////////////
 
@@ -196,14 +177,30 @@ void VkContext::FxInit() {
 
 void VkContext::_doBeginFrame() {
   makeCurrentContext();
+
+  if( auto try_vkcb = _defaultCommandBuffer->_impl.tryAsShared<VkCommandBufferImpl>() ){
+    _cmdbufcurframe_gfx_pri = try_vkcb.value();
+  }
+  else{
+
+    _cmdbufcurframe_gfx_pri = _defaultCommandBuffer->_impl.makeShared<VkCommandBufferImpl>();
+    VkCommandBufferAllocateInfo CBAI_GFX = {};
+    initializeVkStruct(CBAI_GFX, VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO);
+    CBAI_GFX.commandPool        = _vkcmdpool_graphics;
+    CBAI_GFX.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    CBAI_GFX.commandBufferCount = 1;
+
+    VkResult OK = vkAllocateCommandBuffers( _vkdevice, //
+                                            &CBAI_GFX, //
+                                            &_cmdbufcurframe_gfx_pri->_vkcmdbuf );
+    OrkAssert(OK == VK_SUCCESS);
+  }
+
   VkCommandBufferBeginInfo CBBI_GFX = {};
   initializeVkStruct(CBBI_GFX, VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
   CBBI_GFX.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT
                  | VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT; 
   CBBI_GFX.pInheritanceInfo = nullptr;  
-
-  _cmdbufcurframe_gfx_pri = _cmdbuf_pool.allocate();
-
 
   vkResetCommandBuffer(_cmdbufcurframe_gfx_pri->_vkcmdbuf, 0);
   vkBeginCommandBuffer(_cmdbufcurframe_gfx_pri->_vkcmdbuf, &CBBI_GFX);
@@ -222,9 +219,6 @@ void VkContext::_doEndFrame() {
   vkQueueSubmit(_vkqueue_graphics, 1, &SI, nullptr);
   vkQueueWaitIdle(_vkqueue_graphics);
 
-
-
-  _cmdbuf_pool.deallocate(_cmdbufcurframe_gfx_pri);
   _cmdbufcurframe_gfx_pri = nullptr;
 }
 
@@ -344,20 +338,20 @@ void VkContext::_beginRenderPass(renderpass_ptr_t renpass) {
 }
 
 void VkContext::_endRenderPass(renderpass_ptr_t renpass) {
-  OrkAssert(false);
+  //OrkAssert(false);
 
 }
 void VkContext::_beginSubPass(rendersubpass_ptr_t subpass) {
-  OrkAssert(false);
+  //OrkAssert(false);
 }
 
 void VkContext::_endSubPass(rendersubpass_ptr_t rubpass) {
-  OrkAssert(false);
+  //OrkAssert(false);
 
 }
 
 commandbuffer_ptr_t VkContext::_beginRecordCommandBuffer() {
-
+  OrkAssert(false);
   auto cmdbuf = std::make_shared<CommandBuffer>();
   auto vkcmdbuf = cmdbuf->_impl.makeShared<VkCommandBufferImpl>();
   _recordCommandBuffer = cmdbuf;
@@ -365,6 +359,7 @@ commandbuffer_ptr_t VkContext::_beginRecordCommandBuffer() {
 
 }
 void VkContext::_endRecordCommandBuffer(commandbuffer_ptr_t cmdbuf) {
+  OrkAssert(false);
   OrkAssert(cmdbuf==_recordCommandBuffer);
   auto vkcmdbuf = cmdbuf->_impl.getShared<VkCommandBufferImpl>();
   _recordCommandBuffer = nullptr;

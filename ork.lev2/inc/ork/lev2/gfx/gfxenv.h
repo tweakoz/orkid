@@ -28,6 +28,7 @@
 #include <ork/object/AutoConnector.h>
 #include <ork/lev2/lev2_types.h>
 #include <ork/util/Context.h>
+#include <ork/kernel/shared_pool.inl>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2 {
@@ -326,6 +327,7 @@ public:
   PerformanceItem mFramePerfItem;
   commandbuffer_ptr_t _recordCommandBuffer;
   commandbuffer_ptr_t _defaultCommandBuffer;
+  shared_pool::fixed_pool<CommandBuffer,4> _cmdbuf_pool;
 
   bool hiDPI() const;
   float currentDPI() const;

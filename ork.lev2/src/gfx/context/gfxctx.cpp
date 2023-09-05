@@ -60,7 +60,10 @@ void Context::beginFrame(void) {
 
   mRenderContextInstData = 0;
 
+  ////////////////////////
+  _defaultCommandBuffer = _cmdbuf_pool.allocate();
   _doBeginFrame();
+  ////////////////////////
 
   for (auto l : _onBeginFrameCallbacks)
     l();
@@ -69,6 +72,7 @@ void Context::beginFrame(void) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void Context::endFrame(void) {
+
 
   for (auto l : _onEndFrameCallbacks)
     l();
@@ -81,9 +85,15 @@ void Context::endFrame(void) {
 
   PopModColor();
   mbPostInitializeContext = false;
+  ////////////////////////
   _doEndFrame();
+  _cmdbuf_pool.deallocate(_defaultCommandBuffer);
+  _defaultCommandBuffer = nullptr;
+  ////////////////////////
 
   miTargetFrame++;
+
+
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -127,7 +137,6 @@ Context::Context()
   _defaultrcfd       = RCFD;
   pushRenderContextFrameData(_defaultrcfd);
 
-  _defaultCommandBuffer = std::make_shared<CommandBuffer>();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

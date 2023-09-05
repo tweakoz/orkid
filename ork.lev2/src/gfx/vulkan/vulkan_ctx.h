@@ -540,6 +540,7 @@ struct VkFrameBufferInterface final : public FrameBufferInterface {
   void _setAsRenderTarget();
   void _pushRtGroup(RtGroup* Base) final;
   RtGroup* _popRtGroup() final;
+  void _postPushRtGroup(RtGroup* Base);
 
   //////////////////////////////////////////////
 
@@ -780,8 +781,7 @@ public:
   VkQueue  _vkqueue_graphics;
   VkCommandPool _vkcmdpool_graphics;
 
-  pool<VkCommandBufferImpl> _cmdbuf_pool;
-  VkCommandBufferImpl* _cmdbufcurframe_gfx_pri = nullptr;
+  vkcmdbufimpl_ptr_t _cmdbufcurframe_gfx_pri;
   //////////////////////////////////////////////
   void* mhHWND;
   vkcontext_ptr_t _parentTarget;
