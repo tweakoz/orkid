@@ -74,8 +74,8 @@ public:
 
 	size_t capacity() const { return ksize; }
 	
-	//value_type& direct_access( size_t idx ) { return _data[idx]; }
-	//const value_type& direct_access( size_t idx ) const { return _data[idx]; }
+	pointer_t direct_access( size_t idx ) { return _data[idx]; }
+	const_pointer_t direct_access( size_t idx ) const { return _data[idx]; }
 
 protected:
 

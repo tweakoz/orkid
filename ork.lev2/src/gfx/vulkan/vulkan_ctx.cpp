@@ -126,8 +126,29 @@ VkContext::VkContext() {
                                     &CPCI_GFX,
                                     nullptr,
                                     &_vkcmdpool_graphics);
-
   OrkAssert(OK == VK_SUCCESS);
+
+  ////////////////////////////
+  // create command buffer impls
+  ////////////////////////////
+
+
+  size_t count = _cmdbuf_pool.capacity();
+
+  for( size_t i=0; i<count; i++ ){
+    auto ork_cb = _cmdbuf_pool.direct_access(i);
+    auto vk_impl = ork_cb->_impl.makeShared<VkCommandBufferImpl>();
+    VkCommandBufferAllocateInfo CBAI_GFX = {};
+    initializeVkStruct(CBAI_GFX, VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO);
+    CBAI_GFX.commandPool        = _vkcmdpool_graphics;
+    CBAI_GFX.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    CBAI_GFX.commandBufferCount = 1;
+
+    VkResult OK = vkAllocateCommandBuffers( _vkdevice, //
+                                            &CBAI_GFX, //
+                                            &vk_impl->_vkcmdbuf );
+    OrkAssert(OK == VK_SUCCESS);
+  }
 
   ////////////////////////////
   // create child interfaces
@@ -178,23 +199,7 @@ void VkContext::FxInit() {
 void VkContext::_doBeginFrame() {
   makeCurrentContext();
 
-  if( auto try_vkcb = _defaultCommandBuffer->_impl.tryAsShared<VkCommandBufferImpl>() ){
-    _cmdbufcurframe_gfx_pri = try_vkcb.value();
-  }
-  else{
-
-    _cmdbufcurframe_gfx_pri = _defaultCommandBuffer->_impl.makeShared<VkCommandBufferImpl>();
-    VkCommandBufferAllocateInfo CBAI_GFX = {};
-    initializeVkStruct(CBAI_GFX, VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO);
-    CBAI_GFX.commandPool        = _vkcmdpool_graphics;
-    CBAI_GFX.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    CBAI_GFX.commandBufferCount = 1;
-
-    VkResult OK = vkAllocateCommandBuffers( _vkdevice, //
-                                            &CBAI_GFX, //
-                                            &_cmdbufcurframe_gfx_pri->_vkcmdbuf );
-    OrkAssert(OK == VK_SUCCESS);
-  }
+  _cmdbufcurframe_gfx_pri = _defaultCommandBuffer->_impl.getShared<VkCommandBufferImpl>();
 
   VkCommandBufferBeginInfo CBBI_GFX = {};
   initializeVkStruct(CBBI_GFX, VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
