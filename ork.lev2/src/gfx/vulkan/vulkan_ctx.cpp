@@ -334,19 +334,24 @@ void VkContext::makeCurrentContext() {
 
 ///////////////////////////////////////////////////////
 
-void VkContext::_beginRenderPass(renderpass_ptr_t) {
+void VkContext::_beginRenderPass(renderpass_ptr_t renpass) {
+
+  if( renpass->_immutable ){
+    OrkAssert(false);
+  }
+
+
+}
+
+void VkContext::_endRenderPass(renderpass_ptr_t renpass) {
+  OrkAssert(false);
+
+}
+void VkContext::_beginSubPass(rendersubpass_ptr_t subpass) {
   OrkAssert(false);
 }
 
-void VkContext::_endRenderPass(renderpass_ptr_t) {
-  OrkAssert(false);
-
-}
-void VkContext::_beginSubPass(rendersubpass_ptr_t) {
-  OrkAssert(false);
-}
-
-void VkContext::_endSubPass(rendersubpass_ptr_t) {
+void VkContext::_endSubPass(rendersubpass_ptr_t rubpass) {
   OrkAssert(false);
 
 }

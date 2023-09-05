@@ -308,7 +308,7 @@ void VkFrameBufferInterface::_pushRtGroup(RtGroup* rtgroup) {
 
 ///////////////////////////////////////////////////////
 
-void VkFrameBufferInterface::Clear(const fcolor4& rCol, float fdepth) {
+void VkFrameBufferInterface::_clearColorAndDepth(const fcolor4& rCol, float fdepth) {
   auto cmdbuf = _contextVK->_cmdbufcurframe_gfx_pri;
   auto rtgimpl = _active_rtgroup->_impl.getShared<VkRtGroupImpl>();
   int inumtargets = _active_rtgroup->GetNumTargets();
@@ -319,7 +319,7 @@ void VkFrameBufferInterface::Clear(const fcolor4& rCol, float fdepth) {
 
 ///////////////////////////////////////////////////////
 
-void VkFrameBufferInterface::clearDepth(float fdepth) {
+void VkFrameBufferInterface::_clearDepth(float fdepth) {
   OrkAssert(false);
 }
 

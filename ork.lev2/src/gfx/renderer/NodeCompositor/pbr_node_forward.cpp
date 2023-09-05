@@ -158,7 +158,7 @@ struct ForwardPbrNodeImpl {
         FBI->PushRtGroup(rtg_main.get());
         CIMPL->pushCPD(CPD);
         auto MTXI = context->MTXI();
-        FBI->Clear(pbrcommon->_clearColor, 1.0f);
+        //FBI->Clear(pbrcommon->_clearColor, 1.0f);
 
         /////////////////////////////////////////////////////
         // Render Skybox first so AA can blend with it

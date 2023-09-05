@@ -700,6 +700,7 @@ private:
 struct RenderPass{
   svarp_t _impl;
   std::vector<rendersubpass_ptr_t> _subpasses;
+  bool _immutable = false;
 };
 
 struct RenderSubPass{

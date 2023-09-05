@@ -301,7 +301,7 @@ void GlFrameBufferInterface::_setViewport(int iX, int iY, int iW, int iH) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GlFrameBufferInterface::Clear(const fcolor4& color, float fdepth) {
+void GlFrameBufferInterface::_clearColorAndDepth(const fcolor4& color, float fdepth) {
   glClearColor(color.x, color.y, color.z, color.w);
 
   /*GLuint clearColor[4] = { 
@@ -322,7 +322,7 @@ void GlFrameBufferInterface::Clear(const fcolor4& color, float fdepth) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GlFrameBufferInterface::clearDepth(float fdepth) {
+void GlFrameBufferInterface::_clearDepth(float fdepth) {
   glDepthRange(0.0, 1.0f);
   glClearDepth(fdepth);
   GL_ERRORCHECK();

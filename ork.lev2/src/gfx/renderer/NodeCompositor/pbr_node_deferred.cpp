@@ -112,7 +112,7 @@ struct PbrNodeImpl {
     CIMPL->pushCPD(_context->_accumCPD); // base lighting
     FBI->SetAutoClear(true);
     FBI->PushRtGroup(rtg_laccum.get());
-    FBI->Clear(fvec4(0.1, 0.2, 0.3, 1), 1.0f);
+    //FBI->Clear(fvec4(0.1, 0.2, 0.3, 1), 1.0f);
 
     //////////////////////////////////////////////////////////////////
     if (auto lmgr = CIMPL->lightManager()) {

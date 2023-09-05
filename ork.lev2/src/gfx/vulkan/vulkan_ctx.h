@@ -515,8 +515,8 @@ struct VkFrameBufferInterface final : public FrameBufferInterface {
 
   ///////////////////////////////////////////////////////
 
-  void Clear(const fcolor4& rCol, float fdepth) final;
-  void clearDepth(float fdepth) final;
+  void _clearColorAndDepth(const fcolor4& rCol, float fdepth) final;
+  void _clearDepth(float fdepth) final;
 
   void capture(const RtBuffer* inpbuf, const file::Path& pth) final;
   bool captureToTexture(const CaptureBuffer& capbuf, Texture& tex) final;

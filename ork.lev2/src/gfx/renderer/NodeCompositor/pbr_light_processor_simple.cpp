@@ -280,7 +280,7 @@ void SimpleLightProcessor::_renderShadowedTexturedSpotLights(
       CIMPL->pushCPD(DEPTHRENDERCPD); // base lighting
       FBI->PushRtGroup(irt->_rtgroup);
       context->beginFrame();
-      FBI->clearDepth(1.0f);
+      //FBI->clearDepth(1.0f);
       auto DB = RCFD.GetDB();
       if (DB) {
         for (const auto& layer_name : DEPTHRENDERCPD.getLayerNames()) {

@@ -282,7 +282,7 @@ void Surface::Clear() {
   // const fcolor3 &rCol = (surf!=nullptr) ? surf->GetClearColorRef() : fcolor3::Black();
   auto fbi = _target->FBI();
 
-  fbi->Clear(GetClearColorRef(), 1.0f);
+  //fbi->Clear(GetClearColorRef(), 1.0f);
 }
 
 /////////////////////////////////////////////////////////////////////////

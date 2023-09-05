@@ -239,8 +239,8 @@ public:
 
   void _pushRtGroup(RtGroup* Base) final;
   RtGroup* _popRtGroup() final;
-  void Clear(const fcolor4& rCol, float fdepth) final;
-  void clearDepth(float fdepth) final;
+  void _clearColorAndDepth(const fcolor4& rCol, float fdepth) final;
+  void _clearDepth(float fdepth) final;
   void _setViewport(int iX, int iY, int iW, int iH) final;
   void _setScissor(int iX, int iY, int iW, int iH) final;
   void _doBeginFrame(void) final;

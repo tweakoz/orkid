@@ -78,7 +78,7 @@ void EzTopWidget::enableUiDraw() {
       auto fxi     = context->FXI();  // FX Interface
       auto mtxi    = context->MTXI(); // FX Interface
       fbi->SetClearColor(fvec4(0.0, 0.0, 0.1, 1));
-      fbi->Clear(fvec4(1.0, 0.0, 1.0, 1),1);
+      //fbi->Clear(fvec4(1.0, 0.0, 1.0, 1),1);
       ////////////////////////////////////////////////////
       rcfd->_name = "EzTopWidget::rcfd";
       rcfd->pushCompositor(compositorimpl);

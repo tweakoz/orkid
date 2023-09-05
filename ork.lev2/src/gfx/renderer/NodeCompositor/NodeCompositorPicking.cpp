@@ -100,7 +100,7 @@ struct IMPL {
         auto MTXI = targ->MTXI();
         CIMPL->pushCPD(CPD);
         targ->debugPushGroup("toolvp::DrawEnqRenderables");
-        targ->FBI()->Clear(node->_clearColor, 1.0f);
+        //targ->FBI()->Clear(node->_clearColor, 1.0f);
         irenderer->drawEnqueuedRenderables();
         framerenderer.renderMisc();
         targ->debugPopGroup();

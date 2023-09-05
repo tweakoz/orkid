@@ -104,7 +104,7 @@ void pyinit_gfx(py::module& module_lev2) {
             auto crc_fmt = CrcString(format.c_str());
             return fbi.get()->captureAsFormat(rtb.get(), &capbuf, EBufferFormat(crc_fmt._hashed));
           })
-      .def("clear", [](const fbi_t& fbi, const fcolor4& color, float depth) { return fbi.get()->Clear(color, depth); })
+      //.def("clear", [](const fbi_t& fbi, const fcolor4& color, float depth) { return fbi.get()->Clear(color, depth); })
       .def("rtGroupPush", [](const fbi_t& fbi, rtg_t& rtg) { return fbi.get()->PushRtGroup(rtg.get()); })
       .def("rtGroupPop", [](const fbi_t& fbi) { return fbi.get()->PopRtGroup(); })
       .def("rtGroupClear", [](const fbi_t& fbi, rtg_t& rtg) { return fbi.get()->rtGroupClear(rtg.get()); })
