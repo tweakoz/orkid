@@ -196,39 +196,6 @@ void VkContext::FxInit() {
 
 ///////////////////////////////////////////////////////
 
-void VkContext::_doBeginFrame() {
-  makeCurrentContext();
-
-  _cmdbufcurframe_gfx_pri = _defaultCommandBuffer->_impl.getShared<VkCommandBufferImpl>();
-
-  VkCommandBufferBeginInfo CBBI_GFX = {};
-  initializeVkStruct(CBBI_GFX, VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
-  CBBI_GFX.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT
-                 | VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT; 
-  CBBI_GFX.pInheritanceInfo = nullptr;  
-
-  vkResetCommandBuffer(_cmdbufcurframe_gfx_pri->_vkcmdbuf, 0);
-  vkBeginCommandBuffer(_cmdbufcurframe_gfx_pri->_vkcmdbuf, &CBBI_GFX);
-
-}
-
-///////////////////////////////////////////////////////
-void VkContext::_doEndFrame() {
-  vkEndCommandBuffer(_cmdbufcurframe_gfx_pri->_vkcmdbuf);
-
-  VkSubmitInfo SI = {};
-  initializeVkStruct(SI, VK_STRUCTURE_TYPE_SUBMIT_INFO);
-  SI.commandBufferCount = 1;
-  SI.pCommandBuffers    = &_cmdbufcurframe_gfx_pri->_vkcmdbuf;
-  
-  vkQueueSubmit(_vkqueue_graphics, 1, &SI, nullptr);
-  vkQueueWaitIdle(_vkqueue_graphics);
-
-  _cmdbufcurframe_gfx_pri = nullptr;
-}
-
-///////////////////////////////////////////////////////
-
 ctx_platform_handle_t VkContext::_doClonePlatformHandle() const {
   OrkAssert(false);
   return ctx_platform_handle_t();
@@ -329,6 +296,39 @@ static void platoSwapBuffers(vkplatformobject_ptr_t plato) {
 void VkContext::makeCurrentContext() {
   auto plato = _impl.getShared<VkPlatformObject>();
   platoMakeCurrent(plato);
+}
+
+///////////////////////////////////////////////////////
+
+void VkContext::_doBeginFrame() {
+  makeCurrentContext();
+
+  _cmdbufcurframe_gfx_pri = _defaultCommandBuffer->_impl.getShared<VkCommandBufferImpl>();
+
+  VkCommandBufferBeginInfo CBBI_GFX = {};
+  initializeVkStruct(CBBI_GFX, VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
+  CBBI_GFX.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT
+                 | VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT; 
+  CBBI_GFX.pInheritanceInfo = nullptr;  
+
+  vkResetCommandBuffer(_cmdbufcurframe_gfx_pri->_vkcmdbuf, 0);
+  vkBeginCommandBuffer(_cmdbufcurframe_gfx_pri->_vkcmdbuf, &CBBI_GFX);
+
+}
+
+///////////////////////////////////////////////////////
+void VkContext::_doEndFrame() {
+  vkEndCommandBuffer(_cmdbufcurframe_gfx_pri->_vkcmdbuf);
+
+  VkSubmitInfo SI = {};
+  initializeVkStruct(SI, VK_STRUCTURE_TYPE_SUBMIT_INFO);
+  SI.commandBufferCount = 1;
+  SI.pCommandBuffers    = &_cmdbufcurframe_gfx_pri->_vkcmdbuf;
+  
+  vkQueueSubmit(_vkqueue_graphics, 1, &SI, nullptr);
+  vkQueueWaitIdle(_vkqueue_graphics);
+
+  _cmdbufcurframe_gfx_pri = nullptr;
 }
 
 ///////////////////////////////////////////////////////
