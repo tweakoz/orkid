@@ -154,7 +154,7 @@ VkContext::VkContext() {
 
   _dwi = std::make_shared<VkDrawingInterface>(this);
   _imi = std::make_shared<VkImiInterface>(this);
-  _rsi = std::make_shared<VkRasterStateInterface>(this);
+  //_rsi = std::make_shared<VkRasterStateInterface>(this);
   _msi = std::make_shared<VkMatrixStackInterface>(this);
   _fbi = std::make_shared<VkFrameBufferInterface>(this);
   _gbi = std::make_shared<VkGeometryBufferInterface>(this);
@@ -249,10 +249,10 @@ ImmInterface* VkContext::IMI() {
 }
 
 ///////////////////////////////////////////////////////
-RasterStateInterface* VkContext::RSI() {
+/*RasterStateInterface* VkContext::RSI() {
 
   return _rsi.get();
-}
+}*/
 ///////////////////////////////////////////////////////
 
 MatrixStackInterface* VkContext::MTXI() {

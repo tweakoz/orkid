@@ -337,7 +337,7 @@ bool GfxMaterial3DSolid::BeginPass(Context* pTarg, int iPass) {
   }
 
   FXI->CommitParams();
-  pTarg->RSI()->BindRasterState(_rasterstate);
+  //pTarg->RSI()->BindRasterState(_rasterstate);
   return true;
 }
 

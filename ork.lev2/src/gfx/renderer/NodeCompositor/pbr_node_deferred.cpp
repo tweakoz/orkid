@@ -75,7 +75,7 @@ struct PbrNodeImpl {
     auto CIMPL                   = drawdata._cimpl;
     auto FBI                     = targ->FBI();
     auto this_buf                = FBI->GetThisBuffer();
-    auto RSI                     = targ->RSI();
+    //auto RSI                     = targ->RSI();
     auto DWI                     = targ->DWI();
     const auto TOPCPD            = CIMPL->topCPD();
     /////////////////////////////////////////////////
@@ -192,7 +192,7 @@ struct PbrNodeImpl {
 
     _context->bindViewParams(VD);
     _context->_lightingmtl->commit();
-    RSI->BindRasterState(_context->_lightingmtl->_rasterstate);
+    //RSI->BindRasterState(_context->_lightingmtl->_rasterstate);
 
       DWI->quad2DEMLTiled(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 0, 0), 16);
     });

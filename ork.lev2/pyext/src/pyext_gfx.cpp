@@ -53,7 +53,7 @@ void pyinit_gfx(py::module& module_lev2) {
           .def("FXI", [](ctx_t& c) -> fxi_t { return fxi_t(c.get()->FXI()); })
           .def("GBI", [](ctx_t& c) -> gbi_t { return gbi_t(c.get()->GBI()); })
           .def("TXI", [](ctx_t& c) -> txi_t { return txi_t(c.get()->TXI()); })
-          .def("RSI", [](ctx_t& c) -> rsi_t { return rsi_t(c.get()->RSI()); })
+          //.def("RSI", [](ctx_t& c) -> rsi_t { return rsi_t(c.get()->RSI()); })
           //////////////////////
           // todo move to mtxi when we add it
           //////////////////////
@@ -165,11 +165,11 @@ void pyinit_gfx(py::module& module_lev2) {
         return fxs.c_str();
       });
   /////////////////////////////////////////////////////////////////////////////////
-  py::class_<rsi_t>(module_lev2, "RasterStateInterface").def("__repr__", [](const rsi_t& rsi) -> std::string {
+  /*py::class_<rsi_t>(module_lev2, "RasterStateInterface").def("__repr__", [](const rsi_t& rsi) -> std::string {
     fxstring<256> fxs;
     fxs.format("RSI(%p)", rsi.get());
     return fxs.c_str();
-  });
+  });*/
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<SRasterState>(module_lev2, "RasterState") //
       .def_property(

@@ -99,7 +99,7 @@ public:
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-
+/*
 struct DuRasterStateInterface : public RasterStateInterface {
   DuRasterStateInterface(Context& target);
   void BindRasterState(const SRasterState& rState, bool bForce = false) override {
@@ -121,7 +121,7 @@ struct DuRasterStateInterface : public RasterStateInterface {
   }
 
 public:
-};
+};*/
 
 ///////////////////////////////////////////////////////////////////////////////
 #if defined(ENABLE_COMPUTE_SHADERS)
@@ -281,9 +281,9 @@ public:
   FxInterface* FXI() final {
     return &mFxI;
   }
-  RasterStateInterface* RSI() final {
-    return &mRsI;
-  }
+  //RasterStateInterface* RSI() final {
+    //return &mRsI;
+  //}
   MatrixStackInterface* MTXI() final {
     return &mMtxI;
   }
@@ -327,7 +327,7 @@ private:
 private:
   DummyFxInterface mFxI;
   DuMatrixStackInterface mMtxI;
-  DuRasterStateInterface mRsI;
+  //DuRasterStateInterface mRsI;
   DuGeometryBufferInterface mGbI;
   DuTextureInterface mTxI;
   DuFrameBufferInterface mFbI;

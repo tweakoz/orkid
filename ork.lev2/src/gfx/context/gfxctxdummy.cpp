@@ -55,9 +55,9 @@ context_ptr_t createLoaderContext() {
 }
 };
 
-DuRasterStateInterface::DuRasterStateInterface(Context& target)
+/*DuRasterStateInterface::DuRasterStateInterface(Context& target)
     : RasterStateInterface(target) {
-}
+}*/
 
 /////////////////////////////////////////////////////////////////////////
 
@@ -102,7 +102,7 @@ ContextDummy::~ContextDummy() {
 ContextDummy::ContextDummy()
     : Context()
     , mMtxI(*this)
-    , mRsI(*this)
+    //, mRsI(*this)
     , mGbI(*this)
     , mFbI(*this)
     , mDWI(*this) {

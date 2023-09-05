@@ -196,7 +196,7 @@ void DeferredContext::renderGbuffer(RenderCompositingNode* node, CompositorDrawD
   RenderContextFrameData& RCFD = framerenderer.framedata();
   auto targ                    = drawdata.context();
   auto FBI                     = targ->FBI();
-  auto RSI                     = targ->RSI();
+  //auto RSI                     = targ->RSI();
   auto& ddprops                = drawdata._properties;
   auto irenderer               = ddprops["irenderer"_crcu].get<lev2::IRenderer*>();
 
@@ -233,11 +233,11 @@ void DeferredContext::renderGbuffer(RenderCompositingNode* node, CompositorDrawD
     targ->debugPushGroup("toolvp::DrawEnqRenderables");
     rtg_gbuffer->_clearColor = fvec4(0, 0, 0, 0);
     FBI->rtGroupClear(rtg_gbuffer.get());
-    auto newmask = RGBAMask{true,true,true,false};
-    auto oldmask = RSI->SetRGBAWriteMask(newmask);
+    //auto newmask = RGBAMask{true,true,true,false};
+    //auto oldmask = RSI->SetRGBAWriteMask(newmask);
     irenderer->drawEnqueuedRenderables();
     framerenderer.renderMisc();
-    RSI->SetRGBAWriteMask(oldmask);
+    //RSI->SetRGBAWriteMask(oldmask);
     targ->debugPopGroup(); // drawenq
     CIMPL->popCPD();
     irenderer->resetQueue();
@@ -374,7 +374,7 @@ void DeferredContext::bindRasterState(Context* ctx, ECullTest culltest, EDepthTe
   _lightingmtl->_rasterstate.SetBlending(blending);
   _lightingmtl->_rasterstate.SetDepthTest(depthtest);
   _lightingmtl->_rasterstate.SetCullTest(culltest);
-  ctx->RSI()->BindRasterState(_lightingmtl->_rasterstate);
+  //ctx->RSI()->BindRasterState(_lightingmtl->_rasterstate);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -390,7 +390,7 @@ void DeferredContext::renderBaseLighting(RenderCompositingNode* node, Compositor
   auto targ                    = drawdata.context();
   auto FBI                     = targ->FBI();
   auto this_buf                = FBI->GetThisBuffer();
-  auto RSI                     = targ->RSI();
+  //auto RSI                     = targ->RSI();
   auto DWI                     = targ->DWI();
   const auto TOPCPD            = CIMPL->topCPD();
   _accumCPD                    = TOPCPD;
@@ -445,7 +445,7 @@ void DeferredContext::beginPointLighting(RenderCompositingNode* node, Compositor
   auto targ                    = drawdata.context();
   auto FBI                     = targ->FBI();
   auto FXI                     = targ->FXI();
-  auto RSI                     = targ->RSI();
+  //auto RSI                     = targ->RSI();
   targ->debugPushGroup("Deferred::PointLighting");
   CIMPL->pushCPD(_accumCPD);
   FBI->PushRtGroup(rtg_laccum.get());
@@ -498,7 +498,7 @@ void DeferredContext::beginSpotLighting(RenderCompositingNode* node, CompositorD
   auto targ                    = drawdata.context();
   auto FBI                     = targ->FBI();
   auto FXI                     = targ->FXI();
-  auto RSI                     = targ->RSI();
+  //auto RSI                     = targ->RSI();
   targ->debugPushGroup("Deferred::PointLighting");
   CIMPL->pushCPD(_accumCPD);
   FBI->PushRtGroup(rtg_laccum.get());
@@ -551,7 +551,7 @@ void DeferredContext::beginShadowedSpotLighting(RenderCompositingNode* node, Com
   auto targ                    = drawdata.context();
   auto FBI                     = targ->FBI();
   auto FXI                     = targ->FXI();
-  auto RSI                     = targ->RSI();
+  //auto RSI                     = targ->RSI();
   targ->debugPushGroup("Deferred::PointLighting");
   CIMPL->pushCPD(_accumCPD);
   FBI->PushRtGroup(rtg_laccum.get());
@@ -600,7 +600,7 @@ void DeferredContext::beginSpotDecaling(RenderCompositingNode* node, CompositorD
   auto targ                    = drawdata.context();
   auto FBI                     = targ->FBI();
   auto FXI                     = targ->FXI();
-  auto RSI                     = targ->RSI();
+  //auto RSI                     = targ->RSI();
   targ->debugPushGroup("Deferred::SpotDecaling");
   CIMPL->pushCPD(_decalCPD);
   FBI->PushRtGroup(_rtgDecal.get());

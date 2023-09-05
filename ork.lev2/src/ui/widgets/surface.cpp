@@ -81,7 +81,7 @@ void Surface::DoDraw(ui::drawevent_constptr_t drwev) {
   auto mtxi   = tgt->MTXI();
   auto fbi    = tgt->FBI();
   auto fxi    = tgt->FXI();
-  auto rsi    = tgt->RSI();
+  //auto rsi    = tgt->RSI();
   auto& primi = lev2::GfxPrimitives::GetRef();
   ///////////////////////////////////////
   if (_decouple_from_ui_size) {
@@ -132,7 +132,7 @@ void Surface::DoDraw(ui::drawevent_constptr_t drwev) {
   }
   ///////////////////////////////////////
   lev2::SRasterState defstate;
-  rsi->BindRasterState(defstate);
+  //rsi->BindRasterState(defstate);
 
   lev2::material_ptr_t ui_material = lev2::defaultUIMaterial();
   lev2::material_ptr_t material = ui_material;

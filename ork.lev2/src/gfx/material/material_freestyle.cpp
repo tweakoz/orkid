@@ -38,8 +38,8 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu, //
         auto _this       = (FreestyleMaterial*)mtl;
         auto RCFD        = RCID._RCFD;
         auto context     = RCFD->GetTarget();
-        auto RSI         = context->RSI();
-        RSI->BindRasterState(_this->_rasterstate);
+        //auto RSI         = context->RSI();
+        //RSI->BindRasterState(_this->_rasterstate);
       });
        break;
     }
@@ -288,12 +288,12 @@ void FreestyleMaterial::begin(const FxShaderTechnique* tek, const RenderContextF
   OrkAssert(tek != nullptr);
   auto targ = RCFD.GetTarget();
   auto fxi  = targ->FXI();
-  auto rsi  = targ->RSI();
+  //auto rsi  = targ->RSI();
   RenderContextInstData RCID(&RCFD);
   _selectedTEK = tek;
   int npasses  = this->BeginBlock(targ, RCID);
   fxi->BindPass(0);
-  rsi->BindRasterState(_rasterstate);
+  //rsi->BindRasterState(_rasterstate);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void FreestyleMaterial::begin(

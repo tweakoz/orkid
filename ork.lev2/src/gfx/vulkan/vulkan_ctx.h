@@ -113,7 +113,7 @@ using vkcontext_rawptr_t = VkContext*;
 //
 using vkdwi_ptr_t = std::shared_ptr<VkDrawingInterface>;
 using vkimi_ptr_t = std::shared_ptr<VkImiInterface>;
-using vkrsi_ptr_t = std::shared_ptr<VkRasterStateInterface>;
+//using vkrsi_ptr_t = std::shared_ptr<VkRasterStateInterface>;
 using vkmsi_ptr_t = std::shared_ptr<VkMatrixStackInterface>;
 using vkfbi_ptr_t = std::shared_ptr<VkFrameBufferInterface>;
 using vkgbi_ptr_t = std::shared_ptr<VkGeometryBufferInterface>;
@@ -398,6 +398,7 @@ struct VkImiInterface final : public ImmInterface {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+/*
 struct VkRasterStateInterface final : public RasterStateInterface {
 
   VkRasterStateInterface(vkcontext_rawptr_t ctx);
@@ -413,7 +414,7 @@ struct VkRasterStateInterface final : public RasterStateInterface {
 
   vkcontext_rawptr_t _contextVK;
 };
-
+*/
 ///////////////////////////////////////////////////////////////////////////////
 
 struct VkMatrixStackInterface final : public MatrixStackInterface {
@@ -723,7 +724,7 @@ public:
 
   FxInterface* FXI() final;
   ImmInterface* IMI() final;
-  RasterStateInterface* RSI() final;
+  //RasterStateInterface* RSI() final;
   MatrixStackInterface* MTXI() final;
   GeometryBufferInterface* GBI() final;
   FrameBufferInterface* FBI() final;
@@ -788,7 +789,7 @@ public:
 
   vkdwi_ptr_t _dwi;
   vkimi_ptr_t _imi;
-  vkrsi_ptr_t _rsi;
+  //vkrsi_ptr_t _rsi;
   vkmsi_ptr_t _msi;
   vkfbi_ptr_t _fbi;
   vkgbi_ptr_t _gbi;

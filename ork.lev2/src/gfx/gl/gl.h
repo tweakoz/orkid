@@ -120,7 +120,7 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct GlRasterStateInterface : public RasterStateInterface {
+/*struct GlRasterStateInterface : public RasterStateInterface {
 
   GlRasterStateInterface(Context& target);
   void BindRasterState(const SRasterState& rState, bool bForce) final;
@@ -132,7 +132,7 @@ struct GlRasterStateInterface : public RasterStateInterface {
   void SetDepthTest(EDepthTest eVal) final;
   void SetCullTest(ECullTest eVal) final;
   void setScissorTest(EScissorTest eVal) final;
-};
+};*/
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -502,9 +502,9 @@ public:
   ImmInterface* IMI() final {
     return &mImI;
   }
-  RasterStateInterface* RSI() final {
+  /*RasterStateInterface* RSI() final {
     return &mRsI;
-  }
+  }*/
   MatrixStackInterface* MTXI() final {
     return &mMtxI;
   }
@@ -592,7 +592,7 @@ public:
 
   GlImiInterface mImI;
   glslfx::Interface mFxI;
-  GlRasterStateInterface mRsI;
+  //GlRasterStateInterface mRsI;
   GlMatrixStackInterface mMtxI;
   GlGeometryBufferInterface mGbI;
   GlFrameBufferInterface mFbI;

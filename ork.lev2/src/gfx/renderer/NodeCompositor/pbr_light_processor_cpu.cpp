@@ -80,7 +80,7 @@ void CpuLightProcessor::_renderUnshadowedUnTexturedPointLights(
   const auto& RCFD             = framerenderer.framedata();
   auto gfxctx                  = RCFD.GetTarget();
   auto FXI                     = gfxctx->FXI();
-  auto RSI                     = gfxctx->RSI();
+  //auto RSI                     = gfxctx->RSI();
   auto this_buf                = gfxctx->FBI()->GetThisBuffer();
 
   /////////////////////////////////////

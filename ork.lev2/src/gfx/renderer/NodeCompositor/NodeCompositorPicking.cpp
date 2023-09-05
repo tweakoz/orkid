@@ -60,7 +60,7 @@ struct IMPL {
     auto CIMPL                   = drawdata._cimpl;
     auto FBI                     = targ->FBI();
     auto this_buf                = FBI->GetThisBuffer();
-    auto RSI                     = targ->RSI();
+    //auto RSI                     = targ->RSI();
     const auto TOPCPD            = CIMPL->topCPD();
     auto tgt_rect                = targ->mainSurfaceRectAtOrigin();
     auto& ddprops                = drawdata._properties;

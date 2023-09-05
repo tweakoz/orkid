@@ -357,7 +357,7 @@ template <typename vtx_t> void RigidPrimitive<vtx_t>::renderUnitOrthoWithMateria
   mtxi->PushPMatrix(fmtx4::Identity());
   mtxi->PushVMatrix(fmtx4::Identity());
   mtxi->PushMMatrix(fmtx4::Identity());
-  context->RSI()->BindRasterState(DefaultRasterState, true);
+  //context->RSI()->BindRasterState(DefaultRasterState, true);
   fbi->pushViewport(vprectNew);
   fbi->pushScissor(vprectNew);
   { // Draw primitive with specified material

@@ -136,7 +136,6 @@ public:
   /// Interfaces
 
   virtual FxInterface* FXI()             = 0; // Fx Shader Interface
-  virtual RasterStateInterface* RSI()    = 0; // Raster State Interface
   virtual MatrixStackInterface* MTXI()   = 0; // Matrix / Matrix Stack Interface
   virtual GeometryBufferInterface* GBI() = 0; // Geometry Buffer Interface
   virtual FrameBufferInterface* FBI()    = 0; // FrameBuffer/Control Interface
@@ -700,10 +699,13 @@ private:
 
 struct RenderPass{
   svarp_t _impl;
+  std::vector<rendersubpass_ptr_t> _subpasses;
 };
 
 struct RenderSubPass{
   svarp_t _impl;
+  rtgroup_ptr_t _rtg_input;
+  rtgroup_ptr_t _rtg_output;
 };
 
 /// ////////////////////////////////////////////////////////////////////////////

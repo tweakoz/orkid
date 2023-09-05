@@ -148,6 +148,8 @@ public:
   RtGroup* _currentRtGroup     = nullptr;
   PickBuffer* _pickbuffer      = nullptr;
 
+  rtgroup_ptr_t _main_rtg;
+  
   bool _enableVSync;
   bool _enableFullScreen;
   bool _autoClear;

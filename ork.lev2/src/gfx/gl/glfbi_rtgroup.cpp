@@ -90,7 +90,7 @@ void GlFrameBufferInterface::_pushRtGroup(RtGroup* rtgroup) {
 
   if( rtgroup->_pseudoRTG ){
     static const SRasterState defstate;
-    _target.RSI()->BindRasterState(defstate, true);
+    //_target.RSI()->BindRasterState(defstate, true);
     _currentRtGroup = rtgroup;
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     if( rtgroup->_autoclear ){
@@ -453,8 +453,8 @@ void GlFrameBufferInterface::_pushRtGroup(RtGroup* rtgroup) {
 
   GL_ERRORCHECK();
 
-  static const SRasterState defstate;
-  _target.RSI()->BindRasterState(defstate, true);
+  //static const SRasterState defstate;
+  //_target.RSI()->BindRasterState(defstate, true);
 
   _currentRtGroup = rtgroup;
   _postPushRtGroup(rtgroup);

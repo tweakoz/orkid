@@ -79,7 +79,7 @@ void SplitPanel::DoDraw(ui::drawevent_constptr_t drwev) {
   };
 
   lev2::SRasterState defstate;
-  tgt->RSI()->BindRasterState(defstate);
+  //tgt->RSI()->BindRasterState(defstate);
 
   bool has_foc = hasMouseFocus();
   tgt->PushModColor(has_foc ? fcolor4::White() : fcolor4::Red());

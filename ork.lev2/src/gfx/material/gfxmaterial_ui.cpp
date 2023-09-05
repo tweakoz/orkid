@@ -143,7 +143,7 @@ bool GfxMaterialUI::BeginPass(Context* pTarg, int iPass) {
   pTarg->FXI()->BindParamMatrix(hTransform, MatMVP);
   pTarg->FXI()->BindParamVect4(hModColor, pTarg->RefModColor());
   pTarg->FXI()->CommitParams();
-  pTarg->RSI()->BindRasterState(_rasterstate);
+  //pTarg->RSI()->BindRasterState(_rasterstate);
 
   return true;
 }
@@ -210,7 +210,7 @@ bool GfxMaterialUIText::BeginPass(Context* pTarg, int iPass) {
   pTarg->FXI()->BindPass(iPass);
 
   ///////////////////////////////
-  SRasterState& RasterState = _rasterstate; // pTarg->RSI()->RefUIRasterState();
+  //SRasterState& RasterState = _rasterstate; // pTarg->RSI()->RefUIRasterState();
 
   // RasterState.SetAlphaTest( EALPHATEST_GREATER, 0.0f );
    
@@ -313,7 +313,7 @@ void GfxMaterialUITextured::EndPass(Context* pTarg) {
 
 bool GfxMaterialUITextured::BeginPass(Context* pTarg, int iPass) {
   ///////////////////////////////
-  pTarg->RSI()->BindRasterState(_rasterstate);
+  //pTarg->RSI()->BindRasterState(_rasterstate);
   ///////////////////////////////
 
   const fmtx4& MatMVP = pTarg->MTXI()->RefMVPMatrix();

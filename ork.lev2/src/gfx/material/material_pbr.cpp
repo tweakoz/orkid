@@ -72,7 +72,7 @@ static FxPipeline::statelambda_t _createBasicStateLambda(const PBRMaterial* mtl)
     auto context          = RCID._RCFD->GetTarget();
     auto MTXI             = context->MTXI();
     auto FXI              = context->FXI();
-    auto RSI              = context->RSI();
+    //auto RSI              = context->RSI();
     const auto& CPD       = RCID._RCFD->topCPD();
     const auto& RCFDPROPS = RCID._RCFD->userProperties();
     bool is_picking       = CPD.isPicking();
@@ -165,7 +165,7 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu,con
         auto context = RCFD->GetTarget();
         auto FXI     = context->FXI();
         auto MTXI    = context->MTXI();
-        auto RSI     = context->RSI();
+        //auto RSI     = context->RSI();
         auto pbrcommon        = RCFD->_pbrcommon;
         auto envtex  = pbrcommon->envSpecularTexture();
 
@@ -176,7 +176,7 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu,con
         _this->_rasterstate.SetZWriteMask(false);
         _this->_rasterstate.SetDepthTest(EDepthTest::LEQUALS);
         _this->_rasterstate.SetRGBAWriteMask(true, true);
-        RSI->BindRasterState(_this->_rasterstate);
+        //RSI->BindRasterState(_this->_rasterstate);
       };
       //////////////////////////////////////////////////////////
       OrkAssert(permu._instanced==false);
@@ -232,7 +232,7 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu,con
               auto _this       = (PBRMaterial*)mtl;
               auto RCFD        = RCID._RCFD;
               auto context     = RCFD->GetTarget();
-              auto RSI         = context->RSI();
+              //auto RSI         = context->RSI();
               const auto& CPD  = RCFD->topCPD();
               auto FXI         = context->FXI();
               auto modcolor = context->RefModColor();
@@ -240,7 +240,7 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu,con
               _this->_rasterstate.SetDepthTest(EDepthTest::LEQUALS);
               _this->_rasterstate.SetZWriteMask(true);
               _this->_rasterstate.SetRGBAWriteMask(true, true);
-              RSI->BindRasterState(mtl->_rasterstate);
+              //RSI->BindRasterState(mtl->_rasterstate);
               FXI->BindParamVect4(_this->_parModColor, modcolor*_this->_baseColor);
           };
           ////////////////////////////////////////////////////////////////////////////////////////////
@@ -265,7 +265,7 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu,con
                 auto context     = RCFD->GetTarget();
                 auto MTXI        = context->MTXI();
                 auto FXI         = context->FXI();
-                auto RSI         = context->RSI();
+                //auto RSI         = context->RSI();
                 const auto& CPD  = RCFD->topCPD();
                 auto stereocams  = CPD._stereoCameraMatrices;
                 auto worldmatrix = RCID.worldMatrix();
@@ -306,7 +306,7 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu,con
                 auto context     = RCFD->GetTarget();
                 auto FXI         = context->FXI();
                 auto MTXI        = context->MTXI();
-                auto RSI         = context->RSI();
+                //auto RSI         = context->RSI();
                 const auto& CPD  = RCFD->topCPD();
                 auto monocams    = CPD._cameraMatrices;
                 auto worldmatrix = RCID.worldMatrix();
@@ -331,7 +331,7 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu,con
               auto context     = RCFD->GetTarget();
               auto FXI         = context->FXI();
               auto MTXI        = context->MTXI();
-              auto RSI         = context->RSI();
+              //auto RSI         = context->RSI();
               const auto& CPD  = RCFD->topCPD();
               auto monocams    = CPD._cameraMatrices;
               auto worldmatrix = RCID.worldMatrix();
@@ -342,7 +342,7 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu,con
               _this->_rasterstate.SetDepthTest(EDepthTest::LEQUALS);
               _this->_rasterstate.SetZWriteMask(true);
               _this->_rasterstate.SetRGBAWriteMask(true, true);
-              RSI->BindRasterState(_this->_rasterstate);
+              //RSI->BindRasterState(_this->_rasterstate);
 
             });
           }
@@ -398,12 +398,12 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu,con
             auto _this      = (PBRMaterial*)mtl;
             auto RCFD       = RCID._RCFD;
             auto context    = RCFD->GetTarget();
-            auto RSI        = context->RSI();
+            //auto RSI        = context->RSI();
             _this->_rasterstate.SetCullTest(ECullTest::PASS_FRONT);
             _this->_rasterstate.SetDepthTest(EDepthTest::LESS);
             _this->_rasterstate.SetZWriteMask(true);
             _this->_rasterstate.SetRGBAWriteMask(true, true);
-            RSI->BindRasterState(_this->_rasterstate);
+            //RSI->BindRasterState(_this->_rasterstate);
           };
 
           if(permu._stereo){
@@ -481,12 +481,12 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu,con
                 auto context = RCFD->GetTarget();
                 auto FXI     = context->FXI();
                 auto MTXI    = context->MTXI();
-                auto RSI     = context->RSI();
+                //auto RSI     = context->RSI();
                 _this->_rasterstate.SetCullTest(ECullTest::PASS_FRONT);
                 _this->_rasterstate.SetDepthTest(EDepthTest::LEQUALS);
                 _this->_rasterstate.SetZWriteMask(true);
                 _this->_rasterstate.SetRGBAWriteMask(false, false);
-                RSI->BindRasterState(_this->_rasterstate);
+                //RSI->BindRasterState(_this->_rasterstate);
               });
             }
           }
@@ -511,12 +511,12 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu,con
         auto context = RCFD->GetTarget();
         auto FXI     = context->FXI();
         auto MTXI    = context->MTXI();
-        auto RSI     = context->RSI();
+        //auto RSI     = context->RSI();
         _this->_rasterstate.SetCullTest(ECullTest::OFF);
         _this->_rasterstate.SetDepthTest(EDepthTest::OFF);
         _this->_rasterstate.SetZWriteMask(true);
         _this->_rasterstate.SetRGBAWriteMask(true, false);
-        RSI->BindRasterState(_this->_rasterstate);
+        //RSI->BindRasterState(_this->_rasterstate);
       };
       switch (permu._rendering_model) {
         case "FORWARD_PBR"_crcu: {
@@ -955,16 +955,16 @@ void PBRMaterial::gpuUpdate(Context* context) {
 
 bool PBRMaterial::BeginPass(Context* targ, int iPass) {
   auto fxi = targ->FXI();
-  auto rsi = targ->RSI();
+  //auto rsi = targ->RSI();
   fxi->BindPass(0);
-  rsi->BindRasterState(_rasterstate);
+  //rsi->BindRasterState(_rasterstate);
   fxi->CommitParams();
   return true;
 }
 
 void PBRMaterial::UpdateMVPMatrix(Context* context) {
   auto fxi                           = context->FXI();
-  auto rsi                           = context->RSI();
+  //auto rsi                           = context->RSI();
   auto mtxi                          = context->MTXI();
   const RenderContextInstData* RCID  = context->GetRenderContextInstData();
   const RenderContextFrameData* RCFD = context->topRenderContextFrameData();

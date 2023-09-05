@@ -68,7 +68,7 @@ void PickBuffer::Draw(lev2::PixelFetchContext& ctx) {
   auto mtxi = tgt->MTXI();
   auto fbi  = tgt->FBI();
   auto fxi  = tgt->FXI();
-  auto rsi  = tgt->RSI();
+  //auto rsi  = tgt->RSI();
 
   int irtgw  = _rtgroup->width();
   int irtgh  = _rtgroup->height();

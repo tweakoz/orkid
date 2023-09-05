@@ -136,7 +136,7 @@ void FontMan::_endTextBlock(Context* context) {
   const auto& CPD = RCFD->topCPD();
   auto stereocams = CPD._stereoCameraMatrices;
   auto GBI        = context->GBI();
-  auto RSI        = context->RSI();
+  //auto RSI        = context->RSI();
   auto the_font   = currentFont();
   auto top_state = _currentTextBlockState;
   if (bdraw) {
@@ -161,7 +161,7 @@ void FontMan::_endTextBlock(Context* context) {
         RSTATE.SetCullTest(ECullTest::OFF);
         RSTATE.SetDepthTest(EDepthTest::OFF);
         RSTATE.SetBlending(top_state->_blending);
-        RSI->BindRasterState(RSTATE);
+        //RSI->BindRasterState(RSTATE);
         GBI->DrawPrimitiveEML(mTextWriter, ork::lev2::PrimitiveType::TRIANGLES);
       });
     } else {

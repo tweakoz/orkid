@@ -8,6 +8,9 @@ Context::Context() {
   _uitimer.Start();
   _prevtime = 0.0;
   _renderpass = std::make_shared<lev2::RenderPass>();
+  _rendersubpass = std::make_shared<lev2::RenderSubPass>();
+  _renderpass->_subpasses.push_back(_rendersubpass);
+
 }
 /////////////////////////////////////////////////////////////////////////
 void Context::tick(updatedata_ptr_t updata){
@@ -151,14 +154,21 @@ HandlerResult Context::handleEvent(event_constptr_t ev) {
 bool Context::hasMouseFocus(const Widget* w) const {
   return w == _mousefocuswidget;
 }
-//////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
 void Context::draw(drawevent_constptr_t drwev) {
+
   auto gfx_ctx = drwev->GetTarget();
+  auto fbi = gfx_ctx->FBI();
+  _rendersubpass->_rtg_input = nullptr;
+  _rendersubpass->_rtg_output = fbi->_main_rtg;
+
   gfx_ctx->beginRenderPass(_renderpass);
+  gfx_ctx->beginSubPass(_rendersubpass);
   _top->draw(drwev);
   if (_overlayWidget) {
     _overlayWidget->draw(drwev);
   }
+  gfx_ctx->endSubPass(_rendersubpass);
   gfx_ctx->endRenderPass(_renderpass);
 }
 /////////////////////////////////////////////////////////////////////////

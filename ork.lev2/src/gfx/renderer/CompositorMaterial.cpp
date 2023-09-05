@@ -94,7 +94,7 @@ void CompositingMaterial::SetTechnique(const std::string& tek) {
 bool CompositingMaterial::BeginPass(lev2::Context* pTarg, int iPass) {
   // printf("CompositorMtl draw\n");
 
-  pTarg->RSI()->BindRasterState(_rasterstate);
+  //pTarg->RSI()->BindRasterState(_rasterstate);
   pTarg->FXI()->BindPass(iPass);
   pTarg->FXI()->BindParamMatrix(hMatMVP, pTarg->MTXI()->RefMVPMatrix());
 

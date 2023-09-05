@@ -67,18 +67,20 @@ void StateBlockNode::_generate2(shaderbuilder::BackEnd& backend) const {
   //////////////////////
 
   if (_culltest != "") {
-    if (_culltest == "OFF")
+    /*if (_culltest == "OFF")
       psb->addStateFn([=](Context* t) { t->RSI()->SetCullTest(lev2::ECullTest::OFF); });
     else if (_culltest == "PASS_FRONT")
       psb->addStateFn([=](Context* t) { t->RSI()->SetCullTest(lev2::ECullTest::PASS_FRONT); });
     else if (_culltest == "PASS_BACK")
       psb->addStateFn([=](Context* t) { t->RSI()->SetCullTest(lev2::ECullTest::PASS_BACK); });
+      */
   }
   if (_depthmask != "") {
     bool bena = (_depthmask == "true");
-    psb->addStateFn([=](Context* t) { t->RSI()->SetZWriteMask(bena); });
+    //psb->addStateFn([=](Context* t) { t->RSI()->SetZWriteMask(bena); });
   }
   if (_depthtest != "") {
+    /*
     if (_depthtest == "OFF")
       psb->addStateFn([=](Context* t) { t->RSI()->SetDepthTest(lev2::EDepthTest::OFF); });
     else if (_depthtest == "LESS")
@@ -91,8 +93,10 @@ void StateBlockNode::_generate2(shaderbuilder::BackEnd& backend) const {
       psb->addStateFn([=](Context* t) { t->RSI()->SetDepthTest(lev2::EDepthTest::GEQUALS); });
     else if (_depthtest == "EQUALS")
       psb->addStateFn([=](Context* t) { t->RSI()->SetDepthTest(lev2::EDepthTest::EQUALS); });
+      */
   }
   if (_blendmode != "") {
+    /*
     if (_blendmode == "ADDITIVE")
       psb->addStateFn([=](Context* t) { t->RSI()->SetBlending(lev2::Blending::ADDITIVE); });
     else if (_blendmode == "ALPHA_ADDITIVE")
@@ -103,6 +107,7 @@ void StateBlockNode::_generate2(shaderbuilder::BackEnd& backend) const {
       psb->addStateFn([=](Context* t) { t->RSI()->SetBlending(lev2::Blending::ALPHA_SUBTRACTIVE); });
     else if (_blendmode == "ALPHA")
       psb->addStateFn([=](Context* t) { t->RSI()->SetBlending(lev2::Blending::ALPHA); });
+      */
   }
 
   //////////////////////

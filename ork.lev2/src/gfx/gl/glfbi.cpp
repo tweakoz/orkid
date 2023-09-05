@@ -151,7 +151,7 @@ void GlFrameBufferInterface::_doBeginFrame(void) {
   // mTargetGL.debugPushGroup("GlFrameBufferInterface::_doBeginFrameB");
 
   const SRasterState defstate;
-  _target.RSI()->BindRasterState(defstate, true);
+  //_target.RSI()->BindRasterState(defstate, true);
   // mTargetGL.debugPopGroup();
 
   GL_ERRORCHECK();

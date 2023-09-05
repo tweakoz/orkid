@@ -208,7 +208,7 @@ void DisplayBuffer::RenderMatOrthoQuad(
   mtxi->PushPMatrix(mtxi->Ortho(fvx0, fvx1, fvy0, fvy1, 0.0f, 1.0f));
   mtxi->PushVMatrix(fmtx4::Identity());
   mtxi->PushMMatrix(fmtx4::Identity());
-  ctx->RSI()->BindRasterState(DefaultRasterState, true);
+  //ctx->RSI()->BindRasterState(DefaultRasterState, true);
   fbi->pushViewport(vprectNew);
   fbi->pushScissor(vprectNew);
   { // Draw Full Screen Quad with specified material
@@ -277,7 +277,7 @@ void DisplayBuffer::RenderMatOrthoQuad(
   mtxi->PushPMatrix(mtxi->Ortho(fvx0, fvx1, fvy0, fvy1, 0.0f, 1.0f));
   mtxi->PushVMatrix(fmtx4::Identity());
   mtxi->PushMMatrix(fmtx4::Identity());
-  ctx->RSI()->BindRasterState(DefaultRasterState, true);
+  //ctx->RSI()->BindRasterState(DefaultRasterState, true);
   fbi->pushViewport(vprectNew);
   fbi->pushScissor(vprectNew);
   { // Draw Full Screen Quad with specified material

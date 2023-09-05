@@ -72,7 +72,7 @@ void FxPipeline::_set_typed_param(const RenderContextInstData& RCID, fxparam_con
   int W = CPD._width;
   int H = CPD._height;
   auto MTXI             = context->MTXI();
-  auto RSI              = context->RSI();
+  //auto RSI              = context->RSI();
   const auto& RCFDPROPS = RCID._RCFD->userProperties();
   bool is_picking       = CPD.isPicking();
   bool is_stereo        = CPD.isStereoOnePass();

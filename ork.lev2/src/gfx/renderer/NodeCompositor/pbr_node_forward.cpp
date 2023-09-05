@@ -101,7 +101,7 @@ struct ForwardPbrNodeImpl {
     auto FBI          = context->FBI();
     auto GBI          = context->GBI();
     auto this_buf     = FBI->GetThisBuffer();
-    auto RSI          = context->RSI();
+    //auto RSI          = context->RSI();
     auto DWI          = context->DWI();
     const auto TOPCPD = CIMPL->topCPD();
     auto tgt_rect     = context->mainSurfaceRectAtOrigin();
