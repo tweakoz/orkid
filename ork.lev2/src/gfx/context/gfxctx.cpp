@@ -88,6 +88,13 @@ void Context::endFrame(void) {
 
 /////////////////////////////////////////////////////////////////////////
 
+commandbuffer_ptr_t Context::beginRecordCommandBuffer(){
+  return _beginRecordCommandBuffer();
+}
+void Context::endRecordCommandBuffer(commandbuffer_ptr_t cmdbuf){
+  _endRecordCommandBuffer(cmdbuf);
+}
+
 void Context::beginRenderPass(renderpass_ptr_t pass){
   _beginRenderPass(pass);
 }
@@ -119,6 +126,8 @@ Context::Context()
   RCFD->pushCompositor(_gimpl);
   _defaultrcfd       = RCFD;
   pushRenderContextFrameData(_defaultrcfd);
+
+  _defaultCommandBuffer = std::make_shared<CommandBuffer>();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

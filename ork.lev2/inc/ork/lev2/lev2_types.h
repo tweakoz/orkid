@@ -66,11 +66,13 @@ using vtxbufferbase_ptr_t    = std::shared_ptr<VertexBufferBase>;
 // RenderPass
 ///////////////////////////////////////////////////////////////////////////////
 
+struct CommandBuffer;
 struct RenderPass;
 struct RenderSubPass;
 
 using renderpass_ptr_t = std::shared_ptr<RenderPass>;
 using rendersubpass_ptr_t = std::shared_ptr<RenderSubPass>;
+using commandbuffer_ptr_t = std::shared_ptr<CommandBuffer>;
 
 ///////////////////////////////////////////////////////////////////////////////
 // RtGroup

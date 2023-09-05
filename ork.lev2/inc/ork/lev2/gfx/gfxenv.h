@@ -199,6 +199,11 @@ public:
 
   void beginFrame(void);
   void endFrame(void);
+
+
+  commandbuffer_ptr_t beginRecordCommandBuffer();
+  void endRecordCommandBuffer(commandbuffer_ptr_t cmdbuf);
+
   void beginRenderPass(renderpass_ptr_t);
   void endRenderPass(renderpass_ptr_t);
   void beginSubPass(rendersubpass_ptr_t);
@@ -206,6 +211,8 @@ public:
 
   ///////////////////////////////////////////////////////////////////////
 
+  virtual commandbuffer_ptr_t _beginRecordCommandBuffer() { return nullptr; }
+  virtual void _endRecordCommandBuffer(commandbuffer_ptr_t cmdbuf) {}
   virtual void _beginRenderPass(renderpass_ptr_t) {}
   virtual void _endRenderPass(renderpass_ptr_t) {}
   virtual void _beginSubPass(rendersubpass_ptr_t) {}
@@ -317,6 +324,8 @@ public:
   fvec4 maModColorStack[kiModColorStackMax];
   fvec4 mvModColor;
   PerformanceItem mFramePerfItem;
+  commandbuffer_ptr_t _recordCommandBuffer;
+  commandbuffer_ptr_t _defaultCommandBuffer;
 
   bool hiDPI() const;
   float currentDPI() const;
@@ -513,7 +522,6 @@ public:
   DisplayBuffer* _parent = nullptr;
   RtGroup* _parentRtGroup  = nullptr;
   void* _IMPL              = nullptr;
-
   int miWidth;
   int miHeight;
   EBufferFormat meFormat;
@@ -708,6 +716,12 @@ struct RenderSubPass{
   rtgroup_ptr_t _rtg_input;
   rtgroup_ptr_t _rtg_output;
 };
+
+struct CommandBuffer{
+  svarp_t _impl;
+};
+
+
 
 /// ////////////////////////////////////////////////////////////////////////////
 ///

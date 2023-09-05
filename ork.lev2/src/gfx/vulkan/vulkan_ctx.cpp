@@ -356,6 +356,21 @@ void VkContext::_endSubPass(rendersubpass_ptr_t rubpass) {
 
 }
 
+commandbuffer_ptr_t VkContext::_beginRecordCommandBuffer() {
+
+  auto cmdbuf = std::make_shared<CommandBuffer>();
+  auto vkcmdbuf = cmdbuf->_impl.makeShared<VkCommandBufferImpl>();
+  _recordCommandBuffer = cmdbuf;
+  return cmdbuf;
+
+}
+void VkContext::_endRecordCommandBuffer(commandbuffer_ptr_t cmdbuf) {
+  OrkAssert(cmdbuf==_recordCommandBuffer);
+  auto vkcmdbuf = cmdbuf->_impl.getShared<VkCommandBufferImpl>();
+  _recordCommandBuffer = nullptr;
+
+}
+
 ///////////////////////////////////////////////////////
 
 void VkContext::swapBuffers(CTXBASE* ctxbase) {

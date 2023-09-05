@@ -714,6 +714,12 @@ public:
   void _doBeginFrame() final;
   void _doEndFrame() final;
   ctx_platform_handle_t _doClonePlatformHandle() const final;
+
+
+  //////////////////////////////////////////////
+
+  commandbuffer_ptr_t _beginRecordCommandBuffer() final;
+  void _endRecordCommandBuffer(commandbuffer_ptr_t cmdbuf) final;
   void _beginRenderPass(renderpass_ptr_t) final;
   void _endRenderPass(renderpass_ptr_t) final;
   void _beginSubPass(rendersubpass_ptr_t) final;
