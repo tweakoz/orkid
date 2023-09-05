@@ -714,9 +714,10 @@ struct RenderPass{
 };
 
 struct RenderSubPass{
-  svarp_t _impl;
+  std::vector<rendersubpass_ptr_t> _subpass_dependencies;
   rtgroup_ptr_t _rtg_input;
   rtgroup_ptr_t _rtg_output;
+  svarp_t _impl;
 };
 
 struct CommandBuffer{

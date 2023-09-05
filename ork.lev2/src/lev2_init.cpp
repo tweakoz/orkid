@@ -56,28 +56,24 @@
 #include <ork/lev2/ui/ged/ged_test_objects.h>
 #include <ork/lev2/ui/ged/ged_factory.h>
 
+
 ///////////////////////////////////////////////////////////////////////////////
 //#define WIIEMU
 ///////////////////////////////////////////////////////////////////////////////
 
 namespace ork {
-
 namespace lev2 {
+
+std::atomic<int> __FIND_IT;
 
 appinitdata_ptr_t _ginitdata;
 
+uint32_t GRAPHICS_API = "VULKAN"_crcu;
 
-uint64_t GRAPHICS_API = "OPENGL"_crcu;
-
-context_ptr_t OpenGlContextInit();
 namespace vulkan{
   lev2::context_ptr_t createLoaderContext();
   void touchClasses();
 };
-namespace opengl{
-  lev2::context_ptr_t createLoaderContext();
-  void touchClasses();
-}
 namespace dummy{
   lev2::context_ptr_t createLoaderContext();
   void touchClasses();
@@ -93,7 +89,6 @@ struct ClassToucher {
     AllocationLabel label("ork::lev2::Init");
 
     Context::GetClassStatic();
-    opengl::touchClasses();
     vulkan::touchClasses();
     dummy::touchClasses();
 
@@ -116,13 +111,9 @@ struct ClassToucher {
         gloadercontext = dummy::createLoaderContext();
         break;
       }
-      case "VULKAN"_crcu:{
-        gloadercontext = vulkan::createLoaderContext();
-        break;
-      }
-      case "OPENGL"_crcu:
+      case "VULKAN"_crcu:
       default: {
-        gloadercontext = opengl::createLoaderContext();
+        gloadercontext = vulkan::createLoaderContext();
         break;
       }
     }
