@@ -4,25 +4,6 @@
 // Distributed under the MIT License.
 // see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ////////////////////////////////////////////////////////////////
-#if defined( __APPLE__ )
-#define GLFW_EXPOSE_NATIVE_COCOA
-#include <Cocoa/Cocoa.h>
-#include <Foundation/Foundation.h>
-#include <CoreData/CoreData.h>
-#include <ork/kernel/objc.h>
-#include <objc/objc.h>
-#include <objc/message.h>
-#elif defined( LINUX )
-#define GLFW_EXPOSE_NATIVE_X11
-#define GLFW_EXPOSE_NATIVE_GLX
-extern "C" {
-#include <X11/extensions/Xrandr.h>
-#include <X11/Xlib.h>
-#include <X11/Xatom.h>
-}
-#endif
-////////////////////////////////////////////////////////////////////////////////
-
 #include <ork/kernel/opq.h>
 #include <ork/lev2/gfx/ctxbase.h>
 #include <ork/lev2/gfx/gfxenv.h>
@@ -41,25 +22,19 @@ extern "C" {
 #include <ork/math/basicfilters.h>
 #include <ork/lev2/gfx/dbgfontman.h>
 #include <ork/util/logger.h>
-#if defined(ENABLE_GLFW)
 ///////////////////////////////////////////////////////////////////////////////
-#if defined(ENABLE_VULKAN)
 #include "../gfx/vulkan/vulkan_ctx.h"
-#endif
 ///////////////////////////////////////////////////////////////////////////////
+#if defined(ENABLE_GLFW)
 namespace ork::lev2 {
+extern int GLFW_MODIFIER_OSCTRL;
+extern bool _macosUseHIDPI;
 extern uint64_t GRAPHICS_API;
 static logchannel_ptr_t logchan_glfw = logger()->createChannel("GLFW", fvec3(0.8, 0.2, 0.6), true);
 void setAlwaysOnTop(GLFWwindow* window);
 ///////////////////////////////////////////////////////////////////////////////
 float content_scale_x = 1.0f;
 float content_scale_y = 1.0f;
-#if defined(__APPLE__)
-extern bool _macosUseHIDPI;
-const int GLFW_MODIFIER_OSCTRL = GLFW_MOD_SUPER;
-#else
-const int GLFW_MODIFIER_OSCTRL = GLFW_MOD_CONTROL;
-#endif
 static CtxGLFW* _gctx = nullptr;
 ///////////////////////////////////////////////////////////////////////////////
 struct ApiImpl {};
@@ -322,16 +297,6 @@ CtxGLFW::CtxGLFW(Window* ork_win)
 ///////////////////////////////////////////////////////////////////////////////
 void CtxGLFW::initWithData(appinitdata_ptr_t aid) {
   _appinitdata = aid;
-  switch (GRAPHICS_API) {
-    case "VULKAN"_crcu: {
-      break;
-    }
-    case "OPENGL"_crcu:
-    default: {
-      glfwSwapInterval(aid->_swap_interval);
-      break;
-    }
-  }
   glfwWindowHint(GLFW_SAMPLES, aid->_msaa_samples);
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -401,15 +366,10 @@ void CtxGLFW::Show() {
         _appinitdata->_allowHIDPI ? GLFW_TRUE : GLFW_FALSE);
 #endif
 
-    if (_appinitdata->_offscreen) {
-      glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
-      glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
-      glfwWindowHint(GLFW_AUTO_ICONIFY, GLFW_FALSE);
-    } else {
-      glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
-      glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
-      glfwWindowHint(GLFW_AUTO_ICONIFY, GLFW_FALSE);
-    }
+    glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
+    glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
+    glfwWindowHint(GLFW_AUTO_ICONIFY, GLFW_FALSE);
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
     auto global = globalOffscreenContext();
 
@@ -423,17 +383,6 @@ void CtxGLFW::Show() {
 
     OrkAssert(_glfwWindow != nullptr);
     glfwSetWindowUserPointer(_glfwWindow, (void*)_eventSINK.get());
-
-    switch (GRAPHICS_API) {
-      case "VULKAN"_crcu: {
-        break;
-      }
-      case "OPENGL"_crcu:
-      default: {
-        //glfwSetWindowAttrib(_glfwWindow, GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-        break;
-      }
-    }
 
     if (not _appinitdata->_offscreen) {
       glfwSetWindowAttrib(_glfwWindow, GLFW_FOCUS_ON_SHOW, GLFW_TRUE);
@@ -506,31 +455,11 @@ CtxGLFW::~CtxGLFW() {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void CtxGLFW::makeCurrent() {
-  // printf( "CtxGLFW makeCurrent<%p> glfw_win<%p> isglobal<%d>", this, _glfwWindow, int(isGlobal()) );
-  switch (GRAPHICS_API) {
-    case "VULKAN"_crcu: {
-      break;
-    }
-    case "OPENGL"_crcu:
-    default: {
-      glfwMakeContextCurrent(_glfwWindow);
-      break;
-    }
-  }
+  // todo remove
 }
 ///////////////////////////////////////////////////////////////////////////////
 void CtxGLFW::swapBuffers() {
-  switch (GRAPHICS_API) {
-    case "VULKAN"_crcu: {
-      break;
-    }
-    case "OPENGL"_crcu:
-    default: {
-      glfwSwapBuffers(_glfwWindow);
-      usleep(5000);
-      break;
-    }
-  }
+  // todo remove
 }
 ///////////////////////////////////////////////////////////////////////////////
 void CtxGLFW::SetAlwaysRun(bool brun) {
@@ -770,7 +699,6 @@ GLFWwindow* CtxGLFW::_apiInitGL() {
 }
 ///////////////////////////////////////////////////////////////////////////////
 
-#if defined(ENABLE_VULKAN)
 GLFWwindow* CtxGLFW::_apiInitVK() {
   OrkAssert(glfwVulkanSupported());
   OrkAssert(vulkan::_GVI);
@@ -785,7 +713,6 @@ GLFWwindow* CtxGLFW::_apiInitVK() {
   logchan_glfw->log("VK: offscreen_window<%p>", offscreen_window);
   return offscreen_window;
 }
-#endif
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -819,18 +746,7 @@ CtxGLFW* CtxGLFW::globalOffscreenContext() {
 
     GLFWwindow* offscreen_window = nullptr;
 
-    switch (GRAPHICS_API) {
-      case "VULKAN"_crcu: {
-        offscreen_window = _gctx->_apiInitVK();
-        break;
-      }
-      case "OPENGL"_crcu:
-      default: {
-        offscreen_window = _gctx->_apiInitGL();
-        //glfwSwapInterval(0);
-        break;
-      }
-    }
+    offscreen_window = _gctx->_apiInitVK();
 
     glfwSetWindowUserPointer(offscreen_window, (void*)_gctx);
   }
@@ -986,6 +902,7 @@ struct PopupImpl {
     auto global = CtxGLFW::globalOffscreenContext();
 
     glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     if (win->_useTransparency) {
       glfwWindowHint(GLFW_TRANSPARENT_FRAMEBUFFER, GLFW_TRUE);
     }
@@ -1135,8 +1052,6 @@ struct PopupImpl {
     double prev_time            = timer.SecsSinceStart();
     ui::updatedata_ptr_t updata = std::make_shared<ui::UpdateData>();
 
-    bool is_opengl = (GRAPHICS_API == "OPENGL"_crcu);
-
     while (not _terminate) {
 
       double this_time = timer.SecsSinceStart();
@@ -1146,16 +1061,12 @@ struct PopupImpl {
       updata->_abstime = this_time;
 
       glfwPollEvents();
-      if (is_opengl)
-        glfwMakeContextCurrent(_glfwPopupWindow);
 
       _rtgroup->_clearColor = fvec4(0, 0, 0, 0);
 
       _parent_context->FBI()->pushViewport(0, 0, _w, _h);
       _parent_context->FBI()->pushScissor(0, 0, _w, _h);
       _parent_context->FBI()->PushRtGroup(_rtgroup.get());
-      if (is_opengl)
-        glfwMakeContextCurrent(_glfwPopupWindow);
 
       auto plato_saved = _parent_context->_impl;
 
@@ -1173,18 +1084,10 @@ struct PopupImpl {
       _parent_context->FBI()->PopRtGroup();
       _parent_context->FBI()->popScissor();
       _parent_context->FBI()->popViewport();
-      if (is_opengl) {
-        glfwMakeContextCurrent(_glfwPopupWindow);
-        glFinish();
-        glfwSwapBuffers(_glfwPopupWindow);
-      }
 
       usleep(1000 * 16);
     }
 
-    if (is_opengl) {
-      glfwMakeContextCurrent(ctxbase->_glfwWindow);
-    }
     glfwFocusWindow(ctxbase->_glfwWindow);
   }
   //////////////////////////////////////////////////
@@ -1228,176 +1131,6 @@ PopupWindow::~PopupWindow() {
   _impl = 0;
 }
 
-
-#if defined(LINUX)
-#if 0
-void recomputeHIDPI(Context* ctx) {
-
-  switch (ctx->meTargetType) {
-    case TargetType::WINDOW:
-      break;
-    default:
-      return;
-  }
-
-  auto ixplato = ctx->_impl.getShared<GlIxPlatformObject>();
-  ///////////////////////
-  auto glfw_container     = (CtxGLFW*)ctx->GetCtxBase();
-  GLFWwindow* glfw_window = glfw_container->_glfwWindow;
-  ///////////////////////
-  Display* x_dpy = ixplato->getDisplay();
-  int x_screen   = ixplato->getXscreenID();
-  int x_window   = ixplato->getXwindowID();
-  ///////////////////////
-  int winpos_x = 0;
-  int winpos_y = 0;
-  x11_window_t child;
-  x11_window_t root_window = DefaultRootWindow(x_dpy);
-  XTranslateCoordinates(x_dpy, x_window, root_window, 0, 0, &winpos_x, &winpos_y, &child);
-  XWindowAttributes xwa;
-  XGetWindowAttributes(x_dpy, x_window, &xwa);
-  winpos_x -= xwa.x;
-  winpos_y -= xwa.y;
-
-  int numlodpi = 0;
-  int numhidpi = 0;
-  // printf("winx: %d winy: %d\n", winpos_x, winpos_y);
-  ///////////////////////
-  // int DWMM       = DisplayWidthMM(x_dpy, x_screen);
-  // int DHMM       = DisplayHeightMM(x_dpy, x_screen);
-  // int RESW       = DisplayWidth(x_dpy, x_screen);
-  // int RESH       = DisplayHeight(x_dpy, x_screen);
-  // float CDPIX    = float(RESW) / float(DWMM) * 25.4f;
-  // float CDPIY    = float(RESH) / float(DHMM) * 25.4f;
-  // int DPIX       = QX11Info::appDpiX(x_screen);
-  // int DPIY       = QX11Info::appDpiY(x_screen);
-  // float avgdpi = (CDPIX + CDPIY) * 0.5f;
-  // printf("qx11dpi<%d %d>\n", DPIX, DPIY);
-  //_hakHIDPI = avgdpi > 180.0;
-
-  if (0) { // get DPI for screen
-    XRRScreenResources* xrrscreen = XRRGetScreenResources(x_dpy, x_window);
-
-    // printf("x_dpy<%p> x_window<%d> xrrscreen<%p>\n", x_dpy, x_window, xrrscreen);
-
-    if (xrrscreen) {
-      for (int iscres = xrrscreen->noutput; iscres > 0;) {
-        --iscres;
-        XRROutputInfo* info = XRRGetOutputInfo(x_dpy, xrrscreen, xrrscreen->outputs[iscres]);
-        double mm_width     = info->mm_width;
-        double mm_height    = info->mm_height;
-
-        RRCrtc crtcid          = info->crtc;
-        XRRCrtcInfo* crtc_info = XRRGetCrtcInfo(x_dpy, xrrscreen, crtcid);
-
-        /*printf(
-            "iscres<%d> info<%p> mm_width<%g> mm_height<%g> crtcid<%lu> crtc_info<%p>\n",
-            iscres,
-            info,
-            mm_width,
-            mm_height,
-            crtcid,
-            crtc_info);*/
-
-        if (crtc_info) {
-          double pix_left   = crtc_info->x;
-          double pix_top    = crtc_info->y;
-          double pix_width  = crtc_info->width;
-          double pix_height = crtc_info->height;
-          int rot           = crtc_info->rotation;
-          float CDPIX       = pix_width / mm_width * 25.4f;
-          float CDPIY       = pix_height / mm_height * 25.4f;
-          float avgdpi      = (CDPIX + CDPIY) * 0.5f;
-          float is_hidpi    = avgdpi > 180.0f;
-
-          if (not g_allow_HIDPI)
-            is_hidpi = false;
-
-          if (is_hidpi)
-            numhidpi++;
-          else
-            numlodpi++;
-
-          if ((winpos_x >= pix_left) and (winpos_x < (pix_left + pix_width)) and (winpos_y >= pix_top) and
-              (winpos_y < (pix_left + pix_height))) {
-            _hakHIDPI      = is_hidpi;
-            _hakCurrentDPI = avgdpi;
-            // printf("_hakHIDPI<%d>\n", int(_hakHIDPI));
-          }
-
-          switch (rot) {
-            case RR_Rotate_0:
-              break;
-            case RR_Rotate_90: //
-              break;
-            case RR_Rotate_180:
-              break;
-            case RR_Rotate_270:
-              break;
-          }
-
-          // printf("  x<%g> y<%g> w<%g> h<%g> rot<%d> avgdpi<%g>\n", pix_left, pix_top, pix_width, pix_height, rot, avgdpi);
-
-          XRRFreeCrtcInfo(crtc_info);
-        }
-
-        XRRFreeOutputInfo(info);
-      } // for each screen
-      // printf("numhidpi<%d>\n", numhidpi);
-      // printf("numlodpi<%d>\n", numlodpi);
-      _hakMixedDPI = (numhidpi > 0) and (numlodpi > 1);
-      // printf("_hakMixedDPI<%d>\n", int(_hakMixedDPI));
-    }
-  }
-}
-#endif
-bool _hakHIDPI       = false;
-bool _hakMixedDPI    = false;
-float _hakCurrentDPI = 95.0f;
-bool _HIDPI() {
-  return _hakHIDPI;
-}
-bool _MIXEDDPI() {
-  return _hakMixedDPI;
-}
-float _currentDPI() {
-  return _hakCurrentDPI;
-}
-void setAlwaysOnTop(GLFWwindow *window) {
-    Display *display = glfwGetX11Display();
-    auto x11window = glfwGetX11Window(window);
-
-    Atom wmStateAbove = XInternAtom(display, "_NET_WM_STATE_ABOVE", False);
-    Atom wmState = XInternAtom(display, "_NET_WM_STATE", False);
-
-    XEvent event;
-    memset(&event, 0, sizeof(event));
-    event.type = ClientMessage;
-    event.xclient.window = x11window;
-    event.xclient.message_type = wmState;
-    event.xclient.format = 32;
-    event.xclient.data.l[0] = 1; // _NET_WM_STATE_ADD
-    event.xclient.data.l[1] = wmStateAbove;
-    event.xclient.data.l[2] = 0;
-    event.xclient.data.l[3] = 0;
-    event.xclient.data.l[4] = 0;
-
-    XSendEvent(display, DefaultRootWindow(display), False,
-               SubstructureRedirectMask | SubstructureNotifyMask, &event);
-}
-#elif defined(__APPLE__)
-void recomputeHIDPI(Context* ctx){
-}
-void setAlwaysOnTop(GLFWwindow *window) {
-    id glfwWindow = glfwGetCocoaWindow(window);
-    //id nsWindow = ((id(*)(id, SEL))objc_msgSend)(glfwWindow, sel_registerName("window"));
-    id nsWindow = glfwWindow;
-
-    NSUInteger windowLevel = ((NSUInteger(*)(id, SEL))objc_msgSend)(nsWindow, sel_registerName("level"));
-    windowLevel = CGWindowLevelForKey(kCGFloatingWindowLevelKey);
-    ((void(*)(id, SEL, NSUInteger))objc_msgSend)(nsWindow, sel_registerName("setLevel:"), windowLevel);
-}
-#endif
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2
 #endif // #if defined(ENABLE_GLFW)
