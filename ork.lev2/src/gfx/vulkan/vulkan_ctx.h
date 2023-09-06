@@ -212,6 +212,8 @@ struct VulkanInstance {
   MpMcBoundedQueue<load_token_t> _loadTokens;
   bool _debugEnabled = false;
   vkdeviceinfo_ptr_t _preferred;
+
+  std::set<VkContext*> _contexts;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

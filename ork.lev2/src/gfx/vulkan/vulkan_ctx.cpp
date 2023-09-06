@@ -47,51 +47,47 @@ void VkContext::_initVulkanForDevInfo(vkdeviceinfo_ptr_t vk_devinfo){
   // get queue families
   ////////////////////////////
 
-  using qset_t = std::set<uint32_t>;
+  _vkqfid_graphics = NO_QUEUE;
+  _vkqfid_compute  = NO_QUEUE;
+  _vkqfid_transfer = NO_QUEUE;
 
   _num_queue_types = vk_devinfo->_queueprops.size();
-  std::map<int, qset_t> qids;
-  for (size_t i = 0; i < _num_queue_types; i++) {
-    auto& qprops = vk_devinfo->_queueprops[i];
-    auto qflags  = qprops.queueFlags;
-    if (qflags & VK_QUEUE_GRAPHICS_BIT) {
-      if (qprops.queueCount > 0) {
-        qids[i].insert(VK_QUEUE_GRAPHICS_BIT);
-        _vkqfid_graphics = i;
+  std::vector<float> queuePriorities(_num_queue_types, 1.0f);
+
+  for (uint32_t i = 0; i < _num_queue_types; i++) {
+      const auto& QPROP = vk_devinfo->_queueprops[i];
+      if (QPROP.queueCount == 0) continue;
+
+      VkDeviceQueueCreateInfo DQCI;
+      initializeVkStruct(DQCI, VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO);
+
+      DQCI.queueFamilyIndex = i;
+      DQCI.queueCount = 1; // Just one queue from each family for now
+      DQCI.pQueuePriorities = queuePriorities.data();
+
+      bool add = false;
+      if (QPROP.queueFlags & VK_QUEUE_GRAPHICS_BIT && _vkqfid_graphics == NO_QUEUE) {
+          _vkqfid_graphics = i;
+          add = true;
       }
-    }
-    if (qflags & VK_QUEUE_COMPUTE_BIT) {
-      if (qprops.queueCount > 0) {
-        // qids[i].insert(VK_QUEUE_COMPUTE_BIT);
-        //_vkqfid_compute = i;
+
+      if (QPROP.queueFlags & VK_QUEUE_COMPUTE_BIT && _vkqfid_compute == NO_QUEUE) {
+          _vkqfid_compute = i;
+          add = true;
       }
-    }
-    if (qflags & VK_QUEUE_TRANSFER_BIT) {
-      if (qprops.queueCount > 0) {
-        // qids[i].insert(VK_QUEUE_TRANSFER_BIT);
-        //_vkqfid_transfer = i;
+
+      if (QPROP.queueFlags & VK_QUEUE_TRANSFER_BIT && _vkqfid_transfer == NO_QUEUE) {
+          _vkqfid_transfer = i;
+          add = true;
       }
-    }
-  }
+      if(add){
+        _DQCIs.push_back(DQCI);
+      } 
+  }  
 
   OrkAssert(_vkqfid_graphics != NO_QUEUE);
-
-  // OrkAssert(_vkq_compute!=NO_QUEUE);
-  // OrkAssert(_vkq_transfer!=NO_QUEUE);
-
-  _queuePriorities.push_back(1.0f);
-
-  _DQCIs.reserve(qids.size());
-  for (auto item : qids) {
-    int q_index = item.first;
-    for (auto q_type : item.second) {
-      VkDeviceQueueCreateInfo& DQCI = _DQCIs.emplace_back();
-      initializeVkStruct(DQCI, VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO);
-      DQCI.queueFamilyIndex = q_index;
-      DQCI.queueCount       = 1;
-      DQCI.pQueuePriorities = _queuePriorities.data();
-    }
-  }
+  OrkAssert(_vkqfid_compute!=NO_QUEUE);
+  OrkAssert(_vkqfid_transfer!=NO_QUEUE);
 
   ////////////////////////////
   // create device
@@ -124,6 +120,19 @@ void VkContext::_initVulkanForWindow(VkSurfaceKHR surface){
   }
   _initVulkanForDevInfo(vk_devinfo);
   _initVulkanCommon();
+
+  // UGLY!!!
+
+  for( auto ctx : _GVI->_contexts ){
+    if(ctx!=this){
+      ctx->_vkdevice = _vkdevice;
+      ctx->_vkphysicaldevice = _vkphysicaldevice;
+      ctx->_vkqueue_graphics = _vkqueue_graphics;
+      ctx->_vkqfid_graphics = _vkqfid_graphics;
+      ctx->_vkqfid_transfer = _vkqfid_transfer;
+      ctx->_vkqfid_compute = _vkqfid_compute;
+    }
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -200,6 +209,7 @@ void VkContext::_initVulkanCommon(){
 
 VkContext::VkContext() {
 
+  _GVI->_contexts.insert(this);
 
   ////////////////////////////
   // create child interfaces
@@ -434,11 +444,13 @@ void VkContext::_doEndFrame() {
   vkEndCommandBuffer(_cmdbufcurframe_gfx_pri->_vkcmdbuf);
 
   VkSemaphore waitStartRenderSemaphores[] = {_swapChainImageAcquiredSemaphore};
+  VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
 
   VkSubmitInfo SI = {};
   initializeVkStruct(SI, VK_STRUCTURE_TYPE_SUBMIT_INFO);
   SI.waitSemaphoreCount   = 1;
   SI.pWaitSemaphores      = waitStartRenderSemaphores;
+  SI.pWaitDstStageMask    = waitStages;
   SI.commandBufferCount   = 1;
   SI.pCommandBuffers      = &_cmdbufcurframe_gfx_pri->_vkcmdbuf;
   SI.signalSemaphoreCount = 1;
