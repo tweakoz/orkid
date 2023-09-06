@@ -31,9 +31,8 @@ extern "C" {
 }
 ///////////////////////////////////////////////////////////////////////////////
 
-const int GLFW_MODIFIER_OSCTRL = GLFW_MOD_CONTROL;
-
 namespace ork::lev2 {
+int GLFW_MODIFIER_OSCTRL = GLFW_MOD_CONTROL;
 
 #if 0
 void recomputeHIDPI(Context* ctx) {
