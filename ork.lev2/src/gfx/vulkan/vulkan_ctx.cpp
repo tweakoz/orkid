@@ -602,6 +602,10 @@ void VkContext::_beginRenderPass(renderpass_ptr_t renpass) {
     vk_rpass = as_vkrpass.value();
   }
   else{
+    /////////////////////////////////////////
+    // create the renderpass
+    /////////////////////////////////////////
+
     vk_rpass = renpass->_impl.makeShared<VulkanRenderPass>();
 
     //auto rtg_out = renpass->_rtg_output;
@@ -659,30 +663,35 @@ void VkContext::_beginRenderPass(renderpass_ptr_t renpass) {
     VkResult OK = vkCreateRenderPass(_vkdevice, &RPI, nullptr, &vk_rpass->_vkrp);
     OrkAssert(OK == VK_SUCCESS);
     /////////////////////////////////////////
-    // create framebuffer
-    /////////////////////////////////////////
+  }
+  /////////////////////////////////////////
+  // is swapchain backed by a framebuffer ?
+  /////////////////////////////////////////
+  if( nullptr == _swapchain->_mainRenderPass ){
+    _swapchain->_mainRenderPass = vk_rpass;
+
     std::vector<VkImageView> fb_attachments;
     //auto rtb0 = main_rtg->mMrt[0];
     //auto rtb0_impl = rtb0->_impl.getShared<VklRtBufferImpl>();
     //fb_attachments.push_back(rtb0_impl->_vkimgview);
     fb_attachments.push_back(_swapchain->_vkSwapChainImageViews[_swapchain->_curSwapWriteImage]);
 
-    VkFramebufferCreateInfo framebufferInfo = {};
-    framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-    framebufferInfo.renderPass = vk_rpass->_vkrp; // The VkRenderPass you created earlier
-    framebufferInfo.attachmentCount = fb_attachments.size();
-    framebufferInfo.pAttachments = fb_attachments.data();
-    framebufferInfo.width = _swapchain->_extent.width;  // Typically the size of your swap chain images or offscreen buffer
-    framebufferInfo.height = _swapchain->_extent.height;
-    framebufferInfo.layers = 1;
+    VkFramebufferCreateInfo CFBI = {};
+    CFBI.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+    CFBI.renderPass = vk_rpass->_vkrp; // The VkRenderPass you created earlier
+    CFBI.attachmentCount = fb_attachments.size();
+    CFBI.pAttachments = fb_attachments.data();
+    CFBI.width = _swapchain->_extent.width;  // Typically the size of your swap chain images or offscreen buffer
+    CFBI.height = _swapchain->_extent.height;
+    CFBI.layers = 1;
 
-    OK = vkCreateFramebuffer(_vkdevice, &framebufferInfo, nullptr, &rtg_impl->_vkfb);
+    VkResult OK = vkCreateFramebuffer(_vkdevice, &CFBI, nullptr, &_swapchain->_vkrbfp);
     OrkAssert(OK == VK_SUCCESS);
-    /////////////////////////////////////////
 
   }
-
-
+  /////////////////////////////////////////
+  // perform the clear
+  /////////////////////////////////////////
   VkClearValue clearValues[2];
   clearValues[0].color        = {{0.0f, 0.0f, 1.0f, 1.0f}};
   clearValues[1].depthStencil = {1.0f, 0};
@@ -696,13 +705,14 @@ void VkContext::_beginRenderPass(renderpass_ptr_t renpass) {
   RPBI.clearValueCount   = 2;
   RPBI.pClearValues      = clearValues;
   //  clear-misc
-  RPBI.renderPass = vk_rpass->_vkrp;
-  RPBI.framebuffer = rtg_impl->_vkfb;
+  RPBI.renderPass = _swapchain->_mainRenderPass->_vkrp;
+  RPBI.framebuffer = _swapchain->_vkrbfp;
   // CLEAR!
   vkCmdBeginRenderPass(
       _cmdbufcurframe_gfx_pri->_vkcmdbuf, //
       &RPBI,                              //
       VK_SUBPASS_CONTENTS_INLINE);
+  /////////////////////////////////////////
 }
 
 ///////////////////////////////////////////////////////

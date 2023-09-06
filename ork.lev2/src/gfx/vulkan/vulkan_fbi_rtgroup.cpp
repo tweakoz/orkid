@@ -214,7 +214,7 @@ vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(RtGroup* rtgroup) {
 
 RtGroup* VkFrameBufferInterface::_popRtGroup() {
   auto rtb0 = _active_rtgroup->mMrt[0];
-  printf( "poprtg rtb<%s> usage<%08x>\n", //
+  if(0)printf( "poprtg rtb<%s> usage<%08x>\n", //
           rtb0->_debugName.c_str(), //
           rtb0->_usage);
   if(rtb0->_usage == "present"_crcu){

@@ -408,6 +408,8 @@ struct VkSwapChain{
   int _width = 0;
   int _height = 0;
   VkExtent2D _extent;
+  vkrenderpass_ptr_t _mainRenderPass;
+  VkFramebuffer _vkrbfp;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
