@@ -120,6 +120,7 @@ VulkanInstance::VulkanInstance() {
 
 #if defined(__APPLE__)
   _instance_extensions.push_back("VK_MVK_macos_surface");
+  _instance_extensions.push_back("VK_EXT_metal_surface");
   // _instance_extensions.push_back("VK_KHR_portability_subset");
   _instancedata.flags |= VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
 #else 

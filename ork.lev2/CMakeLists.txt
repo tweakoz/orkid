@@ -27,7 +27,7 @@ file(GLOB_RECURSE src_ovr ${SRCD}/vr/*.cpp)
 file(GLOB src_lev2 ${SRCD}/*.cpp)
 
 IF(${APPLE})
-  file(GLOB src_apple ${SRCD}/gfx/gl/*.mm)
+  file(GLOB_RECURSE src_apple ${SRCD}/*.mm)
 ELSE()
   set( src_apple )
 ENDIF()
