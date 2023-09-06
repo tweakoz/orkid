@@ -96,7 +96,8 @@ static void _vkCreateImageForBuffer(vkcontext_rawptr_t ctxVK, //
     imginf.samples = VK_SAMPLE_COUNT_1_BIT; 
     imginf.tiling = VK_IMAGE_TILING_OPTIMAL; 
     imginf.usage = VK_IMAGE_USAGE_SAMPLED_BIT //
-                 | VK_IMAGE_USAGE_TRANSFER_DST_BIT; // Use as texture and allow data transfer to it
+                 | VK_IMAGE_USAGE_TRANSFER_DST_BIT // Use as texture and allow data transfer to it
+                 ;
     imginf.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     imginf.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     ///////////////////////////////////////////////////
@@ -295,6 +296,8 @@ void VkFrameBufferInterface::_pushRtGroup(RtGroup* rtgroup) {
     _active_rtgroup->_impl.setShared<VkRtGroupImpl>(RTGIMPL);
     _active_rtgroup->SetSizeDirty(false);
   }
+ 
+
   /////////////////////////////////////////
   // main (present) rtgroup?
   /////////////////////////////////////////
@@ -317,6 +320,8 @@ void VkFrameBufferInterface::_pushRtGroup(RtGroup* rtgroup) {
     //vkCmdBeginRenderPass( commandBuffer, //
     //                      &renderPassInfo, // 
     //                      VK_SUBPASS_CONTENTS_INLINE);
+
+  
     
   }
   /////////////////////////////////////////

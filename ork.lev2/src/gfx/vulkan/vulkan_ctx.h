@@ -105,6 +105,7 @@ struct VkCommandBufferImpl;
 struct VulkanRenderPass;
 struct VulkanRenderSubPass;
 struct VkSwapChainCaps;
+struct VkSwapChain;
 //
 using vkinstance_ptr_t   = std::shared_ptr<VulkanInstance>;
 using vkdeviceinfo_ptr_t = std::shared_ptr<VulkanDeviceInfo>;
@@ -150,6 +151,7 @@ using vkcmdbufimpl_ptr_t   = std::shared_ptr<VkCommandBufferImpl>;
 using vkrenderpass_ptr_t   = std::shared_ptr<VulkanRenderPass>;
 using vksubpass_ptr_t      = std::shared_ptr<VulkanRenderSubPass>;
 using vkswapchaincaps_ptr_t = std::shared_ptr<VkSwapChainCaps>;
+using vkswapchain_ptr_t = std::shared_ptr<VkSwapChain>;
 
 extern vkinstance_ptr_t _GVI;
 
@@ -223,7 +225,7 @@ struct VkCommandBufferImpl{
 };
 
 struct VulkanRenderPass{
-
+  VkRenderPass _vkrp;
 };
 struct VulkanRenderSubPass{
 
@@ -396,6 +398,16 @@ struct VulkanIndexBuffer {
 struct VkLoadContext {
   VkContext* _vkcontext     = nullptr;
   GLFWwindow* _pushedWindow = nullptr;
+};
+
+struct VkSwapChain{
+  VkSwapchainKHR _vkSwapChain;
+  std::vector<VkImage> _vkSwapChainImages;
+  std::vector<VkImageView> _vkSwapChainImageViews;
+  uint32_t _curSwapWriteImage = 0xffffffff;
+  int _width = 0;
+  int _height = 0;
+  VkExtent2D _extent;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -787,21 +799,25 @@ public:
   void _initVulkanForWindow(VkSurfaceKHR surface);
   void _initVulkanForOffscreen(DisplayBuffer* pBuf);
   void _initVulkanCommon();
+  void _initSwapChain();
+  //////////////////////////////////////////////
+  void _acquireSwapChainForFrame();
+  void _transitionSwapChainForClear();
+  void _transitionSwapChainForPresent();
+  void _clearSwapChainBuffer();
   //////////////////////////////////////////////
   VkDevice _vkdevice;
   VkPhysicalDevice _vkphysicaldevice;
   vkdeviceinfo_ptr_t _vkdeviceinfo;
   VkSurfaceKHR _vkpresentationsurface;
   vkswapchaincaps_ptr_t _vkpresentation_caps;
-  VkSwapchainKHR _vkSwapChain;
-  std::vector<VkImage> _vkSwapChainImages;
-  std::vector<VkImageView> _vkSwapChainImageViews;
   std::vector<const char*> _device_extensions;
   VkSemaphore _swapChainImageAcquiredSemaphore;
   VkSemaphore _renderingCompleteSemaphore;
-  uint32_t _curSwapWriteImage = 0xffffffff;
   VkFence _mainGfxSubmitFence;
   size_t _num_queue_types = 0;
+  vkswapchain_ptr_t _swapchain;
+  std::unordered_set<vkswapchain_ptr_t> _old_swapchains;
   //////////////////////////////////////////////
 
   std::vector<float> _queuePriorities;
