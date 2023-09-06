@@ -511,23 +511,19 @@ void CtxGLFW::makeCurrent() {
     case "VULKAN"_crcu: {
       break;
     }
-    case "OPENGL"_crcu:
     default: {
-      glfwMakeContextCurrent(_glfwWindow);
       break;
     }
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
-void CtxGLFW::swapBuffers() {
+void CtxGLFW::present() {
   switch (GRAPHICS_API) {
     case "VULKAN"_crcu: {
+      usleep(5000);
       break;
     }
-    case "OPENGL"_crcu:
     default: {
-      glfwSwapBuffers(_glfwWindow);
-      usleep(5000);
       break;
     }
   }

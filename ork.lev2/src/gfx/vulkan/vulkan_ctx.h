@@ -104,6 +104,7 @@ struct VkLoadContext;
 struct VkCommandBufferImpl;
 struct VulkanRenderPass;
 struct VulkanRenderSubPass;
+struct VkSwapChainCaps;
 //
 using vkinstance_ptr_t   = std::shared_ptr<VulkanInstance>;
 using vkdeviceinfo_ptr_t = std::shared_ptr<VulkanDeviceInfo>;
@@ -148,8 +149,20 @@ using vkloadctx_ptr_t      = std::shared_ptr<VkLoadContext>;
 using vkcmdbufimpl_ptr_t   = std::shared_ptr<VkCommandBufferImpl>;
 using vkrenderpass_ptr_t   = std::shared_ptr<VulkanRenderPass>;
 using vksubpass_ptr_t      = std::shared_ptr<VulkanRenderSubPass>;
+using vkswapchaincaps_ptr_t = std::shared_ptr<VkSwapChainCaps>;
 
 extern vkinstance_ptr_t _GVI;
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct VkSwapChainCaps {
+
+  bool supportsPresentationMode(VkPresentModeKHR mode) const;
+
+    VkSurfaceCapabilitiesKHR _capabilities;
+    std::vector<VkSurfaceFormatKHR> _formats;
+    std::set<VkPresentModeKHR> _presentModes;
+};
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -191,6 +204,7 @@ struct VulkanInstance {
   std::vector<VkPhysicalDeviceGroupProperties> _phygroups;
   std::vector<vkdevgrp_ptr_t> _devgroups;
   std::vector<vkdeviceinfo_ptr_t> _device_infos;
+  std::vector<const char*> _instance_extensions;
   uint32_t _numgpus   = 0;
   uint32_t _numgroups = 0;
   shadlang::slpcache_ptr_t _slp_cache;
@@ -541,7 +555,7 @@ struct VkFrameBufferInterface final : public FrameBufferInterface {
   void _pushRtGroup(RtGroup* Base) final;
   RtGroup* _popRtGroup() final;
   void _postPushRtGroup(RtGroup* Base);
-
+  void _present();
   //////////////////////////////////////////////
 
   freestyle_mtl_ptr_t utilshader();
@@ -556,9 +570,6 @@ struct VkFrameBufferInterface final : public FrameBufferInterface {
   const FxShaderParam* _fxpColorMap           = nullptr;
 
   vkcontext_rawptr_t _contextVK;
-  rtgroup_ptr_t _main_rtg;
-  rtbuffer_ptr_t _main_rtb_color;
-  rtbuffer_ptr_t _main_rtb_depth;
   int miCurScissorX;
   int miCurScissorY;
   int miCurScissorW;
@@ -744,7 +755,7 @@ public:
   ///////////////////////////////////////////////////////////////////////
 
   void makeCurrentContext(void) final;
-  void swapBuffers(CTXBASE* ctxbase) final;
+  void present(CTXBASE* ctxbase) final;
 
   void initializeWindowContext(Window* pWin, CTXBASE* pctxbase) final; // make a window
   void initializeOffscreenContext(DisplayBuffer* pBuf) final;          // make a pbuffer
@@ -759,6 +770,8 @@ public:
   load_token_t _doBeginLoad() final;
   void _doEndLoad(load_token_t ploadtok) final; // virtual
 
+  vkswapchaincaps_ptr_t _swapChainCapsForSurface(VkSurfaceKHR surface);
+
   //////////////////////////////////////////////
 
   uint32_t _findMemoryType( //
@@ -770,6 +783,10 @@ public:
   VkPhysicalDevice _vkphysicaldevice;
   vkdeviceinfo_ptr_t _vkdeviceinfo;
   VkSurfaceKHR _vkpresentationsurface;
+  vkswapchaincaps_ptr_t _vkpresentation_caps;
+  VkSwapchainKHR _vkSwapChain;
+  std::vector<VkImage> _vkSwapChainImages;
+  std::vector<const char*> _device_extensions;
   //////////////////////////////////////////////
 
   std::vector<float> _queuePriorities;

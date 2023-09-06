@@ -81,7 +81,7 @@ struct CtxGLFW : public CTXBASE {
   void SetAlwaysRun(bool brun);
   fvec2 MapCoordToGlobal(const fvec2& v) const override;
   void makeCurrent() final;
-  void swapBuffers();
+  void present();
   void signalExit();
   void pollEvents();
   void _doEnqueueWindowResize( int w, int h ) final;

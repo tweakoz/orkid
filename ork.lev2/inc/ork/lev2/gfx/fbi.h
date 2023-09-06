@@ -36,6 +36,9 @@ public:
     _enableVSync = bv;
   }
 
+  void pushMainSurface();
+  void popMainSurface();
+  
   ///////////////////////////////////////////////////////
 
   Texture* GetBufferTexture() {
@@ -147,8 +150,6 @@ public:
   DisplayBuffer* _thisBuffer = nullptr;
   RtGroup* _currentRtGroup     = nullptr;
   PickBuffer* _pickbuffer      = nullptr;
-
-  rtgroup_ptr_t _main_rtg;
   
   bool _enableVSync;
   bool _enableFullScreen;
@@ -162,4 +163,9 @@ public:
   fcolor4 _clearColor;
   int _pickState;
   std::stack<lev2::RtGroup*> mRtGroupStack;
+
+  rtgroup_ptr_t _main_rtg;
+  rtbuffer_ptr_t _main_rtb_color;
+  rtbuffer_ptr_t _main_rtb_depth;
+
 };

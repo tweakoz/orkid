@@ -296,14 +296,14 @@ void SpirvCompiler::_inheritUniformSet(
     std::string unisetname,        //
     spirvuniset_ptr_t spirvuset) { //
   if (_vulkan) {
-    spirvuset->_descriptor_set_id = _descriptor_set_counter++;
+    //spirvuset->_descriptor_set_id = _descriptor_set_counter++;
     /////////////////////
     // loose unis
     /////////////////////
     auto line = FormatString(
-        "layout(set=%zu, binding=%zu) uniform %s {", //
-        spirvuset->_descriptor_set_id,               //
-        _binding_id,                                 //
+        "layout(push_constant) uniform %s {", //
+        //spirvuset->_descriptor_set_id,               //
+        //_binding_id,                                 //
         unisetname.c_str());
     _appendText(_uniforms_group, line.c_str());
     for (auto item : spirvuset->_items_by_order) {
@@ -318,7 +318,7 @@ void SpirvCompiler::_inheritUniformSet(
       }
     }
     _appendText(_uniforms_group, "};");
-    _binding_id++;
+    //_binding_id++;
     /////////////////////
     // samplers
     /////////////////////
@@ -326,13 +326,13 @@ void SpirvCompiler::_inheritUniformSet(
       auto dt   = item.second->_datatype;
       auto id   = item.second->_identifier;
       auto line = FormatString(
-          "layout(set=%zu, binding=%zu) uniform %s %s;", //
-          spirvuset->_descriptor_set_id,                 //
+          "layout(binding=%d) uniform %s %s;", //
+          //spirvuset->_descriptor_set_id,                 //
           _binding_id,                                   //
           dt.c_str(),                                    //
           id.c_str());
       _appendText(_uniforms_group, line.c_str());
-      _binding_id++;
+     _binding_id++;
     }
   } else { // opengl
     OrkAssert(false);

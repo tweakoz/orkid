@@ -124,7 +124,7 @@ void EzTopWidget::DoDraw(ui::drawevent_constptr_t drwev) {
     if (_mainwin->_onDraw) {
       _mainwin->_onDraw(drwev);
       auto ctxbase = drwev->GetTarget()->mCtxBase;
-      drwev->GetTarget()->swapBuffers(ctxbase);
+      drwev->GetTarget()->present(ctxbase);
       ezapp->_render_count.fetch_add(1);
     }
     ///////////////////////////

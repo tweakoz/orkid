@@ -17,6 +17,8 @@
               "ENABLE_SHADER_STORAGE",
               "USE_GLFX_LANG",
               "LINUX",
+              "ORK_OSX",
+              "__APPLE__",
               "GCC",
               "_REENTRANT",
               "_LARGEFILE64_SOURCE",

@@ -101,10 +101,14 @@ VkContext::VkContext() {
   // create device
   ////////////////////////////
 
+  _device_extensions.push_back("VK_KHR_swapchain");
+
   VkDeviceCreateInfo DCI = {};
   initializeVkStruct(DCI, VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO);
   DCI.queueCreateInfoCount = _DQCIs.size();
   DCI.pQueueCreateInfos    = _DQCIs.data();
+  DCI.enabledExtensionCount = _device_extensions.size();
+  DCI.ppEnabledExtensionNames = _device_extensions.data();
   vkCreateDevice(_vkphysicaldevice, &DCI, nullptr, &_vkdevice);
 
   vkGetDeviceQueue(_vkdevice, //
@@ -284,10 +288,10 @@ static void platoMakeCurrent(vkplatformobject_ptr_t plato) {
   }
   plato->_bindop();
 }
-static void platoSwapBuffers(vkplatformobject_ptr_t plato) {
+static void platoPresent(vkplatformobject_ptr_t plato) {
   platoMakeCurrent(plato);
   if (plato->_ctxbase) {
-    plato->_ctxbase->swapBuffers();
+    plato->_ctxbase->present();
   }
 }
 
@@ -307,11 +311,11 @@ void VkContext::_doBeginFrame() {
 
   VkCommandBufferBeginInfo CBBI_GFX = {};
   initializeVkStruct(CBBI_GFX, VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
-  CBBI_GFX.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT
-                 | VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT; 
+  CBBI_GFX.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+                 //| VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT; 
   CBBI_GFX.pInheritanceInfo = nullptr;  
 
-  vkResetCommandBuffer(_cmdbufcurframe_gfx_pri->_vkcmdbuf, 0);
+  //vkResetCommandBuffer(_cmdbufcurframe_gfx_pri->_vkcmdbuf, 0); // vkBeginCommandBuffer does an implicit reset
   vkBeginCommandBuffer(_cmdbufcurframe_gfx_pri->_vkcmdbuf, &CBBI_GFX);
 
 }
@@ -373,9 +377,17 @@ void VkContext::_endRecordCommandBuffer(commandbuffer_ptr_t cmdbuf) {
 
 ///////////////////////////////////////////////////////
 
-void VkContext::swapBuffers(CTXBASE* ctxbase) {
+void VkContext::present(CTXBASE* ctxbase) {
   auto plato = _impl.getShared<VkPlatformObject>();
-  platoSwapBuffers(plato);
+  //platoPresent(plato);
+  _fbi->_present();
+}
+
+///////////////////////////////////////////////////////
+
+bool VkSwapChainCaps::supportsPresentationMode(VkPresentModeKHR mode) const{
+  auto it = _presentModes.find(mode);
+  return (it!=_presentModes.end());
 }
 
 ///////////////////////////////////////////////////////
@@ -400,6 +412,53 @@ void VkContext::initializeWindowContext(
                                         nullptr, 
                                         &_vkpresentationsurface);
   OrkAssert(OK == VK_SUCCESS);
+
+  _vkpresentation_caps = _swapChainCapsForSurface(_vkpresentationsurface);
+  OrkAssert( _vkpresentation_caps->supportsPresentationMode(VK_PRESENT_MODE_IMMEDIATE_KHR) );
+  OrkAssert( _vkpresentation_caps->supportsPresentationMode(VK_PRESENT_MODE_FIFO_KHR) );
+  OrkAssert( _vkpresentation_caps->supportsPresentationMode(VK_PRESENT_MODE_FIFO_RELAXED_KHR) );
+  //OrkAssert( _vkpresentation_caps->supportsPresentationMode(VK_PRESENT_MODE_MAILBOX_KHR) );
+  //OrkAssert( _vkpresentation_caps->supportsPresentationMode(VK_PRESENT_MODE_SHARED_DEMAND_REFRESH_KHR) );
+  //OrkAssert( _vkpresentation_caps->supportsPresentationMode(VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR) );
+
+  auto surfaceFormat = _vkpresentation_caps->_formats[0];
+
+  VkSwapchainCreateInfoKHR SCINFO{};
+  initializeVkStruct(SCINFO, VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR);
+  SCINFO.surface = _vkpresentationsurface;
+
+  VkExtent2D extent;
+  extent.width = pWin->miWidth;
+  extent.height = pWin->miHeight;
+
+  // image properties
+  SCINFO.minImageCount = 3; 
+  SCINFO.imageFormat = surfaceFormat.format; // Chosen from VkSurfaceFormatKHR, after querying supported formats
+  SCINFO.imageColorSpace = surfaceFormat.colorSpace; // Chosen from VkSurfaceFormatKHR
+  SCINFO.imageExtent = extent;  // The width and height of the swap chain images
+  SCINFO.imageArrayLayers = 1;  // Always 1 unless developing a stereoscopic 3D application
+  SCINFO.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT; // Or any other value depending on your needs
+
+  // image view properties
+  SCINFO.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE; // Can be VK_SHARING_MODE_CONCURRENT if sharing between multiple queue families
+  SCINFO.queueFamilyIndexCount = 0;  // Only relevant if sharingMode is VK_SHARING_MODE_CONCURRENT
+  SCINFO.pQueueFamilyIndices = nullptr;  // Only relevant if sharingMode is VK_SHARING_MODE_CONCURRENT
+
+  // misc properties
+  SCINFO.preTransform = _vkpresentation_caps->_capabilities.currentTransform; 
+  SCINFO.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;  // todo - support alpha
+  SCINFO.clipped = VK_TRUE; // clip pixels that are obscured by other windows
+  SCINFO.oldSwapchain = VK_NULL_HANDLE; 
+  SCINFO.presentMode = VK_PRESENT_MODE_IMMEDIATE_KHR; 
+
+
+  OK = vkCreateSwapchainKHR(_vkdevice, &SCINFO, nullptr, &_vkSwapChain);
+  OrkAssert(OK == VK_SUCCESS);
+
+  uint32_t imageCount = 0;
+  vkGetSwapchainImagesKHR(_vkdevice, _vkSwapChain, &imageCount, nullptr);
+  _vkSwapChainImages.resize(imageCount);
+  vkGetSwapchainImagesKHR(_vkdevice, _vkSwapChain, &imageCount, _vkSwapChainImages.data());
 
 } // make a window
 
@@ -507,6 +566,49 @@ void VkContext::_doEndLoad(load_token_t ploadtok) {
   auto pushed  = loadctx->_pushedWindow;
   glfwMakeContextCurrent(pushed);
   _GVI->_loadTokens.push(loadctx);
+}
+///////////////////////////////////////////////////////////////////////////////////////////////
+
+vkswapchaincaps_ptr_t VkContext::_swapChainCapsForSurface(VkSurfaceKHR surface){
+
+  auto rval = std::make_shared<VkSwapChainCaps>();
+
+  vkGetPhysicalDeviceSurfaceCapabilitiesKHR(_vkphysicaldevice, //
+                                            surface, // 
+                                            &rval->_capabilities);
+
+    uint32_t formatCount;
+    vkGetPhysicalDeviceSurfaceFormatsKHR(_vkphysicaldevice, // 
+                                         surface, // 
+                                         &formatCount, // 
+                                         nullptr);
+    if (formatCount != 0) {
+        rval->_formats.resize(formatCount);
+        vkGetPhysicalDeviceSurfaceFormatsKHR(_vkphysicaldevice, // 
+                                             surface, // 
+                                             &formatCount, // 
+                                             rval->_formats.data());
+    }
+
+    uint32_t presentModeCount;
+    vkGetPhysicalDeviceSurfacePresentModesKHR(_vkphysicaldevice, // 
+                                              surface, // 
+                                              &presentModeCount, // 
+                                              nullptr);
+
+    printf( "presentModeCount<%d>\n", presentModeCount);
+    if (presentModeCount != 0) {
+        std::vector<VkPresentModeKHR> presentModes;
+        presentModes.resize(presentModeCount);
+        vkGetPhysicalDeviceSurfacePresentModesKHR(_vkphysicaldevice, // 
+                                                  surface, // 
+                                                  &presentModeCount, // 
+                                                  presentModes.data());
+        for( auto item : presentModes ){
+          rval->_presentModes.insert(item);
+        }
+    }
+  return rval;
 }
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2::vulkan

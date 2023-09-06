@@ -15,7 +15,7 @@
 namespace ork::lev2::vulkan {
 
 vkinstance_ptr_t _GVI = nullptr;
-constexpr bool _enable_debug = false;
+constexpr bool _enable_debug = true;
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
 using layer_props_t = std::vector<VkLayerProperties>;
@@ -112,25 +112,22 @@ VulkanInstance::VulkanInstance() {
   }
   _slp_cache = std::make_shared<shadlang::ShadLangParserCache>();
 
-  static std::vector<const char*> instanceExtensions;
-
-
-
   if(_debugEnabled){
-    instanceExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+    _instance_extensions.push_back("VK_EXT_debug_utils");
   }
 
+  _instance_extensions.push_back("VK_KHR_surface");
+
 #if defined(__APPLE__)
-  instanceExtensions.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
-  instanceExtensions.push_back(VK_MVK_MACOS_SURFACE_EXTENSION_NAME);
-  // instanceExtensions.push_back("VK_KHR_portability_subset");
+  _instance_extensions.push_back("VK_MVK_macos_surface");
+  // _instance_extensions.push_back("VK_KHR_portability_subset");
   _instancedata.flags |= VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
 #else 
-  instanceExtensions.push_back("VK_KHR_xcb_surface");
+  _instance_extensions.push_back("VK_KHR_xcb_surface");
 #endif
 
-  _instancedata.enabledExtensionCount   = instanceExtensions.size();
-  _instancedata.ppEnabledExtensionNames = instanceExtensions.data();
+  _instancedata.enabledExtensionCount   = _instance_extensions.size();
+  _instancedata.ppEnabledExtensionNames = _instance_extensions.data();
 
   VkResult res = vkCreateInstance(&_instancedata, nullptr, &_instance);
   OrkAssert(res == 0);

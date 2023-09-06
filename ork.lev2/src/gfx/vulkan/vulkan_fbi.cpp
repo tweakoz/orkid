@@ -15,9 +15,6 @@ VkFrameBufferInterface::VkFrameBufferInterface(vkcontext_rawptr_t ctx)
     : FrameBufferInterface(*ctx)
     , _contextVK(ctx) {
 
-  _main_rtg = std::make_shared<RtGroup>(ctx, 8, 8, MsaaSamples::MSAA_1X);
-  _main_rtb_color = _main_rtg->createRenderTarget(EBufferFormat::RGBA8,"present"_crcu);
-  //_main_rtb_depth = _main_rtg->createRenderTarget(EBufferFormat::Z32);
 }
 
 ///////////////////////////////////////////////////////
