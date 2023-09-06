@@ -11,6 +11,7 @@
 #include <ork/asset/Asset.inl>
 #if defined(ENABLE_VULKAN)
 #include "vulkan_ctx.h"
+#import <ork/lev2/glfw/ctx_glfw.h>
 
 namespace ork::lev2::vulkan {
 
@@ -81,7 +82,23 @@ void VulkanInstance::_setupDebugMessenger() {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
+vkdeviceinfo_ptr_t VulkanInstance::findDeviceForSurface(VkSurfaceKHR surface){
+  for( auto devinfo : _device_infos ){
+    VkBool32 presentSupport = false;
+    vkGetPhysicalDeviceSurfaceSupportKHR(devinfo->_phydev, 0, surface, &presentSupport);
+    if(presentSupport){
+      return devinfo;
+    }
+  }
+  return nullptr;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////
+
 VulkanInstance::VulkanInstance() {
+
+  uint32_t glfwExtensionCount = 0;
+  const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
 
   auto yel = fvec3::Yellow();
 
@@ -114,6 +131,10 @@ VulkanInstance::VulkanInstance() {
 
   if(_debugEnabled){
     _instance_extensions.push_back("VK_EXT_debug_utils");
+  }
+
+  for( size_t i=0; i<glfwExtensionCount; i++ ){
+    _instance_extensions.push_back(glfwExtensions[i]);
   }
 
   _instance_extensions.push_back("VK_KHR_surface");

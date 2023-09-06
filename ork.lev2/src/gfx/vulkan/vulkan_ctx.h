@@ -204,12 +204,14 @@ struct VulkanInstance {
   std::vector<VkPhysicalDeviceGroupProperties> _phygroups;
   std::vector<vkdevgrp_ptr_t> _devgroups;
   std::vector<vkdeviceinfo_ptr_t> _device_infos;
+  vkdeviceinfo_ptr_t findDeviceForSurface(VkSurfaceKHR surface);
   std::vector<const char*> _instance_extensions;
   uint32_t _numgpus   = 0;
   uint32_t _numgroups = 0;
   shadlang::slpcache_ptr_t _slp_cache;
   MpMcBoundedQueue<load_token_t> _loadTokens;
   bool _debugEnabled = false;
+  vkdeviceinfo_ptr_t _preferred;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -779,6 +781,11 @@ public:
       VkMemoryPropertyFlags properties);
 
   //////////////////////////////////////////////
+  void _initVulkanForDevInfo(vkdeviceinfo_ptr_t devinfo );
+  void _initVulkanForWindow(VkSurfaceKHR surface);
+  void _initVulkanForOffscreen(DisplayBuffer* pBuf);
+  void _initVulkanCommon();
+  //////////////////////////////////////////////
   VkDevice _vkdevice;
   VkPhysicalDevice _vkphysicaldevice;
   vkdeviceinfo_ptr_t _vkdeviceinfo;
@@ -786,7 +793,13 @@ public:
   vkswapchaincaps_ptr_t _vkpresentation_caps;
   VkSwapchainKHR _vkSwapChain;
   std::vector<VkImage> _vkSwapChainImages;
+  std::vector<VkImageView> _vkSwapChainImageViews;
   std::vector<const char*> _device_extensions;
+  VkSemaphore _swapChainImageAcquiredSemaphore;
+  VkSemaphore _renderingCompleteSemaphore;
+  uint32_t _curSwapWriteImage = 0xffffffff;
+  VkFence _mainGfxSubmitFence;
+  size_t _num_queue_types = 0;
   //////////////////////////////////////////////
 
   std::vector<float> _queuePriorities;
