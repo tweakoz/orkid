@@ -676,9 +676,17 @@ void VkContext::_beginRenderPass(renderpass_ptr_t renpass) {
   /////////////////////////////////////////
   // perform the clear
   /////////////////////////////////////////
+  static float phi = 0.0f;
+
+  float R = sinf(phi * 0.1f) * 0.5f + 0.5f;
+  float G = sinf(phi * 0.3f) * 0.5f + 0.5f;
+  float B = sinf(phi * 0.77f) * 0.5f + 0.5f;
+
   VkClearValue clearValues[2];
-  clearValues[0].color        = {{0.0f, 0.0f, 1.0f, 1.0f}};
+  clearValues[0].color        = {{R,G,B, 1.0f}};
   clearValues[1].depthStencil = {1.0f, 0};
+
+  phi += 0.001f;
 
   VkRenderPassBeginInfo RPBI = {};
   initializeVkStruct(RPBI, VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO);
