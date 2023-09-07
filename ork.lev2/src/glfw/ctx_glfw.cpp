@@ -363,7 +363,7 @@ void CtxGLFW::Show() {
 #if defined(__APPLE__)
     glfwWindowHint(
         GLFW_COCOA_RETINA_FRAMEBUFFER, //
-        _appinitdata->_allowHIDPI ? GLFW_TRUE : GLFW_FALSE);
+        _appinitdata->_allowHIDPI ? GLFW_TRUE : GLFW_TRUE);
 #endif
 
     glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);

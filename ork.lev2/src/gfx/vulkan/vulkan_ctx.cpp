@@ -478,11 +478,9 @@ void VkContext::_acquireSwapChainForFrame() {
         ok_to_transition = true;
         break;
       case VK_SUBOPTIMAL_KHR:
-        printf("VK_SUBOPTIMAL_KHR\n");
-        break;
       case VK_ERROR_OUT_OF_DATE_KHR: {
         _initSwapChain();
-        printf("VK_ERROR_OUT_OF_DATE_KHR\n");
+        //printf("VK_ERROR_OUT_OF_DATE_KHR\n");
         // OrkAssert(false);
         //  need to recreate swap chain
         break;
@@ -545,8 +543,6 @@ void VkContext::_doEndFrame() {
     case VK_SUCCESS:
       break;
     case VK_SUBOPTIMAL_KHR:
-      printf("VK_SUBOPTIMAL_KHR\n");
-      break;
     case VK_ERROR_OUT_OF_DATE_KHR: {
       // OrkAssert(false);
       //  need to recreate swap chain
@@ -853,7 +849,7 @@ void VkContext::initializeWindowContext(
   _vkpresentation_caps = _swapChainCapsForSurface(_vkpresentationsurface);
   OrkAssert(_vkpresentation_caps->supportsPresentationMode(VK_PRESENT_MODE_IMMEDIATE_KHR));
   OrkAssert(_vkpresentation_caps->supportsPresentationMode(VK_PRESENT_MODE_FIFO_KHR));
-  OrkAssert(_vkpresentation_caps->supportsPresentationMode(VK_PRESENT_MODE_FIFO_RELAXED_KHR));
+  //OrkAssert(_vkpresentation_caps->supportsPresentationMode(VK_PRESENT_MODE_FIFO_RELAXED_KHR));
   // OrkAssert( _vkpresentation_caps->supportsPresentationMode(VK_PRESENT_MODE_MAILBOX_KHR) );
   // OrkAssert( _vkpresentation_caps->supportsPresentationMode(VK_PRESENT_MODE_SHARED_DEMAND_REFRESH_KHR) );
   // OrkAssert( _vkpresentation_caps->supportsPresentationMode(VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR) );
