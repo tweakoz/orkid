@@ -356,36 +356,14 @@ static void platoPresent(vkplatformobject_ptr_t plato) {
 ///////////////////////////////////////////////////////////////////////
 
 void VkContext::makeCurrentContext() {
-  auto plato = _impl.getShared<VkPlatformObject>();
-  platoMakeCurrent(plato);
+  //auto plato = _impl.getShared<VkPlatformObject>();
+  //platoMakeCurrent(plato);
 }
 
-///////////////////////////////////////////////////////
-
-void VkContext::_doBeginFrame() {
-  makeCurrentContext();
-
-  _acquireSwapChainForFrame();
-
-  _cmdbufcurframe_gfx_pri = _defaultCommandBuffer->_impl.getShared<VkCommandBufferImpl>();
-
-  VkCommandBufferBeginInfo CBBI_GFX = {};
-  initializeVkStruct(CBBI_GFX, VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
-  CBBI_GFX.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-  //| VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
-  CBBI_GFX.pInheritanceInfo = nullptr;
-
-  // vkResetCommandBuffer(_cmdbufcurframe_gfx_pri->_vkcmdbuf, 0); // vkBeginCommandBuffer does an implicit reset
-  vkBeginCommandBuffer(_cmdbufcurframe_gfx_pri->_vkcmdbuf, &CBBI_GFX);
-
-  //_transitionSwapChainForClear();
-  //_clearSwapChainBuffer();
-}
 
 ///////////////////////////////////////////////////////
 
 void VkContext::_clearSwapChainBuffer() {
-  /*auto& swap_image = _swapchain->_vkSwapChainImages[_swapchain->_curSwapWriteImage];
 
   VkClearColorValue clearColor = {{0.0f, 1.0f, 0.0f, 1.0f}};  // Clear to black color
   VkImageSubresourceRange ISRR = {};
@@ -397,17 +375,16 @@ void VkContext::_clearSwapChainBuffer() {
 
   vkCmdClearColorImage(
     _cmdbufcurframe_gfx_pri->_vkcmdbuf,
-    swap_image,
+    _swap_image,
     VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
     &clearColor,
     1,
-    &ISRR);*/
+    &ISRR);
 }
 
 ///////////////////////////////////////////////////////
 
-void VkContext::_transitionSwapChainForPresent() {
-  auto& swap_image = _swapchain->_vkSwapChainImages[_swapchain->_curSwapWriteImage];
+void VkContext::_enq_transitionSwapChainForPresent() {
 
   VkImageMemoryBarrier barrier = {};
   initializeVkStruct(barrier, VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
@@ -416,7 +393,7 @@ void VkContext::_transitionSwapChainForPresent() {
   barrier.newLayout           = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
   barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
   barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-  barrier.image               = swap_image; // The image you want to transition.
+  barrier.image               = _swap_image; // The image you want to transition.
 
   barrier.subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
   barrier.subresourceRange.baseMipLevel   = 0;
@@ -444,8 +421,6 @@ void VkContext::_transitionSwapChainForPresent() {
 
 void VkContext::_transitionSwapChainForClear() {
 
-  auto& swap_image = _swapchain->_vkSwapChainImages[_swapchain->_curSwapWriteImage];
-
   VkImageMemoryBarrier barrier = {};
   initializeVkStruct(barrier, VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
 
@@ -453,7 +428,7 @@ void VkContext::_transitionSwapChainForClear() {
   barrier.newLayout           = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
   barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
   barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-  barrier.image               = swap_image; // The image you want to transition.
+  barrier.image               = _swap_image; // The image you want to transition.
 
   barrier.subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
   barrier.subresourceRange.baseMipLevel   = 0;
@@ -514,23 +489,37 @@ void VkContext::_acquireSwapChainForFrame() {
       }
     }
   }
+  _swap_image = _swapchain->_vkSwapChainImages[_swapchain->_curSwapWriteImage];
+  _swap_image_view = _swapchain->_vkSwapChainImageViews[_swapchain->_curSwapWriteImage];
+}
+
+///////////////////////////////////////////////////////
+
+void VkContext::_doBeginFrame() {
+  _acquireSwapChainForFrame();
+  _cmdbufcurframe_gfx_pri = _defaultCommandBuffer->_impl.getShared<VkCommandBufferImpl>();
+  VkCommandBufferBeginInfo CBBI_GFX = {};
+  initializeVkStruct(CBBI_GFX, VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
+  CBBI_GFX.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+  CBBI_GFX.pInheritanceInfo = nullptr;
+  vkBeginCommandBuffer(_cmdbufcurframe_gfx_pri->_vkcmdbuf, &CBBI_GFX); // vkBeginCommandBuffer does an implicit reset
 }
 
 ///////////////////////////////////////////////////////
 void VkContext::_doEndFrame() {
 
-  _transitionSwapChainForPresent();
+  _enq_transitionSwapChainForPresent();
 
   vkEndCommandBuffer(_cmdbufcurframe_gfx_pri->_vkcmdbuf);
 
-  VkSemaphore waitStartRenderSemaphores[] = {_swapChainImageAcquiredSemaphore};
-  VkPipelineStageFlags waitStages[]       = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+  std::vector<VkSemaphore> waitStartRenderSemaphores = {_swapChainImageAcquiredSemaphore};
+  std::vector<VkPipelineStageFlags> waitStages       = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
 
   VkSubmitInfo SI = {};
   initializeVkStruct(SI, VK_STRUCTURE_TYPE_SUBMIT_INFO);
-  SI.waitSemaphoreCount   = 1;
-  SI.pWaitSemaphores      = waitStartRenderSemaphores;
-  SI.pWaitDstStageMask    = waitStages;
+  SI.waitSemaphoreCount   = waitStartRenderSemaphores.size();
+  SI.pWaitSemaphores      = waitStartRenderSemaphores.data();
+  SI.pWaitDstStageMask    = waitStages.data();
   SI.commandBufferCount   = 1;
   SI.pCommandBuffers      = &_cmdbufcurframe_gfx_pri->_vkcmdbuf;
   SI.signalSemaphoreCount = 1;
@@ -538,16 +527,15 @@ void VkContext::_doEndFrame() {
   ///////////////////////////////////////////////////////
 
   vkQueueSubmit(_vkqueue_graphics, 1, &SI, _mainGfxSubmitFence);
-  // vkQueueWaitIdle(_vkqueue_graphics);
 
   ///////////////////////////////////////////////////////
-
-  VkSemaphore waitPresentSemaphores[] = {_renderingCompleteSemaphore};
+  
+  std::vector<VkSemaphore> waitPresentSemaphores = {_renderingCompleteSemaphore};
 
   VkPresentInfoKHR PRESI{};
   initializeVkStruct(PRESI, VK_STRUCTURE_TYPE_PRESENT_INFO_KHR);
-  PRESI.waitSemaphoreCount = 1;
-  PRESI.pWaitSemaphores    = waitPresentSemaphores;
+  PRESI.waitSemaphoreCount = waitPresentSemaphores.size();
+  PRESI.pWaitSemaphores    = waitPresentSemaphores.data();
   PRESI.swapchainCount     = 1;
   PRESI.pSwapchains        = &_swapchain->_vkSwapChain;
   PRESI.pImageIndices      = &_swapchain->_curSwapWriteImage;
@@ -674,7 +662,7 @@ void VkContext::_beginRenderPass(renderpass_ptr_t renpass) {
     //auto rtb0 = main_rtg->mMrt[0];
     //auto rtb0_impl = rtb0->_impl.getShared<VklRtBufferImpl>();
     //fb_attachments.push_back(rtb0_impl->_vkimgview);
-    fb_attachments.push_back(_swapchain->_vkSwapChainImageViews[_swapchain->_curSwapWriteImage]);
+    fb_attachments.push_back(_swap_image_view);
 
     VkFramebufferCreateInfo CFBI = {};
     CFBI.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -702,7 +690,7 @@ void VkContext::_beginRenderPass(renderpass_ptr_t renpass) {
   RPBI.renderArea.offset = {0, 0};
   RPBI.renderArea.extent = _swapchain->_extent;
   //  clear-targets
-  RPBI.clearValueCount   = 2;
+  RPBI.clearValueCount   = 1;
   RPBI.pClearValues      = clearValues;
   //  clear-misc
   RPBI.renderPass = _swapchain->_mainRenderPass->_vkrp;
@@ -972,7 +960,6 @@ load_token_t VkContext::_doBeginLoad() {
   GLFWwindow* current_window = glfwGetCurrentContext();
   save_data->_pushedWindow   = current_window;
   // todo make global loading ctx current..
-  // loadctx->makeCurrentContext();
   return rval;
 }
 ///////////////////////////////////////////////////////

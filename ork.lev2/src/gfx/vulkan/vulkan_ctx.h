@@ -805,7 +805,7 @@ public:
   //////////////////////////////////////////////
   void _acquireSwapChainForFrame();
   void _transitionSwapChainForClear();
-  void _transitionSwapChainForPresent();
+  void _enq_transitionSwapChainForPresent();
   void _clearSwapChainBuffer();
   //////////////////////////////////////////////
   VkDevice _vkdevice;
@@ -820,6 +820,8 @@ public:
   size_t _num_queue_types = 0;
   vkswapchain_ptr_t _swapchain;
   std::unordered_set<vkswapchain_ptr_t> _old_swapchains;
+  VkImage _swap_image;
+  VkImageView _swap_image_view;
   //////////////////////////////////////////////
 
   std::vector<float> _queuePriorities;
