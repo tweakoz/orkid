@@ -7,6 +7,7 @@
 
 #include <ork/pch.h>
 #include <ork/kernel/string/StringBlock.h>
+#include <ork/util/hexdump.inl>
 
 namespace ork {
 
@@ -103,5 +104,17 @@ const char* StringBlock::data() {
 StringBlock::size_type StringBlock::size() {
   return mStringData.size();
 }
+
+void StringBlock::dump(){
+  printf( "////////////////////////////////////////\n" );
+  printf( "// StringBlock<%p> dump length<0x%zx>...\n", this, mStringData.size() );
+  hexdumpbytes((const uint8_t*) mStringData.data(), mStringData.size());
+  printf( "////////////////////////////////////////\n" );
+  for( int i=0; i<mStringOffsets.size(); i++ ){
+    printf( "  str<%d> offset<%d> str<%s>\n", i, mStringOffsets[i], GetStringData(mStringOffsets[i]) );
+  }
+  printf( "////////////////////////////////////////\n" );
+}
+
 
 } // namespace ork

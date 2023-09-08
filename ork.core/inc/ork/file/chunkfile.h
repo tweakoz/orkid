@@ -60,6 +60,7 @@ public:
   void addItem(const fvec2& data);
   void addItem(const fquat& data);
   void addItem(const std::string& str);
+  void addIndexedString(const std::string& str, Writer& writer);
   void addVarMap(const varmap::VarMap& vmap, Writer& writer);
   void addData(const void* ptr, size_t length);
   void addDataBlock(datablock_ptr_t dblock);
@@ -74,6 +75,8 @@ public:
 
   /////////////////////////////////////////////
 
+  std::string _name;
+
 private:
   std::vector<uint8_t> _data;
 };
@@ -87,6 +90,7 @@ struct Writer {
   Writer(const char* file_type);
   OutputStream* AddStream(std::string stream_name);
   int stringIndex(const char* pstr);
+  int stringIndex(const std::string& pstr);
   void WriteToFile(const file::Path& outpath);
   void writeToDataBlock(datablock_ptr_t& out_datablock);
 
@@ -103,6 +107,7 @@ struct InputStream {
   template <typename T> void GetItem(T& item);
   template <typename T> void RefItem(T*& item);
   template <typename T> T readItem();
+  std::string readIndexedString(const Reader& reader);
   void getVarMap(varmap::VarMap& out_vmap, const Reader& reader);
 
   std::vector<uint8_t> readData(size_t length);
@@ -116,9 +121,11 @@ struct InputStream {
   void advance(size_t l) {
     midx += l;
   }
+  void dump() const;
   const void* mpbase;
   size_t midx;
   size_t milength;
+  std::string _streamname;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -160,7 +167,7 @@ struct Reader {
   InputStream mStreamBank[kmaxstreams];
   typedef ork::fixedlut<ork::PoolString, InputStream*, kmaxstreams> StreamLut;
 
-  int mistrtablen;
+  size_t _strtablen = 0;
   const char* mpstrtab;
   bool mbOk;
   std::string _chunkfiletype;

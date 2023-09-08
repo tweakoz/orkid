@@ -33,7 +33,9 @@ public:
 	const char *data();
 	size_type size();
 	int NumStrings() const { return mStringOffsets.size(); }
+	size_t stringOffset(size_t index) const { return mStringOffsets[index]; }
 	BlockString GetSeqString(int seq) const;
+	void dump();
 private:
 	const char *GetStringData(int index) const;
 	ResizableString::size_type FindSortIndex(const PieceString &, bool &success) const;

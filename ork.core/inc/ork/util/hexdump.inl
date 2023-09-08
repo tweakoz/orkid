@@ -11,51 +11,44 @@
 #include <vector>
 #include <cstdio>
 #include <ctype.h>
-
+#include <ork/kernel/string/string.h>
 namespace ork {
 
 inline void hexdumpbytes(const uint8_t* bytes, size_t length) {
-  int numlines = length / 16;
-  for (int r = 0; r < numlines; r++) {
-    int bidx = (r * 16);
-    printf("0x%02x: ", bidx);
 
-    for (int c = 0; c < 16; c++) {
-      u8 byte = bytes[bidx + c];
-      printf("%02x ", byte);
+  std::string dump_text;
+  size_t line_start = 0;
+  for( size_t i=0; i<length; i++ ){
+    bool start_line = (i%16)==0;
+    bool end_line = (i%16)==15;
+    bool end_file = (i==(length-1));
+    if( start_line ){
+      dump_text += FormatString("0x%04x: ", i);
+      line_start = dump_text.length();
     }
-
-    printf(" |");
-    for (int c = 0; c < 16; c++) {
-      char byte = (char)bytes[bidx + c];
-      if (false == isprint(byte))
-        byte = '.';
-      printf("%c", byte);
+    dump_text += FormatString("%02x ", bytes[i]);
+    // print as characters
+    if( end_line || end_file ){
+      size_t line_len = dump_text.length()-line_start;
+      for( size_t j=line_len; j<48; j++ ){
+        dump_text += " ";
+        line_len ++;
+      }
+      dump_text += " | ";
+      for( size_t j=i-(i%16); j<=i; j++ ){
+        char byte = (char)bytes[j];
+        if (false == isprint(byte))
+          byte = '.';
+        dump_text += FormatString("%c", byte);
+      }
+      dump_text += FormatString(" |\n");
     }
-    printf("|\n");
   }
+  printf("%s", dump_text.c_str());
 }
 
 inline void hexdumpbytes(std::vector<uint8_t> bytes) {
-  int numlines = bytes.size() / 16;
-  for (int r = 0; r < numlines; r++) {
-    int bidx = (r * 16);
-    printf("0x%02x: ", bidx);
-
-    for (int c = 0; c < 16; c++) {
-      u8 byte = bytes[bidx + c];
-      printf("%02x ", byte);
-    }
-
-    printf(" |");
-    for (int c = 0; c < 16; c++) {
-      char byte = (char)bytes[bidx + c];
-      if (false == isprint(byte))
-        byte = '.';
-      printf("%c", byte);
-    }
-    printf("|\n");
-  }
+  hexdumpbytes(bytes.data(), bytes.size());
 }
 
 inline void hexdumpu32s(std::vector<uint32_t> words) {
