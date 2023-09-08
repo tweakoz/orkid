@@ -37,14 +37,14 @@ datablock_ptr_t XgmAnim::Save(const XgmAnim* anm) {
   
   printf("XGAOUT inumjointchannels<%d> inumframes<%d>\n", inumchannels, inumframes);
 
-  HeaderStream->AddItem(inumframes);
-  HeaderStream->AddItem(inumchannels);
+  HeaderStream->addItem(inumframes);
+  HeaderStream->addItem(inumchannels);
 
   ///////////////////////////////////////////////////////////////////////////////////////////////
 
   const auto& joint_channels = anm->_jointanimationchannels;
 
-  HeaderStream->AddItem(int(joint_channels.size()));
+  HeaderStream->addItem(int(joint_channels.size()));
   for (auto it : joint_channels ) {
     const std::string& ChannelName          = it.first;
     const std::string& ChannelUsage         = it.second->GetUsageSemantic();
@@ -56,9 +56,9 @@ datablock_ptr_t XgmAnim::Save(const XgmAnim* anm) {
     if (decomp_channel) {
       for (int ifr = 0; ifr < inumframes; ifr++) {
         const DecompMatrix& decomp = decomp_channel->GetFrame(ifr);
-        AnimDataStream->AddItem(decomp._position);
-        AnimDataStream->AddItem(decomp._orientation);
-        AnimDataStream->AddItem(decomp._scale);
+        AnimDataStream->addItem(decomp._position);
+        AnimDataStream->addItem(decomp._orientation);
+        AnimDataStream->addItem(decomp._scale);
       }
     }
 
@@ -70,18 +70,18 @@ datablock_ptr_t XgmAnim::Save(const XgmAnim* anm) {
     int iusgname = chunkwriter.stringIndex(ChannelUsage.c_str());
 
     //printf("XGAOUT channelname<%s>\n", ChannelName.c_str());
-    HeaderStream->AddItem(ichnclas);
-    HeaderStream->AddItem(iobjname);
-    HeaderStream->AddItem(ichnname);
-    HeaderStream->AddItem(iusgname);
-    HeaderStream->AddItem(idataoffset);
+    HeaderStream->addItem(ichnclas);
+    HeaderStream->addItem(iobjname);
+    HeaderStream->addItem(ichnname);
+    HeaderStream->addItem(iusgname);
+    HeaderStream->addItem(idataoffset);
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////////////
 
   const auto& material_channels = anm->RefMaterialChannels();
 
-  HeaderStream->AddItem(int(material_channels.size()));
+  HeaderStream->addItem(int(material_channels.size()));
   for (auto it : material_channels ) {
     const std::string& ChannelName  = it.first;
     const std::string& ChannelUsage = it.second->GetUsageSemantic();
@@ -96,19 +96,19 @@ datablock_ptr_t XgmAnim::Save(const XgmAnim* anm) {
     if (MtxChannel) {
       for (int ifr = 0; ifr < inumframes; ifr++) {
         const DecompMatrix& decomp = MtxChannel->GetFrame(ifr);
-        AnimDataStream->AddItem(decomp._position);
-        AnimDataStream->AddItem(decomp._orientation);
-        AnimDataStream->AddItem(decomp._scale);
+        AnimDataStream->addItem(decomp._position);
+        AnimDataStream->addItem(decomp._orientation);
+        AnimDataStream->addItem(decomp._scale);
       }
     } else if (F32Channel) {
       for (int ifr = 0; ifr < inumframes; ifr++) {
         const float& value = F32Channel->GetFrame(ifr);
-        AnimDataStream->AddItem(value);
+        AnimDataStream->addItem(value);
       }
     } else if (Vec3Channel) {
       for (int ifr = 0; ifr < inumframes; ifr++) {
         const fvec3& value = Vec3Channel->GetFrame(ifr);
-        AnimDataStream->AddItem(value);
+        AnimDataStream->addItem(value);
       }
     }
 
@@ -117,11 +117,11 @@ datablock_ptr_t XgmAnim::Save(const XgmAnim* anm) {
     int iobjname = chunkwriter.stringIndex(ObjectName.c_str());
     int ichnname = chunkwriter.stringIndex(ChannelName.c_str());
     int iusgname = chunkwriter.stringIndex(ChannelUsage.c_str());
-    HeaderStream->AddItem(ichnclas);
-    HeaderStream->AddItem(iobjname);
-    HeaderStream->AddItem(ichnname);
-    HeaderStream->AddItem(iusgname);
-    HeaderStream->AddItem(idataoffset);
+    HeaderStream->addItem(ichnclas);
+    HeaderStream->addItem(iobjname);
+    HeaderStream->addItem(ichnname);
+    HeaderStream->addItem(iusgname);
+    HeaderStream->addItem(idataoffset);
   }
 
   ///////////////////////////////////
@@ -129,7 +129,7 @@ datablock_ptr_t XgmAnim::Save(const XgmAnim* anm) {
 
   int inumposebones = (int)anm->_static_pose.size();
 
-  HeaderStream->AddItem(inumposebones);
+  HeaderStream->addItem(inumposebones);
 
   for (auto it : anm->_static_pose ) {
     const std::string& name = it.first;
@@ -137,11 +137,11 @@ datablock_ptr_t XgmAnim::Save(const XgmAnim* anm) {
     // int idataoffset = AnimDataStream->GetSize();
     int ichannelname = chunkwriter.stringIndex(name.c_str());
 
-    HeaderStream->AddItem(ichannelname);
-    // HeaderStream->AddItem( idataoffset );
-    HeaderStream->AddItem(decomp._position);
-    HeaderStream->AddItem(decomp._orientation);
-    HeaderStream->AddItem(decomp._scale);
+    HeaderStream->addItem(ichannelname);
+    // HeaderStream->addItem( idataoffset );
+    HeaderStream->addItem(decomp._position);
+    HeaderStream->addItem(decomp._orientation);
+    HeaderStream->addItem(decomp._scale);
   }
 
   ////////////////////////////////////////////////////////////////////////////////////

@@ -58,6 +58,8 @@ struct DataBlock {
   /////////////////////////////////////////////
   bool _append(const unsigned char* buffer, size_t bufmax);
   /////////////////////////////////////////////
+  void dump() const;
+  /////////////////////////////////////////////
   std::vector<uint8_t> _storage;
   std::shared_ptr<varmap::VarMap> _vars;
   std::string _name = "noname";

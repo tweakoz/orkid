@@ -6,6 +6,7 @@
 ////////////////////////////////////////////////////////////////
 
 #include <ork/kernel/datablock.h>
+#include <ork/util/hexdump.inl>
 namespace ork {
 ///////////////////////////////////////////////////////////////////////////////
 DataBlock::hasher_t DataBlock::createHasher() {
@@ -60,6 +61,10 @@ uint64_t DataBlock::hash() const {
 void DataBlock::accumlateHash(hasher_t hasher) const {
   hasher->accumulateString(_name);                      // identifier
   hasher->accumulate(_storage.data(), _storage.size()); // data content
+}
+///////////////////////////////////////////////////////////////////////////////
+void DataBlock::dump() const{
+  hexdumpbytes(_storage.data(), _storage.size());
 }
 ///////////////////////////////////////////////////////////////////////////////
 

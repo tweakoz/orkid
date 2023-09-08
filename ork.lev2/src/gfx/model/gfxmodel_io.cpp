@@ -564,8 +564,8 @@ datablock_ptr_t writeXgmToDatablock(const lev2::XgmModel* mdl) {
   // write out new VERSION code
   int32_t iVERSIONTAG = 0x01234567;
   int32_t iVERSION    = 1;
-  HeaderStream->AddItem(iVERSIONTAG);
-  HeaderStream->AddItem(iVERSION);
+  HeaderStream->addItem(iVERSIONTAG);
+  HeaderStream->addItem(iVERSION);
   logchan_mioW->log("WriteXgm: VERSION<%d>", iVERSION);
 
   ///////////////////////////////////
@@ -576,7 +576,7 @@ datablock_ptr_t writeXgmToDatablock(const lev2::XgmModel* mdl) {
 
   int32_t inumjoints = skel.numJoints();
 
-  HeaderStream->AddItem(inumjoints);
+  HeaderStream->addItem(inumjoints);
 
   int32_t istring;
   logchan_mioW->log("WriteXgm: numjoints<%d>", inumjoints);
@@ -589,23 +589,23 @@ datablock_ptr_t writeXgmToDatablock(const lev2::XgmModel* mdl) {
     const fmtx4& JointMatrix   = skel.RefJointMatrix(ib);
     const fmtx4& NodeMatrix    = skel.RefNodeMatrix(ib);
 
-    HeaderStream->AddItem(ib);
-    HeaderStream->AddItem(JointParentIndex);
+    HeaderStream->addItem(ib);
+    HeaderStream->addItem(JointParentIndex);
     istring = chunkwriter.stringIndex(JointName.c_str());
-    HeaderStream->AddItem(istring);
+    HeaderStream->addItem(istring);
 
     PropTypeString tstr;
     PropType<fmtx4>::ToString(NodeMatrix, tstr);
     istring = chunkwriter.stringIndex(tstr.c_str());
-    HeaderStream->AddItem(istring);
+    HeaderStream->addItem(istring);
 
     PropType<fmtx4>::ToString(JointMatrix, tstr);
     istring = chunkwriter.stringIndex(tstr.c_str());
-    HeaderStream->AddItem(istring);
+    HeaderStream->addItem(istring);
 
     PropType<fmtx4>::ToString(bind_matrix, tstr);
     istring = chunkwriter.stringIndex(tstr.c_str());
-    HeaderStream->AddItem(istring);
+    HeaderStream->addItem(istring);
   }
 
   ///////////////////////////////////
@@ -614,15 +614,15 @@ datablock_ptr_t writeXgmToDatablock(const lev2::XgmModel* mdl) {
 
   int32_t inumbones = skel.numBones();
 
-  HeaderStream->AddItem(inumbones);
+  HeaderStream->addItem(inumbones);
 
   logchan_mioW->log("WriteXgm: numbones<%d>", inumbones);
   for (int32_t ib = 0; ib < inumbones; ib++) {
     const lev2::XgmBone& Bone = skel.bone(ib);
 
-    HeaderStream->AddItem(ib);
-    HeaderStream->AddItem(Bone._parentIndex);
-    HeaderStream->AddItem(Bone._childIndex);
+    HeaderStream->addItem(ib);
+    HeaderStream->addItem(Bone._parentIndex);
+    HeaderStream->addItem(Bone._childIndex);
   }
 
   ///////////////////////////////////
@@ -640,20 +640,20 @@ datablock_ptr_t writeXgmToDatablock(const lev2::XgmModel* mdl) {
   const fvec3& bbxyz = mdl->GetBoundingAA_XYZ();
   const fvec3& bbwhd = mdl->boundingAA_WHD();
 
-  HeaderStream->AddItem(bc.x);
-  HeaderStream->AddItem(bc.y);
-  HeaderStream->AddItem(bc.z);
-  HeaderStream->AddItem(bbxyz.x);
-  HeaderStream->AddItem(bbxyz.y);
-  HeaderStream->AddItem(bbxyz.z);
-  HeaderStream->AddItem(bbwhd.x);
-  HeaderStream->AddItem(bbwhd.y);
-  HeaderStream->AddItem(bbwhd.z);
-  HeaderStream->AddItem(br);
+  HeaderStream->addItem(bc.x);
+  HeaderStream->addItem(bc.y);
+  HeaderStream->addItem(bc.z);
+  HeaderStream->addItem(bbxyz.x);
+  HeaderStream->addItem(bbxyz.y);
+  HeaderStream->addItem(bbxyz.z);
+  HeaderStream->addItem(bbwhd.x);
+  HeaderStream->addItem(bbwhd.y);
+  HeaderStream->addItem(bbwhd.z);
+  HeaderStream->addItem(br);
 
-  HeaderStream->AddItem(mdl->GetBonesPerCluster());
-  HeaderStream->AddItem(inummeshes);
-  HeaderStream->AddItem(inummats);
+  HeaderStream->addItem(mdl->GetBonesPerCluster());
+  HeaderStream->addItem(inummeshes);
+  HeaderStream->addItem(inummats);
 
   std::set<std::string> ParameterIgnoreSet;
   ParameterIgnoreSet.insert("binMembership");
@@ -669,22 +669,22 @@ datablock_ptr_t writeXgmToDatablock(const lev2::XgmModel* mdl) {
   if (auto as_embtexmap = mdl->_varmap.typedValueForKey<embtexmap_t>("embtexmap")) {
     auto& embtexmap    = as_embtexmap.value();
     auto textureStream = chunkwriter.AddStream("embtexmap");
-    textureStream->AddItem<size_t>(embtexmap.size());
+    textureStream->addItem<size_t>(embtexmap.size());
     for (auto item : embtexmap) {
       std::string texname   = item.first;
       logchan_mioW->log("WriteXgm: writetex<%s>", texname.c_str());
       EmbeddedTexture* ptex = item.second;
       int istring           = chunkwriter.stringIndex(texname.c_str());
-      textureStream->AddItem<int>(istring);
+      textureStream->addItem<int>(istring);
       auto ddsblock    = ptex->_ddsdestdatablock;
       if(ddsblock){
         size_t blocksize = ddsblock->length();
-        textureStream->AddItem<size_t>(blocksize);
+        textureStream->addItem<size_t>(blocksize);
         auto data = (const void*)ddsblock->data();
-        textureStream->AddData(data, blocksize);
+        textureStream->addData(data, blocksize);
       }
       else{
-        textureStream->AddItem<size_t>(0);
+        textureStream->addItem<size_t>(0);
       }
     }
   }
@@ -698,9 +698,9 @@ datablock_ptr_t writeXgmToDatablock(const lev2::XgmModel* mdl) {
     auto matclass    = pmat->GetClass();
     auto& writeranno = matclass->annotation("xgm.writer");
 
-    HeaderStream->AddItem(imat);
+    HeaderStream->addItem(imat);
     istring = chunkwriter.stringIndex(pmat->GetName().c_str());
-    HeaderStream->AddItem(istring);
+    HeaderStream->addItem(istring);
 
     rtti::Class* pclass         = pmat->GetClass();
     auto classname = pclass->Name();
@@ -708,7 +708,7 @@ datablock_ptr_t writeXgmToDatablock(const lev2::XgmModel* mdl) {
 
     logchan_mioW->log("WriteXgm: material<%d> class<%s> name<%s>", imat, pclassname, pmat->GetName().c_str());
     istring = chunkwriter.stringIndex(classname.c_str());
-    HeaderStream->AddItem(istring);
+    HeaderStream->addItem(istring);
 
     logchan_mioW->log("Material Name<%s> Class<%s>", pmat->GetName().c_str(), classname.c_str());
 
@@ -739,10 +739,10 @@ datablock_ptr_t writeXgmToDatablock(const lev2::XgmModel* mdl) {
 
     int32_t inumsubmeshes = Mesh.numSubMeshes();
 
-    HeaderStream->AddItem(imesh);
+    HeaderStream->addItem(imesh);
     istring = chunkwriter.stringIndex(Mesh.meshName().c_str());
-    HeaderStream->AddItem(istring);
-    HeaderStream->AddItem(inumsubmeshes);
+    HeaderStream->addItem(istring);
+    HeaderStream->addItem(inumsubmeshes);
 
     logchan_mioW->log("WriteXgm: mesh<%d:%s> numsubmeshes<%d>", imesh, Mesh.meshName().c_str(), inumsubmeshes);
     for (int32_t ics = 0; ics < inumsubmeshes; ics++) {
@@ -767,13 +767,13 @@ datablock_ptr_t writeXgmToDatablock(const lev2::XgmModel* mdl) {
         }
       }
 
-      HeaderStream->AddItem(ics);
-      HeaderStream->AddItem(inumenabledclus);
+      HeaderStream->addItem(ics);
+      HeaderStream->addItem(inumenabledclus);
 
       logchan_mioW->log("WriteXgm:  submesh<%d> numenaclus<%d>", ics, inumenabledclus);
       ////////////////////////////////////////////////////////////
       istring = chunkwriter.stringIndex(pmat ? pmat->GetName().c_str() : "None");
-      HeaderStream->AddItem(istring);
+      HeaderStream->addItem(istring);
       ////////////////////////////////////////////////////////////
       for (int32_t ic = 0; ic < inumclus; ic++) {
         auto cluster              = xgm_sub_mesh.cluster(ic);
@@ -799,16 +799,16 @@ datablock_ptr_t writeXgmToDatablock(const lev2::XgmModel* mdl) {
 
           logchan_mioW->log("WriteVB VB<%p> NumVerts<%d> VtxSize<%d>", (void*) VB.get(), VB->GetNumVertices(), VB->GetVtxSize());
 
-          HeaderStream->AddItem(ic);
-          HeaderStream->AddItem(inumpg);
-          HeaderStream->AddItem(inumjb);
-          HeaderStream->AddItem<lev2::EVtxStreamFormat>(VB->GetStreamFormat());
-          HeaderStream->AddItem(ivbufoffset);
-          HeaderStream->AddItem(VB->GetNumVertices());
-          HeaderStream->AddItem(VB->GetVtxSize());
+          HeaderStream->addItem(ic);
+          HeaderStream->addItem(inumpg);
+          HeaderStream->addItem(inumjb);
+          HeaderStream->addItem<lev2::EVtxStreamFormat>(VB->GetStreamFormat());
+          HeaderStream->addItem(ivbufoffset);
+          HeaderStream->addItem(VB->GetNumVertices());
+          HeaderStream->addItem(VB->GetVtxSize());
 
-          HeaderStream->AddItem(clus_box.Min());
-          HeaderStream->AddItem(clus_box.Max());
+          HeaderStream->addItem(clus_box.Min());
+          HeaderStream->addItem(clus_box.Max());
 
           // VBNC->EndianSwap();
 
@@ -823,10 +823,10 @@ datablock_ptr_t writeXgmToDatablock(const lev2::XgmModel* mdl) {
 
           logchan_mioW->log("WritePG<%d> NumIndices<%d>", ipg, inumidx);
 
-          HeaderStream->AddItem(ipg);
-          HeaderStream->AddItem<PrimitiveType>(PG->GetPrimType());
-          HeaderStream->AddItem<int32_t>(inumidx);
-          HeaderStream->AddItem<int32_t>(ModelDataStream->GetSize());
+          HeaderStream->addItem(ipg);
+          HeaderStream->addItem<PrimitiveType>(PG->GetPrimType());
+          HeaderStream->addItem<int32_t>(inumidx);
+          HeaderStream->addItem<int32_t>(ModelDataStream->GetSize());
 
           //////////////////////////////////////////////////
           U16* pidx = (U16*)DummyTarget.GBI()->LockIB(*PG->GetIndexBuffer()); //->GetDataPointer();
@@ -849,10 +849,10 @@ datablock_ptr_t writeXgmToDatablock(const lev2::XgmModel* mdl) {
         for (int32_t ij = 0; ij < inumjb; ij++) {
           const std::string& bound = cluster->GetJointBinding(ij);
           OrkAssert(bound!="");
-          HeaderStream->AddItem(ij);
+          HeaderStream->addItem(ij);
           istring = chunkwriter.stringIndex(bound.c_str());
           logchan_mioW->log( "bound<%s> istring<%d>", bound.c_str(), istring );
-          HeaderStream->AddItem(istring);
+          HeaderStream->addItem(istring);
         }
       }
     }

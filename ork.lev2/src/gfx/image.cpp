@@ -424,30 +424,30 @@ void CompressedImageMipChain::writeXTX(datablock_ptr_t& out_datablock) {
   chunkfile::Writer chunkwriter("xtx");
   auto hdrstream = chunkwriter.AddStream("header");
   auto imgstream = chunkwriter.AddStream("image");
-  hdrstream->AddItem<size_t>(KXTXVERSION);
-  hdrstream->AddItem<size_t>(_width);
-  hdrstream->AddItem<size_t>(_height);
-  hdrstream->AddItem<size_t>(_depth);
-  hdrstream->AddItem<size_t>(_numcomponents);
-  hdrstream->AddItem<EBufferFormat>(_format);
-  hdrstream->AddItem<size_t>(_levels.size());
+  hdrstream->addItem<size_t>(KXTXVERSION);
+  hdrstream->addItem<size_t>(_width);
+  hdrstream->addItem<size_t>(_height);
+  hdrstream->addItem<size_t>(_depth);
+  hdrstream->addItem<size_t>(_numcomponents);
+  hdrstream->addItem<EBufferFormat>(_format);
+  hdrstream->addItem<size_t>(_levels.size());
   hdrstream->addVarMap(_varmap, chunkwriter);
   //////////////////////////////////////////
   OrkAssert(_depth == 1); // only 2D for now..
   //////////////////////////////////////////
   for (size_t levidx = 0; levidx < _levels.size(); levidx++) {
     const auto& level = _levels[levidx];
-    hdrstream->AddItem<size_t>(levidx);
-    hdrstream->AddItem<size_t>(level._width);
-    hdrstream->AddItem<size_t>(level._height);
+    hdrstream->addItem<size_t>(levidx);
+    hdrstream->addItem<size_t>(level._width);
+    hdrstream->addItem<size_t>(level._height);
 
     size_t mipbase   = imgstream->GetSize();
     auto mipdata     = (const void*)level._data->data();
     size_t miplength = level._data->length();
 
-    hdrstream->AddItem<size_t>(mipbase);
-    hdrstream->AddItem<size_t>(miplength);
-    imgstream->AddData(mipdata, miplength);
+    hdrstream->addItem<size_t>(mipbase);
+    hdrstream->addItem<size_t>(miplength);
+    imgstream->addData(mipdata, miplength);
   }
   chunkwriter.writeToDataBlock(out_datablock);
 }
@@ -459,30 +459,30 @@ void CompressedImageMipChain::writeXTX(const file::Path& outpath) {
   chunkfile::Writer chunkwriter("xtx");
   auto hdrstream = chunkwriter.AddStream("header");
   auto imgstream = chunkwriter.AddStream("image");
-  hdrstream->AddItem<size_t>(KXTXVERSION);
-  hdrstream->AddItem<size_t>(_width);
-  hdrstream->AddItem<size_t>(_height);
-  hdrstream->AddItem<size_t>(_depth);
-  hdrstream->AddItem<size_t>(_numcomponents);
-  hdrstream->AddItem<EBufferFormat>(_format);
-  hdrstream->AddItem<size_t>(_levels.size());
+  hdrstream->addItem<size_t>(KXTXVERSION);
+  hdrstream->addItem<size_t>(_width);
+  hdrstream->addItem<size_t>(_height);
+  hdrstream->addItem<size_t>(_depth);
+  hdrstream->addItem<size_t>(_numcomponents);
+  hdrstream->addItem<EBufferFormat>(_format);
+  hdrstream->addItem<size_t>(_levels.size());
   hdrstream->addVarMap(_varmap, chunkwriter);
   //////////////////////////////////////////
   OrkAssert(_depth == 1); // only 2D for now..
   //////////////////////////////////////////
   for (size_t levidx = 0; levidx < _levels.size(); levidx++) {
     const auto& level = _levels[levidx];
-    hdrstream->AddItem<size_t>(levidx);
-    hdrstream->AddItem<size_t>(level._width);
-    hdrstream->AddItem<size_t>(level._height);
+    hdrstream->addItem<size_t>(levidx);
+    hdrstream->addItem<size_t>(level._width);
+    hdrstream->addItem<size_t>(level._height);
 
     size_t mipbase   = imgstream->GetSize();
     auto mipdata     = (const void*)level._data->data();
     size_t miplength = level._data->length();
 
-    hdrstream->AddItem<size_t>(mipbase);
-    hdrstream->AddItem<size_t>(miplength);
-    imgstream->AddData(mipdata, miplength);
+    hdrstream->addItem<size_t>(mipbase);
+    hdrstream->addItem<size_t>(miplength);
+    imgstream->addData(mipdata, miplength);
   }
   chunkwriter.WriteToFile(outpath);
 }

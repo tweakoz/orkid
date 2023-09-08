@@ -20,43 +20,62 @@ using namespace std::literals;
 namespace ork { namespace chunkfile {
 
 ///////////////////////////////////////////////////////////////////////////////
-void OutputStream::AddData(const void* ptr, size_t length) {
+void OutputStream::addData(const void* ptr, size_t length) {
   Write((unsigned char*)ptr, length);
 }
 ///////////////////////////////////////////////////////////////////////////////
-void OutputStream::AddDataBlock(datablock_ptr_t dblock) {
-  AddData(dblock->data(), dblock->length());
+void OutputStream::addDataBlock(datablock_ptr_t dblock) {
+  addData(dblock->data(), dblock->length());
 }
 ///////////////////////////////////////////////////////////////////////////////
-void OutputStream::AddItem(const bool& data) {
+void OutputStream::addItem(const std::string& str) {
+  uint64_t length = str.length();
+  uint8_t* data = (uint8_t*) str.c_str();
+  addItem(length);
+  addData(data, length);
+}
+///////////////////////////////////////////////////////////////////////////////
+void OutputStream::addItem(const bool& data) {
   bool temp = data;
   swapbytes_dynamic(temp);
   Write((unsigned char*)&temp, sizeof(temp));
 }
 ///////////////////////////////////////////////////////////////////////////////
-void OutputStream::AddItem(const unsigned char& data) {
+void OutputStream::addItem(const uint8_t& data) {
   Write(&data, sizeof(data));
 }
 ///////////////////////////////////////////////////////////////////////////////
-void OutputStream::AddItem(const unsigned short& data) {
+void OutputStream::addItem(const uint16_t& data) {
   unsigned short temp = data;
   swapbytes_dynamic(temp);
   Write((unsigned char*)&temp, sizeof(temp));
 }
 ///////////////////////////////////////////////////////////////////////////////
-void OutputStream::AddItem(const int& data) {
+void OutputStream::addItem(const uint32_t& data) {
+  unsigned short temp = data;
+  swapbytes_dynamic(temp);
+  Write((unsigned char*)&temp, sizeof(temp));
+}
+///////////////////////////////////////////////////////////////////////////////
+void OutputStream::addItem(const uint64_t& data) {
+  unsigned short temp = data;
+  swapbytes_dynamic(temp);
+  Write((unsigned char*)&temp, sizeof(temp));
+}
+///////////////////////////////////////////////////////////////////////////////
+void OutputStream::addItem(const int& data) {
   int temp = data;
   swapbytes_dynamic(temp);
   Write((unsigned char*)&temp, sizeof(temp));
 }
 ///////////////////////////////////////////////////////////////////////////////
-void OutputStream::AddItem(const float& data) {
+void OutputStream::addItem(const float& data) {
   float temp = data;
   swapbytes_dynamic(temp);
   Write((unsigned char*)&temp, sizeof(temp));
 }
 ///////////////////////////////////////////////////////////////////////////////
-void OutputStream::AddItem(const fmtx4& data) {
+void OutputStream::addItem(const fmtx4& data) {
   fmtx4 temp = data;
   for (int i = 0; i < 16; i++) {
     swapbytes_dynamic(temp.asArray()[i]);
@@ -64,7 +83,7 @@ void OutputStream::AddItem(const fmtx4& data) {
   Write((unsigned char*)&temp, sizeof(temp));
 }
 ///////////////////////////////////////////////////////////////////////////////
-void OutputStream::AddItem(const fquat& data) {
+void OutputStream::addItem(const fquat& data) {
   fquat temp = data;
   for (int i = 0; i < 4; i++) {
     swapbytes_dynamic(temp.asArray()[i]);
@@ -72,7 +91,7 @@ void OutputStream::AddItem(const fquat& data) {
   Write((unsigned char*)&temp, sizeof(temp));
 }
 ///////////////////////////////////////////////////////////////////////////////
-void OutputStream::AddItem(const fvec4& data) {
+void OutputStream::addItem(const fvec4& data) {
   fvec4 temp = data;
   for (int i = 0; i < 4; i++) {
     swapbytes_dynamic(temp.asArray()[i]);
@@ -80,7 +99,7 @@ void OutputStream::AddItem(const fvec4& data) {
   Write((unsigned char*)&temp, sizeof(temp));
 }
 ///////////////////////////////////////////////////////////////////////////////
-void OutputStream::AddItem(const fvec3& data) {
+void OutputStream::addItem(const fvec3& data) {
   fvec3 temp = data;
   for (int i = 0; i < 3; i++) {
     swapbytes_dynamic(temp.asArray()[i]);
@@ -88,7 +107,7 @@ void OutputStream::AddItem(const fvec3& data) {
   Write((unsigned char*)&temp, sizeof(temp));
 }
 ///////////////////////////////////////////////////////////////////////////////
-void OutputStream::AddItem(const fvec2& data) {
+void OutputStream::addItem(const fvec2& data) {
   fvec2 temp = data;
   for (int i = 0; i < 2; i++) {
     swapbytes_dynamic(temp.asArray()[i]);
@@ -97,64 +116,64 @@ void OutputStream::AddItem(const fvec2& data) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void OutputStream::addVarMap(const varmap::VarMap& vmap, Writer& writer) {
-  AddItem<size_t>("BeginVarMap"_crcu);
-  AddItem<size_t>(vmap._themap.size());
+  addItem<size_t>("BeginVarMap"_crcu);
+  addItem<size_t>(vmap._themap.size());
   for (const auto& item : vmap._themap) {
     const auto& key        = item.first;
     const auto& val        = item.second;
     size_t keystring_index = writer.stringIndex(key.c_str());
-    AddItem<size_t>(keystring_index);
+    addItem<size_t>(keystring_index);
     if (auto as = val.tryAs<std::string>()) {
-      AddItem<uint64_t>("std::string"_crcu);
+      addItem<uint64_t>("std::string"_crcu);
       size_t str_index = writer.stringIndex(as.value().c_str());
-      AddItem<size_t>(str_index);
+      addItem<size_t>(str_index);
     } else if (auto as = val.tryAs<bool>()) {
-      AddItem<uint64_t>("bool"_crcu);
-      AddItem<bool>(as.value());
+      addItem<uint64_t>("bool"_crcu);
+      addItem<bool>(as.value());
     } else if (auto as = val.tryAs<int32_t>()) {
-      AddItem<uint64_t>("int32_t"_crcu);
-      AddItem<int32_t>(as.value());
+      addItem<uint64_t>("int32_t"_crcu);
+      addItem<int32_t>(as.value());
     } else if (auto as = val.tryAs<uint32_t>()) {
-      AddItem<uint64_t>("uint32_t"_crcu);
-      AddItem<uint32_t>(as.value());
+      addItem<uint64_t>("uint32_t"_crcu);
+      addItem<uint32_t>(as.value());
     } else if (auto as = val.tryAs<int64_t>()) {
-      AddItem<uint64_t>("int64_t"_crcu);
-      AddItem<int64_t>(as.value());
+      addItem<uint64_t>("int64_t"_crcu);
+      addItem<int64_t>(as.value());
     } else if (auto as = val.tryAs<uint64_t>()) {
-      AddItem<uint64_t>("uint64_t"_crcu);
-      AddItem<uint64_t>(as.value());
+      addItem<uint64_t>("uint64_t"_crcu);
+      addItem<uint64_t>(as.value());
     } else if (auto as = val.tryAs<size_t>()) {
-      AddItem<uint64_t>("size_t"_crcu);
-      AddItem<size_t>(as.value());
+      addItem<uint64_t>("size_t"_crcu);
+      addItem<size_t>(as.value());
     } else if (auto as = val.tryAs<float>()) {
-      AddItem<uint64_t>("float"_crcu);
-      AddItem<float>(as.value());
+      addItem<uint64_t>("float"_crcu);
+      addItem<float>(as.value());
     } else if (auto as = val.tryAs<double>()) {
-      AddItem<uint64_t>("double"_crcu);
-      AddItem<double>(as.value());
+      addItem<uint64_t>("double"_crcu);
+      addItem<double>(as.value());
     } else if (auto as = val.tryAs<fvec2>()) {
-      AddItem<uint64_t>("fvec2"_crcu);
-      AddItem<fvec2>(as.value());
+      addItem<uint64_t>("fvec2"_crcu);
+      addItem<fvec2>(as.value());
     } else if (auto as = val.tryAs<fvec3>()) {
-      AddItem<uint64_t>("fvec3"_crcu);
-      AddItem<fvec3>(as.value());
+      addItem<uint64_t>("fvec3"_crcu);
+      addItem<fvec3>(as.value());
     } else if (auto as = val.tryAs<fvec4>()) {
-      AddItem<uint64_t>("fvec4"_crcu);
-      AddItem<fvec4>(as.value());
+      addItem<uint64_t>("fvec4"_crcu);
+      addItem<fvec4>(as.value());
     } else if (auto as = val.tryAs<fquat>()) {
-      AddItem<uint64_t>("fquat"_crcu);
-      AddItem<fquat>(as.value());
+      addItem<uint64_t>("fquat"_crcu);
+      addItem<fquat>(as.value());
     } else if (auto as = val.tryAs<fmtx3>()) {
-      AddItem<uint64_t>("fmtx3"_crcu);
-      AddItem<fmtx3>(as.value());
+      addItem<uint64_t>("fmtx3"_crcu);
+      addItem<fmtx3>(as.value());
     } else if (auto as = val.tryAs<fmtx4>()) {
-      AddItem<uint64_t>("fmtx4"_crcu);
-      AddItem<fmtx4>(as.value());
+      addItem<uint64_t>("fmtx4"_crcu);
+      addItem<fmtx4>(as.value());
     } else {
       OrkAssert(false);
     }
   }
-  AddItem<size_t>("EndVarMap"_crcu);
+  addItem<size_t>("EndVarMap"_crcu);
 }
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -179,16 +198,55 @@ InputStream::InputStream(const void* pb, size_t ilength)
     , milength(ilength) {
 }
 
+////////////////////////////////////////////////////////////////////////////////////
+
 const void* InputStream::GetCurrent() {
   const char* pchbase = (const char*)mpbase;
   return (const void*)&pchbase[midx];
 }
+
+////////////////////////////////////////////////////////////////////////////////////
+
+std::vector<uint8_t> InputStream::readData(size_t length){
+  std::vector<uint8_t> data;
+  data.resize(length);
+  memcpy_fast(data.data(), GetCurrent(), length);
+  midx += length;
+  return data;
+}
+
+////////////////////////////////////////////////////////////////////////////////////
+
+template <> std::string InputStream::readItem<std::string>(){
+  int isize = sizeof(uint32_t);
+  int ileft = milength - midx;
+  OrkAssert((midx + isize) <= milength);
+  const char* pchbase = (const char*)mpbase;
+  size_t out_index = midx;
+  midx += isize;
+  auto ptr_to_data = (uint32_t*)&pchbase[out_index];
+  uint32_t str_len = *ptr_to_data;
+  isize = str_len;
+  ileft = milength - midx;
+  OrkAssert((midx + isize) <= milength);
+  out_index = midx;
+  midx += isize;
+  auto ptr_to_data2 = (char*)&pchbase[out_index];
+  std::string str(ptr_to_data2, str_len);
+  return str;
+
+}
+
+////////////////////////////////////////////////////////////////////////////////////
 
 void* InputStream::GetDataAt(size_t idx) {
   OrkAssert(idx < milength);
   const char* pchbase = (const char*)mpbase;
   return (void*)&pchbase[idx];
 }
+
+////////////////////////////////////////////////////////////////////////////////////
+
 void InputStream::getVarMap(varmap::VarMap& out_vmap, const Reader& reader) {
   size_t mkr_beginvarmap = 0;
   size_t mkr_endvarmap   = 0;
@@ -476,4 +534,7 @@ void Writer::WriteToFile(const file::Path& outpath) {
   ork::File outputfile(outpath, ork::EFM_WRITE);
   outputfile.Write(datablock->data(), datablock->length());
 }
+
+
+
 }} // namespace ork::chunkfile

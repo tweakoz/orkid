@@ -41,27 +41,28 @@ public:
   }
 
   /////////////////////////////////////////////
-  template <typename T> void AddItem(const T& data);
-  void AddItem(const bool& data);
-  void AddItem(const uint8_t& data);
-  void AddItem(const uint16_t& data);
+  template <typename T> void addItem(const T& data);
+  void addItem(const bool& data);
+  void addItem(const uint8_t& data);
+  void addItem(const uint16_t& data);
 
-  void AddItem(const int32_t& data);
-  void AddItem(const uint32_t& data);
-  void AddItem(const int64_t& data);
-  void AddItem(const uint64_t& data);
+  void addItem(const int32_t& data);
+  void addItem(const uint32_t& data);
+  void addItem(const int64_t& data);
+  void addItem(const uint64_t& data);
 
-  void AddItem(const float& data);
-  void AddItem(const double& data);
+  void addItem(const float& data);
+  void addItem(const double& data);
 
-  void AddItem(const fmtx4& data);
-  void AddItem(const fvec4& data);
-  void AddItem(const fvec3& data);
-  void AddItem(const fvec2& data);
-  void AddItem(const fquat& data);
+  void addItem(const fmtx4& data);
+  void addItem(const fvec4& data);
+  void addItem(const fvec3& data);
+  void addItem(const fvec2& data);
+  void addItem(const fquat& data);
+  void addItem(const std::string& str);
   void addVarMap(const varmap::VarMap& vmap, Writer& writer);
-  void AddData(const void* ptr, size_t length);
-  void AddDataBlock(datablock_ptr_t dblock);
+  void addData(const void* ptr, size_t length);
+  void addDataBlock(datablock_ptr_t dblock);
   /////////////////////////////////////////////
 
   size_t GetSize() const {
@@ -101,7 +102,11 @@ struct InputStream {
   InputStream(const void* pb = 0, size_t ilength = 0);
   template <typename T> void GetItem(T& item);
   template <typename T> void RefItem(T*& item);
+  template <typename T> T readItem();
   void getVarMap(varmap::VarMap& out_vmap, const Reader& reader);
+
+  std::vector<uint8_t> readData(size_t length);
+
 
   const void* GetCurrent();
   void* GetDataAt(size_t idx);

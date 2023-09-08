@@ -702,33 +702,33 @@ void PBRMaterial::describeX(class_t* c) {
     auto pbrmtl = std::static_pointer_cast<const PBRMaterial>(ctx._material);
 
     int istring = ctx._writer.stringIndex(pbrmtl->mMaterialName.c_str());
-    ctx._outputStream->AddItem(istring);
+    ctx._outputStream->addItem(istring);
 
     istring = ctx._writer.stringIndex(pbrmtl->_textureBaseName.c_str());
-    ctx._outputStream->AddItem(istring);
+    ctx._outputStream->addItem(istring);
 
     auto dotex = [&](std::string channelname, std::string texname) {
       //logchan_pbr->log("write.xgm: tex channel<%s> texname<%s>", channelname.c_str(), texname.c_str());
       if (texname.length()) {
         istring = ctx._writer.stringIndex(channelname.c_str());
-        ctx._outputStream->AddItem(istring);
+        ctx._outputStream->addItem(istring);
         istring = ctx._writer.stringIndex(texname.c_str());
-        ctx._outputStream->AddItem(istring);
+        ctx._outputStream->addItem(istring);
       }
     };
     istring = ctx._writer.stringIndex("begintextures");
-    ctx._outputStream->AddItem(istring);
+    ctx._outputStream->addItem(istring);
     dotex("colormap", pbrmtl->_colorMapName);
     dotex("normalmap", pbrmtl->_normalMapName);
     dotex("amboccmap", pbrmtl->_amboccMapName);
     dotex("emissivemap", pbrmtl->_emissiveMapName);
     dotex("mtlrufmap", pbrmtl->_mtlRufMapName);
     istring = ctx._writer.stringIndex("endtextures");
-    ctx._outputStream->AddItem(istring);
+    ctx._outputStream->addItem(istring);
 
-    ctx._outputStream->AddItem<float>(pbrmtl->_metallicFactor);
-    ctx._outputStream->AddItem<float>(pbrmtl->_roughnessFactor);
-    ctx._outputStream->AddItem<fvec4>(pbrmtl->_baseColor);
+    ctx._outputStream->addItem<float>(pbrmtl->_metallicFactor);
+    ctx._outputStream->addItem<float>(pbrmtl->_roughnessFactor);
+    ctx._outputStream->addItem<fvec4>(pbrmtl->_baseColor);
     //logchan_pbr->log("write.xgm: _metallicFactor<%g>", pbrmtl->_metallicFactor);
     //logchan_pbr->log("write.xgm: _roughnessFactor<%g>", pbrmtl->_roughnessFactor);
     //logchan_pbr->log(

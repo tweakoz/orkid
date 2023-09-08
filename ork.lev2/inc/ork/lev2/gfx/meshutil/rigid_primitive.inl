@@ -212,17 +212,17 @@ void RigidPrimitive<vtx_t>::writeToChunks(
     chunkfile::OutputStream* geostream) {
   lev2::ContextDummy DummyTarget;
   size_t inumclus = xsubmesh._clusters.size();
-  hdrstream->AddItem<size_t>(inumclus);
+  hdrstream->addItem<size_t>(inumclus);
   for (size_t icluster = 0; icluster < inumclus; icluster++) {
     auto cluster = xsubmesh._clusters[icluster];
     // XgmCluster xgmcluster;
     // buildTriStripXgmCluster(DummyTarget, xgmcluster, clusterbuilder);
     ////////////////////////////////////////////////////////////////
-    hdrstream->AddItem<size_t>("begin-sector-lod"_crcu);
-    hdrstream->AddItem<size_t>(icluster);
+    hdrstream->addItem<size_t>("begin-sector-lod"_crcu);
+    hdrstream->addItem<size_t>(icluster);
     // printf("write icluster<%zu>\n", icluster);
-    hdrstream->AddItem<fvec3>(cluster->mBoundingBox.Min());
-    hdrstream->AddItem<fvec3>(cluster->mBoundingBox.Max());
+    hdrstream->addItem<fvec3>(cluster->mBoundingBox.Min());
+    hdrstream->addItem<fvec3>(cluster->mBoundingBox.Max());
     ////////////////////////////////////////////////////////////////
     auto VB                 = cluster->_vertexBuffer;
     size_t numverts         = VB->GetNumVertices();
@@ -231,32 +231,32 @@ void RigidPrimitive<vtx_t>::writeToChunks(
     size_t vertexdataoffset = geostream->GetSize();
     auto vertexdata         = DummyTarget.GBI()->LockVB(*VB);
     OrkAssert(vertexdata != nullptr);
-    hdrstream->AddItem<lev2::EVtxStreamFormat>(vtx_t::meFormat);
-    hdrstream->AddItem<size_t>(numverts);
-    hdrstream->AddItem<size_t>(vtxsize);
-    hdrstream->AddItem<size_t>(vertexdatalen);
-    hdrstream->AddItem<size_t>(vertexdataoffset);
+    hdrstream->addItem<lev2::EVtxStreamFormat>(vtx_t::meFormat);
+    hdrstream->addItem<size_t>(numverts);
+    hdrstream->addItem<size_t>(vtxsize);
+    hdrstream->addItem<size_t>(vertexdatalen);
+    hdrstream->addItem<size_t>(vertexdataoffset);
     geostream->Write((const uint8_t*)vertexdata, vertexdatalen);
     DummyTarget.GBI()->UnLockVB(*VB);
     ////////////////////////////////////////////////////////////////
-    hdrstream->AddItem<size_t>(cluster->_primgroups.size());
+    hdrstream->addItem<size_t>(cluster->_primgroups.size());
     for (size_t ipg = 0; ipg < cluster->_primgroups.size(); ipg++) {
       auto PG           = cluster->_primgroups[ipg];
       size_t ibufoffset = geostream->GetSize();
       size_t numindices = PG->mpIndices->GetNumIndices();
       auto indexdata    = DummyTarget.GBI()->LockIB(*PG->mpIndices);
       OrkAssert(indexdata != nullptr);
-      hdrstream->AddItem<size_t>(ipg);
-      hdrstream->AddItem<lev2::PrimitiveType>(PG->mePrimType);
-      hdrstream->AddItem<size_t>(numindices);
-      hdrstream->AddItem<size_t>(ibufoffset);
+      hdrstream->addItem<size_t>(ipg);
+      hdrstream->addItem<lev2::PrimitiveType>(PG->mePrimType);
+      hdrstream->addItem<size_t>(numindices);
+      hdrstream->addItem<size_t>(ibufoffset);
       geostream->Write(
           (const uint8_t*)indexdata, //
           numindices * sizeof(uint16_t));
       DummyTarget.GBI()->UnLockIB(*PG->mpIndices);
     }
     ////////////////////////////////////////////////////////////////
-    hdrstream->AddItem<size_t>("end-sector-lod"_crcu);
+    hdrstream->addItem<size_t>("end-sector-lod"_crcu);
   }
 }
 template <typename vtx_t>
