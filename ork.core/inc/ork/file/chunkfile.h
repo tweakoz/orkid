@@ -59,7 +59,6 @@ public:
   void addItem(const fvec3& data);
   void addItem(const fvec2& data);
   void addItem(const fquat& data);
-  void addItem(const std::string& str);
   void addIndexedString(const std::string& str, Writer& writer);
   void addVarMap(const varmap::VarMap& vmap, Writer& writer);
   void addData(const void* ptr, size_t length);

@@ -21,6 +21,7 @@ namespace chunkfile {
 ///
 
 template <typename T> void OutputStream::addItem(const T& data) {
+  static_assert(not std::is_same<T, std::string>::value, "use addIndexedString(std::string) instead");
   T temp = data;
   Write((unsigned char*)&temp, sizeof(temp));
 }

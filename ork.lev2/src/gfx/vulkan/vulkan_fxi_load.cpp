@@ -164,7 +164,7 @@ vkfxsfile_ptr_t VkFxInterface::_loadShaderFromShaderText(
     //////////////////
     // uniformsets
     //////////////////
-    /*
+
     auto write_unisets_to_stream = [&](std::unordered_map<std::string, spirv::spirvuniset_ptr_t>& spirv_unisets) //
         -> std::unordered_map<std::string, vkfxsuniset_ptr_t> {                                                  //
       std::unordered_map<std::string, vkfxsuniset_ptr_t> rval;
@@ -196,7 +196,7 @@ vkfxsfile_ptr_t VkFxInterface::_loadShaderFromShaderText(
         /////////////////////////////////////////////
         // rebuild _items_by_name
         /////////////////////////////////////////////
-        shader_stream->addItem<std::string>("params");
+        shader_stream->addIndexedString("params",chunkwriter);
         shader_stream->addItem<size_t>(spirv_uniset->_items_by_name.size());
         for (auto item : spirv_uniset->_items_by_name) {
           shader_stream->addIndexedString(item.first,chunkwriter);
@@ -278,9 +278,9 @@ vkfxsfile_ptr_t VkFxInterface::_loadShaderFromShaderText(
       auto sh_name  = node->typedValueForKey<std::string>("object_name").value();
       auto sh_data  = (uint8_t*)SPC->_spirv_binary.data();
       size_t sh_len = SPC->_spirv_binary.size() * sizeof(uint32_t);
-      shader_stream->addItem<std::string>("shader");
-      shader_stream->addItem<std::string>(shader_type);
-      shader_stream->addItem<std::string>(sh_name);
+      shader_stream->addIndexedString("shader",chunkwriter);
+      shader_stream->addIndexedString(shader_type,chunkwriter);
+      shader_stream->addIndexedString(sh_name,chunkwriter);
       shader_stream->addItem<size_t>(sh_len);
       shader_stream->addData(sh_data, sh_len);
 
@@ -377,7 +377,7 @@ vkfxsfile_ptr_t VkFxInterface::_loadShaderFromShaderText(
       }
       //vulkan_shaderfile->_vk_techniques[tek_name] = vk_tek;
     } // for (auto tek : techniques) {
-      */
+
     chunkwriter.writeToDataBlock(vkfx_datablock);
 
   } // shader binary not cached, compile and cache..

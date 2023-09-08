@@ -34,13 +34,6 @@ void OutputStream::addDataBlock(datablock_ptr_t dblock) {
   addData(dblock->data(), dblock->length());
 }
 ///////////////////////////////////////////////////////////////////////////////
-void OutputStream::addItem(const std::string& str) {
-  uint64_t length = str.length();
-  uint8_t* data = (uint8_t*) str.c_str();
-  addItem(length);
-  addData(data, length);
-}
-///////////////////////////////////////////////////////////////////////////////
 void OutputStream::addItem(const bool& data) {
   bool temp = data;
   swapbytes_dynamic(temp);
@@ -526,16 +519,9 @@ void Writer::writeToDataBlock(datablock_ptr_t& out_datablock) {
   out_datablock->addItem<size_t>(inumchunks);
   ////////////////////////
   _stringblock.dump();
-  OutputStream StringBlockStream;
-  StringBlockStream.Write((const unsigned char*)_stringblock.data(), _stringblock.size());
-  int istringblksize = StringBlockStream.GetSize();
-  ////////////////////////
-  //out_datablock->addItem<size_t>(_stringblock.NumStrings());
-  //for( size_t i=0; i<_stringblock.NumStrings(); i++ ){
-    //out_datablock->addItem<size_t>(_stringblock.stringOffset(i));
-  //}
+  int istringblksize = _stringblock.size();
   out_datablock->addItem<size_t>(istringblksize);
-  out_datablock->addData(StringBlockStream.GetData(), StringBlockStream.GetSize());
+  out_datablock->addData(_stringblock.data(), istringblksize);
   ////////////////////////
   // sentinel
   ////////////////////////
