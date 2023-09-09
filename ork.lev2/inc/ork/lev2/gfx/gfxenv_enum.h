@@ -112,6 +112,7 @@ enum struct EBufferFormat : crc_enum_t {
   CrcEnum(Z16),
   CrcEnum(Z24S8),
   CrcEnum(Z32),
+  CrcEnum(Z32S8),
   CrcEnum(DEPTH),
   CrcEnum(RGBA_BPTC_UNORM),
   CrcEnum(SRGB_ALPHA_BPTC_UNORM),

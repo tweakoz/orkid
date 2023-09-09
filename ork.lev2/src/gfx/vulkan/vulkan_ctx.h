@@ -155,6 +155,18 @@ using vkswapchain_ptr_t = std::shared_ptr<VkSwapChain>;
 
 extern vkinstance_ptr_t _GVI;
 
+struct VkFormatConverter{
+
+    static const VkFormatConverter _instance;
+    VkFormatConverter();
+    VkFormat convertBufferFormat(EBufferFormat fmt_in) const;
+    VkImageLayout layoutForUsage(uint64_t usage) const;
+    VkImageAspectFlagBits aspectForUsage(uint64_t usage) const;
+    std::unordered_map<EBufferFormat,VkFormat> _fmtmap;
+    std::unordered_map<uint64_t,VkImageLayout> _layoutmap;
+    std::unordered_map<uint64_t,VkImageAspectFlagBits> _aspectmap;
+};
+
 ///////////////////////////////////////////////////////////////////////////////
 
 struct VkSwapChainCaps {
@@ -405,6 +417,12 @@ struct VkSwapChain{
   std::vector<VkImage> _vkSwapChainImages;
   std::vector<VkImageView> _vkSwapChainImageViews;
   std::vector<VkFramebuffer> _vkFrameBuffers;
+
+  std::vector<rtgroup_ptr_t> _depth_rtgs;
+  std::vector<rtbuffer_ptr_t> _depth_rtbs;
+  //std::vector<VkImage>       _vkDepthImages;
+  //std::vector<VkImageView>   _vkDepthImageViews;
+
   uint32_t _curSwapWriteImage = 0xffffffff;
 
   VkImage image();
@@ -416,6 +434,10 @@ struct VkSwapChain{
   VkExtent2D _extent;
   vkrenderpass_ptr_t _mainRenderPass;
 };
+
+void _vkCreateImageForBuffer(vkcontext_rawptr_t ctxVK, //
+                             vkrtbufimpl_ptr_t bufferimpl,
+                             uint64_t usage );
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -846,6 +868,7 @@ public:
   std::stack<void*> mGLRCStack;
   EDepthTest meCurDepthTest;
   bool mTargetDrawableSizeDirty;
+  bool _endFrameFenceSet = false;
 
   //////////////////////////////////////////////
   ///////////////////////////////////////////////////////////////////////////

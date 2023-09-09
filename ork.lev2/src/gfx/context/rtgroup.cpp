@@ -73,11 +73,19 @@ rtgroup_ptr_t RtGroup::clone() const {
 
 rtbuffer_ptr_t RtGroup::createRenderTarget(EBufferFormat efmt, uint64_t usage) {
 
-  int islot = mNumMrts++;
+  int islot = mNumMrts;
 
   rtbuffer_ptr_t rtb = std::make_shared<RtBuffer>(this, islot, efmt, miW, miH,usage);
   OrkAssert(islot < kmaxmrts);
-  mMrt[islot] = rtb;
+  switch(usage){
+    case "depth"_crcu:
+      _depthBuffer = rtb;
+      break;
+    default:
+      mMrt[islot] = rtb;
+      mNumMrts++;
+      break;
+  }
   return rtb;
 }
 

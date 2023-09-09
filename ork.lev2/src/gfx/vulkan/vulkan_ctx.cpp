@@ -15,6 +15,8 @@ ImplementReflectionX(ork::lev2::vulkan::VkContext, "VkContext");
 namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
 
+constexpr auto DEPTH_FORMAT = EBufferFormat::Z24S8;
+
 VkImage VkSwapChain::image(){
   return _vkSwapChainImages[_curSwapWriteImage];
 }
@@ -513,6 +515,13 @@ void VkContext::_doBeginFrame() {
   initializeVkStruct(CBBI_GFX, VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
   CBBI_GFX.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
   CBBI_GFX.pInheritanceInfo = nullptr;
+
+  if(_endFrameFenceSet){
+    // technically we should wait for a fence associated with the
+    //  current _cmdbufcurframe_gfx_pri
+    vkWaitForFences(_vkdevice, 1, &_mainGfxSubmitFence, VK_TRUE, UINT64_MAX);
+  }
+
   vkBeginCommandBuffer(_cmdbufcurframe_gfx_pri->_vkcmdbuf, &CBBI_GFX); // vkBeginCommandBuffer does an implicit reset
 }
 
@@ -565,14 +574,9 @@ void VkContext::_doEndFrame() {
   }
 
   ///////////////////////////////////////////////////////
-  // wait while commandbuffer is "pending"
-  ///////////////////////////////////////////////////////
-
-  vkWaitForFences(_vkdevice, 1, &_mainGfxSubmitFence, VK_TRUE, UINT64_MAX);
-
-  ///////////////////////////////////////////////////////
 
   _cmdbufcurframe_gfx_pri = nullptr;
+  _endFrameFenceSet = true;
 }
 
 ///////////////////////////////////////////////////////
@@ -621,7 +625,7 @@ void VkContext::_beginRenderPass(renderpass_ptr_t renpass) {
     CATC.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR; // Prepare for presentation after rendering.
 
     VkAttachmentDescription DATC = {};
-    //DATC.format = findDepthFormat(); // A function to determine the depth format you support.
+    DATC.format = VkFormatConverter::_instance.convertBufferFormat(DEPTH_FORMAT); 
     DATC.samples = VK_SAMPLE_COUNT_1_BIT;
     DATC.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;   // Clear the depth buffer before rendering.
     DATC.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -645,9 +649,9 @@ void VkContext::_beginRenderPass(renderpass_ptr_t renpass) {
     SUBPASS.colorAttachmentCount = 1;
     SUBPASS.pColorAttachments = &CATR;
     SUBPASS.colorAttachmentCount = 1;
-    //SUBPASS.pDepthStencilAttachment = &DATR;
+    SUBPASS.pDepthStencilAttachment = &DATR;
 
-    std::array<VkAttachmentDescription, 1> rp_attachments = { CATC }; //, DATC };
+    std::array<VkAttachmentDescription, 2> rp_attachments = { CATC, DATC };
 
     VkRenderPassCreateInfo RPI = {};
     initializeVkStruct(RPI,VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO);
@@ -673,7 +677,12 @@ void VkContext::_beginRenderPass(renderpass_ptr_t renpass) {
     auto& VKFRB = _swapchain->_vkFrameBuffers[i];
     std::vector<VkImageView> fb_attachments;
     auto& IMGVIEW = _swapchain->_vkSwapChainImageViews[i];
+
+    auto depth_rtb = _swapchain->_depth_rtbs[i];
+    auto depth_rtbimpl = depth_rtb->_impl.getShared<VklRtBufferImpl>();
     fb_attachments.push_back(IMGVIEW);
+    fb_attachments.push_back(depth_rtbimpl->_vkimgview);
+
 
     VkFramebufferCreateInfo CFBI = {};
     CFBI.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -711,7 +720,7 @@ void VkContext::_beginRenderPass(renderpass_ptr_t renpass) {
   RPBI.renderArea.offset = {0, 0};
   RPBI.renderArea.extent = _swapchain->_extent;
   //  clear-targets
-  RPBI.clearValueCount   = 1;
+  RPBI.clearValueCount   = 2;
   RPBI.pClearValues      = clearValues;
   //  clear-misc
   RPBI.renderPass = _swapchain->_mainRenderPass->_vkrp;
@@ -849,6 +858,16 @@ void VkContext::_initSwapChain() {
 
     OK = vkCreateImageView(_vkdevice, &IVCI, nullptr, &swap_chain->_vkSwapChainImageViews[i]);
     OrkAssert(OK == VK_SUCCESS);
+
+    // create depth image
+    auto rtg = std::make_shared<RtGroup>(this, width, height, MsaaSamples::MSAA_1X);
+    auto rtb = rtg->createRenderTarget(DEPTH_FORMAT,"depth"_crcu);
+    auto rtg_impl = _fbi->_createRtGroupImpl(rtg.get());
+    _vkCreateImageForBuffer(this,
+                            rtb->_impl.getShared<VklRtBufferImpl>(),
+                            "depth"_crcu);
+    swap_chain->_depth_rtgs.push_back(rtg);
+    swap_chain->_depth_rtbs.push_back(rtb);
   }
 
   _swapchain = swap_chain;

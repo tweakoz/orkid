@@ -16,10 +16,11 @@ static logchannel_ptr_t logchan_rtgroup = logger()->createChannel("VKRTG", fvec3
 ///////////////////////////////////////////////////////////////////////////////
 
 VklRtBufferImpl::VklRtBufferImpl(VkRtGroupImpl* par, RtBuffer* rtb) //
-  : _parent(par)
-  , _rtb(rtb) { //
+    : _parent(par)
+    , _rtb(rtb) { //
 }
-VkRtGroupImpl::VkRtGroupImpl(RtGroup* rtg) : _rtg(rtg) {
+VkRtGroupImpl::VkRtGroupImpl(RtGroup* rtg)
+    : _rtg(rtg) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -37,120 +38,128 @@ void VkContext::_doResizeMainSurface(int iw, int ih) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-static struct VkFormatConverter{
+VkFormatConverter::VkFormatConverter() {
+  _fmtmap[EBufferFormat::RGBA8] = VK_FORMAT_R8G8B8A8_UNORM;
+  _fmtmap[EBufferFormat::Z32]   = VK_FORMAT_D32_SFLOAT;
+  _fmtmap[EBufferFormat::Z24S8] = VK_FORMAT_D24_UNORM_S8_UINT;
+  _fmtmap[EBufferFormat::Z32S8] = VK_FORMAT_D32_SFLOAT_S8_UINT;
 
-    VkFormatConverter(){
-        _fmtmap[EBufferFormat::RGBA8] = VK_FORMAT_R8G8B8A8_UNORM;
-        _fmtmap[EBufferFormat::Z32] = VK_FORMAT_D32_SFLOAT;
+  _layoutmap["depth"_crcu]   = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+  _layoutmap["color"_crcu]   = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+  _layoutmap["present"_crcu] = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+  // VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL
+  // VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+  // VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL
+  // VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
+  // VK_IMAGE_LAYOUT_PREINITIALIZED
+  // VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
 
-        _layoutmap["depth"_crcu] = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-        _layoutmap["color"_crcu] = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-        _layoutmap["present"_crcu] = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-        // VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL
-        // VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
-        // VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL
-        // VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
-        // VK_IMAGE_LAYOUT_PREINITIALIZED
-        // VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
+  _aspectmap["depth"_crcu]   = VK_IMAGE_ASPECT_DEPTH_BIT;
+  _aspectmap["color"_crcu]   = VK_IMAGE_ASPECT_COLOR_BIT;
+  _aspectmap["present"_crcu] = VK_IMAGE_ASPECT_COLOR_BIT;
+}
+VkFormat VkFormatConverter::convertBufferFormat(EBufferFormat fmt_in) const {
+  auto it = _fmtmap.find(fmt_in);
+  OrkAssert(it != _fmtmap.end());
+  return it->second;
+}
+VkImageLayout VkFormatConverter::layoutForUsage(uint64_t usage) const {
+  auto it = _layoutmap.find(usage);
+  OrkAssert(it != _layoutmap.end());
+  return it->second;
+}
+VkImageAspectFlagBits VkFormatConverter::aspectForUsage(uint64_t usage) const {
+  auto it = _aspectmap.find(usage);
+  OrkAssert(it != _aspectmap.end());
+  return it->second;
+}
 
-        _aspectmap["depth"_crcu] = VK_IMAGE_ASPECT_DEPTH_BIT;
-        _aspectmap["color"_crcu] = VK_IMAGE_ASPECT_COLOR_BIT;
-        _aspectmap["present"_crcu] = VK_IMAGE_ASPECT_COLOR_BIT;
-    }
-    VkFormat convertBufferFormat(EBufferFormat fmt_in) const {
-        auto it = _fmtmap.find(fmt_in);
-        OrkAssert(it!=_fmtmap.end());
-        return it->second;
-    }
-    VkImageLayout layoutForUsage(uint64_t usage) const {
-        auto it = _layoutmap.find(usage);
-        OrkAssert(it!=_layoutmap.end());
-        return it->second;
-    }
-    VkImageAspectFlagBits aspectForUsage(uint64_t usage) const {
-        auto it = _aspectmap.find(usage);
-        OrkAssert(it!=_aspectmap.end());
-        return it->second;
-    }
-    std::unordered_map<EBufferFormat,VkFormat> _fmtmap;
-    std::unordered_map<uint64_t,VkImageLayout> _layoutmap;
-    std::unordered_map<uint64_t,VkImageAspectFlagBits> _aspectmap;
-};
-
-static const VkFormatConverter _vkFormatConverter;
+const VkFormatConverter VkFormatConverter::VkFormatConverter::_instance;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-static void _vkCreateImageForBuffer(vkcontext_rawptr_t ctxVK, //
-                                    vkrtbufimpl_ptr_t bufferimpl,
-                                    uint64_t usage ) { //
-    VkImageCreateInfo imginf = {};
-    initializeVkStruct(imginf, VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO);
-    imginf.imageType = VK_IMAGE_TYPE_2D; // Regular 2D texture
-    imginf.format = bufferimpl->_vkfmt; 
-    imginf.extent.width = bufferimpl->_parent->_width;
-    imginf.extent.height = bufferimpl->_parent->_height;
-    imginf.extent.depth = 1;
-    imginf.mipLevels = 1; 
-    imginf.arrayLayers = 1; 
-    imginf.samples = VK_SAMPLE_COUNT_1_BIT; 
-    imginf.tiling = VK_IMAGE_TILING_OPTIMAL; 
-    imginf.usage = VK_IMAGE_USAGE_SAMPLED_BIT //
-                 | VK_IMAGE_USAGE_TRANSFER_DST_BIT // Use as texture and allow data transfer to it
-                 ;
-    imginf.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-    imginf.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    ///////////////////////////////////////////////////
-    VkResult OK = vkCreateImage(ctxVK->_vkdevice, 
-                                &imginf, 
-                                nullptr, 
-                                &bufferimpl->_vkimg);
-    OrkAssert(OK == VK_SUCCESS);
-    ///////////////////////////////////////////////////
-    bufferimpl->_vkmemflags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-                            //| VK_MEMORY_PROPERTY_HOST_COHERENT_BIT; // do not need flush...
-    ///////////////////////////////////////////////////
-    VkMemoryRequirements memRequirements;
-    initializeVkStruct(memRequirements);
-    vkGetImageMemoryRequirements(ctxVK->_vkdevice, 
-                                 bufferimpl->_vkimg, 
-                                 &memRequirements);
-    ///////////////////////////////////////////////////
-    VkMemoryAllocateInfo allocInfo = {};
-    initializeVkStruct(allocInfo, VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO);
-    allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    allocInfo.allocationSize = memRequirements.size;
-    allocInfo.memoryTypeIndex = ctxVK->_findMemoryType(memRequirements.memoryTypeBits, //
-                                                            bufferimpl->_vkmemflags);
-    ///////////////////////////////////////////////////
-    VkDeviceMemory imageMemory;
-    initializeVkStruct(bufferimpl->_vkmem);
-    OK = vkAllocateMemory(ctxVK->_vkdevice, //
-                          &allocInfo, //
-                          nullptr, //
-                          &bufferimpl->_vkmem);
-    OrkAssert(OK == VK_SUCCESS);
-    ///////////////////////////////////////////////////
-    vkBindImageMemory( ctxVK->_vkdevice, //
-                       bufferimpl->_vkimg, //
-                       bufferimpl->_vkmem, 0);
-    ///////////////////////////////////////////////////
-    VkImageViewCreateInfo viewInfo = {};
-    initializeVkStruct(viewInfo, VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO);
-    viewInfo.image = bufferimpl->_vkimg;
-    viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D; // This is typical for a color buffer. Other types include 3D, cube maps, etc.
-    viewInfo.format = bufferimpl->_vkfmt; // This is a typical format. Adjust as needed.
-    viewInfo.subresourceRange.aspectMask = _vkFormatConverter.aspectForUsage(usage);
-    viewInfo.subresourceRange.baseMipLevel = 0;
-    viewInfo.subresourceRange.levelCount = 1;
-    viewInfo.subresourceRange.baseArrayLayer = 0;
-    viewInfo.subresourceRange.layerCount = 1;
-    OK = vkCreateImageView(ctxVK->_vkdevice, 
-                           &viewInfo, 
-                           nullptr, 
-                           &bufferimpl->_vkimgview);
-    OrkAssert(OK == VK_SUCCESS);
-    ///////////////////////////////////////////////////
+void _vkCreateImageForBuffer(
+    vkcontext_rawptr_t ctxVK, //
+    vkrtbufimpl_ptr_t bufferimpl,
+    uint64_t usage) { //
+  VkImageCreateInfo imginf = {};
+  initializeVkStruct(imginf, VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO);
+  imginf.imageType     = VK_IMAGE_TYPE_2D; // Regular 2D texture
+  imginf.format        = bufferimpl->_vkfmt;
+  imginf.extent.width  = bufferimpl->_parent->_width;
+  imginf.extent.height = bufferimpl->_parent->_height;
+  imginf.extent.depth  = 1;
+  imginf.mipLevels     = 1;
+  imginf.arrayLayers   = 1;
+  imginf.samples       = VK_SAMPLE_COUNT_1_BIT;
+  imginf.tiling        = VK_IMAGE_TILING_OPTIMAL;
+  imginf.usage         = 0;
+  switch(usage){
+    case "depth"_crcu:
+      imginf.usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+      break;
+    case "color"_crcu:
+      imginf.usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+      // Use as texture and allow data transfer to it
+      imginf.usage |= VK_IMAGE_USAGE_SAMPLED_BIT;
+      imginf.usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+      break;
+    case "present"_crcu:
+      imginf.usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+      break;
+    default:
+      OrkAssert(false);
+      break;
+  }
+  imginf.sharingMode   = VK_SHARING_MODE_EXCLUSIVE;
+  imginf.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+  ///////////////////////////////////////////////////
+  VkResult OK = vkCreateImage(ctxVK->_vkdevice, &imginf, nullptr, &bufferimpl->_vkimg);
+  OrkAssert(OK == VK_SUCCESS);
+  ///////////////////////////////////////////////////
+  bufferimpl->_vkmemflags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+  //| VK_MEMORY_PROPERTY_HOST_COHERENT_BIT; // do not need flush...
+  ///////////////////////////////////////////////////
+  VkMemoryRequirements memRequirements;
+  initializeVkStruct(memRequirements);
+  vkGetImageMemoryRequirements(ctxVK->_vkdevice, bufferimpl->_vkimg, &memRequirements);
+  ///////////////////////////////////////////////////
+  VkMemoryAllocateInfo allocInfo = {};
+  initializeVkStruct(allocInfo, VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO);
+  allocInfo.sType           = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+  allocInfo.allocationSize  = memRequirements.size;
+  allocInfo.memoryTypeIndex = ctxVK->_findMemoryType(
+      memRequirements.memoryTypeBits, //
+      bufferimpl->_vkmemflags);
+  ///////////////////////////////////////////////////
+  VkDeviceMemory imageMemory;
+  initializeVkStruct(bufferimpl->_vkmem);
+  OK = vkAllocateMemory(
+      ctxVK->_vkdevice, //
+      &allocInfo,       //
+      nullptr,          //
+      &bufferimpl->_vkmem);
+  OrkAssert(OK == VK_SUCCESS);
+  ///////////////////////////////////////////////////
+  vkBindImageMemory(
+      ctxVK->_vkdevice,   //
+      bufferimpl->_vkimg, //
+      bufferimpl->_vkmem,
+      0);
+  ///////////////////////////////////////////////////
+  VkImageViewCreateInfo viewInfo = {};
+  initializeVkStruct(viewInfo, VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO);
+  viewInfo.image    = bufferimpl->_vkimg;
+  viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D; // This is typical for a color buffer. Other types include 3D, cube maps, etc.
+  viewInfo.format   = bufferimpl->_vkfmt;    // This is a typical format. Adjust as needed.
+  viewInfo.subresourceRange.aspectMask     = VkFormatConverter::_instance.aspectForUsage(usage);
+  viewInfo.subresourceRange.baseMipLevel   = 0;
+  viewInfo.subresourceRange.levelCount     = 1;
+  viewInfo.subresourceRange.baseArrayLayer = 0;
+  viewInfo.subresourceRange.layerCount     = 1;
+  OK                                       = vkCreateImageView(ctxVK->_vkdevice, &viewInfo, nullptr, &bufferimpl->_vkimgview);
+  OrkAssert(OK == VK_SUCCESS);
+  ///////////////////////////////////////////////////
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -159,51 +168,50 @@ vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(RtGroup* rtgroup) {
   vkrtgrpimpl_ptr_t RTGIMPL = std::make_shared<VkRtGroupImpl>(rtgroup);
   RTGIMPL->_width           = rtgroup->width();
   RTGIMPL->_height          = rtgroup->height();
-  int inumtargets = rtgroup->GetNumTargets();
-  int w = rtgroup->width();
-  int h = rtgroup->height();
+  int inumtargets           = rtgroup->GetNumTargets();
+  int w                     = rtgroup->width();
+  int h                     = rtgroup->height();
   if (rtgroup->_depthBuffer) {
-    auto rtbuffer = rtgroup->_depthBuffer;
+    auto rtbuffer   = rtgroup->_depthBuffer;
     auto bufferimpl = std::make_shared<VklRtBufferImpl>(RTGIMPL.get(), rtbuffer.get());
     rtbuffer->_impl.setShared<VklRtBufferImpl>(bufferimpl);
-    bufferimpl->_vkfmt = _vkFormatConverter.convertBufferFormat(rtbuffer->mFormat);
+    bufferimpl->_vkfmt = VkFormatConverter::_instance.convertBufferFormat(rtbuffer->mFormat);
 
     uint64_t USAGE = "depth"_crcu;
     _vkCreateImageForBuffer(_contextVK, bufferimpl, USAGE);
 
     auto& adesc = bufferimpl->_attachmentDesc;
     initializeVkStruct(adesc);
-    adesc.format = bufferimpl->_vkfmt;
-    adesc.samples = VK_SAMPLE_COUNT_1_BIT;
-    adesc.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    adesc.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    adesc.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    adesc.format         = bufferimpl->_vkfmt;
+    adesc.samples        = VK_SAMPLE_COUNT_1_BIT;
+    adesc.loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    adesc.storeOp        = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    adesc.stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
     adesc.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    adesc.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    adesc.finalLayout = _vkFormatConverter.layoutForUsage(USAGE);
-
+    adesc.initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED;
+    adesc.finalLayout    = VkFormatConverter::_instance.layoutForUsage(USAGE);
   }
   // other buffers
   for (int it = 0; it < inumtargets; it++) {
     rtbuffer_ptr_t rtbuffer = rtgroup->GetMrt(it);
-    auto bufferimpl = std::make_shared<VklRtBufferImpl>(RTGIMPL.get(), rtbuffer.get());
+    auto bufferimpl         = std::make_shared<VklRtBufferImpl>(RTGIMPL.get(), rtbuffer.get());
     rtbuffer->_impl.setShared<VklRtBufferImpl>(bufferimpl);
-    bufferimpl->_vkfmt = _vkFormatConverter.convertBufferFormat(rtbuffer->mFormat);
-    uint64_t USAGE = "color"_crcu;
-    if(rtbuffer->_usage != 0){
+    bufferimpl->_vkfmt = VkFormatConverter::_instance.convertBufferFormat(rtbuffer->mFormat);
+    uint64_t USAGE     = "color"_crcu;
+    if (rtbuffer->_usage != 0) {
       USAGE = rtbuffer->_usage;
     }
     _vkCreateImageForBuffer(_contextVK, bufferimpl, USAGE);
     auto& adesc = bufferimpl->_attachmentDesc;
     initializeVkStruct(adesc);
-    adesc.format = bufferimpl->_vkfmt;
-    adesc.samples = VK_SAMPLE_COUNT_1_BIT;
-    adesc.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    adesc.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    adesc.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    adesc.format         = bufferimpl->_vkfmt;
+    adesc.samples        = VK_SAMPLE_COUNT_1_BIT;
+    adesc.loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    adesc.storeOp        = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    adesc.stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
     adesc.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    adesc.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    adesc.finalLayout = _vkFormatConverter.layoutForUsage(USAGE);
+    adesc.initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED;
+    adesc.finalLayout    = VkFormatConverter::_instance.layoutForUsage(USAGE);
     ///////////////////////////////////////////////////
   }
 
@@ -214,39 +222,40 @@ vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(RtGroup* rtgroup) {
 
 RtGroup* VkFrameBufferInterface::_popRtGroup() {
   auto rtb0 = _active_rtgroup->mMrt[0];
-  if(0)printf( "poprtg rtb<%s> usage<%08x>\n", //
-          rtb0->_debugName.c_str(), //
-          rtb0->_usage);
-  if(rtb0->_usage == "present"_crcu){
-    //OrkAssert(false);
+  if (0)
+    printf(
+        "poprtg rtb<%s> usage<%08x>\n", //
+        rtb0->_debugName.c_str(),       //
+        rtb0->_usage);
+  if (rtb0->_usage == "present"_crcu) {
+    // OrkAssert(false);
   }
   return _active_rtgroup;
 }
 
 void VkFrameBufferInterface::_postPushRtGroup(RtGroup* rtgroup) {
 
-  float fx = 0.0f; 
-  float fy = 0.0f; 
+  float fx = 0.0f;
+  float fy = 0.0f;
   float fw = 0.0f;
   float fh = 0.0f;
   if (rtgroup) {
     fw = rtgroup->width();
     fh = rtgroup->height();
-    //glDepthRange(0.0, 1.0f);
+    // glDepthRange(0.0, 1.0f);
   }
   ViewportRect extents(fx, fy, fw, fh);
   pushViewport(extents);
   pushScissor(extents);
-  if(rtgroup and rtgroup->_autoclear) {
+  if (rtgroup and rtgroup->_autoclear) {
     rtGroupClear(rtgroup);
   }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void VkFrameBufferInterface::_present(){
+void VkFrameBufferInterface::_present() {
   OrkAssert(_main_rtb_color->_usage == "present"_crcu);
-
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -297,7 +306,7 @@ void VkFrameBufferInterface::_pushRtGroup(RtGroup* rtgroup) {
     _active_rtgroup->_impl.setShared<VkRtGroupImpl>(RTGIMPL);
     _active_rtgroup->SetSizeDirty(false);
   }
- 
+
 
   /////////////////////////////////////////
   // main (present) rtgroup?
@@ -310,7 +319,7 @@ void VkFrameBufferInterface::_pushRtGroup(RtGroup* rtgroup) {
     //RPI.framebuffer = framebuffer; // Framebuffer you created earlier.
     //RPI.renderArea.offset = {0, 0};
     //RPI.renderArea.extent = extent; // VkExtent2D of your swapchain image, for example.
-    
+
     VkClearValue clearColor = {0.0f, 0.0f, 0.0f, 1.0f};  // RGBA black.
     VkClearValue clearDepth = {1.0f, 0};                 // Clear depth 1.0 and stencil 0.
     VkClearValue clearValues[2] = {clearColor, clearDepth};
@@ -319,11 +328,11 @@ void VkFrameBufferInterface::_pushRtGroup(RtGroup* rtgroup) {
     //RPI.pClearValues = clearValues;
 
     //vkCmdBeginRenderPass( commandBuffer, //
-    //                      &renderPassInfo, // 
+    //                      &renderPassInfo, //
     //                      VK_SUBPASS_CONTENTS_INLINE);
 
-  
-    
+
+
   }
   */
   /////////////////////////////////////////
@@ -333,12 +342,12 @@ void VkFrameBufferInterface::_pushRtGroup(RtGroup* rtgroup) {
 ///////////////////////////////////////////////////////
 
 void VkFrameBufferInterface::_clearColorAndDepth(const fcolor4& rCol, float fdepth) {
-  auto cmdbuf = _contextVK->_cmdbufcurframe_gfx_pri;
-  auto rtgimpl = _active_rtgroup->_impl.getShared<VkRtGroupImpl>();
+  auto cmdbuf     = _contextVK->_cmdbufcurframe_gfx_pri;
+  auto rtgimpl    = _active_rtgroup->_impl.getShared<VkRtGroupImpl>();
   int inumtargets = _active_rtgroup->GetNumTargets();
-  int w = _active_rtgroup->width();
-  int h = _active_rtgroup->height();
-  printf( "clearing rtg<%p> w<%d> h<%d>\n", (void*) rtgimpl.get(), w, h );
+  int w           = _active_rtgroup->width();
+  int h           = _active_rtgroup->height();
+  printf("clearing rtg<%p> w<%d> h<%d>\n", (void*)rtgimpl.get(), w, h);
 }
 
 ///////////////////////////////////////////////////////
