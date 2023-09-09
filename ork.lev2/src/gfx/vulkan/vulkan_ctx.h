@@ -670,6 +670,8 @@ struct VkFxInterface final : public FxInterface {
   bool LoadFxShader(const AssetPath& pth, FxShader* ptex) final;
   FxShader* shaderFromShaderText(const std::string& name, const std::string& shadertext) final;
 
+  datablock_ptr_t _writeIntermediateToDataBlock(shadlang::SHAST::transunit_ptr_t tunit);
+  vkfxsfile_ptr_t _readFromDataBlock(datablock_ptr_t inpdata);
   vkfxsfile_ptr_t _loadShaderFromShaderText(
       FxShader* shader,               //
       const std::string& parser_name, //
