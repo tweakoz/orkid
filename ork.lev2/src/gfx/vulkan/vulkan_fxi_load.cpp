@@ -383,6 +383,7 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
       OrkAssert(str_uniblk == "uniblk");
       auto str_uniblk_name                                = shader_input_stream->readIndexedString(chunkreader);
       auto vk_uniblk                                      = std::make_shared<VkFxShaderUniformBlk>();
+      vk_uniblk->_orkparamblock = std::make_shared<FxShaderParamBlock>();
       vulkan_shaderfile->_vk_uniformblks[str_uniblk_name] = vk_uniblk;
       printf("str_uniblk_name<%s>\n", str_uniblk_name.c_str());
       ///////////////////////////////////////////////
@@ -399,6 +400,7 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
         vk_param->_orkparam->_impl.set<VkFxShaderUniformBlkItem*>(vk_param.get());
         vk_uniblk->_items_by_name[str_param_identifier] = vk_param;
         vk_uniblk->_items_by_order.push_back(vk_param);
+        vk_uniblk->_orkparamblock->_subparams[str_param_identifier] = vk_param->_orkparam.get();
         printf("uniblk<%s> ADDING Item PARAM<%s>\n", str_uniblk_name.c_str(), str_param_identifier.c_str());
       }
     }
@@ -501,7 +503,7 @@ vkfxsfile_ptr_t VkFxInterface::_loadShaderFromShaderText(
   // first check precompiled shader cache
   ////////////////////////////////////////////
   if (vkfx_datablock) {
-    OrkAssert(false);
+
   }
   ////////////////////////////////////////////
   // shader binary not cached, compile and cache
@@ -510,6 +512,7 @@ vkfxsfile_ptr_t VkFxInterface::_loadShaderFromShaderText(
     auto temp_cache = std::make_shared<ShadLangParserCache>();
     auto transunit  = shadlang::parseFromString(temp_cache, parser_name, shadertext);
     vkfx_datablock = _writeIntermediateToDataBlock(transunit);
+    DataBlockCache::setDataBlock(hashkey, vkfx_datablock);
   } // shader binary not cached, compile and cache..
   ////////////////////////////////////////////////////////
   vkfx_datablock->dump();

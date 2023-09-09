@@ -845,6 +845,7 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
   _paramInstanceColorMap  = fxi->parameter(_shader, "InstanceColors");
 
   _parBoneBlock = fxi->parameterBlock(_shader, "ub_vtx_boneblock");
+  OrkAssert(_parBoneBlock != nullptr);
 
   // fwd
 
@@ -873,7 +874,6 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
   //
 
   OrkAssert(_paramMapNormal != nullptr);
-  OrkAssert(_parBoneBlock != nullptr);
 
   if (_texColor == nullptr) {
     auto loadreq = std::make_shared<asset::LoadRequest>();

@@ -52,7 +52,7 @@ const FxShaderParam* VkFxInterface::parameter(FxShader* pshader, const std::stri
     if( it_samp != uniset->_samplers_by_name.end() ) {
       auto samp = it_samp->second;
       rval = samp->_orkparam.get();
-      printf( "VkFxInterface shader<%s> sampler<%s> found>\n", //
+      if(0)printf( "VkFxInterface shader<%s> sampler<%s> found>\n", //
             shader_name.c_str(), //
             name.c_str()); //
       break;
