@@ -258,6 +258,7 @@ void VkFrameBufferInterface::_pushRtGroup(RtGroup* rtgroup) {
   } else {
     _active_rtgroup = rtgroup;
   }
+  /*
   OrkAssert(_active_rtgroup);
   int iw = _active_rtgroup->width();
   int ih = _active_rtgroup->height();
@@ -324,6 +325,7 @@ void VkFrameBufferInterface::_pushRtGroup(RtGroup* rtgroup) {
   
     
   }
+  */
   /////////////////////////////////////////
   _postPushRtGroup(rtgroup);
 }

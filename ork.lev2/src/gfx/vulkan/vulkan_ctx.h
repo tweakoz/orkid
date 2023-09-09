@@ -404,12 +404,17 @@ struct VkSwapChain{
   VkSwapchainKHR _vkSwapChain;
   std::vector<VkImage> _vkSwapChainImages;
   std::vector<VkImageView> _vkSwapChainImageViews;
+  std::vector<VkFramebuffer> _vkFrameBuffers;
   uint32_t _curSwapWriteImage = 0xffffffff;
+
+  VkImage image();
+  VkImageView imageView();
+  VkFramebuffer framebuffer();
+
   int _width = 0;
   int _height = 0;
   VkExtent2D _extent;
   vkrenderpass_ptr_t _mainRenderPass;
-  VkFramebuffer _vkrbfp;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -822,8 +827,6 @@ public:
   size_t _num_queue_types = 0;
   vkswapchain_ptr_t _swapchain;
   std::unordered_set<vkswapchain_ptr_t> _old_swapchains;
-  VkImage _swap_image;
-  VkImageView _swap_image_view;
   //////////////////////////////////////////////
 
   std::vector<float> _queuePriorities;

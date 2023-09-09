@@ -417,8 +417,8 @@ bool Reader::readFromDataBlock(datablock_ptr_t datablock) {
   mpstrtab = pst;
   OrkHeapCheck();
   ///////////////////////////
-  size_t sentenel = dblockstream.getItem<size_t>();
-  OrkAssert(sentenel == 0x0123456789abcdef);
+  size_t marker = dblockstream.getItem<size_t>();
+  OrkAssert(marker == 0x0123456789abcdef);
   ///////////////////////////
   _chunkfiletype        = mpstrtab + ifiletype;
   OrkHeapCheck();
@@ -523,7 +523,7 @@ void Writer::writeToDataBlock(datablock_ptr_t& out_datablock) {
   out_datablock->addItem<size_t>(istringblksize);
   out_datablock->addData(_stringblock.data(), istringblksize);
   ////////////////////////
-  // sentinel
+  // marker
   ////////////////////////
   out_datablock->addItem<size_t>(0x0123456789abcdef);
   ////////////////////////

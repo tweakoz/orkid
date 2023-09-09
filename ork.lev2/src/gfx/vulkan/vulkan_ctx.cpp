@@ -15,6 +15,16 @@ ImplementReflectionX(ork::lev2::vulkan::VkContext, "VkContext");
 namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
 
+VkImage VkSwapChain::image(){
+  return _vkSwapChainImages[_curSwapWriteImage];
+}
+VkImageView VkSwapChain::imageView(){
+  return _vkSwapChainImageViews[_curSwapWriteImage];
+}
+VkFramebuffer VkSwapChain::framebuffer(){
+  return _vkFrameBuffers[_curSwapWriteImage];
+}
+
 void VkContext::describeX(class_t* clazz) {
 
   clazz->annotateTyped<context_factory_t>("context_factory", []() { return VkContext::makeShared(); });
@@ -375,7 +385,7 @@ void VkContext::_clearSwapChainBuffer() {
 
   vkCmdClearColorImage(
     _cmdbufcurframe_gfx_pri->_vkcmdbuf,
-    _swap_image,
+    _swapchain->image(),
     VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
     &clearColor,
     1,
@@ -393,7 +403,7 @@ void VkContext::_enq_transitionSwapChainForPresent() {
   barrier.newLayout           = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
   barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
   barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-  barrier.image               = _swap_image; // The image you want to transition.
+  barrier.image               = _swapchain->image(); // The image you want to transition.
 
   barrier.subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
   barrier.subresourceRange.baseMipLevel   = 0;
@@ -428,7 +438,7 @@ void VkContext::_transitionSwapChainForClear() {
   barrier.newLayout           = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
   barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
   barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-  barrier.image               = _swap_image; // The image you want to transition.
+  barrier.image               = _swapchain->image(); // The image you want to transition.
 
   barrier.subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
   barrier.subresourceRange.baseMipLevel   = 0;
@@ -487,8 +497,11 @@ void VkContext::_acquireSwapChainForFrame() {
       }
     }
   }
-  _swap_image = _swapchain->_vkSwapChainImages[_swapchain->_curSwapWriteImage];
-  _swap_image_view = _swapchain->_vkSwapChainImageViews[_swapchain->_curSwapWriteImage];
+
+  OrkAssert(_swapchain->_curSwapWriteImage>=0);
+  OrkAssert(_swapchain->_curSwapWriteImage<_swapchain->_vkSwapChainImages.size());
+
+  //printf( "_swapchain->_curSwapWriteImage<%u>\n", _swapchain->_curSwapWriteImage );
 }
 
 ///////////////////////////////////////////////////////
@@ -524,6 +537,7 @@ void VkContext::_doEndFrame() {
   SI.pSignalSemaphores    = &_renderingCompleteSemaphore;
   ///////////////////////////////////////////////////////
 
+  vkResetFences(_vkdevice, 1, &_mainGfxSubmitFence);
   vkQueueSubmit(_vkqueue_graphics, 1, &SI, _mainGfxSubmitFence);
 
   ///////////////////////////////////////////////////////
@@ -555,7 +569,6 @@ void VkContext::_doEndFrame() {
   ///////////////////////////////////////////////////////
 
   vkWaitForFences(_vkdevice, 1, &_mainGfxSubmitFence, VK_TRUE, UINT64_MAX);
-  vkResetFences(_vkdevice, 1, &_mainGfxSubmitFence);
 
   ///////////////////////////////////////////////////////
 
@@ -607,34 +620,34 @@ void VkContext::_beginRenderPass(renderpass_ptr_t renpass) {
     CATC.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED; 
     CATC.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR; // Prepare for presentation after rendering.
 
-    /*VkAttachmentDescription DATC = {};
-    DATC.format = findDepthFormat(); // A function to determine the depth format you support.
+    VkAttachmentDescription DATC = {};
+    //DATC.format = findDepthFormat(); // A function to determine the depth format you support.
     DATC.samples = VK_SAMPLE_COUNT_1_BIT;
-    DATC.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR; // Clear the depth buffer before rendering.
-    DATC.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    DATC.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-    DATC.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    DATC.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;   // Clear the depth buffer before rendering.
+    DATC.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+    DATC.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    DATC.stencilStoreOp = VK_ATTACHMENT_STORE_OP_STORE;
     DATC.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     DATC.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-    */
 
-    VkAttachmentReference CATCR = {};
-    initializeVkStruct(CATCR);
-    CATCR.attachment = 0;
-    CATCR.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    VkAttachmentReference CATR = {};
+    initializeVkStruct(CATR);
+    CATR.attachment = 0;
+    CATR.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
-    //VkAttachmentReference depthAttachmentRef = {};
-    //depthAttachmentRef.attachment = 1;
-    //depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+    VkAttachmentReference DATR = {};
+    DATR.attachment = 1;
+    DATR.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
     VkSubpassDescription SUBPASS = {};
     initializeVkStruct(SUBPASS);
     SUBPASS.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
     SUBPASS.colorAttachmentCount = 1;
-    SUBPASS.pColorAttachments = &CATCR;
-    //SUBPASS.pDepthStencilAttachment = &depthAttachmentRef;
+    SUBPASS.pColorAttachments = &CATR;
+    SUBPASS.colorAttachmentCount = 1;
+    //SUBPASS.pDepthStencilAttachment = &DATR;
 
-    std::array<VkAttachmentDescription, 1> rp_attachments = { CATC };
+    std::array<VkAttachmentDescription, 1> rp_attachments = { CATC }; //, DATC };
 
     VkRenderPassCreateInfo RPI = {};
     initializeVkStruct(RPI,VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO);
@@ -654,11 +667,13 @@ void VkContext::_beginRenderPass(renderpass_ptr_t renpass) {
   if( nullptr == _swapchain->_mainRenderPass ){
     _swapchain->_mainRenderPass = vk_rpass;
 
+    _swapchain->_vkFrameBuffers.resize(_swapchain->_vkSwapChainImages.size());
+    for( size_t i=0; i<_swapchain->_vkSwapChainImages.size(); i++ ){
+
+    auto& VKFRB = _swapchain->_vkFrameBuffers[i];
     std::vector<VkImageView> fb_attachments;
-    //auto rtb0 = main_rtg->mMrt[0];
-    //auto rtb0_impl = rtb0->_impl.getShared<VklRtBufferImpl>();
-    //fb_attachments.push_back(rtb0_impl->_vkimgview);
-    fb_attachments.push_back(_swap_image_view);
+    auto& IMGVIEW = _swapchain->_vkSwapChainImageViews[i];
+    fb_attachments.push_back(IMGVIEW);
 
     VkFramebufferCreateInfo CFBI = {};
     CFBI.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -669,8 +684,10 @@ void VkContext::_beginRenderPass(renderpass_ptr_t renpass) {
     CFBI.height = _swapchain->_extent.height;
     CFBI.layers = 1;
 
-    VkResult OK = vkCreateFramebuffer(_vkdevice, &CFBI, nullptr, &_swapchain->_vkrbfp);
+    VkResult OK = vkCreateFramebuffer(_vkdevice, &CFBI, nullptr, &VKFRB);
     OrkAssert(OK == VK_SUCCESS);
+    }
+
 
   }
   /////////////////////////////////////////
@@ -698,7 +715,7 @@ void VkContext::_beginRenderPass(renderpass_ptr_t renpass) {
   RPBI.pClearValues      = clearValues;
   //  clear-misc
   RPBI.renderPass = _swapchain->_mainRenderPass->_vkrp;
-  RPBI.framebuffer = _swapchain->_vkrbfp;
+  RPBI.framebuffer = _swapchain->framebuffer();
   // CLEAR!
   vkCmdBeginRenderPass(
       _cmdbufcurframe_gfx_pri->_vkcmdbuf, //
@@ -758,6 +775,13 @@ void VkContext::_initSwapChain() {
 
   auto surfaceFormat = _vkpresentation_caps->_formats[0];
 
+  VkSurfaceTransformFlagsKHR preTransform;
+  if (_vkpresentation_caps->_capabilities.supportedTransforms & VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR) {
+    preTransform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
+  } else {
+    preTransform = _vkpresentation_caps->_capabilities.currentTransform;
+  }
+
   VkSwapchainCreateInfoKHR SCINFO{};
   initializeVkStruct(SCINFO, VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR);
   SCINFO.surface = _vkpresentationsurface;
@@ -779,10 +803,12 @@ void VkContext::_initSwapChain() {
   SCINFO.imageExtent      = swap_chain->_extent;                 // The width and height of the swap chain images
   SCINFO.imageArrayLayers = 1;                                   // Always 1 unless developing a stereoscopic 3D application
   SCINFO.imageUsage       = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT; // Or any other value depending on your needs
+  SCINFO.imageUsage      |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT; 
+  SCINFO.imageUsage      |= VK_IMAGE_USAGE_TRANSFER_DST_BIT; 
+  SCINFO.preTransform     = (VkSurfaceTransformFlagBitsKHR) preTransform;      
 
   // image view properties
-  SCINFO.imageSharingMode =
-      VK_SHARING_MODE_EXCLUSIVE;          // Can be VK_SHARING_MODE_CONCURRENT if sharing between multiple queue families
+  SCINFO.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;          // Can be VK_SHARING_MODE_CONCURRENT if sharing between multiple queue families
   SCINFO.queueFamilyIndexCount = 0;       // Only relevant if sharingMode is VK_SHARING_MODE_CONCURRENT
   SCINFO.pQueueFamilyIndices   = nullptr; // Only relevant if sharingMode is VK_SHARING_MODE_CONCURRENT
 
@@ -792,6 +818,8 @@ void VkContext::_initSwapChain() {
   SCINFO.clipped        = VK_TRUE;                           // clip pixels that are obscured by other windows
   SCINFO.oldSwapchain   = VK_NULL_HANDLE;
   SCINFO.presentMode    = VK_PRESENT_MODE_IMMEDIATE_KHR;
+  //SCINFO.presentMode    = VK_PRESENT_MODE_FIFO_KHR;
+  SCINFO.clipped = VK_TRUE;
 
   VkResult OK = vkCreateSwapchainKHR(_vkdevice, &SCINFO, nullptr, &swap_chain->_vkSwapChain);
   OrkAssert(OK == VK_SUCCESS);
@@ -809,10 +837,10 @@ void VkContext::_initSwapChain() {
     IVCI.image                           = swap_chain->_vkSwapChainImages[i];
     IVCI.viewType                        = VK_IMAGE_VIEW_TYPE_2D;
     IVCI.format                          = surfaceFormat.format;
-    IVCI.components.r                    = VK_COMPONENT_SWIZZLE_IDENTITY;
-    IVCI.components.g                    = VK_COMPONENT_SWIZZLE_IDENTITY;
-    IVCI.components.b                    = VK_COMPONENT_SWIZZLE_IDENTITY;
-    IVCI.components.a                    = VK_COMPONENT_SWIZZLE_IDENTITY;
+    IVCI.components.r                    = VK_COMPONENT_SWIZZLE_R;
+    IVCI.components.g                    = VK_COMPONENT_SWIZZLE_G;
+    IVCI.components.b                    = VK_COMPONENT_SWIZZLE_B;
+    IVCI.components.a                    = VK_COMPONENT_SWIZZLE_A;
     IVCI.subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
     IVCI.subresourceRange.baseMipLevel   = 0;
     IVCI.subresourceRange.levelCount     = 1;

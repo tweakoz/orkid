@@ -16,7 +16,7 @@
 namespace ork::lev2::vulkan {
 
 vkinstance_ptr_t _GVI = nullptr;
-constexpr bool _enable_debug = true;
+constexpr bool _enable_debug = false;
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
 using layer_props_t = std::vector<VkLayerProperties>;
@@ -103,7 +103,9 @@ VulkanInstance::VulkanInstance() {
   auto yel = fvec3::Yellow();
 
   std::vector<const char*> validation_layers = { //
-    "VK_LAYER_KHRONOS_validation" //
+    "VK_LAYER_KHRONOS_validation", //
+    "VK_LAYER_RENDERDOC_Capture",
+    //"VK_LAYER_LUNARG_api_dump"
   };
 
   auto layer_props = _layerProperties();
@@ -142,9 +144,9 @@ VulkanInstance::VulkanInstance() {
 #if defined(__APPLE__)
   _instance_extensions.push_back("VK_MVK_macos_surface");
   _instance_extensions.push_back("VK_EXT_metal_surface");
-  // _instance_extensions.push_back("VK_KHR_portability_subset");
+  _instance_extensions.push_back("VK_KHR_portability_subset");
   _instancedata.flags |= VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
-#else 
+ #else 
   _instance_extensions.push_back("VK_KHR_xcb_surface");
 #endif
 
