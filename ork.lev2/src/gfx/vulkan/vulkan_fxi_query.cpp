@@ -21,9 +21,7 @@ const FxShaderTechnique* VkFxInterface::technique(FxShader* pshader, const std::
   }
   else{
     auto shader_name = vkshfile->_shader_name;
-    auto tu = vkshfile->_trans_unit;
-    printf( "VkFxInterface tu<%p> shader<%s> technique<%s> not found\n", //
-            (void*) tu.get(), //
+    printf( "VkFxInterface shader<%s> technique<%s> not found\n", //
             shader_name.c_str(), //
             name.c_str() );
   }
@@ -37,7 +35,6 @@ const FxShaderParam* VkFxInterface::parameter(FxShader* pshader, const std::stri
   auto vkshfile = pshader->_internalHandle.get<vkfxsfile_ptr_t>();
   auto shader_name = vkshfile->_shader_name;
   size_t num_unisets = vkshfile->_vk_uniformsets.size();
-  auto tu = vkshfile->_trans_unit;
   for( auto item : vkshfile->_vk_uniformsets ) {
     auto uniset_name = item.first;
     printf( "search uniset<%s>\n", uniset_name.c_str() );
@@ -46,8 +43,7 @@ const FxShaderParam* VkFxInterface::parameter(FxShader* pshader, const std::stri
     if( it_item != uniset->_items_by_name.end() ) {
       auto item = it_item->second;
       rval = item->_orkparam.get();
-      printf( "VkFxInterface tu<%p> shader<%s> parameter<%s> found>\n", //
-            (void*) tu.get(), //
+      printf( "VkFxInterface shader<%s> parameter<%s> found>\n", //
             shader_name.c_str(), //
             name.c_str() ); //
       break;
@@ -56,16 +52,14 @@ const FxShaderParam* VkFxInterface::parameter(FxShader* pshader, const std::stri
     if( it_samp != uniset->_samplers_by_name.end() ) {
       auto samp = it_samp->second;
       rval = samp->_orkparam.get();
-      printf( "VkFxInterface tu<%p> shader<%s> sampler<%s> found>\n", //
-            (void*) tu.get(), //
+      printf( "VkFxInterface shader<%s> sampler<%s> found>\n", //
             shader_name.c_str(), //
             name.c_str()); //
       break;
     }
   }
   if(rval==nullptr){
-    printf( "VkFxInterface tu<%p> shader<%s> parameter<%s> not found numunisets<%zu>\n", //
-            (void*) tu.get(), //
+    printf( "VkFxInterface shader<%s> parameter<%s> not found numunisets<%zu>\n", //
             shader_name.c_str(), //
             name.c_str(), //
             num_unisets );
@@ -78,7 +72,6 @@ const FxShaderParam* VkFxInterface::parameter(FxShader* pshader, const std::stri
 const FxShaderParamBlock* VkFxInterface::parameterBlock(FxShader* pshader, const std::string& name) {
   const FxShaderParamBlock* rval = nullptr;
   auto vkshfile = pshader->_internalHandle.get<vkfxsfile_ptr_t>();
-  auto tu = vkshfile->_trans_unit;
   auto it = vkshfile->_vk_uniformblks.find(name);
   if( it != vkshfile->_vk_uniformblks.end() ) {
     printf( "found uniblk<%s>\n", name.c_str() );
@@ -90,8 +83,7 @@ const FxShaderParamBlock* VkFxInterface::parameterBlock(FxShader* pshader, const
     auto vkshfile = pshader->_internalHandle.get<vkfxsfile_ptr_t>();
     auto shader_name = vkshfile->_shader_name;
     size_t num_uniblks = vkshfile->_vk_uniformblks.size();
-    printf( "VkFxInterface tu<%p> shader<%s> uniblock<%s> not found numuniblks<%zu>\n", //
-            (void*) tu.get(), //
+    printf( "VkFxInterface shader<%s> uniblock<%s> not found numuniblks<%zu>\n", //
             shader_name.c_str(), //
             name.c_str(), //
             num_uniblks );

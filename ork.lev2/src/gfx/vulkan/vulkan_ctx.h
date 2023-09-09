@@ -334,7 +334,7 @@ struct VkFxShaderUniformBlk {
 ///////////////////////////////////////////////////////////////////////////////
 struct VkFxShaderFile {
   std::string _shader_name;
-  shadlang::SHAST::translationunit_ptr_t _trans_unit;
+  //shadlang::SHAST::translationunit_ptr_t _trans_unit;
   std::unordered_map<std::string, vkfxsobj_ptr_t> _vk_shaderobjects;
   std::unordered_map<std::string, vkfxstek_ptr_t> _vk_techniques;
   std::unordered_map<std::string, vkfxsuniset_ptr_t> _vk_uniformsets;
@@ -351,7 +351,7 @@ struct VulkanFxShaderObject {
   VkShaderModuleCreateInfo _vk_shadermoduleinfo;
   VkShaderModule _vk_shadermodule;
   VkPipelineShaderStageCreateInfo _shaderstageinfo;
-  shadlang::SHAST::astnode_ptr_t _astnode; // debug only
+  //shadlang::SHAST::astnode_ptr_t _astnode; // debug only
   std::unordered_map<std::string, vkfxsuniset_ptr_t> _vk_uniformsets;
   std::unordered_map<std::string, vkfxsuniblk_ptr_t> _vk_uniformblks;
   uint64_t _STAGE = 0;
