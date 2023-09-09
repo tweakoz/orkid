@@ -353,7 +353,7 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
         vk_samp->_orkparam          = std::make_shared<FxShaderParam>();
         vk_samp->_orkparam->_impl.set<VkFxShaderUniformSetSampler*>(vk_samp.get());
         vk_uniset->_samplers_by_name[str_sampler_identifier] = vk_samp;
-        printf("uniset<%s> ADDING Sampler PARAM<%s>\n", str_uniset_name.c_str(), str_sampler_identifier.c_str());
+        if(0)printf("uniset<%s> ADDING Sampler PARAM<%s>\n", str_uniset_name.c_str(), str_sampler_identifier.c_str());
       }
       ///////////////////////////////////////////////
       auto str_params = shader_input_stream->readIndexedString(chunkreader);
@@ -369,7 +369,7 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
         vk_param->_orkparam->_impl.set<VkFxShaderUniformSetItem*>(vk_param.get());
         vk_uniset->_items_by_name[str_param_identifier] = vk_param;
         vk_uniset->_items_by_order.push_back(vk_param);
-        printf("uniset<%s> ADDING Item PARAM<%s>\n", str_uniset_name.c_str(), str_param_identifier.c_str());
+       if(0)printf("uniset<%s> ADDING Item PARAM<%s>\n", str_uniset_name.c_str(), str_param_identifier.c_str());
       }
     }
     /////////////////////////////////
@@ -385,7 +385,7 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
       auto vk_uniblk                                      = std::make_shared<VkFxShaderUniformBlk>();
       vk_uniblk->_orkparamblock = std::make_shared<FxShaderParamBlock>();
       vulkan_shaderfile->_vk_uniformblks[str_uniblk_name] = vk_uniblk;
-      printf("str_uniblk_name<%s>\n", str_uniblk_name.c_str());
+      if(0)printf("str_uniblk_name<%s>\n", str_uniblk_name.c_str());
       ///////////////////////////////////////////////
       auto str_params = shader_input_stream->readIndexedString(chunkreader);
       OrkAssert(str_params == "items");
@@ -401,7 +401,7 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
         vk_uniblk->_items_by_name[str_param_identifier] = vk_param;
         vk_uniblk->_items_by_order.push_back(vk_param);
         vk_uniblk->_orkparamblock->_subparams[str_param_identifier] = vk_param->_orkparam.get();
-        printf("uniblk<%s> ADDING Item PARAM<%s>\n", str_uniblk_name.c_str(), str_param_identifier.c_str());
+        if(0)printf("uniblk<%s> ADDING Item PARAM<%s>\n", str_uniblk_name.c_str(), str_param_identifier.c_str());
       }
     }
     /////////////////////////////////

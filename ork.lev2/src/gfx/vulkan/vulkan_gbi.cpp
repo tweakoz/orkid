@@ -16,7 +16,7 @@ VulkanVertexBuffer::VulkanVertexBuffer(vkcontext_rawptr_t ctx, size_t length) {
   initializeVkStruct(_vkmem);
   initializeVkStruct(_vkbuf);
 
-  printf( "length<%zu>\n", length );
+  //printf( "length<%zu>\n", length );
 
   initializeVkStruct(_vkbufinfo,VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO);
   _vkbufinfo.sType       = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -30,7 +30,7 @@ VulkanVertexBuffer::VulkanVertexBuffer(vkcontext_rawptr_t ctx, size_t length) {
   VkMemoryRequirements memRequirements;
   initializeVkStruct(memRequirements);
   vkGetBufferMemoryRequirements(ctx->_vkdevice, _vkbuf, &memRequirements);
-  printf( "alignment<%zu>\n", memRequirements.alignment );
+  //printf( "alignment<%zu>\n", memRequirements.alignment );
   //////////////////
   VkMemoryAllocateInfo allocInfo = {};
   initializeVkStruct(allocInfo,VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO);
@@ -40,7 +40,7 @@ VulkanVertexBuffer::VulkanVertexBuffer(vkcontext_rawptr_t ctx, size_t length) {
               | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT; // do not need flush...
   //////////////////
   allocInfo.memoryTypeIndex = ctx->_findMemoryType(memRequirements.memoryTypeBits, _vkmemflags);
-  printf( "memtypeindex = %u\n", allocInfo.memoryTypeIndex );
+  //printf( "memtypeindex = %u\n", allocInfo.memoryTypeIndex );
   //////////////////
 
   vkAllocateMemory(ctx->_vkdevice, &allocInfo, nullptr, &_vkmem);
