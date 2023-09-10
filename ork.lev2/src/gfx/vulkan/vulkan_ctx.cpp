@@ -401,17 +401,23 @@ void VkContext::_clearSwapChainBuffer() {
 }
 
 ///////////////////////////////////////////////////////
-
-void VkContext::_enq_transitionSwapChainForPresent() {
+ void _imageBarrier(VkCommandBuffer cmdbuf, //
+                    VkImage image, //
+                    VkAccessFlags srcAccessMask, //
+                    VkAccessFlags dstAccessMask, //
+                    VkPipelineStageFlags srcStageMask, //
+                    VkPipelineStageFlags dstStageMask, //
+                    VkImageLayout oldLayout, //
+                    VkImageLayout newLayout) { //
 
   VkImageMemoryBarrier barrier = {};
   initializeVkStruct(barrier, VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
 
-  barrier.oldLayout           = VK_IMAGE_LAYOUT_UNDEFINED;
-  barrier.newLayout           = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+  barrier.oldLayout           = oldLayout;
+  barrier.newLayout           = newLayout;
   barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
   barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-  barrier.image               = _swapchain->image(); // The image you want to transition.
+  barrier.image               = image; // The image you want to transition.
 
   barrier.subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
   barrier.subresourceRange.baseMipLevel   = 0;
@@ -419,13 +425,13 @@ void VkContext::_enq_transitionSwapChainForPresent() {
   barrier.subresourceRange.baseArrayLayer = 0;
   barrier.subresourceRange.layerCount     = 1;
 
-  barrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT; // Adjust as needed.
-  barrier.dstAccessMask = 0;
+  barrier.srcAccessMask = srcAccessMask; // Adjust as needed.
+  barrier.dstAccessMask = dstAccessMask;
 
   vkCmdPipelineBarrier(
-      _cmdbufcurframe_gfx_pri->_vkcmdbuf,
-      VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, // Adjust as needed.
-      VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+      cmdbuf,
+      srcStageMask, 
+      dstStageMask,
       0,
       0,
       nullptr,
@@ -434,40 +440,35 @@ void VkContext::_enq_transitionSwapChainForPresent() {
       1,
       &barrier);
 }
+      
+///////////////////////////////////////////////////////
+
+void VkContext::_enq_transitionSwapChainForPresent() {
+
+  _imageBarrier(
+    _cmdbufcurframe_gfx_pri->_vkcmdbuf,             // cmdbuf
+    _swapchain->image(),                            // image
+    VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,           // srcAccessMask
+    0,                                              // dstAccessMask
+    VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,  // srcStageMask
+    VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,              // dstStageMask
+    VK_IMAGE_LAYOUT_UNDEFINED,                      // oldLayout
+    VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);               // newLayout
+}
 
 ///////////////////////////////////////////////////////
 
 void VkContext::_transitionSwapChainForClear() {
 
-  VkImageMemoryBarrier barrier = {};
-  initializeVkStruct(barrier, VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
-
-  barrier.oldLayout           = VK_IMAGE_LAYOUT_UNDEFINED;
-  barrier.newLayout           = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-  barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-  barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-  barrier.image               = _swapchain->image(); // The image you want to transition.
-
-  barrier.subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
-  barrier.subresourceRange.baseMipLevel   = 0;
-  barrier.subresourceRange.levelCount     = 1;
-  barrier.subresourceRange.baseArrayLayer = 0;
-  barrier.subresourceRange.layerCount     = 1;
-
-  barrier.srcAccessMask = 0; // Adjust as needed.
-  barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-
-  vkCmdPipelineBarrier(
-      _cmdbufcurframe_gfx_pri->_vkcmdbuf,
-      VK_PIPELINE_STAGE_TRANSFER_BIT, // Adjust as needed.
-      VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
-      0,
-      0,
-      nullptr,
-      0,
-      nullptr,
-      1,
-      &barrier);
+  _imageBarrier(
+    _cmdbufcurframe_gfx_pri->_vkcmdbuf,             // cmdbuf
+    _swapchain->image(),                            // image
+    0,                                              // srcAccessMask
+    VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,           // dstAccessMask
+    VK_PIPELINE_STAGE_TRANSFER_BIT,                 // srcStageMask
+    VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,           // dstStageMask
+    VK_IMAGE_LAYOUT_UNDEFINED,                      // oldLayout
+    VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);          // newLayout
 }
 
 ///////////////////////////////////////////////////////
@@ -515,18 +516,26 @@ void VkContext::_acquireSwapChainForFrame() {
 ///////////////////////////////////////////////////////
 
 void VkContext::_doBeginFrame() {
-  _acquireSwapChainForFrame();
+
   _cmdbufcurframe_gfx_pri = _defaultCommandBuffer->_impl.getShared<VkCommandBufferImpl>();
+  _acquireSwapChainForFrame();
+
   VkCommandBufferBeginInfo CBBI_GFX = {};
   initializeVkStruct(CBBI_GFX, VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
   CBBI_GFX.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
   CBBI_GFX.pInheritanceInfo = nullptr;
 
-  if(_endFrameFenceSet){
+  if(_first_frame){
+    beginRenderPass(_main_render_pass);
+    endRenderPass(_main_render_pass);
+  }
+
+  if( not _first_frame){
     // technically we should wait for a fence associated with the
     //  current _cmdbufcurframe_gfx_pri
     vkWaitForFences(_vkdevice, 1, &_mainGfxSubmitFence, VK_TRUE, UINT64_MAX);
   }
+
 
   vkBeginCommandBuffer(_cmdbufcurframe_gfx_pri->_vkcmdbuf, &CBBI_GFX); // vkBeginCommandBuffer does an implicit reset
 }
@@ -582,7 +591,8 @@ void VkContext::_doEndFrame() {
   ///////////////////////////////////////////////////////
 
   _cmdbufcurframe_gfx_pri = nullptr;
-  _endFrameFenceSet = true;
+   _first_frame = false;
+
 }
 
 ///////////////////////////////////////////////////////
@@ -780,8 +790,26 @@ void VkContext::_initSwapChain() {
 
   if (_swapchain) {
     _old_swapchains.insert(_swapchain);
-    for (auto iv : _swapchain->_vkSwapChainImageViews) {
-      vkDestroyImageView(_vkdevice, iv, nullptr);
+    size_t num_images = _swapchain->_vkSwapChainImages.size();
+    vkWaitForFences(_vkdevice, 1, &_mainGfxSubmitFence, VK_TRUE, UINT64_MAX);
+    for( size_t i=0; i<num_images; i++ ){
+      auto img = _swapchain->_vkSwapChainImages[i];
+
+      // barrier - complete all ops before destroying
+      if(0)_imageBarrier(
+        _cmdbufcurframe_gfx_pri->_vkcmdbuf,             // cmdbuf
+        img,                                            // image
+        VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,           // srcAccessMask
+        VK_ACCESS_MEMORY_WRITE_BIT,                     // dstAccessMask
+        VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,  // srcStageMask
+        VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,             // dstStageMask
+        VK_IMAGE_LAYOUT_UNDEFINED,                      // oldLayout
+        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);          // newLayout
+
+
+      auto imgview = _swapchain->_vkSwapChainImageViews[i];
+      vkDestroyImageView(_vkdevice, imgview, nullptr);
+      //vkDestroyImage(_vkdevice, img, nullptr);
     }
     vkDestroySwapchainKHR(_vkdevice, _swapchain->_vkSwapChain, nullptr);
   }
@@ -1081,7 +1109,8 @@ vkswapchaincaps_ptr_t VkContext::_swapChainCapsForSurface(VkSurfaceKHR surface) 
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void VkContext::_doPushCommandBuffer(commandbuffer_ptr_t cmdbuf) {
+void VkContext::_doPushCommandBuffer(commandbuffer_ptr_t cmdbuf, //
+                                     rtgroup_ptr_t rtg ) { //
   OrkAssert(_current_cmdbuf==cmdbuf);
   vkcmdbufimpl_ptr_t impl;
   if( auto as_impl = cmdbuf->_impl.tryAsShared<VkCommandBufferImpl>() ){
@@ -1103,10 +1132,21 @@ void VkContext::_doPushCommandBuffer(commandbuffer_ptr_t cmdbuf) {
 
     _setObjectDebugName(impl->_vkcmdbuf, VK_OBJECT_TYPE_COMMAND_BUFFER, cmdbuf->_debugName.c_str());
   }
+  VkCommandBufferInheritanceInfo INHINFO = {};
+  initializeVkStruct(INHINFO,VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO);
+  auto rpimpl = _main_render_pass->_impl.getShared<VulkanRenderPass>();
+  INHINFO.renderPass = rpimpl->_vkrp;  // The render pass the secondary command buffer will be executed within.
+  INHINFO.subpass = 0;  // The index of the subpass in the render pass.
+  if( rtg ){
+    INHINFO.subpass = 0;  // The index of the subpass in the render pass.
+    OrkAssert(false);
+  }
+  INHINFO.framebuffer = VK_NULL_HANDLE;  // Optional: The framebuffer targeted by the render pass. Can be VK_NULL_HANDLE if not provided.
+  ////////////////////////////////////////////
   VkCommandBufferBeginInfo CBBI_GFX = {};
   initializeVkStruct(CBBI_GFX, VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
   CBBI_GFX.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-  CBBI_GFX.pInheritanceInfo = nullptr;
+  CBBI_GFX.pInheritanceInfo = &INHINFO;
   vkBeginCommandBuffer(impl->_vkcmdbuf, &CBBI_GFX); // vkBeginCommandBuffer does an implicit reset
 }
 

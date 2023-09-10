@@ -288,10 +288,10 @@ public:
 
   //////////////////////////////////////////////
 
-  inline void pushCommandBuffer(commandbuffer_ptr_t cmdbuf) {
+  inline void pushCommandBuffer(commandbuffer_ptr_t cmdbuf, rtgroup_ptr_t rtg=nullptr) {
     _cmdbuf_stack.push(cmdbuf);
     _current_cmdbuf = cmdbuf;
-    _doPushCommandBuffer(cmdbuf);
+    _doPushCommandBuffer(cmdbuf,rtg);
   }
   inline commandbuffer_ptr_t popCommandBuffer() {
     _doPopCommandBuffer();
@@ -307,7 +307,7 @@ public:
     _doEnqueueSecondaryCommandBuffer(cmdbuf);
   }
 
-  virtual void _doPushCommandBuffer(commandbuffer_ptr_t cmdbuf) {}
+  virtual void _doPushCommandBuffer(commandbuffer_ptr_t cmdbuf, rtgroup_ptr_t rtg=nullptr) {}
   virtual void _doPopCommandBuffer() {}
   virtual void _doEnqueueSecondaryCommandBuffer(commandbuffer_ptr_t cmdbuf) {}
 

@@ -837,7 +837,7 @@ public:
   void _enq_transitionSwapChainForPresent();
   void _clearSwapChainBuffer();
   //////////////////////////////////////////////
-  void _doPushCommandBuffer(commandbuffer_ptr_t cmdbuf) final;
+  void _doPushCommandBuffer(commandbuffer_ptr_t cmdbuf, rtgroup_ptr_t rtg ) final;
   void _doPopCommandBuffer() final;
   void _doEnqueueSecondaryCommandBuffer(commandbuffer_ptr_t cmdbuf) final;
   //////////////////////////////////////////////
@@ -889,11 +889,11 @@ public:
   std::stack<void*> mGLRCStack;
   EDepthTest meCurDepthTest;
   bool mTargetDrawableSizeDirty;
-  bool _endFrameFenceSet = false;
-
+  bool _first_frame = true;
   //////////////////////////////////////////////
   ///////////////////////////////////////////////////////////////////////////
 
+  std::vector<void_lambda_t> _deferred_ops;
   vkdwi_ptr_t _dwi;
   vkimi_ptr_t _imi;
   //vkrsi_ptr_t _rsi;
