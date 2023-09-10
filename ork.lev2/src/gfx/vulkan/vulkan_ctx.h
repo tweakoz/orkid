@@ -839,6 +839,7 @@ public:
   //////////////////////////////////////////////
   void _doPushCommandBuffer(commandbuffer_ptr_t cmdbuf) final;
   void _doPopCommandBuffer() final;
+  void _doEnqueueSecondaryCommandBuffer(commandbuffer_ptr_t cmdbuf) final;
   //////////////////////////////////////////////
   template <typename T>
   void _setObjectDebugName(T& object, VkObjectType objectType, const char* name) {

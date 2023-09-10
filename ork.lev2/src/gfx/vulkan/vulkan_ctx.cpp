@@ -1117,6 +1117,11 @@ void VkContext::_doPopCommandBuffer() {
   vkEndCommandBuffer(impl->_vkcmdbuf);
 }
 
+void VkContext::_doEnqueueSecondaryCommandBuffer(commandbuffer_ptr_t cmdbuf) {
+  auto impl = cmdbuf->_impl.getShared<VkCommandBufferImpl>();
+  vkCmdExecuteCommands(_cmdbufcurframe_gfx_pri->_vkcmdbuf, 1, &impl->_vkcmdbuf);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2::vulkan
 ///////////////////////////////////////////////////////////////////////////////

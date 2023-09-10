@@ -92,6 +92,19 @@ void Context::endFrame(void) {
   PopModColor();
   mbPostInitializeContext = false;
   ////////////////////////
+  beginRenderPass(_main_render_pass);
+  ////////////////////////
+  // intermediate subpasses
+  ////////////////////////
+
+  ////////////////////////
+  // main subpass (always last)
+  ////////////////////////
+    beginSubPass(_main_render_subpass);
+    endSubPass(_main_render_subpass);
+  ////////////////////////
+  endRenderPass(_main_render_pass);
+  ////////////////////////
   _doEndFrame();
   _cmdbuf_pool.deallocate(_defaultCommandBuffer);
   _defaultCommandBuffer = nullptr;
@@ -142,6 +155,13 @@ Context::Context()
   RCFD->pushCompositor(_gimpl);
   _defaultrcfd       = RCFD;
   pushRenderContextFrameData(_defaultrcfd);
+
+ _main_render_pass = std::make_shared<lev2::RenderPass>();
+ _main_render_subpass = std::make_shared<lev2::RenderSubPass>();
+ _main_render_pass->_subpasses.push_back(_main_render_subpass);
+
+  //_main_render_subpass->_rtg_input = nullptr;
+  //_main_render_subpass->_rtg_output = fbi->_main_rtg;
 
 }
 

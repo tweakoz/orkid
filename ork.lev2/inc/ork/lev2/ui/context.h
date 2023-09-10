@@ -71,8 +71,6 @@ struct Context {
   Event _prevevent;
   event_ptr_t _tempevent;
   Timer _uitimer;
-  lev2::renderpass_ptr_t _renderpass;
-  lev2::rendersubpass_ptr_t _rendersubpass;
   std::map<int,lev2::commandbufferlist_t> _cmdbufs_by_depth;
   lev2::commandbufferlist_t _cmdbufs_flat;
   lev2::commandbuffer_ptr_t _cmdbuf_top;

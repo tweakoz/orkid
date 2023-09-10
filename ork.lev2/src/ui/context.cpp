@@ -7,11 +7,7 @@ Context::Context() {
   _tempevent = std::make_shared<Event>();
   _uitimer.Start();
   _prevtime = 0.0;
-  _renderpass = std::make_shared<lev2::RenderPass>();
-  _rendersubpass = std::make_shared<lev2::RenderSubPass>();
-  _renderpass->_subpasses.push_back(_rendersubpass);
   _cmdbuf_top = std::make_shared<lev2::CommandBuffer>();
-
 }
 /////////////////////////////////////////////////////////////////////////
 void Context::tick(updatedata_ptr_t updata){
@@ -157,20 +153,44 @@ bool Context::hasMouseFocus(const Widget* w) const {
 }
 /////////////////////////////////////////////////////////////////////////
 void Context::draw(drawevent_constptr_t drwev) {
-
   auto gfx_ctx = drwev->GetTarget();
-  auto fbi = gfx_ctx->FBI();
-  _rendersubpass->_rtg_input = nullptr;
-  _rendersubpass->_rtg_output = fbi->_main_rtg;
-
-  gfx_ctx->beginRenderPass(_renderpass);
-  gfx_ctx->beginSubPass(_rendersubpass);
+  gfx_ctx->pushCommandBuffer(_cmdbuf_top);
   _top->draw(drwev);
   if (_overlayWidget) {
     _overlayWidget->draw(drwev);
   }
-  gfx_ctx->endSubPass(_rendersubpass);
-  gfx_ctx->endRenderPass(_renderpass);
+  gfx_ctx->popCommandBuffer();
+
+  /////////////////////////////////////////////////////////
+  // flatten command buffers (highest depths first)
+  /////////////////////////////////////////////////////////
+
+  _cmdbufs_flat.clear();
+  for( auto depth_item = _cmdbufs_by_depth.rbegin(); //
+            depth_item != _cmdbufs_by_depth.rend(); //
+            depth_item++ ){ //
+    int depth = depth_item->first;
+    const auto& cblist = depth_item->second;
+    for( auto cb : cblist ){
+      _cmdbufs_flat.push_back(cb);
+    }
+  }
+
+  /////////////////////////////////////////////////////////
+  // enqueue flattened command buffers
+  /////////////////////////////////////////////////////////
+
+  for( auto sub_cb : _cmdbufs_flat ){
+    gfx_ctx->enqueueSecondaryCommandBuffer(sub_cb);
+  }
+
+  /////////////////////////////////////////////////////////
+  // enqueue top level command buffer
+  /////////////////////////////////////////////////////////
+
+  gfx_ctx->enqueueSecondaryCommandBuffer(_cmdbuf_top);
+
+  /////////////////////////////////////////////////////////
 }
 /////////////////////////////////////////////////////////////////////////
 void Context::dumpWidgets(std::string label) const{
