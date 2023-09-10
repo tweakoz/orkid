@@ -16,3 +16,5 @@ function(setupEXE target sources)
 endfunction()
 
 setupEXE(ork.test.lev2.ui.layout1.exe layout.cpp )
+
+setupEXE(ork.test.lev2.ui.surfaces.exe surfaces.cpp )

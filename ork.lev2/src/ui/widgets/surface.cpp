@@ -24,6 +24,17 @@ Surface::Surface(const std::string& name, int x, int y, int w, int h, fcolor3 co
 
 ///////////////////////////////////////////////////////////////////////////////
 
+Surface::Surface(const std::string& name, fcolor3 color, F32 depth)
+    : Group(name, 0, 0, 0, 0)
+    , mbClear(true)
+    , _clearColor(color)
+    , mfClearDepth(depth)
+    , mNeedsSurfaceRepaint(true)
+    , _pickbuffer(nullptr) {
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 void Surface::GetPixel(int ix, int iy, lev2::PixelFetchContext& pfc) {
   int iW   = width();
   int iH   = height();
