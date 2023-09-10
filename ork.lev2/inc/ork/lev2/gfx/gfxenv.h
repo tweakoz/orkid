@@ -296,9 +296,12 @@ public:
   inline commandbuffer_ptr_t popCommandBuffer() {
     _doPopCommandBuffer();
     _cmdbuf_stack.pop();
-    auto ret = _cmdbuf_stack.top();
-    _current_cmdbuf = ret;
-    return ret;
+    commandbuffer_ptr_t next = nullptr;
+    if (not _cmdbuf_stack.empty()) {
+      next = _cmdbuf_stack.top();
+    }
+    _current_cmdbuf = next;
+    return next;
   }
 
   virtual void _doPushCommandBuffer(commandbuffer_ptr_t cmdbuf) {}
@@ -730,6 +733,7 @@ struct RenderPass{
   svarp_t _impl;
   std::vector<rendersubpass_ptr_t> _subpasses;
   bool _immutable = false;
+  std::string _debugName;
 };
 
 struct RenderSubPass{
@@ -737,10 +741,16 @@ struct RenderSubPass{
   rtgroup_ptr_t _rtg_input;
   rtgroup_ptr_t _rtg_output;
   svarp_t _impl;
+  std::string _debugName;
 };
 
 struct CommandBuffer{
+  CommandBuffer(std::string name="---")
+    : _debugName(name)
+  {
+  }
   svarp_t _impl;
+  std::string _debugName;
 };
 
 

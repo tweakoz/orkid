@@ -20,19 +20,13 @@ Surface::Surface(const std::string& name, int x, int y, int w, int h, fcolor3 co
     , mfClearDepth(depth)
     , mNeedsSurfaceRepaint(true)
     , _pickbuffer(nullptr) {
-  _cmdbuf = std::make_shared<lev2::CommandBuffer>();
+  _cmdbuf = std::make_shared<lev2::CommandBuffer>("ui::Surface<"+name+">");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 Surface::Surface(const std::string& name, fcolor3 color, F32 depth)
-    : Group(name, 0, 0, 0, 0)
-    , mbClear(true)
-    , _clearColor(color)
-    , mfClearDepth(depth)
-    , mNeedsSurfaceRepaint(true)
-    , _pickbuffer(nullptr) {
-  _cmdbuf = std::make_shared<lev2::CommandBuffer>();
+    : Surface(name, 0, 0, 0, 0, color, depth) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////

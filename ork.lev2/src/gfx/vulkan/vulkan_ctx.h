@@ -840,6 +840,21 @@ public:
   void _doPushCommandBuffer(commandbuffer_ptr_t cmdbuf) final;
   void _doPopCommandBuffer() final;
   //////////////////////////////////////////////
+  template <typename T>
+  void _setObjectDebugName(T& object, VkObjectType objectType, const char* name) {
+    VkDebugUtilsObjectNameInfoEXT nameInfo = {};
+    initializeVkStruct(nameInfo,VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT);
+    nameInfo.objectType = objectType;
+    nameInfo.objectHandle = reinterpret_cast<uint64_t>(object);
+    nameInfo.pObjectName = name;
+    _vkSetDebugUtilsObjectName(_vkdevice, &nameInfo);
+  }
+  //////////////////////////////////////////////
+  template <typename T> void _fetchDeviceProcAddr(T& object, const char* name) {
+    object = reinterpret_cast<T>(vkGetDeviceProcAddr(_vkdevice, name));
+    OrkAssert(object != nullptr);
+  }
+  //////////////////////////////////////////////
   VkDevice _vkdevice;
   VkPhysicalDevice _vkphysicaldevice;
   vkdeviceinfo_ptr_t _vkdeviceinfo;
@@ -864,6 +879,8 @@ public:
   VkCommandPool _vkcmdpool_graphics;
 
   vkcmdbufimpl_ptr_t _cmdbufcurframe_gfx_pri;
+  //////////////////////////////////////////////
+  PFN_vkSetDebugUtilsObjectNameEXT _vkSetDebugUtilsObjectName;
   //////////////////////////////////////////////
   void* mhHWND;
   vkcontext_ptr_t _parentTarget;
@@ -891,5 +908,6 @@ public:
 };
 
 extern vkinstance_ptr_t _GVI;
+
 
 } // namespace ork::lev2::vulkan

@@ -134,7 +134,10 @@ void VkContext::_initVulkanForWindow(VkSurfaceKHR surface) {
   _initVulkanForDevInfo(vk_devinfo);
   _initVulkanCommon();
 
+  _fetchDeviceProcAddr(_vkSetDebugUtilsObjectName,"vkSetDebugUtilsObjectNameEXT");
+
   // UGLY!!!
+
 
   for (auto ctx : _GVI->_contexts) {
     if (ctx != this) {
@@ -144,6 +147,9 @@ void VkContext::_initVulkanForWindow(VkSurfaceKHR surface) {
       ctx->_vkqfid_graphics  = _vkqfid_graphics;
       ctx->_vkqfid_transfer  = _vkqfid_transfer;
       ctx->_vkqfid_compute   = _vkqfid_compute;
+
+      ctx->_vkSetDebugUtilsObjectName = _vkSetDebugUtilsObjectName;
+
     }
   }
 }
@@ -1094,6 +1100,8 @@ void VkContext::_doPushCommandBuffer(commandbuffer_ptr_t cmdbuf) {
         &CBAI_GFX, //
         &impl->_vkcmdbuf);
     OrkAssert(OK == VK_SUCCESS);
+
+    _setObjectDebugName(impl->_vkcmdbuf, VK_OBJECT_TYPE_COMMAND_BUFFER, cmdbuf->_debugName.c_str());
   }
   VkCommandBufferBeginInfo CBBI_GFX = {};
   initializeVkStruct(CBBI_GFX, VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
