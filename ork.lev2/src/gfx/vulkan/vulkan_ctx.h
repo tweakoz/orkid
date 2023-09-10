@@ -837,6 +837,9 @@ public:
   void _enq_transitionSwapChainForPresent();
   void _clearSwapChainBuffer();
   //////////////////////////////////////////////
+  void _doPushCommandBuffer(commandbuffer_ptr_t cmdbuf) final;
+  void _doPopCommandBuffer() final;
+  //////////////////////////////////////////////
   VkDevice _vkdevice;
   VkPhysicalDevice _vkphysicaldevice;
   vkdeviceinfo_ptr_t _vkdeviceinfo;

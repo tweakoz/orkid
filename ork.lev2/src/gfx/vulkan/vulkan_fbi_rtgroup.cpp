@@ -230,6 +230,51 @@ RtGroup* VkFrameBufferInterface::_popRtGroup() {
   if (rtb0->_usage == "present"_crcu) {
     // OrkAssert(false);
   }
+
+  // barrier on all color attachments
+  ///////////////////////////////////////////////////
+
+  int num_buf = _active_rtgroup->GetNumTargets();
+  std::vector<VkImageMemoryBarrier> barriers(num_buf);
+
+  for (int ib = 0; ib < num_buf; ib++) {
+    auto rtb = _active_rtgroup->GetMrt(ib);
+    if (rtb->_usage != "color"_crcu) {
+      continue;
+    }
+    auto bufferimpl = rtb->_impl.getShared<VklRtBufferImpl>();
+    auto& barrier   = barriers[ib];
+    initializeVkStruct(barrier, VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
+
+    barrier.oldLayout           = VK_IMAGE_LAYOUT_UNDEFINED;
+    barrier.newLayout           = VkFormatConverter::_instance.layoutForUsage(rtb->_usage);
+    barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    barrier.image               = bufferimpl->_vkimg; // The image you want to transition.
+
+    barrier.subresourceRange.aspectMask     = VkFormatConverter::_instance.aspectForUsage(rtb->_usage);
+    barrier.subresourceRange.baseMipLevel   = 0;
+    barrier.subresourceRange.levelCount     = 1;
+    barrier.subresourceRange.baseArrayLayer = 0;
+    barrier.subresourceRange.layerCount     = 1;
+
+    barrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT; // Adjust as needed.
+    barrier.dstAccessMask = 0;
+
+  vkCmdPipelineBarrier(
+      _contextVK->_cmdbufcurframe_gfx_pri->_vkcmdbuf,
+      VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, // Adjust as needed.
+      VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+      0,
+      0,
+      nullptr,
+      0,
+      nullptr,
+      1,
+      &barrier);  
+
+  }
+
   return _active_rtgroup;
 }
 

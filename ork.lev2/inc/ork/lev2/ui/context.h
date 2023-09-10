@@ -73,6 +73,9 @@ struct Context {
   Timer _uitimer;
   lev2::renderpass_ptr_t _renderpass;
   lev2::rendersubpass_ptr_t _rendersubpass;
+  std::map<int,lev2::commandbufferlist_t> _cmdbufs_by_depth;
+  lev2::commandbufferlist_t _cmdbufs_flat;
+  lev2::commandbuffer_ptr_t _cmdbuf_top;
   double _prevtime = 0.0;
   double _prev_click_time = 0.0;
   double _prev_dbl_click_time = 0.0;

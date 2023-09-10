@@ -193,7 +193,7 @@ public:
   Context* _uicontext    = nullptr;
   evrouter_t _evrouter   = nullptr;
   evhandler_t _evhandler = nullptr;
-
+  int _depth = 0;
   std::string _name;
   uint64_t _userID = 0;
   drawevent_constptr_t _drawEvent;

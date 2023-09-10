@@ -73,6 +73,7 @@ struct RenderSubPass;
 using renderpass_ptr_t = std::shared_ptr<RenderPass>;
 using rendersubpass_ptr_t = std::shared_ptr<RenderSubPass>;
 using commandbuffer_ptr_t = std::shared_ptr<CommandBuffer>;
+using commandbufferlist_t = std::vector<commandbuffer_ptr_t>;
 
 ///////////////////////////////////////////////////////////////////////////////
 // RtGroup

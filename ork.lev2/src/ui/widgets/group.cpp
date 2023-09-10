@@ -1,9 +1,16 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2023, Michael T. Mayers.
+// Distributed under the MIT License.
+// see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
+////////////////////////////////////////////////////////////////
+
 #include <ork/pch.h>
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/ui/event.h>
 #include <ork/lev2/ui/layoutgroup.inl>
 
-namespace ork { namespace ui {
+namespace ork::ui {
 /////////////////////////////////////////////////////////////////////////
 Group::Group(const std::string& name, int x, int y, int w, int h)
     : Widget(name, x, y, w, h) {
@@ -119,58 +126,4 @@ void Group::_doOnPreDestroy() {
   }
 }
 /////////////////////////////////////////////////////////////////////////
-LayoutGroup::LayoutGroup(const std::string& name, int x, int y, int w, int h)
-    : Group(name, x, y, w, h) {
-  _layout = std::make_shared<anchor::Layout>(this);
-}
-/////////////////////////////////////////////////////////////////////////
-LayoutGroup::~LayoutGroup(){
-}
-/////////////////////////////////////////////////////////////////////////
-void LayoutGroup::_doOnResized() {
-  _clear = true;
-}
-/////////////////////////////////////////////////////////////////////////
-void LayoutGroup::DoLayout() {
-  // in this case, the layout is responsible
-  // for laying out all children, recursively..
-  // note that the layout will use the geometry of this group
-  //  to compute the layout of all children
-  // So it is expected that you set the size of this group
-  //  either manually or driven indirectly through the resize
-  //  of a parent..
-  const auto& g = _geometry;
-  if (0)
-    printf(
-        "LayoutGroup<%s>::DoLayout l<%p> x<%d> y<%d> w<%d> h<%d>\n", //
-        _name.c_str(),
-        (void*) _layout.get(),
-        g._x,
-        g._y,
-        g._w,
-        g._h);
-  if (_layout)
-    _layout->updateAll();
-  //
-}
-/////////////////////////////////////////////////////////////////////////
-void LayoutGroup::DoDraw(drawevent_constptr_t drwev) {
-  if(_clear){
-    auto context = drwev->GetTarget();
-    auto FBI = context->FBI();
-    lev2::ViewportRect vrect;
-    vrect._x = x();
-    vrect._y = y();
-    vrect._w = width();
-    vrect._h = height();
-    FBI->pushScissor(vrect);
-    FBI->pushViewport(vrect);
-    //FBI->Clear(_clearColor,1);
-    FBI->popViewport();
-    FBI->popScissor();
-    _clear = false;
-  }
-  drawChildren(drwev);
-}
-/////////////////////////////////////////////////////////////////////////
-}} // namespace ork::ui
+} // namespace ork::ui

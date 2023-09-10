@@ -90,8 +90,7 @@ void FrameBufferInterface::PopRtGroup() {
   RtGroup* prev = mRtGroupStack.top();
   mRtGroupStack.pop();
   // EndFrame();
-  auto popped = _popRtGroup();
-  OrkAssert(popped == prev);
+  _popRtGroup();
   popViewport();
   popScissor();
 }

@@ -288,6 +288,24 @@ public:
 
   //////////////////////////////////////////////
 
+  inline void pushCommandBuffer(commandbuffer_ptr_t cmdbuf) {
+    _cmdbuf_stack.push(cmdbuf);
+    _current_cmdbuf = cmdbuf;
+    _doPushCommandBuffer(cmdbuf);
+  }
+  inline commandbuffer_ptr_t popCommandBuffer() {
+    _doPopCommandBuffer();
+    _cmdbuf_stack.pop();
+    auto ret = _cmdbuf_stack.top();
+    _current_cmdbuf = ret;
+    return ret;
+  }
+
+  virtual void _doPushCommandBuffer(commandbuffer_ptr_t cmdbuf) {}
+  virtual void _doPopCommandBuffer() {}
+
+  //////////////////////////////////////////////
+
   static const orkvector<DisplayMode*>& GetDisplayModes() {
     return mDisplayModes;
   }
@@ -328,7 +346,8 @@ public:
   commandbuffer_ptr_t _recordCommandBuffer;
   commandbuffer_ptr_t _defaultCommandBuffer;
   shared_pool::fixed_pool<CommandBuffer,4> _cmdbuf_pool;
-
+  std::stack<commandbuffer_ptr_t> _cmdbuf_stack;
+  commandbuffer_ptr_t _current_cmdbuf;
   bool hiDPI() const;
   float currentDPI() const;
 

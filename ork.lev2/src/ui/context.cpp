@@ -10,6 +10,7 @@ Context::Context() {
   _renderpass = std::make_shared<lev2::RenderPass>();
   _rendersubpass = std::make_shared<lev2::RenderSubPass>();
   _renderpass->_subpasses.push_back(_rendersubpass);
+  _cmdbuf_top = std::make_shared<lev2::CommandBuffer>();
 
 }
 /////////////////////////////////////////////////////////////////////////

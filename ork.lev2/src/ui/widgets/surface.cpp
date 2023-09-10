@@ -20,6 +20,7 @@ Surface::Surface(const std::string& name, int x, int y, int w, int h, fcolor3 co
     , mfClearDepth(depth)
     , mNeedsSurfaceRepaint(true)
     , _pickbuffer(nullptr) {
+  _cmdbuf = std::make_shared<lev2::CommandBuffer>();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -31,6 +32,7 @@ Surface::Surface(const std::string& name, fcolor3 color, F32 depth)
     , mfClearDepth(depth)
     , mNeedsSurfaceRepaint(true)
     , _pickbuffer(nullptr) {
+  _cmdbuf = std::make_shared<lev2::CommandBuffer>();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -118,9 +120,11 @@ void Surface::DoDraw(ui::drawevent_constptr_t drwev) {
   }
 
   if (mNeedsSurfaceRepaint || IsDirty()) {
+    tgt->pushCommandBuffer(_cmdbuf);
     fbi->PushRtGroup(_rtgroup.get());
     RePaintSurface(drwev);
     fbi->PopRtGroup();
+    tgt->popCommandBuffer();
     mNeedsSurfaceRepaint = false;
     _dirty               = false;
   }
@@ -142,8 +146,6 @@ void Surface::DoDraw(ui::drawevent_constptr_t drwev) {
     }
   }
   ///////////////////////////////////////
-  lev2::SRasterState defstate;
-  //rsi->BindRasterState(defstate);
 
   lev2::material_ptr_t ui_material = lev2::defaultUIMaterial();
   lev2::material_ptr_t material = ui_material;

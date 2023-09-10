@@ -1072,6 +1072,43 @@ vkswapchaincaps_ptr_t VkContext::_swapChainCapsForSurface(VkSurfaceKHR surface) 
 
   return rval;
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
+void VkContext::_doPushCommandBuffer(commandbuffer_ptr_t cmdbuf) {
+  OrkAssert(_current_cmdbuf==cmdbuf);
+  vkcmdbufimpl_ptr_t impl;
+  if( auto as_impl = cmdbuf->_impl.tryAsShared<VkCommandBufferImpl>() ){
+    impl = as_impl.value();
+  }
+  else{
+    impl = cmdbuf->_impl.makeShared<VkCommandBufferImpl>();
+    VkCommandBufferAllocateInfo CBAI_GFX = {};
+    initializeVkStruct(CBAI_GFX, VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO);
+    CBAI_GFX.commandPool        = _vkcmdpool_graphics;
+    CBAI_GFX.level              = VK_COMMAND_BUFFER_LEVEL_SECONDARY;
+    CBAI_GFX.commandBufferCount = 1;
+
+    VkResult OK = vkAllocateCommandBuffers(
+        _vkdevice, //
+        &CBAI_GFX, //
+        &impl->_vkcmdbuf);
+    OrkAssert(OK == VK_SUCCESS);
+  }
+  VkCommandBufferBeginInfo CBBI_GFX = {};
+  initializeVkStruct(CBBI_GFX, VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
+  CBBI_GFX.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+  CBBI_GFX.pInheritanceInfo = nullptr;
+  vkBeginCommandBuffer(impl->_vkcmdbuf, &CBBI_GFX); // vkBeginCommandBuffer does an implicit reset
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void VkContext::_doPopCommandBuffer() {
+  auto impl = _current_cmdbuf->_impl.getShared<VkCommandBufferImpl>();
+  vkEndCommandBuffer(impl->_vkcmdbuf);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2::vulkan
 ///////////////////////////////////////////////////////////////////////////////

@@ -66,6 +66,7 @@ public:
   bool _decouple_from_ui_size = false;
   int _decoupled_width = 0;
   int _decoupled_height = 0;
+  lev2::commandbuffer_ptr_t _cmdbuf;
 
 protected:
   void _doGpuInit(lev2::Context* pTARG) override;
