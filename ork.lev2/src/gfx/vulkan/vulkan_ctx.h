@@ -843,17 +843,19 @@ public:
   //////////////////////////////////////////////
   template <typename T>
   void _setObjectDebugName(T& object, VkObjectType objectType, const char* name) {
-    VkDebugUtilsObjectNameInfoEXT nameInfo = {};
-    initializeVkStruct(nameInfo,VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT);
-    nameInfo.objectType = objectType;
-    nameInfo.objectHandle = reinterpret_cast<uint64_t>(object);
-    nameInfo.pObjectName = name;
-    _vkSetDebugUtilsObjectName(_vkdevice, &nameInfo);
+    if(_vkSetDebugUtilsObjectName){
+      VkDebugUtilsObjectNameInfoEXT nameInfo = {};
+      initializeVkStruct(nameInfo,VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT);
+      nameInfo.objectType = objectType;
+      nameInfo.objectHandle = reinterpret_cast<uint64_t>(object);
+      nameInfo.pObjectName = name;
+      _vkSetDebugUtilsObjectName(_vkdevice, &nameInfo);
+    }
   }
   //////////////////////////////////////////////
-  template <typename T> void _fetchDeviceProcAddr(T& object, const char* name) {
+  template <typename T> bool _fetchDeviceProcAddr(T& object, const char* name) {
     object = reinterpret_cast<T>(vkGetDeviceProcAddr(_vkdevice, name));
-    OrkAssert(object != nullptr);
+    return (object!=nullptr);
   }
   //////////////////////////////////////////////
   VkDevice _vkdevice;
