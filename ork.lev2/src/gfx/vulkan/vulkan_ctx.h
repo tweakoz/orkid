@@ -884,6 +884,9 @@ public:
   vkcmdbufimpl_ptr_t _cmdbufcurframe_gfx_pri;
   //////////////////////////////////////////////
   PFN_vkSetDebugUtilsObjectNameEXT _vkSetDebugUtilsObjectName;
+  PFN_vkCmdDebugMarkerBeginEXT _vkCmdDebugMarkerBeginEXT;
+  PFN_vkCmdDebugMarkerEndEXT _vkCmdDebugMarkerEndEXT;
+  PFN_vkCmdDebugMarkerInsertEXT _vkCmdDebugMarkerInsertEXT;
   //////////////////////////////////////////////
   void* mhHWND;
   vkcontext_ptr_t _parentTarget;

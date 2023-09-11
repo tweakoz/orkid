@@ -132,6 +132,7 @@ VulkanInstance::VulkanInstance() {
   _slp_cache = std::make_shared<shadlang::ShadLangParserCache>();
 
   _instance_extensions.push_back("VK_EXT_debug_utils");
+  _instance_extensions.push_back("VK_EXT_debug_report");
 
   for( size_t i=0; i<glfwExtensionCount; i++ ){
     _instance_extensions.push_back(glfwExtensions[i]);

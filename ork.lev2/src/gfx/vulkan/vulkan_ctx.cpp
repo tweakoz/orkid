@@ -107,6 +107,9 @@ void VkContext::_initVulkanForDevInfo(vkdeviceinfo_ptr_t vk_devinfo) {
   ////////////////////////////
 
   _device_extensions.push_back("VK_KHR_swapchain");
+  _device_extensions.push_back("VK_EXT_debug_marker");
+
+  //_device_extensions.push_back("VK_EXT_debug_utils");
 
   VkDeviceCreateInfo DCI = {};
   initializeVkStruct(DCI, VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO);
@@ -135,6 +138,9 @@ void VkContext::_initVulkanForWindow(VkSurfaceKHR surface) {
   _initVulkanCommon();
 
   _fetchDeviceProcAddr(_vkSetDebugUtilsObjectName,"vkSetDebugUtilsObjectNameEXT");
+  _fetchDeviceProcAddr(_vkCmdDebugMarkerBeginEXT,"vkCmdDebugMarkerBeginEXT");
+  _fetchDeviceProcAddr(_vkCmdDebugMarkerEndEXT,"vkCmdDebugMarkerEndEXT");
+  _fetchDeviceProcAddr(_vkCmdDebugMarkerInsertEXT,"vkCmdDebugMarkerInsertEXT");
 
   // UGLY!!!
 
@@ -149,6 +155,9 @@ void VkContext::_initVulkanForWindow(VkSurfaceKHR surface) {
       ctx->_vkqfid_compute   = _vkqfid_compute;
 
       ctx->_vkSetDebugUtilsObjectName = _vkSetDebugUtilsObjectName;
+      ctx->_vkCmdDebugMarkerBeginEXT = _vkCmdDebugMarkerBeginEXT;
+      ctx->_vkCmdDebugMarkerEndEXT = _vkCmdDebugMarkerEndEXT;
+      ctx->_vkCmdDebugMarkerInsertEXT = _vkCmdDebugMarkerInsertEXT;
 
     }
   }
@@ -1020,7 +1029,19 @@ void VkContext::debugPopGroup() {
 
 ///////////////////////////////////////////////////////
 
-void VkContext::debugMarker(const std::string str) {
+void VkContext::debugMarker(const std::string named){
+  if(_vkCmdDebugMarkerInsertEXT){
+    OrkAssert(_current_cmdbuf!=nullptr);
+    auto cmdbuf_impl = _current_cmdbuf->_impl.getShared<VkCommandBufferImpl>();
+    VkDebugMarkerMarkerInfoEXT markerInfo = {};
+    initializeVkStruct(markerInfo,VK_STRUCTURE_TYPE_DEBUG_MARKER_MARKER_INFO_EXT);
+    markerInfo.color[0] = 1.0f;  // R
+    markerInfo.color[1] = 0.0f;  // G
+    markerInfo.color[2] = 0.0f;  // B
+    markerInfo.color[3] = 1.0f;  // A
+    markerInfo.pMarkerName = named.c_str();
+    _vkCmdDebugMarkerInsertEXT(cmdbuf_impl->_vkcmdbuf, &markerInfo);
+  }
 }
 
 ///////////////////////////////////////////////////////
