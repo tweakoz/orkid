@@ -29,6 +29,7 @@ struct Timer
     float SecsSinceStart() const;
     float SpanInSecs() const;
 	void OnInterval( float interval, const void_lambda_t& oper );
+	void setCurrentTime(float value);
 
 private:
 

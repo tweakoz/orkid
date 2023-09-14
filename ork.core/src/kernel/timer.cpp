@@ -42,6 +42,12 @@ void Timer::Start()
     mStartTime = get_sync_time();
 }
 
+void Timer::setCurrentTime(float time)
+{
+    float now = get_sync_time();
+	mStartTime = now - time;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 void Timer::End()

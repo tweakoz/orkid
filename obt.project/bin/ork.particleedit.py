@@ -8,7 +8,7 @@
 ################################################################################
 
 import math, sys, os, random, numpy, argparse
-from ork import path
+from obt import path
 from orkengine.core import *
 from orkengine.lev2 import *
 l2exdir = (lev2exdir()/"python").normalized.as_string
