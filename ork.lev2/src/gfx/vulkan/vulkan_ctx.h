@@ -698,7 +698,7 @@ struct VkFxInterface final : public FxInterface {
   FxShader* shaderFromShaderText(const std::string& name, const std::string& shadertext) final;
 
   datablock_ptr_t _writeIntermediateToDataBlock(shadlang::SHAST::transunit_ptr_t tunit);
-  vkfxsfile_ptr_t _readFromDataBlock(datablock_ptr_t inpdata);
+  vkfxsfile_ptr_t _readFromDataBlock(datablock_ptr_t inpdata,FxShader* shader);
   vkfxsfile_ptr_t _loadShaderFromShaderText(
       FxShader* shader,               //
       const std::string& parser_name, //
@@ -710,7 +710,8 @@ struct VkFxInterface final : public FxInterface {
   void unmapParamBuffer(FxShaderParamBufferMapping* mapping) final;
   void bindParamBlockBuffer(const FxShaderParamBlock* block, FxShaderParamBuffer* buffer) final;
 
-  FxShaderTechnique* _currentTEK = nullptr;
+  fxtechnique_constptr_t _currentORKTEK = nullptr;
+  vkfxstek_ptr_t _currentVKTEK;
   vkcontext_rawptr_t _contextVK;
   std::map<AssetPath, vkfxsfile_ptr_t> _fxshaderfiles;
   shadlang::slpcache_ptr_t _slp_cache;

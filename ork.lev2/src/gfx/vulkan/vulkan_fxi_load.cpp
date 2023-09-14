@@ -280,12 +280,14 @@ datablock_ptr_t VkFxInterface::_writeIntermediateToDataBlock(shadlang::SHAST::tr
 
 ///////////////////////////////////////////////////////////////////////////////
 
-vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock){
+vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock,
+                                                  FxShader* ork_shader ){
   ////////////////////////////////////////////////////////
   // parse datablock
   ////////////////////////////////////////////////////////
 
   auto vulkan_shaderfile = std::make_shared<VkFxShaderFile>();
+  ork_shader->_internalHandle.setShared<VkFxShaderFile>(vulkan_shaderfile);
 
   chunkfile::DefaultLoadAllocator load_alloc;
   chunkfile::Reader chunkreader(vkfx_datablock, load_alloc);
@@ -453,12 +455,21 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
     OrkAssert(str_tek == "technique");
     auto str_tek_name = tecniq_input_stream->readIndexedString(chunkreader);
 
+
     auto vk_tek                                     = std::make_shared<VkFxShaderTechnique>();
     vulkan_shaderfile->_vk_techniques[str_tek_name] = vk_tek;
 
     size_t num_passes = tecniq_input_stream->readItem<size_t>();
 
+    auto ork_tek = new FxShaderTechnique;
+    ork_tek->_impl.setShared<VkFxShaderTechnique>(vk_tek);
+    ork_tek->_techniqueName = str_tek_name;
+    ork_tek->_shader        = ork_shader;
+    ork_shader->_techniques[str_tek_name]=ork_tek;
+
     for (size_t i = 0; i < num_passes; i++) {
+      
+      // vulkan side
       auto str_pass = tecniq_input_stream->readIndexedString(chunkreader);
       OrkAssert(str_pass == "pass");
       auto str_vtx_name = tecniq_input_stream->readIndexedString(chunkreader);
@@ -473,6 +484,15 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
       vk_program->_frgshader = frg_obj;
       vk_pass->_vk_program   = vk_program;
       vk_tek->_vk_passes.push_back(vk_pass);
+
+      // orkid side
+      auto ork_pass = new FxShaderPass;
+      ork_pass->_name = FormatString("pass-%zu", i);
+      ork_pass->_impl.setShared<VkFxShaderPass>(vk_pass);
+
+      ork_tek->_passes.push_back(ork_pass);
+
+
     }
 
     return vk_tek;
@@ -516,7 +536,7 @@ vkfxsfile_ptr_t VkFxInterface::_loadShaderFromShaderText(
   } // shader binary not cached, compile and cache..
   ////////////////////////////////////////////////////////
   vkfx_datablock->dump();
-  vulkan_shaderfile = _readFromDataBlock(vkfx_datablock);
+  vulkan_shaderfile = _readFromDataBlock(vkfx_datablock,shader);
   ////////////////////////////////////////////////////////
   return vulkan_shaderfile;
 }

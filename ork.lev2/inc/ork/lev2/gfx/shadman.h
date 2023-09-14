@@ -38,16 +38,13 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 
 struct FxShaderPass {
-  std::string mPassName;
-  void* mInternalHandle;
-  bool mbRestorePass;
 
+  FxShaderPass();
+
+  std::string _name;
+  svarp_t _impl;
   RenderQueueSortingData mRenderQueueSortingData;
 
-  FxShaderPass(void* ih = 0);
-  void* GetPlatformHandle(void) const {
-    return mInternalHandle;
-  }
 };
 
 ///////////////////////////////////////////////////////////////////////////////

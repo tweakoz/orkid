@@ -31,13 +31,17 @@ void VkFxInterface::_doBeginFrame() {
 ///////////////////////////////////////////////////////////////////////////////
 
 int VkFxInterface::BeginBlock(fxtechnique_constptr_t tek, const RenderContextInstData& data) {
-  return 0;
+  auto vk_tek = tek->_impl.getShared<VkFxShaderTechnique>();
+  _currentORKTEK = tek;
+  _currentVKTEK = vk_tek;
+  return (int) vk_tek->_vk_passes.size();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 bool VkFxInterface::BindPass(int ipass) {
-  return false;
+  auto pass = _currentVKTEK->_vk_passes[ipass];
+  return true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

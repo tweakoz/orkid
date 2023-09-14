@@ -29,10 +29,10 @@ FxParamRec::FxParamRec()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-FxShaderPass::FxShaderPass(void* ih)
-    : mInternalHandle(ih)
-    , mbRestorePass(false) {
+FxShaderPass::FxShaderPass(){
 }
+
+///////////////////////////////////////////////////////////////////////////////
 
 FxShaderParam::FxShaderParam()
     : meParamType(EPROPTYPE_END)
