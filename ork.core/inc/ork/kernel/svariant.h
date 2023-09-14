@@ -379,7 +379,7 @@ public:
   // return true if the contained object is a T
   //////////////////////////////////////////////////////////////
   template <typename T> bool isShared() const {
-    static_assert(sizeof(T) <= ksize, "static_variant size violation");
+    static_assert(sizeof(std::shared_ptr<T>) <= ksize, "static_variant size violation");
     return (_mtinfo != 0) ? (*_mtinfo) == typeid(std::shared_ptr<T>) : false;
   }
   //////////////////////////////////////////////////////////////
