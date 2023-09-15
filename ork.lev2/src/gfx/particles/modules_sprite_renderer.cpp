@@ -32,7 +32,7 @@ struct SpriteRendererInst : public ParticleModuleInst {
   void compute(GraphInst* inst, ui::updatedata_ptr_t updata) final;
   void _render(const ork::lev2::RenderContextInstData& RCID);
 
-  Blending meBlendMode              = Blending::ALPHA;
+  BlendingMacro meBlendMode              = BlendingMacro::ALPHA;
   ParticleItemAlignment meAlignment = ParticleItemAlignment::BILLBOARD;
   bool mbSort                       = false;
   int miImageFrame                  = 0;
@@ -167,7 +167,7 @@ void SpriteRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
 
       bool bsort = mbSort;
 
-      if (meBlendMode >= Blending::ADDITIVE && meBlendMode <= Blending::ALPHA_SUBTRACTIVE) {
+      if (meBlendMode >= BlendingMacro::ADDITIVE && meBlendMode <= BlendingMacro::ALPHA_SUBTRACTIVE) {
         bsort = false;
       }
 

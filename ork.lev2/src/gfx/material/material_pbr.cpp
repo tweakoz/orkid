@@ -172,10 +172,10 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu,con
         FXI->BindParamCTex(_this->_parMapSpecularEnv, envtex.get() );
 
         basic_lambda(RCID, ipass);
-        _this->_rasterstate.SetCullTest(ECullTest::OFF);
-        _this->_rasterstate.SetZWriteMask(false);
-        _this->_rasterstate.SetDepthTest(EDepthTest::LEQUALS);
-        _this->_rasterstate.SetRGBAWriteMask(true, true);
+        //_this->_rasterstate.SetCullTest(ECullTest::OFF);
+        //_this->_rasterstate.SetZWriteMask(false);
+        //_this->_rasterstate.SetDepthTest(EDepthTest::LEQUALS);
+        //_this->_rasterstate.SetRGBAWriteMask(true, true);
         //RSI->BindRasterState(_this->_rasterstate);
       };
       //////////////////////////////////////////////////////////
@@ -236,10 +236,10 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu,con
               const auto& CPD  = RCFD->topCPD();
               auto FXI         = context->FXI();
               auto modcolor = context->RefModColor();
-              _this->_rasterstate.SetCullTest(ECullTest::PASS_FRONT);
-              _this->_rasterstate.SetDepthTest(EDepthTest::LEQUALS);
-              _this->_rasterstate.SetZWriteMask(true);
-              _this->_rasterstate.SetRGBAWriteMask(true, true);
+              //_this->_rasterstate.SetCullTest(ECullTest::PASS_FRONT);
+              //_this->_rasterstate.SetDepthTest(EDepthTest::LEQUALS);
+              //_this->_rasterstate.SetZWriteMask(true);
+              //_this->_rasterstate.SetRGBAWriteMask(true, true);
               //RSI->BindRasterState(mtl->_rasterstate);
               FXI->BindParamVect4(_this->_parModColor, modcolor*_this->_baseColor);
           };
@@ -338,10 +338,10 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu,con
               auto modcolor = context->RefModColor();
               FXI->BindParamVect4(_this->_parModColor, modcolor*_this->_baseColor);
               FXI->BindParamMatrix(_this->_paramMVP, monocams->MVPMONO(worldmatrix));
-              _this->_rasterstate.SetCullTest(ECullTest::PASS_FRONT);
-              _this->_rasterstate.SetDepthTest(EDepthTest::LEQUALS);
-              _this->_rasterstate.SetZWriteMask(true);
-              _this->_rasterstate.SetRGBAWriteMask(true, true);
+              //_this->_rasterstate.SetCullTest(ECullTest::PASS_FRONT);
+              //_this->_rasterstate.SetDepthTest(EDepthTest::LEQUALS);
+              //_this->_rasterstate.SetZWriteMask(true);
+              //_this->_rasterstate.SetRGBAWriteMask(true, true);
               //RSI->BindRasterState(_this->_rasterstate);
 
             });
@@ -399,10 +399,10 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu,con
             auto RCFD       = RCID._RCFD;
             auto context    = RCFD->GetTarget();
             //auto RSI        = context->RSI();
-            _this->_rasterstate.SetCullTest(ECullTest::PASS_FRONT);
-            _this->_rasterstate.SetDepthTest(EDepthTest::LESS);
-            _this->_rasterstate.SetZWriteMask(true);
-            _this->_rasterstate.SetRGBAWriteMask(true, true);
+            //_this->_rasterstate.SetCullTest(ECullTest::PASS_FRONT);
+            //_this->_rasterstate.SetDepthTest(EDepthTest::LESS);
+            //_this->_rasterstate.SetZWriteMask(true);
+            //_this->_rasterstate.SetRGBAWriteMask(true, true);
             //RSI->BindRasterState(_this->_rasterstate);
           };
 
@@ -482,10 +482,10 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu,con
                 auto FXI     = context->FXI();
                 auto MTXI    = context->MTXI();
                 //auto RSI     = context->RSI();
-                _this->_rasterstate.SetCullTest(ECullTest::PASS_FRONT);
-                _this->_rasterstate.SetDepthTest(EDepthTest::LEQUALS);
-                _this->_rasterstate.SetZWriteMask(true);
-                _this->_rasterstate.SetRGBAWriteMask(false, false);
+                //_this->_rasterstate.SetCullTest(ECullTest::PASS_FRONT);
+                //_this->_rasterstate.SetDepthTest(EDepthTest::LEQUALS);
+                //_this->_rasterstate.SetZWriteMask(true);
+                //_this->_rasterstate.SetRGBAWriteMask(false, false);
                 //RSI->BindRasterState(_this->_rasterstate);
               });
             }
@@ -512,10 +512,10 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu,con
         auto FXI     = context->FXI();
         auto MTXI    = context->MTXI();
         //auto RSI     = context->RSI();
-        _this->_rasterstate.SetCullTest(ECullTest::OFF);
-        _this->_rasterstate.SetDepthTest(EDepthTest::OFF);
-        _this->_rasterstate.SetZWriteMask(true);
-        _this->_rasterstate.SetRGBAWriteMask(true, false);
+        //_this->_rasterstate.SetCullTest(ECullTest::OFF);
+        //_this->_rasterstate.SetDepthTest(EDepthTest::OFF);
+        //_this->_rasterstate.SetZWriteMask(true);
+        //_this->_rasterstate.SetRGBAWriteMask(true, false);
         //RSI->BindRasterState(_this->_rasterstate);
       };
       switch (permu._rendering_model) {
@@ -599,12 +599,12 @@ PBRMaterial::PBRMaterial(Context* targ)
 
 PBRMaterial::PBRMaterial()
     : _baseColor(1, 1, 1) {
-  _rasterstate.SetShadeModel(ESHADEMODEL_SMOOTH);
-  _rasterstate.SetAlphaTest(EALPHATEST_OFF);
-  _rasterstate.SetBlending(Blending::OFF);
-  _rasterstate.SetDepthTest(EDepthTest::LEQUALS);
-  _rasterstate.SetZWriteMask(true);
-  _rasterstate.SetCullTest(ECullTest::PASS_FRONT);
+  //_rasterstate.SetShadeModel(ESHADEMODEL_SMOOTH);
+  //_rasterstate.SetAlphaTest(EALPHATEST_OFF);
+  //_rasterstate.SetBlending(Blending::OFF);
+  //_rasterstate.SetDepthTest(EDepthTest::LEQUALS);
+  //_rasterstate.SetZWriteMask(true);
+  //_rasterstate.SetCullTest(ECullTest::PASS_FRONT);
   miNumPasses = 1;
   _shaderpath = "orkshader://pbr.glfx";
 }

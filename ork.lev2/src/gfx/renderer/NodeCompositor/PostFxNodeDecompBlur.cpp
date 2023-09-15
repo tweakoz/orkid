@@ -130,7 +130,7 @@ struct IMPL {
             _rtg_c->Resize(smallw,smallh);
             FBI->PushRtGroup(_rtg_c.get());
             _freestyle_mtl->begin(_tek_maskbright,*framedata);
-            _freestyle_mtl->_rasterstate.SetBlending(Blending::OFF);
+            _freestyle_mtl->_rasterstate.setBlendingMacro(BlendingMacro::OFF);
             _freestyle_mtl->bindParamFloat(_fxpMaskThreshold, _node->_threshold);
             _freestyle_mtl->bindParamCTex(_fxpMrtMap0, _rtg_b->GetMrt(0)->_texture.get());
             _freestyle_mtl->bindParamMatrix(_fxpMVP, fmtx4::Identity());
@@ -143,7 +143,7 @@ struct IMPL {
             _rtg_d->Resize(smallw,smallh);
             FBI->PushRtGroup(_rtg_d.get());
             _freestyle_mtl->begin(_tek_blurx,*framedata);
-            _freestyle_mtl->_rasterstate.SetBlending(Blending::OFF);
+            _freestyle_mtl->_rasterstate.setBlendingMacro(BlendingMacro::OFF);
             _freestyle_mtl->bindParamFloat(_fxpBlurFactor, _node->_blurfactor);
             _freestyle_mtl->bindParamInt(_fxpBlurFactorI, _node->_blurwidth );
             _freestyle_mtl->bindParamInt(_fxpImageW,smallw );
@@ -159,7 +159,7 @@ struct IMPL {
             _rtg_e->Resize(smallw,smallh);
             FBI->PushRtGroup(_rtg_e.get());
             _freestyle_mtl->begin(_tek_blury,*framedata);
-            _freestyle_mtl->_rasterstate.SetBlending(Blending::OFF);
+            _freestyle_mtl->_rasterstate.setBlendingMacro(BlendingMacro::OFF);
             _freestyle_mtl->bindParamFloat(_fxpBlurFactor, _node->_blurfactor);
             _freestyle_mtl->bindParamInt(_fxpBlurFactorI, _node->_blurwidth);
             _freestyle_mtl->bindParamInt(_fxpImageW,smallw );
@@ -176,7 +176,7 @@ struct IMPL {
             _rtg_out->Resize(finalw,finalh);
             FBI->PushRtGroup(_rtg_out.get());
             _freestyle_mtl->begin(_tek_join,*framedata);
-            _freestyle_mtl->_rasterstate.SetBlending(Blending::OFF);
+            _freestyle_mtl->_rasterstate.setBlendingMacro(BlendingMacro::OFF);
             _freestyle_mtl->bindParamFloat(_fxpBlurFactor, _node->_blurfactor);
             _freestyle_mtl->bindParamFloat(_fxpEffectAmount, _node->_amount );
             _freestyle_mtl->bindParamCTex(_fxpMrtMap0, _rtg_e->GetMrt(0)->_texture.get());

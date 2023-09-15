@@ -63,7 +63,7 @@ public:
   FlatMaterial();
   void update(const RenderContextInstData& RCID) final;
   void gpuInit(const RenderContextInstData& RCID) final;
-  Blending _blending = Blending::OFF;
+  BlendingMacro _blending = BlendingMacro::OFF;
 };
 
 using flatmaterial_ptr_t = std::shared_ptr<FlatMaterial>;
@@ -85,7 +85,7 @@ public:
   rtgroup_ptr_t _gradient_rtgroup;
   asset::asset_ptr_t _modulation_texture_asset;
   texture_ptr_t _modulation_texture;
-  Blending _blending = Blending::OFF;
+  BlendingMacro _blending = BlendingMacro::OFF;
   float _gradientAlphaIntensity = 1.0f;
   float _gradientColorIntensity = 1.0f;
 };

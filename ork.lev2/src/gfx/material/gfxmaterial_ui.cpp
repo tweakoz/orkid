@@ -37,13 +37,6 @@ GfxMaterialUI::GfxMaterialUI(Context* pTarg)
     : meType(ETYPE_STANDARD)
     , meUIColorMode(UiColorMode::MOD) {
   miNumPasses = 1;
-  _rasterstate.SetShadeModel(ESHADEMODEL_SMOOTH);
-  _rasterstate.SetAlphaTest(EALPHATEST_OFF);
-  _rasterstate.SetBlending(Blending::OFF);
-  _rasterstate.SetDepthTest(EDepthTest::OFF);
-  _rasterstate.SetZWriteMask(false);
-  _rasterstate.SetRGBAWriteMask(true,true);
-  _rasterstate.SetCullTest(ECullTest::OFF);
 
   auto mtl_load_req = std::make_shared<asset::LoadRequest>();
   mtl_load_req->_asset_path = "orkshader://ui";
@@ -143,7 +136,6 @@ bool GfxMaterialUI::BeginPass(Context* pTarg, int iPass) {
   pTarg->FXI()->BindParamMatrix(hTransform, MatMVP);
   pTarg->FXI()->BindParamVect4(hModColor, pTarg->RefModColor());
   pTarg->FXI()->CommitParams();
-  //pTarg->RSI()->BindRasterState(_rasterstate);
 
   return true;
 }
@@ -155,11 +147,6 @@ GfxMaterialUIText::GfxMaterialUIText(Context* pTarg)
     , hTransform(0)
     , hModColor(0)
     , hColorMap(0) {
-  _rasterstate.SetAlphaTest(EALPHATEST_GREATER, 0.0f);
-  _rasterstate.SetBlending(Blending::OFF);
-  _rasterstate.SetDepthTest(EDepthTest::ALWAYS);
-  _rasterstate.SetZWriteMask(false);
-  _rasterstate.SetCullTest(ECullTest::OFF);
 
   miNumPasses = 1;
 
@@ -181,8 +168,6 @@ void GfxMaterialUIText::gpuInit(ork::lev2::Context* pTarg) {
   hTransform = pTarg->FXI()->parameter(_shader, "mvp");
   hModColor  = pTarg->FXI()->parameter(_shader, "ModColor");
   hColorMap  = pTarg->FXI()->parameter(_shader, "ColorMap");
-
-  _rasterstate.SetDepthTest(ork::lev2::EDepthTest::OFF);
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -208,11 +193,6 @@ void GfxMaterialUIText::EndPass(Context* pTarg) {
 
 bool GfxMaterialUIText::BeginPass(Context* pTarg, int iPass) {
   pTarg->FXI()->BindPass(iPass);
-
-  ///////////////////////////////
-  //SRasterState& RasterState = _rasterstate; // pTarg->RSI()->RefUIRasterState();
-
-  // RasterState.SetAlphaTest( EALPHATEST_GREATER, 0.0f );
    
   ///////////////////////////////
 
@@ -242,11 +222,6 @@ void GfxMaterialUIText::UpdateMVPMatrix(Context* context) {
 GfxMaterialUITextured::GfxMaterialUITextured(Context* pTarg, const std::string& Technique)
     : mTechniqueName(Technique) {
   miNumPasses = 1;
-  _rasterstate.SetShadeModel(ESHADEMODEL_SMOOTH);
-  _rasterstate.SetAlphaTest(EALPHATEST_OFF);
-  _rasterstate.SetBlending(Blending::OFF);
-  _rasterstate.SetDepthTest(EDepthTest::OFF);
-  _rasterstate.SetCullTest(ECullTest::OFF);
 
   if (pTarg) {
     gpuInit(pTarg);
@@ -312,9 +287,6 @@ void GfxMaterialUITextured::EndPass(Context* pTarg) {
 ////////////////////////////////////////////////////////////2/////////////
 
 bool GfxMaterialUITextured::BeginPass(Context* pTarg, int iPass) {
-  ///////////////////////////////
-  //pTarg->RSI()->BindRasterState(_rasterstate);
-  ///////////////////////////////
 
   const fmtx4& MatMVP = pTarg->MTXI()->RefMVPMatrix();
 

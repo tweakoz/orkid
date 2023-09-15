@@ -152,15 +152,43 @@ enum EScissorTest {
 
 //////////////////////////////////////
 
-enum EAlphaTest {
-  EALPHATEST_OFF = 0,
-  EALPHATEST_GREATER,
-  EALPHATEST_LESS,
-}; // 1 bit
+enum struct BlendingOp : crc_enum_t {
+  CrcEnum(ADD),
+  CrcEnum(SUBTRACT),
+  CrcEnum(REVSUBTRACT),
+  CrcEnum(MIN),
+  CrcEnum(MAX),
+  CrcEnum(NONE)
+};
+
+enum struct BlendingFactor : crc_enum_t {
+  CrcEnum(ZERO),
+  CrcEnum(ONE),
+  CrcEnum(SRC_COLOR),
+  CrcEnum(ONE_MINUS_SRC_COLOR),
+  CrcEnum(DST_COLOR),
+  CrcEnum(ONE_MINUS_DST_COLOR),
+  CrcEnum(SRC_ALPHA),
+  CrcEnum(ONE_MINUS_SRC_ALPHA),
+  CrcEnum(DST_ALPHA),
+  CrcEnum(ONE_MINUS_DST_ALPHA),
+  CrcEnum(CONSTANT_COLOR),
+  CrcEnum(ONE_MINUS_CONSTANT_COLOR),
+  CrcEnum(CONSTANT_ALPHA),
+  CrcEnum(ONE_MINUS_CONSTANT_ALPHA),
+  CrcEnum(SRC_ALPHA_SATURATE),
+  CrcEnum(NONE)
+};
+
+enum struct EPolygonMode : crc_enum_t {
+  CrcEnum(FILL),
+  CrcEnum(LINE),
+  CrcEnum(POINT),
+};
 
 //////////////////////////////////////
 
-enum struct Blending : crc_enum_t {
+enum struct BlendingMacro : crc_enum_t {
   CrcEnum(OFF),
   CrcEnum(PREMA),             // (SrcClr) + (FBClr*(1-SrcAlpha))
   CrcEnum(ALPHA),             // (SrcClr*SrcAlpha) + (FBClr*(1-SrcAlpha))
@@ -213,21 +241,17 @@ enum EStencilMode {
 }; // 4 bits
 
 //////////////////////////////////////
-// Interp of Per Vertex Params?
 
-enum EShadeModel {
-  ESHADEMODEL_FLAT = 0,
-  ESHADEMODEL_SMOOTH,
-
-}; // 1 bit
-
-//////////////////////////////////////
+enum struct EFrontFace : crc_enum_t {
+  CrcEnum(CLOCKWISE),
+  CrcEnum(COUNTER_CLOCKWISE),
+}; 
 
 enum struct ECullTest : crc_enum_t {
   CrcEnum(OFF),
   CrcEnum(PASS_FRONT),
   CrcEnum(PASS_BACK),
-}; // 2 bits
+}; 
 
 ///////////////////////////////////////////////////////////////////////////////
 

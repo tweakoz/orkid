@@ -523,7 +523,7 @@ struct BillboardStringDrawableData : public DrawableData {
   float _scale = 1.0f;
   fvec4 _color;
   bool _cameraRelativeOffset = false;
-  Blending _blendmode = Blending::ALPHA_ADDITIVE;
+  BlendingMacro _blendmode = BlendingMacro::ALPHA_ADDITIVE;
   lev2::font_rawconstptr_t _font = nullptr;
 };
 
@@ -566,7 +566,7 @@ struct BillboardStringDrawable final : public Drawable {
   float _scale = 1.0f;
   fvec3 _upvec;
   fvec4 _color;
-  Blending _blendmode = Blending::ALPHA_ADDITIVE;
+  BlendingMacro _blendmode = BlendingMacro::ALPHA_ADDITIVE;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

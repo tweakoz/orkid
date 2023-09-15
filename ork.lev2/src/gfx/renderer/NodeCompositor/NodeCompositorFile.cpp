@@ -201,7 +201,7 @@ void FileOutputCompositingNode::composite(CompositorDrawData& drawdata) {
             mtl.begin(impl->_fxtechnique6x6, framedata);
             break;
         }
-        mtl._rasterstate.SetBlending(Blending::OFF);
+        mtl._rasterstate.setBlendingMacro(BlendingMacro::OFF);
         mtl.bindParamCTex(impl->_fxpColorMap, tex);
         mtl.bindParamMatrix(impl->_fxpMVP, fmtx4::Identity());
         this_buf->Render2dQuadEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 1, 1));

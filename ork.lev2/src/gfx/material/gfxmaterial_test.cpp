@@ -26,12 +26,6 @@ bool gearlyhack = true;
 
 GfxMaterial3DSolid::GfxMaterial3DSolid(Context* pTARG)
     : meColorMode(EMODE_MOD_COLOR) {
-  _rasterstate.SetShadeModel(ESHADEMODEL_SMOOTH);
-  _rasterstate.SetAlphaTest(EALPHATEST_OFF);
-  _rasterstate.SetBlending(Blending::OFF);
-  _rasterstate.SetDepthTest(EDepthTest::LEQUALS);
-  _rasterstate.SetZWriteMask(true);
-  _rasterstate.SetCullTest(ECullTest::OFF);
 
   miNumPasses = 1;
 
@@ -52,13 +46,6 @@ GfxMaterial3DSolid::GfxMaterial3DSolid(Context* pTARG, const char* puserfx, cons
     , mUserFxName(puserfx)
     , mUserTekName(pusertek)
     , mAllowCompileFailure(allowcompilefailure) {
-
-  _rasterstate.SetShadeModel(ESHADEMODEL_SMOOTH);
-  _rasterstate.SetAlphaTest(EALPHATEST_OFF);
-  _rasterstate.SetBlending(Blending::OFF);
-  _rasterstate.SetDepthTest(EDepthTest::LEQUALS);
-  _rasterstate.SetZWriteMask(true);
-  _rasterstate.SetCullTest(ECullTest::OFF);
 
   miNumPasses = 1;
 
@@ -337,7 +324,7 @@ bool GfxMaterial3DSolid::BeginPass(Context* pTarg, int iPass) {
   }
 
   FXI->CommitParams();
-  //pTarg->RSI()->BindRasterState(_rasterstate);
+
   return true;
 }
 

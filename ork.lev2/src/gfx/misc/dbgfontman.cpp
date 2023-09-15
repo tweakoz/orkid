@@ -158,9 +158,9 @@ void FontMan::_endTextBlock(Context* context) {
       auto font_material = the_font->_fs_material;
       auto& RSTATE       = font_material->_rasterstate;
       the_font->_pipe_stereo->wrappedDrawCall(*RCID, [&]() { //
-        RSTATE.SetCullTest(ECullTest::OFF);
-        RSTATE.SetDepthTest(EDepthTest::OFF);
-        RSTATE.SetBlending(top_state->_blending);
+        //RSTATE.SetCullTest(ECullTest::OFF);
+        //RSTATE.SetDepthTest(EDepthTest::OFF);
+        //RSTATE.SetBlending(top_state->_blending);
         //RSI->BindRasterState(RSTATE);
         GBI->DrawPrimitiveEML(mTextWriter, ork::lev2::PrimitiveType::TRIANGLES);
       });

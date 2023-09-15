@@ -32,7 +32,7 @@
 
 template class ork::util::ContextTLS<ork::lev2::ThreadGfxContext>;
 
-ork::lev2::Context* ork::lev2::contextForCurrentThread(){
+ork::lev2::Context* ork::lev2::contextForCurrentThread() {
   return ork::lev2::ThreadGfxContext::context()->_context;
 }
 
@@ -40,9 +40,9 @@ ork::lev2::Context* ork::lev2::contextForCurrentThread(){
 
 namespace ork::lev2 {
 
-int msaaEnumToInt( const MsaaSamples& samples ){
+int msaaEnumToInt(const MsaaSamples& samples) {
   int convsamples = 0;
-  switch(samples){
+  switch (samples) {
     case MsaaSamples::MSAA_1X:
       convsamples = 1;
       break;
@@ -68,9 +68,9 @@ int msaaEnumToInt( const MsaaSamples& samples ){
   return convsamples;
 }
 
-MsaaSamples intToMsaaEnum( int samples ){
+MsaaSamples intToMsaaEnum(int samples) {
   MsaaSamples rval;
-  switch(samples){
+  switch (samples) {
     case 1:
       rval = MsaaSamples::MSAA_1X;
       break;
@@ -96,9 +96,9 @@ MsaaSamples intToMsaaEnum( int samples ){
   return rval;
 }
 
-std::string EBufferFormatToName(EBufferFormat fmt){
+std::string EBufferFormatToName(EBufferFormat fmt) {
   std::string rval;
-  switch(fmt){
+  switch (fmt) {
     case EBufferFormat::NONE:
       rval = "NONE";
       break;
@@ -157,26 +157,25 @@ std::string EBufferFormatToName(EBufferFormat fmt){
   return rval;
 }
 
-
 extern std::atomic<int> __FIND_IT;
 int G_MSAASAMPLES = 4;
-}
+} // namespace ork::lev2
 INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::IManipInterface, "IManipInterface");
 
 ///////////////////////////////////////////////////////////////////////////////
 
 using namespace ork::lev2; // too many things to add ork::lev2:: in front of in this file...
 
-BeginEnumRegistration(Blending);
-RegisterEnum(Blending, OFF);
-RegisterEnum(Blending, PREMA);
-RegisterEnum(Blending, ALPHA);
-RegisterEnum(Blending, DSTALPHA);
-RegisterEnum(Blending, ADDITIVE);
-RegisterEnum(Blending, ALPHA_ADDITIVE);
-RegisterEnum(Blending, SUBTRACTIVE);
-RegisterEnum(Blending, ALPHA_SUBTRACTIVE);
-RegisterEnum(Blending, MODULATE);
+BeginEnumRegistration(BlendingMacro);
+RegisterEnum(BlendingMacro, OFF);
+RegisterEnum(BlendingMacro, PREMA);
+RegisterEnum(BlendingMacro, ALPHA);
+RegisterEnum(BlendingMacro, DSTALPHA);
+RegisterEnum(BlendingMacro, ADDITIVE);
+RegisterEnum(BlendingMacro, ALPHA_ADDITIVE);
+RegisterEnum(BlendingMacro, SUBTRACTIVE);
+RegisterEnum(BlendingMacro, ALPHA_SUBTRACTIVE);
+RegisterEnum(BlendingMacro, MODULATE);
 EndEnumRegistration();
 
 BeginEnumRegistration(PrimitiveType);
@@ -201,22 +200,6 @@ ECullTest GlobalCullTest = ECullTest::PASS_FRONT;
 ////////////////////////////////////////////////////////////////////////////////
 
 void IManipInterface::Describe() {
-}
-
-/////////////////////////////////////////////////////////////////////////
-SRasterState::SRasterState() {
-  mPointSize = 1;
-  setScissorTest(ESCISSORTEST_OFF);
-  SetAlphaTest(EALPHATEST_OFF, 0);
-  SetBlending(Blending::OFF);
-  SetDepthTest(EDepthTest::LEQUALS);
-  SetShadeModel(ESHADEMODEL_SMOOTH);
-  SetCullTest(ECullTest::PASS_FRONT);
-  SetZWriteMask(true);
-  SetRGBAWriteMask(true, true);
-  SetStencilMode(ESTENCILTEST_OFF, ESTENCILOP_KEEP, ESTENCILOP_KEEP, 0, 0);
-  SetSortID(0);
-  SetTransparent(false);
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -247,11 +230,10 @@ DynamicVertexBuffer<SVtxV16T16C16>& GfxEnv::GetSharedDynamicV16T16C16() {
 GfxEnv::GfxEnv()
     : NoRttiSingleton<GfxEnv>()
     , mpMainWindow(nullptr)
-    , mVtxBufSharedVect(16 << 20, 0, PrimitiveType::TRIANGLES)    // SVtxV12C4T16==32bytes
+    , mVtxBufSharedVect(16 << 20, 0, PrimitiveType::TRIANGLES)     // SVtxV12C4T16==32bytes
     , mVtxBufSharedVect2(256 << 10, 0, PrimitiveType::TRIANGLES)   // SvtxV12N12B12T8C4==48bytes
     , _vtxBufSharedV16T16C16(1 << 20, 0, PrimitiveType::TRIANGLES) // SvtxV12N12B12T8C4==48bytes
-    , mGfxEnvMutex("GfxEnvGlobalMutex")
-{
+    , mGfxEnvMutex("GfxEnvGlobalMutex") {
   _lockCounter.store(0);
 
   mVtxBufSharedVect.SetRingLock(true);
@@ -266,53 +248,49 @@ GfxEnv::GfxEnv()
 
 /////////////////////////////////////////////////////////////////////////
 
-uint64_t GfxEnv::createLock(){
+uint64_t GfxEnv::createLock() {
   uint64_t l = GetRef()._lockCounter.fetch_add(1);
-  GetRef()._waitlockdata.atomicOp([l](WaitLockData& unlocked){
-    unlocked._locks.insert(l);
-  });
+  GetRef()._waitlockdata.atomicOp([l](WaitLockData& unlocked) { unlocked._locks.insert(l); });
   return l;
 }
 
 /////////////////////////////////////////////////////////////////////////
 
-void GfxEnv::releaseLock(uint64_t lock){
+void GfxEnv::releaseLock(uint64_t lock) {
   locknotifset_t notifs;
-  GetRef()._waitlockdata.atomicOp([lock,&notifs](WaitLockData& unlocked){
+  GetRef()._waitlockdata.atomicOp([lock, &notifs](WaitLockData& unlocked) {
     auto it = unlocked._locks.find(lock);
-    OrkAssert(it!=unlocked._locks.end());
+    OrkAssert(it != unlocked._locks.end());
     unlocked._locks.erase(it);
-    if(unlocked._locks.size()==0){
+    if (unlocked._locks.size() == 0) {
       notifs = unlocked._notifs;
       unlocked._notifs.clear();
     }
   });
-  for(auto n : notifs) n();
+  for (auto n : notifs)
+    n();
 }
 
 /////////////////////////////////////////////////////////////////////////
 
-GfxEnv::lockset_t GfxEnv::dumpLocks(){
+GfxEnv::lockset_t GfxEnv::dumpLocks() {
   GfxEnv::lockset_t rval;
-  GetRef()._waitlockdata.atomicOp([&rval](WaitLockData& unlocked){
-    rval = unlocked._locks;
-  });
+  GetRef()._waitlockdata.atomicOp([&rval](WaitLockData& unlocked) { rval = unlocked._locks; });
   return rval;
 }
 
 /////////////////////////////////////////////////////////////////////////
 
-void GfxEnv::onLocksDone(void_lambda_t l){
+void GfxEnv::onLocksDone(void_lambda_t l) {
   bool execute_now = false;
-  GetRef()._waitlockdata.atomicOp([l,&execute_now](WaitLockData& unlocked){
-    if(unlocked._locks.size()==0){
+  GetRef()._waitlockdata.atomicOp([l, &execute_now](WaitLockData& unlocked) {
+    if (unlocked._locks.size() == 0) {
       execute_now = true;
-    }
-    else{
+    } else {
       unlocked._notifs.push_back(l);
     }
   });
-  if(execute_now)
+  if (execute_now)
     l();
 }
 
@@ -333,25 +311,24 @@ bool GfxEnv::initialized() {
   return GetRef()._initialized;
 }
 
-void GfxEnv::initializeWithContext(context_ptr_t target){
+void GfxEnv::initializeWithContext(context_ptr_t target) {
 
-  auto op = [target](){
-
-    if( not GetRef()._initialized  ){
+  auto op = [target]() {
+    if (not GetRef()._initialized) {
       target->makeCurrentContext();
-      /////////////////////////////////////
-      #if !defined(__APPLE__)
-      //target->beginFrame();
-      #endif
+/////////////////////////////////////
+#if !defined(__APPLE__)
+// target->beginFrame();
+#endif
       /////////////////////////////////////
       target->debugPushGroup("GfxEnv.Lateinit");
       ork::lev2::GfxPrimitives::Init(target.get());
       __FIND_IT.store(0);
       target->debugPopGroup();
-      /////////////////////////////////////
-      #if !defined(__APPLE__)
-      //target->endFrame();
-      #endif
+/////////////////////////////////////
+#if !defined(__APPLE__)
+// target->endFrame();
+#endif
       /////////////////////////////////////
       GfxEnv::GetRef()._initialized = true;
     }

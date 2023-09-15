@@ -10,142 +10,71 @@
 #include <ork/lev2/gfx/gfxenv_enum.h>
 
 ///////////////////////////////////////////////////////////////////////////////
-namespace ork { namespace lev2 {
+namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct SRasterState {
-  // Render States
-
-  unsigned muZWriteMask : 1;   
-  unsigned muAWriteMask : 1;   
-  unsigned muRGBWriteMask : 1; 
-
-  unsigned muAlphaTest : 2;
-  unsigned muAlphaRef : 4; 
-
-  unsigned muScissorTest : 1; 
-  unsigned muShadeModel : 1; 
-  unsigned muStencilMode : 4; 
-  unsigned muStencilRef : 8;  
-  unsigned muStencilMask : 3; 
-  unsigned muStencilOpPass : 3;
-  unsigned muStencilOpFail : 3;
-
-  // Sort (Highest Priority)
-
-  unsigned muSortID : 11;     
-  unsigned muTransparent : 1; 
-
-  float mPointSize;
-
-  /////////////////////////////
-
-  ECullTest _culltest = ECullTest::OFF;         
-  EDepthTest _depthtest  = EDepthTest::LEQUALS; 
-  Blending _blending  = Blending::OFF; 
-
-  /////////////////////////////
-  // Accessors
-
-  void SetRGBAWriteMask(bool rgb, bool a) {
-    muRGBWriteMask = (unsigned)rgb;
-    muAWriteMask   = (unsigned)a;
-  }
-  void SetZWriteMask(bool bv) {
-    muZWriteMask = (unsigned)bv;
-  }
-
-  bool GetZWriteMask(void) const {
-    return (bool)muZWriteMask;
-  }
-  bool GetAWriteMask(void) const {
-    return (bool)muAWriteMask;
-  }
-  bool GetRGBWriteMask(void) const {
-    return (bool)muRGBWriteMask;
-  }
-
-  /////////////////////////////
-
-  void setScissorTest(EScissorTest eVal) {
-    muScissorTest = eVal;
-  }
-  void SetAlphaTest(EAlphaTest eVal, f32 falpharef = 0.0f) {
-    muAlphaTest = eVal;
-    muAlphaRef  = (unsigned)(falpharef * 16.0f);
-  }
-  void SetBlending(Blending eVal) {
-    _blending = eVal;
-  }
-  void SetDepthTest(EDepthTest eVal) {
-    _depthtest = eVal;
-  }
-  void SetShadeModel(EShadeModel eVal) {
-    muShadeModel = eVal;
-  }
-  void SetCullTest(ECullTest eVal) {
-    _culltest = eVal;
-  }
-  void SetStencilMode(EStencilMode eVal, EStencilOp ePassOp, EStencilOp eFailOp, u8 uRef, u8 uMsk) {
-    muStencilOpPass = (unsigned)ePassOp;
-    muStencilOpFail = (unsigned)eFailOp;
-    muStencilMode   = (unsigned)eVal;
-    muStencilRef    = uRef;
-    muStencilMask   = uMsk;
-  }
-
-  EScissorTest GetScissorTest(void) const {
-    return EScissorTest(muScissorTest);
-  }
-  EAlphaTest GetAlphaTest(void) const {
-    return EAlphaTest(muAlphaTest);
-  }
-  Blending GetBlending(void) const {
-    return _blending;
-  }
-  EDepthTest GetDepthTest(void) const {
-    return _depthtest;
-  }
-  EShadeModel GetShadeModel(void) const {
-    return EShadeModel(muShadeModel);
-  }
-  ECullTest GetCullTest(void) const {
-    return _culltest;
-  }
-  void GetStencilMode(EStencilMode& eVal, EStencilOp& ePassOp, EStencilOp& eFailOp, u8& uRef, u8& uMsk) const {
-    ePassOp = (EStencilOp)muStencilOpPass;
-    eFailOp = (EStencilOp)muStencilOpFail;
-    eVal    = (EStencilMode)muStencilMode;
-    uRef    = muStencilRef;
-    uMsk    = muStencilMask;
-  }
-
-  /////////////////////////////
-
-  void SetSortID(unsigned int uVal) {
-    muSortID = uVal;
-  }
-  void SetTransparent(bool bVal) {
-    muTransparent = bVal;
-  }
-
-  unsigned int GetSortID(void) const {
-    return (unsigned int)(muSortID);
-  }
-  bool GetTransparent(void) const {
-    return bool(muTransparent);
-  }
-
-  void SetPointSize(float i) {
-    mPointSize = i;
-  }
-  float GetPointSize() const {
-    return mPointSize;
-  }
-
-  /////////////////////////////////////////////////////////////////////////
 
   SRasterState();
+
+  void setDepthTest(EDepthTest dt);
+  void setCullTest(ECullTest dt);
+  void setWriteMaskZ(bool b);
+  void setWriteMaskA(bool b);
+  void setWriteMaskRGB(bool b);
+  void setDepthBiasEnable(bool b);
+  void setDepthBiasSlopeFactor(float f);
+  void setDepthBiasConstantFactor(float f);
+  void setDepthBiasClamp(float f);
+  void setDepthClampEnable(bool b);
+  void setRasterizerDiscard(bool b);
+  void setBlendEnable(bool b);
+  void setBlendConstant(const fvec4& f);
+  void setBlendFactorSrcRGB(BlendingFactor bf);
+  void setBlendFactorDstRGB(BlendingFactor bf);
+  void setBlendFactorSrcA(BlendingFactor bf);
+  void setBlendFactorDstA(BlendingFactor bf);
+  void setLineWidth(float f);
+  void setPolygonMode(EPolygonMode pm);
+  void setFrontFace(EFrontFace ff);
+  void setBlendingMacro(BlendingMacro bm);
+
+  // Render States
+  
+  bool _writemaskZ : 1;   
+  bool _writemaskA : 1;   
+  bool _writemaskRGB : 1;   
+  bool _depthBiasEnable : 1;
+  bool _depthClampEnable : 1;
+  bool _rasterizerDiscard : 1;   
+  bool _blendEnable : 1;
+
+  float _depthBiasSlopeFactor = 0.0f;
+  float _depthBiasConstantFactor = 0.0f;
+  float _depthBiasClamp = 0.0f;
+  float _lineWidth = 1.0f;
+
+  /////////////////////////////
+
+  EPolygonMode _polygonMode = EPolygonMode::FILL;
+  ECullTest _culltest = ECullTest::OFF;         
+  EFrontFace _frontface = EFrontFace::CLOCKWISE;
+
+  EDepthTest _depthtest  = EDepthTest::LEQUALS; 
+  fvec4 _blendConstant = fvec4(0,0,0,0);
+  BlendingFactor _blendFactorSrcRGB = BlendingFactor::ONE;
+  BlendingFactor _blendFactorDstRGB = BlendingFactor::ZERO;
+  BlendingFactor _blendFactorSrcA = BlendingFactor::ONE;
+  BlendingFactor _blendFactorDstA = BlendingFactor::ZERO;
+
+  // todo: logic ops
+
+  /////////////////////////////
+
+  svar16_t _impl;
+
 };
 
-}} // namespace ork::lev2
+///////////////////////////////////////////////////////////////////////////////
+} // namespace ork::lev2
+///////////////////////////////////////////////////////////////////////////////

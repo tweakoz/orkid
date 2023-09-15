@@ -10,12 +10,6 @@
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 FreestyleMaterial::FreestyleMaterial() {
-  _rasterstate.SetShadeModel(ESHADEMODEL_SMOOTH);
-  _rasterstate.SetAlphaTest(EALPHATEST_OFF);
-  _rasterstate.SetBlending(Blending::OFF);
-  _rasterstate.SetDepthTest(EDepthTest::LEQUALS);
-  _rasterstate.SetZWriteMask(true);
-  _rasterstate.SetCullTest(ECullTest::PASS_FRONT);
   miNumPasses = 1;
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -38,8 +32,6 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu, //
         auto _this       = (FreestyleMaterial*)mtl;
         auto RCFD        = RCID._RCFD;
         auto context     = RCFD->GetTarget();
-        //auto RSI         = context->RSI();
-        //RSI->BindRasterState(_this->_rasterstate);
       });
        break;
     }
@@ -293,7 +285,6 @@ void FreestyleMaterial::begin(const FxShaderTechnique* tek, const RenderContextF
   _selectedTEK = tek;
   int npasses  = this->BeginBlock(targ, RCID);
   fxi->BindPass(0);
-  //rsi->BindRasterState(_rasterstate);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void FreestyleMaterial::begin(

@@ -64,9 +64,9 @@ void CompositingMaterial::gpuInit(lev2::Context* pTarg) {
     hTekBsolo = fxi->technique(_shader, "Bsolo");
     hTekCsolo = fxi->technique(_shader, "Csolo");
 
-    _rasterstate.SetCullTest(ork::lev2::ECullTest::OFF);
-    _rasterstate.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
-    _rasterstate.SetDepthTest(ork::lev2::EDepthTest::OFF);
+    //_rasterstate.SetCullTest(ork::lev2::ECullTest::OFF);
+    //_rasterstate.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
+    //_rasterstate.SetDepthTest(ork::lev2::EDepthTest::OFF);
   }
 }
 /////////////////////////////////////////////////

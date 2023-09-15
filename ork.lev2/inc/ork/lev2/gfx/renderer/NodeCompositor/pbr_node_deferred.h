@@ -55,7 +55,7 @@ struct DeferredContext {
   void endSpotDecaling(CompositorDrawData& drawdata, const ViewData& VD);
   ////////////////////////////////////////////////////////////////////
   void bindViewParams(const ViewData& VD);
-  void bindRasterState(Context* ctx, ECullTest culltest, EDepthTest depthtest, Blending blending);
+  void bindRasterState(Context* ctx, ECullTest culltest, EDepthTest depthtest, BlendingMacro blending);
   ////////////////////////////////////////////////////////////////////
   RenderCompositingNode* _node;
   freestyle_mtl_ptr_t _lightingmtl;

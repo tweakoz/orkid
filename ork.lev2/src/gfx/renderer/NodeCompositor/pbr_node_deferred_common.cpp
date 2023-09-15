@@ -370,10 +370,10 @@ void DeferredContext::bindViewParams(const ViewData& VD) {
   _lightingmtl->bindParamFloat(_parTime, VD._time);
 }
 
-void DeferredContext::bindRasterState(Context* ctx, ECullTest culltest, EDepthTest depthtest, Blending blending) {
-  _lightingmtl->_rasterstate.SetBlending(blending);
-  _lightingmtl->_rasterstate.SetDepthTest(depthtest);
-  _lightingmtl->_rasterstate.SetCullTest(culltest);
+void DeferredContext::bindRasterState(Context* ctx, ECullTest culltest, EDepthTest depthtest, BlendingMacro blending) {
+  _lightingmtl->_rasterstate.setBlendingMacro(blending);
+  _lightingmtl->_rasterstate._depthtest = depthtest;
+  _lightingmtl->_rasterstate._culltest = culltest;
   //ctx->RSI()->BindRasterState(_lightingmtl->_rasterstate);
 }
 
@@ -422,7 +422,7 @@ void DeferredContext::renderBaseLighting(RenderCompositingNode* node, Compositor
       RCFD);
   //////////////////////////////////////////////////////
   bindViewParams(VD);
-  bindRasterState(targ, ECullTest::OFF, EDepthTest::OFF, Blending::OFF);
+  bindRasterState(targ, ECullTest::OFF, EDepthTest::OFF, BlendingMacro::OFF);
   //////////////////////////////////////////////////////
   _lightingmtl->bindParamCTex(_parMapGBuf, rtg_gbuffer->GetMrt(0)->texture());
   _lightingmtl->bindParamCTex(_parMapDepth, rtg_gbuffer->_depthTexture);
@@ -458,7 +458,7 @@ void DeferredContext::beginPointLighting(RenderCompositingNode* node, Compositor
   _lightingmtl->begin(tek, RCFD);
   //////////////////////////////////////////////////////
   bindViewParams(VD);
-  bindRasterState(targ, ECullTest::OFF, EDepthTest::OFF, Blending::ADDITIVE);
+  bindRasterState(targ, ECullTest::OFF, EDepthTest::OFF, BlendingMacro::ADDITIVE);
   //////////////////////////////////////////////////////
   _lightingmtl->bindParamCTex(_parMapGBuf, rtg_gbuffer->GetMrt(0)->texture());
   _lightingmtl->bindParamCTex(_parMapDepth, rtg_gbuffer->_depthTexture);
@@ -511,7 +511,7 @@ void DeferredContext::beginSpotLighting(RenderCompositingNode* node, CompositorD
   _lightingmtl->begin(tek, RCFD);
   //////////////////////////////////////////////////////
   bindViewParams(VD);
-  bindRasterState(targ, ECullTest::OFF, EDepthTest::OFF, Blending::ADDITIVE);
+  bindRasterState(targ, ECullTest::OFF, EDepthTest::OFF, BlendingMacro::ADDITIVE);
   //////////////////////////////////////////////////////
   _lightingmtl->bindParamCTex(_parMapGBuf, rtg_gbuffer->GetMrt(0)->texture());
   _lightingmtl->bindParamCTex(_parMapDepth, rtg_gbuffer->_depthTexture);
@@ -561,7 +561,7 @@ void DeferredContext::beginShadowedSpotLighting(RenderCompositingNode* node, Com
   _lightingmtl->begin(tek, RCFD);
   //////////////////////////////////////////////////////
   bindViewParams(VD);
-  bindRasterState(targ, ECullTest::OFF, EDepthTest::OFF, Blending::ADDITIVE);
+  bindRasterState(targ, ECullTest::OFF, EDepthTest::OFF, BlendingMacro::ADDITIVE);
   //////////////////////////////////////////////////////
   _lightingmtl->bindParamCTex(_parMapGBuf, rtg_gbuffer->GetMrt(0)->texture());
   _lightingmtl->bindParamCTex(_parMapDepth, rtg_gbuffer->_depthTexture);
@@ -613,7 +613,7 @@ void DeferredContext::beginSpotDecaling(RenderCompositingNode* node, CompositorD
   _lightingmtl->begin(tek, RCFD);
   //////////////////////////////////////////////////////
   bindViewParams(VD);
-  bindRasterState(targ, ECullTest::OFF, EDepthTest::OFF, Blending::OFF);
+  bindRasterState(targ, ECullTest::OFF, EDepthTest::OFF, BlendingMacro::OFF);
   ///////////////////////////
   _lightingmtl->bindParamCTex(_parMapGBuf, rtg_gbuffer->GetMrt(0)->texture());
   _lightingmtl->bindParamCTex(_parMapDepth, rtg_gbuffer->_depthTexture);
