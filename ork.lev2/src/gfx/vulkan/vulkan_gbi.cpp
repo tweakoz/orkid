@@ -329,7 +329,11 @@ void VkGeometryBufferInterface::DrawPrimitiveEML(
     PrimitiveType eType,
     int ivbase,
     int ivcount) {
-  auto vk_impl = vtx_buf._impl.getShared<VulkanVertexBuffer>();
+
+  auto vk_vbimpl = vtx_buf._impl.getShared<VulkanVertexBuffer>();
+  auto fxi = _contextVK->_fxi;
+  auto pipeline = fxi->_fetchPipeline(vk_vbimpl);
+  OrkAssert(pipeline);
 }
 
 #if defined(ENABLE_COMPUTE_SHADERS)

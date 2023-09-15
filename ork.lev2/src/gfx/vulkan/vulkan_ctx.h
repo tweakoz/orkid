@@ -94,6 +94,7 @@ struct VkFxShaderUniformSetItem;
 struct VkFxShaderUniformSetSampler;
 struct VkFxShaderUniformBlk;
 struct VkFxShaderUniformBlkItem;
+struct VkPipelineObject;
 struct VklRtBufferImpl;
 struct VkRtGroupImpl;
 struct VkTextureAsyncTask;
@@ -132,7 +133,7 @@ using vkfxsobj_ptr_t  = std::shared_ptr<VulkanFxShaderObject>;
 using vkfxsprg_ptr_t  = std::shared_ptr<VkFxShaderProgram>;
 using vkfxspass_ptr_t = std::shared_ptr<VkFxShaderPass>;
 using vkfxstek_ptr_t  = std::shared_ptr<VkFxShaderTechnique>;
-
+using vkpipeline_obj_ptr_t = std::shared_ptr<VkPipelineObject>;
 using vkfxsuniset_ptr_t     = std::shared_ptr<VkFxShaderUniformSet>;
 using vkfxsunisetitem_ptr_t = std::shared_ptr<VkFxShaderUniformSetItem>;
 using vkfxsunisetsamp_ptr_t = std::shared_ptr<VkFxShaderUniformSetSampler>;
@@ -272,6 +273,7 @@ struct VkRtGroupImpl {
   int _width  = 0;
   int _height = 0;
   VkFramebuffer _vkfb;
+  int _pipeline_bits = -1;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -378,6 +380,11 @@ struct VkFxShaderProgram {
   vkfxsobj_ptr_t _tevshader;
   vkfxsobj_ptr_t _frgshader;
   vkfxsobj_ptr_t _comshader;
+  int _pipeline_bits = -1;
+};
+struct VkPipelineObject{
+  VkGraphicsPipelineCreateInfo _VKGFXPCI;
+  VkPipeline _pipeline;
 };
 
 struct VkFxShaderPass {
@@ -388,6 +395,15 @@ struct VkFxShaderTechnique {
   ~VkFxShaderTechnique();
   std::vector<vkfxspass_ptr_t> _vk_passes;
   std::shared_ptr<FxShaderTechnique> _orktechnique;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct VkVertexInputConfiguration{
+  VkVertexInputBindingDescription _binding_description;
+  std::vector<VkVertexInputAttributeDescription> _attribute_descriptions;
+  VkPipelineVertexInputStateCreateInfo _vertex_input_state;
+  int _pipeline_bits = -1;
 };
 
 struct VulkanVertexBuffer {
@@ -409,6 +425,8 @@ struct VulkanIndexBuffer {
   VkDeviceMemory _vkmem;
   vkcontext_rawptr_t _ctx;
 };
+
+///////////////////////////////////////////////////////////////////////////////
 
 struct VkLoadContext {
   VkContext* _vkcontext     = nullptr;
@@ -486,14 +504,6 @@ struct VkMatrixStackInterface final : public MatrixStackInterface {
   fmtx4 Frustum(float left, float right, float top, float bottom, float zn, float zf);    // virtual
 
   vkcontext_rawptr_t _contextVK;
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
-struct VkVertexInputConfiguration{
-  VkVertexInputBindingDescription _binding_description;
-  std::vector<VkVertexInputAttributeDescription> _attribute_descriptions;
-  VkPipelineVertexInputStateCreateInfo _vertex_input_state;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -713,6 +723,8 @@ struct VkFxInterface final : public FxInterface {
       const std::string& parser_name, //
       const std::string& shadertext);
 
+  vkpipeline_obj_ptr_t _fetchPipeline(vkvtxbuf_ptr_t vb);
+
   // ubo
   FxShaderParamBuffer* createParamBuffer(size_t length) final;
   parambuffermappingptr_t mapParamBuffer(FxShaderParamBuffer* b, size_t base, size_t length) final;
@@ -721,8 +733,10 @@ struct VkFxInterface final : public FxInterface {
 
   fxtechnique_constptr_t _currentORKTEK = nullptr;
   vkfxstek_ptr_t _currentVKTEK;
+  vkfxspass_ptr_t _currentVKPASS;
   vkcontext_rawptr_t _contextVK;
   std::map<AssetPath, vkfxsfile_ptr_t> _fxshaderfiles;
+  std::unordered_map<uint64_t,vkpipeline_obj_ptr_t> _pipelines;
   shadlang::slpcache_ptr_t _slp_cache;
 };
 
