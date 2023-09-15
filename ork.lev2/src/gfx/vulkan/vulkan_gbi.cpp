@@ -157,6 +157,7 @@ vkvertexinputconfig_ptr_t VkGeometryBufferInterface::_instantiateVertexConfig(EV
   };
   switch (format) {
     case EVtxStreamFormat::V12N12B12T8C4: {
+      config->_binding_description.stride = sizeof(SVtxV12N12B12T8C4);
       config->_attribute_descriptions = std::vector<VkVertexInputAttributeDescription>{
           VkVertexInputAttributeDescription{
               // V12
@@ -197,6 +198,7 @@ vkvertexinputconfig_ptr_t VkGeometryBufferInterface::_instantiateVertexConfig(EV
       break;
     }
     case EVtxStreamFormat::V12C4T16: {
+      config->_binding_description.stride = sizeof(SVtxV12C4T16);
       config->_attribute_descriptions = std::vector<VkVertexInputAttributeDescription>{
           VkVertexInputAttributeDescription{
               // V12
