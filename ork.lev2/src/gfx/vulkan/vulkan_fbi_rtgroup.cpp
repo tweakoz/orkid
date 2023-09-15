@@ -171,6 +171,9 @@ vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(RtGroup* rtgroup) {
   int inumtargets           = rtgroup->GetNumTargets();
   int w                     = rtgroup->width();
   int h                     = rtgroup->height();
+
+  RTGIMPL->_pipeline_bits   = 0;
+
   if (rtgroup->_depthBuffer) {
     auto rtbuffer   = rtgroup->_depthBuffer;
     auto bufferimpl = std::make_shared<VklRtBufferImpl>(RTGIMPL.get(), rtbuffer.get());

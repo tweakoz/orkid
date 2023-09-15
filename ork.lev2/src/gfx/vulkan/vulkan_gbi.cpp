@@ -149,6 +149,8 @@ VkGeometryBufferInterface::VkGeometryBufferInterface(vkcontext_rawptr_t ctx)
 
 vkvertexinputconfig_ptr_t VkGeometryBufferInterface::_instantiateVertexConfig(EVtxStreamFormat format) {
   auto config                  = std::make_shared<VkVertexInputConfiguration>();
+  config->_pipeline_bits = _vertexInputConfigs.size();
+  OrkAssert(config->_pipeline_bits<=16); // validate we only used 4 pipeline_bits
   _vertexInputConfigs[format] = config;
   config->_binding_description = VkVertexInputBindingDescription{
       0, // binding
