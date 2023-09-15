@@ -140,6 +140,8 @@ VkGeometryBufferInterface::VkGeometryBufferInterface(vkcontext_rawptr_t ctx)
   ////////////////////////////////////////////////////////////////
   _primclasses[uint64_t(PrimitiveType::TRIANGLES)] = create_primclass(PrimitiveType::TRIANGLES);
   ////////////////////////////////////////////////////////////////
+  OrkAssert( _primclasses.size() <= 16 ); // validate we only used 4 pipeline_bits
+  ////////////////////////////////////////////////////////////////
 
 }
 
