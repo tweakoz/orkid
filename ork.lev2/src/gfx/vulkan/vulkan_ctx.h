@@ -95,6 +95,7 @@ struct VkFxShaderUniformSetSampler;
 struct VkFxShaderUniformBlk;
 struct VkFxShaderUniformBlkItem;
 struct VkPipelineObject;
+struct VkPrimitiveClass;
 struct VklRtBufferImpl;
 struct VkRtGroupImpl;
 struct VkTextureAsyncTask;
@@ -134,6 +135,7 @@ using vkfxsprg_ptr_t  = std::shared_ptr<VkFxShaderProgram>;
 using vkfxspass_ptr_t = std::shared_ptr<VkFxShaderPass>;
 using vkfxstek_ptr_t  = std::shared_ptr<VkFxShaderTechnique>;
 using vkpipeline_obj_ptr_t = std::shared_ptr<VkPipelineObject>;
+using vkprimclass_ptr_t = std::shared_ptr<VkPrimitiveClass>;
 using vkfxsuniset_ptr_t     = std::shared_ptr<VkFxShaderUniformSet>;
 using vkfxsunisetitem_ptr_t = std::shared_ptr<VkFxShaderUniformSetItem>;
 using vkfxsunisetsamp_ptr_t = std::shared_ptr<VkFxShaderUniformSetSampler>;
@@ -406,6 +408,12 @@ struct VkVertexInputConfiguration{
   int _pipeline_bits = -1;
 };
 
+struct VkPrimitiveClass {
+  VkPipelineInputAssemblyStateCreateInfo _input_assembly_state;
+  PrimitiveType _primtype;
+  int _pipeline_bits = -1;
+};
+
 struct VulkanVertexBuffer {
   VulkanVertexBuffer(vkcontext_rawptr_t ctx, VertexBufferBase& vbuf);
   ~VulkanVertexBuffer();
@@ -582,6 +590,7 @@ struct VkGeometryBufferInterface final : public GeometryBufferInterface {
   vkcontext_rawptr_t _contextVK;
   uint32_t _lastComponentMask = 0xFFFFFFFF;
   std::unordered_map<EVtxStreamFormat, vkvertexinputconfig_ptr_t> _vertexInputConfigs;
+  std::unordered_map<uint64_t,vkprimclass_ptr_t> _primclasses;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -723,7 +732,7 @@ struct VkFxInterface final : public FxInterface {
       const std::string& parser_name, //
       const std::string& shadertext);
 
-  vkpipeline_obj_ptr_t _fetchPipeline(vkvtxbuf_ptr_t vb);
+  vkpipeline_obj_ptr_t _fetchPipeline(vkvtxbuf_ptr_t vb, vkprimclass_ptr_t primclas);
 
   // ubo
   FxShaderParamBuffer* createParamBuffer(size_t length) final;

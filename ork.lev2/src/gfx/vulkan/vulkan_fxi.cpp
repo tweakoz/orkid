@@ -30,7 +30,7 @@ void VkFxInterface::_doBeginFrame() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(vkvtxbuf_ptr_t vb){
+vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(vkvtxbuf_ptr_t vb, vkprimclass_ptr_t primclass){
 
   vkpipeline_obj_ptr_t rval;
   auto fbi = _contextVK->_fbi;
@@ -56,9 +56,12 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(vkvtxbuf_ptr_t vb){
   auto shprog = _currentVKPASS->_vk_program;
   int sh_pbits = check_pb_range(shprog->_pipeline_bits,8);
 
+  int pc_pbits = check_pb_range(primclass->_pipeline_bits,4);
+
   uint64_t pipeline_hash = vb_pbits
                          | (rtg_pbits<<4)
-                         | (sh_pbits<<8);
+                         | (pc_pbits<<8)
+                         | (sh_pbits<<12);
 
 
   ////////////////////////////////////////////////////

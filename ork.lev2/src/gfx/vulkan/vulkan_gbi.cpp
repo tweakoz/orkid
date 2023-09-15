@@ -105,6 +105,42 @@ VkGeometryBufferInterface::VkGeometryBufferInterface(vkcontext_rawptr_t ctx)
 
   _instantiateVertexConfig(EVtxStreamFormat::V12C4T16);
   _instantiateVertexConfig(EVtxStreamFormat::V12N12B12T8C4);
+  ////////////////////////////////////////////////////////////////
+  auto create_primclass = [&](PrimitiveType etype) -> vkprimclass_ptr_t {
+    auto rval = std::make_shared<VkPrimitiveClass>();
+    rval->_primtype = etype;
+    rval->_pipeline_bits = _primclasses.size();
+    initializeVkStruct(rval->_input_assembly_state, VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO);
+    switch(etype){
+      case PrimitiveType::TRIANGLES:
+        rval->_input_assembly_state.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+        break;
+      case PrimitiveType::TRIANGLESTRIP:
+        rval->_input_assembly_state.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
+        break;
+      case PrimitiveType::TRIANGLEFAN:
+        rval->_input_assembly_state.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN;
+        break;
+      case PrimitiveType::LINES:
+        rval->_input_assembly_state.topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
+        break;
+      case PrimitiveType::LINESTRIP:
+        rval->_input_assembly_state.topology = VK_PRIMITIVE_TOPOLOGY_LINE_STRIP;
+        break;
+      case PrimitiveType::POINTS:
+        rval->_input_assembly_state.topology = VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
+        break;
+      default:
+        OrkAssert(false);
+        break;
+    }
+    rval->_input_assembly_state.primitiveRestartEnable = VK_FALSE;
+    return rval;
+  };
+  ////////////////////////////////////////////////////////////////
+  _primclasses[uint64_t(PrimitiveType::TRIANGLES)] = create_primclass(PrimitiveType::TRIANGLES);
+  ////////////////////////////////////////////////////////////////
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -330,9 +366,13 @@ void VkGeometryBufferInterface::DrawPrimitiveEML(
     int ivbase,
     int ivcount) {
 
+  auto it_pc = _primclasses.find(uint64_t(eType));
+  OrkAssert(it_pc != _primclasses.end());
+  auto primclass = it_pc->second;
+
   auto vk_vbimpl = vtx_buf._impl.getShared<VulkanVertexBuffer>();
   auto fxi = _contextVK->_fxi;
-  auto pipeline = fxi->_fetchPipeline(vk_vbimpl);
+  auto pipeline = fxi->_fetchPipeline(vk_vbimpl,primclass);
   OrkAssert(pipeline);
 }
 
