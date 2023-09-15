@@ -11,41 +11,54 @@
 namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
 
-VulkanVertexBuffer::VulkanVertexBuffer(vkcontext_rawptr_t ctx, size_t length) {
-  _ctx                   = ctx;
-  initializeVkStruct(_vkmem);
-  initializeVkStruct(_vkbuf);
+VulkanVertexBuffer::VulkanVertexBuffer(vkcontext_rawptr_t ctx, VertexBufferBase& vtx_buf) {
 
-  //printf( "length<%zu>\n", length );
+  _ctx = ctx;
 
-  initializeVkStruct(_vkbufinfo,VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO);
+  /////////////////////////////////////
+  // create vertex buffer object
+  /////////////////////////////////////
+
+  initializeVkStruct(_vkbufinfo, VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO);
   _vkbufinfo.sType       = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-  _vkbufinfo.size        = length;
+  _vkbufinfo.size        = vtx_buf.GetVtxSize() * vtx_buf.GetMax();
   _vkbufinfo.usage       = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
   _vkbufinfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
+  initializeVkStruct(_vkbuf);
   VkResult ok = vkCreateBuffer(ctx->_vkdevice, &_vkbufinfo, nullptr, &_vkbuf);
-  OrkAssert( ok == VK_SUCCESS );
-  //////////////////
-  VkMemoryRequirements memRequirements;
-  initializeVkStruct(memRequirements);
-  vkGetBufferMemoryRequirements(ctx->_vkdevice, _vkbuf, &memRequirements);
-  //printf( "alignment<%zu>\n", memRequirements.alignment );
-  //////////////////
-  VkMemoryAllocateInfo allocInfo = {};
-  initializeVkStruct(allocInfo,VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO);
-  allocInfo.allocationSize       = memRequirements.size;
-  //////////////////
-  _vkmemflags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT 
-              | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT; // do not need flush...
-  //////////////////
-  allocInfo.memoryTypeIndex = ctx->_findMemoryType(memRequirements.memoryTypeBits, _vkmemflags);
-  //printf( "memtypeindex = %u\n", allocInfo.memoryTypeIndex );
-  //////////////////
+  OrkAssert(ok == VK_SUCCESS);
 
+  /////////////////////////////////////
+  // allocate vertex memory
+  /////////////////////////////////////
+
+  VkMemoryRequirements memRequirements;
+  VkMemoryAllocateInfo allocInfo = {};
+  initializeVkStruct(memRequirements);
+  initializeVkStruct(allocInfo, VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO);
+  vkGetBufferMemoryRequirements(ctx->_vkdevice, _vkbuf, &memRequirements);
+  // printf( "alignment<%zu>\n", memRequirements.alignment );
+  allocInfo.allocationSize  = memRequirements.size;
+  _vkmemflags               = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT; // do not need flush...
+  allocInfo.memoryTypeIndex = ctx->_findMemoryType(memRequirements.memoryTypeBits, _vkmemflags);
+  // printf( "memtypeindex = %u\n", allocInfo.memoryTypeIndex );
+  initializeVkStruct(_vkmem);
   vkAllocateMemory(ctx->_vkdevice, &allocInfo, nullptr, &_vkmem);
   vkBindBufferMemory(ctx->_vkdevice, _vkbuf, _vkmem, 0);
+
+  /////////////////////////////////////
+  // find vertex input configuration
+  /////////////////////////////////////
+
+  auto vtx_format = vtx_buf.GetStreamFormat();
+  auto it         = ctx->_gbi->_vertexInputConfigs.find(vtx_format);
+  OrkAssert(it != ctx->_gbi->_vertexInputConfigs.end());
+  _vertexConfig = it->second;
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
 VulkanVertexBuffer::~VulkanVertexBuffer() {
   vkFreeMemory(_ctx->_vkdevice, _vkmem, nullptr);
   vkDestroyBuffer(_ctx->_vkdevice, _vkbuf, nullptr);
@@ -54,9 +67,9 @@ VulkanVertexBuffer::~VulkanVertexBuffer() {
 ///////////////////////////////////////////////////////////////////////////////
 
 VulkanIndexBuffer::VulkanIndexBuffer(vkcontext_rawptr_t ctx, size_t length) {
-  _ctx                   = ctx;
+  _ctx = ctx;
 
-  initializeVkStruct(_vkbufinfo,VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO);
+  initializeVkStruct(_vkbufinfo, VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO);
   _vkbufinfo.size        = length;
   _vkbufinfo.usage       = VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
   _vkbufinfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
@@ -67,11 +80,10 @@ VulkanIndexBuffer::VulkanIndexBuffer(vkcontext_rawptr_t ctx, size_t length) {
   vkGetBufferMemoryRequirements(ctx->_vkdevice, _vkbuf, &memRequirements);
   //////////////////
   VkMemoryAllocateInfo allocInfo = {};
-  initializeVkStruct(allocInfo,VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO);
-  allocInfo.allocationSize       = memRequirements.size;
+  initializeVkStruct(allocInfo, VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO);
+  allocInfo.allocationSize = memRequirements.size;
   //////////////////
-  _vkmemflags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT 
-              | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT; // do not need flush...
+  _vkmemflags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT; // do not need flush...
   //////////////////
   allocInfo.memoryTypeIndex = ctx->_findMemoryType(memRequirements.memoryTypeBits, _vkmemflags);
   //////////////////
@@ -90,9 +102,101 @@ VulkanIndexBuffer::~VulkanIndexBuffer() {
 VkGeometryBufferInterface::VkGeometryBufferInterface(vkcontext_rawptr_t ctx)
     : GeometryBufferInterface(*ctx)
     , _contextVK(ctx) {
+
+  _instantiateVertexConfig(EVtxStreamFormat::V12C4T16);
+  _instantiateVertexConfig(EVtxStreamFormat::V12N12B12T8C4);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+vkvertexinputconfig_ptr_t VkGeometryBufferInterface::_instantiateVertexConfig(EVtxStreamFormat format) {
+  auto config                  = std::make_shared<VkVertexInputConfiguration>();
+  _vertexInputConfigs[format] = config;
+  config->_binding_description = VkVertexInputBindingDescription{
+      0, // binding
+      0, // stride
+      VK_VERTEX_INPUT_RATE_VERTEX,
+  };
+  switch (format) {
+    case EVtxStreamFormat::V12N12B12T8C4: {
+      config->_attribute_descriptions = std::vector<VkVertexInputAttributeDescription>{
+          VkVertexInputAttributeDescription{
+              // V12
+              0, // location
+              0, // binding
+              VK_FORMAT_R32G32B32_SFLOAT,
+              0, // offset
+          },
+          VkVertexInputAttributeDescription{
+              // N12
+              1, // location
+              0, // binding
+              VK_FORMAT_R32G32B32_SFLOAT,
+              12, // offset
+          },
+          VkVertexInputAttributeDescription{
+              // B12
+              2, // location
+              0, // binding
+              VK_FORMAT_R32G32B32_SFLOAT,
+              24, // offset
+          },
+          VkVertexInputAttributeDescription{
+              // T8
+              3, // location
+              0, // binding
+              VK_FORMAT_R32G32_SFLOAT,
+              36, // offset
+          },
+          VkVertexInputAttributeDescription{
+              // C4
+              4, // location
+              0, // binding
+              VK_FORMAT_R8G8B8A8_UNORM,
+              44, // offset
+          },
+      };
+      break;
+    }
+    case EVtxStreamFormat::V12C4T16: {
+      config->_attribute_descriptions = std::vector<VkVertexInputAttributeDescription>{
+          VkVertexInputAttributeDescription{
+              // V12
+              0, // location
+              0, // binding
+              VK_FORMAT_R32G32B32_SFLOAT,
+              0, // offset
+          },
+          VkVertexInputAttributeDescription{
+              // C4
+              1, // location
+              0, // binding
+              VK_FORMAT_R8G8B8A8_UNORM,
+              12, // offset
+          },
+          VkVertexInputAttributeDescription{
+              // T16
+              2, // location
+              0, // binding
+              VK_FORMAT_R32G32B32A32_SFLOAT,
+              16, // offset
+          }
+      };
+      break;
+    }
+    default:
+      OrkAssert(false);
+      break;
+  }
+  VkPipelineVertexInputStateCreateInfo& vis = config->_vertex_input_state;
+  initializeVkStruct(vis, VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO);
+  vis.vertexBindingDescriptionCount   = 1;
+  vis.pVertexBindingDescriptions      = &config->_binding_description;
+  vis.vertexAttributeDescriptionCount = config->_attribute_descriptions.size();
+  vis.pVertexAttributeDescriptions    = config->_attribute_descriptions.data();
+  return config;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 void* VkGeometryBufferInterface::LockVB(VertexBufferBase& vtx_buf, int ivbase, int ivcount) {
@@ -100,7 +204,7 @@ void* VkGeometryBufferInterface::LockVB(VertexBufferBase& vtx_buf, int ivbase, i
   OrkAssert(false == vtx_buf.IsLocked());
   size_t ibasebytes = ivbase * vtx_buf.GetVtxSize();
   size_t isizebytes = ivcount * vtx_buf.GetVtxSize();
-  bool is_static = vtx_buf.IsStatic();
+  bool is_static    = vtx_buf.IsStatic();
   //////////////////////////////////////////////////////////
   // create or reference the vbo
   //////////////////////////////////////////////////////////
@@ -108,27 +212,27 @@ void* VkGeometryBufferInterface::LockVB(VertexBufferBase& vtx_buf, int ivbase, i
   if (auto try_vk_impl = vtx_buf._impl.tryAsShared<VulkanVertexBuffer>()) {
     vk_impl = try_vk_impl.value();
   } else {
-    size_t alloc_size = vtx_buf.GetVtxSize() * vtx_buf.GetMax();
-    vk_impl = std::make_shared<VulkanVertexBuffer>(_contextVK, alloc_size);
+    vk_impl = std::make_shared<VulkanVertexBuffer>(_contextVK, vtx_buf);
     vtx_buf._impl.setShared(vk_impl);
   }
   void* vertex_memory = nullptr;
-  if(is_static){
-    OrkAssert(ibasebytes==0); // TODO change api to not require offset for static buffers
-    vkMapMemory( _contextVK->_vkdevice, // vulkan device
-                 vk_impl->_vkmem,       // vulkan memory 
-                 0,                     // offset
-                 isizebytes,            // size   
-                 0,                     // flags 
-                 &vertex_memory);
-  }
-  else{
-    vkMapMemory( _contextVK->_vkdevice, // vulkan device
-                 vk_impl->_vkmem,       // vulkan memory
-                 ibasebytes,            // offset 
-                 isizebytes,            // size 
-                 0,                     // flags 
-                 &vertex_memory);
+  if (is_static) {
+    OrkAssert(ibasebytes == 0); // TODO change api to not require offset for static buffers
+    vkMapMemory(
+        _contextVK->_vkdevice, // vulkan device
+        vk_impl->_vkmem,       // vulkan memory
+        0,                     // offset
+        isizebytes,            // size
+        0,                     // flags
+        &vertex_memory);
+  } else {
+    vkMapMemory(
+        _contextVK->_vkdevice, // vulkan device
+        vk_impl->_vkmem,       // vulkan memory
+        ibasebytes,            // offset
+        isizebytes,            // size
+        0,                     // flags
+        &vertex_memory);
   }
   //////////////////////////////////////////////////////////
   vtx_buf.Lock();
@@ -220,29 +324,12 @@ void VkGeometryBufferInterface::ReleaseIB(IndexBufferBase& idx_buf) {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-bool VkGeometryBufferInterface::BindStreamSources(const VertexBufferBase& vtx_buf, const IndexBufferBase& IBuf) {
-  OrkAssert(false);
-  auto vk_impl = vtx_buf._impl.getShared<VulkanVertexBuffer>();
-  //vkCmdBindVertexBuffers(cmd_buffer, 0, 1, &vk_impl->_vkbuf, offsets);
-  return false;
-}
-bool VkGeometryBufferInterface::BindVertexStreamSource(const VertexBufferBase& vtx_buf) {
-  OrkAssert(false);
-  return false;
-}
-void VkGeometryBufferInterface::BindVertexDeclaration(EVtxStreamFormat efmt) {
-  OrkAssert(false);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-
 void VkGeometryBufferInterface::DrawPrimitiveEML(
     const VertexBufferBase& vtx_buf, //
     PrimitiveType eType,
     int ivbase,
     int ivcount) {
-  OrkAssert(false);
+  auto vk_impl = vtx_buf._impl.getShared<VulkanVertexBuffer>();
 }
 
 #if defined(ENABLE_COMPUTE_SHADERS)
@@ -298,7 +385,7 @@ void VkGeometryBufferInterface::MultiDrawMeshTasksIndirectCountNV(
 //////////////////////////////////////////////
 
 void VkGeometryBufferInterface::_doBeginFrame() {
-  //OrkAssert(false);
+  // OrkAssert(false);
 }
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2::vulkan

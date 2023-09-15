@@ -99,6 +99,7 @@ struct VkRtGroupImpl;
 struct VkTextureAsyncTask;
 struct VkTexLoadReq;
 struct VulkanVertexBuffer;
+struct VkVertexInputConfiguration;
 struct VulkanIndexBuffer;
 struct VkLoadContext;
 struct VkCommandBufferImpl;
@@ -146,6 +147,7 @@ using vktexloadreq_ptr_t   = std::shared_ptr<VkTexLoadReq>;
 using vkfxshader_bin_t     = std::vector<uint32_t>;
 using vkvtxbuf_ptr_t       = std::shared_ptr<VulkanVertexBuffer>;
 using vkidxbuf_ptr_t       = std::shared_ptr<VulkanIndexBuffer>;
+using vkvertexinputconfig_ptr_t = std::shared_ptr<VkVertexInputConfiguration>;
 using vkloadctx_ptr_t      = std::shared_ptr<VkLoadContext>;
 using vkcmdbufimpl_ptr_t   = std::shared_ptr<VkCommandBufferImpl>;
 using vkrenderpass_ptr_t   = std::shared_ptr<VulkanRenderPass>;
@@ -389,13 +391,14 @@ struct VkFxShaderTechnique {
 };
 
 struct VulkanVertexBuffer {
-  VulkanVertexBuffer(vkcontext_rawptr_t ctx, size_t length);
+  VulkanVertexBuffer(vkcontext_rawptr_t ctx, VertexBufferBase& vbuf);
   ~VulkanVertexBuffer();
   VkBufferCreateInfo _vkbufinfo;
   VkBuffer _vkbuf;
   VkMemoryPropertyFlags _vkmemflags;
   VkDeviceMemory _vkmem;
   vkcontext_rawptr_t _ctx;
+  vkvertexinputconfig_ptr_t _vertexConfig;
 };
 struct VulkanIndexBuffer {
   VulkanIndexBuffer(vkcontext_rawptr_t ctx, size_t length);
@@ -417,7 +420,6 @@ struct VkSwapChain{
   std::vector<VkImage> _vkSwapChainImages;
   std::vector<VkImageView> _vkSwapChainImageViews;
   std::vector<VkFramebuffer> _vkFrameBuffers;
-
   std::vector<rtgroup_ptr_t> _depth_rtgs;
   std::vector<rtbuffer_ptr_t> _depth_rtbs;
   //std::vector<VkImage>       _vkDepthImages;
@@ -488,6 +490,14 @@ struct VkMatrixStackInterface final : public MatrixStackInterface {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+struct VkVertexInputConfiguration{
+  VkVertexInputBindingDescription _binding_description;
+  std::vector<VkVertexInputAttributeDescription> _attribute_descriptions;
+  VkPipelineVertexInputStateCreateInfo _vertex_input_state;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
 struct VkGeometryBufferInterface final : public GeometryBufferInterface {
 
   VkGeometryBufferInterface(vkcontext_rawptr_t ctx);
@@ -518,9 +528,7 @@ struct VkGeometryBufferInterface final : public GeometryBufferInterface {
 
   //
 
-  bool BindStreamSources(const VertexBufferBase& VBuf, const IndexBufferBase& IBuf);
-  bool BindVertexStreamSource(const VertexBufferBase& VBuf);
-  void BindVertexDeclaration(EVtxStreamFormat efmt);
+  vkvertexinputconfig_ptr_t _instantiateVertexConfig(EVtxStreamFormat format);
 
   void DrawPrimitiveEML(
       const VertexBufferBase& VBuf, //
@@ -563,6 +571,7 @@ struct VkGeometryBufferInterface final : public GeometryBufferInterface {
 
   vkcontext_rawptr_t _contextVK;
   uint32_t _lastComponentMask = 0xFFFFFFFF;
+  std::unordered_map<EVtxStreamFormat, vkvertexinputconfig_ptr_t> _vertexInputConfigs;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
