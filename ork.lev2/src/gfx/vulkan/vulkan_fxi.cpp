@@ -72,6 +72,52 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(vkvtxbuf_ptr_t vb, vkprimclas
   if( it == _pipelines.end() ){ // create pipeline
     rval = std::make_shared<VkPipelineObject>();
     _pipelines[pipeline_hash] = rval;
+
+    auto& CINFO = rval->_VKGFXPCI;
+    initializeVkStruct(CINFO, VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO);
+
+    CINFO.flags = VK_PIPELINE_CREATE_DISABLE_OPTIMIZATION_BIT;
+    CINFO.renderPass =  _contextVK->_fbi->_swapchain->_mainRenderPass->_vkrp;
+    CINFO.subpass = 0;
+
+    // count shader stages
+    std::vector<VkPipelineShaderStageCreateInfo> stages;
+    if( shprog->_vtxshader )
+      stages.push_back(shprog->_vtxshader->_shaderstageinfo);
+    if( shprog->_frgshader )
+      stages.push_back(shprog->_frgshader->_shaderstageinfo);
+      
+    CINFO.stageCount = stages.size();
+    CINFO.pStages = stages.data();
+    CINFO.pVertexInputState = &vb->_vertexConfig->_vertex_input_state;
+    CINFO.pInputAssemblyState = &primclass->_input_assembly_state;
+    CINFO.pViewportState = nullptr; // TODO
+    CINFO.pRasterizationState = nullptr; // TODO (from srasterstate)
+    CINFO.pDepthStencilState = nullptr; // TODO (from srasterstate)
+    CINFO.pColorBlendState = nullptr; // TODO (from srasterstate)
+    CINFO.pMultisampleState = nullptr; // TODO (from fbi)
+    CINFO.pDynamicState = nullptr; 
+
+    /*
+    VkDescriptorSetLayoutBinding bindings[16];
+    VkDescriptorSetLayoutCreateInfo layoutinfo;
+    VkDescriptorSetLayout layout;
+    VkPipelineLayoutCreateInfo pipelineLayoutInfo;
+    VkPipelineLayout pipelineLayout;
+    if (vkCreatePipelineLayout(device, &pipelineLayoutCreateInfo, nullptr, &pipelineLayout) != VK_SUCCESS) {
+    } 
+    CINFO.layout = pipelineLayout;
+    */
+
+    CINFO.layout = VkPipelineLayout(); // shader input data layout / bindings
+                                       // TODO: from geometry, shader
+    if(0)
+    vkCreateGraphicsPipelines( _contextVK->_vkdevice, // device
+                               VK_NULL_HANDLE,        // pipeline cache
+                               1,                     // count
+                               &CINFO,                // create info
+                               nullptr,               // allocator
+                               &rval->_pipeline);
   }
   else{ // pipeline already cached!
     rval = it->second;
