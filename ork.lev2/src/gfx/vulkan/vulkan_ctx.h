@@ -43,6 +43,9 @@ struct GLFWwindow;
 #include <ork/lev2/gfx/image.h>
 #include <ork/lev2/gfx/shadlang.h>
 
+#import <ork/lev2/glfw/ctx_glfw.h>
+#include <GLFW/glfw3native.h>
+
 ///////////////////////////////////////////////////////////////////////////////
 
 namespace ork::dds {
@@ -52,6 +55,8 @@ struct DDS_HEADER;
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
+
+constexpr EBufferFormat DEPTH_FORMAT = EBufferFormat::Z24S8;
 
 inline VkDeviceSize vkAlignUp(
     VkDeviceSize value,       //
@@ -625,7 +630,6 @@ struct VkFrameBufferInterface final : public FrameBufferInterface {
   void _setScissor(int iX, int iY, int iW, int iH) final;
   void _doBeginFrame(void) final;
   void _doEndFrame(void) final;
-  void _setMainAsRenderTarget();
   void _pushRtGroup(RtGroup* Base) final;
   RtGroup* _popRtGroup() final;
   void _postPushRtGroup(RtGroup* Base);
@@ -654,6 +658,20 @@ struct VkFrameBufferInterface final : public FrameBufferInterface {
   int miCurScissorY;
   int miCurScissorW;
   int miCurScissorH;
+
+  //////////////////////////////////////////////
+  void _initSwapChain();
+  void _acquireSwapChainForFrame();
+  void _transitionSwapChainForClear();
+  void _enq_transitionSwapChainForPresent();
+  void _clearSwapChainBuffer();
+  void _bindSwapChainToRenderPass(vkrenderpass_ptr_t rpass);
+
+  //////////////////////////////////////////////
+
+  vkswapchain_ptr_t _swapchain;
+  std::unordered_set<vkswapchain_ptr_t> _old_swapchains;
+  VkSemaphore _swapChainImageAcquiredSemaphore;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -870,12 +888,6 @@ public:
   void _initVulkanForWindow(VkSurfaceKHR surface);
   void _initVulkanForOffscreen(DisplayBuffer* pBuf);
   void _initVulkanCommon();
-  void _initSwapChain();
-  //////////////////////////////////////////////
-  void _acquireSwapChainForFrame();
-  void _transitionSwapChainForClear();
-  void _enq_transitionSwapChainForPresent();
-  void _clearSwapChainBuffer();
   //////////////////////////////////////////////
   void _doPushCommandBuffer(commandbuffer_ptr_t cmdbuf, rtgroup_ptr_t rtg ) final;
   void _doPopCommandBuffer() final;
@@ -904,12 +916,9 @@ public:
   VkSurfaceKHR _vkpresentationsurface;
   vkswapchaincaps_ptr_t _vkpresentation_caps;
   std::vector<const char*> _device_extensions;
-  VkSemaphore _swapChainImageAcquiredSemaphore;
   VkSemaphore _renderingCompleteSemaphore;
   VkFence _mainGfxSubmitFence;
   size_t _num_queue_types = 0;
-  vkswapchain_ptr_t _swapchain;
-  std::unordered_set<vkswapchain_ptr_t> _old_swapchains;
   //////////////////////////////////////////////
 
   std::vector<float> _queuePriorities;
@@ -954,6 +963,22 @@ public:
 };
 
 extern vkinstance_ptr_t _GVI;
+
+ void _imageBarrier(VkCommandBuffer cmdbuf, //
+                    VkImage image, //
+                    VkAccessFlags srcAccessMask, //
+                    VkAccessFlags dstAccessMask, //
+                    VkPipelineStageFlags srcStageMask, //
+                    VkPipelineStageFlags dstStageMask, //
+                    VkImageLayout oldLayout, //
+                    VkImageLayout newLayout);
+
+struct VkPlatformObject {
+  CtxGLFW* _ctxbase     = nullptr;
+  bool _needsInit       = true;
+  void_lambda_t _bindop = []() {};
+};
+using vkplatformobject_ptr_t = std::shared_ptr<VkPlatformObject>;
 
 
 } // namespace ork::lev2::vulkan

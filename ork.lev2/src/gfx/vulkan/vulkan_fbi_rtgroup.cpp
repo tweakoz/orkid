@@ -25,14 +25,6 @@ VkRtGroupImpl::VkRtGroupImpl(RtGroup* rtg)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void VkFrameBufferInterface::_setMainAsRenderTarget() { // _main_rtg
-  _currentRtGroup = _main_rtg.get();
-  _active_rtgroup = _main_rtg.get();
-  printf( "BIND RTG<%s>\n", _active_rtgroup->_name.c_str() );
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
 void VkContext::_doResizeMainSurface(int iw, int ih) {
   _fbi->_main_rtg->Resize(iw, ih);
 }

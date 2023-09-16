@@ -41,8 +41,10 @@ void VkFrameBufferInterface::_setScissor(int iX, int iY, int iW, int iH) {
 
 ///////////////////////////////////////////////////////
 void VkFrameBufferInterface::_doBeginFrame() {
-  _contextVK->_acquireSwapChainForFrame();
-  _setMainAsRenderTarget();
+  _acquireSwapChainForFrame();
+  _currentRtGroup = _main_rtg.get();
+  _active_rtgroup = _main_rtg.get();
+  printf( "BIND RTG<%s>\n", _active_rtgroup->_name.c_str() );
   //RtGroup* rtg = _currentRtGroup;
   //_pushRtGroup(rtg);
   //if (_main_rtg and (rtg == nullptr)) {
@@ -53,8 +55,8 @@ void VkFrameBufferInterface::_doBeginFrame() {
 ///////////////////////////////////////////////////////
 
 void VkFrameBufferInterface::_doEndFrame() {
-  popViewport();
-  popScissor();
+  //popViewport();
+  //popScissor();
   //OrkAssert(false);
 }
 
