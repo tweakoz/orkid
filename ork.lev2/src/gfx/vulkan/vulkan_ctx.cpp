@@ -518,7 +518,10 @@ void VkContext::_acquireSwapChainForFrame() {
 
   OrkAssert(_swapchain->_curSwapWriteImage>=0);
   OrkAssert(_swapchain->_curSwapWriteImage<_swapchain->_vkSwapChainImages.size());
+  auto swap_rtg = _swapchain->_rtgs[_swapchain->_curSwapWriteImage];
 
+
+  _fbi->_main_rtg = swap_rtg;
   //printf( "_swapchain->_curSwapWriteImage<%u>\n", _swapchain->_curSwapWriteImage );
 }
 
@@ -527,7 +530,6 @@ void VkContext::_acquireSwapChainForFrame() {
 void VkContext::_doBeginFrame() {
 
   _cmdbufcurframe_gfx_pri = _defaultCommandBuffer->_impl.getShared<VkCommandBufferImpl>();
-  _acquireSwapChainForFrame();
 
   VkCommandBufferBeginInfo CBBI_GFX = {};
   initializeVkStruct(CBBI_GFX, VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
@@ -902,15 +904,30 @@ void VkContext::_initSwapChain() {
     OK = vkCreateImageView(_vkdevice, &IVCI, nullptr, &swap_chain->_vkSwapChainImageViews[i]);
     OrkAssert(OK == VK_SUCCESS);
 
-    // create depth image
-    auto rtg = std::make_shared<RtGroup>(this, width, height, MsaaSamples::MSAA_1X);
-    auto rtb = rtg->createRenderTarget(DEPTH_FORMAT,"depth"_crcu);
+    auto rtg = std::make_shared<RtGroup>(this, width, height, MsaaSamples::MSAA_1X,false);
+    auto rtb_color = rtg->createRenderTarget(EBufferFormat::RGBA8,"present"_crcu);
+    auto rtb_depth = rtg->createRenderTarget(DEPTH_FORMAT,"depth"_crcu);
     auto rtg_impl = _fbi->_createRtGroupImpl(rtg.get());
+    rtg->_name = FormatString("vk-swapchain-%d", i);
+    ////////////////////////////////////////////
+    auto rtb_impl_color = rtb_color->_impl.getShared<VklRtBufferImpl>();
+    auto rtb_impl_depth = rtb_depth->_impl.getShared<VklRtBufferImpl>();
+    ////////////////////////////////////////////
+    // create depth image
     _vkCreateImageForBuffer(this,
-                            rtb->_impl.getShared<VklRtBufferImpl>(),
+                            rtb_impl_depth,
                             "depth"_crcu);
-    swap_chain->_depth_rtgs.push_back(rtg);
-    swap_chain->_depth_rtbs.push_back(rtb);
+    ////////////////////////////////////////////
+    // link to swap chain color image
+    rtb_impl_color->_init = false;
+    rtb_impl_color->_vkimg = swap_chain->_vkSwapChainImages[i];
+    rtb_impl_color->_vkimgview = swap_chain->_vkSwapChainImageViews[i];
+    //rtb_impl_color->_vkfmt = true;
+    ////////////////////////////////////////////
+
+    swap_chain->_rtgs.push_back(rtg);
+    swap_chain->_color_rtbs.push_back(rtb_color);
+    swap_chain->_depth_rtbs.push_back(rtb_depth);
   }
 
   _swapchain = swap_chain;

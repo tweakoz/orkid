@@ -446,7 +446,8 @@ struct VkSwapChain{
   std::vector<VkImage> _vkSwapChainImages;
   std::vector<VkImageView> _vkSwapChainImageViews;
   std::vector<VkFramebuffer> _vkFrameBuffers;
-  std::vector<rtgroup_ptr_t> _depth_rtgs;
+  std::vector<rtgroup_ptr_t> _rtgs;
+  std::vector<rtbuffer_ptr_t> _color_rtbs;
   std::vector<rtbuffer_ptr_t> _depth_rtbs;
   //std::vector<VkImage>       _vkDepthImages;
   //std::vector<VkImageView>   _vkDepthImageViews;
@@ -624,7 +625,7 @@ struct VkFrameBufferInterface final : public FrameBufferInterface {
   void _setScissor(int iX, int iY, int iW, int iH) final;
   void _doBeginFrame(void) final;
   void _doEndFrame(void) final;
-  void _setAsRenderTarget();
+  void _setMainAsRenderTarget();
   void _pushRtGroup(RtGroup* Base) final;
   RtGroup* _popRtGroup() final;
   void _postPushRtGroup(RtGroup* Base);
@@ -741,7 +742,7 @@ struct VkFxInterface final : public FxInterface {
   void bindParamBlockBuffer(const FxShaderParamBlock* block, FxShaderParamBuffer* buffer) final;
 
   fxtechnique_constptr_t _currentORKTEK = nullptr;
-  vkfxstek_ptr_t _currentVKTEK;
+  VkFxShaderTechnique* _currentVKTEK;
   vkfxspass_ptr_t _currentVKPASS;
   vkcontext_rawptr_t _contextVK;
   std::map<AssetPath, vkfxsfile_ptr_t> _fxshaderfiles;

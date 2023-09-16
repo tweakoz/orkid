@@ -85,7 +85,7 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(vkvtxbuf_ptr_t vb, vkprimclas
 ///////////////////////////////////////////////////////////////////////////////
 
 int VkFxInterface::BeginBlock(fxtechnique_constptr_t tek, const RenderContextInstData& data) {
-  auto vk_tek = tek->_impl.getShared<VkFxShaderTechnique>();
+  auto vk_tek = tek->_impl.get<VkFxShaderTechnique*>();
   _currentORKTEK = tek;
   _currentVKTEK = vk_tek;
   return (int) vk_tek->_vk_passes.size();

@@ -25,9 +25,10 @@ VkRtGroupImpl::VkRtGroupImpl(RtGroup* rtg)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void VkFrameBufferInterface::_setAsRenderTarget() { // _main_rtg
+void VkFrameBufferInterface::_setMainAsRenderTarget() { // _main_rtg
   _currentRtGroup = _main_rtg.get();
   _active_rtgroup = _main_rtg.get();
+  printf( "BIND RTG<%s>\n", _active_rtgroup->_name.c_str() );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -165,7 +166,7 @@ void _vkCreateImageForBuffer(
 ///////////////////////////////////////////////////////////////////////////////
 
 vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(RtGroup* rtgroup) {
-  vkrtgrpimpl_ptr_t RTGIMPL = std::make_shared<VkRtGroupImpl>(rtgroup);
+  vkrtgrpimpl_ptr_t RTGIMPL = rtgroup->_impl.makeShared<VkRtGroupImpl>(rtgroup);
   RTGIMPL->_width           = rtgroup->width();
   RTGIMPL->_height          = rtgroup->height();
   int inumtargets           = rtgroup->GetNumTargets();
@@ -204,17 +205,22 @@ vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(RtGroup* rtgroup) {
     if (rtbuffer->_usage != 0) {
       USAGE = rtbuffer->_usage;
     }
-    _vkCreateImageForBuffer(_contextVK, bufferimpl, USAGE);
-    auto& adesc = bufferimpl->_attachmentDesc;
-    initializeVkStruct(adesc);
-    adesc.format         = bufferimpl->_vkfmt;
-    adesc.samples        = VK_SAMPLE_COUNT_1_BIT;
-    adesc.loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    adesc.storeOp        = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    adesc.stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-    adesc.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    adesc.initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED;
-    adesc.finalLayout    = VkFormatConverter::_instance.layoutForUsage(USAGE);
+    if( USAGE == "present"_crcu ){
+
+    }
+    else{
+      _vkCreateImageForBuffer(_contextVK, bufferimpl, USAGE);
+      auto& adesc = bufferimpl->_attachmentDesc;
+      initializeVkStruct(adesc);
+      adesc.format         = bufferimpl->_vkfmt;
+      adesc.samples        = VK_SAMPLE_COUNT_1_BIT;
+      adesc.loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR;
+      adesc.storeOp        = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+      adesc.stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+      adesc.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+      adesc.initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED;
+      adesc.finalLayout    = VkFormatConverter::_instance.layoutForUsage(USAGE);
+    }
     ///////////////////////////////////////////////////
   }
 
@@ -309,12 +315,12 @@ void VkFrameBufferInterface::_present() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkFrameBufferInterface::_pushRtGroup(RtGroup* rtgroup) {
-  auto prev_rtgroup = _active_rtgroup;
-  if (nullptr == rtgroup) {
-    _setAsRenderTarget();
-  } else {
-    _active_rtgroup = rtgroup;
-  }
+  //auto prev_rtgroup = _active_rtgroup;
+  //if (nullptr == rtgroup) {
+    //_setMainAsRenderTarget();
+  //} else {
+    //_active_rtgroup = rtgroup;
+  //}
   /*
   OrkAssert(_active_rtgroup);
   int iw = _active_rtgroup->width();

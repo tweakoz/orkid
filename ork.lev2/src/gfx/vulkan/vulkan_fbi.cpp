@@ -36,11 +36,13 @@ void VkFrameBufferInterface::_setScissor(int iX, int iY, int iW, int iH) {
 
 ///////////////////////////////////////////////////////
 void VkFrameBufferInterface::_doBeginFrame() {
-  RtGroup* rtg = _currentRtGroup;
-  _pushRtGroup(rtg);
-  if (_main_rtg and (rtg == nullptr)) {
-    rtg = _main_rtg.get();
-  }
+  _contextVK->_acquireSwapChainForFrame();
+  _setMainAsRenderTarget();
+  //RtGroup* rtg = _currentRtGroup;
+  //_pushRtGroup(rtg);
+  //if (_main_rtg and (rtg == nullptr)) {
+    //rtg = _main_rtg.get();
+  //}
 }
 
 ///////////////////////////////////////////////////////

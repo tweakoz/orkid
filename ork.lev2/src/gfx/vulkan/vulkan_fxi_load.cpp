@@ -484,6 +484,9 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
       vk_program->_frgshader = frg_obj;
       vk_pass->_vk_program   = vk_program;
       vk_tek->_vk_passes.push_back(vk_pass);
+      static int prog_index = 0;
+      vk_program->_pipeline_bits = prog_index;
+      OrkAssert(prog_index<256);
 
       // orkid side
       auto ork_pass = new FxShaderPass;

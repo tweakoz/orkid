@@ -80,6 +80,7 @@ rtbuffer_ptr_t RtGroup::createRenderTarget(EBufferFormat efmt, uint64_t usage) {
   switch(usage){
     case "depth"_crcu:
       _depthBuffer = rtb;
+      _needsDepth = true;
       break;
     default:
       mMrt[islot] = rtb;
