@@ -291,15 +291,16 @@ void pyinit_gfx_drawables(py::module& module_lev2) {
               "color",
               [](billboard_string_drawabledata_ptr_t drw) -> fvec4 { return drw->_color; },
               [](billboard_string_drawabledata_ptr_t drw, fvec4 val) { drw->_color = val; })
-          .def_property(
+          /*.def_property(
               "blending",
               [](billboard_string_drawabledata_ptr_t drw) -> crcstring_ptr_t { //
                 auto crcstr = std::make_shared<CrcString>(uint64_t(drw->_blendmode));
                 return crcstr;
             },
               [](billboard_string_drawabledata_ptr_t drw, crcstring_ptr_t ctest) { //
-                drw->_blendmode = Blending(ctest->hashed());
-            });
+                drw->_blendmode = BlendingMacro(ctest->hashed());
+            })*/
+            ;
   type_codec->registerStdCodec<billboard_string_drawabledata_ptr_t>(billboard_drawdata_type);
   /////////////////////////////////////////////////////////////////////////////////
 }

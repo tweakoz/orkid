@@ -143,7 +143,7 @@ void PhysicsDebugger::endRenderFrame() {
 
 void PhysicsDebugger::_onGpuInit(Simulation* psi, lev2::Context* ctx) {
   _pbrmaterial = std::make_shared<PBRMaterial>(ctx);
-  _pbrmaterial->_rasterstate.SetZWriteMask(true);
+  _pbrmaterial->_rasterstate.setWriteMaskZ(true);
   _pbrmaterial->_variant = "vertexcolor"_crcu;
   _fxcache = _pbrmaterial->pipelineCache();
 }

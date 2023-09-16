@@ -287,7 +287,6 @@ void GradientEditorImpl::render(lev2::Context* pTARG) {
       ///////////////////////////////
       float time = skin->_timer.SecsSinceStart();
       RenderContextFrameData RCFD(pTARG);
-      skin->_material->_rasterstate.SetRGBAWriteMask(true, true);
       skin->_material->begin(skin->_tekcolorwheel, RCFD);
       skin->_material->bindParamMatrix(skin->_parmvp, skin->_uiMVPMatrix);
       skin->_material->bindParamFloat(skin->_partime, time);

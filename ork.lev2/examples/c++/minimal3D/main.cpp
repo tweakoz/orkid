@@ -33,7 +33,7 @@ struct Resources {
     deco::printf(fvec3::White(), "gpuINIT - context<%p>\n", ctx);
     deco::printf(fvec3::Yellow(), "  fxtechnique<%p>\n", fxtechnique);
     deco::printf(fvec3::Yellow(), "  fxparameterMVP<%p>\n", fxparameterMVP);
-    _material->_rasterstate.SetCullTest(ECullTest::PASS_FRONT);
+    _material->_rasterstate.setCullTest(ECullTest::PASS_FRONT);
 
     ///////////////////////////////////////////////////
     // create RCFD, RCID

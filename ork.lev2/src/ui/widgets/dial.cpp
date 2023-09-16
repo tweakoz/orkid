@@ -35,8 +35,8 @@ void Dial::DoDraw(drawevent_constptr_t drwev) {
     ixc = ix1 + (_geometry._w >> 1);
     iyc = iy1 + (_geometry._h >> 1);
 
-    defmtl->_rasterstate.SetBlending(lev2::Blending::ALPHA);
-    defmtl->_rasterstate.SetDepthTest(lev2::EDepthTest::OFF);
+    defmtl->_rasterstate.setBlendingMacro(lev2::BlendingMacro::ALPHA);
+    defmtl->_rasterstate.setDepthTest(lev2::EDepthTest::OFF);
 
     fvec4 color = _bgcolor;
     if (not hasMouseFocus())

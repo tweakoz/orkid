@@ -190,15 +190,15 @@ void pyinit_gfx(py::module& module_lev2) {
           [](SRasterState& state, crcstring_ptr_t ctest) { //
             state._depthtest = EDepthTest(ctest->hashed());
           })
-      .def_property(
+      /*.def_property(
           "blending",
           [](const SRasterState& state) -> crcstring_ptr_t { //
             auto crcstr = std::make_shared<CrcString>(uint64_t(state._blending));
             return crcstr;
           },
           [](SRasterState& state, crcstring_ptr_t ctest) { //
-            state._blending = Blending(ctest->hashed());
-          })
+            state._blending = BlendingMacro(ctest->hashed());
+          })*/
       .def("__repr__", [](const SRasterState& state) -> std::string {
         fxstring<256> fxs;
         fxs.format("RasterState()");

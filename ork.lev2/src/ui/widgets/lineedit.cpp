@@ -95,8 +95,8 @@ void LineEdit::DoDraw(drawevent_constptr_t drwev) {
           ix2,
           iy2);
 
-    defmtl->_rasterstate.SetBlending(lev2::Blending::ALPHA);
-    defmtl->_rasterstate.SetDepthTest(lev2::EDepthTest::OFF);
+    defmtl->_rasterstate.setBlendingMacro(lev2::BlendingMacro::ALPHA);
+    defmtl->_rasterstate.setDepthTest(lev2::EDepthTest::OFF);
     tgt->PushModColor(_bg_color);
     defmtl->SetUIColorMode(lev2::UiColorMode::MOD);
     primi.RenderQuadAtZ(

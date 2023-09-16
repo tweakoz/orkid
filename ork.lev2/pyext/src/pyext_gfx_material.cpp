@@ -234,13 +234,13 @@ void pyinit_gfx_material(py::module& module_lev2) {
               "gpuInit",
               [](freestyle_mtl_ptr_t m, ctx_t& c, file::Path& path) {
                 m->gpuInit(c.get(), path);
-                m->_rasterstate.SetCullTest(ECullTest::OFF);
+                m->_rasterstate.setCullTest(ECullTest::OFF);
               })
           .def(
               "gpuInitFromShaderText",
               [](freestyle_mtl_ptr_t m, ctx_t& c, const std::string& name, const std::string& shadertext) {
                 m->gpuInitFromShaderText(c.get(), name, shadertext);
-                m->_rasterstate.SetCullTest(ECullTest::OFF);
+                m->_rasterstate.setCullTest(ECullTest::OFF);
               })
           .def_property_readonly(
               "shader",
