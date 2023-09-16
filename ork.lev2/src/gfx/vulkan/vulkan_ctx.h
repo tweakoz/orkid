@@ -635,6 +635,12 @@ struct VkFrameBufferInterface final : public FrameBufferInterface {
   freestyle_mtl_ptr_t utilshader();
 
   vkrtgrpimpl_ptr_t _createRtGroupImpl(RtGroup* rtg);
+  //void _doPushMainSurface() final;
+  //void _doPopMainSurface() final;
+
+  rtgroup_ptr_t _main_rtg;
+  rtbuffer_ptr_t _main_rtb_color;
+  rtbuffer_ptr_t _main_rtb_depth;
 
   RtGroup* _active_rtgroup = nullptr;
   freestyle_mtl_ptr_t _freestyle_mtl;

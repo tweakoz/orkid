@@ -34,6 +34,11 @@ void VkFrameBufferInterface::_setScissor(int iX, int iY, int iW, int iH) {
   //OrkAssert(false);
 }
 
+//void VkFrameBufferInterface::_doPushMainSurface() {
+//}
+//void VkFrameBufferInterface::_doPopMainSurface() {
+//}
+
 ///////////////////////////////////////////////////////
 void VkFrameBufferInterface::_doBeginFrame() {
   _contextVK->_acquireSwapChainForFrame();

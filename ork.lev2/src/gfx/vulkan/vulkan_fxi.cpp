@@ -70,7 +70,8 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(vkvtxbuf_ptr_t vb, vkprimclas
 
   auto it = _pipelines.find(pipeline_hash);
   if( it == _pipelines.end() ){ // create pipeline
-    
+    rval = std::make_shared<VkPipelineObject>();
+    _pipelines[pipeline_hash] = rval;
   }
   else{ // pipeline already cached!
     rval = it->second;

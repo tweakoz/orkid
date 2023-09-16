@@ -65,7 +65,7 @@ void Context::beginFrame(void) {
   _doBeginFrame();
   ////////////////////////
 
-  FBI()->pushMainSurface();
+  //FBI()->pushMainSurface();
 
   ////////////////////////
 
@@ -87,7 +87,7 @@ void Context::endFrame(void) {
   MTXI()->PopPMatrix();
   FBI()->EndFrame();
 
-  FBI()->popMainSurface();
+  //FBI()->popMainSurface();
 
   PopModColor();
   mbPostInitializeContext = false;

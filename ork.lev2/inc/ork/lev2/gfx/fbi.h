@@ -35,9 +35,6 @@ public:
   void SetVSyncEnable(bool bv) {
     _enableVSync = bv;
   }
-
-  void pushMainSurface();
-  void popMainSurface();
   
   ///////////////////////////////////////////////////////
 
@@ -69,6 +66,10 @@ public:
   }
   virtual void rtGroupMipGen(RtGroup* rtg) {
   }
+  //void pushMainSurface();
+  //void popMainSurface();
+  //virtual void _doPushMainSurface() {}
+  //virtual void _doPopMainSurface() {}
 
   ///////////////////////////////////////////////////////
   // viewport / scissor
@@ -164,8 +165,8 @@ public:
   int _pickState;
   std::stack<lev2::RtGroup*> mRtGroupStack;
 
-  rtgroup_ptr_t _main_rtg;
-  rtbuffer_ptr_t _main_rtb_color;
-  rtbuffer_ptr_t _main_rtb_depth;
+  //rtgroup_ptr_t _main_rtg;
+  //rtbuffer_ptr_t _main_rtb_color;
+  //rtbuffer_ptr_t _main_rtb_depth;
 
 };
