@@ -424,14 +424,18 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
     vulkan_shaderfile->_vk_shaderobjects[str_shader_name] = vulkan_shobj;
     /////////////////////////////////
     auto num_iunisets = shader_input_stream->readItem<size_t>();
-    for (size_t i = 0; i < num_iunisets; i++) {
-      auto str_uniset = shader_input_stream->readIndexedString(chunkreader);
-      auto it = vulkan_shaderfile->_vk_uniformsets.find(str_uniset);
-      OrkAssert(it!=vulkan_shaderfile->_vk_uniformsets.end());
-      vkfxsuniset_ptr_t vk_uniset = it->second;
-      vulkan_shobj->_vk_uniformsets[str_uniset] = vk_uniset;
+    if(num_iunisets){
+      auto refs = std::make_shared<VkFxShaderUniformSetsReference>();
+      vulkan_shobj->_uniset_refs = refs;
+      for (size_t i = 0; i < num_iunisets; i++) {
+        auto str_uniset = shader_input_stream->readIndexedString(chunkreader);
+        auto it = vulkan_shaderfile->_vk_uniformsets.find(str_uniset);
+        OrkAssert(it!=vulkan_shaderfile->_vk_uniformsets.end());
+        vkfxsuniset_ptr_t vk_uniset = it->second;
+        refs->_unisets[str_uniset] = vk_uniset;
+      }
+      OrkAssert(refs->_unisets.size()<2);
     }
-    OrkAssert(vulkan_shobj->_vk_uniformsets.size()<2);
     /////////////////////////////////
     return vulkan_shobj;
   };
@@ -518,26 +522,29 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
       auto push_constants = std::make_shared<VkFxShaderPushConstantBlock>();
       vk_program->_pushConstantBlock = push_constants;
 
-      std::set<vkfxsuniset_ptr_t> unisets_vtx;
-      std::set<vkfxsuniset_ptr_t> unisets_frg;
-      for( auto uset_item : vtx_obj->_vk_uniformsets ){
-        auto uset_name = uset_item.first;
-        auto uset = uset_item.second;
-        auto it = unisets_vtx.find( uset );
-        if(it==unisets_vtx.end()){
-          unisets_vtx.insert( uset );
-          push_constants->_vtx_unisets[uset_name] = uset;
-          for( auto item : uset->_items_by_name ){
-            auto item_name = item.first;
-            auto item_ptr  = item.second;
-            auto it = push_constants->_vtx_items_by_name.find(item_name);
-            printf( "merging uset<%s> itemname<%s>\n", uset_name.c_str(), item_name.c_str());
-            OrkAssert(it==push_constants->_vtx_items_by_name.end());
-            push_constants->_vtx_items_by_name[item_name] = item_ptr;
+      if( vtx_obj->_uniset_refs ){
+        std::set<vkfxsuniset_ptr_t> unisets_vtx;
+        for( auto uset_item : vtx_obj->_uniset_refs->_unisets ){
+          auto uset_name = uset_item.first;
+          auto uset = uset_item.second;
+          auto it = unisets_vtx.find( uset );
+          if(it==unisets_vtx.end()){
+            unisets_vtx.insert( uset );
+            push_constants->_vtx_unisets[uset_name] = uset;
+            for( auto item : uset->_items_by_name ){
+              auto item_name = item.first;
+              auto item_ptr  = item.second;
+              auto it = push_constants->_vtx_items_by_name.find(item_name);
+              printf( "merging uset<%s> itemname<%s>\n", uset_name.c_str(), item_name.c_str());
+              OrkAssert(it==push_constants->_vtx_items_by_name.end());
+              push_constants->_vtx_items_by_name[item_name] = item_ptr;
+            }
           }
         }
+
       }
-      for( auto uset_item : frg_obj->_vk_uniformsets ){
+
+      /*for( auto uset_item : frg_obj->_vk_uniformsets ){
         auto name = uset_item.first;
         auto uset = uset_item.second;
         auto it = unisets_frg.find( uset );
@@ -552,7 +559,7 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
             push_constants->_frg_items_by_name[item_name] = item_ptr;
           }
         }
-      }
+      }*/
 
       ////////////////////////////////////////////////////////////
       // layout push constants with BufferLayout
@@ -610,7 +617,7 @@ vkfxsfile_ptr_t VkFxInterface::_loadShaderFromShaderText(
   basehasher->accumulateString("vkfxshader-1.0");
   basehasher->accumulateString(shadertext);
   uint64_t hashkey    = basehasher->result();
-  datablock_ptr_t vkfx_datablock; // = DataBlockCache::findDataBlock(hashkey);
+  datablock_ptr_t vkfx_datablock = DataBlockCache::findDataBlock(hashkey);
   vkfxsfile_ptr_t vulkan_shaderfile;
   ////////////////////////////////////////////
   // shader binary already cached

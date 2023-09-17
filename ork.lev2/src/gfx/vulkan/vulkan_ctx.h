@@ -368,6 +368,11 @@ struct VkFxShaderUniformSet {
   std::unordered_map<std::string, vkfxsunisetitem_ptr_t> _items_by_name;
   std::vector<vkfxsunisetitem_ptr_t> _items_by_order;
 };
+struct VkFxShaderUniformSetsReference {
+  static size_t descriptor_set_counter;
+  std::map<std::string,vkfxsuniset_ptr_t> _unisets;
+};
+using vkfxsunisetsref_ptr_t = std::shared_ptr<VkFxShaderUniformSetsReference>;
 ///////////////////////////////////////////////////////////////////////////////
 struct VkFxShaderPushConstantBlock {
   std::map<std::string,vkfxsuniset_ptr_t> _vtx_unisets;
@@ -412,7 +417,7 @@ struct VulkanFxShaderObject {
   VkShaderModule _vk_shadermodule;
   VkPipelineShaderStageCreateInfo _shaderstageinfo;
   //shadlang::SHAST::astnode_ptr_t _astnode; // debug only
-  std::unordered_map<std::string, vkfxsuniset_ptr_t> _vk_uniformsets;
+  vkfxsunisetsref_ptr_t _uniset_refs;
   std::unordered_map<std::string, vkfxsuniblk_ptr_t> _vk_uniformblks;
   uint64_t _STAGE = 0;
   VkPushConstantRange _vkpc_range;
