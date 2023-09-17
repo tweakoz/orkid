@@ -80,12 +80,18 @@ public:
   virtual ~FxInterface() {
   }
 
+  void pushRasterState(rasterstate_ptr_t rs);
+  rasterstate_ptr_t popRasterState();
+  virtual void _doPushRasterState(rasterstate_ptr_t rs) {}
+  virtual rasterstate_ptr_t _doPopRasterState() { return nullptr; }
+
 protected:
   FxShader* _activeShader;
   const FxShaderTechnique* _activeTechnique;
 
 private:
-  virtual void _doBeginFrame() = 0;
+  virtual void _doBeginFrame() {}
+  virtual void _doEndFrame() {}
   virtual void DoOnReset() {
   }
 };

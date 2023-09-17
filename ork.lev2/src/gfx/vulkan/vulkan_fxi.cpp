@@ -15,6 +15,8 @@ namespace ork::lev2::vulkan {
 VkFxInterface::VkFxInterface(vkcontext_rawptr_t ctx)
     : _contextVK(ctx) {
     _slp_cache = _GVI->_slp_cache;
+
+    _default_rasterstate = std::make_shared<lev2::SRasterState>();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -26,6 +28,73 @@ VkFxInterface::~VkFxInterface(){
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkFxInterface::_doBeginFrame() {
+  pushRasterState(_default_rasterstate);
+}
+void VkFxInterface::_doEndFrame() {
+  popRasterState();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void VkFxInterface::_doPushRasterState(rasterstate_ptr_t rs) {
+  _rasterstate_stack.push(_current_rasterstate);
+  _current_rasterstate = rs;
+}
+rasterstate_ptr_t VkFxInterface::_doPopRasterState() {
+  _current_rasterstate = _rasterstate_stack.top();
+  _rasterstate_stack.pop();
+  return _current_rasterstate;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+VkRasterState::VkRasterState(rasterstate_ptr_t rstate){
+  initializeVkStruct(_VKRSCI, VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO);
+  initializeVkStruct(_VKDSSCI, VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO);
+  initializeVkStruct(_VKCBSI, VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO);
+
+  _VKRSCI.depthClampEnable = VK_FALSE;
+  _VKRSCI.rasterizerDiscardEnable = VK_FALSE;
+  _VKRSCI.polygonMode = VK_POLYGON_MODE_FILL;
+  _VKRSCI.lineWidth = 1.0f;
+  _VKRSCI.cullMode = VK_CULL_MODE_NONE;
+  _VKRSCI.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+  _VKRSCI.depthBiasEnable = VK_FALSE;
+  _VKRSCI.depthBiasConstantFactor = 0.0f; // Optional
+  _VKRSCI.depthBiasClamp = 0.0f;          // Optional
+  _VKRSCI.depthBiasSlopeFactor = 0.0f;    // Optional
+
+  _VKDSSCI.depthTestEnable = VK_TRUE;
+  _VKDSSCI.depthWriteEnable = VK_TRUE;
+  _VKDSSCI.depthCompareOp = VK_COMPARE_OP_LESS;
+  _VKDSSCI.depthBoundsTestEnable = VK_FALSE;
+  _VKDSSCI.minDepthBounds = 0.0f; // Optional
+  _VKDSSCI.maxDepthBounds = 1.0f; // Optional
+  _VKDSSCI.stencilTestEnable = VK_FALSE;
+  _VKDSSCI.front = {}; // Optional
+  _VKDSSCI.back = {};  // Optional
+
+  _VKCBATT.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+  _VKCBATT.blendEnable = VK_FALSE;
+  _VKCBATT.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
+  _VKCBATT.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
+  _VKCBATT.colorBlendOp = VK_BLEND_OP_ADD;
+  _VKCBATT.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+  _VKCBATT.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+  _VKCBATT.alphaBlendOp = VK_BLEND_OP_ADD;
+
+  _VKCBSI.logicOpEnable = VK_FALSE;
+  _VKCBSI.logicOp = VK_LOGIC_OP_COPY; // Optional
+  _VKCBSI.attachmentCount = 1;
+  _VKCBSI.pAttachments = &_VKCBATT;
+  _VKCBSI.blendConstants[0] = 0.0f; // Optional
+  _VKCBSI.blendConstants[1] = 0.0f; // Optional
+  _VKCBSI.blendConstants[2] = 0.0f; // Optional
+  _VKCBSI.blendConstants[3] = 0.0f; // Optional
+
+  static int counter = 0;
+  _pipeline_bits = counter++;
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -36,6 +105,19 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(vkvtxbuf_ptr_t vb, //
   vkpipeline_obj_ptr_t rval;
   auto fbi = _contextVK->_fbi;
   auto gbi = _contextVK->_gbi;
+
+  ////////////////////////////////////////////////////
+  // rasterstate info
+  ////////////////////////////////////////////////////
+
+  OrkAssert(_current_rasterstate!=nullptr);
+  vkrasterstate_ptr_t vkrstate;
+  if( auto try_vkrs = _current_rasterstate->_impl.tryAsShared<VkRasterState>() ){
+    vkrstate = try_vkrs.value();
+  }
+  else{
+    vkrstate = _current_rasterstate->_impl.makeShared<VkRasterState>(_current_rasterstate);
+  }
 
   ////////////////////////////////////////////////////
   // get pipeline hash from permutations
@@ -52,17 +134,19 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(vkvtxbuf_ptr_t vb, //
 
   auto rtg = fbi->_active_rtgroup;
   auto rtg_impl = rtg->_impl.getShared<VkRtGroupImpl>();
+  auto msaa_impl = rtg_impl->_msaaState;
+
   int rtg_pbits = check_pb_range(rtg_impl->_pipeline_bits,4);
+  int pc_pbits = check_pb_range(primclass->_pipeline_bits,4);
 
   auto shprog = _currentVKPASS->_vk_program;
   int sh_pbits = check_pb_range(shprog->_pipeline_bits,8);
 
-  int pc_pbits = check_pb_range(primclass->_pipeline_bits,4);
 
   uint64_t pipeline_hash = vb_pbits
                          | (rtg_pbits<<4)
                          | (pc_pbits<<8)
-                         | (sh_pbits<<12);
+                         | (sh_pbits<<16);
 
 
   ////////////////////////////////////////////////////
@@ -92,12 +176,46 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(vkvtxbuf_ptr_t vb, //
     CINFO.pStages = stages.data();
     CINFO.pVertexInputState = &vb->_vertexConfig->_vertex_input_state;
     CINFO.pInputAssemblyState = &primclass->_input_assembly_state;
-    CINFO.pViewportState = nullptr; // TODO
-    CINFO.pRasterizationState = nullptr; // TODO (from srasterstate)
-    CINFO.pDepthStencilState = nullptr; // TODO (from srasterstate)
-    CINFO.pColorBlendState = nullptr; // TODO (from srasterstate)
-    CINFO.pMultisampleState = nullptr; // TODO (from fbi)
-    CINFO.pDynamicState = nullptr; 
+
+    ////////////////////////////////////////////////////
+    // dynamic states (viewport, scissor)
+    ////////////////////////////////////////////////////
+
+    std::vector<VkDynamicState> dynamic_states = {
+      VK_DYNAMIC_STATE_VIEWPORT,
+      VK_DYNAMIC_STATE_SCISSOR
+    };
+    VkPipelineDynamicStateCreateInfo dynamicState = {};
+    initializeVkStruct(dynamicState, VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO);
+    dynamicState.dynamicStateCount = dynamic_states.size(); // We have two dynamic states: viewport and scissor
+    dynamicState.pDynamicStates = dynamic_states.data();
+
+    CINFO.pDynamicState = & dynamicState; 
+
+    ////////////////////////////////////////////////////
+    // msaa state
+    ////////////////////////////////////////////////////
+
+    VkPipelineMultisampleStateCreateInfo MSAA = {};
+    initializeVkStruct(MSAA, VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO);
+    MSAA.sampleShadingEnable = VK_FALSE; // Enable/Disable sample shading
+    MSAA.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT; // No multisampling
+    MSAA.minSampleShading = 1.0f; // Minimum fraction for sample shading; closer to 1 is smoother
+    MSAA.pSampleMask = nullptr; // Optional
+    MSAA.alphaToCoverageEnable = VK_FALSE; // Enable/Disable alpha to coverage
+    MSAA.alphaToOneEnable = VK_FALSE; // Enable/Disable alpha to one
+
+    CINFO.pMultisampleState = &msaa_impl->_VKSTATE; // todo : dynamic
+
+    ////////////////////////////////////////////////////
+    // raster states
+    ////////////////////////////////////////////////////
+
+    CINFO.pRasterizationState = & vkrstate->_VKRSCI; 
+    CINFO.pDepthStencilState = & vkrstate->_VKDSSCI; 
+    CINFO.pColorBlendState = & vkrstate->_VKCBSI; 
+
+    ////////////////////////////////////////////////////
 
     /*
     VkDescriptorSetLayoutBinding bindings[16];

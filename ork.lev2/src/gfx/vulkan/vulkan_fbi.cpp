@@ -11,10 +11,22 @@
 namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
 
+
+VkMsaaState::VkMsaaState(){
+  initializeVkStruct(_VKSTATE, VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO);
+  _VKSTATE.sampleShadingEnable = VK_FALSE; // Enable/Disable sample shading
+  _VKSTATE.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT; // No multisampling
+  _VKSTATE.minSampleShading = 1.0f; // Minimum fraction for sample shading; closer to 1 is smoother
+  _VKSTATE.pSampleMask = nullptr; // Optional
+  _VKSTATE.alphaToCoverageEnable = VK_FALSE; // Enable/Disable alpha to coverage
+  _VKSTATE.alphaToOneEnable = VK_FALSE; // Enable/Disable alpha to one
+
+  _pipeline_bits = 0;
+}
+
 VkFrameBufferInterface::VkFrameBufferInterface(vkcontext_rawptr_t ctx)
     : FrameBufferInterface(*ctx)
     , _contextVK(ctx) {
-
 }
 
 ///////////////////////////////////////////////////////

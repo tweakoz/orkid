@@ -24,9 +24,16 @@ void Box::DoDraw(drawevent_constptr_t drwev) {
 
   auto tgt    = drwev->GetTarget();
   auto fbi    = tgt->FBI();
+  auto fxi    = tgt->FXI();
   auto mtxi   = tgt->MTXI();
   auto& primi = lev2::GfxPrimitives::GetRef();
   auto defmtl = lev2::defaultUIMaterial();
+
+  if(nullptr==_rasterstate){
+    _rasterstate = std::make_shared<lev2::SRasterState>(defmtl->_rasterstate);
+    _rasterstate->setBlendingMacro(lev2::BlendingMacro::OFF);
+    _rasterstate->setDepthTest(lev2::EDepthTest::OFF);
+  }
 
   mtxi->PushUIMatrix();
   {
@@ -44,8 +51,7 @@ void Box::DoDraw(drawevent_constptr_t drwev) {
           ix2,
           iy2);
 
-    defmtl->_rasterstate.setBlendingMacro(lev2::BlendingMacro::ALPHA);
-    defmtl->_rasterstate.setDepthTest(lev2::EDepthTest::OFF);
+    fxi->pushRasterState(_rasterstate);
     tgt->PushModColor(_color);
     defmtl->SetUIColorMode(lev2::UiColorMode::MOD);
     primi.RenderQuadAtZ(
@@ -62,6 +68,7 @@ void Box::DoDraw(drawevent_constptr_t drwev) {
         1.0f // v0, v1
     );
     tgt->PopModColor();
+    fxi->popRasterState();
   }
   mtxi->PopUIMatrix();
 }

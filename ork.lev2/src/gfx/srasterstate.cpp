@@ -22,6 +22,33 @@ SRasterState::SRasterState(){
   _rasterizerDiscard = false;
   _blendEnable = false;
 }
+
+/////////////////////////////////////////////////////////////////////////
+
+SRasterState::SRasterState( const SRasterState& oth ){
+  _writemaskZ = oth._writemaskZ;
+  _writemaskA = oth._writemaskA;
+  _writemaskRGB = oth._writemaskRGB;
+  _depthBiasEnable = oth._depthBiasEnable;
+  _depthBiasSlopeFactor = oth._depthBiasSlopeFactor;
+  _depthBiasConstantFactor = oth._depthBiasConstantFactor;
+  _depthBiasClamp = oth._depthBiasClamp;
+  _depthClampEnable = oth._depthClampEnable;
+  _rasterizerDiscard = oth._rasterizerDiscard;
+  _blendEnable = oth._blendEnable;
+  _blendConstant = oth._blendConstant;
+  _blendFactorSrcRGB = oth._blendFactorSrcRGB;
+  _blendFactorDstRGB = oth._blendFactorDstRGB;
+  _blendFactorSrcA = oth._blendFactorSrcA;
+  _blendFactorDstA = oth._blendFactorDstA;
+  _lineWidth = oth._lineWidth;
+  _polygonMode = oth._polygonMode;
+  _frontface = oth._frontface;
+  _depthtest = oth._depthtest;
+  _culltest = oth._culltest;
+  _impl.clear();
+}
+
 /////////////////////////////////////////////////////////////////////////
 void SRasterState::setDepthTest(EDepthTest dt){
   _depthtest = dt;

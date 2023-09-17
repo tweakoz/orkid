@@ -1,6 +1,7 @@
 #pragma once
 
 #include <ork/lev2/ui/widget.h>
+#include <ork/lev2/gfx/gfxrasterstate.h>
 
 namespace ork::ui {
 
@@ -21,6 +22,7 @@ public:
 
 private:
   void DoDraw(ui::drawevent_constptr_t drwev) override;
+  lev2::rasterstate_ptr_t _rasterstate;
 };
 
 ////////////////////////////////////////////////////////////////////

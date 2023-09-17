@@ -15,7 +15,9 @@ namespace ork::lev2 {
 
 struct SRasterState {
 
+  SRasterState( const SRasterState& oth );
   SRasterState();
+
 
   void setDepthTest(EDepthTest dt);
   void setCullTest(ECullTest dt);
@@ -74,6 +76,8 @@ struct SRasterState {
   svar16_t _impl;
 
 };
+
+using rasterstate_ptr_t = std::shared_ptr<SRasterState>;
 
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2

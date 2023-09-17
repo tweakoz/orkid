@@ -114,6 +114,8 @@ struct VulkanRenderPass;
 struct VulkanRenderSubPass;
 struct VkSwapChainCaps;
 struct VkSwapChain;
+struct VkMsaaState;
+struct VkRasterState;
 //
 using vkinstance_ptr_t   = std::shared_ptr<VulkanInstance>;
 using vkdeviceinfo_ptr_t = std::shared_ptr<VulkanDeviceInfo>;
@@ -162,6 +164,8 @@ using vkrenderpass_ptr_t   = std::shared_ptr<VulkanRenderPass>;
 using vksubpass_ptr_t      = std::shared_ptr<VulkanRenderSubPass>;
 using vkswapchaincaps_ptr_t = std::shared_ptr<VkSwapChainCaps>;
 using vkswapchain_ptr_t = std::shared_ptr<VkSwapChain>;
+using vkmsaastate_ptr_t = std::shared_ptr<VkMsaaState>;
+using vkrasterstate_ptr_t = std::shared_ptr<VkRasterState>;
 
 extern vkinstance_ptr_t _GVI;
 
@@ -242,6 +246,23 @@ struct VulkanInstance {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+struct VkMsaaState{
+  VkMsaaState();
+  VkPipelineMultisampleStateCreateInfo _VKSTATE;
+  int _pipeline_bits = -1;
+};
+
+struct VkRasterState{
+  VkRasterState(rasterstate_ptr_t rstate);
+  VkPipelineRasterizationStateCreateInfo _VKRSCI;
+  VkPipelineDepthStencilStateCreateInfo _VKDSSCI;
+  VkPipelineColorBlendStateCreateInfo _VKCBSI;
+  VkPipelineColorBlendAttachmentState _VKCBATT;
+  int _pipeline_bits = -1;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
 struct VkCommandBufferImpl{
   VkCommandBuffer _vkcmdbuf;
 };
@@ -283,6 +304,7 @@ struct VkRtGroupImpl {
   int _height = 0;
   VkFramebuffer _vkfb;
   int _pipeline_bits = -1;
+  vkmsaastate_ptr_t _msaaState;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -715,6 +737,7 @@ struct VkFxInterface final : public FxInterface {
   ~VkFxInterface();
 
   void _doBeginFrame() final;
+  void _doEndFrame() final;
 
   int BeginBlock(fxtechnique_constptr_t tek, const RenderContextInstData& data) final;
   bool BindPass(int ipass) final;
@@ -767,6 +790,9 @@ struct VkFxInterface final : public FxInterface {
   void unmapParamBuffer(FxShaderParamBufferMapping* mapping) final;
   void bindParamBlockBuffer(const FxShaderParamBlock* block, FxShaderParamBuffer* buffer) final;
 
+  void _doPushRasterState(rasterstate_ptr_t rs) final;
+  rasterstate_ptr_t _doPopRasterState() final;
+
   fxtechnique_constptr_t _currentORKTEK = nullptr;
   VkFxShaderTechnique* _currentVKTEK;
   vkfxspass_ptr_t _currentVKPASS;
@@ -774,6 +800,10 @@ struct VkFxInterface final : public FxInterface {
   std::map<AssetPath, vkfxsfile_ptr_t> _fxshaderfiles;
   std::unordered_map<uint64_t,vkpipeline_obj_ptr_t> _pipelines;
   shadlang::slpcache_ptr_t _slp_cache;
+  std::stack<rasterstate_ptr_t> _rasterstate_stack;
+  rasterstate_ptr_t _current_rasterstate;
+  lev2::rasterstate_ptr_t _default_rasterstate;
+
 };
 
 ///////////////////////////////////////////////////////////////////////////////
