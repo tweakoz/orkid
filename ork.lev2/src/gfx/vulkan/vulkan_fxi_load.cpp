@@ -455,7 +455,6 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
     OrkAssert(str_tek == "technique");
     auto str_tek_name = tecniq_input_stream->readIndexedString(chunkreader);
 
-
     auto vk_tek                                     = std::make_shared<VkFxShaderTechnique>();
     vulkan_shaderfile->_vk_techniques[str_tek_name] = vk_tek;
 
@@ -487,6 +486,49 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
       static int prog_index = 0;
       vk_program->_pipeline_bits = prog_index;
       OrkAssert(prog_index<256);
+    
+      ////////////////////////////////////////////////////////////
+
+      auto push_constants = std::make_shared<VkFxShaderPushConstantBlock>();
+      vk_program->_pushConstantBlock = push_constants;
+
+      std::set<vkfxsuniset_ptr_t> unisets_vtx;
+      std::set<vkfxsuniset_ptr_t> unisets_frg;
+      for( auto uset_item : vtx_obj->_vk_uniformsets ){
+        auto name = uset_item.first;
+        auto uset = uset_item.second;
+        auto it = unisets_vtx.find( uset );
+        if(it==unisets_vtx.end()){
+          unisets_vtx.insert( uset );
+          push_constants->_vtx_unisets[name] = uset;
+          for( auto item : uset->_items_by_name ){
+            auto item_name = item.first;
+            auto item_ptr  = item.second;
+            auto it = push_constants->_vtx_items_by_name.find(item_name);
+            OrkAssert(it==push_constants->_vtx_items_by_name.end());
+            push_constants->_vtx_items_by_name[item_name] = item_ptr;
+          }
+        }
+      }
+      for( auto uset_item : frg_obj->_vk_uniformsets ){
+        auto name = uset_item.first;
+        auto uset = uset_item.second;
+        auto it = unisets_frg.find( uset );
+        if(it==unisets_frg.end()){
+          unisets_frg.insert( uset );
+          push_constants->_frg_unisets[name] = uset;
+          for( auto item : uset->_items_by_name ){
+            auto item_name = item.first;
+            auto item_ptr  = item.second;
+            auto it = push_constants->_frg_items_by_name.find(item_name);
+            OrkAssert(it==push_constants->_frg_items_by_name.end());
+            push_constants->_frg_items_by_name[item_name] = item_ptr;
+          }
+        }
+      }
+
+
+      ////////////////////////////////////////////////////////////
 
       // orkid side
       auto ork_pass = new FxShaderPass;

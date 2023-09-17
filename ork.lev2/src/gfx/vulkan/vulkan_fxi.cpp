@@ -216,20 +216,42 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(vkvtxbuf_ptr_t vb, //
     CINFO.pColorBlendState = & vkrstate->_VKCBSI; 
 
     ////////////////////////////////////////////////////
+    // pipeline layout...
+    ////////////////////////////////////////////////////
+
+    VkPipelineLayoutCreateInfo PLCI;
+    VkPipelineLayout PL;
+    initializeVkStruct(PLCI, VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO);
+
+    ////////////////////////////////////////////////////
+    // push constants
+    ////////////////////////////////////////////////////
+
+    if(shprog->_pushConstantBlock){
+      PLCI.pushConstantRangeCount = shprog->_pushConstantBlock->_ranges.size();
+      PLCI.pPushConstantRanges = shprog->_pushConstantBlock->_ranges.data();
+    }
+
+    ////////////////////////////////////////////////////
+    // descriptors
+    ////////////////////////////////////////////////////
 
     /*
     VkDescriptorSetLayoutBinding bindings[16];
     VkDescriptorSetLayoutCreateInfo layoutinfo;
     VkDescriptorSetLayout dset_layout;
-    VkPipelineLayoutCreateInfo pipelineLayoutInfo;
-    VkPipelineLayout pipelineLayout;
-    if (vkCreatePipelineLayout(device, &pipelineLayoutCreateInfo, nullptr, &pipelineLayout) != VK_SUCCESS) {
-    } 
-    CINFO.layout = pipelineLayout;
     */
 
-    CINFO.layout = VkPipelineLayout(); // shader input data layout / bindings
-                                       // TODO: from geometry, shader
+    ////////////////////////////////////////////////////
+
+    VkResult OK = vkCreatePipelineLayout( _contextVK->_vkdevice, // device 
+                                          &PLCI,                 // pipeline layout create info
+                                          nullptr,               // allocator
+                                          &PL);                  // pipeline layout
+    OrkAssert(VK_SUCCESS == OK);
+
+    CINFO.layout = PL; // shader input data layout / bindings
+                                   // TODO: from geometry, shader
     if(0)
     vkCreateGraphicsPipelines( _contextVK->_vkdevice, // device
                                VK_NULL_HANDLE,        // pipeline cache

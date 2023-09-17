@@ -99,6 +99,7 @@ struct VkFxShaderUniformSetItem;
 struct VkFxShaderUniformSetSampler;
 struct VkFxShaderUniformBlk;
 struct VkFxShaderUniformBlkItem;
+struct VkFxShaderPushConstantBlock;
 struct VkPipelineObject;
 struct VkPrimitiveClass;
 struct VklRtBufferImpl;
@@ -149,6 +150,7 @@ using vkfxsunisetsamp_ptr_t = std::shared_ptr<VkFxShaderUniformSetSampler>;
 
 using vkfxsuniblk_ptr_t     = std::shared_ptr<VkFxShaderUniformBlk>;
 using vkfxsuniblkitem_ptr_t = std::shared_ptr<VkFxShaderUniformBlkItem>;
+using vkfxpushconstantblk_ptr_t = std::shared_ptr<VkFxShaderPushConstantBlock>;
 
 using vkrtbufimpl_ptr_t    = std::shared_ptr<VklRtBufferImpl>;
 using vkrtgrpimpl_ptr_t    = std::shared_ptr<VkRtGroupImpl>;
@@ -365,6 +367,15 @@ struct VkFxShaderUniformSet {
   std::unordered_map<std::string, vkfxsunisetitem_ptr_t> _items_by_name;
   std::vector<vkfxsunisetitem_ptr_t> _items_by_order;
 };
+struct VkFxShaderPushConstantBlock {
+  std::map<std::string,vkfxsuniset_ptr_t> _vtx_unisets;
+  std::map<std::string,vkfxsuniset_ptr_t> _frg_unisets;
+
+  std::map<std::string, vkfxsunisetitem_ptr_t> _vtx_items_by_name;
+  std::map<std::string, vkfxsunisetitem_ptr_t> _frg_items_by_name;
+
+  std::vector<VkPushConstantRange> _ranges;
+};
 ///////////////////////////////////////////////////////////////////////////////
 struct VkFxShaderUniformBlkItem {
   std::string _datatype;
@@ -402,6 +413,12 @@ struct VulkanFxShaderObject {
   std::unordered_map<std::string, vkfxsuniset_ptr_t> _vk_uniformsets;
   std::unordered_map<std::string, vkfxsuniblk_ptr_t> _vk_uniformblks;
   uint64_t _STAGE = 0;
+  VkPushConstantRange _vkpc_range;
+};
+
+struct VkParamSetItem{
+  VkFxShaderUniformSetItem* _vparam = nullptr;
+  svar64_t _value;
 };
 
 struct VkFxShaderProgram {
@@ -411,7 +428,14 @@ struct VkFxShaderProgram {
   vkfxsobj_ptr_t _tevshader;
   vkfxsobj_ptr_t _frgshader;
   vkfxsobj_ptr_t _comshader;
+  vkfxpushconstantblk_ptr_t _pushConstantBlock;
+
+  std::vector<VkParamSetItem> _pending_params;
+
   int _pipeline_bits = -1;
+
+  std::vector<std::string, vkfxsuniset_ptr_t> _vk_uniformsets;
+
 };
 struct VkPipelineObject{
   VkGraphicsPipelineCreateInfo _VKGFXPCI;
