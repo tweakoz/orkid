@@ -497,16 +497,17 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
       std::set<vkfxsuniset_ptr_t> unisets_vtx;
       std::set<vkfxsuniset_ptr_t> unisets_frg;
       for( auto uset_item : vtx_obj->_vk_uniformsets ){
-        auto name = uset_item.first;
+        auto uset_name = uset_item.first;
         auto uset = uset_item.second;
         auto it = unisets_vtx.find( uset );
         if(it==unisets_vtx.end()){
           unisets_vtx.insert( uset );
-          push_constants->_vtx_unisets[name] = uset;
+          push_constants->_vtx_unisets[uset_name] = uset;
           for( auto item : uset->_items_by_name ){
             auto item_name = item.first;
             auto item_ptr  = item.second;
             auto it = push_constants->_vtx_items_by_name.find(item_name);
+            printf( "merging uset<%s> itemname<%s>\n", uset_name.c_str(), item_name.c_str());
             OrkAssert(it==push_constants->_vtx_items_by_name.end());
             push_constants->_vtx_items_by_name[item_name] = item_ptr;
           }
