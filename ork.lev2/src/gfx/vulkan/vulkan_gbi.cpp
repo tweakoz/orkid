@@ -380,6 +380,12 @@ void VkGeometryBufferInterface::DrawPrimitiveEML(
   auto fxi = _contextVK->_fxi;
   auto pipeline = fxi->_fetchPipeline(vk_vbimpl,primclass);
   OrkAssert(pipeline);
+
+  // draw
+
+  // clear pending params
+  pipeline->_vk_program->_pending_params.clear();
+
 }
 
 #if defined(ENABLE_COMPUTE_SHADERS)

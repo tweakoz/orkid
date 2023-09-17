@@ -157,6 +157,7 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(vkvtxbuf_ptr_t vb, //
   if( it == _pipelines.end() ){ // create pipeline
     rval = std::make_shared<VkPipelineObject>();
     _pipelines[pipeline_hash] = rval;
+    rval->_vk_program = shprog;
 
     auto& CINFO = rval->_VKGFXPCI;
     initializeVkStruct(CINFO, VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO);

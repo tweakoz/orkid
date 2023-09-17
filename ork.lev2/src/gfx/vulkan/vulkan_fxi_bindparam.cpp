@@ -39,9 +39,9 @@ void VkFxInterface::BindParamVect3(const FxShaderParam* hpar, const fvec3& Vec) 
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkFxInterface::BindParamVect4(const FxShaderParam* hpar, const fvec4& Vec) {
-  auto vk_param = hpar->_impl.get<VkFxShaderUniformSetItem*>();
-  auto vk_prog = _currentVKPASS->_vk_program;
-  vk_prog->_current_params[vk_param].set<fvec4>(Vec);
+  auto& param_set = _currentVKPASS->_vk_program->_pending_params.emplace_back();
+  param_set._vk_param = hpar->_impl.get<VkFxShaderUniformSetItem*>();
+  param_set._value.set<fvec4>(Vec);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -71,17 +71,17 @@ void VkFxInterface::BindParamFloatArray(const FxShaderParam* hpar, const float* 
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkFxInterface::BindParamFloat(const FxShaderParam* hpar, float fA) {
-  auto vk_param = hpar->_impl.get<VkFxShaderUniformSetItem*>();
-  auto vk_prog = _currentVKPASS->_vk_program;
-  vk_prog->_current_params[vk_param].set<float>(fA);
+  auto& param_set = _currentVKPASS->_vk_program->_pending_params.emplace_back();
+  param_set._vk_param = hpar->_impl.get<VkFxShaderUniformSetItem*>();
+  param_set._value.set<float>(fA);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkFxInterface::BindParamMatrix(const FxShaderParam* hpar, const fmtx4& Mat) {
-  auto vk_param = hpar->_impl.get<VkFxShaderUniformSetItem*>();
-  auto vk_prog = _currentVKPASS->_vk_program;
-  vk_prog->_current_params[vk_param].set<fmtx4>(Mat);
+  auto& param_set = _currentVKPASS->_vk_program->_pending_params.emplace_back();
+  param_set._vk_param = hpar->_impl.get<VkFxShaderUniformSetItem*>();
+  param_set._value.set<fmtx4>(Mat);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

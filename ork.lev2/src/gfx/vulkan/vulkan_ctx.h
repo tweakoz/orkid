@@ -417,7 +417,7 @@ struct VulkanFxShaderObject {
 };
 
 struct VkParamSetItem{
-  VkFxShaderUniformSetItem* _vparam = nullptr;
+  VkFxShaderUniformSetItem* _vk_param = nullptr;
   svar64_t _value;
 };
 
@@ -434,10 +434,11 @@ struct VkFxShaderProgram {
 
   int _pipeline_bits = -1;
 
-  std::vector<std::string, vkfxsuniset_ptr_t> _vk_uniformsets;
+  std::unordered_map<std::string, vkfxsuniset_ptr_t> _vk_uniformsets;
 
 };
 struct VkPipelineObject{
+  vkfxsprg_ptr_t _vk_program;
   VkGraphicsPipelineCreateInfo _VKGFXPCI;
   VkPipeline _pipeline;
 };
