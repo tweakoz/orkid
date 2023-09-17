@@ -272,6 +272,41 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(vkvtxbuf_ptr_t vb, //
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+  
+VkFxShaderProgram::VkFxShaderProgram(){
+  _pushdatabuffer.reserve(1024); // todo : grow as needed
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void VkFxShaderProgram::applyPendingParams(vkcmdbufimpl_ptr_t cmdbuf){
+
+  OrkAssert(_pushConstantBlock!=nullptr);
+  size_t num_params = _pending_params.size();
+  /*BufferLayout layout(_pushdatabuffer);
+  for( size_t i=0; i<num_params; i++ ){
+    const auto& P = _pending_params[i];
+    const auto& V = P._value;
+    if(auto as_float = V.tryAs<float>()){
+      layout.addItem<float>(as_float.value());
+    }
+    else if(auto as_vec4 = V.tryAs<fvec4>() ){
+      layout.addItem<fvec4>(as_vec4.value());
+    }
+    else if(auto as_mtx4 = V.tryAs<fmtx4>() ){
+      layout.addItem<fmtx4>(as_mtx4.value());
+    }
+    else{
+      OrkAssert(false);
+    }
+  }
+  size_t data_size = layout.size();*/
+  //OrkAssert(data_size<=_pushConstantBlock->_size);
+
+  _pending_params.clear();
+}
+
+///////////////////////////////////////////////////////////////////////////////
 
 int VkFxInterface::BeginBlock(fxtechnique_constptr_t tek, const RenderContextInstData& data) {
   auto vk_tek = tek->_impl.get<VkFxShaderTechnique*>();

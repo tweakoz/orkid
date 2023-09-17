@@ -6,6 +6,7 @@
 ////////////////////////////////////////////////////////////////
 
 #include "vulkan_ctx.h"
+#include "vulkan_ub_layout.inl"
 #include "../shadlang/shadlang_backend_spirv.h"
 #include <ork/file/chunkfile.inl>
 
@@ -342,6 +343,7 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
       auto str_uniset_name                                = shader_input_stream->readIndexedString(chunkreader);
       auto vk_uniset                                      = std::make_shared<VkFxShaderUniformSet>();
       vulkan_shaderfile->_vk_uniformsets[str_uniset_name] = vk_uniset;
+      vulkan_shobj->_vk_uniformsets[str_uniset_name]      = vk_uniset;
       ///////////////////////////////////////////////
       auto str_samplers = shader_input_stream->readIndexedString(chunkreader);
       OrkAssert(str_samplers == "samplers");
@@ -527,6 +529,28 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
         }
       }
 
+      ////////////////////////////////////////////////////////////
+      // layout push constants with BufferLayout
+      ////////////////////////////////////////////////////////////
+
+      BufferLayout vtx_layout;
+      for( auto item : push_constants->_vtx_items_by_name ){
+        auto item_name = item.first;
+        auto item_ptr  = item.second;
+        auto datatype = item_ptr->_datatype;
+        size_t cursor = 0xffffffff;
+        if( datatype == "float"){
+          cursor = vtx_layout.layoutItem<float>();
+        }
+        else if( datatype == "vec4"){
+          cursor = vtx_layout.layoutItem<fvec4>();
+        }
+        else if( datatype == "mtx4"){
+          cursor = vtx_layout.layoutItem<fmtx4>();
+          OrkAssert(false);
+        }
+        printf( "datatype<%s> cursor<%zu>\n", datatype.c_str(), cursor );
+      }
 
       ////////////////////////////////////////////////////////////
 

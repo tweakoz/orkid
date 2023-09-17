@@ -379,12 +379,9 @@ void VkGeometryBufferInterface::DrawPrimitiveEML(
   auto vk_vbimpl = vtx_buf._impl.getShared<VulkanVertexBuffer>();
   auto fxi = _contextVK->_fxi;
   auto pipeline = fxi->_fetchPipeline(vk_vbimpl,primclass);
-  OrkAssert(pipeline);
+  pipeline->_vk_program->applyPendingParams(_contextVK->_cmdbufcurframe_gfx_pri);
 
   // draw
-
-  // clear pending params
-  pipeline->_vk_program->_pending_params.clear();
 
 }
 

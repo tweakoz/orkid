@@ -353,13 +353,14 @@ struct VkFxShaderUniformSetItem {
   std::string _identifier;
   std::shared_ptr<FxShaderParam> _orkparam;
 };
+///////////////////////////////////////////////////////////////////////////////
 struct VkFxShaderUniformSetSampler {
   size_t _binding_id = -1;
   std::string _datatype;
   std::string _identifier;
   std::shared_ptr<FxShaderParam> _orkparam;
 };
-
+///////////////////////////////////////////////////////////////////////////////
 struct VkFxShaderUniformSet {
   static size_t descriptor_set_counter;
   size_t _descriptor_set_id = 0;
@@ -367,6 +368,7 @@ struct VkFxShaderUniformSet {
   std::unordered_map<std::string, vkfxsunisetitem_ptr_t> _items_by_name;
   std::vector<vkfxsunisetitem_ptr_t> _items_by_order;
 };
+///////////////////////////////////////////////////////////////////////////////
 struct VkFxShaderPushConstantBlock {
   std::map<std::string,vkfxsuniset_ptr_t> _vtx_unisets;
   std::map<std::string,vkfxsuniset_ptr_t> _frg_unisets;
@@ -422,6 +424,9 @@ struct VkParamSetItem{
 };
 
 struct VkFxShaderProgram {
+
+  VkFxShaderProgram();
+
   vkfxsobj_ptr_t _vtxshader;
   vkfxsobj_ptr_t _geoshader;
   vkfxsobj_ptr_t _tctshader;
@@ -431,9 +436,11 @@ struct VkFxShaderProgram {
   vkfxpushconstantblk_ptr_t _pushConstantBlock;
 
   std::vector<VkParamSetItem> _pending_params;
+  std::vector<uint8_t> _pushdatabuffer;
 
   int _pipeline_bits = -1;
 
+  void applyPendingParams(vkcmdbufimpl_ptr_t cmdbuf);
   std::unordered_map<std::string, vkfxsuniset_ptr_t> _vk_uniformsets;
 
 };
