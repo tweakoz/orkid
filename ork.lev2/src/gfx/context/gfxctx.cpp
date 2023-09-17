@@ -41,78 +41,13 @@ void Context::describeX(class_t* clazz) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void Context::beginFrame(void) {
-
-  makeCurrentContext();
-  auto mainrect = mainSurfaceRectAtOrigin();
-  FBI()->setViewport(mainrect);
-  FBI()->setScissor(mainrect);
-
-  FBI()->BeginFrame();
-  GBI()->BeginFrame();
-  FXI()->BeginFrame();
-
-  PushModColor(fcolor4::White());
-  MTXI()->PushMMatrix(fmtx4::Identity());
-  MTXI()->PushVMatrix(fmtx4::Identity());
-  MTXI()->PushPMatrix(fmtx4::Identity());
-
-  mpCurrentObject = 0;
-
-  mRenderContextInstData = 0;
-
-  ////////////////////////
-  _defaultCommandBuffer = _cmdbuf_pool.allocate();
   _doBeginFrame();
-  ////////////////////////
-
-  //FBI()->pushMainSurface();
-
-  ////////////////////////
-
-  for (auto l : _onBeginFrameCallbacks)
-    l();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void Context::endFrame(void) {
-
-
-  for (auto l : _onEndFrameCallbacks)
-    l();
-
-  GBI()->EndFrame();
-  MTXI()->PopMMatrix();
-  MTXI()->PopVMatrix();
-  MTXI()->PopPMatrix();
-  FBI()->EndFrame();
-
-  //FBI()->popMainSurface();
-
-  PopModColor();
-  mbPostInitializeContext = false;
-  ////////////////////////
-  beginRenderPass(_main_render_pass);
-  ////////////////////////
-  // intermediate subpasses
-  ////////////////////////
-
-  ////////////////////////
-  // main subpass (always last)
-  ////////////////////////
-    beginSubPass(_main_render_subpass);
-    endSubPass(_main_render_subpass);
-  ////////////////////////
-  endRenderPass(_main_render_pass);
-  ////////////////////////
   _doEndFrame();
-  _cmdbuf_pool.deallocate(_defaultCommandBuffer);
-  _defaultCommandBuffer = nullptr;
-  ////////////////////////
-
-  miTargetFrame++;
-
-
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -135,6 +70,10 @@ void Context::beginSubPass(rendersubpass_ptr_t pass){
 }
 void Context::endSubPass(rendersubpass_ptr_t pass){
   _endSubPass(pass);
+}
+
+RenderSubPass::RenderSubPass(){
+  _commandbuffer = std::make_shared<CommandBuffer>();
 }
 
 /////////////////////////////////////////////////////////////////////////

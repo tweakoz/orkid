@@ -44,7 +44,7 @@ void VkFrameBufferInterface::_doBeginFrame() {
   _acquireSwapChainForFrame();
   _currentRtGroup = _main_rtg.get();
   _active_rtgroup = _main_rtg.get();
-  printf( "BIND RTG<%s>\n", _active_rtgroup->_name.c_str() );
+  //printf( "BIND RTG<%s>\n", _active_rtgroup->_name.c_str() );
   //RtGroup* rtg = _currentRtGroup;
   //_pushRtGroup(rtg);
   //if (_main_rtg and (rtg == nullptr)) {

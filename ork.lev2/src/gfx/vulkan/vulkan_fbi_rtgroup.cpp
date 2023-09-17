@@ -25,12 +25,6 @@ VkRtGroupImpl::VkRtGroupImpl(RtGroup* rtg)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void VkContext::_doResizeMainSurface(int iw, int ih) {
-  _fbi->_main_rtg->Resize(iw, ih);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
 VkFormatConverter::VkFormatConverter() {
   _fmtmap[EBufferFormat::RGBA8] = VK_FORMAT_R8G8B8A8_UNORM;
   _fmtmap[EBufferFormat::Z32]   = VK_FORMAT_D32_SFLOAT;

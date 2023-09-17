@@ -421,6 +421,32 @@ void VkContext::makeCurrentContext() {
 
 void VkContext::_doBeginFrame() {
 
+  makeCurrentContext();
+  auto mainrect = mainSurfaceRectAtOrigin();
+  _fbi->setViewport(mainrect);
+  _fbi->setScissor(mainrect);
+
+  _fbi->BeginFrame();
+  _gbi->BeginFrame();
+  _fxi->BeginFrame();
+
+  PushModColor(fcolor4::White());
+  _msi->PushMMatrix(fmtx4::Identity());
+  _msi->PushVMatrix(fmtx4::Identity());
+  _msi->PushPMatrix(fmtx4::Identity());
+
+  mpCurrentObject = 0;
+
+  mRenderContextInstData = 0;
+
+  ////////////////////////
+  _defaultCommandBuffer = _cmdbuf_pool.allocate();
+
+  ////////////////////////
+
+  for (auto l : _onBeginFrameCallbacks)
+    l();
+
   _cmdbufcurframe_gfx_pri = _defaultCommandBuffer->_impl.getShared<VkCommandBufferImpl>();
 
   VkCommandBufferBeginInfo CBBI_GFX = {};
@@ -441,10 +467,40 @@ void VkContext::_doBeginFrame() {
 
 
   vkBeginCommandBuffer(_cmdbufcurframe_gfx_pri->_vkcmdbuf, &CBBI_GFX); // vkBeginCommandBuffer does an implicit reset
+
+  //FBI()->pushMainSurface();
+
 }
 
 ///////////////////////////////////////////////////////
 void VkContext::_doEndFrame() {
+
+  for (auto l : _onEndFrameCallbacks)
+    l();
+
+  GBI()->EndFrame();
+  MTXI()->PopMMatrix();
+  MTXI()->PopVMatrix();
+  MTXI()->PopPMatrix();
+  FBI()->EndFrame();
+
+  //FBI()->popMainSurface();
+
+  PopModColor();
+  mbPostInitializeContext = false;
+  ////////////////////////
+  beginRenderPass(_main_render_pass);
+  ////////////////////////
+  // intermediate subpasses
+  ////////////////////////
+  for( auto sp : _main_render_pass->_subpasses ){
+    // todo : in parallel ?
+    _beginExecuteSubPass(sp);
+    _endExecuteSubPass(sp);
+  }
+  ////////////////////////
+  endRenderPass(_main_render_pass);
+  ////////////////////////
 
   _fbi->_enq_transitionSwapChainForPresent();
 
@@ -498,6 +554,14 @@ void VkContext::_doEndFrame() {
   _cmdbufcurframe_gfx_pri = nullptr;
    _first_frame = false;
 
+  ///////////////////////////////////////////////////////
+
+  _cmdbuf_pool.deallocate(_defaultCommandBuffer);
+  _defaultCommandBuffer = nullptr;
+  ////////////////////////
+
+  miTargetFrame++;
+
 }
 
 ///////////////////////////////////////////////////////
@@ -528,9 +592,9 @@ void VkContext::_beginRenderPass(renderpass_ptr_t renpass) {
     // create the renderpass
     /////////////////////////////////////////
 
-    vk_rpass = renpass->_impl.makeShared<VulkanRenderPass>();
+    vk_rpass = renpass->_impl.makeShared<VulkanRenderPass>(renpass.get());
 
-    //auto rtg_out = renpass->_rtg_output;
+    // todo - use vk_rpass->_toposorted_subpasses
 
     auto surfaceFormat = _vkpresentation_caps->_formats[0];
 
@@ -563,6 +627,7 @@ void VkContext::_beginRenderPass(renderpass_ptr_t renpass) {
     VkAttachmentReference DATR = {};
     DATR.attachment = 1;
     DATR.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
 
     VkSubpassDescription SUBPASS = {};
     initializeVkStruct(SUBPASS);
@@ -632,13 +697,44 @@ void VkContext::_endRenderPass(renderpass_ptr_t renpass) {
   vkCmdEndRenderPass(_cmdbufcurframe_gfx_pri->_vkcmdbuf);
   // OrkAssert(false);
 }
+
+///////////////////////////////////////////////////////
+// begin subpass recording
+///////////////////////////////////////////////////////
+
 void VkContext::_beginSubPass(rendersubpass_ptr_t subpass) {
+  OrkAssert(_current_subpass==nullptr); // no nesting...
+  _current_subpass = subpass;
+  //_exec_subpasses.push_back(subpass);
   // OrkAssert(false);
 }
 
-void VkContext::_endSubPass(rendersubpass_ptr_t rubpass) {
-  // OrkAssert(false);
+///////////////////////////////////////////////////////
+// end subpass recording
+///////////////////////////////////////////////////////
+
+void VkContext::_endSubPass(rendersubpass_ptr_t subpass) {
+  OrkAssert(_current_subpass==subpass); // no nesting...
+  _current_subpass = nullptr;
 }
+
+///////////////////////////////////////////////////////
+// begin subpass execution
+///////////////////////////////////////////////////////
+
+void VkContext::_beginExecuteSubPass(rendersubpass_ptr_t subpass){
+
+}
+
+///////////////////////////////////////////////////////
+// end subpass execution
+///////////////////////////////////////////////////////
+
+void VkContext::_endExecuteSubPass(rendersubpass_ptr_t subpass){
+
+}
+
+///////////////////////////////////////////////////////
 
 commandbuffer_ptr_t VkContext::_beginRecordCommandBuffer() {
   OrkAssert(false);
@@ -928,6 +1024,41 @@ void VkContext::_doEnqueueSecondaryCommandBuffer(commandbuffer_ptr_t cmdbuf) {
   auto impl = cmdbuf->_impl.getShared<VkCommandBufferImpl>();
   vkCmdExecuteCommands(_cmdbufcurframe_gfx_pri->_vkcmdbuf, 1, &impl->_vkcmdbuf);
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
+void VkContext::_doResizeMainSurface(int iw, int ih) {
+  scheduleOnBeginFrame([this,iw,ih](){
+    _fbi->_main_rtg->Resize(iw, ih);
+  });
+}
+
+VulkanRenderPass::VulkanRenderPass(RenderPass* rpass){
+  // topological sort of renderpass's subpasses
+  //  to determine execution order
+
+  std::set<rendersubpass_ptr_t> subpass_set;
+
+  std::function<void(rendersubpass_ptr_t)> visit_subpass;
+
+  visit_subpass = [&](rendersubpass_ptr_t subp){
+    for( auto dep : subp->_subpass_dependencies ){
+      if( subpass_set.find(dep) == subpass_set.end() ){
+        subpass_set.insert(dep);
+        visit_subpass(dep);
+      }
+    }
+    _toposorted_subpasses.push_back(subp.get());
+  };
+
+  // visit top
+  for(auto subp : rpass->_subpasses){
+    visit_subpass(subp);
+  }
+
+}
+
+///////////////////////////////////////////////////////////////////////////////
 
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2::vulkan

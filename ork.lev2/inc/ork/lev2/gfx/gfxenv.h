@@ -332,7 +332,17 @@ public:
   load_token_t BeginLoad();
   void EndLoad(load_token_t ploadtok);
 
+  void scheduleOnBeginFrame(void_lambda_t l) {
+    _onBeginFrameCallbacks.push_back(l);
+  }
+  void scheduleOnEndFrame(void_lambda_t l) {
+    _onEndFrameCallbacks.push_back(l);
+  }
+
+  virtual void present(CTXBASE* ctxbase) {}
+
   static const int kiModColorStackMax = 8;
+  static orkvector<DisplayMode*> mDisplayModes;
 
   CTXBASE* mCtxBase                                   = nullptr;
   ctx_platform_handle_t _impl;
@@ -355,27 +365,18 @@ public:
   shared_pool::fixed_pool<CommandBuffer,4> _cmdbuf_pool;
   std::stack<commandbuffer_ptr_t> _cmdbuf_stack;
   commandbuffer_ptr_t _current_cmdbuf;
-  lev2::renderpass_ptr_t _main_render_pass;
-  lev2::rendersubpass_ptr_t _main_render_subpass;
+  renderpass_ptr_t _main_render_pass;
+  rendersubpass_ptr_t _main_render_subpass;
+  rendersubpass_ptr_t _current_subpass;
   bool hiDPI() const;
   float currentDPI() const;
 
-  static orkvector<DisplayMode*> mDisplayModes;
-
   std::stack<const RenderContextFrameData*> _rcfdstack;
 
-  void scheduleOnBeginFrame(void_lambda_t l) {
-    _onBeginFrameCallbacks.push_back(l);
-  }
-  void scheduleOnEndFrame(void_lambda_t l) {
-    _onEndFrameCallbacks.push_back(l);
-  }
-
-  virtual void present(CTXBASE* ctxbase) {}
-
-private:
   std::vector<void_lambda_t> _onBeginFrameCallbacks;
   std::vector<void_lambda_t> _onEndFrameCallbacks;
+
+private:
 
   virtual void _doBeginFrame(void) = 0;
   virtual void _doEndFrame(void)   = 0;
@@ -743,11 +744,15 @@ struct RenderPass{
 };
 
 struct RenderSubPass{
+
+  RenderSubPass();
+  
   std::vector<rendersubpass_ptr_t> _subpass_dependencies;
   rtgroup_ptr_t _rtg_input;
   rtgroup_ptr_t _rtg_output;
   svarp_t _impl;
   std::string _debugName;
+  commandbuffer_ptr_t _commandbuffer;
 };
 
 struct CommandBuffer{

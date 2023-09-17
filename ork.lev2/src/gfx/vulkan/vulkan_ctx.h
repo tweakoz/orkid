@@ -247,6 +247,8 @@ struct VkCommandBufferImpl{
 };
 
 struct VulkanRenderPass{
+  VulkanRenderPass(RenderPass* rpass);
+  std::vector<RenderSubPass*> _toposorted_subpasses;
   VkRenderPass _vkrp;
 };
 struct VulkanRenderSubPass{
@@ -842,6 +844,9 @@ public:
   void _beginSubPass(rendersubpass_ptr_t) final;
   void _endSubPass(rendersubpass_ptr_t) final;
 
+  void _beginExecuteSubPass(rendersubpass_ptr_t);
+  void _endExecuteSubPass(rendersubpass_ptr_t);
+
   //////////////////////////////////////////////
   // Interfaces
 
@@ -945,9 +950,7 @@ public:
   bool mTargetDrawableSizeDirty;
   bool _first_frame = true;
   //////////////////////////////////////////////
-  ///////////////////////////////////////////////////////////////////////////
 
-  std::vector<void_lambda_t> _deferred_ops;
   vkdwi_ptr_t _dwi;
   vkimi_ptr_t _imi;
   //vkrsi_ptr_t _rsi;
@@ -962,7 +965,7 @@ public:
 #endif
 };
 
-extern vkinstance_ptr_t _GVI;
+///////////////////////////////////////////////////////////////////////////
 
  void _imageBarrier(VkCommandBuffer cmdbuf, //
                     VkImage image, //
@@ -973,12 +976,18 @@ extern vkinstance_ptr_t _GVI;
                     VkImageLayout oldLayout, //
                     VkImageLayout newLayout);
 
+///////////////////////////////////////////////////////////////////////////
+
 struct VkPlatformObject {
   CtxGLFW* _ctxbase     = nullptr;
   bool _needsInit       = true;
   void_lambda_t _bindop = []() {};
 };
 using vkplatformobject_ptr_t = std::shared_ptr<VkPlatformObject>;
+
+///////////////////////////////////////////////////////////////////////////
+
+extern vkinstance_ptr_t _GVI;
 
 
 } // namespace ork::lev2::vulkan

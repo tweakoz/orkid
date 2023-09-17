@@ -60,6 +60,16 @@ struct RTGIMPL {
       }
       _width  = w;
       _height = h;
+
+      _subpass_assemble = std::make_shared<RenderSubPass>();
+      _subpass_assemble->_debugName = "OCN-RTG-ASSEMBLE";
+      _subpass_assemble->_rtg_input = nullptr;
+      _subpass_assemble->_rtg_output = nullptr;
+
+      _subpass_composite = std::make_shared<RenderSubPass>();
+      _subpass_composite->_debugName = "OCN-RTG-COMPOSITE";
+      _subpass_composite->_rtg_input = nullptr;
+      _subpass_composite->_rtg_output = nullptr;
     }
   }
   ///////////////////////////////////////
@@ -106,6 +116,8 @@ struct RTGIMPL {
   bool _needsinit = true;
   int _width      = 0;
   int _height     = 0;
+  rendersubpass_ptr_t _subpass_assemble;
+  rendersubpass_ptr_t _subpass_composite;
 };
 ///////////////////////////////////////////////////////////////////////////////
 RtGroupOutputCompositingNode::RtGroupOutputCompositingNode(rtgroup_ptr_t defaultrtg) 

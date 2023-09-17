@@ -30,7 +30,8 @@ void VkFxInterface::_doBeginFrame() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(vkvtxbuf_ptr_t vb, vkprimclass_ptr_t primclass){
+vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(vkvtxbuf_ptr_t vb, //
+                                                   vkprimclass_ptr_t primclass){ //
 
   vkpipeline_obj_ptr_t rval;
   auto fbi = _contextVK->_fbi;
@@ -101,7 +102,7 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(vkvtxbuf_ptr_t vb, vkprimclas
     /*
     VkDescriptorSetLayoutBinding bindings[16];
     VkDescriptorSetLayoutCreateInfo layoutinfo;
-    VkDescriptorSetLayout layout;
+    VkDescriptorSetLayout dset_layout;
     VkPipelineLayoutCreateInfo pipelineLayoutInfo;
     VkPipelineLayout pipelineLayout;
     if (vkCreatePipelineLayout(device, &pipelineLayoutCreateInfo, nullptr, &pipelineLayout) != VK_SUCCESS) {

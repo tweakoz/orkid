@@ -57,6 +57,22 @@ struct SCRIMPL {
       _msaadownsamplebuffer = std::make_shared<RtGroup>(ctx, 8, 8, MsaaSamples::MSAA_1X);
       auto dsbuf        = _msaadownsamplebuffer->createRenderTarget(EBufferFormat::RGBA8);
       dsbuf->_debugName = "MsaaDownsampleBuffer";
+
+      _subpass_assemble = std::make_shared<RenderSubPass>();
+      _subpass_assemble->_debugName = "OCN-SCR-ASSEMBLE";
+      _subpass_assemble->_rtg_input = nullptr;
+      _subpass_assemble->_rtg_output = nullptr;
+
+      _subpass_composite = std::make_shared<RenderSubPass>();
+      _subpass_composite->_debugName = "OCN-SCR-COMPOSITE";
+      _subpass_composite->_rtg_input = nullptr;
+      _subpass_composite->_rtg_output = nullptr;
+
+      _screen_renderpass = std::make_shared<RenderPass>();
+      _screen_renderpass->_immutable = true;
+      _screen_renderpass->_debugName = "OCN-SCR-RENDERPASS";
+      _screen_renderpass->_subpasses.push_back(_subpass_assemble);
+      _screen_renderpass->_subpasses.push_back(_subpass_composite);
     }
   }
   ///////////////////////////////////////
@@ -80,13 +96,16 @@ struct SCRIMPL {
     drawdata._properties["OutputWidth"_crcu].set<int>(_width);
     drawdata._properties["OutputHeight"_crcu].set<int>(_height);
     drawdata._properties["StereoEnable"_crcu].set<bool>(false);
+    drawdata._properties["SubPass"_crcu].set<rendersubpass_ptr_t>(_subpass_assemble);
     _CPD.defaultSetup(drawdata);
     CIMPL->pushCPD(_CPD);
+    //targ->beginRenderPass(_screen_renderpass);
+
   }
   void endAssemble(CompositorDrawData& drawdata) {
     auto CIMPL                   = drawdata._cimpl;
-    FrameRenderer& framerenderer = drawdata.mFrameRenderer;
-    RenderContextFrameData& RCFD = framerenderer.framedata();
+    Context* targ                = drawdata.context();
+    //targ->endSubPass(_subpass_assemble);
     CIMPL->popCPD();
   }
   ///////////////////////////////////////
@@ -106,6 +125,9 @@ struct SCRIMPL {
   int _width      = 0;
   int _height     = 0;
   rtgroup_ptr_t _msaadownsamplebuffer;
+  renderpass_ptr_t _screen_renderpass;
+  rendersubpass_ptr_t _subpass_assemble;
+  rendersubpass_ptr_t _subpass_composite;
 };
 ///////////////////////////////////////////////////////////////////////////////
 ScreenOutputCompositingNode::ScreenOutputCompositingNode()
@@ -171,7 +193,7 @@ void ScreenOutputCompositingNode::composite(CompositorDrawData& drawdata) {
         int num_msaa_samples = msaaEnumToInt(tex->_msaa_samples);
 
         if(num_msaa_samples==1){
-          drawdata.context()->debugPushGroup("ScreenCompositingNode::to_screen");
+          context->debugPushGroup("ScreenCompositingNode::to_screen");
           auto this_buf = context->FBI()->GetThisBuffer();
           auto& mtl     = impl->_blit2screenmtl;
           switch (this->_supersample) {
@@ -228,7 +250,8 @@ void ScreenOutputCompositingNode::composite(CompositorDrawData& drawdata) {
       }
     }
   }
-  drawdata.context()->debugPopGroup();
+  context->debugPopGroup();
+  //context->endRenderPass(_screen_renderpass);
 }
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2
