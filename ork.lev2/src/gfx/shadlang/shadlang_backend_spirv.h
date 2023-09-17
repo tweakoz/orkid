@@ -63,6 +63,7 @@ struct SpirvUniformBlock {
 
 struct InheritanceTracker{
   std::set<std::string> _inherited_libs;
+  std::vector<std::string> _inherited_unisets;
 };
 
 struct SpirvCompiler {
@@ -70,6 +71,8 @@ struct SpirvCompiler {
   SpirvCompiler(transunit_ptr_t _transu, bool vulkan);
   void processShader(shader_ptr_t sh);
   
+  void fetchInheritances(InheritanceTracker& tracker, astnode_ptr_t parent_node);
+
 private:
 
   void _convertUniformSets();

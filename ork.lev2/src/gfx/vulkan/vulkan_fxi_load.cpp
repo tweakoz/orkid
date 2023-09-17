@@ -88,6 +88,7 @@ datablock_ptr_t VkFxInterface::_writeIntermediateToDataBlock(shadlang::SHAST::tr
     chunkfile::Writer chunkwriter("xfx");
     auto header_stream = chunkwriter.AddStream("header");
     auto shader_stream = chunkwriter.AddStream("shaders");
+    auto uniforms_stream = chunkwriter.AddStream("uniforms");
     auto tecniq_stream = chunkwriter.AddStream("techniques");
 
     /////////////////////////////////////////////////////////////////////////////
@@ -143,8 +144,8 @@ datablock_ptr_t VkFxInterface::_writeIntermediateToDataBlock(shadlang::SHAST::tr
     //////////////////
 
     auto write_unisets_to_stream = [&](std::unordered_map<std::string, spirv::spirvuniset_ptr_t>& spirv_unisets) { //
-      shader_stream->addIndexedString("unisets", chunkwriter);
-      shader_stream->addItem<size_t>(spirv_unisets.size());
+      uniforms_stream->addIndexedString("unisets", chunkwriter);
+      uniforms_stream->addItem<size_t>(spirv_unisets.size());
 
       for (auto spirv_item : spirv_unisets) {
         std::string name  = spirv_item.first;
@@ -154,22 +155,22 @@ datablock_ptr_t VkFxInterface::_writeIntermediateToDataBlock(shadlang::SHAST::tr
         /////////////////////////////////////////////
         // rebuild _samplers_by_name
         /////////////////////////////////////////////
-        shader_stream->addIndexedString("uniset", chunkwriter);
-        shader_stream->addIndexedString(name, chunkwriter);
-        shader_stream->addIndexedString("samplers", chunkwriter);
-        shader_stream->addItem<size_t>(spirv_uniset->_samplers_by_name.size());
+        uniforms_stream->addIndexedString("uniset", chunkwriter);
+        uniforms_stream->addIndexedString(name, chunkwriter);
+        uniforms_stream->addIndexedString("samplers", chunkwriter);
+        uniforms_stream->addItem<size_t>(spirv_uniset->_samplers_by_name.size());
         for (auto item : spirv_uniset->_samplers_by_name) {
-          shader_stream->addIndexedString(item.second->_datatype, chunkwriter);
-          shader_stream->addIndexedString(item.second->_identifier, chunkwriter);
+          uniforms_stream->addIndexedString(item.second->_datatype, chunkwriter);
+          uniforms_stream->addIndexedString(item.second->_identifier, chunkwriter);
         }
         /////////////////////////////////////////////
         // rebuild _items_by_name
         /////////////////////////////////////////////
-        shader_stream->addIndexedString("params", chunkwriter);
-        shader_stream->addItem<size_t>(spirv_uniset->_items_by_order.size());
+        uniforms_stream->addIndexedString("params", chunkwriter);
+        uniforms_stream->addItem<size_t>(spirv_uniset->_items_by_order.size());
         for (auto item : spirv_uniset->_items_by_order) {
-          shader_stream->addIndexedString(item->_datatype, chunkwriter);
-          shader_stream->addIndexedString(item->_identifier, chunkwriter);
+          uniforms_stream->addIndexedString(item->_datatype, chunkwriter);
+          uniforms_stream->addIndexedString(item->_identifier, chunkwriter);
         }
       }
     };
@@ -179,32 +180,37 @@ datablock_ptr_t VkFxInterface::_writeIntermediateToDataBlock(shadlang::SHAST::tr
     //////////////////
 
     auto write_uniblks_to_stream = [&](std::unordered_map<std::string, spirv::spirvuniblk_ptr_t>& spirv_uniblks) { //
-      shader_stream->addIndexedString("uniblks", chunkwriter);
-      shader_stream->addItem<size_t>(spirv_uniblks.size());
+      uniforms_stream->addIndexedString("uniblks", chunkwriter);
+      uniforms_stream->addItem<size_t>(spirv_uniblks.size());
 
       // std::unordered_map<std::string, vkfxsuniblk_ptr_t> rval;
       for (auto spirv_item : spirv_uniblks) {
         std::string name  = spirv_item.first;
         auto spirv_uniblk = spirv_item.second;
-        shader_stream->addIndexedString("uniblk", chunkwriter);
-        shader_stream->addIndexedString(name, chunkwriter);
+        uniforms_stream->addIndexedString("uniblk", chunkwriter);
+        uniforms_stream->addIndexedString(name, chunkwriter);
         /////////////////////////////////////////////
         // rebuild _items_by_name
         /////////////////////////////////////////////
-        shader_stream->addIndexedString("items", chunkwriter);
-        shader_stream->addItem<size_t>(spirv_uniblk->_items_by_name.size());
+        uniforms_stream->addIndexedString("items", chunkwriter);
+        uniforms_stream->addItem<size_t>(spirv_uniblk->_items_by_name.size());
         for (auto item : spirv_uniblk->_items_by_order) {
           auto vk_item = std::make_shared<VkFxShaderUniformBlkItem>();
-          shader_stream->addIndexedString(item->_datatype, chunkwriter);
-          shader_stream->addIndexedString(item->_identifier, chunkwriter);
+          uniforms_stream->addIndexedString(item->_datatype, chunkwriter);
+          uniforms_stream->addIndexedString(item->_identifier, chunkwriter);
         }
       }
     };
 
+    write_unisets_to_stream(SPC->_spirvuniformsets);
+    write_uniblks_to_stream(SPC->_spirvuniformblks);
+
+    ////////////////////////////////////////////////////////////////
+
     size_t num_shaders_written = 0;
 
-    auto write_shader_to_stream = [&](SHAST::astnode_ptr_t node, std::string shader_type) {
-      auto sh_name  = node->typedValueForKey<std::string>("object_name").value();
+    auto write_shader_to_stream = [&](SHAST::astnode_ptr_t shader_node, std::string shader_type) {
+      auto sh_name  = shader_node->typedValueForKey<std::string>("object_name").value();
       auto sh_data  = (uint8_t*)SPC->_spirv_binary.data();
       size_t sh_len = SPC->_spirv_binary.size() * sizeof(uint32_t);
       shader_stream->addIndexedString("shader", chunkwriter);
@@ -213,8 +219,14 @@ datablock_ptr_t VkFxInterface::_writeIntermediateToDataBlock(shadlang::SHAST::tr
       shader_stream->addItem<size_t>(sh_len);
       shader_stream->addData(sh_data, sh_len);
 
-      write_unisets_to_stream(SPC->_spirvuniformsets);
-      write_uniblks_to_stream(SPC->_spirvuniformblks);
+      shadlang::spirv::InheritanceTracker tracker;
+      SPC->fetchInheritances(tracker,shader_node);
+
+      shader_stream->addItem<size_t>(tracker._inherited_unisets.size());
+      for (auto INHID : tracker._inherited_unisets ) {
+        shader_stream->addIndexedString(INHID, chunkwriter);
+        printf("INHID<%s>\n", INHID.c_str());
+      }
 
       num_shaders_written++;
     };
@@ -294,6 +306,7 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
   chunkfile::Reader chunkreader(vkfx_datablock, load_alloc);
   auto header_input_stream = chunkreader.GetStream("header");
   auto shader_input_stream = chunkreader.GetStream("shaders");
+  auto uniforms_input_stream = chunkreader.GetStream("uniforms");
   auto tecniq_input_stream = chunkreader.GetStream("techniques");
 
   OrkAssert(shader_input_stream != nullptr);
@@ -310,6 +323,84 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
   size_t num_uniblks     = header_input_stream->readItem<size_t>();
   size_t num_techniques  = header_input_stream->readItem<size_t>();
   size_t num_imports     = header_input_stream->readItem<size_t>();
+  /////////////////////////////////
+  // read unisets
+  /////////////////////////////////
+  auto str_unisets = uniforms_input_stream->readIndexedString(chunkreader);
+  OrkAssert(str_unisets == "unisets");
+  auto num_unisets_cnt = uniforms_input_stream->readItem<size_t>();
+  OrkAssert(num_unisets_cnt==num_unisets);
+  for (size_t i = 0; i < num_unisets; i++) {
+    auto str_uniset = uniforms_input_stream->readIndexedString(chunkreader);
+    OrkAssert(str_uniset == "uniset");
+    auto str_uniset_name                                = uniforms_input_stream->readIndexedString(chunkreader);
+    auto vk_uniset                                      = std::make_shared<VkFxShaderUniformSet>();
+    vulkan_shaderfile->_vk_uniformsets[str_uniset_name] = vk_uniset;
+    ///////////////////////////////////////////////
+    auto str_samplers = uniforms_input_stream->readIndexedString(chunkreader);
+    OrkAssert(str_samplers == "samplers");
+    auto num_samplers = uniforms_input_stream->readItem<size_t>();
+    for (size_t j = 0; j < num_samplers; j++) {
+      auto str_sampler_datatype   = uniforms_input_stream->readIndexedString(chunkreader);
+      auto str_sampler_identifier = uniforms_input_stream->readIndexedString(chunkreader);
+      auto vk_samp                = std::make_shared<VkFxShaderUniformSetSampler>();
+      vk_samp->_datatype          = str_sampler_datatype;
+      vk_samp->_identifier        = str_sampler_identifier;
+      vk_samp->_orkparam          = std::make_shared<FxShaderParam>();
+      vk_samp->_orkparam->_impl.set<VkFxShaderUniformSetSampler*>(vk_samp.get());
+      vk_uniset->_samplers_by_name[str_sampler_identifier] = vk_samp;
+      if(0)printf("uniset<%s> ADDING Sampler PARAM<%s>\n", str_uniset_name.c_str(), str_sampler_identifier.c_str());
+    }
+    ///////////////////////////////////////////////
+    auto str_params = uniforms_input_stream->readIndexedString(chunkreader);
+    OrkAssert(str_params == "params");
+    auto num_params = uniforms_input_stream->readItem<size_t>();
+    for (size_t j = 0; j < num_params; j++) {
+      auto str_param_datatype   = uniforms_input_stream->readIndexedString(chunkreader);
+      auto str_param_identifier = uniforms_input_stream->readIndexedString(chunkreader);
+      auto vk_param             = std::make_shared<VkFxShaderUniformSetItem>();
+      vk_param->_datatype       = str_param_datatype;
+      vk_param->_identifier     = str_param_identifier;
+      vk_param->_orkparam       = std::make_shared<FxShaderParam>();
+      vk_param->_orkparam->_impl.set<VkFxShaderUniformSetItem*>(vk_param.get());
+      vk_uniset->_items_by_name[str_param_identifier] = vk_param;
+      vk_uniset->_items_by_order.push_back(vk_param);
+      if(0)printf("uniset<%s> ADDING Item PARAM<%s>\n", str_uniset_name.c_str(), str_param_identifier.c_str());
+    }
+  }
+  /////////////////////////////////
+  // read uniblks
+  /////////////////////////////////
+  auto str_uniblks = uniforms_input_stream->readIndexedString(chunkreader);
+  OrkAssert(str_uniblks == "uniblks");
+  auto num_uniblks_count = uniforms_input_stream->readItem<size_t>();
+  OrkAssert(num_uniblks_count==num_uniblks);
+  for (size_t i = 0; i < num_uniblks; i++) {
+    auto str_uniblk = uniforms_input_stream->readIndexedString(chunkreader);
+    OrkAssert(str_uniblk == "uniblk");
+    auto str_uniblk_name                                = uniforms_input_stream->readIndexedString(chunkreader);
+    auto vk_uniblk                                      = std::make_shared<VkFxShaderUniformBlk>();
+    vk_uniblk->_orkparamblock = std::make_shared<FxShaderParamBlock>();
+    vulkan_shaderfile->_vk_uniformblks[str_uniblk_name] = vk_uniblk;
+    if(0)printf("str_uniblk_name<%s>\n", str_uniblk_name.c_str());
+    ///////////////////////////////////////////////
+    auto str_params = uniforms_input_stream->readIndexedString(chunkreader);
+    OrkAssert(str_params == "items");
+    auto num_params = uniforms_input_stream->readItem<size_t>();
+    for (size_t j = 0; j < num_params; j++) {
+      auto str_param_datatype   = uniforms_input_stream->readIndexedString(chunkreader);
+      auto str_param_identifier = uniforms_input_stream->readIndexedString(chunkreader);
+      auto vk_param             = std::make_shared<VkFxShaderUniformBlkItem>();
+      vk_param->_datatype       = str_param_datatype;
+      vk_param->_identifier     = str_param_identifier;
+      vk_param->_orkparam       = std::make_shared<FxShaderParam>();
+      vk_param->_orkparam->_impl.set<VkFxShaderUniformBlkItem*>(vk_param.get());
+      vk_uniblk->_items_by_name[str_param_identifier] = vk_param;
+      vk_uniblk->_items_by_order.push_back(vk_param);
+      vk_uniblk->_orkparamblock->_subparams[str_param_identifier] = vk_param->_orkparam.get();
+      if(0)printf("uniblk<%s> ADDING Item PARAM<%s>\n", str_uniblk_name.c_str(), str_param_identifier.c_str());
+    }
+  }
   /////////////////////////////////
   // read shader
   /////////////////////////////////
@@ -332,82 +423,15 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
     auto vulkan_shobj                                     = std::make_shared<VulkanFxShaderObject>(_contextVK, shader_bin);
     vulkan_shaderfile->_vk_shaderobjects[str_shader_name] = vulkan_shobj;
     /////////////////////////////////
-    // read unisets
-    /////////////////////////////////
-    auto str_unisets = shader_input_stream->readIndexedString(chunkreader);
-    OrkAssert(str_unisets == "unisets");
-    auto num_unisets = shader_input_stream->readItem<size_t>();
-    for (size_t i = 0; i < num_unisets; i++) {
+    auto num_iunisets = shader_input_stream->readItem<size_t>();
+    for (size_t i = 0; i < num_iunisets; i++) {
       auto str_uniset = shader_input_stream->readIndexedString(chunkreader);
-      OrkAssert(str_uniset == "uniset");
-      auto str_uniset_name                                = shader_input_stream->readIndexedString(chunkreader);
-      auto vk_uniset                                      = std::make_shared<VkFxShaderUniformSet>();
-      vulkan_shaderfile->_vk_uniformsets[str_uniset_name] = vk_uniset;
-      vulkan_shobj->_vk_uniformsets[str_uniset_name]      = vk_uniset;
-      ///////////////////////////////////////////////
-      auto str_samplers = shader_input_stream->readIndexedString(chunkreader);
-      OrkAssert(str_samplers == "samplers");
-      auto num_samplers = shader_input_stream->readItem<size_t>();
-      for (size_t j = 0; j < num_samplers; j++) {
-        auto str_sampler_datatype   = shader_input_stream->readIndexedString(chunkreader);
-        auto str_sampler_identifier = shader_input_stream->readIndexedString(chunkreader);
-        auto vk_samp                = std::make_shared<VkFxShaderUniformSetSampler>();
-        vk_samp->_datatype          = str_sampler_datatype;
-        vk_samp->_identifier        = str_sampler_identifier;
-        vk_samp->_orkparam          = std::make_shared<FxShaderParam>();
-        vk_samp->_orkparam->_impl.set<VkFxShaderUniformSetSampler*>(vk_samp.get());
-        vk_uniset->_samplers_by_name[str_sampler_identifier] = vk_samp;
-        if(0)printf("uniset<%s> ADDING Sampler PARAM<%s>\n", str_uniset_name.c_str(), str_sampler_identifier.c_str());
-      }
-      ///////////////////////////////////////////////
-      auto str_params = shader_input_stream->readIndexedString(chunkreader);
-      OrkAssert(str_params == "params");
-      auto num_params = shader_input_stream->readItem<size_t>();
-      for (size_t j = 0; j < num_params; j++) {
-        auto str_param_datatype   = shader_input_stream->readIndexedString(chunkreader);
-        auto str_param_identifier = shader_input_stream->readIndexedString(chunkreader);
-        auto vk_param             = std::make_shared<VkFxShaderUniformSetItem>();
-        vk_param->_datatype       = str_param_datatype;
-        vk_param->_identifier     = str_param_identifier;
-        vk_param->_orkparam       = std::make_shared<FxShaderParam>();
-        vk_param->_orkparam->_impl.set<VkFxShaderUniformSetItem*>(vk_param.get());
-        vk_uniset->_items_by_name[str_param_identifier] = vk_param;
-        vk_uniset->_items_by_order.push_back(vk_param);
-       if(0)printf("uniset<%s> ADDING Item PARAM<%s>\n", str_uniset_name.c_str(), str_param_identifier.c_str());
-      }
+      auto it = vulkan_shaderfile->_vk_uniformsets.find(str_uniset);
+      OrkAssert(it!=vulkan_shaderfile->_vk_uniformsets.end());
+      vkfxsuniset_ptr_t vk_uniset = it->second;
+      vulkan_shobj->_vk_uniformsets[str_uniset] = vk_uniset;
     }
-    /////////////////////////////////
-    // read uniblks
-    /////////////////////////////////
-    auto str_uniblks = shader_input_stream->readIndexedString(chunkreader);
-    OrkAssert(str_uniblks == "uniblks");
-    auto num_uniblks = shader_input_stream->readItem<size_t>();
-    for (size_t i = 0; i < num_uniblks; i++) {
-      auto str_uniblk = shader_input_stream->readIndexedString(chunkreader);
-      OrkAssert(str_uniblk == "uniblk");
-      auto str_uniblk_name                                = shader_input_stream->readIndexedString(chunkreader);
-      auto vk_uniblk                                      = std::make_shared<VkFxShaderUniformBlk>();
-      vk_uniblk->_orkparamblock = std::make_shared<FxShaderParamBlock>();
-      vulkan_shaderfile->_vk_uniformblks[str_uniblk_name] = vk_uniblk;
-      if(0)printf("str_uniblk_name<%s>\n", str_uniblk_name.c_str());
-      ///////////////////////////////////////////////
-      auto str_params = shader_input_stream->readIndexedString(chunkreader);
-      OrkAssert(str_params == "items");
-      auto num_params = shader_input_stream->readItem<size_t>();
-      for (size_t j = 0; j < num_params; j++) {
-        auto str_param_datatype   = shader_input_stream->readIndexedString(chunkreader);
-        auto str_param_identifier = shader_input_stream->readIndexedString(chunkreader);
-        auto vk_param             = std::make_shared<VkFxShaderUniformBlkItem>();
-        vk_param->_datatype       = str_param_datatype;
-        vk_param->_identifier     = str_param_identifier;
-        vk_param->_orkparam       = std::make_shared<FxShaderParam>();
-        vk_param->_orkparam->_impl.set<VkFxShaderUniformBlkItem*>(vk_param.get());
-        vk_uniblk->_items_by_name[str_param_identifier] = vk_param;
-        vk_uniblk->_items_by_order.push_back(vk_param);
-        vk_uniblk->_orkparamblock->_subparams[str_param_identifier] = vk_param->_orkparam.get();
-        if(0)printf("uniblk<%s> ADDING Item PARAM<%s>\n", str_uniblk_name.c_str(), str_param_identifier.c_str());
-      }
-    }
+    OrkAssert(vulkan_shobj->_vk_uniformsets.size()<2);
     /////////////////////////////////
     return vulkan_shobj;
   };
@@ -586,7 +610,7 @@ vkfxsfile_ptr_t VkFxInterface::_loadShaderFromShaderText(
   basehasher->accumulateString("vkfxshader-1.0");
   basehasher->accumulateString(shadertext);
   uint64_t hashkey    = basehasher->result();
-  auto vkfx_datablock = DataBlockCache::findDataBlock(hashkey);
+  datablock_ptr_t vkfx_datablock; // = DataBlockCache::findDataBlock(hashkey);
   vkfxsfile_ptr_t vulkan_shaderfile;
   ////////////////////////////////////////////
   // shader binary already cached
@@ -605,7 +629,7 @@ vkfxsfile_ptr_t VkFxInterface::_loadShaderFromShaderText(
     DataBlockCache::setDataBlock(hashkey, vkfx_datablock);
   } // shader binary not cached, compile and cache..
   ////////////////////////////////////////////////////////
-  vkfx_datablock->dump();
+  //vkfx_datablock->dump();
   vulkan_shaderfile = _readFromDataBlock(vkfx_datablock,shader);
   ////////////////////////////////////////////////////////
   return vulkan_shaderfile;
