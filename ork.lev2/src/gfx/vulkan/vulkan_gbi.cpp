@@ -38,7 +38,7 @@ VulkanVertexBuffer::VulkanVertexBuffer(vkcontext_rawptr_t ctx, VertexBufferBase&
   initializeVkStruct(memRequirements);
   initializeVkStruct(allocInfo, VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO);
   vkGetBufferMemoryRequirements(ctx->_vkdevice, _vkbuf, &memRequirements);
-  // printf( "alignment<%zu>\n", memRequirements.alignment );
+  printf( "alignment<%zu>\n", memRequirements.alignment );
   allocInfo.allocationSize  = memRequirements.size;
   _vkmemflags               = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT; // do not need flush...
   allocInfo.memoryTypeIndex = ctx->_findMemoryType(memRequirements.memoryTypeBits, _vkmemflags);
@@ -200,6 +200,7 @@ vkvertexinputconfig_ptr_t VkGeometryBufferInterface::_instantiateVertexConfig(EV
       break;
     }
     case EVtxStreamFormat::V12C4T16: {
+      static_assert(sizeof(SVtxV12C4T16)==32);
       config->_binding_description.stride = sizeof(SVtxV12C4T16);
       config->_attribute_descriptions = std::vector<VkVertexInputAttributeDescription>{
           VkVertexInputAttributeDescription{
@@ -404,7 +405,7 @@ void VkGeometryBufferInterface::DrawPrimitiveEML(
   // bind vertex buffer
   ///////////////////////
 
-  VkDeviceSize offset = ivbase;
+  VkDeviceSize offset = ivbase * vtx_buf.GetVtxSize();
   vkCmdBindVertexBuffers(CB->_vkcmdbuf, // command buffer
                          0,                                              // first binding
                          1,                                              // binding count
