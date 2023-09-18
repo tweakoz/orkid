@@ -193,6 +193,15 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(vkvtxbuf_ptr_t vb, //
 
     CINFO.pDynamicState = & dynamicState; 
 
+    VkPipelineViewportStateCreateInfo VPSTATE = {};
+    VPSTATE.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+    VPSTATE.viewportCount = 1; // You can adjust this based on your needs
+    VPSTATE.pViewports = nullptr; // Since you're setting this dynamically
+    VPSTATE.scissorCount = 1; // This should match viewportCount
+    VPSTATE.pScissors = nullptr; // Assuming you're also setting scissor dynamically
+    
+    CINFO.pViewportState = &VPSTATE;
+
     ////////////////////////////////////////////////////
     // msaa state
     ////////////////////////////////////////////////////
@@ -206,7 +215,7 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(vkvtxbuf_ptr_t vb, //
     MSAA.alphaToCoverageEnable = VK_FALSE; // Enable/Disable alpha to coverage
     MSAA.alphaToOneEnable = VK_FALSE; // Enable/Disable alpha to one
 
-    CINFO.pMultisampleState = &msaa_impl->_VKSTATE; // todo : dynamic
+    CINFO.pMultisampleState = &MSAA; //msaa_impl->_VKSTATE; // todo : dynamic
 
     ////////////////////////////////////////////////////
     // raster states
@@ -259,8 +268,8 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(vkvtxbuf_ptr_t vb, //
                                           &PL);                  // pipeline layout
     OrkAssert(VK_SUCCESS == OK);
 
-    CINFO.layout = PL; // shader input data layout / bindings
-                                   // TODO: from geometry, shader
+    CINFO.layout = PL; 
+    
     if(1){
       OK = vkCreateGraphicsPipelines( _contextVK->_vkdevice, // device
                                      VK_NULL_HANDLE,        // pipeline cache

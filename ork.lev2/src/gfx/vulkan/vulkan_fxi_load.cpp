@@ -446,7 +446,7 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
     auto vtx_shader    = read_shader_from_stream();
     vtx_shader->_STAGE = "vertex"_crcu;
     auto& STGIV        = vtx_shader->_shaderstageinfo;
-    STGIV.sType        = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    initializeVkStruct(STGIV, VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO);
     STGIV.stage        = VK_SHADER_STAGE_VERTEX_BIT;
     STGIV.module       = vtx_shader->_vk_shadermodule;
     STGIV.pName        = "main";
@@ -458,7 +458,7 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
     auto frg_shader    = read_shader_from_stream();
     frg_shader->_STAGE = "fragment"_crcu;
     auto& STGIF        = frg_shader->_shaderstageinfo;
-    STGIF.sType        = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    initializeVkStruct(STGIF, VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO);
     STGIF.stage        = VK_SHADER_STAGE_FRAGMENT_BIT;
     STGIF.module       = frg_shader->_vk_shadermodule;
     STGIF.pName        = "main";
@@ -469,8 +469,8 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
   for (size_t i = 0; i < num_cu_shaders; i++) {
     auto cu_shader    = read_shader_from_stream();
     cu_shader->_STAGE = "compute"_crcu;
-    auto& STCIF       = cu_shader->_shaderstageinfo;
-    STCIF.sType       = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    auto& STCIF        = cu_shader->_shaderstageinfo;
+    initializeVkStruct(STCIF, VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO);
     STCIF.stage       = VK_SHADER_STAGE_COMPUTE_BIT;
     STCIF.module      = cu_shader->_vk_shadermodule;
     STCIF.pName       = "main";
