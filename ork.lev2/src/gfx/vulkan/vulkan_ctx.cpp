@@ -467,12 +467,20 @@ void VkContext::_doBeginFrame() {
     vkWaitForFences(_vkdevice, 1, &_mainGfxSubmitFence, VK_TRUE, UINT64_MAX);
   }
 
-  vkBeginCommandBuffer(_cmdbufcurframe_gfx_pri->_vkcmdbuf, &CBBI_GFX); // vkBeginCommandBuffer does an implicit reset
+  vkBeginCommandBuffer(primary_cb()->_vkcmdbuf, &CBBI_GFX); // vkBeginCommandBuffer does an implicit reset
+
+  _cmdbufcur_gfx = primary_cb();
+  _cmdbufprv_gfx = primary_cb();
 
   beginRenderPass(_main_render_pass);
 
   //FBI()->pushMainSurface();
 
+}
+
+vkcmdbufimpl_ptr_t VkContext::primary_cb(){
+  OrkAssert(_current_subpass==nullptr);
+  return _cmdbufcurframe_gfx_pri;
 }
 
 ///////////////////////////////////////////////////////
@@ -505,7 +513,7 @@ void VkContext::_doEndFrame() {
 
   _fbi->_enq_transitionSwapChainForPresent();
 
-  vkEndCommandBuffer(_cmdbufcurframe_gfx_pri->_vkcmdbuf);
+  vkEndCommandBuffer(primary_cb()->_vkcmdbuf);
 
   std::vector<VkSemaphore> waitStartRenderSemaphores = {_fbi->_swapChainImageAcquiredSemaphore};
   std::vector<VkPipelineStageFlags> waitStages       = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
@@ -516,7 +524,7 @@ void VkContext::_doEndFrame() {
   SI.pWaitSemaphores      = waitStartRenderSemaphores.data();
   SI.pWaitDstStageMask    = waitStages.data();
   SI.commandBufferCount   = 1;
-  SI.pCommandBuffers      = &_cmdbufcurframe_gfx_pri->_vkcmdbuf;
+  SI.pCommandBuffers      = &primary_cb()->_vkcmdbuf;
   SI.signalSemaphoreCount = 1;
   SI.pSignalSemaphores    = &_renderingCompleteSemaphore;
   ///////////////////////////////////////////////////////
@@ -686,9 +694,9 @@ void VkContext::_beginRenderPass(renderpass_ptr_t renpass) {
   RPBI.framebuffer = _fbi->_swapchain->framebuffer();
   // CLEAR!
   vkCmdBeginRenderPass(
-      _cmdbufcurframe_gfx_pri->_vkcmdbuf, //
+      primary_cb()->_vkcmdbuf, //
       &RPBI,                              //
-      VK_SUBPASS_CONTENTS_INLINE);
+      VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
   /////////////////////////////////////////
   _renderpass_index++;
 }
@@ -696,7 +704,7 @@ void VkContext::_beginRenderPass(renderpass_ptr_t renpass) {
 ///////////////////////////////////////////////////////
 
 void VkContext::_endRenderPass(renderpass_ptr_t renpass) {
-  vkCmdEndRenderPass(_cmdbufcurframe_gfx_pri->_vkcmdbuf);
+  vkCmdEndRenderPass(primary_cb()->_vkcmdbuf);
   // OrkAssert(false);
 }
 
@@ -976,7 +984,9 @@ vkswapchaincaps_ptr_t VkContext::_swapChainCapsForSurface(VkSurfaceKHR surface) 
 
 void VkContext::_doPushCommandBuffer(commandbuffer_ptr_t cmdbuf, //
                                      rtgroup_ptr_t rtg ) { //
-  return;                                        
+
+  _cmdbufprv_gfx = _cmdbufcur_gfx;
+
   OrkAssert(_current_cmdbuf==cmdbuf);
   vkcmdbufimpl_ptr_t impl;
   if( auto as_impl = cmdbuf->_impl.tryAsShared<VkCommandBufferImpl>() ){
@@ -1015,18 +1025,19 @@ void VkContext::_doPushCommandBuffer(commandbuffer_ptr_t cmdbuf, //
                  | VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
   CBBI_GFX.pInheritanceInfo = &INHINFO;
   vkBeginCommandBuffer(impl->_vkcmdbuf, &CBBI_GFX); // vkBeginCommandBuffer does an implicit reset
+
+  _cmdbufcur_gfx = impl;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkContext::_doPopCommandBuffer() {
-  return;                                        
   auto impl = _current_cmdbuf->_impl.getShared<VkCommandBufferImpl>();
   vkEndCommandBuffer(impl->_vkcmdbuf);
+  _cmdbufcur_gfx = _cmdbufprv_gfx;
 }
 
 void VkContext::_doEnqueueSecondaryCommandBuffer(commandbuffer_ptr_t cmdbuf) {
-  return;                                        
   auto impl = cmdbuf->_impl.getShared<VkCommandBufferImpl>();
   vkCmdExecuteCommands(_cmdbufcurframe_gfx_pri->_vkcmdbuf, 1, &impl->_vkcmdbuf);
 }

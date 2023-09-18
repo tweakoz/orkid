@@ -257,7 +257,7 @@ RtGroup* VkFrameBufferInterface::_popRtGroup() {
     barrier.dstAccessMask = 0;
 
   vkCmdPipelineBarrier(
-      _contextVK->_cmdbufcurframe_gfx_pri->_vkcmdbuf,
+      _contextVK->primary_cb()->_vkcmdbuf,
       VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, // Adjust as needed.
       VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
       0,
@@ -382,7 +382,7 @@ void VkFrameBufferInterface::_pushRtGroup(RtGroup* rtgroup) {
 ///////////////////////////////////////////////////////
 
 void VkFrameBufferInterface::_clearColorAndDepth(const fcolor4& rCol, float fdepth) {
-  auto cmdbuf     = _contextVK->_cmdbufcurframe_gfx_pri;
+  auto cmdbuf     = _contextVK->primary_cb();
   auto rtgimpl    = _active_rtgroup->_impl.getShared<VkRtGroupImpl>();
   int inumtargets = _active_rtgroup->GetNumTargets();
   int w           = _active_rtgroup->width();

@@ -306,43 +306,44 @@ void VkPipelineObject::applyPendingParams(vkcmdbufimpl_ptr_t cmdbuf ){ //
   OrkAssert(_vk_program->_pushConstantBlock!=nullptr);
   size_t num_params = _vk_program->_pending_params.size();
 
-  auto vtx_layout = _vk_program->_pushConstantBlock->_vtx_layout;
-  auto frg_layout = _vk_program->_pushConstantBlock->_frg_layout;
-  auto& ranges = _vk_program->_pushConstantBlock->_ranges;
-  size_t blocksize = _vk_program->_pushConstantBlock->_blockSize;
+  if( num_params ){
+    auto vtx_layout = _vk_program->_pushConstantBlock->_vtx_layout;
+    auto frg_layout = _vk_program->_pushConstantBlock->_frg_layout;
+    auto& ranges = _vk_program->_pushConstantBlock->_ranges;
+    size_t blocksize = _vk_program->_pushConstantBlock->_blockSize;
 
-  static std::vector<uint8_t> pushdatabuffer;
-  pushdatabuffer.clear();
-  pushdatabuffer.resize(blocksize); 
-  memset(pushdatabuffer.data(),0,blocksize);
+    static std::vector<uint8_t> pushdatabuffer;
+    pushdatabuffer.clear();
+    pushdatabuffer.resize(blocksize); 
+    memset(pushdatabuffer.data(),0,blocksize);
 
-  vkCmdPushConstants(
-      cmdbuf->_vkcmdbuf,
-      _pipelineLayout,
-      VK_SHADER_STAGE_VERTEX_BIT,
-      ranges[0].offset, // offset
-      ranges[0].size,
-      pushdatabuffer.data()
-  );
-  vkCmdPushConstants(
-      cmdbuf->_vkcmdbuf,
-      _pipelineLayout,
-      VK_SHADER_STAGE_FRAGMENT_BIT,
-      ranges[1].offset, 
-      ranges[1].size, 
-      pushdatabuffer.data()
-  );
+    vkCmdPushConstants(
+        cmdbuf->_vkcmdbuf,
+        _pipelineLayout,
+        VK_SHADER_STAGE_VERTEX_BIT,
+        ranges[0].offset, // offset
+        ranges[0].size,
+        pushdatabuffer.data()
+    );
+    vkCmdPushConstants(
+        cmdbuf->_vkcmdbuf,
+        _pipelineLayout,
+        VK_SHADER_STAGE_FRAGMENT_BIT,
+        ranges[1].offset, 
+        ranges[1].size, 
+        pushdatabuffer.data()
+    );
 
+    _vk_program->_pending_params.clear();
+  }
 
-
-  _vk_program->_pending_params.clear();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkFxInterface::_bindPipeline(vkpipeline_obj_ptr_t pipe){
 
-  auto cmdbuf = _contextVK->_cmdbufcurframe_gfx_pri->_vkcmdbuf;
+  auto cmdbuf = _contextVK->_cmdbufcur_gfx->_vkcmdbuf;
 
   if( _currentPipeline != pipe ){
     vkCmdBindPipeline( cmdbuf,                         // command buffer

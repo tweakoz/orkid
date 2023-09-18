@@ -1032,6 +1032,7 @@ public:
   VkFence _mainGfxSubmitFence;
   size_t _num_queue_types = 0;
   int _renderpass_index;
+  int _subpass_index = 0;
   //////////////////////////////////////////////
 
   std::vector<float> _queuePriorities;
@@ -1044,6 +1045,11 @@ public:
   VkCommandPool _vkcmdpool_graphics;
 
   vkcmdbufimpl_ptr_t _cmdbufcurframe_gfx_pri;
+  vkcmdbufimpl_ptr_t _cmdbufcur_gfx;
+  vkcmdbufimpl_ptr_t _cmdbufprv_gfx;
+
+  vkcmdbufimpl_ptr_t primary_cb();
+
   //////////////////////////////////////////////
   PFN_vkSetDebugUtilsObjectNameEXT _vkSetDebugUtilsObjectName;
   PFN_vkCmdDebugMarkerBeginEXT _vkCmdDebugMarkerBeginEXT;

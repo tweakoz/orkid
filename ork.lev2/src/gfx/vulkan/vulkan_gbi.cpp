@@ -375,7 +375,7 @@ void VkGeometryBufferInterface::DrawPrimitiveEML(
 
   OrkAssert(_contextVK->_renderpass_index>=0);
 
-  auto& CB = _contextVK->_cmdbufcurframe_gfx_pri;
+  auto& CB = _contextVK->_cmdbufcur_gfx;
 
   auto it_pc = _primclasses.find(uint64_t(eType));
   OrkAssert(it_pc != _primclasses.end());
