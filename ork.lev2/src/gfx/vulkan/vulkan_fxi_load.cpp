@@ -522,67 +522,79 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
       auto push_constants = std::make_shared<VkFxShaderPushConstantBlock>();
       vk_program->_pushConstantBlock = push_constants;
 
-      if( vtx_obj->_uniset_refs ){
-        std::set<vkfxsuniset_ptr_t> unisets_vtx;
-        for( auto uset_item : vtx_obj->_uniset_refs->_unisets ){
-          auto uset_name = uset_item.first;
-          auto uset = uset_item.second;
-          auto it = unisets_vtx.find( uset );
-          if(it==unisets_vtx.end()){
-            unisets_vtx.insert( uset );
-            push_constants->_vtx_unisets[uset_name] = uset;
-            for( auto item : uset->_items_by_name ){
-              auto item_name = item.first;
-              auto item_ptr  = item.second;
-              auto it = push_constants->_vtx_items_by_name.find(item_name);
-              printf( "merging uset<%s> itemname<%s>\n", uset_name.c_str(), item_name.c_str());
-              OrkAssert(it==push_constants->_vtx_items_by_name.end());
-              push_constants->_vtx_items_by_name[item_name] = item_ptr;
+      auto do_unisets = [](vkfxsobj_ptr_t shobj,
+                           uniset_map_t& dest_usetmap,
+                           uniset_item_map_t& dest_usetitemmap,
+                           vkbufferlayout_ptr_t dest_layout,
+                           VkPushConstantRange& dest_range ){
+        if( shobj->_uniset_refs ){
+          std::set<vkfxsuniset_ptr_t> unisets_set;
+          for( auto uset_item : shobj->_uniset_refs->_unisets ){
+            auto uset_name = uset_item.first;
+            auto uset = uset_item.second;
+            auto it = unisets_set.find( uset );
+            if(it==unisets_set.end()){
+              unisets_set.insert( uset );
+              dest_usetmap[uset_name] = uset;
+              for( auto item : uset->_items_by_name ){
+                auto item_name = item.first;
+                auto item_ptr  = item.second;
+                auto it = dest_usetitemmap.find(item_name);
+                printf( "merging uset<%s> itemname<%s>\n", uset_name.c_str(), item_name.c_str());
+                OrkAssert(it==dest_usetitemmap.end());
+                dest_usetitemmap[item_name] = item_ptr;
+              }
             }
           }
-        }
 
-      }
-
-      /*for( auto uset_item : frg_obj->_vk_uniformsets ){
-        auto name = uset_item.first;
-        auto uset = uset_item.second;
-        auto it = unisets_frg.find( uset );
-        if(it==unisets_frg.end()){
-          unisets_frg.insert( uset );
-          push_constants->_frg_unisets[name] = uset;
-          for( auto item : uset->_items_by_name ){
+          for( auto item : dest_usetitemmap ){
             auto item_name = item.first;
             auto item_ptr  = item.second;
-            auto it = push_constants->_frg_items_by_name.find(item_name);
-            OrkAssert(it==push_constants->_frg_items_by_name.end());
-            push_constants->_frg_items_by_name[item_name] = item_ptr;
+            auto datatype = item_ptr->_datatype;
+            size_t cursor = 0xffffffff;
+            if( datatype == "float"){
+              cursor = dest_layout->layoutItem<float>();
+            }
+            else if( datatype == "int"){
+              cursor = dest_layout->layoutItem<int>();
+            }
+            else if( datatype == "vec4"){
+              cursor = dest_layout->layoutItem<fvec4>();
+            }
+            else if( datatype == "mat4"){
+              cursor = dest_layout->layoutItem<fmtx4>();
+            }
+            else{
+              printf( "unknown datatype<%s>\n", datatype.c_str() );
+              OrkAssert(false);
+            }
+            printf( "datatype<%s> cursor<%zu>\n", datatype.c_str(), cursor );
           }
+          initializeVkStruct( dest_range );
+          dest_range.offset = 0;
+          dest_range.size = dest_layout->cursor();
         }
-      }*/
+      };
 
-      ////////////////////////////////////////////////////////////
-      // layout push constants with BufferLayout
-      ////////////////////////////////////////////////////////////
+      push_constants->_vtx_layout = std::make_shared<VkBufferLayout>();
+      push_constants->_frg_layout = std::make_shared<VkBufferLayout>();
+      push_constants->_ranges.reserve(8);
+      auto& vtx_range = push_constants->_ranges.emplace_back();
+      auto& frg_range = push_constants->_ranges.emplace_back();
 
-      BufferLayout vtx_layout;
-      for( auto item : push_constants->_vtx_items_by_name ){
-        auto item_name = item.first;
-        auto item_ptr  = item.second;
-        auto datatype = item_ptr->_datatype;
-        size_t cursor = 0xffffffff;
-        if( datatype == "float"){
-          cursor = vtx_layout.layoutItem<float>();
-        }
-        else if( datatype == "vec4"){
-          cursor = vtx_layout.layoutItem<fvec4>();
-        }
-        else if( datatype == "mtx4"){
-          cursor = vtx_layout.layoutItem<fmtx4>();
-          OrkAssert(false);
-        }
-        printf( "datatype<%s> cursor<%zu>\n", datatype.c_str(), cursor );
-      }
+      do_unisets(vtx_obj,
+                 push_constants->_vtx_unisets,
+                 push_constants->_vtx_items_by_name,
+                 push_constants->_vtx_layout,
+                 vtx_range );
+      do_unisets(frg_obj,
+                 push_constants->_frg_unisets,
+                 push_constants->_frg_items_by_name,
+                 push_constants->_frg_layout,
+                 frg_range );
+
+     vtx_range.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+     frg_range.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
       ////////////////////////////////////////////////////////////
 

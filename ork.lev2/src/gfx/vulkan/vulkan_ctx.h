@@ -117,6 +117,7 @@ struct VkSwapChainCaps;
 struct VkSwapChain;
 struct VkMsaaState;
 struct VkRasterState;
+struct VkBufferLayout;
 //
 using vkinstance_ptr_t   = std::shared_ptr<VulkanInstance>;
 using vkdeviceinfo_ptr_t = std::shared_ptr<VulkanDeviceInfo>;
@@ -151,6 +152,7 @@ using vkfxsunisetsamp_ptr_t = std::shared_ptr<VkFxShaderUniformSetSampler>;
 using vkfxsuniblk_ptr_t     = std::shared_ptr<VkFxShaderUniformBlk>;
 using vkfxsuniblkitem_ptr_t = std::shared_ptr<VkFxShaderUniformBlkItem>;
 using vkfxpushconstantblk_ptr_t = std::shared_ptr<VkFxShaderPushConstantBlock>;
+using vkbufferlayout_ptr_t = std::shared_ptr<VkBufferLayout>;
 
 using vkrtbufimpl_ptr_t    = std::shared_ptr<VklRtBufferImpl>;
 using vkrtgrpimpl_ptr_t    = std::shared_ptr<VkRtGroupImpl>;
@@ -168,6 +170,9 @@ using vkswapchaincaps_ptr_t = std::shared_ptr<VkSwapChainCaps>;
 using vkswapchain_ptr_t = std::shared_ptr<VkSwapChain>;
 using vkmsaastate_ptr_t = std::shared_ptr<VkMsaaState>;
 using vkrasterstate_ptr_t = std::shared_ptr<VkRasterState>;
+
+using uniset_map_t = std::map<std::string,vkfxsuniset_ptr_t>;
+using uniset_item_map_t = std::map<std::string, vkfxsunisetitem_ptr_t>;
 
 extern vkinstance_ptr_t _GVI;
 
@@ -370,16 +375,19 @@ struct VkFxShaderUniformSet {
 };
 struct VkFxShaderUniformSetsReference {
   static size_t descriptor_set_counter;
-  std::map<std::string,vkfxsuniset_ptr_t> _unisets;
+  uniset_map_t _unisets;
 };
 using vkfxsunisetsref_ptr_t = std::shared_ptr<VkFxShaderUniformSetsReference>;
 ///////////////////////////////////////////////////////////////////////////////
 struct VkFxShaderPushConstantBlock {
-  std::map<std::string,vkfxsuniset_ptr_t> _vtx_unisets;
-  std::map<std::string,vkfxsuniset_ptr_t> _frg_unisets;
+  uniset_map_t _vtx_unisets;
+  uniset_map_t _frg_unisets;
 
-  std::map<std::string, vkfxsunisetitem_ptr_t> _vtx_items_by_name;
-  std::map<std::string, vkfxsunisetitem_ptr_t> _frg_items_by_name;
+  uniset_item_map_t _vtx_items_by_name;
+  uniset_item_map_t _frg_items_by_name;
+
+  vkbufferlayout_ptr_t _vtx_layout;
+  vkbufferlayout_ptr_t _frg_layout;
 
   std::vector<VkPushConstantRange> _ranges;
 };
