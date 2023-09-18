@@ -520,13 +520,16 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
       ////////////////////////////////////////////////////////////
 
       auto push_constants = std::make_shared<VkFxShaderPushConstantBlock>();
+      auto descriptors = std::make_shared<VkDescriptorSetBindings>();
       vk_program->_pushConstantBlock = push_constants;
+      vk_program->_descriptors = descriptors;
 
-      auto do_unisets = [](vkfxsobj_ptr_t shobj,
-                           uniset_map_t& dest_usetmap,
-                           uniset_item_map_t& dest_usetitemmap,
-                           vkbufferlayout_ptr_t dest_layout,
-                           VkPushConstantRange& dest_range ){
+      auto do_unisets = [this](vkfxsobj_ptr_t shobj,
+                               uniset_map_t& dest_usetmap,
+                               uniset_item_map_t& dest_usetitemmap,
+                               vkbufferlayout_ptr_t dest_layout,
+                               VkPushConstantRange& dest_range,
+                               descriptor_bindings_vect_t& dest_bindings ){
         if( shobj->_uniset_refs ){
           std::set<vkfxsuniset_ptr_t> unisets_set;
           for( auto uset_item : shobj->_uniset_refs->_unisets ){
@@ -536,6 +539,9 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
             if(it==unisets_set.end()){
               unisets_set.insert( uset );
               dest_usetmap[uset_name] = uset;
+              ///////////////////////////////////////////
+              // loose uniform items (not samplers)
+              ///////////////////////////////////////////
               for( auto item : uset->_items_by_name ){
                 auto item_name = item.first;
                 auto item_ptr  = item.second;
@@ -543,6 +549,45 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
                 printf( "merging uset<%s> itemname<%s>\n", uset_name.c_str(), item_name.c_str());
                 OrkAssert(it==dest_usetitemmap.end());
                 dest_usetitemmap[item_name] = item_ptr;
+              }
+              ///////////////////////////////////////////
+              // loose samplers
+              ///////////////////////////////////////////
+              for( auto item : uset->_samplers_by_name ){
+                auto item_name = item.first;
+                auto item_ptr  = item.second;
+
+                VkSamplerCreateInfo SI;
+                initializeVkStruct(SI, VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO);
+                SI.magFilter = VK_FILTER_NEAREST;
+                SI.minFilter = VK_FILTER_NEAREST;
+                SI.mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
+                SI.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+                SI.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+                SI.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+                SI.mipLodBias = 0.0f;
+                SI.anisotropyEnable = VK_FALSE;
+                SI.maxAnisotropy = 1.0f;
+                SI.compareEnable = VK_FALSE;
+                SI.compareOp = VK_COMPARE_OP_NEVER;
+                SI.minLod = 0.0f;
+                SI.maxLod = 0.0f;
+                SI.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
+                SI.unnormalizedCoordinates = VK_FALSE;
+
+                VkSampler immutableSampler;
+                vkCreateSampler(_contextVK->_vkdevice, 
+                                &SI, 
+                                nullptr, 
+                                &immutableSampler);
+
+                auto& vkb = dest_bindings.emplace_back();
+                vkb.binding = 0; // Binding number, this corresponds to the binding in the shader
+                //vkb.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER; // Type of the descriptor (e.g., uniform buffer, combined image sampler, etc.)
+                vkb.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER; // Type of the descriptor (e.g., uniform buffer, combined image sampler, etc.)
+                vkb.descriptorCount = 1; // Number of descriptors in this binding (useful for arrays of descriptors)
+                vkb.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT; // Shader stages this descriptor will be used in
+                vkb.pImmutableSamplers = &immutableSampler; // Only relevant for samplers and combined image samplers                
               }
             }
           }
@@ -586,12 +631,14 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
                  push_constants->_vtx_unisets,
                  push_constants->_vtx_items_by_name,
                  push_constants->_vtx_layout,
-                 vtx_range );
+                 vtx_range,
+                 descriptors->_vkbindings_vtx );
       do_unisets(frg_obj,
                  push_constants->_frg_unisets,
                  push_constants->_frg_items_by_name,
                  push_constants->_frg_layout,
-                 frg_range );
+                 frg_range,
+                 descriptors->_vkbindings_frg );
 
      vtx_range.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
      frg_range.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;

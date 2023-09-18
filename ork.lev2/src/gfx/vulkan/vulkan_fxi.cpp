@@ -237,6 +237,12 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(vkvtxbuf_ptr_t vb, //
     // descriptors
     ////////////////////////////////////////////////////
 
+    if(shprog->_descriptors){
+      size_t num_vtx_bindings = shprog->_descriptors->_vkbindings_vtx.size();
+      size_t num_frg_bindings = shprog->_descriptors->_vkbindings_frg.size();
+
+    }
+
     /*
     VkDescriptorSetLayoutBinding bindings[16];
     VkDescriptorSetLayoutCreateInfo layoutinfo;

@@ -391,6 +391,18 @@ struct VkFxShaderPushConstantBlock {
 
   std::vector<VkPushConstantRange> _ranges;
 };
+
+using descriptor_bindings_vect_t = std::vector<VkDescriptorSetLayoutBinding>;
+//using descriptor_samplerinfos_vect_t = std::vector<VkSamplerCreateInfo>;
+struct VkDescriptorSetBindings{
+
+  descriptor_bindings_vect_t _vkbindings_vtx;
+  descriptor_bindings_vect_t _vkbindings_frg;
+
+};
+
+using vkdescriptors_ptr_t = std::shared_ptr<VkDescriptorSetBindings>;
+
 ///////////////////////////////////////////////////////////////////////////////
 struct VkFxShaderUniformBlkItem {
   std::string _datatype;
@@ -450,6 +462,7 @@ struct VkFxShaderProgram {
 
   std::vector<VkParamSetItem> _pending_params;
   std::vector<uint8_t> _pushdatabuffer;
+  vkdescriptors_ptr_t _descriptors;
 
   int _pipeline_bits = -1;
 
