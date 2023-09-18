@@ -372,6 +372,8 @@ void VkGeometryBufferInterface::DrawPrimitiveEML(
     int ivbase,
     int ivcount) {
 
+  OrkAssert(_contextVK->_renderpass_index>=0);
+
   auto& CB = _contextVK->_cmdbufcurframe_gfx_pri;
 
   auto it_pc = _primclasses.find(uint64_t(eType));
@@ -396,7 +398,7 @@ void VkGeometryBufferInterface::DrawPrimitiveEML(
   // flush params
   ///////////////////////
 
-  pipeline->_vk_program->applyPendingParams(CB);
+  pipeline->applyPendingParams(CB);
 
   ///////////////////////
   // bind vertex buffer

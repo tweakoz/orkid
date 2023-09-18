@@ -401,6 +401,7 @@ struct VkFxShaderPushConstantBlock {
   vkbufferlayout_ptr_t _frg_layout;
 
   std::vector<VkPushConstantRange> _ranges;
+  size_t _blockSize = 0;
 };
 
 using descriptor_bindings_vect_t = std::vector<VkDescriptorSetLayoutBinding>;
@@ -477,15 +478,17 @@ struct VkFxShaderProgram {
 
   int _pipeline_bits = -1;
 
-  void applyPendingParams(vkcmdbufimpl_ptr_t cmdbuf);
   std::unordered_map<std::string, vkfxsuniset_ptr_t> _vk_uniformsets;
 
 };
 struct VkPipelineObject{
 
+  void applyPendingParams(vkcmdbufimpl_ptr_t cmdbuf);
+
   vkfxsprg_ptr_t _vk_program;
   VkGraphicsPipelineCreateInfo _VKGFXPCI;
   VkPipeline _pipeline;
+  VkPipelineLayout _pipelineLayout;
   vkviewporttracker_ptr_t _viewport;
   vkviewporttracker_ptr_t _scissor;
 
@@ -1028,6 +1031,7 @@ public:
   VkSemaphore _renderingCompleteSemaphore;
   VkFence _mainGfxSubmitFence;
   size_t _num_queue_types = 0;
+  int _renderpass_index;
   //////////////////////////////////////////////
 
   std::vector<float> _queuePriorities;

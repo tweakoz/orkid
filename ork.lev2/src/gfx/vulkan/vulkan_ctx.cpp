@@ -421,6 +421,8 @@ void VkContext::makeCurrentContext() {
 
 void VkContext::_doBeginFrame() {
 
+  _renderpass_index = -1;
+
   makeCurrentContext();
   auto mainrect = mainSurfaceRectAtOrigin();
   _fbi->setViewport(mainrect);
@@ -455,8 +457,8 @@ void VkContext::_doBeginFrame() {
   CBBI_GFX.pInheritanceInfo = nullptr;
 
   if(_first_frame){
-    beginRenderPass(_main_render_pass);
-    endRenderPass(_main_render_pass);
+    //beginRenderPass(_main_render_pass);
+    //endRenderPass(_main_render_pass);
   }
 
   if( not _first_frame){
@@ -465,8 +467,9 @@ void VkContext::_doBeginFrame() {
     vkWaitForFences(_vkdevice, 1, &_mainGfxSubmitFence, VK_TRUE, UINT64_MAX);
   }
 
-
   vkBeginCommandBuffer(_cmdbufcurframe_gfx_pri->_vkcmdbuf, &CBBI_GFX); // vkBeginCommandBuffer does an implicit reset
+
+  beginRenderPass(_main_render_pass);
 
   //FBI()->pushMainSurface();
 
@@ -488,8 +491,6 @@ void VkContext::_doEndFrame() {
 
   PopModColor();
   mbPostInitializeContext = false;
-  ////////////////////////
-  beginRenderPass(_main_render_pass);
   ////////////////////////
   // intermediate subpasses
   ////////////////////////
@@ -561,7 +562,7 @@ void VkContext::_doEndFrame() {
   ////////////////////////
 
   miTargetFrame++;
-
+ _renderpass_index = -1;
 }
 
 ///////////////////////////////////////////////////////
@@ -689,6 +690,7 @@ void VkContext::_beginRenderPass(renderpass_ptr_t renpass) {
       &RPBI,                              //
       VK_SUBPASS_CONTENTS_INLINE);
   /////////////////////////////////////////
+  _renderpass_index++;
 }
 
 ///////////////////////////////////////////////////////

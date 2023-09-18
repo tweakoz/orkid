@@ -523,13 +523,15 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
       vk_program->_pushConstantBlock = push_constants;
       push_constants->_ranges.reserve(16);
 
-      auto do_unisets = [this](vkfxsobj_ptr_t shobj,
-                               uniset_map_t& dest_usetmap,
-                               uniset_item_map_t& dest_usetitemmap,
-                               vkbufferlayout_ptr_t dest_layout,
-                               VkPushConstantRange& dest_range,
-                               vkdescriptors_ptr_t desc_set,
-                               uint32_t stage_bits ){
+      size_t push_constant_offset = 0;
+
+      auto do_unisets = [&](vkfxsobj_ptr_t shobj,
+                            uniset_map_t& dest_usetmap,
+                            uniset_item_map_t& dest_usetitemmap,
+                            vkbufferlayout_ptr_t dest_layout,
+                            VkPushConstantRange& dest_range,
+                            vkdescriptors_ptr_t desc_set,
+                            uint32_t stage_bits ){
         if( shobj->_uniset_refs ){
           std::set<vkfxsuniset_ptr_t> unisets_set;
           for( auto uset_item : shobj->_uniset_refs->_unisets ){
@@ -619,9 +621,14 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
             printf( "datatype<%s> cursor<%zu>\n", datatype.c_str(), cursor );
           }
           initializeVkStruct( dest_range );
-          dest_range.offset = 0;
-          dest_range.size = dest_layout->cursor();
+
+          size_t pc_size = dest_layout->cursor();
+
+          dest_range.offset = push_constant_offset;
+          dest_range.size = pc_size;
           dest_range.stageFlags = stage_bits;
+
+          push_constant_offset += alignUp(pc_size,16);
         }
       };
 
@@ -633,7 +640,7 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
       auto descriptors = std::make_shared<VkDescriptorSetBindings>();
       descriptors->_vksamplers.reserve( 32 );
       descriptors->_vkbindings.reserve( 32 );              
-
+  
       do_unisets(vtx_obj,
                  push_constants->_vtx_unisets,
                  push_constants->_vtx_items_by_name,
@@ -648,6 +655,8 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
                  frg_range,
                  descriptors,
                  VK_SHADER_STAGE_FRAGMENT_BIT );
+
+      push_constants->_blockSize = push_constant_offset;
 
       ////////////////////////////////////////////////////////////
 

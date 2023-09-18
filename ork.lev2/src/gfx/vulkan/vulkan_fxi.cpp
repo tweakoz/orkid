@@ -6,6 +6,7 @@
 ////////////////////////////////////////////////////////////////
 
 #include "vulkan_ctx.h"
+#include "vulkan_ub_layout.inl"
 #include <ork/lev2/gfx/shadman.h>
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -231,7 +232,7 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(vkvtxbuf_ptr_t vb, //
     ////////////////////////////////////////////////////
 
     VkPipelineLayoutCreateInfo PLCI;
-    VkPipelineLayout PL;
+
     initializeVkStruct(PLCI, VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO);
 
     ////////////////////////////////////////////////////
@@ -263,13 +264,13 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(vkvtxbuf_ptr_t vb, //
 
     ////////////////////////////////////////////////////
 
-    VkResult OK = vkCreatePipelineLayout( _contextVK->_vkdevice, // device 
-                                          &PLCI,                 // pipeline layout create info
-                                          nullptr,               // allocator
-                                          &PL);                  // pipeline layout
+    VkResult OK = vkCreatePipelineLayout( _contextVK->_vkdevice,   // device 
+                                          &PLCI,                   // pipeline layout create info
+                                          nullptr,                 // allocator
+                                          &rval->_pipelineLayout); // pipeline layout
     OrkAssert(VK_SUCCESS == OK);
 
-    CINFO.layout = PL; 
+    CINFO.layout = rval->_pipelineLayout; 
     
     if(1){
       OK = vkCreateGraphicsPipelines( _contextVK->_vkdevice, // device
@@ -300,25 +301,41 @@ VkFxShaderProgram::VkFxShaderProgram(){
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void VkFxShaderProgram::applyPendingParams(vkcmdbufimpl_ptr_t cmdbuf){
+void VkPipelineObject::applyPendingParams(vkcmdbufimpl_ptr_t cmdbuf ){ //
 
-  OrkAssert(_pushConstantBlock!=nullptr);
-  size_t num_params = _pending_params.size();
+  OrkAssert(_vk_program->_pushConstantBlock!=nullptr);
+  size_t num_params = _vk_program->_pending_params.size();
 
-  auto vtx_layout = _pushConstantBlock->_vtx_layout;
-  auto frg_layout = _pushConstantBlock->_frg_layout;
-  auto& ranges = _pushConstantBlock->_ranges;
+  auto vtx_layout = _vk_program->_pushConstantBlock->_vtx_layout;
+  auto frg_layout = _vk_program->_pushConstantBlock->_frg_layout;
+  auto& ranges = _vk_program->_pushConstantBlock->_ranges;
+  size_t blocksize = _vk_program->_pushConstantBlock->_blockSize;
 
-  /*vkCmdPushConstants(
-      _contextVK->_cmdbufcurframe_gfx_pri->_vkcmdbuf,
-      pipelineLayout,
+  static std::vector<uint8_t> pushdatabuffer;
+  pushdatabuffer.clear();
+  pushdatabuffer.resize(blocksize); 
+  memset(pushdatabuffer.data(),0,blocksize);
+
+  vkCmdPushConstants(
+      cmdbuf->_vkcmdbuf,
+      _pipelineLayout,
       VK_SHADER_STAGE_VERTEX_BIT,
-      0, // offset
-      sizeof(pushConstants),
-      &pushConstants
-  );*/
+      ranges[0].offset, // offset
+      ranges[0].size,
+      pushdatabuffer.data()
+  );
+  vkCmdPushConstants(
+      cmdbuf->_vkcmdbuf,
+      _pipelineLayout,
+      VK_SHADER_STAGE_FRAGMENT_BIT,
+      ranges[1].offset, 
+      ranges[1].size, 
+      pushdatabuffer.data()
+  );
 
-  _pending_params.clear();
+
+
+  _vk_program->_pending_params.clear();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
