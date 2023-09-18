@@ -424,7 +424,14 @@ void VkContext::_doBeginFrame() {
   _renderpass_index = -1;
 
   makeCurrentContext();
+
+  if( _fbi->_main_rtg ){
+    miW = _fbi->_main_rtg->miW;
+    miH = _fbi->_main_rtg->miH;
+  }
+
   auto mainrect = mainSurfaceRectAtOrigin();
+
   _fbi->setViewport(mainrect);
   _fbi->setScissor(mainrect);
 

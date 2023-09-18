@@ -40,7 +40,8 @@ VulkanVertexBuffer::VulkanVertexBuffer(vkcontext_rawptr_t ctx, VertexBufferBase&
   vkGetBufferMemoryRequirements(ctx->_vkdevice, _vkbuf, &memRequirements);
   printf( "alignment<%zu>\n", memRequirements.alignment );
   allocInfo.allocationSize  = memRequirements.size;
-  _vkmemflags               = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT; // do not need flush...
+  _vkmemflags               = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT //
+                            | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT; // do not need flush...
   allocInfo.memoryTypeIndex = ctx->_findMemoryType(memRequirements.memoryTypeBits, _vkmemflags);
   // printf( "memtypeindex = %u\n", allocInfo.memoryTypeIndex );
   initializeVkStruct(_vkmem);

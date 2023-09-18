@@ -377,6 +377,7 @@ void VkFxInterface::_bindPipeline(vkpipeline_obj_ptr_t pipe){
     vkvp.height = fbi_vp->_height;
     vkvp.minDepth = 0.0f;
     vkvp.maxDepth = 1.0f;
+    printf( "SETVP<%p> x<%f> y<%f> w<%f> h<%f>\n", pipe.get(), vkvp.x, vkvp.y, vkvp.width, vkvp.height);
     vkCmdSetViewport( cmdbuf, // command buffer
                       0,      // first viewport
                       1,      // viewport count
@@ -389,6 +390,7 @@ void VkFxInterface::_bindPipeline(vkpipeline_obj_ptr_t pipe){
     vksc.offset.y = fbi_sc->_y;
     vksc.extent.width = fbi_sc->_width;
     vksc.extent.height = fbi_sc->_height;
+    printf( "SETSC<%p> x<%d> y<%d> w<%d> h<%d>\n", pipe.get(), vksc.offset.x, vksc.offset.y, vksc.extent.width, vksc.extent.height);
     vkCmdSetScissor( cmdbuf, // command buffer
                      0,      // first scissor
                      1,      // scissor count
