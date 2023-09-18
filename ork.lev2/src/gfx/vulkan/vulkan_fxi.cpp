@@ -312,10 +312,20 @@ void VkPipelineObject::applyPendingParams(vkcmdbufimpl_ptr_t cmdbuf ){ //
     auto& ranges = _vk_program->_pushConstantBlock->_ranges;
     size_t blocksize = _vk_program->_pushConstantBlock->_blockSize;
 
-    static std::vector<uint8_t> pushdatabuffer;
-    pushdatabuffer.clear();
-    pushdatabuffer.resize(blocksize); 
-    memset(pushdatabuffer.data(),0,blocksize);
+    auto data = _vk_program->_pushdatabuffer.data();
+
+    for( auto item : _vk_program->_pending_params ){
+      auto vtx_offset = vtx_layout->offsetForParam(item._ork_param);
+      auto frg_offset = frg_layout->offsetForParam(item._ork_param);
+      if( vtx_offset != -1 ){
+        auto vtx_base = data + ranges[0].offset;
+        memcpy( vtx_base + vtx_offset, item._value.data(), item._value.size() );
+      }
+      if( frg_offset != -1 ){
+        auto frg_base = data + ranges[1].offset;
+        memcpy( frg_base + frg_offset, item._value.data(), item._value.size() );
+      }
+    }
 
     vkCmdPushConstants(
         cmdbuf->_vkcmdbuf,
@@ -323,7 +333,7 @@ void VkPipelineObject::applyPendingParams(vkcmdbufimpl_ptr_t cmdbuf ){ //
         VK_SHADER_STAGE_VERTEX_BIT,
         ranges[0].offset, // offset
         ranges[0].size,
-        pushdatabuffer.data()
+        data
     );
     vkCmdPushConstants(
         cmdbuf->_vkcmdbuf,
@@ -331,7 +341,7 @@ void VkPipelineObject::applyPendingParams(vkcmdbufimpl_ptr_t cmdbuf ){ //
         VK_SHADER_STAGE_FRAGMENT_BIT,
         ranges[1].offset, 
         ranges[1].size, 
-        pushdatabuffer.data()
+        data
     );
 
     _vk_program->_pending_params.clear();

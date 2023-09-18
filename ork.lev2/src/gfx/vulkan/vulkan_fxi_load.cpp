@@ -602,17 +602,18 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
             auto item_ptr  = item.second;
             auto datatype = item_ptr->_datatype;
             size_t cursor = 0xffffffff;
+            auto orkparam = item_ptr->_orkparam.get();
             if( datatype == "float"){
-              cursor = dest_layout->layoutItem<float>();
+              cursor = dest_layout->layoutItem<float>(orkparam);
             }
             else if( datatype == "int"){
-              cursor = dest_layout->layoutItem<int>();
+              cursor = dest_layout->layoutItem<int>(orkparam);
             }
             else if( datatype == "vec4"){
-              cursor = dest_layout->layoutItem<fvec4>();
+              cursor = dest_layout->layoutItem<fvec4>(orkparam);
             }
             else if( datatype == "mat4"){
-              cursor = dest_layout->layoutItem<fmtx4>();
+              cursor = dest_layout->layoutItem<fmtx4>(orkparam);
             }
             else{
               printf( "unknown datatype<%s>\n", datatype.c_str() );
@@ -657,6 +658,9 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
                  VK_SHADER_STAGE_FRAGMENT_BIT );
 
       push_constants->_blockSize = push_constant_offset;
+      vk_program->_pushdatabuffer.clear();
+      vk_program->_pushdatabuffer.resize(push_constant_offset); 
+      memset(vk_program->_pushdatabuffer.data(),0,push_constant_offset);
 
       ////////////////////////////////////////////////////////////
 

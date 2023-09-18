@@ -31,7 +31,7 @@ struct VkBufferLayout {
         return alignof(T);
     }
     template <typename datatype_t>
-    size_t layoutItem() {
+    size_t layoutItem(fxparam_constptr_t param) {
         std::size_t alignment = getAlignment<datatype_t>();
         std::size_t space = sizeof(datatype_t);
         
@@ -42,6 +42,8 @@ struct VkBufferLayout {
         
         _cursor += space; // Advance the cursor by the size of the datatype
         
+        _param2offset[param] = rval; // Store the offset for this parameter
+
         return rval;
     }
     //////////////////////////////////////////////
@@ -49,9 +51,18 @@ struct VkBufferLayout {
         return _cursor;
     }
     //////////////////////////////////////////////
+    size_t offsetForParam(fxparam_constptr_t param) const {
+        auto it = _param2offset.find(param);
+        if( it == _param2offset.end() )
+            return -1;
+        else 
+            return it->second;
+    }
+    //////////////////////////////////////////////
 
 private:
     std::size_t _cursor;
+    std::unordered_map<fxparam_constptr_t,size_t> _param2offset;
     // ... other member functions as needed ...
 };
 ///////////////////////////////////////////////////////////////////////////////

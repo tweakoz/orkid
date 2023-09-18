@@ -289,6 +289,9 @@ public:
     auto descriptor = (_descriptorFactory.load())();
     return descriptor._curlength;
   }
+  const void* data() const {
+    return _buffer;
+  }
 
   bool canConvertFrom(const static_variant_base& oth) const {
     return capacity() >= oth.size();

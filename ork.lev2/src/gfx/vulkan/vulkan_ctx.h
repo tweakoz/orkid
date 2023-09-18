@@ -457,6 +457,7 @@ struct VulkanFxShaderObject {
 
 struct VkParamSetItem{
   VkFxShaderUniformSetItem* _vk_param = nullptr;
+  fxparam_constptr_t _ork_param = nullptr;
   svar64_t _value;
 };
 

@@ -41,6 +41,7 @@ void VkFxInterface::BindParamVect3(const FxShaderParam* hpar, const fvec3& Vec) 
 void VkFxInterface::BindParamVect4(const FxShaderParam* hpar, const fvec4& Vec) {
   auto& param_set = _currentVKPASS->_vk_program->_pending_params.emplace_back();
   param_set._vk_param = hpar->_impl.get<VkFxShaderUniformSetItem*>();
+  param_set._ork_param = param_set._vk_param->_orkparam.get();
   param_set._value.set<fvec4>(Vec);
 }
 
@@ -73,6 +74,7 @@ void VkFxInterface::BindParamFloatArray(const FxShaderParam* hpar, const float* 
 void VkFxInterface::BindParamFloat(const FxShaderParam* hpar, float fA) {
   auto& param_set = _currentVKPASS->_vk_program->_pending_params.emplace_back();
   param_set._vk_param = hpar->_impl.get<VkFxShaderUniformSetItem*>();
+  param_set._ork_param = param_set._vk_param->_orkparam.get();
   param_set._value.set<float>(fA);
 }
 
@@ -81,6 +83,7 @@ void VkFxInterface::BindParamFloat(const FxShaderParam* hpar, float fA) {
 void VkFxInterface::BindParamMatrix(const FxShaderParam* hpar, const fmtx4& Mat) {
   auto& param_set = _currentVKPASS->_vk_program->_pending_params.emplace_back();
   param_set._vk_param = hpar->_impl.get<VkFxShaderUniformSetItem*>();
+  param_set._ork_param = param_set._vk_param->_orkparam.get();
   param_set._value.set<fmtx4>(Mat);
 }
 
