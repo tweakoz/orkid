@@ -396,9 +396,9 @@ using descriptor_bindings_vect_t = std::vector<VkDescriptorSetLayoutBinding>;
 //using descriptor_samplerinfos_vect_t = std::vector<VkSamplerCreateInfo>;
 struct VkDescriptorSetBindings{
 
-  descriptor_bindings_vect_t _vkbindings_vtx;
-  descriptor_bindings_vect_t _vkbindings_frg;
-
+  descriptor_bindings_vect_t _vkbindings;
+  std::vector<VkSampler> _vksamplers;
+  VkDescriptorSetLayout _dsetlayout;
 };
 
 using vkdescriptors_ptr_t = std::shared_ptr<VkDescriptorSetBindings>;

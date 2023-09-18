@@ -238,16 +238,18 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(vkvtxbuf_ptr_t vb, //
     ////////////////////////////////////////////////////
 
     if(shprog->_descriptors){
-      size_t num_vtx_bindings = shprog->_descriptors->_vkbindings_vtx.size();
-      size_t num_frg_bindings = shprog->_descriptors->_vkbindings_frg.size();
+      size_t num_vtx_bindings = shprog->_descriptors->_vkbindings.size();
+      size_t num_samplers = shprog->_descriptors->_vksamplers.size();
+      OrkAssert(num_vtx_bindings==num_samplers);
+      VkDescriptorSetLayoutCreateInfo LCI = {};
+      initializeVkStruct(LCI, VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO);
+      LCI.bindingCount = shprog->_descriptors->_vkbindings.size();
+      LCI.pBindings = shprog->_descriptors->_vkbindings.data();
 
+      vkCreateDescriptorSetLayout(_contextVK->_vkdevice, &LCI, nullptr, &shprog->_descriptors->_dsetlayout);
+      PLCI.setLayoutCount = 1;
+      PLCI.pSetLayouts = &shprog->_descriptors->_dsetlayout;
     }
-
-    /*
-    VkDescriptorSetLayoutBinding bindings[16];
-    VkDescriptorSetLayoutCreateInfo layoutinfo;
-    VkDescriptorSetLayout dset_layout;
-    */
 
     ////////////////////////////////////////////////////
 
@@ -259,13 +261,16 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(vkvtxbuf_ptr_t vb, //
 
     CINFO.layout = PL; // shader input data layout / bindings
                                    // TODO: from geometry, shader
-    if(0)
-    vkCreateGraphicsPipelines( _contextVK->_vkdevice, // device
-                               VK_NULL_HANDLE,        // pipeline cache
-                               1,                     // count
-                               &CINFO,                // create info
-                               nullptr,               // allocator
-                               &rval->_pipeline);
+    if(1){
+      OK = vkCreateGraphicsPipelines( _contextVK->_vkdevice, // device
+                                     VK_NULL_HANDLE,        // pipeline cache
+                                     1,                     // count
+                                     &CINFO,                // create info
+                                     nullptr,               // allocator
+                                     &rval->_pipeline);
+
+      OrkAssert(VK_SUCCESS == OK);
+    }
   }
   else{ // pipeline already cached!
     rval = it->second;

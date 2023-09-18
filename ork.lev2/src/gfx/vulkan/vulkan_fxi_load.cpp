@@ -520,16 +520,16 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
       ////////////////////////////////////////////////////////////
 
       auto push_constants = std::make_shared<VkFxShaderPushConstantBlock>();
-      auto descriptors = std::make_shared<VkDescriptorSetBindings>();
       vk_program->_pushConstantBlock = push_constants;
-      vk_program->_descriptors = descriptors;
+      push_constants->_ranges.reserve(16);
 
       auto do_unisets = [this](vkfxsobj_ptr_t shobj,
                                uniset_map_t& dest_usetmap,
                                uniset_item_map_t& dest_usetitemmap,
                                vkbufferlayout_ptr_t dest_layout,
                                VkPushConstantRange& dest_range,
-                               descriptor_bindings_vect_t& dest_bindings ){
+                               vkdescriptors_ptr_t desc_set,
+                               uint32_t stage_bits ){
         if( shobj->_uniset_refs ){
           std::set<vkfxsuniset_ptr_t> unisets_set;
           for( auto uset_item : shobj->_uniset_refs->_unisets ){
@@ -575,18 +575,21 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
                 SI.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
                 SI.unnormalizedCoordinates = VK_FALSE;
 
-                VkSampler immutableSampler;
+                VkSampler& immutableSampler = desc_set->_vksamplers.emplace_back();
                 vkCreateSampler(_contextVK->_vkdevice, 
                                 &SI, 
                                 nullptr, 
                                 &immutableSampler);
 
-                auto& vkb = dest_bindings.emplace_back();
-                vkb.binding = 0; // Binding number, this corresponds to the binding in the shader
-                //vkb.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER; // Type of the descriptor (e.g., uniform buffer, combined image sampler, etc.)
+                size_t binding_index = desc_set->_vksamplers.size();
+                desc_set->_vksamplers.push_back( immutableSampler );
+
+                auto& vkb = desc_set->_vkbindings.emplace_back();
+                initializeVkStruct( vkb );
+                vkb.binding = binding_index; // TODO : query from shader
                 vkb.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER; // Type of the descriptor (e.g., uniform buffer, combined image sampler, etc.)
                 vkb.descriptorCount = 1; // Number of descriptors in this binding (useful for arrays of descriptors)
-                vkb.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT; // Shader stages this descriptor will be used in
+                vkb.stageFlags = stage_bits; // Shader stage to bind this descriptor to
                 vkb.pImmutableSamplers = &immutableSampler; // Only relevant for samplers and combined image samplers                
               }
             }
@@ -626,23 +629,27 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
       push_constants->_ranges.reserve(8);
       auto& vtx_range = push_constants->_ranges.emplace_back();
       auto& frg_range = push_constants->_ranges.emplace_back();
+      auto descriptors = std::make_shared<VkDescriptorSetBindings>();
+      descriptors->_vksamplers.reserve( 32 );
+      descriptors->_vkbindings.reserve( 32 );              
 
       do_unisets(vtx_obj,
                  push_constants->_vtx_unisets,
                  push_constants->_vtx_items_by_name,
                  push_constants->_vtx_layout,
                  vtx_range,
-                 descriptors->_vkbindings_vtx );
+                 descriptors,
+                 VK_SHADER_STAGE_VERTEX_BIT );
       do_unisets(frg_obj,
                  push_constants->_frg_unisets,
                  push_constants->_frg_items_by_name,
                  push_constants->_frg_layout,
                  frg_range,
-                 descriptors->_vkbindings_frg );
+                 descriptors,
+                 VK_SHADER_STAGE_FRAGMENT_BIT );
 
-     vtx_range.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-     frg_range.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-
+      vtx_range.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+      frg_range.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
       ////////////////////////////////////////////////////////////
 
       // orkid side
