@@ -372,30 +372,48 @@ void VkGeometryBufferInterface::DrawPrimitiveEML(
     int ivbase,
     int ivcount) {
 
+  auto& CB = _contextVK->_cmdbufcurframe_gfx_pri;
+
   auto it_pc = _primclasses.find(uint64_t(eType));
   OrkAssert(it_pc != _primclasses.end());
   auto primclass = it_pc->second;
 
+  ///////////////////////
+  // find pipeline
+  ///////////////////////
+
   auto vk_vbimpl = vtx_buf._impl.getShared<VulkanVertexBuffer>();
   auto fxi = _contextVK->_fxi;
   auto pipeline = fxi->_fetchPipeline(vk_vbimpl,primclass);
-  pipeline->_vk_program->applyPendingParams(_contextVK->_cmdbufcurframe_gfx_pri);
 
+  ///////////////////////
   // bind pipeline
-  vkCmdBindPipeline( _contextVK->_cmdbufcurframe_gfx_pri->_vkcmdbuf, // command buffer
-                     VK_PIPELINE_BIND_POINT_GRAPHICS,                // pipeline type
-                     pipeline->_pipeline);                           // pipeline
+  ///////////////////////
 
+  fxi->_bindPipeline(pipeline);
+
+  ///////////////////////
+  // flush params
+  ///////////////////////
+
+  pipeline->_vk_program->applyPendingParams(CB);
+
+  ///////////////////////
   // bind vertex buffer
+  ///////////////////////
+
   VkDeviceSize offset = ivbase;
-  vkCmdBindVertexBuffers(_contextVK->_cmdbufcurframe_gfx_pri->_vkcmdbuf, // command buffer
+  vkCmdBindVertexBuffers(CB->_vkcmdbuf, // command buffer
                          0,                                              // first binding
                          1,                                              // binding count
                          &vk_vbimpl->_vkbuf,                             // buffers
                          &offset);                                       // offsets
 
+  ///////////////////////
   // draw
-  vkCmdDraw( _contextVK->_cmdbufcurframe_gfx_pri->_vkcmdbuf, // command buffer
+  ///////////////////////
+
+  vkCmdDraw( CB->_vkcmdbuf, // command buffer
              ivcount,                                        // vertex count
              1,                                              // instance count
              ivbase,                                         // first vertex

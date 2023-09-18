@@ -28,6 +28,7 @@ VkFxInterface::~VkFxInterface(){
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkFxInterface::_doBeginFrame() {
+  _currentPipeline = nullptr;
   pushRasterState(_default_rasterstate);
 }
 void VkFxInterface::_doEndFrame() {
@@ -307,7 +308,7 @@ void VkFxShaderProgram::applyPendingParams(vkcmdbufimpl_ptr_t cmdbuf){
   auto vtx_layout = _pushConstantBlock->_vtx_layout;
   auto frg_layout = _pushConstantBlock->_frg_layout;
   auto& ranges = _pushConstantBlock->_ranges;
-  
+
   /*vkCmdPushConstants(
       _contextVK->_cmdbufcurframe_gfx_pri->_vkcmdbuf,
       pipelineLayout,
@@ -318,6 +319,54 @@ void VkFxShaderProgram::applyPendingParams(vkcmdbufimpl_ptr_t cmdbuf){
   );*/
 
   _pending_params.clear();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void VkFxInterface::_bindPipeline(vkpipeline_obj_ptr_t pipe){
+
+  auto cmdbuf = _contextVK->_cmdbufcurframe_gfx_pri->_vkcmdbuf;
+
+  if( _currentPipeline != pipe ){
+    vkCmdBindPipeline( cmdbuf,                         // command buffer
+                      VK_PIPELINE_BIND_POINT_GRAPHICS, // pipeline type
+                      pipe->_pipeline);                // pipeline
+    _currentPipeline = pipe;
+    _currentPipeline->_viewport = nullptr;
+    _currentPipeline->_scissor = nullptr;
+  }
+
+  auto fbi = _contextVK->_fbi;
+  auto fbi_vp = fbi->_viewportTracker;
+  auto fbi_sc = fbi->_scissorTracker;
+
+  if( pipe->_viewport != fbi_vp ){
+    pipe->_viewport = fbi_vp;
+    VkViewport vkvp = {};
+    vkvp.x = fbi_vp->_x;
+    vkvp.y = fbi_vp->_y;
+    vkvp.width = fbi_vp->_width;
+    vkvp.height = fbi_vp->_height;
+    vkvp.minDepth = 0.0f;
+    vkvp.maxDepth = 1.0f;
+    vkCmdSetViewport( cmdbuf, // command buffer
+                      0,      // first viewport
+                      1,      // viewport count
+                      &vkvp );// viewport data
+  }
+  if( pipe->_scissor != fbi_sc ){
+    pipe->_scissor = fbi_sc;
+    VkRect2D vksc = {};
+    vksc.offset.x = fbi_sc->_x;
+    vksc.offset.y = fbi_sc->_y;
+    vksc.extent.width = fbi_sc->_width;
+    vksc.extent.height = fbi_sc->_height;
+    vkCmdSetScissor( cmdbuf, // command buffer
+                     0,      // first scissor
+                     1,      // scissor count
+                     &vksc );// scissor data
+  }
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////

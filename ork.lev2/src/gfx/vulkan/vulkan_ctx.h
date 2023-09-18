@@ -190,6 +190,17 @@ struct VkFormatConverter{
 
 ///////////////////////////////////////////////////////////////////////////////
 
+struct VkViewportTracker{
+
+  int _width = 0;
+  int _height = 0;
+  int _x = 0;
+  int _y = 0;
+};
+using vkviewporttracker_ptr_t = std::shared_ptr<VkViewportTracker>;
+
+///////////////////////////////////////////////////////////////////////////////
+
 struct VkSwapChainCaps {
 
   bool supportsPresentationMode(VkPresentModeKHR mode) const;
@@ -471,9 +482,13 @@ struct VkFxShaderProgram {
 
 };
 struct VkPipelineObject{
+
   vkfxsprg_ptr_t _vk_program;
   VkGraphicsPipelineCreateInfo _VKGFXPCI;
   VkPipeline _pipeline;
+  vkviewporttracker_ptr_t _viewport;
+  vkviewporttracker_ptr_t _scissor;
+
 };
 
 struct VkFxShaderPass {
@@ -735,11 +750,9 @@ struct VkFrameBufferInterface final : public FrameBufferInterface {
   const FxShaderParam* _fxpMVP                = nullptr;
   const FxShaderParam* _fxpColorMap           = nullptr;
 
+  vkviewporttracker_ptr_t _viewportTracker;
+  vkviewporttracker_ptr_t _scissorTracker;
   vkcontext_rawptr_t _contextVK;
-  int miCurScissorX;
-  int miCurScissorY;
-  int miCurScissorW;
-  int miCurScissorH;
 
   //////////////////////////////////////////////
   void _initSwapChain();
@@ -851,6 +864,8 @@ struct VkFxInterface final : public FxInterface {
   void _doPushRasterState(rasterstate_ptr_t rs) final;
   rasterstate_ptr_t _doPopRasterState() final;
 
+  void _bindPipeline(vkpipeline_obj_ptr_t pipe );
+
   fxtechnique_constptr_t _currentORKTEK = nullptr;
   VkFxShaderTechnique* _currentVKTEK;
   vkfxspass_ptr_t _currentVKPASS;
@@ -861,6 +876,7 @@ struct VkFxInterface final : public FxInterface {
   std::stack<rasterstate_ptr_t> _rasterstate_stack;
   rasterstate_ptr_t _current_rasterstate;
   lev2::rasterstate_ptr_t _default_rasterstate;
+  vkpipeline_obj_ptr_t _currentPipeline;
 
 };
 

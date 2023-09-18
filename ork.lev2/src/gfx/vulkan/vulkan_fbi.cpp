@@ -37,13 +37,24 @@ VkFrameBufferInterface::~VkFrameBufferInterface() {
 ///////////////////////////////////////////////////////
 
 void VkFrameBufferInterface::_setViewport(int iX, int iY, int iW, int iH) {
-  //OrkAssert(false);
+
+  auto tracker = std::make_shared<VkViewportTracker>();
+  tracker->_width = iW;
+  tracker->_height = iH;
+  tracker->_x = iX;
+  tracker->_y = iY;
+  _viewportTracker = tracker;
 }
 
 ///////////////////////////////////////////////////////
 
 void VkFrameBufferInterface::_setScissor(int iX, int iY, int iW, int iH) {
-  //OrkAssert(false);
+   auto tracker = std::make_shared<VkViewportTracker>();
+  tracker->_width = iW;
+  tracker->_height = iH;
+  tracker->_x = iX;
+  tracker->_y = iY;
+   _scissorTracker = tracker;
 }
 
 //void VkFrameBufferInterface::_doPushMainSurface() {
