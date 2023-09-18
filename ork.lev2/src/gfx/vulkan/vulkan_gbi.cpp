@@ -381,9 +381,29 @@ void VkGeometryBufferInterface::DrawPrimitiveEML(
   auto pipeline = fxi->_fetchPipeline(vk_vbimpl,primclass);
   pipeline->_vk_program->applyPendingParams(_contextVK->_cmdbufcurframe_gfx_pri);
 
+  // bind pipeline
+  vkCmdBindPipeline( _contextVK->_cmdbufcurframe_gfx_pri->_vkcmdbuf, // command buffer
+                     VK_PIPELINE_BIND_POINT_GRAPHICS,                // pipeline type
+                     pipeline->_pipeline);                           // pipeline
+
+  // bind vertex buffer
+  VkDeviceSize offset = ivbase;
+  vkCmdBindVertexBuffers(_contextVK->_cmdbufcurframe_gfx_pri->_vkcmdbuf, // command buffer
+                         0,                                              // first binding
+                         1,                                              // binding count
+                         &vk_vbimpl->_vkbuf,                             // buffers
+                         &offset);                                       // offsets
+
   // draw
+  vkCmdDraw( _contextVK->_cmdbufcurframe_gfx_pri->_vkcmdbuf, // command buffer
+             ivcount,                                        // vertex count
+             1,                                              // instance count
+             ivbase,                                         // first vertex
+             0);                                             // first instance
 
 }
+
+///////////////////////////////////////////////////////////////////////////////
 
 #if defined(ENABLE_COMPUTE_SHADERS)
 void VkGeometryBufferInterface::DrawPrimitiveEML(

@@ -621,6 +621,7 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
           initializeVkStruct( dest_range );
           dest_range.offset = 0;
           dest_range.size = dest_layout->cursor();
+          dest_range.stageFlags = stage_bits;
         }
       };
 
@@ -648,8 +649,6 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
                  descriptors,
                  VK_SHADER_STAGE_FRAGMENT_BIT );
 
-      vtx_range.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-      frg_range.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
       ////////////////////////////////////////////////////////////
 
       // orkid side
