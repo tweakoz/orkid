@@ -322,6 +322,20 @@ void VkPipelineObject::applyPendingParams(vkcmdbufimpl_ptr_t cmdbuf ){ //
         memcpy( vtx_base + vtx_offset, item._value.data(), item._value.size() );
       }
       if( frg_offset != -1 ){
+        auto parm_name = item._ork_param->_name;
+        auto parm_type = item._vk_param->_datatype;
+        size_t parm_size = item._value.size();
+        printf( "parm<%s:%s:%zu> ranges[1].offset<%d> frg_offset<%d> ", //
+                parm_type.c_str(), 
+                parm_name.c_str(), 
+                parm_size,
+                ranges[1].offset, 
+                frg_offset);
+        if( parm_type == "vec4"){
+          auto& as_v4 = item._value.get<fvec4>();
+          printf( "vec4<%f %f %f %f>", as_v4.x, as_v4.y, as_v4.z, as_v4.w );
+        }
+        printf( "\n");
         auto frg_base = data + ranges[1].offset;
         memcpy( frg_base + frg_offset, item._value.data(), item._value.size() );
       }
@@ -377,7 +391,7 @@ void VkFxInterface::_bindPipeline(vkpipeline_obj_ptr_t pipe){
     vkvp.height = fbi_vp->_height;
     vkvp.minDepth = 0.0f;
     vkvp.maxDepth = 1.0f;
-    printf( "SETVP<%p> x<%f> y<%f> w<%f> h<%f>\n", pipe.get(), vkvp.x, vkvp.y, vkvp.width, vkvp.height);
+    //printf( "SETVP<%p> x<%f> y<%f> w<%f> h<%f>\n", pipe.get(), vkvp.x, vkvp.y, vkvp.width, vkvp.height);
     vkCmdSetViewport( cmdbuf, // command buffer
                       0,      // first viewport
                       1,      // viewport count
@@ -390,7 +404,7 @@ void VkFxInterface::_bindPipeline(vkpipeline_obj_ptr_t pipe){
     vksc.offset.y = fbi_sc->_y;
     vksc.extent.width = fbi_sc->_width;
     vksc.extent.height = fbi_sc->_height;
-    printf( "SETSC<%p> x<%d> y<%d> w<%d> h<%d>\n", pipe.get(), vksc.offset.x, vksc.offset.y, vksc.extent.width, vksc.extent.height);
+    //printf( "SETSC<%p> x<%d> y<%d> w<%d> h<%d>\n", pipe.get(), vksc.offset.x, vksc.offset.y, vksc.extent.width, vksc.extent.height);
     vkCmdSetScissor( cmdbuf, // command buffer
                      0,      // first scissor
                      1,      // scissor count

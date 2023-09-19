@@ -347,6 +347,7 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
       vk_samp->_datatype          = str_sampler_datatype;
       vk_samp->_identifier        = str_sampler_identifier;
       vk_samp->_orkparam          = std::make_shared<FxShaderParam>();
+      vk_samp->_orkparam->_name = str_sampler_identifier;
       vk_samp->_orkparam->_impl.set<VkFxShaderUniformSetSampler*>(vk_samp.get());
       vk_uniset->_samplers_by_name[str_sampler_identifier] = vk_samp;
       if(0)printf("uniset<%s> ADDING Sampler PARAM<%s>\n", str_uniset_name.c_str(), str_sampler_identifier.c_str());
@@ -362,6 +363,7 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
       vk_param->_datatype       = str_param_datatype;
       vk_param->_identifier     = str_param_identifier;
       vk_param->_orkparam       = std::make_shared<FxShaderParam>();
+      vk_param->_orkparam->_name = str_param_identifier;
       vk_param->_orkparam->_impl.set<VkFxShaderUniformSetItem*>(vk_param.get());
       vk_uniset->_items_by_name[str_param_identifier] = vk_param;
       vk_uniset->_items_by_order.push_back(vk_param);

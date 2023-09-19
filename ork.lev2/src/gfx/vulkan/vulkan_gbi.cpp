@@ -270,6 +270,8 @@ void* VkGeometryBufferInterface::LockVB(VertexBufferBase& vtx_buf, int ivbase, i
         0,                     // flags
         &vertex_memory);
   } else {
+
+
     vkMapMemory(
         _contextVK->_vkdevice, // vulkan device
         vk_impl->_vkmem,       // vulkan memory
@@ -277,6 +279,7 @@ void* VkGeometryBufferInterface::LockVB(VertexBufferBase& vtx_buf, int ivbase, i
         isizebytes,            // size
         0,                     // flags
         &vertex_memory);
+
   }
   //////////////////////////////////////////////////////////
   vtx_buf.Lock();
@@ -406,12 +409,12 @@ void VkGeometryBufferInterface::DrawPrimitiveEML(
   // bind vertex buffer
   ///////////////////////
 
-  VkDeviceSize offset = ivbase * vtx_buf.GetVtxSize();
-  vkCmdBindVertexBuffers(CB->_vkcmdbuf, // command buffer
-                         0,                                              // first binding
-                         1,                                              // binding count
-                         &vk_vbimpl->_vkbuf,                             // buffers
-                         &offset);                                       // offsets
+  VkDeviceSize offset = 0; 
+  vkCmdBindVertexBuffers(CB->_vkcmdbuf,        // command buffer
+                         0,                    // first binding
+                         1,                    // binding count
+                         &vk_vbimpl->_vkbuf,   // buffers
+                         &offset);             // offsets
 
   ///////////////////////
   // draw
