@@ -345,17 +345,17 @@ void VkPipelineObject::applyPendingParams(vkcmdbufimpl_ptr_t cmdbuf ){ //
         cmdbuf->_vkcmdbuf,
         _pipelineLayout,
         VK_SHADER_STAGE_VERTEX_BIT,
-        ranges[0].offset, // offset
-        ranges[0].size,
+        0,                   // offset
+        vtx_layout->cursor(), // size
         data
     );
     vkCmdPushConstants(
         cmdbuf->_vkcmdbuf,
         _pipelineLayout,
         VK_SHADER_STAGE_FRAGMENT_BIT,
-        0, //ranges[1].offset, 
-        16, //ranges[1].size, 
-        data+192
+        0,                        // offset
+        frg_layout->cursor(),     // size 
+        data+vtx_layout->cursor()
     );
 
     _vk_program->_pending_params.clear();
