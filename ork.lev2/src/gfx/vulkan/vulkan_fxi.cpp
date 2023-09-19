@@ -353,9 +353,9 @@ void VkPipelineObject::applyPendingParams(vkcmdbufimpl_ptr_t cmdbuf ){ //
         cmdbuf->_vkcmdbuf,
         _pipelineLayout,
         VK_SHADER_STAGE_FRAGMENT_BIT,
-        ranges[1].offset, 
-        ranges[1].size, 
-        data
+        0, //ranges[1].offset, 
+        16, //ranges[1].size, 
+        data+192
     );
 
     _vk_program->_pending_params.clear();
