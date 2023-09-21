@@ -6,17 +6,15 @@ fxconfig fxcfg_default { glsl_version = "150"; }
 // Interfaces
 ///////////////////////////////////////////////////////////////
 
-uniform_set ublock_vtx { //
+uniform_set push_constants { //
   mat4 mvp;
   mat4 mvp_l;
   mat4 mvp_r;
-}
-uniform_set ublock_frg {
   vec4 ModColor;
   sampler2D ColorMap;
 }
 
-vertex_interface iface_vdefault : ublock_vtx {
+vertex_interface iface_vdefault : push_constants {
   inputs {
     vec4 position : POSITION;
     vec4 vtxcolor : COLOR0;
@@ -39,7 +37,7 @@ fragment_interface iface_fdefault {
   }
 }
 ///////////////////////////////////////////////////////////////
-fragment_interface iface_fmt : ublock_frg {
+fragment_interface iface_fmt : push_constants {
   inputs {
     vec2 frg_uv;
   }

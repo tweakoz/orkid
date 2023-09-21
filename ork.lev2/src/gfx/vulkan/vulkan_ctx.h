@@ -397,8 +397,7 @@ struct VkFxShaderPushConstantBlock {
   uniset_item_map_t _vtx_items_by_name;
   uniset_item_map_t _frg_items_by_name;
 
-  vkbufferlayout_ptr_t _vtx_layout;
-  vkbufferlayout_ptr_t _frg_layout;
+  vkbufferlayout_ptr_t _data_layout;
 
   std::vector<VkPushConstantRange> _ranges;
   size_t _blockSize = 0;

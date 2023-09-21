@@ -521,17 +521,7 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
     
       ////////////////////////////////////////////////////////////
 
-      auto push_constants = std::make_shared<VkFxShaderPushConstantBlock>();
-      vk_program->_pushConstantBlock = push_constants;
-      push_constants->_ranges.reserve(16);
-
-      size_t push_constant_offset = 0;
-
-      auto do_unisets = [&](vkfxsobj_ptr_t shobj,
-                            uniset_map_t& dest_usetmap,
-                            uniset_item_map_t& dest_usetitemmap,
-                            vkbufferlayout_ptr_t dest_layout,
-                            VkPushConstantRange& dest_range,
+      auto unisets_to_descriptors = [&](vkfxsobj_ptr_t shobj,
                             vkdescriptors_ptr_t desc_set,
                             uint32_t stage_bits ){
         if( shobj->_uniset_refs ){
@@ -542,18 +532,6 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
             auto it = unisets_set.find( uset );
             if(it==unisets_set.end()){
               unisets_set.insert( uset );
-              dest_usetmap[uset_name] = uset;
-              ///////////////////////////////////////////
-              // loose uniform items (not samplers)
-              ///////////////////////////////////////////
-              for( auto item : uset->_items_by_name ){
-                auto item_name = item.first;
-                auto item_ptr  = item.second;
-                auto it = dest_usetitemmap.find(item_name);
-                printf( "merging uset<%s> itemname<%s>\n", uset_name.c_str(), item_name.c_str());
-                OrkAssert(it==dest_usetitemmap.end());
-                dest_usetitemmap[item_name] = item_ptr;
-              }
               ///////////////////////////////////////////
               // loose samplers
               ///////////////////////////////////////////
@@ -598,71 +576,84 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
               }
             }
           }
-
-          for( auto item : dest_usetitemmap ){
-            auto item_name = item.first;
-            auto item_ptr  = item.second;
-            auto datatype = item_ptr->_datatype;
-            size_t cursor = 0xffffffff;
-            auto orkparam = item_ptr->_orkparam.get();
-            if( datatype == "float"){
-              cursor = dest_layout->layoutItem<float>(orkparam);
+        }
+      };
+      //////////////////////////////////////////////////////////////
+      std::set<vkfxsuniset_ptr_t> unisets_set;
+      auto uniset_to_pushconstants = [&](vkfxsobj_ptr_t shobj,
+                                         vkbufferlayout_ptr_t dest_layout ){
+        if(nullptr==shobj->_uniset_refs){
+          return;
+        }
+        for( auto uset_item : shobj->_uniset_refs->_unisets ){
+          auto uset_name = uset_item.first;
+          auto uset = uset_item.second;
+          auto it = unisets_set.find( uset );
+          if(it==unisets_set.end()){
+            unisets_set.insert( uset );
+            for( auto item_ptr : uset->_items_by_order ){
+              auto item_name = item_ptr->_identifier;
+              auto datatype = item_ptr->_datatype;
+              size_t cursor = 0xffffffff;
+              auto orkparam = item_ptr->_orkparam.get();
+              if( datatype == "float"){
+                cursor = dest_layout->layoutItem<float>(orkparam);
+              }
+              else if( datatype == "int"){
+                cursor = dest_layout->layoutItem<int>(orkparam);
+              }
+              else if( datatype == "vec4"){
+                cursor = dest_layout->layoutItem<fvec4>(orkparam);
+              }
+              else if( datatype == "mat4"){
+                cursor = dest_layout->layoutItem<fmtx4>(orkparam);
+              }
+              else{
+                printf( "unknown datatype<%s>\n", datatype.c_str() );
+                OrkAssert(false);
+              }
+              printf( "datatype<%s> cursor<%zu>\n", datatype.c_str(), cursor );
             }
-            else if( datatype == "int"){
-              cursor = dest_layout->layoutItem<int>(orkparam);
-            }
-            else if( datatype == "vec4"){
-              cursor = dest_layout->layoutItem<fvec4>(orkparam);
-            }
-            else if( datatype == "mat4"){
-              cursor = dest_layout->layoutItem<fmtx4>(orkparam);
-            }
-            else{
-              printf( "unknown datatype<%s>\n", datatype.c_str() );
-              OrkAssert(false);
-            }
-            printf( "datatype<%s> cursor<%zu>\n", datatype.c_str(), cursor );
           }
-          initializeVkStruct( dest_range );
-
-          size_t pc_size = dest_layout->cursor();
-
-          dest_range.offset = push_constant_offset;
-          dest_range.size = pc_size;
-          dest_range.stageFlags = stage_bits;
-
-          push_constant_offset += alignUp(pc_size,16);
         }
       };
 
-      push_constants->_vtx_layout = std::make_shared<VkBufferLayout>();
-      push_constants->_frg_layout = std::make_shared<VkBufferLayout>();
-      push_constants->_ranges.reserve(8);
-      auto& vtx_range = push_constants->_ranges.emplace_back();
-      auto& frg_range = push_constants->_ranges.emplace_back();
+      //////////////////////////////////////////////////////////////
+      // descriptors
+      //////////////////////////////////////////////////////////////
+
       auto descriptors = std::make_shared<VkDescriptorSetBindings>();
       descriptors->_vksamplers.reserve( 32 );
       descriptors->_vkbindings.reserve( 32 );              
   
-      do_unisets(vtx_obj,
-                 push_constants->_vtx_unisets,
-                 push_constants->_vtx_items_by_name,
-                 push_constants->_vtx_layout,
-                 vtx_range,
-                 descriptors,
-                 VK_SHADER_STAGE_VERTEX_BIT );
-      do_unisets(frg_obj,
-                 push_constants->_frg_unisets,
-                 push_constants->_frg_items_by_name,
-                 push_constants->_frg_layout,
-                 frg_range,
-                 descriptors,
-                 VK_SHADER_STAGE_FRAGMENT_BIT );
+      unisets_to_descriptors(vtx_obj, descriptors, VK_SHADER_STAGE_VERTEX_BIT );
+      unisets_to_descriptors(frg_obj, descriptors, VK_SHADER_STAGE_FRAGMENT_BIT );
 
-      push_constants->_blockSize = push_constant_offset;
+      //////////////////////////////////////////////////////////////
+      // push constants
+      //////////////////////////////////////////////////////////////
+
+      auto push_constants = std::make_shared<VkFxShaderPushConstantBlock>();
+      push_constants->_ranges.reserve(16);
+
+      auto pc_layout = std::make_shared<VkBufferLayout>();
+      uniset_to_pushconstants(vtx_obj,pc_layout);
+      uniset_to_pushconstants(frg_obj,pc_layout);
+      push_constants->_data_layout = pc_layout;
+
+      size_t pc_size = alignUp(pc_layout->cursor(),16);
+      push_constants->_ranges.reserve(8);
+      auto& pc_range = push_constants->_ranges.emplace_back();
+      initializeVkStruct( pc_range );
+      pc_range.offset = 0;
+      pc_range.size = pc_size;
+      pc_range.stageFlags = VK_SHADER_STAGE_VERTEX_BIT|VK_SHADER_STAGE_FRAGMENT_BIT;
+
+      push_constants->_blockSize = pc_size;
       vk_program->_pushdatabuffer.clear();
-      vk_program->_pushdatabuffer.resize(push_constant_offset); 
-      memset(vk_program->_pushdatabuffer.data(),0,push_constant_offset);
+      vk_program->_pushdatabuffer.resize(pc_size); 
+      memset(vk_program->_pushdatabuffer.data(),0,pc_size);
+      vk_program->_pushConstantBlock = push_constants;
 
       ////////////////////////////////////////////////////////////
 

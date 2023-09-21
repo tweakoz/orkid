@@ -8,6 +8,7 @@
 #include "vulkan_ctx.h"
 #include "vulkan_ub_layout.inl"
 #include <ork/lev2/gfx/shadman.h>
+#include <ork/util/hexdump.inl>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::vulkan {
@@ -307,57 +308,41 @@ void VkPipelineObject::applyPendingParams(vkcmdbufimpl_ptr_t cmdbuf ){ //
   size_t num_params = _vk_program->_pending_params.size();
 
   if( num_params ){
-    auto vtx_layout = _vk_program->_pushConstantBlock->_vtx_layout;
-    auto frg_layout = _vk_program->_pushConstantBlock->_frg_layout;
+    auto data_layout = _vk_program->_pushConstantBlock->_data_layout;
     auto& ranges = _vk_program->_pushConstantBlock->_ranges;
     size_t blocksize = _vk_program->_pushConstantBlock->_blockSize;
 
     auto data = _vk_program->_pushdatabuffer.data();
 
     for( auto item : _vk_program->_pending_params ){
-      auto vtx_offset = vtx_layout->offsetForParam(item._ork_param);
-      auto frg_offset = frg_layout->offsetForParam(item._ork_param);
-      if( vtx_offset != -1 ){
-        auto vtx_base = data + ranges[0].offset;
-        memcpy( vtx_base + vtx_offset, item._value.data(), item._value.size() );
-      }
-      if( frg_offset != -1 ){
+      auto dst_offset = data_layout->offsetForParam(item._ork_param);
+      if( dst_offset != -1 ){
         auto parm_name = item._ork_param->_name;
         auto parm_type = item._vk_param->_datatype;
         size_t parm_size = item._value.size();
-        printf( "parm<%s:%s:%zu> ranges[1].offset<%d> frg_offset<%d> ", //
+        if(0){
+          printf( "parm<%s:%s:%zu> range_offset<%d> dst_offset<%d> ", //
                 parm_type.c_str(), 
                 parm_name.c_str(), 
                 parm_size,
-                ranges[1].offset, 
-                frg_offset);
-        if( parm_type == "vec4"){
-          auto& as_v4 = item._value.get<fvec4>();
-          printf( "vec4<%f %f %f %f>", as_v4.x, as_v4.y, as_v4.z, as_v4.w );
+                ranges[0].offset, 
+                dst_offset);
+          printf( "\n");
         }
-        printf( "\n");
-        auto frg_base = data + ranges[1].offset;
-        memcpy( frg_base + frg_offset, item._value.data(), item._value.size() );
+        auto dest_base = data + ranges[0].offset;
+        OrkAssert( (dst_offset+parm_size) <= blocksize );
+        memcpy( dest_base + dst_offset, item._value.data(), parm_size );
       }
     }
-
+    //hexdumpbytes(data,blocksize);
     vkCmdPushConstants(
         cmdbuf->_vkcmdbuf,
         _pipelineLayout,
-        VK_SHADER_STAGE_VERTEX_BIT,
-        0,                   // offset
-        vtx_layout->cursor(), // size
-        data
+        VK_SHADER_STAGE_VERTEX_BIT|VK_SHADER_STAGE_FRAGMENT_BIT,
+        0,         // dest-offset
+        blocksize, // size
+        data       // src-data
     );
-    vkCmdPushConstants(
-        cmdbuf->_vkcmdbuf,
-        _pipelineLayout,
-        VK_SHADER_STAGE_FRAGMENT_BIT,
-        0,                        // offset
-        frg_layout->cursor(),     // size 
-        data+vtx_layout->cursor()
-    );
-
     _vk_program->_pending_params.clear();
   }
 
