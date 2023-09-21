@@ -371,11 +371,17 @@ void VkFxInterface::_bindPipeline(vkpipeline_obj_ptr_t pipe){
     pipe->_viewport = fbi_vp;
     VkViewport vkvp = {};
     vkvp.x = fbi_vp->_x;
-    vkvp.y = fbi_vp->_y;
     vkvp.width = fbi_vp->_width;
-    vkvp.height = fbi_vp->_height;
+
     vkvp.minDepth = 0.0f;
     vkvp.maxDepth = 1.0f;
+
+    //vkvp.y = fbi_vp->_y;
+    //v/kvp.height = fbi_vp->_height;
+    // flipped (vk origin at upper left)
+    vkvp.y = (fbi_vp->_y + fbi_vp->_height); 
+    vkvp.height = -fbi_vp->_height; 
+
     //printf( "SETVP<%p> x<%f> y<%f> w<%f> h<%f>\n", pipe.get(), vkvp.x, vkvp.y, vkvp.width, vkvp.height);
     vkCmdSetViewport( cmdbuf, // command buffer
                       0,      // first viewport
