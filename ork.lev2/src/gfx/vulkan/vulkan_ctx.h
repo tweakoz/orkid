@@ -780,19 +780,8 @@ struct VkTextureInterface final : public TextureInterface {
 
   void TexManInit(void) final;
 
-  bool _loadImageTexture(texture_ptr_t ptex, datablock_ptr_t inpdata);
-  bool _loadXTXTexture(texture_ptr_t ptex, datablock_ptr_t inpdata);
-  bool _loadDDSTexture(const AssetPath& fname, texture_ptr_t ptex);
-  bool _loadDDSTexture(texture_ptr_t ptex, datablock_ptr_t inpdata);
-  bool _loadVDSTexture(const AssetPath& fname, texture_ptr_t ptex);
   //
-  void _loadXTXTextureMainThreadPart(vktexloadreq_ptr_t req);
-  void _loadDDSTextureMainThreadPart(vktexloadreq_ptr_t req);
-  //
-  bool LoadTexture(texture_ptr_t ptex, datablock_ptr_t inpdata) final;
   bool destroyTexture(texture_ptr_t ptex) final;
-  bool LoadTexture(const AssetPath& fname, texture_ptr_t ptex) final;
-  void SaveTexture(const ork::AssetPath& fname, Texture* ptex) final;
   void ApplySamplingMode(Texture* ptex) final;
   void UpdateAnimatedTexture(Texture* ptex, TextureAnimationInst* tai) final;
   void initTextureFromData(Texture* ptex, TextureInitData tid) final;

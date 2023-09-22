@@ -105,7 +105,8 @@ ContextDummy::ContextDummy()
     //, mRsI(*this)
     , mGbI(*this)
     , mFbI(*this)
-    , mDWI(*this) {
+    , mDWI(*this)
+    , mTxI(this) {
 
   static bool binit = true;
 
@@ -246,21 +247,6 @@ void DuGeometryBufferInterface::DrawInstancedIndexedPrimitiveEML(
     const IndexBufferBase& IdxBuf,
     PrimitiveType eType,
     size_t instance_count) {
-}
-
-bool DuTextureInterface::LoadTexture(const AssetPath& fname, texture_ptr_t ptex) {
-  ///////////////////////////////////////////////
-  AssetPath Filename = fname;
-  bool bHasExt       = Filename.hasExtension();
-  if (false == bHasExt) {
-    Filename.setExtension("dds");
-  }
-  ///////////////////////////////////////////////
-  File TextureFile(Filename, ork::EFM_READ);
-  if (false == TextureFile.IsOpen()) {
-    return false;
-  }
-  return true;
 }
 
 }} // namespace ork::lev2

@@ -142,8 +142,8 @@ void TextureInterface::_loadXTXTextureMainThreadPart(texloadreq_ptr_t req) {
   if (req->ptex->_varmap.hasKey("postproc")) {
     auto dblock    = req->_inpstream._datablock;
     auto postproc  = req->ptex->_varmap.typedValueForKey<Texture::proc_t>("postproc").value();
-    //auto postblock = postproc(req->ptex, &mTargetGL, dblock);
-    //OrkAssert(postblock);
+    auto postblock = postproc(req->ptex, _ctx, dblock);
+    OrkAssert(postblock);
   } else {
     // printf("ptex<%p> no postproc\n", ptex);
   }

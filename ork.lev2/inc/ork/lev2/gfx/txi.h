@@ -50,14 +50,24 @@ using texloadreq_ptr_t = std::shared_ptr<TexLoadReq>;
 class TextureInterface {
 public:
 
+  TextureInterface(context_rawptr_t ctx);
+
   virtual void TexManInit(void) = 0;
 
   texture_ptr_t createColorTexture(fvec4 color, int w, int h);
 
+  bool LoadTexture(const AssetPath& fname, texture_ptr_t ptex);
+  bool LoadTexture(texture_ptr_t ptex, datablock_ptr_t inpdata);
+  void SaveTexture(const ork::AssetPath& fname, Texture* ptex);
+
+  bool _loadImageTexture(texture_ptr_t ptex, datablock_ptr_t src_datablock);
+  bool _loadXTXTexture(texture_ptr_t ptex, datablock_ptr_t datablock);
+  void _loadXTXTextureMainThreadPart(texloadreq_ptr_t req);
+  bool _loadDDSTexture(texture_ptr_t ptex, datablock_ptr_t datablock);
+  bool _loadDDSTexture(const AssetPath& infname, texture_ptr_t ptex);
+  void _loadDDSTextureMainThreadPart(texloadreq_ptr_t req);
+
   virtual bool destroyTexture(texture_ptr_t ptex)                           = 0;
-  virtual bool LoadTexture(const AssetPath& fname, texture_ptr_t ptex)      = 0;
-  virtual bool LoadTexture(texture_ptr_t ptex, datablock_ptr_t inpdata)      = 0;
-  virtual void SaveTexture(const ork::AssetPath& fname, Texture* ptex) = 0;
   virtual void UpdateAnimatedTexture(Texture* ptex, TextureAnimationInst* tai) {
   }
   virtual void ApplySamplingMode(Texture* ptex) {
@@ -69,13 +79,7 @@ public:
   }
   virtual void generateMipMaps(Texture* ptex) = 0;
 
-  bool _loadImageTexture(texture_ptr_t ptex, datablock_ptr_t src_datablock);
-  bool _loadXTXTexture(texture_ptr_t ptex, datablock_ptr_t datablock);
-  void _loadXTXTextureMainThreadPart(texloadreq_ptr_t req);
-  bool _loadDDSTexture(texture_ptr_t ptex, datablock_ptr_t datablock);
-  bool _loadDDSTexture(const AssetPath& infname, texture_ptr_t ptex);
-  void _loadDDSTextureMainThreadPart(texloadreq_ptr_t req);
-
+  context_rawptr_t _ctx;
 };
 
 } //namespace ork::lev2{

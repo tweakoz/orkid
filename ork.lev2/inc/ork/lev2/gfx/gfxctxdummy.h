@@ -179,8 +179,8 @@ class DuGeometryBufferInterface final : public GeometryBufferInterface {
   void DrawPrimitiveEML(
       const FxShaderStorageBuffer* SSBO, //
       PrimitiveType eType = PrimitiveType::NONE,
-      int ivbase           = 0,
-      int ivcount          = 0) final;
+      int ivbase          = 0,
+      int ivcount         = 0) final;
 #endif
 
   void DrawInstancedIndexedPrimitiveEML(
@@ -203,8 +203,11 @@ public:
   DuFrameBufferInterface(Context& target);
   ~DuFrameBufferInterface();
 
-  void _pushRtGroup(RtGroup* Base) final {}
-  RtGroup* _popRtGroup() final { return nullptr;}
+  void _pushRtGroup(RtGroup* Base) final {
+  }
+  RtGroup* _popRtGroup() final {
+    return nullptr;
+  }
 
   ///////////////////////////////////////////////////////
 
@@ -228,7 +231,6 @@ public:
   }
 
   void msaaBlit(rtgroup_ptr_t src, rtgroup_ptr_t dst) final {
-
   }
 
 protected:
@@ -238,17 +240,15 @@ protected:
 
 class DuTextureInterface : public TextureInterface {
 public:
+  DuTextureInterface(context_rawptr_t target)
+      : TextureInterface(target) {
+  }
+
   void TexManInit(void) final {
   }
 
   bool destroyTexture(texture_ptr_t ptex) final {
     return false;
-  }
-  bool LoadTexture(const AssetPath& fname, texture_ptr_t ptex) final;
-  bool LoadTexture(texture_ptr_t ptex, datablock_ptr_t inpdata) final {
-    return false;
-  }
-  void SaveTexture(const ork::AssetPath& fname, Texture* ptex) final {
   }
   void generateMipMaps(Texture* ptex) final {
   }
@@ -281,8 +281,8 @@ public:
   FxInterface* FXI() final {
     return &mFxI;
   }
-  //RasterStateInterface* RSI() final {
-    //return &mRsI;
+  // RasterStateInterface* RSI() final {
+  // return &mRsI;
   //}
   MatrixStackInterface* MTXI() final {
     return &mMtxI;
@@ -318,7 +318,7 @@ private:
   void _doEndFrame(void) final {
   }
   void initializeWindowContext(Window* pWin, CTXBASE* pctxbase) final; // make a window
-  void initializeOffscreenContext(DisplayBuffer* pBuf) final;        // make a pbuffer
+  void initializeOffscreenContext(DisplayBuffer* pBuf) final;          // make a pbuffer
   void initializeLoaderContext() final;
   void _doResizeMainSurface(int iW, int iH) final;
 
@@ -327,7 +327,7 @@ private:
 private:
   DummyFxInterface mFxI;
   DuMatrixStackInterface mMtxI;
-  //DuRasterStateInterface mRsI;
+  // DuRasterStateInterface mRsI;
   DuGeometryBufferInterface mGbI;
   DuTextureInterface mTxI;
   DuFrameBufferInterface mFbI;

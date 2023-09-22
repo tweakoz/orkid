@@ -19,6 +19,61 @@
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
+TextureInterface::TextureInterface(context_rawptr_t ctx)
+  : _ctx(ctx){
+    
+  }
+
+///////////////////////////////////////////////////////////////////////////////
+
+bool TextureInterface::LoadTexture(texture_ptr_t ptex, datablock_ptr_t datablock) {
+  DataBlockInputStream checkstream(datablock);
+  uint32_t magic = checkstream.getItem<uint32_t>();
+  bool ok        = false;
+  if (Char4("chkf") == Char4(magic))
+    ok = _loadXTXTexture(ptex, datablock);
+  else if (Char4("DDS ") == Char4(magic))
+    ok = _loadDDSTexture(ptex, datablock);
+  else
+    ok = _loadImageTexture(ptex, datablock);
+
+  ptex->_contentHash = datablock->hash();
+
+  return ok;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+bool TextureInterface::LoadTexture(const AssetPath& fname, texture_ptr_t ptex) {
+  AssetPath DdsFilename = fname;
+  AssetPath PngFilename = fname;
+  AssetPath XtxFilename = fname;
+  DdsFilename.setExtension("dds");
+  PngFilename.setExtension("png");
+  XtxFilename.setExtension("xtx");
+  ptex->_debugName = fname.toStdString();
+  AssetPath final_fname;
+  if (FileEnv::GetRef().DoesFileExist(PngFilename))
+    final_fname = PngFilename;
+  if (FileEnv::GetRef().DoesFileExist(DdsFilename))
+    final_fname = DdsFilename;
+  if (FileEnv::GetRef().DoesFileExist(XtxFilename))
+    final_fname = XtxFilename;
+
+  printf("fname<%s>\n", fname.c_str());
+  printf("final_fname<%s>\n", final_fname.c_str());
+  if (auto dblock = datablockFromFileAtPath(final_fname))
+    return LoadTexture(ptex, dblock);
+  else
+    return false;
+}
+
+void TextureInterface::SaveTexture(const ork::AssetPath& fname, Texture* ptex) {
+
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 size_t TextureInitData::computeSrcSize() const {
   size_t length = _w * _h * _d;
   switch (_src_format) {

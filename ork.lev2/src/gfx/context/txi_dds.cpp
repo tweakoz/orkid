@@ -120,7 +120,7 @@ void TextureInterface::_loadDDSTextureMainThreadPart(texloadreq_ptr_t req) {
   //}
   //pTEXOBJ->mTarget = TARGET;
 
-  if (0) {
+  if (1) {
     auto dbgname = ptex->_debugName;
     printf("  tex<%s> ptex<%p>\n", dbgname.c_str(), (void*) ptex.get());
     printf("  tex<%s> width<%d>\n", dbgname.c_str(), iwidth);
@@ -286,8 +286,8 @@ void TextureInterface::_loadDDSTextureMainThreadPart(texloadreq_ptr_t req) {
   if (ptex->_varmap.hasKey("postproc")) {
     auto dblock    = req->_inpstream._datablock;
     auto postproc  = ptex->_varmap.typedValueForKey<Texture::proc_t>("postproc").value();
-    //auto postblock = postproc(ptex, &mTargetGL, dblock);
-    //OrkAssert(postblock);
+    auto postblock = postproc(ptex, _ctx, dblock);
+    OrkAssert(postblock);
   } else {
     // printf("ptex<%p> no postproc\n", ptex);
   }

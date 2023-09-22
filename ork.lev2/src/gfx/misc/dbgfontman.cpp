@@ -604,7 +604,7 @@ void Font::LoadFromDisk(Context* context, const FontDesc& fdesc) {
   context->TXI()->ApplySamplingMode(_texture.get());
   mFontDesc = fdesc;
 
-  //_materialDeferred->_asset_texcolor = asset::AssetManager<lev2::TextureAsset>::load(apath);
+  _materialDeferred->_asset_texcolor = asset::AssetManager<lev2::TextureAsset>::load(apath);
   _materialDeferred->_texColor = _texture; //_materialDeferred->_asset_texcolor.GetTexture();
   _materialDeferred->gpuInit(context);
 

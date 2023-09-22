@@ -37,6 +37,7 @@ struct FontMan;
 //
 using gfxcontext_lambda_t = std::function<void(Context*)>;
 using context_ptr_t          = std::shared_ptr<Context>;
+using context_rawptr_t       = Context*;
 using ctxbase_ptr_t          = std::shared_ptr<CTXBASE>;
 using displaybuffer_ptr_t  = std::shared_ptr<DisplayBuffer>;
 using window_ptr_t           = std::shared_ptr<Window>;
