@@ -1,5 +1,7 @@
 #pragma once
 
+namespace ork::lev2{
+
 #if defined (ENABLE_COMPUTE_SHADERS)
 
 enum ImageBindAccess {
@@ -30,3 +32,5 @@ struct ComputeInterface {
 };
 
 #endif
+
+} //namespace ork::lev2{

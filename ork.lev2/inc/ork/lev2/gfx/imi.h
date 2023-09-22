@@ -13,6 +13,8 @@
 /// ////////////////////////////////////////////////////////////////////////////
 /// ////////////////////////////////////////////////////////////////////////////
 
+namespace ork::lev2{
+
 class ImmInterface {
 public:
   inline CVtxBuffer<SVtxV4C4>& RefUIQuadBuffer(void) { return mVtxBufUIQuad; }
@@ -32,3 +34,5 @@ private:
   virtual void _doBeginFrame() = 0;
   virtual void _doEndFrame()   = 0;
 };
+
+} //namespace ork::lev2{

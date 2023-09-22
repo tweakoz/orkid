@@ -11,6 +11,7 @@
 #include <ork/lev2/gfx/gfxenv_enum.h>
 #include <ork/kernel/datablock.h>
 #include <ork/kernel/varmap.inl>
+#include <ork/file/path.h>
 #include <ork/file/chunkfile.h>
 
 namespace ork::lev2 {

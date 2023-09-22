@@ -7,6 +7,8 @@
 
 #pragma once
 
+namespace ork::lev2{
+
 struct DrawingInterface {
   DrawingInterface(Context& ctx);
 
@@ -31,3 +33,5 @@ void line2DEML(const fvec2& v0, const fvec2& v1, const fvec4& vertex_color, floa
   virtual ~DrawingInterface(){}
   Context& _context;
 };
+
+} //namespace ork::lev2{

@@ -7,12 +7,16 @@
 
 #pragma once
 
+#include <ork/gfx/dds.h>
+#include <ork/lev2/gfx/image.h>
+
 /// ////////////////////////////////////////////////////////////////////////////
 /// ////////////////////////////////////////////////////////////////////////////
 /// Texture Interface
 /// ////////////////////////////////////////////////////////////////////////////
 /// ////////////////////////////////////////////////////////////////////////////
 
+namespace ork::lev2{
 struct MipChainLevel;
 struct MipChain;
 
@@ -31,6 +35,17 @@ struct TextureInitData {
   size_t _truncation_length = 0;
   bool _allow_async = false;
 };
+
+struct TexLoadReq {
+  texture_ptr_t ptex;
+  const dds::DDS_HEADER* _ddsheader = nullptr;
+  svar16_t _impl;
+  std::string _texname;
+  DataBlockInputStream _inpstream;
+  std::shared_ptr<CompressedImageMipChain> _cmipchain;
+};
+
+using texloadreq_ptr_t = std::shared_ptr<TexLoadReq>;
 
 class TextureInterface {
 public:
@@ -53,4 +68,14 @@ public:
     return nullptr;
   }
   virtual void generateMipMaps(Texture* ptex) = 0;
+
+  bool _loadImageTexture(texture_ptr_t ptex, datablock_ptr_t src_datablock);
+  bool _loadXTXTexture(texture_ptr_t ptex, datablock_ptr_t datablock);
+  void _loadXTXTextureMainThreadPart(texloadreq_ptr_t req);
+  bool _loadDDSTexture(texture_ptr_t ptex, datablock_ptr_t datablock);
+  bool _loadDDSTexture(const AssetPath& infname, texture_ptr_t ptex);
+  void _loadDDSTextureMainThreadPart(texloadreq_ptr_t req);
+
 };
+
+} //namespace ork::lev2{
