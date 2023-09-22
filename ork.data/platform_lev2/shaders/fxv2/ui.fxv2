@@ -86,9 +86,9 @@ vertex_shader vs_uitext_stereo //
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_uitext : iface_fmt {
-  vec4 s = texture(ColorMap, frg_uv);
-  float texa = pow(s.a*s.r,0.75);
-  //out_clr = vec4(ModColor.xyz, texa*ModColor.w);
+  //vec4 s = texture(ColorMap, frg_uv);
+  //float texa = pow(s.a*s.r,0.75);
+  out_clr = vec4(.3,.3,.1,1); //vec4(ModColor.xyz, texa*ModColor.w);
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_uitext_stereo : iface_fmt {
@@ -117,7 +117,7 @@ fragment_shader ps_modclr : iface_fmt { out_clr = ModColor; }
 ///////////////////////////////////////////////////////////////
 technique uitext {
   fxconfig = fxcfg_default;
-  pass p0 {
+  pass p0A {
     vertex_shader   = vs_uitext;
     fragment_shader = ps_uitext;
     state_block     = sb_lerpblend;
@@ -125,7 +125,7 @@ technique uitext {
 }
 technique uitext_stereo {
   fxconfig = fxcfg_default;
-  pass p0 {
+  pass p0B {
     vertex_shader   = vs_uitext_stereo;
     fragment_shader = ps_uitext_stereo;
     state_block     = sb_lerpblend;
@@ -134,7 +134,7 @@ technique uitext_stereo {
 ///////////////////////////////////////////////////////////////
 technique uitextured {
   fxconfig = fxcfg_default;
-  pass p0 {
+  pass p0C {
     vertex_shader   = vs_uitext;
     fragment_shader = ps_uitextured;
     state_block     = sb_default;
@@ -143,7 +143,7 @@ technique uitextured {
 ///////////////////////////////////////////////////////////////
 technique ui_vtx {
   fxconfig = fxcfg_default;
-  pass p0 {
+  pass p0D {
     vertex_shader   = vs_vtxcolor;
     fragment_shader = ps_fragclr;
     state_block     = sb_default;
@@ -152,7 +152,7 @@ technique ui_vtx {
 ///////////////////////////////////////////////////////////////
 technique uidev_modcolor {
   fxconfig = fxcfg_default;
-  pass p0 {
+  pass p0E {
     vertex_shader   = vs_vtxcolor;
     fragment_shader = ps_modclr;
     state_block     = sb_default;

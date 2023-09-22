@@ -271,7 +271,7 @@ void GedSkin1::End(Context* pTARG) {
     }
     vw.UnLock(pTARG);
 
-    _material->_rasterstate.setDepthTest(EDepthTest::OFF);
+    _material->_rasterstate->setDepthTest(EDepthTest::OFF);
     _material->begin(_tekvtxcolor, RCFD);
     _material->bindParamMatrix(_parmvp, _uiMVPMatrix);
     pTARG->GBI()->DrawPrimitiveEML(vw, PrimitiveType::TRIANGLES);
@@ -329,8 +329,8 @@ void GedSkin1::End(Context* pTARG) {
         }
         vw.UnLock(pTARG);
 
-        _material->_rasterstate.setDepthTest(EDepthTest::OFF);
-        _material->_rasterstate.setBlendingMacro(BlendingMacro::ALPHA);
+        _material->_rasterstate->setDepthTest(EDepthTest::OFF);
+        _material->_rasterstate->setBlendingMacro(BlendingMacro::ALPHA);
 
         _material->begin(_is_pickmode ? _tekvtxcolor : _tektexcolor, RCFD);
         _material->bindParamMatrix(_parmvp, _uiMVPMatrix);
@@ -381,8 +381,8 @@ void GedSkin1::End(Context* pTARG) {
         }
         vw.UnLock(pTARG);
         if (icount) {
-          _material->_rasterstate.setDepthTest(EDepthTest::OFF);
-          _material->_rasterstate.setBlendingMacro(BlendingMacro::OFF);
+          _material->_rasterstate->setDepthTest(EDepthTest::OFF);
+          _material->_rasterstate->setBlendingMacro(BlendingMacro::OFF);
 
           _material->begin(_tekvtxcolor, RCFD);
           _material->bindParamMatrix(_parmvp, _uiMVPMatrix);

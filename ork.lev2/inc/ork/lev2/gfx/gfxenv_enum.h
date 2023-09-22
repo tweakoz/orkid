@@ -158,7 +158,6 @@ enum struct BlendingOp : crc_enum_t {
   CrcEnum(REVSUBTRACT),
   CrcEnum(MIN),
   CrcEnum(MAX),
-  CrcEnum(NONE)
 };
 
 enum struct BlendingFactor : crc_enum_t {
@@ -177,7 +176,6 @@ enum struct BlendingFactor : crc_enum_t {
   CrcEnum(CONSTANT_ALPHA),
   CrcEnum(ONE_MINUS_CONSTANT_ALPHA),
   CrcEnum(SRC_ALPHA_SATURATE),
-  CrcEnum(NONE)
 };
 
 enum struct EPolygonMode : crc_enum_t {

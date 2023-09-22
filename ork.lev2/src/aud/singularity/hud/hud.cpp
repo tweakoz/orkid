@@ -314,7 +314,7 @@ void drawHudLines(
   mtxi->PushUIMatrix(w, h);
   mtl->begin(tek, RCFD);
   mtl->bindParamMatrix(par_mvp, mtxi->RefMVPMatrix());
-  mtl->_rasterstate.setBlendingMacro(BlendingMacro::OFF);
+  mtl->_rasterstate->setBlendingMacro(BlendingMacro::OFF);
   gbi->DrawPrimitiveEML(vw, PrimitiveType::LINES);
   mtl->end(RCFD);
   mtxi->PopUIMatrix();

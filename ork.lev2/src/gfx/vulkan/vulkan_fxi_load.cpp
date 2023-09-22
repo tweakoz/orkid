@@ -517,6 +517,7 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
       vk_tek->_vk_passes.push_back(vk_pass);
       static int prog_index = 0;
       vk_program->_pipeline_bits = prog_index;
+      prog_index++;
       OrkAssert(prog_index<256);
     
       ////////////////////////////////////////////////////////////

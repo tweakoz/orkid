@@ -25,28 +25,31 @@ SRasterState::SRasterState(){
 
 /////////////////////////////////////////////////////////////////////////
 
-SRasterState::SRasterState( const SRasterState& oth ){
-  _writemaskZ = oth._writemaskZ;
-  _writemaskA = oth._writemaskA;
-  _writemaskRGB = oth._writemaskRGB;
-  _depthBiasEnable = oth._depthBiasEnable;
-  _depthBiasSlopeFactor = oth._depthBiasSlopeFactor;
-  _depthBiasConstantFactor = oth._depthBiasConstantFactor;
-  _depthBiasClamp = oth._depthBiasClamp;
-  _depthClampEnable = oth._depthClampEnable;
-  _rasterizerDiscard = oth._rasterizerDiscard;
-  _blendEnable = oth._blendEnable;
-  _blendConstant = oth._blendConstant;
-  _blendFactorSrcRGB = oth._blendFactorSrcRGB;
-  _blendFactorDstRGB = oth._blendFactorDstRGB;
-  _blendFactorSrcA = oth._blendFactorSrcA;
-  _blendFactorDstA = oth._blendFactorDstA;
-  _lineWidth = oth._lineWidth;
-  _polygonMode = oth._polygonMode;
-  _frontface = oth._frontface;
-  _depthtest = oth._depthtest;
-  _culltest = oth._culltest;
-  _impl.clear();
+rasterstate_ptr_t SRasterState::clone() const{
+  auto rval = std::make_shared<SRasterState>();
+  rval->_writemaskZ = _writemaskZ;
+  rval->_writemaskA = _writemaskA;
+  rval->_writemaskRGB = _writemaskRGB;
+  rval->_depthBiasEnable = _depthBiasEnable;
+  rval->_depthBiasSlopeFactor = _depthBiasSlopeFactor;
+  rval->_depthBiasConstantFactor = _depthBiasConstantFactor;
+  rval->_depthBiasClamp = _depthBiasClamp;
+  rval->_depthClampEnable = _depthClampEnable;
+  rval->_rasterizerDiscard = _rasterizerDiscard;
+  rval->_blendEnable = _blendEnable;
+  rval->_blendOpRGB = _blendOpRGB;
+  rval->_blendOpA = _blendOpA;
+  rval->_blendConstant = _blendConstant;
+  rval->_blendFactorSrcRGB = _blendFactorSrcRGB;
+  rval->_blendFactorDstRGB = _blendFactorDstRGB;
+  rval->_blendFactorSrcA = _blendFactorSrcA;
+  rval->_blendFactorDstA = _blendFactorDstA;
+  rval->_lineWidth = _lineWidth;
+  rval->_polygonMode = _polygonMode;
+  rval->_frontface = _frontface;
+  rval->_depthtest = _depthtest;
+  rval->_culltest = _culltest;
+  return rval;
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -157,6 +160,8 @@ void SRasterState::setBlendingMacro(BlendingMacro bm) {
       _blendFactorDstRGB = BlendingFactor::ZERO;
       _blendFactorSrcA   = BlendingFactor::ONE;
       _blendFactorDstA   = BlendingFactor::ZERO;
+      _blendOpRGB        = BlendingOp::ADD;
+      _blendOpA          = BlendingOp::ADD;
       _blendEnable       = false;
       break;
     }
@@ -165,6 +170,8 @@ void SRasterState::setBlendingMacro(BlendingMacro bm) {
       _blendFactorDstRGB = BlendingFactor::ONE_MINUS_SRC_ALPHA;
       _blendFactorSrcA   = BlendingFactor::ONE;
       _blendFactorDstA   = BlendingFactor::ZERO;
+      _blendOpRGB        = BlendingOp::ADD;
+      _blendOpA          = BlendingOp::ADD;
       _blendEnable       = true;
       break;
     }
@@ -174,6 +181,8 @@ void SRasterState::setBlendingMacro(BlendingMacro bm) {
       _blendFactorSrcA   = BlendingFactor::DST_ALPHA;
       _blendFactorDstA   = BlendingFactor::ONE_MINUS_DST_ALPHA;
       _blendEnable       = true;
+      _blendOpRGB        = BlendingOp::ADD;
+      _blendOpA          = BlendingOp::ADD;
       break;
     }
     case BlendingMacro::ADDITIVE: {
@@ -181,6 +190,8 @@ void SRasterState::setBlendingMacro(BlendingMacro bm) {
       _blendFactorDstRGB = BlendingFactor::ONE;
       _blendFactorSrcA   = BlendingFactor::ONE;
       _blendFactorDstA   = BlendingFactor::ONE;
+      _blendOpRGB        = BlendingOp::ADD;
+      _blendOpA          = BlendingOp::ADD;
       _blendEnable       = true;
       break;
     }
@@ -189,6 +200,8 @@ void SRasterState::setBlendingMacro(BlendingMacro bm) {
       _blendFactorDstRGB = BlendingFactor::ONE;
       _blendFactorSrcA   = BlendingFactor::ONE;
       _blendFactorDstA   = BlendingFactor::ONE;
+      _blendOpRGB        = BlendingOp::ADD;
+      _blendOpA          = BlendingOp::ADD;
       _blendEnable       = true;
       break;
     }
@@ -197,6 +210,8 @@ void SRasterState::setBlendingMacro(BlendingMacro bm) {
       _blendFactorDstRGB = BlendingFactor::ONE_MINUS_SRC_COLOR;
       _blendFactorSrcA   = BlendingFactor::ZERO;
       _blendFactorDstA   = BlendingFactor::ONE_MINUS_SRC_ALPHA;
+      _blendOpRGB        = BlendingOp::ADD;
+      _blendOpA          = BlendingOp::ADD;
       _blendEnable       = true;
       break;
     }
@@ -205,6 +220,8 @@ void SRasterState::setBlendingMacro(BlendingMacro bm) {
       _blendFactorDstRGB = BlendingFactor::ONE_MINUS_SRC_ALPHA;
       _blendFactorSrcA   = BlendingFactor::ZERO;
       _blendFactorDstA   = BlendingFactor::ONE_MINUS_SRC_ALPHA;
+      _blendOpRGB        = BlendingOp::ADD;
+      _blendOpA          = BlendingOp::ADD;
       _blendEnable       = true;
       break;
     }
@@ -213,6 +230,8 @@ void SRasterState::setBlendingMacro(BlendingMacro bm) {
       _blendFactorDstRGB = BlendingFactor::SRC_COLOR;
       _blendFactorSrcA   = BlendingFactor::ZERO;
       _blendFactorDstA   = BlendingFactor::SRC_ALPHA;
+      _blendOpRGB        = BlendingOp::ADD;
+      _blendOpA          = BlendingOp::ADD;
       _blendEnable       = true;
       break;
     }
@@ -221,6 +240,8 @@ void SRasterState::setBlendingMacro(BlendingMacro bm) {
       _blendFactorDstRGB = BlendingFactor::ONE_MINUS_SRC_ALPHA;
       _blendFactorSrcA   = BlendingFactor::ONE;
       _blendFactorDstA   = BlendingFactor::ONE_MINUS_SRC_ALPHA;
+      _blendOpRGB        = BlendingOp::ADD;
+      _blendOpA          = BlendingOp::ADD;
       _blendEnable       = true;
       break;
     }

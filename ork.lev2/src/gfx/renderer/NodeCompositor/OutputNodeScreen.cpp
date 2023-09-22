@@ -44,7 +44,7 @@ struct SCRIMPL {
   void gpuInit(lev2::Context* ctx) {
     if (_needsinit) {
       _blit2screenmtl.gpuInit(ctx, "orkshader://solid");
-      _blit2screenmtl._rasterstate._culltest = ECullTest::OFF;
+      _blit2screenmtl._rasterstate->_culltest = ECullTest::OFF;
       _fxtechnique1x1 = _blit2screenmtl.technique("texcolor");
       _fxtechnique2x2 = _blit2screenmtl.technique("downsample_2x2");
       _fxtechnique3x3 = _blit2screenmtl.technique("downsample_3x3");
@@ -216,7 +216,7 @@ void ScreenOutputCompositingNode::composite(CompositorDrawData& drawdata) {
               mtl.begin(impl->_fxtechnique6x6, framedata);
               break;
           }
-          mtl._rasterstate.setBlendingMacro(BlendingMacro::OFF);
+          mtl._rasterstate->setBlendingMacro(BlendingMacro::OFF);
           mtl.bindParamCTex(impl->_fxpColorMap, tex);
           mtl.bindParamMatrix(impl->_fxpMVP, fmtx4::Identity());
           ViewportRect extents(0, 0, context->mainSurfaceWidth(), context->mainSurfaceHeight());
@@ -234,7 +234,7 @@ void ScreenOutputCompositingNode::composite(CompositorDrawData& drawdata) {
           auto this_buf = context->FBI()->GetThisBuffer();
           auto& mtl     = impl->_blit2screenmtl;
           mtl.begin(impl->_fxtechnique1x1, framedata);
-          mtl._rasterstate.setBlendingMacro(BlendingMacro::OFF);
+          mtl._rasterstate->setBlendingMacro(BlendingMacro::OFF);
           tex = impl->_msaadownsamplebuffer->GetMrt(0)->texture();
           mtl.bindParamCTex(impl->_fxpColorMap, tex);
           mtl.bindParamMatrix(impl->_fxpMVP, fmtx4::Identity());

@@ -284,9 +284,9 @@ const uint32_t* DeferredContext::captureDepthClusters(const CompositorDrawData& 
     _lightingmtl->bindParamVec2(_parNearFar, fvec2(VD._near, VD._far));
     _lightingmtl->bindParamVec2(_parZndc2eye, VD._zndc2eye);
     _lightingmtl->bindParamVec2(_parInvViewSize, fvec2(1.0 / float(_width), 1.0f / float(_height)));
-    _lightingmtl->_rasterstate.SetBlending(Blending::OFF);
-    _lightingmtl->_rasterstate.SetDepthTest(EDepthTest::OFF);
-    _lightingmtl->_rasterstate.SetCullTest(ECullTest::OFF);
+    _lightingmtl->_rasterstate->SetBlending(Blending::OFF);
+    _lightingmtl->_rasterstate->SetDepthTest(EDepthTest::OFF);
+    _lightingmtl->_rasterstate->SetCullTest(ECullTest::OFF);
     _lightingmtl->commit();
     this_buf->Render2dQuadEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 0, 0));
     _lightingmtl->end(RCFD);
@@ -371,9 +371,9 @@ void DeferredContext::bindViewParams(const ViewData& VD) {
 }
 
 void DeferredContext::bindRasterState(Context* ctx, ECullTest culltest, EDepthTest depthtest, BlendingMacro blending) {
-  _lightingmtl->_rasterstate.setBlendingMacro(blending);
-  _lightingmtl->_rasterstate._depthtest = depthtest;
-  _lightingmtl->_rasterstate._culltest = culltest;
+  _lightingmtl->_rasterstate->setBlendingMacro(blending);
+  _lightingmtl->_rasterstate->_depthtest = depthtest;
+  _lightingmtl->_rasterstate->_culltest = culltest;
   //ctx->RSI()->BindRasterState(_lightingmtl->_rasterstate);
 }
 

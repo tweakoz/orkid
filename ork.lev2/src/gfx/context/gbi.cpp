@@ -90,6 +90,9 @@ void GeometryBufferInterface::DrawPrimitive(
     PrimitiveType eTyp,
     int ivbase,
     int ivcount) {
+
+
+  auto fxi = _context.FXI();
   int imax = VBuf.GetMax();
   if (imax) {
     int inumpasses = mtl->BeginBlock(&_context);
@@ -100,7 +103,9 @@ void GeometryBufferInterface::DrawPrimitive(
           eTyp = VBuf.GetPrimType();
         }
 
+        fxi->pushRasterState(mtl->_rasterstate);
         DrawPrimitiveEML(VBuf, eTyp, ivbase, ivcount);
+        fxi->popRasterState();
 
         mtl->EndPass(&_context);
       }

@@ -181,8 +181,8 @@ void GraphView::DoRePaintSurface(drawevent_constptr_t drwev) {
       color *= 0.9f;
 
     if (0) { // alphabg
-      defmtl->_rasterstate.setBlendingMacro(lev2::BlendingMacro::ALPHA);
-      defmtl->_rasterstate.setDepthTest(lev2::EDepthTest::OFF);
+      defmtl->_rasterstate->setBlendingMacro(lev2::BlendingMacro::ALPHA);
+      defmtl->_rasterstate->setDepthTest(lev2::EDepthTest::OFF);
       ///////////////////////////////
       tgt->PushModColor(color);
       defmtl->SetUIColorMode(lev2::UiColorMode::MOD);
@@ -273,7 +273,7 @@ void GraphView::DoRePaintSurface(drawevent_constptr_t drwev) {
           mtxi->PushUIMatrix(width(), height());
           mtl->begin(tek, RCFD);
           mtl->bindParamMatrix(par_mvp, mtxi->RefMVPMatrix());
-          mtl->_rasterstate.setBlendingMacro(lev2::BlendingMacro::OFF);
+          mtl->_rasterstate->setBlendingMacro(lev2::BlendingMacro::OFF);
           gbi->DrawPrimitiveEML(vw, lev2::PrimitiveType::LINES);
           mtl->end(RCFD);
           mtxi->PopUIMatrix();
@@ -317,7 +317,7 @@ void GraphView::DoRePaintSurface(drawevent_constptr_t drwev) {
             mtxi->PushMMatrix(fmtx4::Identity());
             mtl->begin(tek, RCFD);
             mtl->bindParamMatrix(par_mvp, mtxi->RefMVPMatrix());
-            mtl->_rasterstate.setBlendingMacro(lev2::BlendingMacro::OFF);
+            mtl->_rasterstate->setBlendingMacro(lev2::BlendingMacro::OFF);
             gbi->DrawPrimitiveEML(vw, lev2::PrimitiveType::LINES);
             mtl->end(RCFD);
             mtxi->PopPMatrix();

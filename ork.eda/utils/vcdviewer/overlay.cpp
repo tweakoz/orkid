@@ -95,8 +95,8 @@ void Overlay::DoDraw(drawevent_constptr_t drwev) {
     ixc = ix1 + (_geometry._w >> 1);
     iyc = iy1 + (_geometry._h >> 1);
 
-    defmtl->_rasterstate.setBlendingMacro(lev2::BlendingMacro::ALPHA);
-    defmtl->_rasterstate.setDepthTest(lev2::EDepthTest::OFF);
+    defmtl->_rasterstate->setBlendingMacro(lev2::BlendingMacro::ALPHA);
+    defmtl->_rasterstate->setDepthTest(lev2::EDepthTest::OFF);
     tgt->PushModColor(_color);
     defmtl->SetUIColorMode(lev2::UiColorMode::MOD);
     primi.RenderQuadAtZ(
@@ -118,10 +118,10 @@ void Overlay::DoDraw(drawevent_constptr_t drwev) {
     // line prims
     /////////////////////////////////
 
-    SRasterState rstate;
-    rstate.setBlendingMacro(lev2::BlendingMacro::ADDITIVE);
-    rstate.setDepthTest(lev2::EDepthTest::OFF);
-    auto save_rstate = defmtl->swapRasterState(rstate);
+    auto temp_rstate = std::make_shared<lev2::SRasterState>();
+    temp_rstate->setBlendingMacro(lev2::BlendingMacro::ADDITIVE);
+    temp_rstate->setDepthTest(lev2::EDepthTest::OFF);
+    auto save_rstate = defmtl->swapRasterState(temp_rstate);
 
     mtxi->PushMMatrix(genmatrix(192, 0));
     defmtl->SetUIColorMode(UiColorMode::VTX);

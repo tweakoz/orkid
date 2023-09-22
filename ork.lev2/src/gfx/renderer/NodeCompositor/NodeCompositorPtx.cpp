@@ -117,8 +117,8 @@ struct PtxImpl {
       mtl.SetTexture(_resultTexture);
       mtl.SetTexture2(nullptr);
       mtl.SetColorMode(GfxMaterial3DSolid::EMODE_USER);
-      mtl._rasterstate.SetBlending(Blending::OFF);
-      mtl._rasterstate.SetDepthTest(EDepthTest::OFF);
+      mtl._rasterstate->SetBlending(Blending::OFF);
+      mtl._rasterstate->SetDepthTest(EDepthTest::OFF);
       this_buf->RenderMatOrthoQuad(
           vprect.asSRect(),
           quadrect,

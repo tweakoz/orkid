@@ -136,9 +136,11 @@ void FontMan::_endTextBlock(Context* context) {
   const auto& CPD = RCFD->topCPD();
   auto stereocams = CPD._stereoCameraMatrices;
   auto GBI        = context->GBI();
-  //auto RSI        = context->RSI();
+  auto FXI        = context->FXI();
   auto the_font   = currentFont();
   auto top_state = _currentTextBlockState;
+  context->debugPushGroup("FontMan::textblock",fvec4::Blue());
+
   if (bdraw) {
     if (stereocams) {
       RenderContextInstData* RCID = nullptr;
@@ -170,6 +172,7 @@ void FontMan::_endTextBlock(Context* context) {
       GBI->DrawPrimitive(material, mTextWriter, ork::lev2::PrimitiveType::TRIANGLES);
     }
   }
+  context->debugPopGroup();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -790,7 +793,6 @@ void FontMan::_gpuInit(Context* pTARG) {
 
   if (_doGpuInit) {
     pTARG->makeCurrentContext();
-    pTARG->debugPushGroup("FontMan::InitFonts");
 
     _addFont(pTARG, Inconsolata12);
     _addFont(pTARG, Inconsolata13);
@@ -803,7 +805,6 @@ void FontMan::_gpuInit(Context* pTARG) {
 
     _defaultTextBlockState->_font = _pushFont("i14");
 
-    pTARG->debugPopGroup();
     _doGpuInit = false;
   }
 }

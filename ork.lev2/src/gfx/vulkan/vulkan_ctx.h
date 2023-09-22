@@ -277,6 +277,10 @@ struct VkRasterState{
   VkPipelineColorBlendStateCreateInfo _VKCBSI;
   VkPipelineColorBlendAttachmentState _VKCBATT;
   int _pipeline_bits = -1;
+
+  using rsmap_t = std::unordered_map<uint64_t, int>;
+
+  static LockedResource<rsmap_t> _global_rasterstate_map;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -967,9 +971,9 @@ public:
   void initializeOffscreenContext(DisplayBuffer* pBuf) final;          // make a pbuffer
   void initializeLoaderContext() final;
 
-  void debugPushGroup(const std::string str) final;
+  void debugPushGroup(const std::string str, const fvec4& color) final;
   void debugPopGroup() final;
-  void debugMarker(const std::string str) final;
+  void debugMarker(const std::string str, const fvec4& color) final;
 
   void TakeThreadOwnership() final;
   bool SetDisplayMode(DisplayMode* mode) final;

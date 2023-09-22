@@ -82,11 +82,11 @@ void Panel::DoDraw(ui::drawevent_constptr_t drwev) {
     if (has_foc)
       clr = _focuscolor;
 
-    defmtl->_rasterstate.setBlendingMacro(lev2::BlendingMacro::ALPHA);
+    defmtl->_rasterstate->setBlendingMacro(lev2::BlendingMacro::ALPHA);
     tgt->PushModColor(clr);
     ren_quad(ixr, iyr, ixr + _geometry._w, iyr + _geometry._h);
     tgt->PopModColor();
-    defmtl->_rasterstate.setBlendingMacro(lev2::BlendingMacro::OFF);
+    defmtl->_rasterstate->setBlendingMacro(lev2::BlendingMacro::OFF);
 
     /////////////
 

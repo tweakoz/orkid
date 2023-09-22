@@ -30,7 +30,7 @@ void Box::DoDraw(drawevent_constptr_t drwev) {
   auto defmtl = lev2::defaultUIMaterial();
 
   if(nullptr==_rasterstate){
-    _rasterstate = std::make_shared<lev2::SRasterState>(defmtl->_rasterstate);
+    _rasterstate = std::make_shared<lev2::SRasterState>(*defmtl->_rasterstate);
     _rasterstate->setBlendingMacro(lev2::BlendingMacro::OFF);
     _rasterstate->setDepthTest(lev2::EDepthTest::OFF);
   }
@@ -108,7 +108,8 @@ EvTestBox::EvTestBox(
 ///////////////////////////////////////////////////////////////////////////////
 HandlerResult EvTestBox::DoOnUiEvent(event_constptr_t Ev) {
   _colorsel = Ev->_eventcode;
-  printf( "EvTestBox::DoOnUiEvent<%s> code<%d>\n", _name.c_str(), int(Ev->_eventcode) );
+  if(0)
+    printf( "EvTestBox::DoOnUiEvent<%s> code<%d>\n", _name.c_str(), int(Ev->_eventcode) );
   return HandlerResult();
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -190,8 +191,8 @@ void EvTestBox::DoDraw(drawevent_constptr_t drwev) {
         break;
     }
 
-    defmtl->_rasterstate.setBlendingMacro(lev2::BlendingMacro::OFF);
-    defmtl->_rasterstate.setDepthTest(lev2::EDepthTest::OFF);
+    defmtl->_rasterstate->setBlendingMacro(lev2::BlendingMacro::OFF);
+    defmtl->_rasterstate->setDepthTest(lev2::EDepthTest::OFF);
     ///////////////////////////////
     if (not hasMouseFocus())
       color *= 0.9f;
@@ -356,8 +357,8 @@ void LambdaBox::DoDraw(drawevent_constptr_t drwev) {
         break;
     }
 
-    defmtl->_rasterstate.setBlendingMacro(lev2::BlendingMacro::ALPHA);
-    defmtl->_rasterstate.setDepthTest(lev2::EDepthTest::OFF);
+    defmtl->_rasterstate->setBlendingMacro(lev2::BlendingMacro::ALPHA);
+    defmtl->_rasterstate->setDepthTest(lev2::EDepthTest::OFF);
     ///////////////////////////////
     if (not hasMouseFocus())
       color *= 0.9f;

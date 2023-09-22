@@ -321,10 +321,10 @@ void GfxEnv::initializeWithContext(context_ptr_t target) {
 // target->beginFrame();
 #endif
       /////////////////////////////////////
-      target->debugPushGroup("GfxEnv.Lateinit");
+      //target->debugPushGroup("GfxEnv.Lateinit");
       ork::lev2::GfxPrimitives::Init(target.get());
       __FIND_IT.store(0);
-      target->debugPopGroup();
+      //target->debugPopGroup();
 /////////////////////////////////////
 #if !defined(__APPLE__)
 // target->endFrame();

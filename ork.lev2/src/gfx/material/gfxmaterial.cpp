@@ -63,7 +63,7 @@ fxpipelinecache_constptr_t GfxMaterial::pipelineCache(fxpipelinepermutation_set_
   return _doFxPipelineCache(perms);
 }
 
-SRasterState GfxMaterial::swapRasterState(SRasterState rstate) {
+rasterstate_ptr_t GfxMaterial::swapRasterState(rasterstate_ptr_t rstate) {
   auto rval    = _rasterstate;
   _rasterstate = rstate;
   return rval;
@@ -89,6 +89,7 @@ TextureContext::TextureContext(const Texture* ptex, float repU, float repV)
 
 GfxMaterial::GfxMaterial()
     : mMaterialName(AddPooledString("DefaultMaterial")) {
+  _rasterstate = std::make_shared<SRasterState>();
   PushDebug(false);
 }
 

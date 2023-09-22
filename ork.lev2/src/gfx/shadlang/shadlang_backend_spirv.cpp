@@ -519,20 +519,24 @@ void SpirvCompiler::_compileShader(shaderc_shader_kind shader_type) {
   // build final ast
   ///////////////////////////////////////////////////////
 
+  _shader_name = _shader->typedValueForKey<std::string>("object_name").value();
+  auto fn_sig = FormatString("void %s()", _shader_name.c_str() );
+  auto fn_inv = FormatString("void main() { %s(); }", _shader_name.c_str() );
+
   _shader_group->appendTypedChild<InsertLine>("#version 450");
   _shader_group->appendChild(_extension_group);
   _shader_group->appendChild(_interface_group);
   _shader_group->appendChild(_uniforms_group);
   _shader_group->appendChild(_libraries_group);
-  _shader_group->appendTypedChild<InsertLine>("void main()");
+  _shader_group->appendTypedChild<InsertLine>(fn_sig);
   _shader_group->appendChildrenFrom(_shader); // compound statement
+  _shader_group->appendTypedChild<InsertLine>(fn_inv);
 
   ///////////////////////////////////////////////////////
   // emit
   ///////////////////////////////////////////////////////
 
   auto as_glsl = shadlang::toGLFX1(_shader_group);
-  _shader_name = _shader->typedValueForKey<std::string>("object_name").value();
   printf("// shader<%s>:\n%s\n", _shader_name.c_str(), as_glsl.c_str());
 
   ///////////////////////////////////////////////////////

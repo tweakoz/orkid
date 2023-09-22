@@ -252,8 +252,8 @@ void ChoiceList::DoDraw(drawevent_constptr_t drwev) {
     // draw default background
     ///////////////////////////////////////////////////////////////////////
 
-    defmtl->_rasterstate.setBlendingMacro(lev2::BlendingMacro::ALPHA);
-    defmtl->_rasterstate.setDepthTest(lev2::EDepthTest::OFF);
+    defmtl->_rasterstate->setBlendingMacro(lev2::BlendingMacro::ALPHA);
+    defmtl->_rasterstate->setDepthTest(lev2::EDepthTest::OFF);
     tgt->PushModColor(_bg_color);
     defmtl->SetUIColorMode(lev2::UiColorMode::MOD);
     primi.RenderQuadAtZ(

@@ -155,10 +155,12 @@ bool Context::hasMouseFocus(const Widget* w) const {
 void Context::draw(drawevent_constptr_t drwev) {
   auto gfx_ctx = drwev->GetTarget();
   gfx_ctx->pushCommandBuffer(_cmdbuf_top);
+  gfx_ctx->debugPushGroup("ui::Context::draw::top",fvec4::White());
   _top->draw(drwev);
   if (_overlayWidget) {
     _overlayWidget->draw(drwev);
   }
+  gfx_ctx->debugPopGroup();
   gfx_ctx->popCommandBuffer();
 
   /////////////////////////////////////////////////////////
@@ -180,8 +182,11 @@ void Context::draw(drawevent_constptr_t drwev) {
   // enqueue flattened command buffers
   /////////////////////////////////////////////////////////
 
+
   for( auto sub_cb : _cmdbufs_flat ){
+    gfx_ctx->debugPushGroup("ui::Context::draw::secondary",fvec4::White());
     gfx_ctx->enqueueSecondaryCommandBuffer(sub_cb);
+    gfx_ctx->debugPopGroup();
   }
 
   /////////////////////////////////////////////////////////

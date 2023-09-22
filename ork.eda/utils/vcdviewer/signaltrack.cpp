@@ -260,8 +260,8 @@ void SignalTrackWidget::DoDraw(ui::drawevent_constptr_t drwev) {
   iyc     = iy1 + (_geometry._h >> 1);
   _labelY = _geometry._y + 4 + (_geometry._h >> 1) - 8;
 
-  defmtl->_rasterstate.setBlendingMacro(lev2::BlendingMacro::ALPHA);
-  defmtl->_rasterstate.setDepthTest(lev2::EDepthTest::OFF);
+  defmtl->_rasterstate->setBlendingMacro(lev2::BlendingMacro::ALPHA);
+  defmtl->_rasterstate->setDepthTest(lev2::EDepthTest::OFF);
   tgt->PushModColor(_color);
   mtxi->PushUIMatrix();
   primi.RenderQuadAtZ(
@@ -283,10 +283,10 @@ void SignalTrackWidget::DoDraw(ui::drawevent_constptr_t drwev) {
   // draw track data
   ////////////////////////////////////////
 
-  SRasterState rstate;
-  rstate.setBlendingMacro(lev2::BlendingMacro::ADDITIVE);
-  rstate.setDepthTest(lev2::EDepthTest::OFF);
-  auto save_rstate = defmtl->swapRasterState(rstate);
+  auto temp_rstate = std::make_shared<lev2::SRasterState>();
+  temp_rstate->setBlendingMacro(lev2::BlendingMacro::ADDITIVE);
+  temp_rstate->setDepthTest(lev2::EDepthTest::OFF);
+  auto save_rstate = defmtl->swapRasterState(temp_rstate);
   mtxi->PushMMatrix(mmatrix);
 
   defmtl->SetUIColorMode(UiColorMode::VTX);

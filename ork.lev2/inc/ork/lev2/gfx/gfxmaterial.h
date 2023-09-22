@@ -183,12 +183,12 @@ public:
   //virtual fxpipeline_ptr_t createFxPipeline(FxPipelineConfig& cfg) const;
 
   //////////////////////////////////////////////////////////////////////////////
-  SRasterState swapRasterState(SRasterState rstate);
+  rasterstate_ptr_t swapRasterState(rasterstate_ptr_t rstate);
   //////////////////////////////////////////////////////////////////////////////
 
   const RenderContextInstData* mRenderContexInstData = nullptr;
 
-  SRasterState _rasterstate;
+  rasterstate_ptr_t _rasterstate;
 
   int miNumPasses = 0; ///< Number Of Render Passes in this Material (platform specific)
   PoolString mMaterialName;

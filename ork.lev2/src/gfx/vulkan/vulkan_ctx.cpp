@@ -103,8 +103,10 @@ void VkContext::_initVulkanForDevInfo(vkdeviceinfo_ptr_t vk_devinfo) {
   ////////////////////////////
 
   _device_extensions.push_back("VK_KHR_swapchain");
-  _device_extensions.push_back("VK_EXT_debug_marker");
-
+  if( _GVI->_debugEnabled ) {
+    _device_extensions.push_back("VK_EXT_debug_marker");
+  }
+  
   //_device_extensions.push_back("VK_EXT_debug_utils");
 
   VkDeviceCreateInfo DCI = {};
@@ -133,10 +135,12 @@ void VkContext::_initVulkanForWindow(VkSurfaceKHR surface) {
   _initVulkanForDevInfo(vk_devinfo);
   _initVulkanCommon();
 
-  _fetchDeviceProcAddr(_vkSetDebugUtilsObjectName,"vkSetDebugUtilsObjectNameEXT");
-  _fetchDeviceProcAddr(_vkCmdDebugMarkerBeginEXT,"vkCmdDebugMarkerBeginEXT");
-  _fetchDeviceProcAddr(_vkCmdDebugMarkerEndEXT,"vkCmdDebugMarkerEndEXT");
-  _fetchDeviceProcAddr(_vkCmdDebugMarkerInsertEXT,"vkCmdDebugMarkerInsertEXT");
+  if( _GVI->_debugEnabled ) {
+    _fetchDeviceProcAddr(_vkSetDebugUtilsObjectName,"vkSetDebugUtilsObjectNameEXT");
+    _fetchDeviceProcAddr(_vkCmdDebugMarkerBeginEXT,"vkCmdDebugMarkerBeginEXT");
+    _fetchDeviceProcAddr(_vkCmdDebugMarkerEndEXT,"vkCmdDebugMarkerEndEXT");
+    _fetchDeviceProcAddr(_vkCmdDebugMarkerInsertEXT,"vkCmdDebugMarkerInsertEXT");
+  }
 
   // UGLY!!!
 
@@ -878,26 +882,43 @@ void VkContext::initializeLoaderContext() {
 
 ///////////////////////////////////////////////////////
 
-void VkContext::debugPushGroup(const std::string str) {
+void VkContext::debugPushGroup(const std::string str, const fvec4& color) {
+  if(vkCmdDebugMarkerBeginEXT){
+    OrkAssert(_current_cmdbuf!=nullptr);
+    auto cmdbuf_impl = _current_cmdbuf->_impl.getShared<VkCommandBufferImpl>();
+    VkDebugMarkerMarkerInfoEXT markerInfo = {};
+    initializeVkStruct(markerInfo,VK_STRUCTURE_TYPE_DEBUG_MARKER_MARKER_INFO_EXT);
+    markerInfo.color[0] = color.x;  // R
+    markerInfo.color[1] = color.y;  // G
+    markerInfo.color[2] = color.z;  // B
+    markerInfo.color[3] = color.w;  // A
+    markerInfo.pMarkerName = str.c_str();
+    _vkCmdDebugMarkerBeginEXT(cmdbuf_impl->_vkcmdbuf, &markerInfo);
+  }
 }
 
 ///////////////////////////////////////////////////////
 
 void VkContext::debugPopGroup() {
+  if(vkCmdDebugMarkerEndEXT){
+    OrkAssert(_current_cmdbuf!=nullptr);
+    auto cmdbuf_impl = _current_cmdbuf->_impl.getShared<VkCommandBufferImpl>();
+    _vkCmdDebugMarkerEndEXT(cmdbuf_impl->_vkcmdbuf);
+  }
 }
 
 ///////////////////////////////////////////////////////
 
-void VkContext::debugMarker(const std::string named){
+void VkContext::debugMarker(const std::string named, const fvec4& color){
   if(_vkCmdDebugMarkerInsertEXT){
     OrkAssert(_current_cmdbuf!=nullptr);
     auto cmdbuf_impl = _current_cmdbuf->_impl.getShared<VkCommandBufferImpl>();
     VkDebugMarkerMarkerInfoEXT markerInfo = {};
     initializeVkStruct(markerInfo,VK_STRUCTURE_TYPE_DEBUG_MARKER_MARKER_INFO_EXT);
-    markerInfo.color[0] = 1.0f;  // R
-    markerInfo.color[1] = 0.0f;  // G
-    markerInfo.color[2] = 0.0f;  // B
-    markerInfo.color[3] = 1.0f;  // A
+    markerInfo.color[0] = color.x;  // R
+    markerInfo.color[1] = color.y;  // G
+    markerInfo.color[2] = color.z;  // B
+    markerInfo.color[3] = color.w;  // A
     markerInfo.pMarkerName = named.c_str();
     _vkCmdDebugMarkerInsertEXT(cmdbuf_impl->_vkcmdbuf, &markerInfo);
   }

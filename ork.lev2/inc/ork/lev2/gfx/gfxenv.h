@@ -152,7 +152,7 @@ public:
 
   ///////////////////////////////////////////////////////////////////////
   /// push command group onto debugstack (for renderdoc,apitrace,nsight,etc..)
-  virtual void debugPushGroup(const std::string str) {
+  virtual void debugPushGroup(const std::string str, const fvec4& color=fvec4(1,1,1,1)) {
   }
   ///////////////////////////////////////////////////////////////////////
   /// pop command group from debugstack (for renderdoc,apitrace,nsight,etc..)
@@ -160,7 +160,7 @@ public:
   }
   ///////////////////////////////////////////////////////////////////////
   /// insert marker into commandstream (for renderdoc,apitrace,nsight,etc..)
-  virtual void debugMarker(const std::string str) {
+  virtual void debugMarker(const std::string str, const fvec4& color=fvec4(1,1,1,1)) {
   }
 
   ///////////////////////////////////////////////////////////////////////

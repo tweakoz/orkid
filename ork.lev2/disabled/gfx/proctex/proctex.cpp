@@ -382,10 +382,10 @@ void ImgModule::UpdateThumb(ProcTex& ptex) {
   auto tek    = thumbmtl.technique("ttex");
   auto parmvp = thumbmtl.param("MatMVP");
   auto partex = thumbmtl.param("ColorMap");
-  thumbmtl._rasterstate.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
-  thumbmtl._rasterstate.SetCullTest(ork::lev2::ECullTest::OFF);
-  thumbmtl._rasterstate.SetBlending(ork::lev2::Blending::OFF);
-  thumbmtl._rasterstate.SetDepthTest(ork::lev2::EDepthTest::ALWAYS);
+  thumbmtl._rasterstate->SetAlphaTest(ork::lev2::EALPHATEST_OFF);
+  thumbmtl._rasterstate->SetCullTest(ork::lev2::ECullTest::OFF);
+  thumbmtl._rasterstate->SetBlending(ork::lev2::Blending::OFF);
+  thumbmtl._rasterstate->SetDepthTest(ork::lev2::EDepthTest::ALWAYS);
   // thumbmtl.SetUser0(fvec4(0.0f, 0.0f, 0.0f, float(wrbuf.miW)));
   thumbmtl.begin(tek, *RCFD);
   thumbmtl.bindParamCTex(partex, ptexture);
@@ -658,10 +658,10 @@ AA16Render::AA16Render(ProcTex& ptx, Buffer& bo)
     , bufout(bo)
     , downsamplemat(lev2::contextForCurrentThread(), "orkshader://proctex", "downsample16") {
   downsamplemat.SetColorMode(lev2::GfxMaterial3DSolid::EMODE_USER);
-  downsamplemat._rasterstate.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
-  downsamplemat._rasterstate.SetCullTest(ork::lev2::ECullTest::OFF);
-  downsamplemat._rasterstate.SetBlending(ork::lev2::Blending::ADDITIVE);
-  downsamplemat._rasterstate.SetDepthTest(ork::lev2::EDepthTest::ALWAYS);
+  downsamplemat._rasterstate->SetAlphaTest(ork::lev2::EALPHATEST_OFF);
+  downsamplemat._rasterstate->SetCullTest(ork::lev2::ECullTest::OFF);
+  downsamplemat._rasterstate->SetBlending(ork::lev2::Blending::ADDITIVE);
+  downsamplemat._rasterstate->SetDepthTest(ork::lev2::EDepthTest::ALWAYS);
   downsamplemat.SetUser0(fvec4(0.0f, 0.0f, 0.0f, float(bo.miW)));
 }
 

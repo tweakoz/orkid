@@ -33,6 +33,7 @@ struct Window;
 struct AppWindow;
 struct Font;
 struct FontMan;
+struct SRasterState;
 
 //
 using gfxcontext_lambda_t = std::function<void(Context*)>;
@@ -45,6 +46,7 @@ using appwindow_ptr_t        = std::shared_ptr<AppWindow>;
 using font_ptr_t = std::shared_ptr<Font>;
 using fontman_ptr_t = std::shared_ptr<FontMan>;
 using font_rawconstptr_t = const Font*;
+using rasterstate_ptr_t = std::shared_ptr<SRasterState>;
 
 using context_factory_t = std::function<context_ptr_t()>;
 ///////////////////////////////////////////////////////////////////////////////
@@ -53,6 +55,7 @@ struct Texture;
 struct IpcTexture;
 using texture_ptr_t          = std::shared_ptr<Texture>;
 using ipctexture_ptr_t       = std::shared_ptr<IpcTexture>;
+
 
 ///////////////////////////////////////////////////////////////////////////////
 // Geometry Buffer

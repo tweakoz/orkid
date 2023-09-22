@@ -15,9 +15,9 @@ namespace ork::lev2 {
 
 struct SRasterState {
 
-  SRasterState( const SRasterState& oth );
   SRasterState();
 
+  rasterstate_ptr_t clone() const;
 
   void setDepthTest(EDepthTest dt);
   void setCullTest(ECullTest dt);
@@ -62,12 +62,14 @@ struct SRasterState {
   ECullTest _culltest = ECullTest::OFF;         
   EFrontFace _frontface = EFrontFace::CLOCKWISE;
 
-  EDepthTest _depthtest  = EDepthTest::LEQUALS; 
+  EDepthTest _depthtest  = EDepthTest::OFF; 
   fvec4 _blendConstant = fvec4(0,0,0,0);
   BlendingFactor _blendFactorSrcRGB = BlendingFactor::ONE;
   BlendingFactor _blendFactorDstRGB = BlendingFactor::ZERO;
   BlendingFactor _blendFactorSrcA = BlendingFactor::ONE;
   BlendingFactor _blendFactorDstA = BlendingFactor::ZERO;
+  BlendingOp _blendOpRGB = BlendingOp::ADD;
+  BlendingOp _blendOpA = BlendingOp::ADD;
 
   // todo: logic ops
 
@@ -76,8 +78,6 @@ struct SRasterState {
   svar16_t _impl;
 
 };
-
-using rasterstate_ptr_t = std::shared_ptr<SRasterState>;
 
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2
