@@ -132,6 +132,8 @@ using vkmsi_ptr_t = std::shared_ptr<VkMatrixStackInterface>;
 using vkfbi_ptr_t = std::shared_ptr<VkFrameBufferInterface>;
 using vkgbi_ptr_t = std::shared_ptr<VkGeometryBufferInterface>;
 using vktxi_ptr_t = std::shared_ptr<VkTextureInterface>;
+using vktxi_rawptr_t = VkTextureInterface*;
+
 using vkfxi_ptr_t = std::shared_ptr<VkFxInterface>;
 #if defined(ENABLE_COMPUTE_SHADERS)
 using vkci_ptr_t = std::shared_ptr<VkComputeInterface>;
@@ -352,17 +354,18 @@ struct VkTexLoadReq {
 
 struct VulkanTextureObject {
 
-  VulkanTextureObject(vktxi_ptr_t txi);
+  VulkanTextureObject(vktxi_rawptr_t txi);
   ~VulkanTextureObject();
 
   // GLuint mObject;
   // GLuint mFbo;
   // GLuint mDbo;
   // GLenum mTarget;
-
+  VkImage _vkimage;
+  
   int _maxmip = 0;
   vktexasynctask_ptr_t _async;
-  vktxi_ptr_t _txi;
+  vktxi_rawptr_t _txi;
 
   static std::atomic<size_t> _vkto_count;
 };
