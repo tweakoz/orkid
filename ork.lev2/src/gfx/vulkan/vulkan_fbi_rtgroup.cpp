@@ -68,55 +68,41 @@ const VkFormatConverter VkFormatConverter::VkFormatConverter::_instance;
 void _vkCreateImageForBuffer(
     vkcontext_rawptr_t ctxVK, //
     vkrtbufimpl_ptr_t bufferimpl,
-    uint64_t usage) { //
-  VkImageCreateInfo imginf = {};
-  initializeVkStruct(imginf, VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO);
-  imginf.imageType     = VK_IMAGE_TYPE_2D; // Regular 2D texture
-  imginf.format        = bufferimpl->_vkfmt;
-  imginf.extent.width  = bufferimpl->_parent->_width;
-  imginf.extent.height = bufferimpl->_parent->_height;
-  imginf.extent.depth  = 1;
-  imginf.mipLevels     = 1;
-  imginf.arrayLayers   = 1;
-  imginf.samples       = VK_SAMPLE_COUNT_1_BIT;
-  imginf.tiling        = VK_IMAGE_TILING_OPTIMAL;
-  imginf.usage         = 0;
-  switch(usage){
+    EBufferFormat ork_fmt,
+    uint64_t usage) {               //
+  auto VKICI = makeVKICI(           //
+      bufferimpl->_parent->_width,  // width
+      bufferimpl->_parent->_height, // height
+      1,                            // depth
+      ork_fmt,                      // format
+      1);                           // miplevels
+  switch (usage) {
     case "depth"_crcu:
-      imginf.usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+      VKICI->usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
       break;
     case "color"_crcu:
-      imginf.usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+      VKICI->usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
       // Use as texture and allow data transfer to it
-      imginf.usage |= VK_IMAGE_USAGE_SAMPLED_BIT;
-      imginf.usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+      VKICI->usage |= VK_IMAGE_USAGE_SAMPLED_BIT;
+      VKICI->usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
       break;
     case "present"_crcu:
-      imginf.usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+      VKICI->usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
       break;
     default:
       OrkAssert(false);
       break;
   }
-  imginf.sharingMode   = VK_SHARING_MODE_EXCLUSIVE;
-  imginf.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
   ///////////////////////////////////////////////////
-  VkResult OK = vkCreateImage(ctxVK->_vkdevice, &imginf, nullptr, &bufferimpl->_vkimg);
-  OrkAssert(OK == VK_SUCCESS);
+  bufferimpl->_imgobj = std::make_shared<VulkanImageObject>(ctxVK, VKICI);
+  auto& vkimage       = bufferimpl->_imgobj->_vkimage;
+  bufferimpl->_vkimg  = vkimage;
   ///////////////////////////////////////////////////
-  bufferimpl->_memforimg = std::make_shared<VulkanMemoryForImage>(ctxVK, bufferimpl->_vkimg,VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-  ///////////////////////////////////////////////////
-  VkImageViewCreateInfo viewInfo = {};
-  initializeVkStruct(viewInfo, VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO);
-  viewInfo.image    = bufferimpl->_vkimg;
-  viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D; // This is typical for a color buffer. Other types include 3D, cube maps, etc.
-  viewInfo.format   = bufferimpl->_vkfmt;    // This is a typical format. Adjust as needed.
-  viewInfo.subresourceRange.aspectMask     = VkFormatConverter::_instance.aspectForUsage(usage);
-  viewInfo.subresourceRange.baseMipLevel   = 0;
-  viewInfo.subresourceRange.levelCount     = 1;
-  viewInfo.subresourceRange.baseArrayLayer = 0;
-  viewInfo.subresourceRange.layerCount     = 1;
-  OK                                       = vkCreateImageView(ctxVK->_vkdevice, &viewInfo, nullptr, &bufferimpl->_vkimgview);
+  auto IVCI = createImageViewInfo2D(
+      vkimage,            //
+      bufferimpl->_vkfmt, //
+      VkFormatConverter::_instance.aspectForUsage(usage));
+  VkResult OK = vkCreateImageView(ctxVK->_vkdevice, IVCI.get(), nullptr, &bufferimpl->_vkimgview);
   OrkAssert(OK == VK_SUCCESS);
   ///////////////////////////////////////////////////
 }
@@ -131,7 +117,7 @@ vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(RtGroup* rtgroup) {
   int w                     = rtgroup->width();
   int h                     = rtgroup->height();
 
-  RTGIMPL->_pipeline_bits   = 0;
+  RTGIMPL->_pipeline_bits = 0;
 
   if (rtgroup->_depthBuffer) {
     auto rtbuffer   = rtgroup->_depthBuffer;
@@ -140,7 +126,7 @@ vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(RtGroup* rtgroup) {
     bufferimpl->_vkfmt = VkFormatConverter::convertBufferFormat(rtbuffer->mFormat);
 
     uint64_t USAGE = "depth"_crcu;
-    _vkCreateImageForBuffer(_contextVK, bufferimpl, USAGE);
+    _vkCreateImageForBuffer(_contextVK, bufferimpl, rtbuffer->mFormat, USAGE);
 
     auto& adesc = bufferimpl->_attachmentDesc;
     initializeVkStruct(adesc);
@@ -163,11 +149,10 @@ vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(RtGroup* rtgroup) {
     if (rtbuffer->_usage != 0) {
       USAGE = rtbuffer->_usage;
     }
-    if( USAGE == "present"_crcu ){
+    if (USAGE == "present"_crcu) {
 
-    }
-    else{
-      _vkCreateImageForBuffer(_contextVK, bufferimpl, USAGE);
+    } else {
+      _vkCreateImageForBuffer(_contextVK, bufferimpl, rtbuffer->mFormat, USAGE);
       auto& adesc = bufferimpl->_attachmentDesc;
       initializeVkStruct(adesc);
       adesc.format         = bufferimpl->_vkfmt;
@@ -217,7 +202,7 @@ RtGroup* VkFrameBufferInterface::_popRtGroup() {
     barrier.newLayout           = VkFormatConverter::_instance.layoutForUsage(rtb->_usage);
     barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
     barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    barrier.image               = bufferimpl->_vkimg; // The image you want to transition.
+    barrier.image               = bufferimpl->_imgobj->_vkimage; // The image you want to transition.
 
     barrier.subresourceRange.aspectMask     = VkFormatConverter::_instance.aspectForUsage(rtb->_usage);
     barrier.subresourceRange.baseMipLevel   = 0;
@@ -228,18 +213,17 @@ RtGroup* VkFrameBufferInterface::_popRtGroup() {
     barrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT; // Adjust as needed.
     barrier.dstAccessMask = 0;
 
-  vkCmdPipelineBarrier(
-      _contextVK->primary_cb()->_vkcmdbuf,
-      VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, // Adjust as needed.
-      VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-      0,
-      0,
-      nullptr,
-      0,
-      nullptr,
-      1,
-      &barrier);  
-
+    vkCmdPipelineBarrier(
+        _contextVK->primary_cb()->_vkcmdbuf,
+        VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, // Adjust as needed.
+        VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+        0,
+        0,
+        nullptr,
+        0,
+        nullptr,
+        1,
+        &barrier);
   }
 
   return _active_rtgroup;
@@ -273,11 +257,11 @@ void VkFrameBufferInterface::_present() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkFrameBufferInterface::_pushRtGroup(RtGroup* rtgroup) {
-  //auto prev_rtgroup = _active_rtgroup;
-  //if (nullptr == rtgroup) {
-    //_setMainAsRenderTarget();
+  // auto prev_rtgroup = _active_rtgroup;
+  // if (nullptr == rtgroup) {
+  //_setMainAsRenderTarget();
   //} else {
-    //_active_rtgroup = rtgroup;
+  //_active_rtgroup = rtgroup;
   //}
   /*
   OrkAssert(_active_rtgroup);

@@ -116,22 +116,11 @@ void VkFrameBufferInterface::_initSwapChain() {
   swap_chain->_vkSwapChainImageViews.resize(swap_chain->_vkSwapChainImages.size());
 
   for (size_t i = 0; i < swap_chain->_vkSwapChainImages.size(); i++) {
-    VkImageViewCreateInfo IVCI{};
-    initializeVkStruct(IVCI, VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO);
-    IVCI.image                           = swap_chain->_vkSwapChainImages[i];
-    IVCI.viewType                        = VK_IMAGE_VIEW_TYPE_2D;
-    IVCI.format                          = surfaceFormat.format;
-    IVCI.components.r                    = VK_COMPONENT_SWIZZLE_R;
-    IVCI.components.g                    = VK_COMPONENT_SWIZZLE_G;
-    IVCI.components.b                    = VK_COMPONENT_SWIZZLE_B;
-    IVCI.components.a                    = VK_COMPONENT_SWIZZLE_A;
-    IVCI.subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
-    IVCI.subresourceRange.baseMipLevel   = 0;
-    IVCI.subresourceRange.levelCount     = 1;
-    IVCI.subresourceRange.baseArrayLayer = 0;
-    IVCI.subresourceRange.layerCount     = 1;
+    auto IVCI = createImageViewInfo2D( swap_chain->_vkSwapChainImages[i], //
+                                       surfaceFormat.format, //
+                                       VK_IMAGE_ASPECT_COLOR_BIT );
 
-    OK = vkCreateImageView(vkdev, &IVCI, nullptr, &swap_chain->_vkSwapChainImageViews[i]);
+    OK = vkCreateImageView(vkdev, IVCI.get(), nullptr, &swap_chain->_vkSwapChainImageViews[i]);
     OrkAssert(OK == VK_SUCCESS);
 
     auto rtg       = std::make_shared<RtGroup>(_contextVK, width, height, MsaaSamples::MSAA_1X, false);
@@ -144,7 +133,7 @@ void VkFrameBufferInterface::_initSwapChain() {
     auto rtb_impl_depth = rtb_depth->_impl.getShared<VklRtBufferImpl>();
     ////////////////////////////////////////////
     // create depth image
-    _vkCreateImageForBuffer(_contextVK, rtb_impl_depth, "depth"_crcu);
+    _vkCreateImageForBuffer(_contextVK, rtb_impl_depth, DEPTH_FORMAT, "depth"_crcu);
     ////////////////////////////////////////////
     // link to swap chain color image
     rtb_impl_color->_init      = false;
