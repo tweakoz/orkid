@@ -336,7 +336,19 @@ Texture* VkTextureInterface::createFromMipChain(MipChain* from_chain) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid) {
+
   auto vktex       = ptex->_impl.makeShared<VulkanTextureObject>(this);
+
+  /////////////////////////////////////
+  // map staging memory and copy
+  /////////////////////////////////////
+  
+  auto staging_buffer = std::make_shared<VulkanBuffer>(_contextVK, tid.computeDstSize(), VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
+  staging_buffer->copyFromHost(tid._data, tid._truncation_length);
+  vktex->_staging_buffer = staging_buffer;
+
+  /////////////////////////////////////
+
   ptex->_texFormat = tid._dst_format;
   ptex->_width     = tid._w;
   ptex->_height    = tid._h;
@@ -349,9 +361,6 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
 
   vktex->_imgobj = std::make_shared<VulkanImageObject>(_contextVK, VKICI);
 
-  /////////////////////////////////////
-
-  // vktex->_imgmem = imgobj->_imgmem;
 
   /////////////////////////////////////
 
@@ -366,20 +375,18 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
 
   /////////////////////////////////////
 
-  auto samplerInfo = makeVKSCI();
-
-  VkSampler vksampler;
-  initializeVkStruct(vksampler);
-  ok = vkCreateSampler(_contextVK->_vkdevice, samplerInfo.get(), nullptr, &vksampler);
+  vktex->_sampler_info = makeVKSCI();
+  ok = vkCreateSampler(_contextVK->_vkdevice, vktex->_sampler_info.get(), nullptr, & vktex->_vksampler);
   OrkAssert(VK_SUCCESS == ok);
 
   /////////////////////////////////////
 
-  VkDescriptorImageInfo descimageInfo{};
-  descimageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-  descimageInfo.imageView   = vktex->_vkimageview;
-  descimageInfo.sampler     = vksampler;
+  vktex->_vkdescriptor_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+  vktex->_vkdescriptor_info.imageView   = vktex->_vkimageview;
+  vktex->_vkdescriptor_info.sampler     = vktex->_vksampler;
 
+  /////////////////////////////////////
+  // transition to transfer dst (for copy)
   /////////////////////////////////////
 
   auto cmdbuf      = _contextVK->beginRecordCommandBuffer();
@@ -392,38 +399,41 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
       VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
       VkAccessFlagBits(0),
       VK_ACCESS_TRANSFER_WRITE_BIT);
-  barrier->subresourceRange = {
-      VK_IMAGE_ASPECT_COLOR_BIT, // VkImageAspectFlags     aspectMask;
-      0,                         // uint32_t               baseMipLevel;
-      1,                         // uint32_t               levelCount;
-      0,                         // uint32_t               baseArrayLayer;
-      1};                        // uint32_t               layerCount;
 
-  vkCmdPipelineBarrier(
-      vk_cmdbuf, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, barrier.get());
+  vkCmdPipelineBarrier( vk_cmdbuf, //  
+                        VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, // 
+                        VK_PIPELINE_STAGE_TRANSFER_BIT, // 
+                        0, //
+                        0, nullptr, //
+                        0, nullptr, //
+                        1, barrier.get()); //
 
-  /////////////////////////////////////
-  // map staging memory and copy
-  /////////////////////////////////////
-
-  auto staging_buffer = std::make_shared<VulkanBuffer>(_contextVK, tid.computeDstSize(), VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
-  staging_buffer->copyFromHost(tid._data, tid._truncation_length);
 
   /////////////////////////////////////
-  // GPU mem -> image
+  // staging mem -> image
   /////////////////////////////////////
 
   VkBufferImageCopy region{};
+  initializeVkStruct(region);
   region.bufferOffset      = 0;
   region.bufferRowLength   = 0;
   region.bufferImageHeight = 0;
-  region.imageSubresource  = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1};
+  region.imageSubresource  = { VK_IMAGE_ASPECT_COLOR_BIT, // 
+                               0, 
+                               0, 
+                               1};
   region.imageOffset       = {0, 0, 0};
   region.imageExtent       = {uint32_t(tid._w), uint32_t(tid._h), 1};
 
-  vkCmdCopyBufferToImage(
-      vk_cmdbuf, staging_buffer->_vkbuffer, vktex->_imgobj->_vkimage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
-
+  vkCmdCopyBufferToImage( vk_cmdbuf, // 
+                          staging_buffer->_vkbuffer, //
+                          vktex->_imgobj->_vkimage, //
+                          VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, //
+                          1, &region); //
+  auto fence = _contextVK->_fbi->_swapchain->_fence;
+  fence->onCrossed([=]() {
+    vktex->_staging_buffer = nullptr; // release staging buffer
+  });
   /////////////////////////////////////
   // transition to sampleable texture
   /////////////////////////////////////
@@ -463,6 +473,8 @@ VkTextureAsyncTask::VkTextureAsyncTask() {
 ///////////////////////////////////////////////////////////////////////////////
 
 VulkanTextureObject::VulkanTextureObject(vktxi_rawptr_t txi) {
+  initializeVkStruct(_vksampler);
+  initializeVkStruct(_vkdescriptor_info);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

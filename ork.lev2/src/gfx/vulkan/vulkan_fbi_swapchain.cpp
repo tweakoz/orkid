@@ -15,14 +15,14 @@ namespace ork::lev2::vulkan {
 void VkFrameBufferInterface::_initSwapChain() {
 
   auto& vkdev    = _contextVK->_vkdevice;
-  auto& fence    = _contextVK->_mainGfxSubmitFence;
+  //auto fence    = _contextVK->_mainGfxSubmitFence;
   auto& cmdbuf   = _contextVK->primary_cb()->_vkcmdbuf;
   auto pres_caps = _contextVK->_vkpresentation_caps;
 
   if (_swapchain) {
     _old_swapchains.insert(_swapchain);
     size_t num_images = _swapchain->_vkSwapChainImages.size();
-    vkWaitForFences(vkdev, 1, &fence, VK_TRUE, UINT64_MAX);
+    _swapchain->_fence->wait();
     for (size_t i = 0; i < num_images; i++) {
       auto img = _swapchain->_vkSwapChainImages[i];
 
@@ -55,7 +55,7 @@ void VkFrameBufferInterface::_initSwapChain() {
   }
 
   auto swap_chain = std::make_shared<VkSwapChain>();
-
+  swap_chain->_fence = std::make_shared<VulkanFenceObject>(_contextVK);
   auto surfaceFormat = pres_caps->_formats[0];
 
   VkSurfaceTransformFlagsKHR preTransform;

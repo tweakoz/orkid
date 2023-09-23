@@ -225,10 +225,10 @@ void VkContext::_initVulkanCommon() {
   OrkAssert(OK == VK_SUCCESS);
 
   ////////////////////////////
-
-  VkFenceCreateInfo fenceCreateInfo = {};
-  initializeVkStruct(fenceCreateInfo, VK_STRUCTURE_TYPE_FENCE_CREATE_INFO);
-  vkCreateFence(_vkdevice, &fenceCreateInfo, nullptr, &_mainGfxSubmitFence);
+  //_mainGfxSubmitFence = std::make_shared<VulkanFenceObject>(this);
+  //VkFenceCreateInfo fenceCreateInfo = {};
+  //initializeVkStruct(fenceCreateInfo, VK_STRUCTURE_TYPE_FENCE_CREATE_INFO);
+  //vkCreateFence(_vkdevice, &fenceCreateInfo, nullptr, &_mainGfxSubmitFence);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -458,7 +458,10 @@ void VkContext::_doBeginFrame() {
   if (not _first_frame) {
     // technically we should wait for a fence associated with the
     //  current _cmdbufcurframe_gfx_pri
-    vkWaitForFences(_vkdevice, 1, &_mainGfxSubmitFence, VK_TRUE, UINT64_MAX);
+    auto swapchain = _fbi->_swapchain;
+    auto fence = swapchain->_fence;
+    fence->wait();
+    //vkWaitForFences(_vkdevice, 1, &_mainGfxSubmitFence, VK_TRUE, UINT64_MAX);
   }
 
   vkBeginCommandBuffer(primary_cb()->_vkcmdbuf, &CBBI_GFX); // vkBeginCommandBuffer does an implicit reset
@@ -521,13 +524,13 @@ void VkContext::_doEndFrame() {
   SI.signalSemaphoreCount = 1;
   SI.pSignalSemaphores    = &_renderingCompleteSemaphore;
   ///////////////////////////////////////////////////////
-
-  vkResetFences(_vkdevice, 1, &_mainGfxSubmitFence);
-  vkQueueSubmit(_vkqueue_graphics, 1, &SI, _mainGfxSubmitFence);
+  auto swapchain = _fbi->_swapchain;
+  auto fence = swapchain->_fence;
+  fence->reset();
+  //vkResetFences(_vkdevice, 1, &_mainGfxSubmitFence);
+  vkQueueSubmit(_vkqueue_graphics, 1, &SI, fence->_vkfence);
 
   ///////////////////////////////////////////////////////
-
-  auto swapchain = _fbi->_swapchain;
 
   std::vector<VkSemaphore> waitPresentSemaphores = {_renderingCompleteSemaphore};
 
@@ -1294,6 +1297,50 @@ void VkContext::enqueueDeferredOneShotCommand(commandbuffer_ptr_t cmdbuf) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+VulkanTimelineSemaphoreObject::VulkanTimelineSemaphoreObject(vkcontext_rawptr_t ctxVK)
+    : _ctxVK(ctxVK) {
+
+  VkSemaphoreTypeCreateInfoKHR STCI = {};
+  initializeVkStruct(STCI, VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO_KHR);
+  STCI.semaphoreType                = VK_SEMAPHORE_TYPE_TIMELINE;
+  STCI.initialValue                 = 0;
+
+  VkSemaphoreCreateInfo SCI = {};
+  initializeVkStruct(SCI, VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO);
+  SCI.pNext                 = &STCI;
+
+    VkResult OK = vkCreateSemaphore(_ctxVK->_vkdevice, &SCI, nullptr, &_vksema);
+    OrkAssert(OK == VK_SUCCESS);
+}
+VulkanTimelineSemaphoreObject::~VulkanTimelineSemaphoreObject() {
+    vkDestroySemaphore(_ctxVK->_vkdevice, _vksema, nullptr);
+}
+
+VulkanFenceObject::VulkanFenceObject(vkcontext_rawptr_t ctxVK)
+    : _ctxVK(ctxVK) {
+  VkFenceCreateInfo FCI = {};
+  initializeVkStruct(FCI, VK_STRUCTURE_TYPE_FENCE_CREATE_INFO);
+  FCI.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+  VkResult OK = vkCreateFence(_ctxVK->_vkdevice, &FCI, nullptr, &_vkfence);
+  OrkAssert(OK == VK_SUCCESS);
+}
+VulkanFenceObject::~VulkanFenceObject() {
+  vkDestroyFence(_ctxVK->_vkdevice, _vkfence, nullptr);
+}
+void VulkanFenceObject::reset(){
+  vkResetFences(_ctxVK->_vkdevice, 1, &_vkfence);
+}
+void VulkanFenceObject::wait(){
+  vkWaitForFences(_ctxVK->_vkdevice, 1, &_vkfence, true, UINT64_MAX);
+  for( auto item : _onReached ){
+    item();
+  }
+  _onReached.clear();
+}
+void VulkanFenceObject::onCrossed(void_lambda_t op){
+  _onReached.push_back(op);
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2::vulkan

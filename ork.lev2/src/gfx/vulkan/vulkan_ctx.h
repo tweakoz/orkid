@@ -431,6 +431,29 @@ barrier_ptr_t createImageBarrier(
 
 ///////////////////////////////////////////////////////////////////////////////
 
+struct VulkanTimelineSemaphoreObject{
+  VulkanTimelineSemaphoreObject(vkcontext_rawptr_t ctxVK);
+  ~VulkanTimelineSemaphoreObject();
+  vkcontext_rawptr_t _ctxVK;
+  VkSemaphore _vksema;
+  void_lambda_t _onReached;
+};
+
+using vktlsema_obj_ptr_t = std::shared_ptr<VulkanTimelineSemaphoreObject>;
+
+struct VulkanFenceObject {
+  VulkanFenceObject(vkcontext_rawptr_t ctxVK);
+  ~VulkanFenceObject();
+  void wait();
+  void reset();
+  void onCrossed(void_lambda_t op);
+  std::vector<void_lambda_t> _onReached;
+  vkcontext_rawptr_t _ctxVK;
+  VkFence _vkfence;
+};
+using vkfence_obj_ptr_t = std::shared_ptr<VulkanFenceObject>;
+///////////////////////////////////////////////////////////////////////////////
+
 struct VulkanImageObject {
   VulkanImageObject(vkcontext_rawptr_t ctx, vkimagecreateinfo_ptr_t cinfo);
   ~VulkanImageObject();
@@ -446,17 +469,17 @@ struct VulkanTextureObject {
   VulkanTextureObject(vktxi_rawptr_t txi);
   ~VulkanTextureObject();
 
-  // GLuint mObject;
-  // GLuint mFbo;
-  // GLuint mDbo;
-  // GLenum mTarget;
-  // vkmemforimg_ptr_t _imgmem;
-  // VkImage _vkimage;
+  vkbuffer_ptr_t _staging_buffer;
   VkImageView _vkimageview;
   vkimageobj_ptr_t _imgobj;
   int _maxmip = 0;
   vktexasynctask_ptr_t _async;
   vktxi_rawptr_t _txi;
+
+  vksamplercreateinfo_ptr_t _sampler_info;
+  VkSampler _vksampler;
+  VkDescriptorImageInfo _vkdescriptor_info;
+
 
   static std::atomic<size_t> _vkto_count;
 };
@@ -646,6 +669,7 @@ struct VkSwapChain {
   std::vector<rtbuffer_ptr_t> _depth_rtbs;
   // std::vector<VkImage>       _vkDepthImages;
   // std::vector<VkImageView>   _vkDepthImageViews;
+  vkfence_obj_ptr_t _fence;
 
   uint32_t _curSwapWriteImage = 0xffffffff;
 
@@ -1107,7 +1131,9 @@ public:
   vkswapchaincaps_ptr_t _vkpresentation_caps;
   std::vector<const char*> _device_extensions;
   VkSemaphore _renderingCompleteSemaphore;
-  VkFence _mainGfxSubmitFence;
+  //vkfence_obj_ptr_t _mainGfxSubmitFence;
+  
+  //VkFence _mainGfxSubmitFence;
   size_t _num_queue_types = 0;
   int _renderpass_index;
   int _subpass_index = 0;
@@ -1145,6 +1171,8 @@ public:
   //////////////////////////////////////////////
   void enqueueDeferredOneShotCommand(commandbuffer_ptr_t cmdbuf);
   std::vector<commandbuffer_ptr_t> _pendingOneShotCommands;
+  std::unordered_set<vktlsema_obj_ptr_t> _pendingOneShotSemas;
+
   //////////////////////////////////////////////
 
   vkdwi_ptr_t _dwi;
