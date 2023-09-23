@@ -183,8 +183,10 @@ using vkmemallocinfo_ptr_t = std::shared_ptr<VkMemoryAllocateInfo>;
 using vkmem_ptr_t = std::shared_ptr<VkDeviceMemory>;
 struct VulkanMemoryForImage;
 struct VulkanMemoryForBuffer;
+struct VulkanBuffer;
 using vkmemforimg_ptr_t = std::shared_ptr<VulkanMemoryForImage>;
 using vkmemforbuf_ptr_t = std::shared_ptr<VulkanMemoryForBuffer>;
+using vkbuffer_ptr_t = std::shared_ptr<VulkanBuffer>;
 
 
 struct VkFormatConverter{
@@ -388,6 +390,24 @@ struct VulkanMemoryForBuffer{
 
 ///////////////////////////////////////////////////////////////////////////////
 
+struct VulkanBuffer{
+  VulkanBuffer(vkcontext_rawptr_t ctxVK, size_t length, VkBufferUsageFlags usage );
+  ~VulkanBuffer();
+
+  void copyFromHost(const void* src, size_t length);
+  void* map( size_t offset, size_t length, VkMemoryMapFlags flags );
+  void unmap();
+  
+  vkcontext_rawptr_t _ctxVK;
+  size_t _length;
+  VkBufferUsageFlags _usage;
+  VkBufferCreateInfo _cinfo;
+  VkBuffer _vkbuffer;
+  vkmemforbuf_ptr_t _memory;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
 struct VulkanTextureObject {
 
   VulkanTextureObject(vktxi_rawptr_t txi);
@@ -566,22 +586,14 @@ struct VkPrimitiveClass {
 struct VulkanVertexBuffer {
   VulkanVertexBuffer(vkcontext_rawptr_t ctx, VertexBufferBase& vbuf);
   ~VulkanVertexBuffer();
-  VkBufferCreateInfo _vkbufinfo;
-  VkBuffer _vkbuf;
-  //VkMemoryPropertyFlags _vkmemflags;
-  //VkDeviceMemory _vkmem;
-  vkmemforbuf_ptr_t _memforbuf;
+  vkbuffer_ptr_t _vkbuffer;
   vkcontext_rawptr_t _ctx;
   vkvertexinputconfig_ptr_t _vertexConfig;
 };
 struct VulkanIndexBuffer {
   VulkanIndexBuffer(vkcontext_rawptr_t ctx, size_t length);
   ~VulkanIndexBuffer();
-  VkBufferCreateInfo _vkbufinfo;
-  VkBuffer _vkbuf;
-  vkmemforbuf_ptr_t _memforbuf;
-  //VkMemoryPropertyFlags _vkmemflags;
-  //VkDeviceMemory _vkmem;
+  vkbuffer_ptr_t _vkbuffer;
   vkcontext_rawptr_t _ctx;
 };
 

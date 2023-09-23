@@ -238,44 +238,12 @@ Texture* VkTextureInterface::createFromMipChain(MipChain* from_chain) {
 
         // register level data with vulkan
 
-        VkBufferCreateInfo BUFINFO;
-        initializeVkStruct(BUFINFO, VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO);
-        BUFINFO.size        = level_length;
-        BUFINFO.usage       = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-        BUFINFO.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-        VkBuffer stagingBuffer;
-        initializeVkStruct(stagingBuffer);
-        VkResult ok = vkCreateBuffer(_contextVK->_vkdevice, &BUFINFO, nullptr, &stagingBuffer);
-
         /////////////////////////////////////
-        // allocate image memory
+        // map staging memory and copy
         /////////////////////////////////////
 
-        VkMemoryRequirements MEMREQ;
-        VkMemoryAllocateInfo ALLOCINFO = {};
-        initializeVkStruct(MEMREQ);
-        initializeVkStruct(ALLOCINFO, VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO);
-        vkGetBufferMemoryRequirements(_contextVK->_vkdevice, stagingBuffer, &MEMREQ);
-        printf( "alignment<%zu>\n", MEMREQ.alignment );
-        ALLOCINFO.allocationSize  = MEMREQ.size;
-        VkMemoryPropertyFlags vkmemflags;
-        vkmemflags               = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT //
-                                 | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT; // do not need flush...
-        ALLOCINFO.memoryTypeIndex = _contextVK->_findMemoryType(MEMREQ.memoryTypeBits, vkmemflags);
-        // printf( "memtypeindex = %u\n", ALLOCINFO.memoryTypeIndex );
-        VkDeviceMemory vkmem;
-        initializeVkStruct(vkmem);
-        vkAllocateMemory(_contextVK->_vkdevice, &ALLOCINFO, nullptr, &vkmem);
-        vkBindBufferMemory(_contextVK->_vkdevice, stagingBuffer, vkmem, 0);
-
-        /////////////////////////////////////
-        // map and copy
-        /////////////////////////////////////
-
-        void* data = nullptr;
-        vkMapMemory(_contextVK->_vkdevice, vkmem, 0, level_length, 0, &data);
-        memcpy(data, level_data, level_length);
-        vkUnmapMemory(_contextVK->_vkdevice, vkmem);
+        auto staging_buffer = std::make_shared<VulkanBuffer>(_contextVK, level_length, VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
+        staging_buffer->copyFromHost(level_data,level_length);
 
         /////////////////////////////////////
         // add mip to texture image
@@ -318,7 +286,7 @@ Texture* VkTextureInterface::createFromMipChain(MipChain* from_chain) {
 
         vkCmdCopyBufferToImage(
             vk_cmdbuf,
-            stagingBuffer,
+            staging_buffer->_vkbuffer,
             vktex->_vkimage,
             VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
             1,
@@ -340,9 +308,6 @@ Texture* VkTextureInterface::createFromMipChain(MipChain* from_chain) {
             nullptr,
             1,
             barrier.get());
-
-        vkDestroyBuffer(_contextVK->_vkdevice, stagingBuffer, nullptr);
-        vkFreeMemory(_contextVK->_vkdevice, vkmem, nullptr);
 
 
     }
@@ -513,36 +478,12 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
       1,
       barrier.get());
 
-  VkBufferCreateInfo BUFINFO;
-  initializeVkStruct(BUFINFO, VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO);
-  BUFINFO.size        = tid.computeDstSize();
-  BUFINFO.usage       = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-  BUFINFO.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-  VkBuffer stagingBuffer;
-  initializeVkStruct(stagingBuffer);
-  ok = vkCreateBuffer(_contextVK->_vkdevice, &BUFINFO, nullptr, &stagingBuffer);
-  OrkAssert(VK_SUCCESS == ok);
-
   /////////////////////////////////////
-  // allocate image GPU memory
+  // map staging memory and copy
   /////////////////////////////////////
 
-  auto bufmem = std::make_shared<VulkanMemoryForBuffer>(_contextVK, //
-                                                         stagingBuffer, //
-                                                         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT //
-                                                       | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-
-  vkBindBufferMemory(_contextVK->_vkdevice, stagingBuffer, *bufmem->_vkmem, 0);
-
-  /////////////////////////////////////
-  // map GPU mem and copy
-  /////////////////////////////////////
-
-  void* data;
-  vkMapMemory(_contextVK->_vkdevice, *bufmem->_vkmem, 0, memRequirements.size, 0, &data);
-  memcpy(data, tid._data, tid._truncation_length);
-  vkUnmapMemory(_contextVK->_vkdevice, *bufmem->_vkmem);
+  auto staging_buffer = std::make_shared<VulkanBuffer>(_contextVK, tid.computeDstSize(), VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
+  staging_buffer->copyFromHost(tid._data,tid._truncation_length);
 
   /////////////////////////////////////
   // GPU mem -> image
@@ -558,13 +499,11 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
 
   vkCmdCopyBufferToImage(
       vk_cmdbuf,
-      stagingBuffer,
+      staging_buffer->_vkbuffer,
       vktex->_vkimage,
       VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
       1,
       &region);
-
-  vkDestroyBuffer(_contextVK->_vkdevice, stagingBuffer, nullptr);
 
   /////////////////////////////////////
   // transition to sampleable texture

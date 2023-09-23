@@ -19,23 +19,7 @@ VulkanVertexBuffer::VulkanVertexBuffer(vkcontext_rawptr_t ctx, VertexBufferBase&
   // create vertex buffer object
   /////////////////////////////////////
 
-  initializeVkStruct(_vkbufinfo, VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO);
-  _vkbufinfo.sType       = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-  _vkbufinfo.size        = vtx_buf.GetVtxSize() * vtx_buf.GetMax();
-  _vkbufinfo.usage       = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-  _vkbufinfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-  initializeVkStruct(_vkbuf);
-  VkResult ok = vkCreateBuffer(ctx->_vkdevice, &_vkbufinfo, nullptr, &_vkbuf);
-  OrkAssert(ok == VK_SUCCESS);
-
-  /////////////////////////////////////
-  // allocate vertex memory
-  /////////////////////////////////////
-
-  _memforbuf = std::make_shared<VulkanMemoryForBuffer>(ctx, _vkbuf);
-
-  vkBindBufferMemory(ctx->_vkdevice, _vkbuf, *_memforbuf->_vkmem, 0);
+  _vkbuffer = std::make_shared<VulkanBuffer>(ctx, vtx_buf.GetVtxSize() * vtx_buf.GetMax(), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
 
   /////////////////////////////////////
   // find vertex input configuration
@@ -50,8 +34,7 @@ VulkanVertexBuffer::VulkanVertexBuffer(vkcontext_rawptr_t ctx, VertexBufferBase&
 ///////////////////////////////////////////////////////////////////////////////
 
 VulkanVertexBuffer::~VulkanVertexBuffer() {
-  vkDestroyBuffer(_ctx->_vkdevice, _vkbuf, nullptr);
-  _memforbuf = nullptr;
+  _vkbuffer = nullptr;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -59,20 +42,12 @@ VulkanVertexBuffer::~VulkanVertexBuffer() {
 VulkanIndexBuffer::VulkanIndexBuffer(vkcontext_rawptr_t ctx, size_t length) {
   _ctx = ctx;
 
-  initializeVkStruct(_vkbufinfo, VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO);
-  _vkbufinfo.size        = length;
-  _vkbufinfo.usage       = VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
-  _vkbufinfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-  vkCreateBuffer(ctx->_vkdevice, &_vkbufinfo, nullptr, &_vkbuf);
-  //////////////////
-  _memforbuf = std::make_shared<VulkanMemoryForBuffer>(ctx, _vkbuf);
-  //////////////////
-  vkBindBufferMemory(ctx->_vkdevice, _vkbuf, *_memforbuf->_vkmem, 0);
+  _vkbuffer = std::make_shared<VulkanBuffer>(ctx, length, VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
+
 }
 ///////////////////////////////////////////////////////////////////////////////
 VulkanIndexBuffer::~VulkanIndexBuffer() {
-  vkDestroyBuffer(_ctx->_vkdevice, _vkbuf, nullptr);
-  _memforbuf = nullptr;
+  _vkbuffer = nullptr;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -239,27 +214,11 @@ void* VkGeometryBufferInterface::LockVB(VertexBufferBase& vtx_buf, int ivbase, i
   }
   void* vertex_memory = nullptr;
 
-  auto& vkmem = *vk_impl->_memforbuf->_vkmem;
-
   if (is_static) {
     OrkAssert(ibasebytes == 0); // TODO change api to not require offset for static buffers
-    vkMapMemory(
-        _contextVK->_vkdevice, // vulkan device
-        vkmem,       // vulkan memory
-        0,                     // offset
-        isizebytes,            // size
-        0,                     // flags
-        &vertex_memory);
+    vertex_memory = vk_impl->_vkbuffer->map(0, isizebytes, 0);
   } else {
-
-
-    vkMapMemory(
-        _contextVK->_vkdevice, // vulkan device
-        vkmem,       // vulkan memory
-        ibasebytes,            // offset
-        isizebytes,            // size
-        0,                     // flags
-        &vertex_memory);
+    vertex_memory = vk_impl->_vkbuffer->map(ibasebytes, isizebytes, 0);
 
   }
   //////////////////////////////////////////////////////////
@@ -273,8 +232,7 @@ void* VkGeometryBufferInterface::LockVB(VertexBufferBase& vtx_buf, int ivbase, i
 void VkGeometryBufferInterface::UnLockVB(VertexBufferBase& vtx_buf) {
   auto vk_impl = vtx_buf._impl.getShared<VulkanVertexBuffer>();
   OrkAssert(vtx_buf.IsLocked());
-  auto& vkmem = *vk_impl->_memforbuf->_vkmem;
-  vkUnmapMemory(_contextVK->_vkdevice, vkmem);
+  vk_impl->_vkbuffer->unmap();
   vtx_buf.Unlock();
 }
 
@@ -395,7 +353,7 @@ void VkGeometryBufferInterface::DrawPrimitiveEML(
   vkCmdBindVertexBuffers(CB->_vkcmdbuf,        // command buffer
                          0,                    // first binding
                          1,                    // binding count
-                         &vk_vbimpl->_vkbuf,   // buffers
+                         &vk_vbimpl->_vkbuffer->_vkbuffer,   // buffers
                          &offset);             // offsets
 
   ///////////////////////
