@@ -15,7 +15,6 @@ namespace ork::lev2::vulkan {
 void VkFrameBufferInterface::_initSwapChain() {
 
   auto& vkdev    = _contextVK->_vkdevice;
-  //auto fence    = _contextVK->_mainGfxSubmitFence;
   auto& cmdbuf   = _contextVK->primary_cb()->_vkcmdbuf;
   auto pres_caps = _contextVK->_vkpresentation_caps;
 

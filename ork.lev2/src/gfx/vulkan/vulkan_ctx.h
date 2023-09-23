@@ -1131,9 +1131,6 @@ public:
   vkswapchaincaps_ptr_t _vkpresentation_caps;
   std::vector<const char*> _device_extensions;
   VkSemaphore _renderingCompleteSemaphore;
-  //vkfence_obj_ptr_t _mainGfxSubmitFence;
-  
-  //VkFence _mainGfxSubmitFence;
   size_t _num_queue_types = 0;
   int _renderpass_index;
   int _subpass_index = 0;

@@ -224,11 +224,6 @@ void VkContext::_initVulkanCommon() {
   OK = vkCreateSemaphore(_vkdevice, &SCI, nullptr, &_renderingCompleteSemaphore);
   OrkAssert(OK == VK_SUCCESS);
 
-  ////////////////////////////
-  //_mainGfxSubmitFence = std::make_shared<VulkanFenceObject>(this);
-  //VkFenceCreateInfo fenceCreateInfo = {};
-  //initializeVkStruct(fenceCreateInfo, VK_STRUCTURE_TYPE_FENCE_CREATE_INFO);
-  //vkCreateFence(_vkdevice, &fenceCreateInfo, nullptr, &_mainGfxSubmitFence);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -456,12 +451,9 @@ void VkContext::_doBeginFrame() {
   }
 
   if (not _first_frame) {
-    // technically we should wait for a fence associated with the
-    //  current _cmdbufcurframe_gfx_pri
     auto swapchain = _fbi->_swapchain;
     auto fence = swapchain->_fence;
     fence->wait();
-    //vkWaitForFences(_vkdevice, 1, &_mainGfxSubmitFence, VK_TRUE, UINT64_MAX);
   }
 
   vkBeginCommandBuffer(primary_cb()->_vkcmdbuf, &CBBI_GFX); // vkBeginCommandBuffer does an implicit reset
@@ -527,7 +519,6 @@ void VkContext::_doEndFrame() {
   auto swapchain = _fbi->_swapchain;
   auto fence = swapchain->_fence;
   fence->reset();
-  //vkResetFences(_vkdevice, 1, &_mainGfxSubmitFence);
   vkQueueSubmit(_vkqueue_graphics, 1, &SI, fence->_vkfence);
 
   ///////////////////////////////////////////////////////
