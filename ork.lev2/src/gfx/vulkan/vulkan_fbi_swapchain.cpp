@@ -14,9 +14,9 @@ namespace ork::lev2::vulkan {
 
 void VkFrameBufferInterface::_initSwapChain() {
 
-  auto& vkdev = _contextVK->_vkdevice;
-  auto& fence = _contextVK->_mainGfxSubmitFence;
-  auto& cmdbuf = _contextVK->primary_cb()->_vkcmdbuf;
+  auto& vkdev    = _contextVK->_vkdevice;
+  auto& fence    = _contextVK->_mainGfxSubmitFence;
+  auto& cmdbuf   = _contextVK->primary_cb()->_vkcmdbuf;
   auto pres_caps = _contextVK->_vkpresentation_caps;
 
   if (_swapchain) {
@@ -27,16 +27,25 @@ void VkFrameBufferInterface::_initSwapChain() {
       auto img = _swapchain->_vkSwapChainImages[i];
 
       // barrier - complete all ops before destroying
-      if (0)
-        _imageBarrier(
-            cmdbuf,            // cmdbuf
-            img,                                           // image
-            VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,          // srcAccessMask
-            VK_ACCESS_MEMORY_WRITE_BIT,                    // dstAccessMask
+      if (0) {
+        auto imgbar = createImageBarrier(
+            img,
+            VK_IMAGE_LAYOUT_UNDEFINED,            // oldLayout
+            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, // newLayout
+            VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, // srcAccessMask
+            VK_ACCESS_MEMORY_WRITE_BIT);          // dstAccessMask
+        vkCmdPipelineBarrier(
+            cmdbuf,                                        // cmdbuf
             VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, // srcStageMask
             VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,            // dstStageMask
-            VK_IMAGE_LAYOUT_UNDEFINED,                     // oldLayout
-            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);         // newLayout
+            0,                                             // dependencyFlags
+            0,
+            nullptr, // memoryBarrierCount, pMemoryBarriers
+            0,
+            nullptr, // bufferMemoryBarrierCount, pBufferMemoryBarriers
+            1,
+            imgbar.get()); // imageMemoryBarrierCount, pImageMemoryBarriers
+      }
 
       auto imgview = _swapchain->_vkSwapChainImageViews[i];
       vkDestroyImageView(vkdev, imgview, nullptr);
@@ -175,15 +184,24 @@ void VkFrameBufferInterface::_enq_transitionSwapChainForPresent() {
 
   auto gfxcb = _contextVK->primary_cb();
 
-  _imageBarrier(
+  auto imgbar = createImageBarrier(
+      _swapchain->image(),
+      VK_IMAGE_LAYOUT_UNDEFINED,            // oldLayout
+      VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,      // newLayout
+      VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, // srcAccessMask
+      VK_ACCESS_MEMORY_READ_BIT);           // dstAccessMask
+
+  vkCmdPipelineBarrier(
       gfxcb->_vkcmdbuf,                              // cmdbuf
-      _swapchain->image(),                           // image
-      VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,          // srcAccessMask
-      0,                                             // dstAccessMask
       VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, // srcStageMask
-      VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,             // dstStageMask
-      VK_IMAGE_LAYOUT_UNDEFINED,                     // oldLayout
-      VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);              // newLayout
+      VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,          // dstStageMask
+      0,                                             // dependencyFlags
+      0,
+      nullptr, // memoryBarrierCount, pMemoryBarriers
+      0,
+      nullptr, // bufferMemoryBarrierCount, pBufferMemoryBarriers
+      1,
+      imgbar.get()); // imageMemoryBarrierCount, pImageMemoryBarriers
 }
 
 ///////////////////////////////////////////////////////
@@ -192,15 +210,24 @@ void VkFrameBufferInterface::_transitionSwapChainForClear() {
 
   auto gfxcb = _contextVK->primary_cb();
 
-  _imageBarrier(
-      gfxcb->_vkcmdbuf,                      // cmdbuf
-      _swapchain->image(),                   // image
-      0,                                     // srcAccessMask
-      VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,  // dstAccessMask
-      VK_PIPELINE_STAGE_TRANSFER_BIT,        // srcStageMask
-      VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,  // dstStageMask
+  auto imgbar = createImageBarrier(
+      _swapchain->image(),
       VK_IMAGE_LAYOUT_UNDEFINED,             // oldLayout
-      VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL); // newLayout
+      VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,  // newLayout
+      VkAccessFlagBits(0),                   // srcAccessMask
+      VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT); // dstAccessMask
+
+  vkCmdPipelineBarrier(
+      gfxcb->_vkcmdbuf,                     // cmdbuf
+      VK_PIPELINE_STAGE_TRANSFER_BIT,       // srcStageMask
+      VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, // dstStageMask
+      0,                                    // dependencyFlags
+      0,
+      nullptr, // memoryBarrierCount, pMemoryBarriers
+      0,
+      nullptr, // bufferMemoryBarrierCount, pBufferMemoryBarriers
+      1,
+      imgbar.get()); // imageMemoryBarrierCount, pImageMemoryBarriers
 }
 
 ///////////////////////////////////////////////////////
@@ -251,35 +278,34 @@ void VkFrameBufferInterface::_acquireSwapChainForFrame() {
 
 void VkFrameBufferInterface::_bindSwapChainToRenderPass(vkrenderpass_ptr_t rpass) {
 
-  if(nullptr==_swapchain->_mainRenderPass){
+  if (nullptr == _swapchain->_mainRenderPass) {
     _swapchain->_mainRenderPass = rpass;
 
     _swapchain->_vkFrameBuffers.resize(_swapchain->_vkSwapChainImages.size());
     for (size_t i = 0; i < _swapchain->_vkSwapChainImages.size(); i++) {
 
-        auto& VKFRB = _swapchain->_vkFrameBuffers[i];
-        std::vector<VkImageView> fb_attachments;
-        auto& IMGVIEW = _swapchain->_vkSwapChainImageViews[i];
+      auto& VKFRB = _swapchain->_vkFrameBuffers[i];
+      std::vector<VkImageView> fb_attachments;
+      auto& IMGVIEW = _swapchain->_vkSwapChainImageViews[i];
 
-        auto depth_rtb     = _swapchain->_depth_rtbs[i];
-        auto depth_rtbimpl = depth_rtb->_impl.getShared<VklRtBufferImpl>();
-        fb_attachments.push_back(IMGVIEW);
-        fb_attachments.push_back(depth_rtbimpl->_vkimgview);
+      auto depth_rtb     = _swapchain->_depth_rtbs[i];
+      auto depth_rtbimpl = depth_rtb->_impl.getShared<VklRtBufferImpl>();
+      fb_attachments.push_back(IMGVIEW);
+      fb_attachments.push_back(depth_rtbimpl->_vkimgview);
 
-        VkFramebufferCreateInfo CFBI = {};
-        CFBI.sType                   = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-        CFBI.renderPass              = rpass->_vkrp; // The VkRenderPass you created earlier
-        CFBI.attachmentCount         = fb_attachments.size();
-        CFBI.pAttachments            = fb_attachments.data();
-        CFBI.width                   = _swapchain->_extent.width; // Typically the size of your swap chain images or offscreen buffer
-        CFBI.height                  = _swapchain->_extent.height;
-        CFBI.layers                  = 1;
+      VkFramebufferCreateInfo CFBI = {};
+      CFBI.sType                   = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+      CFBI.renderPass              = rpass->_vkrp; // The VkRenderPass you created earlier
+      CFBI.attachmentCount         = fb_attachments.size();
+      CFBI.pAttachments            = fb_attachments.data();
+      CFBI.width                   = _swapchain->_extent.width; // Typically the size of your swap chain images or offscreen buffer
+      CFBI.height                  = _swapchain->_extent.height;
+      CFBI.layers                  = 1;
 
-        VkResult OK = vkCreateFramebuffer(_contextVK->_vkdevice, &CFBI, nullptr, &VKFRB);
-        OrkAssert(OK == VK_SUCCESS);
+      VkResult OK = vkCreateFramebuffer(_contextVK->_vkdevice, &CFBI, nullptr, &VKFRB);
+      OrkAssert(OK == VK_SUCCESS);
     }
-  }
-  else{
+  } else {
     OrkAssert(_swapchain->_mainRenderPass == rpass);
   }
 }

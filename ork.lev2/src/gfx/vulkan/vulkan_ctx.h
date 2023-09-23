@@ -406,6 +406,13 @@ struct VulkanBuffer{
   vkmemforbuf_ptr_t _memory;
 };
 
+using barrier_ptr_t = std::shared_ptr<VkImageMemoryBarrier>;
+barrier_ptr_t createImageBarrier(VkImage image,
+                                 VkImageLayout oldLayout,
+                                 VkImageLayout newLayout,
+                                 VkAccessFlagBits srcAccessMask,
+                                 VkAccessFlagBits dstAccessMask);
+
 ///////////////////////////////////////////////////////////////////////////////
 
 struct VulkanTextureObject {
@@ -1129,17 +1136,6 @@ public:
   vkci_ptr_t _ci;
 #endif
 };
-
-///////////////////////////////////////////////////////////////////////////
-
- void _imageBarrier(VkCommandBuffer cmdbuf, //
-                    VkImage image, //
-                    VkAccessFlags srcAccessMask, //
-                    VkAccessFlags dstAccessMask, //
-                    VkPipelineStageFlags srcStageMask, //
-                    VkPipelineStageFlags dstStageMask, //
-                    VkImageLayout oldLayout, //
-                    VkImageLayout newLayout);
 
 ///////////////////////////////////////////////////////////////////////////
 

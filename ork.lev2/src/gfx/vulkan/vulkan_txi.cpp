@@ -51,8 +51,6 @@ void VkTextureInterface::UpdateAnimatedTexture(Texture* ptex, TextureAnimationIn
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-using barrier_ptr_t = std::shared_ptr<VkImageMemoryBarrier>;
-
 barrier_ptr_t createImageBarrier(VkImage image,
                                  VkImageLayout oldLayout,
                                  VkImageLayout newLayout,
@@ -67,6 +65,12 @@ barrier_ptr_t createImageBarrier(VkImage image,
   barrier->newLayout                     = newLayout;
   barrier->srcAccessMask                 = srcAccessMask;
   barrier->dstAccessMask                 = dstAccessMask;
+  auto& range = barrier->subresourceRange;
+  range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+  range.baseMipLevel = 0;
+  range.levelCount = 1;
+  range.baseArrayLayer = 0;
+  range.layerCount = 1;
   return barrier;
 }
 
