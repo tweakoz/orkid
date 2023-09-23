@@ -371,6 +371,31 @@ static void platoPresent(vkplatformobject_ptr_t plato) {
   }
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
+barrier_ptr_t createImageBarrier(VkImage image,
+                                 VkImageLayout oldLayout,
+                                 VkImageLayout newLayout,
+                                 VkAccessFlagBits srcAccessMask,
+                                 VkAccessFlagBits dstAccessMask){
+  barrier_ptr_t barrier = std::make_shared<VkImageMemoryBarrier>();
+  initializeVkStruct(*barrier, VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
+  barrier->image                           = image;
+  barrier->srcQueueFamilyIndex             = VK_QUEUE_FAMILY_IGNORED;
+  barrier->dstQueueFamilyIndex             = VK_QUEUE_FAMILY_IGNORED;
+  barrier->oldLayout                     = oldLayout;
+  barrier->newLayout                     = newLayout;
+  barrier->srcAccessMask                 = srcAccessMask;
+  barrier->dstAccessMask                 = dstAccessMask;
+  auto& range = barrier->subresourceRange;
+  range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+  range.baseMipLevel = 0;
+  range.levelCount = 1;
+  range.baseArrayLayer = 0;
+  range.layerCount = 1;
+  return barrier;
+}
+
 ///////////////////////////////////////////////////////////////////////
 
 void VkContext::makeCurrentContext() {
@@ -1009,6 +1034,9 @@ VulkanMemoryForImage::VulkanMemoryForImage(vkcontext_rawptr_t ctxVK, VkImage ima
   _allocinfo->memoryTypeIndex = _ctxVK->_findMemoryType(_memreq->memoryTypeBits, memprops);
 
   VkResult OK = vkAllocateMemory(_ctxVK->_vkdevice, _allocinfo.get(), nullptr, _vkmem.get());
+  OrkAssert(OK == VK_SUCCESS);
+  
+  OK = vkBindImageMemory(_ctxVK->_vkdevice, _vkimage, *_vkmem, 0);
   OrkAssert(OK == VK_SUCCESS);
 
 }

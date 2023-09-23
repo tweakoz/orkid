@@ -104,14 +104,7 @@ void _vkCreateImageForBuffer(
   VkResult OK = vkCreateImage(ctxVK->_vkdevice, &imginf, nullptr, &bufferimpl->_vkimg);
   OrkAssert(OK == VK_SUCCESS);
   ///////////////////////////////////////////////////
-  auto image_memory = std::make_shared<VulkanMemoryForImage>(ctxVK, bufferimpl->_vkimg,VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-  bufferimpl->_memforimg = image_memory;
-  ///////////////////////////////////////////////////
-  vkBindImageMemory(
-      ctxVK->_vkdevice,   //
-      bufferimpl->_vkimg, //
-      *image_memory->_vkmem,
-      0);
+  bufferimpl->_memforimg = std::make_shared<VulkanMemoryForImage>(ctxVK, bufferimpl->_vkimg,VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
   ///////////////////////////////////////////////////
   VkImageViewCreateInfo viewInfo = {};
   initializeVkStruct(viewInfo, VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO);

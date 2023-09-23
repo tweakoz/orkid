@@ -51,30 +51,6 @@ void VkTextureInterface::UpdateAnimatedTexture(Texture* ptex, TextureAnimationIn
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-barrier_ptr_t createImageBarrier(VkImage image,
-                                 VkImageLayout oldLayout,
-                                 VkImageLayout newLayout,
-                                 VkAccessFlagBits srcAccessMask,
-                                 VkAccessFlagBits dstAccessMask){
-  barrier_ptr_t barrier = std::make_shared<VkImageMemoryBarrier>();
-  initializeVkStruct(*barrier, VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
-  barrier->image                           = image;
-  barrier->srcQueueFamilyIndex             = VK_QUEUE_FAMILY_IGNORED;
-  barrier->dstQueueFamilyIndex             = VK_QUEUE_FAMILY_IGNORED;
-  barrier->oldLayout                     = oldLayout;
-  barrier->newLayout                     = newLayout;
-  barrier->srcAccessMask                 = srcAccessMask;
-  barrier->dstAccessMask                 = dstAccessMask;
-  auto& range = barrier->subresourceRange;
-  range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-  range.baseMipLevel = 0;
-  range.levelCount = 1;
-  range.baseArrayLayer = 0;
-  range.layerCount = 1;
-  return barrier;
-}
-
-///////////////////////////////////////////////////////////////////////////////
 
 void VkTextureInterface::generateMipMaps(Texture* ptex) {
 
@@ -105,13 +81,22 @@ void VkTextureInterface::generateMipMaps(Texture* ptex) {
     int mip_level = 0;
     while( keep_going ) {
         barrier->subresourceRange.baseMipLevel = mip_level;
-        barrier->subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
-        barrier->subresourceRange.baseArrayLayer = 0;
-        barrier->subresourceRange.layerCount     = 1;
-        barrier->subresourceRange.levelCount     = 1;
 
-        vkCmdPipelineBarrier(
-            vk_cmdbuf, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, barrier.get());
+        /////////////////////////////////////////
+        // transition mip level to transfer src
+        /////////////////////////////////////////
+
+        vkCmdPipelineBarrier( vk_cmdbuf, // cmdbuf
+                              VK_PIPELINE_STAGE_TRANSFER_BIT, // srcStageMask
+                              VK_PIPELINE_STAGE_TRANSFER_BIT, // dstStageMask
+                              0, //  dependencyFlags
+                              0, nullptr, // memoryBarriers
+                              0, nullptr, // bufferMemoryBarriers
+                              1, barrier.get()); // imageMemoryBarriers
+
+        /////////////////////////////////////////
+        // blit mip level to next mip level (downsample)
+        /////////////////////////////////////////
 
         VkImageBlit blit{};
         blit.srcOffsets[0]                 = {0, 0, 0};
@@ -137,13 +122,27 @@ void VkTextureInterface::generateMipMaps(Texture* ptex) {
             &blit,
             VK_FILTER_LINEAR);
 
+        /////////////////////////////////////////
+        // transition mip level to shader read
+        /////////////////////////////////////////
+
         barrier->oldLayout     = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
         barrier->newLayout     = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
         barrier->srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
         barrier->dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
 
-        vkCmdPipelineBarrier(
-            vk_cmdbuf, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, barrier.get());
+        vkCmdPipelineBarrier( vk_cmdbuf, // cmdbuf
+                              VK_PIPELINE_STAGE_TRANSFER_BIT, // srcStageMask
+                              VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, // dstStageMask
+                              0, // dependencyFlags
+                              0, nullptr, // memoryBarriers
+                              0, nullptr,  // 
+                              1, barrier.get()); // imageMemoryBarriers
+
+
+        /////////////////////////////////////////
+        // prep for next iteration
+        /////////////////////////////////////////
 
         if (mipWidth > 1)
         mipWidth /= 2;
@@ -152,7 +151,11 @@ void VkTextureInterface::generateMipMaps(Texture* ptex) {
 
         keep_going = (mipWidth > 1) || (mipHeight > 1);
         mip_level++;
-    }
+    } // while( keep_going ) { // for each mipmap...
+
+  /////////////////////////////////////////
+  // transition mip level to shader read
+  /////////////////////////////////////////
 
   barrier->subresourceRange.baseMipLevel = mip_level - 1;
   barrier->oldLayout                     = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
@@ -160,8 +163,13 @@ void VkTextureInterface::generateMipMaps(Texture* ptex) {
   barrier->srcAccessMask                 = VK_ACCESS_TRANSFER_WRITE_BIT;
   barrier->dstAccessMask                 = VK_ACCESS_SHADER_READ_BIT;
 
-  vkCmdPipelineBarrier(
-      vk_cmdbuf, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, barrier.get());
+  vkCmdPipelineBarrier( vk_cmdbuf, // cmdbuf
+                        VK_PIPELINE_STAGE_TRANSFER_BIT, // srcStageMask
+                        VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, // dstStageMask
+                        0, // dependencyFlags
+                        0, nullptr,  // memoryBarriers
+                        0, nullptr,  // bufferMemoryBarriers
+                        1, barrier.get()); // imageMemoryBarriers
 
   _contextVK->endRecordCommandBuffer(cmdbuf);
   _contextVK->enqueueDeferredOneShotCommand(cmdbuf);
@@ -240,25 +248,9 @@ Texture* VkTextureInterface::createFromMipChain(MipChain* from_chain) {
         void* level_data = level->_data;
         size_t level_length = level->_length;
 
-        // register level data with vulkan
-
         /////////////////////////////////////
-        // map staging memory and copy
+        // transition to transfer dst (for copy)
         /////////////////////////////////////
-
-        auto staging_buffer = std::make_shared<VulkanBuffer>(_contextVK, level_length, VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
-        staging_buffer->copyFromHost(level_data,level_length);
-
-        /////////////////////////////////////
-        // add mip to texture image
-        /////////////////////////////////////
-
-        VkImageSubresourceRange mipSubRange = {};
-        mipSubRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
-        mipSubRange.baseMipLevel   = l;
-        mipSubRange.levelCount     = 1;
-        mipSubRange.baseArrayLayer = 0;
-        mipSubRange.layerCount     = 1;
 
         auto barrier = createImageBarrier(vktex->_vkimage,
                                           VK_IMAGE_LAYOUT_UNDEFINED,
@@ -266,20 +258,25 @@ Texture* VkTextureInterface::createFromMipChain(MipChain* from_chain) {
                                           VkAccessFlagBits(0),
                                           VK_ACCESS_TRANSFER_WRITE_BIT
                                           );
-        barrier->subresourceRange  = mipSubRange;
+
+        barrier->subresourceRange.baseMipLevel   = l;
 
         vkCmdPipelineBarrier(
-            vk_cmdbuf,
-            VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-            VK_PIPELINE_STAGE_TRANSFER_BIT,
-            0,
-            0,
-            nullptr,
-            0,
-            nullptr,
-            1,
-            barrier.get());
+            vk_cmdbuf, // cmdbuf
+            VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, // srcStageMask
+            VK_PIPELINE_STAGE_TRANSFER_BIT, // dstStageMask
+            0, // dependencyFlags
+            0, nullptr, // memoryBarriers
+            0, nullptr, // bufferMemoryBarriers
+            1, barrier.get()); // imageMemoryBarriers
         
+        /////////////////////////////////////
+        // map staging memory and copy
+        /////////////////////////////////////
+
+        auto staging_buffer = std::make_shared<VulkanBuffer>(_contextVK, level_length, VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
+        staging_buffer->copyFromHost(level_data,level_length);
+
         VkBufferImageCopy region = {};
         region.bufferOffset      = 0;
         region.bufferRowLength   = 0;
@@ -296,6 +293,10 @@ Texture* VkTextureInterface::createFromMipChain(MipChain* from_chain) {
             1,
             &region);
         
+        /////////////////////////////////////
+        // transition to sampleable texture
+        /////////////////////////////////////
+
         barrier->oldLayout         = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
         barrier->newLayout         = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
         barrier->srcAccessMask     = VK_ACCESS_TRANSFER_WRITE_BIT;
@@ -402,21 +403,8 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
 
   /////////////////////////////////////
 
-  VkMemoryRequirements memRequirements;
-  vkGetImageMemoryRequirements(_contextVK->_vkdevice, vktex->_vkimage, &memRequirements);
-
-  VkMemoryAllocateInfo allocInfo{};
-  initializeVkStruct(allocInfo, VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO);
-  allocInfo.allocationSize  = memRequirements.size;
-  allocInfo.memoryTypeIndex = _contextVK->_findMemoryType(memRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-
-  VkDeviceMemory vkmem;
-  initializeVkStruct(vkmem);
-  ok = vkAllocateMemory(_contextVK->_vkdevice, &allocInfo, nullptr, &vkmem);
-  OrkAssert(VK_SUCCESS == ok);
-  //vktex->_vkmem = vkmem;
-
-  vkBindImageMemory(_contextVK->_vkdevice, vktex->_vkimage, vkmem, 0);
+  vktex->_imgmem = std::make_shared<VulkanMemoryForImage>(_contextVK, vktex->_vkimage,VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+  vkBindImageMemory(_contextVK->_vkdevice, vktex->_vkimage, *vktex->_imgmem->_vkmem, 0);
 
   /////////////////////////////////////
 

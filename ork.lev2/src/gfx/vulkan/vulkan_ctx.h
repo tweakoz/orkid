@@ -424,6 +424,7 @@ struct VulkanTextureObject {
   // GLuint mFbo;
   // GLuint mDbo;
   // GLenum mTarget;
+  vkmemforimg_ptr_t _imgmem;
   VkImage _vkimage;
   VkImageView _vkimageview;
   
