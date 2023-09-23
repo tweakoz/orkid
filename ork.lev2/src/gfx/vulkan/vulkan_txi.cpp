@@ -163,7 +163,7 @@ Texture* VkTextureInterface::createFromMipChain(MipChain* from_chain) {
     size_t num_levels = from_chain->_levels.size();
 
     VkImageCreateInfo imageInfo{};
-    imageInfo.sType         = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+      initializeVkStruct(imageInfo, VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO);
     imageInfo.imageType     = VK_IMAGE_TYPE_2D;
     imageInfo.format        = VkFormat(format);
     imageInfo.extent.width  = from_chain->_width;
@@ -179,11 +179,187 @@ Texture* VkTextureInterface::createFromMipChain(MipChain* from_chain) {
         void* level_data = level->_data;
         size_t level_length = level->_length;
 
+        // register level data with vulkan
+
+        VkBufferCreateInfo BUFINFO;
+        initializeVkStruct(BUFINFO, VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO);
+        BUFINFO.size        = level_length;
+        BUFINFO.usage       = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+        BUFINFO.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+        VkBuffer stagingBuffer;
+        initializeVkStruct(stagingBuffer);
+        VkResult ok = vkCreateBuffer(_contextVK->_vkdevice, &BUFINFO, nullptr, &stagingBuffer);
+
+        /////////////////////////////////////
+        // allocate image memory
+        /////////////////////////////////////
+
+        VkMemoryRequirements MEMREQ;
+        VkMemoryAllocateInfo ALLOCINFO = {};
+        initializeVkStruct(MEMREQ);
+        initializeVkStruct(ALLOCINFO, VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO);
+        vkGetBufferMemoryRequirements(_contextVK->_vkdevice, stagingBuffer, &MEMREQ);
+        printf( "alignment<%zu>\n", MEMREQ.alignment );
+        ALLOCINFO.allocationSize  = MEMREQ.size;
+        VkMemoryPropertyFlags vkmemflags;
+        vkmemflags               = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT //
+                                 | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT; // do not need flush...
+        ALLOCINFO.memoryTypeIndex = _contextVK->_findMemoryType(MEMREQ.memoryTypeBits, vkmemflags);
+        // printf( "memtypeindex = %u\n", ALLOCINFO.memoryTypeIndex );
+        VkDeviceMemory vkmem;
+        initializeVkStruct(vkmem);
+        vkAllocateMemory(_contextVK->_vkdevice, &ALLOCINFO, nullptr, &vkmem);
+        vkBindBufferMemory(_contextVK->_vkdevice, stagingBuffer, vkmem, 0);
+
+        /////////////////////////////////////
+
+        void* data = nullptr;
+        vkMapMemory(_contextVK->_vkdevice, vkmem, 0, level_length, 0, &data);
+        memcpy(data, level_data, level_length);
+        vkUnmapMemory(_contextVK->_vkdevice, vkmem);
+
+        /////////////////////////////////////
+        // add mip to texture image
+        /////////////////////////////////////
+
+        VkImageSubresourceRange mipSubRange = {};
+        mipSubRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+        mipSubRange.baseMipLevel   = l;
+        mipSubRange.levelCount     = 1;
+        mipSubRange.baseArrayLayer = 0;
+        mipSubRange.layerCount     = 1;
+
+        VkImageMemoryBarrier barrier = {};
+        initializeVkStruct(barrier, VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
+        barrier.oldLayout         = VK_IMAGE_LAYOUT_UNDEFINED;
+        barrier.newLayout         = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+        barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        barrier.image             = vktex->_vkimage;
+        barrier.subresourceRange  = mipSubRange;
+        barrier.srcAccessMask     = 0;
+        barrier.dstAccessMask     = VK_ACCESS_TRANSFER_WRITE_BIT;
+
+        vkCmdPipelineBarrier(
+            _contextVK->_cmdbufcur_gfx->_vkcmdbuf,
+            VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+            VK_PIPELINE_STAGE_TRANSFER_BIT,
+            0,
+            0,
+            nullptr,
+            0,
+            nullptr,
+            1,
+            &barrier);
         
+        VkBufferImageCopy region = {};
+        region.bufferOffset      = 0;
+        region.bufferRowLength   = 0;
+        region.bufferImageHeight = 0;
+        region.imageSubresource  = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1};
+        region.imageOffset       = {0, 0, 0};
+        region.imageExtent       = {uint32_t(level_width), uint32_t(level_height), 1};
+
+        vkCmdCopyBufferToImage(
+            _contextVK->_cmdbufcur_gfx->_vkcmdbuf,
+            stagingBuffer,
+            vktex->_vkimage,
+            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+            1,
+            &region);
+        
+        barrier.oldLayout         = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+        barrier.newLayout         = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        barrier.srcAccessMask     = VK_ACCESS_TRANSFER_WRITE_BIT;
+        barrier.dstAccessMask     = VK_ACCESS_SHADER_READ_BIT;
+
+        vkCmdPipelineBarrier(
+            _contextVK->_cmdbufcur_gfx->_vkcmdbuf,
+            VK_PIPELINE_STAGE_TRANSFER_BIT,
+            VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+            0,
+            0,
+            nullptr,
+            0,
+            nullptr,
+            1,
+            &barrier);
+
+        vkDestroyBuffer(_contextVK->_vkdevice, stagingBuffer, nullptr);
+        vkFreeMemory(_contextVK->_vkdevice, vkmem, nullptr);
 
 
     }
 
+    /////////////////////////////////////
+    // create image view
+    /////////////////////////////////////
+
+    VkImageViewCreateInfo viewInfo{};
+    initializeVkStruct(viewInfo, VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO);
+    viewInfo.image                           = vktex->_vkimage;
+    viewInfo.viewType                        = VK_IMAGE_VIEW_TYPE_2D;
+    viewInfo.format                          = VkFormat(format);
+    viewInfo.subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+    viewInfo.subresourceRange.baseMipLevel   = 0;
+    viewInfo.subresourceRange.levelCount     = num_levels;
+    viewInfo.subresourceRange.baseArrayLayer = 0;
+    viewInfo.subresourceRange.layerCount     = 1;
+    
+    VkImageView vkimageview;
+    initializeVkStruct(vkimageview);
+    VkResult ok = vkCreateImageView(_contextVK->_vkdevice, &viewInfo, nullptr, &vkimageview);
+    OrkAssert(VK_SUCCESS == ok);
+
+    //vktex->_vkimageview = vkimageview;
+
+    /////////////////////////////////////
+    // create sampler
+    /////////////////////////////////////
+
+    VkSamplerCreateInfo samplerInfo{};
+    initializeVkStruct(samplerInfo, VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO);
+    samplerInfo.magFilter               = VK_FILTER_LINEAR;
+    samplerInfo.minFilter               = VK_FILTER_LINEAR;
+    samplerInfo.addressModeU            = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    samplerInfo.addressModeV            = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    samplerInfo.addressModeW            = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    samplerInfo.anisotropyEnable        = VK_TRUE;
+    samplerInfo.maxAnisotropy           = 16;
+    samplerInfo.borderColor             = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+    samplerInfo.unnormalizedCoordinates = VK_FALSE;
+    samplerInfo.compareEnable           = VK_FALSE;
+    samplerInfo.compareOp               = VK_COMPARE_OP_ALWAYS;
+    samplerInfo.mipmapMode              = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+    samplerInfo.mipLodBias              = 0.0f;
+    samplerInfo.minLod                  = 0.0f;
+    samplerInfo.maxLod                  = float(num_levels);
+
+    VkSampler vksampler;
+    initializeVkStruct(vksampler);
+    ok = vkCreateSampler(_contextVK->_vkdevice, &samplerInfo, nullptr, &vksampler);
+    OrkAssert(VK_SUCCESS == ok);
+
+    //vktex->_vksampler = vksampler;
+
+    /////////////////////////////////////
+    // create descriptor image info
+    /////////////////////////////////////
+
+    VkDescriptorImageInfo descimageInfo{};
+    descimageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    descimageInfo.imageView   = vkimageview;
+    descimageInfo.sampler     = vksampler;
+
+    /////////////////////////////////////
+
+    ptex->_texFormat = format;
+    ptex->_width     = from_chain->_width;
+    ptex->_height    = from_chain->_height;
+    ptex->_depth     = 1;
+    ptex->_num_mips  = num_levels;
+   //ptex->_target    = ETEXTARGET_2D;
+    ptex->_debugName = "vulkan_texture";
 
     return ptex;
 }
