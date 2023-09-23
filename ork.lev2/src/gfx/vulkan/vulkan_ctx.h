@@ -178,6 +178,15 @@ using uniset_item_map_t = std::map<std::string, vkfxsunisetitem_ptr_t>;
 
 extern vkinstance_ptr_t _GVI;
 
+using vkmemreq_ptr_t = std::shared_ptr<VkMemoryRequirements>;
+using vkmemallocinfo_ptr_t = std::shared_ptr<VkMemoryAllocateInfo>;
+using vkmem_ptr_t = std::shared_ptr<VkDeviceMemory>;
+struct VulkanMemoryForImage;
+struct VulkanMemoryForBuffer;
+using vkmemforimg_ptr_t = std::shared_ptr<VulkanMemoryForImage>;
+using vkmemforbuf_ptr_t = std::shared_ptr<VulkanMemoryForBuffer>;
+
+
 struct VkFormatConverter{
 
     static const VkFormatConverter _instance;
@@ -308,8 +317,9 @@ struct VklRtBufferImpl {
   RtBuffer* _rtb         = nullptr;
   bool _init             = true;
   VkImage _vkimg;
-  VkMemoryPropertyFlags _vkmemflags;
-  VkDeviceMemory _vkmem;
+  //VkMemoryPropertyFlags _vkmemflags;
+  //VkDeviceMemory _vkmem;
+  vkmemforimg_ptr_t _memforimg;
   VkFormat _vkfmt;
   VkImageView _vkimgview;
   VkAttachmentDescription _attachmentDesc;
@@ -352,6 +362,32 @@ struct VkTexLoadReq {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+struct VulkanMemoryForImage{
+  VulkanMemoryForImage(vkcontext_rawptr_t ctxVK, VkImage image, VkMemoryPropertyFlags memprops);
+  ~VulkanMemoryForImage();
+
+  vkcontext_rawptr_t _ctxVK;
+  VkImage _vkimage;
+  vkmemreq_ptr_t _memreq;
+  vkmemallocinfo_ptr_t _allocinfo;
+  vkmem_ptr_t _vkmem;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct VulkanMemoryForBuffer{
+  VulkanMemoryForBuffer(vkcontext_rawptr_t ctxVK, VkBuffer buffer, VkMemoryPropertyFlags memprops=VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+  ~VulkanMemoryForBuffer();
+
+  vkcontext_rawptr_t _ctxVK;
+  VkBuffer _vkbuffer;
+  vkmemreq_ptr_t _memreq;
+  vkmemallocinfo_ptr_t _allocinfo;
+  vkmem_ptr_t _vkmem;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
 struct VulkanTextureObject {
 
   VulkanTextureObject(vktxi_rawptr_t txi);
@@ -362,6 +398,7 @@ struct VulkanTextureObject {
   // GLuint mDbo;
   // GLenum mTarget;
   VkImage _vkimage;
+  VkImageView _vkimageview;
   
   int _maxmip = 0;
   vktexasynctask_ptr_t _async;
@@ -531,8 +568,9 @@ struct VulkanVertexBuffer {
   ~VulkanVertexBuffer();
   VkBufferCreateInfo _vkbufinfo;
   VkBuffer _vkbuf;
-  VkMemoryPropertyFlags _vkmemflags;
-  VkDeviceMemory _vkmem;
+  //VkMemoryPropertyFlags _vkmemflags;
+  //VkDeviceMemory _vkmem;
+  vkmemforbuf_ptr_t _memforbuf;
   vkcontext_rawptr_t _ctx;
   vkvertexinputconfig_ptr_t _vertexConfig;
 };
@@ -541,8 +579,9 @@ struct VulkanIndexBuffer {
   ~VulkanIndexBuffer();
   VkBufferCreateInfo _vkbufinfo;
   VkBuffer _vkbuf;
-  VkMemoryPropertyFlags _vkmemflags;
-  VkDeviceMemory _vkmem;
+  vkmemforbuf_ptr_t _memforbuf;
+  //VkMemoryPropertyFlags _vkmemflags;
+  //VkDeviceMemory _vkmem;
   vkcontext_rawptr_t _ctx;
 };
 

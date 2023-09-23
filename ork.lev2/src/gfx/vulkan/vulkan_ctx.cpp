@@ -1023,6 +1023,62 @@ vkswapchaincaps_ptr_t VkContext::_swapChainCapsForSurface(VkSurfaceKHR surface) 
 
 ///////////////////////////////////////////////////////////////////////////////
 
+VulkanMemoryForImage::VulkanMemoryForImage(vkcontext_rawptr_t ctxVK, VkImage image, VkMemoryPropertyFlags memprops)
+  : _ctxVK(ctxVK)
+  , _vkimage(image){
+
+  _memreq = std::make_shared<VkMemoryRequirements>();
+  _allocinfo = std::make_shared<VkMemoryAllocateInfo>();
+  _vkmem = std::make_shared<VkDeviceMemory>();
+
+  initializeVkStruct(*_memreq);
+  initializeVkStruct(*_allocinfo,VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO);
+  initializeVkStruct(*_vkmem);
+
+
+  vkGetImageMemoryRequirements(_ctxVK->_vkdevice, _vkimage, _memreq.get());
+  _allocinfo->allocationSize = _memreq->size;
+  _allocinfo->memoryTypeIndex = _ctxVK->_findMemoryType(_memreq->memoryTypeBits, memprops);
+
+  VkResult OK = vkAllocateMemory(_ctxVK->_vkdevice, _allocinfo.get(), nullptr, _vkmem.get());
+  OrkAssert(OK == VK_SUCCESS);
+
+}
+
+VulkanMemoryForImage::~VulkanMemoryForImage(){
+  vkFreeMemory(_ctxVK->_vkdevice, *_vkmem, nullptr);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+VulkanMemoryForBuffer::VulkanMemoryForBuffer(vkcontext_rawptr_t ctxVK, VkBuffer buffer, VkMemoryPropertyFlags memprops)
+  : _ctxVK(ctxVK)
+  , _vkbuffer(buffer){
+
+  _memreq = std::make_shared<VkMemoryRequirements>();
+  _allocinfo = std::make_shared<VkMemoryAllocateInfo>();
+  _vkmem = std::make_shared<VkDeviceMemory>();
+
+  initializeVkStruct(*_memreq);
+  initializeVkStruct(*_allocinfo,VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO);
+  initializeVkStruct(*_vkmem);
+
+
+  vkGetBufferMemoryRequirements(_ctxVK->_vkdevice, _vkbuffer, _memreq.get());
+  _allocinfo->allocationSize = _memreq->size;
+  _allocinfo->memoryTypeIndex = _ctxVK->_findMemoryType(_memreq->memoryTypeBits, memprops);
+
+  VkResult OK = vkAllocateMemory(_ctxVK->_vkdevice, _allocinfo.get(), nullptr, _vkmem.get());
+  OrkAssert(OK == VK_SUCCESS);
+
+}
+
+VulkanMemoryForBuffer::~VulkanMemoryForBuffer(){
+  vkFreeMemory(_ctxVK->_vkdevice, *_vkmem, nullptr);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 void VkContext::_doPushCommandBuffer(
     commandbuffer_ptr_t cmdbuf, //
     rtgroup_ptr_t rtg) {        //

@@ -104,34 +104,13 @@ void _vkCreateImageForBuffer(
   VkResult OK = vkCreateImage(ctxVK->_vkdevice, &imginf, nullptr, &bufferimpl->_vkimg);
   OrkAssert(OK == VK_SUCCESS);
   ///////////////////////////////////////////////////
-  bufferimpl->_vkmemflags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-  //| VK_MEMORY_PROPERTY_HOST_COHERENT_BIT; // do not need flush...
-  ///////////////////////////////////////////////////
-  VkMemoryRequirements memRequirements;
-  initializeVkStruct(memRequirements);
-  vkGetImageMemoryRequirements(ctxVK->_vkdevice, bufferimpl->_vkimg, &memRequirements);
-  ///////////////////////////////////////////////////
-  VkMemoryAllocateInfo allocInfo = {};
-  initializeVkStruct(allocInfo, VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO);
-  allocInfo.sType           = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-  allocInfo.allocationSize  = memRequirements.size;
-  allocInfo.memoryTypeIndex = ctxVK->_findMemoryType(
-      memRequirements.memoryTypeBits, //
-      bufferimpl->_vkmemflags);
-  ///////////////////////////////////////////////////
-  VkDeviceMemory imageMemory;
-  initializeVkStruct(bufferimpl->_vkmem);
-  OK = vkAllocateMemory(
-      ctxVK->_vkdevice, //
-      &allocInfo,       //
-      nullptr,          //
-      &bufferimpl->_vkmem);
-  OrkAssert(OK == VK_SUCCESS);
+  auto image_memory = std::make_shared<VulkanMemoryForImage>(ctxVK, bufferimpl->_vkimg,VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+  bufferimpl->_memforimg = image_memory;
   ///////////////////////////////////////////////////
   vkBindImageMemory(
       ctxVK->_vkdevice,   //
       bufferimpl->_vkimg, //
-      bufferimpl->_vkmem,
+      *image_memory->_vkmem,
       0);
   ///////////////////////////////////////////////////
   VkImageViewCreateInfo viewInfo = {};

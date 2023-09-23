@@ -33,20 +33,9 @@ VulkanVertexBuffer::VulkanVertexBuffer(vkcontext_rawptr_t ctx, VertexBufferBase&
   // allocate vertex memory
   /////////////////////////////////////
 
-  VkMemoryRequirements memRequirements;
-  VkMemoryAllocateInfo allocInfo = {};
-  initializeVkStruct(memRequirements);
-  initializeVkStruct(allocInfo, VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO);
-  vkGetBufferMemoryRequirements(ctx->_vkdevice, _vkbuf, &memRequirements);
-  printf( "alignment<%zu>\n", memRequirements.alignment );
-  allocInfo.allocationSize  = memRequirements.size;
-  _vkmemflags               = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT //
-                            | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT; // do not need flush...
-  allocInfo.memoryTypeIndex = ctx->_findMemoryType(memRequirements.memoryTypeBits, _vkmemflags);
-  // printf( "memtypeindex = %u\n", allocInfo.memoryTypeIndex );
-  initializeVkStruct(_vkmem);
-  vkAllocateMemory(ctx->_vkdevice, &allocInfo, nullptr, &_vkmem);
-  vkBindBufferMemory(ctx->_vkdevice, _vkbuf, _vkmem, 0);
+  _memforbuf = std::make_shared<VulkanMemoryForBuffer>(ctx, _vkbuf);
+
+  vkBindBufferMemory(ctx->_vkdevice, _vkbuf, *_memforbuf->_vkmem, 0);
 
   /////////////////////////////////////
   // find vertex input configuration
@@ -61,8 +50,8 @@ VulkanVertexBuffer::VulkanVertexBuffer(vkcontext_rawptr_t ctx, VertexBufferBase&
 ///////////////////////////////////////////////////////////////////////////////
 
 VulkanVertexBuffer::~VulkanVertexBuffer() {
-  vkFreeMemory(_ctx->_vkdevice, _vkmem, nullptr);
   vkDestroyBuffer(_ctx->_vkdevice, _vkbuf, nullptr);
+  _memforbuf = nullptr;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -76,25 +65,14 @@ VulkanIndexBuffer::VulkanIndexBuffer(vkcontext_rawptr_t ctx, size_t length) {
   _vkbufinfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
   vkCreateBuffer(ctx->_vkdevice, &_vkbufinfo, nullptr, &_vkbuf);
   //////////////////
-  VkMemoryRequirements memRequirements;
-  initializeVkStruct(memRequirements);
-  vkGetBufferMemoryRequirements(ctx->_vkdevice, _vkbuf, &memRequirements);
+  _memforbuf = std::make_shared<VulkanMemoryForBuffer>(ctx, _vkbuf);
   //////////////////
-  VkMemoryAllocateInfo allocInfo = {};
-  initializeVkStruct(allocInfo, VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO);
-  allocInfo.allocationSize = memRequirements.size;
-  //////////////////
-  _vkmemflags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT; // do not need flush...
-  //////////////////
-  allocInfo.memoryTypeIndex = ctx->_findMemoryType(memRequirements.memoryTypeBits, _vkmemflags);
-  //////////////////
-  vkAllocateMemory(ctx->_vkdevice, &allocInfo, nullptr, &_vkmem);
-  vkBindBufferMemory(ctx->_vkdevice, _vkbuf, _vkmem, 0);
+  vkBindBufferMemory(ctx->_vkdevice, _vkbuf, *_memforbuf->_vkmem, 0);
 }
 ///////////////////////////////////////////////////////////////////////////////
 VulkanIndexBuffer::~VulkanIndexBuffer() {
-  vkFreeMemory(_ctx->_vkdevice, _vkmem, nullptr);
   vkDestroyBuffer(_ctx->_vkdevice, _vkbuf, nullptr);
+  _memforbuf = nullptr;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -260,11 +238,14 @@ void* VkGeometryBufferInterface::LockVB(VertexBufferBase& vtx_buf, int ivbase, i
     vtx_buf._impl.setShared(vk_impl);
   }
   void* vertex_memory = nullptr;
+
+  auto& vkmem = *vk_impl->_memforbuf->_vkmem;
+
   if (is_static) {
     OrkAssert(ibasebytes == 0); // TODO change api to not require offset for static buffers
     vkMapMemory(
         _contextVK->_vkdevice, // vulkan device
-        vk_impl->_vkmem,       // vulkan memory
+        vkmem,       // vulkan memory
         0,                     // offset
         isizebytes,            // size
         0,                     // flags
@@ -274,7 +255,7 @@ void* VkGeometryBufferInterface::LockVB(VertexBufferBase& vtx_buf, int ivbase, i
 
     vkMapMemory(
         _contextVK->_vkdevice, // vulkan device
-        vk_impl->_vkmem,       // vulkan memory
+        vkmem,       // vulkan memory
         ibasebytes,            // offset
         isizebytes,            // size
         0,                     // flags
@@ -292,7 +273,8 @@ void* VkGeometryBufferInterface::LockVB(VertexBufferBase& vtx_buf, int ivbase, i
 void VkGeometryBufferInterface::UnLockVB(VertexBufferBase& vtx_buf) {
   auto vk_impl = vtx_buf._impl.getShared<VulkanVertexBuffer>();
   OrkAssert(vtx_buf.IsLocked());
-  vkUnmapMemory(_contextVK->_vkdevice, vk_impl->_vkmem);
+  auto& vkmem = *vk_impl->_memforbuf->_vkmem;
+  vkUnmapMemory(_contextVK->_vkdevice, vkmem);
   vtx_buf.Unlock();
 }
 

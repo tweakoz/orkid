@@ -427,16 +427,14 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   imageInfo->sharingMode   = VK_SHARING_MODE_EXCLUSIVE;
   imageInfo->initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
-  VkImage vkimage;
-  initializeVkStruct(vkimage);
-  VkResult ok = vkCreateImage(_contextVK->_vkdevice, imageInfo.get(), nullptr, &vkimage);
+  initializeVkStruct(vktex->_vkimage);
+  VkResult ok = vkCreateImage(_contextVK->_vkdevice, imageInfo.get(), nullptr, &vktex->_vkimage);
   OrkAssert(VK_SUCCESS == ok);
-  vktex->_vkimage = vkimage;
 
   /////////////////////////////////////
 
   VkMemoryRequirements memRequirements;
-  vkGetImageMemoryRequirements(_contextVK->_vkdevice, vkimage, &memRequirements);
+  vkGetImageMemoryRequirements(_contextVK->_vkdevice, vktex->_vkimage, &memRequirements);
 
   VkMemoryAllocateInfo allocInfo{};
   initializeVkStruct(allocInfo, VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO);
@@ -449,13 +447,13 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   OrkAssert(VK_SUCCESS == ok);
   //vktex->_vkmem = vkmem;
 
-  vkBindImageMemory(_contextVK->_vkdevice, vkimage, vkmem, 0);
+  vkBindImageMemory(_contextVK->_vkdevice, vktex->_vkimage, vkmem, 0);
 
   /////////////////////////////////////
 
   VkImageViewCreateInfo viewInfo{};
   initializeVkStruct(viewInfo, VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO);
-  viewInfo.image                           = vkimage;
+  viewInfo.image                           = vktex->_vkimage;
   viewInfo.viewType                        = VK_IMAGE_VIEW_TYPE_2D;
   viewInfo.format                          = VkFormatConverter::convertBufferFormat(tid._dst_format);
   viewInfo.subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -464,12 +462,9 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   viewInfo.subresourceRange.baseArrayLayer = 0;
   viewInfo.subresourceRange.layerCount     = 1;
 
-  VkImageView vkimageview;
-  initializeVkStruct(vkimageview);
-  ok = vkCreateImageView(_contextVK->_vkdevice, &viewInfo, nullptr, &vkimageview);
+  initializeVkStruct(vktex->_vkimageview);
+  ok = vkCreateImageView(_contextVK->_vkdevice, &viewInfo, nullptr, &vktex->_vkimageview);
   OrkAssert(VK_SUCCESS == ok);
-
-  //vktex->_vkimageview = vkimageview;
 
   /////////////////////////////////////
 
@@ -480,13 +475,11 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   ok = vkCreateSampler(_contextVK->_vkdevice, samplerInfo.get(), nullptr, &vksampler);
   OrkAssert(VK_SUCCESS == ok);
 
-  //vktex->_vksampler = vksampler;
-
   /////////////////////////////////////
 
   VkDescriptorImageInfo descimageInfo{};
   descimageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-  descimageInfo.imageView   = vkimageview;
+  descimageInfo.imageView   = vktex->_vkimageview;
   descimageInfo.sampler     = vksampler;
 
   /////////////////////////////////////
@@ -495,7 +488,7 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   auto cmdbuf_impl = cmdbuf->_impl.getShared<VkCommandBufferImpl>();
   auto vk_cmdbuf   = cmdbuf_impl->_vkcmdbuf;
 
-  auto barrier = createImageBarrier(vkimage,
+  auto barrier = createImageBarrier(vktex->_vkimage,
                                     VK_IMAGE_LAYOUT_UNDEFINED,
                                     VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                                     VkAccessFlagBits(0),
@@ -535,30 +528,21 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   // allocate image GPU memory
   /////////////////////////////////////
 
-  VkMemoryRequirements MEMREQ;
-  VkMemoryAllocateInfo ALLOCINFO = {};
-  initializeVkStruct(MEMREQ);
-  initializeVkStruct(ALLOCINFO, VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO);
-  vkGetBufferMemoryRequirements(_contextVK->_vkdevice, stagingBuffer, &MEMREQ);
-  printf( "alignment<%zu>\n", MEMREQ.alignment );
-  ALLOCINFO.allocationSize  = MEMREQ.size;
-  VkMemoryPropertyFlags vkmemflags;
-  vkmemflags               = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT //
-                            | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT; // do not need flush...
-  ALLOCINFO.memoryTypeIndex = _contextVK->_findMemoryType(MEMREQ.memoryTypeBits, vkmemflags);
-  // printf( "memtypeindex = %u\n", ALLOCINFO.memoryTypeIndex );
-  initializeVkStruct(vkmem);
-  vkAllocateMemory(_contextVK->_vkdevice, &ALLOCINFO, nullptr, &vkmem);
-  vkBindBufferMemory(_contextVK->_vkdevice, stagingBuffer, vkmem, 0);
+  auto bufmem = std::make_shared<VulkanMemoryForBuffer>(_contextVK, //
+                                                         stagingBuffer, //
+                                                         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT //
+                                                       | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+  vkBindBufferMemory(_contextVK->_vkdevice, stagingBuffer, *bufmem->_vkmem, 0);
 
   /////////////////////////////////////
   // map GPU mem and copy
   /////////////////////////////////////
 
   void* data;
-  vkMapMemory(_contextVK->_vkdevice, vkmem, 0, memRequirements.size, 0, &data);
+  vkMapMemory(_contextVK->_vkdevice, *bufmem->_vkmem, 0, memRequirements.size, 0, &data);
   memcpy(data, tid._data, tid._truncation_length);
-  vkUnmapMemory(_contextVK->_vkdevice, vkmem);
+  vkUnmapMemory(_contextVK->_vkdevice, *bufmem->_vkmem);
 
   /////////////////////////////////////
   // GPU mem -> image
@@ -575,13 +559,12 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   vkCmdCopyBufferToImage(
       vk_cmdbuf,
       stagingBuffer,
-      vkimage,
+      vktex->_vkimage,
       VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
       1,
       &region);
 
   vkDestroyBuffer(_contextVK->_vkdevice, stagingBuffer, nullptr);
-  vkFreeMemory(_contextVK->_vkdevice, vkmem, nullptr);
 
   /////////////////////////////////////
   // transition to sampleable texture
