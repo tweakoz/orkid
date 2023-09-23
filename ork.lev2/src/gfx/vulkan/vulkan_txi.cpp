@@ -372,15 +372,7 @@ Texture* VkTextureInterface::createFromMipChain(MipChain* from_chain) {
   // create sampler
   /////////////////////////////////////
 
-  auto samplerInfo    = makeVKSCI();
-  samplerInfo->maxLod = float(num_levels);
-
-  VkSampler vksampler;
-  initializeVkStruct(vksampler);
-  ok = vkCreateSampler(_contextVK->_vkdevice, samplerInfo.get(), nullptr, &vksampler);
-  OrkAssert(VK_SUCCESS == ok);
-
-  // vktex->_vksampler = vksampler;
+  vktex->_vksampler = _contextVK->_sampler_per_maxlod[num_levels];
 
   /////////////////////////////////////
   // create descriptor image info
@@ -389,7 +381,7 @@ Texture* VkTextureInterface::createFromMipChain(MipChain* from_chain) {
   VkDescriptorImageInfo descimageInfo{};
   descimageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
   descimageInfo.imageView   = vkimageview;
-  descimageInfo.sampler     = vksampler;
+  descimageInfo.sampler     = vktex->_vksampler->_vksampler;
 
   /////////////////////////////////////
 
@@ -448,15 +440,13 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
 
   /////////////////////////////////////
 
-  vktex->_sampler_info = makeVKSCI();
-  ok                   = vkCreateSampler(_contextVK->_vkdevice, vktex->_sampler_info.get(), nullptr, &vktex->_vksampler);
-  OrkAssert(VK_SUCCESS == ok);
+  vktex->_vksampler = _contextVK->_sampler_base;
 
   /////////////////////////////////////
 
   vktex->_vkdescriptor_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
   vktex->_vkdescriptor_info.imageView   = vktex->_vkimageview;
-  vktex->_vkdescriptor_info.sampler     = vktex->_vksampler;
+  vktex->_vkdescriptor_info.sampler     = vktex->_vksampler->_vksampler;
 
   /////////////////////////////////////
   // transition to transfer dst (for copy)
@@ -561,6 +551,11 @@ VulkanTextureObject::VulkanTextureObject(vktxi_rawptr_t txi) {
 VulkanTextureObject::~VulkanTextureObject() {
 }
 
+VulkanSamplerObject::VulkanSamplerObject(vkcontext_rawptr_t ctx, vksamplercreateinfo_ptr_t cinfo) 
+  : _cinfo(cinfo) {
+  initializeVkStruct(_vksampler);
+  VkResult ok = vkCreateSampler(ctx->_vkdevice, _cinfo.get(), nullptr, &_vksampler);
+}
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2::vulkan
 ///////////////////////////////////////////////////////////////////////////////

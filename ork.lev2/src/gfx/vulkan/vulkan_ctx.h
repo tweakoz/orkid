@@ -464,6 +464,13 @@ struct VulkanImageObject {
   vkmemforimg_ptr_t _imgmem;
 };
 
+struct VulkanSamplerObject {
+  VulkanSamplerObject(vkcontext_rawptr_t ctx, vksamplercreateinfo_ptr_t cinfo);
+  vksamplercreateinfo_ptr_t _cinfo;
+  VkSampler _vksampler;
+};
+using vksampler_obj_ptr_t = std::shared_ptr<VulkanSamplerObject>;
+
 struct VulkanTextureObject {
 
   VulkanTextureObject(vktxi_rawptr_t txi);
@@ -476,8 +483,7 @@ struct VulkanTextureObject {
   vktexasynctask_ptr_t _async;
   vktxi_rawptr_t _txi;
 
-  vksamplercreateinfo_ptr_t _sampler_info;
-  VkSampler _vksampler;
+  vksampler_obj_ptr_t _vksampler;
   VkDescriptorImageInfo _vkdescriptor_info;
 
 
@@ -1153,6 +1159,8 @@ public:
 
   vkcmdbufimpl_ptr_t primary_cb();
 
+  vksampler_obj_ptr_t _sampler_base;
+  std::vector<vksampler_obj_ptr_t> _sampler_per_maxlod;
   //////////////////////////////////////////////
   PFN_vkSetDebugUtilsObjectNameEXT _vkSetDebugUtilsObjectName = nullptr;
   PFN_vkCmdDebugMarkerBeginEXT _vkCmdDebugMarkerBeginEXT      = nullptr;

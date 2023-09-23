@@ -223,6 +223,16 @@ void VkContext::_initVulkanCommon() {
   initializeVkStruct(SCI, VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO);
   OK = vkCreateSemaphore(_vkdevice, &SCI, nullptr, &_renderingCompleteSemaphore);
   OrkAssert(OK == VK_SUCCESS);
+
+  auto vksci_base = makeVKSCI();
+  _sampler_base = std::make_shared<VulkanSamplerObject>(this,vksci_base);
+
+  _sampler_per_maxlod.resize(16);
+  for( size_t maxlod = 0; maxlod<16; maxlod++ ){
+    auto vksci = makeVKSCI();
+    vksci->maxLod = maxlod;
+    _sampler_per_maxlod[maxlod] = std::make_shared<VulkanSamplerObject>(this,vksci);
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
