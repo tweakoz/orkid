@@ -81,10 +81,10 @@ void VkTextureInterface::generateMipMaps(Texture* ptex) {
     vktex = ptex->_impl.makeShared<VulkanTextureObject>(this);
   }
 
-  auto cmdbuf = std::make_shared<CommandBuffer>();
-  _contextVK->pushCommandBuffer(cmdbuf);
-  auto cmdbuf_impl = _contextVK->_cmdbufcur_gfx;
-  auto vk_cmdbuf   = cmdbuf_impl->_vkcmdbuf;
+    auto cmdbuf = _contextVK->beginRecordCommandBuffer();
+    auto cmdbuf_impl = cmdbuf->_impl.getShared<VkCommandBufferImpl>();
+    auto vk_cmdbuf   = cmdbuf_impl->_vkcmdbuf;
+
 
   int32_t mipWidth  = ptex->_width;
   int32_t mipHeight = ptex->_height;
@@ -159,8 +159,8 @@ void VkTextureInterface::generateMipMaps(Texture* ptex) {
   vkCmdPipelineBarrier(
       vk_cmdbuf, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, barrier.get());
 
-  _contextVK->popCommandBuffer();
-  _contextVK->enqueueSecondaryCommandBuffer(cmdbuf);
+  _contextVK->endRecordCommandBuffer(cmdbuf);
+  _contextVK->enqueueDeferredOneShotCommand(cmdbuf);
   
 }
 
@@ -173,7 +173,7 @@ vkimagecreateinfo_ptr_t makeVKICI(int w, int h, int d, //
   auto ret = std::make_shared<VkImageCreateInfo>();
   initializeVkStruct(*ret, VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO);
   ret->imageType     = VK_IMAGE_TYPE_2D;
-  ret->format        = VkFormat(fmt);
+  ret->format        = VkFormatConverter::convertBufferFormat(fmt);
   ret->extent.width  = w;
   ret->extent.height = h;
   ret->extent.depth  = d;
@@ -223,6 +223,10 @@ Texture* VkTextureInterface::createFromMipChain(MipChain* from_chain) {
     size_t num_levels = from_chain->_levels.size();
 
     auto imageInfo = makeVKICI(from_chain->_width, from_chain->_height, 1, format, num_levels);
+
+    auto cmdbuf = _contextVK->beginRecordCommandBuffer();
+    auto cmdbuf_impl = cmdbuf->_impl.getShared<VkCommandBufferImpl>();
+    auto vk_cmdbuf   = cmdbuf_impl->_vkcmdbuf;
 
     for( size_t l=0; l<num_levels; l++ ){
 
@@ -293,7 +297,7 @@ Texture* VkTextureInterface::createFromMipChain(MipChain* from_chain) {
         barrier->subresourceRange  = mipSubRange;
 
         vkCmdPipelineBarrier(
-            _contextVK->_cmdbufcur_gfx->_vkcmdbuf,
+            vk_cmdbuf,
             VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
             VK_PIPELINE_STAGE_TRANSFER_BIT,
             0,
@@ -313,7 +317,7 @@ Texture* VkTextureInterface::createFromMipChain(MipChain* from_chain) {
         region.imageExtent       = {uint32_t(level_width), uint32_t(level_height), 1};
 
         vkCmdCopyBufferToImage(
-            _contextVK->_cmdbufcur_gfx->_vkcmdbuf,
+            vk_cmdbuf,
             stagingBuffer,
             vktex->_vkimage,
             VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
@@ -326,7 +330,7 @@ Texture* VkTextureInterface::createFromMipChain(MipChain* from_chain) {
         barrier->dstAccessMask     = VK_ACCESS_SHADER_READ_BIT;
 
         vkCmdPipelineBarrier(
-            _contextVK->_cmdbufcur_gfx->_vkcmdbuf,
+            vk_cmdbuf,
             VK_PIPELINE_STAGE_TRANSFER_BIT,
             VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
             0,
@@ -351,7 +355,7 @@ Texture* VkTextureInterface::createFromMipChain(MipChain* from_chain) {
     initializeVkStruct(viewInfo, VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO);
     viewInfo.image                           = vktex->_vkimage;
     viewInfo.viewType                        = VK_IMAGE_VIEW_TYPE_2D;
-    viewInfo.format                          = VkFormat(format);
+    viewInfo.format                          = VkFormatConverter::convertBufferFormat(format);
     viewInfo.subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
     viewInfo.subresourceRange.baseMipLevel   = 0;
     viewInfo.subresourceRange.levelCount     = num_levels;
@@ -397,6 +401,9 @@ Texture* VkTextureInterface::createFromMipChain(MipChain* from_chain) {
     ptex->_num_mips  = num_levels;
    //ptex->_target    = ETEXTARGET_2D;
     ptex->_debugName = "vulkan_texture";
+
+    _contextVK->endRecordCommandBuffer(cmdbuf);
+    _contextVK->enqueueDeferredOneShotCommand(cmdbuf);
 
     return ptex;
 }
@@ -450,7 +457,7 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   initializeVkStruct(viewInfo, VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO);
   viewInfo.image                           = vkimage;
   viewInfo.viewType                        = VK_IMAGE_VIEW_TYPE_2D;
-  viewInfo.format                          = VkFormat(tid._dst_format);
+  viewInfo.format                          = VkFormatConverter::convertBufferFormat(tid._dst_format);
   viewInfo.subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
   viewInfo.subresourceRange.baseMipLevel   = 0;
   viewInfo.subresourceRange.levelCount     = 1;
@@ -484,9 +491,8 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
 
   /////////////////////////////////////
 
-  auto cmdbuf = std::make_shared<CommandBuffer>();
-  _contextVK->pushCommandBuffer(cmdbuf);
-  auto cmdbuf_impl = _contextVK->_cmdbufcur_gfx;
+  auto cmdbuf = _contextVK->beginRecordCommandBuffer();
+  auto cmdbuf_impl = cmdbuf->_impl.getShared<VkCommandBufferImpl>();
   auto vk_cmdbuf   = cmdbuf_impl->_vkcmdbuf;
 
   auto barrier = createImageBarrier(vkimage,
@@ -598,7 +604,8 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
       1,
       barrier.get());
   
-  _contextVK->popCommandBuffer();
+  _contextVK->endRecordCommandBuffer(cmdbuf);
+  _contextVK->enqueueDeferredOneShotCommand(cmdbuf);
 
   /////////////////////////////////////
 

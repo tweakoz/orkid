@@ -182,9 +182,9 @@ struct VkFormatConverter{
 
     static const VkFormatConverter _instance;
     VkFormatConverter();
-    VkFormat convertBufferFormat(EBufferFormat fmt_in) const;
-    VkImageLayout layoutForUsage(uint64_t usage) const;
-    VkImageAspectFlagBits aspectForUsage(uint64_t usage) const;
+    static VkFormat convertBufferFormat(EBufferFormat fmt_in);
+    static VkImageLayout layoutForUsage(uint64_t usage);
+    static VkImageAspectFlagBits aspectForUsage(uint64_t usage);
     std::unordered_map<EBufferFormat,VkFormat> _fmtmap;
     std::unordered_map<uint64_t,VkImageLayout> _layoutmap;
     std::unordered_map<uint64_t,VkImageAspectFlagBits> _aspectmap;
@@ -1059,6 +1059,10 @@ public:
   EDepthTest meCurDepthTest;
   bool mTargetDrawableSizeDirty;
   bool _first_frame = true;
+
+  //////////////////////////////////////////////
+  void enqueueDeferredOneShotCommand(commandbuffer_ptr_t cmdbuf);
+  std::vector<commandbuffer_ptr_t> _pendingOneShotCommands;
   //////////////////////////////////////////////
 
   vkdwi_ptr_t _dwi;

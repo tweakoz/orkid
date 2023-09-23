@@ -45,19 +45,19 @@ VkFormatConverter::VkFormatConverter() {
   _aspectmap["color"_crcu]   = VK_IMAGE_ASPECT_COLOR_BIT;
   _aspectmap["present"_crcu] = VK_IMAGE_ASPECT_COLOR_BIT;
 }
-VkFormat VkFormatConverter::convertBufferFormat(EBufferFormat fmt_in) const {
-  auto it = _fmtmap.find(fmt_in);
-  OrkAssert(it != _fmtmap.end());
+VkFormat VkFormatConverter::convertBufferFormat(EBufferFormat fmt_in) {
+  auto it = _instance._fmtmap.find(fmt_in);
+  OrkAssert(it != _instance._fmtmap.end());
   return it->second;
 }
-VkImageLayout VkFormatConverter::layoutForUsage(uint64_t usage) const {
-  auto it = _layoutmap.find(usage);
-  OrkAssert(it != _layoutmap.end());
+VkImageLayout VkFormatConverter::layoutForUsage(uint64_t usage) {
+  auto it = _instance._layoutmap.find(usage);
+  OrkAssert(it != _instance._layoutmap.end());
   return it->second;
 }
-VkImageAspectFlagBits VkFormatConverter::aspectForUsage(uint64_t usage) const {
-  auto it = _aspectmap.find(usage);
-  OrkAssert(it != _aspectmap.end());
+VkImageAspectFlagBits VkFormatConverter::aspectForUsage(uint64_t usage) {
+  auto it = _instance._aspectmap.find(usage);
+  OrkAssert(it != _instance._aspectmap.end());
   return it->second;
 }
 
@@ -165,7 +165,7 @@ vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(RtGroup* rtgroup) {
     auto rtbuffer   = rtgroup->_depthBuffer;
     auto bufferimpl = std::make_shared<VklRtBufferImpl>(RTGIMPL.get(), rtbuffer.get());
     rtbuffer->_impl.setShared<VklRtBufferImpl>(bufferimpl);
-    bufferimpl->_vkfmt = VkFormatConverter::_instance.convertBufferFormat(rtbuffer->mFormat);
+    bufferimpl->_vkfmt = VkFormatConverter::convertBufferFormat(rtbuffer->mFormat);
 
     uint64_t USAGE = "depth"_crcu;
     _vkCreateImageForBuffer(_contextVK, bufferimpl, USAGE);
@@ -186,7 +186,7 @@ vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(RtGroup* rtgroup) {
     rtbuffer_ptr_t rtbuffer = rtgroup->GetMrt(it);
     auto bufferimpl         = std::make_shared<VklRtBufferImpl>(RTGIMPL.get(), rtbuffer.get());
     rtbuffer->_impl.setShared<VklRtBufferImpl>(bufferimpl);
-    bufferimpl->_vkfmt = VkFormatConverter::_instance.convertBufferFormat(rtbuffer->mFormat);
+    bufferimpl->_vkfmt = VkFormatConverter::convertBufferFormat(rtbuffer->mFormat);
     uint64_t USAGE     = "color"_crcu;
     if (rtbuffer->_usage != 0) {
       USAGE = rtbuffer->_usage;

@@ -13,13 +13,13 @@ ImplementReflectionX(ork::lev2::vulkan::VkContext, "VkContext");
 namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
 
-VkImage VkSwapChain::image(){
+VkImage VkSwapChain::image() {
   return _vkSwapChainImages[_curSwapWriteImage];
 }
-VkImageView VkSwapChain::imageView(){
+VkImageView VkSwapChain::imageView() {
   return _vkSwapChainImageViews[_curSwapWriteImage];
 }
-VkFramebuffer VkSwapChain::framebuffer(){
+VkFramebuffer VkSwapChain::framebuffer() {
   return _vkFrameBuffers[_curSwapWriteImage];
 }
 
@@ -103,10 +103,10 @@ void VkContext::_initVulkanForDevInfo(vkdeviceinfo_ptr_t vk_devinfo) {
   ////////////////////////////
 
   _device_extensions.push_back("VK_KHR_swapchain");
-  if( _GVI->_debugEnabled ) {
+  if (_GVI->_debugEnabled) {
     _device_extensions.push_back("VK_EXT_debug_marker");
   }
-  
+
   //_device_extensions.push_back("VK_EXT_debug_utils");
 
   VkDeviceCreateInfo DCI = {};
@@ -135,15 +135,14 @@ void VkContext::_initVulkanForWindow(VkSurfaceKHR surface) {
   _initVulkanForDevInfo(vk_devinfo);
   _initVulkanCommon();
 
-  if( _GVI->_debugEnabled ) {
-    _fetchDeviceProcAddr(_vkSetDebugUtilsObjectName,"vkSetDebugUtilsObjectNameEXT");
-    _fetchDeviceProcAddr(_vkCmdDebugMarkerBeginEXT,"vkCmdDebugMarkerBeginEXT");
-    _fetchDeviceProcAddr(_vkCmdDebugMarkerEndEXT,"vkCmdDebugMarkerEndEXT");
-    _fetchDeviceProcAddr(_vkCmdDebugMarkerInsertEXT,"vkCmdDebugMarkerInsertEXT");
+  if (_GVI->_debugEnabled) {
+    _fetchDeviceProcAddr(_vkSetDebugUtilsObjectName, "vkSetDebugUtilsObjectNameEXT");
+    _fetchDeviceProcAddr(_vkCmdDebugMarkerBeginEXT, "vkCmdDebugMarkerBeginEXT");
+    _fetchDeviceProcAddr(_vkCmdDebugMarkerEndEXT, "vkCmdDebugMarkerEndEXT");
+    _fetchDeviceProcAddr(_vkCmdDebugMarkerInsertEXT, "vkCmdDebugMarkerInsertEXT");
   }
 
   // UGLY!!!
-
 
   for (auto ctx : _GVI->_contexts) {
     if (ctx != this) {
@@ -155,10 +154,9 @@ void VkContext::_initVulkanForWindow(VkSurfaceKHR surface) {
       ctx->_vkqfid_compute   = _vkqfid_compute;
 
       ctx->_vkSetDebugUtilsObjectName = _vkSetDebugUtilsObjectName;
-      ctx->_vkCmdDebugMarkerBeginEXT = _vkCmdDebugMarkerBeginEXT;
-      ctx->_vkCmdDebugMarkerEndEXT = _vkCmdDebugMarkerEndEXT;
+      ctx->_vkCmdDebugMarkerBeginEXT  = _vkCmdDebugMarkerBeginEXT;
+      ctx->_vkCmdDebugMarkerEndEXT    = _vkCmdDebugMarkerEndEXT;
       ctx->_vkCmdDebugMarkerInsertEXT = _vkCmdDebugMarkerInsertEXT;
-
     }
   }
 }
@@ -376,19 +374,20 @@ static void platoPresent(vkplatformobject_ptr_t plato) {
 ///////////////////////////////////////////////////////////////////////
 
 void VkContext::makeCurrentContext() {
-  //auto plato = _impl.getShared<VkPlatformObject>();
-  //platoMakeCurrent(plato);
+  // auto plato = _impl.getShared<VkPlatformObject>();
+  // platoMakeCurrent(plato);
 }
 
 ///////////////////////////////////////////////////////
- void _imageBarrier(VkCommandBuffer cmdbuf, //
-                    VkImage image, //
-                    VkAccessFlags srcAccessMask, //
-                    VkAccessFlags dstAccessMask, //
-                    VkPipelineStageFlags srcStageMask, //
-                    VkPipelineStageFlags dstStageMask, //
-                    VkImageLayout oldLayout, //
-                    VkImageLayout newLayout) { //
+void _imageBarrier(
+    VkCommandBuffer cmdbuf,            //
+    VkImage image,                     //
+    VkAccessFlags srcAccessMask,       //
+    VkAccessFlags dstAccessMask,       //
+    VkPipelineStageFlags srcStageMask, //
+    VkPipelineStageFlags dstStageMask, //
+    VkImageLayout oldLayout,           //
+    VkImageLayout newLayout) {         //
 
   VkImageMemoryBarrier barrier = {};
   initializeVkStruct(barrier, VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
@@ -408,17 +407,7 @@ void VkContext::makeCurrentContext() {
   barrier.srcAccessMask = srcAccessMask; // Adjust as needed.
   barrier.dstAccessMask = dstAccessMask;
 
-  vkCmdPipelineBarrier(
-      cmdbuf,
-      srcStageMask, 
-      dstStageMask,
-      0,
-      0,
-      nullptr,
-      0,
-      nullptr,
-      1,
-      &barrier);
+  vkCmdPipelineBarrier(cmdbuf, srcStageMask, dstStageMask, 0, 0, nullptr, 0, nullptr, 1, &barrier);
 }
 
 ///////////////////////////////////////////////////////
@@ -429,7 +418,7 @@ void VkContext::_doBeginFrame() {
 
   makeCurrentContext();
 
-  if( _fbi->_main_rtg ){
+  if (_fbi->_main_rtg) {
     miW = _fbi->_main_rtg->miW;
     miH = _fbi->_main_rtg->miH;
   }
@@ -464,15 +453,15 @@ void VkContext::_doBeginFrame() {
 
   VkCommandBufferBeginInfo CBBI_GFX = {};
   initializeVkStruct(CBBI_GFX, VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
-  CBBI_GFX.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+  CBBI_GFX.flags            = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
   CBBI_GFX.pInheritanceInfo = nullptr;
 
-  if(_first_frame){
-    //beginRenderPass(_main_render_pass);
-    //endRenderPass(_main_render_pass);
+  if (_first_frame) {
+    // beginRenderPass(_main_render_pass);
+    // endRenderPass(_main_render_pass);
   }
 
-  if( not _first_frame){
+  if (not _first_frame) {
     // technically we should wait for a fence associated with the
     //  current _cmdbufcurframe_gfx_pri
     vkWaitForFences(_vkdevice, 1, &_mainGfxSubmitFence, VK_TRUE, UINT64_MAX);
@@ -485,12 +474,11 @@ void VkContext::_doBeginFrame() {
 
   beginRenderPass(_main_render_pass);
 
-  //FBI()->pushMainSurface();
-
+  // FBI()->pushMainSurface();
 }
 
-vkcmdbufimpl_ptr_t VkContext::primary_cb(){
-  OrkAssert(_current_subpass==nullptr);
+vkcmdbufimpl_ptr_t VkContext::primary_cb() {
+  OrkAssert(_current_subpass == nullptr);
   return _cmdbufcurframe_gfx_pri;
 }
 
@@ -506,14 +494,14 @@ void VkContext::_doEndFrame() {
   MTXI()->PopPMatrix();
   FBI()->EndFrame();
 
-  //FBI()->popMainSurface();
+  // FBI()->popMainSurface();
 
   PopModColor();
   mbPostInitializeContext = false;
   ////////////////////////
   // intermediate subpasses
   ////////////////////////
-  for( auto sp : _main_render_pass->_subpasses ){
+  for (auto sp : _main_render_pass->_subpasses) {
     // todo : in parallel ?
     _beginExecuteSubPass(sp);
     _endExecuteSubPass(sp);
@@ -544,7 +532,7 @@ void VkContext::_doEndFrame() {
   vkQueueSubmit(_vkqueue_graphics, 1, &SI, _mainGfxSubmitFence);
 
   ///////////////////////////////////////////////////////
-  
+
   auto swapchain = _fbi->_swapchain;
 
   std::vector<VkSemaphore> waitPresentSemaphores = {_renderingCompleteSemaphore};
@@ -572,7 +560,7 @@ void VkContext::_doEndFrame() {
   ///////////////////////////////////////////////////////
 
   _cmdbufcurframe_gfx_pri = nullptr;
-   _first_frame = false;
+  _first_frame            = false;
 
   ///////////////////////////////////////////////////////
 
@@ -581,7 +569,7 @@ void VkContext::_doEndFrame() {
   ////////////////////////
 
   miTargetFrame++;
- _renderpass_index = -1;
+  _renderpass_index = -1;
 }
 
 ///////////////////////////////////////////////////////
@@ -604,10 +592,9 @@ void VkContext::_beginRenderPass(renderpass_ptr_t renpass) {
   auto rtg_impl = main_rtg->_impl.getShared<VkRtGroupImpl>();
 
   vkrenderpass_ptr_t vk_rpass;
-  if( auto as_vkrpass = renpass->_impl.tryAsShared<VulkanRenderPass>() ){
+  if (auto as_vkrpass = renpass->_impl.tryAsShared<VulkanRenderPass>()) {
     vk_rpass = as_vkrpass.value();
-  }
-  else{
+  } else {
     /////////////////////////////////////////
     // create the renderpass
     /////////////////////////////////////////
@@ -620,53 +607,52 @@ void VkContext::_beginRenderPass(renderpass_ptr_t renpass) {
 
     VkAttachmentDescription CATC = {};
     initializeVkStruct(CATC);
-    CATC.format = surfaceFormat.format; // Must match the format of the swap chain images.
-    CATC.samples = VK_SAMPLE_COUNT_1_BIT; // No multisampling for this example.
-    CATC.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR; // Clear the color buffer before rendering.
-    CATC.storeOp = VK_ATTACHMENT_STORE_OP_STORE; // Store the rendered content for presentation.
-    CATC.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE; // We don't care about stencil.
+    CATC.format         = surfaceFormat.format;            // Must match the format of the swap chain images.
+    CATC.samples        = VK_SAMPLE_COUNT_1_BIT;           // No multisampling for this example.
+    CATC.loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR;     // Clear the color buffer before rendering.
+    CATC.storeOp        = VK_ATTACHMENT_STORE_OP_STORE;    // Store the rendered content for presentation.
+    CATC.stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE; // We don't care about stencil.
     CATC.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    CATC.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED; 
-    CATC.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR; // Prepare for presentation after rendering.
+    CATC.initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED;
+    CATC.finalLayout    = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR; // Prepare for presentation after rendering.
 
     VkAttachmentDescription DATC = {};
-    DATC.format = VkFormatConverter::_instance.convertBufferFormat(DEPTH_FORMAT); 
-    DATC.samples = VK_SAMPLE_COUNT_1_BIT;
-    DATC.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;   // Clear the depth buffer before rendering.
-    DATC.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    DATC.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    DATC.stencilStoreOp = VK_ATTACHMENT_STORE_OP_STORE;
-    DATC.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    DATC.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+    DATC.format                  = VkFormatConverter::_instance.convertBufferFormat(DEPTH_FORMAT);
+    DATC.samples                 = VK_SAMPLE_COUNT_1_BIT;
+    DATC.loadOp                  = VK_ATTACHMENT_LOAD_OP_CLEAR; // Clear the depth buffer before rendering.
+    DATC.storeOp                 = VK_ATTACHMENT_STORE_OP_STORE;
+    DATC.stencilLoadOp           = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    DATC.stencilStoreOp          = VK_ATTACHMENT_STORE_OP_STORE;
+    DATC.initialLayout           = VK_IMAGE_LAYOUT_UNDEFINED;
+    DATC.finalLayout             = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
     VkAttachmentReference CATR = {};
     initializeVkStruct(CATR);
     CATR.attachment = 0;
-    CATR.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    CATR.layout     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
     VkAttachmentReference DATR = {};
-    DATR.attachment = 1;
-    DATR.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
+    DATR.attachment            = 1;
+    DATR.layout                = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
     VkSubpassDescription SUBPASS = {};
     initializeVkStruct(SUBPASS);
-    SUBPASS.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-    SUBPASS.colorAttachmentCount = 1;
-    SUBPASS.pColorAttachments = &CATR;
-    SUBPASS.colorAttachmentCount = 1;
+    SUBPASS.pipelineBindPoint       = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    SUBPASS.colorAttachmentCount    = 1;
+    SUBPASS.pColorAttachments       = &CATR;
+    SUBPASS.colorAttachmentCount    = 1;
     SUBPASS.pDepthStencilAttachment = &DATR;
 
-    std::array<VkAttachmentDescription, 2> rp_attachments = { CATC, DATC };
+    std::array<VkAttachmentDescription, 2> rp_attachments = {CATC, DATC};
 
     VkRenderPassCreateInfo RPI = {};
-    initializeVkStruct(RPI,VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO);
+    initializeVkStruct(RPI, VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO);
     RPI.attachmentCount = static_cast<uint32_t>(rp_attachments.size());
-    RPI.pAttachments = rp_attachments.data();
-    RPI.subpassCount = 1;
-    RPI.pSubpasses = &SUBPASS;
-    //RPI.dependencyCount = 1;
-    //RPI.pDependencies = &dependency;
+    RPI.pAttachments    = rp_attachments.data();
+    RPI.subpassCount    = 1;
+    RPI.pSubpasses      = &SUBPASS;
+    // RPI.dependencyCount = 1;
+    // RPI.pDependencies = &dependency;
     VkResult OK = vkCreateRenderPass(_vkdevice, &RPI, nullptr, &vk_rpass->_vkrp);
     OrkAssert(OK == VK_SUCCESS);
     /////////////////////////////////////////
@@ -687,7 +673,7 @@ void VkContext::_beginRenderPass(renderpass_ptr_t renpass) {
   float B = sinf(phi * 0.77f) * 0.5f + 0.5f;
 
   VkClearValue clearValues[2];
-  clearValues[0].color        = {{R,G,B, 1.0f}};
+  clearValues[0].color        = {{R, G, B, 1.0f}};
   clearValues[1].depthStencil = {1.0f, 0};
 
   phi += 0.001f;
@@ -698,18 +684,24 @@ void VkContext::_beginRenderPass(renderpass_ptr_t renpass) {
   RPBI.renderArea.offset = {0, 0};
   RPBI.renderArea.extent = _fbi->_swapchain->_extent;
   //  clear-targets
-  RPBI.clearValueCount   = 2;
-  RPBI.pClearValues      = clearValues;
+  RPBI.clearValueCount = 2;
+  RPBI.pClearValues    = clearValues;
   //  clear-misc
-  RPBI.renderPass = vk_rpass->_vkrp;
+  RPBI.renderPass  = vk_rpass->_vkrp;
   RPBI.framebuffer = _fbi->_swapchain->framebuffer();
   // CLEAR!
   vkCmdBeginRenderPass(
       primary_cb()->_vkcmdbuf, //
-      &RPBI,                              //
+      &RPBI,                   //
       VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
   /////////////////////////////////////////
   _renderpass_index++;
+
+  /////////////////////////////////////////
+  for( auto one_shot : _pendingOneShotCommands ){
+    enqueueSecondaryCommandBuffer(one_shot);
+  }
+  _pendingOneShotCommands.clear();
 }
 
 ///////////////////////////////////////////////////////
@@ -724,7 +716,7 @@ void VkContext::_endRenderPass(renderpass_ptr_t renpass) {
 ///////////////////////////////////////////////////////
 
 void VkContext::_beginSubPass(rendersubpass_ptr_t subpass) {
-  OrkAssert(_current_subpass==nullptr); // no nesting...
+  OrkAssert(_current_subpass == nullptr); // no nesting...
   _current_subpass = subpass;
   //_exec_subpasses.push_back(subpass);
   // OrkAssert(false);
@@ -735,7 +727,7 @@ void VkContext::_beginSubPass(rendersubpass_ptr_t subpass) {
 ///////////////////////////////////////////////////////
 
 void VkContext::_endSubPass(rendersubpass_ptr_t subpass) {
-  OrkAssert(_current_subpass==subpass); // no nesting...
+  OrkAssert(_current_subpass == subpass); // no nesting...
   _current_subpass = nullptr;
 }
 
@@ -743,32 +735,54 @@ void VkContext::_endSubPass(rendersubpass_ptr_t subpass) {
 // begin subpass execution
 ///////////////////////////////////////////////////////
 
-void VkContext::_beginExecuteSubPass(rendersubpass_ptr_t subpass){
-
+void VkContext::_beginExecuteSubPass(rendersubpass_ptr_t subpass) {
 }
 
 ///////////////////////////////////////////////////////
 // end subpass execution
 ///////////////////////////////////////////////////////
 
-void VkContext::_endExecuteSubPass(rendersubpass_ptr_t subpass){
-
+void VkContext::_endExecuteSubPass(rendersubpass_ptr_t subpass) {
 }
 
 ///////////////////////////////////////////////////////
 
 commandbuffer_ptr_t VkContext::_beginRecordCommandBuffer() {
-  OrkAssert(false);
   auto cmdbuf          = std::make_shared<CommandBuffer>();
   auto vkcmdbuf        = cmdbuf->_impl.makeShared<VkCommandBufferImpl>();
   _recordCommandBuffer = cmdbuf;
+
+  VkCommandBufferAllocateInfo CBAI_GFX = {};
+  initializeVkStruct(CBAI_GFX, VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO);
+  CBAI_GFX.commandPool        = _vkcmdpool_graphics;
+  CBAI_GFX.level              = VK_COMMAND_BUFFER_LEVEL_SECONDARY;
+  CBAI_GFX.commandBufferCount = 1;
+
+  VkResult OK = vkAllocateCommandBuffers(
+      _vkdevice, //
+      &CBAI_GFX, //
+      &vkcmdbuf->_vkcmdbuf);
+  OrkAssert(OK == VK_SUCCESS);
+
+  _setObjectDebugName(vkcmdbuf->_vkcmdbuf, VK_OBJECT_TYPE_COMMAND_BUFFER, cmdbuf->_debugName.c_str());
+
+  VkCommandBufferBeginInfo CBBI_GFX = {};
+  initializeVkStruct(CBBI_GFX, VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
+  CBBI_GFX.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT //
+                   | VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
+  // CBBI_GFX.pInheritanceInfo = &INHINFO;
+  vkBeginCommandBuffer(vkcmdbuf->_vkcmdbuf, &CBBI_GFX); // vkBeginCommandBuffer does an implicit reset
+
   return cmdbuf;
 }
+
+///////////////////////////////////////////////////////
+
 void VkContext::_endRecordCommandBuffer(commandbuffer_ptr_t cmdbuf) {
-  OrkAssert(false);
   OrkAssert(cmdbuf == _recordCommandBuffer);
   auto vkcmdbuf        = cmdbuf->_impl.getShared<VkCommandBufferImpl>();
   _recordCommandBuffer = nullptr;
+  vkEndCommandBuffer(vkcmdbuf->_vkcmdbuf);
 }
 
 ///////////////////////////////////////////////////////
@@ -777,7 +791,6 @@ bool VkSwapChainCaps::supportsPresentationMode(VkPresentModeKHR mode) const {
   auto it = _presentModes.find(mode);
   return (it != _presentModes.end());
 }
-
 
 ///////////////////////////////////////////////////////
 
@@ -810,10 +823,10 @@ void VkContext::initializeWindowContext(
   _vkpresentation_caps = _swapChainCapsForSurface(_vkpresentationsurface);
   OrkAssert(_vkpresentation_caps->supportsPresentationMode(VK_PRESENT_MODE_IMMEDIATE_KHR));
   OrkAssert(_vkpresentation_caps->supportsPresentationMode(VK_PRESENT_MODE_FIFO_KHR));
-  //OrkAssert(_vkpresentation_caps->supportsPresentationMode(VK_PRESENT_MODE_FIFO_RELAXED_KHR));
-  // OrkAssert( _vkpresentation_caps->supportsPresentationMode(VK_PRESENT_MODE_MAILBOX_KHR) );
-  // OrkAssert( _vkpresentation_caps->supportsPresentationMode(VK_PRESENT_MODE_SHARED_DEMAND_REFRESH_KHR) );
-  // OrkAssert( _vkpresentation_caps->supportsPresentationMode(VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR) );
+  // OrkAssert(_vkpresentation_caps->supportsPresentationMode(VK_PRESENT_MODE_FIFO_RELAXED_KHR));
+  //  OrkAssert( _vkpresentation_caps->supportsPresentationMode(VK_PRESENT_MODE_MAILBOX_KHR) );
+  //  OrkAssert( _vkpresentation_caps->supportsPresentationMode(VK_PRESENT_MODE_SHARED_DEMAND_REFRESH_KHR) );
+  //  OrkAssert( _vkpresentation_caps->supportsPresentationMode(VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR) );
 
   _fbi->_initSwapChain();
 
@@ -883,15 +896,15 @@ void VkContext::initializeLoaderContext() {
 ///////////////////////////////////////////////////////
 
 void VkContext::debugPushGroup(const std::string str, const fvec4& color) {
-  if(_vkCmdDebugMarkerBeginEXT){
-    OrkAssert(_current_cmdbuf!=nullptr);
-    auto cmdbuf_impl = _current_cmdbuf->_impl.getShared<VkCommandBufferImpl>();
+  if (_vkCmdDebugMarkerBeginEXT) {
+    OrkAssert(_current_cmdbuf != nullptr);
+    auto cmdbuf_impl                      = _current_cmdbuf->_impl.getShared<VkCommandBufferImpl>();
     VkDebugMarkerMarkerInfoEXT markerInfo = {};
-    initializeVkStruct(markerInfo,VK_STRUCTURE_TYPE_DEBUG_MARKER_MARKER_INFO_EXT);
-    markerInfo.color[0] = color.x;  // R
-    markerInfo.color[1] = color.y;  // G
-    markerInfo.color[2] = color.z;  // B
-    markerInfo.color[3] = color.w;  // A
+    initializeVkStruct(markerInfo, VK_STRUCTURE_TYPE_DEBUG_MARKER_MARKER_INFO_EXT);
+    markerInfo.color[0]    = color.x; // R
+    markerInfo.color[1]    = color.y; // G
+    markerInfo.color[2]    = color.z; // B
+    markerInfo.color[3]    = color.w; // A
     markerInfo.pMarkerName = str.c_str();
     _vkCmdDebugMarkerBeginEXT(cmdbuf_impl->_vkcmdbuf, &markerInfo);
   }
@@ -900,8 +913,8 @@ void VkContext::debugPushGroup(const std::string str, const fvec4& color) {
 ///////////////////////////////////////////////////////
 
 void VkContext::debugPopGroup() {
-  if(_vkCmdDebugMarkerEndEXT){
-    OrkAssert(_current_cmdbuf!=nullptr);
+  if (_vkCmdDebugMarkerEndEXT) {
+    OrkAssert(_current_cmdbuf != nullptr);
     auto cmdbuf_impl = _current_cmdbuf->_impl.getShared<VkCommandBufferImpl>();
     _vkCmdDebugMarkerEndEXT(cmdbuf_impl->_vkcmdbuf);
   }
@@ -909,16 +922,16 @@ void VkContext::debugPopGroup() {
 
 ///////////////////////////////////////////////////////
 
-void VkContext::debugMarker(const std::string named, const fvec4& color){
-  if(_vkCmdDebugMarkerInsertEXT){
-    OrkAssert(_current_cmdbuf!=nullptr);
-    auto cmdbuf_impl = _current_cmdbuf->_impl.getShared<VkCommandBufferImpl>();
+void VkContext::debugMarker(const std::string named, const fvec4& color) {
+  if (_vkCmdDebugMarkerInsertEXT) {
+    OrkAssert(_current_cmdbuf != nullptr);
+    auto cmdbuf_impl                      = _current_cmdbuf->_impl.getShared<VkCommandBufferImpl>();
     VkDebugMarkerMarkerInfoEXT markerInfo = {};
-    initializeVkStruct(markerInfo,VK_STRUCTURE_TYPE_DEBUG_MARKER_MARKER_INFO_EXT);
-    markerInfo.color[0] = color.x;  // R
-    markerInfo.color[1] = color.y;  // G
-    markerInfo.color[2] = color.z;  // B
-    markerInfo.color[3] = color.w;  // A
+    initializeVkStruct(markerInfo, VK_STRUCTURE_TYPE_DEBUG_MARKER_MARKER_INFO_EXT);
+    markerInfo.color[0]    = color.x; // R
+    markerInfo.color[1]    = color.y; // G
+    markerInfo.color[2]    = color.z; // B
+    markerInfo.color[3]    = color.w; // A
     markerInfo.pMarkerName = named.c_str();
     _vkCmdDebugMarkerInsertEXT(cmdbuf_impl->_vkcmdbuf, &markerInfo);
   }
@@ -1010,18 +1023,18 @@ vkswapchaincaps_ptr_t VkContext::_swapChainCapsForSurface(VkSurfaceKHR surface) 
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void VkContext::_doPushCommandBuffer(commandbuffer_ptr_t cmdbuf, //
-                                     rtgroup_ptr_t rtg ) { //
+void VkContext::_doPushCommandBuffer(
+    commandbuffer_ptr_t cmdbuf, //
+    rtgroup_ptr_t rtg) {        //
 
   _cmdbufprv_gfx = _cmdbufcur_gfx;
 
-  OrkAssert(_current_cmdbuf==cmdbuf);
+  OrkAssert(_current_cmdbuf == cmdbuf);
   vkcmdbufimpl_ptr_t impl;
-  if( auto as_impl = cmdbuf->_impl.tryAsShared<VkCommandBufferImpl>() ){
+  if (auto as_impl = cmdbuf->_impl.tryAsShared<VkCommandBufferImpl>()) {
     impl = as_impl.value();
-  }
-  else{
-    impl = cmdbuf->_impl.makeShared<VkCommandBufferImpl>();
+  } else {
+    impl                                 = cmdbuf->_impl.makeShared<VkCommandBufferImpl>();
     VkCommandBufferAllocateInfo CBAI_GFX = {};
     initializeVkStruct(CBAI_GFX, VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO);
     CBAI_GFX.commandPool        = _vkcmdpool_graphics;
@@ -1037,20 +1050,21 @@ void VkContext::_doPushCommandBuffer(commandbuffer_ptr_t cmdbuf, //
     _setObjectDebugName(impl->_vkcmdbuf, VK_OBJECT_TYPE_COMMAND_BUFFER, cmdbuf->_debugName.c_str());
   }
   VkCommandBufferInheritanceInfo INHINFO = {};
-  initializeVkStruct(INHINFO,VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO);
-  auto rpimpl = _main_render_pass->_impl.getShared<VulkanRenderPass>();
-  INHINFO.renderPass = rpimpl->_vkrp;  // The render pass the secondary command buffer will be executed within.
-  INHINFO.subpass = 0;  // The index of the subpass in the render pass.
-  if( rtg ){
-    INHINFO.subpass = 0;  // The index of the subpass in the render pass.
+  initializeVkStruct(INHINFO, VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO);
+  auto rpimpl        = _main_render_pass->_impl.getShared<VulkanRenderPass>();
+  INHINFO.renderPass = rpimpl->_vkrp; // The render pass the secondary command buffer will be executed within.
+  INHINFO.subpass    = 0;             // The index of the subpass in the render pass.
+  if (rtg) {
+    INHINFO.subpass = 0; // The index of the subpass in the render pass.
     OrkAssert(false);
   }
-  INHINFO.framebuffer = VK_NULL_HANDLE;  // Optional: The framebuffer targeted by the render pass. Can be VK_NULL_HANDLE if not provided.
+  INHINFO.framebuffer =
+      VK_NULL_HANDLE; // Optional: The framebuffer targeted by the render pass. Can be VK_NULL_HANDLE if not provided.
   ////////////////////////////////////////////
   VkCommandBufferBeginInfo CBBI_GFX = {};
   initializeVkStruct(CBBI_GFX, VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
   CBBI_GFX.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT //
-                 | VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
+                   | VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
   CBBI_GFX.pInheritanceInfo = &INHINFO;
   vkBeginCommandBuffer(impl->_vkcmdbuf, &CBBI_GFX); // vkBeginCommandBuffer does an implicit reset
 
@@ -1073,12 +1087,10 @@ void VkContext::_doEnqueueSecondaryCommandBuffer(commandbuffer_ptr_t cmdbuf) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkContext::_doResizeMainSurface(int iw, int ih) {
-  scheduleOnBeginFrame([this,iw,ih](){
-    _fbi->_main_rtg->Resize(iw, ih);
-  });
+  scheduleOnBeginFrame([this, iw, ih]() { _fbi->_main_rtg->Resize(iw, ih); });
 }
 
-VulkanRenderPass::VulkanRenderPass(RenderPass* rpass){
+VulkanRenderPass::VulkanRenderPass(RenderPass* rpass) {
   // topological sort of renderpass's subpasses
   //  to determine execution order
 
@@ -1086,9 +1098,9 @@ VulkanRenderPass::VulkanRenderPass(RenderPass* rpass){
 
   std::function<void(rendersubpass_ptr_t)> visit_subpass;
 
-  visit_subpass = [&](rendersubpass_ptr_t subp){
-    for( auto dep : subp->_subpass_dependencies ){
-      if( subpass_set.find(dep) == subpass_set.end() ){
+  visit_subpass = [&](rendersubpass_ptr_t subp) {
+    for (auto dep : subp->_subpass_dependencies) {
+      if (subpass_set.find(dep) == subpass_set.end()) {
         subpass_set.insert(dep);
         visit_subpass(dep);
       }
@@ -1097,10 +1109,15 @@ VulkanRenderPass::VulkanRenderPass(RenderPass* rpass){
   };
 
   // visit top
-  for(auto subp : rpass->_subpasses){
+  for (auto subp : rpass->_subpasses) {
     visit_subpass(subp);
   }
+}
 
+///////////////////////////////////////////////////////////////////////////////
+
+void VkContext::enqueueDeferredOneShotCommand(commandbuffer_ptr_t cmdbuf){
+  _pendingOneShotCommands.push_back(cmdbuf);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

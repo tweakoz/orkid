@@ -34,32 +34,60 @@ extern "C" {
 namespace ork::lev2 {
 int GLFW_MODIFIER_OSCTRL = GLFW_MOD_CONTROL;
 
-#if 0
-void recomputeHIDPI(Context* ctx) {
+using window_t = ::Window;
 
-  switch (ctx->meTargetType) {
-    case TargetType::WINDOW:
-      break;
-    default:
-      return;
-  }
+bool g_allow_HIDPI   = false;
+bool _hakHIDPI       = false;
+bool _hakMixedDPI    = false;
+float _hakCurrentDPI = 95.0f;
+bool _HIDPI() {
+  return _hakHIDPI;
+}
+bool _MIXEDDPI() {
+  return _hakMixedDPI;
+}
+float _currentDPI() {
+  return _hakCurrentDPI;
+}
+void setAlwaysOnTop(GLFWwindow *window) {
+    Display *display = glfwGetX11Display();
+    auto x11window = glfwGetX11Window(window);
 
-  auto ixplato = ctx->_impl.getShared<GlIxPlatformObject>();
+    Atom wmStateAbove = XInternAtom(display, "_NET_WM_STATE_ABOVE", False);
+    Atom wmState = XInternAtom(display, "_NET_WM_STATE", False);
+
+    XEvent event;
+    memset(&event, 0, sizeof(event));
+    event.type = ClientMessage;
+    event.xclient.window = x11window;
+    event.xclient.message_type = wmState;
+    event.xclient.format = 32;
+    event.xclient.data.l[0] = 1; // _NET_WM_STATE_ADD
+    event.xclient.data.l[1] = wmStateAbove;
+    event.xclient.data.l[2] = 0;
+    event.xclient.data.l[3] = 0;
+    event.xclient.data.l[4] = 0;
+
+    XSendEvent(display, DefaultRootWindow(display), False,
+               SubstructureRedirectMask | SubstructureNotifyMask, &event);
+}
+
+
+#if 1
+void recomputeHIDPI(GLFWwindow *glfw_window) {
+
   ///////////////////////
-  auto glfw_container     = (CtxGLFW*)ctx->GetCtxBase();
-  GLFWwindow* glfw_window = glfw_container->_glfwWindow;
-  ///////////////////////
-  Display* x_dpy = ixplato->getDisplay();
-  int x_screen   = ixplato->getXscreenID();
-  int x_window   = ixplato->getXwindowID();
+  Display *display = glfwGetX11Display();
+  auto x_window = glfwGetX11Window(glfw_window);
+  int x_screen   = DefaultScreen(display);
   ///////////////////////
   int winpos_x = 0;
   int winpos_y = 0;
-  x11_window_t child;
-  x11_window_t root_window = DefaultRootWindow(x_dpy);
-  XTranslateCoordinates(x_dpy, x_window, root_window, 0, 0, &winpos_x, &winpos_y, &child);
+  window_t child;
+  window_t root_window = DefaultRootWindow(display);
+  XTranslateCoordinates(display, x_window, root_window, 0, 0, &winpos_x, &winpos_y, &child);
   XWindowAttributes xwa;
-  XGetWindowAttributes(x_dpy, x_window, &xwa);
+  XGetWindowAttributes(display, x_window, &xwa);
   winpos_x -= xwa.x;
   winpos_y -= xwa.y;
 
@@ -67,10 +95,10 @@ void recomputeHIDPI(Context* ctx) {
   int numhidpi = 0;
   // printf("winx: %d winy: %d\n", winpos_x, winpos_y);
   ///////////////////////
-  // int DWMM       = DisplayWidthMM(x_dpy, x_screen);
-  // int DHMM       = DisplayHeightMM(x_dpy, x_screen);
-  // int RESW       = DisplayWidth(x_dpy, x_screen);
-  // int RESH       = DisplayHeight(x_dpy, x_screen);
+  // int DWMM       = DisplayWidthMM(display, x_screen);
+  // int DHMM       = DisplayHeightMM(display, x_screen);
+  // int RESW       = DisplayWidth(display, x_screen);
+  // int RESH       = DisplayHeight(display, x_screen);
   // float CDPIX    = float(RESW) / float(DWMM) * 25.4f;
   // float CDPIY    = float(RESH) / float(DHMM) * 25.4f;
   // int DPIX       = QX11Info::appDpiX(x_screen);
@@ -80,19 +108,19 @@ void recomputeHIDPI(Context* ctx) {
   //_hakHIDPI = avgdpi > 180.0;
 
   if (0) { // get DPI for screen
-    XRRScreenResources* xrrscreen = XRRGetScreenResources(x_dpy, x_window);
+    XRRScreenResources* xrrscreen = XRRGetScreenResources(display, x_window);
 
-    // printf("x_dpy<%p> x_window<%d> xrrscreen<%p>\n", x_dpy, x_window, xrrscreen);
+    // printf("display<%p> x_window<%d> xrrscreen<%p>\n", display, x_window, xrrscreen);
 
     if (xrrscreen) {
       for (int iscres = xrrscreen->noutput; iscres > 0;) {
         --iscres;
-        XRROutputInfo* info = XRRGetOutputInfo(x_dpy, xrrscreen, xrrscreen->outputs[iscres]);
+        XRROutputInfo* info = XRRGetOutputInfo(display, xrrscreen, xrrscreen->outputs[iscres]);
         double mm_width     = info->mm_width;
         double mm_height    = info->mm_height;
 
         RRCrtc crtcid          = info->crtc;
-        XRRCrtcInfo* crtc_info = XRRGetCrtcInfo(x_dpy, xrrscreen, crtcid);
+        XRRCrtcInfo* crtc_info = XRRGetCrtcInfo(display, xrrscreen, crtcid);
 
         /*printf(
             "iscres<%d> info<%p> mm_width<%g> mm_height<%g> crtcid<%lu> crtc_info<%p>\n",
@@ -155,40 +183,6 @@ void recomputeHIDPI(Context* ctx) {
   }
 }
 #endif
-bool _hakHIDPI       = false;
-bool _hakMixedDPI    = false;
-float _hakCurrentDPI = 95.0f;
-bool _HIDPI() {
-  return _hakHIDPI;
-}
-bool _MIXEDDPI() {
-  return _hakMixedDPI;
-}
-float _currentDPI() {
-  return _hakCurrentDPI;
-}
-void setAlwaysOnTop(GLFWwindow *window) {
-    Display *display = glfwGetX11Display();
-    auto x11window = glfwGetX11Window(window);
-
-    Atom wmStateAbove = XInternAtom(display, "_NET_WM_STATE_ABOVE", False);
-    Atom wmState = XInternAtom(display, "_NET_WM_STATE", False);
-
-    XEvent event;
-    memset(&event, 0, sizeof(event));
-    event.type = ClientMessage;
-    event.xclient.window = x11window;
-    event.xclient.message_type = wmState;
-    event.xclient.format = 32;
-    event.xclient.data.l[0] = 1; // _NET_WM_STATE_ADD
-    event.xclient.data.l[1] = wmStateAbove;
-    event.xclient.data.l[2] = 0;
-    event.xclient.data.l[3] = 0;
-    event.xclient.data.l[4] = 0;
-
-    XSendEvent(display, DefaultRootWindow(display), False,
-               SubstructureRedirectMask | SubstructureNotifyMask, &event);
-}
 
 } // namespace ork::lev2
 #endif
