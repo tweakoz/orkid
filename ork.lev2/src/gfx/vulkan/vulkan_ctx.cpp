@@ -883,7 +883,7 @@ void VkContext::initializeLoaderContext() {
 ///////////////////////////////////////////////////////
 
 void VkContext::debugPushGroup(const std::string str, const fvec4& color) {
-  if(vkCmdDebugMarkerBeginEXT){
+  if(_vkCmdDebugMarkerBeginEXT){
     OrkAssert(_current_cmdbuf!=nullptr);
     auto cmdbuf_impl = _current_cmdbuf->_impl.getShared<VkCommandBufferImpl>();
     VkDebugMarkerMarkerInfoEXT markerInfo = {};
@@ -900,7 +900,7 @@ void VkContext::debugPushGroup(const std::string str, const fvec4& color) {
 ///////////////////////////////////////////////////////
 
 void VkContext::debugPopGroup() {
-  if(vkCmdDebugMarkerEndEXT){
+  if(_vkCmdDebugMarkerEndEXT){
     OrkAssert(_current_cmdbuf!=nullptr);
     auto cmdbuf_impl = _current_cmdbuf->_impl.getShared<VkCommandBufferImpl>();
     _vkCmdDebugMarkerEndEXT(cmdbuf_impl->_vkcmdbuf);

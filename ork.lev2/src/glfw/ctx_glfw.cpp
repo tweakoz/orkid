@@ -32,6 +32,7 @@ extern bool _macosUseHIDPI;
 extern uint64_t GRAPHICS_API;
 static logchannel_ptr_t logchan_glfw = logger()->createChannel("GLFW", fvec3(0.8, 0.2, 0.6), true);
 void setAlwaysOnTop(GLFWwindow* window);
+void recomputeHIDPI(GLFWwindow *window);
 ///////////////////////////////////////////////////////////////////////////////
 float content_scale_x = 1.0f;
 float content_scale_y = 1.0f;
@@ -228,7 +229,7 @@ void fillEventCursor(
   //}
 
 #if defined(__APPLE__)
-  if (false and _macosUseHIDPI) {
+  if (_macosUseHIDPI) {
     xoffset *= 2;
     yoffset *= 2;
   }
@@ -438,6 +439,7 @@ void CtxGLFW::Show() {
 
   if (selected_monitor == nullptr) {
     selected_monitor = monitorForWindow(_glfwWindow);
+    recomputeHIDPI(_glfwWindow);
     // OrkAssert(selected_monitor != nullptr);
   }
 

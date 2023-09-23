@@ -1047,10 +1047,10 @@ public:
   vkcmdbufimpl_ptr_t primary_cb();
 
   //////////////////////////////////////////////
-  PFN_vkSetDebugUtilsObjectNameEXT _vkSetDebugUtilsObjectName;
-  PFN_vkCmdDebugMarkerBeginEXT _vkCmdDebugMarkerBeginEXT;
-  PFN_vkCmdDebugMarkerEndEXT _vkCmdDebugMarkerEndEXT;
-  PFN_vkCmdDebugMarkerInsertEXT _vkCmdDebugMarkerInsertEXT;
+  PFN_vkSetDebugUtilsObjectNameEXT _vkSetDebugUtilsObjectName = nullptr;
+  PFN_vkCmdDebugMarkerBeginEXT _vkCmdDebugMarkerBeginEXT = nullptr;
+  PFN_vkCmdDebugMarkerEndEXT _vkCmdDebugMarkerEndEXT = nullptr;
+  PFN_vkCmdDebugMarkerInsertEXT _vkCmdDebugMarkerInsertEXT = nullptr;
   //////////////////////////////////////////////
   void* mhHWND;
   vkcontext_ptr_t _parentTarget;

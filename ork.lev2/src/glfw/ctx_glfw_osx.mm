@@ -12,37 +12,30 @@
 #include <ork/kernel/objc.h>
 #include <objc/objc.h>
 #include <objc/message.h>
-/*
-#include <ork/kernel/opq.h>
-#include <ork/lev2/gfx/ctxbase.h>
-#include <ork/lev2/gfx/gfxenv.h>
-#include <ork/lev2/gfx/rtgroup.h>
-#include <ork/pch.h>
-*/
 ////////////////////////////////////////////////////////////////////////////////
-//#include <ork/lev2/gfx/camera/uicam.h>
-//#include <ork/lev2/gfx/gfxmaterial_ui.h>
 #include <ork/lev2/glfw/ctx_glfw.h>
 #include <GLFW/glfw3native.h>
-//#include <ork/lev2/ui/viewport.h>
-//#include <ork/lev2/ui/context.h>
-//#include <ork/lev2/imgui/imgui_impl_glfw.h>
-///////////////////////////////////////////////////////////////////////////////
-//#include <ork/kernel/msgrouter.inl>
-//#include <ork/math/basicfilters.h>
-//#include <ork/lev2/gfx/dbgfontman.h>
-//#include <ork/util/logger.h>
-//#include "../gfx/vulkan/vulkan_ctx.h"
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2 {
 int GLFW_MODIFIER_OSCTRL = GLFW_MOD_SUPER;
-bool _macosUseHIDPI = true;
-void recomputeHIDPI(Context* ctx){
+bool _macosUseHIDPI = false;
+static float _DPI = 72.0f;
+void recomputeHIDPI(GLFWwindow *window){
+  // determine if we are on a retina display
+  int width, height;
+  glfwGetFramebufferSize(window, &width, &height);
+  float xscale, yscale;
+  glfwGetWindowContentScale(window, &xscale, &yscale);
+  _macosUseHIDPI = (xscale > 1.0f || yscale > 1.0f);
+
+  // determine the DPI
+  _DPI = 95.0f;
 }
 float _currentDPI() {
-  return 95.0f;
+  return _DPI;
 }
 bool _HIDPI() {
+  // determine if we are on a retina display
   return false;
 }
 void setAlwaysOnTop(GLFWwindow *window) {
