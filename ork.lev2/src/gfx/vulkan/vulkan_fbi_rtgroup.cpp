@@ -25,46 +25,6 @@ VkRtGroupImpl::VkRtGroupImpl(RtGroup* rtg)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-VkFormatConverter::VkFormatConverter() {
-  _fmtmap[EBufferFormat::RGBA8] = VK_FORMAT_R8G8B8A8_UNORM;
-  _fmtmap[EBufferFormat::Z32]   = VK_FORMAT_D32_SFLOAT;
-  _fmtmap[EBufferFormat::Z24S8] = VK_FORMAT_D24_UNORM_S8_UINT;
-  _fmtmap[EBufferFormat::Z32S8] = VK_FORMAT_D32_SFLOAT_S8_UINT;
-
-  _layoutmap["depth"_crcu]   = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-  _layoutmap["color"_crcu]   = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-  _layoutmap["present"_crcu] = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-  // VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL
-  // VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
-  // VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL
-  // VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
-  // VK_IMAGE_LAYOUT_PREINITIALIZED
-  // VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
-
-  _aspectmap["depth"_crcu]   = VK_IMAGE_ASPECT_DEPTH_BIT;
-  _aspectmap["color"_crcu]   = VK_IMAGE_ASPECT_COLOR_BIT;
-  _aspectmap["present"_crcu] = VK_IMAGE_ASPECT_COLOR_BIT;
-}
-VkFormat VkFormatConverter::convertBufferFormat(EBufferFormat fmt_in) {
-  auto it = _instance._fmtmap.find(fmt_in);
-  OrkAssert(it != _instance._fmtmap.end());
-  return it->second;
-}
-VkImageLayout VkFormatConverter::layoutForUsage(uint64_t usage) {
-  auto it = _instance._layoutmap.find(usage);
-  OrkAssert(it != _instance._layoutmap.end());
-  return it->second;
-}
-VkImageAspectFlagBits VkFormatConverter::aspectForUsage(uint64_t usage) {
-  auto it = _instance._aspectmap.find(usage);
-  OrkAssert(it != _instance._aspectmap.end());
-  return it->second;
-}
-
-const VkFormatConverter VkFormatConverter::VkFormatConverter::_instance;
-
-///////////////////////////////////////////////////////////////////////////////
-
 void _vkCreateImageForBuffer(
     vkcontext_rawptr_t ctxVK, //
     vkrtbufimpl_ptr_t bufferimpl,

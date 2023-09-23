@@ -189,6 +189,95 @@ void VkTextureInterface::generateMipMaps(Texture* ptex) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void VkTextureInterface::_createFromCompressedLoadReq(texloadreq_ptr_t req) {
+  auto ptex       = req->ptex;
+  auto vktex      = ptex->_impl.makeShared<VulkanTextureObject>(this);
+  auto chain      = req->_cmipchain;
+  size_t num_mips = chain->_levels.size();
+  auto format     = chain->_format;
+  // size_t size = chain->_data->length();
+  int iwidth  = chain->_width;
+  int iheight = chain->_height;
+  for (int ilevel = 0; ilevel < num_mips; ilevel++) {
+    auto& level         = chain->_levels[ilevel];
+    int level_width     = level._width;
+    int level_height    = level._height;
+    auto level_data     = level._data->data(0);
+    size_t level_length = level._data->length();
+    switch (format) {
+      case EBufferFormat::S3TC_DXT1:
+        printf("  tex<%s> DXT1\n", ptex->_debugName.c_str());
+        break;
+      default:
+        OrkAssert(false);
+        break;
+    }
+    printf("  tex<%s> nummips<%d> w<%d> h<%d> \n", ptex->_debugName.c_str(), num_mips, iwidth, iheight);
+    printf("  tex<%s> level<%d> w<%d> h<%d> len<%zu>\n", ptex->_debugName.c_str(), ilevel, level_width, level_height, level_length);
+    // load into vulkan
+    auto imageInfo   = makeVKICI(level_width, level_height, 1, format, 1);
+    imageInfo->usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+    vktex->_imgobj   = std::make_shared<VulkanImageObject>(_contextVK, imageInfo);
+    auto cmdbuf      = _contextVK->beginRecordCommandBuffer();
+    auto cmdbuf_impl = cmdbuf->_impl.getShared<VkCommandBufferImpl>();
+    auto vk_cmdbuf   = cmdbuf_impl->_vkcmdbuf;
+    auto barrier     = createImageBarrier(
+        vktex->_imgobj->_vkimage,
+        VK_IMAGE_LAYOUT_UNDEFINED,
+        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        VkAccessFlagBits(0),
+        VK_ACCESS_TRANSFER_WRITE_BIT);
+    barrier->subresourceRange.baseMipLevel = ilevel;
+    vkCmdPipelineBarrier(
+        vk_cmdbuf,                         // cmdbuf
+        VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, // srcStageMask
+        VK_PIPELINE_STAGE_TRANSFER_BIT,    // dstStageMask
+        0,                                 // dependencyFlags
+        0,
+        nullptr, // memoryBarriers
+        0,
+        nullptr, // bufferMemoryBarriers
+        1,
+        barrier.get()); // imageMemoryBarriers
+    auto staging_buffer = std::make_shared<VulkanBuffer>(_contextVK, level_length, VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
+    staging_buffer->copyFromHost(level_data, level_length);
+    vktex->_staging_buffer   = staging_buffer;
+    VkBufferImageCopy region = {};
+    region.bufferOffset      = 0;
+    region.bufferRowLength   = 0;
+    region.bufferImageHeight = 0;
+    region.imageSubresource  = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1};
+    region.imageOffset       = {0, 0, 0};
+    region.imageExtent       = {uint32_t(level_width), uint32_t(level_height), 1};
+    if (1)
+      vkCmdCopyBufferToImage(
+          vk_cmdbuf, staging_buffer->_vkbuffer, vktex->_imgobj->_vkimage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+    barrier->oldLayout     = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+    barrier->newLayout     = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    barrier->srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+    barrier->dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+    vkCmdPipelineBarrier(
+        vk_cmdbuf,
+        VK_PIPELINE_STAGE_TRANSFER_BIT,
+        VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+        0,
+        0,
+        nullptr,
+        0,
+        nullptr,
+        1,
+        barrier.get());
+    _contextVK->endRecordCommandBuffer(cmdbuf);
+    _contextVK->enqueueDeferredOneShotCommand(cmdbuf);
+    _contextVK->onFenceCrossed([=]() {
+      // staging_buffer = nullptr;
+       OrkAssert(false);
+    });
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 Texture* VkTextureInterface::createFromMipChain(MipChain* from_chain) {
   auto ptex  = new Texture;
   auto vktex = ptex->_impl.makeShared<VulkanTextureObject>(this);
@@ -337,12 +426,12 @@ Texture* VkTextureInterface::createFromMipChain(MipChain* from_chain) {
 
 void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid) {
 
-  auto vktex       = ptex->_impl.makeShared<VulkanTextureObject>(this);
+  auto vktex = ptex->_impl.makeShared<VulkanTextureObject>(this);
 
   /////////////////////////////////////
   // map staging memory and copy
   /////////////////////////////////////
-  
+
   auto staging_buffer = std::make_shared<VulkanBuffer>(_contextVK, tid.computeDstSize(), VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
   staging_buffer->copyFromHost(tid._data, tid._truncation_length);
   vktex->_staging_buffer = staging_buffer;
@@ -361,7 +450,6 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
 
   vktex->_imgobj = std::make_shared<VulkanImageObject>(_contextVK, VKICI);
 
-
   /////////////////////////////////////
 
   auto IVCI = createImageViewInfo2D(
@@ -376,7 +464,7 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   /////////////////////////////////////
 
   vktex->_sampler_info = makeVKSCI();
-  ok = vkCreateSampler(_contextVK->_vkdevice, vktex->_sampler_info.get(), nullptr, & vktex->_vksampler);
+  ok                   = vkCreateSampler(_contextVK->_vkdevice, vktex->_sampler_info.get(), nullptr, &vktex->_vksampler);
   OrkAssert(VK_SUCCESS == ok);
 
   /////////////////////////////////////
@@ -400,14 +488,17 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
       VkAccessFlagBits(0),
       VK_ACCESS_TRANSFER_WRITE_BIT);
 
-  vkCmdPipelineBarrier( vk_cmdbuf, //  
-                        VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, // 
-                        VK_PIPELINE_STAGE_TRANSFER_BIT, // 
-                        0, //
-                        0, nullptr, //
-                        0, nullptr, //
-                        1, barrier.get()); //
-
+  vkCmdPipelineBarrier(
+      vk_cmdbuf,                         //
+      VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, //
+      VK_PIPELINE_STAGE_TRANSFER_BIT,    //
+      0,                                 //
+      0,
+      nullptr, //
+      0,
+      nullptr, //
+      1,
+      barrier.get()); //
 
   /////////////////////////////////////
   // staging mem -> image
@@ -418,18 +509,21 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   region.bufferOffset      = 0;
   region.bufferRowLength   = 0;
   region.bufferImageHeight = 0;
-  region.imageSubresource  = { VK_IMAGE_ASPECT_COLOR_BIT, // 
-                               0, 
-                               0, 
-                               1};
-  region.imageOffset       = {0, 0, 0};
-  region.imageExtent       = {uint32_t(tid._w), uint32_t(tid._h), 1};
+  region.imageSubresource  = {
+      VK_IMAGE_ASPECT_COLOR_BIT, //
+      0,
+      0,
+      1};
+  region.imageOffset = {0, 0, 0};
+  region.imageExtent = {uint32_t(tid._w), uint32_t(tid._h), 1};
 
-  vkCmdCopyBufferToImage( vk_cmdbuf, // 
-                          staging_buffer->_vkbuffer, //
-                          vktex->_imgobj->_vkimage, //
-                          VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, //
-                          1, &region); //
+  vkCmdCopyBufferToImage(
+      vk_cmdbuf,                            //
+      staging_buffer->_vkbuffer,            //
+      vktex->_imgobj->_vkimage,             //
+      VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, //
+      1,
+      &region); //
   _contextVK->onFenceCrossed([=]() {
     vktex->_staging_buffer = nullptr; // release staging buffer
   });

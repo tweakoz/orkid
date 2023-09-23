@@ -241,7 +241,7 @@ void TextureInterface::_loadDDSTextureMainThreadPart(texloadreq_ptr_t req) {
     int size                   = (iBwidth * iBheight) * li.blockBytes;
     // printf("  tex<%s> DXT3\n", ptex->_debugName.c_str());
     // printf("  tex<%s> size<%d>\n", ptex->_debugName.c_str(), size);
-
+  
     //if (bVOLUMETEX) {
       //Set3DC(this, ptex.get(), kRGBA_DXT3, TARGET, li.blockBytes, NumMips, iwidth, iheight, idepth, req->_inpstream); // ireadptr, pdata );
     //} else
@@ -254,6 +254,30 @@ void TextureInterface::_loadDDSTextureMainThreadPart(texloadreq_ptr_t req) {
     ptex->_texFormat = EBufferFormat::S3TC_DXT1;
     const dds::DdsLoadInfo& li = dds::loadInfoDXT1;
     int size                   = (iBwidth * iBheight) * li.blockBytes;
+    auto cmc = std::make_shared<CompressedImageMipChain>();
+    req->_cmipchain            = cmc;
+    cmc->_width = iwidth;
+    cmc->_height = iheight;
+    cmc->_depth = idepth;
+    cmc->_numcomponents = 3;
+    cmc->_format = EBufferFormat::S3TC_DXT1;
+    cmc->_levels.resize(NumMips);
+    for (int imip = 0; imip < NumMips; imip++) {
+      int iBwidth   = (iwidth + 3) / 4;
+      int iBheight  = (iheight + 3) / 4;
+      int isize     = (iBwidth * iBheight) * li.blockBytes;
+      auto datablock = std::make_shared<DataBlock>(req->_inpstream.current(),isize);
+      req->_inpstream.advance(isize);
+      auto& level = cmc->_levels[imip];
+      level._width = iwidth;
+      level._height = iheight;
+      level._depth = idepth;
+      level._data = datablock;
+      iwidth >>= 1;
+      iheight >>= 1;
+      idepth >>= 1;
+    }
+    _createFromCompressedLoadReq(req);
     // printf("  tex<%s> DXT1\n", ptex->_debugName.c_str());
     // printf("  tex<%s> size<%d> nummips<%d> w<%d> h<%d> \n", ptex->_debugName.c_str(), size, NumMips, iwidth, iheight);
     //if (bVOLUMETEX) {

@@ -53,9 +53,10 @@ using context_factory_t = std::function<context_ptr_t()>;
 
 struct Texture;
 struct IpcTexture;
+struct CompressedImageMipChain;
 using texture_ptr_t          = std::shared_ptr<Texture>;
 using ipctexture_ptr_t       = std::shared_ptr<IpcTexture>;
-
+using comp_mipchain_ptr_t = std::shared_ptr<CompressedImageMipChain>;
 
 ///////////////////////////////////////////////////////////////////////////////
 // Geometry Buffer

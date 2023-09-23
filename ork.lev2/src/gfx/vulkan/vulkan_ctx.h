@@ -904,6 +904,8 @@ struct VkTextureInterface final : public TextureInterface {
   void generateMipMaps(Texture* ptex) final;
   Texture* createFromMipChain(MipChain* from_chain) final;
 
+  void _createFromCompressedLoadReq(texloadreq_ptr_t tlr) final;
+
   // std::map<size_t, pbosetptr_t> _pbosets;
   vkcontext_rawptr_t _contextVK;
 };
