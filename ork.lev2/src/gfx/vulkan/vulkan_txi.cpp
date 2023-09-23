@@ -51,6 +51,26 @@ void VkTextureInterface::UpdateAnimatedTexture(Texture* ptex, TextureAnimationIn
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+using barrier_ptr_t = std::shared_ptr<VkImageMemoryBarrier>;
+
+barrier_ptr_t createImageBarrier(VkImage image,
+                                 VkImageLayout oldLayout,
+                                 VkImageLayout newLayout,
+                                 VkAccessFlagBits srcAccessMask,
+                                 VkAccessFlagBits dstAccessMask){
+  barrier_ptr_t barrier = std::make_shared<VkImageMemoryBarrier>();
+  initializeVkStruct(*barrier, VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
+  barrier->image                           = image;
+  barrier->srcQueueFamilyIndex             = VK_QUEUE_FAMILY_IGNORED;
+  barrier->dstQueueFamilyIndex             = VK_QUEUE_FAMILY_IGNORED;
+  barrier->oldLayout                     = oldLayout;
+  barrier->newLayout                     = newLayout;
+  barrier->srcAccessMask                 = srcAccessMask;
+  barrier->dstAccessMask                 = dstAccessMask;
+  return barrier;
+}
+
+///////////////////////////////////////////////////////////////////////////////
 
 void VkTextureInterface::generateMipMaps(Texture* ptex) {
 
@@ -66,31 +86,28 @@ void VkTextureInterface::generateMipMaps(Texture* ptex) {
   auto cmdbuf_impl = _contextVK->_cmdbufcur_gfx;
   auto vk_cmdbuf   = cmdbuf_impl->_vkcmdbuf;
 
-  VkImageMemoryBarrier barrier{};
-  barrier.sType                           = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-  barrier.image                           = vktex->_vkimage;
-  barrier.srcQueueFamilyIndex             = VK_QUEUE_FAMILY_IGNORED;
-  barrier.dstQueueFamilyIndex             = VK_QUEUE_FAMILY_IGNORED;
-  barrier.subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
-  barrier.subresourceRange.baseArrayLayer = 0;
-  barrier.subresourceRange.layerCount     = 1;
-  barrier.subresourceRange.levelCount     = 1;
-
   int32_t mipWidth  = ptex->_width;
   int32_t mipHeight = ptex->_height;
 
   bool keep_going = true;
 
+  auto barrier = createImageBarrier(vktex->_vkimage,
+                                    VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                                    VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                                    VK_ACCESS_TRANSFER_WRITE_BIT,
+                                    VK_ACCESS_TRANSFER_READ_BIT
+                                    );
+
     int mip_level = 0;
     while( keep_going ) {
-        barrier.subresourceRange.baseMipLevel = mip_level;
-        barrier.oldLayout                     = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-        barrier.newLayout                     = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-        barrier.srcAccessMask                 = VK_ACCESS_TRANSFER_WRITE_BIT;
-        barrier.dstAccessMask                 = VK_ACCESS_TRANSFER_READ_BIT;
+        barrier->subresourceRange.baseMipLevel = mip_level;
+        barrier->subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+        barrier->subresourceRange.baseArrayLayer = 0;
+        barrier->subresourceRange.layerCount     = 1;
+        barrier->subresourceRange.levelCount     = 1;
 
         vkCmdPipelineBarrier(
-            vk_cmdbuf, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier);
+            vk_cmdbuf, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, barrier.get());
 
         VkImageBlit blit{};
         blit.srcOffsets[0]                 = {0, 0, 0};
@@ -116,13 +133,13 @@ void VkTextureInterface::generateMipMaps(Texture* ptex) {
             &blit,
             VK_FILTER_LINEAR);
 
-        barrier.oldLayout     = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-        barrier.newLayout     = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        barrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
-        barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+        barrier->oldLayout     = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+        barrier->newLayout     = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        barrier->srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+        barrier->dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
 
         vkCmdPipelineBarrier(
-            vk_cmdbuf, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier);
+            vk_cmdbuf, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, barrier.get());
 
         if (mipWidth > 1)
         mipWidth /= 2;
@@ -133,14 +150,14 @@ void VkTextureInterface::generateMipMaps(Texture* ptex) {
         mip_level++;
     }
 
-  barrier.subresourceRange.baseMipLevel = mip_level - 1;
-  barrier.oldLayout                     = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-  barrier.newLayout                     = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-  barrier.srcAccessMask                 = VK_ACCESS_TRANSFER_WRITE_BIT;
-  barrier.dstAccessMask                 = VK_ACCESS_SHADER_READ_BIT;
+  barrier->subresourceRange.baseMipLevel = mip_level - 1;
+  barrier->oldLayout                     = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+  barrier->newLayout                     = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+  barrier->srcAccessMask                 = VK_ACCESS_TRANSFER_WRITE_BIT;
+  barrier->dstAccessMask                 = VK_ACCESS_SHADER_READ_BIT;
 
   vkCmdPipelineBarrier(
-      vk_cmdbuf, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier);
+      vk_cmdbuf, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, barrier.get());
 
   _contextVK->popCommandBuffer();
   _contextVK->enqueueSecondaryCommandBuffer(cmdbuf);
@@ -226,16 +243,13 @@ Texture* VkTextureInterface::createFromMipChain(MipChain* from_chain) {
         mipSubRange.baseArrayLayer = 0;
         mipSubRange.layerCount     = 1;
 
-        VkImageMemoryBarrier barrier = {};
-        initializeVkStruct(barrier, VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
-        barrier.oldLayout         = VK_IMAGE_LAYOUT_UNDEFINED;
-        barrier.newLayout         = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-        barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        barrier.image             = vktex->_vkimage;
-        barrier.subresourceRange  = mipSubRange;
-        barrier.srcAccessMask     = 0;
-        barrier.dstAccessMask     = VK_ACCESS_TRANSFER_WRITE_BIT;
+        auto barrier = createImageBarrier(vktex->_vkimage,
+                                          VK_IMAGE_LAYOUT_UNDEFINED,
+                                          VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                                          VkAccessFlagBits(0),
+                                          VK_ACCESS_TRANSFER_WRITE_BIT
+                                          );
+        barrier->subresourceRange  = mipSubRange;
 
         vkCmdPipelineBarrier(
             _contextVK->_cmdbufcur_gfx->_vkcmdbuf,
@@ -247,7 +261,7 @@ Texture* VkTextureInterface::createFromMipChain(MipChain* from_chain) {
             0,
             nullptr,
             1,
-            &barrier);
+            barrier.get());
         
         VkBufferImageCopy region = {};
         region.bufferOffset      = 0;
@@ -265,10 +279,10 @@ Texture* VkTextureInterface::createFromMipChain(MipChain* from_chain) {
             1,
             &region);
         
-        barrier.oldLayout         = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-        barrier.newLayout         = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        barrier.srcAccessMask     = VK_ACCESS_TRANSFER_WRITE_BIT;
-        barrier.dstAccessMask     = VK_ACCESS_SHADER_READ_BIT;
+        barrier->oldLayout         = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+        barrier->newLayout         = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        barrier->srcAccessMask     = VK_ACCESS_TRANSFER_WRITE_BIT;
+        barrier->dstAccessMask     = VK_ACCESS_SHADER_READ_BIT;
 
         vkCmdPipelineBarrier(
             _contextVK->_cmdbufcur_gfx->_vkcmdbuf,
@@ -280,7 +294,7 @@ Texture* VkTextureInterface::createFromMipChain(MipChain* from_chain) {
             0,
             nullptr,
             1,
-            &barrier);
+            barrier.get());
 
         vkDestroyBuffer(_contextVK->_vkdevice, stagingBuffer, nullptr);
         vkFreeMemory(_contextVK->_vkdevice, vkmem, nullptr);
@@ -472,16 +486,18 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   auto cmdbuf_impl = _contextVK->_cmdbufcur_gfx;
   auto vk_cmdbuf   = cmdbuf_impl->_vkcmdbuf;
 
-  VkImageMemoryBarrier barrier{};
-  initializeVkStruct(barrier, VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
-  barrier.oldLayout         = VK_IMAGE_LAYOUT_UNDEFINED;
-  barrier.newLayout         = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-  barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-  barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-  barrier.image             = vkimage;
-  barrier.subresourceRange  = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
-  barrier.srcAccessMask     = 0;
-  barrier.dstAccessMask     = VK_ACCESS_TRANSFER_WRITE_BIT;
+  auto barrier = createImageBarrier(vkimage,
+                                    VK_IMAGE_LAYOUT_UNDEFINED,
+                                    VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                                    VkAccessFlagBits(0),
+                                    VK_ACCESS_TRANSFER_WRITE_BIT
+                                    );
+  barrier->subresourceRange  = {
+    VK_IMAGE_ASPECT_COLOR_BIT, // VkImageAspectFlags     aspectMask;
+    0,                         // uint32_t               baseMipLevel;
+    1,                         // uint32_t               levelCount;
+    0,                         // uint32_t               baseArrayLayer;
+    1};                        // uint32_t               layerCount;
 
   vkCmdPipelineBarrier(
       vk_cmdbuf,
@@ -493,7 +509,7 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
       0,
       nullptr,
       1,
-      &barrier);
+      barrier.get());
 
   VkBufferCreateInfo BUFINFO;
   initializeVkStruct(BUFINFO, VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO);
@@ -507,7 +523,7 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   OrkAssert(VK_SUCCESS == ok);
 
   /////////////////////////////////////
-  // allocate image memory
+  // allocate image GPU memory
   /////////////////////////////////////
 
   VkMemoryRequirements MEMREQ;
@@ -527,7 +543,7 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   vkBindBufferMemory(_contextVK->_vkdevice, stagingBuffer, vkmem, 0);
 
   /////////////////////////////////////
-  // map and copy
+  // map GPU mem and copy
   /////////////////////////////////////
 
   void* data;
@@ -535,6 +551,8 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   memcpy(data, tid._data, tid._truncation_length);
   vkUnmapMemory(_contextVK->_vkdevice, vkmem);
 
+  /////////////////////////////////////
+  // GPU mem -> image
   /////////////////////////////////////
 
   VkBufferImageCopy region{};
@@ -556,10 +574,14 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   vkDestroyBuffer(_contextVK->_vkdevice, stagingBuffer, nullptr);
   vkFreeMemory(_contextVK->_vkdevice, vkmem, nullptr);
 
-  barrier.oldLayout         = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-  barrier.newLayout         = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-  barrier.srcAccessMask     = VK_ACCESS_TRANSFER_WRITE_BIT;
-  barrier.dstAccessMask     = VK_ACCESS_SHADER_READ_BIT;
+  /////////////////////////////////////
+  // transition to sampleable texture
+  /////////////////////////////////////
+
+  barrier->oldLayout         = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+  barrier->newLayout         = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+  barrier->srcAccessMask     = VK_ACCESS_TRANSFER_WRITE_BIT;
+  barrier->dstAccessMask     = VK_ACCESS_SHADER_READ_BIT;
 
   vkCmdPipelineBarrier(
       vk_cmdbuf,
@@ -571,7 +593,7 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
       0,
       nullptr,
       1,
-      &barrier);
+      barrier.get());
   
   _contextVK->popCommandBuffer();
 
