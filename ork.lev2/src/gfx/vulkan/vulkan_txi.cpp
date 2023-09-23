@@ -166,6 +166,54 @@ void VkTextureInterface::generateMipMaps(Texture* ptex) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+using vkimagecreateinfo_ptr_t = std::shared_ptr<VkImageCreateInfo>;
+
+vkimagecreateinfo_ptr_t makeVKICI(int w, int h, int d, //
+                                  EBufferFormat fmt, int nummips) { //
+  auto ret = std::make_shared<VkImageCreateInfo>();
+  initializeVkStruct(*ret, VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO);
+  ret->imageType     = VK_IMAGE_TYPE_2D;
+  ret->format        = VkFormat(fmt);
+  ret->extent.width  = w;
+  ret->extent.height = h;
+  ret->extent.depth  = d;
+  ret->mipLevels     = nummips;
+  //ret->arrayLayers   = 1;
+  //ret->samples       = VK_SAMPLE_COUNT_1_BIT;
+  //ret->tiling        = VK_IMAGE_TILING_OPTIMAL;
+  //ret->usage         = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+  //ret->sharingMode   = VK_SHARING_MODE_EXCLUSIVE;
+  //ret->initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+  return ret;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+using vksamplercreateinfo_ptr_t = std::shared_ptr<VkSamplerCreateInfo>;
+///////////////////////////////////////////////////////////////////////////////
+
+vksamplercreateinfo_ptr_t makeVKSCI() { //
+  auto ret = std::make_shared<VkSamplerCreateInfo>();
+  initializeVkStruct(*ret, VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO);
+  ret->magFilter               = VK_FILTER_LINEAR;
+  ret->minFilter               = VK_FILTER_LINEAR;
+  ret->addressModeU            = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+  ret->addressModeV            = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+  ret->addressModeW            = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+  ret->anisotropyEnable        = VK_TRUE;
+  ret->maxAnisotropy           = 16;
+  ret->borderColor             = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+  ret->unnormalizedCoordinates = VK_FALSE;
+  ret->compareEnable           = VK_FALSE;
+  ret->compareOp               = VK_COMPARE_OP_ALWAYS;
+  ret->mipmapMode              = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+  ret->mipLodBias              = 0.0f;
+  ret->minLod                  = 0.0f;
+  ret->maxLod                  = 1.0f;
+  return ret;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 Texture* VkTextureInterface::createFromMipChain(MipChain* from_chain) {
     auto ptex = new Texture;
     auto vktex  = ptex->_impl.makeShared<VulkanTextureObject>(this);
@@ -174,14 +222,7 @@ Texture* VkTextureInterface::createFromMipChain(MipChain* from_chain) {
     auto type = from_chain->_type;
     size_t num_levels = from_chain->_levels.size();
 
-    VkImageCreateInfo imageInfo{};
-      initializeVkStruct(imageInfo, VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO);
-    imageInfo.imageType     = VK_IMAGE_TYPE_2D;
-    imageInfo.format        = VkFormat(format);
-    imageInfo.extent.width  = from_chain->_width;
-    imageInfo.extent.height = from_chain->_height;
-    imageInfo.extent.depth  = 1;
-    imageInfo.mipLevels     = num_levels;
+    auto imageInfo = makeVKICI(from_chain->_width, from_chain->_height, 1, format, num_levels);
 
     for( size_t l=0; l<num_levels; l++ ){
 
@@ -328,27 +369,12 @@ Texture* VkTextureInterface::createFromMipChain(MipChain* from_chain) {
     // create sampler
     /////////////////////////////////////
 
-    VkSamplerCreateInfo samplerInfo{};
-    initializeVkStruct(samplerInfo, VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO);
-    samplerInfo.magFilter               = VK_FILTER_LINEAR;
-    samplerInfo.minFilter               = VK_FILTER_LINEAR;
-    samplerInfo.addressModeU            = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-    samplerInfo.addressModeV            = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-    samplerInfo.addressModeW            = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-    samplerInfo.anisotropyEnable        = VK_TRUE;
-    samplerInfo.maxAnisotropy           = 16;
-    samplerInfo.borderColor             = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
-    samplerInfo.unnormalizedCoordinates = VK_FALSE;
-    samplerInfo.compareEnable           = VK_FALSE;
-    samplerInfo.compareOp               = VK_COMPARE_OP_ALWAYS;
-    samplerInfo.mipmapMode              = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-    samplerInfo.mipLodBias              = 0.0f;
-    samplerInfo.minLod                  = 0.0f;
-    samplerInfo.maxLod                  = float(num_levels);
+    auto samplerInfo = makeVKSCI();
+    samplerInfo->maxLod                  = float(num_levels);
 
     VkSampler vksampler;
     initializeVkStruct(vksampler);
-    ok = vkCreateSampler(_contextVK->_vkdevice, &samplerInfo, nullptr, &vksampler);
+    ok = vkCreateSampler(_contextVK->_vkdevice, samplerInfo.get(), nullptr, &vksampler);
     OrkAssert(VK_SUCCESS == ok);
 
     //vktex->_vksampler = vksampler;
@@ -386,24 +412,17 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   ptex->_num_mips  = 1;
   ptex->_debugName = "vulkan_texture";
 
-  VkImageCreateInfo imageInfo{};
-  initializeVkStruct(imageInfo, VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO);
-  imageInfo.imageType     = VK_IMAGE_TYPE_2D;
-  imageInfo.format        = VkFormat(tid._dst_format);
-  imageInfo.extent.width  = tid._w;
-  imageInfo.extent.height = tid._h;
-  imageInfo.extent.depth  = 1;
-  imageInfo.mipLevels     = 1;
-  imageInfo.arrayLayers   = 1;
-  imageInfo.samples       = VK_SAMPLE_COUNT_1_BIT;
-  imageInfo.tiling        = VK_IMAGE_TILING_OPTIMAL;
-  imageInfo.usage         = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-  imageInfo.sharingMode   = VK_SHARING_MODE_EXCLUSIVE;
-  imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+  auto imageInfo = makeVKICI(tid._w, tid._h, tid._d, tid._dst_format, 1);
+  imageInfo->arrayLayers   = 1;
+  imageInfo->samples       = VK_SAMPLE_COUNT_1_BIT;
+  imageInfo->tiling        = VK_IMAGE_TILING_OPTIMAL;
+  imageInfo->usage         = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+  imageInfo->sharingMode   = VK_SHARING_MODE_EXCLUSIVE;
+  imageInfo->initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
   VkImage vkimage;
   initializeVkStruct(vkimage);
-  VkResult ok = vkCreateImage(_contextVK->_vkdevice, &imageInfo, nullptr, &vkimage);
+  VkResult ok = vkCreateImage(_contextVK->_vkdevice, imageInfo.get(), nullptr, &vkimage);
   OrkAssert(VK_SUCCESS == ok);
   vktex->_vkimage = vkimage;
 
@@ -447,27 +466,11 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
 
   /////////////////////////////////////
 
-  VkSamplerCreateInfo samplerInfo{};
-  initializeVkStruct(samplerInfo, VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO);
-  samplerInfo.magFilter               = VK_FILTER_LINEAR;
-  samplerInfo.minFilter               = VK_FILTER_LINEAR;
-  samplerInfo.addressModeU            = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-  samplerInfo.addressModeV            = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-  samplerInfo.addressModeW            = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-  samplerInfo.anisotropyEnable        = VK_TRUE;
-  samplerInfo.maxAnisotropy           = 16;
-  samplerInfo.borderColor             = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
-  samplerInfo.unnormalizedCoordinates = VK_FALSE;
-  samplerInfo.compareEnable           = VK_FALSE;
-  samplerInfo.compareOp               = VK_COMPARE_OP_ALWAYS;
-  samplerInfo.mipmapMode              = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-  samplerInfo.mipLodBias              = 0.0f;
-  samplerInfo.minLod                  = 0.0f;
-  samplerInfo.maxLod                  = 1.0f;
+  auto samplerInfo = makeVKSCI();
 
   VkSampler vksampler;
   initializeVkStruct(vksampler);
-  ok = vkCreateSampler(_contextVK->_vkdevice, &samplerInfo, nullptr, &vksampler);
+  ok = vkCreateSampler(_contextVK->_vkdevice, samplerInfo.get(), nullptr, &vksampler);
   OrkAssert(VK_SUCCESS == ok);
 
   //vktex->_vksampler = vksampler;
