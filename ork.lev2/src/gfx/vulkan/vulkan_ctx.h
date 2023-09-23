@@ -1169,7 +1169,7 @@ public:
   void enqueueDeferredOneShotCommand(commandbuffer_ptr_t cmdbuf);
   std::vector<commandbuffer_ptr_t> _pendingOneShotCommands;
   std::unordered_set<vktlsema_obj_ptr_t> _pendingOneShotSemas;
-
+  void onFenceCrossed(void_lambda_t op);
   //////////////////////////////////////////////
 
   vkdwi_ptr_t _dwi;

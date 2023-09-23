@@ -223,7 +223,6 @@ void VkContext::_initVulkanCommon() {
   initializeVkStruct(SCI, VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO);
   OK = vkCreateSemaphore(_vkdevice, &SCI, nullptr, &_renderingCompleteSemaphore);
   OrkAssert(OK == VK_SUCCESS);
-
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -452,7 +451,7 @@ void VkContext::_doBeginFrame() {
 
   if (not _first_frame) {
     auto swapchain = _fbi->_swapchain;
-    auto fence = swapchain->_fence;
+    auto fence     = swapchain->_fence;
     fence->wait();
   }
 
@@ -517,7 +516,7 @@ void VkContext::_doEndFrame() {
   SI.pSignalSemaphores    = &_renderingCompleteSemaphore;
   ///////////////////////////////////////////////////////
   auto swapchain = _fbi->_swapchain;
-  auto fence = swapchain->_fence;
+  auto fence     = swapchain->_fence;
   fence->reset();
   vkQueueSubmit(_vkqueue_graphics, 1, &SI, fence->_vkfence);
 
@@ -1294,43 +1293,48 @@ VulkanTimelineSemaphoreObject::VulkanTimelineSemaphoreObject(vkcontext_rawptr_t 
 
   VkSemaphoreTypeCreateInfoKHR STCI = {};
   initializeVkStruct(STCI, VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO_KHR);
-  STCI.semaphoreType                = VK_SEMAPHORE_TYPE_TIMELINE;
-  STCI.initialValue                 = 0;
+  STCI.semaphoreType = VK_SEMAPHORE_TYPE_TIMELINE;
+  STCI.initialValue  = 0;
 
   VkSemaphoreCreateInfo SCI = {};
   initializeVkStruct(SCI, VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO);
-  SCI.pNext                 = &STCI;
+  SCI.pNext = &STCI;
 
-    VkResult OK = vkCreateSemaphore(_ctxVK->_vkdevice, &SCI, nullptr, &_vksema);
-    OrkAssert(OK == VK_SUCCESS);
+  VkResult OK = vkCreateSemaphore(_ctxVK->_vkdevice, &SCI, nullptr, &_vksema);
+  OrkAssert(OK == VK_SUCCESS);
 }
 VulkanTimelineSemaphoreObject::~VulkanTimelineSemaphoreObject() {
-    vkDestroySemaphore(_ctxVK->_vkdevice, _vksema, nullptr);
+  vkDestroySemaphore(_ctxVK->_vkdevice, _vksema, nullptr);
 }
 
 VulkanFenceObject::VulkanFenceObject(vkcontext_rawptr_t ctxVK)
     : _ctxVK(ctxVK) {
   VkFenceCreateInfo FCI = {};
   initializeVkStruct(FCI, VK_STRUCTURE_TYPE_FENCE_CREATE_INFO);
-  FCI.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+  FCI.flags   = VK_FENCE_CREATE_SIGNALED_BIT;
   VkResult OK = vkCreateFence(_ctxVK->_vkdevice, &FCI, nullptr, &_vkfence);
   OrkAssert(OK == VK_SUCCESS);
 }
 VulkanFenceObject::~VulkanFenceObject() {
   vkDestroyFence(_ctxVK->_vkdevice, _vkfence, nullptr);
 }
-void VulkanFenceObject::reset(){
+void VulkanFenceObject::reset() {
   vkResetFences(_ctxVK->_vkdevice, 1, &_vkfence);
 }
-void VulkanFenceObject::wait(){
+void VulkanFenceObject::wait() {
   vkWaitForFences(_ctxVK->_vkdevice, 1, &_vkfence, true, UINT64_MAX);
-  for( auto item : _onReached ){
+  for (auto item : _onReached) {
     item();
   }
   _onReached.clear();
 }
-void VulkanFenceObject::onCrossed(void_lambda_t op){
+void VulkanFenceObject::onCrossed(void_lambda_t op) {
   _onReached.push_back(op);
+}
+
+void VkContext::onFenceCrossed(void_lambda_t op) {
+  auto fence = _fbi->_swapchain->_fence;
+  fence->onCrossed(op);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -430,8 +430,7 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
                           vktex->_imgobj->_vkimage, //
                           VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, //
                           1, &region); //
-  auto fence = _contextVK->_fbi->_swapchain->_fence;
-  fence->onCrossed([=]() {
+  _contextVK->onFenceCrossed([=]() {
     vktex->_staging_buffer = nullptr; // release staging buffer
   });
   /////////////////////////////////////
