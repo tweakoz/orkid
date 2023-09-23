@@ -469,7 +469,7 @@ struct VulkanTextureObject {
   VulkanTextureObject(vktxi_rawptr_t txi);
   ~VulkanTextureObject();
 
-  vkbuffer_ptr_t _staging_buffer;
+  std::unordered_set<vkbuffer_ptr_t> _staging_buffers;
   VkImageView _vkimageview;
   vkimageobj_ptr_t _imgobj;
   int _maxmip = 0;
