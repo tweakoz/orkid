@@ -362,6 +362,78 @@ void VkGeometryBufferInterface::DrawPrimitiveEML(
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void VkGeometryBufferInterface::DrawIndexedPrimitiveEML(
+    const VertexBufferBase& vtx_buf,
+    const IndexBufferBase& idx_buf,
+    PrimitiveType eType) {
+  OrkAssert(_contextVK->_renderpass_index >= 0);
+
+  auto& CB = _contextVK->_cmdbufcur_gfx;
+
+  int num_indices = idx_buf.GetNumIndices();
+
+  ///////////////////////
+  // get primclass (input to pipeline search)
+  ///////////////////////
+
+  auto it_pc = _primclasses.find(uint64_t(eType));
+  OrkAssert(it_pc != _primclasses.end());
+  auto primclass = it_pc->second;
+
+  ///////////////////////
+  // find pipeline, pass, prog
+  ///////////////////////
+
+  auto vk_vbimpl = vtx_buf._impl.getShared<VulkanVertexBuffer>();
+  auto vk_ibimpl = idx_buf._impl.getShared<VulkanIndexBuffer>();
+  auto fxi       = _contextVK->_fxi;
+  auto pipeline  = fxi->_fetchPipeline(vk_vbimpl, primclass);
+  auto pass      = fxi->_currentVKPASS;
+  auto prog      = pass->_vk_program;
+
+  ///////////////////////
+  // bind pipeline
+  // bind descriptor set
+  // flush push constants
+  // bind vertex buffer
+  ///////////////////////
+
+  fxi->_bindPipeline(pipeline);
+  auto desc_set = pipeline->_descriptorSetCache->fetchDescriptorSetForProgram(prog);
+  fxi->_bindGfxDescriptorSetOnSlot(desc_set, 0);
+  pipeline->applyPendingPushConstants(CB);
+  fxi->_bindVertexBufferOnSlot(vk_vbimpl, 0);
+
+  ///////////////////////
+  // bind index buffer
+  ///////////////////////
+
+  auto vk_index_size = idx_buf.GetIndexSize()==2 //
+                     ? VK_INDEX_TYPE_UINT16 //
+                     : VK_INDEX_TYPE_UINT32;
+
+  auto& vk_buffer = vk_ibimpl->_vkbuffer->_vkbuffer;
+
+  vkCmdBindIndexBuffer( CB->_vkcmdbuf,  // command buffer 
+                        vk_buffer,      // index buffer
+                        0,              // start at first index in index buffer
+                        vk_index_size); // index type
+
+  ///////////////////////
+  // draw
+  ///////////////////////
+
+  vkCmdDrawIndexed(
+      CB->_vkcmdbuf, // command buffer
+      num_indices,   // index count
+      1,             // instance count
+      0,             // first vertex
+      0,             // vertex offset
+      0);            // first instance
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 #if defined(ENABLE_COMPUTE_SHADERS)
 void VkGeometryBufferInterface::DrawPrimitiveEML(
     const FxShaderStorageBuffer* SSBO, //
@@ -371,15 +443,6 @@ void VkGeometryBufferInterface::DrawPrimitiveEML(
   OrkAssert(false);
 }
 #endif
-
-void VkGeometryBufferInterface::DrawIndexedPrimitiveEML(
-    const VertexBufferBase& vtx_buf,
-    const IndexBufferBase& IdxBuf,
-    PrimitiveType eType,
-    int ivbase,
-    int ivcount) {
-  OrkAssert(false);
-}
 
 void VkGeometryBufferInterface::DrawInstancedIndexedPrimitiveEML(
     const VertexBufferBase& vtx_buf,

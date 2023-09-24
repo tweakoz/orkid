@@ -820,7 +820,7 @@ struct VkGeometryBufferInterface final : public GeometryBufferInterface {
 #endif
 
   void
-  DrawIndexedPrimitiveEML(const VertexBufferBase& VBuf, const IndexBufferBase& IdxBuf, PrimitiveType eType, int ivbase, int ivcount)
+  DrawIndexedPrimitiveEML(const VertexBufferBase& VBuf, const IndexBufferBase& IdxBuf, PrimitiveType eType)
       final;
 
   void DrawInstancedIndexedPrimitiveEML(

@@ -121,9 +121,7 @@ void GeometryBufferInterface::DrawIndexedPrimitive(
     GfxMaterial* mtl,
     const VertexBufferBase& VBuf,
     const IndexBufferBase& IdxBuf,
-    PrimitiveType eType,
-    int ivbase,
-    int ivcount) {
+    PrimitiveType eType) {
   int imax = VBuf.GetMax();
 
   if (imax) {
@@ -133,7 +131,7 @@ void GeometryBufferInterface::DrawIndexedPrimitive(
       if (mtl->BeginPass(&_context, ipass)) {
         if (PrimitiveType::NONE == eType)
           eType = VBuf.GetPrimType();
-        DrawIndexedPrimitiveEML(VBuf, IdxBuf, eType, ivbase, ivcount);
+        DrawIndexedPrimitiveEML(VBuf, IdxBuf, eType);
 
         mtl->EndPass(&_context);
       }

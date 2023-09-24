@@ -102,22 +102,22 @@ public:
 /*
 struct DuRasterStateInterface : public RasterStateInterface {
   DuRasterStateInterface(Context& target);
-  void BindRasterState(const SRasterState& rState, bool bForce = false) override {
+  void BindRasterState(const SRasterState& rState, bool bForce = false) final {
   }
-  void SetZWriteMask(bool bv) override {
+  void SetZWriteMask(bool bv) final {
   }
-  void SetRGBAWriteMask(bool rgb, bool a) override {
+  void SetRGBAWriteMask(bool rgb, bool a) final {
   }
-  RGBAMask SetRGBAWriteMask(const RGBAMask& newmask) override {
+  RGBAMask SetRGBAWriteMask(const RGBAMask& newmask) final {
     return _curmask;
   }
-  void SetBlending(Blending eVal) override {
+  void SetBlending(Blending eVal) final {
   }
-  void SetDepthTest(EDepthTest eVal) override {
+  void SetDepthTest(EDepthTest eVal) final {
   }
-  void SetCullTest(ECullTest eVal) override {
+  void SetCullTest(ECullTest eVal) final {
   }
-  void setScissorTest(EScissorTest eVal) override {
+  void setScissorTest(EScissorTest eVal) final {
   }
 
 public:
@@ -145,23 +145,23 @@ class DuGeometryBufferInterface final : public GeometryBufferInterface {
   ///////////////////////////////////////////////////////////////////////
   // VtxBuf Interface
 
-  void* LockVB(VertexBufferBase& VBuf, int ivbase, int icount) override;
-  void UnLockVB(VertexBufferBase& VBuf) override;
+  void* LockVB(VertexBufferBase& VBuf, int ivbase, int icount) final;
+  void UnLockVB(VertexBufferBase& VBuf) final;
 
-  const void* LockVB(const VertexBufferBase& VBuf, int ivbase = 0, int icount = 0) override;
-  void UnLockVB(const VertexBufferBase& VBuf) override;
+  const void* LockVB(const VertexBufferBase& VBuf, int ivbase = 0, int icount = 0) final;
+  void UnLockVB(const VertexBufferBase& VBuf) final;
 
-  void ReleaseVB(VertexBufferBase& VBuf) override;
+  void ReleaseVB(VertexBufferBase& VBuf) final;
 
   //
 
-  void* LockIB(IndexBufferBase& VBuf, int ivbase, int icount) override;
-  void UnLockIB(IndexBufferBase& VBuf) override;
+  void* LockIB(IndexBufferBase& VBuf, int ivbase, int icount) final;
+  void UnLockIB(IndexBufferBase& VBuf) final;
 
-  const void* LockIB(const IndexBufferBase& VBuf, int ibase = 0, int icount = 0) override;
-  void UnLockIB(const IndexBufferBase& VBuf) override;
+  const void* LockIB(const IndexBufferBase& VBuf, int ibase = 0, int icount = 0) final;
+  void UnLockIB(const IndexBufferBase& VBuf) final;
 
-  void ReleaseIB(IndexBufferBase& VBuf) override;
+  void ReleaseIB(IndexBufferBase& VBuf) final;
 
   //
 
@@ -169,11 +169,11 @@ class DuGeometryBufferInterface final : public GeometryBufferInterface {
       const VertexBufferBase& VBuf, //
       PrimitiveType eType,
       int ivbase,
-      int ivcount) override;
+      int ivcount) final;
 
   void
-  DrawIndexedPrimitiveEML(const VertexBufferBase& VBuf, const IndexBufferBase& IdxBuf, PrimitiveType eType, int ivbase, int ivcount)
-      override;
+  DrawIndexedPrimitiveEML(const VertexBufferBase& VBuf, const IndexBufferBase& IdxBuf, PrimitiveType eType)
+      final;
 
 #if defined(ENABLE_COMPUTE_SHADERS)
   void DrawPrimitiveEML(
@@ -187,7 +187,7 @@ class DuGeometryBufferInterface final : public GeometryBufferInterface {
       const VertexBufferBase& VBuf,
       const IndexBufferBase& IdxBuf,
       PrimitiveType eType,
-      size_t instance_count) override;
+      size_t instance_count) final;
 
   //////////////////////////////////////////////
 
