@@ -7,7 +7,7 @@
 # see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ################################################################################
 
-import sys, math, random, signal, numpy, ork.path, os
+import sys, math, random, signal, numpy, obt.path, os
 from orkengine.core import *
 from orkengine.lev2 import *
 from PIL import Image
@@ -153,7 +153,7 @@ class UiSgQuadViewTestApp(object):
             as_np = numpy.array(self.capbuf,dtype=numpy.uint8).reshape( rtgroup.height, rtgroup.width, 4 )
             img = Image.fromarray(as_np, 'RGBA')
             flipped = img.transpose(Image.FLIP_TOP_BOTTOM)
-            out_path = ork.path.temp()/("%s-%003d.png"%(camname,self.frame_index))
+            out_path = obt.path.temp()/("%s-%003d.png"%(camname,self.frame_index))
             flipped.save(out_path)
             self.frame_index += 1
 

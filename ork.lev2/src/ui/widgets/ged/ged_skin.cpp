@@ -216,7 +216,7 @@ void GedSkin::gpuInit(lev2::Context* ctx) {
   _tekcolorwheel = _material->technique("ui_colorwheel");
   _parmvp        = _material->param("mvp");
   _parmodcolor   = _material->param("modcolor");
-  _parobjid      = _material->param("objid");
+  //_parobjid      = _material->param("objid");
   _partime       = _material->param("time");
   _partexture    = _material->param("ColorMap");
   _material->dump();

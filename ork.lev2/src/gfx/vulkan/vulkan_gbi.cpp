@@ -58,6 +58,7 @@ VkGeometryBufferInterface::VkGeometryBufferInterface(vkcontext_rawptr_t ctx)
 
   _instantiateVertexConfig(EVtxStreamFormat::V12C4T16);
   _instantiateVertexConfig(EVtxStreamFormat::V12N12B12T8C4);
+  _instantiateVertexConfig(EVtxStreamFormat::V16T16C16);
   ////////////////////////////////////////////////////////////////
   auto create_primclass = [&](PrimitiveType etype) -> vkprimclass_ptr_t {
     auto rval            = std::make_shared<VkPrimitiveClass>();
@@ -176,6 +177,34 @@ vkvertexinputconfig_ptr_t VkGeometryBufferInterface::_instantiateVertexConfig(EV
               VK_FORMAT_R32G32B32A32_SFLOAT,
               16, // offset
           }};
+      break;
+    }
+    case EVtxStreamFormat::V16T16C16:{
+      static_assert(sizeof(SVtxV16T16C16) == 48);
+      config->_binding_description.stride = sizeof(SVtxV16T16C16);
+      config->_attribute_descriptions     = std::vector<VkVertexInputAttributeDescription>{
+              VkVertexInputAttributeDescription{
+              // V16
+              0, // location
+              0, // binding
+              VK_FORMAT_R32G32B32A32_SFLOAT,
+              0, // offset
+          },
+              VkVertexInputAttributeDescription{
+              // T16
+              1, // location
+              0, // binding
+              VK_FORMAT_R32G32B32A32_SFLOAT,
+              16, // offset
+          },
+              VkVertexInputAttributeDescription{
+              // C16
+              2, // location
+              0, // binding
+              VK_FORMAT_R32G32B32A32_SFLOAT,
+              32, // offset
+          }
+      };
       break;
     }
     default:

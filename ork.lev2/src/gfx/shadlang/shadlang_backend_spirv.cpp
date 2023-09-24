@@ -372,24 +372,26 @@ void SpirvCompiler::_inheritUniformSet(
     /////////////////////
     // loose unis
     /////////////////////
-    auto line = FormatString(
-        "layout(push_constant) uniform %s {", //
-        //spirvuset->_descriptor_set_id,               //
-        //_binding_id,                                 //
-        unisetname.c_str());
-    _appendText(_uniforms_group, line.c_str());
-    for (auto item : spirvuset->_items_by_order) {
-      auto dt = item->_datatype;
-      auto id = item->_identifier;
-      if (item->_is_array) {
-        size_t array_len = item->_array_length;
-        auto str         = FormatString("%s %s[%zu];", dt.c_str(), id.c_str(), array_len);
-        _appendText(_uniforms_group, str.c_str());
-      } else {
-        _appendText(_uniforms_group, (dt + " " + id + ";").c_str());
+    if( spirvuset->_items_by_order.size() ){
+      auto line = FormatString(
+          "layout(push_constant) uniform %s {", //
+          //spirvuset->_descriptor_set_id,               //
+          //_binding_id,                                 //
+          unisetname.c_str());
+      _appendText(_uniforms_group, line.c_str());
+      for (auto item : spirvuset->_items_by_order) {
+        auto dt = item->_datatype;
+        auto id = item->_identifier;
+        if (item->_is_array) {
+          size_t array_len = item->_array_length;
+          auto str         = FormatString("%s %s[%zu];", dt.c_str(), id.c_str(), array_len);
+          _appendText(_uniforms_group, str.c_str());
+        } else {
+          _appendText(_uniforms_group, (dt + " " + id + ";").c_str());
+        }
       }
+      _appendText(_uniforms_group, "};");
     }
-    _appendText(_uniforms_group, "};");
     //_binding_id++;
     /////////////////////
     // samplers

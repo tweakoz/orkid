@@ -332,6 +332,8 @@ void GedSkin1::End(Context* pTARG) {
         _material->_rasterstate->setDepthTest(EDepthTest::OFF);
         _material->_rasterstate->setBlendingMacro(BlendingMacro::ALPHA);
 
+        OrkAssert(_is_pickmode==false);
+
         _material->begin(_is_pickmode ? _tekvtxcolor : _tektexcolor, RCFD);
         _material->bindParamMatrix(_parmvp, _uiMVPMatrix);
         _material->bindParamCTex(_partexture, texture.get());

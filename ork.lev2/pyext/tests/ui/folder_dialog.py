@@ -7,9 +7,9 @@
 # see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ################################################################################
 
-import sys, math, random, numpy, ork.path
+import sys, math, random, numpy, obt.path
 from orkengine.core import *
 from orkengine.lev2 import *
 
-selected_path = ui.popupFolderDialog("Select Folder", str(ork.path.stage()))
+selected_path = ui.popupFolderDialog("Select Folder", str(obt.path.stage()))
 print("selected_path<%s>" % selected_path)

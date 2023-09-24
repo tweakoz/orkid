@@ -27,7 +27,7 @@ public:
   const ork::lev2::FxShaderParam* _parmvp          = nullptr;
   const ork::lev2::FxShaderParam* _parmodcolor     = nullptr;
   const ork::lev2::FxShaderParam* _partexture     = nullptr;
-  const ork::lev2::FxShaderParam* _parobjid        = nullptr;
+  //const ork::lev2::FxShaderParam* _parobjid        = nullptr;
   const ork::lev2::FxShaderParam* _partime        = nullptr;
 
   struct GedText {

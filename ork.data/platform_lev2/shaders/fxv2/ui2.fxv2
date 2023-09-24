@@ -12,15 +12,12 @@ state_block sb_ui : default {
 	BlendMode = OFF;
 }
 ///////////////////////////////////////////////////////////////
-uniform_set ublock_frg {
-  sampler2D ColorMap;
-}
-///////////////////////////////////////////////////////////////
 uniform_set ub_ui {
-  uvec4 objid;
+  //uvec4 objid;
   vec4 modcolor;
   mat4 mvp;
   sampler2D InstanceMatrices;
+  sampler2D ColorMap;
   usampler2D InstanceIds;
   float time;
 }
@@ -84,8 +81,7 @@ fragment_shader fs_frgcolor
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader fs_ui_tex
-	: iface_fui
-	: ublock_frg {
+	: iface_fui {
 	ivec2 iuv = ivec2( int(frg_texc.x), int(frg_texc.y) );
 	out_color = texelFetch(ColorMap,iuv,0);
 	out_color *= frg_clr;
@@ -136,7 +132,7 @@ fragment_shader fs_gradwalpha
 fragment_shader fs_picking
 	: iface_fpick {
 		//out_iid = uvec4(0x1234,0x5678,0,0xabcd); // comes back as 0xabcd000056781234
-		out_iid = objid;
+		//out_iid = objid;
     out_nrmd = vec4(0,1,0,0);
 }
 ///////////////////////////////////////////////////////////////

@@ -588,10 +588,10 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
                 cursor = dest_layout->layoutItem<fmtx4>(orkparam);
               }
               else{
-                printf( "unknown datatype<%s>\n", datatype.c_str() );
+                printf( "VKFXI: unknown datatype<%s>\n", datatype.c_str() );
                 OrkAssert(false);
               }
-              printf( "datatype<%s> cursor<%zu>\n", datatype.c_str(), cursor );
+              printf( "VKFXI: datatype<%s> cursor<%zu>\n", datatype.c_str(), cursor );
             }
           }
         }
