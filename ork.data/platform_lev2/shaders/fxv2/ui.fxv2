@@ -22,14 +22,14 @@ vertex_interface iface_vdefault : push_constants {
     vec2 uv1 : TEXCOORD1;
   }
   outputs {
-    vec4 frg_clr;
+    //vec4 frg_clr;
     vec2 frg_uv;
   }
 }
 ///////////////////////////////////////////////////////////////
 fragment_interface iface_fdefault {
   inputs {
-    vec4 frg_clr;
+    //vec4 frg_clr;
     vec2 frg_uv;
   }
   outputs {
@@ -69,6 +69,7 @@ vertex_shader vs_uitext : iface_vdefault {
   gl_Position = mvp * position;
   //frg_clr     = vtxcolor;
   frg_uv      = uv0;  
+  //frg_uv      = vec2(1,0);  
 
 }
 ///////////////////////////////////////////////////////////////
@@ -86,9 +87,10 @@ vertex_shader vs_uitext_stereo //
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_uitext : iface_fmt {
-  //vec4 s = texture(ColorMap, frg_uv);
-  //float texa = pow(s.a*s.r,0.75);
-  out_clr = vec4(.3,.3,.1,1); //vec4(ModColor.xyz, texa*ModColor.w);
+  vec4 s = texture(ColorMap, frg_uv);
+  float texa = pow(s.a*s.r,0.75);
+  out_clr = s; //vec4(texa,texa,texa,1);
+  //out_clr = vec4(ModColor.xyz, texa*ModColor.w);
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_uitext_stereo : iface_fmt {
@@ -105,12 +107,12 @@ fragment_shader ps_uitextured : iface_fmt {
 ///////////////////////////////////////////////////////////////
 vertex_shader vs_vtxcolor : iface_vdefault {
   gl_Position = mvp * position;
-  frg_clr     = vtxcolor;
+  //frg_clr     = vtxcolor;
   frg_uv      = uv0;
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_fragclr : iface_fdefault {
-  out_clr = frg_clr;
+  //out_clr = frg_clr;
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_modclr : iface_fmt { out_clr = ModColor; }
