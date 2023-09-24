@@ -539,33 +539,10 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
               for( auto item : uset->_samplers_by_name ){
                 auto item_name = item.first;
                 auto item_ptr  = item.second;
+                auto orkparam = item_ptr->_orkparam.get();
+                size_t binding_index = desc_set->_sampler_count++;
 
-                VkSamplerCreateInfo SI;
-                initializeVkStruct(SI, VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO);
-                SI.magFilter = VK_FILTER_NEAREST;
-                SI.minFilter = VK_FILTER_NEAREST;
-                SI.mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
-                SI.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-                SI.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-                SI.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-                SI.mipLodBias = 0.0f;
-                SI.anisotropyEnable = VK_FALSE;
-                SI.maxAnisotropy = 1.0f;
-                SI.compareEnable = VK_FALSE;
-                SI.compareOp = VK_COMPARE_OP_NEVER;
-                SI.minLod = 0.0f;
-                SI.maxLod = 0.0f;
-                SI.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
-                SI.unnormalizedCoordinates = VK_FALSE;
-
-                VkSampler& immutableSampler = desc_set->_vksamplers.emplace_back();
-                vkCreateSampler(_contextVK->_vkdevice, 
-                                &SI, 
-                                nullptr, 
-                                &immutableSampler);
-
-                size_t binding_index = desc_set->_vksamplers.size();
-                desc_set->_vksamplers.push_back( immutableSampler );
+                vk_program->_samplers_by_orkparam[orkparam] = binding_index;
 
                 auto& vkb = desc_set->_vkbindings.emplace_back();
                 initializeVkStruct( vkb );
@@ -573,7 +550,7 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
                 vkb.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER; // Type of the descriptor (e.g., uniform buffer, combined image sampler, etc.)
                 vkb.descriptorCount = 1; // Number of descriptors in this binding (useful for arrays of descriptors)
                 vkb.stageFlags = stage_bits; // Shader stage to bind this descriptor to
-                vkb.pImmutableSamplers = &immutableSampler; // Only relevant for samplers and combined image samplers                
+                //vkb.pImmutableSamplers = &immutableSampler; // Only relevant for samplers and combined image samplers                
               }
             }
           }
@@ -624,12 +601,12 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
       //////////////////////////////////////////////////////////////
 
       auto descriptors = std::make_shared<VkDescriptorSetBindings>();
-      descriptors->_vksamplers.reserve( 32 );
+      //descriptors->_vksamplers.reserve( 32 );
       descriptors->_vkbindings.reserve( 32 );              
   
       unisets_to_descriptors(vtx_obj, descriptors, VK_SHADER_STAGE_VERTEX_BIT );
       unisets_to_descriptors(frg_obj, descriptors, VK_SHADER_STAGE_FRAGMENT_BIT );
-
+      vk_program->_descriptors = descriptors;
       //////////////////////////////////////////////////////////////
       // push constants
       //////////////////////////////////////////////////////////////

@@ -233,6 +233,23 @@ void VkContext::_initVulkanCommon() {
     vksci->maxLod = maxlod;
     _sampler_per_maxlod[maxlod] = std::make_shared<VulkanSamplerObject>(this,vksci);
   }
+
+  // create descriptor pool
+  std::vector<VkDescriptorPoolSize> poolSizes;
+
+  auto& poolsize_samplers = poolSizes.emplace_back();
+  poolsize_samplers.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+  poolsize_samplers.descriptorCount = 1; // Number of descriptors of this type to allocate
+
+  VkDescriptorPoolCreateInfo poolInfo = {};
+  initializeVkStruct(poolInfo, VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO);
+  poolInfo.poolSizeCount = poolSizes.size();
+  poolInfo.pPoolSizes = poolSizes.data();
+  poolInfo.maxSets = 1; // Maximum number of descriptor sets to allocate from this pool
+
+  OK = vkCreateDescriptorPool(_vkdevice, &poolInfo, nullptr, &_vkDescriptorPool);
+  OrkAssert(OK == VK_SUCCESS);
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////

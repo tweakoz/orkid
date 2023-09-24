@@ -120,7 +120,26 @@ void VkFxInterface::bindParamBlockBuffer(const FxShaderParamBlock* block, FxShad
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkFxInterface::BindParamCTex(const FxShaderParam* hpar, const Texture* pTex) {
+  auto vk_shprog = _currentVKPASS->_vk_program;
   auto vk_param = hpar->_impl.get<VkFxShaderUniformSetSampler*>();
+  auto vk_tex = pTex->_impl.getShared<VulkanTextureObject>();
+  const VkDescriptorImageInfo& DII = vk_tex->_vkdescriptor_info;
+  const VkSampler& sampler = vk_tex->_vksampler->_vksampler;
+  const VkImageView& imgview = vk_tex->_imgobj->_vkimageview;
+  auto it = vk_shprog->_samplers_by_orkparam.find(hpar);
+  OrkAssert(it != vk_shprog->_samplers_by_orkparam.end());
+  size_t binding_index = it->second;
+  auto descriptors = vk_shprog->_descriptors;
+  VkWriteDescriptorSet descriptorWrite = {};
+  initializeVkStruct(descriptorWrite,VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
+  descriptorWrite.dstSet = _currentPipeline->_vkDescriptorSet;
+  descriptorWrite.dstBinding = binding_index; // The binding point in the shader
+  descriptorWrite.descriptorCount = 1;
+  descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+  descriptorWrite.pImageInfo = &DII;
+
+  //vkUpdateDescriptorSets(device, 1, &descriptorWrite, 0, nullptr);
+  
 }
 
 ///////////////////////////////////////////////////////////////////////////////

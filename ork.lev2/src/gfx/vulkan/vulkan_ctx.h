@@ -535,7 +535,7 @@ using descriptor_bindings_vect_t = std::vector<VkDescriptorSetLayoutBinding>;
 struct VkDescriptorSetBindings {
 
   descriptor_bindings_vect_t _vkbindings;
-  std::vector<VkSampler> _vksamplers;
+  size_t _sampler_count = 0;
   VkDescriptorSetLayout _dsetlayout;
 };
 
@@ -602,6 +602,7 @@ struct VkFxShaderProgram {
   std::vector<VkParamSetItem> _pending_params;
   std::vector<uint8_t> _pushdatabuffer;
   vkdescriptors_ptr_t _descriptors;
+  std::unordered_map<fxparam_constptr_t, size_t> _samplers_by_orkparam;
 
   int _pipeline_bits = -1;
 
@@ -615,6 +616,7 @@ struct VkPipelineObject {
   VkGraphicsPipelineCreateInfo _VKGFXPCI;
   VkPipeline _pipeline;
   VkPipelineLayout _pipelineLayout;
+  VkDescriptorSet _vkDescriptorSet;
   vkviewporttracker_ptr_t _viewport;
   vkviewporttracker_ptr_t _scissor;
 };
@@ -1161,6 +1163,7 @@ public:
 
   vksampler_obj_ptr_t _sampler_base;
   std::vector<vksampler_obj_ptr_t> _sampler_per_maxlod;
+  VkDescriptorPool _vkDescriptorPool;
   //////////////////////////////////////////////
   PFN_vkSetDebugUtilsObjectNameEXT _vkSetDebugUtilsObjectName = nullptr;
   PFN_vkCmdDebugMarkerBeginEXT _vkCmdDebugMarkerBeginEXT      = nullptr;
