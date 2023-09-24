@@ -43,7 +43,6 @@ VulkanIndexBuffer::VulkanIndexBuffer(vkcontext_rawptr_t ctx, size_t length) {
   _ctx = ctx;
 
   _vkbuffer = std::make_shared<VulkanBuffer>(ctx, length, VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
-
 }
 ///////////////////////////////////////////////////////////////////////////////
 VulkanIndexBuffer::~VulkanIndexBuffer() {
@@ -61,11 +60,11 @@ VkGeometryBufferInterface::VkGeometryBufferInterface(vkcontext_rawptr_t ctx)
   _instantiateVertexConfig(EVtxStreamFormat::V12N12B12T8C4);
   ////////////////////////////////////////////////////////////////
   auto create_primclass = [&](PrimitiveType etype) -> vkprimclass_ptr_t {
-    auto rval = std::make_shared<VkPrimitiveClass>();
-    rval->_primtype = etype;
+    auto rval            = std::make_shared<VkPrimitiveClass>();
+    rval->_primtype      = etype;
     rval->_pipeline_bits = _primclasses.size();
     initializeVkStruct(rval->_input_assembly_state, VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO);
-    switch(etype){
+    switch (etype) {
       case PrimitiveType::TRIANGLES:
         rval->_input_assembly_state.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
         break;
@@ -94,18 +93,17 @@ VkGeometryBufferInterface::VkGeometryBufferInterface(vkcontext_rawptr_t ctx)
   ////////////////////////////////////////////////////////////////
   _primclasses[uint64_t(PrimitiveType::TRIANGLES)] = create_primclass(PrimitiveType::TRIANGLES);
   ////////////////////////////////////////////////////////////////
-  OrkAssert( _primclasses.size() <= 16 ); // validate we only used 4 pipeline_bits
+  OrkAssert(_primclasses.size() <= 16); // validate we only used 4 pipeline_bits
   ////////////////////////////////////////////////////////////////
-
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 vkvertexinputconfig_ptr_t VkGeometryBufferInterface::_instantiateVertexConfig(EVtxStreamFormat format) {
-  auto config                  = std::make_shared<VkVertexInputConfiguration>();
+  auto config            = std::make_shared<VkVertexInputConfiguration>();
   config->_pipeline_bits = _vertexInputConfigs.size();
-  OrkAssert(config->_pipeline_bits<=16); // validate we only used 4 pipeline_bits
-  _vertexInputConfigs[format] = config;
+  OrkAssert(config->_pipeline_bits <= 16); // validate we only used 4 pipeline_bits
+  _vertexInputConfigs[format]  = config;
   config->_binding_description = VkVertexInputBindingDescription{
       0, // binding
       0, // stride
@@ -114,36 +112,36 @@ vkvertexinputconfig_ptr_t VkGeometryBufferInterface::_instantiateVertexConfig(EV
   switch (format) {
     case EVtxStreamFormat::V12N12B12T8C4: {
       config->_binding_description.stride = sizeof(SVtxV12N12B12T8C4);
-      config->_attribute_descriptions = std::vector<VkVertexInputAttributeDescription>{
-          VkVertexInputAttributeDescription{
+      config->_attribute_descriptions     = std::vector<VkVertexInputAttributeDescription>{
+              VkVertexInputAttributeDescription{
               // V12
               0, // location
               0, // binding
               VK_FORMAT_R32G32B32_SFLOAT,
               0, // offset
           },
-          VkVertexInputAttributeDescription{
+              VkVertexInputAttributeDescription{
               // N12
               1, // location
               0, // binding
               VK_FORMAT_R32G32B32_SFLOAT,
               12, // offset
           },
-          VkVertexInputAttributeDescription{
+              VkVertexInputAttributeDescription{
               // B12
               2, // location
               0, // binding
               VK_FORMAT_R32G32B32_SFLOAT,
               24, // offset
           },
-          VkVertexInputAttributeDescription{
+              VkVertexInputAttributeDescription{
               // T8
               3, // location
               0, // binding
               VK_FORMAT_R32G32_SFLOAT,
               36, // offset
           },
-          VkVertexInputAttributeDescription{
+              VkVertexInputAttributeDescription{
               // C4
               4, // location
               0, // binding
@@ -154,31 +152,30 @@ vkvertexinputconfig_ptr_t VkGeometryBufferInterface::_instantiateVertexConfig(EV
       break;
     }
     case EVtxStreamFormat::V12C4T16: {
-      static_assert(sizeof(SVtxV12C4T16)==32);
+      static_assert(sizeof(SVtxV12C4T16) == 32);
       config->_binding_description.stride = sizeof(SVtxV12C4T16);
-      config->_attribute_descriptions = std::vector<VkVertexInputAttributeDescription>{
-          VkVertexInputAttributeDescription{
+      config->_attribute_descriptions     = std::vector<VkVertexInputAttributeDescription>{
+              VkVertexInputAttributeDescription{
               // V12
               0, // location
               0, // binding
               VK_FORMAT_R32G32B32_SFLOAT,
               0, // offset
           },
-          VkVertexInputAttributeDescription{
+              VkVertexInputAttributeDescription{
               // C4
               1, // location
               0, // binding
               VK_FORMAT_R8G8B8A8_UNORM,
               12, // offset
           },
-          VkVertexInputAttributeDescription{
+              VkVertexInputAttributeDescription{
               // T16
               2, // location
               0, // binding
               VK_FORMAT_R32G32B32A32_SFLOAT,
               16, // offset
-          }
-      };
+          }};
       break;
     }
     default:
@@ -219,7 +216,6 @@ void* VkGeometryBufferInterface::LockVB(VertexBufferBase& vtx_buf, int ivbase, i
     vertex_memory = vk_impl->_vkbuffer->map(0, isizebytes, 0);
   } else {
     vertex_memory = vk_impl->_vkbuffer->map(ibasebytes, isizebytes, 0);
-
   }
   //////////////////////////////////////////////////////////
   vtx_buf.Lock();
@@ -317,71 +313,51 @@ void VkGeometryBufferInterface::DrawPrimitiveEML(
     int ivbase,
     int ivcount) {
 
-  OrkAssert(_contextVK->_renderpass_index>=0);
+  OrkAssert(_contextVK->_renderpass_index >= 0);
 
   auto& CB = _contextVK->_cmdbufcur_gfx;
+
+  ///////////////////////
+  // get primclass (input to pipeline search)
+  ///////////////////////
 
   auto it_pc = _primclasses.find(uint64_t(eType));
   OrkAssert(it_pc != _primclasses.end());
   auto primclass = it_pc->second;
 
   ///////////////////////
-  // find pipeline
+  // find pipeline, pass, prog
   ///////////////////////
 
   auto vk_vbimpl = vtx_buf._impl.getShared<VulkanVertexBuffer>();
-  auto fxi = _contextVK->_fxi;
-  auto pipeline = fxi->_fetchPipeline(vk_vbimpl,primclass);
-  auto pass = fxi->_currentVKPASS;
-  auto prog = pass->_vk_program;
+  auto fxi       = _contextVK->_fxi;
+  auto pipeline  = fxi->_fetchPipeline(vk_vbimpl, primclass);
+  auto pass      = fxi->_currentVKPASS;
+  auto prog      = pass->_vk_program;
 
   ///////////////////////
   // bind pipeline
-  ///////////////////////
-
-  fxi->_bindPipeline(pipeline);
-
-  ///////////////////////
   // bind descriptor set
-  ///////////////////////
-
-  auto desc_set = pipeline->_descriptorSetCache->fetchDescriptorSetForProgram(prog);
-
-  vkCmdBindDescriptorSets(CB->_vkcmdbuf, 
-                          VK_PIPELINE_BIND_POINT_GRAPHICS, // pipeline bind point
-                          pipeline->_pipelineLayout, // pipeline layout
-                          0, // first set
-                          1, &desc_set->_vkdescset, // descriptor sets
-                          0, nullptr); // dynamic offsets
-
-  ///////////////////////
-  // flush params
-  ///////////////////////
-
-  pipeline->applyPendingParams(CB);
-
-
-  ///////////////////////
+  // flush push constants
   // bind vertex buffer
   ///////////////////////
 
-  VkDeviceSize offset = 0; 
-  vkCmdBindVertexBuffers(CB->_vkcmdbuf,        // command buffer
-                         0,                    // first binding
-                         1,                    // binding count
-                         &vk_vbimpl->_vkbuffer->_vkbuffer,   // buffers
-                         &offset);             // offsets
+  fxi->_bindPipeline(pipeline);
+  auto desc_set = pipeline->_descriptorSetCache->fetchDescriptorSetForProgram(prog);
+  fxi->_bindGfxDescriptorSetOnSlot(desc_set, 0);
+  pipeline->applyPendingPushConstants(CB);
+  fxi->_bindVertexBufferOnSlot(vk_vbimpl, 0);
 
   ///////////////////////
   // draw
   ///////////////////////
 
-  vkCmdDraw( CB->_vkcmdbuf, // command buffer
-             ivcount,                                        // vertex count
-             1,                                              // instance count
-             ivbase,                                         // first vertex
-             0);                                             // first instance
-
+  vkCmdDraw(
+      CB->_vkcmdbuf, // command buffer
+      ivcount,       // vertex count
+      1,             // instance count
+      ivbase,        // first vertex
+      0);            // first instance
 }
 
 ///////////////////////////////////////////////////////////////////////////////

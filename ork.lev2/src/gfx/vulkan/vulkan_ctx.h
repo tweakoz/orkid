@@ -634,7 +634,7 @@ struct VkPipelineObject {
 
   VkPipelineObject(vkcontext_rawptr_t ctx);
 
-  void applyPendingParams(vkcmdbufimpl_ptr_t cmdbuf);
+  void applyPendingPushConstants(vkcmdbufimpl_ptr_t cmdbuf);
 
   vkfxsprg_ptr_t _vk_program;
   VkGraphicsPipelineCreateInfo _VKGFXPCI;
@@ -1008,6 +1008,8 @@ struct VkFxInterface final : public FxInterface {
   rasterstate_ptr_t _doPopRasterState() final;
 
   void _bindPipeline(vkpipeline_obj_ptr_t pipe);
+  void _bindGfxDescriptorSetOnSlot(vkdescriptorset_ptr_t desc_set,size_t slot);
+  void _bindVertexBufferOnSlot( vkvtxbuf_ptr_t vb, size_t slot );
 
   fxtechnique_constptr_t _currentORKTEK = nullptr;
   VkFxShaderTechnique* _currentVKTEK;
@@ -1020,6 +1022,9 @@ struct VkFxInterface final : public FxInterface {
   rasterstate_ptr_t _current_rasterstate;
   lev2::rasterstate_ptr_t _default_rasterstate;
   vkpipeline_obj_ptr_t _currentPipeline;
+
+  std::array<vkdescriptorset_ptr_t, 4> _active_gfx_descriptorSets;
+  std::array<vkvtxbuf_ptr_t, 4> _active_vbs;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
