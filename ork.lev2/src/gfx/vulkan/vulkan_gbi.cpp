@@ -339,18 +339,19 @@ void VkGeometryBufferInterface::DrawPrimitiveEML(
 
   fxi->_bindPipeline(pipeline);
 
-  ///////////////////////
-  // flush params
-  ///////////////////////
-
-  pipeline->applyPendingParams(CB);
-
   vkCmdBindDescriptorSets(CB->_vkcmdbuf, 
                           VK_PIPELINE_BIND_POINT_GRAPHICS, // pipeline bind point
                           pipeline->_pipelineLayout, // pipeline layout
                           0, // first set
                           1, & pipeline->_vkDescriptorSet, // descriptor sets
                           0, nullptr); // dynamic offsets
+
+  ///////////////////////
+  // flush params
+  ///////////////////////
+
+  pipeline->applyPendingParams(CB);
+
 
   ///////////////////////
   // bind vertex buffer
