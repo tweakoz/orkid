@@ -258,6 +258,29 @@ void VkTextureInterface::_createFromCompressedLoadReq(texloadreq_ptr_t req) {
         1,
         barrier.get());
   }
+  /////////////////////////////////////
+  // create image view
+  /////////////////////////////////////
+
+  auto IVCI = createImageViewInfo2D(
+      vktex->_imgobj->_vkimage,                                //
+      VkFormatConverter::convertBufferFormat(format), //
+      VK_IMAGE_ASPECT_COLOR_BIT);
+  IVCI->subresourceRange.levelCount = num_mips;
+
+  initializeVkStruct(vktex->_imgobj->_vkimageview); 
+  VkResult ok = vkCreateImageView(_contextVK->_vkdevice, IVCI.get(), nullptr, &vktex->_imgobj->_vkimageview);
+  OrkAssert(VK_SUCCESS == ok);
+
+  /////////////////////////////////////
+  // descriptor image info
+  /////////////////////////////////////
+
+  vktex->_vkdescriptor_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+  vktex->_vkdescriptor_info.imageView   = vktex->_imgobj->_vkimageview;
+  OrkAssert(vktex->_imgobj->_vkimageview!=VK_NULL_HANDLE);
+
+  /////////////////////////////////////
 
   _contextVK->endRecordCommandBuffer(cmdbuf);
   _contextVK->enqueueDeferredOneShotCommand(cmdbuf);
@@ -436,7 +459,7 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
       VkFormatConverter::convertBufferFormat(tid._dst_format), //
       VK_IMAGE_ASPECT_COLOR_BIT);
 
-  initializeVkStruct(vktex->_vkimageview);
+  initializeVkStruct(vktex->_imgobj->_vkimageview);
   VkResult ok = vkCreateImageView(_contextVK->_vkdevice, IVCI.get(), nullptr, &vktex->_imgobj->_vkimageview);
   OrkAssert(VK_SUCCESS == ok);
 
@@ -447,7 +470,8 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   /////////////////////////////////////
 
   vktex->_vkdescriptor_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-  vktex->_vkdescriptor_info.imageView   = vktex->_vkimageview;
+  vktex->_vkdescriptor_info.imageView   = vktex->_imgobj->_vkimageview;
+  OrkAssert(vktex->_imgobj->_vkimageview!=VK_NULL_HANDLE);
   //vktex->_vkdescriptor_info.sampler     = vktex->_vksampler->_vksampler;
 
   /////////////////////////////////////

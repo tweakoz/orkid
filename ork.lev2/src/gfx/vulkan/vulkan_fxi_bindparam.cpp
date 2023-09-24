@@ -129,47 +129,23 @@ void VkFxInterface::BindParamCTex(const FxShaderParam* hpar, const Texture* pTex
     vk_tex = as_to.value();
   }
   else{
-    //OrkAssert(false);
+    OrkAssert(false);
     return;
   }
-    return;
-  const VkDescriptorImageInfo& DII = vk_tex->_vkdescriptor_info;
-  //const VkSampler& sampler = vk_tex->_vksampler->_vksampler;
-  //const VkImageView& imgview = vk_tex->_imgobj->_vkimageview;
   auto it = vk_shprog->_samplers_by_orkparam.find(hpar);
   OrkAssert(it != vk_shprog->_samplers_by_orkparam.end());
   size_t binding_index = it->second;
-  auto descriptors = vk_shprog->_descriptors;
-  size_t sampler_count = descriptors->_sampler_count;
-  printf( "binding_index<%zu> sampler_count<%zu>\n", binding_index, sampler_count );
+  //auto descriptors = vk_shprog->_descriptors;
+  //size_t sampler_count = descriptors->_sampler_count;
+  //printf( "binding_index<%zu> sampler_count<%zu>\n", binding_index, sampler_count );
   VkWriteDescriptorSet DWRITE = {};
   initializeVkStruct(DWRITE,VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
   DWRITE.dstSet = _currentPipeline->_vkDescriptorSet;
   DWRITE.dstBinding = binding_index; // The binding point in the shader
   DWRITE.descriptorCount = 1;
   DWRITE.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-  DWRITE.pImageInfo = &DII;
-
-  printf( "addr_vk_tex<%p>\n", (void*) vk_tex.get() );
-  printf( "addr_DII<%p>\n", (void*) (&DII) );
-
-  auto addr_dwrite = &DWRITE;
-  auto addr_dwrite0 = &(addr_dwrite[0]);
-  auto addr_dwrite0_imginfo = &(addr_dwrite0->pImageInfo);
-  auto addr_dwrite0_imginfo_imglayout = &((*addr_dwrite0_imginfo)->imageLayout);
-
-  OrkAssert(addr_dwrite!=nullptr);
-  OrkAssert(addr_dwrite0!=nullptr);
-  OrkAssert(addr_dwrite0_imginfo!=nullptr);
-  OrkAssert(addr_dwrite0_imginfo_imglayout!=nullptr);
-
-  printf( "addr_dwrite<%p>\n", (void*) addr_dwrite );
-  printf( "addr_dwrite0<%p>\n", (void*) addr_dwrite0 );
-  printf( "addr_dwrite0_imginfo<%p>\n", (void*) addr_dwrite0_imginfo );
-  printf( "addr_dwrite0_imginfo_imglayout<%p>\n", (void*) addr_dwrite0_imginfo_imglayout );
-
-  auto& layout = (&DWRITE)[0].pImageInfo[0].imageLayout;
-  printf( "layoutptr<%p>\n", (void*) &layout );
+  DWRITE.pImageInfo = &vk_tex->_vkdescriptor_info;
+  OrkAssert(vk_tex->_vkdescriptor_info.imageView!=VK_NULL_HANDLE);
 
   vkUpdateDescriptorSets( _contextVK->_vkdevice, // device
                           1, &DWRITE, // descriptor write

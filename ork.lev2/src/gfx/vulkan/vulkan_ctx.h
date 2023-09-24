@@ -477,7 +477,7 @@ struct VulkanTextureObject {
   ~VulkanTextureObject();
 
   std::unordered_set<vkbuffer_ptr_t> _staging_buffers;
-  VkImageView _vkimageview;
+  //VkImageView _vkimageview;
   vkimageobj_ptr_t _imgobj;
   int _maxmip = 0;
   vktexasynctask_ptr_t _async;
