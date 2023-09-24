@@ -120,27 +120,8 @@ void VkFxInterface::bindParamBlockBuffer(const FxShaderParamBlock* block, FxShad
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkFxInterface::BindParamCTex(const FxShaderParam* hpar, const Texture* pTex) {
-  // printf( "xxx BindParamCTex<%p:%s>\n", (void*) pTex, pTex->_debugName.c_str() );
   auto vk_shprog = _currentVKPASS->_vk_program;
-  OrkAssert(vk_shprog->_descriptors);
-  // auto vk_param = hpar->_impl.get<VkFxShaderUniformSetSampler*>();
-  vktexobj_ptr_t vk_tex;
-  if (auto as_to = pTex->_impl.tryAsShared<VulkanTextureObject>()) {
-    vk_tex = as_to.value();
-  } else {
-    OrkAssert(false);
-    return;
-  }
-  auto it = vk_shprog->_samplers_by_orkparam.find(hpar);
-  OrkAssert(it != vk_shprog->_samplers_by_orkparam.end());
-  size_t binding_index = it->second;
-  vk_shprog->_textures_by_orkparam[hpar] = vk_tex;
-  vk_shprog->_textures_by_binding[binding_index]  = vk_tex;
-  // auto descriptors = vk_shprog->_descriptors;
-  // auto& vkb = descriptors->_vkbindings[binding_index];
-  // size_t sampler_count = descriptors->_sampler_count;
-  // printf( "binding_index<%zu> sampler_count<%zu>\n", binding_index, sampler_count );
-  //vk_shprog->_pending_param_ops.push_back(op);
+  vk_shprog->bindDescriptorTexture(hpar, pTex);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -340,7 +340,7 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(vkvtxbuf_ptr_t vb, //
 
   auto it = _pipelines.find(pipeline_hash);
   if( it == _pipelines.end() ){ // create pipeline
-    rval = std::make_shared<VkPipelineObject>();
+    rval = std::make_shared<VkPipelineObject>(_contextVK);
     _pipelines[pipeline_hash] = rval;
     rval->_vk_program = shprog;
 
@@ -514,7 +514,7 @@ void VkPipelineObject::applyPendingParams(vkcmdbufimpl_ptr_t cmdbuf ){ //
                 parm_type.c_str(), 
                 parm_name.c_str(), 
                 parm_size,
-                ranges[0].offset, 
+                int(ranges[0].offset), 
                 dst_offset);
           printf( "\n");
         }
@@ -647,6 +647,100 @@ VkFxShaderTechnique::~VkFxShaderTechnique(){
   _orktechnique->_shader = nullptr;
   _orktechnique->_validated = false;
   _orktechnique = nullptr;
+}
+
+void VkFxShaderProgram::bindDescriptorTexture(fxparam_constptr_t param, const Texture* pTex){
+  vktexobj_ptr_t vk_tex;
+  if (auto as_to = pTex->_impl.tryAsShared<VulkanTextureObject>()) {
+    vk_tex = as_to.value();
+  } else {
+    OrkAssert(false);
+    return;
+  }
+  auto it = _samplers_by_orkparam.find(param);
+  OrkAssert(it != _samplers_by_orkparam.end());
+  size_t binding_index = it->second;
+  _textures_by_orkparam[param] = vk_tex;
+  _textures_by_binding[binding_index]  = vk_tex;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+VkPipelineObject::VkPipelineObject(vkcontext_rawptr_t ctx){
+  _descriptorSetCache = std::make_shared<VulkanDescriptorSetCache>(ctx);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+VulkanDescriptorSetCache::VulkanDescriptorSetCache(vkcontext_rawptr_t ctx)
+  : _ctxVK(ctx) {
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+vkdescriptorset_ptr_t VulkanDescriptorSetCache::fetchDescriptorSetForProgram(vkfxsprg_ptr_t program){
+
+  /////////////////////////////////
+  // todo: this is the slow path
+  //    for the sake of efficiency,
+  //    we will (over time) expose descriptor sets to higher level systems
+  /////////////////////////////////
+
+  boost::Crc64 crc64;
+  crc64.init();
+  for( auto it : program->_textures_by_binding ){
+    auto binding_index = it.first;
+    auto vk_tex = it.second;
+    crc64.accumulateItem(binding_index);
+    crc64.accumulateItem(vk_tex.get());
+  }
+  crc64.finish();
+  uint64_t descset_bits = crc64.result();
+
+  auto it = _vkDescriptorSetByHash.find(descset_bits);
+
+  vkdescriptorset_ptr_t descset_ptr = nullptr;
+  if( it == _vkDescriptorSetByHash.end() ){
+    // make new descriptor set
+    descset_ptr = std::make_shared<VulkanDescriptorSet>();
+    _vkDescriptorSetByHash[descset_bits] = descset_ptr;
+
+    VkDescriptorSetAllocateInfo DSAI;
+    initializeVkStruct(DSAI, VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO);
+    DSAI.descriptorPool = _ctxVK->_vkDescriptorPool;
+    DSAI.descriptorSetCount = 1;
+    DSAI.pSetLayouts = &program->_descriptors->_dsetlayout;
+
+    VkResult OK = vkAllocateDescriptorSets(_ctxVK->_vkdevice, &DSAI, &descset_ptr->_vkdescset);
+    OrkAssert(VK_SUCCESS == OK);
+
+    for( auto it : program->_textures_by_binding ){
+      auto binding_index = it.first;
+      auto vk_tex = it.second;
+      auto& desc_info = vk_tex->_vkdescriptor_info;
+      OrkAssert(desc_info.imageView != VK_NULL_HANDLE);
+      VkWriteDescriptorSet DWRITE = {};
+      initializeVkStruct(DWRITE, VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
+      DWRITE.dstSet          = descset_ptr->_vkdescset;
+      DWRITE.dstBinding      = binding_index; // The binding point in the shader
+      DWRITE.descriptorCount = 1;
+      DWRITE.descriptorType  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+      DWRITE.pImageInfo      = &desc_info;
+
+      vkUpdateDescriptorSets(
+          _ctxVK->_vkdevice, // device
+          1,
+          &DWRITE, // descriptor write
+          0,
+          nullptr // descriptor copy
+      );
+
+    }
+  }
+  else{
+    descset_ptr = it->second;
+  }
+  return descset_ptr;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

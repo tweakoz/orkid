@@ -591,6 +591,8 @@ struct VkFxShaderProgram {
 
   VkFxShaderProgram();
 
+  void bindDescriptorTexture(fxparam_constptr_t param, const Texture* pTex);
+
   vkfxsobj_ptr_t _vtxshader;
   vkfxsobj_ptr_t _geoshader;
   vkfxsobj_ptr_t _tctshader;
@@ -610,7 +612,27 @@ struct VkFxShaderProgram {
 
   std::unordered_map<std::string, vkfxsuniset_ptr_t> _vk_uniformsets;
 };
+
+struct VulkanDescriptorSet{
+    VkDescriptorSet _vkdescset;
+};
+using vkdescriptorset_ptr_t = std::shared_ptr<VulkanDescriptorSet>;
+
+struct VulkanDescriptorSetCache{
+
+  VulkanDescriptorSetCache(vkcontext_rawptr_t ctx);
+
+  vkdescriptorset_ptr_t fetchDescriptorSetForProgram(vkfxsprg_ptr_t program);
+
+  std::unordered_map<uint64_t, vkdescriptorset_ptr_t> _vkDescriptorSetByHash;
+  vkcontext_rawptr_t _ctxVK;
+};
+using vkdescriptorsetcache_ptr_t = std::shared_ptr<VulkanDescriptorSetCache>;
+
+
 struct VkPipelineObject {
+
+  VkPipelineObject(vkcontext_rawptr_t ctx);
 
   void applyPendingParams(vkcmdbufimpl_ptr_t cmdbuf);
 
@@ -618,8 +640,8 @@ struct VkPipelineObject {
   VkGraphicsPipelineCreateInfo _VKGFXPCI;
   VkPipeline _pipeline;
   VkPipelineLayout _pipelineLayout;
+  vkdescriptorsetcache_ptr_t _descriptorSetCache;
 
-  std::unordered_map<uint64_t, VkDescriptorSet> _vkDescriptorSetByHash;
   vkviewporttracker_ptr_t _viewport;
   vkviewporttracker_ptr_t _scissor;
 };

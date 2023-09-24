@@ -345,75 +345,15 @@ void VkGeometryBufferInterface::DrawPrimitiveEML(
   // bind descriptor set
   ///////////////////////
 
-  boost::Crc64 crc64;
-  crc64.init();
-  for( auto it : prog->_textures_by_binding ){
-    auto binding_index = it.first;
-    auto vk_tex = it.second;
-    crc64.accumulateItem(binding_index);
-    crc64.accumulateItem(vk_tex.get());
-  }
-  crc64.finish();
-  uint64_t descset_bits = crc64.result();
+  auto desc_set = pipeline->_descriptorSetCache->fetchDescriptorSetForProgram(prog);
 
-  auto it = pipeline->_vkDescriptorSetByHash.find(descset_bits);
-
-  VkDescriptorSet* descset_ptr = nullptr;
-  if( it == pipeline->_vkDescriptorSetByHash.end() ){
-    // make new descriptor set
-    descset_ptr = & pipeline->_vkDescriptorSetByHash[descset_bits];
-
-    VkDescriptorSetAllocateInfo DSAI;
-    initializeVkStruct(DSAI, VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO);
-    DSAI.descriptorPool = _contextVK->_vkDescriptorPool;
-    DSAI.descriptorSetCount = 1;
-    DSAI.pSetLayouts = &prog->_descriptors->_dsetlayout;
-
-    VkResult OK = vkAllocateDescriptorSets(_contextVK->_vkdevice, &DSAI, descset_ptr);
-    OrkAssert(VK_SUCCESS == OK);
-
-    for( auto it : prog->_textures_by_binding ){
-      auto binding_index = it.first;
-      auto vk_tex = it.second;
-      auto& desc_info = vk_tex->_vkdescriptor_info;
-      OrkAssert(desc_info.imageView != VK_NULL_HANDLE);
-      VkWriteDescriptorSet DWRITE = {};
-      initializeVkStruct(DWRITE, VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
-      DWRITE.dstSet          = *descset_ptr;
-      DWRITE.dstBinding      = binding_index; // The binding point in the shader
-      DWRITE.descriptorCount = 1;
-      DWRITE.descriptorType  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-      DWRITE.pImageInfo      = &desc_info;
-
-      vkUpdateDescriptorSets(
-          _contextVK->_vkdevice, // device
-          1,
-          &DWRITE, // descriptor write
-          0,
-          nullptr // descriptor copy
-      );
-
-    }
-
-  }
-  else{
-    descset_ptr = & it->second;
-  }
   vkCmdBindDescriptorSets(CB->_vkcmdbuf, 
                           VK_PIPELINE_BIND_POINT_GRAPHICS, // pipeline bind point
                           pipeline->_pipelineLayout, // pipeline layout
                           0, // first set
-                          1, descset_ptr, // descriptor sets
+                          1, &desc_set->_vkdescset, // descriptor sets
                           0, nullptr); // dynamic offsets
 
-  /*
-  vkCmdBindDescriptorSets(CB->_vkcmdbuf, 
-                          VK_PIPELINE_BIND_POINT_GRAPHICS, // pipeline bind point
-                          pipeline->_pipelineLayout, // pipeline layout
-                          0, // first set
-                          1, & pipeline->_vkDescriptorSet, // descriptor sets
-                          0, nullptr); // dynamic offsets
-  */
   ///////////////////////
   // flush params
   ///////////////////////
