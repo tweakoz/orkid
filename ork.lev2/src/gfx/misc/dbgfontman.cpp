@@ -612,15 +612,15 @@ void Font::LoadFromDisk(Context* context, const FontDesc& fdesc) {
   _materialDeferred->gpuInit(context);
 
 #if defined(__APPLE__)
-  /*if (_macosUseHIDPI) {
-    mFontDesc.miCharWidth *= 2;
-    mFontDesc.miCharHeight *= 2;
-    mFontDesc.miCharOffsetX *= 2;
-    mFontDesc.miCharOffsetY *= 2;
-    mFontDesc.miYShift *= 2;
-    mFontDesc.miAdvanceWidth *= 2;
-    mFontDesc.miAdvanceHeight *= 2;
-  }*/
+  if (_macosUseHIDPI) {
+    //mFontDesc.miCharWidth *= 2;
+    //mFontDesc.miCharHeight *= 2;
+    //mFontDesc.miCharOffsetX *= 2;
+    //mFontDesc.miCharOffsetY *= 2;
+    //mFontDesc.miYShift *= 2;
+    //mFontDesc.miAdvanceWidth *= 2;
+    //mFontDesc.miAdvanceHeight *= 2;
+  }
 #endif
 }
 
