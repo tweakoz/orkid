@@ -432,15 +432,18 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(vkvtxbuf_ptr_t vb, //
     ////////////////////////////////////////////////////
 
     if(shprog->_descriptors){
-      size_t num_vtx_bindings = shprog->_descriptors->_vkbindings.size();
+      size_t num_bindings = shprog->_descriptors->_vkbindings.size();
       size_t num_samplers = shprog->_descriptors->_sampler_count;
-      OrkAssert(num_vtx_bindings==num_samplers);
+      OrkAssert(num_bindings==num_samplers);
       VkDescriptorSetLayoutCreateInfo LCI = {};
       initializeVkStruct(LCI, VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO);
       LCI.bindingCount = shprog->_descriptors->_vkbindings.size();
       LCI.pBindings = shprog->_descriptors->_vkbindings.data();
 
-      vkCreateDescriptorSetLayout(_contextVK->_vkdevice, &LCI, nullptr, &shprog->_descriptors->_dsetlayout);
+      vkCreateDescriptorSetLayout( _contextVK->_vkdevice, // device
+                                   &LCI, // create info
+                                   nullptr, // allocator
+                                   &shprog->_descriptors->_dsetlayout); // descriptor set layout
       PLCI.setLayoutCount = 1;
       PLCI.pSetLayouts = &shprog->_descriptors->_dsetlayout;
     }
@@ -455,16 +458,14 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(vkvtxbuf_ptr_t vb, //
 
     CINFO.layout = rval->_pipelineLayout; 
     
-    if(1){
-      OK = vkCreateGraphicsPipelines( _contextVK->_vkdevice, // device
-                                     VK_NULL_HANDLE,        // pipeline cache
-                                     1,                     // count
-                                     &CINFO,                // create info
-                                     nullptr,               // allocator
-                                     &rval->_pipeline);
+    OK = vkCreateGraphicsPipelines( _contextVK->_vkdevice, // device
+                                    VK_NULL_HANDLE,        // pipeline cache
+                                    1,                     // count
+                                    &CINFO,                // create info
+                                    nullptr,               // allocator
+                                    &rval->_pipeline);
 
-      OrkAssert(VK_SUCCESS == OK);
-    }
+    OrkAssert(VK_SUCCESS == OK);
 
     VkDescriptorSetAllocateInfo DSAI;
     initializeVkStruct(DSAI, VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO);

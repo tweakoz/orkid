@@ -541,7 +541,8 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
                 auto item_ptr  = item.second;
                 auto orkparam = item_ptr->_orkparam.get();
                 size_t binding_index = desc_set->_sampler_count++;
-
+                auto it = vk_program->_samplers_by_orkparam.find(orkparam);
+                OrkAssert(it==vk_program->_samplers_by_orkparam.end());
                 vk_program->_samplers_by_orkparam[orkparam] = binding_index;
 
                 auto& vkb = desc_set->_vkbindings.emplace_back();
@@ -604,7 +605,7 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
       //descriptors->_vksamplers.reserve( 32 );
       descriptors->_vkbindings.reserve( 32 );              
   
-      unisets_to_descriptors(vtx_obj, descriptors, VK_SHADER_STAGE_VERTEX_BIT );
+      //unisets_to_descriptors(vtx_obj, descriptors, VK_SHADER_STAGE_VERTEX_BIT );
       unisets_to_descriptors(frg_obj, descriptors, VK_SHADER_STAGE_FRAGMENT_BIT );
       vk_program->_descriptors = descriptors;
       //////////////////////////////////////////////////////////////

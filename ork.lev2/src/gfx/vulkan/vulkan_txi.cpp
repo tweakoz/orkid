@@ -446,7 +446,7 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
 
   vktex->_vkdescriptor_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
   vktex->_vkdescriptor_info.imageView   = vktex->_vkimageview;
-  vktex->_vkdescriptor_info.sampler     = vktex->_vksampler->_vksampler;
+  //vktex->_vkdescriptor_info.sampler     = vktex->_vksampler->_vksampler;
 
   /////////////////////////////////////
   // transition to transfer dst (for copy)

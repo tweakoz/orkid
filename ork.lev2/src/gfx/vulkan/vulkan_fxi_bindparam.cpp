@@ -121,6 +121,7 @@ void VkFxInterface::bindParamBlockBuffer(const FxShaderParamBlock* block, FxShad
 
 void VkFxInterface::BindParamCTex(const FxShaderParam* hpar, const Texture* pTex) {
   auto vk_shprog = _currentVKPASS->_vk_program;
+  OrkAssert(vk_shprog->_descriptors);
   //auto vk_param = hpar->_impl.get<VkFxShaderUniformSetSampler*>();
   auto vk_tex = pTex->_impl.getShared<VulkanTextureObject>();
   const VkDescriptorImageInfo& DII = vk_tex->_vkdescriptor_info;
@@ -129,18 +130,21 @@ void VkFxInterface::BindParamCTex(const FxShaderParam* hpar, const Texture* pTex
   auto it = vk_shprog->_samplers_by_orkparam.find(hpar);
   OrkAssert(it != vk_shprog->_samplers_by_orkparam.end());
   size_t binding_index = it->second;
-  //auto descriptors = vk_shprog->_descriptors;
+  auto descriptors = vk_shprog->_descriptors;
+  size_t sampler_count = descriptors->_sampler_count;
+  printf( "binding_index<%zu> sampler_count<%zu>\n", binding_index, sampler_count );
+  VkWriteDescriptorSet DWRITE = {};
+  initializeVkStruct(DWRITE,VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
+  DWRITE.dstSet = _currentPipeline->_vkDescriptorSet;
+  DWRITE.dstBinding = binding_index; // The binding point in the shader
+  DWRITE.descriptorCount = 1;
+  DWRITE.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+  DWRITE.pImageInfo = &DII;
 
-
-  VkWriteDescriptorSet descriptorWrite = {};
-  initializeVkStruct(descriptorWrite,VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
-  descriptorWrite.dstSet = _currentPipeline->_vkDescriptorSet;
-  descriptorWrite.dstBinding = binding_index; // The binding point in the shader
-  descriptorWrite.descriptorCount = 1;
-  descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-  descriptorWrite.pImageInfo = &DII;
-
-  vkUpdateDescriptorSets(_contextVK->_vkdevice, 1, &descriptorWrite, 0, nullptr);
+  vkUpdateDescriptorSets( _contextVK->_vkdevice, // device
+                          1, &DWRITE, // descriptor write
+                          0, nullptr // descriptor copy
+                          );
   
 }
 
