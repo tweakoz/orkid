@@ -34,6 +34,9 @@
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
+extern size_t DEFAULT_WINDOW_WIDTH;
+extern size_t DEFAULT_WINDOW_HEIGHT;
+
 extern bool _HIDPI();
 extern bool _MIXEDDPI();
 extern float _currentDPI();

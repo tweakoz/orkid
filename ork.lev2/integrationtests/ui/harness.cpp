@@ -161,5 +161,5 @@ uitestapp_ptr_t createEZapp(appinitdata_ptr_t init_data) {
 }
 //////////////////////////////////////////////////////////////////////////////
 TestViewport::TestViewport()
-    : ui::Viewport("TEST", 0, 0, 1280, 720, fvec3::Red(), 1.0) {
+    : ui::Viewport("TEST", 0, 0, DEFAULT_WINDOW_WIDTH, DEFAULT_WINDOW_HEIGHT, fvec3::Red(), 1.0) {
 }

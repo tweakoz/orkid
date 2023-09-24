@@ -238,8 +238,8 @@ int main(int argc, char** argv, char** envp) {
       ("fullscreen", po::bool_switch()->default_value(false), "fullscreen mode")                              
       ("left",  po::value<int>()->default_value(100), "left window offset")                              
       ("top",  po::value<int>()->default_value(100), "top window offset")                              
-      ("width",  po::value<int>()->default_value(1280), "window width")                              
-      ("height",  po::value<int>()->default_value(720), "window height")
+      ("width",  po::value<int>()->default_value(DEFAULT_WINDOW_WIDTH), "window width")                              
+      ("height",  po::value<int>()->default_value(DEFAULT_WINDOW_HEIGHT), "window height")
       ("usevr",  po::bool_switch()->default_value(false), "use vr output");                             
 
   auto vars = *init_data->parse();

@@ -15,6 +15,8 @@ namespace ork::ui {
 /////////////////////////////////////////////////////////////////////////
 LayoutGroup::LayoutGroup(const std::string& name, int x, int y, int w, int h)
     : Group(name, x, y, w, h) {
+  OrkAssert(w>=1);
+  OrkAssert(h>=1);
   _layout = std::make_shared<anchor::Layout>(this);
 }
 /////////////////////////////////////////////////////////////////////////

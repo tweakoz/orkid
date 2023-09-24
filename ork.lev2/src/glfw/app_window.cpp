@@ -19,14 +19,14 @@
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 AppWindow::AppWindow(uiwidget_ptr_t prw)
-    : Window(0, 0, 1280, 720, "yo")
+    : Window(0, 0, DEFAULT_WINDOW_WIDTH, DEFAULT_WINDOW_HEIGHT, "yo")
     , mbinit(true){
 
     _rootWidget = prw;
 
     if(_HIDPI()){
-      SetBufferWidth(1280*2);
-      SetBufferHeight(720*2);
+      SetBufferWidth(DEFAULT_WINDOW_WIDTH*2);
+      SetBufferHeight(DEFAULT_WINDOW_HEIGHT*2);
     }
 }
 ///////////////////////////////////////////////////////////////////////////////

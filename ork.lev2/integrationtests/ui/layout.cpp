@@ -22,12 +22,12 @@ int main(int argc, char** argv, char** envp) {
   auto vp                  = app->_topLayoutGroup;
   auto w0                  = vp->makeChild<EvTestBox>("w0", fvec4(1, 1, 0, 1));
   auto w1                  = vp->makeChild<SplitPanel>("w1");
-  auto w2                  = vp->makeChild<LayoutGroup>("w2", 0, 0, 0, 0);
+  auto w2                  = vp->makeChild<LayoutGroup>("w2", 0, 0, 1, 1);
   auto w3                  = vp->makeChild<EvTestBox>("w3", fvec4(0, 1, 0, 1));
   w1.typedWidget()->_moveEnabled = false;
   //////////////////////////////////////
   auto panel_w0 = std::make_shared<EvTestBox>("panel-w0", fvec4(0, 1, 1, 1));
-  auto panel_w1 = std::make_shared<LayoutGroup>("panel-w1");
+  auto panel_w1 = std::make_shared<LayoutGroup>("panel-w1", 0, 0, 1, 1);
   w1.typedWidget()->setChild1(panel_w0);
   w1.typedWidget()->setChild2(panel_w1);
   //////////////////////////////////////

@@ -108,6 +108,7 @@ vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(RtGroup* rtgroup) {
   ////////////////////////////////////////
   // other buffers
   ////////////////////////////////////////
+  bool is_swapchain = false;
   for (int it = 0; it < inumtargets; it++) {
     rtbuffer_ptr_t rtbuffer = rtgroup->GetMrt(it);
     auto bufferimpl         = std::make_shared<VklRtBufferImpl>(RTGIMPL.get(), rtbuffer.get());
@@ -120,6 +121,7 @@ vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(RtGroup* rtgroup) {
     }
     ////////////////////////////////////////////
     if (USAGE == "present"_crcu) {
+      is_swapchain = true;
     } 
     ////////////////////////////////////////////
     else { // not present...
@@ -130,7 +132,7 @@ vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(RtGroup* rtgroup) {
   }
 
   ////////////////////////////////////////////////////////////////////
-  if(rtgroup->_pseudoRTG){
+  if(rtgroup->_pseudoRTG or is_swapchain){
     //OrkAssert(false);
   }
   ////////////////////////////////////////////////////////////////////
@@ -144,7 +146,8 @@ vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(RtGroup* rtgroup) {
       auto bufferimpl         = rtbuffer->_impl.getShared<VklRtBufferImpl>();
       auto texture = rtbuffer->texture();
       OrkAssert(texture!=nullptr);
-      printf( "texture<%p:%s>\n", (void*) texture, texture->_debugName.c_str() );
+      printf( "texture<%p:%s> _usage<0x%zx>\n", (void*) texture, texture->_debugName.c_str(), rtbuffer->_usage );
+      OrkAssert(rtbuffer->_usage=="color"_crcu);
       auto teximpl = texture->_impl.getShared<VulkanTextureObject>();
       auto format = bufferimpl->_vkfmt;
 

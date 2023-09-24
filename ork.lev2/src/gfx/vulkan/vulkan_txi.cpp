@@ -573,18 +573,43 @@ void VkTextureInterface::_initTextureFromRtBuffer(RtBuffer* rtbuffer) {
     int iheight = rtbuffer->_height;
     int num_mips = 1;
 
+    /////////////////////////////////////
+    // create image object
+    /////////////////////////////////////
+
     auto img_info = makeVKICI(iwidth, iheight, 1, format, num_mips);
     img_info->usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
 
     teximpl->_imgobj = std::make_shared<VulkanImageObject>(_contextVK, img_info);
     teximpl->_vksampler = _contextVK->_sampler_base;
 
+    /////////////////////////////////////
+    // create image view
+    /////////////////////////////////////
+
+    auto IVCI = createImageViewInfo2D(
+        teximpl->_imgobj->_vkimage,                       //
+        VkFormatConverter::convertBufferFormat(format), //
+        VK_IMAGE_ASPECT_COLOR_BIT);
+    IVCI->subresourceRange.levelCount = num_mips;
+
+    initializeVkStruct(teximpl->_imgobj->_vkimageview); 
+    VkResult ok = vkCreateImageView(_contextVK->_vkdevice, IVCI.get(), nullptr, &teximpl->_imgobj->_vkimageview);
+    OrkAssert(VK_SUCCESS == ok);
+
     OrkAssert(teximpl->_imgobj->_vkimageview != VK_NULL_HANDLE);
+
+    /////////////////////////////////////
+    // create descriptor image info
+    /////////////////////////////////////
 
     teximpl->_vkdescriptor_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     teximpl->_vkdescriptor_info.imageView = teximpl->_imgobj->_vkimageview;
     teximpl->_vkdescriptor_info.sampler = teximpl->_vksampler->_vksampler;
-    ptex->_impl = teximpl;
+
+    /////////////////////////////////////
+    // transition to transfer dst (for copy)
+    /////////////////////////////////////
 
     auto cmdbuf = _contextVK->beginRecordCommandBuffer();
     auto cmdbuf_impl = cmdbuf->_impl.getShared<VkCommandBufferImpl>();
@@ -607,6 +632,8 @@ void VkTextureInterface::_initTextureFromRtBuffer(RtBuffer* rtbuffer) {
         0, nullptr,
         1, barrier.get()
     );
+
+    /////////////////////////////////////
 
     _contextVK->endRecordCommandBuffer(cmdbuf);
     _contextVK->enqueueDeferredOneShotCommand(cmdbuf);

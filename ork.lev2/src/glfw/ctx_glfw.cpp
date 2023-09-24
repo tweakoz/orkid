@@ -1047,6 +1047,7 @@ struct PopupImpl {
     if (_uicontext->_top) {
       _uicontext->_top->gpuInit(_parent_context);
       _uicontext->_top->SetRect(0, 0, _w, _h);
+      OrkAssert(false);
     }
 
     ork::Timer timer;

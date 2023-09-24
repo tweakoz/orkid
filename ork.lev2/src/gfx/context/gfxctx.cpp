@@ -78,10 +78,13 @@ RenderSubPass::RenderSubPass(){
 
 /////////////////////////////////////////////////////////////////////////
 
+size_t DEFAULT_WINDOW_WIDTH = 1280;
+size_t DEFAULT_WINDOW_HEIGHT = 720;
+
 Context::Context()
     : meTargetType(TargetType::NONE)
-    , miW(0)
-    , miH(0)
+    , miW(DEFAULT_WINDOW_WIDTH)
+    , miH(DEFAULT_WINDOW_HEIGHT)
     , miModColorStackIndex(0)
     , miTargetFrame(0)
     , miDrawLock(0)

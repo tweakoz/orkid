@@ -56,7 +56,7 @@ void Rect::PopOrtho(Context* context) const {
 }
 ///////////////////////////////////////////////////////////////////////////////
 HudLayoutGroup::HudLayoutGroup() //
-    : ui::LayoutGroup("HUD", 0, 0, 1280, 720) {
+    : ui::LayoutGroup("HUD", 0, 0, DEFAULT_WINDOW_WIDTH, DEFAULT_WINDOW_HEIGHT) {
 
   /////////////////////////////////
   // route musical kb events to here

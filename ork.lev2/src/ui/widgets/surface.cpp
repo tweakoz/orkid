@@ -60,6 +60,8 @@ void Surface::GetPixel(int ix, int iy, lev2::PixelFetchContext& pfc) {
 /////////////////////////////////////////////////////////////////////////
 
 void Surface::_doOnResized(void) {
+  OrkAssert(width()>=1);
+  OrkAssert(height()>=1);
   printf( "Surface<%s>::OnResize x<%d> y<%d> w<%d> h<%d>\n", _name.c_str(), x(), y(), width(), height() );
   DoSurfaceResize();
   SetDirty();
@@ -70,7 +72,7 @@ void Surface::RePaintSurface(ui::drawevent_constptr_t drwev) {
 }
 
 void Surface::_doGpuInit(lev2::Context* context) {
-  _rtgroup        = std::make_shared<lev2::RtGroup>(context, 8, 8, lev2::MsaaSamples::MSAA_1X);
+  _rtgroup        = std::make_shared<lev2::RtGroup>(context, 8, 8, lev2::MsaaSamples::MSAA_1X,false);
   _rtgroup->_name = FormatString("ui::Surface<%p>", (void*)this);
   auto mrt0       = _rtgroup->createRenderTarget(lev2::EBufferFormat::RGBA8,"color"_crcu);
 }

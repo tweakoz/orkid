@@ -17,10 +17,10 @@ namespace ork::lev2 {
 static logchannel_ptr_t logchan_ezapp = logger()->createChannel("ezapp", fvec3(0.7, 0.7, 0.9));
 ///////////////////////////////////////////////////////////////////////////////
 EzTopWidget::EzTopWidget(EzMainWin* mainwin)
-    : ui::Group("ezviewport", 1, 1, 1, 1)
+    : ui::Group("ezviewport", 1, 1, 128, 128)
     , _mainwin(mainwin) {
-  _geometry._w = 1;
-  _geometry._h = 1;
+  _geometry._w = 128;
+  _geometry._h = 128;
   _initstate.store(0);
   lev2::DrawableBuffer::ClearAndSyncWriters();
   _mainwin->_render_timer.Start();
@@ -142,6 +142,8 @@ void EzTopWidget::DoDraw(ui::drawevent_constptr_t drwev) {
 }
 /////////////////////////////////////////////////
 void EzTopWidget::_doOnResized() {
+  OrkAssert(width() >= 2);
+  OrkAssert(height() >= 2);
   printf( "EzTopWidget::_doOnResized<%d %d>\n", width(), height() );
     if (_mainwin->_onResize) {
       _mainwin->_onResize(width(), height());

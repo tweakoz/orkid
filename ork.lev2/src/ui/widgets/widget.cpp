@@ -24,6 +24,11 @@ void Widget::describeX(class_t* clazz) {
 Widget::Widget(const std::string& name, int x, int y, int w, int h)
     : _name(name) {
 
+  if(w<1)
+    w=1;
+  if(h<1)
+    h=1;
+
   _geometry._x  = x;
   _geometry._y  = y;
   _geometry._w  = w;
@@ -364,6 +369,9 @@ void Widget::SetPos(int iX, int iY) {
 }
 /////////////////////////////////////////////////////////////////////////
 void Widget::SetSize(int iW, int iH) {
+  OrkAssert(iW>=1);
+  OrkAssert(iH>=1);
+
   mSizeDirty |= (width() != iW) or (height() != iH);
   _prevGeometry = _geometry;
   _geometry._w  = iW;
@@ -373,6 +381,10 @@ void Widget::SetSize(int iW, int iH) {
 }
 /////////////////////////////////////////////////////////////////////////
 void Widget::SetRect(int iX, int iY, int iW, int iH) {
+
+  OrkAssert(iW>=1);
+  OrkAssert(iH>=1);
+
   mPosDirty |= (x() != iX) or (y() != iY);
   mSizeDirty |= (width() != iW) or (height() != iH);
   _prevGeometry = _geometry;

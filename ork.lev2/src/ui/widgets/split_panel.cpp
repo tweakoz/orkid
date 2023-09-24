@@ -153,14 +153,18 @@ void SplitPanel::DoLayout() {
   mCloseX      = kpanelw;
   mCloseY      = mDockedAtTop ? _geometry._h - kpanelw : 0;
 
-  int cw = _geometry._w - (kpanelw * 2);
-
+  int cw = _geometry._w - (kpanelw * 2);  
   int ch  = _geometry._h / 2;
   int p1y = kpanelw;
   int p1h = int(float(_geometry._h) * mSplitVal) - ksplith;
   int p2y = p1y + p1h + ksplith;
   int p2h = _geometry._h - kpanelw - p2y;
 
+  cw = std::max(cw, 1); // clamp to 1 pixel 
+  ch = std::max(cw, 1); // clamp to 1 pixel
+  p1h = std::max(p1h, 1); // clamp to 1 pixel
+  p2h = std::max(p2h, 1); // clamp to 1 pixel
+  
   if (0)
     printf(
         "SplitPanel<%s>::DoLayout x<%d> y<%d> w<%d> h<%d> p1y<%d> p1h<%d> p2y<%d> p2h<%d>\n", //
