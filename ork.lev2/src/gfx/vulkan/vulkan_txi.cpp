@@ -263,7 +263,7 @@ void VkTextureInterface::_createFromCompressedLoadReq(texloadreq_ptr_t req) {
   /////////////////////////////////////
 
   auto IVCI = createImageViewInfo2D(
-      vktex->_imgobj->_vkimage,                                //
+      vktex->_imgobj->_vkimage,                       //
       VkFormatConverter::convertBufferFormat(format), //
       VK_IMAGE_ASPECT_COLOR_BIT);
   IVCI->subresourceRange.levelCount = num_mips;
@@ -276,9 +276,10 @@ void VkTextureInterface::_createFromCompressedLoadReq(texloadreq_ptr_t req) {
   // descriptor image info
   /////////////////////////////////////
 
+  vktex->_vksampler = _contextVK->_sampler_per_maxlod[num_mips];
   vktex->_vkdescriptor_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
   vktex->_vkdescriptor_info.imageView   = vktex->_imgobj->_vkimageview;
-  OrkAssert(vktex->_imgobj->_vkimageview!=VK_NULL_HANDLE);
+  vktex->_vkdescriptor_info.sampler     = vktex->_vksampler->_vksampler;
 
   /////////////////////////////////////
 
