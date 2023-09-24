@@ -792,7 +792,7 @@ commandbuffer_ptr_t VkContext::_beginRecordCommandBuffer(renderpass_ptr_t rpass)
     INHINFO.renderPass = rpimpl->_vkrp; // The render pass the secondary command buffer will be executed within.
     INHINFO.subpass    = 0;             // The index of the subpass in the render pass.
     INHINFO.framebuffer =
-        VK_NULL_HANDLE; // Optional: The framebuffer targeted by the render pass. Can be VK_NULL_HANDLE if not provided.
+        rpimpl->_vkfb; // Optional: The framebuffer targeted by the render pass. Can be VK_NULL_HANDLE if not provided.
     CBBI_GFX.pInheritanceInfo = &INHINFO;
   }
 

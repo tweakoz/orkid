@@ -126,6 +126,19 @@ renderpass_ptr_t createRenderPassForRtGroup(vkcontext_rawptr_t ctxVK, vkrtgrpimp
     VkResult OK = vkCreateRenderPass(ctxVK->_vkdevice, &RPI, nullptr, &vk_renpass->_vkrp);
     OrkAssert(OK == VK_SUCCESS);
 
+    initializeVkStruct(vk_renpass->_vkfbinfo, VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO);
+    vk_renpass->_vkfbinfo.attachmentCount = rtg_impl->_vkattach_imageviews.size();
+    vk_renpass->_vkfbinfo.pAttachments = rtg_impl->_vkattach_imageviews.data();
+    vk_renpass->_vkfbinfo.width = rtg_impl->_width;
+    vk_renpass->_vkfbinfo.height = rtg_impl->_height;
+    vk_renpass->_vkfbinfo.layers = 1;
+    vk_renpass->_vkfbinfo.renderPass = vk_renpass->_vkrp; 
+
+    vkCreateFramebuffer( ctxVK->_vkdevice, // device
+                         &vk_renpass->_vkfbinfo, // pCreateInfo
+                         nullptr, // pAllocator
+                         &vk_renpass->_vkfb); // pFramebuffer
+
     // Optionally, you can also define subpass dependencies for layout transitions
     //VkSubpassDependency dependency{};
     //dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
