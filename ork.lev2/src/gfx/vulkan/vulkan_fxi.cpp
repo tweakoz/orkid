@@ -472,15 +472,6 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(vkvtxbuf_ptr_t vb, //
 
     OrkAssert(VK_SUCCESS == OK);
 
-    VkDescriptorSetAllocateInfo DSAI;
-    initializeVkStruct(DSAI, VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO);
-    DSAI.descriptorPool = _contextVK->_vkDescriptorPool;
-    DSAI.descriptorSetCount = 1;
-    DSAI.pSetLayouts = &shprog->_descriptors->_dsetlayout;
-
-    OK = vkAllocateDescriptorSets(_contextVK->_vkdevice, &DSAI, &rval->_vkDescriptorSet);
-    OrkAssert(VK_SUCCESS == OK);
-
   }
   else{ // pipeline already cached!
     rval = it->second;

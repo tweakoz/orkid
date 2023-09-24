@@ -604,7 +604,8 @@ struct VkFxShaderProgram {
   std::vector<uint8_t> _pushdatabuffer;
   vkdescriptors_ptr_t _descriptors;
   std::unordered_map<fxparam_constptr_t, size_t> _samplers_by_orkparam;
-
+  std::unordered_map<fxparam_constptr_t, vktexobj_ptr_t > _textures_by_orkparam;
+  std::unordered_map<size_t, vktexobj_ptr_t > _textures_by_binding;
   int _pipeline_bits = -1;
 
   std::unordered_map<std::string, vkfxsuniset_ptr_t> _vk_uniformsets;
@@ -617,7 +618,8 @@ struct VkPipelineObject {
   VkGraphicsPipelineCreateInfo _VKGFXPCI;
   VkPipeline _pipeline;
   VkPipelineLayout _pipelineLayout;
-  VkDescriptorSet _vkDescriptorSet;
+
+  std::unordered_map<uint64_t, VkDescriptorSet> _vkDescriptorSetByHash;
   vkviewporttracker_ptr_t _viewport;
   vkviewporttracker_ptr_t _scissor;
 };
