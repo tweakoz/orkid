@@ -120,10 +120,19 @@ void VkFxInterface::bindParamBlockBuffer(const FxShaderParamBlock* block, FxShad
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkFxInterface::BindParamCTex(const FxShaderParam* hpar, const Texture* pTex) {
+  //printf( "xxx BindParamCTex<%p:%s>\n", (void*) pTex, pTex->_debugName.c_str() );
   auto vk_shprog = _currentVKPASS->_vk_program;
   OrkAssert(vk_shprog->_descriptors);
   //auto vk_param = hpar->_impl.get<VkFxShaderUniformSetSampler*>();
-  auto vk_tex = pTex->_impl.getShared<VulkanTextureObject>();
+  vktexobj_ptr_t vk_tex;
+  if( auto as_to = pTex->_impl.tryAsShared<VulkanTextureObject>() ){
+    vk_tex = as_to.value();
+  }
+  else{
+    //OrkAssert(false);
+    return;
+  }
+    return;
   const VkDescriptorImageInfo& DII = vk_tex->_vkdescriptor_info;
   //const VkSampler& sampler = vk_tex->_vksampler->_vksampler;
   //const VkImageView& imgview = vk_tex->_imgobj->_vkimageview;
@@ -140,6 +149,27 @@ void VkFxInterface::BindParamCTex(const FxShaderParam* hpar, const Texture* pTex
   DWRITE.descriptorCount = 1;
   DWRITE.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
   DWRITE.pImageInfo = &DII;
+
+  printf( "addr_vk_tex<%p>\n", (void*) vk_tex.get() );
+  printf( "addr_DII<%p>\n", (void*) (&DII) );
+
+  auto addr_dwrite = &DWRITE;
+  auto addr_dwrite0 = &(addr_dwrite[0]);
+  auto addr_dwrite0_imginfo = &(addr_dwrite0->pImageInfo);
+  auto addr_dwrite0_imginfo_imglayout = &((*addr_dwrite0_imginfo)->imageLayout);
+
+  OrkAssert(addr_dwrite!=nullptr);
+  OrkAssert(addr_dwrite0!=nullptr);
+  OrkAssert(addr_dwrite0_imginfo!=nullptr);
+  OrkAssert(addr_dwrite0_imginfo_imglayout!=nullptr);
+
+  printf( "addr_dwrite<%p>\n", (void*) addr_dwrite );
+  printf( "addr_dwrite0<%p>\n", (void*) addr_dwrite0 );
+  printf( "addr_dwrite0_imginfo<%p>\n", (void*) addr_dwrite0_imginfo );
+  printf( "addr_dwrite0_imginfo_imglayout<%p>\n", (void*) addr_dwrite0_imginfo_imglayout );
+
+  auto& layout = (&DWRITE)[0].pImageInfo[0].imageLayout;
+  printf( "layoutptr<%p>\n", (void*) &layout );
 
   vkUpdateDescriptorSets( _contextVK->_vkdevice, // device
                           1, &DWRITE, // descriptor write

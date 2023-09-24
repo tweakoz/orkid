@@ -423,7 +423,7 @@ public:
       printf("_mtinfo: %p:%s\n", (void*)_mtinfo, _mtinfo->name());
       fflush(stdout);
     }
-    assert(tinfo == *_mtinfo);
+    OrkAssert(tinfo == *_mtinfo);
     const T* pval = (const T*)&_buffer[0];
     return *pval;
   }
@@ -433,7 +433,7 @@ public:
   template <typename T> std::shared_ptr<T>& getShared() const {
     typedef std::shared_ptr<T> sharedptr_t;
     static_assert(sizeof(sharedptr_t) <= ksize, "static_variant size violation");
-    assert(typeid(sharedptr_t) == *_mtinfo);
+    OrkAssert(typeid(sharedptr_t) == *_mtinfo);
     auto pval = (sharedptr_t*)&_buffer[0];
     return (*pval);
   }
@@ -449,7 +449,7 @@ public:
     (*pval) = ptr;
     _mtinfo = &typeid(sharedptr_t);
     assignDescriptor<sharedptr_t>();
-    assert(typeid(sharedptr_t) == *_mtinfo);
+    OrkAssert(typeid(sharedptr_t) == *_mtinfo);
   }
   //////////////////////////////////////////////////////////////
   // construct a T and return by reference
@@ -461,7 +461,7 @@ public:
     new (pval) T(std::forward<A>(args)...);
     _mtinfo = &typeid(T);
     assignDescriptor<T>();
-    assert(typeid(T) == *_mtinfo);
+    OrkAssert(typeid(T) == *_mtinfo);
     return *pval;
   }
   //////////////////////////////////////////////////////////////
@@ -475,7 +475,7 @@ public:
     (*pval) = std::make_shared<T>(std::forward<A>(args)...);
     _mtinfo = &typeid(std::shared_ptr<T>);
     assignDescriptor<std::shared_ptr<T>>();
-    assert(typeid(std::shared_ptr<T>) == *_mtinfo);
+    OrkAssert(typeid(std::shared_ptr<T>) == *_mtinfo);
     return (*pval);
   }
   //////////////////////////////////////////////////////////////

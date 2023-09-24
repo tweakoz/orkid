@@ -310,6 +310,11 @@ context_ptr_t createLoaderContext() {
 VkFormatConverter::VkFormatConverter() {
   _fmtmap[EBufferFormat::RGBA8] = VK_FORMAT_R8G8B8A8_UNORM;
   _fmtmap[EBufferFormat::S3TC_DXT1] = VK_FORMAT_BC1_RGBA_UNORM_BLOCK;
+  _fmtmap[EBufferFormat::S3TC_DXT3] = VK_FORMAT_BC2_UNORM_BLOCK;
+  _fmtmap[EBufferFormat::BGR5A1] = VK_FORMAT_B5G5R5A1_UNORM_PACK16;
+  _fmtmap[EBufferFormat::BGRA8]   = VK_FORMAT_B8G8R8A8_UNORM;
+  _fmtmap[EBufferFormat::BGR8]   = VK_FORMAT_B8G8R8_UNORM;
+  _fmtmap[EBufferFormat::R32F]  = VK_FORMAT_R32_SFLOAT;
   _fmtmap[EBufferFormat::Z32]   = VK_FORMAT_D32_SFLOAT;
   _fmtmap[EBufferFormat::Z24S8] = VK_FORMAT_D24_UNORM_S8_UINT;
   _fmtmap[EBufferFormat::Z32S8] = VK_FORMAT_D32_SFLOAT_S8_UINT;

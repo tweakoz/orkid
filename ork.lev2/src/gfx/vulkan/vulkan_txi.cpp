@@ -53,7 +53,7 @@ void VkTextureInterface::UpdateAnimatedTexture(Texture* ptex, TextureAnimationIn
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkTextureInterface::generateMipMaps(Texture* ptex) {
-
+  ptex->_debugName = "VkTextureInterface::generateMipMaps";
   vktexobj_ptr_t vktex;
   if (auto as_vktext = ptex->_impl.tryAsShared<VulkanTextureObject>()) {
     vktex = as_vktext.value();
@@ -191,6 +191,8 @@ void VkTextureInterface::generateMipMaps(Texture* ptex) {
 
 void VkTextureInterface::_createFromCompressedLoadReq(texloadreq_ptr_t req) {
   auto ptex       = req->ptex;
+  printf( "xxx _createFromCompressedLoadReq<%p:%s>\n", (void*) ptex.get(), ptex->_debugName.c_str() );
+  ptex->_debugName = "VkTextureInterface::_createFromCompressedLoadReq";
   auto vktex      = ptex->_impl.makeShared<VulkanTextureObject>(this);
   auto chain      = req->_cmipchain;
   size_t num_mips = chain->_levels.size();
@@ -265,6 +267,7 @@ void VkTextureInterface::_createFromCompressedLoadReq(texloadreq_ptr_t req) {
 
 Texture* VkTextureInterface::createFromMipChain(MipChain* from_chain) {
   auto ptex  = new Texture;
+  ptex->_debugName = "VkTextureInterface::createFromMipChain";
   auto vktex = ptex->_impl.makeShared<VulkanTextureObject>(this);
   OrkAssert(false);
   // vktex->_imgobj = std::make_shared<VulkanImageObject>(_contextVK, imginfo);
@@ -391,7 +394,6 @@ Texture* VkTextureInterface::createFromMipChain(MipChain* from_chain) {
   ptex->_depth     = 1;
   ptex->_num_mips  = num_levels;
   // ptex->_target    = ETEXTARGET_2D;
-  ptex->_debugName = "vulkan_texture";
 
   _contextVK->endRecordCommandBuffer(cmdbuf);
   _contextVK->enqueueDeferredOneShotCommand(cmdbuf);
@@ -402,6 +404,7 @@ Texture* VkTextureInterface::createFromMipChain(MipChain* from_chain) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid) {
+  ptex->_debugName = "VkTextureInterface::initTextureFromData";
 
   auto vktex = ptex->_impl.makeShared<VulkanTextureObject>(this);
 
@@ -420,7 +423,6 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   ptex->_height    = tid._h;
   ptex->_depth     = tid._d;
   ptex->_num_mips  = 1;
-  ptex->_debugName = "vulkan_texture";
 
   auto VKICI   = makeVKICI(tid._w, tid._h, tid._d, tid._dst_format, 1);
   VKICI->usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
