@@ -113,7 +113,6 @@ renderpass_ptr_t createRenderPassForRtGroup(vkcontext_rawptr_t ctxVK, vkrtgrpimp
     SUBPASS.pipelineBindPoint       = VK_PIPELINE_BIND_POINT_GRAPHICS;
     SUBPASS.colorAttachmentCount    = rtg_impl->_vkattach_references.size();
     SUBPASS.pColorAttachments       = rtg_impl->_vkattach_references.data();
-    SUBPASS.colorAttachmentCount    = 0;
     //SUBPASS.pDepthStencilAttachment = &DATR;
 
     VkRenderPassCreateInfo RPI = {};
@@ -126,6 +125,18 @@ renderpass_ptr_t createRenderPassForRtGroup(vkcontext_rawptr_t ctxVK, vkrtgrpimp
     // RPI.pDependencies = &dependency;
     VkResult OK = vkCreateRenderPass(ctxVK->_vkdevice, &RPI, nullptr, &vk_renpass->_vkrp);
     OrkAssert(OK == VK_SUCCESS);
+
+    // Optionally, you can also define subpass dependencies for layout transitions
+    //VkSubpassDependency dependency{};
+    //dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+    //dependency.dstSubpass = 0;
+    //dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    //dependency.srcAccessMask = 0;
+    //dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    //dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
+    //RPI.dependencyCount = 1;
+    //RPI.pDependencies = &dependency;
 
     return renpass;
 }

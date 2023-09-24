@@ -177,32 +177,7 @@ vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(RtGroup* rtgroup) {
 
     }
 
-    // Define the subpass
-    RTGIMPL->_vksubpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-    RTGIMPL->_vksubpass.colorAttachmentCount = RTGIMPL->_vkattach_references.size();
-    RTGIMPL->_vksubpass.pColorAttachments = RTGIMPL->_vkattach_references.data();
-
-    // Define the render pass
-    VkRenderPassCreateInfo RPI{};
-    initializeVkStruct(RPI, VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO);
-    RPI.attachmentCount = RTGIMPL->_vkattach_descriptions.size();
-    RPI.pAttachments = RTGIMPL->_vkattach_descriptions.data();
-    RPI.subpassCount = 1;
-    RPI.pSubpasses = &RTGIMPL->_vksubpass;
-
-    // Optionally, you can also define subpass dependencies for layout transitions
-    //VkSubpassDependency dependency{};
-    //dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-    //dependency.dstSubpass = 0;
-    //dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    //dependency.srcAccessMask = 0;
-    //dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    //dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-
-    //RPI.dependencyCount = 1;
-    //RPI.pDependencies = &dependency;
-
-    vkCreateRenderPass(_contextVK->_vkdevice, &RPI, nullptr, &RTGIMPL->_vkrp);
+    RTGIMPL->_rpass_misc = createRenderPassForRtGroup(_contextVK, RTGIMPL);
 
     // Create Framebuffer
     initializeVkStruct(RTGIMPL->_vkfbinfo, VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO);

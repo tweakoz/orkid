@@ -367,6 +367,7 @@ struct VkRtGroupImpl {
 
   commandbuffer_ptr_t _cmdbuf;
   renderpass_ptr_t _rpass_clear;
+  renderpass_ptr_t _rpass_misc;
 
 };
 
