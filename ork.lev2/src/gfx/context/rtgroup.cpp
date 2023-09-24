@@ -29,6 +29,8 @@ RtBuffer::RtBuffer(const RtGroup* rtg, //
     , _mipgen(EMG_NONE) //
     , _usage(usage) { //
   _texture = std::make_shared<Texture>();
+  auto fmtname = EBufferFormatToName(efmt);
+  _texture->_debugName = FormatString("rtb<%p> slot<%d> format<%s>", this, slot, fmtname.c_str());
 }
 
 ///////////////////////////////////////////////////////////////////////////////

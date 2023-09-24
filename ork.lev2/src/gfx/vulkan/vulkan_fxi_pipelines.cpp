@@ -446,6 +446,7 @@ void VkFxShaderProgram::bindDescriptorTexture(fxparam_constptr_t param, const Te
   if (auto as_to = pTex->_impl.tryAsShared<VulkanTextureObject>()) {
     vk_tex = as_to.value();
   } else {
+    printf( "No Texture impl tex<%p:%s>\n", pTex, pTex->_debugName.c_str() );
     OrkAssert(false);
     return;
   }
