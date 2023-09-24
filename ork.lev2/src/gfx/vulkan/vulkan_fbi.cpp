@@ -104,10 +104,39 @@ void VkFrameBufferInterface::GetPixel(const fvec4& rAt, PixelFetchContext& ctx) 
 
 ///////////////////////////////////////////////////////
 
+renderpass_ptr_t createRenderPassForRtGroup(vkcontext_rawptr_t ctxVK, vkrtgrpimpl_ptr_t rtg_impl){
+  auto renpass = std::make_shared<RenderPass>();
+  auto vk_renpass = renpass->_impl.makeShared<VulkanRenderPass>(renpass.get());
+
+    VkSubpassDescription SUBPASS = {};
+    initializeVkStruct(SUBPASS);
+    SUBPASS.pipelineBindPoint       = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    SUBPASS.colorAttachmentCount    = rtg_impl->_vkattach_references.size();
+    SUBPASS.pColorAttachments       = rtg_impl->_vkattach_references.data();
+    SUBPASS.colorAttachmentCount    = 0;
+    //SUBPASS.pDepthStencilAttachment = &DATR;
+
+    VkRenderPassCreateInfo RPI = {};
+    initializeVkStruct(RPI, VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO);
+    RPI.attachmentCount = rtg_impl->_vkattach_descriptions.size();
+    RPI.pAttachments    = rtg_impl->_vkattach_descriptions.data();
+    RPI.subpassCount    = 1;
+    RPI.pSubpasses      = &SUBPASS;
+    // RPI.dependencyCount = 1;
+    // RPI.pDependencies = &dependency;
+    VkResult OK = vkCreateRenderPass(ctxVK->_vkdevice, &RPI, nullptr, &vk_renpass->_vkrp);
+    OrkAssert(OK == VK_SUCCESS);
+
+    return renpass;
+}
+
+///////////////////////////////////////////////////////
+
 void VkFrameBufferInterface::rtGroupClear(RtGroup* rtg) {
   auto rtgimpl = rtg->_impl.getShared<VkRtGroupImpl>();
   VkFramebuffer& VKFB = rtgimpl->_vkfb;
-  VkRenderPass& VKRP = rtgimpl->_vkrp;
+  //VkRenderPass& VKRP = rtgimpl->_vkrp;
+  VkRenderPass& VKRP = rtgimpl->_rpass_clear->_impl.getShared<VulkanRenderPass>()->_vkrp;
   /////////////////////////////////////////////////////////////
   // clear in a renderpass
   /////////////////////////////////////////////////////////////
@@ -127,7 +156,9 @@ void VkFrameBufferInterface::rtGroupClear(RtGroup* rtg) {
   //  clear-misc
   RPBI.renderPass  = VKRP;
   RPBI.framebuffer = VKFB;
+  /////////////////////////////////////////////////////////////
 
+  /////////////////////////////////////////////////////////////
   rtgimpl->_cmdbuf = _contextVK->_beginRecordCommandBuffer();
   auto cmdbuf_impl = rtgimpl->_cmdbuf->_impl.getShared<VkCommandBufferImpl>();
   // CLEAR!
@@ -140,7 +171,7 @@ void VkFrameBufferInterface::rtGroupClear(RtGroup* rtg) {
   vkCmdEndRenderPass( cmdbuf_impl->_vkcmdbuf);  
   
   _contextVK->_endRecordCommandBuffer(rtgimpl->_cmdbuf);
-  //_contextVK->enqueueSecondaryCommandBuffer(rtgimpl->_cmdbuf);
+  _contextVK->enqueueSecondaryCommandBuffer(rtgimpl->_cmdbuf);
 
 }
 

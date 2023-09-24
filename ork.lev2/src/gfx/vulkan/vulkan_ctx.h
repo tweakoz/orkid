@@ -342,6 +342,8 @@ struct VklRtBufferImpl {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+renderpass_ptr_t createRenderPassForRtGroup(vkcontext_rawptr_t ctxVK, vkrtgrpimpl_ptr_t rtg_impl);
+
 struct VkRtGroupImpl {
   VkRtGroupImpl(RtGroup* _rtg);
   RtGroup* _rtg = nullptr;
@@ -364,7 +366,7 @@ struct VkRtGroupImpl {
   VkSubpassDescription _vksubpass;
 
   commandbuffer_ptr_t _cmdbuf;
-
+  renderpass_ptr_t _rpass_clear;
 
 };
 

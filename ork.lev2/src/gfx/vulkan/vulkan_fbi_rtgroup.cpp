@@ -228,6 +228,9 @@ vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(RtGroup* rtgroup) {
     // vkDestroyRenderPass(_contextVK->_device, renderPass, nullptr);
 
     //vkUpdateDescriptorSets(_contextVK->_device, 1, &descriptorWrite, 0, nullptr);
+
+    RTGIMPL->_rpass_clear = createRenderPassForRtGroup(_contextVK, RTGIMPL);
+
   }
 
   return RTGIMPL;
