@@ -178,17 +178,8 @@ vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(RtGroup* rtgroup) {
     }
 
     RTGIMPL->_rpass_misc = createRenderPassForRtGroup(_contextVK, RTGIMPL);
+    RTGIMPL->_rpass_clear = createRenderPassForRtGroup(_contextVK, RTGIMPL);
 
-    // Create Framebuffer
-    initializeVkStruct(RTGIMPL->_vkfbinfo, VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO);
-    RTGIMPL->_vkfbinfo.renderPass = RTGIMPL->_vkrp;
-    RTGIMPL->_vkfbinfo.attachmentCount = RTGIMPL->_vkattach_imageviews.size();
-    RTGIMPL->_vkfbinfo.pAttachments = RTGIMPL->_vkattach_imageviews.data();
-    RTGIMPL->_vkfbinfo.width = w;
-    RTGIMPL->_vkfbinfo.height = h;
-    RTGIMPL->_vkfbinfo.layers = 1;
-
-    vkCreateFramebuffer(_contextVK->_vkdevice, &RTGIMPL->_vkfbinfo, nullptr, &RTGIMPL->_vkfb);
 
     //VkWriteDescriptorSet DWRITE{};
     //initializeVkStruct(DWRITE, VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
@@ -203,8 +194,6 @@ vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(RtGroup* rtgroup) {
     // vkDestroyRenderPass(_contextVK->_device, renderPass, nullptr);
 
     //vkUpdateDescriptorSets(_contextVK->_device, 1, &descriptorWrite, 0, nullptr);
-
-    RTGIMPL->_rpass_clear = createRenderPassForRtGroup(_contextVK, RTGIMPL);
 
   }
 

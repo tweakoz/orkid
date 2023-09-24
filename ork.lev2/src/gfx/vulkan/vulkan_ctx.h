@@ -322,6 +322,8 @@ struct VulkanRenderPass {
   VulkanRenderPass(RenderPass* rpass);
   std::vector<RenderSubPass*> _toposorted_subpasses;
   VkRenderPass _vkrp;
+  VkFramebufferCreateInfo _vkfbinfo;
+  VkFramebuffer _vkfb;
 };
 struct VulkanRenderSubPass {};
 
@@ -357,12 +359,10 @@ struct VkRtGroupImpl {
 
   int _width  = 0;
   int _height = 0;
-  VkFramebuffer _vkfb;
   int _pipeline_bits = -1;
   vkmsaastate_ptr_t _msaaState;
 
-  VkFramebufferCreateInfo _vkfbinfo;
-  VkRenderPass _vkrp;
+  //VkRenderPass _vkrp;
   VkSubpassDescription _vksubpass;
 
   commandbuffer_ptr_t _cmdbuf;

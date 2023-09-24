@@ -145,9 +145,9 @@ renderpass_ptr_t createRenderPassForRtGroup(vkcontext_rawptr_t ctxVK, vkrtgrpimp
 
 void VkFrameBufferInterface::rtGroupClear(RtGroup* rtg) {
   auto rtgimpl = rtg->_impl.getShared<VkRtGroupImpl>();
-  VkFramebuffer& VKFB = rtgimpl->_vkfb;
   //VkRenderPass& VKRP = rtgimpl->_vkrp;
   VkRenderPass& VKRP = rtgimpl->_rpass_clear->_impl.getShared<VulkanRenderPass>()->_vkrp;
+  VkFramebuffer& VKFB = rtgimpl->_rpass_clear->_impl.getShared<VulkanRenderPass>()->_vkfb;
   /////////////////////////////////////////////////////////////
   // clear in a renderpass
   /////////////////////////////////////////////////////////////
