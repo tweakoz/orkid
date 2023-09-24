@@ -135,11 +135,15 @@ void VkFxInterface::BindParamCTex(const FxShaderParam* hpar, const Texture* pTex
   auto it = vk_shprog->_samplers_by_orkparam.find(hpar);
   OrkAssert(it != vk_shprog->_samplers_by_orkparam.end());
   size_t binding_index = it->second;
-  auto descriptors = vk_shprog->_descriptors;
-  auto& vkb = descriptors->_vkbindings[binding_index];
-  auto& desc_info = vk_tex->_vkdescriptor_info;
+  //auto descriptors = vk_shprog->_descriptors;
+  //auto& vkb = descriptors->_vkbindings[binding_index];
   //size_t sampler_count = descriptors->_sampler_count;
   //printf( "binding_index<%zu> sampler_count<%zu>\n", binding_index, sampler_count );
+
+
+  auto op = [this,binding_index,vk_tex](){
+  auto& desc_info = vk_tex->_vkdescriptor_info;
+  OrkAssert(desc_info.imageView!=VK_NULL_HANDLE);
 
   VkWriteDescriptorSet DWRITE = {};
   initializeVkStruct(DWRITE,VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
@@ -148,13 +152,15 @@ void VkFxInterface::BindParamCTex(const FxShaderParam* hpar, const Texture* pTex
   DWRITE.descriptorCount = 1;
   DWRITE.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
   DWRITE.pImageInfo = &desc_info;
-  OrkAssert(desc_info.imageView!=VK_NULL_HANDLE);
 
-  vkUpdateDescriptorSets( _contextVK->_vkdevice, // device
-                          1, &DWRITE, // descriptor write
-                          0, nullptr // descriptor copy
-                          );
+    vkUpdateDescriptorSets( _contextVK->_vkdevice, // device
+                            1, &DWRITE, // descriptor write
+                            0, nullptr // descriptor copy
+                            );
 
+  };
+
+  _currentVKPASS->_vk_program->_pending_param_ops.push_back(op);
 
 }
 

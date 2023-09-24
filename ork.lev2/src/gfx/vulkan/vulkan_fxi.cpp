@@ -440,10 +440,13 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(vkvtxbuf_ptr_t vb, //
       LCI.bindingCount = shprog->_descriptors->_vkbindings.size();
       LCI.pBindings = shprog->_descriptors->_vkbindings.data();
 
-      vkCreateDescriptorSetLayout( _contextVK->_vkdevice, // device
-                                   &LCI, // create info
-                                   nullptr, // allocator
-                                   &shprog->_descriptors->_dsetlayout); // descriptor set layout
+      VkResult OK = vkCreateDescriptorSetLayout( _contextVK->_vkdevice, // device
+                                                 &LCI, // create info
+                                                 nullptr, // allocator
+                                                 &shprog->_descriptors->_dsetlayout); // descriptor set layout
+
+      OrkAssert(VK_SUCCESS == OK);
+
       PLCI.setLayoutCount = 1;
       PLCI.pSetLayouts = &shprog->_descriptors->_dsetlayout;
     }
@@ -538,7 +541,10 @@ void VkPipelineObject::applyPendingParams(vkcmdbufimpl_ptr_t cmdbuf ){ //
     );
     _vk_program->_pending_params.clear();
   }
-
+  for( auto op : _vk_program->_pending_param_ops ){
+    op();
+  }
+  _vk_program->_pending_param_ops.clear();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -600,6 +600,7 @@ struct VkFxShaderProgram {
   vkfxpushconstantblk_ptr_t _pushConstantBlock;
 
   std::vector<VkParamSetItem> _pending_params;
+  std::vector<void_lambda_t> _pending_param_ops;
   std::vector<uint8_t> _pushdatabuffer;
   vkdescriptors_ptr_t _descriptors;
   std::unordered_map<fxparam_constptr_t, size_t> _samplers_by_orkparam;
