@@ -547,7 +547,7 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
                 auto& vkb = desc_set->_vkbindings.emplace_back();
                 initializeVkStruct( vkb );
                 vkb.binding = binding_index; // TODO : query from shader
-                vkb.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER; // Type of the descriptor (e.g., uniform buffer, combined image sampler, etc.)
+                vkb.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE; // Type of the descriptor (e.g., uniform buffer, combined image sampler, etc.)
                 vkb.descriptorCount = 1; // Number of descriptors in this binding (useful for arrays of descriptors)
                 vkb.stageFlags = stage_bits; // Shader stage to bind this descriptor to
                 //vkb.pImmutableSamplers = &immutableSampler; // Only relevant for samplers and combined image samplers                
