@@ -287,7 +287,7 @@ void VkFrameBufferInterface::_pushRtGroup(RtGroup* rtgroup) {
   /////////////////////////////////////////
   int inumtargets = _active_rtgroup->GetNumTargets();
   int numsamples  = msaaEnumToInt(_active_rtgroup->_msaa_samples);
-  printf( "inumtargets<%d> numsamples<%d>\n", inumtargets, numsamples );
+  //printf( "inumtargets<%d> numsamples<%d>\n", inumtargets, numsamples );
   // auto texture_target_2D = (numsamples==1) ? GL_TEXTURE_2D : GL_TEXTURE_2D_MULTISAMPLE;
   vkrtgrpimpl_ptr_t RTGIMPL;
   if (auto as_impl = _active_rtgroup->_impl.tryAsShared<VkRtGroupImpl>()) {

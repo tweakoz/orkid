@@ -10,6 +10,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
+static logchannel_ptr_t logchan_txi = logger()->createChannel("VKTXI", fvec3(0.8, 0.2, 0.5), true);
 
 VkTextureInterface::VkTextureInterface(vkcontext_rawptr_t ctx)
     : TextureInterface(ctx)
@@ -572,6 +573,9 @@ void VkTextureInterface::_initTextureFromRtBuffer(RtBuffer* rtbuffer) {
     int iwidth = rtbuffer->_width;
     int iheight = rtbuffer->_height;
     int num_mips = 1;
+    auto fmt_str = EBufferFormatToName(format);
+
+    logchan_txi->log("_initTextureFromRtBuffer ptex<%p:%s> w<%d> h<%d> fmt<%s>", (void*)ptex, ptex->_debugName.c_str(), iwidth, iheight, fmt_str.c_str());
 
     /////////////////////////////////////
     // create image object

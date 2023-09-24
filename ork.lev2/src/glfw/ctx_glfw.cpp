@@ -1020,7 +1020,7 @@ struct PopupImpl {
     _rtgroup             = std::make_shared<lev2::RtGroup>(_parent_context, _w, _h);
     _rtgroup->_pseudoRTG = true;
     _rtgroup->mNumMrts   = 1;
-    _rtgroup->_autoclear = true;
+    _rtgroup->_autoclear = false;
 
     _cloned_plato = _parent_context->clonePlatformHandle();
   }

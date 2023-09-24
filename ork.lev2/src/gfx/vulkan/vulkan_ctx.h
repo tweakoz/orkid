@@ -360,9 +360,10 @@ struct VkRtGroupImpl {
   vkmsaastate_ptr_t _msaaState;
 
   VkFramebufferCreateInfo _vkfbinfo;
-  //VkFramebuffer _vkframebuffer;
   VkRenderPass _vkrp;
   VkSubpassDescription _vksubpass;
+
+  commandbuffer_ptr_t _cmdbuf;
 
 
 };
