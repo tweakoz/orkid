@@ -431,6 +431,8 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(vkvtxbuf_ptr_t vb, //
     // descriptors
     ////////////////////////////////////////////////////
 
+    OrkAssert(shprog->_descriptors);
+    
     if(shprog->_descriptors){
       size_t num_bindings = shprog->_descriptors->_vkbindings.size();
       size_t num_samplers = shprog->_descriptors->_sampler_count;
