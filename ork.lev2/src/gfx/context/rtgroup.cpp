@@ -76,6 +76,9 @@ rtgroup_ptr_t RtGroup::clone() const {
 rtbuffer_ptr_t RtGroup::createRenderTarget(EBufferFormat efmt, uint64_t usage) {
 
   int islot = mNumMrts;
+  if( usage == 0 )
+    usage = "color"_crcu;
+
 
   rtbuffer_ptr_t rtb = std::make_shared<RtBuffer>(this, islot, efmt, miW, miH,usage);
   OrkAssert(islot < kmaxmrts);

@@ -563,6 +563,58 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void VkTextureInterface::_initTextureFromRtBuffer(RtBuffer* rtbuffer) {
+    auto ptex = rtbuffer->texture();
+    OrkAssert(ptex);
+    auto& teximpl = ptex->_impl.makeShared<VulkanTextureObject>(_contextVK->_txi.get());
+
+    auto format = rtbuffer->format();
+    int iwidth = rtbuffer->_width;
+    int iheight = rtbuffer->_height;
+    int num_mips = 1;
+
+    auto img_info = makeVKICI(iwidth, iheight, 1, format, num_mips);
+    img_info->usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
+
+    teximpl->_imgobj = std::make_shared<VulkanImageObject>(_contextVK, img_info);
+    teximpl->_vksampler = _contextVK->_sampler_base;
+
+    OrkAssert(teximpl->_imgobj->_vkimageview != VK_NULL_HANDLE);
+
+    teximpl->_vkdescriptor_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    teximpl->_vkdescriptor_info.imageView = teximpl->_imgobj->_vkimageview;
+    teximpl->_vkdescriptor_info.sampler = teximpl->_vksampler->_vksampler;
+    ptex->_impl = teximpl;
+
+    auto cmdbuf = _contextVK->beginRecordCommandBuffer();
+    auto cmdbuf_impl = cmdbuf->_impl.getShared<VkCommandBufferImpl>();
+    auto vk_cmdbuf = cmdbuf_impl->_vkcmdbuf;
+
+    auto barrier = createImageBarrier(
+        teximpl->_imgobj->_vkimage,
+        VK_IMAGE_LAYOUT_UNDEFINED,
+        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+        VkAccessFlagBits(0),
+        VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT
+    );
+
+    vkCmdPipelineBarrier(
+        vk_cmdbuf,
+        VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+        VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+        0,
+        0, nullptr,
+        0, nullptr,
+        1, barrier.get()
+    );
+
+    _contextVK->endRecordCommandBuffer(cmdbuf);
+    _contextVK->enqueueDeferredOneShotCommand(cmdbuf);
+
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 VkTextureAsyncTask::VkTextureAsyncTask() {
 }
 

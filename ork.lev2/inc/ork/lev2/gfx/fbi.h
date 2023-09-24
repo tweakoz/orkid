@@ -151,7 +151,6 @@ public:
   Context& _target;
   Texture* _bufferTex          = nullptr;
   DisplayBuffer* _thisBuffer = nullptr;
-  RtGroup* _currentRtGroup     = nullptr;
   PickBuffer* _pickbuffer      = nullptr;
   
   bool _enableVSync;
@@ -166,6 +165,7 @@ public:
   fcolor4 _clearColor;
   int _pickState;
   std::stack<lev2::RtGroup*> mRtGroupStack;
+  RtGroup* _active_rtgroup = nullptr;
 
   //rtgroup_ptr_t _main_rtg;
   //rtbuffer_ptr_t _main_rtb_color;

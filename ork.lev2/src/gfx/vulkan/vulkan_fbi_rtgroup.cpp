@@ -79,6 +79,12 @@ vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(RtGroup* rtgroup) {
 
   RTGIMPL->_pipeline_bits = 0;
 
+  bool is_surface = rtgroup->_name.find("ui::Surface") != std::string::npos;
+  if(is_surface){
+  }
+  ////////////////////////////////////////
+  // depth buffer
+  ////////////////////////////////////////
   if (rtgroup->_depthBuffer) {
     auto rtbuffer   = rtgroup->_depthBuffer;
     auto bufferimpl = std::make_shared<VklRtBufferImpl>(RTGIMPL.get(), rtbuffer.get());
@@ -99,35 +105,209 @@ vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(RtGroup* rtgroup) {
     adesc.initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED;
     adesc.finalLayout    = VkFormatConverter::_instance.layoutForUsage(USAGE);
   }
+  ////////////////////////////////////////
   // other buffers
+  ////////////////////////////////////////
   for (int it = 0; it < inumtargets; it++) {
     rtbuffer_ptr_t rtbuffer = rtgroup->GetMrt(it);
     auto bufferimpl         = std::make_shared<VklRtBufferImpl>(RTGIMPL.get(), rtbuffer.get());
     rtbuffer->_impl.setShared<VklRtBufferImpl>(bufferimpl);
     bufferimpl->_vkfmt = VkFormatConverter::convertBufferFormat(rtbuffer->mFormat);
+    ////////////////////////////////////////////
     uint64_t USAGE     = "color"_crcu;
     if (rtbuffer->_usage != 0) {
       USAGE = rtbuffer->_usage;
     }
+    ////////////////////////////////////////////
     if (USAGE == "present"_crcu) {
-
-    } else {
-      _vkCreateImageForBuffer(_contextVK, bufferimpl, rtbuffer->mFormat, USAGE);
-      auto& adesc = bufferimpl->_attachmentDesc;
-      initializeVkStruct(adesc);
-      adesc.format         = bufferimpl->_vkfmt;
-      adesc.samples        = VK_SAMPLE_COUNT_1_BIT;
-      adesc.loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR;
-      adesc.storeOp        = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-      adesc.stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-      adesc.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-      adesc.initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED;
-      adesc.finalLayout    = VkFormatConverter::_instance.layoutForUsage(USAGE);
+    } 
+    ////////////////////////////////////////////
+    else { // not present...
+      OrkAssert(rtgroup->_msaa_samples == MsaaSamples::MSAA_1X);
+      _contextVK->_txi->_initTextureFromRtBuffer(rtbuffer.get());
     }
     ///////////////////////////////////////////////////
   }
 
+  ////////////////////////////////////////////////////////////////////
+  if(rtgroup->_pseudoRTG){
+    //OrkAssert(false);
+  }
+  ////////////////////////////////////////////////////////////////////
+  // setup renderpass for rtgroup
+  ////////////////////////////////////////////////////////////////////
+  else{
+
+    for (int it = 0; it < inumtargets; it++) {
+      rtbuffer_ptr_t rtbuffer = rtgroup->GetMrt(it);
+      OrkAssert(rtbuffer->_usage != "depth"_crcu);
+      auto bufferimpl         = rtbuffer->_impl.getShared<VklRtBufferImpl>();
+      auto texture = rtbuffer->texture();
+      OrkAssert(texture!=nullptr);
+      printf( "texture<%p:%s>\n", (void*) texture, texture->_debugName.c_str() );
+      auto teximpl = texture->_impl.getShared<VulkanTextureObject>();
+      auto format = bufferimpl->_vkfmt;
+
+      // Define the color attachment
+      auto& attachment = RTGIMPL->_vkattach_descriptions.emplace_back();
+
+      attachment.format = format; // This should match the format of your image
+      attachment.samples = VK_SAMPLE_COUNT_1_BIT;
+      attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+      attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+      attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+      attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+      attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+      attachment.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+      auto& attachment_ref = RTGIMPL->_vkattach_references.emplace_back();
+
+      attachment_ref.attachment = it;
+      attachment_ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+      auto& image_descriptor_info = RTGIMPL->_vkattach_descimginfos.emplace_back();
+      OrkAssert(teximpl->_imgobj->_vkimageview != VK_NULL_HANDLE);
+      image_descriptor_info.imageView = teximpl->_imgobj->_vkimageview;
+      image_descriptor_info.sampler = teximpl->_vksampler->_vksampler;
+
+      RTGIMPL->_vkattach_imageviews.push_back(teximpl->_imgobj->_vkimageview);
+
+    }
+
+    // Define the subpass
+    RTGIMPL->_vksubpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    RTGIMPL->_vksubpass.colorAttachmentCount = RTGIMPL->_vkattach_references.size();
+    RTGIMPL->_vksubpass.pColorAttachments = RTGIMPL->_vkattach_references.data();
+
+    // Define the render pass
+    VkRenderPassCreateInfo RPI{};
+    initializeVkStruct(RPI, VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO);
+    RPI.attachmentCount = RTGIMPL->_vkattach_descriptions.size();
+    RPI.pAttachments = RTGIMPL->_vkattach_descriptions.data();
+    RPI.subpassCount = 1;
+    RPI.pSubpasses = &RTGIMPL->_vksubpass;
+
+    // Optionally, you can also define subpass dependencies for layout transitions
+    //VkSubpassDependency dependency{};
+    //dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+    //dependency.dstSubpass = 0;
+    //dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    //dependency.srcAccessMask = 0;
+    //dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    //dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
+    //RPI.dependencyCount = 1;
+    //RPI.pDependencies = &dependency;
+
+    vkCreateRenderPass(_contextVK->_vkdevice, &RPI, nullptr, &RTGIMPL->_vkrp);
+
+    // Create Framebuffer
+    initializeVkStruct(RTGIMPL->_vkfbinfo, VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO);
+    RTGIMPL->_vkfbinfo.renderPass = RTGIMPL->_vkrp;
+    RTGIMPL->_vkfbinfo.attachmentCount = RTGIMPL->_vkattach_imageviews.size();
+    RTGIMPL->_vkfbinfo.pAttachments = RTGIMPL->_vkattach_imageviews.data();
+    RTGIMPL->_vkfbinfo.width = w;
+    RTGIMPL->_vkfbinfo.height = h;
+    RTGIMPL->_vkfbinfo.layers = 1;
+
+    vkCreateFramebuffer(_contextVK->_vkdevice, &RTGIMPL->_vkfbinfo, nullptr, &RTGIMPL->_vkfb);
+
+    //VkWriteDescriptorSet DWRITE{};
+    //initializeVkStruct(DWRITE, VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
+    //DWRITE.dstSet = /* Your Descriptor Set */;
+    //DWRITE.dstBinding = /* Your Binding */;
+    //DWRITE.dstArrayElement = 0;
+    //DWRITE.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    //DWRITE.descriptorCount = 1;
+    //DWRITE.pImageInfo = &IMGINFO;
+    // Don't forget to destroy the framebuffer and render pass when they are no longer needed
+    // vkDestroyFramebuffer(_contextVK->_device, framebuffer, nullptr);
+    // vkDestroyRenderPass(_contextVK->_device, renderPass, nullptr);
+
+    //vkUpdateDescriptorSets(_contextVK->_device, 1, &descriptorWrite, 0, nullptr);
+  }
+
   return RTGIMPL;
+}
+
+void VkFrameBufferInterface::_postPushRtGroup(RtGroup* rtgroup) {
+
+  float fx = 0.0f;
+  float fy = 0.0f;
+  float fw = 0.0f;
+  float fh = 0.0f;
+  if (rtgroup) {
+    fw = rtgroup->width();
+    fh = rtgroup->height();
+    // glDepthRange(0.0, 1.0f);
+  }
+  ViewportRect extents(fx, fy, fw, fh);
+  pushViewport(extents);
+  pushScissor(extents);
+  if (rtgroup and rtgroup->_autoclear) {
+    rtGroupClear(rtgroup);
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void VkFrameBufferInterface::_present() {
+  OrkAssert(_main_rtb_color->_usage == "present"_crcu);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void VkFrameBufferInterface::_pushRtGroup(RtGroup* rtgroup) {
+  // auto prev_rtgroup = _active_rtgroup;
+  // if (nullptr == rtgroup) {
+  //_setMainAsRenderTarget();
+  //} else {
+  //_active_rtgroup = rtgroup;
+  //}
+  _active_rtgroup = rtgroup;
+
+  bool is_surface = rtgroup->_name.find("ui::Surface") != std::string::npos;
+  if(is_surface){
+    //OrkAssert(false);
+  }
+
+
+  OrkAssert(_active_rtgroup);
+  int iw = _active_rtgroup->width();
+  int ih = _active_rtgroup->height();
+  /////////////////////////////////////////
+  // if we are a psuedp rtgroup (eg. swapchain), NO_OP
+  /////////////////////////////////////////
+  if (_active_rtgroup->_pseudoRTG) {
+    return;
+  }
+  /////////////////////////////////////////
+  int inumtargets = _active_rtgroup->GetNumTargets();
+  int numsamples  = msaaEnumToInt(_active_rtgroup->_msaa_samples);
+  printf( "inumtargets<%d> numsamples<%d>\n", inumtargets, numsamples );
+  // auto texture_target_2D = (numsamples==1) ? GL_TEXTURE_2D : GL_TEXTURE_2D_MULTISAMPLE;
+  vkrtgrpimpl_ptr_t RTGIMPL;
+  if (auto as_impl = _active_rtgroup->_impl.tryAsShared<VkRtGroupImpl>()) {
+    RTGIMPL = as_impl.value();
+  } else {
+    RTGIMPL = _createRtGroupImpl(_active_rtgroup);
+    _active_rtgroup->_impl.setShared<VkRtGroupImpl>(RTGIMPL);
+  }
+  /////////////////////////////////////////
+  int implw      = RTGIMPL->_width;
+  int implh      = RTGIMPL->_height;
+  int rtgw       = _active_rtgroup->width();
+  int rtgh       = _active_rtgroup->height();
+  bool size_diff = (rtgw != implw) || (rtgh != implh);
+  if (size_diff) {
+    logchan_rtgroup->log("resize FBO iw<%d> ih<%d>", iw, ih);
+    RTGIMPL = _createRtGroupImpl(_active_rtgroup);
+    _active_rtgroup->_impl.setShared<VkRtGroupImpl>(RTGIMPL);
+    _active_rtgroup->SetSizeDirty(false);
+  }
+
+  /////////////////////////////////////////
+  _postPushRtGroup(rtgroup);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -187,112 +367,6 @@ RtGroup* VkFrameBufferInterface::_popRtGroup() {
   }
 
   return _active_rtgroup;
-}
-
-void VkFrameBufferInterface::_postPushRtGroup(RtGroup* rtgroup) {
-
-  float fx = 0.0f;
-  float fy = 0.0f;
-  float fw = 0.0f;
-  float fh = 0.0f;
-  if (rtgroup) {
-    fw = rtgroup->width();
-    fh = rtgroup->height();
-    // glDepthRange(0.0, 1.0f);
-  }
-  ViewportRect extents(fx, fy, fw, fh);
-  pushViewport(extents);
-  pushScissor(extents);
-  if (rtgroup and rtgroup->_autoclear) {
-    rtGroupClear(rtgroup);
-  }
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void VkFrameBufferInterface::_present() {
-  OrkAssert(_main_rtb_color->_usage == "present"_crcu);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void VkFrameBufferInterface::_pushRtGroup(RtGroup* rtgroup) {
-  // auto prev_rtgroup = _active_rtgroup;
-  // if (nullptr == rtgroup) {
-  //_setMainAsRenderTarget();
-  //} else {
-  //_active_rtgroup = rtgroup;
-  //}
-  /*
-  OrkAssert(_active_rtgroup);
-  int iw = _active_rtgroup->width();
-  int ih = _active_rtgroup->height();
-  /////////////////////////////////////////
-  if (_active_rtgroup->_pseudoRTG) {
-    static const SRasterState defstate;
-    //_target.RSI()->BindRasterState(defstate, true);
-    //_currentRtGroup = rtgroup;
-    // glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    // if( rtgroup->_autoclear ){
-    // rtGroupClear(rtgroup);
-    //}
-    return;
-  }
-  /////////////////////////////////////////
-  int inumtargets = _active_rtgroup->GetNumTargets();
-  int numsamples  = msaaEnumToInt(_active_rtgroup->_msaa_samples);
-  // printf( "inumtargets<%d> numsamples<%d>\n", inumtargets, numsamples );
-  // auto texture_target_2D = (numsamples==1) ? GL_TEXTURE_2D : GL_TEXTURE_2D_MULTISAMPLE;
-  vkrtgrpimpl_ptr_t RTGIMPL;
-  if (auto as_impl = _active_rtgroup->_impl.tryAsShared<VkRtGroupImpl>()) {
-    RTGIMPL = as_impl.value();
-  } else {
-    RTGIMPL = _createRtGroupImpl(_active_rtgroup);
-    _active_rtgroup->_impl.setShared<VkRtGroupImpl>(RTGIMPL);
-  }
-  /////////////////////////////////////////
-  int implw      = RTGIMPL->_width;
-  int implh      = RTGIMPL->_height;
-  int rtgw       = _active_rtgroup->width();
-  int rtgh       = _active_rtgroup->height();
-  bool size_diff = (rtgw != implw) || (rtgh != implh);
-  if (size_diff) {
-    logchan_rtgroup->log("resize FBO iw<%d> ih<%d>", iw, ih);
-    RTGIMPL = _createRtGroupImpl(_active_rtgroup);
-    _active_rtgroup->_impl.setShared<VkRtGroupImpl>(RTGIMPL);
-    _active_rtgroup->SetSizeDirty(false);
-  }
-
-
-  /////////////////////////////////////////
-  // main (present) rtgroup?
-  /////////////////////////////////////////
-  if( _active_rtgroup == _main_rtg.get() ){
-
-    VkRenderPassBeginInfo RPI = {};
-    initializeVkStruct(RPI, VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO);
-    //RPI.renderPass = renderPass; // Render pass you created earlier.
-    //RPI.framebuffer = framebuffer; // Framebuffer you created earlier.
-    //RPI.renderArea.offset = {0, 0};
-    //RPI.renderArea.extent = extent; // VkExtent2D of your swapchain image, for example.
-
-    VkClearValue clearColor = {0.0f, 0.0f, 0.0f, 1.0f};  // RGBA black.
-    VkClearValue clearDepth = {1.0f, 0};                 // Clear depth 1.0 and stencil 0.
-    VkClearValue clearValues[2] = {clearColor, clearDepth};
-
-    //RPI.clearValueCount = 2;
-    //RPI.pClearValues = clearValues;
-
-    //vkCmdBeginRenderPass( commandBuffer, //
-    //                      &renderPassInfo, //
-    //                      VK_SUBPASS_CONTENTS_INLINE);
-
-
-
-  }
-  */
-  /////////////////////////////////////////
-  _postPushRtGroup(rtgroup);
 }
 
 ///////////////////////////////////////////////////////

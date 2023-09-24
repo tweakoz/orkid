@@ -125,6 +125,8 @@ void VkFrameBufferInterface::_initSwapChain() {
     auto rtg       = std::make_shared<RtGroup>(_contextVK, width, height, MsaaSamples::MSAA_1X, false);
     auto rtb_color = rtg->createRenderTarget(EBufferFormat::RGBA8, "present"_crcu);
     auto rtb_depth = rtg->createRenderTarget(DEPTH_FORMAT, "depth"_crcu);
+    rtg->_depthBuffer = rtb_depth;
+    rtg->mNumMrts = 1;
     auto rtg_impl  = _createRtGroupImpl(rtg.get());
     rtg->_name     = FormatString("vk-swapchain-%d", i);
     ////////////////////////////////////////////

@@ -447,7 +447,7 @@ void VkFxShaderProgram::bindDescriptorTexture(fxparam_constptr_t param, const Te
     vk_tex = as_to.value();
   } else {
     printf( "No Texture impl tex<%p:%s>\n", pTex, pTex->_debugName.c_str() );
-    OrkAssert(false);
+    //OrkAssert(false);
     return;
   }
   auto it = _samplers_by_orkparam.find(param);

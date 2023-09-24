@@ -66,6 +66,8 @@ public:
   bool _loadDDSTexture(texture_ptr_t ptex, datablock_ptr_t datablock);
   bool _loadDDSTexture(const AssetPath& infname, texture_ptr_t ptex);
   void _loadDDSTextureMainThreadPart(texloadreq_ptr_t req);
+
+
   virtual void _createFromCompressedLoadReq(texloadreq_ptr_t req) {}
 
   virtual bool destroyTexture(texture_ptr_t ptex)                           = 0;

@@ -84,11 +84,13 @@ PickBuffer* FrameBufferInterface::currentPickBuffer() const {
 void FrameBufferInterface::PushRtGroup(RtGroup* Base) {
 
   bool first = mRtGroupStack.empty();
-  mRtGroupStack.push(_currentRtGroup);
+  mRtGroupStack.push(_active_rtgroup);
   _pushRtGroup(Base);
 }
+
+///////////////////////////////////////////////////////////////////////////////
 void FrameBufferInterface::PopRtGroup() {
-  RtGroup* prev = mRtGroupStack.top();
+  _active_rtgroup = mRtGroupStack.top();
   mRtGroupStack.pop();
   // EndFrame();
   _popRtGroup();

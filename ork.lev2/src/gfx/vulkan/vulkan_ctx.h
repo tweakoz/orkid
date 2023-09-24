@@ -347,12 +347,24 @@ struct VkRtGroupImpl {
   RtGroup* _rtg = nullptr;
   vkrtbufimpl_ptr_t _standard;
   vkrtbufimpl_ptr_t _depthonly;
-  std::vector<VkImageView> _vkattachments;
+
+  std::vector<VkAttachmentDescription> _vkattach_descriptions;
+  std::vector<VkAttachmentReference> _vkattach_references;
+  std::vector<VkDescriptorImageInfo> _vkattach_descimginfos;
+  std::vector<VkImageView> _vkattach_imageviews;
+
   int _width  = 0;
   int _height = 0;
   VkFramebuffer _vkfb;
   int _pipeline_bits = -1;
   vkmsaastate_ptr_t _msaaState;
+
+  VkFramebufferCreateInfo _vkfbinfo;
+  //VkFramebuffer _vkframebuffer;
+  VkRenderPass _vkrp;
+  VkSubpassDescription _vksubpass;
+
+
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -895,7 +907,6 @@ struct VkFrameBufferInterface final : public FrameBufferInterface {
   rtbuffer_ptr_t _main_rtb_color;
   rtbuffer_ptr_t _main_rtb_depth;
 
-  RtGroup* _active_rtgroup = nullptr;
   freestyle_mtl_ptr_t _freestyle_mtl;
   const FxShaderTechnique* _tek_downsample2x2 = nullptr;
   const FxShaderTechnique* _tek_blit          = nullptr;
@@ -938,6 +949,7 @@ struct VkTextureInterface final : public TextureInterface {
   Texture* createFromMipChain(MipChain* from_chain) final;
 
   void _createFromCompressedLoadReq(texloadreq_ptr_t tlr) final;
+  void _initTextureFromRtBuffer(RtBuffer* rtb);
 
   // std::map<size_t, pbosetptr_t> _pbosets;
   vkcontext_rawptr_t _contextVK;
