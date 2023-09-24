@@ -1103,7 +1103,7 @@ public:
 
   //////////////////////////////////////////////
 
-  commandbuffer_ptr_t _beginRecordCommandBuffer() final;
+  commandbuffer_ptr_t _beginRecordCommandBuffer(renderpass_ptr_t rpass) final;
   void _endRecordCommandBuffer(commandbuffer_ptr_t cmdbuf) final;
   void _beginRenderPass(renderpass_ptr_t) final;
   void _endRenderPass(renderpass_ptr_t) final;

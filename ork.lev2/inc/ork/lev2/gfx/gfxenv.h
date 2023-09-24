@@ -205,7 +205,7 @@ public:
   void endFrame(void);
 
 
-  commandbuffer_ptr_t beginRecordCommandBuffer();
+  commandbuffer_ptr_t beginRecordCommandBuffer(renderpass_ptr_t rpass=nullptr);
   void endRecordCommandBuffer(commandbuffer_ptr_t cmdbuf);
 
   void beginRenderPass(renderpass_ptr_t);
@@ -215,7 +215,7 @@ public:
 
   ///////////////////////////////////////////////////////////////////////
 
-  virtual commandbuffer_ptr_t _beginRecordCommandBuffer() { return nullptr; }
+  virtual commandbuffer_ptr_t _beginRecordCommandBuffer(renderpass_ptr_t rpass) { return nullptr; }
   virtual void _endRecordCommandBuffer(commandbuffer_ptr_t cmdbuf) {}
   virtual void _beginRenderPass(renderpass_ptr_t) {}
   virtual void _endRenderPass(renderpass_ptr_t) {}

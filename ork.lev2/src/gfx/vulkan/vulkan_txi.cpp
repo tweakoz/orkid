@@ -64,7 +64,7 @@ void VkTextureInterface::generateMipMaps(Texture* ptex) {
     // vktex->_imgobj = std::make_shared<VulkanImageObject>(_contextVK, imageInfo);
   }
 
-  auto cmdbuf      = _contextVK->beginRecordCommandBuffer();
+  auto cmdbuf      = _contextVK->beginRecordCommandBuffer(nullptr);
   auto cmdbuf_impl = cmdbuf->_impl.getShared<VkCommandBufferImpl>();
   auto vk_cmdbuf   = cmdbuf_impl->_vkcmdbuf;
 
@@ -206,7 +206,7 @@ void VkTextureInterface::_createFromCompressedLoadReq(texloadreq_ptr_t req) {
   imageInfo->usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
   vktex->_imgobj   = std::make_shared<VulkanImageObject>(_contextVK, imageInfo);
 
-  auto cmdbuf      = _contextVK->beginRecordCommandBuffer();
+  auto cmdbuf      = _contextVK->beginRecordCommandBuffer(nullptr);
   auto cmdbuf_impl = cmdbuf->_impl.getShared<VkCommandBufferImpl>();
   auto vk_cmdbuf   = cmdbuf_impl->_vkcmdbuf;
 
@@ -302,7 +302,7 @@ Texture* VkTextureInterface::createFromMipChain(MipChain* from_chain) {
 
   auto imageInfo = makeVKICI(from_chain->_width, from_chain->_height, 1, format, num_levels);
 
-  auto cmdbuf      = _contextVK->beginRecordCommandBuffer();
+  auto cmdbuf      = _contextVK->beginRecordCommandBuffer(nullptr);
   auto cmdbuf_impl = cmdbuf->_impl.getShared<VkCommandBufferImpl>();
   auto vk_cmdbuf   = cmdbuf_impl->_vkcmdbuf;
 
@@ -480,7 +480,7 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   // transition to transfer dst (for copy)
   /////////////////////////////////////
 
-  auto cmdbuf      = _contextVK->beginRecordCommandBuffer();
+  auto cmdbuf      = _contextVK->beginRecordCommandBuffer(nullptr);
   auto cmdbuf_impl = cmdbuf->_impl.getShared<VkCommandBufferImpl>();
   auto vk_cmdbuf   = cmdbuf_impl->_vkcmdbuf;
 
@@ -615,7 +615,7 @@ void VkTextureInterface::_initTextureFromRtBuffer(RtBuffer* rtbuffer) {
     // transition to transfer dst (for copy)
     /////////////////////////////////////
 
-    auto cmdbuf = _contextVK->beginRecordCommandBuffer();
+    auto cmdbuf = _contextVK->beginRecordCommandBuffer(nullptr);
     auto cmdbuf_impl = cmdbuf->_impl.getShared<VkCommandBufferImpl>();
     auto vk_cmdbuf = cmdbuf_impl->_vkcmdbuf;
 

@@ -170,7 +170,7 @@ void VkFrameBufferInterface::rtGroupClear(RtGroup* rtg) {
   /////////////////////////////////////////////////////////////
 
   /////////////////////////////////////////////////////////////
-  rtgimpl->_cmdbuf = _contextVK->_beginRecordCommandBuffer();
+  rtgimpl->_cmdbuf = _contextVK->_beginRecordCommandBuffer(rtgimpl->_rpass_clear);
   auto cmdbuf_impl = rtgimpl->_cmdbuf->_impl.getShared<VkCommandBufferImpl>();
   // CLEAR!
   
