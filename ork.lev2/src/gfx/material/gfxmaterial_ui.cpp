@@ -159,7 +159,7 @@ GfxMaterialUIText::GfxMaterialUIText(Context* pTarg)
     gpuInit(pTarg);
   }
 
-  //_rasterstate->setBlendingMacro(lev2::BlendingMacro::ALPHA_ADDITIVE);
+  _rasterstate->setBlendingMacro(lev2::BlendingMacro::ALPHA);
 }
 
 /////////////////////////////////////////////////////////////////////////
