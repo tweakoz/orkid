@@ -26,28 +26,12 @@ FrameBufferInterface::FrameBufferInterface(Context& tgt)
     , maViewportStack(kiVPStackMax)
     , _clearColor(fcolor4::Black())
     , _pickState(0) {
-
-  //_main_rtg = std::make_shared<RtGroup>(&_target, 8, 8, MsaaSamples::MSAA_1X);
-  //_main_rtb_color = _main_rtg->createRenderTarget(EBufferFormat::RGBA8,"present"_crcu);
-  //_main_rtb_color->_debugName = "main_rtb_present";
-  //_main_rtg->_name = "default-main_rtg";
-  //_main_rtb_depth = _main_rtg->createRenderTarget(EBufferFormat::Z32);
-
-  // for( int i=0; i<kiVPStackMax; i++ )
-  //	maViewportStack[i]
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 FrameBufferInterface::~FrameBufferInterface() {
 }
-
-/*void FrameBufferInterface::pushMainSurface(){
-  _doPushMainSurface();
-}
-void FrameBufferInterface::popMainSurface(){
-  _doPopMainSurface();
-}*/
 
 ///////////////////////////////////////////////////////////////////////////////
 

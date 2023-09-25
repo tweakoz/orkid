@@ -38,12 +38,9 @@ void VkFrameBufferInterface::_initSwapChain() {
             VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, // srcStageMask
             VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,            // dstStageMask
             0,                                             // dependencyFlags
-            0,
-            nullptr, // memoryBarrierCount, pMemoryBarriers
-            0,
-            nullptr, // bufferMemoryBarrierCount, pBufferMemoryBarriers
-            1,
-            imgbar.get()); // imageMemoryBarrierCount, pImageMemoryBarriers
+            0, nullptr,                                    // memoryBarrierCount, pMemoryBarriers
+            0, nullptr,                                    // bufferMemoryBarrierCount, pBufferMemoryBarriers
+            1, imgbar.get());                              // imageMemoryBarrierCount, pImageMemoryBarriers
       }
 
       auto imgview = _swapchain->_vkSwapChainImageViews[i];
@@ -140,7 +137,8 @@ void VkFrameBufferInterface::_initSwapChain() {
     rtb_impl_color->_init      = false;
     rtb_impl_color->_vkimg     = swap_chain->_vkSwapChainImages[i];
     rtb_impl_color->_vkimgview = swap_chain->_vkSwapChainImageViews[i];
-    // rtb_impl_color->_vkfmt = true;
+    rtb_impl_color->_vkfmt     = surfaceFormat.format;
+    rtb_impl_color->_is_surface = true;
     ////////////////////////////////////////////
 
     swap_chain->_rtgs.push_back(rtg);
@@ -170,54 +168,55 @@ void VkFrameBufferInterface::_clearSwapChainBuffer() {
 
 ///////////////////////////////////////////////////////
 
-void VkFrameBufferInterface::_enq_transitionSwapChainForPresent() {
+void VkFrameBufferInterface::_enq_transitionMainRtgToPresent() {
 
-  auto gfxcb = _contextVK->primary_cb();
+  auto main_rtb = _main_rtg->GetMrt(0);
+  auto main_rtbi = main_rtb->_impl.getShared<VklRtBufferImpl>();
 
   auto imgbar = createImageBarrier(
-      _swapchain->image(),
-      VK_IMAGE_LAYOUT_UNDEFINED,            // oldLayout
+      main_rtbi->_vkimg,
+      main_rtbi->_currentLayout,            // oldLayout (dont care)
       VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,      // newLayout
       VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, // srcAccessMask
       VK_ACCESS_MEMORY_READ_BIT);           // dstAccessMask
 
   vkCmdPipelineBarrier(
-      gfxcb->_vkcmdbuf,                              // cmdbuf
+      _contextVK->primary_cb()->_vkcmdbuf,           // cmdbuf
       VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, // srcStageMask
       VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,          // dstStageMask
       0,                                             // dependencyFlags
-      0,
-      nullptr, // memoryBarrierCount, pMemoryBarriers
-      0,
-      nullptr, // bufferMemoryBarrierCount, pBufferMemoryBarriers
-      1,
-      imgbar.get()); // imageMemoryBarrierCount, pImageMemoryBarriers
+      0, nullptr,                                    // memoryBarrierCount, pMemoryBarriers
+      0, nullptr,                                    // bufferMemoryBarrierCount, pBufferMemoryBarriers
+      1, imgbar.get());                              // imageMemoryBarrierCount, pImageMemoryBarriers
+
+   main_rtbi->_currentLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+   
 }
 
 ///////////////////////////////////////////////////////
 
 void VkFrameBufferInterface::_transitionSwapChainForClear() {
 
-  auto gfxcb = _contextVK->primary_cb();
+  auto main_rtb = _main_rtg->GetMrt(0);
+  auto main_rtbi = main_rtb->_impl.getShared<VklRtBufferImpl>();
+
+   main_rtbi->_currentLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 
   auto imgbar = createImageBarrier(
-      _swapchain->image(),
+      main_rtbi->_vkimg,
       VK_IMAGE_LAYOUT_UNDEFINED,             // oldLayout
-      VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,  // newLayout
+      main_rtbi->_currentLayout,             // newLayout
       VkAccessFlagBits(0),                   // srcAccessMask
       VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT); // dstAccessMask
 
   vkCmdPipelineBarrier(
-      gfxcb->_vkcmdbuf,                     // cmdbuf
+      _contextVK->primary_cb()->_vkcmdbuf,  // cmdbuf
       VK_PIPELINE_STAGE_TRANSFER_BIT,       // srcStageMask
       VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, // dstStageMask
       0,                                    // dependencyFlags
-      0,
-      nullptr, // memoryBarrierCount, pMemoryBarriers
-      0,
-      nullptr, // bufferMemoryBarrierCount, pBufferMemoryBarriers
-      1,
-      imgbar.get()); // imageMemoryBarrierCount, pImageMemoryBarriers
+      0, nullptr,                           // memoryBarrierCount, pMemoryBarriers
+      0, nullptr,                           // bufferMemoryBarrierCount, pBufferMemoryBarriers
+      1, imgbar.get());                     // imageMemoryBarrierCount, pImageMemoryBarriers
 }
 
 ///////////////////////////////////////////////////////

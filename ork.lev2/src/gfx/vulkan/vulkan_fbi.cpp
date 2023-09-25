@@ -57,11 +57,6 @@ void VkFrameBufferInterface::_setScissor(int iX, int iY, int iW, int iH) {
    _scissorTracker = tracker;
 }
 
-//void VkFrameBufferInterface::_doPushMainSurface() {
-//}
-//void VkFrameBufferInterface::_doPopMainSurface() {
-//}
-
 ///////////////////////////////////////////////////////
 void VkFrameBufferInterface::_doBeginFrame() {
   _acquireSwapChainForFrame();

@@ -325,7 +325,11 @@ struct VulkanRenderPass {
   VkFramebufferCreateInfo _vkfbinfo;
   VkFramebuffer _vkfb;
 };
-struct VulkanRenderSubPass {};
+struct VulkanRenderSubPass {
+
+  std::vector<VkAttachmentReference> _attach_refs;
+  VkSubpassDescription _SUBPASS;
+};
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -334,11 +338,13 @@ struct VklRtBufferImpl {
   VkRtGroupImpl* _parent = nullptr;
   RtBuffer* _rtb         = nullptr;
   bool _init             = true;
+  bool _is_surface       = false;
   VkImage _vkimg;
   vkimageobj_ptr_t _imgobj;
   VkFormat _vkfmt;
   VkImageView _vkimgview;
   VkAttachmentDescription _attachmentDesc;
+  VkImageLayout _currentLayout = VK_IMAGE_LAYOUT_UNDEFINED;
   svar64_t _teximpl;
 };
 
@@ -925,7 +931,7 @@ struct VkFrameBufferInterface final : public FrameBufferInterface {
   void _initSwapChain();
   void _acquireSwapChainForFrame();
   void _transitionSwapChainForClear();
-  void _enq_transitionSwapChainForPresent();
+  void _enq_transitionMainRtgToPresent();
   void _clearSwapChainBuffer();
   void _bindSwapChainToRenderPass(vkrenderpass_ptr_t rpass);
 

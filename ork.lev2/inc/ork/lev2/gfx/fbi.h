@@ -167,10 +167,6 @@ public:
   std::stack<lev2::RtGroup*> mRtGroupStack;
   RtGroup* _active_rtgroup = nullptr;
 
-  //rtgroup_ptr_t _main_rtg;
-  //rtbuffer_ptr_t _main_rtb_color;
-  //rtbuffer_ptr_t _main_rtb_depth;
-
 };
 
 } //namespace ork::lev2{
