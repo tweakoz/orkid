@@ -164,32 +164,6 @@ void Context::draw(drawevent_constptr_t drwev) {
   gfx_ctx->popCommandBuffer();
 
   /////////////////////////////////////////////////////////
-  // flatten command buffers (highest depths first)
-  /////////////////////////////////////////////////////////
-
-  _cmdbufs_flat.clear();
-  for( auto depth_item = _cmdbufs_by_depth.rbegin(); //
-            depth_item != _cmdbufs_by_depth.rend(); //
-            depth_item++ ){ //
-    int depth = depth_item->first;
-    const auto& cblist = depth_item->second;
-    for( auto cb : cblist ){
-      _cmdbufs_flat.push_back(cb);
-    }
-  }
-
-  /////////////////////////////////////////////////////////
-  // enqueue flattened command buffers
-  /////////////////////////////////////////////////////////
-
-
-  for( auto sub_cb : _cmdbufs_flat ){
-    gfx_ctx->debugPushGroup("ui::Context::draw::secondary",fvec4::White());
-    gfx_ctx->enqueueSecondaryCommandBuffer(sub_cb);
-    gfx_ctx->debugPopGroup();
-  }
-
-  /////////////////////////////////////////////////////////
   // enqueue top level command buffer
   /////////////////////////////////////////////////////////
 

@@ -1223,6 +1223,7 @@ public:
   EDepthTest meCurDepthTest;
   bool mTargetDrawableSizeDirty;
   bool _first_frame = true;
+  std::vector<renderpass_ptr_t> _renderpasses;
 
   //////////////////////////////////////////////
   void enqueueDeferredOneShotCommand(commandbuffer_ptr_t cmdbuf);
@@ -1244,6 +1245,10 @@ public:
   vkci_ptr_t _ci;
 #endif
 };
+
+///////////////////////////////////////////////////////////////////////////
+
+renderpass_ptr_t createRenderPassForRtGroup(vkcontext_rawptr_t ctxVK, rtgroup_ptr_t rtg_impl);
 
 ///////////////////////////////////////////////////////////////////////////
 

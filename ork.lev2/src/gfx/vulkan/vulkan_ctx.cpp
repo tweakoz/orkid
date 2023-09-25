@@ -461,28 +461,12 @@ void VkContext::_doBeginFrame() {
   _msi->PushPMatrix(fmtx4::Identity());
 
   mpCurrentObject = 0;
-
   mRenderContextInstData = 0;
-
-  ////////////////////////
-  _defaultCommandBuffer = _cmdbuf_pool.allocate();
 
   ////////////////////////
 
   for (auto l : _onBeginFrameCallbacks)
     l();
-
-  _cmdbufcurframe_gfx_pri = _defaultCommandBuffer->_impl.getShared<VkCommandBufferImpl>();
-
-  VkCommandBufferBeginInfo CBBI_GFX = {};
-  initializeVkStruct(CBBI_GFX, VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
-  CBBI_GFX.flags            = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-  CBBI_GFX.pInheritanceInfo = nullptr;
-
-  if (_first_frame) {
-    // beginRenderPass(_main_render_pass);
-    // endRenderPass(_main_render_pass);
-  }
 
   if (not _first_frame) {
     auto swapchain = _fbi->_swapchain;
@@ -490,18 +474,29 @@ void VkContext::_doBeginFrame() {
     fence->wait();
   }
 
+  ////////////////////////
+  _defaultCommandBuffer = _cmdbuf_pool.allocate();
+  _cmdbufcurframe_gfx_pri = _defaultCommandBuffer->_impl.getShared<VkCommandBufferImpl>();
+  _cmdbufcur_gfx = _cmdbufcurframe_gfx_pri;
+  _cmdbufprv_gfx = _cmdbufcurframe_gfx_pri;
+  ////////////////////////
+  VkCommandBufferBeginInfo CBBI_GFX = {};
+  initializeVkStruct(CBBI_GFX, VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
+  CBBI_GFX.flags            = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+  CBBI_GFX.pInheritanceInfo = nullptr;
   vkBeginCommandBuffer(primary_cb()->_vkcmdbuf, &CBBI_GFX); // vkBeginCommandBuffer does an implicit reset
 
-  _cmdbufcur_gfx = primary_cb();
-  _cmdbufprv_gfx = primary_cb();
+  _renderpasses.clear();
 
-  beginRenderPass(_main_render_pass);
+  auto rpass = createRenderPassForRtGroup(this, _fbi->_main_rtg);
+  _renderpasses.push_back(rpass);
 
-  // FBI()->pushMainSurface();
+  beginRenderPass(rpass);
+
 }
 
 vkcmdbufimpl_ptr_t VkContext::primary_cb() {
-  OrkAssert(_current_subpass == nullptr);
+  //OrkAssert(_current_subpass == nullptr);
   return _cmdbufcurframe_gfx_pri;
 }
 
@@ -522,15 +517,8 @@ void VkContext::_doEndFrame() {
   PopModColor();
   mbPostInitializeContext = false;
   ////////////////////////
-  // intermediate subpasses
-  ////////////////////////
-  for (auto sp : _main_render_pass->_subpasses) {
-    // todo : in parallel ?
-    _beginExecuteSubPass(sp);
-    _endExecuteSubPass(sp);
-  }
-  ////////////////////////
-  endRenderPass(_main_render_pass);
+  auto rpass = _renderpasses.back();
+  endRenderPass(rpass);
   ////////////////////////
 
   _fbi->_enq_transitionSwapChainForPresent();
@@ -733,8 +721,8 @@ void VkContext::_endRenderPass(renderpass_ptr_t renpass) {
 ///////////////////////////////////////////////////////
 
 void VkContext::_beginSubPass(rendersubpass_ptr_t subpass) {
-  OrkAssert(_current_subpass == nullptr); // no nesting...
-  _current_subpass = subpass;
+  //OrkAssert(_current_subpass == nullptr); // no nesting...
+  //_current_subpass = subpass;
   //_exec_subpasses.push_back(subpass);
   // OrkAssert(false);
 }
@@ -744,8 +732,8 @@ void VkContext::_beginSubPass(rendersubpass_ptr_t subpass) {
 ///////////////////////////////////////////////////////
 
 void VkContext::_endSubPass(rendersubpass_ptr_t subpass) {
-  OrkAssert(_current_subpass == subpass); // no nesting...
-  _current_subpass = nullptr;
+  //OrkAssert(_current_subpass == subpass); // no nesting...
+  //_current_subpass = nullptr;
 }
 
 ///////////////////////////////////////////////////////
@@ -1257,7 +1245,8 @@ void VkContext::_doPushCommandBuffer(
   }
   VkCommandBufferInheritanceInfo INHINFO = {};
   initializeVkStruct(INHINFO, VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO);
-  auto rpimpl        = _main_render_pass->_impl.getShared<VulkanRenderPass>();
+  auto rpass = _renderpasses.back();
+  auto rpimpl        = rpass->_impl.getShared<VulkanRenderPass>();
   INHINFO.renderPass = rpimpl->_vkrp; // The render pass the secondary command buffer will be executed within.
   INHINFO.subpass    = 0;             // The index of the subpass in the render pass.
   if (rtg) {

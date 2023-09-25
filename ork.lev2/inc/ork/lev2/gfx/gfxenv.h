@@ -368,9 +368,6 @@ public:
   shared_pool::fixed_pool<CommandBuffer,4> _cmdbuf_pool;
   std::stack<commandbuffer_ptr_t> _cmdbuf_stack;
   commandbuffer_ptr_t _current_cmdbuf;
-  renderpass_ptr_t _main_render_pass;
-  rendersubpass_ptr_t _main_render_subpass;
-  rendersubpass_ptr_t _current_subpass;
   bool hiDPI() const;
   float currentDPI() const;
 

@@ -116,7 +116,7 @@ void Surface::DoDraw(ui::drawevent_constptr_t drwev) {
   }
   
 
-  if (1) { //mNeedsSurfaceRepaint || IsDirty()) {
+  if (0) { //mNeedsSurfaceRepaint || IsDirty()) {
     //tgt->pushCommandBuffer(_cmdbuf);
     tgt->debugMarker("post-cb");
     fbi->PushRtGroup(_rtgroup.get());
@@ -159,7 +159,7 @@ void Surface::DoDraw(ui::drawevent_constptr_t drwev) {
     material = texmtl;
   }
 
-  if(0){
+  if(1){
     bool has_foc = hasMouseFocus();
     tgt->PushModColor(has_foc ? fcolor4::Green() : fcolor4::Blue());
     mtxi->PushUIMatrix();
