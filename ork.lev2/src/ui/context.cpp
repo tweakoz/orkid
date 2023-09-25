@@ -158,6 +158,7 @@ void Context::draw(drawevent_constptr_t drwev) {
 
   auto main_rtg = gfx_ctx->FBI()->_main_rtg;
 
+  gfx_ctx->beginRenderPass(_uirenderpass);
   gfx_ctx->pushCommandBuffer(_cmdbuf_top,_uirenderpass,main_rtg);
   gfx_ctx->debugPushGroup("ui::Context::draw::top",fvec4::White());
   _top->draw(drwev);
@@ -192,6 +193,8 @@ void Context::draw(drawevent_constptr_t drwev) {
     gfx_ctx->enqueueSecondaryCommandBuffer(sub_cb);
     gfx_ctx->debugPopGroup();
   }
+
+  gfx_ctx->endRenderPass(_uirenderpass);
 
   /////////////////////////////////////////////////////////
   // enqueue top level command buffer

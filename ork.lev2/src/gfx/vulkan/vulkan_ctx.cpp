@@ -474,8 +474,8 @@ void VkContext::_doBeginFrame() {
   _cmdbufcurframe_gfx_pri = _primaryCommandBuffer->_impl.getShared<VkCommandBufferImpl>();
 
   if (_first_frame) {
-    // beginRenderPass(_main_render_pass);
-    // endRenderPass(_main_render_pass);
+    //beginRenderPass(_main_render_pass);
+    //endRenderPass(_main_render_pass);
   }
 
   if (not _first_frame) {
@@ -486,7 +486,16 @@ void VkContext::_doBeginFrame() {
 
   _current_secondary_cmdbuf = nullptr;
   pushCommandBuffer(_defaultSecondaryBuffer,_main_render_pass,_fbi->_main_rtg);
+  beginRenderPass(_main_render_pass);
   //_main_render_pass
+
+  VkCommandBufferBeginInfo CBBI_GFX = {};
+  VkCommandBufferInheritanceInfo INHINFO = {};
+  initializeVkStruct(CBBI_GFX, VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
+  initializeVkStruct(INHINFO, VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO);
+  CBBI_GFX.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT; // //
+                   //| VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
+  vkBeginCommandBuffer(_xrimary_cb()->_vkcmdbuf, &CBBI_GFX); // vkBeginCommandBuffer does an implicit reset
 
   // FBI()->pushMainSurface();
 }
@@ -521,13 +530,9 @@ void VkContext::_doEndFrame() {
     //_endExecuteSubPass(sp);
   }
   ////////////////////////
-
+  endRenderPass(_main_render_pass);
   popCommandBuffer(); // pop default secondary
 
-  VkCommandBufferBeginInfo CBBI_GFX = {};
-  VkCommandBufferInheritanceInfo INHINFO = {};
-  initializeVkStruct(CBBI_GFX, VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
-  initializeVkStruct(INHINFO, VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO);
   //if( rpass ){
     //auto rpimpl = rpass->_impl.getShared<VulkanRenderPass>();
     //INHINFO.renderPass = rpimpl->_vkrp; // The render pass the secondary command buffer will be executed within.
@@ -537,15 +542,12 @@ void VkContext::_doEndFrame() {
     //CBBI_GFX.pInheritanceInfo = &INHINFO;
   //}
 
-  CBBI_GFX.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT; // //
-                   //| VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
-  vkBeginCommandBuffer(_xrimary_cb()->_vkcmdbuf, &CBBI_GFX); // vkBeginCommandBuffer does an implicit reset
 
   //pushCommandBuffer(_primaryCommandBuffer,nullptr,nullptr);
   //vkBeginCommandBuffer(primary_cb()->_vkcmdbuf, &CBBI_GFX); // vkBeginCommandBuffer does an implicit reset
   //beginRenderPass(_main_render_pass);
   //endRenderPass(_main_render_pass);
-  //_fbi->_enq_transitionSwapChainForPresent();
+  _fbi->_enq_transitionSwapChainForPresent();
   vkEndCommandBuffer(_xrimary_cb()->_vkcmdbuf);
   ////////////////////////
 
@@ -618,6 +620,8 @@ void VkContext::present(CTXBASE* ctxbase) {
 
 void VkContext::_beginRenderPass(renderpass_ptr_t renpass) {
 
+  OrkAssert(_cur_renderpass==nullptr);
+
   if (renpass->_immutable) {
     OrkAssert(false);
   }
@@ -633,7 +637,7 @@ void VkContext::_beginRenderPass(renderpass_ptr_t renpass) {
     // create the renderpass
     /////////////////////////////////////////
 
-    vk_rpass = renpass->_impl.makeShared<VulkanRenderPass>(renpass.get());
+    /*vk_rpass = renpass->_impl.makeShared<VulkanRenderPass>(renpass.get());
 
     // todo - use vk_rpass->_toposorted_subpasses
 
@@ -688,14 +692,14 @@ void VkContext::_beginRenderPass(renderpass_ptr_t renpass) {
     // RPI.dependencyCount = 1;
     // RPI.pDependencies = &dependency;
     VkResult OK = vkCreateRenderPass(_vkdevice, &RPI, nullptr, &vk_rpass->_vkrp);
-    OrkAssert(OK == VK_SUCCESS);
+    OrkAssert(OK == VK_SUCCESS);*/
     /////////////////////////////////////////
   }
   /////////////////////////////////////////
   // is swapchain backed by a framebuffer ?
   /////////////////////////////////////////
 
-  _fbi->_bindSwapChainToRenderPass(vk_rpass);
+  //_fbi->_bindSwapChainToRenderPass(vk_rpass);
 
   /*
   /////////////////////////////////////////
@@ -733,12 +737,17 @@ void VkContext::_beginRenderPass(renderpass_ptr_t renpass) {
   }
   _pendingOneShotCommands.clear();
   */
+
+ _cur_renderpass = renpass;
 }
 
 ///////////////////////////////////////////////////////
 
 void VkContext::_endRenderPass(renderpass_ptr_t renpass) {
-  vkCmdEndRenderPass(_current_secondary_cmdbuf->_impl.getShared<VkCommandBufferImpl>()->_vkcmdbuf);
+  OrkAssert(_cur_renderpass!=nullptr);
+  _cur_renderpass = nullptr;
+
+  //vkCmdEndRenderPass(_current_secondary_cmdbuf->_impl.getShared<VkCommandBufferImpl>()->_vkcmdbuf);
   // OrkAssert(false);
 }
 

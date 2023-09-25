@@ -187,18 +187,18 @@ void VkFrameBufferInterface::rtGroupClear(rtgroup_ptr_t rtg) {
 
   /////////////////////////////////////////////////////////////
   rtgimpl->_cmdbuf = std::make_shared<CommandBuffer>();
-  _contextVK->pushCommandBuffer(rtgimpl->_cmdbuf,rtgimpl->_rpass_clear,rtg);
-  auto cmdbuf_impl = rtgimpl->_cmdbuf->_impl.getShared<VkCommandBufferImpl>();
+  //_contextVK->pushCommandBuffer(rtgimpl->_cmdbuf,rtgimpl->_rpass_clear,rtg);
+  //auto cmdbuf_impl = rtgimpl->_cmdbuf->_impl.getShared<VkCommandBufferImpl>();
   // CLEAR!
   
   vkCmdBeginRenderPass(
-      cmdbuf_impl->_vkcmdbuf, //
+      _contextVK->_xrimary_cb()->_vkcmdbuf, //
       &RPBI,                   //
       VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);  
 
-  vkCmdEndRenderPass( cmdbuf_impl->_vkcmdbuf);  
+  vkCmdEndRenderPass( _contextVK->_xrimary_cb()->_vkcmdbuf);  
   
-  _contextVK->popCommandBuffer();
+  //_contextVK->popCommandBuffer();
   //_contextVK->enqueueSecondaryCommandBuffer(rtgimpl->_cmdbuf);
 
 }
