@@ -114,9 +114,10 @@ void Surface::DoDraw(ui::drawevent_constptr_t drwev) {
       mNeedsSurfaceRepaint = true;
     }
   }
+  
 
   if (1) { //mNeedsSurfaceRepaint || IsDirty()) {
-    tgt->pushCommandBuffer(_cmdbuf);
+    //tgt->pushCommandBuffer(_cmdbuf);
     tgt->debugMarker("post-cb");
     fbi->PushRtGroup(_rtgroup.get());
     tgt->debugMarker("post-push-rtg");
@@ -124,7 +125,7 @@ void Surface::DoDraw(ui::drawevent_constptr_t drwev) {
     tgt->debugMarker("post-repaint");
     fbi->PopRtGroup();
     tgt->debugMarker("post-pop-rtg");
-    tgt->popCommandBuffer();
+    //tgt->popCommandBuffer();
     mNeedsSurfaceRepaint = false;
     _dirty               = false;
   }
@@ -149,7 +150,7 @@ void Surface::DoDraw(ui::drawevent_constptr_t drwev) {
 
   lev2::material_ptr_t ui_material = lev2::defaultUIMaterial();
   lev2::material_ptr_t material = ui_material;
-  ;
+
   if (_rtgroup) {
     static auto texmtl = std::make_shared<lev2::GfxMaterialUITextured>(tgt);
     auto ptex          = _rtgroup->GetMrt(0)->texture();
@@ -158,102 +159,104 @@ void Surface::DoDraw(ui::drawevent_constptr_t drwev) {
     material = texmtl;
   }
 
-  bool has_foc = hasMouseFocus();
-  tgt->PushModColor(has_foc ? fcolor4::Green() : fcolor4::Blue());
-  mtxi->PushUIMatrix();
-  {
-    int ix_root = 0;
-    int iy_root = 0;
-    LocalToRoot(0, 0, ix_root, iy_root);
+  if(0){
+    bool has_foc = hasMouseFocus();
+    tgt->PushModColor(has_foc ? fcolor4::Green() : fcolor4::Blue());
+    mtxi->PushUIMatrix();
+    {
+      int ix_root = 0;
+      int iy_root = 0;
+      LocalToRoot(0, 0, ix_root, iy_root);
 
-    // printf( "Surface<%s>::Draw wx<%d> wy<%d> w<%d> h<%d>\n", _name.c_str(), ix_root, iy_root, _geometry._w, _geometry._h );
+      // printf( "Surface<%s>::Draw wx<%d> wy<%d> w<%d> h<%d>\n", _name.c_str(), ix_root, iy_root, _geometry._w, _geometry._h );
 
-    if (_decouple_from_ui_size and _aspect_from_rtgroup) {
+      if (_decouple_from_ui_size and _aspect_from_rtgroup) {
 
-      float u0 = 0.0f;
-      float u1 = 1.0f;
-      float v0 = 1.0f;
-      float v1 = 0.0f;
+        float u0 = 0.0f;
+        float u1 = 1.0f;
+        float v0 = 1.0f;
+        float v1 = 0.0f;
 
-     tgt->PushModColor(fcolor4::Black());
+      tgt->PushModColor(fcolor4::Black());
 
-      primi.RenderQuadAtZ(
-          ui_material.get(),
-          tgt,
-          ix_root,
-          ix_root + _geometry._w, // x0, x1
-          iy_root,
-          iy_root + _geometry._h, // y0, y1
-          0.0f,                   // z
-          0.0f,
-          1.0f, // u0, u1
-          1.0f,
-          0.0f // v0, v1
-      );
+        primi.RenderQuadAtZ(
+            ui_material.get(),
+            tgt,
+            ix_root,
+            ix_root + _geometry._w, // x0, x1
+            iy_root,
+            iy_root + _geometry._h, // y0, y1
+            0.0f,                   // z
+            0.0f,
+            1.0f, // u0, u1
+            1.0f,
+            0.0f // v0, v1
+        );
 
-     tgt->PopModColor();
+      tgt->PopModColor();
 
-      float inp_aspect = float(_decoupled_width) / float(_decoupled_height);
-      float out_aspect = float(_geometry._w) / float(_geometry._h);
-      float aspectt    = inp_aspect / out_aspect;
+        float inp_aspect = float(_decoupled_width) / float(_decoupled_height);
+        float out_aspect = float(_geometry._w) / float(_geometry._h);
+        float aspectt    = inp_aspect / out_aspect;
 
-      //printf("inp_aspect<%g> out_aspect<%g> aspectt<%g>\n", inp_aspect, out_aspect, aspectt);
-  
-      if (aspectt > 1.0) { // wider than UI (vertical letterbox)
+        //printf("inp_aspect<%g> out_aspect<%g> aspectt<%g>\n", inp_aspect, out_aspect, aspectt);
+    
+        if (aspectt > 1.0) { // wider than UI (vertical letterbox)
 
-        int hdiff = _geometry._h - int(float(_geometry._h)/aspectt);
-        int oy0 = hdiff/2;
-        int oy1 = -hdiff/2;
+          int hdiff = _geometry._h - int(float(_geometry._h)/aspectt);
+          int oy0 = hdiff/2;
+          int oy1 = -hdiff/2;
 
+          primi.RenderQuadAtZ(
+              material.get(),
+              tgt,
+              ix_root,
+              ix_root + _geometry._w, // x0, x1
+              iy_root + oy0,
+              iy_root + _geometry._h + oy1, // y0, y1
+              0.0f,                   // z
+              u0,
+              u1,
+              v0,
+              v1);
+
+        } else {
+          int wdiff = _geometry._w - int(float(_geometry._w)*aspectt);
+          int ox0 = wdiff/2;
+          int ox1 = -wdiff/2;
+
+          primi.RenderQuadAtZ(
+              material.get(),
+              tgt,
+              ix_root + ox0,
+              ix_root + _geometry._w + ox1, // x0, x1
+              iy_root,
+              iy_root + _geometry._h, // y0, y1
+              0.0f,                   // z
+              u0,
+              u1,
+              v0,
+              v1);
+        }
+      } else {
         primi.RenderQuadAtZ(
             material.get(),
             tgt,
             ix_root,
             ix_root + _geometry._w, // x0, x1
-            iy_root + oy0,
-            iy_root + _geometry._h + oy1, // y0, y1
-            0.0f,                   // z
-            u0,
-            u1,
-            v0,
-            v1);
-
-      } else {
-        int wdiff = _geometry._w - int(float(_geometry._w)*aspectt);
-        int ox0 = wdiff/2;
-        int ox1 = -wdiff/2;
-
-        primi.RenderQuadAtZ(
-            material.get(),
-            tgt,
-            ix_root + ox0,
-            ix_root + _geometry._w + ox1, // x0, x1
             iy_root,
             iy_root + _geometry._h, // y0, y1
             0.0f,                   // z
-            u0,
-            u1,
-            v0,
-            v1);
+            0.0f,
+            1.0f, // u0, u1
+            1.0f,
+            0.0f // v0, v1
+        );
       }
-    } else {
-      primi.RenderQuadAtZ(
-          material.get(),
-          tgt,
-          ix_root,
-          ix_root + _geometry._w, // x0, x1
-          iy_root,
-          iy_root + _geometry._h, // y0, y1
-          0.0f,                   // z
-          0.0f,
-          1.0f, // u0, u1
-          1.0f,
-          0.0f // v0, v1
-      );
     }
+    mtxi->PopUIMatrix();
+    tgt->PopModColor();
   }
-  mtxi->PopUIMatrix();
-  tgt->PopModColor();
 }
 
 /////////////////////////////////////////////////////////////////////////
