@@ -265,7 +265,6 @@ void VkContext::_initVulkanCommon() {
 VkContext::VkContext() {
 
   _GVI->_contexts.insert(this);
-
   ////////////////////////////
   // create child interfaces
   ////////////////////////////
@@ -465,19 +464,14 @@ void VkContext::_doBeginFrame() {
   mRenderContextInstData = 0;
 
   ////////////////////////
-  _defaultCommandBuffer = _cmdbuf_pool.allocate();
+  _primaryCommandBuffer = _cmdbuf_pool.allocate();
 
   ////////////////////////
 
   for (auto l : _onBeginFrameCallbacks)
     l();
 
-  _cmdbufcurframe_gfx_pri = _defaultCommandBuffer->_impl.getShared<VkCommandBufferImpl>();
-
-  VkCommandBufferBeginInfo CBBI_GFX = {};
-  initializeVkStruct(CBBI_GFX, VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
-  CBBI_GFX.flags            = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-  CBBI_GFX.pInheritanceInfo = nullptr;
+  _cmdbufcurframe_gfx_pri = _primaryCommandBuffer->_impl.getShared<VkCommandBufferImpl>();
 
   if (_first_frame) {
     // beginRenderPass(_main_render_pass);
@@ -490,17 +484,14 @@ void VkContext::_doBeginFrame() {
     fence->wait();
   }
 
-  vkBeginCommandBuffer(primary_cb()->_vkcmdbuf, &CBBI_GFX); // vkBeginCommandBuffer does an implicit reset
-
-  _cmdbufcur_gfx = primary_cb();
-  _cmdbufprv_gfx = primary_cb();
-
-  beginRenderPass(_main_render_pass);
+  _current_secondary_cmdbuf = nullptr;
+  pushCommandBuffer(_defaultSecondaryBuffer,_main_render_pass,_fbi->_main_rtg);
+  //_main_render_pass
 
   // FBI()->pushMainSurface();
 }
 
-vkcmdbufimpl_ptr_t VkContext::primary_cb() {
+vkcmdbufimpl_ptr_t VkContext::_xrimary_cb() {
   OrkAssert(_current_subpass == nullptr);
   return _cmdbufcurframe_gfx_pri;
 }
@@ -526,16 +517,37 @@ void VkContext::_doEndFrame() {
   ////////////////////////
   for (auto sp : _main_render_pass->_subpasses) {
     // todo : in parallel ?
-    _beginExecuteSubPass(sp);
-    _endExecuteSubPass(sp);
+    //_beginExecuteSubPass(sp);
+    //_endExecuteSubPass(sp);
   }
   ////////////////////////
-  endRenderPass(_main_render_pass);
+
+  popCommandBuffer(); // pop default secondary
+
+  VkCommandBufferBeginInfo CBBI_GFX = {};
+  VkCommandBufferInheritanceInfo INHINFO = {};
+  initializeVkStruct(CBBI_GFX, VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
+  initializeVkStruct(INHINFO, VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO);
+  //if( rpass ){
+    //auto rpimpl = rpass->_impl.getShared<VulkanRenderPass>();
+    //INHINFO.renderPass = rpimpl->_vkrp; // The render pass the secondary command buffer will be executed within.
+    //INHINFO.subpass    = 0;             // The index of the subpass in the render pass.
+    //INHINFO.framebuffer =
+        //rpimpl->_vkfb; // Optional: The framebuffer targeted by the render pass. Can be VK_NULL_HANDLE if not provided.
+    //CBBI_GFX.pInheritanceInfo = &INHINFO;
+  //}
+
+  CBBI_GFX.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT; // //
+                   //| VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
+  vkBeginCommandBuffer(_xrimary_cb()->_vkcmdbuf, &CBBI_GFX); // vkBeginCommandBuffer does an implicit reset
+
+  //pushCommandBuffer(_primaryCommandBuffer,nullptr,nullptr);
+  //vkBeginCommandBuffer(primary_cb()->_vkcmdbuf, &CBBI_GFX); // vkBeginCommandBuffer does an implicit reset
+  //beginRenderPass(_main_render_pass);
+  //endRenderPass(_main_render_pass);
+  //_fbi->_enq_transitionSwapChainForPresent();
+  vkEndCommandBuffer(_xrimary_cb()->_vkcmdbuf);
   ////////////////////////
-
-  _fbi->_enq_transitionSwapChainForPresent();
-
-  vkEndCommandBuffer(primary_cb()->_vkcmdbuf);
 
   std::vector<VkSemaphore> waitStartRenderSemaphores = {_fbi->_swapChainImageAcquiredSemaphore};
   std::vector<VkPipelineStageFlags> waitStages       = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
@@ -546,7 +558,7 @@ void VkContext::_doEndFrame() {
   SI.pWaitSemaphores      = waitStartRenderSemaphores.data();
   SI.pWaitDstStageMask    = waitStages.data();
   SI.commandBufferCount   = 1;
-  SI.pCommandBuffers      = &primary_cb()->_vkcmdbuf;
+  SI.pCommandBuffers      = &_xrimary_cb()->_vkcmdbuf;
   SI.signalSemaphoreCount = 1;
   SI.pSignalSemaphores    = &_renderingCompleteSemaphore;
   ///////////////////////////////////////////////////////
@@ -586,8 +598,8 @@ void VkContext::_doEndFrame() {
 
   ///////////////////////////////////////////////////////
 
-  _cmdbuf_pool.deallocate(_defaultCommandBuffer);
-  _defaultCommandBuffer = nullptr;
+  _cmdbuf_pool.deallocate(_primaryCommandBuffer);
+  _primaryCommandBuffer = nullptr;
   ////////////////////////
 
   miTargetFrame++;
@@ -685,6 +697,7 @@ void VkContext::_beginRenderPass(renderpass_ptr_t renpass) {
 
   _fbi->_bindSwapChainToRenderPass(vk_rpass);
 
+  /*
   /////////////////////////////////////////
   // perform the clear
   /////////////////////////////////////////
@@ -708,7 +721,7 @@ void VkContext::_beginRenderPass(renderpass_ptr_t renpass) {
   RPBI.framebuffer = _fbi->_swapchain->framebuffer();
   // CLEAR!
   vkCmdBeginRenderPass(
-      primary_cb()->_vkcmdbuf, //
+      _current_secondary_cmdbuf->_impl.getShared<VkCommandBufferImpl>()->_vkcmdbuf, //
       &RPBI,                   //
       VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
   /////////////////////////////////////////
@@ -719,12 +732,13 @@ void VkContext::_beginRenderPass(renderpass_ptr_t renpass) {
     enqueueSecondaryCommandBuffer(one_shot);
   }
   _pendingOneShotCommands.clear();
+  */
 }
 
 ///////////////////////////////////////////////////////
 
 void VkContext::_endRenderPass(renderpass_ptr_t renpass) {
-  vkCmdEndRenderPass(primary_cb()->_vkcmdbuf);
+  vkCmdEndRenderPass(_current_secondary_cmdbuf->_impl.getShared<VkCommandBufferImpl>()->_vkcmdbuf);
   // OrkAssert(false);
 }
 
@@ -924,8 +938,8 @@ void VkContext::initializeLoaderContext() {
 
 void VkContext::debugPushGroup(const std::string str, const fvec4& color) {
   if (_vkCmdDebugMarkerBeginEXT) {
-    OrkAssert(_current_cmdbuf != nullptr);
-    auto cmdbuf_impl                      = _current_cmdbuf->_impl.getShared<VkCommandBufferImpl>();
+    OrkAssert(_current_secondary_cmdbuf != nullptr);
+    auto cmdbuf_impl                      = _current_secondary_cmdbuf->_impl.getShared<VkCommandBufferImpl>();
     VkDebugMarkerMarkerInfoEXT markerInfo = {};
     initializeVkStruct(markerInfo, VK_STRUCTURE_TYPE_DEBUG_MARKER_MARKER_INFO_EXT);
     markerInfo.color[0]    = color.x; // R
@@ -941,8 +955,8 @@ void VkContext::debugPushGroup(const std::string str, const fvec4& color) {
 
 void VkContext::debugPopGroup() {
   if (_vkCmdDebugMarkerEndEXT) {
-    OrkAssert(_current_cmdbuf != nullptr);
-    auto cmdbuf_impl = _current_cmdbuf->_impl.getShared<VkCommandBufferImpl>();
+    OrkAssert(_current_secondary_cmdbuf != nullptr);
+    auto cmdbuf_impl = _current_secondary_cmdbuf->_impl.getShared<VkCommandBufferImpl>();
     _vkCmdDebugMarkerEndEXT(cmdbuf_impl->_vkcmdbuf);
   }
 }
@@ -951,8 +965,8 @@ void VkContext::debugPopGroup() {
 
 void VkContext::debugMarker(const std::string named, const fvec4& color) {
   if (_vkCmdDebugMarkerInsertEXT) {
-    OrkAssert(_current_cmdbuf != nullptr);
-    auto cmdbuf_impl                      = _current_cmdbuf->_impl.getShared<VkCommandBufferImpl>();
+    OrkAssert(_current_secondary_cmdbuf != nullptr);
+    auto cmdbuf_impl                      = _current_secondary_cmdbuf->_impl.getShared<VkCommandBufferImpl>();
     VkDebugMarkerMarkerInfoEXT markerInfo = {};
     initializeVkStruct(markerInfo, VK_STRUCTURE_TYPE_DEBUG_MARKER_MARKER_INFO_EXT);
     markerInfo.color[0]    = color.x; // R
@@ -1234,11 +1248,7 @@ void VkContext::_doPushCommandBuffer(
     renderpass_ptr_t rpass,
     rtgroup_ptr_t rtgroup) {        //
 
-
-
-  _cmdbufprv_gfx = _cmdbufcur_gfx; // _cmdbufcur_gfx just set from parent
-
-  OrkAssert(_current_cmdbuf == cmdbuf);
+  OrkAssert(_current_secondary_cmdbuf == cmdbuf);
   vkcmdbufimpl_ptr_t impl;
   /////////////////////////////////////////////
   // allocate command buffer ?
@@ -1269,16 +1279,35 @@ void VkContext::_doPushCommandBuffer(
   initializeVkStruct(INHINFO, VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO);
   initializeVkStruct(CBBI_GFX, VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
   if( rpass ){
-    auto rpimpl = rpass->_impl.getShared<VulkanRenderPass>();
+    vkrenderpass_ptr_t rpimpl;
+    if( auto as_impl = rpass->_impl.tryAsShared<VulkanRenderPass>() ){
+      rpimpl = as_impl.value();
+    }
+    else{
+      if( rtgroup == nullptr ){
+        rtgroup = _fbi->_main_rtg;
+      }
+    
+      vkrtgrpimpl_ptr_t rtg_impl;
+      if( auto as_rtg_impl = rtgroup->_impl.tryAsShared<VkRtGroupImpl>() ){
+        rtg_impl = as_rtg_impl.value();
+      }
+      else{
+        rtg_impl = _fbi->_createRtGroupImpl(rtgroup);
+      }
+
+      implementRenderPassForRtGroup(this,rpass, rtg_impl);
+      rpimpl = rpass->_impl.getShared<VulkanRenderPass>();
+      OrkAssert(rpimpl!=nullptr);
+    }
     INHINFO.renderPass = rpimpl->_vkrp; // The render pass the secondary command buffer will be executed within.
     INHINFO.subpass    = 0;             // The index of the subpass in the render pass.
     INHINFO.framebuffer =
         rpimpl->_vkfb; // Optional: The framebuffer targeted by the render pass. Can be VK_NULL_HANDLE if not provided.
-    CBBI_GFX.pInheritanceInfo = &INHINFO;
+    CBBI_GFX.flags |= VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
   }
   ////////////////////////////////////////////
-  CBBI_GFX.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT //
-                   | VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
+  CBBI_GFX.flags |= VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
   CBBI_GFX.pInheritanceInfo = &INHINFO;
   vkBeginCommandBuffer(impl->_vkcmdbuf, &CBBI_GFX); // vkBeginCommandBuffer does an implicit reset
 }
@@ -1286,14 +1315,13 @@ void VkContext::_doPushCommandBuffer(
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkContext::_doPopCommandBuffer() {
-  auto impl = _current_cmdbuf->_impl.getShared<VkCommandBufferImpl>();
+  auto impl = _current_secondary_cmdbuf->_impl.getShared<VkCommandBufferImpl>();
   vkEndCommandBuffer(impl->_vkcmdbuf);
-  _cmdbufcur_gfx = _cmdbufprv_gfx;
 }
 
 void VkContext::_doEnqueueSecondaryCommandBuffer(commandbuffer_ptr_t cmdbuf) {
   auto impl = cmdbuf->_impl.getShared<VkCommandBufferImpl>();
-  vkCmdExecuteCommands(_cmdbufcurframe_gfx_pri->_vkcmdbuf, 1, &impl->_vkcmdbuf);
+  vkCmdExecuteCommands(_xrimary_cb()->_vkcmdbuf, 1, &impl->_vkcmdbuf);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

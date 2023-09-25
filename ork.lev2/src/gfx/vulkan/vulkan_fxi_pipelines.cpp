@@ -18,6 +18,8 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(
     vkvtxbuf_ptr_t vb,             //
     vkprimclass_ptr_t primclass) { //
 
+  OrkAssert(_contextVK->_cur_renderpass);
+
   vkpipeline_obj_ptr_t rval;
   auto fbi = _contextVK->_fbi;
   auto gbi = _contextVK->_gbi;
@@ -76,7 +78,7 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(
     initializeVkStruct(CINFO, VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO);
 
     CINFO.flags      = VK_PIPELINE_CREATE_DISABLE_OPTIMIZATION_BIT;
-    CINFO.renderPass = _contextVK->_fbi->_swapchain->_mainRenderPass->_vkrp;
+    CINFO.renderPass = _contextVK->_cur_renderpass->_impl.getShared<VulkanRenderPass>()->_vkrp;
     CINFO.subpass    = 0;
 
     // count shader stages
@@ -214,7 +216,7 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(
 
 void VkFxInterface::_bindPipeline(vkpipeline_obj_ptr_t pipe) {
 
-  auto cmdbuf = _contextVK->_cmdbufcur_gfx->_vkcmdbuf;
+  auto cmdbuf = _contextVK->_current_secondary_cmdbuf->_impl.getShared<VkCommandBufferImpl>()->_vkcmdbuf;
 
   if (_currentPipeline != pipe) {
     vkCmdBindPipeline(
@@ -273,7 +275,7 @@ void VkFxInterface::_bindPipeline(vkpipeline_obj_ptr_t pipe) {
 
 void VkFxInterface::_bindGfxDescriptorSetOnSlot(vkdescriptorset_ptr_t desc_set, size_t slot) {
   if (_active_gfx_descriptorSets[slot] != desc_set) {
-    auto& CB = _contextVK->_cmdbufcur_gfx;
+    auto CB = _contextVK->_current_secondary_cmdbuf->_impl.getShared<VkCommandBufferImpl>();
     vkCmdBindDescriptorSets(
         CB->_vkcmdbuf,
         VK_PIPELINE_BIND_POINT_GRAPHICS,   // pipeline bind point
@@ -292,7 +294,7 @@ void VkFxInterface::_bindGfxDescriptorSetOnSlot(vkdescriptorset_ptr_t desc_set, 
 
 void VkFxInterface::_bindVertexBufferOnSlot(vkvtxbuf_ptr_t vb, size_t slot) {
   if (_active_vbs[slot] != vb) {
-    auto& CB            = _contextVK->_cmdbufcur_gfx;
+    auto CB            = _contextVK->_current_secondary_cmdbuf->_impl.getShared<VkCommandBufferImpl>();
     VkDeviceSize offset = 0;
     vkCmdBindVertexBuffers(
         CB->_vkcmdbuf,             // command buffer

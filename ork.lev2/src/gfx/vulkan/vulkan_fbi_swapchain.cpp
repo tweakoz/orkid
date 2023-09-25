@@ -15,7 +15,7 @@ namespace ork::lev2::vulkan {
 void VkFrameBufferInterface::_initSwapChain() {
 
   auto& vkdev    = _contextVK->_vkdevice;
-  auto& cmdbuf   = _contextVK->primary_cb()->_vkcmdbuf;
+  auto& cmdbuf   = _contextVK->_xrimary_cb()->_vkcmdbuf;
   auto pres_caps = _contextVK->_vkpresentation_caps;
 
   if (_swapchain) {
@@ -155,7 +155,7 @@ void VkFrameBufferInterface::_initSwapChain() {
 
 void VkFrameBufferInterface::_clearSwapChainBuffer() {
 
-  auto gfxcb = _contextVK->primary_cb();
+  auto gfxcb = _contextVK->_xrimary_cb();
 
   VkClearColorValue clearColor = {{0.0f, 1.0f, 0.0f, 1.0f}}; // Clear to black color
   VkImageSubresourceRange ISRR = {};
@@ -172,7 +172,7 @@ void VkFrameBufferInterface::_clearSwapChainBuffer() {
 
 void VkFrameBufferInterface::_enq_transitionSwapChainForPresent() {
 
-  auto gfxcb = _contextVK->primary_cb();
+  auto gfxcb = _contextVK->_xrimary_cb();
 
   auto imgbar = createImageBarrier(
       _swapchain->image(),
@@ -198,7 +198,7 @@ void VkFrameBufferInterface::_enq_transitionSwapChainForPresent() {
 
 void VkFrameBufferInterface::_transitionSwapChainForClear() {
 
-  auto gfxcb = _contextVK->primary_cb();
+  auto gfxcb = _contextVK->_xrimary_cb();
 
   auto imgbar = createImageBarrier(
       _swapchain->image(),
@@ -269,6 +269,7 @@ void VkFrameBufferInterface::_acquireSwapChainForFrame() {
 void VkFrameBufferInterface::_bindSwapChainToRenderPass(vkrenderpass_ptr_t rpass) {
 
   if (nullptr == _swapchain->_mainRenderPass) {
+
     _swapchain->_mainRenderPass = rpass;
 
     _swapchain->_vkFrameBuffers.resize(_swapchain->_vkSwapChainImages.size());

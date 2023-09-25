@@ -292,19 +292,15 @@ public:
   //////////////////////////////////////////////
 
   inline void pushCommandBuffer(commandbuffer_ptr_t cmdbuf, renderpass_ptr_t rpass,rtgroup_ptr_t rtgroup) {
-    _cmdbuf_stack.push(cmdbuf);
-    _current_cmdbuf = cmdbuf;
+    _cmdbuf_stack.push(_current_secondary_cmdbuf);
+    _current_secondary_cmdbuf = cmdbuf;
     _doPushCommandBuffer(cmdbuf,rpass,rtgroup);
   }
   inline commandbuffer_ptr_t popCommandBuffer() {
     _doPopCommandBuffer();
+    _current_secondary_cmdbuf = _cmdbuf_stack.top();
     _cmdbuf_stack.pop();
-    commandbuffer_ptr_t next = nullptr;
-    if (not _cmdbuf_stack.empty()) {
-      next = _cmdbuf_stack.top();
-    }
-    _current_cmdbuf = next;
-    return next;
+    return _current_secondary_cmdbuf;
   }
   void enqueueSecondaryCommandBuffer(commandbuffer_ptr_t cmdbuf) {
     _doEnqueueSecondaryCommandBuffer(cmdbuf);
@@ -363,11 +359,11 @@ public:
   fvec4 maModColorStack[kiModColorStackMax];
   fvec4 mvModColor;
   PerformanceItem mFramePerfItem;
-  commandbuffer_ptr_t _recordCommandBuffer;
-  commandbuffer_ptr_t _defaultCommandBuffer;
+  commandbuffer_ptr_t _primaryCommandBuffer;
+  commandbuffer_ptr_t _defaultSecondaryBuffer;
   shared_pool::fixed_pool<CommandBuffer,4> _cmdbuf_pool;
   std::stack<commandbuffer_ptr_t> _cmdbuf_stack;
-  commandbuffer_ptr_t _current_cmdbuf;
+  commandbuffer_ptr_t _current_secondary_cmdbuf;
   renderpass_ptr_t _main_render_pass;
   rendersubpass_ptr_t _main_render_subpass;
   rendersubpass_ptr_t _current_subpass;

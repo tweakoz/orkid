@@ -1203,10 +1203,8 @@ public:
   VkCommandPool _vkcmdpool_graphics;
 
   vkcmdbufimpl_ptr_t _cmdbufcurframe_gfx_pri;
-  vkcmdbufimpl_ptr_t _cmdbufcur_gfx;
-  vkcmdbufimpl_ptr_t _cmdbufprv_gfx;
 
-  vkcmdbufimpl_ptr_t primary_cb();
+  vkcmdbufimpl_ptr_t _xrimary_cb();
 
   vksampler_obj_ptr_t _sampler_base;
   std::vector<vksampler_obj_ptr_t> _sampler_per_maxlod;
@@ -1224,7 +1222,7 @@ public:
   EDepthTest meCurDepthTest;
   bool mTargetDrawableSizeDirty;
   bool _first_frame = true;
-
+  renderpass_ptr_t _cur_renderpass;
   //////////////////////////////////////////////
   void enqueueDeferredOneShotCommand(commandbuffer_ptr_t cmdbuf);
   std::vector<commandbuffer_ptr_t> _pendingOneShotCommands;

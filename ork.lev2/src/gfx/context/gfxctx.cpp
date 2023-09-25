@@ -101,7 +101,8 @@ Context::Context()
  _main_render_pass = std::make_shared<lev2::RenderPass>();
  _main_render_subpass = std::make_shared<lev2::RenderSubPass>();
  _main_render_pass->_subpasses.push_back(_main_render_subpass);
-  
+ _defaultSecondaryBuffer = std::make_shared<CommandBuffer>();
+
   //_main_render_subpass->_rtg_input = nullptr;
   //_main_render_subpass->_rtg_output = fbi->_main_rtg;
 
