@@ -296,7 +296,7 @@ void VkFrameBufferInterface::_bindSwapChainToRenderPass(vkrenderpass_ptr_t rpass
       OrkAssert(OK == VK_SUCCESS);
     }
   } else {
-    OrkAssert(_swapchain->_mainRenderPass == rpass);
+    //OrkAssert(_swapchain->_mainRenderPass == rpass);
   }
 }
 

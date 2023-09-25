@@ -225,39 +225,38 @@ void VkContext::_initVulkanCommon() {
   OrkAssert(OK == VK_SUCCESS);
 
   auto vksci_base = makeVKSCI();
-  _sampler_base = std::make_shared<VulkanSamplerObject>(this,vksci_base);
+  _sampler_base   = std::make_shared<VulkanSamplerObject>(this, vksci_base);
 
   _sampler_per_maxlod.resize(16);
-  for( size_t maxlod = 0; maxlod<16; maxlod++ ){
-    auto vksci = makeVKSCI();
-    vksci->maxLod = maxlod;
-    _sampler_per_maxlod[maxlod] = std::make_shared<VulkanSamplerObject>(this,vksci);
+  for (size_t maxlod = 0; maxlod < 16; maxlod++) {
+    auto vksci                  = makeVKSCI();
+    vksci->maxLod               = maxlod;
+    _sampler_per_maxlod[maxlod] = std::make_shared<VulkanSamplerObject>(this, vksci);
   }
 
   // create descriptor pool
   std::vector<VkDescriptorPoolSize> poolSizes;
 
-  auto& poolsize_combsamplers = poolSizes.emplace_back();
-  poolsize_combsamplers.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+  auto& poolsize_combsamplers           = poolSizes.emplace_back();
+  poolsize_combsamplers.type            = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
   poolsize_combsamplers.descriptorCount = 64; // Number of descriptors of this type to allocate
 
-  auto& poolsize_samplers = poolSizes.emplace_back();
-  poolsize_samplers.type = VK_DESCRIPTOR_TYPE_SAMPLER;
+  auto& poolsize_samplers           = poolSizes.emplace_back();
+  poolsize_samplers.type            = VK_DESCRIPTOR_TYPE_SAMPLER;
   poolsize_samplers.descriptorCount = 64; // Number of descriptors of this type to allocate
 
-  auto& poolsize_sampled_images = poolSizes.emplace_back();
-  poolsize_sampled_images.type = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+  auto& poolsize_sampled_images           = poolSizes.emplace_back();
+  poolsize_sampled_images.type            = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
   poolsize_sampled_images.descriptorCount = 64; // Number of descriptors of this type to allocate
 
   VkDescriptorPoolCreateInfo poolInfo = {};
   initializeVkStruct(poolInfo, VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO);
   poolInfo.poolSizeCount = poolSizes.size();
-  poolInfo.pPoolSizes = poolSizes.data();
-  poolInfo.maxSets = 64; // Maximum number of descriptor sets to allocate from this pool
+  poolInfo.pPoolSizes    = poolSizes.data();
+  poolInfo.maxSets       = 64; // Maximum number of descriptor sets to allocate from this pool
 
   OK = vkCreateDescriptorPool(_vkdevice, &poolInfo, nullptr, &_vkDescriptorPool);
   OrkAssert(OK == VK_SUCCESS);
-
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -433,7 +432,73 @@ void VkContext::makeCurrentContext() {
   // platoMakeCurrent(plato);
 }
 
-///////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////
+
+renderpass_ptr_t createRenderPassForPresent(vkcontext_rawptr_t ctx) {
+  auto renpass  = std::make_shared<RenderPass>();
+  auto vk_rpass = renpass->_impl.makeShared<VulkanRenderPass>(renpass.get());
+
+  // todo - use vk_rpass->_toposorted_subpasses
+
+  auto surfaceFormat = ctx->_vkpresentation_caps->_formats[0];
+
+  VkAttachmentDescription CATC = {};
+  initializeVkStruct(CATC);
+  CATC.format         = surfaceFormat.format;            // Must match the format of the swap chain images.
+  CATC.samples        = VK_SAMPLE_COUNT_1_BIT;           // No multisampling for this example.
+  CATC.loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR;     // Clear the color buffer before rendering.
+  CATC.storeOp        = VK_ATTACHMENT_STORE_OP_STORE;    // Store the rendered content for presentation.
+  CATC.stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE; // We don't care about stencil.
+  CATC.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+  CATC.initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED;
+  CATC.finalLayout    = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR; // Prepare for presentation after rendering.
+
+  VkAttachmentDescription DATC = {};
+  DATC.format                  = VkFormatConverter::_instance.convertBufferFormat(DEPTH_FORMAT);
+  DATC.samples                 = VK_SAMPLE_COUNT_1_BIT;
+  DATC.loadOp                  = VK_ATTACHMENT_LOAD_OP_CLEAR; // Clear the depth buffer before rendering.
+  DATC.storeOp                 = VK_ATTACHMENT_STORE_OP_STORE;
+  DATC.stencilLoadOp           = VK_ATTACHMENT_LOAD_OP_CLEAR;
+  DATC.stencilStoreOp          = VK_ATTACHMENT_STORE_OP_STORE;
+  DATC.initialLayout           = VK_IMAGE_LAYOUT_UNDEFINED;
+  DATC.finalLayout             = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+  VkAttachmentReference CATR = {};
+  initializeVkStruct(CATR);
+  CATR.attachment = 0;
+  CATR.layout     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+  VkAttachmentReference DATR = {};
+  DATR.attachment            = 1;
+  DATR.layout                = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+  VkSubpassDescription SUBPASS = {};
+  initializeVkStruct(SUBPASS);
+  SUBPASS.pipelineBindPoint       = VK_PIPELINE_BIND_POINT_GRAPHICS;
+  SUBPASS.colorAttachmentCount    = 1;
+  SUBPASS.pColorAttachments       = &CATR;
+  SUBPASS.colorAttachmentCount    = 1;
+  SUBPASS.pDepthStencilAttachment = &DATR;
+
+  std::array<VkAttachmentDescription, 2> rp_attachments = {CATC, DATC};
+
+  VkRenderPassCreateInfo RPI = {};
+  initializeVkStruct(RPI, VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO);
+  RPI.attachmentCount = static_cast<uint32_t>(rp_attachments.size());
+  RPI.pAttachments    = rp_attachments.data();
+  RPI.subpassCount    = 1;
+  RPI.pSubpasses      = &SUBPASS;
+  // RPI.dependencyCount = 1;
+  // RPI.pDependencies = &dependency;
+  VkResult OK = vkCreateRenderPass(ctx->_vkdevice, &RPI, nullptr, &vk_rpass->_vkrp);
+  OrkAssert(OK == VK_SUCCESS);
+
+  ctx->_fbi->_bindSwapChainToRenderPass(vk_rpass);
+
+  return renpass;
+}
+
+///////////////////////////////////////////////////////////////////////////////
 
 void VkContext::_doBeginFrame() {
 
@@ -460,7 +525,7 @@ void VkContext::_doBeginFrame() {
   _msi->PushVMatrix(fmtx4::Identity());
   _msi->PushPMatrix(fmtx4::Identity());
 
-  mpCurrentObject = 0;
+  mpCurrentObject        = 0;
   mRenderContextInstData = 0;
 
   ////////////////////////
@@ -475,10 +540,20 @@ void VkContext::_doBeginFrame() {
   }
 
   ////////////////////////
-  _defaultCommandBuffer = _cmdbuf_pool.allocate();
+  // clean up renderpasses
+  ////////////////////////
+
+  for( auto rpass : _renderpasses ){
+    auto impl = rpass->_impl.getShared<VulkanRenderPass>();
+    vkDestroyRenderPass(_vkdevice, impl->_vkrp, nullptr);
+  }
+  _renderpasses.clear();
+
+  ////////////////////////
+  _defaultCommandBuffer   = _cmdbuf_pool.allocate();
   _cmdbufcurframe_gfx_pri = _defaultCommandBuffer->_impl.getShared<VkCommandBufferImpl>();
-  _cmdbufcur_gfx = _cmdbufcurframe_gfx_pri;
-  _cmdbufprv_gfx = _cmdbufcurframe_gfx_pri;
+  _cmdbufcur_gfx          = _cmdbufcurframe_gfx_pri;
+  _cmdbufprv_gfx          = _cmdbufcurframe_gfx_pri;
   ////////////////////////
   VkCommandBufferBeginInfo CBBI_GFX = {};
   initializeVkStruct(CBBI_GFX, VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
@@ -486,21 +561,23 @@ void VkContext::_doBeginFrame() {
   CBBI_GFX.pInheritanceInfo = nullptr;
   vkBeginCommandBuffer(primary_cb()->_vkcmdbuf, &CBBI_GFX); // vkBeginCommandBuffer does an implicit reset
 
-  _renderpasses.clear();
 
-  auto rpass = createRenderPassForRtGroup(this, _fbi->_main_rtg);
+
+  auto rpass = createRenderPassForPresent(this);
   _renderpasses.push_back(rpass);
 
   beginRenderPass(rpass);
-
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
 vkcmdbufimpl_ptr_t VkContext::primary_cb() {
-  //OrkAssert(_current_subpass == nullptr);
+  // OrkAssert(_current_subpass == nullptr);
   return _cmdbufcurframe_gfx_pri;
 }
 
-///////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+
 void VkContext::_doEndFrame() {
 
   for (auto l : _onEndFrameCallbacks)
@@ -594,84 +671,10 @@ void VkContext::present(CTXBASE* ctxbase) {
 
 void VkContext::_beginRenderPass(renderpass_ptr_t renpass) {
 
-  if (renpass->_immutable) {
-    OrkAssert(false);
-  }
-
   auto main_rtg = _fbi->_main_rtg;
   auto rtg_impl = main_rtg->_impl.getShared<VkRtGroupImpl>();
 
-  vkrenderpass_ptr_t vk_rpass;
-  if (auto as_vkrpass = renpass->_impl.tryAsShared<VulkanRenderPass>()) {
-    vk_rpass = as_vkrpass.value();
-  } else {
-    /////////////////////////////////////////
-    // create the renderpass
-    /////////////////////////////////////////
-
-    vk_rpass = renpass->_impl.makeShared<VulkanRenderPass>(renpass.get());
-
-    // todo - use vk_rpass->_toposorted_subpasses
-
-    auto surfaceFormat = _vkpresentation_caps->_formats[0];
-
-    VkAttachmentDescription CATC = {};
-    initializeVkStruct(CATC);
-    CATC.format         = surfaceFormat.format;            // Must match the format of the swap chain images.
-    CATC.samples        = VK_SAMPLE_COUNT_1_BIT;           // No multisampling for this example.
-    CATC.loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR;     // Clear the color buffer before rendering.
-    CATC.storeOp        = VK_ATTACHMENT_STORE_OP_STORE;    // Store the rendered content for presentation.
-    CATC.stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE; // We don't care about stencil.
-    CATC.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    CATC.initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED;
-    CATC.finalLayout    = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR; // Prepare for presentation after rendering.
-
-    VkAttachmentDescription DATC = {};
-    DATC.format                  = VkFormatConverter::_instance.convertBufferFormat(DEPTH_FORMAT);
-    DATC.samples                 = VK_SAMPLE_COUNT_1_BIT;
-    DATC.loadOp                  = VK_ATTACHMENT_LOAD_OP_CLEAR; // Clear the depth buffer before rendering.
-    DATC.storeOp                 = VK_ATTACHMENT_STORE_OP_STORE;
-    DATC.stencilLoadOp           = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    DATC.stencilStoreOp          = VK_ATTACHMENT_STORE_OP_STORE;
-    DATC.initialLayout           = VK_IMAGE_LAYOUT_UNDEFINED;
-    DATC.finalLayout             = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-    VkAttachmentReference CATR = {};
-    initializeVkStruct(CATR);
-    CATR.attachment = 0;
-    CATR.layout     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-    VkAttachmentReference DATR = {};
-    DATR.attachment            = 1;
-    DATR.layout                = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-    VkSubpassDescription SUBPASS = {};
-    initializeVkStruct(SUBPASS);
-    SUBPASS.pipelineBindPoint       = VK_PIPELINE_BIND_POINT_GRAPHICS;
-    SUBPASS.colorAttachmentCount    = 1;
-    SUBPASS.pColorAttachments       = &CATR;
-    SUBPASS.colorAttachmentCount    = 1;
-    SUBPASS.pDepthStencilAttachment = &DATR;
-
-    std::array<VkAttachmentDescription, 2> rp_attachments = {CATC, DATC};
-
-    VkRenderPassCreateInfo RPI = {};
-    initializeVkStruct(RPI, VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO);
-    RPI.attachmentCount = static_cast<uint32_t>(rp_attachments.size());
-    RPI.pAttachments    = rp_attachments.data();
-    RPI.subpassCount    = 1;
-    RPI.pSubpasses      = &SUBPASS;
-    // RPI.dependencyCount = 1;
-    // RPI.pDependencies = &dependency;
-    VkResult OK = vkCreateRenderPass(_vkdevice, &RPI, nullptr, &vk_rpass->_vkrp);
-    OrkAssert(OK == VK_SUCCESS);
-    /////////////////////////////////////////
-  }
-  /////////////////////////////////////////
-  // is swapchain backed by a framebuffer ?
-  /////////////////////////////////////////
-
-  _fbi->_bindSwapChainToRenderPass(vk_rpass);
+  auto vk_rpass = renpass->_impl.getShared<VulkanRenderPass>();
 
   /////////////////////////////////////////
   // perform the clear
@@ -680,7 +683,7 @@ void VkContext::_beginRenderPass(renderpass_ptr_t renpass) {
   auto color = _fbi->_clearColor;
 
   VkClearValue clearValues[2];
-  clearValues[0].color        = {{color.x,color.y,color.z,color.w}};
+  clearValues[0].color        = {{color.x, color.y, color.z, color.w}};
   clearValues[1].depthStencil = {1.0f, 0};
 
   VkRenderPassBeginInfo RPBI = {};
@@ -721,10 +724,10 @@ void VkContext::_endRenderPass(renderpass_ptr_t renpass) {
 ///////////////////////////////////////////////////////
 
 void VkContext::_beginSubPass(rendersubpass_ptr_t subpass) {
-  //OrkAssert(_current_subpass == nullptr); // no nesting...
+  // OrkAssert(_current_subpass == nullptr); // no nesting...
   //_current_subpass = subpass;
   //_exec_subpasses.push_back(subpass);
-  // OrkAssert(false);
+  //  OrkAssert(false);
 }
 
 ///////////////////////////////////////////////////////
@@ -732,7 +735,7 @@ void VkContext::_beginSubPass(rendersubpass_ptr_t subpass) {
 ///////////////////////////////////////////////////////
 
 void VkContext::_endSubPass(rendersubpass_ptr_t subpass) {
-  //OrkAssert(_current_subpass == subpass); // no nesting...
+  // OrkAssert(_current_subpass == subpass); // no nesting...
   //_current_subpass = nullptr;
 }
 
@@ -771,12 +774,12 @@ commandbuffer_ptr_t VkContext::_beginRecordCommandBuffer(renderpass_ptr_t rpass)
 
   _setObjectDebugName(vkcmdbuf->_vkcmdbuf, VK_OBJECT_TYPE_COMMAND_BUFFER, cmdbuf->_debugName.c_str());
 
-  VkCommandBufferBeginInfo CBBI_GFX = {};
+  VkCommandBufferBeginInfo CBBI_GFX      = {};
   VkCommandBufferInheritanceInfo INHINFO = {};
   initializeVkStruct(CBBI_GFX, VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
   initializeVkStruct(INHINFO, VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO);
-  if( rpass ){
-    auto rpimpl = rpass->_impl.getShared<VulkanRenderPass>();
+  if (rpass) {
+    auto rpimpl        = rpass->_impl.getShared<VulkanRenderPass>();
     INHINFO.renderPass = rpimpl->_vkrp; // The render pass the secondary command buffer will be executed within.
     INHINFO.subpass    = 0;             // The index of the subpass in the render pass.
     INHINFO.framebuffer =
@@ -1245,7 +1248,7 @@ void VkContext::_doPushCommandBuffer(
   }
   VkCommandBufferInheritanceInfo INHINFO = {};
   initializeVkStruct(INHINFO, VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO);
-  auto rpass = _renderpasses.back();
+  auto rpass         = _renderpasses.back();
   auto rpimpl        = rpass->_impl.getShared<VulkanRenderPass>();
   INHINFO.renderPass = rpimpl->_vkrp; // The render pass the secondary command buffer will be executed within.
   INHINFO.subpass    = 0;             // The index of the subpass in the render pass.
