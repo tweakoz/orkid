@@ -127,7 +127,7 @@ void VkFrameBufferInterface::_initSwapChain() {
     auto rtb_depth = rtg->createRenderTarget(DEPTH_FORMAT, "depth"_crcu);
     rtg->_depthBuffer = rtb_depth;
     rtg->mNumMrts = 1;
-    auto rtg_impl  = _createRtGroupImpl(rtg.get());
+    auto rtg_impl  = _createRtGroupImpl(rtg);
     rtg->_name     = FormatString("vk-swapchain-%d", i);
     ////////////////////////////////////////////
     auto rtb_impl_color = rtb_color->_impl.getShared<VklRtBufferImpl>();

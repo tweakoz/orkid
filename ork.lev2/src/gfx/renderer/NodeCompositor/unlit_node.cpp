@@ -41,7 +41,7 @@ struct IMPL {
     pTARG->debugPushGroup("Forward::rendeinitr");
     if (nullptr == _rtg) {
       _material.gpuInit(pTARG);
-      _rtg             = new RtGroup(pTARG, 8, 8);
+      _rtg             = std::make_shared<RtGroup>(pTARG, 8, 8);
       auto buf1        = _rtg->createRenderTarget(lev2::EBufferFormat::RGBA32F);
       auto buf2        = _rtg->createRenderTarget(lev2::EBufferFormat::RGBA32F);
       buf1->_debugName = "ForwardRt0";
@@ -124,7 +124,7 @@ struct IMPL {
   ///////////////////////////////////////
   std::string _camname, _layername;
   CompositingMaterial _material;
-  RtGroup* _rtg = nullptr;
+  rtgroup_ptr_t _rtg = nullptr;
   fmtx4 _viewOffsetMatrix;
   Timer _profile_timer;
 

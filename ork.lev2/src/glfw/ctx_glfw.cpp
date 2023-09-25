@@ -1069,7 +1069,7 @@ struct PopupImpl {
 
       _parent_context->FBI()->pushViewport(0, 0, _w, _h);
       _parent_context->FBI()->pushScissor(0, 0, _w, _h);
-      _parent_context->FBI()->PushRtGroup(_rtgroup.get());
+      _parent_context->FBI()->PushRtGroup(_rtgroup);
 
       auto plato_saved = _parent_context->_impl;
 

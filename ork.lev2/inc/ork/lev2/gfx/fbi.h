@@ -58,15 +58,15 @@ public:
 
   ///////////////////////////////////////////////////////
 
-  virtual void _pushRtGroup(RtGroup* Base) = 0;
-  virtual RtGroup* _popRtGroup() = 0;
+  virtual void _pushRtGroup(rtgroup_ptr_t Base) = 0;
+  virtual rtgroup_ptr_t _popRtGroup() = 0;
 
-  void PushRtGroup(RtGroup* Base);
+  void PushRtGroup(rtgroup_ptr_t Base);
   void PopRtGroup();
 
-  virtual void rtGroupClear(RtGroup* rtg) {
+  virtual void rtGroupClear(rtgroup_ptr_t rtg) {
   }
-  virtual void rtGroupMipGen(RtGroup* rtg) {
+  virtual void rtGroupMipGen(rtgroup_ptr_t rtg) {
   }
   //void pushMainSurface();
   //void popMainSurface();
@@ -164,10 +164,10 @@ public:
 
   fcolor4 _clearColor;
   int _pickState;
-  std::stack<lev2::RtGroup*> mRtGroupStack;
-  RtGroup* _active_rtgroup = nullptr;
+  std::stack<lev2::rtgroup_ptr_t> mRtGroupStack;
+  rtgroup_ptr_t _active_rtgroup = nullptr;
+  rtgroup_ptr_t _main_rtg;
 
-  //rtgroup_ptr_t _main_rtg;
   //rtbuffer_ptr_t _main_rtb_color;
   //rtbuffer_ptr_t _main_rtb_depth;
 

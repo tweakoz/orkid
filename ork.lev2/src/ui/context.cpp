@@ -8,6 +8,7 @@ Context::Context() {
   _uitimer.Start();
   _prevtime = 0.0;
   _cmdbuf_top = std::make_shared<lev2::CommandBuffer>();
+  _uirenderpass = std::make_shared<lev2::RenderPass>();
 }
 /////////////////////////////////////////////////////////////////////////
 void Context::tick(updatedata_ptr_t updata){
@@ -154,7 +155,10 @@ bool Context::hasMouseFocus(const Widget* w) const {
 /////////////////////////////////////////////////////////////////////////
 void Context::draw(drawevent_constptr_t drwev) {
   auto gfx_ctx = drwev->GetTarget();
-  gfx_ctx->pushCommandBuffer(_cmdbuf_top);
+
+  auto main_rtg = gfx_ctx->FBI()->_main_rtg;
+
+  gfx_ctx->pushCommandBuffer(_cmdbuf_top,_uirenderpass,main_rtg);
   gfx_ctx->debugPushGroup("ui::Context::draw::top",fvec4::White());
   _top->draw(drwev);
   if (_overlayWidget) {

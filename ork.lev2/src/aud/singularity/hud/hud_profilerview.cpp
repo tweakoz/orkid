@@ -68,7 +68,7 @@ void ProfilerView::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
   double time  = syn->_timeaccum;
 
   _rtgroup->_clearColor = _clearColor;
-  fbi->rtGroupClear(_rtgroup.get());
+  fbi->rtGroupClear(_rtgroup);
 
   // auto name   = _curprogram->_name;
   int ycursor = 0;

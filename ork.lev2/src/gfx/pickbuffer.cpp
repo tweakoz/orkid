@@ -81,7 +81,7 @@ void PickBuffer::Draw(lev2::PixelFetchContext& ctx) {
     _rtgroup->Resize(isurfw, isurfh);
   }
   // printf("Begin Pickbuffer::Draw() surf<%p>\n", _surface);
-  fbi->PushRtGroup(_rtgroup.get());
+  fbi->PushRtGroup(_rtgroup);
   fbi->EnterPickState(this);
 
   auto drwev = std::make_shared<ork::ui::DrawEvent>(tgt);

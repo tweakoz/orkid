@@ -128,7 +128,7 @@ struct IMPL {
             int smallh = _rtg_b->height();
             //printf( "smallw<%d> smallh<%d>\n", smallw, smallh );
             _rtg_c->Resize(smallw,smallh);
-            FBI->PushRtGroup(_rtg_c.get());
+            FBI->PushRtGroup(_rtg_c);
             _freestyle_mtl->begin(_tek_maskbright,*framedata);
             _freestyle_mtl->_rasterstate->setBlendingMacro(BlendingMacro::OFF);
             _freestyle_mtl->bindParamFloat(_fxpMaskThreshold, _node->_threshold);
@@ -141,7 +141,7 @@ struct IMPL {
             // blurx
             /////////////////////
             _rtg_d->Resize(smallw,smallh);
-            FBI->PushRtGroup(_rtg_d.get());
+            FBI->PushRtGroup(_rtg_d);
             _freestyle_mtl->begin(_tek_blurx,*framedata);
             _freestyle_mtl->_rasterstate->setBlendingMacro(BlendingMacro::OFF);
             _freestyle_mtl->bindParamFloat(_fxpBlurFactor, _node->_blurfactor);
@@ -157,7 +157,7 @@ struct IMPL {
             // blury
             /////////////////////
             _rtg_e->Resize(smallw,smallh);
-            FBI->PushRtGroup(_rtg_e.get());
+            FBI->PushRtGroup(_rtg_e);
             _freestyle_mtl->begin(_tek_blury,*framedata);
             _freestyle_mtl->_rasterstate->setBlendingMacro(BlendingMacro::OFF);
             _freestyle_mtl->bindParamFloat(_fxpBlurFactor, _node->_blurfactor);
@@ -174,7 +174,7 @@ struct IMPL {
             /////////////////////
             //printf( "finalw<%d> finalh<%d>\n", finalw, finalh );
             _rtg_out->Resize(finalw,finalh);
-            FBI->PushRtGroup(_rtg_out.get());
+            FBI->PushRtGroup(_rtg_out);
             _freestyle_mtl->begin(_tek_join,*framedata);
             _freestyle_mtl->_rasterstate->setBlendingMacro(BlendingMacro::OFF);
             _freestyle_mtl->bindParamFloat(_fxpBlurFactor, _node->_blurfactor);

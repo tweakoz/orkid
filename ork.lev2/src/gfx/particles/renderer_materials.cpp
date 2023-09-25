@@ -297,7 +297,7 @@ void GradientMaterial::update(const RenderContextInstData& RCID) {
     bool prev_stereo = CPD.isStereoOnePass();
     CPD.setStereoOnePass(false);
     /////////////////////////////////////////
-    FBI->PushRtGroup(_gradient_rtgroup.get());
+    FBI->PushRtGroup(_gradient_rtgroup);
     _grad_render_pipeline->wrappedDrawCall(RCID, [&]() { //
       GBI->DrawPrimitiveEML(vw, PrimitiveType::TRIANGLES);
     });

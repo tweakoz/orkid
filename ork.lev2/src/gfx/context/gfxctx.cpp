@@ -52,12 +52,12 @@ void Context::endFrame(void) {
 
 /////////////////////////////////////////////////////////////////////////
 
-commandbuffer_ptr_t Context::beginRecordCommandBuffer(renderpass_ptr_t rpass){
-  return _beginRecordCommandBuffer(rpass);
-}
-void Context::endRecordCommandBuffer(commandbuffer_ptr_t cmdbuf){
-  _endRecordCommandBuffer(cmdbuf);
-}
+//commandbuffer_ptr_t Context::beginRecordCommandBuffer(renderpass_ptr_t rpass){
+  //return _beginRecordCommandBuffer(rpass);
+//}
+//void Context::endRecordCommandBuffer(commandbuffer_ptr_t cmdbuf){
+  //_endRecordCommandBuffer(cmdbuf);
+//}
 
 void Context::beginRenderPass(renderpass_ptr_t pass){
   _beginRenderPass(pass);

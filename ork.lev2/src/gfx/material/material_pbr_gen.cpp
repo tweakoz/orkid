@@ -290,7 +290,7 @@ texture_ptr_t PBRMaterial::filterSpecularEnvMap(texture_ptr_t rawenvmap, Context
       logchan_pbrgen->log("filterenv imip<%d> w<%d> h<%d>", imip, w, h);
       logchan_pbrgen->log("filterenv imip<%d> outgroup<%p> outbuf<%p>", imip, outgroup.get(), outbuffr.get());
 
-      fbi->PushRtGroup(outgroup.get());
+      fbi->PushRtGroup(outgroup);
       mtl->begin(tekFilterSpecMap, RCFD);
       ///////////////////////////////////////////////
       float roughness = float(imip) / float(nummips - 1);
@@ -421,7 +421,7 @@ texture_ptr_t PBRMaterial::filterDiffuseEnvMap(texture_ptr_t rawenvmap, Context*
       /// logchan_pbrgen->log("filterenv imip<%d> w<%d> h<%d>", imip, w, h);
       // logchan_pbrgen->log("filterenv imip<%d> outgroup<%p> outbuf<%p>", imip, outgroup.get(), outbuffr.get());
 
-      fbi->PushRtGroup(outgroup.get());
+      fbi->PushRtGroup(outgroup);
       mtl->begin(tekFilterDiffMap, RCFD);
       ///////////////////////////////////////////////
       mtl->bindParamMatrix(param_mvp, fmtx4::Identity());

@@ -34,7 +34,7 @@ struct PtxImpl {
       _blit2screenmtl.SetUserFx("orkshader://solid", "texcolor");
       _blit2screenmtl.gpuInit(pTARG);
 
-      _output                   = new lev2::RtGroup(pTARG, iW, iH);
+      _output                   = std::make_shared<lev2::RtGroup>(pTARG, iW, iH);
       _outputbuffer             = _output->createRenderTarget(lev2::EBufferFormat::RGBA16F);
       _outputbuffer->_debugName = FormatString("PtxCompositingNode::output");
       _output->SetMrt(0, _outputbuffer);
@@ -139,7 +139,7 @@ struct PtxImpl {
   ork::lev2::GfxMaterial3DSolid _blit2screenmtl;
   proctex::ProcTexContext _ptexContext;
   PtxCompositingNode* _node = nullptr;
-  RtGroup* _output          = nullptr;
+  rtgroup_ptr_t _output          = nullptr;
   rtbuffer_ptr_t _outputbuffer;
   Texture* _resultTexture   = nullptr;
   bool _needsinit           = true;

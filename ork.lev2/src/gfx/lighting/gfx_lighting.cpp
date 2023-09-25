@@ -259,7 +259,7 @@ RtGroupRenderTarget* SpotLight::rendertarget(Context* ctx) {
   if (nullptr == _shadowIRT or (_SLD->shadowMapSize() != _shadowmapDim)) {
     _shadowmapDim = _SLD->shadowMapSize();
     MsaaSamples msaasamps = intToMsaaEnum(_SLD->shadowSamples());
-    _shadowRTG    = new RtGroup(ctx, _shadowmapDim, _shadowmapDim, msaasamps);
+    _shadowRTG    = std::make_shared<RtGroup>(ctx, _shadowmapDim, _shadowmapDim, msaasamps);
     _shadowIRT    = new RtGroupRenderTarget(_shadowRTG);
   }
   return _shadowIRT;

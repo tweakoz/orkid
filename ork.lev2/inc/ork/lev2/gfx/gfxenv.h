@@ -205,8 +205,10 @@ public:
   void endFrame(void);
 
 
-  commandbuffer_ptr_t beginRecordCommandBuffer(renderpass_ptr_t rpass=nullptr);
-  void endRecordCommandBuffer(commandbuffer_ptr_t cmdbuf);
+  //commandbuffer_ptr_t beginRecordCommandBuffer(renderpass_ptr_t rpass=nullptr);
+  //void endRecordCommandBuffer(commandbuffer_ptr_t cmdbuf);
+  //virtual commandbuffer_ptr_t _beginRecordCommandBuffer(renderpass_ptr_t rpass) { return nullptr; }
+  //virtual void _endRecordCommandBuffer(commandbuffer_ptr_t cmdbuf) {}
 
   void beginRenderPass(renderpass_ptr_t);
   void endRenderPass(renderpass_ptr_t);
@@ -215,8 +217,6 @@ public:
 
   ///////////////////////////////////////////////////////////////////////
 
-  virtual commandbuffer_ptr_t _beginRecordCommandBuffer(renderpass_ptr_t rpass) { return nullptr; }
-  virtual void _endRecordCommandBuffer(commandbuffer_ptr_t cmdbuf) {}
   virtual void _beginRenderPass(renderpass_ptr_t) {}
   virtual void _endRenderPass(renderpass_ptr_t) {}
   virtual void _beginSubPass(rendersubpass_ptr_t) {}
@@ -291,10 +291,10 @@ public:
 
   //////////////////////////////////////////////
 
-  inline void pushCommandBuffer(commandbuffer_ptr_t cmdbuf, rtgroup_ptr_t rtg=nullptr) {
+  inline void pushCommandBuffer(commandbuffer_ptr_t cmdbuf, renderpass_ptr_t rpass,rtgroup_ptr_t rtgroup) {
     _cmdbuf_stack.push(cmdbuf);
     _current_cmdbuf = cmdbuf;
-    _doPushCommandBuffer(cmdbuf,rtg);
+    _doPushCommandBuffer(cmdbuf,rpass,rtgroup);
   }
   inline commandbuffer_ptr_t popCommandBuffer() {
     _doPopCommandBuffer();
@@ -310,7 +310,7 @@ public:
     _doEnqueueSecondaryCommandBuffer(cmdbuf);
   }
 
-  virtual void _doPushCommandBuffer(commandbuffer_ptr_t cmdbuf, rtgroup_ptr_t rtg=nullptr) {}
+  virtual void _doPushCommandBuffer(commandbuffer_ptr_t cmdbuf, renderpass_ptr_t rpass,rtgroup_ptr_t rtgroup) {}
   virtual void _doPopCommandBuffer() {}
   virtual void _doEnqueueSecondaryCommandBuffer(commandbuffer_ptr_t cmdbuf) {}
 

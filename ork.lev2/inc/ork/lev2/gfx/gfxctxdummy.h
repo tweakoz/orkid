@@ -99,31 +99,6 @@ public:
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-/*
-struct DuRasterStateInterface : public RasterStateInterface {
-  DuRasterStateInterface(Context& target);
-  void BindRasterState(const SRasterState& rState, bool bForce = false) final {
-  }
-  void SetZWriteMask(bool bv) final {
-  }
-  void SetRGBAWriteMask(bool rgb, bool a) final {
-  }
-  RGBAMask SetRGBAWriteMask(const RGBAMask& newmask) final {
-    return _curmask;
-  }
-  void SetBlending(Blending eVal) final {
-  }
-  void SetDepthTest(EDepthTest eVal) final {
-  }
-  void SetCullTest(ECullTest eVal) final {
-  }
-  void setScissorTest(EScissorTest eVal) final {
-  }
-
-public:
-};*/
-
-///////////////////////////////////////////////////////////////////////////////
 #if defined(ENABLE_COMPUTE_SHADERS)
 struct DuComputeInterface : public ComputeInterface {};
 #endif
@@ -203,9 +178,9 @@ public:
   DuFrameBufferInterface(Context& target);
   ~DuFrameBufferInterface();
 
-  void _pushRtGroup(RtGroup* Base) final {
+  void _pushRtGroup(rtgroup_ptr_t Base) final {
   }
-  RtGroup* _popRtGroup() final {
+  rtgroup_ptr_t _popRtGroup() final {
     return nullptr;
   }
 

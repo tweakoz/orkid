@@ -67,7 +67,7 @@ public:
   // static const int kh = 1024;
   Buffer(ork::lev2::EBufferFormat efmt);
   dataflow::node_hash mHash;
-  lev2::RtGroup* mRtGroup;
+  lev2::rtgroup_ptr_t mRtGroup;
   lev2::Context* mTarget;
   std::string _basename;
   int miW, miH;
@@ -84,7 +84,7 @@ public:
     return format() == lev2::EBufferFormat::RGBA16F;
   }
 
-  lev2::RtGroup* GetRtGroup(lev2::Context* pt);
+  lev2::rtgroup_ptr_t GetRtGroup(lev2::Context* pt);
 
   virtual ork::lev2::EBufferFormat format() const = 0;
 

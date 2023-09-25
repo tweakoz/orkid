@@ -122,7 +122,7 @@ void Op2CompositingNode::DoRender(CompositorDrawData& drawdata) // virtual
   }
 
   fbi->SetAutoClear(false);
-  fbi->PushRtGroup(_rtg.get());
+  fbi->PushRtGroup(_rtg);
   gbi->BeginFrame();
 
   SRect vprect(0, 0, iw - 1, ih - 1);

@@ -39,7 +39,7 @@ struct IMPL {
     if (nullptr == _rtg) {
       int w           = pTARG->mainSurfaceWidth();
       int h           = pTARG->mainSurfaceHeight();
-      _rtg            = new RtGroup(pTARG, w, h, lev2::MsaaSamples::MSAA_1X);
+      _rtg            = std::make_shared<RtGroup>(pTARG, w, h, lev2::MsaaSamples::MSAA_1X);
       auto buf        = _rtg->createRenderTarget(lev2::EBufferFormat::RGBA8);
       buf->_debugName = FormatString("ScaleBiasCompositingNode::output");
       _material.gpuInit(pTARG);
@@ -67,7 +67,7 @@ struct IMPL {
   ///////////////////////////////////////
   CompositingMaterial _material;
   ScaleBiasCompositingNode* _node = nullptr;
-  RtGroup* _rtg                   = nullptr;
+  rtgroup_ptr_t _rtg                   = nullptr;
 };
 } // namespace scaleandbias
 ///////////////////////////////////////////////////////////////////////////////

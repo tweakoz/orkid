@@ -345,6 +345,7 @@ struct VklRtBufferImpl {
 ///////////////////////////////////////////////////////////////////////////////
 
 renderpass_ptr_t createRenderPassForRtGroup(vkcontext_rawptr_t ctxVK, vkrtgrpimpl_ptr_t rtg_impl);
+void implementRenderPassForRtGroup(vkcontext_rawptr_t ctxVK, renderpass_ptr_t renpass, vkrtgrpimpl_ptr_t rtg_impl);
 
 struct VkRtGroupImpl {
   VkRtGroupImpl(RtGroup* _rtg);
@@ -882,8 +883,8 @@ struct VkFrameBufferInterface final : public FrameBufferInterface {
 
   void GetPixel(const fvec4& rAt, PixelFetchContext& ctx) final;
 
-  void rtGroupClear(RtGroup* rtg) final;
-  void rtGroupMipGen(RtGroup* rtg) final;
+  void rtGroupClear(rtgroup_ptr_t rtg) final;
+  void rtGroupMipGen(rtgroup_ptr_t rtg) final;
   void msaaBlit(rtgroup_ptr_t src, rtgroup_ptr_t dst) final;
   void blit(rtgroup_ptr_t src, rtgroup_ptr_t dst) final;
   void downsample2x2(rtgroup_ptr_t src, rtgroup_ptr_t dst) final;
@@ -895,15 +896,15 @@ struct VkFrameBufferInterface final : public FrameBufferInterface {
   void _setScissor(int iX, int iY, int iW, int iH) final;
   void _doBeginFrame(void) final;
   void _doEndFrame(void) final;
-  void _pushRtGroup(RtGroup* Base) final;
-  RtGroup* _popRtGroup() final;
-  void _postPushRtGroup(RtGroup* Base);
+  void _pushRtGroup(rtgroup_ptr_t Base) final;
+  rtgroup_ptr_t _popRtGroup() final;
+  void _postPushRtGroup(rtgroup_ptr_t Base);
   void _present();
   //////////////////////////////////////////////
 
   freestyle_mtl_ptr_t utilshader();
 
-  vkrtgrpimpl_ptr_t _createRtGroupImpl(RtGroup* rtg);
+  vkrtgrpimpl_ptr_t _createRtGroupImpl(rtgroup_ptr_t rtg);
   // void _doPushMainSurface() final;
   // void _doPopMainSurface() final;
 
@@ -1103,8 +1104,8 @@ public:
 
   //////////////////////////////////////////////
 
-  commandbuffer_ptr_t _beginRecordCommandBuffer(renderpass_ptr_t rpass) final;
-  void _endRecordCommandBuffer(commandbuffer_ptr_t cmdbuf) final;
+  //commandbuffer_ptr_t _beginRecordCommandBuffer(renderpass_ptr_t rpass) final;
+  //void _endRecordCommandBuffer(commandbuffer_ptr_t cmdbuf) final;
   void _beginRenderPass(renderpass_ptr_t) final;
   void _endRenderPass(renderpass_ptr_t) final;
   void _beginSubPass(rendersubpass_ptr_t) final;
@@ -1160,7 +1161,7 @@ public:
   void _initVulkanForOffscreen(DisplayBuffer* pBuf);
   void _initVulkanCommon();
   //////////////////////////////////////////////
-  void _doPushCommandBuffer(commandbuffer_ptr_t cmdbuf, rtgroup_ptr_t rtg) final;
+  void _doPushCommandBuffer(commandbuffer_ptr_t cmdbuf, renderpass_ptr_t rpass, rtgroup_ptr_t rtgroup) final;
   void _doPopCommandBuffer() final;
   void _doEnqueueSecondaryCommandBuffer(commandbuffer_ptr_t cmdbuf) final;
   //////////////////////////////////////////////

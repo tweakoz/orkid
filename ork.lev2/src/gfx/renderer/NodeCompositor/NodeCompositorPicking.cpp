@@ -74,9 +74,9 @@ struct IMPL {
     auto irenderer = ddprops["irenderer"_crcu].get<lev2::IRenderer*>();
     //////////////////////////////////////////////////////
     targ->debugPushGroup("Picking::render");
-    RtGroupRenderTarget rt(_rtg.get());
+    RtGroupRenderTarget rt(_rtg);
     {
-      targ->FBI()->PushRtGroup(_rtg.get());
+      targ->FBI()->PushRtGroup(_rtg);
       targ->FBI()->SetAutoClear(false); // explicit clear
       targ->beginFrame();
       /////////////////////////////////////////////////////////////////////////////////////////

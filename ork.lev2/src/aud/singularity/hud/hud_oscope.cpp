@@ -110,7 +110,7 @@ void ScopeSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
   const float* _samples = scopebuf->_samples;
 
   _rtgroup->_clearColor = _clearColor;
-  fbi->rtGroupClear(_rtgroup.get());
+  fbi->rtGroupClear(_rtgroup);
 
   float osgain = 1.0f;
 

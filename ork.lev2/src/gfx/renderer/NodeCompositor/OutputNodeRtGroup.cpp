@@ -152,7 +152,7 @@ void RtGroupOutputCompositingNode::composite(CompositorDrawData& drawdata) {
   Context* context                  = framedata.GetTarget();
   auto fbi                          = context->FBI();
   auto gbi = context->GBI();
-  RtGroup* output_rtg = _static_rtg.get();
+  rtgroup_ptr_t output_rtg = _static_rtg;
 
   if(0)
   printf( "composite into rtg<%s> w<%d> h<%d>\n", //

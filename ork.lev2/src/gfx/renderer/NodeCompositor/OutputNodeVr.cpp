@@ -47,7 +47,7 @@ struct VRIMPL {
 
 
       //printf("A: vr width<%d> height<%d>\n", width, height);
-      _rtg            = new RtGroup(context, width, height, MsaaSamples::MSAA_1X);
+      _rtg            = std::make_shared<RtGroup>(context, width, height, MsaaSamples::MSAA_1X);
       auto buf        = _rtg->createRenderTarget(EBufferFormat::RGBA8);
       buf->_debugName = "WtfVrRt";
 
@@ -176,7 +176,7 @@ struct VRIMPL {
   PoolString _camname, _layers;
   CompositingPassData _CPD;
   fmtx4 _viewOffsetMatrix;
-  RtGroup* _rtg                      = nullptr;
+  rtgroup_ptr_t _rtg                      = nullptr;
   bool _doinit                       = true;
   CameraMatrices* _tmpcameramatrices = nullptr;
 };

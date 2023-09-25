@@ -110,9 +110,9 @@ void Buffer::PtexEnd(bool pop_vp) {
   mTarget = nullptr;
 }
 ///////////////////////////////////////////////////////////////////////////////
-lev2::RtGroup* Buffer::GetRtGroup(lev2::Context* ptgt) {
+lev2::rtgroup_ptr_t Buffer::GetRtGroup(lev2::Context* ptgt) {
   if (mRtGroup == nullptr) {
-    mRtGroup             = new RtGroup(ptgt, miW, miH);
+    mRtGroup             = std::make_shared<RtGroup>(ptgt, miW, miH);
     mRtGroup->_autoclear = false;
 
     auto mrt = mRtGroup->createRenderTarget(lev2::EBufferFormat::RGBA8);

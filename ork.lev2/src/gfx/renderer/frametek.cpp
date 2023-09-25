@@ -48,7 +48,7 @@ IRenderTarget::IRenderTarget() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-RtGroupRenderTarget::RtGroupRenderTarget(RtGroup* prtgroup)
+RtGroupRenderTarget::RtGroupRenderTarget(rtgroup_ptr_t prtgroup)
     : _rtgroup(prtgroup) {
 }
 int RtGroupRenderTarget::width() {

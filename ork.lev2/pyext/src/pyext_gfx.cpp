@@ -105,9 +105,9 @@ void pyinit_gfx(py::module& module_lev2) {
             return fbi.get()->captureAsFormat(rtb.get(), &capbuf, EBufferFormat(crc_fmt._hashed));
           })
       //.def("clear", [](const fbi_t& fbi, const fcolor4& color, float depth) { return fbi.get()->Clear(color, depth); })
-      .def("rtGroupPush", [](const fbi_t& fbi, rtg_t& rtg) { return fbi.get()->PushRtGroup(rtg.get()); })
+      .def("rtGroupPush", [](const fbi_t& fbi, rtg_t& rtg) { return fbi.get()->PushRtGroup(rtg); })
       .def("rtGroupPop", [](const fbi_t& fbi) { return fbi.get()->PopRtGroup(); })
-      .def("rtGroupClear", [](const fbi_t& fbi, rtg_t& rtg) { return fbi.get()->rtGroupClear(rtg.get()); })
+      .def("rtGroupClear", [](const fbi_t& fbi, rtg_t& rtg) { return fbi.get()->rtGroupClear(rtg); })
       .def("__repr__", [](const fbi_t& fbi) -> std::string {
         fxstring<256> fxs;
         fxs.format("FBI(%p)", fbi.get());

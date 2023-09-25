@@ -364,7 +364,7 @@ public:
   SpotLight(const SpotLightData* pld);
   SpotLight(xform_generator_t mtx, const SpotLightData* sld = 0);
 
-  RtGroup* _shadowRTG             = nullptr;
+  rtgroup_ptr_t _shadowRTG             = nullptr;
   RtGroupRenderTarget* _shadowIRT = nullptr;
   const SpotLightData* _SLD       = nullptr;
 

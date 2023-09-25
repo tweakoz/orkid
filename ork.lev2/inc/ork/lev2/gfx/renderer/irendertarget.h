@@ -17,14 +17,14 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 
 struct RtGroupRenderTarget : public IRenderTarget {
-  RtGroupRenderTarget(RtGroup* prtgroup);
+  RtGroupRenderTarget(rtgroup_ptr_t prtgroup);
 
   int width() final;
   int height() final;
   void BeginFrame(FrameRenderer& frenderer) final;
   void EndFrame(FrameRenderer& frenderer) final;
 
-  RtGroup* _rtgroup;
+  rtgroup_ptr_t _rtgroup;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

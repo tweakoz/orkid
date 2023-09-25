@@ -69,8 +69,8 @@ void _vkCreateImageForBuffer(
 
 ///////////////////////////////////////////////////////////////////////////////
 
-vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(RtGroup* rtgroup) {
-  vkrtgrpimpl_ptr_t RTGIMPL = rtgroup->_impl.makeShared<VkRtGroupImpl>(rtgroup);
+vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(rtgroup_ptr_t rtgroup) {
+  vkrtgrpimpl_ptr_t RTGIMPL = rtgroup->_impl.makeShared<VkRtGroupImpl>(rtgroup.get());
   RTGIMPL->_width           = rtgroup->width();
   RTGIMPL->_height          = rtgroup->height();
   int inumtargets           = rtgroup->GetNumTargets();
@@ -200,7 +200,7 @@ vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(RtGroup* rtgroup) {
   return RTGIMPL;
 }
 
-void VkFrameBufferInterface::_postPushRtGroup(RtGroup* rtgroup) {
+void VkFrameBufferInterface::_postPushRtGroup(rtgroup_ptr_t rtgroup) {
 
   float fx = 0.0f;
   float fy = 0.0f;
@@ -227,7 +227,7 @@ void VkFrameBufferInterface::_present() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void VkFrameBufferInterface::_pushRtGroup(RtGroup* rtgroup) {
+void VkFrameBufferInterface::_pushRtGroup(rtgroup_ptr_t rtgroup) {
   // auto prev_rtgroup = _active_rtgroup;
   // if (nullptr == rtgroup) {
   //_setMainAsRenderTarget();
@@ -282,7 +282,7 @@ void VkFrameBufferInterface::_pushRtGroup(RtGroup* rtgroup) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-RtGroup* VkFrameBufferInterface::_popRtGroup() {
+rtgroup_ptr_t VkFrameBufferInterface::_popRtGroup() {
   auto rtb0 = _active_rtgroup->mMrt[0];
   if (0)
     printf(

@@ -138,7 +138,7 @@ rtgroup_ptr_t RtgSet::fetch(uint64_t key) {
     rval = std::make_shared<RtGroup>(_context, 8, 8, _msaasamples);
     rval->_autoclear = _autoclear;
     if(_do_rendertarget){
-      rval->_rendertarget = std::make_shared<RtGroupRenderTarget>(rval.get());
+      rval->_rendertarget = std::make_shared<RtGroupRenderTarget>(rval);
     }
     for (auto item : _bufrecs) {
       auto buffer        = rval->createRenderTarget(item._format);

@@ -134,7 +134,7 @@ struct ForwardPbrNodeImpl {
     //////////////////////////////////////////////////////
     rtg_main->_autoclear = false;
     context->debugPushGroup("ForwardPBR::render");
-    RtGroupRenderTarget rt(rtg_main.get());
+    RtGroupRenderTarget rt(rtg_main);
     {
       FBI->SetAutoClear(false); // explicit clear
       /////////////////////////////////////////////////////////////////////////////////////////
@@ -155,7 +155,7 @@ struct ForwardPbrNodeImpl {
         ///////////////////////////////////////////////////////////////////////////
 
         context->debugMarker(FormatString("ForwardPBR::preclear"));
-        FBI->PushRtGroup(rtg_main.get());
+        FBI->PushRtGroup(rtg_main);
         CIMPL->pushCPD(CPD);
         auto MTXI = context->MTXI();
         //FBI->Clear(pbrcommon->_clearColor, 1.0f);
