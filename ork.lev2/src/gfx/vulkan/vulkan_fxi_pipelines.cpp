@@ -60,6 +60,10 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(
 
   int rs_shbits = check_pb_range(vkrstate->_pipeline_bits, 8);
 
+  auto rpass = _contextVK->_renderpasses.back();
+  auto rp_impl = rpass->_impl.getShared<VulkanRenderPass>();
+  // hash renderpass ?
+  
   uint64_t pipeline_hash = vb_pbits | (rtg_pbits << 4) | (pc_pbits << 8) | (sh_pbits << 16) | (rs_shbits << 24);
 
   ////////////////////////////////////////////////////
@@ -76,7 +80,7 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(
     initializeVkStruct(CINFO, VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO);
 
     CINFO.flags      = VK_PIPELINE_CREATE_DISABLE_OPTIMIZATION_BIT;
-    CINFO.renderPass = _contextVK->_fbi->_swapchain->_mainRenderPass->_vkrp;
+    CINFO.renderPass = rp_impl->_vkrp;
     CINFO.subpass    = 0;
 
     // count shader stages
