@@ -764,25 +764,6 @@ struct VkImiInterface final : public ImmInterface {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-/*
-struct VkRasterStateInterface final : public RasterStateInterface {
-
-  VkRasterStateInterface(vkcontext_rawptr_t ctx);
-  void BindRasterState(const SRasterState& rState, bool bForce) final;
-
-  void SetZWriteMask(bool bv) final;
-  void SetRGBAWriteMask(bool rgb, bool a) final;
-  RGBAMask SetRGBAWriteMask(const RGBAMask& newmask) final;
-  void SetBlending(Blending eVal) final;
-  void SetDepthTest(EDepthTest eVal) final;
-  void SetCullTest(ECullTest eVal) final;
-  void setScissorTest(EScissorTest eVal) final;
-
-  vkcontext_rawptr_t _contextVK;
-};
-*/
-///////////////////////////////////////////////////////////////////////////////
-
 struct VkMatrixStackInterface final : public MatrixStackInterface {
 
   VkMatrixStackInterface(vkcontext_rawptr_t ctx);
@@ -909,9 +890,6 @@ struct VkFrameBufferInterface final : public FrameBufferInterface {
   freestyle_mtl_ptr_t utilshader();
 
   vkrtgrpimpl_ptr_t _createRtGroupImpl(RtGroup* rtg);
-  // void _doPushMainSurface() final;
-  // void _doPopMainSurface() final;
-
 
   freestyle_mtl_ptr_t _freestyle_mtl;
   const FxShaderTechnique* _tek_downsample2x2 = nullptr;
@@ -1247,7 +1225,7 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////
 
-renderpass_ptr_t createRenderPassForRtGroup(vkcontext_rawptr_t ctxVK, rtgroup_ptr_t rtg);
+renderpass_ptr_t createRenderPassForRtGroup(vkcontext_rawptr_t ctxVK, RtGroup* rtg );
 
 void _vkReplaceImageForBuffer(
     vkcontext_rawptr_t ctxVK, //

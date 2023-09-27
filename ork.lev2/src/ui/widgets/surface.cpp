@@ -72,7 +72,7 @@ void Surface::RePaintSurface(ui::drawevent_constptr_t drwev) {
 }
 
 void Surface::_doGpuInit(lev2::Context* context) {
-  _rtgroup        = std::make_shared<lev2::RtGroup>(context, 8, 8, lev2::MsaaSamples::MSAA_1X,false);
+  _rtgroup        = std::make_shared<lev2::RtGroup>(context, 8, 8, lev2::MsaaSamples::MSAA_1X,true);
   _rtgroup->_name = FormatString("ui::Surface<%p>", (void*)this);
   auto mrt0       = _rtgroup->createRenderTarget(lev2::EBufferFormat::RGBA8,"color"_crcu);
 }
@@ -116,7 +116,7 @@ void Surface::DoDraw(ui::drawevent_constptr_t drwev) {
   }
   
 
-  if (0) { //mNeedsSurfaceRepaint || IsDirty()) {
+  if (1) { //mNeedsSurfaceRepaint || IsDirty()) {
     //tgt->pushCommandBuffer(_cmdbuf);
     tgt->debugMarker("post-cb");
     fbi->PushRtGroup(_rtgroup.get());

@@ -97,45 +97,58 @@ void VkFrameBufferInterface::GetPixel(const fvec4& rAt, PixelFetchContext& ctx) 
 
 ///////////////////////////////////////////////////////////////////////
 
-vksubpass_ptr_t createSubPass() {
+vksubpass_ptr_t createSubPass(bool has_depth) {
   vksubpass_ptr_t subpass = std::make_shared<VulkanRenderSubPass>();
 
   subpass->_attach_refs.reserve(2);
   auto& CATR = subpass->_attach_refs.emplace_back();
-  auto& DATR = subpass->_attach_refs.emplace_back();
   initializeVkStruct(CATR);
-  initializeVkStruct(DATR);
   CATR.attachment = 0;
-  DATR.attachment = 1;
+
+  if(has_depth){
+    auto& DATR = subpass->_attach_refs.emplace_back();
+    initializeVkStruct(DATR);
+    DATR.attachment = 1;
+  }
 
   initializeVkStruct(subpass->_SUBPASS);
   subpass->_SUBPASS.pipelineBindPoint       = VK_PIPELINE_BIND_POINT_GRAPHICS;
   subpass->_SUBPASS.colorAttachmentCount    = 1;
   subpass->_SUBPASS.pColorAttachments       = &CATR;
   subpass->_SUBPASS.colorAttachmentCount    = 1;
-  subpass->_SUBPASS.pDepthStencilAttachment = &DATR;
+  if(has_depth){
+    auto& DATR = subpass->_attach_refs.back();
+    subpass->_SUBPASS.pDepthStencilAttachment = &DATR;
+  }
 
   return subpass;
 }
 
 ///////////////////////////////////////////////////////
 
-renderpass_ptr_t createRenderPassForRtGroup(vkcontext_rawptr_t ctxVK, rtgroup_ptr_t rtg ){
+renderpass_ptr_t createRenderPassForRtGroup(vkcontext_rawptr_t ctxVK, RtGroup* rtg ){
   auto rtg_impl = rtg->_impl.getShared<VkRtGroupImpl>();
   auto renpass = std::make_shared<RenderPass>();
   auto vk_renpass = renpass->_impl.makeShared<VulkanRenderPass>(renpass.get());
   auto color_rtb  = rtg->GetMrt(0);
   auto color_rtbi = color_rtb->_impl.getShared<VklRtBufferImpl>();
   auto depth_rtb  = rtg->_depthBuffer;
-  auto depth_rtbi = depth_rtb->_impl.getShared<VklRtBufferImpl>();
+  bool has_depth = (depth_rtb!=nullptr);
   color_rtbi->setLayout( VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL );
-  depth_rtbi->setLayout( VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL );
+
+  if( has_depth){
+    auto depth_rtbi = depth_rtb->_impl.getShared<VklRtBufferImpl>();
+    depth_rtbi->setLayout( VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL );
+  }
 
   auto attachments = rtg_impl->attachments();
 
-    auto subpass = createSubPass();
+    auto subpass = createSubPass(has_depth);
     subpass->_attach_refs[0].layout = color_rtbi->_currentLayout;
-    subpass->_attach_refs[1].layout = depth_rtbi->_currentLayout;
+    if( has_depth){
+      auto depth_rtbi = depth_rtb->_impl.getShared<VklRtBufferImpl>();
+      subpass->_attach_refs[1].layout = depth_rtbi->_currentLayout;
+    }
 
     VkRenderPassCreateInfo RPI = {};
     initializeVkStruct(RPI, VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO);

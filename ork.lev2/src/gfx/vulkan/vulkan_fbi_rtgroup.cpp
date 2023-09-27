@@ -283,12 +283,6 @@ void VkFrameBufferInterface::_present() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkFrameBufferInterface::_pushRtGroup(RtGroup* rtgroup) {
-  // auto prev_rtgroup = _active_rtgroup;
-  // if (nullptr == rtgroup) {
-  //_setMainAsRenderTarget();
-  //} else {
-  //_active_rtgroup = rtgroup;
-  //}
 
   if(nullptr==_active_rtgroup){
     _active_rtgroup = rtgroup;
@@ -302,13 +296,26 @@ void VkFrameBufferInterface::_pushRtGroup(RtGroup* rtgroup) {
     // OrkAssert(false);
   }
 
-  auto rpass = createRenderPassForRtGroup(_contextVK, _main_rtg);
-  _contextVK->_renderpasses.push_back(rpass);
-  _contextVK->beginRenderPass(rpass);
+  /////////////////////////////////
+  // end previous renderpass ?
+  /////////////////////////////////
 
+  size_t prev_rpass_count = _contextVK->_renderpasses.size();
+  if(prev_rpass_count>0){
+    auto prev_rpass = _contextVK->_renderpasses.back();
+    _contextVK->endRenderPass(prev_rpass);
+  }
+
+  /////////////////////////////////
+  // main_rtg ?
+  //  (images managed by swapchain)
+  /////////////////////////////////
   if( rtgroup == _main_rtg.get() ){
 
   }
+  /////////////////////////////////
+  // auxillary rtg ?
+  /////////////////////////////////
   else{
     OrkAssert(_active_rtgroup);
     int iw = _active_rtgroup->width();
@@ -344,6 +351,12 @@ void VkFrameBufferInterface::_pushRtGroup(RtGroup* rtgroup) {
       _active_rtgroup->SetSizeDirty(false);
     }
   }
+  /////////////////////////////////////////
+  // begin new renderpass
+  /////////////////////////////////////////
+  auto rpass = createRenderPassForRtGroup(_contextVK, rtgroup );
+  _contextVK->_renderpasses.push_back(rpass);
+  _contextVK->beginRenderPass(rpass);
   /////////////////////////////////////////
   _postPushRtGroup(rtgroup);
 }
