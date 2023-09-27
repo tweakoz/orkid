@@ -430,70 +430,6 @@ void VkContext::makeCurrentContext() {
   // platoMakeCurrent(plato);
 }
 
-///////////////////////////////////////////////////////////////////////
-
-vksubpass_ptr_t createSubPass() {
-  vksubpass_ptr_t subpass = std::make_shared<VulkanRenderSubPass>();
-
-  subpass->_attach_refs.reserve(2);
-  auto& CATR = subpass->_attach_refs.emplace_back();
-  auto& DATR = subpass->_attach_refs.emplace_back();
-  initializeVkStruct(CATR);
-  initializeVkStruct(DATR);
-  CATR.attachment = 0;
-  DATR.attachment = 1;
-
-  initializeVkStruct(subpass->_SUBPASS);
-  subpass->_SUBPASS.pipelineBindPoint       = VK_PIPELINE_BIND_POINT_GRAPHICS;
-  subpass->_SUBPASS.colorAttachmentCount    = 1;
-  subpass->_SUBPASS.pColorAttachments       = &CATR;
-  subpass->_SUBPASS.colorAttachmentCount    = 1;
-  subpass->_SUBPASS.pDepthStencilAttachment = &DATR;
-
-  return subpass;
-}
-
-///////////////////////////////////////////////////////////////////////
-
-renderpass_ptr_t createRenderPassForMainRTG(vkcontext_rawptr_t ctx, rtgroup_ptr_t rtg) {
-  auto renpass    = std::make_shared<RenderPass>();
-  auto vk_rpass   = renpass->_impl.makeShared<VulkanRenderPass>(renpass.get());
-  auto vk_rtgimpl = rtg->_impl.getShared<VkRtGroupImpl>();
-  auto color_rtb  = rtg->GetMrt(0);
-  auto color_rtbi = color_rtb->_impl.getShared<VklRtBufferImpl>();
-  auto depth_rtb  = rtg->_depthBuffer;
-  auto depth_rtbi = depth_rtb->_impl.getShared<VklRtBufferImpl>();
-  OrkAssert(color_rtbi->_is_surface);
-
-  // todo - use vk_rpass->_toposorted_subpasses
-  color_rtbi->setLayout( VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL );
-  depth_rtbi->setLayout( VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL );
- 
-  std::array<VkAttachmentDescription, 2> rp_attachments = { //
-    color_rtbi->_attachmentDesc, //
-    depth_rtbi->_attachmentDesc //
-  };
-
-  auto subpass                    = createSubPass();
-  subpass->_attach_refs[0].layout = color_rtbi->_currentLayout;
-  subpass->_attach_refs[1].layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-  VkRenderPassCreateInfo RPI = {};
-  initializeVkStruct(RPI, VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO);
-  RPI.attachmentCount = static_cast<uint32_t>(rp_attachments.size());
-  RPI.pAttachments    = rp_attachments.data();
-  RPI.subpassCount    = 1;
-  RPI.pSubpasses      = &subpass->_SUBPASS;
-  // RPI.dependencyCount = 1;
-  // RPI.pDependencies = &dependency;
-  VkResult OK = vkCreateRenderPass(ctx->_vkdevice, &RPI, nullptr, &vk_rpass->_vkrp);
-  OrkAssert(OK == VK_SUCCESS);
-
-  ctx->_fbi->_bindSwapChainToRenderPass(vk_rpass);
-
-  return renpass;
-}
-
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkContext::_doBeginFrame() {
@@ -557,11 +493,6 @@ void VkContext::_doBeginFrame() {
   CBBI_GFX.pInheritanceInfo = nullptr;
   vkBeginCommandBuffer(primary_cb()->_vkcmdbuf, &CBBI_GFX); // vkBeginCommandBuffer does an implicit reset
 
-  //auto rtg   = _fbi->_main_rtg;
-  //auto rpass = createRenderPassForMainRTG(this, rtg);
-  //_renderpasses.push_back(rpass);
-  //beginRenderPass(rpass);
-
   _fbi->PushRtGroup(_fbi->_main_rtg.get());
 }
 
@@ -590,9 +521,9 @@ void VkContext::_doEndFrame() {
   PopModColor();
   mbPostInitializeContext = false;
   ////////////////////////
+  // end main renderpass (and pop main rtg)
+  ////////////////////////
   _fbi->PopRtGroup();
-  auto rpass = _renderpasses.back();
-  endRenderPass(rpass);
   ////////////////////////
 
   _fbi->_enq_transitionMainRtgToPresent();

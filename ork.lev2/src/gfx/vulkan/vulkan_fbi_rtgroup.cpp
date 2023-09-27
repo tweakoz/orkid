@@ -238,8 +238,6 @@ vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(RtGroup* rtgroup) {
       bufferimpl->_descriptorInfo.sampler   = teximpl->_vksampler->_vksampler;
     }
 
-    RTGIMPL->_rpass_misc  = createRenderPassForRtGroup(_contextVK, RTGIMPL);
-    RTGIMPL->_rpass_clear = createRenderPassForRtGroup(_contextVK, RTGIMPL);
 
     // VkWriteDescriptorSet DWRITE{};
     // initializeVkStruct(DWRITE, VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
@@ -294,7 +292,7 @@ void VkFrameBufferInterface::_pushRtGroup(RtGroup* rtgroup) {
   //}
 
   if( rtgroup == _main_rtg.get() ){
-    auto rpass = createRenderPassForMainRTG(_contextVK, _main_rtg);
+    auto rpass = createRenderPassForRtGroup(_contextVK, _main_rtg);
     _contextVK->_renderpasses.push_back(rpass);
     _contextVK->beginRenderPass(rpass);
     _postPushRtGroup(_main_rtg.get() );
@@ -356,6 +354,8 @@ void VkFrameBufferInterface::_pushRtGroup(RtGroup* rtgroup) {
 RtGroup* VkFrameBufferInterface::_popRtGroup() {
   OrkAssert(_active_rtgroup);
   if( _active_rtgroup == _main_rtg.get() ){
+    auto rpass = _contextVK->_renderpasses.back();
+    _contextVK->endRenderPass(rpass);
     return _active_rtgroup;
   }
   auto rtb0 = _active_rtgroup->mMrt[0];

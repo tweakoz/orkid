@@ -95,27 +95,54 @@ void VkFrameBufferInterface::GetPixel(const fvec4& rAt, PixelFetchContext& ctx) 
   OrkAssert(false);
 }
 
+///////////////////////////////////////////////////////////////////////
+
+vksubpass_ptr_t createSubPass() {
+  vksubpass_ptr_t subpass = std::make_shared<VulkanRenderSubPass>();
+
+  subpass->_attach_refs.reserve(2);
+  auto& CATR = subpass->_attach_refs.emplace_back();
+  auto& DATR = subpass->_attach_refs.emplace_back();
+  initializeVkStruct(CATR);
+  initializeVkStruct(DATR);
+  CATR.attachment = 0;
+  DATR.attachment = 1;
+
+  initializeVkStruct(subpass->_SUBPASS);
+  subpass->_SUBPASS.pipelineBindPoint       = VK_PIPELINE_BIND_POINT_GRAPHICS;
+  subpass->_SUBPASS.colorAttachmentCount    = 1;
+  subpass->_SUBPASS.pColorAttachments       = &CATR;
+  subpass->_SUBPASS.colorAttachmentCount    = 1;
+  subpass->_SUBPASS.pDepthStencilAttachment = &DATR;
+
+  return subpass;
+}
+
 ///////////////////////////////////////////////////////
 
-renderpass_ptr_t createRenderPassForRtGroup(vkcontext_rawptr_t ctxVK, vkrtgrpimpl_ptr_t rtg_impl){
+renderpass_ptr_t createRenderPassForRtGroup(vkcontext_rawptr_t ctxVK, rtgroup_ptr_t rtg ){
+  auto rtg_impl = rtg->_impl.getShared<VkRtGroupImpl>();
   auto renpass = std::make_shared<RenderPass>();
   auto vk_renpass = renpass->_impl.makeShared<VulkanRenderPass>(renpass.get());
+  auto color_rtb  = rtg->GetMrt(0);
+  auto color_rtbi = color_rtb->_impl.getShared<VklRtBufferImpl>();
+  auto depth_rtb  = rtg->_depthBuffer;
+  auto depth_rtbi = depth_rtb->_impl.getShared<VklRtBufferImpl>();
+  color_rtbi->setLayout( VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL );
+  depth_rtbi->setLayout( VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL );
 
   auto attachments = rtg_impl->attachments();
 
-    VkSubpassDescription SUBPASS = {};
-    initializeVkStruct(SUBPASS);
-    SUBPASS.pipelineBindPoint       = VK_PIPELINE_BIND_POINT_GRAPHICS;
-    SUBPASS.colorAttachmentCount    = attachments->_references.size();
-    SUBPASS.pColorAttachments       = attachments->_references.data();
-    //SUBPASS.pDepthStencilAttachment = &DATR;
+    auto subpass = createSubPass();
+    subpass->_attach_refs[0].layout = color_rtbi->_currentLayout;
+    subpass->_attach_refs[1].layout = depth_rtbi->_currentLayout;
 
     VkRenderPassCreateInfo RPI = {};
     initializeVkStruct(RPI, VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO);
     RPI.attachmentCount = attachments->_descriptions.size();
     RPI.pAttachments    = attachments->_descriptions.data();
     RPI.subpassCount    = 1;
-    RPI.pSubpasses      = &SUBPASS;
+    RPI.pSubpasses      = &subpass->_SUBPASS;
     // RPI.dependencyCount = 1;
     // RPI.pDependencies = &dependency;
     VkResult OK = vkCreateRenderPass(ctxVK->_vkdevice, &RPI, nullptr, &vk_renpass->_vkrp);
@@ -129,10 +156,15 @@ renderpass_ptr_t createRenderPassForRtGroup(vkcontext_rawptr_t ctxVK, vkrtgrpimp
     vk_renpass->_vkfbinfo.layers = 1;
     vk_renpass->_vkfbinfo.renderPass = vk_renpass->_vkrp; 
 
-    vkCreateFramebuffer( ctxVK->_vkdevice, // device
-                         &vk_renpass->_vkfbinfo, // pCreateInfo
-                         nullptr, // pAllocator
-                         &vk_renpass->_vkfb); // pFramebuffer
+    if( rtg == ctxVK->_fbi->_main_rtg ){
+      ctxVK->_fbi->_bindSwapChainToRenderPass(vk_renpass);
+    }
+    else{
+      vkCreateFramebuffer( ctxVK->_vkdevice, // device
+                           &vk_renpass->_vkfbinfo, // pCreateInfo
+                           nullptr, // pAllocator
+                           &vk_renpass->_vkfb); // pFramebuffer
+    }
 
     // Optionally, you can also define subpass dependencies for layout transitions
     //VkSubpassDependency dependency{};
@@ -228,62 +260,6 @@ void VkFrameBufferInterface::_initializeContext(DisplayBuffer* pBuf){
 freestyle_mtl_ptr_t VkFrameBufferInterface::utilshader() {
   OrkAssert(false);
   return nullptr;
-}
-
-void implementRenderPassForRtGroup(vkcontext_rawptr_t ctxVK, renderpass_ptr_t renpass, vkrtgrpimpl_ptr_t rtg_impl){
-  auto vk_renpass = renpass->_impl.makeShared<VulkanRenderPass>(renpass.get());
-
-    auto attachments = rtg_impl->attachments();
-
-    VkSubpassDescription SUBPASS = {};
-    initializeVkStruct(SUBPASS);
-    SUBPASS.pipelineBindPoint       = VK_PIPELINE_BIND_POINT_GRAPHICS;
-    SUBPASS.colorAttachmentCount    = attachments->_references.size();
-    SUBPASS.pColorAttachments       = attachments->_references.data();
-    //SUBPASS.pDepthStencilAttachment = &DATR;
-
-    VkRenderPassCreateInfo RPI = {};
-    initializeVkStruct(RPI, VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO);
-    RPI.attachmentCount = attachments->_descriptions.size();
-    RPI.pAttachments    = attachments->_descriptions.data();
-    RPI.subpassCount    = 1;
-    RPI.pSubpasses      = &SUBPASS;
-    // RPI.dependencyCount = 1;
-    // RPI.pDependencies = &dependency;
-    VkResult OK = vkCreateRenderPass(ctxVK->_vkdevice, &RPI, nullptr, &vk_renpass->_vkrp);
-    OrkAssert(OK == VK_SUCCESS);
-
-    initializeVkStruct(vk_renpass->_vkfbinfo, VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO);
-    vk_renpass->_vkfbinfo.attachmentCount = attachments->_imageviews.size();
-    vk_renpass->_vkfbinfo.pAttachments = attachments->_imageviews.data();
-    vk_renpass->_vkfbinfo.width = rtg_impl->_width;
-    vk_renpass->_vkfbinfo.height = rtg_impl->_height;
-    vk_renpass->_vkfbinfo.layers = 1;
-    vk_renpass->_vkfbinfo.renderPass = vk_renpass->_vkrp; 
-
-    vkCreateFramebuffer( ctxVK->_vkdevice, // device
-                         &vk_renpass->_vkfbinfo, // pCreateInfo
-                         nullptr, // pAllocator
-                         &vk_renpass->_vkfb); // pFramebuffer
-
-    // Optionally, you can also define subpass dependencies for layout transitions
-    //VkSubpassDependency dependency{};
-    //dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-    //dependency.dstSubpass = 0;
-    //dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    //dependency.srcAccessMask = 0;
-    //dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    //dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-
-    //RPI.dependencyCount = 1;
-    //RPI.pDependencies = &dependency;
-}
-
-renderpass_ptr_t createRenderPassForRtGroup(vkcontext_rawptr_t ctxVK, rtgroup_ptr_t rtg){
-  auto renpass = std::make_shared<RenderPass>();
-  auto rtg_impl = ctxVK->_fbi->_createRtGroupImpl(rtg.get());
-  implementRenderPassForRtGroup(ctxVK,renpass,rtg_impl);
-  return renpass;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

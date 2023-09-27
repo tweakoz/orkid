@@ -1264,8 +1264,7 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////
 
-renderpass_ptr_t createRenderPassForRtGroup(vkcontext_rawptr_t ctxVK, rtgroup_ptr_t rtg_impl);
-renderpass_ptr_t createRenderPassForMainRTG(vkcontext_rawptr_t ctx, rtgroup_ptr_t rtg);
+renderpass_ptr_t createRenderPassForRtGroup(vkcontext_rawptr_t ctxVK, rtgroup_ptr_t rtg);
 
 void _vkReplaceImageForBuffer(
     vkcontext_rawptr_t ctxVK, //
