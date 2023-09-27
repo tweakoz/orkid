@@ -105,6 +105,7 @@ renderpass_ptr_t createRenderPassForRtGroup(vkcontext_rawptr_t ctxVK, vkrtgrpimp
 
     auto attach_descs = rtg_impl->attachDescriptions();
     auto attach_refs = rtg_impl->attachReferences();
+    auto attach_imgviews = rtg_impl->attachImageViews();
 
     VkSubpassDescription SUBPASS = {};
     initializeVkStruct(SUBPASS);
@@ -125,8 +126,8 @@ renderpass_ptr_t createRenderPassForRtGroup(vkcontext_rawptr_t ctxVK, vkrtgrpimp
     OrkAssert(OK == VK_SUCCESS);
 
     initializeVkStruct(vk_renpass->_vkfbinfo, VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO);
-    vk_renpass->_vkfbinfo.attachmentCount = rtg_impl->_vkattach_imageviews.size();
-    vk_renpass->_vkfbinfo.pAttachments = rtg_impl->_vkattach_imageviews.data();
+    vk_renpass->_vkfbinfo.attachmentCount = attach_imgviews.size();
+    vk_renpass->_vkfbinfo.pAttachments = attach_imgviews.data();
     vk_renpass->_vkfbinfo.width = rtg_impl->_width;
     vk_renpass->_vkfbinfo.height = rtg_impl->_height;
     vk_renpass->_vkfbinfo.layers = 1;
@@ -238,6 +239,7 @@ void implementRenderPassForRtGroup(vkcontext_rawptr_t ctxVK, renderpass_ptr_t re
 
     auto attach_descs = rtg_impl->attachDescriptions();
     auto attach_refs = rtg_impl->attachReferences();
+    auto attach_imgviews = rtg_impl->attachImageViews();
 
     VkSubpassDescription SUBPASS = {};
     initializeVkStruct(SUBPASS);
@@ -258,8 +260,8 @@ void implementRenderPassForRtGroup(vkcontext_rawptr_t ctxVK, renderpass_ptr_t re
     OrkAssert(OK == VK_SUCCESS);
 
     initializeVkStruct(vk_renpass->_vkfbinfo, VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO);
-    vk_renpass->_vkfbinfo.attachmentCount = rtg_impl->_vkattach_imageviews.size();
-    vk_renpass->_vkfbinfo.pAttachments = rtg_impl->_vkattach_imageviews.data();
+    vk_renpass->_vkfbinfo.attachmentCount = attach_imgviews.size();
+    vk_renpass->_vkfbinfo.pAttachments = attach_imgviews.data();
     vk_renpass->_vkfbinfo.width = rtg_impl->_width;
     vk_renpass->_vkfbinfo.height = rtg_impl->_height;
     vk_renpass->_vkfbinfo.layers = 1;

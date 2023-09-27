@@ -348,6 +348,7 @@ struct VklRtBufferImpl {
   VkImageView _vkimgview;
   VkAttachmentDescription _attachmentDesc;
   VkAttachmentReference _attachmentRef;
+  VkDescriptorImageInfo _descriptorInfo;
   VkImageLayout _currentLayout = VK_IMAGE_LAYOUT_UNDEFINED;
   svar64_t _teximpl;
 };
@@ -361,13 +362,13 @@ struct VkRtGroupImpl {
 
   std::vector<VkAttachmentDescription> attachDescriptions() const;
   std::vector<VkAttachmentReference> attachReferences() const;
+  std::vector<VkImageView> attachImageViews() const;
+  std::vector<VkDescriptorImageInfo> attachDescriptorInfos() const;
 
   RtGroup* _rtg = nullptr;
   vkrtbufimpl_ptr_t _standard;
   vkrtbufimpl_ptr_t _depthonly;
 
-  std::vector<VkDescriptorImageInfo> _vkattach_descimginfos;
-  std::vector<VkImageView> _vkattach_imageviews;
 
   int _width  = 0;
   int _height = 0;

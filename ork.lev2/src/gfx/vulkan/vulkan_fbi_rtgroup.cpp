@@ -86,6 +86,42 @@ std::vector<VkAttachmentReference> VkRtGroupImpl::attachReferences() const{
 
 ///////////////////////////////////////////////////////////////////////////////
 
+std::vector<VkImageView> VkRtGroupImpl::attachImageViews() const{
+  std::vector<VkImageView> rval;
+  int numrt = _rtg->GetNumTargets();
+  for (int i = 0; i < numrt; i++) {
+    auto rtbuffer = _rtg->GetMrt(i);
+    auto bufferimpl = rtbuffer->_impl.getShared<VklRtBufferImpl>();
+    rval.push_back(bufferimpl->_imgobj->_vkimageview);
+  }
+  if(_rtg->_depthBuffer){
+    auto rtbuffer = _rtg->_depthBuffer;
+    auto bufferimpl = rtbuffer->_impl.getShared<VklRtBufferImpl>();
+    rval.push_back(bufferimpl->_imgobj->_vkimageview);
+  }
+  return rval;  
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+std::vector<VkDescriptorImageInfo> VkRtGroupImpl::attachDescriptorInfos() const{
+  std::vector<VkDescriptorImageInfo> rval;
+  int numrt = _rtg->GetNumTargets();
+  for (int i = 0; i < numrt; i++) {
+    auto rtbuffer = _rtg->GetMrt(i);
+    auto bufferimpl = rtbuffer->_impl.getShared<VklRtBufferImpl>();
+    rval.push_back(bufferimpl->_descriptorInfo);
+  }
+  if(_rtg->_depthBuffer){
+    auto rtbuffer = _rtg->_depthBuffer;
+    auto bufferimpl = rtbuffer->_impl.getShared<VklRtBufferImpl>();
+    rval.push_back(bufferimpl->_descriptorInfo);
+  }
+  return rval;  
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 void _vkCreateImageForBuffer(
     vkcontext_rawptr_t ctxVK, //
     vkrtbufimpl_ptr_t bufferimpl,
@@ -208,12 +244,9 @@ vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(RtGroup* rtgroup) {
       attachment_ref.attachment = it;
       attachment_ref.layout     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
-      auto& image_descriptor_info = RTGIMPL->_vkattach_descimginfos.emplace_back();
       OrkAssert(teximpl->_imgobj->_vkimageview != VK_NULL_HANDLE);
-      image_descriptor_info.imageView = teximpl->_imgobj->_vkimageview;
-      image_descriptor_info.sampler   = teximpl->_vksampler->_vksampler;
-
-      RTGIMPL->_vkattach_imageviews.push_back(teximpl->_imgobj->_vkimageview);
+      bufferimpl->_descriptorInfo.imageView = teximpl->_imgobj->_vkimageview;
+      bufferimpl->_descriptorInfo.sampler   = teximpl->_vksampler->_vksampler;
     }
 
     RTGIMPL->_rpass_misc  = createRenderPassForRtGroup(_contextVK, RTGIMPL);
