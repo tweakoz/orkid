@@ -273,9 +273,6 @@ void VkFrameBufferInterface::_postPushRtGroup(RtGroup* rtgroup) {
   ViewportRect extents(fx, fy, fw, fh);
   pushViewport(extents);
   pushScissor(extents);
-  if (rtgroup and rtgroup->_autoclear) {
-    rtGroupClear(rtgroup);
-  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////

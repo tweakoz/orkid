@@ -128,7 +128,6 @@ void VkFrameBufferInterface::_initSwapChain() {
     auto rtb_depth = rtg->createRenderTarget(DEPTH_FORMAT, "depth"_crcu);
     auto rtg_impl  = _createRtGroupImpl(rtg.get());
     rtg->_name     = FormatString("vk-swapchain-%d", i);
-    rtg->_autoclear = false; // todo: renderpass begin uses this ?
     ////////////////////////////////////////////
     // link rtb_color to swap chain color image
     ////////////////////////////////////////////

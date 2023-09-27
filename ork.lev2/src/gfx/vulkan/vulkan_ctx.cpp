@@ -599,33 +599,44 @@ void VkContext::present(CTXBASE* ctxbase) {
 
 void VkContext::_beginRenderPass(renderpass_ptr_t renpass) {
 
-  auto main_rtg = _fbi->_main_rtg;
-  auto rtg_impl = main_rtg->_impl.getShared<VkRtGroupImpl>();
+  auto rtg = _fbi->_active_rtgroup;
+  auto rtg_impl = rtg->_impl.getShared<VkRtGroupImpl>();
 
   auto vk_rpass = renpass->_impl.getShared<VulkanRenderPass>();
 
-  /////////////////////////////////////////
-  // perform the clear
-  /////////////////////////////////////////
-
-  auto color = _fbi->_clearColor;
-
-  VkClearValue clearValues[2];
-  clearValues[0].color        = {{color.x, color.y, color.z, color.w}};
-  clearValues[1].depthStencil = {1.0f, 0};
-
   VkRenderPassBeginInfo RPBI = {};
   initializeVkStruct(RPBI, VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO);
-  //  clear-rect-region
-  RPBI.renderArea.offset = {0, 0};
-  RPBI.renderArea.extent = _fbi->_swapchain->_extent;
-  //  clear-targets
-  RPBI.clearValueCount = 2;
-  RPBI.pClearValues    = clearValues;
-  //  clear-misc
+
+  /////////////////////////////////////////
+  // perform the clear ?
+  /////////////////////////////////////////
+
+  if(rtg->_autoclear){
+
+  auto color = rtg->_clearColor;
+
+    VkClearValue clearValues[2];
+    clearValues[0].color        = {{color.x, color.y, color.z, color.w}};
+    clearValues[1].depthStencil = {1.0f, 0};
+
+    //  clear-rect-region
+    RPBI.renderArea.offset = {0, 0};
+    RPBI.renderArea.extent = {uint32_t(rtg->width()), uint32_t(rtg->height())};
+    //  clear-targets
+    RPBI.clearValueCount = 2;
+    RPBI.pClearValues    = clearValues;
+  }
+
+  /////////////////////////////////////////
+  // misc renderpass
+  /////////////////////////////////////////
+
   RPBI.renderPass  = vk_rpass->_vkrp;
   RPBI.framebuffer = _fbi->_swapchain->framebuffer();
-  // CLEAR!
+
+  /////////////////////////////////////////
+  // Renderpass !
+  /////////////////////////////////////////
   vkCmdBeginRenderPass(
       primary_cb()->_vkcmdbuf, //
       &RPBI,                   //
