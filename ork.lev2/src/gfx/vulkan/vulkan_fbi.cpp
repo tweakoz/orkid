@@ -156,15 +156,10 @@ renderpass_ptr_t createRenderPassForRtGroup(vkcontext_rawptr_t ctxVK, rtgroup_pt
     vk_renpass->_vkfbinfo.layers = 1;
     vk_renpass->_vkfbinfo.renderPass = vk_renpass->_vkrp; 
 
-    if( rtg == ctxVK->_fbi->_main_rtg ){
-      ctxVK->_fbi->_bindSwapChainToRenderPass(vk_renpass);
-    }
-    else{
-      vkCreateFramebuffer( ctxVK->_vkdevice, // device
-                           &vk_renpass->_vkfbinfo, // pCreateInfo
-                           nullptr, // pAllocator
-                           &vk_renpass->_vkfb); // pFramebuffer
-    }
+    vkCreateFramebuffer( ctxVK->_vkdevice, // device
+                         &vk_renpass->_vkfbinfo, // pCreateInfo
+                         nullptr, // pAllocator
+                         &vk_renpass->_vkfb); // pFramebuffer
 
     // Optionally, you can also define subpass dependencies for layout transitions
     //VkSubpassDependency dependency{};

@@ -74,16 +74,12 @@ void VkFrameBufferInterface::_initSwapChain() {
   int width, height;
   glfwGetFramebufferSize(window, &width, &height);
 
-  swap_chain->_extent.width  = width;
-  swap_chain->_extent.height = height;
-  swap_chain->_width         = width;
-  swap_chain->_height        = height;
 
   // image properties
   SCINFO.minImageCount    = 3;
   SCINFO.imageFormat      = surfaceFormat.format;                // Chosen from VkSurfaceFormatKHR, after querying supported formats
   SCINFO.imageColorSpace  = surfaceFormat.colorSpace;            // Chosen from VkSurfaceFormatKHR
-  SCINFO.imageExtent      = swap_chain->_extent;                 // The width and height of the swap chain images
+  SCINFO.imageExtent      = {uint32_t(width),uint32_t(height)};  // The width and height of the swap chain images
   SCINFO.imageArrayLayers = 1;                                   // Always 1 unless developing a stereoscopic 3D application
   SCINFO.imageUsage       = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT; // Or any other value depending on your needs
   SCINFO.imageUsage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
@@ -123,8 +119,10 @@ void VkFrameBufferInterface::_initSwapChain() {
     OK = vkCreateImageView(vkdev, IVCI.get(), nullptr, &imgview);
     OrkAssert(OK == VK_SUCCESS);
 
+    auto ork_color_format = VkFormatConverter::convertBufferFormat(surfaceFormat.format);
+
     auto rtg       = std::make_shared<RtGroup>(_contextVK, width, height, MsaaSamples::MSAA_1X, true);
-    auto rtb_color = rtg->createRenderTarget(EBufferFormat::RGBA8, "present"_crcu);
+    auto rtb_color = rtg->createRenderTarget(ork_color_format, "present"_crcu);
     auto rtb_depth = rtg->createRenderTarget(DEPTH_FORMAT, "depth"_crcu);
     auto rtg_impl  = _createRtGroupImpl(rtg.get());
     rtg->_name     = FormatString("vk-swapchain-%d", i);
@@ -212,44 +210,6 @@ void VkFrameBufferInterface::_acquireSwapChainForFrame() {
   OrkAssert(_swapchain->_curSwapWriteImage < _swapchain->_rtgs.size());
   _main_rtg = _swapchain->currentRTG();
   // printf( "_swapchain->_curSwapWriteImage<%u>\n", _swapchain->_curSwapWriteImage );
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void VkFrameBufferInterface::_bindSwapChainToRenderPass(vkrenderpass_ptr_t rpass) {
-
-  if (nullptr == _swapchain->_mainRenderPass) {
-    _swapchain->_mainRenderPass = rpass;
-
-    _swapchain->_vkFrameBuffers.resize(_swapchain->_rtgs.size());
-    for (size_t i = 0; i < _swapchain->_rtgs.size(); i++) {
-      auto rtg = _swapchain->_rtgs[i];
-      auto rtb_color = rtg->GetMrt(0);
-      auto rtb_depth = rtg->_depthBuffer;
-      auto rtb_impl_color = rtb_color->_impl.getShared<VklRtBufferImpl>();
-      auto rtb_impl_depth = rtb_depth->_impl.getShared<VklRtBufferImpl>();
-
-      auto& VKFRB = _swapchain->_vkFrameBuffers[i];
-      std::vector<VkImageView> fb_attachments;
-
-      fb_attachments.push_back(rtb_impl_color->_vkimgview);
-      fb_attachments.push_back(rtb_impl_depth->_vkimgview);
-
-      VkFramebufferCreateInfo CFBI = {};
-      CFBI.sType                   = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-      CFBI.renderPass              = rpass->_vkrp; // The VkRenderPass you created earlier
-      CFBI.attachmentCount         = fb_attachments.size();
-      CFBI.pAttachments            = fb_attachments.data();
-      CFBI.width                   = _swapchain->_extent.width; // Typically the size of your swap chain images or offscreen buffer
-      CFBI.height                  = _swapchain->_extent.height;
-      CFBI.layers                  = 1;
-
-      VkResult OK = vkCreateFramebuffer(_contextVK->_vkdevice, &CFBI, nullptr, &VKFRB);
-      OrkAssert(OK == VK_SUCCESS);
-    }
-  } else {
-    //OrkAssert(_swapchain->_mainRenderPass == rpass);
-  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////

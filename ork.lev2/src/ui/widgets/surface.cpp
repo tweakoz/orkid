@@ -121,7 +121,7 @@ void Surface::DoDraw(ui::drawevent_constptr_t drwev) {
     tgt->debugMarker("post-cb");
     fbi->PushRtGroup(_rtgroup.get());
     tgt->debugMarker("post-push-rtg");
-    RePaintSurface(drwev);
+    //RePaintSurface(drwev);
     tgt->debugMarker("post-repaint");
     fbi->PopRtGroup();
     tgt->debugMarker("post-pop-rtg");

@@ -17,10 +17,6 @@ rtgroup_ptr_t VkSwapChain::currentRTG(){
   return _rtgs[_curSwapWriteImage];
 }
 
-VkFramebuffer VkSwapChain::framebuffer() {
-  return _vkFrameBuffers[_curSwapWriteImage];
-}
-
 void VkContext::describeX(class_t* clazz) {
 
   clazz->annotateTyped<context_factory_t>("context_factory", []() { return VkContext::makeShared(); });
@@ -520,15 +516,32 @@ void VkContext::_doEndFrame() {
 
   PopModColor();
   mbPostInitializeContext = false;
+
   ////////////////////////
   // end main renderpass (and pop main rtg)
   ////////////////////////
+
   _fbi->PopRtGroup();
+
+  ////////////////////////
+  // main_rtg -> presentation layout
   ////////////////////////
 
   _fbi->_enq_transitionMainRtgToPresent();
 
+  ////////////////////////
+  // done with primary command buffer for this frame
+  ////////////////////////
+
   vkEndCommandBuffer(primary_cb()->_vkcmdbuf);
+
+  ////////////////////////
+
+  printf( "num renderpasses<%zu>\n", _renderpasses.size() );
+
+  ///////////////////////////////////////////////////////
+  // submit primary command buffer for this frame
+  ///////////////////////////////////////////////////////
 
   std::vector<VkSemaphore> waitStartRenderSemaphores = {_fbi->_swapChainImageAcquiredSemaphore};
   std::vector<VkPipelineStageFlags> waitStages       = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
@@ -542,12 +555,13 @@ void VkContext::_doEndFrame() {
   SI.pCommandBuffers      = &primary_cb()->_vkcmdbuf;
   SI.signalSemaphoreCount = 1;
   SI.pSignalSemaphores    = &_renderingCompleteSemaphore;
-  ///////////////////////////////////////////////////////
   auto swapchain = _fbi->_swapchain;
   auto fence     = swapchain->_fence;
   fence->reset();
   vkQueueSubmit(_vkqueue_graphics, 1, &SI, fence->_vkfence);
 
+  ///////////////////////////////////////////////////////
+  // Present !
   ///////////////////////////////////////////////////////
 
   std::vector<VkSemaphore> waitPresentSemaphores = {_renderingCompleteSemaphore};
@@ -632,7 +646,7 @@ void VkContext::_beginRenderPass(renderpass_ptr_t renpass) {
   /////////////////////////////////////////
 
   RPBI.renderPass  = vk_rpass->_vkrp;
-  RPBI.framebuffer = _fbi->_swapchain->framebuffer();
+  RPBI.framebuffer = vk_rpass->_vkfb;
 
   /////////////////////////////////////////
   // Renderpass !

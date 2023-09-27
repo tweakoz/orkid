@@ -201,9 +201,11 @@ struct VkFormatConverter {
   static const VkFormatConverter _instance;
   VkFormatConverter();
   static VkFormat convertBufferFormat(EBufferFormat fmt_in);
+  static EBufferFormat convertBufferFormat(VkFormat fmt_in);
   static VkImageLayout layoutForUsage(uint64_t usage);
   static VkImageAspectFlagBits aspectForUsage(uint64_t usage);
   std::unordered_map<EBufferFormat, VkFormat> _fmtmap;
+  std::unordered_map<VkFormat, EBufferFormat> _inv_fmtmap;
   std::unordered_map<uint64_t, VkImageLayout> _layoutmap;
   std::unordered_map<uint64_t, VkImageAspectFlagBits> _aspectmap;
 };
@@ -729,21 +731,13 @@ struct VkLoadContext {
 };
 
 struct VkSwapChain {
-  VkSwapchainKHR _vkSwapChain;
-  std::vector<VkFramebuffer> _vkFrameBuffers; // used in main render pass
-  std::vector<rtgroup_ptr_t> _rtgs;
-  vkfence_obj_ptr_t _fence;
-
   rtgroup_ptr_t currentRTG();
 
-  uint32_t _curSwapWriteImage = 0xffffffff;
-
-  VkFramebuffer framebuffer();
-
-  int _width  = 0;
-  int _height = 0;
-  VkExtent2D _extent;
+  VkSwapchainKHR _vkSwapChain;
+  std::vector<rtgroup_ptr_t> _rtgs;
+  vkfence_obj_ptr_t _fence;
   vkrenderpass_ptr_t _mainRenderPass;
+  uint32_t _curSwapWriteImage = 0xffffffff;
 };
 
 void _vkCreateImageForBuffer(
@@ -933,7 +927,6 @@ struct VkFrameBufferInterface final : public FrameBufferInterface {
   void _initSwapChain();
   void _acquireSwapChainForFrame();
   void _enq_transitionMainRtgToPresent();
-  void _bindSwapChainToRenderPass(vkrenderpass_ptr_t rpass);
 
   //////////////////////////////////////////////
 

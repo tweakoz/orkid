@@ -308,16 +308,23 @@ context_ptr_t createLoaderContext() {
 ///////////////////////////////////////////////////////////////////////////////
 
 VkFormatConverter::VkFormatConverter() {
-  _fmtmap[EBufferFormat::RGBA8] = VK_FORMAT_R8G8B8A8_UNORM;
-  _fmtmap[EBufferFormat::S3TC_DXT1] = VK_FORMAT_BC1_RGBA_UNORM_BLOCK;
-  _fmtmap[EBufferFormat::S3TC_DXT3] = VK_FORMAT_BC2_UNORM_BLOCK;
-  _fmtmap[EBufferFormat::BGR5A1] = VK_FORMAT_B5G5R5A1_UNORM_PACK16;
-  _fmtmap[EBufferFormat::BGRA8]   = VK_FORMAT_B8G8R8A8_UNORM;
-  _fmtmap[EBufferFormat::BGR8]   = VK_FORMAT_B8G8R8_UNORM;
-  _fmtmap[EBufferFormat::R32F]  = VK_FORMAT_R32_SFLOAT;
-  _fmtmap[EBufferFormat::Z32]   = VK_FORMAT_D32_SFLOAT;
-  _fmtmap[EBufferFormat::Z24S8] = VK_FORMAT_D24_UNORM_S8_UINT;
-  _fmtmap[EBufferFormat::Z32S8] = VK_FORMAT_D32_SFLOAT_S8_UINT;
+
+  auto do_format = [this](EBufferFormat ork_fmt, VkFormat vk_fmt) {
+    _fmtmap[ork_fmt] = vk_fmt;
+    _inv_fmtmap[vk_fmt] = ork_fmt;
+  };
+
+  do_format(EBufferFormat::RGBA8, VK_FORMAT_R8G8B8A8_UNORM);
+  do_format(EBufferFormat::S3TC_DXT1, VK_FORMAT_BC1_RGBA_UNORM_BLOCK);
+  do_format(EBufferFormat::S3TC_DXT3, VK_FORMAT_BC2_UNORM_BLOCK);
+  do_format(EBufferFormat::BGR5A1, VK_FORMAT_B5G5R5A1_UNORM_PACK16);
+  do_format(EBufferFormat::BGRA8, VK_FORMAT_B8G8R8A8_UNORM);
+  do_format(EBufferFormat::BGR8, VK_FORMAT_B8G8R8_UNORM);
+  do_format(EBufferFormat::R32F,VK_FORMAT_R32_SFLOAT);
+  do_format(EBufferFormat::Z32, VK_FORMAT_D32_SFLOAT);
+  do_format(EBufferFormat::Z24S8, VK_FORMAT_D24_UNORM_S8_UINT);
+  do_format(EBufferFormat::Z32S8, VK_FORMAT_D32_SFLOAT_S8_UINT);
+
 
   _layoutmap["depth"_crcu]   = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
   _layoutmap["color"_crcu]   = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
@@ -336,6 +343,11 @@ VkFormatConverter::VkFormatConverter() {
 VkFormat VkFormatConverter::convertBufferFormat(EBufferFormat fmt_in) {
   auto it = _instance._fmtmap.find(fmt_in);
   OrkAssert(it != _instance._fmtmap.end());
+  return it->second;
+}
+EBufferFormat VkFormatConverter::convertBufferFormat(VkFormat fmt_in) {
+  auto it = _instance._inv_fmtmap.find(fmt_in);
+  OrkAssert(it != _instance._inv_fmtmap.end());
   return it->second;
 }
 VkImageLayout VkFormatConverter::layoutForUsage(uint64_t usage) {
