@@ -335,6 +335,9 @@ struct VulkanRenderSubPass {
 
 struct VklRtBufferImpl {
   VklRtBufferImpl(VkRtGroupImpl* par, RtBuffer* rtb);
+  void setLayout(VkImageLayout layout);
+
+
   VkRtGroupImpl* _parent = nullptr;
   RtBuffer* _rtb         = nullptr;
   bool _init             = true;

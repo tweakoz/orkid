@@ -434,7 +434,7 @@ void VkContext::makeCurrentContext() {
 
 ///////////////////////////////////////////////////////////////////////
 
-vksubpass_ptr_t createSubPass(){
+vksubpass_ptr_t createSubPass() {
   vksubpass_ptr_t subpass = std::make_shared<VulkanRenderSubPass>();
 
   subpass->_attach_refs.reserve(2);
@@ -458,40 +458,25 @@ vksubpass_ptr_t createSubPass(){
 ///////////////////////////////////////////////////////////////////////
 
 renderpass_ptr_t createRenderPassForMainRTG(vkcontext_rawptr_t ctx, rtgroup_ptr_t rtg) {
-  auto renpass  = std::make_shared<RenderPass>();
-  auto vk_rpass = renpass->_impl.makeShared<VulkanRenderPass>(renpass.get());
+  auto renpass    = std::make_shared<RenderPass>();
+  auto vk_rpass   = renpass->_impl.makeShared<VulkanRenderPass>(renpass.get());
   auto vk_rtgimpl = rtg->_impl.getShared<VkRtGroupImpl>();
-  auto color_rtb = rtg->GetMrt(0);
+  auto color_rtb  = rtg->GetMrt(0);
   auto color_rtbi = color_rtb->_impl.getShared<VklRtBufferImpl>();
-  // todo - use vk_rpass->_toposorted_subpasses
-  color_rtbi->_currentLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+  auto depth_rtb  = rtg->_depthBuffer;
+  auto depth_rtbi = depth_rtb->_impl.getShared<VklRtBufferImpl>();
   OrkAssert(color_rtbi->_is_surface);
 
-  VkAttachmentDescription CATC = {};
-  initializeVkStruct(CATC);
-  CATC.format         = color_rtbi->_vkfmt;              // Must match the format of the swap chain images.
-  CATC.samples        = VK_SAMPLE_COUNT_1_BIT;           // No multisampling for this example.
-  CATC.loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR;     // Clear the color buffer before rendering.
-  CATC.storeOp        = VK_ATTACHMENT_STORE_OP_STORE;    // Store the rendered content for presentation.
-  CATC.stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE; // We don't care about stencil.
-  CATC.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-  CATC.initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED;
-  CATC.finalLayout    = color_rtbi->_currentLayout; 
+  // todo - use vk_rpass->_toposorted_subpasses
+  color_rtbi->setLayout( VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL );
+  depth_rtbi->setLayout( VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL );
+ 
+  std::array<VkAttachmentDescription, 2> rp_attachments = { //
+    color_rtbi->_attachmentDesc, //
+    depth_rtbi->_attachmentDesc //
+  };
 
-  VkAttachmentDescription DATC = {};
-  DATC.format                  = VkFormatConverter::_instance.convertBufferFormat(DEPTH_FORMAT);
-  DATC.samples                 = VK_SAMPLE_COUNT_1_BIT;
-  DATC.loadOp                  = VK_ATTACHMENT_LOAD_OP_CLEAR; // Clear the depth buffer before rendering.
-  DATC.storeOp                 = VK_ATTACHMENT_STORE_OP_STORE;
-  DATC.stencilLoadOp           = VK_ATTACHMENT_LOAD_OP_CLEAR;
-  DATC.stencilStoreOp          = VK_ATTACHMENT_STORE_OP_STORE;
-  DATC.initialLayout           = VK_IMAGE_LAYOUT_UNDEFINED;
-  DATC.finalLayout             = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-
-  std::array<VkAttachmentDescription, 2> rp_attachments = {CATC, DATC};
-
-  auto subpass = createSubPass();
+  auto subpass                    = createSubPass();
   subpass->_attach_refs[0].layout = color_rtbi->_currentLayout;
   subpass->_attach_refs[1].layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
@@ -500,7 +485,7 @@ renderpass_ptr_t createRenderPassForMainRTG(vkcontext_rawptr_t ctx, rtgroup_ptr_
   RPI.attachmentCount = static_cast<uint32_t>(rp_attachments.size());
   RPI.pAttachments    = rp_attachments.data();
   RPI.subpassCount    = 1;
-  RPI.pSubpasses      = & subpass->_SUBPASS;
+  RPI.pSubpasses      = &subpass->_SUBPASS;
   // RPI.dependencyCount = 1;
   // RPI.pDependencies = &dependency;
   VkResult OK = vkCreateRenderPass(ctx->_vkdevice, &RPI, nullptr, &vk_rpass->_vkrp);
@@ -556,7 +541,7 @@ void VkContext::_doBeginFrame() {
   // clean up renderpasses
   ////////////////////////
 
-  for( auto rpass : _renderpasses ){
+  for (auto rpass : _renderpasses) {
     auto impl = rpass->_impl.getShared<VulkanRenderPass>();
     vkDestroyRenderPass(_vkdevice, impl->_vkrp, nullptr);
   }
@@ -574,9 +559,8 @@ void VkContext::_doBeginFrame() {
   CBBI_GFX.pInheritanceInfo = nullptr;
   vkBeginCommandBuffer(primary_cb()->_vkcmdbuf, &CBBI_GFX); // vkBeginCommandBuffer does an implicit reset
 
-
-  auto rtg = _fbi->_main_rtg;
-  auto rpass = createRenderPassForMainRTG(this,rtg);
+  auto rtg   = _fbi->_main_rtg;
+  auto rpass = createRenderPassForMainRTG(this, rtg);
   _renderpasses.push_back(rpass);
 
   beginRenderPass(rpass);
