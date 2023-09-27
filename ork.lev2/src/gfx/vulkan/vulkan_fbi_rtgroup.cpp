@@ -42,6 +42,8 @@ VklRtBufferImpl::VklRtBufferImpl(VkRtGroupImpl* par, RtBuffer* rtb) //
 void VklRtBufferImpl::setLayout(VkImageLayout layout){
   _currentLayout              = layout;
   _attachmentDesc.finalLayout = layout;
+  OrkAssert(_parent);
+  _parent->__attachments = nullptr;
 }
 
 VkRtGroupImpl::VkRtGroupImpl(RtGroup* rtg)
@@ -49,75 +51,31 @@ VkRtGroupImpl::VkRtGroupImpl(RtGroup* rtg)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-std::vector<VkAttachmentDescription> VkRtGroupImpl::attachDescriptions() const{
-  std::vector<VkAttachmentDescription> rval;
+
+rtgroup_attachments_ptr_t VkRtGroupImpl::attachments() {
+  if( __attachments ){
+    return __attachments;
+  }
+  __attachments = std::make_shared<RtGroupAttachments>();
+  auto at = std::make_shared<RtGroupAttachments>();
   int numrt = _rtg->GetNumTargets();
   for (int i = 0; i < numrt; i++) {
     auto rtbuffer = _rtg->GetMrt(i);
     auto bufferimpl = rtbuffer->_impl.getShared<VklRtBufferImpl>();
-    rval.push_back(bufferimpl->_attachmentDesc);
+    __attachments->_descriptions.push_back(bufferimpl->_attachmentDesc);
+    __attachments->_references.push_back(bufferimpl->_attachmentRef);
+    __attachments->_imageviews.push_back(bufferimpl->_vkimgview);
+    __attachments->descimginfos.push_back(bufferimpl->_descriptorInfo);
   }
   if(_rtg->_depthBuffer){
     auto rtbuffer = _rtg->_depthBuffer;
     auto bufferimpl = rtbuffer->_impl.getShared<VklRtBufferImpl>();
-    rval.push_back(bufferimpl->_attachmentDesc);
+    __attachments->_descriptions.push_back(bufferimpl->_attachmentDesc);
+    __attachments->_references.push_back(bufferimpl->_attachmentRef);
+    __attachments->_imageviews.push_back(bufferimpl->_vkimgview);
+    __attachments->descimginfos.push_back(bufferimpl->_descriptorInfo);
   }
-  return rval;  
-}
-
-
-///////////////////////////////////////////////////////////////////////////////
-
-std::vector<VkAttachmentReference> VkRtGroupImpl::attachReferences() const{
-  std::vector<VkAttachmentReference> rval;
-  int numrt = _rtg->GetNumTargets();
-  for (int i = 0; i < numrt; i++) {
-    auto rtbuffer = _rtg->GetMrt(i);
-    auto bufferimpl = rtbuffer->_impl.getShared<VklRtBufferImpl>();
-    rval.push_back(bufferimpl->_attachmentRef);
-  }
-  if(_rtg->_depthBuffer){
-    auto rtbuffer = _rtg->_depthBuffer;
-    auto bufferimpl = rtbuffer->_impl.getShared<VklRtBufferImpl>();
-    rval.push_back(bufferimpl->_attachmentRef);
-  }
-  return rval;  
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-std::vector<VkImageView> VkRtGroupImpl::attachImageViews() const{
-  std::vector<VkImageView> rval;
-  int numrt = _rtg->GetNumTargets();
-  for (int i = 0; i < numrt; i++) {
-    auto rtbuffer = _rtg->GetMrt(i);
-    auto bufferimpl = rtbuffer->_impl.getShared<VklRtBufferImpl>();
-    rval.push_back(bufferimpl->_imgobj->_vkimageview);
-  }
-  if(_rtg->_depthBuffer){
-    auto rtbuffer = _rtg->_depthBuffer;
-    auto bufferimpl = rtbuffer->_impl.getShared<VklRtBufferImpl>();
-    rval.push_back(bufferimpl->_imgobj->_vkimageview);
-  }
-  return rval;  
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-std::vector<VkDescriptorImageInfo> VkRtGroupImpl::attachDescriptorInfos() const{
-  std::vector<VkDescriptorImageInfo> rval;
-  int numrt = _rtg->GetNumTargets();
-  for (int i = 0; i < numrt; i++) {
-    auto rtbuffer = _rtg->GetMrt(i);
-    auto bufferimpl = rtbuffer->_impl.getShared<VklRtBufferImpl>();
-    rval.push_back(bufferimpl->_descriptorInfo);
-  }
-  if(_rtg->_depthBuffer){
-    auto rtbuffer = _rtg->_depthBuffer;
-    auto bufferimpl = rtbuffer->_impl.getShared<VklRtBufferImpl>();
-    rval.push_back(bufferimpl->_descriptorInfo);
-  }
-  return rval;  
+  return __attachments;  
 }
 
 ///////////////////////////////////////////////////////////////////////////////

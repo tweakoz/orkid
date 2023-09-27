@@ -103,21 +103,19 @@ renderpass_ptr_t createRenderPassForRtGroup(vkcontext_rawptr_t ctxVK, vkrtgrpimp
   auto renpass = std::make_shared<RenderPass>();
   auto vk_renpass = renpass->_impl.makeShared<VulkanRenderPass>(renpass.get());
 
-    auto attach_descs = rtg_impl->attachDescriptions();
-    auto attach_refs = rtg_impl->attachReferences();
-    auto attach_imgviews = rtg_impl->attachImageViews();
+  auto attachments = rtg_impl->attachments();
 
     VkSubpassDescription SUBPASS = {};
     initializeVkStruct(SUBPASS);
     SUBPASS.pipelineBindPoint       = VK_PIPELINE_BIND_POINT_GRAPHICS;
-    SUBPASS.colorAttachmentCount    = attach_refs.size();
-    SUBPASS.pColorAttachments       = attach_refs.data();
+    SUBPASS.colorAttachmentCount    = attachments->_references.size();
+    SUBPASS.pColorAttachments       = attachments->_references.data();
     //SUBPASS.pDepthStencilAttachment = &DATR;
 
     VkRenderPassCreateInfo RPI = {};
     initializeVkStruct(RPI, VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO);
-    RPI.attachmentCount = attach_descs.size();
-    RPI.pAttachments    = attach_descs.data();
+    RPI.attachmentCount = attachments->_descriptions.size();
+    RPI.pAttachments    = attachments->_descriptions.data();
     RPI.subpassCount    = 1;
     RPI.pSubpasses      = &SUBPASS;
     // RPI.dependencyCount = 1;
@@ -126,8 +124,8 @@ renderpass_ptr_t createRenderPassForRtGroup(vkcontext_rawptr_t ctxVK, vkrtgrpimp
     OrkAssert(OK == VK_SUCCESS);
 
     initializeVkStruct(vk_renpass->_vkfbinfo, VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO);
-    vk_renpass->_vkfbinfo.attachmentCount = attach_imgviews.size();
-    vk_renpass->_vkfbinfo.pAttachments = attach_imgviews.data();
+    vk_renpass->_vkfbinfo.attachmentCount = attachments->_imageviews.size();
+    vk_renpass->_vkfbinfo.pAttachments = attachments->_imageviews.data();
     vk_renpass->_vkfbinfo.width = rtg_impl->_width;
     vk_renpass->_vkfbinfo.height = rtg_impl->_height;
     vk_renpass->_vkfbinfo.layers = 1;
@@ -237,21 +235,19 @@ freestyle_mtl_ptr_t VkFrameBufferInterface::utilshader() {
 void implementRenderPassForRtGroup(vkcontext_rawptr_t ctxVK, renderpass_ptr_t renpass, vkrtgrpimpl_ptr_t rtg_impl){
   auto vk_renpass = renpass->_impl.makeShared<VulkanRenderPass>(renpass.get());
 
-    auto attach_descs = rtg_impl->attachDescriptions();
-    auto attach_refs = rtg_impl->attachReferences();
-    auto attach_imgviews = rtg_impl->attachImageViews();
+    auto attachments = rtg_impl->attachments();
 
     VkSubpassDescription SUBPASS = {};
     initializeVkStruct(SUBPASS);
     SUBPASS.pipelineBindPoint       = VK_PIPELINE_BIND_POINT_GRAPHICS;
-    SUBPASS.colorAttachmentCount    = attach_refs.size();
-    SUBPASS.pColorAttachments       = attach_refs.data();
+    SUBPASS.colorAttachmentCount    = attachments->_references.size();
+    SUBPASS.pColorAttachments       = attachments->_references.data();
     //SUBPASS.pDepthStencilAttachment = &DATR;
 
     VkRenderPassCreateInfo RPI = {};
     initializeVkStruct(RPI, VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO);
-    RPI.attachmentCount = attach_descs.size();
-    RPI.pAttachments    = attach_descs.data();
+    RPI.attachmentCount = attachments->_descriptions.size();
+    RPI.pAttachments    = attachments->_descriptions.data();
     RPI.subpassCount    = 1;
     RPI.pSubpasses      = &SUBPASS;
     // RPI.dependencyCount = 1;
@@ -260,8 +256,8 @@ void implementRenderPassForRtGroup(vkcontext_rawptr_t ctxVK, renderpass_ptr_t re
     OrkAssert(OK == VK_SUCCESS);
 
     initializeVkStruct(vk_renpass->_vkfbinfo, VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO);
-    vk_renpass->_vkfbinfo.attachmentCount = attach_imgviews.size();
-    vk_renpass->_vkfbinfo.pAttachments = attach_imgviews.data();
+    vk_renpass->_vkfbinfo.attachmentCount = attachments->_imageviews.size();
+    vk_renpass->_vkfbinfo.pAttachments = attachments->_imageviews.data();
     vk_renpass->_vkfbinfo.width = rtg_impl->_width;
     vk_renpass->_vkfbinfo.height = rtg_impl->_height;
     vk_renpass->_vkfbinfo.layers = 1;

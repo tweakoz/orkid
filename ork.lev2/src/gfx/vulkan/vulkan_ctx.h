@@ -353,6 +353,15 @@ struct VklRtBufferImpl {
   svar64_t _teximpl;
 };
 
+struct RtGroupAttachments{
+  std::vector<VkAttachmentDescription> _descriptions;
+  std::vector<VkAttachmentReference> _references;
+  std::vector<VkImageView> _imageviews;
+  std::vector<VkDescriptorImageInfo> descimginfos;
+};
+
+using rtgroup_attachments_ptr_t = std::shared_ptr<RtGroupAttachments>;
+
 ///////////////////////////////////////////////////////////////////////////////
 
 renderpass_ptr_t createRenderPassForRtGroup(vkcontext_rawptr_t ctxVK, vkrtgrpimpl_ptr_t rtg_impl);
@@ -360,15 +369,14 @@ renderpass_ptr_t createRenderPassForRtGroup(vkcontext_rawptr_t ctxVK, vkrtgrpimp
 struct VkRtGroupImpl {
   VkRtGroupImpl(RtGroup* _rtg);
 
-  std::vector<VkAttachmentDescription> attachDescriptions() const;
-  std::vector<VkAttachmentReference> attachReferences() const;
-  std::vector<VkImageView> attachImageViews() const;
-  std::vector<VkDescriptorImageInfo> attachDescriptorInfos() const;
+
+
+  rtgroup_attachments_ptr_t attachments();
 
   RtGroup* _rtg = nullptr;
   vkrtbufimpl_ptr_t _standard;
   vkrtbufimpl_ptr_t _depthonly;
-
+  rtgroup_attachments_ptr_t __attachments;
 
   int _width  = 0;
   int _height = 0;
