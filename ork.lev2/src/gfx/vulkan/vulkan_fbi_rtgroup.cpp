@@ -49,6 +49,42 @@ VkRtGroupImpl::VkRtGroupImpl(RtGroup* rtg)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+std::vector<VkAttachmentDescription> VkRtGroupImpl::attachDescriptions() const{
+  std::vector<VkAttachmentDescription> rval;
+  int numrt = _rtg->GetNumTargets();
+  for (int i = 0; i < numrt; i++) {
+    auto rtbuffer = _rtg->GetMrt(i);
+    auto bufferimpl = rtbuffer->_impl.getShared<VklRtBufferImpl>();
+    rval.push_back(bufferimpl->_attachmentDesc);
+  }
+  if(_rtg->_depthBuffer){
+    auto rtbuffer = _rtg->_depthBuffer;
+    auto bufferimpl = rtbuffer->_impl.getShared<VklRtBufferImpl>();
+    rval.push_back(bufferimpl->_attachmentDesc);
+  }
+  return rval;  
+}
+
+
+///////////////////////////////////////////////////////////////////////////////
+
+std::vector<VkAttachmentReference> VkRtGroupImpl::attachReferences() const{
+  std::vector<VkAttachmentReference> rval;
+  int numrt = _rtg->GetNumTargets();
+  for (int i = 0; i < numrt; i++) {
+    auto rtbuffer = _rtg->GetMrt(i);
+    auto bufferimpl = rtbuffer->_impl.getShared<VklRtBufferImpl>();
+    rval.push_back(bufferimpl->_attachmentRef);
+  }
+  if(_rtg->_depthBuffer){
+    auto rtbuffer = _rtg->_depthBuffer;
+    auto bufferimpl = rtbuffer->_impl.getShared<VklRtBufferImpl>();
+    rval.push_back(bufferimpl->_attachmentRef);
+  }
+  return rval;  
+}
+
+///////////////////////////////////////////////////////////////////////////////
 
 void _vkCreateImageForBuffer(
     vkcontext_rawptr_t ctxVK, //
@@ -157,7 +193,7 @@ vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(RtGroup* rtgroup) {
     for (int it = 0; it < inumtargets; it++) {
       rtbuffer_ptr_t rtbuffer = rtgroup->GetMrt(it);
       OrkAssert(rtbuffer->_usage != "depth"_crcu);
-      auto bufferimpl = rtbuffer->_impl.getShared<VklRtBufferImpl>();
+      auto bufferimpl = rtbuffer->_impl.makeShared<VklRtBufferImpl>(RTGIMPL.get(),rtbuffer.get());
       auto texture    = rtbuffer->texture();
       OrkAssert(texture != nullptr);
       printf("texture<%p:%s> _usage<0x%zx>\n", (void*)texture, texture->_debugName.c_str(), rtbuffer->_usage);
@@ -165,19 +201,9 @@ vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(RtGroup* rtgroup) {
       auto teximpl = texture->_impl.getShared<VulkanTextureObject>();
       auto format  = bufferimpl->_vkfmt;
 
-      // Define the color attachment
-      auto& attachment = RTGIMPL->_vkattach_descriptions.emplace_back();
+      bufferimpl->setLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
-      attachment.format         = format; // This should match the format of your image
-      attachment.samples        = VK_SAMPLE_COUNT_1_BIT;
-      attachment.loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR;
-      attachment.storeOp        = VK_ATTACHMENT_STORE_OP_STORE;
-      attachment.stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-      attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-      attachment.initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED;
-      attachment.finalLayout    = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-
-      auto& attachment_ref = RTGIMPL->_vkattach_references.emplace_back();
+      auto& attachment_ref = bufferimpl->_attachmentRef;
 
       attachment_ref.attachment = it;
       attachment_ref.layout     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;

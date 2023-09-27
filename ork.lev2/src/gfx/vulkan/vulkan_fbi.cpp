@@ -103,17 +103,20 @@ renderpass_ptr_t createRenderPassForRtGroup(vkcontext_rawptr_t ctxVK, vkrtgrpimp
   auto renpass = std::make_shared<RenderPass>();
   auto vk_renpass = renpass->_impl.makeShared<VulkanRenderPass>(renpass.get());
 
+    auto attach_descs = rtg_impl->attachDescriptions();
+    auto attach_refs = rtg_impl->attachReferences();
+
     VkSubpassDescription SUBPASS = {};
     initializeVkStruct(SUBPASS);
     SUBPASS.pipelineBindPoint       = VK_PIPELINE_BIND_POINT_GRAPHICS;
-    SUBPASS.colorAttachmentCount    = rtg_impl->_vkattach_references.size();
-    SUBPASS.pColorAttachments       = rtg_impl->_vkattach_references.data();
+    SUBPASS.colorAttachmentCount    = attach_refs.size();
+    SUBPASS.pColorAttachments       = attach_refs.data();
     //SUBPASS.pDepthStencilAttachment = &DATR;
 
     VkRenderPassCreateInfo RPI = {};
     initializeVkStruct(RPI, VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO);
-    RPI.attachmentCount = rtg_impl->_vkattach_descriptions.size();
-    RPI.pAttachments    = rtg_impl->_vkattach_descriptions.data();
+    RPI.attachmentCount = attach_descs.size();
+    RPI.pAttachments    = attach_descs.data();
     RPI.subpassCount    = 1;
     RPI.pSubpasses      = &SUBPASS;
     // RPI.dependencyCount = 1;
@@ -233,17 +236,20 @@ freestyle_mtl_ptr_t VkFrameBufferInterface::utilshader() {
 void implementRenderPassForRtGroup(vkcontext_rawptr_t ctxVK, renderpass_ptr_t renpass, vkrtgrpimpl_ptr_t rtg_impl){
   auto vk_renpass = renpass->_impl.makeShared<VulkanRenderPass>(renpass.get());
 
+    auto attach_descs = rtg_impl->attachDescriptions();
+    auto attach_refs = rtg_impl->attachReferences();
+
     VkSubpassDescription SUBPASS = {};
     initializeVkStruct(SUBPASS);
     SUBPASS.pipelineBindPoint       = VK_PIPELINE_BIND_POINT_GRAPHICS;
-    SUBPASS.colorAttachmentCount    = rtg_impl->_vkattach_references.size();
-    SUBPASS.pColorAttachments       = rtg_impl->_vkattach_references.data();
+    SUBPASS.colorAttachmentCount    = attach_refs.size();
+    SUBPASS.pColorAttachments       = attach_refs.data();
     //SUBPASS.pDepthStencilAttachment = &DATR;
 
     VkRenderPassCreateInfo RPI = {};
     initializeVkStruct(RPI, VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO);
-    RPI.attachmentCount = rtg_impl->_vkattach_descriptions.size();
-    RPI.pAttachments    = rtg_impl->_vkattach_descriptions.data();
+    RPI.attachmentCount = attach_descs.size();
+    RPI.pAttachments    = attach_descs.data();
     RPI.subpassCount    = 1;
     RPI.pSubpasses      = &SUBPASS;
     // RPI.dependencyCount = 1;
