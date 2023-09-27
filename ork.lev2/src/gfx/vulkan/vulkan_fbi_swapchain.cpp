@@ -146,34 +146,17 @@ void VkFrameBufferInterface::_initSwapChain() {
 
 ///////////////////////////////////////////////////////
 
-void VkFrameBufferInterface::_clearSwapChainBuffer() {
-
-  auto gfxcb = _contextVK->primary_cb();
-  VkClearColorValue clearColor = {{0.0f, 1.0f, 0.0f, 1.0f}}; // Clear to black color
-  VkImageSubresourceRange ISRR = {};
-  ISRR.aspectMask              = VK_IMAGE_ASPECT_COLOR_BIT;
-  ISRR.baseMipLevel            = 0;
-  ISRR.levelCount              = 1;
-  ISRR.baseArrayLayer          = 0;
-  ISRR.layerCount              = 1;
-
-  auto rtg  = _swapchain->currentRTG();
-  auto rtbi = rtg->GetMrt(0)->_impl.getShared<VklRtBufferImpl>();
-
-  vkCmdClearColorImage(gfxcb->_vkcmdbuf, rtbi->_vkimg, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearColor, 1, &ISRR);
-}
-
-///////////////////////////////////////////////////////
-
 void VkFrameBufferInterface::_enq_transitionMainRtgToPresent() {
 
   auto main_rtb = _main_rtg->GetMrt(0);
   auto main_rtbi = main_rtb->_impl.getShared<VklRtBufferImpl>();
 
+  auto new_layout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
   auto imgbar = createImageBarrier(
       main_rtbi->_vkimg,
       main_rtbi->_currentLayout,            // oldLayout (dont care)
-      VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,      // newLayout
+      new_layout,      // newLayout
       VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, // srcAccessMask
       VK_ACCESS_MEMORY_READ_BIT);           // dstAccessMask
 
@@ -186,34 +169,8 @@ void VkFrameBufferInterface::_enq_transitionMainRtgToPresent() {
       0, nullptr,                                    // bufferMemoryBarrierCount, pBufferMemoryBarriers
       1, imgbar.get());                              // imageMemoryBarrierCount, pImageMemoryBarriers
 
-   main_rtbi->_currentLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+   main_rtbi->setLayout(new_layout);
    
-}
-
-///////////////////////////////////////////////////////
-
-void VkFrameBufferInterface::_transitionSwapChainForClear() {
-
-  auto main_rtb = _main_rtg->GetMrt(0);
-  auto main_rtbi = main_rtb->_impl.getShared<VklRtBufferImpl>();
-
-   main_rtbi->_currentLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-
-  auto imgbar = createImageBarrier(
-      main_rtbi->_vkimg,
-      VK_IMAGE_LAYOUT_UNDEFINED,             // oldLayout
-      main_rtbi->_currentLayout,             // newLayout
-      VkAccessFlagBits(0),                   // srcAccessMask
-      VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT); // dstAccessMask
-
-  vkCmdPipelineBarrier(
-      _contextVK->primary_cb()->_vkcmdbuf,  // cmdbuf
-      VK_PIPELINE_STAGE_TRANSFER_BIT,       // srcStageMask
-      VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, // dstStageMask
-      0,                                    // dependencyFlags
-      0, nullptr,                           // memoryBarrierCount, pMemoryBarriers
-      0, nullptr,                           // bufferMemoryBarrierCount, pBufferMemoryBarriers
-      1, imgbar.get());                     // imageMemoryBarrierCount, pImageMemoryBarriers
 }
 
 ///////////////////////////////////////////////////////

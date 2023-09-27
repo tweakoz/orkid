@@ -44,7 +44,9 @@ VklRtBufferImpl::VklRtBufferImpl(VkRtGroupImpl* par, RtBuffer* rtb) //
 
 }
 void VklRtBufferImpl::setLayout(VkImageLayout layout){
+  auto previousLayout         = _attachmentDesc.finalLayout;
   _currentLayout              = layout;
+  _attachmentDesc.initialLayout = previousLayout;
   _attachmentDesc.finalLayout = layout;
   OrkAssert(_parent);
   _parent->__attachments = nullptr;
@@ -291,14 +293,6 @@ void VkFrameBufferInterface::_pushRtGroup(RtGroup* rtgroup) {
   //_active_rtgroup = rtgroup;
   //}
 
-  if( rtgroup == _main_rtg.get() ){
-    auto rpass = createRenderPassForRtGroup(_contextVK, _main_rtg);
-    _contextVK->_renderpasses.push_back(rpass);
-    _contextVK->beginRenderPass(rpass);
-    _postPushRtGroup(_main_rtg.get() );
-    return;
-  }
-
   if(nullptr==_active_rtgroup){
     _active_rtgroup = rtgroup;
     return;
@@ -311,40 +305,48 @@ void VkFrameBufferInterface::_pushRtGroup(RtGroup* rtgroup) {
     // OrkAssert(false);
   }
 
-  OrkAssert(_active_rtgroup);
-  int iw = _active_rtgroup->width();
-  int ih = _active_rtgroup->height();
-  /////////////////////////////////////////
-  // if we are a psuedp rtgroup (eg. swapchain), NO_OP
-  /////////////////////////////////////////
-  if (_active_rtgroup->_pseudoRTG) {
-    return;
-  }
-  /////////////////////////////////////////
-  int inumtargets = _active_rtgroup->GetNumTargets();
-  int numsamples  = msaaEnumToInt(_active_rtgroup->_msaa_samples);
-  // printf( "inumtargets<%d> numsamples<%d>\n", inumtargets, numsamples );
-  //  auto texture_target_2D = (numsamples==1) ? GL_TEXTURE_2D : GL_TEXTURE_2D_MULTISAMPLE;
-  vkrtgrpimpl_ptr_t RTGIMPL;
-  if (auto as_impl = _active_rtgroup->_impl.tryAsShared<VkRtGroupImpl>()) {
-    RTGIMPL = as_impl.value();
-  } else {
-    RTGIMPL = _createRtGroupImpl(_active_rtgroup);
-    _active_rtgroup->_impl.setShared<VkRtGroupImpl>(RTGIMPL);
-  }
-  /////////////////////////////////////////
-  int implw      = RTGIMPL->_width;
-  int implh      = RTGIMPL->_height;
-  int rtgw       = _active_rtgroup->width();
-  int rtgh       = _active_rtgroup->height();
-  bool size_diff = (rtgw != implw) || (rtgh != implh);
-  if (size_diff) {
-    logchan_rtgroup->log("resize FBO iw<%d> ih<%d>", iw, ih);
-    RTGIMPL = _createRtGroupImpl(_active_rtgroup);
-    _active_rtgroup->_impl.setShared<VkRtGroupImpl>(RTGIMPL);
-    _active_rtgroup->SetSizeDirty(false);
-  }
+  auto rpass = createRenderPassForRtGroup(_contextVK, _main_rtg);
+  _contextVK->_renderpasses.push_back(rpass);
+  _contextVK->beginRenderPass(rpass);
 
+  if( rtgroup == _main_rtg.get() ){
+
+  }
+  else{
+    OrkAssert(_active_rtgroup);
+    int iw = _active_rtgroup->width();
+    int ih = _active_rtgroup->height();
+    /////////////////////////////////////////
+    // if we are a psuedp rtgroup (eg. swapchain), NO_OP
+    /////////////////////////////////////////
+    if (_active_rtgroup->_pseudoRTG) {
+      return;
+    }
+    /////////////////////////////////////////
+    int inumtargets = _active_rtgroup->GetNumTargets();
+    int numsamples  = msaaEnumToInt(_active_rtgroup->_msaa_samples);
+    // printf( "inumtargets<%d> numsamples<%d>\n", inumtargets, numsamples );
+    //  auto texture_target_2D = (numsamples==1) ? GL_TEXTURE_2D : GL_TEXTURE_2D_MULTISAMPLE;
+    vkrtgrpimpl_ptr_t RTGIMPL;
+    if (auto as_impl = _active_rtgroup->_impl.tryAsShared<VkRtGroupImpl>()) {
+      RTGIMPL = as_impl.value();
+    } else {
+      RTGIMPL = _createRtGroupImpl(_active_rtgroup);
+      _active_rtgroup->_impl.setShared<VkRtGroupImpl>(RTGIMPL);
+    }
+    /////////////////////////////////////////
+    int implw      = RTGIMPL->_width;
+    int implh      = RTGIMPL->_height;
+    int rtgw       = _active_rtgroup->width();
+    int rtgh       = _active_rtgroup->height();
+    bool size_diff = (rtgw != implw) || (rtgh != implh);
+    if (size_diff) {
+      logchan_rtgroup->log("resize FBO iw<%d> ih<%d>", iw, ih);
+      RTGIMPL = _createRtGroupImpl(_active_rtgroup);
+      _active_rtgroup->_impl.setShared<VkRtGroupImpl>(RTGIMPL);
+      _active_rtgroup->SetSizeDirty(false);
+    }
+  }
   /////////////////////////////////////////
   _postPushRtGroup(rtgroup);
 }
@@ -353,26 +355,23 @@ void VkFrameBufferInterface::_pushRtGroup(RtGroup* rtgroup) {
 
 RtGroup* VkFrameBufferInterface::_popRtGroup() {
   OrkAssert(_active_rtgroup);
-  if( _active_rtgroup == _main_rtg.get() ){
-    auto rpass = _contextVK->_renderpasses.back();
-    _contextVK->endRenderPass(rpass);
-    return _active_rtgroup;
-  }
-  auto rtb0 = _active_rtgroup->mMrt[0];
-  if (0)
+  auto rpass = _contextVK->_renderpasses.back();
+
+  if (0){
+    auto rtb0 = _active_rtgroup->mMrt[0];
     printf(
         "poprtg rtb<%s> usage<%08x>\n", //
         rtb0->_debugName.c_str(),       //
         rtb0->_usage);
-  if (rtb0->_usage == "present"_crcu) {
-    // OrkAssert(false);
+    if (rtb0->_usage == "present"_crcu) {
+      // OrkAssert(false);
+    }
   }
 
   // barrier on all color attachments
   ///////////////////////////////////////////////////
 
   int num_buf = _active_rtgroup->GetNumTargets();
-  std::vector<VkImageMemoryBarrier> barriers(num_buf);
 
   for (int ib = 0; ib < num_buf; ib++) {
     auto rtb = _active_rtgroup->GetMrt(ib);
@@ -380,23 +379,13 @@ RtGroup* VkFrameBufferInterface::_popRtGroup() {
       continue;
     }
     auto bufferimpl = rtb->_impl.getShared<VklRtBufferImpl>();
-    auto& barrier   = barriers[ib];
-    initializeVkStruct(barrier, VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
+    auto barrier   = createImageBarrier (bufferimpl->_imgobj->_vkimage, // VkImage image
+                                         bufferimpl->_currentLayout, // VkImageLayout oldLayout
+                                         VkFormatConverter::_instance.layoutForUsage(rtb->_usage), // VkImageLayout newLayout
+                                         VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,// VkAccessFlags srcAccessMask
+                                         VkAccessFlagBits(0)); // VkAccessFlags dstAccessMask
 
-    barrier.oldLayout           = VK_IMAGE_LAYOUT_UNDEFINED;
-    barrier.newLayout           = VkFormatConverter::_instance.layoutForUsage(rtb->_usage);
-    barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    barrier.image               = bufferimpl->_imgobj->_vkimage; // The image you want to transition.
-
-    barrier.subresourceRange.aspectMask     = VkFormatConverter::_instance.aspectForUsage(rtb->_usage);
-    barrier.subresourceRange.baseMipLevel   = 0;
-    barrier.subresourceRange.levelCount     = 1;
-    barrier.subresourceRange.baseArrayLayer = 0;
-    barrier.subresourceRange.layerCount     = 1;
-
-    barrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT; // Adjust as needed.
-    barrier.dstAccessMask = 0;
+    barrier->subresourceRange.aspectMask     = VkFormatConverter::_instance.aspectForUsage(rtb->_usage);
 
     vkCmdPipelineBarrier(
         _contextVK->primary_cb()->_vkcmdbuf,
@@ -408,27 +397,11 @@ RtGroup* VkFrameBufferInterface::_popRtGroup() {
         0,
         nullptr,
         1,
-        &barrier);
+        barrier.get());
   }
+  _contextVK->endRenderPass(rpass);
 
   return _active_rtgroup;
-}
-
-///////////////////////////////////////////////////////
-
-void VkFrameBufferInterface::_clearColorAndDepth(const fcolor4& rCol, float fdepth) {
-  auto cmdbuf     = _contextVK->primary_cb();
-  auto rtgimpl    = _active_rtgroup->_impl.getShared<VkRtGroupImpl>();
-  int inumtargets = _active_rtgroup->GetNumTargets();
-  int w           = _active_rtgroup->width();
-  int h           = _active_rtgroup->height();
-  printf("clearing rtg<%p> w<%d> h<%d>\n", (void*)rtgimpl.get(), w, h);
-}
-
-///////////////////////////////////////////////////////
-
-void VkFrameBufferInterface::_clearDepth(float fdepth) {
-  OrkAssert(false);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

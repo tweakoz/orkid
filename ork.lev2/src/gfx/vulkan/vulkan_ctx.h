@@ -368,12 +368,8 @@ using rtgroup_attachments_ptr_t = std::shared_ptr<RtGroupAttachments>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-renderpass_ptr_t createRenderPassForRtGroup(vkcontext_rawptr_t ctxVK, vkrtgrpimpl_ptr_t rtg_impl);
-
 struct VkRtGroupImpl {
   VkRtGroupImpl(RtGroup* _rtg);
-
-
 
   rtgroup_attachments_ptr_t attachments();
 
@@ -387,7 +383,6 @@ struct VkRtGroupImpl {
   int _pipeline_bits = -1;
   vkmsaastate_ptr_t _msaaState;
 
-  //VkRenderPass _vkrp;
   VkSubpassDescription _vksubpass;
 
   commandbuffer_ptr_t _cmdbuf;
@@ -892,9 +887,6 @@ struct VkFrameBufferInterface final : public FrameBufferInterface {
 
   ///////////////////////////////////////////////////////
 
-  void _clearColorAndDepth(const fcolor4& rCol, float fdepth) final;
-  void _clearDepth(float fdepth) final;
-
   void capture(const RtBuffer* inpbuf, const file::Path& pth) final;
   bool captureToTexture(const CaptureBuffer& capbuf, Texture& tex) final;
   bool captureAsFormat(const RtBuffer* inpbuf, CaptureBuffer* buffer, EBufferFormat destfmt) final;
@@ -940,9 +932,7 @@ struct VkFrameBufferInterface final : public FrameBufferInterface {
   //////////////////////////////////////////////
   void _initSwapChain();
   void _acquireSwapChainForFrame();
-  void _transitionSwapChainForClear();
   void _enq_transitionMainRtgToPresent();
-  void _clearSwapChainBuffer();
   void _bindSwapChainToRenderPass(vkrenderpass_ptr_t rpass);
 
   //////////////////////////////////////////////

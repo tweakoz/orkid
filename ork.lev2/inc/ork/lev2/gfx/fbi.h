@@ -90,8 +90,6 @@ public:
 
   virtual void _setViewport(int iX, int iY, int iW, int iH)   = 0;
   virtual void _setScissor(int iX, int iY, int iW, int iH)    = 0;
-  virtual void _clearColorAndDepth(const fcolor4& rCol, float fdepth)       = 0;
-  virtual void _clearDepth(float fdepth)                       = 0;
   virtual void msaaBlit(rtgroup_ptr_t src, rtgroup_ptr_t dst) = 0;
   virtual void blit(rtgroup_ptr_t src, rtgroup_ptr_t dst) {}
   virtual void downsample2x2(rtgroup_ptr_t src, rtgroup_ptr_t dst) {}

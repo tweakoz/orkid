@@ -215,10 +215,6 @@ public:
   }
   void _setScissor(int iX, int iY, int iW, int iH) final {
   }
-  void _clearColorAndDepth(const fcolor4& rCol, float fdepth) final {
-  }
-  void _clearDepth(float fdepth) final {
-  }
 
   void GetPixel(const fvec4& rAt, PixelFetchContext& ctx) final {
   }
