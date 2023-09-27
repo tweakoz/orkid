@@ -20,15 +20,20 @@ void VkFrameBufferInterface::_initSwapChain() {
 
   if (_swapchain) {
     _old_swapchains.insert(_swapchain);
-    size_t num_images = _swapchain->_vkSwapChainImages.size();
     _swapchain->_fence->wait();
+    size_t num_images = _swapchain->_rtgs.size();
     for (size_t i = 0; i < num_images; i++) {
-      auto img = _swapchain->_vkSwapChainImages[i];
+      auto rtg = _swapchain->_rtgs[i];
+      auto rtb_color = rtg->GetMrt(0);
+      auto rtb_depth = rtg->_depthBuffer;
+      auto rtb_impl_color = rtb_color->_impl.getShared<VklRtBufferImpl>();
+      auto rtb_impl_depth = rtb_depth->_impl.getShared<VklRtBufferImpl>();
+      //auto img = _swapchain->_vkSwapChainImages[i];
 
       // barrier - complete all ops before destroying
       if (0) {
         auto imgbar = createImageBarrier(
-            img,
+            rtb_impl_color->_vkimg,
             VK_IMAGE_LAYOUT_UNDEFINED,            // oldLayout
             VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, // newLayout
             VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, // srcAccessMask
@@ -43,8 +48,7 @@ void VkFrameBufferInterface::_initSwapChain() {
             1, imgbar.get());                              // imageMemoryBarrierCount, pImageMemoryBarriers
       }
 
-      auto imgview = _swapchain->_vkSwapChainImageViews[i];
-      vkDestroyImageView(vkdev, imgview, nullptr);
+      vkDestroyImageView(vkdev, rtb_impl_color->_vkimgview, nullptr);
       // vkDestroyImage(vkdev, img, nullptr);
     }
     vkDestroySwapchainKHR(vkdev, _swapchain->_vkSwapChain, nullptr);
@@ -106,44 +110,34 @@ void VkFrameBufferInterface::_initSwapChain() {
 
   uint32_t imageCount = 0;
   vkGetSwapchainImagesKHR(vkdev, swap_chain->_vkSwapChain, &imageCount, nullptr);
-  swap_chain->_vkSwapChainImages.resize(imageCount);
-  vkGetSwapchainImagesKHR(vkdev, swap_chain->_vkSwapChain, &imageCount, swap_chain->_vkSwapChainImages.data());
+  std::vector<VkImage> swapChainImages;
+  swapChainImages.resize(imageCount);
+  vkGetSwapchainImagesKHR(vkdev, swap_chain->_vkSwapChain, &imageCount, swapChainImages.data());
 
-  swap_chain->_vkSwapChainImageViews.resize(swap_chain->_vkSwapChainImages.size());
-
-  for (size_t i = 0; i < swap_chain->_vkSwapChainImages.size(); i++) {
-    auto IVCI = createImageViewInfo2D( swap_chain->_vkSwapChainImages[i], //
+  for (size_t i = 0; i < swapChainImages.size(); i++) {
+    auto IVCI = createImageViewInfo2D( swapChainImages[i], //
                                        surfaceFormat.format, //
                                        VK_IMAGE_ASPECT_COLOR_BIT );
 
-    OK = vkCreateImageView(vkdev, IVCI.get(), nullptr, &swap_chain->_vkSwapChainImageViews[i]);
+    VkImageView imgview;
+    OK = vkCreateImageView(vkdev, IVCI.get(), nullptr, &imgview);
     OrkAssert(OK == VK_SUCCESS);
 
-    auto rtg       = std::make_shared<RtGroup>(_contextVK, width, height, MsaaSamples::MSAA_1X, false);
+    auto rtg       = std::make_shared<RtGroup>(_contextVK, width, height, MsaaSamples::MSAA_1X, true);
     auto rtb_color = rtg->createRenderTarget(EBufferFormat::RGBA8, "present"_crcu);
     auto rtb_depth = rtg->createRenderTarget(DEPTH_FORMAT, "depth"_crcu);
-    rtg->_depthBuffer = rtb_depth;
-    rtg->mNumMrts = 1;
     auto rtg_impl  = _createRtGroupImpl(rtg.get());
     rtg->_name     = FormatString("vk-swapchain-%d", i);
     ////////////////////////////////////////////
+    // link rtb_color to swap chain color image
+    ////////////////////////////////////////////
     auto rtb_impl_color = rtb_color->_impl.getShared<VklRtBufferImpl>();
-    auto rtb_impl_depth = rtb_depth->_impl.getShared<VklRtBufferImpl>();
-    ////////////////////////////////////////////
-    // create depth image
-    _vkCreateImageForBuffer(_contextVK, rtb_impl_depth, DEPTH_FORMAT, "depth"_crcu);
-    ////////////////////////////////////////////
-    // link to swap chain color image
-    rtb_impl_color->_init      = false;
-    rtb_impl_color->_vkimg     = swap_chain->_vkSwapChainImages[i];
-    rtb_impl_color->_vkimgview = swap_chain->_vkSwapChainImageViews[i];
-    rtb_impl_color->_vkfmt     = surfaceFormat.format;
     rtb_impl_color->_is_surface = true;
+    rtb_impl_color->_replaceImage( surfaceFormat.format, //
+                                   imgview, //
+                                   swapChainImages[i] );
     ////////////////////////////////////////////
-
     swap_chain->_rtgs.push_back(rtg);
-    swap_chain->_color_rtbs.push_back(rtb_color);
-    swap_chain->_depth_rtbs.push_back(rtb_depth);
   }
 
   _swapchain = swap_chain;
@@ -154,7 +148,6 @@ void VkFrameBufferInterface::_initSwapChain() {
 void VkFrameBufferInterface::_clearSwapChainBuffer() {
 
   auto gfxcb = _contextVK->primary_cb();
-
   VkClearColorValue clearColor = {{0.0f, 1.0f, 0.0f, 1.0f}}; // Clear to black color
   VkImageSubresourceRange ISRR = {};
   ISRR.aspectMask              = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -163,7 +156,10 @@ void VkFrameBufferInterface::_clearSwapChainBuffer() {
   ISRR.baseArrayLayer          = 0;
   ISRR.layerCount              = 1;
 
-  vkCmdClearColorImage(gfxcb->_vkcmdbuf, _swapchain->image(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearColor, 1, &ISRR);
+  auto rtg  = _swapchain->currentRTG();
+  auto rtbi = rtg->GetMrt(0)->_impl.getShared<VklRtBufferImpl>();
+
+  vkCmdClearColorImage(gfxcb->_vkcmdbuf, rtbi->_vkimg, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearColor, 1, &ISRR);
 }
 
 ///////////////////////////////////////////////////////
@@ -256,10 +252,8 @@ void VkFrameBufferInterface::_acquireSwapChainForFrame() {
   }
 
   OrkAssert(_swapchain->_curSwapWriteImage >= 0);
-  OrkAssert(_swapchain->_curSwapWriteImage < _swapchain->_vkSwapChainImages.size());
-  auto swap_rtg = _swapchain->_rtgs[_swapchain->_curSwapWriteImage];
-
-  _main_rtg = swap_rtg;
+  OrkAssert(_swapchain->_curSwapWriteImage < _swapchain->_rtgs.size());
+  _main_rtg = _swapchain->currentRTG();
   // printf( "_swapchain->_curSwapWriteImage<%u>\n", _swapchain->_curSwapWriteImage );
 }
 
@@ -270,17 +264,19 @@ void VkFrameBufferInterface::_bindSwapChainToRenderPass(vkrenderpass_ptr_t rpass
   if (nullptr == _swapchain->_mainRenderPass) {
     _swapchain->_mainRenderPass = rpass;
 
-    _swapchain->_vkFrameBuffers.resize(_swapchain->_vkSwapChainImages.size());
-    for (size_t i = 0; i < _swapchain->_vkSwapChainImages.size(); i++) {
+    _swapchain->_vkFrameBuffers.resize(_swapchain->_rtgs.size());
+    for (size_t i = 0; i < _swapchain->_rtgs.size(); i++) {
+      auto rtg = _swapchain->_rtgs[i];
+      auto rtb_color = rtg->GetMrt(0);
+      auto rtb_depth = rtg->_depthBuffer;
+      auto rtb_impl_color = rtb_color->_impl.getShared<VklRtBufferImpl>();
+      auto rtb_impl_depth = rtb_depth->_impl.getShared<VklRtBufferImpl>();
 
       auto& VKFRB = _swapchain->_vkFrameBuffers[i];
       std::vector<VkImageView> fb_attachments;
-      auto& IMGVIEW = _swapchain->_vkSwapChainImageViews[i];
 
-      auto depth_rtb     = _swapchain->_depth_rtbs[i];
-      auto depth_rtbimpl = depth_rtb->_impl.getShared<VklRtBufferImpl>();
-      fb_attachments.push_back(IMGVIEW);
-      fb_attachments.push_back(depth_rtbimpl->_vkimgview);
+      fb_attachments.push_back(rtb_impl_color->_vkimgview);
+      fb_attachments.push_back(rtb_impl_depth->_vkimgview);
 
       VkFramebufferCreateInfo CFBI = {};
       CFBI.sType                   = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;

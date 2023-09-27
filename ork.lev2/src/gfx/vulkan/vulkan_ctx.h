@@ -336,6 +336,10 @@ struct VulkanRenderSubPass {
 struct VklRtBufferImpl {
   VklRtBufferImpl(VkRtGroupImpl* par, RtBuffer* rtb);
   void setLayout(VkImageLayout layout);
+  void _replaceImage(
+    VkFormat new_fmt,
+    VkImageView new_view,
+    VkImage new_img);
 
 
   VkRtGroupImpl* _parent = nullptr;
@@ -731,20 +735,14 @@ struct VkLoadContext {
 
 struct VkSwapChain {
   VkSwapchainKHR _vkSwapChain;
-  std::vector<VkImage> _vkSwapChainImages;
-  std::vector<VkImageView> _vkSwapChainImageViews;
-  std::vector<VkFramebuffer> _vkFrameBuffers;
+  std::vector<VkFramebuffer> _vkFrameBuffers; // used in main render pass
   std::vector<rtgroup_ptr_t> _rtgs;
-  std::vector<rtbuffer_ptr_t> _color_rtbs;
-  std::vector<rtbuffer_ptr_t> _depth_rtbs;
-  // std::vector<VkImage>       _vkDepthImages;
-  // std::vector<VkImageView>   _vkDepthImageViews;
   vkfence_obj_ptr_t _fence;
+
+  rtgroup_ptr_t currentRTG();
 
   uint32_t _curSwapWriteImage = 0xffffffff;
 
-  VkImage image();
-  VkImageView imageView();
   VkFramebuffer framebuffer();
 
   int _width  = 0;
@@ -1270,6 +1268,12 @@ public:
 ///////////////////////////////////////////////////////////////////////////
 
 renderpass_ptr_t createRenderPassForRtGroup(vkcontext_rawptr_t ctxVK, rtgroup_ptr_t rtg_impl);
+void _vkReplaceImageForBuffer(
+    vkcontext_rawptr_t ctxVK, //
+    vkrtbufimpl_ptr_t bufferimpl,
+    VkFormat new_fmt,
+    VkImageView new_view,
+    VkImage new_img);
 
 ///////////////////////////////////////////////////////////////////////////
 

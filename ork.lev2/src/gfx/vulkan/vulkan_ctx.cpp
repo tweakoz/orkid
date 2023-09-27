@@ -13,12 +13,10 @@ ImplementReflectionX(ork::lev2::vulkan::VkContext, "VkContext");
 namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
 
-VkImage VkSwapChain::image() {
-  return _vkSwapChainImages[_curSwapWriteImage];
+rtgroup_ptr_t VkSwapChain::currentRTG(){
+  return _rtgs[_curSwapWriteImage];
 }
-VkImageView VkSwapChain::imageView() {
-  return _vkSwapChainImageViews[_curSwapWriteImage];
-}
+
 VkFramebuffer VkSwapChain::framebuffer() {
   return _vkFrameBuffers[_curSwapWriteImage];
 }

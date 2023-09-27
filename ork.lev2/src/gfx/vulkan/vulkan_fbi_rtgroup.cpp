@@ -18,7 +18,11 @@ static logchannel_ptr_t logchan_rtgroup = logger()->createChannel("VKRTG", fvec3
 VklRtBufferImpl::VklRtBufferImpl(VkRtGroupImpl* par, RtBuffer* rtb) //
     : _parent(par)
     , _rtb(rtb) { //
+
   initializeVkStruct(_attachmentDesc);
+  initializeVkStruct(_vkimgview);
+
+
   _attachmentDesc.samples       = VK_SAMPLE_COUNT_1_BIT;        // No multisampling for this example.
   _attachmentDesc.loadOp        = VK_ATTACHMENT_LOAD_OP_CLEAR;  // Clear the color buffer before rendering.
   _attachmentDesc.storeOp       = VK_ATTACHMENT_STORE_OP_STORE; // Store the rendered content for presentation.
@@ -120,6 +124,33 @@ void _vkCreateImageForBuffer(
   VkResult OK = vkCreateImageView(ctxVK->_vkdevice, IVCI.get(), nullptr, &bufferimpl->_vkimgview);
   OrkAssert(OK == VK_SUCCESS);
   ///////////////////////////////////////////////////
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void VklRtBufferImpl::_replaceImage(
+    VkFormat new_fmt, //
+    VkImageView new_view, //
+    VkImage new_img) { //
+
+  auto old_img = _imgobj->_vkimage;
+  auto old_view = _vkimgview;
+
+  ////////////////////
+  // delete old image
+  ////////////////////
+
+  // todo
+
+  ////////////////////
+  // assign new image
+  ////////////////////
+
+  _init      = false;
+  _vkimg     = new_img;
+  _vkimgview = new_view;
+  _vkfmt     = new_fmt;
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////
