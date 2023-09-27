@@ -115,11 +115,11 @@ vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(RtGroup* rtgroup) {
     auto bufferimpl = rtbuffer->_impl.makeShared<VklRtBufferImpl>(RTGIMPL.get(), rtbuffer.get());
     uint64_t USAGE = "depth"_crcu;
     _vkCreateImageForBuffer(_contextVK, bufferimpl, rtbuffer->mFormat, USAGE);
+    bufferimpl->setLayout(VkFormatConverter::_instance.layoutForUsage(USAGE));
     auto& adesc = bufferimpl->_attachmentDesc;
     adesc.storeOp        = VK_ATTACHMENT_STORE_OP_DONT_CARE;
     adesc.stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
     adesc.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    adesc.finalLayout    = VkFormatConverter::_instance.layoutForUsage(USAGE);
   }
   ////////////////////////////////////////
   // other buffers
