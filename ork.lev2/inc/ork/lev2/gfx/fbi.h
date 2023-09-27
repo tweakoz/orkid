@@ -166,6 +166,8 @@ public:
   int _pickState;
   std::stack<lev2::RtGroup*> mRtGroupStack;
   RtGroup* _active_rtgroup = nullptr;
+  rtgroup_ptr_t _main_rtg;
+
 
 };
 

@@ -926,9 +926,6 @@ struct VkFrameBufferInterface final : public FrameBufferInterface {
   // void _doPushMainSurface() final;
   // void _doPopMainSurface() final;
 
-  rtgroup_ptr_t _main_rtg;
-  rtbuffer_ptr_t _main_rtb_color;
-  rtbuffer_ptr_t _main_rtb_depth;
 
   freestyle_mtl_ptr_t _freestyle_mtl;
   const FxShaderTechnique* _tek_downsample2x2 = nullptr;
@@ -1268,6 +1265,8 @@ public:
 ///////////////////////////////////////////////////////////////////////////
 
 renderpass_ptr_t createRenderPassForRtGroup(vkcontext_rawptr_t ctxVK, rtgroup_ptr_t rtg_impl);
+renderpass_ptr_t createRenderPassForMainRTG(vkcontext_rawptr_t ctx, rtgroup_ptr_t rtg);
+
 void _vkReplaceImageForBuffer(
     vkcontext_rawptr_t ctxVK, //
     vkrtbufimpl_ptr_t bufferimpl,

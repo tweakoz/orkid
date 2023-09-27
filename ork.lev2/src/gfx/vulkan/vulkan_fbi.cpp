@@ -61,14 +61,12 @@ void VkFrameBufferInterface::_setScissor(int iX, int iY, int iW, int iH) {
 void VkFrameBufferInterface::_doBeginFrame() {
   _acquireSwapChainForFrame();
   _active_rtgroup = _main_rtg.get();
+
 }
 
 ///////////////////////////////////////////////////////
 
 void VkFrameBufferInterface::_doEndFrame() {
-  //popViewport();
-  //popScissor();
-  //OrkAssert(false);
 }
 
 ///////////////////////////////////////////////////////

@@ -281,7 +281,6 @@ void VkFrameBufferInterface::_postPushRtGroup(RtGroup* rtgroup) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkFrameBufferInterface::_present() {
-  OrkAssert(_main_rtb_color->_usage == "present"_crcu);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -293,6 +292,20 @@ void VkFrameBufferInterface::_pushRtGroup(RtGroup* rtgroup) {
   //} else {
   //_active_rtgroup = rtgroup;
   //}
+
+  if( rtgroup == _main_rtg.get() ){
+    auto rpass = createRenderPassForMainRTG(_contextVK, _main_rtg);
+    _contextVK->_renderpasses.push_back(rpass);
+    _contextVK->beginRenderPass(rpass);
+    _postPushRtGroup(_main_rtg.get() );
+    return;
+  }
+
+  if(nullptr==_active_rtgroup){
+    _active_rtgroup = rtgroup;
+    return;
+    //OrkAssert(false);
+  }
   _active_rtgroup = rtgroup;
 
   bool is_surface = rtgroup->_name.find("ui::Surface") != std::string::npos;
@@ -341,6 +354,10 @@ void VkFrameBufferInterface::_pushRtGroup(RtGroup* rtgroup) {
 ///////////////////////////////////////////////////////////////////////////////
 
 RtGroup* VkFrameBufferInterface::_popRtGroup() {
+  OrkAssert(_active_rtgroup);
+  if( _active_rtgroup == _main_rtg.get() ){
+    return _active_rtgroup;
+  }
   auto rtb0 = _active_rtgroup->mMrt[0];
   if (0)
     printf(

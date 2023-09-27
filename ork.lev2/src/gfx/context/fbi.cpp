@@ -66,7 +66,7 @@ PickBuffer* FrameBufferInterface::currentPickBuffer() const {
 ///////////////////////////////////////////////////////////////////////////////
 
 void FrameBufferInterface::PushRtGroup(RtGroup* Base) {
-
+  OrkAssert(Base!=nullptr);
   bool first = mRtGroupStack.empty();
   mRtGroupStack.push(_active_rtgroup);
   _pushRtGroup(Base);
@@ -85,6 +85,7 @@ void FrameBufferInterface::PopRtGroup() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void FrameBufferInterface::BeginFrame(void) {
+  _active_rtgroup = nullptr;
   _doBeginFrame();
   if (_hackcb)
     _hackcb(&_target);

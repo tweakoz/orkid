@@ -557,11 +557,12 @@ void VkContext::_doBeginFrame() {
   CBBI_GFX.pInheritanceInfo = nullptr;
   vkBeginCommandBuffer(primary_cb()->_vkcmdbuf, &CBBI_GFX); // vkBeginCommandBuffer does an implicit reset
 
-  auto rtg   = _fbi->_main_rtg;
-  auto rpass = createRenderPassForMainRTG(this, rtg);
-  _renderpasses.push_back(rpass);
+  //auto rtg   = _fbi->_main_rtg;
+  //auto rpass = createRenderPassForMainRTG(this, rtg);
+  //_renderpasses.push_back(rpass);
+  //beginRenderPass(rpass);
 
-  beginRenderPass(rpass);
+  _fbi->PushRtGroup(_fbi->_main_rtg.get());
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -589,6 +590,7 @@ void VkContext::_doEndFrame() {
   PopModColor();
   mbPostInitializeContext = false;
   ////////////////////////
+  _fbi->PopRtGroup();
   auto rpass = _renderpasses.back();
   endRenderPass(rpass);
   ////////////////////////
