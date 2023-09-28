@@ -24,12 +24,13 @@ VklRtBufferImpl::VklRtBufferImpl(VkRtGroupImpl* par, RtBuffer* rtb) //
 
 
   _attachmentDesc.samples       = VK_SAMPLE_COUNT_1_BIT;        // No multisampling for this example.
-  _attachmentDesc.loadOp        = VK_ATTACHMENT_LOAD_OP_CLEAR;  // Clear the color buffer before rendering.
-  _attachmentDesc.storeOp       = VK_ATTACHMENT_STORE_OP_STORE; // Store the rendered content for presentation.
+  _attachmentDesc.loadOp        = VK_ATTACHMENT_LOAD_OP_CLEAR;  // Clear the color/depth buffer before rendering.
+  _attachmentDesc.storeOp       = VK_ATTACHMENT_STORE_OP_STORE; // Store the rendered color/depth for presentation.
   _attachmentDesc.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
   _attachmentDesc.finalLayout   = VK_IMAGE_LAYOUT_UNDEFINED;
   switch (rtb->format()) {
     case EBufferFormat::DEPTH:
+    
       _attachmentDesc.stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_CLEAR;
       _attachmentDesc.stencilStoreOp = VK_ATTACHMENT_STORE_OP_STORE;
       break;
@@ -302,6 +303,7 @@ void VkFrameBufferInterface::_pushRtGroup(RtGroup* rtgroup) {
     //OrkAssert(false);
   }
   _active_rtgroup = rtgroup;
+  vkrtgrpimpl_ptr_t RTGIMPL;
 
   bool is_surface = rtgroup->_name.find("ui::Surface") != std::string::npos;
   if (is_surface) {
@@ -323,7 +325,7 @@ void VkFrameBufferInterface::_pushRtGroup(RtGroup* rtgroup) {
   //  (images managed by swapchain)
   /////////////////////////////////
   if( rtgroup == _main_rtg.get() ){
-
+      RTGIMPL = _main_rtg->_impl.getShared<VkRtGroupImpl>();
   }
   /////////////////////////////////
   // auxillary rtg ?
@@ -343,7 +345,6 @@ void VkFrameBufferInterface::_pushRtGroup(RtGroup* rtgroup) {
     int numsamples  = msaaEnumToInt(_active_rtgroup->_msaa_samples);
     // printf( "inumtargets<%d> numsamples<%d>\n", inumtargets, numsamples );
     //  auto texture_target_2D = (numsamples==1) ? GL_TEXTURE_2D : GL_TEXTURE_2D_MULTISAMPLE;
-    vkrtgrpimpl_ptr_t RTGIMPL;
     if (auto as_impl = _active_rtgroup->_impl.tryAsShared<VkRtGroupImpl>()) {
       RTGIMPL = as_impl.value();
     } else {
@@ -371,9 +372,12 @@ void VkFrameBufferInterface::_pushRtGroup(RtGroup* rtgroup) {
   /////////////////////////////////////////
   // begin new renderpass
   /////////////////////////////////////////
-  auto rpass = createRenderPassForRtGroup(_contextVK, rtgroup );
+  auto rpass = _contextVK->createRenderPassForRtGroup(rtgroup );
   _contextVK->_renderpasses.push_back(rpass);
   _contextVK->beginRenderPass(rpass);
+  /////////////////////////////////////////
+  auto rpass_impl = rpass->_impl.getShared<VulkanRenderPass>();
+  _contextVK->pushCommandBuffer(rpass_impl->_seccmdbuffer);
   /////////////////////////////////////////
   _postPushRtGroup(rtgroup);
 }
@@ -388,7 +392,8 @@ RtGroup* VkFrameBufferInterface::_popRtGroup(bool continue_render) {
   mRtGroupStack.pop();
 
   OrkAssert(_active_rtgroup);
-  auto rpass = _contextVK->_renderpasses.back();
+  auto rtg_renpass = _contextVK->_cur_renderpass;
+  auto rtg_rpass_impl = rtg_renpass->_impl.getShared<VulkanRenderPass>();
 
   if (0){
     auto rtb0 = _active_rtgroup->mMrt[0];
@@ -420,7 +425,7 @@ RtGroup* VkFrameBufferInterface::_popRtGroup(bool continue_render) {
 
     barrier->subresourceRange.aspectMask     = VkFormatConverter::_instance.aspectForUsage(rtb->_usage);
 
-    vkCmdPipelineBarrier(
+    /*vkCmdPipelineBarrier(
         _contextVK->primary_cb()->_vkcmdbuf,
         VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, // Adjust as needed.
         VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
@@ -430,14 +435,28 @@ RtGroup* VkFrameBufferInterface::_popRtGroup(bool continue_render) {
         0,
         nullptr,
         1,
-        barrier.get());
+        barrier.get());*/
   }
-  _contextVK->endRenderPass(rpass);
+
+  //////////////////////////////////////////////
+  // RTG commandbuffer complete, pop and execute
+  //////////////////////////////////////////////
+
+  _contextVK->popCommandBuffer(); // rtg
+  _contextVK->enqueueSecondaryCommandBuffer(rtg_rpass_impl->_seccmdbuffer);
+
+  //////////////////////////////////////////////
+  // finish the renderpass (on primary cb)
+  //////////////////////////////////////////////
+
+  _contextVK->endRenderPass(_contextVK->_cur_renderpass);
+
   /////////////////////////////////////////
   // begin new renderpass
   /////////////////////////////////////////
+
   if( continue_render ){
-    auto rpass = createRenderPassForRtGroup(_contextVK, _active_rtgroup );
+    auto rpass = _contextVK->createRenderPassForRtGroup(_active_rtgroup );
     _contextVK->_renderpasses.push_back(rpass);
     rpass->_allow_clear = false;
     _contextVK->beginRenderPass(rpass);
@@ -445,7 +464,6 @@ RtGroup* VkFrameBufferInterface::_popRtGroup(bool continue_render) {
   //rpass = createRenderPassForRtGroup(_contextVK, _active_rtgroup );
   //_contextVK->_renderpasses.push_back(rpass);
   //_contextVK->beginRenderPass(rpass);
-
 
 
   return _active_rtgroup;

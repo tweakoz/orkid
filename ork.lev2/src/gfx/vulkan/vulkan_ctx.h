@@ -317,8 +317,8 @@ struct VkRasterState {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct VkCommandBufferImpl {
-  VkCommandBufferImpl(vkcontext_rawptr_t vkctx,bool primary);
-  VkCommandBuffer _vkcmdbuf;
+  VkCommandBuffer _vkcmdbuf = VK_NULL_HANDLE;
+  CommandBuffer* _parent = nullptr;
 };
 
 struct VulkanRenderPass {
@@ -327,7 +327,7 @@ struct VulkanRenderPass {
   VkRenderPass _vkrp;
   VkFramebufferCreateInfo _vkfbinfo;
   VkFramebuffer _vkfb;
-  vkcmdbufimpl_ptr_t _vkcmdbuf;
+  commandbuffer_ptr_t _seccmdbuffer;
   
 };
 struct VulkanRenderSubPass {
@@ -739,7 +739,6 @@ struct VkSwapChain {
   VkSwapchainKHR _vkSwapChain;
   std::vector<rtgroup_ptr_t> _rtgs;
   vkfence_obj_ptr_t _fence;
-  vkrenderpass_ptr_t _mainRenderPass;
   uint32_t _curSwapWriteImage = 0xffffffff;
 };
 
@@ -1203,8 +1202,10 @@ public:
   bool mTargetDrawableSizeDirty;
   bool _first_frame = true;
   std::vector<renderpass_ptr_t> _renderpasses;
-
+  renderpass_ptr_t _cur_renderpass;
   //////////////////////////////////////////////
+  vkcmdbufimpl_ptr_t _createVkCommandBuffer(CommandBuffer* par);
+  renderpass_ptr_t createRenderPassForRtGroup(RtGroup* rtg );
   void enqueueDeferredOneShotCommand(commandbuffer_ptr_t cmdbuf);
   std::vector<commandbuffer_ptr_t> _pendingOneShotCommands;
   std::unordered_set<vktlsema_obj_ptr_t> _pendingOneShotSemas;
@@ -1227,7 +1228,6 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////
 
-renderpass_ptr_t createRenderPassForRtGroup(vkcontext_rawptr_t ctxVK, RtGroup* rtg );
 
 void _vkReplaceImageForBuffer(
     vkcontext_rawptr_t ctxVK, //

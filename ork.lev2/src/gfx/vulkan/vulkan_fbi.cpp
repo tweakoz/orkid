@@ -126,10 +126,10 @@ vksubpass_ptr_t createSubPass(bool has_depth) {
 
 ///////////////////////////////////////////////////////
 
-renderpass_ptr_t createRenderPassForRtGroup(vkcontext_rawptr_t ctxVK, RtGroup* rtg ){
+renderpass_ptr_t VkContext::createRenderPassForRtGroup(RtGroup* rtg ){
   auto rtg_impl = rtg->_impl.getShared<VkRtGroupImpl>();
   auto renpass = std::make_shared<RenderPass>();
-  auto vk_renpass = renpass->_impl.makeShared<VulkanRenderPass>(ctxVK,renpass.get());
+  auto vk_renpass = renpass->_impl.makeShared<VulkanRenderPass>(this,renpass.get());
   auto color_rtb  = rtg->GetMrt(0);
   auto color_rtbi = color_rtb->_impl.getShared<VklRtBufferImpl>();
   auto depth_rtb  = rtg->_depthBuffer;
@@ -156,9 +156,20 @@ renderpass_ptr_t createRenderPassForRtGroup(vkcontext_rawptr_t ctxVK, RtGroup* r
     RPI.pAttachments    = attachments->_descriptions.data();
     RPI.subpassCount    = 1;
     RPI.pSubpasses      = &subpass->_SUBPASS;
-    // RPI.dependencyCount = 1;
-    // RPI.pDependencies = &dependency;
-    VkResult OK = vkCreateRenderPass(ctxVK->_vkdevice, &RPI, nullptr, &vk_renpass->_vkrp);
+
+    VkSubpassDependency selfDependency = {};
+    initializeVkStruct(selfDependency);
+    selfDependency.srcSubpass = 0; // The index of the subpass in which the barrier is used
+    selfDependency.dstSubpass = 0; // The same subpass as srcSubpass for a self-dependency
+    selfDependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT; // Adjust as needed
+    selfDependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT; // Adjust as needed
+    selfDependency.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT; // Adjust as needed
+    selfDependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT; // Adjust as needed
+    selfDependency.dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+
+    RPI.dependencyCount = 1;
+    RPI.pDependencies = &selfDependency;
+    VkResult OK = vkCreateRenderPass(_vkdevice, &RPI, nullptr, &vk_renpass->_vkrp);
     OrkAssert(OK == VK_SUCCESS);
 
     for( auto item : attachments->_imageviews ){
@@ -176,22 +187,10 @@ renderpass_ptr_t createRenderPassForRtGroup(vkcontext_rawptr_t ctxVK, RtGroup* r
     vk_renpass->_vkfbinfo.layers = 1;
     vk_renpass->_vkfbinfo.renderPass = vk_renpass->_vkrp; 
 
-    vkCreateFramebuffer( ctxVK->_vkdevice, // device
+    vkCreateFramebuffer( _vkdevice, // device
                          &vk_renpass->_vkfbinfo, // pCreateInfo
                          nullptr, // pAllocator
                          &vk_renpass->_vkfb); // pFramebuffer
-
-    // Optionally, you can also define subpass dependencies for layout transitions
-    //VkSubpassDependency dependency{};
-    //dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-    //dependency.dstSubpass = 0;
-    //dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    //dependency.srcAccessMask = 0;
-    //dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    //dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-
-    //RPI.dependencyCount = 1;
-    //RPI.pDependencies = &dependency;
 
     return renpass;
 }

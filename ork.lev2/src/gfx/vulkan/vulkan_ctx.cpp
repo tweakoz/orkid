@@ -188,14 +188,15 @@ void VkContext::_initVulkanCommon() {
   OrkAssert(OK == VK_SUCCESS);
 
   ////////////////////////////
-  // create command buffer impls
+  // create primary command buffer impls
   ////////////////////////////
 
   size_t count = _cmdbuf_pool.capacity();
 
   for (size_t i = 0; i < count; i++) {
     auto ork_cb                          = _cmdbuf_pool.direct_access(i);
-    auto vk_impl                         = ork_cb->_impl.makeShared<VkCommandBufferImpl>(this,true);
+    ork_cb->_is_primary = true;
+    auto vk_impl = _createVkCommandBuffer(ork_cb.get());
   }
 
   VkSemaphoreCreateInfo SCI{};
@@ -616,9 +617,8 @@ void VkContext::_beginRenderPass(renderpass_ptr_t renpass) {
 
   auto rtg = _fbi->_active_rtgroup;
   auto rtg_impl = rtg->_impl.getShared<VkRtGroupImpl>();
-
   auto vk_rpass = renpass->_impl.getShared<VulkanRenderPass>();
-
+  
   VkRenderPassBeginInfo RPBI = {};
   initializeVkStruct(RPBI, VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO);
 
@@ -653,18 +653,21 @@ void VkContext::_beginRenderPass(renderpass_ptr_t renpass) {
   // Renderpass !
   /////////////////////////////////////////
   vkCmdBeginRenderPass(
-      primary_cb()->_vkcmdbuf, //
-      &RPBI,                   //
-      VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+      primary_cb()->_vkcmdbuf,                        // must be on primary!
+      &RPBI,                                          //
+      VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS); // The render pass commands are recorded into secondary command buffers.
   /////////////////////////////////////////
   _renderpass_index++;
+
+  _cur_renderpass = renpass;
 
 }
 
 ///////////////////////////////////////////////////////
 
 void VkContext::_endRenderPass(renderpass_ptr_t renpass) {
-  vkCmdEndRenderPass(primary_cb()->_vkcmdbuf);
+  vkCmdEndRenderPass(primary_cb()->_vkcmdbuf); // must be on primary!
+  _cur_renderpass = nullptr;
   // OrkAssert(false);
 }
 
@@ -706,7 +709,8 @@ void VkContext::_endExecuteSubPass(rendersubpass_ptr_t subpass) {
 
 commandbuffer_ptr_t VkContext::_beginRecordCommandBuffer(renderpass_ptr_t rpass) {
   auto cmdbuf          = std::make_shared<CommandBuffer>();
-  auto vkcmdbuf        = cmdbuf->_impl.makeShared<VkCommandBufferImpl>(this,false);
+  cmdbuf->_debugName = "_beginRecordCommandBuffer";
+  auto vkcmdbuf = _createVkCommandBuffer(cmdbuf.get());
   _recordCommandBuffer = cmdbuf;
 
   _setObjectDebugName(vkcmdbuf->_vkcmdbuf, VK_OBJECT_TYPE_COMMAND_BUFFER, cmdbuf->_debugName.c_str());
@@ -1161,8 +1165,7 @@ void VkContext::_doPushCommandBuffer(
   if (auto as_impl = cmdbuf->_impl.tryAsShared<VkCommandBufferImpl>()) {
     impl = as_impl.value();
   } else {
-    impl                                 = cmdbuf->_impl.makeShared<VkCommandBufferImpl>(this,false);
-    _setObjectDebugName(impl->_vkcmdbuf, VK_OBJECT_TYPE_COMMAND_BUFFER, cmdbuf->_debugName.c_str());
+    impl = _createVkCommandBuffer(cmdbuf.get());
   }
   VkCommandBufferInheritanceInfo INHINFO = {};
   initializeVkStruct(INHINFO, VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO);
@@ -1205,7 +1208,9 @@ VulkanRenderPass::VulkanRenderPass(vkcontext_rawptr_t ctxVK, RenderPass* rpass) 
   // topological sort of renderpass's subpasses
   //  to determine execution order
 
-  _vkcmdbuf = std::make_shared<VkCommandBufferImpl>(ctxVK,false);
+  _seccmdbuffer = std::make_shared<CommandBuffer>();
+  _seccmdbuffer->_debugName = "renderpass cb";
+  auto vkcmdbuf = ctxVK->_createVkCommandBuffer(_seccmdbuffer.get());
 
   std::set<rendersubpass_ptr_t> subpass_set;
 
@@ -1284,19 +1289,22 @@ void VkContext::onFenceCrossed(void_lambda_t op) {
   fence->onCrossed(op);
 }
 
-VkCommandBufferImpl::VkCommandBufferImpl(vkcontext_rawptr_t vkctx,bool primary){
+vkcmdbufimpl_ptr_t VkContext::_createVkCommandBuffer(CommandBuffer* ork_cb){
+
+  vkcmdbufimpl_ptr_t rval = ork_cb->_impl.makeShared<VkCommandBufferImpl>();
+  rval->_parent = ork_cb;
     VkCommandBufferAllocateInfo CBAI_GFX = {};
     initializeVkStruct(CBAI_GFX, VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO);
-    CBAI_GFX.commandPool        = vkctx->_vkcmdpool_graphics;
-    CBAI_GFX.level              = primary ? VK_COMMAND_BUFFER_LEVEL_PRIMARY : VK_COMMAND_BUFFER_LEVEL_SECONDARY;
+    CBAI_GFX.commandPool        = _vkcmdpool_graphics;
+    CBAI_GFX.level              = ork_cb->_is_primary ? VK_COMMAND_BUFFER_LEVEL_PRIMARY : VK_COMMAND_BUFFER_LEVEL_SECONDARY;
     CBAI_GFX.commandBufferCount = 1;
-
     VkResult OK = vkAllocateCommandBuffers(
-        vkctx->_vkdevice, //
+        _vkdevice, //
         &CBAI_GFX, //
-        &_vkcmdbuf);
+        &rval->_vkcmdbuf);
     OrkAssert(OK == VK_SUCCESS);
-
+    _setObjectDebugName(rval->_vkcmdbuf, VK_OBJECT_TYPE_COMMAND_BUFFER, ork_cb->_debugName.c_str());
+    return rval;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

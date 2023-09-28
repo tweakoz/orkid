@@ -763,6 +763,7 @@ struct CommandBuffer{
   }
   svarp_t _impl;
   std::string _debugName;
+  bool _is_primary = false;
 };
 
 
