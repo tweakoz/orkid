@@ -72,6 +72,11 @@ rtgroup_attachments_ptr_t VkRtGroupImpl::attachments() {
     __attachments->_references.push_back(bufferimpl->_attachmentRef);
     __attachments->_imageviews.push_back(bufferimpl->_vkimgview);
     __attachments->descimginfos.push_back(bufferimpl->_descriptorInfo);
+
+    if(bufferimpl->_vkimgview==VK_NULL_HANDLE){
+        printf( "rtg<%s> has null imageview\n", _rtg->_name.c_str() );
+      OrkAssert(false);
+    }
   }
   if(_rtg->_depthBuffer){
     auto rtbuffer = _rtg->_depthBuffer;
@@ -80,6 +85,7 @@ rtgroup_attachments_ptr_t VkRtGroupImpl::attachments() {
     __attachments->_references.push_back(bufferimpl->_attachmentRef);
     __attachments->_imageviews.push_back(bufferimpl->_vkimgview);
     __attachments->descimginfos.push_back(bufferimpl->_descriptorInfo);
+    OrkAssert(bufferimpl->_vkimgview!=VK_NULL_HANDLE);
   }
   return __attachments;  
 }
@@ -238,6 +244,12 @@ vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(RtGroup* rtgroup) {
       OrkAssert(teximpl->_imgobj->_vkimageview != VK_NULL_HANDLE);
       bufferimpl->_descriptorInfo.imageView = teximpl->_imgobj->_vkimageview;
       bufferimpl->_descriptorInfo.sampler   = teximpl->_vksampler->_vksampler;
+      bufferimpl->_imgobj = teximpl->_imgobj;
+      bufferimpl->_vkimgview = teximpl->_imgobj->_vkimageview;
+      bufferimpl->_vkimg     = teximpl->_imgobj->_vkimage;
+      OrkAssert(bufferimpl->_vkimgview != VK_NULL_HANDLE);
+
+
     }
 
 
@@ -349,6 +361,11 @@ void VkFrameBufferInterface::_pushRtGroup(RtGroup* rtgroup) {
       RTGIMPL = _createRtGroupImpl(_active_rtgroup);
       _active_rtgroup->_impl.setShared<VkRtGroupImpl>(RTGIMPL);
       _active_rtgroup->SetSizeDirty(false);
+    }
+    for( int i=0; i<inumtargets; i++ ){
+      auto rtb = _active_rtgroup->GetMrt(i);
+      auto rtb_impl = rtb->_impl.getShared<VklRtBufferImpl>();
+      OrkAssert(rtb_impl->_vkimgview!=VK_NULL_HANDLE);
     }
   }
   /////////////////////////////////////////

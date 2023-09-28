@@ -161,6 +161,13 @@ renderpass_ptr_t createRenderPassForRtGroup(vkcontext_rawptr_t ctxVK, RtGroup* r
     VkResult OK = vkCreateRenderPass(ctxVK->_vkdevice, &RPI, nullptr, &vk_renpass->_vkrp);
     OrkAssert(OK == VK_SUCCESS);
 
+    for( auto item : attachments->_imageviews ){
+      if( item==VK_NULL_HANDLE ){
+        printf( "rtg<%s> has null imageview\n", rtg->_name.c_str() );
+      }
+      OrkAssert(item!=VK_NULL_HANDLE);
+    }
+
     initializeVkStruct(vk_renpass->_vkfbinfo, VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO);
     vk_renpass->_vkfbinfo.attachmentCount = attachments->_imageviews.size();
     vk_renpass->_vkfbinfo.pAttachments = attachments->_imageviews.data();
