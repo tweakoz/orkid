@@ -708,17 +708,16 @@ commandbuffer_ptr_t VkContext::_beginRecordCommandBuffer(renderpass_ptr_t rpass)
   VkCommandBufferInheritanceInfo INHINFO = {};
   initializeVkStruct(CBBI_GFX, VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
   initializeVkStruct(INHINFO, VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO);
+  CBBI_GFX.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
   if (rpass) {
     auto rpimpl        = rpass->_impl.getShared<VulkanRenderPass>();
     INHINFO.renderPass = rpimpl->_vkrp; // The render pass the secondary command buffer will be executed within.
     INHINFO.subpass    = 0;             // The index of the subpass in the render pass.
     INHINFO.framebuffer =
         rpimpl->_vkfb; // Optional: The framebuffer targeted by the render pass. Can be VK_NULL_HANDLE if not provided.
+    CBBI_GFX.flags |= VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
   }
   CBBI_GFX.pInheritanceInfo = &INHINFO;
-
-  CBBI_GFX.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT //
-                   | VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
   vkBeginCommandBuffer(vkcmdbuf->_vkcmdbuf, &CBBI_GFX); // vkBeginCommandBuffer does an implicit reset
 
   return cmdbuf;
