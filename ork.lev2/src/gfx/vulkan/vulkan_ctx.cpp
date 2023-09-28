@@ -478,6 +478,13 @@ void VkContext::_doBeginFrame() {
   CBBI_GFX.pInheritanceInfo = nullptr;
   vkBeginCommandBuffer(primary_cb()->_vkcmdbuf, &CBBI_GFX); // vkBeginCommandBuffer does an implicit reset
 
+  /////////////////////////////////////////
+  for (auto one_shot : _pendingOneShotCommands) {
+    enqueueSecondaryCommandBuffer(one_shot);
+  }
+  _pendingOneShotCommands.clear();
+  /////////////////////////////////////////
+
   _fbi->PushRtGroup(_fbi->_main_rtg.get());
 }
 
@@ -647,11 +654,6 @@ void VkContext::_beginRenderPass(renderpass_ptr_t renpass) {
   /////////////////////////////////////////
   _renderpass_index++;
 
-  /////////////////////////////////////////
-  for (auto one_shot : _pendingOneShotCommands) {
-    enqueueSecondaryCommandBuffer(one_shot);
-  }
-  _pendingOneShotCommands.clear();
 }
 
 ///////////////////////////////////////////////////////
@@ -1191,7 +1193,7 @@ void VkContext::_doPopCommandBuffer() {
 
 void VkContext::_doEnqueueSecondaryCommandBuffer(commandbuffer_ptr_t cmdbuf) {
   auto impl = cmdbuf->_impl.getShared<VkCommandBufferImpl>();
-  vkCmdExecuteCommands(_cmdbufcurframe_gfx_pri->_vkcmdbuf, 1, &impl->_vkcmdbuf);
+  vkCmdExecuteCommands(primary_cb()->_vkcmdbuf, 1, &impl->_vkcmdbuf);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

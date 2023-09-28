@@ -199,46 +199,7 @@ renderpass_ptr_t createRenderPassForRtGroup(vkcontext_rawptr_t ctxVK, RtGroup* r
 ///////////////////////////////////////////////////////
 
 void VkFrameBufferInterface::rtGroupClear(RtGroup* rtg) {
-  auto rtgimpl = rtg->_impl.getShared<VkRtGroupImpl>();
-  //VkRenderPass& VKRP = rtgimpl->_vkrp;
-  VkRenderPass& VKRP = rtgimpl->_rpass_clear->_impl.getShared<VulkanRenderPass>()->_vkrp;
-  VkFramebuffer& VKFB = rtgimpl->_rpass_clear->_impl.getShared<VulkanRenderPass>()->_vkfb;
-  /////////////////////////////////////////////////////////////
-  // clear in a renderpass
-  /////////////////////////////////////////////////////////////
-  auto color = rtg->_clearColor;
-  VkClearValue clearValues[2];
-  clearValues[0].color        = {{color.x,color.y,color.z,color.w}};
-  clearValues[1].depthStencil = {1.0f, 0};
-  VkRenderPassBeginInfo RPBI = {};
-  initializeVkStruct(RPBI, VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO);
-  //  clear-rect-region
-  RPBI.renderArea.offset = {0, 0};
-  RPBI.renderArea.extent.width  = rtg->width();
-  RPBI.renderArea.extent.height = rtg->height();
-  //  clear-targets
-  RPBI.clearValueCount = 1;
-  RPBI.pClearValues    = clearValues;
-  //  clear-misc
-  RPBI.renderPass  = VKRP;
-  RPBI.framebuffer = VKFB;
-  /////////////////////////////////////////////////////////////
-
-  /////////////////////////////////////////////////////////////
-  rtgimpl->_cmdbuf = _contextVK->_beginRecordCommandBuffer(rtgimpl->_rpass_clear);
-  auto cmdbuf_impl = rtgimpl->_cmdbuf->_impl.getShared<VkCommandBufferImpl>();
-  // CLEAR!
-  
-  vkCmdBeginRenderPass(
-      cmdbuf_impl->_vkcmdbuf, //
-      &RPBI,                   //
-      VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);  
-
-  vkCmdEndRenderPass( cmdbuf_impl->_vkcmdbuf);  
-  
-  _contextVK->_endRecordCommandBuffer(rtgimpl->_cmdbuf);
-  _contextVK->enqueueSecondaryCommandBuffer(rtgimpl->_cmdbuf);
-
+  OrkAssert(false);
 }
 
 ///////////////////////////////////////////////////////
