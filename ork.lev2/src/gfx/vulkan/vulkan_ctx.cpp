@@ -1169,12 +1169,7 @@ void VkContext::_doPushCommandBuffer(
   auto rpimpl        = rpass->_impl.getShared<VulkanRenderPass>();
   INHINFO.renderPass = rpimpl->_vkrp; // The render pass the secondary command buffer will be executed within.
   INHINFO.subpass    = 0;             // The index of the subpass in the render pass.
-  if (rtg) {
-    INHINFO.subpass = 0; // The index of the subpass in the render pass.
-    OrkAssert(false);
-  }
-  INHINFO.framebuffer =
-      VK_NULL_HANDLE; // Optional: The framebuffer targeted by the render pass. Can be VK_NULL_HANDLE if not provided.
+  INHINFO.framebuffer = rpimpl->_vkfb; // Optional: The framebuffer targeted by the render pass. Can be VK_NULL_HANDLE if not provided.
   ////////////////////////////////////////////
   VkCommandBufferBeginInfo CBBI_GFX = {};
   initializeVkStruct(CBBI_GFX, VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
