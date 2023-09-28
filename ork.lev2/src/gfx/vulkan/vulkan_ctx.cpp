@@ -195,18 +195,7 @@ void VkContext::_initVulkanCommon() {
 
   for (size_t i = 0; i < count; i++) {
     auto ork_cb                          = _cmdbuf_pool.direct_access(i);
-    auto vk_impl                         = ork_cb->_impl.makeShared<VkCommandBufferImpl>();
-    VkCommandBufferAllocateInfo CBAI_GFX = {};
-    initializeVkStruct(CBAI_GFX, VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO);
-    CBAI_GFX.commandPool        = _vkcmdpool_graphics;
-    CBAI_GFX.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    CBAI_GFX.commandBufferCount = 1;
-
-    VkResult OK = vkAllocateCommandBuffers(
-        _vkdevice, //
-        &CBAI_GFX, //
-        &vk_impl->_vkcmdbuf);
-    OrkAssert(OK == VK_SUCCESS);
+    auto vk_impl                         = ork_cb->_impl.makeShared<VkCommandBufferImpl>(this);
   }
 
   VkSemaphoreCreateInfo SCI{};
@@ -710,20 +699,8 @@ void VkContext::_endExecuteSubPass(rendersubpass_ptr_t subpass) {
 
 commandbuffer_ptr_t VkContext::_beginRecordCommandBuffer(renderpass_ptr_t rpass) {
   auto cmdbuf          = std::make_shared<CommandBuffer>();
-  auto vkcmdbuf        = cmdbuf->_impl.makeShared<VkCommandBufferImpl>();
+  auto vkcmdbuf        = cmdbuf->_impl.makeShared<VkCommandBufferImpl>(this);
   _recordCommandBuffer = cmdbuf;
-
-  VkCommandBufferAllocateInfo CBAI_GFX = {};
-  initializeVkStruct(CBAI_GFX, VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO);
-  CBAI_GFX.commandPool        = _vkcmdpool_graphics;
-  CBAI_GFX.level              = VK_COMMAND_BUFFER_LEVEL_SECONDARY;
-  CBAI_GFX.commandBufferCount = 1;
-
-  VkResult OK = vkAllocateCommandBuffers(
-      _vkdevice, //
-      &CBAI_GFX, //
-      &vkcmdbuf->_vkcmdbuf);
-  OrkAssert(OK == VK_SUCCESS);
 
   _setObjectDebugName(vkcmdbuf->_vkcmdbuf, VK_OBJECT_TYPE_COMMAND_BUFFER, cmdbuf->_debugName.c_str());
 
@@ -1184,19 +1161,7 @@ void VkContext::_doPushCommandBuffer(
   if (auto as_impl = cmdbuf->_impl.tryAsShared<VkCommandBufferImpl>()) {
     impl = as_impl.value();
   } else {
-    impl                                 = cmdbuf->_impl.makeShared<VkCommandBufferImpl>();
-    VkCommandBufferAllocateInfo CBAI_GFX = {};
-    initializeVkStruct(CBAI_GFX, VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO);
-    CBAI_GFX.commandPool        = _vkcmdpool_graphics;
-    CBAI_GFX.level              = VK_COMMAND_BUFFER_LEVEL_SECONDARY;
-    CBAI_GFX.commandBufferCount = 1;
-
-    VkResult OK = vkAllocateCommandBuffers(
-        _vkdevice, //
-        &CBAI_GFX, //
-        &impl->_vkcmdbuf);
-    OrkAssert(OK == VK_SUCCESS);
-
+    impl                                 = cmdbuf->_impl.makeShared<VkCommandBufferImpl>(this);
     _setObjectDebugName(impl->_vkcmdbuf, VK_OBJECT_TYPE_COMMAND_BUFFER, cmdbuf->_debugName.c_str());
   }
   VkCommandBufferInheritanceInfo INHINFO = {};
@@ -1241,9 +1206,11 @@ void VkContext::_doResizeMainSurface(int iw, int ih) {
   scheduleOnBeginFrame([this, iw, ih]() { _fbi->_main_rtg->Resize(iw, ih); });
 }
 
-VulkanRenderPass::VulkanRenderPass(RenderPass* rpass) {
+VulkanRenderPass::VulkanRenderPass(vkcontext_rawptr_t ctxVK, RenderPass* rpass) {
   // topological sort of renderpass's subpasses
   //  to determine execution order
+
+  _vkcmdbuf = std::make_shared<VkCommandBufferImpl>(ctxVK);
 
   std::set<rendersubpass_ptr_t> subpass_set;
 
@@ -1320,6 +1287,21 @@ void VulkanFenceObject::onCrossed(void_lambda_t op) {
 void VkContext::onFenceCrossed(void_lambda_t op) {
   auto fence = _fbi->_swapchain->_fence;
   fence->onCrossed(op);
+}
+
+VkCommandBufferImpl::VkCommandBufferImpl(vkcontext_rawptr_t vkctx){
+    VkCommandBufferAllocateInfo CBAI_GFX = {};
+    initializeVkStruct(CBAI_GFX, VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO);
+    CBAI_GFX.commandPool        = vkctx->_vkcmdpool_graphics;
+    CBAI_GFX.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    CBAI_GFX.commandBufferCount = 1;
+
+    VkResult OK = vkAllocateCommandBuffers(
+        vkctx->_vkdevice, //
+        &CBAI_GFX, //
+        &_vkcmdbuf);
+    OrkAssert(OK == VK_SUCCESS);
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////

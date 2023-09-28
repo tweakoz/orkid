@@ -129,7 +129,7 @@ vksubpass_ptr_t createSubPass(bool has_depth) {
 renderpass_ptr_t createRenderPassForRtGroup(vkcontext_rawptr_t ctxVK, RtGroup* rtg ){
   auto rtg_impl = rtg->_impl.getShared<VkRtGroupImpl>();
   auto renpass = std::make_shared<RenderPass>();
-  auto vk_renpass = renpass->_impl.makeShared<VulkanRenderPass>(renpass.get());
+  auto vk_renpass = renpass->_impl.makeShared<VulkanRenderPass>(ctxVK,renpass.get());
   auto color_rtb  = rtg->GetMrt(0);
   auto color_rtbi = color_rtb->_impl.getShared<VklRtBufferImpl>();
   auto depth_rtb  = rtg->_depthBuffer;

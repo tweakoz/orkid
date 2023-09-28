@@ -317,15 +317,18 @@ struct VkRasterState {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct VkCommandBufferImpl {
+  VkCommandBufferImpl(vkcontext_rawptr_t vkctx);
   VkCommandBuffer _vkcmdbuf;
 };
 
 struct VulkanRenderPass {
-  VulkanRenderPass(RenderPass* rpass);
+  VulkanRenderPass(vkcontext_rawptr_t, RenderPass* rpass);
   std::vector<RenderSubPass*> _toposorted_subpasses;
   VkRenderPass _vkrp;
   VkFramebufferCreateInfo _vkfbinfo;
   VkFramebuffer _vkfb;
+  vkcmdbufimpl_ptr_t _vkcmdbuf;
+  
 };
 struct VulkanRenderSubPass {
 
