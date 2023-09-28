@@ -330,6 +330,7 @@ void VkFrameBufferInterface::_pushRtGroup(RtGroup* rtgroup) {
   // auxillary rtg ?
   /////////////////////////////////
   else{
+    
     OrkAssert(_active_rtgroup);
     int iw = _active_rtgroup->width();
     int ih = _active_rtgroup->height();
@@ -371,12 +372,13 @@ void VkFrameBufferInterface::_pushRtGroup(RtGroup* rtgroup) {
   /////////////////////////////////////////
   // begin new renderpass
   /////////////////////////////////////////
-  auto rpass = _contextVK->createRenderPassForRtGroup(rtgroup );
+  auto rpass = _contextVK->createRenderPassForRtGroup(rtgroup, true );
   _contextVK->_renderpasses.push_back(rpass);
   _contextVK->beginRenderPass(rpass);
   /////////////////////////////////////////
   auto rpass_impl = rpass->_impl.getShared<VulkanRenderPass>();
   _contextVK->pushCommandBuffer(rpass_impl->_seccmdbuffer);
+  rpass_impl->_seccmdbuffer->_no_draw = ( rtgroup != _main_rtg.get() );
   /////////////////////////////////////////
   _postPushRtGroup(rtgroup);
 }
@@ -427,7 +429,7 @@ RtGroup* VkFrameBufferInterface::_popRtGroup(bool continue_render) {
     barrier->subresourceRange.aspectMask     = VkFormatConverter::_instance.aspectForUsage(rtb->_usage);
 
 
-    vkCmdPipelineBarrier(
+    if(0)vkCmdPipelineBarrier(
         vk_cmdbuf->_vkcmdbuf,
         VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, // Adjust as needed.
         VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
@@ -458,9 +460,8 @@ RtGroup* VkFrameBufferInterface::_popRtGroup(bool continue_render) {
   /////////////////////////////////////////
 
   if( continue_render ){
-    auto rpass = _contextVK->createRenderPassForRtGroup(_active_rtgroup );
+    auto rpass = _contextVK->createRenderPassForRtGroup(_active_rtgroup,false);
     _contextVK->_renderpasses.push_back(rpass);
-    rpass->_allow_clear = false;
     _contextVK->beginRenderPass(rpass);
   }
 

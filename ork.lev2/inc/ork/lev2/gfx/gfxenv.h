@@ -764,6 +764,7 @@ struct CommandBuffer{
   svarp_t _impl;
   std::string _debugName;
   bool _is_primary = false;
+  bool _no_draw = false;
 };
 
 

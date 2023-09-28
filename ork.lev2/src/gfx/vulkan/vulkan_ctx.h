@@ -1205,7 +1205,7 @@ public:
   renderpass_ptr_t _cur_renderpass;
   //////////////////////////////////////////////
   vkcmdbufimpl_ptr_t _createVkCommandBuffer(CommandBuffer* par);
-  renderpass_ptr_t createRenderPassForRtGroup(RtGroup* rtg );
+  renderpass_ptr_t createRenderPassForRtGroup(RtGroup* rtg, bool clear );
   void enqueueDeferredOneShotCommand(commandbuffer_ptr_t cmdbuf);
   std::vector<commandbuffer_ptr_t> _pendingOneShotCommands;
   std::unordered_set<vktlsema_obj_ptr_t> _pendingOneShotSemas;

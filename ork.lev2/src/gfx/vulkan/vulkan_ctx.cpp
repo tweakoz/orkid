@@ -642,7 +642,7 @@ vksubpass_ptr_t createSubPass(bool has_depth) {
 
 ///////////////////////////////////////////////////////
 
-renderpass_ptr_t VkContext::createRenderPassForRtGroup(RtGroup* rtg ){
+renderpass_ptr_t VkContext::createRenderPassForRtGroup(RtGroup* rtg, bool clear ){
   auto rtg_impl = rtg->_impl.getShared<VkRtGroupImpl>();
   auto renpass = std::make_shared<RenderPass>();
   auto vk_renpass = renpass->_impl.makeShared<VulkanRenderPass>(this,renpass.get());
@@ -659,12 +659,31 @@ renderpass_ptr_t VkContext::createRenderPassForRtGroup(RtGroup* rtg ){
 
   auto attachments = rtg_impl->attachments();
 
+  int num_rtb = rtg->GetNumTargets();
+  for( int i=0; i<num_rtb; i++ ){
+    auto rtb = rtg->GetMrt(i);
+    auto rtbi = rtb->_impl.getShared<VklRtBufferImpl>();
+    rtbi->_attachmentDesc.loadOp = clear 
+                                  ? VK_ATTACHMENT_LOAD_OP_CLEAR
+                                  : VK_ATTACHMENT_LOAD_OP_LOAD;
+    //rtbi->setLayout( VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL );
+  }
+  if(rtg->_depthBuffer){
+    auto rtb = rtg->_depthBuffer;
+    auto rtbi = rtb->_impl.getShared<VklRtBufferImpl>();
+    rtbi->_attachmentDesc.loadOp = clear 
+                                  ? VK_ATTACHMENT_LOAD_OP_CLEAR
+                                  : VK_ATTACHMENT_LOAD_OP_LOAD;
+  }
+
+
     auto subpass = createSubPass(has_depth);
     subpass->_attach_refs[0].layout = color_rtbi->_currentLayout;
     if( has_depth){
       auto depth_rtbi = depth_rtb->_impl.getShared<VklRtBufferImpl>();
       subpass->_attach_refs[1].layout = depth_rtbi->_currentLayout;
     }
+
 
     VkRenderPassCreateInfo RPI = {};
     initializeVkStruct(RPI, VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO);

@@ -17,7 +17,8 @@ namespace ork::lev2::vulkan {
 
 vkinstance_ptr_t _GVI = nullptr;
 constexpr bool _enable_validate = true;
-constexpr bool _enable_debug = true;
+constexpr bool _enable_renderdoc = false;
+constexpr bool _enable_debug = (_enable_validate or _enable_renderdoc);
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
 using layer_props_t = std::vector<VkLayerProperties>;
@@ -103,15 +104,14 @@ VulkanInstance::VulkanInstance() {
 
   auto yel = fvec3::Yellow();
 
-  std::vector<const char*> validation_layers = { //
-    "VK_LAYER_RENDERDOC_Capture",
-    //"VK_LAYER_LUNARG_api_dump"
-  };
+  std::vector<const char*> validation_layers;
 
   if( _enable_validate ){
     validation_layers.push_back("VK_LAYER_KHRONOS_validation");
   }
-
+  if( _enable_renderdoc ){
+    validation_layers.push_back("VK_LAYER_RENDERDOC_Capture");
+  }
   auto layer_props = _layerProperties();
   _debugEnabled    = _enable_debug and _hasLayer(layer_props, validation_layers[0]);
 
