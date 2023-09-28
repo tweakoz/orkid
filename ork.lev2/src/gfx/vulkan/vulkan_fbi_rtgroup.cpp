@@ -30,9 +30,8 @@ VklRtBufferImpl::VklRtBufferImpl(VkRtGroupImpl* par, RtBuffer* rtb) //
   _attachmentDesc.finalLayout   = VK_IMAGE_LAYOUT_UNDEFINED;
   switch (rtb->format()) {
     case EBufferFormat::DEPTH:
-    
-      _attachmentDesc.stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_CLEAR;
-      _attachmentDesc.stencilStoreOp = VK_ATTACHMENT_STORE_OP_STORE;
+      _attachmentDesc.stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+      _attachmentDesc.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
       break;
     default:
       _attachmentDesc.stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE; // We don't care about stencil.
@@ -394,6 +393,8 @@ RtGroup* VkFrameBufferInterface::_popRtGroup(bool continue_render) {
   OrkAssert(_active_rtgroup);
   auto rtg_renpass = _contextVK->_cur_renderpass;
   auto rtg_rpass_impl = rtg_renpass->_impl.getShared<VulkanRenderPass>();
+  auto rtg_cmdbuf = rtg_rpass_impl->_seccmdbuffer;
+  auto vk_cmdbuf = rtg_cmdbuf->_impl.getShared<VkCommandBufferImpl>();
 
   if (0){
     auto rtb0 = _active_rtgroup->mMrt[0];
@@ -425,8 +426,9 @@ RtGroup* VkFrameBufferInterface::_popRtGroup(bool continue_render) {
 
     barrier->subresourceRange.aspectMask     = VkFormatConverter::_instance.aspectForUsage(rtb->_usage);
 
-    /*vkCmdPipelineBarrier(
-        _contextVK->primary_cb()->_vkcmdbuf,
+
+    vkCmdPipelineBarrier(
+        vk_cmdbuf->_vkcmdbuf,
         VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, // Adjust as needed.
         VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
         0,
@@ -435,7 +437,7 @@ RtGroup* VkFrameBufferInterface::_popRtGroup(bool continue_render) {
         0,
         nullptr,
         1,
-        barrier.get());*/
+        barrier.get());
   }
 
   //////////////////////////////////////////////
@@ -443,7 +445,7 @@ RtGroup* VkFrameBufferInterface::_popRtGroup(bool continue_render) {
   //////////////////////////////////////////////
 
   _contextVK->popCommandBuffer(); // rtg
-  _contextVK->enqueueSecondaryCommandBuffer(rtg_rpass_impl->_seccmdbuffer);
+  _contextVK->enqueueSecondaryCommandBuffer(rtg_cmdbuf);
 
   //////////////////////////////////////////////
   // finish the renderpass (on primary cb)
@@ -452,7 +454,7 @@ RtGroup* VkFrameBufferInterface::_popRtGroup(bool continue_render) {
   _contextVK->endRenderPass(_contextVK->_cur_renderpass);
 
   /////////////////////////////////////////
-  // begin new renderpass
+  // begin new renderpass ?
   /////////////////////////////////////////
 
   if( continue_render ){
@@ -461,10 +463,6 @@ RtGroup* VkFrameBufferInterface::_popRtGroup(bool continue_render) {
     rpass->_allow_clear = false;
     _contextVK->beginRenderPass(rpass);
   }
-  //rpass = createRenderPassForRtGroup(_contextVK, _active_rtgroup );
-  //_contextVK->_renderpasses.push_back(rpass);
-  //_contextVK->beginRenderPass(rpass);
-
 
   return _active_rtgroup;
 }

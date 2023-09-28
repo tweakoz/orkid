@@ -20,7 +20,6 @@ Surface::Surface(const std::string& name, int x, int y, int w, int h, fcolor3 co
     , mfClearDepth(depth)
     , mNeedsSurfaceRepaint(true)
     , _pickbuffer(nullptr) {
-  _cmdbuf = std::make_shared<lev2::CommandBuffer>("ui::Surface<"+name+">");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -75,6 +74,7 @@ void Surface::_doGpuInit(lev2::Context* context) {
   _rtgroup        = std::make_shared<lev2::RtGroup>(context, 8, 8, lev2::MsaaSamples::MSAA_1X,true);
   _rtgroup->_name = FormatString("ui::Surface<%p>", (void*)this);
   auto mrt0       = _rtgroup->createRenderTarget(lev2::EBufferFormat::RGBA8,"color"_crcu);
+  _rtgroup->_clearColor = fvec4(1,1,0,1);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -117,15 +117,11 @@ void Surface::DoDraw(ui::drawevent_constptr_t drwev) {
   
 
   if (1) { //mNeedsSurfaceRepaint || IsDirty()) {
-    //tgt->pushCommandBuffer(_cmdbuf);
-    tgt->debugMarker("post-cb");
     fbi->PushRtGroup(_rtgroup.get());
-    tgt->debugMarker("post-push-rtg");
-    //RePaintSurface(drwev);
-    tgt->debugMarker("post-repaint");
+    tgt->debugMarker("repaint-surface");
+    RePaintSurface(drwev);
+    tgt->debugMarker("post-repaint-surface");
     fbi->PopRtGroup();
-    tgt->debugMarker("post-pop-rtg");
-    //tgt->popCommandBuffer();
     mNeedsSurfaceRepaint = false;
     _dirty               = false;
   }
@@ -159,7 +155,7 @@ void Surface::DoDraw(ui::drawevent_constptr_t drwev) {
     material = texmtl;
   }
 
-  if(1){
+  if(0){
     bool has_foc = hasMouseFocus();
     tgt->PushModColor(has_foc ? fcolor4::Green() : fcolor4::Blue());
     mtxi->PushUIMatrix();

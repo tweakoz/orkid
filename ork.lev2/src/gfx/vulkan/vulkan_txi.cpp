@@ -646,7 +646,8 @@ void VkTextureInterface::_initTextureFromRtBuffer(RtBuffer* rtbuffer) {
     /////////////////////////////////////
 
     _contextVK->endRecordCommandBuffer(cmdbuf);
-    _contextVK->enqueueDeferredOneShotCommand(cmdbuf);
+    _contextVK->enqueueSecondaryCommandBuffer(cmdbuf);
+    //_contextVK->enqueueDeferredOneShotCommand(cmdbuf);
 
 }
 
