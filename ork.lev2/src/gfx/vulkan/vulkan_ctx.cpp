@@ -470,7 +470,6 @@ void VkContext::_doBeginFrame() {
   _defaultCommandBuffer   = _cmdbuf_pool.allocate();
   _cmdbufcurframe_gfx_pri = _defaultCommandBuffer->_impl.getShared<VkCommandBufferImpl>();
   _cmdbufcur_gfx          = _cmdbufcurframe_gfx_pri;
-  _cmdbufprv_gfx          = _cmdbufcurframe_gfx_pri;
   ////////////////////////
   VkCommandBufferBeginInfo CBBI_GFX = {};
   initializeVkStruct(CBBI_GFX, VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
@@ -1155,7 +1154,7 @@ void VkContext::_doPushCommandBuffer(
     commandbuffer_ptr_t cmdbuf, //
     rtgroup_ptr_t rtg) {        //
 
-  _cmdbufprv_gfx = _cmdbufcur_gfx;
+  _vk_cmdbufstack.push(_cmdbufcur_gfx);
 
   OrkAssert(_current_cmdbuf == cmdbuf);
   vkcmdbufimpl_ptr_t impl;
@@ -1186,9 +1185,9 @@ void VkContext::_doPushCommandBuffer(
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkContext::_doPopCommandBuffer() {
-  auto impl = _current_cmdbuf->_impl.getShared<VkCommandBufferImpl>();
-  vkEndCommandBuffer(impl->_vkcmdbuf);
-  _cmdbufcur_gfx = _cmdbufprv_gfx;
+  vkEndCommandBuffer(_cmdbufcur_gfx->_vkcmdbuf);
+  _cmdbufcur_gfx = _vk_cmdbufstack.top();
+  _vk_cmdbufstack.pop();
 }
 
 void VkContext::_doEnqueueSecondaryCommandBuffer(commandbuffer_ptr_t cmdbuf) {

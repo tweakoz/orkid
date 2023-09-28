@@ -1183,8 +1183,7 @@ public:
 
   vkcmdbufimpl_ptr_t _cmdbufcurframe_gfx_pri;
   vkcmdbufimpl_ptr_t _cmdbufcur_gfx;
-  vkcmdbufimpl_ptr_t _cmdbufprv_gfx;
-
+  std::stack<vkcmdbufimpl_ptr_t> _vk_cmdbufstack;
   vkcmdbufimpl_ptr_t primary_cb();
 
   vksampler_obj_ptr_t _sampler_base;
