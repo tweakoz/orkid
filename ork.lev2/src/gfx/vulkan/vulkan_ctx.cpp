@@ -714,8 +714,8 @@ commandbuffer_ptr_t VkContext::_beginRecordCommandBuffer(renderpass_ptr_t rpass)
     INHINFO.subpass    = 0;             // The index of the subpass in the render pass.
     INHINFO.framebuffer =
         rpimpl->_vkfb; // Optional: The framebuffer targeted by the render pass. Can be VK_NULL_HANDLE if not provided.
-    CBBI_GFX.pInheritanceInfo = &INHINFO;
   }
+  CBBI_GFX.pInheritanceInfo = &INHINFO;
 
   CBBI_GFX.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT //
                    | VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
