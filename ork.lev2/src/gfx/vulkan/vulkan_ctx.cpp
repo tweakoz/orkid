@@ -516,13 +516,13 @@ void VkContext::_doEndFrame() {
   // end main renderpass (and pop main rtg)
   ////////////////////////
 
-  _fbi->PopRtGroup();
+  _fbi->PopRtGroup(false);
 
-  size_t prev_rpass_count = _renderpasses.size();
-  if(prev_rpass_count>0){
-    auto prev_rpass = _renderpasses.back();
-    endRenderPass(prev_rpass);
-  }
+  //size_t prev_rpass_count = _renderpasses.size();
+  //if(prev_rpass_count>0){
+    //auto prev_rpass = _renderpasses.back();
+    //endRenderPass(prev_rpass);
+ // }
 
   ////////////////////////
   // main_rtg -> presentation layout
@@ -626,7 +626,7 @@ void VkContext::_beginRenderPass(renderpass_ptr_t renpass) {
   // perform the clear ?
   /////////////////////////////////////////
 
-  if(rtg->_autoclear){
+  if(rtg->_autoclear and renpass->_allow_clear){
 
   auto color = rtg->_clearColor;
 

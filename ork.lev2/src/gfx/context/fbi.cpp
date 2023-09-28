@@ -73,9 +73,9 @@ void FrameBufferInterface::PushRtGroup(RtGroup* Base) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-void FrameBufferInterface::PopRtGroup() {
+void FrameBufferInterface::PopRtGroup(bool continue_render) {
   // EndFrame();
-  _popRtGroup();
+  _popRtGroup(continue_render);
   popViewport();
   popScissor();
 }

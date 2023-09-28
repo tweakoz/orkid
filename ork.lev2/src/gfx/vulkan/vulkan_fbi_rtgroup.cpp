@@ -380,7 +380,7 @@ void VkFrameBufferInterface::_pushRtGroup(RtGroup* rtgroup) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-RtGroup* VkFrameBufferInterface::_popRtGroup() {
+RtGroup* VkFrameBufferInterface::_popRtGroup(bool continue_render) {
 
   auto popped_rtg = _active_rtgroup;
 
@@ -436,9 +436,15 @@ RtGroup* VkFrameBufferInterface::_popRtGroup() {
   /////////////////////////////////////////
   // begin new renderpass
   /////////////////////////////////////////
-  rpass = createRenderPassForRtGroup(_contextVK, _active_rtgroup );
-  _contextVK->_renderpasses.push_back(rpass);
-  _contextVK->beginRenderPass(rpass);
+  if( continue_render ){
+    auto rpass = createRenderPassForRtGroup(_contextVK, _active_rtgroup );
+    _contextVK->_renderpasses.push_back(rpass);
+    rpass->_allow_clear = false;
+    _contextVK->beginRenderPass(rpass);
+  }
+  //rpass = createRenderPassForRtGroup(_contextVK, _active_rtgroup );
+  //_contextVK->_renderpasses.push_back(rpass);
+  //_contextVK->beginRenderPass(rpass);
 
 
 

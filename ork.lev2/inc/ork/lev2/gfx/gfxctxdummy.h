@@ -205,7 +205,7 @@ public:
 
   void _pushRtGroup(RtGroup* Base) final {
   }
-  RtGroup* _popRtGroup() final {
+  RtGroup* _popRtGroup(bool continue_render) final {
     return nullptr;
   }
 

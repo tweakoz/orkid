@@ -59,10 +59,10 @@ public:
   ///////////////////////////////////////////////////////
 
   virtual void _pushRtGroup(RtGroup* Base) = 0;
-  virtual RtGroup* _popRtGroup() = 0;
+  virtual RtGroup* _popRtGroup(bool continue_render) = 0;
 
   void PushRtGroup(RtGroup* Base);
-  void PopRtGroup();
+  void PopRtGroup(bool continue_render = true);
 
   virtual void rtGroupClear(RtGroup* rtg) {
   }

@@ -885,7 +885,7 @@ struct VkFrameBufferInterface final : public FrameBufferInterface {
   void _doBeginFrame(void) final;
   void _doEndFrame(void) final;
   void _pushRtGroup(RtGroup* Base) final;
-  RtGroup* _popRtGroup() final;
+  RtGroup* _popRtGroup(bool continue_render) final;
   void _postPushRtGroup(RtGroup* Base);
   void _present();
   //////////////////////////////////////////////
