@@ -518,6 +518,12 @@ void VkContext::_doEndFrame() {
 
   _fbi->PopRtGroup();
 
+  size_t prev_rpass_count = _renderpasses.size();
+  if(prev_rpass_count>0){
+    auto prev_rpass = _renderpasses.back();
+    endRenderPass(prev_rpass);
+  }
+
   ////////////////////////
   // main_rtg -> presentation layout
   ////////////////////////
@@ -845,8 +851,6 @@ void VkContext::initializeLoaderContext() {
 
 void VkContext::debugPushGroup(const std::string str, const fvec4& color) {
   if (_vkCmdDebugMarkerBeginEXT) {
-    OrkAssert(_current_cmdbuf != nullptr);
-    auto cmdbuf_impl                      = _current_cmdbuf->_impl.getShared<VkCommandBufferImpl>();
     VkDebugMarkerMarkerInfoEXT markerInfo = {};
     initializeVkStruct(markerInfo, VK_STRUCTURE_TYPE_DEBUG_MARKER_MARKER_INFO_EXT);
     markerInfo.color[0]    = color.x; // R
@@ -854,7 +858,7 @@ void VkContext::debugPushGroup(const std::string str, const fvec4& color) {
     markerInfo.color[2]    = color.z; // B
     markerInfo.color[3]    = color.w; // A
     markerInfo.pMarkerName = str.c_str();
-    _vkCmdDebugMarkerBeginEXT(cmdbuf_impl->_vkcmdbuf, &markerInfo);
+    _vkCmdDebugMarkerBeginEXT(_cmdbufcur_gfx->_vkcmdbuf, &markerInfo);
   }
 }
 
@@ -862,9 +866,7 @@ void VkContext::debugPushGroup(const std::string str, const fvec4& color) {
 
 void VkContext::debugPopGroup() {
   if (_vkCmdDebugMarkerEndEXT) {
-    OrkAssert(_current_cmdbuf != nullptr);
-    auto cmdbuf_impl = _current_cmdbuf->_impl.getShared<VkCommandBufferImpl>();
-    _vkCmdDebugMarkerEndEXT(cmdbuf_impl->_vkcmdbuf);
+    _vkCmdDebugMarkerEndEXT(_cmdbufcur_gfx->_vkcmdbuf);
   }
 }
 
@@ -872,8 +874,6 @@ void VkContext::debugPopGroup() {
 
 void VkContext::debugMarker(const std::string named, const fvec4& color) {
   if (_vkCmdDebugMarkerInsertEXT) {
-    OrkAssert(_current_cmdbuf != nullptr);
-    auto cmdbuf_impl                      = _current_cmdbuf->_impl.getShared<VkCommandBufferImpl>();
     VkDebugMarkerMarkerInfoEXT markerInfo = {};
     initializeVkStruct(markerInfo, VK_STRUCTURE_TYPE_DEBUG_MARKER_MARKER_INFO_EXT);
     markerInfo.color[0]    = color.x; // R
@@ -881,7 +881,7 @@ void VkContext::debugMarker(const std::string named, const fvec4& color) {
     markerInfo.color[2]    = color.z; // B
     markerInfo.color[3]    = color.w; // A
     markerInfo.pMarkerName = named.c_str();
-    _vkCmdDebugMarkerInsertEXT(cmdbuf_impl->_vkcmdbuf, &markerInfo);
+    _vkCmdDebugMarkerInsertEXT(_cmdbufcur_gfx->_vkcmdbuf, &markerInfo);
   }
 }
 

@@ -74,8 +74,6 @@ void FrameBufferInterface::PushRtGroup(RtGroup* Base) {
 
 ///////////////////////////////////////////////////////////////////////////////
 void FrameBufferInterface::PopRtGroup() {
-  _active_rtgroup = mRtGroupStack.top();
-  mRtGroupStack.pop();
   // EndFrame();
   _popRtGroup();
   popViewport();
