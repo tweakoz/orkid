@@ -195,7 +195,7 @@ void VkContext::_initVulkanCommon() {
 
   for (size_t i = 0; i < count; i++) {
     auto ork_cb                          = _cmdbuf_pool.direct_access(i);
-    auto vk_impl                         = ork_cb->_impl.makeShared<VkCommandBufferImpl>(this);
+    auto vk_impl                         = ork_cb->_impl.makeShared<VkCommandBufferImpl>(this,true);
   }
 
   VkSemaphoreCreateInfo SCI{};
@@ -699,7 +699,7 @@ void VkContext::_endExecuteSubPass(rendersubpass_ptr_t subpass) {
 
 commandbuffer_ptr_t VkContext::_beginRecordCommandBuffer(renderpass_ptr_t rpass) {
   auto cmdbuf          = std::make_shared<CommandBuffer>();
-  auto vkcmdbuf        = cmdbuf->_impl.makeShared<VkCommandBufferImpl>(this);
+  auto vkcmdbuf        = cmdbuf->_impl.makeShared<VkCommandBufferImpl>(this,false);
   _recordCommandBuffer = cmdbuf;
 
   _setObjectDebugName(vkcmdbuf->_vkcmdbuf, VK_OBJECT_TYPE_COMMAND_BUFFER, cmdbuf->_debugName.c_str());
@@ -1161,7 +1161,7 @@ void VkContext::_doPushCommandBuffer(
   if (auto as_impl = cmdbuf->_impl.tryAsShared<VkCommandBufferImpl>()) {
     impl = as_impl.value();
   } else {
-    impl                                 = cmdbuf->_impl.makeShared<VkCommandBufferImpl>(this);
+    impl                                 = cmdbuf->_impl.makeShared<VkCommandBufferImpl>(this,false);
     _setObjectDebugName(impl->_vkcmdbuf, VK_OBJECT_TYPE_COMMAND_BUFFER, cmdbuf->_debugName.c_str());
   }
   VkCommandBufferInheritanceInfo INHINFO = {};
@@ -1210,7 +1210,7 @@ VulkanRenderPass::VulkanRenderPass(vkcontext_rawptr_t ctxVK, RenderPass* rpass) 
   // topological sort of renderpass's subpasses
   //  to determine execution order
 
-  _vkcmdbuf = std::make_shared<VkCommandBufferImpl>(ctxVK);
+  _vkcmdbuf = std::make_shared<VkCommandBufferImpl>(ctxVK,false);
 
   std::set<rendersubpass_ptr_t> subpass_set;
 
@@ -1289,11 +1289,11 @@ void VkContext::onFenceCrossed(void_lambda_t op) {
   fence->onCrossed(op);
 }
 
-VkCommandBufferImpl::VkCommandBufferImpl(vkcontext_rawptr_t vkctx){
+VkCommandBufferImpl::VkCommandBufferImpl(vkcontext_rawptr_t vkctx,bool primary){
     VkCommandBufferAllocateInfo CBAI_GFX = {};
     initializeVkStruct(CBAI_GFX, VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO);
     CBAI_GFX.commandPool        = vkctx->_vkcmdpool_graphics;
-    CBAI_GFX.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    CBAI_GFX.level              = primary ? VK_COMMAND_BUFFER_LEVEL_PRIMARY : VK_COMMAND_BUFFER_LEVEL_SECONDARY;
     CBAI_GFX.commandBufferCount = 1;
 
     VkResult OK = vkAllocateCommandBuffers(
