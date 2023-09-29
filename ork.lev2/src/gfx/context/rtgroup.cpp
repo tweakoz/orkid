@@ -81,14 +81,17 @@ rtbuffer_ptr_t RtGroup::createRenderTarget(EBufferFormat efmt, uint64_t usage) {
 
 
   rtbuffer_ptr_t rtb = std::make_shared<RtBuffer>(this, islot, efmt, miW, miH,usage);
+
   OrkAssert(islot < kmaxmrts);
   switch(usage){
     case "depth"_crcu:
       _depthBuffer = rtb;
       _needsDepth = true;
+      rtb->_debugName = FormatString("rtb.depth");
       break;
     default:
       mMrt[islot] = rtb;
+      rtb->_debugName = FormatString("rtb.color.%d",islot);
       mNumMrts++;
       break;
   }

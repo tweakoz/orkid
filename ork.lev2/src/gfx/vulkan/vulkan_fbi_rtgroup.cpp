@@ -22,7 +22,6 @@ VklRtBufferImpl::VklRtBufferImpl(VkRtGroupImpl* par, RtBuffer* rtb) //
   initializeVkStruct(_attachmentDesc);
   initializeVkStruct(_vkimgview);
 
-
   _attachmentDesc.samples       = VK_SAMPLE_COUNT_1_BIT;        // No multisampling for this example.
   _attachmentDesc.loadOp        = VK_ATTACHMENT_LOAD_OP_CLEAR;  // Clear the color/depth buffer before rendering.
   _attachmentDesc.storeOp       = VK_ATTACHMENT_STORE_OP_STORE; // Store the rendered color/depth for presentation.
@@ -39,15 +38,14 @@ VklRtBufferImpl::VklRtBufferImpl(VkRtGroupImpl* par, RtBuffer* rtb) //
       break;
   }
 
-   _vkfmt = VkFormatConverter::convertBufferFormat(rtb->format());
-   _attachmentDesc.format      = _vkfmt;
-
+  _vkfmt                 = VkFormatConverter::convertBufferFormat(rtb->format());
+  _attachmentDesc.format = _vkfmt;
 }
-void VklRtBufferImpl::setLayout(VkImageLayout layout){
-  auto previousLayout         = _attachmentDesc.finalLayout;
-  _currentLayout              = layout;
+void VklRtBufferImpl::setLayout(VkImageLayout layout) {
+  auto previousLayout           = _attachmentDesc.finalLayout;
+  _currentLayout                = layout;
   _attachmentDesc.initialLayout = previousLayout;
-  _attachmentDesc.finalLayout = layout;
+  _attachmentDesc.finalLayout   = layout;
   OrkAssert(_parent);
   _parent->__attachments = nullptr;
 }
@@ -59,35 +57,35 @@ VkRtGroupImpl::VkRtGroupImpl(RtGroup* rtg)
 ///////////////////////////////////////////////////////////////////////////////
 
 rtgroup_attachments_ptr_t VkRtGroupImpl::attachments() {
-  if( __attachments ){
+  if (__attachments) {
     return __attachments;
   }
   __attachments = std::make_shared<RtGroupAttachments>();
-  auto at = std::make_shared<RtGroupAttachments>();
-  int numrt = _rtg->GetNumTargets();
+  auto at       = std::make_shared<RtGroupAttachments>();
+  int numrt     = _rtg->GetNumTargets();
   for (int i = 0; i < numrt; i++) {
-    auto rtbuffer = _rtg->GetMrt(i);
+    auto rtbuffer   = _rtg->GetMrt(i);
     auto bufferimpl = rtbuffer->_impl.getShared<VklRtBufferImpl>();
     __attachments->_descriptions.push_back(bufferimpl->_attachmentDesc);
     __attachments->_references.push_back(bufferimpl->_attachmentRef);
     __attachments->_imageviews.push_back(bufferimpl->_vkimgview);
     __attachments->descimginfos.push_back(bufferimpl->_descriptorInfo);
 
-    if(bufferimpl->_vkimgview==VK_NULL_HANDLE){
-        printf( "rtg<%s> has null imageview\n", _rtg->_name.c_str() );
+    if (bufferimpl->_vkimgview == VK_NULL_HANDLE) {
+      printf("rtg<%s> has null imageview\n", _rtg->_name.c_str());
       OrkAssert(false);
     }
   }
-  if(_rtg->_depthBuffer){
-    auto rtbuffer = _rtg->_depthBuffer;
+  if (_rtg->_depthBuffer) {
+    auto rtbuffer   = _rtg->_depthBuffer;
     auto bufferimpl = rtbuffer->_impl.getShared<VklRtBufferImpl>();
     __attachments->_descriptions.push_back(bufferimpl->_attachmentDesc);
     __attachments->_references.push_back(bufferimpl->_attachmentRef);
     __attachments->_imageviews.push_back(bufferimpl->_vkimgview);
     __attachments->descimginfos.push_back(bufferimpl->_descriptorInfo);
-    OrkAssert(bufferimpl->_vkimgview!=VK_NULL_HANDLE);
+    OrkAssert(bufferimpl->_vkimgview != VK_NULL_HANDLE);
   }
-  return __attachments;  
+  return __attachments;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -137,11 +135,11 @@ void _vkCreateImageForBuffer(
 ///////////////////////////////////////////////////////////////////////////////
 
 void VklRtBufferImpl::_replaceImage(
-    VkFormat new_fmt, //
+    VkFormat new_fmt,     //
     VkImageView new_view, //
-    VkImage new_img) { //
+    VkImage new_img) {    //
 
-  auto old_img = _imgobj->_vkimage;
+  auto old_img  = _imgobj->_vkimage;
   auto old_view = _vkimgview;
 
   ////////////////////
@@ -158,7 +156,6 @@ void VklRtBufferImpl::_replaceImage(
   _vkimg     = new_img;
   _vkimgview = new_view;
   _vkfmt     = new_fmt;
-
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -182,10 +179,10 @@ vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(RtGroup* rtgroup) {
   if (rtgroup->_depthBuffer) {
     auto rtbuffer   = rtgroup->_depthBuffer;
     auto bufferimpl = rtbuffer->_impl.makeShared<VklRtBufferImpl>(RTGIMPL.get(), rtbuffer.get());
-    uint64_t USAGE = "depth"_crcu;
+    uint64_t USAGE  = "depth"_crcu;
     _vkCreateImageForBuffer(_contextVK, bufferimpl, rtbuffer->mFormat, USAGE);
     bufferimpl->setLayout(VkFormatConverter::_instance.layoutForUsage(USAGE));
-    auto& adesc = bufferimpl->_attachmentDesc;
+    auto& adesc          = bufferimpl->_attachmentDesc;
     adesc.storeOp        = VK_ATTACHMENT_STORE_OP_DONT_CARE;
     adesc.stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
     adesc.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
@@ -196,7 +193,7 @@ vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(RtGroup* rtgroup) {
   bool is_swapchain = false;
   for (int it = 0; it < inumtargets; it++) {
     rtbuffer_ptr_t rtbuffer = rtgroup->GetMrt(it);
-    auto bufferimpl = rtbuffer->_impl.makeShared<VklRtBufferImpl>(RTGIMPL.get(), rtbuffer.get());
+    auto bufferimpl         = rtbuffer->_impl.makeShared<VklRtBufferImpl>(RTGIMPL.get(), rtbuffer.get());
     ////////////////////////////////////////////
     uint64_t USAGE = "color"_crcu;
     if (rtbuffer->_usage != 0) {
@@ -226,7 +223,7 @@ vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(RtGroup* rtgroup) {
     for (int it = 0; it < inumtargets; it++) {
       rtbuffer_ptr_t rtbuffer = rtgroup->GetMrt(it);
       OrkAssert(rtbuffer->_usage != "depth"_crcu);
-      auto bufferimpl = rtbuffer->_impl.makeShared<VklRtBufferImpl>(RTGIMPL.get(),rtbuffer.get());
+      auto bufferimpl = rtbuffer->_impl.makeShared<VklRtBufferImpl>(RTGIMPL.get(), rtbuffer.get());
       auto texture    = rtbuffer->texture();
       OrkAssert(texture != nullptr);
       printf("texture<%p:%s> _usage<0x%zx>\n", (void*)texture, texture->_debugName.c_str(), rtbuffer->_usage);
@@ -244,14 +241,11 @@ vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(RtGroup* rtgroup) {
       OrkAssert(teximpl->_imgobj->_vkimageview != VK_NULL_HANDLE);
       bufferimpl->_descriptorInfo.imageView = teximpl->_imgobj->_vkimageview;
       bufferimpl->_descriptorInfo.sampler   = teximpl->_vksampler->_vksampler;
-      bufferimpl->_imgobj = teximpl->_imgobj;
-      bufferimpl->_vkimgview = teximpl->_imgobj->_vkimageview;
-      bufferimpl->_vkimg     = teximpl->_imgobj->_vkimage;
+      bufferimpl->_imgobj                   = teximpl->_imgobj;
+      bufferimpl->_vkimgview                = teximpl->_imgobj->_vkimageview;
+      bufferimpl->_vkimg                    = teximpl->_imgobj->_vkimage;
       OrkAssert(bufferimpl->_vkimgview != VK_NULL_HANDLE);
-
-
     }
-
 
     // VkWriteDescriptorSet DWRITE{};
     // initializeVkStruct(DWRITE, VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
@@ -296,10 +290,10 @@ void VkFrameBufferInterface::_present() {
 
 void VkFrameBufferInterface::_pushRtGroup(RtGroup* rtgroup) {
 
-  if(nullptr==_active_rtgroup){
+  if (nullptr == _active_rtgroup) {
     _active_rtgroup = rtgroup;
     return;
-    //OrkAssert(false);
+    // OrkAssert(false);
   }
   _active_rtgroup = rtgroup;
   vkrtgrpimpl_ptr_t RTGIMPL;
@@ -314,7 +308,7 @@ void VkFrameBufferInterface::_pushRtGroup(RtGroup* rtgroup) {
   /////////////////////////////////
 
   size_t prev_rpass_count = _contextVK->_renderpasses.size();
-  if(prev_rpass_count>0){
+  if (prev_rpass_count > 0) {
     auto prev_rpass = _contextVK->_renderpasses.back();
     _contextVK->endRenderPass(prev_rpass);
   }
@@ -323,23 +317,22 @@ void VkFrameBufferInterface::_pushRtGroup(RtGroup* rtgroup) {
   // main_rtg ?
   //  (images managed by swapchain)
   /////////////////////////////////
-  if( rtgroup == _main_rtg.get() ){
-      RTGIMPL = _main_rtg->_impl.getShared<VkRtGroupImpl>();
+  if (rtgroup == _main_rtg.get()) {
+    RTGIMPL = _main_rtg->_impl.getShared<VkRtGroupImpl>();
   }
   /////////////////////////////////
   // auxillary rtg ?
   /////////////////////////////////
-  else{
-    
+  else {
     OrkAssert(_active_rtgroup);
-    int iw = _active_rtgroup->width();
-    int ih = _active_rtgroup->height();
     /////////////////////////////////////////
     // if we are a psuedp rtgroup (eg. swapchain), NO_OP
     /////////////////////////////////////////
     if (_active_rtgroup->_pseudoRTG) {
       return;
     }
+    int iw = _active_rtgroup->width();
+    int ih = _active_rtgroup->height();
     /////////////////////////////////////////
     int inumtargets = _active_rtgroup->GetNumTargets();
     int numsamples  = msaaEnumToInt(_active_rtgroup->_msaa_samples);
@@ -363,22 +356,52 @@ void VkFrameBufferInterface::_pushRtGroup(RtGroup* rtgroup) {
       _active_rtgroup->_impl.setShared<VkRtGroupImpl>(RTGIMPL);
       _active_rtgroup->SetSizeDirty(false);
     }
-    for( int i=0; i<inumtargets; i++ ){
-      auto rtb = _active_rtgroup->GetMrt(i);
+    for (int i = 0; i < inumtargets; i++) {
+      auto rtb      = _active_rtgroup->GetMrt(i);
       auto rtb_impl = rtb->_impl.getShared<VklRtBufferImpl>();
-      OrkAssert(rtb_impl->_vkimgview!=VK_NULL_HANDLE);
+      OrkAssert(rtb_impl->_vkimgview != VK_NULL_HANDLE);
     }
   }
   /////////////////////////////////////////
   // begin new renderpass
   /////////////////////////////////////////
-  auto rpass = _contextVK->createRenderPassForRtGroup(rtgroup, true );
+  auto rpass = _contextVK->createRenderPassForRtGroup(rtgroup, true);
   _contextVK->_renderpasses.push_back(rpass);
   _contextVK->beginRenderPass(rpass);
   /////////////////////////////////////////
   auto rpass_impl = rpass->_impl.getShared<VulkanRenderPass>();
   _contextVK->pushCommandBuffer(rpass_impl->_seccmdbuffer);
-  rpass_impl->_seccmdbuffer->_no_draw = ( rtgroup != _main_rtg.get() );
+  rpass_impl->_seccmdbuffer->_no_draw = (rtgroup != _main_rtg.get());
+  /////////////////////////////////////////
+  // transition to RTT mode
+  /////////////////////////////////////////
+  int inumtargets = _active_rtgroup->GetNumTargets();
+  for (int i = 0; i < inumtargets; i++) {
+    auto rtb      = _active_rtgroup->GetMrt(i);
+    auto rtb_impl = rtb->_impl.getShared<VklRtBufferImpl>();
+    if(rtb_impl->_imgobj){
+      auto barrier  = createImageBarrier(
+          rtb_impl->_imgobj->_vkimage,              // VkImage image
+          VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, // VkImageLayout oldLayout
+          VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, // VkImageLayout newLayout
+          VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,     // VkAccessFlags srcAccessMask
+          VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT);    // VkAccessFlags dstAccessMask
+
+      auto vkcmdbuf = rpass_impl->_seccmdbuffer->_impl.getShared<VkCommandBufferImpl>();
+      if (1)
+        vkCmdPipelineBarrier(
+            vkcmdbuf->_vkcmdbuf,                           // command buffer
+            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, // srcStageMask
+            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, // dstStageMask
+            VK_DEPENDENCY_BY_REGION_BIT,                   // dependencyFlags
+            0,
+            nullptr, // memoryBarriers
+            0,
+            nullptr, // bufferMemoryBarriers
+            1,
+            barrier.get()); // imageMemoryBarriers
+    }
+  }
   /////////////////////////////////////////
   _postPushRtGroup(rtgroup);
 }
@@ -393,12 +416,12 @@ RtGroup* VkFrameBufferInterface::_popRtGroup(bool continue_render) {
   mRtGroupStack.pop();
 
   OrkAssert(_active_rtgroup);
-  auto rtg_renpass = _contextVK->_cur_renderpass;
+  auto rtg_renpass    = _contextVK->_cur_renderpass;
   auto rtg_rpass_impl = rtg_renpass->_impl.getShared<VulkanRenderPass>();
-  auto rtg_cmdbuf = rtg_rpass_impl->_seccmdbuffer;
-  auto vk_cmdbuf = rtg_cmdbuf->_impl.getShared<VkCommandBufferImpl>();
+  auto rtg_cmdbuf     = rtg_rpass_impl->_seccmdbuffer;
+  auto vk_cmdbuf      = rtg_cmdbuf->_impl.getShared<VkCommandBufferImpl>();
 
-  if (0){
+  if (0) {
     auto rtb0 = _active_rtgroup->mMrt[0];
     printf(
         "poprtg rtb<%s> usage<%08x>\n", //
@@ -419,27 +442,33 @@ RtGroup* VkFrameBufferInterface::_popRtGroup(bool continue_render) {
     if (rtb->_usage != "color"_crcu) {
       continue;
     }
+    /////////////////////////////////////////
+    // transition to texture sample model
+    /////////////////////////////////////////
     auto bufferimpl = rtb->_impl.getShared<VklRtBufferImpl>();
-    auto barrier   = createImageBarrier (bufferimpl->_imgobj->_vkimage, // VkImage image
-                                         bufferimpl->_currentLayout, // VkImageLayout oldLayout
-                                         VkFormatConverter::_instance.layoutForUsage(rtb->_usage), // VkImageLayout newLayout
-                                         VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,// VkAccessFlags srcAccessMask
-                                         VkAccessFlagBits(0)); // VkAccessFlags dstAccessMask
+    if(bufferimpl->_imgobj){
+      auto barrier    = createImageBarrier(
+          bufferimpl->_imgobj->_vkimage,            // VkImage image
+          VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, // VkImageLayout oldLayout
+          VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, // VkImageLayout newLayout
+          VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,     // VkAccessFlags srcAccessMask
+          VK_ACCESS_SHADER_READ_BIT);               // VkAccessFlags dstAccessMask
 
-    barrier->subresourceRange.aspectMask     = VkFormatConverter::_instance.aspectForUsage(rtb->_usage);
+      barrier->subresourceRange.aspectMask = VkFormatConverter::_instance.aspectForUsage(rtb->_usage);
 
-
-    if(0)vkCmdPipelineBarrier(
-        vk_cmdbuf->_vkcmdbuf,
-        VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, // Adjust as needed.
-        VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-        0,
-        0,
-        nullptr,
-        0,
-        nullptr,
-        1,
-        barrier.get());
+      if (1)
+        vkCmdPipelineBarrier(
+            vk_cmdbuf->_vkcmdbuf,                          // command buffer
+            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, // srcStageMask
+            VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,         // dstStageMask
+            VK_DEPENDENCY_BY_REGION_BIT,                   // dependencyFlags
+            0,
+            nullptr, // memoryBarriers
+            0,
+            nullptr, // bufferMemoryBarriers
+            1,
+            barrier.get()); // imageMemoryBarriers
+    }
   }
 
   //////////////////////////////////////////////
@@ -459,8 +488,8 @@ RtGroup* VkFrameBufferInterface::_popRtGroup(bool continue_render) {
   // begin new renderpass ?
   /////////////////////////////////////////
 
-  if( continue_render ){
-    auto rpass = _contextVK->createRenderPassForRtGroup(_active_rtgroup,false);
+  if (continue_render) {
+    auto rpass = _contextVK->createRenderPassForRtGroup(_active_rtgroup, false);
     _contextVK->_renderpasses.push_back(rpass);
     _contextVK->beginRenderPass(rpass);
     auto rpass_impl = rpass->_impl.getShared<VulkanRenderPass>();

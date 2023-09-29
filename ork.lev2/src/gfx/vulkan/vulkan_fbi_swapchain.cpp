@@ -111,6 +111,9 @@ void VkFrameBufferInterface::_initSwapChain() {
   vkGetSwapchainImagesKHR(vkdev, swap_chain->_vkSwapChain, &imageCount, swapChainImages.data());
 
   for (size_t i = 0; i < swapChainImages.size(); i++) {
+
+    _contextVK->_setObjectDebugName( swapChainImages[i], VK_OBJECT_TYPE_IMAGE, FormatString("swapchain-image-%d", i).c_str() );
+
     auto IVCI = createImageViewInfo2D( swapChainImages[i], //
                                        surfaceFormat.format, //
                                        VK_IMAGE_ASPECT_COLOR_BIT );

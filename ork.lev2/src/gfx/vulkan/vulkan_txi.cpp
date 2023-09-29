@@ -587,6 +587,8 @@ void VkTextureInterface::_initTextureFromRtBuffer(RtBuffer* rtbuffer) {
     teximpl->_imgobj = std::make_shared<VulkanImageObject>(_contextVK, img_info);
     teximpl->_vksampler = _contextVK->_sampler_base;
 
+    _contextVK->_setObjectDebugName( teximpl->_imgobj->_vkimage, VK_OBJECT_TYPE_IMAGE, (rtbuffer->_debugName+".vkimg").c_str() );
+
     /////////////////////////////////////
     // create image view
     /////////////////////////////////////

@@ -668,6 +668,7 @@ renderpass_ptr_t VkContext::createRenderPassForRtGroup(RtGroup* rtg, bool clear 
                                   ? VK_ATTACHMENT_LOAD_OP_CLEAR
                                   : VK_ATTACHMENT_LOAD_OP_LOAD;
     //rtbi->setLayout( VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL );
+
   }
   if(rtg->_depthBuffer){
     auto rtb = rtg->_depthBuffer;
@@ -698,9 +699,9 @@ renderpass_ptr_t VkContext::createRenderPassForRtGroup(RtGroup* rtg, bool clear 
     selfDependency.srcSubpass = 0; // The index of the subpass in which the barrier is used
     selfDependency.dstSubpass = 0; // The same subpass as srcSubpass for a self-dependency
     selfDependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT; // Adjust as needed
-    selfDependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT; // Adjust as needed
+    selfDependency.dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT; // Adjust as needed
     selfDependency.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT; // Adjust as needed
-    selfDependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT; // Adjust as needed
+    selfDependency.dstAccessMask = VK_ACCESS_SHADER_READ_BIT; // Adjust as needed
     selfDependency.dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
 
     RPI.dependencyCount = 1;
