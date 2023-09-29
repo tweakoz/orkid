@@ -121,7 +121,7 @@ void Surface::DoDraw(ui::drawevent_constptr_t drwev) {
     tgt->debugMarker("repaint-surface");
     RePaintSurface(drwev);
     tgt->debugMarker("post-repaint-surface");
-    fbi->PopRtGroup();
+    fbi->PopRtGroup(true);
     mNeedsSurfaceRepaint = false;
     _dirty               = false;
   }
@@ -258,6 +258,7 @@ void Surface::DoDraw(ui::drawevent_constptr_t drwev) {
 /////////////////////////////////////////////////////////////////////////
 
 void Surface::SurfaceRender(lev2::RenderContextFrameData& FrameData, const std::function<void()>& render_lambda) {
+  OrkAssert(false);
 #if 0
 	lev2::Context* pTARG = FrameData.GetTarget();
 	lev2::IRenderTarget* pIT = FrameData.GetRenderTarget();

@@ -695,6 +695,32 @@ void VkContext::debugPopGroup() {
     _vkCmdDebugMarkerEndEXT(_cmdbufcur_gfx->_vkcmdbuf);
   }
 }
+///////////////////////////////////////////////////////
+
+void VkContext::debugPushGroup(commandbuffer_ptr_t cb, const std::string str, const fvec4& color) {
+  if (_vkCmdDebugMarkerBeginEXT) {
+    VkDebugMarkerMarkerInfoEXT markerInfo = {};
+    initializeVkStruct(markerInfo, VK_STRUCTURE_TYPE_DEBUG_MARKER_MARKER_INFO_EXT);
+    markerInfo.color[0]    = color.x; // R
+    markerInfo.color[1]    = color.y; // G
+    markerInfo.color[2]    = color.z; // B
+    markerInfo.color[3]    = color.w; // A
+    markerInfo.pMarkerName = str.c_str();
+
+    auto cbimpl = cb->_impl.getShared<VkCommandBufferImpl>();
+
+    _vkCmdDebugMarkerBeginEXT(cbimpl->_vkcmdbuf, &markerInfo);
+  }
+}
+
+///////////////////////////////////////////////////////
+
+void VkContext::debugPopGroup(commandbuffer_ptr_t cb) {
+  if (_vkCmdDebugMarkerEndEXT) {
+    auto cbimpl = cb->_impl.getShared<VkCommandBufferImpl>();
+    _vkCmdDebugMarkerEndEXT(cbimpl->_vkcmdbuf);
+  }
+}
 
 ///////////////////////////////////////////////////////
 

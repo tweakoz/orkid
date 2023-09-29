@@ -157,9 +157,13 @@ public:
   /// push command group onto debugstack (for renderdoc,apitrace,nsight,etc..)
   virtual void debugPushGroup(const std::string str, const fvec4& color=fvec4(1,1,1,1)) {
   }
+  virtual void debugPushGroup(commandbuffer_ptr_t cb, const std::string str, const fvec4& color=fvec4(1,1,1,1)) {
+  }
   ///////////////////////////////////////////////////////////////////////
   /// pop command group from debugstack (for renderdoc,apitrace,nsight,etc..)
   virtual void debugPopGroup() {
+  }
+  virtual void debugPopGroup(commandbuffer_ptr_t cb) {
   }
   ///////////////////////////////////////////////////////////////////////
   /// insert marker into commandstream (for renderdoc,apitrace,nsight,etc..)
@@ -741,7 +745,7 @@ struct RenderPass{
   std::vector<rendersubpass_ptr_t> _subpasses;
   bool _immutable = false;
   bool _allow_clear = true;
-  std::string _debugName;
+  std::string _debugName = "RenderPass";
 };
 
 struct RenderSubPass{

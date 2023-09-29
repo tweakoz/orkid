@@ -532,15 +532,13 @@ struct VulkanTextureObject {
   ~VulkanTextureObject();
 
   std::unordered_set<vkbuffer_ptr_t> _staging_buffers;
-  //VkImageView _vkimageview;
   vkimageobj_ptr_t _imgobj;
   int _maxmip = 0;
   vktexasynctask_ptr_t _async;
   vktxi_rawptr_t _txi;
-
   vksampler_obj_ptr_t _vksampler;
   VkDescriptorImageInfo _vkdescriptor_info;
-
+  commandbuffer_ptr_t _loadCB;
 
   static std::atomic<size_t> _vkto_count;
 };
@@ -899,7 +897,6 @@ struct VkFrameBufferInterface final : public FrameBufferInterface {
   void _doEndFrame(void) final;
   void _pushRtGroup(RtGroup* Base) final;
   RtGroup* _popRtGroup(bool continue_render) final;
-  void _postPushRtGroup(RtGroup* Base);
   void _present();
   //////////////////////////////////////////////
 
@@ -1134,6 +1131,9 @@ public:
 
   void debugPushGroup(const std::string str, const fvec4& color) final;
   void debugPopGroup() final;
+  void debugPushGroup(commandbuffer_ptr_t cb, const std::string str, const fvec4& color) final;
+  void debugPopGroup(commandbuffer_ptr_t cb) final;
+
   void debugMarker(const std::string str, const fvec4& color) final;
 
   void TakeThreadOwnership() final;
@@ -1196,9 +1196,11 @@ public:
   VkQueue _vkqueue_graphics;
   VkCommandPool _vkcmdpool_graphics;
 
+  commandbuffer_ptr_t _abs_cmdbufcurframe_gfx_pri;
   vkcmdbufimpl_ptr_t _cmdbufcurframe_gfx_pri;
   vkcmdbufimpl_ptr_t _cmdbufcur_gfx;
   std::stack<vkcmdbufimpl_ptr_t> _vk_cmdbufstack;
+
   vkcmdbufimpl_ptr_t primary_cb();
 
   vksampler_obj_ptr_t _sampler_base;
@@ -1221,7 +1223,7 @@ public:
   renderpass_ptr_t _cur_renderpass;
   //////////////////////////////////////////////
   vkcmdbufimpl_ptr_t _createVkCommandBuffer(CommandBuffer* par);
-  renderpass_ptr_t createRenderPassForRtGroup(RtGroup* rtg, bool clear );
+  renderpass_ptr_t createRenderPassForRtGroup(RtGroup* rtg, bool clear, std::string name );
   void enqueueDeferredOneShotCommand(commandbuffer_ptr_t cmdbuf);
   std::vector<commandbuffer_ptr_t> _pendingOneShotCommands;
   std::unordered_set<vktlsema_obj_ptr_t> _pendingOneShotSemas;

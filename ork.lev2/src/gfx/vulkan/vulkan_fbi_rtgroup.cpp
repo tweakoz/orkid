@@ -265,22 +265,6 @@ vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(RtGroup* rtgroup) {
   return RTGIMPL;
 }
 
-void VkFrameBufferInterface::_postPushRtGroup(RtGroup* rtgroup) {
-
-  float fx = 0.0f;
-  float fy = 0.0f;
-  float fw = 0.0f;
-  float fh = 0.0f;
-  if (rtgroup) {
-    fw = rtgroup->width();
-    fh = rtgroup->height();
-    // glDepthRange(0.0, 1.0f);
-  }
-  ViewportRect extents(fx, fy, fw, fh);
-  pushViewport(extents);
-  pushScissor(extents);
-}
-
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkFrameBufferInterface::_present() {
@@ -290,18 +274,8 @@ void VkFrameBufferInterface::_present() {
 
 void VkFrameBufferInterface::_pushRtGroup(RtGroup* rtgroup) {
 
-  if (nullptr == _active_rtgroup) {
-    _active_rtgroup = rtgroup;
-    return;
-    // OrkAssert(false);
-  }
   _active_rtgroup = rtgroup;
   vkrtgrpimpl_ptr_t RTGIMPL;
-
-  bool is_surface = rtgroup->_name.find("ui::Surface") != std::string::npos;
-  if (is_surface) {
-    // OrkAssert(false);
-  }
 
   /////////////////////////////////
   // end previous renderpass ?
@@ -310,7 +284,7 @@ void VkFrameBufferInterface::_pushRtGroup(RtGroup* rtgroup) {
   size_t prev_rpass_count = _contextVK->_renderpasses.size();
   if (prev_rpass_count > 0) {
     auto prev_rpass = _contextVK->_renderpasses.back();
-    _contextVK->endRenderPass(prev_rpass);
+      _contextVK->endRenderPass(prev_rpass);
   }
 
   /////////////////////////////////
@@ -376,17 +350,86 @@ void VkFrameBufferInterface::_pushRtGroup(RtGroup* rtgroup) {
   /////////////////////////////////////////
   // begin new renderpass
   /////////////////////////////////////////
-  auto rpass = _contextVK->createRenderPassForRtGroup(rtgroup, true);
+  auto rpass_name = FormatString("rpass<%s>", rtgroup->_name.c_str());
+  auto rpass = _contextVK->createRenderPassForRtGroup(rtgroup, true, rpass_name);
   _contextVK->_renderpasses.push_back(rpass);
   _contextVK->beginRenderPass(rpass);
   /////////////////////////////////////////
   auto rpass_impl = rpass->_impl.getShared<VulkanRenderPass>();
   _contextVK->pushCommandBuffer(rpass_impl->_seccmdbuffer);
   rpass_impl->_seccmdbuffer->_no_draw = (rtgroup != _main_rtg.get());
+  /////////////////////////////////////////
+  // push vp/scissor rect
+  /////////////////////////////////////////
+  float fx = 0.0f;
+  float fy = 0.0f;
+  float fw = 0.0f;
+  float fh = 0.0f;
+  if (rtgroup) {
+    fw = rtgroup->width();
+    fh = rtgroup->height();
+  }
+  ViewportRect extents(fx, fy, fw, fh);
+  pushViewport(extents);
+  pushScissor(extents);
+}
 
+///////////////////////////////////////////////////////////////////////////////
+
+RtGroup* VkFrameBufferInterface::_popRtGroup(bool continue_render) {
+
+  auto popped_rtg = _active_rtgroup;
+
+  _active_rtgroup = mRtGroupStack.top();
+  mRtGroupStack.pop();
+
+  OrkAssert(_active_rtgroup);
+  auto rtg_renpass    = _contextVK->_cur_renderpass;
+  auto rtg_rpass_impl = rtg_renpass->_impl.getShared<VulkanRenderPass>();
+  auto rtg_cmdbuf     = rtg_rpass_impl->_seccmdbuffer;
+  auto vk_cmdbuf      = rtg_cmdbuf->_impl.getShared<VkCommandBufferImpl>();
+
+  ///////////////////////////////////////////////////
+
+  int num_buf = popped_rtg->GetNumTargets();
+
+  //////////////////////////////////////////////
+  // RTG commandbuffer complete, pop and execute
+  //////////////////////////////////////////////
+
+  _contextVK->popCommandBuffer(); // rtg
+  _contextVK->enqueueSecondaryCommandBuffer(rtg_cmdbuf);
+
+  //////////////////////////////////////////////
+  // finish the renderpass (on primary cb)
+  //////////////////////////////////////////////
+
+  _contextVK->endRenderPass(_contextVK->_cur_renderpass);
+
+  /////////////////////////////////////////////
+  // transition rtgroup to texture sampling
+  /////////////////////////////////////////////
+
+  for (int ib = 0; ib < num_buf; ib++) {
+    auto rtb      = popped_rtg->GetMrt(ib);
+    auto rtb_impl = rtb->_impl.getShared<VklRtBufferImpl>();
+    rtb_impl->transitionToTexture(_contextVK,_contextVK->primary_cb());
+  }
 
   /////////////////////////////////////////
-  _postPushRtGroup(rtgroup);
+  // begin new renderpass ?
+  /////////////////////////////////////////
+
+  if (continue_render) {
+    auto rpass_name = FormatString("rpass<%s>.rtg_continue", _active_rtgroup->_name.c_str());
+    auto rpass = _contextVK->createRenderPassForRtGroup(_active_rtgroup, false, rpass_name);
+    _contextVK->_renderpasses.push_back(rpass);
+    _contextVK->beginRenderPass(rpass);
+    auto rpass_impl = rpass->_impl.getShared<VulkanRenderPass>();
+    _contextVK->pushCommandBuffer(rpass_impl->_seccmdbuffer);
+  }
+
+  return _active_rtgroup;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -461,75 +504,6 @@ void VklRtBufferImpl::transitionToTexture(vkcontext_rawptr_t ctxVK, vkcmdbufimpl
 
     setLayout(new_layout);
   }
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-RtGroup* VkFrameBufferInterface::_popRtGroup(bool continue_render) {
-
-  auto popped_rtg = _active_rtgroup;
-
-  _active_rtgroup = mRtGroupStack.top();
-  mRtGroupStack.pop();
-
-  OrkAssert(_active_rtgroup);
-  auto rtg_renpass    = _contextVK->_cur_renderpass;
-  auto rtg_rpass_impl = rtg_renpass->_impl.getShared<VulkanRenderPass>();
-  auto rtg_cmdbuf     = rtg_rpass_impl->_seccmdbuffer;
-  auto vk_cmdbuf      = rtg_cmdbuf->_impl.getShared<VkCommandBufferImpl>();
-
-  if (0) {
-    auto rtb0 = _active_rtgroup->mMrt[0];
-    printf(
-        "poprtg rtb<%s> usage<%08x>\n", //
-        rtb0->_debugName.c_str(),       //
-        rtb0->_usage);
-    if (rtb0->_usage == "present"_crcu) {
-      // OrkAssert(false);
-    }
-  }
-
-  // barrier on all color attachments
-  ///////////////////////////////////////////////////
-
-  int num_buf = popped_rtg->GetNumTargets();
-
-  //////////////////////////////////////////////
-  // RTG commandbuffer complete, pop and execute
-  //////////////////////////////////////////////
-
-  _contextVK->popCommandBuffer(); // rtg
-  _contextVK->enqueueSecondaryCommandBuffer(rtg_cmdbuf);
-
-  //////////////////////////////////////////////
-  // finish the renderpass (on primary cb)
-  //////////////////////////////////////////////
-
-  _contextVK->endRenderPass(_contextVK->_cur_renderpass);
-
-  /////////////////////////////////////////////
-  // transition rtgroup to texture sampling
-  /////////////////////////////////////////////
-
-  for (int ib = 0; ib < num_buf; ib++) {
-    auto rtb      = popped_rtg->GetMrt(ib);
-    auto rtb_impl = rtb->_impl.getShared<VklRtBufferImpl>();
-    rtb_impl->transitionToTexture(_contextVK,_contextVK->primary_cb());
-  }
-
-  /////////////////////////////////////////
-  // begin new renderpass ?
-  /////////////////////////////////////////
-
-  if (continue_render) {
-    auto rpass = _contextVK->createRenderPassForRtGroup(_active_rtgroup, false);
-    _contextVK->_renderpasses.push_back(rpass);
-    _contextVK->beginRenderPass(rpass);
-    auto rpass_impl = rpass->_impl.getShared<VulkanRenderPass>();
-    _contextVK->pushCommandBuffer(rpass_impl->_seccmdbuffer);
-  }
-
-  return _active_rtgroup;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
