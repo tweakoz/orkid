@@ -273,6 +273,14 @@ void VkFxInterface::_bindPipeline(vkpipeline_obj_ptr_t pipe) {
   }
 }
 
+void VkFxInterface::_flushRenderPassScopedState(){
+  for( int slot=0; slot<4; slot++ ){
+    _active_vbs[slot] = nullptr;
+    _active_gfx_descriptorSets[slot] = nullptr;
+  }
+
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkFxInterface::_bindGfxDescriptorSetOnSlot(vkdescriptorset_ptr_t desc_set, size_t slot) {

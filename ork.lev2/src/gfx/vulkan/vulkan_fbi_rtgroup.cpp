@@ -463,6 +463,8 @@ RtGroup* VkFrameBufferInterface::_popRtGroup(bool continue_render) {
     auto rpass = _contextVK->createRenderPassForRtGroup(_active_rtgroup,false);
     _contextVK->_renderpasses.push_back(rpass);
     _contextVK->beginRenderPass(rpass);
+    auto rpass_impl = rpass->_impl.getShared<VulkanRenderPass>();
+    _contextVK->pushCommandBuffer(rpass_impl->_seccmdbuffer);
   }
 
   return _active_rtgroup;

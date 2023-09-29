@@ -155,7 +155,7 @@ void Surface::DoDraw(ui::drawevent_constptr_t drwev) {
     material = texmtl;
   }
 
-  if(1){
+  if(0){
     bool has_foc = hasMouseFocus();
     tgt->PushModColor(has_foc ? fcolor4::Green() : fcolor4::Blue());
     mtxi->PushUIMatrix();

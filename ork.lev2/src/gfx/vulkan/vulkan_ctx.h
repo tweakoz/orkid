@@ -319,6 +319,7 @@ struct VkRasterState {
 struct VkCommandBufferImpl {
   VkCommandBuffer _vkcmdbuf = VK_NULL_HANDLE;
   CommandBuffer* _parent = nullptr;
+  bool _recorded = false;
 };
 
 struct VulkanRenderPass {
@@ -1005,6 +1006,8 @@ struct VkFxInterface final : public FxInterface {
   void _bindPipeline(vkpipeline_obj_ptr_t pipe);
   void _bindGfxDescriptorSetOnSlot(vkdescriptorset_ptr_t desc_set,size_t slot);
   void _bindVertexBufferOnSlot( vkvtxbuf_ptr_t vb, size_t slot );
+
+  void _flushRenderPassScopedState();
 
   fxtechnique_constptr_t _currentORKTEK = nullptr;
   VkFxShaderTechnique* _currentVKTEK;
