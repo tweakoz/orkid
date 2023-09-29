@@ -341,6 +341,10 @@ struct VulkanRenderSubPass {
 
 struct VklRtBufferImpl {
   VklRtBufferImpl(VkRtGroupImpl* par, RtBuffer* rtb);
+
+  void transitionToRenderTarget(vkcmdbufimpl_ptr_t cb);
+  void transitionToTexture(vkcmdbufimpl_ptr_t cb);
+
   void setLayout(VkImageLayout layout);
   void _replaceImage(
     VkFormat new_fmt,

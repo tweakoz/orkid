@@ -376,21 +376,30 @@ void VkFrameBufferInterface::_pushRtGroup(RtGroup* rtgroup) {
   // transition to RTT mode
   /////////////////////////////////////////
   int inumtargets = _active_rtgroup->GetNumTargets();
+  auto vkcmdbuf = rpass_impl->_seccmdbuffer->_impl.getShared<VkCommandBufferImpl>();
   for (int i = 0; i < inumtargets; i++) {
     auto rtb      = _active_rtgroup->GetMrt(i);
     auto rtb_impl = rtb->_impl.getShared<VklRtBufferImpl>();
-    if(rtb_impl->_imgobj){
+    rtb_impl->transitionToRenderTarget(vkcmdbuf);
+  }
+  /////////////////////////////////////////
+  _postPushRtGroup(rtgroup);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void VklRtBufferImpl::transitionToRenderTarget(vkcmdbufimpl_ptr_t cb){
+    if(_imgobj){
       auto barrier  = createImageBarrier(
-          rtb_impl->_imgobj->_vkimage,              // VkImage image
+          _imgobj->_vkimage,              // VkImage image
           VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, // VkImageLayout oldLayout
           VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, // VkImageLayout newLayout
           VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,     // VkAccessFlags srcAccessMask
           VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT);    // VkAccessFlags dstAccessMask
 
-      auto vkcmdbuf = rpass_impl->_seccmdbuffer->_impl.getShared<VkCommandBufferImpl>();
       if (1)
         vkCmdPipelineBarrier(
-            vkcmdbuf->_vkcmdbuf,                           // command buffer
+            cb->_vkcmdbuf,                           // command buffer
             VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, // srcStageMask
             VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, // dstStageMask
             VK_DEPENDENCY_BY_REGION_BIT,                   // dependencyFlags
@@ -401,9 +410,34 @@ void VkFrameBufferInterface::_pushRtGroup(RtGroup* rtgroup) {
             1,
             barrier.get()); // imageMemoryBarriers
     }
-  }
-  /////////////////////////////////////////
-  _postPushRtGroup(rtgroup);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void VklRtBufferImpl::transitionToTexture(vkcmdbufimpl_ptr_t cb){
+    if(_imgobj){
+      auto barrier    = createImageBarrier(
+          _imgobj->_vkimage,            // VkImage image
+          VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, // VkImageLayout oldLayout
+          VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, // VkImageLayout newLayout
+          VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,     // VkAccessFlags srcAccessMask
+          VK_ACCESS_SHADER_READ_BIT);               // VkAccessFlags dstAccessMask
+
+      barrier->subresourceRange.aspectMask = VkFormatConverter::_instance.aspectForUsage(_rtb->_usage);
+
+      if (1)
+        vkCmdPipelineBarrier(
+            cb->_vkcmdbuf,                          // command buffer
+            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, // srcStageMask
+            VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,         // dstStageMask
+            VK_DEPENDENCY_BY_REGION_BIT,                   // dependencyFlags
+            0,
+            nullptr, // memoryBarriers
+            0,
+            nullptr, // bufferMemoryBarriers
+            1,
+            barrier.get()); // imageMemoryBarriers
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -446,29 +480,7 @@ RtGroup* VkFrameBufferInterface::_popRtGroup(bool continue_render) {
     // transition to texture sample model
     /////////////////////////////////////////
     auto bufferimpl = rtb->_impl.getShared<VklRtBufferImpl>();
-    if(bufferimpl->_imgobj){
-      auto barrier    = createImageBarrier(
-          bufferimpl->_imgobj->_vkimage,            // VkImage image
-          VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, // VkImageLayout oldLayout
-          VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, // VkImageLayout newLayout
-          VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,     // VkAccessFlags srcAccessMask
-          VK_ACCESS_SHADER_READ_BIT);               // VkAccessFlags dstAccessMask
-
-      barrier->subresourceRange.aspectMask = VkFormatConverter::_instance.aspectForUsage(rtb->_usage);
-
-      if (1)
-        vkCmdPipelineBarrier(
-            vk_cmdbuf->_vkcmdbuf,                          // command buffer
-            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, // srcStageMask
-            VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,         // dstStageMask
-            VK_DEPENDENCY_BY_REGION_BIT,                   // dependencyFlags
-            0,
-            nullptr, // memoryBarriers
-            0,
-            nullptr, // bufferMemoryBarriers
-            1,
-            barrier.get()); // imageMemoryBarriers
-    }
+    bufferimpl->transitionToTexture(vk_cmdbuf);
   }
 
   //////////////////////////////////////////////
