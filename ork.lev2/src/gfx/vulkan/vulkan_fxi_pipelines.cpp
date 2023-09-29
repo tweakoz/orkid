@@ -278,7 +278,7 @@ void VkFxInterface::_flushRenderPassScopedState(){
     _active_vbs[slot] = nullptr;
     _active_gfx_descriptorSets[slot] = nullptr;
   }
-
+  _currentPipeline = nullptr;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
