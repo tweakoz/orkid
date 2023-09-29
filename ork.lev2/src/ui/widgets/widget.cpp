@@ -382,9 +382,6 @@ void Widget::SetSize(int iW, int iH) {
 /////////////////////////////////////////////////////////////////////////
 void Widget::SetRect(int iX, int iY, int iW, int iH) {
 
-  OrkAssert(iW>=1);
-  OrkAssert(iH>=1);
-
   mPosDirty |= (x() != iX) or (y() != iY);
   mSizeDirty |= (width() != iW) or (height() != iH);
   _prevGeometry = _geometry;

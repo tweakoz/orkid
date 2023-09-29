@@ -472,12 +472,6 @@ void VkContext::_doEndFrame() {
 
   _fbi->PopRtGroup(false);
 
-  //size_t prev_rpass_count = _renderpasses.size();
-  //if(prev_rpass_count>0){
-    //auto prev_rpass = _renderpasses.back();
-    //endRenderPass(prev_rpass);
- // }
-
   ////////////////////////
   // main_rtg -> presentation layout
   ////////////////////////
@@ -493,7 +487,7 @@ void VkContext::_doEndFrame() {
 
   ////////////////////////
 
-  printf( "num renderpasses<%zu>\n", _renderpasses.size() );
+  //printf( "num renderpasses<%zu>\n", _renderpasses.size() );
 
   ///////////////////////////////////////////////////////
   // submit primary command buffer for this frame

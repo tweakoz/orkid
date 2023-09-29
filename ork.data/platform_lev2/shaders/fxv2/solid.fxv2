@@ -7,16 +7,14 @@ fxconfig fxcfg_default { glsl_version = "330"; }
 ///////////////////////////////////////////////////////////////
 uniform_set ublock_vtx {
   mat4 MatMVP;
-  mat4 MatMVPL;
-  mat4 MatMVPR;
   mat4 MatMV;
   mat4 MatM;
-  mat4 MatV;
-  mat4 MatP;
-  mat4 MatAux;
-
   vec4 modcolor;
   float Time;
+}
+uniform_set ublock_vtx_stereo {
+  mat4 MatMVPL;
+  mat4 MatMVPR;
 }
 ///////////////////////////////////////////////////////////////
 uniform_set ublock_frg {
@@ -28,7 +26,7 @@ uniform_set ublock_frg {
   sampler2D ColorMap3;
 }
 ///////////////////////////////////////////////////////////////
-vertex_interface iface_vdefault : ublock_vtx {
+vertex_interface iface_vdefault {
   inputs {
     vec4 position : POSITION;
     vec4 vtxcolor : COLOR0;
@@ -200,23 +198,23 @@ fragment_shader ps_downsample7x7 : iface_fmt {
   out_clr = vec4(outc/tot_w,1);
 }
 ///////////////////////////////////////////////////////////////
-vertex_shader vs_vtxcolor : iface_vdefault {
+vertex_shader vs_vtxcolor : iface_vdefault : ublock_vtx {
   gl_Position = MatMVP * position;
   frg_clr     = vtxcolor;
   frg_uv0     = uv0;
 }
-vertex_shader vs_debuguv : iface_vdefault {
+vertex_shader vs_debuguv : iface_vdefault : ublock_vtx {
   gl_Position = MatMVP * position;
   frg_clr     = vec4(uv0,0,1);
   frg_uv0     = uv0;
 }
-vertex_shader vs_wldnormal : iface_vdefault {
+vertex_shader vs_wldnormal : iface_vdefault : ublock_vtx {
   gl_Position = MatMVP * position;
   vec3 n = vtxnormal + vec3(1,1,1);
   frg_clr     = vec4(n*0.5,1);
   frg_uv0     = uv0;
 }
-vertex_shader vs_objnormal : iface_vdefault {
+vertex_shader vs_objnormal : iface_vdefault : ublock_vtx {
   gl_Position = MatMVP * position;
 
   vec3 n = vtxnormal + vec3(1,1,1);
@@ -228,7 +226,8 @@ vertex_shader vs_objnormal : iface_vdefault {
 vertex_shader vs_vtxcolor_stereo
   : extension(GL_NV_stereo_view_rendering)
   : extension(GL_NV_viewport_array2)
-  : iface_vdefault_stereo {
+  : iface_vdefault_stereo
+  : ublock_vtx_stereo {
   gl_Position = MatMVPL * position;
   gl_SecondaryPositionNV = MatMVPR * position;
   gl_Layer = 0;

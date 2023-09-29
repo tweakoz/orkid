@@ -22,6 +22,21 @@ Surface::Surface(const std::string& name, int x, int y, int w, int h, fcolor3 co
     , _pickbuffer(nullptr) {
 }
 
+int Surface::_safeWidth() const{
+  int w = width();
+  if(w<8){
+    w = 8;
+  }
+  return w;
+}
+int Surface::_safeHeight() const{
+  int h = height();
+  if(h<8){
+    h = 8;
+  }
+  return h;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 Surface::Surface(const std::string& name, fcolor3 color, F32 depth)
@@ -31,8 +46,8 @@ Surface::Surface(const std::string& name, fcolor3 color, F32 depth)
 ///////////////////////////////////////////////////////////////////////////////
 
 void Surface::GetPixel(int ix, int iy, lev2::PixelFetchContext& pfc) {
-  int iW   = width();
-  int iH   = height();
+  int iW   = _safeWidth();
+  int iH   = _safeHeight();
   float fx = float(ix) / float(iW);
   float fy = float(iy) / float(iH);
   /////////////////////////////////////////////////////////////
@@ -59,9 +74,11 @@ void Surface::GetPixel(int ix, int iy, lev2::PixelFetchContext& pfc) {
 /////////////////////////////////////////////////////////////////////////
 
 void Surface::_doOnResized(void) {
-  OrkAssert(width()>=1);
-  OrkAssert(height()>=1);
-  printf( "Surface<%s>::OnResize x<%d> y<%d> w<%d> h<%d>\n", _name.c_str(), x(), y(), width(), height() );
+
+  int w = _safeWidth();
+  int h = _safeHeight();
+
+  printf( "Surface<%s>::OnResize x<%d> y<%d> w<%d> h<%d>\n", _name.c_str(), x(), y(), w, h );
   DoSurfaceResize();
   SetDirty();
 }
@@ -98,8 +115,8 @@ void Surface::_doUpdateSurfaces(ui::drawevent_constptr_t drwev){
   } else {
     int irtgw  = _rtgroup->width();
     int irtgh  = _rtgroup->height();
-    int isurfw = width();
-    int isurfh = height();
+    int isurfw = _safeWidth();
+    int isurfh = _safeHeight();
 
     if (irtgw != isurfw or irtgh != isurfh) {
       _rtgroup->Resize(isurfw, isurfh);

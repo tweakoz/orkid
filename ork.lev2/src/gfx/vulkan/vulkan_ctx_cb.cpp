@@ -64,7 +64,7 @@ void VkContext::_doPushCommandBuffer(
     impl = _createVkCommandBuffer(cmdbuf.get());
   }
 
-  printf( "pushCB<%p:%s> impl<%p>\n", (void*) cmdbuf.get(), cmdbuf->_debugName.c_str(), (void*) impl.get() );
+  //printf( "pushCB<%p:%s> impl<%p>\n", (void*) cmdbuf.get(), cmdbuf->_debugName.c_str(), (void*) impl.get() );
   VkCommandBufferInheritanceInfo INHINFO = {};
   initializeVkStruct(INHINFO, VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO);
   auto rpass         = _renderpasses.back();
@@ -87,7 +87,7 @@ void VkContext::_doPushCommandBuffer(
 
 void VkContext::_doPopCommandBuffer() {
   _cmdbufcur_gfx->_recorded = true;
-  printf( "popCB<%p:%s> impl<%p>\n", (void*) _cmdbufcur_gfx->_parent, _cmdbufcur_gfx->_parent->_debugName.c_str(), (void*) _cmdbufcur_gfx.get() );
+  //printf( "popCB<%p:%s> impl<%p>\n", (void*) _cmdbufcur_gfx->_parent, _cmdbufcur_gfx->_parent->_debugName.c_str(), (void*) _cmdbufcur_gfx.get() );
   vkEndCommandBuffer(_cmdbufcur_gfx->_vkcmdbuf);
   _cmdbufcur_gfx = _vk_cmdbufstack.top();
   _vk_cmdbufstack.pop();
@@ -142,7 +142,7 @@ VkCommandBufferImpl::VkCommandBufferImpl(VkContext* ctx)
 ///////////////////////////////////////////////////
 
 VkCommandBufferImpl::~VkCommandBufferImpl(){
-  printf ("DESTROY CB<%p>\n", (void*) _vkcmdbuf );
+  //printf ("DESTROY CB<%p>\n", (void*) _vkcmdbuf );
   vkFreeCommandBuffers(_contextVK->_vkdevice, _contextVK->_vkcmdpool_graphics, 1, &_vkcmdbuf);
 }
 
