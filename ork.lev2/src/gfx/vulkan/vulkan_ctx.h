@@ -317,18 +317,26 @@ struct VkRasterState {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct VkCommandBufferImpl {
+
+  VkCommandBufferImpl(vkcontext_rawptr_t ctxVK);
+  ~VkCommandBufferImpl();
+
   VkCommandBuffer _vkcmdbuf = VK_NULL_HANDLE;
   CommandBuffer* _parent = nullptr;
   bool _recorded = false;
+  vkcontext_rawptr_t _contextVK;
 };
 
 struct VulkanRenderPass {
   VulkanRenderPass(vkcontext_rawptr_t ctxVK, RenderPass* rpass);
+  ~VulkanRenderPass();
+
   std::vector<RenderSubPass*> _toposorted_subpasses;
-  VkRenderPass _vkrp;
+  VkRenderPass _vkrp = VK_NULL_HANDLE;
+  VkFramebuffer _vkfb = VK_NULL_HANDLE;
   VkFramebufferCreateInfo _vkfbinfo;
-  VkFramebuffer _vkfb;
   commandbuffer_ptr_t _seccmdbuffer;
+  vkcontext_rawptr_t _contextVK;
   
 };
 struct VulkanRenderSubPass {
@@ -342,8 +350,8 @@ struct VulkanRenderSubPass {
 struct VklRtBufferImpl {
   VklRtBufferImpl(VkRtGroupImpl* par, RtBuffer* rtb);
 
-  void transitionToRenderTarget(vkcmdbufimpl_ptr_t cb);
-  void transitionToTexture(vkcmdbufimpl_ptr_t cb);
+  void transitionToRenderTarget(vkcontext_rawptr_t ctxVK, vkcmdbufimpl_ptr_t cb);
+  void transitionToTexture(vkcontext_rawptr_t ctxVK, vkcmdbufimpl_ptr_t cb);
 
   void setLayout(VkImageLayout layout);
   void _replaceImage(
@@ -352,7 +360,7 @@ struct VklRtBufferImpl {
     VkImage new_img);
 
 
-  VkRtGroupImpl* _parent = nullptr;
+  VkRtGroupImpl* _rtg_impl = nullptr;
   RtBuffer* _rtb         = nullptr;
   bool _init             = true;
   bool _is_surface       = false;
@@ -394,6 +402,7 @@ struct VkRtGroupImpl {
   vkmsaastate_ptr_t _msaaState;
 
   VkSubpassDescription _vksubpass;
+  VkSubpassDependency _vksubpassdeps;
 
   commandbuffer_ptr_t _cmdbuf;
   renderpass_ptr_t _rpass_clear;

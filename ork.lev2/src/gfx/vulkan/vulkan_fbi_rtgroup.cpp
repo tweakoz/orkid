@@ -16,7 +16,7 @@ static logchannel_ptr_t logchan_rtgroup = logger()->createChannel("VKRTG", fvec3
 ///////////////////////////////////////////////////////////////////////////////
 
 VklRtBufferImpl::VklRtBufferImpl(VkRtGroupImpl* par, RtBuffer* rtb) //
-    : _parent(par)
+    : _rtg_impl(par)
     , _rtb(rtb) { //
 
   initializeVkStruct(_attachmentDesc);
@@ -46,8 +46,8 @@ void VklRtBufferImpl::setLayout(VkImageLayout layout) {
   _currentLayout                = layout;
   _attachmentDesc.initialLayout = previousLayout;
   _attachmentDesc.finalLayout   = layout;
-  OrkAssert(_parent);
-  _parent->__attachments = nullptr;
+  OrkAssert(_rtg_impl);
+  _rtg_impl->__attachments = nullptr;
 }
 
 VkRtGroupImpl::VkRtGroupImpl(RtGroup* rtg)
@@ -96,8 +96,8 @@ void _vkCreateImageForBuffer(
     EBufferFormat ork_fmt,
     uint64_t usage) {               //
   auto VKICI = makeVKICI(           //
-      bufferimpl->_parent->_width,  // width
-      bufferimpl->_parent->_height, // height
+      bufferimpl->_rtg_impl->_width,  // width
+      bufferimpl->_rtg_impl->_height, // height
       1,                            // depth
       ork_fmt,                      // format
       1);                           // miplevels
@@ -363,6 +363,17 @@ void VkFrameBufferInterface::_pushRtGroup(RtGroup* rtgroup) {
     }
   }
   /////////////////////////////////////////
+  // transition rtgroup to RTT mode
+  /////////////////////////////////////////
+
+  int inumtargets = _active_rtgroup->GetNumTargets();
+  //auto vkcmdbuf   = rpass_impl->_seccmdbuffer->_impl.getShared<VkCommandBufferImpl>();
+  for (int i = 0; i < inumtargets; i++) {
+    auto rtb      = _active_rtgroup->GetMrt(i);
+    auto rtb_impl = rtb->_impl.getShared<VklRtBufferImpl>();
+    rtb_impl->transitionToRenderTarget(_contextVK,_contextVK->primary_cb());
+  }
+  /////////////////////////////////////////
   // begin new renderpass
   /////////////////////////////////////////
   auto rpass = _contextVK->createRenderPassForRtGroup(rtgroup, true);
@@ -372,72 +383,84 @@ void VkFrameBufferInterface::_pushRtGroup(RtGroup* rtgroup) {
   auto rpass_impl = rpass->_impl.getShared<VulkanRenderPass>();
   _contextVK->pushCommandBuffer(rpass_impl->_seccmdbuffer);
   rpass_impl->_seccmdbuffer->_no_draw = (rtgroup != _main_rtg.get());
-  /////////////////////////////////////////
-  // transition to RTT mode
-  /////////////////////////////////////////
-  int inumtargets = _active_rtgroup->GetNumTargets();
-  auto vkcmdbuf = rpass_impl->_seccmdbuffer->_impl.getShared<VkCommandBufferImpl>();
-  for (int i = 0; i < inumtargets; i++) {
-    auto rtb      = _active_rtgroup->GetMrt(i);
-    auto rtb_impl = rtb->_impl.getShared<VklRtBufferImpl>();
-    rtb_impl->transitionToRenderTarget(vkcmdbuf);
-  }
+
+
   /////////////////////////////////////////
   _postPushRtGroup(rtgroup);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void VklRtBufferImpl::transitionToRenderTarget(vkcmdbufimpl_ptr_t cb){
-    if(_imgobj){
-      auto barrier  = createImageBarrier(
-          _imgobj->_vkimage,              // VkImage image
-          VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, // VkImageLayout oldLayout
-          VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, // VkImageLayout newLayout
-          VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,     // VkAccessFlags srcAccessMask
-          VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT);    // VkAccessFlags dstAccessMask
+void VklRtBufferImpl::transitionToRenderTarget(vkcontext_rawptr_t ctxVK, vkcmdbufimpl_ptr_t cb) {
 
-      if (1)
-        vkCmdPipelineBarrier(
-            cb->_vkcmdbuf,                           // command buffer
-            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, // srcStageMask
-            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, // dstStageMask
-            VK_DEPENDENCY_BY_REGION_BIT,                   // dependencyFlags
-            0,
-            nullptr, // memoryBarriers
-            0,
-            nullptr, // bufferMemoryBarriers
-            1,
-            barrier.get()); // imageMemoryBarriers
-    }
+  //OrkAssert(ctxVK->_cur_renderpass);
+
+  if (_imgobj) {
+
+    auto new_layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+    auto barrier = createImageBarrier(
+        _imgobj->_vkimage,                        // VkImage image
+        _currentLayout, // VkImageLayout oldLayout
+        new_layout, // VkImageLayout newLayout
+        VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,     // VkAccessFlags srcAccessMask
+        VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT);    // VkAccessFlags dstAccessMask
+
+    if (1)
+      vkCmdPipelineBarrier(
+          cb->_vkcmdbuf,                                 // command buffer
+          VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, // srcStageMask
+          VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, // dstStageMask
+          VK_DEPENDENCY_BY_REGION_BIT,                   // dependencyFlags
+          0,
+          nullptr, // memoryBarriers
+          0,
+          nullptr, // bufferMemoryBarriers
+          1,
+          barrier.get()); // imageMemoryBarriers
+
+      setLayout(new_layout);
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void VklRtBufferImpl::transitionToTexture(vkcmdbufimpl_ptr_t cb){
-    if(_imgobj){
-      auto barrier    = createImageBarrier(
-          _imgobj->_vkimage,            // VkImage image
-          VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, // VkImageLayout oldLayout
-          VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, // VkImageLayout newLayout
-          VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,     // VkAccessFlags srcAccessMask
-          VK_ACCESS_SHADER_READ_BIT);               // VkAccessFlags dstAccessMask
+void VklRtBufferImpl::transitionToTexture(vkcontext_rawptr_t ctxVK, vkcmdbufimpl_ptr_t cb) {
 
-      barrier->subresourceRange.aspectMask = VkFormatConverter::_instance.aspectForUsage(_rtb->_usage);
+  //OrkAssert(ctxVK->_cur_renderpass);
 
-      if (1)
-        vkCmdPipelineBarrier(
-            cb->_vkcmdbuf,                          // command buffer
-            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, // srcStageMask
-            VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,         // dstStageMask
-            VK_DEPENDENCY_BY_REGION_BIT,                   // dependencyFlags
-            0,
-            nullptr, // memoryBarriers
-            0,
-            nullptr, // bufferMemoryBarriers
-            1,
-            barrier.get()); // imageMemoryBarriers
+  if (_imgobj) {
+
+    if (_rtb->_usage != "color"_crcu) {
+      return;
     }
+
+    auto new_layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+    auto barrier = createImageBarrier(
+        _imgobj->_vkimage,                        // VkImage image
+        _currentLayout, // VkImageLayout oldLayout
+        new_layout, // VkImageLayout newLayout
+        VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,     // VkAccessFlags srcAccessMask
+        VK_ACCESS_SHADER_READ_BIT);               // VkAccessFlags dstAccessMask
+
+    barrier->subresourceRange.aspectMask = VkFormatConverter::_instance.aspectForUsage(_rtb->_usage);
+
+    if (1)
+      vkCmdPipelineBarrier(
+          cb->_vkcmdbuf,                                 // command buffer
+          VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, // srcStageMask
+          VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,         // dstStageMask
+          VK_DEPENDENCY_BY_REGION_BIT,                   // dependencyFlags
+          0,
+          nullptr, // memoryBarriers
+          0,
+          nullptr, // bufferMemoryBarriers
+          1,
+          barrier.get()); // imageMemoryBarriers
+
+    setLayout(new_layout);
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -471,18 +494,6 @@ RtGroup* VkFrameBufferInterface::_popRtGroup(bool continue_render) {
 
   int num_buf = popped_rtg->GetNumTargets();
 
-  for (int ib = 0; ib < num_buf; ib++) {
-    auto rtb = popped_rtg->GetMrt(ib);
-    if (rtb->_usage != "color"_crcu) {
-      continue;
-    }
-    /////////////////////////////////////////
-    // transition to texture sample model
-    /////////////////////////////////////////
-    auto bufferimpl = rtb->_impl.getShared<VklRtBufferImpl>();
-    bufferimpl->transitionToTexture(vk_cmdbuf);
-  }
-
   //////////////////////////////////////////////
   // RTG commandbuffer complete, pop and execute
   //////////////////////////////////////////////
@@ -495,6 +506,16 @@ RtGroup* VkFrameBufferInterface::_popRtGroup(bool continue_render) {
   //////////////////////////////////////////////
 
   _contextVK->endRenderPass(_contextVK->_cur_renderpass);
+
+  /////////////////////////////////////////////
+  // transition rtgroup to texture sampling
+  /////////////////////////////////////////////
+
+  for (int ib = 0; ib < num_buf; ib++) {
+    auto rtb      = popped_rtg->GetMrt(ib);
+    auto rtb_impl = rtb->_impl.getShared<VklRtBufferImpl>();
+    rtb_impl->transitionToTexture(_contextVK,_contextVK->primary_cb());
+  }
 
   /////////////////////////////////////////
   // begin new renderpass ?
