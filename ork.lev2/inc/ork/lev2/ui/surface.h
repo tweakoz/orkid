@@ -40,7 +40,7 @@ public:
 
   void GetPixel(int ix, int iy, lev2::PixelFetchContext& ctx);
 
-  void RePaintSurface(ui::drawevent_constptr_t drwev);
+  void _doUpdateSurfaces(ui::drawevent_constptr_t drwev) final;
 
   void decoupleFromUiSize(int w, int h);
 

@@ -78,6 +78,17 @@ void Group::drawChildren(ui::drawevent_constptr_t drwev) {
   }
 }
 /////////////////////////////////////////////////////////////////////////
+void Group::updateSurfaces(ui::drawevent_constptr_t drwev){
+  _doUpdateSurfaces(drwev);
+}
+void Group::_doUpdateSurfaces(ui::drawevent_constptr_t drwev){
+  for (auto child : _children) {
+    if( auto as_group = dynamic_cast<Group*>(child.get()) ){
+      as_group->updateSurfaces(drwev);
+    }
+  }
+}
+/////////////////////////////////////////////////////////////////////////
 void Group::_doOnResized() {
   // printf( "Group<%s>::OnResize x<%d> y<%d> w<%d> h<%d>\n", _name.c_str(), miX, miY, miW, miH );
   for (auto& it : _children) {

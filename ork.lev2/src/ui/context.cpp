@@ -155,6 +155,7 @@ bool Context::hasMouseFocus(const Widget* w) const {
 void Context::draw(drawevent_constptr_t drwev) {
   auto gfx_ctx = drwev->GetTarget();
   gfx_ctx->debugPushGroup("ui::Context::draw::top",fvec4::White());
+  _top->updateSurfaces(drwev);
   _top->draw(drwev);
   if (_overlayWidget) {
     _overlayWidget->draw(drwev);

@@ -66,32 +66,24 @@ void Surface::_doOnResized(void) {
   SetDirty();
 }
 
-void Surface::RePaintSurface(ui::drawevent_constptr_t drwev) {
-  DoRePaintSurface(drwev);
-}
-
-void Surface::_doGpuInit(lev2::Context* context) {
-  _rtgroup        = std::make_shared<lev2::RtGroup>(context, 8, 8, lev2::MsaaSamples::MSAA_1X,true);
-  _rtgroup->_name = FormatString("ui::Surface<%p>", (void*)this);
-  auto mrt0       = _rtgroup->createRenderTarget(lev2::EBufferFormat::RGBA8,"color"_crcu);
-  _rtgroup->_clearColor = fvec4(1,1,0,1);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void Surface::decoupleFromUiSize(int w, int h) {
-  _decoupled_width       = w;
-  _decoupled_height      = h;
-  _decouple_from_ui_size = true;
-}
-
-void Surface::DoDraw(ui::drawevent_constptr_t drwev) {
+void Surface::_doUpdateSurfaces(ui::drawevent_constptr_t drwev){
   auto tgt    = drwev->GetTarget();
-  auto mtxi   = tgt->MTXI();
   auto fbi    = tgt->FBI();
-  auto fxi    = tgt->FXI();
-  //auto rsi    = tgt->RSI();
-  auto& primi = lev2::GfxPrimitives::GetRef();
+  ///////////////////////////////////////
+  // predraw init
+  ///////////////////////////////////////
+  if (_needsinit) {
+    gpuInit(tgt);
+    _needsinit = false;
+  }
+  if (mSizeDirty) {
+    _doOnResized();
+    mPosDirty     = false;
+    mSizeDirty    = false;
+    _prevGeometry = _geometry;
+  }
+  ///////////////////////////////////////
+  // final size computation
   ///////////////////////////////////////
   if (_decouple_from_ui_size) {
     int irtgw  = _rtgroup->width();
@@ -114,18 +106,42 @@ void Surface::DoDraw(ui::drawevent_constptr_t drwev) {
       mNeedsSurfaceRepaint = true;
     }
   }
+  ///////////////////////////////////////
+  // actual repaint
+  ///////////////////////////////////////
+  fbi->PushRtGroup(_rtgroup.get());
+  tgt->debugMarker("repaint-surface");
+  DoRePaintSurface(drwev);
+  tgt->debugMarker("post-repaint-surface");
+  fbi->PopRtGroup(true);
+  mNeedsSurfaceRepaint = false;
+  _dirty               = false;
+  ///////////////////////////////////////
+}
+
+void Surface::_doGpuInit(lev2::Context* context) {
+  _rtgroup        = std::make_shared<lev2::RtGroup>(context, 8, 8, lev2::MsaaSamples::MSAA_1X,true);
+  _rtgroup->_name = FormatString("ui::Surface<%p>", (void*)this);
+  auto mrt0       = _rtgroup->createRenderTarget(lev2::EBufferFormat::RGBA8,"color"_crcu);
+  _rtgroup->_clearColor = _clearColor;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void Surface::decoupleFromUiSize(int w, int h) {
+  _decoupled_width       = w;
+  _decoupled_height      = h;
+  _decouple_from_ui_size = true;
+}
+
+void Surface::DoDraw(ui::drawevent_constptr_t drwev) {
+  auto tgt    = drwev->GetTarget();
+  auto mtxi   = tgt->MTXI();
+  auto fbi    = tgt->FBI();
+  auto fxi    = tgt->FXI();
+  //auto rsi    = tgt->RSI();
+  auto& primi = lev2::GfxPrimitives::GetRef();
   
-
-  if (1) { //mNeedsSurfaceRepaint || IsDirty()) {
-    fbi->PushRtGroup(_rtgroup.get());
-    tgt->debugMarker("repaint-surface");
-    RePaintSurface(drwev);
-    tgt->debugMarker("post-repaint-surface");
-    fbi->PopRtGroup(true);
-    mNeedsSurfaceRepaint = false;
-    _dirty               = false;
-  }
-
   if (_postRenderCallback) {
     _postRenderCallback();
   }
@@ -164,7 +180,7 @@ void Surface::DoDraw(ui::drawevent_constptr_t drwev) {
       int iy_root = 0;
       LocalToRoot(0, 0, ix_root, iy_root);
 
-      // printf( "Surface<%s>::Draw wx<%d> wy<%d> w<%d> h<%d>\n", _name.c_str(), ix_root, iy_root, _geometry._w, _geometry._h );
+       printf( "Surface<%s>::Draw wx<%d> wy<%d> w<%d> h<%d>\n", _name.c_str(), ix_root, iy_root, _geometry._w, _geometry._h );
 
       if (_decouple_from_ui_size and _aspect_from_rtgroup) {
 

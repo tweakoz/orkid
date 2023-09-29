@@ -32,7 +32,10 @@ struct Group : public Widget {
   /////////////////////////////
   Widget* doRouteUiEvent(event_constptr_t Ev) override;
   /////////////////////////////
+  void updateSurfaces(ui::drawevent_constptr_t drwev);
   void drawChildren(ui::drawevent_constptr_t drwev);
+  /////////////////////////////
+  virtual void _doUpdateSurfaces(ui::drawevent_constptr_t drwev);
   /////////////////////////////
   std::set<Widget*> _snapped;
   std::vector<widget_ptr_t> _children;

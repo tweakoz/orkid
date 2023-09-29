@@ -90,7 +90,7 @@ void PickBuffer::Draw(lev2::PixelFetchContext& ctx) {
   // repaint the surface into the pickbuffer's rtgroup
   //////////////////////////////////////////////////////////////
 
-  _surface->RePaintSurface(drwev);
+  _surface->updateSurfaces(drwev);
 
   //////////////////////////////////////////////////////////////
 
