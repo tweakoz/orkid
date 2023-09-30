@@ -28,7 +28,7 @@ uniform_set ublock_frg {
 ///////////////////////////////////////////////////////////////
 vertex_interface iface_vdefault {
   inputs {
-    vec4 position : POSITION;
+    vec3 position : POSITION;
     vec4 vtxcolor : COLOR0;
     vec3 vtxnormal : NORMAL;
     vec2 uv0 : TEXCOORD0;
@@ -199,23 +199,23 @@ fragment_shader ps_downsample7x7 : iface_fmt {
 }
 ///////////////////////////////////////////////////////////////
 vertex_shader vs_vtxcolor : iface_vdefault : ublock_vtx {
-  gl_Position = MatMVP * position;
+  gl_Position = MatMVP * vec4(position,1);
   frg_clr     = vtxcolor;
   frg_uv0     = uv0;
 }
 vertex_shader vs_debuguv : iface_vdefault : ublock_vtx {
-  gl_Position = MatMVP * position;
+  gl_Position = MatMVP * vec4(position,1);
   frg_clr     = vec4(uv0,0,1);
   frg_uv0     = uv0;
 }
 vertex_shader vs_wldnormal : iface_vdefault : ublock_vtx {
-  gl_Position = MatMVP * position;
+  gl_Position = MatMVP * vec4(position,1);
   vec3 n = vtxnormal + vec3(1,1,1);
   frg_clr     = vec4(n*0.5,1);
   frg_uv0     = uv0;
 }
 vertex_shader vs_objnormal : iface_vdefault : ublock_vtx {
-  gl_Position = MatMVP * position;
+  gl_Position = MatMVP * vec4(position,1);
 
   vec3 n = vtxnormal + vec3(1,1,1);
   frg_clr     = vec4(n*0.5,1);
@@ -228,8 +228,8 @@ vertex_shader vs_vtxcolor_stereo
   : extension(GL_NV_viewport_array2)
   : iface_vdefault_stereo
   : ublock_vtx_stereo {
-  gl_Position = MatMVPL * position;
-  gl_SecondaryPositionNV = MatMVPR * position;
+  gl_Position = MatMVPL * vec4(position,1);
+  gl_SecondaryPositionNV = MatMVPR * vec4(position,1);
   gl_Layer = 0;
   gl_ViewportMask[0] = 1;
   gl_SecondaryViewportMaskNV[0] = 2;

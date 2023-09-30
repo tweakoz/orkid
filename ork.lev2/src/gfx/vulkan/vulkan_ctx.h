@@ -331,7 +331,10 @@ struct VulkanVertexInterface{
   std::string _name;
   vkvertexinterface_ptr_t _parent;
   std::vector<vkvertexinterfaceinput_ptr_t> _inputs;
+  int _pipeline_bits = -1;
+  uint64_t _hash = 0;
 };
+
 ///////////////////////////////////////////////////////////////////////////////
 
 struct VkCommandBufferImpl {
@@ -649,6 +652,8 @@ struct VulkanFxShaderObject {
   // shadlang::SHAST::astnode_ptr_t _astnode; // debug only
   vkfxsunisetsref_ptr_t _uniset_refs;
   std::unordered_map<std::string, vkfxsuniblk_ptr_t> _vk_uniformblks;
+  std::vector<std::string> _vk_interfaces;
+
   uint64_t _STAGE = 0;
   VkPushConstantRange _vkpc_range;
 };
@@ -661,7 +666,7 @@ struct VkParamSetItem {
 
 struct VkFxShaderProgram {
 
-  VkFxShaderProgram();
+  VkFxShaderProgram(VkFxShaderFile* file);
 
   void bindDescriptorTexture(fxparam_constptr_t param, const Texture* pTex);
 
@@ -671,6 +676,9 @@ struct VkFxShaderProgram {
   vkfxsobj_ptr_t _tevshader;
   vkfxsobj_ptr_t _frgshader;
   vkfxsobj_ptr_t _comshader;
+
+  vkvertexinterface_ptr_t _vertexinterface;
+
   vkfxpushconstantblk_ptr_t _pushConstantBlock;
 
   std::vector<VkParamSetItem> _pending_params;
@@ -680,9 +688,12 @@ struct VkFxShaderProgram {
   std::unordered_map<fxparam_constptr_t, size_t> _samplers_by_orkparam;
   std::unordered_map<fxparam_constptr_t, vktexobj_ptr_t > _textures_by_orkparam;
   std::unordered_map<size_t, vktexobj_ptr_t > _textures_by_binding;
-  int _pipeline_bits = -1;
+  int _pipeline_bits_prg = -1;
+  int _pipeline_bits_vif = -1;
+  int _pipeline_bits_composite = -1;
 
   std::unordered_map<std::string, vkfxsuniset_ptr_t> _vk_uniformsets;
+  VkFxShaderFile* _shader_file = nullptr;
 };
 
 struct VulkanDescriptorSet{
@@ -748,7 +759,10 @@ struct VulkanVertexBuffer {
   ~VulkanVertexBuffer();
   vkbuffer_ptr_t _vkbuffer;
   vkcontext_rawptr_t _ctx;
-  vkvertexinputconfig_ptr_t _vertexConfig;
+  VertexBufferBase& _ork_vtxbuf;
+  std::unordered_map<uint64_t, vkvertexinputconfig_ptr_t> _vif_to_layout;
+
+  //vkvertexinputconfig_ptr_t _vertexConfig;
 };
 struct VulkanIndexBuffer {
   VulkanIndexBuffer(vkcontext_rawptr_t ctx, size_t length);
@@ -809,6 +823,27 @@ struct VkMatrixStackInterface final : public MatrixStackInterface {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+struct VertexStreamConfigItem{
+  std::string _vbuf_datatype;
+  std::string _semantic;
+  size_t _datasize = 0;
+  size_t _dataoffset = 0;
+  VkFormat _vkformat = VK_FORMAT_UNDEFINED;
+};
+
+using vertex_strconfig_item_ptr_t = std::shared_ptr<VertexStreamConfigItem>;
+
+struct VertexStreamConfig{
+
+  void addItem(std::string sem, std::string vb_dt, size_t ds, size_t offset, VkFormat fmt);
+  std::unordered_map<std::string,vertex_strconfig_item_ptr_t> _item_by_semantic;
+  size_t _stride = 0;
+};
+
+using vertex_strconfig_ptr_t = std::shared_ptr<VertexStreamConfig>;
+
+///////////////////////////////////////////////////////////////////////////////
+
 struct VkGeometryBufferInterface final : public GeometryBufferInterface {
 
   VkGeometryBufferInterface(vkcontext_rawptr_t ctx);
@@ -839,7 +874,9 @@ struct VkGeometryBufferInterface final : public GeometryBufferInterface {
 
   //
 
-  vkvertexinputconfig_ptr_t _instantiateVertexConfig(EVtxStreamFormat format);
+  vertex_strconfig_ptr_t _instantiateVertexStreamConfig(EVtxStreamFormat format);
+
+  vkvertexinputconfig_ptr_t vertexInputState(vkvtxbuf_ptr_t vbuf, vkvertexinterface_ptr_t vif);
 
   void DrawPrimitiveEML(
       const VertexBufferBase& VBuf, //
@@ -882,8 +919,8 @@ struct VkGeometryBufferInterface final : public GeometryBufferInterface {
 
   vkcontext_rawptr_t _contextVK;
   uint32_t _lastComponentMask = 0xFFFFFFFF;
-  std::unordered_map<EVtxStreamFormat, vkvertexinputconfig_ptr_t> _vertexInputConfigs;
   std::unordered_map<uint64_t, vkprimclass_ptr_t> _primclasses;
+  std::unordered_map<EVtxStreamFormat,vertex_strconfig_ptr_t> _vertexStreamConfigs;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -943,6 +980,7 @@ struct VkFrameBufferInterface final : public FrameBufferInterface {
   vkswapchain_ptr_t _swapchain;
   std::unordered_set<vkswapchain_ptr_t> _old_swapchains;
   VkSemaphore _swapChainImageAcquiredSemaphore;
+
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1037,6 +1075,7 @@ struct VkFxInterface final : public FxInterface {
   void _bindVertexBufferOnSlot( vkvtxbuf_ptr_t vb, size_t slot );
 
   void _flushRenderPassScopedState();
+  int _pipelineBitsForShader(vkfxsprg_ptr_t shprog);
 
   fxtechnique_constptr_t _currentORKTEK = nullptr;
   VkFxShaderTechnique* _currentVKTEK;
@@ -1049,7 +1088,7 @@ struct VkFxInterface final : public FxInterface {
   rasterstate_ptr_t _current_rasterstate;
   lev2::rasterstate_ptr_t _default_rasterstate;
   vkpipeline_obj_ptr_t _currentPipeline;
-
+  std::unordered_map<uint64_t, int> _vk_vtxinterface_cache;
   std::array<vkdescriptorset_ptr_t, 4> _active_gfx_descriptorSets;
   std::array<vkvtxbuf_ptr_t, 4> _active_vbs;
 };

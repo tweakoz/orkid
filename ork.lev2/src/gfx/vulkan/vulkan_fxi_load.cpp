@@ -624,16 +624,10 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
     /////////////////////////////////
     auto num_ifaces = shader_input_stream->readItem<size_t>();
     if (num_ifaces) {
-      //auto refs                  = std::make_shared<VkFxShaderUniformSetsReference>();
-      //vulkan_shobj->_uniset_refs = refs;
       for (size_t i = 0; i < num_ifaces; i++) {
         auto str_iface = shader_input_stream->readIndexedString(chunkreader);
-        //auto it         = vulkan_shaderfile->_vk_uniformsets.find(str_iface);
-        //OrkAssert(it != vulkan_shaderfile->_vk_uniformsets.end());
-        //vkfxsuniset_ptr_t vk_uniset = it->second;
-        //refs->_unisets[str_iface]  = vk_uniset;
+        vulkan_shobj->_vk_interfaces.push_back(str_iface);
       }
-      //OrkAssert(refs->_unisets.size() < 2);
     }
     /////////////////////////////////
     return vulkan_shobj;
@@ -703,7 +697,7 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
       auto str_vtx_name = tecniq_input_stream->readIndexedString(chunkreader);
       auto str_frg_name = tecniq_input_stream->readIndexedString(chunkreader);
       auto vk_pass      = std::make_shared<VkFxShaderPass>();
-      auto vk_program   = std::make_shared<VkFxShaderProgram>();
+      auto vk_program   = std::make_shared<VkFxShaderProgram>(vulkan_shaderfile.get());
       auto vtx_obj      = vulkan_shaderfile->_vk_shaderobjects[str_vtx_name];
       auto frg_obj      = vulkan_shaderfile->_vk_shaderobjects[str_frg_name];
       OrkAssert(vtx_obj);
@@ -713,7 +707,7 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
       vk_pass->_vk_program   = vk_program;
       vk_tek->_vk_passes.push_back(vk_pass);
       static int prog_index      = 0;
-      vk_program->_pipeline_bits = prog_index;
+      vk_program->_pipeline_bits_prg = prog_index;
       prog_index++;
       OrkAssert(prog_index < 256);
 

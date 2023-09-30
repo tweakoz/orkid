@@ -46,7 +46,7 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(
     return inp;
   };
 
-  int vb_pbits = check_pb_range(vb->_vertexConfig->_pipeline_bits, 4);
+  int vb_pbits = 0;//check_pb_range(vb->_vertexConfig->_pipeline_bits, 4);
 
   auto rtg       = fbi->_active_rtgroup;
   auto rtg_impl  = rtg->_impl.getShared<VkRtGroupImpl>();
@@ -56,15 +56,20 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(
   int pc_pbits  = check_pb_range(primclass->_pipeline_bits, 4);
 
   auto shprog  = _currentVKPASS->_vk_program;
-  int sh_pbits = check_pb_range(shprog->_pipeline_bits, 8);
 
-  int rs_shbits = check_pb_range(vkrstate->_pipeline_bits, 8);
+  int sh_pbits = _pipelineBitsForShader(shprog);
+  sh_pbits = check_pb_range(sh_pbits, 16);
 
+  int rs_pbits = check_pb_range(vkrstate->_pipeline_bits, 8);
   auto rpass = _contextVK->_renderpasses.back();
   auto rp_impl = rpass->_impl.getShared<VulkanRenderPass>();
   // hash renderpass ?
   
-  uint64_t pipeline_hash = vb_pbits | (rtg_pbits << 4) | (pc_pbits << 8) | (sh_pbits << 16) | (rs_shbits << 24);
+  uint64_t pipeline_hash = vb_pbits //
+                         | (rtg_pbits << 4) //
+                         | (pc_pbits << 8) //
+                         | (sh_pbits << 16) //
+                         | (rs_pbits << 32);
 
   ////////////////////////////////////////////////////
   // find or create pipeline
@@ -72,6 +77,10 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(
 
   auto it = _pipelines.find(pipeline_hash);
   if (it == _pipelines.end()) { // create pipeline
+
+    auto VIF       = shprog->_vertexinterface;
+    OrkAssert(VIF);
+
     rval                      = std::make_shared<VkPipelineObject>(_contextVK);
     _pipelines[pipeline_hash] = rval;
     rval->_vk_program         = shprog;
@@ -90,9 +99,12 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(
     if (shprog->_frgshader)
       stages.push_back(shprog->_frgshader->_shaderstageinfo);
 
+    auto vtx_state = gbi->vertexInputState(vb,VIF);
+    OrkAssert(vtx_state);
+
     CINFO.stageCount          = stages.size();
     CINFO.pStages             = stages.data();
-    CINFO.pVertexInputState   = &vb->_vertexConfig->_vertex_input_state;
+    CINFO.pVertexInputState   = & vtx_state->_vertex_input_state;
     CINFO.pInputAssemblyState = &primclass->_input_assembly_state;
 
     ////////////////////////////////////////////////////
@@ -447,7 +459,8 @@ vkdescriptorset_ptr_t VulkanDescriptorSetCache::fetchDescriptorSetForProgram(vkf
 
 ///////////////////////////////////////////////////////////////////////////////
 
-VkFxShaderProgram::VkFxShaderProgram() {
+VkFxShaderProgram::VkFxShaderProgram(VkFxShaderFile* file) 
+  : _shader_file(file) {
   _pushdatabuffer.reserve(1024); // todo : grow as needed
 }
 
