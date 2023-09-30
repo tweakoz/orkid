@@ -26,18 +26,34 @@ fmtx4 VkMatrixStackInterface::Ortho(float left, float right, float top, float bo
   ortho_projection_for_vulkan[3][2] = fnear / (fnear - ffar);
   return ortho_projection_for_vulkan;
 }
+
 fmtx4 VkMatrixStackInterface::Frustum(float left, float right, float top, float bottom, float zn, float zf) {
-  fmtx4 persp_projection_for_vulkan;
-  persp_projection_for_vulkan[0][0] = (2.0f * zn) / (right - left);
-  persp_projection_for_vulkan[1][1] = (2.0f * zn) / (top - bottom);
-  persp_projection_for_vulkan[2][0] = (right + left) / (right - left);
-  persp_projection_for_vulkan[2][1] = (top + bottom) / (top - bottom);
-  persp_projection_for_vulkan[2][2] = zf / (zf - zn);
-  persp_projection_for_vulkan[2][3] = 1.0f;
-  persp_projection_for_vulkan[3][2] = (zf * zn) / (zn - zf);
-  persp_projection_for_vulkan[3][3] = 0.0f;
-  return persp_projection_for_vulkan;
-}
+  fmtx4 rval;
+
+  rval.setToIdentity();
+
+  const float two_near_dist = 2.0f * zn;
+  const float right_minus_left = right - left;
+  const float top_minus_bottom = top - bottom;
+  const float far_minus_near = zf - zn;
+  
+  const float m00 = two_near_dist / right_minus_left;
+  const float m02 = (right + left) / right_minus_left;
+  const float m11 = two_near_dist / top_minus_bottom;
+  const float m12 = (top + bottom) / top_minus_bottom;
+  //const float m22 = -(zf + zn) / far_minus_near;
+  //const float m23 = -(2.0f * zf * zn) / far_minus_near;
+  const float m22 = -zf / far_minus_near; // Adjusted for Vulkan
+  const float m23 = -(zf * zn) / far_minus_near; // Adjusted for Vulkan
+  const float m32 = -1.0f;
+  
+
+  rval.setRow(0, fvec4(m00, 0.0f, m02, 0.0f) );
+  rval.setRow(1, fvec4(0.0f, m11, m12, 0.0f) );
+  rval.setRow(2, fvec4(0.0f, 0.0f, m22, m23) );
+  rval.setRow(3, fvec4(0.0f, 0.0f, m32, 0.0f) );
+
+	return rval;}
 
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2::vulkan

@@ -59,8 +59,8 @@ struct SRasterState {
   /////////////////////////////
 
   EPolygonMode _polygonMode = EPolygonMode::FILL;
-  ECullTest _culltest = ECullTest::OFF;         
-  EFrontFace _frontface = EFrontFace::CLOCKWISE;
+  ECullTest _culltest = ECullTest::PASS_FRONT;         
+  EFrontFace _frontface = EFrontFace::COUNTER_CLOCKWISE;
 
   EDepthTest _depthtest  = EDepthTest::OFF; 
   fvec4 _blendConstant = fvec4(0,0,0,0);
