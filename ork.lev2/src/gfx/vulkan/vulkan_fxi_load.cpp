@@ -147,6 +147,11 @@ datablock_ptr_t VkFxInterface::_writeIntermediateToDataBlock(shadlang::SHAST::tr
     header_stream->addItem<uint64_t>(num_uniblks);
     header_stream->addItem<uint64_t>(num_techniques);
     header_stream->addItem<uint64_t>(num_imports);
+
+
+
+
+
     //////////////////
     // uniformsets
     //////////////////
@@ -217,6 +222,13 @@ datablock_ptr_t VkFxInterface::_writeIntermediateToDataBlock(shadlang::SHAST::tr
     using namespace shadlang::SHAST;
     const auto& DATASIZES = shadlang::spirv::SpirvCompilerGlobals::instance()->_data_sizes;
     for( auto VIF : vtx_interfaces ){
+
+      InheritanceTracker if_tracker(transunit);
+      if_tracker.fetchInheritances(VIF);
+
+      size_t if_count = if_tracker._inherited_ifaces.size();
+      printf( "XXX if_count<%zu>\n", if_count );
+
       auto vif_name = VIF->typedValueForKey<std::string>("object_name").value();
       auto input_groups  = AstNode::collectNodesOfType<InterfaceInputs>(VIF);
       auto output_groups = AstNode::collectNodesOfType<InterfaceOutputs>(VIF);

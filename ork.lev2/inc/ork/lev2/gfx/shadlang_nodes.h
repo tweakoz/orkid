@@ -389,11 +389,13 @@ struct InheritanceTracker{
   std::set<std::string> _set_inherited_libs;
   std::set<std::string> _set_inherited_unisets;
   std::set<std::string> _set_inherited_uniblks;
+  std::set<std::string> _set_inherited_interfaces;
   std::set<std::string> _set_inherited_extensions;
 
   std::vector<libblock_ptr_t> _inherited_libs;
   std::vector<astnode_ptr_t> _inherited_usets;
   std::vector<astnode_ptr_t> _inherited_blks;
+  std::vector<astnode_ptr_t> _inherited_ifaces;
   std::vector<std::string> _inherited_exts;
 };
 

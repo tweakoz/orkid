@@ -94,11 +94,9 @@ void SpirvCompiler::_beginShader(shader_ptr_t shader) {
   };
   ////////////////////////////////////////////////
   tracker._onInheritUniformSet = [=](std::string INHID, astnode_ptr_t uset) { //
-
     auto it_uset  = _spirvuniformsets.find(INHID);
     OrkAssert(it_uset != _spirvuniformsets.end());
     auto spirvuniset = it_uset->second;
-
     _inheritUniformSet(INHID, spirvuniset);
   };
   ////////////////////////////////////////////////
