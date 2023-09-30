@@ -221,53 +221,64 @@ datablock_ptr_t VkFxInterface::_writeIntermediateToDataBlock(shadlang::SHAST::tr
     ////////////////////////////////////////////////////////////////
     using namespace shadlang::SHAST;
     const auto& DATASIZES = shadlang::spirv::SpirvCompilerGlobals::instance()->_data_sizes;
-    for( auto VIF : vtx_interfaces ){
+    for( auto TOP_VIF : vtx_interfaces ){
 
       InheritanceTracker if_tracker(transunit);
-      if_tracker.fetchInheritances(VIF);
+      if_tracker.fetchInheritances(TOP_VIF);
 
       size_t if_count = if_tracker._inherited_ifaces.size();
       printf( "XXX if_count<%zu>\n", if_count );
-
-      auto vif_name = VIF->typedValueForKey<std::string>("object_name").value();
-      auto input_groups  = AstNode::collectNodesOfType<InterfaceInputs>(VIF);
-      auto output_groups = AstNode::collectNodesOfType<InterfaceOutputs>(VIF);
-      for (auto input_group : input_groups) {
-        auto inputs = AstNode::collectNodesOfType<InterfaceInput>(input_group);
-        // printf("  num_inputs<%zu>\n", inputs.size());
-        for (auto input : inputs) {
-          auto tid = input->childAs<TypedIdentifier>(0);
-          OrkAssert(tid);
-          // dumpAstNode(tid);
-          auto dt = tid->typedValueForKey<std::string>("data_type").value();
-          auto id = tid->typedValueForKey<std::string>("identifier_name").value();
-          //_appendText(_interface_group, "layout(location=%zu) in %s %s;", _input_index, dt.c_str(), id.c_str());
-          auto it = DATASIZES.find(dt);
-          OrkAssert(it != DATASIZES.end());
-          //_input_index += it->second;
-        }
-      }
-      /////////////////////////////////////////
-      for (auto output_group : output_groups) {
-        auto outputs = AstNode::collectNodesOfType<InterfaceOutput>(output_group);
-        // printf("  num_outputs<%zu>\n", outputs.size());
-        for (auto output : outputs) {
-          // dumpAstNode(output);
-          auto tid = output->findFirstChildOfType<TypedIdentifier>();
-          OrkAssert(tid);
-          auto dt = tid->typedValueForKey<std::string>("data_type").value();
-          auto id = tid->typedValueForKey<std::string>("identifier_name").value();
-          if (id.find("gl_") != 0) {
-            //_appendText(_interface_group, "layout(location=%zu) out %s %s;", _output_index, dt.c_str(), id.c_str());
-            auto it = DATASIZES.find(dt);
-            if (it == DATASIZES.end()) {
-              printf("dt<%s> has no sizespec\n", dt.c_str());
-              OrkAssert(false);
+      if( if_count > 0 ){
+        printf( "  XXX ");
+        for( size_t vc=0; vc<if_count; vc++ ){
+          auto VIF = if_tracker._inherited_ifaces[vc];
+          auto vif_name = VIF->typedValueForKey<std::string>("object_name").value();
+          printf( " vif_name<%s>", vif_name.c_str() );
+          auto input_groups  = AstNode::collectNodesOfType<InterfaceInputs>(VIF);
+          auto output_groups = AstNode::collectNodesOfType<InterfaceOutputs>(VIF);
+          for (auto input_group : input_groups) {
+            auto inputs = AstNode::collectNodesOfType<InterfaceInput>(input_group);
+            // printf("  num_inputs<%zu>\n", inputs.size());
+            for (auto input : inputs) {
+              auto tid = input->childAs<TypedIdentifier>(0);
+              OrkAssert(tid);
+              // dumpAstNode(tid);
+              auto dt = tid->typedValueForKey<std::string>("data_type").value();
+              auto id = tid->typedValueForKey<std::string>("identifier_name").value();
+              printf( " inp[dt<%s> id<%s>]", dt.c_str(), id.c_str() );
+              //_appendText(_interface_group, "layout(location=%zu) in %s %s;", _input_index, dt.c_str(), id.c_str());
+              auto it = DATASIZES.find(dt);
+              OrkAssert(it != DATASIZES.end());
+              //_input_index += it->second;
             }
-            //o_output_index += it->second;
+          }
+          /////////////////////////////////////////
+          for (auto output_group : output_groups) {
+            auto outputs = AstNode::collectNodesOfType<InterfaceOutput>(output_group);
+            // printf("  num_outputs<%zu>\n", outputs.size());
+            for (auto output : outputs) {
+              // dumpAstNode(output);
+              auto tid = output->findFirstChildOfType<TypedIdentifier>();
+              OrkAssert(tid);
+              auto dt = tid->typedValueForKey<std::string>("data_type").value();
+              auto id = tid->typedValueForKey<std::string>("identifier_name").value();
+              printf( " out[dt<%s> id<%s>]", dt.c_str(), id.c_str() );
+              if (id.find("gl_") != 0) {
+                //_appendText(_interface_group, "layout(location=%zu) out %s %s;", _output_index, dt.c_str(), id.c_str());
+                auto it = DATASIZES.find(dt);
+                if (it == DATASIZES.end()) {
+                  printf("dt<%s> has no sizespec\n", dt.c_str());
+                  OrkAssert(false);
+                }
+                //o_output_index += it->second;
+              }
+            }
           }
         }
+        printf( "\n");
       }
+
+
     }
 
   ////////////////////////////////////////////////////////////////
