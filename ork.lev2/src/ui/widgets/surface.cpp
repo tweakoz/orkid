@@ -197,7 +197,7 @@ void Surface::DoDraw(ui::drawevent_constptr_t drwev) {
       int iy_root = 0;
       LocalToRoot(0, 0, ix_root, iy_root);
 
-       printf( "Surface<%s>::Draw wx<%d> wy<%d> w<%d> h<%d>\n", _name.c_str(), ix_root, iy_root, _geometry._w, _geometry._h );
+       //printf( "Surface<%s>::Draw wx<%d> wy<%d> w<%d> h<%d>\n", _name.c_str(), ix_root, iy_root, _geometry._w, _geometry._h );
 
       if (_decouple_from_ui_size and _aspect_from_rtgroup) {
 

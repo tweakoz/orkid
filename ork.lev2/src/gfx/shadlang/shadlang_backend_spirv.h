@@ -61,9 +61,13 @@ struct SpirvUniformBlock {
   std::vector<spirvuniblkitem_ptr_t> _items_by_order;
 };
 
-struct InheritanceTracker{
-  std::set<std::string> _inherited_libs;
-  std::vector<std::string> _inherited_unisets;
+struct SpirvCompilerGlobals;
+using spirvcompilerglobals_constptr_t = std::shared_ptr<const SpirvCompilerGlobals>;
+struct SpirvCompilerGlobals {
+  SpirvCompilerGlobals();
+  static spirvcompilerglobals_constptr_t instance();
+  std::unordered_map<std::string, size_t> _data_sizes;
+  std::unordered_map<std::string, std::string> _id_renames;
 };
 
 struct SpirvCompiler {
@@ -71,7 +75,6 @@ struct SpirvCompiler {
   SpirvCompiler(transunit_ptr_t _transu, bool vulkan);
   void processShader(shader_ptr_t sh);
   
-  void fetchInheritances(InheritanceTracker& tracker, astnode_ptr_t parent_node);
 
 private:
 
@@ -81,12 +84,11 @@ private:
   void _collectLibBlocks();
   void _processGlobalRenames();
 
-  void _inheritLibrary(InheritanceTracker& tracker, libblock_ptr_t lib_node);
+  void _inheritLibrary(libblock_ptr_t lib_node);
   void _inheritUniformSet(std::string unisetname, spirvuniset_ptr_t uniset_node);
   void _inheritUniformBlk(std::string uniblkname, spirvuniblk_ptr_t uniblk_node);
   void _inheritIO(astnode_ptr_t interface_node);
   void _inheritExtension(semainhext_ptr_t ext_node);
-  void _procInheritances(InheritanceTracker& tracker, astnode_ptr_t parent_node);
 
   void _beginShader(shader_ptr_t sh);
   void _compileShader(shaderc_shader_kind shader_type);
@@ -98,8 +100,6 @@ private:
   miscgroupnode_ptr_t _extension_group;
   miscgroupnode_ptr_t _uniforms_group;
   miscgroupnode_ptr_t _libraries_group;
-  std::unordered_map<std::string, size_t> _data_sizes;
-  std::unordered_map<std::string, std::string> _id_renames;
   size_t _input_index = 0;
   size_t _output_index = 0;
   size_t _descriptor_set_counter = 0;

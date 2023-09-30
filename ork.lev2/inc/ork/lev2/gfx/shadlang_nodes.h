@@ -366,4 +366,35 @@ DECLARE_STD_AST_CLASS(SemaExpression,SemaIntegerLiteral);
 
 ///////////////////////////////////////////////////////////
 
+struct InheritanceTracker{
+
+  InheritanceTracker(transunit_ptr_t transu);
+  void fetchInheritances(astnode_ptr_t parent_node);
+  void _processNode(astnode_ptr_t parent_node);
+
+  using on_lib_fn_t = std::function<void(std::string, libblock_ptr_t)>;
+  using on_iface_fn_t = std::function<void(std::string, astnode_ptr_t)>;
+  using on_uset_fn_t = std::function<void(std::string, astnode_ptr_t)>;
+  using on_ublk_fn_t = std::function<void(std::string, astnode_ptr_t)>;
+  using on_ext_fn_t = std::function<void(std::string,astnode_ptr_t)>;
+
+  on_lib_fn_t _onInheritLibrary = nullptr;
+  on_iface_fn_t _onInheritInterface = nullptr;
+  on_uset_fn_t _onInheritUniformSet = nullptr;
+  on_ublk_fn_t _onInheritUniformBlk = nullptr; 
+  on_ext_fn_t _onInheritExtension = nullptr;
+
+  transunit_ptr_t _translation_unit;
+  
+  std::set<std::string> _set_inherited_libs;
+  std::set<std::string> _set_inherited_unisets;
+  std::set<std::string> _set_inherited_uniblks;
+  std::set<std::string> _set_inherited_extensions;
+
+  std::vector<libblock_ptr_t> _inherited_libs;
+  std::vector<astnode_ptr_t> _inherited_usets;
+  std::vector<astnode_ptr_t> _inherited_blks;
+  std::vector<std::string> _inherited_exts;
+};
+
 } // namespace ork::lev2::shadlang::SHAST

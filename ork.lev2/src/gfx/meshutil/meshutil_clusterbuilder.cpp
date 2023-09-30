@@ -128,6 +128,8 @@ void BuildXgmClusterPrimGroups(
       const orkvector<unsigned int>& StripIndices = MyStripper.GetStripIndices(i);
       int inumidx                                 = StripIndices.size();
 
+      OrkAssert(inumidx!=0);
+
       /////////////////////////////////
 
       ork::lev2::StaticIndexBuffer<U16>* pidxbuf = new ork::lev2::StaticIndexBuffer<U16>(inumidx);

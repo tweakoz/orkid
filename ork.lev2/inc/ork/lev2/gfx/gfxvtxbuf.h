@@ -27,13 +27,13 @@ class IndexBufferBase {
 protected:
   int miNumIndices;
   void* mpIndices;
-  bool mbLocked;
 
   void Release(void);
 
 public:
 
   buffer_impl_t _impl;
+  bool _locked = false;
 
   int GetNumIndices() const {
     return miNumIndices;

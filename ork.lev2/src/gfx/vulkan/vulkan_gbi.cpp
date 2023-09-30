@@ -40,6 +40,7 @@ VulkanVertexBuffer::~VulkanVertexBuffer() {
 ///////////////////////////////////////////////////////////////////////////////
 
 VulkanIndexBuffer::VulkanIndexBuffer(vkcontext_rawptr_t ctx, size_t length) {
+  OrkAssert(length > 0);
   _ctx = ctx;
 
   _vkbuffer = std::make_shared<VulkanBuffer>(ctx, length, VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
@@ -93,6 +94,11 @@ VkGeometryBufferInterface::VkGeometryBufferInterface(vkcontext_rawptr_t ctx)
   };
   ////////////////////////////////////////////////////////////////
   _primclasses[uint64_t(PrimitiveType::TRIANGLES)] = create_primclass(PrimitiveType::TRIANGLES);
+  _primclasses[uint64_t(PrimitiveType::TRIANGLESTRIP)] = create_primclass(PrimitiveType::TRIANGLESTRIP);
+  _primclasses[uint64_t(PrimitiveType::TRIANGLEFAN)] = create_primclass(PrimitiveType::TRIANGLEFAN);
+  _primclasses[uint64_t(PrimitiveType::LINES)] = create_primclass(PrimitiveType::LINES);
+  _primclasses[uint64_t(PrimitiveType::LINESTRIP)] = create_primclass(PrimitiveType::LINESTRIP);
+  _primclasses[uint64_t(PrimitiveType::POINTS)] = create_primclass(PrimitiveType::POINTS);
   ////////////////////////////////////////////////////////////////
   OrkAssert(_primclasses.size() <= 16); // validate we only used 4 pipeline_bits
   ////////////////////////////////////////////////////////////////
@@ -291,36 +297,57 @@ void VkGeometryBufferInterface::ReleaseVB(VertexBufferBase& vtx_buf) {
 
 void* VkGeometryBufferInterface::LockIB(IndexBufferBase& idx_buf, int ivbase, int icount) {
   _contextVK->makeCurrentContext(); // TODO probably dont need this with queues
+  size_t ibasebytes = ivbase * idx_buf.GetIndexSize();
+  size_t isizebytes = icount * idx_buf.GetIndexSize();
+  bool is_static    = idx_buf.IsStatic();
+
+  if(icount==0){
+    icount=idx_buf.GetNumIndices();
+  }
 
   //////////////////////////////////////////////////////////
   // create or reference the ibo
   //////////////////////////////////////////////////////////
 
-  vkidxbuf_ptr_t vk_buf;
+  vkidxbuf_ptr_t vk_impl;
   if (auto try_vk_buf = idx_buf._impl.tryAsShared<VulkanIndexBuffer>()) {
-    vk_buf = try_vk_buf.value();
+    vk_impl = try_vk_buf.value();
   } else {
     size_t size_in_bytes = icount * idx_buf.GetIndexSize();
-    vk_buf               = std::make_shared<VulkanIndexBuffer>(_contextVK, size_in_bytes);
-    idx_buf._impl.setShared(vk_buf);
+    OrkAssert(size_in_bytes > 0);
+    vk_impl               = std::make_shared<VulkanIndexBuffer>(_contextVK, size_in_bytes);
+    idx_buf._impl.setShared(vk_impl);
   }
-  OrkAssert(false);
-  return nullptr;
+  void* index_memory = nullptr;
+  //////////////////////////////////////////////////////////
+  if (is_static) {
+    OrkAssert(ibasebytes == 0); // TODO change api to not require offset for static buffers
+    index_memory = vk_impl->_vkbuffer->map(0, isizebytes, 0);
+  } else {
+    index_memory = vk_impl->_vkbuffer->map(ibasebytes, isizebytes, 0);
+  }
+  //////////////////////////////////////////////////////////
+  idx_buf._locked = true;
+  OrkAssert(index_memory != nullptr);
+  return index_memory;
 }
+//////////////////////////
 void VkGeometryBufferInterface::UnLockIB(IndexBufferBase& idx_buf) {
-  auto vk_buf = idx_buf._impl.getShared<VulkanIndexBuffer>();
+  auto vk_impl = idx_buf._impl.getShared<VulkanIndexBuffer>();
+  OrkAssert(idx_buf._locked);
+  idx_buf._locked = false;
+  vk_impl->_vkbuffer->unmap();
   // OrkAssert(idx_buf.IsLocked());
-  OrkAssert(false);
 }
-
+//////////////////////////
 const void* VkGeometryBufferInterface::LockIB(const IndexBufferBase& idx_buf, int ibase, int icount) {
-  OrkAssert(false);
-  return nullptr;
+  auto& mutable_idx_buf = const_cast<IndexBufferBase&>(idx_buf);
+  return LockIB(mutable_idx_buf, ibase, icount);
 }
+//////////////////////////
 void VkGeometryBufferInterface::UnLockIB(const IndexBufferBase& idx_buf) {
-  auto vk_buf = idx_buf._impl.getShared<VulkanIndexBuffer>();
-  // OrkAssert(idx_buf.IsLocked());
-  OrkAssert(false);
+  auto& mutable_idx_buf = const_cast<IndexBufferBase&>(idx_buf);
+  UnLockIB(mutable_idx_buf);
 }
 
 void VkGeometryBufferInterface::ReleaseIB(IndexBufferBase& idx_buf) {

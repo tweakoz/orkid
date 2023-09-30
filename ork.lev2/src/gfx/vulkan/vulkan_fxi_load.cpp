@@ -98,6 +98,8 @@ datablock_ptr_t VkFxInterface::_writeIntermediateToDataBlock(shadlang::SHAST::tr
     // TODO - before hoisting cache, implement namespaces..
 
     auto vtx_shaders = SHAST::AstNode::collectNodesOfType<SHAST::VertexShader>(transunit);
+    auto vtx_interfaces = SHAST::AstNode::collectNodesOfType<SHAST::VertexInterface>(transunit);
+    auto frg_interfaces = SHAST::AstNode::collectNodesOfType<SHAST::FragmentInterface>(transunit);
     auto frg_shaders = SHAST::AstNode::collectNodesOfType<SHAST::FragmentShader>(transunit);
     auto cu_shaders  = SHAST::AstNode::collectNodesOfType<SHAST::ComputeShader>(transunit);
     auto techniques  = SHAST::AstNode::collectNodesOfType<SHAST::Technique>(transunit);
@@ -106,7 +108,9 @@ datablock_ptr_t VkFxInterface::_writeIntermediateToDataBlock(shadlang::SHAST::tr
     auto imports     = SHAST::AstNode::collectNodesOfType<SHAST::ImportDirective>(transunit);
 
     size_t num_vtx_shaders = vtx_shaders.size();
+    size_t num_vtx_ifaces = vtx_interfaces.size();
     size_t num_frg_shaders = frg_shaders.size();
+    size_t num_frg_ifaces = frg_interfaces.size();
     size_t num_cu_shaders  = cu_shaders.size();
     size_t num_techniques  = techniques.size();
     size_t num_unisets     = unisets.size();
@@ -114,7 +118,9 @@ datablock_ptr_t VkFxInterface::_writeIntermediateToDataBlock(shadlang::SHAST::tr
     size_t num_imports     = imports.size();
 
     printf("num_vtx_shaders<%zu>\n", num_vtx_shaders);
+    printf("num_vtx_interfaces<%zu>\n", num_vtx_ifaces);
     printf("num_frg_shaders<%zu>\n", num_frg_shaders);
+    printf("num_frg_interfaces<%zu>\n", num_frg_ifaces);
     printf("num_cu_shaders<%zu>\n", num_cu_shaders);
     printf("num_techniques<%zu>\n", num_techniques);
     printf("num_unisets<%zu>\n", num_unisets);
@@ -133,7 +139,9 @@ datablock_ptr_t VkFxInterface::_writeIntermediateToDataBlock(shadlang::SHAST::tr
     //////////////////
     header_stream->addIndexedString("shader_counts", chunkwriter);
     header_stream->addItem<uint64_t>(num_vtx_shaders);
+    header_stream->addItem<uint64_t>(num_vtx_ifaces);
     header_stream->addItem<uint64_t>(num_frg_shaders);
+    header_stream->addItem<uint64_t>(num_frg_ifaces);
     header_stream->addItem<uint64_t>(num_cu_shaders);
     header_stream->addItem<uint64_t>(num_unisets);
     header_stream->addItem<uint64_t>(num_uniblks);
@@ -206,6 +214,51 @@ datablock_ptr_t VkFxInterface::_writeIntermediateToDataBlock(shadlang::SHAST::tr
     write_uniblks_to_stream(SPC->_spirvuniformblks);
 
     ////////////////////////////////////////////////////////////////
+    using namespace shadlang::SHAST;
+    const auto& DATASIZES = shadlang::spirv::SpirvCompilerGlobals::instance()->_data_sizes;
+    for( auto VIF : vtx_interfaces ){
+      auto vif_name = VIF->typedValueForKey<std::string>("object_name").value();
+      auto input_groups  = AstNode::collectNodesOfType<InterfaceInputs>(VIF);
+      auto output_groups = AstNode::collectNodesOfType<InterfaceOutputs>(VIF);
+      for (auto input_group : input_groups) {
+        auto inputs = AstNode::collectNodesOfType<InterfaceInput>(input_group);
+        // printf("  num_inputs<%zu>\n", inputs.size());
+        for (auto input : inputs) {
+          auto tid = input->childAs<TypedIdentifier>(0);
+          OrkAssert(tid);
+          // dumpAstNode(tid);
+          auto dt = tid->typedValueForKey<std::string>("data_type").value();
+          auto id = tid->typedValueForKey<std::string>("identifier_name").value();
+          //_appendText(_interface_group, "layout(location=%zu) in %s %s;", _input_index, dt.c_str(), id.c_str());
+          auto it = DATASIZES.find(dt);
+          OrkAssert(it != DATASIZES.end());
+          //_input_index += it->second;
+        }
+      }
+      /////////////////////////////////////////
+      for (auto output_group : output_groups) {
+        auto outputs = AstNode::collectNodesOfType<InterfaceOutput>(output_group);
+        // printf("  num_outputs<%zu>\n", outputs.size());
+        for (auto output : outputs) {
+          // dumpAstNode(output);
+          auto tid = output->findFirstChildOfType<TypedIdentifier>();
+          OrkAssert(tid);
+          auto dt = tid->typedValueForKey<std::string>("data_type").value();
+          auto id = tid->typedValueForKey<std::string>("identifier_name").value();
+          if (id.find("gl_") != 0) {
+            //_appendText(_interface_group, "layout(location=%zu) out %s %s;", _output_index, dt.c_str(), id.c_str());
+            auto it = DATASIZES.find(dt);
+            if (it == DATASIZES.end()) {
+              printf("dt<%s> has no sizespec\n", dt.c_str());
+              OrkAssert(false);
+            }
+            //o_output_index += it->second;
+          }
+        }
+      }
+    }
+
+  ////////////////////////////////////////////////////////////////
 
     size_t num_shaders_written = 0;
 
@@ -219,11 +272,12 @@ datablock_ptr_t VkFxInterface::_writeIntermediateToDataBlock(shadlang::SHAST::tr
       shader_stream->addItem<size_t>(sh_len);
       shader_stream->addData(sh_data, sh_len);
 
-      shadlang::spirv::InheritanceTracker tracker;
-      SPC->fetchInheritances(tracker,shader_node);
+      shadlang::spirv::InheritanceTracker tracker(transunit);
+      tracker.fetchInheritances(shader_node);
 
-      shader_stream->addItem<size_t>(tracker._inherited_unisets.size());
-      for (auto INHID : tracker._inherited_unisets ) {
+      shader_stream->addItem<size_t>(tracker._inherited_usets.size());
+      for (auto uset : tracker._inherited_usets ) {
+        auto INHID = uset->typedValueForKey<std::string>("object_name").value();
         shader_stream->addIndexedString(INHID, chunkwriter);
         printf("INHID<%s>\n", INHID.c_str());
       }
@@ -317,7 +371,9 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
   auto str_shader_counts = header_input_stream->readIndexedString(chunkreader);
   OrkAssert(str_shader_counts == "shader_counts");
   size_t num_vtx_shaders = header_input_stream->readItem<size_t>();
+  size_t num_vtx_interfaces = header_input_stream->readItem<size_t>();
   size_t num_frg_shaders = header_input_stream->readItem<size_t>();
+  size_t num_frg_interfaces = header_input_stream->readItem<size_t>();
   size_t num_cu_shaders  = header_input_stream->readItem<size_t>();
   size_t num_unisets     = header_input_stream->readItem<size_t>();
   size_t num_uniblks     = header_input_stream->readItem<size_t>();
@@ -667,7 +723,7 @@ vkfxsfile_ptr_t VkFxInterface::_loadShaderFromShaderText(
   basehasher->accumulateString("vkfxshader-1.0");
   basehasher->accumulateString(shadertext);
   uint64_t hashkey    = basehasher->result();
-  datablock_ptr_t vkfx_datablock = DataBlockCache::findDataBlock(hashkey);
+  datablock_ptr_t vkfx_datablock = nullptr; //DataBlockCache::findDataBlock(hashkey);
   vkfxsfile_ptr_t vulkan_shaderfile;
   ////////////////////////////////////////////
   // shader binary already cached

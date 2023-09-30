@@ -171,10 +171,14 @@ VulkanBuffer::VulkanBuffer(vkcontext_rawptr_t ctxVK, size_t length, VkBufferUsag
     : _ctxVK(ctxVK)
     , _length(length)
     , _usage(usage) {
+  OrkAssert(_length > 0);
+  if(_length<1){
+    _length=1;
+  }
 
   VkBufferCreateInfo BUFINFO;
   initializeVkStruct(_cinfo, VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO);
-  _cinfo.size        = length;
+  _cinfo.size        = _length;
   _cinfo.usage       = usage;
   _cinfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
@@ -186,10 +190,12 @@ VulkanBuffer::VulkanBuffer(vkcontext_rawptr_t ctxVK, size_t length, VkBufferUsag
       ctxVK, _vkbuffer, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
   vkBindBufferMemory(ctxVK->_vkdevice, _vkbuffer, *_memory->_vkmem, 0);
 }
+//////////////////////////////////////
 VulkanBuffer::~VulkanBuffer() {
   vkDestroyBuffer(_ctxVK->_vkdevice, _vkbuffer, nullptr);
   _memory = nullptr;
 }
+//////////////////////////////////////
 void VulkanBuffer::copyFromHost(const void* src, size_t length) {
   OrkAssert(length <= _length);
   void* dst = nullptr;
@@ -197,11 +203,15 @@ void VulkanBuffer::copyFromHost(const void* src, size_t length) {
   memcpy(dst, src, _length);
   vkUnmapMemory(_ctxVK->_vkdevice, *_memory->_vkmem);
 }
+//////////////////////////////////////
 void* VulkanBuffer::map(size_t offset, size_t length, VkMemoryMapFlags flags) {
+  if(length<1)
+    length = 1;
   void* dst = nullptr;
   vkMapMemory(_ctxVK->_vkdevice, *_memory->_vkmem, offset, length, flags, &dst);
   return dst;
 }
+//////////////////////////////////////
 void VulkanBuffer::unmap() {
   vkUnmapMemory(_ctxVK->_vkdevice, *_memory->_vkmem);
 }
