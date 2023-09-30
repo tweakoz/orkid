@@ -138,7 +138,8 @@ vertex_strconfig_ptr_t VkGeometryBufferInterface::_instantiateVertexStreamConfig
     case EVtxStreamFormat::V12C4T16: {
       config->addItem("POSITION", "vec3", sizeof(fvec3), 0, VK_FORMAT_R32G32B32_SFLOAT);
       config->addItem("COLOR0", "vec4", sizeof(uint32_t), 12, VK_FORMAT_R8G8B8A8_UNORM);
-      config->addItem("TEXCOORD0", "vec4", sizeof(fvec4), 16, VK_FORMAT_R32G32B32A32_SFLOAT);
+      config->addItem("TEXCOORD0", "vec2", sizeof(fvec2), 16, VK_FORMAT_R32G32_SFLOAT);
+      config->addItem("TEXCOORD1", "vec2", sizeof(fvec2), 24, VK_FORMAT_R32G32_SFLOAT);
       config->_stride = sizeof(SVtxV12C4T16);
       break;
     }
@@ -202,7 +203,12 @@ vkvertexinputconfig_ptr_t VkGeometryBufferInterface::vertexInputState(vkvtxbuf_p
     auto shader_datatype = input->_datatype; // "vec4", "vec3", "vec2", "float", "half4", "half3", "half2", "half"
 
     auto it = vsc->_item_by_semantic.find(semantic);
-    OrkAssert(it != vsc->_item_by_semantic.end());
+    if( it == vsc->_item_by_semantic.end() ){
+      printf( "MISSING: semantic<%s> shader_datatype<%s>\n"
+            , semantic.c_str()
+            , shader_datatype.c_str() );
+      OrkAssert(false);
+    }
 
     auto item = it->second;
 
@@ -224,6 +230,9 @@ vkvertexinputconfig_ptr_t VkGeometryBufferInterface::vertexInputState(vkvtxbuf_p
       }
       else if( shader_datatype == "vec4" and item->_vbuf_datatype == "vec3" ){
         atdesc.format = VK_FORMAT_R32G32B32_SFLOAT;
+      }
+      else if( shader_datatype == "vec2" and item->_vbuf_datatype == "vec4" ){
+        atdesc.format = VK_FORMAT_R32G32_SFLOAT;
       }
       else{
         printf( "MISMATCH: shader_datatype<%s> semantic<%s> item->_vbuf_datatype<%s>\n"

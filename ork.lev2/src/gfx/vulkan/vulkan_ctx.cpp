@@ -237,7 +237,7 @@ void VkContext::_initVulkanCommon() {
   initializeVkStruct(poolInfo, VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO);
   poolInfo.poolSizeCount = poolSizes.size();
   poolInfo.pPoolSizes    = poolSizes.data();
-  poolInfo.maxSets       = 64; // Maximum number of descriptor sets to allocate from this pool
+  poolInfo.maxSets       = 256; // Maximum number of descriptor sets to allocate from this pool
 
   OK = vkCreateDescriptorPool(_vkdevice, &poolInfo, nullptr, &_vkDescriptorPool);
   OrkAssert(OK == VK_SUCCESS);

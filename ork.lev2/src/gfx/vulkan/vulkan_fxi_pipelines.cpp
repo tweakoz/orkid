@@ -38,10 +38,9 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(
   // get pipeline hash from permutations
   ////////////////////////////////////////////////////
 
-  auto check_pb_range = [](int inp, int nbits) -> int {
-    int maxval = (1 << nbits);
+  auto check_pb_range = [](uint64_t inp, int nbits) -> uint64_t {
+    uint64_t maxval = (1 << nbits);
     // printf( "check_pb_range nbits<%d> maxval<%d> inp<%d>\n", nbits, maxval, inp);
-    OrkAssert(inp >= 0);
     OrkAssert(inp < maxval);
     return inp;
   };
@@ -52,15 +51,15 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(
   auto rtg_impl  = rtg->_impl.getShared<VkRtGroupImpl>();
   auto msaa_impl = rtg_impl->_msaaState;
 
-  int rtg_pbits = check_pb_range(rtg_impl->_pipeline_bits, 4);
-  int pc_pbits  = check_pb_range(primclass->_pipeline_bits, 4);
+  uint64_t rtg_pbits = check_pb_range(rtg_impl->_pipeline_bits, 4);
+  uint64_t pc_pbits  = check_pb_range(primclass->_pipeline_bits, 4);
 
   auto shprog  = _currentVKPASS->_vk_program;
 
-  int sh_pbits = _pipelineBitsForShader(shprog);
+  uint64_t sh_pbits = _pipelineBitsForShader(shprog);
   sh_pbits = check_pb_range(sh_pbits, 16);
 
-  int rs_pbits = check_pb_range(vkrstate->_pipeline_bits, 8);
+  uint64_t rs_pbits = check_pb_range(vkrstate->_pipeline_bits, 8);
   auto rpass = _contextVK->_renderpasses.back();
   auto rp_impl = rpass->_impl.getShared<VulkanRenderPass>();
   // hash renderpass ?
@@ -77,6 +76,9 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(
 
   auto it = _pipelines.find(pipeline_hash);
   if (it == _pipelines.end()) { // create pipeline
+
+    printf( "CREATE PIPELINE<%016llx> vb_pbits<%d> rtg_pbits<%zx> pc_pbits<%zx> sh_pbits<%zx> rs_pbits<%zx>\n", //
+            pipeline_hash, vb_pbits, rtg_pbits, pc_pbits, sh_pbits, rs_pbits );
 
     auto VIF       = shprog->_vertexinterface;
     OrkAssert(VIF);
@@ -412,12 +414,13 @@ vkdescriptorset_ptr_t VulkanDescriptorSetCache::fetchDescriptorSetForProgram(vkf
   }
   crc64.finish();
   uint64_t descset_bits = crc64.result();
-
+  //printf( "dscache<%p> descset_bits<%016llx>\n", this, descset_bits );
   auto it = _vkDescriptorSetByHash.find(descset_bits);
 
   vkdescriptorset_ptr_t descset_ptr = nullptr;
   if (it == _vkDescriptorSetByHash.end()) {
     // make new descriptor set
+    static int descset_count = 0;
     descset_ptr                          = std::make_shared<VulkanDescriptorSet>();
     _vkDescriptorSetByHash[descset_bits] = descset_ptr;
 
@@ -427,7 +430,34 @@ vkdescriptorset_ptr_t VulkanDescriptorSetCache::fetchDescriptorSetForProgram(vkf
     DSAI.descriptorSetCount = 1;
     DSAI.pSetLayouts        = &program->_descriptors->_dsetlayout;
 
-    VkResult OK = vkAllocateDescriptorSets(_ctxVK->_vkdevice, &DSAI, &descset_ptr->_vkdescset);
+
+    printf( "ALLOC DESC SET<%d:%p>\n", descset_count, descset_ptr.get() );
+    VkResult OK = vkAllocateDescriptorSets( _ctxVK->_vkdevice, //
+                                            &DSAI, //
+                                            &descset_ptr->_vkdescset);
+
+    descset_count++;
+    switch(OK){
+      case VK_SUCCESS: break;
+      case VK_ERROR_OUT_OF_HOST_MEMORY:
+        printf( "VK_ERROR_OUT_OF_HOST_MEMORY\n" );
+        break;
+      case VK_ERROR_OUT_OF_POOL_MEMORY:
+        printf( "VK_ERROR_OUT_OF_POOL_MEMORY\n" );
+        break;
+      case VK_ERROR_OUT_OF_DEVICE_MEMORY:
+        printf( "VK_ERROR_OUT_OF_DEVICE_MEMORY\n" );
+        break;
+      case VK_ERROR_FRAGMENTED_POOL:
+        printf( "VK_ERROR_FRAGMENTED_POOL\n" );
+        break;
+      case VK_ERROR_TOO_MANY_OBJECTS:
+        printf( "VK_ERROR_TOO_MANY_OBJECTS\n" );
+        break;
+      default:
+        printf( "VK_ERROR_UNKNOWN\n" );
+        break;
+    }
     OrkAssert(VK_SUCCESS == OK);
 
     for (auto it : program->_textures_by_binding) {
@@ -480,6 +510,7 @@ void VkFxShaderProgram::bindDescriptorTexture(fxparam_constptr_t param, const Te
   size_t binding_index                = it->second;
   _textures_by_orkparam[param]        = vk_tex;
   _textures_by_binding[binding_index] = vk_tex;
+  //printf( "binding_index<%zu>\n", binding_index );
 }
 
 ///////////////////////////////////////////////////////////////////////////////

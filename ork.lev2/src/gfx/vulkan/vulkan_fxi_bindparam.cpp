@@ -121,6 +121,8 @@ void VkFxInterface::bindParamBlockBuffer(const FxShaderParamBlock* block, FxShad
 
 void VkFxInterface::BindParamCTex(const FxShaderParam* hpar, const Texture* pTex) {
   auto vk_shprog = _currentVKPASS->_vk_program;
+  //printf( "vk_shprog<%p> bindparam ptex<%p> to param<%p>\n", (void*) vk_shprog.get(), (void*) pTex, (void*) hpar );
+
   vk_shprog->bindDescriptorTexture(hpar, pTex);
 }
 
