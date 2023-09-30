@@ -68,6 +68,7 @@ void ShadLangParser::declareAstNodes() {
   DECLARE_OBJNAME_AST_NODE("technique_name");
   ///////////////////////////////////////////////////////////
   DECLARE_STD_AST_NODE(IDENTIFIER);
+  DECLARE_STD_AST_NODE(COLON);
   DECLARE_STD_AST_NODE(DataType);
   DECLARE_STD_AST_NODE(DataTypeWithUserTypes);
   DECLARE_STD_AST_NODE(MemberRef);
@@ -144,6 +145,7 @@ void ShadLangParser::declareAstNodes() {
   DECLARE_STD_AST_NODE(InterfaceInputs);
   DECLARE_STD_AST_NODE(InterfaceStorages);
   DECLARE_STD_AST_NODE(InterfaceInput);
+//  DECLARE_STD_AST_NODE(InterfaceInputSemantic);
   DECLARE_STD_AST_NODE(InterfaceOutput);
   DECLARE_STD_AST_NODE(InterfaceStorage);
   DECLARE_STD_AST_NODE(InheritList);

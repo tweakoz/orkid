@@ -219,6 +219,11 @@ vkimagecreateinfo_ptr_t makeVKICI(
 
 vksamplercreateinfo_ptr_t makeVKSCI();
 
+struct VulkanVertexInterface;
+struct VulkanVertexInterfaceInput;
+using vkvertexinterfaceinput_ptr_t = std::shared_ptr<VulkanVertexInterfaceInput>;
+using vkvertexinterface_ptr_t = std::shared_ptr<VulkanVertexInterface>;
+
 ///////////////////////////////////////////////////////////////////////////////
 
 struct VkViewportTracker {
@@ -314,6 +319,19 @@ struct VkRasterState {
   static LockedResource<rsmap_t> _global_rasterstate_map;
 };
 
+///////////////////////////////////////////////////////////////////////////
+
+struct VulkanVertexInterfaceInput{
+  std::string _datatype;
+  std::string _identifier;
+  std::string _semantic;
+  size_t _datasize = 0;
+};
+struct VulkanVertexInterface{
+  std::string _name;
+  vkvertexinterface_ptr_t _parent;
+  std::vector<vkvertexinterfaceinput_ptr_t> _inputs;
+};
 ///////////////////////////////////////////////////////////////////////////////
 
 struct VkCommandBufferImpl {
@@ -615,6 +633,7 @@ struct VkFxShaderFile {
   std::unordered_map<std::string, vkfxstek_ptr_t> _vk_techniques;
   std::unordered_map<std::string, vkfxsuniset_ptr_t> _vk_uniformsets;
   std::unordered_map<std::string, vkfxsuniblk_ptr_t> _vk_uniformblks;
+  std::unordered_map<std::string, vkvertexinterface_ptr_t> _vk_vtxinterfaces;
 };
 
 struct VulkanFxShaderObject {

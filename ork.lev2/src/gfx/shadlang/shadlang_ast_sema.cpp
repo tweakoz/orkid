@@ -746,6 +746,21 @@ void _semaResolveSemaFunctionArguments(impl::ShadLangParser* slp, astnode_ptr_t 
   }
 }
 
+void _semaFindInterfaceInputSemantics(impl::ShadLangParser* slp, astnode_ptr_t top) {
+  auto inputs = AstNode::collectNodesOfType<InterfaceInput>(top);
+   printf("  num_inputs<%zu>\n", inputs.size());
+  for (auto input : inputs) {
+    auto tid = input->childAs<TypedIdentifier>(0);
+    OrkAssert(tid);
+    auto colon = input->childAs<COLON>(1);
+    auto semantic = input->childAs<SemaIdentifier>(2);
+    if( colon and semantic ){
+      auto sema_id = semantic->typedValueForKey<std::string>("identifier_name").value();
+      printf( "sema_id<%s>\n", sema_id.c_str() );
+      input->setValueForKey<std::string>("semantic", sema_id);
+    }
+  }
+}
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 template <typename node_t> //
@@ -1087,6 +1102,7 @@ void impl::ShadLangParser::semaAST(astnode_ptr_t top) {
     _semaResolveIdentifierCalls(this, top);
     _semaResolveSemaFunctionArguments(this, top);
     _semaDecorateArrayDeclarations(this, top);
+    _semaFindInterfaceInputSemantics(this, top);
   }
 
   printf("ShadLangParser<%p:%s> semaAST CP-F\n", this, _name.c_str() );

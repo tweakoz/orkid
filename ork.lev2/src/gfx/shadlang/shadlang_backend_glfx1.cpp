@@ -544,7 +544,7 @@ GLFX1Backend::GLFX1Backend() {
   });
   registerAstPostChildCB<TernaryExpression>([=](auto ternary, astnode_ptr_t child) {
     size_t num_children = ternary->_children.size();
-    OrkAssert(num_children == 2);
+    OrkAssert(num_children == 3);
     if( child == ternary->_children[0] ){
       emitContinueLine(" : ");
     }

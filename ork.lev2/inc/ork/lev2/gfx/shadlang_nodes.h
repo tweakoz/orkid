@@ -202,6 +202,7 @@ using miscgroupnode_ptr_t = std::shared_ptr<MiscGroupNode>;
 ///////////////////////////////////////////////////////////
 
 DECLARE_STD_AST_CLASS(AstNode,IDENTIFIER);
+DECLARE_STD_AST_CLASS(AstNode,COLON);
 DECLARE_STD_AST_CLASS_WPTR(AstNode,SemaIdentifier, semaid_ptr_t);
 
 DECLARE_STD_AST_CLASS(AstNode,InheritList);
@@ -212,6 +213,7 @@ DECLARE_STD_AST_CLASS_WPTR(AstNode,Translatable,translatable_ptr_t);
 DECLARE_STD_AST_CLASS(AstNode,DeclArgumentList);
 DECLARE_STD_AST_CLASS(AstNode,InterfaceLayout);
 DECLARE_STD_AST_CLASS(AstNode,InterfaceInput);
+DECLARE_STD_AST_CLASS(AstNode,InterfaceInputSemantic);
 DECLARE_STD_AST_CLASS(AstNode,InterfaceOutput);
 DECLARE_STD_AST_CLASS(AstNode,InterfaceInputs);
 DECLARE_STD_AST_CLASS(AstNode,InterfaceOutputs);

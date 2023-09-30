@@ -23,6 +23,8 @@ template <typename treenode_type> struct Ops {
 
   template <typename T> //
   std::shared_ptr<T> childAs(size_t index) {
+    if (index >= _root->_children.size())
+      return nullptr;
     OrkAssert(index < _root->_children.size());
     auto ch  = _root->_children[index];
     auto ret = std::dynamic_pointer_cast<T>(ch);
