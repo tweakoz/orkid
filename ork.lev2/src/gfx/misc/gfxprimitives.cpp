@@ -1512,12 +1512,12 @@ void GfxPrimitives::RenderQuadAtZ(
   vw.Lock(pTarg, vb, 6);
 
   vw.AddVertex(SVtxV12C4T16(fX1, fY1, fZ, iminU, iminV, 0xffffffff));
-  vw.AddVertex(SVtxV12C4T16(fX2, fY1, fZ, imaxU, iminV, 0xffffffff));
   vw.AddVertex(SVtxV12C4T16(fX2, fY2, fZ, imaxU, imaxV, 0xffffffff));
+  vw.AddVertex(SVtxV12C4T16(fX2, fY1, fZ, imaxU, iminV, 0xffffffff));
 
   vw.AddVertex(SVtxV12C4T16(fX1, fY1, fZ, iminU, iminV, 0xffffffff));
-  vw.AddVertex(SVtxV12C4T16(fX2, fY2, fZ, imaxU, imaxV, 0xffffffff));
   vw.AddVertex(SVtxV12C4T16(fX1, fY2, fZ, iminU, imaxV, 0xffffffff));
+  vw.AddVertex(SVtxV12C4T16(fX2, fY2, fZ, imaxU, imaxV, 0xffffffff));
 
   vw.UnLock(pTarg);
 
