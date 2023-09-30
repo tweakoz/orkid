@@ -297,7 +297,8 @@ datablock_ptr_t VkFxInterface::_writeIntermediateToDataBlock(shadlang::SHAST::tr
 
   size_t num_shaders_written = 0;
 
-  auto write_shader_to_stream = [&](SHAST::astnode_ptr_t shader_node, std::string shader_type) {
+  auto write_shader_to_stream = [&](SHAST::astnode_ptr_t shader_node, //
+                                    std::string shader_type) { //
     auto sh_name  = shader_node->typedValueForKey<std::string>("object_name").value();
     auto sh_data  = (uint8_t*)SPC->_spirv_binary.data();
     size_t sh_len = SPC->_spirv_binary.size() * sizeof(uint32_t);
@@ -310,12 +311,21 @@ datablock_ptr_t VkFxInterface::_writeIntermediateToDataBlock(shadlang::SHAST::tr
     shadlang::spirv::InheritanceTracker tracker(transunit);
     tracker.fetchInheritances(shader_node);
 
+    //////////////////////////////////////////////////////////////////
     shader_stream->addItem<size_t>(tracker._inherited_usets.size());
     for (auto uset : tracker._inherited_usets) {
       auto INHID = uset->typedValueForKey<std::string>("object_name").value();
       shader_stream->addIndexedString(INHID, chunkwriter);
       printf("INHID<%s>\n", INHID.c_str());
     }
+    //////////////////////////////////////////////////////////////////
+    shader_stream->addItem<size_t>(tracker._inherited_ifaces.size());
+    for (auto uset : tracker._inherited_ifaces) {
+      auto INHID = uset->typedValueForKey<std::string>("object_name").value();
+      shader_stream->addIndexedString(INHID, chunkwriter);
+      printf("INHID<%s>\n", INHID.c_str());
+    }
+    //////////////////////////////////////////////////////////////////
 
     num_shaders_written++;
   };
@@ -612,6 +622,20 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
       OrkAssert(refs->_unisets.size() < 2);
     }
     /////////////////////////////////
+    auto num_ifaces = shader_input_stream->readItem<size_t>();
+    if (num_ifaces) {
+      //auto refs                  = std::make_shared<VkFxShaderUniformSetsReference>();
+      //vulkan_shobj->_uniset_refs = refs;
+      for (size_t i = 0; i < num_ifaces; i++) {
+        auto str_iface = shader_input_stream->readIndexedString(chunkreader);
+        //auto it         = vulkan_shaderfile->_vk_uniformsets.find(str_iface);
+        //OrkAssert(it != vulkan_shaderfile->_vk_uniformsets.end());
+        //vkfxsuniset_ptr_t vk_uniset = it->second;
+        //refs->_unisets[str_iface]  = vk_uniset;
+      }
+      //OrkAssert(refs->_unisets.size() < 2);
+    }
+    /////////////////////////////////
     return vulkan_shobj;
   };
 
@@ -831,7 +855,7 @@ vkfxsfile_ptr_t VkFxInterface::_loadShaderFromShaderText(
   basehasher->accumulateString("vkfxshader-1.0");
   basehasher->accumulateString(shadertext);
   uint64_t hashkey               = basehasher->result();
-  datablock_ptr_t vkfx_datablock = DataBlockCache::findDataBlock(hashkey);
+  datablock_ptr_t vkfx_datablock = nullptr; //DataBlockCache::findDataBlock(hashkey);
   vkfxsfile_ptr_t vulkan_shaderfile;
   ////////////////////////////////////////////
   // shader binary already cached
