@@ -40,7 +40,8 @@ void Context::describeX(class_t* clazz) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Context::beginFrame(void) {
+void Context::beginFrame(bool visual) {
+  _is_visual_frame = visual;
   _doBeginFrame();
 }
 

@@ -290,8 +290,10 @@ texture_ptr_t PBRMaterial::filterSpecularEnvMap(texture_ptr_t rawenvmap, Context
       logchan_pbrgen->log("filterenv imip<%d> w<%d> h<%d>", imip, w, h);
       logchan_pbrgen->log("filterenv imip<%d> outgroup<%p> outbuf<%p>", imip, outgroup.get(), outbuffr.get());
 
-      targ->beginFrame();
+      targ->beginFrame(false);
+      
       fbi->PushRtGroup(outgroup.get());
+      
       mtl->begin(tekFilterSpecMap, RCFD);
       ///////////////////////////////////////////////
       float roughness = float(imip) / float(nummips - 1);
@@ -304,9 +306,10 @@ texture_ptr_t PBRMaterial::filterSpecularEnvMap(texture_ptr_t rawenvmap, Context
       dwi->quad2DEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 0, 0));
       ///////////////////////////////////////////////
       mtl->end(RCFD);
-      fbi->PopRtGroup();
+      fbi->PopRtGroup(false);
+       
 
-      fbi->capture(outbuffr.get(), captureb.get());
+     // fbi->capture(outbuffr.get(), captureb.get());
       targ->endFrame();
 
       if (1) {
@@ -423,7 +426,7 @@ texture_ptr_t PBRMaterial::filterDiffuseEnvMap(texture_ptr_t rawenvmap, Context*
       /// logchan_pbrgen->log("filterenv imip<%d> w<%d> h<%d>", imip, w, h);
       // logchan_pbrgen->log("filterenv imip<%d> outgroup<%p> outbuf<%p>", imip, outgroup.get(), outbuffr.get());
 
-      targ->beginFrame();
+      targ->beginFrame(false);
       fbi->PushRtGroup(outgroup.get());
       mtl->begin(tekFilterDiffMap, RCFD);
       ///////////////////////////////////////////////
@@ -434,7 +437,7 @@ texture_ptr_t PBRMaterial::filterDiffuseEnvMap(texture_ptr_t rawenvmap, Context*
       dwi->quad2DEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 0, 0));
       ///////////////////////////////////////////////
       mtl->end(RCFD);
-      fbi->PopRtGroup();
+      fbi->PopRtGroup(false);
 
       fbi->capture(outbuffr.get(), captureb.get());
       targ->endFrame();

@@ -409,9 +409,11 @@ void VkContext::_doBeginFrame() {
     l();
 
   if (not _first_frame) {
-    auto swapchain = _fbi->_swapchain;
-    auto fence     = swapchain->_fence;
-    fence->wait();
+    if(_is_visual_frame){
+      auto swapchain = _fbi->_swapchain;
+      auto fence     = swapchain->_fence;
+      fence->wait();
+    }
   }
 
   ////////////////////////
@@ -438,7 +440,8 @@ void VkContext::_doBeginFrame() {
   _pendingOneShotCommands.clear();
   /////////////////////////////////////////
 
-  _fbi->PushRtGroup(_fbi->_main_rtg.get());
+  if(_is_visual_frame)
+    _fbi->PushRtGroup(_fbi->_main_rtg.get());
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -470,13 +473,15 @@ void VkContext::_doEndFrame() {
   // end main renderpass (and pop main rtg)
   ////////////////////////
 
-  _fbi->PopRtGroup(false);
+  if(_is_visual_frame)
+    _fbi->PopRtGroup(false);
 
   ////////////////////////
   // main_rtg -> presentation layout
   ////////////////////////
 
-  _fbi->_enq_transitionMainRtgToPresent();
+  if(_is_visual_frame)
+    _fbi->_enq_transitionMainRtgToPresent();
 
   ////////////////////////
   // done with primary command buffer for this frame
@@ -493,8 +498,13 @@ void VkContext::_doEndFrame() {
   // submit primary command buffer for this frame
   ///////////////////////////////////////////////////////
 
-  std::vector<VkSemaphore> waitStartRenderSemaphores = {_fbi->_swapChainImageAcquiredSemaphore};
-  std::vector<VkPipelineStageFlags> waitStages       = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+  std::vector<VkSemaphore> waitStartRenderSemaphores;
+  std::vector<VkPipelineStageFlags> waitStages;
+  
+  if(_is_visual_frame){
+    waitStartRenderSemaphores.push_back({_fbi->_swapChainImageAcquiredSemaphore});
+    waitStages.push_back({VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT});
+  }
 
   VkSubmitInfo SI = {};
   initializeVkStruct(SI, VK_STRUCTURE_TYPE_SUBMIT_INFO);
@@ -514,25 +524,27 @@ void VkContext::_doEndFrame() {
   // Present !
   ///////////////////////////////////////////////////////
 
-  std::vector<VkSemaphore> waitPresentSemaphores = {_renderingCompleteSemaphore};
+  if(_is_visual_frame){
+    std::vector<VkSemaphore> waitPresentSemaphores = {_renderingCompleteSemaphore};
 
-  VkPresentInfoKHR PRESI{};
-  initializeVkStruct(PRESI, VK_STRUCTURE_TYPE_PRESENT_INFO_KHR);
-  PRESI.waitSemaphoreCount = waitPresentSemaphores.size();
-  PRESI.pWaitSemaphores    = waitPresentSemaphores.data();
-  PRESI.swapchainCount     = 1;
-  PRESI.pSwapchains        = &swapchain->_vkSwapChain;
-  PRESI.pImageIndices      = &swapchain->_curSwapWriteImage;
+    VkPresentInfoKHR PRESI{};
+    initializeVkStruct(PRESI, VK_STRUCTURE_TYPE_PRESENT_INFO_KHR);
+    PRESI.waitSemaphoreCount = waitPresentSemaphores.size();
+    PRESI.pWaitSemaphores    = waitPresentSemaphores.data();
+    PRESI.swapchainCount     = 1;
+    PRESI.pSwapchains        = &swapchain->_vkSwapChain;
+    PRESI.pImageIndices      = &swapchain->_curSwapWriteImage;
 
-  auto status = vkQueuePresentKHR(_vkqueue_graphics, &PRESI); // Non-Blocking
-  switch (status) {
-    case VK_SUCCESS:
-      break;
-    case VK_SUBOPTIMAL_KHR:
-    case VK_ERROR_OUT_OF_DATE_KHR: {
-      // OrkAssert(false);
-      //  need to recreate swap chain
-      break;
+    auto status = vkQueuePresentKHR(_vkqueue_graphics, &PRESI); // Non-Blocking
+    switch (status) {
+      case VK_SUCCESS:
+        break;
+      case VK_SUBOPTIMAL_KHR:
+      case VK_ERROR_OUT_OF_DATE_KHR: {
+        // OrkAssert(false);
+        //  need to recreate swap chain
+        break;
+      }
     }
   }
 

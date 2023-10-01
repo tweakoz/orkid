@@ -383,7 +383,6 @@ RtGroup* VkFrameBufferInterface::_popRtGroup(bool continue_render) {
   _active_rtgroup = mRtGroupStack.top();
   mRtGroupStack.pop();
 
-  OrkAssert(_active_rtgroup);
   auto rtg_renpass    = _contextVK->_cur_renderpass;
   auto rtg_rpass_impl = rtg_renpass->_impl.getShared<VulkanRenderPass>();
   auto rtg_cmdbuf     = rtg_rpass_impl->_seccmdbuffer;
@@ -420,7 +419,7 @@ RtGroup* VkFrameBufferInterface::_popRtGroup(bool continue_render) {
   // begin new renderpass ?
   /////////////////////////////////////////
 
-  if (continue_render) {
+  if (continue_render and _active_rtgroup) {
     auto rpass_name = FormatString("rpass<%s>.rtg_continue", _active_rtgroup->_name.c_str());
     auto rpass = _contextVK->createRenderPassForRtGroup(_active_rtgroup, false, rpass_name);
     _contextVK->_renderpasses.push_back(rpass);

@@ -205,8 +205,8 @@ public:
 
   //////////////////////////////////////////////
 
-  void beginFrame(void);
-  void endFrame(void);
+  void beginFrame(bool visual=true);
+  void endFrame();
 
 
   commandbuffer_ptr_t beginRecordCommandBuffer(renderpass_ptr_t rpass=nullptr);
@@ -363,7 +363,7 @@ public:
   int miTargetFrame;
   int miDrawLock;
   bool mbPostInitializeContext;
-
+  bool _is_visual_frame = false;
   fvec4 maModColorStack[kiModColorStackMax];
   fvec4 mvModColor;
   PerformanceItem mFramePerfItem;
