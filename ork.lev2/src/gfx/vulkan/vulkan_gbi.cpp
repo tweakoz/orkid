@@ -405,8 +405,6 @@ void VkGeometryBufferInterface::DrawPrimitiveEML(
 
   auto& CB = _contextVK->_cmdbufcur_gfx;
 
-  OrkAssert(false==CB->_parent->_no_draw);
-
   ///////////////////////
   // get primclass (input to pipeline search)
   ///////////////////////

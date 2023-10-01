@@ -84,13 +84,6 @@ bool VkFrameBufferInterface::captureToTexture(const CaptureBuffer& capbuf, Textu
 
 ///////////////////////////////////////////////////////
 
-bool VkFrameBufferInterface::captureAsFormat(const RtBuffer* inpbuf, CaptureBuffer* buffer, EBufferFormat destfmt) {
-  OrkAssert(false);
-    return false;
-}
-
-///////////////////////////////////////////////////////
-
 void VkFrameBufferInterface::GetPixel(const fvec4& rAt, PixelFetchContext& ctx) {
   OrkAssert(false);
 }

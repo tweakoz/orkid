@@ -373,6 +373,7 @@ struct VklRtBufferImpl {
 
   void transitionToRenderTarget(vkcontext_rawptr_t ctxVK, vkcmdbufimpl_ptr_t cb);
   void transitionToTexture(vkcontext_rawptr_t ctxVK, vkcmdbufimpl_ptr_t cb);
+  void transitionToHostRead(vkcontext_rawptr_t ctxVK, vkcmdbufimpl_ptr_t cb);
 
   void setLayout(VkImageLayout layout);
   void _replaceImage(
@@ -486,6 +487,7 @@ struct VulkanBuffer {
   ~VulkanBuffer();
 
   void copyFromHost(const void* src, size_t length);
+  void copyToHost(void* dst, size_t length);
   void* map(size_t offset, size_t length, VkMemoryMapFlags flags);
   void unmap();
 

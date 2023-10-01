@@ -507,5 +507,250 @@ void VklRtBufferImpl::transitionToTexture(vkcontext_rawptr_t ctxVK, vkcmdbufimpl
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+void VklRtBufferImpl::transitionToHostRead(vkcontext_rawptr_t ctxVK, vkcmdbufimpl_ptr_t cb) {
+
+  //OrkAssert(ctxVK->_cur_renderpass);
+
+  if (_imgobj) {
+
+    if (_rtb->_usage != "color"_crcu) {
+      return;
+    }
+
+    auto new_layout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+
+    auto barrier = createImageBarrier(
+        _imgobj->_vkimage,                        // VkImage image
+        _currentLayout, // VkImageLayout oldLayout
+        new_layout, // VkImageLayout newLayout
+        VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,     // VkAccessFlags srcAccessMask
+        VK_ACCESS_TRANSFER_READ_BIT);               // VkAccessFlags dstAccessMask
+
+    barrier->subresourceRange.aspectMask = VkFormatConverter::_instance.aspectForUsage(_rtb->_usage);
+
+    if (1)
+      vkCmdPipelineBarrier(
+          cb->_vkcmdbuf,                                 // command buffer
+          VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, // srcStageMask
+          VK_PIPELINE_STAGE_TRANSFER_BIT,         // dstStageMask
+          VK_DEPENDENCY_BY_REGION_BIT,                   // dependencyFlags
+          0,
+          nullptr, // memoryBarriers
+          0,
+          nullptr, // bufferMemoryBarriers
+          1,
+          barrier.get()); // imageMemoryBarriers
+
+    setLayout(new_layout);
+  }
+}
+
+///////////////////////////////////////////////////////
+
+bool VkFrameBufferInterface::captureAsFormat(const RtBuffer* inpbuf, CaptureBuffer* capbuf, EBufferFormat destfmt) {
+  auto rtbi = inpbuf->_impl.getShared<VklRtBufferImpl>();
+  if (nullptr == capbuf) {
+    OrkAssert(false);
+    return false;
+  }
+  int x = 0;
+  int y = 0;
+  int w = inpbuf->_width;
+  int h = inpbuf->_height;
+
+  if(capbuf->_captureW!=0){
+    x = capbuf->_captureX;
+    y = capbuf->_captureY;
+    w = capbuf->_captureW;
+    h = capbuf->_captureH;
+  }
+
+  rtbi->transitionToHostRead(_contextVK, _contextVK->primary_cb() );
+
+  //printf("captureAsFormat w<%d> h<%d>\n", w, h);
+
+  bool fmtmatch = (capbuf->format() == destfmt);
+  bool sizmatch = (capbuf->width() == w);
+  sizmatch &= (capbuf->height() == h);
+
+  if (not(fmtmatch and sizmatch))
+    capbuf->setFormatAndSize(destfmt, w, h);
+
+
+  auto vkimg = rtbi->_imgobj->_vkimage;
+  auto vkfmt = rtbi->_vkfmt;
+  auto vkimgview = rtbi->_vkimgview;
+
+  VkBufferImageCopy region = {};
+  region.bufferOffset      = 0;
+  region.imageSubresource  = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1};
+  region.imageExtent       = {uint32_t(w), uint32_t(h), 1};
+
+  //GL_ERRORCHECK();
+  static size_t yo       = 0;
+  constexpr float inv256 = 1.0f / 255.0f;
+  switch (destfmt) {
+    case EBufferFormat::NV12: {
+      size_t rgbasize = w * h * 4;
+      if (capbuf->_tempbuffer.size() != rgbasize) {
+        capbuf->_tempbuffer.resize(rgbasize);
+      }
+
+      //glReadPixels(x, y, w, h, GL_RGBA, GL_UNSIGNED_BYTE, capbuf->_tempbuffer.data());
+      //GL_ERRORCHECK();
+      // todo convert RGBA8 to NV12 (on GPU)
+
+      // grab RGBA8 vkimg to staging buffer
+      OrkAssert(vkfmt==VK_FORMAT_R8G8B8A8_UNORM);
+      auto staging_buffer = std::make_shared<VulkanBuffer>(_contextVK, rgbasize, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+      vkCmdCopyImageToBuffer( _contextVK->primary_cb()->_vkcmdbuf, 
+                              vkimg, 
+                              VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 
+                              staging_buffer->_vkbuffer, 
+                              1, 
+                              &region);
+
+
+      staging_buffer->copyToHost(capbuf->_tempbuffer.data(), rgbasize);
+
+      // convert to NV12
+      auto outptr      = (uint8_t*)capbuf->_data;
+      size_t numpixels = w * h;
+      fvec3 avgcol;
+      for (size_t yin = 0; yin < h; yin++) {
+        int yout = (h - 1) - yin;
+        for (size_t x = 0; x < w; x++) {
+          int i_in       = (yin * w) + x;
+          int i_out      = (yout * w) + x;
+          size_t srcbase = i_in * 4;
+          int R          = capbuf->_tempbuffer[srcbase + 0];
+          int G          = capbuf->_tempbuffer[srcbase + 1];
+          int B          = capbuf->_tempbuffer[srcbase + 2];
+          // printf("RGB<%d %d %d>\n", R, G, B);
+          auto rgb = fvec3(R, G, B) * inv256;
+          avgcol += rgb;
+          auto yuv      = rgb.YUV();
+          outptr[i_out] = uint8_t(yuv.x * 255.0f);
+        }
+      }
+      avgcol *= 1.0f / float(numpixels);
+      for (size_t yin = 0; yin < h / 2; yin++) {
+        int yout = ((h / 2) - 1) - yin;
+        for (size_t x = 0; x < w / 2; x++) {
+          size_t ybase    = yin * 2;
+          size_t xbase    = x * 2;
+          size_t srcbase1 = (((ybase + 0) * w) + (xbase + 0)) * 4;
+          size_t srcbase2 = (((ybase + 0) * w) + (xbase + 1)) * 4;
+          size_t srcbase3 = (((ybase + 1) * w) + (xbase + 0)) * 4;
+          size_t srcbase4 = (((ybase + 1) * w) + (xbase + 1)) * 4;
+          int R1          = capbuf->_tempbuffer[srcbase1 + 0];
+          int G1          = capbuf->_tempbuffer[srcbase1 + 1];
+          int B1          = capbuf->_tempbuffer[srcbase1 + 2];
+          int R2          = capbuf->_tempbuffer[srcbase2 + 0];
+          int G2          = capbuf->_tempbuffer[srcbase2 + 1];
+          int B2          = capbuf->_tempbuffer[srcbase2 + 2];
+          int R3          = capbuf->_tempbuffer[srcbase3 + 0];
+          int G3          = capbuf->_tempbuffer[srcbase3 + 1];
+          int B3          = capbuf->_tempbuffer[srcbase3 + 2];
+          int R4          = capbuf->_tempbuffer[srcbase4 + 0];
+          int G4          = capbuf->_tempbuffer[srcbase4 + 1];
+          int B4          = capbuf->_tempbuffer[srcbase4 + 2];
+          auto rgb1       = fvec3(R1, G1, B1) * inv256;
+          auto rgb2       = fvec3(R2, G2, B2) * inv256;
+          auto rgb3       = fvec3(R3, G3, B3) * inv256;
+          auto rgb4       = fvec3(R4, G4, B4) * inv256;
+          auto yuv1       = rgb1.YUV();
+          auto yuv2       = rgb2.YUV();
+          auto yuv3       = rgb3.YUV();
+          auto yuv4       = rgb4.YUV();
+          auto yuv        = (yuv1 + yuv2 + yuv3 + yuv4) * 0.125;
+          yuv += fvec3(0.5, 0.5, 0.5);
+          int u                            = int(yuv.y * 255.0f);
+          int v                            = int(yuv.z * 255.0f);
+          int outindex                     = (yout * (w / 2) + x) * 2;
+          outptr[numpixels + outindex + 0] = u;
+          outptr[numpixels + outindex + 1] = v;
+        }
+      }
+      break;
+    }
+    case EBufferFormat::RGBA8: {
+      //glReadPixels(x, y, w, h, GL_RGBA, GL_UNSIGNED_BYTE, capbuf->_data);
+      OrkAssert(false);
+      break;
+    }
+    case EBufferFormat::RGB8: {
+      OrkAssert(false);
+      //////////////////////////////////////
+      // read RGBA
+      //////////////////////////////////////
+      size_t rgbasize = w * h * 4;
+      if (capbuf->_tempbuffer.size() != rgbasize) {
+        capbuf->_tempbuffer.resize(rgbasize);
+      }
+      //glReadPixels(x, y, w, h, GL_RGBA, GL_UNSIGNED_BYTE, capbuf->_tempbuffer.data());
+      //////////////////////////////////////
+      // discard alpha
+      //////////////////////////////////////
+      auto SRC = (const uint32_t*) capbuf->_tempbuffer.data();
+      auto DST = (uint8_t*) capbuf->_data;
+      for( size_t ipix=0; ipix<(w*h); ipix++ ){
+        int idi = ipix*3;
+        DST[idi++] = (SRC[ipix]&0x00ff0000)>>16;
+        DST[idi++] = (SRC[ipix]&0x0000ff00)>>8;
+        DST[idi++] = (SRC[ipix]&0x000000ff);
+      }
+      //////////////////////////////////////
+      break;
+    }
+    case EBufferFormat::RGBA16F:
+      OrkAssert(false);
+      //glReadPixels(x, y, w, h, GL_RGBA, GL_HALF_FLOAT, capbuf->_data);
+      break;
+    ///////////////////////////////////////////////////////
+    case EBufferFormat::RGBA32F:{
+      OrkAssert(vkfmt==VK_FORMAT_R32G32B32A32_SFLOAT);
+      size_t bufsize = w * h * 16;
+      if (capbuf->_tempbuffer.size() != bufsize) {
+        capbuf->_tempbuffer.resize(bufsize);
+      }
+      auto staging_buffer = std::make_shared<VulkanBuffer>(_contextVK, bufsize, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+      vkCmdCopyImageToBuffer( _contextVK->primary_cb()->_vkcmdbuf, 
+                              vkimg, 
+                              VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 
+                              staging_buffer->_vkbuffer, 
+                              1, 
+                              &region);
+      staging_buffer->copyToHost(capbuf->_tempbuffer.data(), bufsize);
+      capbuf->_impl.setShared<VulkanBuffer>(staging_buffer);
+      break;
+    }
+    ///////////////////////////////////////////////////////
+    case EBufferFormat::R32F:
+      OrkAssert(false);
+      //glReadPixels(x, y, w, h, GL_RED, GL_FLOAT, capbuf->_data);
+      break;
+    case EBufferFormat::R32UI:
+      OrkAssert(false);
+      //glReadPixels(x, y, w, h, GL_RED_INTEGER, GL_UNSIGNED_INT, capbuf->_data);
+      break;
+    case EBufferFormat::RG32F:
+      OrkAssert(false);
+      //glReadPixels(x, y, w, h, GL_RG, GL_FLOAT, capbuf->_data);
+      break;
+    default:
+      OrkAssert(false);
+      break;
+  }
+  //GL_ERRORCHECK();
+
+  //glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  //  glReadBuffer( readbuffer ); // restore read buffer
+  //GL_ERRORCHECK();
+  return true;
+}
+
+///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2::vulkan
 ///////////////////////////////////////////////////////////////////////////////

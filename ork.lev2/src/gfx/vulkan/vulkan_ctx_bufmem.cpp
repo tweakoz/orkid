@@ -204,6 +204,14 @@ void VulkanBuffer::copyFromHost(const void* src, size_t length) {
   vkUnmapMemory(_ctxVK->_vkdevice, *_memory->_vkmem);
 }
 //////////////////////////////////////
+void VulkanBuffer::copyToHost(void* dst, size_t length) {
+  OrkAssert(length <= _length);
+  void* src = nullptr;
+  vkMapMemory(_ctxVK->_vkdevice, *_memory->_vkmem, 0, length, 0, &src);
+  memcpy(dst, src, length);
+  vkUnmapMemory(_ctxVK->_vkdevice, *_memory->_vkmem);
+}
+//////////////////////////////////////
 void* VulkanBuffer::map(size_t offset, size_t length, VkMemoryMapFlags flags) {
   if(length<1)
     length = 1;

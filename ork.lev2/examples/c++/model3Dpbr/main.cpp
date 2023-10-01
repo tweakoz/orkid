@@ -28,7 +28,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/lev2/imgui/imgui.h>
 #include <ork/lev2/imgui/imgui_impl_glfw.h>
-#include <ork/lev2/imgui/imgui_impl_opengl3.h>
+//#include <ork/lev2/imgui/imgui_impl_opengl3.h>
 #include <ork/lev2/imgui/imgui_ged.inl>
 #include <ork/lev2/imgui/imgui_internal.h>
 ///////////////////////////////////////////////////////////////////////////////
@@ -261,7 +261,7 @@ int main(int argc, char** argv, char** envp) {
   bool use_forward = vars["forward"].as<bool>();
   bool use_vr = vars["usevr"].as<bool>();
   //////////////////////////////////////////////////////////
-  init_data->_imgui = true;
+//  init_data->_imgui = true;
   init_data->_application_name = "ork.model3dpbr";
   //////////////////////////////////////////////////////////
   auto ezapp  = OrkEzApp::create(init_data);

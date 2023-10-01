@@ -290,6 +290,7 @@ texture_ptr_t PBRMaterial::filterSpecularEnvMap(texture_ptr_t rawenvmap, Context
       logchan_pbrgen->log("filterenv imip<%d> w<%d> h<%d>", imip, w, h);
       logchan_pbrgen->log("filterenv imip<%d> outgroup<%p> outbuf<%p>", imip, outgroup.get(), outbuffr.get());
 
+      targ->beginFrame();
       fbi->PushRtGroup(outgroup.get());
       mtl->begin(tekFilterSpecMap, RCFD);
       ///////////////////////////////////////////////
@@ -306,6 +307,7 @@ texture_ptr_t PBRMaterial::filterSpecularEnvMap(texture_ptr_t rawenvmap, Context
       fbi->PopRtGroup();
 
       fbi->capture(outbuffr.get(), captureb.get());
+      targ->endFrame();
 
       if (1) {
         auto outpath = file::Path::temp_dir() / FormatString("filteredenv-specmap-mip%d.exr", imip);
