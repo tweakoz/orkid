@@ -2,7 +2,13 @@
 // Uniforms
 ///////////////////////////////////////////////////////////////
 
-uniform_set uset_vtx {
+uniform_set uset_vtxa {
+  mat4 MatM;
+  mat4 MatV;
+  mat4 MatP;
+  mat4 MatMVP;
+}
+uniform_block uset_vtx {
   mat4 MatM;
   mat4 MatV;
   mat4 MatP;

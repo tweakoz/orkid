@@ -751,13 +751,25 @@ void _semaFindInterfaceInputSemantics(impl::ShadLangParser* slp, astnode_ptr_t t
    printf("  num_inputs<%zu>\n", inputs.size());
   for (auto input : inputs) {
     auto tid = input->childAs<TypedIdentifier>(0);
-    OrkAssert(tid);
-    auto colon = input->childAs<COLON>(1);
-    auto semantic = input->childAs<SemaIdentifier>(2);
-    if( colon and semantic ){
-      auto sema_id = semantic->typedValueForKey<std::string>("identifier_name").value();
-      printf( "sema_id<%s>\n", sema_id.c_str() );
-      input->setValueForKey<std::string>("semantic", sema_id);
+    if(tid){
+      auto colon = input->childAs<COLON>(1);
+      auto semantic = input->childAs<SemaIdentifier>(2);
+      if( colon and semantic ){
+        auto sema_id = semantic->typedValueForKey<std::string>("identifier_name").value();
+        printf( "sema_id<%s>\n", sema_id.c_str() );
+        input->setValueForKey<std::string>("semantic", sema_id);
+      }
+    }
+    else { 
+      // try layout(local_size_x = ?, local_size_y = ?, local_size_z = ?); ?
+      auto layout = input->childAs<InterfaceLayout>(0);
+      if(layout){
+        //OrkAssert(false);
+      }
+      else{
+        dumpAstNode(input);
+        OrkAssert(false);
+      }
     }
   }
 }

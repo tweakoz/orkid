@@ -3,9 +3,9 @@
 ///////////////////////////////////////////////////////////////
 fxconfig fxcfg_default {
   glsl_version = "330";
-  import "particle_common.is";
-  import "particle_geoshader.i2";
-  import "particle_comshader.i2";
+  import "orkshader://particle_common.i2";
+  //import "orkshader://particle_geoshader.i2";
+  import "orkshader://particle_comshader.i2";
 }
 ///////////////////////////////////////////////////////////////
 // Vtx/Frg only based techniques

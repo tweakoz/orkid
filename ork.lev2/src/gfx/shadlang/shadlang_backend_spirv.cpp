@@ -103,6 +103,8 @@ SpirvCompilerGlobals::SpirvCompilerGlobals(){
 
   if (_vulkan) {
     _id_renames["ofx_instanceID"] = "gl_InstanceIndex";
+    _id_renames["gl_VertexID"] = "gl_VertexIndex";
+
   } else {
     _id_renames["ofx_depth"]      = "gl_FragDepth";
     _id_renames["ofx_instanceID"] = "gl_InstanceID";
