@@ -291,5 +291,8 @@ enum struct EVtxStreamFormat : crc_enum_t {
 
   CrcEnum(NONE)
 };
+
+std::string EVtxStreamFormatToName(EVtxStreamFormat fmt);
+
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2

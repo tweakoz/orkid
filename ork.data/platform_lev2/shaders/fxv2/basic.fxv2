@@ -54,7 +54,7 @@ vertex_interface iface_vwire : ub_vtx_min {
     vec3 normal : NORMAL;
     vec4 vtxcolor : COLOR0;
     vec2 uv0 : TEXCOORD0;
-    vec3 bary : BINORMAL;
+    vec3 bary : BINORMAL0;
   }
   outputs {
     vec4 frg_clr;

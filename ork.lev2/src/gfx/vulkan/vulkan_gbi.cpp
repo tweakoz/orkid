@@ -204,9 +204,13 @@ vkvertexinputconfig_ptr_t VkGeometryBufferInterface::vertexInputState(vkvtxbuf_p
 
     auto it = vsc->_item_by_semantic.find(semantic);
     if( it == vsc->_item_by_semantic.end() ){
-      printf( "MISSING: semantic<%s> shader_datatype<%s>\n"
+
+      auto vbformatstr = EVtxStreamFormatToName(vb_format);
+      printf( "MISSING: vif<%s> semantic<%s> shader_datatype<%s> vbfmt<%s>\n"
+            , vif->_name.c_str()
             , semantic.c_str()
-            , shader_datatype.c_str() );
+            , shader_datatype.c_str()
+            , vbformatstr.c_str() );
       OrkAssert(false);
     }
 

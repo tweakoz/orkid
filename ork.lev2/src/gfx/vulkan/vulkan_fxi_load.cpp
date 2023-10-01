@@ -688,7 +688,7 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
     size_t num_passes = tecniq_input_stream->readItem<size_t>();
 
     auto ork_tek = new FxShaderTechnique;
-    ork_tek->_impl.setShared<VkFxShaderTechnique>(vk_tek);
+    ork_tek->_impl.set<VkFxShaderTechnique*>(vk_tek.get());
     ork_tek->_techniqueName               = str_tek_name;
     ork_tek->_shader                      = ork_shader;
     ork_shader->_techniques[str_tek_name] = ork_tek;

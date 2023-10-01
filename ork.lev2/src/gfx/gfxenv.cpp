@@ -166,6 +166,49 @@ std::string EBufferFormatToName(EBufferFormat fmt) {
   return rval;
 }
 
+std::string EVtxStreamFormatToName(EVtxStreamFormat fmt){
+  std::string rval;
+  switch (fmt) {
+    case EVtxStreamFormat::V12:
+      rval = "V12";
+      break;
+    case EVtxStreamFormat::V12C4T16:
+      rval = "V12C4T16";
+      break;
+    case EVtxStreamFormat::V12N6C2T4:
+      rval = "V12N6C2T4";
+      break;
+    case EVtxStreamFormat::V12N6I1T4:
+      rval = "V12N6I1T4";
+      break;
+    case EVtxStreamFormat::V12I4N12T8:
+      rval = "V12I4N12T8";
+      break;
+    case EVtxStreamFormat::V12N12T8I4W4:
+      rval = "V12N12T8I4W4";
+      break;
+    case EVtxStreamFormat::V12N12B12T8I4W4:
+      rval = "V12N12B12T8I4W4";
+      break;
+    case EVtxStreamFormat::V12N12B12T8C4:
+      rval = "V12N12B12T8C4";
+      break;
+    case EVtxStreamFormat::V12N12B12T16:
+      rval = "V12N12B12T16";
+      break;
+    case EVtxStreamFormat::V12N12T16C4:
+      rval = "V12N12T16C4";
+      break;
+    case EVtxStreamFormat::MODELERRIGID:
+      rval = "MODELERRIGID";
+      break;
+    default:
+      OrkAssert(false);
+      break;
+  }
+  return rval;
+}
+
 extern std::atomic<int> __FIND_IT;
 int G_MSAASAMPLES = 4;
 } // namespace ork::lev2
