@@ -278,7 +278,7 @@ texture_ptr_t PBRMaterial::filterSpecularEnvMap(texture_ptr_t rawenvmap, Context
     numpix = w * h;
     while ( (w>=4) and (h>=4) ) {
 
-      auto outgroup = std::make_shared<RtGroup>(targ, w, h, MsaaSamples::MSAA_1X);
+      auto outgroup = std::make_shared<RtGroup>(targ, w, h, MsaaSamples::MSAA_1X,false);
       auto outbuffr = outgroup->createRenderTarget(EBufferFormat::RGBA32F);
       auto captureb = std::make_shared<CaptureBuffer>();
 
@@ -309,7 +309,7 @@ texture_ptr_t PBRMaterial::filterSpecularEnvMap(texture_ptr_t rawenvmap, Context
       fbi->PopRtGroup(false);
        
 
-     // fbi->capture(outbuffr.get(), captureb.get());
+      fbi->capture(outbuffr.get(), captureb.get());
       targ->endFrame();
 
       if (1) {
@@ -413,7 +413,7 @@ texture_ptr_t PBRMaterial::filterDiffuseEnvMap(texture_ptr_t rawenvmap, Context*
     CompressedImageMipChain::miplevels_t compressed_levels;
     while (numpix != 0) {
 
-      auto outgroup        = std::make_shared<RtGroup>(targ, w, h, MsaaSamples::MSAA_1X);
+      auto outgroup        = std::make_shared<RtGroup>(targ, w, h, MsaaSamples::MSAA_1X,false);
       auto outbuffr        = outgroup->createRenderTarget(EBufferFormat::RGBA32F);
       auto captureb        = std::make_shared<CaptureBuffer>();
       outgroup->_autoclear = true;

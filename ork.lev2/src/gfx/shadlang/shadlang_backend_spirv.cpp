@@ -14,6 +14,7 @@ using namespace SHAST;
 SpirvCompilerGlobals::SpirvCompilerGlobals(){
   bool _vulkan = true;
   _data_sizes["int"]   = 1;
+  _data_sizes["uint"]  = 1;
   _data_sizes["float"] = 1;
   _data_sizes["vec2"]  = 1;
   _data_sizes["vec3"]  = 1;

@@ -830,7 +830,11 @@ vkswapchaincaps_ptr_t VkContext::_swapChainCapsForSurface(VkSurfaceKHR surface) 
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkContext::_doResizeMainSurface(int iw, int ih) {
-  scheduleOnBeginFrame([this, iw, ih]() { _fbi->_main_rtg->Resize(iw, ih); });
+  scheduleOnBeginFrame([this, iw, ih]() { 
+    if(_fbi->_main_rtg){
+      _fbi->_main_rtg->Resize(iw, ih);
+    }
+  });
 }
 
 
