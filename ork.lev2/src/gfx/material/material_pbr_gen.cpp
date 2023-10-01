@@ -48,13 +48,13 @@ static FxShaderParamBuffer* _getPointLightDataBuffer(Context* context) {
 
   _buffer     = context->FXI()->createParamBuffer(65536);
   auto mapped = context->FXI()->mapParamBuffer(_buffer);
-  // size_t base  = 0;
-  // for (int i = 0; i < KMAXLIGHTSPERCHUNK; i++)
-  // mapped->ref<fvec3>(base + i * sizeof(fvec4)) = fvec3(0, 0, 0);
-  // base += KMAXLIGHTSPERCHUNK * sizeof(fvec4);
-  // for (int i = 0; i < KMAXLIGHTSPERCHUNK; i++)
-  // mapped->ref<fvec4>(base + i * sizeof(fvec4)) = fvec4();
-  mapped->unmap();
+  size_t base  = 0;
+  //for (int i = 0; i < KMAXLIGHTSPERCHUNK; i++)
+    //mapped->ref<fvec3>(base + i * sizeof(fvec4)) = fvec3(0, 0, 0);
+  //base += KMAXLIGHTSPERCHUNK * sizeof(fvec4);
+  //for (int i = 0; i < KMAXLIGHTSPERCHUNK; i++)
+    //mapped->ref<fvec4>(base + i * sizeof(fvec4)) = fvec4();
+  context->FXI()->unmapParamBuffer(mapped);
 
   lev2::GfxEnv::releaseLock(LOCK);
   return _buffer;
@@ -76,7 +76,7 @@ static FxShaderParamBuffer* _getBoneDataBuffer(Context* context) {
     context->makeCurrentContext();
     _buffer     = context->FXI()->createParamBuffer(65536);
     auto mapped = context->FXI()->mapParamBuffer(_buffer);
-    mapped->unmap();
+    context->FXI()->unmapParamBuffer(mapped);
   }
   lev2::GfxEnv::releaseLock(LOCK);
   return _buffer;

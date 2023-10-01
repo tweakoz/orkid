@@ -47,7 +47,7 @@ void SimpleLightProcessor::_gpuInit(lev2::Context* target) {
     base += KMAXLIGHTSPERCHUNK * sizeof(fvec4);
     for (int i = 0; i < KMAXLIGHTSPERCHUNK; i++)
       mapped->ref<fvec4>(base + i * sizeof(fvec4)) = fvec4();
-    mapped->unmap();
+    target->FXI()->unmapParamBuffer(mapped);
   }
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -100,7 +100,7 @@ void SimpleLightProcessor::_updatePointLightUBOparams(Context* ctx, const pointl
     offset_mtx2 += sizeof(fmtx4);
     offset_rad += sizeof(float);
   }
-  FXI->unmapParamBuffer(mapping.get());
+  FXI->unmapParamBuffer(mapping);
   FXI->bindParamBlockBuffer(_deferredContext._lightblock, _lightbuffer);
   _deferredContext._lightingmtl->bindParamFloat(_deferredContext._parDepthFogDistance, 1.0f / _deferredContext._depthFogDistance);
   _deferredContext._lightingmtl->bindParamFloat(_deferredContext._parDepthFogPower, _deferredContext._depthFogPower);
@@ -131,7 +131,7 @@ void SimpleLightProcessor::_updateSpotLightUBOparams(Context* ctx, const spotlig
     offset_mtx2 += sizeof(fmtx4);
     offset_rad += sizeof(float);
   }
-  FXI->unmapParamBuffer(mapping.get());
+  FXI->unmapParamBuffer(mapping);
   FXI->bindParamBlockBuffer(_deferredContext._lightblock, _lightbuffer);
   _deferredContext._lightingmtl->bindParamFloat(_deferredContext._parDepthFogDistance, 1.0f / _deferredContext._depthFogDistance);
   _deferredContext._lightingmtl->bindParamFloat(_deferredContext._parDepthFogPower, _deferredContext._depthFogPower);
@@ -335,7 +335,7 @@ void SimpleLightProcessor::_renderShadowedTexturedSpotLights(
       mapping->ref<float>(offset_rad)  = light->GetRange();
       mapping->ref<fmtx4>(offset_mtx)  = light->worldMatrix();
       mapping->ref<fmtx4>(offset_mtx2) = light->shadowMatrix();
-      FXI->unmapParamBuffer(mapping.get());
+      FXI->unmapParamBuffer(mapping);
       FXI->bindParamBlockBuffer(_deferredContext._lightblock, _lightbuffer);
       lightmtl->bindParamCTex(_deferredContext._parMapShadowDepth, shadowtex);
       fvec4 shadowp;

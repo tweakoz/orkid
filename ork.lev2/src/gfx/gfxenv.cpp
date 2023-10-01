@@ -126,8 +126,14 @@ std::string EBufferFormatToName(EBufferFormat fmt) {
     case EBufferFormat::RGBA16F:
       rval = "RGBA16F";
       break;
+    case EBufferFormat::RGBA16UI:
+      rval = "RGBA16UI";
+      break;
     case EBufferFormat::RGBA32F:
       rval = "RGBA32F";
+      break;
+    case EBufferFormat::RGBA32UI:
+      rval = "RGBA32UI";
       break;
     case EBufferFormat::YUV420P:
       rval = "YUV420P";

@@ -90,7 +90,8 @@ void SpirvCompiler::_beginShader(shader_ptr_t shader) {
   InheritanceTracker tracker(_transu);
   _binding_id = 0;
   ////////////////////////////////////////////////
-  tracker._onInheritLibrary = [=](std::string INHID, libblock_ptr_t lib_block) { //
+  tracker._onInheritLibrary = [&](std::string INHID, libblock_ptr_t lib_block) { //
+    printf( "INHERIT LIB<%s> depth<%zu>\n", INHID.c_str(), tracker._stack_depth );
     _inheritLibrary(lib_block);
   };
   ////////////////////////////////////////////////

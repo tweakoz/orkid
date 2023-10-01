@@ -135,6 +135,8 @@ void DeferredContext::gpuInit(Context* target) {
     _parDepthFogDistance    = _lightingmtl->param("DepthFogDistance");
     _parDepthFogPower       = _lightingmtl->param("DepthFogPower");
     _parShadowParams        = _lightingmtl->param("ShadowParams");
+
+    OrkAssert(_parDepthFogDistance);
     //////////////////////////////////////////////////////////////
     _rtgs_gbuffer = std::make_shared<RtgSet>(target,MsaaSamples::MSAA_1X, true);
     _rtgs_gbuffer->addBuffer("DeferredGbuffer", EBufferFormat::RGBA32UI);
@@ -207,7 +209,7 @@ void DeferredContext::renderGbuffer(RenderCompositingNode* node, CompositorDrawD
   ///////////////////////////////////////////////////////////////////////////
   FBI->PushRtGroup(rtg_gbuffer.get());
   FBI->SetAutoClear(false); // explicit clear
-  targ->beginFrame();
+  //targ->beginFrame(false);
   ///////////////////////////////////////////////////////////////////////////
   const auto TOPCPD  = CIMPL->topCPD();
   auto CPD           = TOPCPD;
@@ -243,7 +245,7 @@ void DeferredContext::renderGbuffer(RenderCompositingNode* node, CompositorDrawD
     irenderer->resetQueue();
   }
   /////////////////////////////////////////////////////////////////////////////////////////
-  targ->endFrame();
+  //targ->endFrame();
   FBI->PopRtGroup();
 }
 

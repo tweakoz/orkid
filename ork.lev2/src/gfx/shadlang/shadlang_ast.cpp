@@ -225,6 +225,7 @@ void InheritanceTracker::_processNode(astnode_ptr_t node) {
 /////////////////////////////////////////////////////////////////////////////////////////////////
 void InheritanceTracker::fetchInheritances(astnode_ptr_t parent_node) {
 
+  _stack_depth++;
   for (auto c : parent_node->_children) {
     //////////////////////////////////////////////////////////////////////
     if (auto as_lib = std::dynamic_pointer_cast<SemaInheritLibrary>(c)) {
@@ -291,6 +292,7 @@ void InheritanceTracker::fetchInheritances(astnode_ptr_t parent_node) {
       _processNode(as_ext); // non-recursive
     }
   }
+  _stack_depth--;
 }
 
 

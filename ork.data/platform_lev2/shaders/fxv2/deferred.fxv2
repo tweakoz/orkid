@@ -857,8 +857,9 @@ fragment_shader ps_spotdecal_textured : iface_f2uv
   GBufData gbd = decodeGBUF(wpd);
   vec4 oc = spotdecaling_textured_simple(wpd,gbd);
   out_clr = vec4(oc.xyz,1);
-  if( oc.w < 0.5)
+  if( oc.w < 0.5){
     discard;
+  }
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_spotdecal_textured_stereo : iface_f2uv 

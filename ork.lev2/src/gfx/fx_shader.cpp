@@ -52,9 +52,6 @@ FxShaderParamBufferMapping::FxShaderParamBufferMapping() {
 FxShaderParamBufferMapping::~FxShaderParamBufferMapping() {
   assert(_mappedaddr == nullptr);
 }
-void FxShaderParamBufferMapping::unmap() {
-  _fxi->unmapParamBuffer(this);
-}
 
 ///////////////////////////////////////////////////////////////////////////////
 

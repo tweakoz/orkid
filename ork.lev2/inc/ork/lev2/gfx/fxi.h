@@ -73,7 +73,7 @@ public:
   virtual parambuffermappingptr_t mapParamBuffer(FxShaderParamBuffer* b, size_t base = 0, size_t length = 0) {
     return nullptr;
   }
-  virtual void unmapParamBuffer(FxShaderParamBufferMapping* mapping) {
+  virtual void unmapParamBuffer(parambuffermappingptr_t mapping) {
   }
   virtual void bindParamBlockBuffer(const FxShaderParamBlock* block, FxShaderParamBuffer* buffer) {
   }

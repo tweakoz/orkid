@@ -69,7 +69,7 @@ struct NVMSIMPL {
       base += KMAXLIGHTSPERCHUNK * sizeof(fvec4);
       for (int i = 0; i < KMAXLIGHTSPERCHUNK; i++)
         mapped->ref<fvec4>(base + i * sizeof(fvec4)) = fvec4();
-      mapped->unmap();
+      target->FXI()->unmapParamBuffer(mapped);
 
       _lightprojectshader = _context._lightingmtl->computeShader("compute_projectlights");
       _lightcollectshader = _context._lightingmtl->computeShader("compute_collectlights");
@@ -226,7 +226,7 @@ struct NVMSIMPL {
       /////////////////////////////////////
       // chunk ready, fire it off..
       /////////////////////////////////////
-      FXI->unmapParamBuffer(mapping.get());
+      FXI->unmapParamBuffer(mapping);
       //////////////////////////////////////////////////
       // set number of lights for tile
       //////////////////////////////////////////////////

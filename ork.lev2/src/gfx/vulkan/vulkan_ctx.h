@@ -1066,7 +1066,7 @@ struct VkFxInterface final : public FxInterface {
   // ubo
   FxShaderParamBuffer* createParamBuffer(size_t length) final;
   parambuffermappingptr_t mapParamBuffer(FxShaderParamBuffer* b, size_t base, size_t length) final;
-  void unmapParamBuffer(FxShaderParamBufferMapping* mapping) final;
+  void unmapParamBuffer(parambuffermappingptr_t mapping) final;
   void bindParamBlockBuffer(const FxShaderParamBlock* block, FxShaderParamBuffer* buffer) final;
 
   void _doPushRasterState(rasterstate_ptr_t rs) final;

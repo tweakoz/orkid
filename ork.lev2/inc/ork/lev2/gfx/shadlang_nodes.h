@@ -399,6 +399,7 @@ struct InheritanceTracker{
   std::vector<astnode_ptr_t> _inherited_blks;
   std::vector<astnode_ptr_t> _inherited_ifaces;
   std::vector<std::string> _inherited_exts;
+  size_t _stack_depth = 0;
 };
 
 } // namespace ork::lev2::shadlang::SHAST

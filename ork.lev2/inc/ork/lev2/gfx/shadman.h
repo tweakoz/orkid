@@ -94,7 +94,6 @@ struct FxShaderParamBuffer {
 struct FxShaderParamBufferMapping {
   FxShaderParamBufferMapping();
   ~FxShaderParamBufferMapping();
-  void unmap();
   FxShaderParamBuffer* _buffer = nullptr;
   FxInterface* _fxi            = nullptr;
   size_t _offset               = 0;

@@ -380,7 +380,7 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu,con
               index++;
             }
 
-            pl_mapped->unmap();
+            FXI->unmapParamBuffer(pl_mapped);
 
             if(mtl->_parUnTexPointLightsCount)
               FXI->BindParamInt(mtl->_parUnTexPointLightsCount, num_untextured_pointlights);
@@ -1056,7 +1056,7 @@ void PbrMatrixBlockApplicator::ApplyToTarget(Context* context) // virtual
     //Matrices[i].dump("bonemtx");
   }
 
-  bones_mapped->unmap();
+  fxi->unmapParamBuffer(bones_mapped);
 
   if(_pbrmaterial->_parBoneBlock){
     fxi->bindParamBlockBuffer(_pbrmaterial->_parBoneBlock, bones_buffer);

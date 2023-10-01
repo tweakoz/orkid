@@ -84,7 +84,7 @@ CastExpression <| sel {
 }|>
 
 ParensExpression <|[
-    [ L_PAREN Expression R_PAREN ]
+    [ L_PAREN opt{Expression} R_PAREN ]
 ]|>
 
 PostfixExpression <|[
