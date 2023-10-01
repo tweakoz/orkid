@@ -139,8 +139,8 @@ void VklRtBufferImpl::_replaceImage(
     VkImageView new_view, //
     VkImage new_img) {    //
 
-  auto old_img  = _imgobj->_vkimage;
-  auto old_view = _vkimgview;
+  //auto old_img  = _imgobj->_vkimage;
+  //auto old_view = _vkimgview;
 
   ////////////////////
   // delete old image

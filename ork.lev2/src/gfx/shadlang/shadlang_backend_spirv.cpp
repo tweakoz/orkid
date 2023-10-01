@@ -11,29 +11,95 @@
 namespace ork::lev2::shadlang::spirv {
 using namespace SHAST;
 /////////////////////////////////////////////////////////////////////////////////////////////////
+struct LayoutStandard430 { // layout by glsl standard 430
+    //////////////////////////////////////////////
+    LayoutStandard430()
+        : _cursor(0) {
+    }
+    void incrementDatatype(const std::string& dtname, size_t array_len = 1) {
+        auto& block_sizes = SpirvCompilerGlobals::instance()->_block_data_sizes;
+        auto it = block_sizes.find(dtname);
+        if( it == block_sizes.end() ){
+          printf( "dtname<%s> not found in block_sizes\n", dtname.c_str() );
+          OrkAssert(false);
+        }
+        size_t item_size = it->second;
+
+        // Handle alignment
+        if (dtname == "vec3" || dtname == "ivec3" || dtname == "uvec3") {
+            item_size = 16; // Align to 16 bytes
+        } else if (dtname == "mat3" || dtname == "imat3" || dtname == "umat3") {
+            item_size = 48; // 3 vec3s each aligned to 16 bytes
+        }
+
+        // Handle arrays
+        if (array_len > 0) {
+            item_size *= array_len;
+
+            // Arrays are aligned to the size of one element
+            auto it = block_sizes.find(dtname);
+            OrkAssert(it != block_sizes.end());
+            size_t alignment = it->second;
+            if (_cursor % alignment != 0) {
+                _cursor += alignment - (_cursor % alignment);
+            }
+        }
+
+        _cursor += item_size;
+    }
+    //////////////////////////////////////////////
+    size_t cursor() const {
+        return _cursor;
+    }
+    //////////////////////////////////////////////
+    std::size_t _cursor;
+};
+/////////////////////////////////////////////////////////////////////////////////////////////////
 SpirvCompilerGlobals::SpirvCompilerGlobals(){
   bool _vulkan = true;
-  _data_sizes["int"]   = 1;
-  _data_sizes["uint"]  = 1;
-  _data_sizes["float"] = 1;
-  _data_sizes["vec2"]  = 1;
-  _data_sizes["vec3"]  = 1;
-  _data_sizes["vec4"]  = 1;
-  _data_sizes["mat2"]  = 2;
-  _data_sizes["mat3"]  = 3;
-  _data_sizes["mat4"]  = 4;
-  _data_sizes["ivec2"] = 1;
-  _data_sizes["ivec3"] = 1;
-  _data_sizes["ivec4"] = 1;
-  _data_sizes["imat2"] = 2;
-  _data_sizes["imat3"] = 3;
-  _data_sizes["imat4"] = 4;
-  _data_sizes["uvec2"] = 1;
-  _data_sizes["uvec3"] = 1;
-  _data_sizes["uvec4"] = 1;
-  _data_sizes["umat2"] = 2;
-  _data_sizes["umat3"] = 3;
-  _data_sizes["umat4"] = 4;
+  _io_data_sizes["int"]   = 1;
+  _io_data_sizes["uint"]  = 1;
+  _io_data_sizes["float"] = 1;
+  _io_data_sizes["vec2"]  = 1;
+  _io_data_sizes["vec3"]  = 1;
+  _io_data_sizes["vec4"]  = 1;
+  _io_data_sizes["mat2"]  = 2;
+  _io_data_sizes["mat3"]  = 3;
+  _io_data_sizes["mat4"]  = 4;
+  _io_data_sizes["ivec2"] = 1;
+  _io_data_sizes["ivec3"] = 1;
+  _io_data_sizes["ivec4"] = 1;
+  _io_data_sizes["imat2"] = 2;
+  _io_data_sizes["imat3"] = 3;
+  _io_data_sizes["imat4"] = 4;
+  _io_data_sizes["uvec2"] = 1;
+  _io_data_sizes["uvec3"] = 1;
+  _io_data_sizes["uvec4"] = 1;
+  _io_data_sizes["umat2"] = 2;
+  _io_data_sizes["umat3"] = 3;
+  _io_data_sizes["umat4"] = 4;
+
+  _block_data_sizes["int"]   = 4;
+  _block_data_sizes["uint"]  = 4;
+  _block_data_sizes["float"] = 4;
+  _block_data_sizes["vec2"]  = 8;
+  _block_data_sizes["vec3"]  = 12; // Note: Due to alignment, it will take up 16 bytes in a buffer!
+  _block_data_sizes["vec4"]  = 16;
+  _block_data_sizes["mat2"]  = 16; // 2 vec2s
+  _block_data_sizes["mat3"]  = 36; // 3 vec3s, but due to alignment, it will take up more space!
+  _block_data_sizes["mat4"]  = 64; // 4 vec4s
+  _block_data_sizes["ivec2"] = 8;
+  _block_data_sizes["ivec3"] = 12; // Same alignment note as vec3
+  _block_data_sizes["ivec4"] = 16;
+  _block_data_sizes["imat2"] = 16;
+  _block_data_sizes["imat3"] = 36;
+  _block_data_sizes["imat4"] = 64;
+  _block_data_sizes["uvec2"] = 8;
+  _block_data_sizes["uvec3"] = 12;
+  _block_data_sizes["uvec4"] = 16;
+  _block_data_sizes["umat2"] = 16;
+  _block_data_sizes["umat3"] = 36;
+  _block_data_sizes["umat4"] = 64;
 
   if (_vulkan) {
     _id_renames["ofx_instanceID"] = "gl_InstanceIndex";
@@ -175,6 +241,7 @@ void SpirvCompiler::_processGlobalRenames() {
 /////////////////////////////////////////////////////////////////////////////////////////////////
 void SpirvCompiler::_convertUniformSets() {
   auto ast_unisets = SHAST::AstNode::collectNodesOfType<SHAST::UniformSet>(_transu);
+  //const auto& DATASIZES = SpirvCompilerGlobals::instance()->_data_sizes;
   for (auto ast_uniset : ast_unisets) {
     auto decls = SHAST::AstNode::collectNodesOfType<SHAST::DataDeclarationBase>(ast_uniset);
     //////////////////////////////////////
@@ -183,6 +250,7 @@ void SpirvCompiler::_convertUniformSets() {
     _spirvuniformsets[uni_name] = uniset;
     uniset->_name               = uni_name;
     //////////////////////////////////////
+    LayoutStandard430 layout;
     for (auto d : decls) {
       auto tid = d->childAs<SHAST::TypedIdentifier>(0);
       OrkAssert(tid);
@@ -200,14 +268,24 @@ void SpirvCompiler::_convertUniformSets() {
         item->_identifier          = id;
         uniset->_items_by_name[id] = item;
         uniset->_items_by_order.push_back(item);
+        item->_offset = layout.cursor();
 
         if (auto as_array = std::dynamic_pointer_cast<ArrayDeclaration>(d)) {
           auto len_node       = as_array->childAs<SHAST::SemaIntegerLiteral>(1);
           item->_is_array     = true;
           auto ary_len_str    = len_node->typedValueForKey<std::string>("literal_value").value();
           item->_array_length = atoi(ary_len_str.c_str());
-          // dumpAstNode(as_array);
+          
+          layout.incrementDatatype(dt, item->_array_length);
+          //offset += item_size*item->_array_length;
         }
+        else{
+          layout.incrementDatatype(dt, 0);
+        }
+      }
+      if(layout.cursor()>256){
+        printf( "uniset<%s> pushconstant overflow length<%zu>\n", uni_name.c_str(), layout.cursor() );
+        OrkAssert(false);
       }
     }
     //////////////////////////////////////
@@ -224,13 +302,25 @@ void SpirvCompiler::_convertUniformBlocks() {
     _spirvuniformblks[uni_name] = uniblk;
     uniblk->_name               = uni_name;
     //////////////////////////////////////
+    LayoutStandard430 layout;
+    //////////////////////////////////////
     for (auto d : decls) {
       auto tid = d->childAs<SHAST::TypedIdentifier>(0);
       OrkAssert(tid);
       auto dt                    = tid->typedValueForKey<std::string>("data_type").value();
+
       auto id                    = tid->typedValueForKey<std::string>("identifier_name").value();
+
+      auto it = dt.find("sampler");
+      if( it != std::string::npos ){
+        printf( "sampler<%s:%s> in uniform block<%s>\n", dt.c_str(), id.c_str(), uni_name.c_str() );
+        OrkAssert(false);
+      }
+
+
       auto item                  = std::make_shared<SpirvUniformBlockItem>();
       item->_datatype            = dt;
+      item->_offset = layout.cursor();
       item->_identifier          = id;
       uniblk->_items_by_name[id] = item;
       uniblk->_items_by_order.push_back(item);
@@ -240,8 +330,16 @@ void SpirvCompiler::_convertUniformBlocks() {
         item->_is_array     = true;
         auto ary_len_str    = len_node->typedValueForKey<std::string>("literal_value").value();
         item->_array_length = atoi(ary_len_str.c_str());
+        layout.incrementDatatype(dt, item->_array_length);
         // dumpAstNode(as_array);
       }
+      else{
+        layout.incrementDatatype(dt, 0);
+      }
+    }
+    if(layout.cursor()>65536){
+      printf( "uniblk<%s> buffer overflow length<%zu>\n", uni_name.c_str(), layout.cursor() );
+      OrkAssert(false);
     }
   }
 }
@@ -316,6 +414,7 @@ void SpirvCompiler::_inheritUniformBlk(
     spirvuniblk_ptr_t spirvublk) { //
   if (_vulkan) {
     spirvublk->_descriptor_set_id = _descriptor_set_counter++;
+    size_t _offset = 0;
     /////////////////////
     // loose unis
     /////////////////////
@@ -348,7 +447,7 @@ void SpirvCompiler::_inheritIO(astnode_ptr_t interface_node) {
   // TODO inherited interfaces
   //
 
-  const auto& DATASIZES = SpirvCompilerGlobals::instance()->_data_sizes;
+  const auto& DATASIZES = SpirvCompilerGlobals::instance()->_io_data_sizes;
 
   auto ifname    = interface_node->typedValueForKey<std::string>("object_name").value();
   auto decorator = FormatString("// begin interface<%s>", ifname.c_str());

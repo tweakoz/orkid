@@ -181,6 +181,7 @@ datablock_ptr_t VkFxInterface::_writeIntermediateToDataBlock(shadlang::SHAST::tr
       for (auto item : spirv_uniset->_items_by_order) {
         uniforms_stream->addIndexedString(item->_datatype, chunkwriter);
         uniforms_stream->addIndexedString(item->_identifier, chunkwriter);
+        uniforms_stream->addItem<size_t>(item->_offset);
       }
     }
   };
@@ -208,6 +209,7 @@ datablock_ptr_t VkFxInterface::_writeIntermediateToDataBlock(shadlang::SHAST::tr
         auto vk_item = std::make_shared<VkFxShaderUniformBlkItem>();
         uniforms_stream->addIndexedString(item->_datatype, chunkwriter);
         uniforms_stream->addIndexedString(item->_identifier, chunkwriter);
+        uniforms_stream->addItem<size_t>(item->_offset);
       }
     }
   };
@@ -217,7 +219,7 @@ datablock_ptr_t VkFxInterface::_writeIntermediateToDataBlock(shadlang::SHAST::tr
 
   ////////////////////////////////////////////////////////////////
   using namespace shadlang::SHAST;
-  const auto& DATASIZES = shadlang::spirv::SpirvCompilerGlobals::instance()->_data_sizes;
+  const auto& IO_DATASIZES = shadlang::spirv::SpirvCompilerGlobals::instance()->_io_data_sizes;
   ////////////////////////////////////////////////////////////////
   // write vtx interfaces
   ////////////////////////////////////////////////////////////////
@@ -248,8 +250,8 @@ datablock_ptr_t VkFxInterface::_writeIntermediateToDataBlock(shadlang::SHAST::tr
         interfaces_stream->addIndexedString(dt, chunkwriter);
         interfaces_stream->addIndexedString(id, chunkwriter);
         interfaces_stream->addIndexedString(semantic, chunkwriter);
-        auto it = DATASIZES.find(dt);
-        OrkAssert(it != DATASIZES.end());
+        auto it = IO_DATASIZES.find(dt);
+        OrkAssert(it != IO_DATASIZES.end());
         interfaces_stream->addItem<size_t>(it->second);
       }
     }
@@ -267,8 +269,8 @@ datablock_ptr_t VkFxInterface::_writeIntermediateToDataBlock(shadlang::SHAST::tr
         auto id = tid->typedValueForKey<std::string>("identifier_name").value();
         interfaces_stream->addIndexedString(dt, chunkwriter);
         interfaces_stream->addIndexedString(id, chunkwriter);
-        auto it = DATASIZES.find(dt);
-        OrkAssert(it != DATASIZES.end());
+        auto it = IO_DATASIZES.find(dt);
+        OrkAssert(it != IO_DATASIZES.end());
         interfaces_stream->addItem<size_t>(it->second);
       }
     }
@@ -464,6 +466,7 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
       auto vk_param              = std::make_shared<VkFxShaderUniformSetItem>();
       vk_param->_datatype        = str_param_datatype;
       vk_param->_identifier      = str_param_identifier;
+      vk_param->_offset = uniforms_input_stream->readItem<size_t>();
       vk_param->_orkparam        = std::make_shared<FxShaderParam>();
       vk_param->_orkparam->_name = str_param_identifier;
       vk_param->_orkparam->_impl.set<VkFxShaderUniformSetItem*>(vk_param.get());
@@ -499,6 +502,7 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
       auto vk_param             = std::make_shared<VkFxShaderUniformBlkItem>();
       vk_param->_datatype       = str_param_datatype;
       vk_param->_identifier     = str_param_identifier;
+      vk_param->_offset = uniforms_input_stream->readItem<size_t>();
       vk_param->_orkparam       = std::make_shared<FxShaderParam>();
       vk_param->_orkparam->_impl.set<VkFxShaderUniformBlkItem*>(vk_param.get());
       vk_uniblk->_items_by_name[str_param_identifier] = vk_param;
@@ -780,6 +784,7 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
                 printf("VKFXI: unknown datatype<%s>\n", datatype.c_str());
                 OrkAssert(false);
               }
+              //OrkAssert(cursor==item_ptr->_offset);
               printf("VKFXI: datatype<%s> cursor<%zu>\n", datatype.c_str(), cursor);
             }
           }

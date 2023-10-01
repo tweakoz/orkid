@@ -33,6 +33,7 @@ struct SpirvUniformSetItem {
   std::string _identifier;
   bool _is_array = false;
   size_t _array_length = 0;
+  size_t _offset = 0;
 };
 struct SpirvUniformSetSampler {
   size_t _binding_id = -1;
@@ -53,6 +54,7 @@ struct SpirvUniformBlockItem {
   std::string _identifier;
   bool _is_array = false;
   size_t _array_length = 0;
+  size_t _offset = 0;
 };
 struct SpirvUniformBlock {
   std::string _name;
@@ -66,7 +68,8 @@ using spirvcompilerglobals_constptr_t = std::shared_ptr<const SpirvCompilerGloba
 struct SpirvCompilerGlobals {
   SpirvCompilerGlobals();
   static spirvcompilerglobals_constptr_t instance();
-  std::unordered_map<std::string, size_t> _data_sizes;
+  std::unordered_map<std::string, size_t> _io_data_sizes;
+  std::unordered_map<std::string, size_t> _block_data_sizes;
   std::unordered_map<std::string, std::string> _id_renames;
 };
 

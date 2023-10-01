@@ -19,10 +19,10 @@ uniform_set ub_vtx_min {
 uniform_set ub_vtx {
   mat4 mvp;
   mat4 m;
-
   vec4 modcolor;
   float time;
-
+}
+uniform_block ub_vtx2 {
   vec3 AmbientLight;
   int NumDirectionalLights;
   vec3 DirectionalLightDir[4];

@@ -497,20 +497,22 @@ VkFxShaderProgram::VkFxShaderProgram(VkFxShaderFile* file)
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkFxShaderProgram::bindDescriptorTexture(fxparam_constptr_t param, const Texture* pTex) {
-  vktexobj_ptr_t vk_tex;
-  if (auto as_to = pTex->_impl.tryAsShared<VulkanTextureObject>()) {
-    vk_tex = as_to.value();
-  } else {
-    printf( "No Texture impl tex<%p:%s>\n", pTex, pTex->_debugName.c_str() );
-    //OrkAssert(false);
-    return;
+  if(pTex){
+    vktexobj_ptr_t vk_tex;
+    if (auto as_to = pTex->_impl.tryAsShared<VulkanTextureObject>()) {
+      vk_tex = as_to.value();
+    } else {
+      printf( "No Texture impl tex<%p:%s>\n", pTex, pTex->_debugName.c_str() );
+      //OrkAssert(false);
+      return;
+    }
+    auto it = _samplers_by_orkparam.find(param);
+    OrkAssert(it != _samplers_by_orkparam.end());
+    size_t binding_index                = it->second;
+    _textures_by_orkparam[param]        = vk_tex;
+    _textures_by_binding[binding_index] = vk_tex;
+    //printf( "binding_index<%zu>\n", binding_index );
   }
-  auto it = _samplers_by_orkparam.find(param);
-  OrkAssert(it != _samplers_by_orkparam.end());
-  size_t binding_index                = it->second;
-  _textures_by_orkparam[param]        = vk_tex;
-  _textures_by_binding[binding_index] = vk_tex;
-  //printf( "binding_index<%zu>\n", binding_index );
 }
 
 ///////////////////////////////////////////////////////////////////////////////

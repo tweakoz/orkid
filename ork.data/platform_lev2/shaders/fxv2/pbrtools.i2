@@ -9,6 +9,17 @@ import "orkshader://envtools.i2";
 // Interfaces
 ///////////////////////////////////////////////////////////////
 uniform_set ub_vtx {
+  mat4 mvp;
+  mat4 mvp_l;
+  mat4 mvp_r;
+  vec4 modcolor;
+}
+uniform_set ub_vtx_samplers {
+  sampler2D InstanceMatrices;
+  sampler2D InstanceColors;
+  usampler2D InstanceIds;
+}
+uniform_block ub_vtx2 {
   mat4 m;
   mat4 mv;
   mat4 vp;
@@ -25,9 +36,6 @@ uniform_set ub_vtx {
   mat3 mrot;
   vec4 modcolor;
   vec2 InvViewportSize; // inverse target size
-  sampler2D InstanceMatrices;
-  sampler2D InstanceColors;
-  usampler2D InstanceIds;
 }
 ///////////////////////////////////////////////////////////////
 uniform_set ub_frg {
@@ -43,14 +51,11 @@ uniform_set ub_frg {
 uniform_set ub_frg_fwd {
 
   mat4 vp;
-  mat4 v_l;
-  mat4 v_r;
   mat4 vp_l;
   mat4 vp_r;
-  mat4 inv_vp;
-  mat4 inv_vp_l;
-  mat4 inv_vp_r;
 
+}
+uniform_set ub_frg_fwd_samplers {
   sampler2D ColorMap;
   sampler2D NormalMap;
   sampler2D MtlRufMap;
@@ -58,6 +63,18 @@ uniform_set ub_frg_fwd {
   sampler2D MapBrdfIntegration;
   sampler2D MapSpecularEnv;
   sampler2D MapDiffuseEnv;
+}
+///////////////////////////////////////////////////////////////
+uniform_block ub_frg_fwd2 {
+
+  mat4 vp;
+  mat4 v_l;
+  mat4 v_r;
+  mat4 vp_l;
+  mat4 vp_r;
+  mat4 inv_vp;
+  mat4 inv_vp_l;
+  mat4 inv_vp_r;
 
   float SkyboxLevel;
   float SpecularLevel;
@@ -77,13 +94,23 @@ uniform_set ub_frg_fwd {
   float EnvironmentMipScale;
 
   int point_light_count;
-  sampler2D UnTexPointLightsData;
 
   vec4 ModColor;
   // vec2 InvViewportSize; // inverse target size
   vec3 EyePostion;
   vec3 EyePostionL;
   vec3 EyePostionR;
+}
+///////////////////////////////////////////////////////////////
+uniform_set ub_frg_fwd_samplers {
+  sampler2D ColorMap;
+  sampler2D NormalMap;
+  sampler2D MtlRufMap;
+
+  sampler2D MapBrdfIntegration;
+  sampler2D MapSpecularEnv;
+  sampler2D MapDiffuseEnv;
+  sampler2D UnTexPointLightsData;
 }
 ///////////////////////////////////////////////////////////////
 uniform_block ub_frg_fwd_lighting {
@@ -94,7 +121,10 @@ uniform_block ub_frg_fwd_lighting {
 ///////////////////////////////////////////////////////////////
 // Vertex Interfaces
 ///////////////////////////////////////////////////////////////
-vertex_interface iface_vgbuffer : ub_vtx {
+vertex_interface iface_vgbuffer 
+  : ub_vtx2
+  : ub_vtx_samplers
+ {
   inputs {
     vec4 position : POSITION;
     vec3 normal : NORMAL;
@@ -135,7 +165,10 @@ vertex_interface iface_vgbuffer_skinned : iface_vgbuffer : iface_skintools {
 ///////////////////////////////////////////////////////////////
 // Fragmentertex Interfaces
 ///////////////////////////////////////////////////////////////
-fragment_interface iface_forward : ub_frg_fwd : ub_frg_fwd_lighting {
+fragment_interface iface_forward 
+  : ub_frg_fwd2
+  : ub_frg_fwd_samplers
+  : ub_frg_fwd_lighting {
   inputs {
     vec4 frg_wpos;
     vec4 frg_clr;
@@ -432,7 +465,9 @@ fragment_shader ps_gbuffer_n_tex_stereo // normalmap (stereo texture - vsplit)
 ///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////
 
-vertex_interface iface_vdprepass : ub_vtx {
+vertex_interface iface_vdprepass 
+  : ub_vtx2
+  : ub_vtx_samplers {
   inputs {
     vec4 position : POSITION;
   }
@@ -508,7 +543,9 @@ vertex_shader vs_forward_instanced : iface_vgbuffer_instanced : lib_pbr_vtx_inst
   ////////////////////////////////
   gl_Position = mvp * instanced_pos;
 }
-vertex_shader vs_forward_instanced_stereo : iface_forward_stereo_instanced : lib_pbr_vtx_instanced
+vertex_shader vs_forward_instanced_stereo 
+    : iface_forward_stereo_instanced 
+    : lib_pbr_vtx_instanced
     : extension(GL_NV_stereo_view_rendering)
     : extension(GL_NV_viewport_array2) {
 

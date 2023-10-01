@@ -172,9 +172,9 @@ void DeferredContext::gpuInit(Context* target) {
     //_gbuffRT = new RtGroupRenderTarget(_rtgGbuffer.get());
     //////////////////////////////////////////////////////////////
     auto mtl_load_req1 = std::make_shared<asset::LoadRequest>("src://effect_textures/white");
-    auto mtl_load_req2 = std::make_shared<asset::LoadRequest>("src://effect_textures/voltex_pn2");
+    //TODOVULKAN auto mtl_load_req2 = std::make_shared<asset::LoadRequest>("src://effect_textures/voltex_pn2");
     _whiteTexture = asset::AssetManager<TextureAsset>::load(mtl_load_req1);
-    _voltexA      = asset::AssetManager<TextureAsset>::load(mtl_load_req2);
+    //TODOVULKAN _voltexA      = asset::AssetManager<TextureAsset>::load(mtl_load_req2);
     //////////////////////////////////////////////////////////////
     // new pipeline stuff.
     //////////////////////////////////////////////////////////////

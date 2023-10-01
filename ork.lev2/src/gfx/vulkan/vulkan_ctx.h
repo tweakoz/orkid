@@ -570,6 +570,7 @@ struct VulkanTextureObject {
 struct VkFxShaderUniformSetItem {
   std::string _datatype;
   std::string _identifier;
+  size_t _offset = 0;
   std::shared_ptr<FxShaderParam> _orkparam;
 };
 ///////////////////////////////////////////////////////////////////////////////
@@ -621,6 +622,7 @@ using vkdescriptors_ptr_t = std::shared_ptr<VkDescriptorSetBindings>;
 struct VkFxShaderUniformBlkItem {
   std::string _datatype;
   std::string _identifier;
+  size_t _offset = 0;
   std::shared_ptr<FxShaderParam> _orkparam;
 };
 struct VkFxShaderUniformBlk {

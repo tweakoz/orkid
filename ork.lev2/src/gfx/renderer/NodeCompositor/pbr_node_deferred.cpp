@@ -171,7 +171,7 @@ struct PbrNodeImpl {
     OrkAssert(_context->brdfIntegrationTexture() != nullptr);
     _context->_lightingmtl->bindParamCTex(_context->_parMapBrdfIntegration, _context->brdfIntegrationTexture().get());
 
-    _context->_lightingmtl->bindParamCTex(_context->_parMapVolTexA, _context->_voltexA->_texture.get());
+    //TODOVULKAN _context->_lightingmtl->bindParamCTex(_context->_parMapVolTexA, _context->_voltexA->_texture.get());
 
     /////////////////////////
     _context->_lightingmtl->bindParamFloat(_context->_parSkyboxLevel, skybox_level);
@@ -193,7 +193,7 @@ struct PbrNodeImpl {
     _context->_lightingmtl->commit();
     //RSI->BindRasterState(_context->_lightingmtl->_rasterstate);
 
-      DWI->quad2DEMLTiled(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 0, 0), 16);
+      //TODOVULKAN DWI->quad2DEMLTiled(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 0, 0), 16);
     });
 
     targ->debugPopGroup(); // BaseLighting
@@ -204,8 +204,9 @@ struct PbrNodeImpl {
 
     if (auto lmgr = CIMPL->lightManager()) {
       EASY_BLOCK("lights-2");
-      if (_enumeratedLights->_alllights.size())
-        _lightProcessor.renderLights(drawdata, VD, _enumeratedLights);
+      if (_enumeratedLights->_alllights.size()){
+        //TODOVULKAN _lightProcessor.renderLights(drawdata, VD, _enumeratedLights);
+      }
     }
 
     /////////////////////////////////
