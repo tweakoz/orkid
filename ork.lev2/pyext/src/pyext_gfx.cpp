@@ -171,35 +171,35 @@ void pyinit_gfx(py::module& module_lev2) {
     return fxs.c_str();
   });*/
   /////////////////////////////////////////////////////////////////////////////////
-  py::class_<SRasterState>(module_lev2, "RasterState") //
+  py::class_<SRasterState,rasterstate_ptr_t>(module_lev2, "RasterState") //
       .def_property(
           "culltest",
-          [](const SRasterState& state) -> crcstring_ptr_t { //
-            auto crcstr = std::make_shared<CrcString>(uint64_t(state._culltest));
+          [](rasterstate_ptr_t state) -> crcstring_ptr_t { //
+            auto crcstr = std::make_shared<CrcString>(uint64_t(state->_culltest));
             return crcstr;
           },
-          [](SRasterState& state, crcstring_ptr_t ctest) { //
-            state._culltest = ECullTest(ctest->hashed());
+          [](rasterstate_ptr_t state, crcstring_ptr_t ctest) { //
+            state->_culltest = ECullTest(ctest->hashed());
           })
       .def_property(
           "depthtest",
-          [](const SRasterState& state) -> crcstring_ptr_t { //
-            auto crcstr = std::make_shared<CrcString>(uint64_t(state._depthtest));
+          [](rasterstate_ptr_t state) -> crcstring_ptr_t { //
+            auto crcstr = std::make_shared<CrcString>(uint64_t(state->_depthtest));
             return crcstr;
           },
-          [](SRasterState& state, crcstring_ptr_t ctest) { //
-            state._depthtest = EDepthTest(ctest->hashed());
+          [](rasterstate_ptr_t state, crcstring_ptr_t ctest) { //
+            state->_depthtest = EDepthTest(ctest->hashed());
           })
       /*.def_property(
           "blending",
-          [](const SRasterState& state) -> crcstring_ptr_t { //
+          [](rasterstate_ptr_t state) -> crcstring_ptr_t { //
             auto crcstr = std::make_shared<CrcString>(uint64_t(state._blending));
             return crcstr;
           },
           [](SRasterState& state, crcstring_ptr_t ctest) { //
             state._blending = BlendingMacro(ctest->hashed());
           })*/
-      .def("__repr__", [](const SRasterState& state) -> std::string {
+      .def("__repr__", [](rasterstate_ptr_t state) -> std::string {
         fxstring<256> fxs;
         fxs.format("RasterState()");
         return fxs.c_str();

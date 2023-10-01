@@ -328,7 +328,7 @@ VkFormatConverter::VkFormatConverter() {
   do_format(EBufferFormat::Z32, VK_FORMAT_D32_SFLOAT);
   do_format(EBufferFormat::Z24S8, VK_FORMAT_D24_UNORM_S8_UINT);
   do_format(EBufferFormat::Z32S8, VK_FORMAT_D32_SFLOAT_S8_UINT);
-
+  do_format(EBufferFormat::RGBA32F, VK_FORMAT_R32G32B32A32_SFLOAT);
 
   _layoutmap["depth"_crcu]   = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
   _layoutmap["color"_crcu]   = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;

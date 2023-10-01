@@ -22,7 +22,6 @@ namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
 bool TextureInterface::_loadImageTexture(texture_ptr_t ptex, datablock_ptr_t src_datablock) {
-  OrkAssert(false);
   DataBlockInputStream checkstream(src_datablock);
   uint8_t magic[4];
   magic[0]                     = checkstream.getItem<uint8_t>();

@@ -4,13 +4,12 @@
 fxconfig fxcfg_default
 {
 	glsl_version = "130";
-	import "gbuftools.i2"
+	import "orkshader://gbuftools.i2"
 }
 ///////////////////////////////////////////////////////////////
 // Interfaces
 ///////////////////////////////////////////////////////////////
-uniform_set ub_vtx
-{
+uniform_set ub_vtx {
 	mat4        mvp;
 	mat4        mvpL;
 	mat4        mvpR;

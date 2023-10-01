@@ -768,6 +768,10 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
                 cursor = dest_layout->layoutItem<float>(orkparam);
               } else if (datatype == "int") {
                 cursor = dest_layout->layoutItem<int>(orkparam);
+              } else if (datatype == "vec2") {
+                cursor = dest_layout->layoutItem<fvec2>(orkparam);
+              } else if (datatype == "vec3") {
+                cursor = dest_layout->layoutItem<fvec3>(orkparam);
               } else if (datatype == "vec4") {
                 cursor = dest_layout->layoutItem<fvec4>(orkparam);
               } else if (datatype == "mat4") {

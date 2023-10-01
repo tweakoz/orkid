@@ -188,7 +188,7 @@ texture_ptr_t PBRMaterial::brdfIntegrationMap(Context* targ) {
 /////////////////////////////////////////////////////////////////////////
 
 static file::Path filterenv_shader_path() {
-  return file::Path("orkshader://pbr_filterenv.glfx");
+  return file::Path("orkshader://pbr_filterenv.fxv2");
 }
 static uint32_t shader_hash() {
   return filterenv_shader_path().hashFileContents();

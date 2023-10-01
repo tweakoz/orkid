@@ -3,14 +3,19 @@
 ///////////////////////////////////////////////////////////////
 fxconfig fxcfg_default {
   glsl_version = "150";
-  import "skintools.i";
+  import "orkshader://skintools.i2";
 }
 
 ///////////////////////////////////////////////////////////////
 // Interfaces
 ///////////////////////////////////////////////////////////////
 
-
+uniform_set ub_vtx_min {
+  mat4 mvp;
+  mat4 m;
+  //vec4 modcolor;
+  float time;
+}
 uniform_set ub_vtx {
   mat4 mvp;
   mat4 m;
@@ -43,7 +48,7 @@ vertex_interface iface_rigid : ub_vtx {
   }
 }
 
-vertex_interface iface_vwire : ub_vtx {
+vertex_interface iface_vwire : ub_vtx_min {
   inputs {
     vec4 position : POSITION;
     vec3 normal : NORMAL;
@@ -172,19 +177,6 @@ vertex_shader vs_wnormal : iface_rigid {
   ///////////////////////////
 }
 
-///////////////////////////////////////////////////////////////
-vertex_shader vs_wnormal_wire : iface_vwire {
-  vec4 hpos  = mvp * position;
-  vec3 wnorm = normalize((m * vec4(normal,0)).xyz);
-  ///////////////////////////
-  frg_clr     = vec4(vec3(.5)+wnorm*0.5, 1.0);
-  frg_pos     = (m * position).xyz;
-  frg_uv0     = uv0;
-  frg_nrmd    = vec4(wnorm, -hpos.z/hpos.w);
-  frg_bary    = bary;
-  gl_Position = hpos;
-  ///////////////////////////
-}
 
 ///////////////////////////////////////////////////////////////
 vertex_interface iface_rigid_stereo : iface_rigid {
@@ -282,16 +274,6 @@ fragment_shader ps_fnormal
 
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_fnormal_wire 
-  : iface_fwire {
-  vec3 X = dFdx(frg_pos);  
-  vec3 Y = dFdy(frg_pos);
-  vec3 normal=normalize(cross(X,Y)); 
-  vec3 bary = frg_bary.xyz;
-  float closest_edge = min(bary.x, min(bary.y, bary.z));
-  vec3 c = vec3(.5,.5,.5)+normal*0.5;
-  out_clr = vec4(c*pow(closest_edge,0.05),1);
-}
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_vnormal_wire 
   : iface_fwire {
@@ -357,14 +339,6 @@ technique tek_fnormal {
     state_block     = sb_default;
   }
 }
-technique tek_fnormal_wire {
-  fxconfig = fxcfg_default;
-  pass p0 {
-    vertex_shader   = vs_wnormal_wire;
-    fragment_shader = ps_fnormal_wire;
-    state_block     = sb_default;
-  }
-}
 technique tek_vnormal_wire {
   fxconfig = fxcfg_default;
   pass p0 {
@@ -414,4 +388,37 @@ technique tek_lamberttex_skinned_stereo {
   }
 }
 */
+///////////////////////////////////////////////////////////////
+vertex_shader vs_wnormal_wire : iface_vwire {
+  vec4 hpos  = mvp * position;
+  vec3 wnorm = normalize((m * vec4(normal,0)).xyz);
+  ///////////////////////////
+  frg_clr     = vec4(vec3(.5)+wnorm*0.5, 1.0);
+  frg_pos     = (m * position).xyz;
+  frg_uv0     = uv0;
+  frg_nrmd    = vec4(wnorm, -hpos.z/hpos.w);
+  frg_bary    = bary;
+  gl_Position = hpos;
+  ///////////////////////////
+}
+fragment_shader ps_fnormal_wire 
+  : iface_fwire {
+  vec3 X = dFdx(frg_pos);  
+  vec3 Y = dFdy(frg_pos);
+  vec3 normal=normalize(cross(X,Y)); 
+  vec3 bary = frg_bary.xyz;
+  float closest_edge = min(bary.x, min(bary.y, bary.z));
+  vec3 c = vec3(.5,.5,.5)+normal*0.5;
+  out_clr = vec4(c*pow(closest_edge,0.05),1);
+}
+
+technique tek_fnormal_wire {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_wnormal_wire;
+    fragment_shader = ps_fnormal_wire;
+    state_block     = sb_default;
+  }
+}
+
 ///////////////////////////////////////////////////////////////
