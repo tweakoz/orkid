@@ -64,7 +64,7 @@ lev2::texture_ptr_t DeferredContext::brdfIntegrationTexture() const {
 ///////////////////////////////////////
 
 void DeferredContext::gpuInit(Context* target) {
-  target->debugPushGroup("Deferred::rendeinitr");
+  //target->debugPushGroup("Deferred::rendeinitr");
   auto FXI = target->FXI();
   if (nullptr == _rtgs_gbuffer) {
     _brdfIntegrationMap = PBRMaterial::brdfIntegrationMap(target);
@@ -184,7 +184,7 @@ void DeferredContext::gpuInit(Context* target) {
     printf( "SHADER<%s> Load Complete\n", _shadername.c_str() );
 
   }
-  target->debugPopGroup();
+  //target->debugPopGroup();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -132,7 +132,7 @@ struct GpuResources {
 
     _spikee_instances = std::make_shared<instances_t>();
 
-    ctx->debugPushGroup("main.onGpuInit");
+    //ctx->debugPushGroup("main.onGpuInit");
 
     _spikee_modelasset = asset::AssetManager<XgmModelAsset>::load("data://tests/pbr1/pbr1");
 
@@ -201,7 +201,7 @@ struct GpuResources {
     _lightsnode  = sg_layer->createDrawableNode("lightmeshes-node", _lights_drawable);
     _spikee_node = sg_layer->createDrawableNode("meshes-node", _spikee_instanced_drawable);
 
-    ctx->debugPopGroup();
+    //ctx->debugPopGroup();
   }
 
   std::shared_ptr<instances_t> _spikee_instances;

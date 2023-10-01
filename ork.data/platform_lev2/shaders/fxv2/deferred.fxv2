@@ -2,12 +2,12 @@
 // FxConfigs
 ///////////////////////////////////////////////////////////////
 fxconfig fxcfg_default {
-  import "mathtools.i2";
-  import "misctools.i2";
-  import "envtools.i2";
-  import "brdftools.i2";
-  import "deftools.i2";
-  import "gbuftools.i2";
+  import "orkshader://mathtools.i2";
+  import "orkshader://misctools.i2";
+  import "orkshader://envtools.i2";
+  import "orkshader://brdftools.i2";
+  import "orkshader://deftools.i2";
+  import "orkshader://gbuftools.i2";
 ///////////////////////////////////////////////////////////////
 }
 // Interfaces

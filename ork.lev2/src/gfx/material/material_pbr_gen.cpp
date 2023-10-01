@@ -220,7 +220,7 @@ texture_ptr_t PBRMaterial::filterSpecularEnvMap(texture_ptr_t rawenvmap, Context
   static const FxShaderParam* param_imgdim         = nullptr;
 
 
-  targ->debugPushGroup("PBRMaterial::filterSpecularEnvMap");
+  //targ->debugPushGroup("PBRMaterial::filterSpecularEnvMap");
   __FIND_IT.store(1);
 
   if (not mtl) {
@@ -347,7 +347,7 @@ texture_ptr_t PBRMaterial::filterSpecularEnvMap(texture_ptr_t rawenvmap, Context
   rawenvmap->_varmap.makeValueForKey<texture_ptr_t>("alt-tex-specenv") = alt_tex;
 
   __FIND_IT.store(0);
-  targ->debugPopGroup();
+  //targ->debugPopGroup();
 
   return alt_tex;
 }
@@ -369,7 +369,7 @@ texture_ptr_t PBRMaterial::filterDiffuseEnvMap(texture_ptr_t rawenvmap, Context*
   static const FxShaderParam* param_ruf            = nullptr;
 
   __FIND_IT.store(1);
-  targ->debugPushGroup("PBRMaterial::filterDiffuseEnvMap");
+  //targ->debugPushGroup("PBRMaterial::filterDiffuseEnvMap");
 
   if (not mtl) {
     mtl = std::make_shared<FreestyleMaterial>();
@@ -423,6 +423,7 @@ texture_ptr_t PBRMaterial::filterDiffuseEnvMap(texture_ptr_t rawenvmap, Context*
       /// logchan_pbrgen->log("filterenv imip<%d> w<%d> h<%d>", imip, w, h);
       // logchan_pbrgen->log("filterenv imip<%d> outgroup<%p> outbuf<%p>", imip, outgroup.get(), outbuffr.get());
 
+      targ->beginFrame();
       fbi->PushRtGroup(outgroup.get());
       mtl->begin(tekFilterDiffMap, RCFD);
       ///////////////////////////////////////////////
@@ -436,6 +437,7 @@ texture_ptr_t PBRMaterial::filterDiffuseEnvMap(texture_ptr_t rawenvmap, Context*
       fbi->PopRtGroup();
 
       fbi->capture(outbuffr.get(), captureb.get());
+      targ->endFrame();
 
       if (1) {
         auto outpath = file::Path::temp_dir() / FormatString("filteredenv-diffmap-mip%d.exr", imip);
@@ -478,7 +480,7 @@ texture_ptr_t PBRMaterial::filterDiffuseEnvMap(texture_ptr_t rawenvmap, Context*
   rawenvmap->_varmap.makeValueForKey<texture_ptr_t>("alt-tex-diffenv") = alt_tex;
 
   __FIND_IT.store(0);
-  targ->debugPopGroup();
+  //targ->debugPopGroup();
 
   return alt_tex;
 }
