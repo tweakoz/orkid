@@ -10,6 +10,7 @@
 #include <ork/lev2/gfx/terrain/terrain_drawable.h>
 #include <ork/lev2/gfx/camera/cameradata.h>
 #include <ork/lev2/gfx/scenegraph/sgnode_grid.h>
+#include <ork/lev2/gfx/scenegraph/sgnode_billboard.h>
 #include <ork/lev2/gfx/scenegraph/sgnode_groundplane.h>
 #include <ork/lev2/gfx/particle/drawable_data.h>
 #include <ork/lev2/gfx/renderer/drawable.h>
@@ -119,6 +120,15 @@ void pyinit_gfx_drawables(py::module& module_lev2) {
               [](griddrawabledataptr_t drw) -> float { return drw->_minorTileDim; },
               [](griddrawabledataptr_t drw, float val) { drw->_minorTileDim = val; });
   type_codec->registerStdCodec<griddrawabledataptr_t>(griddrawdata_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  auto bbdrawdata_type = //
+      py::class_<BillboardDrawableData, billboarddrawabledataptr_t>(module_lev2, "BillboardDrawableData")
+          .def(py::init<>())
+          .def_property(
+              "texturepath",
+              [](billboarddrawabledataptr_t drw) -> std::string { return drw->_colortexpath; },
+              [](billboarddrawabledataptr_t drw, std::string val) { drw->_colortexpath = val; });
+  type_codec->registerStdCodec<billboarddrawabledataptr_t>(bbdrawdata_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto groundplanedrawdata_type = //
       py::class_<GroundPlaneDrawableData, groundplane_drawabledataptr_t>(module_lev2, "GroundPlaneDrawableData")

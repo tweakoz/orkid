@@ -8,6 +8,7 @@
 #include "pyext.h"
 #include <ork/lev2/gfx/camera/cameradata.h>
 #include <ork/lev2/gfx/scenegraph/sgnode_grid.h>
+#include <ork/lev2/gfx/scenegraph/sgnode_billboard.h>
 #include <ork/lev2/gfx/scenegraph/sgnode_groundplane.h>
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -160,6 +161,17 @@ void pyinit_scenegraph(py::module& module_lev2) {
               [](layer_ptr_t layer, //
                  std::string named,
                  griddrawabledataptr_t data) -> node_ptr_t { //
+                if (data->_colortexpath == "")
+                  data->_colortexpath = "lev2://textures/gridcell_blue.png";
+                auto drawable = data->createDrawable();
+                printf("D\n");
+                return layer->createDrawableNode(named, drawable);
+              })
+          .def(
+              "createBillboardNode",
+              [](layer_ptr_t layer, //
+                 std::string named,
+                 billboarddrawabledataptr_t data) -> node_ptr_t { //
                 if (data->_colortexpath == "")
                   data->_colortexpath = "lev2://textures/gridcell_blue.png";
                 auto drawable = data->createDrawable();
