@@ -84,6 +84,18 @@ vertex_shader vs_uitext_stereo //
     gl_ViewportMask[0] = 1;
     gl_SecondaryViewportMaskNV[0] = 2;
 }
+vertex_shader vs_uitextured_stereo //
+  : extension(GL_NV_stereo_view_rendering) //
+  : extension(GL_NV_viewport_array2) //
+ : iface_vdefault { //
+  gl_Position = position;
+  gl_SecondaryPositionNV = position;
+  //frg_clr     = vtxcolor;
+  frg_uv      = uv0;
+    gl_Layer = 0;
+    gl_ViewportMask[0] = 1;
+    gl_SecondaryViewportMaskNV[0] = 2;
+}
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_uitext : iface_fmt {
   vec4 s = texture(ColorMap, frg_uv);
@@ -99,6 +111,12 @@ fragment_shader ps_uitext_stereo : iface_fmt {
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_uitextured : iface_fmt {
+  vec4 texc = texture(ColorMap, frg_uv);
+  out_clr   = vec4(texc.xyz, 1);
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_uitextured_stereo : iface_fmt {
+  //vec4 s = texture(ColorMap, frg_uv);
   vec4 texc = texture(ColorMap, frg_uv);
   out_clr   = vec4(texc.xyz, 1);
 }
@@ -137,6 +155,15 @@ technique uitextured {
   pass p0 {
     vertex_shader   = vs_uitext;
     fragment_shader = ps_uitextured;
+    state_block     = sb_default;
+  }
+}
+///////////////////////////////////////////////////////////////
+technique uitextured_stereo {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_uitextured_stereo;
+    fragment_shader = ps_uitextured_stereo;
     state_block     = sb_default;
   }
 }

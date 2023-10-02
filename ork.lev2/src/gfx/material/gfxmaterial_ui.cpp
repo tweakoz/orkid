@@ -273,6 +273,7 @@ void GfxMaterialUITextured::gpuInit(ork::lev2::Context* pTarg) {
     _shader      = _shaderasset->GetFxShader();
 
     hTek = pTarg->FXI()->technique(_shader, mTechniqueName);
+    hTekStereo = pTarg->FXI()->technique(_shader, "uitextured_stereo");
     printf("HMODFX<%p> pTarg<%p> hTek<%p>\n", (void*) _shader, (void*) pTarg, (void*) hTek);
 
     hTransform = pTarg->FXI()->parameter(_shader, "mvp");
@@ -292,8 +293,18 @@ void GfxMaterialUITextured::gpuInit(ork::lev2::Context* pTarg, const std::string
 
 /////////////////////////////////////////////////////////////////////////
 
-int GfxMaterialUITextured::BeginBlock(Context* pTarg, const RenderContextInstData& MatCtx) {
-  int inumpasses = pTarg->FXI()->BeginBlock(hTek, MatCtx);
+int GfxMaterialUITextured::BeginBlock(Context* pTarg, const RenderContextInstData& RCID) {
+  auto rcfd2 = pTarg->topRenderContextFrameData();
+  OrkAssert(rcfd2);
+  const auto& CPD = rcfd2->topCPD();
+  auto stereocams = CPD._stereoCameraMatrices;
+  int inumpasses = 0;
+  if(stereocams){
+    inumpasses = pTarg->FXI()->BeginBlock(hTekStereo, RCID);
+  }
+  else{
+    inumpasses = pTarg->FXI()->BeginBlock(hTek, RCID);
+  }
   return inumpasses;
 }
 

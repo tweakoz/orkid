@@ -62,14 +62,10 @@ struct BillboardRenderImpl {
 
     //////////////////////////////////////////
     float Z = 0.0f;
-    //fvec3 topl(-1, -1, Z);
-    //fvec3 topr(+1, -1, Z);
-    //fvec3 botr(+1, +1, Z);
-    //fvec3 botl(-1, +1, Z);
-    fvec3 topl(-2, -2, Z);
-    fvec3 topr(+2, -2, Z);
-    fvec3 botr(+2, +2, Z);
-    fvec3 botl(-2, +2, Z);
+    fvec3 topl(-1, -1, Z);
+    fvec3 topr(+1, -1, Z);
+    fvec3 botr(+1, +1, Z);
+    fvec3 botl(-1, +1, Z);
 
     auto uv_topl  = fvec2(0.0f, 0.0f);
     auto uv_topr  = fvec2(1, 0.0f);
