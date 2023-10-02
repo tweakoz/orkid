@@ -26,6 +26,9 @@ void Shader::dumpFinalText() const {
 bool Shader::Compile() {
   GL_NF_ERRORCHECK();
 
+  Timer ctimer;
+  ctimer.Start();
+
   mShaderObjectId = glCreateShader(mShaderType);
 
 #if defined(ENABLE_COMPUTE_SHADERS)
@@ -74,12 +77,20 @@ bool Shader::Compile() {
     return false;
   }
   mbCompiled = true;
+
+  if(_DEBUG_SHADER_COMPILE){
+    double compile_time = ctimer.SecsSinceStart();
+    printf( "SHADER<%s> COMPILE TIME<%f>\n", mName.c_str(), compile_time );
+  }
   return true;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
 bool Interface::compilePipelineVTG(rootcontainer_ptr_t container) {
+
+  Timer ctimer;
+  ctimer.Start();
 
   auto pass = const_cast<Pass*>(container->_activePass);
 
@@ -220,32 +231,12 @@ bool Interface::compilePipelineVTG(rootcontainer_ptr_t container) {
     }
 
     //////////////////////////
-    // ensure vtx_iface exports what frg_iface imports
-    //////////////////////////
-
-    /*if( nullptr == pgeoshader )
-    {
-            for( const auto& itp : frg_iface->mAttributes )
-            {	const Attribute* pfrgattr = itp.second;
-                    if( pfrgattr->mDirection=="in" )
-                    {
-                            int iloc = pfrgattr->mLocation;
-                            const std::string& name = pfrgattr->mName;
-                            //printf( "frgattr<%s> loc<%d> dir<%s>\n",
-    pfrgattr->mName.c_str(), iloc, pfrgattr->mDirection.c_str() ); const auto&
-    itf=vtx_iface->mAttributes.find(name); const Attribute* pvtxattr =
-    (itf!=vtx_iface->mAttributes.end()) ? itf->second : nullptr; OrkAssert(
-    pfrgattr != nullptr ); OrkAssert( pvtxattr != nullptr ); OrkAssert(
-    pvtxattr->mTypeName == pfrgattr->mTypeName );
-                    }
-            }
-    }*/
-
-    //////////////////////////
 
     bool dump_and_exit = false;
     //if(pass->_technique->_name=="tflatparticle_streaks_stereo")
       //dump_and_exit = true;
+
+    double link_start_time = ctimer.SecsSinceStart();
 
     GL_ERRORCHECK();
     glLinkProgram(prgo);
@@ -271,6 +262,8 @@ bool Interface::compilePipelineVTG(rootcontainer_ptr_t container) {
       OrkAssert(not dump_and_exit);
     }
     OrkAssert(linkstat == GL_TRUE);
+    double link_time = ctimer.SecsSinceStart()-link_start_time;
+    printf( "SHADER LINK TIME<%f>\n", link_time );
 
     // printf( "} // linking complete..\n" );
 
@@ -313,6 +306,8 @@ bool Interface::compilePipelineVTG(rootcontainer_ptr_t container) {
     pass->postProc(container);
     //////////////////////////
   }
+  double compile_time = ctimer.SecsSinceStart();
+  printf( "SHADERPROGRAM TOTAL COMPILE/LINK TIME<%f>\n", compile_time );
   return OK;
 }
 
