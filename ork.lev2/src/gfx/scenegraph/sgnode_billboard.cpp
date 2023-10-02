@@ -11,14 +11,14 @@ namespace ork::lev2 {
 
 struct BillboardRenderImpl {
 
-  BillboardRenderImpl(const BillboardDrawableData* grid) : _griddata(grid) {
+  BillboardRenderImpl(const BillboardDrawableData* bbd) : _bbdata(bbd) {
 
   }
   ~BillboardRenderImpl(){
   }
   void gpuInit(lev2::Context* ctx) {
 
-    auto load_req = std::make_shared<asset::LoadRequest>(_griddata->_colortexpath);
+    auto load_req = std::make_shared<asset::LoadRequest>(_bbdata->_colortexpath);
     auto texasset = asset::AssetManager<lev2::TextureAsset>::load(load_req);
     OrkAssert(texasset);
 
@@ -28,7 +28,7 @@ struct BillboardRenderImpl {
     _material       = new GfxMaterialUITextured();
     _material->SetTexture(ETEXDEST_DIFFUSE,_colortexture.get());
     _material->gpuInit(ctx,"uitextured");
-
+    _material->_rasterstate.SetBlending(Blending::ALPHA);
     _initted                   = true;
   }
   void _render(const RenderContextInstData& RCID){
@@ -74,10 +74,13 @@ struct BillboardRenderImpl {
     auto normal   = fvec3(0, 1, 0);
     auto binormal = fvec3(1, 0, 0);
 
-    auto v0 = SVtxV12N12B12T8C4(topl, normal, binormal, uv_topl, 0xffffffff);
-    auto v1 = SVtxV12N12B12T8C4(topr, normal, binormal, uv_topr, 0xffffffff);
-    auto v2 = SVtxV12N12B12T8C4(botr, normal, binormal, uv_botr, 0xffffffff);
-    auto v3 = SVtxV12N12B12T8C4(botl, normal, binormal, uv_botl, 0xffffffff);
+    uint32_t color = 0xffffffff;
+    float alpha    = _bbdata->_alpha;
+    color          = (color & 0x00ffffff) | (uint32_t(alpha * 255.0f) << 24);
+    auto v0 = SVtxV12N12B12T8C4(topl, normal, binormal, uv_topl, color);
+    auto v1 = SVtxV12N12B12T8C4(topr, normal, binormal, uv_topr, color);
+    auto v2 = SVtxV12N12B12T8C4(botr, normal, binormal, uv_botr, color);
+    auto v3 = SVtxV12N12B12T8C4(botl, normal, binormal, uv_botl, color);
 
     VtxWriter<SVtxV12N12B12T8C4> vw;
     vw.Lock(context, &VB, 6);
@@ -102,7 +105,7 @@ struct BillboardRenderImpl {
     auto renderable = dynamic_cast<const CallbackRenderable*>(RCID._irenderable);
     renderable->GetDrawableDataA().getShared<BillboardRenderImpl>()->_render(RCID);
   }
-  const BillboardDrawableData* _griddata;
+  const BillboardDrawableData* _bbdata;
   GfxMaterialUITextured* _material;
   texture_ptr_t _colortexture;
   bool _initted = false;

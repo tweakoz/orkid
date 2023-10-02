@@ -15,6 +15,7 @@ public:
   ~BillboardDrawableData();
 
   std::string _colortexpath;
+  float _alpha = 1.0f;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

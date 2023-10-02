@@ -127,7 +127,11 @@ void pyinit_gfx_drawables(py::module& module_lev2) {
           .def_property(
               "texturepath",
               [](billboarddrawabledataptr_t drw) -> std::string { return drw->_colortexpath; },
-              [](billboarddrawabledataptr_t drw, std::string val) { drw->_colortexpath = val; });
+              [](billboarddrawabledataptr_t drw, std::string val) { drw->_colortexpath = val; })
+            .def_property(
+              "alpha",
+              [](billboarddrawabledataptr_t drw) -> float { return drw->_alpha; },
+              [](billboarddrawabledataptr_t drw, float val) { drw->_alpha = val; });
   type_codec->registerStdCodec<billboarddrawabledataptr_t>(bbdrawdata_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto groundplanedrawdata_type = //

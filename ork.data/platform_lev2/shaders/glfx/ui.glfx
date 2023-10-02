@@ -42,6 +42,7 @@ fragment_interface iface_fdefault {
 fragment_interface iface_fmt : ublock_frg {
   inputs {
     vec2 frg_uv;
+    vec4 frg_clr;
   }
   outputs {
     vec4 out_clr;
@@ -90,7 +91,7 @@ vertex_shader vs_uitextured_stereo //
  : iface_vdefault { //
   gl_Position = position;
   gl_SecondaryPositionNV = position;
-  //frg_clr     = vtxcolor;
+  frg_clr     = vtxcolor;
   frg_uv      = uv0;
     gl_Layer = 0;
     gl_ViewportMask[0] = 1;
@@ -105,9 +106,8 @@ fragment_shader ps_uitext : iface_fmt {
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_uitext_stereo : iface_fmt {
   vec4 s = texture(ColorMap, frg_uv);
-  float texa = s.r; //ow(s.a*s.r,0.75);
+  float texa = s.r; 
   out_clr = vec4(ModColor.xyz, texa);
-  //if(texa < 0.005) discard;
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_uitextured : iface_fmt {
@@ -118,7 +118,7 @@ fragment_shader ps_uitextured : iface_fmt {
 fragment_shader ps_uitextured_stereo : iface_fmt {
   //vec4 s = texture(ColorMap, frg_uv);
   vec4 texc = texture(ColorMap, frg_uv);
-  out_clr   = vec4(texc.xyz, 1);
+  out_clr   = vec4(texc.xyz, frg_clr.a);
 }
 ///////////////////////////////////////////////////////////////
 vertex_shader vs_vtxcolor : iface_vdefault {
