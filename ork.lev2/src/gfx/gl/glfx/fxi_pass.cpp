@@ -167,6 +167,8 @@ void Pass::bindUniformBlockBuffer(UniformBlock* block, UniformBuffer* buffer) {
 ////////////////////////////////////////////////////////////////////////////////
 
 void Pass::postProc(rootcontainer_ptr_t container) {
+  Timer pptimer;
+  pptimer.Start();
   auto flatunimap = container->flatUniMap();
   //////////////////////////
   // query unis
@@ -237,6 +239,8 @@ void Pass::postProc(rootcontainer_ptr_t container) {
       // prob a UBO uni
     }
   }
+  double postproc_time = pptimer.SecsSinceStart();
+   printf( "postproctime<%f>\n", postproc_time );
 }
 
 } // namespace ork::lev2::glslfx

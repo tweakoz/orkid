@@ -20,6 +20,11 @@ using namespace std::literals;
 namespace ork { namespace chunkfile {
 
 ///////////////////////////////////////////////////////////////////////////////
+void OutputStream::AddIndexedString(const std::string& str, Writer& writer){
+  uint64_t index = writer.stringIndex(str.c_str());
+  AddItem<uint64_t>(index);
+}
+///////////////////////////////////////////////////////////////////////////////
 void OutputStream::AddData(const void* ptr, size_t length) {
   Write((unsigned char*)ptr, length);
 }
@@ -294,6 +299,14 @@ void InputStream::getVarMap(varmap::VarMap& out_vmap, const Reader& reader) {
   }
   GetItem<size_t>(mkr_endvarmap);
   OrkAssert(mkr_endvarmap == "EndVarMap"_crcu);
+}
+
+////////////////////////////////////////////////////////////////////////////////////
+
+std::string InputStream::ReadIndexedString(const Reader& reader){
+  uint64_t index;
+  GetItem<uint64_t>(index);
+  return reader.GetString(index);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

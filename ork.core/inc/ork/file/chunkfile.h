@@ -59,6 +59,7 @@ public:
   void AddItem(const fvec3& data);
   void AddItem(const fvec2& data);
   void AddItem(const fquat& data);
+  void AddIndexedString(const std::string& str, Writer& writer);
   void addVarMap(const varmap::VarMap& vmap, Writer& writer);
   void AddData(const void* ptr, size_t length);
   void AddDataBlock(datablock_ptr_t dblock);
@@ -101,7 +102,10 @@ struct InputStream {
   InputStream(const void* pb = 0, size_t ilength = 0);
   template <typename T> void GetItem(T& item);
   template <typename T> void RefItem(T*& item);
+  template <typename T> T ReadItem();
   void getVarMap(varmap::VarMap& out_vmap, const Reader& reader);
+
+  std::string ReadIndexedString(const Reader& reader);
 
   const void* GetCurrent();
   void* GetDataAt(size_t idx);

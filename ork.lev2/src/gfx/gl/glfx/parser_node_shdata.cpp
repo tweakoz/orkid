@@ -117,10 +117,10 @@ void UniformDeclNode::emit(shaderbuilder::BackEnd& backend, bool emit_unitxt) co
 
 void UniformSetNode::emit(shaderbuilder::BackEnd& backend) const {
   auto& codegen = backend._codegen;
-  codegen.formatLine("/// begin uniformset<%p>", this);
+  codegen.formatLine("/// begin uniformset");
   for (auto udecl : _uniformdecls)
     udecl->emit(backend, true);
-  codegen.formatLine("/// end uniformset<%p>", this);
+  codegen.formatLine("/// end uniformset");
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////

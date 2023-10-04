@@ -289,7 +289,7 @@ struct unique_collection{
         auto it = _unique_names.find(raw_test_node);
         if(it==_unique_names.end()){
           size_t index = _collection.size();
-          codegen.formatLine("/// shaderdep col<%p> adding child<%zu,%p,%s>", this, index, as_t_node, as_t_node->_name.c_str() );
+          codegen.formatLine("/// shaderdep adding child<%zu,%s>", index, as_t_node->_name.c_str() );
           _collection.push_back(as_t_node);
          _unique_names.insert(raw_test_node);
         }else{
@@ -311,7 +311,7 @@ void ShaderNode::emitShaderDeps(shaderbuilder::BackEnd& backend) const{
 
   //printf("shaderdep<%p:%s> emit\n", this, _name.c_str() );
   auto& codegen = backend._codegen;
-  codegen.formatLine("/// shaderdep<%p:%s> emit",this, _name.c_str() );
+  codegen.formatLine("/// shaderdep<%s> emit",_name.c_str() );
 
   /////////////////////////////////////////////////
   // recursively collect all deps
@@ -338,34 +338,34 @@ void ShaderNode::emitShaderDeps(shaderbuilder::BackEnd& backend) const{
   // emit deps
   /////////////////////////////////////////////////
 
-  codegen.formatLine("/// begin shaderdeps<%p>",this);
+  codegen.formatLine("/// begin shaderdeps<%s>",_name.c_str());
 
   ////////////
-  codegen.formatLine("/// shaderdeps<%p> uniblocks",this);
+  codegen.formatLine("/// shaderdeps<%s> uniblocks",_name.c_str());
   for (auto node : uniblocks._collection)
     node->emit(backend);
   ////////////
-  codegen.formatLine("/// shaderdeps<%p> unisets",this);
+  codegen.formatLine("/// shaderdeps<%s> unisets",_name.c_str());
   for (auto node : unisets._collection)
     node->emit(backend);
   ////////////
-  codegen.formatLine("/// shaderdeps<%p> typelibblocks",this);
+  codegen.formatLine("/// shaderdeps<%s> typelibblocks",_name.c_str());
   for (auto node : libblocks._collection){
     if( node->_is_typelib)
       node->emitLibrary(backend);
   }
   ////////////
-  codegen.formatLine("/// shaderdeps<%p> interfaces",this);
+  codegen.formatLine("/// shaderdeps<%s> interfaces",_name.c_str());
   for (auto node : interfaces._collection)
     node->emitInterface(backend);
   ////////////
-  codegen.formatLine("/// shaderdeps<%p> libblocks",this);
+  codegen.formatLine("/// shaderdeps<%s> libblocks",_name.c_str());
   for (auto node : libblocks._collection)
     if( not node->_is_typelib)
       node->emitLibrary(backend);
   ////////////
 
-  codegen.formatLine("/// end shaderdeps<%p>",this);
+  codegen.formatLine("/// end shaderdeps<%s>",_name.c_str());
 }
 ///////////////////////////////////////////////////////////
 void VertexShaderNode::_generate2(shaderbuilder::BackEnd& backend) const {

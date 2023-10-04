@@ -170,15 +170,26 @@ bool Interface::BindPass(int ipass) {
 
   _active_effect->_activePass = _active_effect->mActiveTechnique->mPasses[ipass];
   GL_ERRORCHECK();
+
+  static Timer top_timer;
+
+  bool was_compiled = false;
   if (0 == _active_effect->_activePass->_programObjectId) {
+    top_timer.Start();
     bool complinkok = compileAndLink(_active_effect);
     auto fx         = const_cast<FxShader*>(_active_effect->mFxShader);
     fx->SetFailedCompile(false == complinkok);
+    was_compiled = true;
   }
 
   GL_ERRORCHECK();
   glUseProgram(_active_effect->_activePass->_programObjectId);
   GL_ERRORCHECK();
+
+  if(was_compiled){
+    double toptimer_time = top_timer.SecsSinceStart();
+    printf( "toptimer_time<%f>\n", toptimer_time );
+  }
 
   return true;
 }

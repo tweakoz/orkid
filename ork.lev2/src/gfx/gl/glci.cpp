@@ -11,6 +11,7 @@
 #include <ork/lev2/gfx/texman.h>
 #include <ork/lev2/ui/viewport.h>
 #include <ork/pch.h>
+#include <ork/kernel/datacache.h>
 
 namespace ork::lev2::glslfx {
 ///////////////////////////////////////////////////////////////////////////////
@@ -108,29 +109,95 @@ void ComputeInterface::bindImage(const FxComputeShader* shader, uint32_t binding
 ///////////////////////////////////////////////////////////////////////////////
 
 PipelineCompute* ComputeInterface::createComputePipe(ComputeShader* csh) {
+  Timer citimer;
+  citimer.Start();
+
   auto pipe = new PipelineCompute;
   GL_ERRORCHECK();
-  bool compileok = csh->Compile();
-  assert(compileok);
   GLuint prgo            = glCreateProgram();
-  pipe->_programObjectId = prgo;
-  glAttachShader(prgo, csh->mShaderObjectId);
-  GL_ERRORCHECK();
-  glLinkProgram(prgo);
-  GL_ERRORCHECK();
-  GLint linkstat = 0;
-  glGetProgramiv(prgo, GL_LINK_STATUS, &linkstat);
-  if (linkstat != GL_TRUE) {
-    if (csh)
-      csh->dumpFinalText();
-    char infoLog[1 << 16];
-    glGetProgramInfoLog(prgo, sizeof(infoLog), NULL, infoLog);
-    printf("\n\n//////////////////////////////////\n");
-    printf("program COMPUTE InfoLog<%s>\n", infoLog);
-    printf("//////////////////////////////////\n\n");
-    OrkAssert(false);
-  }
   csh->_computePipe = pipe;
+
+  /////////////////////////////////////////
+  // check if precompiled
+  /////////////////////////////////////////
+  auto pipeline_hasher = DataBlock::createHasher();
+  pipeline_hasher->accumulateString("glfx_compute_pipeline"); // identifier
+  pipeline_hasher->accumulateItem<float>(0.01);               // version code
+  printf( "csh->mShaderText<%s>\n", csh->mShaderText.c_str());
+  pipeline_hasher->accumulateString(csh->mShaderText);
+  pipeline_hasher->finish();
+  uint64_t pipeline_hash = pipeline_hasher->result();
+  auto pipeline_datablock = DataBlockCache::findDataBlock(pipeline_hash);
+  ////////////////////////////////////////////////////////////
+  // cached?
+  ////////////////////////////////////////////////////////////
+  if (pipeline_datablock) { 
+    chunkfile::DefaultLoadAllocator load_alloc;
+    chunkfile::Reader chunkreader(pipeline_datablock, load_alloc);
+    auto header_input_stream   = chunkreader.GetStream("header");
+    auto shader_input_stream   = chunkreader.GetStream("shaders");
+    OrkAssert(header_input_stream != nullptr);
+    OrkAssert(shader_input_stream != nullptr);
+    GLenum binary_format = header_input_stream->ReadItem<GLenum>();
+    size_t binary_length = header_input_stream->ReadItem<size_t>();
+    auto binary_data = shader_input_stream->GetDataAt(0);
+    glProgramBinary(prgo, binary_format, binary_data, binary_length);
+    GL_ERRORCHECK();
+  }
+  else{
+    bool compileok = csh->Compile();
+    assert(compileok);
+    glAttachShader(prgo, csh->mShaderObjectId);
+    GL_ERRORCHECK();
+    glLinkProgram(prgo);
+    GL_ERRORCHECK();
+    GLint linkstat = 0;
+    glGetProgramiv(prgo, GL_LINK_STATUS, &linkstat);
+    if (linkstat != GL_TRUE) {
+      if (csh)
+        csh->dumpFinalText();
+      char infoLog[1 << 16];
+      glGetProgramInfoLog(prgo, sizeof(infoLog), NULL, infoLog);
+      printf("\n\n//////////////////////////////////\n");
+      printf("program COMPUTE InfoLog<%s>\n", infoLog);
+      printf("//////////////////////////////////\n\n");
+      OrkAssert(false);
+    }
+    ///////////////////////////////////
+    // fetch shader binary
+    ///////////////////////////////////
+
+    #if !defined(__APPLE__)
+
+    chunkfile::Writer chunkwriter("xfx-glci");
+    auto header_stream   = chunkwriter.AddStream("header");
+    auto shader_stream   = chunkwriter.AddStream("shaders");
+
+    GLint binaryLength = 0;
+    glGetProgramiv(prgo, GL_PROGRAM_BINARY_LENGTH, &binaryLength);
+    std::vector<GLubyte> binary_bytes;
+    binary_bytes.resize(binaryLength);
+    GLenum binaryFormat;
+    glGetProgramBinary(prgo, binaryLength, NULL, &binaryFormat, binary_bytes.data());
+    header_stream->AddItem<GLenum>(binaryFormat);
+    header_stream->AddItem<size_t>(binary_bytes.size());
+    shader_stream->AddData(binary_bytes.data(),binary_bytes.size());
+
+    ///////////////////////////////////
+    // write to datablock cache
+    ///////////////////////////////////
+
+    printf( "WRITING COMPUTE SHADER hash<%016zx> TO CACHE\n", pipeline_hash );
+
+    pipeline_datablock = std::make_shared<DataBlock>();
+    chunkwriter.writeToDataBlock(pipeline_datablock);
+    DataBlockCache::setDataBlock(pipeline_hash, pipeline_datablock);
+
+    #endif
+  }
+  pipe->_programObjectId = prgo;
+  double citime      = citimer.SecsSinceStart();
+  printf("ComputeInterface::createComputePipe<%p> took<%g>\n", (void*)csh, citime);
   return pipe;
 }
 

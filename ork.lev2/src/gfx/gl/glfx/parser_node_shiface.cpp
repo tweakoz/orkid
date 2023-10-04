@@ -298,7 +298,7 @@ void InterfaceNode::emitInterface(shaderbuilder::BackEnd& backend) const {
         codegen.output(tok + " ");
       } else if (tok == ")") {
         codegen.output(") " + iflayout->_direction + ";");
-        codegen.output(FormatString(" // SIF<%p>", this ));
+        codegen.output(FormatString(" // SIF<%s>", _name.c_str() ));
         codegen.endLine();
       } else
         codegen.output(tok + " ");

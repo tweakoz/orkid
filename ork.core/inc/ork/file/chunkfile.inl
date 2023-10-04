@@ -42,6 +42,17 @@ template <typename T> void InputStream::RefItem(T*& item) {
   item                = (T*)&pchbase[midx];
   midx += isize;
 }
+///////////////////////////////////////////////////////////////////////////////
+template <typename T> T InputStream::ReadItem() {
+  int isize = sizeof(T);
+  int ileft = milength - midx;
+  OrkAssert((midx + isize) <= milength);
+  const char* pchbase = (const char*)mpbase;
+  size_t out_index = midx;
+  midx += isize;
+  auto ptr_to_data = (T*)&pchbase[out_index];
+  return *ptr_to_data;
+}
 ///
 } // namespace chunkfile
 } // namespace ork
