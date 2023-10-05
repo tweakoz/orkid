@@ -126,7 +126,10 @@ void RingEmitterInst::_emit(float fdt) {
   _emitter_context.mDispersion        = _input_dispersionangle->value();
   _directedEmitter.meDirection   = EmitterDirection::CONSTANT;
   _directedEmitter.mUserDir      = _input_direction->value();
-  _emitter_context.mPosition          = _input_offset->value();
+
+  auto offset = _input_offset->value();
+  //printf( "OFFSET<%g %g %g>\n", offset.x, offset.y, offset.z);
+  _emitter_context.mPosition          = offset;
   _directedEmitter.Emit(_emitter_context);
   float fphaseINC = fspr * fdt;
   mfPhase         = fmodf(mfPhase + fphaseINC, PI2 * 1000.0f);

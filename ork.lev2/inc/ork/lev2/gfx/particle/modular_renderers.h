@@ -169,7 +169,6 @@ public:
   StreakRendererData();
   static std::shared_ptr<StreakRendererData> createShared();
   dflow::dgmoduleinst_ptr_t createInstance(dataflow::GraphInst* ginst) const final;
-
   basematerial_ptr_t _material;
   bool _sort = false;
 };

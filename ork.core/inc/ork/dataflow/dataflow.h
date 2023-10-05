@@ -24,6 +24,7 @@
 #include <ork/util/logger.h>
 
 #include <ork/kernel/sigslot2.h>
+#include <functional>
 
 namespace ork::dataflow {
 
@@ -69,6 +70,7 @@ using moduleinst_ptr_t = std::shared_ptr<ModuleInst>;
 using dgmoduledata_ptr_t = std::shared_ptr<DgModuleData>;
 using dgmoduleinst_ptr_t = std::shared_ptr<DgModuleInst>;
 using lambdamoduledata_ptr_t = std::shared_ptr<LambdaModuleData>;
+using moduleIOreshape_fn_t = std::function<void(moduledata_ptr_t)>;
 
 using graphdata_ptr_t = std::shared_ptr<GraphData>;
 using graphdata_const_ptr_t = std::shared_ptr<const GraphData>;

@@ -196,6 +196,7 @@ void SpiralEmitterData::describeX(class_t* clazz) {
         yo.lerp(dir, disp, ctx.mDispersion);
         dir                = yo.normalized();
         ptc->mPosition     = pos;
+        printf("EmitCB::pos<%g %g %g>\n", pos.x, pos.y, pos.z);
         ptc->mVelocity     = dir * ctx.mfEmissionVelocity + ctx.mOffsetVelocity;
         ptc->mLastPosition = pos - (ptc->mVelocity * ctx.mfDeltaTime);
         ptc->mKey          = (void*)ctx.mKey;
@@ -253,6 +254,7 @@ void SpiralEmitterData::describeX(class_t* clazz) {
             dir = yo.normalized();
             //////////////////////////////////////////////
             ptc->mPosition = pos;
+            printf("EmitSQ::pos<%g %g %g>\n", pos.x, pos.y, pos.z);
             ptc->mVelocity = dir * EmitterSpeed;
             // ctx.mfEmissionVelocity + ctx.mOffsetVelocity;
             ptc->mLastPosition = pos - (ptc->mVelocity * ctx.mfDeltaTime);
