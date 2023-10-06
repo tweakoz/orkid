@@ -657,7 +657,6 @@ CtxGLFW* CtxGLFW::globalOffscreenContext() {
     }
 
     glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
 
     std::set<int> _try_minors;
     _try_minors.insert(0);
@@ -694,7 +693,11 @@ CtxGLFW* CtxGLFW::globalOffscreenContext() {
       ctx_vars->makeValueForKey<int>("GL_API_MAJOR_VERSION") = 4;
       ctx_vars->makeValueForKey<int>("GL_API_MINOR_VERSION") = this_minor;
 
+      glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
       glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, this_minor);
+      #if defined(__APPLE__)
+      glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GLFW_TRUE);
+      #endif
       MINOR = this_minor;
 
       offscreen_window = glfwCreateWindow(
@@ -708,7 +711,7 @@ CtxGLFW* CtxGLFW::globalOffscreenContext() {
       done |= (offscreen_window != nullptr);
       done |= (it_minor == _try_minors.rend());
 
-      logchan_glfw->log("try<%d> done<%d>", this_minor, int(done));
+      logchan_glfw->log("try minor<%d> offscreen_window<%p> done<%d>", this_minor, (void*) offscreen_window, int(done));
     }
 
     gctx->_vars       = ctx_vars;
