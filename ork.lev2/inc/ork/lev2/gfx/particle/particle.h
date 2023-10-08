@@ -12,6 +12,7 @@
 #include <ork/kernel/tempstring.h>
 #include <ork/kernel/string/ArrayString.h>
 #include <ork/math/cvector4.h>
+#include <ork/math/cmatrix3.h>
 #include <ork/lev2/gfx/gfxenv_enum.h>
 #include <ork/kernel/fixedlut.h>
 #include <ork/rtti/RTTIX.inl>
@@ -317,14 +318,14 @@ inline Char4 PoolString2Char4(const PoolString& ps) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 
-enum EmitterDirection {
-  CONSTANT = 0,
-  VEL,
-  CROSS_X,
-  CROSS_Y,
-  CROSS_Z,
-  TO_POINT,
-  USER,
+enum class EmitterDirection : uint64_t {
+  CrcEnum(CONSTANT),
+  CrcEnum(VEL),
+  CrcEnum(CROSS_X),
+  CrcEnum(CROSS_Y),
+  CrcEnum(CROSS_Z),
+  CrcEnum(TO_POINT),
+  CrcEnum(USER),
 };
 
 struct EmitterCtx {
@@ -347,6 +348,7 @@ struct EmitterCtx {
   fvec3 mPosition;
   fvec3 mLastPosition;
   fvec3 mOffsetVelocity;
+  fvec3 _userDirection;
 
   EmitterCtx();
 };
@@ -367,7 +369,7 @@ public:
   float mDispersionAngle;
   RandGen _randgen;
 
-  virtual void computePosDir(float fi, fvec3& pos, fvec3& dir) = 0;
+  virtual void computePosDir(float fi, fvec3& pos, fmtx3& basis) = 0;
 };
 
 enum class ParticleItemAlignment {

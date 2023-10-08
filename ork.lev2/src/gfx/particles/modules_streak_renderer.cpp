@@ -169,8 +169,7 @@ void StreakRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
   float flength = _input_length->value();
   float fscale  = _input_scale->value();
   auto LW       = ork::fvec2(flength, fwidth);
-
-  printf( "fscale<%f>\n", fscale );
+  //printf( "fscale<%f>\n", fscale );
   //////////////////////////////////////////////////////////////////////////////
   // compute shader path
   //////////////////////////////////////////////////////////////////////////////

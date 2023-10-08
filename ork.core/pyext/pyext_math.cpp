@@ -42,7 +42,25 @@ void pyinit_math(py::module& module_core) {
   type_codec->registerStdCodec<multicurve1d_ptr_t>(curve_type);
   /////////////////////////////////////////////////////////////////////////////////
     auto gradient_type = //
-      py::class_<gradient_fvec4_t,Object,gradient_fvec4_ptr_t>(module_core, "GradientV4");
+      py::class_<gradient_fvec4_t,Object,gradient_fvec4_ptr_t>(module_core, "GradientV4")
+        .def(py::init<>())
+        .def("addColorStop", [](gradient_fvec4_ptr_t self, float flerp, const fvec4& data) -> void { //
+          self->addDataPoint(flerp, data);
+        })
+        .def("setColorStops", [](gradient_fvec4_ptr_t self, py::dict stops) {
+          self->_data.clear();
+          for (auto item : stops) {
+              float flerp = item.first.cast<float>();
+              fvec4 data = item.second.cast<fvec4>();
+              self->addDataPoint(flerp, data);
+          }
+        })
+        .def("sample", [](gradient_fvec4_ptr_t self, float fu) -> fvec4 { //
+          return self->sample(fu);
+        })
+        .def("clear", [](gradient_fvec4_ptr_t self) -> void { //
+          self->_data.clear();
+        });
   type_codec->registerStdCodec<gradient_fvec4_ptr_t>(gradient_type);
   /////////////////////////////////////////////////////////////////////////////////
   module_core.def("dmtx4_to_fmtx4", [](const dmtx4& dmtx) -> fmtx4 { //

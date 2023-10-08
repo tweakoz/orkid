@@ -36,12 +36,36 @@ void pyinit_gfx_particles(py::module& module_lev2) {
   /////////////////////////////////////////////////////////////////////////////
   auto mtl_flat_type = //
       py::class_<ptc::FlatMaterial, ptc::MaterialBase, ptc::flatmaterial_ptr_t>(ptc_module, "FlatMaterial")
-      .def_static("createShared", []() -> ptc::flatmaterial_ptr_t { return ptc::FlatMaterial::createShared(); });
+      .def_static("createShared", []() -> ptc::flatmaterial_ptr_t { return ptc::FlatMaterial::createShared(); })
+      .def_property("blending", 
+        [](ptc::flatmaterial_ptr_t  m) -> crcstring_ptr_t { //
+          auto crcstr = std::make_shared<CrcString>(uint64_t(m->_blending));
+          return crcstr;
+        },
+        [](ptc::flatmaterial_ptr_t  m, crcstring_ptr_t blend) { //
+          m->_blending = Blending(blend->hashed());
+        });
   type_codec->registerStdCodec<ptc::flatmaterial_ptr_t>(mtl_flat_type);
   /////////////////////////////////////////////////////////////////////////////
   auto mtl_grad_type = //
       py::class_<ptc::GradientMaterial, ptc::MaterialBase, ptc::gradientmaterial_ptr_t>(ptc_module, "GradientMaterial")
-      .def_static("createShared", []() -> ptc::gradientmaterial_ptr_t { return ptc::GradientMaterial::createShared(); });
+      .def_static("createShared", []() -> ptc::gradientmaterial_ptr_t { return ptc::GradientMaterial::createShared(); })
+      .def_property("gradient", 
+        [](ptc::gradientmaterial_ptr_t  m) -> gradient_fvec4_ptr_t { //
+          return m->_gradient;
+        },
+        [](ptc::gradientmaterial_ptr_t  m, gradient_fvec4_ptr_t grad) { //
+          m->_gradient = grad;
+        }
+        )
+      .def_property("blending", 
+        [](ptc::gradientmaterial_ptr_t  m) -> crcstring_ptr_t { //
+          auto crcstr = std::make_shared<CrcString>(uint64_t(m->_blending));
+          return crcstr;
+        },
+        [](ptc::gradientmaterial_ptr_t  m, crcstring_ptr_t blend) { //
+          m->_blending = Blending(blend->hashed());
+        });
   type_codec->registerStdCodec<ptc::gradientmaterial_ptr_t>(mtl_grad_type);
   /////////////////////////////////////////////////////////////////////////////
   auto mtl_tex_type = //

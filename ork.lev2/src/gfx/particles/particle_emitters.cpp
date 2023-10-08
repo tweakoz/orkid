@@ -160,43 +160,26 @@ void SpiralEmitterData::describeX(class_t* clazz) {
     }
     //printf("emitrate<%f> deltat<%f> deltap<%f> mark<%f>\n", ctx.mfEmissionRate, ctx.mfDeltaTime, fdeltap, ctx.mfEmitterMark);
     int icount = int(ctx.mfEmitterMark);
-    fvec3 dir, pos, disp, vbin, vtan, yo;
+    fmtx3 basis;
+    fvec3 pos, disp, yo;
     for (int ic = 0; ic < icount; ic++) {
       float fi = float(ic) / float(icount);
-      computePosDir(fi, pos, dir);
+      computePosDir(fi, pos, basis);
       pos += ctx.mPosition;
       BasicParticle* __restrict ptc = the_pool.FastAlloc();
       if (ptc) {
         ptc->mfAge      = 0.0f;
         ptc->mfLifeSpan = ctx.mfLifespan;
-        switch (meDirection) {
-          case EmitterDirection::CROSS_X:
-            dir = dir.crossWith(fvec3::Red());
-            break;
-          case EmitterDirection::CROSS_Y:
-            dir = dir.crossWith(fvec3::Green());
-            break;
-          case EmitterDirection::CROSS_Z:
-            dir = dir.crossWith(fvec3::Blue());
-            break;
-          case EmitterDirection::CONSTANT:
-          case EmitterDirection::VEL:
-          case EmitterDirection::TO_POINT:
-          default:
-            break;
-        }
-        vbin = dir.crossWith(fvec3::Green());
-        if (vbin.magnitudeSquared() < .1f)
-          vbin = dir.crossWith(fvec3::Red());
-        vbin.normalizeInPlace();
-        vtan     = vbin.crossWith(dir);
+        fvec3 dir = basis.column(1);
+        fvec3 vbin = basis.column(0);
+        fvec3 vtan = basis.column(2);
         float fu = _randgen.ranged_rand(-0.5,0.5);
         float fv = _randgen.ranged_rand(-0.5,0.5);
         disp     = (vbin * fu) + (vtan * fv);
         yo.lerp(dir, disp, ctx.mDispersion);
         dir                = yo.normalized();
         ptc->mPosition     = pos;
-        printf("EmitCB::pos<%g %g %g>\n", pos.x, pos.y, pos.z);
+        //printf("EmitCB::pos<%g %g %g> dir<%g %g %g>\n", pos.x, pos.y, pos.z, dir.x, dir.y, dir.z);
         ptc->mVelocity     = dir * ctx.mfEmissionVelocity + ctx.mOffsetVelocity;
         ptc->mLastPosition = pos - (ptc->mVelocity * ctx.mfDeltaTime);
         ptc->mKey          = (void*)ctx.mKey;

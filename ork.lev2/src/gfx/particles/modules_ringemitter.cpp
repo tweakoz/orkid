@@ -19,7 +19,7 @@ struct RingEmitterInst;
 
 struct RingDirectedEmitter : public DirectedEmitter {
   RingDirectedEmitter(RingEmitterInst* module);
-  void computePosDir(float fi, fvec3& pos, fvec3& dir);
+  void computePosDir(float fi, fvec3& pos, fmtx3& basis);
   RingEmitterInst* _emitterModule;
   fvec3 mUserDir;
 };
@@ -156,7 +156,7 @@ RingDirectedEmitter::RingDirectedEmitter(RingEmitterInst* module)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void RingDirectedEmitter::computePosDir(float fi, fvec3& pos, fvec3& dir) {
+void RingDirectedEmitter::computePosDir(float fi, fvec3& pos, fmtx3& basis) {
   float scaler = (fi * _emitterModule->mfThisRadius) + ((1.0f - fi) * _emitterModule->mfLastRadius);
   float phase  = (fi * _emitterModule->mfPhase2) + ((1.0f - fi) * _emitterModule->mfPhase);
   float fpx    = cosf(phase);
@@ -165,9 +165,18 @@ void RingDirectedEmitter::computePosDir(float fi, fvec3& pos, fvec3& dir) {
   float fdz    = sinf(phase + PI_DIV_2);
   pos          = fvec3((fpx * scaler), 0.0f, (fpz * scaler));
   if (meDirection == EmitterDirection::USER) {
-    dir = mUserDir;
+    basis.setColumn(0,fvec3(1,0,0));
+    basis.setColumn(1,mUserDir);
+    basis.setColumn(2,fvec3(0,0,1));
   } else {
-    dir = fvec3(fdx, 0.0f, fdz);
+    //dir = fvec3(fdx, 0.0f, fdz);
+    fvec3 DY = fvec3(fdx, 0.0f, fdz).normalized();
+    fvec3 DX = fvec3(0,1,0);
+    fvec3 DZ = DY.crossWith(DX);
+
+    basis.setColumn(0,DX);
+    basis.setColumn(1,DY);
+    basis.setColumn(2,DZ);
   }
 }
 
