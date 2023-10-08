@@ -37,7 +37,9 @@ using chunkdatasource_seek_t = std::function<void(size_t)>;
 
 struct ChunkData{
     chunkdataiter_ptr_t iterator() const;
+    size_t length() const;
    std::vector<uint8_t> _data;
+   std::string _versionCode;
 };
 
 struct ChunkDataIterator{

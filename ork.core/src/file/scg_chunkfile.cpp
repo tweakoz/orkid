@@ -18,6 +18,10 @@ chunkdataiter_ptr_t ChunkData::iterator() const{
 	return std::make_shared<ChunkDataIterator>(this);
 }
 
+size_t ChunkData::length() const{
+	return _data.size();
+}
+
 ChunkDataIterator::ChunkDataIterator(const ChunkData* cdata) : _chunkdata(cdata) {}
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -74,6 +78,7 @@ chunkdata_ptr_t ChunkGroup::load( chunkheader_ptr_t chunkhdr ){
   _reader->seek(offset);
   _reader->read(data->_data.data(), len);
   hexdumpbytes(data->_data.data(), 40 );
+  data->_versionCode = chunk_genchunkIDSTRING(chunkhdr->version);
   return data;
 }
 
@@ -131,9 +136,20 @@ std::vector<chunkheader_ptr_t> ChunkGroup::chunksOfType( std::string chunkID ) c
 ///////////////////////////////////////////////////////////////////////////////
 
 chunkheader_ptr_t ChunkGroup::getChunkOfType( std::string chunkID ) const{
-	auto rval = chunksOfType(chunkID);
-	OrkAssert(rval.size()==1);
-	return rval[0];
+	auto chunks = chunksOfType(chunkID);
+	chunkheader_ptr_t rval;
+	switch(chunks.size()){
+		case 1:
+	  	  rval = chunks[0];
+		  break;
+		case 0:
+		  break;
+		default:
+		  // ambiguous which chunk to return
+		  OrkAssert(false);
+		  break;
+	}
+	return rval;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -146,9 +162,11 @@ void ChunkGroup::dump_headers(std::string headers_name) {
 
   for (int i = 0; (i < _chunk_headers.size()); i++) {
     chunkheader_ptr_t hdr = _chunk_headers[i];
-    uint32_t chunkID      = hdr->chunktypeID;
+    uint32_t chunkTID      = hdr->chunktypeID;
     std::string chunkNAME = chunk_genchunkIDSTRING(hdr->chunktypeID);
-    printf("// chunk<%d> : CID<%08x:%s> offs %08x len %08x\n", i, chunkID, chunkNAME.c_str(), hdr->offset, hdr->chunklen);
+    std::string chunkVERS = chunk_genchunkIDSTRING(hdr->version);
+
+    printf("// chunk<%d> : CTID<%08x:%s> inst<%08x> vers<%s> offs %08x len %08x\n", i, chunkTID, chunkNAME.c_str(), hdr->chunkID, chunkVERS.c_str(), hdr->offset, hdr->chunklen);
   }
   printf("//////////////////////////////////////////////////////\n");
 }
