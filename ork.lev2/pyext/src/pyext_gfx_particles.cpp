@@ -169,7 +169,15 @@ void pyinit_gfx_particles(py::module& module_lev2) {
       },
       [](ptc::streakmodule_ptr_t r, ptc::basematerial_ptr_t m){
         r->_material = m;
-      })      
+      })   
+      .def_property("depth_sort", 
+        [](ptc::streakmodule_ptr_t  m) -> bool { //
+          return m->_sort;
+        },
+        [](ptc::streakmodule_ptr_t  m, bool sort) { //
+          return m->_sort = sort;
+        }
+        )
       .def_static("createShared", []() -> ptc::streakmodule_ptr_t { return ptc::StreakRendererData::createShared(); });
   type_codec->registerStdCodec<ptc::streakmodule_ptr_t>(streakmoduledata_type);
 }
