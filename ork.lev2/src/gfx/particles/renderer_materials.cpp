@@ -103,7 +103,7 @@ void FlatMaterial::gpuInit(const RenderContextInstData& RCID) {
   _material->_rasterstate.SetBlending(Blending::ADDITIVE);
   _material->_rasterstate.SetCullTest(ECullTest::OFF);
   _material->_rasterstate.SetDepthTest(EDepthTest::LEQUALS);
-  _material->_rasterstate.SetZWriteMask(false);
+  _material->_rasterstate.SetZWriteMask(true);
 
   auto fxparameterMVP      = _material->param("MatMVP");
   auto fxparameterColor  = _material->param("modcolor");
@@ -214,7 +214,7 @@ void GradientMaterial::gpuInit(const RenderContextInstData& RCID) {
   _material->_rasterstate.SetBlending(Blending::ADDITIVE);
   _material->_rasterstate.SetCullTest(ECullTest::OFF);
   _material->_rasterstate.SetDepthTest(EDepthTest::LEQUALS);
-  _material->_rasterstate.SetZWriteMask(false);
+  _material->_rasterstate.SetZWriteMask(true);
   //_material->_rasterstate.SetDepthTest(EDepthTest::OFF);
 
   auto fxparameterMVP     = _material->param("MatMVP");
