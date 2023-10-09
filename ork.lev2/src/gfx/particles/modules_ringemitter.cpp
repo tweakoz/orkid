@@ -182,36 +182,43 @@ void RingDirectedEmitter::computePosDir(float fi, fvec3& pos, fmtx3& basis) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void RingEmitterData::describeX(class_t* clazz) {
-  clazz->setSharedFactory( []() -> rtti::castable_ptr_t {
-    return RingEmitterData::createShared();
-  });
-}
-
 RingEmitterData::RingEmitterData() {
 }
+
+//////////////////////////////////////////////////////////////////////////
+
+static void _reshapeRingEmitterIOs( dataflow::moduledata_ptr_t data ){
+  auto typed = std::dynamic_pointer_cast<RingEmitterData>(data);
+  ModuleData::createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "LifeSpan")->_range = {0,100};
+  ModuleData::createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "EmissionRate")->_range = {0,1000};
+  ModuleData::createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "EmissionVelocity")->_range = {0,10};
+  ModuleData::createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "DispersionAngle")->_range = {0,1};
+  ModuleData::createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "EmissionRadius")->_range = {0,10};
+  ModuleData::createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "EmitterSpinRate")->_range = {0,100};
+  ModuleData::createInputPlug<Vec3XfPlugTraits>(data, EPR_UNIFORM, "Direction")->_range = {-1,1};
+  ModuleData::createInputPlug<Vec3XfPlugTraits>(data, EPR_UNIFORM, "Offset")->_range = {-10,10};
+}
+
+//////////////////////////////////////////////////////////////////////////
 
 std::shared_ptr<RingEmitterData> RingEmitterData::createShared() {
   auto data = std::make_shared<RingEmitterData>();
   _initShared(data);
-
-  //////////////////////////////////////////////////
-  // inputs
-  //////////////////////////////////////////////////
-
-  createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "LifeSpan")->_range = {0,100};
-  createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "EmissionRate")->_range = {0,1000};
-  createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "EmissionVelocity")->_range = {0,10};
-  createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "DispersionAngle")->_range = {0,1};
-  createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "EmissionRadius")->_range = {0,10};
-  createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "EmitterSpinRate")->_range = {0,100};
-  createInputPlug<Vec3XfPlugTraits>(data, EPR_UNIFORM, "Direction")->_range = {-1,1};
-  createInputPlug<Vec3XfPlugTraits>(data, EPR_UNIFORM, "Offset")->_range = {-10,10};
+  _reshapeRingEmitterIOs(data);
   return data;
 }
 
 dgmoduleinst_ptr_t RingEmitterData::createInstance(dataflow::GraphInst* ginst) const {
   return std::make_shared<RingEmitterInst>(this, ginst);
+}
+
+void RingEmitterData::describeX(class_t* clazz) {
+  clazz->setSharedFactory( []() -> rtti::castable_ptr_t {
+    return RingEmitterData::createShared();
+  });
+  clazz->annotateTyped<moduleIOreshape_fn_t>("reshapeIOs",[](dataflow::moduledata_ptr_t mdata){
+    _reshapeRingEmitterIOs(mdata);
+  });
 }
 
 } // namespace ork::lev2::particle
