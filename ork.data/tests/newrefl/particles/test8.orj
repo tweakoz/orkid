@@ -32,7 +32,7 @@
               }
              }
             },
-            "value": 558.2500610351563
+            "value": 59.86279296875
            }
           }
          },
@@ -120,6 +120,32 @@
           "object": {
            "class": "dflow::inplugdata<vec3xf>",
            "uuid": "7afbeda0-030f-431a-baee-eef559afda64",
+           "properties": {
+            "value": [
+             0.0,
+             0.0,
+             0.0
+            ]
+           }
+          }
+         },
+         {
+          "object": {
+           "class": "dflow::inplugdata<vec3xf>",
+           "uuid": "09f14b9b-6678-4d44-b974-0062cc7accb5",
+           "properties": {
+            "value": [
+             0.0,
+             0.0,
+             0.0
+            ]
+           }
+          }
+         },
+         {
+          "object": {
+           "class": "dflow::inplugdata<vec3xf>",
+           "uuid": "3efb5c67-ea1a-4f1b-8a7c-5764b44194d0",
            "properties": {
             "value": [
              0.0,
@@ -555,8 +581,8 @@
           "uuid": "74d21f01-ff54-4fef-9a81-a1ec36f53775",
           "properties": {
            "alphaFactor": 0.7740280628204346,
-           "blendmode": "PREMA",
-           "colorFactor": 4.379345893859863,
+           "blendmode": "ALPHA",
+           "colorFactor": 1.482900619506836,
            "gradient": {
             "object": {
              "class": "GradientV4",
@@ -614,7 +640,7 @@
              "class": "lev2tex",
              "uuid": "1e990c1c-94c9-4fca-b274-96e840d2bf29",
              "properties": {
-              "path": "data://src/effect_textures/ptc3"
+              "path": "data://src/effect_textures/ptc4"
              }
             }
            }
@@ -681,6 +707,24 @@
              }
             },
             "value": 10.0
+           }
+          }
+         },
+         {
+          "object": {
+           "class": "dflow::inplugdata<floatxf>",
+           "uuid": "bfc77d77-8631-4830-805a-c26e14f30e1a",
+           "properties": {
+            "Transform": {
+             "object": {
+              "class": "dflow::floatxfdata",
+              "uuid": "be687b61-d48d-4c5c-b81b-ee56dce4b5c9",
+              "properties": {
+               "Transforms": {}
+              }
+             }
+            },
+            "value": 0.0
            }
           }
          }
@@ -816,7 +860,7 @@
               }
              }
             },
-            "value": -10.79091739654541
+            "value": -4.616367340087891
            }
           }
          },
