@@ -57,7 +57,6 @@ template <typename T> T InputStream::readItem() {
   auto ptr_to_data = (T*)&pchbase[out_index];
   return *ptr_to_data;
 }
-
 ///
 } // namespace chunkfile
 } // namespace ork

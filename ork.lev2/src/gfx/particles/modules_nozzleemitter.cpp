@@ -23,7 +23,7 @@ struct NozzleEmitterInst;
 struct NozzleDirectedEmitter : public DirectedEmitter {
 
   NozzleDirectedEmitter(NozzleEmitterInst* emitterModule);
-  void computePosDir(float fi, fvec3& pos, fvec3& dir) final;
+  void computePosDir(float fi, fvec3& pos, fmtx3& basis) final;
 
   NozzleEmitterInst* _emitterModule;
 };
@@ -39,8 +39,14 @@ struct NozzleEmitterInst : public ParticleModuleInst {
 
   float _timeAccumulator = 0.0f;
   fvec3 _lastPosition;
-  fvec3 _lastDirection;
-  fvec3 _curDirection;
+
+  fvec3 _prevBasisX;
+  fvec3 _prevBasisY;
+  fvec3 _prevBasisZ;
+
+  fvec3 _curBasisX;
+  fvec3 _curBasisY;
+  fvec3 _curBasisZ;
   fvec3 _curOffset;
 
   NozzleDirectedEmitter _directedEmitter;
@@ -52,7 +58,9 @@ struct NozzleEmitterInst : public ParticleModuleInst {
   floatxf_inp_pluginst_ptr_t _input_emissionvelocity;
   floatxf_inp_pluginst_ptr_t _input_dispersionangle;
 
-  fvec3xf_inp_pluginst_ptr_t _input_direction;
+  fvec3xf_inp_pluginst_ptr_t _input_directionX;
+  fvec3xf_inp_pluginst_ptr_t _input_directionY;
+  fvec3xf_inp_pluginst_ptr_t _input_directionZ;
   fvec3xf_inp_pluginst_ptr_t _input_offset;
   fvec3xf_inp_pluginst_ptr_t _input_offset_velocity;
 
@@ -68,6 +76,10 @@ struct NozzleEmitterInst : public ParticleModuleInst {
 NozzleEmitterInst::NozzleEmitterInst(const NozzleEmitterData* ned, dataflow::GraphInst* ginst)
     : ParticleModuleInst(ned, ginst)
     , _directedEmitter(this){
+  
+  _curBasisX = fvec3(1,0,0);
+  _curBasisY = fvec3(0,1,0);
+  _curBasisZ = fvec3(0,0,1);
 
 }
 
@@ -78,7 +90,9 @@ void NozzleEmitterInst::onLink(GraphInst* inst) {
   _input_emissionrate     = typedInputNamed<FloatXfPlugTraits>("EmissionRate");
   _input_emissionvelocity = typedInputNamed<FloatXfPlugTraits>("EmissionVelocity");
   _input_dispersionangle  = typedInputNamed<FloatXfPlugTraits>("DispersionAngle");
-  _input_direction       = typedInputNamed<Vec3XfPlugTraits>("Direction");
+  _input_directionX       = typedInputNamed<Vec3XfPlugTraits>("DirectionX");
+  _input_directionY       = typedInputNamed<Vec3XfPlugTraits>("DirectionY");
+  _input_directionZ       = typedInputNamed<Vec3XfPlugTraits>("DirectionZ");
   _input_offset          = typedInputNamed<Vec3XfPlugTraits>("Offset");
   _input_offset_velocity = typedInputNamed<Vec3XfPlugTraits>("OffsetVelocity");
 }
@@ -91,13 +105,22 @@ void NozzleEmitterInst::compute(GraphInst* inst, ui::updatedata_ptr_t updata) {
   _timeAccumulator += updata->_dt;
 
   _lastPosition  = _curOffset;
-  _lastDirection = _curDirection;
+  _prevBasisX = _curBasisX;
+  _prevBasisY = _curBasisY;
+  _prevBasisZ = _curBasisZ;
 
-  _curDirection = _input_direction->value();
+  _curBasisX = _input_directionX->value();
+  _curBasisY = _input_directionY->value();
+  _curBasisZ = _input_directionZ->value();
   _curOffset    = _input_offset->value();
 
-  if (_curDirection.magnitudeSquared() == 0.0f) {
-    _curDirection = fvec3::Green();
+  if (_curBasisY.magnitudeSquared() == 0.0f) {
+    _curBasisX = fvec3(1,0,0);
+    _curBasisY = fvec3(0,1,0);
+    _curBasisZ = fvec3(0,0,1);
+    _prevBasisX = _curBasisX;
+    _prevBasisY = _curBasisY;
+    _prevBasisZ = _curBasisZ;
   }
 
   float fdelta = 1.0f / _updaterate;
@@ -121,8 +144,7 @@ void NozzleEmitterInst::_emit(float fdt) {
   _emitter_context.mfDeltaTime        = fdt;
   _emitter_context.mfEmissionVelocity = femitvel;
   _emitter_context.mDispersion        = _input_dispersionangle->value();
-  _directedEmitter.meDirection        = EmitterDirection::CONSTANT;
-  fvec3 dir                           = _input_direction->value();
+  _directedEmitter.meDirection        = EmitterDirection::USER;
   _emitter_context.mPosition          = _input_offset->value();
   fvec3 offsetVel                     = _input_offset_velocity->value();
   _emitter_context.mOffsetVelocity    = offsetVel;
@@ -145,17 +167,17 @@ NozzleDirectedEmitter::NozzleDirectedEmitter(NozzleEmitterInst* emitterModule)
 
 //////////////////////////////////////////////////////////////////////////
 
-void NozzleDirectedEmitter::computePosDir(float fi, fvec3& pos, fvec3& dir) {
+void NozzleDirectedEmitter::computePosDir(float fi, fvec3& pos, fmtx3& basis) {
   pos.lerp(_emitterModule->_lastPosition, _emitterModule->_curOffset, fi);
-  dir.lerp(_emitterModule->_lastDirection, _emitterModule->_curDirection, fi);
-}
 
-//////////////////////////////////////////////////////////////////////////
+  fvec3 dirX, dirY, dirZ;
+  dirX.lerp(_emitterModule->_prevBasisX, _emitterModule->_curBasisX, fi);
+  dirY.lerp(_emitterModule->_prevBasisY, _emitterModule->_curBasisY, fi);
+  dirZ.lerp(_emitterModule->_prevBasisZ, _emitterModule->_curBasisZ, fi);
 
-void NozzleEmitterData::describeX(class_t* clazz) {
-  clazz->setSharedFactory( []() -> rtti::castable_ptr_t {
-    return NozzleEmitterData::createShared();
-  });
+  basis.setColumn(0, dirX);
+  basis.setColumn(1, dirY);
+  basis.setColumn(2, dirZ);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -165,18 +187,25 @@ NozzleEmitterData::NozzleEmitterData() {
 
 //////////////////////////////////////////////////////////////////////////
 
+static void _reshapeNozzleEmitterIOs( dataflow::moduledata_ptr_t data ){
+  auto typed = std::dynamic_pointer_cast<NozzleEmitterData>(data);
+  ModuleData::createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "LifeSpan")->_range = {0,20};
+  ModuleData::createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "EmissionRate")->_range = {0,1000};
+  ModuleData::createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "EmissionVelocity")->_range = {-100,100};
+  ModuleData::createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "DispersionAngle")->_range = {0,1};
+  ModuleData::createInputPlug<Vec3XfPlugTraits>(data, EPR_UNIFORM, "DirectionX")->_range = {-1,1};
+  ModuleData::createInputPlug<Vec3XfPlugTraits>(data, EPR_UNIFORM, "DirectionY")->_range = {-1,1};
+  ModuleData::createInputPlug<Vec3XfPlugTraits>(data, EPR_UNIFORM, "DirectionZ")->_range = {-1,1};
+  ModuleData::createInputPlug<Vec3XfPlugTraits>(data, EPR_UNIFORM, "Offset")->_range = {-100,100};
+  ModuleData::createInputPlug<Vec3XfPlugTraits>(data, EPR_UNIFORM, "OffsetVelocity")->_range = {-100,100};
+}
+
+//////////////////////////////////////////////////////////////////////////
+
 std::shared_ptr<NozzleEmitterData> NozzleEmitterData::createShared() {
   auto data = std::make_shared<NozzleEmitterData>();
   _initShared(data);
-
-  createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "LifeSpan")->_range = {0,20};
-  createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "EmissionRate")->_range = {0,1000};
-  createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "EmissionVelocity")->_range = {-100,100};
-  createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "DispersionAngle")->_range = {0,1};
-  createInputPlug<Vec3XfPlugTraits>(data, EPR_UNIFORM, "Direction")->_range = {-1,1};
-  createInputPlug<Vec3XfPlugTraits>(data, EPR_UNIFORM, "Offset")->_range = {-100,100};
-  createInputPlug<Vec3XfPlugTraits>(data, EPR_UNIFORM, "OffsetVelocity")->_range = {-100,100};
-
+  _reshapeNozzleEmitterIOs(data);
   return data;
 }
 
@@ -184,6 +213,18 @@ std::shared_ptr<NozzleEmitterData> NozzleEmitterData::createShared() {
 
 dgmoduleinst_ptr_t NozzleEmitterData::createInstance(dataflow::GraphInst* ginst) const {
   return std::make_shared<NozzleEmitterInst>(this, ginst);
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+void NozzleEmitterData::describeX(class_t* clazz) {
+  clazz->setSharedFactory( []() -> rtti::castable_ptr_t {
+    return NozzleEmitterData::createShared();
+  });
+
+  clazz->annotateTyped<moduleIOreshape_fn_t>("reshapeIOs",[](dataflow::moduledata_ptr_t mdata){
+    _reshapeNozzleEmitterIOs(mdata);
+  });
 }
 
 //////////////////////////////////////////////////////////////////////////

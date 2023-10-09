@@ -41,6 +41,11 @@ def createGridData(extent=10.0,majordim=1,minordim=0.1):
   grid_data.texturepath = "lev2://textures/gridcell_blue.png"
   return grid_data
 
+def createBillboardData(texpath="lev2://textures/gridcell_blue.png"):
+  bb_data = BillboardDrawableData()
+  bb_data.texturepath = texpath
+  return bb_data
+
 def createGroundPlaneData(extent=10.0,pbrmaterial=None, pipeline=None):
   ground_data = GroundPlaneDrawableData()
   ground_data.extent = extent

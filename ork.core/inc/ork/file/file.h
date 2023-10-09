@@ -17,6 +17,7 @@
 #include <ork/file/filedev.h>
 #include <ctype.h>
 
+
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork {
 ///////////////////////////////////////////////////////////////////////////////
@@ -32,6 +33,9 @@ struct BinaryFileReadResult{
 
 using strfilereadresult_ptr_t = std::shared_ptr<StringFileReadResult>;
 using binfilereadresult_ptr_t = std::shared_ptr<BinaryFileReadResult>;
+
+class File;
+using file_ptr_t = std::shared_ptr<File>;
 
 class File {
 

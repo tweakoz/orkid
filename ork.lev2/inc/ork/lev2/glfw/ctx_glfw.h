@@ -65,6 +65,8 @@ struct CtxGLFW : public CTXBASE {
 
   static CtxGLFW* globalOffscreenContext();
 
+  void disableMouseCursor() final;
+
   void SlotRepaint() final;
   int runloop();
 

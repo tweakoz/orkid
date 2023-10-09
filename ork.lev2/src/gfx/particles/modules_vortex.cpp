@@ -73,29 +73,36 @@ struct VortexModuleInst : public ParticleModuleInst {
 
 //////////////////////////////////////////////////////////////////////////
 
-void VortexModuleData::describeX(class_t* clazz) {
-  clazz->setSharedFactory( []() -> rtti::castable_ptr_t {
-    return VortexModuleData::createShared();
-  });
+VortexModuleData::VortexModuleData() {
 }
 
-//////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 
-VortexModuleData::VortexModuleData() {
+static void _reshapeVortexIOs( dataflow::moduledata_ptr_t mdata ){
+  auto typed = std::dynamic_pointer_cast<VortexModuleData>(mdata);
+  ModuleData::createInputPlug<FloatXfPlugTraits>(mdata, EPR_UNIFORM, "VortexStrength")->_range = {-100,100};
+  ModuleData::createInputPlug<FloatXfPlugTraits>(mdata, EPR_UNIFORM, "OutwardStrength")->_range = {-100,100};
+  ModuleData::createInputPlug<FloatXfPlugTraits>(mdata, EPR_UNIFORM, "Falloff")->_range = {0,10};
 }
 
 //////////////////////////////////////////////////////////////////////////
 
 std::shared_ptr<VortexModuleData> VortexModuleData::createShared() {
   auto data = std::make_shared<VortexModuleData>();
-
   _initShared(data);
-
-  createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "VortexStrength")->_range = {-100,100};
-  createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "OutwardStrength")->_range = {-100,100};
-  createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "Falloff")->_range = {0,10};
-
+  _reshapeVortexIOs(data);
   return data;
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+void VortexModuleData::describeX(class_t* clazz) {
+  clazz->setSharedFactory( []() -> rtti::castable_ptr_t {
+    return VortexModuleData::createShared();
+  });
+  clazz->annotateTyped<moduleIOreshape_fn_t>("reshapeIOs",[](dataflow::moduledata_ptr_t mdata){
+    _reshapeVortexIOs(mdata);
+  });
 }
 
 //////////////////////////////////////////////////////////////////////////

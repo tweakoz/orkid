@@ -111,7 +111,6 @@ struct InputStream {
 
   std::vector<uint8_t> readData(size_t length);
 
-
   const void* GetCurrent();
   void* GetDataAt(size_t idx);
   size_t GetLength() const {

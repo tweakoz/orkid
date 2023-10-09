@@ -65,7 +65,10 @@ outpluginst_ptr_t ModuleInst::output(int idx) const{
 }
 inpluginst_ptr_t ModuleInst::inputNamed(const std::string& named) const {
   auto it = _inputsByName.find(named);
-  OrkAssert(it!=_inputsByName.end());
+  if( it==_inputsByName.end() ){
+    printf( "inputNamed<%s> not found!\n", named.c_str() );
+    OrkAssert(false);
+  }
   return it->second;
 }
 outpluginst_ptr_t ModuleInst::outputNamed(const std::string& named) const {

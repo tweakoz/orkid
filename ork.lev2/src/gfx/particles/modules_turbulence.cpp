@@ -64,15 +64,14 @@ struct TurbulenceModuleInst : public ParticleModuleInst {
 
 //////////////////////////////////////////////////////////////////////////
 
-void TurbulenceModuleData::describeX(class_t* clazz) {
-  clazz->setSharedFactory( []() -> rtti::castable_ptr_t {
-    return TurbulenceModuleData::createShared();
-  });
+TurbulenceModuleData::TurbulenceModuleData() {
 }
 
-//////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 
-TurbulenceModuleData::TurbulenceModuleData() {
+static void _reshapeTurbulenceIOs( dataflow::moduledata_ptr_t mdata ){
+  auto typed = std::dynamic_pointer_cast<TurbulenceModuleData>(mdata);
+  ModuleData::createInputPlug<Vec3XfPlugTraits>(mdata, EPR_UNIFORM, "Amount")->_range = {-100,100};
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -81,8 +80,7 @@ std::shared_ptr<TurbulenceModuleData> TurbulenceModuleData::createShared() {
   auto data = std::make_shared<TurbulenceModuleData>();
 
   _initShared(data);
-
-  createInputPlug<Vec3XfPlugTraits>(data, EPR_UNIFORM, "Amount")->_range = {-100,100};
+  _reshapeTurbulenceIOs(data);
 
   return data;
 }
@@ -91,6 +89,17 @@ std::shared_ptr<TurbulenceModuleData> TurbulenceModuleData::createShared() {
 
 dgmoduleinst_ptr_t TurbulenceModuleData::createInstance(dataflow::GraphInst* ginst) const {
   return std::make_shared<TurbulenceModuleInst>(this,ginst);
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+void TurbulenceModuleData::describeX(class_t* clazz) {
+  clazz->setSharedFactory( []() -> rtti::castable_ptr_t {
+    return TurbulenceModuleData::createShared();
+  });
+  clazz->annotateTyped<moduleIOreshape_fn_t>("reshapeIOs",[](dataflow::moduledata_ptr_t mdata){
+    _reshapeTurbulenceIOs(mdata);
+  });
 }
 
 } // namespace ork::lev2::particle

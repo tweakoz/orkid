@@ -38,6 +38,7 @@ struct StreakRendererInst : public ParticleModuleInst {
   const StreakRendererData* _srd;
   floatxf_inp_pluginst_ptr_t _input_length;
   floatxf_inp_pluginst_ptr_t _input_width;
+  floatxf_inp_pluginst_ptr_t _input_scale;
   triple_buf_ptr_t _triple_buf;
   streak_vtxbuf_ptr_t _vertexBuffer;
 };
@@ -62,6 +63,7 @@ void StreakRendererInst::onLink(GraphInst* inst) {
   ptcl_context->_rcidlambda = [this](const RenderContextInstData& RCID) { this->_render(RCID); };
   _input_length             = typedInputNamed<FloatXfPlugTraits>("Length");
   _input_width              = typedInputNamed<FloatXfPlugTraits>("Width");
+  _input_scale             = typedInputNamed<FloatXfPlugTraits>("Scale");
   //_input_length->setValue(.01);
   //_input_width->setValue(.01);
 }
@@ -71,6 +73,8 @@ void StreakRendererInst::onLink(GraphInst* inst) {
 void StreakRendererInst::compute(
     GraphInst* inst, //
     ui::updatedata_ptr_t updata) {
+
+  
   auto ptcl_context = inst->_impl.getShared<Context>();
   auto drawable     = ptcl_context->_drawable;
   OrkAssert(drawable);
@@ -95,11 +99,18 @@ void StreakRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
   auto material = _srd->_material;
 
   if (nullptr == material->_pipeline) {
+    Timer gpu_init_timer;
+    gpu_init_timer.Start();
     material->gpuInit(RCID);
     OrkAssert(material->_pipeline);
+    double gpu_init_time = gpu_init_timer.SecsSinceStart();
+     printf( "gpu_init_time<%f>\n", gpu_init_time );
   }
 
   fmtx4 mtx;
+
+  Timer prender_timer;
+  prender_timer.Start();
 
   ///////////////////////////////////////////////////////////////
   // compute particle dynamic vertex buffer
@@ -110,8 +121,13 @@ void StreakRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
     _triple_buf->end_pull(render_buffer);
     return;
   }
+  double render_time_1 = prender_timer.SecsSinceStart();
 
   //////////////////////////////////////////
+
+  double render_time_1a = 0.0f;
+  double render_time_1b = 0.0f;
+  double render_time_1c = 0.0f;
 
   ork::fmtx4 mtx_iw;
   mtx_iw.inverseOf(mtx);
@@ -151,7 +167,9 @@ void StreakRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
   //////////////////////////////////////////////////////////////////////////////
   float fwidth  = _input_width->value();
   float flength = _input_length->value();
+  float fscale  = _input_scale->value();
   auto LW       = ork::fvec2(flength, fwidth);
+  //printf( "fscale<%f>\n", fscale );
   //////////////////////////////////////////////////////////////////////////////
   // compute shader path
   //////////////////////////////////////////////////////////////////////////////
@@ -165,6 +183,11 @@ void StreakRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
     auto SMM = stereocams->_mono;
     //obj_nrmz = fvec4(SMM->_camdat.zNormal(), 0.0f).transform(mtx_iw).normalized();
     obj_nrmz =fvec4(0,1,0,0);
+
+    fmtx4 scale_matrix;
+    scale_matrix.setScale(fscale,fscale,fscale);
+
+    worldmatrix = scale_matrix * worldmatrix;
     ///////////////////////////////////////////////////////////////
     auto storage = material->_streakcu_vertex_io_buffer;
     size_t mapping_size = 1<<20; 
@@ -189,13 +212,16 @@ void StreakRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
         mapped_storage->make<fvec4>(clamped_unitage, ptcl->mfRandom,0,0);
     }
     CI->unmapStorageBuffer(mapped_storage.get());
+    render_time_1a = prender_timer.SecsSinceStart();
     ///////////////////////////////////////////////////////////////
     CI->bindStorageBuffer(material->_streakcu_shader, 0, storage);
     ///////////////////////////////////////////////////////////////
     int wu_width = icnt;
     int wu_height = 1;
     int wu_depth = 1;
+    render_time_1b = prender_timer.SecsSinceStart();
     CI->dispatchCompute(material->_streakcu_shader, wu_width, wu_height, wu_depth);
+    render_time_1c = prender_timer.SecsSinceStart();
     ///////////////////////////////////////////////////////////////
     material->update(RCID);
     auto pipeline = material->pipeline(RCID, true);
@@ -236,8 +262,29 @@ void StreakRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
       context->GBI()->DrawPrimitiveEML(vw, ork::lev2::PrimitiveType::POINTS);
     });
   }
+  double render_time_2 = prender_timer.SecsSinceStart();
   _triple_buf->end_pull(render_buffer);
 
+  double render_time = prender_timer.SecsSinceStart();
+  if(render_time >0.5f ){
+    printf( "render_time_1<%f>\n", render_time_1 );
+    printf( "render_time_1a<%f>\n", render_time_1a );
+    printf( "render_time_1b<%f>\n", render_time_1b );
+    printf( "render_time_1c<%f>\n", render_time_1c );
+    printf( "render_time_2<%f>\n", render_time_2 );
+    printf( "render_time<%f>\n", render_time );
+  }
+
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+static void _reshapeStreakRendererIOs( dataflow::moduledata_ptr_t mdata ){
+  auto typed = std::dynamic_pointer_cast<StreakRendererData>(mdata);
+  ModuleData::createInputPlug<FloatXfPlugTraits>(typed, EPR_UNIFORM, "Length")->_range            = {-10, 10};
+  ModuleData::createInputPlug<FloatXfPlugTraits>(typed, EPR_UNIFORM, "Width")->_range             = {-10, 10};
+  ModuleData::createInputPlug<FloatXfPlugTraits>(typed, EPR_UNIFORM, "GradientIntensity")->_range = {0, 10};
+  ModuleData::createInputPlug<FloatXfPlugTraits>(typed, EPR_UNIFORM, "Scale")->_range = {-10, 10};
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -250,13 +297,9 @@ void StreakRendererData::describeX(class_t* clazz) {
 
   clazz->directProperty("sort", &StreakRendererData::_sort);
 
-  /*
-  ork::reflect::RegisterProperty("DepthSort", &StreakRendererData::mbSort);
-  ork::reflect::RegisterProperty("AlphaMux", &StreakRendererData::mAlphaMux);
-  static const char* EdGrpStr =
-      "grp://StreakRendererData Input DepthSort AlphaMux Length Width BlendMode Gradient GradientIntensity Texture ";
-  reflect::annotateClassForEditor<StreakRendererData>("editor.prop.groups", EdGrpStr);
-*/
+  clazz->annotateTyped<moduleIOreshape_fn_t>("reshapeIOs",[](dataflow::moduledata_ptr_t mdata){
+    _reshapeStreakRendererIOs(mdata);
+  });
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -271,13 +314,14 @@ std::shared_ptr<StreakRendererData> StreakRendererData::createShared() {
   auto data = std::make_shared<StreakRendererData>();
 
   _initShared(data);
-
-  createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "Length")->_range            = {-10, 10};
-  createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "Width")->_range             = {-10, 10};
-  createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "GradientIntensity")->_range = {0, 10};
-
+  _reshapeStreakRendererIOs(data);
   return data;
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
+//void StreakRendererData::reshapeIOs() {
+  //}
 
 ///////////////////////////////////////////////////////////////////////////////
 

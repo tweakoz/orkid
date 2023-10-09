@@ -50,6 +50,10 @@ static fvec2 gpos;
 ui::event_ptr_t CtxGLFW::uievent() {
   return _uievent;
 }
+void CtxGLFW::disableMouseCursor() {
+  glfwSetInputMode(_glfwWindow, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 ui::event_constptr_t CtxGLFW::uievent() const {
   return _uievent;
