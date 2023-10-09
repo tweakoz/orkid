@@ -77,7 +77,7 @@ chunkdata_ptr_t ChunkGroup::load( chunkheader_ptr_t chunkhdr ){
   printf( "LOAD: seek<%08x> read<%08x>\n", offset, len );
   _reader->seek(offset);
   _reader->read(data->_data.data(), len);
-  hexdumpbytes(data->_data.data(), 40 );
+  //hexdumpbytes(data->_data.data(), 40 );
   data->_versionCode = chunk_genchunkIDSTRING(chunkhdr->version);
   return data;
 }
@@ -104,7 +104,7 @@ chunkgroup_ptr_t ChunkFile::_loadSubHeader(size_t seekoffset) {
 
 chunkgroup_ptr_t ChunkFile::_loadSubHeader(chunkdata_ptr_t parent) {
 
-  hexdumpbytes(parent->_data.data(), 40 );
+  //hexdumpbytes(parent->_data.data(), 40 );
   auto chgrp = std::make_shared<ChunkGroup>();
   chgrp->_name = FormatString("ChildChunkGroup[cdata<%p>]", (void*) parent.get());
   chgrp->_reader = std::make_shared<ChunkSubReader>(parent);
