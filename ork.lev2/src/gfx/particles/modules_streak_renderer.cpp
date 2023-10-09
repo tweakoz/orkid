@@ -183,11 +183,9 @@ void StreakRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
     auto SMM = stereocams->_mono;
     //obj_nrmz = fvec4(SMM->_camdat.zNormal(), 0.0f).transform(mtx_iw).normalized();
     obj_nrmz =fvec4(0,1,0,0);
-
-    fmtx4 scale_matrix;
-    scale_matrix.setScale(fscale,fscale,fscale);
-
-    worldmatrix = scale_matrix * worldmatrix;
+    //fmtx4 scale_matrix;
+    //scale_matrix.setScale(fscale,fscale,fscale);
+    //worldmatrix = scale_matrix * worldmatrix;
     ///////////////////////////////////////////////////////////////
     auto storage = material->_streakcu_vertex_io_buffer;
     size_t mapping_size = 1<<20; 
