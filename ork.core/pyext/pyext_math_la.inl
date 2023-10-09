@@ -539,6 +539,19 @@ void pyinit_math_la_t(py::module& module_core, //
           .def("isPointCoplanar", [](const plane_t& plane, const vec3_t& point) -> bool { return plane.isPointCoplanar(point); })
           .def("distanceToPoint", [](const plane_t& plane, const vec3_t& point) -> T { return plane.pointDistance(point); })
           .def(
+              "intersectWithRay",
+              [](const plane_t& thisplane, const ray3_t& ray) -> py::dict {
+                vec3_t outpoint;
+                T outdistance = 0.0f;
+                bool did_intersect = thisplane.Intersect(ray, outdistance, outpoint);
+                py::dict rval;
+                did_intersect &= (outdistance >= 0.0f);
+                rval["did_intersect"] = did_intersect;
+                rval["distance"]      = outdistance;
+                rval["point"]         = outpoint;
+                return rval;
+              })
+          .def(
               "intersectWithPlane",
               [](const plane_t& thisplane, const plane_t& otherplane, vec3_t& outorigin, vec3_t& outdir) -> bool {
                 return thisplane.PlaneIntersect(otherplane, outorigin, outdir);

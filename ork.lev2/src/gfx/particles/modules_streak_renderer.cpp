@@ -238,29 +238,31 @@ void StreakRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
   //////////////////////////////////////////////////////////////////////////////
   else { // geometry shader path
           //////////////////////////////////////////////////////////////////////////////
-    streak_vertex_writer_t vw;
-    vw.Lock(context, _vertexBuffer.get(), icnt);
-    {
-      ////////////////////////////////////////////////
-      // uniform properties
-      ////////////////////////////////////////////////
-      for (int i = 0; i < icnt; i++) {
-        auto ptcl = get_particle(i);
-        material->_vertexSetterStreak(
-            vw,   //
-            ptcl, //
-            LW,   //
-            obj_nrmz);
+    if(icnt){
+      streak_vertex_writer_t vw;
+      vw.Lock(context, _vertexBuffer.get(), icnt);
+      {
+        ////////////////////////////////////////////////
+        // uniform properties
+        ////////////////////////////////////////////////
+        for (int i = 0; i < icnt; i++) {
+          auto ptcl = get_particle(i);
+          material->_vertexSetterStreak(
+              vw,   //
+              ptcl, //
+              LW,   //
+              obj_nrmz);
+        }
       }
-    }
-    vw.UnLock(context);
+      vw.UnLock(context);
 
-    auto pipeline = material->pipeline(RCID, true);
-    material->update(RCID);
-    pipeline->wrappedDrawCall(RCID, [&]() {
-      context->RSI()->BindRasterState(material->_material->_rasterstate);
-      context->GBI()->DrawPrimitiveEML(vw, ork::lev2::PrimitiveType::POINTS);
-    });
+      auto pipeline = material->pipeline(RCID, true);
+      material->update(RCID);
+      pipeline->wrappedDrawCall(RCID, [&]() {
+        context->RSI()->BindRasterState(material->_material->_rasterstate);
+        context->GBI()->DrawPrimitiveEML(vw, ork::lev2::PrimitiveType::POINTS);
+      });
+    }
   }
   double render_time_2 = prender_timer.SecsSinceStart();
   _triple_buf->end_pull(render_buffer);

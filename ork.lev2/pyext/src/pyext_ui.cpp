@@ -72,6 +72,21 @@ void pyinit_ui(py::module& module_lev2) {
                 return cloned_event;
               })
           .def_property_readonly(
+              "pos",                          //
+              [](ui::event_ptr_t ev) -> fvec2 { //
+                return fvec2(ev->miX, ev->miY);
+              })
+          .def_property_readonly(
+              "unit_pos",                          //
+              [](ui::event_ptr_t ev) -> fvec2 { //
+                return fvec2(ev->mfUnitX, ev->mfUnitY);
+              })
+          .def_property_readonly(
+              "screen_dim",                     //
+              [](ui::event_ptr_t ev) -> fvec2 { //
+                return fvec2(ev->miScreenWidth, ev->miScreenHeight);
+              })
+          .def_property_readonly(
               "x",                            //
               [](ui::event_ptr_t ev) -> int { //
                 return ev->miX;

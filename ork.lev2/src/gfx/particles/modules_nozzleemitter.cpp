@@ -145,7 +145,7 @@ void NozzleEmitterInst::_emit(float fdt) {
   _emitter_context.mfEmissionVelocity = femitvel;
   _emitter_context.mDispersion        = _input_dispersionangle->value();
   _directedEmitter.meDirection        = EmitterDirection::USER;
-  _emitter_context.mPosition          = _input_offset->value();
+  //_emitter_context.mPosition          = _input_offset->value();
   fvec3 offsetVel                     = _input_offset_velocity->value();
   _emitter_context.mOffsetVelocity    = offsetVel;
   _directedEmitter.Emit(_emitter_context);
