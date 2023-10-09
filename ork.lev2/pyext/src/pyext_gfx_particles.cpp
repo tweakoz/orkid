@@ -65,6 +65,13 @@ void pyinit_gfx_particles(py::module& module_lev2) {
         },
         [](ptc::gradientmaterial_ptr_t  m, crcstring_ptr_t blend) { //
           m->_blending = Blending(blend->hashed());
+        })
+      .def_property("modulation_texture", 
+        [](ptc::gradientmaterial_ptr_t  m) -> texture_ptr_t { //
+          return m->_modulation_texture;
+        },
+        [](ptc::gradientmaterial_ptr_t  m, texture_ptr_t t) { //
+          return m->_modulation_texture = t;
         });
   type_codec->registerStdCodec<ptc::gradientmaterial_ptr_t>(mtl_grad_type);
   /////////////////////////////////////////////////////////////////////////////
