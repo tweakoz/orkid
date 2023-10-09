@@ -235,7 +235,7 @@ int main(int argc, char** argv, char** envp) {
       while (keep_going) {
         printf("/////////////\n");
         printf("actor<%d>\n", iactor);
-        load_property_bag(path_data, iter);
+        load_property_bag(acti_data, iter);
       }
       printf("num_actors<%d>\n", num_actors);
     }
