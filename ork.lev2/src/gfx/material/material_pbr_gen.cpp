@@ -293,22 +293,22 @@ texture_ptr_t PBRMaterial::filterSpecularEnvMap(texture_ptr_t rawenvmap, Context
       targ->beginFrame(false);
       
       fbi->PushRtGroup(outgroup.get());
-      
       mtl->begin(tekFilterSpecMap, RCFD);
-      ///////////////////////////////////////////////
-      float roughness = float(imip) / float(nummips - 1);
-      ///////////////////////////////////////////////
-      mtl->bindParamMatrix(param_mvp, fmtx4::Identity());
-      mtl->bindParamCTex(param_pfm, rawenvmap.get());
-      mtl->bindParamFloat(param_ruf, roughness);
-      mtl->bindParamVec2(param_imgdim, fvec2(w,h));
-      mtl->commit();
-      dwi->quad2DEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 0, 0));
-      ///////////////////////////////////////////////
+      if(1){
+      
+        ///////////////////////////////////////////////
+        float roughness = float(imip) / float(nummips - 1);
+        ///////////////////////////////////////////////
+        mtl->bindParamMatrix(param_mvp, fmtx4::Identity());
+        mtl->bindParamCTex(param_pfm, rawenvmap.get());
+        mtl->bindParamFloat(param_ruf, roughness);
+        mtl->bindParamVec2(param_imgdim, fvec2(w,h));
+        mtl->commit();
+        dwi->quad2DEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 0, 0));
+        ///////////////////////////////////////////////
+      }
       mtl->end(RCFD);
-      fbi->PopRtGroup(false);
-       
-
+      fbi->PopRtGroup(false);       
       fbi->capture(outbuffr.get(), captureb.get());
       targ->endFrame();
 
@@ -428,15 +428,17 @@ texture_ptr_t PBRMaterial::filterDiffuseEnvMap(texture_ptr_t rawenvmap, Context*
 
       targ->beginFrame(false);
       fbi->PushRtGroup(outgroup.get());
-      mtl->begin(tekFilterDiffMap, RCFD);
-      ///////////////////////////////////////////////
-      mtl->bindParamMatrix(param_mvp, fmtx4::Identity());
-      mtl->bindParamCTex(param_pfm, rawenvmap.get());
-      mtl->bindParamFloat(param_ruf, roughness);
-      mtl->commit();
-      dwi->quad2DEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 0, 0));
-      ///////////////////////////////////////////////
-      mtl->end(RCFD);
+      if(1){
+        mtl->begin(tekFilterDiffMap, RCFD);
+        ///////////////////////////////////////////////
+        mtl->bindParamMatrix(param_mvp, fmtx4::Identity());
+        mtl->bindParamCTex(param_pfm, rawenvmap.get());
+        mtl->bindParamFloat(param_ruf, roughness);
+        mtl->commit();
+        dwi->quad2DEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 0, 0));
+        ///////////////////////////////////////////////
+        mtl->end(RCFD);
+      }
       fbi->PopRtGroup(false);
 
       fbi->capture(outbuffr.get(), captureb.get());

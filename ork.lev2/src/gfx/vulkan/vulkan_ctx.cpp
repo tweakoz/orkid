@@ -520,6 +520,8 @@ void VkContext::_doEndFrame() {
   fence->reset();
   vkQueueSubmit(_vkqueue_graphics, 1, &SI, fence->_vkfence);
 
+  primary_cb()->_secondary_cmdbuffers.clear();
+
   ///////////////////////////////////////////////////////
   // Present !
   ///////////////////////////////////////////////////////

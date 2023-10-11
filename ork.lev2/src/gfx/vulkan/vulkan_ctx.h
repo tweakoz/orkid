@@ -346,6 +346,9 @@ struct VkCommandBufferImpl {
   CommandBuffer* _parent = nullptr;
   bool _recorded = false;
   vkcontext_rawptr_t _contextVK;
+
+  std::vector<commandbuffer_ptr_t> _secondary_cmdbuffers;
+
 };
 
 struct VulkanRenderPass {

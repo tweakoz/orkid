@@ -457,6 +457,7 @@ void SpirvCompiler::_inheritIO(astnode_ptr_t interface_node) {
 
   auto input_groups  = AstNode::collectNodesOfType<InterfaceInputs>(interface_node);
   auto output_groups = AstNode::collectNodesOfType<InterfaceOutputs>(interface_node);
+  auto storage_groups = AstNode::collectNodesOfType<InterfaceStorages>(interface_node);
   // printf("  num_input_groups<%zu>\n", input_groups.size());
   // printf("  num_output_groups<%zu>\n", output_groups.size());
   /////////////////////////////////////////
@@ -494,6 +495,33 @@ void SpirvCompiler::_inheritIO(astnode_ptr_t interface_node) {
         }
         _output_index += it->second;
       }
+    }
+  }
+  /////////////////////////////////////////
+  for (auto storage_group : storage_groups) {
+    auto storages = AstNode::collectNodesOfType<InterfaceStorage>(storage_group);
+    printf("  num_storages<%zu>\n", storages.size());
+    for (auto storage : storages) {
+      dumpAstNode(storage);
+      auto layout = storage->findFirstChildOfType<InterfaceLayout>();
+      OrkAssert(layout);
+      auto std = layout->childAs<SemaIdentifier>(0);
+      auto bin = layout->childAs<SemaIdentifier>(1);
+      auto bin_num = layout->childAs<SemaIntegerLiteral>(2);
+      OrkAssert(std);
+      OrkAssert(bin);
+      OrkAssert(bin_num);
+      //auto dt = tid->typedValueForKey<std::string>("data_type").value();
+      //auto id = tid->typedValueForKey<std::string>("identifier_name").value();
+      //if (id.find("gl_") != 0) {
+      //  _appendText(_interface_group, "layout(location=%zu) out %s %s;", _output_index, dt.c_str(), id.c_str());
+      //  auto it = DATASIZES.find(dt);
+      //  if (it == DATASIZES.end()) {
+      //    printf("dt<%s> has no sizespec\n", dt.c_str());
+      //    OrkAssert(false);
+      //  }
+      //  _output_index += it->second;
+      //}
     }
   }
   /////////////////////////////////////////

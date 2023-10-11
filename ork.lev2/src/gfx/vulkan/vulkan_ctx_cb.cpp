@@ -102,6 +102,7 @@ void VkContext::_doEnqueueSecondaryCommandBuffer(commandbuffer_ptr_t cmdbuf) {
     OrkAssert(false);
   }
   vkCmdExecuteCommands(primary_cb()->_vkcmdbuf, 1, &impl->_vkcmdbuf);
+  primary_cb()->_secondary_cmdbuffers.push_back(cmdbuf);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
