@@ -56,6 +56,7 @@ class CTXBASE : public ork::Object {
 
 public:
 
+  virtual void disableMouseCursor() {}
 
   bool isGlobal() const;
 

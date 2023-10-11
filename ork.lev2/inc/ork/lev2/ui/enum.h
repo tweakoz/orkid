@@ -35,6 +35,7 @@ enum class EventCode : crc_enum_t {
   CrcEnum(KEY_DOWN),
   CrcEnum(KEY_REPEAT),
   CrcEnum(KEY_UP),
+  CrcEnum(RESIZED),
   CrcEnum(DRAW),
   CrcEnum(MOUSEWHEEL),
   CrcEnum(MULTITOUCH),

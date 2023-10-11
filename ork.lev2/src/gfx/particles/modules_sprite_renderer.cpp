@@ -241,16 +241,22 @@ RendererModuleData::RendererModuleData() {
 
 //////////////////////////////////////////////////////////////////////////
 
-void SpriteRendererData::describeX(class_t* clazz) {
-  clazz->setSharedFactory( []() -> rtti::castable_ptr_t {
-    return SpriteRendererData::createShared();
-  });
-}
-
-//////////////////////////////////////////////////////////////////////////
-
 SpriteRendererData::SpriteRendererData() {
   _material = std::make_shared<FlatMaterial>();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+static void _reshapeSpriteRendererIOs( dataflow::moduledata_ptr_t mdata ){
+  auto typed = std::dynamic_pointer_cast<StreakRendererData>(mdata);
+  ModuleData::createInputPlug<FloatXfPlugTraits>(mdata, EPR_UNIFORM, "Size");
+  ModuleData::createInputPlug<FloatXfPlugTraits>(mdata, EPR_UNIFORM, "Rot");
+  ModuleData::createInputPlug<FloatXfPlugTraits>(mdata, EPR_UNIFORM, "AnimFrame");
+  ModuleData::createInputPlug<FloatXfPlugTraits>(mdata, EPR_UNIFORM, "GradientIntensity");
+
+  ModuleData::createInputPlug<Vec3XfPlugTraits>(mdata, EPR_UNIFORM, "Noise0");
+  ModuleData::createInputPlug<Vec3XfPlugTraits>(mdata, EPR_UNIFORM, "Noise1");
+  ModuleData::createInputPlug<Vec3XfPlugTraits>(mdata, EPR_UNIFORM, "Noise2");
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -259,15 +265,7 @@ std::shared_ptr<SpriteRendererData> SpriteRendererData::createShared() {
   auto data = std::make_shared<SpriteRendererData>();
 
   _initShared(data);
-
-  createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "Size");
-  createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "Rot");
-  createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "AnimFrame");
-  createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "GradientIntensity");
-
-  createInputPlug<Vec3XfPlugTraits>(data, EPR_UNIFORM, "Noise0");
-  createInputPlug<Vec3XfPlugTraits>(data, EPR_UNIFORM, "Noise1");
-  createInputPlug<Vec3XfPlugTraits>(data, EPR_UNIFORM, "Noise2");
+  _reshapeSpriteRendererIOs(data);
 
   return data;
 }
@@ -276,6 +274,17 @@ std::shared_ptr<SpriteRendererData> SpriteRendererData::createShared() {
 
 dgmoduleinst_ptr_t SpriteRendererData::createInstance(dataflow::GraphInst* ginst) const {
   return std::make_shared<SpriteRendererInst>(this,ginst);
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+void SpriteRendererData::describeX(class_t* clazz) {
+  clazz->setSharedFactory( []() -> rtti::castable_ptr_t {
+    return SpriteRendererData::createShared();
+  });
+  clazz->annotateTyped<moduleIOreshape_fn_t>("reshapeIOs",[](dataflow::moduledata_ptr_t mdata){
+    _reshapeSpriteRendererIOs(mdata);
+  });
 }
 
 /////////////////////////////////////////

@@ -36,12 +36,43 @@ void pyinit_gfx_particles(py::module& module_lev2) {
   /////////////////////////////////////////////////////////////////////////////
   auto mtl_flat_type = //
       py::class_<ptc::FlatMaterial, ptc::MaterialBase, ptc::flatmaterial_ptr_t>(ptc_module, "FlatMaterial")
-      .def_static("createShared", []() -> ptc::flatmaterial_ptr_t { return ptc::FlatMaterial::createShared(); });
+      .def_static("createShared", []() -> ptc::flatmaterial_ptr_t { return ptc::FlatMaterial::createShared(); })
+      .def_property("blending", 
+        [](ptc::flatmaterial_ptr_t  m) -> crcstring_ptr_t { //
+          auto crcstr = std::make_shared<CrcString>(uint64_t(m->_blending));
+          return crcstr;
+        },
+        [](ptc::flatmaterial_ptr_t  m, crcstring_ptr_t blend) { //
+          m->_blending = BlendingMacro(blend->hashed());
+        });
   type_codec->registerStdCodec<ptc::flatmaterial_ptr_t>(mtl_flat_type);
   /////////////////////////////////////////////////////////////////////////////
   auto mtl_grad_type = //
       py::class_<ptc::GradientMaterial, ptc::MaterialBase, ptc::gradientmaterial_ptr_t>(ptc_module, "GradientMaterial")
-      .def_static("createShared", []() -> ptc::gradientmaterial_ptr_t { return ptc::GradientMaterial::createShared(); });
+      .def_static("createShared", []() -> ptc::gradientmaterial_ptr_t { return ptc::GradientMaterial::createShared(); })
+      .def_property("gradient", 
+        [](ptc::gradientmaterial_ptr_t  m) -> gradient_fvec4_ptr_t { //
+          return m->_gradient;
+        },
+        [](ptc::gradientmaterial_ptr_t  m, gradient_fvec4_ptr_t grad) { //
+          m->_gradient = grad;
+        }
+        )
+      .def_property("blending", 
+        [](ptc::gradientmaterial_ptr_t  m) -> crcstring_ptr_t { //
+          auto crcstr = std::make_shared<CrcString>(uint64_t(m->_blending));
+          return crcstr;
+        },
+        [](ptc::gradientmaterial_ptr_t  m, crcstring_ptr_t blend) { //
+          m->_blending = BlendingMacro(blend->hashed());
+        })
+      .def_property("modulation_texture", 
+        [](ptc::gradientmaterial_ptr_t  m) -> texture_ptr_t { //
+          return m->_modulation_texture;
+        },
+        [](ptc::gradientmaterial_ptr_t  m, texture_ptr_t t) { //
+          return m->_modulation_texture = t;
+        });
   type_codec->registerStdCodec<ptc::gradientmaterial_ptr_t>(mtl_grad_type);
   /////////////////////////////////////////////////////////////////////////////
   auto mtl_tex_type = //
@@ -138,7 +169,15 @@ void pyinit_gfx_particles(py::module& module_lev2) {
       },
       [](ptc::streakmodule_ptr_t r, ptc::basematerial_ptr_t m){
         r->_material = m;
-      })      
+      })   
+      .def_property("depth_sort", 
+        [](ptc::streakmodule_ptr_t  m) -> bool { //
+          return m->_sort;
+        },
+        [](ptc::streakmodule_ptr_t  m, bool sort) { //
+          return m->_sort = sort;
+        }
+        )
       .def_static("createShared", []() -> ptc::streakmodule_ptr_t { return ptc::StreakRendererData::createShared(); });
   type_codec->registerStdCodec<ptc::streakmodule_ptr_t>(streakmoduledata_type);
 }

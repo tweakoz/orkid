@@ -50,6 +50,10 @@ static fvec2 gpos;
 ui::event_ptr_t CtxGLFW::uievent() {
   return _uievent;
 }
+void CtxGLFW::disableMouseCursor() {
+  glfwSetInputMode(_glfwWindow, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 ui::event_constptr_t CtxGLFW::uievent() const {
   return _uievent;
@@ -248,6 +252,8 @@ void fillEventCursor(
   uiev->mfLastUnitY = uiev->mfUnitY;
   uiev->mfUnitX     = unitX;
   uiev->mfUnitY     = unitY;
+  uiev->miScreenWidth = w;
+  uiev->miScreenHeight = h;
 
   if (monitor) {
     int winX, winY;                         // window position
@@ -814,6 +820,11 @@ void CtxGLFW::_on_callback_refresh() {
 }
 void CtxGLFW::_on_callback_winresized(int w, int h) {
   this->onResize(w, h);
+  auto uiev = this->uievent();
+  uiev->_eventcode  = ui::EventCode::RESIZED;
+  uiev->miScreenWidth = w;
+  uiev->miScreenHeight = h;
+  _fire_ui_event();
 }
 void CtxGLFW::_on_callback_fbresized(int w, int h) {
   this->onResize(w, h);
@@ -834,6 +845,7 @@ void CtxGLFW::_on_callback_keyboard(int key, int scancode, int action, int modif
 }
 void CtxGLFW::_on_callback_cursor(double xoffset, double yoffset) {
   auto uiev = this->uievent();
+  //printf( "_width<%d> _height<%d>\n", _width, _height);
   fillEventCursor(uiev, _glfwWindow, _glfwMonitor, xoffset, yoffset, _width, _height);
   if (this->_buttonState == 0) {
     uiev->_eventcode = ui::EventCode::MOVE; //

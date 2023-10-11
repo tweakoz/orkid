@@ -147,10 +147,10 @@ void pyinit_gfx_renderer(py::module& module_lev2) {
               })
           .def(
               "projectDepthRay",                                              //
-              [](cameradata_ptr_t camera, fvec2_ptr_t pos2d) -> fray3_ptr_t { //
-                auto cammat = camera->computeMatrices(1280.0 / 720.0);
-                auto rval   = std::make_shared<fray3>();
-                cammat.projectDepthRay(*pos2d.get(), *rval.get());
+              [](cameradata_ptr_t camera, fvec2 pos2d, float aspect) -> fray3 { //
+                auto cammat = camera->computeMatrices(aspect);
+                fray3 rval;
+                cammat.projectDepthRay(pos2d, rval);
                 return rval;
               })
           .def_property_readonly("eye", [](cameradata_ptr_t camera) -> fvec3 { return camera->mEye; })

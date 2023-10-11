@@ -81,6 +81,16 @@ void ModuleData::onTopologyUpdate(void) {
 void ModuleData::onStart() {
 }
 ///////////////////////////////////////////////////////////////////////////////
+bool ModuleData::postDeserialize(reflect::serdes::IDeserializer&, object_ptr_t shared) {
+
+  auto as_mdataptr = std::dynamic_pointer_cast<ModuleData>(shared);
+  auto clazz = as_mdataptr->GetClass();
+  if( auto try_reshape = clazz->annotationTyped<moduleIOreshape_fn_t>("reshapeIOs") ){
+    try_reshape.value()(as_mdataptr);
+  }
+  return true;
+}
+///////////////////////////////////////////////////////////////////////////////
 void ModuleData::addDependency(outplugdata_ptr_t pout, inplugdata_ptr_t pin) {
   //pin->connectInternal(&pout);
   // DepPlugSet::value_type v( & pin, & pout );
@@ -88,7 +98,16 @@ void ModuleData::addDependency(outplugdata_ptr_t pout, inplugdata_ptr_t pin) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void ModuleData::addInput(inplugdata_ptr_t plg) {
-  _inputs.push_back(plg);
+  auto name = plg->_name;
+  bool should_add = true;
+  for( auto item : _inputs ){
+    if (name == item->_name) {
+      should_add = false;
+    }
+  }
+  if(should_add){
+    _inputs.push_back(plg);
+  }
 }
 ///////////////////////////////////////////////////////////////////////////////
 void ModuleData::addOutput(outplugdata_ptr_t plg) {

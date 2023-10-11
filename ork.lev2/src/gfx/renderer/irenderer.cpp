@@ -88,6 +88,7 @@ void IRenderer::drawEnqueuedRenderables() {
 
   for (size_t i = 0; i < renderQueueSize; i++) {
     int sorted = sortedRenderQueueIndices[i];
+    //printf( "sorted<%d:%d>\n", i, sorted );
     OrkAssert(sorted < U32(renderQueueSize));
     const RenderQueue::Node* pnode = _sortedNodes[sorted];
     _target->debugPushGroup(FormatString("IRenderer::drawEnqueuedRenderables render item<%zu> node<%p>", i, pnode));

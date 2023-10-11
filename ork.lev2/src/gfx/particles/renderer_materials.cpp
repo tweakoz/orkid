@@ -100,10 +100,10 @@ void FlatMaterial::gpuInit(const RenderContextInstData& RCID) {
   _material                                          = std::make_shared<FreestyleMaterial>();
   _material->_varmap["tflatparticle_streaks_stereo"] = std::string("dump_and_exit");
   _material->gpuInit(context, "orkshader://particle");
-  //_material->_rasterstate->SetBlending(Blending::ADDITIVE);
-  //_material->_rasterstate->SetCullTest(ECullTest::OFF);
-  //_material->_rasterstate->SetDepthTest(EDepthTest::LEQUALS);
-  //_material->_rasterstate->SetZWriteMask(false);
+  _material->_rasterstate->setBlendingMacro(BlendingMacro::ADDITIVE);
+  _material->_rasterstate->setCullTest(ECullTest::OFF);
+  _material->_rasterstate->setDepthTest(EDepthTest::LEQUALS);
+  _material->_rasterstate->setWriteMaskZ(false);
 
   auto fxparameterMVP      = _material->param("MatMVP");
   auto fxparameterColor  = _material->param("modcolor");
@@ -212,10 +212,10 @@ void GradientMaterial::gpuInit(const RenderContextInstData& RCID) {
   _material = std::make_shared<FreestyleMaterial>();
   _material->gpuInit(context, "orkshader://particle");
   _material->_rasterstate->setBlendingMacro(BlendingMacro::ADDITIVE);
-  //_material->_rasterstate->SetCullTest(ECullTest::OFF);
-  //_material->_rasterstate->SetDepthTest(EDepthTest::LEQUALS);
-  //_material->_rasterstate->SetZWriteMask(false);
-  //_material->_rasterstate->SetDepthTest(EDepthTest::OFF);
+  _material->_rasterstate->setCullTest(ECullTest::OFF);
+  _material->_rasterstate->setDepthTest(EDepthTest::LEQUALS);
+  _material->_rasterstate->setWriteMaskZ(false);
+  _material->_rasterstate->setDepthTest(EDepthTest::OFF);
 
   auto fxparameterMVP     = _material->param("MatMVP");
   auto fxparameterGradMap = _material->param("GradientMap");

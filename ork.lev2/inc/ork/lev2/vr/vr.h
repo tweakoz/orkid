@@ -150,7 +150,7 @@ struct Device {
   std::vector<fvec3> _calibnyvect;
   std::vector<fvec3> _calibnzvect;
 
-  bool _do_calibration = true;
+  bool _do_calibration = false;
 
   svar512_t _private;
 

@@ -89,30 +89,25 @@ struct GravityModuleInst : public ParticleModuleInst {
 
 //////////////////////////////////////////////////////////////////////////
 
-void GravityModuleData::describeX(class_t* clazz) {
-  clazz->setSharedFactory( []() -> rtti::castable_ptr_t {
-    return GravityModuleData::createShared();
-  });
-}
-
-//////////////////////////////////////////////////////////////////////////
-
 GravityModuleData::GravityModuleData() {
 }
 
 //////////////////////////////////////////////////////////////////////////
 
+static void _reshapeGravityIOs( dataflow::moduledata_ptr_t data ){
+  auto typed = std::dynamic_pointer_cast<GravityModuleData>(data);
+  ModuleData::createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "G")->_range = {-10.0f, 10.0f};
+  ModuleData::createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "Mass")->_range = {-10.0f, 10.0f};
+  ModuleData::createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "OthMass")->_range = {-10.0f, 10.0f};
+  ModuleData::createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "MinDistance")->_range = {0.0f, 100.0f};
+  ModuleData::createInputPlug<Vec3XfPlugTraits>(data, EPR_UNIFORM, "Center")->_range = {-1000.0f, 1000.0f};
+}
+//////////////////////////////////////////////////////////////////////////
+
 std::shared_ptr<GravityModuleData> GravityModuleData::createShared() {
   auto data = std::make_shared<GravityModuleData>();
-
   _initShared(data);
-
-  createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "G")->_range = {-10.0f, 10.0f};
-  createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "Mass")->_range = {-10.0f, 10.0f};
-  createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "OthMass")->_range = {-10.0f, 10.0f};
-  createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "MinDistance")->_range = {0.0f, 100.0f};
-  createInputPlug<Vec3XfPlugTraits>(data, EPR_UNIFORM, "Center")->_range = {-1000.0f, 1000.0f};
-
+  _reshapeGravityIOs(data);
   return data;
 }
 
@@ -120,11 +115,21 @@ rtti::castable_ptr_t GravityModuleData::sharedFactory(){
   return createShared();
 }
 
-
 //////////////////////////////////////////////////////////////////////////
 
 dgmoduleinst_ptr_t GravityModuleData::createInstance(dataflow::GraphInst* ginst) const {
   return std::make_shared<GravityModuleInst>(this, ginst);
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+void GravityModuleData::describeX(class_t* clazz) {
+  clazz->setSharedFactory( []() -> rtti::castable_ptr_t {
+    return GravityModuleData::createShared();
+  });
+  clazz->annotateTyped<moduleIOreshape_fn_t>("reshapeIOs",[](dataflow::moduledata_ptr_t mdata){
+    _reshapeGravityIOs(mdata);
+  });
 }
 
 } // namespace ork::lev2::particle
