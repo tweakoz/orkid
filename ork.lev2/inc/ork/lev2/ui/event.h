@@ -76,6 +76,8 @@ struct Event final // RawEvent
   int miNumHits        = 0;
   int miScreenPosX     = 0;
   int miScreenPosY     = 0;
+  int miScreenWidth    = 0;
+  int miScreenHeight   = 0;
   int _midiController  = 0;
   int _midiValue       = 0;
   f32 mfX         = 0.0f;

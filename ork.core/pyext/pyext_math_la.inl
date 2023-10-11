@@ -261,6 +261,8 @@ void pyinit_math_la_t(py::module& module_core, //
           .def("toMatrix", &quat_t::toMatrix)
           .def("norm", &quat_t::norm)
           .def("fromAxisAngle", &quat_t::fromAxisAngle)
+          .def("fromMatrix3", &quat_t::fromMatrix3)
+          .def("fromMatrix4", &quat_t::fromMatrix)
           .def("toAxisAngle", &quat_t::toAxisAngle)
           .def("conjugate", &quat_t::conjugate)
           .def("square", &quat_t::square)
@@ -299,6 +301,12 @@ void pyinit_math_la_t(py::module& module_core, //
           .def(py::init<const mat3_t&>())
           .def(py::init<const quat_t&>())
           .def("setScale", (void(mat3_t::*)(T, T, T)) & mat3_t::setScale)
+          .def("setColumn", (void(mat3_t::*)(int icol, const vec3_t&)) & mat3_t::setColumn)
+          .def_property_readonly("inverse", [](const mat3_t& inp) -> mat3_t { 
+              mat3_t inv = inp;
+              inv.inverse();
+              return inv;
+            })
           .def("fromQuaternion", &mat3_t::fromQuaternion)
           .def("zNormal", &mat3_t::xNormal)
           .def("yNormal", &mat3_t::yNormal)
@@ -538,6 +546,19 @@ void pyinit_math_la_t(py::module& module_core, //
           .def("isPointBehind", [](const plane_t& plane, const vec3_t& point) -> bool { return plane.isPointBehind(point); })
           .def("isPointCoplanar", [](const plane_t& plane, const vec3_t& point) -> bool { return plane.isPointCoplanar(point); })
           .def("distanceToPoint", [](const plane_t& plane, const vec3_t& point) -> T { return plane.pointDistance(point); })
+          .def(
+              "intersectWithRay",
+              [](const plane_t& thisplane, const ray3_t& ray) -> py::dict {
+                vec3_t outpoint;
+                T outdistance = 0.0f;
+                bool did_intersect = thisplane.Intersect(ray, outdistance, outpoint);
+                py::dict rval;
+                did_intersect &= (outdistance >= 0.0f);
+                rval["did_intersect"] = did_intersect;
+                rval["distance"]      = outdistance;
+                rval["point"]         = outpoint;
+                return rval;
+              })
           .def(
               "intersectWithPlane",
               [](const plane_t& thisplane, const plane_t& otherplane, vec3_t& outorigin, vec3_t& outdir) -> bool {
