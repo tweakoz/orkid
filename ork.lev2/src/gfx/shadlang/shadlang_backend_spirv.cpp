@@ -463,17 +463,39 @@ void SpirvCompiler::_inheritIO(astnode_ptr_t interface_node) {
   /////////////////////////////////////////
   for (auto input_group : input_groups) {
     auto inputs = AstNode::collectNodesOfType<InterfaceInput>(input_group);
-    // printf("  num_inputs<%zu>\n", inputs.size());
+    printf("  num_inputs<%zu>\n", inputs.size());
+    int ii=0;
     for (auto input : inputs) {
-      auto tid = input->childAs<TypedIdentifier>(0);
-      OrkAssert(tid);
-      // dumpAstNode(tid);
-      auto dt = tid->typedValueForKey<std::string>("data_type").value();
-      auto id = tid->typedValueForKey<std::string>("identifier_name").value();
-      _appendText(_interface_group, "layout(location=%zu) in %s %s;", _input_index, dt.c_str(), id.c_str());
-      auto it = DATASIZES.find(dt);
-      OrkAssert(it != DATASIZES.end());
-      _input_index += it->second;
+      printf("input<%d>\n", ii );
+      if( auto as_layout = input->childAs<InterfaceLayout>(0) ){
+        dumpAstNode(as_layout);
+        OrkAssert(as_layout->_children.size()==6);
+        auto ast_lx = childAsSemaIdString(as_layout,0);
+        auto ast_ly = childAsSemaIdString(as_layout,2);
+        auto ast_lz = childAsSemaIdString(as_layout,4);
+        auto lxv = childAsSemaInteger(as_layout,1);
+        auto lyv = childAsSemaInteger(as_layout,3);
+        auto lzv = childAsSemaInteger(as_layout,5);
+        printf( "ast_lx<%s> v<%d>\n", ast_lx.c_str(), lxv );
+        printf( "ast_ly<%s> v<%d>\n", ast_ly.c_str(), lyv );
+        printf( "ast_lz<%s> v<%d>\n", ast_lz.c_str(), lzv );
+        _appendText(_interface_group, "layout(%s=%d,%s=%d,%s=%d);", 
+          ast_lx.c_str(), lxv,
+          ast_ly.c_str(), lyv,
+          ast_lz.c_str(), lzv );
+      }
+      else if( auto as_tid = input->childAs<TypedIdentifier>(0) ){
+        auto dt = as_tid->typedValueForKey<std::string>("data_type").value();
+        auto id = as_tid->typedValueForKey<std::string>("identifier_name").value();
+        _appendText(_interface_group, "layout(location=%zu) in %s %s;", _input_index, dt.c_str(), id.c_str());
+        auto it = DATASIZES.find(dt);
+        OrkAssert(it != DATASIZES.end());
+        _input_index += it->second;
+        ii++;
+      }
+      else{
+        OrkAssert(false);
+      }
     }
   }
   /////////////////////////////////////////
@@ -500,28 +522,76 @@ void SpirvCompiler::_inheritIO(astnode_ptr_t interface_node) {
   /////////////////////////////////////////
   for (auto storage_group : storage_groups) {
     auto storages = AstNode::collectNodesOfType<InterfaceStorage>(storage_group);
-    printf("  num_storages<%zu>\n", storages.size());
+    printf("  NUM_STORAGES<%zu>\n", storages.size());
     for (auto storage : storages) {
       dumpAstNode(storage);
+      ///////////////////////////////////////////////////////////
+      // parse storage top
+      ///////////////////////////////////////////////////////////
       auto layout = storage->findFirstChildOfType<InterfaceLayout>();
+      auto decls  = storage->findFirstChildOfType<DataDeclarations>();
+      auto ast_storage_type = storage->childAs<SemaIdentifier>(1);
+      auto ast_storage_name = storage->childAs<SemaIdentifier>(3);
       OrkAssert(layout);
-      auto std = layout->childAs<SemaIdentifier>(0);
-      auto bin = layout->childAs<SemaIdentifier>(1);
-      auto bin_num = layout->childAs<SemaIntegerLiteral>(2);
-      OrkAssert(std);
-      OrkAssert(bin);
-      OrkAssert(bin_num);
-      //auto dt = tid->typedValueForKey<std::string>("data_type").value();
-      //auto id = tid->typedValueForKey<std::string>("identifier_name").value();
-      //if (id.find("gl_") != 0) {
-      //  _appendText(_interface_group, "layout(location=%zu) out %s %s;", _output_index, dt.c_str(), id.c_str());
-      //  auto it = DATASIZES.find(dt);
-      //  if (it == DATASIZES.end()) {
-      //    printf("dt<%s> has no sizespec\n", dt.c_str());
-      //    OrkAssert(false);
-      //  }
-      //  _output_index += it->second;
-      //}
+      OrkAssert(decls);
+      OrkAssert(ast_storage_type);
+      OrkAssert(ast_storage_name);
+      auto storage_type = ast_storage_type->typedValueForKey<std::string>("identifier_name").value();
+      auto storage_name = ast_storage_name->typedValueForKey<std::string>("identifier_name").value();
+      printf("storage_type<%s>\n", storage_type.c_str());
+      printf("storage_name<%s>\n", storage_name.c_str());
+
+      ///////////////////////////////////////////////////////////
+      // parse/emit layout
+      ///////////////////////////////////////////////////////////
+      auto ast_std = layout->childAs<SemaIdentifier>(0);
+      auto ast_bin = layout->childAs<SemaIdentifier>(1);
+      auto ast_bin_num = layout->childAs<SemaIntegerLiteral>(2);
+      OrkAssert(ast_std);
+      OrkAssert(ast_bin);
+      OrkAssert(ast_bin_num);
+      auto std = ast_std->typedValueForKey<std::string>("identifier_name").value();
+      auto bin = ast_bin->typedValueForKey<std::string>("identifier_name").value();
+      auto bin_num = atoi(ast_bin_num->typedValueForKey<std::string>("literal_value").value().c_str());
+
+      _appendText(_interface_group, //
+                  "layout(%s, binding=%d) %s %s {", //
+                  std.c_str(), // 
+                  bin_num, // 
+                  storage_type.c_str(), // 
+                  storage_name.c_str() );
+
+      ///////////////////////////////////////////////////////////
+      // parse data/array declarations
+      ///////////////////////////////////////////////////////////
+
+      for( auto decl_sub : decls->_children ){
+        if( auto as_ddecl = std::dynamic_pointer_cast<DataDeclaration>(decl_sub) ){
+          auto tid = as_ddecl->childAs<TypedIdentifier>(0);
+          OrkAssert(tid);
+          auto dt = tid->typedValueForKey<std::string>("data_type").value();
+          auto id = tid->typedValueForKey<std::string>("identifier_name").value();
+          printf( "STORAGE DATADECL dt<%s> id<%s>\n", dt.c_str(), id.c_str() );
+          _appendText(_interface_group, " %s %s;", dt.c_str(), id.c_str());
+        }
+        else if( auto as_adecl = std::dynamic_pointer_cast<ArrayDeclaration>(decl_sub) ){
+          auto tid = as_adecl->childAs<TypedIdentifier>(0);
+          OrkAssert(tid);
+          auto dt = tid->typedValueForKey<std::string>("data_type").value();
+          auto id = tid->typedValueForKey<std::string>("identifier_name").value();
+          auto len_node = as_adecl->childAs<SemaIntegerLiteral>(1);
+          auto ary_len_str = len_node->typedValueForKey<std::string>("literal_value").value();
+          auto ary_len = atoi(ary_len_str.c_str());
+          printf( "STORAGE ARYDECL dt<%s> id<%s> len<%d>\n", dt.c_str(), id.c_str(), ary_len );
+          _appendText(_interface_group, " %s %s[%d];", dt.c_str(), id.c_str(), ary_len);
+        }
+        else{
+          OrkAssert(false);
+        }
+      }
+
+      _appendText(_interface_group, "};");
+
     }
   }
   /////////////////////////////////////////
@@ -556,9 +626,9 @@ void SpirvCompiler::_compileShader(shaderc_shader_kind shader_type) {
 
   _shader_group->appendTypedChild<InsertLine>("#version 450");
   _shader_group->appendChild(_extension_group);
-  _shader_group->appendChild(_interface_group);
   _shader_group->appendChild(_uniforms_group);
   _shader_group->appendChild(_libraries_group);
+  _shader_group->appendChild(_interface_group);
   _shader_group->appendTypedChild<InsertLine>(fn_sig);
   _shader_group->appendChildrenFrom(_shader); // compound statement
   _shader_group->appendTypedChild<InsertLine>(fn_inv);

@@ -402,4 +402,17 @@ struct InheritanceTracker{
   size_t _stack_depth = 0;
 };
 
+inline std::string getSemaIdString(astnode_ptr_t node){
+  return node->typedValueForKey<std::string>("identifier_name").value();
+}
+inline int getSemaInteger(astnode_ptr_t node){
+  return atoi(node->typedValueForKey<std::string>("literal_value").value().c_str());
+}
+inline std::string childAsSemaIdString(astnode_ptr_t node, int ch){
+  return getSemaIdString(node->childAs<SemaIdentifier>(ch));
+}
+inline int childAsSemaInteger(astnode_ptr_t node, int ch){
+  return getSemaInteger(node->childAs<SemaIntegerLiteral>(ch));
+}
+
 } // namespace ork::lev2::shadlang::SHAST

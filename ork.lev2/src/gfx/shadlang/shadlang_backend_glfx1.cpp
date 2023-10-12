@@ -68,7 +68,7 @@ struct GLFX1Backend {
     va_start(args, formatstring);
     vsnprintf(&formatbuffer[0], sizeof(formatbuffer), formatstring, args);
     va_end(args);
-    emitContinueLine("/* %04d */ ", _lineoutindex);
+    emitContinueLine("/* %04d */ ", _lineoutindex+1);
     _outstr += std::string(_indent * 2, ' ');
     _outstr += std::string(formatbuffer);
   }
@@ -99,7 +99,7 @@ struct GLFX1Backend {
     va_start(args, formatstring);
     vsnprintf(&formatbuffer[0], sizeof(formatbuffer), formatstring, args);
     va_end(args);
-    emitContinueLine("/* %04d */ ", _lineoutindex);
+    emitContinueLine("/* %04d */ ", _lineoutindex+1);
     _outstr += std::string(_indent * 2, ' ');
     _outstr += std::string(formatbuffer);
     _outstr += "\n";
@@ -509,6 +509,9 @@ GLFX1Backend::GLFX1Backend() {
   registerAstPreCB<ElseStatementBody>([=](auto ifstmt) { emitBeginLine("else "); });
   registerAstPreCB<ReturnStatement>([=](auto retstmt) { emitContinueLine("return "); });
   registerAstPostCB<ReturnStatement>([=](auto retstmt) { emitContinueLine(";"); });
+  registerAstPreCB<DiscardStatement>([=](auto disc) { emitContinueLine("discard "); });
+  registerAstPostCB<DiscardStatement>([=](auto disc) { emitContinueLine(";"); });
+  
   /////////////////////////////////////////////////////////////////////
   // expressions
   /////////////////////////////////////////////////////////////////////

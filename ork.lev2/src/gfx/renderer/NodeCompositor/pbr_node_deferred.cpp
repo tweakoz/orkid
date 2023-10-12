@@ -110,7 +110,7 @@ struct PbrNodeImpl {
     _context->_depthFogPower                  = pbrcommon->depthFogPower();
     float skybox_level                       = pbrcommon->skyboxLevel() * pbrcommon->environmentIntensity();
     CIMPL->pushCPD(_context->_accumCPD); // base lighting
-    FBI->SetAutoClear(true);
+    //FBI->SetAutoClear(true);
     FBI->PushRtGroup(rtg_laccum.get());
     //FBI->Clear(fvec4(0.1, 0.2, 0.3, 1), 1.0f);
 

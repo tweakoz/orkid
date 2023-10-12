@@ -192,6 +192,7 @@ void DeferredContext::gpuInit(Context* target) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void DeferredContext::renderGbuffer(RenderCompositingNode* node, CompositorDrawData& drawdata, const ViewData& VD) {
+  return;//
   EASY_BLOCK("renderGbuffer");
   auto CIMPL                   = drawdata._cimpl;
   FrameRenderer& framerenderer = drawdata.mFrameRenderer;
@@ -208,7 +209,7 @@ void DeferredContext::renderGbuffer(RenderCompositingNode* node, CompositorDrawD
   ViewportRect mrt_rect(0, 0, rtg_gbuffer->width(), rtg_gbuffer->height());
   ///////////////////////////////////////////////////////////////////////////
   FBI->PushRtGroup(rtg_gbuffer.get());
-  FBI->SetAutoClear(false); // explicit clear
+  //FBI->SetAutoClear(false); // explicit clear
   //targ->beginFrame(false);
   ///////////////////////////////////////////////////////////////////////////
   const auto TOPCPD  = CIMPL->topCPD();
@@ -412,7 +413,7 @@ void DeferredContext::renderBaseLighting(RenderCompositingNode* node, Compositor
   _decalCPD._stereo1pass          = false;
   CIMPL->pushCPD(_accumCPD); // base lighting
   FBI->PushRtGroup(rtg_laccum.get());
-  FBI->rtGroupClear(rtg_laccum.get());
+  //FBI->rtGroupClear(rtg_laccum.get());
   //////////////////////////////////////////////////////////////////
   // base lighting
   //////////////////////////////////////////////////////////////////
