@@ -122,6 +122,13 @@ SpirvCompilerGlobals::SpirvCompilerGlobals(){
   _id_renames["EPSILON"]     = "0.0000001";
   _id_renames["DTOR"]        = "0.017453292519943295";
   _id_renames["RTOD"]        = "57.29577951308232";
+
+  #if defined(__APPLE__)
+    _id_renames["ORK_GPU_SHADER"]        = "";
+  #else
+    _id_renames["ORK_GPU_SHADER"]        = "GL_NV_gpu_shader5";
+  #endif
+
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////
 spirvcompilerglobals_constptr_t SpirvCompilerGlobals::instance(){
@@ -479,7 +486,7 @@ void SpirvCompiler::_inheritIO(astnode_ptr_t interface_node) {
         printf( "ast_lx<%s> v<%d>\n", ast_lx.c_str(), lxv );
         printf( "ast_ly<%s> v<%d>\n", ast_ly.c_str(), lyv );
         printf( "ast_lz<%s> v<%d>\n", ast_lz.c_str(), lzv );
-        _appendText(_interface_group, "layout(%s=%d,%s=%d,%s=%d);", 
+        _appendText(_interface_group, "layout(%s=%d,%s=%d,%s=%d) in;", 
           ast_lx.c_str(), lxv,
           ast_ly.c_str(), lyv,
           ast_lz.c_str(), lzv );
@@ -601,7 +608,14 @@ void SpirvCompiler::_inheritIO(astnode_ptr_t interface_node) {
 /////////////////////////////////////////////////////////////////////////////////////////////////
 void SpirvCompiler::_inheritExtension(semainhext_ptr_t extension_node) {
   auto ext_name = extension_node->typedValueForKey<std::string>("extension_name").value();
-  _appendText(_extension_group, "#extension %s : enable", ext_name.c_str());
+  const auto& RENAMES = SpirvCompilerGlobals::instance()->_id_renames;
+  auto ren = RENAMES.find(ext_name);
+  if(ren!=RENAMES.end()){
+    ext_name = ren->second;
+  }
+  if(ext_name!=""){
+    _appendText(_extension_group, "#extension %s : enable", ext_name.c_str());
+  }
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////
 void SpirvCompiler::_compileShader(shaderc_shader_kind shader_type) {

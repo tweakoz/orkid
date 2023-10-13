@@ -138,8 +138,19 @@ const FxShaderParamBlock* VkFxInterface::parameterBlock(FxShader* pshader, const
 ///////////////////////////////////////////////////////////////////////////////
 const FxComputeShader* VkFxInterface::computeShader(FxShader* pshader, const std::string& name) {
   auto vkshfile = pshader->_internalHandle.get<vkfxsfile_ptr_t>();
-  OrkAssert(false);
-  return nullptr;
+  auto it       = vkshfile->_vk_shaderobjects.find(name);
+  OrkAssert(it != vkshfile->_vk_shaderobjects.end());
+  auto sh_obj = it->second;
+  OrkAssert(sh_obj->_STAGE == "compute"_crcu);
+  auto vk_program   = std::make_shared<VkFxShaderProgram>(vkshfile.get());
+  vk_program->_comshader = sh_obj;
+  auto cushader = new FxComputeShader;
+  cushader->_impl.set<vkfxsprg_ptr_t>(vk_program);
+  static int prog_index      = 128;
+  vk_program->_pipeline_bits_prg = prog_index;
+  prog_index++;
+  OrkAssert(prog_index < 256);
+  return cushader;
 }
 const FxShaderStorageBlock* VkFxInterface::storageBlock(FxShader* pshader, const std::string& name) {
   auto vkshfile = pshader->_internalHandle.get<vkfxsfile_ptr_t>();

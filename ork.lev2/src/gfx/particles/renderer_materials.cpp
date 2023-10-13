@@ -73,6 +73,7 @@ fxpipeline_ptr_t MaterialBase::pipeline(const RenderContextInstData& RCID, bool 
   _pipeline->_technique = (RCID._RCFD->isStereo())                                    //
                               ? (streaks ? _tek_streaks_stereoCI : _tek_sprites_stereo) //
                               : (streaks ? _tek_streaks : _tek_sprites);
+  OrkAssert(_pipeline->_technique);
   return _pipeline;
 }
 
@@ -117,6 +118,10 @@ void FlatMaterial::gpuInit(const RenderContextInstData& RCID) {
   _tek_sprites        = _material->technique("tflatparticle_sprites");
   _tek_streaks        = _material->technique("tflatparticle_streaks");
   _tek_sprites_stereo = _material->technique("tflatparticle_sprites_stereo");
+
+  OrkAssert(_tek_sprites);
+  OrkAssert(_tek_streaks);
+  OrkAssert(_tek_sprites_stereo);
 
 #if defined(ENABLE_COMPUTE_SHADERS)
 
