@@ -268,7 +268,7 @@ protected:
       : _mtinfo(nullptr) {
   }
   virtual ~static_variant_base() = default;
-  const std::type_info* _mtinfo; // TODO: should this go into _descriptorFactory ?
+  const std::type_info* _mtinfo = nullptr; // TODO: should this go into _descriptorFactory ?
   bool _assert_on_destroy = false;
 };
 
@@ -536,7 +536,7 @@ public:
   // return true if the variant has been set to something
   //////////////////////////////////////////////////////////////
   bool isSet() const {
-    return (_mtinfo != 0);
+    return (_mtinfo != nullptr);
   }
 #if defined(SVAR_DEBUG)
   std::string typestr() const {

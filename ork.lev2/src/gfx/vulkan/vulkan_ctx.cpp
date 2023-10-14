@@ -261,9 +261,7 @@ VkContext::VkContext() {
   _gbi = std::make_shared<VkGeometryBufferInterface>(this);
   _txi = std::make_shared<VkTextureInterface>(this);
   _fxi = std::make_shared<VkFxInterface>(this);
-#if defined(ENABLE_COMPUTE_SHADERS)
   _ci = std::make_shared<VkComputeInterface>(this);
-#endif
 }
 
 ///////////////////////////////////////////////////////
@@ -323,11 +321,10 @@ TextureInterface* VkContext::TXI() {
 }
 ///////////////////////////////////////////////////////
 
-#if defined(ENABLE_COMPUTE_SHADERS)
 ComputeInterface* VkContext::CI() {
   return _ci.get();
 };
-#endif
+
 ///////////////////////////////////////////////////////
 
 DrawingInterface* VkContext::DWI() {

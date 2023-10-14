@@ -303,7 +303,6 @@ void FreestyleMaterial::end(const RenderContextFrameData& RCFD) {
 ////////////////////////////////////////////////////////////////////////////////
 // Compute Shaders ?
 ////////////////////////////////////////////////////////////////////////////////
-#if defined(ENABLE_COMPUTE_SHADERS)
 const FxShaderStorageBlock* FreestyleMaterial::storageBlock(std::string named) {
   auto fxi = _initialTarget->FXI();
   auto blk = fxi->storageBlock(_shader, named);
@@ -319,7 +318,6 @@ const FxComputeShader* FreestyleMaterial::computeShader(std::string named) {
     _computeShaders.insert(tek);
   return tek;
 }
-#endif
 ///////////////////////////////////////////////////////////////////////////////
 lev2::freestyle_mtl_ptr_t createShaderFromFile(lev2::Context* ctx, std::string debugname, file::Path shader_path) {
   ork::File shader_file(shader_path, ork::EFM_READ);

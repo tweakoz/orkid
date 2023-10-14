@@ -53,8 +53,8 @@ void Context::endFrame(void) {
 
 /////////////////////////////////////////////////////////////////////////
 
-commandbuffer_ptr_t Context::beginRecordCommandBuffer(renderpass_ptr_t rpass){
-  return _beginRecordCommandBuffer(rpass);
+commandbuffer_ptr_t Context::beginRecordCommandBuffer(renderpass_ptr_t rpass,std::string name){
+  return _beginRecordCommandBuffer(rpass,name);
 }
 void Context::endRecordCommandBuffer(commandbuffer_ptr_t cmdbuf){
   _endRecordCommandBuffer(cmdbuf);

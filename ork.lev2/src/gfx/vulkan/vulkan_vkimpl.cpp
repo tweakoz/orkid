@@ -17,7 +17,7 @@ namespace ork::lev2::vulkan {
 
 vkinstance_ptr_t _GVI = nullptr;
 constexpr bool _enable_validate = true;
-constexpr bool _enable_renderdoc = false;
+constexpr bool _enable_renderdoc = true;
 constexpr bool _enable_debug = (_enable_validate or _enable_renderdoc);
 ///////////////////////////////////////////////////////////////////////////////////////////////
 

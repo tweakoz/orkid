@@ -48,16 +48,12 @@ public:
   const FxShaderParamBlock* parameterBlock(FxShader* hfx, const std::string& name) final {
     return nullptr;
   }
-#if defined(ENABLE_SHADER_STORAGE)
   const FxShaderStorageBlock* storageBlock(FxShader* hfx, const std::string& name) final {
     return nullptr;
   }
-#endif
-#if defined(ENABLE_COMPUTE_SHADERS)
   const FxComputeShader* computeShader(FxShader* hfx, const std::string& name) final {
     return nullptr;
   }
-#endif
 
   void BindParamBool(const FxShaderParam* hpar, const bool bval) final {
   }
@@ -124,9 +120,7 @@ public:
 };*/
 
 ///////////////////////////////////////////////////////////////////////////////
-#if defined(ENABLE_COMPUTE_SHADERS)
 struct DuComputeInterface : public ComputeInterface {};
-#endif
 ///////////////////////////////////////////////////////////////////////////////
 
 class DuMatrixStackInterface : public MatrixStackInterface {
@@ -175,13 +169,11 @@ class DuGeometryBufferInterface final : public GeometryBufferInterface {
   DrawIndexedPrimitiveEML(const VertexBufferBase& VBuf, const IndexBufferBase& IdxBuf, PrimitiveType eType)
       final;
 
-#if defined(ENABLE_COMPUTE_SHADERS)
   void DrawPrimitiveEML(
       const FxShaderStorageBuffer* SSBO, //
       PrimitiveType eType = PrimitiveType::NONE,
       int ivbase          = 0,
       int ivcount         = 0) final;
-#endif
 
   void DrawInstancedIndexedPrimitiveEML(
       const VertexBufferBase& VBuf,
@@ -296,11 +288,9 @@ public:
     return &mDWI;
   }
 
-#if defined(ENABLE_COMPUTE_SHADERS)
   ComputeInterface* CI() final {
     return &mCI;
   }
-#endif
 
   //////////////////////////////////////////////
 
@@ -328,10 +318,7 @@ private:
   DuTextureInterface mTxI;
   DuFrameBufferInterface mFbI;
   DummyDrawingInterface mDWI;
-
-#if defined(ENABLE_COMPUTE_SHADERS)
   DuComputeInterface mCI;
-#endif
 };
 
 ///////////////////////////////////////////////////////////////////////////////

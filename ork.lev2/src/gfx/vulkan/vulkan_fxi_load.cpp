@@ -704,8 +704,14 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
       auto vk_program   = std::make_shared<VkFxShaderProgram>(vulkan_shaderfile.get());
       auto vtx_obj      = vulkan_shaderfile->_vk_shaderobjects[str_vtx_name];
       auto frg_obj      = vulkan_shaderfile->_vk_shaderobjects[str_frg_name];
-      OrkAssert(vtx_obj);
-      OrkAssert(frg_obj);
+      if(vtx_obj==nullptr){
+        printf("vtx_obj<%s> not found\n", str_vtx_name.c_str());
+        OrkAssert(false);
+      }
+      if(frg_obj==nullptr){
+        printf("frg_obj<%s> not found\n", str_frg_name.c_str());
+        OrkAssert(false);
+      }
       vk_program->_vtxshader = vtx_obj;
       vk_program->_frgshader = frg_obj;
       vk_pass->_vk_program   = vk_program;

@@ -154,7 +154,7 @@ vksamplercreateinfo_ptr_t makeVKSCI() { //
 
 ///////////////////////////////////////////////////////////////////////////////
 
-VulkanImageObject::VulkanImageObject(vkcontext_rawptr_t ctx, vkimagecreateinfo_ptr_t cinfo)
+VulkanImageObject::VulkanImageObject(vkcontext_rawptr_t ctx, vkimagecreateinfo_ptr_t cinfo, std::string name)
     : _ctx(ctx)
     , _cinfo(cinfo) {
 
@@ -162,12 +162,17 @@ VulkanImageObject::VulkanImageObject(vkcontext_rawptr_t ctx, vkimagecreateinfo_p
   VkResult ok = vkCreateImage(_ctx->_vkdevice, cinfo.get(), nullptr, &_vkimage);
   OrkAssert(VK_SUCCESS == ok);
   _imgmem = std::make_shared<VulkanMemoryForImage>(_ctx, _vkimage, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+  if(name!=""){
+    _ctx->_setObjectDebugName(*(_imgmem->_vkmem), VK_OBJECT_TYPE_DEVICE_MEMORY, name.c_str());
+  }
 }
 VulkanImageObject::~VulkanImageObject() {
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-VulkanBuffer::VulkanBuffer(vkcontext_rawptr_t ctxVK, size_t length, VkBufferUsageFlags usage)
+VulkanBuffer::VulkanBuffer(vkcontext_rawptr_t ctxVK, size_t length, VkBufferUsageFlags usage,std::string name)
     : _ctxVK(ctxVK)
     , _length(length)
     , _usage(usage) {
@@ -185,6 +190,11 @@ VulkanBuffer::VulkanBuffer(vkcontext_rawptr_t ctxVK, size_t length, VkBufferUsag
   initializeVkStruct(_vkbuffer);
   VkResult ok = vkCreateBuffer(ctxVK->_vkdevice, &_cinfo, nullptr, &_vkbuffer);
   OrkAssert(VK_SUCCESS == ok);
+
+  if(name!=""){
+    _ctxVK->_setObjectDebugName(_vkbuffer, VK_OBJECT_TYPE_BUFFER, name.c_str());
+  }
+
 
   _memory = std::make_shared<VulkanMemoryForBuffer>(
       ctxVK, _vkbuffer, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);

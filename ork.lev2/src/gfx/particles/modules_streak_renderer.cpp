@@ -173,7 +173,6 @@ void StreakRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
   // compute shader path
   //////////////////////////////////////////////////////////////////////////////
   if (RCID._RCFD->isStereo()) {
-#if defined(ENABLE_COMPUTE_SHADERS)
     auto FXI = context->FXI();
     auto CI  = context->CI();
     ///////////////////////////////////////////////////////////////
@@ -232,7 +231,6 @@ void StreakRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
       FXI->reset();
     });
 ///////////////////////////////////////////////////////////////
-#endif
   }
   //////////////////////////////////////////////////////////////////////////////
   else { // geometry shader path

@@ -10,5 +10,3 @@
 #if ! defined(__APPLE__)
 #define ENABLE_NVMESH_SHADERS
 #endif
-#define ENABLE_COMPUTE_SHADERS
-#define ENABLE_SHADER_STORAGE

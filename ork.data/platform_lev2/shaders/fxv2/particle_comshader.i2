@@ -174,20 +174,3 @@ fragment_shader ps_grad_stereoCI //
   out_clr.xyz = gmap.xyz*cmap.xyz;
   out_clr.w = gmap.w*cmap.w;
 }
-///////////////////////////////////////////////////////////////
-technique tflatparticle_streaks_stereoCI {
-  fxconfig = fxcfg_default;
-  pass p0 {
-    vertex_shader   = vs_streak_stereoCI;
-    fragment_shader = ps_flat_stereoCI;
-    state_block     = sb_default;
-  }
-}
-technique tgradparticle_streaks_stereo {
-  fxconfig = fxcfg_default;
-  pass p0 {
-    vertex_shader   = vs_streak_stereoCI;
-    fragment_shader = ps_grad_stereoCI;
-    state_block     = sb_default;
-  }
-}

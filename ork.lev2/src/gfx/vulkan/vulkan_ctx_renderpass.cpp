@@ -190,6 +190,7 @@ void VkContext::_beginRenderPass(renderpass_ptr_t renpass) {
   auto rtg      = _fbi->_active_rtgroup;
   auto rtg_impl = rtg->_impl.getShared<VkRtGroupImpl>();
   auto vk_rpass = renpass->_impl.getShared<VulkanRenderPass>();
+  int num_rtb = rtg->GetNumTargets();
 
   VkRenderPassBeginInfo RPBI = {};
   initializeVkStruct(RPBI, VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO);
@@ -200,19 +201,28 @@ void VkContext::_beginRenderPass(renderpass_ptr_t renpass) {
 
   std::vector<VkClearValue> clearValues;
 
-  if (rtg->_autoclear and renpass->_allow_clear) {
-    auto color = rtg->_clearColor;
-
-    clearValues.reserve(2);
-    clearValues.emplace_back().color        = {{color.x, color.y, color.z, color.w}};
-    clearValues.emplace_back().depthStencil = {1.0f, 0};
-    //  clear-rect-region
-    RPBI.renderArea.offset = {0, 0};
-    RPBI.renderArea.extent = {uint32_t(rtg->width()), uint32_t(rtg->height())};
-    //  clear-targets
-    RPBI.clearValueCount = clearValues.size();
-    RPBI.pClearValues    = clearValues.data();
+  if(rtg->_depthBuffer){
+    auto rtb                     = rtg->_depthBuffer;
+    auto rtbi                    = rtb->_impl.getShared<VklRtBufferImpl>();
+    if(rtbi->_attachmentDesc.loadOp==VK_ATTACHMENT_LOAD_OP_CLEAR){
+      clearValues.emplace_back().depthStencil = {1.0f, 0};
+    }
   }
+  for (int i = 0; i < num_rtb; i++) {
+    auto color = rtg->_clearColor;
+    auto rtb                     = rtg->GetMrt(i);
+    auto rtbi                    = rtb->_impl.getShared<VklRtBufferImpl>();
+    if(rtbi->_attachmentDesc.loadOp==VK_ATTACHMENT_LOAD_OP_CLEAR){
+      clearValues.emplace_back().color = {{color.x, color.y, color.z, color.w}};
+    }
+  }
+
+  //  clear-rect-region
+  RPBI.renderArea.offset = {0, 0};
+  RPBI.renderArea.extent = {uint32_t(rtg->width()), uint32_t(rtg->height())};
+  //  clear-targets
+  RPBI.clearValueCount = clearValues.size();
+  RPBI.pClearValues    = clearValues.data();
 
   /////////////////////////////////////////
   // misc renderpass

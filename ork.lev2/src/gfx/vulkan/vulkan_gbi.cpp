@@ -526,7 +526,6 @@ void VkGeometryBufferInterface::DrawIndexedPrimitiveEML(
 
 ///////////////////////////////////////////////////////////////////////////////
 
-#if defined(ENABLE_COMPUTE_SHADERS)
 void VkGeometryBufferInterface::DrawPrimitiveEML(
     const FxShaderStorageBuffer* SSBO, //
     PrimitiveType eType,
@@ -534,7 +533,6 @@ void VkGeometryBufferInterface::DrawPrimitiveEML(
     int ivcount) {
   OrkAssert(false);
 }
-#endif
 
 void VkGeometryBufferInterface::DrawInstancedIndexedPrimitiveEML(
     const VertexBufferBase& vtx_buf,

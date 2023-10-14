@@ -33,13 +33,8 @@ public:
   virtual const FxShaderParam* parameter(FxShader* hfx, const std::string& name)           = 0;
   virtual const FxShaderParamBlock* parameterBlock(FxShader* hfx, const std::string& name) = 0;
 
-#if defined(ENABLE_COMPUTE_SHADERS)
   virtual const FxComputeShader* computeShader(FxShader* hfx, const std::string& name) = 0;
-#endif
-
-#if defined(ENABLE_SHADER_STORAGE)
   virtual const FxShaderStorageBlock* storageBlock(FxShader* hfx, const std::string& name) = 0;
-#endif
 
   virtual void BindParamBool(const FxShaderParam* hpar, const bool bval)                          = 0;
   virtual void BindParamInt(const FxShaderParam* hpar, const int ival)                            = 0;

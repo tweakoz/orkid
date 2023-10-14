@@ -84,9 +84,7 @@ struct VkFrameBufferInterface;
 struct VkGeometryBufferInterface;
 struct VkTextureInterface;
 struct VkFxInterface;
-#if defined(ENABLE_COMPUTE_SHADERS)
 struct VkComputeInterface;
-#endif
 //
 struct VulkanTextureObject;
 struct VulkanFxShaderObject;
@@ -135,9 +133,7 @@ using vktxi_ptr_t    = std::shared_ptr<VkTextureInterface>;
 using vktxi_rawptr_t = VkTextureInterface*;
 
 using vkfxi_ptr_t = std::shared_ptr<VkFxInterface>;
-#if defined(ENABLE_COMPUTE_SHADERS)
 using vkci_ptr_t = std::shared_ptr<VkComputeInterface>;
-#endif
 //
 using vktexobj_ptr_t        = std::shared_ptr<VulkanTextureObject>;
 using vkfxsfile_ptr_t       = std::shared_ptr<VkFxShaderFile>;
@@ -486,7 +482,7 @@ struct VulkanMemoryForBuffer {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct VulkanBuffer {
-  VulkanBuffer(vkcontext_rawptr_t ctxVK, size_t length, VkBufferUsageFlags usage);
+  VulkanBuffer(vkcontext_rawptr_t ctxVK, size_t length, VkBufferUsageFlags usage, std::string name="");
   ~VulkanBuffer();
 
   void copyFromHost(const void* src, size_t length);
@@ -536,7 +532,7 @@ using vkfence_obj_ptr_t = std::shared_ptr<VulkanFenceObject>;
 ///////////////////////////////////////////////////////////////////////////////
 
 struct VulkanImageObject {
-  VulkanImageObject(vkcontext_rawptr_t ctx, vkimagecreateinfo_ptr_t cinfo);
+  VulkanImageObject(vkcontext_rawptr_t ctx, vkimagecreateinfo_ptr_t cinfo, std::string name="");
   ~VulkanImageObject();
   vkcontext_rawptr_t _ctx;
   vkimagecreateinfo_ptr_t _cinfo;
@@ -891,15 +887,11 @@ struct VkGeometryBufferInterface final : public GeometryBufferInterface {
       int ivbase,
       int ivcount) final;
 
-#if defined(ENABLE_COMPUTE_SHADERS)
-
   void DrawPrimitiveEML(
       const FxShaderStorageBuffer* SSBO, //
       PrimitiveType eType = PrimitiveType::NONE,
       int ivbase          = 0,
       int ivcount         = 0) final;
-
-#endif
 
   void
   DrawIndexedPrimitiveEML(const VertexBufferBase& VBuf, const IndexBufferBase& IdxBuf, PrimitiveType eType)
@@ -1034,10 +1026,8 @@ struct VkFxInterface final : public FxInterface {
   const FxShaderParam* parameter(FxShader* hfx, const std::string& name) final;
   const FxShaderParamBlock* parameterBlock(FxShader* hfx, const std::string& name) final;
 
-#if defined(ENABLE_COMPUTE_SHADERS)
   const FxComputeShader* computeShader(FxShader* hfx, const std::string& name) final;
   const FxShaderStorageBlock* storageBlock(FxShader* hfx, const std::string& name) final;
-#endif
 
   void BindParamBool(const FxShaderParam* hpar, const bool bval) final;
   void BindParamInt(const FxShaderParam* hpar, const int ival) final;
@@ -1102,8 +1092,6 @@ struct VkFxInterface final : public FxInterface {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-#if defined(ENABLE_COMPUTE_SHADERS)
-
 struct VkComputeInterface : public ComputeInterface {
 
   VkComputeInterface(vkcontext_rawptr_t ctx);
@@ -1126,7 +1114,6 @@ struct VkComputeInterface : public ComputeInterface {
   vkfxi_ptr_t _fxi;
 };
 
-#endif
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
@@ -1160,7 +1147,7 @@ public:
 
   //////////////////////////////////////////////
 
-  commandbuffer_ptr_t _beginRecordCommandBuffer(renderpass_ptr_t rpass) final;
+  commandbuffer_ptr_t _beginRecordCommandBuffer(renderpass_ptr_t rpass,std::string name) final;
   void _endRecordCommandBuffer(commandbuffer_ptr_t cmdbuf) final;
   void _beginRenderPass(renderpass_ptr_t) final;
   void _endRenderPass(renderpass_ptr_t) final;
@@ -1180,9 +1167,7 @@ public:
   GeometryBufferInterface* GBI() final;
   FrameBufferInterface* FBI() final;
   TextureInterface* TXI() final;
-#if defined(ENABLE_COMPUTE_SHADERS)
   ComputeInterface* CI() final;
-#endif
   DrawingInterface* DWI() final;
 
   ///////////////////////////////////////////////////////////////////////
@@ -1303,10 +1288,7 @@ public:
   vkgbi_ptr_t _gbi;
   vktxi_ptr_t _txi;
   vkfxi_ptr_t _fxi;
-
-#if defined(ENABLE_COMPUTE_SHADERS)
   vkci_ptr_t _ci;
-#endif
 };
 
 ///////////////////////////////////////////////////////////////////////////

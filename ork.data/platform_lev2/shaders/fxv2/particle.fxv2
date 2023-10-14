@@ -1,10 +1,10 @@
 ///////////////////////////////////////////////////////////////
 // FxConfigs
 ///////////////////////////////////////////////////////////////
-fxconfig fxcfg_default {
+fxconfig fxcfg_default { //a
   glsl_version = "330";
   import "orkshader://particle_common.i2";
-  //import "orkshader://particle_geoshader.i2";
+  import "orkshader://particle_geoshader.i2";
   import "orkshader://particle_comshader.i2";
 }
 ///////////////////////////////////////////////////////////////
@@ -26,8 +26,134 @@ technique tparticle_nogs {
     state_block     = sb_default;
   }
 }
-
-
+///////////////////////////////////////////////////////////////
+technique tflatparticle_streaks_stereoCI {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_streak_stereoCI;
+    fragment_shader = ps_flat_stereoCI;
+    state_block     = sb_default;
+  }
+}
+///////////////////////////////////////////////////////////////
+technique tgradparticle_streaks_stereo {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_streak_stereoCI;
+    fragment_shader = ps_grad_stereoCI;
+    state_block     = sb_default;
+  }
+}
+///////////////////////////////////////////////////////////////
+technique tbasicparticle_pick {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_vtxcolorGEO;
+    geometry_shader = gs_billboardquadGEO;
+    fragment_shader = ps_modtex;
+    state_block     = sb_default;
+  }
+}
+///////////////////////////////////////////////////////////////
+technique tvolnoiseparticle {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_vtxcolorGEO;
+    geometry_shader = gs_billboardquadGEO;
+    fragment_shader = ps_modtex;
+    state_block     = sb_default;
+  }
+}
+///////////////////////////////////////////////////////////////
+technique tvolumeparticle {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_vtxcolorGEO;
+    geometry_shader = gs_billboardquadGEO;
+    fragment_shader = ps_volume;
+    state_block     = sb_alpadd;
+  }
+}
+///////////////////////////////////////////////////////////////
+technique tflatparticle_sprites {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_vtxtexcolorGEO;
+    geometry_shader = gs_billboardquadGEO;
+    fragment_shader = ps_flat;
+    state_block     = sb_default;
+  }
+}
+///////////////////////////////////////////////////////////////
+technique tflatparticle_streaks {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_streakGEO;
+    geometry_shader = gs_streakGEO;
+    fragment_shader = ps_flat;
+    state_block     = sb_default;
+  }
+}
+///////////////////////////////////////////////////////////////
+technique tgradparticle_sprites {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_vtxtexcolorGEO;
+    geometry_shader = gs_billboardquadGEO;
+    fragment_shader = ps_flat;
+    state_block     = sb_default;
+  }
+}
+///////////////////////////////////////////////////////////////
+technique tgradparticle_streaks {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_streakGEO;
+    geometry_shader = gs_streakGEO;
+    fragment_shader = ps_grad;
+    state_block     = sb_default;
+  }
+}
+///////////////////////////////////////////////////////////////
+technique ttexparticle_sprites {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_vtxtexcolorGEO;
+    geometry_shader = gs_billboardquadGEO;
+    fragment_shader = ps_modtexclr;
+    state_block     = sb_default;
+  }
+}
+///////////////////////////////////////////////////////////////
+technique ttexparticle_streaks {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_streakGEO;
+    geometry_shader = gs_streakGEO;
+    fragment_shader = ps_modtexclr;
+    state_block     = sb_default;
+  }
+}
+///////////////////////////////////////////////////////////////
+technique tbasicparticle_stereo {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_vtxtexcolorGEO;
+    geometry_shader = gs_billboardquad_stereoGEO;
+    fragment_shader = ps_modtexclr;
+    state_block     = sb_default;
+  }
+}
+///////////////////////////////////////////////////////////////
+technique tstreakparticle {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_streakGEO;
+    geometry_shader = gs_streakGEO;
+    fragment_shader = ps_modtexclr;
+    state_block     = sb_default;
+  }
+}
 ///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////

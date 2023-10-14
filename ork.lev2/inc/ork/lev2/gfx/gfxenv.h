@@ -145,10 +145,8 @@ public:
   virtual FrameBufferInterface* FBI()    = 0; // FrameBuffer/Control Interface
   virtual TextureInterface* TXI()        = 0; // Texture Interface
   virtual DrawingInterface* DWI()        = 0; // Drawing Interface
-
-#if defined(ENABLE_COMPUTE_SHADERS)
   virtual ComputeInterface* CI() = 0; // ComputeShader Interface
-#endif
+
   virtual ImmInterface* IMI() {
     return 0;
   } // Immediate Mode Interface (optional)
@@ -209,7 +207,7 @@ public:
   void endFrame();
 
 
-  commandbuffer_ptr_t beginRecordCommandBuffer(renderpass_ptr_t rpass=nullptr);
+  commandbuffer_ptr_t beginRecordCommandBuffer(renderpass_ptr_t rpass=nullptr,std::string name="");
   void endRecordCommandBuffer(commandbuffer_ptr_t cmdbuf);
 
   void beginRenderPass(renderpass_ptr_t);
@@ -219,7 +217,7 @@ public:
 
   ///////////////////////////////////////////////////////////////////////
 
-  virtual commandbuffer_ptr_t _beginRecordCommandBuffer(renderpass_ptr_t rpass) { return nullptr; }
+  virtual commandbuffer_ptr_t _beginRecordCommandBuffer(renderpass_ptr_t rpass,std::string name) { return nullptr; }
   virtual void _endRecordCommandBuffer(commandbuffer_ptr_t cmdbuf) {}
   virtual void _beginRenderPass(renderpass_ptr_t) {}
   virtual void _endRenderPass(renderpass_ptr_t) {}

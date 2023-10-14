@@ -67,13 +67,11 @@ public:
       int ivbase           = 0,
       int ivcount          = 0) = 0;
 
-#if defined(ENABLE_COMPUTE_SHADERS)
   virtual void DrawPrimitiveEML(
       const FxShaderStorageBuffer* SSBO, //
       PrimitiveType eType = PrimitiveType::NONE,
       int ivbase           = 0,
       int ivcount          = 0) = 0;
-#endif      
 
   virtual void DrawIndexedPrimitiveEML(
       const VertexBufferBase& VBuf,

@@ -98,6 +98,8 @@ std::shared_ptr<FlatMaterial> FlatMaterial::createShared() {
 ///////////////////////////////////////////////////////////////////////////////
 void FlatMaterial::gpuInit(const RenderContextInstData& RCID) {
   auto context                                       = RCID.context();
+  auto CI  = context->CI();
+
   _material                                          = std::make_shared<FreestyleMaterial>();
   _material->_varmap["tflatparticle_streaks_stereo"] = std::string("dump_and_exit");
   _material->gpuInit(context, "orkshader://particle");
@@ -121,19 +123,13 @@ void FlatMaterial::gpuInit(const RenderContextInstData& RCID) {
 
   OrkAssert(_tek_sprites);
   OrkAssert(_tek_streaks);
-  OrkAssert(_tek_sprites_stereo);
-
-#if defined(ENABLE_COMPUTE_SHADERS)
-
-  auto FXI = context->FXI();
-  auto CI  = context->CI();
+  //OrkAssert(_tek_sprites_stereo);
 
   _streakcu_vertex_io_buffer = CI->createStorageBuffer(8 << 20);
   _streakcu_shader           = _material->computeShader("compute_streaks");
 
   _tek_streaks_stereoCI  = _material->technique("tflatparticle_streaks_stereoCI");
 
-#endif
 }
 ///////////////////////////////////////////////////////////////////////////////
 void FlatMaterial::update(const RenderContextInstData& RCID) {
@@ -198,6 +194,7 @@ std::shared_ptr<GradientMaterial> GradientMaterial::createShared() {
 /////////////////////////////////////////////////////////////////////////////////////////////
 void GradientMaterial::gpuInit(const RenderContextInstData& RCID) {
   auto context = RCID.context();
+  auto CI  = context->CI();
   ////////////////////////////////////////////////////////////////////
   _grad_render_mtl = std::make_shared<FreestyleMaterial>();
   _grad_render_mtl->gpuInit(context, "orkshader://ui2");
@@ -260,20 +257,11 @@ void GradientMaterial::gpuInit(const RenderContextInstData& RCID) {
   };
   _pipeline->bindParam(fxparameterAlphaFactor, alphafactor);
   //////////////////////////////////////////
-  _tek_sprites = _material->technique("tgradparticle_sprites");
-  _tek_streaks = _material->technique("tgradparticle_streaks");
-
-#if defined(ENABLE_COMPUTE_SHADERS)
-
-  auto FXI = context->FXI();
-  auto CI  = context->CI();
-
-  _streakcu_vertex_io_buffer = CI->createStorageBuffer(8 << 20);
+  _tek_sprites               = _material->technique("tgradparticle_sprites");
+  _tek_streaks               = _material->technique("tgradparticle_streaks");
+  _tek_streaks_stereoCI      = _material->technique("tgradparticle_streaks_stereo");
   _streakcu_shader           = _material->computeShader("compute_streaks");
-
-  _tek_streaks_stereoCI  = _material->technique("tgradparticle_streaks_stereo");
-
-#endif
+  _streakcu_vertex_io_buffer = CI->createStorageBuffer(8 << 20);
 
 }
 /////////////////////////////////////////////////////////////////////////////////////////////
