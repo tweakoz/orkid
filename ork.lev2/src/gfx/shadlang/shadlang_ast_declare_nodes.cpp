@@ -59,6 +59,7 @@ void ShadLangParser::declareAstNodes() {
   DECLARE_OBJNAME_AST_NODE("fif_name");
   DECLARE_OBJNAME_AST_NODE("cif_name");
   DECLARE_OBJNAME_AST_NODE("lib_name");
+  DECLARE_OBJNAME_AST_NODE("typeblock_name");
   DECLARE_OBJNAME_AST_NODE("sb_name");
   DECLARE_OBJNAME_AST_NODE("import_id");
 
@@ -163,6 +164,7 @@ void ShadLangParser::declareAstNodes() {
   DECLARE_STD_AST_NODE(UniformSet);
   DECLARE_STD_AST_NODE(UniformBlk);
   DECLARE_STD_AST_NODE(LibraryBlock);
+  DECLARE_STD_AST_NODE(TypeBlock);
   DECLARE_STD_AST_NODE(VertexShader);
   DECLARE_STD_AST_NODE(GeometryShader);
   DECLARE_STD_AST_NODE(FragmentShader);

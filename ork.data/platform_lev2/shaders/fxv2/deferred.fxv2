@@ -88,6 +88,7 @@ libblock lib_deferred
   : lib_envmapping
   : lib_cellnoise
   : lib_brdf
+  : lib_gbuf_types
   : lib_gbuf_decode
   : lib_def
   : lib_mmnoise {

@@ -234,6 +234,12 @@ GLFX1Backend::GLFX1Backend() {
   registerAstPostCB<LibraryBlock>([=](auto libblock) { named_postcb(libblock); });
   registerAstPreChildCB<LibraryBlock>(named_item_pre_child_cb);
   /////////////////////////////////////////////////////////////////////
+  registerAstPreCB<TypeBlock>([=](auto typblock) { 
+    named_precb( typblock, "typeblock" );
+  });
+  registerAstPostCB<TypeBlock>([=](auto typblock) { named_postcb(typblock); });
+  registerAstPreChildCB<TypeBlock>(named_item_pre_child_cb);
+  /////////////////////////////////////////////////////////////////////
   registerAstPreCB<UniformSet>([=](auto uni_set) { named_precb( uni_set, "uniform_set" ); });
   registerAstPostCB<UniformSet>([=](auto uni_set) { named_postcb(uni_set); });
   registerAstPreChildCB<UniformSet>(named_item_pre_child_cb);

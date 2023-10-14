@@ -1,7 +1,7 @@
 ///////////////////////////////////////////////////////////////
 //
 ///////////////////////////////////////////////////////////////
-libblock lib_gbuf_decode {
+typeblock lib_gbuf_types {
   struct GBufData {
     vec2 _uv;
     vec3 _wpos;
@@ -27,7 +27,17 @@ libblock lib_gbuf_decode {
     mat4 _ivp;
     int _index;
   };
-  /////////////////////////////////////////////////////////
+  struct wposout {
+    vec4 _out;
+    float _fogZ;
+    float _linZ;
+    float _rawDepth;
+  };
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+libblock lib_gbuf_decode {
   WPosData stereoWPD(){
     WPosData wpd;
     wpd._muv   = gl_FragCoord.xy * InvViewportSize;
@@ -68,13 +78,6 @@ libblock lib_gbuf_decode {
     vec3 pos    = vec3(rr.xyz / rr.w);
     return pos;
   }
-  /////////////////////////////////////////////////////////
-  struct wposout {
-    vec4 _out;
-    float _fogZ;
-    float _linZ;
-    float _rawDepth;
-  };
   /////////////////////////////////////////////////////////
   wposout defwpos(WPosData wpd) {
     float depthtex = textureLod(MapDepth, wpd._muv,0).r;

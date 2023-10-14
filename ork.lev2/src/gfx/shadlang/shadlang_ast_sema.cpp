@@ -413,6 +413,10 @@ void _semaPerformImports(impl::ShadLangParser* slp, astnode_ptr_t top) {
           slp->importTranslatable<LibraryBlock>(name, as_lib_block, slp->_slp_cache->_library_blocks);
         } 
         ////////////////////////////////////////////////////////////////////////////////////////
+        else if (auto as_typ_block = std::dynamic_pointer_cast<TypeBlock>(translatable)) {
+          slp->importTranslatable<TypeBlock>(name, as_typ_block, slp->_slp_cache->_type_blocks);
+        } 
+        ////////////////////////////////////////////////////////////////////////////////////////
         else if (auto as_uniset = std::dynamic_pointer_cast<UniformSet>(translatable)) {
           slp->importTranslatable<UniformSet>(name, as_uniset, slp->_slp_cache->_uniform_sets);
         }
@@ -813,6 +817,7 @@ int _semaLinkToInheritances(
         }
         /////////////////////////////////
         bool check_lib_blocks  = false;
+        bool check_typ_blocks  = false;
         bool check_uni_sets    = false;
         bool check_uni_blks    = false;
         bool check_vtx_iface   = false;
@@ -825,6 +830,12 @@ int _semaLinkToInheritances(
         /////////////////////////////////
         if constexpr (std::is_same<node_t, LibraryBlock>::value) {
           check_lib_blocks = true;
+          check_typ_blocks = true;
+          //check_uni_sets   = true;
+          //check_uni_blks   = true;
+        }
+        else if constexpr (std::is_same<node_t, TypeBlock>::value) {
+          check_typ_blocks = true;
           //check_uni_sets   = true;
           //check_uni_blks   = true;
         }
@@ -833,6 +844,7 @@ int _semaLinkToInheritances(
         /////////////////////////////////
         else if constexpr (std::is_same<node_t, VertexShader>::value) {
           check_lib_blocks = true;
+          check_typ_blocks = true;
           check_uni_sets   = true;
           check_uni_blks   = true;
           check_vtx_iface  = true;
@@ -842,6 +854,7 @@ int _semaLinkToInheritances(
         /////////////////////////////////
         else if constexpr (std::is_same<node_t, GeometryShader>::value) {
           check_lib_blocks = true;
+          check_typ_blocks = true;
           check_uni_sets   = true;
           check_uni_blks   = true;
           check_vtx_iface  = true;
@@ -852,6 +865,7 @@ int _semaLinkToInheritances(
         /////////////////////////////////
         else if constexpr (std::is_same<node_t, FragmentShader>::value) {
           check_lib_blocks = true;
+          check_typ_blocks = true;
           check_uni_sets   = true;
           check_uni_blks   = true;
           check_vtx_iface  = true;
@@ -863,6 +877,7 @@ int _semaLinkToInheritances(
         /////////////////////////////////
         else if constexpr (std::is_same<node_t, ComputeShader>::value) {
           check_lib_blocks = true;
+          check_typ_blocks = true;
           check_uni_sets   = true;
           check_uni_blks   = true;
           check_com_iface  = true;
@@ -885,16 +900,17 @@ int _semaLinkToInheritances(
           check_stateblocks = true;
         }
         /////////////////////////////////
-        if constexpr (std::is_same<node_t, LibraryBlock>::value) {
-          bool check = check_inheritance(inh_name, slp->_slp_cache->_library_blocks);
-          if(check==false){
-            printf("XXX cannot find %s |  %s << %s\n", n->_type_name.c_str(), objname.c_str(), inh_name.c_str());
-            impl::implStackDump(slp->_slp_cache);
-            OrkAssert(false);
-          }
-        }
         /////////////////////////////////
-        if (check_lib_blocks and check_inheritance(inh_name, slp->_slp_cache->_library_blocks)) {
+        /////////////////////////////////
+        /////////////////////////////////
+        if (check_typ_blocks and check_inheritance(inh_name, slp->_slp_cache->_type_blocks)) {
+          auto typelib   = std::make_shared<SemaInheritTypeBlock>();
+          typelib->_name = FormatString("SemaInheritTypeBlock: %s", inh_name.c_str());
+          typelib->setValueForKey<std::string>("inherit_id", inh_name);
+          slp->replaceInParent(inh_item, typelib);
+          count++;
+        }
+        else if (check_lib_blocks and check_inheritance(inh_name, slp->_slp_cache->_library_blocks)) {
           auto semalib   = std::make_shared<SemaInheritLibrary>();
           semalib->_name = FormatString("SemaInheritLibrary: %s", inh_name.c_str());
           semalib->setValueForKey<std::string>("inherit_id", inh_name);
@@ -1076,6 +1092,7 @@ void impl::ShadLangParser::semaAST(astnode_ptr_t top) {
     _semaCollectNamedOfType<UniformSet>(this, top, _slp_cache->_uniform_sets);
     _semaCollectNamedOfType<UniformBlk>(this, top, _slp_cache->_uniform_blocks);
     _semaCollectNamedOfType<LibraryBlock>(this, top, _slp_cache->_library_blocks);
+    _semaCollectNamedOfType<TypeBlock>(this, top, _slp_cache->_type_blocks);
 
     _semaCollectNamedOfType<StructDecl>(this, top, _structs);
     _semaCollectNamedOfType<StateBlock>(this, top, _stateblocks);
@@ -1127,6 +1144,7 @@ void impl::ShadLangParser::semaAST(astnode_ptr_t top) {
   while (keep_going) {
     int count = 0;
     count += _semaLinkToInheritances<LibraryBlock>(this, top);
+    count += _semaLinkToInheritances<TypeBlock>(this, top);
 
     count += _semaLinkToInheritances<VertexInterface>(this, top);
     count += _semaLinkToInheritances<GeometryInterface>(this, top);

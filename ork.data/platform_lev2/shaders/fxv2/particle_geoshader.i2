@@ -75,7 +75,7 @@ geometry_interface gface_bill_stereoGEO //
 }
 ///////////////////////////////////////////////////////////////
 
-libblock lib_billboardGEO {
+typeblock types_billboardGEO{
   struct Input {
     vec2 inp_ang_siz;
     vec3 inp_pos;
@@ -86,6 +86,9 @@ libblock lib_billboardGEO {
     vec4 pos2;
     vec4 pos3;
   };
+
+}
+libblock lib_billboardGEO : types_billboardGEO {
   Output Compute(Input inp) {
  
     Output outp;
@@ -116,7 +119,7 @@ libblock lib_billboardGEO {
   }
 }
 ///////////////////////////////////////////////////////////////
-libblock lib_streak_typesGEO {
+typeblock types_streak_typesGEO {
   struct StreakInput {
     vec3 pos;
     vec3 vel;
@@ -132,7 +135,7 @@ libblock lib_streak_typesGEO {
 }
 ///////////////////////////////////////////////////////////////
 libblock lib_streakGEO //
-  : lib_streak_typesGEO {
+  : types_streak_typesGEO {
   ///////////////////////////////////////////
   StreakOutput computeStreak(mat4 mvp) {
     StreakOutput outp;

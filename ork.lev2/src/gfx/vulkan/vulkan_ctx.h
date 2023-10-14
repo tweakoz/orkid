@@ -220,6 +220,11 @@ struct VulkanVertexInterfaceInput;
 using vkvertexinterfaceinput_ptr_t = std::shared_ptr<VulkanVertexInterfaceInput>;
 using vkvertexinterface_ptr_t = std::shared_ptr<VulkanVertexInterface>;
 
+struct VulkanGeometryInterface;
+struct VulkanGeometryInterfaceInput;
+using vkgeometryinterfaceinput_ptr_t = std::shared_ptr<VulkanGeometryInterfaceInput>;
+using vkgeometryinterface_ptr_t = std::shared_ptr<VulkanGeometryInterface>;
+
 ///////////////////////////////////////////////////////////////////////////////
 
 struct VkViewportTracker {
@@ -327,6 +332,20 @@ struct VulkanVertexInterface{
   std::string _name;
   vkvertexinterface_ptr_t _parent;
   std::vector<vkvertexinterfaceinput_ptr_t> _inputs;
+  int _pipeline_bits = -1;
+  uint64_t _hash = 0;
+};
+
+struct VulkanGeometryInterfaceInput{
+  std::string _datatype;
+  std::string _identifier;
+  std::string _semantic;
+  size_t _datasize = 0;
+};
+struct VulkanGeometryInterface{
+  std::string _name;
+  vkgeometryinterface_ptr_t _parent;
+  std::vector<vkgeometryinterfaceinput_ptr_t> _inputs;
   int _pipeline_bits = -1;
   uint64_t _hash = 0;
 };
@@ -640,6 +659,7 @@ struct VkFxShaderFile {
   std::unordered_map<std::string, vkfxsuniset_ptr_t> _vk_uniformsets;
   std::unordered_map<std::string, vkfxsuniblk_ptr_t> _vk_uniformblks;
   std::unordered_map<std::string, vkvertexinterface_ptr_t> _vk_vtxinterfaces;
+  std::unordered_map<std::string, vkgeometryinterface_ptr_t> _vk_geointerfaces;
 };
 
 struct VulkanFxShaderObject {
@@ -681,6 +701,7 @@ struct VkFxShaderProgram {
   vkfxsobj_ptr_t _comshader;
 
   vkvertexinterface_ptr_t _vertexinterface;
+  vkgeometryinterface_ptr_t _geometryinterface;
 
   vkfxpushconstantblk_ptr_t _pushConstantBlock;
 
@@ -692,7 +713,6 @@ struct VkFxShaderProgram {
   std::unordered_map<fxparam_constptr_t, vktexobj_ptr_t > _textures_by_orkparam;
   std::unordered_map<size_t, vktexobj_ptr_t > _textures_by_binding;
   int _pipeline_bits_prg = -1;
-  int _pipeline_bits_vif = -1;
   int _pipeline_bits_composite = -1;
 
   std::unordered_map<std::string, vkfxsuniset_ptr_t> _vk_uniformsets;
@@ -1086,6 +1106,7 @@ struct VkFxInterface final : public FxInterface {
   lev2::rasterstate_ptr_t _default_rasterstate;
   vkpipeline_obj_ptr_t _currentPipeline;
   std::unordered_map<uint64_t, int> _vk_vtxinterface_cache;
+  std::unordered_map<uint64_t, int> _vk_geointerface_cache;
   std::array<vkdescriptorset_ptr_t, 4> _active_gfx_descriptorSets;
   std::array<vkvtxbuf_ptr_t, 4> _active_vbs;
 };

@@ -88,6 +88,7 @@ private:
   void _processGlobalRenames();
 
   void _inheritLibrary(libblock_ptr_t lib_node);
+  void _inheritTypes(typeblock_ptr_t typ_node);
   void _inheritUniformSet(std::string unisetname, spirvuniset_ptr_t uniset_node);
   void _inheritUniformBlk(std::string uniblkname, spirvuniblk_ptr_t uniblk_node);
   void _inheritIO(astnode_ptr_t interface_node);
@@ -100,6 +101,7 @@ private:
   shader_ptr_t _shader;
   miscgroupnode_ptr_t _shader_group;
   miscgroupnode_ptr_t _interface_group;
+  miscgroupnode_ptr_t _types_group;
   miscgroupnode_ptr_t _extension_group;
   miscgroupnode_ptr_t _uniforms_group;
   miscgroupnode_ptr_t _libraries_group;

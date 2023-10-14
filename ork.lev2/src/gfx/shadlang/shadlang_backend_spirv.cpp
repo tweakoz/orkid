@@ -154,6 +154,7 @@ void SpirvCompiler::_beginShader(shader_ptr_t shader) {
   _extension_group = std::make_shared<MiscGroupNode>();
   _uniforms_group  = std::make_shared<MiscGroupNode>();
   _libraries_group = std::make_shared<MiscGroupNode>();
+  _types_group = std::make_shared<MiscGroupNode>();
   _input_index     = 0;
   _output_index    = 0;
 
@@ -168,6 +169,11 @@ void SpirvCompiler::_beginShader(shader_ptr_t shader) {
   tracker._onInheritLibrary = [&](std::string INHID, libblock_ptr_t lib_block) { //
     printf( "INHERIT LIB<%s> depth<%zu>\n", INHID.c_str(), tracker._stack_depth );
     _inheritLibrary(lib_block);
+  };
+  ////////////////////////////////////////////////
+  tracker._onInheritTypes = [&](std::string INHID, typeblock_ptr_t typ_block) { //
+    printf( "INHERIT TYP<%s> depth<%zu>\n", INHID.c_str(), tracker._stack_depth );
+    _inheritTypes(typ_block);
   };
   ////////////////////////////////////////////////
   tracker._onInheritUniformSet = [=](std::string INHID, astnode_ptr_t uset) { //
@@ -418,6 +424,21 @@ void SpirvCompiler::_inheritLibrary(libblock_ptr_t lib_block) {
   _appendText(_libraries_group, decorator.c_str());
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////
+void SpirvCompiler::_inheritTypes(typeblock_ptr_t typ_block) {
+
+  auto libname = typ_block->typedValueForKey<std::string>("object_name").value();
+
+  auto decorator = FormatString("// begin types<%s>", libname.c_str());
+  _appendText(_types_group, decorator.c_str());
+
+  auto typ_children   = typ_block->_children;
+  auto libgroup       = _types_group->appendTypedChild<MiscGroupNode>();
+  libgroup->_children = typ_children;
+
+  decorator = FormatString("// end types<%s>", libname.c_str());
+  _appendText(_types_group, decorator.c_str());
+}
+/////////////////////////////////////////////////////////////////////////////////////////////////
 void SpirvCompiler::_inheritUniformBlk(
     std::string uniblkname,        //
     spirvuniblk_ptr_t spirvublk) { //
@@ -640,9 +661,10 @@ void SpirvCompiler::_compileShader(shaderc_shader_kind shader_type) {
 
   _shader_group->appendTypedChild<InsertLine>("#version 450");
   _shader_group->appendChild(_extension_group);
+  _shader_group->appendChild(_types_group);
   _shader_group->appendChild(_uniforms_group);
-  _shader_group->appendChild(_libraries_group);
   _shader_group->appendChild(_interface_group);
+  _shader_group->appendChild(_libraries_group);
   _shader_group->appendTypedChild<InsertLine>(fn_sig);
   _shader_group->appendChildrenFrom(_shader); // compound statement
   _shader_group->appendTypedChild<InsertLine>(fn_inv);

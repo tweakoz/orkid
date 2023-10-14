@@ -350,8 +350,21 @@ LibraryBlock <|[
     L_CURLY
     zom{ 
         sel{
-            StructDecl
             FunctionDef2
+            [KW_PRAGMA_TYPELIB SEMICOLON]
+        }
+    }
+    R_CURLY
+]|>
+
+TypeBlock <|[
+    KW_TYPEBLOCK
+    [ IDENTIFIER ] : "typeblock_name"
+    zom{InheritListItem} : "typ_dependencies"
+    L_CURLY
+    zom{ 
+        sel{
+            StructDecl
             [KW_PRAGMA_TYPELIB SEMICOLON]
         }
     }
@@ -618,6 +631,7 @@ Translatable <|
     Technique
     FxConfigDecl 
     LibraryBlock
+    TypeBlock
   }
 |>
 

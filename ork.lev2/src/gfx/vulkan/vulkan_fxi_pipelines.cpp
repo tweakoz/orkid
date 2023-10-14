@@ -57,7 +57,7 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(
   auto shprog  = _currentVKPASS->_vk_program;
 
   uint64_t sh_pbits = _pipelineBitsForShader(shprog);
-  sh_pbits = check_pb_range(sh_pbits, 16);
+  sh_pbits = check_pb_range(sh_pbits, 24);
 
   uint64_t rs_pbits = check_pb_range(vkrstate->_pipeline_bits, 8);
   auto rpass = _contextVK->_renderpasses.back();
@@ -68,7 +68,7 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(
                          | (rtg_pbits << 4) //
                          | (pc_pbits << 8) //
                          | (sh_pbits << 16) //
-                         | (rs_pbits << 32);
+                         | (rs_pbits << 40);
 
   ////////////////////////////////////////////////////
   // find or create pipeline

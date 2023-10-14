@@ -11,7 +11,14 @@ vertex_interface iface_skintools : ub_vtx_boneblock {
   }
 }
 
-libblock lib_skin_tools {
+typeblock skin_types{
+  struct SkinOut {
+    vec3 skn_pos;
+    vec3 skn_col;
+  };
+}
+
+libblock lib_skin_tools : skin_types {
   vec3 SkinPosition(vec3 objpos) {
     ivec4 idcsi = ivec4(boneindices);
     vec4 pos4   = vec4(objpos, 1.0);
@@ -33,10 +40,6 @@ libblock lib_skin_tools {
     return normalize(WeightedNormal);
   }
 
-  struct SkinOut {
-    vec3 skn_pos;
-    vec3 skn_col;
-  };
 
   SkinOut LitSkinned(vec3 objpos) {
 		SkinOut rval;
