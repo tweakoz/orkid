@@ -132,7 +132,12 @@ int VkFxInterface::_pipelineBitsForShader(vkfxsprg_ptr_t shprog){
     if(geo_shader){
       auto gif_id = geo_shader->_vk_interfaces[0];
       auto it_gif = shprog->_shader_file->_vk_geointerfaces.find(gif_id);
-      OrkAssert(it_gif!=shprog->_shader_file->_vk_geointerfaces.end());
+      if( it_gif == shprog->_shader_file->_vk_geointerfaces.end() ){
+        printf( "shader<%s> gif_id<%s> not found!!\n", //
+                geo_shader->_name.c_str(), //
+                gif_id.c_str() );
+        OrkAssert(false);
+      }
       GIF = it_gif->second;
       shprog->_geometryinterface = GIF;
 

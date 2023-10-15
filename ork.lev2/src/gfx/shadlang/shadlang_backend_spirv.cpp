@@ -586,6 +586,7 @@ std::string SpirvCompiler::_ifIoItem(astnode_ptr_t layout_node, //
   ////////////////////////////////
 
   if( tid_node ){
+
     item_str += _ifTypedId(tid_node);
     if(need_location){
       auto dt = tid_node->typedValueForKey<std::string>("data_type").value();
@@ -593,6 +594,16 @@ std::string SpirvCompiler::_ifIoItem(astnode_ptr_t layout_node, //
       OrkAssert(it != DATASIZES.end());
       IO_index += it->second;
     }
+
+    bool is_geom_shader = (std::dynamic_pointer_cast<GeometryShader>(_shader)!=nullptr);
+
+    if(is_geom_shader){ // geometry shaders need [] on their inputs (broadcast from vertex)
+
+      if( direction == "in" ){
+        item_str += "[]";
+      }
+    }
+
   }
 
   return item_str;
@@ -605,7 +616,7 @@ void SpirvCompiler::_inheritIO(astnode_ptr_t interface_node) {
   // TODO inherited interfaces
   //
 
-  const auto& DATASIZES = SpirvCompilerGlobals::instance()->_io_data_sizes;
+  //const auto& DATASIZES = SpirvCompilerGlobals::instance()->_io_data_sizes;
 
   auto ifname    = interface_node->typedValueForKey<std::string>("object_name").value();
   auto decorator = FormatString("// begin interface<%s>", ifname.c_str());

@@ -679,6 +679,7 @@ struct VulkanFxShaderObject {
 
   uint64_t _STAGE = 0;
   VkPushConstantRange _vkpc_range;
+  std::string _name;
 };
 
 struct VkParamSetItem {

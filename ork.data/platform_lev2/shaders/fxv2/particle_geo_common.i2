@@ -1,0 +1,8 @@
+geometry_interface gface_baseGEO {
+  inputs {
+    layout(points);
+  }
+  outputs {
+    layout(triangle_strip, max_vertices = 4);
+  }
+}

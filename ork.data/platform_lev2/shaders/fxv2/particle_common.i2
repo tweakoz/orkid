@@ -8,7 +8,7 @@ uniform_set uset_vtxa {
   mat4 MatP;
   mat4 MatMVP;
 }
-uniform_block uset_vtx {
+uniform_block ublk_vtx {
   mat4 MatM;
   mat4 MatV;
   mat4 MatP;
@@ -99,7 +99,7 @@ fragment_interface fface_psys : uset_frg {
 }
 
 ///////////////////////////////////////////////////////////////
-vertex_interface vface_nogs : uset_vtx {
+vertex_interface vface_nogs : ublk_vtx {
   inputs {
     vec4 position : POSITION;
     vec4 vtxcolor : COLOR0;
@@ -113,7 +113,7 @@ vertex_interface vface_nogs : uset_vtx {
   }
 }
 ///////////////////////////////////////////////////////////////
-vertex_interface vface_bill : uset_vtx {
+vertex_interface vface_bill : ublk_vtx {
   inputs {
     vec4 position : POSITION;
     vec4 vtxcolor : COLOR0;

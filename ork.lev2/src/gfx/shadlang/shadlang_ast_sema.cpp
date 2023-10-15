@@ -836,8 +836,8 @@ int _semaLinkToInheritances(
         if constexpr (std::is_same<node_t, LibraryBlock>::value) {
           check_lib_blocks = true;
           check_typ_blocks = true;
-          //check_uni_sets   = true;
-          //check_uni_blks   = true;
+          check_uni_sets   = true;
+          check_uni_blks   = true;
         }
         else if constexpr (std::is_same<node_t, TypeBlock>::value) {
           check_typ_blocks = true;
@@ -862,7 +862,7 @@ int _semaLinkToInheritances(
           check_typ_blocks = true;
           check_uni_sets   = true;
           check_uni_blks   = true;
-          check_vtx_iface  = true;
+          //check_vtx_iface  = true;
           check_geo_iface  = true;
         }
         /////////////////////////////////

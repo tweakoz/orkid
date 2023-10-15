@@ -125,6 +125,22 @@ template <typename treenode_type> struct ConstOps {
 
   /////////////////////////////////////////////////////////////////////////////
 
+  template <typename T> //
+  bool hasAncestorOfType() const {
+    if(_root->_parent){
+     auto typed = std::dynamic_pointer_cast<T>(_root->_parent);
+      if (typed) {
+        return true;
+      }
+      else{
+        return _root->_parent->template hasAncestorOfType<T>();
+      }
+    }
+    return false;
+  }
+
+  /////////////////////////////////////////////////////////////////////////////
+
   template <typename child_t> //
   node_ptr_t findFirstChildOfType() const {
     for (auto ch : _root->_children) {

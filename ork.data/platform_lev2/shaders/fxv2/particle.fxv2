@@ -4,7 +4,8 @@
 fxconfig fxcfg_default { //e
   glsl_version = "330";
   import "orkshader://particle_common.i2";
-  import "orkshader://particle_geoshader.i2";
+  import "orkshader://particle_geo_streaks.i2";
+  import "orkshader://particle_geo_billboards.i2";
   import "orkshader://particle_comshader.i2";
 }
 ///////////////////////////////////////////////////////////////

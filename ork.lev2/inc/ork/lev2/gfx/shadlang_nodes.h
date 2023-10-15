@@ -47,6 +47,10 @@ struct AstNode {
   template <typename T> bool hasChildOfType() {
     return treeops(this).hasChildOfType<T>();
   }
+  template <typename T> //
+  bool hasAncestorOfType() const {
+    return tree_constops(this).hasAncestorOfType<T>();
+  }
   ///////////////////////////
   template <typename child_t> //
   astnode_ptr_t findFirstChildOfType() const {

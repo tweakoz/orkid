@@ -142,6 +142,7 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
         printf("uniblk<%s> ADDING Item PARAM<%s>\n", str_uniblk_name.c_str(), str_param_identifier.c_str());
     }
   }
+  // TODO - read VIFS, GIFS
   /////////////////////////////////
   // read vertex interfaces
   /////////////////////////////////
@@ -241,6 +242,7 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
     memcpy(shader_bin.data(), sh_data.data(), sh_bytlen);
     auto vulkan_shobj                                     = std::make_shared<VulkanFxShaderObject>(_contextVK, shader_bin);
     vulkan_shaderfile->_vk_shaderobjects[str_shader_name] = vulkan_shobj;
+    vulkan_shobj->_name = str_shader_name;
     /////////////////////////////////
     auto num_iunisets = shader_input_stream->readItem<size_t>();
     if (num_iunisets) {
