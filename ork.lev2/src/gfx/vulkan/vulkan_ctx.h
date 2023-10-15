@@ -329,6 +329,7 @@ struct VulkanVertexInterfaceInput{
   size_t _datasize = 0;
 };
 struct VulkanVertexInterface{
+  using input_t = VulkanVertexInterfaceInput;
   std::string _name;
   vkvertexinterface_ptr_t _parent;
   std::vector<vkvertexinterfaceinput_ptr_t> _inputs;

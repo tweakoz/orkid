@@ -20,6 +20,80 @@ namespace ork::lev2::vulkan {
 using namespace shadlang;
 ///////////////////////////////////////////////////////////////////////////////
 
+template <typename if_type_t>
+std::shared_ptr<if_type_t> //
+read_interface(chunkfile::InputStream* input_stream, chunkfile::Reader& chunkreader) {
+  auto str_interface = input_stream->readIndexedString(chunkreader);
+  OrkAssert(str_interface == "interface");
+  auto interface   = std::make_shared<if_type_t>();
+  interface->_name = input_stream->readIndexedString(chunkreader);
+  printf(" vtx_interface<%s>\n", interface->_name.c_str());
+  /////////////////
+  auto str_inputgroups = input_stream->readIndexedString(chunkreader);
+  OrkAssert(str_inputgroups == "inputgroups");
+  /////////////////
+  auto num_input_groups = input_stream->readItem<size_t>();
+  for (size_t ig = 0; ig < num_input_groups; ig++) {
+    auto num_inputs = input_stream->readItem<size_t>();
+    for (size_t ii = 0; ii < num_inputs; ii++) {
+      auto str_input = input_stream->readIndexedString(chunkreader);
+      OrkAssert(str_input == "input");
+      auto input         = std::make_shared<typename if_type_t::input_t>();
+      input->_datatype   = input_stream->readIndexedString(chunkreader);
+      input->_identifier = input_stream->readIndexedString(chunkreader);
+      input->_semantic   = input_stream->readIndexedString(chunkreader);
+      input->_datasize   = input_stream->readItem<size_t>();
+      interface->_inputs.push_back(input);
+    }
+  }
+  /////////////////
+  auto str_outputgroups = input_stream->readIndexedString(chunkreader);
+  OrkAssert(str_outputgroups == "outputgroups");
+  auto num_output_groups = input_stream->readItem<size_t>();
+  for (size_t og = 0; og < num_output_groups; og++) {
+    auto num_outputs = input_stream->readItem<size_t>();
+    for (size_t oi = 0; oi < num_outputs; oi++) {
+      auto str_output = input_stream->readIndexedString(chunkreader);
+      OrkAssert(str_output == "output");
+      auto str_output_datatype   = input_stream->readIndexedString(chunkreader);
+      auto str_output_identifier = input_stream->readIndexedString(chunkreader);
+      printf("  output<%s %s>\n", str_output_datatype.c_str(), str_output_identifier.c_str());
+      auto dsize = input_stream->readItem<size_t>();
+      if (str_output_identifier.find("gl_") != 0) {
+        // _appendText(_interface_group, "layout(location=%zu) out %s %s;", _output_index, dt.c_str(), id.c_str());
+        // o_output_index += dsize;
+      }
+    }
+  }
+  /////////////////
+  return interface;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <typename if_ptr_t>
+void //
+read_interface_inheritances(
+    chunkfile::InputStream* input_stream,                 //
+    chunkfile::Reader& chunkreader,                       //
+    std::unordered_map<std::string, if_ptr_t>& the_map) { //
+  auto num_inheritances = input_stream->readItem<size_t>();
+  for (size_t i = 0; i < num_inheritances; i++) {
+    auto str_if_name = input_stream->readIndexedString(chunkreader);
+    auto num_inh      = input_stream->readItem<size_t>();
+    if (num_inh > 0) {
+      auto str_inh_name = input_stream->readIndexedString(chunkreader);
+      printf(" interface<%s> INHERITS interface<%s>\n", str_if_name.c_str(), str_inh_name.c_str());
+
+      auto if_child = the_map.find(str_if_name);
+      OrkAssert(if_child != the_map.end());
+      auto if_parent = the_map.find(str_inh_name);
+      OrkAssert(if_parent != the_map.end());
+      if_child->second->_parent = if_parent->second;
+    }
+  }
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock, FxShader* ork_shader) {
@@ -32,11 +106,11 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
 
   chunkfile::DefaultLoadAllocator load_alloc;
   chunkfile::Reader chunkreader(vkfx_datablock, load_alloc);
-  auto header_input_stream   = chunkreader.GetStream("header");
-  auto shader_input_stream   = chunkreader.GetStream("shaders");
-  auto uniforms_input_stream = chunkreader.GetStream("uniforms");
+  auto header_input_stream     = chunkreader.GetStream("header");
+  auto shader_input_stream     = chunkreader.GetStream("shaders");
+  auto uniforms_input_stream   = chunkreader.GetStream("uniforms");
   auto interfaces_input_stream = chunkreader.GetStream("interfaces");
-  auto tecniq_input_stream   = chunkreader.GetStream("techniques");
+  auto tecniq_input_stream     = chunkreader.GetStream("techniques");
 
   OrkAssert(shader_input_stream != nullptr);
   OrkAssert(tecniq_input_stream != nullptr);
@@ -96,7 +170,7 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
       auto vk_param              = std::make_shared<VkFxShaderUniformSetItem>();
       vk_param->_datatype        = str_param_datatype;
       vk_param->_identifier      = str_param_identifier;
-      vk_param->_offset = uniforms_input_stream->readItem<size_t>();
+      vk_param->_offset          = uniforms_input_stream->readItem<size_t>();
       vk_param->_orkparam        = std::make_shared<FxShaderParam>();
       vk_param->_orkparam->_name = str_param_identifier;
       vk_param->_orkparam->_impl.set<VkFxShaderUniformSetItem*>(vk_param.get());
@@ -132,7 +206,7 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
       auto vk_param             = std::make_shared<VkFxShaderUniformBlkItem>();
       vk_param->_datatype       = str_param_datatype;
       vk_param->_identifier     = str_param_identifier;
-      vk_param->_offset = uniforms_input_stream->readItem<size_t>();
+      vk_param->_offset         = uniforms_input_stream->readItem<size_t>();
       vk_param->_orkparam       = std::make_shared<FxShaderParam>();
       vk_param->_orkparam->_impl.set<VkFxShaderUniformBlkItem*>(vk_param.get());
       vk_uniblk->_items_by_name[str_param_identifier] = vk_param;
@@ -146,79 +220,23 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
   /////////////////////////////////
   // read vertex interfaces
   /////////////////////////////////
-  auto read_vertex_interface = [&](){
-    auto str_interface = interfaces_input_stream->readIndexedString(chunkreader);
-    OrkAssert(str_interface == "interface");
-    auto VKVTXIF = std::make_shared<VulkanVertexInterface>();
-    VKVTXIF->_name = interfaces_input_stream->readIndexedString(chunkreader);
-    vulkan_shaderfile->_vk_vtxinterfaces[VKVTXIF->_name] = VKVTXIF;
-    printf(" vtx_interface<%s>\n", VKVTXIF->_name.c_str());
-    /////////////////
-    auto str_inputgroups = interfaces_input_stream->readIndexedString(chunkreader);
-    OrkAssert(str_inputgroups == "inputgroups");
-    /////////////////
-    auto num_input_groups = interfaces_input_stream->readItem<size_t>();
-    for( size_t ig=0; ig<num_input_groups; ig++ ){
-      auto num_inputs = interfaces_input_stream->readItem<size_t>();
-      for( size_t ii=0; ii<num_inputs; ii++ ){
-        auto str_input = interfaces_input_stream->readIndexedString(chunkreader);
-        OrkAssert(str_input == "input");
-        auto VKVTXIFINP = std::make_shared<VulkanVertexInterfaceInput>();
-        VKVTXIFINP->_datatype = interfaces_input_stream->readIndexedString(chunkreader);
-        VKVTXIFINP->_identifier = interfaces_input_stream->readIndexedString(chunkreader);
-        VKVTXIFINP->_semantic = interfaces_input_stream->readIndexedString(chunkreader);
-        VKVTXIFINP->_datasize = interfaces_input_stream->readItem<size_t>();
-        VKVTXIF->_inputs.push_back(VKVTXIFINP);
-      }
-    }
-    /////////////////
-    auto str_outputgroups = interfaces_input_stream->readIndexedString(chunkreader);
-    OrkAssert(str_outputgroups == "outputgroups");
-    auto num_output_groups = interfaces_input_stream->readItem<size_t>();
-    for( size_t og=0; og<num_output_groups; og++ ){
-      auto num_outputs = interfaces_input_stream->readItem<size_t>();
-      for( size_t oi=0; oi<num_outputs; oi++ ){
-        auto str_output = interfaces_input_stream->readIndexedString(chunkreader);
-        OrkAssert(str_output == "output");
-        auto str_output_datatype = interfaces_input_stream->readIndexedString(chunkreader);
-        auto str_output_identifier = interfaces_input_stream->readIndexedString(chunkreader);
-        printf("  output<%s %s>\n", str_output_datatype.c_str(), str_output_identifier.c_str());
-        auto dsize = interfaces_input_stream->readItem<size_t>();
-        if( str_output_identifier.find("gl_") != 0 ){
-          // _appendText(_interface_group, "layout(location=%zu) out %s %s;", _output_index, dt.c_str(), id.c_str());
-          //o_output_index += dsize;
-        }
-      }
-    }
-    /////////////////
-  };
   auto str_vtx_interfaces = interfaces_input_stream->readIndexedString(chunkreader);
   OrkAssert(str_vtx_interfaces == "vertex-interfaces");
   auto vif_count = interfaces_input_stream->readItem<size_t>();
   OrkAssert(vif_count == num_vtx_interfaces);
   for (size_t i = 0; i < vif_count; i++) {
-    read_vertex_interface();
+    auto interface = read_interface<VulkanVertexInterface>(interfaces_input_stream, chunkreader);
+    vulkan_shaderfile->_vk_vtxinterfaces[interface->_name] = interface;
   }
   /////////////////////////////////
   // read vtx interface inheritances
   /////////////////////////////////
   auto str_vif_inheritances = interfaces_input_stream->readIndexedString(chunkreader);
   OrkAssert(str_vif_inheritances == "vertex_interface_inheritances");
-  auto num_vif_inheritances = interfaces_input_stream->readItem<size_t>();
-  for (size_t i = 0; i < num_vif_inheritances; i++) {
-    auto str_vif_name = interfaces_input_stream->readIndexedString(chunkreader);
-    auto num_inh       = interfaces_input_stream->readItem<size_t>();
-    if(num_inh>0){
-      auto str_inh_name = interfaces_input_stream->readIndexedString(chunkreader);
-      printf(" vtx_interface<%s> INHERITS vtx_interface<%s>\n", str_vif_name.c_str(), str_inh_name.c_str());
-
-      auto if_child = vulkan_shaderfile->_vk_vtxinterfaces.find(str_vif_name);
-      OrkAssert(if_child != vulkan_shaderfile->_vk_vtxinterfaces.end());
-      auto if_parent = vulkan_shaderfile->_vk_vtxinterfaces.find(str_inh_name);
-      OrkAssert(if_parent != vulkan_shaderfile->_vk_vtxinterfaces.end());
-      if_child->second->_parent = if_parent->second;
-    }
-  }
+  read_interface_inheritances(
+      interfaces_input_stream, //
+      chunkreader,             //
+      vulkan_shaderfile->_vk_vtxinterfaces);
   auto str_ifaces_done = interfaces_input_stream->readIndexedString(chunkreader);
   OrkAssert(str_ifaces_done == "interfaces-done");
   /////////////////////////////////
@@ -242,7 +260,7 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
     memcpy(shader_bin.data(), sh_data.data(), sh_bytlen);
     auto vulkan_shobj                                     = std::make_shared<VulkanFxShaderObject>(_contextVK, shader_bin);
     vulkan_shaderfile->_vk_shaderobjects[str_shader_name] = vulkan_shobj;
-    vulkan_shobj->_name = str_shader_name;
+    vulkan_shobj->_name                                   = str_shader_name;
     /////////////////////////////////
     auto num_iunisets = shader_input_stream->readItem<size_t>();
     if (num_iunisets) {
@@ -343,44 +361,43 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
       auto str_pass = tecniq_input_stream->readIndexedString(chunkreader);
       OrkAssert(str_pass == "pass");
       auto str_stages = tecniq_input_stream->readIndexedString(chunkreader);
-      OrkAssert(str_stages == "VF" or str_stages=="VGF");
+      OrkAssert(str_stages == "VF" or str_stages == "VGF");
 
-      auto vk_pass      = std::make_shared<VkFxShaderPass>();
-      auto vk_program   = std::make_shared<VkFxShaderProgram>(vulkan_shaderfile.get());
-      vk_pass->_vk_program   = vk_program;
+      auto vk_pass         = std::make_shared<VkFxShaderPass>();
+      auto vk_program      = std::make_shared<VkFxShaderProgram>(vulkan_shaderfile.get());
+      vk_pass->_vk_program = vk_program;
       vk_tek->_vk_passes.push_back(vk_pass);
-      static int prog_index      = 0;
+      static int prog_index          = 0;
       vk_program->_pipeline_bits_prg = prog_index;
       prog_index++;
       OrkAssert(prog_index < 128);
 
-      if( str_stages.find("V") != std::string::npos ){
-          auto str_vtx_name = tecniq_input_stream->readIndexedString(chunkreader);
-          auto vtx_obj      = vulkan_shaderfile->_vk_shaderobjects[str_vtx_name];
-          if(vtx_obj==nullptr){
-            printf("vtx_obj<%s> not found\n", str_vtx_name.c_str());
-            OrkAssert(false);
-          }
-          vk_program->_vtxshader = vtx_obj;
-
+      if (str_stages.find("V") != std::string::npos) {
+        auto str_vtx_name = tecniq_input_stream->readIndexedString(chunkreader);
+        auto vtx_obj      = vulkan_shaderfile->_vk_shaderobjects[str_vtx_name];
+        if (vtx_obj == nullptr) {
+          printf("vtx_obj<%s> not found\n", str_vtx_name.c_str());
+          OrkAssert(false);
+        }
+        vk_program->_vtxshader = vtx_obj;
       }
 
-      if( str_stages.find("G") != std::string::npos ){
+      if (str_stages.find("G") != std::string::npos) {
         auto str_geo_name = tecniq_input_stream->readIndexedString(chunkreader);
         auto geo_obj      = vulkan_shaderfile->_vk_shaderobjects[str_geo_name];
-        if(geo_obj==nullptr){
-            printf("geo_obj<%s> not found\n", str_geo_name.c_str());
-            OrkAssert(false);
+        if (geo_obj == nullptr) {
+          printf("geo_obj<%s> not found\n", str_geo_name.c_str());
+          OrkAssert(false);
         }
         vk_program->_geoshader = geo_obj;
       }
 
-      if( str_stages.find("F") != std::string::npos ){
+      if (str_stages.find("F") != std::string::npos) {
         auto str_frg_name = tecniq_input_stream->readIndexedString(chunkreader);
         auto frg_obj      = vulkan_shaderfile->_vk_shaderobjects[str_frg_name];
-        if(frg_obj==nullptr){
-            printf("frg_obj<%s> not found\n", str_frg_name.c_str());
-            OrkAssert(false);
+        if (frg_obj == nullptr) {
+          printf("frg_obj<%s> not found\n", str_frg_name.c_str());
+          OrkAssert(false);
         }
         vk_program->_frgshader = frg_obj;
       }
@@ -454,7 +471,7 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
                 printf("VKFXI: unknown datatype<%s>\n", datatype.c_str());
                 OrkAssert(false);
               }
-              //OrkAssert(cursor==item_ptr->_offset);
+              // OrkAssert(cursor==item_ptr->_offset);
               printf("VKFXI: datatype<%s> cursor<%zu>\n", datatype.c_str(), cursor);
             }
           }
@@ -470,8 +487,8 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
       descriptors->_vkbindings.reserve(32);
 
       // unisets_to_descriptors(vtx_obj, descriptors, VK_SHADER_STAGE_VERTEX_BIT );
-      if( vk_program->_frgshader ){
-          unisets_to_descriptors(vk_program->_frgshader, descriptors, VK_SHADER_STAGE_FRAGMENT_BIT);
+      if (vk_program->_frgshader) {
+        unisets_to_descriptors(vk_program->_frgshader, descriptors, VK_SHADER_STAGE_FRAGMENT_BIT);
       }
       vk_program->_descriptors = descriptors;
       //////////////////////////////////////////////////////////////
@@ -483,13 +500,13 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
 
       auto pc_layout = std::make_shared<VkBufferLayout>();
 
-      if( vk_program->_vtxshader ){
+      if (vk_program->_vtxshader) {
         uniset_to_pushconstants(vk_program->_vtxshader, pc_layout);
       }
-      if( vk_program->_geoshader ){
+      if (vk_program->_geoshader) {
         uniset_to_pushconstants(vk_program->_geoshader, pc_layout);
       }
-      if( vk_program->_frgshader ){
+      if (vk_program->_frgshader) {
         uniset_to_pushconstants(vk_program->_frgshader, pc_layout);
       }
 
@@ -530,5 +547,5 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-} //namespace ork::lev2::vulkan {
+} // namespace ork::lev2::vulkan
 ///////////////////////////////////////////////////////////////////////////////
