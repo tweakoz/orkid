@@ -289,6 +289,15 @@ datablock_ptr_t VkFxInterface::_writeIntermediateToDataBlock(shadlang::SHAST::tr
   // fragment shaders
   //////////////////
 
+  for (auto gshader : geo_shaders) {
+    SPC->processShader(gshader);
+    write_shader_to_stream(gshader, "geometry");
+  }
+
+  //////////////////
+  // fragment shaders
+  //////////////////
+
   for (auto fshader : frg_shaders) {
     SPC->processShader(fshader);
     write_shader_to_stream(fshader, "fragment");
@@ -326,8 +335,29 @@ datablock_ptr_t VkFxInterface::_writeIntermediateToDataBlock(shadlang::SHAST::tr
       auto vtx_name = vtx_sema_id->typedValueForKey<std::string>("identifier_name").value();
       auto frg_name = frg_sema_id->typedValueForKey<std::string>("identifier_name").value();
       tecniq_stream->addIndexedString("pass", chunkwriter);
+      std::string stages;
+      stages += "V";
+      ////////////////////////////////////////////////////////////////
+      auto geo_shader_ref = p->findFirstChildOfType<SHAST::GeometryShaderRef>();
+      if(geo_shader_ref){
+        stages += "G";
+      }
+      stages += "F";
+      ////////////////////////////////////////////////////////////////
+      tecniq_stream->addIndexedString(stages, chunkwriter);
+      ////////////////////////////////////////////////////////////////
       tecniq_stream->addIndexedString(vtx_name, chunkwriter);
+      ////////////////////////////////////////////////////////////////
+      if(geo_shader_ref){
+        auto geo_sema_id = geo_shader_ref->findFirstChildOfType<SHAST::SemaIdentifier>();
+        OrkAssert(geo_sema_id);
+        auto geo_name = geo_sema_id->typedValueForKey<std::string>("identifier_name").value();
+        tecniq_stream->addIndexedString(geo_name, chunkwriter);
+      }
+      ////////////////////////////////////////////////////////////////
       tecniq_stream->addIndexedString(frg_name, chunkwriter);
+      ////////////////////////////////////////////////////////////////
+
     }
   } // for (auto tek : techniques) {
 

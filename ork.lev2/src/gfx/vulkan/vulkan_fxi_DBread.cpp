@@ -281,6 +281,18 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
 
   //////////////////
 
+  for (size_t i = 0; i < num_geo_shaders; i++) {
+    auto geo_shader    = read_shader_from_stream();
+    geo_shader->_STAGE = "geometry"_crcu;
+    auto& STGIV        = geo_shader->_shaderstageinfo;
+    initializeVkStruct(STGIV, VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO);
+    STGIV.stage  = VK_SHADER_STAGE_GEOMETRY_BIT;
+    STGIV.module = geo_shader->_vk_shadermodule;
+    STGIV.pName  = "main";
+  }
+
+  //////////////////
+
   for (size_t i = 0; i < num_frg_shaders; i++) {
     auto frg_shader    = read_shader_from_stream();
     frg_shader->_STAGE = "fragment"_crcu;
@@ -328,28 +340,48 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
       // vulkan side
       auto str_pass = tecniq_input_stream->readIndexedString(chunkreader);
       OrkAssert(str_pass == "pass");
-      auto str_vtx_name = tecniq_input_stream->readIndexedString(chunkreader);
-      auto str_frg_name = tecniq_input_stream->readIndexedString(chunkreader);
+      auto str_stages = tecniq_input_stream->readIndexedString(chunkreader);
+      OrkAssert(str_stages == "VF" or str_stages=="VGF");
+
       auto vk_pass      = std::make_shared<VkFxShaderPass>();
       auto vk_program   = std::make_shared<VkFxShaderProgram>(vulkan_shaderfile.get());
-      auto vtx_obj      = vulkan_shaderfile->_vk_shaderobjects[str_vtx_name];
-      auto frg_obj      = vulkan_shaderfile->_vk_shaderobjects[str_frg_name];
-      if(vtx_obj==nullptr){
-        printf("vtx_obj<%s> not found\n", str_vtx_name.c_str());
-        OrkAssert(false);
-      }
-      if(frg_obj==nullptr){
-        printf("frg_obj<%s> not found\n", str_frg_name.c_str());
-        OrkAssert(false);
-      }
-      vk_program->_vtxshader = vtx_obj;
-      vk_program->_frgshader = frg_obj;
       vk_pass->_vk_program   = vk_program;
       vk_tek->_vk_passes.push_back(vk_pass);
       static int prog_index      = 0;
       vk_program->_pipeline_bits_prg = prog_index;
       prog_index++;
       OrkAssert(prog_index < 128);
+
+      if( str_stages.find("V") != std::string::npos ){
+          auto str_vtx_name = tecniq_input_stream->readIndexedString(chunkreader);
+          auto vtx_obj      = vulkan_shaderfile->_vk_shaderobjects[str_vtx_name];
+          if(vtx_obj==nullptr){
+            printf("vtx_obj<%s> not found\n", str_vtx_name.c_str());
+            OrkAssert(false);
+          }
+          vk_program->_vtxshader = vtx_obj;
+
+      }
+
+      if( str_stages.find("G") != std::string::npos ){
+        auto str_geo_name = tecniq_input_stream->readIndexedString(chunkreader);
+        auto geo_obj      = vulkan_shaderfile->_vk_shaderobjects[str_geo_name];
+        if(geo_obj==nullptr){
+            printf("geo_obj<%s> not found\n", str_geo_name.c_str());
+            OrkAssert(false);
+        }
+        vk_program->_geoshader = geo_obj;
+      }
+
+      if( str_stages.find("F") != std::string::npos ){
+        auto str_frg_name = tecniq_input_stream->readIndexedString(chunkreader);
+        auto frg_obj      = vulkan_shaderfile->_vk_shaderobjects[str_frg_name];
+        if(frg_obj==nullptr){
+            printf("frg_obj<%s> not found\n", str_frg_name.c_str());
+            OrkAssert(false);
+        }
+        vk_program->_frgshader = frg_obj;
+      }
 
       ////////////////////////////////////////////////////////////
 
@@ -436,7 +468,9 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
       descriptors->_vkbindings.reserve(32);
 
       // unisets_to_descriptors(vtx_obj, descriptors, VK_SHADER_STAGE_VERTEX_BIT );
-      unisets_to_descriptors(frg_obj, descriptors, VK_SHADER_STAGE_FRAGMENT_BIT);
+      if( vk_program->_frgshader ){
+          unisets_to_descriptors(vk_program->_frgshader, descriptors, VK_SHADER_STAGE_FRAGMENT_BIT);
+      }
       vk_program->_descriptors = descriptors;
       //////////////////////////////////////////////////////////////
       // push constants
@@ -446,8 +480,17 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
       push_constants->_ranges.reserve(16);
 
       auto pc_layout = std::make_shared<VkBufferLayout>();
-      uniset_to_pushconstants(vtx_obj, pc_layout);
-      uniset_to_pushconstants(frg_obj, pc_layout);
+
+      if( vk_program->_vtxshader ){
+        uniset_to_pushconstants(vk_program->_vtxshader, pc_layout);
+      }
+      if( vk_program->_geoshader ){
+        uniset_to_pushconstants(vk_program->_geoshader, pc_layout);
+      }
+      if( vk_program->_frgshader ){
+        uniset_to_pushconstants(vk_program->_frgshader, pc_layout);
+      }
+
       push_constants->_data_layout = pc_layout;
 
       size_t pc_size = alignUp(pc_layout->cursor(), 16);

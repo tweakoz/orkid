@@ -189,7 +189,7 @@ vertex_shader vs_vtxcolorGEO : vface_bill {
   geo_uv1  = uv1;
 }
 ///////////////////////////////////////////////////////////////
-geometry_shader gs_identity : gface_bill {
+geometry_shader gs_identity : gface_billGEO {
   for (int n = 0; n < gl_in.length(); n++) {
     gl_Position = gl_in[n].gl_Position;
     frg_clr     = geo_clr[n];

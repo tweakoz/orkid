@@ -97,6 +97,14 @@ private:
   void _beginShader(shader_ptr_t sh);
   void _compileShader(shaderc_shader_kind shader_type);
 
+  std::string _ifLayoutHeader(astnode_ptr_t layout_node, int iloc=-1);
+  std::string _ifTypedId(astnode_ptr_t tid_node);
+
+  std::string _ifIoItem(astnode_ptr_t layout_node, 
+                        astnode_ptr_t tid_node,
+                        std::string direction,
+                        size_t& IO_index);
+
   transunit_ptr_t _transu;
   shader_ptr_t _shader;
   miscgroupnode_ptr_t _shader_group;

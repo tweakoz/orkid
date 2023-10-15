@@ -31,6 +31,18 @@ template <typename treenode_type> struct Ops {
     return ret;
   }
 
+  template <typename T> //
+  bool hasChildOfType() const {
+    for( auto ch : _root->_children ){
+      auto typed = std::dynamic_pointer_cast<T>(ch);
+      if (typed) {
+        return true;
+        break;
+      }
+    }
+    return false;
+  }
+
   /////////////////////////////////////////////////////////////////////////////
 
   static inline void replaceInParent(

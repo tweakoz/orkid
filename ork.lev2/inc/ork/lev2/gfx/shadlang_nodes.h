@@ -44,6 +44,10 @@ struct AstNode {
     return treeops(this).childAs<T>(index);
   }
   ///////////////////////////
+  template <typename T> bool hasChildOfType() {
+    return treeops(this).hasChildOfType<T>();
+  }
+  ///////////////////////////
   template <typename child_t> //
   astnode_ptr_t findFirstChildOfType() const {
     return tree_constops(this).findFirstChildOfType<child_t>();
@@ -212,6 +216,7 @@ DECLARE_STD_AST_CLASS_WPTR(AstNode,Translatable,translatable_ptr_t);
 
 DECLARE_STD_AST_CLASS(AstNode,DeclArgumentList);
 DECLARE_STD_AST_CLASS(AstNode,InterfaceLayout);
+DECLARE_STD_AST_CLASS(AstNode,InterfaceLayoutItem);
 DECLARE_STD_AST_CLASS(AstNode,InterfaceInput);
 DECLARE_STD_AST_CLASS(AstNode,InterfaceInputSemantic);
 DECLARE_STD_AST_CLASS(AstNode,InterfaceOutput);

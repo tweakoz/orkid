@@ -1,7 +1,7 @@
 ///////////////////////////////////////////////////////////////
 // FxConfigs
 ///////////////////////////////////////////////////////////////
-fxconfig fxcfg_default { //b
+fxconfig fxcfg_default { //e
   glsl_version = "330";
   import "orkshader://particle_common.i2";
   import "orkshader://particle_geoshader.i2";

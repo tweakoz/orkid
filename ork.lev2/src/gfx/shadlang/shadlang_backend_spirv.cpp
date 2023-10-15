@@ -158,6 +158,8 @@ void SpirvCompiler::_beginShader(shader_ptr_t shader) {
   _input_index     = 0;
   _output_index    = 0;
 
+  printf( "begin shader<%s>\n", shader->_name.c_str() );
+
   /////////////////////////////////////////////////
   /////////////////////////////////////////////////
   // process shader inheritances
@@ -177,6 +179,7 @@ void SpirvCompiler::_beginShader(shader_ptr_t shader) {
   };
   ////////////////////////////////////////////////
   tracker._onInheritUniformSet = [=](std::string INHID, astnode_ptr_t uset) { //
+    printf( "INHERIT USET<%s>\n", INHID.c_str() );
     auto it_uset  = _spirvuniformsets.find(INHID);
     OrkAssert(it_uset != _spirvuniformsets.end());
     auto spirvuniset = it_uset->second;
@@ -184,6 +187,7 @@ void SpirvCompiler::_beginShader(shader_ptr_t shader) {
   };
   ////////////////////////////////////////////////
   tracker._onInheritUniformBlk = [=](std::string INHID, astnode_ptr_t ublk) { //
+    printf( "INHERIT UBLK<%s>\n", INHID.c_str() );
       auto it_ublk  = _spirvuniformblks.find(INHID);
       OrkAssert(it_ublk != _spirvuniformblks.end());
       auto spirvuniblk = it_ublk->second;
@@ -191,10 +195,12 @@ void SpirvCompiler::_beginShader(shader_ptr_t shader) {
   };
   ////////////////////////////////////////////////
   tracker._onInheritInterface = [=](std::string INHID, astnode_ptr_t interface_node) { //
+    printf( "INHERIT IO<%s>\n", INHID.c_str() );
     _inheritIO(interface_node);
   }; 
   ////////////////////////////////////////////////
   tracker._onInheritExtension = [=](std::string INHID, astnode_ptr_t ast_node) { //
+    printf( "INHERIT EXTENSIONS<%s>\n", INHID.c_str() );
     auto as_ext_node = std::dynamic_pointer_cast<SemaInheritExtension>(ast_node);
     OrkAssert(as_ext_node);
     _inheritExtension(as_ext_node);
@@ -471,7 +477,129 @@ void SpirvCompiler::_inheritUniformBlk(
     OrkAssert(false);
   }
 }
+
 /////////////////////////////////////////////////////////////////////////////////////////////////
+
+std::string SpirvCompiler::_ifLayoutHeader(astnode_ptr_t layout_node, int iloc) {
+  std::string outhdr = "layout(";
+  size_t num_items = layout_node->_children.size();
+  if(iloc>=0){
+    OrkAssert(num_items==0);
+    outhdr += FormatString("location=%d", iloc);
+  }
+  else{
+    for( size_t i=0; i<num_items; i++  ){
+      auto item = layout_node->childAs<InterfaceLayoutItem>(i);
+      switch(item->_children.size() ){
+        case 1:{ // SemaId
+          auto key = childAsSemaIdString(item,0);
+          outhdr += key;
+          break;
+        }
+        case 2:{ // SemaId = SemaIntegerLiteral
+          auto key = childAsSemaIdString(item,0);
+          auto val = childAsSemaInteger(item,1);
+          outhdr += key + "=" + FormatString("%d",val);
+          break;
+        }
+        default:
+          OrkAssert(false);
+          break;
+      }
+      if(i<(num_items-1)){
+        outhdr += ",";
+      }
+    }
+  }
+  outhdr += ") ";
+  return outhdr;
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
+std::string SpirvCompiler::_ifTypedId(astnode_ptr_t tid_node){
+  auto dt = tid_node->typedValueForKey<std::string>("data_type").value();
+  auto id = tid_node->typedValueForKey<std::string>("identifier_name").value();
+  return FormatString( "%s %s", dt.c_str(), id.c_str() );
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
+std::string SpirvCompiler::_ifIoItem(astnode_ptr_t layout_node, //
+                                     astnode_ptr_t tid_node,
+                                     std::string direction,
+                                     size_t& IO_index) { //
+
+  const auto& DATASIZES = SpirvCompilerGlobals::instance()->_io_data_sizes;
+
+  std::string item_str;
+
+  // InterfaceLayout 
+  // TypedIdentifier
+  // InterfaceLayout TypedIdentifier
+
+  bool has_layout = layout_node!=nullptr;
+
+
+  bool has_tid = tid_node!=nullptr;
+
+  ////////////////////////////////
+  // determine if layout needs a location
+  //  if it's a gl_ builtin, it doesn't
+  ////////////////////////////////
+
+  bool need_location = has_tid;
+  if(has_tid){
+    auto id = tid_node->typedValueForKey<std::string>("identifier_name").value();
+    if (id.find("gl_") == 0) {
+      need_location = false;
+    }
+  }
+
+  ////////////////////////////////
+  // layout
+  ////////////////////////////////
+
+  if( layout_node ){
+  
+    size_t num_items = layout_node->_children.size();
+    for( size_t i=0; i<num_items; i++  ){
+      auto item = layout_node->childAs<InterfaceLayoutItem>(i);
+      auto key = childAsSemaIdString(item,0);
+      if(key=="location"){
+        need_location = false;
+      }
+    }
+
+    dumpAstNode(layout_node);
+    item_str = _ifLayoutHeader(layout_node, need_location ? IO_index : -1) + " "+direction+" ";
+  }
+  else if(need_location){
+    item_str = FormatString("layout(location=%d) %s ", IO_index, direction.c_str() );
+  }
+  else{
+    item_str = direction + " ";
+  }
+
+  ////////////////////////////////
+  // typed identifier
+  ////////////////////////////////
+
+  if( tid_node ){
+    item_str += _ifTypedId(tid_node);
+    if(need_location){
+      auto dt = tid_node->typedValueForKey<std::string>("data_type").value();
+      auto it = DATASIZES.find(dt);
+      OrkAssert(it != DATASIZES.end());
+      IO_index += it->second;
+    }
+  }
+
+  return item_str;
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
 void SpirvCompiler::_inheritIO(astnode_ptr_t interface_node) {
   //
   // TODO inherited interfaces
@@ -492,59 +620,30 @@ void SpirvCompiler::_inheritIO(astnode_ptr_t interface_node) {
   for (auto input_group : input_groups) {
     auto inputs = AstNode::collectNodesOfType<InterfaceInput>(input_group);
     printf("  num_inputs<%zu>\n", inputs.size());
-    int ii=0;
     for (auto input : inputs) {
-      printf("input<%d>\n", ii );
-      if( auto as_layout = input->childAs<InterfaceLayout>(0) ){
-        dumpAstNode(as_layout);
-        OrkAssert(as_layout->_children.size()==6);
-        auto ast_lx = childAsSemaIdString(as_layout,0);
-        auto ast_ly = childAsSemaIdString(as_layout,2);
-        auto ast_lz = childAsSemaIdString(as_layout,4);
-        auto lxv = childAsSemaInteger(as_layout,1);
-        auto lyv = childAsSemaInteger(as_layout,3);
-        auto lzv = childAsSemaInteger(as_layout,5);
-        printf( "ast_lx<%s> v<%d>\n", ast_lx.c_str(), lxv );
-        printf( "ast_ly<%s> v<%d>\n", ast_ly.c_str(), lyv );
-        printf( "ast_lz<%s> v<%d>\n", ast_lz.c_str(), lzv );
-        _appendText(_interface_group, "layout(%s=%d,%s=%d,%s=%d) in;", 
-          ast_lx.c_str(), lxv,
-          ast_ly.c_str(), lyv,
-          ast_lz.c_str(), lzv );
-      }
-      else if( auto as_tid = input->childAs<TypedIdentifier>(0) ){
-        auto dt = as_tid->typedValueForKey<std::string>("data_type").value();
-        auto id = as_tid->typedValueForKey<std::string>("identifier_name").value();
-        _appendText(_interface_group, "layout(location=%zu) in %s %s;", _input_index, dt.c_str(), id.c_str());
-        auto it = DATASIZES.find(dt);
-        OrkAssert(it != DATASIZES.end());
-        _input_index += it->second;
-        ii++;
-      }
-      else{
-        OrkAssert(false);
-      }
+      auto as_layout = input->childAs<InterfaceLayout>(0);
+      auto as_tid = (as_layout!=nullptr) //
+                  ? input->childAs<TypedIdentifier>(1) //
+                  : input->childAs<TypedIdentifier>(0);
+
+      auto input_str = _ifIoItem(as_layout, as_tid, "in", _input_index);
+      _appendText(_interface_group, "%s;", input_str.c_str() );
     }
   }
   /////////////////////////////////////////
   for (auto output_group : output_groups) {
-    auto outputs = AstNode::collectNodesOfType<InterfaceOutput>(output_group);
     // printf("  num_outputs<%zu>\n", outputs.size());
+    ////////////////////////////////
+    auto outputs = AstNode::collectNodesOfType<InterfaceOutput>(output_group);
+    ////////////////////////////////
     for (auto output : outputs) {
-      // dumpAstNode(output);
-      auto tid = output->findFirstChildOfType<TypedIdentifier>();
-      OrkAssert(tid);
-      auto dt = tid->typedValueForKey<std::string>("data_type").value();
-      auto id = tid->typedValueForKey<std::string>("identifier_name").value();
-      if (id.find("gl_") != 0) {
-        _appendText(_interface_group, "layout(location=%zu) out %s %s;", _output_index, dt.c_str(), id.c_str());
-        auto it = DATASIZES.find(dt);
-        if (it == DATASIZES.end()) {
-          printf("dt<%s> has no sizespec\n", dt.c_str());
-          OrkAssert(false);
-        }
-        _output_index += it->second;
-      }
+      auto as_layout = output->childAs<InterfaceLayout>(0);
+      auto as_tid = (as_layout!=nullptr) //
+                  ? output->childAs<TypedIdentifier>(1) //
+                  : output->childAs<TypedIdentifier>(0);
+
+      auto output_str = _ifIoItem(as_layout, as_tid, "out", _output_index);
+      _appendText(_interface_group, "%s;", output_str.c_str() );
     }
   }
   /////////////////////////////////////////
@@ -572,14 +671,15 @@ void SpirvCompiler::_inheritIO(astnode_ptr_t interface_node) {
       ///////////////////////////////////////////////////////////
       // parse/emit layout
       ///////////////////////////////////////////////////////////
-      auto ast_std = layout->childAs<SemaIdentifier>(0);
-      auto ast_bin = layout->childAs<SemaIdentifier>(1);
-      auto ast_bin_num = layout->childAs<SemaIntegerLiteral>(2);
+      auto ast_std = layout->childAs<InterfaceLayoutItem>(0);
+      auto ast_bin = layout->childAs<InterfaceLayoutItem>(1);
       OrkAssert(ast_std);
       OrkAssert(ast_bin);
+      auto std = getSemaIdString(ast_std->_children[0]);
+      auto bin = getSemaIdString(ast_bin->_children[0]);
+
+      auto ast_bin_num = ast_bin->childAs<SemaIntegerLiteral>(1);
       OrkAssert(ast_bin_num);
-      auto std = ast_std->typedValueForKey<std::string>("identifier_name").value();
-      auto bin = ast_bin->typedValueForKey<std::string>("identifier_name").value();
       auto bin_num = atoi(ast_bin_num->typedValueForKey<std::string>("literal_value").value().c_str());
 
       _appendText(_interface_group, //
