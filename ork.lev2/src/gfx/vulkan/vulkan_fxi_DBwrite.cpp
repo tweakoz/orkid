@@ -20,6 +20,90 @@ namespace ork::lev2::vulkan {
 using namespace shadlang;
 ///////////////////////////////////////////////////////////////////////////////
 
+template <typename T>
+void writeInterfaces( chunkfile::OutputStream* out_stream,
+                      chunkfile::Writer& chunkwriter, 
+                      const std::vector<std::shared_ptr<T>>& interfaces) {
+  using namespace shadlang::SHAST;
+  const auto& IO_DATASIZES = shadlang::spirv::SpirvCompilerGlobals::instance()->_io_data_sizes;
+  for (auto IF : interfaces) {
+    out_stream->addIndexedString("interface", chunkwriter);
+    auto if_name = IF->template typedValueForKey<std::string>("object_name").value();
+    out_stream->addIndexedString(if_name, chunkwriter);
+    auto input_groups  = AstNode::collectNodesOfType<InterfaceInputs>(IF);
+    auto output_groups = AstNode::collectNodesOfType<InterfaceOutputs>(IF);
+    out_stream->addIndexedString("inputgroups", chunkwriter);
+    out_stream->addItem<size_t>(input_groups.size());
+    for (auto input_group : input_groups) {
+      auto inputs = AstNode::collectNodesOfType<InterfaceInput>(input_group);
+      out_stream->addItem<size_t>(inputs.size());
+      for (auto input : inputs) {
+        out_stream->addIndexedString("input", chunkwriter);
+        auto tid = input->template childAs<TypedIdentifier>(0);
+        OrkAssert(tid);
+        auto dt = tid->template typedValueForKey<std::string>("data_type").value();
+        auto id = tid->template typedValueForKey<std::string>("identifier_name").value();
+        std::string semantic;
+        if( auto try_sema = input->template typedValueForKey<std::string>("semantic")) {
+          semantic = try_sema.value();
+          OrkAssert(semantic.length());
+        }
+        out_stream->addIndexedString(dt, chunkwriter);
+        out_stream->addIndexedString(id, chunkwriter);
+        out_stream->addIndexedString(semantic, chunkwriter);
+        auto it = IO_DATASIZES.find(dt);
+        OrkAssert(it != IO_DATASIZES.end());
+        out_stream->addItem<size_t>(it->second);
+      }
+    }
+    /////////////////////////////////////////
+    out_stream->addIndexedString("outputgroups", chunkwriter);
+    out_stream->addItem<size_t>(output_groups.size());
+    for (auto output_group : output_groups) {
+      auto outputs = AstNode::collectNodesOfType<InterfaceOutput>(output_group);
+      out_stream->addItem<size_t>(outputs.size());
+      for (auto output : outputs) {
+        out_stream->addIndexedString("output", chunkwriter);
+        auto tid = output->template findFirstChildOfType<TypedIdentifier>();
+        OrkAssert(tid);
+        auto dt = tid->template typedValueForKey<std::string>("data_type").value();
+        auto id = tid->template typedValueForKey<std::string>("identifier_name").value();
+        out_stream->addIndexedString(dt, chunkwriter);
+        out_stream->addIndexedString(id, chunkwriter);
+        auto it = IO_DATASIZES.find(dt);
+        OrkAssert(it != IO_DATASIZES.end());
+        out_stream->addItem<size_t>(it->second);
+      }
+    }
+  } // for (auto VIF : vtx_interfaces) {
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <typename T>
+void writeInterfaceInheritances( chunkfile::OutputStream* out_stream,
+                                 chunkfile::Writer& chunkwriter, 
+                                 shadlang::SHAST::transunit_ptr_t transunit,
+                                 const std::vector<std::shared_ptr<T>>& interfaces) {
+
+  for (auto TOP_IF : interfaces) {
+    auto top_if_name = TOP_IF->template typedValueForKey<std::string>("object_name").value();
+    out_stream->addIndexedString(top_if_name, chunkwriter);
+
+    shadlang::SHAST::InheritanceTracker if_tracker(transunit);
+    if_tracker.fetchInheritances(TOP_IF);
+    size_t if_count = if_tracker._inherited_ifaces.size();
+    out_stream->addItem<size_t>(if_count);
+    if(if_count>0){
+      auto last_inh = if_tracker._inherited_ifaces.back();
+      auto name = last_inh->template typedValueForKey<std::string>("object_name").value();
+     out_stream->addIndexedString(name, chunkwriter);     
+    }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 datablock_ptr_t VkFxInterface::_writeIntermediateToDataBlock(shadlang::SHAST::transunit_ptr_t transunit) {
   chunkfile::Writer chunkwriter("xfx");
   auto header_stream   = chunkwriter.AddStream("header");
@@ -165,79 +249,14 @@ datablock_ptr_t VkFxInterface::_writeIntermediateToDataBlock(shadlang::SHAST::tr
   using namespace shadlang::SHAST;
   const auto& IO_DATASIZES = shadlang::spirv::SpirvCompilerGlobals::instance()->_io_data_sizes;
   ////////////////////////////////////////////////////////////////
-  // write vtx interfaces
+  // write vtx interfaces / inheritances
   ////////////////////////////////////////////////////////////////
   interfaces_stream->addIndexedString("vertex-interfaces", chunkwriter);
   interfaces_stream->addItem<size_t>(vtx_interfaces.size());
-  for (auto VIF : vtx_interfaces) {
-    interfaces_stream->addIndexedString("interface", chunkwriter);
-    auto vif_name = VIF->typedValueForKey<std::string>("object_name").value();
-    interfaces_stream->addIndexedString(vif_name, chunkwriter);
-    auto input_groups  = AstNode::collectNodesOfType<InterfaceInputs>(VIF);
-    auto output_groups = AstNode::collectNodesOfType<InterfaceOutputs>(VIF);
-    interfaces_stream->addIndexedString("inputgroups", chunkwriter);
-    interfaces_stream->addItem<size_t>(input_groups.size());
-    for (auto input_group : input_groups) {
-      auto inputs = AstNode::collectNodesOfType<InterfaceInput>(input_group);
-      interfaces_stream->addItem<size_t>(inputs.size());
-      for (auto input : inputs) {
-        interfaces_stream->addIndexedString("input", chunkwriter);
-        auto tid = input->childAs<TypedIdentifier>(0);
-        OrkAssert(tid);
-        auto dt = tid->typedValueForKey<std::string>("data_type").value();
-        auto id = tid->typedValueForKey<std::string>("identifier_name").value();
-        std::string semantic;
-        if( auto try_sema = input->typedValueForKey<std::string>("semantic")) {
-          semantic = try_sema.value();
-          OrkAssert(semantic.length());
-        }
-        interfaces_stream->addIndexedString(dt, chunkwriter);
-        interfaces_stream->addIndexedString(id, chunkwriter);
-        interfaces_stream->addIndexedString(semantic, chunkwriter);
-        auto it = IO_DATASIZES.find(dt);
-        OrkAssert(it != IO_DATASIZES.end());
-        interfaces_stream->addItem<size_t>(it->second);
-      }
-    }
-    /////////////////////////////////////////
-    interfaces_stream->addIndexedString("outputgroups", chunkwriter);
-    interfaces_stream->addItem<size_t>(output_groups.size());
-    for (auto output_group : output_groups) {
-      auto outputs = AstNode::collectNodesOfType<InterfaceOutput>(output_group);
-      interfaces_stream->addItem<size_t>(outputs.size());
-      for (auto output : outputs) {
-        interfaces_stream->addIndexedString("output", chunkwriter);
-        auto tid = output->findFirstChildOfType<TypedIdentifier>();
-        OrkAssert(tid);
-        auto dt = tid->typedValueForKey<std::string>("data_type").value();
-        auto id = tid->typedValueForKey<std::string>("identifier_name").value();
-        interfaces_stream->addIndexedString(dt, chunkwriter);
-        interfaces_stream->addIndexedString(id, chunkwriter);
-        auto it = IO_DATASIZES.find(dt);
-        OrkAssert(it != IO_DATASIZES.end());
-        interfaces_stream->addItem<size_t>(it->second);
-      }
-    }
-  } // for (auto VIF : vtx_interfaces) {
-  ////////////////////////////////////////////////////////////////
-  // write vtx interface inheritances
-  ////////////////////////////////////////////////////////////////
+  writeInterfaces(interfaces_stream, chunkwriter, vtx_interfaces);
   interfaces_stream->addIndexedString("vertex_interface_inheritances", chunkwriter);
   interfaces_stream->addItem<size_t>(vtx_interfaces.size());
-  for (auto TOP_VIF : vtx_interfaces) {
-    auto top_vif_name = TOP_VIF->typedValueForKey<std::string>("object_name").value();
-    interfaces_stream->addIndexedString(top_vif_name, chunkwriter);
-
-    InheritanceTracker if_tracker(transunit);
-    if_tracker.fetchInheritances(TOP_VIF);
-    size_t if_count = if_tracker._inherited_ifaces.size();
-    interfaces_stream->addItem<size_t>(if_count);
-    if(if_count>0){
-      auto last_inh = if_tracker._inherited_ifaces.back();
-      auto name = last_inh->typedValueForKey<std::string>("object_name").value();
-     interfaces_stream->addIndexedString(name, chunkwriter);     
-    }
-  }
+  writeInterfaceInheritances(interfaces_stream, chunkwriter, transunit, vtx_interfaces);
   interfaces_stream->addIndexedString("interfaces-done", chunkwriter);
   ////////////////////////////////////////////////////////////////
 
