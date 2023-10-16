@@ -344,6 +344,7 @@ struct VulkanGeometryInterfaceInput{
   size_t _datasize = 0;
 };
 struct VulkanGeometryInterface{
+  using input_t = VulkanGeometryInterfaceInput;
   std::string _name;
   vkgeometryinterface_ptr_t _parent;
   std::vector<vkgeometryinterfaceinput_ptr_t> _inputs;

@@ -98,6 +98,8 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(
     std::vector<VkPipelineShaderStageCreateInfo> stages;
     if (shprog->_vtxshader)
       stages.push_back(shprog->_vtxshader->_shaderstageinfo);
+    if (shprog->_geoshader)
+      stages.push_back(shprog->_geoshader->_shaderstageinfo);
     if (shprog->_frgshader)
       stages.push_back(shprog->_frgshader->_shaderstageinfo);
 

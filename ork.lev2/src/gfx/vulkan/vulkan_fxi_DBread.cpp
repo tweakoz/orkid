@@ -36,14 +36,22 @@ read_interface(chunkfile::InputStream* input_stream, chunkfile::Reader& chunkrea
   for (size_t ig = 0; ig < num_input_groups; ig++) {
     auto num_inputs = input_stream->readItem<size_t>();
     for (size_t ii = 0; ii < num_inputs; ii++) {
-      auto str_input = input_stream->readIndexedString(chunkreader);
-      OrkAssert(str_input == "input");
-      auto input         = std::make_shared<typename if_type_t::input_t>();
-      input->_datatype   = input_stream->readIndexedString(chunkreader);
-      input->_identifier = input_stream->readIndexedString(chunkreader);
-      input->_semantic   = input_stream->readIndexedString(chunkreader);
-      input->_datasize   = input_stream->readItem<size_t>();
-      interface->_inputs.push_back(input);
+      auto str_item_type = input_stream->readIndexedString(chunkreader);
+      
+      if( str_item_type == "input" ){
+        auto input         = std::make_shared<typename if_type_t::input_t>();
+        input->_datatype   = input_stream->readIndexedString(chunkreader);
+        input->_identifier = input_stream->readIndexedString(chunkreader);
+        input->_semantic   = input_stream->readIndexedString(chunkreader);
+        input->_datasize   = input_stream->readItem<size_t>();
+        interface->_inputs.push_back(input);
+      }
+      else if(str_item_type=="layout"){
+
+      }
+      else{
+        OrkAssert(false);
+      }
     }
   }
   /////////////////
@@ -53,15 +61,22 @@ read_interface(chunkfile::InputStream* input_stream, chunkfile::Reader& chunkrea
   for (size_t og = 0; og < num_output_groups; og++) {
     auto num_outputs = input_stream->readItem<size_t>();
     for (size_t oi = 0; oi < num_outputs; oi++) {
-      auto str_output = input_stream->readIndexedString(chunkreader);
-      OrkAssert(str_output == "output");
-      auto str_output_datatype   = input_stream->readIndexedString(chunkreader);
-      auto str_output_identifier = input_stream->readIndexedString(chunkreader);
-      printf("  output<%s %s>\n", str_output_datatype.c_str(), str_output_identifier.c_str());
-      auto dsize = input_stream->readItem<size_t>();
-      if (str_output_identifier.find("gl_") != 0) {
-        // _appendText(_interface_group, "layout(location=%zu) out %s %s;", _output_index, dt.c_str(), id.c_str());
-        // o_output_index += dsize;
+      auto str_item_type = input_stream->readIndexedString(chunkreader);
+      if( str_item_type == "output" ){
+        auto str_output_datatype   = input_stream->readIndexedString(chunkreader);
+        auto str_output_identifier = input_stream->readIndexedString(chunkreader);
+        printf("  output<%s %s>\n", str_output_datatype.c_str(), str_output_identifier.c_str());
+        auto dsize = input_stream->readItem<size_t>();
+        if (str_output_identifier.find("gl_") != 0) {
+          // _appendText(_interface_group, "layout(location=%zu) out %s %s;", _output_index, dt.c_str(), id.c_str());
+          // o_output_index += dsize;
+        }
+      }
+      else if(str_item_type=="layout"){
+
+      }
+      else{
+        OrkAssert(false);
       }
     }
   }
@@ -238,8 +253,8 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
   /////////////////////////////////
   // read vertex interfaces / inheritances
   /////////////////////////////////
-  auto str_vtx_interfaces = interfaces_input_stream->readIndexedString(chunkreader);
-  OrkAssert(str_vtx_interfaces == "vertex-interfaces");
+  auto str_interfaces = interfaces_input_stream->readIndexedString(chunkreader);
+  OrkAssert(str_interfaces == "vertex-interfaces");
   readInterfaces(
       interfaces_input_stream, //
       chunkreader,             //
@@ -249,7 +264,22 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
       chunkreader,             //
       vulkan_shaderfile->_vk_vtxinterfaces);
   auto str_ifaces_done = interfaces_input_stream->readIndexedString(chunkreader);
-  OrkAssert(str_ifaces_done == "interfaces-done");
+  OrkAssert(str_ifaces_done == "vertex-interfaces-done");
+  /////////////////////////////////
+  // read geometry interfaces / inheritances
+  /////////////////////////////////
+  str_interfaces = interfaces_input_stream->readIndexedString(chunkreader);
+  OrkAssert(str_interfaces == "geometry-interfaces");
+  readInterfaces(
+      interfaces_input_stream, //
+      chunkreader,             //
+      vulkan_shaderfile->_vk_geointerfaces);
+  read_interface_inheritances(
+      interfaces_input_stream, //
+      chunkreader,             //
+      vulkan_shaderfile->_vk_geointerfaces);
+  str_ifaces_done = interfaces_input_stream->readIndexedString(chunkreader);
+  OrkAssert(str_ifaces_done == "geometry-interfaces-done");
   /////////////////////////////////
   // read shader
   /////////////////////////////////
@@ -315,11 +345,11 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
   for (size_t i = 0; i < num_geo_shaders; i++) {
     auto geo_shader    = read_shader_from_stream();
     geo_shader->_STAGE = "geometry"_crcu;
-    auto& STGIV        = geo_shader->_shaderstageinfo;
-    initializeVkStruct(STGIV, VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO);
-    STGIV.stage  = VK_SHADER_STAGE_GEOMETRY_BIT;
-    STGIV.module = geo_shader->_vk_shadermodule;
-    STGIV.pName  = "main";
+    auto& STGIG        = geo_shader->_shaderstageinfo;
+    initializeVkStruct(STGIG, VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO);
+    STGIG.stage  = VK_SHADER_STAGE_GEOMETRY_BIT;
+    STGIG.module = geo_shader->_vk_shadermodule;
+    STGIG.pName  = "main";
   }
 
   //////////////////

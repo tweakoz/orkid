@@ -40,22 +40,29 @@ void writeInterfaces( chunkfile::OutputStream* out_stream,
       auto inputs = AstNode::collectNodesOfType<InterfaceInput>(input_group);
       out_stream->addItem<size_t>(inputs.size());
       for (auto input : inputs) {
-        out_stream->addIndexedString("input", chunkwriter);
-        auto tid = input->template childAs<TypedIdentifier>(0);
-        OrkAssert(tid);
-        auto dt = tid->template typedValueForKey<std::string>("data_type").value();
-        auto id = tid->template typedValueForKey<std::string>("identifier_name").value();
-        std::string semantic;
-        if( auto try_sema = input->template typedValueForKey<std::string>("semantic")) {
-          semantic = try_sema.value();
-          OrkAssert(semantic.length());
+        dumpAstNode(input);
+        if( auto tid = input->template childAs<TypedIdentifier>(0) ){
+          out_stream->addIndexedString("input", chunkwriter);
+          auto dt = tid->template typedValueForKey<std::string>("data_type").value();
+          auto id = tid->template typedValueForKey<std::string>("identifier_name").value();
+          std::string semantic;
+          if( auto try_sema = input->template typedValueForKey<std::string>("semantic")) {
+            semantic = try_sema.value();
+            OrkAssert(semantic.length());
+          }
+          out_stream->addIndexedString(dt, chunkwriter);
+          out_stream->addIndexedString(id, chunkwriter);
+          out_stream->addIndexedString(semantic, chunkwriter);
+          auto it = IO_DATASIZES.find(dt);
+          OrkAssert(it != IO_DATASIZES.end());
+          out_stream->addItem<size_t>(it->second);
         }
-        out_stream->addIndexedString(dt, chunkwriter);
-        out_stream->addIndexedString(id, chunkwriter);
-        out_stream->addIndexedString(semantic, chunkwriter);
-        auto it = IO_DATASIZES.find(dt);
-        OrkAssert(it != IO_DATASIZES.end());
-        out_stream->addItem<size_t>(it->second);
+        else if( auto layout = input->template childAs<InterfaceLayout>(0) ){
+          out_stream->addIndexedString("layout", chunkwriter);
+        }
+        else{
+          OrkAssert(false);
+        }
       }
     }
     /////////////////////////////////////////
@@ -65,16 +72,23 @@ void writeInterfaces( chunkfile::OutputStream* out_stream,
       auto outputs = AstNode::collectNodesOfType<InterfaceOutput>(output_group);
       out_stream->addItem<size_t>(outputs.size());
       for (auto output : outputs) {
-        out_stream->addIndexedString("output", chunkwriter);
-        auto tid = output->template findFirstChildOfType<TypedIdentifier>();
-        OrkAssert(tid);
-        auto dt = tid->template typedValueForKey<std::string>("data_type").value();
-        auto id = tid->template typedValueForKey<std::string>("identifier_name").value();
-        out_stream->addIndexedString(dt, chunkwriter);
-        out_stream->addIndexedString(id, chunkwriter);
-        auto it = IO_DATASIZES.find(dt);
-        OrkAssert(it != IO_DATASIZES.end());
-        out_stream->addItem<size_t>(it->second);
+        dumpAstNode(output);
+        if( auto as_tid = output->template childAs<TypedIdentifier>(0) ){
+          out_stream->addIndexedString("output", chunkwriter);
+          auto dt = as_tid->template typedValueForKey<std::string>("data_type").value();
+          auto id = as_tid->template typedValueForKey<std::string>("identifier_name").value();
+          out_stream->addIndexedString(dt, chunkwriter);
+          out_stream->addIndexedString(id, chunkwriter);
+          auto it = IO_DATASIZES.find(dt);
+          OrkAssert(it != IO_DATASIZES.end());
+          out_stream->addItem<size_t>(it->second);
+        }
+        else if( auto layout = output->template childAs<InterfaceLayout>(0) ){
+          out_stream->addIndexedString("layout", chunkwriter);
+        }
+        else{
+          OrkAssert(false);
+        }
       }
     }
   } // for (auto VIF : vtx_interfaces) {
@@ -109,6 +123,9 @@ void writeInterfaceInheritances( chunkfile::OutputStream* out_stream,
 ///////////////////////////////////////////////////////////////////////////////
 
 datablock_ptr_t VkFxInterface::_writeIntermediateToDataBlock(shadlang::SHAST::transunit_ptr_t transunit) {
+
+  using namespace shadlang::SHAST;
+
   chunkfile::Writer chunkwriter("xfx");
   auto header_stream   = chunkwriter.AddStream("header");
   auto shader_stream   = chunkwriter.AddStream("shaders");
@@ -122,17 +139,17 @@ datablock_ptr_t VkFxInterface::_writeIntermediateToDataBlock(shadlang::SHAST::tr
 
   // TODO - before hoisting cache, implement namespaces..
 
-  auto vtx_shaders    = SHAST::AstNode::collectNodesOfType<SHAST::VertexShader>(transunit);
-  auto vtx_interfaces = SHAST::AstNode::collectNodesOfType<SHAST::VertexInterface>(transunit);
-  auto geo_shaders    = SHAST::AstNode::collectNodesOfType<SHAST::GeometryShader>(transunit);
-  auto geo_interfaces = SHAST::AstNode::collectNodesOfType<SHAST::GeometryInterface>(transunit);
-  auto frg_interfaces = SHAST::AstNode::collectNodesOfType<SHAST::FragmentInterface>(transunit);
-  auto frg_shaders    = SHAST::AstNode::collectNodesOfType<SHAST::FragmentShader>(transunit);
-  auto cu_shaders     = SHAST::AstNode::collectNodesOfType<SHAST::ComputeShader>(transunit);
-  auto techniques     = SHAST::AstNode::collectNodesOfType<SHAST::Technique>(transunit);
-  auto unisets        = SHAST::AstNode::collectNodesOfType<SHAST::UniformSet>(transunit);
-  auto uniblks        = SHAST::AstNode::collectNodesOfType<SHAST::UniformBlk>(transunit);
-  auto imports        = SHAST::AstNode::collectNodesOfType<SHAST::ImportDirective>(transunit);
+  auto vtx_shaders    = AstNode::collectNodesOfType<VertexShader>(transunit);
+  auto vtx_interfaces = AstNode::collectNodesOfType<VertexInterface>(transunit);
+  auto geo_shaders    = AstNode::collectNodesOfType<GeometryShader>(transunit);
+  auto geo_interfaces = AstNode::collectNodesOfType<GeometryInterface>(transunit);
+  auto frg_interfaces = AstNode::collectNodesOfType<FragmentInterface>(transunit);
+  auto frg_shaders    = AstNode::collectNodesOfType<FragmentShader>(transunit);
+  auto cu_shaders     = AstNode::collectNodesOfType<ComputeShader>(transunit);
+  auto techniques     = AstNode::collectNodesOfType<Technique>(transunit);
+  auto unisets        = AstNode::collectNodesOfType<UniformSet>(transunit);
+  auto uniblks        = AstNode::collectNodesOfType<UniformBlk>(transunit);
+  auto imports        = AstNode::collectNodesOfType<ImportDirective>(transunit);
 
   size_t num_vtx_shaders = vtx_shaders.size();
   size_t num_vtx_ifaces  = vtx_interfaces.size();
@@ -250,20 +267,25 @@ datablock_ptr_t VkFxInterface::_writeIntermediateToDataBlock(shadlang::SHAST::tr
   write_uniblks_to_stream(SPC->_spirvuniformblks);
 
   ////////////////////////////////////////////////////////////////
-  using namespace shadlang::SHAST;
-  const auto& IO_DATASIZES = shadlang::spirv::SpirvCompilerGlobals::instance()->_io_data_sizes;
   ////////////////////////////////////////////////////////////////
   // write vtx interfaces / inheritances
   ////////////////////////////////////////////////////////////////
   interfaces_stream->addIndexedString("vertex-interfaces", chunkwriter);
   writeInterfaces(interfaces_stream, chunkwriter, vtx_interfaces);
   writeInterfaceInheritances(interfaces_stream, chunkwriter, transunit, vtx_interfaces);
-  interfaces_stream->addIndexedString("interfaces-done", chunkwriter);
+  interfaces_stream->addIndexedString("vertex-interfaces-done", chunkwriter);
+  ////////////////////////////////////////////////////////////////
+  // write geo interfaces / inheritances
+  ////////////////////////////////////////////////////////////////
+  interfaces_stream->addIndexedString("geometry-interfaces", chunkwriter);
+  writeInterfaces(interfaces_stream, chunkwriter, geo_interfaces);
+  writeInterfaceInheritances(interfaces_stream, chunkwriter, transunit, geo_interfaces);
+  interfaces_stream->addIndexedString("geometry-interfaces-done", chunkwriter);
   ////////////////////////////////////////////////////////////////
 
   size_t num_shaders_written = 0;
 
-  auto write_shader_to_stream = [&](SHAST::astnode_ptr_t shader_node, //
+  auto write_shader_to_stream = [&](astnode_ptr_t shader_node, //
                                     std::string shader_type) { //
     auto sh_name  = shader_node->typedValueForKey<std::string>("object_name").value();
     auto sh_data  = (uint8_t*)SPC->_spirv_binary.data();
@@ -337,19 +359,19 @@ datablock_ptr_t VkFxInterface::_writeIntermediateToDataBlock(shadlang::SHAST::tr
   //////////////////
 
   for (auto tek : techniques) {
-    auto passes   = SHAST::AstNode::collectNodesOfType<SHAST::Pass>(tek);
+    auto passes   = AstNode::collectNodesOfType<Pass>(tek);
     auto tek_name = tek->typedValueForKey<std::string>("object_name").value();
     tecniq_stream->addIndexedString("technique", chunkwriter);
     tecniq_stream->addIndexedString(tek_name, chunkwriter);
     tecniq_stream->addItem<size_t>(passes.size());
     for (auto p : passes) {
-      auto vtx_shader_ref = p->findFirstChildOfType<SHAST::VertexShaderRef>();
-      auto frg_shader_ref = p->findFirstChildOfType<SHAST::FragmentShaderRef>();
-      auto stateblock_ref = p->findFirstChildOfType<SHAST::StateBlockRef>();
+      auto vtx_shader_ref = p->findFirstChildOfType<VertexShaderRef>();
+      auto frg_shader_ref = p->findFirstChildOfType<FragmentShaderRef>();
+      auto stateblock_ref = p->findFirstChildOfType<StateBlockRef>();
       OrkAssert(vtx_shader_ref);
       OrkAssert(frg_shader_ref);
-      auto vtx_sema_id = vtx_shader_ref->findFirstChildOfType<SHAST::SemaIdentifier>();
-      auto frg_sema_id = frg_shader_ref->findFirstChildOfType<SHAST::SemaIdentifier>();
+      auto vtx_sema_id = vtx_shader_ref->findFirstChildOfType<SemaIdentifier>();
+      auto frg_sema_id = frg_shader_ref->findFirstChildOfType<SemaIdentifier>();
       OrkAssert(vtx_sema_id);
       OrkAssert(frg_sema_id);
       auto vtx_name = vtx_sema_id->typedValueForKey<std::string>("identifier_name").value();
@@ -358,7 +380,7 @@ datablock_ptr_t VkFxInterface::_writeIntermediateToDataBlock(shadlang::SHAST::tr
       std::string stages;
       stages += "V";
       ////////////////////////////////////////////////////////////////
-      auto geo_shader_ref = p->findFirstChildOfType<SHAST::GeometryShaderRef>();
+      auto geo_shader_ref = p->findFirstChildOfType<GeometryShaderRef>();
       if(geo_shader_ref){
         stages += "G";
       }
@@ -369,7 +391,7 @@ datablock_ptr_t VkFxInterface::_writeIntermediateToDataBlock(shadlang::SHAST::tr
       tecniq_stream->addIndexedString(vtx_name, chunkwriter);
       ////////////////////////////////////////////////////////////////
       if(geo_shader_ref){
-        auto geo_sema_id = geo_shader_ref->findFirstChildOfType<SHAST::SemaIdentifier>();
+        auto geo_sema_id = geo_shader_ref->findFirstChildOfType<SemaIdentifier>();
         OrkAssert(geo_sema_id);
         auto geo_name = geo_sema_id->typedValueForKey<std::string>("identifier_name").value();
         tecniq_stream->addIndexedString(geo_name, chunkwriter);
