@@ -26,6 +26,8 @@ void writeInterfaces( chunkfile::OutputStream* out_stream,
                       const std::vector<std::shared_ptr<T>>& interfaces) {
   using namespace shadlang::SHAST;
   const auto& IO_DATASIZES = shadlang::spirv::SpirvCompilerGlobals::instance()->_io_data_sizes;
+
+  out_stream->addItem<size_t>(interfaces.size());
   for (auto IF : interfaces) {
     out_stream->addIndexedString("interface", chunkwriter);
     auto if_name = IF->template typedValueForKey<std::string>("object_name").value();
@@ -86,6 +88,8 @@ void writeInterfaceInheritances( chunkfile::OutputStream* out_stream,
                                  shadlang::SHAST::transunit_ptr_t transunit,
                                  const std::vector<std::shared_ptr<T>>& interfaces) {
 
+  out_stream->addIndexedString("interface_inheritances", chunkwriter);
+  out_stream->addItem<size_t>(interfaces.size());
   for (auto TOP_IF : interfaces) {
     auto top_if_name = TOP_IF->template typedValueForKey<std::string>("object_name").value();
     out_stream->addIndexedString(top_if_name, chunkwriter);
@@ -252,10 +256,7 @@ datablock_ptr_t VkFxInterface::_writeIntermediateToDataBlock(shadlang::SHAST::tr
   // write vtx interfaces / inheritances
   ////////////////////////////////////////////////////////////////
   interfaces_stream->addIndexedString("vertex-interfaces", chunkwriter);
-  interfaces_stream->addItem<size_t>(vtx_interfaces.size());
   writeInterfaces(interfaces_stream, chunkwriter, vtx_interfaces);
-  interfaces_stream->addIndexedString("vertex_interface_inheritances", chunkwriter);
-  interfaces_stream->addItem<size_t>(vtx_interfaces.size());
   writeInterfaceInheritances(interfaces_stream, chunkwriter, transunit, vtx_interfaces);
   interfaces_stream->addIndexedString("interfaces-done", chunkwriter);
   ////////////////////////////////////////////////////////////////

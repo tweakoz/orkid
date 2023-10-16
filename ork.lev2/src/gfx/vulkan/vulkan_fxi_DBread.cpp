@@ -71,16 +71,33 @@ read_interface(chunkfile::InputStream* input_stream, chunkfile::Reader& chunkrea
 
 ///////////////////////////////////////////////////////////////////////////////
 
+template <typename if_type_t>
+void readInterfaces(
+    chunkfile::InputStream* input_stream,                                   //
+    chunkfile::Reader& chunkreader,                                         //
+    std::unordered_map<std::string, std::shared_ptr<if_type_t>>& the_map) { //
+  auto if_count = input_stream->readItem<size_t>();
+  for (size_t i = 0; i < if_count; i++) {
+    auto interface            = read_interface<if_type_t>(input_stream, chunkreader);
+    the_map[interface->_name] = interface;
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 template <typename if_ptr_t>
 void //
 read_interface_inheritances(
     chunkfile::InputStream* input_stream,                 //
     chunkfile::Reader& chunkreader,                       //
     std::unordered_map<std::string, if_ptr_t>& the_map) { //
+
+  auto str_if_inheritances = input_stream->readIndexedString(chunkreader);
+  OrkAssert(str_if_inheritances == "interface_inheritances");
   auto num_inheritances = input_stream->readItem<size_t>();
   for (size_t i = 0; i < num_inheritances; i++) {
     auto str_if_name = input_stream->readIndexedString(chunkreader);
-    auto num_inh      = input_stream->readItem<size_t>();
+    auto num_inh     = input_stream->readItem<size_t>();
     if (num_inh > 0) {
       auto str_inh_name = input_stream->readIndexedString(chunkreader);
       printf(" interface<%s> INHERITS interface<%s>\n", str_if_name.c_str(), str_inh_name.c_str());
@@ -97,6 +114,7 @@ read_interface_inheritances(
 ///////////////////////////////////////////////////////////////////////////////
 
 vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock, FxShader* ork_shader) {
+
   ////////////////////////////////////////////////////////
   // parse datablock
   ////////////////////////////////////////////////////////
@@ -218,21 +236,14 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
   }
   // TODO - read VIFS, GIFS
   /////////////////////////////////
-  // read vertex interfaces
+  // read vertex interfaces / inheritances
   /////////////////////////////////
   auto str_vtx_interfaces = interfaces_input_stream->readIndexedString(chunkreader);
   OrkAssert(str_vtx_interfaces == "vertex-interfaces");
-  auto vif_count = interfaces_input_stream->readItem<size_t>();
-  OrkAssert(vif_count == num_vtx_interfaces);
-  for (size_t i = 0; i < vif_count; i++) {
-    auto interface = read_interface<VulkanVertexInterface>(interfaces_input_stream, chunkreader);
-    vulkan_shaderfile->_vk_vtxinterfaces[interface->_name] = interface;
-  }
-  /////////////////////////////////
-  // read vtx interface inheritances
-  /////////////////////////////////
-  auto str_vif_inheritances = interfaces_input_stream->readIndexedString(chunkreader);
-  OrkAssert(str_vif_inheritances == "vertex_interface_inheritances");
+  readInterfaces(
+      interfaces_input_stream, //
+      chunkreader,             //
+      vulkan_shaderfile->_vk_vtxinterfaces);
   read_interface_inheritances(
       interfaces_input_stream, //
       chunkreader,             //
