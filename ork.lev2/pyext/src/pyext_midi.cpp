@@ -29,7 +29,7 @@ void pyinit_midi(py::module& module_lev2) {
   auto type_codec = python::TypeCodec::instance();
   static int unused; // the capsule needs something to reference
   py::capsule cleanup(&unused, [](PyObject *) { 
-    std::cout << "Cleanup!" << std::endl;
+    printf("Cleanup!\n");
     ON_MIDI_PYLAMBDA = py::none();
   });
   midi_module.add_object("_cleanup", cleanup);

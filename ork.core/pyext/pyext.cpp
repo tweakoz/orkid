@@ -124,6 +124,8 @@ PYBIND11_MODULE(_core, module_core) {
   module_core.def("thispath", &_thispath);
   module_core.def("thisdir", &_thisdir);
   module_core.def("addpoolstring", &_addpoolstring);
+  module_core.attr("pybind11_version") = py::make_tuple(PYBIND11_VERSION_MAJOR, PYBIND11_VERSION_MINOR, PYBIND11_VERSION_PATCH);
+  module_core.attr("pyext_build_data") = py::make_tuple(__DATE__,__TIME__);
   /////////////////////////////////////////////////////////////////////////////////
   // core decoder tyoes
   /////////////////////////////////////////////////////////////////////////////////
