@@ -11,7 +11,7 @@
 #include <ork/python/context.h>
 #include <ork/python/wraprawpointer.inl>
 #include <ork/kernel/varmap.inl>
-
+#include <iostream>
 
 namespace ork::python {
 

@@ -9,6 +9,8 @@
 #include <ork/kernel/opq.h>
 #include <ork/kernel/fixedstring.hpp>
 #include <ork/python/pycodec.h>
+#include <iostream>
+
 namespace py = pybind11;
 using namespace pybind11::literals;
 
