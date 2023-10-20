@@ -567,6 +567,7 @@ public:
   void* mGLXContext;
   ContextGL* mpParentTarget;
   bool _SUPPORTS_BINARY_PIPELINE = true;
+  bool _SUPPORTS_BUFFER_STORAGE = true;
   std::string _GL_RENDERER;
   
   std::stack<void*> mDCStack;

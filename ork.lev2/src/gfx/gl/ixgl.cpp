@@ -258,9 +258,14 @@ void ContextGL::initializeWindowContext(Window* pWin, CTXBASE* pctxbase) {
   mFbI.SetThisBuffer(pWin);
   _GL_RENDERER = (const char*) glGetString(GL_RENDERER);
   printf( "GL_RENDERER<%s>\n", _GL_RENDERER.c_str() );
-  if(_GL_RENDERER.find("Metal")!=std::string::npos){
+  if(_GL_RENDERER.find("virgl")!=std::string::npos){
     _SUPPORTS_BINARY_PIPELINE = false;
+    _SUPPORTS_BUFFER_STORAGE = false;
   }
+  #if ! defined(OPENGL_46)
+    _SUPPORTS_BUFFER_STORAGE = false;
+  #endif
+
 }
 
 /////////////////////////////////////////////////////////////////////////

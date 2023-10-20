@@ -209,6 +209,8 @@ void ContextGL::initializeWindowContext( Window *pWin, CTXBASE* pctxbase  ) {
   _GL_RENDERER = (const char*) glGetString(GL_RENDERER);
   printf( "GL_RENDERER<%s>\n", _GL_RENDERER.c_str() );
   _SUPPORTS_BINARY_PIPELINE = false;
+  _SUPPORTS_BUFFER_STORAGE = false;
+ 
 }
 
 /////////////////////////////////////////////////////////////////////////

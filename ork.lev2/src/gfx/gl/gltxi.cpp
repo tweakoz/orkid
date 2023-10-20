@@ -262,21 +262,27 @@ pboptr_t PboSet::alloc() {
 
       // ??? persistent mapped objects
 
-#if defined(OPENGL_46)
-      u32 create_flags = GL_MAP_WRITE_BIT;
-      create_flags |= GL_MAP_PERSISTENT_BIT;
-      create_flags |= GL_MAP_COHERENT_BIT;
-      glBufferStorage(GL_PIXEL_UNPACK_BUFFER, _size, nullptr, create_flags);
-      GL_ERRORCHECK();
-      u32 map_flags = GL_MAP_WRITE_BIT;
-      map_flags |= GL_MAP_PERSISTENT_BIT;
-      map_flags |= GL_MAP_INVALIDATE_RANGE_BIT;
-      map_flags |= GL_MAP_COHERENT_BIT;
-      // map_flags |= GL_MAP_UNSYNCHRONIZED_BIT;
-      new_pbo->_mapped = glMapBufferRange(GL_PIXEL_UNPACK_BUFFER, 0, _size, map_flags);
-#else
-      glBufferData(GL_PIXEL_UNPACK_BUFFER, _size, NULL, GL_STREAM_DRAW);
-#endif
+      #if defined(OPENGL_46)
+      if(mTargetGL._SUPPORTS_BUFFER_STORAGE){
+        u32 create_flags = GL_MAP_WRITE_BIT;
+        create_flags |= GL_MAP_PERSISTENT_BIT;
+        create_flags |= GL_MAP_COHERENT_BIT;
+        glBufferStorage(GL_PIXEL_UNPACK_BUFFER, _size, nullptr, create_flags);
+        GL_ERRORCHECK();
+        u32 map_flags = GL_MAP_WRITE_BIT;
+        map_flags |= GL_MAP_PERSISTENT_BIT;
+        map_flags |= GL_MAP_INVALIDATE_RANGE_BIT;
+        map_flags |= GL_MAP_COHERENT_BIT;
+        // map_flags |= GL_MAP_UNSYNCHRONIZED_BIT;
+        new_pbo->_mapped = glMapBufferRange(GL_PIXEL_UNPACK_BUFFER, 0, _size, map_flags);
+      }
+      else{
+        glBufferData(GL_PIXEL_UNPACK_BUFFER, _size, NULL, GL_STREAM_DRAW);
+      }
+      #else
+        glBufferData(GL_PIXEL_UNPACK_BUFFER, _size, NULL, GL_STREAM_DRAW);
+      #endif
+
       GL_ERRORCHECK();
       glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
       // GL_ERRORCHECK();
