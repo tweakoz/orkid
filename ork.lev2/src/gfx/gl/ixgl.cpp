@@ -188,8 +188,7 @@ void ContextGL::GLinit() {
 
   global_ctxbase->makeCurrent();
   gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
-
-
+  
   ////////////////////////////////////
   
   //GLint num_gpus = 0;
@@ -257,6 +256,11 @@ void ContextGL::initializeWindowContext(Window* pWin, CTXBASE* pctxbase) {
   ///////////////////////
   plato->makeCurrent();
   mFbI.SetThisBuffer(pWin);
+  _GL_RENDERER = (const char*) glGetString(GL_RENDERER);
+  printf( "GL_RENDERER<%s>\n", _GL_RENDERER.c_str() );
+  if(_GL_RENDERER.find("Metal")!=std::string::npos){
+    _SUPPORTS_BINARY_PIPELINE = false;
+  }
 }
 
 /////////////////////////////////////////////////////////////////////////

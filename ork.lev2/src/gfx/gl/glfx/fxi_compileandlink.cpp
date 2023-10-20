@@ -155,6 +155,7 @@ bool Interface::compilePipelineVTG(rootcontainer_ptr_t container) {
   
   pipeline_hasher->finish();
   uint64_t pipeline_hash = pipeline_hasher->result();
+
   auto pipeline_datablock = DataBlockCache::findDataBlock(pipeline_hash);
   ////////////////////////////////////////////////////////////
   // cached?
@@ -374,29 +375,27 @@ bool Interface::compilePipelineVTG(rootcontainer_ptr_t container) {
       // fetch shader binary
       ///////////////////////////////////
 
-      #if !defined(__APPLE__)
+      if(mTarget._SUPPORTS_BINARY_PIPELINE){
+        GLint binaryLength = 0;
+        glGetProgramiv(prgo, GL_PROGRAM_BINARY_LENGTH, &binaryLength);
+        std::vector<GLubyte> binary_bytes;
+        binary_bytes.resize(binaryLength);
+        GLenum binaryFormat;
+        glGetProgramBinary(prgo, binaryLength, NULL, &binaryFormat, binary_bytes.data());
+        header_stream->AddItem<GLenum>(binaryFormat);
+        header_stream->AddItem<size_t>(binary_bytes.size());
+        shader_stream->AddData(binary_bytes.data(),binary_bytes.size());
 
-      GLint binaryLength = 0;
-      glGetProgramiv(prgo, GL_PROGRAM_BINARY_LENGTH, &binaryLength);
-      std::vector<GLubyte> binary_bytes;
-      binary_bytes.resize(binaryLength);
-      GLenum binaryFormat;
-      glGetProgramBinary(prgo, binaryLength, NULL, &binaryFormat, binary_bytes.data());
-      header_stream->AddItem<GLenum>(binaryFormat);
-      header_stream->AddItem<size_t>(binary_bytes.size());
-      shader_stream->AddData(binary_bytes.data(),binary_bytes.size());
+        ///////////////////////////////////
+        // write to datablock cache
+        ///////////////////////////////////
 
-      ///////////////////////////////////
-      // write to datablock cache
-      ///////////////////////////////////
+        printf( "WRITING SHADER hash<%016zx> TO CACHE\n", pipeline_hash );
 
-      printf( "WRITING SHADER hash<%016zx> TO CACHE\n", pipeline_hash );
-
-      pipeline_datablock = std::make_shared<DataBlock>();
-      chunkwriter.writeToDataBlock(pipeline_datablock);
-      DataBlockCache::setDataBlock(pipeline_hash, pipeline_datablock);
-
-      #endif
+        pipeline_datablock = std::make_shared<DataBlock>();
+        chunkwriter.writeToDataBlock(pipeline_datablock);
+        DataBlockCache::setDataBlock(pipeline_hash, pipeline_datablock);
+      }
 
     }
     double compile_time = ctimer.SecsSinceStart();
