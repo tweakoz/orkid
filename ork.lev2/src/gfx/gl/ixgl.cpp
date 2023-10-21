@@ -461,6 +461,9 @@ void ContextGL::initializeLoaderContext() {
       // printf("resizing defaultRTG<%p>\n", _defaultRTG);
       _defaultRTG->Resize(w, h);
       mTargetDrawableSizeDirty = false;
+      #if ! defined(OPENGL_46)
+        _SUPPORTS_BUFFER_STORAGE = false;
+      #endif
     }
   };
 }

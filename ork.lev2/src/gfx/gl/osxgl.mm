@@ -277,6 +277,8 @@ void ContextGL::initializeLoaderContext() {
       // printf("resizing defaultRTG<%p>\n", _defaultRTG);
       _defaultRTG->Resize(w, h);
       mTargetDrawableSizeDirty = false;
+      _SUPPORTS_BINARY_PIPELINE = false;
+      _SUPPORTS_BUFFER_STORAGE = false;
     }
   };
 }

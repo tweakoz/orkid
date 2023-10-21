@@ -96,7 +96,7 @@ int GetGlError(void);
 
 //////////////////////////////////////////////////////////////////////
 
-class GlTextureInterface;
+struct GlTextureInterface;
 
 struct GlDrawingInterface : public DrawingInterface {
   GlDrawingInterface(ContextGL& ctx);
@@ -347,7 +347,7 @@ struct PboSet {
 
   PboSet(size_t size);
   ~PboSet();
-  pboptr_t alloc();
+  pboptr_t alloc(GlTextureInterface* txi);
   void free(pboptr_t pbo);
   std::queue<pboptr_t> _pbos;
   std::set<pboptr_t> _pbos_perm;
@@ -375,8 +375,8 @@ constexpr uint16_t kRGBA_DXT3 = 0x83F2;
 constexpr uint16_t kRGBA_DXT5 = 0x83F3;
 constexpr GLuint PBOOBJBASE   = 0x12340000;
 
-class GlTextureInterface : public TextureInterface {
-public:
+struct GlTextureInterface : public TextureInterface {
+
   void TexManInit(void) override;
 
   pboptr_t _getPBO(size_t isize);
@@ -385,7 +385,6 @@ public:
 
   void bindTextureToUnit(const Texture* tex, GLenum tex_target, int tex_unit);
 
-private:
   bool _loadImageTexture(texture_ptr_t ptex, datablock_ptr_t inpdata);
 
   bool _loadXTXTexture(texture_ptr_t ptex, datablock_ptr_t inpdata);

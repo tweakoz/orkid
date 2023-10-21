@@ -245,7 +245,7 @@ PboSet::~PboSet() {
 ///////////////////////////////////////////////////////////////////////////////
 
 static std::atomic<int> ipbocount = 0;
-pboptr_t PboSet::alloc() {
+pboptr_t PboSet::alloc(GlTextureInterface* txi) {
   if (_pbos.empty()) {
     for (int i = 0; i < 4; i++) {
       auto new_pbo = std::make_shared<PboItem>();
@@ -263,7 +263,7 @@ pboptr_t PboSet::alloc() {
       // ??? persistent mapped objects
 
       #if defined(OPENGL_46)
-      if(mTargetGL._SUPPORTS_BUFFER_STORAGE){
+      if(txi->mTargetGL._SUPPORTS_BUFFER_STORAGE){
         u32 create_flags = GL_MAP_WRITE_BIT;
         create_flags |= GL_MAP_PERSISTENT_BIT;
         create_flags |= GL_MAP_COHERENT_BIT;
@@ -317,7 +317,7 @@ pboptr_t GlTextureInterface::_getPBO(size_t isize) {
   } else {
     pbs = it->second;
   }
-  return pbs->alloc();
+  return pbs->alloc(this);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
