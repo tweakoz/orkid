@@ -35,6 +35,15 @@ extern "C"
 namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
+static void _osxDisableMacOs(ContextGL* cgl){
+    cgl->_SUPPORTS_BINARY_PIPELINE = false;
+    cgl->_SUPPORTS_BUFFER_STORAGE = false;
+    cgl->_SUPPORTS_PERSISTENT_MAP = false;
+    cgl->_SUPPORTS_EXTERNAL_MEMORY_OBJECT = false;
+}
+
+/////////////////////////////////////////////////////////////////////////
+
 void setAlwaysOnTop(GLFWwindow *window) {
     id glfwWindow = glfwGetCocoaWindow(window);
     //id nsWindow = ((id(*)(id, SEL))objc_msgSend)(glfwWindow, sel_registerName("window"));
@@ -208,9 +217,7 @@ void ContextGL::initializeWindowContext( Window *pWin, CTXBASE* pctxbase  ) {
   mFbI.SetThisBuffer(pWin);
   _GL_RENDERER = (const char*) glGetString(GL_RENDERER);
   printf( "GL_RENDERER<%s>\n", _GL_RENDERER.c_str() );
-  _SUPPORTS_BINARY_PIPELINE = false;
-  _SUPPORTS_BUFFER_STORAGE = false;
- 
+  _osxDisableMacOs(this); 
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -277,8 +284,7 @@ void ContextGL::initializeLoaderContext() {
       // printf("resizing defaultRTG<%p>\n", _defaultRTG);
       _defaultRTG->Resize(w, h);
       mTargetDrawableSizeDirty = false;
-      _SUPPORTS_BINARY_PIPELINE = false;
-      _SUPPORTS_BUFFER_STORAGE = false;
+      _osxDisableMacOs(this);
     }
   };
 }

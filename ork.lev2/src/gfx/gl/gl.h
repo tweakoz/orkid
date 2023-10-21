@@ -336,6 +336,13 @@ struct GLTextureObject {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct PboItem {
+
+#if defined(OPENGL_46)
+  void copyPersistentMapped(const TextureInitData& tid, size_t length, const void* src_data);
+#endif
+
+  void copyWithTempMapped(const TextureInitData& tid, size_t length, const void* src_data);
+
   GLuint _handle = 0xffffffff;
   size_t _length = 0;
   void* _mapped  = nullptr;
@@ -347,6 +354,8 @@ struct PboSet {
 
   PboSet(size_t size);
   ~PboSet();
+
+
   pboptr_t alloc(GlTextureInterface* txi);
   void free(pboptr_t pbo);
   std::queue<pboptr_t> _pbos;
@@ -567,6 +576,8 @@ public:
   ContextGL* mpParentTarget;
   bool _SUPPORTS_BINARY_PIPELINE = true;
   bool _SUPPORTS_BUFFER_STORAGE = true;
+  bool _SUPPORTS_PERSISTENT_MAP = true;
+  bool _SUPPORTS_EXTERNAL_MEMORY_OBJECT = true;
   std::string _GL_RENDERER;
   
   std::stack<void*> mDCStack;

@@ -263,7 +263,7 @@ pboptr_t PboSet::alloc(GlTextureInterface* txi) {
       // ??? persistent mapped objects
 
       #if defined(OPENGL_46)
-      if(txi->mTargetGL._SUPPORTS_BUFFER_STORAGE){
+      if(txi->mTargetGL._SUPPORTS_PERSISTENT_MAP){
         u32 create_flags = GL_MAP_WRITE_BIT;
         create_flags |= GL_MAP_PERSISTENT_BIT;
         create_flags |= GL_MAP_COHERENT_BIT;
@@ -473,6 +473,46 @@ void GlTextureInterface::generateMipMaps(Texture* ptex) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+#if defined(OPENGL_46)
+
+  void PboItem::copyPersistentMapped(const TextureInitData& tid, size_t length, const void* src_data){
+    auto mapped   = _mapped;
+    size_t pbolen = _length;
+    GL_ERRORCHECK();
+    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, _handle);
+    GL_ERRORCHECK();
+    if (tid._truncation_length != 0) {
+      if (tid._truncation_length > pbolen) {
+        logerrchannel()->log(
+            "ERROR: PBO overflow trunclen<%zu> pbolen<%zu>", //
+            tid._truncation_length,                          //
+            pbolen);
+        OrkAssert(false);
+      }
+    }
+    memcpy_fast(mapped, src_buffer, dst_length);
+
+  }
+
+#endif
+
+///////////////////////////////////////////////////////////////////////////////
+
+  void PboItem::copyWithTempMapped(const TextureInitData& tid, size_t length, const void* src_data){
+    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, _handle);
+    GL_ERRORCHECK();
+    u32 map_flags = GL_MAP_WRITE_BIT;
+    map_flags |= GL_MAP_INVALIDATE_BUFFER_BIT;
+    map_flags |= GL_MAP_INVALIDATE_RANGE_BIT;
+    map_flags |= GL_MAP_UNSYNCHRONIZED_BIT;
+    void* mapped = glMapBufferRange(GL_PIXEL_UNPACK_BUFFER, 0, length, map_flags);
+    memcpy_fast(mapped, src_data, length);
+    glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
+    GL_ERRORCHECK();
+  }
+
+///////////////////////////////////////////////////////////////////////////////
+
 void GlTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid) {
   bool is_3d = (tid._d > 1);
 
@@ -565,43 +605,20 @@ void GlTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
     dst_length             = tid._truncation_length;
   }
 
-  ////////////////////////////////////////
-  // OpenGL4.6 - persistent mapped objects
-  ////////////////////////////////////////
-
+  
+  ///////////////////////////////////
 #if defined(OPENGL_46)
-
-  auto mapped   = pboitem->_mapped;
-  size_t pbolen = pboitem->_length;
-  GL_ERRORCHECK();
-  glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pboitem->_handle);
-  GL_ERRORCHECK();
-  if (tid._truncation_length != 0) {
-    if (tid._truncation_length > pbolen) {
-      logerrchannel()->log(
-          "ERROR: PBO overflow trunclen<%zu> pbolen<%zu>", //
-          tid._truncation_length,                          //
-          pbolen);
-      OrkAssert(false);
-    }
+  // OpenGL4.6 - persistent mapped objects
+  if(mTargetGL._SUPPORTS_PERSISTENT_MAP){
+    pboitem->copyPersistentMapped(tid,dst_length,src_buffer);
   }
-  memcpy_fast(mapped, src_buffer, dst_length);
-
+  else{
+    pboitem->copyWithTempMapped(tid,dst_length,src_buffer);
+  }
 #else
-
-  ///////////////////////////////////////////////////////////////////
-
-  glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pboitem->_handle);
-  GL_ERRORCHECK();
-  u32 map_flags = GL_MAP_WRITE_BIT;
-  map_flags |= GL_MAP_INVALIDATE_BUFFER_BIT;
-  map_flags |= GL_MAP_INVALIDATE_RANGE_BIT;
-  map_flags |= GL_MAP_UNSYNCHRONIZED_BIT;
-  void* mapped = glMapBufferRange(GL_PIXEL_UNPACK_BUFFER, 0, dst_length, map_flags);
-  memcpy_fast(mapped, src_buffer, dst_length);
-  glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
-  GL_ERRORCHECK();
+  pboitem->copyWithTempMapped(tid,dst_length,src_buffer);
 #endif
+  ///////////////////////////////////
 
   /*printf(
       "UPDATE IMAGE UNC iw<%d> ih<%d> id<%d> dst_length<%zu> pbo<%d> mem<%p>\n",

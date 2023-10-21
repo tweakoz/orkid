@@ -243,6 +243,15 @@ ContextGL::~ContextGL() {
 
 /////////////////////////////////////////////////////////////////////////
 
+static void _ixDisableVIRGL(ContextGL* cgl){
+    cgl->_SUPPORTS_BINARY_PIPELINE = false;
+    cgl->_SUPPORTS_BUFFER_STORAGE = false;
+    cgl->_SUPPORTS_PERSISTENT_MAP = false;
+    cgl->_SUPPORTS_EXTERNAL_MEMORY_OBJECT = false;
+}
+
+/////////////////////////////////////////////////////////////////////////
+
 void ContextGL::initializeWindowContext(Window* pWin, CTXBASE* pctxbase) {
   meTargetType = TargetType::WINDOW;
   ///////////////////////
@@ -259,11 +268,10 @@ void ContextGL::initializeWindowContext(Window* pWin, CTXBASE* pctxbase) {
   _GL_RENDERER = (const char*) glGetString(GL_RENDERER);
   printf( "GL_RENDERER<%s>\n", _GL_RENDERER.c_str() );
   if(_GL_RENDERER.find("virgl")!=std::string::npos){
-    _SUPPORTS_BINARY_PIPELINE = false;
-    _SUPPORTS_BUFFER_STORAGE = false;
+    _ixDisableVIRGL(this);
   }
   #if ! defined(OPENGL_46)
-    _SUPPORTS_BUFFER_STORAGE = false;
+    _ixDisableVIRGL(this);
   #endif
 
 }
@@ -462,7 +470,7 @@ void ContextGL::initializeLoaderContext() {
       _defaultRTG->Resize(w, h);
       mTargetDrawableSizeDirty = false;
       #if ! defined(OPENGL_46)
-        _SUPPORTS_BUFFER_STORAGE = false;
+          _ixDisableVIRGL(this);
       #endif
     }
   };
