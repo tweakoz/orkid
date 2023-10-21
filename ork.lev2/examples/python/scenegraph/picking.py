@@ -13,7 +13,8 @@ import pyopencl as cl
 mf = cl.mem_flags
 from orkengine.core import *
 from orkengine.lev2 import *
-from ork import host
+from obt import host
+tokens = CrcStringProxy()
 ################################################################################
 from pathlib import Path
 this_dir = Path(os.path.dirname(os.path.abspath(__file__)))
@@ -49,10 +50,10 @@ class PickingApp(_simsetup.SimApp):
   def __init__(self):
     super().__init__(False,instance_set_class)
   def onUiEvent(self,event):
-    #print("x<%d> y<%d> code<%d>"%(event.x,event.y,event.code))
+    print("x<%d> y<%d> code<%d>"%(event.x,event.y,event.code))
     #print("shift<%d> alt<%d> ctrl<%d>"%(event.shift,event.alt,event.ctrl))
     #print("left<%d> middle<%d> right<%d>"%(event.left,event.middle,event.right))
-    if True: #event.code==3:
+    if event.code==tokens.MOVE.hashed:
       picked = self.scene.pickWithScreenCoord(self.camera,vec2(event.x,event.y))
       if picked!=0xffffffffffffffff:
         #print("%s"%(hex(picked)))
@@ -66,4 +67,4 @@ class PickingApp(_simsetup.SimApp):
     pass
   ################################################
 app = PickingApp()
-app.qtapp.mainThreadLoop()
+app.ezapp.mainThreadLoop()
