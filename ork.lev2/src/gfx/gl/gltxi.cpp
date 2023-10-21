@@ -490,8 +490,7 @@ void GlTextureInterface::generateMipMaps(Texture* ptex) {
         OrkAssert(false);
       }
     }
-    memcpy_fast(mapped, src_buffer, dst_length);
-
+    memcpy_fast(mapped, src_data, length);
   }
 
 #endif
