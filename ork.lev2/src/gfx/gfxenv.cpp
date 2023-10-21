@@ -40,6 +40,15 @@ ork::lev2::Context* ork::lev2::contextForCurrentThread(){
 
 namespace ork::lev2 {
 
+bool GfxEnv::_bc7Disabled = false;
+
+bool GfxEnv::supportsBC7(){
+  return not _bc7Disabled;
+}
+void GfxEnv::disableBC7(){
+  _bc7Disabled = true;
+}
+
 int msaaEnumToInt( const MsaaSamples& samples ){
   int convsamples = 0;
   switch(samples){

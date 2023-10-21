@@ -40,6 +40,7 @@ static void _osxDisableMacOs(ContextGL* cgl){
     cgl->_SUPPORTS_BUFFER_STORAGE = false;
     cgl->_SUPPORTS_PERSISTENT_MAP = false;
     cgl->_SUPPORTS_EXTERNAL_MEMORY_OBJECT = false;
+    GfxEnv::disableBC7();
 }
 
 /////////////////////////////////////////////////////////////////////////
