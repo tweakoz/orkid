@@ -7,17 +7,18 @@
 
 #pragma once
 
+//#include <boost/filesystem.hpp>
 #include <ork/lev2/gfx/gfxmaterial.h>
 #include <ork/lev2/gfx/fx_pipeline.h>
 #include <ork/lev2/gfx/renderer/renderer.h>
 #include <ork/lev2/gfx/shadman.h>
 #include <ork/lev2/lev2_asset.h>
-#include <boost/filesystem.hpp>
 #include <ork/file/chunkfile.h>
 #include <ork/file/chunkfile.inl>
 
+//using namespace boost::filesystem;
+
 namespace ork::lev2 {
-using namespace boost::filesystem;
 using namespace std::literals;
 
 ///////////////////////////////////////////////////////////////////////////////

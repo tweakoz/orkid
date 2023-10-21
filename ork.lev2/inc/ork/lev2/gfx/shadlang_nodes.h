@@ -44,6 +44,14 @@ struct AstNode {
     return treeops(this).childAs<T>(index);
   }
   ///////////////////////////
+  template <typename T> bool hasChildOfType() {
+    return treeops(this).hasChildOfType<T>();
+  }
+  template <typename T> //
+  bool hasAncestorOfType() const {
+    return tree_constops(this).hasAncestorOfType<T>();
+  }
+  ///////////////////////////
   template <typename child_t> //
   astnode_ptr_t findFirstChildOfType() const {
     return tree_constops(this).findFirstChildOfType<child_t>();
@@ -212,6 +220,7 @@ DECLARE_STD_AST_CLASS_WPTR(AstNode,Translatable,translatable_ptr_t);
 
 DECLARE_STD_AST_CLASS(AstNode,DeclArgumentList);
 DECLARE_STD_AST_CLASS(AstNode,InterfaceLayout);
+DECLARE_STD_AST_CLASS(AstNode,InterfaceLayoutItem);
 DECLARE_STD_AST_CLASS(AstNode,InterfaceInput);
 DECLARE_STD_AST_CLASS(AstNode,InterfaceInputSemantic);
 DECLARE_STD_AST_CLASS(AstNode,InterfaceOutput);
@@ -297,6 +306,7 @@ DECLARE_STD_AST_CLASS(SemaExpression,SemaConstructorArguments);
 
 DECLARE_STD_AST_CLASS_WPTR(SemaExpression,SemaInherit,semainh_ptr_t);
 DECLARE_STD_AST_CLASS_WPTR(SemaInherit,SemaInheritLibrary, semainhlib_ptr_t);
+DECLARE_STD_AST_CLASS_WPTR(SemaInherit,SemaInheritTypeBlock, semainhtypblk_ptr_t);
 DECLARE_STD_AST_CLASS_WPTR(SemaInherit,SemaInheritUniformSet, semainhuniset_ptr_t);
 DECLARE_STD_AST_CLASS_WPTR(SemaInherit,SemaInheritUniformBlk, semainhuniblk_ptr_t);
 DECLARE_STD_AST_CLASS_WPTR(SemaInherit,SemaInheritStateBlock, semainhstblk_ptr_t);
@@ -333,6 +343,7 @@ DECLARE_STD_AST_CLASS(Statement,DiscardStatement);
 DECLARE_STD_AST_CLASS(Statement,EmptyStatement);
 //
 DECLARE_STD_AST_CLASS_WPTR(Translatable,LibraryBlock, libblock_ptr_t);
+DECLARE_STD_AST_CLASS_WPTR(Translatable,TypeBlock, typeblock_ptr_t);
 DECLARE_STD_AST_CLASS(Translatable,FxConfigDecl);
 DECLARE_STD_AST_CLASS_WPTR(Translatable,Shader, shader_ptr_t);
 DECLARE_STD_AST_CLASS(Translatable,PipelineInterface);
@@ -375,12 +386,14 @@ struct InheritanceTracker{
   void _processNode(astnode_ptr_t parent_node);
 
   using on_lib_fn_t = std::function<void(std::string, libblock_ptr_t)>;
+  using on_typ_fn_t = std::function<void(std::string, typeblock_ptr_t)>;
   using on_iface_fn_t = std::function<void(std::string, astnode_ptr_t)>;
   using on_uset_fn_t = std::function<void(std::string, astnode_ptr_t)>;
   using on_ublk_fn_t = std::function<void(std::string, astnode_ptr_t)>;
   using on_ext_fn_t = std::function<void(std::string,astnode_ptr_t)>;
 
   on_lib_fn_t _onInheritLibrary = nullptr;
+  on_typ_fn_t _onInheritTypes = nullptr;
   on_iface_fn_t _onInheritInterface = nullptr;
   on_uset_fn_t _onInheritUniformSet = nullptr;
   on_ublk_fn_t _onInheritUniformBlk = nullptr; 
@@ -389,16 +402,32 @@ struct InheritanceTracker{
   transunit_ptr_t _translation_unit;
   
   std::set<std::string> _set_inherited_libs;
+  std::set<std::string> _set_inherited_typs;
   std::set<std::string> _set_inherited_unisets;
   std::set<std::string> _set_inherited_uniblks;
   std::set<std::string> _set_inherited_interfaces;
   std::set<std::string> _set_inherited_extensions;
 
   std::vector<libblock_ptr_t> _inherited_libs;
+  std::vector<typeblock_ptr_t> _inherited_types;
   std::vector<astnode_ptr_t> _inherited_usets;
   std::vector<astnode_ptr_t> _inherited_blks;
   std::vector<astnode_ptr_t> _inherited_ifaces;
   std::vector<std::string> _inherited_exts;
+  size_t _stack_depth = 0;
 };
+
+inline std::string getSemaIdString(astnode_ptr_t node){
+  return node->typedValueForKey<std::string>("identifier_name").value();
+}
+inline int getSemaInteger(astnode_ptr_t node){
+  return atoi(node->typedValueForKey<std::string>("literal_value").value().c_str());
+}
+inline std::string childAsSemaIdString(astnode_ptr_t node, int ch){
+  return getSemaIdString(node->childAs<SemaIdentifier>(ch));
+}
+inline int childAsSemaInteger(astnode_ptr_t node, int ch){
+  return getSemaInteger(node->childAs<SemaIntegerLiteral>(ch));
+}
 
 } // namespace ork::lev2::shadlang::SHAST

@@ -2,12 +2,12 @@
 // FxConfigs
 ///////////////////////////////////////////////////////////////
 fxconfig fxcfg_default {
-  import "mathtools.i2";
-  import "misctools.i2";
-  import "envtools.i2";
-  import "brdftools.i2";
-  import "deftools.i2";
-  import "gbuftools.i2";
+  import "orkshader://mathtools.i2";
+  import "orkshader://misctools.i2";
+  import "orkshader://envtools.i2";
+  import "orkshader://brdftools.i2";
+  import "orkshader://deftools.i2";
+  import "orkshader://gbuftools.i2";
 ///////////////////////////////////////////////////////////////
 }
 // Interfaces
@@ -30,10 +30,7 @@ vertex_interface iface_v2uv : ub_vtx {
   }
 }
 ///////////////////////////////////////////////////////////////
-uniform_set ub_frg {
-  mat4 IVPArray[2];
-  mat4 VArray[2];
-  mat4 PArray[2];
+uniform_set ub_frg_samplers {
   //sampler2D MapAlbedoAo;
   //sampler2D MapNormalL;
   //sampler2D MapRufMtlAlpha;
@@ -46,23 +43,29 @@ uniform_set ub_frg {
   sampler2D MapLightingCookie;
   sampler2D MapShadowDepth;
   sampler3D MapVolTexA;
+}
+///////////////////////////////////////////////////////////////
+uniform_block ub_frg {
+  mat4 IVPArray[2];
+  mat4 VArray[2];
+  mat4 PArray[2];
+  vec4 ShadowParams;
   vec3 EyePostion;
   vec2 InvViewportSize; // inverse target size
-  float Time;
   vec2 NearFar;
+  vec2 Zndc2eye;
+  vec3 AmbientLevel;
+  float Time;
   int NumLights;
   int TileDim;
-  vec2 Zndc2eye;
   float SkyboxLevel;
   float SpecularLevel;
   float DiffuseLevel;
-  vec3 AmbientLevel;
   float SpecularMipBias;
   float EnvironmentMipBias;
   float EnvironmentMipScale;
   float DepthFogDistance;
   float DepthFogPower;
-  vec4 ShadowParams;
 }
 ///////////////////////////////////////////////////////////////
 uniform_block ub_light {
@@ -81,12 +84,11 @@ fragment_interface iface_f2uv {
 }
 ///////////////////////////////////////////////////////////////
 libblock lib_deferred
-  : ub_light
-  : ub_frg
   : lib_math
   : lib_envmapping
   : lib_cellnoise
   : lib_brdf
+  : lib_gbuf_types
   : lib_gbuf_decode
   : lib_def
   : lib_mmnoise {
@@ -256,14 +258,14 @@ libblock lib_deferred
     return l*depth_fogval;
   }
   /////////////////////////////////////////////////////////
-  vec3 TEST(WPosData wpd,GBufData gbd){
+  vec3 plTEST(WPosData wpd,GBufData gbd){
     LightCtx plc = lcalc1(wpd,gbd);
     return vec3(mod(gbd._linZ*0.1,1));
   }
   /////////////////////////////////////////////////////////
   vec3 pntlighting_untextured_simple(WPosData wpd,GBufData gbd) {
     //if( gbd._mask==1 ){
-      //return TEST(wpd,gbd);
+      //return plTEST(wpd,gbd);
     //}
     vec3 l       = vec3(0, 0, 0);
     if( gbd._mask==1 ){
@@ -685,7 +687,12 @@ fragment_interface iface_fdownsampledepthcluster {
   }
   outputs { uint out_depthclusters; }
 }
-fragment_shader ps_downsampledepthcluster : iface_fdownsampledepthcluster : lib_deferred {
+fragment_shader ps_downsampledepthcluster 
+  : iface_fdownsampledepthcluster 
+  : lib_deferred
+  : ub_frg
+  : ub_frg_samplers
+  : ub_light {
   vec2 base       = (gl_FragCoord.xy - vec2(0.5, 0.5)) * float(TileDim);
   uint clusterset = 0;
   for (int iy = 0; iy < TileDim; iy++) {
@@ -702,19 +709,31 @@ fragment_shader ps_downsampledepthcluster : iface_fdownsampledepthcluster : lib_
   out_depthclusters = clusterset;
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_baselight : iface_f2uv : lib_deferred {
+fragment_shader ps_baselight : iface_f2uv 
+  : lib_deferred
+  : ub_frg
+  : ub_frg_samplers
+  : ub_light {
   WPosData wpd = monoWPD();
  vec3 c = baselighting(wpd);
   out_clr    = vec4(0,0,0,0);//vec4(c*1.0/25.0, 1);
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_baselight_stereo : iface_f2uv : lib_deferred {
+fragment_shader ps_baselight_stereo : iface_f2uv 
+  : lib_deferred
+  : ub_frg
+  : ub_frg_samplers
+  : ub_light {
   WPosData wpd = stereoWPD();
   vec3 c       = baselighting(wpd);
   out_clr      = vec4(0,0,0,0);//vec4(c, 1);
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_pointlight_textured : iface_f2uv : lib_deferred {
+fragment_shader ps_pointlight_textured : iface_f2uv 
+  : lib_deferred
+  : ub_frg
+  : ub_frg_samplers
+  : ub_light {
   WPosData wpd = monoWPD();
   GBufData gbd = decodeGBUF(wpd);
   out_clr = vec4(pntlighting_textured_simple(wpd,gbd), 1);
@@ -726,27 +745,43 @@ fragment_shader ps_pointlight_textured : iface_f2uv : lib_deferred {
   /////////////////////////////////////////
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_pointlight_untextured : iface_f2uv : lib_deferred {
+fragment_shader ps_pointlight_untextured : iface_f2uv 
+  : lib_deferred
+  : ub_frg
+  : ub_frg_samplers
+  : ub_light {
   WPosData wpd = monoWPD();
   GBufData gbd = decodeGBUF(wpd);
   vec3 lcolor = pntlighting_untextured_simple(wpd,gbd);
   out_clr = vec4(lcolor,0);
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_pointlight_textured_stereo : iface_f2uv : lib_deferred {
+fragment_shader ps_pointlight_textured_stereo : iface_f2uv 
+  : lib_deferred
+  : ub_frg
+  : ub_frg_samplers
+  : ub_light {
   WPosData wpd = stereoWPD();
   GBufData gbd = decodeGBUF(wpd);
   out_clr = vec4(pntlighting_textured_simple(wpd,gbd), 1);
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_pointlight_untextured_stereo : iface_f2uv : lib_deferred {
+fragment_shader ps_pointlight_untextured_stereo : iface_f2uv 
+  : lib_deferred
+  : ub_frg
+  : ub_frg_samplers
+  : ub_light {
   WPosData wpd = stereoWPD();
   GBufData gbd = decodeGBUF(wpd);
   out_clr = vec4(pntlighting_untextured_simple(wpd,gbd), 1);
 }
 ///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_spotlight_untextured : iface_f2uv : lib_deferred {
+fragment_shader ps_spotlight_untextured : iface_f2uv 
+  : lib_deferred
+  : ub_frg
+  : ub_frg_samplers
+  : ub_light {
   WPosData wpd = monoWPD();
   GBufData gbd = decodeGBUF(wpd);
   out_clr = vec4(spotlighting_untextured_simple(wpd,gbd), 1);
@@ -758,7 +793,11 @@ fragment_shader ps_spotlight_untextured : iface_f2uv : lib_deferred {
   /////////////////////////////////////////
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_spotlight_untextured_stereo : iface_f2uv : lib_deferred {
+fragment_shader ps_spotlight_untextured_stereo : iface_f2uv 
+  : lib_deferred
+  : ub_frg
+  : ub_frg_samplers
+  : ub_light {
   WPosData wpd = stereoWPD();
   GBufData gbd = decodeGBUF(wpd);
   out_clr = vec4(spotlighting_untextured_simple(wpd,gbd), 1);
@@ -766,13 +805,21 @@ fragment_shader ps_spotlight_untextured_stereo : iface_f2uv : lib_deferred {
 ///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_spotlight_textured : iface_f2uv : lib_deferred {
+fragment_shader ps_spotlight_textured : iface_f2uv 
+  : lib_deferred
+  : ub_frg
+  : ub_frg_samplers
+  : ub_light {
   WPosData wpd = monoWPD();
   GBufData gbd = decodeGBUF(wpd);
   out_clr = vec4(spotlighting_textured_simple(wpd,gbd), 1);
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_spotlight_textured_stereo : iface_f2uv : lib_deferred {
+fragment_shader ps_spotlight_textured_stereo : iface_f2uv 
+  : lib_deferred
+  : ub_frg
+  : ub_frg_samplers
+  : ub_light {
   WPosData wpd = stereoWPD();
   GBufData gbd = decodeGBUF(wpd);
   out_clr = vec4(spotlighting_textured_simple(wpd,gbd), 1);
@@ -780,13 +827,21 @@ fragment_shader ps_spotlight_textured_stereo : iface_f2uv : lib_deferred {
 ///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_spotlight_textured_shadowed : iface_f2uv : lib_deferred {
+fragment_shader ps_spotlight_textured_shadowed : iface_f2uv 
+  : lib_deferred
+  : ub_frg
+  : ub_frg_samplers
+  : ub_light {
   WPosData wpd = monoWPD();
   GBufData gbd = decodeGBUF(wpd);
   out_clr = vec4(spotlighting_textured_shadowed(wpd,gbd), 1);
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_spotlight_textured_shadowed_stereo : iface_f2uv : lib_deferred {
+fragment_shader ps_spotlight_textured_shadowed_stereo : iface_f2uv 
+  : lib_deferred
+  : ub_frg
+  : ub_frg_samplers
+  : ub_light {
   WPosData wpd = stereoWPD();
   GBufData gbd = decodeGBUF(wpd);
   out_clr = vec4(spotlighting_textured_simple(wpd,gbd), 1);
@@ -794,32 +849,53 @@ fragment_shader ps_spotlight_textured_shadowed_stereo : iface_f2uv : lib_deferre
 ///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_spotdecal_textured : iface_f2uv : lib_deferred {
+fragment_shader ps_spotdecal_textured : iface_f2uv 
+  : lib_deferred
+  : ub_frg
+  : ub_frg_samplers
+  : ub_light {
   WPosData wpd = monoWPD();
   GBufData gbd = decodeGBUF(wpd);
   vec4 oc = spotdecaling_textured_simple(wpd,gbd);
   out_clr = vec4(oc.xyz,1);
-  if( oc.w < 0.5)
+  if( oc.w < 0.5){
     discard;
+  }
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_spotdecal_textured_stereo : iface_f2uv : lib_deferred {
+fragment_shader ps_spotdecal_textured_stereo : iface_f2uv 
+  : lib_deferred
+  : ub_frg
+  : ub_frg_samplers
+  : ub_light {
   WPosData wpd = stereoWPD();
   GBufData gbd = decodeGBUF(wpd);
   out_clr = vec4(1,1,0,1);
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_environment : iface_f2uv : lib_deferred  {
+fragment_shader ps_environment : iface_f2uv
+  : lib_deferred
+  : ub_frg
+  : ub_frg_samplers
+  : ub_light {
   WPosData wpd = monoWPD();
   out_clr = vec4(pbrEnvironmentLighting(wpd),1);
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_environmentSDF : iface_f2uv : lib_deferred  {
+fragment_shader ps_environmentSDF : iface_f2uv 
+  : lib_deferred
+  : ub_frg
+  : ub_frg_samplers
+  : ub_light {
   WPosData wpd = monoWPD();
   out_clr = vec4(pbrEnvironmentLightingSDF(wpd),1);
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_environment_stereo : iface_f2uv : lib_deferred  {
+fragment_shader ps_environment_stereo : iface_f2uv 
+  : lib_deferred
+  : ub_frg
+  : ub_frg_samplers
+  : ub_light {
   WPosData wpd = stereoWPD();
   vec3 c = pbrEnvironmentLighting(wpd);
   out_clr = vec4(c,1);

@@ -222,7 +222,7 @@ void ScreenOutputCompositingNode::composite(CompositorDrawData& drawdata) {
           ViewportRect extents(0, 0, context->mainSurfaceWidth(), context->mainSurfaceHeight());
           fbi->pushViewport(extents);
           fbi->pushScissor(extents);
-          this_buf->Render2dQuadEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 1, 1));
+          //TODOVULKAN this_buf->Render2dQuadEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 1, 1));
           fbi->popViewport();
           fbi->popScissor();
           mtl.end(framedata);

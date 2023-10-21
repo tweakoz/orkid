@@ -33,6 +33,7 @@ struct SpirvUniformSetItem {
   std::string _identifier;
   bool _is_array = false;
   size_t _array_length = 0;
+  size_t _offset = 0;
 };
 struct SpirvUniformSetSampler {
   size_t _binding_id = -1;
@@ -53,6 +54,7 @@ struct SpirvUniformBlockItem {
   std::string _identifier;
   bool _is_array = false;
   size_t _array_length = 0;
+  size_t _offset = 0;
 };
 struct SpirvUniformBlock {
   std::string _name;
@@ -66,7 +68,8 @@ using spirvcompilerglobals_constptr_t = std::shared_ptr<const SpirvCompilerGloba
 struct SpirvCompilerGlobals {
   SpirvCompilerGlobals();
   static spirvcompilerglobals_constptr_t instance();
-  std::unordered_map<std::string, size_t> _data_sizes;
+  std::unordered_map<std::string, size_t> _io_data_sizes;
+  std::unordered_map<std::string, size_t> _block_data_sizes;
   std::unordered_map<std::string, std::string> _id_renames;
 };
 
@@ -85,6 +88,7 @@ private:
   void _processGlobalRenames();
 
   void _inheritLibrary(libblock_ptr_t lib_node);
+  void _inheritTypes(typeblock_ptr_t typ_node);
   void _inheritUniformSet(std::string unisetname, spirvuniset_ptr_t uniset_node);
   void _inheritUniformBlk(std::string uniblkname, spirvuniblk_ptr_t uniblk_node);
   void _inheritIO(astnode_ptr_t interface_node);
@@ -93,10 +97,19 @@ private:
   void _beginShader(shader_ptr_t sh);
   void _compileShader(shaderc_shader_kind shader_type);
 
+  std::string _ifLayoutHeader(astnode_ptr_t layout_node, int iloc=-1);
+  std::string _ifTypedId(astnode_ptr_t tid_node);
+
+  std::string _ifIoItem(astnode_ptr_t layout_node, 
+                        astnode_ptr_t tid_node,
+                        std::string direction,
+                        size_t& IO_index);
+
   transunit_ptr_t _transu;
   shader_ptr_t _shader;
   miscgroupnode_ptr_t _shader_group;
   miscgroupnode_ptr_t _interface_group;
+  miscgroupnode_ptr_t _types_group;
   miscgroupnode_ptr_t _extension_group;
   miscgroupnode_ptr_t _uniforms_group;
   miscgroupnode_ptr_t _libraries_group;

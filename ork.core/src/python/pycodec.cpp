@@ -9,6 +9,8 @@
 #include <ork/kernel/opq.h>
 #include <ork/kernel/fixedstring.hpp>
 #include <ork/python/pycodec.h>
+#include <iostream>
+
 namespace py = pybind11;
 using namespace pybind11::literals;
 
@@ -73,7 +75,7 @@ varval_t PyCodecImpl::decode(const py::object& val) const {
       return rval;
     }
   }
-  std::cout << "BadValue: " << val.cast<std::string>() << std::endl;
+  sprintf("BadValue: %s\n", (val.cast<std::string>()).c_str());
   throw std::runtime_error("pycodec-decode: unregistered type");
   OrkAssert(false); // unknown type!
   return rval;

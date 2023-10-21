@@ -52,9 +52,6 @@ FxShaderParamBufferMapping::FxShaderParamBufferMapping() {
 FxShaderParamBufferMapping::~FxShaderParamBufferMapping() {
   assert(_mappedaddr == nullptr);
 }
-void FxShaderParamBufferMapping::unmap() {
-  _fxi->unmapParamBuffer(this);
-}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -68,7 +65,6 @@ void FxShader::addParameter(const FxShaderParam* param) {
 void FxShader::addParameterBlock(const FxShaderParamBlock* block) {
   _parameterBlockByName[block->_name] = block;
 }
-#if defined(ENABLE_COMPUTE_SHADERS)
 void FxShader::addComputeShader(const FxComputeShader* csh) {
   _computeShaderByName[csh->_name] = csh;
 }
@@ -76,8 +72,7 @@ FxComputeShader* FxShader::findComputeShader(const std::string& named) {
   auto it = _computeShaderByName.find(named);
   return const_cast<FxComputeShader*>((it != _computeShaderByName.end()) ? it->second : nullptr);
 }
-#endif
-#if defined(ENABLE_SHADER_STORAGE)
+
 void FxShader::addStorageBlock(const FxShaderStorageBlock* block) {
   _storageBlockByName[block->_name] = block;
 }
@@ -93,8 +88,6 @@ FxShaderStorageBufferMapping::~FxShaderStorageBufferMapping() {
 void FxShaderStorageBufferMapping::unmap() {
   _ci->unmapStorageBuffer(this);
 }
-
-#endif
 
 ///////////////////////////////////////////////////////////////////////////////
 

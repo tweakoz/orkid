@@ -261,9 +261,7 @@ VkContext::VkContext() {
   _gbi = std::make_shared<VkGeometryBufferInterface>(this);
   _txi = std::make_shared<VkTextureInterface>(this);
   _fxi = std::make_shared<VkFxInterface>(this);
-#if defined(ENABLE_COMPUTE_SHADERS)
   _ci = std::make_shared<VkComputeInterface>(this);
-#endif
 }
 
 ///////////////////////////////////////////////////////
@@ -323,11 +321,10 @@ TextureInterface* VkContext::TXI() {
 }
 ///////////////////////////////////////////////////////
 
-#if defined(ENABLE_COMPUTE_SHADERS)
 ComputeInterface* VkContext::CI() {
   return _ci.get();
 };
-#endif
+
 ///////////////////////////////////////////////////////
 
 DrawingInterface* VkContext::DWI() {
@@ -409,9 +406,11 @@ void VkContext::_doBeginFrame() {
     l();
 
   if (not _first_frame) {
-    auto swapchain = _fbi->_swapchain;
-    auto fence     = swapchain->_fence;
-    fence->wait();
+    if(_is_visual_frame){
+      auto swapchain = _fbi->_swapchain;
+      auto fence     = swapchain->_fence;
+      fence->wait();
+    }
   }
 
   ////////////////////////
@@ -438,7 +437,8 @@ void VkContext::_doBeginFrame() {
   _pendingOneShotCommands.clear();
   /////////////////////////////////////////
 
-  _fbi->PushRtGroup(_fbi->_main_rtg.get());
+  if(_is_visual_frame)
+    _fbi->PushRtGroup(_fbi->_main_rtg.get());
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -470,13 +470,15 @@ void VkContext::_doEndFrame() {
   // end main renderpass (and pop main rtg)
   ////////////////////////
 
-  _fbi->PopRtGroup(false);
+  if(_is_visual_frame)
+    _fbi->PopRtGroup(false);
 
   ////////////////////////
   // main_rtg -> presentation layout
   ////////////////////////
 
-  _fbi->_enq_transitionMainRtgToPresent();
+  if(_is_visual_frame)
+    _fbi->_enq_transitionMainRtgToPresent();
 
   ////////////////////////
   // done with primary command buffer for this frame
@@ -493,8 +495,13 @@ void VkContext::_doEndFrame() {
   // submit primary command buffer for this frame
   ///////////////////////////////////////////////////////
 
-  std::vector<VkSemaphore> waitStartRenderSemaphores = {_fbi->_swapChainImageAcquiredSemaphore};
-  std::vector<VkPipelineStageFlags> waitStages       = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+  std::vector<VkSemaphore> waitStartRenderSemaphores;
+  std::vector<VkPipelineStageFlags> waitStages;
+  
+  if(_is_visual_frame){
+    waitStartRenderSemaphores.push_back({_fbi->_swapChainImageAcquiredSemaphore});
+    waitStages.push_back({VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT});
+  }
 
   VkSubmitInfo SI = {};
   initializeVkStruct(SI, VK_STRUCTURE_TYPE_SUBMIT_INFO);
@@ -510,29 +517,33 @@ void VkContext::_doEndFrame() {
   fence->reset();
   vkQueueSubmit(_vkqueue_graphics, 1, &SI, fence->_vkfence);
 
+  primary_cb()->_secondary_cmdbuffers.clear();
+
   ///////////////////////////////////////////////////////
   // Present !
   ///////////////////////////////////////////////////////
 
-  std::vector<VkSemaphore> waitPresentSemaphores = {_renderingCompleteSemaphore};
+  if(_is_visual_frame){
+    std::vector<VkSemaphore> waitPresentSemaphores = {_renderingCompleteSemaphore};
 
-  VkPresentInfoKHR PRESI{};
-  initializeVkStruct(PRESI, VK_STRUCTURE_TYPE_PRESENT_INFO_KHR);
-  PRESI.waitSemaphoreCount = waitPresentSemaphores.size();
-  PRESI.pWaitSemaphores    = waitPresentSemaphores.data();
-  PRESI.swapchainCount     = 1;
-  PRESI.pSwapchains        = &swapchain->_vkSwapChain;
-  PRESI.pImageIndices      = &swapchain->_curSwapWriteImage;
+    VkPresentInfoKHR PRESI{};
+    initializeVkStruct(PRESI, VK_STRUCTURE_TYPE_PRESENT_INFO_KHR);
+    PRESI.waitSemaphoreCount = waitPresentSemaphores.size();
+    PRESI.pWaitSemaphores    = waitPresentSemaphores.data();
+    PRESI.swapchainCount     = 1;
+    PRESI.pSwapchains        = &swapchain->_vkSwapChain;
+    PRESI.pImageIndices      = &swapchain->_curSwapWriteImage;
 
-  auto status = vkQueuePresentKHR(_vkqueue_graphics, &PRESI); // Non-Blocking
-  switch (status) {
-    case VK_SUCCESS:
-      break;
-    case VK_SUBOPTIMAL_KHR:
-    case VK_ERROR_OUT_OF_DATE_KHR: {
-      // OrkAssert(false);
-      //  need to recreate swap chain
-      break;
+    auto status = vkQueuePresentKHR(_vkqueue_graphics, &PRESI); // Non-Blocking
+    switch (status) {
+      case VK_SUCCESS:
+        break;
+      case VK_SUBOPTIMAL_KHR:
+      case VK_ERROR_OUT_OF_DATE_KHR: {
+        // OrkAssert(false);
+        //  need to recreate swap chain
+        break;
+      }
     }
   }
 
@@ -818,7 +829,11 @@ vkswapchaincaps_ptr_t VkContext::_swapChainCapsForSurface(VkSurfaceKHR surface) 
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkContext::_doResizeMainSurface(int iw, int ih) {
-  scheduleOnBeginFrame([this, iw, ih]() { _fbi->_main_rtg->Resize(iw, ih); });
+  scheduleOnBeginFrame([this, iw, ih]() { 
+    if(_fbi->_main_rtg){
+      _fbi->_main_rtg->Resize(iw, ih);
+    }
+  });
 }
 
 

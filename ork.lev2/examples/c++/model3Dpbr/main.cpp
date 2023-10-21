@@ -28,7 +28,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/lev2/imgui/imgui.h>
 #include <ork/lev2/imgui/imgui_impl_glfw.h>
-#include <ork/lev2/imgui/imgui_impl_opengl3.h>
+//#include <ork/lev2/imgui/imgui_impl_opengl3.h>
 #include <ork/lev2/imgui/imgui_ged.inl>
 #include <ork/lev2/imgui/imgui_internal.h>
 ///////////////////////////////////////////////////////////////////////////////
@@ -132,7 +132,7 @@ struct GpuResources {
 
     _spikee_instances = std::make_shared<instances_t>();
 
-    ctx->debugPushGroup("main.onGpuInit");
+    //ctx->debugPushGroup("main.onGpuInit");
 
     _spikee_modelasset = asset::AssetManager<XgmModelAsset>::load("data://tests/pbr1/pbr1");
 
@@ -201,7 +201,7 @@ struct GpuResources {
     _lightsnode  = sg_layer->createDrawableNode("lightmeshes-node", _lights_drawable);
     _spikee_node = sg_layer->createDrawableNode("meshes-node", _spikee_instanced_drawable);
 
-    ctx->debugPopGroup();
+    //ctx->debugPopGroup();
   }
 
   std::shared_ptr<instances_t> _spikee_instances;
@@ -261,7 +261,7 @@ int main(int argc, char** argv, char** envp) {
   bool use_forward = vars["forward"].as<bool>();
   bool use_vr = vars["usevr"].as<bool>();
   //////////////////////////////////////////////////////////
-  init_data->_imgui = true;
+//  init_data->_imgui = true;
   init_data->_application_name = "ork.model3dpbr";
   //////////////////////////////////////////////////////////
   auto ezapp  = OrkEzApp::create(init_data);

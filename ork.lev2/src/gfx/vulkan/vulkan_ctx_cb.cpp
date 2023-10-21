@@ -11,9 +11,15 @@
 namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
 
-commandbuffer_ptr_t VkContext::_beginRecordCommandBuffer(renderpass_ptr_t rpass) {
+commandbuffer_ptr_t VkContext::_beginRecordCommandBuffer(renderpass_ptr_t rpass,std::string name) {
   auto cmdbuf          = std::make_shared<CommandBuffer>();
-  cmdbuf->_debugName = "_beginRecordCommandBuffer";
+  if( name == "" ){
+    cmdbuf->_debugName = "_beginRecordCommandBuffer";
+  }
+  else {
+    cmdbuf->_debugName = name;
+  }
+
   auto vkcmdbuf = _createVkCommandBuffer(cmdbuf.get());
   _recordCommandBuffer = cmdbuf;
 
@@ -102,6 +108,7 @@ void VkContext::_doEnqueueSecondaryCommandBuffer(commandbuffer_ptr_t cmdbuf) {
     OrkAssert(false);
   }
   vkCmdExecuteCommands(primary_cb()->_vkcmdbuf, 1, &impl->_vkcmdbuf);
+  primary_cb()->_secondary_cmdbuffers.push_back(cmdbuf);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

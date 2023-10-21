@@ -59,9 +59,13 @@ void VkFrameBufferInterface::_setScissor(int iX, int iY, int iW, int iH) {
 
 ///////////////////////////////////////////////////////
 void VkFrameBufferInterface::_doBeginFrame() {
-  _acquireSwapChainForFrame();
-  _active_rtgroup = _main_rtg.get();
-
+  if(_contextVK->_is_visual_frame){
+    _acquireSwapChainForFrame();
+    _active_rtgroup = _main_rtg.get();
+  }
+  else{
+    _active_rtgroup = nullptr;
+  }
 }
 
 ///////////////////////////////////////////////////////
@@ -84,13 +88,6 @@ bool VkFrameBufferInterface::captureToTexture(const CaptureBuffer& capbuf, Textu
 
 ///////////////////////////////////////////////////////
 
-bool VkFrameBufferInterface::captureAsFormat(const RtBuffer* inpbuf, CaptureBuffer* buffer, EBufferFormat destfmt) {
-  OrkAssert(false);
-    return false;
-}
-
-///////////////////////////////////////////////////////
-
 void VkFrameBufferInterface::GetPixel(const fvec4& rAt, PixelFetchContext& ctx) {
   OrkAssert(false);
 }
@@ -98,7 +95,7 @@ void VkFrameBufferInterface::GetPixel(const fvec4& rAt, PixelFetchContext& ctx) 
 ///////////////////////////////////////////////////////
 
 void VkFrameBufferInterface::rtGroupClear(RtGroup* rtg) {
-  OrkAssert(false);
+  //OrkAssert(false);
 }
 
 ///////////////////////////////////////////////////////

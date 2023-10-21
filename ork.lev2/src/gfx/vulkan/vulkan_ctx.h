@@ -84,9 +84,7 @@ struct VkFrameBufferInterface;
 struct VkGeometryBufferInterface;
 struct VkTextureInterface;
 struct VkFxInterface;
-#if defined(ENABLE_COMPUTE_SHADERS)
 struct VkComputeInterface;
-#endif
 //
 struct VulkanTextureObject;
 struct VulkanFxShaderObject;
@@ -135,9 +133,7 @@ using vktxi_ptr_t    = std::shared_ptr<VkTextureInterface>;
 using vktxi_rawptr_t = VkTextureInterface*;
 
 using vkfxi_ptr_t = std::shared_ptr<VkFxInterface>;
-#if defined(ENABLE_COMPUTE_SHADERS)
 using vkci_ptr_t = std::shared_ptr<VkComputeInterface>;
-#endif
 //
 using vktexobj_ptr_t        = std::shared_ptr<VulkanTextureObject>;
 using vkfxsfile_ptr_t       = std::shared_ptr<VkFxShaderFile>;
@@ -223,6 +219,11 @@ struct VulkanVertexInterface;
 struct VulkanVertexInterfaceInput;
 using vkvertexinterfaceinput_ptr_t = std::shared_ptr<VulkanVertexInterfaceInput>;
 using vkvertexinterface_ptr_t = std::shared_ptr<VulkanVertexInterface>;
+
+struct VulkanGeometryInterface;
+struct VulkanGeometryInterfaceInput;
+using vkgeometryinterfaceinput_ptr_t = std::shared_ptr<VulkanGeometryInterfaceInput>;
+using vkgeometryinterface_ptr_t = std::shared_ptr<VulkanGeometryInterface>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -328,9 +329,25 @@ struct VulkanVertexInterfaceInput{
   size_t _datasize = 0;
 };
 struct VulkanVertexInterface{
+  using input_t = VulkanVertexInterfaceInput;
   std::string _name;
   vkvertexinterface_ptr_t _parent;
   std::vector<vkvertexinterfaceinput_ptr_t> _inputs;
+  int _pipeline_bits = -1;
+  uint64_t _hash = 0;
+};
+
+struct VulkanGeometryInterfaceInput{
+  std::string _datatype;
+  std::string _identifier;
+  std::string _semantic;
+  size_t _datasize = 0;
+};
+struct VulkanGeometryInterface{
+  using input_t = VulkanGeometryInterfaceInput;
+  std::string _name;
+  vkgeometryinterface_ptr_t _parent;
+  std::vector<vkgeometryinterfaceinput_ptr_t> _inputs;
   int _pipeline_bits = -1;
   uint64_t _hash = 0;
 };
@@ -346,6 +363,9 @@ struct VkCommandBufferImpl {
   CommandBuffer* _parent = nullptr;
   bool _recorded = false;
   vkcontext_rawptr_t _contextVK;
+
+  std::vector<commandbuffer_ptr_t> _secondary_cmdbuffers;
+
 };
 
 struct VulkanRenderPass {
@@ -373,6 +393,7 @@ struct VklRtBufferImpl {
 
   void transitionToRenderTarget(vkcontext_rawptr_t ctxVK, vkcmdbufimpl_ptr_t cb);
   void transitionToTexture(vkcontext_rawptr_t ctxVK, vkcmdbufimpl_ptr_t cb);
+  void transitionToHostRead(vkcontext_rawptr_t ctxVK, vkcmdbufimpl_ptr_t cb);
 
   void setLayout(VkImageLayout layout);
   void _replaceImage(
@@ -482,10 +503,11 @@ struct VulkanMemoryForBuffer {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct VulkanBuffer {
-  VulkanBuffer(vkcontext_rawptr_t ctxVK, size_t length, VkBufferUsageFlags usage);
+  VulkanBuffer(vkcontext_rawptr_t ctxVK, size_t length, VkBufferUsageFlags usage, std::string name="");
   ~VulkanBuffer();
 
   void copyFromHost(const void* src, size_t length);
+  void copyToHost(void* dst, size_t length);
   void* map(size_t offset, size_t length, VkMemoryMapFlags flags);
   void unmap();
 
@@ -531,7 +553,7 @@ using vkfence_obj_ptr_t = std::shared_ptr<VulkanFenceObject>;
 ///////////////////////////////////////////////////////////////////////////////
 
 struct VulkanImageObject {
-  VulkanImageObject(vkcontext_rawptr_t ctx, vkimagecreateinfo_ptr_t cinfo);
+  VulkanImageObject(vkcontext_rawptr_t ctx, vkimagecreateinfo_ptr_t cinfo, std::string name="");
   ~VulkanImageObject();
   vkcontext_rawptr_t _ctx;
   vkimagecreateinfo_ptr_t _cinfo;
@@ -568,6 +590,7 @@ struct VulkanTextureObject {
 struct VkFxShaderUniformSetItem {
   std::string _datatype;
   std::string _identifier;
+  size_t _offset = 0;
   std::shared_ptr<FxShaderParam> _orkparam;
 };
 ///////////////////////////////////////////////////////////////////////////////
@@ -619,6 +642,7 @@ using vkdescriptors_ptr_t = std::shared_ptr<VkDescriptorSetBindings>;
 struct VkFxShaderUniformBlkItem {
   std::string _datatype;
   std::string _identifier;
+  size_t _offset = 0;
   std::shared_ptr<FxShaderParam> _orkparam;
 };
 struct VkFxShaderUniformBlk {
@@ -637,6 +661,7 @@ struct VkFxShaderFile {
   std::unordered_map<std::string, vkfxsuniset_ptr_t> _vk_uniformsets;
   std::unordered_map<std::string, vkfxsuniblk_ptr_t> _vk_uniformblks;
   std::unordered_map<std::string, vkvertexinterface_ptr_t> _vk_vtxinterfaces;
+  std::unordered_map<std::string, vkgeometryinterface_ptr_t> _vk_geointerfaces;
 };
 
 struct VulkanFxShaderObject {
@@ -656,6 +681,7 @@ struct VulkanFxShaderObject {
 
   uint64_t _STAGE = 0;
   VkPushConstantRange _vkpc_range;
+  std::string _name;
 };
 
 struct VkParamSetItem {
@@ -678,6 +704,7 @@ struct VkFxShaderProgram {
   vkfxsobj_ptr_t _comshader;
 
   vkvertexinterface_ptr_t _vertexinterface;
+  vkgeometryinterface_ptr_t _geometryinterface;
 
   vkfxpushconstantblk_ptr_t _pushConstantBlock;
 
@@ -689,7 +716,6 @@ struct VkFxShaderProgram {
   std::unordered_map<fxparam_constptr_t, vktexobj_ptr_t > _textures_by_orkparam;
   std::unordered_map<size_t, vktexobj_ptr_t > _textures_by_binding;
   int _pipeline_bits_prg = -1;
-  int _pipeline_bits_vif = -1;
   int _pipeline_bits_composite = -1;
 
   std::unordered_map<std::string, vkfxsuniset_ptr_t> _vk_uniformsets;
@@ -884,15 +910,11 @@ struct VkGeometryBufferInterface final : public GeometryBufferInterface {
       int ivbase,
       int ivcount) final;
 
-#if defined(ENABLE_COMPUTE_SHADERS)
-
   void DrawPrimitiveEML(
       const FxShaderStorageBuffer* SSBO, //
       PrimitiveType eType = PrimitiveType::NONE,
       int ivbase          = 0,
       int ivcount         = 0) final;
-
-#endif
 
   void
   DrawIndexedPrimitiveEML(const VertexBufferBase& VBuf, const IndexBufferBase& IdxBuf, PrimitiveType eType)
@@ -1027,10 +1049,8 @@ struct VkFxInterface final : public FxInterface {
   const FxShaderParam* parameter(FxShader* hfx, const std::string& name) final;
   const FxShaderParamBlock* parameterBlock(FxShader* hfx, const std::string& name) final;
 
-#if defined(ENABLE_COMPUTE_SHADERS)
   const FxComputeShader* computeShader(FxShader* hfx, const std::string& name) final;
   const FxShaderStorageBlock* storageBlock(FxShader* hfx, const std::string& name) final;
-#endif
 
   void BindParamBool(const FxShaderParam* hpar, const bool bval) final;
   void BindParamInt(const FxShaderParam* hpar, const int ival) final;
@@ -1064,7 +1084,7 @@ struct VkFxInterface final : public FxInterface {
   // ubo
   FxShaderParamBuffer* createParamBuffer(size_t length) final;
   parambuffermappingptr_t mapParamBuffer(FxShaderParamBuffer* b, size_t base, size_t length) final;
-  void unmapParamBuffer(FxShaderParamBufferMapping* mapping) final;
+  void unmapParamBuffer(parambuffermappingptr_t mapping) final;
   void bindParamBlockBuffer(const FxShaderParamBlock* block, FxShaderParamBuffer* buffer) final;
 
   void _doPushRasterState(rasterstate_ptr_t rs) final;
@@ -1089,13 +1109,12 @@ struct VkFxInterface final : public FxInterface {
   lev2::rasterstate_ptr_t _default_rasterstate;
   vkpipeline_obj_ptr_t _currentPipeline;
   std::unordered_map<uint64_t, int> _vk_vtxinterface_cache;
+  std::unordered_map<uint64_t, int> _vk_geointerface_cache;
   std::array<vkdescriptorset_ptr_t, 4> _active_gfx_descriptorSets;
   std::array<vkvtxbuf_ptr_t, 4> _active_vbs;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-
-#if defined(ENABLE_COMPUTE_SHADERS)
 
 struct VkComputeInterface : public ComputeInterface {
 
@@ -1119,7 +1138,6 @@ struct VkComputeInterface : public ComputeInterface {
   vkfxi_ptr_t _fxi;
 };
 
-#endif
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
@@ -1153,7 +1171,7 @@ public:
 
   //////////////////////////////////////////////
 
-  commandbuffer_ptr_t _beginRecordCommandBuffer(renderpass_ptr_t rpass) final;
+  commandbuffer_ptr_t _beginRecordCommandBuffer(renderpass_ptr_t rpass,std::string name) final;
   void _endRecordCommandBuffer(commandbuffer_ptr_t cmdbuf) final;
   void _beginRenderPass(renderpass_ptr_t) final;
   void _endRenderPass(renderpass_ptr_t) final;
@@ -1173,9 +1191,7 @@ public:
   GeometryBufferInterface* GBI() final;
   FrameBufferInterface* FBI() final;
   TextureInterface* TXI() final;
-#if defined(ENABLE_COMPUTE_SHADERS)
   ComputeInterface* CI() final;
-#endif
   DrawingInterface* DWI() final;
 
   ///////////////////////////////////////////////////////////////////////
@@ -1296,10 +1312,7 @@ public:
   vkgbi_ptr_t _gbi;
   vktxi_ptr_t _txi;
   vkfxi_ptr_t _fxi;
-
-#if defined(ENABLE_COMPUTE_SHADERS)
   vkci_ptr_t _ci;
-#endif
 };
 
 ///////////////////////////////////////////////////////////////////////////

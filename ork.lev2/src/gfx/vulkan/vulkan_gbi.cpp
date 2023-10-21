@@ -204,9 +204,13 @@ vkvertexinputconfig_ptr_t VkGeometryBufferInterface::vertexInputState(vkvtxbuf_p
 
     auto it = vsc->_item_by_semantic.find(semantic);
     if( it == vsc->_item_by_semantic.end() ){
-      printf( "MISSING: semantic<%s> shader_datatype<%s>\n"
+
+      auto vbformatstr = EVtxStreamFormatToName(vb_format);
+      printf( "MISSING: vif<%s> semantic<%s> shader_datatype<%s> vbfmt<%s>\n"
+            , vif->_name.c_str()
             , semantic.c_str()
-            , shader_datatype.c_str() );
+            , shader_datatype.c_str()
+            , vbformatstr.c_str() );
       OrkAssert(false);
     }
 
@@ -405,8 +409,6 @@ void VkGeometryBufferInterface::DrawPrimitiveEML(
 
   auto& CB = _contextVK->_cmdbufcur_gfx;
 
-  OrkAssert(false==CB->_parent->_no_draw);
-
   ///////////////////////
   // get primclass (input to pipeline search)
   ///////////////////////
@@ -524,7 +526,6 @@ void VkGeometryBufferInterface::DrawIndexedPrimitiveEML(
 
 ///////////////////////////////////////////////////////////////////////////////
 
-#if defined(ENABLE_COMPUTE_SHADERS)
 void VkGeometryBufferInterface::DrawPrimitiveEML(
     const FxShaderStorageBuffer* SSBO, //
     PrimitiveType eType,
@@ -532,7 +533,6 @@ void VkGeometryBufferInterface::DrawPrimitiveEML(
     int ivcount) {
   OrkAssert(false);
 }
-#endif
 
 void VkGeometryBufferInterface::DrawInstancedIndexedPrimitiveEML(
     const VertexBufferBase& vtx_buf,
@@ -571,135 +571,6 @@ void VkGeometryBufferInterface::_doBeginFrame() {
   // OrkAssert(false);
 }
 
-
-/*
-vertex_strconfig_ptr_t VkGeometryBufferInterface::XXXX(EVtxStreamFormat format) {
-
-  auto it = XXX.find(format);
-  OrkAssert(it == XXX.end());
-
-  auto config            = std::make_shared<VertexStreamConfig>();
-  XXX[format] = config;
-
-  config->_pipeline_bits = _vertexInputConfigs.size();
-  OrkAssert(config->_pipeline_bits <= 16); // validate we only used 4 pipeline_bits
-  _vertexInputConfigs[format]  = config;
-  config->_binding_description = VkVertexInputBindingDescription{
-      0, // binding
-      0, // stride
-      VK_VERTEX_INPUT_RATE_VERTEX,
-  };
-  switch (format) {
-    case EVtxStreamFormat::V12N12B12T8C4: {
-      config->_binding_description.stride = sizeof(SVtxV12N12B12T8C4);
-      config->_attribute_descriptions     = std::vector<VkVertexInputAttributeDescription>{
-              VkVertexInputAttributeDescription{
-              // V12
-              0, // location
-              0, // binding
-              VK_FORMAT_R32G32B32_SFLOAT,
-              0, // offset
-          },
-              VkVertexInputAttributeDescription{
-              // N12
-              1, // location
-              0, // binding
-              VK_FORMAT_R32G32B32_SFLOAT,
-              12, // offset
-          },
-              VkVertexInputAttributeDescription{
-              // B12
-              2, // location
-              0, // binding
-              VK_FORMAT_R32G32B32_SFLOAT,
-              24, // offset
-          },
-              VkVertexInputAttributeDescription{
-              // T8
-              3, // location
-              0, // binding
-              VK_FORMAT_R32G32_SFLOAT,
-              36, // offset
-          },
-              VkVertexInputAttributeDescription{
-              // C4
-              4, // location
-              0, // binding
-              VK_FORMAT_R8G8B8A8_UNORM,
-              44, // offset
-          },
-      };
-      break;
-    }
-    case EVtxStreamFormat::V12C4T16: {
-      static_assert(sizeof(SVtxV12C4T16) == 32);
-      config->_binding_description.stride = sizeof(SVtxV12C4T16);
-      config->_attribute_descriptions     = std::vector<VkVertexInputAttributeDescription>{
-              VkVertexInputAttributeDescription{
-              // V12
-              0, // location
-              0, // binding
-              VK_FORMAT_R32G32B32_SFLOAT,
-              0, // offset
-          },
-              VkVertexInputAttributeDescription{
-              // C4
-              1, // location
-              0, // binding
-              VK_FORMAT_R8G8B8A8_UNORM,
-              12, // offset
-          },
-              VkVertexInputAttributeDescription{
-              // T16
-              2, // location
-              0, // binding
-              VK_FORMAT_R32G32B32A32_SFLOAT,
-              16, // offset
-          }};
-      break;
-    }
-    case EVtxStreamFormat::V16T16C16:{
-      static_assert(sizeof(SVtxV16T16C16) == 48);
-      config->_binding_description.stride = sizeof(SVtxV16T16C16);
-      config->_attribute_descriptions     = std::vector<VkVertexInputAttributeDescription>{
-              VkVertexInputAttributeDescription{
-              // V16
-              0, // location
-              0, // binding
-              VK_FORMAT_R32G32B32A32_SFLOAT,
-              0, // offset
-          },
-              VkVertexInputAttributeDescription{
-              // T16
-              1, // location
-              0, // binding
-              VK_FORMAT_R32G32B32A32_SFLOAT,
-              16, // offset
-          },
-              VkVertexInputAttributeDescription{
-              // C16
-              2, // location
-              0, // binding
-              VK_FORMAT_R32G32B32A32_SFLOAT,
-              32, // offset
-          }
-      };
-      break;
-    }
-    default:
-      OrkAssert(false);
-      break;
-  }
-  //VkPipelineVertexInputStateCreateInfo& vis = config->_vertex_input_state;
-  //initializeVkStruct(vis, VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO);
-  //vis.vertexBindingDescriptionCount   = 1;
-  //vis.pVertexBindingDescriptions      = &config->_binding_description;
-  //vis.vertexAttributeDescriptionCount = config->_attribute_descriptions.size();
-  //vis.pVertexAttributeDescriptions    = config->_attribute_descriptions.data();
-  
-  return config;
-}
-*/
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2::vulkan
 ///////////////////////////////////////////////////////////////////////////////

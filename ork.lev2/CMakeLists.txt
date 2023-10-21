@@ -124,7 +124,7 @@ ENDIF()
 target_link_libraries(ork_lev2 PUBLIC ${libs} )
 target_link_libraries(ork_lev2 PRIVATE assimp audiofile shaderc_shared )
 
-target_link_libraries(ork_lev2 LINK_PRIVATE boost_filesystem  )
+target_link_libraries(ork_lev2 LINK_PRIVATE Boost::filesystem )
 
 ###################################
 # intel specific

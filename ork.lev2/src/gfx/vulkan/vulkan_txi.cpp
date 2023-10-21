@@ -64,7 +64,8 @@ void VkTextureInterface::generateMipMaps(Texture* ptex) {
     // vktex->_imgobj = std::make_shared<VulkanImageObject>(_contextVK, imageInfo);
   }
 
-  vktex->_loadCB   = _contextVK->beginRecordCommandBuffer(nullptr);
+  vktex->_loadCB   = _contextVK->beginRecordCommandBuffer(nullptr,"VkTextureInterface::generateMipMaps");
+
   auto cmdbuf_impl = vktex->_loadCB->_impl.getShared<VkCommandBufferImpl>();
   auto vk_cmdbuf   = cmdbuf_impl->_vkcmdbuf;
 
@@ -188,7 +189,7 @@ void VkTextureInterface::generateMipMaps(Texture* ptex) {
 
   _contextVK->onFenceCrossed([=]() {
     //vktex->_staging_buffers.erase(staging_buffer);
-    vktex->_loadCB = nullptr;
+    //vktex->_loadCB = nullptr;
   });
 
   /////////////////////////////////////
@@ -203,6 +204,7 @@ void VkTextureInterface::_createFromCompressedLoadReq(texloadreq_ptr_t req) {
   auto ptex = req->ptex;
   printf("xxx _createFromCompressedLoadReq<%p:%s>\n", (void*)ptex.get(), ptex->_debugName.c_str());
   ptex->_debugName = "VkTextureInterface::_createFromCompressedLoadReq";
+
   auto vktex       = ptex->_impl.makeShared<VulkanTextureObject>(this);
   auto chain       = req->_cmipchain;
   size_t num_mips  = chain->_levels.size();
@@ -213,9 +215,10 @@ void VkTextureInterface::_createFromCompressedLoadReq(texloadreq_ptr_t req) {
   // Create a single VkImage with all mip levels
   auto imageInfo   = makeVKICI(iwidth, iheight, 1, format, num_mips);
   imageInfo->usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-  vktex->_imgobj   = std::make_shared<VulkanImageObject>(_contextVK, imageInfo);
+  vktex->_imgobj   = std::make_shared<VulkanImageObject>(_contextVK, imageInfo, "imgmemcfclr");
 
-  vktex->_loadCB   = _contextVK->beginRecordCommandBuffer(nullptr);
+  vktex->_loadCB   = _contextVK->beginRecordCommandBuffer(nullptr, "VkTextureInterface::_createFromCompressedLoadReq");
+
   auto cmdbuf_impl = vktex->_loadCB->_impl.getShared<VkCommandBufferImpl>();
   auto vk_cmdbuf   = cmdbuf_impl->_vkcmdbuf;
 
@@ -239,7 +242,7 @@ void VkTextureInterface::_createFromCompressedLoadReq(texloadreq_ptr_t req) {
         vk_cmdbuf, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, barrier.get());
 
     // Copy the mip level data from the staging buffer to the image
-    auto staging_buffer = std::make_shared<VulkanBuffer>(_contextVK, level_length, VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
+    auto staging_buffer = std::make_shared<VulkanBuffer>(_contextVK, level_length, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, "staging");
     staging_buffer->copyFromHost(level_data, level_length);
     vktex->_staging_buffers.insert(staging_buffer);
     VkBufferImageCopy region = {};
@@ -291,8 +294,8 @@ void VkTextureInterface::_createFromCompressedLoadReq(texloadreq_ptr_t req) {
   /////////////////////////////////////
 
   _contextVK->onFenceCrossed([=]() {
-    vktex->_staging_buffers.clear();
-    vktex->_loadCB = nullptr;
+    //vktex->_staging_buffers.clear();
+    //vktex->_loadCB = nullptr;
   });
 
   /////////////////////////////////////
@@ -315,7 +318,8 @@ Texture* VkTextureInterface::createFromMipChain(MipChain* from_chain) {
 
   auto imageInfo = makeVKICI(from_chain->_width, from_chain->_height, 1, format, num_levels);
 
-  vktex->_loadCB   = _contextVK->beginRecordCommandBuffer(nullptr);
+  vktex->_loadCB   = _contextVK->beginRecordCommandBuffer(nullptr,"VkTextureInterface::createFromMipChain");
+
   auto cmdbuf_impl = vktex->_loadCB->_impl.getShared<VkCommandBufferImpl>();
   auto vk_cmdbuf   = cmdbuf_impl->_vkcmdbuf;
 
@@ -357,7 +361,7 @@ Texture* VkTextureInterface::createFromMipChain(MipChain* from_chain) {
     // map staging memory and copy
     /////////////////////////////////////
 
-    auto staging_buffer = std::make_shared<VulkanBuffer>(_contextVK, level_length, VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
+    auto staging_buffer = std::make_shared<VulkanBuffer>(_contextVK, level_length, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,"staging");
     staging_buffer->copyFromHost(level_data, level_length);
     vktex->_staging_buffers.insert(staging_buffer);
     VkBufferImageCopy region = {};
@@ -436,8 +440,8 @@ Texture* VkTextureInterface::createFromMipChain(MipChain* from_chain) {
   /////////////////////////////////////
 
   _contextVK->onFenceCrossed([=]() {
-    vktex->_staging_buffers.clear();
-    vktex->_loadCB = nullptr;
+    //vktex->_staging_buffers.clear();
+    //vktex->_loadCB = nullptr;
   });
 
   /////////////////////////////////////
@@ -459,7 +463,7 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   // map staging memory and copy
   /////////////////////////////////////
 
-  auto staging_buffer = std::make_shared<VulkanBuffer>(_contextVK, tid.computeDstSize(), VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
+  auto staging_buffer = std::make_shared<VulkanBuffer>(_contextVK, tid.computeDstSize(), VK_BUFFER_USAGE_TRANSFER_SRC_BIT, "staging");
   staging_buffer->copyFromHost(tid._data, tid._truncation_length);
   vktex->_staging_buffers.insert(staging_buffer);
 
@@ -502,7 +506,8 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   // transition to transfer dst (for copy)
   /////////////////////////////////////
 
-  vktex->_loadCB   = _contextVK->beginRecordCommandBuffer(nullptr);
+  vktex->_loadCB   = _contextVK->beginRecordCommandBuffer(nullptr,"VkTextureInterface::initTextureFromData");
+
   auto cmdbuf_impl = vktex->_loadCB->_impl.getShared<VkCommandBufferImpl>();
   auto vk_cmdbuf   = cmdbuf_impl->_vkcmdbuf;
 
@@ -573,8 +578,8 @@ void VkTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   /////////////////////////////////////
 
   _contextVK->onFenceCrossed([=]() {
-    vktex->_staging_buffers.erase(staging_buffer);
-    vktex->_loadCB = nullptr;
+    //vktex->_staging_buffers.erase(staging_buffer);
+    //vktex->_loadCB = nullptr;
   });
 
   /////////////////////////////////////
@@ -656,7 +661,8 @@ void VkTextureInterface::_initTextureFromRtBuffer(RtBuffer* rtbuffer) {
   // transition to transfer dst (for copy)
   /////////////////////////////////////
 
-  auto cmdbuf      = _contextVK->beginRecordCommandBuffer(nullptr);
+  auto cmdbuf      = _contextVK->beginRecordCommandBuffer(nullptr,"VkTextureInterface::_initTextureFromRtBuffer");
+
   auto cmdbuf_impl = cmdbuf->_impl.getShared<VkCommandBufferImpl>();
   auto vk_cmdbuf   = cmdbuf_impl->_vkcmdbuf;
 

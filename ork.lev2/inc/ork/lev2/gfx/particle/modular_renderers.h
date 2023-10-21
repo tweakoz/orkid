@@ -43,11 +43,9 @@ public:
   vtx_set_streak_t _vertexSetterStreak;
   fvec4 _color;
 
-#if defined(ENABLE_COMPUTE_SHADERS)
   FxShaderStorageBuffer* _streakcu_vertex_io_buffer    = nullptr;
   const FxShaderStorageBlock* _streakcu_storage_block  = nullptr;
   const FxComputeShader* _streakcu_shader              = nullptr;
-#endif
 
 
 };

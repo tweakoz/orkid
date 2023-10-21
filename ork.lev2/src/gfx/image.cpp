@@ -224,14 +224,24 @@ void Image::compressDefault(CompressedImage& imgout) const {
 #if defined(__APPLE__) or defined(ORK_ARCHITECTURE_ARM_64)
   compressRGBA(imgout);
 #else
-  compressBC7(imgout);
+  if(GfxEnv::supportsBC7()){
+    compressBC7(imgout);
+  }
+  else{
+    compressRGBA(imgout);
+  }
 #endif
 }
 CompressedImageMipChain Image::compressedMipChainDefault() const {
 #if defined(__APPLE__) or defined(ORK_ARCHITECTURE_ARM_64)
   return compressedMipChainRGBA();
 #else
-  return compressedMipChainBC7();
+  if(GfxEnv::supportsBC7()){
+    return compressedMipChainBC7();
+  }
+  else{
+    return compressedMipChainRGBA();
+  }
 #endif
 }
 

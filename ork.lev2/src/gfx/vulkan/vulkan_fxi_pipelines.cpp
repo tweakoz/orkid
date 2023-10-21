@@ -57,7 +57,7 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(
   auto shprog  = _currentVKPASS->_vk_program;
 
   uint64_t sh_pbits = _pipelineBitsForShader(shprog);
-  sh_pbits = check_pb_range(sh_pbits, 16);
+  sh_pbits = check_pb_range(sh_pbits, 24);
 
   uint64_t rs_pbits = check_pb_range(vkrstate->_pipeline_bits, 8);
   auto rpass = _contextVK->_renderpasses.back();
@@ -68,7 +68,7 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(
                          | (rtg_pbits << 4) //
                          | (pc_pbits << 8) //
                          | (sh_pbits << 16) //
-                         | (rs_pbits << 32);
+                         | (rs_pbits << 40);
 
   ////////////////////////////////////////////////////
   // find or create pipeline
@@ -98,6 +98,8 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(
     std::vector<VkPipelineShaderStageCreateInfo> stages;
     if (shprog->_vtxshader)
       stages.push_back(shprog->_vtxshader->_shaderstageinfo);
+    if (shprog->_geoshader)
+      stages.push_back(shprog->_geoshader->_shaderstageinfo);
     if (shprog->_frgshader)
       stages.push_back(shprog->_frgshader->_shaderstageinfo);
 
@@ -497,20 +499,22 @@ VkFxShaderProgram::VkFxShaderProgram(VkFxShaderFile* file)
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkFxShaderProgram::bindDescriptorTexture(fxparam_constptr_t param, const Texture* pTex) {
-  vktexobj_ptr_t vk_tex;
-  if (auto as_to = pTex->_impl.tryAsShared<VulkanTextureObject>()) {
-    vk_tex = as_to.value();
-  } else {
-    printf( "No Texture impl tex<%p:%s>\n", pTex, pTex->_debugName.c_str() );
-    //OrkAssert(false);
-    return;
+  if(pTex){
+    vktexobj_ptr_t vk_tex;
+    if (auto as_to = pTex->_impl.tryAsShared<VulkanTextureObject>()) {
+      vk_tex = as_to.value();
+    } else {
+      printf( "No Texture impl tex<%p:%s>\n", pTex, pTex->_debugName.c_str() );
+      //OrkAssert(false);
+      return;
+    }
+    auto it = _samplers_by_orkparam.find(param);
+    OrkAssert(it != _samplers_by_orkparam.end());
+    size_t binding_index                = it->second;
+    _textures_by_orkparam[param]        = vk_tex;
+    _textures_by_binding[binding_index] = vk_tex;
+    //printf( "binding_index<%zu>\n", binding_index );
   }
-  auto it = _samplers_by_orkparam.find(param);
-  OrkAssert(it != _samplers_by_orkparam.end());
-  size_t binding_index                = it->second;
-  _textures_by_orkparam[param]        = vk_tex;
-  _textures_by_binding[binding_index] = vk_tex;
-  //printf( "binding_index<%zu>\n", binding_index );
 }
 
 ///////////////////////////////////////////////////////////////////////////////

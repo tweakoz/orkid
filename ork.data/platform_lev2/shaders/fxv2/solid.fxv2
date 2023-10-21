@@ -30,6 +30,17 @@ vertex_interface iface_vdefault {
   inputs {
     vec3 position : POSITION;
     vec4 vtxcolor : COLOR0;
+    vec2 uv0 : TEXCOORD0;
+  }
+  outputs {
+    vec4 frg_clr;
+    vec2 frg_uv0;
+  }
+}
+vertex_interface iface_vdefault_n {
+  inputs {
+    vec3 position : POSITION;
+    vec4 vtxcolor : COLOR0;
     vec3 vtxnormal : NORMAL;
     vec2 uv0 : TEXCOORD0;
   }
@@ -208,13 +219,13 @@ vertex_shader vs_debuguv : iface_vdefault : ublock_vtx {
   frg_clr     = vec4(uv0,0,1);
   frg_uv0     = uv0;
 }
-vertex_shader vs_wldnormal : iface_vdefault : ublock_vtx {
+vertex_shader vs_wldnormal : iface_vdefault_n : ublock_vtx {
   gl_Position = MatMVP * vec4(position,1);
   vec3 n = vtxnormal + vec3(1,1,1);
   frg_clr     = vec4(n*0.5,1);
   frg_uv0     = uv0;
 }
-vertex_shader vs_objnormal : iface_vdefault : ublock_vtx {
+vertex_shader vs_objnormal : iface_vdefault_n : ublock_vtx {
   gl_Position = MatMVP * vec4(position,1);
 
   vec3 n = vtxnormal + vec3(1,1,1);

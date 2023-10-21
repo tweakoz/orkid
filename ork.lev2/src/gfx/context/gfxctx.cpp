@@ -40,7 +40,8 @@ void Context::describeX(class_t* clazz) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Context::beginFrame(void) {
+void Context::beginFrame(bool visual) {
+  _is_visual_frame = visual;
   _doBeginFrame();
 }
 
@@ -52,8 +53,8 @@ void Context::endFrame(void) {
 
 /////////////////////////////////////////////////////////////////////////
 
-commandbuffer_ptr_t Context::beginRecordCommandBuffer(renderpass_ptr_t rpass){
-  return _beginRecordCommandBuffer(rpass);
+commandbuffer_ptr_t Context::beginRecordCommandBuffer(renderpass_ptr_t rpass,std::string name){
+  return _beginRecordCommandBuffer(rpass,name);
 }
 void Context::endRecordCommandBuffer(commandbuffer_ptr_t cmdbuf){
   _endRecordCommandBuffer(cmdbuf);

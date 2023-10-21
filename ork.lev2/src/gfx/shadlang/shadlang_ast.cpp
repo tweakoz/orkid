@@ -122,6 +122,26 @@ void InheritanceTracker::_processNode(astnode_ptr_t node) {
         _onInheritLibrary(INHID,LIB);
       }
     }
+    else{
+      // library already inherited
+    }
+  }
+  //////////////////////////////////////////////////////////////////////
+  else if (auto as_typ = std::dynamic_pointer_cast<SemaInheritTypeBlock>(node)) {
+    auto INHID = as_typ->typedValueForKey<std::string>("inherit_id").value();
+    auto it = _set_inherited_typs.find(INHID);
+    if( it == _set_inherited_typs.end() ){
+      _set_inherited_typs.insert(INHID);
+      auto TYP   = _translation_unit->find<TypeBlock>(INHID);
+      OrkAssert(TYP);
+      _inherited_types.push_back(TYP);
+      if(_onInheritTypes){
+        _onInheritTypes(INHID,TYP);
+      }
+    }
+    else{
+      // typeblock already inherited
+    }
   }
   //////////////////////////////////////////////////////////////////////
   else if (auto as_vif = std::dynamic_pointer_cast<SemaInheritVertexInterface>(node)) {
@@ -134,6 +154,26 @@ void InheritanceTracker::_processNode(astnode_ptr_t node) {
       _inherited_ifaces.push_back(IFACE);
       if(_onInheritInterface)
         _onInheritInterface(INHID,IFACE);
+    }
+    else{
+      // vertex interface already inherited
+    }
+  }
+  //////////////////////////////////////////////////////////////////////
+  else if (auto as_gif = std::dynamic_pointer_cast<SemaInheritGeometryInterface>(node)) {
+    auto INHID = as_gif->typedValueForKey<std::string>("inherit_id").value();
+    auto it = _set_inherited_interfaces.find(INHID);
+    if( it == _set_inherited_interfaces.end() ){
+      _set_inherited_interfaces.insert(INHID);
+      auto IFACE = _translation_unit->find<GeometryInterface>(INHID);
+      OrkAssert(IFACE);
+      _inherited_ifaces.push_back(IFACE);
+      if(_onInheritInterface){
+        _onInheritInterface(INHID,IFACE);
+      }
+    }
+    else{
+      // geometry interface already inherited
     }
   }
   //////////////////////////////////////////////////////////////////////
@@ -148,18 +188,8 @@ void InheritanceTracker::_processNode(astnode_ptr_t node) {
       if(_onInheritInterface)
         _onInheritInterface(INHID,IFACE);
     }
-  }
-  //////////////////////////////////////////////////////////////////////
-  else if (auto as_gif = std::dynamic_pointer_cast<SemaInheritGeometryInterface>(node)) {
-    auto INHID = as_gif->typedValueForKey<std::string>("inherit_id").value();
-    auto it = _set_inherited_interfaces.find(INHID);
-    if( it == _set_inherited_interfaces.end() ){
-      _set_inherited_interfaces.insert(INHID);
-      auto IFACE = _translation_unit->find<GeometryInterface>(INHID);
-      OrkAssert(IFACE);
-      _inherited_ifaces.push_back(IFACE);
-      if(_onInheritInterface)
-        _onInheritInterface(INHID,IFACE);
+    else{
+      // fragment interface already inherited
     }
   }
   //////////////////////////////////////////////////////////////////////
@@ -173,6 +203,9 @@ void InheritanceTracker::_processNode(astnode_ptr_t node) {
       _inherited_ifaces.push_back(IFACE);
       if(_onInheritInterface)
         _onInheritInterface(INHID,IFACE);
+    }
+    else{
+      // compute interface already inherited
     }
   }
   //////////////////////////////////////////////////////////////////////
@@ -188,6 +221,9 @@ void InheritanceTracker::_processNode(astnode_ptr_t node) {
         _onInheritUniformSet(INHID, ast_uset);
       }
     }
+    else{
+      // uniform set already inherited
+    }
   }
   //////////////////////////////////////////////////////////////////////
   else if (auto as_ublk = std::dynamic_pointer_cast<SemaInheritUniformBlk>(node)) {
@@ -200,6 +236,9 @@ void InheritanceTracker::_processNode(astnode_ptr_t node) {
       if( _onInheritUniformBlk ){
         _onInheritUniformBlk(INHID, ast_ublk);
       }
+    }
+    else{
+      // uniform block already inherited
     }
   }
   //////////////////////////////////////////////////////////////////////
@@ -217,6 +256,9 @@ void InheritanceTracker::_processNode(astnode_ptr_t node) {
         _onInheritExtension(ext_name,as_ext);
       }
     }
+    else{
+      // extension already inherited
+    }
   }
   else{
     OrkAssert(false);
@@ -225,6 +267,7 @@ void InheritanceTracker::_processNode(astnode_ptr_t node) {
 /////////////////////////////////////////////////////////////////////////////////////////////////
 void InheritanceTracker::fetchInheritances(astnode_ptr_t parent_node) {
 
+  _stack_depth++;
   for (auto c : parent_node->_children) {
     //////////////////////////////////////////////////////////////////////
     if (auto as_lib = std::dynamic_pointer_cast<SemaInheritLibrary>(c)) {
@@ -235,6 +278,14 @@ void InheritanceTracker::fetchInheritances(astnode_ptr_t parent_node) {
       _processNode(as_lib);
     }
     //////////////////////////////////////////////////////////////////////
+    else if (auto as_typ = std::dynamic_pointer_cast<SemaInheritTypeBlock>(c)) {
+      auto INHID = as_typ->typedValueForKey<std::string>("inherit_id").value();
+      auto TYP   = _translation_unit->find<TypeBlock>(INHID);
+      OrkAssert(TYP);
+      fetchInheritances(TYP);
+      _processNode(as_typ);
+    }
+    //////////////////////////////////////////////////////////////////////
     else if (auto as_vif = std::dynamic_pointer_cast<SemaInheritVertexInterface>(c)) {
       auto INHID = as_vif->typedValueForKey<std::string>("inherit_id").value();
       auto IFACE = _translation_unit->find<VertexInterface>(INHID);
@@ -243,20 +294,20 @@ void InheritanceTracker::fetchInheritances(astnode_ptr_t parent_node) {
       _processNode(as_vif);
     }
     //////////////////////////////////////////////////////////////////////
-    else if (auto as_fif = std::dynamic_pointer_cast<SemaInheritFragmentInterface>(c)) {
-      auto INHID = as_fif->typedValueForKey<std::string>("inherit_id").value();
-      auto IFACE = _translation_unit->find<FragmentInterface>(INHID);
-      OrkAssert(IFACE);
-      fetchInheritances(IFACE);
-      _processNode(as_fif);
-    }
-    //////////////////////////////////////////////////////////////////////
     else if (auto as_gif = std::dynamic_pointer_cast<SemaInheritGeometryInterface>(c)) {
       auto INHID = as_gif->typedValueForKey<std::string>("inherit_id").value();
       auto IFACE = _translation_unit->find<GeometryInterface>(INHID);
       OrkAssert(IFACE);
       fetchInheritances(IFACE);
       _processNode(as_gif);
+    }
+    //////////////////////////////////////////////////////////////////////
+    else if (auto as_fif = std::dynamic_pointer_cast<SemaInheritFragmentInterface>(c)) {
+      auto INHID = as_fif->typedValueForKey<std::string>("inherit_id").value();
+      auto IFACE = _translation_unit->find<FragmentInterface>(INHID);
+      OrkAssert(IFACE);
+      fetchInheritances(IFACE);
+      _processNode(as_fif);
     }
     //////////////////////////////////////////////////////////////////////
     else if (auto as_cif = std::dynamic_pointer_cast<SemaInheritComputeInterface>(c)) {
@@ -291,6 +342,7 @@ void InheritanceTracker::fetchInheritances(astnode_ptr_t parent_node) {
       _processNode(as_ext); // non-recursive
     }
   }
+  _stack_depth--;
 }
 
 

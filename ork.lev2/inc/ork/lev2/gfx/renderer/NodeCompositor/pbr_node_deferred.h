@@ -23,11 +23,8 @@ class DeferredCompositingNode;
 
 struct DeferredContext {
 
-#if defined(ENABLE_COMPUTE_SHADERS)
   static constexpr int KTILEDIMXY = 64;
-#else
-  static constexpr int KTILEDIMXY = 64;
-#endif
+
   //static constexpr float KNEAR = 0.1f;
   //static constexpr float KFAR  = 100000.0f;
   ////////////////////////////////////////////////////////////////////
@@ -105,9 +102,7 @@ struct DeferredContext {
   const FxShaderTechnique* _tekSpotDecalingTexturedStereo = nullptr;
   //
 
-#if defined(ENABLE_COMPUTE_SHADERS)
   FxComputeShader* _lightcollectcomputeshader = nullptr;
-#endif
 
   const FxShaderParam* _parMatIVPArray = nullptr;
   const FxShaderParam* _parMatPArray   = nullptr;

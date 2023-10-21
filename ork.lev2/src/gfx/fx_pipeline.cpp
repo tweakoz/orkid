@@ -61,6 +61,7 @@ void FxPipeline::wrappedDrawCall(const RenderContextInstData& RCID, void_lambda_
 int FxPipeline::beginBlock(const RenderContextInstData& RCID) {
   auto context    = RCID._RCFD->GetTarget();
   auto FXI        = context->FXI();
+  OrkAssert(_technique != nullptr);
   return FXI->BeginBlock(_technique, RCID);
 }
 ///////////////////////////////////////////////////////////////////////////////

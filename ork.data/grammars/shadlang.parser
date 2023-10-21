@@ -84,7 +84,7 @@ CastExpression <| sel {
 }|>
 
 ParensExpression <|[
-    [ L_PAREN Expression R_PAREN ]
+    [ L_PAREN opt{Expression} R_PAREN ]
 ]|>
 
 PostfixExpression <|[
@@ -350,8 +350,21 @@ LibraryBlock <|[
     L_CURLY
     zom{ 
         sel{
-            StructDecl
             FunctionDef2
+            [KW_PRAGMA_TYPELIB SEMICOLON]
+        }
+    }
+    R_CURLY
+]|>
+
+TypeBlock <|[
+    KW_TYPEBLOCK
+    [ IDENTIFIER ] : "typeblock_name"
+    zom{InheritListItem} : "typ_dependencies"
+    L_CURLY
+    zom{ 
+        sel{
+            StructDecl
             [KW_PRAGMA_TYPELIB SEMICOLON]
         }
     }
@@ -418,10 +431,11 @@ InterfaceLayout  <|[
 ]|>
 
 InterfaceInput <| sel{
-    [ opt{ InterfaceLayout } TypedIdentifier SEMICOLON ]
-    [ TypedIdentifier COLON IDENTIFIER SEMICOLON ]
-    [ TypedIdentifier L_SQUARE R_SQUARE SEMICOLON ]
-    [ InterfaceLayout SEMICOLON ]
+    [ InterfaceLayout TypedIdentifier SEMICOLON ] // input with layout
+    [ InterfaceLayout SEMICOLON ] // layout only
+    [ TypedIdentifier SEMICOLON ] // input only
+    [ TypedIdentifier COLON IDENTIFIER SEMICOLON ] // input with semantic
+    [ TypedIdentifier L_SQUARE R_SQUARE SEMICOLON ] // unsized array
 }|>
 
 InterfaceInputs <|[
@@ -434,8 +448,9 @@ InterfaceInputs <|[
 ]|>
 
 InterfaceOutput <| sel {
-    [ opt{InterfaceLayout} TypedIdentifier SEMICOLON ]
-    [ InterfaceLayout SEMICOLON ]
+    [ InterfaceLayout TypedIdentifier SEMICOLON ] // output with layout
+    [ InterfaceLayout SEMICOLON ] // layout only
+    [ TypedIdentifier SEMICOLON ] // output only
 }|>
 
 InterfaceOutputs <|[
@@ -618,6 +633,7 @@ Translatable <|
     Technique
     FxConfigDecl 
     LibraryBlock
+    TypeBlock
   }
 |>
 

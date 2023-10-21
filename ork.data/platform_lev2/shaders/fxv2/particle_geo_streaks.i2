@@ -1,0 +1,113 @@
+import "orkshader://particle_geo_common.i2";
+///////////////////////////////////////////////////////////////
+typeblock types_streak_typesGEO {
+  struct StreakInput {
+    vec3 pos;
+    vec3 vel;
+    vec3 cnrm;
+    vec2 lw;
+  };
+  struct StreakOutput {
+    vec4 pos0;
+    vec4 pos1;
+    vec4 pos2;
+    vec4 pos3;
+  };
+}
+///////////////////////////////////////////////////////////////
+vertex_interface vface_streakGEO : ublk_vtx {
+  inputs {
+    vec4 position : POSITION;
+    vec3 normal : NORMAL;
+    vec3 velocity : BINORMAL;
+    vec2 lw : TEXCOORD0; // length and width
+    vec2 ra : TEXCOORD1; // random and age
+  }
+  outputs {
+    vec3 geo_cnrm; // NOT an array
+    vec3 geo_vel; // NOT an array
+    vec2 geo_lw; // NOT an array
+    vec2 geo_ra; // NOT an array
+  }
+}
+///////////////////////////////////////////////////////////////
+geometry_interface gface_streakGEO //
+  : gface_baseGEO { //
+
+  // inputs passed from vertex shader
+
+  inputs {
+    vec3 geo_cnrm;
+    vec3 geo_vel;
+    vec2 geo_lw;
+    vec2 geo_ra;
+  }
+
+  outputs {
+    vec4 frg_clr;
+    vec2 frg_uv0;
+    vec2 frg_uv1;
+  }
+}
+///////////////////////////////////////////////////////////////
+vertex_shader vs_streakGEO : vface_streakGEO {
+  gl_Position = position;
+  geo_cnrm = normal;
+  geo_vel  = velocity;
+  geo_lw   = lw;
+  geo_ra = ra;
+}
+///////////////////////////////////////////////////////////////
+libblock lib_streakGEO //
+  : types_streak_typesGEO {
+  ///////////////////////////////////////////
+  StreakOutput computeStreak(mat4 mvp) {
+    StreakOutput outp;
+    vec3 vel  = geo_vel[0].xyz;
+    vec3 cnrm = geo_cnrm[0].xyz;
+    float wid = geo_lw[0].y;
+    float len = geo_lw[0].x;
+
+    vec3 pos = gl_in[0].gl_Position.xyz;
+
+
+    vec3 lpos = pos - (vel * len);
+
+    vec3 crs  = wid * normalize(cross(vel, cnrm));
+
+
+    vec3 p0 = pos + crs;
+    vec3 p1 = pos - crs;
+    vec3 p2 = lpos - crs;
+    vec3 p3 = lpos + crs;
+
+    outp.pos0 = mvp * vec4(p0, 1.0);
+    outp.pos1 = mvp * vec4(p1, 1.0);
+    outp.pos2 = mvp * vec4(p2, 1.0);
+    outp.pos3 = mvp * vec4(p3, 1.0);
+
+    return outp;
+  }
+}
+///////////////////////////////////////////////////////////////
+geometry_shader gs_streakGEO //
+  : gface_streakGEO //
+  : lib_streakGEO
+  : ublk_vtx { //
+  StreakOutput outp = computeStreak(MatMVP);
+  gl_Position       = outp.pos0;
+  frg_uv1     = geo_ra[0];
+  frg_clr     = vec4(0,0,0,0);
+  frg_uv0     = vec2(0,0);
+  EmitVertex();
+  gl_Position = outp.pos1;
+  frg_uv0     = vec2(1,0);
+  EmitVertex();
+  gl_Position = outp.pos3;
+  frg_uv0     = vec2(0,1);
+  EmitVertex();
+  gl_Position = outp.pos2;
+  frg_uv0     = vec2(1,1);
+  EmitVertex();
+  //EndPrimitive();
+}

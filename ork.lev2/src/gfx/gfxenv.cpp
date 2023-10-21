@@ -33,14 +33,25 @@
 template class ork::util::ContextTLS<ork::lev2::ThreadGfxContext>;
 
 ork::lev2::Context* ork::lev2::contextForCurrentThread() {
-  return ork::lev2::ThreadGfxContext::context()->_context;
+  auto rval = ork::lev2::ThreadGfxContext::context()->_context;
+  OrkAssert(rval!=nullptr);
+  return rval;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 namespace ork::lev2 {
 
-int msaaEnumToInt(const MsaaSamples& samples) {
+bool GfxEnv::_bc7Disabled = false;
+
+bool GfxEnv::supportsBC7(){
+  return not _bc7Disabled;
+}
+void GfxEnv::disableBC7(){
+  _bc7Disabled = true;
+}
+
+int msaaEnumToInt( const MsaaSamples& samples ){
   int convsamples = 0;
   switch (samples) {
     case MsaaSamples::MSAA_1X:
@@ -126,8 +137,14 @@ std::string EBufferFormatToName(EBufferFormat fmt) {
     case EBufferFormat::RGBA16F:
       rval = "RGBA16F";
       break;
+    case EBufferFormat::RGBA16UI:
+      rval = "RGBA16UI";
+      break;
     case EBufferFormat::RGBA32F:
       rval = "RGBA32F";
+      break;
+    case EBufferFormat::RGBA32UI:
+      rval = "RGBA32UI";
       break;
     case EBufferFormat::YUV420P:
       rval = "YUV420P";
@@ -152,6 +169,49 @@ std::string EBufferFormatToName(EBufferFormat fmt) {
       break;
     case EBufferFormat::S3TC_DXT5:
       rval = "S3TC_DXT5";
+      break;
+    default:
+      OrkAssert(false);
+      break;
+  }
+  return rval;
+}
+
+std::string EVtxStreamFormatToName(EVtxStreamFormat fmt){
+  std::string rval;
+  switch (fmt) {
+    case EVtxStreamFormat::V12:
+      rval = "V12";
+      break;
+    case EVtxStreamFormat::V12C4T16:
+      rval = "V12C4T16";
+      break;
+    case EVtxStreamFormat::V12N6C2T4:
+      rval = "V12N6C2T4";
+      break;
+    case EVtxStreamFormat::V12N6I1T4:
+      rval = "V12N6I1T4";
+      break;
+    case EVtxStreamFormat::V12I4N12T8:
+      rval = "V12I4N12T8";
+      break;
+    case EVtxStreamFormat::V12N12T8I4W4:
+      rval = "V12N12T8I4W4";
+      break;
+    case EVtxStreamFormat::V12N12B12T8I4W4:
+      rval = "V12N12B12T8I4W4";
+      break;
+    case EVtxStreamFormat::V12N12B12T8C4:
+      rval = "V12N12B12T8C4";
+      break;
+    case EVtxStreamFormat::V12N12B12T16:
+      rval = "V12N12B12T16";
+      break;
+    case EVtxStreamFormat::V12N12T16C4:
+      rval = "V12N12T16C4";
+      break;
+    case EVtxStreamFormat::MODELERRIGID:
+      rval = "MODELERRIGID";
       break;
     default:
       OrkAssert(false);

@@ -50,6 +50,7 @@ bool TextureInterface::_loadDDSTexture(texture_ptr_t ptex, datablock_ptr_t datab
   ///////////////////////////////////////////////
   load_req->_ddsheader = ddsh;
   //load_req->pTEXOBJ    = pTEXOBJ;
+
   void_lambda_t lamb  = [=]() {
     /////////////////////////////////////////////
     // texture preprocssing, if any..
@@ -102,6 +103,7 @@ void TextureInterface::_loadDDSTextureMainThreadPart(texloadreq_ptr_t req) {
   //mTargetGL.debugPushGroup("loadDDSTextureMainThreadPart");
   const dds::DDS_HEADER* ddsh = req->_ddsheader;
   texture_ptr_t ptex               = req->ptex;
+
   //auto pTEXOBJ    = req->pTEXOBJ;
   // File& TextureFile = *req->pTEXFILE;
 
@@ -218,7 +220,7 @@ void TextureInterface::_loadDDSTextureMainThreadPart(texloadreq_ptr_t req) {
     cmc->_format = EBufferFormat::BGRA8;
     cmc->_numcomponents = 4;
     proc_mips(4, 0);
-    _createFromCompressedLoadReq(req);
+    //_createFromCompressedLoadReq(req);
     if (NumMips > 3) {
       ptex->TexSamplingMode().PresetTrilinearWrap();
       // assert(false);

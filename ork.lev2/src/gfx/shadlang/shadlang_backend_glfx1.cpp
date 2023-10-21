@@ -68,7 +68,7 @@ struct GLFX1Backend {
     va_start(args, formatstring);
     vsnprintf(&formatbuffer[0], sizeof(formatbuffer), formatstring, args);
     va_end(args);
-    emitContinueLine("/* %04d */ ", _lineoutindex);
+    emitContinueLine("/* %04d */ ", _lineoutindex+1);
     _outstr += std::string(_indent * 2, ' ');
     _outstr += std::string(formatbuffer);
   }
@@ -99,7 +99,7 @@ struct GLFX1Backend {
     va_start(args, formatstring);
     vsnprintf(&formatbuffer[0], sizeof(formatbuffer), formatstring, args);
     va_end(args);
-    emitContinueLine("/* %04d */ ", _lineoutindex);
+    emitContinueLine("/* %04d */ ", _lineoutindex+1);
     _outstr += std::string(_indent * 2, ' ');
     _outstr += std::string(formatbuffer);
     _outstr += "\n";
@@ -233,6 +233,12 @@ GLFX1Backend::GLFX1Backend() {
   });
   registerAstPostCB<LibraryBlock>([=](auto libblock) { named_postcb(libblock); });
   registerAstPreChildCB<LibraryBlock>(named_item_pre_child_cb);
+  /////////////////////////////////////////////////////////////////////
+  registerAstPreCB<TypeBlock>([=](auto typblock) { 
+    named_precb( typblock, "typeblock" );
+  });
+  registerAstPostCB<TypeBlock>([=](auto typblock) { named_postcb(typblock); });
+  registerAstPreChildCB<TypeBlock>(named_item_pre_child_cb);
   /////////////////////////////////////////////////////////////////////
   registerAstPreCB<UniformSet>([=](auto uni_set) { named_precb( uni_set, "uniform_set" ); });
   registerAstPostCB<UniformSet>([=](auto uni_set) { named_postcb(uni_set); });
@@ -372,25 +378,24 @@ GLFX1Backend::GLFX1Backend() {
   });
   
   /////////////////////////////////////////////////////////////////////
-  registerAstPreCB<FragmentInterface>([=](auto frg_if) { named_precb( frg_if, "fragment_interface" ); });
-  registerAstPostCB<FragmentInterface>([=](auto frg_if) { named_postcb(frg_if); });
-  registerAstPreChildCB<FragmentInterface>(named_item_pre_child_cb);
-  /////////////////////////////////////////////////////////////////////
   registerAstPreCB<VertexInterface>([=](auto vtx_if) { named_precb( vtx_if, "vertex_interface" ); });
   registerAstPostCB<VertexInterface>([=](auto vtx_if) { named_postcb(vtx_if); });
   registerAstPreChildCB<VertexInterface>(named_item_pre_child_cb);
+  registerAstPreCB<VertexShader>([=](auto vtx_sh) { named_precb( vtx_sh, "vertex_shader" ); });
   /////////////////////////////////////////////////////////////////////
   registerAstPreCB<GeometryInterface>([=](auto geo_if) { named_precb( geo_if, "geometry_interface" ); });
   registerAstPostCB<GeometryInterface>([=](auto geo_if) { named_postcb(geo_if); });
   registerAstPreChildCB<GeometryInterface>(named_item_pre_child_cb);
+  registerAstPreCB<GeometryShader>([=](auto geo_sh) { named_precb( geo_sh, "geometry_shader" ); });
+  /////////////////////////////////////////////////////////////////////
+  registerAstPreCB<FragmentInterface>([=](auto frg_if) { named_precb( frg_if, "fragment_interface" ); });
+  registerAstPostCB<FragmentInterface>([=](auto frg_if) { named_postcb(frg_if); });
+  registerAstPreChildCB<FragmentInterface>(named_item_pre_child_cb);
+  registerAstPreCB<FragmentShader>([=](auto frg_sh) { named_precb( frg_sh, "fragment_shader" ); });
   /////////////////////////////////////////////////////////////////////
   registerAstPreCB<ComputeInterface>([=](auto com_if) { named_precb( com_if, "compute_interface" ); });
   registerAstPostCB<ComputeInterface>([=](auto com_if) { named_postcb(com_if); });
   registerAstPreChildCB<ComputeInterface>(named_item_pre_child_cb);
-  /////////////////////////////////////////////////////////////////////
-  registerAstPreCB<VertexShader>([=](auto vtx_sh) { named_precb( vtx_sh, "vertex_shader" ); });
-  registerAstPreCB<FragmentShader>([=](auto frg_sh) { named_precb( frg_sh, "fragment_shader" ); });
-  registerAstPreCB<GeometryShader>([=](auto geo_sh) { named_precb( geo_sh, "geometry_shader" ); });
   registerAstPreCB<ComputeShader>([=](auto com_sh) { named_precb( com_sh, "compute_shader" ); });
   /////////////////////////////////////////////////////////////////////
   registerAstPreCB<Technique>([=](auto tek) { 
@@ -423,16 +428,16 @@ GLFX1Backend::GLFX1Backend() {
   registerAstPostCB<VertexShaderRef>([=](auto ref) { 
     emitEndLine( ";" );
   });
-  registerAstPreCB<FragmentShaderRef>([=](auto ref) { 
-    emitBeginLine( "FragmentShaderRef : " );
-  });
-  registerAstPostCB<FragmentShaderRef>([=](auto ref) { 
-    emitEndLine( ";" );
-  });
   registerAstPreCB<GeometryShaderRef>([=](auto ref) { 
     emitBeginLine( "GeometryShaderRef : " );
   });
   registerAstPostCB<GeometryShaderRef>([=](auto ref) { 
+    emitEndLine( ";" );
+  });
+  registerAstPreCB<FragmentShaderRef>([=](auto ref) { 
+    emitBeginLine( "FragmentShaderRef : " );
+  });
+  registerAstPostCB<FragmentShaderRef>([=](auto ref) { 
     emitEndLine( ";" );
   });
   registerAstPreCB<StateBlockRef>([=](auto ref) { 
@@ -509,6 +514,9 @@ GLFX1Backend::GLFX1Backend() {
   registerAstPreCB<ElseStatementBody>([=](auto ifstmt) { emitBeginLine("else "); });
   registerAstPreCB<ReturnStatement>([=](auto retstmt) { emitContinueLine("return "); });
   registerAstPostCB<ReturnStatement>([=](auto retstmt) { emitContinueLine(";"); });
+  registerAstPreCB<DiscardStatement>([=](auto disc) { emitContinueLine("discard "); });
+  registerAstPostCB<DiscardStatement>([=](auto disc) { emitContinueLine(";"); });
+  
   /////////////////////////////////////////////////////////////////////
   // expressions
   /////////////////////////////////////////////////////////////////////

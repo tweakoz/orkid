@@ -119,6 +119,7 @@ KW_DEPTHTEST        <| "DepthTest" |>
 KW_DEPTHMASK        <| "DepthMask" |>
 KW_FXCONFIG         <| "fxconfig" |>
 KW_LIBBLOCK         <| "libblock" |>
+KW_TYPEBLOCK        <| "typeblock" |>
 KW_IMPORT           <| "import" |>
 KW_PRAGMA_TYPELIB   <| "pragma_typelib" |>
 KW_CONST            <| "const" |>

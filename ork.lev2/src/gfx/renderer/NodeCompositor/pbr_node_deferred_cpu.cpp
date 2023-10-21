@@ -69,7 +69,7 @@ struct CpuNodeImpl {
       base += KMAXLIGHTSPERCHUNK * sizeof(fvec4);
       for (int i = 0; i < KMAXLIGHTSPERCHUNK; i++)
         mapped->ref<fvec4>(base + i * sizeof(fvec4)) = fvec4();
-      mapped->unmap();
+      target->FXI()->unmapParamBuffer(mapped);
     }
   }
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -243,7 +243,7 @@ struct CpuNodeImpl {
       /////////////////////////////////////
       // chunk ready, fire it off..
       /////////////////////////////////////
-      FXI->unmapParamBuffer(mapping.get());
+      FXI->unmapParamBuffer(mapping);
       //////////////////////////////////////////////////
       // set number of lights for tile
       //////////////////////////////////////////////////

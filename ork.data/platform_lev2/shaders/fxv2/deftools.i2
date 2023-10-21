@@ -3,11 +3,7 @@ import "orkshader://brdftools.i2";
 import "orkshader://envtools.i2";
 
 ///////////////////////////////////////////////////////////////
-libblock lib_def 
-	: lib_math
-	: lib_brdf
-	: lib_envmapping {
-  /////////////////////////////////////////////////////////
+typeblock def_types {
   struct XXX {
     vec3 _finallitcolor;
     vec3 _diffuse_env;
@@ -34,5 +30,13 @@ libblock lib_def
   	float _alpha;
   	vec3 _albedo;
   };
+}
+
+libblock lib_def 
+	: def_types
+  : lib_math
+	: lib_brdf
+	: lib_envmapping {
+  /////////////////////////////////////////////////////////
 
 }

@@ -10,8 +10,7 @@
 ///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////
 
-libblock typelib_compute_streaks {
-  pragma_typelib;
+typeblock typelib_compute_streaks {
   struct InputVertex {
     vec4 pos;      // 12
     //ec4 nrm; // 24
@@ -26,7 +25,6 @@ libblock typelib_compute_streaks {
   };
 }
 compute_interface iface_compute
-    : typelib_compute_streaks
     : compute_unis {
     inputs {
         layout(local_size_x = 1, local_size_y = 1, local_size_z = 1);
@@ -80,7 +78,8 @@ vertex_shader vs_streak_stereoCI //
 }
 ///////////////////////////////////////////////////////////////
 compute_shader compute_streaks
-    : extension(GL_NV_gpu_shader5)
+    : extension(ORK_GPU_SHADER)
+    : typelib_compute_streaks
     : iface_compute {
 
     int index = int(gl_WorkGroupID.x);
@@ -173,21 +172,4 @@ fragment_shader ps_grad_stereoCI //
   vec4 cmap = texture(ColorMap, frg_uv.xy);
   out_clr.xyz = gmap.xyz*cmap.xyz;
   out_clr.w = gmap.w*cmap.w;
-}
-///////////////////////////////////////////////////////////////
-technique tflatparticle_streaks_stereoCI {
-  fxconfig = fxcfg_default;
-  pass p0 {
-    vertex_shader   = vs_streak_stereoCI;
-    fragment_shader = ps_flat_stereoCI;
-    state_block     = sb_default;
-  }
-}
-technique tgradparticle_streaks_stereo {
-  fxconfig = fxcfg_default;
-  pass p0 {
-    vertex_shader   = vs_streak_stereoCI;
-    fragment_shader = ps_grad_stereoCI;
-    state_block     = sb_default;
-  }
 }

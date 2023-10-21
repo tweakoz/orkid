@@ -64,7 +64,7 @@ lev2::texture_ptr_t DeferredContext::brdfIntegrationTexture() const {
 ///////////////////////////////////////
 
 void DeferredContext::gpuInit(Context* target) {
-  target->debugPushGroup("Deferred::rendeinitr");
+  //target->debugPushGroup("Deferred::rendeinitr");
   auto FXI = target->FXI();
   if (nullptr == _rtgs_gbuffer) {
     _brdfIntegrationMap = PBRMaterial::brdfIntegrationMap(target);
@@ -135,6 +135,8 @@ void DeferredContext::gpuInit(Context* target) {
     _parDepthFogDistance    = _lightingmtl->param("DepthFogDistance");
     _parDepthFogPower       = _lightingmtl->param("DepthFogPower");
     _parShadowParams        = _lightingmtl->param("ShadowParams");
+
+    OrkAssert(_parDepthFogDistance);
     //////////////////////////////////////////////////////////////
     _rtgs_gbuffer = std::make_shared<RtgSet>(target,MsaaSamples::MSAA_1X, true);
     _rtgs_gbuffer->addBuffer("DeferredGbuffer", EBufferFormat::RGBA32UI);
@@ -170,9 +172,9 @@ void DeferredContext::gpuInit(Context* target) {
     //_gbuffRT = new RtGroupRenderTarget(_rtgGbuffer.get());
     //////////////////////////////////////////////////////////////
     auto mtl_load_req1 = std::make_shared<asset::LoadRequest>("src://effect_textures/white");
-    auto mtl_load_req2 = std::make_shared<asset::LoadRequest>("src://effect_textures/voltex_pn2");
+    //TODOVULKAN auto mtl_load_req2 = std::make_shared<asset::LoadRequest>("src://effect_textures/voltex_pn2");
     _whiteTexture = asset::AssetManager<TextureAsset>::load(mtl_load_req1);
-    _voltexA      = asset::AssetManager<TextureAsset>::load(mtl_load_req2);
+    //TODOVULKAN _voltexA      = asset::AssetManager<TextureAsset>::load(mtl_load_req2);
     //////////////////////////////////////////////////////////////
     // new pipeline stuff.
     //////////////////////////////////////////////////////////////
@@ -184,12 +186,13 @@ void DeferredContext::gpuInit(Context* target) {
     printf( "SHADER<%s> Load Complete\n", _shadername.c_str() );
 
   }
-  target->debugPopGroup();
+  //target->debugPopGroup();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void DeferredContext::renderGbuffer(RenderCompositingNode* node, CompositorDrawData& drawdata, const ViewData& VD) {
+  return;//
   EASY_BLOCK("renderGbuffer");
   auto CIMPL                   = drawdata._cimpl;
   FrameRenderer& framerenderer = drawdata.mFrameRenderer;
@@ -206,8 +209,8 @@ void DeferredContext::renderGbuffer(RenderCompositingNode* node, CompositorDrawD
   ViewportRect mrt_rect(0, 0, rtg_gbuffer->width(), rtg_gbuffer->height());
   ///////////////////////////////////////////////////////////////////////////
   FBI->PushRtGroup(rtg_gbuffer.get());
-  FBI->SetAutoClear(false); // explicit clear
-  targ->beginFrame();
+  //FBI->SetAutoClear(false); // explicit clear
+  //targ->beginFrame(false);
   ///////////////////////////////////////////////////////////////////////////
   const auto TOPCPD  = CIMPL->topCPD();
   auto CPD           = TOPCPD;
@@ -243,7 +246,7 @@ void DeferredContext::renderGbuffer(RenderCompositingNode* node, CompositorDrawD
     irenderer->resetQueue();
   }
   /////////////////////////////////////////////////////////////////////////////////////////
-  targ->endFrame();
+  //targ->endFrame();
   FBI->PopRtGroup();
 }
 
@@ -410,7 +413,7 @@ void DeferredContext::renderBaseLighting(RenderCompositingNode* node, Compositor
   _decalCPD._stereo1pass          = false;
   CIMPL->pushCPD(_accumCPD); // base lighting
   FBI->PushRtGroup(rtg_laccum.get());
-  FBI->rtGroupClear(rtg_laccum.get());
+  //FBI->rtGroupClear(rtg_laccum.get());
   //////////////////////////////////////////////////////////////////
   // base lighting
   //////////////////////////////////////////////////////////////////

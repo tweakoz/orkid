@@ -33,13 +33,8 @@ public:
   virtual const FxShaderParam* parameter(FxShader* hfx, const std::string& name)           = 0;
   virtual const FxShaderParamBlock* parameterBlock(FxShader* hfx, const std::string& name) = 0;
 
-#if defined(ENABLE_COMPUTE_SHADERS)
   virtual const FxComputeShader* computeShader(FxShader* hfx, const std::string& name) = 0;
-#endif
-
-#if defined(ENABLE_SHADER_STORAGE)
   virtual const FxShaderStorageBlock* storageBlock(FxShader* hfx, const std::string& name) = 0;
-#endif
 
   virtual void BindParamBool(const FxShaderParam* hpar, const bool bval)                          = 0;
   virtual void BindParamInt(const FxShaderParam* hpar, const int ival)                            = 0;
@@ -73,7 +68,7 @@ public:
   virtual parambuffermappingptr_t mapParamBuffer(FxShaderParamBuffer* b, size_t base = 0, size_t length = 0) {
     return nullptr;
   }
-  virtual void unmapParamBuffer(FxShaderParamBufferMapping* mapping) {
+  virtual void unmapParamBuffer(parambuffermappingptr_t mapping) {
   }
   virtual void bindParamBlockBuffer(const FxShaderParamBlock* block, FxShaderParamBuffer* buffer) {
   }

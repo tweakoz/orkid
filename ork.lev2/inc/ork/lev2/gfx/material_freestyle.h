@@ -52,10 +52,8 @@ struct FreestyleMaterial final : public GfxMaterial {
   const FxShaderParamBlock* paramBlock(std::string named);
 
   ////////////////////////////////////////////
-#if defined(ENABLE_COMPUTE_SHADERS)
   const FxShaderStorageBlock* storageBlock(std::string named);
   const FxComputeShader* computeShader(std::string named);
-#endif
   ////////////////////////////////////////////
 
   void commit();
@@ -91,10 +89,8 @@ struct FreestyleMaterial final : public GfxMaterial {
 
   Context* _initialTarget = nullptr;
 
-#if defined(ENABLE_COMPUTE_SHADERS)
   std::set<const FxShaderStorageBlock*> _storageBlocks;
   std::set<const FxComputeShader*> _computeShaders;
-#endif
 
 };
 

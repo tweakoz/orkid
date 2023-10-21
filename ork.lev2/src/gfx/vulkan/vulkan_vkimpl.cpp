@@ -17,7 +17,7 @@ namespace ork::lev2::vulkan {
 
 vkinstance_ptr_t _GVI = nullptr;
 constexpr bool _enable_validate = true;
-constexpr bool _enable_renderdoc = false;
+constexpr bool _enable_renderdoc = true;
 constexpr bool _enable_debug = (_enable_validate or _enable_renderdoc);
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -328,7 +328,13 @@ VkFormatConverter::VkFormatConverter() {
   do_format(EBufferFormat::Z32, VK_FORMAT_D32_SFLOAT);
   do_format(EBufferFormat::Z24S8, VK_FORMAT_D24_UNORM_S8_UINT);
   do_format(EBufferFormat::Z32S8, VK_FORMAT_D32_SFLOAT_S8_UINT);
+  do_format(EBufferFormat::RGBA16F, VK_FORMAT_R16G16B16A16_SFLOAT);
   do_format(EBufferFormat::RGBA32F, VK_FORMAT_R32G32B32A32_SFLOAT);
+  do_format(EBufferFormat::RGBA32UI, VK_FORMAT_R32G32B32A32_UINT);
+  do_format(EBufferFormat::RGBA16UI, VK_FORMAT_R16G16B16A16_UINT);
+  
+  do_format(EBufferFormat::RGBA_BPTC_UNORM, VK_FORMAT_BC7_UNORM_BLOCK);
+  do_format(EBufferFormat::SRGB_ALPHA_BPTC_UNORM, VK_FORMAT_BC7_SRGB_BLOCK);
 
   _layoutmap["depth"_crcu]   = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
   _layoutmap["color"_crcu]   = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;

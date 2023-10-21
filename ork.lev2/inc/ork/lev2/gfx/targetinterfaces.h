@@ -100,6 +100,7 @@ struct CaptureBuffer {
   int _captureY = 0;
   int _captureW = 0;
   int _captureH = 0;
+  svar32_t _impl;
   ////////////////////////////
 };
 
