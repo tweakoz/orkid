@@ -169,13 +169,13 @@ bool Interface::compilePipelineVTG(rootcontainer_ptr_t container) {
     auto shader_input_stream   = chunkreader.GetStream("shaders");
     OrkAssert(header_input_stream != nullptr);
     OrkAssert(shader_input_stream != nullptr);
-    auto str_attrs = header_input_stream->ReadIndexedString(chunkreader);
+    auto str_attrs = header_input_stream->readIndexedString(chunkreader);
     OrkAssert(str_attrs == "begin-attributes");
-    size_t num_attrs    = header_input_stream->ReadItem<size_t>();
+    size_t num_attrs    = header_input_stream->readItem<size_t>();
     for( size_t iattr=0; iattr<num_attrs; iattr++ ){
-      int iloc = header_input_stream->ReadItem<int>();
-      auto attr_name = header_input_stream->ReadIndexedString(chunkreader);
-      auto attr_sem  = header_input_stream->ReadIndexedString(chunkreader);
+      int iloc = header_input_stream->readItem<int>();
+      auto attr_name = header_input_stream->readIndexedString(chunkreader);
+      auto attr_sem  = header_input_stream->readIndexedString(chunkreader);
       auto it = vtx_iface->_inputAttributes.find(attr_name);
       OrkAssert(it != vtx_iface->_inputAttributes.end());
       Attribute* pattr = it->second;
@@ -183,10 +183,10 @@ bool Interface::compilePipelineVTG(rootcontainer_ptr_t container) {
       pass->_vtxAttributeById[iloc]                    = pattr;
       pass->_vtxAttributesBySemantic[pattr->mSemantic] = pattr;
     }
-    auto str_attrs_done = header_input_stream->ReadIndexedString(chunkreader);
+    auto str_attrs_done = header_input_stream->readIndexedString(chunkreader);
     OrkAssert(str_attrs_done == "end-attributes");
-    GLenum binary_format = header_input_stream->ReadItem<GLenum>();
-    size_t binary_length = header_input_stream->ReadItem<size_t>();
+    GLenum binary_format = header_input_stream->readItem<GLenum>();
+    size_t binary_length = header_input_stream->readItem<size_t>();
     auto binary_data = shader_input_stream->GetDataAt(0);
     glProgramBinary(prgo, binary_format, binary_data, binary_length);
     GL_ERRORCHECK();
@@ -311,13 +311,13 @@ bool Interface::compilePipelineVTG(rootcontainer_ptr_t container) {
 
       static int counter = 0;
 
-      header_stream->AddIndexedString("begin-attributes",chunkwriter);
-      header_stream->AddItem<size_t>(vtx_iface->_inputAttributes.size());
+      header_stream->addIndexedString("begin-attributes",chunkwriter);
+      header_stream->addItem<size_t>(vtx_iface->_inputAttributes.size());
 
       for (const auto& itp : vtx_iface->_inputAttributes) {
         Attribute* pattr = itp.second;
         int iloc         = pattr->mLocation;
-        header_stream->AddItem<int>(iloc);
+        header_stream->addItem<int>(iloc);
         //printf( "	vtxattr<%s> loc<%d> dir<%s> sem<%s>\n",
         //pattr->mName.c_str(), iloc, pattr->mDirection.c_str(),
         //pattr->mSemantic.c_str() );
@@ -326,10 +326,10 @@ bool Interface::compilePipelineVTG(rootcontainer_ptr_t container) {
         pass->_vtxAttributeById[iloc]                    = pattr;
         pass->_vtxAttributesBySemantic[pattr->mSemantic] = pattr;
         counter++;
-        header_stream->AddIndexedString(pattr->mName,chunkwriter);
-        header_stream->AddIndexedString(pattr->mSemantic,chunkwriter);
+        header_stream->addIndexedString(pattr->mName,chunkwriter);
+        header_stream->addIndexedString(pattr->mSemantic,chunkwriter);
       }
-      header_stream->AddIndexedString("end-attributes",chunkwriter);
+      header_stream->addIndexedString("end-attributes",chunkwriter);
 
       //////////////////////////
 
@@ -382,9 +382,9 @@ bool Interface::compilePipelineVTG(rootcontainer_ptr_t container) {
         binary_bytes.resize(binaryLength);
         GLenum binaryFormat;
         glGetProgramBinary(prgo, binaryLength, NULL, &binaryFormat, binary_bytes.data());
-        header_stream->AddItem<GLenum>(binaryFormat);
-        header_stream->AddItem<size_t>(binary_bytes.size());
-        shader_stream->AddData(binary_bytes.data(),binary_bytes.size());
+        header_stream->addItem<GLenum>(binaryFormat);
+        header_stream->addItem<size_t>(binary_bytes.size());
+        shader_stream->addData(binary_bytes.data(),binary_bytes.size());
 
         ///////////////////////////////////
         // write to datablock cache

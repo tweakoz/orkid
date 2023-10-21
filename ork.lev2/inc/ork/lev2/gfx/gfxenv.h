@@ -123,8 +123,8 @@ struct DisplayMode {
 ///   IMI : ImmediateMode interface. convenience methods for oldschool type gfx
 ///////////////////////////////////////////////////////////////////////////////
 
-using load_token_t = svar32_t;
-using ctx_platform_handle_t = svar32_t;
+using load_token_t = svar64_t;
+using ctx_platform_handle_t = svar64_t;
 
 struct Context : public ork::Object {
   DeclareAbstractX(Context, ork::Object);

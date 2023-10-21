@@ -17,7 +17,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 namespace ork { namespace lev2 {
-
+/*
 GlRasterStateInterface::GlRasterStateInterface( Context& target )
 	: RasterStateInterface(target) {}
 
@@ -280,5 +280,5 @@ void GlRasterStateInterface::BindRasterState( SRasterState const &newstate, bool
 	GL_ERRORCHECK();
 
 }
-
+*/
 } } //namespace ork::lev2

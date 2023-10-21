@@ -76,7 +76,7 @@ float _hakCurrentDPI = 95.0f;
 
 ork::MpMcBoundedQueue<void*> ContextGL::_loadTokens;
 
-struct GlIxPlatformObject {
+struct GlIxPlatformObject : public GlPlatformObject {
   static GlIxPlatformObject* _global_plato;
   static GlIxPlatformObject* _current;
   /////////////////////////////////////
@@ -100,13 +100,13 @@ struct GlIxPlatformObject {
     _bindop = [=]() {};
   }
   /////////////////////////////////////
-  void makeCurrent() {
+  void makeCurrent() final  {
     _current = this;
     if( _ctxbase ){
       _ctxbase->makeCurrent();
     }
   }
-  void swapBuffers() {
+  void swapBuffers() final  {
     if( _ctxbase ){
       _ctxbase->swapBuffers();
     }

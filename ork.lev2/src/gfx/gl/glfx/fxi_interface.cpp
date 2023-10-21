@@ -86,21 +86,22 @@ FxShader* Interface::shaderFromShaderText(const std::string& name, const std::st
 
 void Interface::BindContainerToAbstract(rootcontainer_ptr_t container, FxShader* fxh) {
   for (const auto& ittek : container->_techniqueMap) {
-    Technique* ptek         = ittek.second;
-    auto ork_tek            = new FxShaderTechnique((void*)ptek);
+    auto ptek         = ittek.second;
+    auto ork_tek            = new FxShaderTechnique;
+    ork_tek->_impl.setShared<Technique>(ptek);
     ork_tek->_shader        = fxh;
-    ork_tek->mTechniqueName = ittek.first;
+    ork_tek->_techniqueName = ittek.first;
     // pabstek->mPasses = ittek->first;
-    ork_tek->mbValidated = fxh != nullptr;
+    ork_tek->_validated = fxh != nullptr;
     fxh->addTechnique(ork_tek);
   }
   for (const auto& itp : container->_uniforms) {
-    Uniform* puni                = itp.second;
+    auto puni                = itp.second;
     FxShaderParam* ork_parm      = new FxShaderParam;
     ork_parm->_name              = itp.first;
     ork_parm->mParameterSemantic = puni->_semantic;
     ork_parm->mParameterType     = puni->_typeName;
-    ork_parm->mInternalHandle    = (void*)puni;
+    ork_parm->_impl.setShared<Uniform>(puni);
     fxh->addParameter(ork_parm);
   }
 #if defined(ENABLE_COMPUTE_SHADERS)
@@ -137,7 +138,7 @@ int Interface::BeginBlock(const FxShaderTechnique* tek, const RenderContextInstD
   if (nullptr == tek){
     return 0;
   }
-  auto tek_cont = static_cast<const Technique*>(tek->GetPlatformHandle());
+  auto tek_cont = tek->_impl.getShared<Technique>();
   OrkAssert(tek_cont != nullptr);
   _activeTechnique = tek;
   _activeShader    = tek->_shader;
@@ -312,7 +313,7 @@ parambuffermappingptr_t Interface::mapParamBuffer(FxShaderParamBuffer* b, size_t
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Interface::unmapParamBuffer(FxShaderParamBufferMapping* mapping) {
+void Interface::unmapParamBuffer(parambuffermappingptr_t mapping) {
   assert(mapping->_impl.isA<UniformBufferMapping>());
   auto ub = mapping->_buffer->_impl.get<UniformBuffer*>();
   GL_ERRORCHECK();
@@ -356,7 +357,7 @@ const FxShaderParamBlock* Interface::parameterBlock(FxShader* hfx, const std::st
       auto p                         = new FxShaderParam;
       p->_blockinfo                  = new FxShaderParamInBlockInfo;
       p->_blockinfo->_parent         = fxsblock;
-      p->mInternalHandle             = (void*)u;
+      p->_impl.setShared<Uniform>(u);
       p->_name                       = u->_name;
       fxsblock->_subparams[p->_name] = p;
     }
@@ -365,8 +366,6 @@ const FxShaderParamBlock* Interface::parameterBlock(FxShader* hfx, const std::st
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
-#if defined(ENABLE_SHADER_STORAGE)
 
 const FxShaderStorageBlock* Interface::storageBlock(FxShader* hfx, const std::string& name) {
   OrkAssert(0 != hfx);
@@ -381,10 +380,6 @@ const FxShaderStorageBlock* Interface::storageBlock(FxShader* hfx, const std::st
   return fxsblock;
 }
 
-#endif
-
-#if defined(ENABLE_COMPUTE_SHADERS)
-
 const FxComputeShader* Interface::computeShader(FxShader* hfx, const std::string& name) {
   OrkAssert(0 != hfx);
   const auto& cshmap = hfx->namedComputeShaders();
@@ -396,7 +391,5 @@ const FxComputeShader* Interface::computeShader(FxShader* hfx, const std::string
 
   return csh;
 }
-
-#endif
 
 } // namespace ork::lev2::glslfx

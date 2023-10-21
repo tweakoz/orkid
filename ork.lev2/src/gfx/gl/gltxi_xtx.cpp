@@ -67,7 +67,7 @@ bool GlTextureInterface::_loadXTXTexture(texture_ptr_t ptex, datablock_ptr_t dat
 
 void GlTextureInterface::_loadXTXTextureMainThreadPart(GlTexLoadReq req) {
   mTargetGL.makeCurrentContext();
-  mTargetGL.debugPushGroup("_loadXTXTextureMainThreadPart");
+  mTargetGL.debugPushGroup("_loadXTXTextureMainThreadPart",fvec4(1,1,1,1));
   OrkAssert(req._cmipchain.get() != nullptr);
   auto glto = req.ptex->_impl.get<gltexobj_ptr_t>();
   glGenTextures(1, &glto->mObject);

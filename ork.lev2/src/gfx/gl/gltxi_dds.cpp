@@ -92,7 +92,7 @@ bool GlTextureInterface::_loadDDSTexture(const AssetPath& infname, texture_ptr_t
 
 void GlTextureInterface::_loadDDSTextureMainThreadPart(GlTexLoadReq req) {
   mTargetGL.makeCurrentContext();
-  mTargetGL.debugPushGroup("loadDDSTextureMainThreadPart");
+  mTargetGL.debugPushGroup("loadDDSTextureMainThreadPart",fvec4(1,1,1,1));
   const dds::DDS_HEADER* ddsh = req._ddsheader;
   texture_ptr_t ptex               = req.ptex;
   auto pTEXOBJ    = req.pTEXOBJ;

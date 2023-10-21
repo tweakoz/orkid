@@ -69,7 +69,7 @@ void RootContainer::addStateBlock(StateBlock* psb) {
   assert(it==_stateBlocks.end());
   _stateBlocks[psb->mName] = psb;
 }
-void RootContainer::addTechnique(Technique* ptek) {
+void RootContainer::addTechnique(technique_ptr_t ptek) {
   //printf( "RootContainer<%p> addTechnique<%p:%s>\n", this, ptek, ptek->_name.c_str() );
   auto it = _techniqueMap.find(ptek->_name);
   assert(it==_techniqueMap.end());
@@ -199,7 +199,7 @@ StreamInterface* RootContainer::fragmentInterface(const std::string& name) const
 
 ///////////////////////////////////////////////////////////////////////////////
 
-Uniform* RootContainer::GetUniform(const std::string& name) const {
+uniform_ptr_t RootContainer::GetUniform(const std::string& name) const {
   const auto& it = _uniforms.find(name);
   return (it == _uniforms.end()) ? nullptr : it->second;
 }
@@ -254,11 +254,11 @@ ComputeShader* RootContainer::computeShader(const std::string& name) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-Uniform* RootContainer::MergeUniform(const std::string& name) {
-  Uniform* pret  = nullptr;
+uniform_ptr_t RootContainer::MergeUniform(const std::string& name) {
+  uniform_ptr_t pret  = nullptr;
   const auto& it = _uniforms.find(name);
   if (it == _uniforms.end()) {
-    pret            = new Uniform(name);
+    pret            = std::make_shared<Uniform>(name);
     _uniforms[name] = pret;
   } else {
     pret = it->second;
@@ -294,8 +294,8 @@ bool RootContainer::IsValid(void) {
   return true;
 }
 
-std::unordered_map<std::string, Uniform*> RootContainer::flatUniMap() const {
-  std::unordered_map<std::string, Uniform*> flatunimap;
+std::unordered_map<std::string, uniform_ptr_t> RootContainer::flatUniMap() const {
+  std::unordered_map<std::string, uniform_ptr_t> flatunimap;
   for (auto u : this->_uniforms) {
     flatunimap[u.first] = u.second;
   }

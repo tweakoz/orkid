@@ -51,7 +51,8 @@ GLTextureObject::~GLTextureObject() {
 static ork::Timer _proftimer;
 
 GlTextureInterface::GlTextureInterface(ContextGL& tgt)
-    : mTargetGL(tgt) {
+    : TextureInterface(&tgt)
+    , mTargetGL(tgt) {
   _proftimer.Start();
 }
 
@@ -163,7 +164,7 @@ void GlTextureInterface::bindTextureToUnit(const Texture* tex, GLenum tex_target
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool GlTextureInterface::LoadTexture(const AssetPath& infname, texture_ptr_t ptex) {
+/*bool GlTextureInterface::LoadTexture(const AssetPath& infname, texture_ptr_t ptex) {
   AssetPath DdsFilename = infname;
   AssetPath PngFilename = infname;
   AssetPath XtxFilename = infname;
@@ -186,10 +187,10 @@ bool GlTextureInterface::LoadTexture(const AssetPath& infname, texture_ptr_t pte
     return LoadTexture(ptex, dblock);
   else
     return false;
-}
+}*/
 
 ///////////////////////////////////////////////////////////////////////////////
-
+/*
 bool GlTextureInterface::LoadTexture(texture_ptr_t ptex, datablock_ptr_t datablock) {
   DataBlockInputStream checkstream(datablock);
   uint32_t magic = checkstream.getItem<uint32_t>();
@@ -204,7 +205,7 @@ bool GlTextureInterface::LoadTexture(texture_ptr_t ptex, datablock_ptr_t datablo
   ptex->_contentHash = datablock->hash();
 
   return ok;
-}
+}*/
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -342,11 +343,6 @@ void GlTextureInterface::UpdateAnimatedTexture(Texture* ptex, TextureAnimationIn
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GlTextureInterface::SaveTexture(const ork::AssetPath& fname, Texture* ptex) {
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
 static auto addrlamb = [](TextureAddressMode inp) -> GLenum {
   switch (inp) {
     case TextureAddressMode::CLAMP:
@@ -415,7 +411,7 @@ void GlTextureInterface::ApplySamplingMode(Texture* ptex) {
 
     mTargetGL.makeCurrentContext();
     __FIND_IT.store(1);
-    mTargetGL.debugPushGroup("ApplySamplingMode");
+    mTargetGL.debugPushGroup("ApplySamplingMode",fvec4(1,1,1,1));
     GL_ERRORCHECK();
 
     const auto& texmode = ptex->TexSamplingMode();

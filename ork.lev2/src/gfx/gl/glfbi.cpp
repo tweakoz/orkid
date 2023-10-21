@@ -56,6 +56,12 @@ freestyle_mtl_ptr_t GlFrameBufferInterface::utilshader(){
 
 ///////////////////////////////////////////////////////////////////////////////
 
+bool GlFrameBufferInterface::captureToTexture(const CaptureBuffer& capbuf, Texture& tex) {
+  return false;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 void GlFrameBufferInterface::_setAsRenderTarget(void) {
   mTargetGL.makeCurrentContext();
   // mTargetGL.debugPushGroup("GlFrameBufferInterface::_setAsRenderTarget");
@@ -71,18 +77,25 @@ void GlFrameBufferInterface::_setAsRenderTarget(void) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GlFrameBufferInterface::_doBeginFrame(void) {
+void GlFrameBufferInterface::_doBeginFrame() {
 
   mTargetGL.makeCurrentContext();
-
+  if(mTargetGL._is_visual_frame){
+    //_acquireSwapChainForFrame();
+    _active_rtgroup = _main_rtg.get();
+  }
+  else{
+    _active_rtgroup = nullptr;
+  }
+  /*
   // mTargetGL.debugPushGroup("GlFrameBufferInterface::_doBeginFrameA");
   // glFinish();
   GL_ERRORCHECK();
 
-  RtGroup* rtg = mTargetGL.FBI()->GetRtGroup();
+  RtGroup* rtg = mTargetGL.FBI()->_active_rtgroup;
 
   if (mTargetGL._defaultRTG and (rtg != nullptr)) {
-    SetRtGroup(mTargetGL._defaultRTG);
+    _setRtGroup(mTargetGL._defaultRTG);
     rtGroupClear(mTargetGL._defaultRTG);
     rtg = mTargetGL._defaultRTG;
   }
@@ -154,6 +167,7 @@ void GlFrameBufferInterface::_doBeginFrame(void) {
   // mTargetGL.debugPopGroup();
 
   GL_ERRORCHECK();
+  */
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -167,7 +181,7 @@ void GlFrameBufferInterface::_doEndFrame(void) {
   ///////////////////////////////////////////
 
   // glFinish();
-
+/*
   ////////////////////////////////
   auto rtg = mTargetGL.FBI()->GetRtGroup();
 
@@ -183,8 +197,9 @@ void GlFrameBufferInterface::_doEndFrame(void) {
   popScissor();
   GL_ERRORCHECK();
   ////////////////////////////////
-  glBindTexture(GL_TEXTURE_2D, 0);
   // mTargetGL.debugPopGroup();
+  */
+  glBindTexture(GL_TEXTURE_2D, 0);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -297,16 +312,9 @@ void GlFrameBufferInterface::_setViewport(int iX, int iY, int iW, int iH) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GlFrameBufferInterface::Clear(const fcolor4& color, float fdepth) {
+/*void GlFrameBufferInterface::Clear(const fcolor4& color, float fdepth) {
   glClearColor(color.x, color.y, color.z, color.w);
 
-  /*GLuint clearColor[4] = { 
-    GLuint(color.x * 65535.0f),
-    GLuint(color.y * 65535.0f),
-    GLuint(color.z * 65535.0f),
-    GLuint(color.w * 65535.0f)
-  };
-  glClearBufferuiv(GL_COLOR, 0, clearColor);*/
 
   // printf("GlFrameBufferInterface::ClearViewport() color<%g %g %g %g>\n", color.x, color.y, color.z, color.w);
   GL_ERRORCHECK();
@@ -316,8 +324,6 @@ void GlFrameBufferInterface::Clear(const fcolor4& color, float fdepth) {
   GL_ERRORCHECK();
 }
 
-///////////////////////////////////////////////////////////////////////////////
-
 void GlFrameBufferInterface::clearDepth(float fdepth) {
   glDepthRange(0.0, 1.0f);
   glClearDepth(fdepth);
@@ -325,7 +331,7 @@ void GlFrameBufferInterface::clearDepth(float fdepth) {
   glClear(GL_DEPTH_BUFFER_BIT);
   GL_ERRORCHECK();
 }
-
+*/
 ///////////////////////////////////////////////////////////////////////////////
 
 void GlFrameBufferInterface::capture(const RtBuffer* rtb, const file::Path& pth) {

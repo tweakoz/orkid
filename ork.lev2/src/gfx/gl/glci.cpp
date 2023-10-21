@@ -16,7 +16,14 @@
 namespace ork::lev2::glslfx {
 ///////////////////////////////////////////////////////////////////////////////
 
-#if defined(ENABLE_COMPUTE_SHADERS)
+ComputeShader::ComputeShader(const std::string& nam)
+#if defined(ENABLE_COMPUTE_SHADERSS)
+  : Shader(nam, GL_COMPUTE_SHADER)
+#else
+  : Shader(nam, 0)
+#endif
+{
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -37,7 +44,9 @@ void ComputeInterface::dispatchCompute(
   assert(csh);
   bindComputeShader(csh);
   GL_ERRORCHECK();
+#if defined(ENABLE_COMPUTE_SHADERSS)
   glDispatchCompute(numgroups_x, numgroups_y, numgroups_z);
+#endif
   GL_ERRORCHECK();
   bindComputeShader(nullptr);
 }
@@ -49,7 +58,9 @@ void ComputeInterface::dispatchComputeIndirect(const FxComputeShader* shader, in
   assert(csh);
   bindComputeShader(csh);
   GL_ERRORCHECK();
+#if defined(ENABLE_COMPUTE_SHADERSS)
   glDispatchComputeIndirect((GLintptr)indirect);
+#endif
   GL_ERRORCHECK();
   bindComputeShader(nullptr);
 }
@@ -65,11 +76,12 @@ void ComputeInterface::bindStorageBuffer(const FxComputeShader* shader, uint32_t
   assert(bufferimpl != nullptr);
   GL_ERRORCHECK();
   GLuint unit = 0;
+#if defined(ENABLE_COMPUTE_SHADERS)
   glShaderStorageBlockBinding(csh->_computePipe->_programObjectId, unit, binding_index);
 
   GLuint binding_point_index = 80;
   glBindBufferBase(GL_SHADER_STORAGE_BUFFER, binding_index, bufferimpl->_glbufid);
-
+#endif
   GL_ERRORCHECK();
 }
 
@@ -95,6 +107,7 @@ void ComputeInterface::bindImage(const FxComputeShader* shader, uint32_t binding
       glaccess = GL_READ_WRITE;
       break;
   }
+#if defined(ENABLE_COMPUTE_SHADERS)
   glBindImageTexture(
       binding_index,
       texobj->mObject,
@@ -103,6 +116,7 @@ void ComputeInterface::bindImage(const FxComputeShader* shader, uint32_t binding
       0,         // layerid
       glaccess,  // access
       GL_R32UI); // format
+#endif
   GL_ERRORCHECK();
 }
 
@@ -138,8 +152,8 @@ PipelineCompute* ComputeInterface::createComputePipe(ComputeShader* csh) {
     auto shader_input_stream   = chunkreader.GetStream("shaders");
     OrkAssert(header_input_stream != nullptr);
     OrkAssert(shader_input_stream != nullptr);
-    GLenum binary_format = header_input_stream->ReadItem<GLenum>();
-    size_t binary_length = header_input_stream->ReadItem<size_t>();
+    GLenum binary_format = header_input_stream->readItem<GLenum>();
+    size_t binary_length = header_input_stream->readItem<size_t>();
     auto binary_data = shader_input_stream->GetDataAt(0);
     glProgramBinary(prgo, binary_format, binary_data, binary_length);
     GL_ERRORCHECK();
@@ -230,6 +244,7 @@ FxShaderStorageBuffer* ComputeInterface::createStorageBuffer(size_t length) {
   GL_ERRORCHECK();
   glGenBuffers(1, &ssb->_glbufid);
   printf("Create SSBO<%p> glid<%d>\n", (void*)ssb, ssb->_glbufid);
+#if defined(ENABLE_COMPUTE_SHADERS)
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssb->_glbufid);
   auto mem = new char[length];
   for (int i = 0; i < length; i++)
@@ -237,6 +252,7 @@ FxShaderStorageBuffer* ComputeInterface::createStorageBuffer(size_t length) {
   glBufferData(GL_SHADER_STORAGE_BUFFER, length, mem, GL_DYNAMIC_DRAW);
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
   delete[] mem;
+#endif
   GL_ERRORCHECK();
   return ssb->_fxssb;
 }
@@ -261,6 +277,7 @@ storagebuffermappingptr_t ComputeInterface::mapStorageBuffer(FxShaderStorageBuff
   mapping->_buffer = b;
   mapping->_impl.make<StorageBufferMapping>();
   GL_ERRORCHECK();
+#if defined(ENABLE_COMPUTE_SHADERS)
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssb->_glbufid);
   // mapping->_mappedaddr = malloc(length);
   // glMapBuffer(GL_SHADER_STORAGE_BUFFER,
@@ -274,6 +291,7 @@ storagebuffermappingptr_t ComputeInterface::mapStorageBuffer(FxShaderStorageBuff
           0);
   assert(mapping->_mappedaddr != nullptr);
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+#endif
   GL_ERRORCHECK();
   return mapping;
 }
@@ -284,18 +302,16 @@ void ComputeInterface::unmapStorageBuffer(FxShaderStorageBufferMapping* mapping)
   assert(mapping->_impl.isA<StorageBufferMapping>());
   auto ssb = mapping->_buffer->_impl.get<ShaderStorageBuffer*>();
   GL_ERRORCHECK();
+#if defined(ENABLE_COMPUTE_SHADERS)
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssb->_glbufid);
   // glFlushMappedBufferRange(GL_SHADER_STORAGE_BUFFER,mapping->_offset,mapping->_length);
   glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+#endif
   GL_ERRORCHECK();
   mapping->_impl.make<void*>(nullptr);
   mapping->_mappedaddr = nullptr;
 }
-
-///////////////////////////////////////////////////////////////////////////////
-
-#endif
 
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2::glslfx

@@ -136,7 +136,7 @@ void TopNode::parse() {
 
   itokidx = 0;
 
-  ScanViewRegex r("(\n)", true);
+  auto r = std::make_shared<ScanViewRegex>("(\n)", true);
 
   auto program = _parser->_program;
 

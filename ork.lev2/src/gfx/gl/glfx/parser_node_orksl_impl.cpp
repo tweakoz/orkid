@@ -21,7 +21,7 @@
 #include <stdlib.h>
 #include <peglib.h>
 #include <ork/util/logger.h>
-#include <ork/util/parser.h>
+#include <ork/util/parser.inl>
 #include <ork/kernel/string/string.h>
 
 #if defined(USE_ORKSL_LANG)

@@ -136,7 +136,7 @@ void UniformSetNode::_generate2(shaderbuilder::BackEnd& backend) const {
   uset->_name      = _name;
 
   for (auto item : _uniformdecls) {
-    Uniform* puni                = outcon->MergeUniform(item->_name);
+    auto puni                = outcon->MergeUniform(item->_name);
     puni->_typeName              = item->_typeName;
     puni->_arraySize             = item->_arraySize;
     uset->_uniforms[item->_name] = puni;
@@ -166,7 +166,7 @@ void UniformBlockNode::_generate2(shaderbuilder::BackEnd& backend) const {
   ublk->_name        = _name;
 
   for (auto item : _uniformdecls) {
-    auto puni        = new Uniform(item->_name);
+    auto puni        = std::make_shared<Uniform>(item->_name);
     puni->_typeName  = item->_typeName;
     puni->_arraySize = item->_arraySize;
     ublk->_subuniforms.push_back(puni);

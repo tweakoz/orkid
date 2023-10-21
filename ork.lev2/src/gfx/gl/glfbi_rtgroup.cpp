@@ -30,7 +30,17 @@ GlFboObject::GlFboObject() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GlFrameBufferInterface::SetRtGroup(RtGroup* rtgroup) {
+  void GlFrameBufferInterface::_pushRtGroup(RtGroup* Base) {
+    OrkAssert(false);
+  }
+  RtGroup* GlFrameBufferInterface::_popRtGroup(bool continue_render) {
+    OrkAssert(false);
+  }
+
+
+///////////////////////////////////////////////////////////////////////////////
+
+void GlFrameBufferInterface::_setRtGroup(RtGroup* rtgroup) {
 
   // printf("FBI<%p> SetRTG<%p>\n", this, rtgroup );
 
@@ -44,7 +54,7 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* rtgroup) {
     // on xbox, happens after resolve
     ////////////////////////////////////////////////
     _setAsRenderTarget();
-    _currentRtGroup = nullptr;
+    _active_rtgroup = nullptr;
     return;
   }
 
@@ -62,8 +72,8 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* rtgroup) {
 
   if( rtgroup->_pseudoRTG ){
     static const SRasterState defstate;
-    _target.RSI()->BindRasterState(defstate, true);
-    _currentRtGroup = rtgroup;
+    //_target.RSI()->BindRasterState(defstate, true);
+    _active_rtgroup = rtgroup;
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     if( rtgroup->_autoclear ){
       rtGroupClear(rtgroup);
@@ -322,7 +332,7 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* rtgroup) {
           tex->mTexSampleMode.PresetPointAndClamp();
         }
 
-        mTargetGL.debugPushGroup("init-rt-tex");
+        mTargetGL.debugPushGroup("init-rt-tex",fvec4(1,1,1,1));
 
         glBindTexture(texture_target_2D, texobj);
         GL_ERRORCHECK();
@@ -424,10 +434,10 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* rtgroup) {
 
   GL_ERRORCHECK();
 
-  static const SRasterState defstate;
-  _target.RSI()->BindRasterState(defstate, true);
+  //static const SRasterState defstate;
+  //_target.RSI()->BindRasterState(defstate, true);
 
-  _currentRtGroup = rtgroup;
+  _active_rtgroup = rtgroup;
 
 }
 
@@ -521,7 +531,7 @@ void GlFrameBufferInterface::blit(rtgroup_ptr_t src, rtgroup_ptr_t dst) {
   auto shader = utilshader();
 
   shader->begin(_tek_blit,*framedata);
-  shader->_rasterstate.SetBlending(Blending::OFF);
+  shader->_rasterstate->setBlendingMacro(BlendingMacro::OFF);
   shader->bindParamCTex(_fxpColorMap, src->GetMrt(0)->_texture.get());
   shader->bindParamMatrix(_fxpMVP, fmtx4::Identity());
   ViewportRect extents(0, 0, w, h);
@@ -560,7 +570,7 @@ void GlFrameBufferInterface::downsample2x2(rtgroup_ptr_t src, rtgroup_ptr_t dst)
   auto shader = utilshader();
 
   shader->begin(_tek_downsample2x2,*framedata);
-  shader->_rasterstate.SetBlending(Blending::OFF);
+  shader->_rasterstate->setBlendingMacro(BlendingMacro::OFF);
   shader->bindParamCTex(_fxpColorMap, src->GetMrt(0)->_texture.get());
   shader->bindParamMatrix(_fxpMVP, fmtx4::Identity());
   ViewportRect extents(0, 0, wd2, hd2);

@@ -16,7 +16,10 @@ ImplementReflectionX(ork::lev2::ContextGL, "ContextGL");
 namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
-std::atomic<int> __FIND_IT;
+extern std::atomic<int> __FIND_IT;
+
+GlPlatformObject::GlPlatformObject(): _bindop([=](){}) {}
+GlPlatformObject::~GlPlatformObject() {}
 
 void ContextGL::describeX(class_t* clazz) {
   __FIND_IT.store(0);
@@ -31,12 +34,19 @@ std::string indent(int count) {
 static thread_local int _dbglevel = 0;
 static thread_local std::stack<std::string> _groupstack;
 
+void ContextGL::debugPopGroup(commandbuffer_ptr_t cb){
+  OrkAssert(false);
+}
+void ContextGL::debugPushGroup(commandbuffer_ptr_t cb, const std::string str, const fvec4& color){
+  OrkAssert(false);
+}
+
 /////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////
 #if defined(__APPLE__)
 /////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////
-void ContextGL::debugPushGroup(const std::string str) {
+void ContextGL::debugPushGroup(const std::string str, const fvec4& color) {
     int level = _dbglevel++;
     auto mstr = indent(level) + str;
     //printf( "PSHGRP CTX<%p> lev<%d> name<%s>\n", this, level, mstr.c_str() );
@@ -56,7 +66,7 @@ void ContextGL::debugPopGroup() {
     _dbglevel--;
 }
 /////////////////////////////////////////////////////////////////////////
-void ContextGL::debugMarker(const std::string str) {
+void ContextGL::debugMarker(const std::string str, const fvec4& color) {
 }
 /////////////////////////////////////////////////////////////////////////
 void ContextGL::debugLabel(GLenum target, GLuint object, std::string name) {

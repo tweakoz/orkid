@@ -65,7 +65,7 @@ void StateBlockNode::_generate2(shaderbuilder::BackEnd& backend) const {
   }
 
   //////////////////////
-
+  /*
   if (_culltest != "") {
     if (_culltest == "OFF")
       psb->addStateFn([=](Context* t) { t->RSI()->SetCullTest(lev2::ECullTest::OFF); });
@@ -104,7 +104,7 @@ void StateBlockNode::_generate2(shaderbuilder::BackEnd& backend) const {
     else if (_blendmode == "ALPHA")
       psb->addStateFn([=](Context* t) { t->RSI()->SetBlending(lev2::Blending::ALPHA); });
   }
-
+  */
   //////////////////////
 
   backend._container->addStateBlock(psb);

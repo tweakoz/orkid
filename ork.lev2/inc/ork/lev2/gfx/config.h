@@ -9,4 +9,5 @@
 
 #if ! defined(__APPLE__)
 #define ENABLE_NVMESH_SHADERS
+#define ENABLE_COMPUTE_SHADERS
 #endif

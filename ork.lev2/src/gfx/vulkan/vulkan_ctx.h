@@ -957,8 +957,9 @@ struct VkFrameBufferInterface final : public FrameBufferInterface {
   void capture(const RtBuffer* inpbuf, const file::Path& pth) final;
   bool captureToTexture(const CaptureBuffer& capbuf, Texture& tex) final;
   bool captureAsFormat(const RtBuffer* inpbuf, CaptureBuffer* buffer, EBufferFormat destfmt) final;
-
   void GetPixel(const fvec4& rAt, PixelFetchContext& ctx) final;
+
+  ///////////////////////////////////////////////////////
 
   void rtGroupClear(RtGroup* rtg) final;
   void rtGroupMipGen(RtGroup* rtg) final;
@@ -975,12 +976,14 @@ struct VkFrameBufferInterface final : public FrameBufferInterface {
   void _doEndFrame(void) final;
   void _pushRtGroup(RtGroup* Base) final;
   RtGroup* _popRtGroup(bool continue_render) final;
-  void _present();
+
   //////////////////////////////////////////////
 
+  void _present();
   freestyle_mtl_ptr_t utilshader();
-
   vkrtgrpimpl_ptr_t _createRtGroupImpl(RtGroup* rtg);
+
+  //////////////////////////////////////////////
 
   freestyle_mtl_ptr_t _freestyle_mtl;
   const FxShaderTechnique* _tek_downsample2x2 = nullptr;
@@ -1011,7 +1014,7 @@ struct VkTextureInterface final : public TextureInterface {
 
   VkTextureInterface(vkcontext_rawptr_t ctx);
 
-  void TexManInit(void) final;
+  void TexManInit() final;
 
   //
   bool destroyTexture(texture_ptr_t ptex) final;
@@ -1215,9 +1218,14 @@ public:
   load_token_t _doBeginLoad() final;
   void _doEndLoad(load_token_t ploadtok) final; // virtual
 
-  vkswapchaincaps_ptr_t _swapChainCapsForSurface(VkSurfaceKHR surface);
-
   //////////////////////////////////////////////
+  void _doPushCommandBuffer(commandbuffer_ptr_t cmdbuf, rtgroup_ptr_t rtg) final;
+  void _doPopCommandBuffer() final;
+  void _doEnqueueSecondaryCommandBuffer(commandbuffer_ptr_t cmdbuf) final;
+ 
+  //////////////////////////////////////////////
+ 
+  vkswapchaincaps_ptr_t _swapChainCapsForSurface(VkSurfaceKHR surface);
 
   uint32_t _findMemoryType( //
       uint32_t typeFilter,  //
@@ -1228,10 +1236,6 @@ public:
   void _initVulkanForWindow(VkSurfaceKHR surface);
   void _initVulkanForOffscreen(DisplayBuffer* pBuf);
   void _initVulkanCommon();
-  //////////////////////////////////////////////
-  void _doPushCommandBuffer(commandbuffer_ptr_t cmdbuf, rtgroup_ptr_t rtg) final;
-  void _doPopCommandBuffer() final;
-  void _doEnqueueSecondaryCommandBuffer(commandbuffer_ptr_t cmdbuf) final;
   //////////////////////////////////////////////
   template <typename T> void _setObjectDebugName(T& object, VkObjectType objectType, const char* name) {
     if (_vkSetDebugUtilsObjectName) {

@@ -31,8 +31,11 @@ struct RootContainer;
 struct Pass;
 struct Technique;
 struct UniformBlockBinding;
+struct Uniform;
 
 using rootcontainer_ptr_t = std::shared_ptr<RootContainer>;
+using technique_ptr_t = std::shared_ptr<Technique>;
+using uniform_ptr_t = std::shared_ptr<Uniform>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -50,9 +53,7 @@ constexpr const char* block_regex = "(fxconfig|uniform_set|uniform_block|"
                                     "tessctrl_shader|tesseval_shader|"
                                     "geometry_interface|fragment_interface|"
                                     "geometry_shader|fragment_shader|"
-#if defined(ENABLE_COMPUTE_SHADERS)
                                     "compute_shader|compute_interface|"
-#endif
 #if defined(ENABLE_NVMESH_SHADERS)
                                     "nvtask_shader|nvmesh_shader|"
                                     "nvtask_interface|nvmesh_interface|"
@@ -80,7 +81,7 @@ struct Uniform {
 
 struct UniformInstance {
   GLint mLocation;
-  Uniform* mpUniform;
+  uniform_ptr_t mpUniform;
   int mSubItemIndex;
   svar16_t mPrivData;
 
@@ -116,7 +117,7 @@ struct Attribute {
   }
 };
 
-typedef std::unordered_map<std::string, Uniform*> uniform_map_t;
+typedef std::unordered_map<std::string, uniform_ptr_t> uniform_map_t;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -137,7 +138,7 @@ struct UniformBlock {
   }
 
   std::string _name;
-  std::vector<Uniform*> _subuniforms;
+  std::vector<uniform_ptr_t> _subuniforms;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -346,7 +347,7 @@ typedef std::unordered_map<UniformBlock*, UniformBlockBinding*> ubb_map_t;
 typedef std::unordered_map<std::string, Attribute*> attr_map_t;
 
 ///////////////////////////////////////////////////////////////////////////////
-#if defined(ENABLE_COMPUTE_SHADERS)
+
 struct ComputeShader;
 struct ShaderStorageBuffer {
   FxShaderStorageBuffer* _fxssb = nullptr;
@@ -366,12 +367,10 @@ struct PipelineCompute {
   ssbo_map_t _ssboBindingMap;
 };
 struct ComputeShader : Shader {
-  ComputeShader(const std::string& nam = "")
-      : Shader(nam, GL_COMPUTE_SHADER) {
-  }
+  ComputeShader(const std::string& nam = "");
   PipelineCompute* _computePipe = nullptr;
 };
-#endif
+
 ///////////////////////////////////////////////////////////////////////////////
 
 struct Pass {
@@ -386,7 +385,7 @@ struct Pass {
   ubb_map_t _uboBindingMap;
   Attribute* _vtxAttributeById[kmaxattrID];
   int _samplerCount     = 0;
-  Technique* _technique = nullptr;
+  technique_ptr_t _technique = nullptr;
 
   Pass(const std::string& name)
       : _name(name)
@@ -400,7 +399,7 @@ struct Pass {
   void postProc(rootcontainer_ptr_t c);
 
   bool hasUniformInstance(UniformInstance* puni) const;
-  const UniformInstance* uniformInstance(Uniform* puni) const;
+  const UniformInstance* uniformInstance(uniform_ptr_t puni) const;
 
   UniformBlockBinding* uniformBlockBinding(UniformBlock* block);
 
@@ -420,9 +419,9 @@ struct Technique {
     _name = nam;
   }
 
-  void addPass(Pass* pps) {
-    pps->_technique = this;
-    mPasses.push_back(pps);
+  static void addPass(technique_ptr_t tek, Pass* pps) {
+    pps->_technique = tek;
+    tek->mPasses.push_back(pps);
   }
 };
 
@@ -439,24 +438,24 @@ struct RootContainer {
   void addUniformSet(UniformSet* pif);
   void addUniformBlock(UniformBlock* pif);
 
-  Uniform* MergeUniform(const std::string& name);
+  uniform_ptr_t MergeUniform(const std::string& name);
   void addStateBlock(StateBlock* pSB);
-  void addTechnique(Technique* ptek);
+  void addTechnique(technique_ptr_t ptek);
 
   StateBlock* GetStateBlock(const std::string& name) const;
-  Uniform* GetUniform(const std::string& name) const;
+  uniform_ptr_t GetUniform(const std::string& name) const;
   UniformBlock* uniformBlock(const std::string& name) const;
   UniformSet* uniformset(const std::string& name) const;
 
   std::string mEffectName;
-  const Technique* mActiveTechnique;
+  technique_ptr_t mActiveTechnique;
   std::unordered_map<std::string, Config*> mConfigs;
   std::unordered_map<std::string, UniformSet*> _uniformSets;
   std::unordered_map<std::string, UniformBlock*> _uniformBlocks;
   //
   std::unordered_map<std::string, StateBlock*> _stateBlocks;
-  std::unordered_map<std::string, Uniform*> _uniforms;
-  std::unordered_map<std::string, Technique*> _techniqueMap;
+  std::unordered_map<std::string, uniform_ptr_t> _uniforms;
+  std::unordered_map<std::string, technique_ptr_t> _techniqueMap;
 
   Pass* _activePass;
   int mActiveNumPasses;
@@ -521,17 +520,14 @@ struct RootContainer {
 #endif
 
 ///////////////////////////////////////////////////////
-#if defined(ENABLE_SHADER_STORAGE)
-#endif
-///////////////////////////////////////////////////////
-#if defined(ENABLE_COMPUTE_SHADERS)
+
   std::unordered_map<std::string, StreamInterface*> _computeInterfaces;
   std::unordered_map<std::string, ComputeShader*> _computeShaders;
   ComputeShader* computeShader(const std::string& name) const;
   StreamInterface* computeInterface(const std::string& name) const;
   void addComputeInterface(StreamInterface* sif);
   void addComputeShader(ComputeShader* pif);
-#endif
+
   ///////////////////////////////////////////////////////
 };
 
@@ -551,12 +547,8 @@ public:
   const FxShaderTechnique* technique(FxShader* hfx, const std::string& name) final;
   const FxShaderParam* parameter(FxShader* hfx, const std::string& name) final;
   const FxShaderParamBlock* parameterBlock(FxShader* hfx, const std::string& name) final;
-#if defined(ENABLE_COMPUTE_SHADERS)
   const FxComputeShader* computeShader(FxShader* hfx, const std::string& name) final;
-#endif
-#if defined(ENABLE_SHADER_STORAGE)
   const FxShaderStorageBlock* storageBlock(FxShader* hfx, const std::string& name) final;
-#endif
 
   void BindParamBool(const FxShaderParam* hpar, const bool bval) final;
   void BindParamInt(const FxShaderParam* hpar, const int ival) final;
@@ -593,7 +585,7 @@ public:
   // ubo
   FxShaderParamBuffer* createParamBuffer(size_t length) final;
   parambuffermappingptr_t mapParamBuffer(FxShaderParamBuffer* b, size_t base, size_t length) final;
-  void unmapParamBuffer(FxShaderParamBufferMapping* mapping) final;
+  void unmapParamBuffer(parambuffermappingptr_t mapping) final;
   void bindParamBlockBuffer(const FxShaderParamBlock* block, FxShaderParamBuffer* buffer) final;
 
 private:
@@ -607,8 +599,6 @@ private:
 
   ContextGL& mTarget;
 };
-
-#if defined(ENABLE_COMPUTE_SHADERS)
 
 struct ComputeInterface : public lev2::ComputeInterface {
 
@@ -630,7 +620,6 @@ struct ComputeInterface : public lev2::ComputeInterface {
   PipelineCompute* createComputePipe(ComputeShader* csh);
   void bindComputeShader(ComputeShader* csh);
 };
-#endif
 
 rootcontainer_ptr_t LoadFxFromFile(const AssetPath& pth);
 

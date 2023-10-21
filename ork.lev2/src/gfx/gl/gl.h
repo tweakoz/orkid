@@ -66,6 +66,15 @@ struct DDS_HEADER;
 
 namespace ork { namespace lev2 {
 
+struct GlPlatformObject {
+  GlPlatformObject();
+  virtual ~GlPlatformObject();
+  virtual void makeCurrent() = 0;
+  virtual void swapBuffers() = 0;
+
+  void_lambda_t _bindop;
+};
+using glplato_ptr_t = std::shared_ptr<GlPlatformObject>;
 class ContextGL;
 class GlslFxInterface;
 struct GLTextureObject;
@@ -119,22 +128,6 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct GlRasterStateInterface : public RasterStateInterface {
-
-  GlRasterStateInterface(Context& target);
-  void BindRasterState(const SRasterState& rState, bool bForce) final;
-
-  void SetZWriteMask(bool bv) final;
-  void SetRGBAWriteMask(bool rgb, bool a) final;
-  RGBAMask SetRGBAWriteMask(const RGBAMask& newmask) final;
-  void SetBlending(Blending eVal) final;
-  void SetDepthTest(EDepthTest eVal) final;
-  void SetCullTest(ECullTest eVal) final;
-  void setScissorTest(EScissorTest eVal) final;
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
 class GlMatrixStackInterface : public MatrixStackInterface {
   fmtx4 Ortho(float left, float right, float top, float bottom, float fnear, float ffar); // virtual
   fmtx4 Frustum(float left, float right, float top, float bottom, float zn, float zf);    // virtual
@@ -184,17 +177,14 @@ private:
       int ivbase,
       int ivcount) final;
 
-#if defined(ENABLE_COMPUTE_SHADERS)
   void DrawPrimitiveEML(
       const FxShaderStorageBuffer* SSBO, //
       PrimitiveType eType = PrimitiveType::NONE,
       int ivbase           = 0,
       int ivcount          = 0) final;
-#endif
 
   void
-  DrawIndexedPrimitiveEML(const VertexBufferBase& VBuf, const IndexBufferBase& IdxBuf, PrimitiveType eType, int ivbase, int ivcount)
-      final;
+  DrawIndexedPrimitiveEML(const VertexBufferBase& VBuf, const IndexBufferBase& IdxBuf, PrimitiveType eType) final;
 
   void DrawInstancedIndexedPrimitiveEML(
       const VertexBufferBase& VBuf,
@@ -229,28 +219,19 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class GlFrameBufferInterface : public FrameBufferInterface {
-public:
+struct GlFrameBufferInterface : public FrameBufferInterface {
+
   GlFrameBufferInterface(ContextGL& mTarget);
   ~GlFrameBufferInterface();
 
   ///////////////////////////////////////////////////////
 
-  void SetRtGroup(RtGroup* Base) final;
-  void Clear(const fcolor4& rCol, float fdepth) final;
-  void clearDepth(float fdepth) final;
-  void _setViewport(int iX, int iY, int iW, int iH) final;
-  void _setScissor(int iX, int iY, int iW, int iH) final;
-  void _doBeginFrame(void) final;
-  void _doEndFrame(void) final;
-
   void capture(const RtBuffer* inpbuf, const file::Path& pth) final;
-  bool captureToTexture(const CaptureBuffer& capbuf, Texture& tex) final {
-    return false;
-  }
+  bool captureToTexture(const CaptureBuffer& capbuf, Texture& tex) final;
   bool captureAsFormat(const RtBuffer* inpbuf, CaptureBuffer* buffer, EBufferFormat destfmt) final;
-
   void GetPixel(const fvec4& rAt, PixelFetchContext& ctx) final;
+
+  ///////////////////////////////////////////////////////
 
   void rtGroupClear(RtGroup* rtg) final;
   void rtGroupMipGen(RtGroup* rtg) final;
@@ -258,14 +239,26 @@ public:
   void blit(rtgroup_ptr_t src, rtgroup_ptr_t dst) final;
   void downsample2x2(rtgroup_ptr_t src, rtgroup_ptr_t dst) final;
 
+  ///////////////////////////////////////////////////////
+
+  void _initializeContext(DisplayBuffer* pBuf);
+  void _setViewport(int iX, int iY, int iW, int iH) final;
+  void _setScissor(int iX, int iY, int iW, int iH) final;
+  void _doBeginFrame(void) final;
+  void _doEndFrame(void) final;
+  void _pushRtGroup(RtGroup* Base) final;
+  RtGroup* _popRtGroup(bool continue_render) final;
+
+  void _setRtGroup(RtGroup* rtgroup);
+
   //////////////////////////////////////////////
 
+  void _present();
   void _setAsRenderTarget();
-  void _initializeContext(DisplayBuffer* pBuf);
+  //void Clear(const fcolor4& rCol, float fdepth) final;
+  //void clearDepth(float fdepth) final;
 
   freestyle_mtl_ptr_t utilshader();
-
-protected:
 
   freestyle_mtl_ptr_t _freestyle_mtl;
   const FxShaderTechnique* _tek_downsample2x2 = nullptr;
@@ -386,11 +379,24 @@ constexpr GLuint PBOOBJBASE   = 0x12340000;
 
 struct GlTextureInterface : public TextureInterface {
 
-  void TexManInit(void) override;
+  GlTextureInterface(ContextGL& tgt);
+
+  void TexManInit() override;
+
+  bool destroyTexture(texture_ptr_t ptex) final;
+  void ApplySamplingMode(Texture* ptex) final;
+  void UpdateAnimatedTexture(Texture* ptex, TextureAnimationInst* tai) final;
+  void initTextureFromData(Texture* ptex, TextureInitData tid) final;
+  void generateMipMaps(Texture* ptex) final;
+  Texture* createFromMipChain(MipChain* from_chain) final;
+
+  //bool LoadTexture(const AssetPath& fname, texture_ptr_t ptex) final;
+  //void SaveTexture(const ork::AssetPath& fname, Texture* ptex) final;
+  //bool LoadTexture(texture_ptr_t ptex, datablock_ptr_t inpdata) final;
+  ///////////////////////////////////////////////
 
   pboptr_t _getPBO(size_t isize);
   void _returnPBO(pboptr_t pbo);
-  GlTextureInterface(ContextGL& tgt);
 
   void bindTextureToUnit(const Texture* tex, GLenum tex_target, int tex_unit);
 
@@ -403,16 +409,6 @@ struct GlTextureInterface : public TextureInterface {
   bool _loadDDSTexture(const AssetPath& fname, texture_ptr_t ptex);
   bool _loadDDSTexture(texture_ptr_t ptex, datablock_ptr_t inpdata);
   bool _loadVDSTexture(const AssetPath& fname, texture_ptr_t ptex);
-
-  bool LoadTexture(texture_ptr_t ptex, datablock_ptr_t inpdata) final;
-  bool destroyTexture(texture_ptr_t ptex) final;
-  bool LoadTexture(const AssetPath& fname, texture_ptr_t ptex) final;
-  void SaveTexture(const ork::AssetPath& fname, Texture* ptex) final;
-  void ApplySamplingMode(Texture* ptex) final;
-  void UpdateAnimatedTexture(Texture* ptex, TextureAnimationInst* tai) final;
-  void initTextureFromData(Texture* ptex, TextureInitData tid) final;
-  void generateMipMaps(Texture* ptex) final;
-  Texture* createFromMipChain(MipChain* from_chain) final;
 
   std::map<size_t, pbosetptr_t> _pbosets;
   ContextGL& mTargetGL;
@@ -495,7 +491,7 @@ public:
   }
   void _doEndFrame(void) final {
   }
-  void* _doClonePlatformHandle() const final;
+  ctx_platform_handle_t _doClonePlatformHandle() const final;
 
 public:
   //////////////////////////////////////////////
@@ -506,9 +502,6 @@ public:
   }
   ImmInterface* IMI() final {
     return &mImI;
-  }
-  RasterStateInterface* RSI() final {
-    return &mRsI;
   }
   MatrixStackInterface* MTXI() final {
     return &mMtxI;
@@ -522,11 +515,9 @@ public:
   TextureInterface* TXI() final {
     return &mTxI;
   }
-#if defined(ENABLE_COMPUTE_SHADERS)
   ComputeInterface* CI() final {
     return &mCI;
   };
-#endif
   DrawingInterface* DWI() final {
     return &mDWI;
   }
@@ -556,20 +547,27 @@ public:
   }
 
 
-  void swapBuffers(CTXBASE* ctxbase) final;
+  //void swapBuffers(CTXBASE* ctxbase) final;
 
   void initializeWindowContext(Window* pWin, CTXBASE* pctxbase) final; // make a window
   void initializeOffscreenContext(DisplayBuffer* pBuf) final;        // make a pbuffer
   void initializeLoaderContext() final;
 
-  void debugPushGroup(const std::string str) final;
+  void debugPushGroup(const std::string str, const fvec4& color) final;
   void debugPopGroup() final;
-  void debugMarker(const std::string str) final;
+  void debugPushGroup(commandbuffer_ptr_t cb, const std::string str, const fvec4& color) final;
+  void debugPopGroup(commandbuffer_ptr_t cb) final;
+
+  void debugMarker(const std::string str, const fvec4& color) final;
 
   void TakeThreadOwnership() final;
   bool SetDisplayMode(DisplayMode* mode) final;
-  void* _doBeginLoad() final;
-  void _doEndLoad(void* ploadtok) final; // virtual
+  load_token_t _doBeginLoad() final;
+  void _doEndLoad(load_token_t ploadtok) final; // virtual
+
+  void _doPushCommandBuffer(commandbuffer_ptr_t cmdbuf, rtgroup_ptr_t rtg) final;
+  void _doPopCommandBuffer() final;
+  void _doEnqueueSecondaryCommandBuffer(commandbuffer_ptr_t cmdbuf) final;
 
   void* mhHWND;
   void* mGLXContext;
@@ -585,7 +583,7 @@ public:
 
   //////////////////////////////////////////////
 
-  static ork::MpMcBoundedQueue<void*> _loadTokens;
+  static ork::MpMcBoundedQueue<load_token_t> _loadTokens;
 
   ///////////////////////////////////////////////////////////////////////////
   // Rendering State Info
@@ -602,16 +600,12 @@ public:
 
   GlImiInterface mImI;
   glslfx::Interface mFxI;
-  GlRasterStateInterface mRsI;
   GlMatrixStackInterface mMtxI;
   GlGeometryBufferInterface mGbI;
   GlFrameBufferInterface mFbI;
   GlTextureInterface mTxI;
   GlDrawingInterface mDWI;
-
-#if defined(ENABLE_COMPUTE_SHADERS)
   glslfx::ComputeInterface mCI;
-#endif
 
   bool mTargetDrawableSizeDirty;
 };

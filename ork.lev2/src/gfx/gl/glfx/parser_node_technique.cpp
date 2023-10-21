@@ -114,11 +114,11 @@ int PassNode::parse(GlSlFxParser* parser, const ScannerView& view, int istart) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void TechniqueNode::_generate2(shaderbuilder::BackEnd& backend) const {
-  Technique* ptek = new Technique(_name);
+  auto ptek = std::make_shared<Technique>(_name);
   for (auto item : _passNodes) {
     item.second->_generate2(backend);
     auto pass = backend._statemap["pass"].get<Pass*>();
-    ptek->addPass(pass);
+    Technique::addPass(ptek,pass);
   }
   backend._container->addTechnique(ptek);
 }

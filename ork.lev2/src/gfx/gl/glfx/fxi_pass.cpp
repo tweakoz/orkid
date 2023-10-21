@@ -19,14 +19,14 @@ static logchannel_ptr_t logchan_pass = logger()->createChannel("GLSLFXPASS", fve
 ///////////////////////////////////////////////////////////////////////////////
 
 bool Pass::hasUniformInstance(UniformInstance* puni) const {
-  Uniform* pun = puni->mpUniform;
+  auto pun = puni->mpUniform;
   auto it      = _uniformInstances.find(pun->_name);
   return it != _uniformInstances.end();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const UniformInstance* Pass::uniformInstance(Uniform* puni) const {
+const UniformInstance* Pass::uniformInstance(uniform_ptr_t puni) const {
   auto it = _uniformInstances.find(puni->_name);
   return (it != _uniformInstances.end()) ? it->second : nullptr;
 }
@@ -204,7 +204,7 @@ void Pass::postProc(rootcontainer_ptr_t container) {
     auto it = container->_uniforms.find(str_name);
     if (it != container->_uniforms.end()) {
 
-      Uniform* puni = it->second;
+      uniform_ptr_t puni = it->second;
 
       puni->_type = unityp;
 

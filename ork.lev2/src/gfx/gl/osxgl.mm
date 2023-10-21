@@ -45,22 +45,11 @@ static void _osxDisableMacOs(ContextGL* cgl){
 
 /////////////////////////////////////////////////////////////////////////
 
-void setAlwaysOnTop(GLFWwindow *window) {
-    id glfwWindow = glfwGetCocoaWindow(window);
-    //id nsWindow = ((id(*)(id, SEL))objc_msgSend)(glfwWindow, sel_registerName("window"));
-    id nsWindow = glfwWindow;
-
-    NSUInteger windowLevel = ((NSUInteger(*)(id, SEL))objc_msgSend)(nsWindow, sel_registerName("level"));
-    windowLevel = CGWindowLevelForKey(kCGFloatingWindowLevelKey);
-    ((void(*)(id, SEL, NSUInteger))objc_msgSend)(nsWindow, sel_registerName("setLevel:"), windowLevel);
-}
-
-bool _macosUseHIDPI = false;
 bool g_allow_HIDPI = false;
 
-ork::MpMcBoundedQueue<void*> ContextGL::_loadTokens;
+ork::MpMcBoundedQueue<load_token_t> ContextGL::_loadTokens;
 
-struct GlOsxPlatformObject
+struct GlOsxPlatformObject : public GlPlatformObject
 {
   static GlOsxPlatformObject* _global_plato;
   static GlOsxPlatformObject* _current;
@@ -68,20 +57,19 @@ struct GlOsxPlatformObject
 	ContextGL*		_context = nullptr;
   CtxGLFW* _ctxbase = nullptr;
   bool _needsInit       = true;
-  void_lambda_t _bindop;
 
 	GlOsxPlatformObject()
-		: _bindop([=](){}) {
+		: GlPlatformObject() {
 	}
   /////////////////////////////////////
-  void makeCurrent() {
+  void makeCurrent() final {
     _current = this;
     if(_ctxbase)
       _ctxbase->makeCurrent();
   }
-  void swapBuffers() {
-    if(_ctxbase)
-      _ctxbase->swapBuffers();
+  void swapBuffers() final  {
+    //if(_ctxbase)
+    //  _ctxbase->swapBuffers();
   }
   /////////////////////////////////////
 };
@@ -94,6 +82,8 @@ struct GlOsxLoadContext {
   GlOsxPlatformObject* _global_plato = nullptr;
   GLFWwindow* _pushedContext        = nullptr;
 };
+
+using load_context_ptr_t = std::shared_ptr<GlOsxLoadContext>;
 
 /////////////////////////////////////////////////////////////////////////
 
@@ -149,9 +139,10 @@ void ContextGL::GLinit()
 
   ////////////////////////////////////
   for (int i = 0; i < 1; i++) {
-    GlOsxLoadContext* loadctx = new GlOsxLoadContext;
+    load_token_t token;
+    auto loadctx = token.makeShared<GlOsxLoadContext>();
     loadctx->_global_plato  = GlOsxPlatformObject::_global_plato;
-    _loadTokens.push((void*)loadctx);
+    _loadTokens.push(loadctx);
   }
 }
 
@@ -182,12 +173,12 @@ ContextGL::ContextGL()
 	: Context()
 	, mFxI( *this )
 	, mImI( *this )
-	, mRsI( *this )
 	, mGbI( *this )
 	, mFbI( *this )
 	, mTxI( *this )
 	, mMtxI( *this )
 	, mDWI(*this)
+	, mCI(*this)
 	, mTargetDrawableSizeDirty(true)
 {
   ContextGL::GLinit();
@@ -206,10 +197,10 @@ void ContextGL::initializeWindowContext( Window *pWin, CTXBASE* pctxbase  ) {
   auto glfw_container = (CtxGLFW*)pctxbase;
   auto glfw_window    = glfw_container->_glfwWindow;
   ///////////////////////
-  GlOsxPlatformObject* plato = new GlOsxPlatformObject;
+  auto plato = std::make_shared<GlOsxPlatformObject>();
   plato->_ctxbase       = glfw_container;
   mCtxBase                  = pctxbase;
-  mPlatformHandle           = (void*)plato;
+  _impl.set<glplato_ptr_t>(plato);
   ///////////////////////
   miW = pWin->GetBufferW();
   miH = pWin->GetBufferH();
@@ -234,8 +225,9 @@ void ContextGL::initializeOffscreenContext( DisplayBuffer *pBuf )
 
   mCtxBase = 0;
 
-  GlOsxPlatformObject* plato = new GlOsxPlatformObject;
-  mPlatformHandle           = (void*)plato;
+  auto plato = std::make_shared<GlOsxPlatformObject>();
+  _impl.setShared<GlPlatformObject>(plato);
+
   mFbI.SetThisBuffer(pBuf);
 
   auto global_plato = GlOsxPlatformObject::_global_plato;
@@ -251,9 +243,9 @@ void ContextGL::initializeOffscreenContext( DisplayBuffer *pBuf )
 
 /////////////////////////////////////////////////////////////////////////
 
-void ContextGL::swapBuffers(CTXBASE* ctxbase) {
-  SwapGLContext(ctxbase);
-}
+//void ContextGL::swapBuffers(CTXBASE* ctxbase) {
+//  SwapGLContext(ctxbase);
+//}
 
 /////////////////////////////////////////////////////////////////////////
 
@@ -266,8 +258,8 @@ void ContextGL::initializeLoaderContext() {
 
   mCtxBase = 0;
 
-  GlOsxPlatformObject* plato = new GlOsxPlatformObject;
-  mPlatformHandle           = (void*)plato;
+  auto plato = std::make_shared<GlOsxPlatformObject>();
+  _impl.setShared<GlPlatformObject>(plato);
 
   auto global_plato   = GlOsxPlatformObject::_global_plato;
   plato->_ctxbase = global_plato->_ctxbase;
@@ -293,7 +285,7 @@ void ContextGL::initializeLoaderContext() {
 /////////////////////////////////////////////////////////////////////////
 
 void ContextGL::makeCurrentContext( void ){
-  auto plato = (GlOsxPlatformObject*)mPlatformHandle;
+  auto plato = _impl.getShared<GlPlatformObject>();
   OrkAssert(plato);
   if (plato) {
     plato->makeCurrent();
@@ -303,66 +295,58 @@ void ContextGL::makeCurrentContext( void ){
 
 /////////////////////////////////////////////////////////////////////////
 
-void* ContextGL::_doClonePlatformHandle() const {
-  auto plato = (GlOsxPlatformObject*)mPlatformHandle;
-  auto new_plato = new GlOsxPlatformObject;
-  new_plato->_ctxbase = nullptr; //plato->_ctxbase;
-  new_plato->_context = plato->_context;
-  new_plato->_needsInit   = false;
-  //new_plato->_bindop = plato->_bindop;
+ctx_platform_handle_t ContextGL::_doClonePlatformHandle() const {
+  auto glplato = _impl.getShared<GlPlatformObject>();
+  auto macplato = std::dynamic_pointer_cast<GlOsxPlatformObject>(glplato);
 
+  ctx_platform_handle_t rval;
+  auto new_plato = rval.makeShared<GlOsxPlatformObject>();
+  new_plato->_ctxbase = nullptr; //plato->_ctxbase;
+  new_plato->_context = macplato->_context;
+  new_plato->_needsInit   = false;
   // TODO : https://github.com/tweakoz/orkid/issues/139
 
-  return new_plato;
+  return rval;
 }
 
 /////////////////////////////////////////////////////////////////////////
 
 void ContextGL::SwapGLContext( CTXBASE *pCTFL )
 {
-  GlOsxPlatformObject* plato = (GlOsxPlatformObject*)mPlatformHandle;
-  OrkAssert(plato);
-  if (plato) {
-    plato->makeCurrent();
-    plato->swapBuffers();
+  auto glplato = _impl.getShared<GlPlatformObject>();
+  OrkAssert(glplato);
+  if (glplato) {
+    glplato->makeCurrent();
+    glplato->swapBuffers();
   }
 }
 
 /////////////////////////////////////////////////////////////////////////
 
-void* ContextGL::_doBeginLoad()
-{
-  void* pvoiddat = nullptr;
-
-  while (false == _loadTokens.try_pop(pvoiddat)) {
+load_token_t ContextGL::_doBeginLoad() {
+  load_token_t token;
+  while (false == _loadTokens.try_pop(token)) {
     usleep(1 << 10);
   }
-  GlOsxLoadContext* loadctx    = (GlOsxLoadContext*)pvoiddat;
+  auto loadctx    = token.getShared<GlOsxLoadContext>();
   GLFWwindow* current_window = glfwGetCurrentContext();
-
   loadctx->_pushedContext = current_window;
   loadctx->_global_plato->makeCurrent();
-  return pvoiddat;
+  return token;
 }
 
-void ContextGL::_doEndLoad(void*ploadtok)
-{
-  GlOsxLoadContext* loadctx = (GlOsxLoadContext*)ploadtok;
+/////////////////////////////////////////////////////////////////////////
+
+void ContextGL::_doEndLoad(load_token_t token) {
+  auto loadctx = token.getShared<GlOsxLoadContext>();
   auto pushed = loadctx->_pushedContext;
   glfwMakeContextCurrent(pushed);
-  _loadTokens.push(ploadtok);
+  _loadTokens.push(token); // return it..
 }
 
+/////////////////////////////////////////////////////////////////////////
+
 void recomputeHIDPI(Context* ctx){
-}
-bool _HIDPI() {
-  return _macosUseHIDPI;
-}
-bool _MIXEDDPI() {
-  return false;
-}
-float _currentDPI(){
-  return 221.0f; // hardcoded to macbook pro for now..
 }
 
 }}
