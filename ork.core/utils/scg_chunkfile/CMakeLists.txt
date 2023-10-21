@@ -21,7 +21,7 @@ add_executable (ork.scg_chunkfile.exe ${srcs} )
 
 target_link_libraries(ork.scg_chunkfile.exe LINK_PRIVATE ork_core )
 target_link_libraries(ork.scg_chunkfile.exe LINK_PRIVATE ork_lev2 )
-target_link_libraries(ork.scg_chunkfile.exe LINK_PRIVATE boost_system )
+target_link_libraries(ork.scg_chunkfile.exe LINK_PRIVATE Boost::system )
 
 set_target_properties(ork.scg_chunkfile.exe PROPERTIES LINKER_LANGUAGE CXX)
 target_include_directories (ork.scg_chunkfile.exe PRIVATE ${ORKROOT}/ork.core/inc )

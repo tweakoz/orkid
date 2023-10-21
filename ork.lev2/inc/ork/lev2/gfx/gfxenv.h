@@ -673,13 +673,17 @@ public:
   static uint64_t createLock();
   static void releaseLock(uint64_t l);
   static void onLocksDone(void_lambda_t l);
-
   static lockset_t dumpLocks();
+
+  static bool supportsBC7();
+  static void disableBC7();
 
   //////////////////////////////////////////////////////////////////////////////
 protected:
   //////////////////////////////////////////////////////////////////////////////
 
+  static bool _bc7Disabled;
+  
   Window* mpMainWindow;
 
   orkvector<DisplayBuffer*> mvActivePBuffers;
