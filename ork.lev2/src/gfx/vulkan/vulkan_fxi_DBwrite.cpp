@@ -147,6 +147,7 @@ datablock_ptr_t VkFxInterface::_writeIntermediateToDataBlock(shadlang::SHAST::tr
   auto frg_shaders    = AstNode::collectNodesOfType<FragmentShader>(transunit);
   auto cu_shaders     = AstNode::collectNodesOfType<ComputeShader>(transunit);
   auto techniques     = AstNode::collectNodesOfType<Technique>(transunit);
+  auto smpsets        = AstNode::collectNodesOfType<SamplerSet>(transunit);
   auto unisets        = AstNode::collectNodesOfType<UniformSet>(transunit);
   auto uniblks        = AstNode::collectNodesOfType<UniformBlk>(transunit);
   auto imports        = AstNode::collectNodesOfType<ImportDirective>(transunit);
@@ -159,6 +160,7 @@ datablock_ptr_t VkFxInterface::_writeIntermediateToDataBlock(shadlang::SHAST::tr
   size_t num_frg_ifaces  = frg_interfaces.size();
   size_t num_cu_shaders  = cu_shaders.size();
   size_t num_techniques  = techniques.size();
+  size_t num_smpsets     = smpsets.size();
   size_t num_unisets     = unisets.size();
   size_t num_uniblks     = uniblks.size();
   size_t num_imports     = imports.size();
@@ -171,11 +173,15 @@ datablock_ptr_t VkFxInterface::_writeIntermediateToDataBlock(shadlang::SHAST::tr
   printf("num_frg_interfaces<%zu>\n", num_frg_ifaces);
   printf("num_cu_shaders<%zu>\n", num_cu_shaders);
   printf("num_techniques<%zu>\n", num_techniques);
+  printf("num_smpsets<%zu>\n", num_smpsets);
   printf("num_unisets<%zu>\n", num_unisets);
   printf("num_uniblks<%zu>\n", num_uniblks);
   printf("num_imports<%zu>\n", num_imports);
   //////////////////
   auto SPC = std::make_shared<spirv::SpirvCompiler>(transunit, true);
+  for (auto spirvsmpset : SPC->_spirvsamplersets) {
+    printf("spirvsmpset<%s>\n", spirvsmpset.first.c_str());
+  }
   for (auto spirvuniset : SPC->_spirvuniformsets) {
     printf("spirvuniset<%s>\n", spirvuniset.first.c_str());
   }
@@ -193,11 +199,38 @@ datablock_ptr_t VkFxInterface::_writeIntermediateToDataBlock(shadlang::SHAST::tr
   header_stream->addItem<uint64_t>(num_frg_shaders);
   header_stream->addItem<uint64_t>(num_frg_ifaces);
   header_stream->addItem<uint64_t>(num_cu_shaders);
+  header_stream->addItem<uint64_t>(num_smpsets);
   header_stream->addItem<uint64_t>(num_unisets);
   header_stream->addItem<uint64_t>(num_uniblks);
   header_stream->addItem<uint64_t>(num_techniques);
   header_stream->addItem<uint64_t>(num_imports);
 
+  //////////////////
+  // samplersets
+  //////////////////
+
+  auto write_smpsets_to_stream = [&](std::unordered_map<std::string, spirv::spirvsmpset_ptr_t>& spirv_smpsets) { //
+    uniforms_stream->addIndexedString("smpsets", chunkwriter);
+    uniforms_stream->addItem<size_t>(spirv_smpsets.size());
+
+    for (auto smp_item : spirv_smpsets) {
+      std::string name  = smp_item.first;
+      auto spirv_smpset = smp_item.second;
+      /////////////////////////////////////////////
+      // vk_uniset->_descriptor_set_id = spirv_smpset->_descriptor_set_id;
+      /////////////////////////////////////////////
+      // rebuild _samplers_by_name
+      /////////////////////////////////////////////
+      uniforms_stream->addIndexedString("smpset", chunkwriter);
+      uniforms_stream->addIndexedString(name, chunkwriter);
+      uniforms_stream->addIndexedString("samplers", chunkwriter);
+      uniforms_stream->addItem<size_t>(spirv_smpset->_samplers_by_name.size());
+      for (auto item : spirv_smpset->_samplers_by_name) {
+        uniforms_stream->addIndexedString(item.second->_datatype, chunkwriter);
+        uniforms_stream->addIndexedString(item.second->_identifier, chunkwriter);
+      }
+    }
+  };
   //////////////////
   // uniformsets
   //////////////////
@@ -216,15 +249,6 @@ datablock_ptr_t VkFxInterface::_writeIntermediateToDataBlock(shadlang::SHAST::tr
       /////////////////////////////////////////////
       uniforms_stream->addIndexedString("uniset", chunkwriter);
       uniforms_stream->addIndexedString(name, chunkwriter);
-      uniforms_stream->addIndexedString("samplers", chunkwriter);
-      uniforms_stream->addItem<size_t>(spirv_uniset->_samplers_by_name.size());
-      for (auto item : spirv_uniset->_samplers_by_name) {
-        uniforms_stream->addIndexedString(item.second->_datatype, chunkwriter);
-        uniforms_stream->addIndexedString(item.second->_identifier, chunkwriter);
-      }
-      /////////////////////////////////////////////
-      // rebuild _items_by_name
-      /////////////////////////////////////////////
       uniforms_stream->addIndexedString("params", chunkwriter);
       uniforms_stream->addItem<size_t>(spirv_uniset->_items_by_order.size());
       for (auto item : spirv_uniset->_items_by_order) {
@@ -263,6 +287,7 @@ datablock_ptr_t VkFxInterface::_writeIntermediateToDataBlock(shadlang::SHAST::tr
     }
   };
 
+  write_smpsets_to_stream(SPC->_spirvsamplersets);
   write_unisets_to_stream(SPC->_spirvuniformsets);
   write_uniblks_to_stream(SPC->_spirvuniformblks);
 
@@ -299,6 +324,13 @@ datablock_ptr_t VkFxInterface::_writeIntermediateToDataBlock(shadlang::SHAST::tr
     shadlang::spirv::InheritanceTracker tracker(transunit);
     tracker.fetchInheritances(shader_node);
 
+    //////////////////////////////////////////////////////////////////
+    shader_stream->addItem<size_t>(tracker._inherited_ssets.size());
+    for (auto uset : tracker._inherited_ssets) {
+      auto INHID = uset->typedValueForKey<std::string>("object_name").value();
+      shader_stream->addIndexedString(INHID, chunkwriter);
+      printf("INHID<%s>\n", INHID.c_str());
+    }
     //////////////////////////////////////////////////////////////////
     shader_stream->addItem<size_t>(tracker._inherited_usets.size());
     for (auto uset : tracker._inherited_usets) {

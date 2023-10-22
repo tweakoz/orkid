@@ -99,6 +99,7 @@ KW_COMSHADER        <| "compute_shader" |>
 KW_MSHSHADER        <| "mesh_shader" |>
 
 KW_UNISET           <| "uniform_set" |>
+KW_SMPSET           <| "sampler_set" |>
 KW_UNIBLK           <| "uniform_block" |>
 KW_VTXIFACE         <| "vertex_interface" |>
 KW_GEOIFACE         <| "geometry_interface" |>

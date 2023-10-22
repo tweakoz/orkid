@@ -92,6 +92,8 @@ struct VkFxShaderFile;
 struct VkFxShaderProgram;
 struct VkFxShaderPass;
 struct VkFxShaderTechnique;
+struct VkFxShaderSamplerSet;
+struct VkFxShaderSamplerSetItem;
 struct VkFxShaderUniformSet;
 struct VkFxShaderUniformSetItem;
 struct VkFxShaderUniformSetSampler;
@@ -143,6 +145,7 @@ using vkfxspass_ptr_t       = std::shared_ptr<VkFxShaderPass>;
 using vkfxstek_ptr_t        = std::shared_ptr<VkFxShaderTechnique>;
 using vkpipeline_obj_ptr_t  = std::shared_ptr<VkPipelineObject>;
 using vkprimclass_ptr_t     = std::shared_ptr<VkPrimitiveClass>;
+using vkfxssmpset_ptr_t     = std::shared_ptr<VkFxShaderSamplerSet>;
 using vkfxsuniset_ptr_t     = std::shared_ptr<VkFxShaderUniformSet>;
 using vkfxsunisetitem_ptr_t = std::shared_ptr<VkFxShaderUniformSetItem>;
 using vkfxsunisetsamp_ptr_t = std::shared_ptr<VkFxShaderUniformSetSampler>;
@@ -169,6 +172,7 @@ using vkswapchain_ptr_t         = std::shared_ptr<VkSwapChain>;
 using vkmsaastate_ptr_t         = std::shared_ptr<VkMsaaState>;
 using vkrasterstate_ptr_t       = std::shared_ptr<VkRasterState>;
 
+using smpset_map_t      = std::map<std::string, vkfxssmpset_ptr_t>;
 using uniset_map_t      = std::map<std::string, vkfxsuniset_ptr_t>;
 using uniset_item_map_t = std::map<std::string, vkfxsunisetitem_ptr_t>;
 
@@ -602,17 +606,25 @@ struct VkFxShaderUniformSetSampler {
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct VkFxShaderUniformSet {
-  static size_t descriptor_set_counter;
-  size_t _descriptor_set_id = 0;
-  std::unordered_map<std::string, vkfxsunisetsamp_ptr_t> _samplers_by_name;
   std::unordered_map<std::string, vkfxsunisetitem_ptr_t> _items_by_name;
   std::vector<vkfxsunisetitem_ptr_t> _items_by_order;
 };
-struct VkFxShaderUniformSetsReference {
+///////////////////////////////////////////////////////////////////////////////
+struct VkFxShaderSamplerSet {
   static size_t descriptor_set_counter;
+  size_t _descriptor_set_id = 0;
+  std::unordered_map<std::string, vkfxsunisetsamp_ptr_t> _samplers_by_name;
+  std::vector<vkfxsunisetsamp_ptr_t> _samplers_by_order;
+};
+struct VkFxShaderUniformSetsReference {
   uniset_map_t _unisets;
 };
+struct VkFxShaderSamplerSetsReference {
+  static size_t descriptor_set_counter;
+  smpset_map_t _smpsets;
+};
 using vkfxsunisetsref_ptr_t = std::shared_ptr<VkFxShaderUniformSetsReference>;
+using vkfxssmpsetsref_ptr_t = std::shared_ptr<VkFxShaderSamplerSetsReference>;
 ///////////////////////////////////////////////////////////////////////////////
 struct VkFxShaderPushConstantBlock {
   uniset_map_t _vtx_unisets;
@@ -658,6 +670,7 @@ struct VkFxShaderFile {
   // shadlang::SHAST::translationunit_ptr_t _trans_unit;
   std::unordered_map<std::string, vkfxsobj_ptr_t> _vk_shaderobjects;
   std::unordered_map<std::string, vkfxstek_ptr_t> _vk_techniques;
+  std::unordered_map<std::string, vkfxssmpset_ptr_t> _vk_samplersets;
   std::unordered_map<std::string, vkfxsuniset_ptr_t> _vk_uniformsets;
   std::unordered_map<std::string, vkfxsuniblk_ptr_t> _vk_uniformblks;
   std::unordered_map<std::string, vkvertexinterface_ptr_t> _vk_vtxinterfaces;
@@ -676,6 +689,7 @@ struct VulkanFxShaderObject {
   VkPipelineShaderStageCreateInfo _shaderstageinfo;
   // shadlang::SHAST::astnode_ptr_t _astnode; // debug only
   vkfxsunisetsref_ptr_t _uniset_refs;
+  vkfxssmpsetsref_ptr_t _smpset_refs;
   std::unordered_map<std::string, vkfxsuniblk_ptr_t> _vk_uniformblks;
   std::vector<std::string> _vk_interfaces;
 
@@ -718,6 +732,7 @@ struct VkFxShaderProgram {
   int _pipeline_bits_prg = -1;
   int _pipeline_bits_composite = -1;
 
+  std::unordered_map<std::string, vkfxssmpset_ptr_t> _vk_samplersets;
   std::unordered_map<std::string, vkfxsuniset_ptr_t> _vk_uniformsets;
   VkFxShaderFile* _shader_file = nullptr;
 };

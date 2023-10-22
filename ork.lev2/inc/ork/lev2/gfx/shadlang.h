@@ -91,6 +91,7 @@ struct ShadLangParserCache{
   SHAST::import_map_t _import_cache;
   SHAST::astnode_map_t _type_blocks;
   SHAST::astnode_map_t _library_blocks;
+  SHAST::astnode_map_t _sampler_sets;
   SHAST::astnode_map_t _uniform_sets;
   SHAST::astnode_map_t _uniform_blocks;
   SHAST::astnode_map_t _vertex_interfaces;

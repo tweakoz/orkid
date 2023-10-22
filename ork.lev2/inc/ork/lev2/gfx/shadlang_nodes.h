@@ -246,6 +246,8 @@ DECLARE_STD_AST_CLASS(LanguageElement,ArgumentDeclaration);
 DECLARE_STD_AST_CLASS(LanguageElement,DataDeclarationBase);
 DECLARE_STD_AST_CLASS(DataDeclarationBase,DataDeclaration);
 DECLARE_STD_AST_CLASS(DataDeclarationBase,ArrayDeclaration);
+DECLARE_STD_AST_CLASS(LanguageElement,SamplerDeclaration);
+DECLARE_STD_AST_CLASS_WPTR(LanguageElement,SamplerType, smp_ptr_t);
 //
 DECLARE_STD_AST_CLASS_WPTR(LanguageElement,TypedIdentifier, tid_ptr_t);
 DECLARE_STD_AST_CLASS(LanguageElement,ObjectName);
@@ -255,6 +257,7 @@ DECLARE_STD_AST_CLASS(LanguageElement,AssignmentStatementVarDecl);
 DECLARE_STD_AST_CLASS(LanguageElement,Expression);
 DECLARE_STD_AST_CLASS(LanguageElement,Statement);
 DECLARE_STD_AST_CLASS(LanguageElement,DataDeclarations);
+DECLARE_STD_AST_CLASS(LanguageElement,SamplerDeclarations);
 DECLARE_STD_AST_CLASS(LanguageElement,StructDecl);
 //
 DECLARE_STD_AST_CLASS(LanguageElement,Operator);
@@ -307,6 +310,7 @@ DECLARE_STD_AST_CLASS(SemaExpression,SemaConstructorArguments);
 DECLARE_STD_AST_CLASS_WPTR(SemaExpression,SemaInherit,semainh_ptr_t);
 DECLARE_STD_AST_CLASS_WPTR(SemaInherit,SemaInheritLibrary, semainhlib_ptr_t);
 DECLARE_STD_AST_CLASS_WPTR(SemaInherit,SemaInheritTypeBlock, semainhtypblk_ptr_t);
+DECLARE_STD_AST_CLASS_WPTR(SemaInherit,SemaInheritSamplerSet, semainhsmpset_ptr_t);
 DECLARE_STD_AST_CLASS_WPTR(SemaInherit,SemaInheritUniformSet, semainhuniset_ptr_t);
 DECLARE_STD_AST_CLASS_WPTR(SemaInherit,SemaInheritUniformBlk, semainhuniblk_ptr_t);
 DECLARE_STD_AST_CLASS_WPTR(SemaInherit,SemaInheritStateBlock, semainhstblk_ptr_t);
@@ -352,6 +356,7 @@ DECLARE_STD_AST_CLASS(Translatable,Technique);
 DECLARE_STD_AST_CLASS(Translatable,FunctionDef1);
 DECLARE_STD_AST_CLASS_WPTR(Translatable,FunctionDef2, fndef2_ptr_t);
 DECLARE_STD_AST_CLASS_WPTR(Translatable,UniformSet,uniset_ptr_t);
+DECLARE_STD_AST_CLASS_WPTR(Translatable,SamplerSet,samplerset_ptr_t);
 DECLARE_STD_AST_CLASS(Translatable,UniformBlk);
 //
 DECLARE_STD_AST_CLASS(AstNode,Pass);
@@ -388,6 +393,7 @@ struct InheritanceTracker{
   using on_lib_fn_t = std::function<void(std::string, libblock_ptr_t)>;
   using on_typ_fn_t = std::function<void(std::string, typeblock_ptr_t)>;
   using on_iface_fn_t = std::function<void(std::string, astnode_ptr_t)>;
+  using on_sset_fn_t = std::function<void(std::string, astnode_ptr_t)>;
   using on_uset_fn_t = std::function<void(std::string, astnode_ptr_t)>;
   using on_ublk_fn_t = std::function<void(std::string, astnode_ptr_t)>;
   using on_ext_fn_t = std::function<void(std::string,astnode_ptr_t)>;
@@ -395,6 +401,7 @@ struct InheritanceTracker{
   on_lib_fn_t _onInheritLibrary = nullptr;
   on_typ_fn_t _onInheritTypes = nullptr;
   on_iface_fn_t _onInheritInterface = nullptr;
+  on_sset_fn_t _onInheritSamplerSet = nullptr;
   on_uset_fn_t _onInheritUniformSet = nullptr;
   on_ublk_fn_t _onInheritUniformBlk = nullptr; 
   on_ext_fn_t _onInheritExtension = nullptr;
@@ -403,6 +410,7 @@ struct InheritanceTracker{
   
   std::set<std::string> _set_inherited_libs;
   std::set<std::string> _set_inherited_typs;
+  std::set<std::string> _set_inherited_smpsets;
   std::set<std::string> _set_inherited_unisets;
   std::set<std::string> _set_inherited_uniblks;
   std::set<std::string> _set_inherited_interfaces;
@@ -410,6 +418,7 @@ struct InheritanceTracker{
 
   std::vector<libblock_ptr_t> _inherited_libs;
   std::vector<typeblock_ptr_t> _inherited_types;
+  std::vector<astnode_ptr_t> _inherited_ssets;
   std::vector<astnode_ptr_t> _inherited_usets;
   std::vector<astnode_ptr_t> _inherited_blks;
   std::vector<astnode_ptr_t> _inherited_ifaces;

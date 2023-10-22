@@ -17,13 +17,16 @@ uniform_set ublock_vtx_stereo {
   mat4 MatMVPR;
 }
 ///////////////////////////////////////////////////////////////
+sampler_set sset_frg {
+  sampler2D ColorMap;
+  sampler2D ColorMap2;
+  sampler2D ColorMap3;
+
+}
 uniform_set ublock_frg {
   vec4 modcolor;
   int downsampledim;
   float downsampleamp;
-  sampler2D ColorMap;
-  sampler2D ColorMap2;
-  sampler2D ColorMap3;
 }
 ///////////////////////////////////////////////////////////////
 vertex_interface iface_vdefault {
@@ -55,7 +58,7 @@ vertex_interface iface_vdefault_stereo : iface_vdefault {
   }
 }
 ///////////////////////////////////////////////////////////////
-fragment_interface iface_fdefault : ublock_frg {
+fragment_interface iface_fdefault : ublock_frg : sset_frg {
   inputs {
     vec4 frg_clr;
     vec2 frg_uv0;
@@ -63,7 +66,7 @@ fragment_interface iface_fdefault : ublock_frg {
   outputs { layout(location = 0) vec4 out_clr; }
 }
 ///////////////////////////////////////////////////////////////
-fragment_interface iface_fmt : ublock_frg {
+fragment_interface iface_fmt : ublock_frg : sset_frg {
   inputs { vec2 frg_uv0; }
   outputs { layout(location = 0) vec4 out_clr; }
 }

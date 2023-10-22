@@ -642,6 +642,10 @@ GLFX1Backend::GLFX1Backend() {
     auto dt_type = dt_node->template typedValueForKey<std::string>("data_type").value();
     emitContinueLine("%s", dt_type.c_str());
   });
+  registerAstPreCB<SamplerType>([=](auto dt_node) {
+    auto dt_type = dt_node->template typedValueForKey<std::string>("sampler_type").value();
+    emitContinueLine("%s", dt_type.c_str());
+  });
   registerAstPreCB<PrimaryIdentifier>([=](auto pid_node) {
     auto ident = pid_node->template typedValueForKey<std::string>("identifier_name").value();
     emitContinueLine("%s", ident.c_str());

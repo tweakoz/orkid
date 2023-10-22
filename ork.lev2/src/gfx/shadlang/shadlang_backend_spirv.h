@@ -14,17 +14,19 @@ namespace ork::lev2::shadlang::spirv {
 using namespace shadlang::SHAST;
 
 struct SpirvUniformSet;
+struct SpirvSamplerSet;
 struct SpirvUniformSetItem;
-struct SpirvUniformSetSampler;
+struct SpirvSampler;
 struct SpirvUniformBlock;
 struct SpirvUniformBlockItem;
 
 using spirvuniset_ptr_t     = std::shared_ptr<SpirvUniformSet>;
+using spirvsmpset_ptr_t     = std::shared_ptr<SpirvSamplerSet>;
 using spirvunisetitem_ptr_t = std::shared_ptr<SpirvUniformSetItem>;
-using spirvunisetsamp_ptr_t = std::shared_ptr<SpirvUniformSetSampler>;
+using spirvsampler_ptr_t    = std::shared_ptr<SpirvSampler>;
 
 using spirvuniblk_ptr_t     = std::shared_ptr<SpirvUniformBlock>;
-using spirvuniblkitem_ptr_t     = std::shared_ptr<SpirvUniformBlockItem>;
+using spirvuniblkitem_ptr_t = std::shared_ptr<SpirvUniformBlockItem>;
 
 using shader_bin_t     = std::vector<uint32_t>;
 
@@ -35,7 +37,7 @@ struct SpirvUniformSetItem {
   size_t _array_length = 0;
   size_t _offset = 0;
 };
-struct SpirvUniformSetSampler {
+struct SpirvSampler {
   size_t _binding_id = -1;
   std::string _datatype;
   std::string _identifier;
@@ -43,10 +45,14 @@ struct SpirvUniformSetSampler {
 
 struct SpirvUniformSet {
   std::string _name;
-  size_t _descriptor_set_id = 0;
-  std::unordered_map<std::string, spirvunisetsamp_ptr_t> _samplers_by_name;
   std::unordered_map<std::string, spirvunisetitem_ptr_t> _items_by_name;
   std::vector<spirvunisetitem_ptr_t> _items_by_order;
+};
+struct SpirvSamplerSet {
+  std::string _name;
+  size_t _descriptor_set_id = 0;
+  std::unordered_map<std::string, spirvsampler_ptr_t> _samplers_by_name;
+  std::vector<spirvsampler_ptr_t> _samplers_by_order;
 };
 
 struct SpirvUniformBlockItem {
@@ -81,6 +87,7 @@ struct SpirvCompiler {
 
 private:
 
+  void _convertSamplerSets();
   void _convertUniformSets();
   void _convertUniformBlocks();
   void _appendText(miscgroupnode_ptr_t grp, const char* formatstring, ...);
@@ -89,6 +96,7 @@ private:
 
   void _inheritLibrary(libblock_ptr_t lib_node);
   void _inheritTypes(typeblock_ptr_t typ_node);
+  void _inheritSamplerSet(std::string unisetname, spirvsmpset_ptr_t smpset_node);
   void _inheritUniformSet(std::string unisetname, spirvuniset_ptr_t uniset_node);
   void _inheritUniformBlk(std::string uniblkname, spirvuniblk_ptr_t uniblk_node);
   void _inheritIO(astnode_ptr_t interface_node);
@@ -123,6 +131,7 @@ public:
 
   shader_bin_t _spirv_binary;
   std::string _shader_name;
+  std::unordered_map<std::string, spirvsmpset_ptr_t> _spirvsamplersets;
   std::unordered_map<std::string, spirvuniset_ptr_t> _spirvuniformsets;
   std::unordered_map<std::string, spirvuniblk_ptr_t> _spirvuniformblks;
 

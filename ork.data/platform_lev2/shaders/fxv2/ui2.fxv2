@@ -12,13 +12,15 @@ state_block sb_ui : default {
 	BlendMode = OFF;
 }
 ///////////////////////////////////////////////////////////////
+sampler_set smp_ui {
+  sampler2D InstanceMatrices;
+  sampler2D ColorMap;
+  usampler2D InstanceIds;
+}
 uniform_set ub_ui {
   //uvec4 objid;
   vec4 modcolor;
   mat4 mvp;
-  sampler2D InstanceMatrices;
-  sampler2D ColorMap;
-  usampler2D InstanceIds;
   float time;
 }
 ///////////////////////////////////////////////////////////////

@@ -52,6 +52,7 @@ void ShadLangParser::declareAstNodes() {
   DECLARE_OBJNAME_AST_NODE("geo_name");
   DECLARE_OBJNAME_AST_NODE("frg_name");
   DECLARE_OBJNAME_AST_NODE("com_name");
+  DECLARE_OBJNAME_AST_NODE("smpset_name");
   DECLARE_OBJNAME_AST_NODE("uniset_name");
   DECLARE_OBJNAME_AST_NODE("uniblk_name");
   DECLARE_OBJNAME_AST_NODE("vif_name");
@@ -76,9 +77,12 @@ void ShadLangParser::declareAstNodes() {
   DECLARE_STD_AST_NODE(ArrayRef);
   DECLARE_STD_AST_NODE(DeclArgumentList);
   DECLARE_STD_AST_NODE(TypedIdentifier);
+  DECLARE_STD_AST_NODE(SamplerDeclaration);
   DECLARE_STD_AST_NODE(DataDeclaration);
   DECLARE_STD_AST_NODE(DataDeclarations);
   DECLARE_STD_AST_NODE(ArrayDeclaration);
+  DECLARE_STD_AST_NODE(SamplerDeclaration);
+  DECLARE_STD_AST_NODE(SamplerType);
   DECLARE_STD_AST_NODE(ParensExpression);
   ///////////////////////////////////////////////////////////
   DECLARE_STD_AST_NODE(Directive);
@@ -162,6 +166,7 @@ void ShadLangParser::declareAstNodes() {
   DECLARE_STD_AST_NODE(StateBlock);
   DECLARE_STD_AST_NODE(StateBlockItem);
   DECLARE_STD_AST_NODE(FxConfigDecl);
+  DECLARE_STD_AST_NODE(SamplerSet);
   DECLARE_STD_AST_NODE(UniformSet);
   DECLARE_STD_AST_NODE(UniformBlk);
   DECLARE_STD_AST_NODE(LibraryBlock);

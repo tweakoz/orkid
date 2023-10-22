@@ -14,7 +14,7 @@ uniform_set ub_vtx {
   mat4 mvp_r;
   vec4 modcolor;
 }
-uniform_set ub_vtx_samplers {
+sampler_set ub_vtx_samplers {
   sampler2D InstanceMatrices;
   sampler2D InstanceColors;
   usampler2D InstanceIds;
@@ -39,9 +39,6 @@ uniform_block ub_vtx2 {
 }
 ///////////////////////////////////////////////////////////////
 uniform_set ub_frg {
-  sampler2D ColorMap;
-  sampler2D NormalMap;
-  sampler2D MtlRufMap;
   vec4 ModColor;
   vec2 InvViewportSize; // inverse target size
   float MetallicFactor;
@@ -55,7 +52,8 @@ uniform_set ub_frg_fwd {
   mat4 vp_r;
 
 }
-uniform_set ub_frg_fwd_samplers {
+///////////////////////////////////////////////////////////////
+sampler_set fwd_samplers {
   sampler2D ColorMap;
   sampler2D NormalMap;
   sampler2D MtlRufMap;
@@ -63,6 +61,7 @@ uniform_set ub_frg_fwd_samplers {
   sampler2D MapBrdfIntegration;
   sampler2D MapSpecularEnv;
   sampler2D MapDiffuseEnv;
+  sampler2D UnTexPointLightsData;
 }
 ///////////////////////////////////////////////////////////////
 uniform_block ub_frg_fwd2 {
@@ -100,17 +99,6 @@ uniform_block ub_frg_fwd2 {
   vec3 EyePostion;
   vec3 EyePostionL;
   vec3 EyePostionR;
-}
-///////////////////////////////////////////////////////////////
-uniform_set ub_frg_fwd_samplers {
-  sampler2D ColorMap;
-  sampler2D NormalMap;
-  sampler2D MtlRufMap;
-
-  sampler2D MapBrdfIntegration;
-  sampler2D MapSpecularEnv;
-  sampler2D MapDiffuseEnv;
-  sampler2D UnTexPointLightsData;
 }
 ///////////////////////////////////////////////////////////////
 uniform_block ub_frg_fwd_lighting {
@@ -167,7 +155,7 @@ vertex_interface iface_vgbuffer_skinned : iface_vgbuffer : iface_skintools {
 ///////////////////////////////////////////////////////////////
 fragment_interface iface_forward 
   : ub_frg_fwd2
-  : ub_frg_fwd_samplers
+  : fwd_samplers
   : ub_frg_fwd_lighting {
   inputs {
     vec4 frg_wpos;
@@ -258,7 +246,7 @@ libblock lib_pbr_vtx_instanced {
   }
 }
 ///////////////////////////////////////////////////////////////
-libblock lib_pbr_frg : lib_gbuf_encode {
+libblock lib_pbr_frg : lib_gbuf_encode : fwd_samplers {
   void ps_common_n(vec4 modc, vec3 N, vec2 UV, bool emissive) {
     vec3 normal    = normalize(frg_tbn * N);
     vec3 rufmtlamb = texture(MtlRufMap, UV).xyz;

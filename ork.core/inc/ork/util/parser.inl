@@ -77,6 +77,9 @@ template <typename impl_t> std::shared_ptr<impl_t> Match::followImplAsShared() {
 template <typename impl_t> std::shared_ptr<impl_t> SequenceAttempt::itemAsShared(int index) {
   return _items[index]->asShared<impl_t>();
 }
+template <typename impl_t> std::shared_ptr<impl_t> SequenceAttempt::tryItemAsShared(int index) {
+  return _items[index]->tryAsShared<impl_t>();
+}
 template <typename impl_t> std::shared_ptr<impl_t> GroupAttempt::itemAsShared(int index) {
   return _items[index]->asShared<impl_t>();
 }
@@ -98,6 +101,9 @@ template <typename impl_t> std::shared_ptr<impl_t> ProxyAttempt::asShared() {
 
 template <typename impl_t> std::shared_ptr<impl_t> Sequence::itemAsShared(int index) {
   return _items[index]->asShared<impl_t>();
+}
+template <typename impl_t> attempt_cast_const<std::shared_ptr<impl_t>> Sequence::tryItemAsShared(int index) const {
+  return _items[index]->tryAsShared<impl_t>();
 }
 
 template <typename impl_t> std::shared_ptr<impl_t> Group::itemAsShared(int index) {

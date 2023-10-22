@@ -209,6 +209,23 @@ void InheritanceTracker::_processNode(astnode_ptr_t node) {
     }
   }
   //////////////////////////////////////////////////////////////////////
+  else if (auto as_sset = std::dynamic_pointer_cast<SemaInheritSamplerSet>(node)) {
+    auto INHID    = as_sset->typedValueForKey<std::string>("inherit_id").value();
+    auto ast_uset = _translation_unit->find<SHAST::SamplerSet>(INHID);
+    OrkAssert(ast_uset);
+    auto it = _set_inherited_smpsets.find(INHID);
+    if( it == _set_inherited_smpsets.end() ){
+      _set_inherited_smpsets.insert(INHID);
+      _inherited_ssets.push_back(ast_uset);
+      if( _onInheritSamplerSet ){
+        _onInheritSamplerSet(INHID, ast_uset);
+      }
+    }
+    else{
+      // uniform set already inherited
+    }
+  }
+  //////////////////////////////////////////////////////////////////////
   else if (auto as_uset = std::dynamic_pointer_cast<SemaInheritUniformSet>(node)) {
     auto INHID    = as_uset->typedValueForKey<std::string>("inherit_id").value();
     auto ast_uset = _translation_unit->find<SHAST::UniformSet>(INHID);
@@ -316,6 +333,14 @@ void InheritanceTracker::fetchInheritances(astnode_ptr_t parent_node) {
       OrkAssert(IFACE);
       fetchInheritances(IFACE);
       _processNode(as_cif);
+    }
+    //////////////////////////////////////////////////////////////////////
+    else if (auto as_sset = std::dynamic_pointer_cast<SemaInheritSamplerSet>(c)) {
+      auto INHID    = as_sset->typedValueForKey<std::string>("inherit_id").value();
+      auto ast_sset = _translation_unit->find<SHAST::SamplerSet>(INHID);
+      OrkAssert(ast_sset);
+      fetchInheritances(ast_sset);
+      _processNode(as_sset);
     }
     //////////////////////////////////////////////////////////////////////
     else if (auto as_uset = std::dynamic_pointer_cast<SemaInheritUniformSet>(c)) {

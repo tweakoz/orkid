@@ -38,13 +38,14 @@ uniform_set uset_geo_stereo {
 uniform_set uset_frg {
   vec4 modcolor;
   vec4 User0;
-  sampler2D ColorMap;
-  sampler2D GradientMap;
-  sampler3D VolumeMap;
   float ColorFactor;
   float AlphaFactor;
 }
-
+sampler_set sset_frg {
+  sampler2D ColorMap;
+  sampler2D GradientMap;
+  sampler3D VolumeMap;
+}
 uniform_set compute_unis {
     //layout (binding = 1, r32ui) uimage2D img_depthclusters;
     vec3 xxx;
@@ -75,7 +76,9 @@ state_block sb_alpadd : sb_default {
 // Interfaces
 ///////////////////////////////////////////////////////////////
 
-fragment_interface fface_minimal : uset_frg {
+fragment_interface fface_minimal 
+  : uset_frg
+  : sset_frg  {
   inputs {
     vec4 frg_clr;
     vec2 frg_uv0;
@@ -85,7 +88,9 @@ fragment_interface fface_minimal : uset_frg {
     vec4 out_clr;
   }
 }
-fragment_interface fface_psys : uset_frg {
+fragment_interface fface_psys 
+  : uset_frg 
+  : sset_frg {
   inputs {
     vec4 frg_clr;
     vec2 frg_uv0;

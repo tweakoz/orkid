@@ -159,23 +159,24 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
   size_t num_frg_shaders    = header_input_stream->readItem<size_t>();
   size_t num_frg_interfaces = header_input_stream->readItem<size_t>();
   size_t num_cu_shaders     = header_input_stream->readItem<size_t>();
+  size_t num_smpsets        = header_input_stream->readItem<size_t>();
   size_t num_unisets        = header_input_stream->readItem<size_t>();
   size_t num_uniblks        = header_input_stream->readItem<size_t>();
   size_t num_techniques     = header_input_stream->readItem<size_t>();
   size_t num_imports        = header_input_stream->readItem<size_t>();
   /////////////////////////////////
-  // read unisets
+  // read sets
   /////////////////////////////////
-  auto str_unisets = uniforms_input_stream->readIndexedString(chunkreader);
-  OrkAssert(str_unisets == "unisets");
-  auto num_unisets_cnt = uniforms_input_stream->readItem<size_t>();
-  OrkAssert(num_unisets_cnt == num_unisets);
-  for (size_t i = 0; i < num_unisets; i++) {
+  auto str_smpsets = uniforms_input_stream->readIndexedString(chunkreader);
+  OrkAssert(str_smpsets == "smpsets");
+  auto num_smpsets_cnt = uniforms_input_stream->readItem<size_t>();
+  OrkAssert(num_smpsets_cnt == num_smpsets);
+  for (size_t i = 0; i < num_smpsets; i++) {
     auto str_uniset = uniforms_input_stream->readIndexedString(chunkreader);
-    OrkAssert(str_uniset == "uniset");
-    auto str_uniset_name                                = uniforms_input_stream->readIndexedString(chunkreader);
-    auto vk_uniset                                      = std::make_shared<VkFxShaderUniformSet>();
-    vulkan_shaderfile->_vk_uniformsets[str_uniset_name] = vk_uniset;
+    OrkAssert(str_uniset == "smpset");
+    auto str_smpset_name                                = uniforms_input_stream->readIndexedString(chunkreader);
+    auto vk_smpset                                      = std::make_shared<VkFxShaderSamplerSet>();
+    vulkan_shaderfile->_vk_samplersets[str_smpset_name] = vk_smpset;
     ///////////////////////////////////////////////
     auto str_samplers = uniforms_input_stream->readIndexedString(chunkreader);
     OrkAssert(str_samplers == "samplers");
@@ -189,10 +190,24 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
       vk_samp->_orkparam          = std::make_shared<FxShaderParam>();
       vk_samp->_orkparam->_name   = str_sampler_identifier;
       vk_samp->_orkparam->_impl.set<VkFxShaderUniformSetSampler*>(vk_samp.get());
-      vk_uniset->_samplers_by_name[str_sampler_identifier] = vk_samp;
+      vk_smpset->_samplers_by_name[str_sampler_identifier] = vk_samp;
       if (0)
-        printf("uniset<%s> ADDING Sampler PARAM<%s>\n", str_uniset_name.c_str(), str_sampler_identifier.c_str());
+        printf("uniset<%s> ADDING Sampler PARAM<%s>\n", str_smpset_name.c_str(), str_sampler_identifier.c_str());
     }
+  }
+  /////////////////////////////////
+  // read unisets
+  /////////////////////////////////
+  auto str_unisets = uniforms_input_stream->readIndexedString(chunkreader);
+  OrkAssert(str_unisets == "unisets");
+  auto num_unisets_cnt = uniforms_input_stream->readItem<size_t>();
+  OrkAssert(num_unisets_cnt == num_unisets);
+  for (size_t i = 0; i < num_unisets; i++) {
+    auto str_uniset = uniforms_input_stream->readIndexedString(chunkreader);
+    OrkAssert(str_uniset == "uniset");
+    auto str_uniset_name                                = uniforms_input_stream->readIndexedString(chunkreader);
+    auto vk_uniset                                      = std::make_shared<VkFxShaderUniformSet>();
+    vulkan_shaderfile->_vk_uniformsets[str_uniset_name] = vk_uniset;
     ///////////////////////////////////////////////
     auto str_params = uniforms_input_stream->readIndexedString(chunkreader);
     OrkAssert(str_params == "params");
@@ -302,6 +317,20 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
     auto vulkan_shobj                                     = std::make_shared<VulkanFxShaderObject>(_contextVK, shader_bin);
     vulkan_shaderfile->_vk_shaderobjects[str_shader_name] = vulkan_shobj;
     vulkan_shobj->_name                                   = str_shader_name;
+    /////////////////////////////////
+    auto num_ismpsets = shader_input_stream->readItem<size_t>();
+    if (num_ismpsets) {
+      auto refs                  = std::make_shared<VkFxShaderSamplerSetsReference>();
+      vulkan_shobj->_smpset_refs = refs;
+      for (size_t i = 0; i < num_ismpsets; i++) {
+        auto str_smpset = shader_input_stream->readIndexedString(chunkreader);
+        auto it         = vulkan_shaderfile->_vk_samplersets.find(str_smpset);
+        OrkAssert(it != vulkan_shaderfile->_vk_samplersets.end());
+        vkfxssmpset_ptr_t vk_smpset = it->second;
+        refs->_smpsets[str_smpset]  = vk_smpset;
+      }
+      OrkAssert(refs->_smpsets.size() < 2);
+    }
     /////////////////////////////////
     auto num_iunisets = shader_input_stream->readItem<size_t>();
     if (num_iunisets) {
@@ -445,19 +474,19 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
 
       ////////////////////////////////////////////////////////////
 
-      auto unisets_to_descriptors = [&](vkfxsobj_ptr_t shobj, vkdescriptors_ptr_t desc_set, uint32_t stage_bits) {
-        if (shobj->_uniset_refs) {
-          std::set<vkfxsuniset_ptr_t> unisets_set;
-          for (auto uset_item : shobj->_uniset_refs->_unisets) {
-            auto uset_name = uset_item.first;
-            auto uset      = uset_item.second;
-            auto it        = unisets_set.find(uset);
-            if (it == unisets_set.end()) {
-              unisets_set.insert(uset);
+      auto smpsets_to_descriptors = [&](vkfxsobj_ptr_t shobj, vkdescriptors_ptr_t desc_set, uint32_t stage_bits) {
+        if (shobj->_smpset_refs) {
+          std::set<vkfxssmpset_ptr_t> smpsets_set;
+          for (auto smpset_item : shobj->_smpset_refs->_smpsets) {
+            auto sset_name = smpset_item.first;
+            auto sset      = smpset_item.second;
+            auto it        = smpsets_set.find(sset);
+            if (it == smpsets_set.end()) {
+              smpsets_set.insert(sset);
               ///////////////////////////////////////////
               // loose samplers
               ///////////////////////////////////////////
-              for (auto item : uset->_samplers_by_name) {
+              for (auto item : sset->_samplers_by_name) {
                 auto item_name       = item.first;
                 auto item_ptr        = item.second;
                 auto orkparam        = item_ptr->_orkparam.get();
@@ -527,9 +556,9 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
       // descriptors->_vksamplers.reserve( 32 );
       descriptors->_vkbindings.reserve(32);
 
-      // unisets_to_descriptors(vtx_obj, descriptors, VK_SHADER_STAGE_VERTEX_BIT );
+      // smpsets_to_descriptors(vtx_obj, descriptors, VK_SHADER_STAGE_VERTEX_BIT );
       if (vk_program->_frgshader) {
-        unisets_to_descriptors(vk_program->_frgshader, descriptors, VK_SHADER_STAGE_FRAGMENT_BIT);
+        smpsets_to_descriptors(vk_program->_frgshader, descriptors, VK_SHADER_STAGE_FRAGMENT_BIT);
       }
       vk_program->_descriptors = descriptors;
       //////////////////////////////////////////////////////////////

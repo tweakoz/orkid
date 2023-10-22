@@ -37,6 +37,30 @@ const FxShaderParam* VkFxInterface::parameter(FxShader* pshader, const std::stri
   auto shader_name          = vkshfile->_shader_name;
   
   //////////////////////////////////////////////////////
+  // search sampler sets
+  //////////////////////////////////////////////////////
+
+  size_t num_smpsets        = vkshfile->_vk_samplersets.size();
+  for (auto item : vkshfile->_vk_samplersets) {
+    auto smpset_name = item.first;
+    auto smpset  = item.second;
+    auto it_samp = smpset->_samplers_by_name.find(name);
+    if (it_samp != smpset->_samplers_by_name.end()) {
+      auto samp = it_samp->second;
+      rval      = samp->_orkparam.get();
+      if (0)
+        printf(
+            "VkFxInterface shader<%s> sampler<%s> found>\n", //
+            shader_name.c_str(),                             //
+            name.c_str());                                   //
+      break;
+    }
+  }
+  if( rval != nullptr ){
+    return rval;
+  }
+
+  //////////////////////////////////////////////////////
   // search uniform sets
   //////////////////////////////////////////////////////
 
@@ -56,22 +80,11 @@ const FxShaderParam* VkFxInterface::parameter(FxShader* pshader, const std::stri
             name.c_str());                                     //
       break;
     }
-    auto it_samp = uniset->_samplers_by_name.find(name);
-    if (it_samp != uniset->_samplers_by_name.end()) {
-      auto samp = it_samp->second;
-      rval      = samp->_orkparam.get();
-      if (0)
-        printf(
-            "VkFxInterface shader<%s> sampler<%s> found>\n", //
-            shader_name.c_str(),                             //
-            name.c_str());                                   //
-      break;
-    }
   }
-
   if( rval != nullptr ){
     return rval;
   }
+
   //////////////////////////////////////////////////////
   // search uniform blocks
   //////////////////////////////////////////////////////

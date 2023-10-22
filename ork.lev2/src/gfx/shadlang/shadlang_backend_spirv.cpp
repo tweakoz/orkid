@@ -142,6 +142,7 @@ SpirvCompiler::SpirvCompiler(transunit_ptr_t transu, bool vulkan)
 
 
   _processGlobalRenames();
+  _convertSamplerSets();
   _convertUniformSets();
   _convertUniformBlocks();
 }
@@ -176,6 +177,14 @@ void SpirvCompiler::_beginShader(shader_ptr_t shader) {
   tracker._onInheritTypes = [&](std::string INHID, typeblock_ptr_t typ_block) { //
     printf( "INHERIT TYP<%s> depth<%zu>\n", INHID.c_str(), tracker._stack_depth );
     _inheritTypes(typ_block);
+  };
+  ////////////////////////////////////////////////
+  tracker._onInheritSamplerSet = [=](std::string INHID, astnode_ptr_t sset) { //
+    printf( "INHERIT SSET<%s>\n", INHID.c_str() );
+    auto it_sset  = _spirvsamplersets.find(INHID);
+    OrkAssert(it_sset != _spirvsamplersets.end());
+    auto spirvsmpset = it_sset->second;
+    _inheritSamplerSet(INHID, spirvsmpset);
   };
   ////////////////////////////////////////////////
   tracker._onInheritUniformSet = [=](std::string INHID, astnode_ptr_t uset) { //
@@ -260,6 +269,32 @@ void SpirvCompiler::_processGlobalRenames() {
   }
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////
+void SpirvCompiler::_convertSamplerSets() {
+  auto ast_smpsets = SHAST::AstNode::collectNodesOfType<SHAST::SamplerSet>(_transu);
+  for (auto ast_smpset : ast_smpsets) {
+    auto sampler_declarations = SHAST::AstNode::collectNodesOfType<SHAST::SamplerDeclaration>(ast_smpset);
+    //////////////////////////////////////
+    auto smpset_name               = ast_smpset->typedValueForKey<std::string>("object_name").value();
+    auto smpset                 = std::make_shared<SpirvSamplerSet>();
+    _spirvsamplersets[smpset_name] = smpset;
+    smpset->_name               = smpset_name;
+    //////////////////////////////////////
+    for (auto decl : sampler_declarations) {
+      dumpAstNode(decl);
+      auto sampler_type = decl->childAs<SHAST::SamplerType>(0);
+      OrkAssert(sampler_type);
+      auto smp_typename = sampler_type->typedValueForKey<std::string>("sampler_type").value();
+      auto semaid         = decl->childAs<SemaIdentifier>(1);
+      auto smp_name = semaid->typedValueForKey<std::string>("identifier_name").value();
+      auto sampler                     = std::make_shared<SpirvSampler>();
+      sampler->_datatype               = smp_typename;
+      sampler->_identifier             = smp_name;
+      smpset->_samplers_by_name[smp_name] = sampler;
+    }
+    //////////////////////////////////////
+  }
+}
+/////////////////////////////////////////////////////////////////////////////////////////////////
 void SpirvCompiler::_convertUniformSets() {
   auto ast_unisets = SHAST::AstNode::collectNodesOfType<SHAST::UniformSet>(_transu);
   //const auto& DATASIZES = SpirvCompilerGlobals::instance()->_data_sizes;
@@ -277,32 +312,24 @@ void SpirvCompiler::_convertUniformSets() {
       OrkAssert(tid);
       auto dt         = tid->typedValueForKey<std::string>("data_type").value();
       auto id         = tid->typedValueForKey<std::string>("identifier_name").value();
-      bool is_sampler = (dt.find("sampler") != std::string::npos);
-      if (is_sampler) {
-        auto samp                     = std::make_shared<SpirvUniformSetSampler>();
-        samp->_datatype               = dt;
-        samp->_identifier             = id;
-        uniset->_samplers_by_name[id] = samp;
-      } else {
-        auto item                  = std::make_shared<SpirvUniformSetItem>();
-        item->_datatype            = dt;
-        item->_identifier          = id;
-        uniset->_items_by_name[id] = item;
-        uniset->_items_by_order.push_back(item);
-        item->_offset = layout.cursor();
+      auto item                  = std::make_shared<SpirvUniformSetItem>();
+      item->_datatype            = dt;
+      item->_identifier          = id;
+      uniset->_items_by_name[id] = item;
+      uniset->_items_by_order.push_back(item);
+      item->_offset = layout.cursor();
 
-        if (auto as_array = std::dynamic_pointer_cast<ArrayDeclaration>(d)) {
-          auto len_node       = as_array->childAs<SHAST::SemaIntegerLiteral>(1);
-          item->_is_array     = true;
-          auto ary_len_str    = len_node->typedValueForKey<std::string>("literal_value").value();
-          item->_array_length = atoi(ary_len_str.c_str());
-          
-          layout.incrementDatatype(dt, item->_array_length);
-          //offset += item_size*item->_array_length;
-        }
-        else{
-          layout.incrementDatatype(dt, 0);
-        }
+      if (auto as_array = std::dynamic_pointer_cast<ArrayDeclaration>(d)) {
+        auto len_node       = as_array->childAs<SHAST::SemaIntegerLiteral>(1);
+        item->_is_array     = true;
+        auto ary_len_str    = len_node->typedValueForKey<std::string>("literal_value").value();
+        item->_array_length = atoi(ary_len_str.c_str());
+        
+        layout.incrementDatatype(dt, item->_array_length);
+        //offset += item_size*item->_array_length;
+      }
+      else{
+        layout.incrementDatatype(dt, 0);
       }
       if(layout.cursor()>256){
         printf( "uniset<%s> pushconstant overflow length<%zu>\n", uni_name.c_str(), layout.cursor() );
@@ -366,6 +393,30 @@ void SpirvCompiler::_convertUniformBlocks() {
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
+
+void SpirvCompiler::_inheritSamplerSet(
+    std::string unisetname,        //
+    spirvsmpset_ptr_t spirvsset) { //
+    /////////////////////
+    // samplers
+    /////////////////////
+    for (auto item : spirvsset->_samplers_by_name) {
+      auto dt   = item.second->_datatype;
+      auto id   = item.second->_identifier;
+      auto line = FormatString(
+          "layout(binding=%d) uniform %s %s;", //
+          //spirvsset->_descriptor_set_id,                 //
+          _binding_id,                                   //
+          dt.c_str(),                                    //
+          id.c_str());
+      _appendText(_uniforms_group, line.c_str());
+     _binding_id++;
+    }
+
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
 void SpirvCompiler::_inheritUniformSet(
     std::string unisetname,        //
     spirvuniset_ptr_t spirvuset) { //
@@ -395,21 +446,6 @@ void SpirvCompiler::_inheritUniformSet(
       _appendText(_uniforms_group, "};");
     }
     //_binding_id++;
-    /////////////////////
-    // samplers
-    /////////////////////
-    for (auto item : spirvuset->_samplers_by_name) {
-      auto dt   = item.second->_datatype;
-      auto id   = item.second->_identifier;
-      auto line = FormatString(
-          "layout(binding=%d) uniform %s %s;", //
-          //spirvuset->_descriptor_set_id,                 //
-          _binding_id,                                   //
-          dt.c_str(),                                    //
-          id.c_str());
-      _appendText(_uniforms_group, line.c_str());
-     _binding_id++;
-    }
   } else { // opengl
     OrkAssert(false);
   }

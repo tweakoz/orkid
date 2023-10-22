@@ -11,6 +11,8 @@ uniform_set push_constants { //
   mat4 mvp_l;
   mat4 mvp_r;
   vec4 ModColor;
+}
+sampler_set samplers {
   sampler2D ColorMap;
 }
 
@@ -37,7 +39,9 @@ fragment_interface iface_fdefault {
   }
 }
 ///////////////////////////////////////////////////////////////
-fragment_interface iface_fmt : push_constants {
+fragment_interface iface_fmt 
+  : push_constants
+  : samplers {
   inputs {
     vec2 frg_uv;
   }

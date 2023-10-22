@@ -185,6 +185,7 @@ struct MatchAttemptContext {
 
 struct SequenceAttempt {
   template <typename impl_t> std::shared_ptr<impl_t> itemAsShared(int index);
+  template <typename impl_t> std::shared_ptr<impl_t> tryItemAsShared(int index);
   std::vector<match_attempt_ptr_t> _items;
 };
 struct GroupAttempt {
@@ -230,6 +231,7 @@ struct Sequence : public MatchItem {
 
   void dump(std::string header) const;
   template <typename impl_t> std::shared_ptr<impl_t> itemAsShared(int index);
+  template <typename impl_t> attempt_cast_const<std::shared_ptr<impl_t>> tryItemAsShared(int index) const;
 
   std::vector<match_ptr_t> _items;
 };
