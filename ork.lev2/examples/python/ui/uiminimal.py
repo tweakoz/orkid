@@ -31,7 +31,7 @@ class MinimalUiApp(object):
     griditems = lg_group.makeGrid( width = 2,
                                    height = 2,
                                    margin = 1,
-                                   uiclass = ui.UiSceneGraphViewport,
+                                   uiclass = ui.SceneGraphViewport,
                                    args = ["sgvp"] )
 
     griditems[0].widget.clearColor = vec3(1,0,1)*0.1
