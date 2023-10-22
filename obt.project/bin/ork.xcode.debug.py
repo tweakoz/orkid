@@ -88,6 +88,8 @@ if __name__ == "__main__":
     "PATH": os.getenv("PATH"),
     "OBT_STAGE": os.getenv("OBT_STAGE")
   }
+  if "ORKID_GRAPHICS_API" in os.environ:
+    env_vars["ORKID_GRAPHICS_API"] = os.getenv("ORKID_GRAPHICS_API")    
 
   workspace_dir = os.path.join(env_vars["OBT_STAGE"], "tempdir", exec_name + ".xcworkspace")
   create_xcode_structure(workspace_dir, executable_path, env_vars, args.exec_args)
