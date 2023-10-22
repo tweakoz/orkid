@@ -109,6 +109,7 @@ void EzTopWidget::enableUiDraw() {
 }
 /////////////////////////////////////////////////
 void EzTopWidget::DoDraw(ui::drawevent_constptr_t drwev) {
+  auto context = drwev->GetTarget();
     //////////////////////////////////////////////////////
     // ensure onUpdateInit called before onGpuInit!
     //////////////////////////////////////////////////////
@@ -116,17 +117,20 @@ void EzTopWidget::DoDraw(ui::drawevent_constptr_t drwev) {
     if (not ezapp->checkAppState(KAPPSTATEFLAG_UPDRUNNING))
       return;
     ///////////////////////////
-    drwev->GetTarget()->makeCurrentContext();
+    // process render thread app job queue
     ///////////////////////////
+    context->makeCurrentContext();
     while (ezapp->_rthreadq->Process()) {
     }
     ///////////////////////////
+    // render
+    ///////////////////////////
     if (_mainwin->_onDraw) {
       _mainwin->_onDraw(drwev);
-      auto ctxbase = drwev->GetTarget()->mCtxBase;
-      drwev->GetTarget()->present(ctxbase);
       ezapp->_render_count.fetch_add(1);
     }
+    ///////////////////////////
+    // frame statistics
     ///////////////////////////
     double this_time           = _mainwin->_render_timer.SecsSinceStart();
     _mainwin->_render_prevtime = this_time;

@@ -344,8 +344,6 @@ public:
     _onEndFrameCallbacks.push_back(l);
   }
 
-  virtual void present(CTXBASE* ctxbase) {}
-
   static const int kiModColorStackMax = 8;
   static orkvector<DisplayMode*> mDisplayModes;
 

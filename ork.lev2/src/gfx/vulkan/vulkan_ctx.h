@@ -1181,15 +1181,11 @@ public:
   void _beginSubPass(rendersubpass_ptr_t) final;
   void _endSubPass(rendersubpass_ptr_t) final;
 
-  void _beginExecuteSubPass(rendersubpass_ptr_t);
-  void _endExecuteSubPass(rendersubpass_ptr_t);
-
   //////////////////////////////////////////////
   // Interfaces
 
   FxInterface* FXI() final;
   ImmInterface* IMI() final;
-  // RasterStateInterface* RSI() final;
   MatrixStackInterface* MTXI() final;
   GeometryBufferInterface* GBI() final;
   FrameBufferInterface* FBI() final;
@@ -1200,7 +1196,6 @@ public:
   ///////////////////////////////////////////////////////////////////////
 
   void makeCurrentContext(void) final;
-  void present(CTXBASE* ctxbase) final;
 
   void initializeWindowContext(Window* pWin, CTXBASE* pctxbase) final; // make a window
   void initializeOffscreenContext(DisplayBuffer* pBuf) final;          // make a pbuffer
@@ -1310,7 +1305,6 @@ public:
 
   vkdwi_ptr_t _dwi;
   vkimi_ptr_t _imi;
-  // vkrsi_ptr_t _rsi;
   vkmsi_ptr_t _msi;
   vkfbi_ptr_t _fbi;
   vkgbi_ptr_t _gbi;

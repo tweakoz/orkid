@@ -259,7 +259,6 @@ struct GlFrameBufferInterface : public FrameBufferInterface {
 
   //////////////////////////////////////////////
 
-  void _present();
   void _setAsRenderTarget();
   //void Clear(const fcolor4& rCol, float fdepth) final;
   //void clearDepth(float fdepth) final;
