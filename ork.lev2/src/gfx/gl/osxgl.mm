@@ -116,7 +116,7 @@ void ContextGL::GLinit()
   // load extensions
   ////////////////////////////////////
 
-  global_ctxbase->makeCurrent();
+  GlOsxPlatformObject::_global_plato->makeCurrent();
   //gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
 
   ////////////////////////////////////
