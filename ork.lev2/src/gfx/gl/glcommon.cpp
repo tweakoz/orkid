@@ -18,6 +18,26 @@ ImplementReflectionX(ork::lev2::ContextGL, "ContextGL");
 namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
+ork::MpMcBoundedQueue<load_token_t> ContextGL::_loadTokens;
+
+GlPlatformObject* GlPlatformObject::_current = nullptr;
+
+void GlPlatformObject::makeCurrent() {
+    _current = this;
+    if(_ctxbase){
+      auto window = _ctxbase->_glfwWindow;
+      printf( "_glfwWindow<%p> made current\n", (void*) window );
+      glfwMakeContextCurrent(window);
+    }
+    else{
+      OrkAssert(false);
+    }
+    //_ctxbase->makeCurrent();
+}
+void GlPlatformObject::swapBuffers() {
+
+}
+
 void touchClasses() {
   ContextGL::GetClassStatic();
 }
@@ -121,7 +141,7 @@ void ContextGL::debugLabel(GLenum target, GLuint object, std::string name) {
 
 /////////////////////////////////////////////////////////////////////////
 
-void ContextGL::debugPushGroup(const std::string str) {
+void ContextGL::debugPushGroup(const std::string str, const fvec4& color) {
   int level = _dbglevel++;
   auto mstr = indent(level) + str;
   //printf( "PSHGRP CTX<%p> lev<%d> name<%s>\n", (void*) this, level, mstr.c_str() );
@@ -148,7 +168,7 @@ void ContextGL::debugPopGroup() {
 }
 /////////////////////////////////////////////////////////////////////////
 
-void ContextGL::debugMarker(const std::string str) {
+void ContextGL::debugMarker(const std::string str, const fvec4& color) {
   auto mstr = indent(_dbglevel) + str;
   // printf( "Marker:: %s\n", mstr.c_str() );
 
@@ -167,13 +187,17 @@ bool ContextGL::SetDisplayMode(DisplayMode* mode) {
 
 /////////////////////////////////////////////////////////////////////////
 
-void recomputeHIDPI(Context* ctx);
+void recomputeHIDPI(GLFWwindow *glfw_window);
 
 void ContextGL::_doResizeMainSurface(int iw, int ih) {
+  
   miW                      = iw;
   miH                      = ih;
   mTargetDrawableSizeDirty = true;
-  recomputeHIDPI(this);
+  auto plato = _impl.getShared<GlPlatformObject>();
+  auto ctx_glfw = plato->_ctxbase;
+  auto win_glfw = ctx_glfw->_glfwWindow;
+  recomputeHIDPI(win_glfw);
 }
 
 /////////////////////////////////////////////////////////////////////////

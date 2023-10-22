@@ -71,8 +71,6 @@ public:
   Window* GetWindow() const;
   void setContext(Context* ctx);
   void SetWindow(Window* pw);
-
-  virtual void makeCurrent(){}
   
   virtual void SlotRepaint(void) {
   }

@@ -34,6 +34,7 @@
 #include <ork/file/chunkfile.inl>
 #include <ork/kernel/datablock.h>
 #include <ork/lev2/gfx/image.h>
+#include <ork/lev2/glfw/ctx_glfw.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -69,10 +70,15 @@ namespace ork { namespace lev2 {
 struct GlPlatformObject {
   GlPlatformObject();
   virtual ~GlPlatformObject();
-  virtual void makeCurrent() = 0;
-  virtual void swapBuffers() = 0;
+  void makeCurrent();
+  void swapBuffers();
 
   void_lambda_t _bindop;
+  CtxGLFW* _ctxbase = nullptr;
+	ContextGL*		_context = nullptr;
+  bool _needsInit       = true;
+
+  static GlPlatformObject* _current;
 };
 using glplato_ptr_t = std::shared_ptr<GlPlatformObject>;
 class ContextGL;

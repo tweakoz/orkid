@@ -133,7 +133,6 @@ void CTXBASE::progressHandler(opq::progressdata_ptr_t data) {
       MTXI->PushUIMatrix();
       _target->PushModColor(clearcolor);
       if(_orkwindow){
-        makeCurrent();
         _orkwindow->RenderMatOrthoQuad(
           tgtrect.asSRect(), //
           tgtrect.asSRect(),

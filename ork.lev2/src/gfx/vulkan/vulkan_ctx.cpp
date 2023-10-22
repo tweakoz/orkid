@@ -339,7 +339,7 @@ struct VkOneTimeInit {
     _gplato             = std::make_shared<VkPlatformObject>();
     auto global_ctxbase = CtxGLFW::globalOffscreenContext();
     _gplato->_ctxbase   = global_ctxbase;
-    global_ctxbase->makeCurrent();
+    //global_ctxbase->makeCurrent();
   }
   vkplatformobject_ptr_t _gplato;
 };
@@ -352,7 +352,7 @@ static vkplatformobject_ptr_t _current_plato;
 static void platoMakeCurrent(vkplatformobject_ptr_t plato) {
   _current_plato = plato;
   if (plato->_ctxbase) {
-    plato->_ctxbase->makeCurrent();
+    //plato->_ctxbase->makeCurrent();
   }
   plato->_bindop();
 }

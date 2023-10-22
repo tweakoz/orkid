@@ -16,7 +16,6 @@
 #import <ork/lev2/gfx/gfxenv.h>
 #import "gl.h"
 #include <ork/lev2/gfx/gfxmaterial_ui.h>
-#import <ork/lev2/glfw/ctx_glfw.h>
 #import <ork/file/fileenv.h>
 #import <ork/file/filedev.h>
 #import <ork/kernel/opq.h>
@@ -47,37 +46,17 @@ static void _osxDisableMacOs(ContextGL* cgl){
 
 bool g_allow_HIDPI = false;
 
-ork::MpMcBoundedQueue<load_token_t> ContextGL::_loadTokens;
-
 struct GlOsxPlatformObject : public GlPlatformObject
 {
   static GlOsxPlatformObject* _global_plato;
-  static GlOsxPlatformObject* _current;
   /////////////////////////////////////
-	ContextGL*		_context = nullptr;
-  CtxGLFW* _ctxbase = nullptr;
-  bool _needsInit       = true;
 
 	GlOsxPlatformObject()
 		: GlPlatformObject() {
 	}
   /////////////////////////////////////
-  void makeCurrent() final {
-    _current = this;
-    if(_ctxbase){
-      auto window = _ctxbase->_glfwWindow;
-      glfwMakeContextCurrent(window);
-    }
-    //_ctxbase->makeCurrent();
-  }
-  void swapBuffers() final  {
-    //if(_ctxbase)
-    //  _ctxbase->swapBuffers();
-  }
-  /////////////////////////////////////
 };
 GlOsxPlatformObject* GlOsxPlatformObject::_global_plato = nullptr;
-GlOsxPlatformObject* GlOsxPlatformObject::_current      = nullptr;
 
 /////////////////////////////////////////////////////////////////////////
 

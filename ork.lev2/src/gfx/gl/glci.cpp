@@ -193,9 +193,9 @@ PipelineCompute* ComputeInterface::createComputePipe(ComputeShader* csh) {
     binary_bytes.resize(binaryLength);
     GLenum binaryFormat;
     glGetProgramBinary(prgo, binaryLength, NULL, &binaryFormat, binary_bytes.data());
-    header_stream->AddItem<GLenum>(binaryFormat);
-    header_stream->AddItem<size_t>(binary_bytes.size());
-    shader_stream->AddData(binary_bytes.data(),binary_bytes.size());
+    header_stream->addItem<GLenum>(binaryFormat);
+    header_stream->addItem<size_t>(binary_bytes.size());
+    shader_stream->addData(binary_bytes.data(),binary_bytes.size());
 
     ///////////////////////////////////
     // write to datablock cache
