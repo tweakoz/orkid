@@ -149,7 +149,9 @@ compute_shader compute_streaks
     out_vertex[o+5].age_rand = inp_ar;
 }
 ///////////////////////////////////////////////////////////////
-fragment_interface fface_psys_stereoCI : uset_frg {
+fragment_interface fface_psys_stereoCI 
+  : ublk_frg
+  : particle_samplers {
   inputs {
     vec2 frg_uv;
     vec2 frg_age_rand;

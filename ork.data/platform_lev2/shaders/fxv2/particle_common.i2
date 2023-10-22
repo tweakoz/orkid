@@ -35,13 +35,13 @@ uniform_set uset_geo_stereo {
   mat4 MatMVPR;
 }
 
-uniform_set uset_frg {
+uniform_block ublk_frg {
   vec4 modcolor;
   vec4 User0;
   float ColorFactor;
   float AlphaFactor;
 }
-sampler_set sset_frg {
+sampler_set particle_samplers {
   sampler2D ColorMap;
   sampler2D GradientMap;
   sampler3D VolumeMap;
@@ -77,8 +77,8 @@ state_block sb_alpadd : sb_default {
 ///////////////////////////////////////////////////////////////
 
 fragment_interface fface_minimal 
-  : uset_frg
-  : sset_frg  {
+  : ublk_frg
+  : particle_samplers  {
   inputs {
     vec4 frg_clr;
     vec2 frg_uv0;
@@ -89,8 +89,8 @@ fragment_interface fface_minimal
   }
 }
 fragment_interface fface_psys 
-  : uset_frg 
-  : sset_frg {
+  : ublk_frg 
+  : particle_samplers {
   inputs {
     vec4 frg_clr;
     vec2 frg_uv0;

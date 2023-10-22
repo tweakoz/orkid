@@ -19,8 +19,10 @@ uniform_set ub_vtx {
 	vec2 InvViewportSize; // inverse target size
 }
 ///////////////////////////////////////////////////////////////
-uniform_set ub_frg {
+sampler_set samplers {
     sampler2D prefiltmap;
+}
+uniform_set ub_frg {
 		vec2 imgdim; // target size
 		float roughness;
   float EnvironmentMipBias;
@@ -55,6 +57,7 @@ vertex_shader vs_yo
 ///////////////////////////////////////////////////////////////
 fragment_interface iface_fyo
 	: ub_frg
+	: samplers
 {
   inputs {
     vec4 frg_clr;
