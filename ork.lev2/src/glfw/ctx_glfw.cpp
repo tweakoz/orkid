@@ -376,7 +376,14 @@ void CtxGLFW::Show() {
     glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
     glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
     glfwWindowHint(GLFW_AUTO_ICONIFY, GLFW_FALSE);
-    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+
+    switch(GRAPHICS_API){
+      case "VULKAN"_crcu:
+        glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+        break;
+      default:
+        break;
+    }
 
     auto global = globalOffscreenContext();
 
@@ -754,7 +761,20 @@ CtxGLFW* CtxGLFW::globalOffscreenContext() {
 
     GLFWwindow* offscreen_window = nullptr;
 
-    offscreen_window = _gctx->_apiInitVK();
+    switch(GRAPHICS_API){
+      case "OPENGL"_crcu:{
+        offscreen_window = _gctx->_apiInitGL();
+        break;
+      }
+      case "VULKAN"_crcu:{
+        offscreen_window = _gctx->_apiInitVK();
+        break;
+      }
+      default:{
+        OrkAssert(false);
+        break;
+      }
+    }
 
     glfwSetWindowUserPointer(offscreen_window, (void*)_gctx);
   }
@@ -916,7 +936,13 @@ struct PopupImpl {
     auto global = CtxGLFW::globalOffscreenContext();
 
     glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
-    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+    switch(GRAPHICS_API){
+      case "VULKAN"_crcu:
+        glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+        break;
+      default:
+        break;
+    }
     if (win->_useTransparency) {
       glfwWindowHint(GLFW_TRANSPARENT_FRAMEBUFFER, GLFW_TRUE);
     }

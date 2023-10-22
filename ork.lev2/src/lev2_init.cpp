@@ -68,13 +68,17 @@ std::atomic<int> __FIND_IT;
 
 appinitdata_ptr_t _ginitdata;
 
-uint32_t GRAPHICS_API = "VULKAN"_crcu;
+uint64_t GRAPHICS_API = "VULKAN"_crcu;
 
 namespace vulkan{
   lev2::context_ptr_t createLoaderContext();
   void touchClasses();
 };
 namespace dummy{
+  lev2::context_ptr_t createLoaderContext();
+  void touchClasses();
+}
+namespace opengl{
   lev2::context_ptr_t createLoaderContext();
   void touchClasses();
 }
@@ -99,6 +103,9 @@ struct ClassToucher {
       if(gfx_api_str=="VULKAN"){
         GRAPHICS_API  = "VULKAN"_crcu;
       }     
+      else if(gfx_api_str=="OPENGL"){
+        GRAPHICS_API  = "OPENGL"_crcu;
+      }     
       else if(gfx_api_str=="DUMMY"){
         GRAPHICS_API  = "DUMMY"_crcu;
       }     
@@ -109,6 +116,10 @@ struct ClassToucher {
     switch(GRAPHICS_API){
       case "DUMMY"_crcu:{
         gloadercontext = dummy::createLoaderContext();
+        break;
+      }
+      case "OPENGL"_crcu:{
+        gloadercontext = opengl::createLoaderContext();
         break;
       }
       case "VULKAN"_crcu:
@@ -305,22 +316,8 @@ void ClassInit() {
 
 void GfxInit() {
 
-  /*switch(GRAPHICS_API){
-    case "VULKAN"_crcu:{
-      gloadercontext = vulkan::ContextInit();
-      break;
-    }
-    case "OPENGL"_crcu:
-    default: {
-      gloadercontext = OpenGlContextInit();
-      break;
-    }
-  }*/
-
   OrkAssert(gloadercontext);
   opq::init();
-  //GfxEnv::GetRef();
-  //GfxPrimitives::GetRef();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

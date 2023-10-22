@@ -8,6 +8,8 @@
 #include <ork/pch.h>
 
 #include <ork/lev2/gfx/gfxenv.h>
+#include <ork/lev2/lev2_asset.h>
+#include <ork/asset/Asset.inl>
 #include "gl.h"
 
 ImplementReflectionX(ork::lev2::ContextGL, "ContextGL");
@@ -16,12 +18,45 @@ ImplementReflectionX(ork::lev2::ContextGL, "ContextGL");
 namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
+void touchClasses() {
+  ContextGL::GetClassStatic();
+}
+
+namespace opengl{
+  context_ptr_t createLoaderContext() {
+
+    ///////////////////////////////////////////////////////////
+    auto loader = std::make_shared<FxShaderLoader>();
+    FxShader::RegisterLoaders("shaders/glfx/", "glfx");
+    auto shadctx = FileEnv::contextForUriProto("orkshader://");
+    auto democtx = FileEnv::contextForUriProto("demo://");
+    loader->addLocation(shadctx, ".glfx"); // for glsl targets
+    if (democtx) {
+      loader->addLocation(democtx, ".glfx"); // for glsl targets
+    }
+    ///////////////////////////////////////////////////////////
+
+    asset::registerLoader<FxShaderAsset>(loader);
+
+    //_GVI       = std::make_shared<VulkanInstance>();
+    auto clazz = dynamic_cast<object::ObjectClass*>(ContextGL::GetClassStatic());
+    GfxEnv::setContextClass(clazz);
+    auto target = std::make_shared<ContextGL>();
+    target->initializeLoaderContext();
+    GfxEnv::initializeWithContext(target);
+    return target;
+  }  
+}
+
 extern std::atomic<int> __FIND_IT;
 
 GlPlatformObject::GlPlatformObject(): _bindop([=](){}) {}
 GlPlatformObject::~GlPlatformObject() {}
 
 void ContextGL::describeX(class_t* clazz) {
+  clazz->annotateTyped<context_factory_t>("context_factory", []() { //
+    return std::make_shared<ContextGL>();
+  });
   __FIND_IT.store(0);
 }
 
@@ -40,6 +75,7 @@ void ContextGL::debugPopGroup(commandbuffer_ptr_t cb){
 void ContextGL::debugPushGroup(commandbuffer_ptr_t cb, const std::string str, const fvec4& color){
   OrkAssert(false);
 }
+
 
 /////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////

@@ -64,8 +64,11 @@ struct GlOsxPlatformObject : public GlPlatformObject
   /////////////////////////////////////
   void makeCurrent() final {
     _current = this;
-    if(_ctxbase)
-      _ctxbase->makeCurrent();
+    if(_ctxbase){
+      auto window = _ctxbase->_glfwWindow;
+      glfwMakeContextCurrent(window);
+    }
+    //_ctxbase->makeCurrent();
   }
   void swapBuffers() final  {
     //if(_ctxbase)
