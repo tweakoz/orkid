@@ -34,6 +34,10 @@ this_dir = os.path.dirname(this_dir)
 PYTHON = obt.dep.instance("python")
 BOOST = obt.dep.instance("boost")
 ORKID_DEPMODULE = obt.dep.instance("orkid") # fetch from orkid depper to reduce code bloat
+for item in os.environ.keys():
+  if("OBT" in item):
+    print(item,os.environ[item])
+assert(ORKID_DEPMODULE)
 
 ############################################################################
 
