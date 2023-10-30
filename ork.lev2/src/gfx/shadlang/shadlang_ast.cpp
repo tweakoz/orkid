@@ -249,7 +249,7 @@ void InheritanceTracker::_processNode(astnode_ptr_t node) {
     auto it = _set_inherited_uniblks.find(INHID);
     if( it == _set_inherited_uniblks.end() ){
       _set_inherited_uniblks.insert(INHID);
-      _inherited_blks.push_back(ast_ublk);
+      _inherited_ublks.push_back(ast_ublk);
       if( _onInheritUniformBlk ){
         _onInheritUniformBlk(INHID, ast_ublk);
       }

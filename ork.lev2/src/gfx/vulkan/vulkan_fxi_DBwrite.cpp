@@ -217,12 +217,12 @@ datablock_ptr_t VkFxInterface::_writeIntermediateToDataBlock(shadlang::SHAST::tr
       std::string name  = smp_item.first;
       auto spirv_smpset = smp_item.second;
       /////////////////////////////////////////////
-      // vk_uniset->_descriptor_set_id = spirv_smpset->_descriptor_set_id;
-      /////////////////////////////////////////////
       // rebuild _samplers_by_name
       /////////////////////////////////////////////
       uniforms_stream->addIndexedString("smpset", chunkwriter);
+      printf( "WRITE SAMPLERSET<%s>\n", name.c_str() );
       uniforms_stream->addIndexedString(name, chunkwriter);
+      uniforms_stream->addItem<size_t>(spirv_smpset->_descriptor_set_id);
       uniforms_stream->addIndexedString("samplers", chunkwriter);
       uniforms_stream->addItem<size_t>(spirv_smpset->_samplers_by_name.size());
       for (auto item : spirv_smpset->_samplers_by_name) {
@@ -242,8 +242,6 @@ datablock_ptr_t VkFxInterface::_writeIntermediateToDataBlock(shadlang::SHAST::tr
     for (auto spirv_item : spirv_unisets) {
       std::string name  = spirv_item.first;
       auto spirv_uniset = spirv_item.second;
-      /////////////////////////////////////////////
-      // vk_uniset->_descriptor_set_id = spirv_uniset->_descriptor_set_id;
       /////////////////////////////////////////////
       // rebuild _samplers_by_name
       /////////////////////////////////////////////
@@ -273,6 +271,7 @@ datablock_ptr_t VkFxInterface::_writeIntermediateToDataBlock(shadlang::SHAST::tr
       auto spirv_uniblk = spirv_item.second;
       uniforms_stream->addIndexedString("uniblk", chunkwriter);
       uniforms_stream->addIndexedString(name, chunkwriter);
+      uniforms_stream->addItem<size_t>(spirv_uniblk->_descriptor_set_id);
       /////////////////////////////////////////////
       // rebuild _items_by_name
       /////////////////////////////////////////////
@@ -329,21 +328,28 @@ datablock_ptr_t VkFxInterface::_writeIntermediateToDataBlock(shadlang::SHAST::tr
     for (auto uset : tracker._inherited_ssets) {
       auto INHID = uset->typedValueForKey<std::string>("object_name").value();
       shader_stream->addIndexedString(INHID, chunkwriter);
-      printf("INHID<%s>\n", INHID.c_str());
+      printf("WRITE SAMPLERSET REF<%s>\n", INHID.c_str());
     }
     //////////////////////////////////////////////////////////////////
     shader_stream->addItem<size_t>(tracker._inherited_usets.size());
     for (auto uset : tracker._inherited_usets) {
       auto INHID = uset->typedValueForKey<std::string>("object_name").value();
       shader_stream->addIndexedString(INHID, chunkwriter);
-      printf("INHID<%s>\n", INHID.c_str());
+      printf("WRITE UNIFORMSET REF<%s>\n", INHID.c_str());
+    }
+    //////////////////////////////////////////////////////////////////
+    shader_stream->addItem<size_t>(tracker._inherited_ublks.size());
+    for (auto ublk : tracker._inherited_ublks) {
+      auto INHID = ublk->typedValueForKey<std::string>("object_name").value();
+      shader_stream->addIndexedString(INHID, chunkwriter);
+      printf("WRITE UNIFORMBLOCK REF<%s>\n", INHID.c_str());
     }
     //////////////////////////////////////////////////////////////////
     shader_stream->addItem<size_t>(tracker._inherited_ifaces.size());
     for (auto uset : tracker._inherited_ifaces) {
       auto INHID = uset->typedValueForKey<std::string>("object_name").value();
       shader_stream->addIndexedString(INHID, chunkwriter);
-      printf("INHID<%s>\n", INHID.c_str());
+      printf("WRITE IFACE REF<%s>\n", INHID.c_str());
     }
     //////////////////////////////////////////////////////////////////
 

@@ -174,6 +174,7 @@ using vkrasterstate_ptr_t       = std::shared_ptr<VkRasterState>;
 
 using smpset_map_t      = std::map<std::string, vkfxssmpset_ptr_t>;
 using uniset_map_t      = std::map<std::string, vkfxsuniset_ptr_t>;
+using uniblk_map_t      = std::map<std::string, vkfxsuniblk_ptr_t>;
 using uniset_item_map_t = std::map<std::string, vkfxsunisetitem_ptr_t>;
 
 extern vkinstance_ptr_t _GVI;
@@ -619,11 +620,15 @@ struct VkFxShaderSamplerSet {
 struct VkFxShaderUniformSetsReference {
   uniset_map_t _unisets;
 };
+struct VkFxShaderUniformBlksReference {
+  uniblk_map_t _uniblks;
+};
 struct VkFxShaderSamplerSetsReference {
   static size_t descriptor_set_counter;
   smpset_map_t _smpsets;
 };
 using vkfxsunisetsref_ptr_t = std::shared_ptr<VkFxShaderUniformSetsReference>;
+using vkfxsuniblksref_ptr_t = std::shared_ptr<VkFxShaderUniformBlksReference>;
 using vkfxssmpsetsref_ptr_t = std::shared_ptr<VkFxShaderSamplerSetsReference>;
 ///////////////////////////////////////////////////////////////////////////////
 struct VkFxShaderPushConstantBlock {
@@ -658,7 +663,6 @@ struct VkFxShaderUniformBlkItem {
   std::shared_ptr<FxShaderParam> _orkparam;
 };
 struct VkFxShaderUniformBlk {
-  static size_t descriptor_set_counter;
   size_t _descriptor_set_id = 0;
   std::shared_ptr<FxShaderParamBlock> _orkparamblock;
   std::unordered_map<std::string, vkfxsuniblkitem_ptr_t> _items_by_name;
@@ -689,6 +693,7 @@ struct VulkanFxShaderObject {
   VkPipelineShaderStageCreateInfo _shaderstageinfo;
   // shadlang::SHAST::astnode_ptr_t _astnode; // debug only
   vkfxsunisetsref_ptr_t _uniset_refs;
+  vkfxsuniblksref_ptr_t _uniblk_refs;
   vkfxssmpsetsref_ptr_t _smpset_refs;
   std::unordered_map<std::string, vkfxsuniblk_ptr_t> _vk_uniformblks;
   std::vector<std::string> _vk_interfaces;
@@ -734,6 +739,7 @@ struct VkFxShaderProgram {
 
   std::unordered_map<std::string, vkfxssmpset_ptr_t> _vk_samplersets;
   std::unordered_map<std::string, vkfxsuniset_ptr_t> _vk_uniformsets;
+  std::unordered_map<std::string, vkfxsuniblk_ptr_t> _vk_uniformblks;
   VkFxShaderFile* _shader_file = nullptr;
 };
 

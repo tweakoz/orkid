@@ -421,7 +421,7 @@ struct InheritanceTracker{
   std::vector<typeblock_ptr_t> _inherited_types;
   std::vector<astnode_ptr_t> _inherited_ssets;
   std::vector<astnode_ptr_t> _inherited_usets;
-  std::vector<astnode_ptr_t> _inherited_blks;
+  std::vector<astnode_ptr_t> _inherited_ublks;
   std::vector<astnode_ptr_t> _inherited_ifaces;
   std::vector<std::string> _inherited_exts;
   size_t _stack_depth = 0;
