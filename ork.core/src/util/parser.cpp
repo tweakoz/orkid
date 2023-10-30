@@ -17,27 +17,37 @@
 /////////////////////////////////////////////////////////////////////////////////////////////////
 namespace ork {
 //////////////////////////////////////////////////////////////////////
-static logchannel_ptr_t logchan_parser = logger()->createChannel("RULESPEC", fvec3(0.5, 0.7, 0.5), false);
-static logchannel_ptr_t logchan_dump   = logger()->createChannel("PARSER-DUMP", fvec3(0.5, 0.7, 0.5), false);
-static logchannel_ptr_t logchan_matchattempt   = logger()->createChannel("MATCHATTEMPT", fvec3(0.5, 0.7, 0.5), true);
+static logchannel_ptr_t logchan_parser       = logger()->createChannel("RULESPEC", fvec3(0.5, 0.7, 0.5), false);
+static logchannel_ptr_t logchan_dump         = logger()->createChannel("PARSER-DUMP", fvec3(0.5, 0.7, 0.5), false);
+static logchannel_ptr_t logchan_matchattempt = logger()->createChannel("MATCHATTEMPT", fvec3(0.5, 0.7, 0.5), true);
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////
+
+void MatchAttempt::dumpToFile(file_ptr_t out_file, int indent) {
+  _dumpImpl(indent, [out_file](const std::string& log_str) { out_file->write(log_str + "\n"); });
+}
+
 //////////////////////////////////////////////////////////////////////
 
 void MatchAttempt::dump1(int indent) {
+  _dumpImpl(indent, [=](const std::string& log_str) { logchan_matchattempt->log("%s", log_str.c_str()); });
+}
+
+//////////////////////////////////////////////////////////////////////
+
+void MatchAttempt::_dumpImpl(int indent, logger_t logger) {
 
   auto indentstr = std::string(indent, ' ');
 
   std::string log_str;
 
   if (_view->empty()) {
-    log_str += FormatString("[e] matcher<%p:%s>) ",
-        indentstr.c_str(),
-        (void*)_matcher.get(),
-        _matcher->_name.c_str());
+    log_str += FormatString("%s[e] matcher<%p:%s>) ", indentstr.c_str(), (void*)_matcher.get(), _matcher->_name.c_str());
   } else {
-        log_str += FormatString("[%zu..%zu] matcher<%p:%s> ",
+    log_str += FormatString(
+        "%s[%zu..%zu] matcher<%p:%s> ",
         indentstr.c_str(),
         _view->_start,
         _view->_end,
@@ -48,34 +58,33 @@ void MatchAttempt::dump1(int indent) {
   if (auto as_seq = tryAsShared<SequenceAttempt>()) {
     auto seq = as_seq.value();
     log_str += FormatString("SEQ<%p>", (void*)seq.get());
-    logchan_matchattempt->log("%s", log_str.c_str());
+    logger(log_str);
     for (auto i : seq->_items) {
-      i->dump1(indent + 3);
+      i->_dumpImpl(indent + 3, logger);
     }
   } else if (auto as_nom = tryAsShared<NOrMoreAttempt>()) {
     auto nom = as_nom.value();
     log_str += FormatString("NOM%zu<%p>", nom->_minmatches, (void*)nom.get());
-    logchan_matchattempt->log("%s", log_str.c_str());
+    logger(log_str);
     for (auto i : nom->_items) {
-      i->dump1(indent + 3);
+      i->_dumpImpl(indent + 3, logger);
     }
   } else if (auto as_grp = tryAsShared<GroupAttempt>()) {
     auto grp = as_grp.value();
-     log_str += FormatString("GRP<%p>", (void*)grp.get());
-    logchan_matchattempt->log("%s", log_str.c_str());
+    log_str += FormatString("GRP<%p>", (void*)grp.get());
+    logger(log_str);
     for (auto i : grp->_items) {
-      i->dump1(indent + 3);
+      i->_dumpImpl(indent + 3, logger);
     }
   } else if (auto as_opt = tryAsShared<OptionalAttempt>()) {
     auto opt = as_opt.value();
-     log_str += FormatString("OPT<%p>", (void*)opt.get());
-    if (opt->_subitem){
-      logchan_matchattempt->log("%s", log_str.c_str());
-      opt->_subitem->dump1(indent + 3);
-    }
-    else {
+    log_str += FormatString("OPT<%p>", (void*)opt.get());
+    if (opt->_subitem) {
+      logger(log_str);
+      opt->_subitem->_dumpImpl(indent + 3, logger);
+    } else {
       log_str += FormatString("OPT<EMPTY>");
-      logchan_matchattempt->log("%s", log_str.c_str());
+      logger(log_str);
     }
   }
 }
@@ -445,10 +454,10 @@ matcher_ptr_t Parser::rule(const std::string& rule_name) {
 //////////////////////////////////////////////////////////////////////
 
 matcher_ptr_t Parser::declare(std::string name) {
-  //log_info_begin("DECLARE MATCHER<%s> ", name.c_str());
+  // log_info_begin("DECLARE MATCHER<%s> ", name.c_str());
   auto it = _matchers_by_name.find(name);
   if (it != _matchers_by_name.end()) {
-    //log_match_continue("pre-exists<%p>\n", (void*)it->second.get());
+    // log_match_continue("pre-exists<%p>\n", (void*)it->second.get());
     return it->second;
   }
   ///////////////////////////////////////////////
@@ -460,7 +469,7 @@ matcher_ptr_t Parser::declare(std::string name) {
   _matchers.insert(rval);
   rval->_name             = name;
   _matchers_by_name[name] = rval;
-  //log_match_continue("new<%p>\n", (void*)rval.get());
+  // log_match_continue("new<%p>\n", (void*)rval.get());
   ///////////////////////////////////////////////
   return rval;
 }
@@ -579,36 +588,34 @@ void Parser::popAttempt(match_attempt_ptr_t attempt, matcher_ptr_t matcher, scan
   //////////////////////////////////
   if (attempt) {
 
-      auto track      = std::make_shared<MatchAttemptTrackItem>();
-      track->_matcher = matcher;
-      track->_view    = view;
+    auto track      = std::make_shared<MatchAttemptTrackItem>();
+    track->_matcher = matcher;
+    track->_view    = view;
 
-      if( _trackcontig ){
-        if(view->_start!=-1 and view->_end!=-1){
-          if( view->_start > _trackcontig->_view->_start ){
-            _trackcontig    = track;
-          }
+    if (_trackcontig) {
+      if (view->_start != -1 and view->_end != -1) {
+        if (view->_start > _trackcontig->_view->_start) {
+          _trackcontig = track;
         }
       }
-      else{
-        _trackcontig    = track;
-      }
+    } else {
+      _trackcontig = track;
+    }
 
   } else {
 
-    //if(_track_depth > _high_track_depth){
-      //_high_track_depth = _track_depth;
-      //auto track      = std::make_shared<MatchAttemptTrackItem>();
-      //track->_matcher = matcher;
-      //track->_view    = view;
-      //_trackcontig    = track;
-      //printf("_trackcontig<%p>\n", (void*)_trackcontig.get());
+    // if(_track_depth > _high_track_depth){
+    //_high_track_depth = _track_depth;
+    // auto track      = std::make_shared<MatchAttemptTrackItem>();
+    // track->_matcher = matcher;
+    // track->_view    = view;
+    //_trackcontig    = track;
+    // printf("_trackcontig<%p>\n", (void*)_trackcontig.get());
     //}
 
     if (_attempt_prev == nullptr and attempt == nullptr) {
-      //printf("POP NOMATCH matcher<%s> view st<%zu> en<%zu>\n", matcher->_name.c_str(), view->_start, view->_end);
+      // printf("POP NOMATCH matcher<%s> view st<%zu> en<%zu>\n", matcher->_name.c_str(), view->_start, view->_end);
     }
-
   }
   _attempt_prev = attempt;
 
@@ -690,27 +697,34 @@ match_ptr_t Parser::match(
       errview = _trackcontig->_view;
     }
     OrkAssert(errview);
-    topview->dump("topview");
 
-    root_match_attempt->dump1(0);
+    auto scanner_dump_path = file::Path::temp_dir() / "scannerdump.txt";
+    auto parser_dump_path  = file::Path::temp_dir() / "parserdump.txt";
+    auto parser_log        = std::make_shared<File>(parser_dump_path, EFileMode::EFM_WRITE);
+    logerrchannel()->log("scanner dumped to<%s>", scanner_dump_path.c_str());
+    logerrchannel()->log("parser dumped to<%s>", parser_dump_path.c_str());
+    topview->dumpToFile(scanner_dump_path);
 
+    // root_match_attempt->dump1(0);
+    root_match_attempt->dumpToFile(parser_log, 0);
     auto errtok = topview->token(errview->_start);
 
-    logerrchannel()->log("FULL MATCH FAILED");
-    logerrchannel()->log("topview<%zu:%zu>", topview->_start, topview->_end);
-    logerrchannel()->log("errview<%zu:%zu>", errview->_start, errview->_end);
+    parser_log->printF("FULL MATCH FAILED\n");
+    parser_log->printF("topview<%zu:%zu>\n", topview->_start, topview->_end);
+    parser_log->printF("errview<%zu:%zu>\n", errview->_start, errview->_end);
     size_t errtok_lineno = 0;
     size_t errtok_colno  = 0;
     if (errtok) {
       errtok_lineno = errtok->iline;
       errtok_colno  = errtok->icol;
-      logerrchannel()->log("errtok<%s> errtok_linenum<%zu> errtok_columnnum<%zu>", errtok->text.c_str(), errtok_lineno, errtok_colno);
+      parser_log->printF(
+          "errtok<%s> errtok_linenum<%zu> errtok_columnnum<%zu>\n", errtok->text.c_str(), errtok_lineno, errtok_colno);
     } else {
-      logerrchannel()->log("NO END");
+      parser_log->printF("NO END\n");
       exit(-1);
     }
 
-    logerrchannel()->log("////////////////////// CURRENT POS (succeeded) ////////////////////// ");
+    parser_log->printF("////////////////////// CURRENT POS (succeeded) ////////////////////// \n");
 
     size_t st_line = std::max((errtok_lineno - 3), size_t(0));
     size_t en_line = st_line + 3 + 3 + 1;
@@ -728,7 +742,7 @@ match_ptr_t Parser::match(
       printf("%s\n", str.c_str());
     }
 
-    logerrchannel()->log("////////////////////// CURRENT POS (succeeded) ////////////////////// ");
+    parser_log->printF("////////////////////// CURRENT POS (succeeded) ////////////////////// \n");
 
     size_t st_tok = std::max((errview->_start - 9), size_t(0));
     size_t en_tok = st_tok + 9 + 9 + 1;
@@ -746,8 +760,9 @@ match_ptr_t Parser::match(
       printf("%s\n", str.c_str());
     }
 
-    logerrchannel()->log("///////////////////////////////////////////////////////////////////// ");
+    parser_log->printF("///////////////////////////////////////////////////////////////////// \n");
 
+    parser_log = nullptr;
 
     OrkAssert(false);
   }
@@ -836,15 +851,14 @@ static constexpr size_t KVIEWLEN = 16;
 void Parser::_log_valist(scannerlightview_constptr_t view, const char* pMsgFormat, va_list args) const {
   char buf[256];
   vsnprintf_s(buf, sizeof(buf), pMsgFormat, args);
-  size_t indent  = _matchattemptctx._stack.size();
+  size_t indent = _matchattemptctx._stack.size();
   std::string indentstr;
-  if( view ){
+  if (view) {
     auto viewstr = FormatString("view<%zd:%zd>", view->_start, view->_end);
-    size_t vlen = std::max(viewstr.length(), KVIEWLEN);
-    indent = KVIEWLEN+indent-vlen;
-    indentstr = viewstr+std::string(indent, ' ');
-  }
-  else{
+    size_t vlen  = std::max(viewstr.length(), KVIEWLEN);
+    indent       = KVIEWLEN + indent - vlen;
+    indentstr    = viewstr + std::string(indent, ' ');
+  } else {
     indentstr = std::string(indent, ' ');
   }
   printf("[PARSER] %s%s\n", indentstr.c_str(), buf);
@@ -852,15 +866,14 @@ void Parser::_log_valist(scannerlightview_constptr_t view, const char* pMsgForma
 void Parser::_log_valist_begin(scannerlightview_constptr_t view, const char* pMsgFormat, va_list args) const {
   char buf[256];
   vsnprintf_s(buf, sizeof(buf), pMsgFormat, args);
-  size_t indent  = _matchattemptctx._stack.size();
+  size_t indent = _matchattemptctx._stack.size();
   std::string indentstr;
-  if( view ){
+  if (view) {
     auto viewstr = FormatString("view<%zd:%zd>", view->_start, view->_end);
-    size_t vlen = std::max(viewstr.length(), KVIEWLEN);
-    indent = KVIEWLEN+indent-vlen;
-    indentstr = viewstr+std::string(indent, ' ');
-  }
-  else{
+    size_t vlen  = std::max(viewstr.length(), KVIEWLEN);
+    indent       = KVIEWLEN + indent - vlen;
+    indentstr    = viewstr + std::string(indent, ' ');
+  } else {
     indentstr = std::string(indent, ' ');
   }
   printf("[PARSER] %s%s", indentstr.c_str(), buf);

@@ -35,13 +35,15 @@ uniform_set ub_frg {
   vec4 LevelB;
   vec4 LevelC;
   vec4 ModColor;
+}
+sampler_set ub_frg_samplers {
   sampler2D ColorMap;
   sampler2D MapA;
   sampler2D MapB;
   sampler2D MapC;
 }
 ///////////////////////////////////////////////////////////////
-fragment_interface iface_fmt : ub_frg {
+fragment_interface iface_fmt : ub_frg : ub_frg_samplers {
   inputs { vec2 frg_uv; }
   outputs { vec4 out_clr; }
 }

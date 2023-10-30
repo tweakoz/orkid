@@ -111,10 +111,11 @@ fragment_interface iface_fwire {
 
 uniform_set ub_frg {
   vec4 modcolor;
+}
+sampler_set ub_frg_samplers {
   sampler2D DiffuseMap;
 }
-
-fragment_interface iface_fmt : ub_frg {
+fragment_interface iface_fmt : ub_frg : ub_frg_samplers {
   inputs {
     vec4 frg_clr;
     vec2 frg_uv0;

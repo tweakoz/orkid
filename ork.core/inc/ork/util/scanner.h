@@ -11,6 +11,7 @@
 #include <lexertl/generator.hpp>
 #include <lexertl/lookup.hpp>
 #include <lexertl/iterator.hpp>
+#include <ork/file/path.h>
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 namespace ork {
@@ -216,6 +217,7 @@ struct ScannerLightView {
   void advanceTo(size_t i);
   const Token* token(size_t i) const;
   void dump(const std::string& dumpid) const;
+  void dumpToFile(const file::Path& out_path) const;
   const ScannerView& _input_view;
   uint64_t hash() const;
   size_t _start = -1;

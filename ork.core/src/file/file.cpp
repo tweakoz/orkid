@@ -136,11 +136,15 @@ EFileErrCode File::Open() {
   return mpDevice->openFile(*this);
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
 EFileErrCode File::OpenFile(const file::Path& fname, EFileMode eMode) {
   meFileMode = eMode;
   msFileName = fname;
   return Open();
 }
+
+///////////////////////////////////////////////////////////////////////////////
 
 EFileErrCode File::Load(void** filebuffer, size_t& size) {
   OrkAssert(meFileMode & EFM_READ);
@@ -177,5 +181,30 @@ EFileErrCode File::Load(void** filebuffer, size_t& size) {
 
   return result;
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
+EFileErrCode File::printF(const char* formatstring, ...){
+  OrkAssert(mpDevice!=nullptr);
+  OrkAssert(mHandle!=0);
+  char formatbuffer[512];
+  va_list args;
+  va_start(args, formatstring);
+  vsnprintf(&formatbuffer[0], sizeof(formatbuffer), formatstring, args);
+  va_end(args);
+  size_t len = strlen(formatbuffer);
+  mpDevice->write(*this,formatbuffer,len);  
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+EFileErrCode File::write(const std::string& str){
+  OrkAssert(mpDevice!=nullptr);
+  OrkAssert(mHandle!=0);
+  size_t len = str.length();
+  mpDevice->write(*this,str.c_str(),len);  
+}
+
+///////////////////////////////////////////////////////////////////////////////
 
 } // namespace ork

@@ -70,6 +70,9 @@ public:
   EFileErrCode SeekFromCurrent(size_t iOffset);
   EFileErrCode GetLength(size_t& riOffset);
 
+  EFileErrCode printF(const char* formatstring, ...);
+  EFileErrCode write(const std::string& str);
+
   // Serializer functions
   template <class T> inline File& operator<<(const T& d);
   template <class T> inline File& operator>>(T& d);

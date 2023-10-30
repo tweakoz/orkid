@@ -1,12 +1,13 @@
 #pragma once
 
+#include <unordered_set>
+#include <unordered_map>
+#include <functional>
 #include <ork/orktypes.h>
 #include <ork/orkstd.h>
 #include <ork/kernel/varmap.inl>
 #include <ork/kernel/treeops.inl>
 #include <ork/util/scanner.h>
-#include <unordered_set>
-#include <unordered_map>
 #include <ork/util/crc.h>
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -70,8 +71,14 @@ match_attempt_ptr_t filtered_match(matcher_ptr_t matcher, match_attempt_ptr_t th
 
 struct MatchAttempt {
 
+  //using str_lambda_t = std::function<void(const char* fmt_str, std::va_list args)>;
+  //void _dump1Impl(str_lambda_t lambda, int indent);
+  using logger_t = std::function<void(const std::string&)>;
+
+  void _dumpImpl(int indent, logger_t logger);
   void dump1(int indent);
   void dump2(int indent);
+  void dumpToFile(file_ptr_t out_file, int indent);
   static match_ptr_t genmatch(match_attempt_constptr_t attempt);
 
   template <typename impl_t> std::shared_ptr<impl_t> asShared();
