@@ -547,6 +547,17 @@ void _semaNameMemberAccessOperators(impl::ShadLangParser* slp, astnode_ptr_t top
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
+void _semaExtractDescriptorSetIds(impl::ShadLangParser* slp, astnode_ptr_t top) {
+  auto nodes = AstNode::collectNodesOfType<DescriptorSetId>(top);
+  for (auto did_node : nodes) {
+    auto intnode = AstNode::collectNodesOfType<SemaIntegerLiteral>(did_node)[0];
+    auto literal_val = intnode->typedValueForKey<std::string>("literal_value").value();
+    did_node->setValueForKey<int>("descriptor_set_id", atoi(literal_val.c_str()));
+  }
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
 void _semaNameAdditiveOperators(impl::ShadLangParser* slp, astnode_ptr_t top) {
   auto nodes = AstNode::collectNodesOfType<AdditiveOperator>(top);
   for (auto ao_node : nodes) {
@@ -1127,6 +1138,7 @@ void impl::ShadLangParser::semaAST(astnode_ptr_t top) {
   if (1) {
     _semaIntegerLiterals(this, top);
     _semaFloatLiterals(this, top);
+    _semaExtractDescriptorSetIds(this, top);
   }
 
   printf("ShadLangParser<%p:%s> semaAST CP-D\n", this, _name.c_str() );

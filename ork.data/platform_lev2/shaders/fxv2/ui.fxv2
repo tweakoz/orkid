@@ -12,7 +12,7 @@ uniform_set push_constants { //
   mat4 mvp_r;
   vec4 ModColor;
 }
-sampler_set samplers {
+sampler_set samplers (descriptor_set 0) {
   sampler2D ColorMap;
 }
 

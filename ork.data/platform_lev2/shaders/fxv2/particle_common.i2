@@ -8,7 +8,7 @@ uniform_set uset_vtxa {
   mat4 MatP;
   mat4 MatMVP;
 }
-uniform_block ublk_vtx {
+uniform_block ublk_vtx (descriptor_set 0) {
   mat4 MatM;
   mat4 MatV;
   mat4 MatP;
@@ -35,13 +35,13 @@ uniform_set uset_geo_stereo {
   mat4 MatMVPR;
 }
 
-uniform_block ublk_frg {
+uniform_block ublk_frg (descriptor_set 1) {
   vec4 modcolor;
   vec4 User0;
   float ColorFactor;
   float AlphaFactor;
 }
-sampler_set particle_samplers {
+sampler_set particle_samplers (descriptor_set 2) {
   sampler2D ColorMap;
   sampler2D GradientMap;
   sampler3D VolumeMap;

@@ -12,7 +12,7 @@ state_block sb_ui : default {
 	BlendMode = OFF;
 }
 ///////////////////////////////////////////////////////////////
-sampler_set smp_ui {
+sampler_set smp_ui (descriptor_set 0) {
   sampler2D InstanceMatrices;
   sampler2D ColorMap;
   usampler2D InstanceIds;

@@ -415,9 +415,17 @@ UniformSet <|[
   R_CURLY
 ]|>
 
+DescriptorSetId <|[
+  L_PAREN 
+  KW_DESCSET
+  IntegerLiteral  
+  R_PAREN 
+]|>
+
 SamplerSet <|[
   KW_SMPSET
   [ IDENTIFIER ] : "smpset_name"
+  DescriptorSetId
   L_CURLY
   SamplerDeclarations : "smpset_decls"
   R_CURLY
@@ -426,6 +434,7 @@ SamplerSet <|[
 UniformBlk <|[
   KW_UNIBLK
   [ IDENTIFIER ] : "uniblk_name"
+  DescriptorSetId
   L_CURLY
   DataDeclarations : "uniblk_decls"
   R_CURLY

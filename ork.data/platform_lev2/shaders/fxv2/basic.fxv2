@@ -22,7 +22,7 @@ uniform_set ub_vtx {
   vec4 modcolor;
   float time;
 }
-uniform_block ub_vtx2 {
+uniform_block ub_vtx2 (descriptor_set 0) {
   vec3 AmbientLight;
   int NumDirectionalLights;
   vec3 DirectionalLightDir[4];
@@ -112,7 +112,7 @@ fragment_interface iface_fwire {
 uniform_set ub_frg {
   vec4 modcolor;
 }
-sampler_set ub_frg_samplers {
+sampler_set ub_frg_samplers (descriptor_set 1) {
   sampler2D DiffuseMap;
 }
 fragment_interface iface_fmt : ub_frg : ub_frg_samplers {

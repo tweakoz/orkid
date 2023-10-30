@@ -17,7 +17,7 @@ uniform_set ublock_vtx_stereo {
   mat4 MatMVPR;
 }
 ///////////////////////////////////////////////////////////////
-sampler_set sset_frg {
+sampler_set sset_frg (descriptor_set 0) {
   sampler2D ColorMap;
   sampler2D ColorMap2;
   sampler2D ColorMap3;

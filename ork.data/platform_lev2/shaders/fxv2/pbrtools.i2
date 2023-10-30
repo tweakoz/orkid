@@ -14,12 +14,12 @@ uniform_set ub_vtx {
   mat4 mvp_r;
   vec4 modcolor;
 }
-sampler_set ub_vtx_samplers {
+sampler_set ub_vtx_samplers (descriptor_set 0) {
   sampler2D InstanceMatrices;
   sampler2D InstanceColors;
   usampler2D InstanceIds;
 }
-uniform_block ub_vtx2 {
+uniform_block ub_vtx2 (descriptor_set 1) {
   mat4 m;
   mat4 mv;
   mat4 vp;
@@ -53,7 +53,7 @@ uniform_set ub_frg_fwd {
 
 }
 ///////////////////////////////////////////////////////////////
-sampler_set fwd_samplers {
+sampler_set fwd_samplers (descriptor_set 0) {
   sampler2D ColorMap;
   sampler2D NormalMap;
   sampler2D MtlRufMap;
@@ -64,7 +64,7 @@ sampler_set fwd_samplers {
   sampler2D UnTexPointLightsData;
 }
 ///////////////////////////////////////////////////////////////
-uniform_block ub_frg_fwd2 {
+uniform_block ub_frg_fwd2 (descriptor_set 1) {
 
   mat4 vp;
   mat4 v_l;
@@ -101,7 +101,7 @@ uniform_block ub_frg_fwd2 {
   vec3 EyePostionR;
 }
 ///////////////////////////////////////////////////////////////
-uniform_block ub_frg_fwd_lighting {
+uniform_block ub_frg_fwd_lighting (descriptor_set 0) {
   vec4 _lightcolor[16];
   vec4 _lightpos[16];
   float _lightradius[16];

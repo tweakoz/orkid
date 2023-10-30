@@ -30,7 +30,7 @@ vertex_interface iface_v2uv : ub_vtx {
   }
 }
 ///////////////////////////////////////////////////////////////
-sampler_set ub_frg_samplers {
+sampler_set ub_frg_samplers (descriptor_set 0) {
   //sampler2D MapAlbedoAo;
   //sampler2D MapNormalL;
   //sampler2D MapRufMtlAlpha;
@@ -44,9 +44,8 @@ sampler_set ub_frg_samplers {
   sampler2D MapShadowDepth;
   sampler3D MapVolTexA;
 }
-
 ///////////////////////////////////////////////////////////////
-uniform_block ub_frg {
+uniform_block ub_frg (descriptor_set 1) {
   mat4 IVPArray[2];
   mat4 VArray[2];
   mat4 PArray[2];
@@ -69,7 +68,7 @@ uniform_block ub_frg {
   float DepthFogPower;
 }
 ///////////////////////////////////////////////////////////////
-uniform_block ub_light {
+uniform_block ub_light (descriptor_set 2) {
   vec4 LightColorD[256];
   mat4 LightMatrix[256];
   mat4 ShadowMatrix[256];

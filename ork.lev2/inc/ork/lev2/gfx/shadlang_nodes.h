@@ -243,6 +243,7 @@ DECLARE_STD_AST_CLASS(LanguageElement,ArrayRef);
 DECLARE_STD_AST_CLASS(LanguageElement,ArgumentDeclaration);
 
 //
+DECLARE_STD_AST_CLASS(LanguageElement,DescriptorSetId);
 DECLARE_STD_AST_CLASS(LanguageElement,DataDeclarationBase);
 DECLARE_STD_AST_CLASS(DataDeclarationBase,DataDeclaration);
 DECLARE_STD_AST_CLASS(DataDeclarationBase,ArrayDeclaration);

@@ -1,6 +1,6 @@
 //
 
-uniform_block ub_vtx_boneblock {
+uniform_block ub_vtx_boneblock (descriptor_set 0) {
   mat4 _bone_matrices[1024];
 }
 

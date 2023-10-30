@@ -272,12 +272,19 @@ void SpirvCompiler::_processGlobalRenames() {
 void SpirvCompiler::_convertSamplerSets() {
   auto ast_smpsets = SHAST::AstNode::collectNodesOfType<SHAST::SamplerSet>(_transu);
   for (auto ast_smpset : ast_smpsets) {
+    auto dsetids = SHAST::AstNode::collectNodesOfType<SHAST::DescriptorSetId>(ast_smpset);
+    OrkAssert(dsetids.size() == 1);
+    int dset_id = dsetids[0]->typedValueForKey<int>("descriptor_set_id").value();
+    printf("sampler dset_id<%d>\n", dset_id);
+    //////////////////////////////////////
     auto sampler_declarations = SHAST::AstNode::collectNodesOfType<SHAST::SamplerDeclaration>(ast_smpset);
     //////////////////////////////////////
     auto smpset_name               = ast_smpset->typedValueForKey<std::string>("object_name").value();
     auto smpset                 = std::make_shared<SpirvSamplerSet>();
     _spirvsamplersets[smpset_name] = smpset;
     smpset->_name               = smpset_name;
+    smpset->_descriptor_set_id = dset_id;
+    OrkAssert((dset_id>=0) and (dset_id<=4));
     //////////////////////////////////////
     for (auto decl : sampler_declarations) {
       dumpAstNode(decl);
@@ -343,12 +350,19 @@ void SpirvCompiler::_convertUniformSets() {
 void SpirvCompiler::_convertUniformBlocks() {
   auto ast_uniblks = SHAST::AstNode::collectNodesOfType<SHAST::UniformBlk>(_transu);
   for (auto ast_uniblk : ast_uniblks) {
+    auto dsetids = SHAST::AstNode::collectNodesOfType<SHAST::DescriptorSetId>(ast_uniblk);
+    OrkAssert(dsetids.size() == 1);
+    int dset_id = dsetids[0]->typedValueForKey<int>("descriptor_set_id").value();
+    printf("uniblk dset_id<%d>\n", dset_id);
+    //////////////////////////////////////
     auto decls = SHAST::AstNode::collectNodesOfType<SHAST::DataDeclarationBase>(ast_uniblk);
     //////////////////////////////////////
     auto uni_name               = ast_uniblk->typedValueForKey<std::string>("object_name").value();
     auto uniblk                 = std::make_shared<SpirvUniformBlock>();
     _spirvuniformblks[uni_name] = uniblk;
     uniblk->_name               = uni_name;
+    uniblk->_descriptor_set_id = dset_id;
+    OrkAssert((dset_id>=0) and (dset_id<=4));
     //////////////////////////////////////
     LayoutStandard430 layout;
     //////////////////////////////////////
@@ -361,7 +375,7 @@ void SpirvCompiler::_convertUniformBlocks() {
 
       auto it = dt.find("sampler");
       if( it != std::string::npos ){
-        printf( "sampler<%s:%s> in uniform block<%s>\n", dt.c_str(), id.c_str(), uni_name.c_str() );
+        printf( "sampler<%s:%s> in uniform block<%s> not allowed!\n", dt.c_str(), id.c_str(), uni_name.c_str() );
         OrkAssert(false);
       }
 
@@ -404,8 +418,8 @@ void SpirvCompiler::_inheritSamplerSet(
       auto dt   = item.second->_datatype;
       auto id   = item.second->_identifier;
       auto line = FormatString(
-          "layout(binding=%d) uniform %s %s;", //
-          //spirvsset->_descriptor_set_id,                 //
+          "layout(set=%zu, binding=%d) uniform %s %s;",   //
+          spirvsset->_descriptor_set_id,                 //
           _binding_id,                                   //
           dt.c_str(),                                    //
           id.c_str());
@@ -421,7 +435,6 @@ void SpirvCompiler::_inheritUniformSet(
     std::string unisetname,        //
     spirvuniset_ptr_t spirvuset) { //
   if (_vulkan) {
-    //spirvuset->_descriptor_set_id = _descriptor_set_counter++;
     /////////////////////
     // loose unis
     /////////////////////
@@ -485,7 +498,6 @@ void SpirvCompiler::_inheritUniformBlk(
     std::string uniblkname,        //
     spirvuniblk_ptr_t spirvublk) { //
   if (_vulkan) {
-    spirvublk->_descriptor_set_id = _descriptor_set_counter++;
     size_t _offset = 0;
     /////////////////////
     // loose unis

@@ -19,7 +19,7 @@ uniform_set ub_vtx {
 	vec2 InvViewportSize; // inverse target size
 }
 ///////////////////////////////////////////////////////////////
-sampler_set samplers {
+sampler_set samplers (descriptor_set 0) {
     sampler2D prefiltmap;
 }
 uniform_set ub_frg {

@@ -126,6 +126,7 @@ KW_PRAGMA_TYPELIB   <| "pragma_typelib" |>
 KW_CONST            <| "const" |>
 KW_IN               <| "in" |>
 
+KW_DESCSET          <| "descriptor_set" |>
 KW_FUNCTION         <| "function" |>
 KW_LAYOUT           <| "layout" |>
 KW_FOR              <| "for" |>

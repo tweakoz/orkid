@@ -78,6 +78,7 @@ void ShadLangParser::declareAstNodes() {
   DECLARE_STD_AST_NODE(DeclArgumentList);
   DECLARE_STD_AST_NODE(TypedIdentifier);
   DECLARE_STD_AST_NODE(SamplerDeclaration);
+  DECLARE_STD_AST_NODE(DescriptorSetId);
   DECLARE_STD_AST_NODE(DataDeclaration);
   DECLARE_STD_AST_NODE(DataDeclarations);
   DECLARE_STD_AST_NODE(ArrayDeclaration);

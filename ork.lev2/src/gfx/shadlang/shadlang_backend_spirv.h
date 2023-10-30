@@ -50,7 +50,7 @@ struct SpirvUniformSet {
 };
 struct SpirvSamplerSet {
   std::string _name;
-  size_t _descriptor_set_id = 0;
+  size_t _descriptor_set_id = -1;
   std::unordered_map<std::string, spirvsampler_ptr_t> _samplers_by_name;
   std::vector<spirvsampler_ptr_t> _samplers_by_order;
 };
@@ -64,7 +64,7 @@ struct SpirvUniformBlockItem {
 };
 struct SpirvUniformBlock {
   std::string _name;
-  size_t _descriptor_set_id = 0;
+  size_t _descriptor_set_id = -1;
   std::unordered_map<std::string, spirvuniblkitem_ptr_t> _items_by_name;
   std::vector<spirvuniblkitem_ptr_t> _items_by_order;
 };
@@ -123,7 +123,6 @@ private:
   miscgroupnode_ptr_t _libraries_group;
   size_t _input_index = 0;
   size_t _output_index = 0;
-  size_t _descriptor_set_counter = 0;
   size_t _binding_id = 0;
   bool _vulkan = true;
 
