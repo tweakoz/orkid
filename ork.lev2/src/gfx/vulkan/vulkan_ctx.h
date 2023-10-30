@@ -611,12 +611,27 @@ struct VkFxShaderUniformSet {
   std::vector<vkfxsunisetitem_ptr_t> _items_by_order;
 };
 ///////////////////////////////////////////////////////////////////////////////
-struct VkFxShaderSamplerSet {
-  static size_t descriptor_set_counter;
+struct VkFxShaderDescriptorSet{
   size_t _descriptor_set_id = 0;
+};
+using vkfxdescset_ptr_t = std::shared_ptr<VkFxShaderDescriptorSet>;
+///////////////////////////////////////////////////////////////////////////////
+struct VkFxShaderSamplerSet : public VkFxShaderDescriptorSet {
   std::unordered_map<std::string, vkfxsunisetsamp_ptr_t> _samplers_by_name;
   std::vector<vkfxsunisetsamp_ptr_t> _samplers_by_order;
 };
+struct VkFxShaderUniformBlkItem {
+  std::string _datatype;
+  std::string _identifier;
+  size_t _offset = 0;
+  std::shared_ptr<FxShaderParam> _orkparam;
+};
+struct VkFxShaderUniformBlk : public VkFxShaderDescriptorSet {
+  std::shared_ptr<FxShaderParamBlock> _orkparamblock;
+  std::unordered_map<std::string, vkfxsuniblkitem_ptr_t> _items_by_name;
+  std::vector<vkfxsuniblkitem_ptr_t> _items_by_order;
+};
+///////////////////////////////////////////////////////////////////////////////
 struct VkFxShaderUniformSetsReference {
   uniset_map_t _unisets;
 };
@@ -648,29 +663,15 @@ using descriptor_bindings_vect_t = std::vector<VkDescriptorSetLayoutBinding>;
 // using descriptor_samplerinfos_vect_t = std::vector<VkSamplerCreateInfo>;
 struct VkDescriptorSetBindings {
 
-  std::set<vkfxssmpset_ptr_t> _smpsets_set;
-  std::set<vkfxsuniblk_ptr_t> _uniblks_set;
+  std::map<size_t,vkfxdescset_ptr_t> _descriptorsets;
 
   descriptor_bindings_vect_t _vkbindings;
   size_t _sampler_count = 0;
   VkDescriptorSetLayout _dsetlayout;
 };
 
-using vkdescriptors_ptr_t = std::shared_ptr<VkDescriptorSetBindings>;
+using vkdescriptorbindings_ptr_t = std::shared_ptr<VkDescriptorSetBindings>;
 
-///////////////////////////////////////////////////////////////////////////////
-struct VkFxShaderUniformBlkItem {
-  std::string _datatype;
-  std::string _identifier;
-  size_t _offset = 0;
-  std::shared_ptr<FxShaderParam> _orkparam;
-};
-struct VkFxShaderUniformBlk {
-  size_t _descriptor_set_id = 0;
-  std::shared_ptr<FxShaderParamBlock> _orkparamblock;
-  std::unordered_map<std::string, vkfxsuniblkitem_ptr_t> _items_by_name;
-  std::vector<vkfxsuniblkitem_ptr_t> _items_by_order;
-};
 ///////////////////////////////////////////////////////////////////////////////
 struct VkFxShaderFile {
   std::string _shader_name;
@@ -733,7 +734,7 @@ struct VkFxShaderProgram {
   std::vector<VkParamSetItem> _pending_params;
   std::vector<void_lambda_t> _pending_param_ops;
   std::vector<uint8_t> _pushdatabuffer;
-  vkdescriptors_ptr_t _descriptors;
+  vkdescriptorbindings_ptr_t _descriptors;
   std::unordered_map<fxparam_constptr_t, size_t> _samplers_by_orkparam;
   std::unordered_map<fxparam_constptr_t, vktexobj_ptr_t > _textures_by_orkparam;
   std::unordered_map<size_t, vktexobj_ptr_t > _textures_by_binding;

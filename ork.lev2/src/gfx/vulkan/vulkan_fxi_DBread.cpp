@@ -499,15 +499,16 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
       
       ////////////////////////////////////////////////////////////
 
-      auto smpsets_to_descriptors = [&](vkfxsobj_ptr_t shobj, vkdescriptors_ptr_t desc_set, uint32_t stage_bits) {
+      auto smpsets_to_descriptors = [&](vkfxsobj_ptr_t shobj, vkdescriptorbindings_ptr_t descset_bindings, uint32_t stage_bits) {
         if (shobj->_smpset_refs) {
           for (auto smpset_item : shobj->_smpset_refs->_smpsets) {
             auto sset_name = smpset_item.first;
             auto sset      = smpset_item.second;
-            auto it        = desc_set->_smpsets_set.find(sset);
+            auto dsid      = sset->_descriptor_set_id;
+            auto it        = descset_bindings->_descriptorsets.find(dsid);
 
-            if (it == desc_set->_smpsets_set.end()) {
-              desc_set->_smpsets_set.insert(sset);
+            if (it == descset_bindings->_descriptorsets.end()) {
+              descset_bindings->_descriptorsets[ dsid ] = sset;
               ///////////////////////////////////////////
               // loose samplers
               ///////////////////////////////////////////
@@ -515,12 +516,12 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
                 auto item_name       = item.first;
                 auto item_ptr        = item.second;
                 auto orkparam        = item_ptr->_orkparam.get();
-                size_t binding_index = desc_set->_sampler_count++;
+                size_t binding_index = descset_bindings->_sampler_count++;
                 auto it              = vk_program->_samplers_by_orkparam.find(orkparam);
                 OrkAssert(it == vk_program->_samplers_by_orkparam.end());
                 vk_program->_samplers_by_orkparam[orkparam] = binding_index;
 
-                auto& vkb = desc_set->_vkbindings.emplace_back();
+                auto& vkb = descset_bindings->_vkbindings.emplace_back();
                 initializeVkStruct(vkb);
                 vkb.binding        = binding_index;                             // TODO : query from shader
                 vkb.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER; // Type of the descriptor (e.g., uniform buffer,
@@ -532,7 +533,7 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
               }
             }
             // set stage flags
-            for (auto& vkb : desc_set->_vkbindings) {
+            for (auto& vkb : descset_bindings->_vkbindings) {
               vkb.stageFlags |= stage_bits;
             }
           }
@@ -541,22 +542,24 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
 
       //////////////////////////////////////////////////////////////
 
-      auto uniblks_to_descriptors = [&](vkfxsobj_ptr_t shobj, vkdescriptors_ptr_t desc_set, uint32_t stage_bits) {
+      auto uniblks_to_descriptors = [&](vkfxsobj_ptr_t shobj, vkdescriptorbindings_ptr_t descset_bindings, uint32_t stage_bits) {
         if (shobj->_uniblk_refs) {
           for (auto uniblk_item : shobj->_uniblk_refs->_uniblks) {
             auto ublk_name = uniblk_item.first;
             auto ublk      = uniblk_item.second;
-            auto it        = desc_set->_uniblks_set.find(ublk);
-            if (it == desc_set->_uniblks_set.end()) {
-              desc_set->_uniblks_set.insert(ublk);
-              auto& vkb = desc_set->_vkbindings.emplace_back();
+            auto dsid = ublk->_descriptor_set_id;
+            auto it        = descset_bindings->_descriptorsets.find(dsid);
+  
+            if (it == descset_bindings->_descriptorsets.end()) {
+              descset_bindings->_descriptorsets[dsid] = ublk;
+              auto& vkb = descset_bindings->_vkbindings.emplace_back();
               initializeVkStruct(vkb);
               vkb.binding         = 0; // TODO : query from shader
               vkb.descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
               vkb.descriptorCount = 1;          // Number of descriptors in this binding (useful for arrays of descriptors)
               vkb.stageFlags      = 0; // Shader stage to bind this descriptor to
             }
-            for (auto& vkb : desc_set->_vkbindings) {
+            for (auto& vkb : descset_bindings->_vkbindings) {
               vkb.stageFlags |= stage_bits;
             }
           }
