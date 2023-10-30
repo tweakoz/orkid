@@ -496,18 +496,18 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
         }
         vk_program->_frgshader = frg_obj;
       }
-
+      
       ////////////////////////////////////////////////////////////
 
       auto smpsets_to_descriptors = [&](vkfxsobj_ptr_t shobj, vkdescriptors_ptr_t desc_set, uint32_t stage_bits) {
         if (shobj->_smpset_refs) {
-          std::set<vkfxssmpset_ptr_t> smpsets_set;
           for (auto smpset_item : shobj->_smpset_refs->_smpsets) {
             auto sset_name = smpset_item.first;
             auto sset      = smpset_item.second;
-            auto it        = smpsets_set.find(sset);
-            if (it == smpsets_set.end()) {
-              smpsets_set.insert(sset);
+            auto it        = desc_set->_smpsets_set.find(sset);
+
+            if (it == desc_set->_smpsets_set.end()) {
+              desc_set->_smpsets_set.insert(sset);
               ///////////////////////////////////////////
               // loose samplers
               ///////////////////////////////////////////
@@ -526,13 +526,43 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
                 vkb.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER; // Type of the descriptor (e.g., uniform buffer,
                                                                                 // combined image sampler, etc.)
                 vkb.descriptorCount = 1;          // Number of descriptors in this binding (useful for arrays of descriptors)
-                vkb.stageFlags      = stage_bits; // Shader stage to bind this descriptor to
+                vkb.stageFlags      = 0; // Shader stage to bind this descriptor to
                 // vkb.pImmutableSamplers = &immutableSampler; // Only relevant for samplers and combined image samplers
+
               }
+            }
+            // set stage flags
+            for (auto& vkb : desc_set->_vkbindings) {
+              vkb.stageFlags |= stage_bits;
             }
           }
         }
       };
+
+      //////////////////////////////////////////////////////////////
+
+      auto uniblks_to_descriptors = [&](vkfxsobj_ptr_t shobj, vkdescriptors_ptr_t desc_set, uint32_t stage_bits) {
+        if (shobj->_uniblk_refs) {
+          for (auto uniblk_item : shobj->_uniblk_refs->_uniblks) {
+            auto ublk_name = uniblk_item.first;
+            auto ublk      = uniblk_item.second;
+            auto it        = desc_set->_uniblks_set.find(ublk);
+            if (it == desc_set->_uniblks_set.end()) {
+              desc_set->_uniblks_set.insert(ublk);
+              auto& vkb = desc_set->_vkbindings.emplace_back();
+              initializeVkStruct(vkb);
+              vkb.binding         = 0; // TODO : query from shader
+              vkb.descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+              vkb.descriptorCount = 1;          // Number of descriptors in this binding (useful for arrays of descriptors)
+              vkb.stageFlags      = 0; // Shader stage to bind this descriptor to
+            }
+            for (auto& vkb : desc_set->_vkbindings) {
+              vkb.stageFlags |= stage_bits;
+            }
+          }
+        }
+      };
+      
       //////////////////////////////////////////////////////////////
       std::set<vkfxsuniset_ptr_t> unisets_set;
       auto uniset_to_pushconstants = [&](vkfxsobj_ptr_t shobj, vkbufferlayout_ptr_t dest_layout) {
@@ -578,14 +608,20 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
       //////////////////////////////////////////////////////////////
 
       auto descriptors = std::make_shared<VkDescriptorSetBindings>();
-      // descriptors->_vksamplers.reserve( 32 );
+
       descriptors->_vkbindings.reserve(32);
 
       // smpsets_to_descriptors(vtx_obj, descriptors, VK_SHADER_STAGE_VERTEX_BIT );
+      if (vk_program->_vtxshader) {
+        uniblks_to_descriptors(vk_program->_vtxshader, descriptors, VK_SHADER_STAGE_VERTEX_BIT);
+        smpsets_to_descriptors(vk_program->_vtxshader, descriptors, VK_SHADER_STAGE_VERTEX_BIT);
+      }
       if (vk_program->_frgshader) {
+        uniblks_to_descriptors(vk_program->_frgshader, descriptors, VK_SHADER_STAGE_FRAGMENT_BIT);
         smpsets_to_descriptors(vk_program->_frgshader, descriptors, VK_SHADER_STAGE_FRAGMENT_BIT);
       }
       vk_program->_descriptors = descriptors;
+
       //////////////////////////////////////////////////////////////
       // push constants
       //////////////////////////////////////////////////////////////

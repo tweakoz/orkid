@@ -648,6 +648,9 @@ using descriptor_bindings_vect_t = std::vector<VkDescriptorSetLayoutBinding>;
 // using descriptor_samplerinfos_vect_t = std::vector<VkSamplerCreateInfo>;
 struct VkDescriptorSetBindings {
 
+  std::set<vkfxssmpset_ptr_t> _smpsets_set;
+  std::set<vkfxsuniblk_ptr_t> _uniblks_set;
+
   descriptor_bindings_vect_t _vkbindings;
   size_t _sampler_count = 0;
   VkDescriptorSetLayout _dsetlayout;
