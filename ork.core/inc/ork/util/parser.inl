@@ -78,6 +78,8 @@ template <typename impl_t> std::shared_ptr<impl_t> SequenceAttempt::itemAsShared
   return _items[index]->asShared<impl_t>();
 }
 template <typename impl_t> std::shared_ptr<impl_t> SequenceAttempt::tryItemAsShared(int index) {
+  if(index>=_items.size())
+    return nullptr;
   return _items[index]->tryAsShared<impl_t>();
 }
 template <typename impl_t> std::shared_ptr<impl_t> GroupAttempt::itemAsShared(int index) {

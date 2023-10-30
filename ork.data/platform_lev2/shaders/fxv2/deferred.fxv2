@@ -84,7 +84,18 @@ fragment_interface iface_f2uv {
   outputs { vec4 out_clr; }
 }
 ///////////////////////////////////////////////////////////////
+typeblock types_deferred {
+  struct SpotLightCalc2{
+    vec3 _lightoutput;
+    vec2 _lightuv;
+    bool _mask;
+    float _lightz;
+    vec3 _lightdel;
+  };
+}
+///////////////////////////////////////////////////////////////
 libblock lib_deferred
+  : types_deferred
   : lib_math
   : lib_envmapping
   : lib_cellnoise
@@ -284,13 +295,6 @@ libblock lib_deferred
     return l*depth_fogval;
   }
   /////////////////////////////////////////////////////////
-  struct SpotLightCalc2{
-    vec3 _lightoutput;
-    vec2 _lightuv;
-    bool _mask;
-    float _lightz;
-    vec3 _lightdel;
-  };
   SpotLightCalc2 slcalc(GBufData gbd,int lidx){
     SpotLightCalc2 slc;
     mat4 lmtx = LightMatrix[lidx];
