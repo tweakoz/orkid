@@ -411,6 +411,7 @@ void SpirvCompiler::_convertUniformBlocks() {
 void SpirvCompiler::_inheritSamplerSet(
     std::string unisetname,        //
     spirvsmpset_ptr_t spirvsset) { //
+    OrkAssert( (spirvsset->_descriptor_set_id>=0) and (spirvsset->_descriptor_set_id<=4) );
     /////////////////////
     // samplers
     /////////////////////
@@ -441,8 +442,6 @@ void SpirvCompiler::_inheritUniformSet(
     if( spirvuset->_items_by_order.size() ){
       auto line = FormatString(
           "layout(push_constant) uniform %s {", //
-          //spirvuset->_descriptor_set_id,               //
-          //_binding_id,                                 //
           unisetname.c_str());
       _appendText(_uniforms_group, line.c_str());
       for (auto item : spirvuset->_items_by_order) {
@@ -458,7 +457,6 @@ void SpirvCompiler::_inheritUniformSet(
       }
       _appendText(_uniforms_group, "};");
     }
-    //_binding_id++;
   } else { // opengl
     OrkAssert(false);
   }
@@ -497,6 +495,7 @@ void SpirvCompiler::_inheritTypes(typeblock_ptr_t typ_block) {
 void SpirvCompiler::_inheritUniformBlk(
     std::string uniblkname,        //
     spirvuniblk_ptr_t spirvublk) { //
+    OrkAssert( (spirvublk->_descriptor_set_id>=0) and (spirvublk->_descriptor_set_id<=4) );
   if (_vulkan) {
     size_t _offset = 0;
     /////////////////////
