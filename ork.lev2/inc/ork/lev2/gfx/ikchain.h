@@ -19,7 +19,7 @@ struct IkChain{
   IkChain( xgmskeleton_constptr_t skel);
   void bindToBone(std::string named);
   void prepare();
-  void compute(XgmLocalPose& localpose, //
+  void compute(xgmlocalpose_ptr_t localpose, //
                const fvec3& target);
 
   /////////////////////////////////////////////////////////////////////////////
@@ -29,7 +29,7 @@ struct IkChain{
   std::map<int,float> _bonelengths; // length from parent to child
 
   xgmskeleton_constptr_t _skeleton;
-  xgmlocalpose_ptr _bindpose;
+  xgmlocalpose_ptr_t _bindpose;
 
   float _C1 = 0.222f;
   float _C2 = 0.007f;

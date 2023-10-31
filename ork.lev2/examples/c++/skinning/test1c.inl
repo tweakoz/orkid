@@ -59,15 +59,15 @@ skinning_test_ptr_t createTest1C(GpuResources* gpurec) {
       _ikchain->bindToBone("Bone.004");
       _ikchain->prepare();
 
-      auto& localpose = modelinst->_localPose;
-      auto& worldpose = modelinst->_worldPose;
+      auto localpose = modelinst->_localPose;
+      auto worldpose = modelinst->_worldPose;
 
-      localpose.bindPose();
+      localpose->bindPose();
       _char_animinst->_current_frame = 0;
       _char_animinst->applyToPose(localpose);
-      localpose.blendPoses();
-      localpose.concatenate();
-      worldpose.apply(fmtx4(), localpose);
+      localpose->blendPoses();
+      localpose->concatenate();
+      worldpose->apply(fmtx4(), localpose);
 
 
       auto drw = std::make_shared<CallbackDrawable>(nullptr);
@@ -157,10 +157,10 @@ skinning_test_ptr_t createTest1C(GpuResources* gpurec) {
     ///////////////////////////////////////////////////////////
 
     auto modelinst  = impl->_char_drawable->_modelinst;
-    auto& localpose = modelinst->_localPose;
-    localpose.bindPose();
-    localpose.blendPoses();
-    localpose.concatenate();
+    auto localpose = modelinst->_localPose;
+    localpose->bindPose();
+    localpose->blendPoses();
+    localpose->concatenate();
 
     ///////////////////////////////////////////////////////////
 

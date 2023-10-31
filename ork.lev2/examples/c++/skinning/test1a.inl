@@ -51,15 +51,15 @@ skinning_test_ptr_t createTest1A(GpuResources* gpurec) {
       _char_animinst->_use_temporal_lerp = true;
       _char_animinst->bindToSkeleton(_model->_skeleton);
 
-      auto& localpose = modelinst->_localPose;
-      auto& worldpose = modelinst->_worldPose;
+      auto localpose = modelinst->_localPose;
+      auto worldpose = modelinst->_worldPose;
 
-      localpose.bindPose();
+      localpose->bindPose();
       _char_animinst->_current_frame = 0;
       _char_animinst->applyToPose(localpose);
-      localpose.blendPoses();
-      localpose.concatenate();
-      worldpose.apply(fmtx4(), localpose);
+      localpose->blendPoses();
+      localpose->concatenate();
+      worldpose->apply(fmtx4(), localpose);
 
       _skel_applicator = std::make_shared<XgmSkelApplicator>(_model->_skeleton);
       //_skel_applicator->bindToBone("Bone");
@@ -137,10 +137,10 @@ skinning_test_ptr_t createTest1A(GpuResources* gpurec) {
     ///////////////////////////////////////////////////////////
 
     auto modelinst  = impl->_char_drawable->_modelinst;
-    auto& localpose = modelinst->_localPose;
-    localpose.bindPose();
-    localpose.blendPoses();
-    localpose.concatenate();
+    auto localpose = modelinst->_localPose;
+    localpose->bindPose();
+    localpose->blendPoses();
+    localpose->concatenate();
 
     ///////////////////////////////////////////////////////////
     // compute bone lengths
@@ -177,19 +177,19 @@ skinning_test_ptr_t createTest1A(GpuResources* gpurec) {
     fmtx4 mtx;
 
     mtx.lookAt(fvec3(0,0,0),target*l0,fvec3(0,1,0));
-    localpose._concat_matrices[ib0] = mtx.inverse() * myz;
+    localpose->_concat_matrices[ib0] = mtx.inverse() * myz;
       
     mtx.lookAt(target*l0,target*(l0+l1),fvec3(0,1,0));
-    localpose._concat_matrices[ib1] = mtx.inverse() * myz;
+    localpose->_concat_matrices[ib1] = mtx.inverse() * myz;
 
     mtx.lookAt(target*(l0+l1),target*(l0+l1+l2),fvec3(0,1,0));
-    localpose._concat_matrices[ib2] = mtx.inverse() * myz;
+    localpose->_concat_matrices[ib2] = mtx.inverse() * myz;
 
     mtx.lookAt(target*(l0+l1+l2),target*(l0+l1+l2+l3),fvec3(0,1,0));
-    localpose._concat_matrices[ib3] = mtx.inverse() * myz;
+    localpose->_concat_matrices[ib3] = mtx.inverse() * myz;
 
     mtx.lookAt(target*(l0+l1+l2+l3),target*(l0+l1+l2+l3+l4),fvec3(0,1,0));
-    localpose._concat_matrices[ib4] = mtx.inverse() * myz;
+    localpose->_concat_matrices[ib4] = mtx.inverse() * myz;
   };
 
   /////////////////////////////////////////////////////////////////////////////

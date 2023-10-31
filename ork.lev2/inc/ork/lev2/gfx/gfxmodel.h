@@ -451,8 +451,8 @@ struct XgmModelInst final {
   }
 
   const XgmModel* mXgmModel;
-  XgmLocalPose _localPose;
-  mutable XgmWorldPose _worldPose;
+  xgmlocalpose_ptr_t _localPose;
+  xgmworldpose_ptr_t _worldPose;
   XgmMaterialStateInst mMaterialStateInst;
   int miNumChannels;
   bool mbSkinned;

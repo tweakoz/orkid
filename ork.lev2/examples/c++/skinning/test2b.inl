@@ -54,15 +54,15 @@ skinning_test_ptr_t createTest2B(GpuResources* gpurec) {
       // default pose
       ///////////////////////////////////////////////////////////////
 
-      auto& localpose = modelinst->_localPose;
-      auto& worldpose = modelinst->_worldPose;
+      auto localpose = modelinst->_localPose;
+      auto worldpose = modelinst->_worldPose;
 
-      localpose.bindPose();
+      localpose->bindPose();
       _char_animinst->_current_frame = 0;
       _char_animinst->applyToPose(localpose);
-      localpose.blendPoses();
-      localpose.concatenate();
-      worldpose.apply(fmtx4(), localpose);
+      localpose->blendPoses();
+      localpose->concatenate();
+      worldpose->apply(fmtx4(), localpose);
 
       ///////////////////////////////////////////////////////////////
       // create IK chain
@@ -182,13 +182,13 @@ skinning_test_ptr_t createTest2B(GpuResources* gpurec) {
 
     auto model = impl->_char_modelasset->getSharedModel();
     auto modelinst  = impl->_char_drawable->_modelinst;
-    auto& localpose = modelinst->_localPose;
-    auto& worldpose = modelinst->_worldPose;
+    auto localpose = modelinst->_localPose;
+    auto worldpose = modelinst->_worldPose;
 
-    localpose.bindPose();
+    localpose->bindPose();
     impl->_char_animinst->applyToPose(localpose);
-    localpose.blendPoses();
-    localpose.concatenate();
+    localpose->blendPoses();
+    localpose->concatenate();
 
     ///////////////////////////////////////////////////////////
     // get right hand. forearm
@@ -196,8 +196,8 @@ skinning_test_ptr_t createTest2B(GpuResources* gpurec) {
 
     int fajoint = model->_skeleton->jointIndex("mixamorig.RightForeArm");
     int hjoint = model->_skeleton->jointIndex("mixamorig.RightHand");
-    fmtx4 hmtx = localpose._concat_matrices[hjoint];
-    fmtx4 famtx = localpose._concat_matrices[fajoint];
+    fmtx4 hmtx = localpose->_concat_matrices[hjoint];
+    fmtx4 famtx = localpose->_concat_matrices[fajoint];
 
     fvec3 hnx, hny, hnz;
     hmtx.toNormalVectors(hnx,hny,hnz);
@@ -236,8 +236,8 @@ skinning_test_ptr_t createTest2B(GpuResources* gpurec) {
     // fixup new hand pos based on forearm bone length
     /////////////////////////////////
 
-    famtx = localpose._concat_matrices[fajoint];
-    auto old_hand_trans = localpose._concat_matrices[hjoint].translation();
+    famtx = localpose->_concat_matrices[fajoint];
+    auto old_hand_trans = localpose->_concat_matrices[hjoint].translation();
     auto new_hand_trans = fvec3(0,forearm_len,0).transform(famtx).xyz();
     offset = new_hand_trans-old_hand_trans;
 

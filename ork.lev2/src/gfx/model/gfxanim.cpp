@@ -362,13 +362,13 @@ void BoneTransformer::bindToBone(std::string named){
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void BoneTransformer::compute(XgmLocalPose& localpose, //
+void BoneTransformer::compute(xgmlocalpose_ptr_t localpose, //
                           const fmtx4& xf){
 
     int count = _jointindices.size();
     for( int i=0; i<count; i++ ){
       int ji = _jointindices[i];
-      auto& J = localpose._concat_matrices[ji];
+      auto& J = localpose->_concat_matrices[ji];
       J = xf*J;
     }
 }

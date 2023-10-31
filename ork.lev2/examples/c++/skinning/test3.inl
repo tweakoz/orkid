@@ -84,17 +84,17 @@ skinning_test_ptr_t createTest3(GpuResources* gpurec) {
       maskC->Enable(model->_skeleton,"mixamorig.RightHand");
       _char_animinstC->bindToSkeleton(model->_skeleton);
 
-      auto& localpose = modelinst->_localPose;
-      auto& worldpose = modelinst->_worldPose;
+      auto localpose = modelinst->_localPose;
+      auto worldpose = modelinst->_worldPose;
 
-      localpose.bindPose();
+      localpose->bindPose();
       _char_animinstA->_current_frame = 0;
       _char_animinstA->applyToPose(localpose);
       _char_animinstB->applyToPose(localpose);
       _char_animinstC->applyToPose(localpose);
-      localpose.blendPoses();
-      localpose.concatenate();
-      worldpose.apply(fmtx4(), localpose);
+      localpose->blendPoses();
+      localpose->concatenate();
+      worldpose->apply(fmtx4(), localpose);
 
       _timer.Start();
     }
@@ -171,15 +171,15 @@ skinning_test_ptr_t createTest3(GpuResources* gpurec) {
     impl->_char_animinstC->SetWeight(1);
 
     auto modelinst  = impl->_char_drawable->_modelinst;
-    auto& localpose = modelinst->_localPose;
-    auto& worldpose = modelinst->_worldPose;
+    auto localpose = modelinst->_localPose;
+    auto worldpose = modelinst->_worldPose;
 
-    localpose.bindPose();
+    localpose->bindPose();
     impl->_char_animinstA->applyToPose(localpose);
     impl->_char_animinstB->applyToPose(localpose);
     impl->_char_animinstC->applyToPose(localpose);
-    localpose.blendPoses();
-    localpose.concatenate();
+    localpose->blendPoses();
+    localpose->concatenate();
   };
 
   //////////////////////////////////////

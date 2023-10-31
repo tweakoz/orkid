@@ -51,15 +51,15 @@ skinning_test_ptr_t createTest1(GpuResources* gpurec) {
       _char_animinst->_use_temporal_lerp = true;
       _char_animinst->bindToSkeleton(model->_skeleton);
 
-      auto& localpose = modelinst->_localPose;
-      auto& worldpose = modelinst->_worldPose;
+      auto localpose = modelinst->_localPose;
+      auto worldpose = modelinst->_worldPose;
 
-      localpose.bindPose();
+      localpose->bindPose();
       _char_animinst->_current_frame = 0;
       _char_animinst->applyToPose(localpose);
-      localpose.blendPoses();
-      localpose.concatenate();
-      worldpose.apply(fmtx4(), localpose);
+      localpose->blendPoses();
+      localpose->concatenate();
+      worldpose->apply(fmtx4(), localpose);
 
       _skel_applicator = std::make_shared<XgmSkelApplicator>(model->_skeleton);
       _skel_applicator->bindToBone("Bone.001");
@@ -137,11 +137,11 @@ skinning_test_ptr_t createTest1(GpuResources* gpurec) {
     impl->_char_animinst->_current_frame = fmod(frame, float(anim->_numframes));
     impl->_char_animinst->SetWeight(1);
     auto modelinst  = impl->_char_drawable->_modelinst;
-    auto& localpose = modelinst->_localPose;
-    localpose.bindPose();
+    auto localpose = modelinst->_localPose;
+    localpose->bindPose();
     impl->_char_animinst->applyToPose(localpose);
-    localpose.blendPoses();
-    localpose.concatenate();
+    localpose->blendPoses();
+    localpose->concatenate();
 
     ///////////////////////////////////////////////////////////
     // use skel applicator on post concatenated bones
@@ -150,7 +150,7 @@ skinning_test_ptr_t createTest1(GpuResources* gpurec) {
     impl->_skel_applicator->apply([&](int index) {
       fmtx4 rotmtx;
       rotmtx.setRotateY(time*index);
-      auto& ci = localpose._concat_matrices[index];
+      auto& ci = localpose->_concat_matrices[index];
       ci       = (ci*rotmtx);
     });
 

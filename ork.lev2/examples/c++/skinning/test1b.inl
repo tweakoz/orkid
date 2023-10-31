@@ -51,15 +51,15 @@ skinning_test_ptr_t createTest1B(GpuResources* gpurec) {
       _char_animinst->_use_temporal_lerp = true;
       _char_animinst->bindToSkeleton(_model->_skeleton);
 
-      auto& localpose = modelinst->_localPose;
-      auto& worldpose = modelinst->_worldPose;
+      auto localpose = modelinst->_localPose;
+      auto worldpose = modelinst->_worldPose;
 
-      localpose.bindPose();
+      localpose->bindPose();
       _char_animinst->_current_frame = 0;
       _char_animinst->applyToPose(localpose);
-      localpose.blendPoses();
-      localpose.concatenate();
-      worldpose.apply(fmtx4(), localpose);
+      localpose->blendPoses();
+      localpose->concatenate();
+      worldpose->apply(fmtx4(), localpose);
 
       _skel_applicator = std::make_shared<XgmSkelApplicator>(_model->_skeleton);
       //_skel_applicator->bindToBone("Bone");
@@ -137,10 +137,10 @@ skinning_test_ptr_t createTest1B(GpuResources* gpurec) {
     ///////////////////////////////////////////////////////////
 
     auto modelinst  = impl->_char_drawable->_modelinst;
-    auto& localpose = modelinst->_localPose;
-    localpose.bindPose();
-    localpose.blendPoses();
-    localpose.concatenate();
+    auto localpose = modelinst->_localPose;
+    localpose->bindPose();
+    localpose->blendPoses();
+    localpose->concatenate();
 
     ///////////////////////////////////////////////////////////
     // compute bone lengths
@@ -185,11 +185,11 @@ skinning_test_ptr_t createTest1B(GpuResources* gpurec) {
     fvec3 pN[6];
 
 
-    pN[0] = localpose._concat_matrices[jntindices[0]].translation();
-    pN[1] = localpose._concat_matrices[jntindices[1]].translation();
-    pN[2] = localpose._concat_matrices[jntindices[2]].translation();
-    pN[3] = localpose._concat_matrices[jntindices[3]].translation();
-    pN[4] = localpose._concat_matrices[jntindices[4]].translation();
+    pN[0] = localpose->_concat_matrices[jntindices[0]].translation();
+    pN[1] = localpose->_concat_matrices[jntindices[1]].translation();
+    pN[2] = localpose->_concat_matrices[jntindices[2]].translation();
+    pN[3] = localpose->_concat_matrices[jntindices[3]].translation();
+    pN[4] = localpose->_concat_matrices[jntindices[4]].translation();
 
     auto target = fvec3(sinf(time),10,-cosf(time));
 
@@ -209,7 +209,7 @@ skinning_test_ptr_t createTest1B(GpuResources* gpurec) {
                pb, //
                fvec3(0,1,0)); //
 
-    localpose._concat_matrices[jntindices[4]] = mtx.inverse() * myz;
+    localpose->_concat_matrices[jntindices[4]] = mtx.inverse() * myz;
 
 
   };

@@ -309,7 +309,7 @@ struct XgmAnimInst {
   XgmAnimInst();
 
   void bindToSkeleton(xgmskeleton_constptr_t skeleton);
-  void applyToPose(XgmLocalPose& localpose) const;
+  void applyToPose(xgmlocalpose_ptr_t localpose) const;
 
   void bindAnim(xgmanim_constptr_t anim);
 
@@ -477,7 +477,7 @@ struct XgmWorldPose {
 
   XgmWorldPose(xgmskeleton_constptr_t Skeleton);
 
-  void apply(const fmtx4& worldmtx, const XgmLocalPose& LocalPose);
+  void apply(const fmtx4& worldmtx, xgmlocalpose_ptr_t LocalPose);
   std::string dumpc(fvec3 color) const;
 
   xgmskeleton_constptr_t _skeleton;
@@ -623,7 +623,7 @@ struct BoneTransformer{
 
   BoneTransformer( xgmskeleton_constptr_t skel);
   void bindToBone(std::string named);
-  void compute(XgmLocalPose& localpose, //
+  void compute(xgmlocalpose_ptr_t localpose, //
                const fmtx4& xf);
 
   /////////////////////////////////////////////////////////////////////////////

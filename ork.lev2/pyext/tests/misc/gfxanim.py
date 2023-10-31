@@ -55,3 +55,18 @@ for i in range(0,animMaxBones):
   binding = poser.animBinding(i)
   if binding.skeletonIndex!=0xffff and binding.channelIndex!=0xffff:
     print("animbinding %d : skel<%s> channel<%s>" % (i, binding.skeletonIndex, binding.channelIndex) )
+
+bxf = BoneTransformer(model.skeleton)
+print(bxf)
+lpose = XgmLocalPose(model.skeleton)
+lpose.bindPose()
+
+ikc = IkChain(model.skeleton)
+ikc.bindToBone("mixamorig.RightArm")
+ikc.bindToBone("mixamorig.RightForeArm")
+ikc.prepare()
+ikc.compute(lpose,vec3(0,0,0))
+
+
+wpose = XgmWorldPose(model.skeleton)
+wpose.fromLocalPose(lpose,mtx4())

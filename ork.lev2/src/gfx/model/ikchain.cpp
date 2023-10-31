@@ -45,7 +45,7 @@ void IkChain::prepare() {
 /////////////////////////////////////////////////////////////////////////////
 
 void IkChain::compute(
-    XgmLocalPose& localpose, //
+    xgmlocalpose_ptr_t localpose, //
     const fvec3& target) {
 
   ///////////////////////////////////////////////////////////
@@ -59,7 +59,7 @@ void IkChain::compute(
 
   for (int i = 0; i < count; i++) {
     int ji        = _jointindices[i];
-    _jointtemp[i] = localpose._concat_matrices[ji];
+    _jointtemp[i] = localpose->_concat_matrices[ji];
   }
 
   ///////////////////////////////////////////////////
@@ -130,7 +130,7 @@ void IkChain::compute(
 
   for (int i = 0; i < count; i++) {
     int ji                         = _jointindices[i];
-    localpose._concat_matrices[ji] = _jointtemp[i];
+    localpose->_concat_matrices[ji] = _jointtemp[i];
   }
 }
 

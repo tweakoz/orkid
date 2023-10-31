@@ -103,17 +103,17 @@ TEST(gfxanim1) {
     deco::printe(aqua, "Skel-BindPose (Bc)", true);
     deco::prints(skel->dumpBind(aqua), true);
 
-    auto& localpose = modelinst->_localPose;
-    localpose.bindPose();
+    auto localpose = modelinst->_localPose;
+    localpose->bindPose();
     deco::printe(white, "Skel-LocalPose-Bind (J)", true);
-    deco::prints(localpose.dumpc(white), true);
+    deco::prints(localpose->dumpc(white), true);
 
-    localpose.concatenate();
+    localpose->concatenate();
     deco::printe(orange, "Skel-LocalPose-Cat (K)", true);
-    deco::prints(localpose.dumpc(orange), true);
+    deco::prints(localpose->dumpc(orange), true);
 
     deco::printf(somc, "Skel-LocalPose-Cat (Bi)\n");
-    deco::prints(localpose.invdumpc(somc), true);
+    deco::prints(localpose->invdumpc(somc), true);
 
     animinst->bindToSkeleton(skel);
 
@@ -136,20 +136,20 @@ TEST(gfxanim1) {
 
       iframe = (iframe + 1) % num_frames;
 
-      localpose.bindPose();
+      localpose->bindPose();
       animinst->_current_frame = iframe;
       animinst->SetWeight(1);
       animinst->applyToPose(localpose);
-      localpose.blendPoses();
+      localpose->blendPoses();
       deco::printf(white, "AnimPose (J) fr<%d>\n", iframe);
-      deco::prints(localpose.dumpc(white), true);
+      deco::prints(localpose->dumpc(white), true);
 
-      localpose.concatenate();
+      localpose->concatenate();
       deco::printf(orange, "AnimPose (K) fr<%d>\n", iframe);
-      deco::prints(localpose.dumpc(orange), true);
+      deco::prints(localpose->dumpc(orange), true);
 
       deco::printf(somc, "AnimPose-LocalPose-Cat (Bi)\n");
-      deco::prints(localpose.invdumpc(somc), true);
+      deco::prints(localpose->invdumpc(somc), true);
 
       worldpose.apply(ork::fmtx4(), localpose);
       deco::printf(magenta, "AnimPose-Final (V2O) fr<%d>\n", iframe);

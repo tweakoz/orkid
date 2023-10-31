@@ -50,8 +50,6 @@ int XgmModel::meshIndex(const PoolString& name) const {
 
 XgmModelInst::XgmModelInst(const XgmModel* Model)
     : mXgmModel(Model)
-    , _localPose(Model->_skeleton)
-    , _worldPose(Model->_skeleton)
     , mMaterialStateInst(*this)
     , mbSkinned(false)
     , mBlenderZup(false)
@@ -63,10 +61,13 @@ XgmModelInst::XgmModelInst(const XgmModel* Model)
     miNumChannels = 1;
   }
 
-  _localPose.bindPose();
-  _localPose.blendPoses();
-  _localPose.concatenate();
-  _worldPose.apply(fmtx4(), _localPose);
+  _localPose = std::make_shared<XgmLocalPose>(Model->_skeleton);
+  _worldPose = std::make_shared<XgmWorldPose>(Model->_skeleton);
+
+  _localPose->bindPose();
+  _localPose->blendPoses();
+  _localPose->concatenate();
+  _worldPose->apply(fmtx4(), _localPose);
 
   int nummeshes = Model->numMeshes();
   for (int i = 0; i < nummeshes; i++) {
@@ -330,16 +331,16 @@ void XgmModel::RenderSkinned(
   // apply local pose to world pose
   ///////////////////////////////////
 
-  const auto& localpose = minst->_localPose;
-  minst->_worldPose.apply(WorldMat, localpose);
+  auto localpose = minst->_localPose;
+  minst->_worldPose->apply(WorldMat, localpose);
 
   if (0) {
     fvec3 c1(1, .8, .8);
     fvec3 c2(.8, .8, 1);
     deco::printe(c1, "LocalPose (post-concat)", true);
-    deco::prints(localpose.dumpc(c1), true);
+    deco::prints(localpose->dumpc(c1), true);
     deco::printe(c2, "WorldPose (post-concat)", true);
-    deco::prints(minst->_worldPose.dumpc(c2), true);
+    deco::prints(minst->_worldPose->dumpc(c2), true);
   }
 
   ///////////////////////////////////
@@ -379,7 +380,7 @@ void XgmModel::RenderSkinned(
           for (size_t ijointreg = 0; ijointreg < inumjoints; ijointreg++) {
             const std::string& JointName = cluster->mJoints[ijointreg];
             int JointSkelIndex          = cluster->mJointSkelIndices[ijointreg];
-            const fmtx4& finalmtx       = minst->_worldPose._world_bindrela_matrices[JointSkelIndex];
+            const fmtx4& finalmtx       = minst->_worldPose->_world_bindrela_matrices[JointSkelIndex];
             //////////////////////////////////////
             matrix_block[ijointreg] = finalmtx;
           }
@@ -471,8 +472,8 @@ void XgmModel::RenderSkinned(
             continue;
           }
 
-          fmtx4 joint_par     = localpose._concat_matrices[par];
-          fmtx4 joint_child     = localpose._concat_matrices[ij];
+          fmtx4 joint_par     = localpose->_concat_matrices[par];
+          fmtx4 joint_child     = localpose->_concat_matrices[ij];
 
           fvec3 c             = joint_child.translation();
           fvec3 p             = joint_par.translation();

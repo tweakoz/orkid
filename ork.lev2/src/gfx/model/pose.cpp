@@ -340,7 +340,7 @@ void XgmLocalPose::bindPose(void) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void XgmAnimInst::applyToPose(XgmLocalPose& localpose) const {
+void XgmAnimInst::applyToPose(xgmlocalpose_ptr_t localpose) const {
 #ifdef ENABLE_ANIM
   float fweight           = GetWeight();
   ////////////////////////////////////////////////////
@@ -358,7 +358,7 @@ void XgmAnimInst::applyToPose(XgmLocalPose& localpose) const {
       if (iskelindex != 0xffff) {
         int iposeindex             = binding.mChanIndex;
         const DecompMatrix& decomp = static_pose.GetItemAtIndex(iposeindex).second;
-        localpose._blendposeinfos[iskelindex].addPose(decomp, fweight);
+        localpose->_blendposeinfos[iskelindex].addPose(decomp, fweight);
       } else {
         break;
       }
@@ -389,10 +389,10 @@ void XgmAnimInst::applyToPose(XgmLocalPose& localpose) const {
         auto& binding  = _poser->getAnimBinding(iaidx);
         int iskelindex = binding.mSkelIndex;
         if (iskelindex != 0xffff) {
-          auto jname     = localpose._skeleton->GetJointName(iskelindex);
-          int par        = localpose._skeleton->GetJointParent(iskelindex);
-          auto this_bind = localpose._skeleton->_bindMatrices[iskelindex];
-          auto par_bind  = localpose._skeleton->_bindMatrices[par];
+          auto jname     = localpose->_skeleton->GetJointName(iskelindex);
+          int par        = localpose->_skeleton->GetJointParent(iskelindex);
+          auto this_bind = localpose->_skeleton->_bindMatrices[iskelindex];
+          auto par_bind  = localpose->_skeleton->_bindMatrices[par];
           fmtx4 skel_rel;
           skel_rel.correctionMatrix(par_bind, this_bind);
           auto skdump = skel_rel.dump4x3cn();
@@ -435,13 +435,13 @@ void XgmAnimInst::applyToPose(XgmLocalPose& localpose) const {
         } else {
           decomp = joint_data->GetFrame(iframe);
         }
-        localpose._blendposeinfos[iskelindex].addPose(decomp, fweight); // yoyo
+        localpose->_blendposeinfos[iskelindex].addPose(decomp, fweight); // yoyo
 
         //////////////////////////////
         if (0) {
           logchan_pose->log("apply on iskelidx<%d> ichanindex<%d>", iskelindex, ichanindex);
           logchan_pose->log("joint_data<%p> numframes<%zu>", (void*)joint_data.get(), numframes);
-          auto jname = localpose._skeleton->GetJointName(iskelindex);
+          auto jname = localpose->_skeleton->GetJointName(iskelindex);
           fmtx4 as_matrix;
           as_matrix.compose(decomp._position, decomp._orientation, decomp._scale);
           auto adump = as_matrix.dump4x3cn();
@@ -654,13 +654,13 @@ XgmWorldPose::XgmWorldPose(xgmskeleton_constptr_t skel)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void XgmWorldPose::apply(const fmtx4& worldmtx, const XgmLocalPose& localpose) {
-  int inumj = localpose.NumJoints();
+void XgmWorldPose::apply(const fmtx4& worldmtx, xgmlocalpose_ptr_t localpose) {
+  int inumj = localpose->NumJoints();
   _world_bindrela_matrices.resize(inumj);
   _world_concat_matrices.resize(inumj);
-  _boneprops = localpose._boneprops;
+  _boneprops = localpose->_boneprops;
   for (int ij = 0; ij < inumj; ij++) {
-    const auto& C = localpose._concat_matrices[ij];
+    const auto& C = localpose->_concat_matrices[ij];
     const auto& IB = _skeleton->_inverseBindMatrices[ij];
 
     auto WC = worldmtx * C;
