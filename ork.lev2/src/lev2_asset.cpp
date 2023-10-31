@@ -38,6 +38,11 @@ static logchannel_ptr_t logchan_l2asso = logger()->createChannel("lev2ass",fvec3
 XgmModelAsset::~XgmModelAsset() {
 }
 
+
+XgmAnimAsset::XgmAnimAsset(){
+  _animation = std::make_shared<XgmAnim>();
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -195,7 +200,7 @@ public:
 
   asset_ptr_t _doLoadAsset(asset::loadrequest_ptr_t loadreq) final {
     auto animasset = std::make_shared<XgmAnimAsset>();
-    bool bOK       = XgmAnim::LoadUnManaged(animasset->GetAnim(), loadreq->_asset_path);
+    bool bOK       = XgmAnim::LoadUnManaged(animasset->_animation.get(), loadreq->_asset_path);
     OrkAssert(bOK);
     return animasset;
   }
@@ -203,7 +208,7 @@ public:
   void destroy(asset_ptr_t asset) final {
 #if defined(ORKCONFIG_ASSET_UNLOAD)
     auto animasset = std::dynamic_pointer_cast<XgmAnimAsset>(asset);
-    bool bOK       = XgmAnim::unloadUnManaged(animasset->GetAnim());
+    bool bOK       = XgmAnim::unloadUnManaged(animasset->_animation.get());
     OrkAssert(bOK);
 #endif
   }

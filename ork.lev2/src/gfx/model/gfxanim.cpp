@@ -273,6 +273,7 @@ void XgmMaterialStateInst::applyAnimInst(const XgmAnimInst& AnimInst) {
 
 XgmAnim::XgmAnim()
     : _numframes(0) {
+      
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -304,11 +305,12 @@ XgmAnimInst::XgmAnimInst()
     : _animation(nullptr)
     , _current_frame(0.0f)
     , mWeight(1.0f) {
+_mask = std::make_shared<XgmAnimMask>();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void XgmAnimInst::bindAnim(const XgmAnim* anim) {
+void XgmAnimInst::bindAnim(xgmanim_constptr_t anim) {
   OrkAssert(anim);
   
   _animation  = anim;

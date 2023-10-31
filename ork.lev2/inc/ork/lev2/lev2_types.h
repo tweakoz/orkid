@@ -373,6 +373,8 @@ struct XgmFloatAnimChannel;
 using xgmskeleton_ptr_t = std::shared_ptr<XgmSkeleton>;
 using xgmskeleton_constptr_t = std::shared_ptr<const XgmSkeleton>;
 using xgmskelnode_ptr_t = std::shared_ptr<XgmSkelNode>;
+using xgmanim_ptr_t = std::shared_ptr<XgmAnim>;
+using xgmanim_constptr_t = std::shared_ptr<const XgmAnim>;
 using xgmaniminst_ptr_t = std::shared_ptr<XgmAnimInst>;
 using xgmanimmask_ptr_t = std::shared_ptr<XgmAnimMask>;
 using xgmlocalpose_ptr = std::shared_ptr<XgmLocalPose>;

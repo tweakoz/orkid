@@ -45,11 +45,11 @@ skinning_test_ptr_t createTest2(GpuResources* gpurec) {
 
       // model->_skeleton->mTopNodesMatrix.compose(fvec3(),fquat(),0.0001);
 
-      auto anim      = _char_animasset->GetAnim();
+      auto anim      = _char_animasset->_animation;
       _char_animinst = std::make_shared<XgmAnimInst>();
       _char_animinst->bindAnim(anim);
       _char_animinst->SetWeight(1.0f);
-      _char_animinst->RefMask().EnableAll();
+      _char_animinst->_mask->EnableAll();
       _char_animinst->_use_temporal_lerp = true;
       _char_animinst->bindToSkeleton(model->_skeleton);
 
@@ -144,7 +144,7 @@ skinning_test_ptr_t createTest2(GpuResources* gpurec) {
     float time  = impl->_timer.SecsSinceStart();
     float frame = (time * 30.0f * gpurec->_animspeed);
 
-    auto anim = impl->_char_animasset->GetAnim();
+    auto anim = impl->_char_animasset->_animation;
 
     impl->_char_animinst->_current_frame = fmod(frame, float(anim->_numframes));
     impl->_char_animinst->SetWeight(0.5f);

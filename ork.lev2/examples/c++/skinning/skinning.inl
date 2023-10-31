@@ -20,7 +20,7 @@
 #include <ork/lev2/imgui/imgui_ged.inl>
 #include <ork/lev2/imgui/imgui_internal.h>
 #include <ork/lev2/gfx/camera/uicam.h>
-#include <ork/lev2/gfx/ikchain.inl>
+#include <ork/lev2/gfx/ikchain.h>
 ///////////////////////////////////////////////////////////////////////////////
 using namespace std::string_literals;
 using namespace ork;

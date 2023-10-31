@@ -242,7 +242,7 @@ void XgmAnimInst::bindToSkeleton(xgmskeleton_constptr_t skeleton) {
 
           const DecompMatrix& PoseMatrix = it.second;
 
-          bool enabled = RefMask().isEnabled(iskelindex);
+          bool enabled = _mask->isEnabled(iskelindex);
           if (enabled) {
             _poser.setPoseBinding(ipidx++, XgmSkeletonBinding(iskelindex, ispi));
           }
@@ -266,7 +266,7 @@ void XgmAnimInst::bindToSkeleton(xgmskeleton_constptr_t skeleton) {
 
       if (-1 != iskelindex) {
 
-        bool enabled = RefMask().isEnabled(iskelindex);
+        bool enabled = _mask->isEnabled(iskelindex);
         if (enabled) {
           _poser.setAnimBinding(ichidx++, XgmSkeletonBinding(iskelindex, ichiti));
         }
@@ -342,7 +342,6 @@ void XgmLocalPose::bindPose(void) {
 
 void XgmAnimInst::applyToPose(XgmLocalPose& localpose) const {
 #ifdef ENABLE_ANIM
-  const XgmAnimMask& Mask = RefMask();
   float fweight           = GetWeight();
   ////////////////////////////////////////////////////
   // retrieve anim information
@@ -375,7 +374,7 @@ void XgmAnimInst::applyToPose(XgmLocalPose& localpose) const {
     if (0) {
       logchan_pose2->log(
           "apply animinst anm<%p> frame<%d> numframes<%zu> inumanimchannels<%zu>", //
-          (void*)animation,                                                        //
+          (void*)animation.get(),                                                        //
           iframe,                                                                  //
           numframes,                                                               //
           inumanimchannels);

@@ -42,43 +42,46 @@ skinning_test_ptr_t createTest3(GpuResources* gpurec) {
       modelinst->enableAllMeshes();
       modelinst->_drawSkeleton = true;
 
-      auto anim      = _char_animasset->GetAnim();
+      auto anim      = _char_animasset->_animation;
 
       _char_animinstA = std::make_shared<XgmAnimInst>();
+      auto maskA = _char_animinstA->_mask;
       _char_animinstA->bindAnim(anim);
       _char_animinstA->SetWeight(1.0f);
       _char_animinstA->_use_temporal_lerp = true;
-      _char_animinstA->RefMask().EnableAll();
-      _char_animinstA->RefMask().Disable(model->_skeleton,"mixamorig.LeftShoulder");
-      _char_animinstA->RefMask().Disable(model->_skeleton,"mixamorig.LeftArm");
-      _char_animinstA->RefMask().Disable(model->_skeleton,"mixamorig.LeftForeArm");
-      _char_animinstA->RefMask().Disable(model->_skeleton,"mixamorig.LeftHand");
-      _char_animinstA->RefMask().Disable(model->_skeleton,"mixamorig.RightShoulder");
-      _char_animinstA->RefMask().Disable(model->_skeleton,"mixamorig.RightArm");
-      _char_animinstA->RefMask().Disable(model->_skeleton,"mixamorig.RightForeArm");
-      _char_animinstA->RefMask().Disable(model->_skeleton,"mixamorig.RightHand");
+      maskA->EnableAll();
+      maskA->Disable(model->_skeleton,"mixamorig.LeftShoulder");
+      maskA->Disable(model->_skeleton,"mixamorig.LeftArm");
+      maskA->Disable(model->_skeleton,"mixamorig.LeftForeArm");
+      maskA->Disable(model->_skeleton,"mixamorig.LeftHand");
+      maskA->Disable(model->_skeleton,"mixamorig.RightShoulder");
+      maskA->Disable(model->_skeleton,"mixamorig.RightArm");
+      maskA->Disable(model->_skeleton,"mixamorig.RightForeArm");
+      maskA->Disable(model->_skeleton,"mixamorig.RightHand");
       _char_animinstA->bindToSkeleton(model->_skeleton);
 
       _char_animinstB = std::make_shared<XgmAnimInst>();
+      auto maskB = _char_animinstB->_mask;
       _char_animinstB->bindAnim(anim);
       _char_animinstB->SetWeight(1.0f);
       _char_animinstB->_use_temporal_lerp = true;
-      _char_animinstB->RefMask().DisableAll();
-      _char_animinstB->RefMask().Enable(model->_skeleton,"mixamorig.LeftShoulder");
-      _char_animinstB->RefMask().Enable(model->_skeleton,"mixamorig.LeftArm");
-      _char_animinstB->RefMask().Enable(model->_skeleton,"mixamorig.LeftForeArm");
-      _char_animinstB->RefMask().Enable(model->_skeleton,"mixamorig.LeftHand");
+      maskB->DisableAll();
+      maskB->Enable(model->_skeleton,"mixamorig.LeftShoulder");
+      maskB->Enable(model->_skeleton,"mixamorig.LeftArm");
+      maskB->Enable(model->_skeleton,"mixamorig.LeftForeArm");
+      maskB->Enable(model->_skeleton,"mixamorig.LeftHand");
       _char_animinstB->bindToSkeleton(model->_skeleton);
 
       _char_animinstC = std::make_shared<XgmAnimInst>();
+      auto maskC = _char_animinstC->_mask;
       _char_animinstC->bindAnim(anim);
       _char_animinstC->SetWeight(1.0f);
       _char_animinstC->_use_temporal_lerp = true;
-      _char_animinstC->RefMask().DisableAll();
-      _char_animinstC->RefMask().Enable(model->_skeleton,"mixamorig.RightShoulder");
-      _char_animinstC->RefMask().Enable(model->_skeleton,"mixamorig.RightArm");
-      _char_animinstC->RefMask().Enable(model->_skeleton,"mixamorig.RightForeArm");
-      _char_animinstC->RefMask().Enable(model->_skeleton,"mixamorig.RightHand");
+      maskC->DisableAll();
+      maskC->Enable(model->_skeleton,"mixamorig.RightShoulder");
+      maskC->Enable(model->_skeleton,"mixamorig.RightArm");
+      maskC->Enable(model->_skeleton,"mixamorig.RightForeArm");
+      maskC->Enable(model->_skeleton,"mixamorig.RightHand");
       _char_animinstC->bindToSkeleton(model->_skeleton);
 
       auto& localpose = modelinst->_localPose;
@@ -158,7 +161,7 @@ skinning_test_ptr_t createTest3(GpuResources* gpurec) {
     float time  = impl->_timer.SecsSinceStart();
     float frame = (time * 30.0f * gpurec->_animspeed);
 
-    auto anim = impl->_char_animasset->GetAnim();
+    auto anim = impl->_char_animasset->_animation;
 
     impl->_char_animinstA->_current_frame = fmod(frame, float(anim->_numframes));
     impl->_char_animinstA->SetWeight(1);

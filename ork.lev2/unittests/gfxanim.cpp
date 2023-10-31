@@ -48,12 +48,12 @@ TEST(gfxanim1) {
     printf("fxi<%p>\n", (void*)fxi);
     CHECK(fxi != nullptr);
 
-    auto anim = new XgmAnim;
+    auto anim = std::make_shared<XgmAnim>();
     // bool loadOK = XgmAnim::LoadUnManaged(anim, "data://test/bonetest_anim");
     // bool loadOK = XgmAnim::LoadUnManaged(anim, "data://test/rigtest_anim");
-    bool loadOK = XgmAnim::LoadUnManaged(anim, "data://tests/hfstest/hfs_rigtest_anim.fbx");
+    bool loadOK = XgmAnim::LoadUnManaged(anim.get(), "data://tests/hfstest/hfs_rigtest_anim.fbx");
     OrkAssert(loadOK);
-    auto animinst  = new XgmAnimInst;
+    auto animinst  = std::make_shared<XgmAnimInst>();
     int num_frames = anim->_numframes;
 
     printf("num_frames<%d>\n", num_frames);
@@ -72,15 +72,15 @@ TEST(gfxanim1) {
     auto skel = model->_skeleton;
     printf("model<%p> isskinned<%d>\n", (void*)model, int(model->isSkinned()));
 
-    auto modelinst = new XgmModelInst(model);
-    printf("modelinst<%p>\n", (void*)modelinst);
+    auto modelinst = std::make_shared<XgmModelInst>(model);
+    printf("modelinst<%p>\n", (void*)modelinst.get());
 
     modelinst->setBlenderZup(true);
     modelinst->enableSkinning();
     modelinst->enableAllMeshes();
 
     animinst->bindAnim(anim);
-    animinst->RefMask().EnableAll();
+    animinst->_mask->EnableAll();
 
     deco::prints(skel->dump(cyan), true);
 
@@ -157,8 +157,6 @@ TEST(gfxanim1) {
       usleep(1 << 20);
     }
 
-    delete animinst;
-    delete modelinst;
   });
   opq::mainSerialQueue()->drain();
 }

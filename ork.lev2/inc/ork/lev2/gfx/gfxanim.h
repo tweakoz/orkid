@@ -13,6 +13,7 @@
 #include <ork/file/path.h>
 #include <ork/kernel/varmap.inl>
 #include <ork/kernel/orklut.h>
+#include <ork/kernel/datablock.h>
 #include <ork/rtti/RTTIX.inl>
 
 namespace ork::lev2 {
@@ -234,7 +235,9 @@ struct XgmAnim {
 /// ///////////////////////////////////////////////////////////////////////////
 
 struct XgmAnimMask {
-  static const int knummaskbytes = (100 / 8) * 4; // 100 bones, 8 bits per byte, times 4 bit mask
+  static const int knummaskbones = 128; 
+  static const int knummaskbytes = (knummaskbones / 8) * 4; // N bones, 8 bits per byte, times 4 bit mask
+
   U8 mMaskBits[knummaskbytes];
 
   XgmAnimMask();
@@ -308,7 +311,7 @@ struct XgmAnimInst {
   void bindToSkeleton(xgmskeleton_constptr_t skeleton);
   void applyToPose(XgmLocalPose& localpose) const;
 
-  void bindAnim(const XgmAnim* anim);
+  void bindAnim(xgmanim_constptr_t anim);
 
   float GetSampleRate() const {
     return 30.0f;
@@ -324,15 +327,8 @@ struct XgmAnimInst {
     mWeight = fw;
   }
 
-  XgmAnimMask& RefMask() {
-    return mMask;
-  }
-  const XgmAnimMask& RefMask() const {
-    return mMask;
-  }
-
-  const XgmAnim* _animation = nullptr;
-  XgmAnimMask mMask;
+  xgmanim_constptr_t _animation = nullptr;
+  xgmanimmask_ptr_t _mask;
   float _current_frame;
   float mWeight;
   bool _use_temporal_lerp = false;
