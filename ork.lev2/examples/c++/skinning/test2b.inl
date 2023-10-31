@@ -22,7 +22,7 @@ skinning_test_ptr_t createTest2B(GpuResources* gpurec) {
       model_load_req->waitForCompletion();
 
       auto model    = _char_modelasset->getSharedModel();
-      auto skeldump = model->mSkeleton.dump(fvec3(1, 1, 1));
+      auto skeldump = model->_skeleton->dump(fvec3(1, 1, 1));
       printf("skeldump<%s>\n", skeldump.c_str());
 
       _char_animasset = asset::AssetManager<XgmAnimAsset>::load(anim_load_req);
@@ -48,7 +48,7 @@ skinning_test_ptr_t createTest2B(GpuResources* gpurec) {
       _char_animinst->SetWeight(1.0f);
       _char_animinst->RefMask().EnableAll();
       _char_animinst->_use_temporal_lerp = true;
-      _char_animinst->bindToSkeleton(model->mSkeleton);
+      _char_animinst->bindToSkeleton(model->_skeleton);
 
       ///////////////////////////////////////////////////////////////
       // default pose
@@ -68,7 +68,7 @@ skinning_test_ptr_t createTest2B(GpuResources* gpurec) {
       // create IK chain
       ///////////////////////////////////////////////////////////////
 
-      _ikchain = std::make_shared<IkChain>(model->mSkeleton);
+      _ikchain = std::make_shared<IkChain>(model->_skeleton);
       _ikchain->bindToBone("mixamorig.RightArm");
       _ikchain->bindToBone("mixamorig.RightForeArm");
       _ikchain->prepare();
@@ -77,7 +77,7 @@ skinning_test_ptr_t createTest2B(GpuResources* gpurec) {
       // create transformer
       ///////////////////////////////////////////////////////////////
 
-      _transformer = std::make_shared<Transformer>(model->mSkeleton);
+      _transformer = std::make_shared<BoneTransformer>(model->_skeleton);
       _transformer->bindToBone("mixamorig.RightHand");
       _transformer->bindToBone("mixamorig.RightHandThumb1");
       _transformer->bindToBone("mixamorig.RightHandThumb2");
@@ -119,7 +119,7 @@ skinning_test_ptr_t createTest2B(GpuResources* gpurec) {
     scenegraph::node_ptr_t _char_node;
     scenegraph::node_ptr_t _dbgdraw_node;
     ikchain_ptr_t _ikchain;
-    transformer_ptr_t _transformer;
+    bone_transformer_ptr_t _transformer;
 
     ork::Timer _timer;
     fvec3 _target;
@@ -194,8 +194,8 @@ skinning_test_ptr_t createTest2B(GpuResources* gpurec) {
     // get right hand. forearm
     ///////////////////////////////////////////////////////////
 
-    int fajoint = model->mSkeleton.jointIndex("mixamorig.RightForeArm");
-    int hjoint = model->mSkeleton.jointIndex("mixamorig.RightHand");
+    int fajoint = model->_skeleton->jointIndex("mixamorig.RightForeArm");
+    int hjoint = model->_skeleton->jointIndex("mixamorig.RightHand");
     fmtx4 hmtx = localpose._concat_matrices[hjoint];
     fmtx4 famtx = localpose._concat_matrices[fajoint];
 

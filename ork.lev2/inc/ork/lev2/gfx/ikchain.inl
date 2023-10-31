@@ -1,10 +1,20 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2023, Michael T. Mayers.
+// Distributed under the MIT License.
+// see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
+////////////////////////////////////////////////////////////////
+
 #pragma once
 
+#include <ork/math/math_types.inl>
+
+namespace ork::lev2 {
 struct IkChain{
 
   /////////////////////////////////////////////////////////////////////////////
 
-  IkChain( const XgmSkeleton& skel)
+  IkChain( xgmskeleton_constptr_t skel)
     : _skeleton(skel) {
 
     _bindpose = std::make_shared<XgmLocalPose>(_skeleton);
@@ -17,7 +27,7 @@ struct IkChain{
   /////////////////////////////////////////////////////////////////////////////
 
   void bindToBone(std::string named){
-    int index = _skeleton.jointIndex(named);
+    int index = _skeleton->jointIndex(named);
     _jointindices.push_back(index);
   }
 
@@ -25,10 +35,10 @@ struct IkChain{
 
   void prepare(){
 
-    int numbones = _skeleton.numBones();
+    int numbones = _skeleton->numBones();
     for( int bi=0; bi<numbones; bi++ ){
-      int child = _skeleton.bone(bi)._childIndex;
-      _bonelengths[child] = _skeleton.boneLength(bi);
+      int child = _skeleton->bone(bi)._childIndex;
+      _bonelengths[child] = _skeleton->boneLength(bi);
     }
   }
 
@@ -130,7 +140,7 @@ struct IkChain{
   std::vector<fmtx4> _jointtemp;
   std::map<int,float> _bonelengths; // length from parent to child
 
-  const XgmSkeleton& _skeleton;
+  xgmskeleton_constptr_t _skeleton;
   xgmlocalpose_ptr _bindpose;
 
   float _C1 = 0.222f;
@@ -140,3 +150,4 @@ struct IkChain{
 };
 
 using ikchain_ptr_t = std::shared_ptr<IkChain>;
+} //namespace ork::lev2 {

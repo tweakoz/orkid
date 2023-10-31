@@ -22,7 +22,7 @@ skinning_test_ptr_t createTest1(GpuResources* gpurec) {
       model_load_req->waitForCompletion();
 
       auto model    = _char_modelasset->getSharedModel();
-      auto skeldump = model->mSkeleton.dump(fvec3(1, 1, 1));
+      auto skeldump = model->_skeleton->dump(fvec3(1, 1, 1));
       printf("skeldump<%s>\n", skeldump.c_str());
 
       _char_animasset = asset::AssetManager<XgmAnimAsset>::load(anim_load_req);
@@ -49,7 +49,7 @@ skinning_test_ptr_t createTest1(GpuResources* gpurec) {
       _char_animinst->SetWeight(1.0f);
       _char_animinst->RefMask().EnableAll();
       _char_animinst->_use_temporal_lerp = true;
-      _char_animinst->bindToSkeleton(model->mSkeleton);
+      _char_animinst->bindToSkeleton(model->_skeleton);
 
       auto& localpose = modelinst->_localPose;
       auto& worldpose = modelinst->_worldPose;
@@ -61,7 +61,7 @@ skinning_test_ptr_t createTest1(GpuResources* gpurec) {
       localpose.concatenate();
       worldpose.apply(fmtx4(), localpose);
 
-      _skel_applicator = std::make_shared<XgmSkelApplicator>(model->mSkeleton);
+      _skel_applicator = std::make_shared<XgmSkelApplicator>(model->_skeleton);
       _skel_applicator->bindToBone("Bone.001");
       _skel_applicator->bindToBone("Bone.002");
       _skel_applicator->bindToBone("Bone.003");

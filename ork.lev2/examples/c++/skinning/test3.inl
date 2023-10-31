@@ -22,7 +22,7 @@ skinning_test_ptr_t createTest3(GpuResources* gpurec) {
       model_load_req->waitForCompletion();
 
       auto model    = _char_modelasset->getSharedModel();
-      auto skeldump = model->mSkeleton.dump(fvec3(1, 1, 1));
+      auto skeldump = model->_skeleton->dump(fvec3(1, 1, 1));
       printf("skeldump<%s>\n", skeldump.c_str());
 
       _char_animasset = asset::AssetManager<XgmAnimAsset>::load(anim_load_req);
@@ -49,37 +49,37 @@ skinning_test_ptr_t createTest3(GpuResources* gpurec) {
       _char_animinstA->SetWeight(1.0f);
       _char_animinstA->_use_temporal_lerp = true;
       _char_animinstA->RefMask().EnableAll();
-      _char_animinstA->RefMask().Disable(model->mSkeleton,"mixamorig.LeftShoulder");
-      _char_animinstA->RefMask().Disable(model->mSkeleton,"mixamorig.LeftArm");
-      _char_animinstA->RefMask().Disable(model->mSkeleton,"mixamorig.LeftForeArm");
-      _char_animinstA->RefMask().Disable(model->mSkeleton,"mixamorig.LeftHand");
-      _char_animinstA->RefMask().Disable(model->mSkeleton,"mixamorig.RightShoulder");
-      _char_animinstA->RefMask().Disable(model->mSkeleton,"mixamorig.RightArm");
-      _char_animinstA->RefMask().Disable(model->mSkeleton,"mixamorig.RightForeArm");
-      _char_animinstA->RefMask().Disable(model->mSkeleton,"mixamorig.RightHand");
-      _char_animinstA->bindToSkeleton(model->mSkeleton);
+      _char_animinstA->RefMask().Disable(model->_skeleton,"mixamorig.LeftShoulder");
+      _char_animinstA->RefMask().Disable(model->_skeleton,"mixamorig.LeftArm");
+      _char_animinstA->RefMask().Disable(model->_skeleton,"mixamorig.LeftForeArm");
+      _char_animinstA->RefMask().Disable(model->_skeleton,"mixamorig.LeftHand");
+      _char_animinstA->RefMask().Disable(model->_skeleton,"mixamorig.RightShoulder");
+      _char_animinstA->RefMask().Disable(model->_skeleton,"mixamorig.RightArm");
+      _char_animinstA->RefMask().Disable(model->_skeleton,"mixamorig.RightForeArm");
+      _char_animinstA->RefMask().Disable(model->_skeleton,"mixamorig.RightHand");
+      _char_animinstA->bindToSkeleton(model->_skeleton);
 
       _char_animinstB = std::make_shared<XgmAnimInst>();
       _char_animinstB->bindAnim(anim);
       _char_animinstB->SetWeight(1.0f);
       _char_animinstB->_use_temporal_lerp = true;
       _char_animinstB->RefMask().DisableAll();
-      _char_animinstB->RefMask().Enable(model->mSkeleton,"mixamorig.LeftShoulder");
-      _char_animinstB->RefMask().Enable(model->mSkeleton,"mixamorig.LeftArm");
-      _char_animinstB->RefMask().Enable(model->mSkeleton,"mixamorig.LeftForeArm");
-      _char_animinstB->RefMask().Enable(model->mSkeleton,"mixamorig.LeftHand");
-      _char_animinstB->bindToSkeleton(model->mSkeleton);
+      _char_animinstB->RefMask().Enable(model->_skeleton,"mixamorig.LeftShoulder");
+      _char_animinstB->RefMask().Enable(model->_skeleton,"mixamorig.LeftArm");
+      _char_animinstB->RefMask().Enable(model->_skeleton,"mixamorig.LeftForeArm");
+      _char_animinstB->RefMask().Enable(model->_skeleton,"mixamorig.LeftHand");
+      _char_animinstB->bindToSkeleton(model->_skeleton);
 
       _char_animinstC = std::make_shared<XgmAnimInst>();
       _char_animinstC->bindAnim(anim);
       _char_animinstC->SetWeight(1.0f);
       _char_animinstC->_use_temporal_lerp = true;
       _char_animinstC->RefMask().DisableAll();
-      _char_animinstC->RefMask().Enable(model->mSkeleton,"mixamorig.RightShoulder");
-      _char_animinstC->RefMask().Enable(model->mSkeleton,"mixamorig.RightArm");
-      _char_animinstC->RefMask().Enable(model->mSkeleton,"mixamorig.RightForeArm");
-      _char_animinstC->RefMask().Enable(model->mSkeleton,"mixamorig.RightHand");
-      _char_animinstC->bindToSkeleton(model->mSkeleton);
+      _char_animinstC->RefMask().Enable(model->_skeleton,"mixamorig.RightShoulder");
+      _char_animinstC->RefMask().Enable(model->_skeleton,"mixamorig.RightArm");
+      _char_animinstC->RefMask().Enable(model->_skeleton,"mixamorig.RightForeArm");
+      _char_animinstC->RefMask().Enable(model->_skeleton,"mixamorig.RightHand");
+      _char_animinstC->bindToSkeleton(model->_skeleton);
 
       auto& localpose = modelinst->_localPose;
       auto& worldpose = modelinst->_worldPose;

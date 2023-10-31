@@ -32,6 +32,8 @@ XgmModel::XgmModel()
     , mpUserData(0)
     , miNumMaterials(0)
     , mbSkinned(false) {
+    
+    _skeleton = std::make_shared<XgmSkeleton>();
 }
 
 XgmModel::~XgmModel() {
@@ -48,15 +50,15 @@ int XgmModel::meshIndex(const PoolString& name) const {
 
 XgmModelInst::XgmModelInst(const XgmModel* Model)
     : mXgmModel(Model)
-    , _localPose(Model->skeleton())
-    , _worldPose(Model->skeleton())
+    , _localPose(Model->_skeleton)
+    , _worldPose(Model->_skeleton)
     , mMaterialStateInst(*this)
     , mbSkinned(false)
     , mBlenderZup(false)
     , _drawSkeleton(false) {
 
   OrkAssert(Model != 0);
-  miNumChannels = Model->skeleton().numJoints();
+  miNumChannels = Model->_skeleton->numJoints();
   if (miNumChannels == 0) {
     miNumChannels = 1;
   }
@@ -445,7 +447,7 @@ void XgmModel::RenderSkinned(
       typedef SVtxV12N12B12T8C4 vertex_t;
       auto& vtxbuf = GfxEnv::GetSharedDynamicVB2();
       VtxWriter<vertex_t> vw;
-      int inumjoints = skeleton().miNumJoints;
+      int inumjoints = _skeleton->miNumJoints;
       // printf("inumjoints<%d>\n", inumjoints);
       if (inumjoints) {
         vertex_t hvtx, t;
@@ -463,7 +465,7 @@ void XgmModel::RenderSkinned(
 
         for (int ij = 0; ij < inumjoints; ij++) {
 
-          int par = skeleton().GetJointParent(ij);
+          int par = _skeleton->GetJointParent(ij);
 
           if(par<0){
             continue;

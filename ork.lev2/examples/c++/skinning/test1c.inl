@@ -22,7 +22,7 @@ skinning_test_ptr_t createTest1C(GpuResources* gpurec) {
       model_load_req->waitForCompletion();
 
       _model        = _char_modelasset->getSharedModel();
-      auto skeldump = _model->mSkeleton.dump(fvec3(1, 1, 1));
+      auto skeldump = _model->_skeleton->dump(fvec3(1, 1, 1));
       printf("skeldump<%s>\n", skeldump.c_str());
 
       _char_animasset = asset::AssetManager<XgmAnimAsset>::load(anim_load_req);
@@ -49,9 +49,9 @@ skinning_test_ptr_t createTest1C(GpuResources* gpurec) {
       _char_animinst->SetWeight(1.0f);
       _char_animinst->RefMask().EnableAll();
       _char_animinst->_use_temporal_lerp = true;
-      _char_animinst->bindToSkeleton(_model->mSkeleton);
+      _char_animinst->bindToSkeleton(_model->_skeleton);
 
-      _ikchain = std::make_shared<IkChain>(_model->mSkeleton);
+      _ikchain = std::make_shared<IkChain>(_model->_skeleton);
       _ikchain->bindToBone("Bone");
       _ikchain->bindToBone("Bone.001");
       _ikchain->bindToBone("Bone.002");

@@ -371,6 +371,7 @@ struct XgmVect4AnimChannel;
 struct XgmVect3AnimChannel;
 struct XgmFloatAnimChannel;
 using xgmskeleton_ptr_t = std::shared_ptr<XgmSkeleton>;
+using xgmskeleton_constptr_t = std::shared_ptr<const XgmSkeleton>;
 using xgmskelnode_ptr_t = std::shared_ptr<XgmSkelNode>;
 using xgmaniminst_ptr_t = std::shared_ptr<XgmAnimInst>;
 using xgmanimmask_ptr_t = std::shared_ptr<XgmAnimMask>;

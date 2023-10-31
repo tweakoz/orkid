@@ -20,6 +20,7 @@
 #include <ork/lev2/imgui/imgui_ged.inl>
 #include <ork/lev2/imgui/imgui_internal.h>
 #include <ork/lev2/gfx/camera/uicam.h>
+#include <ork/lev2/gfx/ikchain.inl>
 ///////////////////////////////////////////////////////////////////////////////
 using namespace std::string_literals;
 using namespace ork;
@@ -124,8 +125,6 @@ struct GpuResources {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-#include "ikchain.inl"
-#include "transformer.inl"
 #include "test0.inl"
 #include "test1.inl"
 #include "test1a.inl"

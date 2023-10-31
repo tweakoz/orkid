@@ -15,7 +15,7 @@
 #include <ork/kernel/orklut.h>
 #include <ork/rtti/RTTIX.inl>
 
-namespace ork { namespace lev2 {
+namespace ork::lev2 {
 
 static const int kmaxbones = 64;
 
@@ -242,14 +242,14 @@ struct XgmAnimMask {
   XgmAnimMask& operator=(const XgmAnimMask& mask);
 
   void EnableAll();
-  void Enable(const XgmSkeleton& Skeleton, const std::string& BoneName);
+  void Enable(xgmskeleton_constptr_t Skeleton, const std::string& BoneName);
   void Enable(int iboneindex);
 
   void DisableAll();
-  void Disable(const XgmSkeleton& Skeleton, const std::string& BoneName);
+  void Disable(xgmskeleton_constptr_t Skeleton, const std::string& BoneName);
   void Disable(int iboneindex);
 
-  bool isEnabled(const XgmSkeleton& Skeleton, const std::string& BoneName) const;
+  bool isEnabled(xgmskeleton_constptr_t Skeleton, const std::string& BoneName) const;
   bool isEnabled(int iboneindex) const;
 
 };
@@ -280,7 +280,7 @@ struct XgmSkelApplicator {
 
   using fn_t = std::function<void(int i)>;
 
-  XgmSkelApplicator(const XgmSkeleton& skeleton);
+  XgmSkelApplicator(xgmskeleton_constptr_t skeleton);
 
   xgmskelapplicator_ptr_t clone() const;
 
@@ -288,7 +288,7 @@ struct XgmSkelApplicator {
 
   void apply(fn_t the_fn) const;
 
-  const XgmSkeleton& _skeleton;
+  xgmskeleton_constptr_t _skeleton;
 
   std::vector<int> _bones2apply;
 
@@ -305,7 +305,7 @@ struct XgmAnimInst {
 
   XgmAnimInst();
 
-  void bindToSkeleton(const XgmSkeleton& skeleton);
+  void bindToSkeleton(xgmskeleton_constptr_t skeleton);
   void applyToPose(XgmLocalPose& localpose) const;
 
   void bindAnim(const XgmAnim* anim);
@@ -435,7 +435,7 @@ struct XgmBlendPoseInfo {
 
 struct XgmLocalPose {
 
-  XgmLocalPose(const XgmSkeleton& Skeleton);
+  XgmLocalPose(xgmskeleton_constptr_t Skeleton);
   void identityPose();
   void bindPose();  /// set pose to the skeletons bind pose
   void blendPoses(); /// Blend Poses
@@ -461,7 +461,7 @@ struct XgmLocalPose {
 
   ////////////////////////////////////////////////////////////////
 
-  const XgmSkeleton& _skeleton;
+  xgmskeleton_constptr_t _skeleton;
   orkvector<fmtx4> _local_matrices;
   orkvector<fmtx4> _concat_matrices;
   orkvector<fmtx4> _bindrela_matrices;
@@ -479,12 +479,12 @@ struct XgmLocalPose {
 
 struct XgmWorldPose {
 
-  XgmWorldPose(const XgmSkeleton& Skeleton);
+  XgmWorldPose(xgmskeleton_constptr_t Skeleton);
 
   void apply(const fmtx4& worldmtx, const XgmLocalPose& LocalPose);
   std::string dumpc(fvec3 color) const;
 
-  const XgmSkeleton& _skeleton;
+  xgmskeleton_constptr_t _skeleton;
   orkvector<fmtx4> _world_bindrela_matrices;
   orkvector<fmtx4> _world_concat_matrices;
   orkvector<int> _boneprops;
@@ -616,4 +616,27 @@ struct XgmSkeleton {
   orkvector<int> maJointParents;
   orklut<std::string, int> mmJointNameMap;
 };
-}} // namespace ork::lev2
+
+/////////////////////////////////////////////////////////////////////////////
+// BoneTransformer 
+//  transforms selected bones of a skeleton
+//   by a transform
+/////////////////////////////////////////////////////////////////////////////
+
+struct BoneTransformer{
+
+  BoneTransformer( xgmskeleton_constptr_t skel);
+  void bindToBone(std::string named);
+  void compute(XgmLocalPose& localpose, //
+               const fmtx4& xf);
+
+  /////////////////////////////////////////////////////////////////////////////
+
+  std::vector<int> _jointindices;
+  xgmskeleton_constptr_t _skeleton;
+
+};
+
+using bone_transformer_ptr_t = std::shared_ptr<BoneTransformer>;
+
+} // namespace ork::lev2

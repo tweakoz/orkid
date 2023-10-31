@@ -65,7 +65,7 @@ void ModelDrawable::bindModelInst(xgmmodelinst_ptr_t minst) {
   const lev2::XgmModel* Model = _modelinst->xgmModel();
   bool isSkinned              = Model->isSkinned();
   if (isSkinned) {
-    _worldpose = std::make_shared<XgmWorldPose>(Model->skeleton());
+    _worldpose = std::make_shared<XgmWorldPose>(Model->_skeleton);
   }
   Drawable::var_t ap;
   ap.set(_worldpose);

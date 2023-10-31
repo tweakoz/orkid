@@ -69,7 +69,7 @@ TEST(gfxanim1) {
     CHECK(modl_asset != nullptr);
 
     auto model = modl_asset->GetModel();
-    auto& skel = model->skeleton();
+    auto skel = model->_skeleton;
     printf("model<%p> isskinned<%d>\n", (void*)model, int(model->isSkinned()));
 
     auto modelinst = new XgmModelInst(model);
@@ -82,7 +82,7 @@ TEST(gfxanim1) {
     animinst->bindAnim(anim);
     animinst->RefMask().EnableAll();
 
-    deco::prints(skel.dump(cyan), true);
+    deco::prints(skel->dump(cyan), true);
 
     fmtx4 A, B, C;
     A.fromNormalVectors(fvec3(0, 0, -1), fvec3(-1, 0, 0), fvec3(0, 1, 0));
@@ -99,9 +99,9 @@ TEST(gfxanim1) {
     deco::printf(cyan, "//////////////////////////////////////////////\n");
 
     deco::printe(blugrn, "Skel-BindPose (Bi)", true);
-    deco::prints(skel.dumpInvBind(blugrn), true);
+    deco::prints(skel->dumpInvBind(blugrn), true);
     deco::printe(aqua, "Skel-BindPose (Bc)", true);
-    deco::prints(skel.dumpBind(aqua), true);
+    deco::prints(skel->dumpBind(aqua), true);
 
     auto& localpose = modelinst->_localPose;
     localpose.bindPose();
@@ -132,7 +132,7 @@ TEST(gfxanim1) {
     deco::printf(cyan, "//////////////////////////////////////////////\n");
 
     while (true) {
-      deco::prints(skel.dumpInvBind(blugrn), true);
+      deco::prints(skel->dumpInvBind(blugrn), true);
 
       iframe = (iframe + 1) % num_frames;
 

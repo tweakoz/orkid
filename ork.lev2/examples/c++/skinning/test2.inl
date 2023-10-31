@@ -22,7 +22,7 @@ skinning_test_ptr_t createTest2(GpuResources* gpurec) {
       model_load_req->waitForCompletion();
 
       auto model    = _char_modelasset->getSharedModel();
-      auto skeldump = model->mSkeleton.dump(fvec3(1, 1, 1));
+      auto skeldump = model->_skeleton->dump(fvec3(1, 1, 1));
       printf("skeldump<%s>\n", skeldump.c_str());
 
       _char_animasset = asset::AssetManager<XgmAnimAsset>::load(anim_load_req);
@@ -43,7 +43,7 @@ skinning_test_ptr_t createTest2(GpuResources* gpurec) {
       modelinst->enableAllMeshes();
       modelinst->_drawSkeleton = true;
 
-      // model->mSkeleton.mTopNodesMatrix.compose(fvec3(),fquat(),0.0001);
+      // model->_skeleton->mTopNodesMatrix.compose(fvec3(),fquat(),0.0001);
 
       auto anim      = _char_animasset->GetAnim();
       _char_animinst = std::make_shared<XgmAnimInst>();
@@ -51,7 +51,7 @@ skinning_test_ptr_t createTest2(GpuResources* gpurec) {
       _char_animinst->SetWeight(1.0f);
       _char_animinst->RefMask().EnableAll();
       _char_animinst->_use_temporal_lerp = true;
-      _char_animinst->bindToSkeleton(model->mSkeleton);
+      _char_animinst->bindToSkeleton(model->_skeleton);
 
       auto& localpose = modelinst->_localPose;
       auto& worldpose = modelinst->_worldPose;
@@ -64,9 +64,9 @@ skinning_test_ptr_t createTest2(GpuResources* gpurec) {
       worldpose.apply(fmtx4(), localpose);
       // OrkAssert(false);
 
-      auto rarm  = model->mSkeleton.bindMatrixByName("mixamorig.RightArm");
-      auto rfarm = model->mSkeleton.bindMatrixByName("mixamorig.RightForeArm");
-      auto rhand = model->mSkeleton.bindMatrixByName("mixamorig.RightHand");
+      auto rarm  = model->_skeleton->bindMatrixByName("mixamorig.RightArm");
+      auto rfarm = model->_skeleton->bindMatrixByName("mixamorig.RightForeArm");
+      auto rhand = model->_skeleton->bindMatrixByName("mixamorig.RightHand");
 
       fvec3 rarm_pos, rfarm_pos;
       fquat rarm_quat, rfarm_quat;
