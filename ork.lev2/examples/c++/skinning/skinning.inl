@@ -172,9 +172,9 @@ inline GpuResources::GpuResources(
 
   _pbrcommon->_depthFogDistance = 4000.0f;
   _pbrcommon->_depthFogPower    = 5.0f;
-  _pbrcommon->_skyboxLevel      = 0.25;
-  _pbrcommon->_diffuseLevel     = 0.2;
-  _pbrcommon->_specularLevel    = 3.2;
+  _pbrcommon->_skyboxLevel      = 1;
+  _pbrcommon->_diffuseLevel     = 1;
+  _pbrcommon->_specularLevel    = 1;
 
   auto outpnode = nodetek->tryOutputNodeAs<ScreenOutputCompositingNode>();
 

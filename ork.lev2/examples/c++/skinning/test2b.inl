@@ -100,7 +100,7 @@ skinning_test_ptr_t createTest2B(GpuResources* gpurec) {
         RenderContextInstData RCIDCOPY = RCID;
         RCIDCOPY._isSkinned            = false;
         RCIDCOPY._pipeline_cache    = fxcache;
-        _gpurec->drawTarget(RCIDCOPY,_target);
+        _gpurec->drawTarget(RCIDCOPY,fvec4(_target).transform(_worldMatrix).xyz());
       });
       _dbgdraw_node = gpurec->_sg_layer->createDrawableNode("skdebugnode", drw);
       drw->_sortkey = 0x7fffffff;
@@ -123,6 +123,7 @@ skinning_test_ptr_t createTest2B(GpuResources* gpurec) {
 
     ork::Timer _timer;
     fvec3 _target;
+    fmtx4 _worldMatrix;
   };
 
   //////////////////////////////////////
@@ -152,6 +153,8 @@ skinning_test_ptr_t createTest2B(GpuResources* gpurec) {
     fquat orientation;
     float scale = impl->_gpurec->_controller1*10;
     impl->_char_node->_dqxfdata._worldTransform->set(position, orientation, scale);
+
+    impl->_worldMatrix = impl->_char_node->_dqxfdata._worldTransform->composed();
   };
 
   //////////////////////////////////////
@@ -161,9 +164,9 @@ skinning_test_ptr_t createTest2B(GpuResources* gpurec) {
     auto gpurec = impl->_gpurec;
     gpurec->_pbrcommon->_depthFogDistance = 4000.0f;
     gpurec->_pbrcommon->_depthFogPower    = 5.0f;
-    gpurec->_pbrcommon->_skyboxLevel      = 0.25;
-    gpurec->_pbrcommon->_diffuseLevel     = 0.4;
-    gpurec->_pbrcommon->_specularLevel    = 4.2;
+    gpurec->_pbrcommon->_skyboxLevel      = 2;
+    gpurec->_pbrcommon->_diffuseLevel     = 1;
+    gpurec->_pbrcommon->_specularLevel    = 1;
 
     ///////////////////////////////////////////////////////////
     // use skel applicator on post concatenated bones

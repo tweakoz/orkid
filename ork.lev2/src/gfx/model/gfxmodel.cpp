@@ -418,7 +418,12 @@ void XgmModel::RenderSkinned(
   // Draw Skeleton
 
   if (minst->_drawSkeleton or SHOW_SKELETON()) {
+
+    auto world_mtx = pTARG->MTXI()->RefMMatrix();
+
     const auto& worldpose = minst->_worldPose;
+    const auto& localpose = minst->_localPose;
+
     pTARG->debugPushGroup("DrawSkeleton");
     pTARG->PushModColor(fvec4::White());
 
@@ -452,90 +457,67 @@ void XgmModel::RenderSkinned(
         t.mNormal      = fvec3(1, 0, 0);
         hvtx.mBiNormal = fvec3(1, 1, 0);
         t.mBiNormal    = fvec3(1, 1, 0);
-        int numlines   = inumjoints * (28);
-        vw.Lock(pTARG, &vtxbuf, numlines);
+        vw.Lock(pTARG, &vtxbuf, inumjoints*32);
+
+        auto W_INVERSE = WorldMat.inverse();
+
         for (int ij = 0; ij < inumjoints; ij++) {
-          fmtx4 joint_head     = worldpose._world_concat_matrices[ij];
-          fvec3 h             = joint_head.translation();
 
-          float bonelength = 1;
-          float bl2        = bonelength * 0.1;
+          int par = skeleton().GetJointParent(ij);
 
-          fvec3 T;  fquat R;  float S;
-          joint_head.decompose(T,R,S);
-          fmtx4 joint_head_unitscale;
-          joint_head_unitscale.compose2(T,R,1);           
+          if(par<0){
+            continue;
+          }
 
-          auto a = fvec4(bl2,bl2,0).transform(joint_head_unitscale);
-          auto b = fvec4(-bl2,bl2,0).transform(joint_head_unitscale);
-          auto c = fvec4(0,bl2,bl2).transform(joint_head_unitscale);
-          auto d = fvec4(0,bl2,-bl2).transform(joint_head_unitscale);
-          auto t = fvec4(0,1,0).transform(joint_head_unitscale);
+          fmtx4 joint_par     = localpose._concat_matrices[par];
+          fmtx4 joint_child     = localpose._concat_matrices[ij];
 
-          fvec3 hh         = fvec4(0,bl2,0).transform(joint_head_unitscale);
+          fvec3 c             = joint_child.translation();
+          fvec3 p             = joint_par.translation();
+          fvec3 dir = (c-p).normalized();
+          float bonelength = (c-p).magnitude();
+          float bl2 = bonelength*0.1f;
 
           auto add_vertex = [&](const fvec3 pos, const fvec3& col) {
-            hvtx.mPosition = pos;
+            hvtx.mPosition = fvec4(pos).transform(joint_par).xyz();
             hvtx.mColor    = (col*5).ABGRU32();
             vw.AddVertex(hvtx);
           };
 
-          bool bonep = false; //(worldpose._boneprops[bone._parentIndex]==0);
+          // create bone vertices (pyramid)
+          c = fvec4(c).transform(joint_par.inverse()).xyz();
+          dir = fvec4(dir,0).transform(joint_par.inverse()).xyz();
+          auto ctr = fvec4(dir*bl2);          
+          auto px = fvec4(bl2,0,0);          
+          auto pz = fvec4(0,0,bl2);          
+          
 
           auto colorN = fvec3::White();
-          auto colorX = bonep ? fvec3(1,.5,.5) : fvec3::Yellow();
-          auto colorZ = bonep ? fvec3(.5,.5,1) : fvec3::White();
+          auto colorX = fvec3(1,.7,.7);
+          auto colorZ = fvec3(.7,.7,1);
 
-          add_vertex(h, colorX);
-          add_vertex(a, colorX);
-          add_vertex(a, colorX);
-          add_vertex(t, colorX);
-
-          add_vertex(h, colorX);
-          add_vertex(b, colorX);
-          add_vertex(b, colorX);
-          add_vertex(t, colorX);
-
-          add_vertex(a, colorX);
-          add_vertex(hh, colorX);
-
-          add_vertex(h, colorZ);
-          add_vertex(c, colorZ);
-          add_vertex(c, colorZ);
-          add_vertex(t, colorZ);
-
-          add_vertex(h, colorZ);
-          add_vertex(d, colorZ);
-          add_vertex(d, colorZ);
-          add_vertex(t, colorZ);
-
-          add_vertex(c, colorZ);
-          add_vertex(hh, colorZ);
-
-          add_vertex(a, colorN);
+          add_vertex(fvec3(0,0,0), colorN);
           add_vertex(c, colorN);
-          add_vertex(c, colorN);
-          add_vertex(b, colorN);
 
-          add_vertex(b, colorN);
-          add_vertex(d, colorN);
-          add_vertex(d, colorN);
-          add_vertex(a, colorN);
+          add_vertex(ctr-px, fvec3(1,1,1));
+          add_vertex(ctr+px, fvec3(1,0,0));
+          add_vertex(ctr-pz, fvec3(1,1,1));
+          add_vertex(ctr+pz, fvec3(0,0,1));
+
+          add_vertex(c, colorX*0.5);
+          add_vertex(ctr-px, colorX);
+          add_vertex(c, colorX*0.5);
+          add_vertex(ctr+px, colorX);
+          add_vertex(c, colorZ*0.5);
+          add_vertex(ctr-pz, colorZ);
+          add_vertex(c, colorZ*0.5);
+          add_vertex(ctr+pz, colorZ);
+
         }
         vw.UnLock(pTARG);
         pTARG->MTXI()->PushMMatrix(fmtx4::Identity());
         pipeline->wrappedDrawCall(RCID, [&]() {
-          pTARG->GBI()->DrawPrimitiveEML(vw, PrimitiveType::LINES, numlines);
-        });
-        pTARG->MTXI()->PopMMatrix();
-      }
-      for (int ij = 0; ij < inumjoints; ij++) {
-        fmtx4 joint_head     = worldpose._world_bindrela_matrices[ij];
-         joint_head = joint_head * mSkeleton._bindMatrices[ij];
-        pTARG->MTXI()->PushMMatrix(joint_head);
-        pipeline->wrappedDrawCall(RCID, [&]() {
-            auto& axis =  GfxPrimitives::GetRef().mVtxBuf_Axis;
-            pTARG->GBI()->DrawPrimitiveEML(axis);
+          pTARG->GBI()->DrawPrimitiveEML(vw, PrimitiveType::LINES);
         });
         pTARG->MTXI()->PopMMatrix();
       }
