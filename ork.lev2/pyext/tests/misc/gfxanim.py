@@ -12,9 +12,17 @@ from common.primitives import createParticleData
 
 DECO = obt.deco.Deco()
 
+print(animMaxBones)
+
 anim = XgmAnim("data://tests/chartest/char_idle")
 anim_inst = XgmAnimInst(anim)
-print(anim)
+
+model = XgmModel("data://tests/chartest/char_mesh")
+
+anim_inst.bindToSkeleton(model.skeleton)
+
+print( "####################################################")
+print(anim, model)
 print(anim_inst)
 print(anim_inst.sampleRate)
 print(anim_inst.numFrames)
@@ -22,3 +30,28 @@ print(anim_inst.weight)
 print(anim_inst.use_temporal_lerp)
 print(anim_inst.mask)
 print(anim_inst.mask.bytes)
+print(anim_inst.poser)
+
+print( "####################################################")
+print(model.skeleton)
+print("skeleton.name: " + str(model.skeleton.name))
+print("skeleton.numJoints: " + str(model.skeleton.numJoints))
+print("skeleton.numBones: " + str(model.skeleton.numBones))
+
+for i in range(0,model.skeleton.numJoints):
+  print( i, model.skeleton.jointName(i) )
+  print( " joint: " + str(model.skeleton.jointMatrix(i)) )
+  print( "  bind: " + str(model.skeleton.bindMatrix(i)) )
+
+print( "####################################################")
+
+
+poser = anim_inst.poser
+for i in range(0,animMaxBones):
+  binding = poser.poseBinding(i)
+  if binding.skeletonIndex!=0xffff and binding.channelIndex!=0xffff:
+    print("posebinding %d : skel<%s> channel<%s>" % (i, binding.skeletonIndex, binding.channelIndex) )
+for i in range(0,animMaxBones):
+  binding = poser.animBinding(i)
+  if binding.skeletonIndex!=0xffff and binding.channelIndex!=0xffff:
+    print("animbinding %d : skel<%s> channel<%s>" % (i, binding.skeletonIndex, binding.channelIndex) )

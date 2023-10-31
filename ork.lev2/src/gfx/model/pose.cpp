@@ -244,13 +244,13 @@ void XgmAnimInst::bindToSkeleton(xgmskeleton_constptr_t skeleton) {
 
           bool enabled = _mask->isEnabled(iskelindex);
           if (enabled) {
-            _poser.setPoseBinding(ipidx++, XgmSkeletonBinding(iskelindex, ispi));
+            _poser->setPoseBinding(ipidx++, XgmSkeletonBinding(iskelindex, ispi));
           }
         }
       }
       ispi++;
     }
-    _poser.setPoseBinding(ipidx++, XgmSkeletonBinding(0xffff, 0xffff));
+    _poser->setPoseBinding(ipidx++, XgmSkeletonBinding(0xffff, 0xffff));
 
     size_t inumanimchannels = joint_channels.size();
 
@@ -268,12 +268,12 @@ void XgmAnimInst::bindToSkeleton(xgmskeleton_constptr_t skeleton) {
 
         bool enabled = _mask->isEnabled(iskelindex);
         if (enabled) {
-          _poser.setAnimBinding(ichidx++, XgmSkeletonBinding(iskelindex, ichiti));
+          _poser->setAnimBinding(ichidx++, XgmSkeletonBinding(iskelindex, ichiti));
         }
       }
       ichiti++;
     }
-    _poser.setAnimBinding(ichidx++, XgmSkeletonBinding(0xffff, 0xffff));
+    _poser->setAnimBinding(ichidx++, XgmSkeletonBinding(0xffff, 0xffff));
   }
 }
 
@@ -353,7 +353,7 @@ void XgmAnimInst::applyToPose(XgmLocalPose& localpose) const {
     ////////////////////////////////////////////////////
     const XgmAnim::matrix_lut_t& static_pose = animation->_static_pose;
     for (int ipidx = 0; ipidx < kmaxbones; ipidx++) {
-      const XgmSkeletonBinding& binding = _poser.getPoseBinding(ipidx);
+      const XgmSkeletonBinding& binding = _poser->getPoseBinding(ipidx);
       int iskelindex                    = binding.mSkelIndex;
       if (iskelindex != 0xffff) {
         int iposeindex             = binding.mChanIndex;
@@ -386,7 +386,7 @@ void XgmAnimInst::applyToPose(XgmLocalPose& localpose) const {
 
     if (0) {
       for (int iaidx = 0; iaidx < kmaxbones; iaidx++) {
-        auto& binding  = _poser.getAnimBinding(iaidx);
+        auto& binding  = _poser->getAnimBinding(iaidx);
         int iskelindex = binding.mSkelIndex;
         if (iskelindex != 0xffff) {
           auto jname     = localpose._skeleton->GetJointName(iskelindex);
@@ -410,7 +410,7 @@ void XgmAnimInst::applyToPose(XgmLocalPose& localpose) const {
     const auto& joint_channels = animation->_jointanimationchannels;
 
     for (int iaidx = 0; iaidx < kmaxbones; iaidx++) {
-      auto& binding  = _poser.getAnimBinding(iaidx);
+      auto& binding  = _poser->getAnimBinding(iaidx);
       int iskelindex = binding.mSkelIndex;
 
       if (iskelindex != 0xffff) {

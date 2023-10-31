@@ -25,6 +25,11 @@ void pyinit_gfx_xgmmodel(py::module& module_lev2) {
         return modl_asset->_model.atomicCopy();
       }))
       .def_property_readonly(
+          "skeleton", //
+          [](xgmmodel_ptr_t model) -> xgmskeleton_ptr_t { //
+            return model->_skeleton;
+          })
+      .def_property_readonly(
           "boundingCenter", //
           [](xgmmodel_ptr_t model) -> fvec3 { //
             return model->boundingCenter();
@@ -157,6 +162,8 @@ void pyinit_gfx_xgmmodel(py::module& module_lev2) {
           });
 
   type_codec->registerStdCodec<xgmmodelinst_ptr_t>(modelinst_type_t);
+  /////////////////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////////
 
     }
 

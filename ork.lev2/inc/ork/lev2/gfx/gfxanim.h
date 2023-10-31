@@ -333,7 +333,7 @@ struct XgmAnimInst {
   float mWeight;
   bool _use_temporal_lerp = false;
 
-  XgmPoser _poser;
+  xgmposer_ptr_t _poser;
 
 };
 

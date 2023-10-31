@@ -306,6 +306,7 @@ XgmAnimInst::XgmAnimInst()
     , _current_frame(0.0f)
     , mWeight(1.0f) {
 _mask = std::make_shared<XgmAnimMask>();
+_poser = std::make_shared<XgmPoser>();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

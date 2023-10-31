@@ -16,6 +16,7 @@ namespace ork::lev2 {
 
 void pyinit_gfx_xgmanim(py::module& module_lev2) {
   auto type_codec = python::TypeCodec::instance();
+  module_lev2.attr("animMaxBones") = kmaxbones;
   /////////////////////////////////////////////////////////////////////////////////
   auto anim_type_t = py::class_<XgmAnim, xgmanim_ptr_t>(module_lev2, "XgmAnim") //
       .def(py::init([](const std::string& anim_path) -> xgmanim_ptr_t {
@@ -49,10 +50,20 @@ void pyinit_gfx_xgmanim(py::module& module_lev2) {
           [](xgmaniminst_ptr_t self, xgmanim_constptr_t anim) { //
             self->bindAnim(anim);
           })
+      .def(
+          "bindToSkeleton", //
+          [](xgmaniminst_ptr_t self, xgmskeleton_ptr_t skel) { //
+            self->bindToSkeleton(skel);
+          })
       .def_property_readonly(
           "mask", //
           [](xgmaniminst_ptr_t self) -> xgmanimmask_ptr_t { //
             return self->_mask;
+          })
+      .def_property_readonly(
+          "poser", //
+          [](xgmaniminst_ptr_t self) -> xgmposer_ptr_t { //
+            return self->_poser;
           })
       .def_property_readonly(
           "sampleRate", //
@@ -109,6 +120,63 @@ void pyinit_gfx_xgmanim(py::module& module_lev2) {
           self->Disable(bone_index);
       });
   type_codec->registerStdCodec<xgmanimmask_ptr_t>(animmask_type_t);
+  /////////////////////////////////////////////////////////////////////////////////
+  auto animposer_type_t = py::class_<XgmPoser, xgmposer_ptr_t>(module_lev2, "XgmPoser")
+    .def("poseBinding",[](xgmposer_ptr_t self, int index) -> XgmSkeletonBinding& {
+        OrkAssert(index<kmaxbones);
+        return self->_poseBindings[index];
+    })
+    .def("animBinding",[](xgmposer_ptr_t self, int index) -> XgmSkeletonBinding& {
+        OrkAssert(index<kmaxbones);
+        return self->_animBindings[index];
+    });
+  type_codec->registerStdCodec<xgmposer_ptr_t>(animposer_type_t);
+  /////////////////////////////////////////////////////////////////////////////////
+  auto animskelbinding_type_t = py::class_<XgmSkeletonBinding>(module_lev2, "XgmSkeletonBinding")
+    .def_property("skeletonIndex",[](const XgmSkeletonBinding& self) -> int {
+        return self.mSkelIndex;
+    },[](XgmSkeletonBinding& self, int idx) {
+        self.mSkelIndex = idx;
+    })
+    .def_property("channelIndex", [](const XgmSkeletonBinding& self) -> int {
+        return self.mChanIndex;
+    },[](XgmSkeletonBinding& self, int idx) {
+        self.mChanIndex = idx;
+    });
+  //type_codec->registerStdCodec<XgmSkeletonBinding>(animskelbinding_type_t);
+  /////////////////////////////////////////////////////////////////////////////////
+  auto animskel_type_t = py::class_<XgmSkeleton,xgmskeleton_ptr_t>(module_lev2, "XgmSkeleton")
+    .def_property_readonly(
+        "name", //
+        [](xgmskeleton_ptr_t self) -> std::string { //
+        return self->msSkelName;
+        })
+    .def_property_readonly(
+        "numJoints", //
+        [](xgmskeleton_ptr_t self) -> int { //
+        return self->numJoints();
+        })
+    .def_property_readonly(
+        "numBones", //
+        [](xgmskeleton_ptr_t self) -> int { //
+        return self->numBones();
+        })
+    .def(
+        "jointName", //
+        [](xgmskeleton_ptr_t self, int index) -> std::string { //
+        return self->GetJointName(index);
+        })
+    .def(
+        "jointMatrix", //
+        [](xgmskeleton_ptr_t self, int index) -> fmtx4 { //
+        return self->RefNodeMatrix(index);
+        })
+    .def(
+        "bindMatrix", //
+        [](xgmskeleton_ptr_t self, int index) -> fmtx4 { //
+        return self->_bindMatrices[index];
+        });
+  type_codec->registerStdCodec<xgmskeleton_ptr_t>(animskel_type_t);
   /////////////////////////////////////////////////////////////////////////////////
 }
 
