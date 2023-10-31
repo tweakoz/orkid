@@ -22,7 +22,7 @@ skinning_test_ptr_t createTest2B(GpuResources* gpurec) {
       model_load_req->waitForCompletion();
 
       auto model    = _char_modelasset->getSharedModel();
-      auto skeldump = model->mSkeleton.dump(fvec3(1, 1, 1));
+      auto skeldump = model->_skeleton->dump(fvec3(1, 1, 1));
       printf("skeldump<%s>\n", skeldump.c_str());
 
       _char_animasset = asset::AssetManager<XgmAnimAsset>::load(anim_load_req);
@@ -42,33 +42,33 @@ skinning_test_ptr_t createTest2B(GpuResources* gpurec) {
       modelinst->enableAllMeshes();
       modelinst->_drawSkeleton = true;
 
-      auto anim      = _char_animasset->GetAnim();
+      auto anim      = _char_animasset->_animation;
       _char_animinst = std::make_shared<XgmAnimInst>();
       _char_animinst->bindAnim(anim);
       _char_animinst->SetWeight(1.0f);
-      _char_animinst->RefMask().EnableAll();
+      _char_animinst->_mask->EnableAll();
       _char_animinst->_use_temporal_lerp = true;
-      _char_animinst->bindToSkeleton(model->mSkeleton);
+      _char_animinst->bindToSkeleton(model->_skeleton);
 
       ///////////////////////////////////////////////////////////////
       // default pose
       ///////////////////////////////////////////////////////////////
 
-      auto& localpose = modelinst->_localPose;
-      auto& worldpose = modelinst->_worldPose;
+      auto localpose = modelinst->_localPose;
+      auto worldpose = modelinst->_worldPose;
 
-      localpose.bindPose();
+      localpose->bindPose();
       _char_animinst->_current_frame = 0;
       _char_animinst->applyToPose(localpose);
-      localpose.blendPoses();
-      localpose.concatenate();
-      worldpose.apply(fmtx4(), localpose);
+      localpose->blendPoses();
+      localpose->concatenate();
+      worldpose->apply(fmtx4(), localpose);
 
       ///////////////////////////////////////////////////////////////
       // create IK chain
       ///////////////////////////////////////////////////////////////
 
-      _ikchain = std::make_shared<IkChain>(model->mSkeleton);
+      _ikchain = std::make_shared<IkChain>(model->_skeleton);
       _ikchain->bindToBone("mixamorig.RightArm");
       _ikchain->bindToBone("mixamorig.RightForeArm");
       _ikchain->prepare();
@@ -77,7 +77,7 @@ skinning_test_ptr_t createTest2B(GpuResources* gpurec) {
       // create transformer
       ///////////////////////////////////////////////////////////////
 
-      _transformer = std::make_shared<Transformer>(model->mSkeleton);
+      _transformer = std::make_shared<BoneTransformer>(model->_skeleton);
       _transformer->bindToBone("mixamorig.RightHand");
       _transformer->bindToBone("mixamorig.RightHandThumb1");
       _transformer->bindToBone("mixamorig.RightHandThumb2");
@@ -100,7 +100,7 @@ skinning_test_ptr_t createTest2B(GpuResources* gpurec) {
         RenderContextInstData RCIDCOPY = RCID;
         RCIDCOPY._isSkinned            = false;
         RCIDCOPY._pipeline_cache    = fxcache;
-        _gpurec->drawTarget(RCIDCOPY,_target);
+        _gpurec->drawTarget(RCIDCOPY,fvec4(_target).transform(_worldMatrix).xyz());
       });
       _dbgdraw_node = gpurec->_sg_layer->createDrawableNode("skdebugnode", drw);
       drw->_sortkey = 0x7fffffff;
@@ -119,10 +119,11 @@ skinning_test_ptr_t createTest2B(GpuResources* gpurec) {
     scenegraph::node_ptr_t _char_node;
     scenegraph::node_ptr_t _dbgdraw_node;
     ikchain_ptr_t _ikchain;
-    transformer_ptr_t _transformer;
+    bone_transformer_ptr_t _transformer;
 
     ork::Timer _timer;
     fvec3 _target;
+    fmtx4 _worldMatrix;
   };
 
   //////////////////////////////////////
@@ -152,6 +153,8 @@ skinning_test_ptr_t createTest2B(GpuResources* gpurec) {
     fquat orientation;
     float scale = impl->_gpurec->_controller1*10;
     impl->_char_node->_dqxfdata._worldTransform->set(position, orientation, scale);
+
+    impl->_worldMatrix = impl->_char_node->_dqxfdata._worldTransform->composed();
   };
 
   //////////////////////////////////////
@@ -161,9 +164,9 @@ skinning_test_ptr_t createTest2B(GpuResources* gpurec) {
     auto gpurec = impl->_gpurec;
     gpurec->_pbrcommon->_depthFogDistance = 4000.0f;
     gpurec->_pbrcommon->_depthFogPower    = 5.0f;
-    gpurec->_pbrcommon->_skyboxLevel      = 0.25;
-    gpurec->_pbrcommon->_diffuseLevel     = 0.4;
-    gpurec->_pbrcommon->_specularLevel    = 4.2;
+    gpurec->_pbrcommon->_skyboxLevel      = 2;
+    gpurec->_pbrcommon->_diffuseLevel     = 1;
+    gpurec->_pbrcommon->_specularLevel    = 1;
 
     ///////////////////////////////////////////////////////////
     // use skel applicator on post concatenated bones
@@ -172,29 +175,29 @@ skinning_test_ptr_t createTest2B(GpuResources* gpurec) {
     float time  = impl->_timer.SecsSinceStart();
     float frame = (time * 30.0f * gpurec->_animspeed);
 
-    auto anim = impl->_char_animasset->GetAnim();
+    auto anim = impl->_char_animasset->_animation;
 
     impl->_char_animinst->_current_frame = fmod(frame, float(anim->_numframes));
     impl->_char_animinst->SetWeight(0.5f);
 
     auto model = impl->_char_modelasset->getSharedModel();
     auto modelinst  = impl->_char_drawable->_modelinst;
-    auto& localpose = modelinst->_localPose;
-    auto& worldpose = modelinst->_worldPose;
+    auto localpose = modelinst->_localPose;
+    auto worldpose = modelinst->_worldPose;
 
-    localpose.bindPose();
+    localpose->bindPose();
     impl->_char_animinst->applyToPose(localpose);
-    localpose.blendPoses();
-    localpose.concatenate();
+    localpose->blendPoses();
+    localpose->concatenate();
 
     ///////////////////////////////////////////////////////////
     // get right hand. forearm
     ///////////////////////////////////////////////////////////
 
-    int fajoint = model->mSkeleton.jointIndex("mixamorig.RightForeArm");
-    int hjoint = model->mSkeleton.jointIndex("mixamorig.RightHand");
-    fmtx4 hmtx = localpose._concat_matrices[hjoint];
-    fmtx4 famtx = localpose._concat_matrices[fajoint];
+    int fajoint = model->_skeleton->jointIndex("mixamorig.RightForeArm");
+    int hjoint = model->_skeleton->jointIndex("mixamorig.RightHand");
+    fmtx4 hmtx = localpose->_concat_matrices[hjoint];
+    fmtx4 famtx = localpose->_concat_matrices[fajoint];
 
     fvec3 hnx, hny, hnz;
     hmtx.toNormalVectors(hnx,hny,hnz);
@@ -233,8 +236,8 @@ skinning_test_ptr_t createTest2B(GpuResources* gpurec) {
     // fixup new hand pos based on forearm bone length
     /////////////////////////////////
 
-    famtx = localpose._concat_matrices[fajoint];
-    auto old_hand_trans = localpose._concat_matrices[hjoint].translation();
+    famtx = localpose->_concat_matrices[fajoint];
+    auto old_hand_trans = localpose->_concat_matrices[hjoint].translation();
     auto new_hand_trans = fvec3(0,forearm_len,0).transform(famtx).xyz();
     offset = new_hand_trans-old_hand_trans;
 

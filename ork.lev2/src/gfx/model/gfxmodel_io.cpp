@@ -201,7 +201,7 @@ bool XgmModel::_loadXGM(XgmModel* mdl, datablock_ptr_t datablock) {
     }
     /////////////////////////////////////////////////////////
     if (inumjoints) {
-      mdl->mSkeleton.resize(inumjoints);
+      mdl->_skeleton->resize(inumjoints);
       for (int ib = 0; ib < inumjoints; ib++) {
         int iskelindex = 0;
         int iparentindex = 0;
@@ -222,16 +222,16 @@ bool XgmModel::_loadXGM(XgmModel* mdl, datablock_ptr_t datablock) {
         //scalematrix.compose(fvec3(0,0,0),fquat(),0.01f);
 
         fxstring<256> jnamp(pjntname);
-        mdl->mSkeleton.AddJoint(iskelindex, iparentindex, jnamp.c_str());
+        mdl->_skeleton->AddJoint(iskelindex, iparentindex, jnamp.c_str());
         ptstring.set(chunkreader.GetString(inodematrix));
-        mdl->mSkeleton.RefNodeMatrix(iskelindex) = scalematrix*PropType<fmtx4>::FromString(ptstring);
+        mdl->_skeleton->RefNodeMatrix(iskelindex) = scalematrix*PropType<fmtx4>::FromString(ptstring);
         ptstring.set(chunkreader.GetString(ijointmatrix));
-        mdl->mSkeleton.RefJointMatrix(iskelindex) = scalematrix*PropType<fmtx4>::FromString(ptstring);
+        mdl->_skeleton->RefJointMatrix(iskelindex) = scalematrix*PropType<fmtx4>::FromString(ptstring);
         ptstring.set(chunkreader.GetString(iinvrestmatrix));
         auto bind_matrix = scalematrix*PropType<fmtx4>::FromString(ptstring);
-        mdl->mSkeleton._bindMatrices[iskelindex] = bind_matrix;
+        mdl->_skeleton->_bindMatrices[iskelindex] = bind_matrix;
 
-        auto& decomp_out = mdl->mSkeleton._bindDecomps[iskelindex];
+        auto& decomp_out = mdl->_skeleton->_bindDecomps[iskelindex];
 
         bind_matrix.decompose(decomp_out._position, //
                               decomp_out._orientation, //
@@ -240,7 +240,7 @@ bool XgmModel::_loadXGM(XgmModel* mdl, datablock_ptr_t datablock) {
         decomp_out._scale.y = decomp_out._scale.x;
         decomp_out._scale.z = decomp_out._scale.x;
         
-        mdl->mSkeleton._inverseBindMatrices[iskelindex] = bind_matrix.inverse();
+        mdl->_skeleton->_inverseBindMatrices[iskelindex] = bind_matrix.inverse();
       }
     }
     ///////////////////////////////////
@@ -255,12 +255,12 @@ bool XgmModel::_loadXGM(XgmModel* mdl, datablock_ptr_t datablock) {
       OrkAssert(iib == ib);
       HeaderStream->GetItem(Bone._parentIndex);
       HeaderStream->GetItem(Bone._childIndex);
-      mdl->mSkeleton.addBone(Bone);
+      mdl->_skeleton->addBone(Bone);
     }
     if (inumbones) {
-      mdl->mSkeleton.miRootNode = (inumbones > 0) ? mdl->mSkeleton.bone(0)._parentIndex : -1;
+      mdl->_skeleton->miRootNode = (inumbones > 0) ? mdl->_skeleton->bone(0)._parentIndex : -1;
     }
-    // mdl->mSkeleton.dump();
+    // mdl->_skeleton->dump();
     ///////////////////////////////////
     HeaderStream->GetItem(mdl->mBoundingCenter);
     HeaderStream->GetItem(mdl->mAABoundXYZ);
@@ -512,11 +512,11 @@ bool XgmModel::_loadXGM(XgmModel* mdl, datablock_ptr_t datablock) {
             HeaderStream->GetItem(ibindingname);
 
             const char* jointname = chunkreader.GetString(ibindingname);
-            auto itfind = mdl->mSkeleton.mmJointNameMap.find(jointname);
+            auto itfind = mdl->_skeleton->mmJointNameMap.find(jointname);
 
-            if(itfind == mdl->mSkeleton.mmJointNameMap.end()){
+            if(itfind == mdl->_skeleton->mmJointNameMap.end()){
               logerrchannel()->log( "\n\ncannot find joint<%s> in:", jointname );
-              for( auto it: mdl->mSkeleton.mmJointNameMap ){
+              for( auto it: mdl->_skeleton->mmJointNameMap ){
                 logerrchannel()->log( "  %s", it.first.c_str() );
               }
               OrkAssert(false);
@@ -538,7 +538,7 @@ bool XgmModel::_loadXGM(XgmModel* mdl, datablock_ptr_t datablock) {
   else {
     OrkAssert(false);
   }
-  // rval->mSkeleton.dump();
+  // rval->_skeleton->dump();
   // mdl->dump();
   OrkHeapCheck();
   return rval;

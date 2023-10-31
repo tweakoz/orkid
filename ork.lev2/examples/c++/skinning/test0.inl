@@ -22,7 +22,7 @@ skinning_test_ptr_t createTest0(GpuResources* gpurec) {
       model_load_req->waitForCompletion();
 
       auto model    = _char_modelasset->getSharedModel();
-      auto skeldump = model->mSkeleton.dump(fvec3(1, 1, 1));
+      auto skeldump = model->_skeleton->dump(fvec3(1, 1, 1));
       printf("skeldump<%s>\n", skeldump.c_str());
 
       _char_animasset = asset::AssetManager<XgmAnimAsset>::load(anim_load_req);
@@ -43,23 +43,23 @@ skinning_test_ptr_t createTest0(GpuResources* gpurec) {
       modelinst->enableAllMeshes();
       modelinst->_drawSkeleton = true;
 
-      auto anim      = _char_animasset->GetAnim();
+      auto anim      = _char_animasset->_animation;
       _char_animinst = std::make_shared<XgmAnimInst>();
       _char_animinst->bindAnim(anim);
       _char_animinst->SetWeight(1.0f);
-      _char_animinst->RefMask().EnableAll();
+      _char_animinst->_mask->EnableAll();
       _char_animinst->_use_temporal_lerp = true;
-      _char_animinst->bindToSkeleton(model->mSkeleton);
+      _char_animinst->bindToSkeleton(model->_skeleton);
 
-      auto& localpose = modelinst->_localPose;
-      auto& worldpose = modelinst->_worldPose;
+      auto localpose = modelinst->_localPose;
+      auto worldpose = modelinst->_worldPose;
 
-      localpose.bindPose();
+      localpose->bindPose();
       _char_animinst->_current_frame = 0;
       _char_animinst->applyToPose(localpose);
-      localpose.blendPoses();
-      localpose.concatenate();
-      worldpose.apply(fmtx4(), localpose);
+      localpose->blendPoses();
+      localpose->concatenate();
+      worldpose->apply(fmtx4(), localpose);
 
       _timer.Start();
     }
@@ -123,17 +123,17 @@ skinning_test_ptr_t createTest0(GpuResources* gpurec) {
     float time  = impl->_timer.SecsSinceStart();
     float frame = (time * 30.0f * gpurec->_animspeed);
 
-    auto anim = impl->_char_animasset->GetAnim();
+    auto anim = impl->_char_animasset->_animation;
 
     impl->_char_animinst->_current_frame = fmod(frame, float(anim->_numframes));
     impl->_char_animinst->SetWeight(1);
 
     auto modelinst  = impl->_char_drawable->_modelinst;
-    auto& localpose = modelinst->_localPose;
-    localpose.bindPose();
+    auto localpose = modelinst->_localPose;
+    localpose->bindPose();
     impl->_char_animinst->applyToPose(localpose);
-    localpose.blendPoses();
-    localpose.concatenate();
+    localpose->blendPoses();
+    localpose->concatenate();
 
   };
 

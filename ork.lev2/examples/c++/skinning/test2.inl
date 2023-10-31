@@ -22,7 +22,7 @@ skinning_test_ptr_t createTest2(GpuResources* gpurec) {
       model_load_req->waitForCompletion();
 
       auto model    = _char_modelasset->getSharedModel();
-      auto skeldump = model->mSkeleton.dump(fvec3(1, 1, 1));
+      auto skeldump = model->_skeleton->dump(fvec3(1, 1, 1));
       printf("skeldump<%s>\n", skeldump.c_str());
 
       _char_animasset = asset::AssetManager<XgmAnimAsset>::load(anim_load_req);
@@ -43,30 +43,30 @@ skinning_test_ptr_t createTest2(GpuResources* gpurec) {
       modelinst->enableAllMeshes();
       modelinst->_drawSkeleton = true;
 
-      // model->mSkeleton.mTopNodesMatrix.compose(fvec3(),fquat(),0.0001);
+      // model->_skeleton->mTopNodesMatrix.compose(fvec3(),fquat(),0.0001);
 
-      auto anim      = _char_animasset->GetAnim();
+      auto anim      = _char_animasset->_animation;
       _char_animinst = std::make_shared<XgmAnimInst>();
       _char_animinst->bindAnim(anim);
       _char_animinst->SetWeight(1.0f);
-      _char_animinst->RefMask().EnableAll();
+      _char_animinst->_mask->EnableAll();
       _char_animinst->_use_temporal_lerp = true;
-      _char_animinst->bindToSkeleton(model->mSkeleton);
+      _char_animinst->bindToSkeleton(model->_skeleton);
 
-      auto& localpose = modelinst->_localPose;
-      auto& worldpose = modelinst->_worldPose;
+      auto localpose = modelinst->_localPose;
+      auto worldpose = modelinst->_worldPose;
 
-      localpose.bindPose();
+      localpose->bindPose();
       _char_animinst->_current_frame = 0;
       _char_animinst->applyToPose(localpose);
-      localpose.blendPoses();
-      localpose.concatenate();
-      worldpose.apply(fmtx4(), localpose);
+      localpose->blendPoses();
+      localpose->concatenate();
+      worldpose->apply(fmtx4(), localpose);
       // OrkAssert(false);
 
-      auto rarm  = model->mSkeleton.bindMatrixByName("mixamorig.RightArm");
-      auto rfarm = model->mSkeleton.bindMatrixByName("mixamorig.RightForeArm");
-      auto rhand = model->mSkeleton.bindMatrixByName("mixamorig.RightHand");
+      auto rarm  = model->_skeleton->bindMatrixByName("mixamorig.RightArm");
+      auto rfarm = model->_skeleton->bindMatrixByName("mixamorig.RightForeArm");
+      auto rhand = model->_skeleton->bindMatrixByName("mixamorig.RightHand");
 
       fvec3 rarm_pos, rfarm_pos;
       fquat rarm_quat, rfarm_quat;
@@ -144,19 +144,19 @@ skinning_test_ptr_t createTest2(GpuResources* gpurec) {
     float time  = impl->_timer.SecsSinceStart();
     float frame = (time * 30.0f * gpurec->_animspeed);
 
-    auto anim = impl->_char_animasset->GetAnim();
+    auto anim = impl->_char_animasset->_animation;
 
     impl->_char_animinst->_current_frame = fmod(frame, float(anim->_numframes));
     impl->_char_animinst->SetWeight(0.5f);
 
     auto modelinst  = impl->_char_drawable->_modelinst;
-    auto& localpose = modelinst->_localPose;
-    auto& worldpose = modelinst->_worldPose;
+    auto localpose = modelinst->_localPose;
+    auto worldpose = modelinst->_worldPose;
 
-    localpose.bindPose();
+    localpose->bindPose();
     impl->_char_animinst->applyToPose(localpose);
-    localpose.blendPoses();
-    localpose.concatenate();
+    localpose->blendPoses();
+    localpose->concatenate();
 
     auto model = impl->_char_modelasset->getSharedModel();
     auto& skel = model->skeleton();
@@ -166,19 +166,19 @@ skinning_test_ptr_t createTest2(GpuResources* gpurec) {
     int ji_rfarm     = skel.jointIndex("mixamorig.RightForeArm");
     int ji_rhand     = skel.jointIndex("mixamorig.RightHand");
 
-    const auto& rshoulder = localpose._concat_matrices[ji_rshoulder];
+    const auto& rshoulder = localpose->_concat_matrices[ji_rshoulder];
     auto rshoulder_i      = rshoulder.inverse();
 
-    auto rarm    = localpose._concat_matrices[ji_rarm];
+    auto rarm    = localpose->_concat_matrices[ji_rarm];
     auto rarm_i  = rarm.inverse();
-    auto rfarm   = localpose._concat_matrices[ji_rfarm];
+    auto rfarm   = localpose->_concat_matrices[ji_rfarm];
     auto rfarm_i = rfarm.inverse();
 
-    localpose._boneprops[ji_rarm] = 1;
+    localpose->_boneprops[ji_rarm] = 1;
 
     ///////////////////////
 
-    auto rhand         = localpose._concat_matrices[ji_rhand];
+    auto rhand         = localpose->_concat_matrices[ji_rhand];
     auto wrist_xnormal = rhand.xNormal();
     auto wrist_ynormal = rhand.yNormal();
     auto wrist_znormal = rhand.zNormal();
@@ -202,8 +202,8 @@ skinning_test_ptr_t createTest2(GpuResources* gpurec) {
 
     ///////////////////////
 
-    // localpose._concat_matrices[ji_rfarm] = (MS*MM)*rshoulder;
-    // localpose._concat_matrices[ji_rfarm] = rhand;
+    // localpose->_concat_matrices[ji_rfarm] = (MS*MM)*rshoulder;
+    // localpose->_concat_matrices[ji_rfarm] = rhand;
   };
 
   //////////////////////////////////////

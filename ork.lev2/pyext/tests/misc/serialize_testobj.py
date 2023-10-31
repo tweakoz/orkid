@@ -2,7 +2,7 @@
 
 ################################################################################
 
-import sys, math, random, numpy, ork.path, ork.deco
+import sys, math, random, numpy, obt.path, obt.deco
 from orkengine.core import *
 from orkengine.lev2 import *
 lev2appinit()
@@ -10,7 +10,7 @@ l2exdir = (lev2exdir()/"python").normalized.as_string
 sys.path.append(l2exdir) # add parent dir to path
 from common.primitives import createParticleData
 
-DECO = ork.deco.Deco()
+DECO = obt.deco.Deco()
 
 ################################################################################
 # create object graph

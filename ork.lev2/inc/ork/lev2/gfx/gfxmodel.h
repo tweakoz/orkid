@@ -273,10 +273,10 @@ struct XgmModel final {
   }
 
   const XgmSkeleton& skeleton() const {
-    return mSkeleton;
+    return *_skeleton;
   }
   XgmSkeleton& skeleton() {
-    return mSkeleton;
+    return *_skeleton;
   }
 
   xgmmesh_constptr_t mesh(int idx) const {
@@ -387,7 +387,7 @@ struct XgmModel final {
   orklut<PoolString, xgmmesh_ptr_t> mMeshes;
   orkvector<material_ptr_t> mvMaterials;
   int miBonesPerCluster;
-  XgmSkeleton mSkeleton;
+  xgmskeleton_ptr_t _skeleton;
   void* mpUserData;
   int miNumMaterials;
   PoolString msModelName;
@@ -451,8 +451,8 @@ struct XgmModelInst final {
   }
 
   const XgmModel* mXgmModel;
-  XgmLocalPose _localPose;
-  mutable XgmWorldPose _worldPose;
+  xgmlocalpose_ptr_t _localPose;
+  xgmworldpose_ptr_t _worldPose;
   XgmMaterialStateInst mMaterialStateInst;
   int miNumChannels;
   bool mbSkinned;

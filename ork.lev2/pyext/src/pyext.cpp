@@ -26,6 +26,7 @@ void pyinit_primitives(py::module& module_lev2);
 void pyinit_scenegraph(py::module& module_lev2);
 void pyinit_meshutil(py::module& module_lev2);
 void pyinit_gfx_xgmmodel(py::module& module_lev2);
+void pyinit_gfx_xgmanim(py::module& module_lev2);
 void pyinit_ui(py::module& module_lev2);
 void pyinit_gfx_pbr(py::module& module_lev2);
 void pyinit_midi(py::module& module_lev2);
@@ -147,6 +148,7 @@ PYBIND11_MODULE(_lev2, module_lev2) {
   pyinit_gfx_qtez(module_lev2);
   pyinit_gfx_particles(module_lev2);
   pyinit_gfx_xgmmodel(module_lev2);
+  pyinit_gfx_xgmanim(module_lev2);
   pyinit_gfx_pbr(module_lev2);
   pyinit_vr(module_lev2);
   //////////////////////////////////////////////////////////////////////////////

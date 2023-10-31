@@ -22,7 +22,7 @@ skinning_test_ptr_t createTest1B(GpuResources* gpurec) {
       model_load_req->waitForCompletion();
 
       _model    = _char_modelasset->getSharedModel();
-      auto skeldump = _model->mSkeleton.dump(fvec3(1, 1, 1));
+      auto skeldump = _model->_skeleton->dump(fvec3(1, 1, 1));
       printf("skeldump<%s>\n", skeldump.c_str());
 
       _char_animasset = asset::AssetManager<XgmAnimAsset>::load(anim_load_req);
@@ -43,25 +43,25 @@ skinning_test_ptr_t createTest1B(GpuResources* gpurec) {
       modelinst->enableAllMeshes();
       modelinst->_drawSkeleton = true;
 
-      auto anim      = _char_animasset->GetAnim();
+      auto anim      = _char_animasset->_animation;
       _char_animinst = std::make_shared<XgmAnimInst>();
       _char_animinst->bindAnim(anim);
       _char_animinst->SetWeight(1.0f);
-      _char_animinst->RefMask().EnableAll();
+      _char_animinst->_mask->EnableAll();
       _char_animinst->_use_temporal_lerp = true;
-      _char_animinst->bindToSkeleton(_model->mSkeleton);
+      _char_animinst->bindToSkeleton(_model->_skeleton);
 
-      auto& localpose = modelinst->_localPose;
-      auto& worldpose = modelinst->_worldPose;
+      auto localpose = modelinst->_localPose;
+      auto worldpose = modelinst->_worldPose;
 
-      localpose.bindPose();
+      localpose->bindPose();
       _char_animinst->_current_frame = 0;
       _char_animinst->applyToPose(localpose);
-      localpose.blendPoses();
-      localpose.concatenate();
-      worldpose.apply(fmtx4(), localpose);
+      localpose->blendPoses();
+      localpose->concatenate();
+      worldpose->apply(fmtx4(), localpose);
 
-      _skel_applicator = std::make_shared<XgmSkelApplicator>(_model->mSkeleton);
+      _skel_applicator = std::make_shared<XgmSkelApplicator>(_model->_skeleton);
       //_skel_applicator->bindToBone("Bone");
       _skel_applicator->bindToBone("Bone.001");
       _skel_applicator->bindToBone("Bone.002");
@@ -137,35 +137,35 @@ skinning_test_ptr_t createTest1B(GpuResources* gpurec) {
     ///////////////////////////////////////////////////////////
 
     auto modelinst  = impl->_char_drawable->_modelinst;
-    auto& localpose = modelinst->_localPose;
-    localpose.bindPose();
-    localpose.blendPoses();
-    localpose.concatenate();
+    auto localpose = modelinst->_localPose;
+    localpose->bindPose();
+    localpose->blendPoses();
+    localpose->concatenate();
 
     ///////////////////////////////////////////////////////////
     // compute bone lengths
     ///////////////////////////////////////////////////////////
 
-    const auto& skel = impl->_model->mSkeleton;
+    auto skel = impl->_model->_skeleton;
 
     int jntindices[5];
     int inv_jntindices[5];
 
-    jntindices[0] = skel.jointIndex("Bone");
-    jntindices[1] = skel.jointIndex("Bone.001");
-    jntindices[2] = skel.jointIndex("Bone.002");
-    jntindices[3] = skel.jointIndex("Bone.003");
-    jntindices[4] = skel.jointIndex("Bone.004");
+    jntindices[0] = skel->jointIndex("Bone");
+    jntindices[1] = skel->jointIndex("Bone.001");
+    jntindices[2] = skel->jointIndex("Bone.002");
+    jntindices[3] = skel->jointIndex("Bone.003");
+    jntindices[4] = skel->jointIndex("Bone.004");
 
-    inv_jntindices[skel.jointIndex("Bone")] = 0;
-    inv_jntindices[skel.jointIndex("Bone.001")] = 1;
-    inv_jntindices[skel.jointIndex("Bone.002")] = 2;
-    inv_jntindices[skel.jointIndex("Bone.003")] = 3;
-    inv_jntindices[skel.jointIndex("Bone.004")] = 4;
+    inv_jntindices[skel->jointIndex("Bone")] = 0;
+    inv_jntindices[skel->jointIndex("Bone.001")] = 1;
+    inv_jntindices[skel->jointIndex("Bone.002")] = 2;
+    inv_jntindices[skel->jointIndex("Bone.003")] = 3;
+    inv_jntindices[skel->jointIndex("Bone.004")] = 4;
 
     auto len = [&](int ia, int ib) -> float{ //
-        return (skel._bindMatrices[ia].translation() //
-              - skel._bindMatrices[ib].translation()).length();
+        return (skel->_bindMatrices[ia].translation() //
+              - skel->_bindMatrices[ib].translation()).length();
     };
 
     float lens[5];
@@ -185,11 +185,11 @@ skinning_test_ptr_t createTest1B(GpuResources* gpurec) {
     fvec3 pN[6];
 
 
-    pN[0] = localpose._concat_matrices[jntindices[0]].translation();
-    pN[1] = localpose._concat_matrices[jntindices[1]].translation();
-    pN[2] = localpose._concat_matrices[jntindices[2]].translation();
-    pN[3] = localpose._concat_matrices[jntindices[3]].translation();
-    pN[4] = localpose._concat_matrices[jntindices[4]].translation();
+    pN[0] = localpose->_concat_matrices[jntindices[0]].translation();
+    pN[1] = localpose->_concat_matrices[jntindices[1]].translation();
+    pN[2] = localpose->_concat_matrices[jntindices[2]].translation();
+    pN[3] = localpose->_concat_matrices[jntindices[3]].translation();
+    pN[4] = localpose->_concat_matrices[jntindices[4]].translation();
 
     auto target = fvec3(sinf(time),10,-cosf(time));
 
@@ -209,7 +209,7 @@ skinning_test_ptr_t createTest1B(GpuResources* gpurec) {
                pb, //
                fvec3(0,1,0)); //
 
-    localpose._concat_matrices[jntindices[4]] = mtx.inverse() * myz;
+    localpose->_concat_matrices[jntindices[4]] = mtx.inverse() * myz;
 
 
   };

@@ -378,6 +378,8 @@ using xgmmaterial_override_map_ptr_t = std::shared_ptr<XgmMaterialOverrideMap>;
 ///////////////////////////////////////////////////////////////////////////////
 
 struct XgmAnim;
+struct XgmPoser;
+struct XgmSkeletonBinding;
 struct XgmAnimMask;
 struct XgmSkeleton;
 struct XgmSkelNode;
@@ -391,11 +393,15 @@ struct XgmVect4AnimChannel;
 struct XgmVect3AnimChannel;
 struct XgmFloatAnimChannel;
 using xgmskeleton_ptr_t = std::shared_ptr<XgmSkeleton>;
+using xgmskeleton_constptr_t = std::shared_ptr<const XgmSkeleton>;
 using xgmskelnode_ptr_t = std::shared_ptr<XgmSkelNode>;
+using xgmposer_ptr_t = std::shared_ptr<XgmPoser>;
+using xgmanim_ptr_t = std::shared_ptr<XgmAnim>;
+using xgmanim_constptr_t = std::shared_ptr<const XgmAnim>;
 using xgmaniminst_ptr_t = std::shared_ptr<XgmAnimInst>;
 using xgmanimmask_ptr_t = std::shared_ptr<XgmAnimMask>;
-using xgmlocalpose_ptr = std::shared_ptr<XgmLocalPose>;
-using xgmworldpose_ptr = std::shared_ptr<XgmWorldPose>;
+using xgmlocalpose_ptr_t = std::shared_ptr<XgmLocalPose>;
+using xgmworldpose_ptr_t = std::shared_ptr<XgmWorldPose>;
 using xgmskelapplicator_ptr_t = std::shared_ptr<XgmSkelApplicator>;
 using animchannel_ptr_t      = std::shared_ptr<XgmAnimChannel>;
 using animfloatchannel_ptr_t = std::shared_ptr<XgmFloatAnimChannel>;

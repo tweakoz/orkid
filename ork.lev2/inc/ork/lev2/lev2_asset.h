@@ -114,12 +114,11 @@ struct XgmAnimAsset : public ork::asset::Asset {
   static const char* assetTypeNameStatic(void) {
     return "xganim";
   }
-  XgmAnim _animation;
 
 public: //
-  XgmAnim* GetAnim() {
-    return &_animation;
-  }
+
+  XgmAnimAsset();
+  xgmanim_ptr_t _animation;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

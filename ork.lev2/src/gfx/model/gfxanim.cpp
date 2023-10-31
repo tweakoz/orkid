@@ -49,9 +49,9 @@ void XgmAnimMask::EnableAll() {
 inline int BONE_TO_CHAR(int iboneindex) { return (iboneindex >> 3); }
 inline int BONE_TO_BIT(int iboneindex) { return  (iboneindex & 0x7); }
 
-void XgmAnimMask::Enable(const XgmSkeleton& Skel, const std::string& BoneName) {
+void XgmAnimMask::Enable(xgmskeleton_constptr_t Skel, const std::string& BoneName) {
 
-  int iboneindex = Skel.jointIndex(BoneName);
+  int iboneindex = Skel->jointIndex(BoneName);
 
   // this used to be assert, but designers may someday be setting bone names in tool. Be nicer to them.
   if (iboneindex==-1) {
@@ -83,9 +83,9 @@ void XgmAnimMask::DisableAll() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void XgmAnimMask::Disable(const XgmSkeleton& Skel, const std::string& BoneName) {
+void XgmAnimMask::Disable(xgmskeleton_constptr_t Skel, const std::string& BoneName) {
 
-  int iboneindex = Skel.jointIndex(BoneName);
+  int iboneindex = Skel->jointIndex(BoneName);
 
   // this used to be assert, but designers may someday be setting bone names in tool. Be nicer to them.
   if (iboneindex==-1) {
@@ -107,9 +107,9 @@ void XgmAnimMask::Disable(int iboneindex) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool XgmAnimMask::isEnabled(const XgmSkeleton& Skel, const std::string& BoneName) const {
+bool XgmAnimMask::isEnabled(xgmskeleton_constptr_t Skel, const std::string& BoneName) const {
 
-  int iboneindex = Skel.jointIndex(BoneName);
+  int iboneindex = Skel->jointIndex(BoneName);
 
   // this used to be assert, but designers may someday be setting bone names in tool. Be nicer to them.
   if (iboneindex==-1) {
@@ -273,6 +273,7 @@ void XgmMaterialStateInst::applyAnimInst(const XgmAnimInst& AnimInst) {
 
 XgmAnim::XgmAnim()
     : _numframes(0) {
+      
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -304,11 +305,13 @@ XgmAnimInst::XgmAnimInst()
     : _animation(nullptr)
     , _current_frame(0.0f)
     , mWeight(1.0f) {
+_mask = std::make_shared<XgmAnimMask>();
+_poser = std::make_shared<XgmPoser>();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void XgmAnimInst::bindAnim(const XgmAnim* anim) {
+void XgmAnimInst::bindAnim(xgmanim_constptr_t anim) {
   OrkAssert(anim);
   
   _animation  = anim;
@@ -344,5 +347,33 @@ void XgmPoser::setAnimBinding(int i, const XgmSkeletonBinding& inp) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+BoneTransformer::BoneTransformer( xgmskeleton_constptr_t skel)
+    : _skeleton(skel) {
+
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void BoneTransformer::bindToBone(std::string named){
+    int index = _skeleton->jointIndex(named);
+    _jointindices.push_back(index);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void BoneTransformer::compute(xgmlocalpose_ptr_t localpose, //
+                          const fmtx4& xf){
+
+    int count = _jointindices.size();
+    for( int i=0; i<count; i++ ){
+      int ji = _jointindices[i];
+      auto& J = localpose->_concat_matrices[ji];
+      J = xf*J;
+    }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 
 } // namespace ork::lev2

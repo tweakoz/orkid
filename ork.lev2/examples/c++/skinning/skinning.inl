@@ -20,6 +20,7 @@
 #include <ork/lev2/imgui/imgui_ged.inl>
 #include <ork/lev2/imgui/imgui_internal.h>
 #include <ork/lev2/gfx/camera/uicam.h>
+#include <ork/lev2/gfx/ikchain.h>
 ///////////////////////////////////////////////////////////////////////////////
 using namespace std::string_literals;
 using namespace ork;
@@ -124,8 +125,6 @@ struct GpuResources {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-#include "ikchain.inl"
-#include "transformer.inl"
 #include "test0.inl"
 #include "test1.inl"
 #include "test1a.inl"
@@ -172,9 +171,9 @@ inline GpuResources::GpuResources(
 
   _pbrcommon->_depthFogDistance = 4000.0f;
   _pbrcommon->_depthFogPower    = 5.0f;
-  _pbrcommon->_skyboxLevel      = 0.25;
-  _pbrcommon->_diffuseLevel     = 0.2;
-  _pbrcommon->_specularLevel    = 3.2;
+  _pbrcommon->_skyboxLevel      = 1;
+  _pbrcommon->_diffuseLevel     = 1;
+  _pbrcommon->_specularLevel    = 1;
 
   auto outpnode = nodetek->tryOutputNodeAs<ScreenOutputCompositingNode>();
 

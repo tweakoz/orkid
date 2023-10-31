@@ -48,12 +48,12 @@ TEST(gfxanim1) {
     printf("fxi<%p>\n", (void*)fxi);
     CHECK(fxi != nullptr);
 
-    auto anim = new XgmAnim;
+    auto anim = std::make_shared<XgmAnim>();
     // bool loadOK = XgmAnim::LoadUnManaged(anim, "data://test/bonetest_anim");
     // bool loadOK = XgmAnim::LoadUnManaged(anim, "data://test/rigtest_anim");
-    bool loadOK = XgmAnim::LoadUnManaged(anim, "data://tests/hfstest/hfs_rigtest_anim.fbx");
+    bool loadOK = XgmAnim::LoadUnManaged(anim.get(), "data://tests/hfstest/hfs_rigtest_anim.fbx");
     OrkAssert(loadOK);
-    auto animinst  = new XgmAnimInst;
+    auto animinst  = std::make_shared<XgmAnimInst>();
     int num_frames = anim->_numframes;
 
     printf("num_frames<%d>\n", num_frames);
@@ -69,20 +69,20 @@ TEST(gfxanim1) {
     CHECK(modl_asset != nullptr);
 
     auto model = modl_asset->GetModel();
-    auto& skel = model->skeleton();
+    auto skel = model->_skeleton;
     printf("model<%p> isskinned<%d>\n", (void*)model, int(model->isSkinned()));
 
-    auto modelinst = new XgmModelInst(model);
-    printf("modelinst<%p>\n", (void*)modelinst);
+    auto modelinst = std::make_shared<XgmModelInst>(model);
+    printf("modelinst<%p>\n", (void*)modelinst.get());
 
     modelinst->setBlenderZup(true);
     modelinst->enableSkinning();
     modelinst->enableAllMeshes();
 
     animinst->bindAnim(anim);
-    animinst->RefMask().EnableAll();
+    animinst->_mask->EnableAll();
 
-    deco::prints(skel.dump(cyan), true);
+    deco::prints(skel->dump(cyan), true);
 
     fmtx4 A, B, C;
     A.fromNormalVectors(fvec3(0, 0, -1), fvec3(-1, 0, 0), fvec3(0, 1, 0));
@@ -99,21 +99,21 @@ TEST(gfxanim1) {
     deco::printf(cyan, "//////////////////////////////////////////////\n");
 
     deco::printe(blugrn, "Skel-BindPose (Bi)", true);
-    deco::prints(skel.dumpInvBind(blugrn), true);
+    deco::prints(skel->dumpInvBind(blugrn), true);
     deco::printe(aqua, "Skel-BindPose (Bc)", true);
-    deco::prints(skel.dumpBind(aqua), true);
+    deco::prints(skel->dumpBind(aqua), true);
 
-    auto& localpose = modelinst->_localPose;
-    localpose.bindPose();
+    auto localpose = modelinst->_localPose;
+    localpose->bindPose();
     deco::printe(white, "Skel-LocalPose-Bind (J)", true);
-    deco::prints(localpose.dumpc(white), true);
+    deco::prints(localpose->dumpc(white), true);
 
-    localpose.concatenate();
+    localpose->concatenate();
     deco::printe(orange, "Skel-LocalPose-Cat (K)", true);
-    deco::prints(localpose.dumpc(orange), true);
+    deco::prints(localpose->dumpc(orange), true);
 
     deco::printf(somc, "Skel-LocalPose-Cat (Bi)\n");
-    deco::prints(localpose.invdumpc(somc), true);
+    deco::prints(localpose->invdumpc(somc), true);
 
     animinst->bindToSkeleton(skel);
 
@@ -132,24 +132,24 @@ TEST(gfxanim1) {
     deco::printf(cyan, "//////////////////////////////////////////////\n");
 
     while (true) {
-      deco::prints(skel.dumpInvBind(blugrn), true);
+      deco::prints(skel->dumpInvBind(blugrn), true);
 
       iframe = (iframe + 1) % num_frames;
 
-      localpose.bindPose();
+      localpose->bindPose();
       animinst->_current_frame = iframe;
       animinst->SetWeight(1);
       animinst->applyToPose(localpose);
-      localpose.blendPoses();
+      localpose->blendPoses();
       deco::printf(white, "AnimPose (J) fr<%d>\n", iframe);
-      deco::prints(localpose.dumpc(white), true);
+      deco::prints(localpose->dumpc(white), true);
 
-      localpose.concatenate();
+      localpose->concatenate();
       deco::printf(orange, "AnimPose (K) fr<%d>\n", iframe);
-      deco::prints(localpose.dumpc(orange), true);
+      deco::prints(localpose->dumpc(orange), true);
 
       deco::printf(somc, "AnimPose-LocalPose-Cat (Bi)\n");
-      deco::prints(localpose.invdumpc(somc), true);
+      deco::prints(localpose->invdumpc(somc), true);
 
       worldpose.apply(ork::fmtx4(), localpose);
       deco::printf(magenta, "AnimPose-Final (V2O) fr<%d>\n", iframe);
@@ -157,8 +157,6 @@ TEST(gfxanim1) {
       usleep(1 << 20);
     }
 
-    delete animinst;
-    delete modelinst;
   });
   opq::mainSerialQueue()->drain();
 }
