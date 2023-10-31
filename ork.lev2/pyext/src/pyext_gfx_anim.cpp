@@ -73,11 +73,14 @@ void pyinit_gfx_xgmanim(py::module& module_lev2) {
                                  [](xgmaniminst_ptr_t self) -> size_t { //
                                    return self->numFrames();
                                  })
-                             .def_property_readonly(
+                             .def_property(
                                  "weight",                             //
                                  [](xgmaniminst_ptr_t self) -> float { //
                                    return self->GetWeight();
-                                 })
+                                 },
+                                  [](xgmaniminst_ptr_t self, float fv) { //
+                                    self->SetWeight(fv);
+                                  })
                              .def_property(
                                  "use_temporal_lerp",                 //
                                  [](xgmaniminst_ptr_t self) -> bool { //
