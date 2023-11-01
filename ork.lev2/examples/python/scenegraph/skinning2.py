@@ -16,6 +16,7 @@ sys.path.append(l2exdir) # add parent dir to path
 from common.cameras import *
 from common.primitives import createParticleData
 from common.scenegraph import createSceneGraph
+this_dir = path.directoryOfInvokingModule()
 
 ################################################################################
 parser = argparse.ArgumentParser(description='scenegraph skinning example')
@@ -72,6 +73,8 @@ class SkinningApp(object):
         copy.baseColor = vec4(1,.7,.8,1)*1.4
         copy.roughnessFactor = 0.8
         copy.metallicFactor = 0.2
+        copy.shaderpath = str(this_dir/"skin_override_test.glfx")
+        copy.gpuInit(ctx)
         submesh.material = copy
 
     ###################################
