@@ -114,6 +114,7 @@ struct CtxGLFW : public CTXBASE {
   void_lambda_t _onRunLoopIteration;
   appinitdata_ptr_t _appinitdata;
   std::function<void(Context*)> _onGpuInit;
+  std::function<void(Context*)> _onGpuUpdate;
   std::function<void(Context*)> _onGpuExit;
   GLFWmonitor* _glfwMonitor = nullptr;
   eventsink_glfw_ptr_t _eventSINK;

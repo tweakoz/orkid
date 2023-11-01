@@ -92,6 +92,18 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
               });
             }
             ////////////////////////////////////////////////////////////////////
+            if (py::hasattr(appinstance, "onGpuUpdate")) {
+              auto gpuupdatefn //
+                  = py::cast<py::function>(appinstance.attr("onGpuUpdate"));
+              rval->_vars->makeValueForKey<py::function>("gpuupdatefn") = gpuupdatefn;
+              rval->onGpuUpdate([=](Context* ctx) { //
+                ctx->makeCurrentContext();
+                py::gil_scoped_acquire acquire;
+                auto pyfn = rval->_vars->typedValueForKey<py::function>("gpuupdatefn");
+                pyfn.value()(ctx_t(ctx));
+              });
+            }
+            ////////////////////////////////////////////////////////////////////
             if (py::hasattr(appinstance, "onDraw")) {
               auto drawfn //
                   = py::cast<py::function>(appinstance.attr("onDraw"));

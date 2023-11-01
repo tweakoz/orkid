@@ -14,10 +14,14 @@ DECO = obt.deco.Deco()
 
 print(animMaxBones)
 
-anim = XgmAnim("data://tests/chartest/char_idle")
-anim_inst = XgmAnimInst(anim)
-
 model = XgmModel("data://tests/chartest/char_mesh")
+anim = XgmAnim("data://tests/chartest/char_idle")
+
+modelinst = XgmModelInst(model)
+anim_inst = XgmAnimInst(anim)
+anim_inst.weight = 1.0
+anim_inst.mask.enableAll()
+anim_inst.use_temporal_lerp = True
 
 anim_inst.bindToSkeleton(model.skeleton)
 
@@ -58,7 +62,7 @@ for i in range(0,animMaxBones):
 
 bxf = BoneTransformer(model.skeleton)
 print(bxf)
-lpose = XgmLocalPose(model.skeleton)
+lpose = modelinst.localpose
 lpose.bindPose()
 
 ikc = IkChain(model.skeleton)
@@ -67,6 +71,5 @@ ikc.bindToBone("mixamorig.RightForeArm")
 ikc.prepare()
 ikc.compute(lpose,vec3(0,0,0))
 
-
-wpose = XgmWorldPose(model.skeleton)
+wpose = modelinst.worldpose
 wpose.fromLocalPose(lpose,mtx4())

@@ -518,6 +518,10 @@ int CtxGLFW::runloop() {
     // redraw ?
     //////////////////////////////
 
+    if (_onGpuUpdate) {
+      _onGpuUpdate(_target);
+    }
+    
     SlotRepaint();
 
     //////////////////////////////

@@ -132,7 +132,6 @@ void UniformSetNode::_generate2(shaderbuilder::BackEnd& backend) const {
   assert(_blocktype == "uniform_set");
 
   UniformSet* uset = new UniformSet;
-  auto pret        = new UniformSet;
   uset->_name      = _name;
 
   for (auto item : _uniformdecls) {
@@ -162,7 +161,6 @@ void UniformBlockNode::_generate2(shaderbuilder::BackEnd& backend) const {
   assert(_blocktype == "uniform_block");
 
   UniformBlock* ublk = new UniformBlock;
-  auto pret          = new UniformSet;
   ublk->_name        = _name;
 
   for (auto item : _uniformdecls) {

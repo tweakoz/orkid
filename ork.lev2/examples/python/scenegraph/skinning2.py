@@ -18,13 +18,8 @@ from common.primitives import createParticleData
 from common.scenegraph import createSceneGraph
 
 ################################################################################
-parser = argparse.ArgumentParser(description='scenegraph particles example')
-parser.add_argument("-i", "--inputorjfile",type=str, default="", help='load particle orj file')
+parser = argparse.ArgumentParser(description='scenegraph skinning example')
 args = vars(parser.parse_args())
-inputorjfile = args["inputorjfile"]
-orjfile = path.Path(inputorjfile)
-print(orjfile,inputorjfile)
-use_orjfile = len(inputorjfile) and orjfile.exists()
 ################################################################################
 
 class SkinningApp(object):
@@ -34,80 +29,55 @@ class SkinningApp(object):
 
     self.materials = set()
 
-    self.ezapp = OrkEzApp.create(self, left=100, top=100, width=900, height=900)
+    self.ezapp = OrkEzApp.create(self, left=100, top=100, width=960, height=480)
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
-    self.ezapp.topWidget.enableUiDraw()
-    lg_group = self.ezapp.topLayoutGroup
-    self.griditems = lg_group.makeGrid( width = 2,
-                                        height = 1,
-                                        margin = 1,
-                                        uiclass = ui.SceneGraphViewport,
-                                        args = ["SGVP",vec4(1,0,1,1)] )
-
-    ################################################
-    # set vertical proportional layout guide 
-    ################################################
-
-    vguides = lg_group.vertical_guides
-    vguides[1].proportion = 0.35
-    vguides[2].proportion = 0.35
-
-    ################################################
-    # replace left viewport with particle editor
-    ################################################
-
-    self.objmodel = ui.ObjModel()
-    self.ged_item = lg_group.makeChild( uiclass = ui.GedSurface,
-                                        args = ["GEDSURF",self.objmodel] )
-    lg_group.replaceChild(self.griditems[0].layout, self.ged_item)
-    self.ged_surf = self.ged_item.widget
-
-    ################################################
-    # camera / event handler
-    ################################################
-
     setupUiCamera( app=self, eye = vec3(0,0,30), constrainZ=True, up=vec3(0,1,0))
-    self.griditems[1].widget.evhandler = lambda x: self.onSceneGraphUiEvent(x)
-
-  ################################################
-  # scenegraph viewport UI event handler
-  ################################################
-
-  def onSceneGraphUiEvent(self, uievent):
-    handled = self.uicam.uiEventHandler(uievent)
-    if handled:
-      self.uicam.updateMatrices()
-      self.camera.copyFrom( self.uicam.cameradata )
-      #print(self.uicam.cameradata.eye )
-    return ui.HandlerResult()
 
   ##############################################
 
   def onGpuInit(self,ctx):
 
     self.frame_index = 0
+    random.seed(12)
 
     ###################################
     # create scenegraph
     ###################################
 
     sg_params = VarMap()
-    sg_params.SkyboxIntensity = 3.0
+    sg_params.SkyboxIntensity = 1.0
     sg_params.DiffuseIntensity = 1.0
     sg_params.SpecularIntensity = 1.0
-    sg_params.AmbientLevel = vec3(.125)
+    sg_params.AmbientLevel = vec3(1)
+    sg_params.SkyboxTexPathStr = "src://envmaps/blender_forest.dds"
     sg_params.preset = "DeferredPBR"
 
-    self.scenegraph = scenegraph.Scene(sg_params)
+    self.scenegraph = self.ezapp.createScene(sg_params)
     self.layer = self.scenegraph.createLayer("layer")
-    self.griditems[1].widget.scenegraph = self.scenegraph
-    self.griditems[1].widget.forkDB()
+
+    ###################################
+    # create model data
+    ###################################
+
+    tex_white = Texture.load("src://effect_textures/white.dds")
+    tex_normal = Texture.load("src://effect_textures/default_normal.dds")
+
+    self.model = XgmModel("data://tests/chartest/char_mesh")
+    for mesh in self.model.meshes:
+      for submesh in mesh.submeshes:
+        copy = submesh.material.clone()
+        copy.texColor = tex_white
+        copy.texNormal = tex_normal
+        copy.texMtlRuf = tex_white
+        copy.baseColor = vec4(1,.7,.8,1)*1.4
+        copy.roughnessFactor = 0.8
+        copy.metallicFactor = 0.2
+        submesh.material = copy
 
     ###################################
     # create animation data
     ###################################
 
-    self.model = XgmModel("data://tests/chartest/char_mesh")
     self.anim = XgmAnim("data://tests/chartest/char_testanim1")
 
     self.anim_inst = XgmAnimInst(self.anim)
@@ -126,7 +96,6 @@ class SkinningApp(object):
     self.localpose = self.modelinst.localpose
     self.worldpose = self.modelinst.worldpose
 
-
   ################################################
 
   def onGpuUpdate(self,context):
@@ -137,17 +106,19 @@ class SkinningApp(object):
     self.localpose.blendPoses()
     self.localpose.concatenate()
     self.worldpose.fromLocalPose(self.localpose,mtx4())
-    self.frame_index += 0.1
+    self.frame_index += 0.3
+
   ################################################
 
   def onUpdate(self,updinfo):
     self.scenegraph.updateScene(self.cameralut) # update and enqueue all scenenodes
-    self.griditems[1].widget.setDirty()
 
   ##############################################
 
   def onUiEvent(self,uievent):
-    return ui.HandlerResult()
+    handled = self.uicam.uiEventHandler(uievent)
+    if handled:
+      self.camera.copyFrom( self.uicam.cameradata )
 
 ###############################################################################
 

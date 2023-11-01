@@ -53,6 +53,11 @@ void pyinit_gfx_xgmanim(py::module& module_lev2) {
                                  [](xgmaniminst_ptr_t self, xgmskeleton_ptr_t skel) { //
                                    self->bindToSkeleton(skel);
                                  })
+                             .def(
+                                 "applyToPose",                                           //
+                                 [](xgmaniminst_ptr_t self, xgmlocalpose_ptr_t localpose) { //
+                                   self->applyToPose(localpose);
+                                 })
                              .def_property_readonly(
                                  "mask",                                           //
                                  [](xgmaniminst_ptr_t self) -> xgmanimmask_ptr_t { //
@@ -73,11 +78,14 @@ void pyinit_gfx_xgmanim(py::module& module_lev2) {
                                  [](xgmaniminst_ptr_t self) -> size_t { //
                                    return self->numFrames();
                                  })
-                             .def_property_readonly(
+                             .def_property(
                                  "weight",                             //
                                  [](xgmaniminst_ptr_t self) -> float { //
                                    return self->GetWeight();
-                                 })
+                                 },
+                                  [](xgmaniminst_ptr_t self, float fv) { //
+                                    self->SetWeight(fv);
+                                  })
                              .def_property(
                                  "use_temporal_lerp",                 //
                                  [](xgmaniminst_ptr_t self) -> bool { //
@@ -85,6 +93,14 @@ void pyinit_gfx_xgmanim(py::module& module_lev2) {
                                  },
                                  [](xgmaniminst_ptr_t self, bool bv) { //
                                    self->_use_temporal_lerp = bv;
+                                 })
+                             .def_property(
+                                 "currentFrame",                 //
+                                 [](xgmaniminst_ptr_t self) -> float { //
+                                   return self->_current_frame;
+                                 },
+                                 [](xgmaniminst_ptr_t self, float bv) { //
+                                   self->_current_frame = fmod(bv,self->numFrames());
                                  });
 
   type_codec->registerStdCodec<xgmaniminst_ptr_t>(animinst_type_t);
@@ -190,7 +206,7 @@ void pyinit_gfx_xgmanim(py::module& module_lev2) {
       py::class_<XgmWorldPose, xgmworldpose_ptr_t>(module_lev2, "XgmWorldPose")
           .def(py::init([](xgmskeleton_ptr_t skel) -> xgmworldpose_ptr_t { return std::make_shared<XgmWorldPose>(skel); }))
           .def("fromLocalPose", [](xgmworldpose_ptr_t self, xgmlocalpose_ptr_t lpose, fmtx4& world_matrix) {
-            return self->apply(world_matrix, lpose);
+            self->apply(world_matrix, lpose);
           });
   type_codec->registerStdCodec<xgmworldpose_ptr_t>(wpose_type_t);
   /////////////////////////////////////////////////////////////////////////////////

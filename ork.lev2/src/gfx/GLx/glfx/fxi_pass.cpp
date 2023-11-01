@@ -207,6 +207,7 @@ void Pass::postProc(rootcontainer_ptr_t container) {
       uniform_ptr_t puni = it->second;
 
       puni->_type = unityp;
+      OrkAssert(unityp != GL_ZERO);
 
       UniformInstance* pinst = new UniformInstance;
       pinst->mpUniform       = puni;
