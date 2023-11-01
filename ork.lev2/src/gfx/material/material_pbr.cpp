@@ -590,30 +590,6 @@ fxpipelinecache_constptr_t PBRMaterial::_doFxPipelineCache(fxpipelinepermutation
   return _getpbrcache()->getCache(this);
 }
 
-//////////////////////////////////////////////////////
-
-PBRMaterial::PBRMaterial(Context* targ)
-    : PBRMaterial() {
-  gpuInit(targ);
-}
-
-PBRMaterial::PBRMaterial()
-    : _baseColor(1, 1, 1) {
-  _rasterstate.SetShadeModel(ESHADEMODEL_SMOOTH);
-  _rasterstate.SetAlphaTest(EALPHATEST_OFF);
-  _rasterstate.SetBlending(Blending::OFF);
-  _rasterstate.SetDepthTest(EDepthTest::LEQUALS);
-  _rasterstate.SetZWriteMask(true);
-  _rasterstate.SetCullTest(ECullTest::PASS_FRONT);
-  miNumPasses = 1;
-  _shaderpath = "orkshader://pbr";
-}
-
-////////////////////////////////////////////
-
-PBRMaterial::~PBRMaterial() {
-}
-
 /////////////////////////////////////////////////////////////////////////
 
 PbrMatrixBlockApplicator* PbrMatrixBlockApplicator::getApplicator() {
@@ -1078,12 +1054,63 @@ void PBRMaterial::begin(const RenderContextFrameData& RCFD) {
 void PBRMaterial::end(const RenderContextFrameData& RCFD) {
 }
 
+PBRMaterial::PBRMaterial(Context* targ)
+    : PBRMaterial() {
+  gpuInit(targ);
+}
+
+PBRMaterial::PBRMaterial()
+    : _baseColor(1, 1, 1) {
+  _rasterstate.SetShadeModel(ESHADEMODEL_SMOOTH);
+  _rasterstate.SetAlphaTest(EALPHATEST_OFF);
+  _rasterstate.SetBlending(Blending::OFF);
+  _rasterstate.SetDepthTest(EDepthTest::LEQUALS);
+  _rasterstate.SetZWriteMask(true);
+  _rasterstate.SetCullTest(ECullTest::PASS_FRONT);
+  miNumPasses = 1;
+  _shaderpath = "orkshader://pbr";
+}
+
+////////////////////////////////////////////
+
+PBRMaterial::~PBRMaterial() {
+}
+
 ////////////////////////////////////////////
 
 pbrmaterial_ptr_t PBRMaterial::clone() const {
   auto copy = std::make_shared<PBRMaterial>();
-  *copy = *this;
-  copy->_initialTarget = nullptr;
+  copy->_asset_shader = _asset_shader;
+  copy->_asset_texcolor = _asset_texcolor;
+  copy->_asset_texnormal = _asset_texnormal;
+  copy->_asset_mtlruf = _asset_mtlruf;
+  copy->_asset_emissive = _asset_emissive;
+
+  copy->_texColor = _texColor;
+  copy->_texNormal = _texNormal;
+  copy->_texMtlRuf = _texMtlRuf;
+  copy->_texEmissive = _texEmissive;
+  copy->_textureBaseName = _textureBaseName;
+
+  copy->_colorMapName = _colorMapName;
+  copy->_normalMapName = _normalMapName;
+  copy->_mtlRufMapName = _mtlRufMapName;
+  copy->_amboccMapName = _amboccMapName;
+  copy->_emissiveMapName = _emissiveMapName;
+  copy->_shaderpath = _shaderpath;
+
+  copy->_metallicFactor = _metallicFactor;
+  copy->_roughnessFactor = _roughnessFactor;
+  copy->_baseColor = _baseColor;
+  copy->_textureBaseName = _textureBaseName;
+  
+  copy->_variant = _variant;
+  copy->mMaterialName = mMaterialName;
+  copy->_varmap = _varmap;
+
+  if(_initialTarget){
+    copy->gpuInit(_initialTarget);
+  }
   return copy;
 }
 
