@@ -8,6 +8,7 @@ import "skintools.i";
 ///////////////////////////////////////////////////////////////
 uniform_set ub_vtx {
   mat4 m;
+  mat4 v;
   mat4 mv;
   mat4 vp;
   mat4 v_l;
@@ -33,9 +34,11 @@ uniform_set ub_frg {
   sampler2D NormalMap;
   sampler2D MtlRufMap;
   vec4 ModColor;
+  mat4 v;
   vec2 InvViewportSize; // inverse target size
   float MetallicFactor;
   float RoughnessFactor;
+  vec3 EyePostion;
 }
 
 uniform_set ub_frg_fwd {

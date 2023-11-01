@@ -353,6 +353,7 @@ void pyinit_math_la_t(py::module& module_core, //
           .def("decompose", &mat4_t::decompose)
           .def("toRotMatrix3", &mat4_t::rotMatrix33)
           .def("toGlm", &mat4_t::asGlmMat4)
+          .def_property_readonly("translation", &mat4_t::translation)
           .def(
               "getColumn",
               [](mat4_t mtx, int icolumn) -> vec4_t { //

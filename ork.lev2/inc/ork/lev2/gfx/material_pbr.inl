@@ -108,10 +108,11 @@ public:
   FxShader* _shader                      = nullptr;
   Context* _initialTarget                = nullptr;
   fxparam_constptr_t _paramM             = nullptr;
+  fxparam_constptr_t _paramV             = nullptr;
   fxparam_constptr_t _paramVP            = nullptr;
   fxparam_constptr_t _paramIVP           = nullptr;
-  fxparam_constptr_t _paramVL           = nullptr;
-  fxparam_constptr_t _paramVR           = nullptr;
+  fxparam_constptr_t _paramVL            = nullptr;
+  fxparam_constptr_t _paramVR            = nullptr;
   fxparam_constptr_t _paramVPL           = nullptr;
   fxparam_constptr_t _paramVPR           = nullptr;
   fxparam_constptr_t _paramIVPL          = nullptr;

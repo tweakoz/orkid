@@ -310,6 +310,8 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu,con
                 const auto& CPD  = RCFD->topCPD();
                 auto monocams    = CPD._cameraMatrices;
                 auto worldmatrix = RCID.worldMatrix();
+                auto eye_pos = monocams->_vmatrix.inverse().translation();
+                FXI->BindParamVect3(mtl->_paramEyePostion, eye_pos);
                 FXI->BindParamMatrix(_this->_paramM, worldmatrix);
                 FXI->BindParamMatrix(_this->_paramMVP, monocams->MVPMONO(worldmatrix));
               });
@@ -796,6 +798,7 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
   // parameters
 
   _paramM                 = fxi->parameter(_shader, "m");
+  _paramV                 = fxi->parameter(_shader, "v");
   _paramVP                = fxi->parameter(_shader, "vp");
   _paramVL               = fxi->parameter(_shader, "v_l");
   _paramVR               = fxi->parameter(_shader, "v_r");
@@ -950,6 +953,7 @@ void PBRMaterial::UpdateMVPMatrix(Context* context) {
     auto mcams        = CPD._cameraMatrices;
     const auto& world = mtxi->RefMMatrix();
     auto MVP          = fmtx4::multiply_ltor(world, mcams->_vmatrix, mcams->_pmatrix);
+    fxi->BindParamMatrix(_paramV, mcams->_vmatrix);
     fxi->BindParamMatrix(_paramMVP, MVP);
   }
 }
@@ -1103,7 +1107,7 @@ pbrmaterial_ptr_t PBRMaterial::clone() const {
   copy->_varmap = _varmap;
 
   if(_initialTarget){
-    copy->gpuInit(_initialTarget);
+    //copy->gpuInit(_initialTarget);
   }
   return copy;
 }
