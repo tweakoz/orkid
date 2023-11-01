@@ -174,11 +174,18 @@ class SkinningApp(object):
 
     hmtx = self.localpose.concatmatrix(self.hjoint)
     famtx = self.localpose.concatmatrix(self.fajoint)
+    
+    nX = hmtx.getColumn(0).xyz().normalized()
+    nY = hmtx.getColumn(1).xyz().normalized()
+    nZ = hmtx.getColumn(2).xyz().normalized()
 
     old_hand_trans = hmtx.translation
     new_hand_trans = vec3(0,forearm_len,0).transform(famtx)
     offset = new_hand_trans-old_hand_trans
 
+    #xf_offset.setColumn(0,vec4(nX,0))
+    #xf_offset.setColumn(1,vec4(nY,0))
+    #xf_offset.setColumn(2,vec4(nZ,0))
     xf_offset.setColumn(3,vec4(offset))
     self.bxf.compute(self.localpose,xf_offset)
 
