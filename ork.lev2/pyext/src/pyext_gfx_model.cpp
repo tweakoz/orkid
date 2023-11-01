@@ -154,6 +154,14 @@ void pyinit_gfx_xgmmodel(py::module& module_lev2) {
       .def(py::init([](xgmmodel_ptr_t model) -> xgmmodelinst_ptr_t {
         return std::make_shared<XgmModelInst>(model.get());
       }))
+      .def("enableSkinning", //
+          [](xgmmodelinst_ptr_t minst) { //
+            minst->enableSkinning();
+          })
+      .def("enableAllMeshes", //
+          [](xgmmodelinst_ptr_t minst) { //
+            minst->enableAllMeshes();
+          })
         .def_property_readonly(
           "submeshinsts", //
           [](xgmmodelinst_ptr_t minst) -> py::list { //

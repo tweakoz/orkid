@@ -183,7 +183,6 @@ skinning_test_ptr_t createTest2B(GpuResources* gpurec) {
     auto model = impl->_char_modelasset->getSharedModel();
     auto modelinst  = impl->_char_drawable->_modelinst;
     auto localpose = modelinst->_localPose;
-    auto worldpose = modelinst->_worldPose;
 
     localpose->bindPose();
     impl->_char_animinst->applyToPose(localpose);
