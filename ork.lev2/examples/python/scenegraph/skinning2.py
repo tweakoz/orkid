@@ -45,10 +45,11 @@ class SkinningApp(object):
     ###################################
 
     sg_params = VarMap()
-    sg_params.SkyboxIntensity = 3.0
+    sg_params.SkyboxIntensity = 1.0
     sg_params.DiffuseIntensity = 1.0
     sg_params.SpecularIntensity = 1.0
-    sg_params.AmbientLevel = vec3(.125)
+    sg_params.AmbientLevel = vec3(1)
+    sg_params.SkyboxTexPathStr = "src://envmaps/blender_forest.dds"
     sg_params.preset = "DeferredPBR"
 
     self.scenegraph = self.ezapp.createScene(sg_params)
@@ -68,9 +69,9 @@ class SkinningApp(object):
         copy.texColor = tex_white
         copy.texNormal = tex_normal
         copy.texMtlRuf = tex_white
-        copy.baseColor = vec4(1,.9,.7,1)
-        copy.roughnessFactor = 1.0
-        copy.metallicFactor = 0.0
+        copy.baseColor = vec4(1,.7,.8,1)*1.4
+        copy.roughnessFactor = 0.8
+        copy.metallicFactor = 0.2
         submesh.material = copy
 
     ###################################
@@ -105,7 +106,7 @@ class SkinningApp(object):
     self.localpose.blendPoses()
     self.localpose.concatenate()
     self.worldpose.fromLocalPose(self.localpose,mtx4())
-    self.frame_index += 0.1
+    self.frame_index += 0.3
 
   ################################################
 
