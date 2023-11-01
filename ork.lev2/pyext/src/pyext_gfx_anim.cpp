@@ -179,6 +179,11 @@ void pyinit_gfx_xgmanim(py::module& module_lev2) {
                                    return self->GetJointName(index);
                                  })
                              .def(
+                                 "jointIndex",                                           //
+                                 [](xgmskeleton_ptr_t self, std::string named) -> int { //
+                                   return self->jointIndex(named);
+                                 })
+                             .def(
                                  "jointMatrix",                                   //
                                  [](xgmskeleton_ptr_t self, int index) -> fmtx4 { //
                                    return self->RefNodeMatrix(index);
@@ -197,6 +202,7 @@ void pyinit_gfx_xgmanim(py::module& module_lev2) {
           .def("bindPose", [](xgmlocalpose_ptr_t self) { return self->bindPose(); })
           .def("blendPoses", [](xgmlocalpose_ptr_t self) { return self->blendPoses(); })
           .def("concatenate", [](xgmlocalpose_ptr_t self) { return self->concatenate(); })
+          .def("concatmatrix", [](xgmlocalpose_ptr_t self, int index ) -> fmtx4 { return self->_concat_matrices[index]; })
           .def_property_readonly("numJoints", [](xgmlocalpose_ptr_t self) -> int { return self->NumJoints(); })
           .def_property_readonly(
               "objSpaceBoundingSphere", [](xgmlocalpose_ptr_t self) -> fvec4 { return self->mObjSpaceBoundingSphere; });
@@ -217,6 +223,11 @@ void pyinit_gfx_xgmanim(py::module& module_lev2) {
               "bindToBone",                                        //
               [](bone_transformer_ptr_t self, std::string named) { //
                 return self->bindToBone(named);
+              })
+          .def(
+              "compute",                                        //
+              [](bone_transformer_ptr_t self, xgmlocalpose_ptr_t localpose, fmtx4 matrix) { //
+                return self->compute(localpose,matrix);
               });
   type_codec->registerStdCodec<bone_transformer_ptr_t>(bxf_type_t);
   /////////////////////////////////////////////////////////////////////////////////
@@ -240,6 +251,38 @@ void pyinit_gfx_xgmanim(py::module& module_lev2) {
          xgmlocalpose_ptr_t localpose, //
          const fvec3& target) {        //
         self->compute(localpose, target);
+      })
+  .def_property(
+      "C1",                 //
+      [](ikchain_ptr_t self) -> float { //
+        return self->_C1;
+      },
+      [](ikchain_ptr_t self, float val) { //
+        self->_C1 = val;
+      })
+  .def_property(
+      "C2",                 //
+      [](ikchain_ptr_t self) -> float { //
+        return self->_C2;
+      },
+      [](ikchain_ptr_t self, float val) { //
+        self->_C2 = val;
+      })
+  .def_property(
+      "C3",                 //
+      [](ikchain_ptr_t self) -> float { //
+        return self->_C3;
+      },
+      [](ikchain_ptr_t self, float val) { //
+        self->_C3 = val;
+      })
+  .def_property(
+      "C4",                 //
+      [](ikchain_ptr_t self) -> float { //
+        return self->_C4;
+      },
+      [](ikchain_ptr_t self, float val) { //
+        self->_C4 = val;
       });
   type_codec->registerStdCodec<ikchain_ptr_t>(ikc_type_t);
 

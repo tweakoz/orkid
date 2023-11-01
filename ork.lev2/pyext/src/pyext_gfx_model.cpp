@@ -180,8 +180,15 @@ void pyinit_gfx_xgmmodel(py::module& module_lev2) {
           "worldpose", //
           [](xgmmodelinst_ptr_t minst) -> xgmworldpose_ptr_t { //
             return minst->_worldPose;
+          })
+        .def_property(
+          "drawSkeleton", //
+          [](xgmmodelinst_ptr_t minst) -> bool { //
+            return minst->_drawSkeleton;
+          },
+          [](xgmmodelinst_ptr_t minst, bool bv) { //
+            minst->_drawSkeleton = bv;
           });
-
   type_codec->registerStdCodec<xgmmodelinst_ptr_t>(modelinst_type_t);
   /////////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////

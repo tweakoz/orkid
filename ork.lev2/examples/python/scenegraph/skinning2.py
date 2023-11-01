@@ -33,6 +33,7 @@ class SkinningApp(object):
     self.ezapp = OrkEzApp.create(self, left=100, top=100, width=960, height=480)
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     setupUiCamera( app=self, eye = vec3(0,0,30), constrainZ=True, up=vec3(0,1,0))
+    self.time = 0.0
 
   ##############################################
 
@@ -49,8 +50,9 @@ class SkinningApp(object):
     sg_params.SkyboxIntensity = 1.0
     sg_params.DiffuseIntensity = 1.0
     sg_params.SpecularIntensity = 1.0
-    sg_params.AmbientLevel = vec3(1)
+    sg_params.AmbientLevel = vec3(0)
     sg_params.SkyboxTexPathStr = "src://envmaps/blender_forest.dds"
+    #sg_params.SkyboxTexPathStr = "src://envmaps/blender_studio.dds"
     sg_params.preset = "DeferredPBR"
 
     self.scenegraph = self.ezapp.createScene(sg_params)
@@ -70,7 +72,7 @@ class SkinningApp(object):
         copy.texColor = tex_white
         copy.texNormal = tex_normal
         copy.texMtlRuf = tex_white
-        copy.baseColor = vec4(1,.7,.8,1)*1.4
+        copy.baseColor = vec4(1,.7,.8,1)*1.0
         copy.roughnessFactor = 0.8
         copy.metallicFactor = 0.2
         copy.shaderpath = str(this_dir/"skin_override_test.glfx")
@@ -96,24 +98,101 @@ class SkinningApp(object):
     self.modelinst = self.sgnode.user.pyext_retain_modelinst
     self.modelinst.enableSkinning()
     self.modelinst.enableAllMeshes()
+    self.modelinst.drawSkeleton = True
     self.localpose = self.modelinst.localpose
     self.worldpose = self.modelinst.worldpose
+    ##################
+    # create ik chain
+    ##################
+
+    self.ikc = IkChain(self.model.skeleton)
+    self.ikc.bindToBone("mixamorig.RightArm")
+    self.ikc.bindToBone("mixamorig.RightForeArm")
+    self.ikc.prepare()
+    self.ikc.compute(self.localpose,vec3(0,0,0))
+    self.ikc.C1 = .079 
+    self.ikc.C2 = .029 
+
+    ##################
+    # create bone transformer
+    ##################
+
+    self.bxf = BoneTransformer(self.model.skeleton)
+    self.bxf.bindToBone("mixamorig.RightHand")
+    self.bxf.bindToBone("mixamorig.RightHandThumb1")
+    self.bxf.bindToBone("mixamorig.RightHandThumb2")
+    self.bxf.bindToBone("mixamorig.RightHandThumb3")
+    self.bxf.bindToBone("mixamorig.RightHandThumb4")
+    self.bxf.bindToBone("mixamorig.RightHandIndex1")
+    self.bxf.bindToBone("mixamorig.RightHandIndex2")
+    self.bxf.bindToBone("mixamorig.RightHandIndex3")
+    self.bxf.bindToBone("mixamorig.RightHandIndex4")
+
+    ##################
+
+    self.fajoint = self.model.skeleton.jointIndex("mixamorig.RightForeArm")
+    self.hjoint = self.model.skeleton.jointIndex("mixamorig.RightHand")
 
   ################################################
 
   def onGpuUpdate(self,context):
+
     self.localpose.bindPose()
     self.anim_inst.currentFrame = self.frame_index
     self.anim_inst.weight = 1.0
     self.anim_inst.applyToPose(self.localpose)
     self.localpose.blendPoses()
     self.localpose.concatenate()
+
+    #################################
+    ## synthetic motion
+    #################################
+
+    hmtx = self.localpose.concatmatrix(self.hjoint)
+    famtx = self.localpose.concatmatrix(self.fajoint)
+    forearm_len = (famtx.translation-hmtx.translation).mag()
+
+    offset =  vec3(math.sin(self.time)*0.25, 
+                   1+math.cos(self.time*2.1)*3.0, 
+                   1-math.cos(self.time*3.1)*2.0)
+
+    xf_offset = mtx4()
+    xf_offset.setColumn(3,vec4(offset))
+
+    self.bxf.compute(self.localpose,xf_offset)
+
+    #################################
+    ## perform IK (1stpass)
+    #################################
+
+    target = hmtx.translation+offset
+    self.ikc.compute(self.localpose,target)
+
+    #################################
+    # fixup hand
+    #################################
+
+    hmtx = self.localpose.concatmatrix(self.hjoint)
+    famtx = self.localpose.concatmatrix(self.fajoint)
+
+    old_hand_trans = hmtx.translation
+    new_hand_trans = vec3(0,forearm_len,0).transform(famtx)
+    offset = new_hand_trans-old_hand_trans
+
+    xf_offset.setColumn(3,vec4(offset))
+    self.bxf.compute(self.localpose,xf_offset)
+
+    #################################
+    # worldpose
+    #################################
+
     self.worldpose.fromLocalPose(self.localpose,mtx4())
     self.frame_index += 0.3
 
   ################################################
 
   def onUpdate(self,updinfo):
+    self.time += updinfo.deltatime
     self.scenegraph.updateScene(self.cameralut) # update and enqueue all scenenodes
 
   ##############################################
