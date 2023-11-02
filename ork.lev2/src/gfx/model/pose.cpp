@@ -500,8 +500,6 @@ void XgmLocalPose::concatenate(void) {
       int ichild                = Bone._childIndex;
       const fmtx4& ParentMatrix = _concat_matrices[iparent];
       const fmtx4& ChildMatrix  = _local_matrices[ichild];
-      const fmtx4& chi_bind     = _skeleton->_bindMatrices[ichild];
-      const fmtx4& par_bind     = _skeleton->_bindMatrices[iparent];
 
       std::string parname = _skeleton->GetJointName(iparent).c_str();
       std::string chiname = _skeleton->GetJointName(ichild).c_str();
@@ -525,29 +523,6 @@ void XgmLocalPose::concatenate(void) {
       fmaxx = std::max(fmaxx, vtrans.x);
       fmaxy = std::max(fmaxy, vtrans.y);
       fmaxz = std::max(fmaxz, vtrans.z);
-
-      /////////////////////////////////////////////////////////////
-
-      if (0) {
-        logchan_pose2->log("////////\n");
-        logchan_pose2->log(
-            "ib<%d> ip<%d:%s> ic<%d:%s>", //
-            ib,
-            iparent,
-            parname.c_str(),
-            ichild,
-            chiname.c_str());
-
-        fmtx4 skel_rel;
-        skel_rel.correctionMatrix(par_bind, chi_bind);
-
-        logchan_pose2->log(" paren<%s>", ParentMatrix.dump4x3cn().c_str());
-        logchan_pose->log(" pbind<%s>", par_bind.dump4x3cn().c_str());
-        logchan_pose2->log(" child<%s>", ChildMatrix.dump4x3cn().c_str());
-        logchan_pose2->log(" cbind<%s>", chi_bind.dump4x3cn().c_str());
-        logchan_pose->log(" resul<%s>", this_result.dump4x3cn().c_str());
-        logchan_pose->log(" skrel<%s>", skel_rel.dump4x3cn().c_str());
-      }
 
       /////////////////////////////////////////////////////////////
     }
@@ -576,6 +551,28 @@ void XgmLocalPose::concatenate(void) {
   mObjSpaceBoundingSphere = fvec4(fmidx, fmidy, fmidz, frange);
 
   mObjSpaceAABoundingBox.SetMinMax(fvec3(fminx, fminy, fminz), fvec3(fmaxx, fmaxy, fmaxz));
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void XgmLocalPose::decomposeConcatenated() {
+  if (_skeleton->miRootNode >= 0) {
+    _local_matrices[_skeleton->miRootNode] = _concat_matrices[_skeleton->miRootNode];
+    int inumbones = _skeleton->numBones();
+    for (int ib = 1; ib < inumbones; ib++) {
+      const XgmBone& bone = _skeleton->bone(ib);
+      int iparent               = bone._parentIndex;
+      int ichild                = bone._childIndex;
+      const fmtx4& childConcatMatrix = _concat_matrices[ichild];
+      if (iparent >= 0) {
+        const fmtx4& parentConcatMatrix = _concat_matrices[iparent];
+        fmtx4 invParentConcatMatrix = parentConcatMatrix.inverse();
+        _local_matrices[ichild] = childConcatMatrix * invParentConcatMatrix;
+      } else {
+        _local_matrices[ichild] = childConcatMatrix;
+      }
+    }
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////

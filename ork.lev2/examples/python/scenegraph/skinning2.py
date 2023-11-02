@@ -23,6 +23,94 @@ parser = argparse.ArgumentParser(description='scenegraph skinning example')
 args = vars(parser.parse_args())
 ################################################################################
 
+class HandPoser(object):
+  def __init__(self,app,hand_name):
+    self.app = app
+    self.hand_name = hand_name
+    self.jnt_hand = self.app.model.skeleton.jointIndex("mixamorig.%sHand"%(hand_name))
+    self.jnt_forearm = self.app.model.skeleton.jointIndex("mixamorig.%sForeArm"%(hand_name))
+    self.jnts_thumbs = [ self.app.model.skeleton.jointIndex("mixamorig.%sHandThumb%d"%(hand_name,i+1)) for i in range(4)]
+    self.jnts_index = [ self.app.model.skeleton.jointIndex("mixamorig.%sHandIndex%d"%(hand_name,i+1)) for i in range(4)] 
+    self.ikchain = IkChain(self.app.model.skeleton)
+    self.ikchain.bindToBone("mixamorig.%sArm"%(hand_name))
+    self.ikchain.bindToBone("mixamorig.%sForeArm"%(hand_name))
+    self.ikchain.prepare()
+    self.ikchain.compute(self.app.localpose,vec3(0,0,0))
+    self.ikchain.C1 = .079 
+    self.ikchain.C2 = .029 
+    self.fixup_indices = [self.jnt_hand] + self.jnts_thumbs + self.jnts_index
+
+  def update(self,offset):
+    localpose = self.app.localpose
+    concatmatrices = localpose.concatMatrices
+    copy_of_locals = [ localpose.localMatrices[i] for i in range(self.app.model.skeleton.numJoints) ]
+    copy_of_concats = [ concatmatrices[i] for i in range(self.app.model.skeleton.numJoints) ]
+
+    num_fixups = len(self.fixup_indices)
+    #rels = [ copy_of_concats[j] for j in self.fixup_indices ]
+
+    #
+    self.mtx_base = concatmatrices[self.jnt_forearm]
+    self.mtx_end = concatmatrices[self.jnt_hand]
+    self.mtx_endI = self.mtx_end.inverse
+    self.extend_length = (self.mtx_base.translation-self.mtx_end.translation).length
+    target = self.mtx_end.translation+offset
+    self.ikchain.compute(localpose,target)
+
+    if True:
+      #mtxRX = mtx4.rotMatrix(vec3(1,0,0),math.sin(self.app.time*2)*0.25)
+      #mtxRY = mtx4.rotMatrix(vec3(0,1,0),1+math.sin(self.app.time*3)*3.14)
+      #mtxRZ = mtx4.rotMatrix(vec3(0,0,1),-0+math.sin(self.app.time*5)*0.25)
+      #M = mtx4()#self.mtx_end*(mtxRX*mtxRY*mtxRZ)*self.mtx_endI
+      #M = mtxRY
+
+      ####################################
+      # reconnect hand to end of forearm
+      ####################################
+
+      fixup_base = concatmatrices[self.jnt_forearm]
+      fixup_old = concatmatrices[self.jnt_hand].translation
+      fixup_idx = concatmatrices[self.jnt_hand].translation
+      fixup_new = vec3(0,self.extend_length,0).transform(fixup_base)
+      fixup_delta = fixup_new-fixup_old;
+    
+      xf_delta = mtx4()
+      xf_delta.setColumn(3,vec4(fixup_delta,1));
+
+      for i in range(num_fixups):
+        j = self.fixup_indices[i]
+        O = concatmatrices[j]
+        concatmatrices[j] = xf_delta * O # this moves the hand correctly
+
+      ####################################
+      # correct rotation of hand
+      ####################################
+
+      dir_forarm_to_hand = (concatmatrices[self.jnt_hand].translation
+                         - concatmatrices[self.jnt_forearm].translation).normalized()
+
+      dir_hand_to_index = (concatmatrices[self.jnts_index[0]].translation 
+                        - concatmatrices[self.jnt_hand].translation).normalized()
+
+      dir_cross = dir_forarm_to_hand.cross(dir_hand_to_index).normalized()
+      angle = dir_forarm_to_hand.angle(dir_hand_to_index)
+
+      Q = quat()
+      Q.fromAxisAngle(vec4(dir_cross,-angle*0.75))
+      MQ = Q.toMatrix() 
+
+      a = concatmatrices[self.jnt_hand]
+      ai = a.inverse
+
+      MQ = a*MQ*ai
+
+      for i in range(num_fixups):
+        j = self.fixup_indices[i]
+        O = concatmatrices[j]
+        concatmatrices[j] = MQ * O
+
+################################################################################
+
 class SkinningApp(object):
 
   def __init__(self):
@@ -32,7 +120,11 @@ class SkinningApp(object):
 
     self.ezapp = OrkEzApp.create(self, left=100, top=100, width=960, height=480)
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
-    setupUiCamera( app=self, eye = vec3(0,0,30), constrainZ=True, up=vec3(0,1,0))
+    setupUiCamera( app=self, 
+                   eye = vec3(0,0,30), 
+                   constrainZ=True, 
+                   up=vec3(0,1,0),
+                   fov_deg = 110 )
     self.time = 0.0
 
   ##############################################
@@ -72,9 +164,9 @@ class SkinningApp(object):
         copy.texColor = tex_white
         copy.texNormal = tex_normal
         copy.texMtlRuf = tex_white
-        copy.baseColor = vec4(1,.7,.8,1)*1.0
-        copy.roughnessFactor = 0.8
-        copy.metallicFactor = 0.2
+        copy.baseColor = vec4(1,.75,.75,1)*1.8
+        copy.roughnessFactor = 0.75
+        copy.metallicFactor = 0.0
         copy.shaderpath = str(this_dir/"skin_override_test.glfx")
         copy.gpuInit(ctx)
         submesh.material = copy
@@ -101,37 +193,11 @@ class SkinningApp(object):
     self.modelinst.drawSkeleton = True
     self.localpose = self.modelinst.localpose
     self.worldpose = self.modelinst.worldpose
-    ##################
-    # create ik chain
-    ##################
-
-    self.ikc = IkChain(self.model.skeleton)
-    self.ikc.bindToBone("mixamorig.RightArm")
-    self.ikc.bindToBone("mixamorig.RightForeArm")
-    self.ikc.prepare()
-    self.ikc.compute(self.localpose,vec3(0,0,0))
-    self.ikc.C1 = .079 
-    self.ikc.C2 = .029 
-
-    ##################
-    # create bone transformer
-    ##################
-
-    self.bxf = BoneTransformer(self.model.skeleton)
-    self.bxf.bindToBone("mixamorig.RightHand")
-    self.bxf.bindToBone("mixamorig.RightHandThumb1")
-    self.bxf.bindToBone("mixamorig.RightHandThumb2")
-    self.bxf.bindToBone("mixamorig.RightHandThumb3")
-    self.bxf.bindToBone("mixamorig.RightHandThumb4")
-    self.bxf.bindToBone("mixamorig.RightHandIndex1")
-    self.bxf.bindToBone("mixamorig.RightHandIndex2")
-    self.bxf.bindToBone("mixamorig.RightHandIndex3")
-    self.bxf.bindToBone("mixamorig.RightHandIndex4")
 
     ##################
 
-    self.fajoint = self.model.skeleton.jointIndex("mixamorig.RightForeArm")
-    self.hjoint = self.model.skeleton.jointIndex("mixamorig.RightHand")
+    self.lposer = HandPoser(self,"Left")
+    self.rposer = HandPoser(self,"Right")
 
   ################################################
 
@@ -148,53 +214,23 @@ class SkinningApp(object):
     ## synthetic motion
     #################################
 
-    hmtx = self.localpose.concatmatrix(self.hjoint)
-    famtx = self.localpose.concatmatrix(self.fajoint)
-    forearm_len = (famtx.translation-hmtx.translation).mag()
+    offsetL =  vec3(0+math.sin(self.time*1.3)*0.25, 
+                    2+math.cos(self.time*2.4)*4.0, 
+                    1-math.cos(self.time*3.8)*1.0)
 
-    offset =  vec3(math.sin(self.time)*0.25, 
-                   1+math.cos(self.time*2.1)*3.0, 
-                   1-math.cos(self.time*3.1)*2.0)
+    offsetR =  vec3(0+math.sin(self.time)*0.25, 
+                    1+math.cos(self.time*2.1)*3.0, 
+                    1-math.cos(self.time*3.1)*1.0)
 
-    xf_offset = mtx4()
-    xf_offset.setColumn(3,vec4(offset))
-
-    self.bxf.compute(self.localpose,xf_offset)
-
-    #################################
-    ## perform IK (1stpass)
-    #################################
-
-    target = hmtx.translation+offset
-    self.ikc.compute(self.localpose,target)
-
-    #################################
-    # fixup hand
-    #################################
-
-    hmtx = self.localpose.concatmatrix(self.hjoint)
-    famtx = self.localpose.concatmatrix(self.fajoint)
-    
-    nX = hmtx.getColumn(0).xyz().normalized()
-    nY = hmtx.getColumn(1).xyz().normalized()
-    nZ = hmtx.getColumn(2).xyz().normalized()
-
-    old_hand_trans = hmtx.translation
-    new_hand_trans = vec3(0,forearm_len,0).transform(famtx)
-    offset = new_hand_trans-old_hand_trans
-
-    #xf_offset.setColumn(0,vec4(nX,0))
-    #xf_offset.setColumn(1,vec4(nY,0))
-    #xf_offset.setColumn(2,vec4(nZ,0))
-    xf_offset.setColumn(3,vec4(offset))
-    self.bxf.compute(self.localpose,xf_offset)
+    self.lposer.update(offsetL)
+    self.rposer.update(offsetR)
 
     #################################
     # worldpose
     #################################
 
     self.worldpose.fromLocalPose(self.localpose,mtx4())
-    self.frame_index += 0.3
+    self.frame_index = self.time*30.0
 
   ################################################
 

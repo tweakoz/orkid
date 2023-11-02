@@ -464,16 +464,23 @@ void XgmModel::RenderSkinned(
 
         auto W_INVERSE = WorldMat.inverse();
 
-        for (int ij = 0; ij < inumjoints; ij++) {
+        int inumbones = _skeleton->numBones();
+        for (int ib = 0; ib < inumbones; ib++) {
 
-          int par = _skeleton->GetJointParent(ij);
+          const XgmBone& bone = _skeleton->bone(ib);
+          int iparent               = bone._parentIndex;
+          int ichild                = bone._childIndex;
 
-          if(par<0){
+          if(iparent<0){
             continue;
           }
 
-          fmtx4 joint_par     = localpose->_concat_matrices[par];
-          fmtx4 joint_child     = localpose->_concat_matrices[ij];
+          auto sk_par = _skeleton->_jointMatrices[iparent].translation();
+          auto sk_chi = _skeleton->_jointMatrices[ichild].translation();
+          //float bonelength = (sk_chi-sk_par).magnitude();
+
+          fmtx4 joint_par     = localpose->_concat_matrices[iparent];
+          fmtx4 joint_child     = localpose->_concat_matrices[ichild];
 
           fvec3 c             = joint_child.translation();
           fvec3 p             = joint_par.translation();
@@ -498,6 +505,8 @@ void XgmModel::RenderSkinned(
           auto colorN = fvec3::White();
           auto colorX = fvec3(1,.7,.7);
           auto colorZ = fvec3(.7,.7,1);
+
+          c = fvec3(0,bonelength*0.5,0);
 
           add_vertex(fvec3(0,0,0), colorN);
           add_vertex(c, colorN);
