@@ -195,6 +195,46 @@ void pyinit_gfx_xgmanim(py::module& module_lev2) {
                                  });
   type_codec->registerStdCodec<xgmskeleton_ptr_t>(animskel_type_t);
   /////////////////////////////////////////////////////////////////////////////////
+  struct LocalMatrixInterface {
+      LocalMatrixInterface(xgmlocalpose_ptr_t p) : pose(p) {}
+      fmtx4 get(int index) {
+          return pose->_local_matrices[index];
+      }
+      void set(int index, const fmtx4 &value) {
+          pose->_local_matrices[index] = value;
+      }
+      xgmlocalpose_ptr_t pose;
+  };
+  struct ConcatMatrixInterface {
+      ConcatMatrixInterface(xgmlocalpose_ptr_t p) : pose(p) {}
+      fmtx4 get(int index) {
+          return pose->_concat_matrices[index];
+      }
+      void set(int index, const fmtx4 &value) {
+          pose->_concat_matrices[index] = value;
+      }
+      xgmlocalpose_ptr_t pose;
+  };
+  struct BindRelaMatrixInterface {
+      BindRelaMatrixInterface(xgmlocalpose_ptr_t p) : pose(p) {}
+      fmtx4 get(int index) {
+          return pose->_bindrela_matrices[index];
+      }
+      void set(int index, const fmtx4 &value) {
+          pose->_bindrela_matrices[index] = value;
+      }
+      xgmlocalpose_ptr_t pose;
+  };
+  py::class_<LocalMatrixInterface>(module_lev2, "XgmLocalPoseLocalMatrixInterface")
+      .def("__getitem__", &LocalMatrixInterface::get)
+      .def("__setitem__", &LocalMatrixInterface::set);
+  py::class_<ConcatMatrixInterface>(module_lev2, "XgmLocalPoseConcatMatrixInterface")
+      .def("__getitem__", &ConcatMatrixInterface::get)
+      .def("__setitem__", &ConcatMatrixInterface::set);
+  py::class_<BindRelaMatrixInterface>(module_lev2, "XgmLocalPoseBindRelaMatrixInterface")
+      .def("__getitem__", &BindRelaMatrixInterface::get)
+      .def("__setitem__", &BindRelaMatrixInterface::set);
+  ///
   auto lpose_type_t =
       py::class_<XgmLocalPose, xgmlocalpose_ptr_t>(module_lev2, "XgmLocalPose")
           .def(py::init([](xgmskeleton_ptr_t skel) -> xgmlocalpose_ptr_t { return std::make_shared<XgmLocalPose>(skel); }))
@@ -202,10 +242,20 @@ void pyinit_gfx_xgmanim(py::module& module_lev2) {
           .def("bindPose", [](xgmlocalpose_ptr_t self) { return self->bindPose(); })
           .def("blendPoses", [](xgmlocalpose_ptr_t self) { return self->blendPoses(); })
           .def("concatenate", [](xgmlocalpose_ptr_t self) { return self->concatenate(); })
-          .def("concatmatrix", [](xgmlocalpose_ptr_t self, int index ) -> fmtx4 { return self->_concat_matrices[index]; })
+          .def("decomposeConcatenated", [](xgmlocalpose_ptr_t self) { return self->decomposeConcatenated(); })
+          .def_property_readonly("localMatrices", [](xgmlocalpose_ptr_t self) {
+            return LocalMatrixInterface(self);
+          })
+          .def_property_readonly("concatMatrices", [](xgmlocalpose_ptr_t self) {
+            return ConcatMatrixInterface(self);
+          })
+          .def_property_readonly("bindRelativeMatrices", [](xgmlocalpose_ptr_t self) {
+            return ConcatMatrixInterface(self);
+          })
           .def_property_readonly("numJoints", [](xgmlocalpose_ptr_t self) -> int { return self->NumJoints(); })
           .def_property_readonly(
               "objSpaceBoundingSphere", [](xgmlocalpose_ptr_t self) -> fvec4 { return self->mObjSpaceBoundingSphere; });
+
   type_codec->registerStdCodec<xgmlocalpose_ptr_t>(lpose_type_t);
   /////////////////////////////////////////////////////////////////////////////////
   auto wpose_type_t =

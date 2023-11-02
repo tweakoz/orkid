@@ -66,6 +66,10 @@ void pyinit_math_la_t(py::module& module_core, //
           .def("serp", &vec2_t::serp)
           .def("normalized", &vec2_t::normalized)
           .def("normalize", &vec2_t::normalizeInPlace)
+          .def_property_readonly(
+              "length", [](const vec2_t& vec) -> T { return vec.magnitude(); })
+          .def_property_readonly(
+              "lengthSquared", [](const vec2_t& vec) -> T { return vec.magnitudeSquared(); })
           .def(py::self + py::self)
           .def(py::self - py::self)
           .def(py::self * py::self)
@@ -124,6 +128,10 @@ void pyinit_math_la_t(py::module& module_core, //
                 rval.append(vec.z);
                 return rval;
               })
+          .def_property_readonly(
+              "length", [](const vec3_t& vec) -> T { return vec.magnitude(); })
+          .def_property_readonly(
+              "lengthSquared", [](const vec3_t& vec) -> T { return vec.magnitudeSquared(); })
           .def(
               "hashed",
               [](const vec3_t& vec, T quant) -> uint64_t { //
@@ -134,7 +142,7 @@ void pyinit_math_la_t(py::module& module_core, //
           .def("dot", &vec3_t::dotWith)
           .def("cross", &vec3_t::crossWith)
           .def("mag", &vec3_t::magnitude)
-          .def("length", &vec3_t::magnitude)
+//          .def("length", &vec3_t::magnitude)
           .def("magsquared", &vec3_t::magnitudeSquared)
           .def("lerp", &vec3_t::lerp)
           .def("serp", &vec3_t::serp)
