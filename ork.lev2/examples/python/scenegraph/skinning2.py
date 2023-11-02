@@ -58,11 +58,6 @@ class HandPoser(object):
     self.ikchain.compute(localpose,target)
 
     if True:
-      #mtxRX = mtx4.rotMatrix(vec3(1,0,0),math.sin(self.app.time*2)*0.25)
-      #mtxRY = mtx4.rotMatrix(vec3(0,1,0),1+math.sin(self.app.time*3)*3.14)
-      #mtxRZ = mtx4.rotMatrix(vec3(0,0,1),-0+math.sin(self.app.time*5)*0.25)
-      #M = mtx4()#self.mtx_end*(mtxRX*mtxRY*mtxRZ)*self.mtx_endI
-      #M = mtxRY
 
       ####################################
       # reconnect hand to end of forearm
@@ -97,7 +92,7 @@ class HandPoser(object):
 
       Q = quat()
       Q.fromAxisAngle(vec4(dir_cross,-angle))
-      MQ = Q.toMatrix() 
+      MQ = Q.toMatrix()
 
       h = concatmatrices[self.jnt_hand]
       a = mtx4()
@@ -105,6 +100,26 @@ class HandPoser(object):
       ai = a.inverse
 
       MQ = a*MQ*ai
+
+      for i in range(num_fixups):
+        j = self.fixup_indices[i]
+        O = concatmatrices[j]
+        concatmatrices[j] = MQ * O
+
+      ####################################
+      # modify rotation of hand
+      ####################################
+
+      mtxRX = mtx4.rotMatrix(vec3(1,0,0),math.sin(self.app.time*2)*0.15)
+      mtxRY = mtx4.rotMatrix(vec3(0,1,0),math.sin(self.app.time*1.7)*0.15)
+      mtxRZ = mtx4.rotMatrix(vec3(0,0,1),math.sin(self.app.time*3.7)*0.05)
+      M = (mtxRX*mtxRY*mtxRZ)
+      #M = mtxRY
+
+      a = concatmatrices[self.jnt_hand]
+      ai = a.inverse
+
+      MQ = a*M*ai
 
       for i in range(num_fixups):
         j = self.fixup_indices[i]
@@ -217,7 +232,7 @@ class SkinningApp(object):
     #################################
 
     offsetL =  vec3(0+math.sin(self.time*1.3)*0.25, 
-                    2+math.cos(self.time*2.4)*4.0, 
+                    4+math.cos(self.time*2.4)*4.0, 
                     1-math.cos(self.time*3.8)*1.0)
 
     offsetR =  vec3(0+math.sin(self.time)*0.25, 
