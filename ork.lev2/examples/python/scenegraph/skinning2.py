@@ -166,7 +166,7 @@ class SkinningApp(object):
         copy.texColor = tex_white
         copy.texNormal = tex_normal
         copy.texMtlRuf = tex_white
-        copy.baseColor = vec4(1,.75,.75,1)*1.8
+        copy.baseColor = vec4(1,.75,.75,1)*1.4
         copy.roughnessFactor = 0.75
         copy.metallicFactor = 0.0
         copy.shaderpath = str(this_dir/"skin_override_test.glfx")
