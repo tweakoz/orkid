@@ -96,10 +96,12 @@ class HandPoser(object):
       angle = dir_forarm_to_hand.angle(dir_hand_to_index)
 
       Q = quat()
-      Q.fromAxisAngle(vec4(dir_cross,-angle*0.75))
+      Q.fromAxisAngle(vec4(dir_cross,-angle))
       MQ = Q.toMatrix() 
 
-      a = concatmatrices[self.jnt_hand]
+      h = concatmatrices[self.jnt_hand]
+      a = mtx4()
+      a.setColumn(3,h.getColumn(3))
       ai = a.inverse
 
       MQ = a*MQ*ai
