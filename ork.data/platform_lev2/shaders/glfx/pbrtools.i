@@ -342,7 +342,7 @@ vertex_shader vs_forward_rigid_vtxcolor : iface_vgbuffer : lib_pbr_vtx {
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_gbuffer_vtxcolor : iface_fgbuffer : lib_pbr_frg {
-  out_gbuf = packGbuffer(frg_clr.xyz, vec3(0, 0, 0), 1, 0, true);
+  out_gbuf = packGbuffer(vec3(0), frg_clr.xyz, vec3(0), 1, 0);
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_forward_frgcolor : iface_forward {
