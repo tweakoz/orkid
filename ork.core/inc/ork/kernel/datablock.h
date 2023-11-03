@@ -13,6 +13,10 @@
 #include <ork/kernel/varmap.inl>
 namespace ork {
 
+struct DataBlock;
+using datablock_ptr_t = std::shared_ptr<DataBlock>;
+using datablock_constptr_t = std::shared_ptr<const DataBlock>;
+
 ///////////////////////////////////////////////////////////////////////////////
 /// DataBlock : SerDes container for arbitrary binary data
 ///   with convenience methods for getting data in and out
@@ -58,13 +62,14 @@ struct DataBlock {
   /////////////////////////////////////////////
   bool _append(const unsigned char* buffer, size_t bufmax);
   /////////////////////////////////////////////
+  datablock_ptr_t encrypt() const;
+  /////////////////////////////////////////////
+  datablock_ptr_t decrypt() const;
+  /////////////////////////////////////////////
   std::vector<uint8_t> _storage;
   std::shared_ptr<varmap::VarMap> _vars;
   std::string _name = "noname";
 };
-
-using datablock_ptr_t = std::shared_ptr<DataBlock>;
-using datablock_constptr_t = std::shared_ptr<const DataBlock>;
 
 ///////////////////////////////////////////////////////////////////////////////
 template <typename T> T* DataBlock::allocateItems(size_t itemcount) {

@@ -451,11 +451,13 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
         mtlref       = outmtl;
         ork::meshutil::vertex muverts[4];
         logchan_meshutilassimp->log("processing numfaces<%d> %s", mesh->mNumFaces, outmtl->_name.c_str() );
+        int numinputtriangles = 0;
         for (int t = 0; t < mesh->mNumFaces; ++t) {
           const aiFace* face = &mesh->mFaces[t];
           bool is_triangle   = (face->mNumIndices == 3);
 
           if (is_triangle) {
+            numinputtriangles++;
             for (int facevert_index = 0; facevert_index < 3; facevert_index++) {
               int index = face->mIndices[facevert_index];
               /////////////////////////////////////////////
@@ -596,16 +598,17 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
             logchan_meshutilassimp->log("non triangle");
           }
         }
-        // logchan_meshutilassimp->log("  done processing numfaces<%d> ..\n", mesh->mNumFaces);
+        logchan_meshutilassimp->log("done processing numfaces<%d> ..", mesh->mNumFaces);
+        logchan_meshutilassimp->log("numinputtriangles<%d>", numinputtriangles );
         /////////////////////////////////////////////
         // stats
         /////////////////////////////////////////////
-        // int meshout_numtris = out_submesh.GetNumPolys(3);
-        // int meshout_numquads = out_submesh.GetNumPolys(4);
-        // int meshout_numverts = out_submesh._vtxpool.GetNumVertices();
-        // logchan_meshutilassimp->log( "meshout_numtris<%d>\n", meshout_numtris );
-        // logchan_meshutilassimp->log( "meshout_numquads<%d>\n", meshout_numquads );
-        // logchan_meshutilassimp->log( "meshout_numverts<%d>\n", meshout_numverts );
+        int meshout_numtris = out_submesh.numPolys(3);
+        int meshout_numquads = out_submesh.numPolys(4);
+        int meshout_numverts = out_submesh.numVertices();
+        logchan_meshutilassimp->log( "meshout_numtris<%d>", meshout_numtris );
+        logchan_meshutilassimp->log( "meshout_numquads<%d>", meshout_numquads );
+        logchan_meshutilassimp->log( "meshout_numverts<%d>", meshout_numverts );
         /////////////////////////////////////////////
       }
 
@@ -815,7 +818,7 @@ void clusterizeToolMeshToXgmMesh(const ork::meshutil::Mesh& inp_model, ork::lev2
   out_mesh->ReserveSubMeshes(count_subs);
   subindex = 0;
 
-  //logchan_meshutilassimp->log("generating %d submeshes\n", (int)count_subs);
+  logchan_meshutilassimp->log("generating %d submeshes\n", (int)count_subs);
 
   for (auto item : mtlsubmap) {
     GltfMaterial* gltfm = item.first;

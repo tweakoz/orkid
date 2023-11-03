@@ -20,6 +20,36 @@ DataBlock::DataBlock(const void* buffer, size_t len) {
     addData(buffer, len);
 }
 ///////////////////////////////////////////////////////////////////////////////
+datablock_ptr_t DataBlock::encrypt() const {
+  auto rval = std::make_shared<DataBlock>();
+  rval->_name = _name;
+  rval->_vars = _vars;
+  size_t size = _storage.size();
+  rval->_storage.reserve(size);
+  uint32_t counter = (5<<0)|(1<<8)|(11<<16);
+  for (uint8_t byte : _storage) {
+    byte += (counter&0xff);
+    rval->_storage.push_back(byte);
+    counter++;
+  }
+  return rval;
+}
+///////////////////////////////////////////////////////////////////////////////
+datablock_ptr_t DataBlock::decrypt() const {
+  auto rval = std::make_shared<DataBlock>();
+  rval->_name = _name;
+  rval->_vars = _vars;
+  size_t size = _storage.size();
+  rval->_storage.reserve(size);
+  uint32_t counter = (5<<0)|(1<<8)|(11<<16);
+  for (uint8_t byte : _storage) {
+    byte -= (counter&0xff);
+    rval->_storage.push_back(byte);
+    counter++;
+  }
+  return rval;
+}
+///////////////////////////////////////////////////////////////////////////////
 const uint8_t* DataBlock::data(size_t index) const {
   return (const uint8_t*)_storage.data() + index;
 }

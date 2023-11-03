@@ -34,6 +34,9 @@ namespace ork { namespace lev2 {
 static bool FORCE_MODEL_REGEN(){
   return genviron.has("ORKID_LEV2_FORCE_MODEL_REGEN");
 }
+static bool ASSET_ENCRYPT_MODE(){
+  return genviron.has("ORKID_ASSET_ENCRYPT_MODE");
+}
 static logchannel_ptr_t logchan_mioR = logger()->createChannel("gfxmodelIOREAD",fvec3(0.8,0.8,0.4),true);
 static logchannel_ptr_t logchan_mioW = logger()->createChannel("gfxmodelIOWRITE",fvec3(0.8,0.7,0.4));
 ///////////////////////////////////////////////////////////////////////////////
@@ -109,16 +112,38 @@ bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename, const ass
 bool XgmModel::_loaderSelect(XgmModel* mdl, datablock_ptr_t datablock) {
   DataBlockInputStream datablockstream(datablock);
   Char4 check_magic(datablockstream.getItem<uint32_t>());
-  if (check_magic == Char4("chkf")) // its a chunkfile
+  if (check_magic == Char4("chkf")) { // its a chunkfile
     return _loadXGM(mdl, datablock);
-  if (check_magic == Char4("glTF")) // its a glb (binary)
+  }
+  if (check_magic == Char4("glTF")){ // its a glb (binary)
+    if(ASSET_ENCRYPT_MODE()){
+      auto encrypted_datablock = datablock->encrypt();
+      auto encmagic = Char4("oems");
+      // insert 4 bytes of encmagic into beginning of encrypted_datablock->_storage
+      auto data = (uint8_t*) encmagic.mCharMems;
+      encrypted_datablock->_storage.insert(encrypted_datablock->_storage.begin(), data, data+4);
+      auto outpath = file::Path::temp_dir()/"temp.orkemdl";
+      ork::File outputfile(outpath, ork::EFM_WRITE);
+      outputfile.Write(encrypted_datablock->data(), encrypted_datablock->length());
+    }
     return _loadAssimp(mdl, datablock);
+  }
+  printf( "check_magic<%08x>\n", check_magic );
+  if (check_magic.muVal32 == 0x736d656f ){ // its encrypted
+    auto& storage = datablock->_storage;
+    storage.erase(storage.begin(), storage.begin() + 4);
+    auto decrypted_datablock = datablock->decrypt();
+    // pop 4 bytes from front of decrypted_datablock->_storage
+    return _loadAssimp(mdl, decrypted_datablock);
+  }
+  
   auto extension = datablock->_vars->typedValueForKey<std::string>("file-extension").value();
   if (extension == "gltf" or //
       extension == "dae" or  //
       extension == "fbx" or  //
-      extension == "obj")
+      extension == "obj") {
     return _loadAssimp(mdl, datablock);
+  }
   OrkAssert(false);
   return false;
 }

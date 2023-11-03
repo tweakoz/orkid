@@ -62,6 +62,7 @@ ork::asset::asset_ptr_t XgmModelLoader::_doLoadAsset(ork::asset::loadrequest_ptr
       absolutepath.getExtension() == "dae" or //
       absolutepath.getExtension() == "obj" or //
       absolutepath.getExtension() == "glb" or //
+      absolutepath.getExtension() == "orkemdl" or //
       absolutepath.getExtension() == "fbx" or //
       absolutepath.getExtension() == "gltf") {
     modelasset->clearModel();
@@ -85,6 +86,7 @@ void XgmModelLoader::initLoadersForUriProto(const std::string& uriproto) {
   auto ctx = FileEnv::contextForUriProto(uriproto);
   addLocation(ctx, ".xgm");
   addLocation(ctx, ".glb");
+  addLocation(ctx, ".orkemdl");
   addLocation(ctx, ".gltf");
   addLocation(ctx, ".dae");
   addLocation(ctx, ".obj");
