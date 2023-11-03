@@ -1,4 +1,5 @@
 #include <ork/util/logger.h>
+#include <ork/kernel/environment.h>
 
 namespace ork {
 
@@ -10,12 +11,29 @@ namespace ork {
       _name = named;
       _c1_prefix = ork::deco::asciic_rgb(color);
       _reset = ork::deco::asciic_reset();
+
+      auto envvar = FormatString("ORKID_LOGFILE_%s",named.c_str());
+      if (genviron.has(envvar)) {
+        std::string logfilename;
+        genviron.get(envvar,logfilename);
+        _file = std::make_shared<File>(logfilename.c_str(),EFM_WRITE);
+        printf( "logfilename<%s>\n", logfilename.c_str() );
+        enabled = true;
+      }
+
     }
 
     void LogChannel::log_valist(const char *pMsgFormat, va_list args) const {
       char buf[1024];
       vsnprintf_s(buf, sizeof(buf), pMsgFormat, args);
-      printf( "%s[%s]\t%s%s\n", _c1_prefix.c_str(), _name.c_str(), buf, _reset.c_str() );
+      if(_file){
+        auto str = 
+        FormatString( "%s[%s]\t%s%s\n", _c1_prefix.c_str(), _name.c_str(), buf, _reset.c_str() );
+        _file->Write(str.c_str(),str.length());
+      }
+      else{
+        printf( "%s[%s]\t%s%s\n", _c1_prefix.c_str(), _name.c_str(), buf, _reset.c_str() );
+      }
     }
     void LogChannel::log(const char *pMsgFormat, ...) {
       if(_ENABLE_LOGGING and _enabled){
@@ -29,7 +47,14 @@ namespace ork {
     void LogChannel::log_begin_valist(const char *pMsgFormat, va_list args) const {
       char buf[1024];
       vsnprintf_s(buf, sizeof(buf), pMsgFormat, args);
-      printf( "%s[%s]\t%s%s", _c1_prefix.c_str(), _name.c_str(), buf, _reset.c_str() );
+      if(_file){
+        auto str = 
+        FormatString( "%s[%s]\t%s%s", _c1_prefix.c_str(), _name.c_str(), buf, _reset.c_str() );
+        _file->Write(str.c_str(),str.length());
+      }
+      else{
+        printf( "%s[%s]\t%s%s", _c1_prefix.c_str(), _name.c_str(), buf, _reset.c_str() );
+      }
     }
     void LogChannel::log_begin(const char *pMsgFormat, ...) {
       if(_ENABLE_LOGGING and _enabled){
@@ -43,7 +68,14 @@ namespace ork {
     void LogChannel::log_continue_valist(const char *pMsgFormat, va_list args) const {
       char buf[1024];
       vsnprintf_s(buf, sizeof(buf), pMsgFormat, args);
-      printf( "%s%s%s", _c1_prefix.c_str(), buf, _reset.c_str() );
+      if(_file){
+        auto str = 
+        FormatString( "%s%s%s", _c1_prefix.c_str(), buf, _reset.c_str() );
+        _file->Write(str.c_str(),str.length());
+      }
+      else{
+        printf( "%s%s%s", _c1_prefix.c_str(), buf, _reset.c_str() );
+      }
     }
     void LogChannel::log_continue(const char *pMsgFormat, ...) const {
       if(_ENABLE_LOGGING and _enabled){

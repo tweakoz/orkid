@@ -107,8 +107,8 @@ class SkinningApp(object):
     # create animation data
     ###################################
 
-    self.model = XgmModel("data://tests/chartest/char_mesh")
-    self.anim = XgmAnim("data://tests/chartest/char_testanim1")
+    self.model = XgmModel("data://tests/chartest2/chartest2_mesh")
+    self.anim = XgmAnim("data://tests/chartest2/chartest2_anim")
 
     self.anim_inst = XgmAnimInst(self.anim)
     self.anim_inst.mask.enableAll()

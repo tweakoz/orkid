@@ -18,7 +18,7 @@
 
 namespace ork::lev2 {
 
-static const int kmaxbones = 64;
+static const int kmaxbones = 256;
 
 /// ///////////////////////////////////////////////////////////////////////////
 /// Animation Channel
@@ -235,7 +235,7 @@ struct XgmAnim {
 /// ///////////////////////////////////////////////////////////////////////////
 
 struct XgmAnimMask {
-  static const int knummaskbones = 128; 
+  static const int knummaskbones = kmaxbones; 
   static const int knummaskbytes = (knummaskbones / 8) * 4; // N bones, 8 bits per byte, times 4 bit mask
 
   U8 mMaskBits[knummaskbytes];

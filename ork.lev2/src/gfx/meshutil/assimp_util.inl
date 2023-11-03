@@ -19,6 +19,7 @@
 #include <assimp/postprocess.h>
 #include <assimp/pbrmaterial.h>
 #include <assimp/material.h>
+#include <assimp/GltfMaterial.h>
 ///////////////////////////////////////////////////////////////////////////////
 
 namespace ork::meshutil {

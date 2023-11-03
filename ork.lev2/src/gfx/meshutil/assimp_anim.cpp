@@ -195,8 +195,8 @@ datablock_ptr_t assimpToXga(datablock_ptr_t inp_datablock) {
           //   we will probably add it at some point
           ////////////////////////////////////////////////////
 
-          OrkAssert(math::areValuesClose(cursca.x, cursca.y, 0.00001f));
-          OrkAssert(math::areValuesClose(cursca.x, cursca.z, 0.00001f));
+          //OrkAssert(math::areValuesClose(cursca.x, cursca.y, 0.00001f));
+          //OrkAssert(math::areValuesClose(cursca.x, cursca.z, 0.00001f));
         }
 
         /////////////////////////////

@@ -32,6 +32,7 @@ uniform_set ub_vtx {
 uniform_set ub_frg {
   sampler2D ColorMap;
   sampler2D NormalMap;
+  sampler2D EmissiveMap;
   sampler2D MtlRufMap;
   vec4 ModColor;
   mat4 v;
@@ -55,6 +56,7 @@ uniform_set ub_frg_fwd {
   sampler2D ColorMap;
   sampler2D NormalMap;
   sampler2D MtlRufMap;
+  sampler2D EmissiveMap;
 
   sampler2D MapBrdfIntegration;
   sampler2D MapSpecularEnv;
@@ -227,13 +229,14 @@ libblock lib_pbr_vtx_instanced {
 }
 ///////////////////////////////////////////////////////////////
 libblock lib_pbr_frg : lib_gbuf_encode {
-  void ps_common_n(vec4 modc, vec3 N, vec2 UV, bool emissive) {
+  void ps_common_n(vec4 modc, vec3 N, vec2 UV) {
     vec3 normal    = normalize(frg_tbn * N);
     vec3 rufmtlamb = texture(MtlRufMap, UV).xyz;
-    float mtl      = rufmtlamb.z * MetallicFactor;
-    float ruf      = rufmtlamb.y * RoughnessFactor;
+    float mtl      = rufmtlamb.z;// * MetallicFactor;
+    float ruf      = rufmtlamb.y;// * RoughnessFactor;
     vec3 color     = (modc * frg_clr * texture(ColorMap, UV)).xyz;
-    out_gbuf       = packGbuffer(color, normal, ruf, mtl, emissive);
+    vec3 emission = texture(EmissiveMap, UV).xyz;
+    out_gbuf       = packGbuffer(color, emission, normal, ruf, mtl);
   }
   void ps_common_vizn(vec4 modc, vec3 N) {
     vec3 normal = normalize(frg_tbn * N);
@@ -241,7 +244,7 @@ libblock lib_pbr_frg : lib_gbuf_encode {
     float mtl = 0; // rufmtlamb.x * MetallicFactor;
     float ruf = 1; // rufmtlamb.y * RoughnessFactor;
     // vec3 color = (modc*frg_clr*texture(ColorMap,UV)).xyz;
-    out_gbuf = packGbuffer(normal, vec3(0, 0, 0), ruf, mtl, true);
+    out_gbuf = packGbuffer(vec3(0, 0, 0), normal, vec3(0, 0, 0), ruf, mtl);
   }
 }
 ///////////////////////////////////////////////////////////////
@@ -375,38 +378,34 @@ fragment_shader ps_gbuffer_n // normalmap
     : iface_fgbuffer : lib_pbr_frg {
   vec3 TN       = texture(NormalMap, frg_uv0).xyz;
   TN            = mix(TN, vec3(0.5, 1, 0.5), 0.0);
-  bool emissive = length(TN) < 0.1;
   vec3 N        = normalize(TN * 2.0 - vec3(1, 1, 1));
-  ps_common_n(ModColor, N, frg_uv0, emissive);
+  ps_common_n(ModColor, N, frg_uv0);
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_gbuffer_n_stereo // normalmap
     : iface_fgbuffer : lib_pbr_frg {
   vec3 TN       = texture(NormalMap, frg_uv0).xyz;
-  bool emissive = length(TN) < 0.1;
   vec3 N        = normalize(TN * 2.0 - vec3(1, 1, 1));
   if (length(TN) < 0.1)
     N = vec3(0, 0, 0);
-  ps_common_n(ModColor, N, frg_uv0, emissive);
+  ps_common_n(ModColor, N, frg_uv0);
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_gbuffer_n_instanced : iface_fgbuffer_instanced : lib_pbr_frg {
   vec3 TN       = texture(NormalMap, frg_uv0).xyz;
   TN            = mix(TN, vec3(0.5, 1, 0.5), 0.0);
-  bool emissive = length(TN) < 0.1;
   vec3 N        = normalize(TN * 2.0 - vec3(1, 1, 1));
   if (length(TN) < 0.1)
     N = vec3(0, 0, 0);
-  ps_common_n(frg_modcolor, N, frg_uv0, emissive);
+  ps_common_n(frg_modcolor, N, frg_uv0);
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_gbuffer_n_stereo_instanced : iface_fgbuffer_instanced : lib_pbr_frg {
   vec3 TN       = texture(NormalMap, frg_uv0).xyz;
-  bool emissive = length(TN) < 0.1;
   vec3 N        = normalize(TN * 2.0 - vec3(1, 1, 1));
   if (length(TN) < 0.1)
     N = vec3(0, 0, 0);
-  ps_common_n(frg_modcolor, N, frg_uv0, emissive);
+  ps_common_n(frg_modcolor, N, frg_uv0);
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_gbuffer_n_tex_stereo // normalmap (stereo texture - vsplit)
@@ -418,8 +417,7 @@ fragment_shader ps_gbuffer_n_tex_stereo // normalmap (stereo texture - vsplit)
     map_uv += vec2(0, 0.5);
   vec3 TN       = texture(NormalMap, map_uv).xyz;
   vec3 N        = TN * 2.0 - vec3(1, 1, 1);
-  bool emissive = length(TN) < 0.1;
-  ps_common_n(ModColor, N, map_uv, emissive);
+  ps_common_n(ModColor, N, map_uv);
 }
 
 ///////////////////////////////////////////////////////////////

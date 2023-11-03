@@ -126,8 +126,6 @@ libblock lib_deferred
   }
   /////////////////////////////////////////////////////////
   vec3 plcalc2(LightCtx plc,GBufData gbd){
-      if( gbd._emissive==1 )
-        return vec3(0,0,0);
 
       vec3 eye_dir = - plc._viewdir;
 
@@ -159,8 +157,7 @@ libblock lib_deferred
   }
   /////////////////////////////////////////////////////////
   vec3 plcalc2_aa(LightCtx plc,GBufData gbd){
-      if( gbd._emissive==1 )
-        return vec3(0,0,0);
+
       float dist2lightsq = plc._lightdel.x*plc._lightdel.x
                          + plc._lightdel.y*plc._lightdel.y
                          + plc._lightdel.z*plc._lightdel.z;
@@ -305,8 +302,7 @@ libblock lib_deferred
     vec3 lightcol = LightColorD[lidx].xyz;
     vec3 lighttex = texture(MapLightingCookie,slc._lightuv).xyz;
     slc._lightoutput = lightcol*lighttex*float(slc._mask);
-    if( gbd._emissive==1 )
-      slc._lightoutput = vec3(0,0,0);
+
     return slc;
   }
   /////////////////////////////////////////////////////////
@@ -408,12 +404,6 @@ libblock lib_deferred
       vec3 albedo = gbd._albedo;
       /////////////////////////
       vec3 rawn = gbd._wnrm;
-      /////////////////////////
-      if( gbd._emissive==1 ){
-        rval._finallitcolor = albedo;
-        rval._depth_fogval = 0.0;
-        return rval;
-      }
       /////////////////////////
       // pixel was written to in the gbuffer
       float metallic = clamp(gbd._metallic,0.02,0.99);
@@ -597,9 +587,6 @@ libblock lib_deferred
       albedo.y = pow(albedo.y,1.25);
       albedo.z = pow(albedo.z,1.25);
       /////////////////////////
-      if( gbd._emissive==1 )
-        return albedo;
-      /////////////////////////
       // pixel was written to in the gbuffer
       /////////////////////////
       vec3 wpos = gbd._wpos;
@@ -653,18 +640,18 @@ libblock lib_deferred
       float depth_fogval = saturateF(pow(gbd._fogZ*DepthFogDistance,DepthFogPower));
       vec3 skybox_n = vec3(0,0,1);
       vec3 skyboxColor = env_equirectangularFlipV(skybox_n,MapSpecularEnv,0)*SkyboxLevel;
-      //out_color = specular;
       out_color = mix(finallitcolor,skyboxColor,depth_fogval);
+      out_color += gbd._emissive;
+
+      //out_color = vec3( gbd._metallic, gbd._roughness, 0);
     }
     else {
       out_color = skyboxColor;
     }
-    float atmos = gbd._atmos;
-    float alpha = clamp(gbd._alpha,0,1);
-    
-    return mix(out_color,vec3(atmos),clamp(alpha,0,1));
-    
-    //return vec3(alpha*(1-atmos));
+    //float atmos = 0.0; //gbd._atmos;
+    //float alpha = 0.0; //clamp(gbd._alpha,0,1);
+    return out_color;
+    //return mix(out_color,vec3(atmos),clamp(alpha,0,1));
 
   } // vec3 environmentLighting(){
 

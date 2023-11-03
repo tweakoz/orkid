@@ -21,7 +21,7 @@ void Mesh::readFromAssimp(const file::Path& BasePath) {
   OrkAssert(bfs::is_regular_file(GlbPath.toBFS()));
   OrkAssert(bfs::exists(base_dir));
   OrkAssert(bfs::is_directory(base_dir));
-  auto dblock                                                  = datablockFromFileAtPath(GlbPath);
+  datablock_ptr_t dblock = datablockFromFileAtPath(GlbPath);
   dblock->_vars->makeValueForKey<std::string>("file-extension") = GlbPath.getExtension().c_str();
   dblock->_vars->makeValueForKey<bfs::path>("base-directory")   = base_dir;
   //logchan_meshutilassimp->log("BEGIN: importing<%s> via Assimp\n", GlbPath.c_str());
@@ -215,10 +215,10 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
         logchan_meshutilassimp->log("has_uniform_specular<%f %f %f %f>", color.r, color.g, color.b, color.a);
       }
       if (AI_SUCCESS == aiGetMaterialColor(material, AI_MATKEY_COLOR_AMBIENT, &color)) {
-        logchan_meshutilassimp->log("has_uniform_ambient");
+        logchan_meshutilassimp->log("has_uniform_ambient<%f %f %f %f>", color.r, color.g, color.b, color.a);
       }
       if (AI_SUCCESS == aiGetMaterialColor(material, AI_MATKEY_COLOR_EMISSIVE, &color)) {
-        logchan_meshutilassimp->log("has_uniform_emissive");
+        logchan_meshutilassimp->log("has_uniform_emissive<%f %f %f %f>", color.r, color.g, color.b, color.a);
       }
       if (AI_SUCCESS == aiGetMaterialFloat(material, AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLIC_FACTOR, &f)) {
         outmtl->_metallicFactor = f;

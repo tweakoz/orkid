@@ -3,6 +3,7 @@
 
 #include <ork/kernel/string/deco.inl>
 #include <ork/kernel/mutex.h>
+#include <ork/file/file.h>
 
 namespace ork {
 
@@ -23,6 +24,7 @@ namespace ork {
     std::string _c1_prefix;
     std::string _reset;
     bool _enabled;
+    file_ptr_t _file; // if not null, log to file
 
   };
 

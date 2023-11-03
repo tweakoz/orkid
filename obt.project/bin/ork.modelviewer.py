@@ -8,16 +8,13 @@
 ################################################################################
 
 import math, random, argparse, sys, os
-from orkengine.core import *
-from orkengine.lev2 import *
+from obt import path
 
 ################################################################################
 
-sys.path.append((thisdir()/".."/".."/"ork.lev2"/"examples"/"python").normalized.as_string) # add parent dir to path
-from common.cameras import *
-from common.shaders import *
-from common.primitives import createGridData
-from common.scenegraph import createSceneGraph
+thisdir = path.directoryOfInvokingModule()
+
+sys.path.append(str(thisdir/".."/".."/"ork.lev2"/"examples"/"python")) # add parent dir to path
 
 ################################################################################
 
@@ -55,6 +52,18 @@ if args["forceregen"]:
 if args["showskeleton"]:
   os.environ["ORKID_LEV2_SHOW_SKELETON"] = "1"
 
+os.environ["ORKID_LOGFILE_meshutil.assimp"] = os.environ["OBT_STAGE"]+"/tempdir/assimp.log"
+
+################################################################################
+
+# make sure env vars are set before importing the engine...
+
+from orkengine.core import *
+from orkengine.lev2 import *
+from common.cameras import *
+from common.shaders import *
+from common.primitives import createGridData
+from common.scenegraph import createSceneGraph
 
 ################################################################################
 
