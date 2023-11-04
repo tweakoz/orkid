@@ -107,12 +107,8 @@ void DeferredContext::gpuInit(Context* target) {
     _parMatVArray   = _lightingmtl->param("VArray");
     _parMatPArray   = _lightingmtl->param("PArray");
     _parMapGBuf     = _lightingmtl->param("MapGBuffer");
-
-    //_parMapGBufAlbAo       = _lightingmtl->param("MapAlbedoAo");
-    //_parMapGBufNrmL        = _lightingmtl->param("MapNormalL");
     _parMapDepth       = _lightingmtl->param("MapDepth");
     _parMapShadowDepth = _lightingmtl->param("MapShadowDepth");
-    //    _parMapGBufRufMtlAlpha = _lightingmtl->param("MapRufMtlAlpha");
     _parMapDepthCluster     = _lightingmtl->param("MapDepthCluster");
     _parLightCookieTexture  = _lightingmtl->param("MapLightingCookie");
     _parMapSpecularEnv      = _lightingmtl->param("MapSpecularEnv");
@@ -139,35 +135,10 @@ void DeferredContext::gpuInit(Context* target) {
     _rtgs_gbuffer = std::make_shared<RtgSet>(target,MsaaSamples::MSAA_1X, true);
     _rtgs_gbuffer->addBuffer("DeferredGbuffer", EBufferFormat::RGBA32UI);
     _rtgs_gbuffer->_autoclear = false;
-
-    //_rtgGbuffer             = std::make_shared<RtGroup>(target, 8, 8, MsaaSamples::MSAA_1X);
-    //_rtgGbuffer->_autoclear = false;
-    //_rtbGbuffer             = _rtgGbuffer->createRenderTarget(EBufferFormat::RGBA32UI);
-    //_rtbGbuffer->_debugName = "DeferredGbuffer";
-    //_rtbGbuffer->_texture->TexSamplingMode().PresetPointAndClamp();
-    //////////////////////////////////////////////////////////////
-    //_rtgDecal              = std::make_shared<RtGroup>(target, 8, 8, MsaaSamples::MSAA_1X);
-    //_rtgDecal->_needsDepth = false;
-    //_rtgDecal->SetMrt(0, _rtbGbuffer);
-    //_decalRT = new RtGroupRenderTarget(_rtgDecal.get());
-    //////////////////////////////////////////////////////////////
-    //_rtgDepthCluster = std::make_shared<RtGroup>(target, 8, 8, MsaaSamples::MSAA_1X);
-    //_rtbDepthCluster = _rtgDepthCluster->createRenderTarget(EBufferFormat::R32UI);
-    //_rtbDepthCluster->_texture->TexSamplingMode().PresetPointAndClamp();
-    //_rtbDepthCluster->_debugName = "DeferredDepthCluster";
-    //_clusterRT                   = new RtGroupRenderTarget(_rtgDepthCluster.get());
-    ///////////
     //////////////////////////////////////////////////////////////
     _rtgs_laccum = std::make_shared<RtgSet>(target,MsaaSamples::MSAA_1X, true);
     _rtgs_laccum->addBuffer("DeferredLightAccum", EBufferFormat::RGBA16F);
     _rtgs_laccum->_autoclear = false;
-    //_rtgLaccum             = std::make_shared<RtGroup>(target, 8, 8, MsaaSamples::MSAA_1X);
-    //_rtgLaccum->_autoclear = false;
-    //_rtbLightAccum         = _rtgLaccum->createRenderTarget(EBufferFormat::RGBA16F);
-    //_rtbLightAccum->_texture->TexSamplingMode().PresetPointAndClamp();
-    //_rtbLightAccum->_debugName = "DeferredLightAccum";
-    //_accumRT                   = new RtGroupRenderTarget(_rtgLaccum.get());
-    //_gbuffRT = new RtGroupRenderTarget(_rtgGbuffer.get());
     //////////////////////////////////////////////////////////////
     auto mtl_load_req1 = std::make_shared<asset::LoadRequest>("src://effect_textures/white");
     auto mtl_load_req2 = std::make_shared<asset::LoadRequest>("src://effect_textures/voltex_pn2");
@@ -178,7 +149,10 @@ void DeferredContext::gpuInit(Context* target) {
     //////////////////////////////////////////////////////////////
     auto fxcache = _lightingmtl->pipelineCache();
     FxPipelinePermutation permu;
-    permu._forced_technique = _tekEnvironmentLighting;
+    permu._forced_technique = false //_enableSDF
+                            ? _tekEnvironmentLightingSDF
+                            : _tekEnvironmentLighting;
+
     _pipeline_envlighting_model0_mono = fxcache->findPipeline(permu);
 
     printf( "SHADER<%s> Load Complete\n", _shadername.c_str() );

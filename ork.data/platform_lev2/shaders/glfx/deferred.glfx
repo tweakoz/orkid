@@ -478,7 +478,7 @@ libblock lib_deferred
     float t = Time*3;
 
     float displacement = sin(5.0 * p.x + t) * sin(5.0 * p.y) * sin(5.0 * p.z) * 0.25;
-    float sphere_0 = opRep(p, vec3(5,5,5));
+    float sphere_0 = opRep(p, vec3(10,10,10));
     return sphere_0 + displacement;
   }
   /////////////////////////////////////////////////////////
@@ -511,7 +511,7 @@ libblock lib_deferred
 
   
     const float SDF_EPSILON = 0.01;
-    const int MAX_NUM_STEPS = 9999;
+    const int MAX_NUM_STEPS = 99;
 
     float total_distance_traveled = 0.0;
 
@@ -565,7 +565,7 @@ libblock lib_deferred
     vec3 skybox_n = vec3(VIEW_N.x,-VIEW_N.y,VIEW_N.z);
     vec3 skyboxColor = env_equirectangularFlipV(skybox_n,MapSpecularEnv,EnvironmentMipBias)*SkyboxLevel;
     vec3 out1 = mix(the_xxx._finallitcolor,skyboxColor,1.0-depth_fogval);
-    return out1;
+    return vec3(1,0,0);//out1;
   }
   /////////////////////////////////////////////////////////
   vec3 pbrEnvironmentLighting(WPosData wpd){

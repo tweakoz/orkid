@@ -73,6 +73,7 @@ struct DeferredContext {
   int _clusterH = 0;
   textureassetptr_t _whiteTexture;
   textureassetptr_t _voltexA;
+  bool _enableSDF = false;
   ////////////////////////////////////////////////////////////////////
   std::vector<PointLight*> _pointlights;
 
