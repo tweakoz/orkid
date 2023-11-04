@@ -14,7 +14,7 @@ libblock lib_gbuf_decode {
     float _rawDepth;
     float _metallic;
     float _roughness;
-    int _mask;
+    int _mode;
     float _atmos;
     float _alpha;
     float _specscale[9];
@@ -110,22 +110,23 @@ libblock lib_gbuf_decode {
     const float inverse_255 = 1.0/255.0;
     const float inverse_nrm = 1.0/32767.5;
 
-    uint ur = (gbuf.r)&0xfffu; // 12 bits
-    uint ug = (gbuf.r>>12)&0xfffu; // 12 bits 
-    uint er = (gbuf.r>>24)&0xffu; // 8 bits
+    // todo - we want to fork lighting pass based on mode
+    int mode = int(gbuf.r&0xfu);   // 4 bit 
+    uint ur = (gbuf.r>>4)&0xfffu;  // 12 bits
+    float nx = float((gbuf.r>>16)&0xffffu)*inverse_nrm-1.0; // 16 bits 
 
-    uint ub = (gbuf.g)&0xfffu;  // 12 bits 
-    uint eg = (gbuf.g>>12)&0xffu; // 8 bits
-    uint eb = (gbuf.g>>20)&0xffu;  // 8 bits
-    int mask = int((gbuf.g>>28)&1u); // 1 bit 
+    uint ug = (gbuf.g)&0xfffu;      // 12 bits 
+    uint ub = (gbuf.g>>12)&0xfffu;  // 24 bits 
+    uint er = (gbuf.g>>24)&0xffu;   // 32 bits
 
-    uint uruf = uint(gbuf.b)&0xffu; // 8 bits 
-    uint umtl = uint(gbuf.b>>8)&0xffu; // 8 bits 
-    float nx = float((gbuf.b>>16)&0xffffu)*inverse_nrm-1.0; // 16 bits 
+    uint eg = (gbuf.b)&0xffu;       // 8 bits
+    uint eb = (gbuf.b>>8)&0xffu;    // 16 bits
+    float ny = float((gbuf.b>>16)&0xffffu)*inverse_nrm-1.0; // 32 bits 
 
-    float ny = float((gbuf.a)&0xffffu)*inverse_nrm-1.0; // 16 bits 
-    float nz = float((gbuf.a>>16)&0xffffu)*inverse_nrm-1.0;; 
-    
+    float nz = float((gbuf.a)&0xffffu)*inverse_nrm-1.0;;  // 16 bits
+    uint uruf = uint(gbuf.a>>16)&0xffu; // 24 bits 
+    uint umtl = uint(gbuf.a>>24)&0xffu; // 32 bits 
+
     vec3 nn      = vec3(nx,ny,nz);
     ///////////////////////////////
     // multiple normal samples
@@ -173,7 +174,7 @@ libblock lib_gbuf_decode {
     decoded._rawDepth = o._rawDepth;
     decoded._metallic = float(umtl)*inverse_255;
     decoded._roughness = float(uruf)*inverse_255;
-    decoded._mask = mask;
+    decoded._mode = mode;
     decoded._atmos = 0.0;//float(gbuf.a&0xffffu)/32768.0;
     decoded._alpha = 0.0;//float((gbuf.a>>16)&0xffffu)/1024.0;
     ///////////////////////////////
@@ -197,25 +198,25 @@ libblock lib_gbuf_encode {
     ////////////////////
     // convert
     ////////////////////
-    uint r = ucolor.r&0x00000fffu; // 12 bits (12)
-    uint g = ucolor.g&0x00000fffu; // 12 bits (24)
-    uint b = ucolor.b&0x00000fffu; // 12 bits (36)
-    uint er = uemisv.r&0x000000ffu; // 8 bits (44)
-    uint eg = uemisv.g&0x000000ffu; // 8 bits (52)
-    uint eb = uemisv.b&0x000000ffu; // 8 bits (60)
-    uint unx = uint((normed.x+1.0)*32767.5)&0xffffu; // 16 bits (76)
-    uint uny = uint((normed.y+1.0)*32767.5)&0xffffu; // 16 bits (92)
-    uint unz = uint((normed.z+1.0)*32767.5)&0xffffu; // 16 bits (108)
-    uint uruf = uint(ruf*255.0)&0xffu; // 8 bits (116)
-    uint umtl = uint(mtl*255.0)&0xffu; // 8 bits (124)
-    uint mask = (1<<28);               // 1 bit (125)
+    uint mode = 1;                 // 4 bits
+    uint r = ucolor.r&0x00000fffu; // 12 bits (16)
+    uint g = ucolor.g&0x00000fffu; // 12 bits (28)
+    uint b = ucolor.b&0x00000fffu; // 12 bits (40)
+    uint er = uemisv.r&0x000000ffu; // 8 bits (48)
+    uint eg = uemisv.g&0x000000ffu; // 8 bits (56)
+    uint eb = uemisv.b&0x000000ffu; // 8 bits (64)
+    uint unx = uint((normed.x+1.0)*32767.5)&0xffffu; // 16 bits (80)
+    uint uny = uint((normed.y+1.0)*32767.5)&0xffffu; // 16 bits (96)
+    uint unz = uint((normed.z+1.0)*32767.5)&0xffffu; // 16 bits (112)
+    uint uruf = uint(ruf*255.0)&0xffu; // 8 bits (120)
+    uint umtl = uint(mtl*255.0)&0xffu; // 8 bits (128)
     ////////////////////
     // pack
     ////////////////////
-    uint rout = r|(g<<12)|(er<<24);        // 32 bits
-    uint gout = b|(eg<<12)|(eb<<20)|mask;   // 29 bits
-    uint bout = uruf|(umtl<<8)|(unx<<16);  // 32 bits
-    uint aout = uny|(unz<<16);             // 32 bits
+    uint rout = mode|(r<<4)|(unx<<16);     // 32 bits
+    uint gout = g|(b<<12)|(er<<24);        // 32 bits
+    uint bout = eg|(eb<<8)|(uny<<16);      // 32 bits
+    uint aout = unz|(uruf<<16)|(umtl<<24); // 32 bits
     return uvec4(rout,gout,bout,aout);
   }
   uvec4 packGbufferA(float atmos,float alpha){

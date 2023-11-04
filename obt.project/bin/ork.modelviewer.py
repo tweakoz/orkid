@@ -27,12 +27,15 @@ parser.add_argument('--forwardpbr', action="store_true", help='use forward pbr r
 parser.add_argument("-m", "--model", type=str, required=False, default="data://tests/pbr1/pbr1", help='asset to load')
 parser.add_argument("-i", "--lightintensity", type=float, default=1.0, help='light intensity')
 parser.add_argument("-s", "--specularintensity", type=float, default=1.0, help='specular intensity')
-parser.add_argument("-d", "--camdist", type=float, default=0.0, help='camera distance')
+parser.add_argument("-a", "--ambientintensity", type=float, default=1.0, help='diffuse intensity')
+parser.add_argument("-d", "--diffuseintensity", type=float, default=1.0, help='diffuse intensity')
+parser.add_argument("-r", "--camdist", type=float, default=0.0, help='camera distance')
 parser.add_argument("-e", "--envmap", type=str, default="", help='environment map')
 parser.add_argument("-o", "--overrideshader", type=str, default="", help='override shader')
 parser.add_argument("-c", "--overridecolor", type=str, default="", help='override color (vec3)')
 parser.add_argument("-z", "--disablezeroareapolycheck", action="store_true", help='disable zero area poly check')
 parser.add_argument("-x", "--encrypt", action="store_true", help='encrpyt model')
+parser.add_argument("-t", "--ssaa", type=int, default=4, help='ssaa')
 
 ################################################################################
 
@@ -42,11 +45,14 @@ showgrid = args["showgrid"]
 modelpath = args["model"]
 lightintens = args["lightintensity"]
 specuintens = args["specularintensity"]
+diffuintens = args["diffuseintensity"]
+ambiuintens = args["ambientintensity"]
 camdist = args["camdist"]
 fwdpbr = args["forwardpbr"]
 envmap = args["envmap"]
 oshader = args["overrideshader"]
 ocolor = args["overridecolor"]
+ssaa = args["ssaa"]
 
 if args["forceregen"]:
   os.environ["ORKID_LEV2_FORCE_MODEL_REGEN"] = "1"
@@ -79,7 +85,7 @@ class SceneGraphApp(object):
 
   def __init__(self):
     super().__init__()
-    self.ezapp = OrkEzApp.create(self)
+    self.ezapp = OrkEzApp.create(self,ssaa=ssaa)
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     self.materials = set()
     setupUiCamera(app=self,eye=vec3(0,0.5,3))
@@ -91,7 +97,8 @@ class SceneGraphApp(object):
 
     params_dict = {
       "SkyboxIntensity": float(lightintens),
-      "DiffuseIntensity": lightintens*float(1),
+      "AmbientLight": vec3(ambiuintens),
+      "DiffuseIntensity": diffuintens,
       "SpecularIntensity": specuintens,
       "depthFogDistance": float(10000),
     }

@@ -114,8 +114,6 @@ fragment_shader ps_sdfscene
 
     vec3 color = vec3(2,2,2.5);
 
-		bool emissive = false;
-
     ////////////////////////////////////////////////
     // Raymarching loop
     ////////////////////////////////////////////////
@@ -141,7 +139,7 @@ fragment_shader ps_sdfscene
           nze = pow(nze,NoisePowerB);
           color = mix(ColorA*IntensityA,ColorB*IntensityB,nze);
 
-					out_gbuf = packGbuffer(color,normal,roughness,metallic,emissive);
+					out_gbuf = packGbuffer(color,vec3(0),normal,roughness,metallic);
 
           float ndc_depth = (total_distance_traveled-Near)/(Far-Near);
           gl_FragDepth = (1.0 - 0.0) * 0.5 * ndc_depth + (1.0 + 0.0) * 0.5;
