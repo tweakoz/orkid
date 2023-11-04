@@ -43,10 +43,13 @@ class UiSgQuadViewTestApp(object):
 
     lg_group = self.ezapp.topLayoutGroup
     self.griditems = lg_group.makeGrid( width = 2,
-                                        height = 2,
+                                        height = 1,
                                         margin = 1,
                                         uiclass = ui.SceneGraphViewport,
                                         args = ["box",vec4(1,0,1,1)] )
+
+    self.gpu_update_handlers = []
+    self.abstime = 0.0
 
     def onCtrlC(signum, frame):
       print("signalling EXIT to ezapp")
@@ -62,6 +65,7 @@ class UiSgQuadViewTestApp(object):
     self.cameralut = self.ezapp.vars.cameras
     self.uicontext = self.ezapp.uicontext
 
+
     ########################################################
     # shared geometry
     ########################################################
@@ -75,22 +79,32 @@ class UiSgQuadViewTestApp(object):
     submesh_prim = meshutil.RigidPrimitive(submesh,ctx)
     pipeline_mesh = createPipeline( app = self, ctx = ctx, rendermodel="FORWARD_PBR", techname="std_mono_fwd" )
 
+    self.model = XgmModel("data://tests/chartest/char_mesh")
+    self.anim = XgmAnim("data://tests/chartest/char_testanim1")
+
     ########################################################
     # scenegraph init data
     ########################################################
 
-    sg_params = VarMap()
-    sg_params.SkyboxIntensity = 3.0
-    sg_params.DiffuseIntensity = 1.0
-    sg_params.SpecularIntensity = 1.0
-    sg_params.AmbientLevel = vec3(.125)
-    #sg_params.preset = "DeferredPBR"
-    sg_params.preset = "ForwardPBR"
-    #sg_params.dbufcontext = self.dbufcontext
+    sg_params_fwd = VarMap()
+    sg_params_fwd.SkyboxIntensity = 3.0
+    sg_params_fwd.DiffuseIntensity = 1.0
+    sg_params_fwd.SpecularIntensity = 1.0
+    sg_params_fwd.AmbientLevel = vec3(.125)
+    sg_params_fwd.preset = "ForwardPBR"
+
 
     ########################################################
     # create scenegraph / panels
     ########################################################
+
+    self.shared_cameralut = CameraDataLut()
+    self.shared_camera, self.shared_uicam = setupUiCameraX( cameralut=self.shared_cameralut, 
+                                                            camname="SharedCamera",
+                                                            eye = vec3(0,5,20),
+                                                            tgt = vec3(0,5,0),
+                                                            up = vec3(0,1,0) )
+
 
     class Panel:
 
@@ -101,26 +115,97 @@ class UiSgQuadViewTestApp(object):
         self.parent = parent
         self.index = index
         self.camname = "Camera%d"%index
+        self.use_event = False
+
         #
-        self.scenegraph = scenegraph.Scene(sg_params)
-        self.layer = self.scenegraph.createLayer("layer")
-        self.grid_node = self.layer.createGridNode("grid",parent.grid_data)
-        self.grid_node.sortkey = 1
-        self.cube_node = cube_prim.createNode("cube",self.layer,pipeline_cube)
-        #
+
         self.cameralut = CameraDataLut()
-        self.camera, self.uicam = setupUiCameraX( cameralut=self.cameralut, camname=self.camname )
         self.cur_eye = vec3(0,0,0)
         self.cur_tgt = vec3(0,0,1)
         self.dst_eye = vec3(0,0,0)
         self.dst_tgt = vec3(0,0,0)
         self.counter = 0
-        self.use_event = False
 
-        griditem = parent.griditems[index]
-        
-        griditem.widget.cameraName = self.camname
-        griditem.widget.scenegraph = self.scenegraph
+        griditem = parent.griditems[index]        
+        self.cameralut = CameraDataLut()
+        self.camera, self.uicam = setupUiCameraX( cameralut=self.cameralut, camname=self.camname )
+
+        if True:
+
+          if index==0:
+            sg_params_def = VarMap()
+            sg_params_def.SkyboxIntensity = 3.0
+            sg_params_def.DiffuseIntensity = 1.0
+            sg_params_def.SpecularIntensity = 1.0
+            sg_params_def.AmbientLevel = vec3(.125)
+            sg_params_def.preset = "DeferredPBR"
+            self.scenegraph = scenegraph.Scene(sg_params_def)
+          else:
+            comp_tek = NodeCompositingTechnique()
+            comp_tek.renderNode = DeferredPbrRenderNode()
+            comp_tek.outputNode = ScreenOutputNode()
+
+            comp_data = CompositingData()
+            comp_scene = comp_data.createScene("scene1")
+            comp_sceneitem = comp_scene.createSceneItem("item1")
+            comp_sceneitem.technique = comp_tek
+
+            # OVERRIDES
+
+            pbr_common = comp_tek.renderNode.pbr_common
+            pbr_common.requestSkyboxTexture("src://envmaps/tozenv_hellscape")
+            pbr_common.environmentIntensity = 1
+            pbr_common.environmentMipBias = 10
+            pbr_common.environmentMipScale = 1
+            pbr_common.diffuseLevel = 1
+            pbr_common.specularLevel = 1
+            pbr_common.specularMipBias = 1
+            pbr_common.skyboxLevel = .5
+            pbr_common.depthFogDistance = 100
+            pbr_common.depthFogPower = 1
+            comp_tek.renderNode.overrideShader("ork_lev2://examples/python/common/compositorsetup.glfx")
+
+            print(comp_sceneitem)
+            print(comp_tek)
+            print(pbr_common)
+            sg_params_xxx = VarMap()
+            sg_params_xxx.preset = "USER"
+            sg_params_xxx.compositordata = comp_data
+            self.scenegraph = scenegraph.Scene(sg_params_xxx)
+
+          self.use_event = True
+          self.layer = self.scenegraph.createLayer("layer")
+          self.sgnode = parent.model.createNode("modelnode",self.layer)
+
+          self.anim_inst = XgmAnimInst(parent.anim)
+          self.anim_inst.mask.enableAll()
+          self.anim_inst.use_temporal_lerp = True
+          self.anim_inst.bindToSkeleton(parent.model.skeleton)
+
+          self.modelinst = self.sgnode.user.pyext_retain_modelinst
+          self.modelinst.enableSkinning()
+          self.modelinst.enableAllMeshes()
+          self.localpose = self.modelinst.localpose
+          self.worldpose = self.modelinst.worldpose
+          griditem.widget.cameraName = "SharedCamera"
+          griditem.widget.scenegraph = self.scenegraph
+          self.cameralut = parent.shared_cameralut
+          self.camera = parent.shared_camera
+          self.uicam = parent.shared_uicam
+
+          def handler(context):
+            self.localpose.bindPose()
+            self.anim_inst.currentFrame = parent.abstime*30.0
+            self.anim_inst.weight = 1.0
+            self.anim_inst.applyToPose(self.localpose)
+            self.localpose.blendPoses()
+            self.localpose.concatenate()
+            self.worldpose.fromLocalPose(self.localpose,mtx4())
+
+          parent.gpu_update_handlers += [handler]
+
+        #
+
         griditem.widget.forkDB()
 
         ########################################### 
@@ -195,44 +280,24 @@ class UiSgQuadViewTestApp(object):
     self.panels = [
       Panel(self, 0),
       Panel(self, 1),
-      Panel(self, 2),
-      Panel(self, 3),
     ]
     
     ##########################################################################
 
-    self.panels[0].griditem.widget.decoupleFromUiSize(4096,4096)
-    self.panels[0].griditem.widget.aspect_from_rtgroup = True
+    #self.panels[0].griditem.widget.decoupleFromUiSize(4096,4096)
+    #self.panels[0].griditem.widget.aspect_from_rtgroup = True
 
-    if True: # try out widget replacement
-      lg_group = self.ezapp.topLayoutGroup
-      item = lg_group.makeEvTestBox( w=100, #
-                                     h=100, #
-                                     x=100, #
-                                     y=100, #
-                                     color_normal=vec4(0.75,0.75,0.75,0.5), #
-                                     color_click=vec4(0.5,0.0,0.0,0.5), #
-                                     color_doubleclick=vec4(0.5,1.0,0.5,0.5), #
-                                     color_drag=vec4(0.5,0.5,1.0,0.5), #
-                                     name="testbox1")
-      self.uicontext.dumpWidgets("UI1")
-      lg_group.layout.dump()
-      #lg_group.removeChild(self.panels[0].griditem.layout)
-      lg_group.replaceChild(self.panels[0].griditem.layout,item)
-      self.uicontext.dumpWidgets("UI2")
-      lg_group.layout.dump()
-      lg_group.clearColor = vec4(1,0,1,1)
+  ################################################
+
+  def onGpuUpdate(self,context):
+    for handler in self.gpu_update_handlers:
+      handler(context)
 
   ################################################
 
   def onUpdate(self,updinfo):
 
-    abstime = updinfo.absolutetime
-
-    cube_y = 0.4+math.sin(abstime)*0.2
-    #self.cube_node1.worldTransform.translation = vec3(0,cube_y,0) 
-    #self.cube_node1.worldTransform.orientation = quat(vec3(0,1,0),abstime*90*constants.DTOR) 
-    #self.cube_node1.worldTransform.scale = 0.1
+    self.abstime = updinfo.absolutetime
 
     for panel in self.panels:
       panel.update()
