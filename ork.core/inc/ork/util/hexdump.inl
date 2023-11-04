@@ -58,7 +58,7 @@ inline void hexdumpbytes(const uint8_t* bytes, size_t length) {
   }
 }
 
-inline void hexdumpbytes(std::vector<uint8_t> bytes) {
+inline void hexdumpbytes(const std::vector<uint8_t>& bytes) {
   hexdumpbytes(bytes.data(), bytes.size());
 }
 

@@ -60,7 +60,7 @@ if args["disablezeroareapolycheck"]:
 if args["encrypt"]:
   os.environ["ORKID_ASSET_ENCRYPT_MODE"] = "1"
 
-os.environ["ORKID_LOGFILE_meshutil.assimp"] = os.environ["OBT_STAGE"]+"/tempdir/assimp.log"
+#os.environ["ORKID_LOGFILE_meshutil.assimp"] = os.environ["OBT_STAGE"]+"/tempdir/assimp.log"
 
 ################################################################################
 

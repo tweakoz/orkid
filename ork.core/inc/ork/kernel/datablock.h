@@ -11,6 +11,8 @@
 #include <cstdint>
 #include <ork/util/crc64.h>
 #include <ork/kernel/varmap.inl>
+#include <ork/kernel/fixedstring.h>
+
 namespace ork {
 
 struct DataBlock;
@@ -22,6 +24,20 @@ using datablock_constptr_t = std::shared_ptr<const DataBlock>;
 ///   with convenience methods for getting data in and out
 ///   The data is serdes'ed to and from a vector of bytes
 ///////////////////////////////////////////////////////////////////////////////
+
+struct EncryptionCodec{
+  virtual datablock_ptr_t encrypt(const DataBlock* inp) = 0;
+  virtual datablock_ptr_t decrypt(const DataBlock* inp) = 0;
+  svar64_t _impl;
+};
+struct DefaultEncryptionCodec : public EncryptionCodec {
+  DefaultEncryptionCodec();
+  datablock_ptr_t encrypt(const DataBlock* inp) final;
+  datablock_ptr_t decrypt(const DataBlock* inp) final;
+};
+
+using encryptioncodec_ptr_t = std::shared_ptr<EncryptionCodec>;
+encryptioncodec_ptr_t encryptionCodecFactory(uint32_t codecID);
 
 struct DataBlock {
   /////////////////////////////////////////////
@@ -62,9 +78,9 @@ struct DataBlock {
   /////////////////////////////////////////////
   bool _append(const unsigned char* buffer, size_t bufmax);
   /////////////////////////////////////////////
-  datablock_ptr_t encrypt() const;
+  datablock_ptr_t encrypt(encryptioncodec_ptr_t codec) const;
   /////////////////////////////////////////////
-  datablock_ptr_t decrypt() const;
+  datablock_ptr_t decrypt(encryptioncodec_ptr_t codec) const;
   /////////////////////////////////////////////
   std::vector<uint8_t> _storage;
   std::shared_ptr<varmap::VarMap> _vars;
