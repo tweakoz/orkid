@@ -19,12 +19,7 @@ from common.scenegraph import createSceneGraph
 
 ################################################################################
 parser = argparse.ArgumentParser(description='scenegraph particles example')
-parser.add_argument("-i", "--inputorjfile",type=str, default="", help='load particle orj file')
 args = vars(parser.parse_args())
-inputorjfile = args["inputorjfile"]
-orjfile = path.Path(inputorjfile)
-print(orjfile,inputorjfile)
-use_orjfile = len(inputorjfile) and orjfile.exists()
 ################################################################################
 
 class SkinningApp(object):
@@ -49,18 +44,18 @@ class SkinningApp(object):
     ################################################
 
     vguides = lg_group.vertical_guides
-    vguides[1].proportion = 0.35
-    vguides[2].proportion = 0.35
+    vguides[1].proportion = 0.5
+    vguides[2].proportion = 0.5
 
     ################################################
     # replace left viewport with particle editor
     ################################################
 
-    self.objmodel = ui.ObjModel()
-    self.ged_item = lg_group.makeChild( uiclass = ui.GedSurface,
-                                        args = ["GEDSURF",self.objmodel] )
-    lg_group.replaceChild(self.griditems[0].layout, self.ged_item)
-    self.ged_surf = self.ged_item.widget
+    #self.objmodel = ui.ObjModel()
+    #self.ged_item = lg_group.makeChild( uiclass = ui.GedSurface,
+    #                                    args = ["GEDSURF",self.objmodel] )
+    #lg_group.replaceChild(self.griditems[0].layout, self.ged_item)
+    #self.ged_surf = self.ged_item.widget
 
     ################################################
     # camera / event handler
@@ -98,11 +93,6 @@ class SkinningApp(object):
     sg_params.AmbientLevel = vec3(.125)
     sg_params.preset = "DeferredPBR"
 
-    self.scenegraph = scenegraph.Scene(sg_params)
-    self.layer = self.scenegraph.createLayer("layer")
-    self.griditems[1].widget.scenegraph = self.scenegraph
-    self.griditems[1].widget.forkDB()
-
     ###################################
     # create animation data
     ###################################
@@ -119,6 +109,8 @@ class SkinningApp(object):
     # create model / sg node
     ##################
 
+    self.scenegraph = scenegraph.Scene(sg_params)
+    self.layer = self.scenegraph.createLayer("layer")
     self.sgnode = self.model.createNode("modelnode",self.layer)
     self.modelinst = self.sgnode.user.pyext_retain_modelinst
     self.modelinst.enableSkinning()
@@ -126,6 +118,9 @@ class SkinningApp(object):
     self.localpose = self.modelinst.localpose
     self.worldpose = self.modelinst.worldpose
 
+    for i in range(0,1):
+      self.griditems[i].widget.scenegraph = self.scenegraph
+      self.griditems[i].widget.forkDB()
 
   ################################################
 
@@ -142,7 +137,8 @@ class SkinningApp(object):
 
   def onUpdate(self,updinfo):
     self.scenegraph.updateScene(self.cameralut) # update and enqueue all scenenodes
-    self.griditems[1].widget.setDirty()
+    for g in self.griditems:
+      g.widget.setDirty()
 
   ##############################################
 

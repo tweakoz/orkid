@@ -11,13 +11,33 @@
 #include <cstdint>
 #include <ork/util/crc64.h>
 #include <ork/kernel/varmap.inl>
+#include <ork/kernel/fixedstring.h>
+
 namespace ork {
+
+struct DataBlock;
+using datablock_ptr_t = std::shared_ptr<DataBlock>;
+using datablock_constptr_t = std::shared_ptr<const DataBlock>;
 
 ///////////////////////////////////////////////////////////////////////////////
 /// DataBlock : SerDes container for arbitrary binary data
 ///   with convenience methods for getting data in and out
 ///   The data is serdes'ed to and from a vector of bytes
 ///////////////////////////////////////////////////////////////////////////////
+
+struct EncryptionCodec{
+  virtual datablock_ptr_t encrypt(const DataBlock* inp) = 0;
+  virtual datablock_ptr_t decrypt(const DataBlock* inp) = 0;
+  svar64_t _impl;
+};
+struct DefaultEncryptionCodec : public EncryptionCodec {
+  DefaultEncryptionCodec();
+  datablock_ptr_t encrypt(const DataBlock* inp) final;
+  datablock_ptr_t decrypt(const DataBlock* inp) final;
+};
+
+using encryptioncodec_ptr_t = std::shared_ptr<EncryptionCodec>;
+encryptioncodec_ptr_t encryptionCodecFactory(uint32_t codecID);
 
 struct DataBlock {
   /////////////////////////////////////////////
@@ -60,13 +80,14 @@ struct DataBlock {
   /////////////////////////////////////////////
   void dump() const;
   /////////////////////////////////////////////
+  datablock_ptr_t encrypt(encryptioncodec_ptr_t codec) const;
+  /////////////////////////////////////////////
+  datablock_ptr_t decrypt(encryptioncodec_ptr_t codec) const;
+  /////////////////////////////////////////////
   std::vector<uint8_t> _storage;
   std::shared_ptr<varmap::VarMap> _vars;
   std::string _name = "noname";
 };
-
-using datablock_ptr_t = std::shared_ptr<DataBlock>;
-using datablock_constptr_t = std::shared_ptr<const DataBlock>;
 
 ///////////////////////////////////////////////////////////////////////////////
 template <typename T> T* DataBlock::allocateItems(size_t itemcount) {

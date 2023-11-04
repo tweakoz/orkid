@@ -14,3 +14,4 @@
 *.jpeg filter=lfs diff=lfs merge=lfs -text lockable
 *.blend filter=lfs diff=lfs merge=lfs -text lockable
 *.3b.jpg filter=lfs diff=lfs merge=lfs -text lockable
+*.orkemdl filter=lfs diff=lfs merge=lfs -text lockable

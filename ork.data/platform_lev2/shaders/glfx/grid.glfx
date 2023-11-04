@@ -194,7 +194,7 @@ libblock lib_frgdeferred_grid_pbr : lib_frg_grid {
     float ruf = 0.0;
 
     vec3 grid_color = grid_output(frg_pos.xyz).xyz;
-    out_gbuf = packGbuffer(grid_color,normal,ruf,mtl,true);
+    out_gbuf = packGbuffer(vec3(0),grid_color,normal,ruf,mtl);
 
   }
 }

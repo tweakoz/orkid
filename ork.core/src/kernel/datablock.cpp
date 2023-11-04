@@ -7,7 +7,58 @@
 
 #include <ork/kernel/datablock.h>
 #include <ork/util/hexdump.inl>
+#include <ork/util/crc.h>
+
 namespace ork {
+///////////////////////////////////////////////////////////////////////////////
+encryptioncodec_ptr_t encryptionCodecFactory(uint32_t codecID){
+  switch(codecID){
+    case "default_encryption"_crcu:
+      return std::make_shared<DefaultEncryptionCodec>();
+      break;
+    default:
+      OrkAssert(false);
+      break;
+  }
+  return nullptr;
+}
+///////////////////////////////////////////////////////////////////////////////
+DefaultEncryptionCodec::DefaultEncryptionCodec(){
+}
+///////////////////////////////////////////////////////////////////////////////
+datablock_ptr_t DefaultEncryptionCodec::encrypt(const DataBlock* inp) {
+  auto rval = std::make_shared<DataBlock>();
+  rval->_name = inp->_name;
+  rval->_vars = inp->_vars;
+  size_t size = inp->_storage.size();
+  rval->_storage.reserve(size+4);
+  auto encmagic = Char4("oems");
+  auto data = (uint8_t*) encmagic.mCharMems;
+  rval->addItem<uint32_t>(encmagic.muVal32);
+  rval->addItem<uint32_t>("default_encryption"_crcu);
+  uint32_t counter = (5<<0)|(1<<8)|(11<<16);
+  for (uint8_t byte : inp->_storage) {
+    byte += (counter&0xff);
+    rval->_storage.push_back(byte);
+    counter++;
+  }
+  return rval;
+}
+///////////////////////////////////////////////////////////////////////////////
+datablock_ptr_t DefaultEncryptionCodec::decrypt(const DataBlock* inp) {
+  auto rval = std::make_shared<DataBlock>();
+  rval->_name = inp->_name;
+  rval->_vars = inp->_vars;
+  size_t size = inp->_storage.size();
+  rval->_storage.reserve(size);
+  uint32_t counter = (5<<0)|(1<<8)|(11<<16);
+  for (uint8_t byte : inp->_storage) {
+    byte -= (counter&0xff);
+    rval->_storage.push_back(byte);
+    counter++;
+  }
+  return rval;  
+}
 ///////////////////////////////////////////////////////////////////////////////
 DataBlock::hasher_t DataBlock::createHasher() {
   return std::make_shared<::boost::Crc64>();
@@ -19,6 +70,14 @@ DataBlock::DataBlock(const void* buffer, size_t len) {
 
   if (buffer and len)
     addData(buffer, len);
+}
+///////////////////////////////////////////////////////////////////////////////
+datablock_ptr_t DataBlock::encrypt(encryptioncodec_ptr_t codec) const {
+  return codec->encrypt(this);
+}
+///////////////////////////////////////////////////////////////////////////////
+datablock_ptr_t DataBlock::decrypt(encryptioncodec_ptr_t codec) const {
+  return codec->decrypt(this);
 }
 ///////////////////////////////////////////////////////////////////////////////
 const uint8_t* DataBlock::data(size_t index) const {

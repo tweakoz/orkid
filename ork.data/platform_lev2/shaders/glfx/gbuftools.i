@@ -7,6 +7,7 @@ libblock lib_gbuf_decode {
     vec3 _wpos;
     vec3 _wnrm;
     vec3 _albedo;
+    vec3 _emissive;
     float _zeye;
     float _fogZ;
     float _linZ;
@@ -14,7 +15,6 @@ libblock lib_gbuf_decode {
     float _metallic;
     float _roughness;
     int _mask;
-    int _emissive;
     float _atmos;
     float _alpha;
     float _specscale[9];
@@ -109,22 +109,23 @@ libblock lib_gbuf_decode {
     ///////////////////////////////
     const float inverse_255 = 1.0/255.0;
     const float inverse_nrm = 1.0/32767.5;
-    uint ur = (gbuf.x)&0xfffu; // 12 bits
-    uint ug = (gbuf.x>>12)&0xfffu; // 12 bits (24)
-    uint ub = (gbuf.y)&0xfffu;  // 12 bits (36)
-    float nx = float(gbuf.z&0xffffu)*inverse_nrm;
-          nx -= 1.0; // 16 bits (52)
-    float ny = float((gbuf.z>>16)&0xffffu)*inverse_nrm;
-    ny -= 1.0; // 16 bits (68)
 
-    float nz = sqrt(abs(1-nx*nx-ny*ny)); // rebuild normal z component
-    uint uruf = uint(gbuf.y>>12)&0xffu; // 8 bits (76)
-    uint umtl = uint(gbuf.y>>24)&0xffu; // 8 bits (84)
-    bool signof_nz = bool((gbuf.x>>25)&1u);  // 1 bit (61)
-    bool emissive = bool((gbuf.x>>24)&1u);  // 1 bit (62);
-    int mask = int((gbuf.x>>26)&1u); // 1 bit (63)
-    if(signof_nz)
-      nz = -nz;
+    uint ur = (gbuf.r)&0xfffu; // 12 bits
+    uint ug = (gbuf.r>>12)&0xfffu; // 12 bits 
+    uint er = (gbuf.r>>24)&0xffu; // 8 bits
+
+    uint ub = (gbuf.g)&0xfffu;  // 12 bits 
+    uint eg = (gbuf.g>>12)&0xffu; // 8 bits
+    uint eb = (gbuf.g>>20)&0xffu;  // 8 bits
+    int mask = int((gbuf.g>>28)&1u); // 1 bit 
+
+    uint uruf = uint(gbuf.b)&0xffu; // 8 bits 
+    uint umtl = uint(gbuf.b>>8)&0xffu; // 8 bits 
+    float nx = float((gbuf.b>>16)&0xffffu)*inverse_nrm-1.0; // 16 bits 
+
+    float ny = float((gbuf.a)&0xffffu)*inverse_nrm-1.0; // 16 bits 
+    float nz = float((gbuf.a>>16)&0xffffu)*inverse_nrm-1.0;; 
+    
     vec3 nn      = vec3(nx,ny,nz);
     ///////////////////////////////
     // multiple normal samples
@@ -167,14 +168,14 @@ libblock lib_gbuf_decode {
     ///////////////////////////////
     decoded._wnrm   = normalize(nn);
     decoded._albedo = vec3(float(ur),float(ug),float(ub))*inverse_255;
+    decoded._emissive = vec3(float(er),float(eg),float(eb))*inverse_255;
     decoded._fogZ = o._fogZ;
     decoded._rawDepth = o._rawDepth;
-    decoded._emissive = int(emissive);
     decoded._metallic = float(umtl)*inverse_255;
     decoded._roughness = float(uruf)*inverse_255;
     decoded._mask = mask;
-    decoded._atmos = float(gbuf.a&0xffffu)/32768.0;
-    decoded._alpha = float((gbuf.a>>16)&0xffffu)/1024.0;
+    decoded._atmos = 0.0;//float(gbuf.a&0xffffu)/32768.0;
+    decoded._alpha = 0.0;//float((gbuf.a>>16)&0xffffu)/1024.0;
     ///////////////////////////////
     //decoded._emissive = 1;
     //decoded._albedo = vec3(decoded._specscale[4]);
@@ -185,8 +186,13 @@ libblock lib_gbuf_decode {
 libblock lib_gbuf_encode {
   /////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////
-  uvec4 packGbuffer(vec3 basecolor,vec3 normal,float ruf, float mtl, bool emissive){
+  uvec4 packGbuffer(vec3 basecolor,
+                    vec3 emissive,
+                    vec3 normal,
+                    float ruf, 
+                    float mtl){
     uvec3 ucolor = uvec3(basecolor*255.0);
+    uvec3 uemisv = uvec3(emissive*255.0);
     vec3 normed = normalize(normal);
     ////////////////////
     // convert
@@ -194,20 +200,23 @@ libblock lib_gbuf_encode {
     uint r = ucolor.r&0x00000fffu; // 12 bits (12)
     uint g = ucolor.g&0x00000fffu; // 12 bits (24)
     uint b = ucolor.b&0x00000fffu; // 12 bits (36)
-    uint unx = uint((normed.x+1.0)*32767.5)&0xffffu; // 16 bits (52)
-    uint uny = uint((normed.y+1.0)*32767.5)&0xffffu; // 16 bits (68)
-    uint uruf = uint(ruf*255.0)&0xffu; // 8 bits (76)
-    uint umtl = uint(mtl*255.0)&0xffu; // 8 bits (84)
-    uint uemissive = uint(emissive); // 1 bit (85)
-    uint snz = uint(normed.z<0.0); // 1 bit (86)
-    uint mask = 0x80000000; // 1 bit (87)
+    uint er = uemisv.r&0x000000ffu; // 8 bits (44)
+    uint eg = uemisv.g&0x000000ffu; // 8 bits (52)
+    uint eb = uemisv.b&0x000000ffu; // 8 bits (60)
+    uint unx = uint((normed.x+1.0)*32767.5)&0xffffu; // 16 bits (76)
+    uint uny = uint((normed.y+1.0)*32767.5)&0xffffu; // 16 bits (92)
+    uint unz = uint((normed.z+1.0)*32767.5)&0xffffu; // 16 bits (108)
+    uint uruf = uint(ruf*255.0)&0xffu; // 8 bits (116)
+    uint umtl = uint(mtl*255.0)&0xffu; // 8 bits (124)
+    uint mask = (1<<28);               // 1 bit (125)
     ////////////////////
     // pack
     ////////////////////
-    uint rout = r|(g<<12)|(uemissive<<24)|(snz<<25)|(1u<<26);
-    uint gout = b|(uruf<<12)|(umtl<<24);
-    uint bout = unx|(uny<<16);
-    return uvec4(rout,gout,bout,0u);
+    uint rout = r|(g<<12)|(er<<24);        // 32 bits
+    uint gout = b|(eg<<12)|(eb<<20)|mask;   // 29 bits
+    uint bout = uruf|(umtl<<8)|(unx<<16);  // 32 bits
+    uint aout = uny|(unz<<16);             // 32 bits
+    return uvec4(rout,gout,bout,aout);
   }
   uvec4 packGbufferA(float atmos,float alpha){
     uint uatmos = uint(atmos*32768.0)&0xffffu;
@@ -218,6 +227,6 @@ libblock lib_gbuf_encode {
     return uvec4(0,0,0,uatmos|(ualpha<<16));
   }
   uvec4 packGbuffer_unlit(vec3 basecolor){
-    return packGbuffer(basecolor,vec3(0,0,0),1,0,true);
+    return packGbuffer(vec3(0,0,0),basecolor,vec3(0,0,0),1,0);
   }
 } // libblock lib_gbuf {

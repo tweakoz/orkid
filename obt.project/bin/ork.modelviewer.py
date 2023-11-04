@@ -8,16 +8,13 @@
 ################################################################################
 
 import math, random, argparse, sys, os
-from orkengine.core import *
-from orkengine.lev2 import *
+from obt import path
 
 ################################################################################
 
-sys.path.append((thisdir()/".."/".."/"ork.lev2"/"examples"/"python").normalized.as_string) # add parent dir to path
-from common.cameras import *
-from common.shaders import *
-from common.primitives import createGridData
-from common.scenegraph import createSceneGraph
+thisdir = path.directoryOfInvokingModule()
+
+sys.path.append(str(thisdir/".."/".."/"ork.lev2"/"examples"/"python")) # add parent dir to path
 
 ################################################################################
 
@@ -34,6 +31,8 @@ parser.add_argument("-d", "--camdist", type=float, default=0.0, help='camera dis
 parser.add_argument("-e", "--envmap", type=str, default="", help='environment map')
 parser.add_argument("-o", "--overrideshader", type=str, default="", help='override shader')
 parser.add_argument("-c", "--overridecolor", type=str, default="", help='override color (vec3)')
+parser.add_argument("-z", "--disablezeroareapolycheck", action="store_true", help='disable zero area poly check')
+parser.add_argument("-x", "--encrypt", action="store_true", help='encrpyt model')
 
 ################################################################################
 
@@ -55,6 +54,24 @@ if args["forceregen"]:
 if args["showskeleton"]:
   os.environ["ORKID_LEV2_SHOW_SKELETON"] = "1"
 
+if args["disablezeroareapolycheck"]:
+  os.environ["ORKID_LEV2_MESHUTIL_DISABLE_ZEROAREACHECK"] = "1"
+
+if args["encrypt"]:
+  os.environ["ORKID_ASSET_ENCRYPT_MODE"] = "1"
+
+#os.environ["ORKID_LOGFILE_meshutil.assimp"] = os.environ["OBT_STAGE"]+"/tempdir/assimp.log"
+
+################################################################################
+
+# make sure env vars are set before importing the engine...
+
+from orkengine.core import *
+from orkengine.lev2 import *
+from common.cameras import *
+from common.shaders import *
+from common.primitives import createGridData
+from common.scenegraph import createSceneGraph
 
 ################################################################################
 

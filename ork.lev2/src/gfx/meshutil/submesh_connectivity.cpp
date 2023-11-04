@@ -9,9 +9,10 @@
 #include <ork/math/plane.h>
 #include <ork/lev2/gfx/meshutil/submesh.h>
 #include <ork/util/logger.h>
+#include <ork/kernel/environment.h>
 
 namespace ork::meshutil {
-static logchannel_ptr_t logchan_connectivity = logger()->createChannel("meshutil.connectivity", fvec3(.9, .9, 1), false);
+static logchannel_ptr_t logchan_connectivity = logger()->createChannel("meshutil.connectivity", fvec3(.9, .9, 1), true);
 ////////////////////////////////////////////////////////////////
 
 IConnectivity::IConnectivity(submesh* sub)
@@ -26,6 +27,17 @@ DefaultConnectivity::DefaultConnectivity(submesh* sub)
   _vtxpool = std::make_shared<vertexpool>();
   for (int i = 0; i < 8; i++)
     _polyTypeCounter[i] = 0;
+
+
+  if(genviron.has("ORKID_LEV2_MESHUTIL_DISABLE_ZEROAREACHECK")){
+    std::string ORKID_LEV2_MESHUTIL_DISABLE_ZEROAREACHECK;
+    genviron.get("ORKID_LEV2_MESHUTIL_DISABLE_ZEROAREACHECK", ORKID_LEV2_MESHUTIL_DISABLE_ZEROAREACHECK);
+    if(ORKID_LEV2_MESHUTIL_DISABLE_ZEROAREACHECK=="1"){
+      _enable_zero_area_check = false;
+      OrkAssert(false);
+    }
+  }
+
 }
 ////////////////////////////////////////////////////////////////
 poly_index_set_t DefaultConnectivity::polysConnectedToEdge(edge_ptr_t edge, bool ordered) const {
@@ -200,7 +212,9 @@ merged_poly_ptr_t DefaultConnectivity::mergePoly(const Polygon& ply) {
   int ipolyindex = numPolys();
   std::vector<vertex_ptr_t> import_verts;
   std::unordered_set<vertex_ptr_t> unique_verts;
+  int num_inp_verts = 0;
   ply.visitVertices([&](vertex_ptr_t v) {
+    num_inp_verts++;
     OrkAssert(v != nullptr);
     v->_numConnectedPolys++;
     _centerOfPolysCount++;
@@ -212,19 +226,21 @@ merged_poly_ptr_t DefaultConnectivity::mergePoly(const Polygon& ply) {
   });
   int inumv      = import_verts.size();
 
-  if(inumv<3)
+  if(inumv<3){
+    logchan_connectivity->log("Mesh::mergePoly() removing poly : numv<%d> numinputv<%d>", inumv, num_inp_verts);
     return nullptr;
+  }
 
   ///////////////////////////////
   // zero area poly removal
   ///////////////////////////////
   double area = ply.computeArea();
-  if (area < 0.00001) {
+  if( _enable_zero_area_check and (area < 0.00000001)) {
 
     std::string poly_str = "[";
     ply.visitVertices([&](vertex_ptr_t v) { poly_str += FormatString(" %d", v->_poolindex); });
     poly_str += " ]";
-    logchan_connectivity->log("Mesh::mergePoly() removing zero area poly %s", poly_str.c_str());
+    logchan_connectivity->log("Mesh::mergePoly() removing zero area poly %s : area<%g>", poly_str.c_str(), area);
     return nullptr;
   }
   //////////////////////////////

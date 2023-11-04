@@ -476,6 +476,7 @@ struct DefaultConnectivity : public IConnectivity{
 
   dvec3 _centerOfPolysAccum;
   int _centerOfPolysCount = 0;
+  bool _enable_zero_area_check = true;
 
   std::unordered_map<merged_poly_const_ptr_t, halfedge_vect_t> _halfedges_by_poly;
   std::unordered_map<uint64_t, halfedge_ptr_t> _halfedge_map;

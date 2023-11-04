@@ -573,6 +573,7 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu,con
     pipeline->bindParam(mtl->_paramMapColor,mtl->_texColor);
     pipeline->bindParam(mtl->_paramMapNormal,mtl->_texNormal);
     pipeline->bindParam(mtl->_paramMapMtlRuf,mtl->_texMtlRuf);
+    pipeline->bindParam(mtl->_paramMapEmissive,mtl->_texEmissive);
 
     pipeline->bindParam(mtl->_parMetallicFactor,mtl->_metallicFactor);
     pipeline->bindParam(mtl->_parRoughnessFactor,mtl->_roughnessFactor);
@@ -815,6 +816,7 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
   _paramMapColor          = fxi->parameter(_shader, "ColorMap");
   _paramMapNormal         = fxi->parameter(_shader, "NormalMap");
   _paramMapMtlRuf         = fxi->parameter(_shader, "MtlRufMap");
+  _paramMapEmissive       = fxi->parameter(_shader, "EmissiveMap");
   _parInvViewSize         = fxi->parameter(_shader, "InvViewportSize");
   _parMetallicFactor      = fxi->parameter(_shader, "MetallicFactor");
   _parRoughnessFactor     = fxi->parameter(_shader, "RoughnessFactor");
@@ -879,14 +881,9 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
 
     OrkAssert(_texMtlRuf != nullptr);
   }
-  if (_texEmissive) {
-    //_asset_emissive = _asset_texcolor;
-    //_texEmissive       = _asset_emissive->GetTexture();
-    //logchan_pbr->log("substituted white for non-existant color texture");
-    // OrkAssert(_texEmissive != nullptr);
-    forceEmissive();
-    //_asset_texcolor = asset::AssetManager<lev2::TextureAsset>::load("src://effect_textures/white");
-    _texColor = _texEmissive;
+  if (_texEmissive == nullptr) {
+    static auto defemitex = targ->TXI()->createColorTexture(fvec4(0,0,0,0),8,8);
+    _texEmissive    = defemitex;
   }
 }
 

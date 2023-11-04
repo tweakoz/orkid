@@ -21,7 +21,7 @@ class MutableString;
 
 namespace ork::asset {
 
-typedef fxstring<8> file_ext_t;
+typedef fxstring<16> file_ext_t;
 
 struct FileSet {
   file_ext_t mExt;

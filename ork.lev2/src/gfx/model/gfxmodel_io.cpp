@@ -22,6 +22,7 @@
 #include <boost/filesystem.hpp>
 #include <ork/kernel/datacache.h>
 #include <ork/util/logger.h>
+#include <ork/util/hexdump.inl>
 #include <ork/kernel/memcpy.inl>
 
 namespace bfs = boost::filesystem;
@@ -33,6 +34,9 @@ datablock_ptr_t assimpToXgm(datablock_ptr_t inp_datablock);
 namespace ork { namespace lev2 {
 static bool FORCE_MODEL_REGEN(){
   return genviron.has("ORKID_LEV2_FORCE_MODEL_REGEN");
+}
+static bool ASSET_ENCRYPT_MODE(){
+  return genviron.has("ORKID_ASSET_ENCRYPT_MODE");
 }
 static logchannel_ptr_t logchan_mioR = logger()->createChannel("gfxmodelIOREAD",fvec3(0.8,0.8,0.4),true);
 static logchannel_ptr_t logchan_mioW = logger()->createChannel("gfxmodelIOWRITE",fvec3(0.8,0.7,0.4));
@@ -109,16 +113,43 @@ bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename, const ass
 bool XgmModel::_loaderSelect(XgmModel* mdl, datablock_ptr_t datablock) {
   DataBlockInputStream datablockstream(datablock);
   Char4 check_magic(datablockstream.getItem<uint32_t>());
-  if (check_magic == Char4("chkf")) // its a chunkfile
+  if (check_magic == Char4("chkf")) { // its a chunkfile
     return _loadXGM(mdl, datablock);
-  if (check_magic == Char4("glTF")) // its a glb (binary)
+  }
+  if (check_magic == Char4("glTF")){ // its a glb (binary)
+    if(ASSET_ENCRYPT_MODE()){
+      auto codec = std::make_shared<DefaultEncryptionCodec>();
+      auto encrypted_datablock = datablock->encrypt(codec);
+      auto outpath = file::Path::temp_dir()/"temp.orkemdl";
+      ork::File outputfile(outpath, ork::EFM_WRITE);
+      outputfile.Write(encrypted_datablock->data(), encrypted_datablock->length());
+    }
     return _loadAssimp(mdl, datablock);
+  }
+  printf( "check_magic<%08x>\n", check_magic );
+  if (check_magic.muVal32 == 0x736d656f ){ // its encrypted
+    printf("aaa: decrypting datablock hash<%zx> length<%zu>\n", datablock->hash(), datablock->length()  );
+    uint32_t codecID = datablockstream.getItem<uint32_t>();
+    auto& storage = datablock->_storage;
+    storage.erase(storage.begin(), storage.begin() + 8);
+    printf("aaa: decrypting datablock rehash<%zx> relength<%zu>\n", datablock->hash(), datablock->length()  );
+    auto codec = encryptionCodecFactory(codecID);
+    auto decrypted_datablock = datablock->decrypt(codec);
+    hexdumpbytes(decrypted_datablock->_storage.data(),64);
+    printf("aaa: decrypted_datablock hash<%zx> length<%zu>\n", decrypted_datablock->hash(), decrypted_datablock->length() );
+    bool OK =  _loadAssimp(mdl, decrypted_datablock);
+    printf("assimp load status<%d>\n", int(OK));
+    //OrkAssert(false);
+    return OK;
+  }
+  
   auto extension = datablock->_vars->typedValueForKey<std::string>("file-extension").value();
   if (extension == "gltf" or //
       extension == "dae" or  //
       extension == "fbx" or  //
-      extension == "obj")
+      extension == "obj") {
     return _loadAssimp(mdl, datablock);
+  }
   OrkAssert(false);
   return false;
 }
@@ -126,6 +157,7 @@ bool XgmModel::_loaderSelect(XgmModel* mdl, datablock_ptr_t datablock) {
 ////////////////////////////////////////////////////////////
 
 bool XgmModel::_loadAssimp(XgmModel* mdl, datablock_ptr_t inp_datablock) {
+    printf("aaa: load assimp datablock hash<%zx> length<%zu>\n", inp_datablock->hash(), inp_datablock->length() );
   auto basehasher = DataBlock::createHasher();
   basehasher->accumulateString("assimp2xgm");
 
@@ -159,6 +191,7 @@ bool XgmModel::_loadAssimp(XgmModel* mdl, datablock_ptr_t inp_datablock) {
   basehasher->finish();
   uint64_t hashkey   = basehasher->result();
   auto xgm_datablock = DataBlockCache::findDataBlock(hashkey);
+  printf( "xgm_datablock<%p>\n", (void*) xgm_datablock.get() );
   if (not xgm_datablock or FORCE_MODEL_REGEN()) {
     xgm_datablock = meshutil::assimpToXgm(inp_datablock);
     DataBlockCache::setDataBlock(hashkey, xgm_datablock);
@@ -168,6 +201,11 @@ bool XgmModel::_loadAssimp(XgmModel* mdl, datablock_ptr_t inp_datablock) {
 ////////////////////////////////////////////////////////////
 
 bool XgmModel::_loadXGM(XgmModel* mdl, datablock_ptr_t datablock) {
+
+  printf("aaa: load _loadXGM datablock hash<%zx> length<%zu>\n", datablock->hash(), datablock->length() );
+
+  hexdumpbytes(datablock->_storage.data(),64);
+
   constexpr int kVERSIONTAG = 0x01234567;
   bool rval                 = false;
   /////////////////////////////////////////////////////////////
@@ -199,6 +237,7 @@ bool XgmModel::_loadXGM(XgmModel* mdl, datablock_ptr_t datablock) {
       HeaderStream->GetItem(XGMVERSIONCODE);
       HeaderStream->GetItem(inumjoints);
     }
+    logchan_mioR->log("XGM: inumjoints<%d>\n", inumjoints );
     /////////////////////////////////////////////////////////
     if (inumjoints) {
       mdl->_skeleton->resize(inumjoints);
@@ -217,6 +256,7 @@ bool XgmModel::_loadXGM(XgmModel* mdl, datablock_ptr_t datablock) {
         HeaderStream->GetItem(ijointmatrix);
         HeaderStream->GetItem(iinvrestmatrix);
         const char* pjntname = chunkreader.GetString(ijointname);
+        logchan_mioR->log("XGM: joint<%d:%s>\n", ib, pjntname );
 
         fmtx4 scalematrix;
         //scalematrix.compose(fvec3(0,0,0),fquat(),0.01f);
@@ -858,6 +898,7 @@ datablock_ptr_t writeXgmToDatablock(const lev2::XgmModel* mdl) {
     }
   }
   chunkwriter.writeToDataBlock(out_datablock);
+  printf("aaa: _saveXGM datablock hash<%zx> len<%zu>\n", out_datablock->hash(), out_datablock->length() );
   //OrkAssert(false);
   return out_datablock;
 }

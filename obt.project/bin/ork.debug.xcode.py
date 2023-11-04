@@ -7,6 +7,11 @@ import argparse
 import re
 import shutil
 
+from obt import path 
+
+
+cur_wd = os.getcwd()
+
 def prettify(elem):
   """Return a pretty-printed XML string for the Element."""
   rough_string = ET.tostring(elem, 'utf-8')
@@ -36,7 +41,7 @@ def is_python_script(executable_path):
   except Exception as e:
     return False
 
-def create_xcode_structure(workspace_path, bin_path, env_vars, exec_args):
+def create_xcode_structure(workspace_path, bin_path, env_vars, exec_args, working_dir=None):
   # Remove existing workspace if it exists
   if os.path.exists(workspace_path):
     shutil.rmtree(workspace_path)
@@ -63,10 +68,15 @@ def create_xcode_structure(workspace_path, bin_path, env_vars, exec_args):
                                 buildConfiguration="Debug",
                                 selectedDebuggerIdentifier="Xcode.DebuggerFoundation.Debugger.LLDB",
                                 selectedLauncherIdentifier="Xcode.DebuggerFoundation.Launcher.LLDB",
-                                launchStyle="0", useCustomWorkingDirectory="NO",
+                                launchStyle="0", 
+                                useCustomWorkingDirectory="YES" if (working_dir!=None) else "NO",
                                 ignoresPersistentStateOnLaunch="NO",
                                 debugDocumentVersioning="YES", debugServiceExtension="internal",
                                 allowLocationSimulation="YES")
+
+  if working_dir!=None:
+    launch_action.set('customWorkingDirectory', working_dir)
+
   path_runnable = ET.SubElement(launch_action, "PathRunnable", runnableDebuggingMode="0", FilePath=bin_path)
 
   env_vars_elem = ET.SubElement(launch_action, "EnvironmentVariables")
@@ -87,7 +97,7 @@ def create_xcode_structure(workspace_path, bin_path, env_vars, exec_args):
 if __name__ == "__main__":
   parser = argparse.ArgumentParser(description="Generate Xcode workspace structure with debug scheme.")
   parser.add_argument("executable_name", help="Name of the executable or path to the script.")
-  parser.add_argument("--", dest="exec_args", nargs=argparse.REMAINDER, help="Arguments for the executable.")
+  parser.add_argument("rest", nargs=argparse.REMAINDER, help="Arguments for the executable.")
   args = parser.parse_args()
 
   executable_path = find_executable(args.executable_name)
@@ -101,10 +111,10 @@ if __name__ == "__main__":
     if not python_path:
       print("python3 not found.")
       exit(1)
-    exec_args = [executable_path] + (args.exec_args if args.exec_args else [])
+    exec_args = [executable_path] + (args.rest if args.rest else [])
     executable_path = python_path
   else:
-    exec_args = args.exec_args if args.exec_args else []
+    exec_args = args.rest if args.rest else []
 
   exec_name = re.sub(r"[^a-zA-Z0-9]", "_", args.executable_name)
   env_vars = {
@@ -117,4 +127,4 @@ if __name__ == "__main__":
     env_vars["ORKID_GRAPHICS_API"] = os.getenv("ORKID_GRAPHICS_API")
 
   workspace_dir = os.path.join(env_vars["OBT_STAGE"], "tempdir", exec_name + ".xcworkspace")
-  create_xcode_structure(workspace_dir, executable_path, env_vars, exec_args)
+  create_xcode_structure(workspace_dir, executable_path, env_vars, exec_args, cur_wd)

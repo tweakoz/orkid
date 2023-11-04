@@ -21,7 +21,7 @@ void Mesh::readFromAssimp(const file::Path& BasePath) {
   OrkAssert(bfs::is_regular_file(GlbPath.toBFS()));
   OrkAssert(bfs::exists(base_dir));
   OrkAssert(bfs::is_directory(base_dir));
-  auto dblock                                                  = datablockFromFileAtPath(GlbPath);
+  datablock_ptr_t dblock = datablockFromFileAtPath(GlbPath);
   dblock->_vars->makeValueForKey<std::string>("file-extension") = GlbPath.getExtension().c_str();
   dblock->_vars->makeValueForKey<bfs::path>("base-directory")   = base_dir;
   //logchan_meshutilassimp->log("BEGIN: importing<%s> via Assimp\n", GlbPath.c_str());
@@ -215,10 +215,10 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
         logchan_meshutilassimp->log("has_uniform_specular<%f %f %f %f>", color.r, color.g, color.b, color.a);
       }
       if (AI_SUCCESS == aiGetMaterialColor(material, AI_MATKEY_COLOR_AMBIENT, &color)) {
-        logchan_meshutilassimp->log("has_uniform_ambient");
+        logchan_meshutilassimp->log("has_uniform_ambient<%f %f %f %f>", color.r, color.g, color.b, color.a);
       }
       if (AI_SUCCESS == aiGetMaterialColor(material, AI_MATKEY_COLOR_EMISSIVE, &color)) {
-        logchan_meshutilassimp->log("has_uniform_emissive");
+        logchan_meshutilassimp->log("has_uniform_emissive<%f %f %f %f>", color.r, color.g, color.b, color.a);
       }
       if (AI_SUCCESS == aiGetMaterialFloat(material, AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLIC_FACTOR, &f)) {
         outmtl->_metallicFactor = f;
@@ -451,11 +451,13 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
         mtlref       = outmtl;
         ork::meshutil::vertex muverts[4];
         logchan_meshutilassimp->log("processing numfaces<%d> %s", mesh->mNumFaces, outmtl->_name.c_str() );
+        int numinputtriangles = 0;
         for (int t = 0; t < mesh->mNumFaces; ++t) {
           const aiFace* face = &mesh->mFaces[t];
           bool is_triangle   = (face->mNumIndices == 3);
 
           if (is_triangle) {
+            numinputtriangles++;
             for (int facevert_index = 0; facevert_index < 3; facevert_index++) {
               int index = face->mIndices[facevert_index];
               /////////////////////////////////////////////
@@ -596,16 +598,17 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
             logchan_meshutilassimp->log("non triangle");
           }
         }
-        // logchan_meshutilassimp->log("  done processing numfaces<%d> ..\n", mesh->mNumFaces);
+        logchan_meshutilassimp->log("done processing numfaces<%d> ..", mesh->mNumFaces);
+        logchan_meshutilassimp->log("numinputtriangles<%d>", numinputtriangles );
         /////////////////////////////////////////////
         // stats
         /////////////////////////////////////////////
-        // int meshout_numtris = out_submesh.GetNumPolys(3);
-        // int meshout_numquads = out_submesh.GetNumPolys(4);
-        // int meshout_numverts = out_submesh._vtxpool.GetNumVertices();
-        // logchan_meshutilassimp->log( "meshout_numtris<%d>\n", meshout_numtris );
-        // logchan_meshutilassimp->log( "meshout_numquads<%d>\n", meshout_numquads );
-        // logchan_meshutilassimp->log( "meshout_numverts<%d>\n", meshout_numverts );
+        int meshout_numtris = out_submesh.numPolys(3);
+        int meshout_numquads = out_submesh.numPolys(4);
+        int meshout_numverts = out_submesh.numVertices();
+        logchan_meshutilassimp->log( "meshout_numtris<%d>", meshout_numtris );
+        logchan_meshutilassimp->log( "meshout_numquads<%d>", meshout_numquads );
+        logchan_meshutilassimp->log( "meshout_numverts<%d>", meshout_numverts );
         /////////////////////////////////////////////
       }
 
@@ -815,7 +818,7 @@ void clusterizeToolMeshToXgmMesh(const ork::meshutil::Mesh& inp_model, ork::lev2
   out_mesh->ReserveSubMeshes(count_subs);
   subindex = 0;
 
-  //logchan_meshutilassimp->log("generating %d submeshes\n", (int)count_subs);
+  logchan_meshutilassimp->log("generating %d submeshes\n", (int)count_subs);
 
   for (auto item : mtlsubmap) {
     GltfMaterial* gltfm = item.first;
