@@ -1103,9 +1103,6 @@ pbrmaterial_ptr_t PBRMaterial::clone() const {
   copy->mMaterialName = mMaterialName;
   copy->_varmap = _varmap;
 
-  if(_initialTarget){
-    //copy->gpuInit(_initialTarget);
-  }
   return copy;
 }
 

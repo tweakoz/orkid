@@ -40,7 +40,7 @@ class MinimalSceneGraphApp(object):
     # create scenegraph
     ###################################
 
-    createSceneGraph(app=self,rendermodel="DeferredPBR")
+    createSceneGraph(app=self,rendermodel="ForwardPBR")
 
     ###################################
     # create frustum primitive / sgnode
@@ -57,7 +57,7 @@ class MinimalSceneGraphApp(object):
     pipeline = createPipeline( app = self,
                                ctx = ctx,
                                techname = "std_mono",
-                               rendermodel = "DeferredPBR" )
+                               rendermodel = "ForwardPBR" )
 
     self.primnode = frustum_prim.createNode("node1",self.layer1,pipeline)
 

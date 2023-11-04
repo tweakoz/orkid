@@ -201,6 +201,24 @@ struct FxShaderStorageBufferMapping {
 };
 
 ///////////////////////////////////////////////////////////////////////////////
+// TODO : implement descriptor sets at public API level
+//  so we can hoist static descriptor binding code out of rendering loop 
+///////////////////////////////////////////////////////////////////////////////
+
+struct FxShaderDescriptorSetItem {
+  svarp_t _impl;
+};
+struct FxShaderDescriptorSet {
+  std::unordered_map<std::string,fxdescriptorsetitem_ptr_t> _items_by_name;
+  std::unordered_map<fxparam_constptr_t,fxdescriptorsetitem_ptr_t> _items_by_param;
+  std::unordered_map<int,fxdescriptorsetitem_ptr_t> _items_by_binding;
+  svarp_t _impl;
+};
+struct FxShaderDescriptorSetBindPoint {
+  svarp_t _impl;
+};
+
+///////////////////////////////////////////////////////////////////////////////
 
 struct FxComputeShader {
   svar64_t _impl;

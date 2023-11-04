@@ -133,6 +133,9 @@ struct FxPipeline;
 struct FxPipelineCache;
 struct FxPipelinePermutation;
 struct FxPipelinePermutationSet;
+struct FxDescriptorSet;
+struct FxDescriptorSetItem;
+struct FxShaderDescriptorSetBindPoint;
 //
 using parambuffermappingptr_t = std::shared_ptr<FxShaderParamBufferMapping>;
 using fxshader_ptr_t         = FxShader*;
@@ -151,6 +154,12 @@ using fxpipelinepermutation_ptr_t = std::shared_ptr<FxPipelinePermutation>;
 using fxpipelinepermutation_constptr_t = std::shared_ptr<const FxPipelinePermutation>;
 using fxpipelinepermutation_set_ptr_t = std::shared_ptr<FxPipelinePermutationSet>;
 using fxpipelinepermutation_set_constptr_t = std::shared_ptr<const FxPipelinePermutationSet>;
+using fxdescriptorset_ptr_t = std::shared_ptr<FxDescriptorSet>;
+using fxdescriptorset_constptr_t = std::shared_ptr<const FxDescriptorSet>;
+using fxdescriptorsetitem_ptr_t = std::shared_ptr<FxDescriptorSetItem>;
+using fxdescriptorsetitem_constptr_t = std::shared_ptr<const FxDescriptorSetItem>;
+using fxdescriptorsetbindpoint_ptr_t = std::shared_ptr<FxShaderDescriptorSetBindPoint>;
+using fxdescriptorsetbindpoint_constptr_t = std::shared_ptr<const FxShaderDescriptorSetBindPoint>;
 
 ///////////////////////////////////////////////////////////////////////////////
 // Material

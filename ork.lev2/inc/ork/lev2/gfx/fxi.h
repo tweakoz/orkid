@@ -9,7 +9,7 @@
 
 #include <ork/lev2/lev2_types.h>
 
-namespace ork::lev2{
+namespace ork::lev2 {
 
 /// ////////////////////////////////////////////////////////////////////////////
 /// ////////////////////////////////////////////////////////////////////////////
@@ -28,12 +28,13 @@ public:
   virtual void EndPass()                 = 0;
   virtual void EndBlock()                = 0;
   virtual void CommitParams(void)        = 0;
-  virtual void reset() {}
+  virtual void reset() {
+  }
   virtual const FxShaderTechnique* technique(FxShader* hfx, const std::string& name)       = 0;
   virtual const FxShaderParam* parameter(FxShader* hfx, const std::string& name)           = 0;
   virtual const FxShaderParamBlock* parameterBlock(FxShader* hfx, const std::string& name) = 0;
 
-  virtual const FxComputeShader* computeShader(FxShader* hfx, const std::string& name) = 0;
+  virtual const FxComputeShader* computeShader(FxShader* hfx, const std::string& name)     = 0;
   virtual const FxShaderStorageBlock* storageBlock(FxShader* hfx, const std::string& name) = 0;
 
   virtual void BindParamBool(const FxShaderParam* hpar, const bool bval)                          = 0;
@@ -52,8 +53,22 @@ public:
   virtual void BindParamU32(const FxShaderParam* hpar, uint32_t uval)                             = 0;
   virtual void BindParamCTex(const FxShaderParam* hpar, const Texture* pTex)                      = 0;
   virtual void BindParamU64(const FxShaderParam* hpar, uint64_t uval)                             = 0;
-
   void BindParamTex(const FxShaderParam* hpar, const lev2::TextureAsset* tex);
+
+  //////////////////////////////////////////
+  // new descriptorset api
+  //////////////////////////////////////////
+
+  virtual size_t numDescriptorSetBindPoints(fxtechnique_constptr_t tek) {
+    return 0;
+  }
+  virtual fxdescriptorsetbindpoint_constptr_t descriptorSetBindPoint(fxtechnique_constptr_t tek, int slot_index) {
+    return nullptr;
+  }
+  virtual void bindDescriptorSet(fxdescriptorsetbindpoint_constptr_t bindingpoint, fxdescriptorset_constptr_t the_set) {
+  }
+
+  //////////////////////////////////////////
 
   virtual bool LoadFxShader(const AssetPath& pth, FxShader* ptex) = 0;
   virtual FxShader* shaderFromShaderText(const std::string& name, const std::string& shadertext) {
@@ -79,18 +94,23 @@ public:
 
   void pushRasterState(rasterstate_ptr_t rs);
   rasterstate_ptr_t popRasterState();
-  virtual void _doPushRasterState(rasterstate_ptr_t rs) {}
-  virtual rasterstate_ptr_t _doPopRasterState() { return nullptr; }
+  virtual void _doPushRasterState(rasterstate_ptr_t rs) {
+  }
+  virtual rasterstate_ptr_t _doPopRasterState() {
+    return nullptr;
+  }
 
 protected:
   FxShader* _activeShader;
   const FxShaderTechnique* _activeTechnique;
 
 private:
-  virtual void _doBeginFrame() {}
-  virtual void _doEndFrame() {}
+  virtual void _doBeginFrame() {
+  }
+  virtual void _doEndFrame() {
+  }
   virtual void DoOnReset() {
   }
 };
 
-} //namespace ork::lev2{
+} // namespace ork::lev2

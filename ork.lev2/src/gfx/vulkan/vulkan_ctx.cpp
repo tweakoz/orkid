@@ -221,23 +221,33 @@ void VkContext::_initVulkanCommon() {
   // create descriptor pool
   std::vector<VkDescriptorPoolSize> poolSizes;
 
+  constexpr size_t DESCRIPTORSET_COUNT = 4096;
+
   auto& poolsize_combsamplers           = poolSizes.emplace_back();
   poolsize_combsamplers.type            = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-  poolsize_combsamplers.descriptorCount = 64; // Number of descriptors of this type to allocate
+  poolsize_combsamplers.descriptorCount = DESCRIPTORSET_COUNT; // Number of descriptors of this type to allocate
 
   auto& poolsize_samplers           = poolSizes.emplace_back();
   poolsize_samplers.type            = VK_DESCRIPTOR_TYPE_SAMPLER;
-  poolsize_samplers.descriptorCount = 64; // Number of descriptors of this type to allocate
+  poolsize_samplers.descriptorCount = DESCRIPTORSET_COUNT; // Number of descriptors of this type to allocate
 
   auto& poolsize_sampled_images           = poolSizes.emplace_back();
   poolsize_sampled_images.type            = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-  poolsize_sampled_images.descriptorCount = 64; // Number of descriptors of this type to allocate
+  poolsize_sampled_images.descriptorCount = DESCRIPTORSET_COUNT; // Number of descriptors of this type to allocate
+
+  auto& poolsize_uniform_buffers           = poolSizes.emplace_back();
+  poolsize_uniform_buffers.type            = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+  poolsize_uniform_buffers.descriptorCount = DESCRIPTORSET_COUNT; // Number of descriptors of this type to allocate
+
+  auto& poolsize_storage_buffers           = poolSizes.emplace_back();
+  poolsize_storage_buffers.type            = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+  poolsize_storage_buffers.descriptorCount = DESCRIPTORSET_COUNT; // Number of descriptors of this type to allocate
 
   VkDescriptorPoolCreateInfo poolInfo = {};
   initializeVkStruct(poolInfo, VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO);
   poolInfo.poolSizeCount = poolSizes.size();
   poolInfo.pPoolSizes    = poolSizes.data();
-  poolInfo.maxSets       = 256; // Maximum number of descriptor sets to allocate from this pool
+  poolInfo.maxSets       = DESCRIPTORSET_COUNT; // Maximum number of descriptor sets to allocate from this pool
 
   OK = vkCreateDescriptorPool(_vkdevice, &poolInfo, nullptr, &_vkDescriptorPool);
   OrkAssert(OK == VK_SUCCESS);

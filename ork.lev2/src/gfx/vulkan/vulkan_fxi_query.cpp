@@ -12,6 +12,20 @@
 namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
 
+///////////////////////////////////////////////////////////////////////////////
+
+size_t VkFxInterface::numDescriptorSetBindPoints(fxtechnique_constptr_t tek) {
+  OrkAssert(false);
+  return 0;
+}
+
+fxdescriptorsetbindpoint_constptr_t VkFxInterface::descriptorSetBindPoint(fxtechnique_constptr_t tek, int slot_index) {
+  OrkAssert(false);
+  return nullptr;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 const FxShaderTechnique* VkFxInterface::technique(FxShader* pshader, const std::string& name) {
   auto vkshfile = pshader->_internalHandle.get<vkfxsfile_ptr_t>();
   auto it_tek   = vkshfile->_vk_techniques.find(name);
@@ -35,16 +49,16 @@ const FxShaderParam* VkFxInterface::parameter(FxShader* pshader, const std::stri
   const FxShaderParam* rval = nullptr;
   auto vkshfile             = pshader->_internalHandle.get<vkfxsfile_ptr_t>();
   auto shader_name          = vkshfile->_shader_name;
-  
+
   //////////////////////////////////////////////////////
   // search sampler sets
   //////////////////////////////////////////////////////
 
-  size_t num_smpsets        = vkshfile->_vk_samplersets.size();
+  size_t num_smpsets = vkshfile->_vk_samplersets.size();
   for (auto item : vkshfile->_vk_samplersets) {
     auto smpset_name = item.first;
-    auto smpset  = item.second;
-    auto it_samp = smpset->_samplers_by_name.find(name);
+    auto smpset      = item.second;
+    auto it_samp     = smpset->_samplers_by_name.find(name);
     if (it_samp != smpset->_samplers_by_name.end()) {
       auto samp = it_samp->second;
       rval      = samp->_orkparam.get();
@@ -56,7 +70,7 @@ const FxShaderParam* VkFxInterface::parameter(FxShader* pshader, const std::stri
       break;
     }
   }
-  if( rval != nullptr ){
+  if (rval != nullptr) {
     return rval;
   }
 
@@ -64,7 +78,7 @@ const FxShaderParam* VkFxInterface::parameter(FxShader* pshader, const std::stri
   // search uniform sets
   //////////////////////////////////////////////////////
 
-  size_t num_unisets        = vkshfile->_vk_uniformsets.size();
+  size_t num_unisets = vkshfile->_vk_uniformsets.size();
   for (auto item : vkshfile->_vk_uniformsets) {
     auto uniset_name = item.first;
     // printf( "search uniset<%s>\n", uniset_name.c_str() );
@@ -81,7 +95,7 @@ const FxShaderParam* VkFxInterface::parameter(FxShader* pshader, const std::stri
       break;
     }
   }
-  if( rval != nullptr ){
+  if (rval != nullptr) {
     return rval;
   }
 
@@ -153,11 +167,11 @@ const FxComputeShader* VkFxInterface::computeShader(FxShader* pshader, const std
   OrkAssert(it != vkshfile->_vk_shaderobjects.end());
   auto sh_obj = it->second;
   OrkAssert(sh_obj->_STAGE == "compute"_crcu);
-  auto vk_program   = std::make_shared<VkFxShaderProgram>(vkshfile.get());
+  auto vk_program        = std::make_shared<VkFxShaderProgram>(vkshfile.get());
   vk_program->_comshader = sh_obj;
-  auto cushader = new FxComputeShader;
+  auto cushader          = new FxComputeShader;
   cushader->_impl.set<vkfxsprg_ptr_t>(vk_program);
-  static int prog_index      = 128;
+  static int prog_index          = 128;
   vk_program->_pipeline_bits_prg = prog_index;
   prog_index++;
   OrkAssert(prog_index < 256);

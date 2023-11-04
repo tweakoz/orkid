@@ -43,7 +43,11 @@ FxPipeline::FxPipeline(const FxPipelinePermutation& config)
 }
 /////////////////////////////////////////////////////////////////////////
 void FxPipeline::bindParam(fxparam_constptr_t p, varval_t v){
-  OrkAssert(p!=nullptr);
+  if(p==nullptr){
+    auto tn = _technique->_techniqueName;
+    printf( "technique<%s> bad param\n", tn.c_str() );
+    OrkAssert(false);
+  }
   _params[p] = v;
 }
 /////////////////////////////////////////////////////////////////////////

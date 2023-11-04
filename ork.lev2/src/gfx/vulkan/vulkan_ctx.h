@@ -135,7 +135,7 @@ using vktxi_ptr_t    = std::shared_ptr<VkTextureInterface>;
 using vktxi_rawptr_t = VkTextureInterface*;
 
 using vkfxi_ptr_t = std::shared_ptr<VkFxInterface>;
-using vkci_ptr_t = std::shared_ptr<VkComputeInterface>;
+using vkci_ptr_t  = std::shared_ptr<VkComputeInterface>;
 //
 using vktexobj_ptr_t        = std::shared_ptr<VulkanTextureObject>;
 using vkfxsfile_ptr_t       = std::shared_ptr<VkFxShaderFile>;
@@ -223,12 +223,12 @@ vksamplercreateinfo_ptr_t makeVKSCI();
 struct VulkanVertexInterface;
 struct VulkanVertexInterfaceInput;
 using vkvertexinterfaceinput_ptr_t = std::shared_ptr<VulkanVertexInterfaceInput>;
-using vkvertexinterface_ptr_t = std::shared_ptr<VulkanVertexInterface>;
+using vkvertexinterface_ptr_t      = std::shared_ptr<VulkanVertexInterface>;
 
 struct VulkanGeometryInterface;
 struct VulkanGeometryInterfaceInput;
 using vkgeometryinterfaceinput_ptr_t = std::shared_ptr<VulkanGeometryInterfaceInput>;
-using vkgeometryinterface_ptr_t = std::shared_ptr<VulkanGeometryInterface>;
+using vkgeometryinterface_ptr_t      = std::shared_ptr<VulkanGeometryInterface>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -327,34 +327,34 @@ struct VkRasterState {
 
 ///////////////////////////////////////////////////////////////////////////
 
-struct VulkanVertexInterfaceInput{
+struct VulkanVertexInterfaceInput {
   std::string _datatype;
   std::string _identifier;
   std::string _semantic;
   size_t _datasize = 0;
 };
-struct VulkanVertexInterface{
+struct VulkanVertexInterface {
   using input_t = VulkanVertexInterfaceInput;
   std::string _name;
   vkvertexinterface_ptr_t _parent;
   std::vector<vkvertexinterfaceinput_ptr_t> _inputs;
   int _pipeline_bits = -1;
-  uint64_t _hash = 0;
+  uint64_t _hash     = 0;
 };
 
-struct VulkanGeometryInterfaceInput{
+struct VulkanGeometryInterfaceInput {
   std::string _datatype;
   std::string _identifier;
   std::string _semantic;
   size_t _datasize = 0;
 };
-struct VulkanGeometryInterface{
+struct VulkanGeometryInterface {
   using input_t = VulkanGeometryInterfaceInput;
   std::string _name;
   vkgeometryinterface_ptr_t _parent;
   std::vector<vkgeometryinterfaceinput_ptr_t> _inputs;
   int _pipeline_bits = -1;
-  uint64_t _hash = 0;
+  uint64_t _hash     = 0;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -365,12 +365,11 @@ struct VkCommandBufferImpl {
   ~VkCommandBufferImpl();
 
   VkCommandBuffer _vkcmdbuf = VK_NULL_HANDLE;
-  CommandBuffer* _parent = nullptr;
-  bool _recorded = false;
+  CommandBuffer* _parent    = nullptr;
+  bool _recorded            = false;
   vkcontext_rawptr_t _contextVK;
 
   std::vector<commandbuffer_ptr_t> _secondary_cmdbuffers;
-
 };
 
 struct VulkanRenderPass {
@@ -378,12 +377,11 @@ struct VulkanRenderPass {
   ~VulkanRenderPass();
 
   std::vector<RenderSubPass*> _toposorted_subpasses;
-  VkRenderPass _vkrp = VK_NULL_HANDLE;
+  VkRenderPass _vkrp  = VK_NULL_HANDLE;
   VkFramebuffer _vkfb = VK_NULL_HANDLE;
   VkFramebufferCreateInfo _vkfbinfo;
   commandbuffer_ptr_t _seccmdbuffer;
   vkcontext_rawptr_t _contextVK;
-  
 };
 struct VulkanRenderSubPass {
 
@@ -401,16 +399,12 @@ struct VklRtBufferImpl {
   void transitionToHostRead(vkcontext_rawptr_t ctxVK, vkcmdbufimpl_ptr_t cb);
 
   void setLayout(VkImageLayout layout);
-  void _replaceImage(
-    VkFormat new_fmt,
-    VkImageView new_view,
-    VkImage new_img);
-
+  void _replaceImage(VkFormat new_fmt, VkImageView new_view, VkImage new_img);
 
   VkRtGroupImpl* _rtg_impl = nullptr;
-  RtBuffer* _rtb         = nullptr;
-  bool _init             = true;
-  bool _is_surface       = false;
+  RtBuffer* _rtb           = nullptr;
+  bool _init               = true;
+  bool _is_surface         = false;
   VkImage _vkimg;
   vkimageobj_ptr_t _imgobj;
   VkFormat _vkfmt;
@@ -422,7 +416,7 @@ struct VklRtBufferImpl {
   svar64_t _teximpl;
 };
 
-struct RtGroupAttachments{
+struct RtGroupAttachments {
   std::vector<VkAttachmentDescription> _descriptions;
   std::vector<VkAttachmentReference> _references;
   std::vector<VkImageView> _imageviews;
@@ -443,8 +437,8 @@ struct VkRtGroupImpl {
   vkrtbufimpl_ptr_t _depthonly;
   rtgroup_attachments_ptr_t __attachments;
 
-  int _width  = 0;
-  int _height = 0;
+  int _width         = 0;
+  int _height        = 0;
   int _pipeline_bits = -1;
   vkmsaastate_ptr_t _msaaState;
 
@@ -454,7 +448,6 @@ struct VkRtGroupImpl {
   commandbuffer_ptr_t _cmdbuf;
   renderpass_ptr_t _rpass_clear;
   renderpass_ptr_t _rpass_misc;
-
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -508,7 +501,7 @@ struct VulkanMemoryForBuffer {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct VulkanBuffer {
-  VulkanBuffer(vkcontext_rawptr_t ctxVK, size_t length, VkBufferUsageFlags usage, std::string name="");
+  VulkanBuffer(vkcontext_rawptr_t ctxVK, size_t length, VkBufferUsageFlags usage, std::string name = "");
   ~VulkanBuffer();
 
   void copyFromHost(const void* src, size_t length);
@@ -534,7 +527,7 @@ barrier_ptr_t createImageBarrier(
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct VulkanTimelineSemaphoreObject{
+struct VulkanTimelineSemaphoreObject {
   VulkanTimelineSemaphoreObject(vkcontext_rawptr_t ctxVK);
   ~VulkanTimelineSemaphoreObject();
   vkcontext_rawptr_t _ctxVK;
@@ -558,7 +551,7 @@ using vkfence_obj_ptr_t = std::shared_ptr<VulkanFenceObject>;
 ///////////////////////////////////////////////////////////////////////////////
 
 struct VulkanImageObject {
-  VulkanImageObject(vkcontext_rawptr_t ctx, vkimagecreateinfo_ptr_t cinfo, std::string name="");
+  VulkanImageObject(vkcontext_rawptr_t ctx, vkimagecreateinfo_ptr_t cinfo, std::string name = "");
   ~VulkanImageObject();
   vkcontext_rawptr_t _ctx;
   vkimagecreateinfo_ptr_t _cinfo;
@@ -611,7 +604,7 @@ struct VkFxShaderUniformSet {
   std::vector<vkfxsunisetitem_ptr_t> _items_by_order;
 };
 ///////////////////////////////////////////////////////////////////////////////
-struct VkFxShaderDescriptorSet{
+struct VkFxShaderDescriptorSet {
   size_t _descriptor_set_id = 0;
 };
 using vkfxdescset_ptr_t = std::shared_ptr<VkFxShaderDescriptorSet>;
@@ -663,7 +656,7 @@ using descriptor_bindings_vect_t = std::vector<VkDescriptorSetLayoutBinding>;
 // using descriptor_samplerinfos_vect_t = std::vector<VkSamplerCreateInfo>;
 struct VkDescriptorSetBindings {
 
-  std::map<size_t,vkfxdescset_ptr_t> _descriptorsets;
+  std::map<size_t, vkfxdescset_ptr_t> _descriptorsets;
 
   descriptor_bindings_vect_t _vkbindings;
   size_t _sampler_count = 0;
@@ -736,9 +729,9 @@ struct VkFxShaderProgram {
   std::vector<uint8_t> _pushdatabuffer;
   vkdescriptorbindings_ptr_t _descriptors;
   std::unordered_map<fxparam_constptr_t, size_t> _samplers_by_orkparam;
-  std::unordered_map<fxparam_constptr_t, vktexobj_ptr_t > _textures_by_orkparam;
-  std::unordered_map<size_t, vktexobj_ptr_t > _textures_by_binding;
-  int _pipeline_bits_prg = -1;
+  std::unordered_map<fxparam_constptr_t, vktexobj_ptr_t> _textures_by_orkparam;
+  std::unordered_map<size_t, vktexobj_ptr_t> _textures_by_binding;
+  int _pipeline_bits_prg       = -1;
   int _pipeline_bits_composite = -1;
 
   std::unordered_map<std::string, vkfxssmpset_ptr_t> _vk_samplersets;
@@ -747,12 +740,12 @@ struct VkFxShaderProgram {
   VkFxShaderFile* _shader_file = nullptr;
 };
 
-struct VulkanDescriptorSet{
-    VkDescriptorSet _vkdescset;
+struct VulkanDescriptorSet {
+  VkDescriptorSet _vkdescset;
 };
 using vkdescriptorset_ptr_t = std::shared_ptr<VulkanDescriptorSet>;
 
-struct VulkanDescriptorSetCache{
+struct VulkanDescriptorSetCache {
 
   VulkanDescriptorSetCache(vkcontext_rawptr_t ctx);
 
@@ -762,7 +755,6 @@ struct VulkanDescriptorSetCache{
   vkcontext_rawptr_t _ctxVK;
 };
 using vkdescriptorsetcache_ptr_t = std::shared_ptr<VulkanDescriptorSetCache>;
-
 
 struct VkPipelineObject {
 
@@ -813,7 +805,7 @@ struct VulkanVertexBuffer {
   VertexBufferBase& _ork_vtxbuf;
   std::unordered_map<uint64_t, vkvertexinputconfig_ptr_t> _vif_to_layout;
 
-  //vkvertexinputconfig_ptr_t _vertexConfig;
+  // vkvertexinputconfig_ptr_t _vertexConfig;
 };
 struct VulkanIndexBuffer {
   VulkanIndexBuffer(vkcontext_rawptr_t ctx, size_t length);
@@ -874,20 +866,20 @@ struct VkMatrixStackInterface final : public MatrixStackInterface {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct VertexStreamConfigItem{
+struct VertexStreamConfigItem {
   std::string _vbuf_datatype;
   std::string _semantic;
-  size_t _datasize = 0;
+  size_t _datasize   = 0;
   size_t _dataoffset = 0;
   VkFormat _vkformat = VK_FORMAT_UNDEFINED;
 };
 
 using vertex_strconfig_item_ptr_t = std::shared_ptr<VertexStreamConfigItem>;
 
-struct VertexStreamConfig{
+struct VertexStreamConfig {
 
   void addItem(std::string sem, std::string vb_dt, size_t ds, size_t offset, VkFormat fmt);
-  std::unordered_map<std::string,vertex_strconfig_item_ptr_t> _item_by_semantic;
+  std::unordered_map<std::string, vertex_strconfig_item_ptr_t> _item_by_semantic;
   size_t _stride = 0;
 };
 
@@ -941,9 +933,7 @@ struct VkGeometryBufferInterface final : public GeometryBufferInterface {
       int ivbase          = 0,
       int ivcount         = 0) final;
 
-  void
-  DrawIndexedPrimitiveEML(const VertexBufferBase& VBuf, const IndexBufferBase& IdxBuf, PrimitiveType eType)
-      final;
+  void DrawIndexedPrimitiveEML(const VertexBufferBase& VBuf, const IndexBufferBase& IdxBuf, PrimitiveType eType) final;
 
   void DrawInstancedIndexedPrimitiveEML(
       const VertexBufferBase& VBuf,
@@ -967,7 +957,7 @@ struct VkGeometryBufferInterface final : public GeometryBufferInterface {
   vkcontext_rawptr_t _contextVK;
   uint32_t _lastComponentMask = 0xFFFFFFFF;
   std::unordered_map<uint64_t, vkprimclass_ptr_t> _primclasses;
-  std::unordered_map<EVtxStreamFormat,vertex_strconfig_ptr_t> _vertexStreamConfigs;
+  std::unordered_map<EVtxStreamFormat, vertex_strconfig_ptr_t> _vertexStreamConfigs;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1030,7 +1020,6 @@ struct VkFrameBufferInterface final : public FrameBufferInterface {
   vkswapchain_ptr_t _swapchain;
   std::unordered_set<vkswapchain_ptr_t> _old_swapchains;
   VkSemaphore _swapChainImageAcquiredSemaphore;
-
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1100,6 +1089,18 @@ struct VkFxInterface final : public FxInterface {
   bool LoadFxShader(const AssetPath& pth, FxShader* ptex) final;
   FxShader* shaderFromShaderText(const std::string& name, const std::string& shadertext) final;
 
+  //////////////////////////////////////////
+  // new descriptorset api
+  //////////////////////////////////////////
+
+  size_t numDescriptorSetBindPoints(fxtechnique_constptr_t tek);
+
+  fxdescriptorsetbindpoint_constptr_t descriptorSetBindPoint(fxtechnique_constptr_t tek, int slot_index);
+
+  void bindDescriptorSet(fxdescriptorsetbindpoint_constptr_t bindingpoint, fxdescriptorset_constptr_t the_set);
+
+  //////////////////////////////////////////
+
   datablock_ptr_t _writeIntermediateToDataBlock(shadlang::SHAST::transunit_ptr_t tunit);
   vkfxsfile_ptr_t _readFromDataBlock(datablock_ptr_t inpdata, FxShader* shader);
   vkfxsfile_ptr_t _loadShaderFromShaderText(
@@ -1119,8 +1120,8 @@ struct VkFxInterface final : public FxInterface {
   rasterstate_ptr_t _doPopRasterState() final;
 
   void _bindPipeline(vkpipeline_obj_ptr_t pipe);
-  void _bindGfxDescriptorSetOnSlot(vkdescriptorset_ptr_t desc_set,size_t slot);
-  void _bindVertexBufferOnSlot( vkvtxbuf_ptr_t vb, size_t slot );
+  void _bindGfxDescriptorSetOnSlot(vkdescriptorset_ptr_t desc_set, size_t slot);
+  void _bindVertexBufferOnSlot(vkvtxbuf_ptr_t vb, size_t slot);
 
   void _flushRenderPassScopedState();
   int _pipelineBitsForShader(vkfxsprg_ptr_t shprog);
@@ -1199,7 +1200,7 @@ public:
 
   //////////////////////////////////////////////
 
-  commandbuffer_ptr_t _beginRecordCommandBuffer(renderpass_ptr_t rpass,std::string name) final;
+  commandbuffer_ptr_t _beginRecordCommandBuffer(renderpass_ptr_t rpass, std::string name) final;
   void _endRecordCommandBuffer(commandbuffer_ptr_t cmdbuf) final;
   void _beginRenderPass(renderpass_ptr_t) final;
   void _endRenderPass(renderpass_ptr_t) final;
@@ -1242,9 +1243,9 @@ public:
   void _doPushCommandBuffer(commandbuffer_ptr_t cmdbuf, rtgroup_ptr_t rtg) final;
   void _doPopCommandBuffer() final;
   void _doEnqueueSecondaryCommandBuffer(commandbuffer_ptr_t cmdbuf) final;
- 
+
   //////////////////////////////////////////////
- 
+
   vkswapchaincaps_ptr_t _swapChainCapsForSurface(VkSurfaceKHR surface);
 
   uint32_t _findMemoryType( //
@@ -1321,7 +1322,7 @@ public:
   renderpass_ptr_t _cur_renderpass;
   //////////////////////////////////////////////
   vkcmdbufimpl_ptr_t _createVkCommandBuffer(CommandBuffer* par);
-  renderpass_ptr_t createRenderPassForRtGroup(RtGroup* rtg, bool clear, std::string name );
+  renderpass_ptr_t createRenderPassForRtGroup(RtGroup* rtg, bool clear, std::string name);
   void enqueueDeferredOneShotCommand(commandbuffer_ptr_t cmdbuf);
   std::vector<commandbuffer_ptr_t> _pendingOneShotCommands;
   std::unordered_set<vktlsema_obj_ptr_t> _pendingOneShotSemas;
@@ -1339,7 +1340,6 @@ public:
 };
 
 ///////////////////////////////////////////////////////////////////////////
-
 
 void _vkReplaceImageForBuffer(
     vkcontext_rawptr_t ctxVK, //

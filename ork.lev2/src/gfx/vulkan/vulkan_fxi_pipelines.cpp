@@ -45,7 +45,7 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(
     return inp;
   };
 
-  int vb_pbits = 0;//check_pb_range(vb->_vertexConfig->_pipeline_bits, 4);
+  int vb_pbits = 0; // check_pb_range(vb->_vertexConfig->_pipeline_bits, 4);
 
   auto rtg       = fbi->_active_rtgroup;
   auto rtg_impl  = rtg->_impl.getShared<VkRtGroupImpl>();
@@ -54,21 +54,21 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(
   uint64_t rtg_pbits = check_pb_range(rtg_impl->_pipeline_bits, 4);
   uint64_t pc_pbits  = check_pb_range(primclass->_pipeline_bits, 4);
 
-  auto shprog  = _currentVKPASS->_vk_program;
+  auto shprog = _currentVKPASS->_vk_program;
 
   uint64_t sh_pbits = _pipelineBitsForShader(shprog);
-  sh_pbits = check_pb_range(sh_pbits, 24);
+  sh_pbits          = check_pb_range(sh_pbits, 24);
 
   uint64_t rs_pbits = check_pb_range(vkrstate->_pipeline_bits, 8);
-  auto rpass = _contextVK->_renderpasses.back();
-  auto rp_impl = rpass->_impl.getShared<VulkanRenderPass>();
+  auto rpass        = _contextVK->_renderpasses.back();
+  auto rp_impl      = rpass->_impl.getShared<VulkanRenderPass>();
   // hash renderpass ?
-  
-  uint64_t pipeline_hash = vb_pbits //
-                         | (rtg_pbits << 4) //
-                         | (pc_pbits << 8) //
-                         | (sh_pbits << 16) //
-                         | (rs_pbits << 40);
+
+  uint64_t pipeline_hash = vb_pbits           //
+                           | (rtg_pbits << 4) //
+                           | (pc_pbits << 8)  //
+                           | (sh_pbits << 16) //
+                           | (rs_pbits << 40);
 
   ////////////////////////////////////////////////////
   // find or create pipeline
@@ -77,10 +77,16 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(
   auto it = _pipelines.find(pipeline_hash);
   if (it == _pipelines.end()) { // create pipeline
 
-    printf( "CREATE PIPELINE<%016llx> vb_pbits<%d> rtg_pbits<%zx> pc_pbits<%zx> sh_pbits<%zx> rs_pbits<%zx>\n", //
-            pipeline_hash, vb_pbits, rtg_pbits, pc_pbits, sh_pbits, rs_pbits );
+    printf(
+        "CREATE PIPELINE<%016llx> vb_pbits<%d> rtg_pbits<%zx> pc_pbits<%zx> sh_pbits<%zx> rs_pbits<%zx>\n", //
+        pipeline_hash,
+        vb_pbits,
+        rtg_pbits,
+        pc_pbits,
+        sh_pbits,
+        rs_pbits);
 
-    auto VIF       = shprog->_vertexinterface;
+    auto VIF = shprog->_vertexinterface;
     OrkAssert(VIF);
 
     rval                      = std::make_shared<VkPipelineObject>(_contextVK);
@@ -103,12 +109,12 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(
     if (shprog->_frgshader)
       stages.push_back(shprog->_frgshader->_shaderstageinfo);
 
-    auto vtx_state = gbi->vertexInputState(vb,VIF);
+    auto vtx_state = gbi->vertexInputState(vb, VIF);
     OrkAssert(vtx_state);
 
     CINFO.stageCount          = stages.size();
     CINFO.pStages             = stages.data();
-    CINFO.pVertexInputState   = & vtx_state->_vertex_input_state;
+    CINFO.pVertexInputState   = &vtx_state->_vertex_input_state;
     CINFO.pInputAssemblyState = &primclass->_input_assembly_state;
 
     ////////////////////////////////////////////////////
@@ -290,9 +296,9 @@ void VkFxInterface::_bindPipeline(vkpipeline_obj_ptr_t pipe) {
   }
 }
 
-void VkFxInterface::_flushRenderPassScopedState(){
-  for( int slot=0; slot<4; slot++ ){
-    _active_vbs[slot] = nullptr;
+void VkFxInterface::_flushRenderPassScopedState() {
+  for (int slot = 0; slot < 4; slot++) {
+    _active_vbs[slot]                = nullptr;
     _active_gfx_descriptorSets[slot] = nullptr;
   }
   _currentPipeline = nullptr;
@@ -399,6 +405,12 @@ VulkanDescriptorSetCache::VulkanDescriptorSetCache(vkcontext_rawptr_t ctx)
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void VkFxInterface::bindDescriptorSet(fxdescriptorsetbindpoint_constptr_t bindingpoint, fxdescriptorset_constptr_t the_set) {
+  OrkAssert(false);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 vkdescriptorset_ptr_t VulkanDescriptorSetCache::fetchDescriptorSetForProgram(vkfxsprg_ptr_t program) {
 
   /////////////////////////////////
@@ -417,13 +429,13 @@ vkdescriptorset_ptr_t VulkanDescriptorSetCache::fetchDescriptorSetForProgram(vkf
   }
   crc64.finish();
   uint64_t descset_bits = crc64.result();
-  //printf( "dscache<%p> descset_bits<%016llx>\n", this, descset_bits );
+  // printf( "dscache<%p> descset_bits<%016llx>\n", this, descset_bits );
   auto it = _vkDescriptorSetByHash.find(descset_bits);
 
   vkdescriptorset_ptr_t descset_ptr = nullptr;
   if (it == _vkDescriptorSetByHash.end()) {
     // make new descriptor set
-    static int descset_count = 0;
+    static int descset_count             = 0;
     descset_ptr                          = std::make_shared<VulkanDescriptorSet>();
     _vkDescriptorSetByHash[descset_bits] = descset_ptr;
 
@@ -433,32 +445,33 @@ vkdescriptorset_ptr_t VulkanDescriptorSetCache::fetchDescriptorSetForProgram(vkf
     DSAI.descriptorSetCount = 1;
     DSAI.pSetLayouts        = &program->_descriptors->_dsetlayout;
 
-
-    printf( "ALLOC DESC SET<%d:%p>\n", descset_count, descset_ptr.get() );
-    VkResult OK = vkAllocateDescriptorSets( _ctxVK->_vkdevice, //
-                                            &DSAI, //
-                                            &descset_ptr->_vkdescset);
+    printf("ALLOC DESC SET<%d:%p>\n", descset_count, descset_ptr.get());
+    VkResult OK = vkAllocateDescriptorSets(
+        _ctxVK->_vkdevice, //
+        &DSAI,             //
+        &descset_ptr->_vkdescset);
 
     descset_count++;
-    switch(OK){
-      case VK_SUCCESS: break;
+    switch (OK) {
+      case VK_SUCCESS:
+        break;
       case VK_ERROR_OUT_OF_HOST_MEMORY:
-        printf( "VK_ERROR_OUT_OF_HOST_MEMORY\n" );
+        printf("VK_ERROR_OUT_OF_HOST_MEMORY\n");
         break;
       case VK_ERROR_OUT_OF_POOL_MEMORY:
-        printf( "VK_ERROR_OUT_OF_POOL_MEMORY\n" );
+        printf("VK_ERROR_OUT_OF_POOL_MEMORY\n");
         break;
       case VK_ERROR_OUT_OF_DEVICE_MEMORY:
-        printf( "VK_ERROR_OUT_OF_DEVICE_MEMORY\n" );
+        printf("VK_ERROR_OUT_OF_DEVICE_MEMORY\n");
         break;
       case VK_ERROR_FRAGMENTED_POOL:
-        printf( "VK_ERROR_FRAGMENTED_POOL\n" );
+        printf("VK_ERROR_FRAGMENTED_POOL\n");
         break;
       case VK_ERROR_TOO_MANY_OBJECTS:
-        printf( "VK_ERROR_TOO_MANY_OBJECTS\n" );
+        printf("VK_ERROR_TOO_MANY_OBJECTS\n");
         break;
       default:
-        printf( "VK_ERROR_UNKNOWN\n" );
+        printf("VK_ERROR_UNKNOWN\n");
         break;
     }
     OrkAssert(VK_SUCCESS == OK);
@@ -492,21 +505,21 @@ vkdescriptorset_ptr_t VulkanDescriptorSetCache::fetchDescriptorSetForProgram(vkf
 
 ///////////////////////////////////////////////////////////////////////////////
 
-VkFxShaderProgram::VkFxShaderProgram(VkFxShaderFile* file) 
-  : _shader_file(file) {
+VkFxShaderProgram::VkFxShaderProgram(VkFxShaderFile* file)
+    : _shader_file(file) {
   _pushdatabuffer.reserve(1024); // todo : grow as needed
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkFxShaderProgram::bindDescriptorTexture(fxparam_constptr_t param, const Texture* pTex) {
-  if(pTex){
+  if (pTex) {
     vktexobj_ptr_t vk_tex;
     if (auto as_to = pTex->_impl.tryAsShared<VulkanTextureObject>()) {
       vk_tex = as_to.value();
     } else {
-      printf( "No Texture impl tex<%p:%s>\n", pTex, pTex->_debugName.c_str() );
-      //OrkAssert(false);
+      printf("No Texture impl tex<%p:%s>\n", pTex, pTex->_debugName.c_str());
+      // OrkAssert(false);
       return;
     }
     auto it = _samplers_by_orkparam.find(param);
@@ -514,7 +527,7 @@ void VkFxShaderProgram::bindDescriptorTexture(fxparam_constptr_t param, const Te
     size_t binding_index                = it->second;
     _textures_by_orkparam[param]        = vk_tex;
     _textures_by_binding[binding_index] = vk_tex;
-    //printf( "binding_index<%zu>\n", binding_index );
+    // printf( "binding_index<%zu>\n", binding_index );
   }
 }
 

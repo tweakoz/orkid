@@ -86,6 +86,8 @@ struct FxPipeline {
   fxparam_constptr_t _parInstanceColorMap  = nullptr;
   svar64_t _impl;
 
+  std::unordered_map<int,fxdescriptorsetbindpoint_constptr_t> _descset_bindpoints;
+
 };
 
 struct FxPipelineCache {
