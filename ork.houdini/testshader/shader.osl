@@ -1,0 +1,7 @@
+shader simple_shader(
+    color Color = color(1, 0, 0),  // Red color by default
+    output closure color Cout = 0)
+{
+    Cout = emission() * Color;
+}
+

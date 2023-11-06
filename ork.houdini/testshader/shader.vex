@@ -1,0 +1,7 @@
+cvex simple_shader(
+    export vector Cf;  // The output color
+    vector Color = {1, 0, 0};  // Red color by default
+)
+{
+    Cf = Color;  // Assign the input color to the output
+}
