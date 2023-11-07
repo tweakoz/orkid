@@ -301,6 +301,12 @@ void pyinit_gfx_compositor(py::module& module_lev2) {
           .def_property_readonly("context", [](defpbrnode_ptr_t node) -> pbr_deferred_context_ptr_t { //
             return node->deferredContext();
           })
+          .def_property_readonly("outputbuffer", [](defpbrnode_ptr_t rnode) -> rtbuffer_ptr_t { //
+            return rnode->GetOutput();
+          })
+          .def_property_readonly("outputgroup", [](defpbrnode_ptr_t rnode) -> rtgroup_ptr_t { //
+            return rnode->GetOutputGroup();
+          })
           .def("overrideShader", [](defpbrnode_ptr_t node, std::string shaderpath)  { //
             return node->overrideShader(shaderpath);
           })

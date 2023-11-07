@@ -27,6 +27,7 @@ namespace ork::lev2::scenegraph {
 struct Layer;
 struct Node;
 struct DrawableNode;
+struct CameraNode;
 struct InstancedDrawableNode;
 struct LightNode;
 struct Scene;
@@ -35,6 +36,7 @@ using node_ptr_t         = std::shared_ptr<Node>;
 using node_atomicptr_t   = std::atomic<node_ptr_t>;
 using scene_ptr_t        = std::shared_ptr<Scene>;
 using drawable_node_ptr_t = std::shared_ptr<DrawableNode>;
+using camera_node_ptr_t = std::shared_ptr<CameraNode>;
 using instanced_drawable_node_ptr_t = std::shared_ptr<InstancedDrawableNode>;
 using lightnode_ptr_t    = std::shared_ptr<LightNode>;
 
@@ -60,6 +62,17 @@ struct DrawableNode final : public Node {
 
   drawable_ptr_t _drawable;
   fvec4 _modcolor;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct CameraeNode final : public Node {
+
+  CameraeNode(std::string named, cameradata_ptr_t cameradata);
+  ~CameraeNode();
+
+  cameradata_ptr_t _drawable;
+
 };
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -13,7 +13,7 @@ from orkengine.lev2 import *
 
 ################################################################################
 
-sys.path.append((thisdir()/".."/".."/"examples"/"python").normalized.as_string) # add parent dir to path
+sys.path.append((thisdir()/".."/".."/".."/"examples"/"python").normalized.as_string) # add parent dir to path
 from common.cameras import *
 from common.shaders import *
 from common.misc import *
@@ -47,7 +47,7 @@ class SceneGraphApp(object):
 
     createSceneGraph(app=self,rendermodel="DeferredPBR")
 
-    model =XgmModel("data://tests/pbr_calib.glb")
+    model = XgmModel("data://tests/pbr_calib.glb")
     for mesh in model.meshes:
       for submesh in mesh.submeshes:
         copy = submesh.material.clone()

@@ -172,6 +172,10 @@ class UiSgQuadViewTestApp(object):
             sg_params_xxx.preset = "USER"
             sg_params_xxx.compositordata = comp_data
             self.scenegraph = scenegraph.Scene(sg_params_xxx)
+            self.comp_tek = comp_tek
+
+          self.output_node = self.scenegraph.compositoroutputnode
+          self.render_node = self.scenegraph.compositorrendernode
 
           self.use_event = True
           self.layer = self.scenegraph.createLayer("layer")
@@ -193,7 +197,7 @@ class UiSgQuadViewTestApp(object):
           self.camera = parent.shared_camera
           self.uicam = parent.shared_uicam
 
-          def handler(context):
+          def gpu_update_handler(context):
             self.localpose.bindPose()
             self.anim_inst.currentFrame = parent.abstime*30.0
             self.anim_inst.weight = 1.0
@@ -202,7 +206,7 @@ class UiSgQuadViewTestApp(object):
             self.localpose.concatenate()
             self.worldpose.fromLocalPose(self.localpose,mtx4())
 
-          parent.gpu_update_handlers += [handler]
+          parent.gpu_update_handlers += [gpu_update_handler]
 
         #
 
@@ -293,6 +297,19 @@ class UiSgQuadViewTestApp(object):
     for handler in self.gpu_update_handlers:
       handler(context)
 
+  ################################################
+
+  def onDraw(self,drwev):
+    assert(False)
+    self.scene.renderOnContext(drwev.context)
+    sg0 = self.panels[0].scenegraph
+    sg1 = self.panels[1].scenegraph
+    rn0 = self.panels[0].render_node
+    rn1 = self.panels[1].render_node
+    print("rn0<%s>"%rn0)
+    rtg0 = rn0.outputgroup
+    print("rtg0<%s>"%rtg0)
+    
   ################################################
 
   def onUpdate(self,updinfo):

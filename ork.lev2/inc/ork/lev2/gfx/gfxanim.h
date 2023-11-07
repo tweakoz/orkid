@@ -37,6 +37,8 @@ struct DecompMatrix{
   fvec3 _scale;
 };
 
+///////////////////////////////////////////////////////////////////////////////
+
 struct XgmAnimChannel : public ork::Object {
   DeclareAbstractX(XgmAnimChannel, ork::Object);
 public:

@@ -146,25 +146,17 @@ struct DeferredContext {
 
   ////////////////////////////////////////////////////////////////////
 
-  //RtGroupRenderTarget* _accumRT      = nullptr;
-  //RtGroupRenderTarget* _gbuffRT      = nullptr;
-  //RtGroupRenderTarget* _decalRT      = nullptr;
-  //RtGroupRenderTarget* _clusterRT    = nullptr;
   lev2::texture_ptr_t _brdfIntegrationMap = nullptr;
 
   CaptureBuffer _clustercapture;
-  //rtgroup_ptr_t _rtgGbuffer      = nullptr;
 
   rtgset_ptr_t _rtgs_gbuffer;
   rtgset_ptr_t _rtgs_laccum;
 
   rtgroup_ptr_t _rtgDecal        = nullptr;
   rtgroup_ptr_t _rtgDepthCluster = nullptr;
-  //rtgroup_ptr_t _rtgLaccum       = nullptr;
 
-  //rtbuffer_ptr_t _rtbGbuffer      = nullptr;
   rtbuffer_ptr_t _rtbDepthCluster = nullptr;
-  //rtbuffer_ptr_t _rtbLightAccum   = nullptr;
 
   std::string _layername;
   float _specularLevel    = 1.0f;
