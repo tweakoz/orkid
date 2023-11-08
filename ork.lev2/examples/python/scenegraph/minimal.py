@@ -59,15 +59,15 @@ class MinimalSceneGraphApp(object):
                                techname = "std_mono",
                                rendermodel = "ForwardPBR" )
 
-    self.primnode = frustum_prim.createNode("node1",self.layer1,pipeline)
+    #self.primnode = frustum_prim.createNode("node1",self.layer1,pipeline)
 
     ###################################
     # create grid
     ###################################
 
-    self.grid_data = createGridData()
-    self.grid_node = self.layer1.createGridNode("grid",self.grid_data)
-    self.grid_node.sortkey = 1
+    #self.grid_data = createGridData()
+    #self.grid_node = self.layer1.createGridNode("grid",self.grid_data)
+    #self.grid_node.sortkey = 1
 
   ################################################
   # update:
