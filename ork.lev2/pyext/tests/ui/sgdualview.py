@@ -172,15 +172,6 @@ class UiSgQuadViewTestApp(object):
             sg_params_xxx.preset = "USER"
             sg_params_xxx.compositordata = comp_data
             self.scenegraph = scenegraph.Scene(sg_params_xxx)
-            self.comp_tek = comp_tek
-
-          self.output_node = self.scenegraph.compositoroutputnode
-          self.render_node = self.scenegraph.compositorrendernode
-
-          if index==1:
-            self.deferred_ctx = self.render_node.context
-            self.projtex_binding = self.deferred_ctx.createAuxBinding("ProjectionTexture")
-            self.projmtx_binding = self.deferred_ctx.createAuxBinding("ProjectionTextureMatrix")
 
           self.use_event = True
           self.layer = self.scenegraph.createLayer("layer")
@@ -202,7 +193,7 @@ class UiSgQuadViewTestApp(object):
           self.camera = parent.shared_camera
           self.uicam = parent.shared_uicam
 
-          def gpu_update_handler(context):
+          def handler(context):
             self.localpose.bindPose()
             self.anim_inst.currentFrame = parent.abstime*30.0
             self.anim_inst.weight = 1.0
@@ -211,7 +202,7 @@ class UiSgQuadViewTestApp(object):
             self.localpose.concatenate()
             self.worldpose.fromLocalPose(self.localpose,mtx4())
 
-          parent.gpu_update_handlers += [gpu_update_handler]
+          parent.gpu_update_handlers += [handler]
 
         #
 
@@ -301,32 +292,7 @@ class UiSgQuadViewTestApp(object):
   def onGpuUpdate(self,context):
     for handler in self.gpu_update_handlers:
       handler(context)
-    #####################
-    p0 = self.panels[0]
-    p1 = self.panels[1]
-    #####################
-    # fetch lightaccum from panel 0
-    #####################
-    sg0 = p0.scenegraph
-    rn0 = p0.render_node
-    defctx0 = rn0.context
-    gbuffer0 = defctx0.gbuffer
-    lbuffer0 = defctx0.lbuffer
-    if gbuffer0!=None:
-      zbuf = gbuffer0.depth_buffer
-      self.depth_texure = zbuf.texture
-    # Bind Auxiliary shader parameters
-    if lbuffer0!=None:
-      self.laccum_texure = lbuffer0.mrt_buffer(0).texture
-      p1.projtex_binding.texture = self.laccum_texure
 
-      radians = self.abstime*0.125
-
-      mS = mtx4.scaleMatrix(vec3(math.sin(radians)*4))
-      mT = mtx4.transMatrix(+.5,+.5,0)
-      mTi = mtx4.transMatrix(-.5,-.5,0)
-      mR = mtx4.rotMatrix(vec3(0,0,1),radians)
-      p1.projmtx_binding.mtx4 = mS*(mT*mR*mTi)
   ################################################
 
   def onUpdate(self,updinfo):
