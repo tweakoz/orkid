@@ -16,7 +16,6 @@ from PIL import Image
 
 l2exdir = (lev2exdir()/"python").normalized.as_string
 this_dir = obt.path.directoryOfInvokingModule()
-
 sys.path.append(l2exdir) # add parent dir to path
 from common.cameras import *
 from common.shaders import *
@@ -100,14 +99,6 @@ class UiSgQuadViewTestApp(object):
     # create scenegraph / panels
     ########################################################
 
-    self.shared_cameralut = CameraDataLut()
-    self.shared_camera, self.shared_uicam = setupUiCameraX( cameralut=self.shared_cameralut, 
-                                                            camname="SharedCamera",
-                                                            eye = vec3(0,5,20),
-                                                            tgt = vec3(0,5,0),
-                                                            up = vec3(0,1,0) )
-
-
     class Panel:
 
       ####################################################################################
@@ -128,10 +119,17 @@ class UiSgQuadViewTestApp(object):
         self.dst_tgt = vec3(0,0,0)
         self.counter = 0
 
+                    
+
         griditem = parent.griditems[index]        
         self.cameralut = CameraDataLut()
-        self.camera, self.uicam = setupUiCameraX( cameralut=self.cameralut, camname=self.camname )
-
+        self.camera, self.uicam = setupUiCameraX( cameralut=self.cameralut, 
+                                                  near = 0.01,
+                                                  far = 100.0,
+                                                  eye = vec3(0,5,20),
+                                                  tgt = vec3(0,5,0),
+                                                  up = vec3(0,1,0),
+                                                  camname=self.camname )
         if True:
 
           if index==0:
@@ -165,7 +163,7 @@ class UiSgQuadViewTestApp(object):
             pbr_common.skyboxLevel = .5
             pbr_common.depthFogDistance = 100
             pbr_common.depthFogPower = 1
-            comp_tek.renderNode.overrideShader(str(this_dir/"sgdualview.glfx"))
+            comp_tek.renderNode.overrideShader(str(this_dir/"deferred_projmap.glfx"))
 
             print(comp_sceneitem)
             print(comp_tek)
@@ -174,7 +172,18 @@ class UiSgQuadViewTestApp(object):
             sg_params_xxx.preset = "USER"
             sg_params_xxx.compositordata = comp_data
             self.scenegraph = scenegraph.Scene(sg_params_xxx)
+            self.comp_tek = comp_tek
 
+          self.output_node = self.scenegraph.compositoroutputnode
+          self.render_node = self.scenegraph.compositorrendernode
+
+          if index==1:
+            self.deferred_ctx = self.render_node.context
+            self.depthtex_binding = self.deferred_ctx.createAuxBinding("MapShadowDepth")
+            self.projtex_binding = self.deferred_ctx.createAuxBinding("ProjectionTexture")
+            self.projmtx_binding = self.deferred_ctx.createAuxBinding("ProjectionTextureMatrix")
+            self.projcam_eye = self.deferred_ctx.createAuxBinding("ProjectionEyePostion")
+            self.nearfar_binding = self.deferred_ctx.createAuxBinding("NearFar")
           self.use_event = True
           self.layer = self.scenegraph.createLayer("layer")
           self.sgnode = parent.model.createNode("modelnode",self.layer)
@@ -189,13 +198,10 @@ class UiSgQuadViewTestApp(object):
           self.modelinst.enableAllMeshes()
           self.localpose = self.modelinst.localpose
           self.worldpose = self.modelinst.worldpose
-          griditem.widget.cameraName = "SharedCamera"
+          griditem.widget.cameraName = self.camname
           griditem.widget.scenegraph = self.scenegraph
-          self.cameralut = parent.shared_cameralut
-          self.camera = parent.shared_camera
-          self.uicam = parent.shared_uicam
 
-          def handler(context):
+          def gpu_update_handler(context):
             self.localpose.bindPose()
             self.anim_inst.currentFrame = parent.abstime*30.0
             self.anim_inst.weight = 1.0
@@ -204,7 +210,7 @@ class UiSgQuadViewTestApp(object):
             self.localpose.concatenate()
             self.worldpose.fromLocalPose(self.localpose,mtx4())
 
-          parent.gpu_update_handlers += [handler]
+          parent.gpu_update_handlers += [gpu_update_handler]
 
         #
 
@@ -294,7 +300,37 @@ class UiSgQuadViewTestApp(object):
   def onGpuUpdate(self,context):
     for handler in self.gpu_update_handlers:
       handler(context)
-
+    #####################
+    p0 = self.panels[0]
+    p1 = self.panels[1]
+    #####################
+    # fetch lightaccum from panel 0
+    #####################
+    sg0 = p0.scenegraph
+    rn0 = p0.render_node
+    defctx0 = rn0.context
+    gbuffer0 = defctx0.gbuffer
+    lbuffer0 = defctx0.lbuffer
+    if gbuffer0!=None:
+      #gbuf = gbuffer0.mrt_buffer(0)
+      zbuf = gbuffer0.depth_buffer
+      self.depth_texure = zbuf.texture
+    # Bind Auxiliary shader parameters
+    if lbuffer0!=None:
+      L = lbuffer0.mrt_buffer(0).texture
+      self.laccum_texure = L
+      #
+      aspect = float(L.width)/float(L.height)
+      vp_matrix = p0.camera.vpMatrix(aspect)
+      #
+      p1.projtex_binding.texture = L
+      p1.depthtex_binding.texture = zbuf.texture
+      p1.projmtx_binding.mtx4 = vp_matrix
+      #print(vp_matrix)
+      p1.nearfar_binding.vec2 = vec2(p0.camera.near,p0.camera.far)
+      #p1.projcam_eye.vec3 = vp_matrix.inverse.translation
+      p1.projcam_eye.vec3 = p0.camera.eye
+      #print(vp_matrix.inverse.translation,p0.camera.eye)
   ################################################
 
   def onUpdate(self,updinfo):
