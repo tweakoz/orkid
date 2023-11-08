@@ -257,18 +257,20 @@ void pyinit_gfx(py::module& module_lev2) {
       py::class_<Texture, texture_ptr_t>(module_lev2, "Texture")
           .def(
               "__repr__",
-              [](const texture_ptr_t& tex) -> std::string {
+              [](texture_ptr_t self) -> std::string {
                 fxstring<256> fxs;
                 fxs.format(
                     "Texture(%p:\"%s\") w<%d> h<%d> d<%d> fmt<%s>",
-                    tex.get(),
-                    tex->_debugName.c_str(),
-                    tex->_width,
-                    tex->_height,
-                    tex->_depth,
-                    EBufferFormatToName(tex->_texFormat).c_str());
+                    self.get(),
+                    self->_debugName.c_str(),
+                    self->_width,
+                    self->_height,
+                    self->_depth,
+                    EBufferFormatToName(self->_texFormat).c_str());
                 return fxs.c_str();
               })
+          .def_property_readonly("width", [](texture_ptr_t self) -> int { return int(self->_width); })
+          .def_property_readonly("height", [](texture_ptr_t self) -> int { return int(self->_height); })
           .def_static("load", [](std::string path) -> texture_ptr_t { return Texture::LoadUnManaged(path); });
   // using rawtexptr_t = Texture*;
   type_codec->registerStdCodec<texture_ptr_t>(texture_type);

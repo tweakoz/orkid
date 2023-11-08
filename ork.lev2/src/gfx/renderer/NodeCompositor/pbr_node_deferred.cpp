@@ -210,6 +210,21 @@ struct PbrNodeImpl {
       else if( auto as_mtx4 = mappingdata->_var.tryAs<fmtx4>() ){
         _context->_lightingmtl->bindParamMatrix(param, as_mtx4.value() );
       }
+      else if( auto as_float = mappingdata->_var.tryAs<float>() ){
+        _context->_lightingmtl->bindParamFloat(param, as_float.value() );
+      }
+      else if( auto as_double = mappingdata->_var.tryAs<double>() ){
+        _context->_lightingmtl->bindParamFloat(param, as_double.value() );
+      }
+      else if( auto as_vec2 = mappingdata->_var.tryAs<fvec2>() ){
+        _context->_lightingmtl->bindParamVec2(param, as_vec2.value() );
+      }
+      else if( auto as_vec3 = mappingdata->_var.tryAs<fvec3>() ){
+        _context->_lightingmtl->bindParamVec3(param, as_vec3.value() );
+      }
+      else if( auto as_vec4 = mappingdata->_var.tryAs<fvec4>() ){
+        _context->_lightingmtl->bindParamVec4(param, as_vec4.value() );
+      }
     }
 
     //////////////////////////////////////////////////////

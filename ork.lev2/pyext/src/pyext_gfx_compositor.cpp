@@ -307,12 +307,40 @@ void pyinit_gfx_compositor(py::module& module_lev2) {
         [](pbr::deferrednode::auxparambinding_ptr_t self, texture_ptr_t texture) { //
           self->_var.setShared<Texture>(texture);
         })
+      .def_property("float", 
+        [](pbr::deferrednode::auxparambinding_ptr_t self) -> float { //
+          return self->_var.get<float>();
+        },
+        [](pbr::deferrednode::auxparambinding_ptr_t self, float val) { //
+          self->_var.set<float>(val);
+        })
+      .def_property("vec2", 
+        [](pbr::deferrednode::auxparambinding_ptr_t self) -> fvec2 { //
+          return self->_var.get<fvec2>();
+        },
+        [](pbr::deferrednode::auxparambinding_ptr_t self, fvec2 val) { //
+          self->_var.set<fvec2>(val);
+        })
+      .def_property("vec3", 
+        [](pbr::deferrednode::auxparambinding_ptr_t self) -> fvec3 { //
+          return self->_var.get<fvec3>();
+        },
+        [](pbr::deferrednode::auxparambinding_ptr_t self, fvec3 val) { //
+          self->_var.set<fvec3>(val);
+        })
+      .def_property("vec4", 
+        [](pbr::deferrednode::auxparambinding_ptr_t self) -> fvec4 { //
+          return self->_var.get<fvec4>();
+        },
+        [](pbr::deferrednode::auxparambinding_ptr_t self, fvec4 val) { //
+          self->_var.set<fvec4>(val);
+        })
       .def_property("mtx4", 
         [](pbr::deferrednode::auxparambinding_ptr_t self) -> fmtx4 { //
           return self->_var.get<fmtx4>();
         },
-        [](pbr::deferrednode::auxparambinding_ptr_t self, fmtx4 mtx) { //
-          self->_var.set<fmtx4>(mtx);
+        [](pbr::deferrednode::auxparambinding_ptr_t self, fmtx4 val) { //
+          self->_var.set<fmtx4>(val);
         });
   type_codec->registerStdCodec<pbr::deferrednode::auxparambinding_ptr_t>(auxbinding_type);
   /////////////////////////////////////////////////////////////////////////////////

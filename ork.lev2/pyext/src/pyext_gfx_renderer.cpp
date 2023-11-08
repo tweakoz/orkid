@@ -153,6 +153,18 @@ void pyinit_gfx_renderer(py::module& module_lev2) {
                 cammat.projectDepthRay(pos2d, rval);
                 return rval;
               })
+          .def("vMatrix", [](cameradata_ptr_t camera, float aspect) -> fmtx4 { //
+              auto matrices = camera->computeMatrices(aspect);
+              return matrices._vmatrix;
+          })
+          .def("pMatrix", [](cameradata_ptr_t camera, float aspect) -> fmtx4 { //
+              auto matrices = camera->computeMatrices(aspect);
+              return matrices._pmatrix;
+          })
+          .def("vpMatrix", [](cameradata_ptr_t camera, float aspect) -> fmtx4 { //
+              auto matrices = camera->computeMatrices(aspect);
+              return matrices._vpmatrix;
+          })
           .def_property_readonly("eye", [](cameradata_ptr_t camera) -> fvec3 { return camera->mEye; })
           .def_property_readonly("target", [](cameradata_ptr_t camera) -> fvec3 { return camera->mTarget; })
           .def_property_readonly("mUp", [](cameradata_ptr_t camera) -> fvec3 { return camera->mUp; })

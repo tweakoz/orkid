@@ -46,21 +46,6 @@ fmtx4 GlMatrixStackInterface::Frustum( float left, float right, float top, float
 		rval.setRow(2, fvec4(0.0f, 0.0f, m22, m23) );
 		rval.setRow(3, fvec4(0.0f, 0.0f, m32, 0.0f) );
 	}
-	else
-	{	/*
-		glMatrixMode(GL_PROJECTION);
-		glLoadIdentity();
-		glFrustum(left,right,bottom,top,zn,zf);
-		glGetFloatv(GL_PROJECTION_MATRIX, rval.asArray() );
-		GL_ERRORCHECK();*/
-//		rval.Transpose();
-	}
-
-/*	rval.SetCol(0, fvec4(m00, 0.0f, m02, 0.0f) );
-	rval.setRow(1, fvec4(0.0f, m11, m12, 0.0f) );
-	rval.setRow(2, fvec4(0.0f, 0.0f, m22, m23) );
-	rval.setRow(3, fvec4(0.0f, 0.0f, m32, 0.0f) );*/
-
 	return rval;
 }
 
