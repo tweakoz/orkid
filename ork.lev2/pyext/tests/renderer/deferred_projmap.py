@@ -66,12 +66,13 @@ class Panel:
                                               up = vec3(0,1,0),
                                               camname=self.camname )
 
+    sg_params_def = defaultSceneGraphParams()
+
     #################################################
     # scenegraph 0 gets standard deferred pbr
     #################################################
 
     if index==0:
-      sg_params_def = defaultSceneGraphParams()
       sg_params_def.preset = "DeferredPBR"
       self.scenegraph = scenegraph.Scene(sg_params_def)
 
@@ -81,25 +82,29 @@ class Panel:
     #################################################
 
     else:
+
+      # custom compositor node
+
       comp_tek = NodeCompositingTechnique()
       comp_tek.renderNode = DeferredPbrRenderNode()
       comp_tek.outputNode = ScreenOutputNode()
+      comp_tek.renderNode.overrideShader(str(this_dir/"deferred_projmap.glfx"))
+      self.comp_tek = comp_tek
 
       comp_data = CompositingData()
       comp_scene = comp_data.createScene("scene1")
       comp_sceneitem = comp_scene.createSceneItem("item1")
       comp_sceneitem.technique = comp_tek
+      sg_params_def.preset = "USER"
+      sg_params_def.compositordata = comp_data
 
-      # OVERRIDES
+      # custom pbr params
 
       pbr_common = comp_tek.renderNode.pbr_common
       pbr_common.requestSkyboxTexture("src://envmaps/tozenv_hellscape")
-      comp_tek.renderNode.overrideShader(str(this_dir/"deferred_projmap.glfx"))
-      sg_params_def = defaultSceneGraphParams()
-      sg_params_def.preset = "USER"
-      sg_params_def.compositordata = comp_data
+
+      # 
       self.scenegraph = scenegraph.Scene(sg_params_def)
-      self.comp_tek = comp_tek
 
     #################################################
     # cache output and render nodes for scenegraph
