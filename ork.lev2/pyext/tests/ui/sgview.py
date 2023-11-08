@@ -80,8 +80,8 @@ class UiSgQuadViewTestApp(object):
     # make a grid of scenegraph viewports
 
     lg_group = self.ezapp.topLayoutGroup
-    self.griditems = lg_group.makeGrid( width = 2,
-                                        height = 2,
+    self.griditems = lg_group.makeGrid( width = 1,
+                                        height = 1,
                                         margin = 1,
                                         uiclass = ui.SceneGraphViewport,
                                         args = ["box",vec4(1,0,1,1)] )
@@ -106,7 +106,6 @@ class UiSgQuadViewTestApp(object):
     sg_params.DiffuseIntensity = 1.0
     sg_params.SpecularIntensity = 1.0
     sg_params.AmbientLevel = vec3(.125)
-    #sg_params.preset = "DeferredPBR"
     sg_params.preset = "ForwardPBR"
     sg_params.dbufcontext = self.dbufcontext
 
@@ -155,14 +154,8 @@ class UiSgQuadViewTestApp(object):
 
     self.panels = [
       createPanel("cameraA",self.griditems[0]),
-      createPanel("cameraB",self.griditems[1]),
-      createPanel("cameraC",self.griditems[2]),
-      createPanel("cameraD",self.griditems[3]),
     ]
     
-    self.panels[0].griditem.widget.decoupleFromUiSize(4096,4096)
-    self.panels[0].griditem.widget.aspect_from_rtgroup = True
-
   ################################################
 
   def onUpdate(self,updinfo):
@@ -172,7 +165,7 @@ class UiSgQuadViewTestApp(object):
     cube_y = 0.4+math.sin(abstime)*0.2
     self.cube_node.worldTransform.translation = vec3(0,cube_y,0) 
     self.cube_node.worldTransform.orientation = quat(vec3(0,1,0),abstime*90*constants.DTOR) 
-    self.cube_node.worldTransform.scale = 0.1
+    self.cube_node.worldTransform.scale = 0.5
 
     for p in self.panels:
       p.update()

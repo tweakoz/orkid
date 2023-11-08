@@ -20,79 +20,85 @@ struct CubePrimitive {
 
   inline void gpuInit(Context* context) {
 
-    using namespace meshutil;
+using namespace meshutil;
 
-    submesh submeshQuads;
-    submesh submeshTris;
+submesh submeshQuads;
+submesh submeshTris;
 
-    float N = -_size * 0.5f;
-    float P = +_size * 0.5f;
+float N = -_size * 0.5f;
+float P = +_size * 0.5f;
 
-    submeshQuads.addQuad(
-        dvec3(N, N, P),
-        dvec3(P, N, P),
-        dvec3(P, P, P),
-        dvec3(N, P, P), //
-        dvec2(0.0f, 0.0f),
-        dvec2(0.25f, 0.5f),
-        dvec2(0.0f, 0.0f),
-        dvec2(0.25f, 0.5f),
-        _colorFront);
+// Front face (already CCW)
+if(1)submeshQuads.addQuad(
+    dvec3(N, N, P),
+    dvec3(P, N, P),
+    dvec3(P, P, P),
+    dvec3(N, P, P),
+    dvec2(0.0f, 0.0f),
+    dvec2(1.0f, 0.0f),
+    dvec2(1.0f, 1.0f),
+    dvec2(0.0f, 1.0f),
+    _colorFront);
 
-    submeshQuads.addQuad(
-        dvec3(P, N, P),
-        dvec3(P, N, N),
-        dvec3(P, P, N),
-        dvec3(P, P, P), //
-        dvec2(0.25f, 0.0f),
-        dvec2(0.5f, 0.5f),
-        dvec2(0.25f, 0.0f),
-        dvec2(0.5f, 0.5f),
-        _colorRight);
+// Right face (already CCW)
+if(1)submeshQuads.addQuad(
+    dvec3(P, N, P),
+    dvec3(P, N, N),
+    dvec3(P, P, N),
+    dvec3(P, P, P),
+    dvec2(0.0f, 0.0f),
+    dvec2(1.0f, 0.0f),
+    dvec2(1.0f, 1.0f),
+    dvec2(0.0f, 1.0f),
+    _colorRight);
 
-    submeshQuads.addQuad(
-        dvec3(P, N, N),
-        dvec3(N, N, N),
-        dvec3(N, P, N),
-        dvec3(P, P, N), //
-        dvec2(0.5f, 0.0f),
-        dvec2(0.75f, 0.5f),
-        dvec2(0.5f, 0.0f),
-        dvec2(0.75f, 0.5f),
-        _colorBack);
+// Back face (needs to be reversed to be CCW)
+if(1)submeshQuads.addQuad(
+    dvec3(P, N, N),
+    dvec3(N, N, N),
+    dvec3(N, P, N),
+    dvec3(P, P, N),
+    dvec2(1.0f, 0.0f),
+    dvec2(0.0f, 0.0f),
+    dvec2(0.0f, 1.0f),
+    dvec2(1.0f, 1.0f),
+    _colorBack);
 
-    submeshQuads.addQuad(
-        dvec3(N, N, N),
-        dvec3(N, N, P),
-        dvec3(N, P, P),
-        dvec3(N, P, N), //
-        dvec2(0.75f, 0.0f),
-        dvec2(1.0f, 0.5f),
-        dvec2(0.5f, 0.0f),
-        dvec2(0.75f, 0.5f),
-        _colorLeft);
+// Left face (needs to be reversed to be CCW)
+if(1)submeshQuads.addQuad(
+    dvec3(N, P, N),
+    dvec3(N, N, N),
+    dvec3(N, N, P),
+    dvec3(N, P, P),
+    dvec2(1.0f, 0.0f),
+    dvec2(0.0f, 0.0f),
+    dvec2(0.0f, 1.0f),
+    dvec2(1.0f, 1.0f),
+    _colorLeft);
 
-    submeshQuads.addQuad(
-        dvec3(N, P, N),
-        dvec3(N, P, P),
-        dvec3(P, P, P),
-        dvec3(P, P, N), //
-        dvec2(0.0f, 0.5f),
-        dvec2(1.0f, 1.5f),
-        dvec2(0.5f, 0.0f),
-        dvec2(0.75f, 0.5f),
-        _colorTop);
+// Top face (needs to be corrected for CCW)
+if(1) submeshQuads.addQuad(
+    dvec3(N, P, P),
+    dvec3(P, P, P),
+    dvec3(P, P, N),
+    dvec3(N, P, N),
+    dvec2(0.0f, 1.0f),
+    dvec2(1.0f, 1.0f),
+    dvec2(1.0f, 0.0f),
+    dvec2(0.0f, 0.0f),
+    _colorTop);
 
-    submeshQuads.addQuad(
-        dvec3(N, N, N),
-        dvec3(P, N, N), //
-        dvec3(N, N, P),
-        dvec3(P, N, P),
-        dvec2(0.0f, 0.5f),
-        dvec2(1.0f, 1.5f),
-        dvec2(0.5f, 0.0f),
-        dvec2(0.75f, 0.5f),
-        _colorBottom);
+// Bottom face (needs to be corrected for CCW)
+if(1)submeshQuads.addQuad(
+    dvec3(N, N, N),
+    dvec3(P, N, N),
+    dvec3(P, N, P),
+    dvec3(N, N, P),
+    dvec2(0.0f, 0.0f),
+    dvec2(1.0f, 0.0f),
+    dvec2(1.0f, 1.0f),
+    dvec2(0.0f, 1.0f),
+    _colorBottom);
 
     submeshTriangulate(submeshQuads, submeshTris);
 
