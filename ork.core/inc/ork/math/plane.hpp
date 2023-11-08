@@ -502,11 +502,6 @@ uint64_t Plane<T>::hash(T normal_quant, T dist_quant) const{
   uint64_t ud = uint64_t( (d+T(32767))*dist_quant ); //  16+12 bits 
   uint64_t hash = ud | (ux<<32) | (uy<<48);
 
-  if(0)printf( "plane<%f %f %f %f> nenc<%f %f> ud<0x%x> ux<0x%x> uy<%d> hash<0x%016llx>\n",
-          n.x, n.y, n.z, d,
-          nenc.x, nenc.y,
-          int(ud), int(ux), int(uy), hash );
-
   return hash;
 }
 

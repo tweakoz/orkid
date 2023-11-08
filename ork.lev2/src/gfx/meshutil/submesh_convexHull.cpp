@@ -313,7 +313,7 @@ void submeshConvexHullIterative(const submesh& inpsubmesh, submesh& outsmesh, in
   update_conflict_graph();
 
   if (debug) {
-    printf("conflict graph size<%d>\n", conflict_graph._items.size());
+    //printf("conflict graph size<%d>\n", conflict_graph._items.size());
     for (auto& it : conflict_graph._items) {
       ConflictItem& item = it.second;
       auto vertex        = item._vertex;
@@ -361,8 +361,8 @@ void submeshConvexHullIterative(const submesh& inpsubmesh, submesh& outsmesh, in
       continue;
     }
 
-    if (debug)
-      printf("try point<%d> : conflict graph size<%d>\n", conflict_point->_poolindex, conflict_graph._items.size());
+    //if (debug)
+    //  printf("try point<%d> : conflict graph size<%d>\n", conflict_point->_poolindex, conflict_graph._items.size());
 
     ///////////////////////////////
     // remove all conflicting polys from outsmesh
@@ -401,10 +401,10 @@ void submeshConvexHullIterative(const submesh& inpsubmesh, submesh& outsmesh, in
         printf("add_edge<%d,%d>\n", the_edge->_vertexA->_poolindex, the_edge->_vertexB->_poolindex);
     }
     linker.link();
-    if (debug)
-      printf("linker._edge_loops.size()<%d>\n", linker._edge_loops.size());
-    if (debug)
-      printf("linker._edge_chains.size()<%d>\n", linker._edge_chains.size());
+    //if (debug)
+    //  printf("linker._edge_loops.size()<%d>\n", linker._edge_loops.size());
+    //if (debug)
+    //  printf("linker._edge_chains.size()<%d>\n", linker._edge_chains.size());
     if (linker._edge_loops.size() == 0) {
       conflict_graph.clear();
       printf("loop failed!\n");

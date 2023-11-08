@@ -124,7 +124,7 @@ bool Slider<T>::OnUiEvent(ork::ui::event_constptr_t ev) // final
 
   switch (filtev._eventcode) {
     case ui::EventCode::PUSH: {
-        printf("Slider<p> push..\n", this );
+        printf("Slider<%p> push..\n", (void*) this );
       break;
     }
     case ui::EventCode::DRAG: {
@@ -183,6 +183,8 @@ bool Slider<T>::OnUiEvent(ork::ui::event_constptr_t ev) // final
 
       break;
     }
+    default:
+      break;
   }
   SetVal(mval);
   return true;
