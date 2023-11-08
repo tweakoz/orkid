@@ -320,10 +320,13 @@ class UiSgQuadViewTestApp(object):
       self.laccum_texure = lbuffer0.mrt_buffer(0).texture
       p1.projtex_binding.texture = self.laccum_texure
 
-      m = mtx4.rotMatrix(vec3(0,0,1),self.abstime)
-      
-      p1.projmtx_binding.mtx4 = m
+      radians = self.abstime*0.125
 
+      mS = mtx4.scaleMatrix(vec3(math.sin(radians)*4))
+      mT = mtx4.transMatrix(+.5,+.5,0)
+      mTi = mtx4.transMatrix(-.5,-.5,0)
+      mR = mtx4.rotMatrix(vec3(0,0,1),radians)
+      p1.projmtx_binding.mtx4 = mS*(mT*mR*mTi)
   ################################################
 
   def onUpdate(self,updinfo):

@@ -93,7 +93,7 @@ fragment_shader ps_environment //
   WPosData wpd     = monoWPD();
   GBufData gbd     = decodeGBUF(wpd);
 
-  vec4 prj_uv = vec4(frg_uva.xy,0,1) * ProjectionTextureMatrix;
+  vec4 prj_uv = ProjectionTextureMatrix*vec4(frg_uva.xy,0,1);
 
   vec3 pt = texture(ProjectionTexture, prj_uv.xy).xyz;
   vec2 uv          = wpd._muv;
@@ -104,7 +104,7 @@ fragment_shader ps_environment //
   vec3 skyboxColor = env_equirectangularFlipV(skybox_n, MapSpecularEnv, EnvironmentMipBias) * SkyboxLevel;
   vec3 out_color   = skybox_n;
   if (gbd._mode == 1) {
-    out_color = pt+vec3(pow(gbd._fogZ * 0.02*DiffuseLevel, 2))*0.3;
+    out_color = pt*vec3(pow(gbd._fogZ * 0.02*DiffuseLevel, 8));
   }
   colorOUT = vec4(out_color, 1);
 }

@@ -418,15 +418,16 @@ template <typename T> void Matrix44<T>::setTranslation(const Vector3<T>& vec) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> Vector3<T> Matrix44<T>::translation(void) const {
-  return column(3).xyz();
+template <typename T> void Matrix44<T>::setTranslation(T _x, T _y, T _z) {
+  setTranslation(Vector3<T>(_x, _y, _z));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void Matrix44<T>::setTranslation(T _x, T _y, T _z) {
-  setTranslation(Vector3<T>(_x, _y, _z));
+template <typename T> Vector3<T> Matrix44<T>::translation(void) const {
+  return column(3).xyz();
 }
+
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
