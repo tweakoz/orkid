@@ -4,7 +4,7 @@
 # Distributed under the MIT License
 # see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ################################################################################
-import ork.path
+import obt.path
 from orkengine.core import *
 from orkengine.lev2 import *
 
@@ -24,4 +24,4 @@ print(submesh)
 print(as_tris)
 print(as_quads)
 
-as_quads.writeWavefrontObj(str(ork.path.temp()/"monkey_quadulated_out.obj"));
+as_quads.writeWavefrontObj(str(obt.path.temp()/"monkey_quadulated_out.obj"));

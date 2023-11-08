@@ -9,11 +9,11 @@ from orkengine.core import *
 from orkengine.lev2 import *
 from PIL import Image
 import numpy as np
-from ork.deco import Deco
+from obt.deco import Deco
 deco = Deco()
 coreappinit() # setup filesystem
 ################################################################################
-frustum = Frustum(mtx4.lookAt(vec3(0,0,-1),vec3(0,0,0),vec3(0,1,0)),
+frustum = frustum(mtx4.lookAt(vec3(0,0,-1),vec3(0,0,0),vec3(0,1,0)),
                   mtx4.perspective(45,1,0.1,3))
 ################################################################################
 qsubmesh = meshutil.SubMesh()

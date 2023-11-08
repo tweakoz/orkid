@@ -156,6 +156,10 @@ class UiSgQuadViewTestApp(object):
       createPanel("cameraA",self.griditems[0]),
     ]
     
+  def onGpuUpdate(self,ctx):
+    for p in self.panels:
+      p.update()
+
   ################################################
 
   def onUpdate(self,updinfo):
@@ -167,8 +171,6 @@ class UiSgQuadViewTestApp(object):
     self.cube_node.worldTransform.orientation = quat(vec3(0,1,0),abstime*90*constants.DTOR) 
     self.cube_node.worldTransform.scale = 0.5
 
-    for p in self.panels:
-      p.update()
 
     self.scenegraph.updateScene(self.cameralut) 
 
