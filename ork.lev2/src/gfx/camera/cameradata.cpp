@@ -193,8 +193,8 @@ CameraMatrices CameraData::computeMatrices(float faspect) const {
   ///////////////////////////////////////////////////
   if (faper < 0.2f)
     faper = 0.2f;
-  if (fnear < 0.1f)
-    fnear = 0.1f;
+  if (fnear < 0.01f)
+    fnear = 0.01f;
   if (ffar < 0.5f)
     ffar = 0.5f;
   ///////////////////////////////////////////////////
@@ -215,6 +215,7 @@ CameraMatrices CameraData::computeMatrices(float faspect) const {
   ///////////////////////////////////////////////////
   rval._vmatrix.lookAt(mEye, mTarget, mUp);
   rval._ivmatrix.inverseOf(rval._vmatrix);
+  //rval._vpmatrix = fmtx4::multiply_ltor(rval._vmatrix,rval._pmatrix);
   rval._vpmatrix = fmtx4::multiply_ltor(rval._vmatrix,rval._pmatrix);
   rval._ivpmatrix.inverseOf(rval._vpmatrix);
   rval._frustum.set(rval._ivpmatrix);

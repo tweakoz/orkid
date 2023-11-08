@@ -70,12 +70,12 @@ void GlTextureInterface::_loadXTXTextureMainThreadPart(GlTexLoadReq req) {
   mTargetGL.debugPushGroup("_loadXTXTextureMainThreadPart",fvec4(1,1,1,1));
   OrkAssert(req._cmipchain.get() != nullptr);
   auto glto = req.ptex->_impl.get<gltexobj_ptr_t>();
-  glGenTextures(1, &glto->mObject);
-  glBindTexture(GL_TEXTURE_2D, glto->mObject);
+  glGenTextures(1, &glto->_textureObject);
+  glBindTexture(GL_TEXTURE_2D, glto->_textureObject);
   GL_ERRORCHECK();
-  req.ptex->_varmap.makeValueForKey<GLuint>("gltexobj") = glto->mObject;
+  req.ptex->_varmap.makeValueForKey<GLuint>("gltexobj") = glto->_textureObject;
   if (req.ptex->_debugName.length()) {
-    mTargetGL.debugLabel(GL_TEXTURE, glto->mObject, req.ptex->_debugName);
+    mTargetGL.debugLabel(GL_TEXTURE, glto->_textureObject, req.ptex->_debugName);
   }
   int inummips = req._cmipchain->_levels.size();
   OrkAssert(inummips > 0);

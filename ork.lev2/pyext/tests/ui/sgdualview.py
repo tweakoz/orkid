@@ -15,6 +15,8 @@ from PIL import Image
 ################################################################################
 
 l2exdir = (lev2exdir()/"python").normalized.as_string
+this_dir = obt.path.directoryOfInvokingModule()
+
 sys.path.append(l2exdir) # add parent dir to path
 from common.cameras import *
 from common.shaders import *
@@ -163,7 +165,7 @@ class UiSgQuadViewTestApp(object):
             pbr_common.skyboxLevel = .5
             pbr_common.depthFogDistance = 100
             pbr_common.depthFogPower = 1
-            comp_tek.renderNode.overrideShader("ork_lev2://examples/python/common/compositorsetup.glfx")
+            comp_tek.renderNode.overrideShader(str(this_dir/"sgdualview.glfx"))
 
             print(comp_sceneitem)
             print(comp_tek)

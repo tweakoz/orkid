@@ -31,6 +31,10 @@ RtBuffer::RtBuffer(const RtGroup* rtg, //
   _texture = std::make_shared<Texture>();
   auto fmtname = EBufferFormatToName(efmt);
   _texture->_debugName = FormatString("rtb<%p> slot<%d> format<%s>", this, slot, fmtname.c_str());
+  _texture->_texFormat = efmt;
+  _texture->_width     = iW;
+  _texture->_height    = iH;
+  _texture->_debugName = FormatString("rtg%d", slot);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

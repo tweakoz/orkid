@@ -47,7 +47,7 @@ void pyinit_gfx(py::module& module_lev2) {
           .def("debugPushGroup", [](ctx_t& c, cstrref_t str) { return c.get()->debugPushGroup(str); })
           .def("debugPopGroup", [](ctx_t& c) { return c.get()->debugPopGroup(); })
           .def("debugMarker", [](ctx_t& c, cstrref_t str) { return c.get()->debugMarker(str); })
-          .def("defaultRTG", [](ctx_t& c) -> rtg_t { return rtg_t(c.get()->_defaultRTG); })
+          .def("defaultRTG", [](ctx_t& c) -> rtgroup_ptr_t { return rtgroup_ptr_t(c.get()->_defaultRTG); })
           .def("resize", [](ctx_t& rtg, int w, int h) { rtg.get()->resizeMainSurface(w, h); })
           .def("FBI", [](ctx_t& c) -> fbi_t { return fbi_t(c.get()->FBI()); })
           .def("FXI", [](ctx_t& c) -> fxi_t { return fxi_t(c.get()->FXI()); })
@@ -97,17 +97,17 @@ void pyinit_gfx(py::module& module_lev2) {
       .def("capturePixel", [](const fbi_t& fbi, const fvec4& at, PixelFetchContext& pfc) { return fbi.get()->GetPixel(at, pfc); })
       .def(
           "captureBuffer",
-          [](const fbi_t& fbi, rtb_t& rtb, CaptureBuffer& capbuf) -> bool { return fbi.get()->capture(rtb.get(), &capbuf); })
+          [](const fbi_t& fbi, rtbuffer_ptr_t rtb, CaptureBuffer& capbuf) -> bool { return fbi.get()->capture(rtb.get(), &capbuf); })
       .def(
           "captureAsFormat",
-          [](const fbi_t& fbi, rtb_t& rtb, CaptureBuffer& capbuf, std::string format) -> bool {
+          [](const fbi_t& fbi, rtbuffer_ptr_t rtb, CaptureBuffer& capbuf, std::string format) -> bool {
             auto crc_fmt = CrcString(format.c_str());
             return fbi.get()->captureAsFormat(rtb.get(), &capbuf, EBufferFormat(crc_fmt._hashed));
           })
       //.def("clear", [](const fbi_t& fbi, const fcolor4& color, float depth) { return fbi.get()->Clear(color, depth); })
-      .def("rtGroupPush", [](const fbi_t& fbi, rtg_t& rtg) { return fbi.get()->PushRtGroup(rtg.get()); })
+      .def("rtGroupPush", [](const fbi_t& fbi, rtgroup_ptr_t rtg) { return fbi.get()->PushRtGroup(rtg.get()); })
       .def("rtGroupPop", [](const fbi_t& fbi) { return fbi.get()->PopRtGroup(); })
-      .def("rtGroupClear", [](const fbi_t& fbi, rtg_t& rtg) { return fbi.get()->rtGroupClear(rtg.get()); })
+      .def("rtGroupClear", [](const fbi_t& fbi, rtgroup_ptr_t rtg) { return fbi.get()->rtGroupClear(rtg.get()); })
       .def("__repr__", [](const fbi_t& fbi) -> std::string {
         fxstring<256> fxs;
         fxs.format("FBI(%p)", fbi.get());
@@ -205,29 +205,31 @@ void pyinit_gfx(py::module& module_lev2) {
         return fxs.c_str();
       });
   /////////////////////////////////////////////////////////////////////////////////
-  py::class_<RtBuffer, rtb_t>(module_lev2, "RtBuffer")
+  py::class_<RtBuffer, rtbuffer_ptr_t>(module_lev2, "RtBuffer")
       .def(
           "__repr__",
-          [](const rtb_t& rtb) -> std::string {
+          [](rtbuffer_ptr_t rtb) -> std::string {
             fxstring<256> fxs;
             fxs.format("RtBuffer(%p)", rtb.get());
             return fxs.c_str();
           })
-      .def_property_readonly("texture", [](rtb_t& rtb) -> texture_ptr_t { return texture_ptr_t(rtb->texture()); });
+      .def_property_readonly("texture", [](rtbuffer_ptr_t rtb) -> texture_ptr_t { return rtb->_texture; });
   /////////////////////////////////////////////////////////////////////////////////
-  py::class_<RtGroup, rtg_t>(module_lev2, "RtGroup")
-      .def("resize", [](rtg_t& rtg, int w, int h) { rtg.get()->Resize(w, h); })
-      .def_property_readonly("width", [](const rtg_t& rtg) -> int { return int(rtg->width()); })
-      .def_property_readonly("height", [](const rtg_t& rtg) -> int { return int(rtg->height()); })
+  py::class_<RtGroup, rtgroup_ptr_t>(module_lev2, "RtGroup")
+      .def("resize", [](rtgroup_ptr_t rtg, int w, int h) { rtg.get()->Resize(w, h); })
+      .def_property_readonly("width", [](rtgroup_ptr_t rtg) -> int { return int(rtg->width()); })
+      .def_property_readonly("height", [](rtgroup_ptr_t rtg) -> int { return int(rtg->height()); })
       .def(
           "__repr__",
-          [](const rtg_t& rtg) -> std::string {
+          [](rtgroup_ptr_t rtg) -> std::string {
             fxstring<256> fxs;
             fxs.format("RtGroup(%p)", rtg.get());
             return fxs.c_str();
           })
-      .def("buffer", [](const rtg_t& rtg, int irtb) -> rtb_t { return rtg->GetMrt(irtb); });
-  //.def("texture", [](const rtg_t& rtg, int irtb) -> texture_ptr_t { return rtg->GetMrt(irtb)->texture(); });
+      .def_property_readonly("numBuffers", [](rtgroup_ptr_t rtg) -> int { return rtg->GetNumTargets(); })
+      .def_property_readonly("depth_buffer", [](rtgroup_ptr_t rtg) -> rtbuffer_ptr_t { return rtg->_depthBuffer; })
+      .def("mrt_buffer", [](rtgroup_ptr_t rtg, int irtb) -> rtbuffer_ptr_t { return rtg->GetMrt(irtb); });
+  //.def("texture", [](rtgroup_ptr_t rtg, int irtb) -> texture_ptr_t { return rtg->GetMrt(irtb)->texture(); });
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<CaptureBuffer>(module_lev2, "CaptureBuffer", pybind11::buffer_protocol())
       .def(py::init<>())
@@ -255,25 +257,27 @@ void pyinit_gfx(py::module& module_lev2) {
       py::class_<Texture, texture_ptr_t>(module_lev2, "Texture")
           .def(
               "__repr__",
-              [](const texture_ptr_t& tex) -> std::string {
+              [](texture_ptr_t self) -> std::string {
                 fxstring<256> fxs;
                 fxs.format(
                     "Texture(%p:\"%s\") w<%d> h<%d> d<%d> fmt<%s>",
-                    tex.get(),
-                    tex->_debugName.c_str(),
-                    tex->_width,
-                    tex->_height,
-                    tex->_depth,
-                    EBufferFormatToName(tex->_texFormat).c_str());
+                    self.get(),
+                    self->_debugName.c_str(),
+                    self->_width,
+                    self->_height,
+                    self->_depth,
+                    EBufferFormatToName(self->_texFormat).c_str());
                 return fxs.c_str();
               })
+          .def_property_readonly("width", [](texture_ptr_t self) -> int { return int(self->_width); })
+          .def_property_readonly("height", [](texture_ptr_t self) -> int { return int(self->_height); })
           .def_static("load", [](std::string path) -> texture_ptr_t { return Texture::LoadUnManaged(path); });
   // using rawtexptr_t = Texture*;
   type_codec->registerStdCodec<texture_ptr_t>(texture_type);
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<PixelFetchContext>(module_lev2, "PixelFetchContext")
       .def(py::init<>())
-      .def(py::init([](rtg_t& rtg, int mask) {
+      .def(py::init([](rtgroup_ptr_t rtg, int mask) {
         auto pfc       = std::unique_ptr<PixelFetchContext>(new PixelFetchContext);
         pfc->_rtgroup  = rtg;
         pfc->miMrtMask = mask;
@@ -281,8 +285,8 @@ void pyinit_gfx(py::module& module_lev2) {
       }))
       .def_property(
           "rtgroup",
-          [](PixelFetchContext& pfc) -> rtg_t { return pfc._rtgroup; },
-          [](PixelFetchContext& pfc, rtg_t& rtg) { pfc._rtgroup = rtg; })
+          [](PixelFetchContext& pfc) -> rtgroup_ptr_t { return pfc._rtgroup; },
+          [](PixelFetchContext& pfc, rtgroup_ptr_t rtg) { pfc._rtgroup = rtg; })
       .def_property(
           "rtgmask",
           [](PixelFetchContext& pfc) -> int { return pfc.miMrtMask; },

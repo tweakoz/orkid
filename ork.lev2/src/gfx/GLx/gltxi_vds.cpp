@@ -149,13 +149,13 @@ void VdsTextureAnimation::UpdateTexture(TextureInterface* txi, lev2::Texture* pt
     //  this decouples allocation from writing, allowing you to overwrite more efficiently
     /////////////////////////////////////////////////
 
-    glBindTexture(GL_TEXTURE_2D, glto->mObject);
+    glBindTexture(GL_TEXTURE_2D, glto->_textureObject);
 
     /////////////////////////////
     // imgdata->PBO
     /////////////////////////////
 
-    // printf( "UPDATE IMAGE UNC iw<%d> ih<%d> to<%d>\n", miW, miH, int(glto->mObject) );
+    // printf( "UPDATE IMAGE UNC iw<%d> ih<%d> to<%d>\n", miW, miH, int(glto->_textureObject) );
 
     auto pbo = pgltxi->_getPBO(miFrameBaseSize);
 
@@ -190,13 +190,13 @@ void VdsTextureAnimation::UpdateTexture(TextureInterface* txi, lev2::Texture* pt
     //  this decouples allocation from writing, allowing you to overwrite more efficiently
     /////////////////////////////////////////////////
 
-    glBindTexture(GL_TEXTURE_2D, glto->mObject);
+    glBindTexture(GL_TEXTURE_2D, glto->_textureObject);
 
     /////////////////////////////
     // imgdata->PBO
     /////////////////////////////
 
-    // printf( "UPDATE IMAGE UNC iw<%d> ih<%d> to<%d>\n", miW, miH, int(glto->mObject) );
+    // printf( "UPDATE IMAGE UNC iw<%d> ih<%d> to<%d>\n", miW, miH, int(glto->_textureObject) );
 
     auto pbo = pgltxi->_getPBO(miFrameBaseSize);
 
@@ -229,7 +229,7 @@ bool GlTextureInterface::_loadVDSTexture(const AssetPath& infname, texture_ptr_t
 
   auto glto = ptex->_impl.makeShared<GLTextureObject>(this);
 
-  glGenTextures(1, &glto->mObject);
+  glGenTextures(1, &glto->_textureObject);
 
   VdsTextureAnimation* vta = new VdsTextureAnimation(infname);
   ptex->SetTexAnim(vta);
@@ -238,7 +238,7 @@ bool GlTextureInterface::_loadVDSTexture(const AssetPath& infname, texture_ptr_t
   ptex->_height = vta->miH;
   ptex->_depth  = 1;
 
-  glBindTexture(GL_TEXTURE_2D, glto->mObject);
+  glBindTexture(GL_TEXTURE_2D, glto->_textureObject);
 
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);

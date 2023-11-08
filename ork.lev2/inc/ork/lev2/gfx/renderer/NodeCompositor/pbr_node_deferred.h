@@ -21,6 +21,15 @@ class DeferredCompositingNode;
 
 ///////////////////////////////////////////////////////////////////////////////
 
+struct AuxParamBinding{
+  const FxShaderParam* _param = nullptr;
+  svar64_t _var;
+};
+
+using auxparambinding_ptr_t = std::shared_ptr<AuxParamBinding>;
+
+///////////////////////////////////////////////////////////////////////////////
+
 struct DeferredContext {
 
   static constexpr int KTILEDIMXY = 64;
@@ -72,8 +81,11 @@ struct DeferredContext {
   textureassetptr_t _voltexA;
   bool _enableSDF = false;
   ////////////////////////////////////////////////////////////////////
+  auxparambinding_ptr_t createAuxParamBinding(std::string paramname);
+  ////////////////////////////////////////////////////////////////////
+  std::unordered_map<std::string, auxparambinding_ptr_t> _auxbindings;
+  ////////////////////////////////////////////////////////////////////
   std::vector<PointLight*> _pointlights;
-
   ////////////////////////////////////////////////////////////////////
 
   const FxShaderTechnique* _tekBaseLighting              = nullptr;
@@ -110,9 +122,6 @@ struct DeferredContext {
   const FxShaderParam* _parMatVArray   = nullptr;
   const FxShaderParam* _parZndc2eye    = nullptr;
   const FxShaderParam* _parMapGBuf     = nullptr;
-  // const FxShaderParam* _parMapGBufAlbAo        = nullptr;
-  // const FxShaderParam* _parMapGBufNrmL         = nullptr;
-  // const FxShaderParam* _parMapGBufRufMtlAlpha  = nullptr;
   const FxShaderParam* _parMapDepth            = nullptr;
   const FxShaderParam* _parMapDepthCluster     = nullptr;
   const FxShaderParam* _parMapShadowDepth      = nullptr;
@@ -141,25 +150,23 @@ struct DeferredContext {
 
   ////////////////////////////////////////////////////////////////////
 
-  //RtGroupRenderTarget* _accumRT      = nullptr;
-  //RtGroupRenderTarget* _gbuffRT      = nullptr;
-  //RtGroupRenderTarget* _decalRT      = nullptr;
-  //RtGroupRenderTarget* _clusterRT    = nullptr;
+
+  ////////////////////////////////////////////////////////////////////
+
   lev2::texture_ptr_t _brdfIntegrationMap = nullptr;
 
   CaptureBuffer _clustercapture;
-  //rtgroup_ptr_t _rtgGbuffer      = nullptr;
+
+  rtgroup_ptr_t _rtgGbuffer;
+  rtgroup_ptr_t _rtgLbuffer;
 
   rtgset_ptr_t _rtgs_gbuffer;
   rtgset_ptr_t _rtgs_laccum;
 
   rtgroup_ptr_t _rtgDecal        = nullptr;
   rtgroup_ptr_t _rtgDepthCluster = nullptr;
-  //rtgroup_ptr_t _rtgLaccum       = nullptr;
 
-  //rtbuffer_ptr_t _rtbGbuffer      = nullptr;
   rtbuffer_ptr_t _rtbDepthCluster = nullptr;
-  //rtbuffer_ptr_t _rtbLightAccum   = nullptr;
 
   std::string _layername;
   float _specularLevel    = 1.0f;

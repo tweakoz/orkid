@@ -119,6 +119,12 @@ std::string EBufferFormatToName(EBufferFormat fmt) {
     case EBufferFormat::R16:
       rval = "R16";
       break;
+    case EBufferFormat::R32F:
+      rval = "R32F";
+      break;
+    case EBufferFormat::R32UI:
+      rval = "R32UI";
+      break;
     case EBufferFormat::BGR5A1:
       rval = "BGR5A1";
       break;
@@ -143,8 +149,14 @@ std::string EBufferFormatToName(EBufferFormat fmt) {
     case EBufferFormat::RGBA32F:
       rval = "RGBA32F";
       break;
+    case EBufferFormat::RGB32UI:
+      rval = "RGB32UI";
+      break;
     case EBufferFormat::RGBA32UI:
       rval = "RGBA32UI";
+      break;
+    case EBufferFormat::NV12:
+      rval = "NV12";
       break;
     case EBufferFormat::YUV420P:
       rval = "YUV420P";
@@ -160,6 +172,12 @@ std::string EBufferFormatToName(EBufferFormat fmt) {
       break;
     case EBufferFormat::SRGB_ALPHA_BPTC_UNORM:
       rval = "SRGB_ALPHA_BPTC_UNORM";
+      break;
+    case EBufferFormat::RGBA_ASTC_4X4:
+      rval = "RGBA_ASTC_4X4";
+      break;
+    case EBufferFormat::SRGB_ASTC_4X4:
+      rval = "SRGB_ASTC_4X4";
       break;
     case EBufferFormat::S3TC_DXT1:
       rval = "S3TC_DXT1";

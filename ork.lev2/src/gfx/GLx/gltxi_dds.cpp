@@ -137,19 +137,19 @@ void GlTextureInterface::_loadDDSTextureMainThreadPart(GlTexLoadReq req) {
   // assert(sampler_obj!=0);
   // printf( "sampler_obj<%d>\n", int(sampler_obj));
 
-  glGenTextures(1, &pTEXOBJ->mObject);
-  glBindTexture(TARGET, pTEXOBJ->mObject);
+  glGenTextures(1, &pTEXOBJ->_textureObject);
+  glBindTexture(TARGET, pTEXOBJ->_textureObject);
   GL_ERRORCHECK();
   if (ptex->_debugName.length()) {
-    mTargetGL.debugLabel(GL_TEXTURE, pTEXOBJ->mObject, ptex->_debugName);
+    mTargetGL.debugLabel(GL_TEXTURE, pTEXOBJ->_textureObject, ptex->_debugName);
   }
 
-  ptex->_varmap.makeValueForKey<GLuint>("gltexobj") = pTEXOBJ->mObject;
+  ptex->_varmap.makeValueForKey<GLuint>("gltexobj") = pTEXOBJ->_textureObject;
 
 
   auto infname = req._texname;
 
-  // printf("  tex<%p:%s> ORKTEXOBJECT<%p> GLTEXOBJECT<%d>\n", ptex, ptex->_debugName.c_str(), pTEXOBJ, int(pTEXOBJ->mObject));
+  // printf("  tex<%p:%s> ORKTEXOBJECT<%p> GLTEXOBJECT<%d>\n", ptex, ptex->_debugName.c_str(), pTEXOBJ, int(pTEXOBJ->_textureObject));
 
   ////////////////////////////////////////////////////////////////////
   //

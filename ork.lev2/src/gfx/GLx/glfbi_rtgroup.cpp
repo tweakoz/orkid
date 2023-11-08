@@ -115,12 +115,16 @@ void GlFrameBufferInterface::_setRtGroup(RtGroup* rtgroup) {
 
       // depth texture
 
-      rtgroup->_depthTexture                  = new Texture;
-      rtgroup->_depthTexture->_width          = iw;
-      rtgroup->_depthTexture->_height         = ih;
-      rtgroup->_depthTexture->_msaa_samples = rtgroup->_msaa_samples;
+      rtgroup->_depthBuffer = std::make_shared<RtBuffer>(rtgroup, -1, EBufferFormat::Z32, iw, ih);
+      GL_ERRORCHECK();
 
-      auto depth_glto = rtgroup->_depthTexture->_impl.makeShared<GLTextureObject>(&mTargetGL.mTxI);
+      auto dtex = rtgroup->_depthBuffer->_texture;
+      dtex->_width          = iw;
+      dtex->_height         = ih;
+      dtex->_msaa_samples = rtgroup->_msaa_samples;
+      dtex->_texFormat = EBufferFormat::Z32;
+      dtex->_debugName       = "RtgDepth";
+      auto depth_glto = dtex->_impl.makeShared<GLTextureObject>(&mTargetGL.mTxI);
 
       GL_ERRORCHECK();
     }
@@ -144,12 +148,12 @@ void GlFrameBufferInterface::_setRtGroup(RtGroup* rtgroup) {
         auto color_glto = bufferimpl->_teximpl.makeShared<GLTextureObject>(&mTargetGL.mTxI);
 
         GL_ERRORCHECK();
-        glGenTextures(1, (GLuint*)&color_glto->mObject);
-        glBindTexture(texture_target_2D, color_glto->mObject);
+        glGenTextures(1, (GLuint*)&color_glto->_textureObject);
+        glBindTexture(texture_target_2D, color_glto->_textureObject);
 
 
         if (pB->_debugName.length()) {
-          mTargetGL.debugLabel(GL_TEXTURE, color_glto->mObject, pB->_debugName);
+          mTargetGL.debugLabel(GL_TEXTURE, color_glto->_textureObject, pB->_debugName);
         }
         glBindTexture(texture_target_2D, 0);
         GL_ERRORCHECK();
@@ -158,7 +162,7 @@ void GlFrameBufferInterface::_setRtGroup(RtGroup* rtgroup) {
         ptex->_height         = ih;
         ptex->_impl = bufferimpl->_teximpl;
 
-        ptex->_varmap.makeValueForKey<GLuint>("gltexobj") = color_glto->mObject;
+        ptex->_varmap.makeValueForKey<GLuint>("gltexobj") = color_glto->_textureObject;
 
         mTargetGL.TXI()->ApplySamplingMode(ptex);
         //////////////////////////////////////////
@@ -192,21 +196,32 @@ void GlFrameBufferInterface::_setRtGroup(RtGroup* rtgroup) {
       else{
         glRenderbufferStorageMultisample(GL_RENDERBUFFER, numsamples, GL_DEPTH_COMPONENT32, iw, ih);
       }
-      GL_ERRORCHECK();
 
-      if(rtg_impl->_standard->_depthTexture!=0){
-        glDeleteTextures( 1, &rtg_impl->_standard->_depthTexture );
-        rtg_impl->_standard->_depthTexture = 0;
+      if(rtg_impl->_standard->_depthTexObject!=0){
+        glDeleteTextures( 1, &rtg_impl->_standard->_depthTexObject );
+        rtg_impl->_standard->_depthTexObject = 0;
       }
 
-      glGenTextures(1, &rtg_impl->_standard->_depthTexture);
-      glBindTexture(texture_target_2D, rtg_impl->_standard->_depthTexture);
+      glGenTextures(1, &rtg_impl->_standard->_depthTexObject);
+      glBindTexture(texture_target_2D, rtg_impl->_standard->_depthTexObject);
 
-      rtg_impl->_depthonly->_depthTexture = rtg_impl->_standard->_depthTexture;
+      rtg_impl->_depthonly->_depthTexObject = rtg_impl->_standard->_depthTexObject;
+
+      auto dtex = rtgroup->_depthBuffer->_texture;
+      dtex->_width          = iw;
+      dtex->_height         = ih;
+      dtex->_msaa_samples = rtgroup->_msaa_samples;
+      dtex->_texFormat = EBufferFormat::Z32;
+      dtex->_debugName       = "RtgDepth";
+      auto depth_glto = dtex->_impl.getShared<GLTextureObject>();
+
+      depth_glto->_textureObject = rtg_impl->_standard->_depthTexObject;
+      depth_glto->mTarget = texture_target_2D;
+      //depth_glto->_fbo = rtg_impl->_standard->_fbo;
 
       GL_ERRORCHECK();
       std::string DepthTexName("RtgDepth");
-      mTargetGL.debugLabel(GL_TEXTURE, rtg_impl->_standard->_depthTexture, DepthTexName);
+      mTargetGL.debugLabel(GL_TEXTURE, rtg_impl->_standard->_depthTexObject, DepthTexName);
       if(numsamples==1){
         glTexImage2D(texture_target_2D, 0, GL_DEPTH_COMPONENT32, iw, ih, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
         glTexParameteri(texture_target_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -237,13 +252,14 @@ void GlFrameBufferInterface::_setRtGroup(RtGroup* rtgroup) {
       // printf("RtGroup<%p> initdepth3\n", rtgroup);
       glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rtg_impl->_standard->_dsbo);
       GL_ERRORCHECK();
-      glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, texture_target_2D, rtg_impl->_standard->_depthTexture, 0);
+      glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, texture_target_2D, rtg_impl->_standard->_depthTexObject, 0);
       GL_ERRORCHECK();
-      rtgroup->_depthTexture->_varmap.makeValueForKey<GLuint>("gltexobj") = rtg_impl->_standard->_depthTexture;
-      mTargetGL.TXI()->ApplySamplingMode(rtgroup->_depthTexture);
-      rtgroup->_depthTexture->_isDepthTexture = true;
-      auto depthtexobj                     = rtgroup->_depthTexture->_impl.get<gltexobj_ptr_t>();
-      depthtexobj->mObject                 = rtg_impl->_standard->_depthTexture;
+      auto dtex = rtgroup->_depthBuffer->_texture;
+      dtex->_varmap.makeValueForKey<GLuint>("gltexobj") = rtg_impl->_standard->_depthTexObject;
+      mTargetGL.TXI()->ApplySamplingMode(dtex.get());
+      dtex->_isDepthTexture = true;
+      auto depthtexobj                     = dtex->_impl.get<gltexobj_ptr_t>();
+      depthtexobj->_textureObject                 = rtg_impl->_standard->_depthTexObject;
     }
     //////
     for (int it = 0; it < inumtargets; it++) {
@@ -324,7 +340,7 @@ void GlFrameBufferInterface::_setRtGroup(RtGroup* rtgroup) {
         //////////////////////////////////////////
 
         auto glto = tex->_impl.get<gltexobj_ptr_t>();
-        GLuint texobj   = glto->mObject;
+        GLuint texobj   = glto->_textureObject;
 
         if (tex->_formatSupportsFiltering) {
           tex->mTexSampleMode.PresetTrilinearWrap();
@@ -352,7 +368,7 @@ void GlFrameBufferInterface::_setRtGroup(RtGroup* rtgroup) {
             glGenerateMipmap(texture_target_2D);
             int nummips         = std::ceil(log_base(2, std::max(iw, ih))) + 1;
             glto->_maxmip = nummips - 2;
-            // printf("SetRtg::gentex<%d> w<%d> h<%d> nummips<%d>\n", int(glto->mObject), iw, ih, nummips);
+            // printf("SetRtg::gentex<%d> w<%d> h<%d> nummips<%d>\n", int(glto->_textureObject), iw, ih, nummips);
             break;
           }
           default:
@@ -371,8 +387,8 @@ void GlFrameBufferInterface::_setRtGroup(RtGroup* rtgroup) {
 
       auto color_glto = bufferimpl->_teximpl.get<gltexobj_ptr_t>();
 
-      // printf("RtGroup<%p> RtBuffer<%p> attachcoloridx<%d> fbo<%d>\n", rtgroup, rtbuffer, it, int(glto->mObject));
-      glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + it, texture_target_2D, color_glto->mObject, 0);
+      // printf("RtGroup<%p> RtBuffer<%p> attachcoloridx<%d> fbo<%d>\n", rtgroup, rtbuffer, it, int(glto->_textureObject));
+      glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + it, texture_target_2D, color_glto->_textureObject, 0);
       GL_ERRORCHECK();
 
       if (bufferimpl->_init or rtbuffer->mSizeDirty) {
@@ -472,7 +488,7 @@ void GlFrameBufferInterface::rtGroupMipGen(RtGroup* rtg) {
       if (b) {
         auto bufferimpl = b->_impl.get<GlRtBufferImpl*>();
         auto glto = bufferimpl->_teximpl.get<gltexobj_ptr_t>();
-        GLuint tex_obj    = glto->mObject;
+        GLuint tex_obj    = glto->_textureObject;
         if (b->_mipgen == RtBuffer::EMG_AUTOCOMPUTE) {
           GL_ERRORCHECK();
           glBindTexture(GL_TEXTURE_2D, tex_obj);
@@ -498,7 +514,7 @@ void GlFrameBufferInterface::msaaBlit(rtgroup_ptr_t src, rtgroup_ptr_t dst) {
 
   //auto src_bufferimpl = src_rtb->_impl.get<GlRtBufferImpl*>();
   //auto dst_bufferimpl = dst_rtb->_impl.get<GlRtBufferImpl*>();
-  //GLuint src_texture    = src_glto->mObject;
+  //GLuint src_texture    = src_glto->_textureObject;
   int numsamples = msaaEnumToInt(src->_msaa_samples);
   OrkAssert(numsamples!=1);
   GL_ERRORCHECK();

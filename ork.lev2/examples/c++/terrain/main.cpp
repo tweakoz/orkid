@@ -123,8 +123,8 @@ int main(int argc, char** argv, char** envp) {
     ///////////////////////////////////////
     // compute camera data
     ///////////////////////////////////////
-    float phase = abstime * PI2 * 0.01f;
-    fvec3 eye(245, 150, -330);
+    float phase = (20.0f+abstime) * PI2 * 0.01f;
+    fvec3 eye(245, 350, -330);
     auto tgt = eye + fvec3(sinf(phase), -0.1f, -cosf(phase));
     fvec3 up(0, 1, 0);
     camdata->Lookat(eye, tgt, up);

@@ -102,6 +102,7 @@ struct RtGroup final {
   rtbuffer_ptr_t mMrt[kmaxmrts];
   rtbuffer_ptr_t _depthBuffer;
   Texture* _depthTexture = nullptr;
+  DisplayBuffer* mDepth;
   int mNumMrts;
   int miW;
   int miH;

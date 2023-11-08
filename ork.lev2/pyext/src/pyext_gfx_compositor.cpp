@@ -283,10 +283,66 @@ void pyinit_gfx_compositor(py::module& module_lev2) {
       .def_property_readonly("pipeline_envlighting_model0_mono", [](pbr_deferred_context_ptr_t ctx) -> fxpipeline_ptr_t { //
         return ctx->_pipeline_envlighting_model0_mono;
       })
+      .def_property_readonly("gbuffer", [](pbr_deferred_context_ptr_t ctx) -> rtgroup_ptr_t { //
+        return ctx->_rtgGbuffer;
+      })
+      .def_property_readonly("lbuffer", [](pbr_deferred_context_ptr_t ctx) -> rtgroup_ptr_t { //
+        return ctx->_rtgLbuffer;
+      })
+      .def("createAuxBinding", [](pbr_deferred_context_ptr_t ctx,std::string paramname) -> pbr::deferrednode::auxparambinding_ptr_t { //
+        return ctx->createAuxParamBinding(paramname);
+      })
       .def("gpuInit", [](pbr_deferred_context_ptr_t ctx, ctx_t gfx_ctx) { //
         ctx->gpuInit(gfx_ctx.get());
       });
   type_codec->registerStdCodec<pbr_deferred_context_ptr_t>(defpbrctx_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////////
+  auto auxbinding_type = //
+      py::class_<pbr::deferrednode::AuxParamBinding, pbr::deferrednode::auxparambinding_ptr_t>(module_lev2, "AuxParamBinding")
+      .def_property("texture", 
+        [](pbr::deferrednode::auxparambinding_ptr_t self) -> texture_ptr_t { //
+          return self->_var.getShared<Texture>();
+        },
+        [](pbr::deferrednode::auxparambinding_ptr_t self, texture_ptr_t texture) { //
+          self->_var.setShared<Texture>(texture);
+        })
+      .def_property("float", 
+        [](pbr::deferrednode::auxparambinding_ptr_t self) -> float { //
+          return self->_var.get<float>();
+        },
+        [](pbr::deferrednode::auxparambinding_ptr_t self, float val) { //
+          self->_var.set<float>(val);
+        })
+      .def_property("vec2", 
+        [](pbr::deferrednode::auxparambinding_ptr_t self) -> fvec2 { //
+          return self->_var.get<fvec2>();
+        },
+        [](pbr::deferrednode::auxparambinding_ptr_t self, fvec2 val) { //
+          self->_var.set<fvec2>(val);
+        })
+      .def_property("vec3", 
+        [](pbr::deferrednode::auxparambinding_ptr_t self) -> fvec3 { //
+          return self->_var.get<fvec3>();
+        },
+        [](pbr::deferrednode::auxparambinding_ptr_t self, fvec3 val) { //
+          self->_var.set<fvec3>(val);
+        })
+      .def_property("vec4", 
+        [](pbr::deferrednode::auxparambinding_ptr_t self) -> fvec4 { //
+          return self->_var.get<fvec4>();
+        },
+        [](pbr::deferrednode::auxparambinding_ptr_t self, fvec4 val) { //
+          self->_var.set<fvec4>(val);
+        })
+      .def_property("mtx4", 
+        [](pbr::deferrednode::auxparambinding_ptr_t self) -> fmtx4 { //
+          return self->_var.get<fmtx4>();
+        },
+        [](pbr::deferrednode::auxparambinding_ptr_t self, fmtx4 val) { //
+          self->_var.set<fmtx4>(val);
+        });
+  type_codec->registerStdCodec<pbr::deferrednode::auxparambinding_ptr_t>(auxbinding_type);
   /////////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////
   using defpbrnode_ptr_t = std::shared_ptr<pbr::deferrednode::DeferredCompositingNodePbr>;
@@ -300,6 +356,12 @@ void pyinit_gfx_compositor(py::module& module_lev2) {
           })
           .def_property_readonly("context", [](defpbrnode_ptr_t node) -> pbr_deferred_context_ptr_t { //
             return node->deferredContext();
+          })
+          .def_property_readonly("outputbuffer", [](defpbrnode_ptr_t rnode) -> rtbuffer_ptr_t { //
+            return rnode->GetOutput();
+          })
+          .def_property_readonly("outputgroup", [](defpbrnode_ptr_t rnode) -> rtgroup_ptr_t { //
+            return rnode->GetOutputGroup();
           })
           .def("overrideShader", [](defpbrnode_ptr_t node, std::string shaderpath)  { //
             return node->overrideShader(shaderpath);

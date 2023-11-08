@@ -93,7 +93,7 @@ void ComputeInterface::bindImage(const FxComputeShader* shader, uint32_t binding
   bindComputeShader(csh);
   auto texobj = tex->_impl.get<gltexobj_ptr_t>();
   glActiveTexture(GL_TEXTURE0 + binding_index);
-  glBindTexture(GL_TEXTURE_2D, texobj->mObject);
+  glBindTexture(GL_TEXTURE_2D, texobj->_textureObject);
   GL_ERRORCHECK();
   GLenum glaccess;
   switch (access) {
@@ -110,7 +110,7 @@ void ComputeInterface::bindImage(const FxComputeShader* shader, uint32_t binding
 #if defined(ENABLE_COMPUTE_SHADERS)
   glBindImageTexture(
       binding_index,
-      texobj->mObject,
+      texobj->_textureObject,
       0,         // miplevel
       GL_FALSE,  // layered ?
       0,         // layerid

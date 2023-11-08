@@ -110,6 +110,7 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
               rval->_vars->makeValueForKey<py::function>("drawfn") = drawfn;
               rval->_userSpecifiedOnDraw = true;
               rval->onDraw([=](ui::drawevent_constptr_t drwev) { //
+                OrkAssert(false);
                 ork::opq::mainSerialQueue()->Process();
                 py::gil_scoped_acquire acquire;
                 auto pyfn       = rval->_vars->typedValueForKey<py::function>("drawfn");
@@ -283,6 +284,8 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
       .def(
           "enableUiDraw",
           [](eztopwidget_ptr_t ezw) { //
+              auto mwin = ezw->_mainwin;
+              OrkAssert(mwin->_app._userSpecifiedOnDraw == false );
               ezw->enableUiDraw();
           });
   type_codec->registerStdCodec<eztopwidget_ptr_t>(eztopwidget_type);

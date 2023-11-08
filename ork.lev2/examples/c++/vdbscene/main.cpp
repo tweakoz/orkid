@@ -406,7 +406,7 @@ int main(int argc, char** argv, char** envp) {
 
 
       auto rtg_gbuffer = RCFD->getUserProperty("rtg_gbuffer"_crc).get<rtgroup_ptr_t>();
-      auto gbuffer_depth = rtg_gbuffer->_depthTexture;
+      auto gbuffer_depth = rtg_gbuffer->_depthBuffer->_texture.get();
 
       material.begin(gpurec->_tekSDF, *RCFD);
       material.bindParamMatrix(gpurec->_parMatIVP, cammtc->GetIVPMatrix());

@@ -84,13 +84,39 @@ using glplato_ptr_t = std::shared_ptr<GlPlatformObject>;
 class ContextGL;
 class GlslFxInterface;
 struct GLTextureObject;
+struct GlTextureInterface;
+
 using gltexobj_ptr_t = std::shared_ptr<GLTextureObject>;
+
+struct GLTextureAsyncTask{
+  GLTextureAsyncTask();
+  std::atomic<int> _lock;
+  std::queue<void_lambda_t> _onFinished;
+};
+
+using gltexasynctask_ptr_t = std::shared_ptr<GLTextureAsyncTask>;
+
+struct GLTextureObject {
+
+  GLTextureObject(GlTextureInterface* txi);
+  ~GLTextureObject();
+
+  GLuint _textureObject;
+  GLuint mFbo;
+  GLuint mDbo;
+  GLenum mTarget;
+  int _maxmip = 0;
+  gltexasynctask_ptr_t _async;
+  GlTextureInterface* _txi = nullptr;
+
+  static std::atomic<size_t> _glto_count;
+};
 
 struct GlFboObject {
   static const int kmaxrt = RtGroup::kmaxmrts;
   GLuint _fbo = 0;
   GLuint _dsbo = 0;
-  GLuint _depthTexture = 0;
+  GLuint _depthTexObject = 0;
   GlFboObject();
 };
 using glfbo_ptr_t = std::shared_ptr<GlFboObject>;
@@ -110,8 +136,6 @@ using glrtgroupimpl_ptr_t = std::shared_ptr<GlRtGroupImpl>;
 int GetGlError(void);
 
 //////////////////////////////////////////////////////////////////////
-
-struct GlTextureInterface;
 
 struct GlDrawingInterface : public DrawingInterface {
   GlDrawingInterface(ContextGL& ctx);
@@ -305,31 +329,6 @@ public:
 private:
   void UpdateFBO(GLTextureObject& glto, float ftime);
 };
-
-struct GLTextureAsyncTask{
-  GLTextureAsyncTask();
-  std::atomic<int> _lock;
-  std::queue<void_lambda_t> _onFinished;
-};
-
-using gltexasynctask_ptr_t = std::shared_ptr<GLTextureAsyncTask>;
-
-struct GLTextureObject {
-
-  GLTextureObject(GlTextureInterface* txi);
-  ~GLTextureObject();
-
-  GLuint mObject;
-  GLuint mFbo;
-  GLuint mDbo;
-  GLenum mTarget;
-  int _maxmip = 0;
-  gltexasynctask_ptr_t _async;
-  GlTextureInterface* _txi = nullptr;
-
-  static std::atomic<size_t> _glto_count;
-};
-
 
 ///////////////////////////////////////////////////////////////////////////////
 
