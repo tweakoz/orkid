@@ -84,8 +84,8 @@ libblock lib_deferred //
 
 float LinearizeDepth(float depth) {
     float z = depth * 2.0 - 1.0; // Back to NDC 
-    float nearPlane = near_far.x;
-    float farPlane = near_far.y;
+    float nearPlane = NearFar.x;
+    float farPlane = NearFar.y;
     return (2.0 * nearPlane * farPlane) / (farPlane + nearPlane - z * (farPlane - nearPlane));
 }
 
@@ -113,54 +113,30 @@ fragment_shader ps_environment //
   vec3 out_color   = skybox_n;
 
   if (gbd._mode == 1) {
+    //
     vec4 projspace_point = ProjectionTextureMatrix*vec4(wpos,1);
-    float projspace_depth = projspace_point.z;///projspace_point.w;
-    projspace_depth -= 0.1;
-
+    float projspace_depth = projspace_point.z;
     projspace_point.xyz = projspace_point.xyz / projspace_point.w;
     vec3 prj_uv = projspace_point.xyz * 0.5 + vec3(0.5);
     //
-    float shadow_depth = texture(MapShadowDepth, prj_uv.xy).r;
+    float shadow_depth = textureLod(MapShadowDepth, prj_uv.xy,0).r;
     shadow_depth = LinearizeDepth(shadow_depth);
-    float bias = 0.005;
-    //shadow_depth -= bias;
+    float bias = 0.01;
+    shadow_depth -= bias;
      
-    vec3 pt = texture(ProjectionTexture, prj_uv.xy).xyz;
-
-    out_color = mod(wpos,1);
-
-    float sd_mod_1 = mod(projspace_depth,1);
-    if(projspace_depth>=0.0){
-      if(projspace_depth<1.0){
-        out_color = vec3(0,sd_mod_1,0);
-      }
-      else{
-        out_color = vec3(sd_mod_1,sd_mod_1,0);
-      }
-    }
-    else{
-      out_color = vec3(sd_mod_1,0,sd_mod_1);
-    }
 
     if( projspace_depth < shadow_depth ) {
-      out_color = vec3(1,0,1);
+      vec3 pt = texture(ProjectionTexture, prj_uv.xy).xyz;
+      out_color = pt;
     } else {
       out_color = vec3(0);
     }
-    float delta = projspace_depth-shadow_depth;
-    if(projspace_depth>=5.0){
-      //out_color = vec3(mod(delta,1));
-      out_color = vec3(1,1,1);
+    if(projspace_depth<NearFar.x ){
+      out_color = vec3(1,1,0);
     }
-    else if(projspace_depth<0.0)
-      out_color = vec3(0,1,1);
-    //out_color = vec3(pow(projspace_depth,0.5));
-    //out_color = pt;
-    if(prj_uv.x<0 || prj_uv.x>1 || prj_uv.y<0 || prj_uv.y>1)
+    if(prj_uv.x<0 || prj_uv.x>1 || prj_uv.y<0 || prj_uv.y>1){
       out_color = vec3(1,0,0);
-    //if( (-projspace_depth) > (shadow_depth) )
-    //  out_color = vec3(0,0,0);
-      //out_color = vec3(projspace_depth);
+    }
   }
   colorOUT = vec4(out_color, 1);
 }

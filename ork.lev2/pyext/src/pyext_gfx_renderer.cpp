@@ -170,7 +170,9 @@ void pyinit_gfx_renderer(py::module& module_lev2) {
           .def_property_readonly("mUp", [](cameradata_ptr_t camera) -> fvec3 { return camera->mUp; })
           .def_property_readonly("xnormal", [](cameradata_ptr_t camera) -> fvec3 { return camera->_xnormal; })
           .def_property_readonly("ynormal", [](cameradata_ptr_t camera) -> fvec3 { return camera->_ynormal; })
-          .def_property_readonly("znormal", [](cameradata_ptr_t camera) -> fvec3 { return camera->_znormal; });
+          .def_property_readonly("znormal", [](cameradata_ptr_t camera) -> fvec3 { return camera->_znormal; })
+          .def_property_readonly("near", [](cameradata_ptr_t camera) -> float { return camera->mNear; })
+          .def_property_readonly("far", [](cameradata_ptr_t camera) -> float { return camera->mFar; });
   type_codec->registerStdCodec<cameradata_ptr_t>(camdattype);
   /////////////////////////////////////////////////////////////////////////////////
   auto camdatluttype = //
