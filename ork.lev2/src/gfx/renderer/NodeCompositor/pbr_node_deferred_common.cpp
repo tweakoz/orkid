@@ -56,6 +56,16 @@ lev2::texture_ptr_t DeferredContext::brdfIntegrationTexture() const {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+auxparambinding_ptr_t DeferredContext::createAuxParamBinding(std::string paramname){
+  auto it = _auxbindings.find(paramname);
+  OrkAssert(it==_auxbindings.end());
+  auto mapping = std::make_shared<AuxParamBinding>();
+  _auxbindings[paramname] = mapping;
+  return mapping;
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // deferred layout
 // rt0/GL_RGBA8    (32,32)  - albedo,ao (primary color)
 // rt1/GL_RGB10_A2 (32,64)  - normal,model
@@ -174,19 +184,17 @@ void DeferredContext::renderGbuffer(RenderCompositingNode* node, CompositorDrawD
   auto& ddprops                = drawdata._properties;
   auto irenderer               = ddprops["irenderer"_crcu].get<lev2::IRenderer*>();
 
-  auto rtg_gbuffer = _rtgs_gbuffer->fetch(node->_bufferKey);
-
-  ViewportRect tgt_rect(0, 0, rtg_gbuffer->width(), rtg_gbuffer->height());
-  ViewportRect mrt_rect(0, 0, rtg_gbuffer->width(), rtg_gbuffer->height());
+  ViewportRect tgt_rect(0, 0, _rtgGbuffer->width(), _rtgGbuffer->height());
+  ViewportRect mrt_rect(0, 0, _rtgGbuffer->width(), _rtgGbuffer->height());
   ///////////////////////////////////////////////////////////////////////////
-  FBI->PushRtGroup(rtg_gbuffer.get());
+  FBI->PushRtGroup(_rtgGbuffer.get());
   FBI->SetAutoClear(false); // explicit clear
   targ->beginFrame();
   ///////////////////////////////////////////////////////////////////////////
   const auto TOPCPD  = CIMPL->topCPD();
   auto CPD           = TOPCPD;
   CPD.assignLayers(_layername);
-  CPD._irendertarget = rtg_gbuffer->_rendertarget.get();
+  CPD._irendertarget = _rtgGbuffer->_rendertarget.get();
   CPD.SetDstRect(tgt_rect);
   CPD.SetMrtRect(mrt_rect);
   CPD._passID = "defgbuffer1"_crcu;
@@ -205,8 +213,8 @@ void DeferredContext::renderGbuffer(RenderCompositingNode* node, CompositorDrawD
     auto MTXI = targ->MTXI();
     CIMPL->pushCPD(CPD); // drawenq
     targ->debugPushGroup("toolvp::DrawEnqRenderables");
-    rtg_gbuffer->_clearColor = fvec4(0, 0, 0, 0);
-    FBI->rtGroupClear(rtg_gbuffer.get());
+    _rtgGbuffer->_clearColor = fvec4(0, 0, 0, 0);
+    FBI->rtGroupClear(_rtgGbuffer.get());
     auto newmask = RGBAMask{true,true,true,false};
     auto oldmask = RSI->SetRGBAWriteMask(newmask);
     irenderer->drawEnqueuedRenderables();
@@ -254,7 +262,7 @@ const uint32_t* DeferredContext::captureDepthClusters(const CompositorDrawData& 
     targ->beginFrame();
     _lightingmtl->begin(_tekDownsampleDepthCluster, RCFD);
     _lightingmtl->bindParamInt(_parTileDim, KTILEDIMXY);
-    _lightingmtl->bindParamCTex(_parMapDepth, _rtgGbuffer->_depthTexture);
+    _lightingmtl->bindParamCTex(_parMapDepth, _rtgGbuffer->_depthBuffer->_texture.get());
     _lightingmtl->bindParamVec2(_parNearFar, fvec2(VD._near, VD._far));
     _lightingmtl->bindParamVec2(_parZndc2eye, VD._zndc2eye);
     _lightingmtl->bindParamVec2(_parInvViewSize, fvec2(1.0 / float(_width), 1.0f / float(_height)));
@@ -279,22 +287,24 @@ const uint32_t* DeferredContext::captureDepthClusters(const CompositorDrawData& 
 ///////////////////////////////////////////////////////////////////////////////
 
 void DeferredContext::renderUpdate(RenderCompositingNode* node, CompositorDrawData& drawdata) {
-  auto rtg_gbuffer = _rtgs_gbuffer->fetch(node->_bufferKey);
-  auto rtg_laccum = _rtgs_laccum->fetch(node->_bufferKey);
+
+  _rtgGbuffer = _rtgs_gbuffer->fetch(node->_bufferKey);
+  _rtgLbuffer = _rtgs_laccum->fetch(node->_bufferKey);
+
   auto& ddprops = drawdata._properties;
   //////////////////////////////////////////////////////
   // Resize RenderTargets
   //////////////////////////////////////////////////////
   int newwidth  = ddprops["OutputWidth"_crcu].get<int>();
   int newheight = ddprops["OutputHeight"_crcu].get<int>();
-  if (rtg_gbuffer->width() != newwidth or rtg_gbuffer->height() != newheight) {
+  if (_rtgGbuffer->width() != newwidth or _rtgGbuffer->height() != newheight) {
     printf( "RESIZEDEFCTX\n");
     _width    = newwidth;
     _height   = newheight;
     _clusterW = (newwidth + KTILEDIMXY - 1) / KTILEDIMXY;
     _clusterH = (newheight + KTILEDIMXY - 1) / KTILEDIMXY;
-    rtg_gbuffer->Resize(newwidth, newheight);
-    rtg_laccum->Resize(newwidth, newheight);
+    _rtgGbuffer->Resize(newwidth, newheight);
+    _rtgLbuffer->Resize(newwidth, newheight);
     //_rtgDecal->Resize(newwidth, newheight);
     //_rtgDepthCluster->Resize(_clusterW, _clusterH);
   }
@@ -355,8 +365,7 @@ void DeferredContext::bindRasterState(Context* ctx, ECullTest culltest, EDepthTe
 
 void DeferredContext::renderBaseLighting(RenderCompositingNode* node, CompositorDrawData& drawdata, const ViewData& VD) {
   printf("WTF2\n");
-  auto rtg_gbuffer = _rtgs_gbuffer->fetch(node->_bufferKey);
-  auto rtg_laccum = _rtgs_laccum->fetch(node->_bufferKey);
+
   /////////////////////////////////////////////////////////////////
   FrameRenderer& framerenderer = drawdata.mFrameRenderer;
   RenderContextFrameData& RCFD = framerenderer.framedata();
@@ -373,7 +382,7 @@ void DeferredContext::renderBaseLighting(RenderCompositingNode* node, Compositor
   auto vprect   = ViewportRect(0, 0, _width, _height);
   auto quadrect = SRect(0, 0, _width, _height);
   _accumCPD.SetDstRect(vprect);
-  _accumCPD._irendertarget        = rtg_laccum->_rendertarget.get();
+  _accumCPD._irendertarget        = _rtgLbuffer->_rendertarget.get();
   _accumCPD._cameraMatrices       = nullptr;
   _accumCPD._stereoCameraMatrices = nullptr;
   _accumCPD._stereo1pass          = false;
@@ -383,8 +392,8 @@ void DeferredContext::renderBaseLighting(RenderCompositingNode* node, Compositor
   _decalCPD._stereoCameraMatrices = nullptr;
   _decalCPD._stereo1pass          = false;
   CIMPL->pushCPD(_accumCPD); // base lighting
-  FBI->PushRtGroup(rtg_laccum.get());
-  FBI->rtGroupClear(rtg_laccum.get());
+  FBI->PushRtGroup(_rtgLbuffer.get());
+  FBI->rtGroupClear(_rtgLbuffer.get());
   //////////////////////////////////////////////////////////////////
   // base lighting
   //////////////////////////////////////////////////////////////////
@@ -398,8 +407,8 @@ void DeferredContext::renderBaseLighting(RenderCompositingNode* node, Compositor
   bindViewParams(VD);
   bindRasterState(targ, ECullTest::OFF, EDepthTest::OFF, Blending::OFF);
   //////////////////////////////////////////////////////
-  _lightingmtl->bindParamCTex(_parMapGBuf, rtg_gbuffer->GetMrt(0)->texture());
-  _lightingmtl->bindParamCTex(_parMapDepth, rtg_gbuffer->_depthTexture);
+  _lightingmtl->bindParamCTex(_parMapGBuf, _rtgGbuffer->GetMrt(0)->texture());
+  _lightingmtl->bindParamCTex(_parMapDepth, _rtgGbuffer->_depthBuffer->_texture.get());
   _lightingmtl->commit();
   DWI->quad2DEMLTiled(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 0, 0), 2);
   _lightingmtl->end(RCFD);
@@ -411,8 +420,7 @@ void DeferredContext::renderBaseLighting(RenderCompositingNode* node, Compositor
 ///////////////////////////////////////////////////////////////////////////////
 
 void DeferredContext::beginPointLighting(RenderCompositingNode* node, CompositorDrawData& drawdata, const ViewData& VD, lev2::Texture* cookietexture) {
-  auto rtg_gbuffer = _rtgs_gbuffer->fetch(node->_bufferKey);
-  auto rtg_laccum = _rtgs_laccum->fetch(node->_bufferKey);
+
   auto CIMPL                   = drawdata._cimpl;
   FrameRenderer& framerenderer = drawdata.mFrameRenderer;
   RenderContextFrameData& RCFD = framerenderer.framedata();
@@ -422,7 +430,7 @@ void DeferredContext::beginPointLighting(RenderCompositingNode* node, Compositor
   auto RSI                     = targ->RSI();
   targ->debugPushGroup("Deferred::PointLighting");
   CIMPL->pushCPD(_accumCPD);
-  FBI->PushRtGroup(rtg_laccum.get());
+  FBI->PushRtGroup(_rtgLbuffer.get());
   const FxShaderTechnique* tek = nullptr;
   if (VD._isStereo) {
     tek = cookietexture ? _tekPointLightingTexturedStereo : _tekPointLightingUntexturedStereo;
@@ -434,8 +442,8 @@ void DeferredContext::beginPointLighting(RenderCompositingNode* node, Compositor
   bindViewParams(VD);
   bindRasterState(targ, ECullTest::OFF, EDepthTest::OFF, Blending::ADDITIVE);
   //////////////////////////////////////////////////////
-  _lightingmtl->bindParamCTex(_parMapGBuf, rtg_gbuffer->GetMrt(0)->texture());
-  _lightingmtl->bindParamCTex(_parMapDepth, rtg_gbuffer->_depthTexture);
+  _lightingmtl->bindParamCTex(_parMapGBuf, _rtgGbuffer->GetMrt(0)->texture());
+  _lightingmtl->bindParamCTex(_parMapDepth, _rtgGbuffer->_depthBuffer->_texture.get());
   //_lightingmtl->bindParamCTex(_parMapDepthCluster, _rtgDepthCluster->GetMrt(0)->texture());
   _lightingmtl->bindParamCTex(_parMapBrdfIntegration, _brdfIntegrationMap.get());
   ///////////////////////////
@@ -464,8 +472,7 @@ void DeferredContext::endPointLighting(CompositorDrawData& drawdata, const ViewD
 ///////////////////////////////////////////////////////////////////////////////
 
 void DeferredContext::beginSpotLighting(RenderCompositingNode* node, CompositorDrawData& drawdata, const ViewData& VD, lev2::Texture* cookietexture) {
-  auto rtg_gbuffer = _rtgs_gbuffer->fetch(node->_bufferKey);
-  auto rtg_laccum = _rtgs_laccum->fetch(node->_bufferKey);
+
   auto CIMPL                   = drawdata._cimpl;
   FrameRenderer& framerenderer = drawdata.mFrameRenderer;
   RenderContextFrameData& RCFD = framerenderer.framedata();
@@ -475,7 +482,7 @@ void DeferredContext::beginSpotLighting(RenderCompositingNode* node, CompositorD
   auto RSI                     = targ->RSI();
   targ->debugPushGroup("Deferred::PointLighting");
   CIMPL->pushCPD(_accumCPD);
-  FBI->PushRtGroup(rtg_laccum.get());
+  FBI->PushRtGroup(_rtgLbuffer.get());
   const FxShaderTechnique* tek = nullptr;
   if (VD._isStereo) {
     tek = cookietexture ? _tekSpotLightingTexturedStereo : _tekSpotLightingUntexturedStereo;
@@ -487,8 +494,8 @@ void DeferredContext::beginSpotLighting(RenderCompositingNode* node, CompositorD
   bindViewParams(VD);
   bindRasterState(targ, ECullTest::OFF, EDepthTest::OFF, Blending::ADDITIVE);
   //////////////////////////////////////////////////////
-  _lightingmtl->bindParamCTex(_parMapGBuf, rtg_gbuffer->GetMrt(0)->texture());
-  _lightingmtl->bindParamCTex(_parMapDepth, rtg_gbuffer->_depthTexture);
+  _lightingmtl->bindParamCTex(_parMapGBuf, _rtgGbuffer->GetMrt(0)->texture());
+  _lightingmtl->bindParamCTex(_parMapDepth, _rtgGbuffer->_depthBuffer->_texture.get());
   //_lightingmtl->bindParamCTex(_parMapDepthCluster, _rtgDepthCluster->GetMrt(0)->texture());
   _lightingmtl->bindParamCTex(_parMapBrdfIntegration, _brdfIntegrationMap.get());
   ///////////////////////////
@@ -517,8 +524,8 @@ void DeferredContext::endSpotLighting(CompositorDrawData& drawdata, const ViewDa
 ///////////////////////////////////////////////////////////////////////////////
 
 void DeferredContext::beginShadowedSpotLighting(RenderCompositingNode* node, CompositorDrawData& drawdata, const ViewData& VD, lev2::Texture* cookietexture) {
-  auto rtg_gbuffer = _rtgs_gbuffer->fetch(node->_bufferKey);
-  auto rtg_laccum = _rtgs_laccum->fetch(node->_bufferKey);
+
+
   auto CIMPL                   = drawdata._cimpl;
   FrameRenderer& framerenderer = drawdata.mFrameRenderer;
   RenderContextFrameData& RCFD = framerenderer.framedata();
@@ -528,7 +535,7 @@ void DeferredContext::beginShadowedSpotLighting(RenderCompositingNode* node, Com
   auto RSI                     = targ->RSI();
   targ->debugPushGroup("Deferred::PointLighting");
   CIMPL->pushCPD(_accumCPD);
-  FBI->PushRtGroup(rtg_laccum.get());
+  FBI->PushRtGroup(_rtgLbuffer.get());
   const FxShaderTechnique* tek = nullptr;
   OrkAssert(cookietexture != nullptr);
   tek = VD._isStereo ? _tekSpotLightingTexturedShadowedStereo : _tekSpotLightingTexturedShadowed;
@@ -537,8 +544,8 @@ void DeferredContext::beginShadowedSpotLighting(RenderCompositingNode* node, Com
   bindViewParams(VD);
   bindRasterState(targ, ECullTest::OFF, EDepthTest::OFF, Blending::ADDITIVE);
   //////////////////////////////////////////////////////
-  _lightingmtl->bindParamCTex(_parMapGBuf, rtg_gbuffer->GetMrt(0)->texture());
-  _lightingmtl->bindParamCTex(_parMapDepth, rtg_gbuffer->_depthTexture);
+  _lightingmtl->bindParamCTex(_parMapGBuf, _rtgGbuffer->GetMrt(0)->texture());
+  _lightingmtl->bindParamCTex(_parMapDepth, _rtgGbuffer->_depthBuffer->_texture.get());
   //_lightingmtl->bindParamCTex(_parMapDepthCluster, _rtgDepthCluster->GetMrt(0)->texture());
   _lightingmtl->bindParamCTex(_parMapBrdfIntegration, _brdfIntegrationMap.get());
   ///////////////////////////
@@ -566,8 +573,7 @@ void DeferredContext::endShadowedSpotLighting(CompositorDrawData& drawdata, cons
 ///////////////////////////////////////////////////////////////////////////////
 
 void DeferredContext::beginSpotDecaling(RenderCompositingNode* node, CompositorDrawData& drawdata, const ViewData& VD, lev2::Texture* cookietexture) {
-  auto rtg_gbuffer = _rtgs_gbuffer->fetch(node->_bufferKey);
-  auto rtg_laccum = _rtgs_laccum->fetch(node->_bufferKey);
+
   auto CIMPL                   = drawdata._cimpl;
   FrameRenderer& framerenderer = drawdata.mFrameRenderer;
   RenderContextFrameData& RCFD = framerenderer.framedata();
@@ -589,8 +595,8 @@ void DeferredContext::beginSpotDecaling(RenderCompositingNode* node, CompositorD
   bindViewParams(VD);
   bindRasterState(targ, ECullTest::OFF, EDepthTest::OFF, Blending::OFF);
   ///////////////////////////
-  _lightingmtl->bindParamCTex(_parMapGBuf, rtg_gbuffer->GetMrt(0)->texture());
-  _lightingmtl->bindParamCTex(_parMapDepth, rtg_gbuffer->_depthTexture);
+  _lightingmtl->bindParamCTex(_parMapGBuf, _rtgGbuffer->GetMrt(0)->texture());
+  _lightingmtl->bindParamCTex(_parMapDepth, _rtgGbuffer->_depthBuffer->_texture.get());
   if (cookietexture)
     _lightingmtl->bindParamCTex(_parLightCookieTexture, cookietexture);
   //////////////////////////////////////////////////

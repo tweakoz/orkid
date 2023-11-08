@@ -96,8 +96,8 @@ struct RtGroup final {
 
   Context* _parentTarget;
   rtbuffer_ptr_t mMrt[kmaxmrts];
+  rtbuffer_ptr_t _depthBuffer;
   DisplayBuffer* mDepth;
-  Texture* _depthTexture = nullptr;
   int mNumMrts;
   int miW;
   int miH;

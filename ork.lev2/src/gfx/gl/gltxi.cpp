@@ -28,7 +28,7 @@ std::atomic<size_t> GLTextureObject::_glto_count = 0;
 
 GLTextureObject::GLTextureObject(GlTextureInterface* txi)
     : _txi(txi) 
-    , mObject(0)
+    , _textureObject(0)
     , mFbo(0)
     , mDbo(0)
     , mTarget(GL_NONE) {
@@ -41,8 +41,8 @@ GLTextureObject::GLTextureObject(GlTextureInterface* txi)
 GLTextureObject::~GLTextureObject() {
   _glto_count.fetch_add(-1);
   //printf( "destroy glto_count: %zu\n", _glto_count.load() );
-  if(mObject!=0){
-    glDeleteTextures(1, &mObject);
+  if(_textureObject!=0){
+    glDeleteTextures(1, &_textureObject);
   }
 }
 
@@ -71,7 +71,7 @@ void GlTextureInterface::bindTextureToUnit(const Texture* tex, GLenum tex_target
     // assign default texture object (0) to start out with
     /////////////////////////////////////////////////////////////
 
-    tex_obj->mObject = 0;
+    tex_obj->_textureObject = 0;
 
     /////////////////////////////////////////////////////////////
     // check to see if we are referencing external memory objects
@@ -85,7 +85,7 @@ void GlTextureInterface::bindTextureToUnit(const Texture* tex, GLenum tex_target
       GLuint mem_object = 0;
       glCreateMemoryObjectsEXT(1, &mem_object);
 
-      /*printf("MEMOBJECT<%d> fd<%d> w<%d> h<%d> size<%zu>\n",
+      /*printf("ME_textureObject<%d> fd<%d> w<%d> h<%d> size<%zu>\n",
              int(mem_object),
              ipcdata->_image_fd,
              ipcdata->_image_width,
@@ -107,8 +107,8 @@ void GlTextureInterface::bindTextureToUnit(const Texture* tex, GLenum tex_target
 
       GL_ERRORCHECK();
 
-      glCreateTextures(tex_target, 1, &tex_obj->mObject);
-      glBindTexture(tex_target, tex_obj->mObject);
+      glCreateTextures(tex_target, 1, &tex_obj->_textureObject);
+      glBindTexture(tex_target, tex_obj->_textureObject);
 
       GL_ERRORCHECK();
 
@@ -128,7 +128,7 @@ void GlTextureInterface::bindTextureToUnit(const Texture* tex, GLenum tex_target
           ipcdata->_image_width,  // width
           ipcdata->_image_height, // height
           mem_object,             // mem object
-          0);                     // offset into memobject's data
+          0);                     // offset into me_textureObject's data
 
       GL_ERRORCHECK();
       glBindTexture(tex_target, 0);
@@ -144,7 +144,7 @@ void GlTextureInterface::bindTextureToUnit(const Texture* tex, GLenum tex_target
     /////////////////////////////////////////////////////////////
   }
 
-  GLuint texID = tex_obj->mObject;
+  GLuint texID = tex_obj->_textureObject;
 
   /*printf(
       "Bind3 ISDEPTH<%d> tex<%p> texobj<%d> tex_unit<%d> textgt<% d>\n ",
@@ -214,8 +214,8 @@ bool GlTextureInterface::destroyTexture(texture_ptr_t tex) {
 
   void_lambda_t lamb = [=]() {
     if (glto) {
-      if (glto->mObject != 0)
-        glDeleteTextures(1, &glto->mObject);
+      if (glto->_textureObject != 0)
+        glDeleteTextures(1, &glto->_textureObject);
     }
   };
   // opq::mainSerialQueue()->push(lamb,get_backtrace());
@@ -438,7 +438,7 @@ void GlTextureInterface::ApplySamplingMode(Texture* ptex) {
 
     GL_ERRORCHECK();
     // sampler state..
-    glBindTexture(tgt, glto->mObject);
+    glBindTexture(tgt, glto->_textureObject);
 #if defined(OPENGL_41)
     glTexParameterf(tgt, GL_TEXTURE_MAX_ANISOTROPY_EXT, 16.0f);
 #elif defined(OPENGL_46)
@@ -461,7 +461,7 @@ void GlTextureInterface::ApplySamplingMode(Texture* ptex) {
 
 void GlTextureInterface::generateMipMaps(Texture* ptex) {
   auto glto = ptex->_impl.get<gltexobj_ptr_t>();
-  glBindTexture(GL_TEXTURE_2D, glto->mObject);
+  glBindTexture(GL_TEXTURE_2D, glto->_textureObject);
   glGenerateMipmap(GL_TEXTURE_2D);
   glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
   glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
@@ -635,22 +635,22 @@ void GlTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   if (ptex->_impl.isA<gltexobj_ptr_t>()) {
     glto = ptex->_impl.get<gltexobj_ptr_t>();
     GL_ERRORCHECK();
-    glBindTexture(texture_target, glto->mObject);
+    glBindTexture(texture_target, glto->_textureObject);
     GL_ERRORCHECK();
-    //printf( "OLD obj<%p:%d>\n", (void*) glto.get(), int(glto->mObject));
+    //printf( "OLD obj<%p:%d>\n", (void*) glto.get(), int(glto->_textureObject));
   } else { // new texture
     glto       = ptex->_impl.makeShared<GLTextureObject>(this);
     
     GL_ERRORCHECK();
-    glGenTextures(1, &glto->mObject);
-    glBindTexture(texture_target, glto->mObject);
+    glGenTextures(1, &glto->_textureObject);
+    glBindTexture(texture_target, glto->_textureObject);
     GL_ERRORCHECK();
     if (ptex->_debugName.length()) {
-      mTargetGL.debugLabel(GL_TEXTURE, glto->mObject, ptex->_debugName);
+      mTargetGL.debugLabel(GL_TEXTURE, glto->_textureObject, ptex->_debugName);
     }
 
-    ptex->_varmap.makeValueForKey<GLuint>("gltexobj") = glto->mObject;
-    //printf( "NEW obj<%p:%d>\n",  (void*) glto.get(), int(glto->mObject));
+    ptex->_varmap.makeValueForKey<GLuint>("gltexobj") = glto->_textureObject;
+    //printf( "NEW obj<%p:%d>\n",  (void*) glto.get(), int(glto->_textureObject));
 
     //ptex->_impl._assert_on_destroy = true;
   }
@@ -804,12 +804,12 @@ Texture* GlTextureInterface::createFromMipChain(MipChain* from_chain) {
 
   auto glto = tex->_impl.makeShared<GLTextureObject>(this);
 
-  glGenTextures(1, &glto->mObject);
-  glBindTexture(GL_TEXTURE_2D, glto->mObject);
+  glGenTextures(1, &glto->_textureObject);
+  glBindTexture(GL_TEXTURE_2D, glto->_textureObject);
 
   if (from_chain->_debugName.length()) {
     tex->_debugName = from_chain->_debugName;
-    mTargetGL.debugLabel(GL_TEXTURE, glto->mObject, tex->_debugName);
+    mTargetGL.debugLabel(GL_TEXTURE, glto->_textureObject, tex->_debugName);
   }
 
   size_t nummips = from_chain->_levels.size();

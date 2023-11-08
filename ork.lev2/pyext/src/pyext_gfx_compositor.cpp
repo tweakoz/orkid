@@ -283,10 +283,38 @@ void pyinit_gfx_compositor(py::module& module_lev2) {
       .def_property_readonly("pipeline_envlighting_model0_mono", [](pbr_deferred_context_ptr_t ctx) -> fxpipeline_ptr_t { //
         return ctx->_pipeline_envlighting_model0_mono;
       })
+      .def_property_readonly("gbuffer", [](pbr_deferred_context_ptr_t ctx) -> rtgroup_ptr_t { //
+        return ctx->_rtgGbuffer;
+      })
+      .def_property_readonly("lbuffer", [](pbr_deferred_context_ptr_t ctx) -> rtgroup_ptr_t { //
+        return ctx->_rtgLbuffer;
+      })
+      .def("createAuxBinding", [](pbr_deferred_context_ptr_t ctx,std::string paramname) -> pbr::deferrednode::auxparambinding_ptr_t { //
+        return ctx->createAuxParamBinding(paramname);
+      })
       .def("gpuInit", [](pbr_deferred_context_ptr_t ctx, ctx_t gfx_ctx) { //
         ctx->gpuInit(gfx_ctx.get());
       });
   type_codec->registerStdCodec<pbr_deferred_context_ptr_t>(defpbrctx_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////////
+  auto auxbinding_type = //
+      py::class_<pbr::deferrednode::AuxParamBinding, pbr::deferrednode::auxparambinding_ptr_t>(module_lev2, "AuxParamBinding")
+      .def_property("texture", 
+        [](pbr::deferrednode::auxparambinding_ptr_t self) -> texture_ptr_t { //
+          return self->_var.getShared<Texture>();
+        },
+        [](pbr::deferrednode::auxparambinding_ptr_t self, texture_ptr_t texture) { //
+          self->_var.setShared<Texture>(texture);
+        })
+      .def_property("mtx4", 
+        [](pbr::deferrednode::auxparambinding_ptr_t self) -> fmtx4 { //
+          return self->_var.get<fmtx4>();
+        },
+        [](pbr::deferrednode::auxparambinding_ptr_t self, fmtx4 mtx) { //
+          self->_var.set<fmtx4>(mtx);
+        });
+  type_codec->registerStdCodec<pbr::deferrednode::auxparambinding_ptr_t>(auxbinding_type);
   /////////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////
   using defpbrnode_ptr_t = std::shared_ptr<pbr::deferrednode::DeferredCompositingNodePbr>;

@@ -25,7 +25,10 @@ uniform_set ub_frg {
   sampler2D MapBrdfIntegration;
   sampler2D MapLightingCookie;
   sampler2D MapShadowDepth;
+  sampler2D ProjectionTexture;
   sampler3D MapVolTexA;
+
+  mat4 ProjectionTextureMatrix;
   vec3 EyePostion;
   vec2 InvViewportSize; // inverse target size
   float Time;
@@ -89,6 +92,10 @@ fragment_shader ps_environment //
     : lib_deferred {           //
   WPosData wpd     = monoWPD();
   GBufData gbd     = decodeGBUF(wpd);
+
+  vec4 prj_uv = vec4(frg_uva.xy,0,1) * ProjectionTextureMatrix;
+
+  vec3 pt = texture(ProjectionTexture, prj_uv.xy).xyz;
   vec2 uv          = wpd._muv;
   vec3 view_epos0  = posatdepth(wpd, 0.0);
   vec3 view_epos1  = posatdepth(wpd, 1.0);
@@ -97,7 +104,7 @@ fragment_shader ps_environment //
   vec3 skyboxColor = env_equirectangularFlipV(skybox_n, MapSpecularEnv, EnvironmentMipBias) * SkyboxLevel;
   vec3 out_color   = skybox_n;
   if (gbd._mode == 1) {
-    out_color = vec3(pow(gbd._fogZ * 0.02*DiffuseLevel, 2));
+    out_color = pt+vec3(pow(gbd._fogZ * 0.02*DiffuseLevel, 2))*0.3;
   }
   colorOUT = vec4(out_color, 1);
 }

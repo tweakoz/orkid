@@ -177,6 +177,11 @@ class UiSgQuadViewTestApp(object):
           self.output_node = self.scenegraph.compositoroutputnode
           self.render_node = self.scenegraph.compositorrendernode
 
+          if index==1:
+            self.deferred_ctx = self.render_node.context
+            self.projtex_binding = self.deferred_ctx.createAuxBinding("ProjectionTexture")
+            self.projmtx_binding = self.deferred_ctx.createAuxBinding("ProjectionTextureMatrix")
+
           self.use_event = True
           self.layer = self.scenegraph.createLayer("layer")
           self.sgnode = parent.model.createNode("modelnode",self.layer)
@@ -296,20 +301,29 @@ class UiSgQuadViewTestApp(object):
   def onGpuUpdate(self,context):
     for handler in self.gpu_update_handlers:
       handler(context)
+    #####################
+    p0 = self.panels[0]
+    p1 = self.panels[1]
+    #####################
+    # fetch lightaccum from panel 0
+    #####################
+    sg0 = p0.scenegraph
+    rn0 = p0.render_node
+    defctx0 = rn0.context
+    gbuffer0 = defctx0.gbuffer
+    lbuffer0 = defctx0.lbuffer
+    if gbuffer0!=None:
+      zbuf = gbuffer0.depth_buffer
+      self.depth_texure = zbuf.texture
+    # Bind Auxiliary shader parameters
+    if lbuffer0!=None:
+      self.laccum_texure = lbuffer0.mrt_buffer(0).texture
+      p1.projtex_binding.texture = self.laccum_texure
 
-  ################################################
+      m = mtx4.rotMatrix(vec3(0,0,1),self.abstime)
+      
+      p1.projmtx_binding.mtx4 = m
 
-  def onDraw(self,drwev):
-    assert(False)
-    self.scene.renderOnContext(drwev.context)
-    sg0 = self.panels[0].scenegraph
-    sg1 = self.panels[1].scenegraph
-    rn0 = self.panels[0].render_node
-    rn1 = self.panels[1].render_node
-    print("rn0<%s>"%rn0)
-    rtg0 = rn0.outputgroup
-    print("rtg0<%s>"%rtg0)
-    
   ################################################
 
   def onUpdate(self,updinfo):

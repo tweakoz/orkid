@@ -323,7 +323,7 @@ void SimpleLightProcessor::_renderShadowedTexturedSpotLights(
     OrkAssert(numlights < KMAXLIGHTSPERCHUNK);
     for (auto light : lights) {
       numlights                        = 1;
-      auto shadowtex                   = light->_shadowRTG->_depthTexture;
+      auto shadowtex                   = light->_shadowRTG->_depthBuffer->_texture;
       fvec3 color                      = light->color()*light->intensity();
       float dist2cam                   = light->distance(VD._camposmono);
       auto mapping                     = FXI->mapParamBuffer(_lightbuffer, 0, 65536);
@@ -337,7 +337,7 @@ void SimpleLightProcessor::_renderShadowedTexturedSpotLights(
       mapping->ref<fmtx4>(offset_mtx2) = light->shadowMatrix();
       FXI->unmapParamBuffer(mapping.get());
       FXI->bindParamBlockBuffer(_deferredContext._lightblock, _lightbuffer);
-      lightmtl->bindParamCTex(_deferredContext._parMapShadowDepth, shadowtex);
+      lightmtl->bindParamCTex(_deferredContext._parMapShadowDepth, shadowtex.get());
       fvec4 shadowp;
       shadowp.x = (1.0f / float(light->_shadowmapDim));
       shadowp.y = (1.0f / 9.0f);

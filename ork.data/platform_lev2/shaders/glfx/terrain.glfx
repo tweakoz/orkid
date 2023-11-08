@@ -248,7 +248,7 @@ fragment_shader ps_terrain_gbuf1
   : lib_gbuf_encode {
   vec3 n = normalize(frg_nrm);
   vec3 c = albedo(n);
-  out_gbuffer = packGbuffer(c, n, 1, 0, false);
+  out_gbuffer = packGbuffer(c, vec3(0), n, 1, 0);
 }
 ///////////////////////////////////////////////////////////////
 // pick

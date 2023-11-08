@@ -163,7 +163,7 @@ struct PbrNodeImpl {
 
     _context->_lightingmtl->bindParamCTex(_context->_parMapGBuf, rtg_gbuffer->GetMrt(0)->texture());
 
-    _context->_lightingmtl->bindParamCTex(_context->_parMapDepth, rtg_gbuffer->_depthTexture);
+    _context->_lightingmtl->bindParamCTex(_context->_parMapDepth, rtg_gbuffer->_depthBuffer->_texture.get());
 
     _context->_lightingmtl->bindParamCTex(_context->_parMapSpecularEnv, pbrcommon->envSpecularTexture().get());
     _context->_lightingmtl->bindParamCTex(_context->_parMapDiffuseEnv, pbrcommon->envDiffuseTexture().get());
@@ -191,6 +191,30 @@ struct PbrNodeImpl {
     _context->_lightingmtl->_rasterstate.SetAlphaTest(EALPHATEST_OFF);
 
     _context->bindViewParams(VD);
+
+    //////////////////////////////////////////////////////
+    // aux bindings
+    //////////////////////////////////////////////////////
+
+    for( auto mapping : _context->_auxbindings ){
+      auto name = mapping.first;
+      auto mappingdata = mapping.second;
+      if( mappingdata->_param == nullptr ){
+        mappingdata->_param = _context->_lightingmtl->param(name);
+      }
+      OrkAssert(mappingdata->_param != nullptr);
+      auto param = mappingdata->_param;
+      if( auto as_tex = mappingdata->_var.tryAsShared<Texture>() ){
+        _context->_lightingmtl->bindParamCTex(param, as_tex.value().get() );
+      }
+      else if( auto as_mtx4 = mappingdata->_var.tryAs<fmtx4>() ){
+        _context->_lightingmtl->bindParamMatrix(param, as_mtx4.value() );
+      }
+    }
+
+    //////////////////////////////////////////////////////
+
+
     _context->_lightingmtl->commit();
     RSI->BindRasterState(_context->_lightingmtl->_rasterstate);
 

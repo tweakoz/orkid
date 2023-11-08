@@ -21,6 +21,15 @@ class DeferredCompositingNode;
 
 ///////////////////////////////////////////////////////////////////////////////
 
+struct AuxParamBinding{
+  const FxShaderParam* _param = nullptr;
+  svar64_t _var;
+};
+
+using auxparambinding_ptr_t = std::shared_ptr<AuxParamBinding>;
+
+///////////////////////////////////////////////////////////////////////////////
+
 struct DeferredContext {
 
 #if defined(ENABLE_COMPUTE_SHADERS)
@@ -75,8 +84,11 @@ struct DeferredContext {
   textureassetptr_t _voltexA;
   bool _enableSDF = false;
   ////////////////////////////////////////////////////////////////////
+  auxparambinding_ptr_t createAuxParamBinding(std::string paramname);
+  ////////////////////////////////////////////////////////////////////
+  std::unordered_map<std::string, auxparambinding_ptr_t> _auxbindings;
+  ////////////////////////////////////////////////////////////////////
   std::vector<PointLight*> _pointlights;
-
   ////////////////////////////////////////////////////////////////////
 
   const FxShaderTechnique* _tekBaseLighting              = nullptr;
@@ -115,9 +127,6 @@ struct DeferredContext {
   const FxShaderParam* _parMatVArray   = nullptr;
   const FxShaderParam* _parZndc2eye    = nullptr;
   const FxShaderParam* _parMapGBuf     = nullptr;
-  // const FxShaderParam* _parMapGBufAlbAo        = nullptr;
-  // const FxShaderParam* _parMapGBufNrmL         = nullptr;
-  // const FxShaderParam* _parMapGBufRufMtlAlpha  = nullptr;
   const FxShaderParam* _parMapDepth            = nullptr;
   const FxShaderParam* _parMapDepthCluster     = nullptr;
   const FxShaderParam* _parMapShadowDepth      = nullptr;
@@ -146,9 +155,15 @@ struct DeferredContext {
 
   ////////////////////////////////////////////////////////////////////
 
+
+  ////////////////////////////////////////////////////////////////////
+
   lev2::texture_ptr_t _brdfIntegrationMap = nullptr;
 
   CaptureBuffer _clustercapture;
+
+  rtgroup_ptr_t _rtgGbuffer;
+  rtgroup_ptr_t _rtgLbuffer;
 
   rtgset_ptr_t _rtgs_gbuffer;
   rtgset_ptr_t _rtgs_laccum;
