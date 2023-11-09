@@ -174,6 +174,7 @@ struct DeferredContext {
   rtbuffer_ptr_t _rtbDepthCluster = nullptr;
 
   std::string _layername;
+  EBufferFormat _lightAccumFormat;
   float _specularLevel    = 1.0f;
   float _diffuseLevel     = 1.0f;
   float _depthFogPower    = 1.0f;

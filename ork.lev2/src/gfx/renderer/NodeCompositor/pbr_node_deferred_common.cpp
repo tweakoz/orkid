@@ -42,6 +42,7 @@ DeferredContext::DeferredContext(RenderCompositingNode* node, std::string shader
     p->_radius  = 16 + float(rand() & 0xff) / 2.0;
     _pointlights.push_back(p);
   }
+  _lightAccumFormat = EBufferFormat::RGBA16F;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -147,7 +148,7 @@ void DeferredContext::gpuInit(Context* target) {
     _rtgs_gbuffer->_autoclear = false;
     //////////////////////////////////////////////////////////////
     _rtgs_laccum = std::make_shared<RtgSet>(target,MsaaSamples::MSAA_1X, true);
-    _rtgs_laccum->addBuffer("DeferredLightAccum", EBufferFormat::RGBA16F);
+    _rtgs_laccum->addBuffer("DeferredLightAccum", _lightAccumFormat);
     _rtgs_laccum->_autoclear = false;
     //////////////////////////////////////////////////////////////
     auto mtl_load_req1 = std::make_shared<asset::LoadRequest>("src://effect_textures/white");

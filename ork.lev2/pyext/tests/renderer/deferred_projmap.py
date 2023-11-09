@@ -125,6 +125,7 @@ class Panel:
       self.projmtx_binding = self.deferred_ctx.createAuxBinding("ProjectionTextureMatrix")
       self.projcam_eye = self.deferred_ctx.createAuxBinding("ProjectionEyePostion")
       self.nearfar_binding = self.deferred_ctx.createAuxBinding("NearFar")
+      self.deferred_ctx.lightAccumFormat = tokens.RGBA32F
 
     #################################################
     # both scenes will render the same content
