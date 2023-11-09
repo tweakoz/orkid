@@ -134,6 +134,7 @@ class Panel:
 
     self.use_event = True
     self.layer = self.scenegraph.createLayer("layer")
+
     self.sgnode = parent.model.createNode("modelnode",self.layer)
 
     self.anim_inst = XgmAnimInst(parent.anim)
@@ -255,6 +256,10 @@ class UiSgQuadViewTestApp(object):
     ]
     
     ##########################################################################
+
+    #self.grid_data = createGridData()
+    #self.grid_node = self.panels[1].layer.createGridNode("grid",self.grid_data)
+    #self.grid_node.sortkey = 1
 
     #self.panels[0].griditem.widget.decoupleFromUiSize(4096,4096)
     #self.panels[0].griditem.widget.aspect_from_rtgroup = True
