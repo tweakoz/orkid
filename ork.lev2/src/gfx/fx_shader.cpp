@@ -16,16 +16,6 @@ extern bool gearlyhack;
 
 FxShader::FxShader() {
 }
-///////////////////////////////////////////////////////////////////////////////
-
-FxParamRec::FxParamRec()
-    : _name("")
-    , mParameterSemantic("")
-    , meParameterType(ork::EPROPTYPE_END)
-    , mParameterHandle(0)
-    , meBindingScope(ESCOPE_PEROBJECT)
-    , mTargetHash(0xffffffff) {
-}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -35,8 +25,7 @@ FxShaderPass::FxShaderPass(){
 ///////////////////////////////////////////////////////////////////////////////
 
 FxShaderParam::FxShaderParam()
-    : meParamType(EPROPTYPE_END)
-    , mBindable(true)
+    : mBindable(true)
     , mChildParam(0) {
 }
 
@@ -120,9 +109,6 @@ void FxShader::OnReset() {
       target->FXI()->BindParamCTex(param, 0);
     }
   }
-  //_techniques.clear();
-  //_parameterByName.clear();
-  // mParameterBySemantic.clear();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

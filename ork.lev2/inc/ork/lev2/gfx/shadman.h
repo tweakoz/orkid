@@ -15,35 +15,12 @@ namespace ork { namespace lev2 {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class FxParamRec {
-public:
-  enum EBindingScope {
-    ESCOPE_CONSTANT = 0,
-    ESCOPE_PERFRAME,
-    ESCOPE_PERMATERIALINST,
-    ESCOPE_PEROBJECT,
-  };
-
-  FxParamRec();
-
-  std::string _name;
-  std::string mParameterSemantic;
-  EPropType meParameterType;
-
-  fxparam_constptr_t mParameterHandle;
-  EBindingScope meBindingScope;
-  U32 mTargetHash;
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
 struct FxShaderPass {
 
   FxShaderPass();
 
   std::string _name;
   svarp_t _impl;
-  RenderQueueSortingData mRenderQueueSortingData;
 
 };
 
@@ -70,9 +47,8 @@ struct FxShaderParam {
   FxShaderParam();
 
   std::string _name;
-  std::string mParameterSemantic;
+  std::string _semantic;
   std::string mParameterType;
-  EPropType meParamType;
   bool mBindable;
   FxShaderParamInBlockInfo* _blockinfo = nullptr;
   FxShaderParam* mChildParam;
@@ -289,7 +265,7 @@ struct FxShader {
   // SSBO support
   ////////////////////////////////////////////////////
 
-  typedef orkmap<std::string, const FxShaderStorageBlock*> storageblockbynamemap_t;
+  using storageblockbynamemap_t = orkmap<std::string, const FxShaderStorageBlock*>;
   storageblockbynamemap_t _storageBlockByName;
   const storageblockbynamemap_t& namedStorageBlocks(void) const {
     return _storageBlockByName;
