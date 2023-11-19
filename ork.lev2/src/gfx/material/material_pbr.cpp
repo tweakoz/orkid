@@ -192,12 +192,12 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu,con
         pipeline = pipeline_stereo;
       }
       else if(mtl->_tek_FWD_SKYBOX_MO){
-        auto pipeline_stereo        = std::make_shared<FxPipeline>(permu);
-        pipeline_stereo->_technique = mtl->_tek_FWD_SKYBOX_MO;
-        pipeline_stereo->bindParam(mtl->_paramIVP, "RCFD_Camera_IVP_Mono"_crcsh);
-        pipeline_stereo->addStateLambda(skybox_lambda);
-        pipeline_stereo->_material = (GfxMaterial*)mtl;
-        pipeline = pipeline_stereo;
+        auto pipeline_mono        = std::make_shared<FxPipeline>(permu);
+        pipeline_mono->_technique = mtl->_tek_FWD_SKYBOX_MO;
+        pipeline_mono->bindParam(mtl->_paramIVP, "RCFD_Camera_IVP_Mono"_crcsh);
+        pipeline_mono->addStateLambda(skybox_lambda);
+        pipeline_mono->_material = (GfxMaterial*)mtl;
+        pipeline = pipeline_mono;
       }
       //////////////////////////////////////////////////////////
       break;
@@ -617,7 +617,7 @@ void PBRMaterial::describeX(class_t* c) {
     ctx._inputStream->GetItem(istring);
     auto texbasename = ctx._reader.GetString(istring);
     auto mtl         = std::make_shared<PBRMaterial>();
-    mtl->SetName(AddPooledString(materialname));
+    mtl->_name = materialname;
     //logchan_pbr->log("read.xgm: materialName<%s>", materialname);
     ctx._inputStream->GetItem(istring);
     auto begintextures = ctx._reader.GetString(istring);
@@ -680,7 +680,7 @@ void PBRMaterial::describeX(class_t* c) {
   chunkfile::materialwriter_t writer = [](chunkfile::XgmMaterialWriterContext& ctx) {
     auto pbrmtl = std::static_pointer_cast<const PBRMaterial>(ctx._material);
 
-    int istring = ctx._writer.stringIndex(pbrmtl->mMaterialName.c_str());
+    int istring = ctx._writer.stringIndex(pbrmtl->_name.c_str());
     ctx._outputStream->addItem(istring);
 
     istring = ctx._writer.stringIndex(pbrmtl->_textureBaseName.c_str());
@@ -733,12 +733,7 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
   _initialTarget = targ;
   auto fxi       = targ->FXI();
 
-  auto loadreq = std::make_shared<asset::LoadRequest>();
-
-  //printf( "PBRMaterial::gpuInit<%p> _shaderpath<%s>\n", this, _shaderpath.c_str() );
-  loadreq->_asset_path = _shaderpath;
-
-  _as_freestyle = std::make_shared<FreestyleMaterial>();
+  _as_freestyle = std::make_shared<FreestyleMaterial>(_name+".fs");
   _as_freestyle->gpuInit(targ,_shaderpath);
   _asset_shader = _as_freestyle->_shaderasset;
   _shader       = _as_freestyle->_shader;
@@ -1055,8 +1050,11 @@ void PBRMaterial::begin(const RenderContextFrameData& RCFD) {
 void PBRMaterial::end(const RenderContextFrameData& RCFD) {
 }
 
-PBRMaterial::PBRMaterial(Context* targ)
-    : PBRMaterial() {
+PBRMaterial::PBRMaterial(Context* targ,std::string name)
+    : GfxMaterial(name)
+    , _baseColor(1, 1, 1) {
+  miNumPasses = 1;
+  _shaderpath = "orkshader://pbr";
   gpuInit(targ);
 }
 
@@ -1100,7 +1098,7 @@ pbrmaterial_ptr_t PBRMaterial::clone() const {
   copy->_textureBaseName = _textureBaseName;
   
   copy->_variant = _variant;
-  copy->mMaterialName = mMaterialName;
+  copy->_name = _name;
   copy->_varmap = _varmap;
 
   return copy;

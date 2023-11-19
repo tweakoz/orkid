@@ -17,7 +17,8 @@ void pyinit_gfx_material(py::module& module_lev2) {
   /////////////////////////////////////////////////////////////////////////////////
   auto material_type = //
       py::class_<GfxMaterial, material_ptr_t>(module_lev2, "Material")
-          .def_property("name", &GfxMaterial::GetName, &GfxMaterial::SetName)
+          .def_property("name", [](material_ptr_t material) -> std::string { return material->_name; },
+              [](material_ptr_t material, std::string name) { material->_name = name; })
           /*.def_property(
               "rasterstate",                                    //
               [](material_ptr_t material) -> SRasterState  { //
@@ -28,7 +29,7 @@ void pyinit_gfx_material(py::module& module_lev2) {
               })*/
           .def("__repr__", [](material_ptr_t m) -> std::string {
             fxstring<64> fxs;
-            fxs.format("GfxMaterial(%p:%s)", m.get(), m->mMaterialName.c_str());
+            fxs.format("GfxMaterial(%p:%s)", m.get(), m->_name.c_str());
             return fxs.c_str();
           });
   type_codec->registerStdCodec<material_ptr_t>(material_type);
@@ -273,7 +274,7 @@ void pyinit_gfx_material(py::module& module_lev2) {
               [](freestyle_mtl_ptr_t m, pyfxtechnique_ptr_t tek, RenderContextFrameData& rcfd) { m->begin(tek.get(), rcfd); })
           .def("end", [](freestyle_mtl_ptr_t m, RenderContextFrameData& rcfd) { m->end(rcfd); })
           .def("__repr__", [](const freestyle_mtl_ptr_t m) -> std::string {
-            return FormatString("FreestyleMaterial(%p:%s)", m.get(), m->mMaterialName.c_str());
+            return FormatString("FreestyleMaterial(%p:%s)", m.get(), m->_name.c_str());
           });
   type_codec->registerStdCodec<freestyle_mtl_ptr_t>(freestyle_type);
   /////////////////////////////////////////////////////////////////////////////////
@@ -281,7 +282,7 @@ void pyinit_gfx_material(py::module& module_lev2) {
       py::class_<PBRMaterial, GfxMaterial, pbrmaterial_ptr_t>(module_lev2, "PBRMaterial")
           .def(py::init<>())
           .def("__repr__", [](pbrmaterial_ptr_t m) -> std::string {
-            return FormatString("PBRMaterial(%p:%s)", m.get(), m->mMaterialName.c_str());
+            return FormatString("PBRMaterial(%p:%s)", m.get(), m->_name.c_str());
           })
           .def("clone", [](pbrmaterial_ptr_t m) -> pbrmaterial_ptr_t {
             return m->clone();

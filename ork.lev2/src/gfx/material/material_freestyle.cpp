@@ -9,7 +9,8 @@
 
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
-FreestyleMaterial::FreestyleMaterial() {
+FreestyleMaterial::FreestyleMaterial(std::string named)
+  : GfxMaterial(named) {
   miNumPasses = 1;
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -124,6 +125,9 @@ void FreestyleMaterial::gpuInit(Context* targ, const AssetPath& assetname) {
     auto fxi       = targ->FXI();
     auto mtl_load_req = std::make_shared<asset::LoadRequest>();
     mtl_load_req->_asset_path = assetname.c_str();
+    if(_name=="SkyboxMaterial.fs"){
+      printf("yo\n");
+    }
     _shaderasset   = asset::AssetManager<FxShaderAsset>::load(mtl_load_req);
     _shader        = _shaderasset->GetFxShader();
     OrkAssert(_shader);

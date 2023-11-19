@@ -49,7 +49,7 @@ class PBRMaterial final : public GfxMaterial {
   DeclareConcreteX(PBRMaterial, GfxMaterial);
 
 public:
-  PBRMaterial(Context* targ);
+  PBRMaterial(Context* targ,std::string name="PBRMaterial");
   PBRMaterial();
   ~PBRMaterial();
 

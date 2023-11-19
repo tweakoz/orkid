@@ -115,7 +115,7 @@ struct GfxMaterial : public ork::Object {
   //////////////////////////////////////////////////////////////////////////////
 
 public:
-  GfxMaterial();
+  GfxMaterial(std::string name="DefaultMaterial");
   virtual ~GfxMaterial();
 
   virtual int GetNumPasses(void) {
@@ -141,13 +141,6 @@ public:
   void SetTexture(ETextureDest edest, const TextureContext& htex);
   const TextureContext& GetTexture(ETextureDest edest) const;
   TextureContext& GetTexture(ETextureDest edest);
-
-  void SetName(const PoolString& nam) {
-    mMaterialName = nam;
-  }
-  const PoolString& GetName(void) const {
-    return mMaterialName;
-  }
 
   void SetFogStart(F32 fstart) {
     mfFogStart = float(fstart);
@@ -191,7 +184,7 @@ public:
   rasterstate_ptr_t _rasterstate;
 
   int miNumPasses = 0; ///< Number Of Render Passes in this Material (platform specific)
-  PoolString mMaterialName;
+  std::string _name;
   TextureContext mTextureMap[ETEXDEST_END];
   float mfFogStart;
   float mfFogRange;

@@ -44,7 +44,7 @@ VulkanFxShaderObject::~VulkanFxShaderObject() {
 ///////////////////////////////////////////////////////////////////////////////
 
 bool VkFxInterface::LoadFxShader(const AssetPath& input_path, FxShader* pshader) {
-
+    
   auto it = _fxshaderfiles.find(input_path);
   vkfxsfile_ptr_t vulkan_shaderfile;
   ////////////////////////////////////////////
@@ -55,6 +55,9 @@ bool VkFxInterface::LoadFxShader(const AssetPath& input_path, FxShader* pshader)
   } else { // load
     auto str_read = ork::File::readAsString(input_path);
     OrkAssert(str_read != nullptr);
+    if(input_path=="orkshader://pbr.fxv2"){
+      printf("yo\n");
+    }
     vulkan_shaderfile          = _loadShaderFromShaderText(pshader, input_path.c_str(), str_read->_data);
     _fxshaderfiles[input_path] = vulkan_shaderfile;
   }
@@ -89,12 +92,17 @@ vkfxsfile_ptr_t VkFxInterface::_loadShaderFromShaderText(
     FxShader* shader,                //
     const std::string& parser_name,  //
     const std::string& shadertext) { //
+    
   auto basehasher = DataBlock::createHasher();
   basehasher->accumulateString("vkfxshader-1.0");
   basehasher->accumulateString(shadertext);
   uint64_t hashkey               = basehasher->result();
   datablock_ptr_t vkfx_datablock = DataBlockCache::findDataBlock(hashkey);
   vkfxsfile_ptr_t vulkan_shaderfile;
+    ////////////////////////////////////////////
+    if(parser_name=="orkshader://pbr.fxv2"){
+        printf("yo\n");
+    }
   ////////////////////////////////////////////
   // shader binary already cached
   // first check precompiled shader cache
@@ -114,6 +122,7 @@ vkfxsfile_ptr_t VkFxInterface::_loadShaderFromShaderText(
   ////////////////////////////////////////////////////////
   // vkfx_datablock->dump();
   vulkan_shaderfile = _readFromDataBlock(vkfx_datablock, shader);
+    vulkan_shaderfile->_shader_name = parser_name;
   ////////////////////////////////////////////////////////
   return vulkan_shaderfile;
 }

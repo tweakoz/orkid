@@ -387,7 +387,7 @@ bool XgmModel::_loadXGM(XgmModel* mdl, datablock_ptr_t datablock) {
         auto it = override_map->_mtl_map.find(pmatname);
         if(it != override_map->_mtl_map.end() ){
           auto pmat = it->second;
-          pmat->SetName(AddPooledString(pmatname));
+          pmat->_name = pmatname;
           mdl->AddMaterial(pmat);
           pmat->gpuInit(context);
           do_original_shader = false;
@@ -404,7 +404,7 @@ bool XgmModel::_loadXGM(XgmModel* mdl, datablock_ptr_t datablock) {
         auto anno = pmatclass->annotation("xgm.reader");
         if (auto as_reader = anno.tryAs<chunkfile::materialreader_t>()) {
           auto pmat = as_reader.value()(materialread_ctx);
-          pmat->SetName(AddPooledString(pmatname));
+          pmat->_name = pmatname;
           mdl->AddMaterial(pmat);
           pmat->gpuInit(context);
         }
@@ -459,7 +459,7 @@ bool XgmModel::_loadXGM(XgmModel* mdl, datablock_ptr_t datablock) {
 
         for (int imat = 0; imat < mdl->miNumMaterials; imat++) {
           auto pmat = mdl->GetMaterial(imat);
-          if (strcmp(pmat->GetName().c_str(), matname) == 0) {
+          if (strcmp(pmat->_name.c_str(), matname) == 0) {
             xgm_sub_mesh._material = pmat;
           }
         }
@@ -739,18 +739,18 @@ datablock_ptr_t writeXgmToDatablock(const lev2::XgmModel* mdl) {
     auto& writeranno = matclass->annotation("xgm.writer");
 
     HeaderStream->addItem(imat);
-    istring = chunkwriter.stringIndex(pmat->GetName().c_str());
+    istring = chunkwriter.stringIndex(pmat->_name.c_str());
     HeaderStream->addItem(istring);
 
     rtti::Class* pclass         = pmat->GetClass();
     auto classname = pclass->Name();
     const char* pclassname      = classname.c_str();
 
-    logchan_mioW->log("WriteXgm: material<%d> class<%s> name<%s>", imat, pclassname, pmat->GetName().c_str());
+    logchan_mioW->log("WriteXgm: material<%d> class<%s> name<%s>", imat, pclassname, pmat->_name.c_str());
     istring = chunkwriter.stringIndex(classname.c_str());
     HeaderStream->addItem(istring);
 
-    logchan_mioW->log("Material Name<%s> Class<%s>", pmat->GetName().c_str(), classname.c_str());
+    logchan_mioW->log("Material Name<%s> Class<%s>", pmat->_name.c_str(), classname.c_str());
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
     // new style material writer
@@ -803,7 +803,7 @@ datablock_ptr_t writeXgmToDatablock(const lev2::XgmModel* mdl) {
         if (VB->GetNumVertices() > 0) {
           inumenabledclus++;
         } else {
-          logchan_mioW->log("WARNING: material<%s> cluster<%d> has a zero length vertex buffer, skipping", pmat->GetName().c_str(), ic);
+          logchan_mioW->log("WARNING: material<%s> cluster<%d> has a zero length vertex buffer, skipping", pmat->_name.c_str(), ic);
         }
       }
 
@@ -812,7 +812,7 @@ datablock_ptr_t writeXgmToDatablock(const lev2::XgmModel* mdl) {
 
       logchan_mioW->log("WriteXgm:  submesh<%d> numenaclus<%d>", ics, inumenabledclus);
       ////////////////////////////////////////////////////////////
-      istring = chunkwriter.stringIndex(pmat ? pmat->GetName().c_str() : "None");
+      istring = chunkwriter.stringIndex(pmat ? pmat->_name.c_str() : "None");
       HeaderStream->addItem(istring);
       ////////////////////////////////////////////////////////////
       for (int32_t ic = 0; ic < inumclus; ic++) {

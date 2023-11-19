@@ -19,7 +19,7 @@ namespace ork::lev2 {
 
 struct FreestyleMaterial final : public GfxMaterial {
 
-  FreestyleMaterial();
+  FreestyleMaterial(std::string named="FreestyleMaterial");
   ~FreestyleMaterial();
 
   void dump() const;

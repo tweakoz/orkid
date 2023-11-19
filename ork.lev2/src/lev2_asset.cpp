@@ -249,6 +249,7 @@ asset_ptr_t FxShaderLoader::_doLoadAsset(asset::loadrequest_ptr_t loadreq) {
   auto context = lev2::contextForCurrentThread();
   auto fxi     = context->FXI();
   auto path = loadreq->_asset_path;
+  pshader->GetFxShader()->mName = path.c_str();
   bool bOK     = fxi->LoadFxShader(path, pshader->GetFxShader());
   OrkAssert(bOK);
   if (bOK)

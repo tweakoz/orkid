@@ -87,8 +87,8 @@ TextureContext::TextureContext(const Texture* ptex, float repU, float repV)
 
 /////////////////////////////////////////////////////////////////////////
 
-GfxMaterial::GfxMaterial()
-    : mMaterialName(AddPooledString("DefaultMaterial")) {
+GfxMaterial::GfxMaterial(std::string name)
+    : _name(name) {
   _rasterstate = std::make_shared<SRasterState>();
   PushDebug(false);
 }

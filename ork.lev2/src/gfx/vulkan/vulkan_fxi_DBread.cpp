@@ -133,7 +133,8 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
   ////////////////////////////////////////////////////////
   // parse datablock
   ////////////////////////////////////////////////////////
-
+        
+    
   auto vulkan_shaderfile = std::make_shared<VkFxShaderFile>();
   ork_shader->_internalHandle.setShared<VkFxShaderFile>(vulkan_shaderfile);
 
@@ -435,7 +436,12 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
   //////////////////
 
   auto read_technique_from_stream = [&]() -> vkfxstek_ptr_t {
-    auto str_tek = tecniq_input_stream->readIndexedString(chunkreader);
+
+      if(ork_shader->mName=="orkshader://pbr.fxv2"){
+          printf("yo\n");
+      }
+
+      auto str_tek = tecniq_input_stream->readIndexedString(chunkreader);
     OrkAssert(str_tek == "technique");
     auto str_tek_name = tecniq_input_stream->readIndexedString(chunkreader);
 
@@ -444,13 +450,13 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
 
     size_t num_passes = tecniq_input_stream->readItem<size_t>();
 
-    auto ork_tek = new FxShaderTechnique;
-    ork_tek->_impl.set<VkFxShaderTechnique*>(vk_tek.get());
+    auto ork_tek = vk_tek->_orktechnique;
     ork_tek->_techniqueName               = str_tek_name;
     ork_tek->_shader                      = ork_shader;
-    ork_shader->_techniques[str_tek_name] = ork_tek;
+    ork_shader->_techniques[str_tek_name] = ork_tek.get();
+    ork_tek->_validated = true;
 
-    for (size_t i = 0; i < num_passes; i++) {
+      for (size_t i = 0; i < num_passes; i++) {
 
       // vulkan side
       auto str_pass = tecniq_input_stream->readIndexedString(chunkreader);
@@ -676,6 +682,9 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
   for (size_t i = 0; i < num_techniques; i++) {
     auto tecnik = read_technique_from_stream();
   }
+    if(ork_shader->mName=="orkshader://pbr.fxv2"){
+        printf("yo\n");
+    }
 
   return vulkan_shaderfile;
 }
