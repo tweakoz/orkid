@@ -50,11 +50,14 @@ const FxShaderParam* VkFxInterface::parameter(FxShader* pshader, const std::stri
   auto vkshfile             = pshader->_internalHandle.get<vkfxsfile_ptr_t>();
   auto shader_name          = vkshfile->_shader_name;
 
+  size_t num_smpsets = vkshfile->_vk_samplersets.size();
+  size_t num_unisets = vkshfile->_vk_uniformsets.size();
+  size_t num_uniblks = vkshfile->_vk_uniformblks.size();
+
   //////////////////////////////////////////////////////
   // search sampler sets
   //////////////////////////////////////////////////////
 
-  size_t num_smpsets = vkshfile->_vk_samplersets.size();
   for (auto item : vkshfile->_vk_samplersets) {
     auto smpset_name = item.first;
     auto smpset      = item.second;
@@ -78,7 +81,6 @@ const FxShaderParam* VkFxInterface::parameter(FxShader* pshader, const std::stri
   // search uniform sets
   //////////////////////////////////////////////////////
 
-  size_t num_unisets = vkshfile->_vk_uniformsets.size();
   for (auto item : vkshfile->_vk_uniformsets) {
     auto uniset_name = item.first;
     // printf( "search uniset<%s>\n", uniset_name.c_str() );
@@ -111,7 +113,6 @@ const FxShaderParam* VkFxInterface::parameter(FxShader* pshader, const std::stri
         num_unisets);
 
   // search uniform blocks
-  size_t num_uniblks = vkshfile->_vk_uniformblks.size();
 
   for (auto item : vkshfile->_vk_uniformblks) {
     auto uniblk_name = item.first;
@@ -130,7 +131,16 @@ const FxShaderParam* VkFxInterface::parameter(FxShader* pshader, const std::stri
       break;
     }
   }
-  return rval;
+  if (rval != nullptr) {
+    return rval;
+  }
+  if (1)
+    printf(
+        "VkFxInterface shader<%s> parameter<%s> not found in uniblks numuniblks<%zu>\n", //
+        shader_name.c_str(),                                                             //
+        name.c_str(),                                                                    //
+        num_uniblks);
+  return nullptr;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

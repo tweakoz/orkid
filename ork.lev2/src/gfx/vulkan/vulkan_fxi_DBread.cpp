@@ -250,6 +250,12 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
     vk_uniblk->_descriptor_set_id = dset_id;
     printf( "GOT UNIFORMBLK<%s>\n", str_uniblk_name.c_str() );
     vulkan_shaderfile->_vk_uniformblks[str_uniblk_name] = vk_uniblk;
+
+    auto it = ork_shader->_uniformBlocks.find(str_uniblk_name);
+    OrkAssert(it==ork_shader->_uniformBlocks.end());
+    ork_shader->_uniformBlocks[str_uniblk_name] = vk_uniblk->_orkparamblock.get();
+
+
     if (0)
       printf("str_uniblk_name<%s>\n", str_uniblk_name.c_str());
     ///////////////////////////////////////////////

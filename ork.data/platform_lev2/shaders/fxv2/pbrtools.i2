@@ -57,6 +57,7 @@ sampler_set fwd_samplers (descriptor_set 0) {
   sampler2D ColorMap;
   sampler2D NormalMap;
   sampler2D MtlRufMap;
+  sampler2D EmissiveMap;
 
   sampler2D MapBrdfIntegration;
   sampler2D MapSpecularEnv;
