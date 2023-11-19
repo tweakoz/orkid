@@ -32,7 +32,7 @@ public:
   }
   virtual const FxShaderTechnique* technique(FxShader* hfx, const std::string& name)       = 0;
   virtual const FxShaderParam* parameter(FxShader* hfx, const std::string& name)           = 0;
-  virtual const FxUniformBlock* parameterBlock(FxShader* hfx, const std::string& name) = 0;
+  virtual const FxUniformBlock* uniformBlock(FxShader* hfx, const std::string& name) = 0;
 
   virtual const FxComputeShader* computeShader(FxShader* hfx, const std::string& name)     = 0;
   virtual const FxShaderStorageBlock* storageBlock(FxShader* hfx, const std::string& name) = 0;

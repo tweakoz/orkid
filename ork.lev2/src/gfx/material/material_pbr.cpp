@@ -820,7 +820,7 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
   _paramInstanceIdMap     = fxi->parameter(_shader, "InstanceIds");
   _paramInstanceColorMap  = fxi->parameter(_shader, "InstanceColors");
 
-  _parBoneBlock = fxi->parameterBlock(_shader, "ub_vtx_boneblock");
+  _parBoneBlock = fxi->uniformBlock(_shader, "ub_vtx_boneblock");
   OrkAssert(_parBoneBlock != nullptr);
 
   // fwd
@@ -844,7 +844,7 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
   _parDepthFogPower       = fxi->parameter(_shader, "DepthFogPower");
 
   _parUnTexPointLightsCount = fxi->parameter(_shader, "point_light_count");
-  _parUnTexPointLightsData  = fxi->parameterBlock(_shader, "ub_frg_fwd_lighting");
+  _parUnTexPointLightsData  = fxi->uniformBlock(_shader, "ub_frg_fwd_lighting");
 
 
   //

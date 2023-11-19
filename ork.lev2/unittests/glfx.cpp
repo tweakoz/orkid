@@ -37,7 +37,7 @@ TEST(glfx1) {
     for (auto item : shader->_parameterByName) {
       printf("param<%s:%p>\n", item.first.c_str(), (void*)item.second);
     }
-    for (auto item : shader->_parameterBlockByName) {
+    for (auto item : shader->_uniformBlocks) {
       printf("paramblock<%s:%p>\n", item.first.c_str(), (void*)item.second);
     }
     for (auto item : shader->_computeShaderByName) {

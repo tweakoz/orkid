@@ -120,6 +120,7 @@ using rcid_lambda_t = std::function<void(const RenderContextInstData&)>;
 struct FxShader;
 struct FxShaderTechnique;
 struct FxShaderParam;
+struct FxUniformSet;
 struct FxUniformBuffer;
 struct FxUniformBlock;
 struct FxUniformBufferMapping;
@@ -136,6 +137,7 @@ struct FxDescriptorSet;
 struct FxDescriptorSetItem;
 struct FxShaderDescriptorSetBindPoint;
 //
+using fxuniformset_constptr_t     = const FxUniformSet*;
 using fxuniformblock_constptr_t     = const FxUniformBlock*;
 using fxuniformbuffer_ptr_t = std::shared_ptr<FxUniformBuffer>;
 using fxuniformbuffer_constptr_t = std::shared_ptr<const FxUniformBuffer>;

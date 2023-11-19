@@ -339,9 +339,9 @@ void Interface::bindUniformBuffer(fxuniformblock_constptr_t block, fxuniformbuff
 
 ///////////////////////////////////////////////////////////////////////////////
 
-fxuniformblock_constptr_t Interface::parameterBlock(FxShader* hfx, const std::string& name) {
+fxuniformblock_constptr_t Interface::uniformBlock(FxShader* hfx, const std::string& name) {
   OrkAssert(0 != hfx);
-  auto& parammap = hfx->_parameterBlockByName;
+  auto& parammap = hfx->_uniformBlocks;
   auto it        = parammap.find(name);
   auto fxsblock  = (FxUniformBlock*)((it != parammap.end()) ? it->second : nullptr);
   auto container = hfx->_internalHandle.get<rootcontainer_ptr_t>();

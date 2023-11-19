@@ -44,15 +44,28 @@ FxUniformBufferMapping::~FxUniformBufferMapping() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+const char* FxShader::assetTypeNameStatic() {
+  return "fxshader";
+}
+
+const techniquebynamemap_t& FxShader::techniques() const {
+  return _techniques;
+}
+
+const parambynamemap_t& FxShader::namedParams() const {
+  return _parameterByName;
+}
+
+const fxcompute_byname_map_t& FxShader::namedComputeShaders() const {
+  return _computeShaderByName;
+}
+
 void FxShader::addTechnique(const FxShaderTechnique* tek) {
   _techniques[tek->_techniqueName] = tek;
 }
 
 void FxShader::addParameter(const FxShaderParam* param) {
   _parameterByName[param->_name] = param;
-}
-void FxShader::addParameterBlock(const FxUniformBlock* block) {
-  _parameterBlockByName[block->_name] = block;
 }
 void FxShader::addComputeShader(const FxComputeShader* csh) {
   _computeShaderByName[csh->_name] = csh;

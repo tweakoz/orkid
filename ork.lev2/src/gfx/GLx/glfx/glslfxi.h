@@ -545,7 +545,7 @@ public:
 
   const FxShaderTechnique* technique(FxShader* hfx, const std::string& name) final;
   const FxShaderParam* parameter(FxShader* hfx, const std::string& name) final;
-  fxuniformblock_constptr_t parameterBlock(FxShader* hfx, const std::string& name) final;
+  fxuniformblock_constptr_t uniformBlock(FxShader* hfx, const std::string& name) final;
   const FxComputeShader* computeShader(FxShader* hfx, const std::string& name) final;
   const FxShaderStorageBlock* storageBlock(FxShader* hfx, const std::string& name) final;
 

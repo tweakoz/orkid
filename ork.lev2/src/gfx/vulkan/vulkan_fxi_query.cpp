@@ -135,7 +135,7 @@ const FxShaderParam* VkFxInterface::parameter(FxShader* pshader, const std::stri
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const FxUniformBlock* VkFxInterface::parameterBlock(FxShader* pshader, const std::string& name) {
+const FxUniformBlock* VkFxInterface::uniformBlock(FxShader* pshader, const std::string& name) {
   const FxUniformBlock* rval = nullptr;
   auto vkshfile                  = pshader->_internalHandle.get<vkfxsfile_ptr_t>();
   auto it                        = vkshfile->_vk_uniformblks.find(name);

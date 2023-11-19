@@ -11,7 +11,14 @@
 #include <ork/kernel/prop.h>
 #include <ork/lev2/gfx/gfxenv.h>
 
-namespace ork { namespace lev2 {
+namespace ork::lev2 {
+
+  using fxuniformset_byname_map_t      = std::unordered_map<std::string, fxuniformset_constptr_t>;
+  using fxuniformblock_byname_map_t      = std::unordered_map<std::string, fxuniformblock_constptr_t>;
+  using parambynamemap_t     = std::map<std::string, fxparam_constptr_t>;
+  using techniquebynamemap_t  = std::map<std::string, fxtechnique_constptr_t>;
+  using fxcompute_byname_map_t    = std::map<std::string, const FxComputeShader*>;
+  using fxstorageblock_byname_map_t = std::unordered_map<std::string, const FxShaderStorageBlock*>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -54,6 +61,9 @@ struct FxShaderParam {
   FxShaderParam* mChildParam;
   orklut<std::string, std::string> _annotations;
   svarp_t _impl;
+};
+struct FxUniformSet {
+  std::map<std::string, fxparam_constptr_t> _parametersByName;
 };
 
 struct FxUniformBlock {
@@ -205,11 +215,6 @@ struct FxComputeShader {
 
 struct FxShader {
 
-  using parambynamemap_t      = std::map<std::string, fxparam_constptr_t>;
-  using paramblockbynamemap_t = std::map<std::string, const FxUniformBlock*>;
-  using techniquebynamemap_t  = std::map<std::string, fxtechnique_constptr_t>;
-  using computebynamemap_t    = std::map<std::string, const FxComputeShader*>;
-
   void OnReset();
 
   static void SetLoaderTarget(Context* targ);
@@ -218,27 +223,15 @@ struct FxShader {
 
   static void RegisterLoaders(const file::Path& base, const std::string& ext);
 
-  static const char* assetTypeNameStatic(void) {
-    return "fxshader";
-  }
+  static const char* assetTypeNameStatic();
 
   void addTechnique(fxtechnique_constptr_t tek);
   void addParameter(fxparam_constptr_t param);
-  void addParameterBlock(const FxUniformBlock* block);
   void addComputeShader(const FxComputeShader* csh);
 
-  const techniquebynamemap_t& techniques(void) const {
-    return _techniques;
-  }
-  const parambynamemap_t& namedParams(void) const {
-    return _parameterByName;
-  }
-  const paramblockbynamemap_t& namedParamBlocks(void) const {
-    return _parameterBlockByName;
-  }
-  const computebynamemap_t& namedComputeShaders(void) const {
-    return _computeShaderByName;
-  }
+  const techniquebynamemap_t& techniques() const;
+  const parambynamemap_t& namedParams() const;
+  const fxcompute_byname_map_t& namedComputeShaders() const;
 
   FxShaderParam* FindParamByName(const std::string& named);
   FxUniformBlock* FindParamBlockByName(const std::string& named);
@@ -265,9 +258,7 @@ struct FxShader {
   // SSBO support
   ////////////////////////////////////////////////////
 
-  using storageblockbynamemap_t = orkmap<std::string, const FxShaderStorageBlock*>;
-  storageblockbynamemap_t _storageBlockByName;
-  const storageblockbynamemap_t& namedStorageBlocks(void) const {
+  const fxstorageblock_byname_map_t& namedStorageBlocks() const {
     return _storageBlockByName;
   }
   void addStorageBlock(const FxShaderStorageBlock* block);
@@ -278,8 +269,11 @@ struct FxShader {
   svar16_t _internalHandle;
   techniquebynamemap_t _techniques;
   parambynamemap_t _parameterByName;
-  paramblockbynamemap_t _parameterBlockByName;
-  computebynamemap_t _computeShaderByName;
+
+  fxuniformset_byname_map_t _uniformSets;
+  fxuniformblock_byname_map_t _uniformBlocks;
+  fxstorageblock_byname_map_t _storageBlockByName;
+  fxcompute_byname_map_t _computeShaderByName;
   ork::varmap::VarMap _varmap;
   
   bool mAllowCompileFailure = false;
@@ -289,4 +283,4 @@ struct FxShader {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-}} // namespace ork::lev2
+} // namespace ork::lev2
