@@ -121,6 +121,7 @@ struct FxShader;
 struct FxShaderTechnique;
 struct FxShaderParam;
 struct FxUniformSet;
+struct FxSamplerSet;
 struct FxUniformBuffer;
 struct FxUniformBlock;
 struct FxUniformBufferMapping;
@@ -138,6 +139,7 @@ struct FxDescriptorSetItem;
 struct FxShaderDescriptorSetBindPoint;
 //
 using fxuniformset_constptr_t     = const FxUniformSet*;
+using fxsamplerset_constptr_t     = const FxSamplerSet*;
 using fxuniformblock_constptr_t     = const FxUniformBlock*;
 using fxuniformbuffer_ptr_t = std::shared_ptr<FxUniformBuffer>;
 using fxuniformbuffer_constptr_t = std::shared_ptr<const FxUniformBuffer>;

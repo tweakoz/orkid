@@ -543,9 +543,10 @@ public:
   void CommitParams(void) final;
   void reset() final;
 
-  const FxShaderTechnique* technique(FxShader* hfx, const std::string& name) final;
-  const FxShaderParam* parameter(FxShader* hfx, const std::string& name) final;
+  fxtechnique_constptr_t technique(FxShader* hfx, const std::string& name) final;
+  fxparam_constptr_t parameter(FxShader* hfx, const std::string& name) final;
   fxuniformblock_constptr_t uniformBlock(FxShader* hfx, const std::string& name) final;
+  fxsamplerset_constptr_t samplerSet(FxShader* hfx, const std::string& name) final;
   const FxComputeShader* computeShader(FxShader* hfx, const std::string& name) final;
   const FxShaderStorageBlock* storageBlock(FxShader* hfx, const std::string& name) final;
 

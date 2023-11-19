@@ -170,6 +170,11 @@ const FxUniformBlock* VkFxInterface::uniformBlock(FxShader* pshader, const std::
   return rval;
 }
 
+fxsamplerset_constptr_t VkFxInterface::samplerSet(FxShader* hfx, const std::string& name) {
+  OrkAssert(false);
+  return nullptr;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 const FxComputeShader* VkFxInterface::computeShader(FxShader* pshader, const std::string& name) {
   auto vkshfile = pshader->_internalHandle.get<vkfxsfile_ptr_t>();

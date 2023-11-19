@@ -177,6 +177,7 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
     OrkAssert(str_uniset == "smpset");
     auto str_smpset_name                                = uniforms_input_stream->readIndexedString(chunkreader);
     auto vk_smpset                                      = std::make_shared<VkFxShaderSamplerSet>();
+    auto ork_smpset = vk_smpset->_impl.makeShared<FxSamplerSet>();
     auto dset_id    = uniforms_input_stream->readItem<size_t>();
     vk_smpset->_descriptor_set_id = dset_id;
     printf( "GOT SAMPLERSET<%s>\n", str_smpset_name.c_str() );
@@ -191,10 +192,13 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
       auto vk_samp                = std::make_shared<VkFxShaderUniformSetSampler>();
       vk_samp->_datatype          = str_sampler_datatype;
       vk_samp->_identifier        = str_sampler_identifier;
-      vk_samp->_orkparam          = std::make_shared<FxShaderParam>();
+      auto ork_param = std::make_shared<FxShaderParam>();
+      vk_samp->_orkparam          = ork_param;
       vk_samp->_orkparam->_name   = str_sampler_identifier;
       vk_samp->_orkparam->_impl.set<VkFxShaderUniformSetSampler*>(vk_samp.get());
       vk_smpset->_samplers_by_name[str_sampler_identifier] = vk_samp;
+
+      ork_smpset->_parametersByName[str_sampler_identifier] = ork_param.get();
       if (0)
         printf("uniset<%s> ADDING Sampler PARAM<%s>\n", str_smpset_name.c_str(), str_sampler_identifier.c_str());
     }

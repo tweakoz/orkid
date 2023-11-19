@@ -30,9 +30,10 @@ public:
   virtual void CommitParams(void)        = 0;
   virtual void reset() {
   }
-  virtual const FxShaderTechnique* technique(FxShader* hfx, const std::string& name)       = 0;
-  virtual const FxShaderParam* parameter(FxShader* hfx, const std::string& name)           = 0;
-  virtual const FxUniformBlock* uniformBlock(FxShader* hfx, const std::string& name) = 0;
+  virtual fxtechnique_constptr_t technique(FxShader* hfx, const std::string& name)       = 0;
+  virtual fxparam_constptr_t parameter(FxShader* hfx, const std::string& name)           = 0;
+  virtual fxuniformblock_constptr_t uniformBlock(FxShader* hfx, const std::string& name) = 0;
+  virtual fxsamplerset_constptr_t samplerSet(FxShader* hfx, const std::string& name) = 0;
 
   virtual const FxComputeShader* computeShader(FxShader* hfx, const std::string& name)     = 0;
   virtual const FxShaderStorageBlock* storageBlock(FxShader* hfx, const std::string& name) = 0;

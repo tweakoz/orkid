@@ -14,6 +14,7 @@
 namespace ork::lev2 {
 
   using fxuniformset_byname_map_t      = std::unordered_map<std::string, fxuniformset_constptr_t>;
+  using fxsamplerset_byname_map_t      = std::unordered_map<std::string, fxsamplerset_constptr_t>;
   using fxuniformblock_byname_map_t      = std::unordered_map<std::string, fxuniformblock_constptr_t>;
   using parambynamemap_t     = std::map<std::string, fxparam_constptr_t>;
   using techniquebynamemap_t  = std::map<std::string, fxtechnique_constptr_t>;
@@ -63,6 +64,9 @@ struct FxShaderParam {
   svarp_t _impl;
 };
 struct FxUniformSet {
+  std::map<std::string, fxparam_constptr_t> _parametersByName;
+};
+struct FxSamplerSet {
   std::map<std::string, fxparam_constptr_t> _parametersByName;
 };
 
@@ -271,6 +275,7 @@ struct FxShader {
   parambynamemap_t _parameterByName;
 
   fxuniformset_byname_map_t _uniformSets;
+  fxsamplerset_byname_map_t _samplerSets;
   fxuniformblock_byname_map_t _uniformBlocks;
   fxstorageblock_byname_map_t _storageBlockByName;
   fxcompute_byname_map_t _computeShaderByName;

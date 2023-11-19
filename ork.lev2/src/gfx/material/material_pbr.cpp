@@ -791,6 +791,8 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
   // OrkAssert(_tek_FWD_CT_NM_RI_NI_MO);
   // OrkAssert(_tek_FWD_CT_NM_RI_IN_MO);
 
+  _samplers_fwd = fxi->samplerSet(_shader, "samplers_fwd");
+
   // parameters
 
   _paramM                 = fxi->parameter(_shader, "m");
@@ -820,8 +822,8 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
   _paramInstanceIdMap     = fxi->parameter(_shader, "InstanceIds");
   _paramInstanceColorMap  = fxi->parameter(_shader, "InstanceColors");
 
-  _parBoneBlock = fxi->uniformBlock(_shader, "ub_vtx_boneblock");
-  OrkAssert(_parBoneBlock != nullptr);
+  _ublock_bones = fxi->uniformBlock(_shader, "ub_vtx_boneblock");
+  OrkAssert(_ublock_bones != nullptr);
 
   // fwd
 
@@ -1030,8 +1032,8 @@ void PbrMatrixBlockApplicator::ApplyToTarget(Context* context) // virtual
 
   fxi->unmapUniformBuffer(bones_mapped);
 
-  if(_pbrmaterial->_parBoneBlock){
-    fxi->bindUniformBuffer(_pbrmaterial->_parBoneBlock, bones_buffer);
+  if(_pbrmaterial->_ublock_bones){
+    fxi->bindUniformBuffer(_pbrmaterial->_ublock_bones, bones_buffer);
   }
 }
 

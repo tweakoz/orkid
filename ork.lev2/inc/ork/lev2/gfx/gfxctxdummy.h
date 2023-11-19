@@ -39,15 +39,10 @@ public:
   void CommitParams(void) final {
   }
 
-  const FxShaderTechnique* technique(FxShader* hfx, const std::string& name) final {
-    return nullptr;
-  }
-  const FxShaderParam* parameter(FxShader* hfx, const std::string& name) final {
-    return nullptr;
-  }
-  const FxUniformBlock* uniformBlock(FxShader* hfx, const std::string& name) final {
-    return nullptr;
-  }
+  fxtechnique_constptr_t technique(FxShader* hfx, const std::string& name)       { return nullptr; }
+  fxparam_constptr_t parameter(FxShader* hfx, const std::string& name)           { return nullptr; }
+  fxuniformblock_constptr_t uniformBlock(FxShader* hfx, const std::string& name) { return nullptr; }
+  fxsamplerset_constptr_t samplerSet(FxShader* hfx, const std::string& name) { return nullptr; }
   const FxShaderStorageBlock* storageBlock(FxShader* hfx, const std::string& name) final {
     return nullptr;
   }

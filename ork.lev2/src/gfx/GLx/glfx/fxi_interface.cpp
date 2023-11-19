@@ -364,6 +364,12 @@ fxuniformblock_constptr_t Interface::uniformBlock(FxShader* hfx, const std::stri
   return fxsblock;
 }
 
+fxsamplerset_constptr_t Interface::samplerSet(FxShader* hfx, const std::string& name) {
+  OrkAssert(false);
+  return nullptr;
+}
+
+
 ///////////////////////////////////////////////////////////////////////////////
 
 const FxShaderStorageBlock* Interface::storageBlock(FxShader* hfx, const std::string& name) {

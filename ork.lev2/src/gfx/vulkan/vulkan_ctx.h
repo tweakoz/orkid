@@ -612,6 +612,7 @@ using vkfxdescset_ptr_t = std::shared_ptr<VkFxShaderDescriptorSet>;
 struct VkFxShaderSamplerSet : public VkFxShaderDescriptorSet {
   std::unordered_map<std::string, vkfxsunisetsamp_ptr_t> _samplers_by_name;
   std::vector<vkfxsunisetsamp_ptr_t> _samplers_by_order;
+  svar64_t _impl;
 };
 struct VkFxShaderUniformBlkItem {
   std::string _datatype;
@@ -1062,9 +1063,10 @@ struct VkFxInterface final : public FxInterface {
   void CommitParams(void) final;
   void reset() final;
 
-  const FxShaderTechnique* technique(FxShader* hfx, const std::string& name) final;
-  const FxShaderParam* parameter(FxShader* hfx, const std::string& name) final;
-  const FxUniformBlock* uniformBlock(FxShader* hfx, const std::string& name) final;
+  fxtechnique_constptr_t technique(FxShader* hfx, const std::string& name) final;
+  fxparam_constptr_t parameter(FxShader* hfx, const std::string& name) final;
+  fxuniformblock_constptr_t uniformBlock(FxShader* hfx, const std::string& name) final;
+  fxsamplerset_constptr_t samplerSet(FxShader* hfx, const std::string& name) final;
 
   const FxComputeShader* computeShader(FxShader* hfx, const std::string& name) final;
   const FxShaderStorageBlock* storageBlock(FxShader* hfx, const std::string& name) final;
