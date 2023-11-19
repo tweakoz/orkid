@@ -365,7 +365,7 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu,con
             int num_untextured_pointlights = enumlights->_untexturedpointlights.size();
 
             auto pl_buffer = PBRMaterial::pointLightDataBuffer(context);
-            auto pl_mapped = FXI->mapParamBuffer(pl_buffer, 0, pl_buffer->_length);
+            auto pl_mapped = FXI->mapUniformBuffer(pl_buffer, 0, pl_buffer->_length);
 
             size_t f32_stride    = sizeof(float);
             size_t vec4_stride   = sizeof(fvec4);
@@ -382,12 +382,12 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu,con
               index++;
             }
 
-            FXI->unmapParamBuffer(pl_mapped);
+            FXI->unmapUniformBuffer(pl_mapped);
 
             if(mtl->_parUnTexPointLightsCount)
               FXI->BindParamInt(mtl->_parUnTexPointLightsCount, num_untextured_pointlights);
             if(mtl->_parUnTexPointLightsData)
-              FXI->bindParamBlockBuffer(mtl->_parUnTexPointLightsData, pl_buffer);
+              FXI->bindUniformBuffer(mtl->_parUnTexPointLightsData, pl_buffer);
 
             auto modcolor = context->RefModColor();
             FXI->BindParamVect4(mtl->_parModColor, modcolor*mtl->_baseColor);
@@ -1018,7 +1018,7 @@ void PbrMatrixBlockApplicator::ApplyToTarget(Context* context) // virtual
   size_t fmtx4_stride    = sizeof(fmtx4);
 
   auto bones_buffer = PBRMaterial::boneDataBuffer(context);
-  auto bones_mapped = fxi->mapParamBuffer(bones_buffer, 0, inumbones*sizeof(fmtx4));
+  auto bones_mapped = fxi->mapUniformBuffer(bones_buffer, 0, inumbones*sizeof(fmtx4));
 
   //printf( "inumbones<%d>\n", inumbones );
 
@@ -1028,10 +1028,10 @@ void PbrMatrixBlockApplicator::ApplyToTarget(Context* context) // virtual
     //Matrices[i].dump("bonemtx");
   }
 
-  fxi->unmapParamBuffer(bones_mapped);
+  fxi->unmapUniformBuffer(bones_mapped);
 
   if(_pbrmaterial->_parBoneBlock){
-    fxi->bindParamBlockBuffer(_pbrmaterial->_parBoneBlock, bones_buffer);
+    fxi->bindUniformBuffer(_pbrmaterial->_parBoneBlock, bones_buffer);
   }
 }
 

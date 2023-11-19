@@ -39,15 +39,15 @@ SimpleLightProcessor::SimpleLightProcessor(DeferredContext& defctx, DeferredComp
 }
 void SimpleLightProcessor::_gpuInit(lev2::Context* target) {
   if (nullptr == _lightbuffer) {
-    _lightbuffer = target->FXI()->createParamBuffer(65536);
-    auto mapped  = target->FXI()->mapParamBuffer(_lightbuffer);
+    _lightbuffer = target->FXI()->createUniformBuffer(65536);
+    auto mapped  = target->FXI()->mapUniformBuffer(_lightbuffer);
     size_t base  = 0;
     for (int i = 0; i < KMAXLIGHTSPERCHUNK; i++)
       mapped->ref<fvec3>(base + i * sizeof(fvec4)) = fvec3(0, 0, 0);
     base += KMAXLIGHTSPERCHUNK * sizeof(fvec4);
     for (int i = 0; i < KMAXLIGHTSPERCHUNK; i++)
       mapped->ref<fvec4>(base + i * sizeof(fvec4)) = fvec4();
-    target->FXI()->unmapParamBuffer(mapped);
+    target->FXI()->unmapUniformBuffer(mapped);
   }
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -88,7 +88,7 @@ void SimpleLightProcessor::_updatePointLightUBOparams(Context* ctx, const pointl
   size_t numlights   = lights.size();
   OrkAssert(numlights < KMAXLIGHTSPERCHUNK);
   ctx->debugPushGroup("SimpleLightProcessor::_updatePointLightUBOparams");
-  auto mapping = FXI->mapParamBuffer(_lightbuffer, 0, 65536);
+  auto mapping = FXI->mapUniformBuffer(_lightbuffer, 0, 65536);
   for (auto light : lights) {
     fvec3 color                     = light->color()*light->intensity();
     float dist2cam                  = light->distance(campos);
@@ -100,8 +100,8 @@ void SimpleLightProcessor::_updatePointLightUBOparams(Context* ctx, const pointl
     offset_mtx2 += sizeof(fmtx4);
     offset_rad += sizeof(float);
   }
-  FXI->unmapParamBuffer(mapping);
-  FXI->bindParamBlockBuffer(_deferredContext._lightblock, _lightbuffer);
+  FXI->unmapUniformBuffer(mapping);
+  FXI->bindUniformBuffer(_deferredContext._lightblock, _lightbuffer);
   _deferredContext._lightingmtl->bindParamFloat(_deferredContext._parDepthFogDistance, 1.0f / _deferredContext._depthFogDistance);
   _deferredContext._lightingmtl->bindParamFloat(_deferredContext._parDepthFogPower, _deferredContext._depthFogPower);
   _deferredContext._lightingmtl->bindParamInt(_deferredContext._parNumLights, numlights);
@@ -118,7 +118,7 @@ void SimpleLightProcessor::_updateSpotLightUBOparams(Context* ctx, const spotlig
   size_t numlights   = lights.size();
   OrkAssert(numlights < KMAXLIGHTSPERCHUNK);
   ctx->debugPushGroup("SimpleLightProcessor::_updateSpotLightUBOparams");
-  auto mapping = FXI->mapParamBuffer(_lightbuffer, 0, 65536);
+  auto mapping = FXI->mapUniformBuffer(_lightbuffer, 0, 65536);
   for (auto light : lights) {
     fvec3 color                      = light->color()*light->intensity();
     float dist2cam                   = light->distance(campos);
@@ -131,8 +131,8 @@ void SimpleLightProcessor::_updateSpotLightUBOparams(Context* ctx, const spotlig
     offset_mtx2 += sizeof(fmtx4);
     offset_rad += sizeof(float);
   }
-  FXI->unmapParamBuffer(mapping);
-  FXI->bindParamBlockBuffer(_deferredContext._lightblock, _lightbuffer);
+  FXI->unmapUniformBuffer(mapping);
+  FXI->bindUniformBuffer(_deferredContext._lightblock, _lightbuffer);
   _deferredContext._lightingmtl->bindParamFloat(_deferredContext._parDepthFogDistance, 1.0f / _deferredContext._depthFogDistance);
   _deferredContext._lightingmtl->bindParamFloat(_deferredContext._parDepthFogPower, _deferredContext._depthFogPower);
   _deferredContext._lightingmtl->bindParamInt(_deferredContext._parNumLights, numlights);
@@ -326,7 +326,7 @@ void SimpleLightProcessor::_renderShadowedTexturedSpotLights(
       auto shadowtex                   = light->_shadowRTG->_depthBuffer->_texture;
       fvec3 color                      = light->color()*light->intensity();
       float dist2cam                   = light->distance(VD._camposmono);
-      auto mapping                     = FXI->mapParamBuffer(_lightbuffer, 0, 65536);
+      auto mapping                     = FXI->mapUniformBuffer(_lightbuffer, 0, 65536);
       size_t offset_cd                 = 0;
       size_t offset_mtx                = offset_cd + KMAXLIGHTSPERCHUNK * sizeof(fvec4);
       size_t offset_mtx2               = offset_mtx + KMAXLIGHTSPERCHUNK * sizeof(fmtx4);
@@ -335,8 +335,8 @@ void SimpleLightProcessor::_renderShadowedTexturedSpotLights(
       mapping->ref<float>(offset_rad)  = light->GetRange();
       mapping->ref<fmtx4>(offset_mtx)  = light->worldMatrix();
       mapping->ref<fmtx4>(offset_mtx2) = light->shadowMatrix();
-      FXI->unmapParamBuffer(mapping);
-      FXI->bindParamBlockBuffer(_deferredContext._lightblock, _lightbuffer);
+      FXI->unmapUniformBuffer(mapping);
+      FXI->bindUniformBuffer(_deferredContext._lightblock, _lightbuffer);
       lightmtl->bindParamCTex(_deferredContext._parMapShadowDepth, shadowtex.get());
       fvec4 shadowp;
       shadowp.x = (1.0f / float(light->_shadowmapDim));

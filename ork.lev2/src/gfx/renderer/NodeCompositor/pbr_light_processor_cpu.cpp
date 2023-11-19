@@ -40,15 +40,15 @@ CpuLightProcessor::CpuLightProcessor(DeferredContext& defctx, DeferredCompositin
 }
 void CpuLightProcessor::_gpuInit(lev2::Context* target) {
   if (nullptr == _lightbuffer) {
-    _lightbuffer = target->FXI()->createParamBuffer(65536);
-    auto mapped  = target->FXI()->mapParamBuffer(_lightbuffer);
+    _lightbuffer = target->FXI()->createUniformBuffer(65536);
+    auto mapped  = target->FXI()->mapUniformBuffer(_lightbuffer);
     size_t base  = 0;
     for (int i = 0; i < KMAXLIGHTSPERCHUNK; i++)
       mapped->ref<fvec3>(base + i * sizeof(fvec4)) = fvec3(0, 0, 0);
     base += KMAXLIGHTSPERCHUNK * sizeof(fvec4);
     for (int i = 0; i < KMAXLIGHTSPERCHUNK; i++)
       mapped->ref<fvec4>(base + i * sizeof(fvec4)) = fvec4();
-    target->FXI()->unmapParamBuffer(mapped);
+    target->FXI()->unmapUniformBuffer(mapped);
   }
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -206,13 +206,13 @@ void CpuLightProcessor::_renderUnshadowedUnTexturedPointLights(
   /////////////////////////////////////
   auto& lightmtl = _deferredContext._lightingmtl;
   _deferredContext.beginPointLighting(_defcompnode,drawdata, VD, nullptr);
-  FXI->bindParamBlockBuffer(_deferredContext._lightblock, _lightbuffer);
+  FXI->bindUniformBuffer(_deferredContext._lightblock, _lightbuffer);
   while (num_pending_tiles) {
     /////////////////////////////////////
     // process a chunk
     /////////////////////////////////////
     bool chunk_done     = false;
-    auto mapping        = FXI->mapParamBuffer(_lightbuffer, 0, 65536);
+    auto mapping        = FXI->mapUniformBuffer(_lightbuffer, 0, 65536);
     int chunksize       = 0;
     size_t chunk_offset = 0;
     _chunktiles_pos.clear();
@@ -271,7 +271,7 @@ void CpuLightProcessor::_renderUnshadowedUnTexturedPointLights(
     /////////////////////////////////////
     // chunk ready, fire it off..
     /////////////////////////////////////
-    FXI->unmapParamBuffer(mapping);
+    FXI->unmapUniformBuffer(mapping);
     //////////////////////////////////////////////////
     // set number of lights for tile
     //////////////////////////////////////////////////

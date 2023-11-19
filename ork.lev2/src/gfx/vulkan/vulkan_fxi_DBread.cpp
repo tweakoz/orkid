@@ -246,7 +246,7 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
     auto str_uniblk_name                                = uniforms_input_stream->readIndexedString(chunkreader);
     auto dset_id                                        = uniforms_input_stream->readItem<size_t>();
     auto vk_uniblk                                      = std::make_shared<VkFxShaderUniformBlk>();
-    vk_uniblk->_orkparamblock                           = std::make_shared<FxShaderParamBlock>();
+    vk_uniblk->_orkparamblock                           = std::make_shared<FxUniformBlock>();
     vk_uniblk->_descriptor_set_id = dset_id;
     printf( "GOT UNIFORMBLK<%s>\n", str_uniblk_name.c_str() );
     vulkan_shaderfile->_vk_uniformblks[str_uniblk_name] = vk_uniblk;

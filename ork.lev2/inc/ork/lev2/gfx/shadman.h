@@ -39,7 +39,7 @@ struct FxShaderTechnique {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct FxShaderParamInBlockInfo {
-  FxShaderParamBlock* _parent = nullptr;
+  FxUniformBlock* _parent = nullptr;
 };
 
 struct FxShaderParam {
@@ -56,21 +56,21 @@ struct FxShaderParam {
   svarp_t _impl;
 };
 
-struct FxShaderParamBlock {
+struct FxUniformBlock {
   std::string _name;
   FxShaderParam* param(const std::string& name) const;
   std::map<std::string, FxShaderParam*> _subparams;
   svarp_t _impl;
   FxInterface* _fxi = nullptr;
 };
-struct FxShaderParamBuffer {
+struct FxUniformBuffer {
   size_t _length = 0;
   svarp_t _impl;
 };
-struct FxShaderParamBufferMapping {
-  FxShaderParamBufferMapping();
-  ~FxShaderParamBufferMapping();
-  FxShaderParamBuffer* _buffer = nullptr;
+struct FxUniformBufferMapping {
+  FxUniformBufferMapping();
+  ~FxUniformBufferMapping();
+  FxUniformBuffer* _buffer = nullptr;
   FxInterface* _fxi            = nullptr;
   size_t _offset               = 0;
   size_t _cursor               = 0;
@@ -206,7 +206,7 @@ struct FxComputeShader {
 struct FxShader {
 
   using parambynamemap_t      = std::map<std::string, fxparam_constptr_t>;
-  using paramblockbynamemap_t = std::map<std::string, const FxShaderParamBlock*>;
+  using paramblockbynamemap_t = std::map<std::string, const FxUniformBlock*>;
   using techniquebynamemap_t  = std::map<std::string, fxtechnique_constptr_t>;
   using computebynamemap_t    = std::map<std::string, const FxComputeShader*>;
 
@@ -224,7 +224,7 @@ struct FxShader {
 
   void addTechnique(fxtechnique_constptr_t tek);
   void addParameter(fxparam_constptr_t param);
-  void addParameterBlock(const FxShaderParamBlock* block);
+  void addParameterBlock(const FxUniformBlock* block);
   void addComputeShader(const FxComputeShader* csh);
 
   const techniquebynamemap_t& techniques(void) const {
@@ -241,7 +241,7 @@ struct FxShader {
   }
 
   FxShaderParam* FindParamByName(const std::string& named);
-  FxShaderParamBlock* FindParamBlockByName(const std::string& named);
+  FxUniformBlock* FindParamBlockByName(const std::string& named);
   FxShaderTechnique* FindTechniqueByName(const std::string& named);
   FxComputeShader* findComputeShader(const std::string& named);
 

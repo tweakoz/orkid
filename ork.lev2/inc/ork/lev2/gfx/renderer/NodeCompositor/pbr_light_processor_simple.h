@@ -55,7 +55,7 @@ struct SimpleLightProcessor {
 
   /////////////////////////////////////////////////////
 
-  FxShaderParamBuffer* _lightbuffer = nullptr;
+  FxUniformBuffer* _lightbuffer = nullptr;
   DeferredContext& _deferredContext;
   DeferredCompositingNodePbr* _defcompnode;
 };

@@ -49,7 +49,7 @@ struct FreestyleMaterial final : public GfxMaterial {
 
   const FxShaderTechnique* technique(std::string named);
   fxparam_constptr_t param(std::string named);
-  const FxShaderParamBlock* paramBlock(std::string named);
+  const FxUniformBlock* paramBlock(std::string named);
 
   ////////////////////////////////////////////
   const FxShaderStorageBlock* storageBlock(std::string named);
@@ -83,7 +83,7 @@ struct FreestyleMaterial final : public GfxMaterial {
 
   std::set<const FxShaderTechnique*> _techniques;
   std::set<fxparam_constptr_t> _params;
-  std::set<const FxShaderParamBlock*> _paramBlocks;
+  std::set<const FxUniformBlock*> _paramBlocks;
 
   ////////////////////////////////////////////
 

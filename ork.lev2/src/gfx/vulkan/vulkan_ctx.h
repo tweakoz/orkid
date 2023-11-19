@@ -620,7 +620,7 @@ struct VkFxShaderUniformBlkItem {
   std::shared_ptr<FxShaderParam> _orkparam;
 };
 struct VkFxShaderUniformBlk : public VkFxShaderDescriptorSet {
-  std::shared_ptr<FxShaderParamBlock> _orkparamblock;
+  std::shared_ptr<FxUniformBlock> _orkparamblock;
   std::unordered_map<std::string, vkfxsuniblkitem_ptr_t> _items_by_name;
   std::vector<vkfxsuniblkitem_ptr_t> _items_by_order;
 };
@@ -1064,7 +1064,7 @@ struct VkFxInterface final : public FxInterface {
 
   const FxShaderTechnique* technique(FxShader* hfx, const std::string& name) final;
   const FxShaderParam* parameter(FxShader* hfx, const std::string& name) final;
-  const FxShaderParamBlock* parameterBlock(FxShader* hfx, const std::string& name) final;
+  const FxUniformBlock* parameterBlock(FxShader* hfx, const std::string& name) final;
 
   const FxComputeShader* computeShader(FxShader* hfx, const std::string& name) final;
   const FxShaderStorageBlock* storageBlock(FxShader* hfx, const std::string& name) final;
@@ -1111,10 +1111,10 @@ struct VkFxInterface final : public FxInterface {
   vkpipeline_obj_ptr_t _fetchPipeline(vkvtxbuf_ptr_t vb, vkprimclass_ptr_t primclas);
 
   // ubo
-  FxShaderParamBuffer* createParamBuffer(size_t length) final;
-  parambuffermappingptr_t mapParamBuffer(FxShaderParamBuffer* b, size_t base, size_t length) final;
-  void unmapParamBuffer(parambuffermappingptr_t mapping) final;
-  void bindParamBlockBuffer(const FxShaderParamBlock* block, FxShaderParamBuffer* buffer) final;
+  FxUniformBuffer* createUniformBuffer(size_t length) final;
+  fxuniformbuffermapping_ptr_t mapUniformBuffer(FxUniformBuffer* b, size_t base, size_t length) final;
+  void unmapUniformBuffer(fxuniformbuffermapping_ptr_t mapping) final;
+  void bindUniformBuffer(const FxUniformBlock* block, FxUniformBuffer* buffer) final;
 
   void _doPushRasterState(rasterstate_ptr_t rs) final;
   rasterstate_ptr_t _doPopRasterState() final;

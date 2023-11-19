@@ -165,7 +165,7 @@ const FxShaderParam* FreestyleMaterial::param(std::string named) {
   return par;
 }
 ///////////////////////////////////////////////////////////////////////////////
-const FxShaderParamBlock* FreestyleMaterial::paramBlock(std::string named) {
+const FxUniformBlock* FreestyleMaterial::paramBlock(std::string named) {
   auto fxi = _initialTarget->FXI();
   auto par = fxi->parameterBlock(_shader, named);
   if (par != nullptr)

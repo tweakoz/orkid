@@ -31,14 +31,14 @@ FxShaderParam::FxShaderParam()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-FxShaderParam* FxShaderParamBlock::param(const std::string& name) const {
+FxShaderParam* FxUniformBlock::param(const std::string& name) const {
   auto it = _subparams.find(name);
   return (it != _subparams.end()) ? it->second : nullptr;
 }
 
-FxShaderParamBufferMapping::FxShaderParamBufferMapping() {
+FxUniformBufferMapping::FxUniformBufferMapping() {
 }
-FxShaderParamBufferMapping::~FxShaderParamBufferMapping() {
+FxUniformBufferMapping::~FxUniformBufferMapping() {
   assert(_mappedaddr == nullptr);
 }
 
@@ -51,7 +51,7 @@ void FxShader::addTechnique(const FxShaderTechnique* tek) {
 void FxShader::addParameter(const FxShaderParam* param) {
   _parameterByName[param->_name] = param;
 }
-void FxShader::addParameterBlock(const FxShaderParamBlock* block) {
+void FxShader::addParameterBlock(const FxUniformBlock* block) {
   _parameterBlockByName[block->_name] = block;
 }
 void FxShader::addComputeShader(const FxComputeShader* csh) {

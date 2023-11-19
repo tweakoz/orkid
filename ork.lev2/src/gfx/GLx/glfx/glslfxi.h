@@ -151,7 +151,7 @@ struct UniformBlockItem {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct UniformBuffer {
-  FxShaderParamBuffer* _fxspb = nullptr;
+  FxUniformBuffer* _fxspb = nullptr;
   GLuint _glbufid             = 0;
   size_t _length              = 0;
 };
@@ -546,7 +546,7 @@ public:
 
   const FxShaderTechnique* technique(FxShader* hfx, const std::string& name) final;
   const FxShaderParam* parameter(FxShader* hfx, const std::string& name) final;
-  const FxShaderParamBlock* parameterBlock(FxShader* hfx, const std::string& name) final;
+  fxuniformblock_constptr_t parameterBlock(FxShader* hfx, const std::string& name) final;
   const FxComputeShader* computeShader(FxShader* hfx, const std::string& name) final;
   const FxShaderStorageBlock* storageBlock(FxShader* hfx, const std::string& name) final;
 
@@ -583,10 +583,10 @@ public:
   bool compilePipelineNVTM(rootcontainer_ptr_t container);
 
   // ubo
-  FxShaderParamBuffer* createParamBuffer(size_t length) final;
-  parambuffermappingptr_t mapParamBuffer(FxShaderParamBuffer* b, size_t base, size_t length) final;
-  void unmapParamBuffer(parambuffermappingptr_t mapping) final;
-  void bindParamBlockBuffer(const FxShaderParamBlock* block, FxShaderParamBuffer* buffer) final;
+  fxuniformbuffer_ptr_t createUniformBuffer(size_t length) final;
+  fxuniformbuffermapping_ptr_t mapUniformBuffer(fxuniformbuffer_ptr_t b, size_t base, size_t length) final;
+  void unmapUniformBuffer(fxuniformbuffermapping_ptr_t mapping) final;
+  void bindUniformBuffer(fxuniformblock_constptr_t block, FxUniformBuffer* buffer) final;
 
 private:
   typedef std::function<void(int iloc, GLenum checktype)> stdparambinder_t;

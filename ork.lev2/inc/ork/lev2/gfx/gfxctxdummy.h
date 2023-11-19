@@ -45,7 +45,7 @@ public:
   const FxShaderParam* parameter(FxShader* hfx, const std::string& name) final {
     return nullptr;
   }
-  const FxShaderParamBlock* parameterBlock(FxShader* hfx, const std::string& name) final {
+  const FxUniformBlock* parameterBlock(FxShader* hfx, const std::string& name) final {
     return nullptr;
   }
   const FxShaderStorageBlock* storageBlock(FxShader* hfx, const std::string& name) final {

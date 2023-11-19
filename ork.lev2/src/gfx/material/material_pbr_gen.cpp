@@ -37,8 +37,8 @@ extern std::atomic<int> __FIND_IT;
 
 /////////////////////////////////////////////////////////////////////////
 
-static FxShaderParamBuffer* _getPointLightDataBuffer(Context* context) {
-  FxShaderParamBuffer* _buffer;
+static FxUniformBuffer* _getPointLightDataBuffer(Context* context) {
+  FxUniformBuffer* _buffer;
 
   uint64_t LOCK = lev2::GfxEnv::createLock();
   context->makeCurrentContext();
@@ -46,15 +46,15 @@ static FxShaderParamBuffer* _getPointLightDataBuffer(Context* context) {
   std::vector<uint8_t> initial_bytes;
   initial_bytes.resize(64 * 32 * sizeof(float) * 4);
 
-  _buffer     = context->FXI()->createParamBuffer(65536);
-  auto mapped = context->FXI()->mapParamBuffer(_buffer);
+  _buffer     = context->FXI()->createUniformBuffer(65536);
+  auto mapped = context->FXI()->mapUniformBuffer(_buffer);
   size_t base  = 0;
   //for (int i = 0; i < KMAXLIGHTSPERCHUNK; i++)
     //mapped->ref<fvec3>(base + i * sizeof(fvec4)) = fvec3(0, 0, 0);
   //base += KMAXLIGHTSPERCHUNK * sizeof(fvec4);
   //for (int i = 0; i < KMAXLIGHTSPERCHUNK; i++)
     //mapped->ref<fvec4>(base + i * sizeof(fvec4)) = fvec4();
-  context->FXI()->unmapParamBuffer(mapped);
+  context->FXI()->unmapUniformBuffer(mapped);
 
   lev2::GfxEnv::releaseLock(LOCK);
   return _buffer;
@@ -62,21 +62,21 @@ static FxShaderParamBuffer* _getPointLightDataBuffer(Context* context) {
 
 /////////////////////////////////////////////////////////////////////////
 
-FxShaderParamBuffer* PBRMaterial::pointLightDataBuffer(Context* targ) {
-  static FxShaderParamBuffer* _buffer = _getPointLightDataBuffer(targ);
+FxUniformBuffer* PBRMaterial::pointLightDataBuffer(Context* targ) {
+  static FxUniformBuffer* _buffer = _getPointLightDataBuffer(targ);
   return _buffer;
 }
 
 /////////////////////////////////////////////////////////////////////////
 
-static FxShaderParamBuffer* _getBoneDataBuffer(Context* context) {
-  FxShaderParamBuffer* _buffer;
+static FxUniformBuffer* _getBoneDataBuffer(Context* context) {
+  FxUniformBuffer* _buffer;
   uint64_t LOCK = lev2::GfxEnv::createLock();
   { //
     context->makeCurrentContext();
-    _buffer     = context->FXI()->createParamBuffer(65536);
-    auto mapped = context->FXI()->mapParamBuffer(_buffer);
-    context->FXI()->unmapParamBuffer(mapped);
+    _buffer     = context->FXI()->createUniformBuffer(65536);
+    auto mapped = context->FXI()->mapUniformBuffer(_buffer);
+    context->FXI()->unmapUniformBuffer(mapped);
   }
   lev2::GfxEnv::releaseLock(LOCK);
   return _buffer;
@@ -84,8 +84,8 @@ static FxShaderParamBuffer* _getBoneDataBuffer(Context* context) {
 
 /////////////////////////////////////////////////////////////////////////
 
-FxShaderParamBuffer* PBRMaterial::boneDataBuffer(Context* targ) {
-  static FxShaderParamBuffer* _buffer = _getBoneDataBuffer(targ);
+FxUniformBuffer* PBRMaterial::boneDataBuffer(Context* targ) {
+  static FxUniformBuffer* _buffer = _getBoneDataBuffer(targ);
   return _buffer;
 }
 

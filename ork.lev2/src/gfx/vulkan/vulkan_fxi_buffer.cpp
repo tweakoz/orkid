@@ -12,20 +12,20 @@
 namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
 
-FxShaderParamBuffer* VkFxInterface::createParamBuffer(size_t length) {
-  auto pbuf = new FxShaderParamBuffer;
+FxUniformBuffer* VkFxInterface::createUniformBuffer(size_t length) {
+  auto pbuf = new FxUniformBuffer;
   auto uniblk_buf = pbuf->_impl.makeShared<VulkanBuffer>(_contextVK, length, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
   return pbuf;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-parambuffermappingptr_t VkFxInterface::mapParamBuffer(FxShaderParamBuffer* b, //
+fxuniformbuffermapping_ptr_t VkFxInterface::mapUniformBuffer(FxUniformBuffer* b, //
                                                       size_t base, //
                                                       size_t length) { //
 
   auto bufimpl = b->_impl.getShared<VulkanBuffer>();
-  auto mapping = std::make_shared<FxShaderParamBufferMapping>();
+  auto mapping = std::make_shared<FxUniformBufferMapping>();
   mapping->_buffer = b;
   mapping->_offset   = base;
   if(length==0){
@@ -40,7 +40,7 @@ parambuffermappingptr_t VkFxInterface::mapParamBuffer(FxShaderParamBuffer* b, //
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void VkFxInterface::unmapParamBuffer(parambuffermappingptr_t mapping) {
+void VkFxInterface::unmapUniformBuffer(fxuniformbuffermapping_ptr_t mapping) {
   auto bufimpl = mapping->_buffer->_impl.getShared<VulkanBuffer>();
   bufimpl->unmap();
 }

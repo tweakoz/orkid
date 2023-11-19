@@ -144,7 +144,7 @@ struct DeferredContext {
   const FxShaderParam* _parEnvironmentMipScale = nullptr;
   const FxShaderParam* _parDepthFogDistance    = nullptr;
   const FxShaderParam* _parDepthFogPower       = nullptr;
-  const FxShaderParamBlock* _lightblock        = nullptr;
+  const FxUniformBlock* _lightblock        = nullptr;
   const FxShaderParam* _parLightCookieTexture  = nullptr;
   const FxShaderParam* _parShadowParams        = nullptr;
 

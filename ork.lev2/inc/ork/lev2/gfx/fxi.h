@@ -32,7 +32,7 @@ public:
   }
   virtual const FxShaderTechnique* technique(FxShader* hfx, const std::string& name)       = 0;
   virtual const FxShaderParam* parameter(FxShader* hfx, const std::string& name)           = 0;
-  virtual const FxShaderParamBlock* parameterBlock(FxShader* hfx, const std::string& name) = 0;
+  virtual const FxUniformBlock* parameterBlock(FxShader* hfx, const std::string& name) = 0;
 
   virtual const FxComputeShader* computeShader(FxShader* hfx, const std::string& name)     = 0;
   virtual const FxShaderStorageBlock* storageBlock(FxShader* hfx, const std::string& name) = 0;
@@ -77,15 +77,15 @@ public:
 
   static void Reset();
 
-  virtual FxShaderParamBuffer* createParamBuffer(size_t length) {
+  virtual FxUniformBuffer* createUniformBuffer(size_t length) {
     return nullptr;
   }
-  virtual parambuffermappingptr_t mapParamBuffer(FxShaderParamBuffer* b, size_t base = 0, size_t length = 0) {
+  virtual fxuniformbuffermapping_ptr_t mapUniformBuffer(FxUniformBuffer* b, size_t base = 0, size_t length = 0) {
     return nullptr;
   }
-  virtual void unmapParamBuffer(parambuffermappingptr_t mapping) {
+  virtual void unmapUniformBuffer(fxuniformbuffermapping_ptr_t mapping) {
   }
-  virtual void bindParamBlockBuffer(const FxShaderParamBlock* block, FxShaderParamBuffer* buffer) {
+  virtual void bindUniformBuffer(const FxUniformBlock* block, FxUniformBuffer* buffer) {
   }
 
   FxInterface();

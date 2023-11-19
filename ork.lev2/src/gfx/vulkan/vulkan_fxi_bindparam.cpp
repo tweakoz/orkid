@@ -132,7 +132,7 @@ void VkFxInterface::BindParamU64(const FxShaderParam* hpar, uint64_t uval) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void VkFxInterface::bindParamBlockBuffer(const FxShaderParamBlock* block, FxShaderParamBuffer* buffer) {
+void VkFxInterface::bindUniformBuffer(const FxUniformBlock* block, FxUniformBuffer* buffer) {
   /*if( auto as_uniset_item = hpar->_impl.tryAs<VkFxShaderUniformSetItem*>() ){
   }*/
 }
