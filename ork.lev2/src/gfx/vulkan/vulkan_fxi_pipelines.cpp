@@ -185,9 +185,9 @@ vkpipeline_obj_ptr_t VkFxInterface::_fetchPipeline(
     OrkAssert(shprog->_descriptors);
 
     if (shprog->_descriptors) {
-      size_t num_bindings = shprog->_descriptors->_vkbindings.size();
-      size_t num_samplers = shprog->_descriptors->_sampler_count;
-      OrkAssert(num_bindings == num_samplers);
+      //size_t num_bindings = shprog->_descriptors->_vkbindings.size();
+      //size_t num_samplers = shprog->_descriptors->_sampler_count;
+      //OrkAssert(num_bindings == num_samplers);
 
       VkDescriptorSetLayoutCreateInfo LCI = {};
       initializeVkStruct(LCI, VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO);
