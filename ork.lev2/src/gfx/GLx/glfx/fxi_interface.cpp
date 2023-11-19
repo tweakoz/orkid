@@ -253,13 +253,12 @@ const FxShaderParam* Interface::parameter(FxShader* hfx, const std::string& name
 // UBO mgmt
 ///////////////////////////////////////////////////////////////////////////////
 
-FxUniformBuffer* Interface::createUniformBuffer(size_t length) {
+fxuniformbuffer_ptr_t Interface::createUniformBuffer(size_t length) {
   assert(length <= 65536);
-  auto ub    = new UniformBuffer;
-  ub->_fxspb = new FxUniformBuffer;
-  ub->_fxspb->_impl.set<UniformBuffer*>(ub);
+  auto fxub = std::make_shared<FxUniformBuffer>();
+  auto ub    = fxub->_impl.makeShared<UniformBuffer>();
   ub->_length         = length;
-  ub->_fxspb->_length = length;
+  fxub->_length = length;
   GL_ERRORCHECK();
   glGenBuffers(1, &ub->_glbufid);
   //printf("Create UBO<%p> glid<%d>\n", ub, ub->_glbufid);
@@ -271,7 +270,7 @@ FxUniformBuffer* Interface::createUniformBuffer(size_t length) {
   glBindBuffer(GL_UNIFORM_BUFFER, 0);
   delete[] mem;
   GL_ERRORCHECK();
-  return ub->_fxspb;
+  return fxub;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -280,9 +279,9 @@ struct UniformBufferMapping {};
 
 ///////////////////////////////////////////////////////////////////////////////
 
-fxuniformbuffermapping_ptr_t Interface::mapUniformBuffer(FxUniformBuffer* b, size_t base, size_t length) {
+fxuniformbuffermapping_ptr_t Interface::mapUniformBuffer(fxuniformbuffer_ptr_t b, size_t base, size_t length) {
   auto mapping = std::make_shared<FxUniformBufferMapping>();
-  auto ub      = b->_impl.get<UniformBuffer*>();
+  auto glub      = b->_impl.getShared<UniformBuffer>();
   if (length == 0) {
     assert(base == 0);
     length = b->_length;
@@ -291,10 +290,10 @@ fxuniformbuffermapping_ptr_t Interface::mapUniformBuffer(FxUniformBuffer* b, siz
   mapping->_offset = base;
   mapping->_length = length;
   mapping->_fxi    = this;
-  mapping->_buffer = b;
+  mapping->_buffer = b.get();
   mapping->_impl.make<UniformBufferMapping>();
   GL_ERRORCHECK();
-  glBindBuffer(GL_UNIFORM_BUFFER, ub->_glbufid);
+  glBindBuffer(GL_UNIFORM_BUFFER, glub->_glbufid);
   // mapping->_mappedaddr = malloc(length);
   // glMapBuffer(GL_UNIFORM_BUFFER,
   //                                      GL_WRITE_ONLY);
@@ -315,9 +314,9 @@ fxuniformbuffermapping_ptr_t Interface::mapUniformBuffer(FxUniformBuffer* b, siz
 
 void Interface::unmapUniformBuffer(fxuniformbuffermapping_ptr_t mapping) {
   assert(mapping->_impl.isA<UniformBufferMapping>());
-  auto ub = mapping->_buffer->_impl.get<UniformBuffer*>();
+  auto glub = mapping->_buffer->_impl.getShared<UniformBuffer>();
   GL_ERRORCHECK();
-  glBindBuffer(GL_UNIFORM_BUFFER, ub->_glbufid);
+  glBindBuffer(GL_UNIFORM_BUFFER, glub->_glbufid);
   glFlushMappedBufferRange(GL_UNIFORM_BUFFER,mapping->_offset,mapping->_length);
   glUnmapBuffer(GL_UNIFORM_BUFFER);
   glBindBuffer(GL_UNIFORM_BUFFER, 0);
@@ -328,7 +327,7 @@ void Interface::unmapUniformBuffer(fxuniformbuffermapping_ptr_t mapping) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Interface::bindUniformBuffer(const FxUniformBlock* block, FxUniformBuffer* buffer) {
+void Interface::bindUniformBuffer(fxuniformblock_constptr_t block, fxuniformbuffer_constptr_t buffer) {
   auto uniblock  = block->_impl.get<UniformBlock*>();
   auto unibuffer = buffer->_impl.get<UniformBuffer*>();
   assert(uniblock != nullptr);
@@ -340,7 +339,7 @@ void Interface::bindUniformBuffer(const FxUniformBlock* block, FxUniformBuffer* 
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const FxUniformBlock* Interface::parameterBlock(FxShader* hfx, const std::string& name) {
+fxuniformblock_constptr_t Interface::parameterBlock(FxShader* hfx, const std::string& name) {
   OrkAssert(0 != hfx);
   auto& parammap = hfx->_parameterBlockByName;
   auto it        = parammap.find(name);
@@ -359,7 +358,7 @@ const FxUniformBlock* Interface::parameterBlock(FxShader* hfx, const std::string
       p->_blockinfo->_parent         = fxsblock;
       p->_impl.setShared<Uniform>(u);
       p->_name                       = u->_name;
-      fxsblock->_subparams[p->_name] = p;
+      fxsblock->_parametersByName[p->_name] = p;
     }
   }
   return fxsblock;

@@ -58,8 +58,8 @@ struct FxShaderParam {
 
 struct FxUniformBlock {
   std::string _name;
-  FxShaderParam* param(const std::string& name) const;
-  std::map<std::string, FxShaderParam*> _subparams;
+  fxparam_constptr_t param(const std::string& name) const;
+  std::map<std::string, fxparam_constptr_t> _parametersByName;
   svarp_t _impl;
   FxInterface* _fxi = nullptr;
 };

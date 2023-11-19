@@ -12,21 +12,21 @@
 namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
 
-FxUniformBuffer* VkFxInterface::createUniformBuffer(size_t length) {
-  auto pbuf = new FxUniformBuffer;
+fxuniformbuffer_ptr_t VkFxInterface::createUniformBuffer(size_t length) {
+  auto pbuf = std::make_shared<FxUniformBuffer>();
   auto uniblk_buf = pbuf->_impl.makeShared<VulkanBuffer>(_contextVK, length, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
   return pbuf;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-fxuniformbuffermapping_ptr_t VkFxInterface::mapUniformBuffer(FxUniformBuffer* b, //
+fxuniformbuffermapping_ptr_t VkFxInterface::mapUniformBuffer(fxuniformbuffer_ptr_t b, //
                                                       size_t base, //
                                                       size_t length) { //
 
   auto bufimpl = b->_impl.getShared<VulkanBuffer>();
   auto mapping = std::make_shared<FxUniformBufferMapping>();
-  mapping->_buffer = b;
+  mapping->_buffer = b.get();
   mapping->_offset   = base;
   if(length==0){
     mapping->_length = bufimpl->_length;

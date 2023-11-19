@@ -137,7 +137,8 @@ struct FxDescriptorSetItem;
 struct FxShaderDescriptorSetBindPoint;
 //
 using fxuniformblock_constptr_t     = const FxUniformBlock*;
-using fxuniformbuffer_ptr_t = FxUniformBuffer*;
+using fxuniformbuffer_ptr_t = std::shared_ptr<FxUniformBuffer>;
+using fxuniformbuffer_constptr_t = std::shared_ptr<const FxUniformBuffer>;
 using fxuniformbuffermapping_ptr_t = std::shared_ptr<FxUniformBufferMapping>;
 //
 using fxshader_ptr_t         = FxShader*;

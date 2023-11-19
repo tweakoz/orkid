@@ -151,7 +151,6 @@ struct UniformBlockItem {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct UniformBuffer {
-  FxUniformBuffer* _fxspb = nullptr;
   GLuint _glbufid             = 0;
   size_t _length              = 0;
 };
@@ -586,7 +585,7 @@ public:
   fxuniformbuffer_ptr_t createUniformBuffer(size_t length) final;
   fxuniformbuffermapping_ptr_t mapUniformBuffer(fxuniformbuffer_ptr_t b, size_t base, size_t length) final;
   void unmapUniformBuffer(fxuniformbuffermapping_ptr_t mapping) final;
-  void bindUniformBuffer(fxuniformblock_constptr_t block, FxUniformBuffer* buffer) final;
+  void bindUniformBuffer(fxuniformblock_constptr_t block, fxuniformbuffer_constptr_t buffer) final;
 
 private:
   typedef std::function<void(int iloc, GLenum checktype)> stdparambinder_t;

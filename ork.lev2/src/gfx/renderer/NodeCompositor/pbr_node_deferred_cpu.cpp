@@ -288,7 +288,7 @@ struct CpuNodeImpl {
   ork::fixedvector<fvec4, KMAXTILECOUNT> _chunktiles_pos;
   ork::fixedvector<fvec4, KMAXTILECOUNT> _chunktiles_uva;
   ork::fixedvector<fvec4, KMAXTILECOUNT> _chunktiles_uvb;
-  FxUniformBuffer* _lightbuffer = nullptr;
+  fxuniformbuffer_ptr_t _lightbuffer = nullptr;
   std::atomic<int> _pendingtilecounter;
 }; // CpuNodeImpl
 

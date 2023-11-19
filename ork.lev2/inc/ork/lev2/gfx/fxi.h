@@ -77,15 +77,15 @@ public:
 
   static void Reset();
 
-  virtual FxUniformBuffer* createUniformBuffer(size_t length) {
+  virtual fxuniformbuffer_ptr_t createUniformBuffer(size_t length) {
     return nullptr;
   }
-  virtual fxuniformbuffermapping_ptr_t mapUniformBuffer(FxUniformBuffer* b, size_t base = 0, size_t length = 0) {
+  virtual fxuniformbuffermapping_ptr_t mapUniformBuffer(fxuniformbuffer_ptr_t b, size_t base = 0, size_t length = 0) {
     return nullptr;
   }
   virtual void unmapUniformBuffer(fxuniformbuffermapping_ptr_t mapping) {
   }
-  virtual void bindUniformBuffer(const FxUniformBlock* block, FxUniformBuffer* buffer) {
+  virtual void bindUniformBuffer(const FxUniformBlock* block, fxuniformbuffer_constptr_t buffer) {
   }
 
   FxInterface();

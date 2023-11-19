@@ -31,9 +31,9 @@ FxShaderParam::FxShaderParam()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-FxShaderParam* FxUniformBlock::param(const std::string& name) const {
-  auto it = _subparams.find(name);
-  return (it != _subparams.end()) ? it->second : nullptr;
+fxparam_constptr_t FxUniformBlock::param(const std::string& name) const {
+  auto it = _parametersByName.find(name);
+  return (it != _parametersByName.end()) ? it->second : nullptr;
 }
 
 FxUniformBufferMapping::FxUniformBufferMapping() {

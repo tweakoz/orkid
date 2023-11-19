@@ -267,7 +267,7 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
       vk_param->_orkparam->_impl.set<VkFxShaderUniformBlkItem*>(vk_param.get());
       vk_uniblk->_items_by_name[str_param_identifier] = vk_param;
       vk_uniblk->_items_by_order.push_back(vk_param);
-      vk_uniblk->_orkparamblock->_subparams[str_param_identifier] = vk_param->_orkparam.get();
+      vk_uniblk->_orkparamblock->_parametersByName[str_param_identifier] = vk_param->_orkparam.get();
       if (0)
         printf("uniblk<%s> ADDING Item PARAM<%s>\n", str_uniblk_name.c_str(), str_param_identifier.c_str());
     }

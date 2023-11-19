@@ -37,8 +37,8 @@ extern std::atomic<int> __FIND_IT;
 
 /////////////////////////////////////////////////////////////////////////
 
-static FxUniformBuffer* _getPointLightDataBuffer(Context* context) {
-  FxUniformBuffer* _buffer;
+static fxuniformbuffer_ptr_t _getPointLightDataBuffer(Context* context) {
+  fxuniformbuffer_ptr_t _buffer;
 
   uint64_t LOCK = lev2::GfxEnv::createLock();
   context->makeCurrentContext();
@@ -62,15 +62,15 @@ static FxUniformBuffer* _getPointLightDataBuffer(Context* context) {
 
 /////////////////////////////////////////////////////////////////////////
 
-FxUniformBuffer* PBRMaterial::pointLightDataBuffer(Context* targ) {
-  static FxUniformBuffer* _buffer = _getPointLightDataBuffer(targ);
+fxuniformbuffer_ptr_t PBRMaterial::pointLightDataBuffer(Context* targ) {
+  static fxuniformbuffer_ptr_t _buffer = _getPointLightDataBuffer(targ);
   return _buffer;
 }
 
 /////////////////////////////////////////////////////////////////////////
 
-static FxUniformBuffer* _getBoneDataBuffer(Context* context) {
-  FxUniformBuffer* _buffer;
+static fxuniformbuffer_ptr_t _getBoneDataBuffer(Context* context) {
+  fxuniformbuffer_ptr_t _buffer;
   uint64_t LOCK = lev2::GfxEnv::createLock();
   { //
     context->makeCurrentContext();
@@ -84,8 +84,8 @@ static FxUniformBuffer* _getBoneDataBuffer(Context* context) {
 
 /////////////////////////////////////////////////////////////////////////
 
-FxUniformBuffer* PBRMaterial::boneDataBuffer(Context* targ) {
-  static FxUniformBuffer* _buffer = _getBoneDataBuffer(targ);
+fxuniformbuffer_ptr_t PBRMaterial::boneDataBuffer(Context* targ) {
+  static fxuniformbuffer_ptr_t _buffer = _getBoneDataBuffer(targ);
   return _buffer;
 }
 

@@ -64,8 +64,8 @@ public:
 
   ////////////////////////////////////////////
 
-  static FxUniformBuffer* pointLightDataBuffer(Context* targ);
-  static FxUniformBuffer* boneDataBuffer(Context* targ);
+  static fxuniformbuffer_ptr_t pointLightDataBuffer(Context* targ);
+  static fxuniformbuffer_ptr_t boneDataBuffer(Context* targ);
 
   static texture_ptr_t brdfIntegrationMap(Context* targ);
   static texture_ptr_t filterSpecularEnvMap(texture_ptr_t rawenvmap, Context* targ);
