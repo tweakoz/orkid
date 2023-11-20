@@ -104,6 +104,8 @@ struct GpuResources {
       auto vrdev = orkidvr::novr::novr_device();
       orkidvr::setDevice(vrdev);
       vrdev->overrideSize(init_data->_width,init_data->_height);
+
+      vrdev->_posemap["hmd"].setTranslation(0,0,-5);
     }
 
     _camlut                = std::make_shared<CameraDataLut>();
