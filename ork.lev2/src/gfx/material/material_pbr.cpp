@@ -791,8 +791,8 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
   // OrkAssert(_tek_FWD_CT_NM_RI_NI_MO);
   // OrkAssert(_tek_FWD_CT_NM_RI_IN_MO);
 
-  _samplers_fwd = fxi->samplerSet(_shader, "samplers_fwd");
-
+  _samplers_fwd = fxi->samplerSet(_shader, "fwd_samplers");
+  OrkAssert(_samplers_fwd!=nullptr);
   // parameters
 
   _paramM                 = fxi->parameter(_shader, "m");

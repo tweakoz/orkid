@@ -245,6 +245,12 @@ FxShaderLoader::FxShaderLoader()
 ///////////////////////////////////////////////////////////////////////////////
 
 asset_ptr_t FxShaderLoader::_doLoadAsset(asset::loadrequest_ptr_t loadreq) {
+
+  auto it = _shader_cache.find(loadreq->_asset_path.c_str());
+  if (it != _shader_cache.end()) {
+    return it->second;
+  }
+
   auto pshader = std::make_shared<FxShaderAsset>();
   auto context = lev2::contextForCurrentThread();
   auto fxi     = context->FXI();
@@ -254,6 +260,7 @@ asset_ptr_t FxShaderLoader::_doLoadAsset(asset::loadrequest_ptr_t loadreq) {
   OrkAssert(bOK);
   if (bOK)
     pshader->GetFxShader()->SetName(path.c_str());
+  _shader_cache[loadreq->_asset_path.c_str()] = pshader;
   return pshader;
 }
 

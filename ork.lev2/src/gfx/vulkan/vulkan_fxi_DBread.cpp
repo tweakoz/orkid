@@ -180,8 +180,9 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
     auto ork_smpset = vk_smpset->_impl.makeShared<FxSamplerSet>();
     auto dset_id    = uniforms_input_stream->readItem<size_t>();
     vk_smpset->_descriptor_set_id = dset_id;
-    printf( "GOT SAMPLERSET<%s>\n", str_smpset_name.c_str() );
+    printf( "shader<%p:%s> GOT SAMPLERSET<%s>\n", (void*) ork_shader, ork_shader->mName.c_str(), str_smpset_name.c_str() );
     vulkan_shaderfile->_vk_samplersets[str_smpset_name] = vk_smpset;
+    ork_shader->_samplerSets[str_smpset_name] = ork_smpset.get();
     ///////////////////////////////////////////////
     auto str_samplers = uniforms_input_stream->readIndexedString(chunkreader);
     OrkAssert(str_samplers == "samplers");
@@ -342,7 +343,7 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
       vulkan_shobj->_smpset_refs = refs;
       for (size_t i = 0; i < num_ismpsets; i++) {
         auto str_smpset = shader_input_stream->readIndexedString(chunkreader);
-        printf( "REF SAMPLERSET str_smpset<%s>\n", str_smpset.c_str() );
+        //printf( "REF SAMPLERSET str_smpset<%s>\n", str_smpset.c_str() );
         auto it         = vulkan_shaderfile->_vk_samplersets.find(str_smpset);
         OrkAssert(it != vulkan_shaderfile->_vk_samplersets.end());
         vkfxssmpset_ptr_t vk_smpset = it->second;

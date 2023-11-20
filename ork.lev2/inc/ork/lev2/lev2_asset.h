@@ -143,6 +143,7 @@ public:
   FxShaderLoader();
   asset::asset_ptr_t _doLoadAsset(asset::loadrequest_ptr_t loadreq) final;
   void destroy(asset::asset_ptr_t asset) override;
+  std::unordered_map<std::string, asset::asset_ptr_t> _shader_cache;
 };
 using shaderloader_ptr_t = std::shared_ptr<FxShaderLoader>;
 

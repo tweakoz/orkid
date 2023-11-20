@@ -171,8 +171,11 @@ const FxUniformBlock* VkFxInterface::uniformBlock(FxShader* pshader, const std::
 }
 
 fxsamplerset_constptr_t VkFxInterface::samplerSet(FxShader* hfx, const std::string& name) {
-  OrkAssert(false);
-  return nullptr;
+  auto& sampsets = hfx->_samplerSets;
+  auto it        = sampsets.find(name);
+  auto fxsampset  = (FxSamplerSet*)((it != sampsets.end()) ? it->second : nullptr);
+  printf( "shader<%p:%s> FIND SAMPLERSET<%s> fxsampset<%p>\n", (void*) hfx, hfx->mName.c_str(), name.c_str(), fxsampset );
+  return fxsampset;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
