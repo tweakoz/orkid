@@ -9,8 +9,24 @@
             "type": "cppdbg",
             "request": "attach",
             "processId":"${command:pickProcess}",
-            "program": "${env:OBT_STAGE}/bin/ork.example.lev2.gfx.model3Dpbr.exe",
+            "program": "${env:OBT_SUBSPACE_BIN_DIR}/ork.example.lev2.gfx.model3Dpbr.exe",
+            "args": ["--forward","--usevr"],
             "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        {
+            "name": "(gdb) launch model3Dpbr",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${env:OBT_SUBSPACE_BIN_DIR}/ork.example.lev2.gfx.model3Dpbr.exe",
+            "args": ["--forward","--usevr"],
+            "MIMode": "gdb",
+            "cwd": "${env:OBT_STAGE}",
             "setupCommands": [
                 {
                     "text": "-enable-pretty-printing",
@@ -22,7 +38,7 @@
             "name": "(gdb) debug skinning",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${env:OBT_STAGE}/bin/ork.example.lev2.gfx.skinning.exe",
+            "program": "${env:OBT_SUBSPACE_BIN_DIR}/ork.example.lev2.gfx.skinning.exe",
             "MIMode": "gdb",
             "args": ["--testnum","2"],
             "cwd": "${env:OBT_STAGE}",
@@ -37,7 +53,7 @@
             "name": "(gdb) debug tx81z.bank",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${env:OBT_STAGE}/bin/ork.test.lev2.aud.singularity.tx81z.bank.exe",
+            "program": "${env:OBT_SUBSPACE_BIN_DIR}/ork.test.lev2.aud.singularity.tx81z.bank.exe",
             "MIMode": "gdb",
             "args": ["--test","midi","--port","2"],
             "cwd": "${env:OBT_STAGE}",

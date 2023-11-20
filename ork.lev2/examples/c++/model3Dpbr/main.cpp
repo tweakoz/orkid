@@ -117,10 +117,12 @@ struct GpuResources {
     //////////////////////////////////////////////
 
     _sg_params                                         = std::make_shared<varmap::VarMap>();
-    _sg_params->makeValueForKey<std::string>("preset") = use_forward ? "ForwardPBR" : "DeferredPBR";
 
     if(use_vr){
-      _sg_params->makeValueForKey<std::string>("preset") = "PBRVR";
+      _sg_params->makeValueForKey<std::string>("preset") = use_forward ? "FWDPBRVR" : "PBRVR" ;
+    }
+    else{
+    _sg_params->makeValueForKey<std::string>("preset") = use_forward ? "ForwardPBR" : "DeferredPBR";
     }
 
 

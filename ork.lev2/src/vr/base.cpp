@@ -11,7 +11,6 @@ namespace ork::lev2::orkidvr {
 ////////////////////////////////////////////////////////////////////////////////
 static device_ptr_t _gdevice = nullptr;
 void setDevice(std::shared_ptr<Device> device) {
-  OrkAssert(_gdevice == nullptr);
   _gdevice = device;
 }
 device_ptr_t device() {

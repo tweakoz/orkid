@@ -32,6 +32,8 @@
 #include <ork/lev2/gfx/scenegraph/sgnode_grid.h>
 #include <ork/lev2/gfx/scenegraph/sgnode_groundplane.h>
 ///////////////////////////////////////////////////////////////////////////////
+#include <ork/lev2/vr/vr.h>
+///////////////////////////////////////////////////////////////////////////////
 #include <ork/lev2/gfx/particle/modular_particles2.h>
 #include <ork/lev2/gfx/particle/modular_emitters.h>
 #include <ork/lev2/gfx/particle/modular_forces.h>
@@ -300,6 +302,9 @@ void GfxInit(const std::string& gfxlayer) {
 #endif
   }
   opq::init();
+
+  auto def_vrdev = std::make_shared<ork::lev2::orkidvr::novr::NoVrDevice>();
+  ork::lev2::orkidvr::setDevice(def_vrdev);
 }
 struct ModuleInit {
 
