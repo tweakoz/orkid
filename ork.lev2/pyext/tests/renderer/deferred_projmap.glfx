@@ -72,15 +72,12 @@ fragment_interface iface_f2uv {
 }
 ///////////////////////////////////////////////////////////////
 libblock lib_deferred //
-  : ub_light // 
   : ub_frg // 
   : lib_math // 
   : lib_envmapping // 
-  : lib_cellnoise // 
   : lib_brdf // 
   : lib_gbuf_decode // 
-  : lib_def //
-  : lib_mmnoise { //
+  : lib_def { //
 
 float LinearizeDepth(float depth) {
     float z = depth * 2.0 - 1.0; // Back to NDC 
