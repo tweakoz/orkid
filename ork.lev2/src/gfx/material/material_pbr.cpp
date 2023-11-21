@@ -156,6 +156,10 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu,con
 
   fxpipeline_ptr_t pipeline;
 
+  if(0 == strcmp(mtl->mMaterialName.c_str(),"Material.001")){
+    printf( "yo\n");
+  }
+
   switch (mtl->_variant) {
     case "skybox.forward"_crcu: { // FORWARD SKYBOX VARIANT
       auto basic_lambda  = _createBasicStateLambda(mtl);
@@ -582,6 +586,10 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu,con
     pipeline->_parInstanceIdMap     = mtl->_paramInstanceIdMap;
     pipeline->_parInstanceColorMap  = mtl->_paramInstanceColorMap;
     pipeline->_material             = (GfxMaterial*)mtl;
+  }
+  else{
+    printf("No PIPELINE for mtl<%s>\n", mtl->mMaterialName.c_str() );
+    OrkAssert(false);
   }
 
   return pipeline;
@@ -1109,8 +1117,10 @@ pbrmaterial_ptr_t PBRMaterial::clone() const {
   copy->mMaterialName = mMaterialName;
   copy->_varmap = _varmap;
 
+  // TODO - flyweight clones
+
   if(_initialTarget){
-    //copy->gpuInit(_initialTarget);
+    copy->gpuInit(_initialTarget);
   }
   return copy;
 }
