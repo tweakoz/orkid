@@ -157,57 +157,30 @@ libblock lib_deferred
   }
   /////////////////////////////////////////////////////////
   vec3 plcalc2_aa(LightCtx plc,GBufData gbd){
-
-      float dist2lightsq = plc._lightdel.x*plc._lightdel.x
-                         + plc._lightdel.y*plc._lightdel.y
-                         + plc._lightdel.z*plc._lightdel.z;
-      float atten = 1.0 / max(.05,dist2lightsq);
-      vec3 lightdir = normalize(plc._lightdel);
-      vec3 halfdir = normalize(plc._viewdir + lightdir);
-      vec3 fres = fresnelSchlickRoughness(satdot(halfdir,plc._viewdir), plc._F0,plc._roughness);
-      vec3 diffusel = vec3(1) - fres;
-      diffusel *= (1 - plc._metallic);
-      vec3 diffuse_term = (diffusel*gbd._albedo*INV_PI)*DiffuseLevel;
-
-      //////////////////////////
-      // filtered specular (WIP)
-      //////////////////////////
-
-      float ggx = 0.0;
-      float geo = 0.0;
-      float denominator = 0.0;
-      float ndotl = 0.0;
-      vec3 specular_term = vec3(0,0,0);
-      float zbase = gbd._z_samples[4];
-      vec3 Nbase = gbd._wnrm_samples[4];
-
-      float sdiv = 0.0;
-
-      float nd = 0.0;
-
-      for( int i=0; i<9; i++){
-
-        vec3 N = gbd._wnrm_samples[i];
-        float ztest = gbd._z_samples[i];
-        float dZ = abs(ztest-zbase);
-
-        nd += pow(clamp(1.0-dot(Nbase,N),0,1),2);
-
-        if(dZ<.01){
-          sdiv += 1.0;
-          float ggx = computeGGX(N, halfdir, plc._roughness);
-          float geo = geometrySmith(N, plc._viewdir, lightdir, plc._roughness);
-          float denominator = 4 * satdot(N,plc._viewdir) * satdot(N, lightdir) + EPSILON;
-          vec3 numerator  = min(ggx * geo * SpecularLevel, 16)*fres;
-          specular_term += (numerator / max(.0625, denominator)) * gbd._specscale[i];
-          ndotl += satdot(N,lightdir);
-        }
-      }
-     specular_term /= sdiv;
-     ndotl /= sdiv;
-
-    //////////////////////////
-    return (diffuse_term + specular_term*(9.0-nd)/9.0) * atten * ndotl;
+    float HighSpecularClamp = 0.9;
+    float GrazingAngleStart = 0.6;
+    float GrazingAngleEnd = 1.0;
+    vec3 eye_dir = -plc._viewdir;
+    float dist2lightsq = dot(plc._lightdel, plc._lightdel);
+    float atten = 1.0 / max(0.05, dist2lightsq);
+    vec3 lightdir = normalize(plc._lightdel);
+    vec3 halfdir = normalize(eye_dir + lightdir);
+    vec3 F = fresnelSchlickRoughness(smoothstep(0.0, 1.0, satdot(halfdir, eye_dir)), plc._F0, plc._roughness);
+    vec3 diffusel = vec3(1.0) - F;
+    diffusel *= (1.0 - plc._metallic);
+    vec3 diffuse_term = diffusel * gbd._albedo * INV_PI * DiffuseLevel;
+    vec3 N = gbd._wnrm;
+    float ggx = computeGGX(N, halfdir, plc._roughness);
+    float geo = geometrySmith(N, eye_dir, lightdir, plc._roughness);
+    float denominator = 4.0 * satdot(N, eye_dir) * satdot(N, lightdir) + EPSILON;
+    vec3 numerator = min(ggx * geo * SpecularLevel, 16.0) * F;
+    vec3 specular_term = (numerator / max(0.0625, denominator)) * gbd._specscale[4];
+    specular_term = clamp(specular_term, 0.0, HighSpecularClamp);
+    float viewDotNormal = abs(dot(N, eye_dir));
+    float grazingAdjustment = smoothstep(GrazingAngleStart, GrazingAngleEnd, viewDotNormal);
+    specular_term *= grazingAdjustment;
+    float ndotl = satdot(N, lightdir);
+    return (diffuse_term + specular_term) * atten * ndotl;
   }
   /////////////////////////////////////////////////////////
   vec3 pntlighting_clustered(WPosData wpd,GBufData gbd) {
@@ -259,23 +232,21 @@ libblock lib_deferred
   }
   /////////////////////////////////////////////////////////
   vec3 pntlighting_untextured_simple(WPosData wpd,GBufData gbd) {
-    //if( gbd._mode==1 ){
-      //return TEST(wpd,gbd);
-    //}
-    vec3 l       = vec3(0, 0, 0);
-    if( gbd._mode==1 ){
-      LightCtx plc = lcalc1(wpd,gbd);
-      int lbeg = int(frg_uvb.x);
-      int lend = lbeg+int(frg_uvb.y);
-      for (int lidx = lbeg; lidx<lend; lidx++) {
-        vec3 lightpos = LightMatrix[lidx][3].xyz;
-        plc._lightdel = lightpos - gbd._wpos;
-        vec3 lightcol = LightColorD[lidx].xyz;
-        l += plcalc2(plc,gbd)*lightcol;
-      }
+    if( gbd._mode!=1 ){
+      return vec3(0,0,0);
+    }
+    vec3 l = vec3(0.0, 0.0, 0.0);
+    LightCtx plc = lcalc1(wpd,gbd);
+    int lbeg = int(frg_uvb.x);
+    int lend = lbeg + int(frg_uvb.y);
+    for (int lidx = lbeg; lidx<lend; lidx++) {
+      vec3 lightpos = LightMatrix[lidx][3].xyz;
+      plc._lightdel = lightpos - gbd._wpos;
+      vec3 lightcol = LightColorD[lidx].xyz;
+      l += plcalc2_aa(plc,gbd)*lightcol;
     }
     float depth_fogval = 1.0-clamp(pow(gbd._fogZ*DepthFogDistance,DepthFogPower),0,1);
-    return l*depth_fogval;
+    return l * depth_fogval;
   }
   /////////////////////////////////////////////////////////
   struct SpotLightCalc2{
