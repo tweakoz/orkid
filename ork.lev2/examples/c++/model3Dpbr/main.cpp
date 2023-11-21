@@ -167,7 +167,7 @@ struct GpuResources {
     _lights_drawable->bindModel(_light_modelasset->getSharedModel());
     _lights_drawable->_name = "lights";
 
-    constexpr size_t NUMLIGHTS = 10;
+    constexpr size_t NUMLIGHTS = 32;
     _lights_drawable->resize(NUMLIGHTS);
     _lights_drawable->gpuInit(ctx);
 
