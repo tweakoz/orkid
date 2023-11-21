@@ -13,14 +13,13 @@ import pyopencl as cl
 mf = cl.mem_flags
 from orkengine.core import *
 from orkengine.lev2 import *
-from ork import host
+from obt import host
 tokens = CrcStringProxy()
 ################################################################################
 #from pathlib import Path as plpath
 #this_dir = plpath(os.path.dirname(os.path.abspath(__file__)))
-#sys.path.append(str(this_dir))
-#import _simsetup
-thispath_to_syspath() # add file directory to syspath
+sys.path.append(thisdir().normalized.as_string)
+import _simsetup
 ################################################################################
 parser = argparse.ArgumentParser(description='scenegraph example')
 parser.add_argument('--numinstances', metavar="numinstances", help='number of mesh instances' )
@@ -66,13 +65,13 @@ class Blasphemoids(_simsetup.SimApp):
     param_volumetex = material.shader.param("VolumeMap")
     param_v4parref = material.shader.param("testvec4")
     self.v4parref = vec4()
-    stereo_material_inst = material.createFxInstance()
-    stereo_material_inst.technique = material.shader.technique("std_stereo")
-    stereo_material_inst.param[material.param("mvpL")] = tokens.RCFD_Camera_MVP_Left
-    stereo_material_inst.param[material.param("mvpR")] = tokens.RCFD_Camera_MVP_Right
-    stereo_material_inst.param[param_v4parref] = self.v4parref
-    stereo_material_inst.param[param_volumetex] = volumetexture
-    self.stereo_material_inst = stereo_material_inst
+    #stereo_material_inst = material.createFxInstance()
+    material.technique = material.shader.technique("std_stereo")
+    material.bindParamMatrix4(material.param("mvpL"), tokens.RCFD_Camera_MVP_Left)
+    material.bindParamMatrix4(material.param("mvpR"), tokens.RCFD_Camera_MVP_Right)
+    material.bindParamVec4(param_v4parref, self.v4parref)
+    material.bindParamTexture(param_volumetex, volumetexture)
+    #self.stereo_material_inst = stereo_material_inst
     self.timeparam = material.param("time")
     self.laser_a = vec3(0,0,0)
     self.laser_b = vec3(0,0,-100)
@@ -171,4 +170,4 @@ class Blasphemoids(_simsetup.SimApp):
              iset.delta_tras[picked]=tramtx # copy into numpy block
   ################################################
 app = Blasphemoids()
-app.qtapp.mainThreadLoop()
+app.ezapp.mainThreadLoop()

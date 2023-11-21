@@ -4,7 +4,7 @@
 # Distributed under the MIT License
 # see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ################################################################################
-import ork.path
+import obt.path
 import math, random, argparse, sys
 import trimesh, pickle
 from orkengine.core import *

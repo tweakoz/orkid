@@ -234,13 +234,34 @@ void pyinit_gfx(py::module& module_lev2) {
   py::class_<CaptureBuffer>(module_lev2, "CaptureBuffer", pybind11::buffer_protocol())
       .def(py::init<>())
       .def_buffer([](CaptureBuffer& capbuf) -> pybind11::buffer_info {
-        return pybind11::buffer_info(
-            capbuf._data,          // Pointer to buffer
-            sizeof(unsigned char), // Size of one scalar
-            pybind11::format_descriptor<unsigned char>::format(),
-            1,                 // Number of dimensions
-            {capbuf.length()}, // Buffer dimensions
-            {1});              // Strides (in bytes) for each index
+
+        pybind11::buffer_info rval;
+        switch(capbuf.format()){
+          case EBufferFormat::RGBA8:{
+            rval =  pybind11::buffer_info(
+                capbuf._data,          // Pointer to buffer
+                sizeof(unsigned char), // Size of one scalar
+                pybind11::format_descriptor<unsigned char>::format(),
+                1,                 // Number of dimensions
+                {capbuf.length()}, // Buffer dimensions
+                {1});              // Strides (in bytes) for each index
+            break;
+          }
+          case EBufferFormat::RGBA32F:{
+            rval =  pybind11::buffer_info(
+                capbuf._data,          // Pointer to buffer
+                sizeof(float), // Size of one scalar
+                pybind11::format_descriptor<float>::format(),
+                1,                 // Number of dimensions
+                {capbuf.length()/4}, // Buffer dimensions
+                {4});              // Strides (in bytes) for each index
+            break;
+          }
+          default:
+            OrkAssert(false);
+            break;
+        }
+        return rval;
       })
       .def_property_readonly("length", [](CaptureBuffer& capbuf) -> int { return int(capbuf.length()); })
       .def_property_readonly("width", [](CaptureBuffer& capbuf) -> int { return int(capbuf.width()); })

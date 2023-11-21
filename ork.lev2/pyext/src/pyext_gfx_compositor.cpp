@@ -292,6 +292,13 @@ void pyinit_gfx_compositor(py::module& module_lev2) {
       .def("createAuxBinding", [](pbr_deferred_context_ptr_t ctx,std::string paramname) -> pbr::deferrednode::auxparambinding_ptr_t { //
         return ctx->createAuxParamBinding(paramname);
       })
+      .def_property("lightAccumFormat",
+        [](pbr_deferred_context_ptr_t ctx) -> crcstring_ptr_t {
+          return std::make_shared<CrcString>(uint64_t(ctx->_lightAccumFormat));
+        },
+        [](pbr_deferred_context_ptr_t ctx, crcstring_ptr_t value){
+            ctx->_lightAccumFormat = EBufferFormat(value->hashed());
+        })
       .def("gpuInit", [](pbr_deferred_context_ptr_t ctx, ctx_t gfx_ctx) { //
         ctx->gpuInit(gfx_ctx.get());
       });
@@ -405,6 +412,14 @@ void pyinit_gfx_compositor(py::module& module_lev2) {
           .def(py::init([]() -> scroutnode_ptr_t { //
             return std::make_shared<ScreenOutputCompositingNode>();
           }))
+          .def_property("format",
+            [](scroutnode_ptr_t self) -> std::string {
+              return EBufferFormatToName(self->_format);
+            },
+            [](scroutnode_ptr_t self, std::string str_val){
+                uint64_t hashed = CrcString(str_val.c_str()).hashed();
+                self->_format = EBufferFormat(hashed);
+            })
           .def("__repr__", [](scroutnode_ptr_t i) -> std::string {
             fxstring<64> fxs;
             fxs.format("ScreenOutputNode(%p)", i.get());

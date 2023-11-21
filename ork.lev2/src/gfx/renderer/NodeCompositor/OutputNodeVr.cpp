@@ -45,6 +45,11 @@ struct VRIMPL {
       int width  = orkidvr::device()->_width * 2 * (_vrnode->supersample() + 1);
       int height = orkidvr::device()->_height * (_vrnode->supersample() + 1);
 
+      _blit2screenmtl.gpuInit(context, "orkshader://solid");
+      //_blit2screenmtl._rasterstate.SetCullTest(ECullTest::OFF);
+      _fxtechnique1x1 = _blit2screenmtl.technique("texcolor");
+      _fxpMVP         = _blit2screenmtl.param("MatMVP");
+      _fxpColorMap    = _blit2screenmtl.param("ColorMap");
 
       //printf("A: vr width<%d> height<%d>\n", width, height);
       _rtg            = new RtGroup(context, width, height, MsaaSamples::MSAA_1X);
@@ -103,8 +108,7 @@ struct VRIMPL {
     auto DB                      = RCFD.GetDB();
     Context* targ                = drawdata.context();
 
-    bool simrunning = true; //drawdata._properties["simrunning"_crcu].get<bool>();
-    bool use_vr     = (orkidvr::device()->_active and simrunning);
+    bool use_vr     = (orkidvr::device()->_active);
 
     /////////////////////////////////////////////////////////////////////////////
     // get VR camera
@@ -143,8 +147,7 @@ struct VRIMPL {
     drawdata._properties["OutputHeight"_crcu].set<int>(height);
     bool doing_stereo = (use_vr and VRDEV->_supportsStereo);
     drawdata._properties["StereoEnable"_crcu].set<bool>(doing_stereo);
-    if (simrunning)
-      drawdata._properties["simcammtx"_crcu].set<const CameraMatrices*>(VRDEV->_centercamera);
+    drawdata._properties["simcammtx"_crcu].set<const CameraMatrices*>(VRDEV->_centercamera);
 
     if (use_vr and VRDEV->_supportsStereo) {
       RCFD.setUserProperty("vrroot"_crc,rootmatrix);
@@ -179,6 +182,10 @@ struct VRIMPL {
   RtGroup* _rtg                      = nullptr;
   bool _doinit                       = true;
   CameraMatrices* _tmpcameramatrices = nullptr;
+  FreestyleMaterial _blit2screenmtl;
+  const FxShaderTechnique* _fxtechnique1x1;
+  const FxShaderParam* _fxpMVP;
+  const FxShaderParam* _fxpColorMap;
 };
 ///////////////////////////////////////////////////////////////////////////////
 VrCompositingNode::VrCompositingNode()
@@ -222,13 +229,6 @@ void VrCompositingNode::composite(CompositorDrawData& drawdata) {
       auto tex = buffer->texture();
       if (tex) {
 
-        //drawdata.context()->debugPushGroup("VrCompositingNode::to_hmd");
-        //const auto& vrdev = orkidvr::device();
-        //auto inp_rtg = drawdata._properties["render_outgroup"_crcu].get<rtgroup_ptr_t>();
-        //fbi->PushRtGroup(impl->_rtg);
-        //vrdev->__composite(context, tex);
-        //fbi->PopRtGroup();
-        //drawdata.context()->debugPopGroup();
         /////////////////////////////////////////////////////////////////////////////
         // be nice and composite to main screen as well...
         /////////////////////////////////////////////////////////////////////////////
@@ -236,6 +236,32 @@ void VrCompositingNode::composite(CompositorDrawData& drawdata) {
 
         if (_distorion_lambda) {
           _distorion_lambda(framedata, tex);
+        }
+        else{
+          drawdata.context()->debugPushGroup("VrCompositingNode::to_hmd");
+          const auto& vrdev = orkidvr::device();
+          auto& mtl     = impl->_blit2screenmtl;
+          auto inp_rtg = drawdata._properties["render_outgroup"_crcu].get<rtgroup_ptr_t>();
+          auto this_buf = context->FBI()->GetThisBuffer();
+          //fbi->PushRtGroup(nullptr);//impl->_rtg);
+          //vrdev->__composite(context, tex);
+          mtl.begin(impl->_fxtechnique1x1, framedata);
+
+          //mtl._rasterstate.SetBlending(Blending::OFF);
+          mtl.bindParamCTex(impl->_fxpColorMap, tex);
+          mtl.bindParamMatrix(impl->_fxpMVP, fmtx4::Identity());
+          ViewportRect extents(0, 0, context->mainSurfaceWidth(), context->mainSurfaceHeight());
+          fbi->pushViewport(extents);
+          fbi->pushScissor(extents);
+          this_buf->Render2dQuadEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 1, 1));
+          fbi->popViewport();
+          fbi->popScissor();
+          mtl.end(framedata);
+
+
+          //fbi->PopRtGroup();
+          drawdata.context()->debugPopGroup();
+
         } 
 
         drawdata.context()->debugPopGroup();

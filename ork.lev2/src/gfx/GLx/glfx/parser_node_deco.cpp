@@ -89,7 +89,10 @@ void DecoBlockNode::_pregen(shaderbuilder::BackEnd& backend) const {
                                   ? it_nodedeco->second 
                                   : nullptr;
 
-    assert(blocknode!=nullptr);
+    if(blocknode==nullptr){
+      printf("BlockNode<%s> not found\n", deco.c_str());
+      //OrkAssert(false);
+    }
 
     if (auto as_if = std::dynamic_pointer_cast<InterfaceNode>(blocknode)) {
       decochildren->_interfaceNodes.emplace_back(as_if);

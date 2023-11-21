@@ -67,7 +67,10 @@ class UiCamera(object):
 
     pmatrix = ctx.perspective(45,1,0.1,3)
 
-    frustum_prim = createFrustumPrim(ctx=ctx,vmatrix=vmatrix,pmatrix=pmatrix,alpha=0.35)
+    frustum_prim = createFrustumPrim(ctx=ctx,
+                                     vmatrix=fmtx4_to_dmtx4(vmatrix),
+                                     pmatrix=fmtx4_to_dmtx4(pmatrix),
+                                     alpha=0.35)
 
     pipeline_frustumF = createPipeline( app = self,
                                         ctx = ctx,

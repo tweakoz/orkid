@@ -74,16 +74,16 @@ pipeline.bindParam(par_mvp,tokens.RCFD_Camera_MVP_Mono)
 
 fpmtx = ctx.perspective(45,1,0.1,3)
 fvmtx = ctx.lookAt(vec3(0,0,1),vec3(0,0,0),vec3(0,1,0))
-frust = Frustum()
-frust.set(fvmtx,fpmtx)
+frust = dfrustum()
+frust.set(fmtx4_to_dmtx4(fvmtx),fmtx4_to_dmtx4(fpmtx))
 frustum_prim = primitives.FrustumPrimitive()
 frustum_prim.frustum = frust
-frustum_prim.topColor = vec4(0.2,1.0,0.2,1)
-frustum_prim.bottomColor = vec4(0.5,0.5,0.5,1)
-frustum_prim.leftColor = vec4(0.2,0.2,1.0,1)
-frustum_prim.rightColor = vec4(1.0,0.2,0.2,1)
-frustum_prim.nearColor = vec4(0.0,0.0,0.0,1)
-frustum_prim.farColor = vec4(1.0,1.0,1.0,1)
+frustum_prim.topColor = dvec4(0.2,1.0,0.2,1)
+frustum_prim.bottomColor = dvec4(0.5,0.5,0.5,1)
+frustum_prim.leftColor = dvec4(0.2,0.2,1.0,1)
+frustum_prim.rightColor = dvec4(1.0,0.2,0.2,1)
+frustum_prim.nearColor = dvec4(0.0,0.0,0.0,1)
+frustum_prim.farColor = dvec4(1.0,1.0,1.0,1)
 frustum_prim.gpuInit(ctx)
 
 ###################################
@@ -91,7 +91,7 @@ frustum_prim.gpuInit(ctx)
 ###################################
 
 rtg = ctx.defaultRTG()
-rtb = rtg.buffer(0) #rtg's MRT buffer 0
+rtb = rtg.mrt_buffer(0) #rtg's MRT buffer 0
 ctx.resize(WIDTH,HEIGHT)
 capbuf = CaptureBuffer()
 

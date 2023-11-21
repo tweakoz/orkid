@@ -29,6 +29,9 @@ public:
   }
   void setSuperSample(int ss);
 
+  EBufferFormat _format;
+
+
 private:
   void gpuInit(lev2::Context* pTARG, int w, int h) final;
   void beginAssemble(CompositorDrawData& drawdata) final;

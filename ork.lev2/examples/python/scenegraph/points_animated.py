@@ -8,6 +8,7 @@
 ################################################################################
 
 import math, sys, os, random, numpy
+from numba import jit, prange
 from pathlib import Path
 from orkengine.core import *
 from orkengine.lev2 import *
@@ -80,7 +81,7 @@ class PointsPrimApp(object):
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     self.materials = set()
     setupUiCamera( app=self, eye = vec3(6,6,6), constrainZ=True, up=vec3(0,1,0))
-    self.NUMPOINTS = 65536
+    self.NUMPOINTS = 262144
 
   def updatePoints(self,context, abstime):
 
@@ -96,9 +97,9 @@ class PointsPrimApp(object):
     data_ptr = self.points_prim.lock(context) # return V12C4 array view
 
     data_ptr['color'] = numpy.ones(self.NUMPOINTS, dtype=numpy.uint32)*0x00004040
-    data_ptr['x'] = numpy.random.uniform(-1,1, self.NUMPOINTS).astype(numpy.float32)
+    data_ptr['x'] = numpy.random.uniform(-2,2, self.NUMPOINTS).astype(numpy.float32)
     data_ptr['y'] = numpy.random.uniform(-1,1, self.NUMPOINTS).astype(numpy.float32)
-    data_ptr['z'] = numpy.random.uniform(-1,1, self.NUMPOINTS).astype(numpy.float32)
+    data_ptr['z'] = numpy.random.uniform(-2,2, self.NUMPOINTS).astype(numpy.float32)
 
     def do_axis(named):
       S = numpy.sign(data_ptr[named])

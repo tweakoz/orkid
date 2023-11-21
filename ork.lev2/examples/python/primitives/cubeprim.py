@@ -14,6 +14,11 @@ from orkengine.core import *
 from orkengine.lev2 import *
 tokens = CrcStringProxy()
 
+l2exdir = (lev2exdir()/"python").normalized.as_string
+sys.path.append(l2exdir) # add parent dir to path
+
+from common.primitives import createCubePrim
+
 WIDTH = 2560
 HEIGHT = 1440
 
@@ -62,15 +67,8 @@ pipeline.param[par_tex] = texture
 
 ###################################
 
-cubeprim = primitives.CubePrimitive()
-cubeprim.size = 1
-cubeprim.topColor = vec4(0.5,1.0,0.5,1)
-cubeprim.bottomColor = vec4(0.5,0.0,0.5,1)
-cubeprim.leftColor = vec4(0.0,0.5,0.5,1)
-cubeprim.rightColor = vec4(1.0,0.5,0.5,1)
-cubeprim.frontColor = vec4(0.5,0.5,1.0,1)
-cubeprim.backColor = vec4(0.5,0.5,0.0,1)
-cubeprim.gpuInit(ctx)
+cubeprim = createCubePrim(ctx=ctx,size=1.0)
+#pipeline_cube = createPipeline( app = self, ctx = ctx, rendermodel="FORWARD_PBR", techname="std_mono_fwd" )
 
 ###################################
 # rtg setup

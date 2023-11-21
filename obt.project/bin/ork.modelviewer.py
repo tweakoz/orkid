@@ -27,7 +27,7 @@ parser.add_argument('--forwardpbr', action="store_true", help='use forward pbr r
 parser.add_argument("-m", "--model", type=str, required=False, default="data://tests/pbr1/pbr1", help='asset to load')
 parser.add_argument("-i", "--lightintensity", type=float, default=1.0, help='light intensity')
 parser.add_argument("-s", "--specularintensity", type=float, default=1.0, help='specular intensity')
-parser.add_argument("-a", "--ambientintensity", type=float, default=1.0, help='diffuse intensity')
+parser.add_argument("-a", "--ambientintensity", type=float, default=0.0, help='diffuse intensity')
 parser.add_argument("-d", "--diffuseintensity", type=float, default=1.0, help='diffuse intensity')
 parser.add_argument("-r", "--camdist", type=float, default=0.0, help='camera distance')
 parser.add_argument("-e", "--envmap", type=str, default="", help='environment map')
@@ -106,11 +106,17 @@ class SceneGraphApp(object):
     if envmap != "":
       params_dict["SkyboxTexPathStr"] = envmap
 
-    rendermodel = "DeferredPBR"
     if fwdpbr:
-      rendermodel = "ForwardPBR"
-    if vrmode:
-      rendermodel = "PBRVR"
+      if vrmode:
+        rendermodel = "FWDPBRVR"
+      else:
+        rendermodel = "ForwardPBR"
+    else:
+      if vrmode:
+        rendermodel = "PBRVR"
+      else:
+        rendermodel = "DeferredPBR"
+
 
     createSceneGraph( app=self,
                       params_dict=params_dict,

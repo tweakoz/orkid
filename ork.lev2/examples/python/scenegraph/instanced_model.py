@@ -63,7 +63,7 @@ class instance_set(object):
     ########################################
     incraxis = vec3(random.uniform(-1,1),
                     random.uniform(-1,1),
-                    random.uniform(-1,1)).normal()
+                    random.uniform(-1,1)).normalized()
     incrmagn = random.uniform(-0.05,0.05)
     ########################################
     Z = random.uniform(-2.5,-50)
@@ -94,18 +94,19 @@ class SceneGraphApp(object):
   def __init__(self):
     super().__init__()
     self.sceneparams = VarMap()
-    self.sceneparams.preset = "PBRVR" if vrmode else "PBR"
-    self.qtapp = OrkEzApp.create(self)
-    self.qtapp.setRefreshPolicy(RefreshFastest, 0)
+    self.sceneparams.preset = "PBRVR" if vrmode else "DeferredPBR"
+    self.ezapp = OrkEzApp.create(self)
+    self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     self.instancesets=[]
   ##############################################
   def onGpuInit(self,ctx):
+    self.scene = self.ezapp.createScene(self.sceneparams)
     layer = self.scene.createLayer("layer1")
     models = []
-    #models += [Model("data://tests/pbr1/pbr1")]
-    #models += [Model("data://tests/pbr_calib.gltf")]
-    #models += [Model("src://environ/objects/misc/headwalker.obj")]
-    models += [Model("src://environ/objects/misc/ref/uvsph.glb")]
+    #models += [XgmModel("data://tests/pbr1/pbr1")]
+    #models += [XgmModel("data://tests/pbr_calib.gltf")]
+    #models += [XgmModel("src://environ/objects/misc/headwalker.obj")]
+    models += [XgmModel("src://environ/objects/misc/ref/uvsph.glb")]
     ###################################
     for model in models:
       self.instancesets += [instance_set(model,numinstances,layer)]
@@ -127,4 +128,4 @@ class SceneGraphApp(object):
     self.scene.updateScene(self.cameralut) # update and enqueue all scenenodes
 ################################################
 app = SceneGraphApp()
-app.qtapp.mainThreadLoop()
+app.ezapp.mainThreadLoop()

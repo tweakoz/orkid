@@ -72,15 +72,12 @@ fragment_interface iface_f2uv {
 }
 ///////////////////////////////////////////////////////////////
 libblock lib_deferred //
-  : ub_light // 
   : ub_frg // 
   : lib_math // 
   : lib_envmapping // 
-  : lib_cellnoise // 
   : lib_brdf // 
   : lib_gbuf_decode // 
-  : lib_def //
-  : lib_mmnoise { //
+  : lib_def { //
 
 float LinearizeDepth(float depth) {
     float z = depth * 2.0 - 1.0; // Back to NDC 
@@ -103,6 +100,7 @@ fragment_shader ps_environment //
   WPosData wpd     = monoWPD();
   GBufData gbd     = decodeGBUF(wpd);
   vec3 wpos = gbd._wpos;
+  vec3 wnrm = normalize(gbd._wnrm);
 
   vec2 uv          = wpd._muv;
   vec3 view_epos0  = posatdepth(wpd, 0.0);
@@ -114,23 +112,41 @@ fragment_shader ps_environment //
 
   if (gbd._mode == 1) {
     //
+    vec3 dir = normalize(ProjectionEyePostion-wpos);
+    float d = dot(dir,wnrm);
+    if(d<0.0)
+      d = 0.0;
+
+    //
     vec4 projspace_point = ProjectionTextureMatrix*vec4(wpos,1);
     float projspace_depth = projspace_point.z;
     projspace_point.xyz = projspace_point.xyz / projspace_point.w;
     vec3 prj_uv = projspace_point.xyz * 0.5 + vec3(0.5);
+    vec3 pt = texture(ProjectionTexture, prj_uv.xy).xyz;
     //
-    float shadow_depth = textureLod(MapShadowDepth, prj_uv.xy,0).r;
-    shadow_depth = LinearizeDepth(shadow_depth);
-    float bias = 0.01;
-    shadow_depth -= bias;
-     
 
-    if( projspace_depth < shadow_depth ) {
-      vec3 pt = texture(ProjectionTexture, prj_uv.xy).xyz;
-      out_color = pt;
-    } else {
-      out_color = vec3(0);
+    // supersample shadow calculation
+    vec2 tex_size = textureSize(MapShadowDepth, 0);
+    vec2 inv_tex_size = vec2(1.0/tex_size.x,1.0/tex_size.y);
+    const int count = 16;
+    float bias = 0.0005;
+    float sum = 0;
+    //////////////////////////
+    int cd2 = count>>1;
+    for(int i=0;i<count;i++){
+      for(int j=0;j<count;j++){
+        vec2 uv = prj_uv.xy + vec2(i-cd2,j-cd2)*inv_tex_size*2;
+        float shadow_depth = textureLod(MapShadowDepth, uv,0).r;
+        shadow_depth = LinearizeDepth(shadow_depth);
+        sum += float((shadow_depth + bias) > projspace_depth);
+      }
     }
+    //////////////////////////
+    sum /= float(count*count);
+    d *= float(pow(sum,6));
+    out_color = pt*d*2; 
+    //out_color = vec3(d); 
+
     if(projspace_depth<NearFar.x ){
       out_color = vec3(1,1,0);
     }

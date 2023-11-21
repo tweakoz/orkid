@@ -55,7 +55,7 @@ struct SCRIMPL {
       _fxpColorMap    = _blit2screenmtl.param("ColorMap");
       _needsinit      = false;
       _msaadownsamplebuffer = std::make_shared<RtGroup>(ctx, 8, 8, MsaaSamples::MSAA_1X);
-      auto dsbuf        = _msaadownsamplebuffer->createRenderTarget(EBufferFormat::RGBA8);
+      auto dsbuf        = _msaadownsamplebuffer->createRenderTarget(_node->_format);
       dsbuf->_debugName = "MsaaDownsampleBuffer";
 
       _subpass_assemble = std::make_shared<RenderSubPass>();
@@ -132,6 +132,7 @@ struct SCRIMPL {
 ///////////////////////////////////////////////////////////////////////////////
 ScreenOutputCompositingNode::ScreenOutputCompositingNode()
     : _supersample(0) {
+  _format = EBufferFormat::RGBA8;
   _impl = std::make_shared<SCRIMPL>(this);
 }
 ScreenOutputCompositingNode::~ScreenOutputCompositingNode() {
