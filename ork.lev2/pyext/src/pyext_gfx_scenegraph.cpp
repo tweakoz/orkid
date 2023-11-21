@@ -92,12 +92,12 @@ void pyinit_scenegraph(py::module& module_lev2) {
               })
           .def(
               "setInstanceMatrix",                                             //
-              [](drawable_node_ptr_t node, int instance, fmtx4_ptr_t matrix) { //
+              [](drawable_node_ptr_t node, int instance, fmtx4 matrix) { //
                 auto drw     = node->_drawable;
                 auto instdrw = std::dynamic_pointer_cast<InstancedModelDrawable>(drw);
                 if (instdrw) {
                   auto instdata                      = instdrw->_instancedata;
-                  instdata->_worldmatrices[instance] = *matrix.get();
+                  instdata->_worldmatrices[instance] = matrix;
                 } else {
                   OrkAssert(false);
                 }
@@ -124,10 +124,9 @@ void pyinit_scenegraph(py::module& module_lev2) {
           .def(
               "setMatrix",
               [](lightnode_ptr_t lnode, //
-                 fmtx4_ptr_t mtx) {     //
-                auto mtx_copy          = *mtx.get();
+                 fmtx4 mtx) {     //
                 auto light             = lnode->_light;
-                light->_xformgenerator = [=]() -> fmtx4 { return mtx_copy; };
+                light->_xformgenerator = [=]() -> fmtx4 { return mtx; };
               });
   type_codec->registerStdCodec<lightnode_ptr_t>(lightnode_type);
   /////////////////////////////////////////////////////////////////////////////////

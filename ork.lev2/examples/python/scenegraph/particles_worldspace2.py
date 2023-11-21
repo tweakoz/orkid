@@ -137,7 +137,7 @@ class ParticlesApp(object):
     self.prev_isect = self.prev_isect*0.9999+self.isect*0.0001
 
     Z_DIR = (self.isect - self.prev_isect)
-    if Z_DIR.length() < 0.001:
+    if Z_DIR.length < 0.001:
       Z_DIR = vec3(0,0,1)
     else:
       Z_DIR = Z_DIR.normalized()
@@ -175,7 +175,7 @@ class ParticlesApp(object):
 
   ##############################################
 
-  def onGpuUpdate(self):
+  def onGpuUpdate(self,context):
     phA = self._gradient_phase_A
     phB = self._gradient_phase_B
     RED0 = 0.5+math.sin(phA)*0.5
@@ -225,4 +225,4 @@ class ParticlesApp(object):
 ###############################################################################
 
 app_top = ParticlesApp()
-app_top.ezapp.mainThreadLoop( on_iter=lambda: app_top.onGpuUpdate())
+app_top.ezapp.mainThreadLoop()
