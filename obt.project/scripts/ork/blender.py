@@ -1,8 +1,12 @@
 #
-from obt import path
+from obt import path, host
 
-blender_dir = path.Path("/opt/blender401")
-executable = blender_dir/"blender"
+if host.IsLinux:
+  blender_dir = path.Path("/opt/blender401")
+  executable = blender_dir/"blender"
+else:
+  blender_dir = path.Path("/Applications/Blender.app/Contents/MacOS")
+  executable = blender_dir/"Blender"
 
 def export_character_mesh(blend_path, glb_path):
   import bpy

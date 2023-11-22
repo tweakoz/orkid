@@ -276,7 +276,6 @@ void vertex::center(const std::vector<vertex_ptr_t>& verts) {
 uint64_t vertex::hash(double quantization) const {
   boost::Crc64 crc64;
   crc64.init();
-  quantization = 1000.0;
   crc64.accumulateItem(miNumWeights);
   crc64.accumulateItem(miNumColors);
   crc64.accumulateItem(miNumUvs);
