@@ -13,8 +13,12 @@ from obt.deco import Deco
 deco = Deco()
 coreappinit() # setup filesystem
 ################################################################################
-frustum = frustum(mtx4.lookAt(vec3(0,0,-1),vec3(0,0,0),vec3(0,1,0)),
-                  mtx4.perspective(45,1,0.1,3))
+vmatrix = mtx4.lookAt(vec3(0,0,-1),vec3(0,0,0),vec3(0,1,0))
+pmatrix = mtx4.perspective(45,1,0.1,3)
+
+frustum = dfrustum(fmtx4_to_dmtx4(vmatrix),
+                   fmtx4_to_dmtx4(pmatrix))
+
 ################################################################################
 qsubmesh = meshutil.SubMesh()
 qsubmesh.addQuad(frustum.nearCorner(3), # near
@@ -110,19 +114,19 @@ print("box.submesh: isconvexhull: %s" % submesh.isConvexHull)
 print("###############################")
 print("# vtxpool")
 print("###############################")
-print(submesh.vertexpool)
-ordered_verts = submesh.vertexpool.orderedVertices
-print(len(ordered_verts))
-print(ordered_verts[0])
-print(ordered_verts[0].position)
-print(ordered_verts[0].normal)
-print(ordered_verts[0].uvc(0).uv)
-print(ordered_verts[0].uvc(0).binormal)
-print(ordered_verts[0].uvc(0).tangent)
-print(ordered_verts[0].color(0))
-print("###############################")
-for item in ordered_verts:
-  print( "vtx<%02d> pos<%+g %+g %+g> nrm<%+g %+g %+g>" % (item.poolindex, item.position.x, item.position.y, item.position.z, item.normal.x, item.normal.y, item.normal.z ))
+print(submesh.vertices)
+#ordered_verts = submesh.vertexpool.orderedVertices
+#print(len(ordered_verts))
+#print(ordered_verts[0])
+#print(ordered_verts[0].position)
+#print(ordered_verts[0].normal)
+#print(ordered_verts[0].uvc(0).uv)
+#print(ordered_verts[0].uvc(0).binormal)
+#print(ordered_verts[0].uvc(0).tangent)
+#print(ordered_verts[0].color(0))
+#print("###############################")
+#for item in ordered_verts:
+#  print( "vtx<%02d> pos<%+g %+g %+g> nrm<%+g %+g %+g>" % (item.poolindex, item.position.x, item.position.y, item.position.z, item.normal.x, item.normal.y, item.normal.z ))
 ################################################################################
 print("###############################")
 print("# polys")
