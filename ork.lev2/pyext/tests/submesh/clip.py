@@ -4,7 +4,7 @@
 # Distributed under the MIT License
 # see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ################################################################################
-import ork.path
+import obt.path
 import math, random, argparse, sys
 from orkengine.core import *
 from orkengine.lev2 import *
@@ -40,13 +40,13 @@ right2  = dplane(-0.558692,0,0.829375,-0)
 top2  = dplane(0, 0.58111,0.813825,-9.53674e-07)
 bottom2  = dplane(0,-0.58111,0.813825,-9.31323e-10)
 ################################################################################
-a = submesh1.clippedWithPlane(plane=near2)["front"]
-b = a.clippedWithPlane(plane=far2)["front"]
-c = b.clippedWithPlane(plane=left2)["front"]
-d = c.clippedWithPlane(plane=right2)["front"]
-e = d.clippedWithPlane(plane=top2)["front"]
-f = e.clippedWithPlane(plane=bottom2)["front"]
-
+a = submesh1.clippedWithPlane(plane=near2)
+b = a.clippedWithPlane(plane=far2)
+c = b.clippedWithPlane(plane=left2)
+d = c.clippedWithPlane(plane=right2)
+#e = d.clippedWithPlane(plane=top2)
+#f = e.clippedWithPlane(plane=bottom2)
+print(d)
 
 #clip poly num verts<4>
 

@@ -296,7 +296,7 @@ uint64_t vertex::hash(double quantization) const {
     crc64.accumulateItem(UV.mMapTangent.hash(quantization));
     crc64.accumulateItem(UV.mMapTexCoord.hash(quantization));
   }
-  uint64_t pos_hash = mPos.hash(quantization*1000);
+  uint64_t pos_hash = mPos.hash(quantization);
   uint64_t nrm_hash = mNrm.hash(quantization);
   crc64.accumulateItem(pos_hash);
   crc64.accumulateItem(nrm_hash);
