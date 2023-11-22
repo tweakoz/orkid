@@ -12,6 +12,8 @@ import obt.path
 
 def setup():
 
+  this_dir = obt.path.directoryOfInvokingModule(__file__)
+
   ##############################################
   # compute paths
   ##############################################
@@ -37,6 +39,8 @@ def setup():
   ##############################################
 
   obt.env.prepend("PATH",orkbin_dir)
+
+  obt.env.append("PYTHONPATH",this_dir)
 
   ##############################################
   # add search paths
