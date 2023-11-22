@@ -113,74 +113,74 @@ fragment_shader ps_blit : iface_fmt {
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_downsample2x2 : iface_fmt {
-  const float kscale = 1.0/4.0;
-  vec2 uvb = gl_FragCoord.xy*2-vec2(0.5,0.5);
-  vec3 outc = vec3(0);
-  for(int iy=0; iy<2; iy++){
-    for(int ix=0; ix<2; ix++){
-    vec2 uvx = uvb+vec2(ix,iy);
-    vec3 texc = texelFetch(ColorMap, ivec2(uvx), 0).xyz;
-    outc += texc;
+  const float kscale = 1.0 / 4.0; 
+  vec2 uvScale = vec2(textureSize(ColorMap, 0)) / 2.0; 
+  vec2 baseUV = (gl_FragCoord.xy - 0.5) / uvScale; 
+  vec3 outc = vec3(0.0); 
+  for(int iy = 0; iy < 2; iy++) {
+    for(int ix = 0; ix < 2; ix++) {
+      vec2 offset = vec2(ix, iy) / uvScale; 
+      vec3 texc = texture(ColorMap, baseUV + offset*0.5).xyz; 
+      outc += texc; 
     }
   }
-  out_clr = vec4(outc*kscale,1);
+  out_clr = vec4(outc * kscale, 1.0); 
 }
 fragment_shader ps_downsample3x3 : iface_fmt {
-  const float kscale = 1.0/9.0;
-  vec2 uvb = gl_FragCoord.xy*3-vec2(0.5,0.5);
-  vec3 outc = vec3(0);
-  for(int iy=0; iy<3; iy++){
-    for(int ix=0; ix<3; ix++){
-    vec2 uvx = uvb+vec2(ix,iy);
-    vec3 texc = texelFetch(ColorMap, ivec2(uvx), 0).xyz;
-    outc += texc;
+  const float kscale = 1.0 / 9.0; 
+  vec2 uvScale = vec2(textureSize(ColorMap, 0)) / 3.0; 
+  vec2 baseUV = (gl_FragCoord.xy - 0.5) / uvScale; 
+  vec3 outc = vec3(0.0); 
+  for(int iy = 0; iy < 3; iy++) {
+    for(int ix = 0; ix < 3; ix++) {
+      vec2 offset = vec2(ix, iy) / uvScale; 
+      vec3 texc = texture(ColorMap, baseUV + offset*0.5).xyz; 
+      outc += texc; 
     }
   }
-  out_clr = vec4(outc*kscale,1);
+  out_clr = vec4(outc * kscale, 1.0); 
 }
 fragment_shader ps_downsample4x4 : iface_fmt {
-  const float kscale = 1.0/16.0;
-  vec2 uvb = gl_FragCoord.xy*4-vec2(0.5,0.5);
-  vec3 outc = vec3(0);
-  for(int iy=0; iy<4; iy++){
-    for(int ix=0; ix<4; ix++){
-    vec2 uvx = uvb+vec2(ix,iy);
-    vec3 texc = texelFetch(ColorMap, ivec2(uvx), 0).xyz;
-    outc += texc;
+  const float kscale = 1.0 / 16.0; 
+  vec2 uvScale = vec2(textureSize(ColorMap, 0)) / 4.0; 
+  vec2 baseUV = (gl_FragCoord.xy - 0.5) / uvScale; 
+  vec3 outc = vec3(0.0); 
+  for(int iy = 0; iy < 4; iy++) {
+    for(int ix = 0; ix < 4; ix++) {
+      vec2 offset = vec2(ix, iy) / uvScale; 
+      vec3 texc = texture(ColorMap, baseUV + offset*0.5).xyz; 
+      outc += texc; 
     }
   }
-  out_clr = vec4(outc*kscale,1);
+  out_clr = vec4(outc * kscale, 1.0); 
 }
 fragment_shader ps_downsample5x5 : iface_fmt {
-  const float kscale = 1.0/25.0;
-  vec2 uvb = gl_FragCoord.xy*5+vec2(2,2);
-  vec3 outc = vec3(0);
-  float tot_w = 0.0;
-  for(int iy=-2; iy<=2; iy++){
-    for(int ix=-2; ix<=2; ix++){
-    vec2 uvx = uvb+vec2(ix,iy);
-    float w_x = abs(ix);
-    float w_y = abs(iy);
-    float w = 1; //w_x*w_y;
-    tot_w += w;
-    vec3 texc = texelFetch(ColorMap, ivec2(uvx), 0).xyz*w;
-    outc += texc;
+  const float kscale = 1.0 / 25.0; 
+  vec2 uvScale = vec2(textureSize(ColorMap, 0)) / 5.0; 
+  vec2 baseUV = (gl_FragCoord.xy - 0.5) / uvScale; 
+  vec3 outc = vec3(0.0); 
+  for(int iy = 0; iy < 5; iy++) {
+    for(int ix = 0; ix < 5; ix++) {
+      vec2 offset = vec2(ix, iy) / uvScale; 
+      vec3 texc = texture(ColorMap, baseUV + offset*0.5).xyz; 
+      outc += texc; 
     }
   }
-  out_clr = vec4(outc/tot_w,1);
+  out_clr = vec4(outc * kscale, 1.0); 
 }
 fragment_shader ps_downsample6x6 : iface_fmt {
-  const float kscale = 1.0/36.0;
-  vec2 uvb = gl_FragCoord.xy*6-vec2(0.5,0.5);
-  vec3 outc = vec3(0);
-  for(int iy=0; iy<6; iy++){
-    for(int ix=0; ix<6; ix++){
-    vec2 uvx = uvb+vec2(ix,iy);
-    vec3 texc = texelFetch(ColorMap, ivec2(uvx), 0).xyz;
-    outc += texc;
+  const float kscale = 1.0 / 36.0; 
+  vec2 uvScale = vec2(textureSize(ColorMap, 0))/6.0; 
+  vec2 baseUV = (gl_FragCoord.xy - 0.5) / uvScale; 
+  vec3 outc = vec3(0.0); 
+  for(int iy = 0; iy < 5; iy++) {
+    for(int ix = 0; ix < 5; ix++) {
+      vec2 offset = vec2(ix, iy) / uvScale; 
+      vec3 texc = texture(ColorMap, baseUV + offset*0.5).xyz; 
+      outc += texc; 
     }
   }
-  out_clr = vec4(outc*kscale,1);
+  out_clr = vec4(outc * kscale, 1.0); 
 }
 fragment_shader ps_downsample7x7 : iface_fmt {
   vec2 uvb = gl_FragCoord.xy*7+vec2(3,3);

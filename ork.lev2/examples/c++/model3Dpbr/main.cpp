@@ -66,7 +66,7 @@ struct Instance {
 
       fi = float(rand() % 255) / 255.0;
 
-      _target.z = -2.5 + fi * 10.0f;
+      _target.z = -10.0 + fi * 20.0f;
       //_target *= 10.0f;
 
       fvec3 axis;
@@ -120,6 +120,8 @@ struct GpuResources {
 
     _sg_params                                         = std::make_shared<varmap::VarMap>();
 
+    _sg_params->makeValueForKey<float>("SkyboxIntensity") = 2.0f;
+
     if(use_vr){
       _sg_params->makeValueForKey<std::string>("preset") = use_forward ? "FWDPBRVR" : "PBRVR" ;
     }
@@ -138,7 +140,7 @@ struct GpuResources {
 
     //ctx->debugPushGroup("main.onGpuInit");
 
-    _spikee_modelasset = asset::AssetManager<XgmModelAsset>::load("data://tests/pbr1/pbr1");
+    _spikee_modelasset = asset::AssetManager<XgmModelAsset>::load("data://tests/pbr1/pbr1.glb");
 
     _spikee_instanced_drawable->bindModel(_spikee_modelasset->getSharedModel());
     _spikee_instanced_drawable->_name = "spikee";
@@ -165,7 +167,7 @@ struct GpuResources {
     _lights_drawable->bindModel(_light_modelasset->getSharedModel());
     _lights_drawable->_name = "lights";
 
-    constexpr size_t NUMLIGHTS = 4;
+    constexpr size_t NUMLIGHTS = 32;
     _lights_drawable->resize(NUMLIGHTS);
     _lights_drawable->gpuInit(ctx);
 
@@ -290,7 +292,7 @@ int main(int argc, char** argv, char** envp) {
     // compute camera data
     ///////////////////////////////////////
     float phase    = abstime * PI2 * 0.01f;
-    float distance = 10.0f;
+    float distance = 5.0f;
     auto eye       = fvec3(sinf(phase), 1.0f, -cosf(phase)) * distance;
     fvec3 tgt(0, 0, 0);
     fvec3 up(0, 1, 0);

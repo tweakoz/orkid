@@ -461,7 +461,10 @@ void SubMeshClipper::procEdges(merged_poly_const_ptr_t input_poly) { //
       }
     } // did we cross plane ?
   }   // for (int iva = 0; iva < inuminverts; iva++) {
-  OrkAssert(_b2f_count == _f2b_count);
+  if(_b2f_count!=_f2b_count){
+    printf("b2f<%d> f2b<%d>\n",_b2f_count,_f2b_count);
+    OrkAssert(false);
+  }
   if (_F2B_EDGE != nullptr) {
     _inp_poly_varmap[input_poly].makeValueForKey<int>("f2b_index") = _f2b_index;
   }
