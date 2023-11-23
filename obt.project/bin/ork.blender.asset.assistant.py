@@ -61,6 +61,12 @@ class Edit:
 
 #############################################################################
 
+class OutputData:
+   def __init__(self, index, text, input_path):
+      self.input_path = input_path
+      self.index = index
+      self.text = text
+
 class AssetWidget(QWidget):
 
    ##########################################
@@ -104,17 +110,12 @@ class AssetWidget(QWidget):
      ########################################
 
      self.assetlist = QPlainTextEdit()
-     #selfhilighter = hilite.Highlighter(self.assetlist.document())
      qdss = "QWidget{background-color: rgb(64,64,128); color: rgb(160,160,192);}"
      qdss += "QDockWidget::title {background-color: rgb(32,32,48); color: rgb(255,0,0);}"
      self.assetlist.setStyleSheet(qdss)
      v1_layout.addWidget(self.assetlist)
 
-     #self.assetlist.setMaximumSize(800,4096)
-
      self.updateAssetList()
-     #spacer = QSpacerItem(20, 100, QSizePolicy.Minimum, QSizePolicy.Expanding)
-     #v1_layout.addItem(spacer)
 
      ########################################
      # go button 
@@ -126,20 +127,15 @@ class AssetWidget(QWidget):
      gobutton.pressed.connect(self.goPushed)
      self.gobutton = gobutton
 
-
-     #spacer = QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding)
-     #v1_layout.addItem(spacer)
-
      ##########################
      # output console
      ##########################
 
      self.output_console = QPlainTextEdit()
-     hilighter = hilite.Highlighter(self.output_console.document())
+     self.output_hilighter = hilite.Highlighter(self.output_console.document())
      qdss = "QWidget{background-color: rgb(32,32,64); color: rgb(255,255,255);}"
      self.output_console.setStyleSheet(qdss)
      v2_layout.addWidget(self.output_console)
-
      ##########################
      top_layout.addLayout(v1_layout)
      top_layout.addLayout(v2_layout)
@@ -191,8 +187,9 @@ class AssetWidget(QWidget):
       self.output_texts = dict()
 
       class SubProc:
-         def __init__(self,asswidget, index, cmdlist):
+         def __init__(self,asswidget, index, cmdlist, item_path):
             #############################
+            self.index = index
             self.asswidget = asswidget
             self.stdout = ""
             self.stderr = ""
@@ -205,11 +202,19 @@ class AssetWidget(QWidget):
             def finished(text):
                # serialize output to text edit
                # (serially so other processes are not interleaved in the text edit)
-               asswidget.output_texts[index] = self.stdout+self.stderr
+
+               outdata = OutputData(self.index, self.stdout+self.stderr,item_path)
+               asswidget.output_texts[index] = outdata
 
                merge_output_text = ""
                for key in sorted(asswidget.output_texts.keys()):
-                  merge_output_text += asswidget.output_texts[key]
+                  outdata = asswidget.output_texts[key]
+                  merge_output_text += "\n"
+                  merge_output_text += "#####################################################\n"
+                  merge_output_text += "##  %d  %s\n" % (outdata.index,outdata.input_path)
+                  merge_output_text += "#####################################################\n"
+                  merge_output_text += "\n"
+                  merge_output_text += outdata.text
 
                self.asswidget.output_console.setPlainText(merge_output_text)
                self.asswidget.update()
@@ -243,7 +248,7 @@ class AssetWidget(QWidget):
       self.running_count = 0
       for item in self.assetlist_list:
          cmdlist = [orkbin, "-i", item, "-o", path.temp()/"test.glb"]
-         sp = SubProc(self,index,cmdlist)
+         sp = SubProc(self,index,cmdlist,item)
          index += 1
 
 #############################################################################

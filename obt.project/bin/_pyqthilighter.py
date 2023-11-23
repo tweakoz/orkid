@@ -26,9 +26,10 @@ STYLES = {
     'string2': format('darkMagenta'),
     'comment': format('#7fff7f', 'italic'),
     'numbers': format('#cfcfff'),
-    'path': format('#ffff00'),
+    'path': format('#ffffcf'),
     'orkurl': format("#cfcf7f"),
     'error': format('#ff3f1f'),
+    'warning': format('#ffcf00'),
     'extension': format('#ffffff'),
 }
 
@@ -53,6 +54,9 @@ class Highlighter (QSyntaxHighlighter):
             (r'[\w]*://[\w,/]*.\w*', 0, STYLES["orkurl"]),
             (r'ERROR:[^\n]*',0,STYLES["error"]),
             (r'FileError\([^\n]*',0,STYLES["error"]),
+            # any line with error or Error at any position
+            (r'Error[^\n]*',0,STYLES["error"]),
+            (r'Warning[^\n]*',0,STYLES["warning"]),
             # Double-quoted string, possibly containing escape sequences
             (r'"[^"\\]*(\\.[^"\\]*)*"', 0, STYLES['string']),
             # Single-quoted string, possibly containing escape sequences
