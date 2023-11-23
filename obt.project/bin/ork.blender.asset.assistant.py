@@ -72,7 +72,7 @@ class Edit:
 
    def onChangedExternally(self,text):
       self.value = text
-      self.edit.setText(text)
+      self.edit.setText(str(text))
 
    def addToLayout(self,l):
       l.addLayout(self.layout)
@@ -88,6 +88,9 @@ class AssetWidget(QWidget):
      cfg = Config(name,self.srced.value,self.filter_ed.value)
      self.configs[name] = cfg
      self.updateConfigList()
+     settings.setValue("configs",self.configs)
+     self.configlist.setCurrentText(name)
+     self.selectConfig()
 
    def minusConfig(self):
      name = self.configname.text()
@@ -102,15 +105,21 @@ class AssetWidget(QWidget):
          closest_key = keys[index+1]
        del self.configs[name]
      self.updateConfigList()
+     settings.setValue("configs",self.configs)
 
    def selectConfig(self):
      name = self.configlist.currentText()
-     cfg = self.configs[name]
-     self.configname.setText(cfg.name)
-     self.srced.onChangedExternally(cfg.base_path)
-     self.filter_ed.onChangedExternally(cfg.filter)
-     self.updateAssetList()
-
+     if name in self.configs.keys():
+       cfg = self.configs[name]
+       self.configname.setText(cfg.name)
+       self.srced.onChangedExternally(cfg.base_path)
+       self.filter_ed.onChangedExternally(cfg.filter)
+       self.updateAssetList()
+     else:
+       self.configname.setText("new-config")
+       self.srced.onChangedExternally(this_dir)
+       self.filter_ed.onChangedExternally("*")
+       self.updateAssetList()
    ##########################################
 
    def __init__(self,mainwin):
@@ -144,12 +153,16 @@ class AssetWidget(QWidget):
 
      cfg_plusbutton = QPushButton("+")
      cfg_minusbutton = QPushButton("-")
-     cfg_plusbutton.setStyleSheet(button_style)
-     cfg_minusbutton.setStyleSheet(button_style)
+     cfg_plusbutton.setStyleSheet("QWidget{background-color: rgb(0,0,0); color: rgb(255,255,255);}")
+     cfg_minusbutton.setStyleSheet("QWidget{background-color: rgb(0,0,0); color: rgb(255,255,255);}")
+     cfg_plusbutton.setMinimumSize(24,28)
+     cfg_minusbutton.setMinimumSize(24,28)
 
 
      self.configname = QLineEdit("default")
-     self.configname.setStyleSheet(editstylesheet)
+     self.configname.setStyleSheet("QWidget{background-color: rgb(0,0,32); color: rgb(255,255,0);}")
+     #self.configname.setStyleSheet(editstylesheet)
+     self.configname.setMinimumSize(64,28)
      cfg_layout.addWidget(self.configname)
      cfg_layout.addWidget(cfg_plusbutton)
      cfg_layout.addWidget(cfg_minusbutton)
@@ -157,7 +170,7 @@ class AssetWidget(QWidget):
      v1_layout.addLayout(cfg_layout)
 
      self.configlist = QComboBox()
-     self.configlist.setStyleSheet(editstylesheet)
+     self.configlist.setStyleSheet("QWidget{background-color: rgb(0,0,0); color: rgb(255,255,255);}")
      v1_layout.addWidget(self.configlist)
 
      ##########################################
@@ -167,7 +180,10 @@ class AssetWidget(QWidget):
      sbutton = QPushButton()
      sbutton.setIcon(file_icon)
      sbutton.setStyleSheet(button_style)
+     sbutton.setMinimumSize(48,24)
+     sbutton.setStyleSheet("QWidget{background-color: rgb(0,0,0); color: rgb(255,255,255);}")
      self.srced = Edit("Source Directory")
+     self.srced.edit.setMinimumSize(64,28)
      slay2 = QHBoxLayout()
      slay2.addLayout(self.srced.layout)
      self.srced.edit.setStyleSheet(bgcolor(64,32,64)+fgcolor(255,255,0))
@@ -179,6 +195,8 @@ class AssetWidget(QWidget):
        pattern = settings.value("pattern")
 
      self.filter_ed = Edit("filter",pattern)
+     self.filter_ed.edit.setMinimumSize(64,28)
+     self.filter_ed.edit.setStyleSheet("QWidget{background-color: rgb(0,0,32); color: rgb(255,255,0);}")
      v1_layout.addLayout(self.filter_ed.layout)
 
      ########################################
@@ -187,6 +205,7 @@ class AssetWidget(QWidget):
 
      self.assetlist = QPlainTextEdit()
      self.assetlist.setStyleSheet(editstylesheet)
+     self.assetlist.setReadOnly(True)
      v1_layout.addWidget(self.assetlist)
 
      ########################################
@@ -203,6 +222,7 @@ class AssetWidget(QWidget):
      ##########################
 
      self.output_console = QPlainTextEdit()
+     self.output_console.setReadOnly(True)
      self.output_hilighter = hilite.Highlighter(self.output_console.document())
      qdss = "QWidget{background-color: rgb(32,32,64); color: rgb(255,255,255);}"
      self.output_console.setStyleSheet(qdss)
