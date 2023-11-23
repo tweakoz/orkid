@@ -200,6 +200,7 @@ class AssetWidget(QWidget):
                bytes = self.process.readAllStandardError()
                self.stderr += str(bytes, encoding='ascii')
             def finished(text):
+               exitcode = self.process.exitCode()
                # serialize output to text edit
                # (serially so other processes are not interleaved in the text edit)
 
@@ -215,6 +216,7 @@ class AssetWidget(QWidget):
                   merge_output_text += "#####################################################\n"
                   merge_output_text += "\n"
                   merge_output_text += outdata.text
+                  merge_output_text += "\n## exit code: %d\n" % exitcode
 
                self.asswidget.output_console.setPlainText(merge_output_text)
                self.asswidget.update()
