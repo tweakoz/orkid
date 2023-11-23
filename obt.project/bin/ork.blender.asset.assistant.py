@@ -13,6 +13,22 @@ from PyQt5.QtGui import QPalette, QPixmap
 from pathlib import Path
 import _pyqthilighter as hilite
 
+#############################################################################
+
+class OutputData:
+   def __init__(self, index, text, input_path):
+      self.input_path = input_path
+      self.index = index
+      self.text = text
+
+class Config:
+   def __init__(self, name, base_path, filter):
+      self.name = name
+      self.base_path = base_path
+      self.filter = filter
+
+#############################################################################
+
 settings = QSettings("TweakoZ", "OrkidTool");
 settings.beginGroup("App");
 settings.endGroup();
@@ -24,7 +40,9 @@ if settings.contains("src_dir"):
    try_srcdir = settings.value("src_dir")
    print(try_srcdir)
    srcdir = try_srcdir
+
 #############################################################################
+
 def bgcolor(r,g,b):
    return "background-color: rgb(%g,%g,%g); " % (r,g,b)
 def fgcolor(r,g,b):
@@ -61,17 +79,41 @@ class Edit:
 
 #############################################################################
 
-class OutputData:
-   def __init__(self, index, text, input_path):
-      self.input_path = input_path
-      self.index = index
-      self.text = text
-
 class AssetWidget(QWidget):
+
+   def plusConfig(self):
+     name = self.configname.text()
+     if name in self.configs.keys():
+       return
+     cfg = Config(name,self.srced.value,self.filter_ed.value)
+     self.configs[name] = cfg
+     self.updateConfigList()
+
+   def minusConfig(self):
+     name = self.configname.text()
+     if name in self.configs.keys():
+       # first cache closest key to the one we are deleteing...
+       keys = list(self.configs.keys())
+       keys.sort()
+       index = keys.index(name)
+       if index > 0:
+         closest_key = keys[index-1]
+       else:
+         closest_key = keys[index+1]
+       del self.configs[name]
+     self.updateConfigList()
+
+   def selectConfig(self):
+     name = self.configlist.currentText()
+     cfg = self.configs[name]
+     self.configname.setText(cfg.name)
+     self.srced.onChangedExternally(cfg.base_path)
+     self.filter_ed.onChangedExternally(cfg.filter)
+     self.updateAssetList()
 
    ##########################################
 
-    def __init__(self,mainwin):
+   def __init__(self,mainwin):
      super(AssetWidget, self).__init__()
      self.mainwin = mainwin
      self.output_texts = dict()
@@ -79,18 +121,53 @@ class AssetWidget(QWidget):
      v1_layout = QVBoxLayout()
      v2_layout = QVBoxLayout()
 
+     style = QStyleFactory.create("Macintosh")
+     file_icon = style.standardIcon(QStyle.SP_FileIcon)
+     button_style = "background-color: rgb(0, 0, 64); border-radius: 2; "
+     editstylesheet = "QWidget{background-color: rgb(64,64,128); color: rgb(160,160,192);}"
+     editstylesheet += "QDockWidget::title {background-color: rgb(32,32,48); color: rgb(255,0,0);}"
+
+     ########################################
+
+     if settings.contains("configs"):
+       self.configs = settings.value("configs") 
+     else:
+       self.configs = dict()
+       default_config = Config("default",this_dir,"*")
+       self.configs["default"] = default_config
+
+     ########################################
+     # configuration list
+     ########################################
+
+     cfg_layout = QHBoxLayout()
+
+     cfg_plusbutton = QPushButton("+")
+     cfg_minusbutton = QPushButton("-")
+     cfg_plusbutton.setStyleSheet(button_style)
+     cfg_minusbutton.setStyleSheet(button_style)
+
+
+     self.configname = QLineEdit("default")
+     self.configname.setStyleSheet(editstylesheet)
+     cfg_layout.addWidget(self.configname)
+     cfg_layout.addWidget(cfg_plusbutton)
+     cfg_layout.addWidget(cfg_minusbutton)
+
+     v1_layout.addLayout(cfg_layout)
+
+     self.configlist = QComboBox()
+     self.configlist.setStyleSheet(editstylesheet)
+     v1_layout.addWidget(self.configlist)
+
      ##########################################
      # source directory 
      ##########################################
 
      sbutton = QPushButton()
-     style = QStyleFactory.create("Macintosh")
-     icon = style.standardIcon(QStyle.SP_FileIcon)
-     sbutton.setIcon(icon)
-     sbutton.setStyleSheet("background-color: rgb(0, 0, 64); border-radius: 2; ")
-     sbutton.pressed.connect(self.selectSourceDirectory)
+     sbutton.setIcon(file_icon)
+     sbutton.setStyleSheet(button_style)
      self.srced = Edit("Source Directory")
-     self.srced.onChangedExternally(str(srcdir))
      slay2 = QHBoxLayout()
      slay2.addLayout(self.srced.layout)
      self.srced.edit.setStyleSheet(bgcolor(64,32,64)+fgcolor(255,255,0))
@@ -103,19 +180,14 @@ class AssetWidget(QWidget):
 
      self.filter_ed = Edit("filter",pattern)
      v1_layout.addLayout(self.filter_ed.layout)
-     self.filter_ed.edit.textChanged.connect(self.updateAssetList)
 
      ########################################
      # asset list
      ########################################
 
      self.assetlist = QPlainTextEdit()
-     qdss = "QWidget{background-color: rgb(64,64,128); color: rgb(160,160,192);}"
-     qdss += "QDockWidget::title {background-color: rgb(32,32,48); color: rgb(255,0,0);}"
-     self.assetlist.setStyleSheet(qdss)
+     self.assetlist.setStyleSheet(editstylesheet)
      v1_layout.addWidget(self.assetlist)
-
-     self.updateAssetList()
 
      ########################################
      # go button 
@@ -124,7 +196,6 @@ class AssetWidget(QWidget):
      gobutton = QPushButton("Go")
      gobutton.setStyleSheet(bgcolor(32,32,128)+fgcolor(255,255,128))
      v1_layout.addWidget(gobutton)
-     gobutton.pressed.connect(self.goPushed)
      self.gobutton = gobutton
 
      ##########################
@@ -141,9 +212,28 @@ class AssetWidget(QWidget):
      top_layout.addLayout(v2_layout)
      self.setLayout(top_layout)
 
+     ##########################
+     # connect signal slots
+     ##########################
+
+     self.updateConfigList()
+
+     self.srced.onChangedExternally(str(srcdir))
+     self.filter_ed.edit.textChanged.connect(self.updateAssetList)
+     sbutton.pressed.connect(self.selectSourceDirectory)
+     cfg_plusbutton.pressed.connect(self.plusConfig)
+     cfg_minusbutton.pressed.connect(self.minusConfig)  
+     gobutton.pressed.connect(self.goPushed)
+     self.configlist.currentIndexChanged.connect(self.selectConfig)
+
+     self.updateAssetList()
+
+     ##########################
+
+
    ##########################################
 
-    def selectSourceDirectory(self):
+   def selectSourceDirectory(self):
       src = QFileDialog.getExistingDirectory(self,
         "Select Asset Source Directory",
         srcdir,
@@ -157,7 +247,7 @@ class AssetWidget(QWidget):
 
    ##########################################
 
-    def updateAssetList(self):
+   def updateAssetList(self):
       srcpath = self.srced.value
       a = pathtools.recursive_patglob(srcpath,"*.blend")
       pattern = self.filter_ed.value
@@ -175,7 +265,14 @@ class AssetWidget(QWidget):
 
    ##########################################
 
-    def goPushed(self):
+   def updateConfigList(self):
+      self.configlist.clear()
+      for key in self.configs.keys():
+        self.configlist.addItem(key)
+
+   ##########################################
+
+   def goPushed(self):
       srcpath = self.srced.value
       os.chdir(srcpath)
 
@@ -201,6 +298,7 @@ class AssetWidget(QWidget):
                self.stderr += str(bytes, encoding='ascii')
             def finished(text):
                exitcode = self.process.exitCode()
+               # when process finished, async update QT GUI
                # serialize output to text edit
                # (serially so other processes are not interleaved in the text edit)
 
@@ -236,7 +334,6 @@ class AssetWidget(QWidget):
             cmdstr = " ".join(convlist)
             self.process.start(cmdstr)
             asswidget.running_count += 1
-            # when process finished, async update QT GUI
 
 
       #############################
@@ -275,7 +372,7 @@ if __name__ == '__main__':
 
     mainwin = AssetWindow()
 
-    mainwin.resize(960,240)
+    mainwin.resize(1600,960)
     mainwin.setWindowTitle("Orkid Asset Assistant \N{COPYRIGHT SIGN} 2017 - TweakoZ")
 
     appss = "QWidget {background-color: rgb(64,64,96); color: rgb(255,255,255);}"
