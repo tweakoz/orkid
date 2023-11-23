@@ -8,24 +8,16 @@ from obt import path, pathtools, command
 from PyQt5.QtCore import QSize, Qt, QProcess, QSettings
 from PyQt5.QtWidgets import QApplication, QVBoxLayout, QHBoxLayout, QLabel, QWidget, QComboBox, QCheckBox
 from PyQt5.QtWidgets import QLineEdit, QTextEdit, QPushButton, QFileDialog, QStyle, QStyleFactory
-from PyQt5.QtWidgets import QMainWindow, QDockWidget, QPlainTextEdit
+from PyQt5.QtWidgets import QMainWindow, QDockWidget, QPlainTextEdit, QSpacerItem, QSizePolicy
 from PyQt5.QtGui import QPalette, QPixmap
 from pathlib import Path
 import _pyqthilighter as hilite
-
-scriptdir = os.path.dirname(os.path.realpath(__file__))
 
 settings = QSettings("TweakoZ", "OrkidTool");
 settings.beginGroup("App");
 settings.endGroup();
 
 this_dir = path.directoryOfInvokingModule()
-basedir = Path(os.getenv("ORKID_WORKSPACE_DIR"))
-datadir = basedir/"ork.data"
-srcdir = str(datadir/"src")
-dstdir = str(datadir/"pc")
-datadir = str(datadir)
-basedir = str(basedir)
 
 # check src_dir in settings, apply if valid
 if settings.contains("src_dir"):
@@ -72,17 +64,22 @@ class Edit:
 class AssetWidget(QWidget):
 
    ##########################################
+
     def __init__(self,mainwin):
      super(AssetWidget, self).__init__()
      self.mainwin = mainwin
      mainLayout = QVBoxLayout()
+
+     ##########################################
+     # source directory 
+     ##########################################
 
      sbutton = QPushButton()
      style = QStyleFactory.create("Macintosh")
      icon = style.standardIcon(QStyle.SP_FileIcon)
      sbutton.setIcon(icon)
      sbutton.setStyleSheet("background-color: rgb(0, 0, 64); border-radius: 2; ")
-     sbutton.pressed.connect(self.selectInput)
+     sbutton.pressed.connect(self.selectSourceDirectory)
      self.srced = Edit("Source Directory")
      self.srced.onChangedExternally(str(srcdir))
      slay2 = QHBoxLayout()
@@ -91,6 +88,28 @@ class AssetWidget(QWidget):
      slay2.addWidget(sbutton)
      mainLayout.addLayout(slay2)
 
+     ed = Edit("filter")
+     mainLayout.addLayout(ed.layout)
+
+     ########################################
+     # asset list
+     ########################################
+
+     self.assetlist = QPlainTextEdit()
+     #selfhilighter = hilite.Highlighter(self.assetlist.document())
+     qdss = "QWidget{background-color: rgb(64,64,128); color: rgb(160,160,192);}"
+     qdss += "QDockWidget::title {background-color: rgb(32,32,48); color: rgb(255,0,0);}"
+     self.assetlist.setStyleSheet(qdss)
+     mainLayout.addWidget(self.assetlist)
+
+     self.updateAssetList()
+     #spacer = QSpacerItem(20, 100, QSizePolicy.Minimum, QSizePolicy.Expanding)
+     #mainLayout.addItem(spacer)
+
+     ########################################
+     # go button 
+     ########################################
+
      gobutton = QPushButton("Go")
      gobutton.setStyleSheet(bgcolor(32,32,128)+fgcolor(255,255,128))
      mainLayout.addWidget(gobutton)
@@ -98,11 +117,16 @@ class AssetWidget(QWidget):
      self.setLayout(mainLayout)
      self.gobutton = gobutton
 
+
+     #spacer = QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding)
+     #mainLayout.addItem(spacer)
+     
+     ##########################
      self.output_texts = dict()
 
    ##########################################
 
-    def selectInput(self):
+    def selectSourceDirectory(self):
      
      src = QFileDialog.getExistingDirectory(self,
         "Select Asset Source Directory",
@@ -113,6 +137,16 @@ class AssetWidget(QWidget):
      # preserve folder selection for other
      # invokations of this program (via QSettings)
      settings.setValue("src_dir",src)
+     self.updateAssetList()
+
+
+   ##########################################
+
+    def updateAssetList(self):
+      srcpath = self.srced.value
+      a = pathtools.recursive_patglob(srcpath,"*.blend")
+      text = "\n".join(a)
+      self.assetlist.setPlainText(text)
 
    ##########################################
 
@@ -128,7 +162,7 @@ class AssetWidget(QWidget):
 
       qd = QDockWidget("Export")
       qd.setWidget(te)
-      qd.setMinimumSize(480,240)
+      qd.setMinimumSize(480,180)
       qd.setFeatures(QDockWidget.DockWidgetMovable|QDockWidget.DockWidgetVerticalTitleBar|QDockWidget.DockWidgetFloatable)
       qd.setAllowedAreas(Qt.RightDockWidgetArea)
       qdss = "QWidget{background-color: rgb(64,64,128); color: rgb(160,160,192);}"
@@ -211,23 +245,6 @@ class AssetWidget(QWidget):
          sp = SubProc(self,index,cmdlist)
          index += 1
 
-      #############################
-
-      #...
-      #void MainWindow::updateError()
-      #{
-      #QByteArray data = myProcess->readAllStandardError();
-      #textEdit_verboseOutput->append(QString(data));
-      #}
-
-      #void MainWindow::updateText()
-      #{
-      #QByteArray data = myProcess->readAllStandardOutput();
-      #textEdit_verboseOutput->append(QString(data));
-      #}
-
-      #os.system(cmd)
-
 #############################################################################
 
 class AssetWindow(QMainWindow):
@@ -238,8 +255,8 @@ class AssetWindow(QMainWindow):
     qd = QDockWidget()
     qd.setWidget(aw)
     self.setCentralWidget(qd)
-    self.setMinimumSize(480,360)
-    self.setMaximumSize(1920,1080)
+    self.setMinimumSize(480,180)
+    #self.setMaximumSize(1920,1080)
     self.setDockOptions(QMainWindow.AnimatedDocks | QMainWindow.ForceTabbedDocks);
 
 
@@ -250,7 +267,7 @@ if __name__ == '__main__':
 
     mainwin = AssetWindow()
 
-    mainwin.resize(960,360)
+    mainwin.resize(960,240)
     mainwin.setWindowTitle("Orkid Asset Assistant \N{COPYRIGHT SIGN} 2017 - TweakoZ")
 
     appss = "QWidget {background-color: rgb(64,64,96); color: rgb(255,255,255);}"
