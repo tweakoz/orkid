@@ -2,7 +2,7 @@
 # Copyright 2017 - Michael T. Mayers
 # Licensed under the GPLV3 - see https://www.gnu.org/licenses/gpl-3.0.html
 
-import os,sys, string, math
+import os,sys, string, math, re, fnmatch
 from obt import path, pathtools, command
 
 from PyQt5.QtCore import QSize, Qt, QProcess, QSettings
@@ -33,10 +33,10 @@ def fgcolor(r,g,b):
 #############################################################################
 
 class Edit:
-   def __init__(self,label):
+   def __init__(self,label,default=""):
       height = 24
       self.key = label
-      self.value = ""
+      self.value = default
       self.layout = QHBoxLayout()
       self.labl = QLabel(label)
       self.labl.setFixedHeight(height)
@@ -68,7 +68,10 @@ class AssetWidget(QWidget):
     def __init__(self,mainwin):
      super(AssetWidget, self).__init__()
      self.mainwin = mainwin
-     mainLayout = QVBoxLayout()
+     self.output_texts = dict()
+     top_layout = QHBoxLayout()
+     v1_layout = QVBoxLayout()
+     v2_layout = QVBoxLayout()
 
      ##########################################
      # source directory 
@@ -86,10 +89,15 @@ class AssetWidget(QWidget):
      slay2.addLayout(self.srced.layout)
      self.srced.edit.setStyleSheet(bgcolor(64,32,64)+fgcolor(255,255,0))
      slay2.addWidget(sbutton)
-     mainLayout.addLayout(slay2)
+     v1_layout.addLayout(slay2)
 
-     ed = Edit("filter")
-     mainLayout.addLayout(ed.layout)
+     pattern = "*"
+     if settings.contains("pattern"):
+       pattern = settings.value("pattern")
+
+     self.filter_ed = Edit("filter",pattern)
+     v1_layout.addLayout(self.filter_ed.layout)
+     self.filter_ed.edit.textChanged.connect(self.updateAssetList)
 
      ########################################
      # asset list
@@ -100,11 +108,13 @@ class AssetWidget(QWidget):
      qdss = "QWidget{background-color: rgb(64,64,128); color: rgb(160,160,192);}"
      qdss += "QDockWidget::title {background-color: rgb(32,32,48); color: rgb(255,0,0);}"
      self.assetlist.setStyleSheet(qdss)
-     mainLayout.addWidget(self.assetlist)
+     v1_layout.addWidget(self.assetlist)
+
+     #self.assetlist.setMaximumSize(800,4096)
 
      self.updateAssetList()
      #spacer = QSpacerItem(20, 100, QSizePolicy.Minimum, QSizePolicy.Expanding)
-     #mainLayout.addItem(spacer)
+     #v1_layout.addItem(spacer)
 
      ########################################
      # go button 
@@ -112,77 +122,69 @@ class AssetWidget(QWidget):
 
      gobutton = QPushButton("Go")
      gobutton.setStyleSheet(bgcolor(32,32,128)+fgcolor(255,255,128))
-     mainLayout.addWidget(gobutton)
+     v1_layout.addWidget(gobutton)
      gobutton.pressed.connect(self.goPushed)
-     self.setLayout(mainLayout)
      self.gobutton = gobutton
 
 
      #spacer = QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding)
-     #mainLayout.addItem(spacer)
-     
+     #v1_layout.addItem(spacer)
+
      ##########################
-     self.output_texts = dict()
+     # output console
+     ##########################
+
+     self.output_console = QPlainTextEdit()
+     hilighter = hilite.Highlighter(self.output_console.document())
+     qdss = "QWidget{background-color: rgb(32,32,64); color: rgb(255,255,255);}"
+     self.output_console.setStyleSheet(qdss)
+     v2_layout.addWidget(self.output_console)
+
+     ##########################
+     top_layout.addLayout(v1_layout)
+     top_layout.addLayout(v2_layout)
+     self.setLayout(top_layout)
 
    ##########################################
 
     def selectSourceDirectory(self):
-     
-     src = QFileDialog.getExistingDirectory(self,
+      src = QFileDialog.getExistingDirectory(self,
         "Select Asset Source Directory",
         srcdir,
         QFileDialog.ShowDirsOnly)
 
-     self.srced.onChangedExternally(src)
-     # preserve folder selection for other
-     # invokations of this program (via QSettings)
-     settings.setValue("src_dir",src)
-     self.updateAssetList()
-
+      self.srced.onChangedExternally(src)
+      # preserve folder selection for other
+      # invokations of this program (via QSettings)
+      settings.setValue("src_dir",src)
+      self.updateAssetList()
 
    ##########################################
 
     def updateAssetList(self):
       srcpath = self.srced.value
       a = pathtools.recursive_patglob(srcpath,"*.blend")
-      text = "\n".join(a)
+      pattern = self.filter_ed.value
+      regex = fnmatch.translate(pattern)
+      compiled_regex = re.compile(regex)
+      b = []
+      for item in a:
+        m = compiled_regex.match(item)
+        if m != None:
+          b.append(item)
+      text = "\n".join(b)
       self.assetlist.setPlainText(text)
+      settings.setValue("pattern",pattern)
+      self.assetlist_list = b
 
    ##########################################
 
     def goPushed(self):
       srcpath = self.srced.value
       os.chdir(srcpath)
-      te = QPlainTextEdit()
-      hilighter = hilite.Highlighter(te.document())
 
       self.gobutton.setStyleSheet(bgcolor(128,32,0)+fgcolor(255,255,128))
-
-      #######################################
-
-      qd = QDockWidget("Export")
-      qd.setWidget(te)
-      qd.setMinimumSize(480,180)
-      qd.setFeatures(QDockWidget.DockWidgetMovable|QDockWidget.DockWidgetVerticalTitleBar|QDockWidget.DockWidgetFloatable)
-      qd.setAllowedAreas(Qt.RightDockWidgetArea)
-      qdss = "QWidget{background-color: rgb(64,64,128); color: rgb(160,160,192);}"
-      qdss += "QDockWidget::title {background-color: rgb(32,32,48); color: rgb(255,0,0);}"
-      qd.setStyleSheet(qdss)
-      mainwin.addDockWidget(Qt.RightDockWidgetArea,qd)
-
-      #######################################
-
-      if mainwin.prevDockWidget!=None:
-         mainwin.tabifyDockWidget(mainwin.prevDockWidget,qd)
-      mainwin.prevDockWidget = qd
-
-      #######################################
-      # remove all other "Dae:Xgm" widgets
-      #######################################
-
-      for qdw in mainwin.findChildren(QDockWidget):
-         if qdw.windowTitle() == "Export" and qdw!=qd:
-            mainwin.removeDockWidget(qdw)
+      self.gobutton.setEnabled(False)
 
       #######################################
 
@@ -209,11 +211,12 @@ class AssetWidget(QWidget):
                for key in sorted(asswidget.output_texts.keys()):
                   merge_output_text += asswidget.output_texts[key]
 
-               te.setPlainText(merge_output_text)
+               self.asswidget.output_console.setPlainText(merge_output_text)
                self.asswidget.update()
                asswidget.running_count -= 1
                if asswidget.running_count == 0:
                   self.asswidget.gobutton.setStyleSheet(bgcolor(32,32,128)+fgcolor(255,255,128))
+                  self.asswidget.gobutton.setEnabled(True)
 
                #print( "process done...\n")
             #############################
@@ -233,14 +236,12 @@ class AssetWidget(QWidget):
       # enumerate all 
       #############################
 
-      a = pathtools.recursive_patglob(srcpath,"*.blend")
-      print(a)
       orkbin = "ork.blender.export.character.py"
 
       #############################
       index = 0
       self.running_count = 0
-      for item in a:
+      for item in self.assetlist_list:
          cmdlist = [orkbin, "-i", item, "-o", path.temp()/"test.glb"]
          sp = SubProc(self,index,cmdlist)
          index += 1
