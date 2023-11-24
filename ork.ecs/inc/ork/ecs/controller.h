@@ -51,15 +51,15 @@ struct Controller {
 
 	struct Event {
 	  EventID _eventID;
-	  svar128_t _payload;
+	  dvar_t _payload;
 	};
 	struct Request {
 	  RequestID _requestID;
-	  svar128_t _payload;
+	  dvar_t _payload;
 	};
 
 	struct Transaction{
-		std::vector<svar256_t> _items;
+		std::vector<dvar_t> _items;
 	};
 
 	using xact_ptr_t = std::shared_ptr<Transaction>;
@@ -70,7 +70,8 @@ struct Controller {
 		FILE* _output_file = nullptr;
 		void _traceEvent(const Event& event);
 		void _traceRequest(const Request& request);
-		std::string _traceVar128(const svar128_t& var);
+		std::string _traceDVar(const dvar_t& var);
+		//std::string _traceVar128(const svar128_t& var);
 		std::string _traceVar64(const svar64_t& var);
 		std::string _traceTable(const DataTable& table);
 		bool _firstitem = true;

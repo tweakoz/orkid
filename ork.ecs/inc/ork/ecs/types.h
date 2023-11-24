@@ -9,6 +9,7 @@
 
 #include <ork/util/crc.h>
 #include <ork/kernel/svariant.h>
+#include <ork/kernel/dvariant.h>
 #include <ork/kernel/string/PoolString.h>
 #include <unordered_map>
 

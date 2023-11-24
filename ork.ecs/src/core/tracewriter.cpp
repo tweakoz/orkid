@@ -152,7 +152,7 @@ std::string Controller::TraceWriter::_traceVar64(const svar64_t& var){
 
 ///////////////////////////////////////////////////////////////////////////////
 
-std::string Controller::TraceWriter::_traceVar128(const svar128_t& var){
+std::string Controller::TraceWriter::_traceDVar(const dvar_t& var){
 
 	std::string rval;
 
@@ -299,7 +299,7 @@ void Controller::TraceWriter::_traceEvent(const Event& event){
 
 	float timestamp_offset = _outtimer.SecsSinceStart();
 
-	std::string payload_output = _traceVar128(event._payload);
+	std::string payload_output = _traceDVar(event._payload);
 	std::string prefix = _firstitem ? "\n" : ",\n";
 	std::string output = FormatString("%s{\"timestamp\": %g, %s }", //
 		prefix.c_str(), //
@@ -319,7 +319,7 @@ void Controller::TraceWriter::_traceRequest(const Request& request){
 
 	float timestamp_offset = _outtimer.SecsSinceStart();
 
-	std::string payload_output = _traceVar128(request._payload);
+	std::string payload_output = _traceDVar(request._payload);
 
 	std::string prefix = _firstitem ? "\n" : ",\n";
 
