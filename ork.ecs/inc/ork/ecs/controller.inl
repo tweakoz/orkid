@@ -28,6 +28,7 @@ template <typename T> sys_ref_t Controller::findSystem() {
   FSYS._sysref = SystemRef{._sysID = ID};
   FSYS._syskey = T::SystemType;
 
+  OrkAssert(FSYS._syskey != "");
   _enqueueEvent(simevent);
 
   //////////////////////////////////////////////////////

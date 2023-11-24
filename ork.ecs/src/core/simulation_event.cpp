@@ -77,11 +77,12 @@ bool Simulation::_onControllerEvent(const Controller::Event& event) {
       const auto& SEV = event._payload.get<impl::_SystemEvent>();
       uint64_t sysid     = SEV._sysref._sysID;
       System* the_system = nullptr;
-      _controller->_mutateObject([sysid, &the_system](const Controller::id2obj_map_t& unlocked) {
-        auto it = unlocked.find(sysid);
-        OrkAssert(it != unlocked.end());
+      _controller->_mutateObject([sysid, &the_system](const Controller::id2obj_map_t& unlocked_id2objmap) {
+        auto it = unlocked_id2objmap.find(sysid);
+        OrkAssert(it != unlocked_id2objmap.end());
         auto& system_var = it->second;
         the_system       = system_var.get<System*>();
+        OrkAssert(the_system!=nullptr);
       });
       the_system->_notify(SEV._eventID,SEV._eventData);
       break;
@@ -104,6 +105,7 @@ bool Simulation::_onControllerEvent(const Controller::Event& event) {
           the_system = (it->second);
       });
       _controller->_mutateObject([&](Controller::id2obj_map_t& unlocked) { //
+        OrkAssert(the_system!=nullptr);
         unlocked[FEV._sysref._sysID].set<System*>(the_system);                         //
       });
       break;

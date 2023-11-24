@@ -99,13 +99,31 @@ void Controller::renderWithStandardCompositorFrame(lev2::standardcompositorframe
 ///////////////////////////////////////////////////////////////////////////////
 
 void Controller::_enqueueEvent(Event& event) {
-  _eventQueue.atomicOp([&](evq_t& unlocked) { unlocked.push_back(event); });
+  _eventQueue.atomicOp([&](evq_t& unlocked) { 
+    
+    OrkAssert( uint64_t(event._eventID) != 0 );
+  
+    unlocked.push_back(event);
+
+    auto& end = unlocked.back().get<Controller::Event>();
+
+    OrkAssert( uint64_t(end._eventID) != 0 );
+
+  });
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void Controller::_enqueueRequest(Request& request) {
-  _eventQueue.atomicOp([&](evq_t& unlocked) { unlocked.push_back(request); });
+    _eventQueue.atomicOp([&](evq_t& unlocked) { 
+        OrkAssert( uint64_t(request._requestID) != 0 );
+        
+        unlocked.emplace_back(request);
+        
+        auto& end = unlocked.back().get<Controller::Request>();
+        
+        OrkAssert( uint64_t(end._requestID) != 0 );
+    });
 }
 
 ///////////////////////////////////////////////////////////////////////////////

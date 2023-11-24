@@ -51,15 +51,6 @@ public:
 
   //////////////////////////////////////////////////////////////
 
-  size_t capacity() const {
-    return _buffer.capacity();
-  }
-  size_t size() const {
-    return _buffer.size();
-  }
-
-  //////////////////////////////////////////////////////////////
-
   template <typename T> void assignDescriptor() {
 
     _destroyer = [](dynamic_variant& var) {
@@ -85,57 +76,15 @@ public:
 #if defined(VAR_DEBUG)
     _typestr = demangled_typename<T>();
 #endif
+
+    _mtinfo = &typeid(T);
+
   }
 
   //////////////////////////////////////////////////////////////
   // default constuctor
   //////////////////////////////////////////////////////////////
   dynamic_variant() {
-  }
-  //////////////////////////////////////////////////////////////
-  // copy constuctor
-  //////////////////////////////////////////////////////////////
-  dynamic_variant(const dynamic_variant& oth) {
-    if (_destroyer) {
-      _destroyer(*this);
-    }
-    _assert_on_destroy = oth._assert_on_destroy;
-    _buffer.resize(oth._buffer.size());
-    _mtinfo = oth._mtinfo;
-    if (_copier) {
-      _copier(*this, oth);
-    }
-  }
-  //////////////////////////////////////////////////////////////
-  dynamic_variant& operator=(const dynamic_variant& oth) {
-    if (_destroyer) {
-      _destroyer(*this);
-    }
-    _assert_on_destroy = oth._assert_on_destroy;
-    _buffer.resize(oth._buffer.size());
-    _mtinfo = oth._mtinfo;
-    if (_copier) {
-      _copier(*this, oth);
-    }
-    return *this;
-  }
-  //////////////////////////////////////////////////////////////
-  bool operator==(const dynamic_variant& oth) const {
-    if (_equals) {
-      return _equals(*this, oth);
-    }
-    return false;
-  }
-  //////////////////////////////////////////////////////////////
-  // typed constructor
-  //////////////////////////////////////////////////////////////
-  template <typename T> dynamic_variant(const T& value) {
-    _buffer.resize(sizeof(T));
-    memset(_buffer.data(), 0, sizeof(T));
-    T* pval = (T*)_buffer.data();
-    new (pval) T(value);
-    _mtinfo = &typeid(T);
-    assignDescriptor<T>();
   }
   //////////////////////////////////////////////////////////////
   // destructor, delegate destuction of the contained object to the destroyer
@@ -157,28 +106,115 @@ public:
     _typestr = "";
   }
   //////////////////////////////////////////////////////////////
-  // return true if the contained object is a T
-  //////////////////////////////////////////////////////////////
-  template <typename T> bool isA() const {
-    return (_mtinfo != 0) ? (*_mtinfo) == typeid(T) : false;
+  dynamic_variant& operator=(const dynamic_variant& oth) {
+    _destroy();
+    printf( "WTF are you skipping this?\n");
+    _assert_on_destroy = oth._assert_on_destroy;
+    _buffer.resize(oth._buffer.size());
+    memset(_buffer.data(), 0, _buffer.size());
+    _mtinfo = oth._mtinfo;
+    if (_copier) {
+      _copier(*this, oth);
+    }
+    _destroyer = oth._destroyer;
+    _copier    = oth._copier;
+    _equals    = oth._equals;
+    _typestr   = oth._typestr;
+    return *this;
   }
   //////////////////////////////////////////////////////////////
-  // return true if the contained object is a T
+  bool operator==(const dynamic_variant& oth) const {
+    if (_equals) {
+      return _equals(*this, oth);
+    }
+    return false;
+  }
   //////////////////////////////////////////////////////////////
-  template <typename T> bool isShared() const {
-    return (_mtinfo != 0) ? (*_mtinfo) == typeid(std::shared_ptr<T>) : false;
+  // typed constructor
+  //////////////////////////////////////////////////////////////
+template <typename T, 
+          typename std::enable_if<!std::is_same<typename std::decay<T>::type, dynamic_variant>::value, int>::type = 0>
+  dynamic_variant(const T& value) {
+    _buffer.resize(sizeof(T));
+    memset(_buffer.data(), 0, sizeof(T));
+    T* pval = (T*)_buffer.data();
+    printf( "WTF are you skipping this?\n");
+    new (pval) T(value);
+    assignDescriptor<T>();
+  }
+  //////////////////////////////////////////////////////////////
+  // copy constuctor
+  //////////////////////////////////////////////////////////////
+  dynamic_variant(const dynamic_variant& oth) {
+    _assert_on_destroy = oth._assert_on_destroy;
+    _buffer.resize(oth._buffer.size());
+    _mtinfo = oth._mtinfo;
+    if (oth._copier) {
+      oth._copier(*this, oth);
+    }
+    _destroyer = oth._destroyer;
+    _copier    = oth._copier;
+    _equals    = oth._equals;
+    _typestr   = oth._typestr;
+
   }
   //////////////////////////////////////////////////////////////
   // assign an object to the variant, assert if it does not fit
   //////////////////////////////////////////////////////////////
   template <typename T> void set(const T& value) {
     _destroy();
+    _buffer.resize(sizeof(T));
+    memset(_buffer.data(), 0, sizeof(T));
     T* pval = (T*)_buffer.data();
+    printf( "WTF are you skipping this?\n");
     new (pval) T(value);
-    _mtinfo = &typeid(T);
     assignDescriptor<T>();
   }
   //////////////////////////////////////////////////////////////
+  // return the type T object by const reference, assert if the types dont match
+  //////////////////////////////////////////////////////////////
+  template <typename T> void setShared(std::shared_ptr<T> ptr) {
+    using sharedptr_t = std::shared_ptr<T>;
+    _destroy();
+    _buffer.resize(sizeof(sharedptr_t));
+    memset(_buffer.data(), 0, sizeof(T));
+    auto pval = (sharedptr_t*)_buffer.data();
+    printf( "WTF are you skipping this?\n");
+    new (pval) sharedptr_t;
+    (*pval) = ptr;
+    assignDescriptor<sharedptr_t>();
+    assert(typeid(sharedptr_t) == *_mtinfo);
+  }
+  //////////////////////////////////////////////////////////////
+  // construct a T and return by reference
+  //////////////////////////////////////////////////////////////
+  template <typename T, typename... A> T& make(A&&... args) {
+    _destroy();
+    _buffer.resize(sizeof(T));
+    memset(_buffer.data(), 0, sizeof(T));
+    auto pval = (T*)_buffer.data();
+    printf( "WTF are you skipping this?\n");
+    new (pval) T(std::forward<A>(args)...);
+    assignDescriptor<T>();
+    assert(typeid(T) == *_mtinfo);
+    return *pval;
+  }
+  //////////////////////////////////////////////////////////////
+  // construct and return a reference to a shared_ptr<T>
+  //////////////////////////////////////////////////////////////
+  template <typename T, typename... A> std::shared_ptr<T>& makeShared(A&&... args) {
+    using sharedptr_t = std::shared_ptr<T>;
+    _destroy();
+    _buffer.resize(sizeof(sharedptr_t));
+    memset(_buffer.data(), 0, sizeof(T));
+    auto pval = (sharedptr_t*)_buffer.data();
+    printf( "WTF are you skipping this?\n");
+    new (pval) sharedptr_t;
+    (*pval) = std::make_shared<T>(std::forward<A>(args)...);
+    assignDescriptor<sharedptr_t>();
+    assert(typeid(sharedptr_t) == *_mtinfo);
+    return (*pval);
+  }  //////////////////////////////////////////////////////////////
   // return the type T object by reference, assert if the types dont match
   //////////////////////////////////////////////////////////////
   template <typename T> T& get() {
@@ -210,48 +246,6 @@ public:
     typedef std::shared_ptr<T> sharedptr_t;
     assert(typeid(sharedptr_t) == *_mtinfo);
     auto pval = (sharedptr_t*)_buffer.data();
-    return (*pval);
-  }
-  //////////////////////////////////////////////////////////////
-  // return the type T object by const reference, assert if the types dont match
-  //////////////////////////////////////////////////////////////
-  template <typename T> void setShared(std::shared_ptr<T> ptr) {
-    using sharedptr_t = std::shared_ptr<T>;
-    _destroy();
-    _buffer.resize(sizeof(sharedptr_t));
-    auto pval = (sharedptr_t*)_buffer.data();
-    new (pval) sharedptr_t;
-    (*pval) = ptr;
-    _mtinfo = &typeid(sharedptr_t);
-    assignDescriptor<sharedptr_t>();
-    assert(typeid(sharedptr_t) == *_mtinfo);
-  }
-  //////////////////////////////////////////////////////////////
-  // construct a T and return by reference
-  //////////////////////////////////////////////////////////////
-  template <typename T, typename... A> T& make(A&&... args) {
-    _destroy();
-    _buffer.resize(sizeof(T));
-    auto pval = (T*)_buffer.data();
-    new (pval) T(std::forward<A>(args)...);
-    _mtinfo = &typeid(T);
-    assignDescriptor<T>();
-    assert(typeid(T) == *_mtinfo);
-    return *pval;
-  }
-  //////////////////////////////////////////////////////////////
-  // construct and return a reference to a shared_ptr<T>
-  //////////////////////////////////////////////////////////////
-  template <typename T, typename... A> std::shared_ptr<T>& makeShared(A&&... args) {
-    using sharedptr_t = std::shared_ptr<T>;
-    _destroy();
-    _buffer.resize(sizeof(sharedptr_t));
-    auto pval = (sharedptr_t*)_buffer.data();
-    new (pval) sharedptr_t;
-    (*pval) = std::make_shared<T>(std::forward<A>(args)...);
-    _mtinfo = &typeid(sharedptr_t);
-    assignDescriptor<sharedptr_t>();
-    assert(typeid(sharedptr_t) == *_mtinfo);
     return (*pval);
   }
   //////////////////////////////////////////////////////////////
@@ -290,6 +284,18 @@ public:
     return attempt_cast_const<T>((const T*)(type_ok ? _buffer.data() : nullptr));
   }
   //////////////////////////////////////////////////////////////
+  // return true if the contained object is a T
+  //////////////////////////////////////////////////////////////
+  template <typename T> bool isA() const {
+    return (_mtinfo != 0) ? (*_mtinfo) == typeid(T) : false;
+  }
+  //////////////////////////////////////////////////////////////
+  // return true if the contained object is a T
+  //////////////////////////////////////////////////////////////
+  template <typename T> bool isShared() const {
+    return (_mtinfo != 0) ? (*_mtinfo) == typeid(std::shared_ptr<T>) : false;
+  }
+  //////////////////////////////////////////////////////////////
   // return true if the variant is capable of containing an object of type T
   //////////////////////////////////////////////////////////////
   template <typename T> static bool isTypeOk() {
@@ -326,6 +332,13 @@ public:
   //////////////////////////////////////////////////////////////
   TypeId getOrkTypeId() const {
     return TypeId::fromStdTypeInfo(_mtinfo);
+  }
+  //////////////////////////////////////////////////////////////
+  size_t capacity() const {
+    return _buffer.capacity();
+  }
+  size_t size() const {
+    return _buffer.size();
   }
   //////////////////////////////////////////////////////////////
 private:

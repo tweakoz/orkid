@@ -45,7 +45,7 @@ struct Controller {
 
 	///////////////////////////////////////////////////////////////////////////////
 
-	using evq_t = std::vector<svar256_t>;
+	using evq_t = std::vector<dvar_t>;
 	using delayed_opq_t = std::multimap<float, void_lambda_t>;
   using delayed_opv_t = std::vector<void_lambda_t>;
 
@@ -71,7 +71,6 @@ struct Controller {
 		void _traceEvent(const Event& event);
 		void _traceRequest(const Request& request);
 		std::string _traceDVar(const dvar_t& var);
-		//std::string _traceVar128(const svar128_t& var);
 		std::string _traceVar64(const svar64_t& var);
 		std::string _traceTable(const DataTable& table);
 		bool _firstitem = true;
