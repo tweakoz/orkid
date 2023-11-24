@@ -19,11 +19,11 @@ class EcsApp(object):
     def __init__(self):
         super().__init__()
         self.sceneparams = VarMap()
-        self.sceneparams.preset = "PBR"
-        self.qtapp = ecs.createApp(self)
-        self.qtapp.setRefreshPolicy(lev2.RefreshFastest, 0)
+        self.sceneparams.preset = "PBRDeferred"
+        self.ezapp = ecs.createApp(self)
+        self.ezapp.setRefreshPolicy(lev2.RefreshFastest, 0)
         self.updinit = True
-        self.coreapp = self.qtapp.coreapp()
+        self.coreapp = self.ezapp.coreapp()
     ################################################
     # onUpdateInit (always called before onGpuInit() is complete...)
     #  technically called at the beginning of ezapp->runloop()
@@ -105,5 +105,5 @@ class EcsApp(object):
         self.sim.render(drawevent)
 ################################################
 app = EcsApp()
-app.qtapp.exec()
+app.ezapp.exec()
 

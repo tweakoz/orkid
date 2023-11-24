@@ -101,6 +101,16 @@ private:
 
 } // namespace ork
 
+template <size_t N>
+struct x_npot {
+    static const size_t value = x_npot<(N >> 1)>::value << 1;
+};
+
+template <>
+struct x_npot<1> {
+    static const size_t value = 2;
+};
+
 ///////////////////////////////////////////////////////////////////////////////
 
 namespace ork {
@@ -109,13 +119,24 @@ template <typename T> class LockedResource {
   using mutable_atomicop_t = std::function<void(T&)>;
   using const_atomicop_t = std::function<void(const T&)>;
 
-  mutable ork::recursive_mutex _mutex;
   std::shared_ptr<T> _resource;
+  mutable ork::recursive_mutex _mutex;
 
 public:
   LockedResource(const char* pname = "ResourceMutex", const T def = T())
       : _mutex(pname) {
-    _resource = std::make_shared<T>(def);
+    constexpr size_t size = sizeof(T);
+    constexpr size_t alignment = x_npot<size>::value; // Desired alignment
+
+    // Allocate aligned memory
+    void* ptr = std::aligned_alloc(alignment, alignment);
+    auto instance = new(ptr) T(def);
+
+    std::shared_ptr<T> ptr_to_t(instance, [ptr](T* p) {
+        p->~T(); // Call the destructor
+        std::free(ptr); // Free the aligned memory
+    });
+    _resource = ptr_to_t;
   }
   LockedResource(const LockedResource& oth)
       : _mutex(oth._mutex.GetName().c_str()) {

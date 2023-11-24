@@ -21,16 +21,11 @@ set( INCD3 $ENV{ORKID_WORKSPACE_DIR}/ork.ecs/inc )
 file(GLOB sources ${SRCD}/*.cpp)
 
 add_library( _ecs SHARED ${sources} )
-
 ork_std_target_opts(_ecs)
-
 target_include_directories (_ecs PRIVATE ${INCD} ${INCD2} ${INCD3} )
-
-
 target_link_libraries(_ecs LINK_PUBLIC ork_core ork_lev2 ork_ecs )
 
-#target_link_libraries(_ecs PUBLIC ${PYTHON_LIBRARY_PATH} )
-target_link_options(_ecs PUBLIC -Wl,-rpath )
+#target_link_options(_ecs PUBLIC -Wl,-rpath )
 
 set_target_properties( _ecs
   PROPERTIES

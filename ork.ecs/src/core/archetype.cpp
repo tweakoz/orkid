@@ -15,7 +15,6 @@
 #include <ork/ecs/ReferenceArchetype.h>
 
 ImplementReflectionX(ork::ecs::Archetype, "EcsArchetype");
-// ImplementReflectionX(ork::ecs::CompositeArchetype, "EcsCompositeArchetype");
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::ecs {
