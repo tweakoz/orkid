@@ -1,4 +1,4 @@
-#!/opt/homebrew/bin/python3
+#!/usr/bin/env os-python
 # Copyright 2017 - Michael T. Mayers
 # Licensed under the GPLV3 - see https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -34,7 +34,7 @@ settings.beginGroup("App");
 settings.endGroup();
 
 this_dir = path.directoryOfInvokingModule()
-
+srcdir = this_dir
 # check src_dir in settings, apply if valid
 if settings.contains("src_dir"):
    try_srcdir = settings.value("src_dir")
@@ -130,7 +130,7 @@ class AssetWidget(QWidget):
      v1_layout = QVBoxLayout()
      v2_layout = QVBoxLayout()
 
-     style = QStyleFactory.create("Macintosh")
+     style = QStyleFactory.create("Fusion")
      file_icon = style.standardIcon(QStyle.SP_FileIcon)
      button_style = "background-color: rgb(0, 0, 64); border-radius: 2; "
      editstylesheet = "QWidget{background-color: rgb(64,64,128); color: rgb(160,160,192);}"
@@ -256,7 +256,7 @@ class AssetWidget(QWidget):
    def selectSourceDirectory(self):
       src = QFileDialog.getExistingDirectory(self,
         "Select Asset Source Directory",
-        srcdir,
+        str(srcdir),
         QFileDialog.ShowDirsOnly)
 
       self.srced.onChangedExternally(src)
