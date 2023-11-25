@@ -13,7 +13,6 @@
 #include <ork/rtti/downcast.h>
 #include <ork/reflect/properties/register.h>
 #include <ork/util/Context.h>
-#include <ork/lev2/gfx/gfxenv.h>
 #include <utpp/UnitTest++.h>
 #include <ork/ecs/lua/LuaComponent.h>
 #include <ork/ecs/controller.h>

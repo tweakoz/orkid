@@ -71,6 +71,8 @@ int main(int argc, char** argv, char** envp) {
     movie->init(init_data->_width,init_data->_height);
   }
 
+  init_data->_ssaa_samples = 9;
+
   auto ezapp  = OrkEzApp::create(init_data);
   auto ezwin  = ezapp->_mainWindow;
   auto appwin = ezwin->_appwin;

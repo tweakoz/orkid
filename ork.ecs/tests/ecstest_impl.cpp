@@ -10,8 +10,6 @@
 #include <utpp/UnitTest++.h>
 #include <ork/pch.h>
 #include <ork/kernel/opq.h>
-#include <ork/lev2/init.h>
-#include <ork/lev2/gfx/gfxenv.h>
 #include <ork/file/file.h>
 #include <ork/object/Object.h>
 #include <ork/rtti/downcast.h>
