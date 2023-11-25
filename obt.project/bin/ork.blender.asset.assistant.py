@@ -302,7 +302,7 @@ class AssetWidget(QWidget):
       #######################################
 
       self.output_texts = dict()
-
+      self.subprocs = dict()
       class SubProc:
          def __init__(self,asswidget, index, cmdlist, item_path):
             #############################
@@ -368,6 +368,7 @@ class AssetWidget(QWidget):
       for item in self.assetlist_list:
          cmdlist = [orkbin, "-i", item, "-o", path.temp()/"test.glb"]
          sp = SubProc(self,index,cmdlist,item)
+         self.subprocs[index] = sp
          index += 1
 
 #############################################################################
