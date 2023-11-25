@@ -1,5 +1,7 @@
 import os, re
 
+####################################################################
+
 def find_executable(exec_name):
   """Find the executable in PATH or use the provided path."""
   exec_name = os.path.expandvars(exec_name)
@@ -12,7 +14,11 @@ def find_executable(exec_name):
     full_path = os.path.join(path, exec_name)
     if os.path.exists(full_path) and os.access(full_path, os.X_OK):
       return full_path
+  if os.path.exists(exec_name) and os.access(exec_name, os.X_OK):
+    return exec_name
   return None
+
+####################################################################
 
 def is_python_script(executable_path):
   """Determine if the given file is a Python script."""
@@ -23,8 +29,11 @@ def is_python_script(executable_path):
   except Exception as e:
     return False
 
+####################################################################
+
 def get_exec_and_args(parse_args):
   executable_path = find_executable(parse_args.executable_name)
+
   if not executable_path:
     print(f"Executable '{parse_args.executable_name}' not found in $PATH.")
     exit(1)

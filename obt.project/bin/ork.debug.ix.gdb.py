@@ -23,4 +23,5 @@ cmd_list = ["gdb",
            ]
 
 cmd_list += exe_args
+print(cmd_list)
 command.run(cmd_list,do_log=True)
