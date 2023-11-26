@@ -11,13 +11,13 @@ parser.add_argument("executable_name", help="Name of the executable (without pat
 parser.add_argument("exec_args", nargs=argparse.REMAINDER, help="Arguments for the executable.")
 args = parser.parse_args()
 
-filters = path.orkid()/"obt.project"/"scripts"/"ork"/"ix_gdb_filters.py"
+extensions_py = path.orkid()/"obt.project"/"scripts"/"ork"/"ix_gdb_extensions.py"
 
 exe_path, exe_args, exe_name = _debug_helpers.get_exec_and_args(args)
 
 
 cmd_list = ["gdb",
-            "--command=%s"%str(filters),
+            "--command=%s"%str(extensions_py),
             "--args",
             exe_path
            ]
