@@ -71,7 +71,7 @@ class FilterThreads(gdb.Command):
           if filter_opq_idle:
             if frame and '__GI___clock_nanosleep' in frame.name():
               t_name = t.name if t.name else "N/A"
-              if t_name == "concurrentQueue":
+              if t_name == "concurrentQueue" or t_name == "coordinatorSeri":
                 frame_count = 1
                 while frame:
                   frame = frame.older()
@@ -146,6 +146,16 @@ class FilteredBacktrace(gdb.Command):
         100: RGB(255, 255, 128),
     }
 
+    self.replace_map = {
+        #std::shared_ptr<ork::lev2::Texture>
+        "std::shared_ptr<ork::lev2::Texture>": "lev2::texture_ptr_t",
+        "std::shared_ptr<ork::DataBlock const>": "datablock_constptr_t",
+        "std::shared_ptr<ork::DataBlock>": "datablock_ptr_t",
+        "std::shared_ptr<ork::AppInitData>": "appinitdata_ptr_t",
+        "std::shared_ptr<ork::lev2::CameraDataLut>":
+        "lev2::cameradatalut_ptr_t",
+    }
+
   ############################################################
 
   def create_segments(self, s):
@@ -190,11 +200,19 @@ class FilteredBacktrace(gdb.Command):
 
   ############################################################
 
+  def common_replacements(self, s):
+    for k in self.replace_map.keys():
+      s = s.replace(k,self.replace_map[k])
+    return s
+
+  ############################################################
+
   def colorizeFrameName(self, s):
     result = ""
     if s == None:
       return ""
     s = self.simplify_string(s)
+    s = self.common_replacements(s)
     parsed = general_parser.parse(s)
     s = ''.join(filter(None, parsed))
     segments = self.create_segments(s)
