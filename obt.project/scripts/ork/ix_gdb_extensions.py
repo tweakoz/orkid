@@ -1,4 +1,5 @@
 import gdb, re
+import gdb.printing
 from parsy import string, seq, regex, Parser, any_char
 from obt import deco
 
@@ -10,11 +11,14 @@ decor = deco.Deco()
 
 # Basic parsers
 identifier = regex(r'[a-zA-Z_][a-zA-Z0-9_]*')
-namespace = seq(identifier, string('::')).combine(lambda ident, colon: ident + colon)
-qualified_identifier = seq(namespace.optional(), identifier).map(lambda x: ''.join(filter(None, x)))
+namespace = seq(identifier,
+                string('::')).combine(lambda ident, colon: ident + colon)
+qualified_identifier = seq(namespace.optional(),
+                           identifier).map(lambda x: ''.join(filter(None, x)))
 angle_bracket_open = string('<')
 angle_bracket_close = string('>')
 comma = string(',')
+
 
 # Recursive parser for template arguments
 @Parser
@@ -22,31 +26,27 @@ def template_arg(input, index):
   content = yield (template | qualified_identifier).sep_by(comma)
   return ",".join(filter(None, content))
 
+
 # Parser for templates
-template = seq(
-    qualified_identifier + angle_bracket_open,
-    template_arg,
-    angle_bracket_close
-).combine(lambda a, b, c: ''.join(filter(None, [a[0], '<', b, '>'])))
+template = seq(qualified_identifier + angle_bracket_open, template_arg,
+               angle_bracket_close).combine(
+                   lambda a, b, c: ''.join(filter(None, [a[0], '<', b, '>'])))
 
 # Parser for std::deque, simplifying to keep only the first argument
 std_deque = seq(
     string('std::deque<'),
     template_arg.map(lambda args: args.split(',')[0].strip()),
-    angle_bracket_close
-).combine(lambda a, b, c: 'std::deque<' + b + '>')
+    angle_bracket_close).combine(lambda a, b, c: 'std::deque<' + b + '>')
 
 # Parser for std::queue, handling std::deque with allocator specifically
 std_queue = seq(
     string('std::queue<'),
-    template_arg.map(lambda args: std_deque.parse(args) if 'std::deque' in args else args.split(',')[0].strip()),
-    angle_bracket_close
-).combine(lambda a, b, c: 'std::queue<' + b + '>')
+    template_arg.map(lambda args: std_deque.parse(args)
+                     if 'std::deque' in args else args.split(',')[0].strip()),
+    angle_bracket_close).combine(lambda a, b, c: 'std::queue<' + b + '>')
 
 # General parser that handles any text and std::queue
-general_parser = (
-    std_queue | std_deque | any_char.at_least(1).concat()
-).many()
+general_parser = (std_queue | std_deque | any_char.at_least(1).concat()).many()
 
 ###############################################################################
 
@@ -76,7 +76,7 @@ class FilterThreads(gdb.Command):
                 while frame:
                   frame = frame.older()
                   frame_count += 1
-                if frame_count<=10:
+                if frame_count <= 10:
                   show = False
           if show:
             sorted_threads[t.num] = t
@@ -125,6 +125,7 @@ class Segment:
   def __init__(self, level, text):
     self.level = level
     self.text = text
+
 
 ###############################################################################
 
@@ -202,7 +203,7 @@ class FilteredBacktrace(gdb.Command):
 
   def common_replacements(self, s):
     for k in self.replace_map.keys():
-      s = s.replace(k,self.replace_map[k])
+      s = s.replace(k, self.replace_map[k])
     return s
 
   ############################################################
@@ -248,5 +249,97 @@ class FilteredBacktrace(gdb.Command):
 
 ###############################################################################
 
+
+class MyStringPrinter:
+  """Pretty-printer for std::string."""
+
+  def __init__(self, val):
+    self.val = val
+
+  def to_string(self):
+    # Check if string uses SSO (short string optimization)
+    string_length = self.val['_M_string_length']
+    capacity = self.val.type.template_argument(0).sizeof * 2 - 1
+
+    if string_length > capacity:
+      # Long string, use _M_p
+      return self.val['_M_dataplus']['_M_p'].string()
+    else:
+      # Short string, use _M_local_buf
+      return self.val['_M_local_buf'].string(length=string_length)
+
+
+class RenderContextInstDataPrinter:
+  """Pretty-printer for RenderContextInstData."""
+
+  def __init__(self, val):
+    self.val = val
+
+  def to_string(self):
+    # Custom formatting logic
+    fields = []
+    for field in self.val.type.fields():
+      field_val = self.val[field.name]
+      fields.append(f"{field.name} = {field_val}")
+    r_str = "ork::lev2::RenderContextInstData {\n"
+    for item in fields:
+      r_str += "  %s\n" % item
+    r_str += "}\n"
+    return r_str
+
+
+class TextureDataPrinter:
+  """Pretty-printer for Texture."""
+
+  def __init__(self, val):
+    # Dereference pointers and std::shared_ptr
+    if val.type.code == gdb.TYPE_CODE_PTR:
+      self.val = val.referenced_value()
+    elif val.type.strip_typedefs(
+    ).code == gdb.TYPE_CODE_STRUCT and val.type.tag == 'std::__shared_ptr':
+      # Extract the actual object from std::shared_ptr
+      self.val = val['_M_ptr'].dereference()
+    else:
+      self.val = val
+
+  def to_string(self):
+    fields = []
+    for field in self.val.type.fields():
+      field_val = self.val[field.name]
+      if field.name != "_impl" and field.name != "_varmap":
+        if field.name == "_debugName":
+          # Special handling for _debugName field
+          debug_name_obj = self.val["_debugName"]
+          try:
+            # Attempt to call c_str() and retrieve the string value
+            field_val = debug_name_obj.dereference()['c_str']()
+          except gdb.error:
+            # Fallback if c_str() method is not available or fails
+            field_val = "ERROR"
+        strout = decor.key(field.name)
+        strout += " = "
+        strout += decor.val(field_val)
+        fields.append(strout)
+    r_str = "ork::lev2::Texture {\n"
+    for item in fields:
+      r_str += "  %s\n" % item
+    r_str += "}\n"
+    return r_str
+
+
+def build_pretty_printer():
+  pp = gdb.printing.RegexpCollectionPrettyPrinter("MyPrettyPrinters")
+  pp.add_printer('ork::lev2::RenderContextInstData', '^RenderContextInstData$',
+                 RenderContextInstDataPrinter)
+  pp.add_printer('ork::lev2::Texture', '^ork::lev2::Texture$',
+                 TextureDataPrinter)
+  pp.add_printer('std::string', '^std::(__cxx11::)?string$', MyStringPrinter)
+  return pp
+
+
+###############################################################################
+
 FilteredBacktrace()
 FilterThreads()
+gdb.printing.register_pretty_printer(gdb.current_objfile(),
+                                     build_pretty_printer())
