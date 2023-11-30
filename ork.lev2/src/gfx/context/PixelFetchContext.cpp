@@ -28,13 +28,14 @@ namespace ork::lev2 {
 
 /////////////////////////////////////////////////////////////////////////
 
-PixelFetchContext::PixelFetchContext()
+PixelFetchContext::PixelFetchContext(size_t s)
     : miMrtMask(0)
     , mUserData(nullptr) {
-  for (int i = 0; i < kmaxitems; i++) {
-    _pickvalues[i] = fcolor4(0.0f, 0.0f, 0.0f, 0.0f);
-    mUsage[i]      = EPU_FLOAT;
-  }
+    resize(s);
+}
+void PixelFetchContext::resize(size_t s){
+  _pickvalues.resize(2);
+  _usage.resize(2);
 }
 
 /////////////////////////////////////////////////////////////////////////

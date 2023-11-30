@@ -274,12 +274,11 @@ void pyinit_scenegraph(py::module& module_lev2) {
                 OrkAssert(SG != nullptr);
                 OrkAssert(ray != nullptr);
                 SG->_userdata->set<py::object>("pickcallback", callback);
-                SG->pickWithRay(ray,[SG,type_codec](pickvariant_t pickID){
+                SG->pickWithRay(ray,[SG,type_codec](pixelfetchctx_ptr_t pfc){
                   py::gil_scoped_acquire acquire_gil;
                   auto try_callback = SG->_userdata->typedValueForKey<py::object>("pickcallback");
                   if(try_callback and try_callback.value()){
-                    auto converted = type_codec->encode(pickID);
-                    try_callback.value()(converted);
+                    try_callback.value()(pfc);
                   }
                 });
               })
@@ -289,12 +288,11 @@ void pyinit_scenegraph(py::module& module_lev2) {
                                          py::object callback) { //
             OrkAssert(SG != nullptr);
             SG->_userdata->set<py::object>("pickcallback", callback);
-            SG->pickWithScreenCoord(cam, scoord, [SG,type_codec](pickvariant_t pickID){
+            SG->pickWithScreenCoord(cam, scoord, [SG,type_codec](pixelfetchctx_ptr_t pfc){
                 py::gil_scoped_acquire acquire_gil;
                 auto try_callback = SG->_userdata->typedValueForKey<py::object>("pickcallback");
                 if(try_callback and try_callback.value()){
-                  auto converted = type_codec->encode(pickID);
-                  try_callback.value()(converted);
+                  try_callback.value()(pfc);
                 }
             });
           })

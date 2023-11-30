@@ -123,10 +123,10 @@ void Surface::DoDraw(ui::drawevent_constptr_t drwev) {
   ///////////////////////////////////
   if (false) {
     if (_pickbuffer) {
-      ork::lev2::PixelFetchContext pfc;
+      ork::lev2::PixelFetchContext pfc(2);
       pfc.miMrtMask = (1 << 0); // | (1 << 1); // ObjectID and ObjectUVD
-      pfc.mUsage[0] = lev2::PixelFetchContext::EPU_PTR64;
-      pfc.mUsage[1] = lev2::PixelFetchContext::EPU_FLOAT;
+      pfc._usage[0] = lev2::PixelFetchContext::EPU_PTR64;
+      pfc._usage[1] = lev2::PixelFetchContext::EPU_FLOAT;
       GetPixel(100, 100, pfc);
     }
   }

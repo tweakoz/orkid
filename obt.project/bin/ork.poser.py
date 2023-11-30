@@ -210,9 +210,11 @@ class SceneGraphApp(object):
     if uievent.code == tokens.PUSH.hashed: 
       camdat = self.uicam.cameradata
       scoord = uievent.pos
-      def pick_callback(pickid):
-        print("!!picked!!",pickid)
-      pickID = self.scene.pickWithScreenCoord(camdat,scoord,pick_callback)
+      def pick_callback(pixel_fetch_context):
+        #dstr = pixel_fetch_context.dump()
+        #print(dstr)
+        print(pixel_fetch_context.value(0),pixel_fetch_context.value(1))
+      self.scene.pickWithScreenCoord(camdat,scoord,pick_callback)
     
     handled = self.uicam.uiEventHandler(uievent)
     if handled:

@@ -30,7 +30,7 @@ OIIO_NAMESPACE_USING
 
 namespace ork { namespace lev2 {
 
-static logchannel_ptr_t logchan_glfbi = logger()->createChannel("GLFBI", fvec3(0.8, 0.2, 0.5), true);
+static logchannel_ptr_t logchan_glfbi = logger()->createChannel("GLFBI", fvec3(0.8, 0.2, 0.5), false);
 
 extern int G_MSAASAMPLES;
 
@@ -647,12 +647,16 @@ void GlFrameBufferInterface::GetPixel(const fvec4& rAt, PixelFetchContext& pfc) 
 
           logchan_glfbi->log("previous_readbuffer<%d>", int(previous_readbuffer));
 
+          int pfc_index = 0;
+          size_t pfc_size = pfc._pickvalues.size();
           for (int MrtIndex = 0; MrtIndex < 4; MrtIndex++) {
             int MrtTest = 1 << MrtIndex;
 
-            pfc._pickvalues[MrtIndex] = fcolor4(0.0f, 0.0f, 0.0f, 0.0f);
-
             if (MrtTest & MrtMask) {
+
+              if(MrtIndex<pfc_size){
+                pfc._pickvalues[MrtIndex] = fcolor4(0.0f, 0.0f, 0.0f, 0.0f);
+              }
 
               auto rtbuffer = pfc._rtgroup->GetMrt(MrtIndex);
 
@@ -665,13 +669,15 @@ void GlFrameBufferInterface::GetPixel(const fvec4& rAt, PixelFetchContext& pfc) 
               glReadBuffer(GL_COLOR_ATTACHMENT0 + MrtIndex);
               GL_ERRORCHECK();
 
-              switch (pfc.mUsage[MrtIndex]) {
+              switch (pfc._usage[MrtIndex]) {
                 case PixelFetchContext::EPU_SVARIANT: {
                   switch(rtbuffer->mFormat){
                     case EBufferFormat::RGBA32F: {
                       fvec4 rgba;
                       glReadPixels(sx, sy, 1, 1, GL_RGBA, GL_FLOAT, (void*) & rgba );
-                      pfc._pickvalues[MrtIndex] = pfc.decodeVariant(rgba);
+                      if(MrtIndex<pfc_size){
+                        pfc._pickvalues[MrtIndex] = pfc.decodeVariant(rgba);
+                      }
                       break;
                     }
                     default:

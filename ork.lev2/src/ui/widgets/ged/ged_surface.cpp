@@ -157,9 +157,9 @@ ui::HandlerResult GedSurface::DoOnUiEvent(ui::event_constptr_t EV) {
   int ilocx, ilocy;
   RootToLocal(ix, iy, ilocx, ilocy);
 
-  lev2::PixelFetchContext ctx;
+  lev2::PixelFetchContext ctx(1);
   ctx.miMrtMask = (1 << 0); //| (1 << 1); // ObjectID and ObjectUVD
-  ctx.mUsage[0] = lev2::PixelFetchContext::EPU_PTR64;
+  ctx._usage[0] = lev2::PixelFetchContext::EPU_PTR64;
 
   bool filt_kpush = (filtev.mAction == "keypush");
 

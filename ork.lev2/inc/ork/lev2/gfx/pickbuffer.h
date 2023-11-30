@@ -32,8 +32,8 @@ namespace ork { namespace lev2 {
 struct PixelFetchContext {
   ork::rtti::ICastable* GetObject(PickBuffer* pb, int ichan) const;
   void* GetPointer(int ichan) const;
-  PixelFetchContext();
-
+  PixelFetchContext(size_t size=0);
+  void resize(size_t s);
   //////////////////////
 
   fvec4 encodeVariant(pickvariant_t data);
@@ -47,13 +47,11 @@ struct PixelFetchContext {
     EPU_SVARIANT,
   };
 
-  static const int kmaxitems = 4;
-
   Context* _gfxContext = nullptr;
   rtgroup_ptr_t _rtgroup;
   int miMrtMask;
-  pickvariant_t _pickvalues[kmaxitems];
-  EPixelUsage mUsage[kmaxitems];
+  std::vector<pickvariant_t> _pickvalues;
+  std::vector<EPixelUsage> _usage;
   std::unordered_map<uint64_t,int> _pickIDlut;
   std::vector<pickvariant_t> _pickIDvec;
   anyp mUserData;

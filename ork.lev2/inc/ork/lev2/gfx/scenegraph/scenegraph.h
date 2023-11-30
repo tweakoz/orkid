@@ -153,7 +153,7 @@ struct Layer {
 ///////////////////////////////////////////////////////////////////////////
 struct SgPickBuffer {
 
-  using callback_t = std::function<void(pickvariant_t)>;
+  using callback_t = std::function<void(pixelfetchctx_ptr_t)>;
 
   SgPickBuffer(ork::lev2::Context* ctx, Scene& scene);
   void mydraw(fray3_constptr_t ray);
