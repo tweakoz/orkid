@@ -367,6 +367,14 @@ struct XgmModel final {
       const RenderContextInstData& MatCtx,
       const RenderContextInstModelData& MdlCtx) const;
 
+  void RenderSkeleton(
+      const XgmModelInst* minst,
+      const fcolor4& ModColor,
+      const fmtx4& WorldMat,
+      ork::lev2::Context* pTARG,
+      const RenderContextInstData& MatCtx,
+      const RenderContextInstModelData& MdlCtx) const;
+
   /////////////////////////////////////
 
   static bool LoadUnManaged(XgmModel* mdl, const AssetPath& fname, const asset::vars_t& vars);
