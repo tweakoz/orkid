@@ -12,11 +12,13 @@ parser.add_argument("executable_name", help="Name of the executable (without pat
 parser.add_argument("exec_args", nargs=argparse.REMAINDER, help="Arguments for the executable.")
 args = parser.parse_args()
 
-capture_path = path.stage()/"tempdir"/"temp.rdc"
+capture_path = path.temp()/"temp.rdc"
 
 exe_path, exe_args, exe_name = _debug_helpers.get_exec_and_args(args)
 
-renderdoc = path.Path("/opt/renderdoc_1.28/bin/qrenderdoc")
+rdoc_dir = path.Path(os.environ["RENDERDOC_DIR"])
+
+renderdoc = rdoc_dir/"bin"/"qrenderdoc"
 
 project_content = {
     "rdocCaptureSettings": 1,
@@ -46,7 +48,7 @@ project_content = {
     }
 }
 
-project_file_path = path.stage()/"tempdir"/"project.cap"
+project_file_path = path.temp()/"project.cap"
 with open(project_file_path, 'w') as f:
     json.dump(project_content, f, indent=4)
 
