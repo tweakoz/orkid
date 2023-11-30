@@ -148,6 +148,12 @@ void ModelDrawable::enqueueToRenderQueue(drawablebufitem_constptr_t item, lev2::
     frad = vwhd.z;
   frad *= 0.6f;
 
+  if( isPickState ){
+    if( not _pickable ){
+      return;
+    }
+  }
+
   bool bCenterInFrustum = monofrustum.contains(ctr);
 
   //////////////////////////////////////////////////////////////////////

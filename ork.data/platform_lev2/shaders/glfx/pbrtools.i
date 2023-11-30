@@ -153,16 +153,6 @@ fragment_interface iface_forward : ub_frg_fwd : ub_frg_fwd_lighting {
   }
 }
 ///////////////////////////////////////////////////////////////
-fragment_interface iface_pick : ub_frg_fwd {
-  inputs {
-    vec4 frg_wpos;
-  }
-  outputs {
-    layout(location = 0) vec4 out_color;
-    layout(location = 1) vec4 out_wpos;
-  }
-}
-///////////////////////////////////////////////////////////////
 // Fragmentertex Interfaces
 ///////////////////////////////////////////////////////////////
 fragment_interface iface_fdprepass : ub_frg_fwd {
@@ -546,14 +536,6 @@ vertex_shader vs_forward_skinned_mono
   ////////////////////////////////
   gl_Position                   = mvp * skn_pos;
 }
-vertex_shader vs_pick_skinned_mono 
-    : iface_vgbuffer_skinned 
-    : skin_tools 
-    : lib_pbr_vtx {
-  vec4 skn_pos = vec4(SkinPosition(position.xyz), 1);
-  gl_Position                   = mvp * skn_pos;
-  frg_wpos = m * skn_pos;
-}
 vertex_shader vs_forward_skinned_stereo : iface_vgbuffer_skinned : skin_tools : lib_pbr_vtx : extension(GL_NV_stereo_view_rendering)
     : extension(GL_NV_viewport_array2) {
   vec4 skn_pos = vec4(SkinPosition(position.xyz), 1);
@@ -575,11 +557,6 @@ fragment_shader ps_forward_test //
   : lib_def // 
   : lib_fwd { //
   out_color = vec4(forward_lighting_mono(ModColor.xyz), 1);
-}
-fragment_shader ps_pick //
-  : iface_pick {
-  out_color = ModColor; 
-  out_wpos = mod(frg_wpos,1);
 }
 fragment_shader ps_forward_test_instanced_mono : iface_forward : lib_math : lib_brdf : lib_def : lib_fwd {
   out_color = vec4(forward_lighting_mono(frg_modcolor.xyz), 1);
@@ -690,4 +667,49 @@ vertex_shader vs_forward_unlit : iface_vgbuffer : lib_pbr_vtx {
 fragment_shader ps_forward_unlit : iface_forward {
   vec3 rgb  = texture(ColorMap, frg_uv0).xyz * ModColor.xyz;
   out_color = vec4(ModColor.xyz, 1);
+}
+///////////////////////////////////////////////////////////////
+// picking
+///////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////
+vertex_interface iface_vtx_pick_skinned 
+  : iface_skintools {
+  inputs {
+    vec4 position : POSITION;
+    vec3 normal : NORMAL;
+  }
+  outputs {
+    vec4 frg_wpos;
+    vec3 frg_wnrm;
+  }
+}
+///////////////////////////////////////////////////////////////
+fragment_interface iface_frg_pick : ub_frg_fwd {
+  inputs {
+    vec4 frg_wpos;
+    vec3 frg_wnrm;
+  }
+  outputs {
+    layout(location = 0) vec4 out_color;
+    layout(location = 1) vec4 out_wpos;
+    layout(location = 2) vec4 out_wnrm;
+  }
+}
+///////////////////////////////////////////////////////////////
+vertex_shader vs_pick_skinned_mono 
+    : iface_vtx_pick_skinned 
+    : skin_tools 
+    : ub_vtx {
+  vec4 skn_pos = vec4(SkinPosition(position.xyz), 1);
+  vec3 skn_nrm = SkinNormal(normal);
+  gl_Position                   = mvp * skn_pos;
+  frg_wpos = m * skn_pos;
+  frg_wnrm = normalize(mrot * normal);
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_pick //
+  : iface_frg_pick {
+  out_color = ModColor; 
+  out_wpos = frg_wpos;
+  out_wnrm = vec4(frg_wnrm,0);
 }

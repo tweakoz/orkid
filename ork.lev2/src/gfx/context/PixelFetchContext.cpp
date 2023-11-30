@@ -34,16 +34,16 @@ PixelFetchContext::PixelFetchContext(size_t s)
     resize(s);
 }
 void PixelFetchContext::resize(size_t s){
-  _pickvalues.resize(2);
-  _usage.resize(2);
+  _pickvalues.resize(s);
+  _usage.resize(s);
+  miMrtMask = (1<<s)-1;
+  for( size_t i=0; i<s; i++ ){
+    _usage[i] = EPU_SVARIANT;
+    _pickvalues[i] = fvec4(0,0,0,1);
+  }
 }
 
 /////////////////////////////////////////////////////////////////////////
-
-enum class EPFCEncoding{
-  UNKNOWN = 0,
-  CONSTOBJPTR = 1,
-};
 
 fvec4 PixelFetchContext::encodeVariant(pickvariant_t data){
   fvec4 rval;

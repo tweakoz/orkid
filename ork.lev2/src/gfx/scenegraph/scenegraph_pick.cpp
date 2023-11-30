@@ -14,11 +14,11 @@ SgPickBuffer::SgPickBuffer(ork::lev2::Context* ctx, Scene& scene)
     : _context(ctx)
     , _scene(scene) {
   _pick_mvp_matrix           = std::make_shared<fmtx4>();
-  _pfc = std::make_shared<PixelFetchContext>(2);
+  _pfc = std::make_shared<PixelFetchContext>(3);
   _pfc->_gfxContext = ctx;
-  _pfc->miMrtMask   = 3;
   _pfc->_usage[0]   = lev2::PixelFetchContext::EPU_SVARIANT;
   _pfc->_usage[1]   = lev2::PixelFetchContext::EPU_FLOAT;
+  _pfc->_usage[2]   = lev2::PixelFetchContext::EPU_FLOAT;
 }
 ///////////////////////////////////////////////////////////////////////////
 void SgPickBuffer::pickWithScreenCoord(cameradata_ptr_t cam, fvec2 screencoord, callback_t callback) {
@@ -60,7 +60,9 @@ void SgPickBuffer::mydraw(fray3_constptr_t ray) {
     piknode->gpuInit(_context, PICKBUFDIM, PICKBUFDIM);
     _pfc->_rtgroup = piknode->GetOutputGroup();
     _compimpl               = _compdata->createImpl();
-    _picktexture = _pfc->_rtgroup->GetMrt(1)->texture();
+    _pickIDtexture = _pfc->_rtgroup->GetMrt(0)->texture();
+    _pickPOStexture = _pfc->_rtgroup->GetMrt(1)->texture();
+    _pickNRMtexture = _pfc->_rtgroup->GetMrt(2)->texture();
   }
   _compimpl->_compcontext->Resize(PICKBUFDIM, PICKBUFDIM);
   ///////////////////////////////////////////////////////////////////////////

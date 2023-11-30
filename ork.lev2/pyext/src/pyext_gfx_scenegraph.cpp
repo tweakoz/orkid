@@ -58,6 +58,14 @@ void pyinit_scenegraph(py::module& module_lev2) {
               [](node_ptr_t node, bool ena) { //
                 node->_enabled = ena;
               })
+          .def_property(
+              "pickable",                    //
+              [](node_ptr_t node) -> bool { //
+                return node->_pickable;
+              },
+              [](node_ptr_t node, bool ena) { //
+                node->_pickable = ena;
+              })
           .def_property_readonly(
               "user",                                       //
               [](node_ptr_t node) -> varmap::varmap_ptr_t { //

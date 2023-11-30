@@ -54,6 +54,7 @@ public:
   DrawQueueXfData _dqxfdata;
   varmap::varmap_ptr_t _userdata;
   bool _enabled = true;
+  bool _pickable = true;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -167,7 +168,9 @@ struct SgPickBuffer {
   compositorimpl_ptr_t _compimpl;
   fmtx4_ptr_t _pick_mvp_matrix;
   CameraData _camdat;
-  const ork::lev2::Texture* _picktexture = nullptr;
+  const ork::lev2::Texture* _pickIDtexture = nullptr;
+  const ork::lev2::Texture* _pickPOStexture = nullptr;
+  const ork::lev2::Texture* _pickNRMtexture = nullptr;
 };
 using sgpickbuffer_ptr_t = std::shared_ptr<SgPickBuffer>;
 

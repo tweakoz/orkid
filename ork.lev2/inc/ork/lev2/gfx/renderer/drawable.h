@@ -318,6 +318,7 @@ struct Drawable {
   on_render_rcid_t _rendercb;
   on_render_rcid_t _rendercb_user;
   bool mEnabled;
+  bool _pickable = true;
   std::string _name;
 
   uint32_t _sortkey = 0;

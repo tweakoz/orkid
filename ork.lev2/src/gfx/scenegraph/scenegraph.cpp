@@ -516,6 +516,7 @@ void Scene::enqueueToRenderer(cameradatalut_ptr_t cameras,on_enqueue_fn_t on_enq
     l->_drawable_nodes.atomicOp([drawable_layer, this](const Layer::drawablenodevect_t& unlocked) {
       for (auto n : unlocked) {
         if (n->_drawable and n->_enabled) {
+          
           DrawItem item;
           item._layer   = drawable_layer;
           item._drwnode = n;
@@ -553,6 +554,7 @@ void Scene::enqueueToRenderer(cameradatalut_ptr_t cameras,on_enqueue_fn_t on_enq
                        (void*) n->_drawable->_name.c_str(), //
                        drawable_layer->_name.c_str() );
     }
+    n->_drawable->_pickable = n->_pickable;
     n->_drawable->enqueueOnLayer(n->_dqxfdata, *drawable_layer);
   }
 
@@ -664,6 +666,8 @@ void Scene::_renderIMPL(Context* context,rcfd_ptr_t RCFD){
       static bool gpuinit = true;
       static freestyle_mtl_ptr_t pickhudmat = std::make_shared<lev2::FreestyleMaterial>();
       static fxtechnique_constptr_t tek_texcolor;
+      static fxtechnique_constptr_t tek_texcolormod1;
+      static fxtechnique_constptr_t tek_texcolornrm;
       static fxparam_constptr_t par_colormap;
       static fxparam_constptr_t par_mvp;
 
@@ -671,26 +675,48 @@ void Scene::_renderIMPL(Context* context,rcfd_ptr_t RCFD){
         gpuinit = false;
         pickhudmat->gpuInit(context,"orkshader://solid");
         tek_texcolor = pickhudmat->technique("texcolor");
+        tek_texcolormod1 = pickhudmat->technique("texcolormod1");
+        tek_texcolornrm = pickhudmat->technique("texcolornrm");
         par_colormap = pickhudmat->param("ColorMap");
         par_mvp = pickhudmat->param("MatMVP");
       }
-      if(_sgpickbuffer->_picktexture){
-
-        auto uimatrix = mtxi->uiMatrix(TARGW, TARGH);
-        context->debugPushGroup("pickhud");
+      auto uimatrix = mtxi->uiMatrix(TARGW, TARGH);
+      context->debugPushGroup("pickhud");
+      size_t DIM = 200;
+      if(_sgpickbuffer->_pickIDtexture){
         pickhudmat->begin(tek_texcolor,*RCFD);
-        fxi->BindParamCTex(par_colormap, _sgpickbuffer->_picktexture);
+        fxi->BindParamCTex(par_colormap, _sgpickbuffer->_pickIDtexture);
         fxi->BindParamMatrix(par_mvp, uimatrix);
-
-
-        dwi->quad2DEML(fvec4(0,0,256,256), // quadrect
+        dwi->quad2DEML(fvec4(0,0,DIM,DIM), // quadrect
                        fvec4(1,0,-1,1), // uvrect
                        fvec4(1,0,-1,1), // uvrect2
                        0.0f );         // depth
 
         pickhudmat->end(*RCFD);
-        context->debugPopGroup();
       }
+      if(_sgpickbuffer->_pickPOStexture){
+        pickhudmat->begin(tek_texcolormod1,*RCFD);
+        fxi->BindParamCTex(par_colormap, _sgpickbuffer->_pickPOStexture);
+        fxi->BindParamMatrix(par_mvp, uimatrix);
+        dwi->quad2DEML(fvec4(0,DIM,DIM,DIM), // quadrect
+                       fvec4(1,0,-1,1), // uvrect
+                       fvec4(1,0,-1,1), // uvrect2
+                       0.0f );         // depth
+
+        pickhudmat->end(*RCFD);
+      }
+      if(_sgpickbuffer->_pickNRMtexture){
+        pickhudmat->begin(tek_texcolornrm,*RCFD);
+        fxi->BindParamCTex(par_colormap, _sgpickbuffer->_pickNRMtexture);
+        fxi->BindParamMatrix(par_mvp, uimatrix);
+        dwi->quad2DEML(fvec4(0,DIM*2,DIM,DIM), // quadrect
+                       fvec4(1,0,-1,1), // uvrect
+                       fvec4(1,0,-1,1), // uvrect2
+                       0.0f );         // depth
+
+        pickhudmat->end(*RCFD);
+      }
+      context->debugPopGroup();
       
     }
     ////////////////////////////////////////////////////////////////////////////

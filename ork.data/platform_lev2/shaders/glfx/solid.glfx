@@ -106,6 +106,14 @@ fragment_shader ps_texcolor4 : iface_fmt {
   vec4 texc = texture(ColorMap, frg_uv0);
   out_clr   = texc;
 }
+fragment_shader ps_texcolor_modulo1 : iface_fmt {
+  vec4 texc = texture(ColorMap, frg_uv0);
+  out_clr   = vec4(mod(texc.xyz,1), 1);
+}
+fragment_shader ps_texcolor_nrm : iface_fmt {
+  vec4 texc = texture(ColorMap, frg_uv0);
+  out_clr   = vec4(vec3(.5,.5,.5)+texc.xyz*0.5, 0);
+}
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_blit : iface_fmt {
   vec3 texc = texture(ColorMap, frg_uv0.xy).xyz;
@@ -317,6 +325,22 @@ technique texcolor {
   pass p0 {
     vertex_shader   = vs_vtxcolor;
     fragment_shader = ps_texcolor;
+    state_block     = sb_default;
+  }
+}
+technique texcolormod1 {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_vtxcolor;
+    fragment_shader = ps_texcolor_modulo1;
+    state_block     = sb_default;
+  }
+}
+technique texcolornrm {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_vtxcolor;
+    fragment_shader = ps_texcolor_nrm;
     state_block     = sb_default;
   }
 }
