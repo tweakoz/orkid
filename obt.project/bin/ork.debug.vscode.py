@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 
 import sys, os, json, argparse, re, shutil
+from obt import path 
 
-this_dir = path.fileOfInvokingModule(__FILE__)
+this_dir = path.fileOfInvokingModule()
 import _debug_helpers
 
 def create_vscode_config(workspace_path, bin_path, env_vars, exec_args):
@@ -37,12 +38,15 @@ def create_vscode_config(workspace_path, bin_path, env_vars, exec_args):
         ]
     }
   else:  # Assuming Linux for now
+    extensions_py = path.orkid()/"obt.project"/"scripts"/"ork"/"ix_gdb_extensions.py"
+    stdcxx_extensions_py = path.Path("/usr/share/gcc/python/libstdcxx/v6/printers.py")
     config = {
         "version": "0.2.0",
         "configurations": [
             {
                 "name": "Debug Executable (GDB)",
-                "type": "cppdbg",
+                #"type": "cppdbg",
+                "type": "sldb",
                 "request": "launch",
                 "program": bin_path,
                 "args": exec_args,
@@ -52,7 +56,9 @@ def create_vscode_config(workspace_path, bin_path, env_vars, exec_args):
                 "externalConsole": False,
                 "MIMode": "gdb",
                 "setupCommands": [
-                    {"description": "Enable pretty-printing for gdb", "text": "-enable-pretty-printing", "ignoreFailures": True}
+                    {"description": "Enable pretty-printing for gdb", "text": "-enable-pretty-printing", "ignoreFailures": True},
+                    {"description": "ork-extensions", "text": "--command "+str(extensions_py), "ignoreFailures": True},
+                    {"description": "ork-extensions", "text": "--command "+str(stdcxx_extensions_py), "ignoreFailures": True}
                 ],
                 "preLaunchTask": "",
                 "miDebuggerPath": "gdb",

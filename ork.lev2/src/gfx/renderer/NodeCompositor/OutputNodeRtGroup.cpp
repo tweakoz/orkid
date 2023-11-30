@@ -29,16 +29,21 @@ void RtGroupOutputCompositingNode::describeX(class_t* c) {
 ///////////////////////////////////////////////////////////////////////////////
 struct RTGIMPL {
   ///////////////////////////////////////
-  RTGIMPL(RtGroupOutputCompositingNode* node)
+  RTGIMPL(const RtGroupOutputCompositingNode* node,rtgroup_ptr_t defaultrtg)
       : _node(node)
       , _camname(AddPooledString("Camera"))
       , _layers(AddPooledString("All")) {
+    _outputRTG = defaultrtg;
   }
   ///////////////////////////////////////
   ~RTGIMPL() {
   }
   ///////////////////////////////////////
   void gpuInit(lev2::Context* ctx) {
+    if(nullptr==_outputRTG){
+      _outputRTG = std::make_shared<RtGroup>(ctx,8, 8, MsaaSamples::MSAA_1X);
+      auto rtb = _outputRTG->createRenderTarget(EBufferFormat::RGBA32F);
+    }
     if (_needsinit) {
       _blit2screenmtl.gpuInit(ctx, "orkshader://solid");
       _blit2screenmtl.gpuInit(ctx, "orkshader://solid");
@@ -90,19 +95,20 @@ struct RTGIMPL {
     CIMPL->popCPD();
   }
   ///////////////////////////////////////
-  RtGroupOutputCompositingNode* _node = nullptr;
+  const RtGroupOutputCompositingNode* _node = nullptr;
+  rtgroup_ptr_t _outputRTG;
   PoolString _camname, _layers;
   CompositingPassData _CPD;
   FreestyleMaterial _blit2screenmtl;
-  const FxShaderTechnique* _fxtechnique1x1;
-  const FxShaderTechnique* _fxtechnique2x2;
-  const FxShaderTechnique* _fxtechnique3x3;
-  const FxShaderTechnique* _fxtechnique4x4;
-  const FxShaderTechnique* _fxtechnique5x5;
-  const FxShaderTechnique* _fxtechnique6x6;
-  const FxShaderTechnique* _fxtechnique7x7;
-  const FxShaderParam* _fxpMVP;
-  const FxShaderParam* _fxpColorMap;
+  fxtechnique_constptr_t _fxtechnique1x1;
+  fxtechnique_constptr_t _fxtechnique2x2;
+  fxtechnique_constptr_t _fxtechnique3x3;
+  fxtechnique_constptr_t _fxtechnique4x4;
+  fxtechnique_constptr_t _fxtechnique5x5;
+  fxtechnique_constptr_t _fxtechnique6x6;
+  fxtechnique_constptr_t _fxtechnique7x7;
+  fxparam_constptr_t     _fxpMVP;
+  fxparam_constptr_t     _fxpColorMap;
   bool _needsinit = true;
   int _width      = 0;
   int _height     = 0;
@@ -110,8 +116,7 @@ struct RTGIMPL {
 ///////////////////////////////////////////////////////////////////////////////
 RtGroupOutputCompositingNode::RtGroupOutputCompositingNode(rtgroup_ptr_t defaultrtg) 
   : _supersample(0) {
-  _impl       = std::make_shared<RTGIMPL>(this);
-  _static_rtg = defaultrtg;
+  _impl       = std::make_shared<RTGIMPL>(this,defaultrtg);
 }
 RtGroupOutputCompositingNode::~RtGroupOutputCompositingNode() {
 }
@@ -140,9 +145,9 @@ void RtGroupOutputCompositingNode::composite(CompositorDrawData& drawdata) {
   Context* context                  = framedata.GetTarget();
   auto fbi                          = context->FBI();
   auto gbi = context->GBI();
-  RtGroup* output_rtg = _static_rtg.get();
+  auto output_rtg = impl->_outputRTG.get();
 
-  if(0)
+  if(1)
   printf( "composite into rtg<%s> w<%d> h<%d>\n", //
            output_rtg->_name.c_str(), //
            output_rtg->width(), //
@@ -162,7 +167,7 @@ void RtGroupOutputCompositingNode::composite(CompositorDrawData& drawdata) {
         int dstw = output_buffer->_width;
         int dsth = output_buffer->_height;
 
-        //printf( "src<%d %d> dst<%d %d>\n", srcw, srch, dstw, dsth );
+        printf( "src<%d %d> dst<%d %d>\n", srcw, srch, dstw, dsth );
 
         assert(src_buffer != nullptr);
         auto tex = src_buffer->texture();

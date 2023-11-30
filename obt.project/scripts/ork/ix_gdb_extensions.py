@@ -155,6 +155,14 @@ class FilteredBacktrace(gdb.Command):
         "std::shared_ptr<ork::AppInitData>": "appinitdata_ptr_t",
         "std::shared_ptr<ork::lev2::CameraDataLut>":
         "lev2::cameradatalut_ptr_t",
+        "std::shared_ptr<ork::lev2::CameraData>": "lev2::cameradata_ptr_t",
+        "std::shared_ptr<ork::lev2::scenegraph::Scene>": "lev2SG::scene_ptr_t",
+        "ork::Vector2<float>": "fvec2",
+        "ork::Vector3<float>": "fvec3",
+        "ork::Vector4<float>": "fvec4",
+        "ork::Vector2<double>": "dvec2",
+        "ork::Vector3<double>": "dvec3",
+        "ork::Vector4<double>": "dvec4",
     }
 
   ############################################################
@@ -244,7 +252,10 @@ class FilteredBacktrace(gdb.Command):
   @staticmethod
   def should_filter(file_name):
     # Define your filtering criteria here
-    return "lib/gcc/x86_64-linux-gnu" in file_name
+    do_filter = "lib/gcc/x86_64-linux-gnu" in file_name
+    do_filter = do_filter or "conda/python" in file_name
+    do_filter = do_filter or "include/pybind11" in file_name
+    return do_filter
 
 
 ###############################################################################
@@ -327,6 +338,77 @@ class TextureDataPrinter:
     return r_str
 
 
+###############################################################################
+
+
+class OrkStepInCommand(gdb.Command):
+  """Step in and stop at the next line that passes a specified filter. 
+    If the line doesn't pass the filter, step out."""
+
+  def __init__(self):
+    super(OrkStepInCommand, self).__init__("ork-step-in", gdb.COMMAND_USER)
+
+  def invoke(self, arg, from_tty):
+    def source_filter(file_name):
+      return "orkid" in file_name
+
+    while True:
+
+      gdb.execute("step", to_string=True)
+      frame = gdb.selected_frame()
+      if not frame:
+        print("No frame available.")
+        return
+
+      sal = frame.find_sal()  # Get source and line info
+      if not sal or not sal.symtab:
+        continue  # No source info available, keep stepping
+
+      filename = sal.symtab.fullname()
+      if source_filter(filename):
+        # We've reached a line that passes the filter
+        print(f"Stopped at {filename}:{sal.line}")
+        break
+      else:
+        # If the filter doesn't pass, step out and continue
+        gdb.execute("finish", to_string=True)
+
+###############################################################################
+
+class OrkStepOutCommand(gdb.Command):
+  """Step in and stop at the next line that passes a specified filter. 
+    If the line doesn't pass the filter, step out."""
+
+  def __init__(self):
+    super(OrkStepOutCommand, self).__init__("ork-step-out", gdb.COMMAND_USER)
+
+  def invoke(self, arg, from_tty):
+    def source_filter(file_name):
+      return "orkid" in file_name
+
+    finished = False
+    
+    while not finished:
+      gdb.execute("finish", to_string=True)
+      frame = gdb.selected_frame()
+      if not frame:
+        print("No frame available.")
+        finished = True
+        continue
+      else:
+        sal = frame.find_sal()  # Get source and line info
+        if not sal or not sal.symtab:
+          continue  # No source info available, keep stepping
+        filename = sal.symtab.fullname()
+        if source_filter(filename):
+          # We've reached a line that passes the filter
+          print(f"Stopped at {filename}:{sal.line}")
+          finished = True
+          break
+
+###############################################################################
+
+
 def build_pretty_printer():
   pp = gdb.printing.RegexpCollectionPrettyPrinter("MyPrettyPrinters")
   pp.add_printer('ork::lev2::RenderContextInstData', '^RenderContextInstData$',
@@ -341,5 +423,7 @@ def build_pretty_printer():
 
 FilteredBacktrace()
 FilterThreads()
-gdb.printing.register_pretty_printer(gdb.current_objfile(),
-                                     build_pretty_printer())
+OrkStepInCommand()
+OrkStepOutCommand()
+
+gdb.printing.register_pretty_printer(None,build_pretty_printer())

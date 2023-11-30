@@ -525,6 +525,24 @@ vertex_shader vs_forward_instanced_stereo : iface_forward_stereo_instanced : lib
   gl_ViewportMask[0]            = 1;
   gl_SecondaryViewportMaskNV[0] = 2;
 }
+vertex_shader vs_forward_skinned_mono 
+    : iface_vgbuffer_skinned 
+    : skin_tools 
+    : lib_pbr_vtx {
+  vec4 skn_pos = vec4(SkinPosition(position.xyz), 1);
+  vec3 skn_nrm = SkinNormal(normal);
+  vec3 skn_bit = SkinNormal(binormal); // // technically binormal is a bitangent
+  vs_common(skn_pos, skn_nrm, skn_bit);
+  ////////////////////////////////
+  gl_Position                   = mvp * skn_pos;
+}
+vertex_shader vs_pick_skinned_mono 
+    : iface_vgbuffer_skinned 
+    : skin_tools 
+    : lib_pbr_vtx {
+  vec4 skn_pos = vec4(SkinPosition(position.xyz), 1);
+  gl_Position                   = mvp * skn_pos;
+}
 vertex_shader vs_forward_skinned_stereo : iface_vgbuffer_skinned : skin_tools : lib_pbr_vtx : extension(GL_NV_stereo_view_rendering)
     : extension(GL_NV_viewport_array2) {
   vec4 skn_pos = vec4(SkinPosition(position.xyz), 1);
@@ -539,8 +557,17 @@ vertex_shader vs_forward_skinned_stereo : iface_vgbuffer_skinned : skin_tools : 
   gl_SecondaryViewportMaskNV[0] = 2;
 }
 //////////////////////////////////////
-fragment_shader ps_forward_test : iface_forward : lib_math : lib_brdf : lib_def : lib_fwd {
+fragment_shader ps_forward_test //
+  : iface_forward // 
+  : lib_math // 
+  : lib_brdf // 
+  : lib_def // 
+  : lib_fwd { //
   out_color = vec4(forward_lighting_mono(ModColor.xyz), 1);
+}
+fragment_shader ps_pick //
+  : iface_forward {
+  out_color = ModColor; 
 }
 fragment_shader ps_forward_test_instanced_mono : iface_forward : lib_math : lib_brdf : lib_def : lib_fwd {
   out_color = vec4(forward_lighting_mono(frg_modcolor.xyz), 1);

@@ -139,14 +139,15 @@ public:
   virtual FrameBufferInterface* FBI()    = 0; // FrameBuffer/Control Interface
   virtual TextureInterface* TXI()        = 0; // Texture Interface
   virtual DrawingInterface* DWI()        = 0; // Drawing Interface
-
 #if defined(ENABLE_COMPUTE_SHADERS)
   virtual ComputeInterface* CI() = 0; // ComputeShader Interface
 #endif
   virtual ImmInterface* IMI() {
     return 0;
   } // Immediate Mode Interface (optional)
-
+  ///////////////////////////////////////////////////////////////////////
+  void triggerFrameDebugCapture();
+  virtual void _doTriggerFrameDebugCapture() {}
   ///////////////////////////////////////////////////////////////////////
   /// push command group onto debugstack (for renderdoc,apitrace,nsight,etc..)
   virtual void debugPushGroup(const std::string str) {
@@ -306,7 +307,7 @@ public:
   int miTargetFrame;
   int miDrawLock;
   bool mbPostInitializeContext;
-
+  bool _isFrameDebugCapture = false;
   fvec4 maModColorStack[kiModColorStackMax];
   fvec4 mvModColor;
   PerformanceItem mFramePerfItem;
@@ -321,6 +322,9 @@ public:
   void scheduleOnBeginFrame(void_lambda_t l) {
     _onBeginFrameCallbacks.push_back(l);
   }
+  void scheduleBeforeDoEndFrameOneShot(void_lambda_t l) {
+    _onBeforeDoEndFrameOneShotCallbacks.push_back(l);
+  }
   void scheduleOnEndFrame(void_lambda_t l) {
     _onEndFrameCallbacks.push_back(l);
   }
@@ -330,6 +334,7 @@ public:
 private:
   std::vector<void_lambda_t> _onBeginFrameCallbacks;
   std::vector<void_lambda_t> _onEndFrameCallbacks;
+  std::vector<void_lambda_t> _onBeforeDoEndFrameOneShotCallbacks;
 
   virtual void _doBeginFrame(void) = 0;
   virtual void _doEndFrame(void)   = 0;

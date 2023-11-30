@@ -73,7 +73,7 @@ void CallbackDrawable::enqueueToRenderQueue(drawablebufitem_constptr_t item, lev
   // auto str                             = matrix.dump4x3cn();
   // printf("XFX: %s\n", str.c_str());
   renderable.SetMatrix(matrix);
-  renderable.SetObject(GetOwner());
+  renderable._pickID = _pickID;
   renderable.SetRenderCallback(mRenderCallback);
   renderable.SetSortKey(_sortkey);
   renderable.SetDrawableDataA(GetUserDataA());

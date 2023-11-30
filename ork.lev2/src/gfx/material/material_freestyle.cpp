@@ -286,7 +286,7 @@ void FreestyleMaterial::bindParamMatrixArray(const FxShaderParam* par, const fmt
 ///////////////////////////////////////////////////////////////////////////////
 void FreestyleMaterial::begin(const FxShaderTechnique* tek, const RenderContextFrameData& RCFD) {
   OrkAssert(tek != nullptr);
-  auto targ = RCFD.GetTarget();
+ auto targ = RCFD.GetTarget();
   auto fxi  = targ->FXI();
   auto rsi  = targ->RSI();
   RenderContextInstData RCID(&RCFD);
@@ -294,7 +294,8 @@ void FreestyleMaterial::begin(const FxShaderTechnique* tek, const RenderContextF
   int npasses  = this->BeginBlock(targ, RCID);
   fxi->BindPass(0);
   rsi->BindRasterState(_rasterstate);
-}
+  OrkAssert(tek->mbValidated);
+ }
 ///////////////////////////////////////////////////////////////////////////////
 void FreestyleMaterial::begin(
     const FxShaderTechnique* tekMono,

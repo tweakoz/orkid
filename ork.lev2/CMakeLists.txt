@@ -96,6 +96,15 @@ ELSEIF(${UNIX})
       target_compile_definitions( ork_lev2 PRIVATE ENABLE_VULKAN )
       target_include_directories (ork_lev2 PRIVATE $ENV{OBT_VULKAN_ROOT}/include)
       list(APPEND libs vulkan )
+
+      IF(CMAKE_BUILD_TYPE STREQUAL "Debug")
+      IF(EXISTS ENV{RENDERDOC_DIR}/include/)
+        target_include_directories(ork_lev2 PRIVATE ENV{RENDERDOC_DIR}/include/)
+        set(RENDERDOC_API_ENABLED:BOOL=ON)
+        target_compile_definitions( ork_lev2 PRIVATE RENDERDOC_API_ENABLED )
+      ENDIF()
+      ENDIF()
+
     ENDIF()
 
 

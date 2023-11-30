@@ -12,6 +12,11 @@ technique PIK_RI_NI {
 	vf_pass={vs_forward_test,ps_forward_test,sb_default}
 }
 ///////////////////////////////////////////////////////////////
+technique PIK_SK_NI {
+	fxconfig=fxcfg_default;
+	vf_pass={vs_pick_skinned_mono,ps_pick,sb_default}
+}
+///////////////////////////////////////////////////////////////
 technique PIK_RI_IN {
 	fxconfig=fxcfg_default;
 	vf_pass={vs_forward_instanced,ps_forward_test,sb_default}

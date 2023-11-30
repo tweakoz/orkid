@@ -12,7 +12,7 @@
 #include <ork/kernel/string/string.h>
 #include <ork/kernel/datacache.h>
 
-constexpr bool _DEBUG_SHADER_COMPILE = false;
+constexpr bool _DEBUG_SHADER_COMPILE = true;
 
 namespace ork::lev2::glslfx {
 ///////////////////////////////////////////////////////////////////////////////
@@ -27,7 +27,7 @@ void Shader::dumpFinalText() const {
 ///////////////////////////////////////////////////////////////////////////////
 
 bool Shader::Compile() {
-  GL_NF_ERRORCHECK();
+  GL_ERRORCHECK();
 
   Timer ctimer;
   ctimer.Start();

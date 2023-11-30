@@ -42,21 +42,9 @@ drawable_ptr_t ModelDrawableData::createDrawable() const {
 
 ///////////////////////////////////////////////////////////////////////////////
 ModelDrawable::ModelDrawable(DrawableOwner* pent) {
-  for (int i = 0; i < kMaxEngineParamFloats; i++)
-    mEngineParamFloats[i] = 0.0f;
 }
 /////////////////////////////////////////////////////////////////////
 ModelDrawable::~ModelDrawable() {
-}
-/////////////////////////////////////////////////////////////////////
-void ModelDrawable::setEngineParamFloat(int idx, float fv) {
-  OrkAssert(idx >= 0 && idx < kMaxEngineParamFloats);
-  mEngineParamFloats[idx] = fv;
-}
-/////////////////////////////////////////////////////////////////////
-float ModelDrawable::getEngineParamFloat(int idx) const {
-  OrkAssert(idx >= 0 && idx < kMaxEngineParamFloats);
-  return mEngineParamFloats[idx];
 }
 ///////////////////////////////////////////////////////////////////////////////
 void ModelDrawable::bindModelInst(xgmmodelinst_ptr_t minst) {
@@ -215,16 +203,11 @@ void ModelDrawable::enqueueToRenderQueue(drawablebufitem_constptr_t item, lev2::
       }
 
       if (btest) {
+        //OrkBreak();
         lev2::ModelRenderable& renderable = renderer->enqueueModel();
-
-        // if(mEngineParamFloats[0] < 1.0f && mEngineParamFloats[0] > 0.0f)
-        //  orkprintf("mEngineParamFloats[0] = %g\n", mEngineParamFloats[0]);
-
-        for (int i = 0; i < kMaxEngineParamFloats; i++)
-          renderable.SetEngineParamFloat(i, mEngineParamFloats[i]);
-
+        
         renderable._modelinst = std::const_pointer_cast<const XgmModelInst>(_modelinst);
-        renderable.SetObject(GetOwner());
+        renderable._pickID = _pickID;
         renderable._submeshinst = submeshinst;
         renderable._cluster = cluster;
         renderable.SetModColor(_modcolor);
@@ -273,18 +256,6 @@ void ModelDrawable::enqueueToRenderQueue(drawablebufitem_constptr_t item, lev2::
 /////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////
 ModelRenderable::ModelRenderable(IRenderer* renderer) {
-  for (int i = 0; i < kMaxEngineParamFloats; i++)
-    mEngineParamFloats[i] = 0.0f;
-}
-///////////////////////////////////////////////////////////////////////////////
-void ModelRenderable::SetEngineParamFloat(int idx, float fv) {
-  OrkAssert(idx >= 0 && idx < kMaxEngineParamFloats);
-  mEngineParamFloats[idx] = fv;
-}
-///////////////////////////////////////////////////////////////////////////////
-float ModelRenderable::GetEngineParamFloat(int idx) const {
-  OrkAssert(idx >= 0 && idx < kMaxEngineParamFloats);
-  return mEngineParamFloats[idx];
 }
 ///////////////////////////////////////////////////////////////////////////////
 void ModelRenderable::Render(const IRenderer* renderer) const {
@@ -326,6 +297,7 @@ void ModelRenderable::Render(const IRenderer* renderer) const {
   RCID.SetRenderer(renderer);
   RCID.setRenderable(this);
   RCID._pipeline_cache = _submeshinst->_fxpipelinecache;
+  RCID._pickID = _pickID;
   // context->debugMarker(FormatString("toolrenderer::RenderModel isskinned<%d> owner_as_ent<%p>", int(model->isSkinned()),
   // as_ent));
   ///////////////////////////////////////
@@ -335,6 +307,7 @@ void ModelRenderable::Render(const IRenderer* renderer) const {
   RCID._isSkinned       = model_is_skinned;
   RCID_MD.SetSkinned(model_is_skinned);
   RCID_MD.SetModelInst(minst);
+
   auto ObjColor = this->_modColor;
   if (model_is_skinned) {
     model->RenderSkinned(minst.get(), ObjColor, nmat, context, RCID, RCID_MD);

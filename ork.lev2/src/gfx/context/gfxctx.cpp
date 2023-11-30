@@ -38,6 +38,11 @@ float Context::currentDPI() const {
 void Context::describeX(class_t* clazz) {
 }
 
+void Context::triggerFrameDebugCapture(){
+  _isFrameDebugCapture = true;
+  _doTriggerFrameDebugCapture();
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 void Context::beginFrame(void) {
@@ -73,6 +78,8 @@ void Context::endFrame(void) {
   for (auto l : _onEndFrameCallbacks)
     l();
 
+
+
   GBI()->EndFrame();
   MTXI()->PopMMatrix();
   MTXI()->PopVMatrix();
@@ -81,9 +88,16 @@ void Context::endFrame(void) {
 
   PopModColor();
   mbPostInitializeContext = false;
+
+  for (auto l : _onBeforeDoEndFrameOneShotCallbacks)
+    l();
+
+  _onBeforeDoEndFrameOneShotCallbacks.clear();
+
   _doEndFrame();
 
   miTargetFrame++;
+  _isFrameDebugCapture = false;
 }
 
 /////////////////////////////////////////////////////////////////////////

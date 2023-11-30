@@ -33,6 +33,8 @@
 
 namespace ork::meshutil {
 
+using bonename_set_t = std::set<std::string>;
+
 struct MaterialBindingItem {
   std::string mMaterialName;
   std::string mMaterialDaeId;

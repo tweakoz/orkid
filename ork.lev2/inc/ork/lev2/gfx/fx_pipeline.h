@@ -43,6 +43,8 @@ struct FxPipelinePermutation {
   bool _stereo = false;
   bool _instanced = false;
   bool _skinned = false;
+  bool _is_picking = false;
+  
   fxtechnique_constptr_t _forced_technique = nullptr;
 
 };
@@ -85,6 +87,8 @@ struct FxPipeline {
   fxparam_constptr_t _parInstanceIdMap     = nullptr;
   fxparam_constptr_t _parInstanceColorMap  = nullptr;
   svar64_t _impl;
+
+  bool _debugBreak = false;
 
 };
 

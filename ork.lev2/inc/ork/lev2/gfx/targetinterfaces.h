@@ -103,35 +103,6 @@ struct CaptureBuffer {
   ////////////////////////////
 };
 
-/// ////////////////////////////////////////////////////////////////////////////
-/// ////////////////////////////////////////////////////////////////////////////
-/// Pixel Getter Context
-///  this can grab pixels from buffers, including multiple pixels from MRT's
-/// ////////////////////////////////////////////////////////////////////////////
-/// ////////////////////////////////////////////////////////////////////////////
-
-struct PixelFetchContext {
-  ork::rtti::ICastable* GetObject(PickBuffer* pb, int ichan) const;
-  void* GetPointer(int ichan) const;
-  PixelFetchContext();
-
-  //////////////////////
-
-  enum EPixelUsage {
-    EPU_FLOAT = 0,
-    EPU_PTR64,
-  };
-
-  static const int kmaxitems = 4;
-
-  Context* _gfxContext = nullptr;
-  rtgroup_ptr_t _rtgroup;
-  int miMrtMask;
-  svar256_t _pickvalues[kmaxitems];
-  EPixelUsage mUsage[kmaxitems];
-  anyp mUserData;
-};
-
 #include "fxi.h"
 #include "imi.h"
 #include "mtxi.h"

@@ -10,6 +10,9 @@
 #include <ork/lev2/gfx/gfxenv.h>
 #include "gl.h"
 #include <ork/lev2/gfx/gfxprimitives.h>
+#include <ork/kernel/environment.h>
+#include <ork/file/path.h>
+#include <dlfcn.h>
 
 #if defined(ORK_CONFIG_OPENGL) && defined(LINUX)
 
@@ -37,9 +40,36 @@ extern "C" {
 extern bool gbVSYNC;
 }
 
+
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
+
+#if defined(RENDERDOC_API_ENABLED)
+  static RENDERDOC_API_1_6_0* _glrenderdocAPI = nullptr;
+#endif
+
+void ContextGL::_doTriggerFrameDebugCapture() {
+}
+void ContextGL::_doBeginFrame() {
+#if defined(RENDERDOC_API_ENABLED)
+  if(_glrenderdocAPI and _isFrameDebugCapture){
+    printf( "RENDERDOC BEGIN CAPTURE FRAME\n");
+    _glrenderdocAPI->StartFrameCapture(NULL, NULL);
+  }
+#endif
+}
+void ContextGL::_doEndFrame() {
+#if defined(RENDERDOC_API_ENABLED)
+  if(_glrenderdocAPI and _isFrameDebugCapture ){
+    _glrenderdocAPI->EndFrameCapture(NULL, NULL);
+    uint32_t numcap = _glrenderdocAPI->GetNumCaptures();
+    printf( "RENDERDOC END CAPTURE FRAME numcap<%u>\n", numcap );
+
+  }
+  _isFrameDebugCapture = false;
+#endif
+}
 
 void setAlwaysOnTop(GLFWwindow *window) {
     Display *display = glfwGetX11Display();
@@ -189,6 +219,23 @@ void ContextGL::GLinit() {
   global_ctxbase->makeCurrent();
   gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
   
+  #if defined(RENDERDOC_API_ENABLED)
+  std::string renderdoc_path;
+  if( genviron.get("RENDERDOC_DIR", renderdoc_path) ){
+    auto renderdoc_lib = renderdoc_path + "/lib/librenderdoc.so";
+    if(void *mod = dlopen(renderdoc_lib.c_str(), RTLD_NOW | RTLD_NOLOAD)) {
+      pRENDERDOC_GetAPI RENDERDOC_GetAPI = (pRENDERDOC_GetAPI)dlsym(mod, "RENDERDOC_GetAPI");
+      int ret = RENDERDOC_GetAPI(eRENDERDOC_API_Version_1_6_0, (void **)&_glrenderdocAPI);
+      OrkAssert(ret == 1);
+      _glrenderdocAPI->SetCaptureFilePathTemplate(file::Path::temp_dir().c_str());
+    }
+  }
+  else{
+    auto the_error = dlerror();
+    printf( "dlerror<%s>\n", the_error );
+  }
+  #endif
+
   ////////////////////////////////////
   
   //GLint num_gpus = 0;
@@ -202,6 +249,7 @@ void ContextGL::GLinit() {
     loadctx->_global_plato  = GlIxPlatformObject::_global_plato;
     _loadTokens.push((void*)loadctx);
   }
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -215,6 +263,8 @@ context_ptr_t OpenGlContextInit() {
   auto target = std::make_shared<ContextGL>();
   target->initializeLoaderContext();
   GfxEnv::initializeWithContext(target);
+
+
   return target;
 }
 

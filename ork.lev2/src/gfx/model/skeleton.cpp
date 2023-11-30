@@ -192,6 +192,7 @@ void XgmSkeleton::resize(int inumjoints) {
   _inverseBindMatrices.resize(inumjoints);
   _jointMatrices.resize(inumjoints);
   _nodeMatrices.resize(inumjoints);
+  _jointProperties.resize(inumjoints);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

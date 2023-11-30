@@ -194,7 +194,7 @@ bool XgmModel::_loadAssimp(XgmModel* mdl, datablock_ptr_t inp_datablock) {
   printf( "xgm_datablock<%p>\n", (void*) xgm_datablock.get() );
   if (not xgm_datablock or FORCE_MODEL_REGEN()) {
     xgm_datablock = meshutil::assimpToXgm(inp_datablock);
-    DataBlockCache::setDataBlock(hashkey, xgm_datablock);
+    //DataBlockCache::setDataBlock(hashkey, xgm_datablock);
   }
   return _loadXGM(mdl, xgm_datablock);
 }
@@ -248,10 +248,19 @@ bool XgmModel::_loadXGM(XgmModel* mdl, datablock_ptr_t datablock) {
         int ijointmatrix = 0;
         int iinvrestmatrix = 0;
         int inodematrix = 0;
+
+        auto jprops = std::make_shared<XgmJointProperties>();
+        mdl->_skeleton->_jointProperties[ib] = jprops;
+
+        // read phase 0
+
         HeaderStream->GetItem(iskelindex);
         OrkAssert(ib == iskelindex);
         HeaderStream->GetItem(iparentindex);
         HeaderStream->GetItem(ijointname);
+        HeaderStream->GetItem(jprops->_numVerticesInfluenced);
+
+        // read phase 1
         HeaderStream->GetItem(inodematrix);
         HeaderStream->GetItem(ijointmatrix);
         HeaderStream->GetItem(iinvrestmatrix);
@@ -281,6 +290,8 @@ bool XgmModel::_loadXGM(XgmModel* mdl, datablock_ptr_t datablock) {
         decomp_out._scale.z = decomp_out._scale.x;
         
         mdl->_skeleton->_inverseBindMatrices[iskelindex] = bind_matrix.inverse();
+
+
       }
     }
     ///////////////////////////////////
@@ -622,18 +633,22 @@ datablock_ptr_t writeXgmToDatablock(const lev2::XgmModel* mdl) {
   logchan_mioW->log("WriteXgm: numjoints<%d>", inumjoints);
 
   for (int32_t ib = 0; ib < inumjoints; ib++) {
-    const std::string& JointName = skel.GetJointName(ib);
 
+    const std::string& JointName = skel.GetJointName(ib);
     int32_t JointParentIndex   = skel.GetJointParent(ib);
     const fmtx4& bind_matrix = skel._bindMatrices[ib];
     const fmtx4& JointMatrix   = skel.RefJointMatrix(ib);
     const fmtx4& NodeMatrix    = skel.RefNodeMatrix(ib);
 
+    // write phase 0
     HeaderStream->AddItem(ib);
     HeaderStream->AddItem(JointParentIndex);
     istring = chunkwriter.stringIndex(JointName.c_str());
     HeaderStream->AddItem(istring);
+    auto jprops = skel._jointProperties[ib];
+    HeaderStream->AddItem(jprops->_numVerticesInfluenced);
 
+    // write phase 1
     PropTypeString tstr;
     PropType<fmtx4>::ToString(NodeMatrix, tstr);
     istring = chunkwriter.stringIndex(tstr.c_str());
@@ -646,6 +661,8 @@ datablock_ptr_t writeXgmToDatablock(const lev2::XgmModel* mdl) {
     PropType<fmtx4>::ToString(bind_matrix, tstr);
     istring = chunkwriter.stringIndex(tstr.c_str());
     HeaderStream->AddItem(istring);
+
+
   }
 
   ///////////////////////////////////

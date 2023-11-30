@@ -24,6 +24,7 @@
               "ENABLE_PORTAUDIO",
               "ENABLE_IGL",
               "ENABLE_OPENVR",
+              "RENDERDOC_API_ENABLED"
             ],
             "compilerPath": "/usr/bin/clang",
             "cStandard": "c17",

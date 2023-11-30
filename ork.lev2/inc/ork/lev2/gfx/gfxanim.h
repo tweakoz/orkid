@@ -524,6 +524,12 @@ public:
 ///	 mpRootNode:		tree hierarchy (export) (move to collada land)
 /// ///////////////////////////////////////////////////////////////////////////
 
+struct XgmJointProperties{
+  int _numVerticesInfluenced = 0;
+};
+
+using xgmjointprops_ptr_t = std::shared_ptr<XgmJointProperties>;
+
 struct XgmSkeleton {
 
   /////////////////////////////////////
@@ -592,7 +598,7 @@ struct XgmSkeleton {
 
   /////////////////////////////////////
 
-  XgmSkelNode* mpRootNode = nullptr;
+  //XgmSkelNode* mpRootNode = nullptr;
   void* mpUserData        = nullptr;
 
   int miNumJoints = 0;
@@ -613,7 +619,10 @@ struct XgmSkeleton {
   orkvector<std::string> mvJointNameVect;
   orkvector<XgmBone> _bones;
   orkvector<int> maJointParents;
+  orkvector<xgmjointprops_ptr_t> _jointProperties;
+
   orklut<std::string, int> mmJointNameMap;
+
 };
 
 /////////////////////////////////////////////////////////////////////////////

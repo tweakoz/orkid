@@ -42,8 +42,8 @@ struct IRenderable {
   IRenderable();
   virtual ~IRenderable();
   //////////////////////////////////////////////////////////////////////////////
-  void SetObject(const ork::Object* o);
-  const ork::Object* GetObject() const;
+  void setObject(const ork::Object* o);
+  const ork::Object* getObject() const;
   const fcolor4& GetModColor() const;
   void SetModColor(const fcolor4& color);
   void SetMatrix(const fmtx4& mtx);
@@ -65,7 +65,7 @@ struct IRenderable {
 
   matrix_lamda_t genMatrixLambda() const;
 
-  const ork::Object* _object = nullptr;
+  pickvariant_t _pickID;
   bool _instanced            = false;
 
   fmtx4 _worldMatrix;
@@ -78,12 +78,8 @@ struct IRenderable {
 
 struct ModelRenderable : public IRenderable {
 
-  static const int kMaxEngineParamFloats = ork::lev2::RenderContextInstData::kMaxEngineParamFloats;
-
   ModelRenderable(IRenderer* renderer = NULL);
 
-  void SetEngineParamFloat(int idx, float fv);
-  float GetEngineParamFloat(int idx) const;
   uint32_t ComposeSortKey(const IRenderer* renderer) const final;
   void Render(const IRenderer* renderer) const final;
 
@@ -96,8 +92,6 @@ struct ModelRenderable : public IRenderable {
   int mMaterialPassIndex = 0;
   int mEdgeColor         = -1;
   float _scale           = 1.0f;
-
-  float mEngineParamFloats[kMaxEngineParamFloats];
 
   fvec3 _offset;
   fquat _orientation;

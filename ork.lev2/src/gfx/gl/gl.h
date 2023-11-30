@@ -36,6 +36,10 @@
 #include <ork/lev2/gfx/image.h>
 
 ///////////////////////////////////////////////////////////////////////////////
+#if defined(RENDERDOC_API_ENABLED)
+#include <renderdoc_app.h>
+#endif
+///////////////////////////////////////////////////////////////////////////////
 
 #define USE_ORKSL_LANG
 
@@ -118,7 +122,7 @@ struct GlRtGroupImpl {
 
 using glrtgroupimpl_ptr_t = std::shared_ptr<GlRtGroupImpl>;
 
-int GetGlError(void);
+int GetGlError();
 
 //////////////////////////////////////////////////////////////////////
 
@@ -265,8 +269,8 @@ public:
   void clearDepth(float fdepth) final;
   void _setViewport(int iX, int iY, int iW, int iH) final;
   void _setScissor(int iX, int iY, int iW, int iH) final;
-  void _doBeginFrame(void) final;
-  void _doEndFrame(void) final;
+  void _doBeginFrame() final;
+  void _doEndFrame() final;
 
   void capture(const RtBuffer* inpbuf, const file::Path& pth) final;
   bool captureToTexture(const CaptureBuffer& capbuf, Texture& tex) final {
@@ -311,7 +315,7 @@ public:
   VdsTextureAnimation(const AssetPath& pth);
   ~VdsTextureAnimation();                                                                   // virtual
   void UpdateTexture(TextureInterface* txi, Texture* ptex, TextureAnimationInst* ptexanim); // virtual
-  float GetLengthOfTime(void) const;                                                        // virtual
+  float GetLengthOfTime() const;                                                        // virtual
 
   void* ReadFromFrameCache(int iframe, int isize);
 
@@ -385,7 +389,7 @@ constexpr GLuint PBOOBJBASE   = 0x12340000;
 
 struct GlTextureInterface : public TextureInterface {
 
-  void TexManInit(void) override;
+  void TexManInit() override;
 
   pboptr_t _getPBO(size_t isize);
   void _returnPBO(pboptr_t pbo);
@@ -489,11 +493,11 @@ public:
 
   ///////////////////////////////////////////////////////////////////////
 
+  void _doTriggerFrameDebugCapture() final;
+
   void _doResizeMainSurface(int iw, int ih) final;
-  void _doBeginFrame(void) final {
-  }
-  void _doEndFrame(void) final {
-  }
+  void _doBeginFrame() final;
+  void _doEndFrame() final;
   void* _doClonePlatformHandle() const final;
 
 public:
@@ -536,7 +540,7 @@ public:
 
   //////////////////////////////////////////////
 
-  void makeCurrentContext(void) final;
+  void makeCurrentContext() final;
 
   void debugLabel(GLenum target, GLuint object, std::string name);
 

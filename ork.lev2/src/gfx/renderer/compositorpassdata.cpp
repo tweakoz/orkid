@@ -134,6 +134,9 @@ bool CompositingPassData::isPicking() const {
   return _ispicking;
 }
 void CompositingPassData::AddLayer(const std::string& layername) {
+  auto it = _layernameset.find(layername);
+  if (it == _layernameset.end())
+    _layernames.push_back(layername);
   _layernameset.insert(layername);
 }
 bool CompositingPassData::HasLayer(const std::string& layername) const {

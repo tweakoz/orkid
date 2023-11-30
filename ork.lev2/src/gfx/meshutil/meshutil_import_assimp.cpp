@@ -373,9 +373,11 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
       auto nren = remapSkelName(n->mName.data);
 
       auto it_nod_skelnode                 = xgmskelnodes.find(nren);
-      ork::lev2::xgmskelnode_ptr_t nod_skelnode = (it_nod_skelnode != xgmskelnodes.end()) ? it_nod_skelnode->second : nullptr;
+      ork::lev2::xgmskelnode_ptr_t nod_skelnode = (it_nod_skelnode != xgmskelnodes.end()) //
+                                                ? it_nod_skelnode->second //
+                                                : nullptr;
 
-      //logchan_meshutilassimp->log("xgmnode<%p:%s>\n", (void*) nod_skelnode, nod_skelnode->_name.c_str());
+      //logchan_meshutilassimp->log("xxx xgmnode<%p:%s>\n", (void*) nod_skelnode, nod_skelnode->_name.c_str());
       // auto ppar_skelnode = nod_skelnode->_parent;
       std::string name = nod_skelnode->_name;
       auto nodematrix  = nod_skelnode->_nodeMatrix;
@@ -422,6 +424,8 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
       //////////////////////////////////////////////
       // visit node
       //////////////////////////////////////////////
+
+      auto& deformer_bones = _varmap->makeValueForKey<bonename_set_t>("deformer_bones");
 
       for (int i = 0; i < n->mNumMeshes; ++i) {
         const aiMesh* mesh = scene->mMeshes[n->mMeshes[i]];
@@ -512,7 +516,8 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
                       auto pr      = std::make_pair(1.0f - fw, xgminfl);
                       largestWeightMap.insert(pr);
                     }
-                    // logchan_meshutilassimp->log(" inf<%d> bone<%s> weight<%g>\n", inf, remapped.c_str(), fw);
+                    deformer_bones.insert(remapped);
+                    logchan_meshutilassimp->log(" xxx inf<%d> bone<%s> weight<%g>\n", inf, remapped.c_str(), fw);
                   }
                   int icount      = 0;
                   float totweight = 0.0f;
@@ -600,6 +605,10 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
         }
         logchan_meshutilassimp->log("done processing numfaces<%d> ..", mesh->mNumFaces);
         logchan_meshutilassimp->log("numinputtriangles<%d>", numinputtriangles );
+        logchan_meshutilassimp->log("xxx num deformer bones<%zu>", deformer_bones.size() );
+        for( auto b : deformer_bones ){
+          logchan_meshutilassimp->log("xxx defbone<%s>", b.c_str() );
+        }
         /////////////////////////////////////////////
         // stats
         /////////////////////////////////////////////
@@ -673,6 +682,11 @@ void configureXgmSkeleton(const ork::meshutil::Mesh& input, lev2::XgmModel& xgmm
     xgmskel._inverseBindMatrices[idx] = skelnode ? skelnode->_bindMatrixInverse : fmtx4();
     xgmskel.RefJointMatrix(idx)       = skelnode ? skelnode->_jointMatrix : fmtx4();
     xgmskel.RefNodeMatrix(idx)        = skelnode ? skelnode->_nodeMatrix : fmtx4();
+
+    auto jprops = std::make_shared<lev2::XgmJointProperties>();
+    xgmskel._jointProperties[idx] = jprops;
+    jprops->_numVerticesInfluenced = skelnode->_numBoundVertices;
+
   }
   /////////////////////////////////////
   // flatten the skeleton (WIP)
@@ -683,21 +697,23 @@ void configureXgmSkeleton(const ork::meshutil::Mesh& input, lev2::XgmModel& xgmm
 
   auto root          = parsedskel->rootXgmSkelNode();
   xgmskel.miRootNode = root ? root->miSkelIndex : -1;
+  size_t add_count = 0;
   if (root) {
-    lev2::XgmSkelNode::visitHierarchy(root,[&xgmskel](lev2::xgmskelnode_ptr_t node) {
+    lev2::XgmSkelNode::visitHierarchy(root,[&xgmskel,&add_count](lev2::xgmskelnode_ptr_t node) {
       auto parent = node->_parent;
       if (parent) {
         bool ignore = (parent->_numBoundVertices == 0);
         ignore      = ignore and (node->_numBoundVertices == 0);
         if (ignore){
-          //logchan_meshutilassimp->log("IGNORE<%s>\n", node->_name.c_str());
+          //logchan_meshutilassimp->log("xxx IGNORE<%s>\n", node->_name.c_str());
         }
         else {
-          //logchan_meshutilassimp->log("ADD<%s>\n", node->_name.c_str());
+          logchan_meshutilassimp->log("xxx ADD<%zu:%s>\n", add_count, node->_name.c_str());
           int iparentindex   = parent->miSkelIndex;
           int ichildindex    = node->miSkelIndex;
           lev2::XgmBone Bone = {iparentindex, ichildindex};
           xgmskel.addBone(Bone);
+          add_count++;
         }
       }
     });

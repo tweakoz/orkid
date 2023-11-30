@@ -277,8 +277,8 @@ class AssetWidget(QWidget):
       for item in a:
         m = compiled_regex.match(item)
         if m != None:
-          b.append(item)
-      text = "\n".join(b)
+          b.append(Path(item))
+      text = "\n".join([str(x) for x in b])
       self.assetlist.setPlainText(text)
       settings.setValue("pattern",pattern)
       self.assetlist_list = b
@@ -366,7 +366,10 @@ class AssetWidget(QWidget):
       index = 0
       self.running_count = 0
       for item in self.assetlist_list:
-         cmdlist = [orkbin, "-i", item, "-o", path.temp()/"test.glb"]
+         out_dir = item.parent
+         out_fil = item.stem + ".glb"
+         print(out_dir,out_fil,out_dir/out_fil)
+         cmdlist = [orkbin, "-i", item, "-o", out_dir/out_fil]
          sp = SubProc(self,index,cmdlist,item)
          self.subprocs[index] = sp
          index += 1

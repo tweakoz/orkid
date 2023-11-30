@@ -46,7 +46,7 @@ def get_exec_and_args(parse_args):
       print("python3 not found.")
       exit(1)
     exec_args.insert(0, executable_path)
-    executable_path = python_path
+    executable_path = os.path.realpath(python_path)
 
   exec_name = re.sub(r"[^a-zA-Z0-9]", "_", parse_args.executable_name)
   return executable_path, exec_args, exec_name

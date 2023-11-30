@@ -197,6 +197,7 @@ public:
 
   fxtechnique_constptr_t _tek_PIK_RI_IN = nullptr;
   fxtechnique_constptr_t _tek_PIK_RI_NI = nullptr;
+  fxtechnique_constptr_t _tek_PIK_SK_NI = nullptr;
 
   //////////////////////
   // forward techniques

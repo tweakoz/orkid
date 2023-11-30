@@ -22,9 +22,47 @@
 namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
-class PickBuffer //: public ork::lev2::DisplayBuffer
-{
-public:
+/// ////////////////////////////////////////////////////////////////////////////
+/// ////////////////////////////////////////////////////////////////////////////
+/// Pixel Getter Context
+///  this can grab pixels from buffers, including multiple pixels from MRT's
+/// ////////////////////////////////////////////////////////////////////////////
+/// ////////////////////////////////////////////////////////////////////////////
+
+struct PixelFetchContext {
+  ork::rtti::ICastable* GetObject(PickBuffer* pb, int ichan) const;
+  void* GetPointer(int ichan) const;
+  PixelFetchContext();
+
+  //////////////////////
+
+  fvec4 encodeVariant(pickvariant_t data);
+  pickvariant_t decodeVariant(fvec4 inp);
+
+  //////////////////////
+
+  enum EPixelUsage {
+    EPU_FLOAT = 0,
+    EPU_PTR64,
+    EPU_SVARIANT,
+  };
+
+  static const int kmaxitems = 4;
+
+  Context* _gfxContext = nullptr;
+  rtgroup_ptr_t _rtgroup;
+  int miMrtMask;
+  pickvariant_t _pickvalues[kmaxitems];
+  EPixelUsage mUsage[kmaxitems];
+  std::unordered_map<uint64_t,int> _pickIDlut;
+  std::vector<pickvariant_t> _pickIDvec;
+  anyp mUserData;
+};
+
+/// ////////////////////////////////////////////////////////////////////////////
+
+struct PickBuffer  {
+
   PickBuffer(ui::Surface* surf, Context* ctx, int iW, int iH);
 
   void Init();

@@ -42,10 +42,13 @@ using lightnode_ptr_t    = std::shared_ptr<LightNode>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct Node {
+struct Node : public ork::Object {
+
+  DeclareAbstractX(Node, ork::Object);
+public:
 
   Node(std::string named);
-  virtual ~Node();
+  //virtual ~Node();
 
   std::string _name;
   DrawQueueXfData _dqxfdata;
@@ -148,21 +151,25 @@ struct Layer {
 };
 
 ///////////////////////////////////////////////////////////////////////////
-struct PickBuffer {
-  PickBuffer(ork::lev2::Context* ctx, Scene& scene);
+struct SgPickBuffer {
+
+  using callback_t = std::function<void(pickvariant_t)>;
+
+  SgPickBuffer(ork::lev2::Context* ctx, Scene& scene);
   void mydraw(fray3_constptr_t ray);
-  uint64_t pickWithRay(fray3_constptr_t ray);
-  uint64_t pickWithScreenCoord(cameradata_ptr_t cam, fvec2 screencoord);
+  void pickWithRay(fray3_constptr_t ray, callback_t callback);
+  void pickWithScreenCoord(cameradata_ptr_t cam, fvec2 screencoord, callback_t callback);
   lev2::Context* _context    = nullptr;
   CompositingData* _compdata = nullptr;
 
   Scene& _scene;
-  lev2::PixelFetchContext _pixelfetchctx;
+  lev2::pixelfetchctx_ptr_t _pfc;
   compositorimpl_ptr_t _compimpl;
   fmtx4_ptr_t _pick_mvp_matrix;
   CameraData _camdat;
+  const ork::lev2::Texture* _picktexture = nullptr;
 };
-using pickbuffer_ptr_t = std::shared_ptr<PickBuffer>;
+using sgpickbuffer_ptr_t = std::shared_ptr<SgPickBuffer>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -218,8 +225,8 @@ struct Scene {
   void gpuInit(Context* ctx);
   void gpuExit(Context* ctx);
 
-  uint64_t pickWithRay(fray3_constptr_t ray);
-  uint64_t pickWithScreenCoord(cameradata_ptr_t cam, fvec2 screencoord);
+  void pickWithRay(fray3_constptr_t ray, SgPickBuffer::callback_t callback);
+  void pickWithScreenCoord(cameradata_ptr_t cam, fvec2 screencoord, SgPickBuffer::callback_t callback);
 
   template <typename T> std::shared_ptr<T> tryRenderNodeAs() {
     return std::dynamic_pointer_cast<T>(_renderNode);
@@ -228,13 +235,15 @@ struct Scene {
     return std::dynamic_pointer_cast<T>(_outputNode);
   }
 
+  void enablePickHud();
+
   dbufcontext_ptr_t _dbufcontext_SG;
   irenderer_ptr_t _renderer;
   lightmanager_ptr_t _lightManager;
   lightmanagerdata_ptr_t _lightManagerData;
   compositorimpl_ptr_t _compositorImpl;
   compositordata_ptr_t _compositorData;
-  pickbuffer_ptr_t _pickbuffer;
+  sgpickbuffer_ptr_t _sgpickbuffer;
   nodecompositortechnique_ptr_t _compositorTechnique = nullptr;
   compositoroutnode_ptr_t _outputNode            = nullptr;
   compositorrendernode_ptr_t _renderNode = nullptr;
@@ -260,6 +269,7 @@ struct Scene {
   };
 
   std::vector<DrawItem> _nodes2draw;
+  bool _enable_pick_hud = false;
 
 };
 

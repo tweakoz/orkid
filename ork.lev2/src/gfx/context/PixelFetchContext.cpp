@@ -39,6 +39,44 @@ PixelFetchContext::PixelFetchContext()
 
 /////////////////////////////////////////////////////////////////////////
 
+enum class EPFCEncoding{
+  UNKNOWN = 0,
+  CONSTOBJPTR = 1,
+};
+
+fvec4 PixelFetchContext::encodeVariant(pickvariant_t data){
+  fvec4 rval;
+
+  uint64_t hash = data.hash();
+  size_t index = 0;
+  if(_pickIDlut.find(hash) == _pickIDlut.end()){
+    index = _pickIDvec.size();
+    _pickIDlut[hash] = index;
+    _pickIDvec.push_back(data);
+  }
+  index += 0xf000f000f000f000;
+  rval.x = float(index & 0xFFFF);
+  rval.y = float((index >> 16) & 0xFFFF);
+  rval.z = float((index >> 32) & 0xFFFF);
+  rval.w = float((index >> 48) & 0xFFFF);
+  return rval;
+}
+pickvariant_t PixelFetchContext::decodeVariant(fvec4 rgba){
+  pickvariant_t rval;
+  uint64_t a             = uint64_t(rgba.x);
+  uint64_t b             = uint64_t(rgba.y);
+  uint64_t c             = uint64_t(rgba.z);
+  uint64_t d             = uint64_t(rgba.w);
+  size_t value = (d << 48) | (c << 32) | (b << 16) | a;
+  value -= 0xf000f000f000f000;
+  if(value < _pickIDvec.size()){
+    rval = _pickIDvec[value];
+  }
+  return rval;
+}
+
+/////////////////////////////////////////////////////////////////////////
+
 ork::rtti::ICastable* PixelFetchContext::GetObject(PickBuffer* pb, int ichan) const {
   if (nullptr == pb)
     return nullptr;

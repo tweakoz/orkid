@@ -44,10 +44,9 @@ struct IMPL {
     if (nullptr == _rtg) {
       _material.gpuInit(pTARG);
       _rtg             = std::make_shared<RtGroup>(pTARG, _width, _height, MsaaSamples::MSAA_1X);
-      auto buf1        = _rtg->createRenderTarget(EBufferFormat::RGBA16UI);
-      auto buf2        = _rtg->createRenderTarget(EBufferFormat::RGBA32F);
+      auto buf1        = _rtg->createRenderTarget(EBufferFormat::RGBA32F);
       buf1->_debugName = "PickingRt0";
-      buf2->_debugName = "PickingRt1";
+      _rtg->_name = "PickingRtGroup";
     }
     pTARG->debugPopGroup();
     _initted = true;
@@ -56,14 +55,15 @@ struct IMPL {
   void _render(PickingCompositingNode* node, CompositorDrawData& drawdata) {
     FrameRenderer& framerenderer = drawdata.mFrameRenderer;
     RenderContextFrameData& RCFD = framerenderer.framedata();
-    auto targ                    = RCFD.GetTarget();
-    auto CIMPL                   = drawdata._cimpl;
-    auto FBI                     = targ->FBI();
-    auto this_buf                = FBI->GetThisBuffer();
-    auto RSI                     = targ->RSI();
-    const auto TOPCPD            = CIMPL->topCPD();
-    auto tgt_rect                = targ->mainSurfaceRectAtOrigin();
     auto& ddprops                = drawdata._properties;
+
+    auto context                    = RCFD.GetTarget();
+    auto CIMPL                   = drawdata._cimpl;
+    auto FBI                     = context->FBI();
+    auto this_buf                = FBI->GetThisBuffer();
+    auto RSI                     = context->RSI();
+    const auto TOPCPD            = CIMPL->topCPD();
+    auto tgt_rect                = context->mainSurfaceRectAtOrigin();
     //////////////////////////////////////////////////////
     // Resize RenderTargets
     //////////////////////////////////////////////////////
@@ -73,12 +73,11 @@ struct IMPL {
     //////////////////////////////////////////////////////
     auto irenderer = ddprops["irenderer"_crcu].get<lev2::IRenderer*>();
     //////////////////////////////////////////////////////
-    targ->debugPushGroup("Picking::render");
+    context->debugPushGroup("Picking::render");
     RtGroupRenderTarget rt(_rtg.get());
     {
-      targ->FBI()->PushRtGroup(_rtg.get());
-      targ->FBI()->SetAutoClear(false); // explicit clear
-      targ->beginFrame();
+      //targ->triggerFrameDebugCapture();
+      FBI->SetAutoClear(false); // explicit clear
       /////////////////////////////////////////////////////////////////////////////////////////
       auto DB             = RCFD.GetDB();
       auto CPD            = CIMPL->topCPD();
@@ -87,30 +86,43 @@ struct IMPL {
       CPD._ispicking      = true;
       CPD._cameraMatrices = ddprops["defcammtx"_crcu].get<const CameraMatrices*>();
       CPD.SetDstRect(tgt_rect);
+      CPD.assignLayers(_layername);
+      RCFD._renderingmodel = "PICKING"_crcu;
       ///////////////////////////////////////////////////////////////////////////
       if (DB) {
+
         ///////////////////////////////////////////////////////////////////////////
-        // DrawableBuffer -> RenderQueue enqueue
+        // enqueue renderables to DB
         ///////////////////////////////////////////////////////////////////////////
+
         for (const auto& layer_name : CPD.getLayerNames()) {
-          targ->debugMarker(FormatString("Picking::renderEnqueuedScene::layer<%s>", layer_name.c_str()));
+          context->debugMarker(FormatString("Picking::renderEnqueuedScene::layer<%s>", layer_name.c_str()));
           DB->enqueueLayerToRenderQueue(layer_name, irenderer);
         }
+
+        ///////////////////////////////////////////////////////////////////////////
+        // clear
+        ///////////////////////////////////////////////////////////////////////////
+
+        FBI->PushRtGroup(_rtg.get());
+        FBI->Clear(fvec3(0,0,0), 1.0f);
+
         /////////////////////////////////////////////////
-        auto MTXI = targ->MTXI();
+        // render enqueued
+        /////////////////////////////////////////////////
+        auto MTXI = context->MTXI();
         CIMPL->pushCPD(CPD);
-        targ->debugPushGroup("toolvp::DrawEnqRenderables");
-        targ->FBI()->Clear(node->_clearColor, 1.0f);
+        context->debugPushGroup("rnodePicking::drawEnqueuedRenderables");
         irenderer->drawEnqueuedRenderables();
         framerenderer.renderMisc();
-        targ->debugPopGroup();
+        context->debugPopGroup();
         CIMPL->popCPD();
+        FBI->PopRtGroup();
+        irenderer->resetQueue();
       }
       /////////////////////////////////////////////////////////////////////////////////////////
-      targ->endFrame();
-      targ->FBI()->PopRtGroup();
     }
-    targ->debugPopGroup();
+    context->debugPopGroup();
   }
   ///////////////////////////////////////
   std::string _camname, _layername;

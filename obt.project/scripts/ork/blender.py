@@ -95,8 +95,8 @@ def export_character_mesh(blend_path, glb_path):
       "ACTIONS",  # Export actions (actives and on NLA tracks) as separate animations
       "export_nla_strips": False,
       "export_nla_strips_merged_animation_name": "Animation",
-      "export_def_bones": False,
-      "export_hierarchy_flatten_bones": False,
+      "export_def_bones": True,
+      "export_hierarchy_flatten_bones": True,
       #"export_hierarchy_flatten_objs": False,
       #"export_armature_object_remove": False,
       "export_optimize_animation_size": True,

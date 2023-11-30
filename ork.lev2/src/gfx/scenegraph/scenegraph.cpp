@@ -72,14 +72,15 @@ void Synchro::endRender(){
 
 ///////////////////////////////////////////////////////////////////////////////
 
-Node::Node(std::string named)
-    : _name(named) {
-  _userdata = std::make_shared<varmap::VarMap>();
+void Node::describeX(class_t* clazz){
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-Node::~Node() {
+Node::Node(std::string named)
+    : _name(named) {
+  _userdata = std::make_shared<varmap::VarMap>();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -143,6 +144,7 @@ drawable_node_ptr_t Layer::createDrawableNode(std::string named, drawable_ptr_t 
                      drawable.get(), // 
                      rval.get() ); //
   }
+  drawable->_pickID.set<object_ptr_t>(rval);
   return rval;
 }
 
@@ -248,7 +250,7 @@ Scene::~Scene() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void Scene::gpuInit(Context* ctx) {
-  _pickbuffer   = std::make_shared<PickBuffer>(ctx, *this);
+  _sgpickbuffer   = std::make_shared<SgPickBuffer>(ctx, *this);
   _dogpuinit    = false;
   _boundContext = ctx;
 
@@ -256,7 +258,7 @@ void Scene::gpuInit(Context* ctx) {
 }
 
 void Scene::gpuExit(Context* ctx){
-  _pickbuffer = nullptr;
+  _sgpickbuffer = nullptr;
   _compositorImpl = nullptr;
   _compositorData = nullptr;
   _renderer = nullptr;
@@ -274,16 +276,16 @@ void Scene::gpuExit(Context* ctx){
 
 ///////////////////////////////////////////////////////////////////////////////
 
-uint64_t Scene::pickWithRay(fray3_constptr_t ray) {
-  OrkAssert(_pickbuffer);
-  return _pickbuffer->pickWithRay(ray);
+void Scene::pickWithRay(fray3_constptr_t ray, SgPickBuffer::callback_t callback) {
+  if(_sgpickbuffer)
+    _sgpickbuffer->pickWithRay(ray, callback);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-uint64_t Scene::pickWithScreenCoord(cameradata_ptr_t cam, fvec2 screencoord) {
-  OrkAssert(_pickbuffer);
-  return _pickbuffer->pickWithScreenCoord(cam, screencoord);
+void Scene::pickWithScreenCoord(cameradata_ptr_t cam, fvec2 screencoord, SgPickBuffer::callback_t callback) {
+  if(_sgpickbuffer)
+    _sgpickbuffer->pickWithScreenCoord(cam, screencoord, callback);
 }
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -367,6 +369,10 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
     auto nodetek  = _compositorData->tryNodeTechnique<NodeCompositingTechnique>("scene1", "item1");
     auto outrnode = nodetek->tryRenderNodeAs<pbr::ForwardNode>();
     pbrcommon = outrnode->_pbrcommon;
+  } else if (preset == "PICKTEST") {
+    auto cdata = std::make_shared<CompositingData>();
+    cdata->presetPickingDebug();
+    _compositorData = cdata;
   } else if (preset == "USER"){
     _compositorData = params->typedValueForKey<compositordata_ptr_t>("compositordata").value();
   } else {
@@ -572,6 +578,10 @@ void Scene::enqueueToRenderer(cameradatalut_ptr_t cameras,on_enqueue_fn_t on_enq
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void Scene::enablePickHud(){
+  _enable_pick_hud = true;
+}
+
 void Scene::_renderIMPL(Context* context,rcfd_ptr_t RCFD){
 
   if (_dogpuinit) {
@@ -588,8 +598,11 @@ void Scene::_renderIMPL(Context* context,rcfd_ptr_t RCFD){
   auto DB = _dbufcontext_SG->acquireForReadLocked();
 
   RCFD->setUserProperty("DB"_crc, lev2::rendervar_t(DB));
-
   RCFD->setUserProperty("time"_crc,_currentTime);
+ 
+ auto pick_mvp_matrix           = std::make_shared<fmtx4>();
+
+  RCFD->setUserProperty("pickbufferMvpMatrix"_crc, pick_mvp_matrix);
 
   RCFD->pushCompositor(_compositorImpl);
 
@@ -600,6 +613,7 @@ void Scene::_renderIMPL(Context* context,rcfd_ptr_t RCFD){
   auto fxi  = context->FXI();  // FX Interface
   auto mtxi = context->MTXI(); // matrix Interface
   auto gbi  = context->GBI();  // GeometryBuffer Interface
+  auto dwi  = context->DWI();  // GeometryBuffer Interface
   ///////////////////////////////////////
   // compositor setup
   ///////////////////////////////////////
@@ -641,12 +655,45 @@ void Scene::_renderIMPL(Context* context,rcfd_ptr_t RCFD){
     // debug picking here, so it shows up in renderdoc (within frame boundaries)
     ////////////////////////////////////////////////////////////////////////////
     if (0) {
-      auto r   = std::make_shared<fray3>(fvec3(0, 0, 5), fvec3(0, 0, -1));
-      auto val = pickWithRay(r);
+      //auto r   = std::make_shared<fray3>(fvec3(0, 0, 5), fvec3(0, 0, -1));
+      //auto val = pickWithRay(r);
       // printf("%zx\n", val);
     }
     ////////////////////////////////////////////////////////////////////////////
+    if(_enable_pick_hud){
+      static bool gpuinit = true;
+      static freestyle_mtl_ptr_t pickhudmat = std::make_shared<lev2::FreestyleMaterial>();
+      static fxtechnique_constptr_t tek_texcolor;
+      static fxparam_constptr_t par_colormap;
+      static fxparam_constptr_t par_mvp;
 
+      if(gpuinit){
+        gpuinit = false;
+        pickhudmat->gpuInit(context,"orkshader://solid");
+        tek_texcolor = pickhudmat->technique("texcolor");
+        par_colormap = pickhudmat->param("ColorMap");
+        par_mvp = pickhudmat->param("MatMVP");
+      }
+      if(_sgpickbuffer->_picktexture){
+
+        auto uimatrix = mtxi->uiMatrix(TARGW, TARGH);
+        context->debugPushGroup("pickhud");
+        pickhudmat->begin(tek_texcolor,*RCFD);
+        fxi->BindParamCTex(par_colormap, _sgpickbuffer->_picktexture);
+        fxi->BindParamMatrix(par_mvp, uimatrix);
+
+
+        dwi->quad2DEML(fvec4(0,0,256,256), // quadrect
+                       fvec4(1,0,-1,1), // uvrect
+                       fvec4(1,0,-1,1), // uvrect2
+                       0.0f );         // depth
+
+        pickhudmat->end(*RCFD);
+        context->debugPopGroup();
+      }
+      
+    }
+    ////////////////////////////////////////////////////////////////////////////
     context->endFrame();
   }
   _dbufcontext_SG->releaseFromReadLocked(DB);
@@ -745,3 +792,5 @@ void Scene::renderOnContext(Context* context) {
 
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2::scenegraph
+
+ImplementReflectionX(ork::lev2::scenegraph::Node, "scenegraph::Node");

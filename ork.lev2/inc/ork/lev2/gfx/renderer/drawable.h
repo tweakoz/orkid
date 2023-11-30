@@ -117,7 +117,6 @@ struct DrawableBufLayer {
   }
   void Reset(const DrawableBuffer& dB);
   drawablebufitem_ptr_t enqueueDrawable(const DrawQueueXfData& xfdata, const Drawable* d);
-  // void terminate();
 
   DrawableBufLayer();
   ~DrawableBufLayer();
@@ -130,7 +129,6 @@ typedef std::function<void(lev2::RenderContextFrameData& RCFD)> prerendercallbac
 
 struct DrawableBuffer {
 public:
-  //using rendervar_t = svar64_t;
   using usermap_t   = orklut<CrcString, rendervar_t>;
 
   static std::atomic<int> _gate;
@@ -284,13 +282,6 @@ struct Drawable {
 
   virtual drawablebufitem_ptr_t enqueueOnLayer(const DrawQueueXfData& xfdata, DrawableBufLayer& buffer) const;
 
-  const ork::Object* GetOwner() const {
-    return mOwner;
-  }
-  void SetOwner(const ork::Object* owner) {
-    mOwner = owner;
-  }
-
   void SetUserDataA(var_t data) {
     mDataA = data;
   }
@@ -318,7 +309,7 @@ struct Drawable {
     return false;
   }
 
-  const ork::Object* mOwner;
+  pickvariant_t _pickID;
   var_t mDataA;
   var_t mDataB;
   varmap::varmap_ptr_t _properties;
@@ -386,9 +377,7 @@ struct ModelDrawable : public Drawable {
   ModelDrawable(DrawableOwner* owner = NULL);
   ~ModelDrawable();
 
-  void bindModelInst(xgmmodelinst_ptr_t pModelInst); // { mModelInst = pModelInst; }
-  void setEngineParamFloat(int idx, float fv);
-  float getEngineParamFloat(int idx) const;
+  void bindModelInst(xgmmodelinst_ptr_t pModelInst); 
   void enqueueToRenderQueue(drawablebufitem_constptr_t, lev2::IRenderer* renderer) const final;
 
   asset::loadrequest_ptr_t bindModelAsset(AssetPath assetpath);
@@ -410,8 +399,6 @@ struct ModelDrawable : public Drawable {
   fvec3 _offset;
   fquat _orientation;
 
-  static const int kMaxEngineParamFloats = ork::lev2::RenderContextInstData::kMaxEngineParamFloats;
-  float mEngineParamFloats[kMaxEngineParamFloats];
 };
 
 ///////////////////////////////////////////////////////////////////////////////

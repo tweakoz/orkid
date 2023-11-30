@@ -273,7 +273,7 @@ void XgmModel::RenderRigid(
   const XgmSubMesh& XgmClusSet = *mdlctx.mSubMesh;
   int inummesh                 = numMeshes();
   int inumclusset              = XgmMesh.numSubMeshes();
-
+  
   auto fxcache = RCID._pipeline_cache;
   OrkAssert(fxcache);
   auto pipeline = fxcache->findPipeline(RCID);
@@ -346,6 +346,9 @@ void XgmModel::RenderSkinned(
   ///////////////////////////////////
   // Draw Skinned Mesh
   ///////////////////////////////////
+  
+  if(CPD.isPicking()){
+  }
 
   if (1) // draw mesh
   {
@@ -372,6 +375,10 @@ void XgmModel::RenderSkinned(
         auto pipeline = fxcache->findPipeline(RCID);
         OrkAssert(pipeline);
 
+        if( pipeline->_debugBreak ){
+          //OrkBreak();
+        }
+
         pipeline->wrappedDrawCall(RCID, [&]() {
           size_t inumjoints = cluster->mJoints.size();
 
@@ -396,7 +403,7 @@ void XgmModel::RenderSkinned(
           { mtxblockitem.mApplicator->ApplyToTarget(pTARG); }
           mtl->UnBindMaterialInstItem(&mtxblockitem);
 
-          mtl->UpdateMVPMatrix(pTARG);
+          //mtl->UpdateMVPMatrix(pTARG);
 
           //////////////////////////////////////////////////////
           auto vtxbuffer = cluster->GetVertexBuffer();
@@ -420,6 +427,7 @@ void XgmModel::RenderSkinned(
   ////////////////////////////////////////
   // Draw Skeleton
 
+  if(not CPD.isPicking())
   if (minst->_drawSkeleton or SHOW_SKELETON()) {
 
     auto world_mtx = pTARG->MTXI()->RefMMatrix();
@@ -474,7 +482,17 @@ void XgmModel::RenderSkinned(
           if(iparent<0){
             continue;
           }
-
+         
+          auto ch_props = _skeleton->_jointProperties[ichild];
+          auto pa_props = _skeleton->_jointProperties[iparent];
+          OrkAssert(ch_props!=nullptr);
+          if(   (ch_props->_numVerticesInfluenced == 0)
+                ||(pa_props->_numVerticesInfluenced == 0) ){
+            continue;
+          }
+          //if(pa_props->_numVerticesInfluenced == 0){
+            //continue;
+          //}
           auto sk_par = _skeleton->_jointMatrices[iparent].translation();
           auto sk_chi = _skeleton->_jointMatrices[ichild].translation();
           //float bonelength = (sk_chi-sk_par).magnitude();

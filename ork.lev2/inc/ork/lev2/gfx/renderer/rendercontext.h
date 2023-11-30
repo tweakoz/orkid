@@ -33,8 +33,6 @@ struct RenderingModel {
 
 struct RenderContextInstData {
 
-  static constexpr int kMaxEngineParamFloats = 4;
-
   static const RenderContextInstData Default;
   static rcid_ptr_t create(rcfd_ptr_t the_rcfd);
 
@@ -51,8 +49,6 @@ struct RenderContextInstData {
   const XgmMaterialStateInst* GetMaterialInst() const;
   Context* context() const;
 
-  void SetEngineParamFloat(int idx, float fv);
-  float GetEngineParamFloat(int idx) const;
   //////////////////////////////////////
 
   fmtx4 worldMatrix() const;
@@ -85,8 +81,7 @@ struct RenderContextInstData {
   rcfd_ptr_t                    _held_rcfd  = nullptr;
   const XgmMaterialStateInst* mMaterialInst = nullptr;
   fxpipelinecache_constptr_t _pipeline_cache;
-
-  float mEngineParamFloats[kMaxEngineParamFloats];
+  pickvariant_t _pickID;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
