@@ -655,7 +655,7 @@ void GlFrameBufferInterface::GetPixel(const fvec4& rAt, PixelFetchContext& pfc) 
             if (MrtTest & MrtMask) {
 
               if(MrtIndex<pfc_size){
-                pfc._pickvalues[MrtIndex] = fcolor4(0.0f, 0.0f, 0.0f, 0.0f);
+                pfc._pickvalues[MrtIndex] = nullptr;
               }
 
               auto rtbuffer = pfc._rtgroup->GetMrt(MrtIndex);
