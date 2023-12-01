@@ -36,6 +36,7 @@ struct SCRIMPL {
       : _node(node)
       , _camname(AddPooledString("Camera"))
       , _layers(AddPooledString("All")) {
+      _CPD._debugName = "ScreenOutputCompositingNode";
   }
   ///////////////////////////////////////
   ~SCRIMPL() {

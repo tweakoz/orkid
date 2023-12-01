@@ -43,21 +43,28 @@ void XgmModel::RenderSkeleton(
   context->debugPushGroup("DrawSkeleton");
   context->PushModColor(fvec4::White());
 
-  static pbrmaterial_ptr_t material = default3DMaterial(context);
+  static pbrmaterial_ptr_t material_sk = std::make_shared<PBRMaterial>(context);
+  static pbrmaterial_ptr_t material_pick = std::make_shared<PBRMaterial>(context);
+  material_sk->mMaterialName = AddPooledString("mtl-sk");
+  material_sk->_variant = "vertexcolor"_crcu;
+  material_pick->mMaterialName = AddPooledString("mtl-sk-pick");
+  material_pick->_variant = "vertexcolor"_crcu;;
 
-  if(CPD.isPicking()){
+  bool is_pick = CPD.isPicking();
+
+  if( RCFD->hasUserProperty("is_sg_pick"_crc) ){
     //OrkBreak();
   }
 
+  auto use_mtl = is_pick //
+               ? material_pick   //
+               : material_sk;
+    //OrkBreak();
 
-  material->_variant = CPD.isPicking() //
-                     ? 0 //
-                     : "vertexcolor"_crcu;
 
-
-  material->_rasterstate.SetDepthTest(ork::lev2::EDepthTest::OFF);
-  material->_rasterstate.SetZWriteMask(true);
-  auto fxcache = material->pipelineCache();
+  use_mtl->_rasterstate.SetDepthTest(EDepthTest::OFF);
+  use_mtl->_rasterstate.SetZWriteMask(true);
+  auto fxcache = use_mtl->pipelineCache();
   OrkAssert(fxcache);
   RenderContextInstData RCIDCOPY = RCID;
   RCIDCOPY._isSkinned            = false;
@@ -66,6 +73,10 @@ void XgmModel::RenderSkeleton(
   auto pipeline                  = fxcache->findPipeline(RCIDCOPY);
   OrkAssert(pipeline);
 
+  if( RCFD->hasUserProperty("is_sg_pick"_crc) ){
+    printf("pipeline tek<%s> is_pick<%d> CPD<%s>\n", pipeline->_technique->mTechniqueName.c_str(), int(is_pick), CPD._debugName.c_str() );
+  }
+        
   //////////////
 
   {

@@ -6,7 +6,7 @@ from xml.dom import minidom
 
 from obt import path 
 
-this_dir = path.fileOfInvokingModule(__FILE__)
+this_dir = path.fileOfInvokingModule()
 sys.path.append(str(this_dir))
 
 import _debug_helpers
@@ -73,11 +73,18 @@ def create_xcode_structure(workspace_path, bin_path, env_vars, exec_args, workin
   os.system(f"open {workspace_path}")
 
 if __name__ == "__main__":
-  parser = argparse.ArgumentParser(description="Generate Xcode workspace structure with debug scheme.")
-  parser.add_argument("executable_name", help="Name of the executable or path to the script.")
-  parser.add_argument("rest", nargs=argparse.REMAINDER, help="Arguments for the executable.")
-  args = parser.parse_args()
-
+  #parser = argparse.ArgumentParser(description="Generate Xcode workspace structure with debug scheme.")
+  #parser.add_argument("executable_name", help="Name of the executable or path to the script.")
+  #parser.add_argument("rest", nargs=argparse.REMAINDER, help="Arguments for the executable.")
+  class MyArgParse:
+    def __init__(self):
+      self.executable_name = sys.argv[1]
+      if len(sys.argv) > 2:
+        self.exec_args = sys.argv[2:]
+      else:
+        self.exec_args = []
+  args = MyArgParse()
+  print(args)
   exe_path, exe_args, exe_name = _debug_helpers.get_exec_and_args(args)
 
   env_vars = {

@@ -120,6 +120,7 @@ struct RenderContextFrameData {
     return _userProperties;
   }
 
+  bool hasUserProperty(CrcString) const;
   void setUserProperty(CrcString, rendervar_t data);
   void unSetUserProperty(CrcString);
   rendervar_t getUserProperty(CrcString prop) const;

@@ -170,6 +170,8 @@ struct CompositingPassData {
   std::unordered_set<std::string> _layernameset;
   int _width = 0;
   int _height = 0;
+  
+  std::string _debugName;
 };
 
 typedef std::stack<lev2::CompositingPassData> compositingpassdatastack_t;

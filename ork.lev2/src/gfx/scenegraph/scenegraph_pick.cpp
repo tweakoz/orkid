@@ -96,7 +96,7 @@ void SgPickBuffer::mydraw(fray3_constptr_t ray) {
       ray->mOrigin, //
       ray->mOrigin + ray->mDirection,
       up);
-
+    
     auto mtcs                 = _camdat.computeMatrices(1.0);
     fmtx4 P                   = mtcs.GetPMatrix();
     fmtx4 V                   = mtcs.GetVMatrix();
@@ -111,7 +111,9 @@ void SgPickBuffer::mydraw(fray3_constptr_t ray) {
     RCFD.setUserProperty("DB"_crc, lev2::rendervar_t(DB));
     RCFD.setUserProperty("pickbufferMvpMatrix"_crc, _pick_mvp_matrix);
     RCFD.setUserProperty("pixel_fetch_context"_crc, _pfc);
+    RCFD.setUserProperty("is_sg_pick"_crcu, true);
     lev2::CompositingPassData CPD;
+    CPD._debugName = "scenegraph_pick";
     CPD.AddLayer("All");
     CPD.SetDstRect(tgt_rect);
     CPD._ispicking     = true;
@@ -131,6 +133,7 @@ void SgPickBuffer::mydraw(fray3_constptr_t ray) {
     ///////////////////////////////////////////////////////////////////////////
     _compimpl->pushCPD(CPD);
     FBI->EnterPickState(nullptr);
+    //OrkBreak();
     _compimpl->assemble(drawdata);
 
     _scene._dbufcontext_SG->releaseFromReadLocked(DB);

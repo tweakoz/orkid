@@ -55,6 +55,11 @@ compositorimpl_ptr_t RenderContextFrameData::topCompositor() const {
   return __cimplstack.top();
 }
 
+bool RenderContextFrameData::hasUserProperty(CrcString key) const {
+  auto it = _userProperties.find(key);
+  return (it != _userProperties.end());
+}
+
 void RenderContextFrameData::setUserProperty(CrcString key, rendervar_t val) {
   auto it = _userProperties.find(key);
   if (it == _userProperties.end())

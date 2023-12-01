@@ -581,6 +581,17 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu,con
           }
           break;
         }
+        case "PICKING"_crcu: {
+          if (not permu._instanced and not permu._skinned and not permu._stereo) {
+            if(mtl->_tek_PIK_RI_NI){
+              pipeline                     = std::make_shared<FxPipeline>(permu);
+              pipeline->_technique         = mtl->_tek_PIK_RI_NI;
+              pipeline->bindParam(mtl->_paramMVP, "RCFD_Camera_Pick"_crcsh);
+              OrkAssert(pipeline->_technique != nullptr);
+            }
+          }
+          break;
+        }
         default:
           break;
       }

@@ -9,7 +9,7 @@ fxconfig fxcfg_default {
 ///////////////////////////////////////////////////////////////
 technique PIK_RI_NI {
 	fxconfig=fxcfg_default;
-	vf_pass={vs_forward_test,ps_forward_test,sb_default}
+	vf_pass={vs_pick_rigid_mono,ps_pick,sb_default}
 }
 ///////////////////////////////////////////////////////////////
 technique PIK_SK_NI {
@@ -19,7 +19,7 @@ technique PIK_SK_NI {
 ///////////////////////////////////////////////////////////////
 technique PIK_RI_IN {
 	fxconfig=fxcfg_default;
-	vf_pass={vs_pick_rigid_mono,ps_pick,sb_default}
+	vf_pass={vs_pick_rigid_instanced_mono,ps_pick,sb_default}
 }
 ///////////////////////////////////////////////////////////////
 technique FWD_SKYBOX_MO {
