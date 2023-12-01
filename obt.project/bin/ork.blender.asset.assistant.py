@@ -182,7 +182,7 @@ class AssetWidget(QWidget):
      sbutton.setStyleSheet(button_style)
      sbutton.setMinimumSize(48,24)
      sbutton.setStyleSheet("QWidget{background-color: rgb(0,0,0); color: rgb(255,255,255);}")
-     self.srced = Edit("Source Directory")
+     self.srced = Edit("Source Directory","/")
      self.srced.edit.setMinimumSize(64,28)
      slay2 = QHBoxLayout()
      slay2.addLayout(self.srced.layout)
@@ -269,6 +269,8 @@ class AssetWidget(QWidget):
 
    def updateAssetList(self):
       srcpath = self.srced.value
+      if srcpath == "":
+         return
       a = pathtools.recursive_patglob(srcpath,"*.blend")
       pattern = self.filter_ed.value
       regex = fnmatch.translate(pattern)

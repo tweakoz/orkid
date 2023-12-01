@@ -125,6 +125,16 @@ void check_debug_log()
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void ContextGL::_doTriggerFrameDebugCapture() {
+}
+void ContextGL::_doBeginFrame() {
+}
+void ContextGL::_doEndFrame() {
+  _isFrameDebugCapture = false;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 static ork::atomic<int> atomic_init;
 
 void ContextGL::GLinit()
