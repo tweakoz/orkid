@@ -19,7 +19,7 @@ technique PIK_SK_NI {
 ///////////////////////////////////////////////////////////////
 technique PIK_RI_IN {
 	fxconfig=fxcfg_default;
-	vf_pass={vs_forward_instanced,ps_forward_test,sb_default}
+	vf_pass={vs_pick_rigid_mono,ps_pick,sb_default}
 }
 ///////////////////////////////////////////////////////////////
 technique FWD_SKYBOX_MO {

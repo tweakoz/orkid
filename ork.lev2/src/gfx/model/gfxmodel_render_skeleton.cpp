@@ -31,9 +31,6 @@ void XgmModel::RenderSkeleton(
   auto RCFD        = context->topRenderContextFrameData();
   const auto& CPD  = RCFD->topCPD();
 
-  if (CPD.isPicking()) {
-    return;
-  }
 
   ////////////////////////////////////////
   // Draw Skeleton
@@ -47,7 +44,17 @@ void XgmModel::RenderSkeleton(
   context->PushModColor(fvec4::White());
 
   static pbrmaterial_ptr_t material = default3DMaterial(context);
-  material->_variant                = "vertexcolor"_crcu;
+
+  if(CPD.isPicking()){
+    //OrkBreak();
+  }
+
+
+  material->_variant = CPD.isPicking() //
+                     ? 0 //
+                     : "vertexcolor"_crcu;
+
+
   material->_rasterstate.SetDepthTest(ork::lev2::EDepthTest::OFF);
   material->_rasterstate.SetZWriteMask(true);
   auto fxcache = material->pipelineCache();
@@ -55,13 +62,14 @@ void XgmModel::RenderSkeleton(
   RenderContextInstData RCIDCOPY = RCID;
   RCIDCOPY._isSkinned            = false;
   RCIDCOPY._pipeline_cache       = fxcache;
+
   auto pipeline                  = fxcache->findPipeline(RCIDCOPY);
   OrkAssert(pipeline);
 
   //////////////
 
   {
-    typedef SVtxV12N12B12T8C4 vertex_t;
+    using vertex_t = SVtxV12N12B12T8C4;
     auto& vtxbuf = GfxEnv::GetSharedDynamicVB2();
     VtxWriter<vertex_t> vw;
     int inumjoints = _skeleton->miNumJoints;
@@ -120,38 +128,70 @@ void XgmModel::RenderSkeleton(
         };
 
         // create bone vertices (pyramid)
-        c        = fvec4(c).transform(joint_par.inverse()).xyz();
         dir      = fvec4(dir, 0).transform(joint_par.inverse()).xyz();
         auto ctr = fvec4(dir * bl2);
-        auto px  = fvec4(bl2, 0, 0);
-        auto pz  = fvec4(0, 0, bl2);
+
 
         auto colorN = fvec3::White();
         auto colorX = fvec3(1, .7, .7);
         auto colorZ = fvec3(.7, .7, 1);
 
-        c = fvec3(0, bonelength * 0.5, 0);
+        auto chi_ctr = fvec3(0, bonelength * 0.5, 0);
+        auto par_ctr = fvec3(0, 0, 0);
 
-        add_vertex(fvec3(0, 0, 0), colorN);
-        add_vertex(c, colorN);
+        auto px  = par_ctr+fvec4(bl2, 0, 0);
+        auto pz  = par_ctr+fvec4(0, 0, bl2);
+        auto nx  = par_ctr+fvec4(-bl2, 0, 0);
+        auto nz  = par_ctr+fvec4(0, 0, -bl2);
 
-        add_vertex(ctr - px, fvec3(1, 1, 1));
-        add_vertex(ctr + px, fvec3(1, 0, 0));
-        add_vertex(ctr - pz, fvec3(1, 1, 1));
-        add_vertex(ctr + pz, fvec3(0, 0, 1));
+        // add triangles for bone (maintaining counter-clockwise winding)
 
-        add_vertex(c, colorX * 0.5);
-        add_vertex(ctr - px, colorX);
-        add_vertex(c, colorX * 0.5);
-        add_vertex(ctr + px, colorX);
-        add_vertex(c, colorZ * 0.5);
-        add_vertex(ctr - pz, colorZ);
-        add_vertex(c, colorZ * 0.5);
-        add_vertex(ctr + pz, colorZ);
+        add_vertex(par_ctr, colorN);
+        add_vertex(nx, colorN);
+        add_vertex(nz, colorN);
+
+        add_vertex(par_ctr, colorN);
+        add_vertex(nx, colorN);
+        add_vertex(pz, colorN);
+
+        add_vertex(par_ctr, colorN);
+        add_vertex(px, colorN);
+        add_vertex(pz, colorN);
+
+        add_vertex(par_ctr, colorN);
+        add_vertex(px, colorN);
+        add_vertex(nz, colorN);
+
+        add_vertex(par_ctr, colorN);
+        add_vertex(nx, colorN);
+        add_vertex(pz, colorN);
+     
+        // square to child
+
+        add_vertex(chi_ctr, colorN);
+        add_vertex(nx, colorN);
+        add_vertex(nz, colorN);
+
+        add_vertex(chi_ctr, colorN);
+        add_vertex(nx, colorN);
+        add_vertex(pz, colorN);
+
+        add_vertex(chi_ctr, colorN);
+        add_vertex(px, colorN);
+        add_vertex(pz, colorN);
+
+        add_vertex(chi_ctr, colorN);
+        add_vertex(px, colorN);
+        add_vertex(nz, colorN);
+
+
       }
       vw.UnLock(context);
       context->MTXI()->PushMMatrix(fmtx4::Identity());
-      pipeline->wrappedDrawCall(RCID, [&]() { context->GBI()->DrawPrimitiveEML(vw, PrimitiveType::LINES); });
+      RCIDCOPY._pickID = fvec4(1,0,1,1);
+      pipeline->wrappedDrawCall(RCIDCOPY, [&]() { //
+        context->GBI()->DrawPrimitiveEML(vw, PrimitiveType::TRIANGLES); 
+      });
       context->MTXI()->PopMMatrix();
     }
   }

@@ -60,6 +60,11 @@ fvec4 PixelFetchContext::encodeVariant(pickvariant_t data){
   rval.y = float((index >> 16) & 0xFFFF);
   rval.z = float((index >> 32) & 0xFFFF);
   rval.w = float((index >> 48) & 0xFFFF);
+
+  if(data.isA<fvec4>()){
+    rval = data.get<fvec4>();
+  }
+
   return rval;
 }
 pickvariant_t PixelFetchContext::decodeVariant(fvec4 rgba){

@@ -240,6 +240,9 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu,con
               pipeline                     = std::make_shared<FxPipeline>(permu);
               pipeline->_technique         = mtl->_tek_PIK_RI_NI;
               pipeline->bindParam(mtl->_paramMVP, "RCFD_Camera_Pick"_crcsh);
+              pipeline->bindParam(mtl->_paramM, "RCFD_M"_crcsh);
+              pipeline->bindParam(mtl->_paramMROT, "RCFD_Model_Rot"_crcsh);
+              pipeline->bindParam(mtl->_parModColor, "RCID_PickID"_crcsh);
             }
             else{
               OrkAssert(false);

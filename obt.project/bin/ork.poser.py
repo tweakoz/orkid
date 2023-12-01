@@ -119,7 +119,7 @@ class SceneGraphApp(object):
       else:
         rendermodel = "DeferredPBR"
 
-    #rendermodel = "PICKTEST"
+    rendermodel = "PICKTEST"
 
     createSceneGraph( app=self,
                       params_dict=params_dict,
@@ -212,7 +212,11 @@ class SceneGraphApp(object):
 
   def onUiEvent(self,uievent):
     
-    if uievent.code == tokens.PUSH.hashed: 
+    if uievent.alt:
+      handled = self.uicam.uiEventHandler(uievent)
+      if handled:
+        self.camera.copyFrom( self.uicam.cameradata )
+    elif uievent.code == tokens.DRAG.hashed:
       camdat = self.uicam.cameradata
       scoord = uievent.pos
       def pick_callback(pixel_fetch_context):
@@ -222,16 +226,13 @@ class SceneGraphApp(object):
         pos = pixel_fetch_context.value(1)
         nrm = pixel_fetch_context.value(2)
         if obj is not None:
-          print("obj: %s"%obj)
-          print("pos: %s"%pos)
-          print("nrm: %s"%nrm)
+          #print("obj: %s"%obj)
+          #print("pos: %s"%pos)
+          #print("nrm: %s"%nrm)
           self.ball_node.worldTransform.translation = pos.xyz()
-
       self.scene.pickWithScreenCoord(camdat,scoord,pick_callback)
+          
     
-    handled = self.uicam.uiEventHandler(uievent)
-    if handled:
-      self.camera.copyFrom( self.uicam.cameradata )
 
   ################################################
 

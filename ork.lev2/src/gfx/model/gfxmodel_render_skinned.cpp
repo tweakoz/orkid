@@ -119,8 +119,6 @@ void XgmModel::RenderSkinned(
           { mtxblockitem.mApplicator->ApplyToTarget(context); }
           mtl->UnBindMaterialInstItem(&mtxblockitem);
 
-          // mtl->UpdateMVPMatrix(context);
-
           //////////////////////////////////////////////////////
           auto vtxbuffer = cluster->GetVertexBuffer();
           if (vtxbuffer) {

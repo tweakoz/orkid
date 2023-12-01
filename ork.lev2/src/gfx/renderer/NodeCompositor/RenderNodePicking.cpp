@@ -12,6 +12,7 @@
 #include <ork/lev2/gfx/renderer/drawable.h>
 #include <ork/lev2/gfx/renderer/irendertarget.h>
 #include <ork/lev2/gfx/rtgroup.h>
+#include <ork/lev2/gfx/pickbuffer.h>
 #include <ork/pch.h>
 #include <ork/reflect/properties/registerX.inl>
 
@@ -92,6 +93,13 @@ struct IMPL {
       CPD.SetDstRect(tgt_rect);
       CPD.assignLayers(_layername);
       RCFD._renderingmodel = "PICKING"_crcu;
+      auto& userprops = RCFD.userProperties();
+      auto it_pfc = userprops.find("pixel_fetch_context"_crc);
+      if(it_pfc == userprops.end()){
+        auto pfc = std::make_shared<PixelFetchContext>(3);
+        RCFD.setUserProperty("pixel_fetch_context"_crc, pfc);
+        RCFD.setUserProperty("pickbufferMvpMatrix"_crc, std::make_shared<fmtx4>());
+      }
       ///////////////////////////////////////////////////////////////////////////
       if (DB) {
 
