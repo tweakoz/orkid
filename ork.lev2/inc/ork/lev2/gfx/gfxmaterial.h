@@ -201,7 +201,12 @@ public:
   f32 mfParticleSize; // todo this does not belong here
 
   ork::varmap::VarMap _varmap;
-  uint32_t _variant = 0;
+  
+  //
+
+  uint32_t _variant = 0; // crc32 of variant name
+                         // variant being the top level variation
+                         // of a given material type 
 };
 
 ///////////////////////////////////////////////////////////////////////////////
