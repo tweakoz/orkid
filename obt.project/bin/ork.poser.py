@@ -90,7 +90,7 @@ class SceneGraphApp(object):
     self.ezapp = OrkEzApp.create(self,ssaa=ssaa)
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     self.materials = set()
-    setupUiCamera(app=self,eye=vec3(0,0.5,3))
+    setupUiCamera(app=self,eye=vec3(0,0.5,1))
     self.modelinsts=[]
 
   ##############################################
@@ -186,7 +186,7 @@ class SceneGraphApp(object):
     ######################
 
     center = self.model.boundingCenter
-    radius = self.model.boundingRadius*2.5
+    radius = self.model.boundingRadius*1.5
 
     print("center<%s> radius<%s>"%(center,radius))
     
