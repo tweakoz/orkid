@@ -122,7 +122,7 @@ int main(int argc, char** argv, char** envp) {
 
   auto compositordata = std::make_shared<CompositingData>();
   auto compositorimpl = compositordata->createImpl();
-  auto renderer = std::make_shared<DefaultRenderer>();
+  auto renderer = std::make_shared<IRenderer>();
   auto CPD = std::make_shared<CompositingPassData>();
   CPD->addStandardLayers();
   compositordata->mbEnable = true;

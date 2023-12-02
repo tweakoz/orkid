@@ -710,13 +710,12 @@ vertex_shader vs_pick_skinned_mono : iface_vtx_pick_skinned : skin_tools : ub_vt
   gl_Position  = mvp * skn_pos;
   frg_wpos     = m * skn_pos;
   frg_wnrm     = normalize(mrot * skn_nrm);
-  frg_wnrm     = vec3(0, 0, 1);
 }
 ///////////////////////////////////////////////////////////////
 vertex_shader vs_pick_rigid_mono : iface_vtx_pick_rigid : ub_vtx {
   gl_Position = mvp * position;
   frg_wpos    = m * position;
-  frg_wnrm    = vec3(0, 1, 0); // normalize(mrot * normal);
+  frg_wnrm    = normalize(mrot * normal);
 }
 ///////////////////////////////////////////////////////////////
 vertex_shader vs_pick_rigid_instanced_mono : iface_vtx_pick_rigid : ub_vtx {
@@ -738,12 +737,12 @@ vertex_shader vs_pick_rigid_instanced_mono : iface_vtx_pick_rigid : ub_vtx {
   ////////////////////////////////
   gl_Position = mvp * position;
   frg_wpos    = m * position;
-  frg_wnrm    = vec3(0, 1, 0); // normalize(mrot * normal);
+  frg_wnrm    = normalize(mrot * normal);
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_pick //
     : iface_frg_pick {
-  out_color = vec4(frg_wnrm, 1); // ModColor;
+  out_color = ModColor;
   out_wpos  = frg_wpos;
   out_wnrm  = vec4(normalize(frg_wnrm), 0);
 }

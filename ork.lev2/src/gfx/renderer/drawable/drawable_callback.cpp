@@ -95,7 +95,7 @@ CallbackRenderable::CallbackRenderable(IRenderer* renderer)
 }
 /////////////////////////////////////////////////////////////////////
 void CallbackRenderable::Render(const IRenderer* renderer) const {
-  renderer->RenderCallback(*this);
+  renderer->_renderCallbackRenderable(*this);
 }
 /////////////////////////////////////////////////////////////////////
 void CallbackRenderable::SetSortKey(uint32_t skey) {

@@ -65,7 +65,7 @@ int main(int argc, char** argv, char** envp) {
   //  use a deferredPBR compositing node
   //  which does all the gbuffer and lighting passes
   //////////////////////////////////////////////////////////
-  auto renderer = std::make_shared<DefaultRenderer>();
+  auto renderer = std::make_shared<IRenderer>();
   auto lmd      = std::make_shared<LightManagerData>();
   auto lightmgr = std::make_shared<LightManager>(*lmd);
   auto cameras = std::make_shared<CameraDataLut>();

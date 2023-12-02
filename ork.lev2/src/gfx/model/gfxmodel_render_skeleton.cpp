@@ -22,15 +22,12 @@ namespace ork::lev2 {
 
 void XgmModel::RenderSkeleton(
     const XgmModelInst* minst,
-    const fcolor4& ModColor,
     const fmtx4& WorldMat,
     ork::lev2::Context* context,
-    const RenderContextInstData& RCID,
-    const RenderContextInstModelData& mdlctx) const {
+    const RenderContextInstData& RCID) const {
 
   auto RCFD        = context->topRenderContextFrameData();
   const auto& CPD  = RCFD->topCPD();
-
 
   ////////////////////////////////////////
   // Draw Skeleton
@@ -73,9 +70,9 @@ void XgmModel::RenderSkeleton(
   auto pipeline                  = fxcache->findPipeline(RCIDCOPY);
   OrkAssert(pipeline);
 
-  if( RCFD->hasUserProperty("is_sg_pick"_crc) ){
-    printf("pipeline tek<%s> is_pick<%d> CPD<%s>\n", pipeline->_technique->mTechniqueName.c_str(), int(is_pick), CPD._debugName.c_str() );
-  }
+  //if( RCFD->hasUserProperty("is_sg_pick"_crc) ){
+   // printf("pipeline tek<%s> is_pick<%d> CPD<%s>\n", pipeline->_technique->mTechniqueName.c_str(), int(is_pick), CPD._debugName.c_str() );
+  //}
         
   //////////////
 
@@ -201,6 +198,7 @@ void XgmModel::RenderSkeleton(
       context->MTXI()->PushMMatrix(fmtx4::Identity());
       RCIDCOPY._pickID = fvec4(1,0,1,1);
       pipeline->wrappedDrawCall(RCIDCOPY, [&]() { //
+        context->RSI()->BindRasterState(use_mtl->_rasterstate);
         context->GBI()->DrawPrimitiveEML(vw, PrimitiveType::TRIANGLES); 
       });
       context->MTXI()->PopMMatrix();

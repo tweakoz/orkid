@@ -119,7 +119,7 @@ class SceneGraphApp(object):
       else:
         rendermodel = "DeferredPBR"
 
-    rendermodel = "PICKTEST"
+    #rendermodel = "PICKTEST"
 
     createSceneGraph( app=self,
                       params_dict=params_dict,

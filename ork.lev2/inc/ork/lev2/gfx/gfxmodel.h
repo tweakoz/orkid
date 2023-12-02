@@ -348,7 +348,7 @@ struct XgmModel final {
       const fmtx4& WorldMat,
       ork::lev2::Context* pTARG,
       const RenderContextInstData& MatCtx,
-      const RenderContextInstModelData& MdlCtx) const;
+      const RenderContextInstModelData& RCID) const;
   void EndRigidBlock() const;
   void RenderRigidBlockItem() const;
 
@@ -357,7 +357,7 @@ struct XgmModel final {
       const fmtx4& WorldMat,
       ork::lev2::Context* pTARG,
       const RenderContextInstData& MatCtx,
-      const RenderContextInstModelData& MdlCtx) const;
+      const RenderContextInstModelData& RCID) const;
 
   void RenderSkinned(
       const XgmModelInst* minst,
@@ -365,15 +365,13 @@ struct XgmModel final {
       const fmtx4& WorldMat,
       ork::lev2::Context* pTARG,
       const RenderContextInstData& MatCtx,
-      const RenderContextInstModelData& MdlCtx) const;
+      const RenderContextInstModelData& RCID) const;
 
   void RenderSkeleton(
       const XgmModelInst* minst,
-      const fcolor4& ModColor,
       const fmtx4& WorldMat,
       ork::lev2::Context* pTARG,
-      const RenderContextInstData& MatCtx,
-      const RenderContextInstModelData& MdlCtx) const;
+      const RenderContextInstData& RCID) const;
 
   /////////////////////////////////////
 

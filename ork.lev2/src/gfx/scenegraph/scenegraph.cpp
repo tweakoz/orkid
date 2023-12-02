@@ -300,7 +300,7 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
     _dbufcontext_SG = try_dbufcontext.value();
   }
 
-  _renderer = std::make_shared<DefaultRenderer>();
+  _renderer = std::make_shared<IRenderer>();
   _lightManagerData = std::make_shared<LightManagerData>();
   _lightManager     = std::make_shared<LightManager>(*_lightManagerData.get());
   _compositorData   = std::make_shared<CompositingData>();

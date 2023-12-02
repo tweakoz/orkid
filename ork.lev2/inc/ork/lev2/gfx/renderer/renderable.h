@@ -98,6 +98,21 @@ struct ModelRenderable : public IRenderable {
   xgmcluster_ptr_t _cluster;
 };
 
+struct SkeletonRenderable : public IRenderable {
+
+  SkeletonRenderable(IRenderer* renderer = NULL);
+
+  uint32_t ComposeSortKey(const IRenderer* renderer) const final;
+  void Render(const IRenderer* renderer) const final;
+
+  xgmsubmeshinst_ptr_t _submeshinst;
+  xgmmodelinst_constptr_t _modelinst;
+  uint32_t _sortkey      = 0;
+  float _scale           = 1.0f;
+  fvec3 _offset;
+  fquat _orientation;
+};
+
 ///////////////////////////////////////////////////////////////////////////////
 
 struct CallbackRenderable : public IRenderable {

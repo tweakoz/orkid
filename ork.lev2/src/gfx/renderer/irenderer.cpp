@@ -65,7 +65,7 @@ void IRenderer::drawEnqueuedRenderables() {
   for (size_t i = 0; i < renderQueueSize; i++) {
     int skey = _sortedNodes[i]->_renderable->ComposeSortKey(this);
     _sortkeys[i] = skey;
-     //printf( "skey<%d:%d>\n", i, skey );
+    // printf( "skey<%d:%d>\n", i, skey );
   }
 
   ///////////////////////////////////////////////////////
@@ -120,7 +120,7 @@ void IRenderer::resetQueue(void) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void IRenderer::RenderCallback(const CallbackRenderable& cbren) const {
+void IRenderer::_renderCallbackRenderable(const CallbackRenderable& cbren) const {
   if (cbren.GetRenderCallback()) {
     auto context = GetTarget();
     RenderContextInstData RCID(context->topRenderContextFrameData());

@@ -67,7 +67,7 @@ int main(int argc, char** argv, char** envp) {
   // GPU init
   /////////////////////////////////////////////////////////////////////////
 
-  auto renderer = std::make_shared<DefaultRenderer>();
+  auto renderer = std::make_shared<IRenderer>();
   auto sframe = std::make_shared<StandardCompositorFrame>();
   sframe->_use_imgui_docking = true;
 

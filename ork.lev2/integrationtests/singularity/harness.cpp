@@ -102,7 +102,7 @@ singularitytestapp_ptr_t createEZapp(appinitdata_ptr_t init_data) {
   //////////////////////////////////////////////////////////
   // create references to various items scoped by ezapp
   //////////////////////////////////////////////////////////
-  auto renderer = ezapp->_vars->makeSharedForKey<DefaultRenderer>("renderer");
+  auto renderer = ezapp->_vars->makeSharedForKey<IRenderer>("renderer");
   auto lmd      = ezapp->_vars->makeSharedForKey<LightManagerData>("lmgrdata");
   auto lightmgr = ezapp->_vars->makeSharedForKey<LightManager>("lmgr", *lmd);
   auto compdata = ezapp->_vars->makeSharedForKey<CompositingData>("compdata");
