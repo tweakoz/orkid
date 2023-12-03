@@ -171,6 +171,7 @@ struct SgPickBuffer {
   const ork::lev2::Texture* _pickIDtexture = nullptr;
   const ork::lev2::Texture* _pickPOStexture = nullptr;
   const ork::lev2::Texture* _pickNRMtexture = nullptr;
+  const ork::lev2::Texture* _pickUVtexture = nullptr;
 };
 using sgpickbuffer_ptr_t = std::shared_ptr<SgPickBuffer>;
 

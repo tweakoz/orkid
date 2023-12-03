@@ -48,9 +48,11 @@ struct IMPL {
       auto buf_id          = _rtg->createRenderTarget(EBufferFormat::RGBA32F);
       auto buf_wpos        = _rtg->createRenderTarget(EBufferFormat::RGBA32F);
       auto buf_wnrm        = _rtg->createRenderTarget(EBufferFormat::RGBA32F);
+      auto buf_uv          = _rtg->createRenderTarget(EBufferFormat::RGBA32F);
       buf_id->_debugName   = "rt0-pickid";
       buf_wpos->_debugName = "rt0-wpos";
       buf_wnrm->_debugName = "rt0-wnrm";
+      buf_uv->_debugName   = "rt0-uv";
       _rtg->_name = "PickingRtGroup";
     }
     pTARG->debugPopGroup();

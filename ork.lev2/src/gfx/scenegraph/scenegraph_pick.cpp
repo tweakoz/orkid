@@ -19,6 +19,7 @@ SgPickBuffer::SgPickBuffer(ork::lev2::Context* ctx, Scene& scene)
   _pfc->_usage[0]   = lev2::PixelFetchContext::EPU_SVARIANT;
   _pfc->_usage[1]   = lev2::PixelFetchContext::EPU_FLOAT;
   _pfc->_usage[2]   = lev2::PixelFetchContext::EPU_FLOAT;
+  _pfc->_usage[3]   = lev2::PixelFetchContext::EPU_FLOAT;
 }
 ///////////////////////////////////////////////////////////////////////////
 void SgPickBuffer::pickWithScreenCoord(cameradata_ptr_t cam, fvec2 screencoord, callback_t callback) {
@@ -63,6 +64,7 @@ void SgPickBuffer::mydraw(fray3_constptr_t ray) {
     _pickIDtexture = _pfc->_rtgroup->GetMrt(0)->texture();
     _pickPOStexture = _pfc->_rtgroup->GetMrt(1)->texture();
     _pickNRMtexture = _pfc->_rtgroup->GetMrt(2)->texture();
+    _pickUVtexture = _pfc->_rtgroup->GetMrt(3)->texture();
   }
   _compimpl->_compcontext->Resize(PICKBUFDIM, PICKBUFDIM);
   ///////////////////////////////////////////////////////////////////////////

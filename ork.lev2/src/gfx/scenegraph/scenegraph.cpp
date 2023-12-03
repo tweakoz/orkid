@@ -716,6 +716,17 @@ void Scene::_renderIMPL(Context* context,rcfd_ptr_t RCFD){
 
         pickhudmat->end(*RCFD);
       }
+      if(_sgpickbuffer->_pickUVtexture){
+        pickhudmat->begin(tek_texcolor,*RCFD);
+        fxi->BindParamCTex(par_colormap, _sgpickbuffer->_pickUVtexture);
+        fxi->BindParamMatrix(par_mvp, uimatrix);
+        dwi->quad2DEML(fvec4(0,DIM*3,DIM,DIM), // quadrect
+                       fvec4(1,0,-1,1), // uvrect
+                       fvec4(1,0,-1,1), // uvrect2
+                       0.0f );         // depth
+
+        pickhudmat->end(*RCFD);
+      }
       context->debugPopGroup();
       
     }
