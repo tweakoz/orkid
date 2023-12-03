@@ -96,6 +96,8 @@ void XgmModel::RenderSkeleton(
 
   auto cammats  = CPD.cameraMatrices();
   fvec3 eye_pos = cammats->_vmatrix.inverse().translation();
+  fvec3 eye_dir = cammats->_vmatrix.inverse().zNormal().normalized();
+  //printf("eye_pos<%g %g %g>\n", eye_pos.x, eye_pos.y, eye_pos.z);
 
   //////////////
 
@@ -114,12 +116,12 @@ void XgmModel::RenderSkeleton(
   t.mBiNormal    = fvec3(1, 1, 0);
   vw.Lock(context, &vtxbuf, inumjoints * 64);
 
+  std::multimap<float, Triangle> depth_sorted_triangles;
+
   auto enqueue_bones = [&](bool outline) {
     auto W_INVERSE = WorldMat.inverse();
 
     int inumbones = _skeleton->numBones();
-    std::multimap<float, Triangle> depth_sorted_triangles;
-    std::vector<Triangle> unsorted_triangles;
 
     for (int ib = 0; ib < inumbones; ib++) {
 
@@ -165,16 +167,28 @@ void XgmModel::RenderSkeleton(
       }
       float bl2 = bonelength * 0.1f;
 
-      auto add_triangle = [&](const fvec3 posa,
-                              const fvec3& cola, //
-                              const fvec3 posb,
-                              const fvec3& colb, //
-                              const fvec3 posc,
-                              const fvec3& colc) { //
+      auto add_triangle = [&](fvec3 posa,
+                              fvec3 cola, //
+                              fvec3 posb,
+                              fvec3 colb, //
+                              fvec3 posc,
+                              fvec3 colc) { //
         fvec3 ctr   = (posa + posb + posc) * 0.33333333f;
-        float depth = (ctr - eye_pos).magnitude();
-        if(outline){
-          depth += 0.001f;          
+
+        fvec3 wctr = fvec4(ctr).transform(joint_par).xyz();
+
+        float depth = (wctr - eye_pos).magnitude();
+
+        if(outline){ // depth bias outline
+          depth += 0.02f;          
+        }
+        else if(not is_pick){ 
+          // color render : show wireframe
+          //  by making triangles a bit smaller
+          //  and leaking the outline layer through
+          posa = ctr+(posa-ctr)*0.9;
+          posb = ctr+(posb-ctr)*0.9;
+          posc = ctr+(posc-ctr)*0.9;
         }
         auto tri = Triangle{
             //
@@ -188,12 +202,11 @@ void XgmModel::RenderSkeleton(
         };
 
         depth_sorted_triangles.insert(std::make_pair(depth, tri));
-        unsorted_triangles.push_back(tri);
       };
 
-      auto colorN = outline ? fvec3::Black() : fvec3(1, 0.5, 0);
-      auto colorX = outline ? fvec3::Black() : fvec3(1, 0.5, 0);
-      auto colorZ = outline ? fvec3::Black() : fvec3(1, 0.5, 0);
+      auto colorN = outline ? fvec3(0,0,.25) : fvec3(1, 0.5, 0);
+      auto colorX = outline ? fvec3(0,0,.25) : fvec3(1, 0.5, 0);
+      auto colorZ = outline ? fvec3(0,0,.25) : fvec3(1, 0.5, 0);
 
       ///////////////////
       // create bone vertices (pyramid)
@@ -210,22 +223,41 @@ void XgmModel::RenderSkeleton(
       auto nx = par_ctr + fvec3(-bl2, 0, 0);
       auto nz = par_ctr + fvec3(0, 0, -bl2);
 
-
-      // add triangles for bone (maintaining counter-clockwise winding)
+      // add triangles for bone 
+      // (maintaining counter-clockwise winding)
 
       par_ctr = fvec3(0,-bonelength*0.1,0);
 
-      add_triangle(par_ctr, colorN, nx, colorX, nz, colorZ);
-      add_triangle(par_ctr, colorN, nx, colorX, pz, colorZ);
-      add_triangle(par_ctr, colorN, px, colorX, pz, colorZ);
-      add_triangle(par_ctr, colorN, px, colorX, nz, colorZ);
+      if(outline){
 
-      // square to child
+        add_triangle(par_ctr, colorN, nz, colorX, nx, colorZ);
+        add_triangle(par_ctr, colorN, px, colorX, nz, colorZ);
+        add_triangle(par_ctr, colorN, pz, colorX, px, colorZ);
+        add_triangle(par_ctr, colorN, nx, colorX, pz, colorZ);
 
-      add_triangle(chi_ctr, colorN, nx, colorX, nz, colorZ);
-      add_triangle(chi_ctr, colorN, nx, colorX, pz, colorZ);
-      add_triangle(chi_ctr, colorN, px, colorX, pz, colorZ);
-      add_triangle(chi_ctr, colorN, px, colorX, nz, colorZ);
+        // square to child
+
+        add_triangle(chi_ctr, colorN, nx, colorX, nz, colorZ);
+        add_triangle(chi_ctr, colorN, nz, colorX, px, colorZ);
+        add_triangle(chi_ctr, colorN, px, colorX, pz, colorZ);
+        add_triangle(chi_ctr, colorN, pz, colorX, nx, colorZ);
+
+      }
+      else{
+        add_triangle(par_ctr, colorN, nx, colorX, nz, colorZ);
+        add_triangle(par_ctr, colorN, nz, colorX, px, colorZ);
+        add_triangle(par_ctr, colorN, px, colorX, pz, colorZ);
+        add_triangle(par_ctr, colorN, pz, colorX, nx, colorZ);
+
+        // square to child
+
+        add_triangle(chi_ctr, colorN, nz, colorX, nx, colorZ);
+        add_triangle(chi_ctr, colorN, px, colorX, nz, colorZ);
+        add_triangle(chi_ctr, colorN, pz, colorX, px, colorZ);
+        add_triangle(chi_ctr, colorN, nx, colorX, pz, colorZ);
+
+      }
+
 
     } // for (int ib = 0; ib < inumbones; ib++) {
 
@@ -235,27 +267,38 @@ void XgmModel::RenderSkeleton(
     /////////////////////////////////
 
     auto add_vertex = [&](const fmtx4& J, const fvec3 pos, const fvec3& col, const fvec3& N) {
+
+
       hvtx.mPosition = fvec4(pos).transform(J).xyz();
-      hvtx.mColor    = (col * 5).ABGRU32();
+      hvtx.mColor    = col.ABGRU32();
       hvtx.mNormal   = N;
       vw.AddVertex(hvtx);
     };
 
-    auto w_rot_mat = WorldMat;
-    w_rot_mat.setColumn(3,fvec4(0, 0, 0,1));
-    auto iw_rot_mat = w_rot_mat.inverse().rotMatrix33();
+
     for (auto it_tri = depth_sorted_triangles.rbegin(); //
           it_tri != depth_sorted_triangles.rend();       //
           ++it_tri) {                                   //
+
       auto& tri      = it_tri->second;
       auto joint_par = tri._jnt;
-      auto wld_normal = (tri._posB - tri._posA).crossWith(tri._posC - tri._posA).normalized();
-      auto obj_normal = wld_normal.transform(iw_rot_mat);
-      //obj_normal = fvec3(obj_normal.x, obj_normal.z, obj_normal.y);
-      //obj_normal = fvec3(0.5,0.5,0.5)+(obj_normal*(-0.5));
-      add_vertex(joint_par, tri._posA, tri._colA, obj_normal);
-      add_vertex(joint_par, tri._posB, tri._colB, obj_normal);
-      add_vertex(joint_par, tri._posC, tri._colC, obj_normal);
+
+      auto w_rot_mat4 = joint_par;
+      auto w_rot_mat = w_rot_mat4.rotMatrix33();
+
+      auto obj_normal = (tri._posB - tri._posA) //
+                      . crossWith(tri._posC - tri._posA) //
+                      .normalized();
+
+      auto wld_normal = obj_normal.transform(w_rot_mat).normalized();
+      float dot = wld_normal.dotWith(eye_dir);
+      if(dot<0.0f){
+        dot = 0.0f;
+      }
+
+      add_vertex(joint_par, tri._posA, tri._colA*dot, wld_normal);
+      add_vertex(joint_par, tri._posB, tri._colB*dot, wld_normal);
+      add_vertex(joint_par, tri._posC, tri._colC*dot, wld_normal);
     }
 
   }; // auto enqueue_bones = [&](bool outline){
@@ -273,7 +316,7 @@ void XgmModel::RenderSkeleton(
   context->MTXI()->PushMMatrix(fmtx4::Identity());
   RCIDCOPY._pickID = fvec4(1, 0, 0, 1);
   use_mtl->_rasterstate.SetDepthTest(EDepthTest::OFF);
-  use_mtl->_rasterstate.SetCullTest(ECullTest::OFF);
+  use_mtl->_rasterstate.SetCullTest(ECullTest::PASS_FRONT);
   use_mtl->_rasterstate.SetZWriteMask(false);
   pipeline->wrappedDrawCall(RCIDCOPY, [&]() { //
     context->RSI()->BindRasterState(use_mtl->_rasterstate);
