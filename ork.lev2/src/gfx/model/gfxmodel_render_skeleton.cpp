@@ -180,7 +180,7 @@ void XgmModel::RenderSkeleton(
         float depth = (wctr - eye_pos).magnitude();
 
         if(outline){ // depth bias outline
-          depth += 0.02f;          
+          depth += 0.1f*bonelength;          
         }
         else if(not is_pick){ 
           // color render : show wireframe
