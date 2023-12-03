@@ -13,7 +13,7 @@ import pyopencl as cl
 mf = cl.mem_flags
 from orkengine.core import *
 from orkengine.lev2 import *
-from ork import host
+from obt import host
 ################################################################################
 from pathlib import Path
 this_dir = Path(os.path.dirname(os.path.abspath(__file__)))
@@ -53,17 +53,20 @@ class PickingApp(_simsetup.SimApp):
     #print("shift<%d> alt<%d> ctrl<%d>"%(event.shift,event.alt,event.ctrl))
     #print("left<%d> middle<%d> right<%d>"%(event.left,event.middle,event.right))
     if True: #event.code==3:
-      picked = self.scene.pickWithScreenCoord(self.camera,vec2(event.x,event.y))
-      if picked!=0xffffffffffffffff:
-        #print("%s"%(hex(picked)))
-        assert(picked<=numinstances);
-        color = vec4(random.uniform(0,1),
-                     random.uniform(0,1),
-                     random.uniform(0,1),
-                     1)
-        iset = self.instanceset
-        iset.instancecolors[picked] = color
+      def pick_callback(pixel_fetch_context):
+        obj = pixel_fetch_context.value(0)
+        picked = 0
+        if picked!=0xffffffffffffffff:
+          #print("%s"%(hex(picked)))
+          assert(picked<=numinstances);
+          color = vec4(random.uniform(0,1),
+                      random.uniform(0,1),
+                      random.uniform(0,1),
+                      1)
+          iset = self.instanceset
+          iset.instancecolors[picked] = color
+      self.scene.pickWithScreenCoord(self.camera,vec2(event.x,event.y),pick_callback)
     pass
   ################################################
 app = PickingApp()
-app.qtapp.mainThreadLoop()
+app.ezapp.mainThreadLoop()
