@@ -186,9 +186,9 @@ void XgmModel::RenderSkeleton(
           // color render : show wireframe
           //  by making triangles a bit smaller
           //  and leaking the outline layer through
-          posa = ctr+(posa-ctr)*0.9;
-          posb = ctr+(posb-ctr)*0.9;
-          posc = ctr+(posc-ctr)*0.9;
+          posa = ctr+(posa-ctr)*0.8;
+          posb = ctr+(posb-ctr)*0.8;
+          posc = ctr+(posc-ctr)*0.8;
         }
         auto tri = Triangle{
             //
