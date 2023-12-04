@@ -6,6 +6,7 @@
 ////////////////////////////////////////////////////////////////
 
 #include <ork/lev2/editor/manip.h>
+#include <ork/lev2/gfx/gfxanim.h>
 #include <ork/reflect/properties/registerX.inl>
 
 
@@ -16,6 +17,54 @@ namespace ork::lev2 {
 
 void ManipulatorInterface::describeX(class_t* clazz) {
 
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+bool JointManipulatorInterface::supportsTranslation() const {
+  return true;
+}
+bool JointManipulatorInterface::supportsRotation() const {
+  return true;
+}
+bool JointManipulatorInterface::supportsScaling() const {
+  return true;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void JointManipulatorInterface::_onBeginTranslation(ui::event_constptr_t EV) {
+  OrkAssert(false);
+}
+void JointManipulatorInterface::_onUpdateTranslation(ui::event_constptr_t EV) {
+  OrkAssert(false);
+}
+void JointManipulatorInterface::_onEndTranslation(ui::event_constptr_t EV) {
+  OrkAssert(false);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void JointManipulatorInterface::_onBeginRotation(ui::event_constptr_t EV) {
+  OrkAssert(false);
+}
+void JointManipulatorInterface::_onUpdateRotation(ui::event_constptr_t EV) {
+  OrkAssert(false);
+}
+void JointManipulatorInterface::_onEndRotation(ui::event_constptr_t EV) {
+  OrkAssert(false);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void JointManipulatorInterface::_onBeginScaling(ui::event_constptr_t EV) {
+  OrkAssert(false);
+}
+void JointManipulatorInterface::_onUpdateScaling(ui::event_constptr_t EV) {
+  OrkAssert(false);
+}
+void JointManipulatorInterface::_onEndScaling(ui::event_constptr_t EV) {
+  OrkAssert(false);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

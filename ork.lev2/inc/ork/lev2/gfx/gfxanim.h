@@ -7,14 +7,15 @@
 
 #pragma once
 
-#include <ork/lev2/lev2_types.h>
+#include <ork/rtti/RTTIX.inl>
 #include <ork/math/cmatrix4.h>
 #include <ork/math/box.h>
 #include <ork/file/path.h>
 #include <ork/kernel/varmap.inl>
 #include <ork/kernel/orklut.h>
 #include <ork/kernel/datablock.h>
-#include <ork/rtti/RTTIX.inl>
+#include <ork/lev2/lev2_types.h>
+#include <ork/lev2/editor/manip.h>
 
 namespace ork::lev2 {
 
