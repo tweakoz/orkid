@@ -120,6 +120,9 @@ vtxbufferbase_ptr_t VertexBufferBase::CreateVertexBuffer(EVtxStreamFormat eforma
     case EVtxStreamFormat::MODELERRIGID:
       pvb = _createvb<SVtxMODELERRIGID>(inumverts, bstatic);
       break;
+    case EVtxStreamFormat::V12N12T8DF12C4:
+      pvb = _createvb<SVtxV12N12T8DF12C4>(inumverts, bstatic);
+      break;
     default:
       OrkAssert(false);
   }

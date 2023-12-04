@@ -28,9 +28,14 @@ namespace ork::lev2 {
 
 /////////////////////////////////////////////////////////////////////////
 
+indexscrambler65k_ptr_t PixelFetchContext::_gscrambler = std::make_shared<IndexScrambler<65536>>(42);
+std::atomic<int> PixelFetchContext::_gpickcounter = 0;
+
+/////////////////////////////////////////////////////////////////////////
+
 PixelFetchContext::PixelFetchContext(size_t s)
     : miMrtMask(0)
-    , mUserData(nullptr) {
+    , mUserData(nullptr){
     resize(s);
 }
 void PixelFetchContext::resize(size_t s){
@@ -45,6 +50,21 @@ void PixelFetchContext::resize(size_t s){
 
 /////////////////////////////////////////////////////////////////////////
 
+void PixelFetchContext::beginPickRender(){
+  _pickindex = _gpickcounter.fetch_add(4);
+  _offset  = uint64_t(_gscrambler->scramble(_pickindex+0))<<0;
+  _offset += uint64_t(_gscrambler->scramble(_pickindex+1))<<16;
+  _offset += uint64_t(_gscrambler->scramble(_pickindex+2))<<32;
+  _offset += uint64_t(_gscrambler->scramble(_pickindex+3))<<48;
+  _pickIDlut.clear();
+  _pickIDvec.clear();
+}
+void PixelFetchContext::endPickRender(){
+  
+}
+
+/////////////////////////////////////////////////////////////////////////
+
 fvec4 PixelFetchContext::encodeVariant(pickvariant_t data){
   fvec4 rval;
 
@@ -55,11 +75,12 @@ fvec4 PixelFetchContext::encodeVariant(pickvariant_t data){
     _pickIDlut[hash] = index;
     _pickIDvec.push_back(data);
   }
-  index += 0xf000f000f000f000;
+  index += _offset;
   rval.x = float(index & 0xFFFF);
   rval.y = float((index >> 16) & 0xFFFF);
   rval.z = float((index >> 32) & 0xFFFF);
   rval.w = float((index >> 48) & 0xFFFF);
+  printf( "enc rval<%g %g %g %g>\n", rval.x, rval.y, rval.z, rval.w );
 
   if(data.isA<fvec4>()){
     rval = data.get<fvec4>();
@@ -74,7 +95,7 @@ pickvariant_t PixelFetchContext::decodeVariant(fvec4 rgba){
   uint64_t c             = uint64_t(rgba.z);
   uint64_t d             = uint64_t(rgba.w);
   size_t value = (d << 48) | (c << 32) | (b << 16) | a;
-  value -= 0xf000f000f000f000;
+  value -= _offset;
   if(value < _pickIDvec.size()){
     rval = _pickIDvec[value];
   }

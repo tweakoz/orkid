@@ -293,6 +293,23 @@ public:
   void* BeginLoad();
   void EndLoad(void* ploadtok);
 
+
+  template <typename vtx_t> std::shared_ptr<DynamicVertexBuffer<vtx_t>> miscVertexBuffer(uint32_t id,uint32_t numverts) {
+    using vtxbuf_t = DynamicVertexBuffer<vtx_t>;
+    using vtxbuf_ptr_t = std::shared_ptr<vtxbuf_t>;
+    auto it = _miscVBs.find(id);
+    if (it != _miscVBs.end()) {
+      return it->second.get<vtxbuf_ptr_t>();
+    }
+    else{
+      auto vbp = std::make_shared<vtxbuf_t>(numverts,0,PrimitiveType::NONE);
+      vbp->SetRingLock(true);
+
+      _miscVBs[id] = vbp;
+      return vbp;
+    }
+  }
+
   static const int kiModColorStackMax = 8;
 
   CTXBASE* mCtxBase                                   = nullptr;
@@ -311,6 +328,7 @@ public:
   fvec4 maModColorStack[kiModColorStackMax];
   fvec4 mvModColor;
   PerformanceItem mFramePerfItem;
+  std::unordered_map<uint32_t,svar64_t> _miscVBs;
 
   bool hiDPI() const;
   float currentDPI() const;

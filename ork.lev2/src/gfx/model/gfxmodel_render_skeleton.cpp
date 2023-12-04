@@ -104,19 +104,17 @@ void XgmModel::RenderSkeleton(
 
   //////////////
 
-  using vertex_t = SVtxV12N12B12T8C4;
+  using vertex_t = SVtxV12N12B12T8C4; //SVtxV12N12T8DF12C4;
+  //auto vtxbuf   = context->miscVertexBuffer<vertex_t>("SKELETONS"_crcu, 16384);
   auto& vtxbuf   = GfxEnv::GetSharedDynamicVB2();
   VtxWriter<vertex_t> vw;
 
   vertex_t hvtx, t;
-  hvtx.mColor    = uint32_t(0xff0000ff);
-  t.mColor       = uint32_t(0xff0000ff);
-  hvtx.mUV0      = fvec2(0, 0);
-  t.mUV0         = fvec2(1, 1);
-  hvtx.mNormal   = fvec3(0, 0, 0);
-  t.mNormal      = fvec3(1, 0, 0);
-  hvtx.mBiNormal = fvec3(1, 1, 0);
-  t.mBiNormal    = fvec3(1, 1, 0);
+  hvtx._uv       = fvec2(0, 0);
+  hvtx._normal   = fvec3(0, 0, 1);
+  t._uv          = fvec2(0, 0);
+  t._normal      = fvec3(0, 0, 1);
+  //vw.Lock(context, vtxbuf.get(), inumjoints * 64);
   vw.Lock(context, &vtxbuf, inumjoints * 64);
 
   std::multimap<float, Triangle> depth_sorted_triangles;
@@ -269,12 +267,15 @@ void XgmModel::RenderSkeleton(
     //. to vertex buffer
     /////////////////////////////////
 
-    auto add_vertex = [&](const fmtx4& J, const fvec3 pos, const fvec3& col, const fvec3& N) {
+    auto add_vertex = [&](const fmtx4& J, const fvec3 pos, const fvec4& col, const fvec3& N) {
 
 
-      hvtx.mPosition = fvec4(pos).transform(J).xyz();
-      hvtx.mColor    = col.ABGRU32();
-      hvtx.mNormal   = N;
+      hvtx._position = fvec4(pos).transform(J).xyz();
+      hvtx._color    = col.ABGRU32();
+      hvtx._normal   = N;
+      hvtx._uv       = fvec2(0, 0);
+      //hvtx._data     = fvec4(0, 0, 0, 0);
+
       vw.AddVertex(hvtx);
     };
 

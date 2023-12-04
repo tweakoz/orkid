@@ -6,7 +6,7 @@
 using namespace std::string_literals;
 using namespace ork;
 
-const int PICKBUFDIM = 255;
+const int PICKBUFDIM = 127;
 
 namespace ork::lev2::scenegraph {
 
@@ -106,8 +106,7 @@ void SgPickBuffer::mydraw(fray3_constptr_t ray) {
     auto screen_coordinate    = fvec4(0.5, 0.5, 0, 0);
     /////////////////////////////////////////////////////////////
 
-    _pfc->_pickIDlut.clear();
-    _pfc->_pickIDvec.clear();
+    _pfc->beginPickRender();
 
     lev2::UiViewportRenderTarget rt(nullptr);
     RCFD.setUserProperty("DB"_crc, lev2::rendervar_t(DB));
@@ -145,6 +144,7 @@ void SgPickBuffer::mydraw(fray3_constptr_t ray) {
     ///////////////////////////////////////////??
     // fetch the pixel, yo.
     ///////////////////////////////////////////??
+    _pfc->endPickRender();
     FBI->GetPixel(screen_coordinate, *_pfc);
     ///////////////////////////////////////////??
 

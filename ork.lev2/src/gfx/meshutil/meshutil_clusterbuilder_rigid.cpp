@@ -143,11 +143,11 @@ void XgmRigidClusterBuilder::buildVertexBuffer(lev2::Context& context, lev2::EVt
         lev2::SVtxV12N12B12T8C4 out_vtx;
         const auto& pos     = inpvtx.mPos;
         const auto& nrm     = inpvtx.mNrm;
-        out_vtx.mPosition = fvec3(pos.x, pos.y, pos.z);
-        out_vtx.mUV0      = inpvtx.mUV[0].mMapTexCoord;
-        out_vtx.mNormal   = fvec3(nrm.x, nrm.y, nrm.z);;
-        out_vtx.mBiNormal = inpvtx.mUV[0].mMapBiNormal;
-        out_vtx.mColor    = inpvtx.mCol[0].ABGRU32();
+        out_vtx._position = fvec3(pos.x, pos.y, pos.z);
+        out_vtx._uv      = inpvtx.mUV[0].mMapTexCoord;
+        out_vtx._normal   = fvec3(nrm.x, nrm.y, nrm.z);;
+        out_vtx._binormal = inpvtx.mUV[0].mMapBiNormal;
+        out_vtx._color    = inpvtx.mCol[0].ABGRU32();
         return out_vtx;
       });
       break;

@@ -17,6 +17,7 @@
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/event/Event.h>
 #include <ork/object/AutoConnector.h>
+#include <ork/util/scrambler.inl>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace lev2 {
@@ -35,6 +36,9 @@ struct PixelFetchContext {
   PixelFetchContext(size_t size=0);
   void resize(size_t s);
   //////////////////////
+
+  void beginPickRender();
+  void endPickRender();
 
   fvec4 encodeVariant(pickvariant_t data);
   pickvariant_t decodeVariant(fvec4 inp);
@@ -55,6 +59,10 @@ struct PixelFetchContext {
   std::unordered_map<uint64_t,int> _pickIDlut;
   std::vector<pickvariant_t> _pickIDvec;
   anyp mUserData;
+  int _pickindex = -1;
+  uint64_t _offset = 0;
+  static indexscrambler65k_ptr_t _gscrambler;
+  static std::atomic<int> _gpickcounter;
 };
 
 /// ////////////////////////////////////////////////////////////////////////////

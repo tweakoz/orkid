@@ -58,8 +58,6 @@ void XgmModel::RenderSkinned(
   // Draw Skinned Mesh
   ///////////////////////////////////
 
-  if (CPD.isPicking()) {
-  }
 
   if (1) // draw mesh
   {
@@ -67,7 +65,13 @@ void XgmModel::RenderSkinned(
 
     context->debugPushGroup("RenderSkinnedMesh");
     context->MTXI()->PushMMatrix(fmtx4());
-    context->PushModColor(ModColor);
+    if (CPD.isPicking()) {
+      context->PushModColor(fvec4(1,1,0,1));
+    }
+    else{
+      context->PushModColor(ModColor);
+    }
+
     {
       const XgmMesh& XgmMesh       = *mdlctx.mMesh;
       auto cluster                 = mdlctx._cluster;

@@ -512,11 +512,11 @@ struct SVtxV12N12B12T8 {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct SVtxV12N12B12T8C4 {
-  fvec3 mPosition;
-  fvec3 mNormal;
-  fvec3 mBiNormal;
-  fvec2 mUV0;
-  U32 mColor;
+  fvec3 _position;
+  fvec3 _normal;
+  fvec3 _binormal;
+  fvec2 _uv;
+  U32 _color;
 
   SVtxV12N12B12T8C4(
       const fvec3& pos   = fvec3(),
@@ -524,11 +524,49 @@ struct SVtxV12N12B12T8C4 {
       const fvec3& binrm = fvec3(),
       const fvec2& uv    = fvec2(),
       const U32 clr      = 0xffffffff)
+      : _position(pos)
+      , _normal(nrm)
+      , _binormal(binrm)
+      , _uv(uv)
+      , _color(clr) {
+  }
+
+  void EndianSwap() {
+    swapbytes_dynamic(_position[0]);
+    swapbytes_dynamic(_position[1]);
+    swapbytes_dynamic(_position[2]);
+
+    swapbytes_dynamic(_normal[0]);
+    swapbytes_dynamic(_normal[1]);
+    swapbytes_dynamic(_normal[2]);
+
+    swapbytes_dynamic(_binormal[0]);
+    swapbytes_dynamic(_binormal[1]);
+    swapbytes_dynamic(_binormal[2]);
+
+    swapbytes_dynamic(_uv[0]);
+    swapbytes_dynamic(_uv[1]);
+
+    swapbytes_dynamic(_color);
+  }
+
+  constexpr static EVtxStreamFormat meFormat = EVtxStreamFormat::V12N12B12T8C4;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct SVtxV12N12T16 {
+  fvec3 mPosition;
+  fvec3 mNormal;
+  fvec4 mUV;
+
+  SVtxV12N12T16(
+      const fvec3& pos   = fvec3(),
+      const fvec3& nrm   = fvec3(),
+      const fvec4& uv   = fvec4())
       : mPosition(pos)
       , mNormal(nrm)
-      , mBiNormal(binrm)
-      , mUV0(uv)
-      , mColor(clr) {
+      , mUV(uv) {
   }
 
   void EndianSwap() {
@@ -540,17 +578,55 @@ struct SVtxV12N12B12T8C4 {
     swapbytes_dynamic(mNormal[1]);
     swapbytes_dynamic(mNormal[2]);
 
-    swapbytes_dynamic(mBiNormal[0]);
-    swapbytes_dynamic(mBiNormal[1]);
-    swapbytes_dynamic(mBiNormal[2]);
-
-    swapbytes_dynamic(mUV0[0]);
-    swapbytes_dynamic(mUV0[1]);
-
-    swapbytes_dynamic(mColor);
+    swapbytes_dynamic(mUV[0]);
+    swapbytes_dynamic(mUV[1]);
+    swapbytes_dynamic(mUV[2]);
+    swapbytes_dynamic(mUV[3]);
   }
 
-  constexpr static EVtxStreamFormat meFormat = EVtxStreamFormat::V12N12B12T8C4;
+  constexpr static EVtxStreamFormat meFormat = EVtxStreamFormat::V12N12T16;
+};
+
+struct SVtxV12N12T8DF12C4 {
+  fvec3 _position;
+  fvec3 _normal;
+  fvec2 _uv;
+  fvec3 _data;
+  uint32_t _color;
+
+  SVtxV12N12T8DF12C4(
+      const fvec3& pos   = fvec3(),
+      const fvec3& nrm   = fvec3(),
+      const fvec2& uv    = fvec2(),
+      const fvec3& d     = fvec3(),
+      const uint32_t clr = 0xffffffff)
+      : _position(pos)
+      , _normal(nrm)
+      , _uv(uv)
+      , _data(d)
+      , _color(clr) {
+  }
+
+  void EndianSwap() {
+    swapbytes_dynamic(_position[0]);
+    swapbytes_dynamic(_position[1]);
+    swapbytes_dynamic(_position[2]);
+
+    swapbytes_dynamic(_normal[0]);
+    swapbytes_dynamic(_normal[1]);
+    swapbytes_dynamic(_normal[2]);
+
+    swapbytes_dynamic(_uv[0]);
+    swapbytes_dynamic(_uv[1]);
+
+    swapbytes_dynamic(_data[0]);
+    swapbytes_dynamic(_data[1]);
+    swapbytes_dynamic(_data[2]);
+
+    swapbytes_dynamic(_color);
+  }
+
+  constexpr static EVtxStreamFormat meFormat = EVtxStreamFormat::V12N12T8DF12C4;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

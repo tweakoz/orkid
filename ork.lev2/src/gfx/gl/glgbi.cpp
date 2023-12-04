@@ -594,6 +594,15 @@ static bool EnableVtxBufComponents(const VertexBufferBase& VBuf, const svarp_t p
       _setConfig(cfgs);
       break;
     }
+    case lev2::EVtxStreamFormat::V12N12T16: {
+      static vtx_config cfgs[] = {
+          {"POSITION", 3, GL_FLOAT, false, 0, 0, 0},
+          {"NORMAL", 3, GL_FLOAT, true, 12, 0, 0},
+          {"TEXCOORD0", 4, GL_FLOAT, false, 24, 0, 0},
+      };
+      _setConfig(cfgs);
+      break;
+    }
     case lev2::EVtxStreamFormat::V12N12B12T16: {
       static vtx_config cfgs[] = {
           {"POSITION", 3, GL_FLOAT, false, 0, 0, 0},
@@ -601,6 +610,17 @@ static bool EnableVtxBufComponents(const VertexBufferBase& VBuf, const svarp_t p
           {"BINORMAL", 3, GL_FLOAT, true, 24, 0, 0},
           {"TEXCOORD0", 2, GL_FLOAT, false, 36, 0, 0},
           {"TEXCOORD1", 2, GL_FLOAT, false, 44, 0, 0},
+      };
+      _setConfig(cfgs);
+      break;
+    }
+    case lev2::EVtxStreamFormat::V12N12T8DF12C4: {
+      static vtx_config cfgs[] = {
+          {"POSITION",  3, GL_FLOAT, false,         0, 0, 0},
+          {"NORMAL",    3, GL_FLOAT, true,         12, 0, 0},
+          {"TEXCOORD0", 2, GL_FLOAT, false,        24, 0, 0},
+          {"TEXCOORD1", 3, GL_FLOAT, false,        32, 0, 0},
+          {"COLOR0",    4, GL_UNSIGNED_BYTE, true, 44, 0, 0},
       };
       _setConfig(cfgs);
       break;

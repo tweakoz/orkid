@@ -666,6 +666,7 @@ void Scene::_renderIMPL(Context* context,rcfd_ptr_t RCFD){
       static bool gpuinit = true;
       static freestyle_mtl_ptr_t pickhudmat = std::make_shared<lev2::FreestyleMaterial>();
       static fxtechnique_constptr_t tek_texcolor;
+      static fxtechnique_constptr_t tek_texcolorpik;
       static fxtechnique_constptr_t tek_texcolormod1;
       static fxtechnique_constptr_t tek_texcolornrm;
       static fxparam_constptr_t par_colormap;
@@ -675,6 +676,7 @@ void Scene::_renderIMPL(Context* context,rcfd_ptr_t RCFD){
         gpuinit = false;
         pickhudmat->gpuInit(context,"orkshader://solid");
         tek_texcolor = pickhudmat->technique("texcolor");
+        tek_texcolorpik = pickhudmat->technique("texcolorpik");
         tek_texcolormod1 = pickhudmat->technique("texcolormod1");
         tek_texcolornrm = pickhudmat->technique("texcolornrm");
         par_colormap = pickhudmat->param("ColorMap");
@@ -684,7 +686,7 @@ void Scene::_renderIMPL(Context* context,rcfd_ptr_t RCFD){
       context->debugPushGroup("pickhud");
       size_t DIM = 200;
       if(_sgpickbuffer->_pickIDtexture){
-        pickhudmat->begin(tek_texcolor,*RCFD);
+        pickhudmat->begin(tek_texcolorpik,*RCFD);
         fxi->BindParamCTex(par_colormap, _sgpickbuffer->_pickIDtexture);
         fxi->BindParamMatrix(par_mvp, uimatrix);
         dwi->quad2DEML(fvec4(0,0,DIM,DIM), // quadrect
