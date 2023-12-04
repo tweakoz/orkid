@@ -35,7 +35,8 @@ ImplementReflectionX(SharedTest, "SharedTest");
 ImplementReflectionX(MapTest, "MapTest");
 ImplementReflectionX(VectorTest, "VectorTest");
 ImplementReflectionX(ArrayTest, "ArrayTest");
-
+ImplementReflectionX(InterfaceTest, "InterfaceTest");
+ImplementReflectionX(TheTestInterface, "TheTestInterface");
 ///////////////////////////////////////////////////////////////////////////////
 void AssetTest::describeX(ObjectClass* clazz) {
   ///////////////////////////////////
@@ -227,3 +228,12 @@ void MathTest::describeX(ObjectClass* clazz) {
       &MathTest::_fmtx4);
 }
 ///////////////////////////////////////////////////////////////////////////////
+InterfaceTest::InterfaceTest(){
+
+}
+
+void InterfaceTest::describeX(class_t* clazz) {
+}
+void TheTestInterface::describeX(class_t* clazz) {
+}
+

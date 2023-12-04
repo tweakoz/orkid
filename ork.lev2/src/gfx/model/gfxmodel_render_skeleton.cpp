@@ -20,6 +20,9 @@
 template class ork::orklut<ork::PoolString, ork::lev2::xgmmesh_ptr_t>;
 namespace ork::lev2 {
 
+
+
+
 void XgmModel::RenderSkeleton(
     const XgmModelInst* minst,
     const fmtx4& WorldMat,
