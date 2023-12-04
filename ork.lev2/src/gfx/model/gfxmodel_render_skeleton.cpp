@@ -315,6 +315,21 @@ void XgmModel::RenderSkeleton(
   // render bones
   ///////////////////
 
+  // todo - per-bone selection 
+  //  use pickbuffer heirarchical partition method
+  //
+  // 8 bits - pickbuffer method encoding
+  // 
+  // method 0 (object only)
+  // 8  bits (value 0) : Method 0
+  // 56 bits : object id
+  // 
+  // method 1 (object/component/subcomponent)
+  //  8 bits : Method 1
+  // 16 bits : object id
+  //  8 bits : component-id
+  // 32 bits : sub-component-id
+
   vw.UnLock(context);
   context->MTXI()->PushMMatrix(fmtx4::Identity());
   RCIDCOPY._pickID = fvec4(1, 0, 0, 1);
