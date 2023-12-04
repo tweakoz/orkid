@@ -13,6 +13,7 @@
 #include <ork/orkstd.h>
 #include <ork/orkstd.h>
 #include <klein/klein.hpp>
+#include <ork/math/scrambler.inl>
 
 using namespace ork;
 
@@ -285,4 +286,15 @@ TEST(klein1) {
   mat4x4 m_matrix = m.as_mat4x4();
 
   // std::cout << m_matrix;
+}
+
+TEST(scrambleru16) {
+  using namespace ork;
+  ScramblerUint16 scrambler(42);
+  for (int i = 0; i < 65536; i++) {
+    uint16_t scrambled = scrambler.scramble(i);
+    uint16_t unscrambled = scrambler.unscramble(scrambled);
+    printf( "i<%04x> scrambled<%04x> unscrambled<%04x>\n", i, scrambled, unscrambled);
+    CHECK_EQUAL(i, unscrambled);
+  }
 }
