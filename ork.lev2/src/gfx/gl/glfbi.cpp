@@ -676,7 +676,15 @@ void GlFrameBufferInterface::GetPixel(const fvec4& rAt, PixelFetchContext& pfc) 
                       fvec4 rgba;
                       glReadPixels(sx, sy, 1, 1, GL_RGBA, GL_FLOAT, (void*) & rgba );
                       if(MrtIndex<pfc_size){
-                        pfc._pickvalues[MrtIndex] = pfc.decodeVariant(rgba);
+                        pfc._pickvalues[MrtIndex] = pfc.decodePixel(rgba);
+                      }
+                      break;
+                    }
+                    case EBufferFormat::RGBA32UI: {
+                      u32vec4 value;
+                      glReadPixels(sx, sy, 1, 1, GL_RGBA, GL_UNSIGNED_INT, (void*) & value );
+                      if(MrtIndex<pfc_size){
+                        pfc._pickvalues[MrtIndex] = pfc.decodePixel(value);
                       }
                       break;
                     }

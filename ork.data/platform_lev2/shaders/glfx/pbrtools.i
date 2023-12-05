@@ -35,6 +35,7 @@ uniform_set ub_frg {
   sampler2D EmissiveMap;
   sampler2D MtlRufMap;
   vec4 ModColor;
+  uint obj_pickID;
   mat4 v;
   vec2 InvViewportSize; // inverse target size
   float MetallicFactor;
@@ -83,6 +84,7 @@ uniform_set ub_frg_fwd {
   sampler2D UnTexPointLightsData;
 
   vec4 ModColor;
+  uint obj_pickID;
   // vec2 InvViewportSize; // inverse target size
   vec3 EyePostion;
   vec3 EyePostionL;
@@ -164,7 +166,8 @@ fragment_interface iface_fdprepass : ub_frg_fwd {
   }
 }
 ///////////////////////////////////////////////////////////////
-fragment_interface iface_fgbuffer : ub_frg {
+fragment_interface iface_fgbuffer 
+ : ub_frg {
   inputs {
     vec4 frg_wpos;
     vec4 frg_clr;
@@ -376,7 +379,8 @@ fragment_shader ps_gbuffer_vizn : iface_fgbuffer : lib_pbr_frg {
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_gbuffer_n // normalmap
-    : iface_fgbuffer : lib_pbr_frg {
+    : iface_fgbuffer 
+    : lib_pbr_frg {
   vec3 TN = texture(NormalMap, frg_uv0).xyz;
   TN      = mix(TN, vec3(0.5, 1, 0.5), 0.0);
   vec3 N  = normalize(TN * 2.0 - vec3(1, 1, 1));
@@ -703,7 +707,7 @@ fragment_interface iface_frg_pick : ub_frg_fwd {
     vec2 frg_uv;
   }
   outputs {
-    layout(location = 0) vec4 out_color;
+    layout(location = 0) uvec4 out_pickID;
     layout(location = 1) vec4 out_wpos;
     layout(location = 2) vec4 out_wnrm;
     layout(location = 3) vec4 out_uv;
@@ -751,7 +755,9 @@ vertex_shader vs_pick_rigid_instanced_mono : iface_vtx_pick_rigid : ub_vtx {
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_pick //
     : iface_frg_pick {
-  out_color = ModColor;
+
+  out_pickID = uvec4(obj_pickID,0,0,0);
+
   out_wpos  = vec4(frg_wpos,0);
   out_wnrm  = vec4(normalize(frg_wnrm), 0);
   out_uv  = vec4(frg_uv, 0, 0);

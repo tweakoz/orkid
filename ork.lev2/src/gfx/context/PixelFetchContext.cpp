@@ -51,11 +51,11 @@ void PixelFetchContext::resize(size_t s){
 /////////////////////////////////////////////////////////////////////////
 
 void PixelFetchContext::beginPickRender(){
-  _pickindex = _gpickcounter.fetch_add(4);
-  _offset  = uint64_t(_gscrambler->scramble(_pickindex+0))<<0;
-  _offset += uint64_t(_gscrambler->scramble(_pickindex+1))<<16;
-  _offset += uint64_t(_gscrambler->scramble(_pickindex+2))<<32;
-  _offset += uint64_t(_gscrambler->scramble(_pickindex+3))<<48;
+  _gpickcounter = 0;
+  //_offset  = uint64_t(_gscrambler->scramble(_pickindex+0))<<0;
+  //_offset += uint64_t(_gscrambler->scramble(_pickindex+1))<<16;
+  //_offset += uint64_t(_gscrambler->scramble(_pickindex+2))<<32;
+  //_offset += uint64_t(_gscrambler->scramble(_pickindex+3))<<48;
   _pickIDlut.clear();
   _pickIDvec.clear();
 }
@@ -65,8 +65,8 @@ void PixelFetchContext::endPickRender(){
 
 /////////////////////////////////////////////////////////////////////////
 
-fvec4 PixelFetchContext::encodeVariant(pickvariant_t data){
-  fvec4 rval;
+uint32_t PixelFetchContext::encodeVariant(pickvariant_t data){
+  uint32_t rval;
 
   uint64_t hash = data.hash();
   size_t index = 0;
@@ -76,24 +76,17 @@ fvec4 PixelFetchContext::encodeVariant(pickvariant_t data){
     _pickIDvec.push_back(data);
   }
   index += _offset;
-  rval.x = float(index & 0xFFFF);
-  rval.y = float((index >> 16) & 0xFFFF);
-  rval.z = float((index >> 32) & 0xFFFF);
-  rval.w = float((index >> 48) & 0xFFFF);
-  printf( "enc rval<%g %g %g %g>\n", rval.x, rval.y, rval.z, rval.w );
-
-  if(data.isA<fvec4>()){
-    rval = data.get<fvec4>();
-  }
-
+  //index = 0;
+  rval = uint32_t(index);
+  _pickindex = _gpickcounter.fetch_add(4);
   return rval;
 }
-pickvariant_t PixelFetchContext::decodeVariant(fvec4 rgba){
+pickvariant_t PixelFetchContext::decodePixel(fvec4 raw_pixel){
   pickvariant_t rval;
-  uint64_t a             = uint64_t(rgba.x);
-  uint64_t b             = uint64_t(rgba.y);
-  uint64_t c             = uint64_t(rgba.z);
-  uint64_t d             = uint64_t(rgba.w);
+  uint64_t a             = uint64_t(raw_pixel.x);
+  uint64_t b             = uint64_t(raw_pixel.y);
+  uint64_t c             = uint64_t(raw_pixel.z);
+  uint64_t d             = uint64_t(raw_pixel.w);
   size_t value = (d << 48) | (c << 32) | (b << 16) | a;
   value -= _offset;
   if(value < _pickIDvec.size()){
@@ -101,7 +94,16 @@ pickvariant_t PixelFetchContext::decodeVariant(fvec4 rgba){
   }
   return rval;
 }
-
+/////////////////////////////////////////////////////////////////////////
+pickvariant_t PixelFetchContext::decodePixel(u32vec4 raw_pixel){
+  pickvariant_t rval;
+  auto as_out = rval.makeShared<u32vec4>();
+  as_out->x = raw_pixel.x;
+  as_out->y = raw_pixel.y;
+  as_out->z = raw_pixel.z;
+  as_out->w = raw_pixel.w;
+  return rval;
+}
 /////////////////////////////////////////////////////////////////////////
 
 ork::rtti::ICastable* PixelFetchContext::GetObject(PickBuffer* pb, int ichan) const {

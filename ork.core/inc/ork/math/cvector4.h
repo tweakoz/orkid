@@ -273,6 +273,14 @@ struct use_custom_serdes<fvec4> { //
 fvec4 dvec4_to_fvec4(const dvec4& dvec);
 dvec4 fvec4_to_dvec4(const fvec4& dvec);
 
+struct u32vec4{
+  uint32_t x = 0;
+  uint32_t y = 0;
+  uint32_t z = 0;
+  uint32_t w = 0;
+};
+using u32vec4_ptr_t = std::shared_ptr<u32vec4>;
+
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork
 ///////////////////////////////////////////////////////////////////////////////

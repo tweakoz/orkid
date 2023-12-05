@@ -233,7 +233,7 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu,con
               pipeline->bindParam(mtl->_paramMVP, "RCFD_Camera_Pick"_crcsh);
               pipeline->bindParam(mtl->_paramM, "RCFD_M"_crcsh);
               pipeline->bindParam(mtl->_paramMROT, "RCFD_Model_Rot"_crcsh);
-              pipeline->bindParam(mtl->_parModColor, "RCID_PickID"_crcsh);
+              pipeline->bindParam(mtl->_parPickID, "RCID_PickID"_crcsh);
               //pipeline->_debugBreak = true;
             }
             else if (not permu._skinned and mtl->_tek_PIK_RI_NI) {
@@ -242,7 +242,7 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu,con
               pipeline->bindParam(mtl->_paramMVP, "RCFD_Camera_Pick"_crcsh);
               pipeline->bindParam(mtl->_paramM, "RCFD_M"_crcsh);
               pipeline->bindParam(mtl->_paramMROT, "RCFD_Model_Rot"_crcsh);
-              pipeline->bindParam(mtl->_parModColor, "RCID_PickID"_crcsh);
+              pipeline->bindParam(mtl->_parPickID, "RCID_PickID"_crcsh);
             }
             else{
               OrkAssert(false);
@@ -873,6 +873,7 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
   _parMetallicFactor      = fxi->parameter(_shader, "MetallicFactor");
   _parRoughnessFactor     = fxi->parameter(_shader, "RoughnessFactor");
   _parModColor            = fxi->parameter(_shader, "ModColor");
+  _parPickID              = fxi->parameter(_shader, "obj_pickID");
   _paramInstanceMatrixMap = fxi->parameter(_shader, "InstanceMatrices");
   _paramInstanceIdMap     = fxi->parameter(_shader, "InstanceIds");
   _paramInstanceColorMap  = fxi->parameter(_shader, "InstanceColors");

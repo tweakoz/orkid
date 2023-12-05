@@ -45,7 +45,7 @@ struct IMPL {
     if (nullptr == _rtg) {
       _material.gpuInit(pTARG);
       _rtg                 = std::make_shared<RtGroup>(pTARG, _width, _height, MsaaSamples::MSAA_1X);
-      auto buf_id          = _rtg->createRenderTarget(EBufferFormat::RGBA32F);
+      auto buf_id          = _rtg->createRenderTarget(EBufferFormat::RGBA32UI);
       auto buf_wpos        = _rtg->createRenderTarget(EBufferFormat::RGBA32F);
       auto buf_wnrm        = _rtg->createRenderTarget(EBufferFormat::RGBA32F);
       auto buf_uv          = _rtg->createRenderTarget(EBufferFormat::RGBA32F);

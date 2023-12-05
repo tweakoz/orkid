@@ -670,6 +670,7 @@ void Scene::_renderIMPL(Context* context,rcfd_ptr_t RCFD){
       static fxtechnique_constptr_t tek_texcolormod1;
       static fxtechnique_constptr_t tek_texcolornrm;
       static fxparam_constptr_t par_colormap;
+      static fxparam_constptr_t par_pickidmap;
       static fxparam_constptr_t par_mvp;
 
       if(gpuinit){
@@ -680,6 +681,7 @@ void Scene::_renderIMPL(Context* context,rcfd_ptr_t RCFD){
         tek_texcolormod1 = pickhudmat->technique("texcolormod1");
         tek_texcolornrm = pickhudmat->technique("texcolornrm");
         par_colormap = pickhudmat->param("ColorMap");
+        par_pickidmap = pickhudmat->param("PickIdMap");
         par_mvp = pickhudmat->param("MatMVP");
       }
       auto uimatrix = mtxi->uiMatrix(TARGW, TARGH);
@@ -687,7 +689,7 @@ void Scene::_renderIMPL(Context* context,rcfd_ptr_t RCFD){
       size_t DIM = 200;
       if(_sgpickbuffer->_pickIDtexture){
         pickhudmat->begin(tek_texcolorpik,*RCFD);
-        fxi->BindParamCTex(par_colormap, _sgpickbuffer->_pickIDtexture);
+        fxi->BindParamCTex(par_pickidmap, _sgpickbuffer->_pickIDtexture);
         fxi->BindParamMatrix(par_mvp, uimatrix);
         dwi->quad2DEML(fvec4(0,0,DIM,DIM), // quadrect
                        fvec4(1,0,-1,1), // uvrect

@@ -274,7 +274,7 @@ void XgmModel::RenderSkeleton(
       hvtx._color    = col.ABGRU32();
       hvtx._normal   = N;
       hvtx._uv       = fvec2(0, 0);
-      //hvtx._data     = fvec4(0, 0, 0, 0);
+      hvtx._data     = fvec3(0, 0, 0);
 
       vw.AddVertex(hvtx);
     };
@@ -333,6 +333,7 @@ void XgmModel::RenderSkeleton(
 
   vw.UnLock(context);
   context->MTXI()->PushMMatrix(fmtx4::Identity());
+  //RCIDCOPY._pickID = fvec4(1, 0, 0, 1);
   RCIDCOPY._pickID = fvec4(1, 0, 0, 1);
   use_mtl->_rasterstate.SetDepthTest(EDepthTest::OFF);
   use_mtl->_rasterstate.SetCullTest(ECullTest::PASS_FRONT);

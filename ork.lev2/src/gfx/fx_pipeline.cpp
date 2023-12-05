@@ -136,9 +136,9 @@ void FxPipeline::_set_typed_param(const RenderContextInstData& RCID, fxparam_con
           auto itpfc = RCFDPROPS.find("pixel_fetch_context"_crc);
           OrkAssert(itpfc != RCFDPROPS.end());
           auto as_pfc = itpfc->second.get<pixelfetchctx_ptr_t>();
-          auto as_rgba = as_pfc->encodeVariant(RCID._pickID);
-          printf( "PICKID: RGBA<%g %g %g %g>\n", as_rgba.x, as_rgba.y, as_rgba.z, as_rgba.w );
-          FXI->BindParamVect4(param, as_rgba);
+          auto as_u32 = as_pfc->encodeVariant(RCID._pickID);
+          //printf( "PICKID: RGBA<%g %g %g %g>\n", as_rgba.x, as_rgba.y, as_rgba.z, as_rgba.w );
+          FXI->BindParamU32(param, as_u32);
           break;
         }
         case "RCFD_Camera_Pick"_crcu: {
