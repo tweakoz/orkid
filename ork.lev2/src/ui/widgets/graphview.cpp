@@ -12,6 +12,7 @@
 #include <ork/lev2/gfx/gfxprimitives.h>
 #include <ork/lev2/gfx/material_freestyle.h>
 #include <ork/math/misc_math.h>
+#include <ork/lev2/gfx/gfxvtxbuf.inl>
 ///////////////////////////////////////////////////////////
 namespace ork::ui {
 static constexpr int _kbasechanlaby = 16;

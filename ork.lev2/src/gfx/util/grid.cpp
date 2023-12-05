@@ -14,6 +14,7 @@
 #include <ork/math/audiomath.h>
 #include <ork/math/misc_math.h>
 #include <ork/pch.h>
+#include <ork/lev2/gfx/gfxvtxbuf.inl>
 
 using namespace ork::audiomath;
 

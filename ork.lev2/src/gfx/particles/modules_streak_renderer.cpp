@@ -14,6 +14,7 @@
 #include <ork/dataflow/module.inl>
 #include <ork/dataflow/plug_data.inl>
 #include <ork/dataflow/plug_inst.inl>
+#include <ork/lev2/gfx/gfxvtxbuf.inl>
 #include <ork/util/triple_buffer.h>
 
 using namespace ork::dataflow;

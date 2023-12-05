@@ -14,6 +14,7 @@
 #include <ork/lev2/gfx/rtgroup.h>
 #include <ork/dataflow/module.inl>
 #include <ork/dataflow/plug_data.inl>
+#include <ork/lev2/gfx/gfxvtxbuf.inl>
 
 using namespace ork::dataflow;
 

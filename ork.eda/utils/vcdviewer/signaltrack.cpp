@@ -7,6 +7,7 @@
 
 #include "vcdviewer.h"
 #include <ork/lev2/input/inputdevice.h>
+#include <ork/lev2/gfx/gfxvtxbuf.inl>
 
 ///////////////////////////////////////////////////////////////////////////////
 

@@ -19,6 +19,7 @@
 #include <ork/lev2/gfx/gfxprimitives.h>
 #include <ork/lev2/gfx/gfxmaterial_ui.h>
 #include <ork/lev2/ui/layoutgroup.inl>
+#include <ork/lev2/gfx/gfxvtxbuf.inl>
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/lev2/gfx/renderer/NodeCompositor/pbr_node_deferred.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/pbr_node_forward.h>

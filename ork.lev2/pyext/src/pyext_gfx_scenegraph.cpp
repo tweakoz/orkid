@@ -11,6 +11,7 @@
 #include <ork/lev2/gfx/scenegraph/sgnode_billboard.h>
 #include <ork/lev2/gfx/scenegraph/sgnode_groundplane.h>
 #include <ork/python/pycodec.h>
+#include <ork/lev2/gfx/gfxvtxbuf.inl>
 
 ///////////////////////////////////////////////////////////////////////////////
 

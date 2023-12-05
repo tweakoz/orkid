@@ -13,6 +13,7 @@
 #include <ork/lev2/gfx/dbgfontman.h>
 #include <ork/lev2/gfx/meshutil/submesh.h>
 #include <ork/reflect/properties/registerX.inl>
+#include <ork/lev2/gfx/gfxvtxbuf.inl>
 
 ImplementReflectionX(ork::lev2::LabeledPointDrawableData, "LabeledPointDrawableData");
 

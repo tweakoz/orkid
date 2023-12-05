@@ -15,6 +15,7 @@
 #include <ork/lev2/gfx/gfxmaterial_test.h>
 #include <ork/lev2/gfx/gfxmaterial_ui.h>
 #include <ork/math/misc_math.h>
+#include <ork/lev2/gfx/gfxvtxbuf.inl>
 
 ////////////////////////////////////////////////////////////////
 namespace ork::lev2::ged {

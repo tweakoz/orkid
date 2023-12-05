@@ -3,6 +3,7 @@
 #include <ork/lev2/ui/ui.h>
 #include <ork/lev2/gfx/rtgroup.h>
 #include <ork/lev2/gfx/renderer/rendercontext.h>
+#include <ork/lev2/gfx/gfxvtxbuf.inl>
 
 namespace ork::lev2 {
 

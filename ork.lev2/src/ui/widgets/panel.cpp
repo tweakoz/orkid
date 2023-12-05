@@ -7,6 +7,7 @@
 #include <ork/util/hotkey.h>
 #include <ork/lev2/gfx/dbgfontman.h>
 #include <ork/lev2/gfx/gfxprimitives.h>
+#include <ork/lev2/gfx/gfxvtxbuf.inl>
 
 namespace ork { namespace ui {
 

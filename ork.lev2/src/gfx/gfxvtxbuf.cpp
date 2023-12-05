@@ -7,7 +7,7 @@
 
 #include <ork/pch.h>
 #include <ork/lev2/gfx/gfxenv.h>
-#include <ork/lev2/gfx/gfxvtxbuf.h>
+#include <ork/lev2/gfx/gfxvtxbuf.inl>
 
 /////////////////////////////////////////////////////////////////////////
 namespace ork { namespace lev2 {
@@ -25,45 +25,19 @@ IndexBufferBase::~IndexBufferBase() {
   mpIndices = 0;
 }
 
-/////////////////////////////////////////////////////////////////////////
-template <typename T> IdxBuffer<T>::~IdxBuffer() {
-}
-/////////////////////////////////////////////////////////////////////////
-
-template <typename T>
-StaticIndexBuffer<T>::StaticIndexBuffer(int inumidx, const T* src)
-    : IdxBuffer<T>() {
-  if (inumidx) {
-    this->miNumIndices = inumidx;
-
-    if (src) {
-      this->mpIndices = const_cast<T*>(src);
-    }
+  int IndexBufferBase::GetNumIndices() const {
+    return miNumIndices;
   }
-}
+  void IndexBufferBase::SetNumIndices(int inum) {
+    miNumIndices = inum;
+  }
+  void* IndexBufferBase::GetHandle(void) const {
+    return (mhIndexBuf);
+  }
+  void IndexBufferBase::SetHandle(void* ph) const {
+    mhIndexBuf = ph;
+  }
 
-template <typename T> StaticIndexBuffer<T>::~StaticIndexBuffer() {
-  this->mpIndices = 0;
-}
-
-/////////////////////////////////////////////////////////////////////////
-
-template <typename T>
-DynamicIndexBuffer<T>::DynamicIndexBuffer(int inumidx)
-    : IdxBuffer<T>() {
-  this->miNumIndices = inumidx;
-}
-
-template <typename T> DynamicIndexBuffer<T>::~DynamicIndexBuffer() {
-  this->mpIndices = 0;
-}
-
-/////////////////////////////////////////////////////////////////////////
-
-template class StaticIndexBuffer<U16>;
-template class DynamicIndexBuffer<U16>;
-template class StaticIndexBuffer<U32>;
-template class DynamicIndexBuffer<U32>;
 
 /////////////////////////////////////////////////////////////////////////
 template <typename T> vtxbufferbase_ptr_t _createvb(int _numverts, bool _static) {
@@ -146,6 +120,59 @@ VertexBufferBase::VertexBufferBase(int iMax, int iFlush, int iSize, /*PrimitiveT
 VertexBufferBase::~VertexBufferBase() {
 }
 
+  int VertexBufferBase::GetMax(void) const {
+    return int(miMaxVerts);
+  }
+  int VertexBufferBase::GetNumVertices(void) const {
+    return int(miNumVerts);
+  }
+  int VertexBufferBase::GetVtxSize(void) const {
+    return int(miVtxSize);
+  }
+  void VertexBufferBase::SetHandle(void* hVB) {
+    _IMPL = hVB;
+  }
+  void* VertexBufferBase::GetHandle(void) const {
+    return _IMPL;
+  }
+
+  void VertexBufferBase::Reset(void) {
+    miNumVerts = 0;
+  }
+  void VertexBufferBase::SetNumVertices(int inum) {
+    miNumVerts = inum;
+  }
+
+  EVtxStreamFormat VertexBufferBase::GetStreamFormat(void) const {
+    return EVtxStreamFormat(meStreamFormat);
+  }
+
+  bool VertexBufferBase::IsLocked(void) const {
+    return mbLocked;
+  }
+  void VertexBufferBase::Lock() const {
+    miLockWriteIndex = 0;
+    SetLock(true);
+  }
+  void VertexBufferBase::Unlock() const {
+    // miLockWriteIndex=0;
+    SetLock(false);
+  }
+  void VertexBufferBase::SetRingLock(bool v) {
+    mbRingLock = v;
+  }
+  bool VertexBufferBase::GetRingLock() const {
+    return mbRingLock;
+  }
+/////////////////////////////////////////////////////////////////////////
+  VtxWriterBase::VtxWriterBase()
+      : miWriteBase(0)
+      , miWriteCounter(0)
+      , miWriteMax(0)
+      , mpBase(0)
+      , mpVB(0) {
+  }
+
 /////////////////////////////////////////////////////////////////////////
 void VtxWriterBase::Lock(Context* pT, VertexBufferBase* pVB, int icount) {
   Lock(pT->GBI(), pVB, icount);
@@ -213,5 +240,10 @@ void VtxWriterBase::UnLock(GeometryBufferInterface* GBI, u32 ulflgs) {
     mpVB->SetNumVertices(miWriteCounter);
   }
 }
+
+template class StaticIndexBuffer<U16>;
+template class DynamicIndexBuffer<U16>;
+template class StaticIndexBuffer<U32>;
+template class DynamicIndexBuffer<U32>;
 
 }} // namespace ork::lev2

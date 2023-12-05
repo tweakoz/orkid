@@ -12,6 +12,7 @@
 #include <ork/lev2/ui/ui.h>
 #include <ork/lev2/gfx/texman.h>
 #include <ork/object/AutoConnector.h>
+#include <ork/lev2/gfx/gfxvtxbuf.inl>
 
 ///////////////////////////////////////////////////////////////////////////////
 

@@ -16,6 +16,7 @@
 #include <ork/kernel/string/deco.inl>
 #include <ork/lev2/gfx/material_pbr.inl>
 #include <ork/lev2/gfx/material_freestyle.h>
+#include <ork/lev2/gfx/gfxvtxbuf.inl>
 
 template class ork::orklut<ork::PoolString, ork::lev2::xgmmesh_ptr_t>;
 namespace ork::lev2 {

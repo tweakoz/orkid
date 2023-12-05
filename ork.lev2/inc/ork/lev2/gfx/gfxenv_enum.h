@@ -236,7 +236,6 @@ enum struct EVtxStreamFormat : crc_enum_t {
   CrcEnum(V12),             // 12 BPV	flat fvec3's
   CrcEnum(V4T4C4),          // 12 BPV	2D text (or textured quads) w / vtxcolors
 
-  CrcEnum(V16),             // 16 BPV	flat fvec4's
   CrcEnum(V12C4),           // 16 BPV  flat fvec3's
   CrcEnum(V6I2C4N3T2),      // 16 BPV	I2 = Bone Index (SKINNED)
 
@@ -264,7 +263,7 @@ enum struct EVtxStreamFormat : crc_enum_t {
   CrcEnum(V12N12B12T16),    // 52BPV	Normals,Binormals,2UV (lightmapped)
   CrcEnum(V12N12B12T8I4W4), // 52BPV	Normals,Binormals,1UV,4 bone weighting
 
-  CrcEnum(MODELERRIGID), // 32 BPV	I4 = Bone Index, W4 = Bone Weights
+  CrcEnum(MODELERRIGID),    // 72 BPV	I4 = Bone Index, W4 = Bone Weights
 
   //////////////////////////////
   // Platform Specific

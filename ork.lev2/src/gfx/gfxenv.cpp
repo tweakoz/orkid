@@ -25,6 +25,7 @@
 #include <ork/reflect/enum_serializer.inl>
 #include <ork/util/Context.hpp>
 #include <ork/kernel/memcpy.inl>
+#include <ork/lev2/gfx/gfxvtxbuf.inl>
 
 #include <ork/reflect/properties/register.h>
 

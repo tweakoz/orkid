@@ -9,6 +9,7 @@
 #include <ork/lev2/gfx/renderer/drawable.h>
 #include <ork/lev2/lev2_asset.h>
 #include <ork/lev2/gfx/gfxmodel.h>
+#include <ork/lev2/gfx/gfxvtxbuf.inl>
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/lev2/gfx/renderer/NodeCompositor/pbr_node_deferred.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/pbr_node_forward.h>

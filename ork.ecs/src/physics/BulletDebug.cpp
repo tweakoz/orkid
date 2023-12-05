@@ -17,6 +17,7 @@
 #include <ork/lev2/gfx/material_pbr.inl>
 
 #include "bullet_impl.h"
+#include <ork/lev2/gfx/gfxvtxbuf.inl>
 
 using namespace ork::lev2;
 ///////////////////////////////////////////////////////////////////////////////

@@ -11,6 +11,7 @@
 #include <ork/lev2/gfx/meshutil/meshutil_stripper.h>
 #include <ork/lev2/gfx/meshutil/meshutil_fixedgrid.h>
 #include <ork/util/logger.h>
+#include <ork/lev2/gfx/gfxvtxbuf.inl>
 
 const bool gbFORCEDICE = true;
 const int kDICESIZE    = 512;

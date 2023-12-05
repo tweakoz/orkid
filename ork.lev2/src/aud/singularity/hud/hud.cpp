@@ -11,6 +11,7 @@
 #include <ork/lev2/gfx/material_freestyle.h>
 #include <ork/lev2/ezapp.h> // todo move updatedata_ptr_t out..
 #include <ork/util/logger.h>
+#include <ork/lev2/gfx/gfxvtxbuf.inl>
 
 using namespace ork;
 using namespace ork::lev2;
