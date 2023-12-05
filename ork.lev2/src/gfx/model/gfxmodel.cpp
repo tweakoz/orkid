@@ -177,7 +177,7 @@ XgmPrimGroup::~XgmPrimGroup() {
 XgmPrimGroup::XgmPrimGroup()
     : miNumIndices(0)
     , mpIndices(0)
-    , mePrimType(PrimitiveType::NONE) {
+    , mePrimType(PrimitiveType::END) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////

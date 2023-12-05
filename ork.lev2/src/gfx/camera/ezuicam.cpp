@@ -236,8 +236,8 @@ void EzUiCam::draw(Context* context) const {
   mtlinst->wrappedDrawCall(RCID, [context]() {
     auto& tricircle = GfxPrimitives::GetRef().mVtxBuf_TriCircle;
     auto& axis      = GfxPrimitives::GetRef().mVtxBuf_Axis;
-    context->GBI()->DrawPrimitiveEML(tricircle);
-    context->GBI()->DrawPrimitiveEML(axis);
+    context->GBI()->DrawPrimitiveEML(tricircle,PrimitiveType::LINES);
+    context->GBI()->DrawPrimitiveEML(axis,PrimitiveType::LINES);
   });
   context->debugPopGroup();
   ///////////////////////////////////////////////////////////////

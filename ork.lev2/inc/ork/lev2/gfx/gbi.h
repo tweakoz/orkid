@@ -47,7 +47,7 @@ public:
   void DrawPrimitive(
       GfxMaterial* mtl,
       const VertexBufferBase& VBuf, //
-      PrimitiveType eType = PrimitiveType::NONE,
+      PrimitiveType eType,
       int ivbase           = 0,
       int ivcount          = 0);
 
@@ -55,7 +55,7 @@ public:
       GfxMaterial* mtl,
       const VertexBufferBase& VBuf,
       const IndexBufferBase& IdxBuf,
-      PrimitiveType eType = PrimitiveType::NONE,
+      PrimitiveType eType,
       int ivbase           = 0,
       int ivcount          = 0);
 
@@ -63,14 +63,14 @@ public:
 
   virtual void DrawPrimitiveEML(
       const VertexBufferBase& VBuf, //
-      PrimitiveType eType = PrimitiveType::NONE,
+      PrimitiveType eType,
       int ivbase           = 0,
       int ivcount          = 0) = 0;
 
 #if defined(ENABLE_COMPUTE_SHADERS)
   virtual void DrawPrimitiveEML(
       const FxShaderStorageBuffer* SSBO, //
-      PrimitiveType eType = PrimitiveType::NONE,
+      PrimitiveType eType,
       int ivbase           = 0,
       int ivcount          = 0) = 0;
 #endif      
@@ -78,7 +78,7 @@ public:
   virtual void DrawIndexedPrimitiveEML(
       const VertexBufferBase& VBuf,
       const IndexBufferBase& IdxBuf,
-      PrimitiveType eType = PrimitiveType::NONE,
+      PrimitiveType eType,
       int ivbase           = 0,
       int ivcount          = 0) = 0;
 

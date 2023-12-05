@@ -51,7 +51,7 @@ StreakRendererInst::StreakRendererInst(const StreakRendererData* srd, dataflow::
   OrkAssert(srd);
   _triple_buf                         = std::make_shared<triple_buf_t>();
   static constexpr size_t KMAXSTREAKS = 128 << 10;
-  _vertexBuffer                       = std::make_shared<streak_vtxbuf_t>(KMAXSTREAKS, 0, PrimitiveType::POINTS);
+  _vertexBuffer                       = std::make_shared<streak_vtxbuf_t>(KMAXSTREAKS, 0);
   _vertexBuffer->SetRingLock(true);
 }
 

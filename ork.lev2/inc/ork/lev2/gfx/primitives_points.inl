@@ -24,7 +24,7 @@ struct PointsPrimitive {
 
   inline PointsPrimitive(int numpoints){
     _numpoints = numpoints;
-    _vertexBuffer = std::make_shared<vtx_buf_t>(numpoints,0,PrimitiveType::POINTS);
+    _vertexBuffer = std::make_shared<vtx_buf_t>(numpoints,0);
   }
 
   //////////////////////////////////////////////////////////////////////////////

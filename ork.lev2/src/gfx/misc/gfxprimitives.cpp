@@ -37,37 +37,37 @@ static const int NUM_DOME_TRIANGLES   = 10 * 50 * 6;
 
 GfxPrimitives::GfxPrimitives()
     : NoRttiSingleton<GfxPrimitives>()
-    , mVtxBuf_Axis(6, 6, PrimitiveType::LINES)
-    , mVtxBuf_AxisBox(36, 36, PrimitiveType::TRIANGLES)
-    , mVtxBuf_AxisCone(1000, 400, PrimitiveType::TRIANGLES)
-    , mVtxBuf_AxisLine(6 * 2 * 3, 6 * 2 * 3, PrimitiveType::TRIANGLES)
+    , mVtxBuf_Axis(6, 6)
+    , mVtxBuf_AxisBox(36, 36)
+    , mVtxBuf_AxisCone(1000, 400)
+    , mVtxBuf_AxisLine(6 * 2 * 3, 6 * 2 * 3)
 
-    , mVtxBuf_Box(6 * 2 * 3, 6 * 2 * 3, PrimitiveType::TRIANGLES)
+    , mVtxBuf_Box(6 * 2 * 3, 6 * 2 * 3)
 
-    , mVtxBuf_Capsule((6 * NUM_CYLINDER_FACES + 2), (6 * NUM_CYLINDER_FACES + 2), PrimitiveType::TRIANGLES)
-    , mVtxBuf_CircleStrip(1000, 1000, PrimitiveType::TRIANGLES)
-    , mVtxBuf_CircleStripUI(1000, 1000, PrimitiveType::QUADS)
-    , mVtxBuf_CircleUI(1000, 1000, PrimitiveType::TRIANGLES)
-    , mVtxBuf_Cone(1000, 400, PrimitiveType::TRIANGLES)
-    , mVtxBuf_Cylinder(12 * NUM_CYLINDER_FACES + 2, 12 * NUM_CYLINDER_FACES + 2, PrimitiveType::TRIANGLES)
+    , mVtxBuf_Capsule((6 * NUM_CYLINDER_FACES + 2), (6 * NUM_CYLINDER_FACES + 2))
+    , mVtxBuf_CircleStrip(1000, 1000)
+    , mVtxBuf_CircleStripUI(1000, 1000)
+    , mVtxBuf_CircleUI(1000, 1000)
+    , mVtxBuf_Cone(1000, 400)
+    , mVtxBuf_Cylinder(12 * NUM_CYLINDER_FACES + 2, 12 * NUM_CYLINDER_FACES + 2)
 
-    , mVtxBuf_Diamond(3 * 6, 3 * 6, PrimitiveType::TRIANGLES)
-    , mVtxBuf_DirCone(1000, 400, PrimitiveType::TRIANGLES)
-    , mVtxBuf_Dome(NUM_DOME_TRIANGLES, NUM_DOME_TRIANGLES, PrimitiveType::TRIANGLES)
+    , mVtxBuf_Diamond(3 * 6, 3 * 6)
+    , mVtxBuf_DirCone(1000, 400)
+    , mVtxBuf_Dome(NUM_DOME_TRIANGLES, NUM_DOME_TRIANGLES)
 
-    , mVtxBuf_EQSphere(1024, 1024, PrimitiveType::POINTS)
-    , mVtxBuf_FullSphere(8192, 8192, PrimitiveType::TRIANGLES)
-    , mVtxBuf_GridX100(1000, 400, PrimitiveType::LINES)
-    , mVtxBuf_GroundPlane(6, 6, PrimitiveType::TRIANGLES)
+    , mVtxBuf_EQSphere(1024, 1024)
+    , mVtxBuf_FullSphere(8192, 8192)
+    , mVtxBuf_GridX100(1000, 400)
+    , mVtxBuf_GroundPlane(6, 6)
 
-    , mVtxBuf_PerlinTerrain(inumgroundverts, inumgroundverts, PrimitiveType::TRIANGLES)
-    , mVtxBuf_SkySphere(32768, 32768, PrimitiveType::TRIANGLES) // PrimitiveType::TRIANGLES
-    , mVtxBuf_TriCircle(6 * (CIRCSEGS + 2), 6 * (CIRCSEGS + 2), PrimitiveType::LINES)
+    , mVtxBuf_PerlinTerrain(inumgroundverts, inumgroundverts)
+    , mVtxBuf_SkySphere(32768, 32768) 
+    , mVtxBuf_TriCircle(6 * (CIRCSEGS + 2), 6 * (CIRCSEGS + 2))
 
-    , mVtxBuf_WireFrameBox(6 * 4 * 2, 6 * 4 * 2, PrimitiveType::LINES)
-    , mVtxBuf_WireFrameCapsule(6 * 4 * 2, 6 * 4 * 2, PrimitiveType::LINES)
-    , mVtxBuf_WireFrameCylinder(4 * NUM_CYLINDER_FACES + 2, 4 * NUM_CYLINDER_FACES + 2, PrimitiveType::LINES)
-    , mVtxBuf_WireFrameDome(6 * (CIRCSEGS + 2), 6 * (CIRCSEGS + 2), PrimitiveType::LINES) {
+    , mVtxBuf_WireFrameBox(6 * 4 * 2, 6 * 4 * 2)
+    , mVtxBuf_WireFrameCapsule(6 * 4 * 2, 6 * 4 * 2)
+    , mVtxBuf_WireFrameCylinder(4 * NUM_CYLINDER_FACES + 2, 4 * NUM_CYLINDER_FACES + 2)
+    , mVtxBuf_WireFrameDome(6 * (CIRCSEGS + 2), 6 * (CIRCSEGS + 2)) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1255,58 +1255,58 @@ void GfxPrimitives::Init(Context* pTarg) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void GfxPrimitives::RenderAxis(Context* pTarg) {
-  pTarg->GBI()->DrawPrimitive(default3DMaterial(pTarg).get(), GetRef().mVtxBuf_Axis);
+  pTarg->GBI()->DrawPrimitive(default3DMaterial(pTarg).get(), GetRef().mVtxBuf_Axis,PrimitiveType::LINES);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void GfxPrimitives::RenderGridX100(Context* pTarg) {
-  pTarg->GBI()->DrawPrimitive(&GetRef().mMaterial, GetRef().mVtxBuf_GridX100);
+  pTarg->GBI()->DrawPrimitive(&GetRef().mMaterial, GetRef().mVtxBuf_GridX100,PrimitiveType::LINES);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void GfxPrimitives::RenderCone(Context* pTarg) {
-  pTarg->GBI()->DrawPrimitive(&GetRef().mMaterial, GetRef().mVtxBuf_Cone);
+  pTarg->GBI()->DrawPrimitive(&GetRef().mMaterial, GetRef().mVtxBuf_Cone,PrimitiveType::TRIANGLES);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void GfxPrimitives::RenderDirCone(Context* pTarg) {
-  pTarg->GBI()->DrawPrimitive(&GetRef().mMaterial, GetRef().mVtxBuf_DirCone);
+  pTarg->GBI()->DrawPrimitive(&GetRef().mMaterial, GetRef().mVtxBuf_DirCone,PrimitiveType::TRIANGLES);
 }
 ///////////////////////////////////////////////////////////////////////////////
 
 void GfxPrimitives::RenderCircleStrip(Context* pTarg) {
-  pTarg->GBI()->DrawPrimitive(&GetRef().mMaterial, GetRef().mVtxBuf_CircleStrip);
+  pTarg->GBI()->DrawPrimitive(&GetRef().mMaterial, GetRef().mVtxBuf_CircleStrip,PrimitiveType::TRIANGLES);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void GfxPrimitives::RenderCircleUI(Context* pTarg) {
-  pTarg->GBI()->DrawPrimitive(&GetRef().mMaterial, GetRef().mVtxBuf_CircleUI);
+  pTarg->GBI()->DrawPrimitive(&GetRef().mMaterial, GetRef().mVtxBuf_CircleUI,PrimitiveType::TRIANGLES);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void GfxPrimitives::RenderCircleStripUI(Context* pTarg) {
-  pTarg->GBI()->DrawPrimitive(&GetRef().mMaterial, GetRef().mVtxBuf_CircleStripUI);
+  pTarg->GBI()->DrawPrimitive(&GetRef().mMaterial, GetRef().mVtxBuf_CircleStripUI,PrimitiveType::TRIANGLES);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void GfxPrimitives::RenderTriCircle(Context* pTarg) {
-  pTarg->GBI()->DrawPrimitive(&GetRef().mMaterial, GetRef().mVtxBuf_TriCircle);
+  pTarg->GBI()->DrawPrimitive(&GetRef().mMaterial, GetRef().mVtxBuf_TriCircle,PrimitiveType::LINES);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void GfxPrimitives::RenderDiamond(Context* pTarg) {
-  pTarg->GBI()->DrawPrimitive(&GetRef().mMaterial, GetRef().mVtxBuf_Diamond);
+  pTarg->GBI()->DrawPrimitive(&GetRef().mMaterial, GetRef().mVtxBuf_Diamond,PrimitiveType::TRIANGLES);
 }
 
 void GfxPrimitives::RenderCylinder(Context* pTarg, bool drawoutline) {
-  pTarg->GBI()->DrawPrimitive(&GetRef().mMaterial, GetRef().mVtxBuf_Cylinder);
+  pTarg->GBI()->DrawPrimitive(&GetRef().mMaterial, GetRef().mVtxBuf_Cylinder,PrimitiveType::TRIANGLES);
 }
 
 void GfxPrimitives::RenderCapsule(Context* pTarg, float radius) {
@@ -1320,31 +1320,31 @@ void GfxPrimitives::RenderCapsule(Context* pTarg, float radius) {
   MatTrans.setTranslation(trans);
 
   pTarg->MTXI()->PushMMatrix(fmtx4::multiply_ltor(MatScale,MatRotate,MatTrans));
-  pTarg->GBI()->DrawPrimitive(&GetRef().mMaterial, GetRef().mVtxBuf_Dome);
+  pTarg->GBI()->DrawPrimitive(&GetRef().mMaterial, GetRef().mVtxBuf_Dome,PrimitiveType::TRIANGLES);
   pTarg->MTXI()->PopMMatrix();
 
   // Bottom dome
   MatRotate.rotateOnZ(PI);
   MatTrans.setTranslation(pTarg->MTXI()->RefMMatrix().translation());
   pTarg->MTXI()->PushMMatrix(fmtx4::multiply_ltor(MatScale,MatRotate,MatTrans));
-  pTarg->GBI()->DrawPrimitive(&GetRef().mMaterial, GetRef().mVtxBuf_Dome);
+  pTarg->GBI()->DrawPrimitive(&GetRef().mMaterial, GetRef().mVtxBuf_Dome,PrimitiveType::TRIANGLES);
   pTarg->MTXI()->PopMMatrix();
 
-  pTarg->GBI()->DrawPrimitive(&GetRef().mMaterial, GetRef().mVtxBuf_Capsule);
+  pTarg->GBI()->DrawPrimitive(&GetRef().mMaterial, GetRef().mVtxBuf_Capsule,PrimitiveType::TRIANGLES);
 }
 
 void GfxPrimitives::RenderBox(Context* pTarg, bool drawoutline) {
-  pTarg->GBI()->DrawPrimitive(&GetRef().mMaterial, GetRef().mVtxBuf_Box);
-  pTarg->GBI()->DrawPrimitive(&GetRef().mMaterial, GetRef().mVtxBuf_WireFrameBox);
+  pTarg->GBI()->DrawPrimitive(&GetRef().mMaterial, GetRef().mVtxBuf_Box,PrimitiveType::TRIANGLES);
+  pTarg->GBI()->DrawPrimitive(&GetRef().mMaterial, GetRef().mVtxBuf_WireFrameBox,PrimitiveType::LINES);
 }
 
 void GfxPrimitives::RenderAxisLineCone(Context* pTarg) {
-  pTarg->GBI()->DrawPrimitive(&GetRef().mMaterial, GetRef().mVtxBuf_AxisCone);
-  pTarg->GBI()->DrawPrimitive(&GetRef().mMaterial, GetRef().mVtxBuf_AxisLine);
+  pTarg->GBI()->DrawPrimitive(&GetRef().mMaterial, GetRef().mVtxBuf_AxisCone,PrimitiveType::TRIANGLES);
+  pTarg->GBI()->DrawPrimitive(&GetRef().mMaterial, GetRef().mVtxBuf_AxisLine,PrimitiveType::TRIANGLES);
 }
 
 void GfxPrimitives::RenderAxisBox(Context* pTarg) {
-  pTarg->GBI()->DrawPrimitive(&GetRef().mMaterial, GetRef().mVtxBuf_AxisBox);
+  pTarg->GBI()->DrawPrimitive(&GetRef().mMaterial, GetRef().mVtxBuf_AxisBox,PrimitiveType::TRIANGLES);
 }
 
 /*
@@ -1357,25 +1357,25 @@ void GfxPrimitives::RenderHalfSphere( Context *pTarg )
 ///////////////////////////////////////////////////////////////////////////////
 
 void GfxPrimitives::RenderEQSphere(Context* pTarg) {
-  pTarg->GBI()->DrawPrimitive(&GetRef().mMaterial, GetRef().mVtxBuf_EQSphere);
+  pTarg->GBI()->DrawPrimitive(&GetRef().mMaterial, GetRef().mVtxBuf_EQSphere,PrimitiveType::POINTS);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void GfxPrimitives::RenderSkySphere(Context* pTarg) {
-  pTarg->GBI()->DrawPrimitive(&GetRef().mMaterial, GetRef().mVtxBuf_SkySphere);
+  pTarg->GBI()->DrawPrimitive(&GetRef().mMaterial, GetRef().mVtxBuf_SkySphere,PrimitiveType::TRIANGLES);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void GfxPrimitives::RenderGroundPlane(Context* pTarg) {
-  pTarg->GBI()->DrawPrimitive(&GetRef().mMaterial, GetRef().mVtxBuf_GroundPlane);
+  pTarg->GBI()->DrawPrimitive(&GetRef().mMaterial, GetRef().mVtxBuf_GroundPlane,PrimitiveType::TRIANGLES);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void GfxPrimitives::RenderPerlinTerrain(Context* pTarg) {
-  pTarg->GBI()->DrawPrimitive(&GetRef().mMaterial, GetRef().mVtxBuf_PerlinTerrain);
+  pTarg->GBI()->DrawPrimitive(&GetRef().mMaterial, GetRef().mVtxBuf_PerlinTerrain,PrimitiveType::TRIANGLES);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

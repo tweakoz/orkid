@@ -302,7 +302,7 @@ public:
       return it->second.get<vtxbuf_ptr_t>();
     }
     else{
-      auto vbp = std::make_shared<vtxbuf_t>(numverts,0,PrimitiveType::NONE);
+      auto vbp = std::make_shared<vtxbuf_t>(numverts,0);
       vbp->SetRingLock(true);
 
       _miscVBs[id] = vbp;

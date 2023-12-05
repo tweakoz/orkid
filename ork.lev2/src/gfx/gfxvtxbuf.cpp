@@ -74,10 +74,10 @@ template <typename T> vtxbufferbase_ptr_t _createvb(int _numverts, bool _static)
 
   if (_static) {
     rval = std::static_pointer_cast<VertexBufferBase> //
-        (std::make_shared<static_t>(_numverts, 0, ork::lev2::PrimitiveType::MULTI));
+        (std::make_shared<static_t>(_numverts, 0));
   } else {
     rval = std::static_pointer_cast<VertexBufferBase> //
-        (std::make_shared<dynamic_t>(_numverts, 0, ork::lev2::PrimitiveType::MULTI));
+        (std::make_shared<dynamic_t>(_numverts, 0));
   }
   return rval;
 }
@@ -131,13 +131,13 @@ vtxbufferbase_ptr_t VertexBufferBase::CreateVertexBuffer(EVtxStreamFormat eforma
 
 /////////////////////////////////////////////////////////////////////////
 
-VertexBufferBase::VertexBufferBase(int iMax, int iFlush, int iSize, PrimitiveType eType, EVtxStreamFormat eFmt)
+VertexBufferBase::VertexBufferBase(int iMax, int iFlush, int iSize, /*PrimitiveType eType,*/ EVtxStreamFormat eFmt)
     : miNumVerts(0)
     , miMaxVerts(iMax)
     , miVtxSize(iSize)
     , miLockWriteIndex(0)
     , miFlushSize(iFlush)
-    , mePrimType(eType)
+    //, mePrimType(eType)
     , meStreamFormat(eFmt)
     , mbLocked(false)
     , mbRingLock(false) {

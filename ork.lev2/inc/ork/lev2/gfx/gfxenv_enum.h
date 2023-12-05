@@ -127,7 +127,6 @@ std::string EBufferFormatToName(EBufferFormat fmt);
 ///////////////////////////////////////////////////////////////////////////////
 
 enum struct PrimitiveType : crc_enum_t {
-  CrcEnum(NONE),
   CrcEnum(POINTS),
   CrcEnum(LINES),
   CrcEnum(LINESTRIP),

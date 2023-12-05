@@ -104,9 +104,8 @@ void XgmModel::RenderSkeleton(
 
   //////////////
 
-  using vertex_t = SVtxV12N12B12T8C4; //SVtxV12N12T8DF12C4;
-  //auto vtxbuf   = context->miscVertexBuffer<vertex_t>("SKELETONS"_crcu, 16384);
-  auto& vtxbuf   = GfxEnv::GetSharedDynamicVB2();
+  using vertex_t = SVtxV12N12T8DF12C4; 
+  auto vtxbuf   = context->miscVertexBuffer<vertex_t>("SKELETONS"_crcu, 256<<10);
   VtxWriter<vertex_t> vw;
 
   vertex_t hvtx, t;
@@ -114,8 +113,8 @@ void XgmModel::RenderSkeleton(
   hvtx._normal   = fvec3(0, 0, 1);
   t._uv          = fvec2(0, 0);
   t._normal      = fvec3(0, 0, 1);
-  //vw.Lock(context, vtxbuf.get(), inumjoints * 64);
-  vw.Lock(context, &vtxbuf, inumjoints * 64);
+  vw.Lock(context, vtxbuf.get(), inumjoints * 64);
+  //vw.Lock(context, &vtxbuf, inumjoints * 64);
 
   std::multimap<float, Triangle> depth_sorted_triangles;
 

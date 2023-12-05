@@ -829,9 +829,6 @@ void GlGeometryBufferInterface::DrawPrimitiveEML(const VertexBufferBase& VBuf, P
 
   int inum = (ivcount == 0) ? VBuf.GetNumVertices() : ivcount;
 
-  if (eType == PrimitiveType::NONE) {
-    eType = VBuf.GetPrimType();
-  }
   if (inum) {
     GL_ERRORCHECK();
     switch (eType) {

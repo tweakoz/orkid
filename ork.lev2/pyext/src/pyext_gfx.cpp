@@ -341,7 +341,7 @@ void pyinit_gfx(py::module& module_lev2) {
       .def_static(
           "staticBuffer",
           [](size_t size) -> vb_static_vtxa_t //
-          { return vb_static_vtxa_t(size, 0, PrimitiveType::NONE); });
+          { return vb_static_vtxa_t(size, 0); });
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<vb_static_vtxa_t, VertexBufferBase>(module_lev2, "VtxV12N12B12T8C4_StaticBuffer");
   /////////////////////////////////////////////////////////////////////////////////

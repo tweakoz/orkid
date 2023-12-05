@@ -55,7 +55,7 @@ lev2::vtxbufferbase_ptr_t buildTypedVertexBuffer(
     std::function<vtx_t(const meshutil::vertex&)> genOutVertex) {
   using vtxbuf_t       = lev2::StaticVertexBuffer<vtx_t>;
   int NumVertexIndices = inp_submesh.numVertices();
-  auto out_vbuf        = std::make_shared<vtxbuf_t>(NumVertexIndices, 0, ork::lev2::PrimitiveType::MULTI);
+  auto out_vbuf        = std::make_shared<vtxbuf_t>(NumVertexIndices, 0);
   lev2::VtxWriter<vtx_t> vwriter;
   vwriter.Lock(&context, out_vbuf.get(), NumVertexIndices);
   for (int iv = 0; iv < NumVertexIndices; iv++)

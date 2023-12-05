@@ -213,7 +213,6 @@ RegisterEnum(Blending, MODULATE);
 EndEnumRegistration();
 
 BeginEnumRegistration(PrimitiveType);
-RegisterEnum(PrimitiveType, NONE);
 RegisterEnum(PrimitiveType, POINTS);
 RegisterEnum(PrimitiveType, LINES);
 RegisterEnum(PrimitiveType, LINESTRIP);
@@ -280,9 +279,9 @@ DynamicVertexBuffer<SVtxV16T16C16>& GfxEnv::GetSharedDynamicV16T16C16() {
 GfxEnv::GfxEnv()
     : NoRttiSingleton<GfxEnv>()
     , mpMainWindow(nullptr)
-    , mVtxBufSharedVect(16 << 20, 0, PrimitiveType::TRIANGLES)    // SVtxV12C4T16==32bytes
-    , mVtxBufSharedVect2(256 << 10, 0, PrimitiveType::TRIANGLES)   // SvtxV12N12B12T8C4==48bytes
-    , _vtxBufSharedV16T16C16(1 << 20, 0, PrimitiveType::TRIANGLES) // SvtxV12N12B12T8C4==48bytes
+    , mVtxBufSharedVect(16 << 20, 0)    // SVtxV12C4T16==32bytes
+    , mVtxBufSharedVect2(256 << 10, 0)   // SvtxV12N12B12T8C4==48bytes
+    , _vtxBufSharedV16T16C16(1 << 20, 0) // SvtxV12N12B12T8C4==48bytes
     , mGfxEnvMutex("GfxEnvGlobalMutex")
 {
   _lockCounter.store(0);

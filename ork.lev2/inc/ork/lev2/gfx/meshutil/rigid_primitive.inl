@@ -46,7 +46,7 @@ template <typename vtx_t> struct RigidPrimitive {
 
   struct PrimitiveGroup {
     idxbuf_ptr_t _idxbuffer;
-    lev2::PrimitiveType _primtype = lev2::PrimitiveType::NONE;
+    lev2::PrimitiveType _primtype = lev2::PrimitiveType::END;
   };
 
   using primgroup_ptr_t        = std::shared_ptr<PrimitiveGroup>;

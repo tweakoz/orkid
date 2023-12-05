@@ -18,7 +18,7 @@ Overlay::Overlay(
     fvec4 color)
     : Widget(name)
     , _color(color)
-    , _vtxbuf(1 << 20, 0, PrimitiveType::NONE) {
+    , _vtxbuf(1 << 20, 0) {
   _textcolor = fvec4(1, 1, 1, 1);
   _vtxbuf.SetRingLock(false);
 }

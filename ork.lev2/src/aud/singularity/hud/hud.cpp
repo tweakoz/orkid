@@ -26,7 +26,7 @@ int hud_lineheight() {
 }
 ///////////////////////////////////////////////////////////////////////////////
 static vtxbuf_ptr_t create_vertexbuffer(Context* context) {
-  auto vb = std::make_shared<vtxbuf_t>(16 << 20, 0, PrimitiveType::NONE); // ~800 MB
+  auto vb = std::make_shared<vtxbuf_t>(16 << 20, 0); // ~800 MB
   vb->SetRingLock(true);
   return vb;
 }

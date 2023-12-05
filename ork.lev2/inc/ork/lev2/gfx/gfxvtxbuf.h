@@ -91,7 +91,7 @@ public:
 
 class VertexBufferBase {
 public:
-  VertexBufferBase(int iMax, int iFlush, int iSize, PrimitiveType eType, EVtxStreamFormat eFmt);
+  VertexBufferBase(int iMax, int iFlush, int iSize/*, PrimitiveType eType*/, EVtxStreamFormat eFmt);
   virtual ~VertexBufferBase();
 
   ///////////////////////////////////////////////////////////////
@@ -124,9 +124,9 @@ public:
   EVtxStreamFormat GetStreamFormat(void) const {
     return EVtxStreamFormat(meStreamFormat);
   }
-  PrimitiveType GetPrimType(void) const {
-    return PrimitiveType(mePrimType);
-  }
+  //PrimitiveType GetPrimType(void) const {
+    //return PrimitiveType(mePrimType);
+  //}
 
   bool IsLocked(void) const {
     return mbLocked;
@@ -163,7 +163,7 @@ protected:
   int miVtxSize;
   mutable int miLockWriteIndex;
   int miFlushSize;
-  PrimitiveType mePrimType;
+  //PrimitiveType mePrimType;
   EVtxStreamFormat meStreamFormat;
   mutable bool mbLocked;
   bool mbInited;
@@ -181,8 +181,8 @@ template <typename T> class CVtxBuffer : public VertexBufferBase {
 public:
   typedef T vertex_t;
 
-  CVtxBuffer(int iMax, int iFlush, PrimitiveType eType)
-      : VertexBufferBase(iMax, iFlush, sizeof(T), eType, T::meFormat) {
+  CVtxBuffer(int iMax, int iFlush/*, PrimitiveType eType*/)
+      : VertexBufferBase(iMax, iFlush, sizeof(T)/*, eType*/, T::meFormat) {
   }
 
   virtual void EndianSwap() {
@@ -248,8 +248,8 @@ template <typename T> class StaticVertexBuffer : public CVtxBuffer<T> {
   }
 
 public:
-  StaticVertexBuffer(int iMax, int iFlush, PrimitiveType eType)
-      : CVtxBuffer<T>(iMax, iFlush, eType) {
+  StaticVertexBuffer(int iMax, int iFlush)
+      : CVtxBuffer<T>(iMax, iFlush) {
     // printf("StaticVertexBuffer max<%d> len<%zu>\n", iMax, iMax * sizeof(T));
   }
 };
@@ -262,8 +262,8 @@ template <typename T> class DynamicVertexBuffer : public CVtxBuffer<T> {
   }
 
 public:
-  DynamicVertexBuffer(int iMax, int iFlush, PrimitiveType eType)
-      : CVtxBuffer<T>(iMax, iFlush, eType) {
+  DynamicVertexBuffer(int iMax, int iFlush)
+      : CVtxBuffer<T>(iMax, iFlush) {
     // printf("DynamicVertexBuffer max<%d> len<%zu>\n", iMax, iMax * sizeof(T));
   }
 };

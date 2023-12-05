@@ -178,7 +178,7 @@ class DuGeometryBufferInterface final : public GeometryBufferInterface {
 #if defined(ENABLE_COMPUTE_SHADERS)
   void DrawPrimitiveEML(
       const FxShaderStorageBuffer* SSBO, //
-      PrimitiveType eType = PrimitiveType::NONE,
+      PrimitiveType eType,
       int ivbase           = 0,
       int ivcount          = 0) final;
 #endif
