@@ -48,6 +48,7 @@ struct PixelFetchContext {
 
   enum EPixelUsage {
     EPU_FLOAT = 0,
+    EPU_FVEC4,
     EPU_PTR64,
     EPU_SVARIANT,
   };

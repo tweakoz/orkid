@@ -741,7 +741,7 @@ void GlFrameBufferInterface::GetPixel(const fvec4& rAt, PixelFetchContext& pfc) 
                   /////////////////////////////////////////////////////////////////
                   break;
                 }
-                case PixelFetchContext::EPU_FLOAT: {
+                case PixelFetchContext::EPU_FVEC4: {
                   fvec4 rv;
                   glReadPixels(sx, sy, 1, 1, GL_RGBA, GL_FLOAT, (void*)rv.asArray());
                   pfc._pickvalues[MrtIndex].set<fvec4>(rv);

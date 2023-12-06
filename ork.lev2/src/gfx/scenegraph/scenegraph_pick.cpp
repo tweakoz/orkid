@@ -17,9 +17,9 @@ SgPickBuffer::SgPickBuffer(ork::lev2::Context* ctx, Scene& scene)
   _pfc = std::make_shared<PixelFetchContext>(4);
   _pfc->_gfxContext = ctx;
   _pfc->_usage[0]   = lev2::PixelFetchContext::EPU_SVARIANT;
-  _pfc->_usage[1]   = lev2::PixelFetchContext::EPU_FLOAT;
-  _pfc->_usage[2]   = lev2::PixelFetchContext::EPU_FLOAT;
-  _pfc->_usage[3]   = lev2::PixelFetchContext::EPU_FLOAT;
+  _pfc->_usage[1]   = lev2::PixelFetchContext::EPU_FVEC4;
+  _pfc->_usage[2]   = lev2::PixelFetchContext::EPU_FVEC4;
+  _pfc->_usage[3]   = lev2::PixelFetchContext::EPU_FVEC4;
 }
 ///////////////////////////////////////////////////////////////////////////
 void SgPickBuffer::pickWithScreenCoord(cameradata_ptr_t cam, fvec2 screencoord, callback_t callback) {
