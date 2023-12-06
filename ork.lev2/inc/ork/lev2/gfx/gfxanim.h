@@ -459,6 +459,7 @@ struct XgmLocalPose {
     return mObjSpaceAABoundingBox;
   }
   void poseJoint(int index, float weight, const DecompMatrix& mtx);
+  DecompMatrix decompLocal(int iskelindex) const;
 
   ////////////////////////////////////////////////////////////////
 

@@ -21,7 +21,38 @@ void pyinit_gfx_xgmanim(py::module& module_lev2) {
   auto dcmtx_type_t = py::class_<DecompMatrix>(module_lev2, "DecompMatrix") //
       .def(py::init([]() -> DecompMatrix {
         return DecompMatrix();
-      }));
+      }))
+      .def_property(
+          "orientation", //
+          [](DecompMatrix& self) -> fquat { //
+            return self._orientation;
+          },
+          [](DecompMatrix& self, const fquat& val) { //
+            self._orientation = val;
+          })
+      .def_property(
+          "scale", //
+          [](DecompMatrix& self) -> fvec3 { //
+            return self._scale;
+          },
+          [](DecompMatrix& self, const fvec3& val) { //
+            self._scale = val;
+          })
+      .def_property(
+          "translation", //
+          [](DecompMatrix& self) -> fvec3 { //
+            return self._position;
+          },
+          [](DecompMatrix& self, const fvec3& val) { //
+            self._position = val;
+          })
+      .def("__repr__", [](const DecompMatrix& self) -> std::string {
+        auto oristr = FormatString("%g %g %g %g", self._orientation.x, self._orientation.y, self._orientation.z, self._orientation.w);
+        auto sclstr = FormatString("%g %g %g", self._scale.x, self._scale.y, self._scale.z);
+        auto posstr = FormatString("%g %g %g", self._position.x, self._position.y, self._position.z);
+        return FormatString("DecompMatrix: ori[%s] scl[%s] tra[%s]", //
+                            oristr.c_str(), sclstr.c_str(), posstr.c_str());
+      });
   type_codec->registerStdCodec<DecompMatrix>(dcmtx_type_t);
   /////////////////////////////////////////////////////////////////////////////////
   auto anim_type_t = py::class_<XgmAnim, xgmanim_ptr_t>(module_lev2, "XgmAnim") //
@@ -256,6 +287,9 @@ void pyinit_gfx_xgmanim(py::module& module_lev2) {
           .def("decomposeConcatenated", [](xgmlocalpose_ptr_t self) { return self->decomposeConcatenated(); })
           .def("poseJoint", [](xgmlocalpose_ptr_t self, int index, float fweight, DecompMatrix& mtx) { //
             self->poseJoint(index,fweight,mtx);
+           })
+          .def("decompLocal", [](xgmlocalpose_ptr_t self, int index) -> DecompMatrix  { //
+            return self->decompLocal(index);
            })
           .def_property_readonly("localMatrices", [](xgmlocalpose_ptr_t self) {
             return LocalMatrixInterface(self);

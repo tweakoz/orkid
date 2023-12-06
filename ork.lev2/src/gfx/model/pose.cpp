@@ -346,6 +346,15 @@ void XgmLocalPose::poseJoint(int iskelindex, float fweight, const DecompMatrix& 
 
 ///////////////////////////////////////////////////////////////////////////////
 
+DecompMatrix XgmLocalPose::decompLocal(int iskelindex) const {
+  fmtx4 local = _local_matrices[iskelindex];
+  DecompMatrix rval;
+  rval.decompose(local);
+  return rval;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 void XgmAnimInst::applyToPose(xgmlocalpose_ptr_t localpose) const {
 #ifdef ENABLE_ANIM
   float fweight           = GetWeight();
