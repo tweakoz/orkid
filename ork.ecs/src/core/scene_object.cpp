@@ -27,6 +27,8 @@ ImplementReflectionX(ork::ecs::SceneDagObject, "EcsSceneDagObject");
 
 ImplementReflectionX(ork::ecs::DagNodeData, "EcsDagNodeData");
 
+using namespace ::ork::lev2::editor;
+
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace ecs {
 void SceneObjectClass::describeX(ork::rtti::Category* clazz)
@@ -67,7 +69,7 @@ void SceneDagObject::describeX(SceneObjectClass* clazz) {
 
 
   /////////////////////
-  editor::prophandler_t xfhandler = [](const editor::EditorContext& ctx, //
+  prophandler_t xfhandler = [](const EditorContext& ctx, //
                                        object_ptr_t obj, //
                                        const reflect::ObjectProperty* prop){
 
@@ -78,7 +80,7 @@ void SceneDagObject::describeX(SceneObjectClass* clazz) {
       dagnodedata_ptr_t dnd = std::dynamic_pointer_cast<DagNodeData>(child);
       xfnode_ptr_t xfn = dnd->_xfnode;
 
-      editor::imgui::DirectTransformPropUI(ctx, xfn);
+      imgui::DirectTransformPropUI(ctx, xfn);
     };
 
   clazz->directObjectProperty("DagNodeData", &SceneDagObject::_dagnode)

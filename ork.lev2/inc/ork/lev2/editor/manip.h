@@ -11,8 +11,9 @@
 #include <ork/kernel/core/singleton.h>
 #include <ork/object/AutoConnector.h>
 #include <ork/lev2/ui/ui.h>
+#include <ork/lev2/editor/types.h>
 
-namespace ork::lev2 {
+namespace ork::lev2::editor {
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -65,4 +66,4 @@ struct JointManipulatorInterface : ManipulatorInterface {
 
 using jointmanipulatorinterface_ptr_t = std::shared_ptr<JointManipulatorInterface>;
 
-} //namespace ork::lev2 {
+} //namespace ork::lev2::editor {

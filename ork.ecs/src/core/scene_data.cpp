@@ -96,15 +96,16 @@ using namespace ::ork;
 using namespace ::ork::object;
 using namespace ::ork::reflect;
 using namespace ::ork::rtti;
+using namespace ::ork::lev2::editor;
 
 void SceneData::describeX(ObjectClass* clazz) {
 
   clazz->annotate("editor.object.props", "ScriptFile SceneObjects SystemData"s);
 
   /////////////////////
-  editor::prophandler_t sohandler = [](const editor::EditorContext& ctx, object_ptr_t obj, const reflect::ObjectProperty* prop){
+  prophandler_t sohandler = [](const EditorContext& ctx, object_ptr_t obj, const reflect::ObjectProperty* prop){
       using map_t = orkmap<PoolString, sceneobject_ptr_t>;
-      editor::imgui::DirectObjectMapPropUI<map_t>(ctx, obj,prop);
+      imgui::DirectObjectMapPropUI<map_t>(ctx, obj,prop);
     };
   clazz->directObjectMapProperty("SceneObjects", &SceneData::_sceneObjects)
     ->annotate("editor.prop.handler",sohandler);

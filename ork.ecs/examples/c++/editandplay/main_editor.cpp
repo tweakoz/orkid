@@ -55,7 +55,7 @@ int main(int argc, char** argv, char** envp) {
   //////////////////////////////////////////////////////////
 
   lev2::initModule(init_data); // lev2 registration
-  imgui::initModule(init_data);
+  lev2::editor::imgui::initModule(init_data);
   ecs::initModule(init_data); // ecs registration
 
   logchan_editor->log( "T1<%g>", timer.SecsSinceStart() );

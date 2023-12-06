@@ -25,7 +25,7 @@
 #include <ork/lev2/ui/event.h>
 #include <ork/lev2/ui/context.h>
 
-namespace ork::imgui {
+namespace ork::lev2::editor::imgui {
 void initModule(appinitdata_ptr_t initdata);
 }
 

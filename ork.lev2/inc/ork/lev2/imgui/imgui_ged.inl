@@ -22,7 +22,7 @@
 #include <ork/lev2/imgui/imgui_impl_opengl3.h>
 #include <ork/lev2/imgui/ImGuizmo.h>
 
-namespace ork::editor {
+namespace ork::lev2::editor {
 
 struct EditorContext {
 
@@ -47,7 +47,7 @@ using prophandler_t = std::function<void(
 
 }; // namespace ork::editor
 
-namespace ork::editor::imgui {
+namespace ork::lev2::editor::imgui {
 
 inline void ObjectEditor(const EditorContext& ctx, object_ptr_t obj);
 
@@ -652,4 +652,4 @@ inline void ObjectEditor(const EditorContext& edctx, object_ptr_t obj) {
 
 #pragma GCC diagnostic pop
 
-} // namespace ork::editor::imgui
+} // namespace ork::lev2::editor::imgui

@@ -194,7 +194,7 @@ bool XgmModel::_loadAssimp(XgmModel* mdl, datablock_ptr_t inp_datablock) {
   printf( "xgm_datablock<%p>\n", (void*) xgm_datablock.get() );
   if (not xgm_datablock or FORCE_MODEL_REGEN()) {
     xgm_datablock = meshutil::assimpToXgm(inp_datablock);
-    //DataBlockCache::setDataBlock(hashkey, xgm_datablock);
+    DataBlockCache::setDataBlock(hashkey, xgm_datablock);
   }
   return _loadXGM(mdl, xgm_datablock);
 }

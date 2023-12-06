@@ -10,10 +10,12 @@
 #include <ork/ecs/entity.h>
 #include <ork/ecs/archetype.h>
 
+using namespace ork::lev2::editor;
+
 namespace ork::ecs {
 
 void Outliner(
-    const ork::editor::EditorContext& editorctx, //
+    const EditorContext& editorctx, //
     EcsEditor& ecseditor) {
 
   auto scene = ecseditor._scene;

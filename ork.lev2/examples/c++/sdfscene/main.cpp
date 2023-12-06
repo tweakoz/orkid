@@ -278,7 +278,7 @@ struct GpuResources {
 
 int main(int argc, char** argv,char** envp) {
   auto init_data = std::make_shared<ork::AppInitData>(argc,argv,envp);
-  imgui::initModule(init_data);
+  editor::imgui::initModule(init_data);
 
   SdfSceneData::GetClassStatic();
   SdfSubOne::GetClassStatic();

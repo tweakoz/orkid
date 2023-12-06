@@ -40,7 +40,7 @@ int main(int argc, char** argv, char** envp) {
   auto init_data = std::make_shared<ork::AppInitData>(argc, argv, envp);
 
   lev2::initModule(init_data); // lev2 registration
-  imgui::initModule(init_data);
+  lev2::editor::imgui::initModule(init_data);
   ecs::initModule(init_data); // ecs registration
 
   auto ezapp  = OrkEzApp::create(init_data);
