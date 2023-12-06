@@ -222,10 +222,12 @@ class SceneGraphApp(object):
           obj = pixel_fetch_context.value(0)
           pos = pixel_fetch_context.value(1)
           nrm = pixel_fetch_context.value(2)
+          uv  = pixel_fetch_context.value(3)
           if obj is not None:
             print("obj: %s"%obj)
             print("pos: %s"%pos)
             print("nrm: %s"%nrm)
+            print(" uv: %s"%uv)
             self.ball_node.worldTransform.translation = pos.xyz()
         self.scene.pickWithScreenCoord(camdat,scoord,pick_callback)
     else:

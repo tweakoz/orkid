@@ -14,7 +14,7 @@ SgPickBuffer::SgPickBuffer(ork::lev2::Context* ctx, Scene& scene)
     : _context(ctx)
     , _scene(scene) {
   _pick_mvp_matrix           = std::make_shared<fmtx4>();
-  _pfc = std::make_shared<PixelFetchContext>(3);
+  _pfc = std::make_shared<PixelFetchContext>(4);
   _pfc->_gfxContext = ctx;
   _pfc->_usage[0]   = lev2::PixelFetchContext::EPU_SVARIANT;
   _pfc->_usage[1]   = lev2::PixelFetchContext::EPU_FLOAT;
