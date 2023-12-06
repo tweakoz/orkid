@@ -273,7 +273,13 @@ void XgmModel::RenderSkeleton(
 
 
       hvtx._position = fvec4(pos).transform(J).xyz();
+
       hvtx._color    = col.ABGRU32();
+      if(_skeleton->_seljointindex>=0){
+        if(BID==_skeleton->_seljointindex){
+          hvtx._color    = 0xff00ffff;
+        }
+      }
       hvtx._normal   = N;
       hvtx._uv       = fvec2(0, 0);
       hvtx._data[0] = BID;

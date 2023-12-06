@@ -231,7 +231,10 @@ class SceneGraphApp(object):
             print("pos: %s"%pos)
             print("nrm: %s"%nrm)
             print(" uv: %s"%uv)
+            sel_bone = obj["y"]
             self.ball_node.worldTransform.translation = pos.xyz()
+            if type(obj["x"]) == vec4:
+              self.model.skeleton.selectJoint(sel_bone)
         self.scene.pickWithScreenCoord(camdat,scoord,pick_callback)
     else:
       handled = self.uicam.uiEventHandler(uievent)

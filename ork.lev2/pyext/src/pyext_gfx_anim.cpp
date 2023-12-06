@@ -184,6 +184,11 @@ void pyinit_gfx_xgmanim(py::module& module_lev2) {
                                    return self->jointIndex(named);
                                  })
                              .def(
+                                 "selectJoint",                                           //
+                                 [](xgmskeleton_ptr_t self, int index) { //
+                                   return self->selectJointIndex(index);
+                                 })
+                             .def(
                                  "jointMatrix",                                   //
                                  [](xgmskeleton_ptr_t self, int index) -> fmtx4 { //
                                    return self->RefNodeMatrix(index);
