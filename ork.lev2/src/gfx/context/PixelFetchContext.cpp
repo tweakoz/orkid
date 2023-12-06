@@ -97,7 +97,7 @@ pickvariant_t PixelFetchContext::decodePixel(fvec4 raw_pixel){
 /////////////////////////////////////////////////////////////////////////
 pickvariant_t PixelFetchContext::decodePixel(u32vec4 raw_pixel){
   pickvariant_t rval;
-  printf( "inrawpix<%08x %08x %08x %08x>\n", raw_pixel.x, raw_pixel.y, raw_pixel.z, raw_pixel.w );
+  //printf( "inrawpix<%08x %08x %08x %08x>\n", raw_pixel.x, raw_pixel.y, raw_pixel.z, raw_pixel.w );
   if(raw_pixel.x < _pickIDvec.size()){
     auto vmap = rval.makeShared<varmap::VarMap>();
     (*vmap)["x"] = _pickIDvec[raw_pixel.x];
