@@ -141,36 +141,29 @@ class SceneGraphApp(object):
   def onUiEvent(self,uievent):
     
     if uievent.alt:
-      if uievent.code == tokens.DRAG.hashed:
+      if uievent.code == tokens.MOVE.hashed:
         camdat = self.uicam.cameradata
         scoord = uievent.pos
         def pick_callback(pixel_fetch_context):
-          #dstr = pixel_fetch_context.dump()
-          #print(dstr)
           obj = pixel_fetch_context.value(0)
           pos = pixel_fetch_context.value(1)
           nrm = pixel_fetch_context.value(2)
           uv  = pixel_fetch_context.value(3)
           if obj is not None:
-            #print("obj.x: %s"%obj["x"])
-            #print("obj.y: %s"%obj["y"])
-            #print("obj.z: %s"%obj["z"])
-            #print("obj.w: %s"%obj["w"])
-            #print("pos: %s"%pos)
-            #print("nrm: %s"%nrm)
-            #print(" uv: %s"%uv)
             sel_bone = obj["y"]
             self.ball_node.worldTransform.translation = pos.xyz()
             if type(obj["x"]) == vec4:
               self.skeleton.selectJoint(sel_bone)
-              trans = self.localpose.localMatrices[sel_bone].translation
-              trans = trans+vec3(0,1.1,0.1)
-              print(trans)
+              dcmtx = DecompMatrix()
               self.localpose.bindPose()
-              self.localpose.localMatrices[sel_bone].setColumn(3,vec4(trans,1))
+              self.localpose.poseJoint( sel_bone, 1.0, dcmtx )
               self.localpose.blendPoses()
               self.localpose.concatenate()
-              self.worldpose.fromLocalPose(self.localpose,mtx4())
+            else:
+              self.skeleton.selectJoint(-1)
+              self.localpose.bindPose()
+              self.localpose.blendPoses()
+              self.localpose.concatenate()
         self.scene.pickWithScreenCoord(camdat,scoord,pick_callback)
     else:
       handled = self.uicam.uiEventHandler(uievent)

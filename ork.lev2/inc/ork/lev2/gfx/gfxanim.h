@@ -458,6 +458,7 @@ struct XgmLocalPose {
   const AABox& RefObjSpaceAABoundingBox() const {
     return mObjSpaceAABoundingBox;
   }
+  void poseJoint(int index, float weight, const DecompMatrix& mtx);
 
   ////////////////////////////////////////////////////////////////
 

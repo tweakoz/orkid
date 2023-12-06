@@ -18,6 +18,12 @@ void pyinit_gfx_xgmanim(py::module& module_lev2) {
   auto type_codec                  = python::TypeCodec::instance();
   module_lev2.attr("animMaxBones") = kmaxbones;
   /////////////////////////////////////////////////////////////////////////////////
+  auto dcmtx_type_t = py::class_<DecompMatrix>(module_lev2, "DecompMatrix") //
+      .def(py::init([]() -> DecompMatrix {
+        return DecompMatrix();
+      }));
+  type_codec->registerStdCodec<DecompMatrix>(dcmtx_type_t);
+  /////////////////////////////////////////////////////////////////////////////////
   auto anim_type_t = py::class_<XgmAnim, xgmanim_ptr_t>(module_lev2, "XgmAnim") //
                          .def(py::init([](const std::string& anim_path) -> xgmanim_ptr_t {
                            auto loadreq    = std::make_shared<asset::LoadRequest>(anim_path.c_str());
@@ -248,6 +254,9 @@ void pyinit_gfx_xgmanim(py::module& module_lev2) {
           .def("blendPoses", [](xgmlocalpose_ptr_t self) { return self->blendPoses(); })
           .def("concatenate", [](xgmlocalpose_ptr_t self) { return self->concatenate(); })
           .def("decomposeConcatenated", [](xgmlocalpose_ptr_t self) { return self->decomposeConcatenated(); })
+          .def("poseJoint", [](xgmlocalpose_ptr_t self, int index, float fweight, DecompMatrix& mtx) { //
+            self->poseJoint(index,fweight,mtx);
+           })
           .def_property_readonly("localMatrices", [](xgmlocalpose_ptr_t self) {
             return LocalMatrixInterface(self);
           })

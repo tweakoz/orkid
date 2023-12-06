@@ -340,6 +340,12 @@ void XgmLocalPose::bindPose(void) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void XgmLocalPose::poseJoint(int iskelindex, float fweight, const DecompMatrix& mtx){
+    _blendposeinfos[iskelindex].addPose(mtx, fweight);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 void XgmAnimInst::applyToPose(xgmlocalpose_ptr_t localpose) const {
 #ifdef ENABLE_ANIM
   float fweight           = GetWeight();
@@ -602,11 +608,14 @@ std::string XgmLocalPose::dumpc(fvec3 color) const {
     fvec3 cb                 = color * 0.7;
 
     for (int ij = 0; ij < inumjoints; ij++) {
-      fvec3 cc         = (ij & 1) ? cb : ca;
-      std::string name = _skeleton->GetJointName(ij).c_str();
-      const auto& jmtx = _local_matrices[ij];
-      rval += deco::format(cc, "%28s: ", name.c_str());
-      rval += jmtx.dump4x3cn() + "\n"s;
+      auto jprops = _skeleton->_jointProperties[ij];
+      if(jprops->_numVerticesInfluenced){
+        fvec3 cc         = (ij & 1) ? cb : ca;
+        std::string name = _skeleton->GetJointName(ij).c_str();
+        const auto& jmtx = _local_matrices[ij];
+        rval += deco::format(cc, "%28s: ", name.c_str());
+        rval += jmtx.dump4x3cn() + "\n"s;
+      }
     }
   }
   return rval;

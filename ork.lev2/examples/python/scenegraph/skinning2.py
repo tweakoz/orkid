@@ -242,11 +242,6 @@ class SkinningApp(object):
     self.lposer.update(offsetL)
     self.rposer.update(offsetR)
 
-    #################################
-    # worldpose
-    #################################
-
-    self.worldpose.fromLocalPose(self.localpose,mtx4())
     self.frame_index = self.time*30.0
 
   ################################################
