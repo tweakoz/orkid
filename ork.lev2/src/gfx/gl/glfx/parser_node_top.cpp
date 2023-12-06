@@ -71,7 +71,7 @@ TopNode::TopNode(GlSlFxParser* parser)
 
   std::string kws = "for while do struct const if else "
                     "return not and or true false "
-                    "uniform layout switch case";
+                    "uniform layout switch case flat";
 
   for (auto item : SplitString(typenames, ' '))
     _keywords.insert(item);

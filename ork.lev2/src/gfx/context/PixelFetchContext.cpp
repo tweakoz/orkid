@@ -52,10 +52,10 @@ void PixelFetchContext::resize(size_t s){
 
 void PixelFetchContext::beginPickRender(){
   _gpickcounter = 0;
-  //_offset  = uint64_t(_gscrambler->scramble(_pickindex+0))<<0;
-  //_offset += uint64_t(_gscrambler->scramble(_pickindex+1))<<16;
-  //_offset += uint64_t(_gscrambler->scramble(_pickindex+2))<<32;
-  //_offset += uint64_t(_gscrambler->scramble(_pickindex+3))<<48;
+  _offset  = uint64_t(_gscrambler->scramble(_pickindex+0))<<0;
+  _offset += uint64_t(_gscrambler->scramble(_pickindex+1))<<16;
+  _offset += uint64_t(_gscrambler->scramble(_pickindex+2))<<32;
+  _offset += uint64_t(_gscrambler->scramble(_pickindex+3))<<48;
   _pickIDlut.clear();
   _pickIDvec.clear();
 }
@@ -97,6 +97,7 @@ pickvariant_t PixelFetchContext::decodePixel(fvec4 raw_pixel){
 /////////////////////////////////////////////////////////////////////////
 pickvariant_t PixelFetchContext::decodePixel(u32vec4 raw_pixel){
   pickvariant_t rval;
+  printf( "inrawpix<%08x %08x %08x %08x>\n", raw_pixel.x, raw_pixel.y, raw_pixel.z, raw_pixel.w );
   auto as_out = rval.makeShared<u32vec4>();
   as_out->x = raw_pixel.x;
   as_out->y = raw_pixel.y;

@@ -89,6 +89,7 @@ void XgmModel::RenderSkeleton(
   OrkAssert(pipeline);
 
   struct Triangle {
+    uint32_t boneID;
     fmtx4 _jnt;
     fvec3 _posA;
     fvec3 _colA;
@@ -105,7 +106,7 @@ void XgmModel::RenderSkeleton(
 
   //////////////
 
-  using vertex_t = SVtxV12N12T8DF12C4; 
+  using vertex_t = SVtxV12N12T8DU12C4;
   auto vtxbuf   = context->miscVertexBuffer<vertex_t>("SKELETONS"_crcu, 256<<10);
   VtxWriter<vertex_t> vw;
 
@@ -193,6 +194,7 @@ void XgmModel::RenderSkeleton(
         }
         auto tri = Triangle{
             //
+            uint32_t(ichild),
             joint_par, //
             posa,
             cola, //
@@ -267,14 +269,16 @@ void XgmModel::RenderSkeleton(
     //. to vertex buffer
     /////////////////////////////////
 
-    auto add_vertex = [&](const fmtx4& J, const fvec3 pos, const fvec4& col, const fvec3& N) {
+    auto add_vertex = [&](const fmtx4& J, const fvec3 pos, const fvec4& col, const fvec3& N, uint32_t BID) {
 
 
       hvtx._position = fvec4(pos).transform(J).xyz();
       hvtx._color    = col.ABGRU32();
       hvtx._normal   = N;
       hvtx._uv       = fvec2(0, 0);
-      hvtx._data     = fvec3(0, 0, 0);
+      hvtx._data[0] = BID<<27;
+      hvtx._data[1] = 0;
+      hvtx._data[2] = 0;
 
       vw.AddVertex(hvtx);
     };
@@ -300,9 +304,9 @@ void XgmModel::RenderSkeleton(
         dot = 0.0f;
       }
 
-      add_vertex(joint_par, tri._posA, tri._colA*dot, wld_normal);
-      add_vertex(joint_par, tri._posB, tri._colB*dot, wld_normal);
-      add_vertex(joint_par, tri._posC, tri._colC*dot, wld_normal);
+      add_vertex(joint_par, tri._posA, tri._colA*dot, wld_normal, tri.boneID);
+      add_vertex(joint_par, tri._posB, tri._colB*dot, wld_normal, tri.boneID);
+      add_vertex(joint_par, tri._posC, tri._colC*dot, wld_normal, tri.boneID);
     }
 
   }; // auto enqueue_bones = [&](bool outline){

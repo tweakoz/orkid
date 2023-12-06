@@ -106,7 +106,7 @@ fragment_shader ps_texcolor : iface_fmt {
 fragment_shader ps_texcolor_pik : iface_fmt {
   ivec2 texelCoord = ivec2(frg_uv0 * textureSize(PickIdMap, 0));
   uvec4 texc = texelFetch(PickIdMap, texelCoord,0); ///65535.0;
-  vec4 texc_scaled = vec4(texc)/65535.0;
+  vec4 texc_scaled = vec4(texc)/4294967295.0;
   out_clr   = vec4(texc_scaled.xyz, 1);
 }
 fragment_shader ps_texcolor4 : iface_fmt {

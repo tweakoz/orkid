@@ -67,7 +67,7 @@ void pyinit_math(py::module& module_core) {
       py::class_<u32vec4,u32vec4_ptr_t>(module_core, "u32vec4")
         .def(py::init<>())
         .def("__repr__", [](u32vec4_ptr_t value) -> std::string { //
-          return FormatString("u32vec4<%d %d %d %d>", value->x, value->y, value->z, value->w);
+          return FormatString("u32vec4<0x%08x 0x%08x 0x%08x 0x%08x>", value->x, value->y, value->z, value->w);
         });
   type_codec->registerStdCodec<u32vec4_ptr_t>(u32vec4_type);
   /////////////////////////////////////////////////////////////////////////////////

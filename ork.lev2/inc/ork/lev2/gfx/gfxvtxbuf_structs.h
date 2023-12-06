@@ -634,6 +634,51 @@ struct SVtxV12N12T8DF12C4 { // 48BPV
 };
 
 ///////////////////////////////////////////////////////////////////////////////
+
+struct SVtxV12N12T8DU12C4 { // 48BPV
+  fvec3 _position;
+  fvec3 _normal;
+  fvec2 _uv;
+  uint32_t _data[3];
+  uint32_t _color;
+
+  SVtxV12N12T8DU12C4(
+      const fvec3& pos   = fvec3(),
+      const fvec3& nrm   = fvec3(),
+      const fvec2& uv    = fvec2(),
+      const uint32_t clr = 0xffffffff)
+      : _position(pos)
+      , _normal(nrm)
+      , _uv(uv)
+      , _color(clr) {
+      _data[0] = 0;
+      _data[1] = 0;
+      _data[2] = 0;
+  }
+
+  void EndianSwap() {
+    swapbytes_dynamic(_position[0]);
+    swapbytes_dynamic(_position[1]);
+    swapbytes_dynamic(_position[2]);
+
+    swapbytes_dynamic(_normal[0]);
+    swapbytes_dynamic(_normal[1]);
+    swapbytes_dynamic(_normal[2]);
+
+    swapbytes_dynamic(_uv[0]);
+    swapbytes_dynamic(_uv[1]);
+
+    swapbytes_dynamic(_data[0]);
+    swapbytes_dynamic(_data[1]);
+    swapbytes_dynamic(_data[2]);
+
+    swapbytes_dynamic(_color);
+  }
+
+  constexpr static EVtxStreamFormat meFormat = EVtxStreamFormat::V12N12T8DU12C4;
+};
+
+///////////////////////////////////////////////////////////////////////////////
 // fat testing format
 
 struct SVtxV16T16C16 // 48 BPV

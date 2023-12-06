@@ -685,18 +685,21 @@ vertex_interface iface_vtx_pick_skinned //
     vec3 frg_wpos;
     vec3 frg_wnrm;
     vec2 frg_uv;
+    flat uvec3 frg_pickSUBID;
   }
 }
 ///////////////////////////////////////////////////////////////
 vertex_interface iface_vtx_pick_rigid {
   inputs {
     vec4 position : POSITION;
+    uvec3 pickSUBID : TEXCOORD1;
     vec3 normal : NORMAL;
   }
   outputs {
     vec3 frg_wpos;
     vec3 frg_wnrm;
     vec2 frg_uv;
+    flat uvec3 frg_pickSUBID;
   }
 }
 ///////////////////////////////////////////////////////////////
@@ -705,6 +708,7 @@ fragment_interface iface_frg_pick : ub_frg_fwd {
     vec3 frg_wpos;
     vec3 frg_wnrm;
     vec2 frg_uv;
+    flat uvec3 frg_pickSUBID;
   }
   outputs {
     layout(location = 0) uvec4 out_pickID;
@@ -728,6 +732,7 @@ vertex_shader vs_pick_rigid_mono : iface_vtx_pick_rigid : ub_vtx {
   frg_wpos    = (m * position).xyz;
   frg_wnrm    = normalize(mrot * normal);
   frg_uv      = vec2(0,0);
+  frg_pickSUBID  = pickSUBID;
 }
 ///////////////////////////////////////////////////////////////
 vertex_shader vs_pick_rigid_instanced_mono : iface_vtx_pick_rigid : ub_vtx {
@@ -756,7 +761,7 @@ vertex_shader vs_pick_rigid_instanced_mono : iface_vtx_pick_rigid : ub_vtx {
 fragment_shader ps_pick //
     : iface_frg_pick {
 
-  out_pickID = uvec4(obj_pickID,0,0,0);
+  out_pickID = uvec4(obj_pickID,frg_pickSUBID.x,frg_pickSUBID.y,frg_pickSUBID.z);
 
   out_wpos  = vec4(frg_wpos,0);
   out_wnrm  = vec4(normalize(frg_wnrm), 0);

@@ -259,6 +259,7 @@ enum struct EVtxStreamFormat : crc_enum_t {
   CrcEnum(V16T16C16),       // 48 BPV	Fat Testing Format
   CrcEnum(V12N12B12T8C4),   // 48BPV	Normals,Binormals,1UV,vtxcolor
   CrcEnum(V12N12T8DF12C4),  // 48BPV	Normals,UV2,DF12,vtxcolor
+  CrcEnum(V12N12T8DU12C4),  // 48BPV	Normals,UV2,DU12,vtxcolor
 
   CrcEnum(V12N12B12T16),    // 52BPV	Normals,Binormals,2UV (lightmapped)
   CrcEnum(V12N12B12T8I4W4), // 52BPV	Normals,Binormals,1UV,4 bone weighting
