@@ -276,7 +276,7 @@ void XgmModel::RenderSkeleton(
       hvtx._color    = col.ABGRU32();
       hvtx._normal   = N;
       hvtx._uv       = fvec2(0, 0);
-      hvtx._data[0] = BID<<27;
+      hvtx._data[0] = BID<<16;
       hvtx._data[1] = 0;
       hvtx._data[2] = 0;
 

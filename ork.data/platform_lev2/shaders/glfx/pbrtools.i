@@ -680,6 +680,7 @@ vertex_interface iface_vtx_pick_skinned //
     vec4 position : POSITION;
     vec3 normal : NORMAL;
     vec2 uv0 : TEXCOORD0;
+    uvec3 pickSUBID : TEXCOORD1;
   }
   outputs {
     vec3 frg_wpos;
@@ -692,8 +693,8 @@ vertex_interface iface_vtx_pick_skinned //
 vertex_interface iface_vtx_pick_rigid {
   inputs {
     vec4 position : POSITION;
-    uvec3 pickSUBID : TEXCOORD1;
     vec3 normal : NORMAL;
+    uvec3 pickSUBID : TEXCOORD1;
   }
   outputs {
     vec3 frg_wpos;
@@ -725,6 +726,7 @@ vertex_shader vs_pick_skinned_mono : iface_vtx_pick_skinned : skin_tools : ub_vt
   frg_wpos     = (m * skn_pos).xyz;
   frg_wnrm     = normalize(mrot * skn_nrm);
   frg_uv      = uv0;
+  frg_pickSUBID  = pickSUBID;
 }
 ///////////////////////////////////////////////////////////////
 vertex_shader vs_pick_rigid_mono : iface_vtx_pick_rigid : ub_vtx {
