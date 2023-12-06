@@ -194,7 +194,7 @@ void XgmModel::RenderSkeleton(
         }
         auto tri = Triangle{
             //
-            uint32_t(ichild),
+            uint32_t(iparent),
             joint_par, //
             posa,
             cola, //

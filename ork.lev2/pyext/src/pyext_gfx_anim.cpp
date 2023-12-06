@@ -226,6 +226,11 @@ void pyinit_gfx_xgmanim(py::module& module_lev2) {
                                    return self->selectJointIndex(index);
                                  })
                              .def(
+                                 "jointParent",                                   //
+                                 [](xgmskeleton_ptr_t self, int index) -> int { //
+                                   return self->maJointParents[index];
+                                 })
+                             .def(
                                  "jointMatrix",                                   //
                                  [](xgmskeleton_ptr_t self, int index) -> fmtx4 { //
                                    return self->RefNodeMatrix(index);
@@ -234,6 +239,52 @@ void pyinit_gfx_xgmanim(py::module& module_lev2) {
                                  "bindMatrix",                                    //
                                  [](xgmskeleton_ptr_t self, int index) -> fmtx4 { //
                                    return self->_bindMatrices[index];
+                                 })
+                             .def_property_readonly(
+                                 "jointMatrices",                                    //
+                                 [](xgmskeleton_ptr_t self) -> py::list { //
+                                   py::list rval;
+                                    for (int i = 0; i < self->numJoints(); i++) {
+                                      rval.append(self->_jointMatrices[i]);
+                                    }
+                                   return rval;
+                                 })
+                             .def_property_readonly(
+                                 "nodeMatrices",                                    //
+                                 [](xgmskeleton_ptr_t self) -> py::list { //
+                                   py::list rval;
+                                    for (int i = 0; i < self->numJoints(); i++) {
+                                      rval.append(self->_nodeMatrices[i]);
+                                    }
+                                   return rval;
+                                 })
+                             .def_property_readonly(
+                                 "bindMatrices",                                    //
+                                 [](xgmskeleton_ptr_t self) -> py::list { //
+                                   py::list rval;
+                                    for (int i = 0; i < self->numJoints(); i++) {
+                                      rval.append(self->_bindMatrices[i]);
+                                    }
+                                   return rval;
+                                 })
+                             .def_property_readonly(
+                                 "inverseBindMatrices",                                    //
+                                 [](xgmskeleton_ptr_t self) -> py::list { //
+                                   py::list rval;
+                                    for (int i = 0; i < self->numJoints(); i++) {
+                                      rval.append(self->_inverseBindMatrices[i]);
+                                    }
+                                   return rval;
+                                 })
+                             .def_property_readonly(
+                                 "jointVertexInfluenceCounts",                                    //
+                                 [](xgmskeleton_ptr_t self) -> py::list { //
+                                   py::list rval;
+                                    for (int i = 0; i < self->numJoints(); i++) {
+                                      auto jp = self->_jointProperties[i];
+                                      rval.append(jp->_numVerticesInfluenced);
+                                    }
+                                   return rval;
                                  });
   type_codec->registerStdCodec<xgmskeleton_ptr_t>(animskel_type_t);
   /////////////////////////////////////////////////////////////////////////////////
@@ -269,12 +320,45 @@ void pyinit_gfx_xgmanim(py::module& module_lev2) {
   };
   py::class_<LocalMatrixInterface>(module_lev2, "XgmLocalPoseLocalMatrixInterface")
       .def("__getitem__", &LocalMatrixInterface::get)
+      .def("__getitem__", [](LocalMatrixInterface& LMI, py::slice slicer) -> py::list {
+        ssize_t start, stop, step, slicelength;
+        if (!slicer.compute(LMI.pose->NumJoints(), &start, &stop, &step, &slicelength)){
+          OrkAssert(false);
+        }
+        py::list rval;
+        for (int i = start; i < stop; i += step) {
+          rval.append(LMI.get(i));
+        }
+        return rval;
+      })
       .def("__setitem__", &LocalMatrixInterface::set);
   py::class_<ConcatMatrixInterface>(module_lev2, "XgmLocalPoseConcatMatrixInterface")
       .def("__getitem__", &ConcatMatrixInterface::get)
+      .def("__getitem__", [](ConcatMatrixInterface& CMI, py::slice slicer) -> py::list {
+        ssize_t start, stop, step, slicelength;
+        if (!slicer.compute(CMI.pose->NumJoints(), &start, &stop, &step, &slicelength)){
+          OrkAssert(false);
+        }
+        py::list rval;
+        for (int i = start; i < stop; i += step) {
+          rval.append(CMI.get(i));
+        }
+        return rval;
+      })
       .def("__setitem__", &ConcatMatrixInterface::set);
   py::class_<BindRelaMatrixInterface>(module_lev2, "XgmLocalPoseBindRelaMatrixInterface")
       .def("__getitem__", &BindRelaMatrixInterface::get)
+      .def("__getitem__", [](BindRelaMatrixInterface& BMI, py::slice slicer) -> py::list {
+        ssize_t start, stop, step, slicelength;
+        if (!slicer.compute(BMI.pose->NumJoints(), &start, &stop, &step, &slicelength)){
+          OrkAssert(false);
+        }
+        py::list rval;
+        for (int i = start; i < stop; i += step) {
+          rval.append(BMI.get(i));
+        }
+        return rval;
+      })
       .def("__setitem__", &BindRelaMatrixInterface::set);
   ///
   auto lpose_type_t =

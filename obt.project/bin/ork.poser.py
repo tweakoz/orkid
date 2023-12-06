@@ -102,11 +102,48 @@ class SceneGraphApp(object):
     self.modelinst.enableAllMeshes()
     self.localpose = self.modelinst.localpose
     self.worldpose = self.modelinst.worldpose
-    self.animinst = XgmAnimInst()
-    self.animinst.weight = 1.0
-    self.animinst.mask.enableAll()
-    self.animinst.use_temporal_lerp = True
-    self.animinst.bindToSkeleton(self.skeleton)
+    ##############################
+    self.bindmats = self.skeleton.bindMatrices
+    self.invbindmats = self.skeleton.inverseBindMatrices
+    self.nodematrices = self.skeleton.nodeMatrices
+    self.jointmatrices = self.skeleton.jointMatrices
+    self.infcounts = self.skeleton.jointVertexInfluenceCounts
+    self.joints_with_infs = dict()
+    for i in range(0,len(self.infcounts)):
+      infcount = self.infcounts[i]
+      if infcount>0:
+        jname = self.skeleton.jointName(i)
+        self.joints_with_infs[jname] = infcount
+    #print(self.joints_with_infs)
+    parents_not_infs = set()
+    for jname in self.joints_with_infs.keys():
+      ji = self.skeleton.jointIndex(jname)
+      par = self.skeleton.jointParent(ji)
+      pname = self.skeleton.jointName(par)
+      numinfs = self.joints_with_infs[jname]
+      if(pname not in self.joints_with_infs):
+        parents_not_infs.add(pname)
+      print("joint<%d:%s> par<%d:%s> infcount<%d>"%(ji,jname, par, pname, numinfs))
+    print("####################################################")
+    print(parents_not_infs)
+    print("####################################################")
+    ##############################
+    self.localpose.bindPose()
+    self.localpose.blendPoses()
+    self.localpose.concatenate()
+    self.concats = self.localpose.concatMatrices[0:]
+    self.locals = self.localpose.localMatrices[0:]
+    self.bindrels = self.localpose.bindRelativeMatrices[0:]
+    #print(self.locals)
+    #print(self.concats)
+    #print(self.bindrels)
+    ##############################
+    
+    #self.animinst = XgmAnimInst()
+    #self.animinst.weight = 1.0
+    #self.animinst.mask.enableAll()
+    #self.animinst.use_temporal_lerp = True
+    #self.animinst.bindToSkeleton(self.skeleton)
 
     self.ball_model = XgmModel("data://tests/pbr_calib")
     self.ball_node = self.ball_model.createNode("ball-node",self.layer1)
@@ -140,8 +177,12 @@ class SceneGraphApp(object):
 
   def onUiEvent(self,uievent):
     
-    if uievent.alt:
-      if uievent.code == tokens.MOVE.hashed:
+    if (uievent.code == tokens.KEY_DOWN.hashed) and (uievent.keycode == 32):
+      self.localpose.bindPose()
+      self.localpose.blendPoses()
+      self.localpose.concatenate()
+    elif uievent.alt:
+      if uievent.code == tokens.DRAG.hashed:
         camdat = self.uicam.cameradata
         scoord = uievent.pos
         def pick_callback(pixel_fetch_context):
@@ -154,8 +195,7 @@ class SceneGraphApp(object):
             self.ball_node.worldTransform.translation = pos.xyz()
             if type(obj["x"]) == vec4:
               self.skeleton.selectJoint(sel_bone)
-              dcmtx = self.localpose.decompLocal(sel_bone)
-              Q = quat(vec3(0,0,1),0.03)
+              Q = quat(vec3(0,0,1),0.06)
               MQ = mtx4(Q)
               self.localpose.concatenate()
               m = self.localpose.concatMatrices[sel_bone]*MQ
@@ -163,12 +203,12 @@ class SceneGraphApp(object):
               self.localpose.decomposeConcatenated()
               self.localpose.blendPoses()
               self.localpose.concatenate()
-            else:
-              self.skeleton.selectJoint(-1)
-              self.localpose.bindPose()
-              self.localpose.blendPoses()
-              self.localpose.concatenate()
         self.scene.pickWithScreenCoord(camdat,scoord,pick_callback)
+      if uievent.code == tokens.PUSH.hashed:
+        self.concats = self.localpose.concatMatrices[0:]
+        self.locals = self.localpose.localMatrices[0:]
+        self.bindrels = self.localpose.bindRelativeMatrices[0:]
+        print(len(self.concats))
     else:
       handled = self.uicam.uiEventHandler(uievent)
       if handled:
