@@ -141,7 +141,7 @@ class SceneGraphApp(object):
   def onUiEvent(self,uievent):
     
     if uievent.alt:
-      if uievent.code == tokens.DRAG.hashed:
+      if uievent.code == tokens.MOVE.hashed:
         camdat = self.uicam.cameradata
         scoord = uievent.pos
         def pick_callback(pixel_fetch_context):
@@ -155,12 +155,12 @@ class SceneGraphApp(object):
             if type(obj["x"]) == vec4:
               self.skeleton.selectJoint(sel_bone)
               dcmtx = self.localpose.decompLocal(sel_bone)
-              Q = dcmtx.orientation * quat(0,0,0.01,0.99)
-              Q.normalize()
-              dcmtx.orientation = Q
-              self.localpose.bindPose()
-              print(dcmtx)
-              self.localpose.poseJoint( sel_bone, 1.0, dcmtx )
+              Q = quat(vec3(0,0,1),0.03)
+              MQ = mtx4(Q)
+              self.localpose.concatenate()
+              m = self.localpose.concatMatrices[sel_bone]*MQ
+              self.localpose.concatMatrices[sel_bone]=m
+              self.localpose.decomposeConcatenated()
               self.localpose.blendPoses()
               self.localpose.concatenate()
             else:
