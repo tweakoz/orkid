@@ -19,7 +19,8 @@ namespace ork::lev2::editor {
 
 struct Editor {
 
-
+    selmgr_ptr_t _selection_manager;
+    manipinterface_ptr_t _current_manipulator_interface;
 
 };
 
