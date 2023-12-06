@@ -35,7 +35,12 @@ void pyinit_editor(py::module& module_lev2) {
                              });
   type_codec->registerStdCodec<editor_ptr_t>(ed_type_t);
   /////////////////////////////////////////////////////////////////////////////////
-  auto sm_type_t = py::class_<SelectionManager, selmgr_ptr_t>(module_lev2, "SelectionManager");
+  auto sm_type_t = py::class_<SelectionManager, selmgr_ptr_t>(module_lev2, "SelectionManager")
+    .def_property_readonly(
+        "currentObject",                //
+        [](selmgr_ptr_t selmgr) -> object_ptr_t { //
+        return selmgr->_selectedObject;
+        });
   type_codec->registerStdCodec<selmgr_ptr_t>(sm_type_t);
   /////////////////////////////////////////////////////////////////////////////////
   auto mif_type_t = py::class_<ManipulatorInterface, manipinterface_ptr_t>(module_lev2, "ManipulatorInterface");
