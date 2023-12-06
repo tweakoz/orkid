@@ -224,7 +224,10 @@ class SceneGraphApp(object):
           nrm = pixel_fetch_context.value(2)
           uv  = pixel_fetch_context.value(3)
           if obj is not None:
-            print("obj: %s"%obj)
+            print("obj.x: %s"%obj["x"])
+            print("obj.y: %s"%obj["y"])
+            print("obj.z: %s"%obj["z"])
+            print("obj.w: %s"%obj["w"])
             print("pos: %s"%pos)
             print("nrm: %s"%nrm)
             print(" uv: %s"%uv)

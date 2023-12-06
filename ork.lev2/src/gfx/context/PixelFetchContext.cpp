@@ -37,6 +37,10 @@ PixelFetchContext::PixelFetchContext(size_t s)
     : miMrtMask(0)
     , mUserData(nullptr){
     resize(s);
+  _offset  = uint64_t(_gscrambler->scramble(_pickindex+0))<<0;
+  _offset += uint64_t(_gscrambler->scramble(_pickindex+1))<<16;
+  _offset += uint64_t(_gscrambler->scramble(_pickindex+2))<<32;
+  _offset += uint64_t(_gscrambler->scramble(_pickindex+3))<<48;
 }
 void PixelFetchContext::resize(size_t s){
   _pickvalues.resize(s);
@@ -52,10 +56,6 @@ void PixelFetchContext::resize(size_t s){
 
 void PixelFetchContext::beginPickRender(){
   _gpickcounter = 0;
-  _offset  = uint64_t(_gscrambler->scramble(_pickindex+0))<<0;
-  _offset += uint64_t(_gscrambler->scramble(_pickindex+1))<<16;
-  _offset += uint64_t(_gscrambler->scramble(_pickindex+2))<<32;
-  _offset += uint64_t(_gscrambler->scramble(_pickindex+3))<<48;
   _pickIDlut.clear();
   _pickIDvec.clear();
 }
@@ -75,7 +75,7 @@ uint32_t PixelFetchContext::encodeVariant(pickvariant_t data){
     _pickIDlut[hash] = index;
     _pickIDvec.push_back(data);
   }
-  index += _offset;
+  //index += _offset;
   //index = 0;
   rval = uint32_t(index);
   _pickindex = _gpickcounter.fetch_add(4);
@@ -98,11 +98,19 @@ pickvariant_t PixelFetchContext::decodePixel(fvec4 raw_pixel){
 pickvariant_t PixelFetchContext::decodePixel(u32vec4 raw_pixel){
   pickvariant_t rval;
   printf( "inrawpix<%08x %08x %08x %08x>\n", raw_pixel.x, raw_pixel.y, raw_pixel.z, raw_pixel.w );
-  auto as_out = rval.makeShared<u32vec4>();
-  as_out->x = raw_pixel.x;
-  as_out->y = raw_pixel.y;
-  as_out->z = raw_pixel.z;
-  as_out->w = raw_pixel.w;
+  if(raw_pixel.x < _pickIDvec.size()){
+    auto vmap = rval.makeShared<varmap::VarMap>();
+    (*vmap)["x"] = _pickIDvec[raw_pixel.x];
+    (*vmap)["y"] = raw_pixel.y;
+    (*vmap)["z"] = raw_pixel.z;
+    (*vmap)["w"] = raw_pixel.w;
+    //rval = ;
+  }
+  //auto as_out = rval.makeShared<u32vec4>();
+  //as_out->x = raw_pixel.x;
+  //as_out->y = raw_pixel.y;
+  //as_out->z = raw_pixel.z;
+  //as_out->w = raw_pixel.w;
   return rval;
 }
 /////////////////////////////////////////////////////////////////////////
