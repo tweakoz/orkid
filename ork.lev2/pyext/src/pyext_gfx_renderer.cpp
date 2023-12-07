@@ -165,6 +165,13 @@ void pyinit_gfx_renderer(py::module& module_lev2) {
               auto matrices = camera->computeMatrices(aspect);
               return matrices._vpmatrix;
           })
+          .def("project", [](cameradata_ptr_t camera, float aspect, fvec3 wpos) -> fvec3 { //
+              auto matrices = camera->computeMatrices(aspect);
+              auto VP = matrices._vpmatrix;
+              auto hpos = fvec4(wpos,1).transform(VP);
+              hpos.perspectiveDivideInPlace();
+              return hpos.xyz();
+          })
           .def_property_readonly("eye", [](cameradata_ptr_t camera) -> fvec3 { return camera->mEye; })
           .def_property_readonly("target", [](cameradata_ptr_t camera) -> fvec3 { return camera->mTarget; })
           .def_property_readonly("mUp", [](cameradata_ptr_t camera) -> fvec3 { return camera->mUp; })

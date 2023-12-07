@@ -116,6 +116,13 @@ T ork::Vector2<T>::angle(const Vector2& vec) const{
 
   return T(glm::angle(a,b));
 }
+template <typename T>
+T ork::Vector2<T>::orientedAngle(const Vector2& vec) const{
+  const base_t& a = *this;
+  const base_t& b = vec;
+
+  return T(glm::orientedAngle(a,b));
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 

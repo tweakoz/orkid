@@ -60,6 +60,8 @@ void pyinit_math_la_t(py::module& module_core, //
               "y", [](const vec2_t& vec) -> T { return vec.y; }, [](vec2_t& vec, T val) { return vec.y = val; }) //
           .def("dot", &vec2_t::dotWith)
           .def("perp", &vec2_t::perpDotWith)
+          .def("angle", &vec2_t::angle)
+          .def("orientedAngle", &vec2_t::orientedAngle)
           .def("mag", &vec2_t::magnitude)
           .def("magsquared", &vec2_t::magnitudeSquared)
           .def("lerp", &vec2_t::lerp)
