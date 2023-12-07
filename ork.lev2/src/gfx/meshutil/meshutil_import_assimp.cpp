@@ -5,6 +5,7 @@
 
 #include "assimp_util.inl"
 #include<ork/util/logger.h>
+#include <ork/kernel/opq.h>
 
 namespace bfs = boost::filesystem;
 ///////////////////////////////////////////////////////////////////////////////
@@ -728,7 +729,7 @@ void configureXgmSkeleton(const ork::meshutil::Mesh& input, lev2::XgmModel& xgmm
 template <typename ClusterizerType>
 void clusterizeToolMeshToXgmMesh(const ork::meshutil::Mesh& inp_model, ork::lev2::XgmModel& out_model) {
 
-  // logchan_meshutilassimp->log("BEGIN: clusterizing model\n");
+  logchan_meshutilassimp->log("BEGIN: clusterizing model\n");
   bool is_skinned = false;
   if (auto as_bool = inp_model._varmap->valueForKey("is_skinned").tryAs<bool>()) {
     is_skinned = as_bool.value();
@@ -761,7 +762,7 @@ void clusterizeToolMeshToXgmMesh(const ork::meshutil::Mesh& inp_model, ork::lev2
 
   int subindex = 0;
   for (auto item : inp_model.RefSubMeshLut()) {
-    // logchan_meshutilassimp->log("BEGIN: clusterizing submesh<%d>\n", subindex);
+     logchan_meshutilassimp->log("BEGIN: clusterizing submesh<%d>\n", subindex);
     subindex++;
     auto inp_submesh = item.second;
     auto& mtlset     = inp_submesh->typedAnnotation<std::set<int>>("materialset");
@@ -798,11 +799,18 @@ void clusterizeToolMeshToXgmMesh(const ork::meshutil::Mesh& inp_model, ork::lev2
     ork::meshutil::XgmClusterTri clustertri;
     clusterizer->Begin();
 
+    size_t num_polys = inp_submesh->numPolys();
+    size_t inp_index = 0;
     inp_submesh->visitAllPolys([&](merged_poly_const_ptr_t p) {
       assert(p->numVertices() == 3);
       for (int i = 0; i < 3; i++)
         clustertri._vertex[i] = *inp_submesh->vertex(p->vertexID(i));
       clusterizer->addTriangle(clustertri, materialGroup->mMeshConfigurationFlags);
+      inp_index++;
+
+      //if(inp_index%1000==0){
+        //logchan_meshutilassimp->log("clusterizing submesh<%d> inp_index<%zu> num_polys<%zu>\n", subindex, inp_index, num_polys);
+      //}
     });
 
     clusterizer->End();
@@ -817,7 +825,7 @@ void clusterizeToolMeshToXgmMesh(const ork::meshutil::Mesh& inp_model, ork::lev2
     mtlsubmap[gltfmtl].push_back(srec);
 
     ///////////////////////////////////////
-    // logchan_meshutilassimp->log("END: clusterizing submesh<%d>\n", subindex);
+    logchan_meshutilassimp->log("END: clusterizing submesh<%d>\n", subindex);
   }
 
   //////////////////////////////////////////////////////////////////
@@ -849,29 +857,31 @@ void clusterizeToolMeshToXgmMesh(const ork::meshutil::Mesh& inp_model, ork::lev2
       subindex++;
 
       int inumclus = clusterizer->GetNumClusters();
+      std::atomic<int> op_counter = 0;
       for (int icluster = 0; icluster < inumclus; icluster++) {
-        lev2::ContextDummy DummyTarget;
         auto clusterbuilder = clusterizer->GetCluster(icluster);
-        clusterbuilder->buildVertexBuffer(DummyTarget, VertexFormat);
-
         auto xgm_cluster = std::make_shared<lev2::XgmCluster>();
         xgm_submesh->_clusters.push_back(xgm_cluster);
+        op_counter.fetch_add(1);
+        auto op = [&op_counter,xgm_cluster,clusterbuilder,VertexFormat](){
 
-        // logchan_meshutilassimp->log("building tristrip cluster<%d>\n", icluster);
+          lev2::ContextDummy DummyTarget;
+          //logchan_meshutilassimp->log("building tristrip cluster<%d>\n", icluster);
+          clusterbuilder->buildVertexBuffer(DummyTarget, VertexFormat);
+          buildXgmCluster(DummyTarget, xgm_cluster, clusterbuilder,true);
+          op_counter.fetch_add(-1);
+        };
+        opq::concurrentQueue()->enqueue(op);
+      }
+      int last_count = inumclus+1;
+      while( op_counter.load() > 0 ){
 
-        buildXgmCluster(DummyTarget, xgm_cluster, clusterbuilder,true);
+        if(op_counter.load() != last_count){
+          last_count = op_counter.load();
+          logchan_meshutilassimp->log("waiting for clusterbuild remaining<%d>.....", last_count);
+        }
 
-        const int imaxvtx = xgm_cluster->_vertexBuffer->GetNumVertices();
-        //logchan_meshutilassimp->log("xgm_cluster->_vertexBuffer<%p> imaxvtx<%d>\n", (void*) xgm_cluster->_vertexBuffer.get(), imaxvtx);
-        // OrkAssert(false);
-        // int inumclusjoints = XgmClus.mJoints.size();
-        // for( int ib=0; ib<inumclusjoints; ib++ )
-        //{
-        //	const PoolString JointName = XgmClus.mJoints[ ib ];
-        //	orklut<PoolString,int>::const_iterator itfind = mXgmModel.skeleton().mmJointNameMap.find( JointName );
-        //	int iskelindex = (*itfind).second;
-        //	XgmClus.mJointSkelIndices.push_back(iskelindex);
-        //}
+        usleep(1000);
       }
     }
   }

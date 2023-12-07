@@ -217,14 +217,19 @@ int submesh::numVertices() const {
 ///////////////////////////////////////////////////////////////////////////////
 int submesh::numPolys(int inumsides) const {
   int count = 0;
-  visitAllPolys([&](merged_poly_const_ptr_t p) {
-    if(inumsides==0){
-      count++;
-    }
-    else if (p->numVertices() == inumsides) {
-      count++;
-    }
-  });
+  if( inumsides==0 ){
+    count = _connectivityIMPL->numPolys();
+  }
+  else{
+    visitAllPolys([&](merged_poly_const_ptr_t p) {
+      if(inumsides==0){
+        count++;
+      }
+      else if (p->numVertices() == inumsides) {
+        count++;
+      }
+    });
+  }
   return count;
 }
 /////////////////////////////////////////////////////////////////////////
