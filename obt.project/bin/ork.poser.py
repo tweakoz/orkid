@@ -197,19 +197,20 @@ class SceneGraphApp(object):
       ##############################
       elif uievent.keycode == 65:
         self.children = []
+        self.push_screen_pos = scoord
+        self.push_cam_z_dir = camdat.znormal
         def pick_callback(pixel_fetch_context):
           obj = pixel_fetch_context.value(0)
           pos = pixel_fetch_context.value(1)
           nrm = pixel_fetch_context.value(2)
           uv  = pixel_fetch_context.value(3)
+          eye = camdat.eye
           if obj is not None:
             sel_bone = obj["y"]
             self.skeleton.selectJoint(sel_bone)
+            self.pivot = self.localpose.concatMatrices[self.sel_joint].translation
             self.sel_joint = sel_bone
             self.children = self.skeleton.childrenOf(sel_bone)
-            self.localpose.bindPose()
-            self.localpose.blendPoses()
-            self.localpose.concatenate()
             self.pmat = self.localpose.concatMatrices[sel_bone]
             self.chcmats = [self.localpose.concatMatrices[i] for i in self.children]
             # compute matrices relative to pmat
@@ -221,16 +222,22 @@ class SceneGraphApp(object):
       if uievent.code == tokens.MOVE.hashed:
         if self.sel_joint >= 0:
           # transform selected bone
-          Q = quat(vec3(0,0,1),0.06)
-          MQ = mtx4(Q)
           self.localpose.concatenate()
-          m = self.localpose.concatMatrices[self.sel_joint]*MQ
-          self.localpose.concatMatrices[self.sel_joint]=m
+          #
+          X = self.localpose.concatMatrices[self.sel_joint]
+          OR = X.toRotMatrix4()
+          ZN = vec4(camdat.znormal,0).transform(OR).xyz()
+          IP = mtx4.transMatrix(self.pivot*-1.0)
+          P = mtx4.transMatrix(self.pivot)
+          Q = quat.createFromAxisAngle(ZN,0.01)
+          R = Q.toMatrix()
+          M = P*R*IP
+          self.localpose.concatMatrices[self.sel_joint] = X*M
           # transform children bones (concatenated)
           for i in range(len(self.children)):
             ich = self.children[i]
             MCH = self.relmats[i]
-            self.localpose.concatMatrices[ich]=m*MCH
+            self.localpose.concatMatrices[ich]=X*M*MCH
           # recompute from concatenated
           self.localpose.decomposeConcatenated()
           self.localpose.blendPoses()

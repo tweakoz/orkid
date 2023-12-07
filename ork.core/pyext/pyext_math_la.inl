@@ -271,6 +271,11 @@ void pyinit_math_la_t(py::module& module_core, //
           .def("toMatrix", &quat_t::toMatrix)
           .def("norm", &quat_t::norm)
           .def("fromAxisAngle", &quat_t::fromAxisAngle)
+          .def_static("createFromAxisAngle", [](vec3_t& axis, T angle) -> quat_t {
+            quat_t rval;
+            rval.fromAxisAngle(vec4_t(axis, angle));
+            return rval;
+          })
           .def("fromMatrix3", &quat_t::fromMatrix3)
           .def("fromMatrix4", &quat_t::fromMatrix)
           .def("toAxisAngle", &quat_t::toAxisAngle)
@@ -360,6 +365,7 @@ void pyinit_math_la_t(py::module& module_core, //
           .def("inverseOf", &mat4_t::inverseOf)
           .def("decompose", &mat4_t::decompose)
           .def("toRotMatrix3", &mat4_t::rotMatrix33)
+          .def("toRotMatrix4", &mat4_t::rotMatrix44)
           .def("toGlm", &mat4_t::asGlmMat4)
           .def_property_readonly("translation", &mat4_t::translation)
           .def(

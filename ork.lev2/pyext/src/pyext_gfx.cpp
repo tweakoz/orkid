@@ -8,7 +8,6 @@
 #include "pyext.h"
 #include <ork/lev2/input/inputdevice.h>
 #include <ork/lev2/gfx/terrain/terrain_drawable.h>
-#include <ork/lev2/gfx/camera/cameradata.h>
 #include <ork/lev2/gfx/gfxvtxbuf.inl>
 #include <ork/math/cvector4.h>
 
