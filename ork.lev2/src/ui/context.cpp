@@ -9,6 +9,14 @@ Context::Context() {
   _prevtime = 0.0;
 }
 /////////////////////////////////////////////////////////////////////////
+bool Context::isKeyDown(int code) const {
+  auto it = _downkeys.find(code);
+  if(it==_downkeys.end()){
+    return false;
+  }
+  return it->second;
+}
+/////////////////////////////////////////////////////////////////////////
 void Context::tick(updatedata_ptr_t updata){
   for( auto sitem : _tickSubscribers ){
     auto w = sitem.first;
@@ -26,6 +34,22 @@ HandlerResult Context::handleEvent(event_constptr_t ev) {
   //  the widget they started on..
   /////////////////////////////////
   switch (ev->_eventcode) {
+    case EventCode::KEY_DOWN: {
+      _downkeys[ev->miKeyCode] = true;
+      _evdragtarget = nullptr;
+      auto dest     = _top->routeUiEvent(ev);
+      if (dest)
+        rval = dest->OnUiEvent(ev);
+      break;
+    }
+    case EventCode::KEY_UP: {
+      _downkeys[ev->miKeyCode] = false;
+      _evdragtarget = nullptr;
+      auto dest     = _top->routeUiEvent(ev);
+      if (dest)
+        rval = dest->OnUiEvent(ev);
+      break;
+    }
     /////////////////////////////////
     case EventCode::DRAG: {
       if (_prevevent._eventcode != EventCode::DRAG) { // start drag

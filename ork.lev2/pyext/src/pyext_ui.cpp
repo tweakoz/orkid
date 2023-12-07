@@ -59,7 +59,8 @@ void pyinit_ui(py::module& module_lev2) {
       py::class_<ui::Context, ui::context_ptr_t>(module_lev2, "Context")
           .def_property_readonly("hasKeyboardFocus", [](ui::context_ptr_t uictx) -> bool { return uictx->hasKeyboardFocus(); })
           .def("hasMouseFocus", [](ui::context_ptr_t uictx, uiwidget_ptr_t w) -> bool { return uictx->hasMouseFocus(w.get()); })
-          .def("dumpWidgets", [](ui::context_ptr_t uictx,std::string label) { uictx->dumpWidgets(label); });
+          .def("dumpWidgets", [](ui::context_ptr_t uictx,std::string label) { uictx->dumpWidgets(label); })
+          .def("isKeyDown", [](ui::context_ptr_t uictx,int keycode) -> bool { return uictx->isKeyDown(keycode); });
   type_codec->registerStdCodec<ui::context_ptr_t>(uicontext_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto uievent_type = //

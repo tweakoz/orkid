@@ -67,7 +67,9 @@ class SceneGraphApp(object):
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     self.materials = set()
     self.editor = Editor()
+    self.uictx = self.ezapp.uicontext
     setupUiCamera(app=self,eye=vec3(0,0.5,1))
+    self.sel_joint = -1
 
   ##############################################
 
@@ -134,6 +136,7 @@ class SceneGraphApp(object):
     self.concats = self.localpose.concatMatrices[0:]
     self.locals = self.localpose.localMatrices[0:]
     self.bindrels = self.localpose.bindRelativeMatrices[0:]
+    self.children = []
     #print(self.locals)
     #print(self.concats)
     #print(self.bindrels)
@@ -176,15 +179,24 @@ class SceneGraphApp(object):
   ##############################################
 
   def onUiEvent(self,uievent):
-    
-    if (uievent.code == tokens.KEY_DOWN.hashed) and (uievent.keycode == 32):
-      self.localpose.bindPose()
-      self.localpose.blendPoses()
-      self.localpose.concatenate()
-    elif uievent.alt:
-      if uievent.code == tokens.DRAG.hashed:
-        camdat = self.uicam.cameradata
-        scoord = uievent.pos
+    camdat = self.uicam.cameradata
+    scoord = uievent.pos
+    handled = False
+    if uievent.code == tokens.KEY_UP.hashed:
+      if uievent.keycode == 65:
+        self.skeleton.selectJoint(-1)
+        self.sel_joint = -1
+        handled = True
+    if uievent.code == tokens.KEY_DOWN.hashed:
+      ##############################
+      if uievent.keycode == 32:
+        self.localpose.bindPose()
+        self.localpose.blendPoses()
+        self.localpose.concatenate()
+        handled = True
+      ##############################
+      elif uievent.keycode == 65:
+        self.children = []
         def pick_callback(pixel_fetch_context):
           obj = pixel_fetch_context.value(0)
           pos = pixel_fetch_context.value(1)
@@ -192,28 +204,48 @@ class SceneGraphApp(object):
           uv  = pixel_fetch_context.value(3)
           if obj is not None:
             sel_bone = obj["y"]
-            self.ball_node.worldTransform.translation = pos.xyz()
-            if type(obj["x"]) == vec4:
-              self.skeleton.selectJoint(sel_bone)
-              Q = quat(vec3(0,0,1),0.06)
-              MQ = mtx4(Q)
-              self.localpose.concatenate()
-              m = self.localpose.concatMatrices[sel_bone]*MQ
-              self.localpose.concatMatrices[sel_bone]=m
-              self.localpose.decomposeConcatenated()
-              self.localpose.blendPoses()
-              self.localpose.concatenate()
-              self.children = self.skeleton.childrenOf(sel_bone)
-              print(self.children)
-
+            self.skeleton.selectJoint(sel_bone)
+            self.sel_joint = sel_bone
+            self.children = self.skeleton.childrenOf(sel_bone)
+            self.localpose.bindPose()
+            self.localpose.blendPoses()
+            self.localpose.concatenate()
+            self.pmat = self.localpose.concatMatrices[sel_bone]
+            self.chcmats = [self.localpose.concatMatrices[i] for i in self.children]
+            # compute matrices relative to pmat
+            self.relmats = [self.pmat.inverse * ch for ch in self.chcmats]
         self.scene.pickWithScreenCoord(camdat,scoord,pick_callback)
+        handled = True
+      ##############################
+    elif self.uictx.isKeyDown(65):
+      if uievent.code == tokens.MOVE.hashed:
+        if self.sel_joint >= 0:
+          # transform selected bone
+          Q = quat(vec3(0,0,1),0.06)
+          MQ = mtx4(Q)
+          self.localpose.concatenate()
+          m = self.localpose.concatMatrices[self.sel_joint]*MQ
+          self.localpose.concatMatrices[self.sel_joint]=m
+          # transform children bones (concatenated)
+          for i in range(len(self.children)):
+            ich = self.children[i]
+            MCH = self.relmats[i]
+            self.localpose.concatMatrices[ich]=m*MCH
+          # recompute from concatenated
+          self.localpose.decomposeConcatenated()
+          self.localpose.blendPoses()
+          self.localpose.concatenate()
+          #
+          handled = True
       if uievent.code == tokens.PUSH.hashed:
         self.concats = self.localpose.concatMatrices[0:]
         self.locals = self.localpose.localMatrices[0:]
         self.bindrels = self.localpose.bindRelativeMatrices[0:]
         print(len(self.concats))
         print(len(self.concats))
-    else:
+        handled = True
+    
+    if not handled:
       handled = self.uicam.uiEventHandler(uievent)
       if handled:
         self.camera.copyFrom( self.uicam.cameradata )
