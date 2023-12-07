@@ -203,11 +203,15 @@ class SceneGraphApp(object):
               self.localpose.decomposeConcatenated()
               self.localpose.blendPoses()
               self.localpose.concatenate()
+              self.children = self.skeleton.childrenOf(sel_bone)
+              print(self.children)
+
         self.scene.pickWithScreenCoord(camdat,scoord,pick_callback)
       if uievent.code == tokens.PUSH.hashed:
         self.concats = self.localpose.concatMatrices[0:]
         self.locals = self.localpose.localMatrices[0:]
         self.bindrels = self.localpose.bindRelativeMatrices[0:]
+        print(len(self.concats))
         print(len(self.concats))
     else:
       handled = self.uicam.uiEventHandler(uievent)
