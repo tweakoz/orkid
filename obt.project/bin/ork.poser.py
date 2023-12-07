@@ -226,7 +226,7 @@ class SceneGraphApp(object):
       ##############################
     elif self.uictx.isKeyDown(65):
       if uievent.code == tokens.MOVE.hashed:
-        if self.sel_joint >= 0:
+        if self.sel_joint > 0:
           # determine angle of rotation
           # from scoord delta and camdat.znormal and acos
           mag = (scoord - self.push_screen_pos).length
