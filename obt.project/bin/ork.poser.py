@@ -231,7 +231,7 @@ class SceneGraphApp(object):
           # from scoord delta and camdat.znormal and acos
           mag = (scoord - self.push_screen_pos).length
           if self.activate_rot == False:
-            if mag > 64:
+            if mag > 32:
               self.activate_rot = True
               self.acive_pos = scoord
 
