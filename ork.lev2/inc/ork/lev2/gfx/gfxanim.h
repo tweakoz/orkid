@@ -529,6 +529,7 @@ public:
 
 struct XgmJointProperties{
   int _numVerticesInfluenced = 0;
+  std::unordered_set<int> _children;
 };
 
 using xgmjointprops_ptr_t = std::shared_ptr<XgmJointProperties>;
@@ -564,6 +565,8 @@ struct XgmSkeleton {
     return _bones[idx];
   }
   int jointIndex(const std::string& Named) const;
+
+  std::vector<int> childJointsOf(int joint) const;
 
   /////////////////////////////////////
 

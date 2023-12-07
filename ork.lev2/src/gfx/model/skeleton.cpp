@@ -358,5 +358,24 @@ fmtx4 XgmSkeleton::concatenated(const std::string& named) const {
 }
 
 
+std::vector<int> XgmSkeleton::childJointsOf(int joint) const{
+
+  std::set<int> remaining;
+  remaining.insert(joint);
+  std::vector<int> rval;
+
+  while(remaining.size()){
+    int j = *remaining.begin();
+    remaining.erase(j);
+    auto jprops = _jointProperties[j];
+    for( auto c : jprops->_children ){
+      remaining.insert(c);
+      rval.push_back(c);
+    }
+  }
+  return rval;
+}
+
+
 
 } // namespace ork::lev2

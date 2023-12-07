@@ -240,6 +240,16 @@ void pyinit_gfx_xgmanim(py::module& module_lev2) {
                                  [](xgmskeleton_ptr_t self, int index) -> fmtx4 { //
                                    return self->_bindMatrices[index];
                                  })
+                             .def(
+                                 "childrenOf",                                    //
+                                 [](xgmskeleton_ptr_t self, int index) -> py::list { //
+                                   auto children = self->childJointsOf(index);
+                                   py::list rval;
+                                    for (auto c : children) {
+                                      rval.append(c);
+                                    }
+                                   return rval;
+                                 })
                              .def_property_readonly(
                                  "jointMatrices",                                    //
                                  [](xgmskeleton_ptr_t self) -> py::list { //

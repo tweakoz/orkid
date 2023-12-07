@@ -589,6 +589,11 @@ bool XgmModel::_loadXGM(XgmModel* mdl, datablock_ptr_t datablock) {
   else {
     OrkAssert(false);
   }
+  for( int i=0; i < mdl->_skeleton->miNumJoints; i++ ){
+    int iparent = mdl->_skeleton->GetJointParent(i);
+    auto jprops = mdl->_skeleton->_jointProperties[iparent];
+    jprops->_children.insert(i);
+  }
   // rval->_skeleton->dump();
   // mdl->dump();
   OrkHeapCheck();
