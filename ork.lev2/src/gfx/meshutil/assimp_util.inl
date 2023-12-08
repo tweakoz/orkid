@@ -20,6 +20,7 @@
 #include <assimp/pbrmaterial.h>
 #include <assimp/material.h>
 #include <assimp/GltfMaterial.h>
+#include <deque>
 ///////////////////////////////////////////////////////////////////////////////
 
 namespace ork::meshutil {
@@ -116,10 +117,11 @@ inline std::string remapSkelName(std::string inp) {
 struct ParsedSkeleton {
   //////////////////////////////////////////////////////////////
   inline lev2::xgmskelnode_ptr_t rootXgmSkelNode() {
-    return _xgmskelmap.find(remapSkelName(_rootname))->second;
+    return _xgmskelmap.find(remapSkelName(_rootpath))->second;
   }
   //////////////////////////////////////////////////////////////
   std::string _rootname;
+  std::string _rootpath;
   skelnodemap_t _xgmskelmap;
   bool _isSkinned = false;
 };
@@ -146,6 +148,12 @@ inline int compute_aiNodeDepth(const aiNode* node, int depth = 0) {
     return compute_aiNodeDepth(node->mParent, depth + 1);
 }
 
+using ainode_visitorfn_t = std::function<void(const aiNode*, int depth)>;
+
+void visit_ainodes_down(const aiNode* node, int depth, ainode_visitorfn_t visitor);
+void visit_ainodes_up(const aiNode* node, int depth, ainode_visitorfn_t visitor);
+std::string aiNodePathName(const aiNode* node);
+std::deque<const aiNode*> aiNodePath(const aiNode* node);
 ///////////////////////////////////////////////////////////////////////////////
 
 } // namespace ork::meshutil

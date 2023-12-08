@@ -273,7 +273,7 @@ bool XgmModel::_loadXGM(XgmModel* mdl, datablock_ptr_t datablock) {
         fmtx4 scalematrix;
         //scalematrix.compose(fvec3(0,0,0),fquat(),0.01f);
 
-        fxstring<256> jnamp(pjntname);
+        std::string jnamp(pjntname);
         mdl->_skeleton->AddJoint(iskelindex, iparentindex, jnamp.c_str());
         ptstring.set(chunkreader.GetString(inodematrix));
         mdl->_skeleton->RefNodeMatrix(iskelindex) = scalematrix*PropType<fmtx4>::FromString(ptstring);

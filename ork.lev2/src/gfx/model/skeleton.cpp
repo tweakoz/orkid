@@ -45,7 +45,7 @@ XgmSkelNode::NodeType XgmSkelNode::nodetype() const {
   if (_parent == nullptr) {
     return ENODE_ROOT;
   }
-  if (_children.size()) {
+  if (_childrenX.size()) {
     return ENODE_NONLEAF;
   }
   return ENODE_LEAF;
@@ -55,7 +55,7 @@ XgmSkelNode::NodeType XgmSkelNode::nodetype() const {
 
 void XgmSkelNode::visitHierarchy(xgmskelnode_ptr_t node, nodevisitfn_t visitfn) {
   visitfn(node);
-  for (auto child : node->_children) {
+  for (auto child : node->_childrenX) {
     visitHierarchy(child, visitfn);
   }
 }

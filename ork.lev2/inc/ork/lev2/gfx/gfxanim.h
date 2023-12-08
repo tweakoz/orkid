@@ -376,9 +376,10 @@ struct XgmSkelNode {
   int miSkelIndex       = -1;
   int _numBoundVertices = 0;
   int _depth = -1;
-  orkvector<xgmskelnode_ptr_t> _children;
+  orkvector<xgmskelnode_ptr_t> _childrenX;
 
   std::string _name;
+  std::string _path;
   fmtx4 _bindMatrixInverse;
   fmtx4 _bindMatrix;
   fmtx4 _jointMatrix;

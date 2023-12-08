@@ -14,6 +14,35 @@ static logchannel_ptr_t logchan_meshutilassimp = logger()->createChannel("meshut
 ///////////////////////////////////////////////////////////////////////////////
 typedef std::set<std::string> bonemarkset_t;
 ///////////////////////////////////////////////////////////////////////////////
+void visit_ainodes_down(const aiNode* node, int depth, ainode_visitorfn_t visitor){
+    visitor(node,depth);
+    for (int i = 0; i < node->mNumChildren; ++i) {
+        visit_ainodes_down(node->mChildren[i], depth+1, visitor);
+    }
+}
+void visit_ainodes_up(const aiNode* node, int depth, ainode_visitorfn_t visitor){
+    visitor(node,depth);
+    if( node->mParent){
+        visit_ainodes_up(node->mParent, depth+1, visitor);
+    }
+}
+std::deque<const aiNode*> aiNodePath(const aiNode* start_node){
+  std::deque<const aiNode*> node_path;
+  visit_ainodes_up(start_node, 0, [&](const aiNode* visited, int depth) {
+     node_path.push_front(visited);
+  });
+  return node_path;
+}
+std::string aiNodePathName(const aiNode* start_node){
+  auto node_path = aiNodePath(start_node);
+  std::string node_path_name;
+  for (auto n : node_path) {
+      node_path_name += "/";
+      node_path_name += n->mName.data;
+  }
+  return node_path_name;
+}
+///////////////////////////////////////////////////////////////////////////////
 void Mesh::readFromAssimp(const file::Path& BasePath) {
 
   ork::file::Path GlbPath = BasePath;
@@ -32,7 +61,9 @@ void Mesh::readFromAssimp(const file::Path& BasePath) {
 void Mesh::readFromAssimp(datablock_ptr_t datablock) {
   auto& extension = datablock->_vars->typedValueForKey<std::string>("file-extension").value();
   //logchan_meshutilassimp->log("BEGIN: importing scene from datablock length<%zu> extension<%s>\n", datablock->length(), extension.c_str());
-  auto scene = aiImportFileFromMemory((const char*)datablock->data(), datablock->length(), assimpImportFlags(), extension.c_str());
+  auto flags = assimpImportFlags();
+  flags |= aiProcess_PopulateArmatureData;
+  auto scene = aiImportFileFromMemory((const char*)datablock->data(), datablock->length(), flags, extension.c_str());
   //logchan_meshutilassimp->log("END: importing scene<%p>\n", (void*) scene);
   if (scene) {
     auto& embtexmap = _varmap->makeValueForKey<lev2::embtexmap_t>("embtexmap");
@@ -283,7 +314,7 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
     //////////////////////////////////////////////
 
     struct XgmAssimpVertexWeightItem {
-      std::string _bonename;
+      std::string _bonepath;
       float _weight = 0.0f;
     };
     struct XgmAssimpVertexWeights {
@@ -300,8 +331,10 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
         const aiMesh* mesh = scene->mMeshes[n->mMeshes[m]];
         for (int b = 0; b < mesh->mNumBones; b++) {
           auto bone     = mesh->mBones[b];
+          auto bone_node = bone->mNode;
+          auto bone_path = aiNodePathName(bone_node);
           auto bonename = remapSkelName(bone->mName.data);
-          auto itb      = xgmskelnodes.find(bonename);
+          auto itb      = xgmskelnodes.find(bone_path);
           bonemarkset.insert(bonename);
           /////////////////////////////////////////////
           // yuk -- assimp is not like gltf, or collada...
@@ -334,7 +367,7 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
                   weights_for_vertex        = new XgmAssimpVertexWeights;
                   assimpweightlut[vertexID] = weights_for_vertex;
                 }
-                auto xgmw = XgmAssimpVertexWeightItem{bonename, weight};
+                auto xgmw = XgmAssimpVertexWeightItem{bone_path, weight};
                 weights_for_vertex->_items.push_back(xgmw);
               }
             }
@@ -354,7 +387,9 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
     // std::deque<fmtx4> ork_mtxstack;
     // ork_mtxstack.push_front(convertMatrix44(scene->mRootNode->mTransformation));
 
-    auto it_root_skelnode                 = xgmskelnodes.find(remapSkelName(scene->mRootNode->mName.data));
+    auto root_name = remapSkelName(scene->mRootNode->mName.data);
+    auto root_path = aiNodePathName(scene->mRootNode);
+    auto it_root_skelnode                 = xgmskelnodes.find(root_path);
     ork::lev2::xgmskelnode_ptr_t root_skelnode = (it_root_skelnode != xgmskelnodes.end()) ? it_root_skelnode->second : nullptr;
 
     //////////////////////////////////////////////
@@ -372,8 +407,8 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
       nodestack.pop();
 
       auto nren = remapSkelName(n->mName.data);
-
-      auto it_nod_skelnode                 = xgmskelnodes.find(nren);
+      auto npath = aiNodePathName(n);
+      auto it_nod_skelnode                 = xgmskelnodes.find(npath);
       ork::lev2::xgmskelnode_ptr_t nod_skelnode = (it_nod_skelnode != xgmskelnodes.end()) //
                                                 ? it_nod_skelnode->second //
                                                 : nullptr;
@@ -516,15 +551,14 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
                     float fw  = infl._weight;
                     if (fw < 0.001)
                       fw = 0.001;
-                    auto remapped          = remapSkelName(infl._bonename);
-                    rawweightMap[remapped] = fw;
+                    rawweightMap[infl._bonepath] = fw;
                     /*if (fw != 0.0f)*/ {
                       auto xgminfl = XgmAssimpVertexWeightItem(infl);
                       auto pr      = std::make_pair(1.0f - fw, xgminfl);
                       largestWeightMap.insert(pr);
                     }
-                    deformer_bones.insert(remapped);
-                    logchan_meshutilassimp->log(" xxx inf<%d> bone<%s> weight<%g>\n", inf, remapped.c_str(), fw);
+                    deformer_bones.insert(infl._bonepath);
+                    logchan_meshutilassimp->log(" xxx inf<%d> bone<%s> weight<%g>\n", inf, infl._bonepath.c_str(), fw);
                   }
                   int icount      = 0;
                   float totweight = 0.0f;
@@ -544,8 +578,7 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
                       float w            = 1.0f - item.first;
                       float fjointweight = w / totweight;
                       newtotweight += fjointweight;
-                      std::string name = item.second._bonename;
-                      prunedWeightMap.insert(std::make_pair(fjointweight, remapSkelName(name)));
+                      prunedWeightMap.insert(std::make_pair(fjointweight,item.second._bonepath));
                       ++icount;
                     }
                   }
@@ -574,7 +607,7 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
                   // init vertex with no influences
                   /////////////////////////////////
                   for (int iw = 0; iw < 4; iw++) {
-                    muvtx.mJointNames[iw]   = root_skelnode->_name;
+                    muvtx.mJointNames[iw]   = root_skelnode->_path;
                     muvtx.mJointWeights[iw] = 0.0f;
                   }
                   /////////////////////////////////
@@ -704,8 +737,13 @@ void configureXgmSkeleton(const ork::meshutil::Mesh& input, lev2::XgmModel& xgmm
     jprops->_numVerticesInfluenced = skelnode->_numBoundVertices;
 
   }
+
   /////////////////////////////////////
   // flatten the skeleton (WIP)
+  //  this means traverse the tree and add bones for each parent/child pair
+  //  the bones are added in order of traversal
+  //  so that later processing (concatenation) can be done
+  //   by traversing an array of bones
   /////////////////////////////////////
 
   //logchan_meshutilassimp->log("Flatten Skeleton\n");
