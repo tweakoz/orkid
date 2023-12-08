@@ -211,6 +211,8 @@ class SceneGraphApp(object):
             self.skeleton.selectJoint(sel_bone)
             self.pivot = self.localpose.concatMatrices[self.sel_joint].translation
             self.sel_joint = sel_bone
+            jname = self.skeleton.jointName(sel_bone)
+            print(jname)
             self.children = self.skeleton.childrenOf(sel_bone)
             self.pmat = self.localpose.concatMatrices[sel_bone]
             self.chcmats = [self.localpose.concatMatrices[i] for i in self.children]

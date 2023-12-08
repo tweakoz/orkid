@@ -191,8 +191,11 @@ bool XgmModel::_loadAssimp(XgmModel* mdl, datablock_ptr_t inp_datablock) {
   basehasher->finish();
   uint64_t hashkey   = basehasher->result();
   auto xgm_datablock = DataBlockCache::findDataBlock(hashkey);
+  if(FORCE_MODEL_REGEN()){
+    xgm_datablock = nullptr;
+  }
   printf( "xgm_datablock<%p>\n", (void*) xgm_datablock.get() );
-  if (not xgm_datablock or FORCE_MODEL_REGEN()) {
+  if (not xgm_datablock) {
     xgm_datablock = meshutil::assimpToXgm(inp_datablock);
     DataBlockCache::setDataBlock(hashkey, xgm_datablock);
   }

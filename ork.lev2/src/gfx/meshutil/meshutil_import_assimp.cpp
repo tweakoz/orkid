@@ -454,6 +454,12 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
         mtlset.insert(mesh->mMaterialIndex);
         auto& mtlref = out_submesh.typedAnnotation<GltfMaterial*>("gltfmaterial");
         mtlref       = outmtl;
+
+
+
+
+
+
         ork::meshutil::vertex muverts[4];
         logchan_meshutilassimp->log("processing numfaces<%d> %s", mesh->mNumFaces, outmtl->_name.c_str() );
         int numinputtriangles = 0;
@@ -603,7 +609,8 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
           } else {
             logchan_meshutilassimp->log("non triangle");
           }
-        }
+        } //  for (int t = 0; t < mesh->mNumFaces; ++t) {
+
         logchan_meshutilassimp->log("done processing numfaces<%d> ..", mesh->mNumFaces);
         logchan_meshutilassimp->log("numinputtriangles<%d>", numinputtriangles );
         logchan_meshutilassimp->log("xxx num deformer bones<%zu>", deformer_bones.size() );
@@ -674,9 +681,17 @@ void configureXgmSkeleton(const ork::meshutil::Mesh& input, lev2::XgmModel& xgmm
     const std::string& JointName = item.first;
     auto skelnode                = item.second;
     auto parskelnode             = skelnode->_parent;
+    std::string ParName = parskelnode ? parskelnode->_name : "none";
     int idx                      = skelnode->miSkelIndex;
     int pidx                     = parskelnode ? parskelnode->miSkelIndex : -1;
-    //logchan_meshutilassimp->log("JointName<%s> skelnode<%p> parskelnode<%p> idx<%d> pidx<%d>\n", JointName.c_str(), (void*) skelnode, (void*) parskelnode, idx, pidx);
+    logchan_meshutilassimp->log("JointName<%s> ParName<%s> skelnode<%p> parskelnode<%p> idx<%d> pidx<%d> numinfs<%d>", //
+       JointName.c_str(), 
+       ParName.c_str(),
+       (void*) skelnode.get(), 
+       (void*) parskelnode.get(), 
+       idx, 
+       pidx,
+       int(skelnode->_numBoundVertices));
 
     xgmskel.AddJoint(idx, pidx, JointName);
     xgmskel._bindMatrices[idx] = skelnode ? skelnode->_bindMatrix : fmtx4();
@@ -709,12 +724,25 @@ void configureXgmSkeleton(const ork::meshutil::Mesh& input, lev2::XgmModel& xgmm
           //logchan_meshutilassimp->log("xxx IGNORE<%s>\n", node->_name.c_str());
         }
         else {
-          logchan_meshutilassimp->log("xxx ADD<%zu:%s>\n", add_count, node->_name.c_str());
           int iparentindex   = parent->miSkelIndex;
           int ichildindex    = node->miSkelIndex;
-          lev2::XgmBone Bone = {iparentindex, ichildindex};
-          xgmskel.addBone(Bone);
-          add_count++;
+          auto pa_props = xgmskel._jointProperties[iparentindex];
+          auto ch_props = xgmskel._jointProperties[ichildindex];
+
+          bool valid = (pa_props->_numVerticesInfluenced > 0) or (ch_props->_numVerticesInfluenced > 0);
+          if(valid){
+            logchan_meshutilassimp->log("xxx ADD BONE<%d> par<%zu:%s (%d)> chi<%zu:%s (%d)>\n", //
+              add_count, //
+              iparentindex,
+              parent->_name.c_str(),
+              pa_props->_numVerticesInfluenced,
+              ichildindex,
+              node->_name.c_str(),
+              ch_props->_numVerticesInfluenced);
+            lev2::XgmBone Bone = {iparentindex, ichildindex};
+            xgmskel.addBone(Bone);
+            add_count++;
+          }
         }
       }
     });
@@ -761,8 +789,8 @@ void clusterizeToolMeshToXgmMesh(const ork::meshutil::Mesh& inp_model, ork::lev2
   mtl2mtlmap_t mtlmtlmap;
 
   int subindex = 0;
+  std::atomic<int> op_counter = 0;
   for (auto item : inp_model.RefSubMeshLut()) {
-     logchan_meshutilassimp->log("BEGIN: clusterizing submesh<%d>\n", subindex);
     subindex++;
     auto inp_submesh = item.second;
     auto& mtlset     = inp_submesh->typedAnnotation<std::set<int>>("materialset");
@@ -793,27 +821,9 @@ void clusterizeToolMeshToXgmMesh(const ork::meshutil::Mesh& inp_model, ork::lev2
       materialGroup->mMeshConfigurationFlags._skinned = is_skinned;
       materialGroup->meVtxFormat                      = VertexFormat;
       mtlmtlmap[gltfmtl]                              = materialGroup;
-    } else
+    } else{
       materialGroup = it->second;
-
-    ork::meshutil::XgmClusterTri clustertri;
-    clusterizer->Begin();
-
-    size_t num_polys = inp_submesh->numPolys();
-    size_t inp_index = 0;
-    inp_submesh->visitAllPolys([&](merged_poly_const_ptr_t p) {
-      assert(p->numVertices() == 3);
-      for (int i = 0; i < 3; i++)
-        clustertri._vertex[i] = *inp_submesh->vertex(p->vertexID(i));
-      clusterizer->addTriangle(clustertri, materialGroup->mMeshConfigurationFlags);
-      inp_index++;
-
-      //if(inp_index%1000==0){
-        //logchan_meshutilassimp->log("clusterizing submesh<%d> inp_index<%zu> num_polys<%zu>\n", subindex, inp_index, num_polys);
-      //}
-    });
-
-    clusterizer->End();
+    }
 
     ///////////////////////////////////////
 
@@ -824,8 +834,45 @@ void clusterizeToolMeshToXgmMesh(const ork::meshutil::Mesh& inp_model, ork::lev2
     srec._clusterizer = clusterizer;
     mtlsubmap[gltfmtl].push_back(srec);
 
-    ///////////////////////////////////////
-    logchan_meshutilassimp->log("END: clusterizing submesh<%d>\n", subindex);
+    op_counter.fetch_add(1);
+    auto op = [&op_counter,inp_submesh,clusterizer, subindex, materialGroup](){
+
+     logchan_meshutilassimp->log("BEGIN: clusterizing submesh<%d>\n", subindex);
+
+      ork::meshutil::XgmClusterTri clustertri;
+      clusterizer->Begin();
+
+      size_t num_polys = inp_submesh->numPolys();
+      size_t inp_index = 0;
+      inp_submesh->visitAllPolys([&](merged_poly_const_ptr_t p) {
+        assert(p->numVertices() == 3);
+        for (int i = 0; i < 3; i++)
+          clustertri._vertex[i] = *inp_submesh->vertex(p->vertexID(i));
+        clusterizer->addTriangle(clustertri, materialGroup->mMeshConfigurationFlags);
+        inp_index++;
+
+        //if(inp_index%1000==0){
+          //logchan_meshutilassimp->log("clusterizing submesh<%d> inp_index<%zu> num_polys<%zu>\n", subindex, inp_index, num_polys);
+        //}
+      });
+
+      clusterizer->End();
+      op_counter.fetch_add(-1);
+  
+      logchan_meshutilassimp->log("END: clusterizing submesh<%d> ops remaining: %d\n", subindex, op_counter.load());
+
+    };
+
+    opq::concurrentQueue()->enqueue(op);
+
+  } // for (auto item : inp_model.RefSubMeshLut()) {
+
+  //////////////////////////////////////////////////////////////////
+  // wait for partitioning to complete..
+  //////////////////////////////////////////////////////////////////
+
+  while( op_counter.load() > 0 ){
+    usleep(100000);
   }
 
   //////////////////////////////////////////////////////////////////
@@ -874,6 +921,11 @@ void clusterizeToolMeshToXgmMesh(const ork::meshutil::Mesh& inp_model, ork::lev2
         opq::concurrentQueue()->enqueue(op);
       }
       int last_count = inumclus+1;
+
+      //////////////////////////////////////////////////////////////////
+      // wait for clusterbuild to complete..
+      //////////////////////////////////////////////////////////////////
+
       while( op_counter.load() > 0 ){
 
         if(op_counter.load() != last_count){
@@ -881,7 +933,7 @@ void clusterizeToolMeshToXgmMesh(const ork::meshutil::Mesh& inp_model, ork::lev2
           logchan_meshutilassimp->log("waiting for clusterbuild remaining<%d>.....", last_count);
         }
 
-        usleep(1000);
+        usleep(100000);
       }
     }
   }

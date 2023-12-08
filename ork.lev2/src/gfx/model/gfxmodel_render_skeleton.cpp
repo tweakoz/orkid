@@ -169,6 +169,9 @@ void XgmModel::RenderSkeleton(
       }
       float bl2 = bonelength * 0.1f;
 
+      if(bonelength>0.5){
+        //continue;
+      }
       auto add_triangle = [&](fvec3 posa,
                               fvec3 cola, //
                               fvec3 posb,

@@ -375,7 +375,7 @@ struct XgmSkelNode {
   xgmskelnode_ptr_t _parent  = nullptr;
   int miSkelIndex       = -1;
   int _numBoundVertices = 0;
-
+  int _depth = -1;
   orkvector<xgmskelnode_ptr_t> _children;
 
   std::string _name;
