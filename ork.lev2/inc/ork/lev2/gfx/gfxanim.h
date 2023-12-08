@@ -589,8 +589,8 @@ struct XgmSkeleton {
   const fmtx4& RefJointMatrix(int idx) const {
     return _jointMatrices[idx];
   }
-  void selectJointIndex(int index){
-    _seljointindex = index;
+  void selectBoneIndex(int index){
+    _selboneindex = index;
   }
   fmtx4 concatenated(const std::string& named) const;
 
@@ -619,7 +619,7 @@ struct XgmSkeleton {
   fvec4 mBoundMax;
   fmtx4 mBindShapeMatrix;
   fmtx4 mTopNodesMatrix;
-  int _seljointindex = -1;
+  int _selboneindex = -1;
   orkvector<fmtx4> _inverseBindMatrices;
   orkvector<fmtx4> _bindMatrices;
   orkvector<DecompMatrix> _bindDecomps;

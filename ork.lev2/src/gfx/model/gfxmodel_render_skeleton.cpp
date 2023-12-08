@@ -197,7 +197,7 @@ void XgmModel::RenderSkeleton(
         }
         auto tri = Triangle{
             //
-            uint32_t(iparent),
+            uint32_t(ib),
             joint_par, //
             posa,
             cola, //
@@ -278,8 +278,8 @@ void XgmModel::RenderSkeleton(
       hvtx._position = fvec4(pos).transform(J).xyz();
 
       hvtx._color    = col.ABGRU32();
-      if(_skeleton->_seljointindex>=0){
-        if(BID==_skeleton->_seljointindex){
+      if(_skeleton->_selboneindex>=0){
+        if(BID==_skeleton->_selboneindex){
           hvtx._color    = 0xff00ffff;
         }
       }

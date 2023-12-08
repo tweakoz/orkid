@@ -183,8 +183,8 @@ class SceneGraphApp(object):
     scoord = uievent.pos
     handled = False
     if uievent.code == tokens.KEY_UP.hashed:
-      if uievent.keycode == 65:
-        self.skeleton.selectJoint(-1)
+      if uievent.keycode == ord("A") or uievent.keycode == ord("S"):
+        self.skeleton.selectBone(-1)
         self.sel_joint = -1
         handled = True
     if uievent.code == tokens.KEY_DOWN.hashed:
@@ -195,7 +195,25 @@ class SceneGraphApp(object):
         self.localpose.concatenate()
         handled = True
       ##############################
-      elif uievent.keycode == 65:
+      elif uievent.keycode == 66:
+        numbones = self.skeleton.numBones
+        numjoints = self.skeleton.numJoints
+        for i in range(0,numbones):
+          bone = self.skeleton.bone(i)
+          p = bone.parentIndex
+          c = bone.childIndex
+          pname = self.skeleton.jointName(p)
+          cname = self.skeleton.jointName(c)
+          pname = pname.split("/")[-1]
+          cname = cname.split("/")[-1]
+          print("bone<%d> par<%d:%s> child<%d:%s>"%(i,p,pname,c,cname))
+        for i in range(0,numjoints):
+          jname = self.skeleton.jointName(i)
+          jname = jname.split("/")[-1]
+          print("joint<%d:%s>"%(i,jname))
+
+      ##############################
+      elif uievent.keycode == ord("A") or uievent.keycode == ord("S"):
         self.children = []
         self.push_screen_pos = scoord
         self.push_cam_z_dir = camdat.znormal
@@ -207,14 +225,17 @@ class SceneGraphApp(object):
           uv  = pixel_fetch_context.value(3).xyz().xy()
           eye = camdat.eye+camdat.znormal*10
           if obj is not None:
-            sel_bone = obj["y"]
-            self.skeleton.selectJoint(sel_bone)
+            sel_bone_index = obj["y"]
+            self.skeleton.selectBone(sel_bone_index)
+            sel_bone = self.skeleton.bone(sel_bone_index)
+            sel_parent_index = sel_bone.parentIndex
             self.pivot = self.localpose.concatMatrices[self.sel_joint].translation
-            self.sel_joint = sel_bone
-            jname = self.skeleton.jointName(sel_bone)
+            self.sel_joint = sel_parent_index
+            jname = self.skeleton.jointName(sel_parent_index)
             print(jname)
-            self.children = self.skeleton.childrenOf(sel_bone)
-            self.pmat = self.localpose.concatMatrices[sel_bone]
+            self.children = self.skeleton.childrenOf(sel_parent_index)
+            print(self.children)
+            self.pmat = self.localpose.concatMatrices[sel_parent_index]
             self.chcmats = [self.localpose.concatMatrices[i] for i in self.children]
             self.concats_push = self.localpose.concatMatrices[0:]
             # compute matrices relative to pmat
@@ -226,7 +247,7 @@ class SceneGraphApp(object):
         self.scene.pickWithScreenCoord(camdat,scoord,pick_callback)
         handled = True
       ##############################
-    elif self.uictx.isKeyDown(65):
+    elif self.uictx.isKeyDown(ord("A")):
       if uievent.code == tokens.MOVE.hashed:
         if self.sel_joint > 0:
           # determine angle of rotation
@@ -260,11 +281,45 @@ class SceneGraphApp(object):
               self.localpose.concatMatrices[ich]=X*M*MCH
             # recompute from concatenated
             self.localpose.decomposeConcatenated()
-            self.localpose.blendPoses()
+            #self.localpose.blendPoses()
             self.localpose.concatenate()
             #
           handled = True
-      if uievent.code == tokens.PUSH.hashed:
+      ##############################
+    elif self.uictx.isKeyDown(ord("S")):
+      if uievent.code == tokens.MOVE.hashed:
+        if self.sel_joint == 2:
+          # determine angle of rotation
+          # from scoord delta and camdat.znormal and acos
+          mag = (scoord - self.push_screen_pos).length
+          if self.activate_rot == False:
+            if mag > 32:
+              self.activate_rot = True
+              self.acive_pos = scoord
+
+          if self.activate_rot:
+            deltaA = (self.acive_pos - self.push_screen_pos).normalized()
+            deltaB = (scoord - self.push_screen_pos).normalized()
+            angle = deltaB.orientedAngle(deltaA)
+            # transform selected bone
+            self.localpose.concatenate()
+            #
+            X = self.concats_push[self.sel_joint]
+            OR = X.toRotMatrix4()
+            ZN = vec4(camdat.znormal,0).transform(OR).xyz()
+            IP = mtx4.transMatrix(self.pivot*-1.0)
+            P = mtx4.transMatrix(self.pivot)
+            Q = quat.createFromAxisAngle(ZN,angle)
+            R = Q.toMatrix()
+            M = P*R*IP
+            self.localpose.concatMatrices[self.sel_joint] = X*M
+            # transform children bones (concatenated)
+            for i in range(len(self.children)):
+              ich = self.children[i]
+              MCH = self.relmats[i]
+              self.localpose.concatMatrices[ich]=X*M*MCH
+          handled = True
+    if uievent.code == tokens.PUSH.hashed:
         self.concats = self.localpose.concatMatrices[0:]
         self.locals = self.localpose.localMatrices[0:]
         self.bindrels = self.localpose.bindRelativeMatrices[0:]

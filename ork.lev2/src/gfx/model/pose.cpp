@@ -574,7 +574,7 @@ void XgmLocalPose::decomposeConcatenated() {
   if (_skeleton->miRootNode >= 0) {
     _local_matrices[_skeleton->miRootNode] = _concat_matrices[_skeleton->miRootNode];
     int inumbones = _skeleton->numBones();
-    for (int ib = 1; ib < inumbones; ib++) {
+    for (int ib = 0; ib < inumbones; ib++) {
       const XgmBone& bone = _skeleton->bone(ib);
       int iparent               = bone._parentIndex;
       int ichild                = bone._childIndex;
@@ -587,6 +587,10 @@ void XgmLocalPose::decomposeConcatenated() {
         _local_matrices[ichild] = childConcatMatrix;
       }
     }
+  }
+  int inumjoints = NumJoints();
+  for (int ij = 0; ij < inumjoints; ij++) {
+    _blendposeinfos[ij].initBlendPose();
   }
 }
 

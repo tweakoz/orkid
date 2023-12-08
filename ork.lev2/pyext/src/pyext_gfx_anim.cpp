@@ -194,6 +194,19 @@ void pyinit_gfx_xgmanim(py::module& module_lev2) {
                                         [](XgmSkeletonBinding& self, int idx) { self.mChanIndex = idx; });
   // type_codec->registerStdCodec<XgmSkeletonBinding>(animskelbinding_type_t);
   /////////////////////////////////////////////////////////////////////////////////
+  auto bone_type_t = py::class_<XgmBone>(module_lev2, "XgmBone")
+    .def_property_readonly(
+        "parentIndex",                                     //
+        [](const XgmBone& self) -> int { //
+          return self._parentIndex;
+        })
+    .def_property_readonly(
+        "childIndex",                                     //
+        [](const XgmBone& self) -> int { //
+          return self._childIndex;
+        });
+  type_codec->registerStdCodec<XgmBone>(bone_type_t);
+  /////////////////////////////////////////////////////////////////////////////////
   auto animskel_type_t = py::class_<XgmSkeleton, xgmskeleton_ptr_t>(module_lev2, "XgmSkeleton")
                              .def_property_readonly(
                                  "name",                                     //
@@ -221,9 +234,14 @@ void pyinit_gfx_xgmanim(py::module& module_lev2) {
                                    return self->jointIndex(named);
                                  })
                              .def(
-                                 "selectJoint",                                           //
+                                 "selectBone",                                           //
                                  [](xgmskeleton_ptr_t self, int index) { //
-                                   return self->selectJointIndex(index);
+                                   return self->selectBoneIndex(index);
+                                 })
+                             .def(
+                                 "bone",                                   //
+                                 [](xgmskeleton_ptr_t self, int index) -> XgmBone { //
+                                   return self->_bones[index];
                                  })
                              .def(
                                  "jointParent",                                   //
