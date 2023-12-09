@@ -176,6 +176,9 @@ void XgmModel::RenderSkeleton(
         }
         BONECOLOR = fvec3(1, 0, 1);
       }
+      if( ch_props->_children.size() > 1){
+        BONECOLOR = fvec3(0.35, 0.75, 0.35 );
+      }
       if(iparent==_skeleton->miRootNode){
         bonelength = 0.2;
         BONECOLOR = fvec3(1, 0, 0);
