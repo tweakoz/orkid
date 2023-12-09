@@ -147,7 +147,7 @@ void XgmModel::RenderSkeleton(
       auto ch_props = _skeleton->_jointProperties[ichild];
       auto pa_props = _skeleton->_jointProperties[iparent];
       OrkAssert(ch_props != nullptr);
-      if ((ch_props->_numVerticesInfluenced == 0) || (pa_props->_numVerticesInfluenced == 0)) {
+      if ((ch_props->_numVerticesInfluenced == 0) && (pa_props->_numVerticesInfluenced == 0)) {
         continue;
       }
 

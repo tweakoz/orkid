@@ -231,8 +231,29 @@ class SceneGraphApp(object):
             sel_parent_index = sel_bone.parentIndex
             self.pivot = self.localpose.concatMatrices[self.sel_joint].translation
             self.sel_joint = sel_parent_index
-            jname = self.skeleton.jointName(sel_parent_index)
-            print(jname)
+            pname = self.skeleton.jointName(sel_bone.parentIndex)
+            cname = self.skeleton.jointName(sel_bone.childIndex)
+            print("parent: ", pname)
+            print("child: ", cname)
+            
+            P = self.localpose.concatMatrices[sel_bone.parentIndex]
+            C = self.localpose.concatMatrices[sel_bone.childIndex]
+            PT = P.translation
+            CT = C.translation
+            length = (CT-PT).length
+
+            print("concat.pt<%g %g %g>"%(PT.x,PT.y,PT.z))
+            print("concat.ct<%g %g %g>"%(CT.x,CT.y,CT.z))
+            print("concat.length<%f>"%length)
+            
+            P = self.localpose.localMatrices[sel_bone.parentIndex]
+            C = self.localpose.localMatrices[sel_bone.childIndex]
+            PT = P.translation
+            CT = C.translation
+
+            print("local.pt<%g %g %g>"%(PT.x,PT.y,PT.z))
+            print("local.ct<%g %g %g>"%(CT.x,CT.y,CT.z))
+            
             self.children = self.skeleton.childrenOf(sel_parent_index)
             print(self.children)
             self.pmat = self.localpose.concatMatrices[sel_parent_index]
