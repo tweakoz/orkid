@@ -35,11 +35,11 @@ parsedskeletonptr_t parseSkeleton(const aiScene* scene) {
 
   auto create_skelnodes = [&](const aiNode* n, int depth) {
     OrkAssert(n != nullptr);
-    auto name = remapSkelName(n->mName.data);
-    auto node_path  = aiNodePathName(n);
-    auto itb  = uniqskelnodeset.find(node_path);
+    auto name      = remapSkelName(n->mName.data);
+    auto node_path = aiNodePathName(n);
+    auto itb       = uniqskelnodeset.find(node_path);
     if (itb != uniqskelnodeset.end()) {
-      auto prior = itb->second;
+      auto prior      = itb->second;
       auto prior_path = aiNodePathName(prior);
       printf(
           "uniqskelnodeset node already present name<%s> prior<%p> new<%p>\n", //
@@ -51,8 +51,8 @@ parsedskeletonptr_t parseSkeleton(const aiScene* scene) {
       if (n_metadata) {
         auto numprops = n_metadata->mNumProperties;
         for (int i = 0; i < numprops; i++) {
-          auto key  = n_metadata->mKeys[i].data;
-          //auto val  = metadata->mValues[i]->mData;
+          auto key = n_metadata->mKeys[i].data;
+          // auto val  = metadata->mValues[i]->mData;
           printf("n_metadata prop<%s>\n", key);
         }
       }
@@ -60,8 +60,8 @@ parsedskeletonptr_t parseSkeleton(const aiScene* scene) {
       if (p_metadata) {
         auto numprops = p_metadata->mNumProperties;
         for (int i = 0; i < numprops; i++) {
-          auto key  = p_metadata->mKeys[i].data;
-          //auto val  = p_metadata->mValues[i]->mData;
+          auto key = p_metadata->mKeys[i].data;
+          // auto val  = p_metadata->mValues[i]->mData;
           printf("p_metadata prop<%s>\n", key);
         }
       }
@@ -69,12 +69,12 @@ parsedskeletonptr_t parseSkeleton(const aiScene* scene) {
       printf("node_path<%s>\n", node_path.c_str());
       OrkAssert(false);
     }
-    int index             = uniqskelnodeset.size();
+    int index                  = uniqskelnodeset.size();
     uniqskelnodeset[node_path] = n;
-    auto xgmnode          = std::make_shared<lev2::XgmSkelNode>(name);
-    xgmnode->_path = node_path;
-    xgmnode->miSkelIndex  = index;
-    xgmnode->_depth       = depth;
+    auto xgmnode               = std::make_shared<lev2::XgmSkelNode>(name);
+    xgmnode->_path             = node_path;
+    xgmnode->miSkelIndex       = index;
+    xgmnode->_depth            = depth;
 
     if (n == scene->mRootNode) {
       root_skelnode = xgmnode;
@@ -85,7 +85,7 @@ parsedskeletonptr_t parseSkeleton(const aiScene* scene) {
         fvec3::White(),
         "aiNode<%d:%s> depth<%d>  xgmnode<%p> remapped<%s>\n", //
         index,                                                 //
-        node_path.c_str(),                                         //
+        node_path.c_str(),                                     //
         depth,
         (void*)xgmnode.get(), //
         name.c_str());
@@ -107,12 +107,12 @@ parsedskeletonptr_t parseSkeleton(const aiScene* scene) {
     for (int m = 0; m < n->mNumMeshes; ++m) {
       const aiMesh* mesh = scene->mMeshes[n->mMeshes[m]];
       for (int b = 0; b < mesh->mNumBones; b++) {
-        auto bone     = mesh->mBones[b];
+        auto bone      = mesh->mBones[b];
         auto bone_node = bone->mNode;
         OrkAssert(bone_node);
         auto bone_path = aiNodePathName(bone_node);
-        auto bonename = remapSkelName(bone->mName.data);
-        auto itb      = xgmskelnodes.find(bone_path);
+        auto bonename  = remapSkelName(bone->mName.data);
+        auto itb       = xgmskelnodes.find(bone_path);
         OrkAssert(itb != xgmskelnodes.end());
         if (itb != xgmskelnodes.end()) {
           auto xgmnode = itb->second;
@@ -136,7 +136,6 @@ parsedskeletonptr_t parseSkeleton(const aiScene* scene) {
 
   std::set<const aiNode*> visited;
   std::set<std::string> visited_name;
-
   auto set_parents = [&](const aiNode* p, int depth) {
     auto it = visited.find(p);
     if (it != visited.end()) {
@@ -146,7 +145,7 @@ parsedskeletonptr_t parseSkeleton(const aiScene* scene) {
     visited.insert(p);
     //////////////////////////////
     auto premapped = remapSkelName(p->mName.data);
-    auto ppath = aiNodePathName(p);
+    auto ppath     = aiNodePathName(p);
     auto itp       = xgmskelnodes.find(ppath);
     OrkAssert(itp != xgmskelnodes.end());
     auto pskelnode = itp->second;
@@ -167,7 +166,7 @@ parsedskeletonptr_t parseSkeleton(const aiScene* scene) {
       auto c = p->mChildren[i];
 
       auto cremapped = remapSkelName(c->mName.data);
-      auto cpath = aiNodePathName(c);
+      auto cpath     = aiNodePathName(c);
       auto itc       = xgmskelnodes.find(cpath);
 
       OrkAssert(itc != xgmskelnodes.end());
@@ -192,7 +191,7 @@ parsedskeletonptr_t parseSkeleton(const aiScene* scene) {
   }; // while (not ainode_stack.empty())
   visit_ainodes_down(scene->mRootNode, 0, set_parents);
 
-  /////////
+  /////////////////////////////////////////////////
   // test that hierarchy is a tree (no cycles)
   /////////////////////////////////////////////////
 
@@ -207,6 +206,7 @@ parsedskeletonptr_t parseSkeleton(const aiScene* scene) {
       visited.insert(node);
     });
   }
+
 
   /////////////////////////////////////////////////
   // set joints matrices from nodes
@@ -234,6 +234,63 @@ parsedskeletonptr_t parseSkeleton(const aiScene* scene) {
   }
 
   /////////////////////////////////////////////////
+  // synthesize end effector nodes
+  /////////////////////////////////////////////////
+
+  std::vector<lev2::xgmskelnode_ptr_t> tailnodes;
+  lev2::XgmSkelNode::visitHierarchy(root_skelnode,  //
+    [&tailnodes](lev2::xgmskelnode_ptr_t node) { //
+    if ((node->_depth > 3) and (node->_childrenX.size() == 0)) {
+      tailnodes.push_back(node);
+    }
+  });
+
+  for( auto node : tailnodes ){
+
+
+
+      auto endeffector     = std::make_shared<lev2::XgmSkelNode>(node->_name + "_endeffector");
+      int index            = uniqskelnodeset.size();
+      endeffector->_path   = node->_path + "/" + endeffector->_name;
+      endeffector->_depth  = node->_depth + 1;
+      endeffector->_parent = node;
+      endeffector->miSkelIndex = index;
+
+      auto par = node->_parent;
+      fvec3 parpos = par->_nodeMatrix.translation();
+      fvec3 nodepos = node->_nodeMatrix.translation();
+      float length = (nodepos-parpos).magnitude();
+      //fvec3 endpos = nodepos + node->_nodeMatrix.zNormal() * length;
+
+      // endeffector bone will be length distance on node's z axis
+      // the basis should inherit the node's basis
+
+      // TODO fix end effector scales via matrices here (not in skeleton renderer)
+
+      fmtx4 end_local;
+      end_local.setColumn(3,fvec4(0.0f,0.0f,length,1.0f));
+
+      auto end_concat = node->_nodeMatrix * end_local;
+
+      fmtx4 Bc = end_concat;
+      fmtx4 Bp = node->_nodeMatrix;
+      fmtx4 J = fmtx4::multiply_ltor(Bp.inverse(), Bc);
+
+      endeffector->_nodeMatrix         = end_concat;
+      endeffector->_jointMatrix        = J;
+      endeffector->_bindMatrixInverse  = fmtx4();
+      endeffector->_bindMatrix         = fmtx4();
+      endeffector->_assimpOffsetMatrix = fmtx4();
+
+
+      xgmskelnodes[endeffector->_path] = endeffector;
+
+      uniqskelnodeset.insert(std::make_pair(endeffector->_path, nullptr));
+      node->_childrenX.push_back(endeffector);
+      //
+  }
+
+  /////////////////////////////////////////////////
   // debug dump
   /////////////////////////////////////////////////
 
@@ -252,16 +309,16 @@ parsedskeletonptr_t parseSkeleton(const aiScene* scene) {
       fmtx4 O       = node->concatenated_joint(); // object space
       auto n        = node->_name;
       auto pn       = par ? par->_name : "---";
-      deco::printe(fvec3::White(), n + ".par: " + pn, true);
-      deco::printe(fvec3::White(), n + ".ASSO: " + ASSO.dump4x3cn(), true);
-      deco::printe(fvec3::White(), n + ".ASSOi: " + ASSO.inverse().dump4x3cn(), true);
-      deco::printe(fvec3::White(), n + ".nodemtx: " + nodemtx.dump4x3cn(), true);
-      deco::printe(fvec3::White(), n + ".nodecat: " + nodecat.dump4x3cn(), true);
-      deco::printe(fvec3::White(), n + ".J: " + J.dump4x3cn(), true);
-      deco::printe(fvec3::White(), n + ".Bi: " + Bi.dump4x3cn(), true);
-      deco::printe(fvec3::White(), n + ".Bc: " + Bc.dump4x3cn(), true);
-      deco::printe(fvec3::White(), n + ".Bp: " + Bp.dump4x3cn(), true);
-      deco::printe(fvec3::White(), n + ".O: " + O.dump4x3cn(), true);
+      deco::printe(fvec3::White(), n + "<mtx>.par: " + pn, true);
+      deco::printe(fvec3::White(), n + "<mtx>.ASSO: " + ASSO.dump4x3cn(), true);
+      deco::printe(fvec3::White(), n + "<mtx>.ASSOi: " + ASSO.inverse().dump4x3cn(), true);
+      deco::printe(fvec3::White(), n + "<mtx>.nodemtx: " + nodemtx.dump4x3cn(), true);
+      deco::printe(fvec3::White(), n + "<mtx>.nodecat: " + nodecat.dump4x3cn(), true);
+      deco::printe(fvec3::White(), n + "<mtx>.J: " + J.dump4x3cn(), true);
+      deco::printe(fvec3::White(), n + "<mtx>.Bi: " + Bi.dump4x3cn(), true);
+      deco::printe(fvec3::White(), n + "<mtx>.Bc: " + Bc.dump4x3cn(), true);
+      deco::printe(fvec3::White(), n + "<mtx>.Bp: " + Bp.dump4x3cn(), true);
+      deco::printe(fvec3::White(), n + "<mtx>.O: " + O.dump4x3cn(), true);
       printf("\n");
     });
   }

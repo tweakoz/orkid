@@ -167,11 +167,20 @@ void XgmModel::RenderSkeleton(
       if (outline) {
         bonelength *= 1.3f;
       }
-      float bl2 = bonelength * 0.1f;
 
-      if(bonelength>0.5){
-        //continue;
+      auto BONECOLOR = fvec3(1, 0.5, 0);
+
+      if( ch_props->_children.size() == 0){
+        if(bonelength>0.05){
+          bonelength = 0.05;
+        }
+        BONECOLOR = fvec3(1, 0, 1);
       }
+      if(iparent==_skeleton->miRootNode){
+        bonelength = 0.2;
+        BONECOLOR = fvec3(1, 0, 0);
+      }
+      float bl2 = bonelength * 0.1f;
       auto add_triangle = [&](fvec3 posa,
                               fvec3 cola, //
                               fvec3 posb,
@@ -210,15 +219,15 @@ void XgmModel::RenderSkeleton(
         depth_sorted_triangles.insert(std::make_pair(depth, tri));
       };
 
-      auto colorN = outline ? fvec3(0,0,.25) : fvec3(1, 0.5, 0);
-      auto colorX = outline ? fvec3(0,0,.25) : fvec3(1, 0.5, 0);
-      auto colorZ = outline ? fvec3(0,0,.25) : fvec3(1, 0.5, 0);
+      auto colorN = outline ? fvec3(0,0,.25) : BONECOLOR;
+      auto colorX = outline ? fvec3(0,0,.25) : BONECOLOR;
+      auto colorZ = outline ? fvec3(0,0,.25) : BONECOLOR;
 
       ///////////////////
       // create bone vertices (pyramid)
       ///////////////////
 
-      dir      = fvec4(dir, 0).transform(joint_par.inverse()).xyz();
+      dir      = fvec4(dir, 0).transform(joint_par.inverse()).xyz().normalized();
       auto ctr = fvec4(dir * bl2);
 
       auto chi_ctr = fvec3(0, bonelength * 0.5, 0);
