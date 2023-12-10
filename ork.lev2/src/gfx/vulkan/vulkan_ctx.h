@@ -930,11 +930,11 @@ struct VkGeometryBufferInterface final : public GeometryBufferInterface {
 
   void DrawPrimitiveEML(
       const FxShaderStorageBuffer* SSBO, //
-      PrimitiveType eType = PrimitiveType::NONE,
+      PrimitiveType eType,
       int ivbase          = 0,
       int ivcount         = 0) final;
 
-  void DrawIndexedPrimitiveEML(const VertexBufferBase& VBuf, const IndexBufferBase& IdxBuf, PrimitiveType eType) final;
+  void DrawIndexedPrimitiveEML(const VertexBufferBase& VBuf, const IndexBufferBase& IdxBuf, PrimitiveType eType, int ivbase, int ivcount) final;
 
   void DrawInstancedIndexedPrimitiveEML(
       const VertexBufferBase& VBuf,

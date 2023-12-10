@@ -313,6 +313,12 @@ PYBIND11_MODULE(_core, module_core) {
               rval.append(item.first);
             }
             return rval;           
+          })
+          .def("__repr__", [](varmap::varmap_ptr_t vmap) -> std::string {
+            std::string rval;
+            size_t numkeys = vmap->_themap.size();
+            rval = FormatString("VarMap(nkeys:%zu)", numkeys );
+            return rval;           
           });
   //.def("__reversed__", [](varmap::varmap_ptr_t vmap) -> Sequence { return s.reversed(); })
   type_codec->registerStdCodec<varmap::varmap_ptr_t>(varmaptype_t);

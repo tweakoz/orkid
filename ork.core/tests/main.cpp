@@ -31,6 +31,8 @@ struct TestApplication {
     MapTest::GetClassStatic();
     ArrayTest::GetClassStatic();
     VectorTest::GetClassStatic();
+    TheTestInterface::GetClassStatic();
+    InterfaceTest::GetClassStatic();
 
     rtti::Class::InitializeClasses();
   }

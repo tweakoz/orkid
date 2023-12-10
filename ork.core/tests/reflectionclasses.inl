@@ -151,3 +151,20 @@ public:
 };
 
 ////////////////////////////////////////////////////////////////////////////////
+struct InterfaceTest;
+struct TheTestInterface final : public Object {
+  DeclareConcreteX(TheTestInterface, Object);
+
+  void doSomethingWith(InterfaceTest* with) const {
+    printf("TheTestInterface::doSomethingWith with<%p>\n", with);
+  }
+};
+
+struct InterfaceTest final : public Object {
+  DeclareConcreteX(InterfaceTest, Object);
+
+public:
+  InterfaceTest();
+};
+
+////////////////////////////////////////////////////////////////////////////////

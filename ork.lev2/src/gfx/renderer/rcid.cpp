@@ -42,8 +42,6 @@ RenderContextInstData::RenderContextInstData(const RenderContextFrameData* RCFD)
   if (_RCFD) {
     mpActiveRenderer = _RCFD->_renderer;
   }
-  for (int i = 0; i < kMaxEngineParamFloats; i++)
-    mEngineParamFloats[i] = 0.0f;
 
   _genMatrix = [this]()->fmtx4{
     return _RCFD->GetTarget()->MTXI()->RefMMatrix();
@@ -62,22 +60,6 @@ rcid_ptr_t RenderContextInstData::create(rcfd_ptr_t the_rcfd){
 Context* RenderContextInstData::context() const {
   OrkAssert(_RCFD);
   return _RCFD->GetTarget();
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void RenderContextInstData::SetEngineParamFloat(int idx, float fv) {
-  OrkAssert(idx >= 0 && idx < kMaxEngineParamFloats);
-
-  mEngineParamFloats[idx] = fv;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-float RenderContextInstData::GetEngineParamFloat(int idx) const {
-  OrkAssert(idx >= 0 && idx < kMaxEngineParamFloats);
-
-  return mEngineParamFloats[idx];
 }
 
 ///////////////////////////////////////////////////////////////////////////////

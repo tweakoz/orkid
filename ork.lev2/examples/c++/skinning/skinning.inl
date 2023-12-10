@@ -9,6 +9,7 @@
 #include <ork/lev2/gfx/renderer/drawable.h>
 #include <ork/lev2/lev2_asset.h>
 #include <ork/lev2/gfx/gfxmodel.h>
+#include <ork/lev2/gfx/gfxvtxbuf.inl>
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/lev2/gfx/renderer/NodeCompositor/pbr_node_deferred.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/pbr_node_forward.h>
@@ -74,11 +75,11 @@ struct GpuResources {
       VtxWriter<vertex_t> vw;
       auto add_vertex = [&](const fvec3 pos, const fvec3& col) {
         vertex_t hvtx;
-        hvtx.mPosition = pos;
-        hvtx.mColor    = (col * 5).ABGRU32();
-        hvtx.mUV0      = fvec2(0, 0);
-        hvtx.mNormal   = fvec3(0, 0, 0);
-        hvtx.mBiNormal = fvec3(1, 1, 0);
+        hvtx._position = pos;
+        hvtx._color    = (col * 5).ABGRU32();
+        hvtx._uv      = fvec2(0, 0);
+        hvtx._normal   = fvec3(0, 0, 0);
+        hvtx._binormal = fvec3(1, 1, 0);
         vw.AddVertex(hvtx);
       };
 

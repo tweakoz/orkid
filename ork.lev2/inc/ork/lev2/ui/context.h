@@ -43,6 +43,7 @@ struct Context {
   const Widget* keyboardFocusWidget() const {
     return _keyboardFocusWidget;
   }
+  bool isKeyDown(int code) const;
   //////////////////////////////////////
   void draw(drawevent_constptr_t drwev);
   //////////////////////////////////////
@@ -77,6 +78,7 @@ struct Context {
   double _prevtime = 0.0;
   double _prev_click_time = 0.0;
   double _prev_dbl_click_time = 0.0;
+  std::unordered_map<int,bool> _downkeys;
 };
 
 } // namespace ork::ui

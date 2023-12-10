@@ -56,7 +56,6 @@ void Controller::readTrace(file::Path inpath){
 
 Controller::~Controller() {
   ork::opq::assertOnQueue(opq::mainSerialQueue());
-  OrkAssert(ork::lev2::contextForCurrentThread());
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -6,21 +6,23 @@
 using namespace std::string_literals;
 using namespace ork;
 
-const int PICKBUFDIM = 17;
+const int PICKBUFDIM = 127;
 
 namespace ork::lev2::scenegraph {
 
-PickBuffer::PickBuffer(ork::lev2::Context* ctx, Scene& scene)
+SgPickBuffer::SgPickBuffer(ork::lev2::Context* ctx, Scene& scene)
     : _context(ctx)
     , _scene(scene) {
   _pick_mvp_matrix           = std::make_shared<fmtx4>();
-  _pixelfetchctx._gfxContext = ctx;
-  _pixelfetchctx.miMrtMask   = 3;
-  _pixelfetchctx.mUsage[0]   = lev2::PixelFetchContext::EPU_PTR64;
-  _pixelfetchctx.mUsage[1]   = lev2::PixelFetchContext::EPU_FLOAT;
+  _pfc = std::make_shared<PixelFetchContext>(4);
+  _pfc->_gfxContext = ctx;
+  _pfc->_usage[0]   = lev2::PixelFetchContext::EPU_SVARIANT;
+  _pfc->_usage[1]   = lev2::PixelFetchContext::EPU_FVEC4;
+  _pfc->_usage[2]   = lev2::PixelFetchContext::EPU_FVEC4;
+  _pfc->_usage[3]   = lev2::PixelFetchContext::EPU_FVEC4;
 }
 ///////////////////////////////////////////////////////////////////////////
-uint64_t PickBuffer::pickWithScreenCoord(cameradata_ptr_t cam, fvec2 screencoord) {
+void SgPickBuffer::pickWithScreenCoord(cameradata_ptr_t cam, fvec2 screencoord, callback_t callback) {
   auto FBI = _context->FBI();
   int W    = _context->mainSurfaceWidth();
   int H    = _context->mainSurfaceHeight();
@@ -32,33 +34,15 @@ uint64_t PickBuffer::pickWithScreenCoord(cameradata_ptr_t cam, fvec2 screencoord
   mtcs.projectDepthRay(unitpos, *ray.get());
   auto o = ray->mOrigin;
   auto d = ray->mDirection;
-  // printf("//////////////////\n");
-  // printf("unitpos<%g %g>\n", fx, fy);
-  // printf("ori <%g %g %g>\n", o.x, o.y, o.z);
-  // printf("dir <%g %g %g>\n", d.x, d.y, d.z);
-  uint64_t val = pickWithRay(ray);
-  //printf("val <0x%zu>\n", val);
-  //printf("//////////////////\n");
-
-  return val;
+  pickWithRay(ray,callback);
 }
 ///////////////////////////////////////////////////////////////////////////
-uint64_t PickBuffer::pickWithRay(fray3_constptr_t ray) {
-  _camdat.Persp(0.01, 1000, 0.1);
-
-  auto perp = ray->mDirection.crossWith(fvec3(0, 1, 0));
-  perp      = ray->mDirection.crossWith(perp);
-
-  _camdat.Lookat(
-      ray->mOrigin, //
-      ray->mOrigin + ray->mDirection,
-      perp);
-  mydraw(ray);
-  auto p = _pixelfetchctx.GetPointer(0);
-  return uint64_t(p);
+void SgPickBuffer::pickWithRay(fray3_constptr_t ray, callback_t callback) {
+    mydraw(ray);
+    callback(_pfc);
 }
 ///////////////////////////////////////////////////////////////////////////
-void PickBuffer::mydraw(fray3_constptr_t ray) {
+void SgPickBuffer::mydraw(fray3_constptr_t ray) {
   ork::opq::assertOnQueue2(opq::mainSerialQueue());
   _context->makeCurrentContext();
   auto FBI = _context->FBI();
@@ -70,17 +54,23 @@ void PickBuffer::mydraw(fray3_constptr_t ray) {
     auto csi     = _compdata->findScene("scene1");
     auto itm     = csi->findItem("item1");
     auto tek     = itm->tryTechniqueAs<NodeCompositingTechnique>();
-    auto rtgnode = tek->tryOutputNodeAs<RtGroupOutputCompositingNode>();
     auto piknode = tek->tryRenderNodeAs<PickingCompositingNode>();
+    auto rtgnode = tek->tryOutputNodeAs<RtGroupOutputCompositingNode>();
+    piknode->resize(PICKBUFDIM, PICKBUFDIM);
     rtgnode->resize(PICKBUFDIM, PICKBUFDIM);
     piknode->gpuInit(_context, PICKBUFDIM, PICKBUFDIM);
-    _pixelfetchctx._rtgroup = piknode->GetOutputGroup();
+    _pfc->_rtgroup = piknode->GetOutputGroup();
     _compimpl               = _compdata->createImpl();
+    _pickIDtexture = _pfc->_rtgroup->GetMrt(0)->texture();
+    _pickPOStexture = _pfc->_rtgroup->GetMrt(1)->texture();
+    _pickNRMtexture = _pfc->_rtgroup->GetMrt(2)->texture();
+    _pickUVtexture = _pfc->_rtgroup->GetMrt(3)->texture();
   }
+  _compimpl->_compcontext->Resize(PICKBUFDIM, PICKBUFDIM);
   ///////////////////////////////////////////////////////////////////////////
   ork::lev2::RenderContextFrameData RCFD(_context); //
   RCFD.pushCompositor(_compimpl);
-  _pixelfetchctx.mUserData.set<ork::lev2::RenderContextFrameData*>(&RCFD);
+  _pfc->mUserData.set<ork::lev2::RenderContextFrameData*>(&RCFD);
   ///////////////////////////////////////////////////////////////////////////
 
   ork::recursive_mutex& glock = lev2::GfxEnv::GetRef().GetGlobalLock();
@@ -92,7 +82,7 @@ void PickBuffer::mydraw(fray3_constptr_t ray) {
   // irenderer->setContext(_context);
   RCFD.SetLightManager(nullptr);
   ///////////////////////////////////////////////////////////////////////////
-  DrawableBuffer* DB = nullptr; //DrawableBuffer::acquireForRead(0x1234);
+  auto DB = _scene._dbufcontext_SG->acquireForReadLocked();
   if (DB) {
 
     /////////////////////////////////////////////////////////////
@@ -101,18 +91,30 @@ void PickBuffer::mydraw(fray3_constptr_t ray) {
     //  and the pixel of interest will be at the center
     //  of the rendered buffer
     /////////////////////////////////////////////////////////////
-
+    _camdat.Persp(0.01, 1000, 0.1);
+    auto up = ray->mDirection.crossWith(fvec3(0, 1, 0));
+    up      = ray->mDirection.crossWith(up);
+    _camdat.Lookat(
+      ray->mOrigin, //
+      ray->mOrigin + ray->mDirection,
+      up);
+    
     auto mtcs                 = _camdat.computeMatrices(1.0);
     fmtx4 P                   = mtcs.GetPMatrix();
     fmtx4 V                   = mtcs.GetVMatrix();
-    (*_pick_mvp_matrix.get()) = fmtx4::multiply_ltor(V,P);
+    (*_pick_mvp_matrix.get()) = P*V;
     auto screen_coordinate    = fvec4(0.5, 0.5, 0, 0);
     /////////////////////////////////////////////////////////////
+
+    _pfc->beginPickRender();
 
     lev2::UiViewportRenderTarget rt(nullptr);
     RCFD.setUserProperty("DB"_crc, lev2::rendervar_t(DB));
     RCFD.setUserProperty("pickbufferMvpMatrix"_crc, _pick_mvp_matrix);
+    RCFD.setUserProperty("pixel_fetch_context"_crc, _pfc);
+    RCFD.setUserProperty("is_sg_pick"_crcu, true);
     lev2::CompositingPassData CPD;
+    CPD._debugName = "scenegraph_pick";
     CPD.AddLayer("All");
     CPD.SetDstRect(tgt_rect);
     CPD._ispicking     = true;
@@ -132,17 +134,18 @@ void PickBuffer::mydraw(fray3_constptr_t ray) {
     ///////////////////////////////////////////////////////////////////////////
     _compimpl->pushCPD(CPD);
     FBI->EnterPickState(nullptr);
+    //OrkBreak();
     _compimpl->assemble(drawdata);
 
-  //    DrawableBuffer::releaseFromRead(DB);
-    OrkAssert(false);
+    _scene._dbufcontext_SG->releaseFromReadLocked(DB);
     
     FBI->LeavePickState();
     _compimpl->popCPD();
     ///////////////////////////////////////////??
     // fetch the pixel, yo.
     ///////////////////////////////////////////??
-    FBI->GetPixel(screen_coordinate, _pixelfetchctx);
+    _pfc->endPickRender();
+    FBI->GetPixel(screen_coordinate, *_pfc);
     ///////////////////////////////////////////??
 
   } // if(DB)

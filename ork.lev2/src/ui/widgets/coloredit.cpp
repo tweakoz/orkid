@@ -7,6 +7,7 @@
 #include <ork/lev2/gfx/gfxprimitives.h>
 #include <ork/lev2/ui/coloredit.h>
 #include <ork/lev2/gfx/material_freestyle.h>
+#include <ork/lev2/gfx/gfxvtxbuf.inl>
 
 namespace ork::ui {
 ///////////////////////////////////////////////////////////////////////////////

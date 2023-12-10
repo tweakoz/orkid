@@ -57,7 +57,7 @@ simpleuiapp_ptr_t createSimpleUiApp(appinitdata_ptr_t initdata ) {
   //////////////////////////////////////////////////////////
   // create references to various items scoped by ezapp
   //////////////////////////////////////////////////////////
-  auto renderer = ezapp->_vars->makeSharedForKey<DefaultRenderer>("renderer");
+  auto renderer = ezapp->_vars->makeSharedForKey<IRenderer>("renderer");
   auto lmd      = ezapp->_vars->makeSharedForKey<LightManagerData>("lmgrdata");
   auto lightmgr = ezapp->_vars->makeSharedForKey<LightManager>("lmgr", *lmd);
   auto compdata = ezapp->_vars->makeSharedForKey<CompositingData>("compdata");

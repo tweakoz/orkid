@@ -457,12 +457,14 @@ void VkGeometryBufferInterface::DrawPrimitiveEML(
 void VkGeometryBufferInterface::DrawIndexedPrimitiveEML(
     const VertexBufferBase& vtx_buf,
     const IndexBufferBase& idx_buf,
-    PrimitiveType eType) {
+    PrimitiveType eType,
+    int ivbase,
+    int ivcount) {
   OrkAssert(_contextVK->_renderpass_index >= 0);
 
   auto& CB = _contextVK->_cmdbufcur_gfx;
 
-  int num_indices = idx_buf.GetNumIndices();
+  int num_indices = ivcount; //idx_buf.GetNumIndices();
 
   ///////////////////////
   // get primclass (input to pipeline search)
@@ -519,7 +521,7 @@ void VkGeometryBufferInterface::DrawIndexedPrimitiveEML(
       CB->_vkcmdbuf, // command buffer
       num_indices,   // index count
       1,             // instance count
-      0,             // first vertex
+      ivbase,             // first vertex
       0,             // vertex offset
       0);            // first instance
 }

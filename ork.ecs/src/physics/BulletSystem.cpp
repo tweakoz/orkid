@@ -350,7 +350,6 @@ bool BulletSystem::_onLink(Simulation* psi) {
 
   drw->setEnqueueOnLayerCallback(bulletDebugEnqueueToLayer);
   drw->SetRenderCallback(bulletDebugRender);
-  drw->SetOwner(&_systemData);
   drw->_sortkey = (0x3fffffff);
 
 

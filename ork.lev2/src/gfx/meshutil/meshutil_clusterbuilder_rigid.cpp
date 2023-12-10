@@ -10,6 +10,7 @@
 #include <ork/lev2/gfx/meshutil/clusterizer.h>
 #include <ork/lev2/gfx/meshutil/meshutil_stripper.h>
 #include <ork/lev2/gfx/meshutil/meshutil_fixedgrid.h>
+#include <ork/lev2/gfx/gfxvtxbuf.inl>
 
 const bool gbFORCEDICE = true;
 const int kDICESIZE    = 512;
@@ -55,7 +56,7 @@ lev2::vtxbufferbase_ptr_t buildTypedVertexBuffer(
     std::function<vtx_t(const meshutil::vertex&)> genOutVertex) {
   using vtxbuf_t       = lev2::StaticVertexBuffer<vtx_t>;
   int NumVertexIndices = inp_submesh.numVertices();
-  auto out_vbuf        = std::make_shared<vtxbuf_t>(NumVertexIndices, 0, ork::lev2::PrimitiveType::MULTI);
+  auto out_vbuf        = std::make_shared<vtxbuf_t>(NumVertexIndices, 0);
   lev2::VtxWriter<vtx_t> vwriter;
   vwriter.Lock(&context, out_vbuf.get(), NumVertexIndices);
   for (int iv = 0; iv < NumVertexIndices; iv++)
@@ -143,11 +144,11 @@ void XgmRigidClusterBuilder::buildVertexBuffer(lev2::Context& context, lev2::EVt
         lev2::SVtxV12N12B12T8C4 out_vtx;
         const auto& pos     = inpvtx.mPos;
         const auto& nrm     = inpvtx.mNrm;
-        out_vtx.mPosition = fvec3(pos.x, pos.y, pos.z);
-        out_vtx.mUV0      = inpvtx.mUV[0].mMapTexCoord;
-        out_vtx.mNormal   = fvec3(nrm.x, nrm.y, nrm.z);;
-        out_vtx.mBiNormal = inpvtx.mUV[0].mMapBiNormal;
-        out_vtx.mColor    = inpvtx.mCol[0].ABGRU32();
+        out_vtx._position = fvec3(pos.x, pos.y, pos.z);
+        out_vtx._uv      = inpvtx.mUV[0].mMapTexCoord;
+        out_vtx._normal   = fvec3(nrm.x, nrm.y, nrm.z);;
+        out_vtx._binormal = inpvtx.mUV[0].mMapBiNormal;
+        out_vtx._color    = inpvtx.mCol[0].ABGRU32();
         return out_vtx;
       });
       break;

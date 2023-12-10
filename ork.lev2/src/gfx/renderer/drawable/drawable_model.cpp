@@ -18,6 +18,11 @@
 #include <ork/lev2/gfx/renderer/renderable.h>
 #include <ork/lev2/gfx/renderer/renderer.h>
 #include <ork/lev2/gfx/gfxmodel.h>
+#include <ork/kernel/environment.h>
+
+static bool SHOW_SKELETON() {
+  return ork::genviron.has("ORKID_LEV2_SHOW_SKELETON");
+}
 
 namespace ork::lev2 {
 static logchannel_ptr_t logchan_model = logger()->createChannel("model",fvec3(0.9,0.2,0.9),false);
@@ -42,21 +47,9 @@ drawable_ptr_t ModelDrawableData::createDrawable() const {
 
 ///////////////////////////////////////////////////////////////////////////////
 ModelDrawable::ModelDrawable(DrawableOwner* pent) {
-  for (int i = 0; i < kMaxEngineParamFloats; i++)
-    mEngineParamFloats[i] = 0.0f;
 }
 /////////////////////////////////////////////////////////////////////
 ModelDrawable::~ModelDrawable() {
-}
-/////////////////////////////////////////////////////////////////////
-void ModelDrawable::setEngineParamFloat(int idx, float fv) {
-  OrkAssert(idx >= 0 && idx < kMaxEngineParamFloats);
-  mEngineParamFloats[idx] = fv;
-}
-/////////////////////////////////////////////////////////////////////
-float ModelDrawable::getEngineParamFloat(int idx) const {
-  OrkAssert(idx >= 0 && idx < kMaxEngineParamFloats);
-  return mEngineParamFloats[idx];
 }
 ///////////////////////////////////////////////////////////////////////////////
 void ModelDrawable::bindModelInst(xgmmodelinst_ptr_t minst) {
@@ -148,7 +141,7 @@ void ModelDrawable::enqueueToRenderQueue(drawablebufitem_constptr_t item, lev2::
   // TODO - resolve frustum in case of stereo camera
 
   const ork::fmtx4 matw         = item->mXfData._worldTransform->composed();
-  bool isPickState              = renderer->GetTarget()->FBI()->isPickState();
+  bool isPickState              = RCFD->_renderingmodel._modelID == "PICKING"_crcu;
   bool isSkinned                = Model->isSkinned();
   ork::fvec3 center_plus_offset = _offset + Model->boundingCenter();
   ork::fvec3 ctr                = ork::fvec4(center_plus_offset * _scale).transform(matw);
@@ -159,6 +152,12 @@ void ModelDrawable::enqueueToRenderQueue(drawablebufitem_constptr_t item, lev2::
   if (vwhd.z > frad)
     frad = vwhd.z;
   frad *= 0.6f;
+
+  if( isPickState ){
+    if( not _pickable ){
+      return;
+    }
+  }
 
   bool bCenterInFrustum = monofrustum.contains(ctr);
 
@@ -215,16 +214,11 @@ void ModelDrawable::enqueueToRenderQueue(drawablebufitem_constptr_t item, lev2::
       }
 
       if (btest) {
+        //OrkBreak();
         lev2::ModelRenderable& renderable = renderer->enqueueModel();
-
-        // if(mEngineParamFloats[0] < 1.0f && mEngineParamFloats[0] > 0.0f)
-        //  orkprintf("mEngineParamFloats[0] = %g\n", mEngineParamFloats[0]);
-
-        for (int i = 0; i < kMaxEngineParamFloats; i++)
-          renderable.SetEngineParamFloat(i, mEngineParamFloats[i]);
-
-        renderable._modelinst = std::const_pointer_cast<const XgmModelInst>(_modelinst);
-        renderable.SetObject(GetOwner());
+        
+        renderable._modelinst = _modelinst;
+        renderable._pickID = _pickID;
         renderable._submeshinst = submeshinst;
         renderable._cluster = cluster;
         renderable.SetModColor(_modcolor);
@@ -234,21 +228,7 @@ void ModelDrawable::enqueueToRenderQueue(drawablebufitem_constptr_t item, lev2::
         renderable._orientation = _orientation;
         renderable._offset = _offset;
 
-        //size_t umat = size_t(material.get());
-        //u32 imtla   = (umat & 0xff);
-        //u32 imtlb   = ((umat >> 8) & 0xff);
-        //u32 imtlc   = ((umat >> 16) & 0xff);
-        //u32 imtld   = ((umat >> 24) & 0xff);
-        //u32 imtl    = (imtla + imtlb + imtlc + imtld) & 0xff;
-        //const auto& rqsortdata = material->GetRenderQueueSortingData();
-        //int isortpass = (rqsortdata.miSortingPass + 16) & 0xff;
-        //int isortoffs = rqsortdata.miSortingOffset;
-        //int isortkey = (isortpass << 24) | (isortoffs << 16) | imtl;
-
         renderable._sortkey = _sortkey;
-        // TODO figure out how to combine "user sort key" with "material sort key
-        
-        // orkprintf( " ModelDrawable::enqueueToRenderQueue() rable<%p> \n", & renderable );
 
         if (item->_onrenderable) {
           item->_onrenderable(&renderable);
@@ -267,35 +247,34 @@ void ModelDrawable::enqueueToRenderQueue(drawablebufitem_constptr_t item, lev2::
     if(submeshinst->_enabled)
       do_submesh(submeshinst);
   }
+  if (_modelinst->_drawSkeleton or SHOW_SKELETON() and Model->isSkinned()) {
+      auto& renderable = renderer->enqueueSkeleton();
+      renderable._modelinst = _modelinst;
+      renderable._pickID = _pickID;
+      renderable.SetModColor(_modcolor);
+      renderable.SetMatrix(matw);
+      renderable._scale = _scale;
+      renderable._orientation = _orientation;
+      renderable._offset = _offset;
+      renderable._sortkey = 0x7fffffff;
+  }
 
 }
 ///////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////
 ModelRenderable::ModelRenderable(IRenderer* renderer) {
-  for (int i = 0; i < kMaxEngineParamFloats; i++)
-    mEngineParamFloats[i] = 0.0f;
-}
-///////////////////////////////////////////////////////////////////////////////
-void ModelRenderable::SetEngineParamFloat(int idx, float fv) {
-  OrkAssert(idx >= 0 && idx < kMaxEngineParamFloats);
-  mEngineParamFloats[idx] = fv;
-}
-///////////////////////////////////////////////////////////////////////////////
-float ModelRenderable::GetEngineParamFloat(int idx) const {
-  OrkAssert(idx >= 0 && idx < kMaxEngineParamFloats);
-  return mEngineParamFloats[idx];
 }
 ///////////////////////////////////////////////////////////////////////////////
 void ModelRenderable::Render(const IRenderer* renderer) const {
-  //renderer->RenderModel(*this);
+
   auto context = renderer->GetTarget();
   auto minst   = this->_modelinst;
   auto model   = minst->xgmModel();
   auto submesh = _submeshinst->_submesh;
   auto mesh = submesh->_parentmesh;
 
-  context->debugPushGroup(FormatString("DefaultRenderer::RenderModel model<%p> minst<%p>", model, minst.get()));
+  context->debugPushGroup(FormatString("IRenderer::RenderModel model<%p> minst<%p>", model, minst.get()));
   /////////////////////////////////////////////////////////////
   float fscale        = this->_scale;
   const fvec3& offset = this->_offset;
@@ -326,6 +305,7 @@ void ModelRenderable::Render(const IRenderer* renderer) const {
   RCID.SetRenderer(renderer);
   RCID.setRenderable(this);
   RCID._pipeline_cache = _submeshinst->_fxpipelinecache;
+  RCID._pickID = _pickID;
   // context->debugMarker(FormatString("toolrenderer::RenderModel isskinned<%d> owner_as_ent<%p>", int(model->isSkinned()),
   // as_ent));
   ///////////////////////////////////////
@@ -335,6 +315,7 @@ void ModelRenderable::Render(const IRenderer* renderer) const {
   RCID._isSkinned       = model_is_skinned;
   RCID_MD.SetSkinned(model_is_skinned);
   RCID_MD.SetModelInst(minst);
+
   auto ObjColor = this->_modColor;
   if (model_is_skinned) {
     model->RenderSkinned(minst.get(), ObjColor, nmat, context, RCID, RCID_MD);
@@ -345,6 +326,53 @@ void ModelRenderable::Render(const IRenderer* renderer) const {
 }
 /////////////////////////////////////////////////////////////////////
 uint32_t ModelRenderable::ComposeSortKey(const IRenderer* renderer) const {
+  return _sortkey;
+}
+///////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////
+SkeletonRenderable::SkeletonRenderable(IRenderer* renderer) {
+}
+///////////////////////////////////////////////////////////////////////////////
+void SkeletonRenderable::Render(const IRenderer* renderer) const {
+
+  auto context = renderer->GetTarget();
+  auto minst   = this->_modelinst;
+  auto model   = minst->xgmModel();
+  context->debugPushGroup(FormatString("SkeletonRenderable model<%p> minst<%p>", model, minst.get()));
+  /////////////////////////////////////////////////////////////
+  float fscale        = this->_scale;
+  const fvec3& offset = this->_offset;
+  fmtx4 smat, tmat, rmat;
+  smat.setScale(fscale);
+  tmat.setTranslation(offset);
+  rmat.fromQuaternion(_orientation);
+  fmtx4 wmat = this->GetMatrix();
+  /////////////////////////////////////////////////////////////
+  // compute world matrix
+  /////////////////////////////////////////////////////////////
+  fmtx4 nmat = fmtx4::multiply_ltor(tmat,rmat,smat,wmat);
+  if (minst->isBlenderZup()) { // zup to yup conversion matrix
+    fmtx4 rmatx, rmaty;
+    rmatx.rotateOnX(3.14159f * -0.5f);
+    rmaty.rotateOnX(3.14159f);
+    nmat = fmtx4::multiply_ltor(rmatx,rmaty,nmat);
+  }
+  /////////////////////////////////////////////////////////////
+  RenderContextInstData RCID;
+  auto RCFD = context->topRenderContextFrameData();
+  RCID._RCFD = RCFD;
+  RCID.SetRenderer(renderer);
+  RCID.setRenderable(this);
+  //RCID._pipeline_cache = _submeshinst->_fxpipelinecache;
+  RCID._pickID = _pickID;
+  OrkAssert( model->isSkinned() );
+  RCID._isSkinned       = true;
+  model->RenderSkeleton(minst.get(), nmat, context, RCID);
+  context->debugPopGroup();
+}
+/////////////////////////////////////////////////////////////////////
+uint32_t SkeletonRenderable::ComposeSortKey(const IRenderer* renderer) const {
   return _sortkey;
 }
 /////////////////////////////////////////////////////////////////////

@@ -7,7 +7,7 @@
 
 #include <ork/pch.h>
 #include <ork/lev2/gfx/gfxenv.h>
-#include <ork/lev2/gfx/gfxvtxbuf.h>
+#include <ork/lev2/gfx/gfxvtxbuf.inl>
 
 /////////////////////////////////////////////////////////////////////////
 namespace ork { namespace lev2 {
@@ -24,45 +24,13 @@ IndexBufferBase::~IndexBufferBase() {
   mpIndices = 0;
 }
 
-/////////////////////////////////////////////////////////////////////////
-template <typename T> IdxBuffer<T>::~IdxBuffer() {
-}
-/////////////////////////////////////////////////////////////////////////
-
-template <typename T>
-StaticIndexBuffer<T>::StaticIndexBuffer(int inumidx, const T* src)
-    : IdxBuffer<T>() {
-  if (inumidx) {
-    this->miNumIndices = inumidx;
-
-    if (src) {
-      this->mpIndices = const_cast<T*>(src);
-    }
+  int IndexBufferBase::GetNumIndices() const {
+    return miNumIndices;
   }
-}
+  void IndexBufferBase::SetNumIndices(int inum) {
+    miNumIndices = inum;
+  }
 
-template <typename T> StaticIndexBuffer<T>::~StaticIndexBuffer() {
-  this->mpIndices = 0;
-}
-
-/////////////////////////////////////////////////////////////////////////
-
-template <typename T>
-DynamicIndexBuffer<T>::DynamicIndexBuffer(int inumidx)
-    : IdxBuffer<T>() {
-  this->miNumIndices = inumidx;
-}
-
-template <typename T> DynamicIndexBuffer<T>::~DynamicIndexBuffer() {
-  this->mpIndices = 0;
-}
-
-/////////////////////////////////////////////////////////////////////////
-
-template class StaticIndexBuffer<U16>;
-template class DynamicIndexBuffer<U16>;
-template class StaticIndexBuffer<U32>;
-template class DynamicIndexBuffer<U32>;
 
 /////////////////////////////////////////////////////////////////////////
 template <typename T> vtxbufferbase_ptr_t _createvb(int _numverts, bool _static) {
@@ -73,10 +41,10 @@ template <typename T> vtxbufferbase_ptr_t _createvb(int _numverts, bool _static)
 
   if (_static) {
     rval = std::static_pointer_cast<VertexBufferBase> //
-        (std::make_shared<static_t>(_numverts, 0, ork::lev2::PrimitiveType::MULTI));
+        (std::make_shared<static_t>(_numverts, 0));
   } else {
     rval = std::static_pointer_cast<VertexBufferBase> //
-        (std::make_shared<dynamic_t>(_numverts, 0, ork::lev2::PrimitiveType::MULTI));
+        (std::make_shared<dynamic_t>(_numverts, 0));
   }
   return rval;
 }
@@ -119,6 +87,9 @@ vtxbufferbase_ptr_t VertexBufferBase::CreateVertexBuffer(EVtxStreamFormat eforma
     case EVtxStreamFormat::MODELERRIGID:
       pvb = _createvb<SVtxMODELERRIGID>(inumverts, bstatic);
       break;
+    case EVtxStreamFormat::V12N12T8DF12C4:
+      pvb = _createvb<SVtxV12N12T8DF12C4>(inumverts, bstatic);
+      break;
     default:
       OrkAssert(false);
   }
@@ -127,13 +98,13 @@ vtxbufferbase_ptr_t VertexBufferBase::CreateVertexBuffer(EVtxStreamFormat eforma
 
 /////////////////////////////////////////////////////////////////////////
 
-VertexBufferBase::VertexBufferBase(int iMax, int iFlush, int iSize, PrimitiveType eType, EVtxStreamFormat eFmt)
+VertexBufferBase::VertexBufferBase(int iMax, int iFlush, int iSize, /*PrimitiveType eType,*/ EVtxStreamFormat eFmt)
     : miNumVerts(0)
     , miMaxVerts(iMax)
     , miVtxSize(iSize)
     , miLockWriteIndex(0)
     , miFlushSize(iFlush)
-    , mePrimType(eType)
+    //, mePrimType(eType)
     , meStreamFormat(eFmt)
     , mbLocked(false)
     , mbRingLock(false) {
@@ -141,6 +112,52 @@ VertexBufferBase::VertexBufferBase(int iMax, int iFlush, int iSize, PrimitiveTyp
 
 VertexBufferBase::~VertexBufferBase() {
 }
+
+  int VertexBufferBase::GetMax(void) const {
+    return int(miMaxVerts);
+  }
+  int VertexBufferBase::GetNumVertices(void) const {
+    return int(miNumVerts);
+  }
+  int VertexBufferBase::GetVtxSize(void) const {
+    return int(miVtxSize);
+  }
+  void VertexBufferBase::Reset(void) {
+    miNumVerts = 0;
+  }
+  void VertexBufferBase::SetNumVertices(int inum) {
+    miNumVerts = inum;
+  }
+
+  EVtxStreamFormat VertexBufferBase::GetStreamFormat(void) const {
+    return EVtxStreamFormat(meStreamFormat);
+  }
+
+  bool VertexBufferBase::IsLocked(void) const {
+    return mbLocked;
+  }
+  void VertexBufferBase::Lock() const {
+    miLockWriteIndex = 0;
+    SetLock(true);
+  }
+  void VertexBufferBase::Unlock() const {
+    // miLockWriteIndex=0;
+    SetLock(false);
+  }
+  void VertexBufferBase::SetRingLock(bool v) {
+    mbRingLock = v;
+  }
+  bool VertexBufferBase::GetRingLock() const {
+    return mbRingLock;
+  }
+/////////////////////////////////////////////////////////////////////////
+  VtxWriterBase::VtxWriterBase()
+      : miWriteBase(0)
+      , miWriteCounter(0)
+      , miWriteMax(0)
+      , mpBase(0)
+      , mpVB(0) {
+  }
 
 /////////////////////////////////////////////////////////////////////////
 void VtxWriterBase::Lock(Context* pT, VertexBufferBase* pVB, int icount) {
@@ -209,5 +226,10 @@ void VtxWriterBase::UnLock(GeometryBufferInterface* GBI, u32 ulflgs) {
     mpVB->SetNumVertices(miWriteCounter);
   }
 }
+
+template class StaticIndexBuffer<U16>;
+template class DynamicIndexBuffer<U16>;
+template class StaticIndexBuffer<U32>;
+template class DynamicIndexBuffer<U32>;
 
 }} // namespace ork::lev2

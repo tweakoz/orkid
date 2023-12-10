@@ -18,12 +18,8 @@
 #include <ork/lev2/gfx/material_freestyle.h>
 
 template class ork::orklut<ork::PoolString, ork::lev2::xgmmesh_ptr_t>;
-int eggtestcount = 0;
-namespace ork { namespace lev2 {
 
-static bool SHOW_SKELETON(){
-  return genviron.has("ORKID_LEV2_SHOW_SKELETON");
-}
+namespace ork { namespace lev2 {
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -181,7 +177,7 @@ XgmPrimGroup::~XgmPrimGroup() {
 XgmPrimGroup::XgmPrimGroup()
     : miNumIndices(0)
     , mpIndices(0)
-    , mePrimType(PrimitiveType::NONE) {
+    , mePrimType(PrimitiveType::END) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -257,290 +253,6 @@ void XgmModel::AddMaterial(material_ptr_t Mat) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void XgmModel::RenderRigid(
-    const fcolor4& ModColor,
-    const fmtx4& WorldMat,
-    ork::lev2::Context* pTARG,
-    const RenderContextInstData& RCID,
-    const RenderContextInstModelData& mdlctx) const {
-
-  auto R                       = RCID.GetRenderer();
-  auto RCFD                    = pTARG->topRenderContextFrameData();
-  const auto& CPD              = RCFD->topCPD();
-  bool stereo1pass             = CPD.isStereoOnePass();
-  const XgmMesh& XgmMesh       = *mdlctx.mMesh;
-  auto cluster                 = mdlctx._cluster;
-  const XgmSubMesh& XgmClusSet = *mdlctx.mSubMesh;
-  int inummesh                 = numMeshes();
-  int inumclusset              = XgmMesh.numSubMeshes();
-
-  auto fxcache = RCID._pipeline_cache;
-  OrkAssert(fxcache);
-  auto pipeline = fxcache->findPipeline(RCID);
-  OrkAssert(pipeline);
-
-
-  pTARG->debugPushGroup(
-      FormatString("XgmModel::RenderRigid stereo1pass<%d> inummesh<%d> inumclusset<%d>", int(stereo1pass), inummesh, inumclusset));
-
-  pTARG->MTXI()->SetMMatrix(WorldMat);
-  pTARG->PushModColor(ModColor);
-  {
-    //////////////////////////////////////////////
-    // pipeline wrapped draw call
-    //////////////////////////////////////////////
-    pipeline->wrappedDrawCall(RCID, [&]() {
-      auto vtxbuffer = cluster->_vertexBuffer;
-      int inumprim   = cluster->numPrimGroups();
-      for (int iprim = 0; iprim < inumprim; iprim++) {
-        auto primgroup = cluster->primgroup(iprim);
-        auto idxbuffer = primgroup->GetIndexBuffer();
-        pTARG->GBI()->DrawIndexedPrimitiveEML(*vtxbuffer, *idxbuffer, primgroup->GetPrimType());
-      }
-    });
-    //////////////////////////////////////////////
-  }
-  pTARG->PopModColor();
-  pTARG->debugPopGroup();
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void XgmModel::RenderSkinned(
-    const XgmModelInst* minst,
-    const fcolor4& ModColor,
-    const fmtx4& WorldMat,
-    ork::lev2::Context* pTARG,
-    const RenderContextInstData& RCID,
-    const RenderContextInstModelData& mdlctx) const {
-
-
-  static constexpr size_t kMatrixBlockSize = 1024;
-  static auto matrix_block = new fmtx4[kMatrixBlockSize];
-
-  auto fxcache = RCID._pipeline_cache;
-  auto pipeline  = fxcache->findPipeline(RCID);
-  auto pmat    = pipeline->_material;
-
-  auto R           = RCID.GetRenderer();
-  auto RCFD        = pTARG->topRenderContextFrameData();
-  const auto& CPD  = RCFD->topCPD();
-  bool stereo1pass = CPD.isStereoOnePass();
-
-  ///////////////////////////////////
-  // apply local pose to world pose
-  ///////////////////////////////////
-
-  auto localpose = minst->_localPose;
-  minst->_worldPose->apply(WorldMat, localpose);
-
-  if (0) {
-    fvec3 c1(1, .8, .8);
-    fvec3 c2(.8, .8, 1);
-    deco::printe(c1, "LocalPose (post-concat)", true);
-    deco::prints(localpose->dumpc(c1), true);
-    deco::printe(c2, "WorldPose (post-concat)", true);
-    deco::prints(minst->_worldPose->dumpc(c2), true);
-  }
-
-  ///////////////////////////////////
-  // Draw Skinned Mesh
-  ///////////////////////////////////
-
-  if (1) // draw mesh
-  {
-    const XgmSkeleton& Skeleton = skeleton();
-
-    pTARG->debugPushGroup("RenderSkinnedMesh");
-    pTARG->MTXI()->PushMMatrix(fmtx4());
-    pTARG->PushModColor(ModColor);
-    {
-      const XgmMesh& XgmMesh       = *mdlctx.mMesh;
-      auto cluster                 = mdlctx._cluster;
-      const XgmSubMesh& XgmClusSet = *mdlctx.mSubMesh;
-
-      bool bmatpushed = false;
-
-      auto mtl = XgmClusSet.GetMaterial();
-
-      if (mtl != nullptr) {
-
-        mtl->gpuUpdate(pTARG);
-
-        auto fxcache = RCID._pipeline_cache;
-        OrkAssert(fxcache);
-        auto pipeline = fxcache->findPipeline(RCID);
-        OrkAssert(pipeline);
-
-        pipeline->wrappedDrawCall(RCID, [&]() {
-          size_t inumjoints = cluster->mJoints.size();
-
-          OrkAssert(miBonesPerCluster <= kMatrixBlockSize);
-
-          for (size_t ijointreg = 0; ijointreg < inumjoints; ijointreg++) {
-            const std::string& JointName = cluster->mJoints[ijointreg];
-            int JointSkelIndex          = cluster->mJointSkelIndices[ijointreg];
-            const fmtx4& finalmtx       = minst->_worldPose->_world_bindrela_matrices[JointSkelIndex];
-            //////////////////////////////////////
-            matrix_block[ijointreg] = finalmtx;
-          }
-
-          //////////////////////////////////////////////////////
-          // apply bones
-          //////////////////////////////////////////////////////
-
-          MaterialInstItemMatrixBlock mtxblockitem;
-          mtxblockitem.SetNumMatrices(inumjoints);
-          mtxblockitem.SetMatrixBlock(matrix_block);
-          mtl->BindMaterialInstItem(&mtxblockitem);
-          { mtxblockitem.mApplicator->ApplyToTarget(pTARG); }
-          mtl->UnBindMaterialInstItem(&mtxblockitem);
-
-          mtl->UpdateMVPMatrix(pTARG);
-
-          //////////////////////////////////////////////////////
-          auto vtxbuffer = cluster->GetVertexBuffer();
-          if (vtxbuffer) {
-            int inumprim = cluster->numPrimGroups();
-            for (int iprim = 0; iprim < inumprim; iprim++) {
-              auto primgroup = cluster->primgroup(iprim);
-              auto idxbuffer = primgroup->GetIndexBuffer();
-              pTARG->GBI()->DrawIndexedPrimitiveEML(*vtxbuffer, *idxbuffer, primgroup->GetPrimType());
-            }
-          }
-          //////////////////////////////////////////////////////
-        });
-      }
-      pTARG->PopModColor();
-      pTARG->MTXI()->PopMMatrix();
-      pTARG->debugPopGroup();
-    }
-  }
-
-  ////////////////////////////////////////
-  // Draw Skeleton
-
-  if (minst->_drawSkeleton or SHOW_SKELETON()) {
-
-    auto world_mtx = pTARG->MTXI()->RefMMatrix();
-
-    const auto& worldpose = minst->_worldPose;
-    const auto& localpose = minst->_localPose;
-
-    pTARG->debugPushGroup("DrawSkeleton");
-    pTARG->PushModColor(fvec4::White());
-
-    static pbrmaterial_ptr_t material = default3DMaterial(pTARG);
-    material->_variant = "vertexcolor"_crcu;
-    //material->_rasterstate->SetDepthTest(ork::lev2::EDepthTest::OFF);
-    //material->_rasterstate->SetZWriteMask(true);
-    auto fxcache = material->pipelineCache();
-    OrkAssert(fxcache);
-    RenderContextInstData RCIDCOPY = RCID;
-    RCIDCOPY._isSkinned = false;
-    RCIDCOPY._pipeline_cache = fxcache;
-    auto pipeline = fxcache->findPipeline(RCIDCOPY);
-    OrkAssert(pipeline);
-
-    //////////////
-
-    {
-      typedef SVtxV12N12B12T8C4 vertex_t;
-      auto& vtxbuf = GfxEnv::GetSharedDynamicVB2();
-      VtxWriter<vertex_t> vw;
-      int inumjoints = _skeleton->miNumJoints;
-      // printf("inumjoints<%d>\n", inumjoints);
-      if (inumjoints) {
-        vertex_t hvtx, t;
-        hvtx.mColor    = uint32_t(0xff00ffff);
-        t.mColor       = uint32_t(0xff0000ff);
-        hvtx.mUV0      = fvec2(0, 0);
-        t.mUV0         = fvec2(1, 1);
-        hvtx.mNormal   = fvec3(0, 0, 0);
-        t.mNormal      = fvec3(1, 0, 0);
-        hvtx.mBiNormal = fvec3(1, 1, 0);
-        t.mBiNormal    = fvec3(1, 1, 0);
-        vw.Lock(pTARG, &vtxbuf, inumjoints*32);
-
-        auto W_INVERSE = WorldMat.inverse();
-
-        int inumbones = _skeleton->numBones();
-        for (int ib = 0; ib < inumbones; ib++) {
-
-          const XgmBone& bone = _skeleton->bone(ib);
-          int iparent               = bone._parentIndex;
-          int ichild                = bone._childIndex;
-
-          if(iparent<0){
-            continue;
-          }
-
-          auto sk_par = _skeleton->_jointMatrices[iparent].translation();
-          auto sk_chi = _skeleton->_jointMatrices[ichild].translation();
-          //float bonelength = (sk_chi-sk_par).magnitude();
-
-          fmtx4 joint_par     = localpose->_concat_matrices[iparent];
-          fmtx4 joint_child     = localpose->_concat_matrices[ichild];
-
-          fvec3 c             = joint_child.translation();
-          fvec3 p             = joint_par.translation();
-          fvec3 dir = (c-p).normalized();
-          float bonelength = (c-p).magnitude();
-          float bl2 = bonelength*0.1f;
-
-          auto add_vertex = [&](const fvec3 pos, const fvec3& col) {
-            hvtx.mPosition = fvec4(pos).transform(joint_par).xyz();
-            hvtx.mColor    = (col*5).ABGRU32();
-            vw.AddVertex(hvtx);
-          };
-
-          // create bone vertices (pyramid)
-          c = fvec4(c).transform(joint_par.inverse()).xyz();
-          dir = fvec4(dir,0).transform(joint_par.inverse()).xyz();
-          auto ctr = fvec4(dir*bl2);          
-          auto px = fvec4(bl2,0,0);          
-          auto pz = fvec4(0,0,bl2);          
-          
-
-          auto colorN = fvec3::White();
-          auto colorX = fvec3(1,.7,.7);
-          auto colorZ = fvec3(.7,.7,1);
-
-          c = fvec3(0,bonelength*0.5,0);
-
-          add_vertex(fvec3(0,0,0), colorN);
-          add_vertex(c, colorN);
-
-          add_vertex(ctr-px, fvec3(1,1,1));
-          add_vertex(ctr+px, fvec3(1,0,0));
-          add_vertex(ctr-pz, fvec3(1,1,1));
-          add_vertex(ctr+pz, fvec3(0,0,1));
-
-          add_vertex(c, colorX*0.5);
-          add_vertex(ctr-px, colorX);
-          add_vertex(c, colorX*0.5);
-          add_vertex(ctr+px, colorX);
-          add_vertex(c, colorZ*0.5);
-          add_vertex(ctr-pz, colorZ);
-          add_vertex(c, colorZ*0.5);
-          add_vertex(ctr+pz, colorZ);
-
-        }
-        vw.UnLock(pTARG);
-        pTARG->MTXI()->PushMMatrix(fmtx4::Identity());
-        pipeline->wrappedDrawCall(RCID, [&]() {
-          pTARG->GBI()->DrawPrimitiveEML(vw, PrimitiveType::LINES);
-        });
-        pTARG->MTXI()->PopMMatrix();
-      }
-    }
-    pTARG->PopModColor();
-    pTARG->debugPopGroup();
-  }
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
 void XgmModel::dump() const {
   int inummeshes = numMeshes();
 
@@ -578,7 +290,7 @@ void XgmSubMesh::dump() const {
 
 void XgmCluster::dump() const {
   int inumskelidc = int(mJointSkelIndices.size());
-  int inumjoints  = int(mJoints.size());
+  int inumjoints  = int(_jointPaths.size());
 
   orkprintf("   XgmCluster this<%p>\n", this);
   orkprintf("    NumPrimGroups<%zu>\n", numPrimGroups());
@@ -588,7 +300,7 @@ void XgmCluster::dump() const {
   }
   orkprintf("    NumJointNames<%d>\n", inumjoints);
   for (int i = 0; i < inumjoints; i++) {
-    orkprintf("     JointName<%d>=<%s>\n", i, mJoints[i].c_str());
+    orkprintf("     JointPath<%d>=<%s>\n", i, _jointPaths[i].c_str());
   }
 }
 

@@ -99,10 +99,6 @@ void GeometryBufferInterface::DrawPrimitive(
     for (int ipass = 0; ipass < inumpasses; ipass++) {
       bool bDRAW = mtl->BeginPass(&_context, ipass);
       if (bDRAW) {
-        if (PrimitiveType::NONE == eTyp) {
-          eTyp = VBuf.GetPrimType();
-        }
-
         fxi->pushRasterState(mtl->_rasterstate);
         DrawPrimitiveEML(VBuf, eTyp, ivbase, ivcount);
         fxi->popRasterState();
@@ -121,7 +117,8 @@ void GeometryBufferInterface::DrawIndexedPrimitive(
     GfxMaterial* mtl,
     const VertexBufferBase& VBuf,
     const IndexBufferBase& IdxBuf,
-    PrimitiveType eType) {
+    PrimitiveType eType,
+    int ivbase, int ivcount) {
   int imax = VBuf.GetMax();
 
   if (imax) {
@@ -129,10 +126,7 @@ void GeometryBufferInterface::DrawIndexedPrimitive(
 
     for (int ipass = 0; ipass < inumpasses; ipass++) {
       if (mtl->BeginPass(&_context, ipass)) {
-        if (PrimitiveType::NONE == eType)
-          eType = VBuf.GetPrimType();
-        DrawIndexedPrimitiveEML(VBuf, IdxBuf, eType);
-
+        DrawIndexedPrimitiveEML(VBuf, IdxBuf, eType, ivbase, ivcount);
         mtl->EndPass(&_context);
       }
     }

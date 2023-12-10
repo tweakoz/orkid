@@ -55,7 +55,7 @@ int main(int argc, char** argv, char** envp) {
   //////////////////////////////////////////////////////////
 
   lev2::initModule(init_data); // lev2 registration
-  imgui::initModule(init_data);
+  lev2::editor::imgui::initModule(init_data);
   ecs::initModule(init_data); // ecs registration
 
   logchan_editor->log( "T1<%g>", timer.SecsSinceStart() );
@@ -70,6 +70,8 @@ int main(int argc, char** argv, char** envp) {
     movie = std::make_shared<MovieContext>();
     movie->init(init_data->_width,init_data->_height);
   }
+
+  init_data->_ssaa_samples = 9;
 
   auto ezapp  = OrkEzApp::create(init_data);
   auto ezwin  = ezapp->_mainWindow;
@@ -131,7 +133,7 @@ int main(int argc, char** argv, char** envp) {
 
   auto compositordata = std::make_shared<CompositingData>();
   auto compositorimpl = compositordata->createImpl();
-  auto renderer = std::make_shared<DefaultRenderer>();
+  auto renderer = std::make_shared<IRenderer>();
   auto CPD = std::make_shared<CompositingPassData>();
   CPD->addStandardLayers();
   compositordata->mbEnable = true;

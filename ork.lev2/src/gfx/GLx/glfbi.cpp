@@ -11,6 +11,7 @@
 #include <ork/lev2/gfx/material_freestyle.h>
 #include <ork/lev2/gfx/texman.h>
 #include <ork/lev2/ui/viewport.h>
+#include <ork/lev2/gfx/pickbuffer.h>
 #include <ork/pch.h>
 
 #include <ork/lev2/gfx/dbgfontman.h>
@@ -639,7 +640,7 @@ void GlFrameBufferInterface::GetPixel(const fvec4& rAt, PixelFetchContext& pfc) 
         glBindFramebuffer(GL_FRAMEBUFFER, fboobj->_fbo);
         GL_ERRORCHECK();
 
-        logchan_glfbi->log("GetPixel<%d %d> FboMaster<%u>", sx, sy, fboobj->_fbo);
+        logchan_glfbi->log("GetPixel<%d %d> w<%d> h<%d> FboMaster<%u> rtg<%s>", sx, sy, W, H, fboobj->_fbo, pfc._rtgroup->_name.c_str());
 
         if (fboobj->_fbo) {
 
@@ -652,12 +653,16 @@ void GlFrameBufferInterface::GetPixel(const fvec4& rAt, PixelFetchContext& pfc) 
 
           logchan_glfbi->log("previous_readbuffer<%d>", int(previous_readbuffer));
 
+          int pfc_index = 0;
+          size_t pfc_size = pfc._pickvalues.size();
           for (int MrtIndex = 0; MrtIndex < 4; MrtIndex++) {
             int MrtTest = 1 << MrtIndex;
 
-            pfc._pickvalues[MrtIndex] = fcolor4(0.0f, 0.0f, 0.0f, 0.0f);
-
             if (MrtTest & MrtMask) {
+
+              if(MrtIndex<pfc_size){
+                pfc._pickvalues[MrtIndex] = nullptr;
+              }
 
               auto rtbuffer = pfc._rtgroup->GetMrt(MrtIndex);
 
@@ -670,29 +675,79 @@ void GlFrameBufferInterface::GetPixel(const fvec4& rAt, PixelFetchContext& pfc) 
               glReadBuffer(GL_COLOR_ATTACHMENT0 + MrtIndex);
               GL_ERRORCHECK();
 
-              float rgba[4] = {0.0f, 0.0f, 0.0f, 0.0f};
-              switch (pfc.mUsage[MrtIndex]) {
+              switch (pfc._usage[MrtIndex]) {
+                case PixelFetchContext::EPU_SVARIANT: {
+                  switch(rtbuffer->mFormat){
+                    case EBufferFormat::RGBA32F: {
+                      fvec4 rgba;
+                      glReadPixels(sx, sy, 1, 1, GL_RGBA, GL_FLOAT, (void*) & rgba );
+                      if(MrtIndex<pfc_size){
+                        pfc._pickvalues[MrtIndex] = pfc.decodePixel(rgba);
+                      }
+                      break;
+                    }
+                    case EBufferFormat::RGBA32UI: {
+                      u32vec4 value;
+                      glReadPixels(sx, sy, 1, 1, GL_RGBA_INTEGER, GL_UNSIGNED_INT, (void*) & value );
+                      if(MrtIndex<pfc_size){
+                        pfc._pickvalues[MrtIndex] = pfc.decodePixel(value);
+                      }
+                      break;
+                    }
+                    default:
+                      OrkAssert(false);
+                      break;
+                  }
+                  break;
+                }
                 case PixelFetchContext::EPU_PTR64: {
-                  OrkAssert(rtbuffer->mFormat == EBufferFormat::RGBA32F);
-                  glReadPixels(sx, sy, 1, 1, GL_RGBA, GL_FLOAT, (void*)rgba);
-                  /////////////////////////////////////////////////////////////////
-                  // swizzle so hex appears as xxxxyyyyzzzzwwww
-                  /////////////////////////////////////////////////////////////////
-                  uint64_t a             = uint64_t(rgba[0]);
-                  uint64_t b             = uint64_t(rgba[1]);
-                  uint64_t c             = uint64_t(rgba[2]);
-                  uint64_t d             = uint64_t(rgba[3]);
-                  uint64_t value = (d << 48) | (c << 32) | (b << 16) | a;
-                  /////////////////////////////////////////////////////////////////
-                  pfc._pickvalues[MrtIndex].set<uint64_t>(value);
-                  logchan_glfbi->log("getpix MrtIndex<%d> rx<%d> ry<%d> rgba<%g %g %g %g> value<0x%zx>", 
-                                      MrtIndex, sx, sy, 
-                                      rgba[0], rgba[1], rgba[2], rgba[3],
-                                      value);
+                  switch(rtbuffer->mFormat){
+                    case EBufferFormat::RGBA16UI: {
+                      uint16_t rgba[4] = {0,0,0,0};
+                      glReadPixels(sx, sy, 1, 1, GL_RGBA, GL_UNSIGNED_SHORT, (void*)rgba);
+                      /////////////////////////////////////////////////////////////////
+                      // swizzle so hex appears as xxxxyyyyzzzzwwww
+                      /////////////////////////////////////////////////////////////////
+                      uint64_t a             = uint64_t(rgba[0]);
+                      uint64_t b             = uint64_t(rgba[1]);
+                      uint64_t c             = uint64_t(rgba[2]);
+                      uint64_t d             = uint64_t(rgba[3]);
+                      uint64_t value = (d << 48) | (c << 32) | (b << 16) | a;
+                      /////////////////////////////////////////////////////////////////
+                      pfc._pickvalues[MrtIndex].set<uint64_t>(value);
+                      logchan_glfbi->log("getpix MrtIndex<%d> rx<%d> ry<%d> rgba(u16)<%u %u %u %u> value<0x%zx>", 
+                                          MrtIndex, sx, sy, 
+                                          rgba[0], rgba[1], rgba[2], rgba[3],
+                                          value);
+                      break;
+                    }                    
+                    case EBufferFormat::RGBA32F: {
+                      float rgba[4] = {0.0f, 0.0f, 0.0f, 0.0f};
+                      glReadPixels(sx, sy, 1, 1, GL_RGBA, GL_FLOAT, (void*)rgba);
+                      /////////////////////////////////////////////////////////////////
+                      // swizzle so hex appears as xxxxyyyyzzzzwwww
+                      /////////////////////////////////////////////////////////////////
+                      uint64_t a             = uint64_t(rgba[0]);
+                      uint64_t b             = uint64_t(rgba[1]);
+                      uint64_t c             = uint64_t(rgba[2]);
+                      uint64_t d             = uint64_t(rgba[3]);
+                      uint64_t value = (d << 48) | (c << 32) | (b << 16) | a;
+                      /////////////////////////////////////////////////////////////////
+                      pfc._pickvalues[MrtIndex].set<uint64_t>(value);
+                      logchan_glfbi->log("getpix MrtIndex<%d> rx<%d> ry<%d> rgba(f32)<%g %g %g %g> value<0x%zx>", 
+                                          MrtIndex, sx, sy, 
+                                          rgba[0], rgba[1], rgba[2], rgba[3],
+                                          value);
+                      break;
+                    }
+                    default:
+                      OrkAssert(false);
+                      break;
+                  }
                   /////////////////////////////////////////////////////////////////
                   break;
                 }
-                case PixelFetchContext::EPU_FLOAT: {
+                case PixelFetchContext::EPU_FVEC4: {
                   fvec4 rv;
                   glReadPixels(sx, sy, 1, 1, GL_RGBA, GL_FLOAT, (void*)rv.asArray());
                   pfc._pickvalues[MrtIndex].set<fvec4>(rv);

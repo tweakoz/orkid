@@ -1,33 +1,10 @@
 #!/usr/bin/env python3
 
-import os
-import json
-import argparse
-import re
-import shutil
+import sys, os, json, argparse, re, shutil
+from obt import path 
 
-def find_executable(exec_name):
-  """Find the executable in PATH or use the provided path."""
-  exec_name = os.path.expandvars(exec_name)
-  if exec_name.startswith(("./", "../")) or os.path.isabs(exec_name):
-    full_path = os.path.abspath(exec_name)
-    if os.path.exists(full_path) and os.access(full_path, os.X_OK):
-      return full_path
-    return None
-  for path in os.environ["PATH"].split(os.pathsep):
-    full_path = os.path.join(path, exec_name)
-    if os.path.exists(full_path) and os.access(full_path, os.X_OK):
-      return full_path
-  return None
-
-def is_python_script(executable_path):
-  """Determine if the given file is a Python script."""
-  try:
-    with open(executable_path, 'r') as f:
-      first_line = f.readline().strip()
-      return first_line.startswith("#!") and "python" in first_line
-  except Exception as e:
-    return False
+this_dir = path.fileOfInvokingModule()
+import _debug_helpers
 
 def create_vscode_config(workspace_path, bin_path, env_vars, exec_args):
   if os.path.exists(workspace_path):
@@ -61,12 +38,15 @@ def create_vscode_config(workspace_path, bin_path, env_vars, exec_args):
         ]
     }
   else:  # Assuming Linux for now
+    extensions_py = path.orkid()/"obt.project"/"scripts"/"ork"/"ix_gdb_extensions.py"
+    stdcxx_extensions_py = path.Path("/usr/share/gcc/python/libstdcxx/v6/printers.py")
     config = {
         "version": "0.2.0",
         "configurations": [
             {
                 "name": "Debug Executable (GDB)",
-                "type": "cppdbg",
+                #"type": "cppdbg",
+                "type": "sldb",
                 "request": "launch",
                 "program": bin_path,
                 "args": exec_args,
@@ -76,7 +56,9 @@ def create_vscode_config(workspace_path, bin_path, env_vars, exec_args):
                 "externalConsole": False,
                 "MIMode": "gdb",
                 "setupCommands": [
-                    {"description": "Enable pretty-printing for gdb", "text": "-enable-pretty-printing", "ignoreFailures": True}
+                    {"description": "Enable pretty-printing for gdb", "text": "-enable-pretty-printing", "ignoreFailures": True},
+                    {"description": "ork-extensions", "text": "--command "+str(extensions_py), "ignoreFailures": True},
+                    {"description": "ork-extensions", "text": "--command "+str(stdcxx_extensions_py), "ignoreFailures": True}
                 ],
                 "preLaunchTask": "",
                 "miDebuggerPath": "gdb",
@@ -100,22 +82,7 @@ if __name__ == "__main__":
   parser.add_argument("exec_args", nargs=argparse.REMAINDER, help="Arguments for the executable.")
   args = parser.parse_args()
 
-  executable_path = find_executable(args.executable_name)
-  if not executable_path:
-    print(f"Executable '{args.executable_name}' not found in $PATH.")
-    exit(1)
-
-  exec_args = args.exec_args
-
-  if is_python_script(executable_path):
-    python_path = find_executable("python3")
-    if not python_path:
-      print("python3 not found.")
-      exit(1)
-    exec_args.insert(0, executable_path)
-    executable_path = python_path
-
-  exec_name = re.sub(r"[^a-zA-Z0-9]", "_", args.executable_name)
+  exe_path, exe_args, exec_name = _debug_helpers.get_exec_and_args(args)
 
   env_vars = {
       "ORKID_WORKSPACE_DIR": os.getenv("ORKID_WORKSPACE_DIR"),
@@ -128,4 +95,4 @@ if __name__ == "__main__":
     env_vars["ORKID_GRAPHICS_API"] = os.getenv("ORKID_GRAPHICS_API")    
 
   workspace_dir = os.path.join(env_vars["OBT_STAGE"], "tempdir", exec_name)
-  create_vscode_config(workspace_dir, executable_path, env_vars, exec_args)
+  create_vscode_config(workspace_dir, exe_path, env_vars, exe_args)

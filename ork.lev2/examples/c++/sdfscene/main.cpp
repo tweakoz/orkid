@@ -217,7 +217,7 @@ void SdfSceneData::describeX(ork::object::ObjectClass* clazz) {
 struct GpuResources {
 
   GpuResources(Context* ctx, file::Path this_dir) {
-    _renderer = std::make_shared<DefaultRenderer>();
+    _renderer = std::make_shared<IRenderer>();
     _renderer->setContext(ctx);
     _lightmgr = std::make_shared<LightManager>(_lmd);
 
@@ -278,7 +278,7 @@ struct GpuResources {
 
 int main(int argc, char** argv,char** envp) {
   auto init_data = std::make_shared<ork::AppInitData>(argc,argv,envp);
-  imgui::initModule(init_data);
+  editor::imgui::initModule(init_data);
 
   SdfSceneData::GetClassStatic();
   SdfSubOne::GetClassStatic();

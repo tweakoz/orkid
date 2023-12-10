@@ -10,6 +10,8 @@
 #include <ork/lev2/gfx/scenegraph/sgnode_grid.h>
 #include <ork/lev2/gfx/scenegraph/sgnode_billboard.h>
 #include <ork/lev2/gfx/scenegraph/sgnode_groundplane.h>
+#include <ork/python/pycodec.h>
+#include <ork/lev2/gfx/gfxvtxbuf.inl>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -56,6 +58,14 @@ void pyinit_scenegraph(py::module& module_lev2) {
               },
               [](node_ptr_t node, bool ena) { //
                 node->_enabled = ena;
+              })
+          .def_property(
+              "pickable",                    //
+              [](node_ptr_t node) -> bool { //
+                return node->_pickable;
+              },
+              [](node_ptr_t node, bool ena) { //
+                node->_pickable = ena;
               })
           .def_property_readonly(
               "user",                                       //
@@ -263,12 +273,38 @@ void pyinit_scenegraph(py::module& module_lev2) {
                 SG->renderOnContext(context.get());
               })
           .def(
+              "enablePickHud",
+              [](scene_ptr_t SG) { //
+                SG->enablePickHud();
+              })
+          .def(
               "pickWithRay",
-              [](scene_ptr_t SG, fray3_ptr_t ray) -> uint64_t { //
+              [type_codec](scene_ptr_t SG, fray3_ptr_t ray, py::object callback) { //
                 OrkAssert(SG != nullptr);
                 OrkAssert(ray != nullptr);
-                return SG->pickWithRay(ray);
+                SG->_userdata->set<py::object>("pickcallback", callback);
+                SG->pickWithRay(ray,[SG,type_codec](pixelfetchctx_ptr_t pfc){
+                  py::gil_scoped_acquire acquire_gil;
+                  auto try_callback = SG->_userdata->typedValueForKey<py::object>("pickcallback");
+                  if(try_callback and try_callback.value()){
+                    try_callback.value()(pfc);
+                  }
+                });
               })
+          .def("pickWithScreenCoord", [type_codec](scene_ptr_t SG, 
+                                         cameradata_ptr_t cam, 
+                                         fvec2 scoord,
+                                         py::object callback) { //
+            OrkAssert(SG != nullptr);
+            SG->_userdata->set<py::object>("pickcallback", callback);
+            SG->pickWithScreenCoord(cam, scoord, [SG,type_codec](pixelfetchctx_ptr_t pfc){
+                py::gil_scoped_acquire acquire_gil;
+                auto try_callback = SG->_userdata->typedValueForKey<py::object>("pickcallback");
+                if(try_callback and try_callback.value()){
+                  try_callback.value()(pfc);
+                }
+            });
+          })
           .def(
               "enableSynchro",                      //
               [](scene_ptr_t SG) -> synchro_ptr_t { //
@@ -283,11 +319,7 @@ void pyinit_scenegraph(py::module& module_lev2) {
               [](scene_ptr_t SG, float time) { //
                 SG->_currentTime = time;
               })
-          .def("pickWithScreenCoord", [](scene_ptr_t SG, cameradata_ptr_t cam, fvec2_ptr_t scoord) -> uint64_t { //
-            OrkAssert(SG != nullptr);
-            OrkAssert(scoord != nullptr);
-            return SG->pickWithScreenCoord(cam, *scoord.get());
-          });
+    ;
   type_codec->registerStdCodec<scene_ptr_t>(scenegraph_type);
 }
 } // namespace ork::lev2

@@ -17,14 +17,60 @@
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/event/Event.h>
 #include <ork/object/AutoConnector.h>
+#include <ork/util/scrambler.inl>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
-class PickBuffer //: public ork::lev2::DisplayBuffer
-{
-public:
+/// ////////////////////////////////////////////////////////////////////////////
+/// ////////////////////////////////////////////////////////////////////////////
+/// Pixel Getter Context
+///  this can grab pixels from buffers, including multiple pixels from MRT's
+/// ////////////////////////////////////////////////////////////////////////////
+/// ////////////////////////////////////////////////////////////////////////////
+
+struct PixelFetchContext {
+  ork::rtti::ICastable* GetObject(PickBuffer* pb, int ichan) const;
+  void* GetPointer(int ichan) const;
+  PixelFetchContext(size_t size=0);
+  void resize(size_t s);
+  //////////////////////
+
+  void beginPickRender();
+  void endPickRender();
+
+  uint32_t encodeVariant(pickvariant_t data);
+  pickvariant_t decodePixel(fvec4 fv4_pixel);
+  pickvariant_t decodePixel(u32vec4 u32v4_pixel);
+
+  //////////////////////
+
+  enum EPixelUsage {
+    EPU_FLOAT = 0,
+    EPU_FVEC4,
+    EPU_PTR64,
+    EPU_SVARIANT,
+  };
+
+  Context* _gfxContext = nullptr;
+  rtgroup_ptr_t _rtgroup;
+  int miMrtMask;
+  std::vector<pickvariant_t> _pickvalues;
+  std::vector<EPixelUsage> _usage;
+  std::unordered_map<uint64_t,int> _pickIDlut;
+  std::vector<pickvariant_t> _pickIDvec;
+  anyp mUserData;
+  int _pickindex = -1;
+  uint64_t _offset = 0;
+  static indexscrambler65k_ptr_t _gscrambler;
+  static std::atomic<int> _gpickcounter;
+};
+
+/// ////////////////////////////////////////////////////////////////////////////
+
+struct PickBuffer  {
+
   PickBuffer(ui::Surface* surf, Context* ctx, int iW, int iH);
 
   void Init();

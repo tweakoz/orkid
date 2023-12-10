@@ -493,11 +493,17 @@ void GlGeometryBufferInterface::ReleaseVB(VertexBufferBase& VBuf) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+enum class AttrType : uint32_t {
+  FLOAT = 0,
+  FLOAT_NORMALIZED,
+  INTEGER,
+};
+
 struct vtx_config {
   const std::string mSemantic;
   const int mNu_components;
   const GLenum mType;
-  const bool mNormalize;
+  const AttrType _attrtype;
   const int mOffset;
   const glslfx::Pass* mPass;
   glslfx::Attribute* mAttr;
@@ -518,7 +524,17 @@ struct vtx_config {
     }
     if (mAttr) {
       // printf( "gbi::bind_attr istride<%d> loc<%d> numc<%d> offs<%d>\n", istride, mAttr->mLocation, mNu_components, mOffset );
-      glVertexAttribPointer(mAttr->mLocation, mNu_components, mType, mNormalize, istride, (void*)(uint64_t)mOffset);
+      switch( _attrtype ){
+        case AttrType::FLOAT:
+          glVertexAttribPointer(mAttr->mLocation, mNu_components, mType, false, istride, (void*)(uint64_t)mOffset);
+          break;
+        case AttrType::FLOAT_NORMALIZED:
+          glVertexAttribPointer(mAttr->mLocation, mNu_components, mType, true, istride, (void*)(uint64_t)mOffset);
+          break;
+        case AttrType::INTEGER:
+          glVertexAttribIPointer(mAttr->mLocation, mNu_components, mType, istride, (void*)(uint64_t)mOffset);
+          break;
+      }
       rval = 1 << mAttr->mLocation;
     } else {
       // printf( "gbi::bind_attr no_attr\n" );
@@ -570,53 +586,84 @@ static bool EnableVtxBufComponents(const VertexBufferBase& VBuf, const svarp_t p
   //////////////////////////////////////////////
   switch (eStrFmt) {
     case lev2::EVtxStreamFormat::V12: {
-      static vtx_config cfgs[] = {{"POSITION", 3, GL_FLOAT, false, 0, 0, 0}};
+      static vtx_config cfgs[] = {{"POSITION", 3, GL_FLOAT, AttrType::FLOAT, 0, 0, 0}};
       _setConfig(cfgs);
       break;
     }
     case lev2::EVtxStreamFormat::V12C4: {
       static vtx_config cfgs[] = {
-          {"POSITION", 3, GL_FLOAT, false, 0, 0, 0},
-          {"COLOR0", 4, GL_UNSIGNED_BYTE, true, 12, 0, 0},
+          {"POSITION", 3, GL_FLOAT, AttrType::FLOAT, 0, 0, 0},
+          {"COLOR0", 4, GL_UNSIGNED_BYTE, AttrType::FLOAT_NORMALIZED, 12, 0, 0},
       };
       _setConfig(cfgs);
       break;
     }
     case lev2::EVtxStreamFormat::V12T8: {
-      static vtx_config cfgs[] = {{"POSITION", 3, GL_FLOAT, false, 0, 0, 0}, {"TEXCOORD0", 2, GL_FLOAT, false, 12, 0, 0}};
+      static vtx_config cfgs[] = {{"POSITION", 3, GL_FLOAT, AttrType::FLOAT, 0, 0, 0}, {"TEXCOORD0", 2, GL_FLOAT, AttrType::FLOAT, 12, 0, 0}};
+      _setConfig(cfgs);
+      break;
+    }
+    case lev2::EVtxStreamFormat::V12N12T16: {
+      static vtx_config cfgs[] = {
+          {"POSITION", 3, GL_FLOAT, AttrType::FLOAT, 0, 0, 0},
+          {"NORMAL", 3, GL_FLOAT, AttrType::FLOAT_NORMALIZED, 12, 0, 0},
+          {"TEXCOORD0", 4, GL_FLOAT, AttrType::FLOAT, 24, 0, 0},
+      };
       _setConfig(cfgs);
       break;
     }
     case lev2::EVtxStreamFormat::V12N12B12T16: {
       static vtx_config cfgs[] = {
-          {"POSITION", 3, GL_FLOAT, false, 0, 0, 0},
-          {"NORMAL", 3, GL_FLOAT, true, 12, 0, 0},
-          {"BINORMAL", 3, GL_FLOAT, true, 24, 0, 0},
-          {"TEXCOORD0", 2, GL_FLOAT, false, 36, 0, 0},
-          {"TEXCOORD1", 2, GL_FLOAT, false, 44, 0, 0},
+          {"POSITION", 3, GL_FLOAT, AttrType::FLOAT, 0, 0, 0},
+          {"NORMAL", 3, GL_FLOAT, AttrType::FLOAT_NORMALIZED, 12, 0, 0},
+          {"BINORMAL", 3, GL_FLOAT, AttrType::FLOAT_NORMALIZED, 24, 0, 0},
+          {"TEXCOORD0", 2, GL_FLOAT, AttrType::FLOAT, 36, 0, 0},
+          {"TEXCOORD1", 2, GL_FLOAT, AttrType::FLOAT, 44, 0, 0},
+      };
+      _setConfig(cfgs);
+      break;
+    }
+    case lev2::EVtxStreamFormat::V12N12T8DF12C4: {
+      static vtx_config cfgs[] = {
+          {"POSITION",  3, GL_FLOAT, AttrType::FLOAT,         0, 0, 0},
+          {"NORMAL",    3, GL_FLOAT, AttrType::FLOAT_NORMALIZED,         12, 0, 0},
+          {"TEXCOORD0", 2, GL_FLOAT, AttrType::FLOAT,        24, 0, 0},
+          {"TEXCOORD1", 3, GL_FLOAT, AttrType::FLOAT,        32, 0, 0},
+          {"COLOR0",    4, GL_UNSIGNED_BYTE, AttrType::FLOAT_NORMALIZED, 44, 0, 0},
+      };
+      _setConfig(cfgs);
+      break;
+    }
+    case lev2::EVtxStreamFormat::V12N12T8DU12C4: {
+      static vtx_config cfgs[] = {
+          {"POSITION",  3, GL_FLOAT, AttrType::FLOAT,         0, 0, 0},
+          {"NORMAL",    3, GL_FLOAT, AttrType::FLOAT_NORMALIZED,         12, 0, 0},
+          {"TEXCOORD0", 2, GL_FLOAT, AttrType::FLOAT,        24, 0, 0},
+          {"TEXCOORD1", 3, GL_UNSIGNED_INT, AttrType::INTEGER, 32, 0, 0},
+          {"COLOR0",    4, GL_UNSIGNED_BYTE, AttrType::FLOAT_NORMALIZED, 44, 0, 0},
       };
       _setConfig(cfgs);
       break;
     }
     case lev2::EVtxStreamFormat::V12N12B12T8I4W4: {
       static vtx_config cfgs[] = {
-          {"POSITION", 3, GL_FLOAT, false, 0, 0, 0},
-          {"NORMAL", 3, GL_FLOAT, true, 12, 0, 0},
-          {"BINORMAL", 3, GL_FLOAT, true, 24, 0, 0},
-          {"TEXCOORD0", 2, GL_FLOAT, false, 36, 0, 0},
-          {"BONEINDICES", 4, GL_UNSIGNED_BYTE, false, 44, 0, 0},
-          {"BONEWEIGHTS", 4, GL_UNSIGNED_BYTE, true, 48, 0, 0},
+          {"POSITION", 3, GL_FLOAT, AttrType::FLOAT, 0, 0, 0},
+          {"NORMAL", 3, GL_FLOAT, AttrType::FLOAT_NORMALIZED, 12, 0, 0},
+          {"BINORMAL", 3, GL_FLOAT, AttrType::FLOAT_NORMALIZED, 24, 0, 0},
+          {"TEXCOORD0", 2, GL_FLOAT, AttrType::FLOAT, 36, 0, 0},
+          {"BONEINDICES", 4, GL_UNSIGNED_BYTE, AttrType::FLOAT, 44, 0, 0},
+          {"BONEWEIGHTS", 4, GL_UNSIGNED_BYTE, AttrType::FLOAT_NORMALIZED, 48, 0, 0},
       };
       _setConfig(cfgs);
       break;
     }
     case lev2::EVtxStreamFormat::V12N12T8I4W4: {
       static vtx_config cfgs[] = {
-          {"POSITION", 3, GL_FLOAT, false, 0, 0, 0},
-          {"NORMAL", 3, GL_FLOAT, true, 12, 0, 0},
-          {"TEXCOORD0", 2, GL_FLOAT, false, 24, 0, 0},
-          {"BONEINDICES", 4, GL_UNSIGNED_BYTE, true, 32, 0, 0},
-          {"BONEWEIGHTS", 4, GL_UNSIGNED_BYTE, true, 36, 0, 0},
+          {"POSITION", 3, GL_FLOAT, AttrType::FLOAT, 0, 0, 0},
+          {"NORMAL", 3, GL_FLOAT, AttrType::FLOAT_NORMALIZED, 12, 0, 0},
+          {"TEXCOORD0", 2, GL_FLOAT, AttrType::FLOAT, 24, 0, 0},
+          {"BONEINDICES", 4, GL_UNSIGNED_BYTE, AttrType::FLOAT_NORMALIZED, 32, 0, 0},
+          {"BONEWEIGHTS", 4, GL_UNSIGNED_BYTE, AttrType::FLOAT_NORMALIZED, 36, 0, 0},
       };
       _setConfig(cfgs);
       break;
@@ -629,40 +676,40 @@ static bool EnableVtxBufComponents(const VertexBufferBase& VBuf, const svarp_t p
     }
     case EVtxStreamFormat::V12N12B12T8C4: {
       static vtx_config cfgs[] = {
-          {"POSITION", 3, GL_FLOAT, false, 0, 0, 0},
-          {"NORMAL", 3, GL_FLOAT, false, 12, 0, 0},
-          {"BINORMAL", 3, GL_FLOAT, false, 24, 0, 0},
-          {"TEXCOORD0", 2, GL_FLOAT, false, 36, 0, 0},
-          {"COLOR0", 4, GL_UNSIGNED_BYTE, true, 44, 0, 0},
+          {"POSITION", 3, GL_FLOAT, AttrType::FLOAT, 0, 0, 0},
+          {"NORMAL", 3, GL_FLOAT, AttrType::FLOAT, 12, 0, 0},
+          {"BINORMAL", 3, GL_FLOAT, AttrType::FLOAT, 24, 0, 0},
+          {"TEXCOORD0", 2, GL_FLOAT, AttrType::FLOAT, 36, 0, 0},
+          {"COLOR0", 4, GL_UNSIGNED_BYTE, AttrType::FLOAT_NORMALIZED, 44, 0, 0},
       };
       _setConfig(cfgs);
       break;
     }
     case lev2::EVtxStreamFormat::V12N12T16C4: {
       static vtx_config cfgs[] = {
-          {"POSITION", 3, GL_FLOAT, false, 0, 0, 0},
-          {"NORMAL", 3, GL_FLOAT, true, 12, 0, 0},
-          {"TEXCOORD0", 2, GL_FLOAT, false, 24, 0, 0},
-          {"TEXCOORD1", 2, GL_FLOAT, false, 32, 0, 0},
-          {"COLOR0", 4, GL_UNSIGNED_BYTE, true, 40, 0, 0},
+          {"POSITION", 3, GL_FLOAT, AttrType::FLOAT, 0, 0, 0},
+          {"NORMAL", 3, GL_FLOAT, AttrType::FLOAT_NORMALIZED, 12, 0, 0},
+          {"TEXCOORD0", 2, GL_FLOAT, AttrType::FLOAT, 24, 0, 0},
+          {"TEXCOORD1", 2, GL_FLOAT, AttrType::FLOAT, 32, 0, 0},
+          {"COLOR0", 4, GL_UNSIGNED_BYTE, AttrType::FLOAT_NORMALIZED, 40, 0, 0},
       };
       _setConfig(cfgs);
       break;
     }
     case EVtxStreamFormat::V12C4T16: {
       static vtx_config cfgs[] = {
-          {"POSITION", 3, GL_FLOAT, false, 0, 0, 0},
-          {"COLOR0", 4, GL_UNSIGNED_BYTE, true, 12, 0, 0},
-          {"TEXCOORD0", 2, GL_FLOAT, false, 16, 0, 0},
-          {"TEXCOORD1", 2, GL_FLOAT, false, 24, 0, 0}};
+          {"POSITION", 3, GL_FLOAT, AttrType::FLOAT, 0, 0, 0},
+          {"COLOR0", 4, GL_UNSIGNED_BYTE, AttrType::FLOAT_NORMALIZED, 12, 0, 0},
+          {"TEXCOORD0", 2, GL_FLOAT, AttrType::FLOAT, 16, 0, 0},
+          {"TEXCOORD1", 2, GL_FLOAT, AttrType::FLOAT, 24, 0, 0}};
       _setConfig(cfgs);
       break;
     }
     case EVtxStreamFormat::V16T16C16: {
       static vtx_config cfgs[] = {
-          {"POSITION", 4, GL_FLOAT, false, 0, 0, 0},
-          {"TEXCOORD0", 4, GL_FLOAT, false, 16, 0, 0},
-          {"COLOR0", 4, GL_FLOAT, false, 32, 0, 0},
+          {"POSITION", 4, GL_FLOAT, AttrType::FLOAT, 0, 0, 0},
+          {"TEXCOORD0", 4, GL_FLOAT, AttrType::FLOAT, 16, 0, 0},
+          {"COLOR0", 4, GL_FLOAT, AttrType::FLOAT, 32, 0, 0},
       };
       _setConfig(cfgs);
       break;
@@ -800,9 +847,6 @@ void GlGeometryBufferInterface::DrawPrimitiveEML(const VertexBufferBase& VBuf, P
 
   int inum = (ivcount == 0) ? VBuf.GetNumVertices() : ivcount;
 
-  if (eType == PrimitiveType::NONE) {
-    eType = VBuf.GetPrimType();
-  }
   if (inum) {
     GL_ERRORCHECK();
     switch (eType) {
@@ -915,18 +959,20 @@ void GlGeometryBufferInterface::DrawPrimitiveEML(
 void GlGeometryBufferInterface::DrawIndexedPrimitiveEML(
     const VertexBufferBase& VBuf,
     const IndexBufferBase& IdxBuf,
-    PrimitiveType eType) {
+    PrimitiveType eType,
+    int ivbase,
+    int ivcount) {
   GL_ERRORCHECK();
   ////////////////////////////////////////////////////////////////////
 
   BindStreamSources(VBuf, IdxBuf);
 
-  int iNum = IdxBuf.GetNumIndices();
+  int iNum = ivcount;
 
   auto plat_handle = IdxBuf._impl.getShared<GLIdxBufHandle>();
 
-  int imin = plat_handle->mMinIndex;
-  int imax = plat_handle->mMaxIndex;
+  int imin = ivbase; //plat_handle->mMinIndex;
+  int imax = ivbase+ivcount-1; //plat_handle->mMaxIndex;
 
   // GLint maxidx = 0;
   // glGetIntegerv( GL_MAX_ELEMENTS_INDICES, & maxidx );

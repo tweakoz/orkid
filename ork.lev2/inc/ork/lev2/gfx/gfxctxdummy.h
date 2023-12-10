@@ -161,14 +161,14 @@ class DuGeometryBufferInterface final : public GeometryBufferInterface {
       int ivcount) final;
 
   void
-  DrawIndexedPrimitiveEML(const VertexBufferBase& VBuf, const IndexBufferBase& IdxBuf, PrimitiveType eType)
+  DrawIndexedPrimitiveEML(const VertexBufferBase& VBuf, const IndexBufferBase& IdxBuf, PrimitiveType eType, int ivbase, int ivcount)
       final;
 
   void DrawPrimitiveEML(
       const FxShaderStorageBuffer* SSBO, //
-      PrimitiveType eType = PrimitiveType::NONE,
-      int ivbase          = 0,
-      int ivcount         = 0) final;
+      PrimitiveType eType,
+      int ivbase           = 0,
+      int ivcount          = 0) final;
 
   void DrawInstancedIndexedPrimitiveEML(
       const VertexBufferBase& VBuf,

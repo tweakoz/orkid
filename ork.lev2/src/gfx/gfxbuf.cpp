@@ -16,6 +16,7 @@
 #include <ork/lev2/ui/ui.h>
 #include <ork/lev2/ui/viewport.h>
 #include <ork/rtti/downcast.h>
+#include <ork/lev2/gfx/gfxvtxbuf.inl>
 
 ImplementReflectionX(ork::lev2::DisplayBuffer, "ork::lev2::DisplayBuffer");
 

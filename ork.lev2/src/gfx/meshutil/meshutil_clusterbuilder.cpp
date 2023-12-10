@@ -229,16 +229,12 @@ void buildXgmCluster( lev2::Context& context,
   auto skinned_builder = std::dynamic_pointer_cast<XgmSkinnedClusterBuilder>(clusterbuilder);
 
   if (skinned_builder) {
-    const orkmap<std::string, int>& BoneMap = skinned_builder->RefBoneRegMap();
-
-    int inumjointsmapped = BoneMap.size();
-
-    xgm_cluster->mJoints.resize(inumjointsmapped);
-
-    for (orkmap<std::string, int>::const_iterator it = BoneMap.begin(); it != BoneMap.end(); it++) {
-      const std::string& JointName        = it->first;  // the index of the bone in the skeleton
-      int JointRegister                   = it->second; // the shader register index the bone goes into
-      xgm_cluster->mJoints[JointRegister] = JointName;
+    const auto& joint_map = skinned_builder->jointRegMap();
+    xgm_cluster->_jointPaths.resize(joint_map.size());
+    for (auto item : joint_map ) {
+      const std::string& joint_path            = item.first;  
+      int joint_register                       = item.second; // the shader register index the bone goes into
+      xgm_cluster->_jointPaths[joint_register] = joint_path;
     }
   }
 

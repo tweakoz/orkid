@@ -39,6 +39,7 @@ template <typename T> struct Vector2 final
   Vector2 yx() const { return Vector2(this->y,this->x); }
 
   T angle(const Vector2& vec) const; 
+  T orientedAngle(const Vector2& vec) const; 
 
   T dotWith(const Vector2& vec) const; 
   T perpDotWith(const Vector2& vec) const;

@@ -8,8 +8,7 @@
 #include "pyext.h"
 #include <ork/lev2/input/inputdevice.h>
 #include <ork/lev2/gfx/terrain/terrain_drawable.h>
-#include <ork/lev2/gfx/camera/cameradata.h>
-#include <ork/lev2/gfx/gfxvtxbuf.h>
+#include <ork/lev2/gfx/gfxvtxbuf.inl>
 #include <ork/math/cvector4.h>
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -296,41 +295,43 @@ void pyinit_gfx(py::module& module_lev2) {
   // using rawtexptr_t = Texture*;
   type_codec->registerStdCodec<texture_ptr_t>(texture_type);
   /////////////////////////////////////////////////////////////////////////////////
-  py::class_<PixelFetchContext>(module_lev2, "PixelFetchContext")
-      .def(py::init<>())
-      .def(py::init([](rtgroup_ptr_t rtg, int mask) {
-        auto pfc       = std::unique_ptr<PixelFetchContext>(new PixelFetchContext);
-        pfc->_rtgroup  = rtg;
-        pfc->miMrtMask = mask;
-        return pfc;
-      }))
+  auto pfc_type = py::class_<PixelFetchContext,pixelfetchctx_ptr_t>(module_lev2, "PixelFetchContext")
       .def_property(
           "rtgroup",
-          [](PixelFetchContext& pfc) -> rtgroup_ptr_t { return pfc._rtgroup; },
-          [](PixelFetchContext& pfc, rtgroup_ptr_t rtg) { pfc._rtgroup = rtg; })
+          [](pixelfetchctx_ptr_t pfc) -> rtgroup_ptr_t { return pfc->_rtgroup; },
+          [](pixelfetchctx_ptr_t pfc, rtgroup_ptr_t rtg) { pfc->_rtgroup = rtg; })
       .def_property(
           "rtgmask",
-          [](PixelFetchContext& pfc) -> int { return pfc.miMrtMask; },
-          [](PixelFetchContext& pfc, int mask) { pfc.miMrtMask = mask; })
+          [](pixelfetchctx_ptr_t pfc) -> int { return pfc->miMrtMask; },
+          [](pixelfetchctx_ptr_t pfc, int mask) { pfc->miMrtMask = mask; })
+      .def_property_readonly(
+          "numValues",
+          [](pixelfetchctx_ptr_t pfc) -> int { return pfc->_pickvalues.size(); })
       .def(
-          "color",
-          [](const PixelFetchContext& pfc, int index) -> fvec4 {
+          "value",
+          [type_codec](pixelfetchctx_ptr_t pfc, int index) -> py::object {
             OrkAssert(index >= 0);
-            OrkAssert(index < PixelFetchContext::kmaxitems);
-            return pfc._pickvalues[index].get<fvec4>();
+            OrkAssert(index < pfc->_pickvalues.size());
+            auto encoded = type_codec->encode(pfc->_pickvalues[index]);
+            return encoded;
           })
-      .def(
-          "pointer",
-          [](const PixelFetchContext& pfc, int index) -> fvec4 {
-            OrkAssert(index >= 0);
-            OrkAssert(index < PixelFetchContext::kmaxitems);
-            return pfc._pickvalues[index].get<uint64_t>();
-          })
-      .def("__repr__", [](const PixelFetchContext& pfc) -> std::string {
+      .def("dump", [](pixelfetchctx_ptr_t pfc) -> std::string {
+        std::string rval;
+        rval += FormatString("PixelFetchContext(%p){\n", &pfc);
+        rval += FormatString("  numvals: %zu\n", pfc->_pickvalues.size());
+        for (int i = 0; i < pfc->_pickvalues.size(); i++) {
+          auto& val = pfc->_pickvalues[i];
+          rval += FormatString("    val<%d> : %s\n", i, val.typestr().c_str());
+        }
+        rval += "}\n";
+        return rval;
+      })
+      .def("__repr__", [](pixelfetchctx_ptr_t pfc) -> std::string {
         fxstring<256> fxs;
         fxs.format("PixelFetchContext(%p)", &pfc);
         return fxs.c_str();
       });
+  type_codec->registerStdCodec<pixelfetchctx_ptr_t>(pfc_type);
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<VertexBufferBase>(module_lev2, "VertexBufferBase");
   /////////////////////////////////////////////////////////////////////////////////
@@ -339,7 +340,7 @@ void pyinit_gfx(py::module& module_lev2) {
       .def_static(
           "staticBuffer",
           [](size_t size) -> vb_static_vtxa_t //
-          { return vb_static_vtxa_t(size, 0, PrimitiveType::NONE); });
+          { return vb_static_vtxa_t(size, 0); });
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<vb_static_vtxa_t, VertexBufferBase>(module_lev2, "VtxV12N12B12T8C4_StaticBuffer");
   /////////////////////////////////////////////////////////////////////////////////

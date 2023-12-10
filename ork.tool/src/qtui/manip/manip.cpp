@@ -42,8 +42,12 @@ INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::ManipRZ, "ManipRZ");
 INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::ManipManager, "ManipManager");
 
 ////////////////////////////////////////////////////////////////////////////////
-namespace ork { namespace lev2 {
+namespace ork::lev2 {
 ////////////////////////////////////////////////////////////////////////////////
+
+void ManipulatorInterface::describeX(clazz_t* clazz) {
+
+}
 
 void Manip::Describe() {
 }
@@ -568,4 +572,4 @@ void ManipManager::EnableManip(Manip* pObj) {
 
   RebaseMatrices();
 }
-}} // namespace ork::lev2
+} // namespace ork::lev2

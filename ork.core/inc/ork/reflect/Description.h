@@ -17,8 +17,6 @@
 
 namespace ork {
 
-class ConstString;
-
 namespace object {
 class Signal;
 struct AutoSlot;

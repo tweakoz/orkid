@@ -106,6 +106,7 @@ struct Attribute {
   std::string mInlineStruct;
   std::string mComment;
   bool _typeIsInlineStruct = false;
+  bool _isInteger = false;
   std::vector<std::string> _inlineStructToks;
   std::set<std::string> _typequalifier;
   Attribute(const std::string& nam, const std::string& sem = "")

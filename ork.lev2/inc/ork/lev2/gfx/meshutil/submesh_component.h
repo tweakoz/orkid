@@ -180,7 +180,7 @@ struct vertex {
   void Center(const vertex** pverts, int icnt);
   void center(const std::vector<vertex_ptr_t>& verts);
 
-  uint64_t hash(double quantization=3333.0) const;
+  uint64_t hash(double quantization=1000.0) const;
 
   void dump(const std::string& name) const;
   void clearAllExceptPosition();
@@ -195,7 +195,7 @@ struct vertex {
   int miNumColors = 0;
   int miNumUvs = 0;
 
-  std::string mJointNames[kmaxinfluences];
+  std::string _jointpaths[kmaxinfluences];
 
   fvec4 mCol[kmaxcolors];
   uvmapcoord mUV[kmaxuvs];

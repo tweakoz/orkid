@@ -35,6 +35,7 @@ uniform_set ub_frg {
   sampler2D EmissiveMap;
   sampler2D MtlRufMap;
   vec4 ModColor;
+  uint obj_pickID;
   mat4 v;
   vec2 InvViewportSize; // inverse target size
   float MetallicFactor;
@@ -83,6 +84,7 @@ uniform_set ub_frg_fwd {
   sampler2D UnTexPointLightsData;
 
   vec4 ModColor;
+  uint obj_pickID;
   // vec2 InvViewportSize; // inverse target size
   vec3 EyePostion;
   vec3 EyePostionL;
@@ -164,7 +166,8 @@ fragment_interface iface_fdprepass : ub_frg_fwd {
   }
 }
 ///////////////////////////////////////////////////////////////
-fragment_interface iface_fgbuffer : ub_frg {
+fragment_interface iface_fgbuffer 
+ : ub_frg {
   inputs {
     vec4 frg_wpos;
     vec4 frg_clr;
@@ -235,7 +238,7 @@ libblock lib_pbr_frg : lib_gbuf_encode {
     float mtl      = rufmtlamb.z * MetallicFactor;
     float ruf      = rufmtlamb.y * RoughnessFactor;
     vec3 color     = (modc * frg_clr * texture(ColorMap, UV)).xyz;
-    vec3 emission = texture(EmissiveMap, UV).xyz*modc.xyz;
+    vec3 emission  = texture(EmissiveMap, UV).xyz * modc.xyz;
     out_gbuf       = packGbuffer(color, emission, normal, ruf, mtl);
   }
   void ps_common_vizn(vec4 modc, vec3 N) {
@@ -342,7 +345,8 @@ vertex_shader vs_forward_rigid_vtxcolor : iface_vgbuffer : lib_pbr_vtx {
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_gbuffer_vtxcolor : iface_fgbuffer : lib_pbr_frg {
-  out_gbuf = packGbuffer(vec3(0), frg_clr.xyz, vec3(0), 1, 0);
+  out_gbuf = packGbuffer(vec3(0), frg_clr.xyz, vec3(0,0,1), 1, 0);
+  //out_gbuf = packGbuffer(vec3(0,1,0), vec3(1,1,0), vec3(0,0,1), 1, 0);
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_forward_frgcolor : iface_forward {
@@ -375,34 +379,35 @@ fragment_shader ps_gbuffer_vizn : iface_fgbuffer : lib_pbr_frg {
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_gbuffer_n // normalmap
-    : iface_fgbuffer : lib_pbr_frg {
-  vec3 TN       = texture(NormalMap, frg_uv0).xyz;
-  TN            = mix(TN, vec3(0.5, 1, 0.5), 0.0);
-  vec3 N        = normalize(TN * 2.0 - vec3(1, 1, 1));
+    : iface_fgbuffer 
+    : lib_pbr_frg {
+  vec3 TN = texture(NormalMap, frg_uv0).xyz;
+  TN      = mix(TN, vec3(0.5, 1, 0.5), 0.0);
+  vec3 N  = normalize(TN * 2.0 - vec3(1, 1, 1));
   ps_common_n(ModColor, N, frg_uv0);
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_gbuffer_n_stereo // normalmap
     : iface_fgbuffer : lib_pbr_frg {
-  vec3 TN       = texture(NormalMap, frg_uv0).xyz;
-  vec3 N        = normalize(TN * 2.0 - vec3(1, 1, 1));
+  vec3 TN = texture(NormalMap, frg_uv0).xyz;
+  vec3 N  = normalize(TN * 2.0 - vec3(1, 1, 1));
   if (length(TN) < 0.1)
     N = vec3(0, 0, 0);
   ps_common_n(ModColor, N, frg_uv0);
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_gbuffer_n_instanced : iface_fgbuffer_instanced : lib_pbr_frg {
-  vec3 TN       = texture(NormalMap, frg_uv0).xyz;
-  TN            = mix(TN, vec3(0.5, 1, 0.5), 0.0);
-  vec3 N        = normalize(TN * 2.0 - vec3(1, 1, 1));
+  vec3 TN = texture(NormalMap, frg_uv0).xyz;
+  TN      = mix(TN, vec3(0.5, 1, 0.5), 0.0);
+  vec3 N  = normalize(TN * 2.0 - vec3(1, 1, 1));
   if (length(TN) < 0.1)
     N = vec3(0, 0, 0);
   ps_common_n(frg_modcolor, N, frg_uv0);
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_gbuffer_n_stereo_instanced : iface_fgbuffer_instanced : lib_pbr_frg {
-  vec3 TN       = texture(NormalMap, frg_uv0).xyz;
-  vec3 N        = normalize(TN * 2.0 - vec3(1, 1, 1));
+  vec3 TN = texture(NormalMap, frg_uv0).xyz;
+  vec3 N  = normalize(TN * 2.0 - vec3(1, 1, 1));
   if (length(TN) < 0.1)
     N = vec3(0, 0, 0);
   ps_common_n(frg_modcolor, N, frg_uv0);
@@ -415,8 +420,8 @@ fragment_shader ps_gbuffer_n_tex_stereo // normalmap (stereo texture - vsplit)
   vec2 map_uv    = frg_uv0 * vec2(1, 0.5);
   if (is_right)
     map_uv += vec2(0, 0.5);
-  vec3 TN       = texture(NormalMap, map_uv).xyz;
-  vec3 N        = TN * 2.0 - vec3(1, 1, 1);
+  vec3 TN = texture(NormalMap, map_uv).xyz;
+  vec3 N  = TN * 2.0 - vec3(1, 1, 1);
   ps_common_n(ModColor, N, map_uv);
 }
 
@@ -525,6 +530,14 @@ vertex_shader vs_forward_instanced_stereo : iface_forward_stereo_instanced : lib
   gl_ViewportMask[0]            = 1;
   gl_SecondaryViewportMaskNV[0] = 2;
 }
+vertex_shader vs_forward_skinned_mono : iface_vgbuffer_skinned : skin_tools : lib_pbr_vtx {
+  vec4 skn_pos = vec4(SkinPosition(position.xyz), 1);
+  vec3 skn_nrm = SkinNormal(normal);
+  vec3 skn_bit = SkinNormal(binormal); // // technically binormal is a bitangent
+  vs_common(skn_pos, skn_nrm, skn_bit);
+  ////////////////////////////////
+  gl_Position = mvp * skn_pos;
+}
 vertex_shader vs_forward_skinned_stereo : iface_vgbuffer_skinned : skin_tools : lib_pbr_vtx : extension(GL_NV_stereo_view_rendering)
     : extension(GL_NV_viewport_array2) {
   vec4 skn_pos = vec4(SkinPosition(position.xyz), 1);
@@ -539,7 +552,12 @@ vertex_shader vs_forward_skinned_stereo : iface_vgbuffer_skinned : skin_tools : 
   gl_SecondaryViewportMaskNV[0] = 2;
 }
 //////////////////////////////////////
-fragment_shader ps_forward_test : iface_forward : lib_math : lib_brdf : lib_def : lib_fwd {
+fragment_shader ps_forward_test //
+    : iface_forward             //
+    : lib_math                  //
+    : lib_brdf                  //
+    : lib_def                   //
+    : lib_fwd {                 //
   out_color = vec4(forward_lighting_mono(ModColor.xyz), 1);
 }
 fragment_shader ps_forward_test_instanced_mono : iface_forward : lib_math : lib_brdf : lib_def : lib_fwd {
@@ -652,3 +670,103 @@ fragment_shader ps_forward_unlit : iface_forward {
   vec3 rgb  = texture(ColorMap, frg_uv0).xyz * ModColor.xyz;
   out_color = vec4(ModColor.xyz, 1);
 }
+///////////////////////////////////////////////////////////////
+// picking
+///////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////
+vertex_interface iface_vtx_pick_skinned //
+    : iface_skintools {                 //
+  inputs {
+    vec4 position : POSITION;
+    vec3 normal : NORMAL;
+    vec2 uv0 : TEXCOORD0;
+    uvec3 pickSUBID : TEXCOORD1;
+  }
+  outputs {
+    vec3 frg_wpos;
+    vec3 frg_wnrm;
+    vec2 frg_uv;
+    flat uvec3 frg_pickSUBID;
+  }
+}
+///////////////////////////////////////////////////////////////
+vertex_interface iface_vtx_pick_rigid {
+  inputs {
+    vec4 position : POSITION;
+    vec3 normal : NORMAL;
+    uvec3 pickSUBID : TEXCOORD1;
+  }
+  outputs {
+    vec3 frg_wpos;
+    vec3 frg_wnrm;
+    vec2 frg_uv;
+    flat uvec3 frg_pickSUBID;
+  }
+}
+///////////////////////////////////////////////////////////////
+fragment_interface iface_frg_pick : ub_frg_fwd {
+  inputs {
+    vec3 frg_wpos;
+    vec3 frg_wnrm;
+    vec2 frg_uv;
+    flat uvec3 frg_pickSUBID;
+  }
+  outputs {
+    layout(location = 0) uvec4 out_pickID;
+    layout(location = 1) vec4 out_wpos;
+    layout(location = 2) vec4 out_wnrm;
+    layout(location = 3) vec4 out_uv;
+  }
+}
+///////////////////////////////////////////////////////////////
+vertex_shader vs_pick_skinned_mono : iface_vtx_pick_skinned : skin_tools : ub_vtx {
+  vec4 skn_pos = vec4(SkinPosition(position.xyz), 1);
+  vec3 skn_nrm = SkinNormal(normal);
+  gl_Position  = mvp * skn_pos;
+  frg_wpos     = (m * skn_pos).xyz;
+  frg_wnrm     = normalize(mrot * skn_nrm);
+  frg_uv      = uv0;
+  frg_pickSUBID  = pickSUBID;
+}
+///////////////////////////////////////////////////////////////
+vertex_shader vs_pick_rigid_mono : iface_vtx_pick_rigid : ub_vtx {
+  gl_Position = mvp * position;
+  frg_wpos    = (m * position).xyz;
+  frg_wnrm    = normalize(mrot * normal);
+  frg_uv      = vec2(0,0);
+  frg_pickSUBID  = pickSUBID;
+}
+///////////////////////////////////////////////////////////////
+vertex_shader vs_pick_rigid_instanced_mono : iface_vtx_pick_rigid : ub_vtx {
+  int matrix_v   = (gl_InstanceID >> 10);
+  int matrix_u   = (gl_InstanceID & 0x3ff) << 2;
+  int modcolor_u = (gl_InstanceID & 0xfff);
+  int modcolor_v = (gl_InstanceID >> 12);
+  ////////////////////////////////
+  mat4 instance_matrix = mat4(
+      texelFetch(InstanceMatrices, ivec2(matrix_u + 0, matrix_v), 0),
+      texelFetch(InstanceMatrices, ivec2(matrix_u + 1, matrix_v), 0),
+      texelFetch(InstanceMatrices, ivec2(matrix_u + 2, matrix_v), 0),
+      texelFetch(InstanceMatrices, ivec2(matrix_u + 3, matrix_v), 0));
+  mat3 instance_rot = mat3(instance_matrix);
+  ////////////////////////////////
+  vec4 instanced_pos      = (instance_matrix * position);
+  vec4 instanced_modcolor = texelFetch(InstanceColors, ivec2(modcolor_u, modcolor_v), 0);
+  vec3 wnormal            = normalize(instance_rot * normal);
+  ////////////////////////////////
+  gl_Position = mvp * position;
+  frg_wpos    = (m * position).xyz;
+  frg_wnrm    = normalize(mrot * normal);
+  frg_uv = vec2(0,0);
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_pick //
+    : iface_frg_pick {
+
+  out_pickID = uvec4(obj_pickID,frg_pickSUBID.x,frg_pickSUBID.y,frg_pickSUBID.z);
+
+  out_wpos  = vec4(frg_wpos,0);
+  out_wnrm  = vec4(normalize(frg_wnrm), 0);
+  out_uv  = vec4(frg_uv, 0, 0);
+}
+///////////////////////////////////////////////////////////////

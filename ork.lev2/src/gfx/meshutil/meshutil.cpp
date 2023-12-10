@@ -400,11 +400,11 @@ void FlatSubMesh::fromSubmesh(const submesh& mesh){
     auto invtx = mesh.vertex(iv0);
     const auto& pos     = invtx->mPos;
     const auto& nrm     = invtx->mNrm;
-    OutVertex.mPosition = fvec3(pos.x, pos.y, pos.z);
-    OutVertex.mNormal   = fvec3(nrm.x, nrm.y, nrm.z);
-    OutVertex.mBiNormal = invtx->mUV[0].mMapBiNormal;
-    OutVertex.mUV0      = invtx->mUV[0].mMapTexCoord;
-    OutVertex.mColor    = invtx->mCol[0].RGBAU32();
+    OutVertex._position = fvec3(pos.x, pos.y, pos.z);
+    OutVertex._normal   = fvec3(nrm.x, nrm.y, nrm.z);
+    OutVertex._binormal = invtx->mUV[0].mMapBiNormal;
+    OutVertex._uv      = invtx->mUV[0].mMapTexCoord;
+    OutVertex._color    = invtx->mCol[0].RGBAU32();
     MergeVertsT8.push_back(OutVertex);
   }
   ////////////////////////////////////////////////////////

@@ -38,6 +38,11 @@ float Context::currentDPI() const {
 void Context::describeX(class_t* clazz) {
 }
 
+void Context::triggerFrameDebugCapture(){
+  _isFrameDebugCapture = true;
+  _doTriggerFrameDebugCapture();
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 void Context::beginFrame(bool visual) {
@@ -48,6 +53,9 @@ void Context::beginFrame(bool visual) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void Context::endFrame(void) {
+  for (auto l : _onBeforeDoEndFrameOneShotCallbacks)
+    l();
+  _onBeforeDoEndFrameOneShotCallbacks.clear();
   _doEndFrame();
 }
 

@@ -7,6 +7,7 @@
 #include <ork/lev2/gfx/dbgfontman.h>
 #include <ork/lev2/gfx/gfxprimitives.h>
 #include <ork/kernel/opq.h>
+#include <ork/lev2/gfx/gfxvtxbuf.inl>
 
 namespace ork { namespace ui {
 

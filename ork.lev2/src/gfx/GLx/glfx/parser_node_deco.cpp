@@ -44,6 +44,16 @@ void DecoBlockNode::parse(GlSlFxParser* parser, const ScannerView& view) {
 
   auto topnode = parser->_topNode;
 
+  // default extensions
+
+  auto extnode        = std::make_shared<RequiredExtensionNode>();
+  extnode->_extension = "GL_ARB_gpu_shader_int64";
+  _requiredExtensions.push_back(extnode);
+
+  extnode        = std::make_shared<RequiredExtensionNode>();
+  extnode->_extension = "GL_NV_gpu_shader5";
+  _requiredExtensions.push_back(extnode);
+
   /////////////////////////////
   // fetch block decorators
   /////////////////////////////

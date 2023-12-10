@@ -9,7 +9,7 @@
 #include <ork/pch.h>
 #include <ork/math/misc_math.h>
 #include <ork/lev2/gfx/gfxenv.h>
-#include <ork/lev2/gfx/gfxvtxbuf.h>
+#include <ork/lev2/gfx/gfxvtxbuf.inl>
 #include <ork/lev2/gfx/gfxprimitives.h>
 #include <ork/math/gradient.h>
 

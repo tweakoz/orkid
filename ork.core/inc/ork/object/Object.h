@@ -61,6 +61,10 @@ public:
 
   boost::uuids::uuid _uuid;
 
+  template <typename T> //
+  std::shared_ptr<T> //
+  queryInterface(const ConstString& interfaceID) const;
+
 private:
   virtual void doNotify(const event::Event* pEV) {
     return;

@@ -27,7 +27,7 @@ void Shader::dumpFinalText() const {
 ///////////////////////////////////////////////////////////////////////////////
 
 bool Shader::Compile() {
-  GL_NF_ERRORCHECK();
+  GL_ERRORCHECK();
 
   Timer ctimer;
   ctimer.Start();

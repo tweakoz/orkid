@@ -49,7 +49,7 @@ public:
   void DrawPrimitive(
       GfxMaterial* mtl,
       const VertexBufferBase& VBuf, //
-      PrimitiveType eType = PrimitiveType::NONE,
+      PrimitiveType eType,
       int ivbase           = 0,
       int ivcount          = 0);
 
@@ -57,26 +57,30 @@ public:
       GfxMaterial* mtl,
       const VertexBufferBase& VBuf,
       const IndexBufferBase& IdxBuf,
-      PrimitiveType eType);
+      PrimitiveType eType,
+      int ivbase           = 0,
+      int ivcount          = 0);
 
   ///////////////////////////////////////////////////////
 
   virtual void DrawPrimitiveEML(
       const VertexBufferBase& VBuf, //
-      PrimitiveType eType = PrimitiveType::NONE,
+      PrimitiveType eType,
       int ivbase           = 0,
       int ivcount          = 0) = 0;
 
   virtual void DrawPrimitiveEML(
       const FxShaderStorageBuffer* SSBO, //
-      PrimitiveType eType = PrimitiveType::NONE,
+      PrimitiveType eType,
       int ivbase           = 0,
       int ivcount          = 0) = 0;
 
   virtual void DrawIndexedPrimitiveEML(
       const VertexBufferBase& VBuf,
       const IndexBufferBase& IdxBuf,
-      PrimitiveType eType) = 0;
+      PrimitiveType eType,
+      int ivbase           = 0,
+      int ivcount          = 0) = 0;
 
   virtual void DrawInstancedIndexedPrimitiveEML(
       const VertexBufferBase& VBuf,

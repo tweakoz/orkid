@@ -38,23 +38,7 @@ extern appinitdata_ptr_t _ginitdata;
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 void CompositingData::describeX(class_t* c) {
-/*  using namespace ork::reflect;
-
-  RegisterProperty("Enable", &CompositingData::mbEnable);
-
-  RegisterMapProperty("Groups", &CompositingData::_groups);
-  annotatePropertyForEditor<CompositingData>("Groups", "editor.factorylistbase", "CompositingGroup");
-
-  RegisterMapProperty("Scenes", &CompositingData::_scenes);
-  annotatePropertyForEditor<CompositingData>("Scenes", "editor.factorylistbase", "CompositingScene");
-
-  RegisterProperty("ActiveScene", &CompositingData::_activeScene);
-  RegisterProperty("ActiveItem", &CompositingData::_activeItem);
-
-  static const char* EdGrpStr = "grp://Main Enable ActiveScene ActiveItem "
-                                "grp://Data Groups Scenes ";
-  reflect::annotateClassForEditor<CompositingData>("editor.prop.groups", EdGrpStr);
-*/}
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -94,23 +78,6 @@ RenderPresetContext CompositingData::presetUnlit(rtgroup_ptr_t outputgrp) {
   rval._rendernode = r1;
 
   return rval;
-}
-
-//////////////////////////////////////////////////////////////////////////////
-
-void CompositingData::presetPicking() {
-
-  auto t1 = std::make_shared<NodeCompositingTechnique>();
-  auto o1 = t1->createOutputNode<RtGroupOutputCompositingNode>();
-  auto r1 = t1->createRenderNode<PickingCompositingNode>();
-
-  auto s1 = std::make_shared<CompositingScene>();
-  auto i1 = std::make_shared<CompositingSceneItem>();
-  i1->_technique = t1;
-  s1->_items["item1"]=i1;
-  _activeScene = "scene1";
-  _activeItem  = "item1";
-  _scenes["scene1"]=s1;
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -179,6 +146,37 @@ RenderPresetContext CompositingData::presetPBRVR() {
   rval._rendernode = r1;
 
   return rval;
+}
+
+//////////////////////////////////////////////////////////////////////////////
+
+void CompositingData::presetPicking() {
+
+  auto t1 = std::make_shared<NodeCompositingTechnique>();
+  auto o1 = t1->createOutputNode<RtGroupOutputCompositingNode>();
+  auto r1 = t1->createRenderNode<PickingCompositingNode>();
+
+  auto s1 = std::make_shared<CompositingScene>();
+  auto i1 = std::make_shared<CompositingSceneItem>();
+  i1->_technique = t1;
+  s1->_items["item1"]=i1;
+  _activeScene = "scene1";
+  _activeItem  = "item1";
+  _scenes["scene1"]=s1;
+}
+void CompositingData::presetPickingDebug() {
+
+  auto t1 = std::make_shared<NodeCompositingTechnique>();
+  auto o1 = t1->createOutputNode<ScreenOutputCompositingNode>();
+  auto r1 = t1->createRenderNode<PickingCompositingNode>();
+
+  auto s1 = std::make_shared<CompositingScene>();
+  auto i1 = std::make_shared<CompositingSceneItem>();
+  i1->_technique = t1;
+  s1->_items["item1"]=i1;
+  _activeScene = "scene1";
+  _activeItem  = "item1";
+  _scenes["scene1"]=s1;
 }
 
 //////////////////////////////////////////////////////////////////////////////

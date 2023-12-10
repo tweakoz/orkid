@@ -7,6 +7,7 @@
 
 #include "vcdviewer.h"
 #include <ork/lev2/input/inputdevice.h>
+#include <ork/lev2/gfx/gfxvtxbuf.inl>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -16,7 +17,7 @@ SignalTrackWidget::SignalTrackWidget(
     : Widget("SignalTrackWidget")
     , _color(color)
     , _signal(sig)
-    , _vtxbuf(1 << 20, 0, PrimitiveType::NONE) {
+    , _vtxbuf(1 << 20, 0) {
   _textcolor = fvec4(1, 1, 1, 1);
 }
 

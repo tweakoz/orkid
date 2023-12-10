@@ -215,7 +215,7 @@ void SdfSceneData::describeX(ork::object::ObjectClass* clazz) {
 struct GpuResources {
 
   GpuResources(Context* ctx, file::Path this_dir) {
-    _renderer = std::make_shared<DefaultRenderer>();
+    _renderer = std::make_shared<IRenderer>();
     _lightmgr = std::make_shared<LightManager>(_lmd);
 
     _camlut  = std::make_shared<CameraDataLut>();

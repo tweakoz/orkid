@@ -32,6 +32,7 @@ void pyinit_gfx_pbr(py::module& module_lev2);
 void pyinit_midi(py::module& module_lev2);
 void pyinit_gfx_camera(py::module& module_lev2);
 void pyinit_vr(py::module& module_lev2);
+void pyinit_editor(py::module& module_lev2);
 
 void ClassInit();
 void GfxInit();
@@ -151,6 +152,7 @@ PYBIND11_MODULE(_lev2, module_lev2) {
   pyinit_gfx_xgmanim(module_lev2);
   pyinit_gfx_pbr(module_lev2);
   pyinit_vr(module_lev2);
+  pyinit_editor(module_lev2);
   //////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////
   auto type_codec = python::TypeCodec::instance();

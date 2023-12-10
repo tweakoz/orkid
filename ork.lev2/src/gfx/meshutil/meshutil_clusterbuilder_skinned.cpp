@@ -11,6 +11,7 @@
 #include <ork/lev2/gfx/meshutil/meshutil_stripper.h>
 #include <ork/lev2/gfx/meshutil/meshutil_fixedgrid.h>
 #include <ork/util/logger.h>
+#include <ork/lev2/gfx/gfxvtxbuf.inl>
 
 const bool gbFORCEDICE = true;
 const int kDICESIZE    = 512;
@@ -25,11 +26,11 @@ XgmSkinnedClusterBuilder::XgmSkinnedClusterBuilder(const XgmClusterizer& cluster
 
 ///////////////////////////////////////////////////////////////////////////////
 
-int XgmSkinnedClusterBuilder::FindNewBoneIndex(const std::string& BoneName) {
+int XgmSkinnedClusterBuilder::findNewJointIndex(const std::string& joint_path) {
   int rval                                        = -1;
-  orkmap<std::string, int>::const_iterator itBONE = _boneRegisterMap.find(BoneName);
-  if (_boneRegisterMap.end() != itBONE) {
-    rval = (*itBONE).second;
+  auto itJ = _jointRegisterMapX.find(joint_path);
+  if (_jointRegisterMapX.end() != itJ) {
+    rval = (*itJ).second;
   }
   //	OrkAssert( rval>=0 );
   return rval;
@@ -54,50 +55,49 @@ bool XgmSkinnedClusterBuilder::addTriangle(const XgmClusterTri& Triangle) {
   // make sure triangle will absolutely fit in the vertex buffer
   ///////////////////////////////////////
 
-  bool bAddTriangle             = false;
+  bool do_add_triangle             = false;
   const int kMaxBonesPerCluster = _clusterizer._policy._maxBonesPerCluster;
   orkset<std::string> AddThisRun;
   for (int i = 0; i < 3; i++) {
     int inumw = Triangle._vertex[i].miNumWeights;
     for (int iw = 0; iw < inumw; iw++) {
-      const std::string& BoneName         = Triangle._vertex[i].mJointNames[iw];
-      bool IsBoneResidentInClusterAlready = _boneRegisterMap.find(BoneName) != _boneRegisterMap.end();
-      if (IsBoneResidentInClusterAlready) {
-      } else if (AddThisRun.find(BoneName) == AddThisRun.end()) {
-        AddThisRun.insert(BoneName);
+      const std::string& joint_path         = Triangle._vertex[i]._jointpaths[iw];
+      bool already_resident = _jointRegisterMapX.find(joint_path) != _jointRegisterMapX.end();
+      if (already_resident) {
+      } else if (AddThisRun.find(joint_path) == AddThisRun.end()) {
+        AddThisRun.insert(joint_path);
       }
     }
   }
   size_t NumBonesToAllocate = AddThisRun.size();
   if (0 == NumBonesToAllocate) {
-    bAddTriangle = true;
+    do_add_triangle = true;
   } else {
-    size_t NumBonesAlreadyAllocated = _boneRegisterMap.size();
+    size_t NumBonesAlreadyAllocated = _jointRegisterMapX.size();
     size_t NumBonesFreeInCluster    = (size_t)kMaxBonesPerCluster - NumBonesAlreadyAllocated;
     if (NumBonesFreeInCluster <= 0) { // orkprintf( "Current Cluster [%08x] Is Full\n", this );
       return false;
     } else if (NumBonesToAllocate <= NumBonesFreeInCluster) {
-      for (orkset<std::string>::const_iterator it = AddThisRun.begin(); it != AddThisRun.end(); it++) {
-        const std::string& BoneName = *it;
-        int iBoneREG                = (int)_boneRegisterMap.size();
-        // orkprintf( "SKIN: <Cluster %08x> <Adding New Bone %d> <Reg%02d> <Bone:%s>\n", this, AddThisRun.size(), iBoneREG,
-        // BoneName.c_str() );
-        if (_boneRegisterMap.find(BoneName) == _boneRegisterMap.end()) {
-          std::pair<std::string, int> NewBone(BoneName, iBoneREG);
-          _boneRegisterMap.insert(NewBone);
+      for (auto joint_path : AddThisRun ) {
+        int register_index                = (int)_jointRegisterMapX.size();
+        // orkprintf( "SKIN: <Cluster %08x> <Adding New Bone %d> <Reg%02d> <Bone:%s>\n", this, AddThisRun.size(), register_index,
+        // joint_path.c_str() );
+        if (_jointRegisterMapX.find(joint_path) == _jointRegisterMapX.end()) {
+          std::pair<std::string, int> new_joint(joint_path, register_index);
+          _jointRegisterMapX.insert(new_joint);
           // orkprintf( "Cluster[%08x] Adding BoneRec [Reg%02d:Bone:%s]\n", this, iBoneREG, BoneName.c_str() );
         }
       }
-      bAddTriangle = true;
+      do_add_triangle = true;
     }
   }
-  if (bAddTriangle) {
+  if (do_add_triangle) {
     auto v0 = _submesh.mergeVertex(Triangle._vertex[0]);
     auto v1 = _submesh.mergeVertex(Triangle._vertex[1]);
     auto v2 = _submesh.mergeVertex(Triangle._vertex[2]);
     _submesh.mergePoly(Polygon(v0, v1, v2));
   }
-  return bAddTriangle;
+  return do_add_triangle;
 }
 
 void XgmSkinnedClusterBuilder::buildVertexBuffer(lev2::Context& context, lev2::EVtxStreamFormat format) {
@@ -134,7 +134,7 @@ void XgmSkinnedClusterBuilder::BuildVertexBuffer_V12N12B12T8I4W4(lev2::Context& 
   const double kVertexScale(1.0f);
   const fvec2 UVScale(1.0f, 1.0f);
   int NumVertexIndices = _submesh.numVertices();
-  _vertexBuffer        = std::make_shared<vtxbuf_t>(NumVertexIndices, 0, ork::lev2::PrimitiveType::MULTI);
+  _vertexBuffer        = std::make_shared<vtxbuf_t>(NumVertexIndices, 0);
   vwriter.Lock(&context, _vertexBuffer.get(), NumVertexIndices);
 
   for (int iv = 0; iv < NumVertexIndices; iv++) {
@@ -147,15 +147,15 @@ void XgmSkinnedClusterBuilder::BuildVertexBuffer_V12N12B12T8I4W4(lev2::Context& 
     OutVtx.mUV0                   = InVtx.mUV[0].mMapTexCoord * UVScale;
     OutVtx.mBiNormal              = InVtx.mUV[0].mMapBiNormal;
 
-    const std::string& jn0 = InVtx.mJointNames[0];
-    const std::string& jn1 = InVtx.mJointNames[1];
-    const std::string& jn2 = InVtx.mJointNames[2];
-    const std::string& jn3 = InVtx.mJointNames[3];
+    const std::string& jn0 = InVtx._jointpaths[0];
+    const std::string& jn1 = InVtx._jointpaths[1];
+    const std::string& jn2 = InVtx._jointpaths[2];
+    const std::string& jn3 = InVtx._jointpaths[3];
 
-    int index0 = FindNewBoneIndex(jn0);
-    int index1 = FindNewBoneIndex(jn1);
-    int index2 = FindNewBoneIndex(jn2);
-    int index3 = FindNewBoneIndex(jn3);
+    int index0 = findNewJointIndex(jn0);
+    int index1 = findNewJointIndex(jn1);
+    int index2 = findNewJointIndex(jn2);
+    int index3 = findNewJointIndex(jn3);
 
     index0 = (index0 == -1) ? 0 : index0;
     index1 = (index1 == -1) ? 0 : index1;
@@ -219,7 +219,7 @@ void XgmSkinnedClusterBuilder::BuildVertexBuffer_V12N12T8I4W4(lev2::Context& con
   const fvec2 UVScale(1.0f, 1.0f);
   int NumVertexIndices = _submesh.numVertices();
 
-  _vertexBuffer = std::make_shared<vtxbuf_t>(NumVertexIndices, 0, ork::lev2::PrimitiveType::MULTI);
+  _vertexBuffer = std::make_shared<vtxbuf_t>(NumVertexIndices, 0);
   vwriter.Lock(&context, _vertexBuffer.get(), NumVertexIndices);
   for (int iv = 0; iv < NumVertexIndices; iv++) {
     vtx_t OutVtx;
@@ -229,15 +229,15 @@ void XgmSkinnedClusterBuilder::BuildVertexBuffer_V12N12T8I4W4(lev2::Context& con
     OutVtx.mPosition              = fvec3(pos.x, pos.y, pos.z);
     OutVtx.mNormal               = fvec3(nrm.x, nrm.y, nrm.z);
     OutVtx.mUV0                   = InVtx.mUV[0].mMapTexCoord * UVScale;
-    const std::string& jn0 = InVtx.mJointNames[0];
-    const std::string& jn1 = InVtx.mJointNames[1];
-    const std::string& jn2 = InVtx.mJointNames[2];
-    const std::string& jn3 = InVtx.mJointNames[3];
+    const std::string& jn0 = InVtx._jointpaths[0];
+    const std::string& jn1 = InVtx._jointpaths[1];
+    const std::string& jn2 = InVtx._jointpaths[2];
+    const std::string& jn3 = InVtx._jointpaths[3];
 
-    int index0 = FindNewBoneIndex(jn0);
-    int index1 = FindNewBoneIndex(jn1);
-    int index2 = FindNewBoneIndex(jn2);
-    int index3 = FindNewBoneIndex(jn3);
+    int index0 = findNewJointIndex(jn0);
+    int index1 = findNewJointIndex(jn1);
+    int index2 = findNewJointIndex(jn2);
+    int index3 = findNewJointIndex(jn3);
 
     index0 = (index0 == -1) ? 0 : index0;
     index1 = (index1 == -1) ? 0 : index1;
@@ -269,7 +269,7 @@ void XgmSkinnedClusterBuilder::BuildVertexBuffer_V12N6I1T4(lev2::Context& contex
   const float kVertexScale(1.0f);
   const fvec2 UVScale(1.0f, 1.0f);
   int NumVertexIndices = _submesh.numVertices();
-  _vertexBuffer        = std::make_shared<vtxbuf_t>(NumVertexIndices, 0, ork::lev2::PrimitiveType::MULTI);
+  _vertexBuffer        = std::make_shared<vtxbuf_t>(NumVertexIndices, 0);
   vwriter.Lock(&context, _vertexBuffer.get(), NumVertexIndices);
   for (int iv = 0; iv < NumVertexIndices; iv++) {
     vtx_t OutVtx;
@@ -288,15 +288,15 @@ void XgmSkinnedClusterBuilder::BuildVertexBuffer_V12N6I1T4(lev2::Context& contex
 
     ///////////////////////////////////////
 
-    const std::string& jn0 = InVtx.mJointNames[0];
-    const std::string& jn1 = InVtx.mJointNames[1];
-    const std::string& jn2 = InVtx.mJointNames[2];
-    const std::string& jn3 = InVtx.mJointNames[3];
+    const std::string& jn0 = InVtx._jointpaths[0];
+    const std::string& jn1 = InVtx._jointpaths[1];
+    const std::string& jn2 = InVtx._jointpaths[2];
+    const std::string& jn3 = InVtx._jointpaths[3];
 
-    int index0 = FindNewBoneIndex(jn0);
-    int index1 = FindNewBoneIndex(jn1);
-    int index2 = FindNewBoneIndex(jn2);
-    int index3 = FindNewBoneIndex(jn3);
+    int index0 = findNewJointIndex(jn0);
+    int index1 = findNewJointIndex(jn1);
+    int index2 = findNewJointIndex(jn2);
+    int index3 = findNewJointIndex(jn3);
 
     index0 = (index0 == -1) ? 0 : index0;
     index1 = (index1 == -1) ? 0 : index1;

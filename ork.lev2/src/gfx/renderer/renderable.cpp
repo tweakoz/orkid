@@ -15,8 +15,7 @@ namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
 IRenderable::IRenderable()
-    : _object(0)
-    , _modColor(fcolor4::White())
+    : _modColor(fcolor4::White())
     , _drawDataA(nullptr)
     , _drawDataB(nullptr) {
 }
@@ -26,11 +25,11 @@ uint32_t IRenderable::ComposeSortKey(const IRenderer* renderer) const { // virtu
   return 0;
 }
 
-void IRenderable::SetObject(const ork::Object* o) {
-  _object = o;
+void IRenderable::setObject(const ork::Object* o) {
+  _pickID.set<const ork::Object*>(o);
 }
-const ork::Object* IRenderable::GetObject() const {
-  return _object;
+const ork::Object* IRenderable::getObject() const {
+  return _pickID.get<const ork::Object*>();
 }
 
 const fcolor4& IRenderable::GetModColor() const {

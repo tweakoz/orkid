@@ -272,7 +272,7 @@ struct NVMSIMPL {
   ork::fixedvector<fvec4, KMAXTILECOUNT> _chunktiles_pos;
   ork::fixedvector<fvec4, KMAXTILECOUNT> _chunktiles_uva;
   ork::fixedvector<fvec4, KMAXTILECOUNT> _chunktiles_uvb;
-  FxUniformBuffer* _lightbuffer          = nullptr;
+  fxuniformbuffer_ptr_t _lightbuffer          = nullptr;
   FxShaderStorageBuffer* _storagebuffer      = nullptr;
   const FxShaderStorageBlock* _storageparam  = nullptr;
   const FxComputeShader* _lightprojectshader = nullptr;

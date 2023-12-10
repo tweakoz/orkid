@@ -24,6 +24,29 @@ class ManipManager;
 
 ////////////////////////////////////////////////////////////////////////////////
 
+struct ManipulatorInterface : public Object {
+
+  DeclareAbstractX(ManipulatorInterface, Object);
+
+  virtual bool supportsTranslation() const { return false; }
+  virtual bool supportsRotation() const { return false; }
+  virtual bool supportsScaling() const { return false; }
+
+  virtual void _onBeginTranslation(ManipManager* pmanip, ui::event_constptr_t EV){}
+  virtual void _onUpdateTranslation(ManipManager* pmanip, ui::event_constptr_t EV){}
+  virtual void _onEndTranslation(ManipManager* pmanip, ui::event_constptr_t EV){}
+
+  virtual void _onBeginRotation(ManipManager* pmanip, ui::event_constptr_t EV){}
+  virtual void _onUpdateRotation(ManipManager* pmanip, ui::event_constptr_t EV){}
+  virtual void _onEndRotation(ManipManager* pmanip, ui::event_constptr_t EV){}
+
+  virtual void _onBeginScaling(ManipManager* pmanip, ui::event_constptr_t EV){}
+  virtual void _onUpdateScaling(ManipManager* pmanip, ui::event_constptr_t EV){}
+  virtual void _onEndScaling(ManipManager* pmanip, ui::event_constptr_t EV){}
+};
+
+////////////////////////////////////////////////////////////////////////////////
+
 struct IntersectionRecord {
   fvec3 mIntersectionPoint;
   fvec3 mOldIntersectionPoint;

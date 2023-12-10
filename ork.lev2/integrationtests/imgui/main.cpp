@@ -36,7 +36,7 @@ int main(int argc, char** argv, char** envp) {
   /////////////////////////////////////////////////////////////////////////
 
   lev2::initModule(initdata);
-  imgui::initModule(initdata);
+  lev2::editor::imgui::initModule(initdata);
 
   /////////////////////////////////////////////////////////////////////////
   // Create App
@@ -67,7 +67,7 @@ int main(int argc, char** argv, char** envp) {
   // GPU init
   /////////////////////////////////////////////////////////////////////////
 
-  auto renderer = std::make_shared<DefaultRenderer>();
+  auto renderer = std::make_shared<IRenderer>();
   auto sframe = std::make_shared<StandardCompositorFrame>();
   sframe->_use_imgui_docking = true;
 

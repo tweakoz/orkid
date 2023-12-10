@@ -35,6 +35,8 @@ struct AppWindow;
 struct Font;
 struct FontMan;
 struct SRasterState;
+struct PixelFetchContext;
+struct PickBuffer;
 
 //
 using gfxcontext_lambda_t = std::function<void(Context*)>;
@@ -48,6 +50,9 @@ using font_ptr_t = std::shared_ptr<Font>;
 using fontman_ptr_t = std::shared_ptr<FontMan>;
 using font_rawconstptr_t = const Font*;
 using rasterstate_ptr_t = std::shared_ptr<SRasterState>;
+using pixelfetchctx_ptr_t = std::shared_ptr<PixelFetchContext>;
+
+using pickvariant_t = svar128_t;
 
 using context_factory_t = std::function<context_ptr_t()>;
 ///////////////////////////////////////////////////////////////////////////////
@@ -116,7 +121,6 @@ using rcid_lambda_t = std::function<void(const RenderContextInstData&)>;
 ///////////////////////////////////////////////////////////////////////////////
 // FxShader/FxPipeline
 ///////////////////////////////////////////////////////////////////////////////
-
 struct FxShader;
 struct FxShaderTechnique;
 struct FxShaderParam;
@@ -300,9 +304,9 @@ struct IRenderer;
 struct IRenderable;
 struct FrameRenderer;
 struct FrameTechniqueBase;
-struct DefaultRenderer;
+struct IRenderer;
 using irenderer_ptr_t         = std::shared_ptr<IRenderer>;
-using defaultrenderer_ptr_t         = std::shared_ptr<DefaultRenderer>;
+using defaultrenderer_ptr_t         = std::shared_ptr<IRenderer>;
 using rendervar_t = varmap::var_t;
 using rendervar_usermap_t = orklut<CrcString, rendervar_t>;
 using rendervar_strmap_t   = orklut<std::string, rendervar_t>;
@@ -441,7 +445,6 @@ using fxshaderasset_constptr_t = std::shared_ptr<const FxShaderAsset>;
 ///////////////////////////////////////////////////////////////////////////////
 
 class TextureAnimationInst;
-class PickBuffer;
 
 ///////////////////////////////////////////////////////////////////////////////
 // PBR

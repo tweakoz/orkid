@@ -170,6 +170,8 @@ struct CompositingPassData {
   std::unordered_set<std::string> _layernameset;
   int _width = 0;
   int _height = 0;
+  
+  std::string _debugName;
 };
 
 typedef std::stack<lev2::CompositingPassData> compositingpassdatastack_t;
@@ -230,6 +232,7 @@ public:
 
   void presetDefault();
   void presetPicking();
+  void presetPickingDebug();
   RenderPresetContext presetUnlit(rtgroup_ptr_t outputgrp = nullptr);
   RenderPresetContext presetDeferredPBR(rtgroup_ptr_t outputgrp = nullptr);
   RenderPresetContext presetForwardPBR(rtgroup_ptr_t outputgrp = nullptr);

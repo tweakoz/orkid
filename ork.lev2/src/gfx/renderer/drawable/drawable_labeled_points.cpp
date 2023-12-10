@@ -13,6 +13,7 @@
 #include <ork/lev2/gfx/dbgfontman.h>
 #include <ork/lev2/gfx/meshutil/submesh.h>
 #include <ork/reflect/properties/registerX.inl>
+#include <ork/lev2/gfx/gfxvtxbuf.inl>
 
 ImplementReflectionX(ork::lev2::LabeledPointDrawableData, "LabeledPointDrawableData");
 
@@ -36,7 +37,7 @@ void LabeledPointDrawable::enqueueToRenderQueue(drawablebufitem_constptr_t item,
   auto& cb_renderable = renderer->enqueueCallback();
   auto worldmatrix    = item->mXfData._worldTransform->composed();
   cb_renderable.SetMatrix(worldmatrix);
-  cb_renderable.SetObject(GetOwner());
+  cb_renderable._pickID = _pickID;
   cb_renderable.SetRenderCallback(_rendercb);
   cb_renderable.SetSortKey(0x7fff);
   cb_renderable.SetModColor(renderer->GetTarget()->RefModColor());

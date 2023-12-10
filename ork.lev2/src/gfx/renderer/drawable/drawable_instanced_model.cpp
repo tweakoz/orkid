@@ -112,7 +112,7 @@ void InstancedModelDrawable::enqueueToRenderQueue(
     gpuInit(context); // todo figure out better do-only-once method...
   }
   ////////////////////////////////////////////////////////////////////
-  renderable.SetObject(GetOwner());
+  renderable._pickID = _pickID;
   renderable.SetSortKey(0x00000001);
   renderable.SetDrawableDataA(GetUserDataA());
   renderable.SetDrawableDataB(GetUserDataB());

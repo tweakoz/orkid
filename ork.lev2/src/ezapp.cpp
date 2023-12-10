@@ -14,7 +14,7 @@
 
 using namespace std::string_literals;
 
-namespace ork::imgui {
+namespace ork::lev2::editor::imgui {
 void initModule(appinitdata_ptr_t initdata) {
   initdata->_imgui = true;
 }
@@ -92,7 +92,7 @@ orkezapp_ptr_t OrkEzApp::create(appinitdata_ptr_t initdata) {
   //  QApplication::setAttribute(Qt::AA_DisableHighDpiScaling);
   lev2::initModule(initdata);
   if (initdata->_imgui) {
-    imgui::initModule(initdata);
+    lev2::editor::imgui::initModule(initdata);
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO();
 

@@ -995,9 +995,9 @@ void TerrainRenderImpl::render(const RenderContextInstData& RCID) {
   //////////////////////////
   fvec4 color = fcolor4::White();
   if (bpick) {
-    auto pickbuf    = targ->FBI()->currentPickBuffer();
-    uint64_t pickid = pickbuf->AssignPickId(raw_drawable->GetOwner());
-    color.setRGBAU64(pickid);
+    //auto pickbuf    = targ->FBI()->currentPickBuffer();
+    //uint64_t pickid = pickbuf->AssignPickId(raw_drawable->GetOwner());
+    //color.setRGBAU64(pickid);
   } else if (false) { // is_sel ){
     color = fcolor4::Red();
   }

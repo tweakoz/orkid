@@ -84,7 +84,7 @@ void StringDrawable::enqueueToRenderQueue(drawablebufitem_constptr_t item, lev2:
   auto& cb_renderable = renderer->enqueueCallback();
   auto worldmatrix    = item->mXfData._worldTransform->composed();
   cb_renderable.SetMatrix(worldmatrix);
-  cb_renderable.SetObject(GetOwner());
+  cb_renderable._pickID = _pickID;
   cb_renderable.SetRenderCallback(_rendercb);
   cb_renderable.SetSortKey(0x7fff);
   cb_renderable._drawDataA.set<const StringDrawableData*>(_data);
@@ -110,7 +110,7 @@ void BillboardStringDrawable::enqueueToRenderQueue(drawablebufitem_constptr_t it
   auto& cb_renderable = renderer->enqueueCallback();
   auto worldmatrix    = item->mXfData._worldTransform->composed();
   cb_renderable.SetMatrix(worldmatrix);
-  cb_renderable.SetObject(GetOwner());
+  cb_renderable._pickID = _pickID;
   cb_renderable.SetRenderCallback(_rendercb);
   cb_renderable.SetSortKey(0x7fff);
   cb_renderable._drawDataA.set<std::string>(_data->_initialString);
@@ -357,7 +357,7 @@ void InstancedBillboardStringDrawable::enqueueToRenderQueue(drawablebufitem_cons
   auto& cb_renderable = renderer->enqueueCallback();
   // auto worldmatrix = item->mXfData._worldTransform->composed();
   // cb_renderable.SetMatrix(worldmatrix);
-  cb_renderable.SetObject(GetOwner());
+  cb_renderable._pickID = _pickID;
   cb_renderable.SetRenderCallback(_rendercb);
   cb_renderable.SetSortKey(0x7fff);
   cb_renderable._drawDataB.set<const InstancedBillboardStringDrawable*>(this);

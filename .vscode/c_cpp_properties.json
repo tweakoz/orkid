@@ -29,6 +29,8 @@
               "ENABLE_VULKAN",
               "ENABLE_GLFW",
               "USE_ORKSL_LANG",
+              "RENDERDOC_API_ENABLED",
+              "ENABLE_NVMESH_SHADERS"
             ],
             "compilerPath": "/usr/bin/clang",
             "cStandard": "c17",

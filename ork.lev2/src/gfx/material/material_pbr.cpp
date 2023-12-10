@@ -160,6 +160,13 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu,con
     printf( "yo\n");
   }
 
+  bool is_picking = permu._is_picking;
+  if(is_picking){
+    //OrkBreak();
+  }
+  
+  bool require_pbr_params = true;
+
   switch (mtl->_variant) {
     case "skybox.forward"_crcu: { // FORWARD SKYBOX VARIANT
       auto basic_lambda  = _createBasicStateLambda(mtl);
@@ -211,6 +218,7 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu,con
         //////////////////////////////////////////
         case "PICKING"_crcu: {
           OrkAssert(permu._stereo == false);
+          require_pbr_params = false;
           if (permu._instanced and mtl->_tek_PIK_RI_IN) {
             pipeline                     = std::make_shared<FxPipeline>(permu);
             pipeline->_technique         = mtl->_tek_PIK_RI_IN;
@@ -218,10 +226,26 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu,con
           }
           ////////////////
           else { // non-instanced
-            if (not permu._skinned and mtl->_tek_PIK_RI_NI) {
+            if (permu._skinned and mtl->_tek_PIK_SK_NI) {
+              //OrkBreak();
+              pipeline                     = std::make_shared<FxPipeline>(permu);
+              pipeline->_technique         = mtl->_tek_PIK_SK_NI;
+              pipeline->bindParam(mtl->_paramMVP, "RCFD_Camera_Pick"_crcsh);
+              pipeline->bindParam(mtl->_paramM, "RCFD_M"_crcsh);
+              pipeline->bindParam(mtl->_paramMROT, "RCFD_Model_Rot"_crcsh);
+              pipeline->bindParam(mtl->_parPickID, "RCID_PickID"_crcsh);
+              //pipeline->_debugBreak = true;
+            }
+            else if (not permu._skinned and mtl->_tek_PIK_RI_NI) {
               pipeline                     = std::make_shared<FxPipeline>(permu);
               pipeline->_technique         = mtl->_tek_PIK_RI_NI;
               pipeline->bindParam(mtl->_paramMVP, "RCFD_Camera_Pick"_crcsh);
+              pipeline->bindParam(mtl->_paramM, "RCFD_M"_crcsh);
+              pipeline->bindParam(mtl->_paramMROT, "RCFD_Model_Rot"_crcsh);
+              pipeline->bindParam(mtl->_parPickID, "RCID_PickID"_crcsh);
+            }
+            else{
+              OrkAssert(false);
             }
             ////////////////
           }
@@ -230,6 +254,12 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu,con
         }
         //////////////////////////////////////////
         case "DEFERRED_PBR"_crcu: {
+
+          if(is_picking){
+            OrkAssert(false);
+          }
+
+
           fxtechnique_constptr_t tek;
           ////////////////////////////////////////////////////////////////////////////////////////////
           auto common_lambda = [mtl](const RenderContextInstData& RCID, int ipass){
@@ -551,6 +581,17 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu,con
           }
           break;
         }
+        case "PICKING"_crcu: {
+          if (not permu._instanced and not permu._skinned and not permu._stereo) {
+            if(mtl->_tek_PIK_RI_NI){
+              pipeline                     = std::make_shared<FxPipeline>(permu);
+              pipeline->_technique         = mtl->_tek_PIK_RI_NI;
+              pipeline->bindParam(mtl->_paramMVP, "RCFD_Camera_Pick"_crcsh);
+              OrkAssert(pipeline->_technique != nullptr);
+            }
+          }
+          break;
+        }
         default:
           break;
       }
@@ -574,13 +615,15 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu,con
 
     pipeline->bindParam(mtl->_paramMROT,"RCFD_Model_Rot"_crcsh);
 
-    pipeline->bindParam(mtl->_paramMapColor,mtl->_texColor);
-    pipeline->bindParam(mtl->_paramMapNormal,mtl->_texNormal);
-    pipeline->bindParam(mtl->_paramMapMtlRuf,mtl->_texMtlRuf);
-    pipeline->bindParam(mtl->_paramMapEmissive,mtl->_texEmissive);
+    if( require_pbr_params ){
+      pipeline->bindParam(mtl->_paramMapColor,mtl->_texColor);
+      pipeline->bindParam(mtl->_paramMapNormal,mtl->_texNormal);
+      pipeline->bindParam(mtl->_paramMapMtlRuf,mtl->_texMtlRuf);
+      pipeline->bindParam(mtl->_paramMapEmissive,mtl->_texEmissive);
 
-    pipeline->bindParam(mtl->_parMetallicFactor,mtl->_metallicFactor);
-    pipeline->bindParam(mtl->_parRoughnessFactor,mtl->_roughnessFactor);
+      pipeline->bindParam(mtl->_parMetallicFactor,mtl->_metallicFactor);
+      pipeline->bindParam(mtl->_parRoughnessFactor,mtl->_roughnessFactor);
+    }
 
     pipeline->_parInstanceMatrixMap = mtl->_paramInstanceMatrixMap;
     pipeline->_parInstanceIdMap     = mtl->_paramInstanceIdMap;
@@ -756,6 +799,7 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
 
   _tek_PIK_RI_IN = fxi->technique(_shader, "PIK_RI_IN");
   _tek_PIK_RI_NI = fxi->technique(_shader, "PIK_RI_NI");
+  _tek_PIK_SK_NI = fxi->technique(_shader, "PIK_SK_NI");
 
   // forwards
 
@@ -826,6 +870,7 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
   _parMetallicFactor      = fxi->parameter(_shader, "MetallicFactor");
   _parRoughnessFactor     = fxi->parameter(_shader, "RoughnessFactor");
   _parModColor            = fxi->parameter(_shader, "ModColor");
+  _parPickID              = fxi->parameter(_shader, "obj_pickID");
   _paramInstanceMatrixMap = fxi->parameter(_shader, "InstanceMatrices");
   _paramInstanceIdMap     = fxi->parameter(_shader, "InstanceIds");
   _paramInstanceColorMap  = fxi->parameter(_shader, "InstanceColors");

@@ -64,7 +64,7 @@ vertex::vertex()
     mCol[i] = fvec4::White();
   }
   for (int i = 0; i < kmaxinfluences; i++) {
-    mJointNames[i]   = "";
+    _jointpaths[i]   = "";
     mJointWeights[i] = float(0.0f);
   }
 }
@@ -94,7 +94,7 @@ void vertex::clearAllExceptPosition() {
     mCol[i] = fvec4::White();
   }
   for (int i = 0; i < kmaxinfluences; i++) {
-    mJointNames[i]   = "";
+    _jointpaths[i]   = "";
     mJointWeights[i] = 0.0f;
   }
   for (int i = 0; i < kmaxuvs; i++) {
@@ -114,7 +114,7 @@ vertex::vertex(const vertex& rhs) {
   miNumUvs     = rhs.miNumUvs;
 
   for (int i = 0; i < kmaxinfluences; i++) {
-    mJointNames[i]   = rhs.mJointNames[i];
+    _jointpaths[i]   = rhs._jointpaths[i];
     mJointWeights[i] = rhs.mJointWeights[i];
   }
   for (int i = 0; i < kmaxcolors; i++) {
@@ -276,14 +276,13 @@ void vertex::center(const std::vector<vertex_ptr_t>& verts) {
 uint64_t vertex::hash(double quantization) const {
   boost::Crc64 crc64;
   crc64.init();
-  quantization = 1000.0;
   crc64.accumulateItem(miNumWeights);
   crc64.accumulateItem(miNumColors);
   crc64.accumulateItem(miNumUvs);
   for (int i = 0; i < miNumWeights; i++) {
-    int ilen = (int)mJointNames[i].length();
+    int ilen = (int)_jointpaths[i].length();
     if (ilen) {
-      crc64.accumulateString(mJointNames[i]);
+      crc64.accumulateString(_jointpaths[i]);
     }
     crc64.accumulateItem(mJointWeights[i]);
   }

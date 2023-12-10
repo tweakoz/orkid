@@ -7,14 +7,15 @@
 
 #pragma once
 
-#include <ork/lev2/lev2_types.h>
+#include <ork/rtti/RTTIX.inl>
 #include <ork/math/cmatrix4.h>
 #include <ork/math/box.h>
 #include <ork/file/path.h>
 #include <ork/kernel/varmap.inl>
 #include <ork/kernel/orklut.h>
 #include <ork/kernel/datablock.h>
-#include <ork/rtti/RTTIX.inl>
+#include <ork/lev2/lev2_types.h>
+#include <ork/lev2/editor/manip.h>
 
 namespace ork::lev2 {
 
@@ -374,10 +375,13 @@ struct XgmSkelNode {
   xgmskelnode_ptr_t _parent  = nullptr;
   int miSkelIndex       = -1;
   int _numBoundVertices = 0;
-
-  orkvector<xgmskelnode_ptr_t> _children;
+  int _depth = -1;
+  orkvector<xgmskelnode_ptr_t> _childrenX;
 
   std::string _name;
+  std::string _path;
+  std::string _ID;
+
   fmtx4 _bindMatrixInverse;
   fmtx4 _bindMatrix;
   fmtx4 _jointMatrix;
@@ -457,6 +461,8 @@ struct XgmLocalPose {
   const AABox& RefObjSpaceAABoundingBox() const {
     return mObjSpaceAABoundingBox;
   }
+  void poseJoint(int index, float weight, const DecompMatrix& mtx);
+  DecompMatrix decompLocal(int iskelindex) const;
 
   ////////////////////////////////////////////////////////////////
 
@@ -524,6 +530,13 @@ public:
 ///	 mpRootNode:		tree hierarchy (export) (move to collada land)
 /// ///////////////////////////////////////////////////////////////////////////
 
+struct XgmJointProperties{
+  int _numVerticesInfluenced = 0;
+  std::unordered_set<int> _children;
+};
+
+using xgmjointprops_ptr_t = std::shared_ptr<XgmJointProperties>;
+
 struct XgmSkeleton {
 
   /////////////////////////////////////
@@ -542,11 +555,17 @@ struct XgmSkeleton {
 
   float boneLength(int ibone) const;
 
-  const std::string& GetJointName(int idx) const {
-    return mvJointNameVect[idx];
+  const std::string& jointName(int idx) const {
+    return _jointNAMES[idx];
   }
-  int GetJointParent(int idx) const {
-    return maJointParents[idx];
+  const std::string& jointPath(int idx) const {
+    return _jointPATHS[idx];
+  }
+  const std::string& jointID(int idx) const {
+    return _jointIDS[idx];
+  }
+  int jointParent(int idx) const {
+    return _parentIndices[idx];
   }
   void* GetUserData(void) {
     return mpUserData;
@@ -556,10 +575,13 @@ struct XgmSkeleton {
   }
   int jointIndex(const std::string& Named) const;
 
+  std::vector<int> childJointsOf(int joint) const;
+  std::vector<int> descendantJointsOf(int joint) const;
+
   /////////////////////////////////////
 
   void resize(int inumjoints); // set number of joints
-  void AddJoint(int iskelindex, int iparindex, const std::string& name);
+  void addJoint(int iskelindex, int iparindex, const std::string& name, const std::string& path, const std::string& id);
   void addBone(const XgmBone& bone);
 
   /////////////////////////////////////
@@ -576,7 +598,9 @@ struct XgmSkeleton {
   const fmtx4& RefJointMatrix(int idx) const {
     return _jointMatrices[idx];
   }
-
+  void selectBoneIndex(int index){
+    _selboneindex = index;
+  }
   fmtx4 concatenated(const std::string& named) const;
 
   /////////////////////////////////////
@@ -592,7 +616,7 @@ struct XgmSkeleton {
 
   /////////////////////////////////////
 
-  XgmSkelNode* mpRootNode = nullptr;
+  //XgmSkelNode* mpRootNode = nullptr;
   void* mpUserData        = nullptr;
 
   int miNumJoints = 0;
@@ -604,16 +628,23 @@ struct XgmSkeleton {
   fvec4 mBoundMax;
   fmtx4 mBindShapeMatrix;
   fmtx4 mTopNodesMatrix;
-
+  int _selboneindex = -1;
   orkvector<fmtx4> _inverseBindMatrices;
   orkvector<fmtx4> _bindMatrices;
   orkvector<DecompMatrix> _bindDecomps;
   orkvector<fmtx4> _jointMatrices;
   orkvector<fmtx4> _nodeMatrices;
-  orkvector<std::string> mvJointNameVect;
+  orkvector<std::string> _jointIDS;
+  orkvector<std::string> _jointPATHS;
+  orkvector<std::string> _jointNAMES;
   orkvector<XgmBone> _bones;
-  orkvector<int> maJointParents;
-  orklut<std::string, int> mmJointNameMap;
+  orkvector<int> _parentIndices;
+  orkvector<xgmjointprops_ptr_t> _jointProperties;
+
+  std::unordered_map<std::string, int> _jointsByName;
+  std::unordered_map<std::string, int> _jointsByPath;
+  std::unordered_map<std::string, int> _jointsByID;
+
 };
 
 /////////////////////////////////////////////////////////////////////////////

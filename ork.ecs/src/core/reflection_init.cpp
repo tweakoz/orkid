@@ -8,7 +8,6 @@
 #include <ork/pch.h>
 
 #include <ork/application/application.h>
-#include <ork/lev2/gfx/renderer/drawable.h>
 #include <ork/reflect/properties/AccessorTyped.hpp>
 #include <ork/reflect/properties/DirectTypedMap.h>
 #include <ork/reflect/properties/DirectTypedMap.hpp>

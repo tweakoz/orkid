@@ -131,7 +131,8 @@ public:
   fxparam_constptr_t _parRoughnessFactor = nullptr;
   fxparam_constptr_t _parModColor        = nullptr;
   fxuniformblock_constptr_t _ublock_bones  = nullptr;
-
+  fxparam_constptr_t _parPickID          = nullptr;
+  
   // fwd
 
   fxsamplerset_constptr_t _samplers_fwd  = nullptr;
@@ -200,6 +201,7 @@ public:
 
   fxtechnique_constptr_t _tek_PIK_RI_IN = nullptr;
   fxtechnique_constptr_t _tek_PIK_RI_NI = nullptr;
+  fxtechnique_constptr_t _tek_PIK_SK_NI = nullptr;
 
   //////////////////////
   // forward techniques

@@ -150,7 +150,9 @@ public:
   virtual ImmInterface* IMI() {
     return 0;
   } // Immediate Mode Interface (optional)
-
+  ///////////////////////////////////////////////////////////////////////
+  void triggerFrameDebugCapture();
+  virtual void _doTriggerFrameDebugCapture() {}
   ///////////////////////////////////////////////////////////////////////
   /// push command group onto debugstack (for renderdoc,apitrace,nsight,etc..)
   virtual void debugPushGroup(const std::string str, const fvec4& color=fvec4(1,1,1,1)) {
@@ -337,11 +339,21 @@ public:
   load_token_t BeginLoad();
   void EndLoad(load_token_t ploadtok);
 
-  void scheduleOnBeginFrame(void_lambda_t l) {
-    _onBeginFrameCallbacks.push_back(l);
-  }
-  void scheduleOnEndFrame(void_lambda_t l) {
-    _onEndFrameCallbacks.push_back(l);
+
+  template <typename vtx_t> std::shared_ptr<DynamicVertexBuffer<vtx_t>> miscVertexBuffer(uint32_t id,uint32_t numverts) {
+    using vtxbuf_t = DynamicVertexBuffer<vtx_t>;
+    using vtxbuf_ptr_t = std::shared_ptr<vtxbuf_t>;
+    auto it = _miscVBs.find(id);
+    if (it != _miscVBs.end()) {
+      return it->second.get<vtxbuf_ptr_t>();
+    }
+    else{
+      auto vbp = std::make_shared<vtxbuf_t>(numverts,0);
+      vbp->SetRingLock(true);
+
+      _miscVBs[id] = vbp;
+      return vbp;
+    }
   }
 
   static const int kiModColorStackMax = 8;
@@ -352,7 +364,7 @@ public:
   const RenderContextInstData* mRenderContextInstData = nullptr;
   const ork::rtti::ICastable* mpCurrentObject         = nullptr;
   RtGroup* _defaultRTG                                = nullptr;
-
+  std::unordered_map<uint32_t, svarp_t> _miscVBs;
   TargetType meTargetType;
   int miW, miH;
   int miModColorStackIndex;
@@ -360,6 +372,7 @@ public:
   int miDrawLock;
   bool mbPostInitializeContext;
   bool _is_visual_frame = false;
+  bool _isFrameDebugCapture = false;
   fvec4 maModColorStack[kiModColorStackMax];
   fvec4 mvModColor;
   PerformanceItem mFramePerfItem;
@@ -373,8 +386,21 @@ public:
 
   std::stack<const RenderContextFrameData*> _rcfdstack;
 
+  void scheduleOnBeginFrame(void_lambda_t l) {
+    _onBeginFrameCallbacks.push_back(l);
+  }
+  void scheduleBeforeDoEndFrameOneShot(void_lambda_t l) {
+    _onBeforeDoEndFrameOneShotCallbacks.push_back(l);
+  }
+  void scheduleOnEndFrame(void_lambda_t l) {
+    _onEndFrameCallbacks.push_back(l);
+  }
+
+  virtual void swapBuffers(CTXBASE* ctxbase) {}
+
   std::vector<void_lambda_t> _onBeginFrameCallbacks;
   std::vector<void_lambda_t> _onEndFrameCallbacks;
+  std::vector<void_lambda_t> _onBeforeDoEndFrameOneShotCallbacks;
 
 private:
 

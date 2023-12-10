@@ -8,6 +8,7 @@
 #include <ork/lev2/gfx/fx_pipeline.h>
 #include <ork/lev2/gfx/renderer/drawable.h>
 #include <ork/lev2/gfx/renderer/renderable.h>
+#include <ork/lev2/gfx/pickbuffer.h>
 #include <ork/util/logger.h>
 
 namespace ork::lev2 {
@@ -18,7 +19,8 @@ uint64_t FxPipelinePermutation::genIndex() const {
   index += (uint64_t(_stereo) << 1);
   index += (uint64_t(_instanced) << 2);
   index += (uint64_t(_skinned) << 3);
-  index += (uint64_t(_rendering_model) << 4);
+  index += (uint64_t(_is_picking) << 4);
+  index += (uint64_t(_rendering_model) << 5);
 
   auto tekovr = uint64_t((const void*)_forced_technique);
   index += tekovr;
@@ -27,11 +29,12 @@ uint64_t FxPipelinePermutation::genIndex() const {
 ///////////////////////////////////////////////////////////////////////////////
 void FxPipelinePermutation::dump() const {
   logchan_fxcache->log(
-      "configdump: rendering_model<0x%zx> stereo<%d> instanced<%d> skinned<%d>",
+      "configdump: rendering_model<0x%zx> stereo<%d> instanced<%d> skinned<%d> picking<%d>",
       uint64_t(_rendering_model),
       int(_stereo),
       int(_instanced),
-      int(_skinned));
+      int(_skinned),
+      int(_is_picking));
 }
 ///////////////////////////////////////////////////////////////////////////////
 void FxPipelinePermutationSet::add(fxpipelinepermutation_constptr_t perm){
@@ -134,11 +137,21 @@ void FxPipeline::_set_typed_param(const RenderContextInstData& RCID, fxparam_con
 
       switch (crcstr.hashed()) {
 
+        case "RCID_PickID"_crcu: {
+          auto itpfc = RCFDPROPS.find("pixel_fetch_context"_crc);
+          OrkAssert(itpfc != RCFDPROPS.end());
+          auto as_pfc = itpfc->second.get<pixelfetchctx_ptr_t>();
+          auto as_u32 = as_pfc->encodeVariant(RCID._pickID);
+          //printf( "PICKID: RGBA<%g %g %g %g>\n", as_rgba.x, as_rgba.y, as_rgba.z, as_rgba.w );
+          FXI->BindParamU32(param, as_u32);
+          break;
+        }
         case "RCFD_Camera_Pick"_crcu: {
           auto it = RCFDPROPS.find("pickbufferMvpMatrix"_crc);
           OrkAssert(it != RCFDPROPS.end());
           auto as_mtx4p    = it->second.get<fmtx4_ptr_t>();
           const fmtx4& MVP = *(as_mtx4p.get());
+          //MVP.dump("pickbufferMvpMatrix");
           FXI->BindParamMatrix(param, MVP);
           break;
         }
@@ -255,6 +268,10 @@ bool FxPipeline::beginPass(const RenderContextInstData& RCID, int ipass) {
   auto context          = RCID._RCFD->GetTarget();
   auto FXI              = context->FXI();
 
+  if( _debugBreak ){
+    OrkBreak();
+  }
+
   bool rval = FXI->BindPass(ipass);
   if (not rval)
     return rval;
@@ -270,7 +287,6 @@ bool FxPipeline::beginPass(const RenderContextInstData& RCID, int ipass) {
   ///////////////////////////////
   // run individual state items
   ///////////////////////////////
-
 
   for (auto item : _params) {
     fxparam_constptr_t param = item.first;
@@ -295,12 +311,14 @@ fxpipeline_ptr_t FxPipelineCache::findPipeline(const RenderContextInstData& RCID
   auto context    = RCFD->_target;
   auto fxi        = context->FXI();
   bool stereo = RCFD->hasCPD() ? RCFD->topCPD().isStereoOnePass() : false;
+  bool picking = RCFD->hasCPD() ? RCFD->topCPD().isPicking() : false;
   /////////////////
   FxPipelinePermutation permu;
   permu._stereo          = stereo;
   permu._skinned         = RCID._isSkinned;
   permu._instanced       = RCID._isInstanced;
   permu._forced_technique = RCID._forced_technique;
+  permu._is_picking = picking;
   permu._rendering_model = RCFD->_renderingmodel._modelID;
   //permu.dump();
   /////////////////

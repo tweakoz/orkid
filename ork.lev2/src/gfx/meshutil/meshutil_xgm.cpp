@@ -98,9 +98,9 @@ void Mesh::ReadFromXGM(const file::Path& BasePath) {
                       U16 uidx                             = pidx16[ii];
                       const lev2::SVtxV12N12B12T8C4& InVtx = ptypedsource[uidx];
                       vertex ToolVertex;
-                      ToolVertex.mPos                = fvec3_to_dvec3(InVtx.mPosition);
-                      ToolVertex.mNrm                = fvec3_to_dvec3(InVtx.mNormal);
-                      ToolVertex.mUV[0].mMapTexCoord = InVtx.mUV0;
+                      ToolVertex.mPos                = fvec3_to_dvec3(InVtx._position);
+                      ToolVertex.mNrm                = fvec3_to_dvec3(InVtx._normal);
+                      ToolVertex.mUV[0].mMapTexCoord = InVtx._uv;
                       ToolVertex.mCol[0]             = fcolor4::White();
                       vertexcache[(ii % 3)]          = outsub.mergeVertex(ToolVertex);
                       if (2 == (ii % 3)) {

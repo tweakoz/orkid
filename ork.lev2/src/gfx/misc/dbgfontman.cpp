@@ -13,6 +13,7 @@
 #include <ork/kernel/prop.hpp>
 #include <ork/lev2/lev2_asset.h>
 #include <ork/lev2/gfx/targetinterfaces.h>
+#include <ork/lev2/gfx/gfxvtxbuf.inl>
 
 namespace ork { namespace lev2 {
 

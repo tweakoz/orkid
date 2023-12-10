@@ -36,6 +36,7 @@ struct SCRIMPL {
       : _node(node)
       , _camname(AddPooledString("Camera"))
       , _layers(AddPooledString("All")) {
+      _CPD._debugName = "ScreenOutputCompositingNode";
   }
   ///////////////////////////////////////
   ~SCRIMPL() {
@@ -199,22 +200,31 @@ void ScreenOutputCompositingNode::composite(CompositorDrawData& drawdata) {
           auto& mtl     = impl->_blit2screenmtl;
           switch (this->_supersample) {
             case 0:
+              drawdata.context()->debugPushGroup("ScreenCompositingNode::to_screen<0>");
               mtl.begin(impl->_fxtechnique1x1, framedata);
               break;
             case 1:
+              drawdata.context()->debugPushGroup("ScreenCompositingNode::to_screen<1>");
               mtl.begin(impl->_fxtechnique2x2, framedata);
               break;
             case 2:
+              drawdata.context()->debugPushGroup("ScreenCompositingNode::to_screen<2>");
               mtl.begin(impl->_fxtechnique3x3, framedata);
               break;
             case 3:
+              drawdata.context()->debugPushGroup("ScreenCompositingNode::to_screen<3>");
               mtl.begin(impl->_fxtechnique4x4, framedata);
               break;
             case 4:
+              drawdata.context()->debugPushGroup("ScreenCompositingNode::to_screen<4>");
               mtl.begin(impl->_fxtechnique5x5, framedata);
               break;
             case 5:
+              drawdata.context()->debugPushGroup("ScreenCompositingNode::to_screen<5>");
               mtl.begin(impl->_fxtechnique6x6, framedata);
+              break;
+            default:
+              OrkAssert(false);
               break;
           }
           mtl._rasterstate->setBlendingMacro(BlendingMacro::OFF);
@@ -227,6 +237,7 @@ void ScreenOutputCompositingNode::composite(CompositorDrawData& drawdata) {
           fbi->popViewport();
           fbi->popScissor();
           mtl.end(framedata);
+          drawdata.context()->debugPopGroup();
           drawdata.context()->debugPopGroup();
         }
         else{

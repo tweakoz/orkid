@@ -30,15 +30,12 @@ public:
     _supersample = ss;
   }
 
-private:
   void gpuInit(lev2::Context* pTARG, int w, int h) final;
   void beginAssemble(CompositorDrawData& drawdata) final;
   void endAssemble(CompositorDrawData& drawdata) final;
   void composite(CompositorDrawData& drawdata) final;
 
   svar256_t _impl;
-
-  rtgroup_ptr_t _static_rtg;
   int _supersample;
 
 };

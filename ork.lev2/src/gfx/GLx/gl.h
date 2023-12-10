@@ -37,6 +37,10 @@
 #include <ork/lev2/glfw/ctx_glfw.h>
 
 ///////////////////////////////////////////////////////////////////////////////
+#if defined(RENDERDOC_API_ENABLED)
+#include <renderdoc_app.h>
+#endif
+///////////////////////////////////////////////////////////////////////////////
 
 #define USE_ORKSL_LANG
 
@@ -133,7 +137,7 @@ struct GlRtGroupImpl {
 
 using glrtgroupimpl_ptr_t = std::shared_ptr<GlRtGroupImpl>;
 
-int GetGlError(void);
+int GetGlError();
 
 //////////////////////////////////////////////////////////////////////
 
@@ -209,12 +213,15 @@ private:
 
   void DrawPrimitiveEML(
       const FxShaderStorageBuffer* SSBO, //
-      PrimitiveType eType = PrimitiveType::NONE,
+      PrimitiveType eType,
       int ivbase           = 0,
       int ivcount          = 0) final;
 
   void
-  DrawIndexedPrimitiveEML(const VertexBufferBase& VBuf, const IndexBufferBase& IdxBuf, PrimitiveType eType) final;
+  DrawIndexedPrimitiveEML(const VertexBufferBase& VBuf,
+                          const IndexBufferBase& IdxBuf, 
+                          PrimitiveType eType,
+                          int ivbase, int ivcount) final;
 
   void DrawInstancedIndexedPrimitiveEML(
       const VertexBufferBase& VBuf,
@@ -309,7 +316,7 @@ public:
   VdsTextureAnimation(const AssetPath& pth);
   ~VdsTextureAnimation();                                                                   // virtual
   void UpdateTexture(TextureInterface* txi, Texture* ptex, TextureAnimationInst* ptexanim); // virtual
-  float GetLengthOfTime(void) const;                                                        // virtual
+  float GetLengthOfTime() const;                                                        // virtual
 
   void* ReadFromFrameCache(int iframe, int isize);
 
@@ -490,12 +497,12 @@ public:
 
   ///////////////////////////////////////////////////////////////////////
 
+  void _doTriggerFrameDebugCapture() final;
+
   void _doResizeMainSurface(int iw, int ih) final;
-  void _doBeginFrame(void) final {
-  }
-  void _doEndFrame(void) final {
-  }
-  ctx_platform_handle_t _doClonePlatformHandle() const final;
+  void _doBeginFrame() final;
+  void _doEndFrame() final;
+  svar64_t _doClonePlatformHandle() const final;
 
 public:
   //////////////////////////////////////////////
@@ -532,7 +539,7 @@ public:
 
   //////////////////////////////////////////////
 
-  void makeCurrentContext(void) final;
+  void makeCurrentContext() final;
 
   void debugLabel(GLenum target, GLuint object, std::string name);
 

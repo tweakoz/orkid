@@ -11,6 +11,7 @@
 #include <ork/math/TransformNode.h>
 #include <ork/asset/Asset.h>
 #include <ork/dataflow/all.h>
+#include <ork/object/COM.h>
 
 namespace dflow = ork::dataflow;
 
@@ -18,6 +19,7 @@ namespace ork {
 
 struct ClassToucher {
   ClassToucher() {
+    COM::GetClassStatic();
     HotKeyConfiguration::GetClassStatic();
     HotKey::GetClassStatic();
     MultiCurve1D::GetClassStatic();

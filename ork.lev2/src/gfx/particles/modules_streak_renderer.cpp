@@ -14,6 +14,7 @@
 #include <ork/dataflow/module.inl>
 #include <ork/dataflow/plug_data.inl>
 #include <ork/dataflow/plug_inst.inl>
+#include <ork/lev2/gfx/gfxvtxbuf.inl>
 #include <ork/util/triple_buffer.h>
 
 using namespace ork::dataflow;
@@ -51,7 +52,7 @@ StreakRendererInst::StreakRendererInst(const StreakRendererData* srd, dataflow::
   OrkAssert(srd);
   _triple_buf                         = std::make_shared<triple_buf_t>();
   static constexpr size_t KMAXSTREAKS = 128 << 10;
-  _vertexBuffer                       = std::make_shared<streak_vtxbuf_t>(KMAXSTREAKS, 0, PrimitiveType::POINTS);
+  _vertexBuffer                       = std::make_shared<streak_vtxbuf_t>(KMAXSTREAKS, 0);
   _vertexBuffer->SetRingLock(true);
 }
 

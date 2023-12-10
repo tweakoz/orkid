@@ -12,6 +12,7 @@
 #include <ork/lev2/gfx/gfxprimitives.h>
 #include <ork/lev2/gfx/material_freestyle.h>
 #include <ork/math/misc_math.h>
+#include <ork/lev2/gfx/gfxvtxbuf.inl>
 ///////////////////////////////////////////////////////////
 namespace ork::ui {
 static constexpr int _kbasechanlaby = 16;
@@ -125,7 +126,7 @@ using vtx_t        = lev2::SVtxV16T16C16;
 using vtxbuf_t     = lev2::DynamicVertexBuffer<vtx_t>;
 using vtxbuf_ptr_t = std::shared_ptr<vtxbuf_t>;
 static vtxbuf_ptr_t create_vertexbuffer(lev2::Context* context) {
-  auto vb = std::make_shared<vtxbuf_t>(16 << 20, 0, lev2::PrimitiveType::NONE); // ~800 MB
+  auto vb = std::make_shared<vtxbuf_t>(16 << 20, 0); // ~800 MB
   vb->SetRingLock(true);
   return vb;
 }

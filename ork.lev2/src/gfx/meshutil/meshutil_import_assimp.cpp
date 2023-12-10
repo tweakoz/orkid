@@ -5,13 +5,41 @@
 
 #include "assimp_util.inl"
 #include<ork/util/logger.h>
+#include <ork/kernel/opq.h>
 
 namespace bfs = boost::filesystem;
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::meshutil {
 static logchannel_ptr_t logchan_meshutilassimp = logger()->createChannel("meshutil.assimp",fvec3(1,.9,.9));
 ///////////////////////////////////////////////////////////////////////////////
-typedef std::set<std::string> bonemarkset_t;
+void visit_ainodes_down(const aiNode* node, int depth, ainode_visitorfn_t visitor){
+    visitor(node,depth);
+    for (int i = 0; i < node->mNumChildren; ++i) {
+        visit_ainodes_down(node->mChildren[i], depth+1, visitor);
+    }
+}
+void visit_ainodes_up(const aiNode* node, int depth, ainode_visitorfn_t visitor){
+    visitor(node,depth);
+    if( node->mParent){
+        visit_ainodes_up(node->mParent, depth+1, visitor);
+    }
+}
+std::deque<const aiNode*> aiNodePath(const aiNode* start_node){
+  std::deque<const aiNode*> node_path;
+  visit_ainodes_up(start_node, 0, [&](const aiNode* visited, int depth) {
+     node_path.push_front(visited);
+  });
+  return node_path;
+}
+std::string aiNodePathName(const aiNode* start_node){
+  auto node_path = aiNodePath(start_node);
+  std::string node_path_name;
+  for (auto n : node_path) {
+      node_path_name += "/";
+      node_path_name += n->mName.data;
+  }
+  return node_path_name;
+}
 ///////////////////////////////////////////////////////////////////////////////
 void Mesh::readFromAssimp(const file::Path& BasePath) {
 
@@ -31,7 +59,9 @@ void Mesh::readFromAssimp(const file::Path& BasePath) {
 void Mesh::readFromAssimp(datablock_ptr_t datablock) {
   auto& extension = datablock->_vars->typedValueForKey<std::string>("file-extension").value();
   //logchan_meshutilassimp->log("BEGIN: importing scene from datablock length<%zu> extension<%s>\n", datablock->length(), extension.c_str());
-  auto scene = aiImportFileFromMemory((const char*)datablock->data(), datablock->length(), assimpImportFlags(), extension.c_str());
+  auto flags = assimpImportFlags();
+  flags |= aiProcess_PopulateArmatureData;
+  auto scene = aiImportFileFromMemory((const char*)datablock->data(), datablock->length(), flags, extension.c_str());
   //logchan_meshutilassimp->log("END: importing scene<%p>\n", (void*) scene);
   if (scene) {
     auto& embtexmap = _varmap->makeValueForKey<lev2::embtexmap_t>("embtexmap");
@@ -269,7 +299,7 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
 
     (*_varmap)["parsedskel"].make<parsedskeletonptr_t>(parsedskel);
     bool is_skinned    = parsedskel->_isSkinned;
-    auto& xgmskelnodes = parsedskel->_xgmskelmap;
+    //auto& xgmskelnodes = parsedskel->_xgmskelmap;
 
     //////////////////////////////////////////////
     // count, visit dagnodes
@@ -282,7 +312,7 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
     //////////////////////////////////////////////
 
     struct XgmAssimpVertexWeightItem {
-      std::string _bonename;
+      std::string _jointpath;
       float _weight = 0.0f;
     };
     struct XgmAssimpVertexWeights {
@@ -299,8 +329,10 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
         const aiMesh* mesh = scene->mMeshes[n->mMeshes[m]];
         for (int b = 0; b < mesh->mNumBones; b++) {
           auto bone     = mesh->mBones[b];
+          auto bone_node = bone->mNode;
+          auto bone_path = aiNodePathName(bone_node);
           auto bonename = remapSkelName(bone->mName.data);
-          auto itb      = xgmskelnodes.find(bonename);
+          auto itb      = parsedskel->_xgmskelmap_by_path.find(bone_path);
           bonemarkset.insert(bonename);
           /////////////////////////////////////////////
           // yuk -- assimp is not like gltf, or collada...
@@ -308,7 +340,7 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
           /////////////////////////////////////////////
           int numvertsaffected = bone->mNumWeights;
           ////////////////////////////////////////////
-          if (itb != xgmskelnodes.end()) {
+          if (itb != parsedskel->_xgmskelmap_by_path.end()) {
             auto xgmnode = itb->second;
             //////////////////////////////////
             // mark skel node as actual mesh referenced bone
@@ -333,7 +365,7 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
                   weights_for_vertex        = new XgmAssimpVertexWeights;
                   assimpweightlut[vertexID] = weights_for_vertex;
                 }
-                auto xgmw = XgmAssimpVertexWeightItem{bonename, weight};
+                auto xgmw = XgmAssimpVertexWeightItem{bone_path, weight};
                 weights_for_vertex->_items.push_back(xgmw);
               }
             }
@@ -353,8 +385,10 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
     // std::deque<fmtx4> ork_mtxstack;
     // ork_mtxstack.push_front(convertMatrix44(scene->mRootNode->mTransformation));
 
-    auto it_root_skelnode                 = xgmskelnodes.find(remapSkelName(scene->mRootNode->mName.data));
-    ork::lev2::xgmskelnode_ptr_t root_skelnode = (it_root_skelnode != xgmskelnodes.end()) ? it_root_skelnode->second : nullptr;
+    auto root_name = remapSkelName(scene->mRootNode->mName.data);
+    auto root_path = aiNodePathName(scene->mRootNode);
+    auto it_root_skelnode                 = parsedskel->_xgmskelmap_by_path.find(root_path);
+    ork::lev2::xgmskelnode_ptr_t root_skelnode = (it_root_skelnode != parsedskel->_xgmskelmap_by_path.end()) ? it_root_skelnode->second : nullptr;
 
     //////////////////////////////////////////////
     // parse nodes
@@ -371,11 +405,13 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
       nodestack.pop();
 
       auto nren = remapSkelName(n->mName.data);
+      auto npath = aiNodePathName(n);
+      auto it_nod_skelnode                 = parsedskel->_xgmskelmap_by_path.find(npath);
+      ork::lev2::xgmskelnode_ptr_t nod_skelnode = (it_nod_skelnode != parsedskel->_xgmskelmap_by_path.end()) //
+                                                ? it_nod_skelnode->second //
+                                                : nullptr;
 
-      auto it_nod_skelnode                 = xgmskelnodes.find(nren);
-      ork::lev2::xgmskelnode_ptr_t nod_skelnode = (it_nod_skelnode != xgmskelnodes.end()) ? it_nod_skelnode->second : nullptr;
-
-      //logchan_meshutilassimp->log("xgmnode<%p:%s>\n", (void*) nod_skelnode, nod_skelnode->_name.c_str());
+      //logchan_meshutilassimp->log("xxx xgmnode<%p:%s>\n", (void*) nod_skelnode, nod_skelnode->_name.c_str());
       // auto ppar_skelnode = nod_skelnode->_parent;
       std::string name = nod_skelnode->_name;
       auto nodematrix  = nod_skelnode->_nodeMatrix;
@@ -423,6 +459,8 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
       // visit node
       //////////////////////////////////////////////
 
+      auto& deformer_bones = _varmap->makeValueForKey<bonename_set_t>("deformer_bones");
+
       for (int i = 0; i < n->mNumMeshes; ++i) {
         const aiMesh* mesh = scene->mMeshes[n->mMeshes[i]];
         /////////////////////////////////////////////
@@ -449,6 +487,12 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
         mtlset.insert(mesh->mMaterialIndex);
         auto& mtlref = out_submesh.typedAnnotation<GltfMaterial*>("gltfmaterial");
         mtlref       = outmtl;
+
+
+
+
+
+
         ork::meshutil::vertex muverts[4];
         logchan_meshutilassimp->log("processing numfaces<%d> %s", mesh->mNumFaces, outmtl->_name.c_str() );
         int numinputtriangles = 0;
@@ -505,14 +549,14 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
                     float fw  = infl._weight;
                     if (fw < 0.001)
                       fw = 0.001;
-                    auto remapped          = remapSkelName(infl._bonename);
-                    rawweightMap[remapped] = fw;
+                    rawweightMap[infl._jointpath] = fw;
                     /*if (fw != 0.0f)*/ {
                       auto xgminfl = XgmAssimpVertexWeightItem(infl);
                       auto pr      = std::make_pair(1.0f - fw, xgminfl);
                       largestWeightMap.insert(pr);
                     }
-                    // logchan_meshutilassimp->log(" inf<%d> bone<%s> weight<%g>\n", inf, remapped.c_str(), fw);
+                    deformer_bones.insert(infl._jointpath);
+                    logchan_meshutilassimp->log(" xxx inf<%d> bone<%s> weight<%g>\n", inf, infl._jointpath.c_str(), fw);
                   }
                   int icount      = 0;
                   float totweight = 0.0f;
@@ -532,8 +576,7 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
                       float w            = 1.0f - item.first;
                       float fjointweight = w / totweight;
                       newtotweight += fjointweight;
-                      std::string name = item.second._bonename;
-                      prunedWeightMap.insert(std::make_pair(fjointweight, remapSkelName(name)));
+                      prunedWeightMap.insert(std::make_pair(fjointweight,item.second._jointpath));
                       ++icount;
                     }
                   }
@@ -562,7 +605,7 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
                   // init vertex with no influences
                   /////////////////////////////////
                   for (int iw = 0; iw < 4; iw++) {
-                    muvtx.mJointNames[iw]   = root_skelnode->_name;
+                    muvtx._jointpaths[iw]   = root_skelnode->_path;
                     muvtx.mJointWeights[iw] = 0.0f;
                   }
                   /////////////////////////////////
@@ -573,7 +616,7 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
                     float w = it->first / newtotweight;
                     OrkAssert(w >= 0.0f);
                     OrkAssert(w <= 1.0f);
-                    muvtx.mJointNames[windex]   = it->second;
+                    muvtx._jointpaths[windex]   = it->second;
                     muvtx.mJointWeights[windex] = w;
                     // logchan_meshutilassimp->log("inf<%s:%g> ", it->second.c_str(), w);
                     totw += w;
@@ -597,9 +640,14 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
           } else {
             logchan_meshutilassimp->log("non triangle");
           }
-        }
+        } //  for (int t = 0; t < mesh->mNumFaces; ++t) {
+
         logchan_meshutilassimp->log("done processing numfaces<%d> ..", mesh->mNumFaces);
         logchan_meshutilassimp->log("numinputtriangles<%d>", numinputtriangles );
+        logchan_meshutilassimp->log("xxx num deformer bones<%zu>", deformer_bones.size() );
+        for( auto b : deformer_bones ){
+          logchan_meshutilassimp->log("xxx defbone<%s>", b.c_str() );
+        }
         /////////////////////////////////////////////
         // stats
         /////////////////////////////////////////////
@@ -650,69 +698,10 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void configureXgmSkeleton(const ork::meshutil::Mesh& input, lev2::XgmModel& xgmmdlout) {
-
-  auto parsedskel = input._varmap->valueForKey("parsedskel").get<parsedskeletonptr_t>();
-
-  const auto& xgmskelnodes = parsedskel->_xgmskelmap;
-
-  //logchan_meshutilassimp->log("NumSkelNodes<%d>\n", int(xgmskelnodes.size()));
-  xgmmdlout.SetSkinned(true);
-  auto& xgmskel = xgmmdlout.skeleton();
-  xgmskel.resize(xgmskelnodes.size());
-  for (auto& item : xgmskelnodes) {
-    const std::string& JointName = item.first;
-    auto skelnode                = item.second;
-    auto parskelnode             = skelnode->_parent;
-    int idx                      = skelnode->miSkelIndex;
-    int pidx                     = parskelnode ? parskelnode->miSkelIndex : -1;
-    //logchan_meshutilassimp->log("JointName<%s> skelnode<%p> parskelnode<%p> idx<%d> pidx<%d>\n", JointName.c_str(), (void*) skelnode, (void*) parskelnode, idx, pidx);
-
-    xgmskel.AddJoint(idx, pidx, JointName);
-    xgmskel._bindMatrices[idx] = skelnode ? skelnode->_bindMatrix : fmtx4();
-    xgmskel._inverseBindMatrices[idx] = skelnode ? skelnode->_bindMatrixInverse : fmtx4();
-    xgmskel.RefJointMatrix(idx)       = skelnode ? skelnode->_jointMatrix : fmtx4();
-    xgmskel.RefNodeMatrix(idx)        = skelnode ? skelnode->_nodeMatrix : fmtx4();
-  }
-  /////////////////////////////////////
-  // flatten the skeleton (WIP)
-  /////////////////////////////////////
-
-  //logchan_meshutilassimp->log("Flatten Skeleton\n");
-  const auto& bonemarkset = (*input._varmap)["bonemarkset"].get<bonemarkset_t>();
-
-  auto root          = parsedskel->rootXgmSkelNode();
-  xgmskel.miRootNode = root ? root->miSkelIndex : -1;
-  if (root) {
-    lev2::XgmSkelNode::visitHierarchy(root,[&xgmskel](lev2::xgmskelnode_ptr_t node) {
-      auto parent = node->_parent;
-      if (parent) {
-        bool ignore = (parent->_numBoundVertices == 0);
-        ignore      = ignore and (node->_numBoundVertices == 0);
-        if (ignore){
-          //logchan_meshutilassimp->log("IGNORE<%s>\n", node->_name.c_str());
-        }
-        else {
-          //logchan_meshutilassimp->log("ADD<%s>\n", node->_name.c_str());
-          int iparentindex   = parent->miSkelIndex;
-          int ichildindex    = node->miSkelIndex;
-          lev2::XgmBone Bone = {iparentindex, ichildindex};
-          xgmskel.addBone(Bone);
-        }
-      }
-    });
-    // xgmskel.dump();
-  }
-
-  //logchan_meshutilassimp->log("skeleton configuration complete..\n");
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
 template <typename ClusterizerType>
 void clusterizeToolMeshToXgmMesh(const ork::meshutil::Mesh& inp_model, ork::lev2::XgmModel& out_model) {
 
-  // logchan_meshutilassimp->log("BEGIN: clusterizing model\n");
+  logchan_meshutilassimp->log("BEGIN: clusterizing model\n");
   bool is_skinned = false;
   if (auto as_bool = inp_model._varmap->valueForKey("is_skinned").tryAs<bool>()) {
     is_skinned = as_bool.value();
@@ -744,8 +733,8 @@ void clusterizeToolMeshToXgmMesh(const ork::meshutil::Mesh& inp_model, ork::lev2
   mtl2mtlmap_t mtlmtlmap;
 
   int subindex = 0;
+  std::atomic<int> op_counter = 0;
   for (auto item : inp_model.RefSubMeshLut()) {
-    // logchan_meshutilassimp->log("BEGIN: clusterizing submesh<%d>\n", subindex);
     subindex++;
     auto inp_submesh = item.second;
     auto& mtlset     = inp_submesh->typedAnnotation<std::set<int>>("materialset");
@@ -776,20 +765,9 @@ void clusterizeToolMeshToXgmMesh(const ork::meshutil::Mesh& inp_model, ork::lev2
       materialGroup->mMeshConfigurationFlags._skinned = is_skinned;
       materialGroup->meVtxFormat                      = VertexFormat;
       mtlmtlmap[gltfmtl]                              = materialGroup;
-    } else
+    } else{
       materialGroup = it->second;
-
-    ork::meshutil::XgmClusterTri clustertri;
-    clusterizer->Begin();
-
-    inp_submesh->visitAllPolys([&](merged_poly_const_ptr_t p) {
-      assert(p->numVertices() == 3);
-      for (int i = 0; i < 3; i++)
-        clustertri._vertex[i] = *inp_submesh->vertex(p->vertexID(i));
-      clusterizer->addTriangle(clustertri, materialGroup->mMeshConfigurationFlags);
-    });
-
-    clusterizer->End();
+    }
 
     ///////////////////////////////////////
 
@@ -800,8 +778,45 @@ void clusterizeToolMeshToXgmMesh(const ork::meshutil::Mesh& inp_model, ork::lev2
     srec._clusterizer = clusterizer;
     mtlsubmap[gltfmtl].push_back(srec);
 
-    ///////////////////////////////////////
-    // logchan_meshutilassimp->log("END: clusterizing submesh<%d>\n", subindex);
+    op_counter.fetch_add(1);
+    auto op = [&op_counter,inp_submesh,clusterizer, subindex, materialGroup](){
+
+     logchan_meshutilassimp->log("BEGIN: clusterizing submesh<%d>\n", subindex);
+
+      ork::meshutil::XgmClusterTri clustertri;
+      clusterizer->Begin();
+
+      size_t num_polys = inp_submesh->numPolys();
+      size_t inp_index = 0;
+      inp_submesh->visitAllPolys([&](merged_poly_const_ptr_t p) {
+        assert(p->numVertices() == 3);
+        for (int i = 0; i < 3; i++)
+          clustertri._vertex[i] = *inp_submesh->vertex(p->vertexID(i));
+        clusterizer->addTriangle(clustertri, materialGroup->mMeshConfigurationFlags);
+        inp_index++;
+
+        //if(inp_index%1000==0){
+          //logchan_meshutilassimp->log("clusterizing submesh<%d> inp_index<%zu> num_polys<%zu>\n", subindex, inp_index, num_polys);
+        //}
+      });
+
+      clusterizer->End();
+      op_counter.fetch_add(-1);
+  
+      logchan_meshutilassimp->log("END: clusterizing submesh<%d> ops remaining: %d\n", subindex, op_counter.load());
+
+    };
+
+    opq::concurrentQueue()->enqueue(op);
+
+  } // for (auto item : inp_model.RefSubMeshLut()) {
+
+  //////////////////////////////////////////////////////////////////
+  // wait for partitioning to complete..
+  //////////////////////////////////////////////////////////////////
+
+  while( op_counter.load() > 0 ){
+    usleep(100000);
   }
 
   //////////////////////////////////////////////////////////////////
@@ -833,29 +848,36 @@ void clusterizeToolMeshToXgmMesh(const ork::meshutil::Mesh& inp_model, ork::lev2
       subindex++;
 
       int inumclus = clusterizer->GetNumClusters();
+      std::atomic<int> op_counter = 0;
       for (int icluster = 0; icluster < inumclus; icluster++) {
-        lev2::ContextDummy DummyTarget;
         auto clusterbuilder = clusterizer->GetCluster(icluster);
-        clusterbuilder->buildVertexBuffer(DummyTarget, VertexFormat);
-
         auto xgm_cluster = std::make_shared<lev2::XgmCluster>();
         xgm_submesh->_clusters.push_back(xgm_cluster);
+        op_counter.fetch_add(1);
+        auto op = [&op_counter,xgm_cluster,clusterbuilder,VertexFormat](){
 
-        // logchan_meshutilassimp->log("building tristrip cluster<%d>\n", icluster);
+          lev2::ContextDummy DummyTarget;
+          //logchan_meshutilassimp->log("building tristrip cluster<%d>\n", icluster);
+          clusterbuilder->buildVertexBuffer(DummyTarget, VertexFormat);
+          buildXgmCluster(DummyTarget, xgm_cluster, clusterbuilder,true);
+          op_counter.fetch_add(-1);
+        };
+        opq::concurrentQueue()->enqueue(op);
+      }
+      int last_count = inumclus+1;
 
-        buildXgmCluster(DummyTarget, xgm_cluster, clusterbuilder,true);
+      //////////////////////////////////////////////////////////////////
+      // wait for clusterbuild to complete..
+      //////////////////////////////////////////////////////////////////
 
-        const int imaxvtx = xgm_cluster->_vertexBuffer->GetNumVertices();
-        //logchan_meshutilassimp->log("xgm_cluster->_vertexBuffer<%p> imaxvtx<%d>\n", (void*) xgm_cluster->_vertexBuffer.get(), imaxvtx);
-        // OrkAssert(false);
-        // int inumclusjoints = XgmClus.mJoints.size();
-        // for( int ib=0; ib<inumclusjoints; ib++ )
-        //{
-        //	const PoolString JointName = XgmClus.mJoints[ ib ];
-        //	orklut<PoolString,int>::const_iterator itfind = mXgmModel.skeleton().mmJointNameMap.find( JointName );
-        //	int iskelindex = (*itfind).second;
-        //	XgmClus.mJointSkelIndices.push_back(iskelindex);
-        //}
+      while( op_counter.load() > 0 ){
+
+        if(op_counter.load() != last_count){
+          last_count = op_counter.load();
+          logchan_meshutilassimp->log("waiting for clusterbuild remaining<%d>.....", last_count);
+        }
+
+        usleep(100000);
       }
     }
   }

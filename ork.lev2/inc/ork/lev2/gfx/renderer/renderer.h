@@ -35,11 +35,8 @@ public:
   static const int kmaxrablesmed = 8192;
   //static const int kmaxrablessm  = 64;
 
-
-
-protected:
-  
-  virtual ~IRenderer() {}
+  IRenderer(Context* pTARG=nullptr);
+  virtual ~IRenderer() {}  
   
   Context* _target;
 
@@ -47,15 +44,14 @@ protected:
   ork::fixedvector<const RenderQueue::Node*, RenderQueue::krqmaxsize> _sortedNodes;
 
   ork::fixedvector<ModelRenderable, kmaxrables> _models;
+  ork::fixedvector<SkeletonRenderable, kmaxrables> _skeletons;
   ork::fixedvector<CallbackRenderable, kmaxrablesmed> _callbacks;
 
-public:
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   // Immediate Rendering (sort of, actually just submit the renderable to the target, which might itself place into a display list)
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  virtual void RenderModel(const ModelRenderable& ModelRen) const = 0;
-  void RenderCallback(const CallbackRenderable& cbren) const;
+  void _renderCallbackRenderable(const CallbackRenderable& cbren) const;
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   // Queued rendering
@@ -63,6 +59,11 @@ public:
 
   ModelRenderable& enqueueModel() {
     ModelRenderable& rend = _models.create();
+    enqueueRenderable(&rend);
+    return rend;
+  }
+  SkeletonRenderable& enqueueSkeleton() {
+    SkeletonRenderable& rend = _skeletons.create();
     enqueueRenderable(&rend);
     return rend;
   }
@@ -97,25 +98,13 @@ public:
 
   void resetQueue(void);
 
-protected:
   RadixSort _radixsorter;
   RenderQueue _unsortedNodes;
   PerformanceItem* mPerformanceItem;
-
-  IRenderer(Context* pTARG);
+  std::string _renderername;
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-struct DefaultRenderer : public lev2::IRenderer {
-
-public:
-  DefaultRenderer(lev2::Context* ptarg = nullptr);
-
-private:
-  void RenderModel(const lev2::ModelRenderable& ModelRen) const final;
-};
-
 
 using renderer_ptr_t = std::shared_ptr<IRenderer>;
 

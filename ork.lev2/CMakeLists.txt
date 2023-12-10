@@ -16,6 +16,7 @@ set( INCD ${CMAKE_CURRENT_SOURCE_DIR}/inc )
 set( COREINCD ${CMAKE_CURRENT_SOURCE_DIR}/../ork.core/inc )
 ###################################
 
+file(GLOB_RECURSE src_editor ${SRCD}/editor/*.cpp)
 file(GLOB_RECURSE src_aud ${SRCD}/aud/*.cpp)
 file(GLOB_RECURSE src_midi ${SRCD}/midi/*.cpp)
 file(GLOB_RECURSE src_gfx ${SRCD}/gfx/*.cpp)
@@ -35,7 +36,7 @@ ENDIF()
 file(GLOB_RECURSE src_glad ${SRCD}/gfx/GLx/glad/*.c)
 set( orksrcs ${src_aud} ${src_midi} ${src_gfx} ${src_input} )
 list( APPEND orksrcs ${src_glfw} ${src_ui} ${src_imgui} ${src_lev2} )
-list( APPEND orksrcs ${src_apple} ${src_ovr} ${src_glad} )
+list( APPEND orksrcs ${src_apple} ${src_ovr} ${src_glad} ${src_editor} )
 list( APPEND orksrcs ${INCD}/ork/lev2/ezapp.h )
 
 ###################################
@@ -95,6 +96,18 @@ ELSEIF(${UNIX})
     set(ENV{VK_LAYER_PATH}=$ENV{OBT_VULKAN_ROOT}/etc/vulkan/explicit_layer.d)
     IF( "${ARCHITECTURE}" STREQUAL "x86_64" )
       list(APPEND libs openvr_api )
+      target_compile_definitions( ork_lev2 PRIVATE ENABLE_VULKAN )
+      target_include_directories (ork_lev2 PRIVATE $ENV{OBT_VULKAN_ROOT}/include)
+      list(APPEND libs vulkan )
+
+      IF(CMAKE_BUILD_TYPE STREQUAL "Debug")
+      IF(EXISTS ENV{RENDERDOC_DIR}/include/)
+        target_include_directories(ork_lev2 PRIVATE ENV{RENDERDOC_DIR}/include/)
+        set(RENDERDOC_API_ENABLED:BOOL=ON)
+        target_compile_definitions( ork_lev2 PRIVATE RENDERDOC_API_ENABLED )
+      ENDIF()
+      ENDIF()
+
     ENDIF()
 
 

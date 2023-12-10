@@ -163,17 +163,17 @@ btTriangleIndexVertexArray* flatSubmeshToTriVertArray(meshutil::flatsubmesh_ptr_
   btmesh.m_vertexStride = knfloats * sizeof(btScalar);
   for (int i = 0; i < inumvertices; i++) {
     const auto& src_vtx = vertices[i];
-    float fv                                    = src_vtx.mUV0.y;
+    float fv                                    = src_vtx._uv.y;
     int j                                       = i * knfloats;
-    pVERTS[j + 0]                               = src_vtx.mPosition.x;
-    pVERTS[j + 1]                               = (src_vtx.mPosition.y); 
-    pVERTS[j + 2]                               = src_vtx.mPosition.z;
-    pVERTS[j + 3]                               = src_vtx.mNormal.x;
-    pVERTS[j + 4]                               = src_vtx.mNormal.y;
-    pVERTS[j + 5]                               = src_vtx.mNormal.z;
-    pVERTS[j + 6]                               = src_vtx.mBiNormal.x;
-    pVERTS[j + 7]                               = src_vtx.mBiNormal.y;
-    pVERTS[j + 8]                               = src_vtx.mBiNormal.z;
+    pVERTS[j + 0]                               = src_vtx._position.x;
+    pVERTS[j + 1]                               = (src_vtx._position.y); 
+    pVERTS[j + 2]                               = src_vtx._position.z;
+    pVERTS[j + 3]                               = src_vtx._normal.x;
+    pVERTS[j + 4]                               = src_vtx._normal.y;
+    pVERTS[j + 5]                               = src_vtx._normal.z;
+    pVERTS[j + 6]                               = src_vtx._binormal.x;
+    pVERTS[j + 7]                               = src_vtx._binormal.y;
+    pVERTS[j + 8]                               = src_vtx._binormal.z;
   }
 
   indexVertexArrays->addIndexedMesh(btmesh, PHY_INTEGER);
