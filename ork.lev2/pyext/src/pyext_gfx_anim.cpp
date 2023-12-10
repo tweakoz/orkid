@@ -466,9 +466,19 @@ void pyinit_gfx_xgmanim(py::module& module_lev2) {
     return std::make_shared<IkChain>(skel);
   }))
   .def(
-      "bindToBone",                               //
+      "bindToJointNamed",                               //
       [](ikchain_ptr_t self, std::string named) { //
-        return self->bindToBone(named);
+        return self->bindToJointNamed(named);
+      })
+  .def(
+      "bindToJointPath",                               //
+      [](ikchain_ptr_t self, std::string named) { //
+        return self->bindToJointPath(named);
+      })
+  .def(
+      "bindToJointID",                               //
+      [](ikchain_ptr_t self, std::string named) { //
+        return self->bindToJointID(named);
       })
   .def(
       "prepare",               //

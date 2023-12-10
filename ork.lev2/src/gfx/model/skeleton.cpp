@@ -312,6 +312,28 @@ int XgmSkeleton::jointIndex(const std::string& named) const {
   }
   return index;
 }
+int XgmSkeleton::jointIndexFromPath(const std::string& path) const {
+  auto it   = _jointsByPath.find(path);
+  int index = (it == _jointsByPath.end()) ? -1 : it->second;
+  if (index == -1) {
+    // printf( "find joint<%s> in map\n", path.c_str() );
+    for (auto it : _jointsByPath) {
+      // printf( "in map key<%s>\n", it.first.c_str());
+    }
+  }
+  return index;
+}
+int XgmSkeleton::jointIndexFromID(const std::string& idstr) const {
+  auto it   = _jointsByID.find(idstr);
+  int index = (it == _jointsByID.end()) ? -1 : it->second;
+  if (index == -1) {
+    // printf( "find joint<%s> in map\n", idstr.c_str() );
+    for (auto it : _jointsByID) {
+      // printf( "in map key<%s>\n", it.first.c_str());
+    }
+  }
+  return index;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 

@@ -240,7 +240,7 @@ bool XgmModel::_loadXGM(XgmModel* mdl, datablock_ptr_t datablock) {
       HeaderStream->GetItem(XGMVERSIONCODE);
       HeaderStream->GetItem(inumjoints);
     }
-    logchan_mioR->log("XGM: inumjoints<%d>\n", inumjoints );
+    logchan_mioR->log("XGM: inumjoints<%d>", inumjoints );
     /////////////////////////////////////////////////////////
     if (inumjoints) {
       mdl->_skeleton->resize(inumjoints);
@@ -277,7 +277,7 @@ bool XgmModel::_loadXGM(XgmModel* mdl, datablock_ptr_t datablock) {
 
         mdl->_skeleton->_jointIDS[ij] = pjntID;
 
-        logchan_mioR->log("XGM: joint index<%d> id<%s> name<%s>\n", ij, pjntID, pjntname );
+        logchan_mioR->log("XGM: joint index<%d> id<%s> name<%s>", ij, pjntID, pjntname );
 
         fmtx4 scalematrix;
         //scalematrix.compose(fvec3(0,0,0),fquat(),0.01f);

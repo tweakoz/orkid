@@ -578,6 +578,8 @@ struct XgmSkeleton {
     return _bones[idx];
   }
   int jointIndex(const std::string& Named) const;
+  int jointIndexFromPath(const std::string& Path) const;
+  int jointIndexFromID(const std::string& Path) const;
 
   std::vector<int> childJointsOf(int joint) const;
   std::vector<int> descendantJointsOf(int joint) const;
