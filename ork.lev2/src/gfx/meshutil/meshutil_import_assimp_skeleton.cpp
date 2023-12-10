@@ -4,16 +4,16 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 #include "assimp_util.inl"
+#include<ork/util/logger.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::meshutil {
 ///////////////////////////////////////////////////////////////////////////////
+static logchannel_ptr_t logchan_meshutilassimp_skel = logger()->createChannel("meshutil.assimp.skel",fvec3(1,.8,.7));
 
 parsedskeletonptr_t parseSkeleton(const aiScene* scene) {
 
   auto rval = std::make_shared<ParsedSkeleton>();
-
-  skelnodemap_t& xgmskelnodes = rval->_xgmskelmap;
 
   /////////////////////////////////////////////////
   // get nodes
@@ -37,6 +37,7 @@ parsedskeletonptr_t parseSkeleton(const aiScene* scene) {
     OrkAssert(n != nullptr);
     auto name      = remapSkelName(n->mName.data);
     auto node_path = aiNodePathName(n);
+    std::string node_ID = (n->mID.data) ? n->mID.data : "";
     auto itb       = uniqskelnodeset.find(node_path);
     if (itb != uniqskelnodeset.end()) {
       auto prior      = itb->second;
@@ -67,11 +68,13 @@ parsedskeletonptr_t parseSkeleton(const aiScene* scene) {
       }
       printf("prior_path<%s>\n", prior_path.c_str());
       printf("node_path<%s>\n", node_path.c_str());
+      printf("node_ID<%s>\n", node_ID.c_str());
       OrkAssert(false);
     }
     int index                  = uniqskelnodeset.size();
     uniqskelnodeset[node_path] = n;
     auto xgmnode               = std::make_shared<lev2::XgmSkelNode>(name);
+    xgmnode->_ID               = node_ID;
     xgmnode->_path             = node_path;
     xgmnode->miSkelIndex       = index;
     xgmnode->_depth            = depth;
@@ -92,7 +95,9 @@ parsedskeletonptr_t parseSkeleton(const aiScene* scene) {
 
     xgmnode->_nodeMatrix = convertMatrix44(n->mTransformation);
     // deco::printe(fvec3::Yellow(), xgmnode->_nodeMatrix.dump4x3(), true);
-    xgmskelnodes[node_path] = xgmnode;
+    rval->_xgmskelmap_by_path[node_path] = xgmnode;
+    rval->_xgmskelmap_by_name[name]      = xgmnode;
+    rval->_xgmskelmap_by_id[node_ID]     = xgmnode;
   };
 
   visit_ainodes_down(scene->mRootNode, 0, create_skelnodes);
@@ -112,9 +117,9 @@ parsedskeletonptr_t parseSkeleton(const aiScene* scene) {
         OrkAssert(bone_node);
         auto bone_path = aiNodePathName(bone_node);
         auto bonename  = remapSkelName(bone->mName.data);
-        auto itb       = xgmskelnodes.find(bone_path);
-        OrkAssert(itb != xgmskelnodes.end());
-        if (itb != xgmskelnodes.end()) {
+        auto itb       = rval->_xgmskelmap_by_path.find(bone_path);
+        OrkAssert(itb != rval->_xgmskelmap_by_path.end());
+        if (itb != rval->_xgmskelmap_by_path.end()) {
           auto xgmnode = itb->second;
           if (false == xgmnode->_varmap["visited_bone"].isA<bool>()) {
             xgmnode->_varmap["visited_bone"].set<bool>(true);
@@ -146,8 +151,8 @@ parsedskeletonptr_t parseSkeleton(const aiScene* scene) {
     //////////////////////////////
     auto premapped = remapSkelName(p->mName.data);
     auto ppath     = aiNodePathName(p);
-    auto itp       = xgmskelnodes.find(ppath);
-    OrkAssert(itp != xgmskelnodes.end());
+    auto itp       = rval->_xgmskelmap_by_path.find(ppath);
+    OrkAssert(itp != rval->_xgmskelmap_by_path.end());
     auto pskelnode = itp->second;
     auto itn       = visited_name.find(ppath);
     if (itn != visited_name.end()) {
@@ -168,9 +173,9 @@ parsedskeletonptr_t parseSkeleton(const aiScene* scene) {
 
       auto cremapped = remapSkelName(c->mName.data);
       auto cpath     = aiNodePathName(c);
-      auto itc       = xgmskelnodes.find(cpath);
+      auto itc       = rval->_xgmskelmap_by_path.find(cpath);
 
-      OrkAssert(itc != xgmskelnodes.end());
+      OrkAssert(itc != rval->_xgmskelmap_by_path.end());
       auto cskelnode = itc->second;
 
       deco::printf(
@@ -284,7 +289,9 @@ parsedskeletonptr_t parseSkeleton(const aiScene* scene) {
       endeffector->_assimpOffsetMatrix = fmtx4();
 
 
-      xgmskelnodes[endeffector->_path] = endeffector;
+      rval->_xgmskelmap_by_path[endeffector->_path] = endeffector;
+      rval->_xgmskelmap_by_name[endeffector->_name] = endeffector;
+      rval->_xgmskelmap_by_id[endeffector->_path] = endeffector;
 
       uniqskelnodeset.insert(std::make_pair(endeffector->_path, nullptr));
       node->_childrenX.push_back(endeffector);
@@ -330,6 +337,100 @@ parsedskeletonptr_t parseSkeleton(const aiScene* scene) {
 
   // OrkAssert(false);
   return rval;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void configureXgmSkeleton(const ork::meshutil::Mesh& input, lev2::XgmModel& xgmmdlout) {
+
+  auto parsedskel = input._varmap->valueForKey("parsedskel").get<parsedskeletonptr_t>();
+
+  //logchan_meshutilassimp_skel->log("NumSkelNodes<%d>\n", int(xgmskelnodes.size()));
+  xgmmdlout.SetSkinned(true);
+  auto& xgmskel = xgmmdlout.skeleton();
+ 
+  xgmskel.resize(parsedskel->_xgmskelmap_by_path.size());
+  
+  for (auto& item : parsedskel->_xgmskelmap_by_path) {
+    const std::string& JointPath = item.first;
+    auto skelnode                = item.second;
+    auto JointName = skelnode->_name;
+    auto JointID = skelnode->_ID;
+    auto parskelnode             = skelnode->_parent;
+    std::string ParName = parskelnode ? parskelnode->_name : "none";
+    int idx                      = skelnode->miSkelIndex;
+    int pidx                     = parskelnode ? parskelnode->miSkelIndex : -1;
+    logchan_meshutilassimp_skel->log("JointName<%s> ParName<%s> skelnode<%p> parskelnode<%p> idx<%d> pidx<%d> numinfs<%d>", //
+       JointName.c_str(), 
+       ParName.c_str(),
+       (void*) skelnode.get(), 
+       (void*) parskelnode.get(), 
+       idx, 
+       pidx,
+       int(skelnode->_numBoundVertices));
+
+    xgmskel.addJoint(idx, pidx, JointName, JointPath, JointID);
+    xgmskel._bindMatrices[idx] = skelnode ? skelnode->_bindMatrix : fmtx4();
+    xgmskel._inverseBindMatrices[idx] = skelnode ? skelnode->_bindMatrixInverse : fmtx4();
+    xgmskel.RefJointMatrix(idx)       = skelnode ? skelnode->_jointMatrix : fmtx4();
+    xgmskel.RefNodeMatrix(idx)        = skelnode ? skelnode->_nodeMatrix : fmtx4();
+
+    auto jprops = std::make_shared<lev2::XgmJointProperties>();
+    xgmskel._jointProperties[idx] = jprops;
+    jprops->_numVerticesInfluenced = skelnode->_numBoundVertices;
+
+  }
+
+  /////////////////////////////////////
+  // flatten the skeleton (WIP)
+  //  this means traverse the tree and add bones for each parent/child pair
+  //  the bones are added in order of traversal
+  //  so that later processing (concatenation) can be done
+  //   by traversing an array of bones
+  /////////////////////////////////////
+
+  //logchan_meshutilassimp_skel->log("Flatten Skeleton\n");
+  const auto& bonemarkset = (*input._varmap)["bonemarkset"].get<bonemarkset_t>();
+
+  auto root          = parsedskel->rootXgmSkelNode();
+  xgmskel.miRootNode = root ? root->miSkelIndex : -1;
+  size_t add_count = 0;
+  if (root) {
+    lev2::XgmSkelNode::visitHierarchy(root,[&xgmskel,&add_count](lev2::xgmskelnode_ptr_t node) {
+      auto parent = node->_parent;
+      if (parent) {
+        bool ignore = (parent->_numBoundVertices == 0);
+        ignore      = ignore and (node->_numBoundVertices == 0);
+        if (ignore){
+          //logchan_meshutilassimp_skel->log("xxx IGNORE<%s>\n", node->_name.c_str());
+        }
+        else {
+          int iparentindex   = parent->miSkelIndex;
+          int ichildindex    = node->miSkelIndex;
+          auto pa_props = xgmskel._jointProperties[iparentindex];
+          auto ch_props = xgmskel._jointProperties[ichildindex];
+
+          bool valid = (pa_props->_numVerticesInfluenced > 0) or (ch_props->_numVerticesInfluenced > 0);
+          if(valid){
+            logchan_meshutilassimp_skel->log("xxx ADD BONE<%d> par<%zu:%s (%d)> chi<%zu:%s (%d)>\n", //
+              add_count, //
+              iparentindex,
+              parent->_name.c_str(),
+              pa_props->_numVerticesInfluenced,
+              ichildindex,
+              node->_name.c_str(),
+              ch_props->_numVerticesInfluenced);
+            lev2::XgmBone Bone = {iparentindex, ichildindex};
+            xgmskel.addBone(Bone);
+            add_count++;
+          }
+        }
+      }
+    });
+    // xgmskel.dump();
+  }
+
+  //logchan_meshutilassimp_skel->log("skeleton configuration complete..\n");
 }
 
 ///////////////////////////////////////////////////////////////////////////////

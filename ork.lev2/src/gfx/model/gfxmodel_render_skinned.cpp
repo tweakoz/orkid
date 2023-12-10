@@ -95,12 +95,12 @@ void XgmModel::RenderSkinned(
         }
 
         pipeline->wrappedDrawCall(RCID, [&]() {
-          size_t inumjoints = cluster->mJoints.size();
+          size_t inumjoints = cluster->_jointPaths.size();
 
           OrkAssert(miBonesPerCluster <= kMatrixBlockSize);
 
           for (size_t ijointreg = 0; ijointreg < inumjoints; ijointreg++) {
-            const std::string& JointName = cluster->mJoints[ijointreg];
+            const std::string& joint_path = cluster->_jointPaths[ijointreg];
             int JointSkelIndex           = cluster->mJointSkelIndices[ijointreg];
             const fmtx4& finalmtx        = minst->_worldPose->_world_bindrela_matrices[JointSkelIndex];
             //////////////////////////////////////

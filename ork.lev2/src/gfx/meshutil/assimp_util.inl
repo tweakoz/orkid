@@ -25,6 +25,11 @@
 
 namespace ork::meshutil {
 
+using bonemarkset_t = std::set<std::string>;
+
+void configureXgmSkeleton (const ork::meshutil::Mesh& input, //
+                           lev2::XgmModel& xgmmdlout);
+
 ///////////////////////////////////////////////////////////////////////////////
 
 inline uint32_t assimpImportFlags() {
@@ -117,12 +122,14 @@ inline std::string remapSkelName(std::string inp) {
 struct ParsedSkeleton {
   //////////////////////////////////////////////////////////////
   inline lev2::xgmskelnode_ptr_t rootXgmSkelNode() {
-    return _xgmskelmap.find(remapSkelName(_rootpath))->second;
+    return _xgmskelmap_by_path.find(_rootpath)->second;
   }
   //////////////////////////////////////////////////////////////
   std::string _rootname;
   std::string _rootpath;
-  skelnodemap_t _xgmskelmap;
+  skelnodemap_t _xgmskelmap_by_name;
+  skelnodemap_t _xgmskelmap_by_path;
+  skelnodemap_t _xgmskelmap_by_id;
   bool _isSkinned = false;
 };
 using parsedskeletonptr_t = std::shared_ptr<ParsedSkeleton>;

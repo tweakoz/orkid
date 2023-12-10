@@ -90,25 +90,25 @@ struct XgmCluster final { // Run Time Cluster
   virtual ~XgmCluster();
   void Dump(void);
 
-  inline size_t numPrimGroups(void) const {
+  inline size_t numPrimGroups() const {
     return _primgroups.size();
   }
   inline xgmprimgroup_ptr_t primgroup(int idx) const {
     return _primgroups[idx];
   }
-  vtxbufferbase_ptr_t GetVertexBuffer(void) const {
+  vtxbufferbase_ptr_t GetVertexBuffer() const {
     return _vertexBuffer;
   }
-  const std::string& GetJointBinding(int idx) const {
-    return mJoints[idx];
+  const std::string& jointBinding(int idx) const {
+    return _jointPaths[idx];
   }
-  size_t GetNumJointBindings(void) const {
-    return mJoints.size();
+  size_t numJointBindings() const {
+    return _jointPaths.size();
   }
 
   void dump() const;
 
-  orkvector<std::string> mJoints;
+  orkvector<std::string> _jointPaths;
   orkvector<int> mJointSkelIndices;
 
   std::vector<xgmprimgroup_ptr_t> _primgroups;

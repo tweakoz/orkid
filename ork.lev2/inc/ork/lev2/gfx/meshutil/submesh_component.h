@@ -195,7 +195,7 @@ struct vertex {
   int miNumColors = 0;
   int miNumUvs = 0;
 
-  std::string mJointNames[kmaxinfluences];
+  std::string _jointpaths[kmaxinfluences];
 
   fvec4 mCol[kmaxcolors];
   uvmapcoord mUV[kmaxuvs];

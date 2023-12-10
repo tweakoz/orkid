@@ -70,19 +70,19 @@ typedef std::shared_ptr<XgmClusterBuilder> clusterbuilder_ptr_t;
 struct XgmSkinnedClusterBuilder : public XgmClusterBuilder {
   XgmSkinnedClusterBuilder(const XgmClusterizer& clusterizer);
   /////////////////////////////////////////////////
-  const orkmap<std::string, int>& RefBoneRegMap() const {
-    return _boneRegisterMap;
+  const orkmap<std::string, int>& jointRegMap() const {
+    return _jointRegisterMapX;
   }
 
   bool addTriangle(const XgmClusterTri& Triangle) final;
   void buildVertexBuffer(lev2::Context& context, lev2::EVtxStreamFormat format) final; // virtual
 
-  int FindNewBoneIndex(const std::string& BoneName);
+  int findNewJointIndex(const std::string& jointpath);
   void BuildVertexBuffer_V12N12T8I4W4(lev2::Context& context);
   void BuildVertexBuffer_V12N12B12T8I4W4(lev2::Context& context);
   void BuildVertexBuffer_V12N6I1T4(lev2::Context& context);
 
-  orkmap<std::string, int> _boneRegisterMap;
+  orkmap<std::string, int> _jointRegisterMapX;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -40,7 +40,6 @@ datablock_ptr_t assimpToXga(datablock_ptr_t inp_datablock) {
     /////////////////////////////
 
     auto parsedskel = parseSkeleton(scene); // create and link skeleton
-    auto& skelnodes = parsedskel->_xgmskelmap;
 
     /////////////////////////////
     // we assume a single animation per file
@@ -70,12 +69,12 @@ datablock_ptr_t assimpToXga(datablock_ptr_t inp_datablock) {
     while (not nodestack.empty()) {
       auto n = nodestack.front();
       nodestack.pop();
-      //auto name = std::string(n->mName.data);
-      auto name = aiNodePathName(n);
-      auto itb  = uniqskelnodeset.find(name);
+      auto name = std::string(n->mName.data);
+      auto path = aiNodePathName(n);
+      auto itb  = uniqskelnodeset.find(path);
       if (itb == uniqskelnodeset.end()) {
         int index = uniqskelnodeset.size();
-        uniqskelnodeset.insert(name);
+        uniqskelnodeset.insert(path);
         auto matrix         = convertMatrix44(n->mTransformation);
         auto remapped_name  = name; //remapSkelName(name);
         channel_remap[name] = remapped_name;
@@ -128,7 +127,7 @@ datablock_ptr_t assimpToXga(datablock_ptr_t inp_datablock) {
 
       std::string channel_name = remapSkelName(channel->mNodeName.data);
 
-      auto its        = skelnodes.find(channel_name);
+      auto its        = parsedskel->_xgmskelmap_by_name.find(channel_name);
       auto skelnode   = its->second;
       auto bindmatrix = skelnode->_bindMatrix;
       auto invbindmtx = skelnode->_bindMatrixInverse;
@@ -243,7 +242,7 @@ datablock_ptr_t assimpToXga(datablock_ptr_t inp_datablock) {
           // deco::printf(color, "///////////\n");
           aiNodeAnim* channel        = anim->mChannels[i];
           std::string channel_name   = remapSkelName(channel->mNodeName.data);
-          auto its                   = skelnodes.find(channel_name);
+          auto its                   = parsedskel->_xgmskelmap_by_name.find(channel_name);
           auto skelnode              = its->second;
           auto& skelnode_framevect_n = skelnode->_varmap["framevect_n"].get<framevect_t>();
           skelnode->_jointMatrix = skelnode_framevect_n[f];
@@ -254,7 +253,7 @@ datablock_ptr_t assimpToXga(datablock_ptr_t inp_datablock) {
         for (int i = 0; i < anim->mNumChannels; i++) {
           aiNodeAnim* channel        = anim->mChannels[i];
           std::string channel_name   = remapSkelName(channel->mNodeName.data);
-          auto its                   = skelnodes.find(channel_name);
+          auto its                   = parsedskel->_xgmskelmap_by_name.find(channel_name);
           auto skelnode              = its->second;
           fmtx4 JSPACE; 
           if (skelnode->_parent) {

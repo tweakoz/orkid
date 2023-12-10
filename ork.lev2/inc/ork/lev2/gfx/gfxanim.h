@@ -380,6 +380,8 @@ struct XgmSkelNode {
 
   std::string _name;
   std::string _path;
+  std::string _ID;
+
   fmtx4 _bindMatrixInverse;
   fmtx4 _bindMatrix;
   fmtx4 _jointMatrix;
@@ -553,11 +555,17 @@ struct XgmSkeleton {
 
   float boneLength(int ibone) const;
 
-  const std::string& GetJointName(int idx) const {
-    return mvJointNameVect[idx];
+  const std::string& jointName(int idx) const {
+    return _jointNAMES[idx];
   }
-  int GetJointParent(int idx) const {
-    return maJointParents[idx];
+  const std::string& jointPath(int idx) const {
+    return _jointPATHS[idx];
+  }
+  const std::string& jointID(int idx) const {
+    return _jointIDS[idx];
+  }
+  int jointParent(int idx) const {
+    return _parentIndices[idx];
   }
   void* GetUserData(void) {
     return mpUserData;
@@ -573,7 +581,7 @@ struct XgmSkeleton {
   /////////////////////////////////////
 
   void resize(int inumjoints); // set number of joints
-  void AddJoint(int iskelindex, int iparindex, const std::string& name);
+  void addJoint(int iskelindex, int iparindex, const std::string& name, const std::string& path, const std::string& id);
   void addBone(const XgmBone& bone);
 
   /////////////////////////////////////
@@ -626,12 +634,16 @@ struct XgmSkeleton {
   orkvector<DecompMatrix> _bindDecomps;
   orkvector<fmtx4> _jointMatrices;
   orkvector<fmtx4> _nodeMatrices;
-  orkvector<std::string> mvJointNameVect;
+  orkvector<std::string> _jointIDS;
+  orkvector<std::string> _jointPATHS;
+  orkvector<std::string> _jointNAMES;
   orkvector<XgmBone> _bones;
-  orkvector<int> maJointParents;
+  orkvector<int> _parentIndices;
   orkvector<xgmjointprops_ptr_t> _jointProperties;
 
-  orklut<std::string, int> mmJointNameMap;
+  std::unordered_map<std::string, int> _jointsByName;
+  std::unordered_map<std::string, int> _jointsByPath;
+  std::unordered_map<std::string, int> _jointsByID;
 
 };
 

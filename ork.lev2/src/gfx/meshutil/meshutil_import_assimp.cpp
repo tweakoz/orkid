@@ -12,8 +12,6 @@ namespace bfs = boost::filesystem;
 namespace ork::meshutil {
 static logchannel_ptr_t logchan_meshutilassimp = logger()->createChannel("meshutil.assimp",fvec3(1,.9,.9));
 ///////////////////////////////////////////////////////////////////////////////
-typedef std::set<std::string> bonemarkset_t;
-///////////////////////////////////////////////////////////////////////////////
 void visit_ainodes_down(const aiNode* node, int depth, ainode_visitorfn_t visitor){
     visitor(node,depth);
     for (int i = 0; i < node->mNumChildren; ++i) {
@@ -301,7 +299,7 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
 
     (*_varmap)["parsedskel"].make<parsedskeletonptr_t>(parsedskel);
     bool is_skinned    = parsedskel->_isSkinned;
-    auto& xgmskelnodes = parsedskel->_xgmskelmap;
+    //auto& xgmskelnodes = parsedskel->_xgmskelmap;
 
     //////////////////////////////////////////////
     // count, visit dagnodes
@@ -314,7 +312,7 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
     //////////////////////////////////////////////
 
     struct XgmAssimpVertexWeightItem {
-      std::string _bonepath;
+      std::string _jointpath;
       float _weight = 0.0f;
     };
     struct XgmAssimpVertexWeights {
@@ -334,7 +332,7 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
           auto bone_node = bone->mNode;
           auto bone_path = aiNodePathName(bone_node);
           auto bonename = remapSkelName(bone->mName.data);
-          auto itb      = xgmskelnodes.find(bone_path);
+          auto itb      = parsedskel->_xgmskelmap_by_path.find(bone_path);
           bonemarkset.insert(bonename);
           /////////////////////////////////////////////
           // yuk -- assimp is not like gltf, or collada...
@@ -342,7 +340,7 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
           /////////////////////////////////////////////
           int numvertsaffected = bone->mNumWeights;
           ////////////////////////////////////////////
-          if (itb != xgmskelnodes.end()) {
+          if (itb != parsedskel->_xgmskelmap_by_path.end()) {
             auto xgmnode = itb->second;
             //////////////////////////////////
             // mark skel node as actual mesh referenced bone
@@ -389,8 +387,8 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
 
     auto root_name = remapSkelName(scene->mRootNode->mName.data);
     auto root_path = aiNodePathName(scene->mRootNode);
-    auto it_root_skelnode                 = xgmskelnodes.find(root_path);
-    ork::lev2::xgmskelnode_ptr_t root_skelnode = (it_root_skelnode != xgmskelnodes.end()) ? it_root_skelnode->second : nullptr;
+    auto it_root_skelnode                 = parsedskel->_xgmskelmap_by_path.find(root_path);
+    ork::lev2::xgmskelnode_ptr_t root_skelnode = (it_root_skelnode != parsedskel->_xgmskelmap_by_path.end()) ? it_root_skelnode->second : nullptr;
 
     //////////////////////////////////////////////
     // parse nodes
@@ -408,8 +406,8 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
 
       auto nren = remapSkelName(n->mName.data);
       auto npath = aiNodePathName(n);
-      auto it_nod_skelnode                 = xgmskelnodes.find(npath);
-      ork::lev2::xgmskelnode_ptr_t nod_skelnode = (it_nod_skelnode != xgmskelnodes.end()) //
+      auto it_nod_skelnode                 = parsedskel->_xgmskelmap_by_path.find(npath);
+      ork::lev2::xgmskelnode_ptr_t nod_skelnode = (it_nod_skelnode != parsedskel->_xgmskelmap_by_path.end()) //
                                                 ? it_nod_skelnode->second //
                                                 : nullptr;
 
@@ -551,14 +549,14 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
                     float fw  = infl._weight;
                     if (fw < 0.001)
                       fw = 0.001;
-                    rawweightMap[infl._bonepath] = fw;
+                    rawweightMap[infl._jointpath] = fw;
                     /*if (fw != 0.0f)*/ {
                       auto xgminfl = XgmAssimpVertexWeightItem(infl);
                       auto pr      = std::make_pair(1.0f - fw, xgminfl);
                       largestWeightMap.insert(pr);
                     }
-                    deformer_bones.insert(infl._bonepath);
-                    logchan_meshutilassimp->log(" xxx inf<%d> bone<%s> weight<%g>\n", inf, infl._bonepath.c_str(), fw);
+                    deformer_bones.insert(infl._jointpath);
+                    logchan_meshutilassimp->log(" xxx inf<%d> bone<%s> weight<%g>\n", inf, infl._jointpath.c_str(), fw);
                   }
                   int icount      = 0;
                   float totweight = 0.0f;
@@ -578,7 +576,7 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
                       float w            = 1.0f - item.first;
                       float fjointweight = w / totweight;
                       newtotweight += fjointweight;
-                      prunedWeightMap.insert(std::make_pair(fjointweight,item.second._bonepath));
+                      prunedWeightMap.insert(std::make_pair(fjointweight,item.second._jointpath));
                       ++icount;
                     }
                   }
@@ -607,7 +605,7 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
                   // init vertex with no influences
                   /////////////////////////////////
                   for (int iw = 0; iw < 4; iw++) {
-                    muvtx.mJointNames[iw]   = root_skelnode->_path;
+                    muvtx._jointpaths[iw]   = root_skelnode->_path;
                     muvtx.mJointWeights[iw] = 0.0f;
                   }
                   /////////////////////////////////
@@ -618,7 +616,7 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
                     float w = it->first / newtotweight;
                     OrkAssert(w >= 0.0f);
                     OrkAssert(w <= 1.0f);
-                    muvtx.mJointNames[windex]   = it->second;
+                    muvtx._jointpaths[windex]   = it->second;
                     muvtx.mJointWeights[windex] = w;
                     // logchan_meshutilassimp->log("inf<%s:%g> ", it->second.c_str(), w);
                     totw += w;
@@ -696,98 +694,6 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
   } // if(scene)
 
   //logchan_meshutilassimp->log("DONE: readFromAssimp\n");
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void configureXgmSkeleton(const ork::meshutil::Mesh& input, lev2::XgmModel& xgmmdlout) {
-
-  auto parsedskel = input._varmap->valueForKey("parsedskel").get<parsedskeletonptr_t>();
-
-  const auto& xgmskelnodes = parsedskel->_xgmskelmap;
-
-  //logchan_meshutilassimp->log("NumSkelNodes<%d>\n", int(xgmskelnodes.size()));
-  xgmmdlout.SetSkinned(true);
-  auto& xgmskel = xgmmdlout.skeleton();
-  xgmskel.resize(xgmskelnodes.size());
-  for (auto& item : xgmskelnodes) {
-    const std::string& JointName = item.first;
-    auto skelnode                = item.second;
-    auto parskelnode             = skelnode->_parent;
-    std::string ParName = parskelnode ? parskelnode->_name : "none";
-    int idx                      = skelnode->miSkelIndex;
-    int pidx                     = parskelnode ? parskelnode->miSkelIndex : -1;
-    logchan_meshutilassimp->log("JointName<%s> ParName<%s> skelnode<%p> parskelnode<%p> idx<%d> pidx<%d> numinfs<%d>", //
-       JointName.c_str(), 
-       ParName.c_str(),
-       (void*) skelnode.get(), 
-       (void*) parskelnode.get(), 
-       idx, 
-       pidx,
-       int(skelnode->_numBoundVertices));
-
-    xgmskel.AddJoint(idx, pidx, JointName);
-    xgmskel._bindMatrices[idx] = skelnode ? skelnode->_bindMatrix : fmtx4();
-    xgmskel._inverseBindMatrices[idx] = skelnode ? skelnode->_bindMatrixInverse : fmtx4();
-    xgmskel.RefJointMatrix(idx)       = skelnode ? skelnode->_jointMatrix : fmtx4();
-    xgmskel.RefNodeMatrix(idx)        = skelnode ? skelnode->_nodeMatrix : fmtx4();
-
-    auto jprops = std::make_shared<lev2::XgmJointProperties>();
-    xgmskel._jointProperties[idx] = jprops;
-    jprops->_numVerticesInfluenced = skelnode->_numBoundVertices;
-
-  }
-
-  /////////////////////////////////////
-  // flatten the skeleton (WIP)
-  //  this means traverse the tree and add bones for each parent/child pair
-  //  the bones are added in order of traversal
-  //  so that later processing (concatenation) can be done
-  //   by traversing an array of bones
-  /////////////////////////////////////
-
-  //logchan_meshutilassimp->log("Flatten Skeleton\n");
-  const auto& bonemarkset = (*input._varmap)["bonemarkset"].get<bonemarkset_t>();
-
-  auto root          = parsedskel->rootXgmSkelNode();
-  xgmskel.miRootNode = root ? root->miSkelIndex : -1;
-  size_t add_count = 0;
-  if (root) {
-    lev2::XgmSkelNode::visitHierarchy(root,[&xgmskel,&add_count](lev2::xgmskelnode_ptr_t node) {
-      auto parent = node->_parent;
-      if (parent) {
-        bool ignore = (parent->_numBoundVertices == 0);
-        ignore      = ignore and (node->_numBoundVertices == 0);
-        if (ignore){
-          //logchan_meshutilassimp->log("xxx IGNORE<%s>\n", node->_name.c_str());
-        }
-        else {
-          int iparentindex   = parent->miSkelIndex;
-          int ichildindex    = node->miSkelIndex;
-          auto pa_props = xgmskel._jointProperties[iparentindex];
-          auto ch_props = xgmskel._jointProperties[ichildindex];
-
-          bool valid = (pa_props->_numVerticesInfluenced > 0) or (ch_props->_numVerticesInfluenced > 0);
-          if(valid){
-            logchan_meshutilassimp->log("xxx ADD BONE<%d> par<%zu:%s (%d)> chi<%zu:%s (%d)>\n", //
-              add_count, //
-              iparentindex,
-              parent->_name.c_str(),
-              pa_props->_numVerticesInfluenced,
-              ichildindex,
-              node->_name.c_str(),
-              ch_props->_numVerticesInfluenced);
-            lev2::XgmBone Bone = {iparentindex, ichildindex};
-            xgmskel.addBone(Bone);
-            add_count++;
-          }
-        }
-      }
-    });
-    // xgmskel.dump();
-  }
-
-  //logchan_meshutilassimp->log("skeleton configuration complete..\n");
 }
 
 ///////////////////////////////////////////////////////////////////////////////

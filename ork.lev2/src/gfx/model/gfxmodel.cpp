@@ -290,7 +290,7 @@ void XgmSubMesh::dump() const {
 
 void XgmCluster::dump() const {
   int inumskelidc = int(mJointSkelIndices.size());
-  int inumjoints  = int(mJoints.size());
+  int inumjoints  = int(_jointPaths.size());
 
   orkprintf("   XgmCluster this<%p>\n", this);
   orkprintf("    NumPrimGroups<%zu>\n", numPrimGroups());
@@ -300,7 +300,7 @@ void XgmCluster::dump() const {
   }
   orkprintf("    NumJointNames<%d>\n", inumjoints);
   for (int i = 0; i < inumjoints; i++) {
-    orkprintf("     JointName<%d>=<%s>\n", i, mJoints[i].c_str());
+    orkprintf("     JointPath<%d>=<%s>\n", i, _jointPaths[i].c_str());
   }
 }
 

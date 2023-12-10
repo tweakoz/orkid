@@ -171,11 +171,11 @@ void XgmModel::RenderSkeleton(
       auto BONECOLOR = fvec3(1, 0.5, 0);
 
       if( ch_props->_children.size() == 0){
-        int ipp = _skeleton->GetJointParent(iparent);
+        int ipp = _skeleton->jointParent(iparent);
         fmtx4 joint_pp   = localpose->_concat_matrices[ipp];
         fvec3 pp          = joint_pp.translation();
         bonelength = (pp - p).magnitude();
-        auto chname = _skeleton->GetJointName(ichild);
+        auto chname = _skeleton->jointName(ichild);
         //printf("%s bonelength<%g>\n",chname.c_str(), bonelength);
         //if(bonelength>0.05){
           //bonelength = 0.05;

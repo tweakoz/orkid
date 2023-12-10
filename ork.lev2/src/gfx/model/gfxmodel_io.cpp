@@ -244,23 +244,27 @@ bool XgmModel::_loadXGM(XgmModel* mdl, datablock_ptr_t datablock) {
     /////////////////////////////////////////////////////////
     if (inumjoints) {
       mdl->_skeleton->resize(inumjoints);
-      for (int ib = 0; ib < inumjoints; ib++) {
+      for (int ij = 0; ij < inumjoints; ij++) {
         int iskelindex = 0;
         int iparentindex = 0;
         int ijointname = 0;
+        int ijointpath = 0;
+        int ijointID = 0;
         int ijointmatrix = 0;
         int iinvrestmatrix = 0;
         int inodematrix = 0;
 
         auto jprops = std::make_shared<XgmJointProperties>();
-        mdl->_skeleton->_jointProperties[ib] = jprops;
+        mdl->_skeleton->_jointProperties[ij] = jprops;
 
         // read phase 0
 
         HeaderStream->GetItem(iskelindex);
-        OrkAssert(ib == iskelindex);
+        OrkAssert(ij == iskelindex);
         HeaderStream->GetItem(iparentindex);
         HeaderStream->GetItem(ijointname);
+        HeaderStream->GetItem(ijointpath);
+        HeaderStream->GetItem(ijointID);
         HeaderStream->GetItem(jprops->_numVerticesInfluenced);
 
         // read phase 1
@@ -268,13 +272,21 @@ bool XgmModel::_loadXGM(XgmModel* mdl, datablock_ptr_t datablock) {
         HeaderStream->GetItem(ijointmatrix);
         HeaderStream->GetItem(iinvrestmatrix);
         const char* pjntname = chunkreader.GetString(ijointname);
-        logchan_mioR->log("XGM: joint<%d:%s>\n", ib, pjntname );
+        const char* pjntpath = chunkreader.GetString(ijointpath);
+        const char* pjntID = chunkreader.GetString(ijointID);
+
+        mdl->_skeleton->_jointIDS[ij] = pjntID;
+
+        logchan_mioR->log("XGM: joint index<%d> id<%s> name<%s>\n", ij, pjntID, pjntname );
 
         fmtx4 scalematrix;
         //scalematrix.compose(fvec3(0,0,0),fquat(),0.01f);
 
-        std::string jnamp(pjntname);
-        mdl->_skeleton->AddJoint(iskelindex, iparentindex, jnamp.c_str());
+        std::string jname(pjntname);
+        std::string jpath(pjntpath);
+        std::string jid(pjntID);
+
+        mdl->_skeleton->addJoint(iskelindex, iparentindex, jname, jpath, jid );
         ptstring.set(chunkreader.GetString(inodematrix));
         mdl->_skeleton->RefNodeMatrix(iskelindex) = scalematrix*PropType<fmtx4>::FromString(ptstring);
         ptstring.set(chunkreader.GetString(ijointmatrix));
@@ -556,7 +568,7 @@ bool XgmModel::_loadXGM(XgmModel* mdl, datablock_ptr_t datablock) {
             newprimgroup->mpIndices = pidxbuf;
           }
           ////////////////////////////////////////////////////////////////////////
-          cluster->mJoints.resize(inumbb);
+          cluster->_jointPaths.resize(inumbb);
           cluster->mJointSkelIndices.resize(inumbb);
           for (int ib = 0; ib < inumbb; ib++) {
             int ibindingindex = -1;
@@ -565,18 +577,18 @@ bool XgmModel::_loadXGM(XgmModel* mdl, datablock_ptr_t datablock) {
             HeaderStream->GetItem(ibindingindex);
             HeaderStream->GetItem(ibindingname);
 
-            const char* jointname = chunkreader.GetString(ibindingname);
-            auto itfind = mdl->_skeleton->mmJointNameMap.find(jointname);
+            const char* jointpath = chunkreader.GetString(ibindingname);
+            auto itfind = mdl->_skeleton->_jointsByPath.find(jointpath);
 
-            if(itfind == mdl->_skeleton->mmJointNameMap.end()){
-              logerrchannel()->log( "\n\ncannot find joint<%s> in:", jointname );
-              for( auto it: mdl->_skeleton->mmJointNameMap ){
+            if(itfind == mdl->_skeleton->_jointsByPath.end()){
+              logerrchannel()->log( "\n\ncannot find joint<%s> in:", jointpath );
+              for( auto it: mdl->_skeleton->_jointsByPath ){
                 logerrchannel()->log( "  %s", it.first.c_str() );
               }
               OrkAssert(false);
             }
             int iskelindex                 = (*itfind).second;
-            cluster->mJoints[ib]           = jointname;
+            cluster->_jointPaths[ib]       = jointpath;
             cluster->mJointSkelIndices[ib] = iskelindex;
           }
 
@@ -593,7 +605,7 @@ bool XgmModel::_loadXGM(XgmModel* mdl, datablock_ptr_t datablock) {
     OrkAssert(false);
   }
   for( int i=0; i < mdl->_skeleton->miNumJoints; i++ ){
-    int iparent = mdl->_skeleton->GetJointParent(i);
+    int iparent = mdl->_skeleton->jointParent(i);
     if(iparent>=0){
       auto jprops = mdl->_skeleton->_jointProperties[iparent];
       jprops->_children.insert(i);
@@ -642,20 +654,26 @@ datablock_ptr_t writeXgmToDatablock(const lev2::XgmModel* mdl) {
   int32_t istring;
   logchan_mioW->log("WriteXgm: numjoints<%d>", inumjoints);
 
-  for (int32_t ib = 0; ib < inumjoints; ib++) {
+  for (int32_t ij = 0; ij < inumjoints; ij++) {
 
-    const std::string& JointName = skel.GetJointName(ib);
-    int32_t JointParentIndex   = skel.GetJointParent(ib);
-    const fmtx4& bind_matrix = skel._bindMatrices[ib];
-    const fmtx4& JointMatrix   = skel.RefJointMatrix(ib);
-    const fmtx4& NodeMatrix    = skel.RefNodeMatrix(ib);
+    const std::string& JointName = skel._jointNAMES[ij];
+    const std::string& JointPath = skel._jointPATHS[ij];
+    const std::string& JointID = skel._jointIDS[ij];
+    int32_t JointParentIndex   = skel.jointParent(ij);
+    const fmtx4& bind_matrix = skel._bindMatrices[ij];
+    const fmtx4& JointMatrix   = skel.RefJointMatrix(ij);
+    const fmtx4& NodeMatrix    = skel.RefNodeMatrix(ij);
 
     // write phase 0
-    HeaderStream->AddItem(ib);
+    HeaderStream->AddItem(ij);
     HeaderStream->AddItem(JointParentIndex);
     istring = chunkwriter.stringIndex(JointName.c_str());
     HeaderStream->AddItem(istring);
-    auto jprops = skel._jointProperties[ib];
+    istring = chunkwriter.stringIndex(JointPath.c_str());
+    HeaderStream->AddItem(istring);
+    istring = chunkwriter.stringIndex(JointID.c_str());
+    HeaderStream->AddItem(istring);
+    auto jprops = skel._jointProperties[ij];
     HeaderStream->AddItem(jprops->_numVerticesInfluenced);
 
     // write phase 1
@@ -852,7 +870,7 @@ datablock_ptr_t writeXgmToDatablock(const lev2::XgmModel* mdl) {
           continue;
 
         int32_t inumpg = cluster->numPrimGroups();
-        int32_t inumjb = (int)cluster->GetNumJointBindings();
+        int32_t inumjb = (int)cluster->numJointBindings();
 
         logchan_mioW->log("VB<%p> NumVerts<%d>", (void*) VB.get(), VB->GetNumVertices());
         logchan_mioW->log("clus<%d> numjb<%d>", ic, inumjb);
@@ -914,11 +932,11 @@ datablock_ptr_t writeXgmToDatablock(const lev2::XgmModel* mdl) {
         }
         // write cluster bindings
         for (int32_t ij = 0; ij < inumjb; ij++) {
-          const std::string& bound = cluster->GetJointBinding(ij);
-          OrkAssert(bound!="");
+          const std::string& bound_path = cluster->jointBinding(ij);
+          OrkAssert(bound_path!="");
           HeaderStream->AddItem(ij);
-          istring = chunkwriter.stringIndex(bound.c_str());
-          logchan_mioW->log( "bound<%s> istring<%d>", bound.c_str(), istring );
+          istring = chunkwriter.stringIndex(bound_path.c_str());
+          logchan_mioW->log( "bound_path<%s> istring<%d>", bound_path.c_str(), istring );
           HeaderStream->AddItem(istring);
         }
       }

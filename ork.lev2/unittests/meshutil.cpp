@@ -36,8 +36,8 @@ TEST(MergeVertex) {
   vtx2.mCol[0].setXYZ(0.0f, 0.0f, 0.0f);
   vtx2.mCol[1].setXYZ(0.0f, 0.0f, 0.0f);
 
-  vtx2.mJointNames[0] = "test";
-  vtx2.mJointNames[0].clear();
+  vtx2._jointpaths[0] = "test";
+  vtx2._jointpaths[0].clear();
 
   auto v2 = group.mergeVertex(vtx2);
 

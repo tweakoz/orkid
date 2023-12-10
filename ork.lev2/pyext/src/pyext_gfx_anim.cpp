@@ -226,7 +226,17 @@ void pyinit_gfx_xgmanim(py::module& module_lev2) {
                              .def(
                                  "jointName",                                           //
                                  [](xgmskeleton_ptr_t self, int index) -> std::string { //
-                                   return self->GetJointName(index);
+                                   return self->_jointNAMES[index];
+                                 })
+                             .def(
+                                 "jointPath",                                           //
+                                 [](xgmskeleton_ptr_t self, int index) -> std::string { //
+                                   return self->_jointPATHS[index];
+                                 })
+                             .def(
+                                 "jointID",                                           //
+                                 [](xgmskeleton_ptr_t self, int index) -> std::string { //
+                                   return self->_jointIDS[index];
                                  })
                              .def(
                                  "jointIndex",                                           //
@@ -246,7 +256,7 @@ void pyinit_gfx_xgmanim(py::module& module_lev2) {
                              .def(
                                  "jointParent",                                   //
                                  [](xgmskeleton_ptr_t self, int index) -> int { //
-                                   return self->maJointParents[index];
+                                   return self->_parentIndices[index];
                                  })
                              .def(
                                  "jointMatrix",                                   //

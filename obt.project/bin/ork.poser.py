@@ -233,8 +233,12 @@ class SceneGraphApp(object):
             self.sel_joint = sel_parent_index
             pname = self.skeleton.jointName(sel_bone.parentIndex)
             cname = self.skeleton.jointName(sel_bone.childIndex)
-            print("parent: ", pname)
-            print("child: ", cname)
+            pID = self.skeleton.jointID(sel_bone.parentIndex)
+            cID = self.skeleton.jointID(sel_bone.childIndex)
+            print("parent<name>: ", pname)
+            print("child<name>: ", cname)
+            print("parent<id>: ", pID)
+            print("child<id>: ", cID)
             
             P = self.localpose.concatMatrices[sel_bone.parentIndex]
             C = self.localpose.concatMatrices[sel_bone.childIndex]

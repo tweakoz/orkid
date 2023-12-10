@@ -225,12 +225,13 @@ void XgmAnimInst::bindToSkeleton(xgmskeleton_constptr_t skeleton) {
 
     int ipidx = 0;
     int ispi  = 0;
+    // TODO - BY ID NOT BY NAME
     for (auto it : static_pose) {
       const std::string& JointName = it.first;
 
       int iskelindex = skeleton->jointIndex(JointName);
 
-      int inumjinmap = skeleton->mmJointNameMap.size();
+      int inumjinmap = skeleton->_jointsByName.size();
 
       // logchan_pose->log("bindAnimInst jname<%s> iskelindex<%d> inumjinmap<%d>", JointName.c_str(), iskelindex, inumjinmap);
 
@@ -318,7 +319,7 @@ void XgmLocalPose::bindPose(void) {
 
     auto this_bind = _skeleton->_bindMatrices[ij];
 
-    int par = _skeleton->GetJointParent(ij);
+    int par = _skeleton->jointParent(ij);
     // printf( "ij<%d> par<%d>\n", ij, par );
     if (par >= 0) {
       auto par_bind = _skeleton->_bindMatrices[par];
@@ -404,8 +405,8 @@ void XgmAnimInst::applyToPose(xgmlocalpose_ptr_t localpose) const {
         auto& binding  = _poser->getAnimBinding(iaidx);
         int iskelindex = binding.mSkelIndex;
         if (iskelindex != 0xffff) {
-          auto jname     = localpose->_skeleton->GetJointName(iskelindex);
-          int par        = localpose->_skeleton->GetJointParent(iskelindex);
+          auto jpath     = localpose->_skeleton->_jointPATHS[iskelindex];
+          int par        = localpose->_skeleton->jointParent(iskelindex);
           auto this_bind = localpose->_skeleton->_bindMatrices[iskelindex];
           auto par_bind  = localpose->_skeleton->_bindMatrices[par];
           fmtx4 skel_rel;
@@ -414,7 +415,7 @@ void XgmAnimInst::applyToPose(xgmlocalpose_ptr_t localpose) const {
           logchan_pose->log(
               "skldump: joint<%d:%s> skel_rel: %s", //
               iskelindex,                           //
-              jname.c_str(),                        //
+              jpath.c_str(),                        //
               skdump.c_str());
         }
       }
@@ -456,14 +457,14 @@ void XgmAnimInst::applyToPose(xgmlocalpose_ptr_t localpose) const {
         if (0) {
           logchan_pose->log("apply on iskelidx<%d> ichanindex<%d>", iskelindex, ichanindex);
           logchan_pose->log("joint_data<%p> numframes<%zu>", (void*)joint_data.get(), numframes);
-          auto jname = localpose->_skeleton->GetJointName(iskelindex);
+          auto jpath = localpose->_skeleton->_jointPATHS[iskelindex];
           fmtx4 as_matrix;
           as_matrix.compose(decomp._position, decomp._orientation, decomp._scale);
           auto adump = as_matrix.dump4x3cn();
           logchan_pose2->log(
               "anmdump: joint<%d:%s> anm_jmtx: %s", //
               iskelindex,                           //
-              jname.c_str(),                        //
+              jpath.c_str(),                        //
               adump.c_str());
         }
         //////////////////////////////
@@ -516,8 +517,8 @@ void XgmLocalPose::concatenate(void) {
       const fmtx4& ParentMatrix = _concat_matrices[iparent];
       const fmtx4& ChildMatrix  = _local_matrices[ichild];
 
-      std::string parname = _skeleton->GetJointName(iparent).c_str();
-      std::string chiname = _skeleton->GetJointName(ichild).c_str();
+      std::string parpath = _skeleton->_jointPATHS[iparent].c_str();
+      std::string chipath = _skeleton->_jointPATHS[ichild].c_str();
 
       fmtx4 this_result = fmtx4::multiply_ltor(ParentMatrix, ChildMatrix);
 
@@ -601,9 +602,9 @@ std::string XgmLocalPose::dump() const {
   if (_skeleton->miRootNode >= 0) {
     int inumjoints = _skeleton->numJoints();
     for (int ij = 0; ij < inumjoints; ij++) {
-      std::string name = _skeleton->GetJointName(ij).c_str();
+      std::string path = _skeleton->_jointPATHS[ij].c_str();
       const auto& jmtx = _local_matrices[ij];
-      rval += FormatString("%28s", name.c_str());
+      rval += FormatString("%28s", path.c_str());
       rval += ": "s + jmtx.dump() + "\n"s;
     }
   }
@@ -624,9 +625,9 @@ std::string XgmLocalPose::dumpc(fvec3 color) const {
       auto jprops = _skeleton->_jointProperties[ij];
       if(jprops->_numVerticesInfluenced){
         fvec3 cc         = (ij & 1) ? cb : ca;
-        std::string name = _skeleton->GetJointName(ij).c_str();
+        std::string path = _skeleton->_jointPATHS[ij].c_str();
         const auto& jmtx = _local_matrices[ij];
-        rval += deco::format(cc, "%28s: ", name.c_str());
+        rval += deco::format(cc, "%28s: ", path.c_str());
         rval += jmtx.dump4x3cn() + "\n"s;
       }
     }
@@ -646,10 +647,10 @@ std::string XgmLocalPose::invdumpc(fvec3 color) const {
 
     for (int ij = 0; ij < inumjoints; ij++) {
       fvec3 cc         = (ij & 1) ? cb : ca;
-      std::string name = _skeleton->GetJointName(ij).c_str();
+      std::string path = _skeleton->_jointPATHS[ij].c_str();
       auto jmtx        = _local_matrices[ij].inverse();
       rval += deco::asciic_rgb(cc);
-      rval += FormatString("%28s", name.c_str());
+      rval += FormatString("%28s", path.c_str());
       rval += ": "s + jmtx.dump4x3(cc) + ""s;
       rval += deco::asciic_reset();
     }
@@ -700,9 +701,9 @@ std::string XgmWorldPose::dumpc(fvec3 color) const {
 
     for (int ij = 0; ij < inumjoints; ij++) {
       fvec3 cc         = (ij & 1) ? cb : ca;
-      std::string name = _skeleton->GetJointName(ij).c_str();
+      std::string path = _skeleton->_jointPATHS[ij].c_str();
       const auto& jmtx = _world_bindrela_matrices[ij];
-      rval += deco::format(cc, "%28s: ", name.c_str());
+      rval += deco::format(cc, "%28s: ", path.c_str());
       rval += jmtx.dump4x3cn() + "\n"s;
     }
   }

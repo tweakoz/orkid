@@ -185,14 +185,17 @@ XgmSkeleton::~XgmSkeleton() {
 void XgmSkeleton::resize(int inumjoints) {
   miNumJoints = inumjoints;
 
-  mvJointNameVect.resize(inumjoints);
-  maJointParents.resize(inumjoints);
+  _jointNAMES.resize(inumjoints);
+  _jointPATHS.resize(inumjoints);
+  _jointIDS.resize(inumjoints);
+  _parentIndices.resize(inumjoints);
   _bindMatrices.resize(inumjoints);
   _bindDecomps.resize(inumjoints);
   _inverseBindMatrices.resize(inumjoints);
   _jointMatrices.resize(inumjoints);
   _nodeMatrices.resize(inumjoints);
   _jointProperties.resize(inumjoints);
+  _jointIDS.resize(inumjoints);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -218,10 +221,10 @@ std::string XgmSkeleton::dumpBind(fvec3 color) const {
 
     for (int ij = 0; ij < inumjoints; ij++) {
       fvec3 cc         = (ij & 1) ? cb : ca;
-      std::string name = GetJointName(ij).c_str();
+      std::string path = _jointPATHS[ij].c_str();
       auto jmtx        = _bindMatrices[ij];
       rval += deco::asciic_rgb(cc);
-      rval += FormatString("%28s", name.c_str());
+      rval += FormatString("%28s", path.c_str());
       rval += ": "s + jmtx.dump4x3(cc) + "\n"s;
       rval += deco::asciic_reset();
     }
@@ -240,10 +243,10 @@ std::string XgmSkeleton::dumpInvBind(fvec3 color) const {
 
     for (int ij = 0; ij < inumjoints; ij++) {
       fvec3 cc         = (ij & 1) ? cb : ca;
-      std::string name = GetJointName(ij).c_str();
+      std::string path = _jointPATHS[ij].c_str();
       const auto& jmtx = _inverseBindMatrices[ij];
       rval += deco::asciic_rgb(cc);
-      rval += FormatString("%28s", name.c_str());
+      rval += FormatString("%28s", path.c_str());
       rval += ": "s + jmtx.dump4x3(cc) + "\n"s;
       rval += deco::asciic_reset();
     }
@@ -261,14 +264,14 @@ std::string XgmSkeleton::dump(fvec3 color) const {
   rval += deco::format(color, " rootindex<%d>\n", miRootNode);
 
   int i = 0;
-  for (auto item : mmJointNameMap) {
+  for (auto item : _jointsByName) {
     const std::string& sidx = item.first;
     int idx                 = item.second;
     // rval += deco::format(color," jointnamemap<%d> <%s>:<%d>\n", i, sidx.c_str(), idx);
     i++;
   }
   i = 0;
-  for (const std::string& name : mvJointNameVect) {
+  for (const std::string& name : _jointNAMES) {
     // rval += deco::format(color," jointnamevect<%d> <%s>\n", i, s.c_str());
     i++;
   }
@@ -282,12 +285,12 @@ std::string XgmSkeleton::dump(fvec3 color) const {
   rval += deco::format(color, " bindmat: ") + mBindShapeMatrix.dump4x3cn() + "\n";
 
   for (int ij = 0; ij < miNumJoints; ij++) {
-    auto name = GetJointName(ij);
+    auto name = _jointNAMES[ij];
     rval += deco::format(color, "   joint<%02d:%s>\n", ij, name.c_str());
 
-    int parent          = maJointParents[ij];
-    const char* parname = (parent >= 0) ? GetJointName(parent).c_str() : "none";
-    rval += deco::format(color, "     parent<%d:%s>\n", parent, parname);
+    int parent          = _parentIndices[ij];
+    auto parname = (parent >= 0) ? _jointNAMES[parent] : "none";
+    rval += deco::format(color, "     parent<%d:%s>\n", parent, parname.c_str());
 
     rval += deco::format(color, "     ljmat: ") + _jointMatrices[ij].dump4x3cn() + "\n";
     rval += deco::format(color, "     ibmat: ") + _inverseBindMatrices[ij].dump4x3cn() + "\n";
@@ -299,11 +302,11 @@ std::string XgmSkeleton::dump(fvec3 color) const {
 ///////////////////////////////////////////////////////////////////////////////
 
 int XgmSkeleton::jointIndex(const std::string& named) const {
-  auto it   = mmJointNameMap.find(named);
-  int index = (it == mmJointNameMap.end()) ? -1 : it->second;
+  auto it   = _jointsByName.find(named);
+  int index = (it == _jointsByName.end()) ? -1 : it->second;
   if (index == -1) {
     // printf( "find joint<%s> in map\n", named.c_str() );
-    for (auto it : mmJointNameMap) {
+    for (auto it : _jointsByName) {
       // printf( "in map key<%s>\n", it.first.c_str());
     }
   }
@@ -312,10 +315,15 @@ int XgmSkeleton::jointIndex(const std::string& named) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void XgmSkeleton::AddJoint(int iskelindex, int iparindex, const std::string& name) {
-  mvJointNameVect[iskelindex] = name;
-  mmJointNameMap.AddSorted(name, iskelindex);
-  maJointParents[iskelindex] = iparindex;
+void XgmSkeleton::addJoint(int iskelindex, int iparindex, const std::string& name, const std::string& path, const std::string& id) {
+  _jointNAMES[iskelindex] = name;
+  _jointIDS[iskelindex]       = id;
+  _jointPATHS[iskelindex]     = path;
+
+  _jointsByName[name] =iskelindex;
+  _jointsByPath[path] =iskelindex;
+  _jointsByID[id] =iskelindex;
+  _parentIndices[iskelindex] = iparindex;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -345,7 +353,7 @@ fmtx4 XgmSkeleton::concatenated(const std::string& named) const {
   int index = jointIndex(named);
   while (index != -1) {
     walk.push_back(index);
-    index = GetJointParent(index);
+    index = jointParent(index);
   }
   int walklen = sizeof(walk);
   fmtx4 rval;
