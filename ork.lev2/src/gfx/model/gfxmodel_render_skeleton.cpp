@@ -185,8 +185,8 @@ void XgmModel::RenderSkeleton(
         //}
         BONECOLOR = fvec3(1, 0, 1);
       }
-      if(bonelength>(bounding_radius*0.1)){
-        bonelength = bounding_radius*0.1;
+      if(bonelength>(bounding_radius*0.03)){
+        bonelength = bounding_radius*0.03;
       }
 
       if( ch_props->_children.size() > 1){
