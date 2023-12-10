@@ -259,7 +259,17 @@ void pyinit_gfx_xgmanim(py::module& module_lev2) {
                                    return self->_bindMatrices[index];
                                  })
                              .def(
-                                 "childrenOf",                                    //
+                                 "descendantJointsOf",                                    //
+                                 [](xgmskeleton_ptr_t self, int index) -> py::list { //
+                                   auto children = self->descendantJointsOf(index);
+                                   py::list rval;
+                                    for (auto c : children) {
+                                      rval.append(c);
+                                    }
+                                   return rval;
+                                 })
+                             .def(
+                                 "childJointsOf",                                    //
                                  [](xgmskeleton_ptr_t self, int index) -> py::list { //
                                    auto children = self->childJointsOf(index);
                                    py::list rval;

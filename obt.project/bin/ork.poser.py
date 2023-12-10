@@ -136,7 +136,7 @@ class SceneGraphApp(object):
     self.concats = self.localpose.concatMatrices[0:]
     self.locals = self.localpose.localMatrices[0:]
     self.bindrels = self.localpose.bindRelativeMatrices[0:]
-    self.children = []
+    self.descendants = []
     #print(self.locals)
     #print(self.concats)
     #print(self.bindrels)
@@ -214,7 +214,7 @@ class SceneGraphApp(object):
 
       ##############################
       elif uievent.keycode == ord("A") or uievent.keycode == ord("S"):
-        self.children = []
+        self.descendants = []
         self.push_screen_pos = scoord
         self.push_cam_z_dir = camdat.znormal
         self.vpmatrix = camdat.vpMatrix(1280/720.0)
@@ -253,11 +253,22 @@ class SceneGraphApp(object):
 
             print("local.pt<%g %g %g>"%(PT.x,PT.y,PT.z))
             print("local.ct<%g %g %g>"%(CT.x,CT.y,CT.z))
-            
-            self.children = self.skeleton.childrenOf(sel_parent_index)
-            print(self.children)
+
+            print("p index: ", sel_parent_index)
+            print("c index: ", sel_bone.childIndex)
+
+            self.children = self.skeleton.childJointsOf(sel_parent_index)
+            print("children of p: ", self.children)
+            self.descendants = self.skeleton.descendantJointsOf(sel_parent_index)
+            print("descendants of p: ", self.descendants)
+
+            self.childrenC = self.skeleton.childJointsOf(sel_bone.childIndex)
+            print("children of c: ", self.childrenC)
+            self.descendantsC = self.skeleton.descendantJointsOf(sel_bone.childIndex)
+            print("descendants of c: ", self.descendantsC)
+
             self.pmat = self.localpose.concatMatrices[sel_parent_index]
-            self.chcmats = [self.localpose.concatMatrices[i] for i in self.children]
+            self.chcmats = [self.localpose.concatMatrices[i] for i in self.descendants]
             self.concats_push = self.localpose.concatMatrices[0:]
             # compute matrices relative to pmat
             self.relmats = [self.pmat.inverse * ch for ch in self.chcmats]
@@ -295,9 +306,9 @@ class SceneGraphApp(object):
             R = Q.toMatrix()
             M = P*R*IP
             self.localpose.concatMatrices[self.sel_joint] = X*M
-            # transform children bones (concatenated)
-            for i in range(len(self.children)):
-              ich = self.children[i]
+            # transform descendants bones (concatenated)
+            for i in range(len(self.descendants)):
+              ich = self.descendants[i]
               MCH = self.relmats[i]
               self.localpose.concatMatrices[ich]=X*M*MCH
             # recompute from concatenated
@@ -334,9 +345,9 @@ class SceneGraphApp(object):
             R = Q.toMatrix()
             M = P*R*IP
             self.localpose.concatMatrices[self.sel_joint] = X*M
-            # transform children bones (concatenated)
-            for i in range(len(self.children)):
-              ich = self.children[i]
+            # transform descendants bones (concatenated)
+            for i in range(len(self.descendants)):
+              ich = self.descendants[i]
               MCH = self.relmats[i]
               self.localpose.concatMatrices[ich]=X*M*MCH
           handled = True

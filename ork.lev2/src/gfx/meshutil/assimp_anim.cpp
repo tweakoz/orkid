@@ -64,20 +64,20 @@ datablock_ptr_t assimpToXga(datablock_ptr_t inp_datablock) {
     auto& staticpose = xgmanim._static_pose;
     std::set<std::string> uniqskelnodeset;
     std::map<std::string, std::string> channel_remap;
-    std::map<std::string, fmtx4> inv_bind_map;
 
     std::queue<aiNode*> nodestack;
     nodestack.push(scene->mRootNode);
     while (not nodestack.empty()) {
       auto n = nodestack.front();
       nodestack.pop();
-      auto name = std::string(n->mName.data);
+      //auto name = std::string(n->mName.data);
+      auto name = aiNodePathName(n);
       auto itb  = uniqskelnodeset.find(name);
       if (itb == uniqskelnodeset.end()) {
         int index = uniqskelnodeset.size();
         uniqskelnodeset.insert(name);
         auto matrix         = convertMatrix44(n->mTransformation);
-        auto remapped_name  = remapSkelName(name);
+        auto remapped_name  = name; //remapSkelName(name);
         channel_remap[name] = remapped_name;
         auto a              = deco::decorate(fvec3(0, 1, 1), name);
         auto b              = deco::decorate(fvec3(1, 1, 1), remapped_name);
@@ -236,7 +236,6 @@ datablock_ptr_t assimpToXga(datablock_ptr_t inp_datablock) {
       deco::printf(fvec3::White(), "// J Space Anim\n");
       deco::printf(fvec3::White(), "/////////////////////////////////////////////\n");
       for (size_t f = 0; f < framecount; f++) {
-
         ////////////////////////////////////////////////////
         // apply anim to skelnodes
         ////////////////////////////////////////////////////

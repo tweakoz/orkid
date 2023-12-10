@@ -157,9 +157,10 @@ parsedskeletonptr_t parseSkeleton(const aiScene* scene) {
     //////////////////////////////
     deco::printf(
         fvec3::White(),
-        "par path<%s> depth<%d> : \n", //
+        "par path<%s> depth<%d> id<%s>: \n", //
         ppath.c_str(),
-        pskelnode->_depth);
+        pskelnode->_depth,
+        p->mID.data);
 
     //////////////////////////////
     for (int i = 0; i < p->mNumChildren; ++i) {
