@@ -233,13 +233,32 @@ class SceneGraphApp(object):
             self.sel_joint = sel_parent_index
             pname = self.skeleton.jointName(sel_bone.parentIndex)
             cname = self.skeleton.jointName(sel_bone.childIndex)
+            ppath = self.skeleton.jointPath(sel_bone.parentIndex)
+            cpath = self.skeleton.jointPath(sel_bone.childIndex)
             pID = self.skeleton.jointID(sel_bone.parentIndex)
             cID = self.skeleton.jointID(sel_bone.childIndex)
+            print("###########################################")
             print("parent<name>: ", pname)
             print("child<name>: ", cname)
+            print("parent<path>: ", ppath)
+            print("child<path>: ", cpath)
             print("parent<id>: ", pID)
             print("child<id>: ", cID)
-            
+            print("bone index: ", sel_bone_index)
+            print("par index: ", sel_bone.parentIndex)
+            print("chi index: ", sel_bone.childIndex)
+            print("###########################################")
+            self.children = self.skeleton.childJointsOf(sel_parent_index)
+            print("children of p: ", self.children)
+            self.descendants = self.skeleton.descendantJointsOf(sel_parent_index)
+            print("descendants of p: ", self.descendants)
+
+            self.childrenC = self.skeleton.childJointsOf(sel_bone.childIndex)
+            print("children of c: ", self.childrenC)
+            self.descendantsC = self.skeleton.descendantJointsOf(sel_bone.childIndex)
+            print("descendants of c: ", self.descendantsC)
+
+            print("###########################################")
             P = self.localpose.concatMatrices[sel_bone.parentIndex]
             C = self.localpose.concatMatrices[sel_bone.childIndex]
             PT = P.translation
@@ -250,6 +269,7 @@ class SceneGraphApp(object):
             print("concat.ct<%g %g %g>"%(CT.x,CT.y,CT.z))
             print("concat.length<%f>"%length)
             
+            print("###########################################")
             P = self.localpose.localMatrices[sel_bone.parentIndex]
             C = self.localpose.localMatrices[sel_bone.childIndex]
             PT = P.translation
@@ -257,19 +277,6 @@ class SceneGraphApp(object):
 
             print("local.pt<%g %g %g>"%(PT.x,PT.y,PT.z))
             print("local.ct<%g %g %g>"%(CT.x,CT.y,CT.z))
-
-            print("p index: ", sel_parent_index)
-            print("c index: ", sel_bone.childIndex)
-
-            self.children = self.skeleton.childJointsOf(sel_parent_index)
-            print("children of p: ", self.children)
-            self.descendants = self.skeleton.descendantJointsOf(sel_parent_index)
-            print("descendants of p: ", self.descendants)
-
-            self.childrenC = self.skeleton.childJointsOf(sel_bone.childIndex)
-            print("children of c: ", self.childrenC)
-            self.descendantsC = self.skeleton.descendantJointsOf(sel_bone.childIndex)
-            print("descendants of c: ", self.descendantsC)
 
             self.pmat = self.localpose.concatMatrices[sel_parent_index]
             self.chcmats = [self.localpose.concatMatrices[i] for i in self.descendants]
@@ -303,7 +310,7 @@ class SceneGraphApp(object):
             #
             X = self.concats_push[self.sel_joint]
             OR = X.toRotMatrix4()
-            ZN = vec4(camdat.znormal,0).transform(OR).xyz()
+            ZN = vec4(camdat.znormal,0).transform(OR).xyz().normalized()
             IP = mtx4.transMatrix(self.pivot*-1.0)
             P = mtx4.transMatrix(self.pivot)
             Q = quat.createFromAxisAngle(ZN,angle)

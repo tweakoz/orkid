@@ -665,6 +665,28 @@ int XgmLocalPose::NumJoints() const {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+float XgmLocalPose::boundingRadius() const {
+  float radius = 0.0f;
+  if(_concat_matrices.size()){
+    fvec3 center;
+    for( auto& m : _concat_matrices ){
+      auto t = m.translation();
+      center += t;
+    }
+    center /= float(_concat_matrices.size());
+
+    radius = 0.0f;
+    for( auto& m : _concat_matrices ){
+      auto t = m.translation();
+      float dist = (t-center).magnitude();
+      radius = std::max(radius, dist);
+    }
+  }
+  return radius;
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // WorldPose
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -708,6 +730,28 @@ std::string XgmWorldPose::dumpc(fvec3 color) const {
     }
   }
   return rval;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+float XgmWorldPose::boundingRadius() const {
+  float radius = 0.0f;
+  if(_world_concat_matrices.size()){
+    fvec3 center;
+    for( auto& m : _world_concat_matrices ){
+      auto t = m.translation();
+      center += t;
+    }
+    center /= float(_world_concat_matrices.size());
+
+    radius = 0.0f;
+    for( auto& m : _world_concat_matrices ){
+      auto t = m.translation();
+      float dist = (t-center).magnitude();
+      radius = std::max(radius, dist);
+    }
+  }
+  return radius;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

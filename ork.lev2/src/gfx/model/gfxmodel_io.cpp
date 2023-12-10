@@ -326,6 +326,15 @@ bool XgmModel::_loadXGM(XgmModel* mdl, datablock_ptr_t datablock) {
     if (inumbones) {
       mdl->_skeleton->miRootNode = (inumbones > 0) ? mdl->_skeleton->bone(0)._parentIndex : -1;
     }
+
+    auto blocalpose = std::make_shared<XgmLocalPose>(mdl->_skeleton);
+    mdl->_skeleton->_bind_local_pose = blocalpose;
+    blocalpose->bindPose();
+    blocalpose->blendPoses();
+    blocalpose->concatenate();
+
+
+
     // mdl->_skeleton->dump();
     ///////////////////////////////////
     HeaderStream->GetItem(mdl->mBoundingCenter);
