@@ -224,7 +224,8 @@ class SceneGraphApp(object):
           nrm = pixel_fetch_context.value(2).xyz()
           uv  = pixel_fetch_context.value(3).xyz().xy()
           eye = camdat.eye+camdat.znormal*10
-          if obj is not None:
+          print(obj)
+          if obj is not None and (type(obj["x"])==vec4):
             sel_bone_index = obj["y"]
             self.skeleton.selectBone(sel_bone_index)
             sel_bone = self.skeleton.bone(sel_bone_index)
