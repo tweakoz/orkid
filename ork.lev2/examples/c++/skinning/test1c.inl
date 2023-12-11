@@ -52,11 +52,11 @@ skinning_test_ptr_t createTest1C(GpuResources* gpurec) {
       _char_animinst->bindToSkeleton(_model->_skeleton);
 
       _ikchain = std::make_shared<IkChain>(_model->_skeleton);
-      _ikchain->bindToBone("Bone");
-      _ikchain->bindToBone("Bone.001");
-      _ikchain->bindToBone("Bone.002");
-      _ikchain->bindToBone("Bone.003");
-      _ikchain->bindToBone("Bone.004");
+      _ikchain->bindToJointNamed("Bone");
+      _ikchain->bindToJointNamed("Bone.001");
+      _ikchain->bindToJointNamed("Bone.002");
+      _ikchain->bindToJointNamed("Bone.003");
+      _ikchain->bindToJointNamed("Bone.004");
       _ikchain->prepare();
 
       auto localpose = modelinst->_localPose;

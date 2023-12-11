@@ -32,8 +32,8 @@ class HandPoser(object):
     self.jnts_thumbs = [ self.app.model.skeleton.jointIndex("mixamorig.%sHandThumb%d"%(hand_name,i+1)) for i in range(4)]
     self.jnts_index = [ self.app.model.skeleton.jointIndex("mixamorig.%sHandIndex%d"%(hand_name,i+1)) for i in range(4)] 
     self.ikchain = IkChain(self.app.model.skeleton)
-    self.ikchain.bindToBone("mixamorig.%sArm"%(hand_name))
-    self.ikchain.bindToBone("mixamorig.%sForeArm"%(hand_name))
+    self.ikchain.bindToJointNamed("mixamorig.%sArm"%(hand_name))
+    self.ikchain.bindToJointNamed("mixamorig.%sForeArm"%(hand_name))
     self.ikchain.prepare()
     self.ikchain.compute(self.app.localpose,vec3(0,0,0))
     self.ikchain.C1 = .079 

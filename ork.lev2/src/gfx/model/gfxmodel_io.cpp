@@ -240,7 +240,7 @@ bool XgmModel::_loadXGM(XgmModel* mdl, datablock_ptr_t datablock) {
       HeaderStream->GetItem(XGMVERSIONCODE);
       HeaderStream->GetItem(inumjoints);
     }
-    logchan_mioR->log("XGM: inumjoints<%d>\n", inumjoints );
+    logchan_mioR->log("XGM: inumjoints<%d>", inumjoints );
     /////////////////////////////////////////////////////////
     if (inumjoints) {
       mdl->_skeleton->resize(inumjoints);
@@ -277,7 +277,7 @@ bool XgmModel::_loadXGM(XgmModel* mdl, datablock_ptr_t datablock) {
 
         mdl->_skeleton->_jointIDS[ij] = pjntID;
 
-        logchan_mioR->log("XGM: joint index<%d> id<%s> name<%s>\n", ij, pjntID, pjntname );
+        logchan_mioR->log("XGM: joint index<%d> id<%s> name<%s>", ij, pjntID, pjntname );
 
         fmtx4 scalematrix;
         //scalematrix.compose(fvec3(0,0,0),fquat(),0.01f);
@@ -326,6 +326,15 @@ bool XgmModel::_loadXGM(XgmModel* mdl, datablock_ptr_t datablock) {
     if (inumbones) {
       mdl->_skeleton->miRootNode = (inumbones > 0) ? mdl->_skeleton->bone(0)._parentIndex : -1;
     }
+
+    auto blocalpose = std::make_shared<XgmLocalPose>(mdl->_skeleton);
+    mdl->_skeleton->_bind_local_pose = blocalpose;
+    blocalpose->bindPose();
+    blocalpose->blendPoses();
+    blocalpose->concatenate();
+
+
+
     // mdl->_skeleton->dump();
     ///////////////////////////////////
     HeaderStream->GetItem(mdl->mBoundingCenter);

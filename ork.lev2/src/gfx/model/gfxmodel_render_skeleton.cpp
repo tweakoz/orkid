@@ -41,10 +41,13 @@ void XgmModel::RenderSkeleton(
   ////////////////////////////////////////
   // Draw Skeleton
 
+  auto model = minst->xgmModel();
   auto world_mtx = context->MTXI()->RefMMatrix();
 
   const auto& worldpose = minst->_worldPose;
   const auto& localpose = minst->_localPose;
+
+  float bounding_radius = _skeleton->_bind_local_pose->boundingRadius();
 
   context->debugPushGroup("DrawSkeleton");
   context->PushModColor(fvec4::White());
@@ -182,11 +185,15 @@ void XgmModel::RenderSkeleton(
         //}
         BONECOLOR = fvec3(1, 0, 1);
       }
+      if(bonelength>(bounding_radius*0.03)){
+        bonelength = bounding_radius*0.03;
+      }
+
       if( ch_props->_children.size() > 1){
         BONECOLOR = fvec3(0.35, 0.75, 0.35 );
       }
       if(iparent==_skeleton->miRootNode){
-        bonelength = 0.2;
+        //bonelength = 0.2;
         BONECOLOR = fvec3(1, 0, 0);
       }
       float bl2 = bonelength * 0.1f;

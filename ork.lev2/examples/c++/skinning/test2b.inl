@@ -69,8 +69,8 @@ skinning_test_ptr_t createTest2B(GpuResources* gpurec) {
       ///////////////////////////////////////////////////////////////
 
       _ikchain = std::make_shared<IkChain>(model->_skeleton);
-      _ikchain->bindToBone("mixamorig.RightArm");
-      _ikchain->bindToBone("mixamorig.RightForeArm");
+      _ikchain->bindToJointNamed("mixamorig.RightArm");
+      _ikchain->bindToJointNamed("mixamorig.RightForeArm");
       _ikchain->prepare();
 
       ///////////////////////////////////////////////////////////////

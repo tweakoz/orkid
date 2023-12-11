@@ -571,6 +571,26 @@ void XgmLocalPose::concatenate(void) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void XgmLocalPose::transformOnPostConcat(int index, const fmtx4& mtx){
+  auto descendants = _skeleton->descendantJointsOf(index);
+  auto original = _concat_matrices;
+  auto base = _concat_matrices[index];
+  auto basei = base.inverse();
+  auto rotation = (base*mtx*basei);
+
+  for( int i : descendants ){
+    fmtx4 relative;
+
+    auto& m = original[i];
+    //relative.correctionMatrix(base,m);
+
+    _concat_matrices[i] = rotation*m;
+  }
+  _concat_matrices[index] = rotation*base;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 void XgmLocalPose::decomposeConcatenated() {
   if (_skeleton->miRootNode >= 0) {
     _local_matrices[_skeleton->miRootNode] = _concat_matrices[_skeleton->miRootNode];
@@ -665,6 +685,28 @@ int XgmLocalPose::NumJoints() const {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+float XgmLocalPose::boundingRadius() const {
+  float radius = 0.0f;
+  if(_concat_matrices.size()){
+    fvec3 center;
+    for( auto& m : _concat_matrices ){
+      auto t = m.translation();
+      center += t;
+    }
+    center /= float(_concat_matrices.size());
+
+    radius = 0.0f;
+    for( auto& m : _concat_matrices ){
+      auto t = m.translation();
+      float dist = (t-center).magnitude();
+      radius = std::max(radius, dist);
+    }
+  }
+  return radius;
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // WorldPose
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -708,6 +750,28 @@ std::string XgmWorldPose::dumpc(fvec3 color) const {
     }
   }
   return rval;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+float XgmWorldPose::boundingRadius() const {
+  float radius = 0.0f;
+  if(_world_concat_matrices.size()){
+    fvec3 center;
+    for( auto& m : _world_concat_matrices ){
+      auto t = m.translation();
+      center += t;
+    }
+    center /= float(_world_concat_matrices.size());
+
+    radius = 0.0f;
+    for( auto& m : _world_concat_matrices ){
+      auto t = m.translation();
+      float dist = (t-center).magnitude();
+      radius = std::max(radius, dist);
+    }
+  }
+  return radius;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

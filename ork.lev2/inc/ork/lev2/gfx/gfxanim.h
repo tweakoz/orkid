@@ -442,6 +442,9 @@ struct XgmLocalPose {
   void bindPose();  /// set pose to the skeletons bind pose
   void blendPoses(); /// Blend Poses
   void concatenate();
+
+  void transformOnPostConcat(int index, const fmtx4& mtx);
+
   void decomposeConcatenated();
   int NumJoints() const;
   std::string dumpc(fvec3 color) const;
@@ -463,6 +466,8 @@ struct XgmLocalPose {
   }
   void poseJoint(int index, float weight, const DecompMatrix& mtx);
   DecompMatrix decompLocal(int iskelindex) const;
+
+  float boundingRadius() const;
 
   ////////////////////////////////////////////////////////////////
 
@@ -488,6 +493,8 @@ struct XgmWorldPose {
 
   void apply(const fmtx4& worldmtx, xgmlocalpose_ptr_t LocalPose);
   std::string dumpc(fvec3 color) const;
+
+  float boundingRadius() const;
 
   xgmskeleton_constptr_t _skeleton;
   orkvector<fmtx4> _world_bindrela_matrices;
@@ -574,6 +581,8 @@ struct XgmSkeleton {
     return _bones[idx];
   }
   int jointIndex(const std::string& Named) const;
+  int jointIndexFromPath(const std::string& Path) const;
+  int jointIndexFromID(const std::string& Path) const;
 
   std::vector<int> childJointsOf(int joint) const;
   std::vector<int> descendantJointsOf(int joint) const;
@@ -644,6 +653,8 @@ struct XgmSkeleton {
   std::unordered_map<std::string, int> _jointsByName;
   std::unordered_map<std::string, int> _jointsByPath;
   std::unordered_map<std::string, int> _jointsByID;
+
+  xgmlocalpose_constptr_t _bind_local_pose;
 
 };
 

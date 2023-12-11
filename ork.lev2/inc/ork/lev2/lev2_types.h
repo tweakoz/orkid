@@ -420,6 +420,7 @@ using xgmanim_constptr_t = std::shared_ptr<const XgmAnim>;
 using xgmaniminst_ptr_t = std::shared_ptr<XgmAnimInst>;
 using xgmanimmask_ptr_t = std::shared_ptr<XgmAnimMask>;
 using xgmlocalpose_ptr_t = std::shared_ptr<XgmLocalPose>;
+using xgmlocalpose_constptr_t = std::shared_ptr<const XgmLocalPose>;
 using xgmworldpose_ptr_t = std::shared_ptr<XgmWorldPose>;
 using xgmskelapplicator_ptr_t = std::shared_ptr<XgmSkelApplicator>;
 using animchannel_ptr_t      = std::shared_ptr<XgmAnimChannel>;

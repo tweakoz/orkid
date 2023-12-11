@@ -26,8 +26,16 @@ IkChain::IkChain(xgmskeleton_constptr_t skel)
 
 /////////////////////////////////////////////////////////////////////////////
 
-void IkChain::bindToBone(std::string named) {
+void IkChain::bindToJointNamed(std::string named) {
   int index = _skeleton->jointIndex(named);
+  _jointindices.push_back(index);
+}
+void IkChain::bindToJointPath(std::string path) {
+  int index = _skeleton->jointIndexFromPath(path);
+  _jointindices.push_back(index);
+}
+void IkChain::bindToJointID(std::string path) {
+  int index = _skeleton->jointIndexFromID(path);
   _jointindices.push_back(index);
 }
 

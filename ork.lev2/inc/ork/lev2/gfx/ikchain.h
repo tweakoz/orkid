@@ -17,7 +17,9 @@ struct IkChain{
   /////////////////////////////////////////////////////////////////////////////
 
   IkChain( xgmskeleton_constptr_t skel);
-  void bindToBone(std::string named);
+  void bindToJointNamed(std::string named);
+  void bindToJointPath(std::string path);
+  void bindToJointID(std::string idstr);
   void prepare();
   void compute(xgmlocalpose_ptr_t localpose, //
                const fvec3& target);
