@@ -420,6 +420,9 @@ void pyinit_gfx_xgmanim(py::module& module_lev2) {
           .def("poseJoint", [](xgmlocalpose_ptr_t self, int index, float fweight, DecompMatrix& mtx) { //
             self->poseJoint(index,fweight,mtx);
            })
+          .def("transformOnPostConcat", [](xgmlocalpose_ptr_t self, int index, const fmtx4& mtx) { //
+            self->transformOnPostConcat(index,mtx);
+           })
           .def("decompLocal", [](xgmlocalpose_ptr_t self, int index) -> DecompMatrix  { //
             return self->decompLocal(index);
            })
@@ -430,7 +433,7 @@ void pyinit_gfx_xgmanim(py::module& module_lev2) {
             return ConcatMatrixInterface(self);
           })
           .def_property_readonly("bindRelativeMatrices", [](xgmlocalpose_ptr_t self) {
-            return ConcatMatrixInterface(self);
+            return BindRelaMatrixInterface(self);
           })
           .def_property_readonly("numJoints", [](xgmlocalpose_ptr_t self) -> int { return self->NumJoints(); })
           .def_property_readonly(
@@ -438,11 +441,66 @@ void pyinit_gfx_xgmanim(py::module& module_lev2) {
 
   type_codec->registerStdCodec<xgmlocalpose_ptr_t>(lpose_type_t);
   /////////////////////////////////////////////////////////////////////////////////
-  auto wpose_type_t =
+  struct WorldPoseConcatMatrixInterface {
+      WorldPoseConcatMatrixInterface(xgmworldpose_ptr_t p) : pose(p) {}
+      fmtx4 get(int index) {
+          return pose->_world_concat_matrices[index];
+      }
+      void set(int index, const fmtx4 &value) {
+          pose->_world_concat_matrices[index] = value;
+      }
+      xgmworldpose_ptr_t pose;
+  };
+  struct WorldPoseBindRelaMatrixInterface {
+      WorldPoseBindRelaMatrixInterface(xgmworldpose_ptr_t p) : pose(p) {}
+      fmtx4 get(int index) {
+          return pose->_world_bindrela_matrices[index];
+      }
+      void set(int index, const fmtx4 &value) {
+          pose->_world_bindrela_matrices[index] = value;
+      }
+      xgmworldpose_ptr_t pose;
+  };
+  py::class_<WorldPoseConcatMatrixInterface>(module_lev2, "XgmWorldPoseConcatMatrixInterface")
+      .def("__getitem__", &WorldPoseConcatMatrixInterface::get)
+      .def("__getitem__", [](WorldPoseConcatMatrixInterface& CMI, py::slice slicer) -> py::list {
+        ssize_t start, stop, step, slicelength;
+        if (!slicer.compute(CMI.pose->_world_bindrela_matrices.size(), &start, &stop, &step, &slicelength)){
+          OrkAssert(false);
+        }
+        py::list rval;
+        for (int i = start; i < stop; i += step) {
+          rval.append(CMI.get(i));
+        }
+        return rval;
+      })
+      .def("__setitem__", &WorldPoseConcatMatrixInterface::set);
+  py::class_<WorldPoseBindRelaMatrixInterface>(module_lev2, "XgmLocalPoseWorldPoseBindRelaMatrixInterface")
+      .def("__getitem__", &WorldPoseBindRelaMatrixInterface::get)
+      .def("__getitem__", [](WorldPoseBindRelaMatrixInterface& BMI, py::slice slicer) -> py::list {
+        ssize_t start, stop, step, slicelength;
+        if (!slicer.compute(BMI.pose->_world_bindrela_matrices.size(), &start, &stop, &step, &slicelength)){
+          OrkAssert(false);
+        }
+        py::list rval;
+        for (int i = start; i < stop; i += step) {
+          rval.append(BMI.get(i));
+        }
+        return rval;
+      })
+      .def("__setitem__", &WorldPoseBindRelaMatrixInterface::set);
+  /////////////////////////////////////////////////////////////////////////////////
+    auto wpose_type_t =
       py::class_<XgmWorldPose, xgmworldpose_ptr_t>(module_lev2, "XgmWorldPose")
           .def(py::init([](xgmskeleton_ptr_t skel) -> xgmworldpose_ptr_t { return std::make_shared<XgmWorldPose>(skel); }))
           .def("fromLocalPose", [](xgmworldpose_ptr_t self, xgmlocalpose_ptr_t lpose, fmtx4& world_matrix) {
             self->apply(world_matrix, lpose);
+          })
+          .def_property_readonly("concatMatrices", [](xgmworldpose_ptr_t self) {
+            return WorldPoseConcatMatrixInterface(self);
+          })
+          .def_property_readonly("bindRelativeMatrices", [](xgmworldpose_ptr_t self) {
+            return WorldPoseBindRelaMatrixInterface(self);
           });
   type_codec->registerStdCodec<xgmworldpose_ptr_t>(wpose_type_t);
   /////////////////////////////////////////////////////////////////////////////////

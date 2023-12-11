@@ -571,6 +571,26 @@ void XgmLocalPose::concatenate(void) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void XgmLocalPose::transformOnPostConcat(int index, const fmtx4& mtx){
+  auto descendants = _skeleton->descendantJointsOf(index);
+  auto original = _concat_matrices;
+  auto base = _concat_matrices[index];
+  auto basei = base.inverse();
+  auto rotation = (base*mtx*basei);
+
+  for( int i : descendants ){
+    fmtx4 relative;
+
+    auto& m = original[i];
+    //relative.correctionMatrix(base,m);
+
+    _concat_matrices[i] = rotation*m;
+  }
+  _concat_matrices[index] = rotation*base;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 void XgmLocalPose::decomposeConcatenated() {
   if (_skeleton->miRootNode >= 0) {
     _local_matrices[_skeleton->miRootNode] = _concat_matrices[_skeleton->miRootNode];
