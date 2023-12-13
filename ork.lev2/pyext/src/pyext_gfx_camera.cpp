@@ -35,6 +35,20 @@ void pyinit_gfx_camera(py::module& module_lev2) {
           .def("updateMatrices", [](ezuicam_ptr_t cam) {
             cam->updateMatrices();
           })
+          .def("copyFrom", [](ezuicam_ptr_t cam_dest, ezuicam_ptr_t cam_src) {
+            cam_dest->_base_zmoveamt = cam_src->_base_zmoveamt;
+            cam_dest->_fov = cam_src->_fov;
+            cam_dest->_constrainZ = cam_src->_constrainZ;
+            cam_dest->mvCenter = cam_src->mvCenter;
+            cam_dest->QuatC = cam_src->QuatC;
+            cam_dest->CamLoc = cam_src->CamLoc;
+            cam_dest->PrevCamLoc = cam_src->PrevCamLoc;
+            cam_dest->mfLoc = cam_src->mfLoc;
+           // cam_dest->mNear = cam_src->mNear;
+           // cam_dest->mFar = cam_src->mFar;
+            //cam_dest->mFovY = cam_src->mFovY;
+            //cam_dest->mAspect = cam_src->mAspect;            
+          })
           .def_property_readonly(
               "cameradata",
               [](ezuicam_ptr_t uic) -> cameradata_ptr_t { //
