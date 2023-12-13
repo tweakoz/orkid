@@ -35,6 +35,8 @@ struct Font;
 struct FontMan;
 struct PixelFetchContext;
 struct PickBuffer;
+struct GpuEvent;
+struct GpuEventSink;
 
 //
 using gfxcontext_lambda_t = std::function<void(Context*)>;
@@ -47,6 +49,8 @@ using font_ptr_t = std::shared_ptr<Font>;
 using fontman_ptr_t = std::shared_ptr<FontMan>;
 using font_rawconstptr_t = const Font*;
 using pixelfetchctx_ptr_t = std::shared_ptr<PixelFetchContext>;
+using gpuevent_ptr_t = std::shared_ptr<GpuEvent>;
+using gpueventsink_ptr_t = std::shared_ptr<GpuEventSink>;
 
 using pickvariant_t = svar128_t;
 

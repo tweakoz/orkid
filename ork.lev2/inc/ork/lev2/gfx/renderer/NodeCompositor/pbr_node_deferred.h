@@ -83,6 +83,7 @@ struct DeferredContext {
   textureassetptr_t _whiteTexture;
   textureassetptr_t _voltexA;
   bool _enableSDF = false;
+  void_lambda_t _onGpuInitialized;
   ////////////////////////////////////////////////////////////////////
   auxparambinding_ptr_t createAuxParamBinding(std::string paramname);
   ////////////////////////////////////////////////////////////////////

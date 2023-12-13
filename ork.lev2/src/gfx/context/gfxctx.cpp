@@ -27,6 +27,17 @@ namespace ork { namespace lev2 {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void Context::enqueueGpuEvent(gpuevent_ptr_t evt) {
+  _gpuEventQueue.push(evt);
+}
+void Context::registerGpuEventSink(gpueventsink_ptr_t sink) {
+  _gpuEventSinks.atomicOp([sink](gpueventsink_map_t& unlocked){
+    unlocked.insert(std::make_pair(sink->_eventID,sink));
+  });
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 bool Context::hiDPI() const {
   return _HIDPI();
 }
@@ -69,6 +80,22 @@ void Context::beginFrame(void) {
 
   for (auto l : _onBeginFrameCallbacks)
     l();
+
+  _gpuEventSinks.atomicOp([this](gpueventsink_map_t& unlocked){
+    while(not _gpuEventQueue.empty() ){
+      auto event = _gpuEventQueue.front();
+      auto it = unlocked.find(event->_eventID);
+      if( it != unlocked.end() ){
+        auto sink = it->second;
+        if(sink->_onEvent){
+          sink->_onEvent(event);
+        }
+        //it->second->onGpuEvent(event);
+      }
+      _gpuEventQueue.pop();
+    }
+  });
+  
 }
 
 ///////////////////////////////////////////////////////////////////////////////

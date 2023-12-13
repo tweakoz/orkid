@@ -170,6 +170,12 @@ void DeferredContext::gpuInit(Context* target) {
 
   }
   target->debugPopGroup();
+  auto ev = std::make_shared<GpuEvent>();
+  ev->_eventID = "ork::lev2::pbr::deferrednode::DeferredContext::gpuInit";
+  target->enqueueGpuEvent(ev);
+  if(_onGpuInitialized){
+    _onGpuInitialized();
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////

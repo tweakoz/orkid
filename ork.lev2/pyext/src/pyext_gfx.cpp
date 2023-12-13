@@ -434,5 +434,27 @@ void pyinit_gfx(py::module& module_lev2) {
       py::class_<DrawBufContext, dbufcontext_ptr_t>(module_lev2, "DrawBufContext");
   type_codec->registerStdCodec<dbufcontext_ptr_t>(dbufcontext_type);
   /////////////////////////////////////////////////////////////////////////////////
+  auto gpuev_t = py::class_<GpuEvent, gpuevent_ptr_t>(module_lev2, "GpuEvent")
+      .def(
+          "__repr__",
+          [](gpuevent_ptr_t ev) -> std::string {
+            fxstring<256> fxs;
+            fxs.format("GpuEvent(%p)", ev.get());
+            return fxs.c_str();
+          })
+      .def_property_readonly("eventID", [](gpuevent_ptr_t ev) -> std::string { return ev->_eventID; });
+  type_codec->registerStdCodec<gpuevent_ptr_t>(gpuev_t);
+  /////////////////////////////////////////////////////////////////////////////////
+  auto gpuevsink_t = py::class_<GpuEventSink, gpueventsink_ptr_t>(module_lev2, "GpuEventSink")
+      .def(
+          "__repr__",
+          [](gpueventsink_ptr_t ev) -> std::string {
+            fxstring<256> fxs;
+            fxs.format("GpuEventSink(%p)", ev.get());
+            return fxs.c_str();
+          })
+      .def_property_readonly("eventID", [](gpueventsink_ptr_t ev) -> std::string { return ev->_eventID; });
+  type_codec->registerStdCodec<gpueventsink_ptr_t>(gpuevsink_t);
+  /////////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2
 } // namespace ork::lev2
