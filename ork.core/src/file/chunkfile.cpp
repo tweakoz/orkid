@@ -410,7 +410,7 @@ InputStream* Reader::GetStream(const char* streamname) {
   return (it == mInputStreams.end()) ? 0 : it->second;
 }
 ////////////////////////////////////////////////////////////////////////////////////
-const char* Reader::GetString(int index) const {
+const char* Reader::GetString(size_t index) const {
   OrkAssert(index < mistrtablen);
   OrkAssert(mpstrtab);
   return mpstrtab + index;
@@ -434,7 +434,7 @@ OutputStream* Writer::AddStream(std::string stream_name) {
 
 ////////////////////////////////////////////////////////////////////////////////////
 
-int Writer::stringIndex(const char* pstr) {
+size_t Writer::stringIndex(const char* pstr) {
   return _stringblock.AddString(pstr).Index();
 }
 

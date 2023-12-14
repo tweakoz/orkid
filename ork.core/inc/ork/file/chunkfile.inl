@@ -26,7 +26,7 @@ template <typename T> void OutputStream::AddItem(const T& data) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 template <typename T> void InputStream::GetItem(T& item) {
-  int isize = sizeof(T);
+  size_t isize = sizeof(T);
   OrkAssert((midx + isize) <= milength);
   const char* pchbase = (const char*)mpbase;
   T* pt               = (T*)&pchbase[midx];
@@ -35,8 +35,8 @@ template <typename T> void InputStream::GetItem(T& item) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 template <typename T> void InputStream::RefItem(T*& item) {
-  int isize = sizeof(T);
-  int ileft = milength - midx;
+  size_t isize = sizeof(T);
+  size_t ileft = milength - midx;
   OrkAssert((midx + isize) <= milength);
   const char* pchbase = (const char*)mpbase;
   item                = (T*)&pchbase[midx];
@@ -44,8 +44,8 @@ template <typename T> void InputStream::RefItem(T*& item) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 template <typename T> T InputStream::ReadItem() {
-  int isize = sizeof(T);
-  int ileft = milength - midx;
+  size_t isize = sizeof(T);
+  size_t ileft = milength - midx;
   OrkAssert((midx + isize) <= milength);
   const char* pchbase = (const char*)mpbase;
   size_t out_index = midx;

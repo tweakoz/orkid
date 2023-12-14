@@ -86,7 +86,7 @@ struct Writer {
 
   Writer(const char* file_type);
   OutputStream* AddStream(std::string stream_name);
-  int stringIndex(const char* pstr);
+  size_t stringIndex(const char* pstr);
   void WriteToFile(const file::Path& outpath);
   void writeToDataBlock(datablock_ptr_t& out_datablock);
 
@@ -125,12 +125,12 @@ struct InputStream {
 struct ILoadAllocator { //////////////////////////////
   virtual ~ILoadAllocator() {
   }
-  virtual void* alloc(const char* pchkname, int ilen)  = 0;
+  virtual void* alloc(const char* pchkname, size_t ilen)  = 0;
   virtual void done(const char* pchkname, void* pdata) = 0;
 };
 
 struct DefaultLoadAllocator : public ILoadAllocator { //////////////////////////////
-  inline void* alloc(const char* pchkname, int ilen) final {
+  inline void* alloc(const char* pchkname, size_t ilen) final {
     return malloc(ilen);
   }
   inline void done(const char* pchkname, void* pdata) final {
@@ -149,7 +149,7 @@ struct Reader {
   bool readFromDataBlock(datablock_ptr_t datablock);
 
   InputStream* GetStream(const char* streamname);
-  const char* GetString(int index) const;
+  const char* GetString(size_t index) const;
 
   bool IsOk() const {
     return mbOk;
@@ -159,7 +159,7 @@ struct Reader {
   InputStream mStreamBank[kmaxstreams];
   typedef ork::fixedlut<ork::PoolString, InputStream*, kmaxstreams> StreamLut;
 
-  int mistrtablen;
+  size_t mistrtablen;
   const char* mpstrtab;
   bool mbOk;
   std::string _chunkfiletype;
