@@ -375,15 +375,15 @@ bool Reader::readFromDataBlock(datablock_ptr_t datablock) {
   ///////////////////////////
   for (int ic = 0; ic < inumchunks; ic++) {
     int32_t ichunkid    = dblockstream.getItem<int32_t>();
-    int32_t ioffset     = dblockstream.getItem<int32_t>();
-    int32_t ichunklen   = dblockstream.getItem<int32_t>();
+    size_t offset     = dblockstream.getItem<size_t>();
+    size_t chunklen   = dblockstream.getItem<size_t>();
     PoolString psname   = AddPooledString(GetString(ichunkid));
     InputStream* stream = &mStreamBank[ic];
     OrkHeapCheck();
-    if (ichunklen) {
-      void* pdata = _allocator.alloc(psname.c_str(), ichunklen);
+    if (chunklen) {
+      void* pdata = _allocator.alloc(psname.c_str(), chunklen);
       OrkAssert(pdata != 0);
-      new (stream) InputStream(pdata, ichunklen);
+      new (stream) InputStream(pdata, chunklen);
       mInputStreams.AddSorted(psname, stream);
     } else {
       new (stream) InputStream(0, 0);
@@ -457,23 +457,23 @@ void Writer::writeToDataBlock(datablock_ptr_t& out_datablock) {
   int inumchunks = (int)mOutputStreams.size();
   out_datablock->addItem<int>(inumchunks);
   ////////////////////////
-  int ioffset = 0;
+  size_t offset = 0;
   for (orkmap<int, OutputStream*>::const_iterator it = mOutputStreams.begin(); it != mOutputStreams.end(); it++) {
     int ichunkid         = it->first;
     OutputStream* stream = it->second;
-    int ichunklen        = stream->GetSize();
+    size_t chunklen        = stream->GetSize();
     ////////////////////////
     out_datablock->addItem<int>(ichunkid);
-    out_datablock->addItem<int>(ioffset);
-    out_datablock->addItem<int>(ichunklen);
+    out_datablock->addItem<size_t>(offset);
+    out_datablock->addItem<size_t>(chunklen);
     ////////////////////////
-    ioffset += ichunklen;
+    offset += chunklen;
   }
   ////////////////////////
   for (orkmap<int, OutputStream*>::const_iterator it = mOutputStreams.begin(); it != mOutputStreams.end(); it++) {
     int ichunkid         = it->first;
     OutputStream* stream = it->second;
-    int ichunklen        = stream->GetSize();
+    size_t ichunklen        = stream->GetSize();
     if (ichunklen && stream->GetData()) {
       out_datablock->addData(stream->GetData(), ichunklen);
     }
