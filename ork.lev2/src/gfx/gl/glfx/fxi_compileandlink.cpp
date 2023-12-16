@@ -157,6 +157,9 @@ bool Interface::compilePipelineVTG(rootcontainer_ptr_t container) {
   uint64_t pipeline_hash = pipeline_hasher->result();
 
   auto pipeline_datablock = DataBlockCache::findDataBlock(pipeline_hash);
+  if(_debugDrawCall){
+    pipeline_datablock = nullptr;
+  }
   ////////////////////////////////////////////////////////////
   // cached?
   ////////////////////////////////////////////////////////////
@@ -257,7 +260,7 @@ bool Interface::compilePipelineVTG(rootcontainer_ptr_t container) {
       //////////////
 
 
-      if (_DEBUG_SHADER_COMPILE) {
+      if (_DEBUG_SHADER_COMPILE or _debugDrawCall) {
         auto tek = pass->_technique;
 
         printf( "link tek<%s> pass<%s> prgo<%d>\n",
@@ -267,29 +270,32 @@ bool Interface::compilePipelineVTG(rootcontainer_ptr_t container) {
 
         if (pvtxshader) {
           printf(
-              "link tek<%s> pass<%s> vtxshader<%s> interface<%p>\n",
+              "link tek<%s> pass<%s> vtxshader<%s> interface<%p> shobj<%d>\n",
               tek->_name.c_str(),
               pass->_name.c_str(),
               pvtxshader->mName.c_str(),
-              (void*)vtx_iface);
+              (void*)vtx_iface,
+              int(pvtxshader->mShaderObjectId));
         }
         if (pgeoshader) {
           StreamInterface* geo_iface = pgeoshader->_inputInterface;
           printf(
-              "link tek<%s> pass<%s> geoshader<%s> interface<%p>\n",
+              "link tek<%s> pass<%s> geoshader<%s> interface<%p> shobj<%d>\n",
               tek->_name.c_str(),
               pass->_name.c_str(),
               pgeoshader->mName.c_str(),
-              (void*)geo_iface);
+              (void*)geo_iface,
+              int(pgeoshader->mShaderObjectId));
         }
         if (pfrgshader) {
 
           printf(
-              "link tek<%s> pass<%s>frgshader<%s> interface<%p>\n",
+              "link tek<%s> pass<%s> frgshader<%s> interface<%p> shobj<%d>\n",
               tek->_name.c_str(),
               pass->_name.c_str(),
               pfrgshader->mName.c_str(),
-              (void*)frg_iface);
+              (void*)frg_iface,
+              int(pfrgshader->mShaderObjectId));
         }
       }
 
@@ -344,7 +350,7 @@ bool Interface::compilePipelineVTG(rootcontainer_ptr_t container) {
       GL_ERRORCHECK();
       GLint linkstat = 0;
       glGetProgramiv(prgo, GL_LINK_STATUS, &linkstat);
-      if (linkstat != GL_TRUE or dump_and_exit) {
+      if (linkstat != GL_TRUE or dump_and_exit or _debugDrawCall) {
         if (pvtxshader)
           pvtxshader->dumpFinalText();
         if (ptecshader)

@@ -80,6 +80,8 @@ public:
   virtual ~FxInterface() {
   }
 
+  bool _debugDrawCall = false;
+  
 protected:
   FxShader* _activeShader;
   const FxShaderTechnique* _activeTechnique;

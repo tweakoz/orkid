@@ -172,14 +172,50 @@ void pyinit_gfx_material(py::module& module_lev2) {
                   py_callback();
                 });
               })
-          .def(
+          .def("dump",[](fxpipeline_ptr_t pipeline){
+            pipeline->dump();
+          })
+          .def_property(
+              "technique",                                                                    //
+              [](fxpipeline_ptr_t pipeline) -> pyfxtechnique_ptr_t { //
+                return pyfxtechnique_ptr_t(pipeline->_technique);
+              },
+              [](fxpipeline_ptr_t pipeline, pyfxtechnique_ptr_t tek) { //
+                pipeline->_technique = tek.get();
+              })
+          .def_property(
+              "sharedMaterial",                                                                    //
+              [](fxpipeline_ptr_t pipeline) -> material_ptr_t { //
+                return pipeline->_sharedMaterial;
+              },
+              [](fxpipeline_ptr_t pipeline, material_ptr_t mtl) { //
+                pipeline->_sharedMaterial = mtl;
+              })
+          .def_property(
+              "debugPrint",                                                                    //
+              [](fxpipeline_ptr_t pipeline) -> bool { //
+                return pipeline->_debugPrint;
+              },
+              [](fxpipeline_ptr_t pipeline, bool val) { //
+                pipeline->_debugPrint = val;
+              })
+          .def_property(
+              "debugName",                                                                    //
+              [](fxpipeline_ptr_t pipeline) -> std::string { //
+                return pipeline->_debugName;
+              },
+              [](fxpipeline_ptr_t pipeline, std::string val) { //
+                pipeline->_debugName = val;
+              })
+          /*.def(
               "__setattr__",                                                                    //
               [type_codec](fxpipeline_ptr_t pipeline, const std::string& key, py::object val) { //
                 auto varmap_val = type_codec->decode(val);
-                if (key == "technique")
-                  pipeline->_technique = varmap_val.get<fxtechnique_constptr_t>();
-                else if(key=="sharedMaterial"){
-                  pipeline->_sharedMaterial = py::cast<material_ptr_t>(val); 
+                else if(key=="debugPrint"){
+                  pipeline->_debugPrint = py::cast<bool>(val); 
+                }
+                else if(key=="debugName"){
+                  pipeline->_debugName = py::cast<std::string>(val); 
                 }
                 else {
                   OrkAssert(false);
@@ -189,7 +225,7 @@ void pyinit_gfx_material(py::module& module_lev2) {
                   // deco::printe(fvec3::Yellow(), k + " ", false);
                   // printf("\n");
                 }
-              })
+              })*/
           .def(
               "__getattr__",                                                                  //
               [type_codec](fxpipeline_ptr_t pipeline, const std::string& key) -> py::object { //
@@ -201,12 +237,6 @@ void pyinit_gfx_material(py::module& module_lev2) {
                   proxy->_pipeline = pipeline;
                   varval.set<matinst_param_proxy_ptr_t>(proxy);
                   return type_codec->encode(varval);
-                } else if (key == "technique") {
-                  varval.set<fxtechnique_constptr_t>(pipeline->_technique);
-                  return type_codec->encode(varval);
-                }
-                else if(key=="sharedMaterial"){
-                  return type_codec->encode(pipeline->_sharedMaterial); 
                 }
                 return py::none(); // ;
               });
@@ -272,6 +302,7 @@ void pyinit_gfx_material(py::module& module_lev2) {
               "begin",
               [](freestyle_mtl_ptr_t m, pyfxtechnique_ptr_t tek, RenderContextFrameData& rcfd) { m->begin(tek.get(), rcfd); })
           .def("end", [](freestyle_mtl_ptr_t m, RenderContextFrameData& rcfd) { m->end(rcfd); })
+          .def("dump", [](freestyle_mtl_ptr_t m) { m->dump(); })
           .def("__repr__", [](const freestyle_mtl_ptr_t m) -> std::string {
             return FormatString("FreestyleMaterial(%p:%s)", m.get(), m->mMaterialName.c_str());
           });

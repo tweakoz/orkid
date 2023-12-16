@@ -76,6 +76,7 @@ struct FxPipeline {
   using varval_generator_t = std::function<varval_t()>;
 
   void bindParam(fxparam_constptr_t p, varval_t v);
+  void dump() const;
 
   GfxMaterial* _material = nullptr;
   material_ptr_t _sharedMaterial = nullptr;
@@ -89,6 +90,8 @@ struct FxPipeline {
   svar64_t _impl;
 
   bool _debugBreak = false;
+  bool _debugPrint = false;
+  std::string _debugName;
 
 };
 
