@@ -16,6 +16,7 @@ def mkdir(folder, wipe=False):
 parser = argparse.ArgumentParser(description="python packager")
 parser.add_argument("executable_name", help="Name of the executable (without path).")
 parser.add_argument("exec_args", nargs=argparse.REMAINDER, help="Arguments for the executable.")
+parser.add_argument("--bundlename", type=str, default = "Orkid", help="Bundle name for the app (CFBundleName).", required=True)
 args = parser.parse_args()
 
 # Import _debug_helpers after parsing arguments
@@ -23,17 +24,33 @@ import _debug_helpers
 
 # Get executable path and arguments
 exe_path, exe_args, exe_name = _debug_helpers.get_exec_and_args(args)
+exe_base = os.path.basename(exe_path)
 
+is_python_script = "python" in exe_base and ".py" in exe_args[0]
+
+print("exe_path", exe_path)
+print("exe_base", exe_base)
+print("exe_args", exe_args)
+print("exe_name", exe_name)
+print("is_python_script", is_python_script)
+
+####################################################################################    
 # Define source, temporary, and bundle directories
+####################################################################################    
+
+bundle_name = args.bundlename
 orkid_src_dir = path.orkid()
 temp_dir = path.temp() / "pydist"  # Temporary directory for packaging
-#bundle_dir = temp_dir / f"{args.executable_name}.app" / "Contents"
-bundle_dir = temp_dir / "Orkid.app" / "Contents"
+#bundle_dir = temp_dir / "Orkid.app" / "Contents"
+bundle_dir = temp_dir / f"{bundle_name}.app" / "Contents"
 
 icon_src = orkid_src_dir/"ork.tool"/"OrkidTool.app"/"Contents"/"Resources"/"orkidlogo.icns"
 icon_dest = bundle_dir / "Resources" / "orkidlogo.icns"
 
-# Create the macOS bundle structure
+####################################################################################    
+# Create the macOS bundle directory structure
+####################################################################################    
+
 mkdir(temp_dir, wipe=True)
 mkdir(bundle_dir / "MacOS", wipe=True)
 mkdir(bundle_dir / "Resources", wipe=True)
@@ -43,7 +60,18 @@ deployment_id = datetime.datetime.now().strftime("%Y%m%d%H%M%S") + '_' + str(uui
 
 executable_name = os.path.basename(exe_path)
 
+
+####################################################################################    
 # Generate and write init_env.py script
+####################################################################################    
+
+#########
+# head
+#########
+
+orig_path = os.environ["OBT_ORIGINAL_PATH"]
+orig_pypath = os.environ["OBT_ORIGINAL_PYTHONPATH"]
+
 init_env_script = f"""#!/usr/bin/env python3
 import os, sys, subprocess, pathlib
 
@@ -51,6 +79,7 @@ bundle_dir = pathlib.PosixPath(__file__).parent.parent
 app_support_dir = pathlib.Path.home() / 'Library' / 'Application Support' / 'Orkid'
 staging_dir = app_support_dir / '{deployment_id}'
 os.makedirs(staging_dir, exist_ok=True)
+exe_args = {exe_args}
 
 env_vars = {{
     "OBT_STAGE": str(staging_dir),
@@ -58,47 +87,95 @@ env_vars = {{
     "PATH": str(bundle_dir / "MacOS" / "bin"),
     "LD_LIBRARY_PATH": str(bundle_dir / "MacOS" / "lib"),
     "PYTHONHOME": str(bundle_dir / "MacOS" / "pyvenv"),
-    # Additional environment variables
+    "PYTHONPATH": "{orig_pypath}",
+    "PATH": "{orig_path}",
 }}
 
 os.environ.update(env_vars)
 
-# Determine the path of the executable
-bin_executable_path = bundle_dir / "MacOS" / "bin" / "{executable_name}"
-pyvenv_executable_path = bundle_dir / "MacOS" / "pyvenv" / "bin" / "{executable_name}"
+int_executable_name = '""" + exe_base + """'
 
-if bin_executable_path.exists():
-    executable_path = bin_executable_path
-elif pyvenv_executable_path.exists():
-    executable_path = pyvenv_executable_path
-else:
-    raise FileNotFoundError(f"Executable {executable_name} not found in bundle.")
-
-# Execute the main application with provided arguments
-subprocess.run([str(executable_path)] + {exe_args})
 """
 
+#########
+# python script handling...
+#########
+
+if is_python_script:     
+  first_arg = exe_args[0]
+  init_env_script += f"""
+# Rebase the path relative to bundle_dir / "Resources"
+rebased_path = bundle_dir / "Resources" / pathlib.Path('{first_arg}')
+exe_args[0] = str(rebased_path)
+# Determine the path of the executable
+int_executable_path = bundle_dir / "MacOS" / "pyvenv" / "bin" / int_executable_name
+"""
+else:
+  init_env_script += f"""
+int_executable_path = bundle_dir / "MacOS" / "bin" / int_executable_name
+"""
+  
+#########
+# tail
+#########
+
+init_env_script += f"""
+
+if not int_executable_path.exists():
+  raise FileNotFoundError("Executable " + int_executable_name + " not found @ " + str(int_executable_path) + "(in bundle).")
+
+# Execute the main application with rebased arguments
+subprocess.run([str(int_executable_path)] + exe_args)
+"""
+  
+####################################################################################    
 # Create Info.plist
+####################################################################################    
+
+def format_bundle_identifier(bundle_name):
+    # Sanitize the bundle_name to create a legal identifier
+    sanitized_name = re.sub(r'[^a-zA-Z0-9.]+', '', bundle_name.replace(' ', ''))
+    return f"com.tweakoz.orkid.{sanitized_name}"
+
+bundle_id = format_bundle_identifier(bundle_name)
+
 info_plist = {
-    'CFBundleDisplayName': 'Orkid',  # Human-readable application name
+    'CFBundleDisplayName': bundle_name,  # Human-readable application name
     'CFBundleExecutable': 'init_env.py',  # Executable script
-    'CFBundleIdentifier': 'com.example.orkid',  # Unique bundle identifier
-    'CFBundleName': 'Orkid',  # Application name
+    'CFBundleIdentifier': bundle_id,  # Unique bundle identifier
+    'CFBundleName': bundle_name,  # Application name
     'CFBundleVersion': '1.0.0',
     'CFBundleIconFile': 'orkidlogo.icns',  # Name of your icon file
     # Additional plist keys
 }
 
+print("#################################")
+print("#################################")
+print("#################################")
+print("#################################")
+print(init_env_script)
+print("#################################")
+print(info_plist)
+print("#################################")
+
+#assert(False)
+
 with open(bundle_dir / "Info.plist", 'wb') as plist_file:
     plistlib.dump(info_plist, plist_file)
 
+####################################################################################    
 # Write init_env.py to the bundle MacOS directory
+####################################################################################    
+
 init_env_path = bundle_dir / 'MacOS' / 'init_env.py'
 with open(init_env_path, 'w') as file:
     file.write(init_env_script)
 init_env_path.chmod(0o755)
 
+####################################################################################    
 # Copy data directories to bundle directories
+####################################################################################    
+
 copy_tree(orkid_src_dir / "ork.data", bundle_dir / "Resources" / "ork.data")
 copy_tree(path.bin(), bundle_dir / "MacOS" / "bin")
 copy_tree(path.libs(), bundle_dir / "MacOS" / "lib")
@@ -110,12 +187,14 @@ copy_tree(orkid_src_dir / "ork.lev2" / "pyext" / "tests", bundle_dir / "Resource
 copy_tree(orkid_src_dir / "ork.ecs" / "examples", bundle_dir / "Resources" / "ork.ecs" / "examples")
 #copy_tree(orkid_src_dir / "ork.ecs" / "pyext" / "tests", bundle_dir / "Resources" /  "ork.ecs" / "pyext" / "tests")
 
-os.chdir(bundle_dir / "MacOS" / "pyvenv")
+####################################################################################    
 # Remove __pycache__ directories
-os.system( "find . -type d -name '__pycache__' -exec rm -rf {} +")
-
 # Remove test directories
+# Remove .dist-info directories
+####################################################################################    
+
+os.chdir(bundle_dir / "MacOS" / "pyvenv")
+os.system( "find . -type d -name '__pycache__' -exec rm -rf {} +")
 os.system( "find . -type d -name 'tests' -exec rm -rf {} +")
 os.system( "find . -type d -name 'test' -exec rm -rf {} +")
-# Remove .dist-info directories
 os.system( "find . -type d -name '*.dist-info' -exec rm -rf {} +")
