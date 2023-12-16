@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import sys, os, json, argparse, re, shutil, plistlib, datetime, uuid
+import sys, os, json, argparse, re, shutil, plistlib, datetime, uuid, subprocess
 from obt import path, command
 from pathlib import Path
 
@@ -60,6 +60,90 @@ deployment_id = datetime.datetime.now().strftime("%Y%m%d%H%M%S") + '_' + str(uui
 
 executable_name = os.path.basename(exe_path)
 
+####################################################################################    
+# find homebrew dylibs and copy them to the bundle
+####################################################################################    
+
+
+def get_dylib_dependencies(file_path, seen=None):
+  """Recursively get a list of dynamic library dependencies for the file."""
+  if seen is None:
+    seen = set()
+  if not os.path.exists(file_path) or not os.path.isfile(file_path):
+    return seen
+  deps = subprocess.check_output(['otool', '-L', file_path]).decode()
+  for line in deps.splitlines()[1:]:
+    dylib = line.split()[0]
+    if dylib not in seen:
+      seen.add(dylib)
+      get_dylib_dependencies(dylib, seen)
+  return seen
+
+homebrew_dir = Path("/opt/homebrew")
+def homebrew_dylib_dependencies(raw_deps):
+  rval = []
+  for item in raw_deps:
+    if str(homebrew_dir) in item:
+      rval.append(item)
+  return rval
+
+staging_pyvenv = path.stage() / "pyvenv"
+def staging_dylib_dependencies(raw_deps):
+  rval = []
+  for item in raw_deps:
+    if str(staging_pyvenv) in item:
+      rval.append(item)
+  return rval
+
+def copy_dylibs_to_folder(dylibs, dest_folder):
+  """Copy dynamic libraries to the destination folder."""
+  os.makedirs(dest_folder, exist_ok=True)
+  for dylib in dylibs:
+    shutil.copy(dylib, dest_folder)
+
+def change_rpath_homebrew(file_path, dest_folder):
+  """Change the RPATH of the file for each of its dependencies."""
+  deps = subprocess.check_output(['otool', '-L', file_path]).decode()
+  for line in deps.splitlines()[1:]:
+    old_path = line.split()[0]
+    new_path = ""
+    if str(homebrew_dir) in line:
+      new_path = os.path.join(dest_folder, os.path.basename(old_path))
+      print(f"Changing RPATH from {old_path} to {new_path}")
+
+def change_rpath_staging(binary_path):
+  output = subprocess.check_output(['otool', '-L', binary_path]).decode()
+  for line in output.splitlines():
+    if str(staging_pyvenv) in line:
+      lib_path = line.split()[0]
+      lib_name = os.path.basename(lib_path)
+      #subprocess.run(['install_name_tool', '-change', lib_path, lib_name, binary_path])
+      print(f"Updated {lib_path} to {lib_name} in {binary_path}")
+
+dest_folder = bundle_dir/"MacOS"/"homebrew"
+
+# Step 1: Recursively identify all dependencies
+all_dependencies = get_dylib_dependencies(exe_path)
+hb_deps = homebrew_dylib_dependencies(all_dependencies)
+staging_deps = staging_dylib_dependencies(all_dependencies)
+print(all_dependencies)
+print(hb_deps)
+print(staging_deps)
+
+# Step 2: Copy all dependencies to a folder
+#copy_dylibs_to_folder(all_dependencies, dest_folder)
+
+# Step 3: Modify the RPATH of the executable and all its dependencies
+change_rpath_homebrew(exe_path, dest_folder)
+change_rpath_staging(exe_path)
+for dep in hb_deps:
+  change_rpath(dep, dest_folder)
+for dep in staging_deps:
+  change_rpath_staging(dep)
+
+print("Dependencies packaged and RPATHs modified.")
+
+assert(False)
 
 ####################################################################################    
 # Generate and write init_env.py script
