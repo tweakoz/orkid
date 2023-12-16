@@ -197,7 +197,12 @@ static file::Path this_path() {
   return file::Path("ork_lev2://src/gfx/material/material_pbr_gen.cpp");
 }
 static uint32_t this_hash() {
-  return this_path().hashFileContents();
+  if(this_path().doesPathExist()){
+    return this_path().hashFileContents();    
+  }
+  else{
+    return 0;
+  }
 }
 
 /////////////////////////////////////////////////////////////////////////
