@@ -387,32 +387,29 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
         auto load_req = pbrcommon->requestSkyboxTexture(texture_path);
       }
 
-      if (auto try_envintensity = params->typedValueForKey<float>("EnvironmentIntensity")) {
+      if (auto try_envintensity = params->tryKeyAsNumber("EnvironmentIntensity")) {
         pbrcommon->_environmentIntensity = try_envintensity.value();
       }
-      if (auto try_diffuseLevel = params->typedValueForKey<float>("DiffuseIntensity")) {
+      if (auto try_diffuseLevel = params->tryKeyAsNumber("DiffuseIntensity")) {
         pbrcommon->_diffuseLevel = try_diffuseLevel.value();
       }
       if (auto try_ambientLevel = params->typedValueForKey<fvec3>("AmbientLight")) {
         pbrcommon->_ambientLevel = try_ambientLevel.value();
       }
-      if (auto try_skyboxLevel = params->typedValueForKey<float>("SkyboxIntensity")) {
+      if (auto try_skyboxLevel = params->tryKeyAsNumber("SkyboxIntensity")) {
         pbrcommon->_skyboxLevel = try_skyboxLevel.value();
       }
-      if (auto try_specularLevel = params->typedValueForKey<float>("SpecularIntensity")) {
+      if (auto try_specularLevel = params->tryKeyAsNumber("SpecularIntensity")) {
         pbrcommon->_specularLevel = try_specularLevel.value();
       }
-      if (auto try_DepthFogDistance = params->typedValueForKey<float>("DepthFogDistance")) {
+      if (auto try_DepthFogDistance = params->tryKeyAsNumber("DepthFogDistance")) {
         pbrcommon->_depthFogDistance = try_DepthFogDistance.value();
       }
-      if (auto try_DepthFogPower = params->typedValueForKey<float>("DepthFogPower")) {
+      if (auto try_DepthFogPower = params->tryKeysAsNumber("DepthFogPower","depthFogPower")) {
         pbrcommon->_depthFogPower = try_DepthFogPower.value();
       }
-      if (auto try_dfdist = params->typedValueForKey<float>("depthFogDistance")) {
+      if (auto try_dfdist = params->tryKeysAsNumber("DepthFogDistance", "depthFogDistance")) {
         pbrcommon->_depthFogDistance = try_dfdist.value();
-      }
-      if (auto try_dfpwr = params->typedValueForKey<float>("depthFogPower")) {
-        pbrcommon->_depthFogPower = try_dfpwr.value();
       }
   }
   //////////////////////////////////////////////
