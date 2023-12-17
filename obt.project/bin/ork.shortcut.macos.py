@@ -6,8 +6,6 @@ from pathlib import Path
 deco = deco.Deco()
 
 # Helper Functions
-def copy_tree(src, dest):
-    shutil.copytree(str(src), str(dest),symlinks=True)
 
 def mkdir(folder, wipe=False):
     if wipe and folder.exists():
@@ -47,16 +45,7 @@ bundle_dir = temp_dir / f"{bundle_name}.app" / "Contents"
 
 src_icon = orkid_src_dir/"ork.tool"/"OrkidTool.app"/"Contents"/"Resources"/"orkidlogo.icns"
 dst_icon = bundle_dir / "Resources" / "orkidlogo.icns"
-
 dst_init_env = bundle_dir / 'MacOS' / 'init_env.py'
-dst_bin = bundle_dir / "MacOS" / "bin"
-dst_lib = bundle_dir / "MacOS" / "lib"
-src_homebrew = Path("/opt/homebrew")
-dst_homebrew = bundle_dir/"MacOS"/"homebrew"
-src_pyvenv = path.stage() / "pyvenv"
-dst_pyvenv = bundle_dir / "MacOS" / "pyvenv"
-
-dst_python_executable = dst_pyvenv/"bin"/"python3.11"
 
 ####################################################################################    
 # Create the macOS bundle directory structure
@@ -67,22 +56,26 @@ mkdir(bundle_dir / "MacOS", wipe=True)
 mkdir(bundle_dir / "Resources", wipe=True)
 shutil.copy(str(src_icon), str(dst_icon))
 
-deployment_id = datetime.datetime.now().strftime("%Y%m%d%H%M%S") + '_' + str(uuid.uuid4())
-
 ####################################################################################    
 # Generate and write init_env.py script
 ####################################################################################    
 
-#########
-# head
-#########
+env_vars = [
+    "OBT_STAGE",
+    "ORKID_WORKSPACE_DIR",
+    "PATH",
+    "LD_LIBRARY_PATH",
+    "PYTHONPATH",
+    "PYTHONNOUSERSITE",
+    "ORKID_LEV2_EXAMPLES_DIR",
+    "LUA_PATH",
+    "HOMEBREW_PREFIX",
+]
 
-orig_path = os.environ["PATH"]
-orig_pypath = os.environ["PYTHONPATH"]
-orig_ldlibpath = os.environ["LD_LIBRARY_PATH"]
-#orig_dyldlibpath = os.environ["DYLD_LIBRARY_PATH"]
-orig_orkid_dir = os.environ["ORKID_WORKSPACE_DIR"]
-orig_stage_dir = str(path.stage())
+env_var_set_str = ""
+
+for item in env_vars:
+  env_var_set_str += f"    \"{item}\": \"" + os.environ[item]+"\",\n"
 
 init_env_script = f"""#!/usr/bin/env python3
 import os, sys, subprocess, pathlib
@@ -94,25 +87,15 @@ os.chdir(this_dir)
 exe_args = {exe_args}
 
 env_vars = {{
-    "OBT_STAGE": "{orig_stage_dir}",
-    "ORKID_WORKSPACE_DIR": "{orig_orkid_dir}",
-    "PATH": "{orig_path}",
-    "LD_LIBRARY_PATH": "{orig_ldlibpath}",
-    "PATH": "{orig_path}",
-    "PYTHONPATH": "{orig_pypath}",
-    }}
+    {env_var_set_str}
+}}
 
 os.environ.update(env_vars)
+print("#################################")
 for item in env_vars.keys():
   print(item, " = ", env_vars[item])
-
-"""
-  
-#########
-# tail
-#########
-
-init_env_script += f"""
+  print()
+print("#################################")
 
 # Determine the path of the executable
 int_executable_path = pathlib.Path("{exe_path}")
@@ -149,55 +132,19 @@ info_plist = {
 
 print("#################################")
 print("#################################")
-print("#################################")
-print("#################################")
 print(init_env_script)
 print("#################################")
 print(info_plist)
 print("#################################")
-
-#assert(False)
-
-with open(bundle_dir / "Info.plist", 'wb') as plist_file:
-    plistlib.dump(info_plist, plist_file)
+print("#################################")
 
 ####################################################################################    
 # Write init_env.py to the bundle MacOS directory
 ####################################################################################    
 
+with open(bundle_dir / "Info.plist", 'wb') as plist_file:
+    plistlib.dump(info_plist, plist_file)
+
 with open(dst_init_env, 'w') as file:
     file.write(init_env_script)
 dst_init_env.chmod(0o755)
-
-####################################################################################    
-# Copy data directories to bundle directories
-####################################################################################    
-
-#print( "Copying build products ...." )
-
-#copy_tree(orkid_src_dir / "ork.data", bundle_dir / "Resources" / "ork.data")
-#copy_tree(path.bin(), dst_bin)
-#copy_tree(path.libs(), dst_lib)
-
-#print( "Copying python environment ...." )
-#copy_tree(src_pyvenv, dst_pyvenv)
-
-#print( "Copying examples and tests ...." )
-
-#copy_tree(orkid_src_dir / "ork.core" / "examples", bundle_dir / "Resources" / "ork.core" / "examples")
-#copy_tree(orkid_src_dir / "ork.core" / "pyext" / "tests", bundle_dir / "Resources" /  "ork.core" / "pyext" / "tests")
-#copy_tree(orkid_src_dir / "ork.lev2" / "examples", bundle_dir / "Resources" / "ork.lev2" / "examples")
-#copy_tree(orkid_src_dir / "ork.lev2" / "pyext" / "tests", bundle_dir / "Resources" /  "ork.lev2" / "pyext" / "tests")
-#copy_tree(orkid_src_dir / "ork.ecs" / "examples", bundle_dir / "Resources" / "ork.ecs" / "examples")
-
-####################################################################################    
-# Remove __pycache__ directories
-# Remove test directories
-# Remove .dist-info directories
-####################################################################################    
-
-#os.chdir(bundle_dir / "MacOS" / "pyvenv")
-#os.system( "find . -type d -name '__pycache__' -exec rm -rf {} +")
-#os.system( "find . -type d -name 'tests' -exec rm -rf {} +")
-#os.system( "find . -type d -name 'test' -exec rm -rf {} +")
-#os.system( "find . -type d -name '*.dist-info' -exec rm -rf {} +")
