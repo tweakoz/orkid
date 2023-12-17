@@ -883,7 +883,7 @@ void GlGeometryBufferInterface::DrawPrimitiveEML(const VertexBufferBase& VBuf, P
         GL_ERRORCHECK();
         //glPointSize(1.0f);
         glEnable(GL_PROGRAM_POINT_SIZE);
-        printf("drawpoints<%d,%d>\n", ivbase, inum);
+        //printf("drawpoints<%d,%d>\n", ivbase, inum);
         glDrawArrays(GL_POINTS, ivbase, inum);
         GL_ERRORCHECK();
         break;
