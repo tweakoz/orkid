@@ -281,6 +281,8 @@ texture_ptr_t PBRMaterial::filterSpecularEnvMap(texture_ptr_t rawenvmap, Context
     w      = rawenvmap->_width;
     h      = rawenvmap->_height;
     numpix = w * h;
+    std::atomic<int> pending = 0;
+    std::vector<compressedimg_ptr_t> cimgs;
     while ( (w>=4) and (h>=4) ) {
 
       auto outgroup = std::make_shared<RtGroup>(targ, w, h, MsaaSamples::MSAA_1X);
@@ -323,11 +325,16 @@ texture_ptr_t PBRMaterial::filterSpecularEnvMap(texture_ptr_t rawenvmap, Context
         out->close();
       }
 
-      Image im;
-      im.initWithNormalizedFloatBuffer(w, h, 4, (const float*)captureb->_data);
-      CompressedImage cim;
-      im.compressDefault(cim);
-      compressed_levels.push_back(cim);
+      pending.fetch_add(1);
+      auto cimg = std::make_shared<CompressedImage>();
+      cimgs.push_back(cimg);
+      auto op = [=,&pending](){
+        Image im;
+        im.initWithNormalizedFloatBuffer(w, h, 4, (const float*)captureb->_data);
+        im.compressDefault(*cimg);
+        pending.fetch_sub(1);
+      };
+      opq::concurrentQueue()->enqueue(op);
 
       rawenvmap->_varmap.makeValueForKey<rtgroup_ptr_t>(FormatString("alt-tex-specenv-group-mip%d", imip))   = std::move(outgroup);
       rawenvmap->_varmap.makeValueForKey<rtbuffer_ptr_t>(FormatString("alt-tex-specenv-buffer-mip%d", imip)) = std::move(outbuffr);
@@ -336,7 +343,12 @@ texture_ptr_t PBRMaterial::filterSpecularEnvMap(texture_ptr_t rawenvmap, Context
       numpix = w * h;
       imip++;
     }
-
+    while (pending.load() > 0) {
+      usleep(1000);
+    }
+    for(auto cimg : cimgs ){
+      compressed_levels.push_back(*cimg);
+    }
     CompressedImageMipChain mipchain;
     mipchain.initWithPrecompressedMipLevels(compressed_levels);
     cmipchain_datablock = std::make_shared<DataBlock>();
@@ -411,6 +423,8 @@ texture_ptr_t PBRMaterial::filterDiffuseEnvMap(texture_ptr_t rawenvmap, Context*
     float roughness = 1.0f;
     std::map<int, std::shared_ptr<CaptureBuffer>> cap4mip;
     CompressedImageMipChain::miplevels_t compressed_levels;
+    std::atomic<int> pending = 0;
+    std::vector<compressedimg_ptr_t> cimgs;
     while (numpix != 0) {
 
       auto outgroup        = std::make_shared<RtGroup>(targ, w, h, MsaaSamples::MSAA_1X);
@@ -451,11 +465,16 @@ texture_ptr_t PBRMaterial::filterDiffuseEnvMap(texture_ptr_t rawenvmap, Context*
         out->close();
       }
 
-      Image im;
-      im.initWithNormalizedFloatBuffer(w, h, 4, (const float*)captureb->_data);
-      CompressedImage cim;
-      im.compressRGBA(cim);
-      compressed_levels.push_back(cim);
+      pending.fetch_add(1);
+      auto cimg = std::make_shared<CompressedImage>();
+      cimgs.push_back(cimg);
+      auto op = [=,&pending](){
+        Image im;
+        im.initWithNormalizedFloatBuffer(w, h, 4, (const float*)captureb->_data);
+        im.compressDefault(*cimg);
+        pending.fetch_sub(1);
+      };
+      opq::concurrentQueue()->enqueue(op);
 
       rawenvmap->_varmap.makeValueForKey<std::shared_ptr<RtGroup>>(FormatString("alt-tex-diffenv-group-mip%d", imip))   = outgroup;
       rawenvmap->_varmap.makeValueForKey<std::shared_ptr<RtBuffer>>(FormatString("alt-tex-diffenv-buffer-mip%d", imip)) = outbuffr;
@@ -466,6 +485,12 @@ texture_ptr_t PBRMaterial::filterDiffuseEnvMap(texture_ptr_t rawenvmap, Context*
       roughness += 0.1f;
       numpix = w * h;
       imip++;
+    }
+    while (pending.load() > 0) {
+      usleep(1000);
+    }
+    for(auto cimg : cimgs ){
+      compressed_levels.push_back(*cimg);
     }
 
     CompressedImageMipChain cmipchain;

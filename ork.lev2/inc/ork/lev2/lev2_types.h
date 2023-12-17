@@ -37,6 +37,7 @@ struct PixelFetchContext;
 struct PickBuffer;
 struct GpuEvent;
 struct GpuEventSink;
+struct CompressedImage;
 
 //
 using gfxcontext_lambda_t = std::function<void(Context*)>;
@@ -51,6 +52,7 @@ using font_rawconstptr_t = const Font*;
 using pixelfetchctx_ptr_t = std::shared_ptr<PixelFetchContext>;
 using gpuevent_ptr_t = std::shared_ptr<GpuEvent>;
 using gpueventsink_ptr_t = std::shared_ptr<GpuEventSink>;
+using compressedimg_ptr_t = std::shared_ptr<CompressedImage>;
 
 using pickvariant_t = svar128_t;
 

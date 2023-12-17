@@ -346,13 +346,15 @@ void Image::compressRGBA(CompressedImage& imgout) const {
   ////////////////////////////////////////
   // parallel ISPC-RGBA compressor
   ////////////////////////////////////////
-  auto opgroup      = opq::createCompletionGroup(opq::concurrentQueue(), "RGBAENC");
+  //auto opgroup      = opq::createCompletionGroup(opq::concurrentQueue(), "RGBAENC");
+  std::atomic<int> pending = 0;
   size_t src_stride = _width * _numcomponents;
   size_t dst_stride = _width * 4;
   auto src_base     = (uint8_t*)this->_data->data();
   auto dst_base     = (uint8_t*)imgout._data->allocateBlock(dst_stride * _height);
   for (int y = 0; y < _height; y++) {
-    opgroup->enqueue([=]() {
+    pending.fetch_add(1);
+    opq::concurrentQueue()->enqueue([=,&pending]() {
       auto src_line = src_base + y * src_stride;
       auto dst_line = dst_base + y * dst_stride;
       switch (_numcomponents) {
@@ -383,9 +385,12 @@ void Image::compressRGBA(CompressedImage& imgout) const {
           OrkAssert(false);
           break;
       }
+      pending.fetch_sub(1);
     });
   }
-  opgroup->join();
+  while(pending.load()>0){
+    usleep(1000);
+  }
   ////////////////////////////////////////
 
   float time = timer.SecsSinceStart();
