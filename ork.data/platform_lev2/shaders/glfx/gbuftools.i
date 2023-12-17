@@ -227,6 +227,6 @@ libblock lib_gbuf_encode {
     return uvec4(0,0,0,uatmos|(ualpha<<16));
   }
   uvec4 packGbuffer_unlit(vec3 basecolor){
-    return packGbuffer(vec3(0,0,0),basecolor,vec3(0,0,0),1,0);
+    return packGbuffer(vec3(0,0,0),basecolor,vec3(0,0,1),0,1);
   }
 } // libblock lib_gbuf {

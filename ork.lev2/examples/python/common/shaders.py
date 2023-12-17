@@ -5,6 +5,7 @@ tokens = CrcStringProxy()
 
 def createPipeline( app=None,
                     ctx=None,
+                    shadername="myshader",
                     rendermodel="ForwardPBR",
                     depthtest=tokens.LEQUALS,
                     blending=tokens.OFF,
@@ -14,7 +15,7 @@ def createPipeline( app=None,
                     techname = "std_mono_fwd" ):
     material = FreestyleMaterial()
     if shadertext!=None:
-      material.gpuInitFromShaderText(ctx,"myshader",shadertext)
+      material.gpuInitFromShaderText(ctx,shadername,shadertext)
     else:
       material.gpuInit(ctx,shaderfile)
     #
