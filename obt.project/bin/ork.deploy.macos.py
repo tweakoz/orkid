@@ -118,7 +118,11 @@ if do_rebase:
     "PYTHONHOME": str(this_dir / "pyvenv"),
     "PYTHONPATH": str(this_dir / "pyvenv" / "lib" / "python3.11" / "site-packages"),
 """
-
+else:
+  init_env_script += f"""
+    "PYTHONPATH": "{orig_pypath}",
+"""
+  
 init_env_script += f"""
     }}
 
