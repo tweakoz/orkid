@@ -85,15 +85,21 @@ void pyinit_gfx_camera(py::module& module_lev2) {
               [](ezuicam_ptr_t uic, float fov) { //
                 uic->_fov = fov;
               })
-          .def_property_readonly(
+          .def_property(
               "center",
               [](ezuicam_ptr_t uic) -> fvec3 { //
                 return uic->mvCenter;
+              },
+              [](ezuicam_ptr_t uic, fvec3 center) { //
+                uic->mvCenter = center;
               })
-          .def_property_readonly(
+          .def_property(
               "orientation",
               [](ezuicam_ptr_t uic) -> fquat { //
                 return uic->QuatC;
+              },
+              [](ezuicam_ptr_t uic, fquat quat) { //
+                uic->QuatC = quat;
               })
           .def_property(
               "loc",
