@@ -49,6 +49,17 @@ void pyinit_gfx_camera(py::module& module_lev2) {
             //cam_dest->mFovY = cam_src->mFovY;
             //cam_dest->mAspect = cam_src->mAspect;            
           })
+          .def("dump", [](ezuicam_ptr_t cam) {
+              printf( "ezuicam<%p> dump\n", (void*) cam.get() );
+              printf( "  _base_zmoveamt<%g>\n", cam->_base_zmoveamt );
+              printf( "  _fov<%g>\n", cam->_fov );
+              printf( "  _constrainZ<%d>\n", cam->_constrainZ );
+              printf( "  mvCenter<%g %g %g>\n", cam->mvCenter.x, cam->mvCenter.y, cam->mvCenter.z );
+              printf( "  QuatC<%g %g %g %g>\n", cam->QuatC.x, cam->QuatC.y, cam->QuatC.z, cam->QuatC.w );
+              printf( "  CamLoc<%g %g %g>\n", cam->CamLoc.x, cam->CamLoc.y, cam->CamLoc.z );
+              printf( "  PrevCamLoc<%g %g %g>\n", cam->PrevCamLoc.x, cam->PrevCamLoc.y, cam->PrevCamLoc.z );
+              printf( "  mfLoc<%g>\n", cam->mfLoc );
+          })
           .def_property_readonly(
               "cameradata",
               [](ezuicam_ptr_t uic) -> cameradata_ptr_t { //
