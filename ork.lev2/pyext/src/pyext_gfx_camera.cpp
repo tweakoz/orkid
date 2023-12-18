@@ -41,9 +41,17 @@ void pyinit_gfx_camera(py::module& module_lev2) {
             cam_dest->_constrainZ = cam_src->_constrainZ;
             cam_dest->mvCenter = cam_src->mvCenter;
             cam_dest->QuatC = cam_src->QuatC;
+            cam_dest->QuatHeading = cam_src->QuatHeading;
+            cam_dest->QuatElevation = cam_src->QuatElevation;
+            cam_dest->QuatCPushed = cam_src->QuatCPushed;
             cam_dest->CamLoc = cam_src->CamLoc;
             cam_dest->PrevCamLoc = cam_src->PrevCamLoc;
             cam_dest->mfLoc = cam_src->mfLoc;
+            cam_dest->_curMatrices = cam_src->_curMatrices;
+            cam_dest->_vpdim = cam_src->_vpdim;
+            cam_dest->_camcamdata = cam_src->_camcamdata;
+
+
            // cam_dest->mNear = cam_src->mNear;
            // cam_dest->mFar = cam_src->mFar;
             //cam_dest->mFovY = cam_src->mFovY;
