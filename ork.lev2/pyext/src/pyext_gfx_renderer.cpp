@@ -143,7 +143,21 @@ void pyinit_gfx_renderer(py::module& module_lev2) {
           .def(
               "copyFrom",                                                //
               [](cameradata_ptr_t camera, cameradata_ptr_t src_camera) { //
-                *camera = *src_camera;
+                //*camera = *src_camera;
+                camera->mEye    = src_camera->mEye;
+                camera->mTarget = src_camera->mTarget;
+                camera->mUp     = src_camera->mUp;
+                camera->_xnormal = src_camera->_xnormal;
+                camera->_ynormal = src_camera->_ynormal;
+                camera->_znormal = src_camera->_znormal;
+                camera->_left = src_camera->_left;
+                camera->_right = src_camera->_right;
+                camera->_top = src_camera->_top;
+                camera->_bottom = src_camera->_bottom;
+                camera->mAper = src_camera->mAper;
+                camera->mHorizAper = src_camera->mHorizAper;
+                camera->mNear = src_camera->mNear;
+                camera->mFar = src_camera->mFar;
               })
           .def(
               "projectDepthRay",                                              //
