@@ -192,8 +192,24 @@ void pyinit_gfx_renderer(py::module& module_lev2) {
           .def_property_readonly("xnormal", [](cameradata_ptr_t camera) -> fvec3 { return camera->_xnormal; })
           .def_property_readonly("ynormal", [](cameradata_ptr_t camera) -> fvec3 { return camera->_ynormal; })
           .def_property_readonly("znormal", [](cameradata_ptr_t camera) -> fvec3 { return camera->_znormal; })
-          .def_property_readonly("near", [](cameradata_ptr_t camera) -> float { return camera->mNear; })
-          .def_property_readonly("far", [](cameradata_ptr_t camera) -> float { return camera->mFar; });
+          .def_property("fovy", [](cameradata_ptr_t camera) -> float { 
+              return camera->mAper;
+              },
+              [](cameradata_ptr_t camera, float fovy_degrees) {
+              camera->mAper = fovy_degrees;
+              })
+          .def_property("near", [](cameradata_ptr_t camera) -> float { 
+              return camera->mNear;
+              },
+              [](cameradata_ptr_t camera, float near) {
+              camera->mNear = near;
+              })
+          .def_property("far", [](cameradata_ptr_t camera) -> float { 
+            return camera->mFar; 
+            },
+            [](cameradata_ptr_t camera, float far) {
+              camera->mFar = far;
+            });
   type_codec->registerStdCodec<cameradata_ptr_t>(camdattype);
   /////////////////////////////////////////////////////////////////////////////////
   auto camdatluttype = //

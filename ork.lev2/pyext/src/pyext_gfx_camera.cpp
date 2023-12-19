@@ -127,6 +127,22 @@ void pyinit_gfx_camera(py::module& module_lev2) {
                 uic->mfLoc = loc;
               })
           .def_property(
+              "near_min",
+              [](ezuicam_ptr_t uic) -> float { //
+                return uic->near_min;
+              },
+              [](ezuicam_ptr_t uic, float value) { //
+                uic->near_min = value;
+              })
+          .def_property(
+              "far_max",
+              [](ezuicam_ptr_t uic) -> float { //
+                return uic->far_max;
+              },
+              [](ezuicam_ptr_t uic, float value) { //
+                uic->far_max = value;
+              })
+          .def_property(
               "constrainZ",
               [](ezuicam_ptr_t uic) -> bool { //
                 return uic->_constrainZ;
