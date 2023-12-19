@@ -299,6 +299,13 @@ void pyinit_gfx_compositor(py::module& module_lev2) {
         [](pbr_deferred_context_ptr_t ctx, crcstring_ptr_t value){
             ctx->_lightAccumFormat = EBufferFormat(value->hashed());
         })
+      .def_property("auxiliaryFormat",
+        [](pbr_deferred_context_ptr_t ctx) -> crcstring_ptr_t {
+          return std::make_shared<CrcString>(uint64_t(ctx->_auxBufferFormat));
+        },
+        [](pbr_deferred_context_ptr_t ctx, crcstring_ptr_t value){
+            ctx->_auxBufferFormat = EBufferFormat(value->hashed());
+        })
       .def("gpuInit", [](pbr_deferred_context_ptr_t ctx, ctx_t gfx_ctx) { //
         ctx->gpuInit(gfx_ctx.get());
       })

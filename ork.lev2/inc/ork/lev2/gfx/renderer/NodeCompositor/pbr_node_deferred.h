@@ -176,6 +176,7 @@ struct DeferredContext {
 
   std::string _layername;
   EBufferFormat _lightAccumFormat;
+  EBufferFormat _auxBufferFormat = EBufferFormat::NONE;
   float _specularLevel    = 1.0f;
   float _diffuseLevel     = 1.0f;
   float _depthFogPower    = 1.0f;

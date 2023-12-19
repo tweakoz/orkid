@@ -256,6 +256,16 @@ void pyinit_gfx(py::module& module_lev2) {
                 {4});              // Strides (in bytes) for each index
             break;
           }
+          case EBufferFormat::R32F:{
+            rval =  pybind11::buffer_info(
+                capbuf._data,          // Pointer to buffer
+                sizeof(float), // Size of one scalar
+                pybind11::format_descriptor<float>::format(),
+                1,                 // Number of dimensions
+                {capbuf.length()/4}, // Buffer dimensions
+                {4});              // Strides (in bytes) for each index
+            break;
+          }
           default:
             OrkAssert(false);
             break;
