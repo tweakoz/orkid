@@ -27,8 +27,6 @@
 
 #if defined(ENABLE_PORTAUDIO)
 
-int WTF = 0;
-
 using namespace ork::audio::singularity;
 
 template class ork::orklut<ork::Char8, float>;
