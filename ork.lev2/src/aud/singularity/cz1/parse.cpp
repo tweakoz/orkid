@@ -374,7 +374,7 @@ czxprogdata_ptr_t parse_czprogramdata(CzData* outd, prgdata_ptr_t prgout, std::v
     dca2 level (0..15)
   */
 
-  if (1) {
+  if (0) {
     hexdumpbytes(bytes);
   }
 
@@ -391,16 +391,16 @@ czxprogdata_ptr_t parse_czprogramdata(CzData* outd, prgdata_ptr_t prgout, std::v
 
   switch (czprogdata->_lineSel) {
     case 0: // 1
-      printf("linesel<1>\n");
+      //printf("linesel<1>\n");
       break;
     case 1: // 2
-      printf("linesel<2>\n");
+      //printf("linesel<2>\n");
       break;
     case 2: // 1+1'
-      printf("linesel<1+1'>\n");
+      //printf("linesel<1+1'>\n");
       break;
     case 3: // 1+2'
-      printf("linesel<1+2'>\n");
+      //printf("linesel<1+2'>\n");
       break;
     default:
       assert(false);
@@ -523,7 +523,7 @@ czxprogdata_ptr_t parse_czprogramdata(CzData* outd, prgdata_ptr_t prgout, std::v
     ///////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////
     uint16_t MFW = (uint16_t(MFW0) << 8) | uint16_t(MFW1);
-    printf("MFW0<x%2x> MFW1<x%2x>\n", MFW0, MFW1);
+    //printf("MFW0<x%2x> MFW1<x%2x>\n", MFW0, MFW1);
     OSC->_dcoBaseWaveA = int(MFW0 >> 5) & 0x7;
     OSC->_dcoBaseWaveB = int(MFW0 >> 2) & 0x7;
     OSC->_dcoWindow    = int(MFW0 << 2);
@@ -644,7 +644,7 @@ czxprogdata_ptr_t parse_czprogramdata(CzData* outd, prgdata_ptr_t prgout, std::v
   }
   /////////////////////////////////////////////////
   czprogdata->_name = name;
-  czprogdata->dump();
+  //czprogdata->dump();
   return czprogdata;
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -701,7 +701,7 @@ void parse_czx(CzData* outd, const file::Path& path, const std::string& bnkname)
   }
 
   for (int iv = 0; iv < programcount; iv++) {
-    printf("////////////////////////////\n");
+    //printf("////////////////////////////\n");
     auto name        = FormatString("%s(%02d)", bnkname.c_str(), iv);
     int newprogramid = outd->_lastprg++;
     auto prgout      = std::make_shared<ProgramData>();
@@ -729,7 +729,7 @@ void parse_czx(CzData* outd, const file::Path& path, const std::string& bnkname)
     if (czpd) {
       outd->_bankdata->addProgram(newprogramid, czpd->_name, prgout);
       prgout->_name = czpd->_name;
-      printf("czprog<%s>\n", prgout->_name.c_str());
+      //printf("czprog<%s>\n", prgout->_name.c_str());
     }
     ///////////////////////////
   }
