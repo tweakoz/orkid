@@ -51,7 +51,10 @@ endfunction()
 
 orkid_find_python()
 
+message(STATUS "CMAKE_MODULE_PATH: ${CMAKE_MODULE_PATH}")
+
 find_package(ObtOpenBlas REQUIRED)
+find_package(ObtPipewire REQUIRED)
 
 ################################################################################
 # enable python for a given target

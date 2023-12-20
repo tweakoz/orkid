@@ -55,7 +55,7 @@ IF( "${ARCHITECTURE}" STREQUAL "x86_64" )
 
   list( APPEND orksrcs ${ispc_audio_object_list} )
   list( APPEND orksrcs ${ispc_gfx_object_list} )
-
+  
 ENDIF()
 
 ###################################
@@ -97,6 +97,10 @@ ELSEIF(${UNIX})
       target_compile_definitions( ork_lev2 PRIVATE ENABLE_VULKAN )
       target_include_directories (ork_lev2 PRIVATE $ENV{OBT_VULKAN_ROOT}/include)
       list(APPEND libs vulkan )
+
+      target_include_directories (ork_lev2 PRIVATE ${ObtPipewireSpaInclude_DIR} ${ObtPipewireInclude_DIR} )
+
+      target_link_libraries(ork_lev2 LINK_PRIVATE ${ObtPipewire_LIBRARIES} )
 
       IF(CMAKE_BUILD_TYPE STREQUAL "Debug")
       IF(EXISTS ENV{RENDERDOC_DIR}/include/)
