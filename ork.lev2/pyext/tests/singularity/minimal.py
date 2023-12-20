@@ -95,7 +95,13 @@ class SingulApp(object):
     self.synth.mainThreadHandler()
 
   def onUiEvent(self,uievent):
-    if uievent.code == tokens.KEY_DOWN.hashed:
+    if uievent.code == tokens.KEY_UP.hashed:
+      KC = uievent.keycode
+      if KC in self.voices:
+        voice = self.voices[KC]
+        self.synth.keyOff(voice)
+        del self.voices[KC]
+    elif uievent.code == tokens.KEY_DOWN.hashed:
       KC = uievent.keycode
       if KC in self.base_notes:
        if KC not in self.voices:
@@ -132,24 +138,25 @@ class SingulApp(object):
             self.voices.clear()
         elif KC == ord("0"): # 
           self.octave = 0
+          print("octave<%d>" % self.octave)
         elif KC == ord("1"): # 
           self.octave = 1
+          print("octave<%d>" % self.octave)
         elif KC == ord("2"): #
-            self.octave = 2
+          self.octave = 2
+          print("octave<%d>" % self.octave)
         elif KC == ord("3"): #
-            self.octave = 3
+          self.octave = 3
+          print("octave<%d>" % self.octave)
         elif KC == ord("4"): #
-            self.octave = 4
+          self.octave = 4
+          print("octave<%d>" % self.octave)
         elif KC == ord("5"): #
-            self.octave = 5
+          self.octave = 5
+          print("octave<%d>" % self.octave)
         elif KC == ord("6"): #
-            self.octave = 6
-    elif uievent.code == tokens.KEY_UP.hashed:
-      KC = uievent.keycode
-      if KC in self.voices:
-        voice = self.voices[KC]
-        self.synth.keyOff(voice)
-        del self.voices[KC]
+          self.octave = 6
+          print("octave<%d>" % self.octave)
       pass
 
 

@@ -29,7 +29,7 @@ lyrdata_ptr_t fxpreset_distortionpluschorus() {
       1000.0f, // cutoff
       36.0f,   // drive
       -6.0f);  // output gain
-  appendStereoDistortion(fxlayer, fxstage, 18.0f);
+  appendStereoDistortion(fxlayer, fxstage, -12.0);
   appendStereoChorus(fxlayer, fxstage);
   return fxlayer;
 }
@@ -56,7 +56,7 @@ lyrdata_ptr_t fxpreset_distortionplusecho() {
       1000.0f, // cutoff
       36.0f,   // drive
       -6.0f);  // output gain
-  appendStereoDistortion(fxlayer, fxstage, 24.0f);
+  appendStereoDistortion(fxlayer, fxstage, -6.0f);
   appendStereoChorus(fxlayer, fxstage);
   return fxlayer;
 }
