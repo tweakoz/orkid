@@ -57,8 +57,8 @@ struct BankData : public ork::Object {
   void loadJson(const std::string& fname, int bank);
 
   void addProgram(int idx, const std::string& name, prgdata_ptr_t program);
-  prgdata_constptr_t findProgram(int idx) const;
-  prgdata_constptr_t findProgramByName(const std::string named) const;
+  prgdata_ptr_t findProgram(int idx) const;
+  prgdata_ptr_t findProgramByName(const std::string named) const;
   keymap_constptr_t findKeymap(int kmID) const;
 
   //

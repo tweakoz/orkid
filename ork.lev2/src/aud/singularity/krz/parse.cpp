@@ -1037,8 +1037,8 @@ void BankData::loadJson(const std::string& fname, int ibaseid) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-prgdata_constptr_t BankData::findProgram(int progID) const {
-  prgdata_constptr_t pd = nullptr;
+prgdata_ptr_t BankData::findProgram(int progID) const {
+  prgdata_ptr_t pd = nullptr;
   auto it               = _programs.find(progID);
   if (it == _programs.end()) {
     return _programs.begin()->second;
@@ -1048,8 +1048,8 @@ prgdata_constptr_t BankData::findProgram(int progID) const {
   return pd;
 }
 
-prgdata_constptr_t BankData::findProgramByName(const std::string named) const {
-  prgdata_constptr_t pd = nullptr;
+prgdata_ptr_t BankData::findProgramByName(const std::string named) const {
+  prgdata_ptr_t pd = nullptr;
   auto it               = _programsByName.find(named);
   if (it == _programsByName.end()) {
     return _programsByName.begin()->second;

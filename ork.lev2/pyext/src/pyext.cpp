@@ -11,6 +11,10 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 
+namespace ork::audio::singularity{
+  void pyinit_aud_singularity(py::module& module_lev2);
+}
+
 namespace ork::lev2 {
 
 void pyinit_gfx(py::module& module_lev2);
@@ -36,6 +40,7 @@ void pyinit_editor(py::module& module_lev2);
 
 void ClassInit();
 void GfxInit(const std::string& gfxlayer);
+
 
 extern context_ptr_t gloadercontext;
 
@@ -153,6 +158,7 @@ PYBIND11_MODULE(_lev2, module_lev2) {
   pyinit_gfx_pbr(module_lev2);
   pyinit_vr(module_lev2);
   pyinit_editor(module_lev2);
+  ::ork::audio::singularity::pyinit_aud_singularity(module_lev2);
   //////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////
   auto type_codec = python::TypeCodec::instance();
