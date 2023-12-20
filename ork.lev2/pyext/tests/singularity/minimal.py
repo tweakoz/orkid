@@ -30,7 +30,8 @@ class SingulApp(object):
     self.ezapp.topWidget.enableUiDraw()
     lg_group = self.ezapp.topLayoutGroup
     root_layout = lg_group.layout
-
+    self.time = 0.0
+  
   ##############################################
 
   def onGpuInit(self,ctx):
@@ -87,8 +88,11 @@ class SingulApp(object):
     }
     self.voices = dict()
 
+  def onUpdate(self,updinfo):
+    self.time = updinfo.absolutetime
+
   def onGpuUpdate(self,ctx):
-    pass
+    self.synth.mainThreadHandler()
 
   def onUiEvent(self,uievent):
     if uievent.code == tokens.KEY_DOWN.hashed:
@@ -99,7 +103,11 @@ class SingulApp(object):
          prgname = self.sorted_progs[index_fixed]
          self.prog = self.czbank.programByName(prgname)
          note = self.base_notes[KC] + (self.octave*12)
-         voice = self.synth.keyOn(note,127,self.prog)
+         mods = singularity.KeyOnModifiers()
+         def modulatePan():
+            return math.sin(self.time*6.0)*2
+         mods.STEREOPAN2 = modulatePan
+         voice = self.synth.keyOn(note,127,self.prog,mods)
          self.voices[KC] = voice
       else:
         if KC == ord(","): # prev program

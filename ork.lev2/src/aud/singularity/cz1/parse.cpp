@@ -199,6 +199,9 @@ CZLAYERDATACTX configureCz1Algorithm(lyrdata_ptr_t layerdata, int numosc) {
                                  ? algdout->appendStage("MOD")
                                  : nullptr;
   //////////////////////////////////////////
+  auto stage_stereo = algdout->appendStage("STMIX"); // todo : quadraphonic, 3d?
+  stage_stereo->setNumIos(1, 2); // 1 in, 2 out
+  //////////////////////////////////////////
   lctx._algdata = algdout;
   lctx._stage_dco = stage_dco;
   lctx._stage_amp = stage_amp;
@@ -216,17 +219,28 @@ CZLAYERDATACTX configureCz1Algorithm(lyrdata_ptr_t layerdata, int numosc) {
   /////////////////////////////////////////////////
   // stereo mix out
   /////////////////////////////////////////////////
-  //auto stereoout         = stage_stereo->appendTypedBlock<MonoInStereoOut>("MonoInStereoOut");
-  //auto STEREOC           = layerdata->appendController<ConstantControllerData>("STEREOMIX");
-  //STEREOC->_constvalue   = 1.0f;
-  //auto stereo_mod        = stereoout->_paramd[0]->_mods;
-  //stereo_mod->_src1      = STEREOC;
-  //stereo_mod->_src1Depth = 1.0f;
-  //STEREOC->_onkeyon      = [](CustomControllerInst* cci, //
-  //                     const KeyOnInfo& KOI) {    //
-  //cci->_curval = 1.0f;                            // amplitude to unity
-  //};
-  //stereoout->addDspChannel(0);
+  auto stereoout         = stage_stereo->appendTypedBlock<MonoInStereoOut>("MonoInStereoOut");
+
+  auto GAONCONST         = layerdata->appendController<ConstantControllerData>("STEREO-GAIN");
+  auto gain_modulator    = stereoout->_paramd[0]->_mods;
+  auto PANCONST          = layerdata->appendController<ConstantControllerData>("STEREO-PAN");
+  auto PANCUSTOM         = layerdata->appendController<CustomControllerData>("STEREOPAN2");
+  auto pan_modulator     = stereoout->_paramd[1]->_mods;
+
+  GAONCONST->_constvalue   = 1.0f;
+  gain_modulator->_src1  = GAONCONST;
+  gain_modulator->_src1Depth = 1.0f;
+
+  PANCONST->_constvalue   = 0.0f;
+  PANCUSTOM->_oncompute   = [](CustomControllerInst* cci) { //
+    cci->_curval = 0.0f;
+  };
+  pan_modulator->_src1  = PANCONST;
+  pan_modulator->_src1Depth = 1.0f;
+  pan_modulator->_src2  = PANCUSTOM;
+  pan_modulator->_src2MinDepth = 1.0f;
+  pan_modulator->_src2MaxDepth = 1.0f;
+
   //////////////////////////////////////////
   return lctx;
 }

@@ -103,6 +103,7 @@ struct KrzTestData;
 struct KrzKmTestData;
 struct CzProgData;
 struct OutputBus;
+struct KeyOnModifiers;
 ///////////////////////////////////////////////////////////////////////////////
 // scope / signal analyzer
 ///////////////////////////////////////////////////////////////////////////////
@@ -158,6 +159,7 @@ using scopesource_ptr_t           = std::shared_ptr<ScopeSource>;
 using scopesink_ptr_t             = std::shared_ptr<ScopeSink>;
 using signalscope_ptr_t           = std::shared_ptr<SignalScope>;
 using fxpresetmap_t               = std::map<std::string, lyrdata_ptr_t>;
+using keyonmod_ptr_t = std::shared_ptr<KeyOnModifiers>;
 
 using dspparam_ptr_t         = std::shared_ptr<DspParamData>;
 using dspparam_constptr_t    = std::shared_ptr<const DspParamData>;

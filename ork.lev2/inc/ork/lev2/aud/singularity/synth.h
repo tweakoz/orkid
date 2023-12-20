@@ -24,11 +24,11 @@ struct programInst {
   programInst();
   ~programInst();
 
-  void keyOn(int note, int velocity, prgdata_constptr_t pd);
+  void keyOn(int note, int velocity, prgdata_constptr_t pd, keyonmod_ptr_t kmod = nullptr);
   void keyOff();
 
   prgdata_constptr_t _progdata;
-
+  keyonmod_ptr_t _keymods;
   std::vector<layer_ptr_t> _layers;
 };
 
@@ -84,10 +84,21 @@ struct OutputBus {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+struct KeyOnModifiers{
+  using float_fn_t = std::function<float()>;
+  struct DATA{
+    float_fn_t _fn;
+    float _currentValue = 0.0f;
+  };
+  using data_ptr_t = std::shared_ptr<DATA>;
+  using map_t = std::unordered_map<std::string,data_ptr_t>;
+  map_t _mods;
+  bool _dangling = false;
+};
+
 struct synth {
   synth();
   ~synth();
-
 
 
   using eventmap_t = std::multimap<float, void_lambda_t>;
@@ -109,14 +120,15 @@ struct synth {
 
   void compute(int inumframes, const void* inputbuffer);
 
-  programInst* keyOn(int note, int velocity, prgdata_constptr_t pd);
+  programInst* keyOn(int note, int velocity, prgdata_constptr_t pd, keyonmod_ptr_t kmod = nullptr);
   void keyOff(programInst* p);
 
   void _keyOnLayer(layer_ptr_t l, int note, int velocity, lyrdata_ptr_t ld);
   void _keyOffLayer(layer_ptr_t l);
+  void _cleanupKeyOnModifiers();
 
 
-  programInst* liveKeyOn(int note, int velocity, prgdata_constptr_t pd);
+  programInst* liveKeyOn(int note, int velocity, prgdata_constptr_t pd, keyonmod_ptr_t kmod = nullptr);
   void liveKeyOff(programInst* p);
 
   layer_ptr_t allocLayer();
@@ -131,14 +143,14 @@ struct synth {
   float _timeaccum;
 
   void nextEffect(); // temporary
-
+  void mainThreadHandler();
+  
   fxpresetmap_t _fxpresets;
   fxpresetmap_t::iterator _fxcurpreset;
 
   std::map<std::string, outbus_ptr_t> _outputBusses;
   std::vector<onkey_t> _onkey_subscribers;
   onprofframe_t _onprofilerframe = nullptr;
-
   outbus_ptr_t _tempbus;
 
   outputBuffer _ibuf;
@@ -146,6 +158,7 @@ struct synth {
   float _sampleRate;
   float _dt;
 
+  using keyonmodvect_t = std::vector<keyonmod_ptr_t>;
   using proginstset_t = std::set<programInst*>;
 
   std::set<layer_ptr_t> _allVoices;
@@ -158,7 +171,7 @@ struct synth {
   LockedResource<proginstset_t> _freeProgInst;
   LockedResource<proginstset_t> _activeProgInst;
   std::map<std::string, hudsamples_t> _hudsample_map;
-
+  LockedResource<keyonmodvect_t> _CCIVALS;
   LockedResource<eventmap_t> _eventmap;
 
   void resize(int numframes);

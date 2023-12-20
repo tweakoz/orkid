@@ -43,6 +43,20 @@ void ControlBlockInst::keyOn(const KeyOnInfo& KOI, controlblockdata_constptr_t C
       l->_controld2iMap[data]     = _cinst[i];
       l->_controlMap[data->_name] = _cinst[i];
       _cinst[i]->keyOn(KOI);
+      if(l->_keymods){
+        auto it = l->_keymods->_mods.find(data->_name);
+        if(it!=l->_keymods->_mods.end()){
+          auto kmdata = it->second;
+
+          auto as_cci = dynamic_cast<CustomControllerInst*>(_cinst[i]);
+          OrkAssert(as_cci);
+          as_cci->_oncompute = [kmdata](CustomControllerInst* cci) {
+            cci->_curval = cci->_curval*0.99+0.01*kmdata->_currentValue;
+            //printf("cci->_curval<%g>\n", cci->_curval);
+          };
+        }
+      }
+
     }
   }
 }
@@ -86,18 +100,21 @@ ControllerInst* CustomControllerData::instantiate(layer_ptr_t layer) const {
 CustomControllerInst::CustomControllerInst(const CustomControllerData* data, layer_ptr_t layer)
     : ControllerInst(layer)
     , _data(data) {
+    _oncompute = data->_oncompute;
+    _onkeyon   = data->_onkeyon;
+    _onkeyoff  = data->_onkeyoff;
 }
 ///////////////////////////////////////////////////////////////////////////////
 void CustomControllerInst::compute() {
-  _data->_oncompute(this);
+  _oncompute(this);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void CustomControllerInst::keyOn(const KeyOnInfo& KOI) {
-  _data->_onkeyon(this, KOI);
+  _onkeyon(this, KOI);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void CustomControllerInst::keyOff() {
-  _data->_onkeyoff(this);
+  _onkeyoff(this);
 }
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////

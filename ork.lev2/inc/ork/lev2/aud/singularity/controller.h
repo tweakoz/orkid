@@ -152,6 +152,9 @@ struct CustomControllerInst final : public ControllerInst {
   void keyOn(const KeyOnInfo& KOI) override;
   void keyOff() override;
   const CustomControllerData* _data = nullptr;
+  customcontroller_computemethod_t _oncompute;
+  customcontroller_keyonmethod_t _onkeyon;
+  customcontroller_keyoffmethod_t _onkeyoff;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -40,6 +40,9 @@ void pyinit_aud_singularity(py::module& module_lev2) {
                                 printf("the_synth<%p>\n", (void*)the_synth.get());
                                 return the_synth;
                               })
+                          .def("mainThreadHandler", [](synth_ptr_t synth) { //
+                              synth->mainThreadHandler();
+                          })
                           .def(
                               "nextEffect", //
                               [](synth_ptr_t synth) { synth->nextEffect(); })
@@ -50,15 +53,15 @@ void pyinit_aud_singularity(py::module& module_lev2) {
                               "createOutputBus", //
                               [](synth_ptr_t synth, std::string named) -> outbus_ptr_t { return synth->createOutputBus(named); })
                           .def(
-                              "keyOn", //
-                              [](synth_ptr_t synth, int note, int vel, prgdata_ptr_t prg) -> prginst_rawptr_t { //
-                                return synth->liveKeyOn(note,vel,prg); 
-                            })
+                              "keyOn",                                                                          //
+                              [](synth_ptr_t synth, int note, int vel, prgdata_ptr_t prg, keyonmod_ptr_t kmods=nullptr ) -> prginst_rawptr_t { //
+                                return synth->liveKeyOn(note, vel, prg, kmods);
+                              })
                           .def(
-                              "keyOff", //
+                              "keyOff",                                      //
                               [](synth_ptr_t synth, prginst_rawptr_t prgi) { //
-                                synth->liveKeyOff(prgi.get()); 
-                            })
+                                synth->liveKeyOff(prgi.get());
+                              })
                           .def_property(
                               "masterGain", //
                               [](synth_ptr_t synth) -> float { return synth->_masterGain; },
@@ -66,7 +69,16 @@ void pyinit_aud_singularity(py::module& module_lev2) {
   type_codec->registerStdCodec<synth_ptr_t>(synth_type_t);
   /////////////////////////////////////////////////////////////////////////////////
   auto prgi_type = py::class_<prginst_rawptr_t>(singmodule, "ProgramInst");
-  type_codec->registerRawPtrCodec<prginst_rawptr_t,programInst*>(prgi_type);
+                       /*.def_property_readonly(
+                           "layers",                                         //
+                           [type_codec](prginst_rawptr_t prgi) -> py::list { //
+                             py::list layers;
+                             for (auto item : prgi->_layers) {
+                               layers.append(type_codec->encode(item));
+                             }
+                             return layers;
+                           });*/
+  type_codec->registerRawPtrCodec<prginst_rawptr_t, programInst*>(prgi_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto obus_type = py::class_<OutputBus, outbus_ptr_t>(singmodule, "OutputBus") //
                        .def_property_readonly(
@@ -106,15 +118,15 @@ void pyinit_aud_singularity(py::module& module_lev2) {
                                  return rval;
                                })
                            .def(
-                               "programByName",                                  //
-                               [](bankdata_ptr_t bdata,std::string named) -> prgdata_ptr_t { //
-                                auto program = bdata->findProgramByName(named);
+                               "programByName",                                               //
+                               [](bankdata_ptr_t bdata, std::string named) -> prgdata_ptr_t { //
+                                 auto program = bdata->findProgramByName(named);
                                  return program;
                                })
                            .def(
-                               "programByID",                                  //
-                               [](bankdata_ptr_t bdata,int id) -> prgdata_ptr_t { //
-                                auto program = bdata->findProgram(id);
+                               "programByID",                                      //
+                               [](bankdata_ptr_t bdata, int id) -> prgdata_ptr_t { //
+                                 auto program = bdata->findProgram(id);
                                  return program;
                                });
   type_codec->registerStdCodec<bankdata_ptr_t>(bankdata_type);
@@ -135,6 +147,93 @@ void pyinit_aud_singularity(py::module& module_lev2) {
                            czdata->appendBank(bankpath, bankname);
                          });
   type_codec->registerStdCodec<czsyndata_ptr_t>(czdata_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  struct KeyModIterator {
+
+    using map_t            = typename KeyOnModifiers::map_t;
+    using map_const_iter_t = map_t::const_iterator;
+
+    KeyModIterator(keyonmod_ptr_t kmod)
+        : _kmod(kmod) {
+    }
+
+    std::string operator*() const {
+      return _it->first;
+    }
+
+    KeyModIterator operator++() {
+      ++_it;
+      return *this;
+    }
+
+    bool operator==(const KeyModIterator& other) const {
+      return _kmod == other._kmod;
+    }
+
+    static KeyModIterator _begin(keyonmod_ptr_t kmod) {
+      auto it = KeyModIterator(kmod);
+      it._it  = kmod->_mods.begin();
+      return it;
+    }
+
+    static KeyModIterator _end(keyonmod_ptr_t kmod) {
+      auto it = KeyModIterator(kmod);
+      it._it  = kmod->_mods.end();
+      return it;
+    }
+
+    keyonmod_ptr_t _kmod;
+    map_const_iter_t _it;
+  };
+    auto konmod_type = py::class_<KeyOnModifiers, keyonmod_ptr_t>(singmodule, "KeyOnModifiers")
+    .def(py::init<>())
+          .def(
+              "__setattr__",                                                                    //
+              [type_codec](keyonmod_ptr_t kmod, const std::string& key, py::object obj) { //
+                auto data = std::make_shared<KeyOnModifiers::DATA>();
+                data->_fn = [=]()-> float{
+                  py::gil_scoped_acquire acquire;
+                  return obj().cast<float>();
+                };
+                kmod->_mods[key] = data;
+              })
+          .def("__len__", [](keyonmod_ptr_t kmod) -> size_t { return kmod->_mods.size(); })
+          .def(
+              "__iter__",
+              [](keyonmod_ptr_t kmod) { //
+                OrkAssert(false);
+                return py::make_iterator( //
+                  KeyModIterator::_begin(kmod), //
+                  KeyModIterator::_end(kmod));
+              },
+              py::keep_alive<0, 1>())
+          .def("__contains__", [](keyonmod_ptr_t kmod, std::string key) { //
+            return kmod->_mods.contains(key);
+          })
+          .def("__getitem__", [type_codec](keyonmod_ptr_t kmod, std::string key) -> py::object { //
+            auto it = kmod->_mods.find(key);
+            if( it == kmod->_mods.end() )
+              throw py::key_error("key not found");
+            else {
+              auto varmap_val = it->second;
+              auto python_val = type_codec->encode(varmap_val);
+              return python_val;
+              }
+          })
+          .def("keys", [](keyonmod_ptr_t kmod) -> py::list {
+            py::list rval;
+            for( auto item : kmod->_mods ){
+              rval.append(item.first);
+            }
+            return rval;           
+          })
+          .def("__repr__", [](keyonmod_ptr_t kmod) -> std::string {
+            std::string rval;
+            size_t numkeys = kmod->_mods.size();
+            rval = FormatString("KeyOnModifiers(nkeys:%zu)", numkeys );
+            return rval;           
+          });
+  type_codec->registerStdCodec<keyonmod_ptr_t>(konmod_type);
   /////////////////////////////////////////////////////////////////////////////////
 }
 

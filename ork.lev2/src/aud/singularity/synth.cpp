@@ -237,7 +237,9 @@ void synth::deactivateVoices() {
     // printf("syn freeLayer<%p> curnumvoices<%d>\n", l, inumv);
 
     l->endCompute();
-
+    if(l->_keymods!=nullptr){
+      l->_keymods->_dangling = true;
+    }
     it = _freeVoices.find(l);
     assert(it == _freeVoices.end());
     _freeVoices.insert(l);
@@ -278,7 +280,7 @@ void synth::prevProgram() {
 }
 ///////////////////////////////////////////////////////////////////////////////
 static int GNOTE = 0;
-programInst* synth::liveKeyOn(int note, int velocity, prgdata_constptr_t pdata) {
+programInst* synth::liveKeyOn(int note, int velocity, prgdata_constptr_t pdata, keyonmod_ptr_t kmods) {
   GNOTE = note;
   if (not pdata)
     return nullptr;
@@ -291,14 +293,18 @@ programInst* synth::liveKeyOn(int note, int velocity, prgdata_constptr_t pdata) 
   });
   pi->_progdata = pdata;
 
-  addEvent(0.0f, [note, velocity, pdata, this, pi]() {
+  addEvent(0.0f, [note, velocity, pdata, this, pi, kmods]() {
     logchan_synth->log("liveKeyOn note<%d>", note);
 
     int clampn = std::clamp(note, 0, 127);
     int clampv = std::clamp(velocity, 0, 127);
 
-    pi->keyOn(clampn, clampv, pdata);
-
+    pi->keyOn(clampn, clampv, pdata, kmods);
+    if(kmods){
+      _CCIVALS.atomicOp([kmods](keyonmodvect_t& unlocked){
+        unlocked.push_back(kmods);
+      });
+    }
     _activeProgInst.atomicOp([pi](proginstset_t& piset) { //
       piset.insert(pi);
     });
@@ -329,7 +335,49 @@ void synth::liveKeyOff(programInst* pinst) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 
-programInst* synth::keyOn(int note, int velocity, prgdata_constptr_t pdata) {
+template <typename T>
+void _remove_items(std::vector<T>& vec, const std::vector<size_t>& indices_to_remove) {
+    std::vector<T> temp;
+    temp.reserve(vec.size() - indices_to_remove.size());
+    size_t curr_index = 0;
+    for (size_t i = 0; i < vec.size(); ++i) {
+        if (curr_index < indices_to_remove.size() && indices_to_remove[curr_index] == i) {
+            ++curr_index;  // Skip this element
+        } else {
+            temp.push_back(vec[i]);  // Keep this element
+        }
+    }
+
+    vec.swap(temp);  // Replace the original vector with the temporary one
+}
+
+void synth::mainThreadHandler(){
+  std::vector<keyonmod_ptr_t> exec_list;
+  std::vector<size_t> rem_list;
+  _CCIVALS.atomicOp([&](keyonmodvect_t& unlocked){
+    size_t index = 0;
+    for( auto kmod : unlocked ){
+      if( kmod->_dangling){
+        rem_list.push_back( index );
+      }
+      else{
+        exec_list.push_back(kmod);
+      }
+      index++;
+    }
+  });
+  _CCIVALS.atomicOp([&](keyonmodvect_t& unlocked){
+    _remove_items(unlocked, rem_list);
+  });
+  for( auto kmod : exec_list ){
+    for( auto item : kmod->_mods ){
+      auto kmdata = item.second;
+      kmdata->_currentValue = kmdata->_fn();
+    }
+  }
+}
+  
+programInst* synth::keyOn(int note, int velocity, prgdata_constptr_t pdata, keyonmod_ptr_t kmods) {
   assert(pdata);
   programInst* pi = nullptr;
 
@@ -345,7 +393,7 @@ programInst* synth::keyOn(int note, int velocity, prgdata_constptr_t pdata) {
   int clampn = std::clamp(note, 0, 127);
   int clampv = std::clamp(velocity, 0, 127);
 
-  pi->keyOn(clampn, clampv, pdata);
+  pi->keyOn(clampn, clampv, pdata, kmods);
 
   _activeProgInst.atomicOp([pi](proginstset_t& piset) { //
     piset.insert(pi);
@@ -673,7 +721,8 @@ void synth::_keyOffLayer(layer_ptr_t l) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void programInst::keyOn(int note, int velocity, prgdata_constptr_t pd) {
+void programInst::keyOn(int note, int velocity, prgdata_constptr_t pd, keyonmod_ptr_t kmod ) {
+  _keymods = kmod;
   int ilayer = 0;
 
   auto syn = synth::instance();
@@ -699,6 +748,7 @@ void programInst::keyOn(int note, int velocity, prgdata_constptr_t pd) {
 
     auto l      = syn->allocLayer();
     l->_ldindex = ilayer - 1;
+    l->_keymods = _keymods;
 
     assert(l != nullptr);
 

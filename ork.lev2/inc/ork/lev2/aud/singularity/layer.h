@@ -129,7 +129,8 @@ struct Layer {
   outbus_ptr_t _outbus;
   KeyOnInfo _koi;
   scopesource_ptr_t _scopesource;
-
+  keyonmod_ptr_t _keymods;
+  
   ctrlblockinst_ptr_t _ctrlBlock = nullptr;
 
   std::map<std::string, ControllerInst*> _controlMap;
