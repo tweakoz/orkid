@@ -104,8 +104,10 @@ class SingulApp(object):
          self.prog = self.czbank.programByName(prgname)
          note = self.base_notes[KC] + (self.octave*12)
          mods = singularity.KeyOnModifiers()
+         timebase = self.time
+         modrate = math.sin(self.time)*5
          def modulatePan():
-            return math.sin(self.time*6.0)*2
+            return math.sin((self.time-timebase)*modrate)*2
          mods.STEREOPAN2 = modulatePan
          voice = self.synth.keyOn(note,127,self.prog,mods)
          self.voices[KC] = voice
