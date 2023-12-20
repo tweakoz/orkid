@@ -324,6 +324,7 @@ void SpectraSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void SpectraSurf::_doGpuInit(lev2::Context* pt) {
+  Surface::_doGpuInit(pt);
 }
 ///////////////////////////////////////////////////////////////////////////////
 ui::HandlerResult SpectraSurf::DoOnUiEvent(ui::event_constptr_t EV) {

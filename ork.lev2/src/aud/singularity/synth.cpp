@@ -128,8 +128,6 @@ synth::synth()
     _allProgInsts.insert(pi);
   }
 
-  _hudvp = std::make_shared<HudLayoutGroup>();
-
   resize(1);
 
   _lock_compute = false;

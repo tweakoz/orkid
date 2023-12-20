@@ -110,6 +110,7 @@ void ProgramView::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void ProgramView::_doGpuInit(lev2::Context* pt) {
+  Surface::_doGpuInit(pt);
   _pickbuffer = new lev2::PickBuffer(this, pt, width(), height());
   _ctxbase    = pt->GetCtxBase();
 }
