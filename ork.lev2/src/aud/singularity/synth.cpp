@@ -243,6 +243,11 @@ void synth::deactivateVoices() {
     it = _freeVoices.find(l);
     assert(it == _freeVoices.end());
     _freeVoices.insert(l);
+    if(l->_alg){
+      l->_alg->_algdata.returnAlgInst(l->_alg);
+      l->_alg = nullptr;
+    }
+
 
     done = (_deactiveateVoiceQ.size() == 0);
   }

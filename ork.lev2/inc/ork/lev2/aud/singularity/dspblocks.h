@@ -183,6 +183,16 @@ struct DspStage final {
 };
 
 ///////////////////////////////////////////////////////////////////////////////
+// TODO - reuse DspStages
+///////////////////////////////////////////////////////////////////////////////
+
+struct AlgStageBlock{
+  dspstage_ptr_t _stages[kmaxdspstagesperlayer];
+};
+
+using algstacgeblock_ptr_t = std::shared_ptr<AlgStageBlock>();
+
+///////////////////////////////////////////////////////////////////////////////
 
 struct AlgData final : public ork::Object {
 
@@ -193,24 +203,18 @@ struct AlgData final : public ork::Object {
   dspstagedata_ptr_t stageByName(const std::string& named);
   dspstagedata_ptr_t stageByIndex(int index);
   alg_ptr_t createAlgInst() const;
+  void returnAlgInst(alg_ptr_t alg) const;
 
   int _numstages = 0;
   std::string _name;
   dspstagedata_ptr_t _stages[kmaxdspstagesperlayer];
   std::map<std::string, dspstagedata_ptr_t> _stageByName;
+
+  mutable std::vector<alg_ptr_t> _voicecache;
 };
 
 algdata_ptr_t configureKrzAlgorithm(int algid);
 
-///////////////////////////////////////////////////////////////////////////////
-// TODO - reuse DspStages
-///////////////////////////////////////////////////////////////////////////////
-
-struct AlgStageBlock{
-  dspstage_ptr_t _stages[kmaxdspstagesperlayer];
-};
-
-using algstacgeblock_ptr_t = std::shared_ptr<AlgStageBlock>();
 
 ///////////////////////////////////////////////////////////////////////////////
 

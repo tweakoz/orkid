@@ -42,8 +42,18 @@ bool AlgData::postDeserialize(reflect::serdes::IDeserializer&, object_ptr_t shar
 ///////////////////////////////////////////////////////////////////////////////
 
 alg_ptr_t AlgData::createAlgInst() const {
-  auto alg = std::make_shared<Alg>(*this);
-  return alg;
+  alg_ptr_t rval = nullptr;
+  if(_voicecache.empty()){
+    rval = std::make_shared<Alg>(*this);
+  }
+  else{
+    rval = _voicecache.back();
+    _voicecache.pop_back();
+  }
+  return rval;
+}
+void AlgData::returnAlgInst(alg_ptr_t alg) const{
+  _voicecache.push_back(alg);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

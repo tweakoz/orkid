@@ -39,7 +39,7 @@ class SingulApp(object):
     self.audiodevice = singularity.device.instance()
     self.synth = singularity.synth.instance()
     self.mainbus = self.synth.outputBus("main")
-    for i in range(11):
+    for i in range(6):
       self.synth.nextEffect()
     self.syn_data_base = singularity.baseDataPath()/"casioCZ"
     self.synth.masterGain = singularity.decibelsToLinear(0.0)
