@@ -22,24 +22,24 @@
 
 ImplementReflectionX(ork::audio::singularity::DspBlockData, "SynDspBlock");
 ImplementReflectionX(ork::audio::singularity::DspStageData, "SynDspStage");
-ImplementReflectionX(ork::audio::singularity::IoMask, "SynIoMask");
+ImplementReflectionX(ork::audio::singularity::IoConfig, "SynIoConfig");
 
 namespace ork::audio::singularity {
 
 //////////////////////////////////////////////////////////////////////////////
 
-void IoMask::describeX(class_t* clazz) {
-  clazz->directVectorProperty("Inputs", &IoMask::_inputs);
-  clazz->directVectorProperty("Outputs", &IoMask::_outputs);
+void IoConfig::describeX(class_t* clazz) {
+  clazz->directVectorProperty("Inputs", &IoConfig::_inputs);
+  clazz->directVectorProperty("Outputs", &IoConfig::_outputs);
 }
 //////////////////////////////////////////////////////////////////////////////
-IoMask::IoMask() {
+IoConfig::IoConfig() {
 }
 //////////////////////////////////////////////////////////////////////////////
-size_t IoMask::numInputs() const {
+size_t IoConfig::numInputs() const {
   return _inputs.size();
 }
-size_t IoMask::numOutputs() const {
+size_t IoConfig::numOutputs() const {
   return _outputs.size();
 }
 //////////////////////////////////////////////////////////////////////////////
@@ -127,7 +127,7 @@ float* DspBuffer::channel(int ich) {
 void DspStageData::describeX(class_t* clazz) {
   clazz->directProperty("Name", &DspStageData::_name);
   clazz->directProperty("StageIndex", &DspStageData::_stageIndex);
-  clazz->directObjectProperty("IoMask", &DspStageData::_iomask);
+  clazz->directObjectProperty("IoConfig", &DspStageData::_ioconfig);
   clazz->directObjectMapProperty("DspBlocks", &DspStageData::_namedblockdatas);
 }
 
@@ -146,7 +146,7 @@ bool DspStageData::postDeserialize(reflect::serdes::IDeserializer&, object_ptr_t
 ///////////////////////////////////////////////////////////////////////////////
 
 DspStageData::DspStageData() {
-  _iomask = std::make_shared<IoMask>();
+  _ioconfig = std::make_shared<IoConfig>();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -162,9 +162,9 @@ dspblkdata_ptr_t DspStageData::appendBlock() {
 
 void DspStageData::setNumIos(int numinp, int numout) {
   for (int i = 0; i < numinp; i++)
-    _iomask->_inputs.push_back(i);
+    _ioconfig->_inputs.push_back(i);
   for (int i = 0; i < numout; i++)
-    _iomask->_outputs.push_back(i);
+    _ioconfig->_outputs.push_back(i);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -207,7 +207,7 @@ void DspBlock::keyOn(const KeyOnInfo& koi) {
 
 const float* DspBlock::getInpBuf(DspBuffer& dspbuf, int index) {
   int chan   = _dspchannel[index];
-  int inpidx = _iomask->_inputs[chan];
+  int inpidx = _ioconfig->_inputs[chan];
   return dspbuf.channel(inpidx);
 }
 
@@ -215,20 +215,20 @@ const float* DspBlock::getInpBuf(DspBuffer& dspbuf, int index) {
 
 float* DspBlock::getOutBuf(DspBuffer& dspbuf, int index) {
   int chan   = _dspchannel[index];
-  int outidx = _iomask->_outputs[chan];
+  int outidx = _ioconfig->_outputs[chan];
   return dspbuf.channel(outidx);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 int DspBlock::numOutputs() const {
-  return _iomask->numOutputs();
+  return _ioconfig->numOutputs();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 int DspBlock::numInputs() const {
-  return _iomask->numInputs();
+  return _ioconfig->numInputs();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

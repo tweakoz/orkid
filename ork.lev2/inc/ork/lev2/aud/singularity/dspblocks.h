@@ -35,13 +35,13 @@ private:
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-// IoMask:
+// IoConfig:
 //   specifies inputs and output configuration of a zpm module
 ////////////////////////////////////////////////////////////////////////////////
 
-struct IoMask final : public ork::Object {
-  DeclareConcreteX(IoMask, ork::Object);
-  IoMask();
+struct IoConfig final : public ork::Object {
+  DeclareConcreteX(IoConfig, ork::Object);
+  IoConfig();
   size_t numInputs() const;
   size_t numOutputs() const;
   std::vector<int> _inputs;
@@ -139,7 +139,7 @@ struct DspBlock {
   int _dspchannel[kmaxdspblocksperstage];
   float _fval[kmaxparmperblock];
   DspParam _param[kmaxparmperblock];
-  iomask_constptr_t _iomask;
+  ioconfig_constptr_t _ioconfig;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -173,7 +173,7 @@ struct DspStageData final : public ork::Object {
   int _stageIndex = -1;
   dspblkdata_ptr_t _blockdatas[kmaxdspblocksperstage];
   std::map<std::string, dspblkdata_ptr_t> _namedblockdatas;
-  iomask_ptr_t _iomask;
+  ioconfig_ptr_t _ioconfig;
   int _numblocks = 0;
 };
 struct DspStage final {
@@ -203,6 +203,16 @@ struct AlgData final : public ork::Object {
 algdata_ptr_t configureKrzAlgorithm(int algid);
 
 ///////////////////////////////////////////////////////////////////////////////
+// TODO - reuse DspStages
+///////////////////////////////////////////////////////////////////////////////
+
+struct AlgStageBlock{
+  dspstage_ptr_t _stages[kmaxdspstagesperlayer];
+};
+
+using algstacgeblock_ptr_t = std::shared_ptr<AlgStageBlock>();
+
+///////////////////////////////////////////////////////////////////////////////
 
 struct Alg final {
   Alg(const AlgData& algd);
@@ -222,7 +232,7 @@ struct Alg final {
   virtual void doKeyOn(KeyOnInfo& koi);
   dspblk_ptr_t lastBlock() const;
 
-  dspstage_ptr_t _stages[kmaxdspstagesperlayer];
+  AlgStageBlock _stageblock;
 
   const AlgData& _algdata;
 

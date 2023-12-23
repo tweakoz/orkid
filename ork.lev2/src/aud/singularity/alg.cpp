@@ -106,19 +106,19 @@ dspblk_ptr_t Alg::lastBlock() const {
 void Alg::keyOn(KeyOnInfo& koi) {
   auto l = koi._layer;
   assert(l != nullptr);
-
-  const auto ld = l->_layerdata;
+  //const auto ld = l->_layerdata;
 
   ///////////////////////////////////////////////////
   // instantiate dspblock grid
   ///////////////////////////////////////////////////
 
+  auto& out_stages = _stageblock._stages;
   int numstages = 0;
   for (int istage = 0; istage < kmaxdspstagesperlayer; istage++) {
     auto stagedata = _algdata._stages[istage];
     if (stagedata) {
       auto stage      = std::make_shared<DspStage>();
-      _stages[istage] = stage;
+      out_stages[istage] = stage;
       numstages++;
       for (int iblock = 0; iblock < kmaxdspblocksperstage; iblock++) {
         auto blockdata = stagedata->_blockdatas[iblock];
@@ -126,18 +126,18 @@ void Alg::keyOn(KeyOnInfo& koi) {
           auto block             = createDspBlock(blockdata.get());
           stage->_blocks[iblock] = block;
           block->_verticalIndex  = iblock;
-          block->_iomask         = stagedata->_iomask;
+          block->_ioconfig         = stagedata->_ioconfig;
         }
       }
     } else
-      _stages[istage] = nullptr;
+      out_stages[istage] = nullptr;
   }
   // printf("ALG<%p> numstages<%d>\n", this, numstages);
   ///////////////////////////////////////////////////
 
   // if (i == 0) // pitch block ?
   //{
-  //_block[i]->_iomask._outputMask = 3;
+  //_block[i]->_ioconfig._outputMask = 3;
   //}
   //} else
   //_block[i] = nullptr;
@@ -148,8 +148,9 @@ void Alg::keyOn(KeyOnInfo& koi) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void Alg::forEachStage(stagefn_t fn) {
+  auto& out_stages = _stageblock._stages;
   for (int istage = 0; istage < kmaxdspstagesperlayer; istage++) {
-    auto stage = _stages[istage];
+    auto stage = out_stages[istage];
     if (stage) {
       fn(stage);
     }

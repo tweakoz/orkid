@@ -267,7 +267,7 @@ struct ClassToucher {
     RegisterClassX(audio::singularity::ConstantControllerData);
     RegisterClassX(audio::singularity::CustomControllerData);
 
-    RegisterClassX(audio::singularity::IoMask);
+    RegisterClassX(audio::singularity::IoConfig);
     RegisterClassX(audio::singularity::DspBlockData);
     RegisterClassX(audio::singularity::PMXData);
     RegisterClassX(audio::singularity::PMXMixData);
