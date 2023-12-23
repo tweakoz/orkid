@@ -216,8 +216,8 @@ lyrdata_ptr_t fxpreset_pitchwave() {
   pmod->_src1Depth     = 1.0;
   PITCHMOD->_oncompute = [](CustomControllerInst* cci) { //
     float time   = cci->_layer->_layerTime;
-    cci->_curval = (1.0f + sinf(time * pi2 * 0.03f)) * 2400.0f;
-    return cci->_curval;
+    cci->_value.x = (1.0f + sinf(time * pi2 * 0.03f)) * 2400.0f;
+    return cci->_value.x;
   };
   /////////////////
   return fxlayer;

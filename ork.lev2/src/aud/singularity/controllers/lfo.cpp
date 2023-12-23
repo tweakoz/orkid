@@ -155,7 +155,7 @@ void LfoInst::keyOff() // final
 void LfoInst::compute() // final
 {
   if (nullptr == _data) {
-    _curval = 0.0f;
+    _value.x = 0.0f;
   } else {
     float SR = getSampleRate();
     float dt = float(_layer->_dspwritecount) / SR;
@@ -165,7 +165,7 @@ void LfoInst::compute() // final
     // printf( "lforate<%f>\n", rate );
     _phaseInc = dt * _currate;
     _phase += _phaseInc;
-    _curval = _mapper(_phase);
+    _value.x = _mapper(_phase);
   }
 }
 

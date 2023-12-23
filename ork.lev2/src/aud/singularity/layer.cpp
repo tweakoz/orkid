@@ -322,7 +322,7 @@ controller_t Layer::getController(controllerdata_constptr_t cdat) const {
   auto it = _controld2iMap.find(cdat);
   if (it != _controld2iMap.end()) {
     auto cinst = it->second;
-    return [cinst]() { return cinst->_curval; };
+    return [cinst]() { return cinst->_value.x; };
   }
   return [this]() { return 0.0f; };
 }
@@ -334,7 +334,7 @@ controller_t Layer::getController(const std::string& srcn) const {
   if (it != _controlMap.end()) {
     auto cinst = it->second;
     // printf("getcon<%s> -> %p\n", srcn.c_str(), cinst);
-    return [cinst]() { return cinst->_curval; };
+    return [cinst]() { return cinst->_value.x; };
   } else if (srcn == "OFF")
     return [this]() { return 0.0f; };
   else if (srcn == "ON")

@@ -233,7 +233,7 @@ CZLAYERDATACTX configureCz1Algorithm(lyrdata_ptr_t layerdata, int numosc) {
 
   PANCONST->_constvalue   = 0.0f;
   PANCUSTOM->_oncompute   = [](CustomControllerInst* cci) { //
-    cci->_curval = 0.0f;
+    cci->_value.x = 0.0f;
   };
   pan_modulator->_src1  = PANCONST;
   pan_modulator->_src1Depth = 1.0f;
@@ -353,8 +353,8 @@ void make_dco(CZLAYERDATACTX czctx,
     DETUNE->_onkeyon         = [czprogdata](
         CustomControllerInst* cci, //
         const KeyOnInfo& KOI) {    //
-      cci->_curval = czprogdata->_detuneCents;
-      // printf("DETUNE<%g>\n", cci->_curval);
+      cci->_value.x = czprogdata->_detuneCents;
+      // printf("DETUNE<%g>\n", cci->_value.x);
     };
   }
 };

@@ -44,7 +44,7 @@ FunInst::FunInst(const FunData* data, layer_ptr_t l)
 
 void FunInst::compute() // final
 {
-  _curval = _op();
+  _value.x = _op();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

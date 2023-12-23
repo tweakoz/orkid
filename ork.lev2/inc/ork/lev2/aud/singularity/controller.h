@@ -8,6 +8,7 @@
 #pragma once
 
 #include "konoff.h"
+#include <ork/math/cvector4.h>
 
 namespace ork::audio::singularity {
 
@@ -50,11 +51,11 @@ struct ControllerInst {
   virtual void keyOn(const KeyOnInfo& KOI) = 0;
   virtual void keyOff()                    = 0;
   virtual void compute()                   = 0;
-  float getval() const {
-    return _curval;
-  }
-
-  float _curval;
+  void setFloatValue(float v);
+  void setVec4Value(fvec4 v);
+  float getFloatValue() const;
+  fvec4 getVec4Value() const;
+  fvec4 _value;
   layer_ptr_t _layer = nullptr;
 };
 

@@ -81,14 +81,14 @@ signalscope_ptr_t create_envelope_analyzer(
             ratelevsurf->_cursegindex                 = ratelev->_segmentIndex;
             ratelevsurf->_envdata                     = ratelev->_data;
             int isample                               = ratelevsurf->_curwritesample++;
-            ratelevsurf->_samples[isample % maxsamps] = ratelev->_curval;
+            ratelevsurf->_samples[isample % maxsamps] = ratelev->_value.x;
             ratelevsurf->_curreadsample               = isample;
             break;
           }
           case 4:
           default: // detach
             int isample                               = ratelevsurf->_curwritesample++;
-            ratelevsurf->_samples[isample % maxsamps] = ratelev->_curval;
+            ratelevsurf->_samples[isample % maxsamps] = ratelev->_value.x;
             ratelevsurf->_curreadsample               = isample;
             ratelevsurf->_envdata                     = nullptr;
             ratelevsurf->_envinst                     = nullptr;
@@ -370,7 +370,7 @@ void RateLevelSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
   drawtext(
       this, //
       context,
-      FormatString("curval: %g", _envinst->_curval),
+      FormatString("curval: %g", _envinst->_value.x),
       miscx,
       (miscy++) * miscspc,
       fontscale,

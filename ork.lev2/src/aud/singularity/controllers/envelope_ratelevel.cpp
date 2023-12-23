@@ -88,7 +88,7 @@ void RateLevelEnvInst::initSeg(int iseg) {
   const auto& base_segment = segs[_segmentIndex];
   auto adjusted_segment    = edata._envadjust(base_segment, iseg, _konoffinfo);
   //////////////////////////////////////////////
-  _startval   = _curval;
+  _startval   = _value.x;
   _rawdestval = base_segment._level;
   _rawtime    = base_segment._time;
   _destval    = adjusted_segment._level;
@@ -129,7 +129,7 @@ void RateLevelEnvInst::compute() // final
     case 0: { // atkdec
       ///////////////////////////////////////////
       _lerpindex += _lerpincr;
-      _curval          = shapedvalue();
+      _value          = shapedvalue();
       bool try_advance = (_lerpindex >= 1.0);
       ///////////////////////////////////////////
       if (try_advance) {
@@ -157,7 +157,7 @@ void RateLevelEnvInst::compute() // final
     case 2: { // release
       ///////////////////////////////////////////
       _lerpindex += _lerpincr;
-      _curval          = shapedvalue();
+      _value          = shapedvalue();
       bool try_advance = (_lerpindex >= 1.0);
       ///////////////////////////////////////////
       if (try_advance) {
@@ -171,7 +171,7 @@ void RateLevelEnvInst::compute() // final
         //  when the value is inaudible
         ///////////////////////////////////////////
         if (_ampenv) {
-          float dbatten = linear_amp_ratio_to_decibel(_curval);
+          float dbatten = linear_amp_ratio_to_decibel(_value.x);
           bool done     = (_segmentIndex >= numsegs) //
                       and (dbatten < -96.0f);
           if (done) //
@@ -187,9 +187,9 @@ void RateLevelEnvInst::compute() // final
       if (_ampenv) {
         // printf("ampenv<%p> RELEASING LAYER<%p>\n", this, _layer);
         synth::instance()->releaseLayer(_layer);
-        _curval = 0.0;
+        _value.x = 0.0;
       } else {
-        _curval = segs.rbegin()->_level;
+        _value.x = segs.rbegin()->_level;
       }
       _data  = nullptr;
       _state = 4;
@@ -206,7 +206,7 @@ void RateLevelEnvInst::compute() // final
   }
   //////////////////////////////////////
   _updatecount++;
-  // printf("env<%p> _state<%d> _curval<%g>\n", this, _state, _curval);
+  // printf("env<%p> _state<%d> _value<%g>\n", this, _state, _value);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -237,7 +237,7 @@ void RateLevelEnvInst::keyOn(const KeyOnInfo& KOI) {
     }
     _clamprange = (_clampmax - _clampmin);
     ///////////////////////
-    _curval = 0.0f;
+    _value.x = 0.0f;
     initSeg(0);
     if (_ampenv)
       _layer->retain();
@@ -246,7 +246,7 @@ void RateLevelEnvInst::keyOn(const KeyOnInfo& KOI) {
   else {
     _startval   = 0.0f;
     _destval    = 0.0f;
-    _curval     = 0.0f;
+    _value.x    = 0.0f;
     _clampmin   = 0.0f;
     _clampmax   = 1.0f;
     _clamprange = 1.0f;

@@ -8,9 +8,24 @@
 #pragma once
 
 #include <ork/lev2/aud/singularity/krztypes.h>
+#include <ork/math/cvector4.h>
 #include "reflection.h"
 
 namespace ork::audio::singularity {
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct KeyOnModifiers{
+  using fvec4_fn_t = std::function<fvec4()>;
+  struct DATA{
+    fvec4_fn_t _fn;
+    fvec4 _currentValue;
+  };
+  using data_ptr_t = std::shared_ptr<DATA>;
+  using map_t = std::unordered_map<std::string,data_ptr_t>;
+  map_t _mods;
+  bool _dangling = false;
+};
 
 ///////////////////////////////////////////////////////////////////////////////
 

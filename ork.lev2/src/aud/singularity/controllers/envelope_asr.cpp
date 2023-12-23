@@ -65,7 +65,7 @@ void AsrInst::initSeg(int iseg) {
       ep._level = 1;
       break;
     case 2: // hold
-      _curval           = 1;
+      _value.x           = 1;
       _curslope_persamp = 0.0f;
       return;
       break;
@@ -78,16 +78,16 @@ void AsrInst::initSeg(int iseg) {
   ep = edata._envadjust(ep, iseg, _konoffinfo);
 
   if (ep._time == 0.0f) {
-    _curval           = ep._level;
+    _value.x           = ep._level;
     _curslope_persamp = 0.0f;
   } else {
-    float deltlev     = (ep._level - _curval);
+    float deltlev     = (ep._level - _value.x);
     float slope       = (deltlev / ep._time);
     _curslope_persamp = slope / getSampleRate();
   }
   _framesrem = ep._time * getSampleRate(); // / 48000.0f;
 
-  // printf( "AsrInst<%p> _data<%p> initSeg<%d> segtime<%f> dstlevl<%f> _curval<%f>\n", this, _data, iseg, segtime, dstlevl, _curval
+  // printf( "AsrInst<%p> _data<%p> initSeg<%d> segtime<%f> dstlevl<%f> _value.x<%f>\n", this, _data, iseg, segtime, dstlevl, _value.x
   // );
 }
 
@@ -96,7 +96,7 @@ void AsrInst::initSeg(int iseg) {
 void AsrInst::compute() // final
 {
   if (nullptr == _data)
-    _curval = 0.5f;
+    _value.x = 0.5f;
 
   const auto& edata = *_data;
   _framesrem--;
@@ -119,9 +119,9 @@ void AsrInst::compute() // final
     }
   }
 
-  _curval += _curslope_persamp;
-  _curval = clip_float(_curval, 0.0f, 1.0f);
-  // printf( "compute ASR<%s> seg<%d> fr<%d> _mode<%d> _curval<%f>\n", _data->_name.c_str(), _curseg, _framesrem, _mode, _curval
+  _value.x += _curslope_persamp;
+  _value.x = clip_float(_value.x, 0.0f, 1.0f);
+  // printf( "compute ASR<%s> seg<%d> fr<%d> _mode<%d> _value.x<%f>\n", _data->_name.c_str(), _curseg, _framesrem, _mode, _value.x
   // );
 }
 
@@ -133,7 +133,7 @@ void AsrInst::keyOn(const KeyOnInfo& KOI) // final
   auto ld        = KOI._layerdata;
   _ignoreRelease = ld->_ignRels;
   assert(_data);
-  _curval   = 0.0f;
+  _value.x   = 0.0f;
   _released = false;
   if (_data->_mode == "Normal")
     _mode = 0;

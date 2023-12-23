@@ -51,8 +51,8 @@ void ControlBlockInst::keyOn(const KeyOnInfo& KOI, controlblockdata_constptr_t C
           auto as_cci = dynamic_cast<CustomControllerInst*>(_cinst[i]);
           OrkAssert(as_cci);
           as_cci->_oncompute = [kmdata](CustomControllerInst* cci) {
-            cci->_curval = cci->_curval*0.99+0.01*kmdata->_currentValue;
-            //printf("cci->_curval<%g>\n", cci->_curval);
+            cci->_value = (cci->_value*0.99)+(kmdata->_currentValue*0.01);
+            //printf("cci->_value.x<%g>\n", cci->_value.x);
           };
         }
       }
@@ -76,8 +76,20 @@ void ControlBlockInst::compute() {
 ///////////////////////////////////////////////////////////////////////////////
 
 ControllerInst::ControllerInst(layer_ptr_t l)
-    : _curval(1.0f)
+    : _value(1,1,1,1)
     , _layer(l) {
+}
+float ControllerInst::getFloatValue() const{
+  return _value.x;
+}
+fvec4 ControllerInst::getVec4Value() const{
+  return _value;
+}
+void ControllerInst::setFloatValue(float v){
+  _value.x = v;
+}
+void ControllerInst::setVec4Value(fvec4 v){
+  _value = v;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -88,7 +100,7 @@ void CustomControllerData::describeX(class_t* clazz) {
 
 CustomControllerData::CustomControllerData() {
   _oncompute = [](CustomControllerInst* cci) {};
-  _onkeyon   = [](CustomControllerInst* cci, const KeyOnInfo& KOI) { cci->_curval = 0.0f; };
+  _onkeyon   = [](CustomControllerInst* cci, const KeyOnInfo& KOI) { cci->_value.x = 0.0f; };
   _onkeyoff  = [](CustomControllerInst* cci) {};
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -129,10 +141,10 @@ ControllerInst* ConstantControllerData::instantiate(layer_ptr_t layer) const {
 }
 ConstantInst::ConstantInst(const ConstantControllerData* data, layer_ptr_t layer)
     : ControllerInst(layer) {
-  _curval = data->_constvalue;
+  _value.x = data->_constvalue;
 }
 void ConstantInst::compute() {
-  // printf("_curval<%g>\n", _curval);
+  // printf("_value.x<%g>\n", _value.x);
 }
 void ConstantInst::keyOn(const KeyOnInfo& KOI) {
 }

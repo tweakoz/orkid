@@ -115,25 +115,25 @@ void YmEnvInst::compute() {
   }
   switch (_data->_egshift) {
     case 0:
-      _curval = _prcout;
+      _value.x = _prcout;
       break;
     case 1: {
       float lo = decibel_to_linear_amp_ratio(-12);
-      _curval  = lo + _prcout*(1.0f-lo);
+      _value.x  = lo + _prcout*(1.0f-lo);
       break;
     }
     case 2: {
       float lo = decibel_to_linear_amp_ratio(-24);
-      _curval  = lo + _prcout*(1.0f-lo);
+      _value.x  = lo + _prcout*(1.0f-lo);
       break;
     }
     case 3: {
       float lo = decibel_to_linear_amp_ratio(-48);
-      _curval  = lo + _prcout*(1.0f-lo);
+      _value.x  = lo + _prcout*(1.0f-lo);
       break;
     }
   }
-  validateSample(_curval);
+  validateSample(_value.x);
 }
 
 static constexpr float attacktimes[32] = {
@@ -230,7 +230,7 @@ void YmEnvInst::keyOn(const KeyOnInfo& KOI) {
   validateSample(_dec2ratefactor);
   validateSample(_data->_rateScale);
   validateSample(_atkinc);
-  validateSample(_curval);*/
+  validateSample(_value.x);*/
 }
 void YmEnvInst::keyOff() {
   _curseg = "RELEASE"_crcu;

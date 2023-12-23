@@ -457,7 +457,7 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
 
           /////////////////////////////////
 
-          cci->_curval = final_amp;
+          cci->_value.x = final_amp;
         };
 
         ////////////////////////////////////////////////////////////////////////

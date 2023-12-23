@@ -84,17 +84,6 @@ struct OutputBus {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct KeyOnModifiers{
-  using float_fn_t = std::function<float()>;
-  struct DATA{
-    float_fn_t _fn;
-    float _currentValue = 0.0f;
-  };
-  using data_ptr_t = std::shared_ptr<DATA>;
-  using map_t = std::unordered_map<std::string,data_ptr_t>;
-  map_t _mods;
-  bool _dangling = false;
-};
 
 struct synth {
   synth();

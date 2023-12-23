@@ -27,13 +27,13 @@ dspblkdata_ptr_t appendStereoChorus(lyrdata_ptr_t layer, dspstagedata_ptr_t stag
   delaytime_modL->_src1Depth = 1.0;
   DELAYTIMEMODL->_oncompute  = [](CustomControllerInst* cci) { //
     float time   = cci->_layer->_layerTime;
-    cci->_curval = 0.010f + sinf(time * pi2 * .1) * 0.001f;
+    cci->setFloatValue( 0.010f + sinf(time * pi2 * .1) * 0.001f);
   };
   delaytime_modR->_src1      = DELAYTIMEMODR;
   delaytime_modR->_src1Depth = 1.0;
   DELAYTIMEMODR->_oncompute  = [](CustomControllerInst* cci) { //
     float time   = cci->_layer->_layerTime;
-    cci->_curval = 0.005f + sinf(time * pi2 * 0.09) * 0.0047f;
+    cci->setFloatValue( 0.005f + sinf(time * pi2 * 0.09) * 0.0047f);
   };
   /////////////////
   return chorus;
@@ -164,7 +164,7 @@ void appendStereoEnhancer(lyrdata_ptr_t layer, dspstagedata_ptr_t stage) {
   width_mod->_src1         = WIDTHCONTROL;
   width_mod->_src1Depth    = 1.0;
   WIDTHCONTROL->_oncompute = [](CustomControllerInst* cci) { //
-    cci->_curval = 0.7f;
+    cci->setFloatValue( 0.7f);
   };
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -204,13 +204,13 @@ void appendPitchChorus(
   pmodR->_src1Depth     = 1.0;
   PITCHMODL->_oncompute = [cents](CustomControllerInst* cci) { //
     float time   = cci->_layer->_layerTime;
-    cci->_curval = sinf(time * pi2 * 0.03f) * cents;
-    return cci->_curval;
+    cci->setFloatValue( sinf(time * pi2 * 0.03f) * cents);
+    return cci->getFloatValue();
   };
   PITCHMODR->_oncompute = [cents](CustomControllerInst* cci) { //
     float time   = cci->_layer->_layerTime;
-    cci->_curval = sinf(time * pi2 * 0.07f) * cents;
-    return cci->_curval;
+    cci->setFloatValue( sinf(time * pi2 * 0.07f) * cents);
+    return cci->getFloatValue();
   };
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -241,8 +241,8 @@ void appendWackiVerb(lyrdata_ptr_t fxlayer, dspstagedata_ptr_t fxstage) {
     float speed           = rg.rangedf(mins, maxs);
     RV0DTMODA->_oncompute = [speed, midt, rang](CustomControllerInst* cci) { //
       float time   = cci->_layer->_layerTime;
-      cci->_curval = midt + sinf(time * pi2 * speed) * rang;
-      return cci->_curval;
+      cci->setFloatValue( midt + sinf(time * pi2 * speed) * rang);
+      return cci->getFloatValue();
     };
     /////////////////
     auto RV0DTMODB        = fxlayer->appendController<CustomControllerData>(basename + "RV0DTB");
@@ -252,8 +252,8 @@ void appendWackiVerb(lyrdata_ptr_t fxlayer, dspstagedata_ptr_t fxstage) {
     speed                 = rg.rangedf(mins, maxs);
     RV0DTMODB->_oncompute = [speed, midt, rang](CustomControllerInst* cci) { //
       float time   = cci->_layer->_layerTime;
-      cci->_curval = midt + sinf(time * pi2 * speed) * rang;
-      return cci->_curval;
+      cci->setFloatValue( midt + sinf(time * pi2 * speed) * rang);
+      return cci->getFloatValue();
     };
     /////////////////
     auto RV0DTMODC        = fxlayer->appendController<CustomControllerData>(basename + "RV0DTC");
@@ -263,8 +263,8 @@ void appendWackiVerb(lyrdata_ptr_t fxlayer, dspstagedata_ptr_t fxstage) {
     speed                 = rg.rangedf(mins, maxs);
     RV0DTMODC->_oncompute = [speed, midt, rang](CustomControllerInst* cci) { //
       float time   = cci->_layer->_layerTime;
-      cci->_curval = midt + sinf(time * pi2 * speed) * rang;
-      return cci->_curval;
+      cci->setFloatValue( midt + sinf(time * pi2 * speed) * rang);
+      return cci->getFloatValue();
     };
     /////////////////
     auto RV0DTDMOD        = fxlayer->appendController<CustomControllerData>(basename + "RV0DTD");
@@ -274,8 +274,8 @@ void appendWackiVerb(lyrdata_ptr_t fxlayer, dspstagedata_ptr_t fxstage) {
     speed                 = rg.rangedf(mins, maxs);
     RV0DTDMOD->_oncompute = [speed, midt, rang](CustomControllerInst* cci) { //
       float time   = cci->_layer->_layerTime;
-      cci->_curval = midt + sinf(time * pi2 * speed) * rang;
-      return cci->_curval;
+      cci->setFloatValue( midt + sinf(time * pi2 * speed) * rang);
+      return cci->getFloatValue();
     };
   };
   crverb(11, 0.09, 0.13, 0.1, 0.17);
