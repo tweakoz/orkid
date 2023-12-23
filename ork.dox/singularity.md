@@ -90,5 +90,9 @@ Orkid's synthesizer is loosely inspired by Kurzeil VAST, in that it supports ful
   - Algorithm : A stack of DspStages that implement a sound generation method, comprised of 1 or more DspStage's.
   - DspStage a Directed Acyclic Graph of DspBlocks conforming to an IoMask, with 1 or more inputs, 0 or more middle DspBlocks, and 1 or more output DspBlocks.
   - IoMask : Input Output topology description (num inputs, num outputs)
-  - DspBlocks : Implementation of a specific DSP technique - can be sources, modifiers, or sinks. eg. PM Oscillator, Sample Playback Oscillator, Filter, Mono Output Amp, etc..
+  - DspBlocks : Implementation of a specific DSP technique - can be sources, modifiers, or sinks. eg. PM Oscillator, Sample Playback Oscillator, Filter, Mono Output Amp, etc.. Can have 0 or more DspParam's
+  - DspParam : a parameter of a DspBlock that can be set, evaluated, modulated, etc..
+  - BlockModulationData : A set of up to 2 modulation sources that modulate a DspParam.
+  - Controller : a realtime data source routed into a BlockModulation, eg. LFO, EG, FUN, Keyboard Input, etc..
+
 
