@@ -89,11 +89,11 @@ Orkid's synthesizer is loosely inspired by Kurzeil VAST, in that it supports ful
   ### Definitions
 
   - Synth : collection of all layers/busses that get mixed to final outputs
-  - Layer : A single "voice", generating a sound using an Algorithm even though it is a single "voice" - it can still in itself have many sound generation components. 
+  - Layer : A single "voice", generating a sound using an Algorithm, despite being a single "voice" - it can still within itself have multiple sound generation components. Layers are also used for Effects processing, they could either be an effect per voice, or non-keyed effect layers can be attached to output busses.
   - Algorithm : A stack of DspStages that implement a sound generation method, comprised of 1 or more DspStage's.
   - DspStage : typically a Directed Acyclic Graph (DAG) of DspBlocks conforming to an IoConfig, with 1 or more inputs, 0 or more middle DspBlocks, and 1 or more output DspBlocks. Cycles can be permitted in some cases.
   - IoConfig : Input Output topology description for a DspStage (num inputs, num outputs)
-  - DspBlocks : Implementation of a specific DSP technique - can be sources, modifiers, or sinks. eg. PM Oscillator, Sample Playback Oscillator, Filter, Mono Output Amp, etc.. Can have 0 or more DspParam's
+  - DspBlocks : Implementation of a specific DSP technique - can be sources, modifiers, or sinks. eg. PM Oscillator, Sample Playback Oscillator, Filter, Mono Output Amp, DelayLine, PitchShifter, Reverb, Chorus, etc.. Can have 0 or more DspParam's
   - DspParam : a parameter of a DspBlock that can be set, evaluated, modulated, etc..
   - BlockModulation : A set of up to 2 modulation sources (controller) that modulate a DspParam, coupled with an "evalutor" which handles block specific semantics.
   - Controller : a realtime data source routed into a BlockModulation, eg. LFO, EG, FUN, Keyboard Input, MIDI CC, custom lambda etc..

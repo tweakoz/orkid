@@ -42,7 +42,7 @@ class SingulApp(object):
     for i in range(6):
       self.synth.nextEffect()
     self.syn_data_base = singularity.baseDataPath()/"casioCZ"
-    self.synth.masterGain = singularity.decibelsToLinear(0.0)
+    self.synth.masterGain = singularity.decibelsToLinear(-6.0)
     self.czdata = singularity.CzSynthData()
     self.czdata.loadBank("bankA", self.syn_data_base/"factoryA.bnk")
     self.czdata.loadBank("bankB", self.syn_data_base/"factoryB.bnk")
