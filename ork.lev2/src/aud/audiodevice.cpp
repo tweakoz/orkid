@@ -16,6 +16,8 @@
 #include <ork/kernel/tempstring.h>
 #include <ork/asset/FileAssetLoader.h>
 #include <ork/asset/FileAssetNamer.h>
+#include <ork/kernel/netpacket_serdes.inl>
+#include <ork/kernel/environment.h>
 #include <ork/math/audiomath.h>
 #include <ork/reflect/properties/register.h>
 
@@ -25,15 +27,14 @@
 ///////////////////////////////////////
 #if defined(ENABLE_ALSA)
 #include "alsa/audiodevice_alsa.h"
-#define NativeDevice AudioDeviceAlsa
+#endif
 ///////////////////////////////////////
-#elif defined(ENABLE_PORTAUDIO)
+#if defined(ENABLE_PORTAUDIO)
 #include "portaudio/audiodevice_pa.h"
-#define NativeDevice AudioDevicePa
+#endif
 ///////////////////////////////////////
-#elif defined(ENABLE_PIPEWIRE)
+#if defined(ENABLE_PIPEWIRE)
 #include "pipewire/audiodevice_pipewire.h"
-#define NativeDevice pipewire::AudioDevicePipeWire
 ///////////////////////////////////////
 #endif
 
@@ -51,9 +52,54 @@ namespace ork { namespace lev2 {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+struct AudioDevFactory{
+
+  AudioDevFactory(){
+
+    std::string default_device_type = "PORTAUDIO";
+
+    auto stagedir = ork::file::Path::stage_dir();
+    auto orkconfig_path = stagedir / "orkid.json";
+    printf( "orkconfig_path<%s>\n", orkconfig_path.c_str());
+    if( orkconfig_path.doesPathExist() ){
+      ork::net::serdes::val_t out_val;
+      ork::net::serdes::valueFromJsonFile(out_val,orkconfig_path);
+      auto& orkconfig = out_val.get<ork::net::serdes::kvmap_t>();
+      auto it = orkconfig.find("AUDIODEVICE");
+      if( it != orkconfig.end() ){
+        default_device_type = it->second.get<std::string>();
+      }
+    }
+
+#if defined(ENABLE_ALSA)
+    if( default_device_type == "ALSA" ){
+      _device = std::make_shared<AudioDeviceAlsa>();
+    }
+#endif
+#if defined(ENABLE_PORTAUDIO)
+    if( default_device_type == "PORTAUDIO" ){
+      _device = std::make_shared<AudioDevicePa>();
+    }
+#endif
+#if defined(ENABLE_PIPEWIRE)
+    if( default_device_type == "PIPEWIRE" ){
+      _device = std::make_shared<pipewire::AudioDevicePipeWire>();
+    }
+#endif
+    
+    if(nullptr == _device ){
+      _device = std::make_shared<AudioDeviceNULL>();
+    }
+  }
+
+  audiodevice_ptr_t _device;
+};
+
+using audiodevfactory_ptr_t = std::shared_ptr<AudioDevFactory>;
+
 audiodevice_ptr_t AudioDevice::instance(void) {
-  static auto device = std::make_shared<NativeDevice>();
-  return device;
+  static auto devfactory = std::make_shared<AudioDevFactory>();
+  return devfactory->_device;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
