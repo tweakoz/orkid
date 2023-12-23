@@ -50,7 +50,7 @@ Orkid's synthesizer is loosely inspired by Kurzeil VAST, in that it supports ful
     - NULL (for debug)
 
 
-  ### Concepts
+  ### Objects Overview
 
   - DataObjects (objects used to construct instance objects, immutable from audio thread)
     - DspBlockData     
@@ -82,4 +82,13 @@ Orkid's synthesizer is loosely inspired by Kurzeil VAST, in that it supports ful
     - KeyOnInfo
     - KeyOnModifiers
     - OutputBus
+
+  ### Definitions
+
+  - Synth : collection of all layers/busses that get mixed to final outputs
+  - Layer : A single voice, generating a sound using an Algorithm.
+  - Algorithm : A stack of DspStages that implement a sound generation method, comprised of 1 or more DspStage's.
+  - DspStage a Directed Acyclic Graph of DspBlocks conforming to an IoMask, with 1 or more inputs, 0 or more middle DspBlocks, and 1 or more output DspBlocks.
+  - IoMask : Input Output topology description (num inputs, num outputs)
+  - DspBlocks : Implementation of a specific DSP technique - can be sources, modifiers, or sinks. eg. PM Oscillator, Sample Playback Oscillator, Filter, Mono Output Amp, etc..
 
