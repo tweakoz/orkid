@@ -57,6 +57,7 @@ struct ControllerInst {
   fvec4 getVec4Value() const;
   fvec4 _value;
   layer_ptr_t _layer = nullptr;
+  std::string _name;
 };
 
 struct ControlBlockInst {

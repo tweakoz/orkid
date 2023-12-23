@@ -57,6 +57,7 @@ struct LayerData : public ork::Object {
 
   algdata_ptr_t _algdata;
   std::string _outbus;
+  std::string _name;
 
   kmpblockdata_ptr_t _kmpBlock;
   dspblkdata_ptr_t _pchBlock;

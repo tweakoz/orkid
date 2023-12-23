@@ -40,9 +40,6 @@ void pyinit_aud_singularity(py::module& module_lev2) {
                                 printf("the_synth<%p>\n", (void*)the_synth.get());
                                 return the_synth;
                               })
-                          .def("mainThreadHandler", [](synth_ptr_t synth) { //
-                              synth->mainThreadHandler();
-                          })
                           .def(
                               "nextEffect", //
                               [](synth_ptr_t synth) { synth->nextEffect(); })
@@ -189,13 +186,65 @@ void pyinit_aud_singularity(py::module& module_lev2) {
     .def(py::init<>())
           .def(
               "__setattr__",                                                                    //
-              [type_codec](keyonmod_ptr_t kmod, const std::string& key, py::object obj) { //
-                auto data = std::make_shared<KeyOnModifiers::DATA>();
-                data->_fn = [=]()-> float{
-                  py::gil_scoped_acquire acquire;
-                  return obj().cast<float>();
-                };
-                kmod->_mods[key] = data;
+              [type_codec](keyonmod_ptr_t kmod, const std::string& key, py::dict inp_dict) { //
+                auto builtins   = py::module::import("builtins");
+                auto int_type   = builtins.attr("int");
+                auto float_type = builtins.attr("float");
+                if( key == "generators"){
+                  for( auto item : inp_dict ){
+                    auto genname = item.first.cast<std::string>();
+                    auto python_generator = item.second.cast<py::object>();
+                    KeyOnModifiers::data_ptr_t kdata;
+                    auto it = kmod->_mods.find(genname);
+                    if(it!=kmod->_mods.end()){
+                      kdata = it->second;
+                    }
+                    else{
+                      kdata = std::make_shared<KeyOnModifiers::DATA>();
+                      kmod->_mods[genname] = kdata;
+                    }
+
+                    kdata->_generator = [=]()-> fvec4 {
+                      py::gil_scoped_acquire acquire;
+                      auto gval = python_generator();
+                      auto pytype = gval.get_type();
+                      if(pytype == float_type){
+                        auto fval = gval.cast<float>();
+                        return fvec4(fval,fval,fval,fval);
+                      }
+                      else{
+                        OrkAssert(false);
+                        return fvec4(0,0,0,0);
+                      }
+                    };
+                  }
+                }
+                else if( key == "subscribers"){
+                  for( auto item : inp_dict ){
+                    auto subname = item.first.cast<std::string>();
+                    auto python_subscriber = item.second.cast<py::object>();
+                    KeyOnModifiers::data_ptr_t kdata;
+                    auto it = kmod->_mods.find(subname);
+                    if(it!=kmod->_mods.end()){
+                      kdata = it->second;
+                    }
+                    else{
+                      kdata = std::make_shared<KeyOnModifiers::DATA>();
+                      kmod->_mods[subname] = kdata;
+                    }
+                    kdata->_vars.makeValueForKey<py::object>("python_subscriber",python_subscriber);
+                    kdata->_subscriber = [kdata,type_codec](fvec4 inp) {
+                      py::gil_scoped_acquire acquire;
+                      auto py_argument = type_codec->encode(inp);
+                      auto subscriber = kdata->_vars.typedValueForKey<py::object>("python_subscriber");
+                      subscriber.value()(py_argument);
+                    };
+                  }
+                }
+                else{
+                  OrkAssert(false);
+                }
+                
               })
           .def("__len__", [](keyonmod_ptr_t kmod) -> size_t { return kmod->_mods.size(); })
           .def(

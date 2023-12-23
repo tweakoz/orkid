@@ -70,6 +70,7 @@ RateLevelEnvInst::RateLevelEnvInst(const RateLevelEnvData* data, layer_ptr_t l)
     , _released(false)
     , _ampenv(data->_ampenv)
     , _envType(data->_envType) {
+    _name = data->_name;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -121,8 +122,8 @@ void RateLevelEnvInst::compute() // final
   /////////////////////////////
   const auto& edata = *_data;
   const auto& segs  = edata._segments;
-  size_t numsegs    = segs.size();
-  size_t maxseg     = numsegs - 1;
+  int numsegs    = segs.size();
+  int maxseg     = numsegs - 1;
   /////////////////////////////
   switch (_state) {
     ////////////////////////////////////////////////////////////////////////////
@@ -152,17 +153,26 @@ void RateLevelEnvInst::compute() // final
     }
     ////////////////////////////////////////////////////////////////////////////
     case 1: // sustain
+      if(_prevstate!=1){
+         printf("env<%p:%s> begin-sustain\n", this, _name.c_str() );
+      }
       break;
     ////////////////////////////////////////////////////////////////////////////
     case 2: { // release
+      if(_prevstate!=2){
+         printf("env<%p:%s> begin-release\n", this, _name.c_str() );
+      }
       ///////////////////////////////////////////
       _lerpindex += _lerpincr;
       _value          = shapedvalue();
+      //printf( "_value<%g>\n", _value.x);
       bool try_advance = (_lerpindex >= 1.0);
       ///////////////////////////////////////////
       if (try_advance) {
-        if (_segmentIndex >= maxseg)
-          _state = 3;
+        if (_segmentIndex >= maxseg){
+          _state = 5;
+          printf("env<%p:%s> release adv1 _segmentIndex<%d> maxseg<%d>\n", this, _name.c_str(), _segmentIndex, maxseg );
+        }
         else
           initSeg(_segmentIndex + 1);
       } else {
@@ -174,8 +184,10 @@ void RateLevelEnvInst::compute() // final
           float dbatten = linear_amp_ratio_to_decibel(_value.x);
           bool done     = (_segmentIndex >= numsegs) //
                       and (dbatten < -96.0f);
-          if (done) //
+          if (done){
             _state = 3;
+            printf("env<%p:%s> release adv2 dbatten<%g>\n", this, _name.c_str(), dbatten );
+          }
         }
         ///////////////////////////////////////////
       }
@@ -183,7 +195,7 @@ void RateLevelEnvInst::compute() // final
     }
       ////////////////////////////////////////////////////////////////////////////
     case 3: // done
-      // printf("env<%p> done\n", this);
+       printf("env<%p:%s> done\n", this, _name.c_str() );
       if (_ampenv) {
         // printf("ampenv<%p> RELEASING LAYER<%p>\n", this, _layer);
         synth::instance()->releaseLayer(_layer);
@@ -197,6 +209,17 @@ void RateLevelEnvInst::compute() // final
       ////////////////////////////////////////////////////////////////////////////
     case 4: // dead (NOP)
       break;
+      ////////////////////////////////////////////////////////////////////////////
+    case 5: { // ENDDECAYTEST
+       //printf("env<%p:%s> st5 <%g>\n", this, _name.c_str(), _value.x );
+      _value.x *= 0.99;
+      float dbatten = linear_amp_ratio_to_decibel(_value.x);
+      bool done     = dbatten<-96.0;
+      if(done){
+        _state = 3;
+      }
+      break;
+    }
   }
   //////////////////////////////////////
   // SignalScope
@@ -206,6 +229,7 @@ void RateLevelEnvInst::compute() // final
   }
   //////////////////////////////////////
   _updatecount++;
+  _prevstate = _state;
   // printf("env<%p> _state<%d> _value<%g>\n", this, _state, _value);
 }
 
@@ -215,6 +239,7 @@ void RateLevelEnvInst::keyOn(const KeyOnInfo& KOI) {
   _layer         = KOI._layer;
   _konoffinfo    = KOI;
   _state         = 0;
+  _prevstate     = 0;
   auto ld        = KOI._layerdata;
   int ikey       = KOI._key;
   _ignoreRelease = ld->_ignRels;

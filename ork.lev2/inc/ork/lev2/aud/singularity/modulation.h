@@ -9,6 +9,7 @@
 
 #include <ork/lev2/aud/singularity/krztypes.h>
 #include <ork/math/cvector4.h>
+#include <ork/kernel/varmap.inl>
 #include "reflection.h"
 
 namespace ork::audio::singularity {
@@ -16,10 +17,13 @@ namespace ork::audio::singularity {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct KeyOnModifiers{
-  using fvec4_fn_t = std::function<fvec4()>;
+  using fvec4_genfn_t = std::function<fvec4()>;
+  using fvec4_subfn_t = std::function<void(fvec4)>;
   struct DATA{
-    fvec4_fn_t _fn;
+    fvec4_genfn_t _generator;
+    fvec4_subfn_t _subscriber;
     fvec4 _currentValue;
+    varmap::VarMap _vars;
   };
   using data_ptr_t = std::shared_ptr<DATA>;
   using map_t = std::unordered_map<std::string,data_ptr_t>;

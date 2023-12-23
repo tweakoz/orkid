@@ -42,14 +42,14 @@ class SingulApp(object):
     for i in range(6):
       self.synth.nextEffect()
     self.syn_data_base = singularity.baseDataPath()/"casioCZ"
-    self.synth.masterGain = singularity.decibelsToLinear(-6.0)
+    self.synth.masterGain = singularity.decibelsToLinear(-12.0)
     self.czdata = singularity.CzSynthData()
     self.czdata.loadBank("bankA", self.syn_data_base/"factoryA.bnk")
     self.czdata.loadBank("bankB", self.syn_data_base/"factoryB.bnk")
-    self.czdata.loadBank("bank0", self.syn_data_base/"cz1_1.bnk")
-    self.czdata.loadBank("bank1", self.syn_data_base/"cz1_2.bnk")
-    self.czdata.loadBank("bank2", self.syn_data_base/"cz1_3.bnk")
-    self.czdata.loadBank("bank3", self.syn_data_base/"cz1_4.bnk")
+    #self.czdata.loadBank("bank0", self.syn_data_base/"cz1_1.bnk")
+    #self.czdata.loadBank("bank1", self.syn_data_base/"cz1_2.bnk")
+    #self.czdata.loadBank("bank2", self.syn_data_base/"cz1_3.bnk")
+    #self.czdata.loadBank("bank3", self.syn_data_base/"cz1_4.bnk")
     self.czbank = self.czdata.bankData
     self.czprogs = self.czbank.programsByName
     self.sorted_progs = sorted(self.czprogs.keys())
@@ -92,7 +92,7 @@ class SingulApp(object):
     self.time = updinfo.absolutetime
 
   def onGpuUpdate(self,ctx):
-    self.synth.mainThreadHandler()
+    pass
 
   def onUiEvent(self,uievent):
     if uievent.code == tokens.KEY_DOWN.hashed:
@@ -108,7 +108,15 @@ class SingulApp(object):
          modrate = math.sin(self.time)*5
          def modulatePan():
             return math.sin((self.time-timebase)*modrate)*2
-         mods.STEREOPAN2 = modulatePan
+         def sub(x):
+           print(x)
+         mods.generators = {
+           "STEREOPAN2": modulatePan
+         }
+         mods.subscribers = {
+           "CZ1.DCAENV0": sub,
+           "CZ1.DCAENV1": sub
+         }
          voice = self.synth.keyOn(note,127,self.prog,mods)
          self.voices[KC] = voice
       else:

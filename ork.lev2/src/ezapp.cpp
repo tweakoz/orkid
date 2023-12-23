@@ -1,5 +1,6 @@
 #include <ork/lev2/ezapp.h>
 #include <ork/lev2/ui/viewport.h>
+#include <ork/lev2/aud/singularity/synth.h>
 #include <ork/lev2/ui/layoutgroup.inl>
 #include <ork/lev2/gfx/renderer/drawable.h>
 #include <ork/lev2/gfx/dbgfontman.h>
@@ -481,6 +482,9 @@ int OrkEzApp::mainThreadLoop() {
   glfw_ctx->_onGpuUpdate = [this](lev2::Context* context) {
     if (_mainWindow->_onGpuUpdate) {
       _mainWindow->_onGpuUpdate(context);
+    }
+    if(audio::singularity::synth::instance()){
+      audio::singularity::synth::instance()->mainThreadHandler();
     }
   };
 

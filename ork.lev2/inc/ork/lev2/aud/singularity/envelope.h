@@ -88,9 +88,11 @@ struct RateLevelEnvInst : public ControllerInst {
   bool _ignoreRelease;
   bool _ampenv;
   int _state;
+  int _prevstate;
   RlEnvType _envType;
   KeyOnInfo _konoffinfo;
   int _updatecount = 0;
+  std::string _debugName;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

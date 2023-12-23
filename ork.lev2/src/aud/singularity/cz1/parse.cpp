@@ -86,7 +86,7 @@ float decode_a_envlevel(int value) {
       break;
   }
   float fn = float(normed) / 99.0f;
-  return powf(fn, 0.5);
+  return powf(fn, 2);
 }
 ///////////////////////////////////////////
 float decode_a_envrate(int value, float delta) {
@@ -115,7 +115,7 @@ float decode_w_envlevel(int value) {
       break;
   }
   float fn = float(normed) / 99.0f;
-  return powf(fn, 1.0f);
+  return powf(fn, 2.0f);
 }
 ///////////////////////////////////////////
 float decode_w_envrate(int value, float delta) {
@@ -191,7 +191,7 @@ CZLAYERDATACTX configureCz1Algorithm(lyrdata_ptr_t layerdata, int numosc) {
   lctx._layerdata = layerdata;
   auto algdout        = std::make_shared<AlgData>();
   layerdata->_algdata = algdout;
-  algdout->_name      = ork::FormatString("Cz1<%d>", numosc);
+  algdout->_name      = ork::FormatString("Cz1:osc%d", numosc);
   //////////////////////////////////////////
   auto stage_dco               = algdout->appendStage("DCO");
   auto stage_amp               = algdout->appendStage("AMP");
@@ -565,6 +565,7 @@ czxprogdata_ptr_t parse_czprogramdata(CzData* outd, prgdata_ptr_t prgout, std::v
 
   /////////////////////////////////////////////////
   auto layerdata           = prgout->newLayer();
+  layerdata->_name = "CZ1";
   layerdata->_layerLinGain = 0.25;
   /////////////////////////////////////////////////
   // line select
@@ -644,7 +645,7 @@ czxprogdata_ptr_t parse_czprogramdata(CzData* outd, prgdata_ptr_t prgout, std::v
   }
   /////////////////////////////////////////////////
   czprogdata->_name = name;
-  //czprogdata->dump();
+  czprogdata->dump();
   return czprogdata;
 }
 ///////////////////////////////////////////////////////////////////////////////

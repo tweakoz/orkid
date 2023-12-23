@@ -357,29 +357,35 @@ void _remove_items(std::vector<T>& vec, const std::vector<size_t>& indices_to_re
 }
 
 void synth::mainThreadHandler(){
-  std::vector<keyonmod_ptr_t> exec_list;
-  std::vector<size_t> rem_list;
+  _kmod_exec_list.clear();
+  _kmod_rem_list.clear();
   _CCIVALS.atomicOp([&](keyonmodvect_t& unlocked){
     size_t index = 0;
     for( auto kmod : unlocked ){
       if( kmod->_dangling){
-        rem_list.push_back( index );
+        _kmod_rem_list.push_back( index );
       }
       else{
-        exec_list.push_back(kmod);
+        _kmod_exec_list.push_back(kmod);
       }
       index++;
     }
   });
-  _CCIVALS.atomicOp([&](keyonmodvect_t& unlocked){
-    _remove_items(unlocked, rem_list);
-  });
-  for( auto kmod : exec_list ){
+  for( auto kmod : _kmod_exec_list ){
     for( auto item : kmod->_mods ){
       auto kmdata = item.second;
-      kmdata->_currentValue = kmdata->_fn();
+      if(kmdata->_generator){
+        kmdata->_currentValue = kmdata->_currentValue * 0.95
+                              + kmdata->_generator() * 0.05;
+      }
+      if(kmdata->_subscriber){
+        kmdata->_subscriber(kmdata->_currentValue);
+      }
     }
   }
+  _CCIVALS.atomicOp([&](keyonmodvect_t& unlocked){
+    _remove_items(unlocked, _kmod_rem_list);
+  });
 }
   
 programInst* synth::keyOn(int note, int velocity, prgdata_constptr_t pdata, keyonmod_ptr_t kmods) {

@@ -201,6 +201,10 @@ struct synth {
 
   HudFrameControl _curhud_kframe;
   hudvp_ptr_t _hudvp;
+
+  std::vector<keyonmod_ptr_t> _kmod_exec_list;
+  std::vector<size_t> _kmod_rem_list;
+
 };
 
 } // namespace ork::audio::singularity
