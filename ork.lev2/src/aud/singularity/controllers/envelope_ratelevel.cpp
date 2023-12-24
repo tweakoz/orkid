@@ -139,11 +139,20 @@ void RateLevelEnvInst::compute() // final
         } else if (edata._sustainSegment == -1) { // this env has no sustain...
           // so go to release
           _state = 2;
+          printf("env<%p:%s> pre-begin release _value<%g>\n", this, _name.c_str(), _value.x );
         } else if (_segmentIndex < edata._sustainSegment) { // we are not at sustain yet..
           if (_segmentIndex >= maxseg)
             _state = 3; // straight to done..
-          else
+          else {
+            if(_keymoddata and _keymoddata->_subscriber){
+                  _keymoddata->_evstrings.atomicOp([this](std::vector<std::string>& unlocked){
+                    auto s = FormatString("begseg<%d>",  _segmentIndex );
+                    unlocked.push_back(s);
+                    printf("statechange: %s\n", s.c_str());
+                  });
+              }
             initSeg(_segmentIndex + 1);
+          }
         } else {
           OrkAssert(false);
         }
@@ -171,7 +180,7 @@ void RateLevelEnvInst::compute() // final
       if (try_advance) {
         if (_segmentIndex >= maxseg){
           _state = 5;
-          printf("env<%p:%s> release adv1 _segmentIndex<%d> maxseg<%d>\n", this, _name.c_str(), _segmentIndex, maxseg );
+          printf("env<%p:%s> release adv1 _segmentIndex<%d> maxseg<%d> _value<%g>\n", this, _name.c_str(), _segmentIndex, maxseg, _value.x );
         }
         else
           initSeg(_segmentIndex + 1);
@@ -212,11 +221,12 @@ void RateLevelEnvInst::compute() // final
       ////////////////////////////////////////////////////////////////////////////
     case 5: { // ENDDECAYTEST
        //printf("env<%p:%s> st5 <%g>\n", this, _name.c_str(), _value.x );
-      _value.x *= 0.99;
+      _value.x *= 0.9999;
       float dbatten = linear_amp_ratio_to_decibel(_value.x);
       bool done     = dbatten<-96.0;
       if(done){
         _state = 3;
+        printf( "DONE\n" );
       }
       break;
     }
@@ -229,10 +239,19 @@ void RateLevelEnvInst::compute() // final
   }
   //////////////////////////////////////
   _updatecount++;
-  _prevstate = _state;
   if(_keymoddata){
     _keymoddata->_currentValue = _value;
+    if(_prevstate!=_state){
+      if(_keymoddata->_subscriber){
+        _keymoddata->_evstrings.atomicOp([this](std::vector<std::string>& unlocked){
+          auto s = FormatString("state<%d->%d>",  _prevstate, _state );
+          unlocked.push_back(s);
+          printf("statechange: %s\n", s.c_str());
+        });
+      }
+    }
   }
+  _prevstate = _state;
   // printf("env<%p> _state<%d> _value<%g>\n", this, _state, _value);
 }
 

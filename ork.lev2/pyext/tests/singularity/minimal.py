@@ -58,6 +58,7 @@ class SingulApp(object):
     self.sorted_progs = sorted(self.czprogs.keys())
     self.octave = 3
     self.charts = {}
+    self.chart_events = {}
 
     print("czprogs<%s>" % self.czprogs)
     self.mylist = [
@@ -113,10 +114,16 @@ class SingulApp(object):
          def modulatePan():
             return math.sin((self.time-timebase)*modrate)*2
          def sub(name,value):
-           channel = "%g.%s" % (timebase,name)
+           channel = name #"%g.%s" % (timebase,name)
            if channel not in self.charts:
              self.charts[channel] = dict()
-           self.charts[channel][self.time-timebase] = value.x
+             self.chart_events[channel] = dict()
+           TIME = self.time-timebase
+           if type(value) == vec4:
+             self.charts[channel][TIME] = value.x
+           elif type(value) == str:
+             self.chart_events[channel][TIME] = value
+             print("TIME<%g> event<%s>" % (TIME,value))
          mods.generators = {
            "LCZX0.STEREOPAN2": modulatePan
          }
@@ -155,14 +162,43 @@ class SingulApp(object):
             self.octave = 8
         elif KC == ord("N"): # new chart 
           self.charts = dict()
+          self.chart_events = dict()
         elif KC == ord("M"): # show chart
           fig = go.Figure()
+          color_map = {
+            "LCZX0.DCAENV0": "red",
+            "LCZX0.DCAENV1": "blue",
+            "LCZX0.STEREOPAN2": "green"
+          }
+          default_color = 'gray'
           for name, the_dict in self.charts.items():
             sorted_data = sorted(the_dict.items())
             times, values = zip(*sorted_data)
-            fig.add_trace(go.Scatter(x=times, y=values, mode='lines', name=name))
+            line_color = color_map.get(name, default_color)
+            fig.add_trace(go.Scatter(x=times, y=values, mode='lines', name=name, line=dict(color=line_color)))
+          ypos = 0
+          for name, the_dict in self.chart_events.items():
+            # Add an annotation at each event timestamp
+            for item in the_dict.items():
+              timestamp, event_name = item
+              line_color = color_map.get(name, default_color)
+              fig.add_annotation(
+                  x=timestamp, y=ypos, # Position of the annotation
+                  text=event_name,  # Event name
+                  showarrow=False,
+                  yshift=10,
+                  xanchor='center',
+                  font=dict(color=line_color)
+              )
+              fig.add_shape(
+                      type="line",
+                      x0=timestamp, y0=0, x1=timestamp, y1=1, # Line coordinates
+                      line=dict(color="black", width=1)
+              )
+            ypos += 0.1
           fig.show()
           self.charts = dict()
+          self.chart_events = dict()
   
     elif uievent.code == tokens.KEY_UP.hashed:
       KC = uievent.keycode

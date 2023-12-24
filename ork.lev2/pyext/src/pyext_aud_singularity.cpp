@@ -235,11 +235,20 @@ void pyinit_aud_singularity(py::module& module_lev2) {
                       kdata->_name = subname;
                     }
                     kdata->_vars.makeValueForKey<py::object>("python_subscriber",python_subscriber);
-                    kdata->_subscriber = [kdata,type_codec](std::string name, fvec4 inp) {
+                    kdata->_subscriber = [kdata,type_codec](std::string name, svar64_t inp) {
                       py::gil_scoped_acquire acquire;
-                      auto py_argument = type_codec->encode(inp);
                       auto subscriber = kdata->_vars.typedValueForKey<py::object>("python_subscriber");
-                      subscriber.value()(name,py_argument);
+                      if(auto as_fvec4 = inp.tryAs<fvec4>()){
+                        auto py_argument = type_codec->encode(as_fvec4.value());
+                        subscriber.value()(name,py_argument);
+                      }
+                      else if(auto as_str = inp.tryAs<std::string>()){
+                        auto py_argument = type_codec->encode(as_str.value());
+                        subscriber.value()(name,py_argument);
+                      }
+                      else{
+                        OrkAssert(false);
+                      }
                     };
                   }
                 }

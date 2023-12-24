@@ -380,6 +380,12 @@ void synth::mainThreadHandler(){
       }
       if(kmdata->_subscriber){
         kmdata->_subscriber(kmdata->_name, kmdata->_currentValue);
+        kmdata->_evstrings.atomicOp([kmdata](std::vector<std::string>& unlocked){
+          for(auto item : unlocked){
+            kmdata->_subscriber(kmdata->_name, item);
+          }
+          unlocked.clear();
+        });
       }
     }
   }
