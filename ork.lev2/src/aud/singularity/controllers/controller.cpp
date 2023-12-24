@@ -40,6 +40,8 @@ void ControlBlockInst::keyOn(const KeyOnInfo& KOI, controlblockdata_constptr_t C
     auto data = CBD->_cdata[i];
     if (data) {
       _cinst[i]                   = data->instantiate(l);
+      _cinst[i]->_name            = data->_name;
+      _cinst[i]->_cdata           = data;
       l->_controld2iMap[data]     = _cinst[i];
       l->_controlMap[data->_name] = _cinst[i];
       _cinst[i]->keyOn(KOI);
@@ -47,13 +49,16 @@ void ControlBlockInst::keyOn(const KeyOnInfo& KOI, controlblockdata_constptr_t C
         auto it = l->_keymods->_mods.find(data->_name);
         if(it!=l->_keymods->_mods.end()){
           auto kmdata = it->second;
+          OrkAssert(kmdata!=nullptr);
+          _cinst[i]->_keymoddata      = kmdata;
 
           auto as_cci = dynamic_cast<CustomControllerInst*>(_cinst[i]);
-          OrkAssert(as_cci);
-          as_cci->_oncompute = [kmdata](CustomControllerInst* cci) {
-            cci->_value = (cci->_value*0.99)+(kmdata->_currentValue*0.01);
-            //printf("cci->_value.x<%g>\n", cci->_value.x);
-          };
+          if(as_cci){
+            as_cci->_oncompute = [kmdata](CustomControllerInst* cci) {
+              cci->_value = (cci->_value*0.99)+(kmdata->_currentValue*0.01);
+              //printf("cci->_value.x<%g>\n", cci->_value.x);
+            };
+          }
         }
       }
 

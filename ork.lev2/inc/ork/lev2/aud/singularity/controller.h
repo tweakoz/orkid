@@ -58,6 +58,8 @@ struct ControllerInst {
   fvec4 _value;
   layer_ptr_t _layer = nullptr;
   std::string _name;
+  controllerdata_constptr_t _cdata;
+  KeyOnModifiers::data_ptr_t _keymoddata;
 };
 
 struct ControlBlockInst {

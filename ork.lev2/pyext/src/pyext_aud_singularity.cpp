@@ -202,6 +202,7 @@ void pyinit_aud_singularity(py::module& module_lev2) {
                     else{
                       kdata = std::make_shared<KeyOnModifiers::DATA>();
                       kmod->_mods[genname] = kdata;
+                      kdata->_name = genname;
                     }
 
                     kdata->_generator = [=]()-> fvec4 {
@@ -231,13 +232,14 @@ void pyinit_aud_singularity(py::module& module_lev2) {
                     else{
                       kdata = std::make_shared<KeyOnModifiers::DATA>();
                       kmod->_mods[subname] = kdata;
+                      kdata->_name = subname;
                     }
                     kdata->_vars.makeValueForKey<py::object>("python_subscriber",python_subscriber);
-                    kdata->_subscriber = [kdata,type_codec](fvec4 inp) {
+                    kdata->_subscriber = [kdata,type_codec](std::string name, fvec4 inp) {
                       py::gil_scoped_acquire acquire;
                       auto py_argument = type_codec->encode(inp);
                       auto subscriber = kdata->_vars.typedValueForKey<py::object>("python_subscriber");
-                      subscriber.value()(py_argument);
+                      subscriber.value()(name,py_argument);
                     };
                   }
                 }

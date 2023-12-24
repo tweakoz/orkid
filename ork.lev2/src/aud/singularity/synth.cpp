@@ -379,7 +379,7 @@ void synth::mainThreadHandler(){
                               + kmdata->_generator() * 0.05;
       }
       if(kmdata->_subscriber){
-        kmdata->_subscriber(kmdata->_currentValue);
+        kmdata->_subscriber(kmdata->_name, kmdata->_currentValue);
       }
     }
   }
@@ -760,6 +760,7 @@ void programInst::keyOn(int note, int velocity, prgdata_constptr_t pd, keyonmod_
     auto l      = syn->allocLayer();
     l->_ldindex = ilayer - 1;
     l->_keymods = _keymods;
+    l->_name = ld->_name;
 
     assert(l != nullptr);
 

@@ -230,6 +230,9 @@ void RateLevelEnvInst::compute() // final
   //////////////////////////////////////
   _updatecount++;
   _prevstate = _state;
+  if(_keymoddata){
+    _keymoddata->_currentValue = _value;
+  }
   // printf("env<%p> _state<%d> _value<%g>\n", this, _state, _value);
 }
 

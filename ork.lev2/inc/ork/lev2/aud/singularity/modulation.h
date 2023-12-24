@@ -18,8 +18,9 @@ namespace ork::audio::singularity {
 
 struct KeyOnModifiers{
   using fvec4_genfn_t = std::function<fvec4()>;
-  using fvec4_subfn_t = std::function<void(fvec4)>;
+  using fvec4_subfn_t = std::function<void(std::string name, fvec4)>;
   struct DATA{
+    std::string _name;
     fvec4_genfn_t _generator;
     fvec4_subfn_t _subscriber;
     fvec4 _currentValue;

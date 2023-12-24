@@ -8,6 +8,9 @@
 ################################################################################
 
 import sys, math, random, numpy, obt.path, time, bisect
+import plotly.graph_objects as go
+from collections import defaultdict
+import re
 from orkengine.core import *
 from orkengine.lev2 import *
 ################################################################################
@@ -54,6 +57,7 @@ class SingulApp(object):
     self.czprogs = self.czbank.programsByName
     self.sorted_progs = sorted(self.czprogs.keys())
     self.octave = 3
+    self.charts = {}
 
     print("czprogs<%s>" % self.czprogs)
     self.mylist = [
@@ -108,14 +112,17 @@ class SingulApp(object):
          modrate = math.sin(self.time)*5
          def modulatePan():
             return math.sin((self.time-timebase)*modrate)*2
-         def sub(x):
-           print(x)
+         def sub(name,value):
+           channel = "%g.%s" % (timebase,name)
+           if channel not in self.charts:
+             self.charts[channel] = dict()
+           self.charts[channel][self.time-timebase] = value.x
          mods.generators = {
-           "STEREOPAN2": modulatePan
+           "LCZX0.STEREOPAN2": modulatePan
          }
          mods.subscribers = {
-           "CZ1.DCAENV0": sub,
-           "CZ1.DCAENV1": sub
+           "LCZX0.DCAENV0": sub,
+           "LCZX0.DCAENV1": sub
          }
          voice = self.synth.keyOn(note,127,self.prog,mods)
          self.voices[KC] = voice
@@ -138,20 +145,25 @@ class SingulApp(object):
           for voice in self.voices:
             self.synth.keyOff(voice)
             self.voices.clear()
-        elif KC == ord("0"): # 
-          self.octave = 0
-        elif KC == ord("1"): # 
-          self.octave = 1
-        elif KC == ord("2"): #
-            self.octave = 2
-        elif KC == ord("3"): #
-            self.octave = 3
-        elif KC == ord("4"): #
-            self.octave = 4
-        elif KC == ord("5"): #
-            self.octave = 5
-        elif KC == ord("6"): #
-            self.octave = 6
+        elif KC == ord("Z"): # 
+          self.octave -= 1
+          if self.octave < 0:
+            self.octave = 0
+        elif KC == ord("X"): # 
+          self.octave += 1
+          if self.octave > 8:
+            self.octave = 8
+        elif KC == ord("N"): # new chart 
+          self.charts = dict()
+        elif KC == ord("M"): # show chart
+          fig = go.Figure()
+          for name, the_dict in self.charts.items():
+            sorted_data = sorted(the_dict.items())
+            times, values = zip(*sorted_data)
+            fig.add_trace(go.Scatter(x=times, y=values, mode='lines', name=name))
+          fig.show()
+          self.charts = dict()
+  
     elif uievent.code == tokens.KEY_UP.hashed:
       KC = uievent.keycode
       if KC in self.voices:

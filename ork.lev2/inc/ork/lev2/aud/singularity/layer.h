@@ -131,7 +131,7 @@ struct Layer {
   KeyOnInfo _koi;
   scopesource_ptr_t _scopesource;
   keyonmod_ptr_t _keymods;
-  
+  std::string _name;
   ctrlblockinst_ptr_t _ctrlBlock = nullptr;
 
   std::map<std::string, ControllerInst*> _controlMap;

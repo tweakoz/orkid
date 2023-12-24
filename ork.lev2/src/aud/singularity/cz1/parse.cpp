@@ -191,7 +191,7 @@ CZLAYERDATACTX configureCz1Algorithm(lyrdata_ptr_t layerdata, int numosc) {
   lctx._layerdata = layerdata;
   auto algdout        = std::make_shared<AlgData>();
   layerdata->_algdata = algdout;
-  algdout->_name      = ork::FormatString("Cz1:osc%d", numosc);
+  algdout->_name      = layerdata->_name+ork::FormatString("osc%d", numosc);
   //////////////////////////////////////////
   auto stage_dco               = algdout->appendStage("DCO");
   auto stage_amp               = algdout->appendStage("AMP");
@@ -219,12 +219,12 @@ CZLAYERDATACTX configureCz1Algorithm(lyrdata_ptr_t layerdata, int numosc) {
   /////////////////////////////////////////////////
   // stereo mix out
   /////////////////////////////////////////////////
-  auto stereoout         = stage_stereo->appendTypedBlock<MonoInStereoOut>("MonoInStereoOut");
+  auto stereoout         = stage_stereo->appendTypedBlock<MonoInStereoOut>("LCZX0.MonoInStereoOut");
 
-  auto GAONCONST         = layerdata->appendController<ConstantControllerData>("STEREO-GAIN");
+  auto GAONCONST         = layerdata->appendController<ConstantControllerData>("LCZX0.STEREO-GAIN");
   auto gain_modulator    = stereoout->_paramd[0]->_mods;
-  auto PANCONST          = layerdata->appendController<ConstantControllerData>("STEREO-PAN");
-  auto PANCUSTOM         = layerdata->appendController<CustomControllerData>("STEREOPAN2");
+  auto PANCONST          = layerdata->appendController<ConstantControllerData>("LCZX0.STEREO-PAN");
+  auto PANCUSTOM         = layerdata->appendController<CustomControllerData>("LCZX0.STEREOPAN2");
   auto pan_modulator     = stereoout->_paramd[1]->_mods;
 
   GAONCONST->_constvalue   = 1.0f;
@@ -251,9 +251,9 @@ void make_dco(CZLAYERDATACTX czctx,
               int dcochannel) {
   auto layerdata = czctx._layerdata;
   /////////////////////////////////////////////////
-  auto dcoenvname = FormatString("DCOENV%d", dcochannel);
-  auto dcaenvname = FormatString("DCAENV%d", dcochannel);
-  auto dcwenvname = FormatString("DCWENV%d", dcochannel);
+  auto dcoenvname = layerdata->_name+"."+FormatString("DCOENV%d", dcochannel);
+  auto dcaenvname = layerdata->_name+"."+FormatString("DCAENV%d", dcochannel);
+  auto dcwenvname = layerdata->_name+"."+FormatString("DCWENV%d", dcochannel);
   /////////////////////////////////////////////////
   // Pitch Envelope
   /////////////////////////////////////////////////
@@ -565,7 +565,7 @@ czxprogdata_ptr_t parse_czprogramdata(CzData* outd, prgdata_ptr_t prgout, std::v
 
   /////////////////////////////////////////////////
   auto layerdata           = prgout->newLayer();
-  layerdata->_name = "CZ1";
+  layerdata->_name = "LCZX0";
   layerdata->_layerLinGain = 0.25;
   /////////////////////////////////////////////////
   // line select
