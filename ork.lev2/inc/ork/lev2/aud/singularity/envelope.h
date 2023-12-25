@@ -66,6 +66,7 @@ struct RateLevelEnvInst : public ControllerInst {
   ////////////////////////////
   float shapedvalue() const;
   ////////////////////////////
+  void setState(int istate);
   void initSeg(int iseg);
   bool done() const;
   const RateLevelEnvData* _data;

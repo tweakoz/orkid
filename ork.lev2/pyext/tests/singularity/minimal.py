@@ -56,7 +56,7 @@ class SingulApp(object):
     self.czbank = self.czdata.bankData
     self.czprogs = self.czbank.programsByName
     self.sorted_progs = sorted(self.czprogs.keys())
-    self.octave = 3
+    self.octave = 5
     self.charts = {}
     self.chart_events = {}
 
@@ -67,7 +67,7 @@ class SingulApp(object):
       "Sizzle Cymbal"
     ]
     # find index of "Bells and Chimes" in sorted_progs
-    self.prog_index = find_index(self.sorted_progs, "Sizzle Cymbal")
+    self.prog_index = find_index(self.sorted_progs, "ELEC.BASS 2")
     print("prog_index<%d>" % self.prog_index)
 
     self.base_notes = {
@@ -122,7 +122,9 @@ class SingulApp(object):
            if type(value) == vec4:
              self.charts[channel][TIME] = value.x
            elif type(value) == str:
-             self.chart_events[channel][TIME] = value
+             if time not in self.chart_events[channel].keys():
+               self.chart_events[channel][TIME] = []
+             self.chart_events[channel][TIME] += [value]
              print("TIME<%g> event<%s>" % (TIME,value))
          mods.generators = {
            "LCZX0.STEREOPAN2": modulatePan
@@ -175,27 +177,46 @@ class SingulApp(object):
             sorted_data = sorted(the_dict.items())
             times, values = zip(*sorted_data)
             line_color = color_map.get(name, default_color)
-            fig.add_trace(go.Scatter(x=times, y=values, mode='lines', name=name, line=dict(color=line_color)))
+            fig.add_trace(go.Scatter(x=times, 
+                                     y=values, 
+                                     mode='lines', 
+                                     name=name, 
+                                     line=dict(color=line_color)))
           ypos = 0
           for name, the_dict in self.chart_events.items():
             # Add an annotation at each event timestamp
             for item in the_dict.items():
-              timestamp, event_name = item
+              timestamp, event_names = item
               line_color = color_map.get(name, default_color)
-              fig.add_annotation(
-                  x=timestamp, y=ypos, # Position of the annotation
-                  text=event_name,  # Event name
-                  showarrow=False,
-                  yshift=10,
-                  xanchor='center',
-                  font=dict(color=line_color)
-              )
-              fig.add_shape(
-                      type="line",
-                      x0=timestamp, y0=0, x1=timestamp, y1=1, # Line coordinates
-                      line=dict(color="black", width=1)
-              )
-            ypos += 0.1
+              for en in event_names:
+                fig.add_annotation(
+                    x=timestamp, y=ypos, # Position of the annotation
+                    text=en,  # Event name
+                    showarrow=False,
+                    yshift=10,
+                    xanchor='center',
+                    font=dict(color=line_color)
+                )
+                fig.add_shape(
+                        type="line",
+                        x0=timestamp, y0=0, x1=timestamp, y1=1, # Line coordinates
+                        line=dict(color="yellow", width=1)
+                )
+                ypos += 0.03
+            ypos += 0.07
+            fig.update_layout({
+                'plot_bgcolor': 'rgba(0, 0, 0, 0)',  # Transparent background within the plot area
+                'paper_bgcolor': 'rgb(10, 10, 10)',  # Background color outside the plot area
+                'font': {
+                    'color': 'white'  # Text color
+                },
+                'xaxis': {
+                    'gridcolor': 'rgb(40, 40, 40)'  # Grid line color for X-axis
+                },
+                'yaxis': {
+                    'gridcolor': 'rgb(40, 40, 40)'  # Grid line color for Y-axis
+                }
+            })
           fig.show()
           self.charts = dict()
           self.chart_events = dict()
