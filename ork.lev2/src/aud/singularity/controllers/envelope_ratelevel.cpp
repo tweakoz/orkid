@@ -105,6 +105,9 @@ void RateLevelEnvInst::initSeg(int iseg) {
     _lerpincr  = 0.001f;
     _lerpindex = 0.0f;
   }
+  if(_lerpincr>0.1){
+    _lerpincr = 0.1;
+  }
   if(_keymoddata and _keymoddata->_subscriber){
         _keymoddata->_evstrings.atomicOp([this,prevseg](std::vector<std::string>& unlocked){
           auto s = FormatString("seg<%d->%d> _startval<%g> _destval<%g> _lerpincr<%g> _lerpindex<%g>", prevseg,  _segmentIndex, _startval, _destval, _lerpincr, _lerpindex );
@@ -123,9 +126,11 @@ float RateLevelEnvInst::shapedvalue() const {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void RateLevelEnvInst::setState(int istate){
+  _prevstate = _state;
   if(_keymoddata and _keymoddata->_subscriber){
         _keymoddata->_evstrings.atomicOp([this,istate](std::vector<std::string>& unlocked){
-          //unlocked.push_back(s);
+          auto s = FormatString("state<%d->%d> _value<%g> seg<%d>", _prevstate,  _state, _value.x, _segmentIndex );
+          unlocked.push_back(s);
         });
     }
   _state = istate;
@@ -155,7 +160,7 @@ void RateLevelEnvInst::compute() // final
         } else if (edata._sustainSegment == -1) { // this env has no sustain...
           // so go to release
           setState(2);
-          printf("env<%p:%s> pre-begin release _value<%g>\n", this, _name.c_str(), _value.x );
+          //printf("env<%p:%s> pre-begin release _value<%g>\n", this, _name.c_str(), _value.x );
         } else if (_segmentIndex < edata._sustainSegment) { // we are not at sustain yet..
           if (_segmentIndex >= maxseg)
             setState(3); // straight to done.).
@@ -171,15 +176,9 @@ void RateLevelEnvInst::compute() // final
     }
     ////////////////////////////////////////////////////////////////////////////
     case 1: // sustain
-      if(_prevstate!=1){
-         printf("env<%p:%s> begin-sustain\n", this, _name.c_str() );
-      }
       break;
     ////////////////////////////////////////////////////////////////////////////
     case 2: { // release
-      if(_prevstate!=2){
-         printf("env<%p:%s> begin-release\n", this, _name.c_str() );
-      }
       ///////////////////////////////////////////
       _lerpindex += _lerpincr;
       _value          = shapedvalue();
@@ -189,7 +188,7 @@ void RateLevelEnvInst::compute() // final
       if (try_advance) {
         if (_segmentIndex >= maxseg){
           setState(5);
-          printf("env<%p:%s> release adv1 _segmentIndex<%d> maxseg<%d> _value<%g>\n", this, _name.c_str(), _segmentIndex, maxseg, _value.x );
+          //printf("env<%p:%s> release adv1 _segmentIndex<%d> maxseg<%d> _value<%g>\n", this, _name.c_str(), _segmentIndex, maxseg, _value.x );
         }
         else
           initSeg(_segmentIndex + 1);
@@ -204,7 +203,7 @@ void RateLevelEnvInst::compute() // final
                       and (dbatten < -96.0f);
           if (done){
             setState(3);
-            printf("env<%p:%s> release adv2 dbatten<%g>\n", this, _name.c_str(), dbatten );
+            //printf("env<%p:%s> release adv2 dbatten<%g>\n", this, _name.c_str(), dbatten );
           }
         }
         ///////////////////////////////////////////
@@ -213,7 +212,7 @@ void RateLevelEnvInst::compute() // final
     }
       ////////////////////////////////////////////////////////////////////////////
     case 3: // done
-       printf("env<%p:%s> done\n", this, _name.c_str() );
+       //printf("env<%p:%s> done\n", this, _name.c_str() );
       if (_ampenv) {
         // printf("ampenv<%p> RELEASING LAYER<%p>\n", this, _layer);
         synth::instance()->releaseLayer(_layer);
@@ -235,7 +234,7 @@ void RateLevelEnvInst::compute() // final
       bool done     = dbatten<-96.0;
       if(done){
         setState(3);
-        printf( "DONE\n" );
+        //printf( "DONE\n" );
       }
       break;
     }
@@ -250,18 +249,7 @@ void RateLevelEnvInst::compute() // final
   _updatecount++;
   if(_keymoddata){
     _keymoddata->_currentValue = _value;
-    if(_prevstate!=_state){
-      if(_keymoddata->_subscriber){
-        _keymoddata->_evstrings.atomicOp([this](std::vector<std::string>& unlocked){
-          auto s = FormatString("state<%d->%d> _value<%g> seg<%d>", _prevstate,  _state, _value.x, _segmentIndex );
-          unlocked.push_back(s);
-          printf("statechange: %s\n", s.c_str());
-        });
-      }
-    }
   }
-  _prevstate = _state;
-  // printf("env<%p> _state<%d> _value<%g>\n", this, _state, _value);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -270,7 +258,7 @@ void RateLevelEnvInst::keyOn(const KeyOnInfo& KOI) {
   _layer         = KOI._layer;
   _konoffinfo    = KOI;
   _state         = 0;
-  _prevstate     = 0;
+  _prevstate     = -1;
   auto ld        = KOI._layerdata;
   int ikey       = KOI._key;
   _ignoreRelease = ld->_ignRels;
