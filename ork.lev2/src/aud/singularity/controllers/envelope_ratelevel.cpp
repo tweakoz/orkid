@@ -105,8 +105,8 @@ void RateLevelEnvInst::initSeg(int iseg) {
     _lerpincr  = 0.001f;
     _lerpindex = 0.0f;
   }
-  if(_lerpincr>0.1){
-    _lerpincr = 0.1;
+  if(_lerpincr>0.2){
+    _lerpincr = 0.2;
   }
   if(_keymoddata and _keymoddata->_subscriber){
         _keymoddata->_evstrings.atomicOp([this,prevseg](std::vector<std::string>& unlocked){

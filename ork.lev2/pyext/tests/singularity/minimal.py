@@ -49,10 +49,10 @@ class SingulApp(object):
     self.czdata = singularity.CzSynthData()
     self.czdata.loadBank("bankA", self.syn_data_base/"factoryA.bnk")
     self.czdata.loadBank("bankB", self.syn_data_base/"factoryB.bnk")
-    #self.czdata.loadBank("bank0", self.syn_data_base/"cz1_1.bnk")
-    #self.czdata.loadBank("bank1", self.syn_data_base/"cz1_2.bnk")
-    #self.czdata.loadBank("bank2", self.syn_data_base/"cz1_3.bnk")
-    #self.czdata.loadBank("bank3", self.syn_data_base/"cz1_4.bnk")
+    self.czdata.loadBank("bank0", self.syn_data_base/"cz1_1.bnk")
+    self.czdata.loadBank("bank1", self.syn_data_base/"cz1_2.bnk")
+    self.czdata.loadBank("bank2", self.syn_data_base/"cz1_3.bnk")
+    self.czdata.loadBank("bank3", self.syn_data_base/"cz1_4.bnk")
     self.czbank = self.czdata.bankData
     self.czprogs = self.czbank.programsByName
     self.sorted_progs = sorted(self.czprogs.keys())

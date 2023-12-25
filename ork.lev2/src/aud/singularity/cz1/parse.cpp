@@ -44,7 +44,7 @@ struct ratelevmodel {
     _inpdiv    = 97.4786f;
     _rorbias   = 0.102644f;
     _basenumer = 1.04686f;
-    _power     = 3.6284f;
+    _power     = 1.6284f;
     _scalar    = 0.635746f;
   }
   void low_pmodel() {
