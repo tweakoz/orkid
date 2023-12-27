@@ -27,20 +27,15 @@ algdata_ptr_t configureKrzAlgorithm(int algid) {
     case 1: { // KRZ1 (PCH->DSP->AMP->MONO)
       auto stage_dsp = algdout->appendStage("DSP");
       auto stage_amp = algdout->appendStage("AMP");
-      stage_dsp->_ioconfig->_inputs.push_back(0);  // 1 input
-      stage_dsp->_ioconfig->_outputs.push_back(0); // 1 output
-      stage_amp->_ioconfig->_inputs.push_back(0);  // 1 input
-      stage_amp->_ioconfig->_outputs.push_back(0); // 1 output
+      stage_dsp->setNumIos(1, 1); // 1 in, 1 out
+      stage_amp->setNumIos(1, 1); // 1 in, 1 out
       break;
     }
     case 2: { // KRZ2 (PCH->DSP1->DSP2->PANNER->AMP->STEREO)
       auto stage_dsp    = algdout->appendStage("DSP");
       auto stage_panner = algdout->appendStage("AMP");
-      stage_dsp->_ioconfig->_inputs.push_back(0);    // 1 input
-      stage_dsp->_ioconfig->_outputs.push_back(0);   // 1 output
-      stage_panner->_ioconfig->_inputs.push_back(0); // 1 input
-      stage_panner->_ioconfig->_outputs.push_back(0);
-      stage_panner->_ioconfig->_outputs.push_back(1); // 2 outputs
+      stage_dsp->setNumIos(1, 1); // 1 in, 1 out
+      stage_panner->setNumIos(1, 2); // 1 in, 2 out
       break;
     }
     default:

@@ -8,6 +8,7 @@
 #include <ork/lev2/aud/singularity/synthdata.h>
 #include <ork/lev2/aud/singularity/synth.h>
 #include <ork/lev2/aud/singularity/krzobjects.h>
+#include <ork/lev2/aud/singularity/krzdata.h>
 #include <ork/kernel/string/string.h>
 #include <ork/lev2/aud/singularity/alg_oscil.h>
 #include <ork/lev2/aud/singularity/sampler.h>
@@ -155,7 +156,7 @@ static KrzAlgCfg getAlgConfig(int algID) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 
-keymap_ptr_t BankData::parseKeymap(int kmid, const Value& jsonobj) {
+keymap_ptr_t KrzBankDataParser::parseKeymap(int kmid, const Value& jsonobj) {
   auto kmapout = std::make_shared<KeyMap>();
 
   kmapout->_kmID = kmid;
@@ -192,7 +193,7 @@ keymap_ptr_t BankData::parseKeymap(int kmid, const Value& jsonobj) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-sample* BankData::parseSample(const Value& jsonobj, const multisample* parent) {
+sample* KrzBankDataParser::parseSample(const Value& jsonobj, const multisample* parent) {
   auto sout           = new sample;
   sout->_sampleBlock  = getK2V3InternalSoundBlock();
   sout->_name         = jsonobj["subSampleName"].GetString();
@@ -256,7 +257,7 @@ sample* BankData::parseSample(const Value& jsonobj, const multisample* parent) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-multisample* BankData::parseMultiSample(const Value& jsonobj) {
+multisample* KrzBankDataParser::parseMultiSample(const Value& jsonobj) {
   auto msout    = new multisample;
   msout->_name  = jsonobj["MultiSample"].GetString();
   msout->_objid = jsonobj["objectID"].GetInt();
@@ -274,7 +275,7 @@ multisample* BankData::parseMultiSample(const Value& jsonobj) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void BankData::parseAsr(
+void KrzBankDataParser::parseAsr(
     const rapidjson::Value& jo, //
     controlblockdata_ptr_t cblock,
     const EnvCtrlData& ENVCTRL,
@@ -322,7 +323,7 @@ void BankData::parseAsr(
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void BankData::parseLfo(const rapidjson::Value& jo, controlblockdata_ptr_t cblock, const std::string& name) {
+void KrzBankDataParser::parseLfo(const rapidjson::Value& jo, controlblockdata_ptr_t cblock, const std::string& name) {
   auto lout           = cblock->addController<LfoData>();
   lout->_initialPhase = jo["phase"].GetFloat();
   lout->_shape        = jo["shape"].GetString();
@@ -334,7 +335,7 @@ void BankData::parseLfo(const rapidjson::Value& jo, controlblockdata_ptr_t cbloc
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void BankData::parseFun(const rapidjson::Value& jo, controlblockdata_ptr_t cblock, const std::string& name) {
+void KrzBankDataParser::parseFun(const rapidjson::Value& jo, controlblockdata_ptr_t cblock, const std::string& name) {
   auto out   = cblock->addController<FunData>();
   out->_a    = jo["a"].GetString();
   out->_b    = jo["b"].GetString();
@@ -373,7 +374,7 @@ int NoteFromString(const std::string& snote) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void BankData::parseFBlock(const Value& fseg, dspparam_ptr_t fblk) {
+void KrzBankDataParser::parseFBlock(const Value& fseg, dspparam_ptr_t fblk) {
   //////////////////////////////////
   using namespace std::string_literals;
 
@@ -480,7 +481,7 @@ void BankData::parseFBlock(const Value& fseg, dspparam_ptr_t fblk) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-dspblkdata_ptr_t BankData::parseDspBlock(const Value& dseg, lyrdata_ptr_t layd, bool force) {
+dspblkdata_ptr_t KrzBankDataParser::parseDspBlock(const Value& dseg, lyrdata_ptr_t layd, bool force) {
   dspblkdata_ptr_t rval;
   if (dseg.HasMember("BLOCK_ALG ")) {
     rval             = std::make_shared<DspBlockData>();
@@ -536,7 +537,7 @@ dspblkdata_ptr_t BankData::parseDspBlock(const Value& dseg, lyrdata_ptr_t layd, 
 
 ///////////////////////////////////////////////////////////////////////////////
 
-dspblkdata_ptr_t BankData::parsePchBlock(const Value& pseg, lyrdata_ptr_t layd) {
+dspblkdata_ptr_t KrzBankDataParser::parsePchBlock(const Value& pseg, lyrdata_ptr_t layd) {
   auto dblk = parseDspBlock(pseg, layd, true);
 
   if (nullptr == dblk)
@@ -554,7 +555,7 @@ dspblkdata_ptr_t BankData::parsePchBlock(const Value& pseg, lyrdata_ptr_t layd) 
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void BankData::parseKmpBlock(const Value& kmseg, KmpBlockData& kmblk) {
+void KrzBankDataParser::parseKmpBlock(const Value& kmseg, KmpBlockData& kmblk) {
   kmblk._keyTrack    = kmseg["KeyTrack(ct)"].GetInt();
   kmblk._transpose   = kmseg["transposeTS(st)"].GetInt();
   kmblk._timbreShift = kmseg["timbreshift"].GetInt();
@@ -563,7 +564,7 @@ void BankData::parseKmpBlock(const Value& kmseg, KmpBlockData& kmblk) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-lyrdata_ptr_t BankData::parseLayer(const Value& jsonobj, prgdata_ptr_t pd) {
+lyrdata_ptr_t KrzBankDataParser::parseLayer(const Value& jsonobj, prgdata_ptr_t pd) {
   const auto& name = pd->_name;
   printf("Got Prgram<%s> layer..\n", name.c_str());
   const auto& calvinSeg = jsonobj["CALVIN"];
@@ -575,29 +576,29 @@ lyrdata_ptr_t BankData::parseLayer(const Value& jsonobj, prgdata_ptr_t pd) {
   // printf( "find KMID<%d>\n", kmid );
   auto it = _tempkeymaps.find(kmid);
   if (it == _tempkeymaps.end()) {
-    it = _keymaps.find(kmid);
-    assert(it != _keymaps.end());
+    it = _objdb->_keymaps.find(kmid);
+    assert(it != _objdb->_keymaps.end());
   }
 
-  auto rval     = pd->newLayer();
+  auto layerdata     = pd->newLayer();
   auto km       = it->second;
-  rval->_keymap = km;
+  layerdata->_keymap = km;
 
-  parseKmpBlock(keymapSeg, *rval->_kmpBlock);
+  parseKmpBlock(keymapSeg, *layerdata->_kmpBlock);
 
-  rval->_loKey = jsonobj["loKey"].GetInt();
-  rval->_hiKey = jsonobj["hiKey"].GetInt();
-  rval->_loVel = jsonobj["loVel"].GetInt() * 18;
-  rval->_hiVel = 1 + (jsonobj["hiVel"].GetInt() * 18);
-  if (rval->_loVel == 0 && rval->_hiVel == 0)
-    rval->_hiVel = 127;
+  layerdata->_loKey = jsonobj["loKey"].GetInt();
+  layerdata->_hiKey = jsonobj["hiKey"].GetInt();
+  layerdata->_loVel = jsonobj["loVel"].GetInt() * 18;
+  layerdata->_hiVel = 1 + (jsonobj["hiVel"].GetInt() * 18);
+  if (layerdata->_loVel == 0 && layerdata->_hiVel == 0)
+    layerdata->_hiVel = 127;
 
-  rval->_ignRels  = miscSeg["ignRels"].GetBool();
-  rval->_atk1Hold = miscSeg["atkHold"].GetBool();
-  rval->_atk3Hold = miscSeg["susHold"].GetBool();
+  layerdata->_ignRels  = miscSeg["ignRels"].GetBool();
+  layerdata->_atk1Hold = miscSeg["atkHold"].GetBool();
+  layerdata->_atk3Hold = miscSeg["susHold"].GetBool();
 
   auto krzalgdat = parseAlg(jsonobj);
-  rval->_algdata = krzalgdat._algdata;
+  layerdata->_algdata = krzalgdat._algdata;
 
   //////////////////////////////////////////////////////
 
@@ -605,7 +606,7 @@ lyrdata_ptr_t BankData::parseLayer(const Value& jsonobj, prgdata_ptr_t pd) {
   const auto& envcSeg = jsonobj["ENVCTRL"];
   parseEnvControl(envcSeg, ENVCTRL);
 
-  rval->_usenatenv = ENVCTRL._useNatEnv;
+  layerdata->_usenatenv = ENVCTRL._useNatEnv;
 
   auto parseEnv = [&](const Value& envobj, //
                       controlblockdata_ptr_t cblock,
@@ -702,7 +703,7 @@ lyrdata_ptr_t BankData::parseLayer(const Value& jsonobj, prgdata_ptr_t pd) {
     return rout;
   };
   //////////////////////////////////////////////////////
-  auto CB = rval->_ctrlBlock;
+  auto CB = layerdata->_ctrlBlock;
   //////////////////////////////////////////////////////
   // kurzweil only has 3 envs per layer!
   //////////////////////////////////////////////////////
@@ -767,7 +768,7 @@ lyrdata_ptr_t BankData::parseLayer(const Value& jsonobj, prgdata_ptr_t pd) {
   //////////////////////////////////////////////////////
 
   if (krzalgdat._algindex == 0)
-    return rval;
+    return layerdata;
 
   assert(krzalgdat._algindex >= 1);
   assert(krzalgdat._algindex <= 31);
@@ -789,6 +790,10 @@ lyrdata_ptr_t BankData::parseLayer(const Value& jsonobj, prgdata_ptr_t pd) {
         return "???";
     }
   };
+
+  auto dspstage   = layerdata->stageByName("DSP");
+  auto ampstage   = layerdata->stageByName("AMP");
+
   auto do_block = [&](int blkbase, int paramcount) -> dspblkdata_ptr_t {
     dspblkdata_ptr_t dspblock;
 
@@ -799,11 +804,11 @@ lyrdata_ptr_t BankData::parseLayer(const Value& jsonobj, prgdata_ptr_t pd) {
     printf("algd<%d> blkbase<%d> paramcount<%d> blockn1<%s>\n", krzalgdat._algindex, blkbase, paramcount, blockn1);
 
     if (0 == blkbase) {
-      dspblock             = parsePchBlock(pitchSeg, rval);
+      dspblock             = parsePchBlock(pitchSeg, layerdata);
       dspblock->_numParams = 1;
       parseFBlock(pitchSeg, dspblock->param(0));
     } else if (jsonobj.HasMember(blockn1)) {
-      dspblock = parseDspBlock(jsonobj[blockn1], rval);
+      dspblock = parseDspBlock(jsonobj[blockn1], layerdata);
 
       if (dspblock == nullptr)
         return nullptr;
@@ -853,43 +858,43 @@ lyrdata_ptr_t BankData::parseLayer(const Value& jsonobj, prgdata_ptr_t pd) {
   OrkAssert(false);
   /* replace with dspstage method
   if (ACFG._wp)
-    rval->_dspBlocks[outindex++] = do_block(blockindex, ACFG._wp);
+    layerdata->_dspBlocks[outindex++] = do_block(blockindex, ACFG._wp);
   blockindex += ACFG._wp;
   if (ACFG._w1)
-    rval->_dspBlocks[outindex++] = do_block(blockindex, ACFG._w1);
+    layerdata->_dspBlocks[outindex++] = do_block(blockindex, ACFG._w1);
   blockindex += ACFG._w1;
   if (ACFG._w2)
-    rval->_dspBlocks[outindex++] = do_block(blockindex, ACFG._w2);
+    layerdata->_dspBlocks[outindex++] = do_block(blockindex, ACFG._w2);
   blockindex += ACFG._w2;
   if (ACFG._w3)
-    rval->_dspBlocks[outindex++] = do_block(blockindex, ACFG._w3);
+    layerdata->_dspBlocks[outindex++] = do_block(blockindex, ACFG._w3);
   blockindex += ACFG._w3;
   if (ACFG._wa)
-    rval->_dspBlocks[outindex++] = do_block(blockindex, ACFG._wa);
+    layerdata->_dspBlocks[outindex++] = do_block(blockindex, ACFG._wa);
   blockindex += ACFG._wa;
 
   if (pd->_name == "Click") {
 
     for (int i = 0; i < 5; i++) {
-      auto blk = rval->_dspBlocks[i];
+      auto blk = layerdata->_dspBlocks[i];
       if (blk)
         printf("dspblk<%d:%p:%s>\n", i, blk.get(), blk->_blocktype.c_str());
     }
     // assert(false);
   }
 
-  rval->_pchBlock = rval->_dspBlocks[0];
+  layerdata->_pchBlock = layerdata->_dspBlocks[0];
   */
 
   //////////////////////////////////////////////////////
 
   // printf( "got keymapID<%d:%p:%s>\n", kmid, km, km->_name.c_str() );
-  return rval;
+  return layerdata;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-KrzAlgData BankData::parseAlg(const rapidjson::Value& JO) {
+KrzAlgData KrzBankDataParser::parseAlg(const rapidjson::Value& JO) {
   const auto& calvin = JO["CALVIN"];
   int krzAlgIndex    = calvin["ALG"].GetInt();
 
@@ -900,7 +905,7 @@ KrzAlgData BankData::parseAlg(const rapidjson::Value& JO) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void BankData::parseEnvControl(const rapidjson::Value& seg, EnvCtrlData& ed) {
+void KrzBankDataParser::parseEnvControl(const rapidjson::Value& seg, EnvCtrlData& ed) {
   auto aenvmode = seg["ampenv_mode"].GetString();
   ed._useNatEnv = (0 == strcmp(aenvmode, "Natural"));
   ed._atkAdjust = seg["AtkAdjust"].GetFloat();
@@ -913,7 +918,7 @@ void BankData::parseEnvControl(const rapidjson::Value& seg, EnvCtrlData& ed) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-prgdata_ptr_t BankData::parseProgram(const Value& jsonobj) {
+prgdata_ptr_t KrzBankDataParser::parseProgram(const Value& jsonobj) {
   auto pdata       = std::make_shared<ProgramData>();
   pdata->_tags     = "Program";
   const auto& name = jsonobj["Program"].GetString();
@@ -933,7 +938,7 @@ prgdata_ptr_t BankData::parseProgram(const Value& jsonobj) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void BankData::loadKrzJsonFromFile(const std::string& fname, int ibaseid) {
+void KrzBankDataParser::loadKrzJsonFromFile(const std::string& fname, int ibaseid) {
   auto realfname = basePath() / "kurzweil" / (fname + ".json");
   printf("fname<%s>\n", realfname.c_str());
   FILE* fin = fopen(realfname.c_str(), "rt");
@@ -952,12 +957,12 @@ void BankData::loadKrzJsonFromFile(const std::string& fname, int ibaseid) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void BankData::loadKrzJsonFromString(const std::string& json_data, int ibaseid) {
+void KrzBankDataParser::loadKrzJsonFromString(const std::string& json_data, int ibaseid) {
+  
+  _objdb = std::make_shared<BankData>();
 
   Document document;
   document.Parse(json_data.c_str());
-
-  auto objmap = this;
 
   assert(document.IsObject());
   assert(document.HasMember("KRZ"));
@@ -981,7 +986,7 @@ void BankData::loadKrzJsonFromString(const std::string& json_data, int ibaseid) 
       auto ms                  = parseMultiSample(obj);
       _tempmultisamples[objid] = ms;
     } else if (obj.HasMember("Program")) {
-      auto p               = this->parseProgram(obj);
+      auto p               = parseProgram(obj);
       _tempprograms[objid] = p;
       //p->_tags             = "k2000(" + fname + ")";
     } else {
@@ -995,27 +1000,27 @@ void BankData::loadKrzJsonFromString(const std::string& json_data, int ibaseid) 
   for (auto it : _tempprograms) {
     int objid         = it.first;
     prgdata_ptr_t prg = it.second;
-    auto it2          = objmap->_programs.find(objid);
-    if (it2 != objmap->_programs.end()) {
-      int nid = (objmap->_programs.rbegin()->first + 1);
+    auto it2          = _objdb->_programs.find(objid);
+    if (it2 != _objdb->_programs.end()) {
+      int nid = (_objdb->_programs.rbegin()->first + 1);
       // nid = nid-(nid%
       printf("REMAP PROG<%d> -> <%d>\n", objid, nid);
       objid = nid;
     }
-    objmap->_programs[objid] = prg;
+    _objdb->_programs[objid] = prg;
 
     // TODO - remap duplicates (by name)
-    objmap->_programsByName[prg->_name] = prg;
+    _objdb->_programsByName[prg->_name] = prg;
   }
   for (auto it : _tempkeymaps) {
     int objid               = it.first;
     auto km                 = it.second;
-    objmap->_keymaps[objid] = km;
+    _objdb->_keymaps[objid] = km;
     for (auto kr : km->_regions) {
       int msid  = kr->_multsampID;
       auto msit = _tempmultisamples.find(msid);
       if (msit == _tempmultisamples.end()) {
-        msit = _multisamples.find(msid);
+        msit = _objdb->_multisamples.find(msid);
         assert(msit != _multisamples.end());
       }
 
@@ -1035,44 +1040,11 @@ void BankData::loadKrzJsonFromString(const std::string& json_data, int ibaseid) 
   for (auto it : _tempmultisamples) {
     int objid                    = it.first;
     multisample* ms              = it.second;
-    objmap->_multisamples[objid] = ms;
+    _objdb->_multisamples[objid] = ms;
   }
 
   /////////////////////////////////////////
 }
 
-///////////////////////////////////////////////////////////////////////////////
-
-prgdata_ptr_t BankData::findProgram(int progID) const {
-  prgdata_ptr_t pd = nullptr;
-  auto it               = _programs.find(progID);
-  if (it == _programs.end()) {
-    return _programs.begin()->second;
-  }
-  assert(it != _programs.end());
-  pd = it->second;
-  return pd;
-}
-
-prgdata_ptr_t BankData::findProgramByName(const std::string named) const {
-  prgdata_ptr_t pd = nullptr;
-  auto it               = _programsByName.find(named);
-  if (it == _programsByName.end()) {
-    return _programsByName.begin()->second;
-  }
-  assert(it != _programsByName.end());
-  pd = it->second;
-  return pd;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-keymap_constptr_t BankData::findKeymap(int kmID) const {
-  keymap_constptr_t kd = nullptr;
-  auto it              = _keymaps.find(kmID);
-  if (it != _keymaps.end())
-    kd = it->second;
-  return kd;
-}
 
 } // namespace ork::audio::singularity

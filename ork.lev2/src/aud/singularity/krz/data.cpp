@@ -59,10 +59,14 @@ bankdata_ptr_t KrzSynthData::baseObjects() {
   }
   std::vector<uint8_t> array = dblock->_storage;
   auto as_str = std::string(array.begin(), array.end());
-
-  bankdata_ptr_t objdb = std::make_shared<BankData>();
-  objdb->loadKrzJsonFromString(as_str, 0);
-  return objdb;
+  auto base_output      = ork::audio::singularity::basePath() / "kurzweil"/"k2v3base.json";
+  FILE* out_file = fopen(base_output.c_str(), "w");
+  fprintf(out_file, "%s", as_str.c_str());
+  fclose(out_file);
+  
+  KrzBankDataParser parser;
+  parser.loadKrzJsonFromString(as_str, 0);
+  return parser._objdb;
 }
 
 KrzSynthData::KrzSynthData()

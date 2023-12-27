@@ -32,6 +32,40 @@ void BankData::describeX(class_t* clazz) {
   // clazz->directObjectMapProperty("KeyMaps", &BankData::_keymaps);
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
+prgdata_ptr_t BankData::findProgram(int progID) const {
+  prgdata_ptr_t pd = nullptr;
+  auto it               = _programs.find(progID);
+  if (it == _programs.end()) {
+    return _programs.begin()->second;
+  }
+  assert(it != _programs.end());
+  pd = it->second;
+  return pd;
+}
+
+prgdata_ptr_t BankData::findProgramByName(const std::string named) const {
+  prgdata_ptr_t pd = nullptr;
+  auto it               = _programsByName.find(named);
+  if (it == _programsByName.end()) {
+    return _programsByName.begin()->second;
+  }
+  assert(it != _programsByName.end());
+  pd = it->second;
+  return pd;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+keymap_constptr_t BankData::findKeymap(int kmID) const {
+  keymap_constptr_t kd = nullptr;
+  auto it              = _keymaps.find(kmID);
+  if (it != _keymaps.end())
+    kd = it->second;
+  return kd;
+}
+
 //////////////////////////////////////////////////////////////////////////////
 
 void BankData::addProgram(int idx, const std::string& name, prgdata_ptr_t program) {

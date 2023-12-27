@@ -54,9 +54,6 @@ struct BankData : public ork::Object {
 
   DeclareConcreteX(BankData, ork::Object);
 
-  void loadKrzJsonFromFile(const std::string& fname, int bank);
-  void loadKrzJsonFromString(const std::string& json, int bank);
-
   void addProgram(int idx, const std::string& name, prgdata_ptr_t program);
   prgdata_ptr_t findProgram(int idx) const;
   prgdata_ptr_t findProgramByName(const std::string named) const;
@@ -64,30 +61,11 @@ struct BankData : public ork::Object {
 
   //
 
-  keymap_ptr_t parseKeymap(int kmid, const rapidjson::Value& JO);
-  void parseAsr(const rapidjson::Value& JO, controlblockdata_ptr_t cblock, const EnvCtrlData& ENVCTRL, const std::string& name);
-  void parseLfo(const rapidjson::Value& JO, controlblockdata_ptr_t cblock, const std::string& name);
-  void parseFun(const rapidjson::Value& JO, controlblockdata_ptr_t cblock, const std::string& name);
-  lyrdata_ptr_t parseLayer(const rapidjson::Value& JO, prgdata_ptr_t pd);
-  void parseEnvControl(const rapidjson::Value& JO, EnvCtrlData& ed);
-  prgdata_ptr_t parseProgram(const rapidjson::Value& JO);
-  multisample* parseMultiSample(const rapidjson::Value& JO);
-  sample* parseSample(const rapidjson::Value& JO, const multisample* parent);
-
-  KrzAlgData parseAlg(const rapidjson::Value& JO);
-  void parseKmpBlock(const Value& JO, KmpBlockData& kmblk);
-  void parseFBlock(const Value& JO, dspparam_ptr_t param);
-  dspblkdata_ptr_t parseDspBlock(const Value& JO, lyrdata_ptr_t layd, bool force = false);
-  dspblkdata_ptr_t parsePchBlock(const Value& JO, lyrdata_ptr_t layd);
-
   std::map<int, prgdata_ptr_t> _programs;
   std::map<std::string, prgdata_ptr_t> _programsByName;
   std::map<int, keymap_ptr_t> _keymaps;
   std::map<int, multisample*> _multisamples;
 
-  std::map<int, prgdata_ptr_t> _tempprograms;
-  std::map<int, keymap_ptr_t> _tempkeymaps;
-  std::map<int, multisample*> _tempmultisamples;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
