@@ -26,12 +26,15 @@ static const auto krzbasedir = basePath() / "kurzweil" / "krz";
 
 bankdata_ptr_t KrzSynthData::baseObjects() {
   static bankdata_ptr_t objdb = std::make_shared<BankData>();
-  objdb->loadJson("k2v3base", 0);
+  //objdb->loadJson("k2v3base", 0);
+  auto base      = ork::audio::singularity::basePath() / "kurzweil";
+  krzio::convert((base/"k2v3base.bin").c_str());
   return objdb;
 }
 
 KrzSynthData::KrzSynthData()
     : SynthData() {
+  auto bo = baseObjects();
 }
 
 void KrzSynthData::loadBank(const file::Path& syxpath){

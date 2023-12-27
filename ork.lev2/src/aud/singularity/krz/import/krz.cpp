@@ -73,7 +73,7 @@ Keymap::Keymap()
 
 SampleFile::SampleFile() {
   auto base      = ork::audio::singularity::basePath() / "kurzweil";
-  auto rompath   = base / "k2v3internalsamplerom.bin";
+  auto rompath   = base / "samplerom_internal.bin";
   FILE* fsamprom = fopen(rompath.c_str(), "rb");
   size_t romlen = 8 << 20;
   auto sample_data = new uint8_t[romlen];
