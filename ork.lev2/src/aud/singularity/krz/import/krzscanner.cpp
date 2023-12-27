@@ -100,6 +100,13 @@ void filescanner::scanAndDump() {
   // printf( "JSONOUT\n\n%s\n\n", strbuf.GetString() );
 }
 
+std::string filescanner::jsonPrograms() const{
+  rapidjson::StringBuffer strbuf;
+  rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(strbuf);
+  _joprog.Accept(writer);
+  return strbuf.GetString();
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 void ParseSong(const datablock& db, datablock::iterator& it) {

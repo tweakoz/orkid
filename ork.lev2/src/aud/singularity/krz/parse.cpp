@@ -19,7 +19,7 @@ namespace ork::audio::singularity {
 const s16* getK2V3InternalSoundBlock() {
   static s16* gdata = nullptr;
   if (nullptr == gdata) {
-    auto filename = basePath() / "kurzweil" / "k2v3internalsamplerom.bin";
+    auto filename = basePath() / "kurzweil" / "samplerom_internal.bin";
     printf("Loading Soundblock<%s>\n", filename.c_str());
     FILE* fin = fopen(filename.toAbsolute().c_str(), "rb");
     if (fin == nullptr) {
@@ -933,7 +933,7 @@ prgdata_ptr_t BankData::parseProgram(const Value& jsonobj) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void BankData::loadJson(const std::string& fname, int ibaseid) {
+void BankData::loadKrzJsonFromFile(const std::string& fname, int ibaseid) {
   auto realfname = basePath() / "kurzweil" / (fname + ".json");
   printf("fname<%s>\n", realfname.c_str());
   FILE* fin = fopen(realfname.c_str(), "rt");
@@ -946,10 +946,16 @@ void BankData::loadJson(const std::string& fname, int ibaseid) {
   fread(jsondata, size, 1, fin);
   jsondata[size] = 0;
   fclose(fin);
+  loadKrzJsonFromString(jsondata, ibaseid);
+  free((void*)jsondata);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void BankData::loadKrzJsonFromString(const std::string& json_data, int ibaseid) {
 
   Document document;
-  document.Parse(jsondata);
-  free((void*)jsondata);
+  document.Parse(json_data.c_str());
 
   auto objmap = this;
 
@@ -977,7 +983,7 @@ void BankData::loadJson(const std::string& fname, int ibaseid) {
     } else if (obj.HasMember("Program")) {
       auto p               = this->parseProgram(obj);
       _tempprograms[objid] = p;
-      p->_tags             = "k2000(" + fname + ")";
+      //p->_tags             = "k2000(" + fname + ")";
     } else {
       assert(false);
     }

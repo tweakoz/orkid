@@ -15,6 +15,8 @@
 #include <ork/lev2/aud/singularity/envelope.h>
 #include <ork/lev2/aud/singularity/krzobjects.h>
 #include <ork/lev2/aud/singularity/sampler.h>
+#include <ork/kernel/datacache.h>
+#include <ork/kernel/datablock.h>
 #include "import/krzio.h"
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -25,10 +27,41 @@ namespace ork::audio::singularity {
 static const auto krzbasedir = basePath() / "kurzweil" / "krz";
 
 bankdata_ptr_t KrzSynthData::baseObjects() {
-  static bankdata_ptr_t objdb = std::make_shared<BankData>();
-  //objdb->loadJson("k2v3base", 0);
   auto base      = ork::audio::singularity::basePath() / "kurzweil";
-  krzio::convert((base/"k2v3base.bin").c_str());
+  auto base_path = base/"k2v3base.bin";
+
+  auto bin_file = fopen(base_path.c_str(), "rb");
+  printf("file<%p>\n", (void*) bin_file);
+  fseek(bin_file, 0, SEEK_END);
+  size_t ilen = ftell(bin_file);
+  printf("length<%zu>\n", ilen);
+  auto bin_data = malloc(ilen);
+  fseek(bin_file, 0, SEEK_SET);
+  fread(bin_data, ilen, 1, bin_file);
+  fclose(bin_file);
+
+  auto krzbasehasher = DataBlock::createHasher();
+  krzbasehasher->accumulateString("krzbaseobjects"); // identifier
+  krzbasehasher->accumulateItem<float>(1.0);         // version code
+  krzbasehasher->accumulate(bin_data, ilen);         // data
+
+  krzbasehasher->finish();
+  uint64_t krzbase_hash = krzbasehasher->result();
+  auto dblock = DataBlockCache::findDataBlock(krzbase_hash);
+  if (dblock == nullptr) {
+    auto base_json = krzio::convert(base_path.c_str());
+    printf("%s", base_json.c_str());
+    dblock        = std::make_shared<DataBlock>();
+    auto array = std::vector<uint8_t>(base_json.begin(), base_json.end());
+    array.push_back(0);
+    dblock->addData(array.data(), array.size());
+    DataBlockCache::setDataBlock(krzbase_hash, dblock);
+  }
+  std::vector<uint8_t> array = dblock->_storage;
+  auto as_str = std::string(array.begin(), array.end());
+
+  bankdata_ptr_t objdb = std::make_shared<BankData>();
+  objdb->loadKrzJsonFromString(as_str, 0);
   return objdb;
 }
 

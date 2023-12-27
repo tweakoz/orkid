@@ -10,7 +10,7 @@
 namespace ork::audio::singularity::krzio {
 ///////////////////////////////////////////////////////////////////////////////
 
-int convert(std::string krzpath) {
+std::string convert(std::string krzpath) {
 
   rapidjson::Document gconfigdoc;
   // document.Parse(json);
@@ -102,7 +102,7 @@ int convert(std::string krzpath) {
 
   /////////////////////////////
 
-  return 0;
+  return scanner.jsonPrograms();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

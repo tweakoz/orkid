@@ -44,7 +44,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 namespace ork::audio::singularity::krzio {
-int convert(std::string krzpath);
+std::string convert(std::string krzpath);
 typedef uint32_t u32;
 typedef uint16_t u16;
 typedef int16_t s16;
@@ -635,6 +635,10 @@ struct filescanner {
     kv.SetString(key.c_str(), _japrog);
     parent.AddMember(kv, val, _japrog);
   }
+
+  /////////////////////////////////////////////
+
+  std::string jsonPrograms() const;
 
   /////////////////////////////////////////////
 

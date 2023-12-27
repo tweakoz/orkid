@@ -54,7 +54,8 @@ struct BankData : public ork::Object {
 
   DeclareConcreteX(BankData, ork::Object);
 
-  void loadJson(const std::string& fname, int bank);
+  void loadKrzJsonFromFile(const std::string& fname, int bank);
+  void loadKrzJsonFromString(const std::string& json, int bank);
 
   void addProgram(int idx, const std::string& name, prgdata_ptr_t program);
   prgdata_ptr_t findProgram(int idx) const;
