@@ -71,7 +71,8 @@ bankdata_ptr_t KrzSynthData::baseObjects() {
 
 KrzSynthData::KrzSynthData()
     : SynthData() {
-  auto bo = baseObjects();
+  _bankdata = baseObjects();
+  
 }
 
 void KrzSynthData::loadBank(const file::Path& syxpath){

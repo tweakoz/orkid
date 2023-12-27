@@ -504,7 +504,7 @@ dspblkdata_ptr_t KrzBankDataParser::parseDspBlock(const Value& dseg, dspstagedat
     std::string blocktype = dseg["BLOCK_ALG "].GetString();
     //rval             = std::make_shared<DspBlockData>();
     //rval->_blocktype = dseg["BLOCK_ALG "].GetString();
-    printf("rval._dspBlock<%s>\n", blocktype.c_str());
+    //printf("rval._dspBlock<%s>\n", blocktype.c_str());
     ///////////
     // alg_filters
     ///////////
@@ -788,7 +788,7 @@ void KrzBankDataParser::parseKmpBlock(const Value& kmseg, KmpBlockData& kmblk) {
 
 lyrdata_ptr_t KrzBankDataParser::parseLayer(const Value& jsonobj, prgdata_ptr_t pd) {
   const auto& name = pd->_name;
-  printf("Got Prgram<%s> layer..\n", name.c_str());
+  //printf("Got Prgram<%s> layer..\n", name.c_str());
   const auto& calvinSeg = jsonobj["CALVIN"];
   const auto& keymapSeg = calvinSeg["KEYMAP"];
   const auto& pitchSeg  = calvinSeg["PITCH"];
@@ -1020,7 +1020,7 @@ lyrdata_ptr_t KrzBankDataParser::parseLayer(const Value& jsonobj, prgdata_ptr_t 
     auto blockn3 = blkname(blkbase + 2);
     dspblkdata_ptr_t dspblock;
 
-    printf("algd<%d> blkbase<%d> paramcount<%d> blockn1<%s>\n", krzalgdat._algindex, blkbase, paramcount, blockn1);
+    //printf("algd<%d> blkbase<%d> paramcount<%d> blockn1<%s>\n", krzalgdat._algindex, blkbase, paramcount, blockn1);
     if(blockn1!="PITCH" and blockn2!="PITCH"){
       dspblock = parseDspBlock(jsonobj[blockn1], stage, layerdata);
       if( dspblock ){
@@ -1040,11 +1040,11 @@ lyrdata_ptr_t KrzBankDataParser::parseLayer(const Value& jsonobj, prgdata_ptr_t 
   };
   int blockindex = 0;
 
-  printf("ACFG._wp<%d>\n", ACFG._wp);
-  printf("ACFG._w1<%d>\n", ACFG._w1);
-  printf("ACFG._w2<%d>\n", ACFG._w2);
-  printf("ACFG._w3<%d>\n", ACFG._w3);
-  printf("ACFG._wa<%d>\n", ACFG._wa);
+  //printf("ACFG._wp<%d>\n", ACFG._wp);
+  //printf("ACFG._w1<%d>\n", ACFG._w1);
+  //printf("ACFG._w2<%d>\n", ACFG._w2);
+  //printf("ACFG._w3<%d>\n", ACFG._w3);
+  //printf("ACFG._wa<%d>\n", ACFG._wa);
 
   auto dspstage   = layerdata->stageByName("DSP");
   auto ampstage   = layerdata->stageByName("AMP");
