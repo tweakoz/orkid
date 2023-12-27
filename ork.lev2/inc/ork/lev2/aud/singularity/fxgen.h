@@ -70,7 +70,14 @@ dspblkdata_ptr_t appendPitchShifter(
     lyrdata_ptr_t layer, //
     dspstagedata_ptr_t stage);
 ///////////////////////////////////////////////////////////////////////////////
-dspblkdata_ptr_t appendStereoReverb(
+void appendPitchRec(
+    lyrdata_ptr_t layer, //
+    dspstagedata_ptr_t stage,
+    float cents,
+    float wetness,
+    float feedback);
+///////////////////////////////////////////////////////////////////////////////
+std::shared_ptr<Fdn4ReverbData> appendStereoReverb(
     lyrdata_ptr_t layer, //
     dspstagedata_ptr_t stage,
     float tscale);
@@ -83,7 +90,8 @@ void appendPitchChorus(
     lyrdata_ptr_t fxlayer, //
     dspstagedata_ptr_t fxstage,
     float wetness,
-    float cents);
+    float cents,
+    float feedback);
 ///////////////////////////////////////////////////////////////////////////////
 void appendWackiVerb(
     lyrdata_ptr_t fxlayer, //

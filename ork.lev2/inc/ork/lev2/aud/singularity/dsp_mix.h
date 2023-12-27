@@ -68,6 +68,27 @@ struct DelayContext {
   DspBuffer _buffer;
   float* _bufdata = nullptr;
 };
+struct DelayInput {
+  DelayInput();
+  void inp(float inputSample);
+  void setDelayTime(float delayTime);
+  DspBuffer _buffer;
+  int64_t _index = 0;
+  float _delayLen = 0.0f;
+  float* _bufdata = nullptr;
+  static constexpr int64_t _maxdelay = 1 << 20;
+};
+struct DelayOutput {
+  DelayOutput(DelayInput& input);
+  float out(float fi, size_t tapIndex) const;
+  void addTap(float tapDelay);
+  void removeTap(size_t tapIndex);
+  DelayInput& _input;
+  std::vector<float> _tapDelays;
+  static constexpr int64_t _maxdelay = 1 << 20;
+  static constexpr int64_t _maxx = _maxdelay << 16;
+};
+
 ///////////////////////////////////////////////////////////////////////////////
 struct PitchShifterData : public DspBlockData {
   PitchShifterData(std::string name);
@@ -99,6 +120,41 @@ struct PitchShifter : public DspBlock {
   DelayContext _delayD;
 };
 ///////////////////////////////////////////////////////////////////////////////
+struct RecursivePitchShifterData : public DspBlockData {
+  RecursivePitchShifterData(std::string name,float feedback);
+  dspblk_ptr_t createInstance() const override;
+  float _feedback;
+};
+struct RecursivePitchShifter : public DspBlock {
+  using dataclass_t = RecursivePitchShifterData;
+  RecursivePitchShifter(const dataclass_t* dbd);
+  void compute(DspBuffer& dspbuf) final;
+  void doKeyOn(const KeyOnInfo& koi) final;
+
+  int64_t _phaseA;
+  int64_t _phaseB;
+  int64_t _phaseC;
+  int64_t _phaseD;
+  BiQuad _hipassfilter;
+  BiQuad _lopassAfilter;
+  BiQuad _lopassBfilter;
+  BiQuad _lopassCfilter;
+  BiQuad _lopassDfilter;
+  BiQuad _lopassEfilter;
+  BiQuad _lopassFfilter;
+  BiQuad _lopassGfilter;
+  BiQuad _lopassHfilter;
+
+  DelayContext _delayA;
+  DelayContext _delayB;
+  DelayContext _delayC;
+  DelayContext _delayD;
+
+  DelayContext _delayOuter;
+  const dataclass_t* _mydata;
+
+};
+///////////////////////////////////////////////////////////////////////////////
 struct StereoDynamicEchoData : public DspBlockData {
   StereoDynamicEchoData(std::string name);
   dspblk_ptr_t createInstance() const override;
@@ -118,6 +174,7 @@ struct Fdn4ReverbData : public DspBlockData {
   Fdn4ReverbData(std::string name, float tscale);
   dspblk_ptr_t createInstance() const override;
   float _tscale;
+  float _tbase;
 };
 struct Fdn4Reverb : public DspBlock {
   using dataclass_t = Fdn4ReverbData;

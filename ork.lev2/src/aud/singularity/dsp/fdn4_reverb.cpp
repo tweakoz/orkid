@@ -22,6 +22,8 @@ Fdn4ReverbData::Fdn4ReverbData(std::string name, float tscale)
   _blocktype     = "Fdn4Reverb";
   auto mix_param = addParam();
   mix_param->useDefaultEvaluator();
+  _tbase = 0.01;  // wet/dry mix
+  _tscale = 0.031; // 1 octave up
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -37,7 +39,8 @@ Fdn4Reverb::Fdn4Reverb(const Fdn4ReverbData* dbd)
   ///////////////////////////
   float input_g  = 0.75f;
   float output_g = 0.75f;
-  float tscale   = dbd->_tscale;
+  float tbase   = dbd->_tscale;
+  float tscale = dbd->_tscale;
   ///////////////////////////
   // matrixHadamard(0.0);
   matrixHouseholder();
@@ -46,10 +49,10 @@ Fdn4Reverb::Fdn4Reverb(const Fdn4ReverbData* dbd)
   _inputGainsR  = fvec4(input_g, input_g, input_g, input_g);
   _outputGainsL = fvec4(output_g, output_g, 0, 0);
   _outputGainsR = fvec4(0, 0, output_g, output_g);
-  _delayA.setStaticDelayTime(tscale * 0.01f);
-  _delayB.setStaticDelayTime(tscale * 0.03f);
-  _delayC.setStaticDelayTime(tscale * 0.07f);
-  _delayD.setStaticDelayTime(tscale * 0.11f);
+  _delayA.setStaticDelayTime(tbase);
+  _delayB.setStaticDelayTime(tbase * tscale);
+  _delayC.setStaticDelayTime(tbase * tscale*tscale);
+  _delayD.setStaticDelayTime(tbase * tscale*tscale*tscale);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -65,7 +68,7 @@ void Fdn4Reverb::matrixHadamard(float fblevel) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void Fdn4Reverb::matrixHouseholder() {
-  float fbgain = 0.5f;
+  float fbgain = 0.45f;
   _feedbackMatrix.setRow(0, fvec4(+fbgain, -fbgain, -fbgain, -fbgain));
   _feedbackMatrix.setRow(1, fvec4(-fbgain, +fbgain, -fbgain, -fbgain));
   _feedbackMatrix.setRow(2, fvec4(-fbgain, -fbgain, +fbgain, -fbgain));

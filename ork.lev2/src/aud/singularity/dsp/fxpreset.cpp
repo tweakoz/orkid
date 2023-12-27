@@ -82,7 +82,11 @@ lyrdata_ptr_t fxpreset_stereochorus() {
   fxstage->setNumIos(2, 2); // stereo in, stereo out
   /////////////////
   appendStereoEnhancer(fxlayer, fxstage);
-  appendStereoChorus(fxlayer, fxstage);
+  auto chorus = appendStereoChorus(fxlayer, fxstage);
+  chorus->param(0)->_coarse  = 0.025f; // delay time (L)
+  chorus->param(1)->_coarse  = 0.0125f; // delay time (R)
+  chorus->param(2)->_coarse  = 0.75; // feedback
+  chorus->param(3)->_coarse  = 0.45;  // wet/dry mix
   return fxlayer;
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -99,7 +103,9 @@ lyrdata_ptr_t fxpreset_fdn4reverb() {
   fxstage->setNumIos(2, 2); // stereo in, stereo out
   /////////////////
   appendStereoEnhancer(fxlayer, fxstage);
-  appendStereoReverb(fxlayer, fxstage, 0.47);
+  auto reverb = appendStereoReverb(fxlayer, fxstage, 0.47);
+  reverb->_tbase = 0.04;
+  reverb->_tscale = 0.031;
   /////////////////
   return fxlayer;
 }
@@ -170,7 +176,7 @@ lyrdata_ptr_t fxpreset_wackiverb() {
   fxstage->setNumIos(2, 2); // stereo in, stereo out
   /////////////////
   auto chorus               = appendStereoChorus(fxlayer, fxstage);
-  chorus->param(2)->_coarse = 0.35; // feedback
+  chorus->param(2)->_coarse = 0.25; // feedback
   chorus->param(3)->_coarse = 0.35; // wet/dry mix
   /////////////////
   appendWackiVerb(fxlayer, fxstage);
@@ -243,7 +249,23 @@ lyrdata_ptr_t fxpreset_pitchchorus() {
   auto fxstage = fxalg->appendStage("FX");
   fxstage->setNumIos(2, 2); // stereo in, stereo out
   /////////////////
-  appendPitchChorus(fxlayer, fxstage, 0.5, 35.0f);
+  appendPitchChorus(fxlayer, fxstage, 0.5, 12.50f,0.25);
+  return fxlayer;
+}
+///////////////////////////////////////////////////////////////////////////////
+lyrdata_ptr_t fxpreset_pitchrec() {
+  auto fxprog       = std::make_shared<ProgramData>();
+  auto fxlayer      = fxprog->newLayer();
+  auto fxalg        = std::make_shared<AlgData>();
+  fxlayer->_algdata = fxalg;
+  fxalg->_name      = ork::FormatString("FxAlg");
+  /////////////////
+  // output effect
+  /////////////////
+  auto fxstage = fxalg->appendStage("FX");
+  fxstage->setNumIos(2, 2); // stereo in, stereo out
+  /////////////////
+  appendPitchRec(fxlayer, fxstage,700,0.5,0.5);
   return fxlayer;
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -269,7 +291,8 @@ lyrdata_ptr_t fxpreset_multitest() {
       fxlayer, //
       fxstage,
       0.25,   // wetness
-      50.0f); // pitchmod (cents)
+      50.0f,  // pitchmod (cents)
+      0.5);   // feedback
   /////////////////
   appendStereoHighFreqStimulator(
       fxlayer, //
@@ -308,6 +331,7 @@ void loadAllFxPresets(synth* s) {
   s->_fxpresets["shifter-octave-up"] = fxpreset_pitchoctup();
   s->_fxpresets["shifter-wave"]      = fxpreset_pitchwave();
   s->_fxpresets["shifter-chorus"]    = fxpreset_pitchchorus();
+  s->_fxpresets["shifter-rec"]    = fxpreset_pitchrec();
   s->_fxpresets["multitest"]         = fxpreset_multitest();
 }
 } // namespace ork::audio::singularity

@@ -27,13 +27,13 @@ dspblkdata_ptr_t appendStereoChorus(lyrdata_ptr_t layer, dspstagedata_ptr_t stag
   delaytime_modL->_src1Depth = 1.0;
   DELAYTIMEMODL->_oncompute  = [](CustomControllerInst* cci) { //
     float time   = cci->_layer->_layerTime;
-    cci->setFloatValue( 0.010f + sinf(time * pi2 * .1) * 0.001f);
+    cci->setFloatValue( 0.010f + sinf(time * pi2 * .14) * 0.001f);
   };
   delaytime_modR->_src1      = DELAYTIMEMODR;
   delaytime_modR->_src1Depth = 1.0;
   DELAYTIMEMODR->_oncompute  = [](CustomControllerInst* cci) { //
     float time   = cci->_layer->_layerTime;
-    cci->setFloatValue( 0.005f + sinf(time * pi2 * 0.09) * 0.0047f);
+    cci->setFloatValue( 0.005f + sinf(time * pi2 * 0.09) * 0.0077f);
   };
   /////////////////
   return chorus;
@@ -45,7 +45,13 @@ dspblkdata_ptr_t appendPitchShifter(lyrdata_ptr_t layer, dspstagedata_ptr_t stag
   return shifter;
 }
 ///////////////////////////////////////////////////////////////////////////////
-dspblkdata_ptr_t appendStereoReverb(lyrdata_ptr_t layer, dspstagedata_ptr_t stage, float tscale) {
+dspblkdata_ptr_t appendRecursivePitchShifter(lyrdata_ptr_t layer, dspstagedata_ptr_t stage,float feedback) {
+  auto shifter               = stage->appendTypedBlock<RecursivePitchShifter>("shifter-recursive",feedback);
+  shifter->param(0)->_coarse = 0.5f; // wet/dry mix
+  return shifter;
+}
+///////////////////////////////////////////////////////////////////////////////
+std::shared_ptr<Fdn4ReverbData> appendStereoReverb(lyrdata_ptr_t layer, dspstagedata_ptr_t stage, float tscale) {
   auto fdn4               = stage->appendTypedBlock<Fdn4Reverb>("reverb", tscale);
   fdn4->param(0)->_coarse = 0.5f; // wet/dry mix
   return fdn4;
@@ -185,10 +191,11 @@ void appendPitchChorus(
     lyrdata_ptr_t fxlayer, //
     dspstagedata_ptr_t fxstage,
     float wetness,
-    float cents) {
+    float cents,
+    float feedback) {
   /////////////////
-  auto shifterL               = appendPitchShifter(fxlayer, fxstage);
-  auto shifterR               = appendPitchShifter(fxlayer, fxstage);
+  auto shifterL               = appendRecursivePitchShifter(fxlayer, fxstage,feedback);
+  auto shifterR               = appendRecursivePitchShifter(fxlayer, fxstage,feedback);
   shifterL->param(0)->_coarse = wetness; // wet/dry mix
   shifterR->param(0)->_coarse = wetness; // wet/dry mix
   /////////////////
@@ -205,14 +212,50 @@ void appendPitchChorus(
   pmodR->_src1Depth     = 1.0;
   PITCHMODL->_oncompute = [cents](CustomControllerInst* cci) { //
     float time   = cci->_layer->_layerTime;
-    cci->setFloatValue( sinf(time * pi2 * 0.03f) * cents);
+    cci->setFloatValue( cents + sinf(time * pi2 * 0.03f) * 25 );
     return cci->getFloatValue();
   };
   PITCHMODR->_oncompute = [cents](CustomControllerInst* cci) { //
     float time   = cci->_layer->_layerTime;
-    cci->setFloatValue( sinf(time * pi2 * 0.07f) * cents);
+    cci->setFloatValue( cents + sinf(time * pi2 * 0.07f) * 30 );
     return cci->getFloatValue();
   };
+}
+void appendPitchRec(
+    lyrdata_ptr_t fxlayer, //
+    dspstagedata_ptr_t fxstage,
+    float cents,
+    float wetness,
+    float feedback){
+  /////////////////
+  auto shifterL               = appendRecursivePitchShifter(fxlayer, fxstage, feedback);
+  auto shifterR               = appendRecursivePitchShifter(fxlayer, fxstage, feedback);
+  shifterL->param(0)->_coarse = wetness; // wet/dry mix
+  shifterR->param(0)->_coarse = wetness; // wet/dry mix
+  /////////////////
+  shifterL->addDspChannel(0); // chorus voice 1 on left
+  shifterR->addDspChannel(1); // chorus voice 2 on right
+  /////////////////
+  auto PITCHMODL        = fxlayer->appendController<CustomControllerData>("PITCHSHIFT1");
+  auto PITCHMODR        = fxlayer->appendController<CustomControllerData>("PITCHSHIFT2");
+  auto pmodL            = shifterL->param(1)->_mods;
+  auto pmodR            = shifterR->param(1)->_mods;
+  pmodL->_src1          = PITCHMODL;
+  pmodL->_src1Depth     = 1.0;
+  pmodR->_src1          = PITCHMODR;
+  pmodR->_src1Depth     = 1.0;
+  PITCHMODL->_oncompute = [cents](CustomControllerInst* cci) { //
+    float time   = cci->_layer->_layerTime;
+    cci->setFloatValue( cents + sinf(time * pi2 * 0.07f) * 15 );
+    return cci->getFloatValue();
+  };
+  PITCHMODR->_oncompute = [cents](CustomControllerInst* cci) { //
+    float time   = cci->_layer->_layerTime;
+    cci->setFloatValue( cents + sinf(time * pi2 * 0.17f) * 20 );
+    return cci->getFloatValue();
+  };
+
+  appendNiceVerb(fxlayer, fxstage, 0.1);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void appendWackiVerb(lyrdata_ptr_t fxlayer, dspstagedata_ptr_t fxstage) {
