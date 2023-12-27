@@ -481,7 +481,7 @@ void KrzBankDataParser::parseFBlock(const Value& fseg, dspparam_ptr_t fblk) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-dspblkdata_ptr_t KrzBankDataParser::parseDspBlock(const Value& dseg, lyrdata_ptr_t layd, bool force) {
+dspblkdata_ptr_t KrzBankDataParser::parseDspBlock(const Value& dseg, dspstagedata_ptr_t stage, lyrdata_ptr_t layd, bool force) {
   dspblkdata_ptr_t rval;
   if (dseg.HasMember("BLOCK_ALG ")) {
     rval             = std::make_shared<DspBlockData>();
@@ -537,8 +537,8 @@ dspblkdata_ptr_t KrzBankDataParser::parseDspBlock(const Value& dseg, lyrdata_ptr
 
 ///////////////////////////////////////////////////////////////////////////////
 
-dspblkdata_ptr_t KrzBankDataParser::parsePchBlock(const Value& pseg, lyrdata_ptr_t layd) {
-  auto dblk = parseDspBlock(pseg, layd, true);
+dspblkdata_ptr_t KrzBankDataParser::parsePchBlock(const Value& pseg, dspstagedata_ptr_t stage, lyrdata_ptr_t layd) {
+  auto dblk = parseDspBlock(pseg, stage, layd, true);
 
   if (nullptr == dblk)
     return dblk;
@@ -791,10 +791,7 @@ lyrdata_ptr_t KrzBankDataParser::parseLayer(const Value& jsonobj, prgdata_ptr_t 
     }
   };
 
-  auto dspstage   = layerdata->stageByName("DSP");
-  auto ampstage   = layerdata->stageByName("AMP");
-
-  auto do_block = [&](int blkbase, int paramcount) -> dspblkdata_ptr_t {
+  auto do_block = [&](dspstagedata_ptr_t stage, int blkbase, int paramcount) -> dspblkdata_ptr_t {
     dspblkdata_ptr_t dspblock;
 
     auto blockn1 = blkname(blkbase + 0);
@@ -804,11 +801,12 @@ lyrdata_ptr_t KrzBankDataParser::parseLayer(const Value& jsonobj, prgdata_ptr_t 
     printf("algd<%d> blkbase<%d> paramcount<%d> blockn1<%s>\n", krzalgdat._algindex, blkbase, paramcount, blockn1);
 
     if (0 == blkbase) {
-      dspblock             = parsePchBlock(pitchSeg, layerdata);
+      dspblock             = parsePchBlock(pitchSeg, stage, layerdata);
       dspblock->_numParams = 1;
       parseFBlock(pitchSeg, dspblock->param(0));
+      layerdata->_pchBlock = dspblock;
     } else if (jsonobj.HasMember(blockn1)) {
-      dspblock = parseDspBlock(jsonobj[blockn1], layerdata);
+      dspblock = parseDspBlock(jsonobj[blockn1], stage, layerdata);
 
       if (dspblock == nullptr)
         return nullptr;
@@ -819,25 +817,25 @@ lyrdata_ptr_t KrzBankDataParser::parseLayer(const Value& jsonobj, prgdata_ptr_t 
         case 0:
           break;
         case 1: {
-          if (jsonobj.HasMember(blockn1)) {
-            parseFBlock(jsonobj[blockn1], dspblock->param(0));
-          }
+          //if (jsonobj.HasMember(blockn1)) {
+            //parseFBlock(jsonobj[blockn1], dspblock->param(0));
+          //}
           break;
         }
         case 2: {
-          if (jsonobj.HasMember(blockn1))
-            parseFBlock(jsonobj[blockn1], dspblock->param(0));
-          if (jsonobj.HasMember(blockn2))
-            parseFBlock(jsonobj[blockn2], dspblock->param(1));
+          //if (jsonobj.HasMember(blockn1))
+            //parseFBlock(jsonobj[blockn1], dspblock->param(0));
+          //if (jsonobj.HasMember(blockn2))
+            //parseFBlock(jsonobj[blockn2], dspblock->param(1));
           break;
         }
         case 3: {
-          if (jsonobj.HasMember(blockn1))
-            parseFBlock(jsonobj[blockn1], dspblock->param(0));
-          if (jsonobj.HasMember(blockn2))
-            parseFBlock(jsonobj[blockn2], dspblock->param(1));
-          if (jsonobj.HasMember(blockn3))
-            parseFBlock(jsonobj[blockn3], dspblock->param(2));
+          //if (jsonobj.HasMember(blockn1))
+            //parseFBlock(jsonobj[blockn1], dspblock->param(0));
+          //if (jsonobj.HasMember(blockn2))
+            //parseFBlock(jsonobj[blockn2], dspblock->param(1));
+          //if (jsonobj.HasMember(blockn3))
+            //parseFBlock(jsonobj[blockn3], dspblock->param(2));
           break;
         }
         default:
@@ -854,37 +852,30 @@ lyrdata_ptr_t KrzBankDataParser::parseLayer(const Value& jsonobj, prgdata_ptr_t 
   printf("ACFG._w3<%d>\n", ACFG._w3);
   printf("ACFG._wa<%d>\n", ACFG._wa);
 
-  int outindex = 0;
-  OrkAssert(false);
-  /* replace with dspstage method
-  if (ACFG._wp)
-    layerdata->_dspBlocks[outindex++] = do_block(blockindex, ACFG._wp);
-  blockindex += ACFG._wp;
-  if (ACFG._w1)
-    layerdata->_dspBlocks[outindex++] = do_block(blockindex, ACFG._w1);
-  blockindex += ACFG._w1;
-  if (ACFG._w2)
-    layerdata->_dspBlocks[outindex++] = do_block(blockindex, ACFG._w2);
-  blockindex += ACFG._w2;
-  if (ACFG._w3)
-    layerdata->_dspBlocks[outindex++] = do_block(blockindex, ACFG._w3);
-  blockindex += ACFG._w3;
-  if (ACFG._wa)
-    layerdata->_dspBlocks[outindex++] = do_block(blockindex, ACFG._wa);
-  blockindex += ACFG._wa;
+  auto dspstage   = layerdata->stageByName("DSP");
+  auto ampstage   = layerdata->stageByName("AMP");
 
-  if (pd->_name == "Click") {
-
-    for (int i = 0; i < 5; i++) {
-      auto blk = layerdata->_dspBlocks[i];
-      if (blk)
-        printf("dspblk<%d:%p:%s>\n", i, blk.get(), blk->_blocktype.c_str());
-    }
-    // assert(false);
+  if (ACFG._wp){
+    do_block(dspstage, blockindex, ACFG._wp);
+    blockindex += ACFG._wp;
   }
-
-  layerdata->_pchBlock = layerdata->_dspBlocks[0];
-  */
+  if (ACFG._w1){
+    do_block(dspstage, blockindex, ACFG._w1);
+    blockindex += ACFG._w1;
+  }
+  if (ACFG._w2){
+    do_block(dspstage, blockindex, ACFG._w2);
+    blockindex += ACFG._w2;
+  }
+  if (ACFG._w3){
+    do_block(dspstage, blockindex, ACFG._w3);
+    blockindex += ACFG._w3;
+  }
+  if (ACFG._wa){
+    do_block(ampstage, blockindex, ACFG._wa);
+    blockindex += ACFG._wa;
+  }
+ 
 
   //////////////////////////////////////////////////////
 
