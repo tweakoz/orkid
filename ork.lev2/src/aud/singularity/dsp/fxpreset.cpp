@@ -23,18 +23,19 @@ lyrdata_ptr_t fxpreset_distortionpluschorus() {
   /////////////////
   appendStereoEnhancer(fxlayer, fxstage);
   /////////////////
+  appendStereoDistortion(fxlayer, fxstage, -24);
   appendStereoHighFreqStimulator(
       fxlayer, //
       fxstage,
-      500.0f, // cutoff
+      1500.0f, // cutoff
       24.0f,   // drive
-      -6.0f);  // output gain
-  appendStereoDistortion(fxlayer, fxstage, -12);
-  auto chorus = appendStereoChorus(fxlayer, fxstage);
-  chorus->param(0)->_coarse  = 0.05f; // delay time (L)
-  chorus->param(1)->_coarse  = 0.03f; // delay time (R)
-  chorus->param(2)->_coarse  = 0.5; // feedback
-  chorus->param(3)->_coarse  = 0.5;  // wet/dry mix
+      -12.0f);  // output gain
+  //auto chorus = appendStereoChorus(fxlayer, fxstage);
+  appendPitchChorus(fxlayer, fxstage, 0.5, 12.50f,0.25);
+  //chorus->param(0)->_coarse  = 0.05f; // delay time (L)
+  //chorus->param(1)->_coarse  = 0.03f; // delay time (R)
+  //chorus->param(2)->_coarse  = 0.5; // feedback
+  //chorus->param(3)->_coarse  = 0.5;  // wet/dry mix
   return fxlayer;
 }
 ///////////////////////////////////////////////////////////////////////////////

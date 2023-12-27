@@ -44,6 +44,9 @@ void pyinit_aud_singularity(py::module& module_lev2) {
                               "nextEffect", //
                               [](synth_ptr_t synth) { synth->nextEffect(); })
                           .def(
+                              "prevEffect", //
+                              [](synth_ptr_t synth) { synth->prevEffect(); })
+                          .def(
                               "outputBus", //
                               [](synth_ptr_t synth, std::string named) -> outbus_ptr_t { return synth->outputBus(named); })
                           .def(

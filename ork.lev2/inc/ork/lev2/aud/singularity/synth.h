@@ -132,6 +132,7 @@ struct synth {
   float _timeaccum;
 
   void nextEffect(); // temporary
+  void prevEffect(); // temporary
   void mainThreadHandler();
   
   fxpresetmap_t _fxpresets;

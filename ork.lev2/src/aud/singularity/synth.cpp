@@ -48,6 +48,32 @@ void synth::nextEffect() {
   });
 }
 ///////////////////////////////////////////////////////////////////////////////
+void synth::prevEffect() {
+  _eventmap.atomicOp([this](eventmap_t& emap) { //
+    emap.insert(std::make_pair(0.0f, [this]() {
+      for (auto bus : _outputBusses) {
+        auto it = _fxcurpreset;
+        if (it != _fxpresets.end()) {
+            if (it == _fxpresets.begin()) {
+                // If it's the beginning, rotate to the end
+                it = std::prev(_fxpresets.end());
+            } else {
+                // Otherwise, just decrement
+                --it;
+            }
+        }
+        ///////////////////////////////
+        _fxcurpreset    = it;
+        auto nextpreset = _fxcurpreset->second;
+        assert(nextpreset->_algdata != nullptr); // did you add presets ?
+        bus.second->setBusDSP(nextpreset);
+        bus.second->_fxname = it->first;
+        logchan_synth->log( "switched to effect<%s>", it->first.c_str() );
+      }
+    }));
+  });
+}
+///////////////////////////////////////////////////////////////////////////////
 void OutputBus::resize(int numframes) {
   _buffer.resize(numframes);
   if (_dsplayer) {

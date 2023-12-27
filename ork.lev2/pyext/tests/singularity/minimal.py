@@ -152,7 +152,9 @@ class SingulApp(object):
             self.prog_index = 0
           prgname = self.sorted_progs[self.prog_index]
           print("prgname<%s>" % prgname)
-        elif KC == ord(" "): # next effect
+        elif KC == ord("-"): # next effect
+          self.synth.prevEffect()
+        elif KC == ord("="): # next effect
           self.synth.nextEffect()
         elif KC == ord("!"): # panic
           for voice in self.voices:
