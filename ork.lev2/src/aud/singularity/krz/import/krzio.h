@@ -44,6 +44,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 namespace ork::audio::singularity::krzio {
+int convert(std::string krzpath);
 typedef uint32_t u32;
 typedef uint16_t u16;
 typedef int16_t s16;

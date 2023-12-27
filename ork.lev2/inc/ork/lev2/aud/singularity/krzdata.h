@@ -19,6 +19,7 @@ namespace ork::audio::singularity {
 struct KrzSynthData : public SynthData {
   static bankdata_ptr_t baseObjects();
   KrzSynthData();
+  void loadBank(const file::Path& syxpath);
 };
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -15,6 +15,7 @@
 #include <ork/lev2/aud/singularity/envelope.h>
 #include <ork/lev2/aud/singularity/krzobjects.h>
 #include <ork/lev2/aud/singularity/sampler.h>
+#include "import/krzio.h"
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -32,6 +33,12 @@ bankdata_ptr_t KrzSynthData::baseObjects() {
 KrzSynthData::KrzSynthData()
     : SynthData() {
 }
+
+void KrzSynthData::loadBank(const file::Path& syxpath){
+  krzio::convert(syxpath.c_str());
+
+}
+
 
 ///////////////////////////////////////////////////////////////////////////////
 

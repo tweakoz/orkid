@@ -8,6 +8,8 @@
 #include "pyext.h"
 #include <ork/lev2/aud/audiodevice.h>
 #include <ork/lev2/aud/singularity/cz1.h>
+#include <ork/lev2/aud/singularity/krzdata.h>
+#include <ork/lev2/aud/singularity/tx81z.h>
 #include <ork/lev2/aud/singularity/fxgen.h>
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -147,6 +149,20 @@ void pyinit_aud_singularity(py::module& module_lev2) {
                            czdata->appendBank(bankpath, bankname);
                          });
   type_codec->registerStdCodec<czsyndata_ptr_t>(czdata_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  auto krzdata_type = py::class_<KrzSynthData, SynthData, krzsyndata_ptr_t>(singmodule, "KrzSynthData")
+                         .def(py::init<>())
+                         .def("loadBank", [](krzsyndata_ptr_t krzdata, std::string bankname, const file::Path& bankpath) {
+                           krzdata->loadBank(bankpath);
+                         });
+  type_codec->registerStdCodec<krzsyndata_ptr_t>(krzdata_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  auto tx81zdata_type = py::class_<Tx81zData, SynthData, tx81zsyndata_ptr_t>(singmodule, "Tx81zSynthData")
+                         .def(py::init<>())
+                         .def("loadBank", [](tx81zsyndata_ptr_t txdata, std::string bankname, const file::Path& bankpath) {
+                           txdata->loadBank(bankpath);
+                         });
+  type_codec->registerStdCodec<tx81zsyndata_ptr_t>(tx81zdata_type);
   /////////////////////////////////////////////////////////////////////////////////
   struct KeyModIterator {
 
