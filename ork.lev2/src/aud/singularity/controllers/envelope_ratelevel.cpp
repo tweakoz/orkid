@@ -229,7 +229,7 @@ void RateLevelEnvInst::compute() // final
       ////////////////////////////////////////////////////////////////////////////
     case 5: { // ENDDECAYTEST
        //printf("env<%p:%s> st5 <%g>\n", this, _name.c_str(), _value.x );
-      _value.x *= 0.9999;
+      _value.x *= 0.995;
       float dbatten = linear_amp_ratio_to_decibel(_value.x);
       bool done     = dbatten<-96.0;
       if(done){

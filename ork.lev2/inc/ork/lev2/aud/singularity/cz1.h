@@ -18,6 +18,8 @@ struct CzEnvelope {
   int _endStep   = 0;
   int _sustPoint = -1;
   bool _decreasing[8];
+  uint8_t _raw_rates[8];
+  uint8_t _raw_levels[8];
   float _time[8];
   float _level[8];
 };
@@ -40,6 +42,8 @@ struct CzOscData {
   CzEnvelope _dcwEnv;
   bool _noisemod      = false;
   double _octaveScale = 1.0;
+
+  void dump() const;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -112,7 +116,8 @@ struct CZX final : public DspBlock {
   float _waveoutputs[8];
   float _modIndex;
   int64_t _phase;
-  int64_t _resophase;
+  int64_t _resophaseA;
+  int64_t _resophaseB;
   bool _noisemod           = false;
   int64_t _noisevalue      = 0;
   int64_t _noisemodcounter = 0;
@@ -120,6 +125,8 @@ struct CZX final : public DspBlock {
   scopesynctrack_ptr_t _scopetrack;
   czxdata_constptr_t _oscdata;
   int _updatecount = 0;
+  int _aafade = 0;
+  constexpr static int _gaafademax = 128;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

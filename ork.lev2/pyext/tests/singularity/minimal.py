@@ -47,6 +47,10 @@ class SingulApp(object):
     self.syn_data_base = singularity.baseDataPath()/"casioCZ"
     self.synth.masterGain = singularity.decibelsToLinear(-12.0)
     self.czdata = singularity.CzSynthData()
+    #self.czdata.loadBank("5th", self.syn_data_base/"ACIDPEDAL1.syx")
+    #self.czdata.loadBank("fx", self.syn_data_base/"fx.bnk")
+    #self.czdata.loadBank("dxbank", self.syn_data_base/"dxbank.bnk")
+    #self.czdata.loadBank("jxbank", self.syn_data_base/"jxbank.bnk")
     self.czdata.loadBank("bankA", self.syn_data_base/"factoryA.bnk")
     self.czdata.loadBank("bankB", self.syn_data_base/"factoryB.bnk")
     self.czdata.loadBank("bank0", self.syn_data_base/"cz1_1.bnk")
@@ -67,7 +71,7 @@ class SingulApp(object):
       "Sizzle Cymbal"
     ]
     # find index of "Bells and Chimes" in sorted_progs
-    self.prog_index = find_index(self.sorted_progs, "ELEC.BASS 2")
+    self.prog_index = find_index(self.sorted_progs, "Casio Toms")
     print("prog_index<%d>" % self.prog_index)
 
     self.base_notes = {
@@ -131,7 +135,7 @@ class SingulApp(object):
          }
          mods.subscribers = {
            "LCZX0.DCAENV0": sub,
-           "LCZX0.DCAENV1": sub
+           #"LCZX0.DCAENV1": sub
          }
          voice = self.synth.keyOn(note,127,self.prog,mods)
          self.voices[KC] = voice

@@ -17,8 +17,8 @@ dspblkdata_ptr_t appendStereoChorus(lyrdata_ptr_t layer, dspstagedata_ptr_t stag
   auto chorus                = stage->appendTypedBlock<StereoDynamicEcho>("echo");
   chorus->param(0)->_coarse  = 0.0f; // delay time (L)
   chorus->param(1)->_coarse  = 0.0f; // delay time (R)
-  chorus->param(2)->_coarse  = 0.15; // feedback
-  chorus->param(3)->_coarse  = 0.4;  // wet/dry mix
+  chorus->param(2)->_coarse  = 0.25; // feedback
+  chorus->param(3)->_coarse  = 0.5;  // wet/dry mix
   auto delaytime_modL        = chorus->param(0)->_mods;
   auto delaytime_modR        = chorus->param(1)->_mods;
   auto DELAYTIMEMODL         = layer->appendController<CustomControllerData>("DELAYTIMEL");

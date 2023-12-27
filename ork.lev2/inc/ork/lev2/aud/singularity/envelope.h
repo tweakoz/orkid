@@ -25,6 +25,8 @@ struct EnvPoint {
   float _time  = 0.0f;
   float _level = 0.0f;
   float _shape = 1.0f;
+  int _raw_rate = 0;
+  int _raw_level = 0;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -29,12 +29,22 @@ base_casioCZ = URL("http://cd.textfiles.com/10000soundssongs/SYNTHDAT/CASIO")
 base_casioManuals = base_manuals/"casio"
 ensureDirectoryExists(dest_path/"casioCZ")
 batch_wget({
+
  base_casioCZ/"FACTRYA.BNK": (dest_path/"casioCZ"/"factoryA.bnk","25e5a50fcaea8ce351a59d67d91c6284"),
  base_casioCZ/"FACTRYB.BNK": (dest_path/"casioCZ"/"factoryB.bnk","cb7d91d5fed5b283c0eb12a1b59d83d9"),
  base_casioCZ/"CZ1_1.BNK": (dest_path/"casioCZ"/"cz1_1.bnk","00ec49470a8fd608dc4c99ade63da9e1"),
  base_casioCZ/"CZ1_2.BNK": (dest_path/"casioCZ"/"cz1_2.bnk","63efea6b5a72a6ddec9a169f55af7176"),
  base_casioCZ/"CZ1_3.BNK": (dest_path/"casioCZ"/"cz1_3.bnk","28b4b9e3299723290d3e2dd0b573e760"),
  base_casioCZ/"CZ1_4.BNK": (dest_path/"casioCZ"/"cz1_4.bnk","08a090716825288b26ee163fd2be85a2"),
+
+ # bad format or duplicates
+ #base_casioCZ/"JXBANK.BNK": (dest_path/"casioCZ"/"jxbank.bnk","78493d68c279ee201da82c3b478ed013"),
+ #base_casioCZ/"DXBANK.BNK": (dest_path/"casioCZ"/"dxbank.bnk","1dc0521a0b62ab8339f77fdfcef6a997"),
+ #base_casioCZ/"FX.BNK": (dest_path/"casioCZ"/"fx.bnk","04f6b8837d66515aebaba20b6f60a9f4"),
+ #base_casioCZ/"SYNTHS.BNK": (dest_path/"casioCZ"/"synths.bnk","f278ec63496eed601d4c22fcdeeac655"),
+ #base_casioCZ/"CZ1STUFF.BNK": (dest_path/"casioCZ"/"cz1stuff.bnk","00ec49470a8fd608dc4c99ade63da9e1"),
+
+
  base_casioManuals/"cz-1"/"owners_manual"/"casio_cz-1_owners_manual.pdf":
  (dest_path/"casioCZ"/"cz1manual.pdf","8e3767ac690af435dd1d9371fe494d1d"),
  base_casioManuals/"cz-5000"/"owners_manual"/"cz5000ownersmanual.pdf":
