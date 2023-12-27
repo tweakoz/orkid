@@ -169,7 +169,7 @@ float decode_p_envlevel(int value) {
   cents = float(linv64) / 8.0;
   cents += 2 * float(linv66);
 
-  return cents*2.0f;
+  return cents*4.0f;
 } // namespace ork::audio::singularity
 
 ///////////////////////////////////////////////////////////////////////////////
