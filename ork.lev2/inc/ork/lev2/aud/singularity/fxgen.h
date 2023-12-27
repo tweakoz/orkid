@@ -26,7 +26,7 @@ void appendStereoParaEQ(
     float w,
     float gain);
 ///////////////////////////////////////////////////////////////////////////////
-void appendStereoStereoDynamicEcho(
+dspblkdata_ptr_t appendStereoStereoDynamicEcho(
     lyrdata_ptr_t layer, //
     dspstagedata_ptr_t stage,
     float dtL,

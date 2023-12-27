@@ -63,7 +63,7 @@ void appendStereoDistortion(
   r->addDspChannel(1);
 }
 ///////////////////////////////////////////////////////////////////////////////
-void appendStereoStereoDynamicEcho(
+dspblkdata_ptr_t appendStereoStereoDynamicEcho(
     lyrdata_ptr_t layer, //
     dspstagedata_ptr_t stage,
     float dtL,
@@ -77,6 +77,7 @@ void appendStereoStereoDynamicEcho(
   echo->param(3)->_coarse = wetness;
   echo->addDspChannel(0);
   echo->addDspChannel(1);
+  return echo;
 }
 ///////////////////////////////////////////////////////////////////////////////
 void appendStereoParaEQ(

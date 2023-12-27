@@ -26,11 +26,15 @@ lyrdata_ptr_t fxpreset_distortionpluschorus() {
   appendStereoHighFreqStimulator(
       fxlayer, //
       fxstage,
-      1000.0f, // cutoff
-      36.0f,   // drive
+      500.0f, // cutoff
+      24.0f,   // drive
       -6.0f);  // output gain
-  appendStereoDistortion(fxlayer, fxstage, 18.0f);
-  appendStereoChorus(fxlayer, fxstage);
+  appendStereoDistortion(fxlayer, fxstage, -12);
+  auto chorus = appendStereoChorus(fxlayer, fxstage);
+  chorus->param(0)->_coarse  = 0.05f; // delay time (L)
+  chorus->param(1)->_coarse  = 0.03f; // delay time (R)
+  chorus->param(2)->_coarse  = 0.5; // feedback
+  chorus->param(3)->_coarse  = 0.5;  // wet/dry mix
   return fxlayer;
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -48,16 +52,20 @@ lyrdata_ptr_t fxpreset_distortionplusecho() {
   /////////////////
   appendStereoEnhancer(fxlayer, fxstage);
   /////////////////
-  appendStereoStereoDynamicEcho(fxlayer, fxstage, 0.25, 0.5, 0.5, 0.5);
+  auto echo = appendStereoStereoDynamicEcho(fxlayer, fxstage, 0.55, 0.28, 0.15, 0.15);
   /////////////////
   appendStereoHighFreqStimulator(
       fxlayer, //
       fxstage,
-      1000.0f, // cutoff
-      36.0f,   // drive
-      -6.0f);  // output gain
-  appendStereoDistortion(fxlayer, fxstage, 24.0f);
-  appendStereoChorus(fxlayer, fxstage);
+      500.0f, // cutoff
+      18.0f,   // drive
+      0.0f);  // output gain
+  appendStereoDistortion(fxlayer, fxstage, -12.0);
+  auto chorus = appendStereoChorus(fxlayer, fxstage);
+  chorus->param(0)->_coarse  = 0.5f; // delay time (L)
+  chorus->param(1)->_coarse  = 0.25f; // delay time (R)
+  chorus->param(2)->_coarse  = 0.25; // feedback
+  chorus->param(3)->_coarse  = 0.35;  // wet/dry mix
   return fxlayer;
 }
 ///////////////////////////////////////////////////////////////////////////////
