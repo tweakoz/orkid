@@ -332,8 +332,8 @@ void CZX::doKeyOn(const KeyOnInfo& koi) // final
 
   _updatecount = 0;
 
-  //auto czdata = (const CZXDATA*) _dbd;
-  //czdata->_cxzdata->dump();
+  auto czdata = (const CZXDATA*) _dbd;
+  czdata->_cxzdata->dump();
 }
 ///////////////////////////////////////////////////////////////////////////////
 

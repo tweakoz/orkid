@@ -65,7 +65,16 @@ struct ratelevmodel {
   }
 };
 
-struct wa_model {
+struct wa_env_model {
+  float transform(int value) {
+    //float j = 0.25+float(value)/20.5f;
+    //float T = 50.0f*powf(0.1,j);
+    float j = float(value)/22.5f;
+    float T = 100.0f*powf(0.1,j);
+    return T;
+  }
+};
+struct p_env_model {
   float transform(int value) {
     //float j = 0.25+float(value)/20.5f;
     //float T = 50.0f*powf(0.1,j);
@@ -91,7 +100,7 @@ float decode_a_envrate(int value, float delta) {
   int uservalue = 1 + (value * 99) / 109;
   if( uservalue < 0 ) uservalue = 0;
   if( uservalue > 99 ) uservalue = 99;
-  wa_model model;
+  wa_env_model model;
   float X = model.transform(uservalue);
   printf("val<%d> uservalue<%d> X<%g> delta<%g>\n", value, uservalue, X, delta);
   return X;
@@ -112,26 +121,20 @@ float decode_w_envrate(int value, float delta) {
   int uservalue = 1 + ((value-8) * 99) / 119;
   if( uservalue < 0 ) uservalue = 0;
   if( uservalue > 99 ) uservalue = 99;
-  wa_model model;
+  wa_env_model model;
   float W = model.transform(uservalue);
   printf("val<%d> uservalue<%d> W<%g> delta<%g>\n", value, uservalue, W, delta);
   return W;
 }
-float decode_p_envrate(int value, float delta) {
-  float uservalue = (value * 99) / 127 + 1;
-  switch (value) {
-    case 0:
-      uservalue = 0;
-      break;
-    case 0x7f:
-      uservalue = 99;
-      break;
-  }
-  ratelevmodel lopmodel, midpmodel;
-  lopmodel.low_pmodel();
-  midpmodel.mid_pmodel();
-  auto model = (uservalue <= 75) ? midpmodel : lopmodel;
-  return model.transform(uservalue) * fabs(delta);
+float decode_p_envrate(int value) {
+  int normed = (value * 99) / 127;
+  if(normed<0) normed = 0;
+  if(normed>99) normed = 99;
+  float fn = float(normed) / 99.0f;
+  float rval = powf(fn, 1);
+  if(rval>1.0f) rval = 1.0f;
+  if(rval<0.0f) rval = 0.0f;
+  return rval;
 }
 ///////////////////////////////////////////////////////////////////////////////
 float decode_p_envlevel(int value) {
@@ -163,10 +166,10 @@ float decode_p_envlevel(int value) {
   int linv64 = std::clamp(linv, 0, 64);
   int linv66 = std::clamp(linv - 64, 0, 36);
 
-  cents = 100.0 * float(linv64) / 8.0;
-  cents += 200.0 * float(linv66);
+  cents = float(linv64) / 8.0;
+  cents += 2 * float(linv66);
 
-  return cents;
+  return cents*2.0f;
 } // namespace ork::audio::singularity
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -330,7 +333,7 @@ void make_dco(CZLAYERDATACTX czctx,
   //////////////////////////////////////
   auto pitch_mod        = dco->_paramd[0]->_mods;
   pitch_mod->_src1      = DCOENV;
-  pitch_mod->_src1Depth = 0.0f;
+  pitch_mod->_src1Depth = 1.0f;
   /////////////////////////////////////////////////
   auto modulation_index        = dco->_paramd[1]->_mods;
   modulation_index->_src1      = DCWENV;
@@ -512,13 +515,8 @@ czxprogdata_ptr_t parse_czprogramdata(CzData* outd, prgdata_ptr_t prgout, std::v
 
       OSC->_dcoEnv._decreasing[i] = (r & 0x80);
 
-      float thislev  = decode_p_envlevel(l7);
-      float deltalev = fabs(thislev - prevlevel) / 8400.0f;
-      prevlevel      = thislev;
-
       OSC->_dcoEnv._level[i] = decode_p_envlevel(l7);
-      float decoded_time     = decode_p_envrate(r7, deltalev);
-      OSC->_dcoEnv._time[i]  = decoded_time;
+      OSC->_dcoEnv._time[i]  = decode_p_envrate(r7);
     }
     ///////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////
@@ -539,7 +537,7 @@ czxprogdata_ptr_t parse_czprogramdata(CzData* outd, prgdata_ptr_t prgout, std::v
     OSC->_dcaKeyFollow = MAMD & 0xf;
     OSC->_dcwKeyFollow = MWMD & 0xf;
 
-
+    printf( "MWMD<0x%02x> MAMD<0x%02x>\n", MWMD, MAMD );
 
     OSC->_dcaDepth     = 15 - (MAMD >> 4);
     OSC->_dcwDepth     = 15 - (MWMD >> 4);

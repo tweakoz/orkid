@@ -37,6 +37,7 @@ struct CzOscData {
   int _dcwVelFollow = 0;
   int _dcaDepth     = 0;
   int _dcwDepth     = 0;
+  int _dcoDepth     = 0; // cents
   CzEnvelope _dcoEnv;
   CzEnvelope _dcaEnv;
   CzEnvelope _dcwEnv;
