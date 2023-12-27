@@ -14,21 +14,37 @@ namespace ork::audio::singularity {
 ///////////////////////////////////////////////////////////////////////////////
 // nonlinear blocks
 ///////////////////////////////////////////////////////////////////////////////
+struct SHAPER_DATA : public DspBlockData {
+  SHAPER_DATA(std::string name);
+  dspblk_ptr_t createInstance() const override;
+};
 
 struct SHAPER : public DspBlock {
+  using dataclass_t = SHAPER_DATA;
   SHAPER(const DspBlockData* dbd);
   void compute(DspBuffer& dspbuf) final;
 };
+struct SHAPE2_DATA : public DspBlockData {
+  SHAPE2_DATA(std::string name);
+  dspblk_ptr_t createInstance() const override;
+};
 struct SHAPE2 : public DspBlock {
+  using dataclass_t = SHAPE2_DATA;
   SHAPE2(const DspBlockData* dbd);
   void compute(DspBuffer& dspbuf) final;
 };
+struct TWOPARAM_SHAPER_DATA : public DspBlockData {
+  TWOPARAM_SHAPER_DATA(std::string name);
+  dspblk_ptr_t createInstance() const override;
+};
 struct TWOPARAM_SHAPER : public DspBlock {
+  using dataclass_t = TWOPARAM_SHAPER_DATA;
   TWOPARAM_SHAPER(const DspBlockData* dbd);
   void compute(DspBuffer& dspbuf) final;
   float ph1, ph2;
   void doKeyOn(const KeyOnInfo& koi) final;
 };
+//
 struct WrapData : public DspBlockData {
   WrapData(std::string name);
   dspblk_ptr_t createInstance() const override;

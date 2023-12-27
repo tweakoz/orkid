@@ -12,13 +12,24 @@
 
 namespace ork::audio::singularity {
 
+struct PARABASS_DATA : public DspBlockData {
+  PARABASS_DATA(std::string name);
+  dspblk_ptr_t createInstance() const override;
+};
+
 struct PARABASS : public DspBlock {
+  using dataclass_t = PARABASS_DATA;
   PARABASS(const DspBlockData* dbd);
   LoShelveEq _lsq;
   void compute(DspBuffer& dspbuf) final;
   void doKeyOn(const KeyOnInfo& koi) final;
 };
+struct STEEP_RESONANT_BASS_DATA : public DspBlockData {
+  STEEP_RESONANT_BASS_DATA(std::string name);
+  dspblk_ptr_t createInstance() const override;
+};
 struct STEEP_RESONANT_BASS : public DspBlock {
+  using dataclass_t = STEEP_RESONANT_BASS_DATA;
   STEEP_RESONANT_BASS(const DspBlockData* dbd);
   LoShelveEq _lsq;
   TrapSVF _svf;
@@ -26,13 +37,23 @@ struct STEEP_RESONANT_BASS : public DspBlock {
   void compute(DspBuffer& dspbuf) final;
   void doKeyOn(const KeyOnInfo& koi) final;
 };
+struct PARAMID_DATA : public DspBlockData {
+  PARAMID_DATA(std::string name);
+  dspblk_ptr_t createInstance() const override;
+};
 struct PARAMID : public DspBlock {
+  using dataclass_t = PARAMID_DATA;
   PARAMID(const DspBlockData* dbd);
   BiQuad _biquad;
   void compute(DspBuffer& dspbuf) final;
   void doKeyOn(const KeyOnInfo& koi) final;
 };
+struct PARATREBLE_DATA : public DspBlockData {
+  PARATREBLE_DATA(std::string name);
+  dspblk_ptr_t createInstance() const override;
+};
 struct PARATREBLE : public DspBlock {
+  using dataclass_t = PARATREBLE_DATA;
   PARATREBLE(const DspBlockData* dbd);
   HiShelveEq _lsq;
   void compute(DspBuffer& dspbuf) final;

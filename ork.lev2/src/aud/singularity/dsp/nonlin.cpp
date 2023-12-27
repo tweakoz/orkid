@@ -17,6 +17,14 @@ float wrap(float inp, float adj);
 
 ///////////////////////////////////////////////////////////////////////////////
 
+SHAPER_DATA::SHAPER_DATA(std::string name)
+    : DspBlockData(name) {
+  addParam("amount")->useDefaultEvaluator(); 
+}
+dspblk_ptr_t SHAPER_DATA::createInstance() const {
+  return std::make_shared<SHAPER>(this);
+}
+
 SHAPER::SHAPER(const DspBlockData* dbd)
     : DspBlock(dbd) {
 }
@@ -42,6 +50,14 @@ void SHAPER::compute(DspBuffer& dspbuf) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
+SHAPE2_DATA::SHAPE2_DATA(std::string name)
+    : DspBlockData(name) {
+  addParam("amount")->useDefaultEvaluator(); 
+}
+dspblk_ptr_t SHAPE2_DATA::createInstance() const {
+  return std::make_shared<SHAPE2>(this);
+}
+
 SHAPE2::SHAPE2(const DspBlockData* dbd)
     : DspBlock(dbd) {
 }
@@ -64,6 +80,15 @@ void SHAPE2::compute(DspBuffer& dspbuf) // final
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+TWOPARAM_SHAPER_DATA::TWOPARAM_SHAPER_DATA(std::string name)
+    : DspBlockData(name) {
+  addParam("even")->useDefaultEvaluator(); 
+  addParam("odd")->useDefaultEvaluator(); 
+}
+dspblk_ptr_t TWOPARAM_SHAPER_DATA::createInstance() const {
+  return std::make_shared<TWOPARAM_SHAPER>(this);
+}
 
 TWOPARAM_SHAPER::TWOPARAM_SHAPER(const DspBlockData* dbd)
     : DspBlock(dbd) {

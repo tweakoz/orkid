@@ -51,9 +51,9 @@ struct KrzBankDataParser {
 
   KrzAlgData parseAlg(const rapidjson::Value& JO);
   void parseKmpBlock(const Value& JO, KmpBlockData& kmblk);
-  void parseFBlock(const Value& JO, dspparam_ptr_t param);
-  dspblkdata_ptr_t parseDspBlock(const Value& JO, dspstagedata_ptr_t stage, lyrdata_ptr_t layd, bool force = false);
-  dspblkdata_ptr_t parsePchBlock(const Value& JO, dspstagedata_ptr_t stage, lyrdata_ptr_t layd);
+  void parseFBlock(const Value& JO, lyrdata_ptr_t layd, dspparam_ptr_t param);
+  dspblkdata_ptr_t parseDspBlock(const Value& JO, dspstagedata_ptr_t stage, lyrdata_ptr_t layd);
+  //dspblkdata_ptr_t parsePchBlock(const Value& JO, dspstagedata_ptr_t stage, lyrdata_ptr_t layd);
 
   lyrdata_ptr_t parseLayer(const rapidjson::Value& JO, prgdata_ptr_t pd);
 

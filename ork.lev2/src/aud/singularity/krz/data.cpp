@@ -42,7 +42,7 @@ bankdata_ptr_t KrzSynthData::baseObjects() {
 
   auto krzbasehasher = DataBlock::createHasher();
   krzbasehasher->accumulateString("krzbaseobjects"); // identifier
-  krzbasehasher->accumulateItem<float>(1.0);         // version code
+  krzbasehasher->accumulateItem<float>(1.1);         // version code
   krzbasehasher->accumulate(bin_data, ilen);         // data
 
   krzbasehasher->finish();

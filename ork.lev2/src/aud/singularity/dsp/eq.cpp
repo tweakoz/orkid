@@ -13,6 +13,17 @@ namespace ork::audio::singularity {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+PARABASS_DATA::PARABASS_DATA(std::string name)
+    : DspBlockData(name) {
+  _blocktype = "PARABASS";
+  addParam("fc")->useFrequencyEvaluator();
+  addParam("gain")->useAmplitudeEvaluator();
+}
+
+dspblk_ptr_t PARABASS_DATA::createInstance() const { // override
+  return std::make_shared<PARABASS>(this);
+}
+
 PARABASS::PARABASS(const DspBlockData* dbd)
     : DspBlock(dbd) {
 }
@@ -54,6 +65,18 @@ void PARABASS::doKeyOn(const KeyOnInfo& koi) // final
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+STEEP_RESONANT_BASS_DATA::STEEP_RESONANT_BASS_DATA(std::string name)
+    : DspBlockData(name) {
+  _blocktype = "STEEP_RESONANT_BASS";
+  addParam("fc")->useFrequencyEvaluator();
+  addParam("resonance")->useDefaultEvaluator();
+  addParam("gain")->useAmplitudeEvaluator();
+}
+
+dspblk_ptr_t STEEP_RESONANT_BASS_DATA::createInstance() const { // override
+  return std::make_shared<STEEP_RESONANT_BASS>(this);
+}
 
 STEEP_RESONANT_BASS::STEEP_RESONANT_BASS(const DspBlockData* dbd)
     : DspBlock(dbd) {
@@ -97,6 +120,17 @@ void STEEP_RESONANT_BASS::doKeyOn(const KeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
+PARATREBLE_DATA::PARATREBLE_DATA(std::string name)
+    : DspBlockData(name) {
+  _blocktype = "PARATREBLE";
+  addParam("fc")->useFrequencyEvaluator();
+  addParam("gain")->useAmplitudeEvaluator();
+}
+
+dspblk_ptr_t PARATREBLE_DATA::createInstance() const { // override
+  return std::make_shared<PARATREBLE>(this);
+}
+
 PARATREBLE::PARATREBLE(const DspBlockData* dbd)
     : DspBlock(dbd) {
 }
@@ -135,6 +169,17 @@ void PARATREBLE::doKeyOn(const KeyOnInfo& koi) // final
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+PARAMID_DATA::PARAMID_DATA(std::string name)
+    : DspBlockData(name) {
+  _blocktype = "PARAMID";
+  addParam("fc")->useFrequencyEvaluator();
+  addParam("gain")->useAmplitudeEvaluator();
+}
+
+dspblk_ptr_t PARAMID_DATA::createInstance() const { // override
+  return std::make_shared<PARAMID>(this);
+}
 
 PARAMID::PARAMID(const DspBlockData* dbd)
     : DspBlock(dbd) {

@@ -22,7 +22,7 @@ float wrap(float inp, float adj);
 AMP_MONOIO_DATA::AMP_MONOIO_DATA(std::string name)
     : DspBlockData(name) {
   _blocktype = "AMP_MONOIO";
-  auto param = addParam();
+  auto param = addParam("gain");
   param->useAmplitudeEvaluator();
 }
 
@@ -64,6 +64,14 @@ void AMP_MONOIO::doKeyOn(const KeyOnInfo& koi) // final
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+PLUSAMP_DATA::PLUSAMP_DATA(std::string name)
+    : DspBlockData(name) {
+  addParam("gain")->useDefaultEvaluator(); // position: eval: "POS" 
+}
+dspblk_ptr_t PLUSAMP_DATA::createInstance() const {
+  return std::make_shared<PLUSAMP>(this);
+}
 
 void PLUSAMP::initBlock(dspblkdata_ptr_t blockdata) {
   blockdata->_blocktype = "+ AMP";
@@ -111,6 +119,14 @@ void PLUSAMP::doKeyOn(const KeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
+XAMP_DATA::XAMP_DATA(std::string name)
+    : DspBlockData(name) {
+  addParam("gain")->useDefaultEvaluator(); // position: eval: "POS" 
+}
+dspblk_ptr_t XAMP_DATA::createInstance() const {
+  return std::make_shared<XAMP>(this);
+}
+
 void XAMP::initBlock(dspblkdata_ptr_t blockdata) {
   blockdata->_blocktype = "x AMP";
   auto param            = blockdata->addParam();
@@ -154,6 +170,14 @@ void XAMP::doKeyOn(const KeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
+GAIN_DATA::GAIN_DATA(std::string name)
+    : DspBlockData(name) {
+  addParam("gain")->useDefaultEvaluator(); // position: eval: "POS" 
+}
+dspblk_ptr_t GAIN_DATA::createInstance() const {
+  return std::make_shared<GAIN>(this);
+}
+
 GAIN::GAIN(const DspBlockData* dbd)
     : DspBlock(dbd) {
 }
@@ -177,6 +201,14 @@ void GAIN::compute(DspBuffer& dspbuf) // final
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+XFADE_DATA::XFADE_DATA(std::string name)
+    : DspBlockData(name) {
+  addParam("gain")->useDefaultEvaluator(); // position: eval: "POS" 
+}
+dspblk_ptr_t XFADE_DATA::createInstance() const {
+  return std::make_shared<XFADE>(this);
+}
 
 XFADE::XFADE(const DspBlockData* dbd)
     : DspBlock(dbd) {
@@ -219,6 +251,14 @@ void XFADE::doKeyOn(const KeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
+XGAIN_DATA::XGAIN_DATA(std::string name)
+    : DspBlockData(name) {
+  addParam("gain")->useDefaultEvaluator(); // position: eval: "POS" 
+}
+dspblk_ptr_t XGAIN_DATA::createInstance() const {
+  return std::make_shared<XGAIN>(this);
+}
+
 XGAIN::XGAIN(const DspBlockData* dbd)
     : DspBlock(dbd) {
 }
@@ -252,6 +292,15 @@ void XGAIN::doKeyOn(const KeyOnInfo& koi) // final
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+AMPU_AMPL_DATA::AMPU_AMPL_DATA(std::string name)
+    : DspBlockData(name) {
+  addParam("gainU")->useDefaultEvaluator(); // position: eval: "POS" 
+  addParam("gainL")->useDefaultEvaluator(); // position: eval: "POS" 
+}
+dspblk_ptr_t AMPU_AMPL_DATA::createInstance() const {
+  return std::make_shared<AMPU_AMPL>(this);
+}
 
 AMPU_AMPL::AMPU_AMPL(const DspBlockData* dbd)
     : DspBlock(dbd) {
@@ -305,6 +354,14 @@ void AMPU_AMPL::doKeyOn(const KeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
+BAL_AMP_DATA::BAL_AMP_DATA(std::string name)
+    : DspBlockData(name) {
+  addParam("POS")->useDefaultEvaluator(); // position: eval: "POS" 
+}
+dspblk_ptr_t BAL_AMP_DATA::createInstance() const {
+  return std::make_shared<BAL_AMP>(this);
+}
+
 BAL_AMP::BAL_AMP(const DspBlockData* dbd)
     : DspBlock(dbd) {
 }
@@ -330,6 +387,14 @@ void BAL_AMP::doKeyOn(const KeyOnInfo& koi) // final
 {
 }
 ///////////////////////////////////////////////////////////////////////////////
+
+PANNER_DATA::PANNER_DATA(std::string name)
+    : DspBlockData(name) {
+  addParam("POS")->useDefaultEvaluator(); // position: eval: "POS" 
+}
+dspblk_ptr_t PANNER_DATA::createInstance() const {
+  return std::make_shared<PANNER>(this);
+}
 
 PANNER::PANNER(const DspBlockData* dbd)
     : DspBlock(dbd) {
@@ -366,6 +431,14 @@ void PANNER::doKeyOn(const KeyOnInfo& koi) // final
 ///////////////////////////////////////////////////////////////////////////////
 
 ///////////////////////////////////////////////////////////////////////////////
+
+BANGAMP_DATA::BANGAMP_DATA(std::string name)
+    : DspBlockData(name) {
+  addParam("gain")->useDefaultEvaluator(); // position: eval: "POS" 
+}
+dspblk_ptr_t BANGAMP_DATA::createInstance() const {
+  return std::make_shared<BANGAMP>(this);
+}
 
 BANGAMP::BANGAMP(const DspBlockData* dbd)
     : DspBlock(dbd) {

@@ -518,6 +518,8 @@ czxprogdata_ptr_t parse_czprogramdata(CzData* outd, prgdata_ptr_t prgout, std::v
       OSC->_dcoEnv._level[i] = decode_p_envlevel(l7);
       OSC->_dcoEnv._time[i]  = decode_p_envrate(r7);
     }
+    OrkAssert(byteindex == 128);
+
     ///////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////
     //uint16_t MFW = (uint16_t(MFW0) << 8);
@@ -548,7 +550,6 @@ czxprogdata_ptr_t parse_czprogramdata(CzData* outd, prgdata_ptr_t prgout, std::v
     OSC->_dcwEnv._endStep = PMWL & 7;
     OSC->_dcoEnv._endStep = PMPL & 7;
   }
-  assert(byteindex == 128);
 
   ////////////////////////////////////
   // todo create 2 instances of CzOsc

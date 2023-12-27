@@ -13,6 +13,15 @@ namespace ork::audio::singularity {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+BANDPASS_FILT_DATA::BANDPASS_FILT_DATA(std::string name)
+    : DspBlockData(name) {
+  addParam("cutoff")->useFrequencyEvaluator(); // P0 cutoff eval: "FRQ" 
+  addParam("width")->useDefaultEvaluator();   // P1 width  eval: "WID"
+}
+dspblk_ptr_t BANDPASS_FILT_DATA::createInstance() const {
+  return std::make_shared<BANDPASS_FILT>(this);
+}
+
 BANDPASS_FILT::BANDPASS_FILT(const DspBlockData* dbd)
     : DspBlock(dbd) {
 }
@@ -52,6 +61,14 @@ void BANDPASS_FILT::doKeyOn(const KeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
+BAND2_DATA::BAND2_DATA(std::string name)
+    : DspBlockData(name) {
+  addParam("cutoff")->useFrequencyEvaluator(); // P0 cutoff eval: "FRQ" 
+}
+dspblk_ptr_t BAND2_DATA::createInstance() const {
+  return std::make_shared<BAND2>(this);
+}
+
 BAND2::BAND2(const DspBlockData* dbd)
     : DspBlock(dbd) {
 }
@@ -83,6 +100,15 @@ void BAND2::doKeyOn(const KeyOnInfo& koi) // final
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+NOTCH_FILT_DATA::NOTCH_FILT_DATA(std::string name)
+    : DspBlockData(name) {
+  addParam("cutoff")->useFrequencyEvaluator(); // P0 cutoff eval: "FRQ" 
+  addParam("width")->useDefaultEvaluator();   // P1 width  eval: "WID"
+}
+dspblk_ptr_t NOTCH_FILT_DATA::createInstance() const {
+  return std::make_shared<NOTCH_FILT>(this);
+}
 
 NOTCH_FILT::NOTCH_FILT(const DspBlockData* dbd)
     : DspBlock(dbd) {
@@ -117,6 +143,14 @@ void NOTCH_FILT::doKeyOn(const KeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
+NOTCH2_DATA::NOTCH2_DATA(std::string name)
+    : DspBlockData(name) {
+  addParam("cutoff")->useFrequencyEvaluator(); // P0 cutoff eval: "FRQ" 
+}
+dspblk_ptr_t NOTCH2_DATA::createInstance() const {
+  return std::make_shared<NOTCH2>(this);
+}
+
 NOTCH2::NOTCH2(const DspBlockData* dbd)
     : DspBlock(dbd) {
 }
@@ -147,6 +181,16 @@ void NOTCH2::doKeyOn(const KeyOnInfo& koi) // final
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+DOUBLE_NOTCH_W_SEP_DATA::DOUBLE_NOTCH_W_SEP_DATA(std::string name)
+    : DspBlockData(name) {
+  addParam("cutoff")->useFrequencyEvaluator(); // cutoff eval: "FRQ" 
+  addParam("resonance")->useDefaultEvaluator();   // Q
+  addParam("separation")->useDefaultEvaluator();   // cents
+}
+dspblk_ptr_t DOUBLE_NOTCH_W_SEP_DATA::createInstance() const {
+  return std::make_shared<DOUBLE_NOTCH_W_SEP>(this);
+}
 
 DOUBLE_NOTCH_W_SEP::DOUBLE_NOTCH_W_SEP(const DspBlockData* dbd)
     : DspBlock(dbd) {
@@ -189,6 +233,14 @@ void DOUBLE_NOTCH_W_SEP::doKeyOn(const KeyOnInfo& koi) // final
 // LOPAS2 = TWOPOLE_LOWPASS (fixed -6dB res)
 ///////////////////////////////////////////////////////////////////////////////
 
+LOPAS2_DATA::LOPAS2_DATA(std::string name)
+    : DspBlockData(name) {
+  addParam("cutoff")->useFrequencyEvaluator(); // P0 cutoff eval: "FRQ" 
+}
+dspblk_ptr_t LOPAS2_DATA::createInstance() const {
+  return std::make_shared<LOPAS2>(this);
+}
+
 LOPAS2::LOPAS2(const DspBlockData* dbd)
     : DspBlock(dbd) {
 }
@@ -221,6 +273,14 @@ void LOPAS2::doKeyOn(const KeyOnInfo& koi) // final
 // LOPAS2 = TWOPOLE_LOWPASS (fixed -6dB res)
 ///////////////////////////////////////////////////////////////////////////////
 
+LP2RES_DATA::LP2RES_DATA(std::string name)
+    : DspBlockData(name) {
+  addParam("cutoff")->useFrequencyEvaluator(); // P0 cutoff eval: "FRQ" 
+}
+dspblk_ptr_t LP2RES_DATA::createInstance() const {
+  return std::make_shared<LP2RES>(this);
+}
+
 LP2RES::LP2RES(const DspBlockData* dbd)
     : DspBlock(dbd) {
 }
@@ -251,6 +311,16 @@ void LP2RES::doKeyOn(const KeyOnInfo& koi) // final
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+FOURPOLE_HIPASS_W_SEP_DATA::FOURPOLE_HIPASS_W_SEP_DATA(std::string name)
+    : DspBlockData(name) {
+  addParam("cutoff")->useFrequencyEvaluator();   // P0 cutoff eval: "FRQ" 
+  addParam("resonance")->useDefaultEvaluator();  // Q
+  addParam("separation")->useDefaultEvaluator(); // cents
+}
+dspblk_ptr_t FOURPOLE_HIPASS_W_SEP_DATA::createInstance() const {
+  return std::make_shared<FOURPOLE_HIPASS_W_SEP>(this);
+}
 
 FOURPOLE_HIPASS_W_SEP::FOURPOLE_HIPASS_W_SEP(const DspBlockData* dbd)
     : DspBlock(dbd) {
@@ -299,6 +369,14 @@ void FOURPOLE_HIPASS_W_SEP::doKeyOn(const KeyOnInfo& koi) // final
 // LPCLIP : 1 pole! lowpass
 ///////////////////////////////////////////////////////////////////////////////
 
+LPCLIP_DATA::LPCLIP_DATA(std::string name)
+    : DspBlockData(name) {
+  addParam("cutoff")->useFrequencyEvaluator(); // P0 cutoff eval: "FRQ" 
+}
+dspblk_ptr_t LPCLIP_DATA::createInstance() const {
+  return std::make_shared<LPCLIP>(this);
+}
+
 LPCLIP::LPCLIP(const DspBlockData* dbd)
     : DspBlock(dbd) {
 }
@@ -329,6 +407,14 @@ void LPCLIP::doKeyOn(const KeyOnInfo& koi) // final
 // LOPASS : 1 pole! lowpass
 ///////////////////////////////////////////////////////////////////////////////
 
+LPGATE_DATA::LPGATE_DATA(std::string name)
+    : DspBlockData(name) {
+  addParam("cutoff")->useFrequencyEvaluator(); // P0 cutoff eval: "FRQ" 
+}
+dspblk_ptr_t LPGATE_DATA::createInstance() const {
+  return std::make_shared<LPGATE>(this);
+}
+
 LPGATE::LPGATE(const DspBlockData* dbd)
     : DspBlock(dbd) {
 }
@@ -358,6 +444,7 @@ void LPGATE::doKeyOn(const KeyOnInfo& koi) // final
 ///////////////////////////////////////////////////////////////////////////////
 LowPassData::LowPassData(std::string name)
     : DspBlockData(name) {
+  addParam("cutoff")->useFrequencyEvaluator(); // P0 cutoff eval: "FRQ" 
 }
 dspblk_ptr_t LowPassData::createInstance() const {
   return std::make_shared<LowPass>(this);
@@ -397,7 +484,7 @@ void LowPass::doKeyOn(const KeyOnInfo& koi) // final
 
 HighPassData::HighPassData(std::string name)
     : DspBlockData(name) {
-  addParam()->useDefaultEvaluator(); // cutoff
+  addParam("cutoff")->useFrequencyEvaluator(); // P0 cutoff eval: "FRQ" 
 }
 dspblk_ptr_t HighPassData::createInstance() const {
   return std::make_shared<HighPass>(this);
@@ -432,7 +519,7 @@ void HighPass::doKeyOn(const KeyOnInfo& koi) // final
 
 HighFreqStimulatorData::HighFreqStimulatorData(std::string name)
     : DspBlockData(name) {
-  addParam()->useDefaultEvaluator(); // cutoff
+  addParam("cutoff")->useFrequencyEvaluator(); // P0 cutoff eval: "FRQ" 
   addParam()->useDefaultEvaluator(); // drive
   addParam()->useDefaultEvaluator(); // outgain
 }
@@ -482,7 +569,7 @@ void HighFreqStimulator::doKeyOn(const KeyOnInfo& koi) // final
 
 AllPassData::AllPassData(std::string name)
     : DspBlockData(name) {
-  addParam()->useDefaultEvaluator(); // cutoff
+  addParam("cutoff")->useFrequencyEvaluator(); // P0 cutoff eval: "FRQ" 
 }
 dspblk_ptr_t AllPassData::createInstance() const {
   return std::make_shared<AllPass>(this);
@@ -519,7 +606,7 @@ void AllPass::doKeyOn(const KeyOnInfo& koi) // final
 TwoPoleAllPassData::TwoPoleAllPassData(std::string name)
     : DspBlockData(name) {
   _blocktype = "TwoPoleAllPass";
-  addParam()->useDefaultEvaluator(); // center
+  addParam("cutoff")->useFrequencyEvaluator(); // P0 cutoff eval: "FRQ" 
   addParam()->useDefaultEvaluator(); // width
 }
 dspblk_ptr_t TwoPoleAllPassData::createInstance() const {
@@ -563,10 +650,8 @@ void TwoPoleAllPass::doKeyOn(const KeyOnInfo& koi) // final
 TwoPoleLowPassData::TwoPoleLowPassData(std::string name)
     : DspBlockData(name) {
   _blocktype     = "TwoPoleLowPassData";
-  auto cutoff    = addParam();
-  auto resonance = addParam();
-  cutoff->useDefaultEvaluator();
-  resonance->useDefaultEvaluator();
+  addParam("cutoff")->useFrequencyEvaluator(); // P0 cutoff eval: "FRQ" 
+  addParam("resonance")->useDefaultEvaluator(); // Q
 }
 dspblk_ptr_t TwoPoleLowPassData::createInstance() const {
   return std::make_shared<TwoPoleLowPass>(this);
@@ -611,9 +696,9 @@ void TwoPoleLowPass::doKeyOn(const KeyOnInfo& koi) // final
 FourPoleLowPassWithSepData::FourPoleLowPassWithSepData(std::string name)
     : DspBlockData(name) {
   _blocktype = "FourPoleLowPassWithSep";
-  addParam()->useDefaultEvaluator(); // cutoff
-  addParam()->useDefaultEvaluator(); // resonance
-  addParam()->useDefaultEvaluator(); // seperation
+  addParam("cutoff")->useFrequencyEvaluator(); // P0 cutoff eval: "FRQ" 
+  addParam("resonance")->useDefaultEvaluator(); // resonance Q
+  addParam("separation")->useDefaultEvaluator(); // seperation (cents)
 }
 dspblk_ptr_t FourPoleLowPassWithSepData::createInstance() const { // override
   return std::make_shared<FourPoleLowPassWithSep>(this);
