@@ -202,8 +202,13 @@ struct sampleOsc {
 };
 
 ///////////////////////////////////////////////////////////////////////////////
+struct SAMPLER_DATA : public DspBlockData {
+  SAMPLER_DATA(std::string name);
+  dspblk_ptr_t createInstance() const override;
+};
 
 struct SAMPLER final : public DspBlock {
+  using dataclass_t = SAMPLER_DATA;
   SAMPLER(const DspBlockData* dbd);
   void compute(DspBuffer& dspbuf);
 

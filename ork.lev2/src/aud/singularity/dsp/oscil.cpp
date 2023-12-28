@@ -23,8 +23,8 @@ float wrap(float inp, float adj);
 PITCH_DATA::PITCH_DATA(std::string name)
     : DspBlockData(name) {
   _blocktype = "PITCH";
-  addParam("pch")->usePitchEvaluator();
-  addParam("pch2")->usePitchEvaluator();
+  addParam("pitch")->usePitchEvaluator();
+  //addParam("pch2")->usePitchEvaluator();
 }
 
 dspblk_ptr_t PITCH_DATA::createInstance() const { // override
@@ -48,7 +48,7 @@ void PITCH::doKeyOn(const KeyOnInfo& koi) // final
 SINE_DATA::SINE_DATA(std::string name)
     : DspBlockData(name) {
   _blocktype = "SINE";
-  addParam("pch")->usePitchEvaluator();
+  addParam("pitch")->usePitchEvaluator();
 }
 
 dspblk_ptr_t SINE_DATA::createInstance() const { // override
@@ -90,7 +90,7 @@ void SINE::doKeyOn(const KeyOnInfo& koi) // final
 SAW_DATA::SAW_DATA(std::string name)
     : DspBlockData(name) {
   _blocktype = "SAW";
-  addParam("pch")->usePitchEvaluator();
+  addParam("pitch")->usePitchEvaluator();
 }
 
 dspblk_ptr_t SAW_DATA::createInstance() const { // override
@@ -131,7 +131,7 @@ void SAW::doKeyOn(const KeyOnInfo& koi) // final
 SQUARE_DATA::SQUARE_DATA(std::string name)
     : DspBlockData(name) {
   _blocktype = "SQUARE";
-  addParam("pch")->usePitchEvaluator();
+  addParam("pitch")->usePitchEvaluator();
 }
 
 dspblk_ptr_t SQUARE_DATA::createInstance() const { // override
@@ -172,7 +172,7 @@ void SQUARE::doKeyOn(const KeyOnInfo& koi) // final
 SINEPLUS_DATA::SINEPLUS_DATA(std::string name)
     : DspBlockData(name) {
   _blocktype = "SINEPLUS";
-  addParam("pch")->usePitchEvaluator();
+  addParam("pitch")->usePitchEvaluator();
 }
 
 dspblk_ptr_t SINEPLUS_DATA::createInstance() const { // override
@@ -215,7 +215,7 @@ void SINEPLUS::doKeyOn(const KeyOnInfo& koi) // final
 SAWPLUS_DATA::SAWPLUS_DATA(std::string name)
     : DspBlockData(name) {
   _blocktype = "SAWPLUS";
-  addParam("pch")->usePitchEvaluator();
+  addParam("pitch")->usePitchEvaluator();
 }
 
 dspblk_ptr_t SAWPLUS_DATA::createInstance() const { // override
@@ -263,7 +263,7 @@ void SAWPLUS::doKeyOn(const KeyOnInfo& koi) // final
 SWPLUSSHP_DATA::SWPLUSSHP_DATA(std::string name)
     : DspBlockData(name) {
   _blocktype = "SWPLUSSHP";
-  addParam("pch")->usePitchEvaluator();
+  addParam("pitch")->usePitchEvaluator();
 }
 
 dspblk_ptr_t SWPLUSSHP_DATA::createInstance() const { // override
@@ -310,7 +310,7 @@ void SWPLUSSHP::doKeyOn(const KeyOnInfo& koi) // final
 SHAPEMODOSC_DATA::SHAPEMODOSC_DATA(std::string name)
     : DspBlockData(name) {
   _blocktype = "SHAPEMODOSC";
-  addParam("pch")->usePitchEvaluator();
+  addParam("pitch")->usePitchEvaluator();
   addParam("depth")->useDefaultEvaluator();
 }
 
@@ -384,7 +384,7 @@ void SHAPEMODOSC::doKeyOn(const KeyOnInfo& koi) // final
 PLUSSHAPEMODOSC_DATA::PLUSSHAPEMODOSC_DATA(std::string name)
     : DspBlockData(name) {
   _blocktype = "PLUSSHAPEMODOSC";
-  addParam("pch")->usePitchEvaluator();
+  addParam("pitch")->usePitchEvaluator();
   addParam("depth")->useDefaultEvaluator();
 }
 
@@ -471,7 +471,7 @@ void PLUSSHAPEMODOSC::doKeyOn(const KeyOnInfo& koi) // final
 SYNCM_DATA::SYNCM_DATA(std::string name)
     : DspBlockData(name) {
   _blocktype = "SYNCM";
-  addParam("pch")->usePitchEvaluator();
+  addParam("pitch")->usePitchEvaluator();
 }
 
 dspblk_ptr_t SYNCM_DATA::createInstance() const { // override
@@ -514,7 +514,7 @@ void SYNCM::doKeyOn(const KeyOnInfo& koi) // final
 SYNCS_DATA::SYNCS_DATA(std::string name)
     : DspBlockData(name) {
   _blocktype = "SYNCS";
-  addParam("pch")->usePitchEvaluator();
+  addParam("pitch")->usePitchEvaluator();
 }
 
 dspblk_ptr_t SYNCS_DATA::createInstance() const { // override
@@ -603,7 +603,7 @@ void PWM::doKeyOn(const KeyOnInfo& koi) // final
 NOISE_DATA::NOISE_DATA(std::string name)
     : DspBlockData(name) {
   _blocktype = "NOISE";
-  addParam("pch")->usePitchEvaluator();
+  addParam("pitch")->usePitchEvaluator();
 }
 
 dspblk_ptr_t NOISE_DATA::createInstance() const { // override

@@ -1062,9 +1062,17 @@ lyrdata_ptr_t KrzBankDataParser::parseLayer(const Value& jsonobj, prgdata_ptr_t 
   if (ACFG._wp){
     //parse_dsp_block(dspstage, blockindex, ACFG._wp);
     //parseDspBlock(pitchSeg, dspstage, layerdata);
-    dspparam_ptr_t dsp_param = std::make_shared<DspParamData>();
-    parseFBlock(pitchSeg, layerdata, dsp_param);
+    OrkAssert(USING_SAMPLE);
+
+    auto pitch = dspstage->appendTypedBlock<PITCH>("PITCH");
+    auto sampler = dspstage->appendTypedBlock<SAMPLER>("SAMPLER");
+
+    parseFBlock(pitchSeg, layerdata, pitch->param(0));
+    layerdata->_pchBlock = pitch;
     blockindex += ACFG._wp;
+  }
+  else{
+    OrkAssert(not USING_SAMPLE);
   }
   if (ACFG._w1){
     parse_dsp_block(dspstage, blockindex, ACFG._w1);
