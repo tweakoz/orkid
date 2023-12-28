@@ -37,11 +37,15 @@ void ControlBlockInst::keyOn(const KeyOnInfo& KOI, controlblockdata_constptr_t C
   auto l = KOI._layer;
 
   for (int i = 0; i < kmaxctrlperblock; i++) {
-    auto data = CBD->_cdata[i];
+    auto data = CBD->_controller_datas[i];
     if (data) {
       _cinst[i]                   = data->instantiate(l);
       _cinst[i]->_name            = data->_name;
-      _cinst[i]->_cdata           = data;
+
+      printf( "INSTANTIATE CONTROLLER<%s>\n", data->_name.c_str() );
+
+
+      _cinst[i]->_controller_data = data;
       l->_controld2iMap[data]     = _cinst[i];
       l->_controlMap[data->_name] = _cinst[i];
       _cinst[i]->keyOn(KOI);

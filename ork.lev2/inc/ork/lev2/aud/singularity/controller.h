@@ -21,10 +21,10 @@ struct ControlBlockData {
   template <typename T> std::shared_ptr<T> addController() {
     OrkAssert((_numcontrollers + 1) <= kmaxctrlperblock);
     auto c                    = std::make_shared<T>();
-    _cdata[_numcontrollers++] = c;
+    _controller_datas[_numcontrollers++] = c;
     return c;
   }
-  controllerdata_constptr_t _cdata[kmaxctrlperblock];
+  controllerdata_constptr_t _controller_datas[kmaxctrlperblock];
   size_t _numcontrollers = 0;
 };
 
@@ -58,7 +58,7 @@ struct ControllerInst {
   fvec4 _value;
   layer_ptr_t _layer = nullptr;
   std::string _name;
-  controllerdata_constptr_t _cdata;
+  controllerdata_constptr_t _controller_data;
   KeyOnModifiers::data_ptr_t _keymoddata;
 };
 

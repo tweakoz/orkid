@@ -15,11 +15,45 @@
 #include <ork/lev2/aud/singularity/synth.h>
 #include <ork/lev2/aud/singularity/sampler.h>
 
+ImplementReflectionX(ork::audio::singularity::NatEnvWrapperData, "SynNatEnvWrapperData");
+
 namespace ork::audio::singularity {
 
 ///////////////////////////////////////////////////////////////////////////////
 // Natural envelopes
 ///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+void NatEnvWrapperData::describeX(class_t* clazz) {
+}
+
+NatEnvWrapperData::NatEnvWrapperData() {
+}
+ControllerInst* NatEnvWrapperData::instantiate(layer_ptr_t layer) const {
+  return new NatEnvWrapperInst(this, layer);
+}
+
+NatEnvWrapperInst::NatEnvWrapperInst(const NatEnvWrapperData* data, layer_ptr_t l)
+  : ControllerInst(l) {
+  _natenv = std::make_shared<NatEnv>();
+}
+void NatEnvWrapperInst::compute() {
+}
+void NatEnvWrapperInst::keyOn(const KeyOnInfo& KOI) {
+  // FIND sample which has std::vector<natenvseg> _natenv;
+  // use to init NatEnv::keyOn
+  OrkAssert(_layer);
+  auto l = _layer;
+  auto ld = l->_layerdata;
+  auto algdata = ld->_algdata;
+  OrkAssert(algdata);
+  auto stagedata0 = algdata->_stages[0];
+  OrkAssert(stagedata0);
+  auto blkdata0 = stagedata0->_blockdatas[0];
+  OrkAssert(blkdata0);
+  printf("blkdata0<%p:%s>\n", (void*) blkdata0.get(), blkdata0->_name.c_str());
+}
+void NatEnvWrapperInst::keyOff() {
+}
 
 NatEnv::NatEnv()
     : _layer(nullptr)
@@ -30,7 +64,7 @@ NatEnv::NatEnv()
     , _slopePerSecond(0.0f)
     , _slopePerSample(0.0f)
     , _SR(getSampleRate())
-    , _state(0){
+    , _state(0) {
   _envadjust = [](const EnvPoint& inp, //
                   int iseg,
                   const KeyOnInfo& KOI) -> EnvPoint { //

@@ -934,6 +934,11 @@ lyrdata_ptr_t KrzBankDataParser::parseLayer(const Value& jsonobj, prgdata_ptr_t 
     if (seg.IsObject())
       parseEnv(seg, CB, "AMPENV");
   }
+  else if(layerdata->_usenatenv){
+    // AMPENV from NATENV
+    auto natenvdata = CB->addController<NatEnvWrapperData>();
+    natenvdata->_name = "AMPENV";
+  }
   if (jsonobj.HasMember("ENV2")) {
     const auto& seg = jsonobj["ENV2"];
     if (seg.IsObject())
@@ -991,6 +996,11 @@ lyrdata_ptr_t KrzBankDataParser::parseLayer(const Value& jsonobj, prgdata_ptr_t 
 
   if (krzalgdat._algindex == 0)
     return layerdata;
+
+  bool USING_SAMPLE = krzalgdat._algindex<26;
+  USING_SAMPLE = USING_SAMPLE and (kmid!=0);
+
+  layerdata->_varmap->makeValueForKey<bool>("USING_SAMPLE", USING_SAMPLE);
 
   assert(krzalgdat._algindex >= 1);
   assert(krzalgdat._algindex <= 31);

@@ -64,6 +64,8 @@ struct LayerData : public ork::Object {
   keymap_constptr_t _keymap;
   std::map<std::string, controllerdata_ptr_t> _controllermap;
   controlblockdata_ptr_t _ctrlBlock = nullptr;
+  varmap::varmap_ptr_t _varmap;
+
   scopesource_ptr_t _scopesource = nullptr;
 };
 

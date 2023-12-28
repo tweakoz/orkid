@@ -32,6 +32,8 @@ struct ProgramData : public ork::Object {
 
   DeclareConcreteX(ProgramData, ork::Object);
 
+  ProgramData();
+
   lyrdata_ptr_t newLayer();
   inline lyrdata_ptr_t getLayer(int i) const {
     return _layerdatas[i];
@@ -44,6 +46,7 @@ struct ProgramData : public ork::Object {
   std::string _tags;
   std::vector<lyrdata_ptr_t> _layerdatas;
   std::vector<std::string> _hudinfos;
+  varmap::varmap_ptr_t _varmap;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

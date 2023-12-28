@@ -34,7 +34,7 @@ bool LayerData::postDeserialize(reflect::serdes::IDeserializer&, object_ptr_t sh
   int icid = 0;
   for (auto item : _controllermap) {
     auto controller            = item.second;
-    _ctrlBlock->_cdata[icid++] = controller;
+    _ctrlBlock->_controller_datas[icid++] = controller;
   }
   _ctrlBlock->_numcontrollers = _controllermap.size();
   return true;
@@ -50,6 +50,7 @@ LayerData::LayerData(const ProgramData* pdata)
   _kmpBlock    = std::make_shared<KmpBlockData>(); // todo move to samplerdata
   _scopesource = nullptr;
   _outbus      = "main";
+  _varmap = std::make_shared<varmap::VarMap>();
 }
 ///////////////////////////////////////////////////////////////////////////////
 int LayerData::numDspBlocks() const {

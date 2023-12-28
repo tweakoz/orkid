@@ -356,7 +356,7 @@ void sampleOsc::keyOn(const KeyOnInfo& koi) {
     // probably should explicity create a NatEnv controller
     //  and bind it to AMP
     //_lyr->_AENV = _NATENV;
-    _natAmpEnv.keyOn(koi, _kmregion->_sample);
+    _natAmpEnv->keyOn(koi, _kmregion->_sample);
   }
 }
 
@@ -368,7 +368,7 @@ void sampleOsc::keyOff() {
   printf("osc<%p> beginRelease\n", (void*) this);
 
   if (_enableNatEnv)
-    _natAmpEnv.keyOff();
+    _natAmpEnv->keyOff();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -554,7 +554,7 @@ void sampleOsc::compute(int inumfr) {
     // float sampleval = std::invoke(this, _pbFunc);
 
     _OUTPUT[i] = sampleval;
-    _NATENV[i] = _natAmpEnv.compute();
+    _NATENV[i] = _natAmpEnv->compute();
 
     //_lyr->_HAF_nenvseg = _natAmpEnv._curseg;
     // todo update HUD ui of segment change...

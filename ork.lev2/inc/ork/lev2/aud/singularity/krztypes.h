@@ -73,6 +73,7 @@ struct Layer;
 struct outputBuffer;
 struct RateLevelEnvData;
 struct natenvseg;
+struct NatEnv;
 struct BankData;
 struct DspParam;
 struct Wavetable;
@@ -160,7 +161,7 @@ using scopesink_ptr_t             = std::shared_ptr<ScopeSink>;
 using signalscope_ptr_t           = std::shared_ptr<SignalScope>;
 using fxpresetmap_t               = std::map<std::string, lyrdata_ptr_t>;
 using keyonmod_ptr_t = std::shared_ptr<KeyOnModifiers>;
-
+using natenv_ptr_t = std::shared_ptr<NatEnv>;
 using dspparam_ptr_t         = std::shared_ptr<DspParamData>;
 using dspparam_constptr_t    = std::shared_ptr<const DspParamData>;
 using dspparammod_ptr_t      = std::shared_ptr<BlockModulationData>;

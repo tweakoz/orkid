@@ -86,7 +86,7 @@ struct kmregion {
 struct KeyMap {
   std::string _name;
   std::vector<kmregion*> _regions;
-  int _kmID;
+  int _kmID = -1;
 
   kmregion* getRegion(int note, int vel) const;
 };
@@ -196,7 +196,7 @@ struct sampleOsc {
   int _samppbnote;
 
 
-  NatEnv _natAmpEnv;
+  natenv_ptr_t _natAmpEnv;
 
   bool _released;
 };

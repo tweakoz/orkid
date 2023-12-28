@@ -25,6 +25,10 @@ ImplementReflectionX(ork::audio::singularity::BankData, "SynBankData");
 
 namespace ork::audio::singularity {
 
+ProgramData::ProgramData(){
+  _varmap = std::make_shared<varmap::VarMap>();
+}
+
 //////////////////////////////////////////////////////////////////////////////
 
 void BankData::describeX(class_t* clazz) {

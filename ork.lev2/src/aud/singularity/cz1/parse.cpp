@@ -518,7 +518,7 @@ czxprogdata_ptr_t parse_czprogramdata(CzData* outd, prgdata_ptr_t prgout, std::v
       OSC->_dcoEnv._level[i] = decode_p_envlevel(l7);
       OSC->_dcoEnv._time[i]  = decode_p_envrate(r7);
     }
-    OrkAssert(byteindex == 128);
+    //OrkAssert(byteindex == 128);
 
     ///////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////

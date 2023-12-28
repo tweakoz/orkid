@@ -58,6 +58,7 @@ struct RateLevelEnvData : public ControllerData {
   int _sustainSegment = -1;
 };
 
+
 ///////////////////////////////////////////////////////////////////////////////
 
 struct RateLevelEnvInst : public ControllerInst {
@@ -96,6 +97,24 @@ struct RateLevelEnvInst : public ControllerInst {
   KeyOnInfo _konoffinfo;
   int _updatecount = 0;
   std::string _debugName;
+};
+
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct NatEnvWrapperData : public ControllerData {
+  DeclareConcreteX(NatEnvWrapperData, ControllerData);
+  NatEnvWrapperData();
+  ControllerInst* instantiate(layer_ptr_t layer) const final;
+};
+
+struct NatEnvWrapperInst : public ControllerInst {
+  NatEnvWrapperInst(const NatEnvWrapperData* data, layer_ptr_t l);
+  void compute() final;
+  void keyOn(const KeyOnInfo& KOI) final;
+  void keyOff() final;
+  KeyOnInfo _konoffinfo;
+  natenv_ptr_t _natenv;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
