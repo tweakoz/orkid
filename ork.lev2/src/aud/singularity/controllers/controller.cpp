@@ -42,7 +42,7 @@ void ControlBlockInst::keyOn(const KeyOnInfo& KOI, controlblockdata_constptr_t C
       _cinst[i]                   = data->instantiate(l);
       _cinst[i]->_name            = data->_name;
 
-      printf( "INSTANTIATE CONTROLLER<%s>\n", data->_name.c_str() );
+      //printf( "INSTANTIATE CONTROLLER<%s>\n", data->_name.c_str() );
 
 
       _cinst[i]->_controller_data = data;

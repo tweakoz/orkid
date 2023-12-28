@@ -154,7 +154,6 @@ void Layer::keyOn(int note, int velocity, lyrdata_ptr_t ld, outbus_ptr_t obus){
 
   this->retain();
 
-  //printf( "LAYER KEYON<%d>\n", note );
   /////////////////////////////////////////////
   // controllers
   /////////////////////////////////////////////
@@ -165,6 +164,8 @@ void Layer::keyOn(int note, int velocity, lyrdata_ptr_t ld, outbus_ptr_t obus){
   }
 
   ///////////////////////////////////////
+  auto algname = ld->_algdata->_name;
+  printf( "LAYER KEYON<%d> alg<%s>\n", note, algname.c_str() );
 
   this->_alg = this->_layerdata->_algdata->createAlgInst();
   // assert(_alg);

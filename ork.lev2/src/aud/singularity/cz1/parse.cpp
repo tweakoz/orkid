@@ -651,7 +651,7 @@ czxprogdata_ptr_t parse_czprogramdata(CzData* outd, prgdata_ptr_t prgout, std::v
     }
   }
   /////////////////////////////////////////////////
-  czprogdata->dump();
+  //czprogdata->dump();
   return czprogdata;
 }
 ///////////////////////////////////////////////////////////////////////////////

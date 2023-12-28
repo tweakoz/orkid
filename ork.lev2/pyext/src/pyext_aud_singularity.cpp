@@ -89,9 +89,14 @@ void pyinit_aud_singularity(py::module& module_lev2) {
   type_codec->registerStdCodec<outbus_ptr_t>(obus_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto pdata_type = py::class_<ProgramData, prgdata_ptr_t>(singmodule, "ProgramData") //
-                        .def_property_readonly(
+                        .def(py::init<>())
+                        .def("merge", [](prgdata_ptr_t pdata, prgdata_ptr_t other) { //
+                          pdata->merge(*other);
+                        })
+                        .def_property(
                             "name", //
-                            [](prgdata_ptr_t pdata) -> std::string { return pdata->_name; });
+                            [](prgdata_ptr_t pdata) -> std::string { return pdata->_name; },
+                            [](prgdata_ptr_t pdata, std::string named) { pdata->_name = named; });
   type_codec->registerStdCodec<prgdata_ptr_t>(pdata_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto bankdata_type = py::class_<BankData, ::ork::Object, bankdata_ptr_t>(singmodule, "BankData")
@@ -118,6 +123,35 @@ void pyinit_aud_singularity(py::module& module_lev2) {
                                    rval[type_codec->encode(id)] = type_codec->encode(name);
                                  }
                                  return rval;
+                               })
+                           .def(
+                               "addProgram",                                               //
+                               [](bankdata_ptr_t bdata, prgdata_ptr_t prg) { //
+                                int highestID = bdata->_programs.rbegin()->first;
+                                 bdata->_programs[highestID+1] = prg;
+                                  bdata->_programsByName[prg->_name] = prg;
+                               })
+                           .def(
+                               "merge",                                               //
+                               [](bankdata_ptr_t bdata, bankdata_ptr_t other) { //
+                                 bdata->merge(*other);
+                               })
+                           .def(
+                               "filterPrograms",                                               //
+                               [](bankdata_ptr_t bdata, py::list allow_list) -> bankdata_ptr_t { //
+                                  auto out_bank = std::make_shared<BankData>();
+                                  int counter = 0;
+                                  for( auto item : allow_list ){
+                                    auto py_item = item.cast<py::object>();
+                                    auto py_item_str = py_item.attr("__str__")();
+                                    auto py_item_str_str = py_item_str.cast<std::string>();
+                                    auto program = bdata->findProgramByName(py_item_str_str);
+                                    if(program){
+                                      out_bank->_programsByName[py_item_str_str] = program;
+                                      out_bank->_programs[counter++] = program;
+                                    }
+                                  }
+                                  return out_bank;
                                })
                            .def(
                                "programByName",                                               //

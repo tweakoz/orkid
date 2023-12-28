@@ -69,18 +69,7 @@ void KrzSynthData::loadBank(const file::Path& syxpath){
   auto as_json = krzio::convert(syxpath.c_str());
   KrzBankDataParser parser;
   parser.loadKrzJsonFromString(as_json, 0);
-  for( auto item : parser._objdb->_programs ){
-    _bankdata->_programs[item.first] = item.second;
-  }
-  for( auto item : parser._objdb->_programsByName ){
-    _bankdata->_programsByName[item.first] = item.second;
-  }
-  for( auto item : parser._objdb->_keymaps ){
-    _bankdata->_keymaps[item.first] = item.second;
-  }
-  for( auto item : parser._objdb->_multisamples ){
-    _bankdata->_multisamples[item.first] = item.second;
-  }
+  _bankdata->merge(*parser._objdb);
 }
 
 

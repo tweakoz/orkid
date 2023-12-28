@@ -409,6 +409,9 @@ void PANNER::compute(DspBuffer& dspbuf) // final
   float lmix     = (pan > 0) ? lerp(0.5, 0, pan) : lerp(0.5, 1, -pan);
   float rmix     = (pan > 0) ? lerp(0.5, 1, pan) : lerp(0.5, 0, -pan);
 
+  lmix *= 0.25;
+  rmix *= 0.25;
+
   _fval[0] = pos;
 
   // printf( "pan<%f> lmix<%f> rmix<%f>\n", pan, lmix, rmix );

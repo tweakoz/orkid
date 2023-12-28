@@ -136,6 +136,9 @@ class SingulTestApp(object):
             self.synth.keyOff(voice)
             self.voices.clear()
           return True
+        elif KC == ord("4"): # 
+          print(self.sorted_progs)
+          return True
         elif KC == ord("Z"): # 
           self.octave -= 1
           if self.octave < 0:

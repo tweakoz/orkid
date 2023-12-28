@@ -504,7 +504,7 @@ dspblkdata_ptr_t KrzBankDataParser::parseDspBlock(const Value& dseg, dspstagedat
     std::string blocktype = dseg["BLOCK_ALG "].GetString();
     //rval             = std::make_shared<DspBlockData>();
     //rval->_blocktype = dseg["BLOCK_ALG "].GetString();
-    printf("rval._dspBlock<%s>\n", blocktype.c_str());
+    //printf("rval._dspBlock<%s>\n", blocktype.c_str());
     ///////////
     // alg_filters
     ///////////
@@ -1073,6 +1073,10 @@ lyrdata_ptr_t KrzBankDataParser::parseLayer(const Value& jsonobj, prgdata_ptr_t 
   if (ACFG._wa){
     parse_dsp_block(ampstage, blockindex, ACFG._wa);
     blockindex += ACFG._wa;
+    if( krzalgdat._algindex >=1 and krzalgdat._algindex <= 4  ){
+      auto amp = ampstage->appendTypedBlock<PANNER>("PANNER");
+    }
+
   }
  
 
@@ -1223,7 +1227,7 @@ void KrzBankDataParser::loadKrzJsonFromString(const std::string& json_data, int 
       } else {
         auto s      = sit->second;
         kr->_sample = s;
-         printf( "found sample<%d:%s> in multisample<%d>\n", sid, s->_name.c_str(), msid );
+         //printf( "found sample<%d:%s> in multisample<%d>\n", sid, s->_name.c_str(), msid );
       }
     }
   }

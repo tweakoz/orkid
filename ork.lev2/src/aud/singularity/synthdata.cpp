@@ -31,9 +31,33 @@ ProgramData::ProgramData(){
 
 //////////////////////////////////////////////////////////////////////////////
 
+void ProgramData::merge(const ProgramData& oth){
+  for( auto item : oth._layerdatas ){
+	_layerdatas.push_back(item);
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+
 void BankData::describeX(class_t* clazz) {
   clazz->directObjectMapProperty("Programs", &BankData::_programsByName);
   // clazz->directObjectMapProperty("KeyMaps", &BankData::_keymaps);
+}
+
+void BankData::merge( const BankData& oth ){
+  for( auto item : oth._programs ){
+    _programs[item.first] = item.second;
+  }
+  for( auto item : oth._programsByName ){
+    _programsByName[item.first] = item.second;
+  }
+  for( auto item : oth._keymaps ){
+    _keymaps[item.first] = item.second;
+  }
+  for( auto item : oth._multisamples ){
+    _multisamples[item.first] = item.second;
+  }
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////

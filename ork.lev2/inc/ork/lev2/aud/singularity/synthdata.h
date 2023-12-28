@@ -41,6 +41,7 @@ struct ProgramData : public ork::Object {
   inline void addHudInfo(std::string str) {
     _hudinfos.push_back(str);
   }
+  void merge(const ProgramData& oth);
 
   std::string _name;
   std::string _tags;
@@ -62,6 +63,7 @@ struct BankData : public ork::Object {
   prgdata_ptr_t findProgramByName(const std::string named) const;
   keymap_constptr_t findKeymap(int kmID) const;
 
+  void merge( const BankData& oth );
   //
 
   std::map<int, prgdata_ptr_t> _programs;

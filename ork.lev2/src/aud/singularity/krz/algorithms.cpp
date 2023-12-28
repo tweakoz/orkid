@@ -22,14 +22,14 @@ const int kmaskBOTH  = 3;
 algdata_ptr_t configureKrzAlgorithm(int algid) {
 
   auto algdout   = std::make_shared<AlgData>();
-  algdout->_name = ork::FormatString("KrzALG%d", algid);
+  algdout->_name = ork::FormatString("Krz-ALG-%d", algid);
   //printf("configure IO for algid<%d>\n", algid );
   switch (algid) {
     case 1: { // KRZ1 (PCH->DSP->AMP->MONO)
       auto stage_dsp = algdout->appendStage("DSP");
       auto stage_amp = algdout->appendStage("AMP");
       stage_dsp->setNumIos(1, 1); // 1 in, 1 out
-      stage_amp->setNumIos(1, 1); // 1 in, 1 out
+      stage_amp->setNumIos(1, 2); // 1 in, 1 out
       break;
     }
     case 2:   // KRZ2 (PCH->DSP1->DSP2->PANNER->AMP->STEREO)
