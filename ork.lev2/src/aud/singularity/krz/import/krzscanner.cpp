@@ -89,6 +89,7 @@ void filescanner::scanAndDump() {
   _joprog.AddMember("KRZ", _joprogroot, _japrog);
 
   rapidjson::StringBuffer strbuf;
+  strbuf.Reserve(32<<20);
   rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(strbuf);
   _joprog.Accept(writer);
 
@@ -102,9 +103,14 @@ void filescanner::scanAndDump() {
 
 std::string filescanner::jsonPrograms() const{
   rapidjson::StringBuffer strbuf;
+  strbuf.Reserve(32<<20);
   rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(strbuf);
   _joprog.Accept(writer);
-  return strbuf.GetString();
+  std::string json_str = std::string(strbuf.GetString(), strbuf.GetSize());
+  printf( "json<^%s>\n", json_str.c_str() );
+  printf( "len1<%d>\n", (int) strbuf.GetSize() );
+  printf( "len2<%d>\n", (int) json_str.length() );
+  return json_str;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

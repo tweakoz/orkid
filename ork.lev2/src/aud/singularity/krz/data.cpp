@@ -6,7 +6,6 @@
 ////////////////////////////////////////////////////////////////
 
 #include <string>
-#include <assert.h>
 #include <unistd.h>
 #include <math.h>
 
@@ -24,14 +23,12 @@
 namespace ork::audio::singularity {
 ///////////////////////////////////////////////////////////////////////////////
 
-static const auto krzbasedir = basePath() / "kurzweil" / "krz";
-
 bankdata_ptr_t KrzSynthData::baseObjects() {
   auto base      = ork::audio::singularity::basePath() / "kurzweil";
   auto base_path = base/"k2v3base.bin";
 
   auto bin_file = fopen(base_path.c_str(), "rb");
-  printf("file<%p>\n", (void*) bin_file);
+  printf("file<%p:%s>\n", (void*) bin_file, base_path.c_str());
   fseek(bin_file, 0, SEEK_END);
   size_t ilen = ftell(bin_file);
   printf("length<%zu>\n", ilen);
@@ -42,29 +39,22 @@ bankdata_ptr_t KrzSynthData::baseObjects() {
 
   auto krzbasehasher = DataBlock::createHasher();
   krzbasehasher->accumulateString("krzbaseobjects"); // identifier
-  krzbasehasher->accumulateItem<float>(1.1);         // version code
+  krzbasehasher->accumulateItem<float>(1.5);         // version code
   krzbasehasher->accumulate(bin_data, ilen);         // data
 
   krzbasehasher->finish();
   uint64_t krzbase_hash = krzbasehasher->result();
-  auto dblock = DataBlockCache::findDataBlock(krzbase_hash);
+  datablock_ptr_t dblock = DataBlockCache::findDataBlock(krzbase_hash);
   if (dblock == nullptr) {
     auto base_json = krzio::convert(base_path.c_str());
-    printf("%s", base_json.c_str());
     dblock        = std::make_shared<DataBlock>();
     auto array = std::vector<uint8_t>(base_json.begin(), base_json.end());
     array.push_back(0);
     dblock->addData(array.data(), array.size());
     DataBlockCache::setDataBlock(krzbase_hash, dblock);
   }
-  std::vector<uint8_t> array = dblock->_storage;
-  auto as_str = std::string(array.begin(), array.end());
-  auto base_output      = ork::audio::singularity::basePath() / "kurzweil"/"k2v3base.json";
-  FILE* out_file = fopen(base_output.c_str(), "w");
-  fprintf(out_file, "%s", as_str.c_str());
-  fclose(out_file);
-  
   KrzBankDataParser parser;
+  auto as_str = std::string(dblock->_storage.begin(), dblock->_storage.end());
   parser.loadKrzJsonFromString(as_str, 0);
   return parser._objdb;
 }

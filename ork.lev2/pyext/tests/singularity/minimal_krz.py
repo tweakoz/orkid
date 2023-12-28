@@ -30,8 +30,8 @@ class KrzApp(SingulTestApp):
     super().onGpuInit(ctx)
     self.syn_data_base = singularity.baseDataPath()/"kurzweil"
     self.krzdata = singularity.KrzSynthData()
-    self.krzdata.loadBank("alesisdr", self.syn_data_base/"alesisdr.krz")
-    self.krzdata.loadBank("m1drums", self.syn_data_base/"m1drums.krz")
+    #self.krzdata.loadBank("alesisdr", self.syn_data_base/"alesisdr.krz")
+    #self.krzdata.loadBank("m1drums", self.syn_data_base/"m1drums.krz")
     self.soundbank = self.krzdata.bankData
     self.krzprogs = self.soundbank.programsByName
     self.sorted_progs = sorted(self.krzprogs.keys())

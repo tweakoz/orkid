@@ -169,7 +169,7 @@ keymap_ptr_t KrzBankDataParser::parseKeymap(int kmid, const Value& jsonobj) {
   // printf( "Got Keymap name<%s>\n", kmapout->_name.c_str() );
 
   const auto& jsonrgns = jsonobj["regions"];
-  assert(jsonrgns.IsArray());
+  OrkAssert(jsonrgns.IsArray());
 
   for (SizeType i = 0; i < jsonrgns.Size(); i++) // Uses SizeType instead of size_t
   {
@@ -221,7 +221,7 @@ sample* KrzBankDataParser::parseSample(const Value& jsonobj, const multisample* 
     sout->_loopMode = isloop ? eLoopMode::FWD : eLoopMode::NONE;
   else {
     printf("pbmode<%s>\n", pbmode.c_str());
-    assert(false);
+    OrkAssert(false);
   }
 
   float sgain    = jsonobj["volAdjust"].GetFloat();
@@ -232,9 +232,9 @@ sample* KrzBankDataParser::parseSample(const Value& jsonobj, const multisample* 
 
   const auto& jsonneslopes = jsonnatEnv["segSlope (dB/sec)"];
   const auto& jsonnetimes  = jsonnatEnv["segTime (sec)"];
-  assert(jsonneslopes.IsArray());
-  assert(jsonnetimes.IsArray());
-  assert(jsonneslopes.Size() == jsonnetimes.Size());
+  OrkAssert(jsonneslopes.IsArray());
+  OrkAssert(jsonnetimes.IsArray());
+  OrkAssert(jsonneslopes.Size() == jsonnetimes.Size());
   int numsegs = jsonneslopes.Size();
   sout->_natenv.resize(numsegs);
 
@@ -268,7 +268,7 @@ multisample* KrzBankDataParser::parseMultiSample(const Value& jsonobj) {
   msout->_objid = jsonobj["objectID"].GetInt();
   // printf( "Got MultiSample name<%s>\n", msout->_name.c_str() );
   const auto& jsonsamps = jsonobj["samples"];
-  assert(jsonsamps.IsArray());
+  OrkAssert(jsonsamps.IsArray());
 
   for (SizeType i = 0; i < jsonsamps.Size(); i++) // Uses SizeType instead of size_t
   {
@@ -412,7 +412,7 @@ void KrzBankDataParser::parseFBlock(const Value& fseg, lyrdata_ptr_t layerdata, 
 
   if (fseg.HasMember("Coarse")) {
     auto& c = fseg["Coarse"];
-    assert(c.HasMember("Value"));
+    OrkAssert(c.HasMember("Value"));
     fblk->_units = c["Unit"].GetString();
     auto& v      = c["Value"];
     switch (v.GetType()) {
@@ -433,13 +433,13 @@ void KrzBankDataParser::parseFBlock(const Value& fseg, lyrdata_ptr_t layerdata, 
         // printf( "v.GetString() %s\n", v.GetString() );
         // printf( "inote<%d> ioct<%d> midinote<%d> frq<%f>\n", inote, ioct, midinote, frq );
         // assert(false);
-        assert(c["Unit"] == "nt");
+        OrkAssert(c["Unit"] == "nt");
         // note/cent evaluator
         // GenFRQ(fblk);
         break;
       }
       default:
-        assert(false);
+        OrkAssert(false);
         break;
     }
   }
@@ -504,7 +504,7 @@ dspblkdata_ptr_t KrzBankDataParser::parseDspBlock(const Value& dseg, dspstagedat
     std::string blocktype = dseg["BLOCK_ALG "].GetString();
     //rval             = std::make_shared<DspBlockData>();
     //rval->_blocktype = dseg["BLOCK_ALG "].GetString();
-    //printf("rval._dspBlock<%s>\n", blocktype.c_str());
+    printf("rval._dspBlock<%s>\n", blocktype.c_str());
     ///////////
     // alg_filters
     ///////////
@@ -656,10 +656,10 @@ dspblkdata_ptr_t KrzBankDataParser::parseDspBlock(const Value& dseg, dspstagedat
     ///////////
     // alg_oscil
     ///////////
-    else if(blocktype=="SWPLUSSHP"){
+    else if(blocktype=="SW+SHP"){
       rval = stage->appendTypedBlock<SWPLUSSHP>(blocktype);
     }
-    else if(blocktype=="SAWPLUS"){
+    else if(blocktype=="SAW+"){
       rval = stage->appendTypedBlock<SAWPLUS>(blocktype);
     }
     else if(blocktype=="SINE"){
@@ -675,19 +675,19 @@ dspblkdata_ptr_t KrzBankDataParser::parseDspBlock(const Value& dseg, dspstagedat
     else if(blocktype=="SQUARE"){
       rval = stage->appendTypedBlock<SQUARE>(blocktype);
     }
-    else if(blocktype=="SINEPLUS"){
+    else if(blocktype=="SINE+"){
       rval = stage->appendTypedBlock<SINEPLUS>(blocktype);
     }
-    else if(blocktype=="SHAPEMODOSC"){
+    else if(blocktype=="SHAPE MOD OSC"){
       rval = stage->appendTypedBlock<SHAPEMODOSC>(blocktype);
     }
-    else if(blocktype=="PLUSSHAPEMODOSC"){
+    else if(blocktype=="+ SHAPEMOD OSC"){
       rval = stage->appendTypedBlock<PLUSSHAPEMODOSC>(blocktype);
     }
-    else if(blocktype=="SYNCM"){
+    else if(blocktype=="SYNC M"){
       rval = stage->appendTypedBlock<SYNCM>(blocktype);
     }
-    else if(blocktype=="SYNCS"){
+    else if(blocktype=="SYNC S"){
       rval = stage->appendTypedBlock<SYNCS>(blocktype);
     }
     else if(blocktype=="PWM"){
@@ -799,7 +799,7 @@ lyrdata_ptr_t KrzBankDataParser::parseLayer(const Value& jsonobj, prgdata_ptr_t 
   auto it = _tempkeymaps.find(kmid);
   if (it == _tempkeymaps.end()) {
     it = _objdb->_keymaps.find(kmid);
-    assert(it != _objdb->_keymaps.end());
+    OrkAssert(it != _objdb->_keymaps.end());
   }
 
   auto layerdata     = pd->newLayer();
@@ -861,17 +861,17 @@ lyrdata_ptr_t KrzBankDataParser::parseLayer(const Value& jsonobj, prgdata_ptr_t 
     //}
     //////////////////////////////////////////
     const auto& jsonrates = envobj["rates"];
-    assert(jsonrates.IsArray());
+    OrkAssert(jsonrates.IsArray());
     int inumrates = jsonrates.Size();
-    assert(inumrates == 7);
+    OrkAssert(inumrates == 7);
     std::vector<float> times;
     for (SizeType i = 0; i < inumrates; i++) // Uses SizeType instead of size_t
       times.push_back(jsonrates[i].GetFloat());
     //////////////////////////////////////////
     const auto& jsonlevels = envobj["levels"];
-    assert(jsonlevels.IsArray());
+    OrkAssert(jsonlevels.IsArray());
     int inumlevels = jsonlevels.Size();
-    assert(inumlevels == 7);
+    OrkAssert(inumlevels == 7);
     std::vector<float> levels;
     for (SizeType i = 0; i < inumlevels; i++) // Uses SizeType instead of size_t
       levels.push_back(jsonlevels[i].GetFloat());
@@ -1002,8 +1002,8 @@ lyrdata_ptr_t KrzBankDataParser::parseLayer(const Value& jsonobj, prgdata_ptr_t 
 
   layerdata->_varmap->makeValueForKey<bool>("USING_SAMPLE", USING_SAMPLE);
 
-  assert(krzalgdat._algindex >= 1);
-  assert(krzalgdat._algindex <= 31);
+  OrkAssert(krzalgdat._algindex >= 1);
+  OrkAssert(krzalgdat._algindex <= 31);
   const KrzAlgCfg ACFG = getAlgConfig(krzalgdat._algindex);
 
   auto blkname = [](int bid) -> const char* {
@@ -1124,7 +1124,7 @@ prgdata_ptr_t KrzBankDataParser::parseProgram(const Value& jsonobj) {
   pdata->_name = name;
 
   const auto& jsonlays = jsonobj["LAYERS"];
-  assert(jsonlays.IsArray());
+  OrkAssert(jsonlays.IsArray());
 
   for (SizeType i = 0; i < jsonlays.Size(); i++) // Uses SizeType instead of size_t
   {
@@ -1140,7 +1140,7 @@ void KrzBankDataParser::loadKrzJsonFromFile(const std::string& fname, int ibasei
   auto realfname = basePath() / "kurzweil" / (fname + ".json");
   printf("fname<%s>\n", realfname.c_str());
   FILE* fin = fopen(realfname.c_str(), "rt");
-  assert(fin != nullptr);
+  OrkAssert(fin != nullptr);
   fseek(fin, 0, SEEK_END);
   int size = ftell(fin);
   printf("filesize<%d>\n", size);
@@ -1162,12 +1162,12 @@ void KrzBankDataParser::loadKrzJsonFromString(const std::string& json_data, int 
   Document document;
   document.Parse(json_data.c_str());
 
-  assert(document.IsObject());
-  assert(document.HasMember("KRZ"));
+  OrkAssert(document.IsObject());
+  OrkAssert(document.HasMember("KRZ"));
 
   const auto& root    = document["KRZ"];
   const auto& objects = root["objects"];
-  assert(objects.IsArray());
+  OrkAssert(objects.IsArray());
 
   _tempprograms.clear();
   _tempkeymaps.clear();
@@ -1188,7 +1188,7 @@ void KrzBankDataParser::loadKrzJsonFromString(const std::string& json_data, int 
       _tempprograms[objid] = p;
       //p->_tags             = "k2000(" + fname + ")";
     } else {
-      assert(false);
+      OrkAssert(false);
     }
   }
 
@@ -1219,7 +1219,7 @@ void KrzBankDataParser::loadKrzJsonFromString(const std::string& json_data, int 
       auto msit = _tempmultisamples.find(msid);
       if (msit == _tempmultisamples.end()) {
         msit = _objdb->_multisamples.find(msid);
-        assert(msit != _objdb->_multisamples.end());
+        OrkAssert(msit != _objdb->_multisamples.end());
       }
 
       kr->_multiSample = msit->second;
@@ -1231,7 +1231,7 @@ void KrzBankDataParser::loadKrzJsonFromString(const std::string& json_data, int 
       } else {
         auto s      = sit->second;
         kr->_sample = s;
-        // printf( "found sample<%d:%s> in multisample<%d>\n", sid, s->_name.c_str(), msid );
+         printf( "found sample<%d:%s> in multisample<%d>\n", sid, s->_name.c_str(), msid );
       }
     }
   }
