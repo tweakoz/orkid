@@ -1066,7 +1066,6 @@ lyrdata_ptr_t KrzBankDataParser::parseLayer(const Value& jsonobj, prgdata_ptr_t 
 
     auto pitch = dspstage->appendTypedBlock<PITCH>("PITCH");
     auto sampler = dspstage->appendTypedBlock<SAMPLER>("SAMPLER");
-
     parseFBlock(pitchSeg, layerdata, pitch->param(0));
     layerdata->_pchBlock = pitch;
     blockindex += ACFG._wp;

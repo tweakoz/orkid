@@ -249,6 +249,8 @@ sampleOsc::sampleOsc()
     , _preDSPGAIN(1.0f)
     , _loopMode(eLoopMode::NONE)
     , _loopCounter(0) {
+
+    _natAmpEnv = std::make_shared<NatEnv>();
 }
 
 void sampleOsc::setSrRatio(float pbratio) {
@@ -268,7 +270,7 @@ void sampleOsc::keyOn(const KeyOnInfo& koi) {
   int note = koi._key;
 
   _lyr = koi._layer;
-  assert(_lyr);
+  OrkAssert(_lyr);
 
   findRegion(koi);
 
@@ -283,7 +285,7 @@ void sampleOsc::keyOn(const KeyOnInfo& koi) {
     return;
   }
 
-  assert(_sample);
+  OrkAssert(_sample);
 
   _blk_start     = int64_t(_sample->_blk_start) << 16;
   _blk_alt       = int64_t(_sample->_blk_alt) << 16;
@@ -313,7 +315,7 @@ void sampleOsc::keyOn(const KeyOnInfo& koi) {
       _pbFunc = nullptr;
       break;
     default:
-      assert(false);
+      OrkAssert(false);
       break;
   }
   switch (_kmregion->_loopModeOverride) {
@@ -331,7 +333,7 @@ void sampleOsc::keyOn(const KeyOnInfo& koi) {
         _pbFunc = &sampleOsc::playNoLoop;
       break;
     default:
-      assert(false);
+      OrkAssert(false);
       break;
   }
   // printf( "LOOPMODE<%d>\n", int(_loopMode));
@@ -364,7 +366,6 @@ void sampleOsc::keyOn(const KeyOnInfo& koi) {
   printf("_enableNatEnv<%d>\n", int(_enableNatEnv));
 
   if (_enableNatEnv) {
-    OrkAssert(false);
     // probably should explicity create a NatEnv controller
     //  and bind it to AMP
     //_lyr->_AENV = _NATENV;
@@ -390,7 +391,7 @@ void sampleOsc::findRegion(const KeyOnInfo& koi) {
   auto KMP = ld->_kmpBlock;
 
   auto PCHBLK = ld->_pchBlock;
-  assert(PCHBLK);
+  OrkAssert(PCHBLK);
   const auto& PCH = PCHBLK->_paramd[0];
 
   auto& HKF = _lyr->_HKF;
@@ -643,7 +644,7 @@ float sampleOsc::playLoopFwd() {
   ///////////////
   // linear
   auto sblk = _sample->_sampleBlock;
-  assert(sblk != nullptr);
+  OrkAssert(sblk != nullptr);
   float sampA = float(sblk[iiA]);
   float sampB = float(sblk[iiB]);
   float samp  = (sampB * fract + sampA * invfr) * kinv32k;
@@ -680,7 +681,7 @@ float sampleOsc::playLoopFwd() {
 }
 
 float sampleOsc::playLoopBid() {
-  assert(false);
+  OrkAssert(false);
   return 0.0f;
   /*
   _pbindexNext = _forwarddir
@@ -731,8 +732,8 @@ float sampleOsc::playLoopBid() {
       printf( "yo\n");
   }
 
-  assert(iiA<_numFrames);
-  assert(iiB<_numFrames);
+  OrkAssert(iiA<_numFrames);
+  OrkAssert(iiB<_numFrames);
   float sampA = float(_sampleData[iiA] );
   float sampB = float(_sampleData[iiB] );
 
