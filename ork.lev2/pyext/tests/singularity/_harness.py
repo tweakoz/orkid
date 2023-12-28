@@ -96,6 +96,22 @@ class SingulTestApp(object):
     return None
 
   def onUiEvent(self,uievent):
+    if uievent.code == tokens.KEY_REPEAT.hashed or uievent.code==tokens.KEY_DOWN.hashed:
+      KC = uievent.keycode
+      if KC == ord(","): # prev program
+        self.prog_index -= 1
+        if self.prog_index < 0:
+          self.prog_index = len(self.sorted_progs)-1
+        prgname = self.sorted_progs[self.prog_index]
+        print("prgname<%s>" % prgname)
+        return True
+      elif KC == ord("."): # next program
+        self.prog_index += 1
+        if self.prog_index >= len(self.sorted_progs):
+          self.prog_index = 0
+        prgname = self.sorted_progs[self.prog_index]
+        print("prgname<%s>" % prgname)
+        return True
     if uievent.code == tokens.KEY_DOWN.hashed:
       KC = uievent.keycode
       if KC in self.base_notes:
@@ -109,21 +125,7 @@ class SingulTestApp(object):
          self.voices[KC] = voice
          return True
       else:
-        if KC == ord(","): # prev program
-          self.prog_index -= 1
-          if self.prog_index < 0:
-            self.prog_index = len(self.sorted_progs)-1
-          prgname = self.sorted_progs[self.prog_index]
-          print("prgname<%s>" % prgname)
-          return True
-        elif KC == ord("."): # next program
-          self.prog_index += 1
-          if self.prog_index >= len(self.sorted_progs):
-            self.prog_index = 0
-          prgname = self.sorted_progs[self.prog_index]
-          print("prgname<%s>" % prgname)
-          return True
-        elif KC == ord("-"): # next effect
+        if KC == ord("-"): # next effect
           self.synth.prevEffect()
           return True
         elif KC == ord("="): # next effect

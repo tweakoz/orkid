@@ -41,7 +41,7 @@ void NatEnvWrapperInst::compute() {
 void NatEnvWrapperInst::keyOn(const KeyOnInfo& KOI) {
   // FIND sample which has std::vector<natenvseg> _natenv;
   // use to init NatEnv::keyOn
-  OrkAssert(_layer);
+  /*OrkAssert(_layer);
   auto l = _layer;
   auto ld = l->_layerdata;
   auto algdata = ld->_algdata;
@@ -49,8 +49,15 @@ void NatEnvWrapperInst::keyOn(const KeyOnInfo& KOI) {
   auto stagedata0 = algdata->_stages[0];
   OrkAssert(stagedata0);
   auto blkdata0 = stagedata0->_blockdatas[0];
-  OrkAssert(blkdata0);
+  auto blkdata1 = stagedata0->_blockdatas[1];
+  auto sampler = std::dynamic_pointer_cast<SAMPLER_DATA>(blkdata1);
+  OrkAssert(sampler);
+  RegionSearch RF = sampler->findRegion(ld,KOI);
+  auto sample = RF._sample;
   printf("blkdata0<%p:%s>\n", (void*) blkdata0.get(), blkdata0->_name.c_str());
+  printf("sampler<%p:%s>\n", (void*) sampler.get(), sampler->_name.c_str());
+  printf("sample<%p:%s> natenvcount<%d>\n", (void*) sample, sample->_name.c_str(), int(sample->_natenv.size()));
+  */
 }
 void NatEnvWrapperInst::keyOff() {
 }

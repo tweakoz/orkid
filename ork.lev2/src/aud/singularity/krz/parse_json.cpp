@@ -759,24 +759,6 @@ dspblkdata_ptr_t KrzBankDataParser::parseDspBlock(const Value& dseg, dspstagedat
 
 ///////////////////////////////////////////////////////////////////////////////
 
-/*dspblkdata_ptr_t KrzBankDataParser::parsePchBlock(const Value& pseg, dspstagedata_ptr_t stage, lyrdata_ptr_t layd) {
-  auto dblk = parseDspBlock(pseg, stage, layd, true);
-
-  if (nullptr == dblk)
-    return dblk;
-
-  auto KMP = layd->_kmpBlock;
-  if (KMP->_pbMode == "Noise") {
-    dblk->_blocktype = "NOISE";
-    dblk->param(0)->usePitchEvaluator();
-  } else {
-    //SAMPLER::initBlock(dblk);
-  }
-  return dblk;
-}*/
-
-///////////////////////////////////////////////////////////////////////////////
-
 void KrzBankDataParser::parseKmpBlock(const Value& kmseg, KmpBlockData& kmblk) {
   kmblk._keyTrack    = kmseg["KeyTrack(ct)"].GetInt();
   kmblk._transpose   = kmseg["transposeTS(st)"].GetInt();
@@ -926,6 +908,7 @@ lyrdata_ptr_t KrzBankDataParser::parseLayer(const Value& jsonobj, prgdata_ptr_t 
   };
   //////////////////////////////////////////////////////
   auto CB = layerdata->_ctrlBlock;
+  natenvwrapperdata_ptr_t natenvwrapperdata;
   //////////////////////////////////////////////////////
   // kurzweil only has 3 envs per layer!
   //////////////////////////////////////////////////////
@@ -936,8 +919,8 @@ lyrdata_ptr_t KrzBankDataParser::parseLayer(const Value& jsonobj, prgdata_ptr_t 
   }
   else if(layerdata->_usenatenv){
     // AMPENV from NATENV
-    auto natenvdata = CB->addController<NatEnvWrapperData>();
-    natenvdata->_name = "AMPENV";
+    natenvwrapperdata = CB->addController<NatEnvWrapperData>();
+    natenvwrapperdata->_name = "AMPENV";
   }
   if (jsonobj.HasMember("ENV2")) {
     const auto& seg = jsonobj["ENV2"];
@@ -1069,6 +1052,8 @@ lyrdata_ptr_t KrzBankDataParser::parseLayer(const Value& jsonobj, prgdata_ptr_t 
     parseFBlock(pitchSeg, layerdata, pitch->param(0));
     layerdata->_pchBlock = pitch;
     blockindex += ACFG._wp;
+    sampler->_natenvwrapperdata = natenvwrapperdata;
+
   }
   else{
     OrkAssert(not USING_SAMPLE);

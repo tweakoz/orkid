@@ -30,13 +30,40 @@ class KrzApp(SingulTestApp):
     super().onGpuInit(ctx)
     self.syn_data_base = singularity.baseDataPath()/"kurzweil"
     self.krzdata = singularity.KrzSynthData()
-    #self.krzdata.loadBank("alesisdr", self.syn_data_base/"alesisdr.krz")
-    #self.krzdata.loadBank("m1drums", self.syn_data_base/"m1drums.krz")
+    self.krzdata.loadBank("alesisdr", self.syn_data_base/"alesisdr.krz")
+    self.krzdata.loadBank("m1drums", self.syn_data_base/"m1drums.krz")
     self.soundbank = self.krzdata.bankData
     self.krzprogs = self.soundbank.programsByName
     self.sorted_progs = sorted(self.krzprogs.keys())
-    print("krzprogs<%s>" % self.krzprogs)
-    self.prog_index = 0
+    ok_list = [
+      "Stereo_Grand",
+      "Real_Drums",
+      "Steel_Str_Guitar",
+      "Solo_Trumpet",
+      "Slo_Chorus_Gtr",
+      "Native_Drum",
+      "Kotolin",
+      "Hip_Brass",
+      "Hi_Res_Sweeper",
+      "Guitar_Mutes_1",
+      "Guitar_Mutes_2",
+      "General_MIDI_kit",
+      "Finger_Bass",
+      "Default_Program",
+      "Click",
+      "Classical_Gtr",
+      "5_8ve_Percussion",
+      "40_Something",
+      "20's_Trumpet",
+      "Wood_Bars",
+      "WonderSynth_Bass",
+      "Trumpet+Bone",
+      "Tine_Elec_Piano",
+      "Tenor_Sax",
+    ]
+    self.sorted_progs = ok_list
+    print("krzprogs<%s>" % self.krzprogs)    
+    self.prog_index = find_index(self.sorted_progs, "Stereo_Grand")
 
 ###############################################################################
 

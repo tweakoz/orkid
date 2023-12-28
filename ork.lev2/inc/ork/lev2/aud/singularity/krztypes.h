@@ -105,6 +105,8 @@ struct KrzKmTestData;
 struct CzProgData;
 struct OutputBus;
 struct KeyOnModifiers;
+struct NatEnvWrapperData;
+
 ///////////////////////////////////////////////////////////////////////////////
 // scope / signal analyzer
 ///////////////////////////////////////////////////////////////////////////////
@@ -166,7 +168,7 @@ using dspparam_ptr_t         = std::shared_ptr<DspParamData>;
 using dspparam_constptr_t    = std::shared_ptr<const DspParamData>;
 using dspparammod_ptr_t      = std::shared_ptr<BlockModulationData>;
 using dspparammod_constptr_t = std::shared_ptr<const BlockModulationData>;
-
+using natenvwrapperdata_ptr_t = std::shared_ptr<NatEnvWrapperData>;
 ///////////////////////////////////////////////////////////////////////////////
 typedef std::function<float()> controller_t;
 typedef std::function<float(float)> mapper_t;
