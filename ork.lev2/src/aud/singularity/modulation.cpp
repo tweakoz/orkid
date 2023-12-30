@@ -192,8 +192,8 @@ void DspParamData::useFrequencyEvaluator() {
     float vtcents  = param_inst._vval;
     float totcents = param_inst._C1() + param_inst._C2() + ktcents + vtcents;
     float ratio    = cents_to_linear_freq_ratio(totcents);
-     printf( "vtcents<%f> ratio<%f>\n", vtcents, ratio );
-     printf( "ratio<%f>\n", ratio);
+     //printf( "vtcents<%f> ratio<%f>\n", vtcents, ratio );
+     //printf( "ratio<%f>\n", ratio);
     return _coarse * ratio;
   };
 }

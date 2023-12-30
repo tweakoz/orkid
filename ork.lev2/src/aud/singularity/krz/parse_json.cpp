@@ -35,6 +35,7 @@ const s16* getK2V3InternalSoundBlock() {
       OrkAssert(false);
     }
     fread(data_read, 8 << 20, 1, fin);
+    data_read += 4 << 20;
     fclose(fin);
     //
     filename = basePath() / "kurzweil" / "samplerom_ext1.bin";
@@ -44,8 +45,8 @@ const s16* getK2V3InternalSoundBlock() {
       printf("You will need the K2000 ROM sampledata at <%s> to use this method!\n", filename.c_str());
       OrkAssert(false);
     }
-    data_read += 8 << 20;
     fread(data_read, 8 << 20, 1, fin);
+    data_read += 4 << 20;
     //
     filename = basePath() / "kurzweil" / "samplerom_ext2.bin";
     printf("Loading Soundblock<%s>\n", filename.c_str());
@@ -54,7 +55,6 @@ const s16* getK2V3InternalSoundBlock() {
       printf("You will need the K2000 ROM sampledata at <%s> to use this method!\n", filename.c_str());
       OrkAssert(false);
     }
-    data_read += 8 << 20;
     fread(data_read, 8 << 20, 1, fin);
     fclose(fin);
 
@@ -234,6 +234,27 @@ sample* KrzBankDataParser::parseSample(const Value& jsonobj, const multisample* 
   sout->_blk_loopstart = jsonobj["uLoop"].GetInt();
   sout->_blk_loopend   = jsonobj["uEnd"].GetInt();
   sout->_blk_end       = jsonobj["uEnd"].GetInt();
+
+  int orchestral_base = 16<<20;
+  int contemporary_base = 20<<20;
+  int orchestral_offset = orchestral_base - (4<<20);
+  int contemporary_offset = contemporary_base - (8<<20);
+
+  if(sout->_blk_start>=contemporary_base){
+    sout->_blk_start -= contemporary_offset;
+    sout->_blk_alt   -= contemporary_offset;
+    sout->_blk_loopstart -= contemporary_offset;
+    sout->_blk_loopend -= contemporary_offset;
+    sout->_blk_end -= contemporary_offset;
+  }
+  else if(sout->_blk_start>=orchestral_base){
+    sout->_blk_start -= orchestral_offset;
+    sout->_blk_alt   -= orchestral_offset;
+    sout->_blk_loopstart -= orchestral_offset;
+    sout->_blk_loopend -= orchestral_offset;
+    sout->_blk_end -= orchestral_offset;
+  }
+
 
   std::string pbmode = jsonobj["playbackMode"].GetString();
   bool isloop        = jsonobj["isLooped"].GetBool();

@@ -51,6 +51,17 @@ struct XAMP : public DspBlock {
   float _filt;
 };
 ///////////////////////////////////////////////////////////////////////////////
+struct STEREO_GAIN_DATA : public DspBlockData {
+  STEREO_GAIN_DATA(std::string name);
+  dspblk_ptr_t createInstance() const override;
+};
+struct STEREO_GAIN : public DspBlock {
+  using dataclass_t = STEREO_GAIN_DATA;
+  STEREO_GAIN(const DspBlockData* dbd);
+  void compute(DspBuffer& dspbuf) final;
+  float _filt;
+};
+///////////////////////////////////////////////////////////////////////////////
 struct GAIN_DATA : public DspBlockData {
   GAIN_DATA(std::string name);
   dspblk_ptr_t createInstance() const override;

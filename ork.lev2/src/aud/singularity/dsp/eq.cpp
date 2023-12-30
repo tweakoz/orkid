@@ -234,7 +234,8 @@ ParametricEq::ParametricEq(const ParametricEqData* dbd)
 void ParametricEq::compute(DspBuffer& dspbuf) // final
 {
   int inumframes = _layer->_dspwritecount;
-  float* ubuf    = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
+  const float* ibuf    = getInpBuf(dspbuf, 0) + _layer->_dspwritebase;
+  float* obuf    = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
 
   float fc   = _param[0].eval();
   float wid  = clip_float(_param[1].eval(), 0.2, 8);
@@ -260,11 +261,12 @@ void ParametricEq::compute(DspBuffer& dspbuf) // final
 
       _peq1.set(_smoothFC, _smoothW, _smoothG);
 
-      float inp = ubuf[i] * pad;
+      float inp = ibuf[i] * pad;
+      //printf("inp<%g>\n", inp);
       // float outp = _biquad.compute2(inp);
       float outp = _peq1.compute(inp);
-      // outp = _peq.proc(1,ubuf,fc/48000.0f,wid,gain);
-      ubuf[i] = outp;
+      // outp = _peq.proc(1,obuf,fc/48000.0f,wid,gain);
+      obuf[i] = inp;
     }
 }
 void ParametricEq::doKeyOn(const KeyOnInfo& koi) // final

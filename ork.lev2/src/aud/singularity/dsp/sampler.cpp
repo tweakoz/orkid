@@ -552,6 +552,11 @@ void sampleOsc::compute(int inumfr) {
 
     float sampleval = _pbFunc ? (this->*_pbFunc)() : 0.0f;
 
+    if(_pbFunc){
+      //printf("sampleval<%g>\n", sampleval);
+    }else{
+      printf("sampleval no_pbFunc\n");
+    }
     // float sampleval = std::invoke(this, _pbFunc);
 
     _OUTPUT[i] = sampleval;
@@ -611,7 +616,7 @@ float sampleOsc::playLoopFwd() {
   bool did_loop = false;
 
   if ((_pbindexNext >> 16) > (_blk_loopend >> 16)) {
-    // printf( "reached _blk_loopend<%d>\n", int(_blk_loopend>>16));
+     //printf( "reached _blk_loopend<%d>\n", int(_blk_loopend>>16));
 
     int64_t over = (_pbindexNext - _blk_loopend) - (1 << 16);
     _pbindexNext = _blk_loopstart + over;
@@ -642,7 +647,7 @@ float sampleOsc::playLoopFwd() {
   float sampB = float(sblk[iiB]);
   float samp  = (sampB * fract + sampA * invfr) * kinv32k;
   ///////////////
-
+  //printf("iiA<%zd> iiB<%zd> sampA<%g> sampB<%g> samp<%g>\n", iiA, iiB, sampA, sampB, samp);
   ///////////////
   // cosine
   // float mu2 = (1.0f-cos(fract*pi))*0.5f;

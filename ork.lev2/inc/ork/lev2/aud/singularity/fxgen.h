@@ -9,6 +9,7 @@
 #include <assert.h>
 #include <ork/lev2/aud/singularity/dsp_mix.h>
 #include <ork/lev2/aud/singularity/alg_eq.h>
+#include <ork/lev2/aud/singularity/alg_amp.h>
 #include <ork/lev2/aud/singularity/alg_nonlin.h>
 
 namespace ork::audio::singularity {

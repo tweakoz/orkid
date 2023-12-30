@@ -200,6 +200,35 @@ void GAIN::compute(DspBuffer& dspbuf) // final
   }
 }
 
+STEREO_GAIN_DATA::STEREO_GAIN_DATA(std::string name)
+    : DspBlockData(name) {
+  addParam("gain")->useAmplitudeEvaluator(); 
+}
+dspblk_ptr_t STEREO_GAIN_DATA::createInstance() const {
+  return std::make_shared<STEREO_GAIN>(this);
+}
+
+STEREO_GAIN::STEREO_GAIN(const DspBlockData* dbd)
+    : DspBlock(dbd) {
+}
+
+void STEREO_GAIN::compute(DspBuffer& dspbuf) // final
+{
+  float gain = _param[0].eval(); //,0.01f,100.0f);
+  _fval[0]   = gain;
+
+  if (1) {
+    float linG      = decibel_to_linear_amp_ratio(gain);
+    int inumframes  = _layer->_dspwritecount;
+    auto inpbuf     = getInpBuf(dspbuf, 0) + _layer->_dspwritebase;
+    auto outputchan = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
+    for (int i = 0; i < inumframes; i++) {
+      float inp     = inpbuf[i] * _dbd->_inputPad;
+      float outp    = softsat(inp * linG, 1);
+      outputchan[i] = outp;
+    }
+  }
+}
 ///////////////////////////////////////////////////////////////////////////////
 
 XFADE_DATA::XFADE_DATA(std::string name)

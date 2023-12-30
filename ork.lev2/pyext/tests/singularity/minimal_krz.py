@@ -40,9 +40,11 @@ class KrzApp(SingulTestApp):
       "Real_Drums",
       "Steel_Str_Guitar",
       "Solo_Trumpet",
+      "Chorus_Gtr",
       "Slo_Chorus_Gtr",
       "Native_Drum",
       "Kotolin",
+      "Kotobira",
       "Hip_Brass",
       "Hi_Res_Sweeper",
       "Guitar_Mutes_1",
@@ -60,10 +62,46 @@ class KrzApp(SingulTestApp):
       "Trumpet+Bone",
       "Tine_Elec_Piano",
       "Tenor_Sax",
+      "Bright_Piano",
+      "Straight_Strat",
+      "Soft_Trumpet",
+      "Pizzicato_String",
+      "Orch_EnglishHorn",
+      "Orch_Clarinet",
+      "Mbira_Stack",
+      "Jazz_Quartet",
+      "Jam_Corp",
+      "India_Jam",
+      "Harp_w_8ve_CTL",
+      "Harmon_Section",
+      "Elect_12_String",
+      "Econo_Kit_",
+      #"EDrum_Kit_1_",
+      "Dynamic_Harp",
+      "Dyn_Brass_+_Horn",
+      "Dual_Tri_Bass",
+      "DigiBass", # fix pan (alg 5)
+      "Xylophone", # fix pan (alg 9)
+      "Touch_MiniBass", # fix pan (alg 5)
+      "CowGogiBell",
+      "Chimes",
+      "Cartoon_Perc",
+      "Brt_Dbl_Bass",
+      "BrazKnuckles",
+      "Big_Drum_Corp",
+      "Arco_Dbl_Bass",
+      "Acoustic_Bass",
+      "Touch_Clav",
+      "Timpani_Chimes",
+      "Sweetar"
+
+
+
+
     ]
-    #self.sorted_progs = ok_list
+    self.sorted_progs = ok_list
     print("krzprogs<%s>" % self.krzprogs)    
-    self.prog_index = find_index(self.sorted_progs, "Stereo_Grand")
+    self.prog_index = find_index(self.sorted_progs, "Straight_Strat")
 
 ###############################################################################
 
