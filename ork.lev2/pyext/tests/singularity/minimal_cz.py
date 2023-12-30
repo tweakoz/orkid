@@ -75,13 +75,13 @@ class Cz1App(SingulTestApp):
         if time not in self.chart_events[channel].keys():
           self.chart_events[channel][TIME] = []
           self.chart_events[channel][TIME] += [value]
-          #print("TIME<%g> event<%s>" % (TIME,value))
+          print("TIME<%g> event<%s>" % (TIME,value))
     #########
     mods = singularity.KeyOnModifiers()
-    mods.generators = {
+    mods.controllers.generators = {
     "LCZX0.STEREOPAN2": modulatePan
     }
-    mods.subscribers = {
+    mods.controllers.subscribers = {
     "LCZX0.DCAENV0": sub,
     #"LCZX0.DCAENV1": sub
     }

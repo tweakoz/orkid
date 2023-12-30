@@ -26,6 +26,15 @@ class KrzApp(SingulTestApp):
   
   ##############################################
 
+  def genMods(self):
+    timebase = self.time
+    modrate = math.sin(self.time)*5
+    mods = singularity.KeyOnModifiers()
+    mods.layerMask = 0x1  
+    return mods
+
+  ##############################################
+
   def onGpuInit(self,ctx):
     super().onGpuInit(ctx)
     self.syn_data_base = singularity.baseDataPath()/"kurzweil"
@@ -99,9 +108,10 @@ class KrzApp(SingulTestApp):
 
 
     ]
-    self.sorted_progs = ok_list
+    #self.sorted_progs = ok_list
     print("krzprogs<%s>" % self.krzprogs)    
-    self.prog_index = find_index(self.sorted_progs, "Straight_Strat")
+    self.prog_index = find_index(self.sorted_progs, "Doomsday")
+    self.synth.masterGain = singularity.decibelsToLinear(-24.0)
 
 ###############################################################################
 

@@ -34,52 +34,53 @@ void pyinit_aud_singularity(py::module& module_lev2) {
                       });
   type_codec->registerStdCodec<audiodevice_ptr_t>(auddev_t);
   /////////////////////////////////////////////////////////////////////////////////
-  auto synth_type_t = py::class_<synth, synth_ptr_t>(singmodule, "synth") //
-                          .def_static(
-                              "instance",
-                              []() -> synth_ptr_t { //
-                                auto the_synth = synth::instance();
-                                printf("the_synth<%p>\n", (void*)the_synth.get());
-                                return the_synth;
-                              })
-                          .def(
-                              "nextEffect", //
-                              [](synth_ptr_t synth) { synth->nextEffect(); })
-                          .def(
-                              "prevEffect", //
-                              [](synth_ptr_t synth) { synth->prevEffect(); })
-                          .def(
-                              "outputBus", //
-                              [](synth_ptr_t synth, std::string named) -> outbus_ptr_t { return synth->outputBus(named); })
-                          .def(
-                              "createOutputBus", //
-                              [](synth_ptr_t synth, std::string named) -> outbus_ptr_t { return synth->createOutputBus(named); })
-                          .def(
-                              "keyOn",                                                                          //
-                              [](synth_ptr_t synth, int note, int vel, prgdata_ptr_t prg, keyonmod_ptr_t kmods=nullptr ) -> prginst_rawptr_t { //
-                                return synth->liveKeyOn(note, vel, prg, kmods);
-                              })
-                          .def(
-                              "keyOff",                                      //
-                              [](synth_ptr_t synth, prginst_rawptr_t prgi) { //
-                                synth->liveKeyOff(prgi.get());
-                              })
-                          .def_property(
-                              "masterGain", //
-                              [](synth_ptr_t synth) -> float { return synth->_masterGain; },
-                              [](synth_ptr_t synth, float gain) { synth->_masterGain = gain; });
+  auto synth_type_t =
+      py::class_<synth, synth_ptr_t>(singmodule, "synth") //
+          .def_static(
+              "instance",
+              []() -> synth_ptr_t { //
+                auto the_synth = synth::instance();
+                printf("the_synth<%p>\n", (void*)the_synth.get());
+                return the_synth;
+              })
+          .def(
+              "nextEffect", //
+              [](synth_ptr_t synth) { synth->nextEffect(); })
+          .def(
+              "prevEffect", //
+              [](synth_ptr_t synth) { synth->prevEffect(); })
+          .def(
+              "outputBus", //
+              [](synth_ptr_t synth, std::string named) -> outbus_ptr_t { return synth->outputBus(named); })
+          .def(
+              "createOutputBus", //
+              [](synth_ptr_t synth, std::string named) -> outbus_ptr_t { return synth->createOutputBus(named); })
+          .def(
+              "keyOn",                                                                                                          //
+              [](synth_ptr_t synth, int note, int vel, prgdata_ptr_t prg, keyonmod_ptr_t kmods = nullptr) -> prginst_rawptr_t { //
+                return synth->liveKeyOn(note, vel, prg, kmods);
+              })
+          .def(
+              "keyOff",                                      //
+              [](synth_ptr_t synth, prginst_rawptr_t prgi) { //
+                synth->liveKeyOff(prgi.get());
+              })
+          .def_property(
+              "masterGain", //
+              [](synth_ptr_t synth) -> float { return synth->_masterGain; },
+              [](synth_ptr_t synth, float gain) { synth->_masterGain = gain; });
   type_codec->registerStdCodec<synth_ptr_t>(synth_type_t);
   /////////////////////////////////////////////////////////////////////////////////
   auto prgi_type = py::class_<prginst_rawptr_t>(singmodule, "ProgramInst");
-                       /*.def_property_readonly(
-                           "layers",                                         //
-                           [type_codec](prginst_rawptr_t prgi) -> py::list { //
-                             py::list layers;
-                             for (auto item : prgi->_layers) {
-                               layers.append(type_codec->encode(item));
-                             }
-                             return layers;
-                           });*/
+  /*.def_property_readonly(
+      "layers",                                         //
+      [type_codec](prginst_rawptr_t prgi) -> py::list { //
+        py::list layers;
+        for (auto item : prgi->_layers) {
+          layers.append(type_codec->encode(item));
+        }
+        return layers;
+      });*/
   type_codec->registerRawPtrCodec<prginst_rawptr_t, programInst*>(prgi_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto obus_type = py::class_<OutputBus, outbus_ptr_t>(singmodule, "OutputBus") //
@@ -90,9 +91,11 @@ void pyinit_aud_singularity(py::module& module_lev2) {
   /////////////////////////////////////////////////////////////////////////////////
   auto pdata_type = py::class_<ProgramData, prgdata_ptr_t>(singmodule, "ProgramData") //
                         .def(py::init<>())
-                        .def("merge", [](prgdata_ptr_t pdata, prgdata_ptr_t other) { //
-                          pdata->merge(*other);
-                        })
+                        .def(
+                            "merge",
+                            [](prgdata_ptr_t pdata, prgdata_ptr_t other) { //
+                              pdata->merge(*other);
+                            })
                         .def_property(
                             "name", //
                             [](prgdata_ptr_t pdata) -> std::string { return pdata->_name; },
@@ -125,33 +128,33 @@ void pyinit_aud_singularity(py::module& module_lev2) {
                                  return rval;
                                })
                            .def(
-                               "addProgram",                                               //
+                               "addProgram",                                 //
                                [](bankdata_ptr_t bdata, prgdata_ptr_t prg) { //
-                                int highestID = bdata->_programs.rbegin()->first;
-                                 bdata->_programs[highestID+1] = prg;
-                                  bdata->_programsByName[prg->_name] = prg;
+                                 int highestID                      = bdata->_programs.rbegin()->first;
+                                 bdata->_programs[highestID + 1]    = prg;
+                                 bdata->_programsByName[prg->_name] = prg;
                                })
                            .def(
-                               "merge",                                               //
+                               "merge",                                         //
                                [](bankdata_ptr_t bdata, bankdata_ptr_t other) { //
                                  bdata->merge(*other);
                                })
                            .def(
-                               "filterPrograms",                                               //
+                               "filterPrograms",                                                 //
                                [](bankdata_ptr_t bdata, py::list allow_list) -> bankdata_ptr_t { //
-                                  auto out_bank = std::make_shared<BankData>();
-                                  int counter = 0;
-                                  for( auto item : allow_list ){
-                                    auto py_item = item.cast<py::object>();
-                                    auto py_item_str = py_item.attr("__str__")();
-                                    auto py_item_str_str = py_item_str.cast<std::string>();
-                                    auto program = bdata->findProgramByName(py_item_str_str);
-                                    if(program){
-                                      out_bank->_programsByName[py_item_str_str] = program;
-                                      out_bank->_programs[counter++] = program;
-                                    }
-                                  }
-                                  return out_bank;
+                                 auto out_bank = std::make_shared<BankData>();
+                                 int counter   = 0;
+                                 for (auto item : allow_list) {
+                                   auto py_item         = item.cast<py::object>();
+                                   auto py_item_str     = py_item.attr("__str__")();
+                                   auto py_item_str_str = py_item_str.cast<std::string>();
+                                   auto program         = bdata->findProgramByName(py_item_str_str);
+                                   if (program) {
+                                     out_bank->_programsByName[py_item_str_str] = program;
+                                     out_bank->_programs[counter++]             = program;
+                                   }
+                                 }
+                                 return out_bank;
                                })
                            .def(
                                "programByName",                                               //
@@ -185,17 +188,17 @@ void pyinit_aud_singularity(py::module& module_lev2) {
   type_codec->registerStdCodec<czsyndata_ptr_t>(czdata_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto krzdata_type = py::class_<KrzSynthData, SynthData, krzsyndata_ptr_t>(singmodule, "KrzSynthData")
-                         .def(py::init<>())
-                         .def("loadBank", [](krzsyndata_ptr_t krzdata, std::string bankname, const file::Path& bankpath) {
-                           krzdata->loadBank(bankpath);
-                         });
+                          .def(py::init<>())
+                          .def("loadBank", [](krzsyndata_ptr_t krzdata, std::string bankname, const file::Path& bankpath) {
+                            krzdata->loadBank(bankpath);
+                          });
   type_codec->registerStdCodec<krzsyndata_ptr_t>(krzdata_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto tx81zdata_type = py::class_<Tx81zData, SynthData, tx81zsyndata_ptr_t>(singmodule, "Tx81zSynthData")
-                         .def(py::init<>())
-                         .def("loadBank", [](tx81zsyndata_ptr_t txdata, std::string bankname, const file::Path& bankpath) {
-                           txdata->loadBank(bankpath);
-                         });
+                            .def(py::init<>())
+                            .def("loadBank", [](tx81zsyndata_ptr_t txdata, std::string bankname, const file::Path& bankpath) {
+                              txdata->loadBank(bankpath);
+                            });
   type_codec->registerStdCodec<tx81zsyndata_ptr_t>(tx81zdata_type);
   /////////////////////////////////////////////////////////////////////////////////
   struct KeyModIterator {
@@ -235,117 +238,134 @@ void pyinit_aud_singularity(py::module& module_lev2) {
     keyonmod_ptr_t _kmod;
     map_const_iter_t _it;
   };
-    auto konmod_type = py::class_<KeyOnModifiers, keyonmod_ptr_t>(singmodule, "KeyOnModifiers")
-    .def(py::init<>())
+  /////////////////////////////////////////////////////////////////////////////////
+  struct KonModControllerProxy {
+    keyonmod_ptr_t _kmod;
+  };
+  using konmodctrlproxy_ptr_t = std::shared_ptr<KonModControllerProxy>;
+  auto konmodctrlproxy_type   =                                                                      //
+      py::class_<KonModControllerProxy, konmodctrlproxy_ptr_t>(singmodule, "KonModControllerProxy") //
           .def(
-              "__setattr__",                                                                    //
-              [type_codec](keyonmod_ptr_t kmod, const std::string& key, py::dict inp_dict) { //
+              "__setattr__",                                                                 //
+              [type_codec](konmodctrlproxy_ptr_t proxy, const std::string& key, py::dict inp_dict) { //
                 auto builtins   = py::module::import("builtins");
                 auto int_type   = builtins.attr("int");
                 auto float_type = builtins.attr("float");
-                if( key == "generators"){
-                  for( auto item : inp_dict ){
-                    auto genname = item.first.cast<std::string>();
+                if (key == "generators") {
+                  for (auto item : inp_dict) {
+                    auto genname          = item.first.cast<std::string>();
                     auto python_generator = item.second.cast<py::object>();
                     KeyOnModifiers::data_ptr_t kdata;
-                    auto it = kmod->_mods.find(genname);
-                    if(it!=kmod->_mods.end()){
+                    auto it = proxy->_kmod->_mods.find(genname);
+                    if (it != proxy->_kmod->_mods.end()) {
                       kdata = it->second;
-                    }
-                    else{
-                      kdata = std::make_shared<KeyOnModifiers::DATA>();
-                      kmod->_mods[genname] = kdata;
-                      kdata->_name = genname;
+                    } else {
+                      kdata                = std::make_shared<KeyOnModifiers::DATA>();
+                      proxy->_kmod->_mods[genname] = kdata;
+                      kdata->_name         = genname;
                     }
 
-                    kdata->_generator = [=]()-> fvec4 {
+                    kdata->_generator = [=]() -> fvec4 {
                       py::gil_scoped_acquire acquire;
-                      auto gval = python_generator();
+                      auto gval   = python_generator();
                       auto pytype = gval.get_type();
-                      if(pytype == float_type){
+                      if (pytype == float_type) {
                         auto fval = gval.cast<float>();
-                        return fvec4(fval,fval,fval,fval);
-                      }
-                      else{
+                        return fvec4(fval, fval, fval, fval);
+                      } else {
                         OrkAssert(false);
-                        return fvec4(0,0,0,0);
+                        return fvec4(0, 0, 0, 0);
                       }
                     };
                   }
-                }
-                else if( key == "subscribers"){
-                  for( auto item : inp_dict ){
-                    auto subname = item.first.cast<std::string>();
+                } else if (key == "subscribers") {
+                  for (auto item : inp_dict) {
+                    auto subname           = item.first.cast<std::string>();
                     auto python_subscriber = item.second.cast<py::object>();
                     KeyOnModifiers::data_ptr_t kdata;
-                    auto it = kmod->_mods.find(subname);
-                    if(it!=kmod->_mods.end()){
+                    auto it = proxy->_kmod->_mods.find(subname);
+                    if (it != proxy->_kmod->_mods.end()) {
                       kdata = it->second;
+                    } else {
+                      kdata                = std::make_shared<KeyOnModifiers::DATA>();
+                      proxy->_kmod->_mods[subname] = kdata;
+                      kdata->_name         = subname;
                     }
-                    else{
-                      kdata = std::make_shared<KeyOnModifiers::DATA>();
-                      kmod->_mods[subname] = kdata;
-                      kdata->_name = subname;
-                    }
-                    kdata->_vars.makeValueForKey<py::object>("python_subscriber",python_subscriber);
-                    kdata->_subscriber = [kdata,type_codec](std::string name, svar64_t inp) {
+                    kdata->_vars.makeValueForKey<py::object>("python_subscriber", python_subscriber);
+                    kdata->_subscriber = [kdata, type_codec](std::string name, svar64_t inp) {
                       py::gil_scoped_acquire acquire;
                       auto subscriber = kdata->_vars.typedValueForKey<py::object>("python_subscriber");
-                      if(auto as_fvec4 = inp.tryAs<fvec4>()){
+                      if (auto as_fvec4 = inp.tryAs<fvec4>()) {
                         auto py_argument = type_codec->encode(as_fvec4.value());
-                        subscriber.value()(name,py_argument);
-                      }
-                      else if(auto as_str = inp.tryAs<std::string>()){
+                        subscriber.value()(name, py_argument);
+                      } else if (auto as_str = inp.tryAs<std::string>()) {
                         auto py_argument = type_codec->encode(as_str.value());
-                        subscriber.value()(name,py_argument);
-                      }
-                      else{
+                        subscriber.value()(name, py_argument);
+                      } else {
                         OrkAssert(false);
                       }
                     };
                   }
-                }
-                else{
+                } else {
                   OrkAssert(false);
                 }
-                
+
               })
-          .def("__len__", [](keyonmod_ptr_t kmod) -> size_t { return kmod->_mods.size(); })
+          .def("__len__", [](konmodctrlproxy_ptr_t proxy) -> size_t { return proxy->_kmod->_mods.size(); })
           .def(
               "__iter__",
-              [](keyonmod_ptr_t kmod) { //
+              [](konmodctrlproxy_ptr_t proxy) { //
                 OrkAssert(false);
-                return py::make_iterator( //
-                  KeyModIterator::_begin(kmod), //
-                  KeyModIterator::_end(kmod));
+                return py::make_iterator(         //
+                    KeyModIterator::_begin(proxy->_kmod), //
+                    KeyModIterator::_end(proxy->_kmod));
               },
               py::keep_alive<0, 1>())
-          .def("__contains__", [](keyonmod_ptr_t kmod, std::string key) { //
-            return kmod->_mods.contains(key);
-          })
-          .def("__getitem__", [type_codec](keyonmod_ptr_t kmod, std::string key) -> py::object { //
-            auto it = kmod->_mods.find(key);
-            if( it == kmod->_mods.end() )
-              throw py::key_error("key not found");
-            else {
-              auto varmap_val = it->second;
-              auto python_val = type_codec->encode(varmap_val);
-              return python_val;
-              }
-          })
-          .def("keys", [](keyonmod_ptr_t kmod) -> py::list {
+          .def(
+              "__contains__",
+              [](konmodctrlproxy_ptr_t proxy, std::string key) { //
+                return proxy->_kmod->_mods.contains(key);
+              })
+          .def(
+              "__getitem__",
+              [type_codec](konmodctrlproxy_ptr_t proxy, std::string key) -> py::object { //
+                auto it = proxy->_kmod->_mods.find(key);
+                if (it == proxy->_kmod->_mods.end())
+                  throw py::key_error("key not found");
+                else {
+                  auto varmap_val = it->second;
+                  auto python_val = type_codec->encode(varmap_val);
+                  return python_val;
+                }
+              })
+          .def("keys", [](konmodctrlproxy_ptr_t proxy) -> py::list {
             py::list rval;
-            for( auto item : kmod->_mods ){
+            for (auto item : proxy->_kmod->_mods) {
               rval.append(item.first);
             }
-            return rval;           
-          })
-          .def("__repr__", [](keyonmod_ptr_t kmod) -> std::string {
-            std::string rval;
-            size_t numkeys = kmod->_mods.size();
-            rval = FormatString("KeyOnModifiers(nkeys:%zu)", numkeys );
-            return rval;           
+            return rval;
           });
+  type_codec->registerStdCodec<konmodctrlproxy_ptr_t>(konmodctrlproxy_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  auto konmod_type = py::class_<KeyOnModifiers, keyonmod_ptr_t>(singmodule, "KeyOnModifiers")
+                         .def(py::init<>())
+                         .def(
+                             "__repr__",
+                             [](keyonmod_ptr_t kmod) -> std::string {
+                               std::string rval;
+                               size_t numkeys = kmod->_mods.size();
+                               rval           = FormatString("KeyOnModifiers(nkeys:%zu)", numkeys);
+                               return rval;
+                             })
+                         .def_property_readonly("controllers", [](keyonmod_ptr_t kmod) -> konmodctrlproxy_ptr_t {
+                           auto proxy = std::make_shared<KonModControllerProxy>();
+                           proxy->_kmod = kmod;
+                           return proxy;
+                         })
+                         .def_property(
+                             "layerMask", //
+                             [](keyonmod_ptr_t kmod) -> uint32_t { return kmod->_layermask; },
+                             [](keyonmod_ptr_t kmod, uint32_t val) { kmod->_layermask = val; });
   type_codec->registerStdCodec<keyonmod_ptr_t>(konmod_type);
   /////////////////////////////////////////////////////////////////////////////////
 }

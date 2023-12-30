@@ -31,6 +31,7 @@ struct KeyOnModifiers{
   using data_ptr_t = std::shared_ptr<DATA>;
   using map_t = std::unordered_map<std::string,data_ptr_t>;
   map_t _mods;
+  uint32_t _layermask = 0xffffffff;
   bool _dangling = false;
 };
 
