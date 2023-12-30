@@ -357,6 +357,7 @@ void AMPU_AMPL::doKeyOn(const KeyOnInfo& koi) // final
 BAL_AMP_DATA::BAL_AMP_DATA(std::string name)
     : DspBlockData(name) {
   addParam("POS")->useDefaultEvaluator(); // position: eval: "POS" 
+  addParam("AMP")->useAmplitudeEvaluator(); // position: eval: "POS" 
 }
 dspblk_ptr_t BAL_AMP_DATA::createInstance() const {
   return std::make_shared<BAL_AMP>(this);
@@ -386,6 +387,43 @@ void BAL_AMP::compute(DspBuffer& dspbuf) // final
 void BAL_AMP::doKeyOn(const KeyOnInfo& koi) // final
 {
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
+AMP_MOD_OSC_DATA::AMP_MOD_OSC_DATA(std::string name)
+    : DspBlockData(name) {
+  addParam("PITCH")->usePitchEvaluator(); // oscilator pitch 
+  addParam("DEP")->useDefaultEvaluator(); // ampmod depth 
+}
+dspblk_ptr_t AMP_MOD_OSC_DATA::createInstance() const {
+  return std::make_shared<AMP_MOD_OSC>(this);
+}
+
+AMP_MOD_OSC::AMP_MOD_OSC(const DspBlockData* dbd)
+    : DspBlock(dbd) {
+}
+
+void AMP_MOD_OSC::compute(DspBuffer& dspbuf) // final
+{
+  float gain = _param[0].eval(); //,0.01f,100.0f);
+  _fval[0]   = gain;
+
+  float linG = decibel_to_linear_amp_ratio(gain);
+
+  int inumframes = _layer->_dspwritecount;
+  float* ubuf    = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
+  float* lbuf    = getOutBuf(dspbuf, 1) + _layer->_dspwritebase;
+
+  if (1)
+    for (int i = 0; i < inumframes; i++) {
+      float inp = ubuf[i];
+      ubuf[i]   = inp * linG;
+    }
+}
+void AMP_MOD_OSC::doKeyOn(const KeyOnInfo& koi) // final
+{
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 PANNER_DATA::PANNER_DATA(std::string name)

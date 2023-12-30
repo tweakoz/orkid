@@ -99,6 +99,18 @@ struct BAL_AMP : public DspBlock {
   float _filt;
 };
 ///////////////////////////////////////////////////////////////////////////////
+struct AMP_MOD_OSC_DATA : public DspBlockData {
+  AMP_MOD_OSC_DATA(std::string name);
+  dspblk_ptr_t createInstance() const override;
+};
+struct AMP_MOD_OSC : public DspBlock {
+  using dataclass_t = AMP_MOD_OSC_DATA;
+  AMP_MOD_OSC(const DspBlockData* dbd);
+  void compute(DspBuffer& dspbuf) final;
+  void doKeyOn(const KeyOnInfo& koi) final;
+  float _filt;
+};
+///////////////////////////////////////////////////////////////////////////////
 struct XGAIN_DATA : public DspBlockData {
   XGAIN_DATA(std::string name);
   dspblk_ptr_t createInstance() const override;
