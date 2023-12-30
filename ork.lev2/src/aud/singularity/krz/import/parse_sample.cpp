@@ -163,7 +163,7 @@ void filescanner::ParseSampleHeader(const datablock& db, datablock::iterator& it
       int inumsmps = (uEndOfSpan - uStart);
       printf("MS112 samp<%d> ustart<%08x> inumsmps<%d>\n", int(usamp), int(uStart), inumsmps);
     }
-    if (uStart <= 0x3fffff) // rom block 0 ?
+    //if (uStart <= 0x3fffff) // rom block 0 ?
     {
       char buffer[256];
       sprintf(buffer, "samples/%03d_%s_%d.aiff", iObjectID, ObjName.c_str(), usamp);
@@ -274,8 +274,8 @@ void filescanner::ParseSampleHeader(const datablock& db, datablock::iterator& it
 ///////////////////////////////////////////////////////////////////////////////
 
 void filescanner::emitMultiSample(const MultiSample* ms, rapidjson::Value& parent) {
-  if (ms->_objectId > 200)
-    return;
+  //if (ms->_objectId > 200)
+  //  return;
 
   Value jsonobj(kObjectType);
   AddStringKVMember(jsonobj, "MultiSample", ms->_multiSampleName);

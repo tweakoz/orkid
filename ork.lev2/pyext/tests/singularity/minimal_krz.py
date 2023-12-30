@@ -61,7 +61,7 @@ class KrzApp(SingulTestApp):
       "Tine_Elec_Piano",
       "Tenor_Sax",
     ]
-    self.sorted_progs = ok_list
+    #self.sorted_progs = ok_list
     print("krzprogs<%s>" % self.krzprogs)    
     self.prog_index = find_index(self.sorted_progs, "Stereo_Grand")
 

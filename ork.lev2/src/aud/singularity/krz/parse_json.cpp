@@ -25,6 +25,8 @@ namespace ork::audio::singularity {
 const s16* getK2V3InternalSoundBlock() {
   static s16* gdata = nullptr;
   if (nullptr == gdata) {
+    gdata = (s16*)malloc(24 << 20);
+    auto data_read = gdata;
     auto filename = basePath() / "kurzweil" / "samplerom_internal.bin";
     printf("Loading Soundblock<%s>\n", filename.c_str());
     FILE* fin = fopen(filename.toAbsolute().c_str(), "rb");
@@ -32,9 +34,30 @@ const s16* getK2V3InternalSoundBlock() {
       printf("You will need the K2000 ROM sampledata at <%s> to use this method!\n", filename.c_str());
       OrkAssert(false);
     }
-    gdata = (s16*)malloc(8 << 20);
-    fread(gdata, 8 << 20, 1, fin);
+    fread(data_read, 8 << 20, 1, fin);
     fclose(fin);
+    //
+    filename = basePath() / "kurzweil" / "samplerom_ext1.bin";
+    printf("Loading Soundblock<%s>\n", filename.c_str());
+    fin = fopen(filename.toAbsolute().c_str(), "rb");
+    if (fin == nullptr) {
+      printf("You will need the K2000 ROM sampledata at <%s> to use this method!\n", filename.c_str());
+      OrkAssert(false);
+    }
+    data_read += 8 << 20;
+    fread(data_read, 8 << 20, 1, fin);
+    //
+    filename = basePath() / "kurzweil" / "samplerom_ext2.bin";
+    printf("Loading Soundblock<%s>\n", filename.c_str());
+    fin = fopen(filename.toAbsolute().c_str(), "rb");
+    if (fin == nullptr) {
+      printf("You will need the K2000 ROM sampledata at <%s> to use this method!\n", filename.c_str());
+      OrkAssert(false);
+    }
+    data_read += 8 << 20;
+    fread(data_read, 8 << 20, 1, fin);
+    fclose(fin);
+
   }
   return gdata;
 }
@@ -219,9 +242,11 @@ sample* KrzBankDataParser::parseSample(const Value& jsonobj, const multisample* 
     sout->_loopMode = isloop ? eLoopMode::FWD : eLoopMode::NONE;
   else if (pbmode == "Reverse")
     sout->_loopMode = isloop ? eLoopMode::FWD : eLoopMode::NONE;
+  else if (pbmode == "Bidirectional")
+    sout->_loopMode = isloop ? eLoopMode::BIDIR : eLoopMode::NONE;
   else {
     printf("pbmode<%s>\n", pbmode.c_str());
-    OrkAssert(false);
+    //OrkAssert(false);
   }
 
   float sgain    = jsonobj["volAdjust"].GetFloat();
@@ -504,7 +529,6 @@ dspblkdata_ptr_t KrzBankDataParser::parseDspBlock(const Value& dseg, dspstagedat
     std::string blocktype = dseg["BLOCK_ALG "].GetString();
     //rval             = std::make_shared<DspBlockData>();
     //rval->_blocktype = dseg["BLOCK_ALG "].GetString();
-    //printf("rval._dspBlock<%s>\n", blocktype.c_str());
     ///////////
     // alg_filters
     ///////////
@@ -605,6 +629,10 @@ dspblkdata_ptr_t KrzBankDataParser::parseDspBlock(const Value& dseg, dspstagedat
       // TODO FIXME
       rval = stage->appendTypedBlock<XAMP>(blocktype);
     }
+    else if(blocktype=="AMP MOD OSC"){
+      // TODO FIXME
+      rval = stage->appendTypedBlock<AMP_MOD_OSC>(blocktype);
+    }
     else if(blocktype=="GAIN"){
       rval = stage->appendTypedBlock<GAIN>(blocktype);
     }
@@ -618,7 +646,7 @@ dspblkdata_ptr_t KrzBankDataParser::parseDspBlock(const Value& dseg, dspstagedat
     else if(blocktype=="AMP U   AMP L"){
       rval = stage->appendTypedBlock<AMPU_AMPL>(blocktype);
     }
-    else if(blocktype=="BAL_AMP"){
+    else if(blocktype=="BAL     AMP"){
       rval = stage->appendTypedBlock<BAL_AMP>(blocktype);
     }
     else if(blocktype=="XFADE"){
@@ -672,6 +700,9 @@ dspblkdata_ptr_t KrzBankDataParser::parseDspBlock(const Value& dseg, dspstagedat
     else if(blocktype=="SAW"){
       rval = stage->appendTypedBlock<SAW>(blocktype);
     }
+    else if(blocktype=="SW+DST"){
+      rval = stage->appendTypedBlock<SAW>(blocktype);
+    }
     else if(blocktype=="SQUARE"){
       rval = stage->appendTypedBlock<SQUARE>(blocktype);
     }
@@ -707,6 +738,7 @@ dspblkdata_ptr_t KrzBankDataParser::parseDspBlock(const Value& dseg, dspstagedat
     // ??
     ///////////
     else{
+      printf("unhandled DSPBLOCK <%s>\n", blocktype.c_str());
       OrkAssert(false);
     }
   } else {
@@ -1033,11 +1065,11 @@ lyrdata_ptr_t KrzBankDataParser::parseLayer(const Value& jsonobj, prgdata_ptr_t 
   };
   int blockindex = 0;
 
-  //printf("ACFG._wp<%d>\n", ACFG._wp);
-  //printf("ACFG._w1<%d>\n", ACFG._w1);
-  //printf("ACFG._w2<%d>\n", ACFG._w2);
-  //printf("ACFG._w3<%d>\n", ACFG._w3);
-  //printf("ACFG._wa<%d>\n", ACFG._wa);
+  printf("ACFG._wp<%d>\n", ACFG._wp);
+  printf("ACFG._w1<%d>\n", ACFG._w1);
+  printf("ACFG._w2<%d>\n", ACFG._w2);
+  printf("ACFG._w3<%d>\n", ACFG._w3);
+  printf("ACFG._wa<%d>\n", ACFG._wa);
 
   auto dspstage   = layerdata->stageByName("DSP");
   auto ampstage   = layerdata->stageByName("AMP");
@@ -1215,19 +1247,19 @@ void KrzBankDataParser::loadKrzJsonFromString(const std::string& json_data, int 
       auto msit = _tempmultisamples.find(msid);
       if (msit == _tempmultisamples.end()) {
         msit = _objdb->_multisamples.find(msid);
-        OrkAssert(msit != _objdb->_multisamples.end());
       }
-
-      kr->_multiSample = msit->second;
-      int sid          = kr->_sampID;
-      auto& samplemap  = kr->_multiSample->_samples;
-      auto sit         = samplemap.find(sid);
-      if (sit == samplemap.end()) {
-        // printf( "sample<%d> not found in multisample<%d>\n", sid, msid );
-      } else {
-        auto s      = sit->second;
-        kr->_sample = s;
-         //printf( "found sample<%d:%s> in multisample<%d>\n", sid, s->_name.c_str(), msid );
+      if (msit != _objdb->_multisamples.end()) {
+        kr->_multiSample = msit->second;
+        int sid          = kr->_sampID;
+        auto& samplemap  = kr->_multiSample->_samples;
+        auto sit         = samplemap.find(sid);
+        if (sit == samplemap.end()) {
+          // printf( "sample<%d> not found in multisample<%d>\n", sid, msid );
+        } else {
+          auto s      = sit->second;
+          kr->_sample = s;
+          //printf( "found sample<%d:%s> in multisample<%d>\n", sid, s->_name.c_str(), msid );
+        }
       }
     }
   }
