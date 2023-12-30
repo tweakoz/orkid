@@ -30,8 +30,15 @@ class KrzApp(SingulTestApp):
     timebase = self.time
     modrate = math.sin(self.time)*5
     mods = singularity.KeyOnModifiers()
-    mods.layerMask = 0x1  
+    mods.layerMask = 0x2  
     return mods
+
+  ##############################################
+
+  def onNote(self,voice):
+    LD = self.prog.layer(1)
+    ST = LD.stage("DSP")
+    ST.dump()
 
   ##############################################
 

@@ -128,7 +128,7 @@ void DspParamData::useAmplitudeEvaluator() {
               + param_inst._s2val //
               + param_inst._kval  //
               + param_inst._vval;
-    // printf("vt<%f> kt<%f> x<%f>\n", _velTrack, _keyTrack, x);
+     printf("vt<%f> kt<%f> x<%f>\n", _velTrack, _keyTrack, x);
     return x;
   };
 }

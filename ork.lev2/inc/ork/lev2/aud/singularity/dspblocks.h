@@ -65,7 +65,7 @@ struct DspBlockData : public ork::Object {
 
   std::string _blocktype;
 
-  dspparam_ptr_t addParam(std::string name = "");
+  dspparam_ptr_t addParam(std::string name = "", std::string units="");
   dspparam_ptr_t param(int index);
   int addDspChannel(int channel);
 
@@ -175,6 +175,7 @@ struct DspStageData final : public ork::Object {
   std::map<std::string, dspblkdata_ptr_t> _namedblockdatas;
   ioconfig_ptr_t _ioconfig;
   int _numblocks = 0;
+  void dump() const;
 };
 struct DspStage final {
   dspblk_ptr_t _blocks[kmaxdspblocksperstage];

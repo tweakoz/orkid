@@ -128,7 +128,8 @@ int main(int argc, char** argv,char**envp) {
   //////////////////////////////////////
   // envelope viewer
   //////////////////////////////////////
-  controllerdata_ptr_t inspect_env = layerdata->controllerByName("DCWENV1");
+  auto ctrlblk = layerdata->_ctrlBlock;
+  controllerdata_ptr_t inspect_env = ctrlblk->controllerByName("DCWENV1");
   auto env_source                  = inspect_env->createScopeSource();
   auto envview                     = create_envelope_analyzer(app->_hudvp, nobounds);
   env_source->connect(envview->_sink);

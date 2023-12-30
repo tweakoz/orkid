@@ -43,7 +43,7 @@ struct KrzBankDataParser {
   keymap_ptr_t parseKeymap(int kmid, const rapidjson::Value& JO);
   void parseAsr(const rapidjson::Value& JO, controlblockdata_ptr_t cblock, const EnvCtrlData& ENVCTRL, const std::string& name);
   void parseLfo(const rapidjson::Value& JO, controlblockdata_ptr_t cblock, const std::string& name);
-  void parseFun(const rapidjson::Value& JO, controlblockdata_ptr_t cblock, const std::string& name);
+  void parseFun(const rapidjson::Value& JO, lyrdata_ptr_t ld, controlblockdata_ptr_t cblock, const std::string& name);
   void parseEnvControl(const rapidjson::Value& JO, EnvCtrlData& ed);
   prgdata_ptr_t parseProgram(const rapidjson::Value& JO);
   multisample* parseMultiSample(const rapidjson::Value& JO);

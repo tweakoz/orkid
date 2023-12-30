@@ -72,15 +72,6 @@ void pyinit_aud_singularity(py::module& module_lev2) {
   type_codec->registerStdCodec<synth_ptr_t>(synth_type_t);
   /////////////////////////////////////////////////////////////////////////////////
   auto prgi_type = py::class_<prginst_rawptr_t>(singmodule, "ProgramInst");
-  /*.def_property_readonly(
-      "layers",                                         //
-      [type_codec](prginst_rawptr_t prgi) -> py::list { //
-        py::list layers;
-        for (auto item : prgi->_layers) {
-          layers.append(type_codec->encode(item));
-        }
-        return layers;
-      });*/
   type_codec->registerRawPtrCodec<prginst_rawptr_t, programInst*>(prgi_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto obus_type = py::class_<OutputBus, outbus_ptr_t>(singmodule, "OutputBus") //
@@ -89,12 +80,81 @@ void pyinit_aud_singularity(py::module& module_lev2) {
                            [](outbus_ptr_t bus) -> std::string { return bus->_name; });
   type_codec->registerStdCodec<outbus_ptr_t>(obus_type);
   /////////////////////////////////////////////////////////////////////////////////
+  auto ioc_type = py::class_<IoConfig, ioconfig_ptr_t>(singmodule, "IoConfig") //
+                      .def_property_readonly(
+                          "numInputs",
+                          [](ioconfig_ptr_t ioc) -> int { //
+                            return ioc->numInputs();
+                          })
+                      .def_property_readonly(
+                          "numOutputs",
+                          [](ioconfig_ptr_t ioc) -> int { //
+                            return ioc->numOutputs();
+                          })
+                      .def_property(
+                          "inputs",
+                          [](ioconfig_ptr_t ioc) -> py::list { //
+                            py::list rval;
+                            for (int i = 0; i < ioc->numInputs(); i++) {
+                              auto inp = ioc->_inputs[i];
+                              rval.append(inp);
+                            }
+                            return rval;
+                          },
+                          [](ioconfig_ptr_t ioc, py::list inp_list) {
+                            ioc->_inputs.clear();
+                            for (int i = 0; i < inp_list.size(); i++) {
+                              int inp = inp_list[i].cast<int>();
+                              ioc->_inputs.push_back(inp);
+                            }
+                          })
+                      .def_property(
+                          "outputs",
+                          [](ioconfig_ptr_t ioc) -> py::list { //
+                            py::list rval;
+                            for (int i = 0; i < ioc->numOutputs(); i++) {
+                              auto outp = ioc->_outputs[i];
+                              rval.append(outp);
+                            }
+                            return rval;
+                          },
+                          [](ioconfig_ptr_t ioc, py::list out_list) {
+                            ioc->_outputs.clear();
+                            for (int i = 0; i < out_list.size(); i++) {
+                              int inp = out_list[i].cast<int>();
+                              ioc->_outputs.push_back(inp);
+                            }
+                          });
+  type_codec->registerStdCodec<ioconfig_ptr_t>(ioc_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  auto stgdata_type = py::class_<DspStageData, dspstagedata_ptr_t>(singmodule, "DspStageData") //
+                          .def_property_readonly(
+                              "name",
+                              [](dspstagedata_ptr_t stgdata) -> std::string { //
+                                return stgdata->_name;
+                              })
+                            .def("dump", [](dspstagedata_ptr_t stgdata) {
+                              stgdata->dump();
+                            });
+  type_codec->registerStdCodec<dspstagedata_ptr_t>(stgdata_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  auto ldata_type = py::class_<LayerData, lyrdata_ptr_t>(singmodule, "LayerData")                        //
+                        .def("stage", [](lyrdata_ptr_t pdata, std::string named) -> dspstagedata_ptr_t { //
+                          return pdata->stageByName(named);
+                        });
+  type_codec->registerStdCodec<lyrdata_ptr_t>(ldata_type);
+  /////////////////////////////////////////////////////////////////////////////////
   auto pdata_type = py::class_<ProgramData, prgdata_ptr_t>(singmodule, "ProgramData") //
                         .def(py::init<>())
                         .def(
                             "merge",
                             [](prgdata_ptr_t pdata, prgdata_ptr_t other) { //
                               pdata->merge(*other);
+                            })
+                        .def(
+                            "layer",
+                            [](prgdata_ptr_t pdata, size_t index) -> lyrdata_ptr_t { //
+                              return pdata->getLayer(index);
                             })
                         .def_property(
                             "name", //
@@ -243,10 +303,10 @@ void pyinit_aud_singularity(py::module& module_lev2) {
     keyonmod_ptr_t _kmod;
   };
   using konmodctrlproxy_ptr_t = std::shared_ptr<KonModControllerProxy>;
-  auto konmodctrlproxy_type   =                                                                      //
+  auto konmodctrlproxy_type   =                                                                     //
       py::class_<KonModControllerProxy, konmodctrlproxy_ptr_t>(singmodule, "KonModControllerProxy") //
           .def(
-              "__setattr__",                                                                 //
+              "__setattr__",                                                                         //
               [type_codec](konmodctrlproxy_ptr_t proxy, const std::string& key, py::dict inp_dict) { //
                 auto builtins   = py::module::import("builtins");
                 auto int_type   = builtins.attr("int");
@@ -260,9 +320,9 @@ void pyinit_aud_singularity(py::module& module_lev2) {
                     if (it != proxy->_kmod->_mods.end()) {
                       kdata = it->second;
                     } else {
-                      kdata                = std::make_shared<KeyOnModifiers::DATA>();
+                      kdata                        = std::make_shared<KeyOnModifiers::DATA>();
                       proxy->_kmod->_mods[genname] = kdata;
-                      kdata->_name         = genname;
+                      kdata->_name                 = genname;
                     }
 
                     kdata->_generator = [=]() -> fvec4 {
@@ -287,9 +347,9 @@ void pyinit_aud_singularity(py::module& module_lev2) {
                     if (it != proxy->_kmod->_mods.end()) {
                       kdata = it->second;
                     } else {
-                      kdata                = std::make_shared<KeyOnModifiers::DATA>();
+                      kdata                        = std::make_shared<KeyOnModifiers::DATA>();
                       proxy->_kmod->_mods[subname] = kdata;
-                      kdata->_name         = subname;
+                      kdata->_name                 = subname;
                     }
                     kdata->_vars.makeValueForKey<py::object>("python_subscriber", python_subscriber);
                     kdata->_subscriber = [kdata, type_codec](std::string name, svar64_t inp) {
@@ -316,7 +376,7 @@ void pyinit_aud_singularity(py::module& module_lev2) {
               "__iter__",
               [](konmodctrlproxy_ptr_t proxy) { //
                 OrkAssert(false);
-                return py::make_iterator(         //
+                return py::make_iterator(                 //
                     KeyModIterator::_begin(proxy->_kmod), //
                     KeyModIterator::_end(proxy->_kmod));
               },
@@ -357,11 +417,13 @@ void pyinit_aud_singularity(py::module& module_lev2) {
                                rval           = FormatString("KeyOnModifiers(nkeys:%zu)", numkeys);
                                return rval;
                              })
-                         .def_property_readonly("controllers", [](keyonmod_ptr_t kmod) -> konmodctrlproxy_ptr_t {
-                           auto proxy = std::make_shared<KonModControllerProxy>();
-                           proxy->_kmod = kmod;
-                           return proxy;
-                         })
+                         .def_property_readonly(
+                             "controllers",
+                             [](keyonmod_ptr_t kmod) -> konmodctrlproxy_ptr_t {
+                               auto proxy   = std::make_shared<KonModControllerProxy>();
+                               proxy->_kmod = kmod;
+                               return proxy;
+                             })
                          .def_property(
                              "layerMask", //
                              [](keyonmod_ptr_t kmod) -> uint32_t { return kmod->_layermask; },

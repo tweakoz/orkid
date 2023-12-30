@@ -24,7 +24,7 @@ namespace ork::audio::singularity {
 ///////////////////////////////////////////////////////////////////////////////
 
 void LayerData::describeX(class_t* clazz) {
-  clazz->directObjectMapProperty("Controllers", &LayerData::_controllermap);
+  //clazz->directObjectMapProperty("Controllers", &LayerData::_controllermap);
   clazz->directObjectProperty("Algorithm", &LayerData::_algdata);
 }
 
@@ -32,11 +32,11 @@ void LayerData::describeX(class_t* clazz) {
 
 bool LayerData::postDeserialize(reflect::serdes::IDeserializer&, object_ptr_t shared) {
   int icid = 0;
-  for (auto item : _controllermap) {
-    auto controller            = item.second;
-    _ctrlBlock->_controller_datas[icid++] = controller;
-  }
-  _ctrlBlock->_numcontrollers = _controllermap.size();
+  //for (auto item : _controllermap) {
+    //auto controller            = item.second;
+    //_ctrlBlock->_controller_datas[icid++] = controller;
+  //}
+  //_ctrlBlock->_numcontrollers = _controllermap.size();
   return true;
 }
 
@@ -60,11 +60,6 @@ int LayerData::numDspBlocks() const {
     dspb += stage->_numblocks;
   }
   return dspb;
-}
-///////////////////////////////////////////////////////////////////////////////
-controllerdata_ptr_t LayerData::controllerByName(const std::string& named) const {
-  auto it = _controllermap.find(named);
-  return it != _controllermap.end() ? it->second : nullptr;
 }
 ///////////////////////////////////////////////////////////////////////////////
 dspstagedata_ptr_t LayerData::appendStage(const std::string& named) {
@@ -336,58 +331,11 @@ controller_t Layer::getController(const std::string& srcn) const {
   auto it = _controlMap.find(srcn);
   if (it != _controlMap.end()) {
     auto cinst = it->second;
-    // printf("getcon<%s> -> %p\n", srcn.c_str(), cinst);
+    printf("getcon<%s> -> %p\n", srcn.c_str(), cinst);
     return [cinst]() { return cinst->_value.x; };
-  } else if (srcn == "OFF")
-    return [this]() { return 0.0f; };
-  else if (srcn == "ON")
-    return [this]() { return 1.0f; };
-  else if (srcn == "-ON")
-    return [this]() { return -1.0f; };
-  else if (srcn == "MPress") {
-    auto state = new float(0);
-    return [this, state]() {
-      float v  = synth::instance()->_doPressure;
-      (*state) = (*state) * 0.99 + v * 0.01;
-      return (*state);
-    };
-  } else if (srcn == "MWheel") {
-    auto state = new float(0);
-    return [this, state]() {
-      float v  = synth::instance()->_doModWheel;
-      (*state) = (*state) * 0.99 + v * 0.01;
-      return (*state);
-    };
-  } else if (srcn == "KeyNum")
-    return [this]() { return this->_curnote / float(127.0f); };
-  else if (srcn == "MIDI(49)")
-    return [this]() {
-      float lt = this->_layerTime;
-      float s  = sinf(lt * pi2 * 8.0f);
-      s        = (s >= 0.0f) ? 1.0f : 0.0f;
-      return s;
-    };
-  else if (srcn == "RandV1")
-    return [this]() {
-      float lt = -1.0f + float(rand() & 0xffff) / 32768.0f;
-      return lt;
-    };
-  else if (srcn == "AttVel")
-    return [this]() {
-      float atkvel = float(this->_curvel) / 128.0f;
-      return atkvel;
-    };
-  else if (srcn == "VTRIG1")
-    return [this]() {
-      float atkvel = float(this->_curvel > 64);
-      return atkvel;
-    };
-  else if (srcn == "VTRIG2")
-    return [this]() {
-      float atkvel = float(this->_curvel > 96);
-      return atkvel;
-    };
+  }
   else {
+    //auto cdata = _layerdata->controllerByName(scrn);
     printf("CONTROLLER<%s> not found!\n", srcn.c_str());
     float fv = atof(srcn.c_str());
     if (fv != 0.0f) {
@@ -404,6 +352,10 @@ controller_t Layer::getController(const std::string& srcn) const {
 
 controller_t Layer::getSRC1(dspparammod_constptr_t mods) {
   auto src1 = this->getController(mods->_src1);
+  printf("src1<%p>\n", (void*) mods->_src1.get());
+  if(mods->_src1){
+    printf("src1<%p:%s>\n", (void*) mods->_src1.get(), mods->_src1->_name.c_str());
+  }
 
   auto it = [=]() -> float {
     float src1depth = mods->_src1Depth;
@@ -418,6 +370,10 @@ controller_t Layer::getSRC1(dspparammod_constptr_t mods) {
 controller_t Layer::getSRC2(dspparammod_constptr_t mods) {
   auto src2     = this->getController(mods->_src2);
   auto depthcon = this->getController(mods->_src2DepthCtrl);
+  printf("src2<%p>\n", (void*) mods->_src2.get());
+  if(mods->_src2){
+    printf("src2<%p:%s>\n", (void*) mods->_src2.get(), mods->_src2->_name.c_str());
+  }
 
   auto it = [=]() -> float {
     float mindepth = mods->_src2MinDepth;

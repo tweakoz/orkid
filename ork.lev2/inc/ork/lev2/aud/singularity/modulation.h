@@ -93,7 +93,9 @@ struct DspParamData final : public ork::Object {
   float _fine           = 0.0f;
   float _fineHZ         = 0.0f;
   float _keyTrack       = 0.0f;
+  std::string _keyTrackUnits;
   float _velTrack       = 0.0f;
+  std::string _velTrackUnits;
   int _keystartNote     = 60;
   bool _keystartBipolar = true; // false==unipolar
   // evalit_t _evaluator;

@@ -31,7 +31,8 @@ PARABASS::PARABASS(const DspBlockData* dbd)
 void PARABASS::compute(DspBuffer& dspbuf) // final
 {
   int inumframes = _layer->_dspwritecount;
-  float* ubuf    = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
+  const float* inpbuf    = getInpBuf(dspbuf, 0) + _layer->_dspwritebase;
+  float* outbuf    = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
 
   float fc   = _param[0].eval();
   float gain = _param[1].eval();
@@ -50,11 +51,14 @@ void PARABASS::compute(DspBuffer& dspbuf) // final
 
   // float ling = decibel_to_linear_amp_ratio(gain);
 
+  //printf( "fc<%f> gain<%f> pad<%f>\n", fc, gain, pad);
+  //fc<311.126984> gain<36.000000> pad<0.501187>
+
   if (1)
     for (int i = 0; i < inumframes; i++) {
-      float input = ubuf[i] * pad;
+      float input = inpbuf[i] * pad;
       float outp  = _lsq.compute(input);
-      ubuf[i]     = outp;
+      outbuf[i]     = outp;
     }
 
   // printf( "ff<%f> wid<%f>\n", ff, wid );

@@ -94,6 +94,9 @@ class SingulTestApp(object):
 
   def genMods(self):
     return None
+  
+  def onNote(self,voice):
+    pass
 
   def onUiEvent(self,uievent):
     if uievent.code == tokens.KEY_REPEAT.hashed or uievent.code==tokens.KEY_DOWN.hashed:
@@ -125,6 +128,7 @@ class SingulTestApp(object):
          note = self.base_notes[KC] + (self.octave*12)
          mods = self.genMods()
          voice = self.synth.keyOn(note,127,self.prog,mods)
+         self.onNote(voice)
          self.voices[KC] = voice
          return True
       else:

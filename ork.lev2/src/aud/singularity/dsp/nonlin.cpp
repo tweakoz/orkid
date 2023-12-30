@@ -19,7 +19,7 @@ float wrap(float inp, float adj);
 
 SHAPER_DATA::SHAPER_DATA(std::string name)
     : DspBlockData(name) {
-  addParam("amount")->useDefaultEvaluator(); 
+  addParam("amount","x")->useDefaultEvaluator(); 
 }
 dspblk_ptr_t SHAPER_DATA::createInstance() const {
   return std::make_shared<SHAPER>(this);
@@ -52,7 +52,7 @@ void SHAPER::compute(DspBuffer& dspbuf) // final
 
 SHAPE2_DATA::SHAPE2_DATA(std::string name)
     : DspBlockData(name) {
-  addParam("amount")->useDefaultEvaluator(); 
+  addParam("amount","x")->useDefaultEvaluator(); 
 }
 dspblk_ptr_t SHAPE2_DATA::createInstance() const {
   return std::make_shared<SHAPE2>(this);
@@ -149,7 +149,7 @@ void TWOPARAM_SHAPER::compute(DspBuffer& dspbuf) // final
 WrapData::WrapData(std::string name)
     : DspBlockData(name) {
   _blocktype = "WRAP";
-  addParam()->useDefaultEvaluator();
+  addParam("adjust", "dB")->useAmplitudeEvaluator();
 }
 dspblk_ptr_t WrapData::createInstance() const {
   return std::make_shared<Wrap>(this);
@@ -161,13 +161,15 @@ Wrap::Wrap(const DspBlockData* dbd)
 void Wrap::compute(DspBuffer& dspbuf) // final
 {
   int inumframes = _layer->_dspwritecount;
-  float rpoint   = _param[0].eval();
-  _fval[0]       = rpoint;
+  float adjust   = _param[0].eval(false);
+  _fval[0]       = adjust;
+ // printf( "adjust<%g>\n", adjust);
   if (1) {
-    auto inputchan  = getInpBuf(dspbuf, 0) + _layer->_dspwritebase;
-    auto outputchan = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
+    auto inpbuf = getInpBuf(dspbuf, 0) + _layer->_dspwritebase;
+    auto outbuf = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
+    float gain = decibel_to_linear_amp_ratio(adjust+30.0f);
     for (int i = 0; i < inumframes; i++) {
-      outputchan[i] = wrap(inputchan[i], rpoint);
+      outbuf[i] = fmod(inpbuf[i] * gain, 1.0f);
     }
   }
 }
@@ -176,7 +178,7 @@ void Wrap::compute(DspBuffer& dspbuf) // final
 DistortionData::DistortionData(std::string name)
     : DspBlockData(name) {
   _blocktype = "DIST";
-  addParam()->useDefaultEvaluator();
+  addParam("drive","dB")->useDefaultEvaluator();
 }
 dspblk_ptr_t DistortionData::createInstance() const {
   return std::make_shared<Distortion>(this);

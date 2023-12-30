@@ -56,16 +56,16 @@ int main(int argc, char** argv, char** envp) {
   auto bankdata = std::dynamic_pointer_cast<BankData>(instance_out);
   auto prgdata  = bankdata->findProgramByName("test");
   auto lyrdata  = prgdata->getLayer(0);
-
+  auto ctrlblk = lyrdata->_ctrlBlock;
   auto ops_stage = lyrdata->stageByName("OPS");
   auto op0       = ops_stage->_blockdatas[3];
   auto op1       = ops_stage->_blockdatas[2];
   auto op2       = ops_stage->_blockdatas[1];
   auto op3       = ops_stage->_blockdatas[0];
-  auto op0env    = lyrdata->controllerByName("OP0ENV");
-  auto op1env    = lyrdata->controllerByName("OP1ENV");
-  auto op2env    = lyrdata->controllerByName("OP2ENV");
-  auto op3env    = lyrdata->controllerByName("OP3ENV");
+  auto op0env    = ctrlblk->controllerByName("OP0ENV");
+  auto op1env    = ctrlblk->controllerByName("OP1ENV");
+  auto op2env    = ctrlblk->controllerByName("OP2ENV");
+  auto op3env    = ctrlblk->controllerByName("OP3ENV");
   ////////////////////////////////////////////////
   // main bus effect
   ////////////////////////////////////////////////

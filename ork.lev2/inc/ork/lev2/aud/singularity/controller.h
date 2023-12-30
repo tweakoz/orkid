@@ -18,13 +18,21 @@ struct FunData;
 ///////////////////////////////////////////////////////////////////////////////
 
 struct ControlBlockData {
-  template <typename T> std::shared_ptr<T> addController() {
+  template <typename T> std::shared_ptr<T> addController(std::string named) {
+    auto it = _controllers_by_name.find(named);
+    if(it!=_controllers_by_name.end()){
+      printf( "controller<%s> already exists\n", named.c_str() );
+      OrkAssert(false);
+    }
     OrkAssert((_numcontrollers + 1) <= kmaxctrlperblock);
     auto c                    = std::make_shared<T>();
+    c->_name             = named;
     _controller_datas[_numcontrollers++] = c;
     return c;
   }
-  controllerdata_constptr_t _controller_datas[kmaxctrlperblock];
+  controllerdata_ptr_t controllerByName(std::string named);
+  controllerdata_ptr_t _controller_datas[kmaxctrlperblock];
+  std::unordered_map<std::string, controllerdata_ptr_t> _controllers_by_name;
   size_t _numcontrollers = 0;
 };
 

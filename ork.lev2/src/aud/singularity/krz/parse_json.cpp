@@ -325,13 +325,12 @@ void KrzBankDataParser::parseAsr(
     controlblockdata_ptr_t cblock,
     const EnvCtrlData& ENVCTRL,
     const std::string& name) {
-  auto aout      = cblock->addController<AsrData>();
+  auto aout      = cblock->addController<AsrData>(name);
   aout->_trigger = jo["trigger"].GetString();
   aout->_mode    = jo["mode"].GetString();
   aout->_delay   = jo["delay"].GetFloat();
   aout->_attack  = jo["attack"].GetFloat();
   aout->_release = jo["release"].GetFloat();
-  aout->_name    = name;
 
   aout->_envadjust = [=](const EnvPoint& inp, //
                          int iseg,
@@ -369,23 +368,24 @@ void KrzBankDataParser::parseAsr(
 ///////////////////////////////////////////////////////////////////////////////
 
 void KrzBankDataParser::parseLfo(const rapidjson::Value& jo, controlblockdata_ptr_t cblock, const std::string& name) {
-  auto lout           = cblock->addController<LfoData>();
+  auto lout           = cblock->addController<LfoData>(name);
   lout->_initialPhase = jo["phase"].GetFloat();
   lout->_shape        = jo["shape"].GetString();
   lout->_controller   = jo["rateCtl"].GetString();
   lout->_minRate      = jo["minRate(hz)"].GetFloat();
   lout->_maxRate      = jo["maxRate(hz)"].GetFloat();
-  lout->_name         = name;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void KrzBankDataParser::parseFun(const rapidjson::Value& jo, controlblockdata_ptr_t cblock, const std::string& name) {
-  auto out   = cblock->addController<FunData>();
+void KrzBankDataParser::parseFun(const rapidjson::Value& jo, //
+                                 lyrdata_ptr_t layerdata, //
+                                 controlblockdata_ptr_t cblock, // 
+                                 const std::string& name) {
+  auto out   = cblock->addController<FunData>(name);
   out->_a    = jo["a"].GetString();
   out->_b    = jo["b"].GetString();
   out->_op   = jo["op"].GetString();
-  out->_name = name;
 }
 
 int NoteFromString(const std::string& snote) {
@@ -419,13 +419,16 @@ int NoteFromString(const std::string& snote) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void KrzBankDataParser::parseFBlock(const Value& fseg, lyrdata_ptr_t layerdata, dspparam_ptr_t fblk) {
+void KrzBankDataParser::parseFBlock(const Value& fseg, //
+                                    lyrdata_ptr_t layerdata, //
+                                    dspparam_ptr_t fblk) { //
+
   //////////////////////////////////
   using namespace std::string_literals;
 
   if (fseg.HasMember("PARAM_SCHEME")) {
     auto scheme = fseg["PARAM_SCHEME"].GetString();
-    if (scheme == "PCH"s)
+    /*if (scheme == "PCH"s)
       fblk->usePitchEvaluator();
     else if (scheme == "AMP"s)
       fblk->useAmplitudeEvaluator();
@@ -438,15 +441,8 @@ void KrzBankDataParser::parseFBlock(const Value& fseg, lyrdata_ptr_t layerdata, 
     else if (scheme == "ODD"s)
       fblk->useKrzEvnOddEvaluator();
     else
-      fblk->useDefaultEvaluator();
+      fblk->useDefaultEvaluator();*/
   }
-
-  if (fseg.HasMember("KeyTrack"))
-    fblk->_keyTrack = fseg["KeyTrack"]["Value"].GetFloat();
-  if (fseg.HasMember("VelTrack"))
-    fblk->_velTrack = fseg["VelTrack"]["Value"].GetFloat();
-  float keytrack = fblk->_keyTrack;
-  float veltrack = fblk->_velTrack;
 
   //////////////////////////////////
 
@@ -495,7 +491,7 @@ void KrzBankDataParser::parseFBlock(const Value& fseg, lyrdata_ptr_t layerdata, 
   if (fseg.HasMember("Src1")) {
     auto& s1 = fseg["Src1"];
     std::string ctrl_name =  s1["Source"].GetString();
-    auto SRC1             = layerdata->controllerByName(ctrl_name);
+    auto SRC1             = layerdata->_ctrlBlock->controllerByName(ctrl_name);
     mods->_src1 = SRC1;
     if (s1.HasMember("Depth")) {
       auto& d                = s1["Depth"];
@@ -506,11 +502,11 @@ void KrzBankDataParser::parseFBlock(const Value& fseg, lyrdata_ptr_t layerdata, 
   if (fseg.HasMember("Src2")) {
     auto& s2 = fseg["Src2"];
     std::string ctrl_name =  s2["Source"].GetString();
-    auto SRC2             = layerdata->controllerByName(ctrl_name);
+    auto SRC2             = layerdata->_ctrlBlock->controllerByName(ctrl_name);
     mods->_src2 = SRC2;
     if (s2.HasMember("DepthControl")){
       std::string ctrl_name =  s2["DepthControl"].GetString();
-      auto DEPTHCONTROL     = layerdata->controllerByName(ctrl_name);
+      auto DEPTHCONTROL     = layerdata->_ctrlBlock->controllerByName(ctrl_name);
       mods->_src2DepthCtrl = DEPTHCONTROL;
     }
     if (s2.HasMember("MinDepth")){
@@ -521,12 +517,20 @@ void KrzBankDataParser::parseFBlock(const Value& fseg, lyrdata_ptr_t layerdata, 
     }
     use_mods = true;
   }
+  if (fseg.HasMember("KeyTrack")){
+    fblk->_keyTrack = fseg["KeyTrack"]["Value"].GetFloat();
+    fblk->_keyTrackUnits = fseg["KeyTrack"]["Unit"].GetString();
+  }
   if (fseg.HasMember("KeyStart")) {
     auto& i                = fseg["KeyStart"];
     fblk->_keystartBipolar = i["Mode"].GetString() == std::string("Bipolar");
     int inote              = NoteFromString(i["Note"].GetString());
     int ioct               = i["Octave"].GetInt();
     fblk->_keystartNote    = (ioct + 1) * 12 + inote;
+  }
+  if (fseg.HasMember("VelTrack")){
+    fblk->_velTrack = fseg["VelTrack"]["Value"].GetFloat();
+    fblk->_velTrackUnits = fseg["VelTrack"]["Unit"].GetString();
   }
   if(use_mods){
     fblk->_mods = mods;
@@ -862,9 +866,8 @@ lyrdata_ptr_t KrzBankDataParser::parseLayer(const Value& jsonobj, prgdata_ptr_t 
   auto parseEnv = [&](const Value& envobj, //
                       controlblockdata_ptr_t cblock,
                       const std::string& name) -> controllerdata_ptr_t {
-    auto rout                 = cblock->addController<RateLevelEnvData>();
+    auto rout                 = cblock->addController<RateLevelEnvData>(name);
     RateLevelEnvData& destenv = *rout;
-    rout->_name               = name;
     if (name == "AMPENV") {
       rout->_ampenv  = true;
       rout->_envType = RlEnvType::ERLTYPE_KRZAMPENV;
@@ -966,8 +969,7 @@ lyrdata_ptr_t KrzBankDataParser::parseLayer(const Value& jsonobj, prgdata_ptr_t 
   }
   else if(layerdata->_usenatenv){
     // AMPENV from NATENV
-    natenvwrapperdata = CB->addController<NatEnvWrapperData>();
-    natenvwrapperdata->_name = "AMPENV";
+    natenvwrapperdata = CB->addController<NatEnvWrapperData>("AMPENV");
   }
   if (jsonobj.HasMember("ENV2")) {
     const auto& seg = jsonobj["ENV2"];
@@ -1005,22 +1007,39 @@ lyrdata_ptr_t KrzBankDataParser::parseLayer(const Value& jsonobj, prgdata_ptr_t 
   if (jsonobj.HasMember("FUN1")) {
     const auto& seg = jsonobj["FUN1"];
     if (seg.IsObject())
-      parseFun(seg, CB, "FUN1");
+      parseFun(seg, layerdata, CB, "FUN1");
   }
   if (jsonobj.HasMember("FUN2")) {
     const auto& seg = jsonobj["FUN2"];
     if (seg.IsObject())
-      parseFun(seg, CB, "FUN2");
+      parseFun(seg, layerdata, CB, "FUN2");
   }
   if (jsonobj.HasMember("FUN3")) {
     const auto& seg = jsonobj["FUN3"];
     if (seg.IsObject())
-      parseFun(seg, CB, "FUN3");
+      parseFun(seg, layerdata, CB, "FUN3");
   }
   if (jsonobj.HasMember("FUN4")) {
     const auto& seg = jsonobj["FUN4"];
     if (seg.IsObject())
-      parseFun(seg, CB, "FUN4");
+      parseFun(seg, layerdata, CB, "FUN4");
+  }
+  //////////////////////////////////////////////////////
+  // resolve nested controllers
+  //////////////////////////////////////////////////////
+  for( auto item : CB->_controllers_by_name){
+    auto name = item.first;
+    auto ctrl = item.second;
+    if(auto as_fun = std::dynamic_pointer_cast<FunData>(ctrl) ){
+      CB->controllerByName(as_fun->_a);
+      CB->controllerByName(as_fun->_b);
+    }
+    else if(auto as_lfo = std::dynamic_pointer_cast<LfoData>(ctrl) ){
+      CB->controllerByName(as_lfo->_controller);
+    }
+    else{
+      OrkAssert(false);
+    }
   }
   //////////////////////////////////////////////////////
 
@@ -1125,8 +1144,14 @@ lyrdata_ptr_t KrzBankDataParser::parseLayer(const Value& jsonobj, prgdata_ptr_t 
     }
 
   }
- 
 
+  // if last stage is panner, then ioconfig numoutputs is 2
+
+  auto last = dspstage->_blockdatas[dspstage->_numblocks-1];
+  if(auto as_panner = std::dynamic_pointer_cast<PANNER_DATA>(last)){
+    dspstage->_ioconfig->_outputs.push_back(1);
+  }
+ 
   //////////////////////////////////////////////////////
 
   // printf( "got keymapID<%d:%p:%s>\n", kmid, km, km->_name.c_str() );

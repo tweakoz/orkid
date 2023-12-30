@@ -18,8 +18,6 @@ ImplementReflectionX(ork::audio::singularity::AlgData, "SynAlgorithm");
 
 namespace ork::audio::singularity {
 
-dspblk_ptr_t createDspBlock(const DspBlockData* dbd);
-
 ///////////////////////////////////////////////////////////////////////////////
 
 void AlgData::describeX(class_t* clazz) {
@@ -133,7 +131,7 @@ void Alg::keyOn(KeyOnInfo& koi) {
       for (int iblock = 0; iblock < kmaxdspblocksperstage; iblock++) {
         auto blockdata = stagedata->_blockdatas[iblock];
         if (blockdata) {
-          auto block             = createDspBlock(blockdata.get());
+          auto block             = blockdata->createInstance();
           stage->_blocks[iblock] = block;
           block->_verticalIndex  = iblock;
           block->_ioconfig         = stagedata->_ioconfig;

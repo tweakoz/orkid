@@ -29,13 +29,12 @@ struct LayerData : public ork::Object {
   ///////////////////////////////////////////////////
   template <typename T>                                                  //
   inline std::shared_ptr<T> appendController(const std::string& named) { //
-    std::shared_ptr<T> controllerdata = _ctrlBlock->addController<T>();
-    controllerdata->_name             = named;
-    _controllermap[named]             = controllerdata;
+    std::shared_ptr<T> controllerdata = _ctrlBlock->addController<T>(named);
+    //_controllermap[named]             = controllerdata;
     return controllerdata;
   }
   ///////////////////////////////////////////////////
-  controllerdata_ptr_t controllerByName(const std::string& named) const;
+  //controllerdata_ptr_t controllerByName(const std::string& named);
   ///////////////////////////////////////////////////
   scopesource_ptr_t createScopeSource();
   ///////////////////////////////////////////////////
@@ -62,7 +61,7 @@ struct LayerData : public ork::Object {
   kmpblockdata_ptr_t _kmpBlock;
   dspblkdata_ptr_t _pchBlock;
   keymap_constptr_t _keymap;
-  std::map<std::string, controllerdata_ptr_t> _controllermap;
+  //std::map<std::string, controllerdata_ptr_t> _controllermap;
   controlblockdata_ptr_t _ctrlBlock = nullptr;
   varmap::varmap_ptr_t _varmap;
 

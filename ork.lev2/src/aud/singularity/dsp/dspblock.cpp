@@ -21,27 +21,9 @@
 #include <ork/reflect/properties/registerX.inl>
 
 ImplementReflectionX(ork::audio::singularity::DspBlockData, "SynDspBlock");
-ImplementReflectionX(ork::audio::singularity::DspStageData, "SynDspStage");
-ImplementReflectionX(ork::audio::singularity::IoConfig, "SynIoConfig");
 
 namespace ork::audio::singularity {
 
-//////////////////////////////////////////////////////////////////////////////
-
-void IoConfig::describeX(class_t* clazz) {
-  clazz->directVectorProperty("Inputs", &IoConfig::_inputs);
-  clazz->directVectorProperty("Outputs", &IoConfig::_outputs);
-}
-//////////////////////////////////////////////////////////////////////////////
-IoConfig::IoConfig() {
-}
-//////////////////////////////////////////////////////////////////////////////
-size_t IoConfig::numInputs() const {
-  return _inputs.size();
-}
-size_t IoConfig::numOutputs() const {
-  return _outputs.size();
-}
 //////////////////////////////////////////////////////////////////////////////
 
 void DspBlockData::describeX(class_t* clazz) {
@@ -81,9 +63,10 @@ scopesource_ptr_t DspBlockData::createScopeSource() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-dspparam_ptr_t DspBlockData::addParam(std::string named) {
+dspparam_ptr_t DspBlockData::addParam(std::string named, std::string units) {
   OrkAssert(_numParams < kmaxparmperblock - 1);
   auto param = std::make_shared<DspParamData>(named);
+  param->_units = units;
   _paramd.push_back(param);
   _numParams = _paramd.size();
   return param;
@@ -91,80 +74,6 @@ dspparam_ptr_t DspBlockData::addParam(std::string named) {
 
 dspparam_ptr_t DspBlockData::param(int index) {
   return _paramd[index];
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-DspBuffer::DspBuffer()
-    : _maxframes(16384)
-    , _numframes(0) {
-  for (int i = 0; i < kmaxdspblocksperstage; i++) {
-    _channels[i].resize(_maxframes);
-  }
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void DspBuffer::resize(int inumframes) {
-  if (inumframes > _maxframes) {
-    for (int i = 0; i < kmaxdspblocksperstage; i++) {
-      _channels[i].resize(inumframes);
-    }
-    _maxframes = inumframes;
-  }
-  _numframes = inumframes;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-float* DspBuffer::channel(int ich) {
-  ich = ich % kmaxdspblocksperstage;
-  return _channels[ich].data();
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void DspStageData::describeX(class_t* clazz) {
-  clazz->directProperty("Name", &DspStageData::_name);
-  clazz->directProperty("StageIndex", &DspStageData::_stageIndex);
-  clazz->directObjectProperty("IoConfig", &DspStageData::_ioconfig);
-  clazz->directObjectMapProperty("DspBlocks", &DspStageData::_namedblockdatas);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-bool DspStageData::postDeserialize(reflect::serdes::IDeserializer&, object_ptr_t shared) { // override
-  for (auto item : _namedblockdatas) {
-    auto blockdata     = item.second;
-    int index          = blockdata->_blockIndex;
-    _blockdatas[index] = blockdata;
-  }
-  _numblocks = _namedblockdatas.size();
-  return true;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-DspStageData::DspStageData() {
-  _ioconfig = std::make_shared<IoConfig>();
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-dspblkdata_ptr_t DspStageData::appendBlock() {
-  OrkAssert(_numblocks < kmaxdspblocksperstage);
-  auto blk                  = std::make_shared<DspBlockData>();
-  _blockdatas[_numblocks++] = blk;
-  return blk;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void DspStageData::setNumIos(int numinp, int numout) {
-  for (int i = 0; i < numinp; i++)
-    _ioconfig->_inputs.push_back(i);
-  for (int i = 0; i < numout; i++)
-    _ioconfig->_outputs.push_back(i);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -244,122 +153,6 @@ NOP::NOP(const DspBlockData* dbd)
   _numParams = 0;
 }
 void NOP::compute(DspBuffer& dspbuf) { // override
-}
-///////////////////////////////////////////////////////////////////////////////
-
-dspblk_ptr_t createDspBlock(const DspBlockData* dbd) {
-
-  dspblk_ptr_t rval = dbd->createInstance();
-  if (rval)
-    return rval;
-  /*
-  ////////////////////////
-  // amp/mix
-  ////////////////////////
-
-  if (dbd->_blocktype == "XFADE")
-    rval = std::make_shared<XFADE>(dbd);
-  if (dbd->_blocktype == "x GAIN")
-    rval = std::make_shared<XGAIN>(dbd);
-  if (dbd->_blocktype == "GAIN")
-    rval = std::make_shared<GAIN>(dbd);
-  if (dbd->_blocktype == "AMP_MONOIO")
-    rval = std::make_shared<AMP_MONOIO>(dbd);
-  if (dbd->_blocktype == "+ AMP")
-    rval = std::make_shared<PLUSAMP>(dbd);
-  if (dbd->_blocktype == "x AMP")
-    rval = std::make_shared<XAMP>(dbd);
-  if (dbd->_blocktype == "PANNER")
-    rval = std::make_shared<PANNER>(dbd);
-  if (dbd->_blocktype == "AMP U   AMP L")
-    rval = std::make_shared<AMPU_AMPL>(dbd);
-  if (dbd->_blocktype == "! AMP")
-    rval = std::make_shared<BANGAMP>(dbd);
-
-  ////////////////////////
-  // osc/gen
-  ////////////////////////
-
-  if (dbd->_blocktype == "SAMPLER")
-    rval = std::make_shared<SAMPLER>(dbd);
-  if (dbd->_blocktype == "SINE")
-    rval = std::make_shared<SINE>(dbd);
-  if (dbd->_blocktype == "LF SIN")
-    rval = std::make_shared<SINE>(dbd);
-  if (dbd->_blocktype == "SAW")
-    rval = std::make_shared<SAW>(dbd);
-  if (dbd->_blocktype == "SQUARE")
-    rval = std::make_shared<SQUARE>(dbd);
-  if (dbd->_blocktype == "SINE+")
-    rval = std::make_shared<SINEPLUS>(dbd);
-  if (dbd->_blocktype == "SAW+")
-    rval = std::make_shared<SAWPLUS>(dbd);
-  if (dbd->_blocktype == "SW+SHP")
-    rval = std::make_shared<SWPLUSSHP>(dbd);
-  if (dbd->_blocktype == "+ SHAPEMOD OSC")
-    rval = std::make_shared<PLUSSHAPEMODOSC>(dbd);
-  if (dbd->_blocktype == "SHAPE MOD OSC")
-    rval = std::make_shared<SHAPEMODOSC>(dbd);
-
-  if (dbd->_blocktype == "SYNC M")
-    rval = std::make_shared<SYNCM>(dbd);
-  if (dbd->_blocktype == "SYNC S")
-    rval = std::make_shared<SYNCS>(dbd);
-  if (dbd->_blocktype == "PWM")
-    rval = std::make_shared<PWM>(dbd);
-
-  if (dbd->_blocktype == "NOISE")
-    rval = std::make_shared<NOISE>(dbd);
-
-  ////////////////////////
-  // EQ
-  ////////////////////////
-
-  if (dbd->_blocktype == "PARA BASS")
-    rval = std::make_shared<PARABASS>(dbd);
-  if (dbd->_blocktype == "PARA MID")
-    rval = std::make_shared<PARAMID>(dbd);
-  if (dbd->_blocktype == "PARA TREBLE")
-    rval = std::make_shared<PARATREBLE>(dbd);
-
-  ////////////////////////
-  // filter
-  ////////////////////////
-
-  if (dbd->_blocktype == "STEEP RESONANT BASS")
-    rval = std::make_shared<STEEP_RESONANT_BASS>(dbd);
-  if (dbd->_blocktype == "4POLE HIPASS W/SEP")
-    rval = std::make_shared<FOURPOLE_HIPASS_W_SEP>(dbd);
-  if (dbd->_blocktype == "NOTCH FILTER")
-    rval = std::make_shared<NOTCH_FILT>(dbd);
-  if (dbd->_blocktype == "NOTCH2")
-    rval = std::make_shared<NOTCH2>(dbd);
-  if (dbd->_blocktype == "DOUBLE NOTCH W/SEP")
-    rval = std::make_shared<DOUBLE_NOTCH_W_SEP>(dbd);
-  if (dbd->_blocktype == "BANDPASS FILT")
-    rval = std::make_shared<BANDPASS_FILT>(dbd);
-  if (dbd->_blocktype == "BAND2")
-    rval = std::make_shared<BAND2>(dbd);
-
-  if (dbd->_blocktype == "LOPAS2")
-    rval = std::make_shared<LOPAS2>(dbd);
-  if (dbd->_blocktype == "LP2RES")
-    rval = std::make_shared<LP2RES>(dbd);
-  if (dbd->_blocktype == "LPCLIP")
-    rval = std::make_shared<LPCLIP>(dbd);
-  if (dbd->_blocktype == "LPGATE")
-    rval = std::make_shared<LPGATE>(dbd);
-
-  ////////////////////////
-  // nonlin
-  ////////////////////////
-
-  if (dbd->_blocktype == "SHAPER")
-    rval = std::make_shared<SHAPER>(dbd);
-  if (dbd->_blocktype == "2PARAM SHAPER")
-    rval = std::make_shared<TWOPARAM_SHAPER>(dbd);
-*/
-  return rval;
 }
 
 } // namespace ork::audio::singularity

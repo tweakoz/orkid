@@ -766,20 +766,29 @@ void synth::_keyOffLayer(layer_ptr_t l) {
 
 void programInst::keyOn(int note, int velocity, prgdata_constptr_t pd, keyonmod_ptr_t kmod ) {
   _keymods = kmod;
-  int ilayer = 0;
 
   auto syn = synth::instance();
 
-  for (const auto& ld : pd->_layerdatas) {
-    ilayer++;
+  uint32_t layer_mask = 0xffffffff;
+  if(kmod){
+    layer_mask = kmod->_layermask;
+  }
+  printf( "layer_mask<0x%08x>\n", layer_mask);
+  int ilayer = 0;
+  size_t num_layerdatas = pd->_layerdatas.size();
+  for (size_t ilayer=0; ilayer<num_layerdatas; ilayer++) {
+    auto ld = pd->_layerdatas[ilayer];
+    if ( (layer_mask & (1<<ilayer)) == 0 ){
+      continue;
+    }
+    if (syn->_soloLayer >= 0) {
+      if (syn->_soloLayer != ilayer)
+        continue;
+    }
 
     if (note < ld->_loKey || note > ld->_hiKey)
       continue;
 
-    if (syn->_soloLayer >= 0) {
-      if (syn->_soloLayer != (ilayer - 1))
-        continue;
-    }
 
     // printf( "lovel<%d>\n", ld->_loVel );
     // printf( "hivel<%d>\n", ld->_hiVel );
@@ -801,6 +810,7 @@ void programInst::keyOn(int note, int velocity, prgdata_constptr_t pd, keyonmod_
     syn->_keyOnLayer(l, note, velocity, ld);
 
     _layers.push_back(l);
+
   }
   int inuml = _layers.size();
   int solol = syn->_soloLayer;
@@ -809,11 +819,14 @@ void programInst::keyOn(int note, int velocity, prgdata_constptr_t pd, keyonmod_
     syn->_hudLayer = _layers[solol];
   } else if (inuml > 0) {
     syn->_hudLayer = _layers[0];
-  } else
+  } else{
     syn->_hudLayer = nullptr;
+  }
 
   // if (syn->_hudLayer)
   // syn->_hudbuf.push(syn->_hudLayer->_HKF);
+
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////
