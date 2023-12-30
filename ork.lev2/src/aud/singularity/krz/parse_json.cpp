@@ -27,37 +27,23 @@ const s16* getK2V3InternalSoundBlock() {
   if (nullptr == gdata) {
     gdata = (s16*)malloc(24 << 20);
     auto data_read = gdata;
-    auto filename = basePath() / "kurzweil" / "samplerom_internal.bin";
-    printf("Loading Soundblock<%s>\n", filename.c_str());
-    FILE* fin = fopen(filename.toAbsolute().c_str(), "rb");
-    if (fin == nullptr) {
-      printf("You will need the K2000 ROM sampledata at <%s> to use this method!\n", filename.c_str());
-      OrkAssert(false);
-    }
-    fread(data_read, 8 << 20, 1, fin);
-    data_read += 4 << 20;
-    fclose(fin);
-    //
-    filename = basePath() / "kurzweil" / "samplerom_ext1.bin";
-    printf("Loading Soundblock<%s>\n", filename.c_str());
-    fin = fopen(filename.toAbsolute().c_str(), "rb");
-    if (fin == nullptr) {
-      printf("You will need the K2000 ROM sampledata at <%s> to use this method!\n", filename.c_str());
-      OrkAssert(false);
-    }
-    fread(data_read, 8 << 20, 1, fin);
-    data_read += 4 << 20;
-    //
-    filename = basePath() / "kurzweil" / "samplerom_ext2.bin";
-    printf("Loading Soundblock<%s>\n", filename.c_str());
-    fin = fopen(filename.toAbsolute().c_str(), "rb");
-    if (fin == nullptr) {
-      printf("You will need the K2000 ROM sampledata at <%s> to use this method!\n", filename.c_str());
-      OrkAssert(false);
-    }
-    fread(data_read, 8 << 20, 1, fin);
-    fclose(fin);
-
+    ///////////////////////////////////////////////////////////////////////////////////////////
+    auto load_sound_block = [&](file::Path filename, size_t numbytes){
+      printf("Loading Soundblock<%s>\n", filename.c_str());
+      FILE* fin = fopen(filename.toAbsolute().c_str(), "rb");
+      if (fin == nullptr) {
+        printf("You will need the K2000 ROM sampledata at <%s> to use this method!\n", filename.c_str());
+        OrkAssert(false);
+      }
+      fread(data_read, numbytes, 1, fin);
+      data_read += (numbytes>>1);
+      fclose(fin);
+    };
+    ///////////////////////////////////////////////////////////////////////////////////////////
+    load_sound_block(basePath() / "kurzweil" / "k2vx_samples_base.bin", 8<<20);
+    load_sound_block(basePath() / "kurzweil" / "k2vx_samples_ext1.bin", 8<<20);
+    load_sound_block(basePath() / "kurzweil" / "k2vx_samples_ext2.bin", 8<<20);
+    ///////////////////////////////////////////////////////////////////////////////////////////
   }
   return gdata;
 }

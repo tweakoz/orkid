@@ -104,13 +104,16 @@ class SingulTestApp(object):
           self.prog_index = len(self.sorted_progs)-1
         prgname = self.sorted_progs[self.prog_index]
         print("prgname<%s>" % prgname)
+        self.prog = self.soundbank.programByName(prgname)
+        print("prgname<%s> %s" % (prgname, self.prog.name))
         return True
       elif KC == ord("."): # next program
         self.prog_index += 1
         if self.prog_index >= len(self.sorted_progs):
           self.prog_index = 0
         prgname = self.sorted_progs[self.prog_index]
-        print("prgname<%s>" % prgname)
+        self.prog = self.soundbank.programByName(prgname)
+        print("prgname<%s> %s" % (prgname, self.prog.name))
         return True
     if uievent.code == tokens.KEY_DOWN.hashed:
       KC = uievent.keycode
@@ -125,7 +128,22 @@ class SingulTestApp(object):
          self.voices[KC] = voice
          return True
       else:
-        if KC == ord("-"): # next effect
+        if KC == ord("1"): # next effect
+          self.synth.masterGain = singularity.decibelsToLinear(-24.0)
+          return True
+        elif KC == ord("2"): # next effect
+          self.synth.masterGain = singularity.decibelsToLinear(-18.0)
+          return True
+        elif KC == ord("3"): # next effect
+          self.synth.masterGain = singularity.decibelsToLinear(-12.0)
+          return True
+        elif KC == ord("4"): # next effect
+          self.synth.masterGain = singularity.decibelsToLinear(-6.0)
+          return True
+        elif KC == ord("5"): # next effect
+          self.synth.masterGain = singularity.decibelsToLinear(0)
+          return True
+        elif KC == ord("-"): # next effect
           self.synth.prevEffect()
           return True
         elif KC == ord("="): # next effect
