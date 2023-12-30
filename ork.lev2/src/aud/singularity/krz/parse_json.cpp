@@ -236,13 +236,21 @@ sample* KrzBankDataParser::parseSample(const Value& jsonobj, const multisample* 
   OrkAssert(jsonnetimes.IsArray());
   OrkAssert(jsonneslopes.Size() == jsonnetimes.Size());
   int numsegs = jsonneslopes.Size();
-  sout->_natenv.resize(numsegs);
 
-  for (SizeType i = 0; i < numsegs; i++) // Uses SizeType instead of size_t
-  {
-    auto& dest  = sout->_natenv[i];
-    dest._slope = jsonneslopes[i].GetFloat();
-    dest._time  = jsonnetimes[i].GetFloat();
+  if(numsegs>0){
+
+    auto natenv = std::make_shared<NatEnvWrapperData>();
+    natenv->_name = "AMPENV";
+    natenv->_segments.resize(numsegs);
+
+    for (SizeType i = 0; i < numsegs; i++) // Uses SizeType instead of size_t
+    {
+      auto& dest  = natenv->_segments[i];
+      dest._slope = jsonneslopes[i].GetFloat();
+      dest._time  = jsonnetimes[i].GetFloat();
+    }
+
+    sout->_naturalEnvelope = natenv;
   }
 
   //
@@ -1052,7 +1060,7 @@ lyrdata_ptr_t KrzBankDataParser::parseLayer(const Value& jsonobj, prgdata_ptr_t 
     parseFBlock(pitchSeg, layerdata, pitch->param(0));
     layerdata->_pchBlock = pitch;
     blockindex += ACFG._wp;
-    sampler->_natenvwrapperdata = natenvwrapperdata;
+    //sampler->_natenvwrapperdata = natenvwrapperdata;
 
   }
   else{

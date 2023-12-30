@@ -53,8 +53,7 @@ struct sample {
   int _highestPitch;
 
   eLoopMode _loopMode = eLoopMode::NONE;
-  std::vector<natenvseg> _natenv;
-
+  natenvwrapperdata_ptr_t _naturalEnvelope;
   int _pitchAdjust = 0;
 };
 
@@ -146,7 +145,6 @@ struct SAMPLER_DATA : public DspBlockData {
   SAMPLER_DATA(std::string name);
   dspblk_ptr_t createInstance() const override;
   RegionSearch findRegion(lyrdata_constptr_t ld, const KeyOnInfo& koi) const;
-  natenvwrapperdata_ptr_t _natenvwrapperdata;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -221,6 +219,7 @@ struct SAMPLER final : public DspBlock {
   void doKeyOn(const KeyOnInfo& koi);
   void doKeyOff();
   sampleOsc* _spOsc = nullptr;
+  natenvwrapperdata_ptr_t _natenvwrapperdata;
   float _filtp;
 };
 

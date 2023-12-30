@@ -88,7 +88,7 @@ void NatEnv::keyOn(const KeyOnInfo& KOI, const sample* s) {
   _layer->retain();
 
   _natenvseg.clear();
-  for (const auto& item : s->_natenv)
+  for (const auto& item : s->_naturalEnvelope->_segments)
     _natenvseg.push_back(item);
   _numseg        = _natenvseg.size();
   _curseg        = 0;

@@ -106,6 +106,7 @@ struct NatEnvWrapperData : public ControllerData {
   DeclareConcreteX(NatEnvWrapperData, ControllerData);
   NatEnvWrapperData();
   ControllerInst* instantiate(layer_ptr_t layer) const final;
+  std::vector<natenvseg> _segments;
 };
 
 struct NatEnvWrapperInst : public ControllerInst {
