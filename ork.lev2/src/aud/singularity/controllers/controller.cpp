@@ -66,6 +66,17 @@ controllerdata_ptr_t ControlBlockData::controllerByName(std::string named){
       };
       rval = CD;
     }
+    else if (named == "PWheel") {
+      auto CD = std::make_shared<CustomControllerData>();
+      CD->_name = named;
+      CD->_oncompute = [](CustomControllerInst* cci) {
+        auto L = cci->_layer;
+        float pwheel = 0.0f;//synth::instance()->_doModWheel;
+        cci->_value.x = (cci->_value.x* 0.99) + (pwheel * 0.01);
+        OrkAssert(false);
+      };
+      rval = CD;
+    }
     else if (named == "MWheel") {
       auto CD = std::make_shared<CustomControllerData>();
       CD->_name = named;
@@ -111,6 +122,16 @@ controllerdata_ptr_t ControlBlockData::controllerByName(std::string named){
       };
       rval = CD;
     }
+    else if (named == "BKeyNum") {
+      auto CD = std::make_shared<CustomControllerData>();
+      CD->_name = named;
+      CD->_oncompute = [](CustomControllerInst* cci) {
+        auto L = cci->_layer;
+        cci->_value.x = -1.0f+(L->_curnote / float(127.0f))*2.0f;
+        OrkAssert(false);
+      };
+      rval = CD;
+    }
     else if (named == "RandV1") {
       auto CD = std::make_shared<CustomControllerData>();
       CD->_name = named;
@@ -125,7 +146,29 @@ controllerdata_ptr_t ControlBlockData::controllerByName(std::string named){
       CD->_name = named;
       CD->_oncompute = [](CustomControllerInst* cci) {
         auto L = cci->_layer;
-        float atkvel = float(L->_curvel) / 128.0f;
+        float atkvel = float(L->_curvel) / 127.0f;
+        cci->_value.x = atkvel;
+        OrkAssert(false);
+      };
+      rval = CD;
+    }
+    else if (named == "InvAttVel") {
+      auto CD = std::make_shared<CustomControllerData>();
+      CD->_name = named;
+      CD->_oncompute = [](CustomControllerInst* cci) {
+        auto L = cci->_layer;
+        float atkvel = float(127-L->_curvel) / 127.0f;
+        cci->_value.x = atkvel;
+        OrkAssert(false);
+      };
+      rval = CD;
+    }
+    else if (named == "Bi-AVel") {
+      auto CD = std::make_shared<CustomControllerData>();
+      CD->_name = named;
+      CD->_oncompute = [](CustomControllerInst* cci) {
+        auto L = cci->_layer;
+        float atkvel = (float(L->_curvel) / 63.5f)-1.0f;
         cci->_value.x = atkvel;
         OrkAssert(false);
       };
@@ -162,9 +205,84 @@ controllerdata_ptr_t ControlBlockData::controllerByName(std::string named){
       };
       rval = CD;
     }
+    else if (named == "AbsPwl") { // absolute value of pitch wheel
+      auto CD = std::make_shared<CustomControllerData>();
+      CD->_name = named;
+      CD->_oncompute = [](CustomControllerInst* cci) {
+        cci->_value.x = 0.0f;
+        OrkAssert(false);
+      };
+      rval = CD;
+    }
+    else if (named == "ATKSTATE") {
+      auto CD = std::make_shared<CustomControllerData>();
+      CD->_name = named;
+      CD->_oncompute = [](CustomControllerInst* cci) {
+        auto L = cci->_layer;
+        float atkstate = 0.0f;
+        cci->_value.x = atkstate;
+        OrkAssert(false);
+      };
+      rval = CD;
+    }
+    else if (named == "RELSTATE") {
+      auto CD = std::make_shared<CustomControllerData>();
+      CD->_name = named;
+      CD->_oncompute = [](CustomControllerInst* cci) {
+        auto L = cci->_layer;
+        float relstate = 0.0f;
+        cci->_value.x = relstate;
+        OrkAssert(false);
+      };
+      rval = CD;
+    }
+    else if (named == "Chan St") {
+      auto CD = std::make_shared<CustomControllerData>();
+      CD->_name = named;
+      CD->_oncompute = [](CustomControllerInst* cci) {
+        float chanst = 0.0f;
+        cci->_value.x = chanst;
+        OrkAssert(false);
+      };
+      rval = CD;
+    }
+    else if (named == "Foot") {
+      auto CD = std::make_shared<CustomControllerData>();
+      CD->_name = named;
+      CD->_oncompute = [](CustomControllerInst* cci) {
+        float foot = 0.0f;
+        cci->_value.x = foot;
+        OrkAssert(false);
+      };
+      rval = CD;
+    }
+    else if (named == "SAMPLEPBRATE") {
+      auto CD = std::make_shared<CustomControllerData>();
+      CD->_name = named;
+      CD->_oncompute = [](CustomControllerInst* cci) {
+        float spbr = 1.0f; // ratio of sample playback rate to sample root ?
+        cci->_value.x = spbr;
+        OrkAssert(false);
+      };
+      rval = CD;
+    }
+    
     else{
-      printf("controller not found named<%s>\n", named.c_str());
-      //OrkAssert(false);
+      // is a float constant ?
+      static std::regex float_regex("[-+]?[0-9]*\\.?[0-9]+([eE][-+]?[0-9]+)?");
+      std::smatch match;
+      if (std::regex_search(named, match, float_regex)) {      //
+        float fval = std::stof(match[0].str());
+        auto CD = std::make_shared<ConstantControllerData>();
+        CD->_name = named;
+        CD->_constvalue = fval;
+        rval = CD;
+        //OrkAssert(false);
+      }
+      else{
+        printf("controller not found named<%s>\n", named.c_str());
+        //OrkAssert(false);
+      }
     }
     _controllers_by_name[named] = rval;
   }

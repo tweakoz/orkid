@@ -28,6 +28,7 @@ struct ControlBlockData {
     auto c                    = std::make_shared<T>();
     c->_name             = named;
     _controller_datas[_numcontrollers++] = c;
+    _controllers_by_name[named] = c;
     return c;
   }
   controllerdata_ptr_t controllerByName(std::string named);

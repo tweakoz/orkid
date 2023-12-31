@@ -1027,18 +1027,18 @@ lyrdata_ptr_t KrzBankDataParser::parseLayer(const Value& jsonobj, prgdata_ptr_t 
   //////////////////////////////////////////////////////
   // resolve nested controllers
   //////////////////////////////////////////////////////
-  for( auto item : CB->_controllers_by_name){
+  auto named_controllers = CB->_controllers_by_name;
+  for( auto item : named_controllers){
     auto name = item.first;
     auto ctrl = item.second;
     if(auto as_fun = std::dynamic_pointer_cast<FunData>(ctrl) ){
-      CB->controllerByName(as_fun->_a);
-      CB->controllerByName(as_fun->_b);
+      auto resolvedA = CB->controllerByName(as_fun->_a);
+      auto resolvedB = CB->controllerByName(as_fun->_b);
     }
     else if(auto as_lfo = std::dynamic_pointer_cast<LfoData>(ctrl) ){
-      CB->controllerByName(as_lfo->_controller);
+      auto resolved = CB->controllerByName(as_lfo->_controller);
     }
     else{
-      OrkAssert(false);
     }
   }
   //////////////////////////////////////////////////////

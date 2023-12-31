@@ -464,13 +464,13 @@ void LowPass::compute(DspBuffer& dspbuf) // final
   _fval[0] = fc;
   _lpf.set(fc);
 
-  auto inpbuf = getInpBuf(dspbuf, 0) + _layer->_dspwritebase;
 
   if (1) {
-    auto outputchan = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
+    auto inpbuf = getInpBuf(dspbuf, 0) + _layer->_dspwritebase;
+    auto outbuf = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
     for (int i = 0; i < inumframes; i++) {
       float inp     = inpbuf[i] * pad;
-      outputchan[i] = _lpf.compute(inp);
+      outbuf[i] = _lpf.compute(inp);
     }
   }
 }
