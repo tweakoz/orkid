@@ -29,14 +29,12 @@ struct ProgramView final : public ui::Surface {
   int _velocity    = 127;
 };
 ///////////////////////////////////////////////////////////////////////////////
-hudpanel_ptr_t createProgramView(
+hudpanel_ptr_t createProgramView2(
     uilayoutgroup_ptr_t vp, //
-    const ui::anchor::Bounds& bounds,
     std::string named) {
   auto hudpanel    = std::make_shared<HudPanel>();
   auto programview = std::make_shared<ProgramView>();
   auto uipanelitem = vp->makeChild<ui::Panel>("progview", 0, 0, 32, 32);
-  uipanelitem.applyBounds(bounds);
   hudpanel->_uipanel                = uipanelitem.typedWidget();
   hudpanel->_panelLayout            = uipanelitem._layout;
   hudpanel->_uipanel->_closeEnabled = false;
@@ -46,9 +44,19 @@ hudpanel_ptr_t createProgramView(
   hudpanel->_uipanel->setChild(hudpanel->_uisurface);
   hudpanel->_uipanel->_stdcolor   = fvec4(0.2, 0.2, 0.3f, 0.5f);
   hudpanel->_uipanel->_focuscolor = fvec4(0.3, 0.2, 0.4f, 0.5f);
+  hudpanel->_layoutitem = uipanelitem.as_shared();
   ///////////////////////////////////////////////////////////////////////
   vp->addChild(hudpanel->_uipanel);
   return hudpanel;
+}
+///////////////////////////////////////////////////////////////////////////////
+hudpanel_ptr_t createProgramView(
+    uilayoutgroup_ptr_t vp, //
+    const ui::anchor::Bounds& bounds,
+    std::string named) {
+    auto rval = createProgramView2(vp,named);
+    //rval->_uipanel->applyBounds(bounds);
+    return rval;
 }
 ///////////////////////////////////////////////////////////////////////////////
 ProgramView::ProgramView() //

@@ -540,6 +540,24 @@ void pyinit_aud_singularity(py::module& module_lev2) {
           });
   type_codec->registerStdCodec<analyzer_ptr_t>(oscope_type);
   /////////////////////////////////////////////////////////////////////////////////
+  struct PROGRAMVIEW_PROXY{
+    hudpanel_ptr_t _instrument;
+  };
+  using pgmview_ptr_t = std::shared_ptr<PROGRAMVIEW_PROXY>;
+  auto pgmview_type = //
+      py::class_<PROGRAMVIEW_PROXY, pgmview_ptr_t>(singmodule, "ProgramView")
+          .def_static("uifactory", [type_codec](uilayoutgroup_ptr_t lg, py::list py_args) -> uilayoutitem_ptr_t { //
+            auto decoded_args = type_codec->decodeList(py_args);
+            auto name         = decoded_args[0].get<std::string>();
+            auto instrument   = createProgramView2(lg, name);
+            auto proxy = std::make_shared<PROGRAMVIEW_PROXY>();
+            proxy->_instrument = instrument;
+            // retain scope in layout group
+            lg->_uservars.makeValueForKey<pgmview_ptr_t>("programviews." + name, proxy);
+            return instrument->_layoutitem;
+          });
+  type_codec->registerStdCodec<pgmview_ptr_t>(pgmview_type);
+  /////////////////////////////////////////////////////////////////////////////////
 }
 
 ///////////////////////////////////////////////////////////////////////////////

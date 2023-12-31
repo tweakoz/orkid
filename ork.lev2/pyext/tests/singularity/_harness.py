@@ -45,6 +45,7 @@ class SingulTestApp(object):
     for g in self.griditems:
       g.widget.ignoreEvents = True
 
+
     ######################### 
     # create an oscope
     #  replace the 2nd griditem with it
@@ -97,6 +98,22 @@ class SingulTestApp(object):
     self.mainbus_source = self.mainbus.createScopeSource()
     self.mainbus_source.connect(self.oscope_sink)
     self.mainbus_source.connect(self.spectra_sink)
+
+    ######################### 
+    # create an program view
+    #  replace the 3nd griditem with it
+    ######################### 
+
+
+    lg_group = self.ezapp.topLayoutGroup
+    item = lg_group.makeChild( uiclass = singularity.ProgramView,
+                               args = ["PROGRAM"] )
+    
+    self.pgmview = lg_group.getUserVar("programviews.PROGRAM")
+    lg_group.replaceChild(self.griditems[2].layout,item)
+
+    ######################### 
+
     for i in range(6):
       self.synth.nextEffect()
     self.gain = -12.0
