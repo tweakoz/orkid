@@ -35,7 +35,7 @@ struct LayoutItemBase {
 };
 
 template <typename T> struct LayoutItem : public LayoutItemBase {
-  std::shared_ptr<T> typedWidget(){
+  std::shared_ptr<T> typedWidget() {
     return dynamic_pointer_cast<T>(_widget);
   }
 };
@@ -60,7 +60,7 @@ struct LayoutGroup : public Group {
   template <typename T, typename... A> //
   layoutitem_ptr_t makeChild2(A&&... args) {
     layoutitem_ptr_t rval;
-    rval = std::make_shared<LayoutItem<T>>();
+    rval          = std::make_shared<LayoutItem<T>>();
     rval->_widget = std::make_shared<T>(std::forward<A>(args)...);
     rval->_layout = _layout->childLayout(rval->_widget.get());
     addChild(rval->_widget);
@@ -70,24 +70,38 @@ struct LayoutGroup : public Group {
   template <typename T, typename... A> //
   std::vector<LayoutItem<T>> makeGridOfWidgets(int w, int h, A&&... args) {
     std::vector<LayoutItem<T>> layout_items;
+    ui::anchor::guide_ptr_t gxa, gxb;
+    ui::anchor::guide_ptr_t gya, gyb;
     for (int x = 0; x < w; x++) {
       float fxa = float(x) / float(w);
       float fxb = float(x + 1) / float(w);
-      auto gxa  = _layout->proportionalVerticalGuide(fxa); // 23,27,31,35
-      auto gxb  = _layout->proportionalVerticalGuide(fxb); // 24,28,32,36
+      if (x == 0) {
+        gxa          = _layout->proportionalVerticalGuide(fxa); // 23,27,31,35
+        gxa->_margin = _margin;
+      } else {
+        gxa = gxb;
+      }
+      gxb          = _layout->proportionalVerticalGuide(fxb); // 24,28,32,36
+      gxb->_margin = _margin;
       _vguides.insert(gxa);
       _vguides.insert(gxb);
       for (int y = 0; y < h; y++) {
-        float fya   = float(y) / float(h);
-        float fyb   = float(y + 1) / float(h);
-        auto gya    = _layout->proportionalHorizontalGuide(fya); // 25,29,33,37
-        auto gyb    = _layout->proportionalHorizontalGuide(fyb); // 26,30,34,38
+        float fya = float(y) / float(h);
+        float fyb = float(y + 1) / float(h);
+        if (y == 0) {
+          gya          = _layout->proportionalHorizontalGuide(fya); // 25,29,33,37
+          gya->_margin = _margin;
+        } else {
+          gya = gyb;
+        }
+        gyb          = _layout->proportionalHorizontalGuide(fyb); // 25,29,33,37
+        gyb->_margin = _margin;
         _hguides.insert(gya);
         _hguides.insert(gyb);
         auto name   = _name + FormatString("-ch-%d", (y * w + x));
         auto chitem = this->makeChild<T>(std::forward<A>(args)...);
         layout_items.push_back(chitem);
-        chitem._layout->setMargin(2);
+        chitem._layout->setMargin(_margin);
         chitem._layout->top()->anchorTo(gya);
         chitem._layout->left()->anchorTo(gxa);
         chitem._layout->bottom()->anchorTo(gyb);
@@ -99,21 +113,23 @@ struct LayoutGroup : public Group {
   //////////////////////////////////////
   anchor::layout_ptr_t layoutAndAddChild(widget_ptr_t w);
   void removeChild(anchor::layout_ptr_t ch);
-  void replaceChild(anchor::layout_ptr_t ch, 
-                           layoutitem_ptr_t rep);
+  void replaceChild(anchor::layout_ptr_t ch, layoutitem_ptr_t rep);
   void setClearColor(fvec4 clr);
   fvec4 clearColor() const;
   const std::set<uiguide_ptr_t>& horizontalGuides() const;
-  const  std::set<uiguide_ptr_t>& verticalGuides() const;
+  const std::set<uiguide_ptr_t>& verticalGuides() const;
   HandlerResult OnUiEvent(event_constptr_t ev);
-//////////////////////////////////////
+  //////////////////////////////////////
   anchor::layout_ptr_t _layout;
+
+  int _margin = 2;
+  bool _clear = true;
+  fvec4 _clearColor;
+
 private:
   void DoDraw(ui::drawevent_constptr_t drwev) override;
   void _doOnResized() override;
   void DoLayout() override;
-  bool _clear = true;
-  fvec4 _clearColor;
   std::set<uiguide_ptr_t> _hguides;
   std::set<uiguide_ptr_t> _vguides;
 };

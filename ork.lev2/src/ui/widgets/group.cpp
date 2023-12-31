@@ -207,7 +207,7 @@ void LayoutGroup::DoDraw(drawevent_constptr_t drwev) {
     FBI->Clear(_clearColor, 1);
     FBI->popViewport();
     FBI->popScissor();
-    _clear = false;
+    //_clear = false;
   }
   drawChildren(drwev);
 }

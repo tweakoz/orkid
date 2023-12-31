@@ -380,7 +380,13 @@ void pyinit_ui(py::module& module_lev2) {
               rval = uigrid_factory(lgrp, width, height, margin, args);
             }
             return rval;
-          });
+          })
+          .def_property("margin", [](uilayoutgroup_ptr_t lgrp) -> int { //
+            return lgrp->_margin;
+          },
+              [](uilayoutgroup_ptr_t lgrp, int m) { //
+                lgrp->_margin = m;
+              });
   type_codec->registerStdCodec<uilayoutgroup_ptr_t>(layoutgroup_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto surface_type = //

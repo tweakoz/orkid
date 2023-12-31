@@ -127,9 +127,20 @@ void pyinit_ui_layout(py::module& uimodule) {
                 layout->fill(other.get());
               })
           //////////////////////////////////
-          .def("dump", [](uilayout_ptr_t layout) { //
-            layout->dump();
-          });
+          .def(
+              "dump",
+              [](uilayout_ptr_t layout) { //
+                layout->dump();
+              })
+          //////////////////////////////////
+          .def_property(
+              "locked",
+              [](uilayout_ptr_t layout) -> bool { //
+                return layout->_locked;
+              },
+              [](uilayout_ptr_t layout, bool locked) { //
+                layout->_locked = locked;
+              });
   //////////////////////////////////
   type_codec->registerStdCodec<uilayout_ptr_t>(layout_type);
   /////////////////////////////////////////////////////////////////////////////////
@@ -138,28 +149,42 @@ void pyinit_ui_layout(py::module& uimodule) {
           .def_property_readonly(
               "margin",
               [](uiguide_ptr_t guide) -> int { //
-    return guide->_margin;
+                return guide->_margin;
               })
           .def_property_readonly(
               "sign",
               [](uiguide_ptr_t guide) -> int { //
-    return guide->_sign;
+                return guide->_sign;
               })
-          .def_property_readonly( "fixed",
+          .def_property_readonly(
+              "fixed",
               [](uiguide_ptr_t guide) -> int { //
                 return guide->_fixed;
-            })
+              })
           //////////////////////////////////
-          .def_property("proportion", [](uiguide_ptr_t guide) -> float { //
-              return guide->_proportion;
-            },
-            [](uiguide_ptr_t guide, float prop) { //
-              guide->_proportion = prop;
-            })
+          .def_property(
+              "proportion",
+              [](uiguide_ptr_t guide) -> float { //
+                return guide->_proportion;
+              },
+              [](uiguide_ptr_t guide, float prop) { //
+                guide->_proportion = prop;
+              })
           //////////////////////////////////
-          .def("anchorTo", [](uiguide_ptr_t guide, uiguide_ptr_t other_guide) { //
-    guide->anchorTo(other_guide);
-          });
+          .def(
+              "anchorTo",
+              [](uiguide_ptr_t guide, uiguide_ptr_t other_guide) { //
+                guide->anchorTo(other_guide);
+              })
+          //////////////////////////////////
+          .def_property(
+              "locked",
+              [](uiguide_ptr_t guide) -> bool { //
+                return guide->_locked;
+              },
+              [](uiguide_ptr_t guide, bool locked) { //
+                guide->_locked = locked;
+              });
   type_codec->registerStdCodec<uiguide_ptr_t>(guide_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto litem_type = //
