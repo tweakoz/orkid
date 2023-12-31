@@ -36,7 +36,10 @@ struct ProgramData : public ork::Object {
 
   lyrdata_ptr_t newLayer();
   inline lyrdata_ptr_t getLayer(int i) const {
-    return _layerdatas[i];
+    if( i < _layerdatas.size() )
+      return _layerdatas[i];
+    else
+      return nullptr;
   }
   inline void addHudInfo(std::string str) {
     _hudinfos.push_back(str);

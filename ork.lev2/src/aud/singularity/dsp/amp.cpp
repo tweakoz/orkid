@@ -22,7 +22,7 @@ float wrap(float inp, float adj);
 AMP_MONOIO_DATA::AMP_MONOIO_DATA(std::string name)
     : DspBlockData(name) {
   _blocktype = "AMP_MONOIO";
-  auto param = addParam("gain");
+  auto param = addParam("gain","dB");
   param->useAmplitudeEvaluator();
 }
 
@@ -42,11 +42,13 @@ void AMP_MONOIO::compute(DspBuffer& dspbuf) { // final
   auto inputchan  = getInpBuf(dspbuf, 0) + _layer->_dspwritebase;
   auto outputchan = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
   float laychgain = decibel_to_linear_amp_ratio(LD->_channelGains[0]);
+  float ampenv = _layer->_ampenvgain;
   //////////////////////////////////
   for (int i = 0; i < inumframes; i++) {
     //_filt      = 0.995 * _filt + 0.005 * paramgain;
     float linG = paramgain; // decibel_to_linear_amp_ratio(_filt);
     linG *= laychgain;
+    linG *= ampenv;
     float inp     = inputchan[i];
     outputchan[i] = clip_float(inp * linG * _dbd->_inputPad, kminclip, kmaxclip);
     // printf("inp<%g>\n", inp);

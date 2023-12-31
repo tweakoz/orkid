@@ -257,7 +257,7 @@ void ParametricEq::compute(DspBuffer& dspbuf) // final
   const float kf1 = 0.005f;
   const float kf2 = 1.0f - kf1;
 
-  if (1)
+  if (not _dbd->_bypass )
     for (int i = 0; i < inumframes; i++) {
       _smoothFC = fc;   // kf2*_smoothFC + kf1*fc;
       _smoothW  = wid;  // kf2 * _smoothW + kf1 * wid;

@@ -255,6 +255,9 @@ void RateLevelEnvInst::compute() // final
   if(_keymoddata){
     _keymoddata->_currentValue = _value;
   }
+  if (_ampenv) {
+    _layer->_ampenvgain = _value.x;
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////

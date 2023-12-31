@@ -70,7 +70,7 @@ void DspStageData::dump() const {
   for (int ib = 0; ib < _numblocks; ib++) {
     auto blockdata = _blockdatas[ib];
     if (blockdata) {
-      printf("   %d: %s\n", index, blockdata->_name.c_str());
+      printf("   %d: %s (bypass: %d)\n", index, blockdata->_name.c_str(), int(blockdata->_bypass) );
       for (int i = 0; i < blockdata->_numParams; i++) {
         auto param = blockdata->_paramd[i];
         if (param) {

@@ -121,7 +121,7 @@ struct Layer {
   int64_t _sampleindex = 0;
 
   int _layerBasePitch; // in cents
-
+  float _ampenvgain = 1.0f;
   float _pchc1;
   float _pchc2;
   float _sinrepPH = 0.0f;

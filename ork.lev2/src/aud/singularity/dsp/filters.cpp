@@ -521,9 +521,9 @@ void HighPass::doKeyOn(const KeyOnInfo& koi) // final
 
 HighFreqStimulatorData::HighFreqStimulatorData(std::string name)
     : DspBlockData(name) {
-  addParam("cutoff")->useFrequencyEvaluator(); // P0 cutoff eval: "FRQ" 
-  addParam()->useDefaultEvaluator(); // drive
-  addParam()->useDefaultEvaluator(); // outgain
+  addParam("cutoff","Hz")->useFrequencyEvaluator(); // P0 cutoff eval: "FRQ" 
+  addParam("drive","dB")->useDefaultEvaluator(); // drive
+  addParam("gain","dB")->useDefaultEvaluator(); // outgain
 }
 dspblk_ptr_t HighFreqStimulatorData::createInstance() const {
   return std::make_shared<HighFreqStimulator>(this);
@@ -539,12 +539,13 @@ void HighFreqStimulator::compute(DspBuffer& dspbuf) // final
   int inumframes    = _layer->_dspwritecount;
   const float* ibuf = getInpBuf(dspbuf, 0) + _layer->_dspwritebase;
   float* obuf       = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
-  float fc          = _param[0].eval();
+  float fc          = _param[0].eval()*0.3;
   float drv         = _param[1].eval();
   float amp         = _param[2].eval();
   float drvg        = decibel_to_linear_amp_ratio(drv);
   float ling        = decibel_to_linear_amp_ratio(amp);
-  if (1)
+  printf("pad<%f> fc<%f> drv<%f> amp<%f>\n", pad, fc, drv, amp);
+  if (not _dbd->_bypass)
     for (int i = 0; i < inumframes; i++) {
       float input = ibuf[i] * pad;
       _filter1.SetWithRes(EM_HPF, fc, 0.0f);

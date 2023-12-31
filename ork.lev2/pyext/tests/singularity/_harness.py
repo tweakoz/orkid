@@ -37,6 +37,8 @@ class SingulTestApp(object):
     self.octave = 5
     self.charts = {}
     self.chart_events = {}
+    self.layermask = 0xffffffff
+    self.layerID = 0
 
   ##############################################
 
@@ -47,7 +49,8 @@ class SingulTestApp(object):
     self.mainbus = self.synth.outputBus("main")
     for i in range(6):
       self.synth.nextEffect()
-    self.synth.masterGain = singularity.decibelsToLinear(-12.0)
+    self.gain = -12.0
+    self.synth.masterGain = singularity.decibelsToLinear(self.gain)
     self.sorted_progs = []
     self.octave = 5
     self.charts = {}
@@ -75,7 +78,6 @@ class SingulTestApp(object):
         ord("P"): 15,
         ord(";"): 16,
         ord("'"): 17,
-        ord("]"): 18,
     }
     self.voices = dict()
 
@@ -96,6 +98,21 @@ class SingulTestApp(object):
     return None
   
   def onNote(self,voice):
+    pass
+
+  def prLayerMask(self):
+    as_bools = binary_str = format(self.layermask, '032b')[::-1]
+    print("###########################################")
+    print("layerID<%d> layermask<%s> " % (self.layerID,as_bools))
+    print("###########################################")
+    if self.prog:
+      LD = self.prog.layer(self.layerID)
+      if LD:
+        DST = LD.stage("DSP")
+        DST.dump()
+        AST = LD.stage("AMP")
+        AST.dump()
+    print("###########################################")
     pass
 
   def onUiEvent(self,uievent):
@@ -132,20 +149,33 @@ class SingulTestApp(object):
          self.voices[KC] = voice
          return True
       else:
-        if KC == ord("1"): # next effect
-          self.synth.masterGain = singularity.decibelsToLinear(-24.0)
+        if KC == ord("["): # decr gain
+          self.gain -= 6.0
+          self.synth.masterGain = singularity.decibelsToLinear(self.gain)
           return True
-        elif KC == ord("2"): # next effect
-          self.synth.masterGain = singularity.decibelsToLinear(-18.0)
+        if KC == ord("]"): # incr gain
+          self.gain += 6.0
+          self.synth.masterGain = singularity.decibelsToLinear(self.gain)
           return True
-        elif KC == ord("3"): # next effect
-          self.synth.masterGain = singularity.decibelsToLinear(-12.0)
+        elif KC == ord("1"): # toggle 1 bit in layermask
+          self.layermask = self.layermask ^ (1<<0)
+          self.layerID = 0
+          self.prLayerMask()
           return True
-        elif KC == ord("4"): # next effect
-          self.synth.masterGain = singularity.decibelsToLinear(-6.0)
+        elif KC == ord("2"): # toggle 1 bit in layermask
+          self.layermask = self.layermask ^ (1<<1)
+          self.layerID = 1
+          self.prLayerMask()
           return True
-        elif KC == ord("5"): # next effect
-          self.synth.masterGain = singularity.decibelsToLinear(0)
+        elif KC == ord("3"): # toggle 1 bit in layermask
+          self.layermask = self.layermask ^ (1<<2)
+          self.layerID = 2
+          self.prLayerMask()
+          return True
+        elif KC == ord("4"): # toggle 1 bit in layermask
+          self.layermask = self.layermask ^ (1<<3)
+          self.layerID = 3
+          self.prLayerMask()
           return True
         elif KC == ord("-"): # next effect
           self.synth.prevEffect()

@@ -563,9 +563,11 @@ void sampleOsc::compute(int inumfr) {
 
     float natval = _natAmpEnv->compute();
     _NATENV[i] = natval;
+    _lyr->_ampenvgain = natval;
+    
 
     if(_natenvwrapperinst){
-      _OUTPUT[i] *= natval;
+      //_OUTPUT[i] *= natval;
       _natenvwrapperinst->_value.x = natval;
     }
   }
