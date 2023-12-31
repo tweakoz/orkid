@@ -32,6 +32,19 @@ class SingulTestApp(object):
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     self.ezapp.topWidget.enableUiDraw()
     lg_group = self.ezapp.topLayoutGroup
+    lg_group.margin = 4
+
+    self.griditems = lg_group.makeGrid(
+      width = 2,
+      height = 2,
+      margin = 4,
+      uiclass = ui.LambdaBox,
+      args = ["label",vec4(1,0,1,1)],
+    )
+
+    for g in self.griditems:
+      g.widget.onPressed(lambda: print("GRIDITEM0 PUSHED"))
+
     root_layout = lg_group.layout
     self.time = 0.0
     self.octave = 5
@@ -39,6 +52,12 @@ class SingulTestApp(object):
     self.chart_events = {}
     self.layermask = 0xffffffff
     self.layerID = 0
+
+    def onCtrlC(signum, frame):
+      print("signalling EXIT to ezapp")
+      self.ezapp.signalExit()
+
+    signal.signal(signal.SIGINT, onCtrlC)
 
   ##############################################
 
@@ -116,6 +135,8 @@ class SingulTestApp(object):
     pass
 
   def onUiEvent(self,uievent):
+    res = ui.HandlerResult()
+    res.setHandler( self.ezapp.topWidget )
     if uievent.code == tokens.KEY_REPEAT.hashed or uievent.code==tokens.KEY_DOWN.hashed:
       KC = uievent.keycode
       if KC == ord(","): # prev program
@@ -126,7 +147,7 @@ class SingulTestApp(object):
         print("prgname<%s>" % prgname)
         self.prog = self.soundbank.programByName(prgname)
         print("prgname<%s> %s" % (prgname, self.prog.name))
-        return True
+        return res
       elif KC == ord("."): # next program
         self.prog_index += 1
         if self.prog_index >= len(self.sorted_progs):
@@ -134,7 +155,7 @@ class SingulTestApp(object):
         prgname = self.sorted_progs[self.prog_index]
         self.prog = self.soundbank.programByName(prgname)
         print("prgname<%s> %s" % (prgname, self.prog.name))
-        return True
+        return res
     if uievent.code == tokens.KEY_DOWN.hashed:
       KC = uievent.keycode
       if KC in self.base_notes:
@@ -147,66 +168,66 @@ class SingulTestApp(object):
          voice = self.synth.keyOn(note,127,self.prog,mods)
          self.onNote(voice)
          self.voices[KC] = voice
-         return True
+         return res
       else:
         if KC == ord("["): # decr gain
           self.gain -= 6.0
           self.synth.masterGain = singularity.decibelsToLinear(self.gain)
-          return True
+          return res
         if KC == ord("]"): # incr gain
           self.gain += 6.0
           self.synth.masterGain = singularity.decibelsToLinear(self.gain)
-          return True
+          return res
         elif KC == ord("1"): # toggle 1 bit in layermask
           self.layermask = self.layermask ^ (1<<0)
           self.layerID = 0
           self.prLayerMask()
-          return True
+          return res
         elif KC == ord("2"): # toggle 1 bit in layermask
           self.layermask = self.layermask ^ (1<<1)
           self.layerID = 1
           self.prLayerMask()
-          return True
+          return res
         elif KC == ord("3"): # toggle 1 bit in layermask
           self.layermask = self.layermask ^ (1<<2)
           self.layerID = 2
           self.prLayerMask()
-          return True
+          return res
         elif KC == ord("4"): # toggle 1 bit in layermask
           self.layermask = self.layermask ^ (1<<3)
           self.layerID = 3
           self.prLayerMask()
-          return True
+          return res
         elif KC == ord("-"): # next effect
           self.synth.prevEffect()
-          return True
+          return res
         elif KC == ord("="): # next effect
           self.synth.nextEffect()
-          return True
+          return res
         elif KC == ord("!"): # panic
           for voice in self.voices:
             self.synth.keyOff(voice)
             self.voices.clear()
-          return True
+          return res
         elif KC == ord("4"): # 
           print(self.sorted_progs)
-          return True
+          return res
         elif KC == ord("Z"): # 
           self.octave -= 1
           if self.octave < 0:
             self.octave = 0
-          return True
+          return res
         elif KC == ord("X"): # 
           self.octave += 1
           if self.octave > 8:
             self.octave = 8
-          return True
+          return res
         elif KC == ord("N"): # new chart 
           self.clearChart()
-          return True
+          return res
         elif KC == ord("M"): # show chart
           self.showCharts()
-          return True
+          return res
 
   
     elif uievent.code == tokens.KEY_UP.hashed:
@@ -215,9 +236,9 @@ class SingulTestApp(object):
         voice = self.voices[KC]
         self.synth.keyOff(voice)
         del self.voices[KC]
-        return True
+        return res
 
-    return False
+    return ui.HandlerResult()
 
 
 ###############################################################################

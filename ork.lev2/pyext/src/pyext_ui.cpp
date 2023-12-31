@@ -27,40 +27,46 @@ void pyinit_ui(py::module& module_lev2) {
   auto uimodule   = module_lev2.def_submodule("ui", "ui operations");
   auto type_codec = python::TypeCodec::instance();
   /////////////////////////////////////////////////////////////////////////////////
-  uimodule.def("popupOpenDialog", [](std::string title, //
-                                     std::string default_path_and_file, //
-                                     std::vector<std::string> filter_patterns, //
-                                     bool allow_multiple_selects) -> py::list { //
-    std::string values = ui::popupOpenDialog(title, default_path_and_file, filter_patterns, allow_multiple_selects);
-    py::list rval;
-    // split values by |
-    std::string delimiter = "|";
-    size_t pos            = 0;
-    std::string token;
-    while ((pos = values.find(delimiter)) != std::string::npos) {
-      token = values.substr(0, pos);
-      rval.append(token);
-      values.erase(0, pos + delimiter.length());
-    }
-    rval.append(values);
-    return rval;
-  });
-  uimodule.def("popupSaveDialog", [](std::string title, //
-                                     std::string default_path_and_file, //
-                                     std::vector<std::string> filter_patterns) -> std::string { //
-    return ui::popupSaveDialog(title, default_path_and_file, filter_patterns);
-  });
-  uimodule.def("popupFolderDialog", [](std::string title, //
-                                       std::string default_path) -> std::string { //
-    return ui::popupFolderDialog(title, default_path);
-  });
+  uimodule.def(
+      "popupOpenDialog",
+      [](std::string title,                         //
+         std::string default_path_and_file,         //
+         std::vector<std::string> filter_patterns,  //
+         bool allow_multiple_selects) -> py::list { //
+        std::string values = ui::popupOpenDialog(title, default_path_and_file, filter_patterns, allow_multiple_selects);
+        py::list rval;
+        // split values by |
+        std::string delimiter = "|";
+        size_t pos            = 0;
+        std::string token;
+        while ((pos = values.find(delimiter)) != std::string::npos) {
+          token = values.substr(0, pos);
+          rval.append(token);
+          values.erase(0, pos + delimiter.length());
+        }
+        rval.append(values);
+        return rval;
+      });
+  uimodule.def(
+      "popupSaveDialog",
+      [](std::string title,                                         //
+         std::string default_path_and_file,                         //
+         std::vector<std::string> filter_patterns) -> std::string { //
+        return ui::popupSaveDialog(title, default_path_and_file, filter_patterns);
+      });
+  uimodule.def(
+      "popupFolderDialog",
+      [](std::string title,                         //
+         std::string default_path) -> std::string { //
+        return ui::popupFolderDialog(title, default_path);
+      });
   /////////////////////////////////////////////////////////////////////////////////
   auto uicontext_type = //
       py::class_<ui::Context, ui::context_ptr_t>(module_lev2, "Context")
           .def_property_readonly("hasKeyboardFocus", [](ui::context_ptr_t uictx) -> bool { return uictx->hasKeyboardFocus(); })
           .def("hasMouseFocus", [](ui::context_ptr_t uictx, uiwidget_ptr_t w) -> bool { return uictx->hasMouseFocus(w.get()); })
-          .def("dumpWidgets", [](ui::context_ptr_t uictx,std::string label) { uictx->dumpWidgets(label); })
-          .def("isKeyDown", [](ui::context_ptr_t uictx,int keycode) -> bool { return uictx->isKeyDown(keycode); });
+          .def("dumpWidgets", [](ui::context_ptr_t uictx, std::string label) { uictx->dumpWidgets(label); })
+          .def("isKeyDown", [](ui::context_ptr_t uictx, int keycode) -> bool { return uictx->isKeyDown(keycode); });
   type_codec->registerStdCodec<ui::context_ptr_t>(uicontext_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto uievent_type = //
@@ -73,12 +79,12 @@ void pyinit_ui(py::module& module_lev2) {
                 return cloned_event;
               })
           .def_property_readonly(
-              "pos",                          //
+              "pos",                            //
               [](ui::event_ptr_t ev) -> fvec2 { //
                 return fvec2(ev->miX, ev->miY);
               })
           .def_property_readonly(
-              "unit_pos",                          //
+              "unit_pos",                       //
               [](ui::event_ptr_t ev) -> fvec2 { //
                 return fvec2(ev->mfUnitX, ev->mfUnitY);
               })
@@ -98,12 +104,12 @@ void pyinit_ui(py::module& module_lev2) {
                 return ev->miY;
               })
           .def_property_readonly(
-              "midiController",                      //
+              "midiController",               //
               [](ui::event_ptr_t ev) -> int { //
                 return ev->_midiController;
               })
           .def_property_readonly(
-              "midiValue",                      //
+              "midiValue",                    //
               [](ui::event_ptr_t ev) -> int { //
                 return ev->_midiValue;
               })
@@ -156,7 +162,12 @@ void pyinit_ui(py::module& module_lev2) {
   type_codec->registerStdCodec<uidrawevent_ptr_t>(drwev_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto evhandlerrestult_type = //
-      py::class_<ui::HandlerResult>(uimodule, "HandlerResult").def(py::init<>());
+      py::class_<ui::HandlerResult>(uimodule, "HandlerResult").def(py::init<>())
+      .def(
+          "setHandler",
+          [](ui::HandlerResult& hr, uiwidget_ptr_t handler) { //
+            hr.mHandler = handler.get();
+          });
   type_codec->registerStdCodec<ui::HandlerResult>(evhandlerrestult_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto widget_type = //
@@ -166,7 +177,7 @@ void pyinit_ui(py::module& module_lev2) {
               [](uiwidget_ptr_t widget) -> py::object { //
                 return py::none();
               },
-              [](uiwidget_ptr_t widget, py::object callback )  { //
+              [](uiwidget_ptr_t widget, py::object callback) { //
                 widget->_evhandler = [callback](ui::event_constptr_t ev) -> ui::HandlerResult {
                   ui::HandlerResult rval;
                   py::gil_scoped_acquire acquire_gil;
@@ -184,7 +195,7 @@ void pyinit_ui(py::module& module_lev2) {
               [](uiwidget_ptr_t widget) -> uint64_t { //
                 return widget->_userID;
               },
-              [](uiwidget_ptr_t widget, uint64_t uid )  { //
+              [](uiwidget_ptr_t widget, uint64_t uid) { //
                 widget->_userID = uid;
               })
           .def_property_readonly(
@@ -233,10 +244,9 @@ void pyinit_ui(py::module& module_lev2) {
   type_codec->registerStdCodec<uiwidget_ptr_t>(widget_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto group_type = //
-      py::class_<ui::Group, ui::Widget, uigroup_ptr_t>(uimodule, "Group")
-         .def("updateLayout",[](uigroup_ptr_t grp){
-            grp->DoLayout();
-         });
+      py::class_<ui::Group, ui::Widget, uigroup_ptr_t>(uimodule, "Group").def("updateLayout", [](uigroup_ptr_t grp) {
+        grp->DoLayout();
+      });
   type_codec->registerStdCodec<uigroup_ptr_t>(group_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto layoutgroup_type = //
@@ -259,10 +269,10 @@ void pyinit_ui(py::module& module_lev2) {
               [](uilayoutgroup_ptr_t lgrp) -> std::vector<uiguide_ptr_t> { //
                 std::multimap<float, uiguide_ptr_t> sorted;
                 for (auto g : lgrp->horizontalGuides()) {
-                  sorted.insert(std::make_pair(g->sortKey(),g));
+                  sorted.insert(std::make_pair(g->sortKey(), g));
                 }
                 std::vector<uiguide_ptr_t> rval;
-                for( auto item : sorted ){
+                for (auto item : sorted) {
                   rval.push_back(item.second);
                 }
                 return rval;
@@ -272,10 +282,10 @@ void pyinit_ui(py::module& module_lev2) {
               [](uilayoutgroup_ptr_t lgrp) -> std::vector<uiguide_ptr_t> { //
                 std::multimap<float, uiguide_ptr_t> sorted;
                 for (auto g : lgrp->verticalGuides()) {
-                  sorted.insert(std::make_pair(g->sortKey(),g));
+                  sorted.insert(std::make_pair(g->sortKey(), g));
                 }
                 std::vector<uiguide_ptr_t> rval;
-                for( auto item : sorted ){
+                for (auto item : sorted) {
                   rval.push_back(item.second);
                 }
                 return rval;
@@ -293,97 +303,109 @@ void pyinit_ui(py::module& module_lev2) {
           .def(
               "replaceChild",
               [](uilayoutgroup_ptr_t lgrp, uilayout_ptr_t ch, uilayoutitem_ptr_t rep) { //
-                lgrp->replaceChild(ch,rep);
+                lgrp->replaceChild(ch, rep);
               })
           .def(
               "makeEvTestBox",
-              [type_codec](uilayoutgroup_ptr_t lgrp, 
-                 py::kwargs kwargs) -> uilayoutitem_ptr_t { //
-                 uilayoutitem_ptr_t rval;
-                 if (kwargs) {
-                    auto var_args = type_codec->decode_kwargs(kwargs);
-                    int w  = var_args.typedValueForKey<int>("w").value();
-                    int h  = var_args.typedValueForKey<int>("h").value();
-                    int x  = var_args.typedValueForKey<int>("x").value();
-                    int y  = var_args.typedValueForKey<int>("y").value();
-                    fvec4 color_normal = var_args.typedValueForKey<fvec4>("color_normal").value();;
-                    fvec4 color_click = var_args.typedValueForKey<fvec4>("color_click").value();;
-                    fvec4 color_doubleclick = var_args.typedValueForKey<fvec4>("color_doubleclick").value();;
-                    fvec4 color_drag = var_args.typedValueForKey<fvec4>("color_drag").value();;
-                    std::string name = var_args.typedValueForKey<std::string>("name").value();;
-                    auto litem = lgrp->makeChild<ui::EvTestBox>(name, color_normal);
-                    rval = std::make_shared<ui::LayoutItemBase>();
-                    rval->_widget = litem._widget;
-                    rval->_layout = litem._layout;
-                 }
-                 return rval;
+              [type_codec](
+                  uilayoutgroup_ptr_t lgrp,
+                  py::kwargs kwargs) -> uilayoutitem_ptr_t { //
+                uilayoutitem_ptr_t rval;
+                if (kwargs) {
+                  auto var_args      = type_codec->decode_kwargs(kwargs);
+                  int w              = var_args.typedValueForKey<int>("w").value();
+                  int h              = var_args.typedValueForKey<int>("h").value();
+                  int x              = var_args.typedValueForKey<int>("x").value();
+                  int y              = var_args.typedValueForKey<int>("y").value();
+                  fvec4 color_normal = var_args.typedValueForKey<fvec4>("color_normal").value();
+                  ;
+                  fvec4 color_click = var_args.typedValueForKey<fvec4>("color_click").value();
+                  ;
+                  fvec4 color_doubleclick = var_args.typedValueForKey<fvec4>("color_doubleclick").value();
+                  ;
+                  fvec4 color_drag = var_args.typedValueForKey<fvec4>("color_drag").value();
+                  ;
+                  std::string name = var_args.typedValueForKey<std::string>("name").value();
+                  ;
+                  auto litem    = lgrp->makeChild<ui::EvTestBox>(name, color_normal);
+                  rval          = std::make_shared<ui::LayoutItemBase>();
+                  rval->_widget = litem._widget;
+                  rval->_layout = litem._layout;
+                }
+                return rval;
               })
-          .def("makeChild", [](uilayoutgroup_ptr_t lgrp, py::kwargs kwargs) -> uilayoutitem_ptr_t { //
-            uilayoutitem_ptr_t rval;
-            if (kwargs) {
-              int width  = 0;
-              int height = 0;
-              int margin = 0;
-              py::list args;
-              py::object uifactory;
-              int args_parsed = 0;
-              for (auto item : kwargs) {
-                auto key = py::cast<std::string>(item.first);
-                if (key == "uiclass") {
-                  auto uiclass_obj   = py::cast<py::object>(item.second);
-                  bool has_uifactory = py::hasattr(uiclass_obj, "uifactory");
-                  OrkAssert(has_uifactory);
-                  uifactory = uiclass_obj.attr("uifactory");
-                  args_parsed++;
-                } else if (key == "args") {
-                  args = py::cast<py::list>(item.second);
-                  args_parsed++;
+          .def(
+              "makeChild",
+              [](uilayoutgroup_ptr_t lgrp, py::kwargs kwargs) -> uilayoutitem_ptr_t { //
+                uilayoutitem_ptr_t rval;
+                if (kwargs) {
+                  int width  = 0;
+                  int height = 0;
+                  int margin = 0;
+                  py::list args;
+                  py::object uifactory;
+                  int args_parsed = 0;
+                  for (auto item : kwargs) {
+                    auto key = py::cast<std::string>(item.first);
+                    if (key == "uiclass") {
+                      auto uiclass_obj   = py::cast<py::object>(item.second);
+                      bool has_uifactory = py::hasattr(uiclass_obj, "uifactory");
+                      OrkAssert(has_uifactory);
+                      uifactory = uiclass_obj.attr("uifactory");
+                      args_parsed++;
+                    } else if (key == "args") {
+                      args = py::cast<py::list>(item.second);
+                      args_parsed++;
+                    }
+                  }
+                  OrkAssert(args_parsed == 2);
+                  rval = py::cast<uilayoutitem_ptr_t>(uifactory(lgrp, args));
                 }
-              }
-              OrkAssert(args_parsed == 2);
-              rval = py::cast<uilayoutitem_ptr_t>(uifactory(lgrp, args));
-            }
-            return rval;
-          })
-          .def("makeGrid", [](uilayoutgroup_ptr_t lgrp, py::kwargs kwargs) -> py::list { //
-            py::list rval;
-            if (kwargs) {
-              int width  = 0;
-              int height = 0;
-              int margin = 0;
-              py::list args;
-              py::object uigrid_factory;
-              int args_parsed = 0;
-              for (auto item : kwargs) {
-                auto key = py::cast<std::string>(item.first);
-                if (key == "width") {
-                  width = py::cast<int>(item.second);
-                  args_parsed++;
-                } else if (key == "height") {
-                  height = py::cast<int>(item.second);
-                  args_parsed++;
-                } else if (key == "margin") {
-                  margin = py::cast<int>(item.second);
-                  args_parsed++;
-                } else if (key == "uiclass") {
-                  auto uiclass_obj   = py::cast<py::object>(item.second);
-                  bool has_uifactory = py::hasattr(uiclass_obj, "uigridfactory");
-                  OrkAssert(has_uifactory);
-                  uigrid_factory = uiclass_obj.attr("uigridfactory");
-                  args_parsed++;
-                } else if (key == "args") {
-                  args = py::cast<py::list>(item.second);
-                  args_parsed++;
+                return rval;
+              })
+          .def(
+              "makeGrid",
+              [](uilayoutgroup_ptr_t lgrp, py::kwargs kwargs) -> py::list { //
+                py::list rval;
+                if (kwargs) {
+                  int width  = 0;
+                  int height = 0;
+                  int margin = 0;
+                  py::list args;
+                  py::object uigrid_factory;
+                  int args_parsed = 0;
+                  for (auto item : kwargs) {
+                    auto key = py::cast<std::string>(item.first);
+                    if (key == "width") {
+                      width = py::cast<int>(item.second);
+                      args_parsed++;
+                    } else if (key == "height") {
+                      height = py::cast<int>(item.second);
+                      args_parsed++;
+                    } else if (key == "margin") {
+                      margin = py::cast<int>(item.second);
+                      args_parsed++;
+                    } else if (key == "uiclass") {
+                      auto uiclass_obj   = py::cast<py::object>(item.second);
+                      bool has_uifactory = py::hasattr(uiclass_obj, "uigridfactory");
+                      OrkAssert(has_uifactory);
+                      uigrid_factory = uiclass_obj.attr("uigridfactory");
+                      args_parsed++;
+                    } else if (key == "args") {
+                      args = py::cast<py::list>(item.second);
+                      args_parsed++;
+                    }
+                  }
+                  OrkAssert(args_parsed == 5);
+                  rval = uigrid_factory(lgrp, width, height, margin, args);
                 }
-              }
-              OrkAssert(args_parsed == 5);
-              rval = uigrid_factory(lgrp, width, height, margin, args);
-            }
-            return rval;
-          })
-          .def_property("margin", [](uilayoutgroup_ptr_t lgrp) -> int { //
-            return lgrp->_margin;
-          },
+                return rval;
+              })
+          .def_property(
+              "margin",
+              [](uilayoutgroup_ptr_t lgrp) -> int { //
+                return lgrp->_margin;
+              },
               [](uilayoutgroup_ptr_t lgrp, int m) { //
                 lgrp->_margin = m;
               });
@@ -394,16 +416,17 @@ void pyinit_ui(py::module& module_lev2) {
           .def(
               "onPostRender",
               [](uisurface_ptr_t surface, py::object callback) { //
-                 OrkAssert(py::hasattr(callback, "__call__"));
-                  surface->_postRenderCallback = [callback](){
-                      py::gil_scoped_acquire acquire_gil;
-                      callback();
-                  };
-             })
+                OrkAssert(py::hasattr(callback, "__call__"));
+                surface->_postRenderCallback = [callback]() {
+                  py::gil_scoped_acquire acquire_gil;
+                  callback();
+                };
+              })
           //////////////////////////////////
-          .def("decoupleFromUiSize",
-                [](uisurface_ptr_t surface, int w, int h) { //
-                return surface->decoupleFromUiSize(w,h);
+          .def(
+              "decoupleFromUiSize",
+              [](uisurface_ptr_t surface, int w, int h) { //
+                return surface->decoupleFromUiSize(w, h);
               })
           //////////////////////////////////
           .def_property(
@@ -411,10 +434,9 @@ void pyinit_ui(py::module& module_lev2) {
               [](uisurface_ptr_t surface) -> bool { //
                 return surface->_aspect_from_rtgroup;
               },
-              [](uisurface_ptr_t surface, bool x)  { //
+              [](uisurface_ptr_t surface, bool x) { //
                 return surface->_aspect_from_rtgroup = x;
-              }
-              )
+              })
           .def_property_readonly(
               "rtgroup",
               [](uisurface_ptr_t surface) -> rtgroup_ptr_t { //
@@ -436,7 +458,20 @@ void pyinit_ui(py::module& module_lev2) {
   auto box_type = //
       py::class_<ui::Box, ui::Widget, uibox_ptr_t>(uimodule, "Box")
           .def_static(
-              "uigridfactory", [type_codec](uilayoutgroup_ptr_t lg, int grid_w, int grid_h, int m, py::list py_args) -> py::list { //
+              "uifactory",
+              [type_codec](uilayoutgroup_ptr_t lg, py::list py_args) -> uilayoutitem_ptr_t { //
+                auto decoded_args    = type_codec->decodeList(py_args);
+                auto name            = decoded_args[0].get<std::string>();
+                auto color           = decoded_args[1].get<fvec4>();
+                auto layoutitem      = lg->makeChild<ui::Box>(name, color);
+                auto shared_item     = std::make_shared<ui::LayoutItemBase>();
+                shared_item->_widget = layoutitem._widget;
+                shared_item->_layout = layoutitem._layout;
+                return shared_item;
+              })
+          .def_static(
+              "uigridfactory",
+              [type_codec](uilayoutgroup_ptr_t lg, int grid_w, int grid_h, int m, py::list py_args) -> py::list { //
                 auto decoded_args = type_codec->decodeList(py_args);
                 auto name         = decoded_args[0].get<std::string>();
                 auto color        = decoded_args[1].get<fvec4>();
@@ -455,7 +490,20 @@ void pyinit_ui(py::module& module_lev2) {
   auto evtestbox_type = //
       py::class_<ui::EvTestBox, ui::Widget, uievtestbox_ptr_t>(uimodule, "EvTestBox")
           .def_static(
-              "uigridfactory", [type_codec](uilayoutgroup_ptr_t lg, int grid_w, int grid_h, int m, py::list py_args) -> py::list { //
+              "uifactory",
+              [type_codec](uilayoutgroup_ptr_t lg, py::list py_args) -> uilayoutitem_ptr_t { //
+                auto decoded_args    = type_codec->decodeList(py_args);
+                auto name            = decoded_args[0].get<std::string>();
+                auto color           = decoded_args[1].get<fvec4>();
+                auto layoutitem      = lg->makeChild<ui::EvTestBox>(name, color);
+                auto shared_item     = std::make_shared<ui::LayoutItemBase>();
+                shared_item->_widget = layoutitem._widget;
+                shared_item->_layout = layoutitem._layout;
+                return shared_item;
+              })
+          .def_static(
+              "uigridfactory",
+              [type_codec](uilayoutgroup_ptr_t lg, int grid_w, int grid_h, int m, py::list py_args) -> py::list { //
                 auto decoded_args = type_codec->decodeList(py_args);
                 auto name         = decoded_args[0].get<std::string>();
                 auto color        = decoded_args[1].get<fvec4>();
@@ -474,6 +522,18 @@ void pyinit_ui(py::module& module_lev2) {
   auto lambdabox_type = //
       py::class_<ui::LambdaBox, ui::Widget, uilambdabox_ptr_t>(uimodule, "LambdaBox")
           .def_static(
+              "uifactory",
+              [type_codec](uilayoutgroup_ptr_t lg, py::list py_args) -> uilayoutitem_ptr_t { //
+                auto decoded_args    = type_codec->decodeList(py_args);
+                auto name            = decoded_args[0].get<std::string>();
+                auto color           = decoded_args[1].get<fvec4>();
+                auto layoutitem      = lg->makeChild<ui::LambdaBox>(name, color);
+                auto shared_item     = std::make_shared<ui::LayoutItemBase>();
+                shared_item->_widget = layoutitem._widget;
+                shared_item->_layout = layoutitem._layout;
+                return shared_item;
+              })
+          .def_static(
               "uigridfactory",
               [type_codec](uilayoutgroup_ptr_t lg, int grid_w, int grid_h, int m, py::list py_args) -> py::list { //
                 auto decoded_args = type_codec->decodeList(py_args);
@@ -482,8 +542,8 @@ void pyinit_ui(py::module& module_lev2) {
                 auto layoutitems  = lg->makeGridOfWidgets<ui::LambdaBox>(grid_w, grid_h, name, color);
                 py::list rval;
                 for (auto item : layoutitems) {
-                  auto shared_item     = std::make_shared<ui::LayoutItemBase>();
-                  //printf( "item._widget<%p>\n", (void*) item._widget.get() );
+                  auto shared_item = std::make_shared<ui::LayoutItemBase>();
+                  // printf( "item._widget<%p>\n", (void*) item._widget.get() );
                   shared_item->_widget = item._widget;
                   shared_item->_layout = item._layout;
                   rval.append(shared_item);
@@ -491,8 +551,8 @@ void pyinit_ui(py::module& module_lev2) {
                 return rval;
               })
           .def("onPressed", [](uilambdabox_ptr_t lbox, py::object on_pressed) { //
-            lbox->_onPressed = [on_pressed,lbox]() {
-              printf( "pressing lbox<%p>\n", (void*) lbox.get() );
+            lbox->_onPressed = [on_pressed, lbox]() {
+              printf("pressing lbox<%p>\n", (void*)lbox.get());
               py::gil_scoped_acquire acquire;
               on_pressed();
             };
@@ -502,6 +562,17 @@ void pyinit_ui(py::module& module_lev2) {
   auto sgviewport_type = //
       py::class_<ui::SceneGraphViewport, ui::Viewport, uisgviewport_ptr_t>(uimodule, "SceneGraphViewport")
           .def_static(
+              "uifactory",
+              [type_codec](uilayoutgroup_ptr_t lg, py::list py_args) -> uilayoutitem_ptr_t { //
+                auto decoded_args    = type_codec->decodeList(py_args);
+                auto name            = decoded_args[0].get<std::string>();
+                auto layoutitem      = lg->makeChild<ui::SceneGraphViewport>(name);
+                auto shared_item     = std::make_shared<ui::LayoutItemBase>();
+                shared_item->_widget = layoutitem._widget;
+                shared_item->_layout = layoutitem._layout;
+                return shared_item;
+              })
+          .def_static(
               "uigridfactory",
               [type_codec](uilayoutgroup_ptr_t lg, int grid_w, int grid_h, int m, py::list py_args) -> py::list { //
                 auto decoded_args = type_codec->decodeList(py_args);
@@ -509,8 +580,8 @@ void pyinit_ui(py::module& module_lev2) {
                 auto layoutitems  = lg->makeGridOfWidgets<ui::SceneGraphViewport>(grid_w, grid_h, name);
                 py::list rval;
                 for (auto item : layoutitems) {
-                  auto shared_item     = std::make_shared<ui::LayoutItemBase>();
-                  //printf( "item._widget<%p>\n", (void*) item._widget.get() );
+                  auto shared_item = std::make_shared<ui::LayoutItemBase>();
+                  // printf( "item._widget<%p>\n", (void*) item._widget.get() );
                   shared_item->_widget = item._widget;
                   shared_item->_layout = item._layout;
                   rval.append(shared_item);
@@ -529,18 +600,14 @@ void pyinit_ui(py::module& module_lev2) {
               [](uisgviewport_ptr_t sgview) -> lev2::scenegraph::scene_ptr_t { //
                 return sgview->_scenegraph;
               },
-              [](uisgviewport_ptr_t sgview, lev2::scenegraph::scene_ptr_t sg) 
-                { return sgview->_scenegraph = sg; 
-                })
+              [](uisgviewport_ptr_t sgview, lev2::scenegraph::scene_ptr_t sg) { return sgview->_scenegraph = sg; })
           //////////////////////////////////
           .def_property(
               "cameraName",
               [](uisgviewport_ptr_t sgview) -> std::string { //
                 return sgview->_cameraname;
               },
-              [](uisgviewport_ptr_t sgview, std::string camname) 
-                { return sgview->_cameraname = camname; 
-                });
+              [](uisgviewport_ptr_t sgview, std::string camname) { return sgview->_cameraname = camname; });
   type_codec->registerStdCodec<uisgviewport_ptr_t>(sgviewport_type);
   /////////////////////////////////////////////////////////////////////////////////
   pyinit_ui_layout(uimodule);
