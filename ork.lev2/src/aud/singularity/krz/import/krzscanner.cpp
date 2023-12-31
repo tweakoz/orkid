@@ -93,10 +93,10 @@ void filescanner::scanAndDump() {
   rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(strbuf);
   _joprog.Accept(writer);
 
-  std::ofstream of("krzdump.json");
-  of << "\n";
-  of << strbuf.GetString();
-  of << "\n";
+  //std::ofstream of("krzdump.json");
+  //of << "\n";
+  //of << strbuf.GetString();
+  //of << "\n";
 
   // printf( "JSONOUT\n\n%s\n\n", strbuf.GetString() );
 }

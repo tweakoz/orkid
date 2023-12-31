@@ -53,7 +53,6 @@ controllerdata_ptr_t ControlBlockData::controllerByName(std::string named){
       CD->_name = named;
       CD->_oncompute = [](CustomControllerInst* cci) {
         cci->_value.x = 1.0f;
-        OrkAssert(false);
       };
       rval = CD;
     }
@@ -62,7 +61,6 @@ controllerdata_ptr_t ControlBlockData::controllerByName(std::string named){
       CD->_name = named;
       CD->_oncompute = [](CustomControllerInst* cci) {
         cci->_value.x = -1.0f;
-        OrkAssert(false);
       };
       rval = CD;
     }
@@ -73,7 +71,6 @@ controllerdata_ptr_t ControlBlockData::controllerByName(std::string named){
         auto L = cci->_layer;
         float pwheel = 0.0f;//synth::instance()->_doModWheel;
         cci->_value.x = (cci->_value.x* 0.99) + (pwheel * 0.01);
-        OrkAssert(false);
       };
       rval = CD;
     }
@@ -84,7 +81,6 @@ controllerdata_ptr_t ControlBlockData::controllerByName(std::string named){
         auto L = cci->_layer;
         float mwheel = synth::instance()->_doModWheel;
         cci->_value.x = (cci->_value.x* 0.99) + (mwheel * 0.01);
-        OrkAssert(false);
       };
       rval = CD;
     }
@@ -95,7 +91,6 @@ controllerdata_ptr_t ControlBlockData::controllerByName(std::string named){
         auto L = cci->_layer;
         float mpress = synth::instance()->_doPressure;
         cci->_value.x = (cci->_value.x* 0.99) + (mpress * 0.01);
-        OrkAssert(false);
       };
       rval = CD;
     }
@@ -108,7 +103,6 @@ controllerdata_ptr_t ControlBlockData::controllerByName(std::string named){
         float s  = sinf(lt * pi2 * 8.0f);
         s        = (s >= 0.0f) ? 1.0f : 0.0f;
         cci->_value.x = (cci->_value.x* 0.99) + (s * 0.01);
-        OrkAssert(false);
       };
       rval = CD;
     }
@@ -118,7 +112,6 @@ controllerdata_ptr_t ControlBlockData::controllerByName(std::string named){
       CD->_oncompute = [](CustomControllerInst* cci) {
         auto L = cci->_layer;
         cci->_value.x = L->_curnote / float(127.0f);
-        OrkAssert(false);
       };
       rval = CD;
     }
@@ -128,7 +121,6 @@ controllerdata_ptr_t ControlBlockData::controllerByName(std::string named){
       CD->_oncompute = [](CustomControllerInst* cci) {
         auto L = cci->_layer;
         cci->_value.x = -1.0f+(L->_curnote / float(127.0f))*2.0f;
-        OrkAssert(false);
       };
       rval = CD;
     }
@@ -137,7 +129,6 @@ controllerdata_ptr_t ControlBlockData::controllerByName(std::string named){
       CD->_name = named;
       CD->_oncompute = [](CustomControllerInst* cci) {
         cci->_value.x = -1.0f + float(rand() & 0xffff) / 32768.0f;
-        OrkAssert(false);
       };
       rval = CD;
     }
@@ -148,7 +139,6 @@ controllerdata_ptr_t ControlBlockData::controllerByName(std::string named){
         auto L = cci->_layer;
         float atkvel = float(L->_curvel) / 127.0f;
         cci->_value.x = atkvel;
-        OrkAssert(false);
       };
       rval = CD;
     }
@@ -159,7 +149,6 @@ controllerdata_ptr_t ControlBlockData::controllerByName(std::string named){
         auto L = cci->_layer;
         float atkvel = float(127-L->_curvel) / 127.0f;
         cci->_value.x = atkvel;
-        OrkAssert(false);
       };
       rval = CD;
     }
@@ -170,7 +159,6 @@ controllerdata_ptr_t ControlBlockData::controllerByName(std::string named){
         auto L = cci->_layer;
         float atkvel = (float(L->_curvel) / 63.5f)-1.0f;
         cci->_value.x = atkvel;
-        OrkAssert(false);
       };
       rval = CD;
     }
@@ -181,7 +169,6 @@ controllerdata_ptr_t ControlBlockData::controllerByName(std::string named){
         auto L = cci->_layer;
         float atkvel = float(L->_curvel > 64);
         cci->_value.x = atkvel;
-        OrkAssert(false);
       };
       rval = CD;
     }
@@ -192,7 +179,6 @@ controllerdata_ptr_t ControlBlockData::controllerByName(std::string named){
         auto L = cci->_layer;
         float atkvel = float(L->_curvel > 96);
         cci->_value.x = atkvel;
-        OrkAssert(false);
       };
       rval = CD;
     }
@@ -201,7 +187,6 @@ controllerdata_ptr_t ControlBlockData::controllerByName(std::string named){
       CD->_name = named;
       CD->_oncompute = [](CustomControllerInst* cci) {
         cci->_value.x = 0.0f;
-        OrkAssert(false);
       };
       rval = CD;
     }
@@ -210,7 +195,6 @@ controllerdata_ptr_t ControlBlockData::controllerByName(std::string named){
       CD->_name = named;
       CD->_oncompute = [](CustomControllerInst* cci) {
         cci->_value.x = 0.0f;
-        OrkAssert(false);
       };
       rval = CD;
     }
@@ -221,7 +205,6 @@ controllerdata_ptr_t ControlBlockData::controllerByName(std::string named){
         auto L = cci->_layer;
         float atkstate = 0.0f;
         cci->_value.x = atkstate;
-        OrkAssert(false);
       };
       rval = CD;
     }
@@ -232,7 +215,6 @@ controllerdata_ptr_t ControlBlockData::controllerByName(std::string named){
         auto L = cci->_layer;
         float relstate = 0.0f;
         cci->_value.x = relstate;
-        OrkAssert(false);
       };
       rval = CD;
     }
@@ -242,7 +224,6 @@ controllerdata_ptr_t ControlBlockData::controllerByName(std::string named){
       CD->_oncompute = [](CustomControllerInst* cci) {
         float chanst = 0.0f;
         cci->_value.x = chanst;
-        OrkAssert(false);
       };
       rval = CD;
     }
@@ -252,7 +233,6 @@ controllerdata_ptr_t ControlBlockData::controllerByName(std::string named){
       CD->_oncompute = [](CustomControllerInst* cci) {
         float foot = 0.0f;
         cci->_value.x = foot;
-        OrkAssert(false);
       };
       rval = CD;
     }
@@ -262,7 +242,6 @@ controllerdata_ptr_t ControlBlockData::controllerByName(std::string named){
       CD->_oncompute = [](CustomControllerInst* cci) {
         float spbr = 1.0f; // ratio of sample playback rate to sample root ?
         cci->_value.x = spbr;
-        OrkAssert(false);
       };
       rval = CD;
     }
@@ -295,8 +274,11 @@ void ControlBlockInst::keyOn(const KeyOnInfo& KOI, controlblockdata_constptr_t C
   assert(CBD);
   auto l = KOI._layer;
 
-  for (int i = 0; i < kmaxctrlperblock; i++) {
-    auto data = CBD->_controller_datas[i];
+  size_t i = 0;
+  std::vector<ControllerInst*> instances;
+  for (auto item : CBD->_controllers_by_name) {
+    auto name = item.first;
+    auto data = item.second;
     if (data) {
       _cinst[i]                   = data->instantiate(l);
       _cinst[i]->_name            = data->_name;
@@ -307,7 +289,7 @@ void ControlBlockInst::keyOn(const KeyOnInfo& KOI, controlblockdata_constptr_t C
       _cinst[i]->_controller_data = data;
       l->_controld2iMap[data]     = _cinst[i];
       l->_controlMap[data->_name] = _cinst[i];
-      _cinst[i]->keyOn(KOI);
+      instances.push_back(_cinst[i]);
       if(l->_keymods){
         auto it = l->_keymods->_mods.find(data->_name);
         if(it!=l->_keymods->_mods.end()){
@@ -324,9 +306,13 @@ void ControlBlockInst::keyOn(const KeyOnInfo& KOI, controlblockdata_constptr_t C
           }
         }
       }
-
+      i++;
     }
   }
+  for( auto cinst : instances ){
+    cinst->keyOn(KOI);
+  }
+
 }
 void ControlBlockInst::keyOff() {
   for (int i = 0; i < kmaxctrlperblock; i++) {
