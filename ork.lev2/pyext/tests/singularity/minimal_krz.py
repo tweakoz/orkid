@@ -39,9 +39,10 @@ class KrzApp(SingulTestApp):
     LD = self.prog.layer(1)
     ST = LD.stage("DSP")
     ST.dump()
+    #ST.dspblock(0).paramByName("pitch").debug = True
     #ST.dspblock(4).paramByName("cutoff").debug = True
-    ST.dspblock(2).bypass = True
-    #ST.dspblock(3).bypass = True
+    #ST.dspblock(2).bypass = True
+    ST.dspblock(3).bypass = True
     ST.dspblock(4).bypass = True
     #print("dspblk<%s>" % dspblk.name)
 

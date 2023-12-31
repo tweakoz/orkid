@@ -44,7 +44,7 @@ kmregion* KeyMap::getRegion(int note, int vel) const {
 SAMPLER_DATA::SAMPLER_DATA(std::string name)
     : DspBlockData(name) {
   _blocktype = "SAMPLER";
-  addParam("pch")->usePitchEvaluator();
+  //addParam("pch")->usePitchEvaluator();
 }
 
 dspblk_ptr_t SAMPLER_DATA::createInstance() const { // override

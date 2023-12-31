@@ -168,7 +168,7 @@ void DspParamData::usePitchEvaluator() {
                      + vt;
      if(_debug){
        float ratio = cents_to_linear_freq_ratio(totcents);
-       printf( "pitcheval<%s> totcents<%f> rat<%f>\n", _name.c_str(), totcents, ratio);
+       printf( "pitcheval<%s> ko<%g> kt<%g> vt<%g> totcents<%f> rat<%f>\n", _name.c_str(), param_inst._keyOff, kt, vt, totcents, ratio);
      }
     
     if(param_inst._update_count==0){
@@ -265,10 +265,11 @@ void DspParam::keyOn(int ikey, int ivel) {
 
   _update_count = 0;
   _keyRaw  = ikey;
-  _keyOff  = float(60 - _data->_keystartNote);
+  _keyOff  = float(ikey - _data->_keystartNote);
   _unitVel = float(ivel) / 127.0f;
 
-   logchan_modulation->log( "DspParam::keyOn: ikey<%d> ivel<%d> keystart<%d> _keyOff<%g>", ikey, ivel, _data->_keystartNote, _keyOff );
+  float kt = _data->_keyTrack;
+   printf( "DspParam<%s> keyOn: ikey<%d> ivel<%d> keytrack<%g>  keystart<%d> _keyOff<%g>\n", _data->_name.c_str(), ikey, ivel, kt, _data->_keystartNote, _keyOff );
 
   if (false == _data->_keystartBipolar) {
     if (_keyOff < 0)
