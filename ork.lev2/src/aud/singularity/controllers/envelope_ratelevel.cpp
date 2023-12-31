@@ -71,6 +71,10 @@ RateLevelEnvInst::RateLevelEnvInst(const RateLevelEnvData* data, layer_ptr_t l)
     , _ampenv(data->_ampenv)
     , _envType(data->_envType) {
     _name = data->_name;
+  printf("new RateLevelEnvInst<%s> ampenv<%d>\n",  _name.c_str(), int(_ampenv) );
+  for( auto seg : data->_segments ){
+    printf( "  seg t<%g> l<%g> shp<%g>\n", seg._time, seg._level, seg._shape );
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -127,6 +131,7 @@ float RateLevelEnvInst::shapedvalue() const {
 ///////////////////////////////////////////////////////////////////////////////
 void RateLevelEnvInst::setState(int istate){
   _prevstate = _state;
+  printf("env<%p:%s> state<%d->%d>\n", this, _name.c_str(), _prevstate, _state );
   if(_keymoddata and _keymoddata->_subscriber){
         _keymoddata->_evstrings.atomicOp([this,istate](std::vector<std::string>& unlocked){
           auto s = FormatString("state<%d->%d> _value<%g> seg<%d>", _prevstate,  _state, _value.x, _segmentIndex );

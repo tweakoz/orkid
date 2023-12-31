@@ -30,21 +30,27 @@ class KrzApp(SingulTestApp):
     timebase = self.time
     modrate = math.sin(self.time)*5
     mods = singularity.KeyOnModifiers()
-    mods.layerMask = 0x2
+    mods.layerMask = 0x1
+    #def sub(name,value):
+    #  print("sub<%s> value<%s>" % (name,value))
+    #mods.controllers.subscribers = {
+    #"AMPENV": sub,
+    #}
     return mods
 
   ##############################################
 
   def onNote(self,voice):
-    LD = self.prog.layer(1)
-    ST = LD.stage("DSP")
-    ST.dump()
+    #LD = self.prog.layer(1)
+    #ST = LD.stage("DSP")
+    #ST.dump()
     #ST.dspblock(0).paramByName("pitch").debug = True
     #ST.dspblock(4).paramByName("cutoff").debug = True
     #ST.dspblock(2).bypass = True
-    ST.dspblock(3).bypass = True
-    ST.dspblock(4).bypass = True
+    #ST.dspblock(3).bypass = True
+    #ST.dspblock(4).bypass = True
     #print("dspblk<%s>" % dspblk.name)
+    pass
 
   ##############################################
 
@@ -116,14 +122,11 @@ class KrzApp(SingulTestApp):
       "Touch_Clav",
       "Timpani_Chimes",
       "Sweetar"
-
-
-
-
     ]
     #self.sorted_progs = ok_list
     print("krzprogs<%s>" % self.krzprogs)    
-    self.prog_index = find_index(self.sorted_progs, "Doomsday")
+    #self.prog_index = find_index(self.sorted_progs, "Doomsday")
+    self.prog_index = find_index(self.sorted_progs, "Classical_Guitar")
     self.synth.masterGain = singularity.decibelsToLinear(-24.0)
 
 ###############################################################################

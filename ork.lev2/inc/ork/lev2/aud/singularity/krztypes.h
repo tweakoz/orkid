@@ -30,8 +30,8 @@ using namespace ork::audiomath;
 static constexpr int kmaxenvperlayer       = 8;
 static constexpr int kmaxdspblocksperstage = 16; // vertical dimension of layer's dsp grid
 static constexpr int kmaxdspstagesperlayer = 16; // horizontal dimension of layer's dsp grid
-static constexpr int kmaxctrlperblock      = 16;
-static constexpr int kmaxparmperblock      = 16;
+static constexpr int kmaxctrlperblock      = 32;
+static constexpr int kmaxparmperblock      = 32;
 static constexpr int kmaxlayerspersynth    = 512;
 ///////////////////////////////////////////////////////////////////////////////
 static constexpr double pi      = 3.141592654;

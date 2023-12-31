@@ -28,10 +28,12 @@ LfoData::LfoData()
     , _maxRate(1.0f)
     , _shape("Sine") {
 }
+LfoData::~LfoData(){
+  printf("XX\n");
+}
 
 ControllerInst* LfoData::instantiate(layer_ptr_t l) const {
-  auto r = new LfoInst(this, l);
-  return r;
+  return new LfoInst(this, l);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -48,6 +50,9 @@ LfoInst::LfoInst(const LfoData* data, layer_ptr_t l)
   _mapper = [](float inp) -> float { return 0.0f; };
 }
 
+LfoInst::~LfoInst(){
+  printf("XX\n");
+}
 ///////////////////////////////////////////////////////////////////////////////
 
 void LfoInst::reset() {

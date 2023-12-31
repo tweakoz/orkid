@@ -38,7 +38,9 @@ PITCH::PITCH(const DspBlockData* dbd)
 
 void PITCH::compute(DspBuffer& dspbuf) // final
 {
-  float centoff = _param[0].eval(); //,0.01f,100.0f);
+  float value = _param[0].eval();
+  _layer->_curPitchOffsetInCents = value;
+  
 }
 void PITCH::doKeyOn(const KeyOnInfo& koi) // final
 {

@@ -157,18 +157,30 @@ void DspParamData::usePitchEvaluator() {
 
   _mods->_evaluator = [this](DspParam& param_inst) -> float {
 
-    float kt       = _keyTrack * param_inst._keyOff;
+    float KEY = param_inst._keyRaw+_coarse;
+
+    float kr       = KEY*_keyTrack+_fine;
+    //float kt       = _keyTrack * param_inst._keyOff;
     float vt       = _velTrack * param_inst._unitVel;
-    float totcents = param_inst._keyRaw*100 // 60(midi-middle-C) * 100 cents
-                     + (_coarse)   //
-                     + _fine       //
-                     + param_inst._C1()   //
-                     + param_inst._C2()   //
-                     + kt          //
+    float c1      = param_inst._C1();
+    float c2      = param_inst._C2();
+    float totcents = kr // 
+                     + c1   //
+                     + c2   //
                      + vt;
-     if(_debug){
+     if(_debug and param_inst._update_count==0){
        float ratio = cents_to_linear_freq_ratio(totcents);
-       printf( "pitcheval<%s> ko<%g> kt<%g> vt<%g> totcents<%f> rat<%f>\n", _name.c_str(), param_inst._keyOff, kt, vt, totcents, ratio);
+       printf( "pitcheval<%s> kr<%g> course<%f> fine<%g> c1<%g> c2<%g> ko<%g> vt<%g> totcents<%f> rat<%f>\n", //
+               _name.c_str(), // 
+              kr, //  
+               _coarse, //
+               _fine, //
+                c1, //
+                c2, //
+               param_inst._keyOff, // 
+               vt, // 
+               totcents, // 
+               ratio);
      }
     
     if(param_inst._update_count==0){
@@ -179,7 +191,7 @@ void DspParamData::usePitchEvaluator() {
       logchan_modulation->log( "c1<%f>", param_inst._C1());
       logchan_modulation->log( "c2<%f>", param_inst._C2());
       logchan_modulation->log( "vt<%f>", vt);
-      logchan_modulation->log( "kt<%f>", kt);
+      //logchan_modulation->log( "kt<%f>", kt);
       logchan_modulation->log( "totcents<%f>", totcents);
     }
 

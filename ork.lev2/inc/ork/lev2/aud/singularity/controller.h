@@ -67,7 +67,7 @@ struct ControllerInst {
   fvec4 _value;
   layer_ptr_t _layer = nullptr;
   std::string _name;
-  controllerdata_constptr_t _controller_data;
+  //controllerdata_constptr_t _controller_data;
   KeyOnModifiers::data_ptr_t _keymoddata;
 };
 
@@ -88,6 +88,7 @@ struct LfoData : public ControllerData {
   DeclareConcreteX(LfoData, ControllerData);
 
   LfoData();
+  ~LfoData();
   ControllerInst* instantiate(layer_ptr_t layer) const final;
 
   float _initialPhase;
@@ -101,6 +102,7 @@ struct LfoData : public ControllerData {
 
 struct LfoInst : public ControllerInst {
   LfoInst(const LfoData* data, layer_ptr_t layer);
+  ~LfoInst();
 
   void reset();
   void keyOn(const KeyOnInfo& KOI) final;
