@@ -328,9 +328,7 @@ void pyinit_ui(py::module& module_lev2) {
                   std::string name = var_args.typedValueForKey<std::string>("name").value();
                   ;
                   auto litem    = lgrp->makeChild<ui::EvTestBox>(name, color_normal);
-                  rval          = std::make_shared<ui::LayoutItemBase>();
-                  rval->_widget = litem._widget;
-                  rval->_layout = litem._layout;
+                  rval = litem.as_shared();
                 }
                 return rval;
               })
@@ -464,10 +462,7 @@ void pyinit_ui(py::module& module_lev2) {
                 auto name            = decoded_args[0].get<std::string>();
                 auto color           = decoded_args[1].get<fvec4>();
                 auto layoutitem      = lg->makeChild<ui::Box>(name, color);
-                auto shared_item     = std::make_shared<ui::LayoutItemBase>();
-                shared_item->_widget = layoutitem._widget;
-                shared_item->_layout = layoutitem._layout;
-                return shared_item;
+                return layoutitem.as_shared();
               })
           .def_static(
               "uigridfactory",
@@ -478,10 +473,7 @@ void pyinit_ui(py::module& module_lev2) {
                 auto layoutitems  = lg->makeGridOfWidgets<ui::Box>(grid_w, grid_h, name, color);
                 py::list rval;
                 for (auto item : layoutitems) {
-                  auto shared_item     = std::make_shared<ui::LayoutItemBase>();
-                  shared_item->_widget = item._widget;
-                  shared_item->_layout = item._layout;
-                  rval.append(shared_item);
+                  rval.append(item.as_shared());
                 }
                 return rval;
               });
@@ -496,10 +488,7 @@ void pyinit_ui(py::module& module_lev2) {
                 auto name            = decoded_args[0].get<std::string>();
                 auto color           = decoded_args[1].get<fvec4>();
                 auto layoutitem      = lg->makeChild<ui::EvTestBox>(name, color);
-                auto shared_item     = std::make_shared<ui::LayoutItemBase>();
-                shared_item->_widget = layoutitem._widget;
-                shared_item->_layout = layoutitem._layout;
-                return shared_item;
+                return layoutitem.as_shared();
               })
           .def_static(
               "uigridfactory",
@@ -510,10 +499,7 @@ void pyinit_ui(py::module& module_lev2) {
                 auto layoutitems  = lg->makeGridOfWidgets<ui::EvTestBox>(grid_w, grid_h, name, color);
                 py::list rval;
                 for (auto item : layoutitems) {
-                  auto shared_item     = std::make_shared<ui::LayoutItemBase>();
-                  shared_item->_widget = item._widget;
-                  shared_item->_layout = item._layout;
-                  rval.append(shared_item);
+                  rval.append(item.as_shared());
                 }
                 return rval;
               });
@@ -528,10 +514,7 @@ void pyinit_ui(py::module& module_lev2) {
                 auto name            = decoded_args[0].get<std::string>();
                 auto color           = decoded_args[1].get<fvec4>();
                 auto layoutitem      = lg->makeChild<ui::LambdaBox>(name, color);
-                auto shared_item     = std::make_shared<ui::LayoutItemBase>();
-                shared_item->_widget = layoutitem._widget;
-                shared_item->_layout = layoutitem._layout;
-                return shared_item;
+                return layoutitem.as_shared();
               })
           .def_static(
               "uigridfactory",
@@ -542,11 +525,7 @@ void pyinit_ui(py::module& module_lev2) {
                 auto layoutitems  = lg->makeGridOfWidgets<ui::LambdaBox>(grid_w, grid_h, name, color);
                 py::list rval;
                 for (auto item : layoutitems) {
-                  auto shared_item = std::make_shared<ui::LayoutItemBase>();
-                  // printf( "item._widget<%p>\n", (void*) item._widget.get() );
-                  shared_item->_widget = item._widget;
-                  shared_item->_layout = item._layout;
-                  rval.append(shared_item);
+                  rval.append(item.as_shared());
                 }
                 return rval;
               })
@@ -567,10 +546,7 @@ void pyinit_ui(py::module& module_lev2) {
                 auto decoded_args    = type_codec->decodeList(py_args);
                 auto name            = decoded_args[0].get<std::string>();
                 auto layoutitem      = lg->makeChild<ui::SceneGraphViewport>(name);
-                auto shared_item     = std::make_shared<ui::LayoutItemBase>();
-                shared_item->_widget = layoutitem._widget;
-                shared_item->_layout = layoutitem._layout;
-                return shared_item;
+                return layoutitem.as_shared();
               })
           .def_static(
               "uigridfactory",
@@ -580,11 +556,7 @@ void pyinit_ui(py::module& module_lev2) {
                 auto layoutitems  = lg->makeGridOfWidgets<ui::SceneGraphViewport>(grid_w, grid_h, name);
                 py::list rval;
                 for (auto item : layoutitems) {
-                  auto shared_item = std::make_shared<ui::LayoutItemBase>();
-                  // printf( "item._widget<%p>\n", (void*) item._widget.get() );
-                  shared_item->_widget = item._widget;
-                  shared_item->_layout = item._layout;
-                  rval.append(shared_item);
+                  rval.append(item.as_shared());
                 }
                 return rval;
               })

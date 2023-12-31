@@ -146,6 +146,7 @@ struct SignalScope {
     return _vars.typedValueForKey<T>(key).value();
   }
   ///////////////////////////////////////////////////////////////////////////
+  ui::layoutitem_ptr_t _layoutitem;
   hudpanel_ptr_t _hudpanel;
   scopesink_ptr_t _sink;
   varmap::VarMap _vars;

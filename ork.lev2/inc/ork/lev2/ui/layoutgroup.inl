@@ -38,6 +38,12 @@ template <typename T> struct LayoutItem : public LayoutItemBase {
   std::shared_ptr<T> typedWidget() {
     return dynamic_pointer_cast<T>(_widget);
   }
+  std::shared_ptr<LayoutItemBase> as_shared() const {
+    auto shlitem = std::make_shared<ui::LayoutItemBase>();
+    shlitem->_widget = _widget;
+    shlitem->_layout = _layout;
+    return shlitem;
+  }
 };
 
 using layoutitem_ptr_t = std::shared_ptr<LayoutItemBase>;
