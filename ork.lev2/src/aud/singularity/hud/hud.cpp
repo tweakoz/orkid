@@ -57,7 +57,7 @@ void Rect::PopOrtho(Context* context) const {
 }
 ///////////////////////////////////////////////////////////////////////////////
 HudLayoutGroup::HudLayoutGroup() //
-    : ui::LayoutGroup("HUD", 0, 0, 1280, 720) {
+    : ui::LayoutGroup("HUD", 0, 0, 1280, 720) { // //here (name==1)
 
   /////////////////////////////////
   // route musical kb events to here
@@ -110,6 +110,8 @@ HudLayoutGroup::HudLayoutGroup() //
   };
 
   _evhandler = [this](ui::event_constptr_t ev) -> ui::HandlerResult { //
+    ui::HandlerResult result;
+
     bool was_handled = false;
     //printf("hudlg evh\n");
     switch (ev->_eventcode) {
@@ -220,8 +222,22 @@ HudLayoutGroup::HudLayoutGroup() //
         }
         break;
       } // case ui::EventCode::KEYUP: {
+      /////////////////////////////
+      // handle layout guide drag events
+      /////////////////////////////
+      case ui::EventCode::PUSH: 
+      case ui::EventCode::RELEASE: 
+      case ui::EventCode::BEGIN_DRAG: 
+      case ui::EventCode::END_DRAG: 
+      case ui::EventCode::DRAG: {
+        result = LayoutGroup::OnUiEvent(ev);
+        was_handled = (result.mHandler!=nullptr);
+        break;
+      }
     }   // switch (ev->_eventcode) {
-    return ui::HandlerResult(this);
+    if(was_handled)
+      result.setHandled(this);
+    return result;
   };
 
   /////////////////////////////////

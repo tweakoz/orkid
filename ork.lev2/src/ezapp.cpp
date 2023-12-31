@@ -239,7 +239,7 @@ OrkEzApp::OrkEzApp(appinitdata_ptr_t initdata)
     _eztopwidget->_uicontext           = _uicontext.get();
     _mainWindow->_appwin->_rootWidget = _eztopwidget;
     _eztopwidget->_topLayoutGroup =
-        _uicontext->makeTop<ui::LayoutGroup>("top-layoutgroup", 0, 0, _initdata->_width, _initdata->_height);
+        _uicontext->makeTop<ui::LayoutGroup>("ezapp-top-layoutgroup", 0, 0, _initdata->_width, _initdata->_height);
     _topLayoutGroup = _eztopwidget->_topLayoutGroup;
     /////////////////////////////////////////////
     _updq     = ork::opq::updateSerialQueue();

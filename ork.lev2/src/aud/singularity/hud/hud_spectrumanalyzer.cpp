@@ -103,7 +103,7 @@ signalscope_ptr_t create_spectrumanalyzer(
   };
   instrument->_sink->_onkeyoff = [analyzersurf](const ScopeSource* src) { //
   };
-  // vp->addChild(hudpanel->_uipanel);
+  vp->addChild(hudpanel->_uipanel);
   vp->_hudpanels.insert(hudpanel);
   return instrument;
 }
@@ -122,7 +122,7 @@ void SpectraSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
     return;
   const float* _samples = scopebuf->_samples;
 
-  // printf("SpectraSurf::DoRePaintSurface\n");
+  //printf("SpectraSurf::DoRePaintSurface w<%d> h<%d>\n", width(), height());
 
   hudlines_t lines;
 

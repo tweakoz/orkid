@@ -15,6 +15,7 @@ Layout::Layout(Widget* w)
     : _widget(w) {
   static int _names = 0;
   _name             = _names++;
+  //OrkAssert(_name!=1);
 }
 /////////////////////////////////////////////////////////////////////////
 Layout::~Layout() {
@@ -93,6 +94,7 @@ guide_ptr_t Layout::top() {
   if (_top == nullptr) {
     _top = std::make_shared<Guide>(this, Edge::Top);
     _top->setMargin(_margin);
+    _top->_locked = _locked;
   }
   return _top;
 }
@@ -101,6 +103,7 @@ guide_ptr_t Layout::left() {
   if (_left == nullptr) {
     _left = std::make_shared<Guide>(this, Edge::Left);
     _left->setMargin(_margin);
+    _left->_locked = _locked;
   }
   return _left;
 }
@@ -109,6 +112,7 @@ guide_ptr_t Layout::bottom() {
   if (_bottom == nullptr) {
     _bottom = std::make_shared<Guide>(this, Edge::Bottom);
     _bottom->setMargin(_margin);
+    _bottom->_locked = _locked;
   }
   return _bottom;
 }
@@ -117,6 +121,7 @@ guide_ptr_t Layout::right() {
   if (_right == nullptr) {
     _right = std::make_shared<Guide>(this, Edge::Right);
     _right->setMargin(_margin);
+    _right->_locked = _locked;
   }
   return _right;
 }
@@ -143,7 +148,7 @@ void Layout::updateAll() {
 }
 /////////////////////////////////////////////////////////////////////////
 void Layout::_doUpdateAll(visit_set& vset) {
-  bool log = true;
+  bool log = false;
   if(log)printf( "  layout<%p>::_doUpdateAll  ", this );
   if (_top){
     if(log)printf( "  _top<%p>  ", _top.get() );
@@ -268,6 +273,7 @@ guide_ptr_t Layout::proportionalHorizontalGuide(float proportion) {
   auto guide         = std::make_shared<Guide>(this, Edge::CustomHorizontal);
   guide->_proportion = proportion;
   guide->_type = GuideType::PROPORTIONAL;
+  guide->_locked = _locked;
   _customguides.insert(guide);
   return guide;
 }
@@ -276,6 +282,7 @@ guide_ptr_t Layout::proportionalVerticalGuide(float proportion) {
   auto guide         = std::make_shared<Guide>(this, Edge::CustomVertical);
   guide->_proportion = proportion;
   guide->_type = GuideType::PROPORTIONAL;
+  guide->_locked = _locked;
   _customguides.insert(guide);
   return guide;
 }
@@ -284,6 +291,7 @@ guide_ptr_t Layout::fixedHorizontalGuide(int fixed) {
   auto guide    = std::make_shared<Guide>(this, Edge::CustomHorizontal);
   guide->_fixed = fixed;
   guide->_type = GuideType::FIXED;
+  guide->_locked = _locked;
   _customguides.insert(guide);
   return guide;
 }
@@ -292,6 +300,7 @@ guide_ptr_t Layout::fixedVerticalGuide(int fixed) {
   auto guide    = std::make_shared<Guide>(this, Edge::CustomVertical);
   guide->_fixed = fixed;
   guide->_type = GuideType::FIXED;
+  guide->_locked = _locked;
   _customguides.insert(guide);
   return guide;
 }
@@ -311,26 +320,31 @@ bool Layout::isAnchorAllowed(Layout* layout) const {
          layout->_widget->parent() == _widget->parent();
 }
 /////////////////////////////////////////////////////////////////////////
-void Layout::dump() {
-  printf("//////////////////////////\n");
-  printf("// Layout<%d:%p> margin<%d> widget<%p:%s>\n", _name, this, _margin, _widget, _widget->_name.c_str());
+void Layout::dump(int level) {
+  if(level==0){
+    printf("//////////////////////////\n");
+  }
+  auto indent = std::string(level*2,' ');
+  printf("%sLayout<%d:%p> margin<%d> widget<%p:%s>\n",indent.c_str(),  _name, this, _margin, _widget, _widget->_name.c_str());
   if (_top)
-    _top->dump();
+    _top->dump(level+1);
   if (_left)
-    _left->dump();
+    _left->dump(level+1);
   if (_bottom)
-    _bottom->dump();
+    _bottom->dump(level+1);
   if (_right)
-    _right->dump();
+    _right->dump(level+1);
   if (_centerH)
-    _centerH->dump();
+    _centerH->dump(level+1);
   if (_centerV)
-    _centerV->dump();
+    _centerV->dump(level+1);
   for (auto g : _customguides)
-    g->dump();
+    g->dump(level+1);
   for (auto l : _childlayouts)
-    l->dump();
-  printf("//////////////////////////\n");
+    l->dump(level+1);
+  if(level==0){
+    printf("//////////////////////////\n");
+  }
 }
 /////////////////////////////////////////////////////////////////////////
 } // namespace ork::ui::anchor

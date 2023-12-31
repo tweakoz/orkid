@@ -19,7 +19,7 @@
 #include <ork/util/logger.h>
 
 namespace ork::lev2 {
-static logchannel_ptr_t logchan_rtgroup = logger()->createChannel("GLRTG", fvec3(0.8, 0.2, 0.5), true);
+static logchannel_ptr_t logchan_rtgroup = logger()->createChannel("GLRTG", fvec3(0.8, 0.2, 0.5), false);
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -54,6 +54,11 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* rtgroup) {
 
   int iw = rtgroup->width();
   int ih = rtgroup->height();
+
+  if(iw<1)
+    iw = 1;
+  if(ih<1)
+    ih = 1;
 
   //iw = (iw < 16) ? 16 : iw;
   //ih = (ih < 16) ? 16 : ih;

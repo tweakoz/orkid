@@ -97,10 +97,16 @@ singularitytestapp_ptr_t createEZapp(appinitdata_ptr_t init_data) {
   appwin->_rootWidget->_uicontext = uicontext.get();
   //////////////////////////////////////////////////////////
   // a wee bit convoluted, TODO: fixme
-  ezapp->_eztopwidget->enableUiDraw();
-  auto hudvplayout       = ezapp->_topLayoutGroup->makeChild<HudLayoutGroup>();
+  auto hudvplayout       = ezapp->_topLayoutGroup->makeChild<HudLayoutGroup>(); //here (name==1)
   ezapp->_hudvp = hudvplayout.typedWidget();
   synth::instance()->_hudvp = hudvplayout.typedWidget();
+
+  ezapp->_topLayoutGroup->_layout->dump();
+
+  ezapp->_topLayoutGroup->dumpTopology();
+  ezapp->_eztopwidget->enableUiDraw();
+
+  //OrkAssert(false);
 
   //////////////////////////////////////////////////////////
   // create references to various items scoped by ezapp
@@ -186,6 +192,7 @@ singularitytestapp_ptr_t createEZapp(appinitdata_ptr_t init_data) {
                                       // printf("GOTRESIZE<%d %d>\n", w, h);
                                       // ezapp->_eztopwidget->_topLayoutGroup->SetSize(w, h);
     ezapp->_eztopwidget->SetSize(w, h);
+    ezapp->_hudvp->SetSize(w,h);
     ezapp->_eztopwidget->_topLayoutGroup->SetSize(w, h);
   });
   //////////////////////////////////////////////////////////

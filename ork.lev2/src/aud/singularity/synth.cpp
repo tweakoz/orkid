@@ -773,7 +773,7 @@ void programInst::keyOn(int note, int velocity, prgdata_constptr_t pd, keyonmod_
   if(kmod){
     layer_mask = kmod->_layermask;
   }
-  printf( "layer_mask<0x%08x>\n", layer_mask);
+  //printf( "layer_mask<0x%08x>\n", layer_mask);
   size_t ilayer = 0;
   size_t num_layerdatas = pd->_layerdatas.size();
   for (size_t ilayer=0; ilayer<num_layerdatas; ilayer++) {

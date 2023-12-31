@@ -544,7 +544,7 @@ void HighFreqStimulator::compute(DspBuffer& dspbuf) // final
   float amp         = _param[2].eval();
   float drvg        = decibel_to_linear_amp_ratio(drv);
   float ling        = decibel_to_linear_amp_ratio(amp);
-  printf("pad<%f> fc<%f> drv<%f> amp<%f>\n", pad, fc, drv, amp);
+  //printf("pad<%f> fc<%f> drv<%f> amp<%f>\n", pad, fc, drv, amp);
   if (not _dbd->_bypass)
     for (int i = 0; i < inumframes; i++) {
       float input = ibuf[i] * pad;

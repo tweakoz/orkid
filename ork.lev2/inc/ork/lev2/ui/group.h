@@ -26,6 +26,8 @@ struct Group : public Widget {
   void removeChild(Widget* w);
   void visitHeirarchy(visit_fn_t vfn);
   /////////////////////////////
+  void dumpTopology(int depth = 0);
+  /////////////////////////////
   void _doOnResized() override;
   void DoLayout() override;
   void _doOnPreDestroy() override;

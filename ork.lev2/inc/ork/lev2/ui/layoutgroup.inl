@@ -47,14 +47,12 @@ struct LayoutGroup : public Group {
   LayoutGroup(const std::string& name, int x = 0, int y = 0, int w = 0, int h = 0);
   ~LayoutGroup();
 
-  anchor::layout_ptr_t _layout;
-
   //////////////////////////////////////
   template <typename T, typename... A> //
   LayoutItem<T> makeChild(A&&... args) {
     LayoutItem<T> rval;
     rval._widget = std::make_shared<T>(std::forward<A>(args)...);
-    rval._layout = _layout->childLayout(rval._widget.get());
+    rval._layout = _layout->childLayout(rval._widget.get()); // HERE (name==2)
     addChild(rval._widget);
     return rval;
   }
@@ -99,42 +97,17 @@ struct LayoutGroup : public Group {
     return layout_items;
   }
   //////////////////////////////////////
-  inline anchor::layout_ptr_t layoutAndAddChild(widget_ptr_t w) {
-    auto layout = _layout->childLayout(w.get());
-    addChild(w);
-    return layout;
-  }
-  //////////////////////////////////////
-  inline void removeChild(anchor::layout_ptr_t ch) {
-    _layout->removeChild(ch);
-    Group::removeChild(ch->_widget);
-  }
-  //////////////////////////////////////
-  inline void replaceChild(anchor::layout_ptr_t ch, 
-                           layoutitem_ptr_t rep) {
-    _layout->removeChild(rep->_layout);
-    Group::removeChild(ch->_widget);
-    Group::addChild(rep->_widget);
-    ch->_widget = rep->_widget.get();
-    rep->_layout = ch;
-  }
-  //////////////////////////////////////
-  inline void setClearColor(fvec4 clr) {
-    _clearColor = clr;
-  }
-  //////////////////////////////////////
-  inline fvec4 clearColor() const {
-    return _clearColor;
-  }
-  //////////////////////////////////////
-  inline const std::set<uiguide_ptr_t>& horizontalGuides() const {
-    return _hguides;
-  }
-  //////////////////////////////////////
-  inline const  std::set<uiguide_ptr_t>& verticalGuides() const {
-    return _vguides;
-  }
-  //////////////////////////////////////
+  anchor::layout_ptr_t layoutAndAddChild(widget_ptr_t w);
+  void removeChild(anchor::layout_ptr_t ch);
+  void replaceChild(anchor::layout_ptr_t ch, 
+                           layoutitem_ptr_t rep);
+  void setClearColor(fvec4 clr);
+  fvec4 clearColor() const;
+  const std::set<uiguide_ptr_t>& horizontalGuides() const;
+  const  std::set<uiguide_ptr_t>& verticalGuides() const;
+  HandlerResult OnUiEvent(event_constptr_t ev);
+//////////////////////////////////////
+  anchor::layout_ptr_t _layout;
 private:
   void DoDraw(ui::drawevent_constptr_t drwev) override;
   void _doOnResized() override;

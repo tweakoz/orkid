@@ -160,7 +160,7 @@ void Layer::keyOn(int note, int velocity, lyrdata_ptr_t ld, outbus_ptr_t obus){
 
   ///////////////////////////////////////
   auto algname = ld->_algdata->_name;
-  printf( "LAYER KEYON<%d> alg<%s>\n", note, algname.c_str() );
+  //printf( "LAYER KEYON<%d> alg<%s>\n", note, algname.c_str() );
 
   this->_alg = this->_layerdata->_algdata->createAlgInst();
   // assert(_alg);
@@ -353,9 +353,9 @@ controller_t Layer::getController(const std::string& srcn) const {
 controller_t Layer::getSRC1(dspparammod_constptr_t mods) {
   auto src1 = this->getController(mods->_src1);
   //printf("src1<%p>\n", (void*) mods->_src1.get());
-  if(mods->_src1){
-    printf("src1<%p:%s>\n", (void*) mods->_src1.get(), mods->_src1->_name.c_str());
-  }
+  //if(mods->_src1){
+    //printf("src1<%p:%s>\n", (void*) mods->_src1.get(), mods->_src1->_name.c_str());
+  //}
 
   auto it = [=]() -> float {
     float src1depth = mods->_src1Depth;
@@ -371,9 +371,9 @@ controller_t Layer::getSRC2(dspparammod_constptr_t mods) {
   auto src2     = this->getController(mods->_src2);
   auto depthcon = this->getController(mods->_src2DepthCtrl);
   //printf("src2<%p>\n", (void*) mods->_src2.get());
-  if(mods->_src2){
-    printf("src2<%p:%s>\n", (void*) mods->_src2.get(), mods->_src2->_name.c_str());
-  }
+  //if(mods->_src2){
+    //printf("src2<%p:%s>\n", (void*) mods->_src2.get(), mods->_src2->_name.c_str());
+  //}
 
   auto it = [=]() -> float {
     float mindepth = mods->_src2MinDepth;

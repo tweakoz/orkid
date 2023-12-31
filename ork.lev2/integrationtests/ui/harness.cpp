@@ -151,7 +151,7 @@ uitestapp_ptr_t createEZapp(appinitdata_ptr_t init_data) {
       default:
         //OrkAssert(false);
         // return uicontext->handleEvent(ev);
-        // return ezapp->_eztopwidget->HandleUiEvent(ev);
+        return ezapp->_topLayoutGroup->OnUiEvent(ev);
         break;
     }
     ui::HandlerResult rval;

@@ -353,7 +353,7 @@ void make_dco(CZLAYERDATACTX czctx,
         CustomControllerInst* cci, //
         const KeyOnInfo& KOI) {    //
       cci->_value.x = czprogdata->_detuneCents;
-      printf("DETUNE<%g>\n", cci->_value.x);
+      //printf("DETUNE<%g>\n", cci->_value.x);
     };
   }
 };
@@ -748,7 +748,6 @@ void parse_czx(CzData* outd, const file::Path& path, const std::string& bnkname)
         bytes.push_back(data[base + i]);
     }
     hexdumpbytes(bytes);
-    assert(false);
     ///////////////////////////
     auto czpd = parse_czprogramdata(outd, prgout, bytes);
     if (czpd) {

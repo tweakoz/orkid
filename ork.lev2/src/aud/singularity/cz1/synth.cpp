@@ -26,7 +26,7 @@ using namespace ork;
 
 namespace ork::audio::singularity {
 
-static logchannel_ptr_t logchan_czx = logger()->createChannel("singul.czx", fvec3(1, 0.6, .8), true);
+static logchannel_ptr_t logchan_czx = logger()->createChannel("singul.czx", fvec3(1, 0.6, .8), false);
 
 inline double sinc(double i) { // ph --1 .. +1
   if (i == 0.0)
@@ -333,7 +333,7 @@ void CZX::doKeyOn(const KeyOnInfo& koi) // final
   _updatecount = 0;
 
   auto czdata = (const CZXDATA*) _dbd;
-  czdata->_cxzdata->dump();
+  //czdata->_cxzdata->dump();
 }
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -348,8 +348,8 @@ CZXDATA::CZXDATA(std::string name, czxdata_constptr_t czdata, int dcochannel)
     , _cxzdata(czdata)
     , _dcochannel(dcochannel) {
   _blocktype = "CZX";
-  addParam()->usePitchEvaluator();
-  addParam()->useDefaultEvaluator();
+  addParam("pitch","cents")->usePitchEvaluator();
+  addParam("index", "x")->useDefaultEvaluator();
   _vars.makeValueForKey<czxdata_constptr_t>("CZX") = _cxzdata;
   _vars.makeValueForKey<int>("dcochannel")         = dcochannel;
 }

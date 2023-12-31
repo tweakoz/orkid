@@ -236,7 +236,7 @@ void DspParamData::useKrzPosEvaluator() {
     if(_debug){
       printf( "krzposeval<%s> rval<%f>\n", _name.c_str(), rval );
     }
-
+    return rval;
   };
 }
 
@@ -281,7 +281,10 @@ void DspParam::keyOn(int ikey, int ivel) {
   _unitVel = float(ivel) / 127.0f;
 
   float kt = _data->_keyTrack;
+
+  if(_data->_debug){
    printf( "DspParam<%s> keyOn: ikey<%d> ivel<%d> keytrack<%g>  keystart<%d> _keyOff<%g>\n", _data->_name.c_str(), ikey, ivel, kt, _data->_keystartNote, _keyOff );
+  }
 
   if (false == _data->_keystartBipolar) {
     if (_keyOff < 0)
@@ -307,8 +310,9 @@ void DspParam::keyOn(int ikey, int ivel) {
 
 float DspParam::eval(bool dump) {
   float tot = _evaluator(*this);
-  if (dump)
+  if (dump){
     printf("coarse<%g> c1<%g> c2<%g> tot<%g>\n", _data->_coarse, _C1(), _C2(), tot);
+  }
 
   return tot;
 }
