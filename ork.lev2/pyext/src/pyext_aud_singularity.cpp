@@ -11,6 +11,13 @@
 #include <ork/lev2/aud/singularity/krzdata.h>
 #include <ork/lev2/aud/singularity/tx81z.h>
 #include <ork/lev2/aud/singularity/fxgen.h>
+#include <ork/lev2/ui/widget.h>
+#include <ork/lev2/ui/group.h>
+#include <ork/lev2/ui/surface.h>
+#include <ork/lev2/ui/viewport.h>
+#include <ork/lev2/ui/layoutgroup.inl>
+#include <ork/lev2/ui/anchor.h>
+#include <ork/lev2/ui/box.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::audio::singularity {
@@ -466,6 +473,22 @@ void pyinit_aud_singularity(py::module& module_lev2) {
                              [](keyonmod_ptr_t kmod) -> uint32_t { return kmod->_layermask; },
                              [](keyonmod_ptr_t kmod, uint32_t val) { kmod->_layermask = val; });
   type_codec->registerStdCodec<keyonmod_ptr_t>(konmod_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  auto oscope_type = //
+      py::class_<ui::LambdaBox, ui::Widget, uilambdabox_ptr_t>(singmodule, "Oscilloscope")
+          .def_static(
+              "uifactory",
+              [type_codec](uilayoutgroup_ptr_t lg, py::list py_args) -> uilayoutitem_ptr_t { //
+                auto decoded_args    = type_codec->decodeList(py_args);
+                auto name            = decoded_args[0].get<std::string>();
+                auto color           = decoded_args[1].get<fvec4>();
+                auto layoutitem      = lg->makeChild<ui::LambdaBox>(name, color);
+                auto shared_item     = std::make_shared<ui::LayoutItemBase>();
+                shared_item->_widget = layoutitem._widget;
+                shared_item->_layout = layoutitem._layout;
+                return shared_item;
+              });
+  type_codec->registerStdCodec<uilambdabox_ptr_t>(oscope_type);
   /////////////////////////////////////////////////////////////////////////////////
 }
 

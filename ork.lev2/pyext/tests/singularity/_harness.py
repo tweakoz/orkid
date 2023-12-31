@@ -45,7 +45,7 @@ class SingulTestApp(object):
     for g in self.griditems:
       g.widget.onPressed(lambda: print("GRIDITEM0 PUSHED"))
 
-    item = lg_group.makeChild( uiclass = ui.LambdaBox,
+    item = lg_group.makeChild( uiclass = singularity.Oscilloscope,
                                args = ["label",vec4(1,0,0,1)] )
 
     lg_group.replaceChild(self.griditems[1].layout,item)
