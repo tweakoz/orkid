@@ -42,11 +42,14 @@ class KrzApp(SingulTestApp):
 
   def onNote(self,voice):
     LD = self.prog.layer(self.layerID)
+    
     if LD:
       DST = LD.stage("DSP")
       DST.dump()
       AST = LD.stage("AMP")
       AST.dump()
+      #source = LD.createScopeSource()
+      #source.connect(self.the_sink)
     if False:
       LD = self.prog.layer(0)
       DST = LD.stage("DSP")

@@ -116,7 +116,7 @@ Widget* Group::doRouteUiEvent(event_constptr_t ev) {
     }
     if (inside) {
       auto child_target = child->routeUiEvent(ev);
-      if (child_target) {
+      if (child_target and not child_target->_ignoreEvents) {
         if (0) {
           printf("  child_target<%s>\n", child_target->_name.c_str());
         }

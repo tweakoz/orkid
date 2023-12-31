@@ -85,7 +85,10 @@ void pyinit_aud_singularity(py::module& module_lev2) {
   auto obus_type = py::class_<OutputBus, outbus_ptr_t>(singmodule, "OutputBus") //
                        .def_property_readonly(
                            "name", //
-                           [](outbus_ptr_t bus) -> std::string { return bus->_name; });
+                           [](outbus_ptr_t bus) -> std::string { return bus->_name; })
+                       .def("createScopeSource", [](outbus_ptr_t bus) -> scopesource_ptr_t { //
+                         return bus->createScopeSource();
+                       });
   type_codec->registerStdCodec<outbus_ptr_t>(obus_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto ioc_type = py::class_<IoConfig, ioconfig_ptr_t>(singmodule, "IoConfig") //
@@ -183,9 +186,14 @@ void pyinit_aud_singularity(py::module& module_lev2) {
           .def("dump", [](dspstagedata_ptr_t stgdata) { stgdata->dump(); });
   type_codec->registerStdCodec<dspstagedata_ptr_t>(stgdata_type);
   /////////////////////////////////////////////////////////////////////////////////
-  auto ldata_type = py::class_<LayerData, lyrdata_ptr_t>(singmodule, "LayerData")                        //
-                        .def("stage", [](lyrdata_ptr_t pdata, std::string named) -> dspstagedata_ptr_t { //
-                          return pdata->stageByName(named);
+  auto ldata_type = py::class_<LayerData, lyrdata_ptr_t>(singmodule, "LayerData") //
+                        .def(
+                            "stage",
+                            [](lyrdata_ptr_t pdata, std::string named) -> dspstagedata_ptr_t { //
+                              return pdata->stageByName(named);
+                            })
+                        .def("createScopeSource", [](lyrdata_ptr_t pdata) -> scopesource_ptr_t { //
+                          return pdata->createScopeSource();
                         });
   type_codec->registerStdCodec<lyrdata_ptr_t>(ldata_type);
   /////////////////////////////////////////////////////////////////////////////////
@@ -475,21 +483,62 @@ void pyinit_aud_singularity(py::module& module_lev2) {
                              [](keyonmod_ptr_t kmod, uint32_t val) { kmod->_layermask = val; });
   type_codec->registerStdCodec<keyonmod_ptr_t>(konmod_type);
   /////////////////////////////////////////////////////////////////////////////////
+  auto scopesource_type = //
+      py::class_<ScopeSource, scopesource_ptr_t>(singmodule, "ScopeSource")
+          .def("connect", [](scopesource_ptr_t src, scopesink_ptr_t sink) { //
+            src->connect(sink);
+          });
+  type_codec->registerStdCodec<scopesource_ptr_t>(scopesource_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  auto scopesink_type = //
+      py::class_<ScopeSink, scopesink_ptr_t>(singmodule, "ScopeSink");
+  type_codec->registerStdCodec<scopesink_ptr_t>(scopesink_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  struct OSCOPE_PROXY{
+    signalscope_ptr_t _instrument;
+  };
+  using oscope_ptr_t = std::shared_ptr<OSCOPE_PROXY>;
+  auto analyzer_type = //
+      py::class_<OSCOPE_PROXY, oscope_ptr_t>(singmodule, "Oscilloscope")
+          .def_property_readonly(
+              "sink",
+              [](oscope_ptr_t scope) -> scopesink_ptr_t { //
+                return scope->_instrument->_sink;
+              })
+          .def_static("uifactory", [type_codec](uilayoutgroup_ptr_t lg, py::list py_args) -> uilayoutitem_ptr_t { //
+            auto decoded_args = type_codec->decodeList(py_args);
+            auto name         = decoded_args[0].get<std::string>();
+            auto instrument        = create_oscilloscope2(lg, name);
+            auto proxy = std::make_shared<OSCOPE_PROXY>();
+            proxy->_instrument = instrument;
+            // retain scope in layout group
+            lg->_uservars.makeValueForKey<oscope_ptr_t>("oscilloscopes." + name, proxy);
+            return instrument->_layoutitem;
+          });
+  type_codec->registerStdCodec<oscope_ptr_t>(analyzer_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  struct ANALYZER_PROXY{
+    signalscope_ptr_t _instrument;
+  };
+  using analyzer_ptr_t = std::shared_ptr<ANALYZER_PROXY>;
   auto oscope_type = //
-      py::class_<SignalScope, signalscope_ptr_t>(singmodule, "Oscilloscope")
-          .def_static(
-              "uifactory",
-              [type_codec](uilayoutgroup_ptr_t lg, py::list py_args) -> uilayoutitem_ptr_t { //
-                auto decoded_args    = type_codec->decodeList(py_args);
-                auto name            = decoded_args[0].get<std::string>();
-                auto color           = decoded_args[1].get<fvec4>();
-                auto layoutitem      = lg->makeChild<ui::LambdaBox>(name, color);
-                auto shared_item     = std::make_shared<ui::LayoutItemBase>();
-                shared_item->_widget = layoutitem._widget;
-                shared_item->_layout = layoutitem._layout;
-                return shared_item;
-              });
-  type_codec->registerStdCodec<signalscope_ptr_t>(oscope_type);
+      py::class_<ANALYZER_PROXY, analyzer_ptr_t>(singmodule, "SpectrumAnalyzer")
+          .def_property_readonly(
+              "sink",
+              [](analyzer_ptr_t analyzer) -> scopesink_ptr_t { //
+                return analyzer->_instrument->_sink;
+              })
+          .def_static("uifactory", [type_codec](uilayoutgroup_ptr_t lg, py::list py_args) -> uilayoutitem_ptr_t { //
+            auto decoded_args = type_codec->decodeList(py_args);
+            auto name         = decoded_args[0].get<std::string>();
+            auto instrument   = create_spectrumanalyzer2(lg, name);
+            auto proxy = std::make_shared<ANALYZER_PROXY>();
+            proxy->_instrument = instrument;
+            // retain scope in layout group
+            lg->_uservars.makeValueForKey<analyzer_ptr_t>("analyzers." + name, proxy);
+            return instrument->_layoutitem;
+          });
+  type_codec->registerStdCodec<analyzer_ptr_t>(oscope_type);
   /////////////////////////////////////////////////////////////////////////////////
 }
 

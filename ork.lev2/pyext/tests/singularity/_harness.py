@@ -38,17 +38,40 @@ class SingulTestApp(object):
       width = 2,
       height = 2,
       margin = 4,
-      uiclass = ui.LambdaBox,
-      args = ["label",vec4(1,0,1,1)],
+      uiclass = ui.Box,
+      args = ["label",vec4(0.2)],
     )
 
     for g in self.griditems:
-      g.widget.onPressed(lambda: print("GRIDITEM0 PUSHED"))
+      g.widget.ignoreEvents = True
+
+    ######################### 
+    # create an oscope
+    #  replace the 2nd griditem with it
+    ######################### 
 
     item = lg_group.makeChild( uiclass = singularity.Oscilloscope,
-                               args = ["label",vec4(1,0,0,1)] )
+                               args = ["MAINBUS"] )
+    
+    self.oscope = lg_group.getUserVar("oscilloscopes.MAINBUS")
+    self.oscope_sink = self.oscope.sink
 
     lg_group.replaceChild(self.griditems[1].layout,item)
+
+    ######################### 
+    # create an spectrum analyzer
+    #  replace the 4nd griditem with it
+    ######################### 
+
+    item = lg_group.makeChild( uiclass = singularity.SpectrumAnalyzer,
+                               args = ["MAINBUS"] )
+    
+    self.spectra = lg_group.getUserVar("analyzers.MAINBUS")
+    self.spectra_sink = self.spectra.sink
+
+    lg_group.replaceChild(self.griditems[3].layout,item)
+
+    ######################### 
 
     root_layout = lg_group.layout
     self.time = 0.0
@@ -71,6 +94,9 @@ class SingulTestApp(object):
     self.audiodevice = singularity.device.instance()
     self.synth = singularity.synth.instance()
     self.mainbus = self.synth.outputBus("main")
+    self.mainbus_source = self.mainbus.createScopeSource()
+    self.mainbus_source.connect(self.oscope_sink)
+    self.mainbus_source.connect(self.spectra_sink)
     for i in range(6):
       self.synth.nextEffect()
     self.gain = -12.0

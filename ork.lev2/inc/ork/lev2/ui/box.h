@@ -21,6 +21,7 @@ public:
 
 private:
   void DoDraw(ui::drawevent_constptr_t drwev) override;
+  HandlerResult DoOnUiEvent(event_constptr_t Ev) override;
 };
 
 ////////////////////////////////////////////////////////////////////

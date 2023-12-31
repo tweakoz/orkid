@@ -55,16 +55,14 @@ struct SpectraSurf final : public ui::Surface {
   const ScopeSource* _currentSource = nullptr;
 };
 ///////////////////////////////////////////////////////////////////////////////
-signalscope_ptr_t create_spectrumanalyzer(
+signalscope_ptr_t create_spectrumanalyzer2(
     uilayoutgroup_ptr_t vp, //
-    const ui::anchor::Bounds& bounds,
     std::string named) {
   auto hudpanel    = std::make_shared<HudPanel>();
-  auto uipanelitem = vp->makeChild<ui::Panel>("analyzer", 0, 0, 32, 32);
-  uipanelitem.applyBounds(bounds);
+  auto pnl = vp->makeChild<ui::Panel>("analyzer", 0, 0, 32, 32);
   auto analyzersurf                 = std::make_shared<SpectraSurf>();
-  hudpanel->_uipanel                = uipanelitem.typedWidget();
-  hudpanel->_panelLayout            = uipanelitem._layout;
+  hudpanel->_uipanel                = pnl.typedWidget();
+  hudpanel->_panelLayout            = pnl._layout;
   hudpanel->_uipanel->_closeEnabled = false;
   hudpanel->_uipanel->_moveEnabled  = false;
   hudpanel->_uipanel->setTitle(named);
@@ -74,6 +72,7 @@ signalscope_ptr_t create_spectrumanalyzer(
   hudpanel->_uipanel->_focuscolor = fvec4(0.3, 0.2, 0.4f, 0.5f);
   auto instrument                 = std::make_shared<SignalScope>();
   instrument->_hudpanel           = hudpanel;
+  instrument->_layoutitem = pnl.as_shared();
   instrument->_sink               = std::make_shared<ScopeSink>();
   instrument->_sink->_onupdate    = [analyzersurf](const ScopeSource* src) { //
     bool select = (analyzersurf->_currentSource == nullptr);
@@ -105,6 +104,15 @@ signalscope_ptr_t create_spectrumanalyzer(
   };
   vp->addChild(hudpanel->_uipanel);
   return instrument;
+}
+///////////////////////////////////////////////////////////////////////////////
+signalscope_ptr_t create_spectrumanalyzer(
+    uilayoutgroup_ptr_t vp, //
+    const ui::anchor::Bounds& bounds,
+    std::string named) {
+  auto scope = create_spectrumanalyzer2(vp, named);
+  scope->_layoutitem->applyBounds(bounds);
+  return scope;
 }
 ///////////////////////////////////////////////////////////////////////////////
 SpectraSurf::SpectraSurf() //

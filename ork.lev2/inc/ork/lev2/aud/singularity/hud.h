@@ -152,10 +152,16 @@ struct SignalScope {
   varmap::VarMap _vars;
 };
 ///////////////////////////////////////////////////////////////////////////////
+signalscope_ptr_t create_oscilloscope2(
+    uilayoutgroup_ptr_t vp, //
+    std::string named);
 signalscope_ptr_t create_oscilloscope(
     uilayoutgroup_ptr_t vp, //
     const ui::anchor::Bounds& bounds,
     std::string named = "");
+signalscope_ptr_t create_spectrumanalyzer2(
+    uilayoutgroup_ptr_t vp, //
+    std::string named);
 signalscope_ptr_t create_spectrumanalyzer(
     uilayoutgroup_ptr_t vp, //
     const ui::anchor::Bounds& bounds,

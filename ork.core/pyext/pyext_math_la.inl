@@ -198,6 +198,7 @@ void pyinit_math_la_t(py::module& module_core, //
           })
           //////////////////////////////////////////////////////////////////////////
           .def(py::init<>())
+          .def(py::init<T>())
           .def(py::init<T, T, T, T>())
           .def(py::init<vec3_t>())
           .def(py::init<vec3_t, T>())

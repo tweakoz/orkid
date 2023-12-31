@@ -193,6 +193,7 @@ public:
   Context* _uicontext    = nullptr;
   evrouter_t _evrouter   = nullptr;
   evhandler_t _evhandler = nullptr;
+  bool _ignoreEvents = false;
 
   std::string _name;
   uint64_t _userID = 0;

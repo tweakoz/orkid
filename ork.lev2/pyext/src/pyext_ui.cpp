@@ -240,6 +240,18 @@ void pyinit_ui(py::module& module_lev2) {
               })
           .def("setRect", [](uiwidget_ptr_t widget, int x, int y, int w, int h) { //
             widget->SetRect(x, y, w, h);
+          })
+          .def_property("ignoreEvents", [](uiwidget_ptr_t widget) -> bool { //
+            return widget->_ignoreEvents;
+          }, [](uiwidget_ptr_t widget, bool x) { //
+            widget->_ignoreEvents = x;
+          })
+          .def("getUserVar", [type_codec](uiwidget_ptr_t widget, std::string key) -> py::object { //
+            py::object rval;
+            if(widget->_uservars.hasKey(key)){
+              rval = type_codec->encode(widget->_uservars.valueForKey(key));
+            }
+            return rval;
           });
   type_codec->registerStdCodec<uiwidget_ptr_t>(widget_type);
   /////////////////////////////////////////////////////////////////////////////////
