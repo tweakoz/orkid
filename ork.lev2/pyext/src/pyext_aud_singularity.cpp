@@ -11,6 +11,7 @@
 #include <ork/lev2/aud/singularity/krzdata.h>
 #include <ork/lev2/aud/singularity/tx81z.h>
 #include <ork/lev2/aud/singularity/fxgen.h>
+#include <ork/lev2/aud/singularity/hud.h>
 #include <ork/lev2/ui/widget.h>
 #include <ork/lev2/ui/group.h>
 #include <ork/lev2/ui/surface.h>
@@ -475,7 +476,7 @@ void pyinit_aud_singularity(py::module& module_lev2) {
   type_codec->registerStdCodec<keyonmod_ptr_t>(konmod_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto oscope_type = //
-      py::class_<ui::LambdaBox, ui::Widget, uilambdabox_ptr_t>(singmodule, "Oscilloscope")
+      py::class_<SignalScope, signalscope_ptr_t>(singmodule, "Oscilloscope")
           .def_static(
               "uifactory",
               [type_codec](uilayoutgroup_ptr_t lg, py::list py_args) -> uilayoutitem_ptr_t { //
@@ -488,7 +489,7 @@ void pyinit_aud_singularity(py::module& module_lev2) {
                 shared_item->_layout = layoutitem._layout;
                 return shared_item;
               });
-  type_codec->registerStdCodec<uilambdabox_ptr_t>(oscope_type);
+  type_codec->registerStdCodec<signalscope_ptr_t>(oscope_type);
   /////////////////////////////////////////////////////////////////////////////////
 }
 

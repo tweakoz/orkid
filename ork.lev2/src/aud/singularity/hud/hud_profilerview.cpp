@@ -28,7 +28,7 @@ struct ProfilerView final : public ui::Surface {
 };
 ///////////////////////////////////////////////////////////////////////////////
 hudpanel_ptr_t createProfilerView(
-    hudvp_ptr_t vp, //
+    uilayoutgroup_ptr_t vp, //
     const ui::anchor::Bounds& bounds,
     std::string named) {
   auto hudpanel    = std::make_shared<HudPanel>();
@@ -46,7 +46,6 @@ hudpanel_ptr_t createProfilerView(
   hudpanel->_uipanel->_focuscolor = fvec4(0.3, 0.2, 0.4f, 0.5f);
   ///////////////////////////////////////////////////////////////////////
   vp->addChild(hudpanel->_uipanel);
-  vp->_hudpanels.insert(hudpanel);
   return hudpanel;
 }
 ///////////////////////////////////////////////////////////////////////////////

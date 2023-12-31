@@ -56,7 +56,7 @@ struct SpectraSurf final : public ui::Surface {
 };
 ///////////////////////////////////////////////////////////////////////////////
 signalscope_ptr_t create_spectrumanalyzer(
-    hudvp_ptr_t vp, //
+    uilayoutgroup_ptr_t vp, //
     const ui::anchor::Bounds& bounds,
     std::string named) {
   auto hudpanel    = std::make_shared<HudPanel>();
@@ -104,7 +104,6 @@ signalscope_ptr_t create_spectrumanalyzer(
   instrument->_sink->_onkeyoff = [analyzersurf](const ScopeSource* src) { //
   };
   vp->addChild(hudpanel->_uipanel);
-  vp->_hudpanels.insert(hudpanel);
   return instrument;
 }
 ///////////////////////////////////////////////////////////////////////////////

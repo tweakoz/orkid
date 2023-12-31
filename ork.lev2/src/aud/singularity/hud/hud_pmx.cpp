@@ -135,7 +135,7 @@ layoutgroup_ptr_t createParamEdit(
 } // namespace ork::audio::singularity
 ///////////////////////////////////////////////////////////////////////////////
 hudpanel_ptr_t createPmxEditView(
-    hudvp_ptr_t vp, //
+    uilayoutgroup_ptr_t vp, //
     std::string named,
     fvec4 color,
     dspblkdata_ptr_t dbdata,

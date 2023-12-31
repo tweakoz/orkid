@@ -19,7 +19,7 @@ using namespace ork::lev2;
 namespace ork::audio::singularity {
 ///////////////////////////////////////////////////////////////////////////////
 hudpanel_ptr_t createEnvYmEditView(
-    hudvp_ptr_t vp, //
+    uilayoutgroup_ptr_t vp, //
     std::string named,
     fvec4 color,
     controllerdata_ptr_t envdata,

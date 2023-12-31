@@ -152,33 +152,33 @@ struct SignalScope {
 };
 ///////////////////////////////////////////////////////////////////////////////
 signalscope_ptr_t create_oscilloscope(
-    hudvp_ptr_t vp, //
+    uilayoutgroup_ptr_t vp, //
     const ui::anchor::Bounds& bounds,
     std::string named = "");
 signalscope_ptr_t create_spectrumanalyzer(
-    hudvp_ptr_t vp, //
+    uilayoutgroup_ptr_t vp, //
     const ui::anchor::Bounds& bounds,
     std::string named = "");
 signalscope_ptr_t create_envelope_analyzer(
-    hudvp_ptr_t vp, //
+    uilayoutgroup_ptr_t vp, //
     const ui::anchor::Bounds& bounds,
     std::string named = "");
 hudpanel_ptr_t createProgramView(
-    hudvp_ptr_t vp, //
+    uilayoutgroup_ptr_t vp, //
     const ui::anchor::Bounds& bounds,
     std::string named = "");
 hudpanel_ptr_t createProfilerView(
-    hudvp_ptr_t vp, //
+    uilayoutgroup_ptr_t vp, //
     const ui::anchor::Bounds& bounds,
     std::string named = "");
 hudpanel_ptr_t createEnvYmEditView(
-    hudvp_ptr_t vp, //
+    uilayoutgroup_ptr_t vp, //
     std::string named,
     fvec4 color,
     controllerdata_ptr_t envdata,
     const ui::anchor::Bounds& bounds);
 hudpanel_ptr_t createPmxEditView(
-    hudvp_ptr_t vp, //
+    uilayoutgroup_ptr_t vp, //
     std::string named,
     fvec4 color,
     dspblkdata_ptr_t dbdata,

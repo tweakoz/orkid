@@ -200,6 +200,7 @@ public:
   Rect _geometry;
   std::stack<eventfilter_ptr_t> _eventfilterstack;
   Rect _prevGeometry;
+  varmap::VarMap _uservars;
 
   virtual Widget* doRouteUiEvent(event_constptr_t Ev);
 
