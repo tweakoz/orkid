@@ -109,7 +109,9 @@ void DspParamData::useDefaultEvaluator() {
                + param_inst._C1() //
                + param_inst._C2() //
                + kt + vt;
-     //printf("defaulteval rv<%g>\n", rv);
+     if(_debug){
+      printf("defeval<%s> rv<%g>\n", _name.c_str(), rv);
+     }
     return rv;
   };
 }
@@ -128,7 +130,9 @@ void DspParamData::useAmplitudeEvaluator() {
               + param_inst._s2val //
               + param_inst._kval  //
               + param_inst._vval;
-     printf("vt<%f> kt<%f> x<%f>\n", _velTrack, _keyTrack, x);
+     if(_debug){
+      printf("ampeval<%s> vt<%f> kt<%f> x<%f>\n", _name.c_str(), _velTrack, _keyTrack, x);
+     }
     return x;
   };
 }
@@ -162,8 +166,10 @@ void DspParamData::usePitchEvaluator() {
                      + param_inst._C2()   //
                      + kt          //
                      + vt;
-    // float ratio = cents_to_linear_freq_ratio(totcents);
-    // printf( "rat<%f>\n", ratio);
+     if(_debug){
+       float ratio = cents_to_linear_freq_ratio(totcents);
+       printf( "pitcheval<%s> totcents<%f> rat<%f>\n", _name.c_str(), totcents, ratio);
+     }
     
     if(param_inst._update_count==0){
       logchan_modulation->log( "keyRaw<%d>", param_inst._keyRaw);
@@ -192,8 +198,9 @@ void DspParamData::useFrequencyEvaluator() {
     float vtcents  = param_inst._vval;
     float totcents = param_inst._C1() + param_inst._C2() + ktcents + vtcents;
     float ratio    = cents_to_linear_freq_ratio(totcents);
-     //printf( "vtcents<%f> ratio<%f>\n", vtcents, ratio );
-     //printf( "ratio<%f>\n", ratio);
+     if(_debug){
+       printf( "frqeval<%s> vtcents<%f> ratio<%f>\n", _name.c_str(), vtcents, ratio );
+     }
     return _coarse * ratio;
   };
 }
@@ -212,7 +219,12 @@ void DspParamData::useKrzPosEvaluator() {
               + param_inst._s2val //
               + param_inst._kval  //
               + param_inst._vval;
-    return clip_float(x, -100, 100);
+    float rval = clip_float(x, -100, 100);
+
+    if(_debug){
+      printf( "krzposeval<%s> rval<%f>\n", _name.c_str(), rval );
+    }
+
   };
 }
 
@@ -228,7 +240,9 @@ void DspParamData::useKrzEvnOddEvaluator() {
               + param_inst._C2() //
               + kt        //
               + vt;
-    // printf( "vt<%f> kt<%f> x<%f>\n", vt, kt, x );
+    if(_debug){
+      printf( "krzevnoddeval<%s> vt<%f> kt<%f> x<%f>\n", _name.c_str(), vt, kt, x );
+    }
     return clip_float(x, -10, 10);
   };
 }

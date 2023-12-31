@@ -331,7 +331,7 @@ controller_t Layer::getController(const std::string& srcn) const {
   auto it = _controlMap.find(srcn);
   if (it != _controlMap.end()) {
     auto cinst = it->second;
-    printf("getcon<%s> -> %p\n", srcn.c_str(), cinst);
+    //printf("getcon<%s> -> %p\n", srcn.c_str(), cinst);
     return [cinst]() { return cinst->_value.x; };
   }
   else {
@@ -352,7 +352,7 @@ controller_t Layer::getController(const std::string& srcn) const {
 
 controller_t Layer::getSRC1(dspparammod_constptr_t mods) {
   auto src1 = this->getController(mods->_src1);
-  printf("src1<%p>\n", (void*) mods->_src1.get());
+  //printf("src1<%p>\n", (void*) mods->_src1.get());
   if(mods->_src1){
     printf("src1<%p:%s>\n", (void*) mods->_src1.get(), mods->_src1->_name.c_str());
   }
@@ -370,7 +370,7 @@ controller_t Layer::getSRC1(dspparammod_constptr_t mods) {
 controller_t Layer::getSRC2(dspparammod_constptr_t mods) {
   auto src2     = this->getController(mods->_src2);
   auto depthcon = this->getController(mods->_src2DepthCtrl);
-  printf("src2<%p>\n", (void*) mods->_src2.get());
+  //printf("src2<%p>\n", (void*) mods->_src2.get());
   if(mods->_src2){
     printf("src2<%p:%s>\n", (void*) mods->_src2.get(), mods->_src2->_name.c_str());
   }

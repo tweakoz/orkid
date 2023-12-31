@@ -38,7 +38,7 @@ void SHAPER::compute(DspBuffer& dspbuf) // final
   _fval[0]  = amt;
 
   // float la = decibel_to_linear_amp_ratio(amt);
-  if (1) {
+  if (not _dbd->_bypass) {
     auto inputchan  = getInpBuf(dspbuf, 0) + _layer->_dspwritebase;
     auto outputchan = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
     for (int i = 0; i < inumframes; i++) {
@@ -164,7 +164,7 @@ void Wrap::compute(DspBuffer& dspbuf) // final
   float adjust   = _param[0].eval(false);
   _fval[0]       = adjust;
  // printf( "adjust<%g>\n", adjust);
-  if (1) {
+  if (not _dbd->_bypass) {
     auto inpbuf = getInpBuf(dspbuf, 0) + _layer->_dspwritebase;
     auto outbuf = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
     float gain = decibel_to_linear_amp_ratio(adjust+30.0f);

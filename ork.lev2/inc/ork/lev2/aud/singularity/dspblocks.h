@@ -67,6 +67,7 @@ struct DspBlockData : public ork::Object {
 
   dspparam_ptr_t addParam(std::string name = "", std::string units="");
   dspparam_ptr_t param(int index);
+  dspparam_ptr_t paramByName(std::string named);
   int addDspChannel(int channel);
 
   std::string _name;
@@ -75,6 +76,7 @@ struct DspBlockData : public ork::Object {
   float _inputPad = 1.0f;
   int _blockIndex = -1;
   varmap::VarMap _vars;
+  bool _bypass = false;
   std::vector<dspparam_ptr_t> _paramd;
   scopesource_ptr_t _scopesource;
 };

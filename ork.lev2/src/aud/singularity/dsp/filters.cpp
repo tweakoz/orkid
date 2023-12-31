@@ -444,7 +444,9 @@ void LPGATE::doKeyOn(const KeyOnInfo& koi) // final
 ///////////////////////////////////////////////////////////////////////////////
 LowPassData::LowPassData(std::string name)
     : DspBlockData(name) {
-  addParam("cutoff")->useFrequencyEvaluator(); // P0 cutoff eval: "FRQ" 
+  auto p = addParam("cutoff","Hz");
+  p->useFrequencyEvaluator(); // P0 cutoff eval: "FRQ" 
+ // p->_debug = true;
 }
 dspblk_ptr_t LowPassData::createInstance() const {
   return std::make_shared<LowPass>(this);
@@ -465,9 +467,9 @@ void LowPass::compute(DspBuffer& dspbuf) // final
   _lpf.set(fc);
 
 
-  if (1) {
-    auto inpbuf = getInpBuf(dspbuf, 0) + _layer->_dspwritebase;
-    auto outbuf = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
+  auto inpbuf = getInpBuf(dspbuf, 0) + _layer->_dspwritebase;
+  auto outbuf = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
+  if (not _dbd->_bypass ) {
     for (int i = 0; i < inumframes; i++) {
       float inp     = inpbuf[i] * pad;
       outbuf[i] = _lpf.compute(inp);

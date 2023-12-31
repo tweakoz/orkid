@@ -127,15 +127,52 @@ void pyinit_aud_singularity(py::module& module_lev2) {
                           });
   type_codec->registerStdCodec<ioconfig_ptr_t>(ioc_type);
   /////////////////////////////////////////////////////////////////////////////////
-  auto stgdata_type = py::class_<DspStageData, dspstagedata_ptr_t>(singmodule, "DspStageData") //
-                          .def_property_readonly(
-                              "name",
-                              [](dspstagedata_ptr_t stgdata) -> std::string { //
-                                return stgdata->_name;
-                              })
-                            .def("dump", [](dspstagedata_ptr_t stgdata) {
-                              stgdata->dump();
-                            });
+  auto dspparamdata_type = py::class_<DspParamData, dspparam_ptr_t>(singmodule, "DspParamData") //
+                               .def_property_readonly(
+                                   "name",
+                                   [](dspparam_ptr_t param) -> std::string { //
+                                     return param->_name;
+                                   })
+                               .def_property(
+                                   "debug",
+                                   [](dspparam_ptr_t param) -> bool { //
+                                     return param->_debug;
+                                   },
+                                   [](dspparam_ptr_t param, bool val) { //
+                                     param->_debug = val;
+                                   });
+  type_codec->registerStdCodec<dspparam_ptr_t>(dspparamdata_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  auto dspdata_type =
+      py::class_<DspBlockData, dspblkdata_ptr_t>(singmodule, "DspBlockData") //
+          .def_property_readonly(
+              "name",
+              [](dspblkdata_ptr_t blkdata) -> std::string { //
+                return blkdata->_name;
+              })
+          .def("paramByIndex", [](dspblkdata_ptr_t blkdata, int index) -> dspparam_ptr_t { return blkdata->param(index); })
+          .def(
+              "paramByName",
+              [](dspblkdata_ptr_t blkdata, std::string named) -> dspparam_ptr_t { return blkdata->paramByName(named); })
+          .def_property(
+              "bypass",
+              [](dspblkdata_ptr_t blkdata) -> bool { //
+                return blkdata->_bypass;
+              },
+              [](dspblkdata_ptr_t blkdata, bool val) { //
+                blkdata->_bypass = val;
+              });
+  type_codec->registerStdCodec<dspblkdata_ptr_t>(dspdata_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  auto stgdata_type =
+      py::class_<DspStageData, dspstagedata_ptr_t>(singmodule, "DspStageData") //
+          .def_property_readonly(
+              "name",
+              [](dspstagedata_ptr_t stgdata) -> std::string { //
+                return stgdata->_name;
+              })
+          .def("dspblock", [](dspstagedata_ptr_t stgdata, int index) -> dspblkdata_ptr_t { return stgdata->_blockdatas[index]; })
+          .def("dump", [](dspstagedata_ptr_t stgdata) { stgdata->dump(); });
   type_codec->registerStdCodec<dspstagedata_ptr_t>(stgdata_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto ldata_type = py::class_<LayerData, lyrdata_ptr_t>(singmodule, "LayerData")                        //

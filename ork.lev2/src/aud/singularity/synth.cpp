@@ -769,12 +769,12 @@ void programInst::keyOn(int note, int velocity, prgdata_constptr_t pd, keyonmod_
 
   auto syn = synth::instance();
 
-  uint32_t layer_mask = 0xffffffff;
+  size_t layer_mask = 0xffffffff;
   if(kmod){
     layer_mask = kmod->_layermask;
   }
   printf( "layer_mask<0x%08x>\n", layer_mask);
-  int ilayer = 0;
+  size_t ilayer = 0;
   size_t num_layerdatas = pd->_layerdatas.size();
   for (size_t ilayer=0; ilayer<num_layerdatas; ilayer++) {
     auto ld = pd->_layerdatas[ilayer];

@@ -75,6 +75,12 @@ dspparam_ptr_t DspBlockData::addParam(std::string named, std::string units) {
 dspparam_ptr_t DspBlockData::param(int index) {
   return _paramd[index];
 }
+dspparam_ptr_t DspBlockData::paramByName(std::string named) {
+  for( auto it : _paramd )
+    if( it->_name == named )
+      return it;
+  return nullptr;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 

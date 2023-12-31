@@ -426,6 +426,7 @@ void KrzBankDataParser::parseFBlock(const Value& fseg, //
   //////////////////////////////////
   using namespace std::string_literals;
 
+  auto mods = fblk->_mods;
   if (fseg.HasMember("PARAM_SCHEME")) {
     auto scheme = fseg["PARAM_SCHEME"].GetString();
     /*if (scheme == "PCH"s)
@@ -486,7 +487,6 @@ void KrzBankDataParser::parseFBlock(const Value& fseg, //
     fblk->_fineHZ = fseg["FineHZ"].GetFloat();
   }
 
-  auto mods = std::make_shared<BlockModulationData>();
   bool use_mods = false;
   if (fseg.HasMember("Src1")) {
     auto& s1 = fseg["Src1"];
