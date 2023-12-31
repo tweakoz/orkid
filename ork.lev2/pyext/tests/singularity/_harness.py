@@ -45,15 +45,8 @@ class SingulTestApp(object):
     for g in self.griditems:
       g.widget.onPressed(lambda: print("GRIDITEM0 PUSHED"))
 
-    item = lg_group.makeEvTestBox( w=100, #
-                                    h=100, #
-                                    x=100, #
-                                    y=100, #
-                                    color_normal=vec4(0.75,0.75,0.75,0.5), #
-                                    color_click=vec4(0.5,0.0,0.0,0.5), #
-                                    color_doubleclick=vec4(0.5,1.0,0.5,0.5), #
-                                    color_drag=vec4(0.5,0.5,1.0,0.5), #
-                                    name="testbox1")
+    item = lg_group.makeChild( uiclass = ui.LambdaBox,
+                               args = ["label",vec4(1,0,0,1)] )
 
     lg_group.replaceChild(self.griditems[1].layout,item)
 
