@@ -240,6 +240,6 @@ struct ProgramView final : public ui::Surface {
 };
 ///////////////////////////////////////////////////////////////////////////////
 
-static const float fontscale = 0.50;
+static const float fontscale = 0.125;
 
 } // namespace ork::audio::singularity

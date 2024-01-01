@@ -768,7 +768,7 @@ void KrzBankDataParser::parseKmpBlock(const Value& kmseg, KmpBlockData& kmblk) {
 
 lyrdata_ptr_t KrzBankDataParser::parseLayer(const Value& jsonobj, prgdata_ptr_t pd) {
   const auto& name = pd->_name;
-  // printf("Got Prgram<%s> layer..\n", name.c_str());
+  printf("Got Prgram<%s> layer..\n", name.c_str());
   const auto& calvinSeg = jsonobj["CALVIN"];
   const auto& keymapSeg = calvinSeg["KEYMAP"];
   const auto& pitchSeg  = calvinSeg["PITCH"];
@@ -1016,13 +1016,15 @@ lyrdata_ptr_t KrzBankDataParser::parseLayer(const Value& jsonobj, prgdata_ptr_t 
     }
   };
 
-  auto parse_dsp_block = [&](dspstagedata_ptr_t stage, int blkbase, int paramcount) -> dspblkdata_ptr_t {
+  auto parse_dsp_block = [&](dspstagedata_ptr_t stage, 
+                             int blkbase, 
+                             int paramcount) -> dspblkdata_ptr_t {
     auto blockn1 = blkname(blkbase + 0);
     auto blockn2 = blkname(blkbase + 1);
     auto blockn3 = blkname(blkbase + 2);
     dspblkdata_ptr_t dspblock;
 
-    // printf("algd<%d> blkbase<%d> paramcount<%d> blockn1<%s>\n", krzalgdat._algindex, blkbase, paramcount, blockn1);
+    printf("algd<%d> blkbase<%d> paramcount<%d> blockn1<%s>\n", krzalgdat._algindex, blkbase, paramcount, blockn1);
     if (blockn1 != "PITCH" and blockn2 != "PITCH") {
       dspblock = parseDspBlock(jsonobj[blockn1], stage, layerdata);
       if (dspblock) {
@@ -1081,9 +1083,9 @@ lyrdata_ptr_t KrzBankDataParser::parseLayer(const Value& jsonobj, prgdata_ptr_t 
   if (ACFG._wa) {
     parse_dsp_block(ampstage, blockindex, ACFG._wa);
     blockindex += ACFG._wa;
-    if (krzalgdat._algindex >= 1 and krzalgdat._algindex <= 4) {
-      auto amp = ampstage->appendTypedBlock<PANNER>("PANNER");
-    }
+    //if (krzalgdat._algindex >= 1 and krzalgdat._algindex <= 4) {
+    //  auto amp = ampstage->appendTypedBlock<PANNER>("PANNER");
+    //}
   }
 
   // if last stage is panner, then ioconfig numoutputs is 2
@@ -1095,6 +1097,9 @@ lyrdata_ptr_t KrzBankDataParser::parseLayer(const Value& jsonobj, prgdata_ptr_t 
 
   //////////////////////////////////////////////////////
 
+  if(name=="Doomsday"){
+    //OrkAssert(false);
+  }
   // printf( "got keymapID<%d:%p:%s>\n", kmid, km, km->_name.c_str() );
   return layerdata;
 }

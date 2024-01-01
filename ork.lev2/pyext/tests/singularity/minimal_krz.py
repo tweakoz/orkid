@@ -41,12 +41,8 @@ class KrzApp(SingulTestApp):
   ##############################################
 
   def onNote(self,voice):
-    LD = self.prog.layer(self.layerID)
-    if LD:
-      #source = LD.createScopeSource()
-      #source.connect(self.the_sink)
-      pass
     if False:
+      LD = self.prog.layer(self.layerID)
       LD = self.prog.layer(0)
       DST = LD.stage("DSP")
       DST.dspblock(2).bypass = True
@@ -127,13 +123,14 @@ class KrzApp(SingulTestApp):
       "Acoustic_Bass",
       "Touch_Clav",
       "Timpani_Chimes",
-      "Sweetar"
+      "Sweetar",
+      "Doomsday"
     ]
-    #self.sorted_progs = ok_list
+    self.sorted_progs = ok_list
     print("krzprogs<%s>" % self.krzprogs)    
-    #self.prog_index = find_index(self.sorted_progs, "Doomsday")
-    self.prog_index = find_index(self.sorted_progs, "Chorus_Gtr")
-    self.prog = self.soundbank.programByName("Chorus_Gtr")
+    self.prog_index = find_index(self.sorted_progs, "Doomsday")
+    #self.prog_index = find_index(self.sorted_progs, "Chorus_Gtr")
+    self.prog = self.soundbank.programByName("Doomsday")
     self.synth.masterGain = singularity.decibelsToLinear(-24.0)
     if self.pgmview:
       self.pgmview.setProgram(self.prog)

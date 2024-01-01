@@ -15,6 +15,7 @@ namespace ork::audio::singularity {
 
 BANDPASS_FILT_DATA::BANDPASS_FILT_DATA(std::string name)
     : DspBlockData(name) {
+  _blocktype = "BANDPASS_FILT";
   addParam("cutoff")->useFrequencyEvaluator(); // P0 cutoff eval: "FRQ" 
   addParam("width")->useDefaultEvaluator();   // P1 width  eval: "WID"
 }
@@ -63,6 +64,7 @@ void BANDPASS_FILT::doKeyOn(const KeyOnInfo& koi) // final
 
 BAND2_DATA::BAND2_DATA(std::string name)
     : DspBlockData(name) {
+  _blocktype = "BAND2";
   addParam("cutoff")->useFrequencyEvaluator(); // P0 cutoff eval: "FRQ" 
 }
 dspblk_ptr_t BAND2_DATA::createInstance() const {
@@ -103,6 +105,7 @@ void BAND2::doKeyOn(const KeyOnInfo& koi) // final
 
 NOTCH_FILT_DATA::NOTCH_FILT_DATA(std::string name)
     : DspBlockData(name) {
+  _blocktype = "NOTCH_FILT";
   addParam("cutoff")->useFrequencyEvaluator(); // P0 cutoff eval: "FRQ" 
   addParam("width")->useDefaultEvaluator();   // P1 width  eval: "WID"
 }
@@ -145,6 +148,7 @@ void NOTCH_FILT::doKeyOn(const KeyOnInfo& koi) // final
 
 NOTCH2_DATA::NOTCH2_DATA(std::string name)
     : DspBlockData(name) {
+  _blocktype = "NOTCH2";
   addParam("cutoff")->useFrequencyEvaluator(); // P0 cutoff eval: "FRQ" 
 }
 dspblk_ptr_t NOTCH2_DATA::createInstance() const {
@@ -184,6 +188,7 @@ void NOTCH2::doKeyOn(const KeyOnInfo& koi) // final
 
 DOUBLE_NOTCH_W_SEP_DATA::DOUBLE_NOTCH_W_SEP_DATA(std::string name)
     : DspBlockData(name) {
+  _blocktype = "DOUBLE_NOTCH_W_SEP";
   addParam("cutoff")->useFrequencyEvaluator(); // cutoff eval: "FRQ" 
   addParam("resonance")->useDefaultEvaluator();   // Q
   addParam("separation")->useDefaultEvaluator();   // cents
@@ -235,6 +240,7 @@ void DOUBLE_NOTCH_W_SEP::doKeyOn(const KeyOnInfo& koi) // final
 
 LOPAS2_DATA::LOPAS2_DATA(std::string name)
     : DspBlockData(name) {
+  _blocktype = "LOPAS2";
   addParam("cutoff")->useFrequencyEvaluator(); // P0 cutoff eval: "FRQ" 
 }
 dspblk_ptr_t LOPAS2_DATA::createInstance() const {
@@ -275,6 +281,7 @@ void LOPAS2::doKeyOn(const KeyOnInfo& koi) // final
 
 LP2RES_DATA::LP2RES_DATA(std::string name)
     : DspBlockData(name) {
+  _blocktype = "LP2RES";
   addParam("cutoff")->useFrequencyEvaluator(); // P0 cutoff eval: "FRQ" 
 }
 dspblk_ptr_t LP2RES_DATA::createInstance() const {
@@ -314,6 +321,7 @@ void LP2RES::doKeyOn(const KeyOnInfo& koi) // final
 
 FOURPOLE_HIPASS_W_SEP_DATA::FOURPOLE_HIPASS_W_SEP_DATA(std::string name)
     : DspBlockData(name) {
+  _blocktype = "4POLE_HIPASS_W_SEP";
   addParam("cutoff")->useFrequencyEvaluator();   // P0 cutoff eval: "FRQ" 
   addParam("resonance")->useDefaultEvaluator();  // Q
   addParam("separation")->useDefaultEvaluator(); // cents
@@ -371,6 +379,7 @@ void FOURPOLE_HIPASS_W_SEP::doKeyOn(const KeyOnInfo& koi) // final
 
 LPCLIP_DATA::LPCLIP_DATA(std::string name)
     : DspBlockData(name) {
+  _blocktype = "LPCLIP";
   addParam("cutoff")->useFrequencyEvaluator(); // P0 cutoff eval: "FRQ" 
 }
 dspblk_ptr_t LPCLIP_DATA::createInstance() const {
@@ -409,6 +418,7 @@ void LPCLIP::doKeyOn(const KeyOnInfo& koi) // final
 
 LPGATE_DATA::LPGATE_DATA(std::string name)
     : DspBlockData(name) {
+  _blocktype = "LPGATE";
   addParam("cutoff")->useFrequencyEvaluator(); // P0 cutoff eval: "FRQ" 
 }
 dspblk_ptr_t LPGATE_DATA::createInstance() const {
@@ -444,6 +454,7 @@ void LPGATE::doKeyOn(const KeyOnInfo& koi) // final
 ///////////////////////////////////////////////////////////////////////////////
 LowPassData::LowPassData(std::string name)
     : DspBlockData(name) {
+  _blocktype = "LOPASS";
   auto p = addParam("cutoff","Hz");
   p->useFrequencyEvaluator(); // P0 cutoff eval: "FRQ" 
  // p->_debug = true;
@@ -486,6 +497,7 @@ void LowPass::doKeyOn(const KeyOnInfo& koi) // final
 
 HighPassData::HighPassData(std::string name)
     : DspBlockData(name) {
+  _blocktype = "HIPASS";
   addParam("cutoff")->useFrequencyEvaluator(); // P0 cutoff eval: "FRQ" 
 }
 dspblk_ptr_t HighPassData::createInstance() const {
@@ -521,6 +533,7 @@ void HighPass::doKeyOn(const KeyOnInfo& koi) // final
 
 HighFreqStimulatorData::HighFreqStimulatorData(std::string name)
     : DspBlockData(name) {
+  _blocktype = "HIGH_FREQ_STIMULATOR";
   addParam("cutoff","Hz")->useFrequencyEvaluator(); // P0 cutoff eval: "FRQ" 
   addParam("drive","dB")->useDefaultEvaluator(); // drive
   addParam("gain","dB")->useDefaultEvaluator(); // outgain
@@ -572,6 +585,7 @@ void HighFreqStimulator::doKeyOn(const KeyOnInfo& koi) // final
 
 AllPassData::AllPassData(std::string name)
     : DspBlockData(name) {
+  _blocktype = "ALLPASS";
   addParam("cutoff")->useFrequencyEvaluator(); // P0 cutoff eval: "FRQ" 
 }
 dspblk_ptr_t AllPassData::createInstance() const {

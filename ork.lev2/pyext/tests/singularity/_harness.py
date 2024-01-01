@@ -32,14 +32,14 @@ class SingulTestApp(object):
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     self.ezapp.topWidget.enableUiDraw()
     lg_group = self.ezapp.topLayoutGroup
-    lg_group.margin = 4
+    lg_group.margin = 5
 
     rccounts = [3,2]
     self.griditems = lg_group.makeRowsColumns(
       rccounts = rccounts,
       margin = 4,
       uiclass = ui.Box,
-      args = ["label",vec4(0.2)],
+      args = ["label",vec4(0.1,0.1,0.3,1)],
     )
 
     for g in self.griditems:
@@ -196,7 +196,7 @@ class SingulTestApp(object):
     res.setHandler( self.ezapp.topWidget )
     if uievent.code == tokens.KEY_REPEAT.hashed or uievent.code==tokens.KEY_DOWN.hashed:
       KC = uievent.keycode
-      if KC == ord(","): # prev program
+      if KC == ord("."): # prev program
         self.prog_index -= 1
         if self.prog_index < 0:
           self.prog_index = len(self.sorted_progs)-1
@@ -205,7 +205,7 @@ class SingulTestApp(object):
         if self.pgmview:
           self.pgmview.setProgram(self.prog)
         return res
-      elif KC == ord("."): # next program
+      elif KC == ord(","): # next program
         self.prog_index += 1
         if self.prog_index >= len(self.sorted_progs):
           self.prog_index = 0

@@ -69,6 +69,7 @@ void AMP_MONOIO::doKeyOn(const KeyOnInfo& koi) // final
 
 PLUSAMP_DATA::PLUSAMP_DATA(std::string name)
     : DspBlockData(name) {
+  _blocktype = "PLUSAMP";
   addParam("gain")->useDefaultEvaluator(); // position: eval: "POS" 
 }
 dspblk_ptr_t PLUSAMP_DATA::createInstance() const {
@@ -123,6 +124,7 @@ void PLUSAMP::doKeyOn(const KeyOnInfo& koi) // final
 
 XAMP_DATA::XAMP_DATA(std::string name)
     : DspBlockData(name) {
+  _blocktype = "XAMP";
   addParam("gain")->useDefaultEvaluator(); // position: eval: "POS" 
 }
 dspblk_ptr_t XAMP_DATA::createInstance() const {
@@ -174,6 +176,7 @@ void XAMP::doKeyOn(const KeyOnInfo& koi) // final
 
 GAIN_DATA::GAIN_DATA(std::string name)
     : DspBlockData(name) {
+  _blocktype = "GAIN";
   addParam("gain")->useDefaultEvaluator(); // position: eval: "POS" 
 }
 dspblk_ptr_t GAIN_DATA::createInstance() const {
@@ -204,6 +207,7 @@ void GAIN::compute(DspBuffer& dspbuf) // final
 
 STEREO_GAIN_DATA::STEREO_GAIN_DATA(std::string name)
     : DspBlockData(name) {
+  _blocktype = "STEREO_GAIN";
   addParam("gain")->useAmplitudeEvaluator(); 
 }
 dspblk_ptr_t STEREO_GAIN_DATA::createInstance() const {
@@ -235,6 +239,7 @@ void STEREO_GAIN::compute(DspBuffer& dspbuf) // final
 
 XFADE_DATA::XFADE_DATA(std::string name)
     : DspBlockData(name) {
+  _blocktype = "XFADE";
   addParam("gain")->useDefaultEvaluator(); // position: eval: "POS" 
 }
 dspblk_ptr_t XFADE_DATA::createInstance() const {
@@ -284,6 +289,7 @@ void XFADE::doKeyOn(const KeyOnInfo& koi) // final
 
 XGAIN_DATA::XGAIN_DATA(std::string name)
     : DspBlockData(name) {
+  _blocktype = "XGAIN";
   addParam("gain")->useDefaultEvaluator(); // position: eval: "POS" 
 }
 dspblk_ptr_t XGAIN_DATA::createInstance() const {
@@ -326,6 +332,7 @@ void XGAIN::doKeyOn(const KeyOnInfo& koi) // final
 
 AMPU_AMPL_DATA::AMPU_AMPL_DATA(std::string name)
     : DspBlockData(name) {
+  _blocktype = "AMPUAMPL";
   addParam("gainU")->useDefaultEvaluator(); // position: eval: "POS" 
   addParam("gainL")->useDefaultEvaluator(); // position: eval: "POS" 
 }
@@ -387,6 +394,7 @@ void AMPU_AMPL::doKeyOn(const KeyOnInfo& koi) // final
 
 BAL_AMP_DATA::BAL_AMP_DATA(std::string name)
     : DspBlockData(name) {
+  _blocktype = "BALAMP";
   addParam("POS")->useDefaultEvaluator(); // position: eval: "POS" 
   addParam("AMP")->useAmplitudeEvaluator(); // position: eval: "POS" 
 }
@@ -423,6 +431,7 @@ void BAL_AMP::doKeyOn(const KeyOnInfo& koi) // final
 
 AMP_MOD_OSC_DATA::AMP_MOD_OSC_DATA(std::string name)
     : DspBlockData(name) {
+  _blocktype = "AMPMODOSC";
   addParam("PITCH")->usePitchEvaluator(); // oscilator pitch 
   addParam("DEP")->useDefaultEvaluator(); // ampmod depth 
 }
@@ -459,6 +468,7 @@ void AMP_MOD_OSC::doKeyOn(const KeyOnInfo& koi) // final
 
 PANNER_DATA::PANNER_DATA(std::string name)
     : DspBlockData(name) {
+  _blocktype = "PANNER";
   addParam("POS")->useDefaultEvaluator(); // position: eval: "POS" 
 }
 dspblk_ptr_t PANNER_DATA::createInstance() const {
@@ -506,6 +516,7 @@ void PANNER::doKeyOn(const KeyOnInfo& koi) // final
 
 BANGAMP_DATA::BANGAMP_DATA(std::string name)
     : DspBlockData(name) {
+  _blocktype = "!AMP";
   addParam("gain")->useDefaultEvaluator(); // position: eval: "POS" 
 }
 dspblk_ptr_t BANGAMP_DATA::createInstance() const {

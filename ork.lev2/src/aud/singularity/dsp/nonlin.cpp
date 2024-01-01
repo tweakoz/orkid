@@ -19,6 +19,7 @@ float wrap(float inp, float adj);
 
 SHAPER_DATA::SHAPER_DATA(std::string name)
     : DspBlockData(name) {
+  _blocktype = "SHAPER";
   addParam("amount","x")->useDefaultEvaluator(); 
 }
 dspblk_ptr_t SHAPER_DATA::createInstance() const {
@@ -52,6 +53,7 @@ void SHAPER::compute(DspBuffer& dspbuf) // final
 
 SHAPE2_DATA::SHAPE2_DATA(std::string name)
     : DspBlockData(name) {
+  _blocktype = "SHAPE2";
   addParam("amount","x")->useDefaultEvaluator(); 
 }
 dspblk_ptr_t SHAPE2_DATA::createInstance() const {
@@ -83,6 +85,7 @@ void SHAPE2::compute(DspBuffer& dspbuf) // final
 
 TWOPARAM_SHAPER_DATA::TWOPARAM_SHAPER_DATA(std::string name)
     : DspBlockData(name) {
+  _blocktype = "TWOPARAM_SHAPER";
   addParam("even")->useDefaultEvaluator(); 
   addParam("odd")->useDefaultEvaluator(); 
 }

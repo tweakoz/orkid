@@ -284,7 +284,7 @@ void drawtext(
   if (ork::lev2::_HIDPI()) {
     fontman->SetCurrentFont("i32");
   } else {
-    fontman->SetCurrentFont("i16");
+    fontman->SetCurrentFont("i14");
   }
   context->PushModColor(fcolor4(r, g, b, 1));
 
