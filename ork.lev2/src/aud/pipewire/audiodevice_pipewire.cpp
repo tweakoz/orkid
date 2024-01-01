@@ -105,10 +105,9 @@ void PrivateImplementation::on_pw_process(void* userdata) {
     the_synth->compute(num_frames, _this->_input_buffer);
 
     const auto& obuf = the_synth->_obuf;
-    float gain       = the_synth->_masterGain;
     for (size_t i = 0; i < num_frames; i++) {
-      *output_buffer++ = obuf._leftBuffer[i]* gain;  // interleaved
-      *output_buffer++ = obuf._rightBuffer[i]* gain; // interleaved
+      *output_buffer++ = obuf._leftBuffer[i];  // interleaved
+      *output_buffer++ = obuf._rightBuffer[i]; // interleaved
     }
 
     _this->_timeAccum += _this->_timer.SecsSinceStart() - start_time;

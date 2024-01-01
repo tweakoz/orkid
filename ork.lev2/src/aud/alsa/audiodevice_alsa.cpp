@@ -162,11 +162,10 @@ PrivateImplementation::PrivateImplementation() {
       if (_multibufProducer.try_pop(popped)) {
         _synth->compute(_numframes, _float_buf);
         const auto& obuf = _synth->_obuf;
-        float gain       = _synth->_masterGain;
         auto sbuf        = popped->_s16_buf;
         auto lbuf        = obuf._leftBuffer;
         auto rbuf        = obuf._rightBuffer;
-        float gint       = gain * 16384.0f;
+        float gint       = 16384.0f;
         for (size_t i = 0; i < _numframes; i++) {
           sbuf[i * 2 + 0] = int16_t(lbuf[i] * gint); // interleaved
           sbuf[i * 2 + 1] = int16_t(rbuf[i] * gint); // interleaved

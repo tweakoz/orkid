@@ -126,7 +126,7 @@ class KrzApp(SingulTestApp):
       "Sweetar",
       "Doomsday"
     ]
-    self.sorted_progs = ok_list
+    #self.sorted_progs = ok_list
     print("krzprogs<%s>" % self.krzprogs)    
     self.prog_index = find_index(self.sorted_progs, "Doomsday")
     #self.prog_index = find_index(self.sorted_progs, "Chorus_Gtr")
