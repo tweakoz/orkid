@@ -223,9 +223,20 @@ float ENVX(float vpw, float vph);
 float DSPW(float vpw, float vph);
 float DSPX(float vpw, float vph);
 void DrawBorder(lev2::Context* context, int X1, int Y1, int X2, int Y2, int color = 0);
-
+///////////////////////////////////////////////////////////////////////////////
+struct ProgramView final : public ui::Surface {
+  ProgramView();
+  void DoRePaintSurface(ui::drawevent_constptr_t drwev) override;
+  void _doGpuInit(lev2::Context* pt) override;
+  ui::HandlerResult DoOnUiEvent(ui::event_constptr_t EV) override;
+  ork::lev2::CTXBASE* _ctxbase = nullptr;
+  int _updatecount             = 0;
+  prgdata_constptr_t _curprogram;
+  int _octaveshift = 0;
+  int _velocity    = 127;
+};
 ///////////////////////////////////////////////////////////////////////////////
 
-static const float fontscale = 0.40;
+static const float fontscale = 0.50;
 
 } // namespace ork::audio::singularity

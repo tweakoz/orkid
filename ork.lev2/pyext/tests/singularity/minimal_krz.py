@@ -42,14 +42,10 @@ class KrzApp(SingulTestApp):
 
   def onNote(self,voice):
     LD = self.prog.layer(self.layerID)
-    
     if LD:
-      DST = LD.stage("DSP")
-      DST.dump()
-      AST = LD.stage("AMP")
-      AST.dump()
       #source = LD.createScopeSource()
       #source.connect(self.the_sink)
+      pass
     if False:
       LD = self.prog.layer(0)
       DST = LD.stage("DSP")
@@ -139,6 +135,8 @@ class KrzApp(SingulTestApp):
     self.prog_index = find_index(self.sorted_progs, "Chorus_Gtr")
     self.prog = self.soundbank.programByName("Chorus_Gtr")
     self.synth.masterGain = singularity.decibelsToLinear(-24.0)
+    if self.pgmview:
+      self.pgmview.setProgram(self.prog)
 
 ###############################################################################
 

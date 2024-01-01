@@ -25,10 +25,10 @@ namespace ork::audio::singularity {
 const s16* getK2V3InternalSoundBlock() {
   static s16* gdata = nullptr;
   if (nullptr == gdata) {
-    gdata = (s16*)malloc(24 << 20);
+    gdata          = (s16*)malloc(24 << 20);
     auto data_read = gdata;
     ///////////////////////////////////////////////////////////////////////////////////////////
-    auto load_sound_block = [&](file::Path filename, size_t numbytes){
+    auto load_sound_block = [&](file::Path filename, size_t numbytes) {
       printf("Loading Soundblock<%s>\n", filename.c_str());
       FILE* fin = fopen(filename.toAbsolute().c_str(), "rb");
       if (fin == nullptr) {
@@ -36,13 +36,13 @@ const s16* getK2V3InternalSoundBlock() {
         OrkAssert(false);
       }
       fread(data_read, numbytes, 1, fin);
-      data_read += (numbytes>>1);
+      data_read += (numbytes >> 1);
       fclose(fin);
     };
     ///////////////////////////////////////////////////////////////////////////////////////////
-    load_sound_block(basePath() / "kurzweil" / "k2vx_samples_base.bin", 8<<20);
-    load_sound_block(basePath() / "kurzweil" / "k2vx_samples_ext1.bin", 8<<20);
-    load_sound_block(basePath() / "kurzweil" / "k2vx_samples_ext2.bin", 8<<20);
+    load_sound_block(basePath() / "kurzweil" / "k2vx_samples_base.bin", 8 << 20);
+    load_sound_block(basePath() / "kurzweil" / "k2vx_samples_ext1.bin", 8 << 20);
+    load_sound_block(basePath() / "kurzweil" / "k2vx_samples_ext2.bin", 8 << 20);
     ///////////////////////////////////////////////////////////////////////////////////////////
   }
   return gdata;
@@ -221,26 +221,24 @@ sample* KrzBankDataParser::parseSample(const Value& jsonobj, const multisample* 
   sout->_blk_loopend   = jsonobj["uEnd"].GetInt();
   sout->_blk_end       = jsonobj["uEnd"].GetInt();
 
-  int orchestral_base = 16<<20;
-  int contemporary_base = 20<<20;
-  int orchestral_offset = orchestral_base - (4<<20);
-  int contemporary_offset = contemporary_base - (8<<20);
+  int orchestral_base     = 16 << 20;
+  int contemporary_base   = 20 << 20;
+  int orchestral_offset   = orchestral_base - (4 << 20);
+  int contemporary_offset = contemporary_base - (8 << 20);
 
-  if(sout->_blk_start>=contemporary_base){
+  if (sout->_blk_start >= contemporary_base) {
     sout->_blk_start -= contemporary_offset;
-    sout->_blk_alt   -= contemporary_offset;
+    sout->_blk_alt -= contemporary_offset;
     sout->_blk_loopstart -= contemporary_offset;
     sout->_blk_loopend -= contemporary_offset;
     sout->_blk_end -= contemporary_offset;
-  }
-  else if(sout->_blk_start>=orchestral_base){
+  } else if (sout->_blk_start >= orchestral_base) {
     sout->_blk_start -= orchestral_offset;
-    sout->_blk_alt   -= orchestral_offset;
+    sout->_blk_alt -= orchestral_offset;
     sout->_blk_loopstart -= orchestral_offset;
     sout->_blk_loopend -= orchestral_offset;
     sout->_blk_end -= orchestral_offset;
   }
-
 
   std::string pbmode = jsonobj["playbackMode"].GetString();
   bool isloop        = jsonobj["isLooped"].GetBool();
@@ -253,7 +251,7 @@ sample* KrzBankDataParser::parseSample(const Value& jsonobj, const multisample* 
     sout->_loopMode = isloop ? eLoopMode::BIDIR : eLoopMode::NONE;
   else {
     printf("pbmode<%s>\n", pbmode.c_str());
-    //OrkAssert(false);
+    // OrkAssert(false);
   }
 
   float sgain    = jsonobj["volAdjust"].GetFloat();
@@ -269,9 +267,9 @@ sample* KrzBankDataParser::parseSample(const Value& jsonobj, const multisample* 
   OrkAssert(jsonneslopes.Size() == jsonnetimes.Size());
   int numsegs = jsonneslopes.Size();
 
-  if(numsegs>0){
+  if (numsegs > 0) {
 
-    auto natenv = std::make_shared<NatEnvWrapperData>();
+    auto natenv   = std::make_shared<NatEnvWrapperData>();
     natenv->_name = "AMPENV";
     natenv->_segments.resize(numsegs);
 
@@ -378,14 +376,15 @@ void KrzBankDataParser::parseLfo(const rapidjson::Value& jo, controlblockdata_pt
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void KrzBankDataParser::parseFun(const rapidjson::Value& jo, //
-                                 lyrdata_ptr_t layerdata, //
-                                 controlblockdata_ptr_t cblock, // 
-                                 const std::string& name) {
-  auto out   = cblock->addController<FunData>(name);
-  out->_a    = jo["a"].GetString();
-  out->_b    = jo["b"].GetString();
-  out->_op   = jo["op"].GetString();
+void KrzBankDataParser::parseFun(
+    const rapidjson::Value& jo,    //
+    lyrdata_ptr_t layerdata,       //
+    controlblockdata_ptr_t cblock, //
+    const std::string& name) {
+  auto out = cblock->addController<FunData>(name);
+  out->_a  = jo["a"].GetString();
+  out->_b  = jo["b"].GetString();
+  out->_op = jo["op"].GetString();
 }
 
 int NoteFromString(const std::string& snote) {
@@ -419,9 +418,10 @@ int NoteFromString(const std::string& snote) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void KrzBankDataParser::parseFBlock(const Value& fseg, //
-                                    lyrdata_ptr_t layerdata, //
-                                    dspparam_ptr_t fblk) { //
+void KrzBankDataParser::parseFBlock(
+    const Value& fseg,       //
+    lyrdata_ptr_t layerdata, //
+    dspparam_ptr_t fblk) {   //
 
   //////////////////////////////////
   using namespace std::string_literals;
@@ -483,42 +483,42 @@ void KrzBankDataParser::parseFBlock(const Value& fseg, //
   if (fseg.HasMember("Fine") and fseg["Fine"].IsObject()) {
     fblk->_fine = fseg["Fine"]["Value"].GetFloat();
   }
-  if (fseg.HasMember("FineHZ") and fseg["FineHZ"].IsNumber()){
+  if (fseg.HasMember("FineHZ") and fseg["FineHZ"].IsNumber()) {
     fblk->_fineHZ = fseg["FineHZ"].GetFloat();
   }
 
   bool use_mods = false;
   if (fseg.HasMember("Src1")) {
-    auto& s1 = fseg["Src1"];
-    std::string ctrl_name =  s1["Source"].GetString();
+    auto& s1              = fseg["Src1"];
+    std::string ctrl_name = s1["Source"].GetString();
     auto SRC1             = layerdata->_ctrlBlock->controllerByName(ctrl_name);
-    mods->_src1 = SRC1;
+    mods->_src1           = SRC1;
     if (s1.HasMember("Depth")) {
-      auto& d                = s1["Depth"];
+      auto& d          = s1["Depth"];
       mods->_src1Depth = d["Value"].GetFloat();
     }
     use_mods = true;
   }
   if (fseg.HasMember("Src2")) {
-    auto& s2 = fseg["Src2"];
-    std::string ctrl_name =  s2["Source"].GetString();
+    auto& s2              = fseg["Src2"];
+    std::string ctrl_name = s2["Source"].GetString();
     auto SRC2             = layerdata->_ctrlBlock->controllerByName(ctrl_name);
-    mods->_src2 = SRC2;
-    if (s2.HasMember("DepthControl")){
-      std::string ctrl_name =  s2["DepthControl"].GetString();
+    mods->_src2           = SRC2;
+    if (s2.HasMember("DepthControl")) {
+      std::string ctrl_name = s2["DepthControl"].GetString();
       auto DEPTHCONTROL     = layerdata->_ctrlBlock->controllerByName(ctrl_name);
-      mods->_src2DepthCtrl = DEPTHCONTROL;
+      mods->_src2DepthCtrl  = DEPTHCONTROL;
     }
-    if (s2.HasMember("MinDepth")){
+    if (s2.HasMember("MinDepth")) {
       mods->_src2MinDepth = s2["MinDepth"]["Value"].GetFloat();
     }
-    if (s2.HasMember("MaxDepth")){
+    if (s2.HasMember("MaxDepth")) {
       mods->_src2MaxDepth = s2["MaxDepth"]["Value"].GetFloat();
     }
     use_mods = true;
   }
-  if (fseg.HasMember("KeyTrack")){
-    fblk->_keyTrack = fseg["KeyTrack"]["Value"].GetFloat();
+  if (fseg.HasMember("KeyTrack")) {
+    fblk->_keyTrack      = fseg["KeyTrack"]["Value"].GetFloat();
     fblk->_keyTrackUnits = fseg["KeyTrack"]["Unit"].GetString();
   }
   if (fseg.HasMember("KeyStart")) {
@@ -528,11 +528,11 @@ void KrzBankDataParser::parseFBlock(const Value& fseg, //
     int ioct               = i["Octave"].GetInt();
     fblk->_keystartNote    = (ioct + 1) * 12 + inote;
   }
-  if (fseg.HasMember("VelTrack")){
-    fblk->_velTrack = fseg["VelTrack"]["Value"].GetFloat();
+  if (fseg.HasMember("VelTrack")) {
+    fblk->_velTrack      = fseg["VelTrack"]["Value"].GetFloat();
     fblk->_velTrackUnits = fseg["VelTrack"]["Unit"].GetString();
   }
-  if(use_mods){
+  if (use_mods) {
     fblk->_mods = mods;
   }
   //////////////////////////////////
@@ -546,217 +546,164 @@ dspblkdata_ptr_t KrzBankDataParser::parseDspBlock(const Value& dseg, dspstagedat
   dspblkdata_ptr_t rval;
   if (dseg.HasMember("BLOCK_ALG ")) {
     std::string blocktype = dseg["BLOCK_ALG "].GetString();
-    //rval             = std::make_shared<DspBlockData>();
-    //rval->_blocktype = dseg["BLOCK_ALG "].GetString();
+    // rval             = std::make_shared<DspBlockData>();
+    // rval->_blocktype = dseg["BLOCK_ALG "].GetString();
     ///////////
     // alg_filters
     ///////////
-    if(blocktype=="BANDPASS FILT"){
+    if (blocktype == "BANDPASS FILT") {
       rval = stage->appendTypedBlock<BANDPASS_FILT>(blocktype);
-    }
-    else if(blocktype=="BAND2"){
+    } else if (blocktype == "BAND2") {
       rval = stage->appendTypedBlock<BAND2>(blocktype);
-    }
-    else if(blocktype=="NOTCH FILTER"){
+    } else if (blocktype == "NOTCH FILTER") {
       rval = stage->appendTypedBlock<NOTCH_FILT>(blocktype);
-    }
-    else if(blocktype=="NOTCH2"){
+    } else if (blocktype == "NOTCH2") {
       rval = stage->appendTypedBlock<NOTCH2>(blocktype);
-    }
-    else if(blocktype=="DOUBLE NOTCH W/SEP"){
+    } else if (blocktype == "DOUBLE NOTCH W/SEP") {
       rval = stage->appendTypedBlock<DOUBLE_NOTCH_W_SEP>(blocktype);
-    }
-    else if(blocktype=="TWIN PEAKS BANDPASS"){
+    } else if (blocktype == "TWIN PEAKS BANDPASS") {
       // TODO FIXME
       rval = stage->appendTypedBlock<DOUBLE_NOTCH_W_SEP>(blocktype);
-    }
-    else if(blocktype=="LOPAS2"){
+    } else if (blocktype == "LOPAS2") {
       rval = stage->appendTypedBlock<LOPAS2>(blocktype);
-    }
-    else if(blocktype=="LP2RES"){
+    } else if (blocktype == "LP2RES") {
       rval = stage->appendTypedBlock<LP2RES>(blocktype);
-    }
-    else if(blocktype=="LPGATE"){
+    } else if (blocktype == "LPGATE") {
       rval = stage->appendTypedBlock<LPGATE>(blocktype);
-    }
-    else if(blocktype=="4POLE HIPASS W/SEP"){
+    } else if (blocktype == "4POLE HIPASS W/SEP") {
       rval = stage->appendTypedBlock<FOURPOLE_HIPASS_W_SEP>(blocktype);
-    }
-    else if(blocktype=="LPCLIP"){
+    } else if (blocktype == "LPCLIP") {
       rval = stage->appendTypedBlock<LPCLIP>(blocktype);
-    }
-    else if(blocktype=="LOPASS"){
+    } else if (blocktype == "LOPASS") {
       rval = stage->appendTypedBlock<LowPass>(blocktype);
-    }
-    else if(blocktype=="HIPASS"){
+    } else if (blocktype == "HIPASS") {
       rval = stage->appendTypedBlock<HighPass>(blocktype);
-    }
-    else if(blocktype=="HIPAS2"){
+    } else if (blocktype == "HIPAS2") {
       // TODO FIXME
       rval = stage->appendTypedBlock<HighPass>(blocktype);
-    }
-    else if(blocktype=="ALPASS"){
+    } else if (blocktype == "ALPASS") {
       rval = stage->appendTypedBlock<AllPass>(blocktype);
-    }
-    else if(blocktype=="HIFREQ STIMULATOR"){
+    } else if (blocktype == "HIFREQ STIMULATOR") {
       rval = stage->appendTypedBlock<HighFreqStimulator>(blocktype);
-    }
-    else if(blocktype=="2POLE LOWPASS"){
+    } else if (blocktype == "2POLE LOWPASS") {
       rval = stage->appendTypedBlock<TwoPoleLowPass>(blocktype);
-    }
-    else if(blocktype=="2POLE ALLPASS"){
+    } else if (blocktype == "2POLE ALLPASS") {
       rval = stage->appendTypedBlock<TwoPoleAllPass>(blocktype);
-    }
-    else if(blocktype=="4POLE LOPASS W/SEP"){
+    } else if (blocktype == "4POLE LOPASS W/SEP") {
       rval = stage->appendTypedBlock<FourPoleLowPassWithSep>(blocktype);
     }
     ///////////
     // alg_eqs
     ///////////
-    else if(blocktype=="STEEP RESONANT BASS"){
+    else if (blocktype == "STEEP RESONANT BASS") {
       rval = stage->appendTypedBlock<STEEP_RESONANT_BASS>(blocktype);
-    }
-    else if(blocktype=="PARA BASS"){
+    } else if (blocktype == "PARA BASS") {
       rval = stage->appendTypedBlock<PARABASS>(blocktype);
-    }
-    else if(blocktype=="PARA MID"){
+    } else if (blocktype == "PARA MID") {
       rval = stage->appendTypedBlock<PARAMID>(blocktype);
-    }
-    else if(blocktype=="PARA TREBLE"){
+    } else if (blocktype == "PARA TREBLE") {
       rval = stage->appendTypedBlock<PARATREBLE>(blocktype);
-    }
-    else if(blocktype=="PARAMETRIC EQ"){
+    } else if (blocktype == "PARAMETRIC EQ") {
       rval = stage->appendTypedBlock<ParametricEq>(blocktype);
     }
     ///////////
     // alg_gain
     ///////////
-    else if(blocktype=="AMP"){
+    else if (blocktype == "AMP") {
       rval = stage->appendTypedBlock<AMP_MONOIO>(blocktype);
-    }
-    else if(blocktype=="+ AMP"){
+    } else if (blocktype == "+ AMP") {
       rval = stage->appendTypedBlock<PLUSAMP>(blocktype);
-    }
-    else if(blocktype=="+ GAIN"){
+    } else if (blocktype == "+ GAIN") {
       // TODO FIXME
       rval = stage->appendTypedBlock<PLUSAMP>(blocktype);
-    }
-    else if(blocktype=="x AMP"){
+    } else if (blocktype == "x AMP") {
       rval = stage->appendTypedBlock<XAMP>(blocktype);
-    }
-    else if(blocktype=="AMPMOD"){
+    } else if (blocktype == "AMPMOD") {
       // TODO FIXME
       rval = stage->appendTypedBlock<XAMP>(blocktype);
-    }
-    else if(blocktype=="AMP MOD OSC"){
+    } else if (blocktype == "AMP MOD OSC") {
       // TODO FIXME
       rval = stage->appendTypedBlock<AMP_MOD_OSC>(blocktype);
-    }
-    else if(blocktype=="GAIN"){
+    } else if (blocktype == "GAIN") {
       rval = stage->appendTypedBlock<GAIN>(blocktype);
-    }
-    else if(blocktype=="x GAIN"){
+    } else if (blocktype == "x GAIN") {
       // TODO FIXME
       rval = stage->appendTypedBlock<XAMP>(blocktype);
-    }
-    else if(blocktype=="! AMP"){
+    } else if (blocktype == "! AMP") {
       rval = stage->appendTypedBlock<BANGAMP>(blocktype);
-    }
-    else if(blocktype=="AMP U   AMP L"){
+    } else if (blocktype == "AMP U   AMP L") {
       rval = stage->appendTypedBlock<AMPU_AMPL>(blocktype);
-    }
-    else if(blocktype=="BAL     AMP"){
+    } else if (blocktype == "BAL     AMP") {
       rval = stage->appendTypedBlock<BAL_AMP>(blocktype);
-    }
-    else if(blocktype=="XFADE"){
+    } else if (blocktype == "XFADE") {
       rval = stage->appendTypedBlock<XFADE>(blocktype);
-    }
-    else if(blocktype=="PANNER"){
+    } else if (blocktype == "PANNER") {
       rval = stage->appendTypedBlock<PANNER>(blocktype);
     }
     ///////////
     // alg_nonlin
     ///////////
-    else if(blocktype=="SHAPER"){
+    else if (blocktype == "SHAPER") {
       rval = stage->appendTypedBlock<SHAPER>(blocktype);
-    }
-    else if(blocktype=="SHAPE2"){
+    } else if (blocktype == "SHAPE2") {
       rval = stage->appendTypedBlock<SHAPE2>(blocktype);
-    }
-    else if(blocktype=="2PARAM SHAPER"){
+    } else if (blocktype == "2PARAM SHAPER") {
       rval = stage->appendTypedBlock<TWOPARAM_SHAPER>(blocktype);
-    }
-    else if(blocktype=="SHAPER"){
+    } else if (blocktype == "SHAPER") {
       rval = stage->appendTypedBlock<SHAPER>(blocktype);
-    }
-    else if(blocktype=="WRAP"){
+    } else if (blocktype == "WRAP") {
       rval = stage->appendTypedBlock<Wrap>(blocktype);
-    }
-    else if(blocktype=="DIST"){
+    } else if (blocktype == "DIST") {
       rval = stage->appendTypedBlock<Distortion>(blocktype);
     }
     ///////////
-    else if(blocktype=="PITCH"){
+    else if (blocktype == "PITCH") {
       // instantiate sampler ?
       rval = stage->appendTypedBlock<PITCH>(blocktype);
     }
     ///////////
     // alg_oscil
     ///////////
-    else if(blocktype=="SW+SHP"){
+    else if (blocktype == "SW+SHP") {
       rval = stage->appendTypedBlock<SWPLUSSHP>(blocktype);
-    }
-    else if(blocktype=="SAW+"){
+    } else if (blocktype == "SAW+") {
       rval = stage->appendTypedBlock<SAWPLUS>(blocktype);
-    }
-    else if(blocktype=="SINE"){
+    } else if (blocktype == "SINE") {
       rval = stage->appendTypedBlock<SINE>(blocktype);
-    }
-    else if(blocktype=="LF SIN"){
+    } else if (blocktype == "LF SIN") {
       // TODO FIXME
       rval = stage->appendTypedBlock<SINE>(blocktype);
-    }
-    else if(blocktype=="SAW"){
+    } else if (blocktype == "SAW") {
       rval = stage->appendTypedBlock<SAW>(blocktype);
-    }
-    else if(blocktype=="SW+DST"){
+    } else if (blocktype == "SW+DST") {
       rval = stage->appendTypedBlock<SAW>(blocktype);
-    }
-    else if(blocktype=="SQUARE"){
+    } else if (blocktype == "SQUARE") {
       rval = stage->appendTypedBlock<SQUARE>(blocktype);
-    }
-    else if(blocktype=="SINE+"){
+    } else if (blocktype == "SINE+") {
       rval = stage->appendTypedBlock<SINEPLUS>(blocktype);
-    }
-    else if(blocktype=="SHAPE MOD OSC"){
+    } else if (blocktype == "SHAPE MOD OSC") {
       rval = stage->appendTypedBlock<SHAPEMODOSC>(blocktype);
-    }
-    else if(blocktype=="+ SHAPEMOD OSC"){
+    } else if (blocktype == "+ SHAPEMOD OSC") {
       rval = stage->appendTypedBlock<PLUSSHAPEMODOSC>(blocktype);
-    }
-    else if(blocktype=="SYNC M"){
+    } else if (blocktype == "SYNC M") {
       rval = stage->appendTypedBlock<SYNCM>(blocktype);
-    }
-    else if(blocktype=="SYNC S"){
+    } else if (blocktype == "SYNC S") {
       rval = stage->appendTypedBlock<SYNCS>(blocktype);
-    }
-    else if(blocktype=="PWM"){
+    } else if (blocktype == "PWM") {
       rval = stage->appendTypedBlock<PWM>(blocktype);
-    }
-    else if(blocktype=="NOISE"){
+    } else if (blocktype == "NOISE") {
       rval = stage->appendTypedBlock<NOISE>(blocktype);
-    }
-    else if(blocktype=="NOISE+"){
+    } else if (blocktype == "NOISE+") {
       // TODO FIXME
       rval = stage->appendTypedBlock<NOISE>(blocktype);
     }
     ///////////
-    else if(blocktype=="NONE"){
+    else if (blocktype == "NONE") {
     }
     ///////////
     // ??
     ///////////
-    else{
+    else {
       printf("unhandled DSPBLOCK <%s>\n", blocktype.c_str());
       OrkAssert(false);
     }
@@ -821,7 +768,7 @@ void KrzBankDataParser::parseKmpBlock(const Value& kmseg, KmpBlockData& kmblk) {
 
 lyrdata_ptr_t KrzBankDataParser::parseLayer(const Value& jsonobj, prgdata_ptr_t pd) {
   const auto& name = pd->_name;
-  //printf("Got Prgram<%s> layer..\n", name.c_str());
+  // printf("Got Prgram<%s> layer..\n", name.c_str());
   const auto& calvinSeg = jsonobj["CALVIN"];
   const auto& keymapSeg = calvinSeg["KEYMAP"];
   const auto& pitchSeg  = calvinSeg["PITCH"];
@@ -836,7 +783,7 @@ lyrdata_ptr_t KrzBankDataParser::parseLayer(const Value& jsonobj, prgdata_ptr_t 
   }
 
   auto layerdata     = pd->newLayer();
-  auto km       = it->second;
+  auto km            = it->second;
   layerdata->_keymap = km;
 
   parseKmpBlock(keymapSeg, *layerdata->_kmpBlock);
@@ -852,7 +799,7 @@ lyrdata_ptr_t KrzBankDataParser::parseLayer(const Value& jsonobj, prgdata_ptr_t 
   layerdata->_atk1Hold = miscSeg["atkHold"].GetBool();
   layerdata->_atk3Hold = miscSeg["susHold"].GetBool();
 
-  auto krzalgdat = parseAlg(jsonobj);
+  auto krzalgdat      = parseAlg(jsonobj);
   layerdata->_algdata = krzalgdat._algdata;
 
   //////////////////////////////////////////////////////
@@ -966,8 +913,7 @@ lyrdata_ptr_t KrzBankDataParser::parseLayer(const Value& jsonobj, prgdata_ptr_t 
     const auto& seg = jsonobj["AMPENV"];
     if (seg.IsObject())
       parseEnv(seg, CB, "AMPENV");
-  }
-  else if(layerdata->_usenatenv){
+  } else if (layerdata->_usenatenv) {
     // AMPENV from NATENV
     natenvwrapperdata = CB->addController<NatEnvWrapperData>("AMPENV");
   }
@@ -1028,17 +974,15 @@ lyrdata_ptr_t KrzBankDataParser::parseLayer(const Value& jsonobj, prgdata_ptr_t 
   // resolve nested controllers
   //////////////////////////////////////////////////////
   auto named_controllers = CB->_controllers_by_name;
-  for( auto item : named_controllers){
+  for (auto item : named_controllers) {
     auto name = item.first;
     auto ctrl = item.second;
-    if(auto as_fun = std::dynamic_pointer_cast<FunData>(ctrl) ){
+    if (auto as_fun = std::dynamic_pointer_cast<FunData>(ctrl)) {
       auto resolvedA = CB->controllerByName(as_fun->_a);
       auto resolvedB = CB->controllerByName(as_fun->_b);
-    }
-    else if(auto as_lfo = std::dynamic_pointer_cast<LfoData>(ctrl) ){
+    } else if (auto as_lfo = std::dynamic_pointer_cast<LfoData>(ctrl)) {
       auto resolved = CB->controllerByName(as_lfo->_controller);
-    }
-    else{
+    } else {
     }
   }
   //////////////////////////////////////////////////////
@@ -1046,8 +990,8 @@ lyrdata_ptr_t KrzBankDataParser::parseLayer(const Value& jsonobj, prgdata_ptr_t 
   if (krzalgdat._algindex == 0)
     return layerdata;
 
-  bool USING_SAMPLE = krzalgdat._algindex<26;
-  USING_SAMPLE = USING_SAMPLE and (kmid!=0);
+  bool USING_SAMPLE = krzalgdat._algindex < 26;
+  USING_SAMPLE      = USING_SAMPLE and (kmid != 0);
 
   layerdata->_varmap->makeValueForKey<bool>("USING_SAMPLE", USING_SAMPLE);
 
@@ -1073,23 +1017,22 @@ lyrdata_ptr_t KrzBankDataParser::parseLayer(const Value& jsonobj, prgdata_ptr_t 
   };
 
   auto parse_dsp_block = [&](dspstagedata_ptr_t stage, int blkbase, int paramcount) -> dspblkdata_ptr_t {
-
     auto blockn1 = blkname(blkbase + 0);
     auto blockn2 = blkname(blkbase + 1);
     auto blockn3 = blkname(blkbase + 2);
     dspblkdata_ptr_t dspblock;
 
-    //printf("algd<%d> blkbase<%d> paramcount<%d> blockn1<%s>\n", krzalgdat._algindex, blkbase, paramcount, blockn1);
-    if(blockn1!="PITCH" and blockn2!="PITCH"){
+    // printf("algd<%d> blkbase<%d> paramcount<%d> blockn1<%s>\n", krzalgdat._algindex, blkbase, paramcount, blockn1);
+    if (blockn1 != "PITCH" and blockn2 != "PITCH") {
       dspblock = parseDspBlock(jsonobj[blockn1], stage, layerdata);
-      if( dspblock ){
-        if((paramcount>0) and (jsonobj.HasMember(blockn1))){
+      if (dspblock) {
+        if ((paramcount > 0) and (jsonobj.HasMember(blockn1))) {
           parseFBlock(jsonobj[blockn1], layerdata, dspblock->param(0));
         }
-        if((paramcount>1) and (jsonobj.HasMember(blockn2))){
+        if ((paramcount > 1) and (jsonobj.HasMember(blockn2))) {
           parseFBlock(jsonobj[blockn2], layerdata, dspblock->param(1));
         }
-        if((paramcount>2) and (jsonobj.HasMember(blockn3))){
+        if ((paramcount > 2) and (jsonobj.HasMember(blockn3))) {
           parseFBlock(jsonobj[blockn3], layerdata, dspblock->param(2));
         }
       }
@@ -1105,53 +1048,51 @@ lyrdata_ptr_t KrzBankDataParser::parseLayer(const Value& jsonobj, prgdata_ptr_t 
   printf("ACFG._w3<%d>\n", ACFG._w3);
   printf("ACFG._wa<%d>\n", ACFG._wa);
 
-  auto dspstage   = layerdata->stageByName("DSP");
-  auto ampstage   = layerdata->stageByName("AMP");
+  auto dspstage = layerdata->stageByName("DSP");
+  auto ampstage = layerdata->stageByName("AMP");
 
-  if (ACFG._wp){
-    //parse_dsp_block(dspstage, blockindex, ACFG._wp);
-    //parseDspBlock(pitchSeg, dspstage, layerdata);
+  if (ACFG._wp) {
+    // parse_dsp_block(dspstage, blockindex, ACFG._wp);
+    // parseDspBlock(pitchSeg, dspstage, layerdata);
     OrkAssert(USING_SAMPLE);
 
-    auto pitch = dspstage->appendTypedBlock<PITCH>("PITCH");
+    auto pitch   = dspstage->appendTypedBlock<PITCH>("PITCH");
     auto sampler = dspstage->appendTypedBlock<SAMPLER>("SAMPLER");
     parseFBlock(pitchSeg, layerdata, pitch->param(0));
     layerdata->_pchBlock = pitch;
     blockindex += ACFG._wp;
-    //sampler->_natenvwrapperdata = natenvwrapperdata;
+    // sampler->_natenvwrapperdata = natenvwrapperdata;
 
-  }
-  else{
+  } else {
     OrkAssert(not USING_SAMPLE);
   }
-  if (ACFG._w1){
+  if (ACFG._w1) {
     parse_dsp_block(dspstage, blockindex, ACFG._w1);
     blockindex += ACFG._w1;
   }
-  if (ACFG._w2){
+  if (ACFG._w2) {
     parse_dsp_block(dspstage, blockindex, ACFG._w2);
     blockindex += ACFG._w2;
   }
-  if (ACFG._w3){
+  if (ACFG._w3) {
     parse_dsp_block(dspstage, blockindex, ACFG._w3);
     blockindex += ACFG._w3;
   }
-  if (ACFG._wa){
+  if (ACFG._wa) {
     parse_dsp_block(ampstage, blockindex, ACFG._wa);
     blockindex += ACFG._wa;
-    if( krzalgdat._algindex >=1 and krzalgdat._algindex <= 4  ){
+    if (krzalgdat._algindex >= 1 and krzalgdat._algindex <= 4) {
       auto amp = ampstage->appendTypedBlock<PANNER>("PANNER");
     }
-
   }
 
   // if last stage is panner, then ioconfig numoutputs is 2
 
-  auto last = dspstage->_blockdatas[dspstage->_numblocks-1];
-  if(auto as_panner = std::dynamic_pointer_cast<PANNER_DATA>(last)){
+  auto last = dspstage->_blockdatas[dspstage->_numblocks - 1];
+  if (auto as_panner = std::dynamic_pointer_cast<PANNER_DATA>(last)) {
     dspstage->_ioconfig->_outputs.push_back(1);
   }
- 
+
   //////////////////////////////////////////////////////
 
   // printf( "got keymapID<%d:%p:%s>\n", kmid, km, km->_name.c_str() );
@@ -1194,9 +1135,31 @@ prgdata_ptr_t KrzBankDataParser::parseProgram(const Value& jsonobj) {
   const auto& jsonlays = jsonobj["LAYERS"];
   OrkAssert(jsonlays.IsArray());
 
+  pdata->addHudInfo(FormatString("ProgramType: KRZ"));
   for (SizeType i = 0; i < jsonlays.Size(); i++) // Uses SizeType instead of size_t
   {
-    auto l = parseLayer(jsonlays[i], pdata);
+    auto l       = parseLayer(jsonlays[i], pdata);
+    auto algdata = l->_algdata;
+    pdata->addHudInfo(FormatString("LAYER: %d", i));
+    pdata->addHudInfo(FormatString("  ALG: %s", algdata->_name.c_str()));
+    int numstages = algdata->_numstages;
+    for (int istage = 0; istage < numstages; istage++) {
+      auto stage = l->stageByIndex(istage);
+      pdata->addHudInfo(FormatString("  STAGE: %s", stage->_name.c_str()));
+      int numblocks = stage->_namedblockdatas.size();
+      for (int iblock = 0; iblock < numblocks; iblock++) {
+        auto block = stage->_blockdatas[iblock];
+        if(block){
+          pdata->addHudInfo(FormatString("    BLOCK: %s", block->_blocktype.c_str()));
+          for( auto p : block->_paramd ){
+            if(p){
+              auto pstr = FormatString("     PARAM name<%s> : units<%s> evaluator<%s>", p->_name.c_str(), p->_units.c_str(), p->_evaluatorid.c_str() );
+              pdata->addHudInfo(pstr);
+            }
+          }
+        }
+      }
+    }
   }
 
   return pdata;
@@ -1224,7 +1187,7 @@ void KrzBankDataParser::loadKrzJsonFromFile(const std::string& fname, int ibasei
 ///////////////////////////////////////////////////////////////////////////////
 
 void KrzBankDataParser::loadKrzJsonFromString(const std::string& json_data, int ibaseid) {
-  
+
   _objdb = std::make_shared<BankData>();
 
   Document document;
@@ -1254,7 +1217,7 @@ void KrzBankDataParser::loadKrzJsonFromString(const std::string& json_data, int 
     } else if (obj.HasMember("Program")) {
       auto p               = parseProgram(obj);
       _tempprograms[objid] = p;
-      //p->_tags             = "k2000(" + fname + ")";
+      // p->_tags             = "k2000(" + fname + ")";
     } else {
       OrkAssert(false);
     }
@@ -1298,7 +1261,7 @@ void KrzBankDataParser::loadKrzJsonFromString(const std::string& json_data, int 
         } else {
           auto s      = sit->second;
           kr->_sample = s;
-          //printf( "found sample<%d:%s> in multisample<%d>\n", sid, s->_name.c_str(), msid );
+          // printf( "found sample<%d:%s> in multisample<%d>\n", sid, s->_name.c_str(), msid );
         }
       }
     }
@@ -1311,6 +1274,5 @@ void KrzBankDataParser::loadKrzJsonFromString(const std::string& json_data, int 
 
   /////////////////////////////////////////
 }
-
 
 } // namespace ork::audio::singularity

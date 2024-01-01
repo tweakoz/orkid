@@ -17,17 +17,6 @@ using namespace ork::lev2;
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::audio::singularity {
-struct ProgramView final : public ui::Surface {
-  ProgramView();
-  void DoRePaintSurface(ui::drawevent_constptr_t drwev) override;
-  void _doGpuInit(lev2::Context* pt) override;
-  ui::HandlerResult DoOnUiEvent(ui::event_constptr_t EV) override;
-  ork::lev2::CTXBASE* _ctxbase = nullptr;
-  int _updatecount             = 0;
-  prgdata_constptr_t _curprogram;
-  int _octaveshift = 0;
-  int _velocity    = 127;
-};
 ///////////////////////////////////////////////////////////////////////////////
 hudpanel_ptr_t createProgramView2(
     uilayoutgroup_ptr_t vp, //

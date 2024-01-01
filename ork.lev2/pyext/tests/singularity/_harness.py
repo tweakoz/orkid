@@ -172,14 +172,6 @@ class SingulTestApp(object):
     print("###########################################")
     print("layerID<%d> layermask<%s> " % (self.layerID,as_bools))
     print("###########################################")
-    if self.prog:
-      LD = self.prog.layer(self.layerID)
-      if LD:
-        DST = LD.stage("DSP")
-        DST.dump()
-        AST = LD.stage("AMP")
-        AST.dump()
-    print("###########################################")
     pass
 
   def onUiEvent(self,uievent):
@@ -192,9 +184,9 @@ class SingulTestApp(object):
         if self.prog_index < 0:
           self.prog_index = len(self.sorted_progs)-1
         prgname = self.sorted_progs[self.prog_index]
-        print("prgname<%s>" % prgname)
         self.prog = self.soundbank.programByName(prgname)
-        print("prgname<%s> %s" % (prgname, self.prog.name))
+        if self.pgmview:
+          self.pgmview.setProgram(self.prog)
         return res
       elif KC == ord("."): # next program
         self.prog_index += 1
@@ -202,7 +194,8 @@ class SingulTestApp(object):
           self.prog_index = 0
         prgname = self.sorted_progs[self.prog_index]
         self.prog = self.soundbank.programByName(prgname)
-        print("prgname<%s> %s" % (prgname, self.prog.name))
+        if self.pgmview:
+          self.pgmview.setProgram(self.prog)
         return res
     if uievent.code == tokens.KEY_DOWN.hashed:
       KC = uievent.keycode

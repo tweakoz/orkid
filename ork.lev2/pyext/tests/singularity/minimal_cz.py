@@ -52,7 +52,9 @@ class Cz1App(SingulTestApp):
     ]
     # find index of "Bells and Chimes" in sorted_progs
     self.prog_index = find_index(self.sorted_progs, "Casio Toms")
-    print("prog_index<%d>" % self.prog_index)
+    self.prog = self.soundbank.programByName("Casio Toms")
+    if self.pgmview:
+      self.pgmview.setProgram(self.prog)
 
   ##############################################
 
