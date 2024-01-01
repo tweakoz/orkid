@@ -50,7 +50,6 @@ class ParticlesApp(object):
 
     vguides = lg_group.vertical_guides
     vguides[1].proportion = 0.35
-    vguides[2].proportion = 0.35
 
     ################################################
     # replace left viewport with particle editor

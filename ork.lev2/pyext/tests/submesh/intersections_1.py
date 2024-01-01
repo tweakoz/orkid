@@ -229,25 +229,29 @@ class SceneGraphApp(BasicUiCamSgApp):
     #print("intersection convexVolume: %s" % submesh_isect.convexVolume)
     #self.mutex.release()
   def onUiEvent(self,uievent):
+    res = ui.HandlerResult()
     super().onUiEvent(uievent)
     if uievent.code == tokens.KEY_DOWN.hashed or uievent.code == tokens.KEY_REPEAT.hashed:
-        if uievent.keycode == 32: # spacebar
-          self.maxsteps_sim += 1
-          self.dirty = True
-        elif uievent.keycode == ord('/'): 
-          self.step_incr = (self.step_incr + 1)%2
-        elif uievent.keycode == ord('['): # spacebar
-          self.dirty = True
-          self.maxsteps_cut = (self.maxsteps_cut - 1)
-          if self.maxsteps_cut<0:
-            self.maxsteps_cut = 0
-          print(self.maxsteps_cut)
-        elif uievent.keycode == ord(']'): # spacebar
-          self.dirty = True
-          self.maxsteps_cut = (self.maxsteps_cut + 1)
-          if self.maxsteps_cut>8:
-            self.maxsteps_cut = 8
-          print(self.maxsteps_cut)
+      if uievent.keycode == 32: # spacebar
+        self.maxsteps_sim += 1
+        self.dirty = True
+      elif uievent.keycode == ord('/'): 
+        self.step_incr = (self.step_incr + 1)%2
+      elif uievent.keycode == ord('['): # spacebar
+        self.dirty = True
+        self.maxsteps_cut = (self.maxsteps_cut - 1)
+        if self.maxsteps_cut<0:
+          self.maxsteps_cut = 0
+        print(self.maxsteps_cut)
+      elif uievent.keycode == ord(']'): # spacebar
+        self.dirty = True
+        self.maxsteps_cut = (self.maxsteps_cut + 1)
+        if self.maxsteps_cut>8:
+          self.maxsteps_cut = 8
+        print(self.maxsteps_cut)
+      res = ui.HandlerResult()
+      res.setHandler(self.ezapp.topWidget)
+    return res
 
 ###############################################################################
 

@@ -179,6 +179,7 @@ class SceneGraphApp(object):
   ##############################################
 
   def onUiEvent(self,uievent):
+    res = ui.HandlerResult()
     camdat = self.uicam.cameradata
     scoord = uievent.pos
     handled = False
@@ -375,7 +376,7 @@ class SceneGraphApp(object):
       handled = self.uicam.uiEventHandler(uievent)
       if handled:
         self.camera.copyFrom( self.uicam.cameradata )
-          
+    return res     
     
 
   ################################################
