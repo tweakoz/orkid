@@ -182,14 +182,16 @@ struct Fdn4ReverbData : public DspBlockData {
   float _allpass_shift_frq_mul = 1.2f; // x
   int   _allpass_count = 4;
   float _hipass_cutoff = 200.0; // hz
+  void matrixHadamard(float fblevel);
+  void matrixHouseholder(float fbgain=0.45);
+  void update();
+  fmtx4 _feedbackMatrix;
 };
 struct Fdn4Reverb : public DspBlock {
   using dataclass_t = Fdn4ReverbData;
   Fdn4Reverb(const Fdn4ReverbData*);
   void compute(DspBuffer& dspbuf) final;
   void doKeyOn(const KeyOnInfo& koi) final;
-  void matrixHadamard(float fblevel);
-  void matrixHouseholder(float fbgain=0.45);
 
   const Fdn4ReverbData* _mydata;
   DelayContext _delayA;
@@ -198,13 +200,13 @@ struct Fdn4Reverb : public DspBlock {
   DelayContext _delayD;
   BiQuad _hipassfilterL;
   BiQuad _hipassfilterR;
+  fmtx4 _feedbackMatrix;
   std::vector<TrapAllpass> _allpassA;
   std::vector<TrapAllpass> _allpassB;
   std::vector<TrapAllpass> _allpassC;
   std::vector<TrapAllpass> _allpassD;
   TrapAllpass _allpassE;
   TrapAllpass _allpassF;
-  fmtx4 _feedbackMatrix;
   fvec4 _inputGainsL;
   fvec4 _inputGainsR;
   fvec4 _outputGainsL;

@@ -29,6 +29,27 @@ dspblk_ptr_t Fdn4ReverbData::createInstance() const { // override
   return std::make_shared<Fdn4Reverb>(this);
 }
 
+void Fdn4ReverbData::update(){
+}
+///////////////////////////////////////////////////////////////////////////////
+
+void Fdn4ReverbData::matrixHadamard(float fblevel) {
+  float fbgain = lerp(0.40, 0.49, fblevel);
+  _feedbackMatrix.setRow(0, fvec4(+fbgain, +fbgain, +fbgain, +fbgain));
+  _feedbackMatrix.setRow(1, fvec4(+fbgain, -fbgain, +fbgain, -fbgain));
+  _feedbackMatrix.setRow(2, fvec4(+fbgain, +fbgain, -fbgain, -fbgain));
+  _feedbackMatrix.setRow(3, fvec4(+fbgain, -fbgain, -fbgain, +fbgain));
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void Fdn4ReverbData::matrixHouseholder(float fbgain) {
+  _feedbackMatrix.setRow(0, fvec4(+fbgain, -fbgain, -fbgain, -fbgain));
+  _feedbackMatrix.setRow(1, fvec4(-fbgain, +fbgain, -fbgain, -fbgain));
+  _feedbackMatrix.setRow(2, fvec4(-fbgain, -fbgain, +fbgain, -fbgain));
+  _feedbackMatrix.setRow(3, fvec4(-fbgain, -fbgain, -fbgain, +fbgain));
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 Fdn4Reverb::Fdn4Reverb(const Fdn4ReverbData* dbd)
@@ -41,7 +62,6 @@ Fdn4Reverb::Fdn4Reverb(const Fdn4ReverbData* dbd)
   float tscale = dbd->_time_scale;
   ///////////////////////////
   // matrixHadamard(0.0);
-  matrixHouseholder(dbd->_matrix_gain);
   ///////////////////////////
   _inputGainsL  = fvec4(input_g, input_g, input_g, input_g);
   _inputGainsR  = fvec4(input_g, input_g, input_g, input_g);
@@ -53,24 +73,6 @@ Fdn4Reverb::Fdn4Reverb(const Fdn4ReverbData* dbd)
   _delayD.setStaticDelayTime(tbase * tscale*tscale*tscale);
 }
 
-///////////////////////////////////////////////////////////////////////////////
-
-void Fdn4Reverb::matrixHadamard(float fblevel) {
-  float fbgain = lerp(0.40, 0.49, fblevel);
-  _feedbackMatrix.setRow(0, fvec4(+fbgain, +fbgain, +fbgain, +fbgain));
-  _feedbackMatrix.setRow(1, fvec4(+fbgain, -fbgain, +fbgain, -fbgain));
-  _feedbackMatrix.setRow(2, fvec4(+fbgain, +fbgain, -fbgain, -fbgain));
-  _feedbackMatrix.setRow(3, fvec4(+fbgain, -fbgain, -fbgain, +fbgain));
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void Fdn4Reverb::matrixHouseholder(float fbgain) {
-  _feedbackMatrix.setRow(0, fvec4(+fbgain, -fbgain, -fbgain, -fbgain));
-  _feedbackMatrix.setRow(1, fvec4(-fbgain, +fbgain, -fbgain, -fbgain));
-  _feedbackMatrix.setRow(2, fvec4(-fbgain, -fbgain, +fbgain, -fbgain));
-  _feedbackMatrix.setRow(3, fvec4(-fbgain, -fbgain, -fbgain, +fbgain));
-}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -164,6 +166,9 @@ void Fdn4Reverb::compute(DspBuffer& dspbuf) // final
 ///////////////////////////////////////////////////////////////////////////////
 
 void Fdn4Reverb::doKeyOn(const KeyOnInfo& koi) { // final
+
+  _feedbackMatrix = _mydata->_feedbackMatrix;
+
   _hipassfilterL.Clear();
   _hipassfilterR.Clear();
   _hipassfilterL.SetHpf(_mydata->_hipass_cutoff);

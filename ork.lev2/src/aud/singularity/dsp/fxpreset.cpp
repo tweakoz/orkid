@@ -107,8 +107,42 @@ lyrdata_ptr_t fxpreset_fdn4reverb() {
   /////////////////
   appendStereoEnhancer(fxlayer, fxstage);
   auto reverb = appendStereoReverb(fxlayer, fxstage);
-  reverb->_time_base = 0.007;
-  reverb->_time_scale = 0.071;
+  /////////////////
+  return fxlayer;
+}
+///////////////////////////////////////////////////////////////////////////////
+lyrdata_ptr_t fxpreset_oilbarrelreverb() {
+  auto fxprog       = std::make_shared<ProgramData>();
+  auto fxlayer      = fxprog->newLayer();
+  auto fxalg        = std::make_shared<AlgData>();
+  fxlayer->_algdata = fxalg;
+  fxalg->_name      = ork::FormatString("FxAlg");
+  /////////////////
+  // output effect
+  /////////////////
+  auto fxstage = fxalg->appendStage("FX");
+  fxstage->setNumIos(2, 2); // stereo in, stereo out
+  /////////////////
+  auto reverb = appendOilBarrelReverb(fxlayer, fxstage);
+  appendStereoEnhancer(fxlayer, fxstage);
+  /////////////////
+  return fxlayer;
+}
+///////////////////////////////////////////////////////////////////////////////
+lyrdata_ptr_t fxpreset_guywireeverb() {
+  auto fxprog       = std::make_shared<ProgramData>();
+  auto fxlayer      = fxprog->newLayer();
+  auto fxalg        = std::make_shared<AlgData>();
+  fxlayer->_algdata = fxalg;
+  fxalg->_name      = ork::FormatString("FxAlg");
+  /////////////////
+  // output effect
+  /////////////////
+  auto fxstage = fxalg->appendStage("FX");
+  fxstage->setNumIos(2, 2); // stereo in, stereo out
+  /////////////////
+  auto reverb = appendGuyWireReverb(fxlayer, fxstage);
+  appendStereoEnhancer(fxlayer, fxstage);
   /////////////////
   return fxlayer;
 }
@@ -327,14 +361,16 @@ void loadAllFxPresets(synth* s) {
   s->_fxpresets["distortion+chorus"] = fxpreset_distortionpluschorus();
   s->_fxpresets["distortion+echo"]   = fxpreset_distortionplusecho();
   s->_fxpresets["stereo-chorus"]     = fxpreset_stereochorus();
-  s->_fxpresets["fdn4reverb"]        = fxpreset_fdn4reverb();
-  s->_fxpresets["niceverb"]          = fxpreset_niceverb();
-  s->_fxpresets["echoverb"]          = fxpreset_echoverb();
-  s->_fxpresets["wackiverb"]         = fxpreset_wackiverb();
+  s->_fxpresets["Reverb::FDN4"]      = fxpreset_fdn4reverb();
+  s->_fxpresets["Reverb:OilBarrel"]  = fxpreset_oilbarrelreverb();
+  s->_fxpresets["Reverb:GuyWire"]    = fxpreset_guywireeverb();
+  s->_fxpresets["Reverb::NiceVerb"]  = fxpreset_niceverb();
+  s->_fxpresets["Reverb::EchoVerb"]  = fxpreset_echoverb();
+  s->_fxpresets["Reverb::WackiVerb"] = fxpreset_wackiverb();
   s->_fxpresets["shifter-octave-up"] = fxpreset_pitchoctup();
   s->_fxpresets["shifter-wave"]      = fxpreset_pitchwave();
   s->_fxpresets["shifter-chorus"]    = fxpreset_pitchchorus();
-  s->_fxpresets["shifter-rec"]    = fxpreset_pitchrec();
+  s->_fxpresets["shifter-rec"]       = fxpreset_pitchrec();
   s->_fxpresets["multitest"]         = fxpreset_multitest();
 }
 } // namespace ork::audio::singularity

@@ -56,13 +56,49 @@ std::shared_ptr<Fdn4ReverbData> appendStereoReverb(lyrdata_ptr_t layer, dspstage
   fdn4->param(0)->_coarse = 0.5f; // wet/dry mix
   fdn4->_input_gain = 0.5;
   fdn4->_output_gain = 1.35;
+  fdn4->_time_base = 0.007;
+  fdn4->_time_scale = 0.071;
+  fdn4->_matrix_gain = 0.498;
+  fdn4->_hipass_cutoff = 200.0;
+  fdn4->_allpass_shift_frq_bas = 700.0;
+  fdn4->_allpass_shift_frq_mul = 1.5;
+  fdn4->_allpass_count = 4;
+  fdn4->matrixHouseholder(fdn4->_matrix_gain);
+  fdn4->update();
+  return fdn4;
+}
+///////////////////////////////////////////////////////////////////////////////
+std::shared_ptr<Fdn4ReverbData> appendOilBarrelReverb(lyrdata_ptr_t layer, dspstagedata_ptr_t stage) {
+  auto fdn4               = stage->appendTypedBlock<Fdn4Reverb>("reverb");
+  fdn4->param(0)->_coarse = 0.5f; // wet/dry mix
+  fdn4->_input_gain = 0.5;
+  fdn4->_output_gain = 1.35;
+  fdn4->_time_base = 0.007;
+  fdn4->_time_scale = 0.071;
+  fdn4->_matrix_gain = 0.498;
+  fdn4->_hipass_cutoff = 200.0;
+  fdn4->_allpass_shift_frq_bas = 60.0;
+  fdn4->_allpass_shift_frq_mul = 1.1;
+  fdn4->_allpass_count = 128;
+  fdn4->matrixHouseholder(fdn4->_matrix_gain);
+  fdn4->update();
+  return fdn4;
+}
+///////////////////////////////////////////////////////////////////////////////
+std::shared_ptr<Fdn4ReverbData> appendGuyWireReverb(lyrdata_ptr_t layer, dspstagedata_ptr_t stage) {
+  auto fdn4               = stage->appendTypedBlock<Fdn4Reverb>("reverb");
+  fdn4->param(0)->_coarse = 0.5f; // wet/dry mix
+  fdn4->_input_gain = 0.5;
+  fdn4->_output_gain = 1.35;
   fdn4->_time_base = 0.37;
   fdn4->_time_scale = 0.7;
   fdn4->_matrix_gain = 0.498;
   fdn4->_hipass_cutoff = 200.0;
   fdn4->_allpass_shift_frq_bas = 60.0;
-  fdn4->_allpass_shift_frq_mul = 1.3;
-  fdn4->_allpass_count = 64;
+  fdn4->_allpass_shift_frq_mul = 1.1;
+  fdn4->_allpass_count = 128;
+  fdn4->matrixHouseholder(fdn4->_matrix_gain);
+  fdn4->update();
   return fdn4;
 }
 ///////////////////////////////////////////////////////////////////////////////

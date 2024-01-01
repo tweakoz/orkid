@@ -82,6 +82,14 @@ std::shared_ptr<Fdn4ReverbData> appendStereoReverb(
     lyrdata_ptr_t layer, //
     dspstagedata_ptr_t stage);
 ///////////////////////////////////////////////////////////////////////////////
+std::shared_ptr<Fdn4ReverbData> appendOilBarrelReverb(
+    lyrdata_ptr_t layer, //
+    dspstagedata_ptr_t stage);
+///////////////////////////////////////////////////////////////////////////////
+std::shared_ptr<Fdn4ReverbData> appendGuyWireReverb(
+    lyrdata_ptr_t layer, //
+    dspstagedata_ptr_t stage);
+///////////////////////////////////////////////////////////////////////////////
 void appendStereoEnhancer(
     lyrdata_ptr_t layer, //
     dspstagedata_ptr_t stage);
