@@ -53,7 +53,7 @@ hudpanel_ptr_t createProfilerView(
     const ui::anchor::Bounds& bounds,
     std::string named) {
     auto rval = createProfilerView2(vp,named);
-    //rval->_uipanel->applyBounds(bounds);
+    rval->_layoutitem->applyBounds(bounds);
     return rval;
 }
 ///////////////////////////////////////////////////////////////////////////////

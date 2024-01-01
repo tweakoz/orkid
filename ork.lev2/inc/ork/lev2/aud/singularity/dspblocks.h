@@ -117,6 +117,7 @@ struct DspBlock {
   virtual void doKeyOff() {
   }
 
+  float* getRawBuf(DspBuffer& dspbuf, int chanindex);
   const float* getInpBuf(DspBuffer& dspbuf, int chanindex);
   float* getOutBuf(DspBuffer& dspbuf, int chanindex);
 

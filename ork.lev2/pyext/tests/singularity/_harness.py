@@ -28,7 +28,7 @@ class SingulTestApp(object):
 
   def __init__(self):
     super().__init__()
-    self.ezapp = OrkEzApp.create(self,left=420, top=100, height=720,width=480)
+    self.ezapp = OrkEzApp.create(self,left=420, top=100, height=720,width=1280)
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     self.ezapp.topWidget.enableUiDraw()
     lg_group = self.ezapp.topLayoutGroup
@@ -196,7 +196,7 @@ class SingulTestApp(object):
     res.setHandler( self.ezapp.topWidget )
     if uievent.code == tokens.KEY_REPEAT.hashed or uievent.code==tokens.KEY_DOWN.hashed:
       KC = uievent.keycode
-      if KC == ord("."): # prev program
+      if KC == ord(","): # prev program
         self.prog_index -= 1
         if self.prog_index < 0:
           self.prog_index = len(self.sorted_progs)-1
@@ -205,7 +205,7 @@ class SingulTestApp(object):
         if self.pgmview:
           self.pgmview.setProgram(self.prog)
         return res
-      elif KC == ord(","): # next program
+      elif KC == ord("."): # next program
         self.prog_index += 1
         if self.prog_index >= len(self.sorted_progs):
           self.prog_index = 0

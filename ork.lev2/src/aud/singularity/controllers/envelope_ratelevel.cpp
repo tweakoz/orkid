@@ -106,9 +106,10 @@ void RateLevelEnvInst::initSeg(int iseg) {
     _lerpincr  = controlPeriod() / _adjtime;
     _lerpindex = 0.0f;
   } else {
-    _lerpincr  = 0.001f;
+    _lerpincr  = 0.07f;
     _lerpindex = 0.0f;
   }
+  //printf( "basetime<%g> adjtime<%g> _lerpincr<%g>\n", _rawtime, _adjtime, _lerpincr);
   if(_lerpincr>0.2){
     _lerpincr = 0.2;
   }
@@ -131,7 +132,9 @@ float RateLevelEnvInst::shapedvalue() const {
 ///////////////////////////////////////////////////////////////////////////////
 void RateLevelEnvInst::setState(int istate){
   _prevstate = _state;
-  //printf("env<%p:%s> state<%d->%d>\n", this, _name.c_str(), _prevstate, _state );
+  if(_ampenv){
+    //printf("env<%p:%s> state<%d->%d>\n", this, _name.c_str(), _prevstate, _state );
+  }
   if(_keymoddata and _keymoddata->_subscriber){
         _keymoddata->_evstrings.atomicOp([this,istate](std::vector<std::string>& unlocked){
           auto s = FormatString("state<%d->%d> _value<%g> seg<%d>", _prevstate,  _state, _value.x, _segmentIndex );
@@ -256,7 +259,10 @@ void RateLevelEnvInst::compute() // final
     _keymoddata->_currentValue = _value;
   }
   if (_ampenv) {
-    _layer->_ampenvgain = _value.x;
+    float ling = _value.x;
+    float dbg = (1.0f-ling)*-96.0f;
+    _layer->_ampenvgain = decibel_to_linear_amp_ratio(dbg);
+    //printf("ampenv dbg<%g>\n", dbg);
   }
 }
 

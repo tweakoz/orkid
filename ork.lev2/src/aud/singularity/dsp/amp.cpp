@@ -19,6 +19,85 @@ float wrap(float inp, float adj);
 
 ///////////////////////////////////////////////////////////////////////////////
 
+AMP_ADAPTIVE_DATA::AMP_ADAPTIVE_DATA(std::string name)
+    : DspBlockData(name) {
+  _blocktype = "AMP_ADAPTIVE";
+  auto param = addParam("gain","dB");
+  param->useAmplitudeEvaluator();
+}
+
+dspblk_ptr_t AMP_ADAPTIVE_DATA::createInstance() const { // override
+  return std::make_shared<AMP_ADAPTIVE>(this);
+}
+
+AMP_ADAPTIVE::AMP_ADAPTIVE(const DspBlockData* dbd)
+    : DspBlock(dbd) {
+}
+
+void AMP_ADAPTIVE::compute(DspBuffer& dspbuf) { // final
+  float paramgain = _param[0].eval();         //,0.01f,100.0f);
+  int inumframes  = _layer->_dspwritecount;
+  const auto& LD  = _layer->_layerdata;
+  //////////////////////////////////
+  int numinp = _ioconfig->numInputs();
+  int numout = _ioconfig->numOutputs();
+  //printf( "numinp<%d> numout<%d>\n", numinp, numout );
+  //////////////////////////////////
+  float laychgain = decibel_to_linear_amp_ratio(LD->_channelGains[0]);
+  //printf("paramgain<%g> laychgain<%g> _dbd->_inputPad<%g>\n", paramgain, laychgain, _dbd->_inputPad);
+  float baseG = laychgain;
+  baseG *= decibel_to_linear_amp_ratio(paramgain)*_dbd->_inputPad;
+  bool use_natenv = LD->_usenatenv;
+  //////////////////////////////////
+  switch(numinp){
+    case 1:{
+      auto bufferL  = getRawBuf(dspbuf, 0) + _layer->_dspwritebase;
+      auto bufferR  = getRawBuf(dspbuf, 1) + _layer->_dspwritebase;
+      for (int i = 0; i < inumframes; i++) {
+        //printf( "_layer->_ampenvgain<%g>\n", _layer->_ampenvgain ); 
+        float ampenv = use_natenv //
+                     ? 1.0f //
+                     : _layer->_ampenvgain;
+        float linG = baseG*ampenv;
+        float inp     = bufferL[i];
+        bufferL[i] = clip_float(inp * linG, kminclip, kmaxclip);
+        bufferR[i] = clip_float(inp * linG, kminclip, kmaxclip);
+      }
+      break;
+    }
+    case 2:{
+      auto chanL  = getRawBuf(dspbuf, 0) + _layer->_dspwritebase;
+      auto chanR  = getRawBuf(dspbuf, 1) + _layer->_dspwritebase;
+      //printf( "outputchanL<%p> outputchanR<%p>\n", outputchanL, outputchanR );
+      for (int i = 0; i < inumframes; i++) {
+        float ampenv = use_natenv //
+                     ? 1.0f //
+                     : _layer->_ampenvgain;
+        float linG = baseG*ampenv;
+        float inpL     = chanL[i];
+        float inpR     = chanR[i];
+        chanL[i] = clip_float(inpL * linG, kminclip, kmaxclip);
+        chanR[i] = clip_float(inpR * linG, kminclip, kmaxclip);
+      }
+      break;
+    }
+    default:
+      OrkAssert(false);
+  }
+  //////////////////////////////////
+  _fval[0] = _filt;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void AMP_ADAPTIVE::doKeyOn(const KeyOnInfo& koi) // final
+{
+  _filt   = 0.0f;
+  auto LD = koi._layer->_layerdata;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 AMP_MONOIO_DATA::AMP_MONOIO_DATA(std::string name)
     : DspBlockData(name) {
   _blocktype = "AMP_MONOIO";
@@ -88,7 +167,7 @@ PLUSAMP::PLUSAMP(const DspBlockData* dbd)
 
 void PLUSAMP::compute(DspBuffer& dspbuf) // final
 {
-  float gain = _param[0].eval(); //,0.01f,100.0f);
+  float paramgain = _param[0].eval(); //,0.01f,100.0f);
 
   int inumframes = _layer->_dspwritecount;
   float* ubuf    = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
@@ -96,18 +175,22 @@ void PLUSAMP::compute(DspBuffer& dspbuf) // final
 
   auto LD = _layer->_layerdata;
 
-  float LinG = decibel_to_linear_amp_ratio(LD->_channelGains[0]);
-
+  float laychgain = decibel_to_linear_amp_ratio(LD->_channelGains[0]);
+  float baseG = laychgain;
+  baseG *= decibel_to_linear_amp_ratio(paramgain)*_dbd->_inputPad;
+  bool use_natenv = LD->_usenatenv;
   // printf( "frq<%f> _phaseInc<%lld>\n", frq, _phaseInc );
   if (1)
     for (int i = 0; i < inumframes; i++) {
-      _filt      = 0.999 * _filt + 0.001 * gain;
-      float linG = decibel_to_linear_amp_ratio(_filt);
-      float inU  = ubuf[i] * _dbd->_inputPad * LinG;
-      float inL  = lbuf[i] * _dbd->_inputPad * LinG;
-      float ae   = _param[1].eval();
+      float ampenv = use_natenv ? 1.0f : decibel_to_linear_amp_ratio((1.0-_layer->_ampenvgain)*-96.0f);
+      float linG = baseG*ampenv;
+      _filt      = 0.99 * _filt + 0.01 * linG;
+      //float final_g = decibel_to_linear_amp_ratio(_filt);
+      float inU  = ubuf[i] * _filt;
+      float inL  = lbuf[i] * _filt;
+      //float ae   = _param[1].eval();
       // float ae   = aenv[i];
-      float res = (inU + inL) * 0.5 * linG * ae * 2.0;
+      float res = (inU + inL) * 0.5 * _filt * 2.0;
       res       = clip_float(res, -2, 2);
       ubuf[i]   = res;
       lbuf[i]   = res;
@@ -359,18 +442,22 @@ void AMPU_AMPL::compute(DspBuffer& dspbuf) // final
   const auto& layd = _layer->_layerdata;
   float LowerLinG  = decibel_to_linear_amp_ratio(layd->_channelGains[0]);
   float UpperLinG  = decibel_to_linear_amp_ratio(layd->_channelGains[1]);
+  float baseLG = LowerLinG;
+  baseLG *= decibel_to_linear_amp_ratio(gainL)*_dbd->_inputPad;
+  float baseUG = UpperLinG;
+  baseUG *= decibel_to_linear_amp_ratio(gainU)*_dbd->_inputPad;
 
   if (1)
     for (int i = 0; i < inumframes; i++) {
-      _filtU      = 0.999 * _filtU + 0.001 * gainU;
-      _filtL      = 0.999 * _filtL + 0.001 * gainL;
-      float linGU = decibel_to_linear_amp_ratio(_filtU);
-      float linGL = decibel_to_linear_amp_ratio(_filtL);
-      float inU   = ubuf[i] * _dbd->_inputPad;
-      float inL   = lbuf[i] * _dbd->_inputPad;
-      float ae    = _param[1].eval();
-      float resU  = inU * linGU * ae * UpperLinG;
-      float resL  = inL * linGL * ae * LowerLinG;
+      _filtU      = 0.999 * _filtU + 0.001 * baseUG;
+      _filtL      = 0.999 * _filtL + 0.001 * baseLG;
+      //float linGU = decibel_to_linear_amp_ratio(_filtU);
+      //float linGL = decibel_to_linear_amp_ratio(_filtL);
+      float inU   = ubuf[i];
+      float inL   = lbuf[i];
+      //float ae    = _param[1].eval();
+      float resU  = inU * _filtU;
+      float resL  = inL * _filtL;
 
       ubuf[i] = clip_float(resU * u_lrmix.lmix + resL * l_lrmix.lmix, kminclip, kmaxclip);
       lbuf[i] = clip_float(resU * u_lrmix.rmix + resL * l_lrmix.rmix, kminclip, kmaxclip);

@@ -120,6 +120,10 @@ void DspBlock::keyOn(const KeyOnInfo& koi) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+float* DspBlock::getRawBuf(DspBuffer& dspbuf, int chanindex){
+  return dspbuf.channel(chanindex);
+}
+
 const float* DspBlock::getInpBuf(DspBuffer& dspbuf, int index) {
   int chan   = _dspchannel[index];
   int inpidx = _ioconfig->_inputs[chan];

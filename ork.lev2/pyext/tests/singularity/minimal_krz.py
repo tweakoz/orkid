@@ -122,11 +122,37 @@ class KrzApp(SingulTestApp):
       "Arco_Dbl_Bass",
       "Acoustic_Bass",
       "Touch_Clav",
+      "Touch_MiniBass",
+      "Touch_StringOrch",
+      "Tranquility",
       "Timpani_Chimes",
       "Sweetar",
-      "Doomsday"
+      "Sweeper",
+      "Syncro_Taps",
+      "Too_Bad_Bass",
+      "TotalCntrl_Orch1",
+      "TotalCntrl_Orch2",
+      "Walking_Bass",
+      "Woodwinds_2",
+      "Woody_Jam_Rack",
+      "Waterflute",
+      "Wet_Pizz_",
+      "Wind_Vox",
+      "Doomsday",
+      "2nd_Violin",
+      "2nd_Oboe",
+      "7th_World_String",
+      "A.Bass+RidePno",
+      "Analog_Brazz",
+      "Bad_Clav",
+      "Baroque_Strg_Ens",
+      "Bass_String_Sec",
+      "Brite_Klav",
+      "Chamber_Section",
+      "Digital_E_Piano",
+      "Dog_Chases_Tail",
     ]
-    #self.sorted_progs = ok_list
+    self.sorted_progs = sorted(ok_list)
     print("krzprogs<%s>" % self.krzprogs)    
     self.prog_index = find_index(self.sorted_progs, "Doomsday")
     #self.prog_index = find_index(self.sorted_progs, "Chorus_Gtr")

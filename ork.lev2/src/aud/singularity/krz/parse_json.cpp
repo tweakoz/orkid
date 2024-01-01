@@ -610,7 +610,7 @@ dspblkdata_ptr_t KrzBankDataParser::parseDspBlock(const Value& dseg, dspstagedat
     // alg_gain
     ///////////
     else if (blocktype == "AMP") {
-      rval = stage->appendTypedBlock<AMP_MONOIO>(blocktype);
+      rval = stage->appendTypedBlock<AMP_ADAPTIVE>(blocktype);
     } else if (blocktype == "+ AMP") {
       rval = stage->appendTypedBlock<PLUSAMP>(blocktype);
     } else if (blocktype == "+ GAIN") {
@@ -882,6 +882,10 @@ lyrdata_ptr_t KrzBankDataParser::parseLayer(const Value& jsonobj, prgdata_ptr_t 
         decAdjust   = lerp(decAdjust, 1.0 / DKT, flerp);
         relAdjust   = lerp(relAdjust, 1.0 / RKT, flerp);
       }
+
+      //atkAdjust = 80.0f;
+      //decAdjust = 80.0f;
+      //relAdjust = 80.0f;
 
       switch (iseg) {
         case 0:

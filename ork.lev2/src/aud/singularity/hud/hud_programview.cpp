@@ -44,7 +44,7 @@ hudpanel_ptr_t createProgramView(
     const ui::anchor::Bounds& bounds,
     std::string named) {
     auto rval = createProgramView2(vp,named);
-    //rval->_uipanel->applyBounds(bounds);
+    rval->_layoutitem->applyBounds(bounds);
     return rval;
 }
 ///////////////////////////////////////////////////////////////////////////////
