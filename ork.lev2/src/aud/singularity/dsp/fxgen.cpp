@@ -159,7 +159,7 @@ dspblkdata_ptr_t appendStereoReverbX(
   fdn4->param(2)->_coarse = tscale * rg.rangedf(mint, maxt);
   fdn4->param(3)->_coarse = tscale * rg.rangedf(mint, maxt);
   fdn4->param(4)->_coarse = tscale * rg.rangedf(mint, maxt);
-  fdn4->_input_gain       = 0.5;
+  fdn4->_input_gain       = 0.65;
   fdn4->_output_gain      = 0.75;
   fdn4->update();
   return fdn4;
