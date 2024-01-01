@@ -564,6 +564,24 @@ void pyinit_aud_singularity(py::module& module_lev2) {
           });
   type_codec->registerStdCodec<pgmviewproxy_ptr_t>(pgmview_type);
   /////////////////////////////////////////////////////////////////////////////////
+  struct PROFILERVIEW_PROXY{
+    hudpanel_ptr_t _instrument;
+  };
+  using profviewproxy_ptr_t = std::shared_ptr<PROFILERVIEW_PROXY>;
+  auto profview_type = //
+      py::class_<PROFILERVIEW_PROXY, profviewproxy_ptr_t>(singmodule, "ProfilerView")
+          .def_static("uifactory", [type_codec](uilayoutgroup_ptr_t lg, py::list py_args) -> uilayoutitem_ptr_t { //
+            auto decoded_args = type_codec->decodeList(py_args);
+            auto name         = decoded_args[0].get<std::string>();
+            auto instrument   = createProfilerView2(lg, name);
+            auto proxy = std::make_shared<PROFILERVIEW_PROXY>();
+            proxy->_instrument = instrument;
+            // retain scope in layout group
+            lg->_uservars.makeValueForKey<profviewproxy_ptr_t>("profilerviews." + name, proxy);
+            return instrument->_layoutitem;
+          });
+  type_codec->registerStdCodec<profviewproxy_ptr_t>(profview_type);
+  /////////////////////////////////////////////////////////////////////////////////
 }
 
 ///////////////////////////////////////////////////////////////////////////////

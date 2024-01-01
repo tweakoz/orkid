@@ -34,9 +34,9 @@ class SingulTestApp(object):
     lg_group = self.ezapp.topLayoutGroup
     lg_group.margin = 4
 
-    self.griditems = lg_group.makeGrid(
-      width = 2,
-      height = 2,
+    rccounts = [3,2]
+    self.griditems = lg_group.makeRowsColumns(
+      rccounts = rccounts,
       margin = 4,
       uiclass = ui.Box,
       args = ["label",vec4(0.2)],
@@ -44,34 +44,6 @@ class SingulTestApp(object):
 
     for g in self.griditems:
       g.widget.ignoreEvents = True
-
-
-    ######################### 
-    # create an oscope
-    #  replace the 2nd griditem with it
-    ######################### 
-
-    item = lg_group.makeChild( uiclass = singularity.Oscilloscope,
-                               args = ["MAINBUS"] )
-    
-    self.oscope = lg_group.getUserVar("oscilloscopes.MAINBUS")
-    self.oscope_sink = self.oscope.sink
-
-    lg_group.replaceChild(self.griditems[1].layout,item)
-
-    ######################### 
-    # create an spectrum analyzer
-    #  replace the 4nd griditem with it
-    ######################### 
-
-    item = lg_group.makeChild( uiclass = singularity.SpectrumAnalyzer,
-                               args = ["MAINBUS"] )
-    
-    self.spectra = lg_group.getUserVar("analyzers.MAINBUS")
-    self.spectra_sink = self.spectra.sink
-
-    lg_group.replaceChild(self.griditems[3].layout,item)
-    item.widget.ignoreEvents = True
 
     ######################### 
 
@@ -97,22 +69,65 @@ class SingulTestApp(object):
     self.synth = singularity.synth.instance()
     self.mainbus = self.synth.outputBus("main")
     self.mainbus_source = self.mainbus.createScopeSource()
-    self.mainbus_source.connect(self.oscope_sink)
-    self.mainbus_source.connect(self.spectra_sink)
+
+    lg_group = self.ezapp.topLayoutGroup
+
+    ######################### 
+    # create an profiler view
+    #  replace the 2nd griditem with it
+    ######################### 
+
+    item = lg_group.makeChild( uiclass = singularity.ProfilerView,
+                               args = ["YO"] )
+    
+    self.profview = lg_group.getUserVar("profilerviews.YO")
+    lg_group.replaceChild(self.griditems[1].layout,item)
+    item.widget.ignoreEvents = True
 
     ######################### 
     # create an program view
     #  replace the 3nd griditem with it
     ######################### 
 
-
-    lg_group = self.ezapp.topLayoutGroup
     item = lg_group.makeChild( uiclass = singularity.ProgramView,
                                args = ["PROGRAM"] )
     
     self.pgmview = lg_group.getUserVar("programviews.PROGRAM")
     lg_group.replaceChild(self.griditems[2].layout,item)
     item.widget.ignoreEvents = True
+
+    ######################### 
+    # create an oscope
+    #  replace the 4nd griditem with it
+    ######################### 
+
+    item = lg_group.makeChild( uiclass = singularity.Oscilloscope,
+                               args = ["MAINBUS"] )
+    
+    self.oscope = lg_group.getUserVar("oscilloscopes.MAINBUS")
+    self.oscope_sink = self.oscope.sink
+
+    lg_group.replaceChild(self.griditems[3].layout,item)
+
+    ######################### 
+    # create an spectrum analyzer
+    #  replace the 5th griditem with it
+    ######################### 
+
+    item = lg_group.makeChild( uiclass = singularity.SpectrumAnalyzer,
+                               args = ["MAINBUS"] )
+    
+    self.spectra = lg_group.getUserVar("analyzers.MAINBUS")
+    self.spectra_sink = self.spectra.sink
+
+    lg_group.replaceChild(self.griditems[4].layout,item)
+    item.widget.ignoreEvents = True
+
+
+    ######################### 
+
+    self.mainbus_source.connect(self.oscope_sink)
+    self.mainbus_source.connect(self.spectra_sink)
 
     ######################### 
 

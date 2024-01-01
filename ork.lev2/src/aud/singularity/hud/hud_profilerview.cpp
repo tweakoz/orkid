@@ -27,16 +27,14 @@ struct ProfilerView final : public ui::Surface {
   SynthProfilerFrame _curprofframe;
 };
 ///////////////////////////////////////////////////////////////////////////////
-hudpanel_ptr_t createProfilerView(
+hudpanel_ptr_t createProfilerView2(
     uilayoutgroup_ptr_t vp, //
-    const ui::anchor::Bounds& bounds,
     std::string named) {
   auto hudpanel    = std::make_shared<HudPanel>();
   auto programview = std::make_shared<ProfilerView>();
-  auto uipanelitem = vp->makeChild<ui::Panel>("profiler", 0, 0, 32, 32);
-  uipanelitem.applyBounds(bounds);
-  hudpanel->_uipanel                = uipanelitem.typedWidget();
-  hudpanel->_panelLayout            = uipanelitem._layout;
+  auto pnl = vp->makeChild<ui::Panel>("profiler", 0, 0, 32, 32);
+  hudpanel->_uipanel                = pnl.typedWidget();
+  hudpanel->_panelLayout            = pnl._layout;
   hudpanel->_uipanel->_closeEnabled = false;
   hudpanel->_uipanel->_moveEnabled  = false;
   hudpanel->_uipanel->setTitle(named);
@@ -44,9 +42,19 @@ hudpanel_ptr_t createProfilerView(
   hudpanel->_uipanel->setChild(hudpanel->_uisurface);
   hudpanel->_uipanel->_stdcolor   = fvec4(0.2, 0.2, 0.3f, 0.5f);
   hudpanel->_uipanel->_focuscolor = fvec4(0.3, 0.2, 0.4f, 0.5f);
+  hudpanel->_layoutitem = pnl.as_shared();
   ///////////////////////////////////////////////////////////////////////
   vp->addChild(hudpanel->_uipanel);
   return hudpanel;
+}
+///////////////////////////////////////////////////////////////////////////////
+hudpanel_ptr_t createProfilerView(
+    uilayoutgroup_ptr_t vp, //
+    const ui::anchor::Bounds& bounds,
+    std::string named) {
+    auto rval = createProfilerView2(vp,named);
+    //rval->_uipanel->applyBounds(bounds);
+    return rval;
 }
 ///////////////////////////////////////////////////////////////////////////////
 ProfilerView::ProfilerView() //

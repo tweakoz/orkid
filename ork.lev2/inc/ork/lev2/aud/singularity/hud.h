@@ -178,6 +178,9 @@ hudpanel_ptr_t createProgramView(
     uilayoutgroup_ptr_t vp, //
     const ui::anchor::Bounds& bounds,
     std::string named = "");
+hudpanel_ptr_t createProfilerView2(
+    uilayoutgroup_ptr_t vp, //
+    std::string named = "");
 hudpanel_ptr_t createProfilerView(
     uilayoutgroup_ptr_t vp, //
     const ui::anchor::Bounds& bounds,

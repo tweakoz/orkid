@@ -74,6 +74,52 @@ struct LayoutGroup : public Group {
   }
   //////////////////////////////////////
   template <typename T, typename... A> //
+  std::vector<LayoutItem<T>> makeWidgetsRC(std::vector<int> rccounts, A&&... args) {
+    std::vector<LayoutItem<T>> layout_items;
+    ui::anchor::guide_ptr_t gxa, gxb;
+    ui::anchor::guide_ptr_t gya, gyb;
+    int h = rccounts.size();
+    for (int y = 0; y < h; y++) {
+      float fya = float(y) / float(h);
+      float fyb = float(y + 1) / float(h);
+      if (y == 0) {
+        gya          = _layout->proportionalHorizontalGuide(fya); // 23,27,31,35
+        gya->_margin = _margin;
+      } else {
+        gya = gyb;
+      }
+      gyb          = _layout->proportionalHorizontalGuide(fyb); // 24,28,32,36
+      gyb->_margin = _margin;
+      _hguides.insert(gya);
+      _hguides.insert(gyb);
+      int w = rccounts[y];
+      for (int x = 0; x < w; x++) {
+        float fxa = float(x) / float(w);
+        float fxb = float(x + 1) / float(w);
+        if (x == 0) {
+          gxa          = _layout->proportionalVerticalGuide(fxa); // 25,29,33,37
+          gxa->_margin = _margin;
+        } else {
+          gxa = gxb;
+        }
+        gxb          = _layout->proportionalVerticalGuide(fxb); // 25,29,33,37
+        gxb->_margin = _margin;
+        _vguides.insert(gxa);
+        _vguides.insert(gxb);
+        auto name   = _name + FormatString("-ch-%d", (y * w + x));
+        auto chitem = this->makeChild<T>(std::forward<A>(args)...);
+        layout_items.push_back(chitem);
+        chitem._layout->setMargin(_margin);
+        chitem._layout->top()->anchorTo(gya);
+        chitem._layout->left()->anchorTo(gxa);
+        chitem._layout->bottom()->anchorTo(gyb);
+        chitem._layout->right()->anchorTo(gxb);
+      }
+    }
+    return layout_items; 
+  }
+  //////////////////////////////////////
+  template <typename T, typename... A> //
   std::vector<LayoutItem<T>> makeGridOfWidgets(int w, int h, A&&... args) {
     std::vector<LayoutItem<T>> layout_items;
     ui::anchor::guide_ptr_t gxa, gxb;

@@ -374,6 +374,40 @@ void pyinit_ui(py::module& module_lev2) {
                 return rval;
               })
           .def(
+              "makeRowsColumns",
+              [](uilayoutgroup_ptr_t lgrp, py::kwargs kwargs) -> py::list { //
+                py::list rval;
+                if (kwargs) {
+                  py::list rccounts;
+                  int margin = 0;
+                  py::list args;
+                  py::object uirc_factory;
+                  int args_parsed = 0;
+                  for (auto item : kwargs) {
+                    auto key = py::cast<std::string>(item.first);
+                    if (key == "rccounts") {
+                      rccounts = py::cast<py::list>(item.second);
+                      args_parsed++;
+                    } else if (key == "margin") {
+                      margin = py::cast<int>(item.second);
+                      args_parsed++;
+                    } else if (key == "uiclass") {
+                      auto uiclass_obj   = py::cast<py::object>(item.second);
+                      bool has_uifactory = py::hasattr(uiclass_obj, "uircfactory");
+                      OrkAssert(has_uifactory);
+                      uirc_factory = uiclass_obj.attr("uircfactory");
+                      args_parsed++;
+                    } else if (key == "args") {
+                      args = py::cast<py::list>(item.second);
+                      args_parsed++;
+                    }
+                  }
+                  OrkAssert(args_parsed == 4);
+                  rval = uirc_factory(lgrp, rccounts, margin, args);
+                }
+                return rval;
+              })
+              .def(
               "makeGrid",
               [](uilayoutgroup_ptr_t lgrp, py::kwargs kwargs) -> py::list { //
                 py::list rval;
@@ -483,6 +517,25 @@ void pyinit_ui(py::module& module_lev2) {
                 auto name         = decoded_args[0].get<std::string>();
                 auto color        = decoded_args[1].get<fvec4>();
                 auto layoutitems  = lg->makeGridOfWidgets<ui::Box>(grid_w, grid_h, name, color);
+                py::list rval;
+                for (auto item : layoutitems) {
+                  rval.append(item.as_shared());
+                }
+                return rval;
+              })
+          .def_static(
+              "uircfactory",
+              [type_codec](uilayoutgroup_ptr_t lg, py::list rowcols, int m, py::list py_args) -> py::list { //
+                auto decoded_args = type_codec->decodeList(py_args);
+                auto name         = decoded_args[0].get<std::string>();
+                auto color        = decoded_args[1].get<fvec4>();
+                int h = rowcols.size();
+                std::vector<int> rccounts;
+                for (int i = 0; i < h; i++) {
+                  int rc = py::cast<int>(rowcols[i]);
+                  rccounts.push_back(rc);
+                }
+                auto layoutitems  = lg->makeWidgetsRC<ui::Box>(rccounts, name, color);
                 py::list rval;
                 for (auto item : layoutitems) {
                   rval.append(item.as_shared());

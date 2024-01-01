@@ -43,6 +43,7 @@ void Layout::visitGuides(guide_visit_fn gfn){
 layout_ptr_t Layout::childLayout(Widget* w) {
   auto l = std::make_shared<Layout>(w);
   _childlayouts.push_back(l);
+  l->_parent = this;
   return l;
 }
 /////////////////////////////////////////////////////////////////////////

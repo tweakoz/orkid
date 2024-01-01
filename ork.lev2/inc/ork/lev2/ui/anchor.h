@@ -95,6 +95,7 @@ struct Layout {
 
   Widget* _widget = nullptr;
 
+  Layout* _parent = nullptr;
   layout_ptr_t _fill   = nullptr;
   layout_ptr_t _center = nullptr;
 
