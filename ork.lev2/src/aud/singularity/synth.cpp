@@ -712,8 +712,16 @@ void synth::compute(int inumframes, const void* inputBuffer) {
   // final clamping
   /////////////////////////////
   for (int i = 0; i < inumframes; i++) {
-    master_left[i]  = clip_float(master_left[i], -32, 32);
-    master_right[i] = clip_float(master_right[i], -32, 32);
+    float L = clip_float(master_left[i], -1.0f, 1.0f);
+    float R = clip_float(master_right[i], -1.0f, 1.0f);
+    if(isnan(L) or isinf(L)){
+      L = 0.0f;
+    }
+    if(isnan(R) or isinf(R)){
+      R = 0.0f;
+    }
+    master_left[i]  = L;
+    master_right[i] = R;
   }
   /////////////////////////////
 }

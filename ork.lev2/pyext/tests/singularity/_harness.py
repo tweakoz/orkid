@@ -71,6 +71,7 @@ class SingulTestApp(object):
     self.spectra_sink = self.spectra.sink
 
     lg_group.replaceChild(self.griditems[3].layout,item)
+    item.widget.ignoreEvents = True
 
     ######################### 
 
@@ -111,6 +112,7 @@ class SingulTestApp(object):
     
     self.pgmview = lg_group.getUserVar("programviews.PROGRAM")
     lg_group.replaceChild(self.griditems[2].layout,item)
+    item.widget.ignoreEvents = True
 
     ######################### 
 
