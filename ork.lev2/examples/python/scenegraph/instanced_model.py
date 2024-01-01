@@ -126,6 +126,9 @@ class SceneGraphApp(object):
       minst.update(updinfo.deltatime)
     ###################################
     self.scene.updateScene(self.cameralut) # update and enqueue all scenenodes
+  ################################################
+  def onUiEvent(self,uievent):
+    return ui.HandlerResult()
 ################################################
 app = SceneGraphApp()
 app.ezapp.mainThreadLoop()
