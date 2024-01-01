@@ -80,8 +80,7 @@ void appendPitchRec(
 ///////////////////////////////////////////////////////////////////////////////
 std::shared_ptr<Fdn4ReverbData> appendStereoReverb(
     lyrdata_ptr_t layer, //
-    dspstagedata_ptr_t stage,
-    float tscale);
+    dspstagedata_ptr_t stage);
 ///////////////////////////////////////////////////////////////////////////////
 void appendStereoEnhancer(
     lyrdata_ptr_t layer, //

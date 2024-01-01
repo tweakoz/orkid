@@ -154,9 +154,9 @@ class KrzApp(SingulTestApp):
     ]
     self.sorted_progs = sorted(ok_list)
     print("krzprogs<%s>" % self.krzprogs)    
-    self.prog_index = find_index(self.sorted_progs, "Doomsday")
+    self.prog_index = find_index(self.sorted_progs, "CowGogiBell")
     #self.prog_index = find_index(self.sorted_progs, "Chorus_Gtr")
-    self.prog = self.soundbank.programByName("Doomsday")
+    self.prog = self.soundbank.programByName("CowGogiBell")
     self.synth.masterGain = singularity.decibelsToLinear(-24.0)
     if self.pgmview:
       self.pgmview.setProgram(self.prog)

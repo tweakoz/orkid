@@ -171,10 +171,15 @@ struct StereoDynamicEcho : public DspBlock {
 // Feedback Delay Network Reverb (4 nodes)
 ///////////////////////////////////////////////////////////////////////////////
 struct Fdn4ReverbData : public DspBlockData {
-  Fdn4ReverbData(std::string name, float tscale);
+  Fdn4ReverbData(std::string name);
   dspblk_ptr_t createInstance() const override;
-  float _tscale;
-  float _tbase;
+  float _time_base  = 0.01 ; // sec
+  float _time_scale = 0.031; // sec
+  float _input_gain = 0.75;  // linear
+  float _output_gain = 0.75; // linear
+  float _matrix_gain = 0.35; // linear
+  float _allpass_cutoff = 4500.0; // hz
+  float _hipass_cutoff = 200.0; // hz
 };
 struct Fdn4Reverb : public DspBlock {
   using dataclass_t = Fdn4ReverbData;
@@ -182,14 +187,21 @@ struct Fdn4Reverb : public DspBlock {
   void compute(DspBuffer& dspbuf) final;
   void doKeyOn(const KeyOnInfo& koi) final;
   void matrixHadamard(float fblevel);
-  void matrixHouseholder();
+  void matrixHouseholder(float fbgain=0.45);
 
+  const Fdn4ReverbData* _mydata;
   DelayContext _delayA;
   DelayContext _delayB;
   DelayContext _delayC;
   DelayContext _delayD;
   BiQuad _hipassfilterL;
   BiQuad _hipassfilterR;
+  TrapAllpass _allpassA;
+  TrapAllpass _allpassB;
+  TrapAllpass _allpassC;
+  TrapAllpass _allpassD;
+  TrapAllpass _allpassE;
+  TrapAllpass _allpassF;
   fmtx4 _feedbackMatrix;
   fvec4 _inputGainsL;
   fvec4 _inputGainsR;
@@ -200,10 +212,12 @@ struct Fdn4Reverb : public DspBlock {
 // Feedback Delay Network Reverb (4 nodes) with rotation matrix
 ///////////////////////////////////////////////////////////////////////////////
 struct Fdn4ReverbXData : public DspBlockData {
-  Fdn4ReverbXData(std::string name, float tscale);
+  Fdn4ReverbXData(std::string name);
   dspblk_ptr_t createInstance() const override;
   float _tscale = 1.0f;
 
+  void update();
+  
   fvec4 _inputGainsL;
   fvec4 _inputGainsR;
   fvec4 _outputGainsL;
@@ -211,6 +225,12 @@ struct Fdn4ReverbXData : public DspBlockData {
   fvec3 _axis;
   float _angle;
   float _speed = 0.0f;
+  float _time_scale = 1.0; // x
+  float _input_gain = 0.75;  // linear
+  float _output_gain = 0.75; // linear
+  float _matrix_gain = 0.35; // linear
+  float _allpass_cutoff = 4500.0; // hz
+  float _hipass_cutoff = 200.0; // hz
 };
 struct Fdn4ReverbX : public DspBlock {
   using dataclass_t = Fdn4ReverbXData;
@@ -218,8 +238,9 @@ struct Fdn4ReverbX : public DspBlock {
   void compute(DspBuffer& dspbuf) final;
   void doKeyOn(const KeyOnInfo& koi) final;
   void matrixHadamard(float fblevel);
-  void matrixHouseholder();
+  void matrixHouseholder(float fbgain);
 
+  const Fdn4ReverbXData* _mydata;
   fvec3 _axis;
   float _angle;
   float _speed = 0.0f;
@@ -232,6 +253,12 @@ struct Fdn4ReverbX : public DspBlock {
   BiQuad _filterB;
   BiQuad _filterC;
   BiQuad _filterD;
+  TrapAllpass _allpassA;
+  TrapAllpass _allpassB;
+  TrapAllpass _allpassC;
+  TrapAllpass _allpassD;
+  TrapAllpass _allpassE;
+  TrapAllpass _allpassF;
 
   fmtx4 _feedbackMatrix;
   fvec4 _inputGainsL;

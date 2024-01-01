@@ -51,9 +51,16 @@ dspblkdata_ptr_t appendRecursivePitchShifter(lyrdata_ptr_t layer, dspstagedata_p
   return shifter;
 }
 ///////////////////////////////////////////////////////////////////////////////
-std::shared_ptr<Fdn4ReverbData> appendStereoReverb(lyrdata_ptr_t layer, dspstagedata_ptr_t stage, float tscale) {
-  auto fdn4               = stage->appendTypedBlock<Fdn4Reverb>("reverb", tscale);
+std::shared_ptr<Fdn4ReverbData> appendStereoReverb(lyrdata_ptr_t layer, dspstagedata_ptr_t stage) {
+  auto fdn4               = stage->appendTypedBlock<Fdn4Reverb>("reverb");
   fdn4->param(0)->_coarse = 0.5f; // wet/dry mix
+  fdn4->_input_gain = 1.0;
+  fdn4->_output_gain = 1.0;
+  fdn4->_time_base = 0.03;
+  fdn4->_time_scale = 0.7;
+  fdn4->_matrix_gain = 0.5;
+  fdn4->_allpass_cutoff = 3500.0;
+  fdn4->_hipass_cutoff = 200.0;
   return fdn4;
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -143,24 +150,18 @@ dspblkdata_ptr_t appendStereoReverbX(
     float maxt,
     float minspeed,
     float maxspeed) {
-  auto fdn4 = stage->appendTypedBlock<Fdn4ReverbX>("reverb", tscale);
-  math::FRANDOMGEN rg(seed);
-  fdn4->_axis.x = rg.rangedf(-1, 1);
-  fdn4->_axis.y = rg.rangedf(-1, 1);
-  fdn4->_axis.z = rg.rangedf(-1, 1);
-  fdn4->_axis.normalizeInPlace();
+  auto fdn4 = stage->appendTypedBlock<Fdn4ReverbX>("reverb");
+
+  math::FRANDOMGEN rg(10);
   fdn4->_speed            = rg.rangedf(minspeed, maxspeed);
+  fdn4->param(0)->_coarse = 0.5f; // wet/dry mix
   fdn4->param(1)->_coarse = tscale * rg.rangedf(mint, maxt);
   fdn4->param(2)->_coarse = tscale * rg.rangedf(mint, maxt);
   fdn4->param(3)->_coarse = tscale * rg.rangedf(mint, maxt);
   fdn4->param(4)->_coarse = tscale * rg.rangedf(mint, maxt);
-  float input_g           = 0.75f;
-  float output_g          = 0.75f;
-  fdn4->_inputGainsL      = fvec4(input_g, input_g, input_g, input_g);
-  fdn4->_inputGainsR      = fvec4(input_g, input_g, input_g, input_g);
-  fdn4->_outputGainsL     = fvec4(output_g, output_g, 0, 0);
-  fdn4->_outputGainsR     = fvec4(0, 0, output_g, output_g);
-  fdn4->param(0)->_coarse = 0.5f; // wet/dry mix
+  fdn4->_input_gain       = 0.5;
+  fdn4->_output_gain      = 0.75;
+  fdn4->update();
   return fdn4;
 }
 ///////////////////////////////////////////////////////////////////////////////

@@ -16,9 +16,8 @@ namespace ork::audio::singularity {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-Fdn4ReverbXData::Fdn4ReverbXData(std::string name, float tscale)
-    : DspBlockData(name)
-    , _tscale(tscale) {
+Fdn4ReverbXData::Fdn4ReverbXData(std::string name)
+    : DspBlockData(name){
   _blocktype     = "Fdn4ReverbX";
   auto mix_param = addParam();
   auto dta_param = addParam();
@@ -26,31 +25,30 @@ Fdn4ReverbXData::Fdn4ReverbXData(std::string name, float tscale)
   auto dtc_param = addParam();
   auto dtd_param = addParam();
 
-  mix_param->useDefaultEvaluator();
-  dta_param->useDefaultEvaluator();
-  dtb_param->useDefaultEvaluator();
-  dtc_param->useDefaultEvaluator();
-  dtd_param->useDefaultEvaluator();
-
   math::FRANDOMGEN rg(10);
-
-  dta_param->_coarse = tscale * rg.rangedf(0.01, 0.15);
-  dtb_param->_coarse = tscale * rg.rangedf(0.01, 0.15);
-  dtc_param->_coarse = tscale * rg.rangedf(0.01, 0.15);
-  dtd_param->_coarse = tscale * rg.rangedf(0.01, 0.15);
 
   _axis.x = rg.rangedf(-1, 1);
   _axis.y = rg.rangedf(-1, 1);
   _axis.z = rg.rangedf(-1, 1);
   _axis.normalizeInPlace();
-  _speed         = rg.rangedf(0.00001, 0.001);
-  float input_g  = 0.75f;
-  float output_g = 0.75f;
-  _inputGainsL   = fvec4(input_g, input_g, input_g, input_g);
-  _inputGainsR   = fvec4(input_g, input_g, input_g, input_g);
-  _outputGainsL  = fvec4(output_g, output_g, 0, 0);
-  _outputGainsR  = fvec4(0, 0, output_g, output_g);
+  _speed = rg.rangedf(0.00001, 0.001);
+
+  dta_param->_coarse = _time_scale * rg.rangedf(0.01, 0.15);
+  dtb_param->_coarse = _time_scale * rg.rangedf(0.01, 0.15);
+  dtc_param->_coarse = _time_scale * rg.rangedf(0.01, 0.15);
+  dtd_param->_coarse = _time_scale * rg.rangedf(0.01, 0.15);
+
+  update();
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
+void Fdn4ReverbXData::update(){
+
+  _inputGainsL   = fvec4(_input_gain, _input_gain, _input_gain, _input_gain);
+  _inputGainsR   = fvec4(_input_gain, _input_gain, _input_gain, _input_gain);
+  _outputGainsL  = fvec4(_output_gain, _output_gain, 0, 0);
+  _outputGainsR  = fvec4(0, 0, _output_gain, _output_gain);}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -61,7 +59,8 @@ dspblk_ptr_t Fdn4ReverbXData::createInstance() const { // override
 ///////////////////////////////////////////////////////////////////////////////
 
 Fdn4ReverbX::Fdn4ReverbX(const Fdn4ReverbXData* dbd)
-    : DspBlock(dbd) {
+    : DspBlock(dbd)
+    , _mydata(dbd) {
 
   _inputGainsL  = dbd->_inputGainsL;
   _inputGainsR  = dbd->_inputGainsR;
@@ -72,7 +71,8 @@ Fdn4ReverbX::Fdn4ReverbX(const Fdn4ReverbXData* dbd)
   _speed        = dbd->_speed;
   ///////////////////////////
   // matrixHadamard(0.0);
-  matrixHouseholder();
+  matrixHouseholder(dbd->_matrix_gain);
+
   ///////////////////////////
   _delayA.setStaticDelayTime(_param[1].eval());
   _delayB.setStaticDelayTime(_param[2].eval());
@@ -92,8 +92,7 @@ void Fdn4ReverbX::matrixHadamard(float fblevel) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Fdn4ReverbX::matrixHouseholder() {
-  float fbgain = 0.5f;
+void Fdn4ReverbX::matrixHouseholder(float fbgain) {
   _feedbackMatrix.setRow(0, fvec4(+fbgain, -fbgain, -fbgain, -fbgain));
   _feedbackMatrix.setRow(1, fvec4(-fbgain, +fbgain, -fbgain, -fbgain));
   _feedbackMatrix.setRow(2, fvec4(-fbgain, -fbgain, +fbgain, -fbgain));
@@ -161,29 +160,34 @@ void Fdn4ReverbX::compute(DspBuffer& dspbuf) // final
     float cinp = finl * _inputGainsL.z + finr * _inputGainsR.z;
     float dinp = finl * _inputGainsL.w + finr * _inputGainsR.w;
 
-    ainp += grp0.dotWith(abcd_out) + 1e-9;
-    binp += grp1.dotWith(abcd_out) + 1e-9;
-    cinp += grp2.dotWith(abcd_out) + 1e-9;
-    dinp += grp3.dotWith(abcd_out) + 1e-9;
+    float ainpA = ainp + grp0.dotWith(abcd_out) + 1e-9;
+    float binpA = binp + grp1.dotWith(abcd_out) + 1e-9;
+    float cinpA = cinp + grp2.dotWith(abcd_out) + 1e-9;
+    float dinpA = dinp + grp3.dotWith(abcd_out) + 1e-9;
 
-    _delayA.inp(ainp);
-    _delayB.inp(binp);
-    _delayC.inp(cinp);
-    _delayD.inp(dinp);
+    float ainpB = _allpassA.Tick(ainpA);
+    float binpB = _allpassB.Tick(binpA);
+    float cinpB = _allpassC.Tick(cinpA);
+    float dinpB = _allpassD.Tick(dinpA);
+
+    _delayA.inp(ainpB);
+    _delayB.inp(binpB);
+    _delayC.inp(cinpB);
+    _delayD.inp(dinpB);
 
     /////////////////////////////////////
     // output to dsp channels
     /////////////////////////////////////
 
-    float lout = ainp * _outputGainsL.x   //
-                 + binp * _outputGainsL.y //
-                 + cinp * _outputGainsL.z //
-                 + dinp * _outputGainsL.w;
+    float lout = ainpA * _outputGainsL.x   //
+                 + binpA * _outputGainsL.y //
+                 + cinpA * _outputGainsL.z //
+                 + dinpA * _outputGainsL.w;
 
-    float rout = ainp * _outputGainsR.x   //
-                 + binp * _outputGainsR.y //
-                 + cinp * _outputGainsR.z //
-                 + dinp * _outputGainsR.w;
+    float rout = ainpA * _outputGainsR.x   //
+                 + binpA * _outputGainsR.y //
+                 + cinpA * _outputGainsR.z //
+                 + dinpA * _outputGainsR.w;
 
     olbuf[i] = lerp(inl, lout, mix);
     orbuf[i] = lerp(inr, rout, mix);
@@ -198,9 +202,17 @@ void Fdn4ReverbX::doKeyOn(const KeyOnInfo& koi) // final
   _filterB.Clear();
   _filterC.Clear();
   _filterD.Clear();
-  _filterA.SetHpf(200);
-  _filterB.SetHpf(200);
-  _filterC.SetHpf(200);
-  _filterD.SetHpf(200);
+  _filterA.SetHpf(_mydata->_hipass_cutoff);
+  _filterB.SetHpf(_mydata->_hipass_cutoff);
+  _filterC.SetHpf(_mydata->_hipass_cutoff);
+  _filterD.SetHpf(_mydata->_hipass_cutoff);
+  _allpassA.Clear();
+  _allpassB.Clear();
+  _allpassC.Clear();
+  _allpassD.Clear();
+  _allpassA.set(_mydata->_allpass_cutoff);
+  _allpassB.set(_mydata->_allpass_cutoff);
+  _allpassC.set(_mydata->_allpass_cutoff);
+  _allpassD.set(_mydata->_allpass_cutoff);
 }
 } // namespace ork::audio::singularity

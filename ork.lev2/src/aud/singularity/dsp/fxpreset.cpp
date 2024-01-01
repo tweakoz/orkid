@@ -106,9 +106,9 @@ lyrdata_ptr_t fxpreset_fdn4reverb() {
   fxstage->setNumIos(2, 2); // stereo in, stereo out
   /////////////////
   appendStereoEnhancer(fxlayer, fxstage);
-  auto reverb = appendStereoReverb(fxlayer, fxstage, 0.47);
-  reverb->_tbase = 0.04;
-  reverb->_tscale = 0.031;
+  auto reverb = appendStereoReverb(fxlayer, fxstage);
+  reverb->_time_base = 0.007;
+  reverb->_time_scale = 0.071;
   /////////////////
   return fxlayer;
 }
@@ -301,8 +301,8 @@ lyrdata_ptr_t fxpreset_multitest() {
       fxlayer, //
       fxstage,
       2000.0f, // cutoff
-      36.0f,   // drive
-      -12.0f); // output gain
+      30.0f,   // drive
+      -24.0f); // output gain
   /////////////////
   return fxlayer;
 }
