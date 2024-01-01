@@ -178,7 +178,9 @@ struct Fdn4ReverbData : public DspBlockData {
   float _input_gain = 0.75;  // linear
   float _output_gain = 0.75; // linear
   float _matrix_gain = 0.35; // linear
-  float _allpass_cutoff = 4500.0; // hz
+  float _allpass_shift_frq_bas = 500.0; // hz
+  float _allpass_shift_frq_mul = 1.2f; // x
+  int   _allpass_count = 4;
   float _hipass_cutoff = 200.0; // hz
 };
 struct Fdn4Reverb : public DspBlock {
@@ -196,10 +198,10 @@ struct Fdn4Reverb : public DspBlock {
   DelayContext _delayD;
   BiQuad _hipassfilterL;
   BiQuad _hipassfilterR;
-  TrapAllpass _allpassA;
-  TrapAllpass _allpassB;
-  TrapAllpass _allpassC;
-  TrapAllpass _allpassD;
+  std::vector<TrapAllpass> _allpassA;
+  std::vector<TrapAllpass> _allpassB;
+  std::vector<TrapAllpass> _allpassC;
+  std::vector<TrapAllpass> _allpassD;
   TrapAllpass _allpassE;
   TrapAllpass _allpassF;
   fmtx4 _feedbackMatrix;
@@ -217,7 +219,7 @@ struct Fdn4ReverbXData : public DspBlockData {
   float _tscale = 1.0f;
 
   void update();
-  
+
   fvec4 _inputGainsL;
   fvec4 _inputGainsR;
   fvec4 _outputGainsL;
@@ -229,7 +231,7 @@ struct Fdn4ReverbXData : public DspBlockData {
   float _input_gain = 0.75;  // linear
   float _output_gain = 0.75; // linear
   float _matrix_gain = 0.35; // linear
-  float _allpass_cutoff = 4500.0; // hz
+  float _allpass_shift_frq = 4500.0; // hz
   float _hipass_cutoff = 200.0; // hz
 };
 struct Fdn4ReverbX : public DspBlock {

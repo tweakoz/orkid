@@ -210,9 +210,9 @@ void Fdn4ReverbX::doKeyOn(const KeyOnInfo& koi) // final
   _allpassB.Clear();
   _allpassC.Clear();
   _allpassD.Clear();
-  _allpassA.set(_mydata->_allpass_cutoff);
-  _allpassB.set(_mydata->_allpass_cutoff);
-  _allpassC.set(_mydata->_allpass_cutoff);
-  _allpassD.set(_mydata->_allpass_cutoff);
+  _allpassA.set(_mydata->_allpass_shift_frq);
+  _allpassB.set(_mydata->_allpass_shift_frq);
+  _allpassC.set(_mydata->_allpass_shift_frq);
+  _allpassD.set(_mydata->_allpass_shift_frq);
 }
 } // namespace ork::audio::singularity

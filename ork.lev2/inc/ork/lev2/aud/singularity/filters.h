@@ -59,7 +59,7 @@ struct TrapAllpass {
   void Clear();
 
   // set coefficients
-  void set(float cutoff);
+  void set(float cutoff); // tecbnically not cutoff, frq at which phase shift is max
   float Tick(float input);
 };
 

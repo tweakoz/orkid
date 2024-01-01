@@ -125,10 +125,17 @@ void Fdn4Reverb::compute(DspBuffer& dspbuf) // final
     float cinpA = cinp + grp2.dotWith(abcd_out) + 1e-9;
     float dinpA = dinp + grp3.dotWith(abcd_out) + 1e-9;
 
-    float ainpB = _allpassA.Tick(ainpA);
-    float binpB = _allpassB.Tick(binpA);
-    float cinpB = _allpassC.Tick(cinpA);
-    float dinpB = _allpassD.Tick(dinpA);
+    float ainpB = ainpA;
+    float binpB = binpA;
+    float cinpB = cinpA;
+    float dinpB = dinpA;
+    
+    for( int i=0; i<_mydata->_allpass_count; i++ ){
+      ainpB =_allpassA[i].Tick(ainpB);
+      binpB =_allpassB[i].Tick(binpB);
+      cinpB =_allpassC[i].Tick(cinpB);
+      dinpB =_allpassD[i].Tick(dinpB);
+    }
 
     _delayA.inp(ainpB);
     _delayB.inp(binpB);
@@ -161,14 +168,22 @@ void Fdn4Reverb::doKeyOn(const KeyOnInfo& koi) { // final
   _hipassfilterR.Clear();
   _hipassfilterL.SetHpf(_mydata->_hipass_cutoff);
   _hipassfilterR.SetHpf(_mydata->_hipass_cutoff);
-  _allpassA.Clear();
-  _allpassB.Clear();
-  _allpassC.Clear();
-  _allpassD.Clear();
-  _allpassA.set(_mydata->_allpass_cutoff);
-  _allpassB.set(_mydata->_allpass_cutoff);
-  _allpassC.set(_mydata->_allpass_cutoff);
-  _allpassD.set(_mydata->_allpass_cutoff);
+  int numalp = _mydata->_allpass_count;
+  _allpassA.resize(numalp);
+  _allpassB.resize(numalp);
+  _allpassC.resize(numalp);
+  _allpassD.resize(numalp);
+  for( int i=0; i<numalp; i++) {
+    _allpassA[i].Clear();
+    _allpassB[i].Clear();
+    _allpassC[i].Clear();
+    _allpassD[i].Clear();
+    float frq = _mydata->_allpass_shift_frq_bas * powf(_mydata->_allpass_shift_frq_mul,float(i));
+    _allpassA[i].set(frq);
+    _allpassB[i].set(frq);
+    _allpassC[i].set(frq);
+    _allpassD[i].set(frq);
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////

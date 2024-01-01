@@ -54,13 +54,15 @@ dspblkdata_ptr_t appendRecursivePitchShifter(lyrdata_ptr_t layer, dspstagedata_p
 std::shared_ptr<Fdn4ReverbData> appendStereoReverb(lyrdata_ptr_t layer, dspstagedata_ptr_t stage) {
   auto fdn4               = stage->appendTypedBlock<Fdn4Reverb>("reverb");
   fdn4->param(0)->_coarse = 0.5f; // wet/dry mix
-  fdn4->_input_gain = 1.0;
-  fdn4->_output_gain = 1.0;
-  fdn4->_time_base = 0.03;
+  fdn4->_input_gain = 0.5;
+  fdn4->_output_gain = 1.35;
+  fdn4->_time_base = 0.37;
   fdn4->_time_scale = 0.7;
-  fdn4->_matrix_gain = 0.5;
-  fdn4->_allpass_cutoff = 3500.0;
+  fdn4->_matrix_gain = 0.498;
   fdn4->_hipass_cutoff = 200.0;
+  fdn4->_allpass_shift_frq_bas = 60.0;
+  fdn4->_allpass_shift_frq_mul = 1.3;
+  fdn4->_allpass_count = 64;
   return fdn4;
 }
 ///////////////////////////////////////////////////////////////////////////////
