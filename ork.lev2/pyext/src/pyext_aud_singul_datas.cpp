@@ -12,6 +12,7 @@
 #include <ork/lev2/aud/singularity/tx81z.h>
 #include <ork/lev2/aud/singularity/fxgen.h>
 #include <ork/lev2/aud/singularity/hud.h>
+#include <ork/lev2/aud/singularity/alg_oscil.h>
 #include <ork/lev2/ui/widget.h>
 #include <ork/lev2/ui/group.h>
 #include <ork/lev2/ui/surface.h>
@@ -81,6 +82,54 @@ void pyinit_aud_singularity_datas(py::module& singmodule) {
                                      return param->_name;
                                    })
                                .def_property(
+                                   "coarse",
+                                    [](dspparam_ptr_t param) -> float { //
+                                      return param->_coarse;
+                                    },
+                                    [](dspparam_ptr_t param, float val) { //
+                                      param->_coarse = val;
+                                    })
+                               .def_property(
+                                   "fine",
+                                    [](dspparam_ptr_t param) -> float { //
+                                      return param->_fine;
+                                    },
+                                    [](dspparam_ptr_t param, float val) { //
+                                      param->_fine = val;
+                                    })
+                               .def_property(
+                                   "fineHZ",
+                                    [](dspparam_ptr_t param) -> float { //
+                                      return param->_fineHZ;
+                                    },
+                                    [](dspparam_ptr_t param, float val) { //
+                                      param->_fineHZ = val;
+                                    })
+                               .def_property(
+                                   "keyTrack",
+                                    [](dspparam_ptr_t param) -> float { //
+                                      return param->_keyTrack;
+                                    },
+                                    [](dspparam_ptr_t param, float val) { //
+                                      param->_keyTrack = val;
+                                    })
+                               .def_property(
+                                   "velTrack",
+                                    [](dspparam_ptr_t param) -> float { //
+                                      return param->_velTrack;
+                                    },
+                                    [](dspparam_ptr_t param, float val) { //
+                                      param->_velTrack = val;
+                                    })
+                               .def_property(
+                                   "keystartNote",
+                                    [](dspparam_ptr_t param) -> int { //
+                                      return param->_keystartNote;
+                                    },
+                                    [](dspparam_ptr_t param, int val) { //
+                                      param->_keystartNote = val;
+                                    })
+                               .def_property(
                                    "debug",
                                    [](dspparam_ptr_t param) -> bool { //
                                      return param->_debug;
@@ -111,6 +160,11 @@ void pyinit_aud_singularity_datas(py::module& singmodule) {
               });
   type_codec->registerStdCodec<dspblkdata_ptr_t>(dspdata_type);
   /////////////////////////////////////////////////////////////////////////////////
+  using pitchblk_ptr_t = std::shared_ptr<PITCH_DATA>;
+  auto pitchdata_type =
+      py::class_<PITCH_DATA, DspBlockData, pitchblk_ptr_t>(singmodule, "PitchBlockData");
+  type_codec->registerStdCodec<pitchblk_ptr_t>(pitchdata_type);
+  /////////////////////////////////////////////////////////////////////////////////
   auto stgdata_type =
       py::class_<DspStageData, dspstagedata_ptr_t>(singmodule, "DspStageData") //
           .def_property_readonly(
@@ -125,17 +179,30 @@ void pyinit_aud_singularity_datas(py::module& singmodule) {
   auto ldata_type = py::class_<LayerData, lyrdata_ptr_t>(singmodule, "LayerData") //
                         .def(
                             "stage",
-                            [](lyrdata_ptr_t pdata, std::string named) -> dspstagedata_ptr_t { //
-                              return pdata->stageByName(named);
+                            [](lyrdata_ptr_t ldata, std::string named) -> dspstagedata_ptr_t { //
+                              return ldata->stageByName(named);
                             })
                         .def(
                             "clone",
-                            [](lyrdata_ptr_t pdata) -> lyrdata_ptr_t { //
-                              return pdata->clone();
+                            [](lyrdata_ptr_t ldata) -> lyrdata_ptr_t { //
+                              return ldata->clone();
                             })
-                        .def("createScopeSource", [](lyrdata_ptr_t pdata) -> scopesource_ptr_t { //
-                          return pdata->createScopeSource();
-                        });
+                        .def("createScopeSource", [](lyrdata_ptr_t ldata) -> scopesource_ptr_t { //
+                          return ldata->createScopeSource();
+                        })
+                        .def_property_readonly(
+                            "pitchBlock", //
+                            [](lyrdata_ptr_t ldata) -> pitchblk_ptr_t { //
+                              return std::dynamic_pointer_cast<PITCH_DATA>(ldata->_pchBlock);
+                            })
+                        .def_property(
+                            "gain", //
+                            [](lyrdata_ptr_t ldata) -> float { //
+                              return linear_amp_ratio_to_decibel(ldata->_layerLinGain);
+                              },
+                            [](lyrdata_ptr_t ldata, float gainDB) { //
+                            ldata->_layerLinGain = decibel_to_linear_amp_ratio(gainDB); 
+                            });
   type_codec->registerStdCodec<lyrdata_ptr_t>(ldata_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto pdata_type = py::class_<ProgramData, prgdata_ptr_t>(singmodule, "ProgramData") //
