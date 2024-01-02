@@ -28,15 +28,19 @@ class HybridApp(SingulTestApp):
 
   def onGpuInit(self,ctx):
     super().onGpuInit(ctx)
+    ############################
+    # load patches
+    ############################
     self.syn_data_base = singularity.baseDataPath()/"casioCZ"
     self.cz1data = singularity.CzSynthData()
-    self.cz1data.loadBank("bank0", self.syn_data_base/"cz1_1.bnk")
-    self.cz1data.loadBank("bank1", self.syn_data_base/"cz1_2.bnk")
-    self.cz1data.loadBank("bank2", self.syn_data_base/"cz1_3.bnk")
-    self.cz1data.loadBank("bank3", self.syn_data_base/"cz1_4.bnk")
+    self.cz1data.loadBank("banka", self.syn_data_base/"cz1_2.bnk")
+    self.cz1data.loadBank("bankb", self.syn_data_base/"cz1_4.bnk")
     self.krzdata = singularity.KrzSynthData()
     krz_bank = self.krzdata.bankData
     cz1_bank = self.cz1data.bankData
+    ############################
+    # create a new hybrid patch
+    #  mixing different synth architectures
     ############################
     self.new_soundbank = singularity.BankData()
     newprog = self.new_soundbank.newProgram("_HYBRID")
@@ -61,6 +65,14 @@ class HybridApp(SingulTestApp):
       override(3,"aux4",18,0,0)
     ############################
     self.soundbank = self.new_soundbank
+    ############################
+    # hook up aux4 bus to oscope and spectra
+    ############################
+    self.aux4_source = self.aux4bus.createScopeSource()
+    self.mainbus_source.disconnect(self.oscope_sink)
+    self.mainbus_source.disconnect(self.spectra_sink)
+    self.aux4_source.connect(self.oscope_sink)
+    self.aux4_source.connect(self.spectra_sink)
     ############################
     ok_list = [
       "HYBRID1",
