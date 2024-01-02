@@ -68,7 +68,7 @@ std::shared_ptr<Fdn4ReverbData> appendStereoReverb(lyrdata_ptr_t layer, dspstage
   return fdn4;
 }
 ///////////////////////////////////////////////////////////////////////////////
-std::shared_ptr<Fdn4ReverbData> appendOilBarrelReverb(lyrdata_ptr_t layer, dspstagedata_ptr_t stage) {
+std::shared_ptr<Fdn4ReverbData> appendOilTankReverb(lyrdata_ptr_t layer, dspstagedata_ptr_t stage) {
   auto fdn4               = stage->appendTypedBlock<Fdn4Reverb>("reverb");
   fdn4->param(0)->_coarse = 0.5f; // wet/dry mix
   fdn4->_input_gain = 0.5;

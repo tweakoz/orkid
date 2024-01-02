@@ -68,10 +68,16 @@ class SingulTestApp(object):
     self.audiodevice = singularity.device.instance()
     self.synth = singularity.synth.instance()
     self.aux1bus = self.synth.createOutputBus("aux1")
+    self.aux2bus = self.synth.createOutputBus("aux2")
+    self.aux3bus = self.synth.createOutputBus("aux3")
+    self.aux4bus = self.synth.createOutputBus("aux4")
     self.mainbus = self.synth.outputBus("main")
     self.mainbus_source = self.mainbus.createScopeSource()
     self.synth.setEffect(self.mainbus,"none")
     self.synth.setEffect(self.aux1bus,"Reverb:GuyWire")
+    self.synth.setEffect(self.aux2bus,"Reverb:OilTank")
+    self.synth.setEffect(self.aux3bus,"distortion+chorus")
+    self.synth.setEffect(self.aux4bus,"shifter-rec")
 
     lg_group = self.ezapp.topLayoutGroup
 
@@ -134,7 +140,7 @@ class SingulTestApp(object):
 
     ######################### 
 
-    self.gain = -12.0
+    self.gain = -24.0
     self.synth.masterGain = singularity.decibelsToLinear(self.gain)
     self.sorted_progs = []
     self.octave = 5

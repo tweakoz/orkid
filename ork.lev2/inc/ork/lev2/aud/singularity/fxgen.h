@@ -82,7 +82,7 @@ std::shared_ptr<Fdn4ReverbData> appendStereoReverb(
     lyrdata_ptr_t layer, //
     dspstagedata_ptr_t stage);
 ///////////////////////////////////////////////////////////////////////////////
-std::shared_ptr<Fdn4ReverbData> appendOilBarrelReverb(
+std::shared_ptr<Fdn4ReverbData> appendOilTankReverb(
     lyrdata_ptr_t layer, //
     dspstagedata_ptr_t stage);
 ///////////////////////////////////////////////////////////////////////////////

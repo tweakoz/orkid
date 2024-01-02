@@ -45,24 +45,20 @@ class HybridApp(SingulTestApp):
     newprog.merge(cz1_bank.programByName("Delayed Pad"))
     ####
     if True:
-      L0 = newprog.layer(0)
-      L0.gain = -18 # dB
-      L0.outputBus = "aux1"
-      P0 = L0.pitchBlock.paramByName("pitch")
-      P0.coarse=24
-      P0.keyTrack=0
-      P0.evaluatorID = "pitch"
-      #P0.debug = True
-      #assert(False)
-      ####
-      L1 = newprog.layer(1)
-      L1.gain = -18 # dB
-      L1.outputBus = "aux1"
-      P1 = L1.pitchBlock.paramByName("pitch")
-      P1.coarse=12
-      P1.keyTrack=0
-      P1.evaluatorID = "pitch"
-      #P1.debug = True
+      def override(lid,bus,gain,coarse,kt):
+         L = newprog.layer(lid)
+         L.gain = gain
+         L.outputBus = bus
+         PB = L.pitchBlock
+         if PB != None:
+           P = PB.paramByName("pitch")
+           P.coarse=coarse
+           P.keyTrack=kt
+           P.evaluatorID = "pitch"
+      override(0,"aux1",-18,24,0)
+      override(1,"aux4",-18,12,0)
+      override(2,"aux2",0,-12,0)
+      override(3,"aux4",18,0,0)
     ############################
     self.soundbank = self.new_soundbank
     ############################
@@ -72,7 +68,7 @@ class HybridApp(SingulTestApp):
     ############################
     self.sorted_progs = sorted(ok_list)
     self.prog_index = find_index(self.sorted_progs, "HYBRID1")
-
+    self.octave = 3
   ##############################################
 
 ###############################################################################

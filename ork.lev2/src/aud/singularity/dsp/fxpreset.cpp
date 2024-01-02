@@ -178,7 +178,7 @@ lyrdata_ptr_t fxpreset_fdn4reverb() {
   return fxlayer;
 }
 ///////////////////////////////////////////////////////////////////////////////
-lyrdata_ptr_t fxpreset_oilbarrelreverb() {
+lyrdata_ptr_t fxpreset_oiltankreverb() {
   auto fxprog       = std::make_shared<ProgramData>();
   auto fxlayer      = fxprog->newLayer();
   auto fxalg        = std::make_shared<AlgData>();
@@ -190,7 +190,7 @@ lyrdata_ptr_t fxpreset_oilbarrelreverb() {
   auto fxstage = fxalg->appendStage("FX");
   fxstage->setNumIos(2, 2); // stereo in, stereo out
   /////////////////
-  auto reverb = appendOilBarrelReverb(fxlayer, fxstage);
+  auto reverb = appendOilTankReverb(fxlayer, fxstage);
   appendStereoEnhancer(fxlayer, fxstage);
   /////////////////
   return fxlayer;
@@ -429,7 +429,7 @@ void loadAllFxPresets(synth* s) {
   s->_fxpresets["distortion+echo"]   = fxpreset_distortionplusecho();
   s->_fxpresets["stereo-chorus"]     = fxpreset_stereochorus();
   s->_fxpresets["Reverb::FDN4"]      = fxpreset_fdn4reverb();
-  s->_fxpresets["Reverb:OilBarrel"]  = fxpreset_oilbarrelreverb();
+  s->_fxpresets["Reverb:OilTank"]    = fxpreset_oiltankreverb();
   s->_fxpresets["Reverb:GuyWire"]    = fxpreset_guywireeverb();
   s->_fxpresets["Reverb::NiceVerb"]  = fxpreset_niceverb();
   s->_fxpresets["Reverb::EchoVerb"]  = fxpreset_echoverb();
