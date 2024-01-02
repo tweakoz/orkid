@@ -18,6 +18,9 @@ struct FunData;
 ///////////////////////////////////////////////////////////////////////////////
 
 struct ControlBlockData {
+
+  controlblockdata_ptr_t clone() const;
+
   template <typename T> std::shared_ptr<T> addController(std::string named) {
     auto it = _controllers_by_name.find(named);
     if(it!=_controllers_by_name.end()){
@@ -42,6 +45,8 @@ struct ControlBlockData {
 struct ControllerData : public ork::Object {
 
   DeclareAbstractX(ControllerData, ork::Object);
+
+  virtual controllerdata_ptr_t clone() const = 0;
 
   virtual ControllerInst* instantiate(layer_ptr_t layer) const = 0;
 
@@ -87,6 +92,8 @@ struct LfoData : public ControllerData {
 
   DeclareConcreteX(LfoData, ControllerData);
 
+  controllerdata_ptr_t clone() const final;
+
   LfoData();
   ~LfoData();
   ControllerInst* instantiate(layer_ptr_t layer) const final;
@@ -124,6 +131,7 @@ struct LfoInst : public ControllerInst {
 struct FunData : public ControllerData {
 
   DeclareConcreteX(FunData, ControllerData);
+  controllerdata_ptr_t clone() const final;
 
   ControllerInst* instantiate(layer_ptr_t layer) const final;
 
@@ -156,6 +164,7 @@ struct CustomControllerData final : public ControllerData {
   DeclareConcreteX(CustomControllerData, ControllerData);
 
   CustomControllerData();
+  controllerdata_ptr_t clone() const final;
   ControllerInst* instantiate(layer_ptr_t layer) const override;
   customcontroller_computemethod_t _oncompute;
   customcontroller_keyonmethod_t _onkeyon;
@@ -177,6 +186,7 @@ struct CustomControllerInst final : public ControllerInst {
 struct ConstantControllerData : public ControllerData {
 
   DeclareConcreteX(ConstantControllerData, ControllerData);
+  controllerdata_ptr_t clone() const final;
 
   ControllerInst* instantiate(layer_ptr_t layer) const final;
 

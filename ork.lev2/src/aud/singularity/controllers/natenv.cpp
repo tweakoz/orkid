@@ -32,6 +32,12 @@ ControllerInst* NatEnvWrapperData::instantiate(layer_ptr_t layer) const {
   return new NatEnvWrapperInst(this, layer);
 }
 
+controllerdata_ptr_t NatEnvWrapperData::clone() const {
+  auto rval = std::make_shared<NatEnvWrapperData>();
+  rval->_segments = _segments;
+  return rval;
+}
+
 NatEnvWrapperInst::NatEnvWrapperInst(const NatEnvWrapperData* data, layer_ptr_t l)
   : ControllerInst(l) {
   _natenv = std::make_shared<NatEnv>();

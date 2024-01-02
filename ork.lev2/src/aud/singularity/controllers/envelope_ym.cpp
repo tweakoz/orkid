@@ -42,6 +42,19 @@ YmEnvData::YmEnvData() {
   };
 }
 
+controllerdata_ptr_t YmEnvData::clone() const {
+  auto rval = std::make_shared<YmEnvData>();
+  rval->_attackRate  = _attackRate;
+  rval->_attackShape = _attackShape;
+  rval->_decay1Rate  = _decay1Rate;
+  rval->_decay1Level = _decay1Level;
+  rval->_decay2Rate  = _decay2Rate;
+  rval->_releaseRate = _releaseRate;
+  rval->_egshift     = _egshift;
+  rval->_rateScale   = _rateScale;
+  return rval;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 ControllerInst* YmEnvData::instantiate(layer_ptr_t l) const // final

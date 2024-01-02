@@ -20,6 +20,19 @@ namespace ork::audio::singularity {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+kmpblockdata_ptr_t KmpBlockData::clone() const {
+  auto rval = std::make_shared<KmpBlockData>();
+  rval->_transpose = _transpose;
+  rval->_timbreShift = _timbreShift;
+  rval->_keyTrack = _keyTrack;
+  rval->_velTrack = _velTrack;
+  rval->_keymap = _keymap->clone();
+  rval->_pbMode = _pbMode;
+  return rval;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 kmregion* KeyMap::getRegion(int note, int vel) const {
   int k2vel = vel / 18; // map 0..127 -> 0..7
 
@@ -37,6 +50,36 @@ kmregion* KeyMap::getRegion(int note, int vel) const {
   }
 
   return nullptr;
+}
+
+kmregion* kmregion::clone() const{
+  auto rval = new kmregion;
+  rval->_lokey = _lokey;
+  rval->_hikey = _hikey;
+  rval->_lovel = _lovel;
+  rval->_hivel = _hivel;
+  rval->_tuning = _tuning;
+  rval->_linGain = _linGain;
+  rval->_loopModeOverride = _loopModeOverride;
+  rval->_sample = _sample;
+  rval->_multiSample = _multiSample;
+  rval->_sampID = _sampID;
+  rval->_multsampID = _multsampID;
+  rval->_volAdj = _volAdj;
+  rval->_sampleName = _sampleName;
+
+  return rval;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+keymap_ptr_t KeyMap::clone() const {
+  auto rval = std::make_shared<KeyMap>();
+  for (auto r : _regions) {
+    auto rclone = r->clone();
+    rval->_regions.push_back(rclone);
+  }
+  return rval;  
 }
 
 ///////////////////////////////////////////////////////////////////////////////

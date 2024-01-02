@@ -32,6 +32,19 @@ scopesource_ptr_t ControllerData::createScopeSource() {
 }
 ///////////////////////////////////////////////////////////////////////////////
 
+controlblockdata_ptr_t ControlBlockData::clone() const{
+  auto rval = std::make_shared<ControlBlockData>();
+  for( size_t i=0; i<_numcontrollers; i++ ){
+    auto the_clone = _controller_datas[i]->clone();
+    rval->_controller_datas[i] = the_clone;
+    rval->_controllers_by_name[the_clone->_name] = the_clone;
+  }
+  rval->_numcontrollers = _numcontrollers;
+  return rval;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 controllerdata_ptr_t ControlBlockData::controllerByName(std::string named){
   controllerdata_ptr_t rval;
   auto it = _controllers_by_name.find(named);
@@ -359,6 +372,17 @@ CustomControllerData::CustomControllerData() {
   _onkeyoff  = [](CustomControllerInst* cci) {};
 }
 ///////////////////////////////////////////////////////////////////////////////
+
+controllerdata_ptr_t CustomControllerData::clone() const {
+  auto rval = std::make_shared<CustomControllerData>();
+  rval->_name = _name;
+  rval->_oncompute = _oncompute;
+  rval->_onkeyon = _onkeyon;
+  rval->_onkeyoff = _onkeyoff;
+  return rval;
+}
+
+///////////////////////////////////////////////////////////////////////////////
 ControllerInst* CustomControllerData::instantiate(layer_ptr_t layer) const {
   //
   return new CustomControllerInst(this, layer);
@@ -389,6 +413,12 @@ void CustomControllerInst::keyOff() {
 
 void ConstantControllerData::describeX(class_t* clazz) {
   clazz->directProperty("constvalue", &ConstantControllerData::_constvalue);
+}
+
+controllerdata_ptr_t ConstantControllerData::clone() const {
+  auto rval = std::make_shared<ConstantControllerData>();
+  rval->_constvalue = _constvalue;
+  return rval;
 }
 
 ControllerInst* ConstantControllerData::instantiate(layer_ptr_t layer) const {

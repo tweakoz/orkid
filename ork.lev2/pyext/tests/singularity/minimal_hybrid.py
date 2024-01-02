@@ -29,57 +29,30 @@ class HybridApp(SingulTestApp):
   def onGpuInit(self,ctx):
     super().onGpuInit(ctx)
     self.syn_data_base = singularity.baseDataPath()/"casioCZ"
-    self.czdata = singularity.CzSynthData()
-    self.czdata.loadBank("bank0", self.syn_data_base/"cz1_1.bnk")
-    self.czdata.loadBank("bank1", self.syn_data_base/"cz1_2.bnk")
-    self.czdata.loadBank("bank2", self.syn_data_base/"cz1_3.bnk")
-    self.czdata.loadBank("bank3", self.syn_data_base/"cz1_4.bnk")
-    self.soundbank = self.czdata.bankData
-    krz_ok_list = [
-      "Stereo_Grand",
-      "Real_Drums",
-      "Steel_Str_Guitar",
-      "Solo_Trumpet",
-      "Slo_Chorus_Gtr",
-      "Native_Drum",
-      "Kotolin",
-      "Hip_Brass",
-      "Hi_Res_Sweeper",
-      "Guitar_Mutes_1",
-      "Guitar_Mutes_2",
-      "General_MIDI_kit",
-      "Finger_Bass",
-      "Default_Program",
-      "Click",
-      "Classical_Gtr",
-      "5_8ve_Percussion",
-      "40_Something",
-      "20's_Trumpet",
-      "Wood_Bars",
-      "WonderSynth_Bass",
-      "Trumpet+Bone",
-      "Tine_Elec_Piano",
-      "Tenor_Sax",
-    ]
+    self.cz1data = singularity.CzSynthData()
+    self.cz1data.loadBank("bank0", self.syn_data_base/"cz1_1.bnk")
+    self.cz1data.loadBank("bank1", self.syn_data_base/"cz1_2.bnk")
+    self.cz1data.loadBank("bank2", self.syn_data_base/"cz1_3.bnk")
+    self.cz1data.loadBank("bank3", self.syn_data_base/"cz1_4.bnk")
     self.krzdata = singularity.KrzSynthData()
-    print("B<%s>" % self.krzdata.bankData.programsByName)
-    B2 = self.krzdata.bankData.filterPrograms(krz_ok_list)
-    print("B2<%s>" % B2.programsByName)
-    self.soundbank.merge(B2)
+    krz_bank = self.krzdata.bankData
+    cz1_bank = self.cz1data.bankData
     ############################
-    newprog = singularity.ProgramData()
-    newprog.name = "_HYBRID"
-    newprog.merge(self.soundbank.programByName("Stereo_Grand"))
-    newprog.merge(self.soundbank.programByName("Wood_Bars"))
-    newprog.merge(self.soundbank.programByName("Delayed Pad"))
-    newprog.merge(self.soundbank.programByName("Strings Chorus1"))    
-    self.soundbank.addProgram(newprog)
+    self.new_soundbank = singularity.BankData()
+    newprog = self.new_soundbank.newProgram("_HYBRID")
+    newprog.merge(krz_bank.programByName("Waterflute"))
+    newprog.merge(cz1_bank.programByName("Bells and Chimes"))
+    newprog.merge(cz1_bank.programByName("Delayed Pad"))
+    L = newprog.cloneLayer(1)
     ############################
-    self.czprogs = self.soundbank.programsByName
-    self.sorted_progs = sorted(self.czprogs.keys())
-    # find index of "Bells and Chimes" in sorted_progs
-    self.prog_index = find_index(self.sorted_progs, "Casio Toms")
-    print("prog_index<%d>" % self.prog_index)
+    self.soundbank = self.new_soundbank
+    ############################
+    ok_list = [
+      "HYBRID1",
+    ]
+    ############################
+    self.sorted_progs = sorted(ok_list)
+    self.prog_index = find_index(self.sorted_progs, "HYBRID1")
 
   ##############################################
 

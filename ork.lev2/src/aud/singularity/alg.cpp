@@ -25,6 +25,19 @@ void AlgData::describeX(class_t* clazz) {
   clazz->directObjectMapProperty("Stages", &AlgData::_stageByName);
 }
 
+algdata_ptr_t AlgData::clone() const {
+  auto rval = std::make_shared<AlgData>();
+  rval->_name = _name;
+  rval->_numstages = _numstages;
+  for (size_t i=0; i<_numstages; i++) {
+    auto stage = _stages[i];
+    auto clone = stage->clone();
+    rval->_stages[i] = clone;
+    rval->_stageByName[clone->_name] = clone;
+  }
+  return rval;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 bool AlgData::postDeserialize(reflect::serdes::IDeserializer&, object_ptr_t shared) { // override

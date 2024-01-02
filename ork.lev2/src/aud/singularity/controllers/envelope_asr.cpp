@@ -34,6 +34,16 @@ ControllerInst* AsrData::instantiate(layer_ptr_t l) const // final
   return new AsrInst(this, l);
 }
 
+controllerdata_ptr_t AsrData::clone() const {
+  auto rval = std::make_shared<AsrData>();
+  rval->_delay   = _delay;
+  rval->_attack  = _attack;
+  rval->_release = _release;
+  rval->_mode    = _mode;
+  rval->_envadjust = _envadjust;
+  return rval;
+}
+
 AsrInst::AsrInst(const AsrData* data, layer_ptr_t l)
     : ControllerInst(l)
     , _data(data)

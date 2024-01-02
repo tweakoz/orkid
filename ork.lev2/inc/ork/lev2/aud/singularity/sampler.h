@@ -68,6 +68,8 @@ struct multisample {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct kmregion {
+
+  kmregion* clone() const;
   int _lokey = 0, _hikey = 0;
   int _lovel = 0, _hivel = 127;
   int _tuning                 = 0;
@@ -83,6 +85,9 @@ struct kmregion {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct KeyMap {
+
+  keymap_ptr_t clone() const;
+
   std::string _name;
   std::vector<kmregion*> _regions;
   int _kmID = -1;
@@ -93,6 +98,9 @@ struct KeyMap {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct KmpBlockData {
+
+  kmpblockdata_ptr_t clone() const;
+
   keymap_constptr_t _keymap;
   int _transpose   = 0;
   float _keyTrack  = 100.0f;

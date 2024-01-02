@@ -52,6 +52,29 @@ LayerData::LayerData(const ProgramData* pdata)
   _outbus      = "main";
   _varmap = std::make_shared<varmap::VarMap>();
 }
+lyrdata_ptr_t LayerData::clone() const{
+  auto rval = std::make_shared<LayerData>();
+  rval->_programdata = _programdata;
+  rval->_loKey = _loKey;
+  rval->_hiKey = _hiKey;
+  rval->_loVel = _loVel;
+  rval->_hiVel = _hiVel;
+  rval->_ignRels = _ignRels;
+  rval->_atk1Hold = _atk1Hold;
+  rval->_atk3Hold = _atk3Hold;
+  rval->_usenatenv = _usenatenv;
+  rval->_layerLinGain = _layerLinGain;
+  rval->_algdata = _algdata->clone();
+  rval->_outbus = _outbus;
+  rval->_name = _name;
+  rval->_kmpBlock = _kmpBlock->clone();
+  rval->_pchBlock = _pchBlock->clone();
+  rval->_keymap = _keymap;
+  rval->_ctrlBlock = _ctrlBlock->clone();
+  rval->_varmap = _varmap;
+  rval->_scopesource = _scopesource;
+  return rval;
+}
 ///////////////////////////////////////////////////////////////////////////////
 int LayerData::numDspBlocks() const {
   int dspb = 0;

@@ -106,7 +106,74 @@ lyrdata_ptr_t fxpreset_fdn4reverb() {
   fxstage->setNumIos(2, 2); // stereo in, stereo out
   /////////////////
   appendStereoEnhancer(fxlayer, fxstage);
-  auto reverb = appendStereoReverb(fxlayer, fxstage);
+  /////////////////
+  float matrix_gain = 0.458;
+  float out_gain = 0.4;
+  /////////////////
+  auto fdn4A = fxstage->appendTypedBlock<Fdn4Reverb>("diffusionA");
+  fdn4A->param(0)->_coarse = 0.5f; // wet/dry mix
+  fdn4A->_input_gain = 0.3;
+  fdn4A->_output_gain = out_gain;
+  fdn4A->_time_base = 0.007;
+  fdn4A->_time_scale = 1.071;
+  fdn4A->_matrix_gain = matrix_gain;
+  fdn4A->_hipass_cutoff = 100.0;
+  fdn4A->_allpass_shift_frq_bas = 700.0;
+  fdn4A->_allpass_shift_frq_mul = 1.3;
+  fdn4A->_allpass_count = 12;
+  fdn4A->matrixHouseholder(fdn4A->_matrix_gain);
+  fdn4A->update();
+  /////////////////
+  auto fdn4B = fxstage->appendTypedBlock<Fdn4Reverb>("diffusionB");
+  fdn4B->param(0)->_coarse = 0.5f; // wet/dry mix
+  fdn4B->_input_gain = 0.4;
+  fdn4B->_output_gain = out_gain;
+  fdn4B->_time_base = 0.017;
+  fdn4B->_time_scale = 1.061;
+  fdn4B->_matrix_gain = matrix_gain;
+  fdn4B->_hipass_cutoff = 100.0;
+  fdn4B->_allpass_shift_frq_bas = 500.0;
+  fdn4B->_allpass_shift_frq_mul = 1.4;
+  fdn4B->_allpass_count = 8;
+  fdn4B->matrixHouseholder(fdn4B->_matrix_gain);
+  fdn4B->update();
+  /////////////////
+  auto fdn4C = fxstage->appendTypedBlock<Fdn4Reverb>("diffusionC");
+  fdn4C->param(0)->_coarse = 0.5f; // wet/dry mix
+  fdn4C->_input_gain = 0.5;
+  fdn4C->_output_gain = out_gain;
+  fdn4C->_time_base = 0.037;
+  fdn4C->_time_scale = 1.061;
+  fdn4C->_matrix_gain = matrix_gain;
+  fdn4C->_hipass_cutoff = 100.0;
+  fdn4C->_allpass_shift_frq_bas = 1500.0;
+  fdn4C->_allpass_shift_frq_mul = 1.5;
+  fdn4C->_allpass_count = 4;
+  fdn4C->matrixHouseholder(fdn4C->_matrix_gain);
+  fdn4C->update();
+  /////////////////
+  auto fdn4D = fxstage->appendTypedBlock<Fdn4Reverb>("diffusionD");
+  fdn4D->param(0)->_coarse = 0.5f; // wet/dry mix
+  fdn4D->_input_gain = 0.5;
+  fdn4D->_output_gain = out_gain;
+  fdn4D->_time_base = 0.077;
+  fdn4D->_time_scale = 1.161;
+  fdn4D->_matrix_gain = matrix_gain;
+  fdn4D->_hipass_cutoff = 100.0;
+  fdn4D->_allpass_shift_frq_bas = 1500.0;
+  fdn4D->_allpass_shift_frq_mul = 1.5;
+  fdn4D->_allpass_count = 4;
+  fdn4D->matrixHouseholder(fdn4D->_matrix_gain);
+  fdn4D->update();
+  /////////////////
+  auto stereoenh           = fxstage->appendTypedBlock<StereoDynamicEcho>("echo2");
+  auto width_mod           = stereoenh->param(0)->_mods;
+  auto WIDTHCONTROL        = fxlayer->appendController<CustomControllerData>("WIDTH2");
+  width_mod->_src1         = WIDTHCONTROL;
+  width_mod->_src1Depth    = 1.0;
+  WIDTHCONTROL->_oncompute = [](CustomControllerInst* cci) { //
+    cci->setFloatValue( 0.7f);
+  };
   /////////////////
   return fxlayer;
 }

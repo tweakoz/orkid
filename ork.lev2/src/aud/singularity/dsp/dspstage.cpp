@@ -35,6 +35,13 @@ void IoConfig::describeX(class_t* clazz) {
 IoConfig::IoConfig() {
 }
 //////////////////////////////////////////////////////////////////////////////
+ioconfig_ptr_t IoConfig::clone() const{
+  auto rval = std::make_shared<IoConfig>();
+  rval->_inputs = _inputs;
+  rval->_outputs = _outputs;
+  return rval;
+}
+//////////////////////////////////////////////////////////////////////////////
 size_t IoConfig::numInputs() const {
   return _inputs.size();
 }
@@ -48,6 +55,23 @@ void DspStageData::describeX(class_t* clazz) {
   clazz->directProperty("StageIndex", &DspStageData::_stageIndex);
   clazz->directObjectProperty("IoConfig", &DspStageData::_ioconfig);
   clazz->directObjectMapProperty("DspBlocks", &DspStageData::_namedblockdatas);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+dspstagedata_ptr_t DspStageData::clone() const{
+  auto rval = std::make_shared<DspStageData>();
+  rval->_name = _name;
+  rval->_stageIndex = _stageIndex;
+  rval->_numblocks = _numblocks;
+  rval->_ioconfig = _ioconfig->clone();
+  for (size_t i=0; i<_numblocks; i++) {
+    auto block = _blockdatas[i];
+    auto clone = block->clone();
+    rval->_blockdatas[i] = block; //clone;
+    rval->_namedblockdatas[clone->_name] = block; //clone;
+  }
+  return rval;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

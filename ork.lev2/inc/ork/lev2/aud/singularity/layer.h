@@ -21,7 +21,7 @@ struct LayerData : public ork::Object {
   bool postDeserialize(reflect::serdes::IDeserializer&, object_ptr_t shared) override;
 
   LayerData(const ProgramData* pdat = nullptr);
-
+  lyrdata_ptr_t clone() const;
   dspstagedata_ptr_t appendStage(const std::string& named);
   dspstagedata_ptr_t stageByIndex(int index);
   dspstagedata_ptr_t stageByName(const std::string& named);

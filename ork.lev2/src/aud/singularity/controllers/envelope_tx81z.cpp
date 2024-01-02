@@ -25,6 +25,18 @@ void TX81ZEnvData::describeX(class_t* clazz) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+controllerdata_ptr_t TX81ZEnvData::clone() const {
+  auto rval = std::make_shared<TX81ZEnvData>();
+  rval->_attackRate  = _attackRate;
+  rval->_decay1Rate  = _decay1Rate;
+  rval->_decay1Level = _decay1Level;
+  rval->_decay2Rate  = _decay2Rate;
+  rval->_releaseRate = _releaseRate;
+  return rval;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 PolynomialEval::PolynomialEval() {
 }
 

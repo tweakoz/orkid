@@ -22,6 +22,20 @@ namespace ork::audio::singularity {
 void RateLevelEnvData::describeX(class_t* clazz) {
 }
 
+controllerdata_ptr_t RateLevelEnvData::clone() const {
+  auto rval = std::make_shared<RateLevelEnvData>();
+  rval->_name = _name;
+  rval->_ampenv = _ampenv;
+  rval->_bipolar = _bipolar;
+  rval->_envType = _envType;
+  rval->_sustainSegment = _sustainSegment;
+  rval->_releaseSegment = _releaseSegment;
+  rval->_envadjust = _envadjust;
+  rval->_segmentNames = _segmentNames;
+  rval->_segments = _segments;
+  return rval;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // 7-seg rate/level envelopes
 ///////////////////////////////////////////////////////////////////////////////

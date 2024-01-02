@@ -128,6 +128,11 @@ void pyinit_aud_singularity_datas(py::module& singmodule) {
                             [](lyrdata_ptr_t pdata, std::string named) -> dspstagedata_ptr_t { //
                               return pdata->stageByName(named);
                             })
+                        .def(
+                            "clone",
+                            [](lyrdata_ptr_t pdata) -> lyrdata_ptr_t { //
+                              return pdata->clone();
+                            })
                         .def("createScopeSource", [](lyrdata_ptr_t pdata) -> scopesource_ptr_t { //
                           return pdata->createScopeSource();
                         });
@@ -145,6 +150,14 @@ void pyinit_aud_singularity_datas(py::module& singmodule) {
                             [](prgdata_ptr_t pdata, size_t index) -> lyrdata_ptr_t { //
                               return pdata->getLayer(index);
                             })
+                        .def(
+                            "cloneLayer",
+                            [](prgdata_ptr_t pdata, size_t index) -> lyrdata_ptr_t { //
+                              auto original = pdata->getLayer(index);
+                              auto clone = original->clone();
+                              pdata->setLayer(index, clone);
+                              return clone;
+                            })
                         .def_property(
                             "name", //
                             [](prgdata_ptr_t pdata) -> std::string { return pdata->_name; },
@@ -152,6 +165,7 @@ void pyinit_aud_singularity_datas(py::module& singmodule) {
   type_codec->registerStdCodec<prgdata_ptr_t>(pdata_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto bankdata_type = py::class_<BankData, ::ork::Object, bankdata_ptr_t>(singmodule, "BankData")
+                           .def(py::init<>())
                            .def_property_readonly(
                                "programsByName",                                //
                                [type_codec](bankdata_ptr_t bdata) -> py::dict { //
@@ -175,6 +189,19 @@ void pyinit_aud_singularity_datas(py::module& singmodule) {
                                    rval[type_codec->encode(id)] = type_codec->encode(name);
                                  }
                                  return rval;
+                               })
+                           .def(
+                               "newProgram",                                 //
+                               [](bankdata_ptr_t bdata, std::string named) -> prgdata_ptr_t { //
+                                 auto prg = std::make_shared<ProgramData>();
+                                 prg->_name = named;
+                                 int highestID                   = 0;
+                                 if( bdata->_programs.size() ){
+                                    bdata->_programs.rbegin()->first;
+                                 }
+                                 bdata->_programs[highestID + 1] = prg;
+                                 bdata->_programsByName[named]   = prg;
+                                 return prg;
                                })
                            .def(
                                "addProgram",                                 //

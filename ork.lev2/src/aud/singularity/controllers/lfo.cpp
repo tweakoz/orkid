@@ -36,6 +36,16 @@ ControllerInst* LfoData::instantiate(layer_ptr_t l) const {
   return new LfoInst(this, l);
 }
 
+controllerdata_ptr_t LfoData::clone() const {
+  auto rval = std::make_shared<LfoData>();
+  rval->_initialPhase = _initialPhase;
+  rval->_minRate      = _minRate;
+  rval->_maxRate      = _maxRate;
+  rval->_shape        = _shape;
+  rval->_controller   = _controller;
+  return rval;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 LfoInst::LfoInst(const LfoData* data, layer_ptr_t l)

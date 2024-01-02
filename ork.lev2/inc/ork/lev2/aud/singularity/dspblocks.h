@@ -42,6 +42,9 @@ private:
 struct IoConfig final : public ork::Object {
   DeclareConcreteX(IoConfig, ork::Object);
   IoConfig();
+
+  ioconfig_ptr_t clone() const;
+
   size_t numInputs() const;
   size_t numOutputs() const;
   std::vector<int> _inputs;
@@ -56,6 +59,7 @@ struct DspBlockData : public ork::Object {
   bool postDeserialize(reflect::serdes::IDeserializer&, object_ptr_t shared) override;
 
   DspBlockData(std::string name = "");
+  virtual dspblkdata_ptr_t clone() const { return nullptr; }
 
   virtual dspblk_ptr_t createInstance() const {
     return nullptr;
@@ -155,6 +159,9 @@ struct DspStageData final : public ork::Object {
   bool postDeserialize(reflect::serdes::IDeserializer&, object_ptr_t shared) override;
 
   DspStageData();
+
+  dspstagedata_ptr_t clone() const;
+
   dspblkdata_ptr_t appendBlock();
 
   template <typename T, typename... A>     //
@@ -202,6 +209,7 @@ struct AlgData final : public ork::Object {
 
   DeclareConcreteX(AlgData, ork::Object);
   bool postDeserialize(reflect::serdes::IDeserializer&, object_ptr_t shared) override;
+  algdata_ptr_t clone() const;
 
   dspstagedata_ptr_t appendStage(const std::string& named);
   dspstagedata_ptr_t stageByName(const std::string& named);
