@@ -74,6 +74,23 @@ void synth::prevEffect() {
   });
 }
 ///////////////////////////////////////////////////////////////////////////////
+void synth::setEffect(std::string name) {
+  auto it = _fxpresets.find(name);
+  if(it!=_fxpresets.end()){
+    auto nextpreset = it->second;
+    _eventmap.atomicOp([this,name,nextpreset](eventmap_t& emap) { //
+      emap.insert(std::make_pair(0.0f, [this,nextpreset,name]() {
+        for (auto bus : _outputBusses) {
+          assert(nextpreset->_algdata != nullptr); // did you add presets ?
+          bus.second->setBusDSP(nextpreset);
+          bus.second->_fxname = name;
+          logchan_synth->log( "switched to effect<%s>", name.c_str() );
+        }
+      }));
+    });
+  }
+}
+///////////////////////////////////////////////////////////////////////////////
 void OutputBus::resize(int numframes) {
   _buffer.resize(numframes);
   if (_dsplayer) {

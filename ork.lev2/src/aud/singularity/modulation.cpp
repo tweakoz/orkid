@@ -96,18 +96,31 @@ dspparam_ptr_t DspParamData::clone() const{
   return rval;
 }
 
+void DspParamData::dump() const {
+  printf( "DspParam<%p:%s>\n", this, _name.c_str() );
+  printf( " _coarse<%f>\n", _coarse );
+  printf( " _fine<%f>\n", _fine );
+  printf( " _fineHZ<%f>\n", _fineHZ );
+  printf( " _keyTrack<%f>\n", _keyTrack );
+  printf( " _velTrack<%f>\n", _velTrack );
+  printf( " _keystartNote<%d>\n", _keystartNote );
+  printf( " _keystartBipolar<%d>\n", _keystartBipolar );
+  printf( " _units<%s>\n", _units.c_str() );
+  printf( " _evaluatorid<%s>\n", _evaluatorid.c_str() ); 
+}
 ///////////////////////////////////////////////////////////////////////////////
 
 DspParamData::DspParamData(std::string name) {
   _name = name;
   _mods = std::make_shared<BlockModulationData>();
   useDefaultEvaluator();
+  //_keyTrack = 100.0f;
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 bool DspParamData::postDeserialize(reflect::serdes::IDeserializer&, object_ptr_t shared) { // override
-
   if (_evaluatorid == "default")
     useDefaultEvaluator();
   else if (_evaluatorid == "amplitude")
@@ -192,25 +205,26 @@ void DspParamData::usePitchEvaluator() {
   _edit_keytrack_min      = -200.0f;
   _edit_keytrack_max      = 200.0f;
   _edit_keytrack_numsteps = 400;
-  _keyTrack = 100.0;
 
   _mods->_evaluator = [this](DspParam& param_inst) -> float {
 
-    float KEY = param_inst._keyRaw+_coarse;
+    float KEY = param_inst._keyOff;
 
-    float kr       = KEY*_keyTrack+_fine;
-    //float kt       = _keyTrack * param_inst._keyOff;
+    float kr       = (KEY*_keyTrack);
     float vt       = _velTrack * param_inst._unitVel;
     float c1      = param_inst._C1();
     float c2      = param_inst._C2();
-    float totcents = kr // 
-                     + c1   //
-                     + c2   //
-                     + vt;
-     if(_debug and param_inst._update_count==0){
+    float totcents = (_coarse * 100.0)
+                   +_fine
+                   + kr // 
+                   + c1   //
+                   + c2   //
+                   + vt;
+     if( _debug and param_inst._update_count==0){
        float ratio = cents_to_linear_freq_ratio(totcents);
-       printf( "pitcheval<%s> kr<%g> course<%f> fine<%g> c1<%g> c2<%g> ko<%g> vt<%g> totcents<%f> rat<%f>\n", //
-               _name.c_str(), // 
+       printf( "pitcheval<%p:%s> _keyTrack<%g> kr<%g> course<%f> fine<%g> c1<%g> c2<%g> ko<%g> vt<%g> totcents<%f> rat<%f>\n", //
+               (void*) this, _name.c_str(), // 
+               _keyTrack,
               kr, //  
                _coarse, //
                _fine, //

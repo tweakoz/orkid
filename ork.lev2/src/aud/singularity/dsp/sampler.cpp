@@ -563,11 +563,14 @@ void sampleOsc::compute(int inumfr) {
 
   //_curPitchOffsetInCents = clip_float( _curPitchOffsetInCents, -6400,6400 );
 
-  _curcents = _regionsearch._baseCents + _lyr->_curPitchOffsetInCents;
+  _curcents = _regionsearch._baseCents //
+            + _lyr->_curPitchOffsetInCents;
   _curcents = clip_float(_curcents, -0, 12700);
 
-  // printf( "_baseCents<%f> offs<%f> _curcents<%d>\n",
-  //		 _baseCents, _lyr->_curPitchOffsetInCents, _curcents );
+  if(0)printf( "_baseCents<%f> offs<%f> _curcents<%d>\n", //
+      		 _regionsearch._baseCents, //
+           _lyr->_curPitchOffsetInCents, //
+           _curcents );
 
   if (false == _active) {
     for (int i = 0; i < inumfr; i++) {

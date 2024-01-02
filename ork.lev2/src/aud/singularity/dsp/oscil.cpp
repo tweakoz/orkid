@@ -29,9 +29,15 @@ PITCH_DATA::PITCH_DATA(std::string name)
 
 dspblkdata_ptr_t PITCH_DATA::clone() const{
   auto rval = std::make_shared<PITCH_DATA>(_name);
-  for(auto p:_paramd){
+  size_t numparams = _paramd.size();
+  rval->_paramd.clear();
+  rval->_paramd.resize(numparams);
+  for (size_t i=0; i<numparams; i++) {
+    auto p = _paramd[i];
     auto p2 = p->clone();
-    rval->_paramd.push_back(p2);
+    rval->_paramd[i] = p2;
+    p->dump();
+    p2->dump();
   }
   rval->_blocktype = _blocktype;
   rval->_numParams = _numParams;

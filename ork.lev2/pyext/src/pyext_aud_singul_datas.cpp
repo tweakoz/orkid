@@ -136,6 +136,28 @@ void pyinit_aud_singularity_datas(py::module& singmodule) {
                                    },
                                    [](dspparam_ptr_t param, bool val) { //
                                      param->_debug = val;
+                                   })
+                               .def_property(
+                                   "evaluatorID",
+                                   [](dspparam_ptr_t param) -> std::string { //
+                                     return param->_evaluatorid;
+                                   },
+                                   [](dspparam_ptr_t param, std::string evalid) { //
+                                     if(evalid=="default"){
+                                        param->useDefaultEvaluator();
+                                     } else if(evalid=="pitch"){
+                                        param->usePitchEvaluator();
+                                     } else if(evalid=="frequency"){
+                                        param->useFrequencyEvaluator();
+                                     } else if(evalid=="amplitude"){
+                                        param->useAmplitudeEvaluator();
+                                     } else if(evalid=="krzpos"){
+                                        param->useKrzPosEvaluator();
+                                     } else if(evalid=="krzevnodd"){
+                                        param->useKrzEvnOddEvaluator();
+                                     } else {
+                                        OrkAssert(false);
+                                     }
                                    });
   type_codec->registerStdCodec<dspparam_ptr_t>(dspparamdata_type);
   /////////////////////////////////////////////////////////////////////////////////
@@ -218,7 +240,7 @@ void pyinit_aud_singularity_datas(py::module& singmodule) {
                               return pdata->getLayer(index);
                             })
                         .def(
-                            "cloneLayer",
+                            "forkLayer",
                             [](prgdata_ptr_t pdata, size_t index) -> lyrdata_ptr_t { //
                               auto original = pdata->getLayer(index);
                               auto clone = original->clone();

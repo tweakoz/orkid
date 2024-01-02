@@ -5,7 +5,7 @@
 // see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ////////////////////////////////////////////////////////////////
 
-//#include <audiofile.h>
+// #include <audiofile.h>
 #include <string>
 #include <assert.h>
 #include <unistd.h>
@@ -25,15 +25,30 @@ ImplementReflectionX(ork::audio::singularity::BankData, "SynBankData");
 
 namespace ork::audio::singularity {
 
-ProgramData::ProgramData(){
+ProgramData::ProgramData() {
   _varmap = std::make_shared<varmap::VarMap>();
+}
+
+lyrdata_ptr_t ProgramData::getLayer(int i) const {
+  if (i < _layerdatas.size())
+    return _layerdatas[i];
+  else
+    return nullptr;
+}
+void ProgramData::setLayer(int i, lyrdata_ptr_t l) {
+  if (i < _layerdatas.size()) {
+    _layerdatas[i] = l;
+  }
+}
+void ProgramData::addHudInfo(std::string str) {
+  _hudinfos.push_back(str);
 }
 
 //////////////////////////////////////////////////////////////////////////////
 
-void ProgramData::merge(const ProgramData& oth){
-  for( auto item : oth._layerdatas ){
-	_layerdatas.push_back(item);
+void ProgramData::merge(const ProgramData& oth) {
+  for (auto item : oth._layerdatas) {
+    _layerdatas.push_back(item);
   }
 }
 
@@ -44,27 +59,26 @@ void BankData::describeX(class_t* clazz) {
   // clazz->directObjectMapProperty("KeyMaps", &BankData::_keymaps);
 }
 
-void BankData::merge( const BankData& oth ){
-  for( auto item : oth._programs ){
+void BankData::merge(const BankData& oth) {
+  for (auto item : oth._programs) {
     _programs[item.first] = item.second;
   }
-  for( auto item : oth._programsByName ){
+  for (auto item : oth._programsByName) {
     _programsByName[item.first] = item.second;
   }
-  for( auto item : oth._keymaps ){
+  for (auto item : oth._keymaps) {
     _keymaps[item.first] = item.second;
   }
-  for( auto item : oth._multisamples ){
+  for (auto item : oth._multisamples) {
     _multisamples[item.first] = item.second;
   }
-
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 prgdata_ptr_t BankData::findProgram(int progID) const {
   prgdata_ptr_t pd = nullptr;
-  auto it               = _programs.find(progID);
+  auto it          = _programs.find(progID);
   if (it == _programs.end()) {
     return _programs.begin()->second;
   }
@@ -75,7 +89,7 @@ prgdata_ptr_t BankData::findProgram(int progID) const {
 
 prgdata_ptr_t BankData::findProgramByName(const std::string named) const {
   prgdata_ptr_t pd = nullptr;
-  auto it               = _programsByName.find(named);
+  auto it          = _programsByName.find(named);
   if (it == _programsByName.end()) {
     return _programsByName.begin()->second;
   }

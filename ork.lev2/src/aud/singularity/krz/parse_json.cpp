@@ -428,21 +428,6 @@ void KrzBankDataParser::parseFBlock(
 
   auto mods = fblk->_mods;
   if (fseg.HasMember("PARAM_SCHEME")) {
-    auto scheme = fseg["PARAM_SCHEME"].GetString();
-    /*if (scheme == "PCH"s)
-      fblk->usePitchEvaluator();
-    else if (scheme == "AMP"s)
-      fblk->useAmplitudeEvaluator();
-    else if (scheme == "FRQ"s)
-      fblk->useFrequencyEvaluator();
-    else if (scheme == "POS"s)
-      fblk->useKrzPosEvaluator();
-    else if (scheme == "EVN"s)
-      fblk->useKrzEvnOddEvaluator();
-    else if (scheme == "ODD"s)
-      fblk->useKrzEvnOddEvaluator();
-    else
-      fblk->useDefaultEvaluator();*/
   }
 
   //////////////////////////////////

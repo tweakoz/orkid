@@ -151,6 +151,9 @@ class KrzApp(SingulTestApp):
       "Chamber_Section",
       "Digital_E_Piano",
       "Dog_Chases_Tail",
+      "Ethereal_Echos",
+      "French_Horn_Sec1",
+      "Fun_Delay_Square"
     ]
     self.sorted_progs = sorted(ok_list)
     print("krzprogs<%s>" % self.krzprogs)    

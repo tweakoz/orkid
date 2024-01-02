@@ -133,6 +133,7 @@ struct synth {
 
   void nextEffect(); // temporary
   void prevEffect(); // temporary
+  void setEffect(std::string name); // temporary
   void mainThreadHandler();
   
   fxpresetmap_t _fxpresets;

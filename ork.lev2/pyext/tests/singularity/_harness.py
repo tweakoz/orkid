@@ -131,8 +131,7 @@ class SingulTestApp(object):
 
     ######################### 
 
-    for i in range(6):
-      self.synth.nextEffect()
+    self.synth.setEffect("none")
     self.gain = -12.0
     self.synth.masterGain = singularity.decibelsToLinear(self.gain)
     self.sorted_progs = []

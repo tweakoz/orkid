@@ -35,20 +35,9 @@ struct ProgramData : public ork::Object {
   ProgramData();
 
   lyrdata_ptr_t newLayer();
-  inline lyrdata_ptr_t getLayer(int i) const {
-    if( i < _layerdatas.size() )
-      return _layerdatas[i];
-    else
-      return nullptr;
-  }
-  inline void setLayer(int i, lyrdata_ptr_t l) {
-    if( i < _layerdatas.size() ){
-      _layerdatas[i] = l;
-    }
-  }
-  inline void addHudInfo(std::string str) {
-    _hudinfos.push_back(str);
-  }
+  lyrdata_ptr_t getLayer(int i) const;
+  void setLayer(int i, lyrdata_ptr_t l);
+  void addHudInfo(std::string str);
   void merge(const ProgramData& oth);
 
   std::string _name;

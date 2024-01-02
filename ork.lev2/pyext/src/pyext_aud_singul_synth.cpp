@@ -55,6 +55,9 @@ void pyinit_aud_singularity_synth(py::module& singmodule) {
               "prevEffect", //
               [](synth_ptr_t synth) { synth->prevEffect(); })
           .def(
+              "setEffect", //
+              [](synth_ptr_t synth,std::string name) { synth->setEffect(name); })
+          .def(
               "outputBus", //
               [](synth_ptr_t synth, std::string named) -> outbus_ptr_t { return synth->outputBus(named); })
           .def(

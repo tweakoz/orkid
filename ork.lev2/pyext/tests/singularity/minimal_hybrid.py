@@ -41,20 +41,27 @@ class HybridApp(SingulTestApp):
     self.new_soundbank = singularity.BankData()
     newprog = self.new_soundbank.newProgram("_HYBRID")
     newprog.merge(krz_bank.programByName("Waterflute"))
-    #newprog.merge(cz1_bank.programByName("Bells and Chimes"))
-    #newprog.merge(cz1_bank.programByName("Delayed Pad"))
+    newprog.merge(cz1_bank.programByName("Bells and Chimes"))
+    newprog.merge(cz1_bank.programByName("Delayed Pad"))
     ####
-    L0 = newprog.cloneLayer(0)
-    L0.gain = -18 # dB
-    L0.pitchBlock.paramByName("pitch").coarse=36
-    L0.pitchBlock.paramByName("pitch").keyTrack=0
-    ####
-    L1 = newprog.cloneLayer(1)
-    L1.gain = -18 # dB
-    L1.pitchBlock.paramByName("pitch").coarse=36
-    L1.pitchBlock.paramByName("pitch").keyTrack=0
-    ####
-    #assert(False)
+    if True:
+      L0 = newprog.forkLayer(0)
+      L0.gain = -18 # dB
+      P0 = L0.pitchBlock.paramByName("pitch")
+      P0.coarse=24
+      P0.keyTrack=0
+      P0.evaluatorID = "pitch"
+      #P0.debug = True
+      #assert(False)
+      ####
+      L1 = newprog.forkLayer(1)
+      L1.gain = -18 # dB
+      P1 = L1.pitchBlock.paramByName("pitch")
+      P1.coarse=12
+      P1.keyTrack=0
+      P1.evaluatorID = "pitch"
+      #P1.debug = True
+    assert(False)
     ############################
     self.soundbank = self.new_soundbank
     ############################

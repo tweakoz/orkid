@@ -65,7 +65,8 @@ struct DspParamData final : public ork::Object {
   DspParamData(std::string name = "");
 
   dspparam_ptr_t clone() const;
-
+  void dump() const;
+  
   void useDefaultEvaluator();
   void usePitchEvaluator();
   void useFrequencyEvaluator();

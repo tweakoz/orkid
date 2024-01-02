@@ -220,9 +220,10 @@ void PARAMID::doKeyOn(const KeyOnInfo& koi) // final
 ///////////////////////////////////////////////////////////////////////////////
 ParametricEqData::ParametricEqData(std::string name)
     : DspBlockData(name) {
-  auto fc_param    = addParam();
-  auto width_param = addParam();
-  auto gain_param  = addParam();
+      _blocktype = "ParametricEq";
+  auto fc_param    = addParam("cutoff","hz");
+  auto width_param = addParam("width", "oct");
+  auto gain_param  = addParam("gain", "db");
   fc_param->useDefaultEvaluator();
   width_param->useDefaultEvaluator();
   gain_param->useDefaultEvaluator();
