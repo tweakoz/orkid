@@ -99,6 +99,12 @@ TX81ZEnvInst::TX81ZEnvInst(const TX81ZEnvData* data, layer_ptr_t l)
   _decay2Rate  = tables._decay2.evaluate(_envdata->_decay2Rate);
   _releaseRate = tables._release.evaluate(_envdata->_releaseRate);
 
+  _attackRate  = 32.0/float(_envdata->_attackRate+1);
+  _decay1Rate  = 32.0/float(_envdata->_decay1Rate+1);
+  _decay1Level = _envdata->_decay1Level/15.0f; 
+  _decay2Rate  = 32.0/float(_envdata->_decay2Rate+1);
+  _releaseRate = 32.0/float(_envdata->_releaseRate+1);
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -15,6 +15,7 @@
 #include <ork/lev2/aud/singularity/tx81z.h>
 #include <ork/lev2/aud/singularity/dspblocks.h>
 #include <ork/lev2/aud/singularity/dsp_mix.h>
+#include <ork/lev2/aud/singularity/alg_oscil.h>
 
 using namespace ork;
 namespace ork::audio::singularity {
@@ -230,16 +231,17 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
 
     configureTx81zAlgorithm(layerdata, fm4pd);
     auto ops_stage = layerdata->stageByName("OPS");
-
+    auto pitch_block = ops_stage->appendTypedBlock<PITCH>("PITCH");
+    auto pitch_param = pitch_block->paramByName("pitch");
+    pitch_param->_debug = true;
     for (int opindex = 0; opindex < 4; opindex++) {
       const int src_op[]  = {3, 1, 2, 0};
       int op_base         = src_op[opindex] * 10;
       auto ops_block      = ops_stage->_blockdatas[3 - opindex];
       auto as_pmx         = dynamic_cast<PMXData*>(ops_block.get());
       auto& opd           = fm4pd->_ops[opindex];
-      auto pitch_param    = ops_block->param(0);
-      auto amp_param      = ops_block->param(1);
-      auto feedback_param = ops_block->param(2);
+      auto amp_param      = ops_block->param(0);
+      auto feedback_param = ops_block->param(1);
       // feedback_param->_coarse = (FBL == 0) ? 0 : powf(2.0, FBL - 7);
       feedback_param->_coarse = 0.0f; // 0.3 * exp(log(2) * (double)(FBL - 7));
       ///////////////////////////////
@@ -346,6 +348,7 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
         OrkAssert(coarseFrq < 64);
 
         int keybase = 60 + (middleC - 24);
+        //int keybase = (middleC - 24);
 
         float ratio            = compute_ratio(coarseFrq, fineFrq) * det_rat;
         float cents            = linear_freq_ratio_to_cents(ratio);
@@ -452,8 +455,8 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
 
           float final_amp = baselev * velamp * keyamp;
 
-          //if (1)
-            //printf("uls<%g> numoct<%g> dbfalloff<%g> keyamp<%g> final_amp<%g>\n", unit_levscale, number_octaves, db_falloff, keyamp, final_amp);
+          if (0)
+            printf("uls<%g> numoct<%g> dbfalloff<%g> keyamp<%g> final_amp<%g>\n", unit_levscale, number_octaves, db_falloff, keyamp, final_amp);
 
           /////////////////////////////////
 

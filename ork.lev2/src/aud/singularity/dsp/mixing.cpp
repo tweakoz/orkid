@@ -75,21 +75,20 @@ void MonoInStereoOut::compute(DspBuffer& dspbuf) // final
   int ibase         = _layer->_dspwritebase;
   const auto& LD    = _layer->_layerdata;
   auto l_lrmix      = panBlend(dynamicpan);
-  auto ibuf         = getInpBuf(dspbuf, 0) + ibase;
-  auto lbuf         = getOutBuf(dspbuf, 1) + ibase;
-  auto ubuf         = getOutBuf(dspbuf, 0) + ibase;
+  auto lbuf         = getRawBuf(dspbuf, 0) + ibase;
+  auto rbuf         = getRawBuf(dspbuf, 1) + ibase;
   float SingleLinG  = decibel_to_linear_amp_ratio(LD->_channelGains[0]);
 
   for (int i = 0; i < inumframes; i++) {
     // float linG = decibel_to_linear_amp_ratio(dynamicgain);
     // linG *= SingleLinG;
-    float inp  = ibuf[i];
+    float inp  = lbuf[i];
     float mono = clip_float(
         inp * dynamicgain, //
         kminclip,
         kmaxclip);
-    ubuf[i] = mono * l_lrmix.lmix;
-    lbuf[i] = mono * l_lrmix.rmix;
+    lbuf[i] = mono * l_lrmix.lmix;
+    rbuf[i] = mono * l_lrmix.rmix;
   }
   _fval[0] = _filt;
 }
