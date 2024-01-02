@@ -178,6 +178,28 @@ lyrdata_ptr_t fxpreset_fdn4reverb() {
   return fxlayer;
 }
 ///////////////////////////////////////////////////////////////////////////////
+lyrdata_ptr_t fxpreset_fdn8reverb() {
+  auto fxprog       = std::make_shared<ProgramData>();
+  auto fxlayer      = fxprog->newLayer();
+  auto fxalg        = std::make_shared<AlgData>();
+  fxlayer->_algdata = fxalg;
+  fxalg->_name      = ork::FormatString("FxAlg");
+  /////////////////
+  // output effect
+  /////////////////
+  auto fxstage = fxalg->appendStage("FX");
+  fxstage->setNumIos(2, 2); // stereo in, stereo out
+  /////////////////
+  auto fdn8D = fxstage->appendTypedBlock<Fdn8Reverb>("diffusionD");
+  fdn8D->param(0)->_coarse = 0.5f; // wet/dry mix
+  fdn8D->_time_base = 0.1;
+  /////////////////
+  //fdn4D->update(); 
+  appendStereoEnhancer(fxlayer, fxstage);
+  /////////////////
+  return fxlayer;
+}
+///////////////////////////////////////////////////////////////////////////////
 lyrdata_ptr_t fxpreset_oiltankreverb() {
   auto fxprog       = std::make_shared<ProgramData>();
   auto fxlayer      = fxprog->newLayer();
@@ -439,5 +461,7 @@ void loadAllFxPresets(synth* s) {
   s->_fxpresets["shifter-chorus"]    = fxpreset_pitchchorus();
   s->_fxpresets["shifter-rec"]       = fxpreset_pitchrec();
   s->_fxpresets["multitest"]         = fxpreset_multitest();
+  s->_fxpresets["fdn8reverb"]        = fxpreset_fdn8reverb();
+
 }
 } // namespace ork::audio::singularity

@@ -12,6 +12,7 @@
 #include "dspblocks.h"
 #include <ork/math/cmatrix4.h>
 #include <ork/math/cvector4.h>
+#include <ork/math/cvector2.h>
 #include "shelveeq.h"
 
 namespace ork::audio::singularity {
@@ -270,6 +271,76 @@ struct Fdn4ReverbX : public DspBlock {
   fvec4 _outputGainsL;
   fvec4 _outputGainsR;
   fvec4 _delayTimes;
+};
+
+struct vec8f {
+  vec8f();
+  void broadcast(float inp);
+  void broadcast(fvec2 inp);
+  float _elements[8];
+  float dotWith(const vec8f& oth) const;
+  vec8f operator+(const vec8f& oth) const;
+  vec8f operator-(const vec8f& oth) const;
+  vec8f operator*(float scalar) const;
+};
+struct mtx8f {
+  float _elements[8][8];
+  vec8f column(int i) const;
+  static mtx8f generateHadamard();
+  static mtx8f householder(const vec8f& v);
+  static mtx8f permute(int seed);
+  vec8f transform(const vec8f& input) const;
+};
+struct mix8to2 {
+    mix8to2();
+    fvec2 mixdown(const vec8f& input) const;
+    float _elements[2][8];
+};
+
+
+struct Fdn8ReverbData : public DspBlockData {
+  Fdn8ReverbData(std::string name);
+  dspblk_ptr_t createInstance() const override;
+  float _time_base  = 0.01 ; // sec
+  float _input_gain = 0.75;  // linear
+  float _output_gain = 0.75; // linear
+  float _hipass_cutoff = 200.0; // hz
+  void update();
+  mtx8f _hadamard;
+  mtx8f _householder;
+  mtx8f _permute;
+};
+struct ParallelDelay{
+  vec8f output(float fi);
+  void input(const vec8f& input);
+  DelayContext _delay[8];
+};
+struct Fdn8Reverb : public DspBlock {
+  using dataclass_t = Fdn8ReverbData;
+  Fdn8Reverb(const Fdn8ReverbData*);
+  void compute(DspBuffer& dspbuf) final;
+  void doKeyOn(const KeyOnInfo& koi) final;
+
+  struct DiffuserStep{
+    DiffuserStep();
+    void setTime(float time);
+    vec8f process(const vec8f& input,float fi);
+    mtx8f _hadamard;
+    mtx8f _permute;
+    ParallelDelay _delays;
+  };
+
+  const Fdn8ReverbData* _mydata;
+  static constexpr size_t k_num_diffusers = 8;
+  DiffuserStep _diffuser[k_num_diffusers];
+  BiQuad _hipassfilterL;
+  BiQuad _hipassfilterR;
+  ParallelDelay _fbdelay;
+  ParallelDelay _early_refl;
+  mtx8f _householder;
+  float _inputGain;
+  float _outputGain;
+  mix8to2 _stereomix;
 };
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::audio::singularity

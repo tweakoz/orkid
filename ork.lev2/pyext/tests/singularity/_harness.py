@@ -74,10 +74,10 @@ class SingulTestApp(object):
     self.mainbus = self.synth.outputBus("main")
     self.mainbus_source = self.mainbus.createScopeSource()
     self.synth.setEffect(self.mainbus,"none")
-    self.synth.setEffect(self.aux1bus,"Reverb:GuyWire")
-    self.synth.setEffect(self.aux2bus,"Reverb:OilTank")
-    self.synth.setEffect(self.aux3bus,"distortion+chorus")
-    self.synth.setEffect(self.aux4bus,"shifter-rec")
+    self.synth.setEffect(self.aux1bus,"none")
+    self.synth.setEffect(self.aux2bus,"none")
+    self.synth.setEffect(self.aux3bus,"none")
+    self.synth.setEffect(self.aux4bus,"Reverb:OilTank")
 
     lg_group = self.ezapp.topLayoutGroup
 
