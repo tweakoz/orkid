@@ -33,7 +33,7 @@ class SingulTestApp(object):
     self.ezapp.topWidget.enableUiDraw()
     lg_group = self.ezapp.topLayoutGroup
     lg_group.margin = 5
-
+    self.held_voices = []
     rccounts = [3,2]
     self.griditems = lg_group.makeRowsColumns(
       rccounts = rccounts,
@@ -195,7 +195,16 @@ class SingulTestApp(object):
     res.setHandler( self.ezapp.topWidget )
     if uievent.code == tokens.KEY_REPEAT.hashed or uievent.code==tokens.KEY_DOWN.hashed:
       KC = uievent.keycode
-      if KC == ord(","): # prev program
+      if KC == ord(" "): # hold drones
+        for KC in self.voices:
+          voice = self.voices[KC]
+          self.held_voices += [voice]
+        self.voices = dict()
+      if KC == ord("B"): # release drones
+        for v in self.held_voices:
+          self.synth.keyOff(v)
+        self.held_voices = []
+      elif KC == ord(","): # prev program
         self.prog_index -= 1
         if self.prog_index < 0:
           self.prog_index = len(self.sorted_progs)-1

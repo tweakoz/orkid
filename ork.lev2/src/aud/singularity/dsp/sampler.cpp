@@ -171,21 +171,10 @@ if (auto PCHBLK = _layerdata->_pchBlock) {
 */
 void SAMPLER::compute(DspBuffer& dspbuf) // final
 {
-  float centoff = _param[0].eval();
-  _fval[0]      = centoff;
-
   int inumframes = _layer->_dspwritecount;
   float* lbuf    = getOutBuf(dspbuf, 1) + _layer->_dspwritebase;
   float* ubuf    = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
-  // float lyrcents = _layer->_layerBasePitch;
-  // float cin = (lyrcents+centoff)*0.01;
-  // float frq = midi_note_to_frequency(cin);
-  // float SR = _layer->_syn._sampleRate;
-  // float pad = _dbd->_inputPad;
 
-  //_filtp = 0.5*_filtp + 0.5*centoff;
-  //_layer->_curPitchOffsetInCents = centoff;
-  // printf( "centoff<%f>\n", centoff );
   _spOsc->compute(inumframes);
 
   for (int i = 0; i < inumframes; i++) {
@@ -555,13 +544,6 @@ void sampleOsc::updateFreqRatio() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void sampleOsc::compute(int inumfr) {
-  //_pchc1 = _pchControl1();
-  //_pchc2 = _pchControl2();
-  //_pchc1 = clip_float( _pchc1, -6400,6400 );
-  //_pchc2 = clip_float( _pchc2, -6400,6400 );
-  //_curPitchOffsetInCents = _pchc1+_pchc2;
-
-  //_curPitchOffsetInCents = clip_float( _curPitchOffsetInCents, -6400,6400 );
 
   _curcents = _regionsearch._baseCents //
             + _lyr->_curPitchOffsetInCents;
