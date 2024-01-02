@@ -56,7 +56,7 @@ void pyinit_aud_singularity_synth(py::module& singmodule) {
               [](synth_ptr_t synth) { synth->prevEffect(); })
           .def(
               "setEffect", //
-              [](synth_ptr_t synth,std::string name) { synth->setEffect(name); })
+              [](synth_ptr_t synth, outbus_ptr_t bus, std::string name) { synth->setEffect(bus,name); })
           .def(
               "outputBus", //
               [](synth_ptr_t synth, std::string named) -> outbus_ptr_t { return synth->outputBus(named); })
@@ -86,6 +86,9 @@ void pyinit_aud_singularity_synth(py::module& singmodule) {
                        .def_property_readonly(
                            "name", //
                            [](outbus_ptr_t bus) -> std::string { return bus->_name; })
+                       .def("addChildBus", [](outbus_ptr_t parent,outbus_ptr_t child) { //
+                         return parent->_children.push_back(child);
+                       })
                        .def("createScopeSource", [](outbus_ptr_t bus) -> scopesource_ptr_t { //
                          return bus->createScopeSource();
                        });

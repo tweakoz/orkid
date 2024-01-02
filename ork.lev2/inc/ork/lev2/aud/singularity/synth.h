@@ -79,6 +79,7 @@ struct OutputBus {
   scopesource_ptr_t _scopesource;
   std::string _fxname;
 
+  std::vector<outbus_ptr_t> _children;
   /////////////////////////
 };
 
@@ -133,7 +134,7 @@ struct synth {
 
   void nextEffect(); // temporary
   void prevEffect(); // temporary
-  void setEffect(std::string name); // temporary
+  void setEffect(outbus_ptr_t bus, std::string name); // temporary
   void mainThreadHandler();
   
   fxpresetmap_t _fxpresets;

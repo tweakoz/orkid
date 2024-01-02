@@ -350,6 +350,7 @@ CZXDATA::CZXDATA(std::string name, czxdata_constptr_t czdata, int dcochannel)
   _blocktype = "CZX";
   auto P = addParam("pitch","cents"); 
   P->_keyTrack = 100.0;
+  P->_coarse = 60;
   P->usePitchEvaluator();
   addParam("index", "x")->useDefaultEvaluator();
   _vars.makeValueForKey<czxdata_constptr_t>("CZX") = _cxzdata;

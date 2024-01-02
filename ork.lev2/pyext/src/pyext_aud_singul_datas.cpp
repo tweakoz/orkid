@@ -224,6 +224,14 @@ void pyinit_aud_singularity_datas(py::module& singmodule) {
                               },
                             [](lyrdata_ptr_t ldata, float gainDB) { //
                             ldata->_layerLinGain = decibel_to_linear_amp_ratio(gainDB); 
+                            })
+                        .def_property(
+                            "outputBus", //
+                            [](lyrdata_ptr_t ldata) -> std::string { //
+                              return ldata->_outbus;
+                              },
+                            [](lyrdata_ptr_t ldata, std::string busname) { //
+                              ldata->_outbus = busname; 
                             });
   type_codec->registerStdCodec<lyrdata_ptr_t>(ldata_type);
   /////////////////////////////////////////////////////////////////////////////////

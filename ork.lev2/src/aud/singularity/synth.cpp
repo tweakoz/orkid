@@ -74,45 +74,21 @@ void synth::prevEffect() {
   });
 }
 ///////////////////////////////////////////////////////////////////////////////
-void synth::setEffect(std::string name) {
+void synth::setEffect(outbus_ptr_t bus, std::string name) {
   auto it = _fxpresets.find(name);
   if(it!=_fxpresets.end()){
     auto nextpreset = it->second;
-    _eventmap.atomicOp([this,name,nextpreset](eventmap_t& emap) { //
-      emap.insert(std::make_pair(0.0f, [this,nextpreset,name]() {
-        for (auto bus : _outputBusses) {
+    _eventmap.atomicOp([=](eventmap_t& unlocked) { //
+      float timestamp = 0.0f; // now
+      auto deferred_operation = [=]() {
           assert(nextpreset->_algdata != nullptr); // did you add presets ?
-          bus.second->setBusDSP(nextpreset);
-          bus.second->_fxname = name;
+          bus->setBusDSP(nextpreset);
+          bus->_fxname = name;
           logchan_synth->log( "switched to effect<%s>", name.c_str() );
-        }
-      }));
+      };
+      unlocked.insert(std::make_pair(timestamp,deferred_operation));
     });
   }
-}
-///////////////////////////////////////////////////////////////////////////////
-void OutputBus::resize(int numframes) {
-  _buffer.resize(numframes);
-  if (_dsplayer) {
-    _dsplayer->resize(numframes);
-  }
-}
-///////////////////////////////////////////////////////////////////////////////
-void OutputBus::setBusDSP(lyrdata_ptr_t ld) {
-
-  assert(ld->_algdata != nullptr);
-
-  _dsplayer = nullptr;
-
-  _dsplayerdata        = ld;
-  auto l               = std::make_shared<Layer>();
-  l->_is_bus_processor = true;
-  synth::instance()->_keyOnLayer(l, 0, 0, _dsplayerdata); // outbus layer always keyed on...
-  _dsplayer = l;
-}
-scopesource_ptr_t OutputBus::createScopeSource() {
-  _scopesource = std::make_shared<ScopeSource>();
-  return _scopesource;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -189,7 +165,6 @@ synth::~synth() {
   _freeVoices.clear();
   _activeVoices.clear();
   _pendactVoices.clear();
-  // _deactiveateVoiceQ.clear();
   _freeProgInst.atomicOp([](proginstset_t& unlocked) { unlocked.clear(); });
   _activeProgInst.atomicOp([](proginstset_t& unlocked) { unlocked.clear(); });
 

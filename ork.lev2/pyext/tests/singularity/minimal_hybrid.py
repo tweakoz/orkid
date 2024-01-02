@@ -45,8 +45,9 @@ class HybridApp(SingulTestApp):
     newprog.merge(cz1_bank.programByName("Delayed Pad"))
     ####
     if True:
-      L0 = newprog.forkLayer(0)
+      L0 = newprog.layer(0)
       L0.gain = -18 # dB
+      L0.outputBus = "aux1"
       P0 = L0.pitchBlock.paramByName("pitch")
       P0.coarse=24
       P0.keyTrack=0
@@ -54,14 +55,14 @@ class HybridApp(SingulTestApp):
       #P0.debug = True
       #assert(False)
       ####
-      L1 = newprog.forkLayer(1)
+      L1 = newprog.layer(1)
       L1.gain = -18 # dB
+      L1.outputBus = "aux1"
       P1 = L1.pitchBlock.paramByName("pitch")
       P1.coarse=12
       P1.keyTrack=0
       P1.evaluatorID = "pitch"
       #P1.debug = True
-    assert(False)
     ############################
     self.soundbank = self.new_soundbank
     ############################
