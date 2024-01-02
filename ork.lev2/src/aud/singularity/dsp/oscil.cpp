@@ -27,6 +27,23 @@ PITCH_DATA::PITCH_DATA(std::string name)
   //addParam("pch2")->usePitchEvaluator();
 }
 
+dspblkdata_ptr_t PITCH_DATA::clone() const{
+  auto rval = std::make_shared<PITCH_DATA>(_name);
+  for(auto p:_paramd){
+    auto p2 = p->clone();
+    rval->_paramd.push_back(p2);
+  }
+  rval->_blocktype = _blocktype;
+  rval->_numParams = _numParams;
+  rval->_inputPad = _inputPad;
+
+  rval->_blockIndex = _blockIndex;
+  rval->_vars = _vars;
+  rval->_bypass = _bypass;
+
+  return rval;
+}
+
 dspblk_ptr_t PITCH_DATA::createInstance() const { // override
   return std::make_shared<PITCH>(this);
 }

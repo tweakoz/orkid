@@ -67,14 +67,13 @@ struct DspBlockData : public ork::Object {
 
   scopesource_ptr_t createScopeSource();
 
-  std::string _blocktype;
-
   dspparam_ptr_t addParam(std::string name = "", std::string units="");
   dspparam_ptr_t param(int index);
   dspparam_ptr_t paramByName(std::string named);
   int addDspChannel(int channel);
 
   std::string _name;
+  std::string _blocktype;
   std::vector<int> _dspchannels;
   int _numParams  = 0;
   float _inputPad = 1.0f;

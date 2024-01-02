@@ -44,6 +44,7 @@ struct BlockModulationData final : public ork::Object {
   BlockModulationData();
   BlockModulationData(const BlockModulationData&) = delete;
 
+  dspparammod_ptr_t clone() const;
   controllerdata_ptr_t _src1;
   controllerdata_ptr_t _src2;
   controllerdata_ptr_t _src2DepthCtrl;
@@ -62,6 +63,8 @@ struct DspParamData final : public ork::Object {
   bool postDeserialize(reflect::serdes::IDeserializer&, object_ptr_t shared) override;
 
   DspParamData(std::string name = "");
+
+  dspparam_ptr_t clone() const;
 
   void useDefaultEvaluator();
   void usePitchEvaluator();

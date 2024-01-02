@@ -42,6 +42,18 @@ BlockModulationData::BlockModulationData() {
       float { return param_inst._data->_coarse; };
 }
 
+dspparammod_ptr_t BlockModulationData::clone() const{
+  auto rval = std::make_shared<BlockModulationData>();
+  rval->_src1 = _src1;
+  rval->_src2 = _src2;
+  rval->_src2DepthCtrl = _src2DepthCtrl;
+  rval->_src1Depth = _src1Depth;
+  rval->_src2MinDepth = _src2MinDepth;
+  rval->_src2MaxDepth = _src2MaxDepth;
+  rval->_evaluator = _evaluator;
+  return rval;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 void DspParamData::describeX(class_t* clazz) {
@@ -55,6 +67,33 @@ void DspParamData::describeX(class_t* clazz) {
   clazz->directProperty("VelTrack", &DspParamData::_velTrack);
   clazz->directProperty("KeyStart", &DspParamData::_keystartNote);
   clazz->directProperty("KeyStartBipolar", &DspParamData::_keystartBipolar);
+}
+
+dspparam_ptr_t DspParamData::clone() const{
+  auto rval = std::make_shared<DspParamData>();
+  rval->_name = _name;
+  rval->_mods = _mods->clone();
+  rval->_evaluatorid = _evaluatorid;
+  rval->_coarse = _coarse;
+  rval->_fine = _fine;
+  rval->_fineHZ = _fineHZ;
+  rval->_keyTrack = _keyTrack;
+  rval->_velTrack = _velTrack;
+  rval->_keystartNote = _keystartNote;
+  rval->_keystartBipolar = _keystartBipolar;
+  rval->_edit_coarse_min = _edit_coarse_min;
+  rval->_edit_coarse_max = _edit_coarse_max;
+  rval->_edit_coarse_numsteps = _edit_coarse_numsteps;
+  rval->_edit_fine_min = _edit_fine_min;
+  rval->_edit_fine_max = _edit_fine_max;
+  rval->_edit_fine_numsteps = _edit_fine_numsteps;
+  rval->_edit_keytrack_min = _edit_keytrack_min;
+  rval->_edit_keytrack_max = _edit_keytrack_max;
+  rval->_edit_keytrack_numsteps = _edit_keytrack_numsteps;
+  rval->_edit_keytrack_shape = _edit_keytrack_shape;
+  rval->_units = _units;
+  rval->_debug = _debug;
+  return rval;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

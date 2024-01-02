@@ -16,7 +16,8 @@ namespace ork::audio::singularity {
 ///////////////////////////////////////////////////////////////////////////////
 struct PITCH_DATA : public DspBlockData {
   PITCH_DATA(std::string name);
-  dspblk_ptr_t createInstance() const override;
+  dspblkdata_ptr_t clone() const final;
+  dspblk_ptr_t createInstance() const final;
 };
 
 struct PITCH : public DspBlock {

@@ -67,9 +67,11 @@ dspstagedata_ptr_t DspStageData::clone() const{
   rval->_ioconfig = _ioconfig->clone();
   for (size_t i=0; i<_numblocks; i++) {
     auto block = _blockdatas[i];
-    auto clone = block->clone();
-    rval->_blockdatas[i] = block; //clone;
-    rval->_namedblockdatas[clone->_name] = block; //clone;
+      if(block){
+        auto clone = block->clone(); // null for now...
+        rval->_blockdatas[i] = block; //clone;
+        rval->_namedblockdatas[block->_name] = block; //clone;
+      }
   }
   return rval;
 }

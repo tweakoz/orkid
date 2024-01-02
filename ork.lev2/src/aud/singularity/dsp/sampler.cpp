@@ -26,7 +26,9 @@ kmpblockdata_ptr_t KmpBlockData::clone() const {
   rval->_timbreShift = _timbreShift;
   rval->_keyTrack = _keyTrack;
   rval->_velTrack = _velTrack;
-  rval->_keymap = _keymap->clone();
+  if(_keymap){
+    rval->_keymap = _keymap->clone();
+  }
   rval->_pbMode = _pbMode;
   return rval;
 }
