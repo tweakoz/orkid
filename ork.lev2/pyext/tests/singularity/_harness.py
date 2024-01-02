@@ -203,12 +203,37 @@ class SingulTestApp(object):
     res.setHandler( self.ezapp.topWidget )
     if uievent.code == tokens.KEY_REPEAT.hashed or uievent.code==tokens.KEY_DOWN.hashed:
       KC = uievent.keycode
-      if KC == ord(" "): # hold drones
+      if KC == ord("0"): # solo layer off
+        if uievent.shift:
+          self.synth.soloLayer = -1
+        else:
+          self.synth.programbus = self.mainbus
+      elif KC == ord("1"): # solo layer 1
+        if uievent.shift:
+          self.synth.soloLayer = 0
+        else:
+          self.synth.programbus = self.aux1bus
+      elif KC == ord("2"): # solo layer 2
+        if uievent.shift:
+          self.synth.soloLayer = 1
+        else:
+          self.synth.programbus = self.aux2bus
+      elif KC == ord("3"): # solo layer 3
+        if uievent.shift:
+          self.synth.soloLayer = 2
+        else:
+          self.synth.programbus = self.aux3bus
+      elif KC == ord("4"): # solo layer 3
+        if uievent.shift:
+          self.synth.soloLayer = 3
+        else:
+          self.synth.programbus = self.aux4bus
+      elif KC == ord(" "): # hold drones
         for KC in self.voices:
           voice = self.voices[KC]
           self.held_voices += [voice]
         self.voices = dict()
-      if KC == ord("B"): # release drones
+      elif KC == ord("C"): # release drones
         for v in self.held_voices:
           self.synth.keyOff(v)
         self.held_voices = []
@@ -252,39 +277,16 @@ class SingulTestApp(object):
           self.gain += 6.0
           self.synth.masterGain = singularity.decibelsToLinear(self.gain)
           return res
-        elif KC == ord("1"): # toggle 1 bit in layermask
-          self.layermask = self.layermask ^ (1<<0)
-          self.layerID = 0
-          self.prLayerMask()
-          return res
-        elif KC == ord("2"): # toggle 1 bit in layermask
-          self.layermask = self.layermask ^ (1<<1)
-          self.layerID = 1
-          self.prLayerMask()
-          return res
-        elif KC == ord("3"): # toggle 1 bit in layermask
-          self.layermask = self.layermask ^ (1<<2)
-          self.layerID = 2
-          self.prLayerMask()
-          return res
-        elif KC == ord("4"): # toggle 1 bit in layermask
-          self.layermask = self.layermask ^ (1<<3)
-          self.layerID = 3
-          self.prLayerMask()
-          return res
         elif KC == ord("-"): # next effect
-          self.synth.prevEffect()
+          self.synth.prevEffect(self.synth.programbus)
           return res
         elif KC == ord("="): # next effect
-          self.synth.nextEffect()
+          self.synth.nextEffect(self.synth.programbus)
           return res
         elif KC == ord("!"): # panic
           for voice in self.voices:
             self.synth.keyOff(voice)
             self.voices.clear()
-          return res
-        elif KC == ord("4"): # 
-          print(self.sorted_progs)
           return res
         elif KC == ord("Z"): # 
           self.octave -= 1

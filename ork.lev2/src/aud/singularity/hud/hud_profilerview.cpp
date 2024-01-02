@@ -149,9 +149,20 @@ void ProfilerView::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
         0);
   ycursor += hud_lineheight();
 
-  for (auto b : syn->_outputBusses) {
-    auto busname = b.first;
-    auto fxname  = b.second->_fxname;
+  for (auto item : syn->_outputBusses) {
+    auto busname = item.first;
+    auto bus = item.second;
+    auto fxname  = item.second->_fxname;
+    float r = 1;
+    float g = 1;
+    float b = 1;
+    if(bus==syn->_curprogrambus){
+      r = 1;
+      g = 0;
+      b = 0;
+    }
+
+
     drawtext(
         this,
         context, //
@@ -159,9 +170,9 @@ void ProfilerView::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
         0,
         ycursor,
         fontscale,
-        1,
-        1,
-        0);
+        r,
+        g,
+        b);
     ycursor += hud_lineheight();
   }
 

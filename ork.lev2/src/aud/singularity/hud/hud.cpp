@@ -136,7 +136,8 @@ HudLayoutGroup::HudLayoutGroup() //
             break;
           }
           case '5': {
-            synth::instance()->nextEffect();
+            auto bus = synth::instance()->_curprogrambus;
+            synth::instance()->nextEffect(bus);
             was_handled = true;
             break;
           }

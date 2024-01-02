@@ -133,7 +133,7 @@ void NOTCH_FILT::compute(DspBuffer& dspbuf) // final
   if (1)
     for (int i = 0; i < inumframes; i++) {
       _filter.Tick(ubuf[i] * pad);
-      ubuf[i] = _filter.output;
+      ubuf[i] = _filter.output*4.0f;
     }
 
   // printf( "ff<%f> wid<%f>\n", ff, wid );
@@ -483,7 +483,7 @@ void LowPass::compute(DspBuffer& dspbuf) // final
   if (not _dbd->_bypass ) {
     for (int i = 0; i < inumframes; i++) {
       float inp     = inpbuf[i] * pad;
-      outbuf[i] = _lpf.compute(inp);
+      outbuf[i] = _lpf.compute(inp)*0.5;
     }
   }
 }

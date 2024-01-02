@@ -50,13 +50,13 @@ void pyinit_aud_singularity_synth(py::module& singmodule) {
               })
           .def(
               "nextEffect", //
-              [](synth_ptr_t synth) { synth->nextEffect(); })
+              [](synth_ptr_t synth,outbus_ptr_t obus) { synth->nextEffect(obus); })
           .def(
               "prevEffect", //
-              [](synth_ptr_t synth) { synth->prevEffect(); })
+              [](synth_ptr_t synth,outbus_ptr_t obus) { synth->prevEffect(obus); })
           .def(
               "setEffect", //
-              [](synth_ptr_t synth, outbus_ptr_t bus, std::string name) { synth->setEffect(bus,name); })
+              [](synth_ptr_t synth, outbus_ptr_t bus, std::string name) { synth->setEffect(bus, name); })
           .def(
               "outputBus", //
               [](synth_ptr_t synth, std::string named) -> outbus_ptr_t { return synth->outputBus(named); })
@@ -76,7 +76,15 @@ void pyinit_aud_singularity_synth(py::module& singmodule) {
           .def_property(
               "masterGain", //
               [](synth_ptr_t synth) -> float { return synth->_masterGain; },
-              [](synth_ptr_t synth, float gain) { synth->_masterGain = gain; });
+              [](synth_ptr_t synth, float gain) { synth->_masterGain = gain; })
+          .def_property(
+              "soloLayer", //
+              [](synth_ptr_t synth) -> int { return synth->_soloLayer; },
+              [](synth_ptr_t synth, int index) { synth->_soloLayer = index; })
+          .def_property(
+              "programbus", //
+              [](synth_ptr_t synth) -> outbus_ptr_t { return synth->_curprogrambus; },
+              [](synth_ptr_t synth, outbus_ptr_t bus) { synth->_curprogrambus = bus; });
   type_codec->registerStdCodec<synth_ptr_t>(synth_type_t);
   /////////////////////////////////////////////////////////////////////////////////
   auto prgi_type = py::class_<prginst_rawptr_t>(singmodule, "ProgramInst");
@@ -86,15 +94,15 @@ void pyinit_aud_singularity_synth(py::module& singmodule) {
                        .def_property_readonly(
                            "name", //
                            [](outbus_ptr_t bus) -> std::string { return bus->_name; })
-                       .def("addChildBus", [](outbus_ptr_t parent,outbus_ptr_t child) { //
-                         return parent->_children.push_back(child);
-                       })
+                       .def(
+                           "addChildBus",
+                           [](outbus_ptr_t parent, outbus_ptr_t child) { //
+                             return parent->_children.push_back(child);
+                           })
                        .def("createScopeSource", [](outbus_ptr_t bus) -> scopesource_ptr_t { //
                          return bus->createScopeSource();
                        });
   type_codec->registerStdCodec<outbus_ptr_t>(obus_type);
-
-
 }
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::audio::singularity

@@ -24,7 +24,7 @@ namespace ork::audio::singularity {
 ///////////////////////////////////////////////////////////////////////////////
 
 void LayerData::describeX(class_t* clazz) {
-  //clazz->directObjectMapProperty("Controllers", &LayerData::_controllermap);
+  // clazz->directObjectMapProperty("Controllers", &LayerData::_controllermap);
   clazz->directObjectProperty("Algorithm", &LayerData::_algdata);
 }
 
@@ -32,9 +32,9 @@ void LayerData::describeX(class_t* clazz) {
 
 bool LayerData::postDeserialize(reflect::serdes::IDeserializer&, object_ptr_t shared) {
   int icid = 0;
-  //for (auto item : _controllermap) {
-    //auto controller            = item.second;
-    //_ctrlBlock->_controller_datas[icid++] = controller;
+  // for (auto item : _controllermap) {
+  // auto controller            = item.second;
+  //_ctrlBlock->_controller_datas[icid++] = controller;
   //}
   //_ctrlBlock->_numcontrollers = _controllermap.size();
   return true;
@@ -49,30 +49,29 @@ LayerData::LayerData(const ProgramData* pdata)
   _ctrlBlock   = std::make_shared<ControlBlockData>();
   _kmpBlock    = std::make_shared<KmpBlockData>(); // todo move to samplerdata
   _scopesource = nullptr;
-  _outbus      = "main";
-  _varmap = std::make_shared<varmap::VarMap>();
+  _varmap      = std::make_shared<varmap::VarMap>();
 }
-lyrdata_ptr_t LayerData::clone() const{
-  auto rval = std::make_shared<LayerData>();
-  rval->_programdata = _programdata;
-  rval->_loKey = _loKey;
-  rval->_hiKey = _hiKey;
-  rval->_loVel = _loVel;
-  rval->_hiVel = _hiVel;
-  rval->_ignRels = _ignRels;
-  rval->_atk1Hold = _atk1Hold;
-  rval->_atk3Hold = _atk3Hold;
-  rval->_usenatenv = _usenatenv;
+lyrdata_ptr_t LayerData::clone() const {
+  auto rval           = std::make_shared<LayerData>();
+  rval->_programdata  = _programdata;
+  rval->_loKey        = _loKey;
+  rval->_hiKey        = _hiKey;
+  rval->_loVel        = _loVel;
+  rval->_hiVel        = _hiVel;
+  rval->_ignRels      = _ignRels;
+  rval->_atk1Hold     = _atk1Hold;
+  rval->_atk3Hold     = _atk3Hold;
+  rval->_usenatenv    = _usenatenv;
   rval->_layerLinGain = _layerLinGain;
-  rval->_algdata = _algdata->clone();
-  rval->_outbus = _outbus;
-  rval->_name = _name;
-  rval->_kmpBlock = _kmpBlock->clone();
-  rval->_pchBlock = _pchBlock->clone();
-  rval->_keymap = _keymap;
-  rval->_ctrlBlock = _ctrlBlock->clone();
-  rval->_varmap = _varmap;
-  rval->_scopesource = _scopesource;
+  rval->_algdata      = _algdata->clone();
+  rval->_outbus       = _outbus;
+  rval->_name         = _name;
+  rval->_kmpBlock     = _kmpBlock->clone();
+  rval->_pchBlock     = _pchBlock->clone();
+  rval->_keymap       = _keymap;
+  rval->_ctrlBlock    = _ctrlBlock->clone();
+  rval->_varmap       = _varmap;
+  rval->_scopesource  = _scopesource;
   return rval;
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -124,10 +123,10 @@ Layer::Layer()
 
 Layer::~Layer() {
   std::lock_guard<std::mutex> lock(_mutex);
-  _pchBlock = nullptr;
-  _outbus = nullptr;
+  _pchBlock  = nullptr;
+  _outbus    = nullptr;
   _ctrlBlock = nullptr;
-  _alg = nullptr;
+  _alg       = nullptr;
   _dspbuffer = nullptr;
   _layerdata = nullptr;
   _controlMap.clear();
@@ -149,7 +148,7 @@ void Layer::reset() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Layer::keyOn(int note, int velocity, lyrdata_ptr_t ld, outbus_ptr_t obus){
+void Layer::keyOn(int note, int velocity, lyrdata_ptr_t ld, outbus_ptr_t obus) {
   this->reset();
   this->_HKF._miscText   = "";
   this->_HKF._note       = note;
@@ -183,7 +182,7 @@ void Layer::keyOn(int note, int velocity, lyrdata_ptr_t ld, outbus_ptr_t obus){
 
   ///////////////////////////////////////
   auto algname = ld->_algdata->_name;
-  //printf( "LAYER KEYON<%d> alg<%s>\n", note, algname.c_str() );
+  // printf( "LAYER KEYON<%d> alg<%s>\n", note, algname.c_str() );
 
   this->_alg = this->_layerdata->_algdata->createAlgInst();
   // assert(_alg);
@@ -201,7 +200,7 @@ void Layer::keyOn(int note, int velocity, lyrdata_ptr_t ld, outbus_ptr_t obus){
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Layer::keyOff(){
+void Layer::keyOff() {
   if (this->_ctrlBlock)
     this->_ctrlBlock->keyOff();
   if (this->_ignoreRelease)
@@ -312,7 +311,7 @@ void Layer::replaceBus(int base, int count) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void Layer::endCompute() {
-  if (_alg){
+  if (_alg) {
     _alg->endCompute();
   }
 }
@@ -354,11 +353,10 @@ controller_t Layer::getController(const std::string& srcn) const {
   auto it = _controlMap.find(srcn);
   if (it != _controlMap.end()) {
     auto cinst = it->second;
-    //printf("getcon<%s> -> %p\n", srcn.c_str(), cinst);
+    // printf("getcon<%s> -> %p\n", srcn.c_str(), cinst);
     return [cinst]() { return cinst->_value.x; };
-  }
-  else {
-    //auto cdata = _layerdata->controllerByName(scrn);
+  } else {
+    // auto cdata = _layerdata->controllerByName(scrn);
     printf("CONTROLLER<%s> not found!\n", srcn.c_str());
     float fv = atof(srcn.c_str());
     if (fv != 0.0f) {
@@ -375,9 +373,9 @@ controller_t Layer::getController(const std::string& srcn) const {
 
 controller_t Layer::getSRC1(dspparammod_constptr_t mods) {
   auto src1 = this->getController(mods->_src1);
-  //printf("src1<%p>\n", (void*) mods->_src1.get());
-  //if(mods->_src1){
-    //printf("src1<%p:%s>\n", (void*) mods->_src1.get(), mods->_src1->_name.c_str());
+  // printf("src1<%p>\n", (void*) mods->_src1.get());
+  // if(mods->_src1){
+  // printf("src1<%p:%s>\n", (void*) mods->_src1.get(), mods->_src1->_name.c_str());
   //}
 
   auto it = [=]() -> float {
@@ -393,9 +391,9 @@ controller_t Layer::getSRC1(dspparammod_constptr_t mods) {
 controller_t Layer::getSRC2(dspparammod_constptr_t mods) {
   auto src2     = this->getController(mods->_src2);
   auto depthcon = this->getController(mods->_src2DepthCtrl);
-  //printf("src2<%p>\n", (void*) mods->_src2.get());
-  //if(mods->_src2){
-    //printf("src2<%p:%s>\n", (void*) mods->_src2.get(), mods->_src2->_name.c_str());
+  // printf("src2<%p>\n", (void*) mods->_src2.get());
+  // if(mods->_src2){
+  // printf("src2<%p:%s>\n", (void*) mods->_src2.get(), mods->_src2->_name.c_str());
   //}
 
   auto it = [=]() -> float {

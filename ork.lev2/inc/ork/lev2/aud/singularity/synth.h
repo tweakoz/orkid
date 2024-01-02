@@ -80,6 +80,7 @@ struct OutputBus {
   std::string _fxname;
 
   std::vector<outbus_ptr_t> _children;
+  fxpresetmap_t::iterator _fxcurpreset;
   /////////////////////////
 };
 
@@ -132,13 +133,12 @@ struct synth {
   void _tick(eventmap_t& emap, float dt);
   float _timeaccum;
 
-  void nextEffect(); // temporary
-  void prevEffect(); // temporary
+  void nextEffect(outbus_ptr_t bus); // temporary
+  void prevEffect(outbus_ptr_t bus); // temporary
   void setEffect(outbus_ptr_t bus, std::string name); // temporary
   void mainThreadHandler();
   
   fxpresetmap_t _fxpresets;
-  fxpresetmap_t::iterator _fxcurpreset;
 
   std::map<std::string, outbus_ptr_t> _outputBusses;
   std::vector<onkey_t> _onkey_subscribers;
@@ -195,6 +195,8 @@ struct synth {
   int64_t _samplesuntilnexttick = 0;
   bool _lock_compute            = true;
   float _cpuload                = 0.0f;
+
+  outbus_ptr_t _curprogrambus;
 
   layer_ptr_t _hudLayer   = nullptr;
   bool _clearhuddata = true;
