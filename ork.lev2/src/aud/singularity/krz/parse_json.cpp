@@ -1145,9 +1145,16 @@ prgdata_ptr_t KrzBankDataParser::parseProgram(const Value& jsonobj) {
         auto block = stage->_blockdatas[iblock];
         if(block){
           pdata->addHudInfo(FormatString("    BLOCK: %s", block->_blocktype.c_str()));
+          if(block->_blocktype=="SAMPLER"){
+            auto sampler = std::dynamic_pointer_cast<SAMPLER_DATA>(block);
+            auto kmp = l->_kmpBlock;
+            auto keymap = l->_keymap;
+            auto pstr = FormatString("     KEYMAP: %s", keymap->_name.c_str() );
+            pdata->addHudInfo(pstr);
+          }
           for( auto p : block->_paramd ){
             if(p){
-              auto pstr = FormatString("     PARAM name<%s> : units<%s> evaluator<%s>", p->_name.c_str(), p->_units.c_str(), p->_evaluatorid.c_str() );
+              auto pstr = FormatString("     PARAM name: %s units: %s evaluator: %s", p->_name.c_str(), p->_units.c_str(), p->_evaluatorid.c_str() );
               pdata->addHudInfo(pstr);
             }
           }
