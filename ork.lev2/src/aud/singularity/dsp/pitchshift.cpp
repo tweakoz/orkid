@@ -56,8 +56,10 @@ void PitchShifter::compute(DspBuffer& dspbuf) // final
   float mix      = _param[0].eval();
   float shift    = _param[1].eval(); // cents
 
-  auto ibuf = getInpBuf(dspbuf, 0) + ibase;
-  auto obuf = getOutBuf(dspbuf, 0) + ibase;
+  auto ibufL = getInpBuf(dspbuf, 0) + ibase;
+  auto ibufR = getInpBuf(dspbuf, 1) + ibase;
+  auto obufL = getOutBuf(dspbuf, 0) + ibase;
+  auto obufR = getOutBuf(dspbuf, 1) + ibase;
 
   float invfr = 1.0f / inumframes;
 
@@ -84,7 +86,7 @@ void PitchShifter::compute(DspBuffer& dspbuf) // final
   int64_t phaseinc = frq * -double(1L << 48) * getInverseSampleRate(); // * (getSampleRate() * kinv24m);
   // printf("ratio<%g> frq<%g> pi<%lld>\n", ratio, frq, phaseinc);
 
-  float outgain = 0.3;
+  float outgain = 0.7;
 
   for (int i = 0; i < inumframes; i++) {
     float fi     = float(i) * invfr;
@@ -116,8 +118,9 @@ void PitchShifter::compute(DspBuffer& dspbuf) // final
     // input from dsp channels
     /////////////////////////////////////
 
-    float oinp = ibuf[i];
-    float inp  = oinp;
+    float oinpL = ibufL[i];
+    float oinpR = ibufR[i];
+    float inp  = oinpL+oinpR;
     inp        = _hipassfilter.compute(inp);
     inp        = _lopassAfilter.compute(inp);
     inp        = _lopassBfilter.compute(inp);
@@ -151,7 +154,8 @@ void PitchShifter::compute(DspBuffer& dspbuf) // final
                 cout * maskc + //
                 dout * maskd;
 
-    obuf[i] = lerp(oinp, out * outgain, mix);
+    obufL[i] = lerp(oinpL,oinpL+ out * outgain, mix);
+    obufR[i] = lerp(oinpR,oinpR+ out * outgain, mix);
   }
 }
 
