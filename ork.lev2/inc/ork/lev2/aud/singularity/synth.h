@@ -73,11 +73,12 @@ struct OutputBus {
   /////////////////////////
 
   void setBusDSP(lyrdata_ptr_t ld);
-
+  
   lyrdata_ptr_t _dsplayerdata;
   layer_ptr_t _dsplayer = nullptr;
   scopesource_ptr_t _scopesource;
   std::string _fxname;
+  prgdata_constptr_t _uiprogram;
 
   std::vector<outbus_ptr_t> _children;
   fxpresetmap_t::iterator _fxcurpreset;

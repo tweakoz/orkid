@@ -80,6 +80,7 @@ void ProfilerView::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
   // auto name   = _curprogram->_name;
   int ycursor = 0;
 
+
   drawtext(
       this,
       context, //
@@ -149,6 +150,48 @@ void ProfilerView::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
         0);
   ycursor += hud_lineheight();
 
+  auto draw3cols = [&]( const std::string stra, //
+                        const std::string strb, // 
+                        const std::string strc, // 
+                        float r, //
+                        float g, //
+                        float b) { //
+    int w = width()/8;
+    int w1 = w/4;
+    int w3 = w/3;
+    int w2 = w-w1-w3;
+    auto str1 = FormatString("%-*s", w1, stra.c_str());
+    auto str2 = FormatString("%-*s", w2, strb.c_str());
+    auto str3 = FormatString("%*s", w3, strc.c_str());
+    drawtext(
+        this,
+        context, //
+        FormatString("%s%s%s", str1.c_str(), str2.c_str(), str3.c_str()),
+        0,
+        ycursor,
+        fontscale,
+        r,
+        g,
+        b);
+    ycursor += hud_lineheight();
+  };
+
+
+  draw3cols("OutputBus","Program","FX",1,1,1);
+
+  hudlines_t lines;
+  float line_y = ycursor+2;
+  lines.push_back(
+    HudLine{ fvec2(0, line_y), 
+             fvec2(width(), line_y), 
+             fvec3(1, 1, 1)
+            });
+
+
+    drawHudLines(this,context,lines);
+
+  ycursor += hud_lineheight()-4;
+
   for (auto item : syn->_outputBusses) {
     auto busname = item.first;
     auto bus = item.second;
@@ -160,35 +203,12 @@ void ProfilerView::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
       r = 1;
       g = 0;
       b = 0;
-    }
+    } 
 
+    auto prgname = bus->_uiprogram ? bus->_uiprogram->_name : "----";
 
-    drawtext(
-        this,
-        context, //
-        FormatString("OutputBus<%s>: fx<%s>", busname.c_str(), fxname.c_str()),
-        0,
-        ycursor,
-        fontscale,
-        r,
-        g,
-        b);
-    ycursor += hud_lineheight();
+    draw3cols(busname,prgname,fxname,r,g,b);
   }
-
-  /*for (auto l : _curprogram->_hudinfos) {
-    drawtext(
-        this,
-        context, //
-        FormatString("%s", l.c_str()),
-        0,
-        ycursor,
-        fontscale,
-        1,
-        1,
-        0);
-    ycursor += hud_lineheight();
-  }*/
 
   // drawHudLines(this, context, lines);
 }

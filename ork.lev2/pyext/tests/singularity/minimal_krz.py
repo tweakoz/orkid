@@ -161,8 +161,7 @@ class KrzApp(SingulTestApp):
     #self.prog_index = find_index(self.sorted_progs, "Chorus_Gtr")
     self.prog = self.soundbank.programByName("CowGogiBell")
     self.synth.masterGain = singularity.decibelsToLinear(-24.0)
-    if self.pgmview:
-      self.pgmview.setProgram(self.prog)
+    self.setUiProgram(self.prog)
 
 ###############################################################################
 

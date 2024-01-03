@@ -101,7 +101,10 @@ void pyinit_aud_singularity_synth(py::module& singmodule) {
                            })
                        .def("createScopeSource", [](outbus_ptr_t bus) -> scopesource_ptr_t { //
                          return bus->createScopeSource();
-                       });
+                       })
+                       .def_property("uiprogram", //
+                                     [](outbus_ptr_t bus) -> prgdata_constptr_t { return bus->_uiprogram; },
+                                     [](outbus_ptr_t bus, prgdata_constptr_t pd) { bus->_uiprogram = pd; });
   type_codec->registerStdCodec<outbus_ptr_t>(obus_type);
 }
 ///////////////////////////////////////////////////////////////////////////////
