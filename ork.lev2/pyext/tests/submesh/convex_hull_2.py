@@ -22,7 +22,7 @@ class SceneGraphApp(BasicUiCamSgApp):
     self.mutex = Lock()
     self.uicam.lookAt( vec3(0,0,20), vec3(0,0,0), vec3(0,1,0) )
     self.camera.copyFrom( self.uicam.cameradata )
-    self.NUMPOINTS = 128
+    self.NUMPOINTS = 32
     self.pnt = [dvec3(0) for i in range(self.NUMPOINTS)]
     self.numsteps = 0
   ##############################################
@@ -92,12 +92,16 @@ class SceneGraphApp(BasicUiCamSgApp):
       self.prim3.fromSubMesh(self.barysub_isect,self.context)
 
   def onUiEvent(self,uievent):
+    res = ui.HandlerResult()
     super().onUiEvent(uievent)
     if uievent.code == tokens.KEY_DOWN.hashed:
-        if uievent.keycode == 32: # spacebar
-          self.numsteps = (self.numsteps + 1) % 4
-        if uievent.keycode == ord('A'):
-          self.incr_time = not self.incr_time
+      if uievent.keycode == 32: # spacebar
+        self.numsteps = (self.numsteps + 1) % 4
+      if uievent.keycode == ord('A'):
+        self.incr_time = not self.incr_time
+      res = ui.HandlerResult()
+      res.setHandler(self.ezapp.topWidget)
+    return res
 ###############################################################################
 
 sgapp = SceneGraphApp()

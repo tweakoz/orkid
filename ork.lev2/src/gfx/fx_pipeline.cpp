@@ -28,8 +28,8 @@ uint64_t FxPipelinePermutation::genIndex() const {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void FxPipelinePermutation::dump() const {
-  logchan_fxcache->log(
-      "configdump: rendering_model<0x%zx> stereo<%d> instanced<%d> skinned<%d> picking<%d>",
+  printf(
+      "configdump: rendering_model<0x%zx> stereo<%d> instanced<%d> skinned<%d> picking<%d>\n",
       uint64_t(_rendering_model),
       int(_stereo),
       int(_instanced),
@@ -56,6 +56,9 @@ void FxPipeline::bindParam(fxparam_constptr_t p, varval_t v){
 /////////////////////////////////////////////////////////////////////////
 void FxPipeline::wrappedDrawCall(const RenderContextInstData& RCID, void_lambda_t drawcall) {
   int inumpasses = beginBlock(RCID);
+  if(_debugPrint){
+    printf( "FxPipeline<%p:%s> wrappedDrawCall inumpasses<%d>\n", this, _debugName.c_str(), inumpasses );
+  }
   for (int ipass = 0; ipass < inumpasses; ipass++) {
     if (beginPass(RCID, ipass)) {
       drawcall();
@@ -263,6 +266,10 @@ void FxPipeline::_set_typed_param(const RenderContextInstData& RCID, fxparam_con
       OrkAssert(false);
     }
 }
+void FxPipeline::dump() const {
+  printf( "FxPipeline<%p>\n", (void*) this );
+  __permutation.dump();
+}
 ///////////////////////////////////////////////////////////////////////////////
 bool FxPipeline::beginPass(const RenderContextInstData& RCID, int ipass) {
   auto context          = RCID._RCFD->GetTarget();
@@ -272,13 +279,23 @@ bool FxPipeline::beginPass(const RenderContextInstData& RCID, int ipass) {
     OrkBreak();
   }
 
-  bool rval = FXI->BindPass(ipass);
-  if (not rval)
-    return rval;
+  FXI->_debugDrawCall = _debugPrint;
+  bool OK = FXI->BindPass(ipass);
+  FXI->_debugDrawCall = false;
+  if (not OK)
+    return OK;
+
+  if(_debugPrint){
+    printf( "FxPipeline<%p:%s>::beginPass index<%d> OK<%d>\n", this, _debugName.c_str(), ipass, int(OK) );
+  }
 
   ///////////////////////////////
   // run state lambdas
   ///////////////////////////////
+
+  if(_debugPrint){
+    printf( "FxPipeline<%p:%s>::beginPass num_statelambdas<%zu>\n", this, _debugName.c_str(), _statelambdas.size() );
+  }
 
   for( auto& item: _statelambdas ){
     item(RCID,ipass);
@@ -288,12 +305,16 @@ bool FxPipeline::beginPass(const RenderContextInstData& RCID, int ipass) {
   // run individual state items
   ///////////////////////////////
 
+  if(_debugPrint){
+    printf( "FxPipeline<%p:%s>::beginPass num_params<%zu>\n", this, _debugName.c_str(), _params.size() );
+  }
+
   for (auto item : _params) {
     fxparam_constptr_t param = item.first;
     const auto& val          = item.second;
     _set_typed_param(RCID,param,val);
   }
-  return rval;
+  return OK;
 }
 ///////////////////////////////////////////////////////////////////////////////
 void FxPipeline::endPass(const RenderContextInstData& RCID) {

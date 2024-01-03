@@ -68,12 +68,11 @@ Guide::Guide(Layout* layout, Edge edge)
   _name             = _names++;
 }
 /////////////////////////////////////////////////////////////////////////
-Guide::~Guide(){
-
+Guide::~Guide() {
 }
 /////////////////////////////////////////////////////////////////////////
-float Guide::sortKey() const{
-  bool is_proportional = _type==GuideType::PROPORTIONAL;
+float Guide::sortKey() const {
+  bool is_proportional = _type == GuideType::PROPORTIONAL;
   return is_proportional ? _proportion : float(_fixed);
 }
 /////////////////////////////////////////////////////////////////////////
@@ -148,6 +147,7 @@ void Guide::updateGeometry() {
         geo.setTop(top);
       else
         geo.moveTop(top);
+      _centerpos = geo._y;
       break;
     }
     case Edge::Left: {
@@ -156,14 +156,17 @@ void Guide::updateGeometry() {
         geo.setLeft(left);
       else
         geo.moveLeft(left);
+      _centerpos = geo._x;
       break;
     }
     case Edge::Bottom: {
       int bottom = line._from.y - signed_offset;
+      _centerpos = bottom;
       if (_layout->_top->_relative)
         geo.setBottom(bottom);
       else
         geo.moveBottom(bottom);
+      _centerpos = geo.y2();
       break;
     }
     case Edge::Right: {
@@ -172,20 +175,23 @@ void Guide::updateGeometry() {
         geo.setRight(right);
       else
         geo.moveRight(right);
+      _centerpos = geo.x2();
       break;
     }
     case Edge::HorizontalCenter:
       geo.moveCenter(line._from.x + signed_offset, geo.center_y());
+      _centerpos = geo.center_x();
       break;
     case Edge::VerticalCenter:
       geo.moveCenter(geo.center_x(), line._from.y + signed_offset);
+      _centerpos = geo.center_y();
       break;
     default:
       break;
   }
-  if(0)printf( "setgeo<%s> %d,%d %d,%d\n",
-          _layout->_widget->_name.c_str(), 
-          geo._x, geo._y, geo._w, geo._h);
+
+  if (0)
+    printf("setgeo<%s> %d,%d %d,%d\n", _layout->_widget->_name.c_str(), geo._x, geo._y, geo._w, geo._h);
   _layout->_widget->setGeometry(geo);
 }
 /////////////////////////////////////////////////////////////////////////
@@ -237,7 +243,8 @@ void Guide::anchorTo(Guide* other) {
     _relative = other;
     _relative->_associate(this);
 
-    if(0)printf( "guide<%p> anchorTo<%p>\n", this, other );
+    if (0)
+      printf("guide<%p> anchorTo<%p>\n", this, other);
 
   } else
     _relative = nullptr;
@@ -342,34 +349,217 @@ Line Guide::line(Mode mode) const {
   }
 
   return outline;
-} // namespace ork::ui::anchor
+} 
 /////////////////////////////////////////////////////////////////////////
-void Guide::dump() {
+void Guide::dump(int level) {
+  auto indentstr = std::string(level * 2, ' ');
   printf(
-      "//   Guide<%d> edge<%s> margin<%d> relative<%d>", //
+      "%sGuide<%d> edge<%s> margin<%d> relative<%d>", //
+      indentstr.c_str(),
       _name,
       edge2str(_edge).c_str(),
       _margin,
       _relative ? _relative->_name : -1);
 
-
-  switch(_type){
-    case GuideType::NONE: printf( " type<NONE>" ); break;
-    case GuideType::FIXED: printf( " type<FIXED> f<%d>", _fixed ); break;
-    case GuideType::PROPORTIONAL: printf( " type<PROPORTIONAL> p<%g>", _proportion ); break;
+  switch (_type) {
+    case GuideType::NONE:
+      printf(" type<NONE>");
+      break;
+    case GuideType::FIXED:
+      printf(" type<FIXED> f<%d>", _fixed);
+      break;
+    case GuideType::PROPORTIONAL:
+      printf(" type<PROPORTIONAL> p<%g>", _proportion);
+      break;
     default:
       OrkAssert(false);
       break;
   }
-  printf( "\n");
+  printf("\n");
   for (auto g : _associates) {
     printf(
-        "//     associate<%d> layout<%d> edge<%s> margin<%d>\n", //
+        "%sassociate<%d> layout<%d> edge<%s> margin<%d>\n", //
+        indentstr.c_str(),
         g->_name,
         g->_layout->_name,
         edge2str(g->_edge).c_str(),
         g->_margin);
   }
+}
+/////////////////////////////////////////////////////////////////////////
+static float _distanceFromPointToLine(const fvec2& point, const fvec2& lineStart, const fvec2& lineEnd) {
+  float lineLength = std::hypot(lineEnd.x - lineStart.x, lineEnd.y - lineStart.y);
+  if (lineLength == 0.0f)
+    return std::hypot(point.x - lineStart.x, point.y - lineStart.y);
+
+  float t = ((point.x - lineStart.x) * (lineEnd.x - lineStart.x) + (point.y - lineStart.y) * (lineEnd.y - lineStart.y)) /
+            (lineLength * lineLength);
+  t = std::max(0.0f, std::min(1.0f, t));
+  fvec2 projection;
+  projection.x = lineStart.x + t * (lineEnd.x - lineStart.x);
+  projection.y = lineStart.y + t * (lineEnd.y - lineStart.y);
+  return std::hypot(point.x - projection.x, point.y - projection.y);
+}
+/////////////////////////////////////////////////////////////////////////
+// Function to check if a point (mouse position) is over a guide
+/////////////////////////////////////////////////////////////////////////
+static bool _isMouseOverGuide(const Guide* guide, const fvec2& mousePos, float threshold = 5.0f) {
+  if (!guide)
+    return false;
+  Line line = guide->line(Mode::Geometry);
+  return _distanceFromPointToLine(mousePos, line._from, line._to) <= threshold;
+}
+/////////////////////////////////////////////////////////////////////////
+// Function to get all guides from a layout
+/////////////////////////////////////////////////////////////////////////
+static std::vector<guide_ptr_t> _getAllGuides(const Layout* layout) {
+  std::vector<guide_ptr_t> guides;
+  if (layout->_top)
+    guides.push_back(layout->_top);
+  if (layout->_left)
+    guides.push_back(layout->_left);
+  if (layout->_bottom)
+    guides.push_back(layout->_bottom);
+  if (layout->_right)
+    guides.push_back(layout->_right);
+  if (layout->_centerH)
+    guides.push_back(layout->_centerH);
+  if (layout->_centerV)
+    guides.push_back(layout->_centerV);
+  for (auto& custom_guide : layout->_customguides)
+    guides.push_back(custom_guide);
+  return guides;
+}
+/////////////////////////////////////////////////////////////////////////
+static std::pair<guide_ptr_t, guide_ptr_t>
+_findGuidePairRecursive(const Layout* layout, const fvec2& mousePos, const std::vector<guide_ptr_t>& guides) {
+  if (!layout)
+    return {nullptr, nullptr};
+
+  for (const auto& guide : guides) {
+    if (_isMouseOverGuide(guide.get(), mousePos)) {
+      // Check for a pair within the same layout
+      for (const auto& otherGuide : _getAllGuides(layout)) {
+        if (guide != otherGuide && _isMouseOverGuide(otherGuide.get(), mousePos)) {
+          return {guide, otherGuide};
+        }
+      }
+
+      // Recursively check child layouts
+      for (const auto& childLayout : layout->_childlayouts) {
+        auto result = _findGuidePairRecursive(childLayout.get(), mousePos, guides);
+        if (result.first && result.second) {
+          return result;
+        }
+      }
+    }
+  }
+
+  return {nullptr, nullptr};
+}
+/////////////////////////////////////////////////////////////////////////
+std::pair<guide_ptr_t, guide_ptr_t> findGuidePairUnderMouse(const Layout* rootLayout, const fvec2& mousePos) {
+  std::vector<guide_ptr_t> allGuides;
+  std::function<void(const Layout*)> enumerateAllGuides = [&](const Layout* layout) {
+    if (!layout)
+      return;
+    auto guides = _getAllGuides(layout);
+    allGuides.insert(allGuides.end(), guides.begin(), guides.end());
+    for (const auto& child : layout->_childlayouts) {
+      enumerateAllGuides(child.get());
+    }
+  };
+  enumerateAllGuides(rootLayout);
+  return _findGuidePairRecursive(rootLayout, mousePos, allGuides);
+}
+/////////////////////////////////////////////////////////////////////////
+static void _adjustGuidePositionVProportional(const guide_ptr_t& guide, float deltaX) {
+    auto layout_dimensions = guide->_layout->_widget->geometry();
+    float try_new_proportion = guide->_proportion + (deltaX / static_cast<float>(layout_dimensions._w));
+    try_new_proportion = std::max(0.05f, std::min(0.95f, try_new_proportion)); 
+    int try_size_left = static_cast<int>(try_new_proportion * layout_dimensions._w);
+    int try_size_right = layout_dimensions._w - try_size_left;
+    if (try_size_left >= 8 && try_size_right >= 8) {
+        guide->_proportion = try_new_proportion;
+        guide->_layout->updateAll();
+    }
+}
+/////////////////////////////////////////////////////////////////////////
+static void _adjustGuidePositionVFixed(const guide_ptr_t& guide, float deltaX) {
+    auto layout_dimensions = guide->_layout->_widget->geometry();
+    int new_fixed = guide->_fixed + static_cast<int>(deltaX);
+    int try_size_left = new_fixed;
+    int try_size_right = layout_dimensions._w - new_fixed;
+    if (try_size_left >= 8 && try_size_right >= 8) {
+        guide->_fixed = new_fixed;
+        guide->_layout->updateAll();
+    }
+}
+/////////////////////////////////////////////////////////////////////////
+static void _adjustGuidePositionHProportional(const guide_ptr_t& guide, float deltaY) {
+    auto layout_dimensions = guide->_layout->_widget->geometry();
+    float try_new_proportion = guide->_proportion + (deltaY / static_cast<float>(layout_dimensions._h));
+    try_new_proportion = std::max(0.05f, std::min(0.95f, try_new_proportion)); 
+    int try_size_above = static_cast<int>(try_new_proportion * layout_dimensions._h);
+    int try_size_below = layout_dimensions._h - try_size_above;
+    if (try_size_above >= 8 && try_size_below >= 8) {
+        guide->_proportion = try_new_proportion;
+        guide->_layout->updateAll();
+    }
+}
+/////////////////////////////////////////////////////////////////////////
+static void _adjustGuidePositionHFixed(const guide_ptr_t& guide, float deltaY) {
+    auto layout_dimensions = guide->_layout->_widget->geometry();
+    int try_new_fixed = guide->_fixed + static_cast<int>(deltaY);
+    int try_size_above = try_new_fixed;
+    int try_size_below = layout_dimensions._h - try_new_fixed;
+    if (try_size_above >= 8 && try_size_below >= 8) {
+        guide->_fixed = try_new_fixed;
+        guide->_layout->updateAll();
+    }
+}
+/////////////////////////////////////////////////////////////////////////
+static void _dragGuideH(const guide_ptr_t& guide, float deltaY) {
+  switch (guide->_edge) {
+    case Edge::CustomHorizontal:
+      if(guide->_type == GuideType::FIXED)
+        _adjustGuidePositionHFixed(guide, deltaY);
+      else
+        _adjustGuidePositionHProportional(guide, deltaY);
+      break;
+    default:
+      // Not a horizontal guide, no action needed
+      break;
+  }
+}
+/////////////////////////////////////////////////////////////////////////
+static void _dragGuideV(const guide_ptr_t& guide, float deltaX) {
+  switch (guide->_edge) {
+    case Edge::CustomVertical:
+      if(guide->_type == GuideType::FIXED)
+        _adjustGuidePositionVFixed(guide, deltaX);
+      else
+        _adjustGuidePositionVProportional(guide, deltaX);
+      break;
+      break;
+    default:
+      // Not a vertical guide, no action needed
+      break;
+  }
+}
+/////////////////////////////////////////////////////////////////////////
+void dragGuidePairH(const std::pair<guide_ptr_t, guide_ptr_t>& pair, float deltaY) {
+  if (!pair.first || !pair.second)
+    return;
+  _dragGuideH(pair.first, deltaY);
+  _dragGuideH(pair.second, deltaY);
+}
+/////////////////////////////////////////////////////////////////////////
+void dragGuidePairV(const std::pair<guide_ptr_t, guide_ptr_t>& pair, float deltaX) {
+  if (!pair.first || !pair.second)
+    return;
+  _dragGuideV(pair.first, deltaX);
+  _dragGuideV(pair.second, deltaX);
 }
 /////////////////////////////////////////////////////////////////////////
 } // namespace ork::ui::anchor

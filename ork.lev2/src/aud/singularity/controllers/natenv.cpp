@@ -15,11 +15,58 @@
 #include <ork/lev2/aud/singularity/synth.h>
 #include <ork/lev2/aud/singularity/sampler.h>
 
+ImplementReflectionX(ork::audio::singularity::NatEnvWrapperData, "SynNatEnvWrapperData");
+
 namespace ork::audio::singularity {
 
 ///////////////////////////////////////////////////////////////////////////////
 // Natural envelopes
 ///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+void NatEnvWrapperData::describeX(class_t* clazz) {
+}
+
+NatEnvWrapperData::NatEnvWrapperData() {
+}
+ControllerInst* NatEnvWrapperData::instantiate(layer_ptr_t layer) const {
+  return new NatEnvWrapperInst(this, layer);
+}
+
+controllerdata_ptr_t NatEnvWrapperData::clone() const {
+  auto rval = std::make_shared<NatEnvWrapperData>();
+  rval->_segments = _segments;
+  return rval;
+}
+
+NatEnvWrapperInst::NatEnvWrapperInst(const NatEnvWrapperData* data, layer_ptr_t l)
+  : ControllerInst(l) {
+  _natenv = std::make_shared<NatEnv>();
+}
+void NatEnvWrapperInst::compute() {
+}
+void NatEnvWrapperInst::keyOn(const KeyOnInfo& KOI) {
+  // FIND sample which has std::vector<natenvseg> _natenv;
+  // use to init NatEnv::keyOn
+  /*OrkAssert(_layer);
+  auto l = _layer;
+  auto ld = l->_layerdata;
+  auto algdata = ld->_algdata;
+  OrkAssert(algdata);
+  auto stagedata0 = algdata->_stages[0];
+  OrkAssert(stagedata0);
+  auto blkdata0 = stagedata0->_blockdatas[0];
+  auto blkdata1 = stagedata0->_blockdatas[1];
+  auto sampler = std::dynamic_pointer_cast<SAMPLER_DATA>(blkdata1);
+  OrkAssert(sampler);
+  RegionSearch RF = sampler->findRegion(ld,KOI);
+  auto sample = RF._sample;
+  printf("blkdata0<%p:%s>\n", (void*) blkdata0.get(), blkdata0->_name.c_str());
+  printf("sampler<%p:%s>\n", (void*) sampler.get(), sampler->_name.c_str());
+  printf("sample<%p:%s> natenvcount<%d>\n", (void*) sample, sample->_name.c_str(), int(sample->_natenv.size()));
+  */
+}
+void NatEnvWrapperInst::keyOff() {
+}
 
 NatEnv::NatEnv()
     : _layer(nullptr)
@@ -30,7 +77,7 @@ NatEnv::NatEnv()
     , _slopePerSecond(0.0f)
     , _slopePerSample(0.0f)
     , _SR(getSampleRate())
-    , _state(0){
+    , _state(0) {
   _envadjust = [](const EnvPoint& inp, //
                   int iseg,
                   const KeyOnInfo& KOI) -> EnvPoint { //
@@ -47,7 +94,7 @@ void NatEnv::keyOn(const KeyOnInfo& KOI, const sample* s) {
   _layer->retain();
 
   _natenvseg.clear();
-  for (const auto& item : s->_natenv)
+  for (const auto& item : s->_naturalEnvelope->_segments)
     _natenvseg.push_back(item);
   _numseg        = _natenvseg.size();
   _curseg        = 0;

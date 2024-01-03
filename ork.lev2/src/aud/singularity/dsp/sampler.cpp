@@ -20,6 +20,21 @@ namespace ork::audio::singularity {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+kmpblockdata_ptr_t KmpBlockData::clone() const {
+  auto rval = std::make_shared<KmpBlockData>();
+  rval->_transpose = _transpose;
+  rval->_timbreShift = _timbreShift;
+  rval->_keyTrack = _keyTrack;
+  rval->_velTrack = _velTrack;
+  if(_keymap){
+    rval->_keymap = _keymap->clone();
+  }
+  rval->_pbMode = _pbMode;
+  return rval;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 kmregion* KeyMap::getRegion(int note, int vel) const {
   int k2vel = vel / 18; // map 0..127 -> 0..7
 
@@ -39,17 +54,83 @@ kmregion* KeyMap::getRegion(int note, int vel) const {
   return nullptr;
 }
 
+kmregion* kmregion::clone() const{
+  auto rval = new kmregion;
+  rval->_lokey = _lokey;
+  rval->_hikey = _hikey;
+  rval->_lovel = _lovel;
+  rval->_hivel = _hivel;
+  rval->_tuning = _tuning;
+  rval->_linGain = _linGain;
+  rval->_loopModeOverride = _loopModeOverride;
+  rval->_sample = _sample;
+  rval->_multiSample = _multiSample;
+  rval->_sampID = _sampID;
+  rval->_multsampID = _multsampID;
+  rval->_volAdj = _volAdj;
+  rval->_sampleName = _sampleName;
+
+  return rval;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
-void SAMPLER::initBlock(dspblkdata_ptr_t blockdata) {
-  blockdata->_blocktype = "SAMPLER";
-  blockdata->_paramd[0]->usePitchEvaluator();
+keymap_ptr_t KeyMap::clone() const {
+  auto rval = std::make_shared<KeyMap>();
+  for (auto r : _regions) {
+    auto rclone = r->clone();
+    rval->_regions.push_back(rclone);
+  }
+  return rval;  
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+SAMPLER_DATA::SAMPLER_DATA(std::string name)
+    : DspBlockData(name) {
+  _blocktype = "SAMPLER";
+  //addParam("pch")->usePitchEvaluator();
+}
+
+dspblk_ptr_t SAMPLER_DATA::createInstance() const { // override
+  return std::make_shared<SAMPLER>(this);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 SAMPLER::SAMPLER(const DspBlockData* dbd)
-    : DspBlock(dbd) {
+  : DspBlock(dbd) {
+    auto sampler_data = dynamic_cast<const SAMPLER_DATA*>(dbd);
+    _spOsc = new sampleOsc(sampler_data);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void SAMPLER::doKeyOn(const KeyOnInfo& koi) { // final
+  //NatEnvWrapperInst
+  auto L = koi._layer;
+  auto A = L->_alg;
+  auto S = A->_stageblock._stages[0];
+  auto C = L->_ctrlBlock;
+  OrkAssert(C);
+  NatEnvWrapperInst* nat = nullptr;
+  for( auto ci : C->_cinst ){
+    auto as_nat = dynamic_cast<NatEnvWrapperInst*>(ci);
+    if(as_nat){
+      nat = as_nat;
+      break;
+    }
+  }
+  if(nat){
+    _spOsc->_natenvwrapperinst = nat;
+  }
+  _spOsc->keyOn(koi);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void SAMPLER::doKeyOff() { // final
+  _spOsc->keyOff();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -90,42 +171,17 @@ if (auto PCHBLK = _layerdata->_pchBlock) {
 */
 void SAMPLER::compute(DspBuffer& dspbuf) // final
 {
-  float centoff = _param[0].eval();
-  _fval[0]      = centoff;
-
   int inumframes = _layer->_dspwritecount;
   float* lbuf    = getOutBuf(dspbuf, 1) + _layer->_dspwritebase;
   float* ubuf    = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
-  // float lyrcents = _layer->_layerBasePitch;
-  // float cin = (lyrcents+centoff)*0.01;
-  // float frq = midi_note_to_frequency(cin);
-  // float SR = _layer->_syn._sampleRate;
-  // float pad = _dbd->_inputPad;
 
-  //_filtp = 0.5*_filtp + 0.5*centoff;
-  //_layer->_curPitchOffsetInCents = centoff;
-  // printf( "centoff<%f>\n", centoff );
-  _spOsc.compute(inumframes);
+  _spOsc->compute(inumframes);
 
   for (int i = 0; i < inumframes; i++) {
-    float outp = _spOsc._OUTPUT[i];
+    float outp = _spOsc->_OUTPUT[i];
     lbuf[i]    = outp;
     ubuf[i]    = outp;
   }
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void SAMPLER::doKeyOn(const KeyOnInfo& koi) // final
-{
-  _spOsc.keyOn(koi);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void SAMPLER::doKeyOff() // final
-{
-  _spOsc.keyOff();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -222,27 +278,25 @@ void sample::load(const std::string& fname)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-sampleOsc::sampleOsc()
-    : _lyr(nullptr)
-    , _sample(nullptr)
+sampleOsc::sampleOsc(const SAMPLER_DATA* data)
+    : _sampler_data(data)
+    , _lyr(nullptr)
     , _active(false)
     , _pbindex(0.0f)
     , _pbindexNext(0.0f)
     , _pbincrem(0.0f)
     , _curratio(1.0f)
-    , _sampleRoot(0)
-    , _kmregion(nullptr)
-    , _curcents(0)
-    , _baseCents(0)
-    , _preDSPGAIN(1.0f)
     , _loopMode(eLoopMode::NONE)
     , _loopCounter(0) {
+
+    _natAmpEnv = std::make_shared<NatEnv>();
 }
 
 void sampleOsc::setSrRatio(float pbratio) {
   _curratio = pbratio;
-  if (_sample) {
-    _playbackRate = _sample->_sampleRate * _curratio;
+  auto sample = _regionsearch._sample;
+  if (sample) {
+    _playbackRate = sample->_sampleRate * _curratio;
     _pbincrem     = (_dt * _playbackRate * 65536.0f);
   } else {
     _playbackRate = 0.0f;
@@ -256,9 +310,13 @@ void sampleOsc::keyOn(const KeyOnInfo& koi) {
   int note = koi._key;
 
   _lyr = koi._layer;
-  assert(_lyr);
+  OrkAssert(_lyr);
 
-  findRegion(koi);
+  _regionsearch = _sampler_data->findRegion(_lyr->_layerdata, koi);
+  _curcents = _regionsearch._baseCents;
+  updateFreqRatio();
+  auto& HKF = _lyr->_HKF;
+  HKF._kmregion = _regionsearch._kmregion;
 
   float pbratio = this->_curSampSRratio;
 
@@ -266,18 +324,20 @@ void sampleOsc::keyOn(const KeyOnInfo& koi) {
 
   lyrdata_constptr_t ld = _lyr->_layerdata;
 
-  if (nullptr == _sample) {
+  auto sample = _regionsearch._sample;
+
+  if (nullptr == sample) {
     printf("sampleOsc no sample!\n");
     return;
   }
 
-  assert(_sample);
+  OrkAssert(sample);
 
-  _blk_start     = int64_t(_sample->_blk_start) << 16;
-  _blk_alt       = int64_t(_sample->_blk_alt) << 16;
-  _blk_loopstart = int64_t(_sample->_blk_loopstart) << 16;
-  _blk_loopend   = int64_t(_sample->_blk_loopend) << 16;
-  _blk_end       = int64_t(_sample->_blk_end) << 16;
+  _blk_start     = int64_t(sample->_blk_start) << 16;
+  _blk_alt       = int64_t(sample->_blk_alt) << 16;
+  _blk_loopstart = int64_t(sample->_blk_loopstart) << 16;
+  _blk_loopend   = int64_t(sample->_blk_loopend) << 16;
+  _blk_end       = int64_t(sample->_blk_end) << 16;
 
   _pbindex     = _blk_start;
   _pbindexNext = _blk_start;
@@ -285,7 +345,7 @@ void sampleOsc::keyOn(const KeyOnInfo& koi) {
   _pbincrem = 0;
   _dt       = synth::instance()->_dt;
 
-  _loopMode = _sample->_loopMode;
+  _loopMode = sample->_loopMode;
 
   switch (_loopMode) {
     case eLoopMode::BIDIR:
@@ -301,10 +361,10 @@ void sampleOsc::keyOn(const KeyOnInfo& koi) {
       _pbFunc = nullptr;
       break;
     default:
-      assert(false);
+      OrkAssert(false);
       break;
   }
-  switch (_kmregion->_loopModeOverride) {
+  switch (_regionsearch._kmregion->_loopModeOverride) {
     case eLoopMode::BIDIR:
       _pbFunc = &sampleOsc::playLoopBid;
       break;
@@ -319,7 +379,7 @@ void sampleOsc::keyOn(const KeyOnInfo& koi) {
         _pbFunc = &sampleOsc::playNoLoop;
       break;
     default:
-      assert(false);
+      OrkAssert(false);
       break;
   }
   // printf( "LOOPMODE<%d>\n", int(_loopMode));
@@ -334,12 +394,12 @@ void sampleOsc::keyOn(const KeyOnInfo& koi) {
 
   setSrRatio(pbratio);
 
-  // printf( "osc<%p> sroot<%d> SR<%d> ratio<%f> PBR<%d> looped<%d>\n", this, _sample->_rootKey, int(_sample->_sampleRate),
+  // printf( "osc<%p> sroot<%d> SR<%d> ratio<%f> PBR<%d> looped<%d>\n", this, sample->_rootKey, int(sample->sampleRate),
   // _curratio, int(_playbackRate), int(_isLooped) );
-  printf("sample<%s>\n", _sample->_name.c_str());
-  printf("sampleBlock<%p>\n", (void*) _sample->_sampleBlock);
-  printf("st<%d> en<%d>\n", _sample->_blk_start, _sample->_blk_end);
-  printf("lpst<%d> lpend<%d>\n", _sample->_blk_loopstart, _sample->_blk_loopend);
+  //printf("sample<%s>\n", sample->_name.c_str());
+  //printf("sampleBlock<%p>\n", (void*) sample->_sampleBlock);
+  //printf("st<%d> en<%d>\n", sample->_blk_start, sample->_blk_end);
+  //printf("lpst<%d> lpend<%d>\n", sample->_blk_loopstart, sample->_blk_loopend);
   _active = true;
 
   _forwarddir = true;
@@ -349,14 +409,13 @@ void sampleOsc::keyOn(const KeyOnInfo& koi) {
 
   _enableNatEnv = ld->_usenatenv;
 
-  printf("_enableNatEnv<%d>\n", int(_enableNatEnv));
+  //printf("_enableNatEnv<%d>\n", int(_enableNatEnv));
 
   if (_enableNatEnv) {
-    OrkAssert(false);
     // probably should explicity create a NatEnv controller
     //  and bind it to AMP
     //_lyr->_AENV = _NATENV;
-    _natAmpEnv.keyOn(koi, _kmregion->_sample);
+    _natAmpEnv->keyOn(koi, sample);
   }
 }
 
@@ -368,30 +427,31 @@ void sampleOsc::keyOff() {
   printf("osc<%p> beginRelease\n", (void*) this);
 
   if (_enableNatEnv)
-    _natAmpEnv.keyOff();
+    _natAmpEnv->keyOff();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void sampleOsc::findRegion(const KeyOnInfo& koi) {
-  auto ld  = _lyr->_layerdata;
+RegionSearch SAMPLER_DATA::findRegion(lyrdata_constptr_t ld, const KeyOnInfo& koi) const {
+
   auto KMP = ld->_kmpBlock;
 
   auto PCHBLK = ld->_pchBlock;
-  assert(PCHBLK);
+  OrkAssert(PCHBLK);
   const auto& PCH = PCHBLK->_paramd[0];
 
-  auto& HKF = _lyr->_HKF;
-
   int note = koi._key;
-
-  _kmregion = nullptr;
 
   /////////////////////////////////////////////
 
   auto km = ld->_keymap;
-  if (nullptr == km)
-    return;
+  if (nullptr == km){
+    RegionSearch not_found;
+    return not_found;
+  }
+
+  RegionSearch RFOUND;
+  RFOUND._kmregion = nullptr;
 
   ///////////////////////////////////////
 
@@ -408,13 +468,7 @@ void sampleOsc::findRegion(const KeyOnInfo& koi) {
   int kmdeltacents = kmdeltakey * kmkeytrack;        // 8*0 = 0
   int kmfinalcents = (kmpivot * 100) + kmdeltacents; // 4800
 
-  // printf( "kmtrans<%d>\n", kmtrans);
-  // printf( "timbreshift<%d>\n", timbreshift);
-  // printf( "kmpivot<%d>\n", kmpivot);
-  // printf( "kmdeltakey<%d>\n", kmdeltakey);
-  // printf( "kmdeltacents<%d>\n", kmdeltacents);
-
-  _sampselnote = (kmfinalcents / 100) + timbreshift; // 4800/100=48
+  RFOUND._sampselnote = (kmfinalcents / 100) + timbreshift; // 4800/100=48
 
   int pchtrans      = PCH->_coarse - timbreshift;       // 8
   int pchpivot      = (kNOTEC4 + pchtrans);             // 48-0 = 48
@@ -422,30 +476,25 @@ void sampleOsc::findRegion(const KeyOnInfo& koi) {
   int pchdeltacents = pchdeltakey * pchkeytrack;        // 0*0=0
   int pchfinalcents = (pchtrans * 100) + pchdeltacents; // 0*100+0=0
 
-  auto region = km->getRegion(_sampselnote, 64);
+  auto region = km->getRegion(RFOUND._sampselnote, 64);
+  RFOUND._kmregion = region;
 
-  // printf( "layer<%d> region<%p> kmkeytrack<%d> \n", _lyr->_ldindex, region, kmkeytrack );
-  // printf( "note<%d> kmfinalcents<%d> pchfinalcents<%d>\n", note, kmfinalcents, pchfinalcents );
   if (region) {
-    HKF._kmregion = region;
-
-    _kmregion = region;
-
     ///////////////////////////////////////
     auto sample  = region->_sample;
     float sampsr = sample->_sampleRate;
     int highestP = sample->_highestPitch;
-    _sampleRoot  = sample->_rootKey;
-    _keydiff     = note - _sampleRoot;
+    RFOUND._sampleRoot  = sample->_rootKey;
+    RFOUND._keydiff     = note - RFOUND._sampleRoot;
     ///////////////////////////////////////
 
-    _kmcents  = kmfinalcents + region->_tuning;
-    _pchcents = pchfinalcents;
+    RFOUND._kmcents  = kmfinalcents + region->_tuning;
+    RFOUND._pchcents = pchfinalcents;
 
     ///////////////////////////////////////
 
     float SRratio = 96000.0f / sampsr;
-    int RKcents   = (_sampleRoot)*100;
+    int RKcents   = (RFOUND._sampleRoot)*100;
     int delcents  = highestP - RKcents;
     int frqerc    = linear_freq_ratio_to_cents(SRratio);
     int pitchadjx = (frqerc - delcents);  //+1200;
@@ -456,74 +505,54 @@ void sampleOsc::findRegion(const KeyOnInfo& koi) {
     // printf( "sampsr<%f> srrat<%f> rkc<%d> hp<%d> delc<%d> frqerc<%d> pitchadjx<%d>\n", sampsr, SRratio, RKcents, highestP,
     // delcents, frqerc, pitchadjx );
 
-    _curpitchadj  = pitchadj;
-    _curpitchadjx = pitchadjx;
+    RFOUND._curpitchadj  = pitchadj;
+    RFOUND._curpitchadjx = pitchadjx;
 
-    _baseCents = _kmcents + /*_pchcents*/ +pitchadjx - 1200;
+    RFOUND._baseCents = RFOUND._kmcents + /*_pchcents*/ +pitchadjx - 1200;
     //_basecentsOSC = 6000;//(note-0)*100;//pitchadjx-1200;
     if (pitchadj) {
-      _baseCents = _kmcents + /*_pchcents*/ +pitchadj;
+      RFOUND._baseCents = RFOUND._kmcents + /*_pchcents*/ +pitchadj;
       //_basecentsOSC = _pchcents+pitchadj;
     }
-    _curcents = _baseCents;
-
-    // printf( "kmfinalcents<%d>\n", kmfinalcents );
-    // printf( "region->_tuning<%d>\n", region->_tuning );
-    // printf( "_kmcents<%d>\n", _kmcents );
-    // printf( "pitchadjx<%d>\n", pitchadjx );
-    // printf( "_baseCents<%f>\n", _baseCents );
-
-    updateFreqRatio();
-
-    // printf( "_curcents<%d> curratio<%f>\n", _curcents, _curratio );
 
     // float outputPAD = decibel_to_linear_amp_ratio(F4._inputPad);
     // float ampCOARSE = decibel_to_linear_amp_ratio(F4._coarse);
 
     //_totalGain = sample->_linGain* region->_linGain; // * _layerGain * outputPAD * ampCOARSE;
 
-    _preDSPGAIN = sample->_linGain * region->_linGain;
+    RFOUND._preDSPGAIN = sample->_linGain * region->_linGain;
 
     ///////////////////////////////////////
     //  trigger sample playback oscillator
     ///////////////////////////////////////
 
-    _sample = sample;
-    //_spOsc.keyOn(_curSampSRratio);
+    RFOUND._sample = sample;
+    //_spOsc->keyOn(_curSampSRratio);
   }
+  return RFOUND;
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
 void sampleOsc::updateFreqRatio() {
-  ///////////////////////////////////////
-
-  int cents_at_root = (_sampleRoot * 100);
+  int cents_at_root = (_regionsearch._sampleRoot * 100);
   int delta_cents   = _curcents - cents_at_root;
-
-  // printf( "DESCENTS<%d>\n", _curcents );
-  // printf( "SROOTCENTS<%d>\n", cents_at_root );
-  // printf( "DELCENTS<%d>\n", delta_cents );
-
-  _samppbnote = _sampleRoot + (delta_cents / 100);
-
+  _samppbnote = _regionsearch._sampleRoot + (delta_cents / 100);
   _curSampSRratio = cents_to_linear_freq_ratio(delta_cents);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void sampleOsc::compute(int inumfr) {
-  //_pchc1 = _pchControl1();
-  //_pchc2 = _pchControl2();
-  //_pchc1 = clip_float( _pchc1, -6400,6400 );
-  //_pchc2 = clip_float( _pchc2, -6400,6400 );
-  //_curPitchOffsetInCents = _pchc1+_pchc2;
 
-  //_curPitchOffsetInCents = clip_float( _curPitchOffsetInCents, -6400,6400 );
-
-  _curcents = _baseCents + _lyr->_curPitchOffsetInCents;
+  _curcents = _regionsearch._baseCents //
+            + _lyr->_curPitchOffsetInCents;
   _curcents = clip_float(_curcents, -0, 12700);
 
-  // printf( "_baseCents<%f> offs<%f> _curcents<%d>\n",
-  //		 _baseCents, _lyr->_curPitchOffsetInCents, _curcents );
+  if(0)printf( "_baseCents<%f> offs<%f> _curcents<%d>\n", //
+      		 _regionsearch._baseCents, //
+           _lyr->_curPitchOffsetInCents, //
+           _curcents );
 
   if (false == _active) {
     for (int i = 0; i < inumfr; i++) {
@@ -532,18 +561,20 @@ void sampleOsc::compute(int inumfr) {
     return;
   }
 
+  auto sample = _regionsearch._sample;
+
   for (int i = 0; i < inumfr; i++) {
 
     updateFreqRatio();
     setSrRatio(_curSampSRratio);
 
-    // _spOsc.setSrRatio(currat);
+    // _spOsc->setSrRatio(currat);
 
     // float lyrpocents = _lyr._curPitchOffsetInCents;
 
     // float ratio = cents_to_linear_freq_ratio(_keyoncents+lyrpocents);
 
-    _playbackRate = _sample->_sampleRate * _curratio;
+    _playbackRate = sample->_sampleRate * _curratio;
 
     _pbincrem = (_dt * _playbackRate * 65536.0f);
 
@@ -551,15 +582,25 @@ void sampleOsc::compute(int inumfr) {
 
     float sampleval = _pbFunc ? (this->*_pbFunc)() : 0.0f;
 
+    if(_pbFunc){
+      //printf("sampleval<%g>\n", sampleval);
+    }else{
+      printf("sampleval no_pbFunc\n");
+    }
     // float sampleval = std::invoke(this, _pbFunc);
 
     _OUTPUT[i] = sampleval;
-    _NATENV[i] = _natAmpEnv.compute();
 
-    //_lyr->_HAF_nenvseg = _natAmpEnv._curseg;
-    // todo update HUD ui of segment change...
+    float natval = _natAmpEnv->compute();
+    _NATENV[i] = natval;
+    
 
-    // printf( "_NATENV<%f> sampleval<%f>\n\n", _NATENV[i], sampleval);
+    if(_natenvwrapperinst){
+      _lyr->_ampenvgain = 0.0f; //natval;
+      _OUTPUT[i] *= natval;
+      _natenvwrapperinst->_value.x = natval;
+    }
+
   }
 }
 
@@ -567,6 +608,8 @@ void sampleOsc::compute(int inumfr) {
 
 float sampleOsc::playNoLoop() {
   _pbindexNext = _pbindex + _pbincrem;
+
+  auto sample = _regionsearch._sample;
 
   ///////////////
 
@@ -584,7 +627,7 @@ float sampleOsc::playNoLoop() {
     iiB = (_blk_end >> 16);
 
   ///////////////
-  auto sblk = _sample->_sampleBlock;
+  auto sblk = sample->_sampleBlock;
 
   float sampA = float(sblk[iiA]);
   float sampB = float(sblk[iiB]);
@@ -601,11 +644,12 @@ float sampleOsc::playNoLoop() {
 
 float sampleOsc::playLoopFwd() {
   _pbindexNext = _pbindex + _pbincrem;
+  auto sample = _regionsearch._sample;
 
   bool did_loop = false;
 
   if ((_pbindexNext >> 16) > (_blk_loopend >> 16)) {
-    // printf( "reached _blk_loopend<%d>\n", int(_blk_loopend>>16));
+     //printf( "reached _blk_loopend<%d>\n", int(_blk_loopend>>16));
 
     int64_t over = (_pbindexNext - _blk_loopend) - (1 << 16);
     _pbindexNext = _blk_loopstart + over;
@@ -630,13 +674,13 @@ float sampleOsc::playLoopFwd() {
 
   ///////////////
   // linear
-  auto sblk = _sample->_sampleBlock;
-  assert(sblk != nullptr);
+  auto sblk = sample->_sampleBlock;
+  OrkAssert(sblk != nullptr);
   float sampA = float(sblk[iiA]);
   float sampB = float(sblk[iiB]);
   float samp  = (sampB * fract + sampA * invfr) * kinv32k;
   ///////////////
-
+  //printf("iiA<%zd> iiB<%zd> sampA<%g> sampB<%g> samp<%g>\n", iiA, iiB, sampA, sampB, samp);
   ///////////////
   // cosine
   // float mu2 = (1.0f-cos(fract*pi))*0.5f;
@@ -668,7 +712,7 @@ float sampleOsc::playLoopFwd() {
 }
 
 float sampleOsc::playLoopBid() {
-  assert(false);
+  OrkAssert(false);
   return 0.0f;
   /*
   _pbindexNext = _forwarddir
@@ -719,8 +763,8 @@ float sampleOsc::playLoopBid() {
       printf( "yo\n");
   }
 
-  assert(iiA<_numFrames);
-  assert(iiB<_numFrames);
+  OrkAssert(iiA<_numFrames);
+  OrkAssert(iiB<_numFrames);
   float sampA = float(_sampleData[iiA] );
   float sampB = float(_sampleData[iiB] );
 

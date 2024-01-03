@@ -17,26 +17,13 @@ using namespace ork::lev2;
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::audio::singularity {
-struct ProgramView final : public ui::Surface {
-  ProgramView();
-  void DoRePaintSurface(ui::drawevent_constptr_t drwev) override;
-  void _doGpuInit(lev2::Context* pt) override;
-  ui::HandlerResult DoOnUiEvent(ui::event_constptr_t EV) override;
-  ork::lev2::CTXBASE* _ctxbase = nullptr;
-  int _updatecount             = 0;
-  prgdata_constptr_t _curprogram;
-  int _octaveshift = 0;
-  int _velocity    = 127;
-};
 ///////////////////////////////////////////////////////////////////////////////
-hudpanel_ptr_t createProgramView(
-    hudvp_ptr_t vp, //
-    const ui::anchor::Bounds& bounds,
+hudpanel_ptr_t createProgramView2(
+    uilayoutgroup_ptr_t vp, //
     std::string named) {
   auto hudpanel    = std::make_shared<HudPanel>();
   auto programview = std::make_shared<ProgramView>();
   auto uipanelitem = vp->makeChild<ui::Panel>("progview", 0, 0, 32, 32);
-  uipanelitem.applyBounds(bounds);
   hudpanel->_uipanel                = uipanelitem.typedWidget();
   hudpanel->_panelLayout            = uipanelitem._layout;
   hudpanel->_uipanel->_closeEnabled = false;
@@ -46,10 +33,19 @@ hudpanel_ptr_t createProgramView(
   hudpanel->_uipanel->setChild(hudpanel->_uisurface);
   hudpanel->_uipanel->_stdcolor   = fvec4(0.2, 0.2, 0.3f, 0.5f);
   hudpanel->_uipanel->_focuscolor = fvec4(0.3, 0.2, 0.4f, 0.5f);
+  hudpanel->_layoutitem = uipanelitem.as_shared();
   ///////////////////////////////////////////////////////////////////////
   vp->addChild(hudpanel->_uipanel);
-  vp->_hudpanels.insert(hudpanel);
   return hudpanel;
+}
+///////////////////////////////////////////////////////////////////////////////
+hudpanel_ptr_t createProgramView(
+    uilayoutgroup_ptr_t vp, //
+    const ui::anchor::Bounds& bounds,
+    std::string named) {
+    auto rval = createProgramView2(vp,named);
+    rval->_layoutitem->applyBounds(bounds);
+    return rval;
 }
 ///////////////////////////////////////////////////////////////////////////////
 ProgramView::ProgramView() //
@@ -110,6 +106,7 @@ void ProgramView::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void ProgramView::_doGpuInit(lev2::Context* pt) {
+  Surface::_doGpuInit(pt);
   _pickbuffer = new lev2::PickBuffer(this, pt, width(), height());
   _ctxbase    = pt->GetCtxBase();
 }

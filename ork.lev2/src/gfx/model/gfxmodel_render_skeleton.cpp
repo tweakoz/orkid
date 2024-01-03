@@ -118,7 +118,7 @@ void XgmModel::RenderSkeleton(
   hvtx._normal   = fvec3(0, 0, 1);
   t._uv          = fvec2(0, 0);
   t._normal      = fvec3(0, 0, 1);
-  vw.Lock(context, vtxbuf.get(), inumjoints * 64);
+  vw.Lock(context, vtxbuf.get(), inumjoints * 256);
   //vw.Lock(context, &vtxbuf, inumjoints * 64);
 
   std::multimap<float, Triangle> depth_sorted_triangles;

@@ -38,15 +38,6 @@ struct ratelevmodel {
   float _basenumer = 0.0f;
   float _power     = 0.0f;
   float _scalar    = 0.0f;
-  void wamodel() {
-    _inpbias   = 1.09252f;
-    _inpscale  = 90.9917f;
-    _inpdiv    = 97.4786f;
-    _rorbias   = 0.102644f;
-    _basenumer = 1.04686f;
-    _power     = 2.6284f;
-    _scalar    = 0.635746f;
-  }
   void low_pmodel() {
     _inpbias   = 0.583739f;
     _inpscale  = 87.4026f;
@@ -74,79 +65,76 @@ struct ratelevmodel {
   }
 };
 
+struct wa_env_model {
+  float transform(int value) {
+    //float j = 0.25+float(value)/20.5f;
+    //float T = 50.0f*powf(0.1,j);
+    float j = float(value)/22.5f;
+    float T = 100.0f*powf(0.1,j);
+    return T;
+  }
+};
+struct p_env_model {
+  float transform(int value) {
+    //float j = 0.25+float(value)/20.5f;
+    //float T = 50.0f*powf(0.1,j);
+    float j = float(value)/22.5f;
+    float T = 100.0f*powf(0.1,j);
+    return T;
+  }
+};
+
 ///////////////////////////////////////////
 float decode_a_envlevel(int value) {
-  int normed = (value * 99) / 127 + 1;
-  switch (normed) {
-    case 0:
-      normed = 0;
-      break;
-    case 0x7f:
-      normed = 99;
-      break;
-  }
+  int normed = (value * 99) / 127;
+  if(normed<0) normed = 0;
+  if(normed>99) normed = 99;
   float fn = float(normed) / 99.0f;
-  return powf(fn, 0.5);
+  float rval = powf(fn, 1);
+  if(rval>1.0f) rval = 1.0f;
+  if(rval<0.0f) rval = 0.0f;
+  return rval;
 }
 ///////////////////////////////////////////
 float decode_a_envrate(int value, float delta) {
-  int uservalue = (value * 99) / 119 + 1;
-  switch (value) {
-    case 0:
-      uservalue = 0;
-      break;
-    case 0x7f:
-      uservalue = 99;
-      break;
-  }
-  ratelevmodel model;
-  model.wamodel();
-  return model.transform(uservalue) * fabs(delta);
+  int uservalue = 1 + (value * 99) / 109;
+  if( uservalue < 0 ) uservalue = 0;
+  if( uservalue > 99 ) uservalue = 99;
+  wa_env_model model;
+  float X = model.transform(uservalue);
+  printf("val<%d> uservalue<%d> X<%g> delta<%g>\n", value, uservalue, X, delta);
+  return X;
 }
 ///////////////////////////////////////////
 float decode_w_envlevel(int value) {
-  int normed = (value * 99) / 127 + 1;
-  switch (normed) {
-    case 0:
-      normed = 0;
-      break;
-    case 0x7f:
-      normed = 99;
-      break;
-  }
+  int normed = (value * 99) / 127;
+  if(normed<0) normed = 0;
+  if(normed>99) normed = 99;
   float fn = float(normed) / 99.0f;
-  return powf(fn, 1.0f);
+  float rval = powf(fn, 1);
+  if(rval>1.0f) rval = 1.0f;
+  if(rval<0.0f) rval = 0.0f;
+  return rval;
 }
 ///////////////////////////////////////////
 float decode_w_envrate(int value, float delta) {
-  int uservalue = (((value - 8) * 99) / 119) + 1;
-  switch (value) {
-    case 0:
-      uservalue = 0;
-      break;
-    case 0x7f:
-      uservalue = 99;
-      break;
-  }
-  ratelevmodel model;
-  model.wamodel();
-  return model.transform(uservalue) * fabs(delta);
+  int uservalue = 1 + ((value-8) * 99) / 119;
+  if( uservalue < 0 ) uservalue = 0;
+  if( uservalue > 99 ) uservalue = 99;
+  wa_env_model model;
+  float W = model.transform(uservalue);
+  printf("val<%d> uservalue<%d> W<%g> delta<%g>\n", value, uservalue, W, delta);
+  return W;
 }
-float decode_p_envrate(int value, float delta) {
-  float uservalue = (value * 99) / 127 + 1;
-  switch (value) {
-    case 0:
-      uservalue = 0;
-      break;
-    case 0x7f:
-      uservalue = 99;
-      break;
-  }
-  ratelevmodel lopmodel, midpmodel;
-  lopmodel.low_pmodel();
-  midpmodel.mid_pmodel();
-  auto model = (uservalue <= 75) ? midpmodel : lopmodel;
-  return model.transform(uservalue) * fabs(delta);
+float decode_p_envrate(int value) {
+  int normed = (value * 99) / 127;
+  if(normed<0) normed = 0;
+  if(normed>99) normed = 99;
+  float fn = float(normed) / 99.0f;
+  float rval = powf(fn, 1);
+  if(rval>1.0f) rval = 1.0f;
+  if(rval<0.0f) rval = 0.0f;
+  return rval;
 }
 ///////////////////////////////////////////////////////////////////////////////
 float decode_p_envlevel(int value) {
@@ -178,10 +166,10 @@ float decode_p_envlevel(int value) {
   int linv64 = std::clamp(linv, 0, 64);
   int linv66 = std::clamp(linv - 64, 0, 36);
 
-  cents = 100.0 * float(linv64) / 8.0;
-  cents += 200.0 * float(linv66);
+  cents = float(linv64) / 8.0;
+  cents += 2 * float(linv66);
 
-  return cents;
+  return cents*2.0f;
 } // namespace ork::audio::singularity
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -191,13 +179,16 @@ CZLAYERDATACTX configureCz1Algorithm(lyrdata_ptr_t layerdata, int numosc) {
   lctx._layerdata = layerdata;
   auto algdout        = std::make_shared<AlgData>();
   layerdata->_algdata = algdout;
-  algdout->_name      = ork::FormatString("Cz1<%d>", numosc);
+  algdout->_name      = layerdata->_name+ork::FormatString("osc%d", numosc);
   //////////////////////////////////////////
   auto stage_dco               = algdout->appendStage("DCO");
   auto stage_amp               = algdout->appendStage("AMP");
   dspstagedata_ptr_t stage_mod = (numosc == 2) //
                                  ? algdout->appendStage("MOD")
                                  : nullptr;
+  //////////////////////////////////////////
+  auto stage_stereo = algdout->appendStage("STMIX"); // todo : quadraphonic, 3d?
+  stage_stereo->setNumIos(1, 2); // 1 in, 2 out
   //////////////////////////////////////////
   lctx._algdata = algdout;
   lctx._stage_dco = stage_dco;
@@ -216,17 +207,28 @@ CZLAYERDATACTX configureCz1Algorithm(lyrdata_ptr_t layerdata, int numosc) {
   /////////////////////////////////////////////////
   // stereo mix out
   /////////////////////////////////////////////////
-  //auto stereoout         = stage_stereo->appendTypedBlock<MonoInStereoOut>("MonoInStereoOut");
-  //auto STEREOC           = layerdata->appendController<ConstantControllerData>("STEREOMIX");
-  //STEREOC->_constvalue   = 1.0f;
-  //auto stereo_mod        = stereoout->_paramd[0]->_mods;
-  //stereo_mod->_src1      = STEREOC;
-  //stereo_mod->_src1Depth = 1.0f;
-  //STEREOC->_onkeyon      = [](CustomControllerInst* cci, //
-  //                     const KeyOnInfo& KOI) {    //
-  //cci->_curval = 1.0f;                            // amplitude to unity
-  //};
-  //stereoout->addDspChannel(0);
+  auto stereoout         = stage_stereo->appendTypedBlock<MonoInStereoOut>("LCZX0.MonoInStereoOut");
+
+  auto GAONCONST         = layerdata->appendController<ConstantControllerData>("LCZX0.STEREO-GAIN");
+  auto gain_modulator    = stereoout->_paramd[0]->_mods;
+  auto PANCONST          = layerdata->appendController<ConstantControllerData>("LCZX0.STEREO-PAN");
+  auto PANCUSTOM         = layerdata->appendController<CustomControllerData>("LCZX0.STEREOPAN2");
+  auto pan_modulator     = stereoout->_paramd[1]->_mods;
+
+  GAONCONST->_constvalue   = 1.0f;
+  gain_modulator->_src1  = GAONCONST;
+  gain_modulator->_src1Depth = 1.0f;
+
+  PANCONST->_constvalue   = 0.0f;
+  PANCUSTOM->_oncompute   = [](CustomControllerInst* cci) { //
+    cci->_value.x = 0.0f;
+  };
+  pan_modulator->_src1  = PANCONST;
+  pan_modulator->_src1Depth = 1.0f;
+  pan_modulator->_src2  = PANCUSTOM;
+  pan_modulator->_src2MinDepth = 1.0f;
+  pan_modulator->_src2MaxDepth = 1.0f;
+
   //////////////////////////////////////////
   return lctx;
 }
@@ -237,9 +239,9 @@ void make_dco(CZLAYERDATACTX czctx,
               int dcochannel) {
   auto layerdata = czctx._layerdata;
   /////////////////////////////////////////////////
-  auto dcoenvname = FormatString("DCOENV%d", dcochannel);
-  auto dcaenvname = FormatString("DCAENV%d", dcochannel);
-  auto dcwenvname = FormatString("DCWENV%d", dcochannel);
+  auto dcoenvname = layerdata->_name+"."+FormatString("DCOENV%d", dcochannel);
+  auto dcaenvname = layerdata->_name+"."+FormatString("DCAENV%d", dcochannel);
+  auto dcwenvname = layerdata->_name+"."+FormatString("DCWENV%d", dcochannel);
   /////////////////////////////////////////////////
   // Pitch Envelope
   /////////////////////////////////////////////////
@@ -273,9 +275,10 @@ void make_dco(CZLAYERDATACTX czctx,
                                 const KeyOnInfo& KOI) -> EnvPoint { //
     EnvPoint outp = inp;
     int ikeydelta = KOI._key;
-    float base    = 1.0 - (oscdata->_dcwKeyFollow * 0.001);
+    float base    = 1.0 - (oscdata->_dcwKeyFollow * 0.003);
     float power   = pow(base, ikeydelta);
     // printf("DCW kf<%d> ikeydelta<%d> base<%0.3f> power<%0.3f>\n", oscdata->_dcwKeyFollow, ikeydelta, base, power);
+    outp._time *= power;
     outp._level *= power;
     return outp;
   };
@@ -290,6 +293,9 @@ void make_dco(CZLAYERDATACTX czctx,
     if (i <= srcdcaenv._endStep) {
       auto name = FormatString("seg%d", i);
       DCAENV->addSegment(name, srcdcaenv._time[i], srcdcaenv._level[i]);
+      auto& seg = DCAENV->_segments.back();
+      seg._raw_rate  = srcdcaenv._raw_rates[i];
+      seg._raw_level = srcdcaenv._raw_levels[i];
     }
     DCAENV->_releaseSegment = srcdcaenv._endStep;
   }
@@ -300,8 +306,15 @@ void make_dco(CZLAYERDATACTX czctx,
     int ikeydelta = KOI._key;
     float base    = 1.0 - (oscdata->_dcaKeyFollow * 0.001);
     float power   = pow(base, ikeydelta);
-    // printf("DCA kf<%d> ikeydelta<%d> base<%0.3f> power<%0.3f>\n", oscdata->_dcaKeyFollow, ikeydelta, base, power);
+    if(0){
+      for(int i=0;i<8;i++){
+        const auto& SEG = DCAENV->_segments[i];
+        printf("DCAENV<%d> rawrate<%d> rawlev<%d> time<%g> level<%g>\n", i, SEG._raw_rate, SEG._raw_level, SEG._time, SEG._level);
+      }
+      printf("DCA kf<%d> ikeydelta<%d> base<%0.3f> power<%0.3f>\n", oscdata->_dcaKeyFollow, ikeydelta, base, power);
+    }
     outp._time *= power;
+    outp._level *= power;
     return outp;
   };
   //////////////////////////////////////
@@ -320,7 +333,7 @@ void make_dco(CZLAYERDATACTX czctx,
   //////////////////////////////////////
   auto pitch_mod        = dco->_paramd[0]->_mods;
   pitch_mod->_src1      = DCOENV;
-  pitch_mod->_src1Depth = 0.0f;
+  pitch_mod->_src1Depth = 1.0f;
   /////////////////////////////////////////////////
   auto modulation_index        = dco->_paramd[1]->_mods;
   modulation_index->_src1      = DCWENV;
@@ -334,13 +347,13 @@ void make_dco(CZLAYERDATACTX czctx,
   if (dcochannel == 1) { // add detune
     auto DETUNE              = layerdata->appendController<CustomControllerData>("DCO1DETUNE");
     pitch_mod->_src2         = DETUNE;
-    pitch_mod->_src2MinDepth = 0.0;
-    pitch_mod->_src2MaxDepth = 0.0;
+    pitch_mod->_src2MinDepth = 1.0;
+    pitch_mod->_src2MaxDepth = 1.0;
     DETUNE->_onkeyon         = [czprogdata](
         CustomControllerInst* cci, //
         const KeyOnInfo& KOI) {    //
-      cci->_curval = czprogdata->_detuneCents;
-      // printf("DETUNE<%g>\n", cci->_curval);
+      cci->_value.x = czprogdata->_detuneCents;
+      //printf("DETUNE<%g>\n", cci->_value.x);
     };
   }
 };
@@ -377,16 +390,16 @@ czxprogdata_ptr_t parse_czprogramdata(CzData* outd, prgdata_ptr_t prgout, std::v
 
   switch (czprogdata->_lineSel) {
     case 0: // 1
-      printf("linesel<1>\n");
+      //printf("linesel<1>\n");
       break;
     case 1: // 2
-      printf("linesel<2>\n");
+      //printf("linesel<2>\n");
       break;
     case 2: // 1+1'
-      printf("linesel<1+1'>\n");
+      //printf("linesel<1+1'>\n");
       break;
     case 3: // 1+2'
-      printf("linesel<1+2'>\n");
+      //printf("linesel<1+2'>\n");
       break;
     default:
       assert(false);
@@ -417,7 +430,6 @@ czxprogdata_ptr_t parse_czprogramdata(CzData* outd, prgdata_ptr_t prgout, std::v
   u8 PVDD                   = bytes[0x0b]; // vibrato depth (skip 2)
   czprogdata->_vibratoDepth = PVDD;
 
-  int byteindex = 0x0e; // OSC START
   // (48+9) == 57 bytes per osc * 2 == 114 bytes
   // 114+0xe == 128
   // 0xe .. 0x46 osc 1
@@ -441,6 +453,7 @@ czxprogdata_ptr_t parse_czprogramdata(CzData* outd, prgdata_ptr_t prgout, std::v
     }
 
     ///////////////////////////////////////////////////////////
+    int byteindex = 0x0e; // OSC START
     u8 MFW0 = bytes[byteindex++]; // dc01 wave / modulation
     u8 MFW1 = bytes[byteindex++]; // dc01 wave / modulation
     u8 MAMD = bytes[byteindex++]; // DCA key follow
@@ -465,6 +478,8 @@ czxprogdata_ptr_t parse_czprogramdata(CzData* outd, prgdata_ptr_t prgout, std::v
         OSC->_dcaEnv._sustPoint = i;
       OSC->_dcaEnv._time[i]  = decode_a_envrate(r7, deltalev);
       OSC->_dcaEnv._level[i] = thislev;
+      OSC->_dcaEnv._raw_rates[i] = r7;
+      OSC->_dcaEnv._raw_levels[i] = l7;
     }
     ///////////////////////////////////////////////////////////
     u8 PMWL   = bytes[byteindex++]; // DCW1 end
@@ -484,6 +499,8 @@ czxprogdata_ptr_t parse_czprogramdata(CzData* outd, prgdata_ptr_t prgout, std::v
 
       OSC->_dcwEnv._time[i]  = decode_w_envrate(r7, deltalev);
       OSC->_dcwEnv._level[i] = thislev;
+      OSC->_dcwEnv._raw_rates[i] = r7;
+      OSC->_dcwEnv._raw_levels[i] = l7;
     }
     ///////////////////////////////////////////////////////////
     u8 PMPL   = bytes[byteindex++]; // DCO1 end
@@ -498,22 +515,22 @@ czxprogdata_ptr_t parse_czprogramdata(CzData* outd, prgdata_ptr_t prgout, std::v
 
       OSC->_dcoEnv._decreasing[i] = (r & 0x80);
 
-      float thislev  = decode_p_envlevel(l7);
-      float deltalev = fabs(thislev - prevlevel) / 8400.0f;
-      prevlevel      = thislev;
-
       OSC->_dcoEnv._level[i] = decode_p_envlevel(l7);
-      float decoded_time     = decode_p_envrate(r7, deltalev);
-      OSC->_dcoEnv._time[i]  = decoded_time;
+      OSC->_dcoEnv._time[i]  = decode_p_envrate(r7);
     }
+    //OrkAssert(byteindex == 128);
+
     ///////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////
-    uint16_t MFW = (uint16_t(MFW0) << 8) | uint16_t(MFW1);
-    printf("MFW0<x%2x> MFW1<x%2x>\n", MFW0, MFW1);
+    //uint16_t MFW = (uint16_t(MFW0) << 8);
+     //| uint16_t(MFW1);
+    printf("MFW0<0x%02x> MFW1<0x%02x>\n", MFW0, MFW1);
+    //0xc2, 0x00
+    // -> 0b1100---- 
     OSC->_dcoBaseWaveA = int(MFW0 >> 5) & 0x7;
     OSC->_dcoBaseWaveB = int(MFW0 >> 2) & 0x7;
-    OSC->_dcoWindow    = int(MFW0 << 2);
-    OSC->_dcoWindow |= (int(MFW1 >> 6) & 0x3);
+
+    OSC->_dcoWindow    = (int(MFW1 >> 6) & 0x3);
 
     if (o == 0) { // ignore linemod from line1{
       czprogdata->_lineMod = (MFW1 >> 2) & 0xf;
@@ -521,6 +538,9 @@ czxprogdata_ptr_t parse_czprogramdata(CzData* outd, prgdata_ptr_t prgout, std::v
 
     OSC->_dcaKeyFollow = MAMD & 0xf;
     OSC->_dcwKeyFollow = MWMD & 0xf;
+
+    printf( "MWMD<0x%02x> MAMD<0x%02x>\n", MWMD, MAMD );
+
     OSC->_dcaDepth     = 15 - (MAMD >> 4);
     OSC->_dcwDepth     = 15 - (MWMD >> 4);
 
@@ -530,7 +550,6 @@ czxprogdata_ptr_t parse_czprogramdata(CzData* outd, prgdata_ptr_t prgout, std::v
     OSC->_dcwEnv._endStep = PMWL & 7;
     OSC->_dcoEnv._endStep = PMPL & 7;
   }
-  assert(byteindex == 128);
 
   ////////////////////////////////////
   // todo create 2 instances of CzOsc
@@ -544,13 +563,17 @@ czxprogdata_ptr_t parse_czprogramdata(CzData* outd, prgdata_ptr_t prgout, std::v
     // remove leading and trailing spaces from patch name
     name = std::regex_replace(name, std::regex("^ +| +$|( ) +"), "$1");
   }
+  else{
+  }
   prgout->_name = name;
+  czprogdata->_name = name;
 
   ////////////////////////////////////
 
 
   /////////////////////////////////////////////////
   auto layerdata           = prgout->newLayer();
+  layerdata->_name = "LCZX0";
   layerdata->_layerLinGain = 0.25;
   /////////////////////////////////////////////////
   // line select
@@ -620,7 +643,6 @@ czxprogdata_ptr_t parse_czprogramdata(CzData* outd, prgdata_ptr_t prgout, std::v
       OrkAssert(false);
       break;
     case 7: { // noise 2
-      OrkAssert(false);
       OrkAssert(czprogdata->numOscs() == 2);
       czprogdata->_oscData[1]->_noisemod = true;
       auto modstage                      = layerdata->stageByName("MOD");
@@ -629,8 +651,7 @@ czxprogdata_ptr_t parse_czprogramdata(CzData* outd, prgdata_ptr_t prgout, std::v
     }
   }
   /////////////////////////////////////////////////
-  czprogdata->_name = name;
-  czprogdata->dump();
+  //czprogdata->dump();
   return czprogdata;
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -644,16 +665,17 @@ void parse_czx(CzData* outd, const file::Path& path, const std::string& bnkname)
   size_t size = 0;
   syxfile.Load((void**)(&data), size);
 
-  printf("casio CZ syxfile<%s> loaded size<%d>\n", path.c_str(), int(size));
 
   int programcount = 0;
-  int programincrm = (256 + 8);
+  int programincrm = 0;
   int prgbase      = 0;
   int bytesperprog = 128;
   bool sysexdecode = true;
 
+  std::string single_name = path.getName().c_str();
   switch (size) {
-    case 264: // CZ-101 single patch sysex dump
+    case 264: { // CZ-101 single patch sysex dump
+      printf("casio CZ (CZ101-single) syxfile<%s> name<%s> loaded size<%d>\n", path.c_str(), single_name.c_str(), int(size));
       // sysex format
       assert(data[0] == 0xf0 and data[1] == 0x44); // sysx header
       assert(data[263] == 0xf7);                   // sysx footer
@@ -661,25 +683,40 @@ void parse_czx(CzData* outd, const file::Path& path, const std::string& bnkname)
       programcount = 1;
       prgbase      = 7;
       bytesperprog = 128;
+      programincrm = (256 + 8);
       break;
+    }
     case 296: // CZ-1 single patch sysex dump
       // sysex format
+      printf("casio CZ (CZ1-single) syxfile<%s> name<%s> loaded size<%d>\n", path.c_str(), single_name.c_str(), int(size));
       assert(data[0] == 0xf0 and data[1] == 0x44);
       assert(data[295] == 0xf7); // sysx footer
       programcount = 1;
       prgbase      = 7;
       bytesperprog = 144;
+      programincrm = (256 + 8);
       break;
     case 4224: // CZ-101 16 patch sysex dump
+      printf("casio CZ (CZ101-16 patch) syxfile<%s> loaded size<%d>\n", path.c_str(), int(size));
       assert(data[0] == 0xf0 and data[1] == 0x44);
       programcount = 16;
       prgbase      = 7;
       break;
     case 4608: // CZ-1 32 patch binary blob format
+      printf("casio CZ (CZ1-32 patch) syxfile<%s> loaded size<%d>\n", path.c_str(), int(size));
       programcount = 32;
       prgbase      = 0;
       bytesperprog = 144;
       sysexdecode  = false;
+      programincrm = (256 + 8);
+      break;
+    case 8704: // CZ-1 32 patch binary blob format
+      printf("casio CZ (CZ1-32 patch) syxfile<%s> loaded size<%d>\n", path.c_str(), int(size));
+      programcount = 32;
+      prgbase      = 0x200;
+      bytesperprog = 128;
+      programincrm = 128;
+      sysexdecode  = true;
       break;
     default:
       assert(false);
@@ -687,7 +724,7 @@ void parse_czx(CzData* outd, const file::Path& path, const std::string& bnkname)
   }
 
   for (int iv = 0; iv < programcount; iv++) {
-    printf("////////////////////////////\n");
+    //printf("////////////////////////////\n");
     auto name        = FormatString("%s(%02d)", bnkname.c_str(), iv);
     int newprogramid = outd->_lastprg++;
     auto prgout      = std::make_shared<ProgramData>();
@@ -710,15 +747,20 @@ void parse_czx(CzData* outd, const file::Path& path, const std::string& bnkname)
       for (int i = 0; i < bytesperprog; i++)
         bytes.push_back(data[base + i]);
     }
+    hexdumpbytes(bytes);
     ///////////////////////////
     auto czpd = parse_czprogramdata(outd, prgout, bytes);
     if (czpd) {
       outd->_bankdata->addProgram(newprogramid, czpd->_name, prgout);
-      prgout->_name = czpd->_name;
-      printf("czprog<%s>\n", prgout->_name.c_str());
+      if(czpd->_name.length())
+        prgout->_name = czpd->_name;
+      else
+        prgout->_name = single_name;
+      //printf("czprog<%s>\n", prgout->_name.c_str());
     }
     ///////////////////////////
   }
+
 }
 ///////////////////////////////////////////////////////////////////////////////
 void CzProgData::dump() const {
@@ -774,40 +816,43 @@ void CzProgData::dump() const {
   printf("  _vibratoDepth<%d>\n", _vibratoDepth);
   for (int o = 0; o < 2; o++) {
     const auto OSC = _oscData[o];
-    assert(OSC->_dcoBaseWaveA >= 0);
-    assert(OSC->_dcoBaseWaveB >= 0);
-    assert(OSC->_dcoBaseWaveA < 8);
-    assert(OSC->_dcoBaseWaveB < 8);
-    printf("  osc<%d>\n", o);
-    printf("    _dcoBaseWaveA<%d>\n", OSC->_dcoBaseWaveA);
-    printf("    _dcoBaseWaveB<%d>\n", OSC->_dcoBaseWaveB);
+    OSC->dump();
+  }
+}
+void CzOscData::dump() const{
+    OrkAssert(_dcoBaseWaveA >= 0);
+    OrkAssert(_dcoBaseWaveB >= 0);
+    OrkAssert(_dcoBaseWaveA < 8);
+    OrkAssert(_dcoBaseWaveB < 8);
+    printf("  osc<%d>\n", this);
+    printf("    _dcoBaseWaveA<%d>\n", _dcoBaseWaveA);
+    printf("    _dcoBaseWaveB<%d>\n", _dcoBaseWaveB);
     auto dumpenv = [](const CzEnvelope& env) {
       printf("        _endStep<%d>\n", env._endStep);
       if (env._sustPoint >= 0)
         printf("        _sustPoint<%d>\n", env._sustPoint);
       printf("        r: ");
-      for (int i = 0; i < 8; i++)
-        printf("%0.3fs ", env._time[i]);
+      for (int i = 0; i < 8; i++){
+        printf("[%d] %0.3fs ", env._raw_rates[i], env._time[i]);
+      }
       printf("\n");
       printf("        l: ");
       for (int i = 0; i < 8; i++)
-        printf("%g     ", env._level[i]);
+        printf("[%d] %g     ", env._raw_levels[i], env._level[i]);
       printf("\n");
     };
     printf("    _dcoEnv\n");
-    dumpenv(OSC->_dcoEnv);
+    dumpenv(_dcoEnv);
     printf("    _dcwEnv\n");
-    dumpenv(OSC->_dcwEnv);
-    printf("    _dcwKeyFollow<%d>\n", OSC->_dcwKeyFollow);
-    printf("    _dcwVelFollow<%d>\n", OSC->_dcwVelFollow);
-    printf("    _dcwDepth<%d>\n", OSC->_dcwDepth);
+    dumpenv(_dcwEnv);
+    printf("    _dcwKeyFollow<%d>\n", _dcwKeyFollow);
+    printf("    _dcwVelFollow<%d>\n", _dcwVelFollow);
+    printf("    _dcwDepth<%d>\n", _dcwDepth);
     printf("    _dcaEnv\n");
-    dumpenv(OSC->_dcaEnv);
-    printf("    _dcaKeyFollow<%d>\n", OSC->_dcaKeyFollow);
-    printf("    _dcaVelFollow<%d>\n", OSC->_dcaVelFollow);
-    printf("    _dcaDepth<%d>\n", OSC->_dcaDepth);
-  }
-}
+    dumpenv(_dcaEnv);
+    printf("    _dcaKeyFollow<%d>\n", _dcaKeyFollow);
+    printf("    _dcaVelFollow<%d>\n", _dcaVelFollow);
+    printf("    _dcaDepth<%d>\n", _dcaDepth);}
 ///////////////////////////////////////////////////////////////////////////////
 CzData::CzData()
     : SynthData()

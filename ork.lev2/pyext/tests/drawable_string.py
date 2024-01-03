@@ -7,7 +7,7 @@
 # see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ################################################################################
 
-import sys, math, random, signal, numpy
+import sys, math, random, signal, numpy, obt.path
 from orkengine.core import *
 from orkengine.lev2 import *
 sys.path.append((thisdir()/".."/".."/"examples"/"python").normalized.as_string) # add parent dir to path
@@ -73,9 +73,10 @@ class UiSgQuadViewTestApp(object):
     # make a grid of scenegraph viewports
 
     lg_group = self.ezapp.topLayoutGroup
+    lg_group.margin = 8
     self.griditems = lg_group.makeGrid( width = 2,
                                         height = 2,
-                                        margin = 1,
+                                        margin = 4,
                                         uiclass = ui.SceneGraphViewport,
                                         args = ["box",vec4(1,0,1,1)] )
     

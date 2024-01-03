@@ -43,6 +43,19 @@ extern float _currentDPI();
 
 typedef SVtxV12C4T16 TEXT_VTXFMT;
 
+struct GpuEvent {
+  std::string _eventID;
+  varmap::VarMap _vars;
+};
+
+using gpuevent_queue_t = std::queue<gpuevent_ptr_t>;
+using gpuevent_cb_t = std::function<void(gpuevent_ptr_t)>;
+struct GpuEventSink {
+  std::string _eventID;
+  gpuevent_cb_t _onEvent;
+};
+using gpueventsink_map_t = std::unordered_map<std::string,gpueventsink_ptr_t>;
+
 /// ////////////////////////////////////////////////////////////////////////////
 ///
 /// ////////////////////////////////////////////////////////////////////////////
@@ -398,9 +411,15 @@ public:
 
   virtual void swapBuffers(CTXBASE* ctxbase) {}
 
+  void enqueueGpuEvent(gpuevent_ptr_t evt);
+  void registerGpuEventSink(gpueventsink_ptr_t sink);
+
+private:
   std::vector<void_lambda_t> _onBeginFrameCallbacks;
   std::vector<void_lambda_t> _onEndFrameCallbacks;
   std::vector<void_lambda_t> _onBeforeDoEndFrameOneShotCallbacks;
+  LockedResource<gpueventsink_map_t> _gpuEventSinks;
+  gpuevent_queue_t _gpuEventQueue;
 
 private:
 

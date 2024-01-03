@@ -17,8 +17,8 @@ dspblkdata_ptr_t appendStereoChorus(lyrdata_ptr_t layer, dspstagedata_ptr_t stag
   auto chorus                = stage->appendTypedBlock<StereoDynamicEcho>("echo");
   chorus->param(0)->_coarse  = 0.0f; // delay time (L)
   chorus->param(1)->_coarse  = 0.0f; // delay time (R)
-  chorus->param(2)->_coarse  = 0.15; // feedback
-  chorus->param(3)->_coarse  = 0.4;  // wet/dry mix
+  chorus->param(2)->_coarse  = 0.25; // feedback
+  chorus->param(3)->_coarse  = 0.5;  // wet/dry mix
   auto delaytime_modL        = chorus->param(0)->_mods;
   auto delaytime_modR        = chorus->param(1)->_mods;
   auto DELAYTIMEMODL         = layer->appendController<CustomControllerData>("DELAYTIMEL");
@@ -27,13 +27,13 @@ dspblkdata_ptr_t appendStereoChorus(lyrdata_ptr_t layer, dspstagedata_ptr_t stag
   delaytime_modL->_src1Depth = 1.0;
   DELAYTIMEMODL->_oncompute  = [](CustomControllerInst* cci) { //
     float time   = cci->_layer->_layerTime;
-    cci->_curval = 0.010f + sinf(time * pi2 * .1) * 0.001f;
+    cci->setFloatValue( 0.010f + sinf(time * pi2 * .14) * 0.001f);
   };
   delaytime_modR->_src1      = DELAYTIMEMODR;
   delaytime_modR->_src1Depth = 1.0;
   DELAYTIMEMODR->_oncompute  = [](CustomControllerInst* cci) { //
     float time   = cci->_layer->_layerTime;
-    cci->_curval = 0.005f + sinf(time * pi2 * 0.09) * 0.0047f;
+    cci->setFloatValue( 0.005f + sinf(time * pi2 * 0.09) * 0.0077f);
   };
   /////////////////
   return chorus;
@@ -45,9 +45,60 @@ dspblkdata_ptr_t appendPitchShifter(lyrdata_ptr_t layer, dspstagedata_ptr_t stag
   return shifter;
 }
 ///////////////////////////////////////////////////////////////////////////////
-dspblkdata_ptr_t appendStereoReverb(lyrdata_ptr_t layer, dspstagedata_ptr_t stage, float tscale) {
-  auto fdn4               = stage->appendTypedBlock<Fdn4Reverb>("reverb", tscale);
+dspblkdata_ptr_t appendRecursivePitchShifter(lyrdata_ptr_t layer, dspstagedata_ptr_t stage,float feedback) {
+  auto shifter               = stage->appendTypedBlock<RecursivePitchShifter>("shifter-recursive",feedback);
+  shifter->param(0)->_coarse = 0.5f; // wet/dry mix
+  return shifter;
+}
+///////////////////////////////////////////////////////////////////////////////
+std::shared_ptr<Fdn4ReverbData> appendStereoReverb(lyrdata_ptr_t layer, dspstagedata_ptr_t stage) {
+  auto fdn4               = stage->appendTypedBlock<Fdn4Reverb>("reverb");
   fdn4->param(0)->_coarse = 0.5f; // wet/dry mix
+  fdn4->_input_gain = 0.5;
+  fdn4->_output_gain = 1.35;
+  fdn4->_time_base = 0.007;
+  fdn4->_time_scale = 0.071;
+  fdn4->_matrix_gain = 0.498;
+  fdn4->_hipass_cutoff = 200.0;
+  fdn4->_allpass_shift_frq_bas = 700.0;
+  fdn4->_allpass_shift_frq_mul = 1.5;
+  fdn4->_allpass_count = 4;
+  fdn4->matrixHouseholder(fdn4->_matrix_gain);
+  fdn4->update();
+  return fdn4;
+}
+///////////////////////////////////////////////////////////////////////////////
+std::shared_ptr<Fdn4ReverbData> appendOilTankReverb(lyrdata_ptr_t layer, dspstagedata_ptr_t stage) {
+  auto fdn4               = stage->appendTypedBlock<Fdn4Reverb>("reverb");
+  fdn4->param(0)->_coarse = 0.5f; // wet/dry mix
+  fdn4->_input_gain = 0.5;
+  fdn4->_output_gain = 1.35;
+  fdn4->_time_base = 0.007;
+  fdn4->_time_scale = 0.071;
+  fdn4->_matrix_gain = 0.498;
+  fdn4->_hipass_cutoff = 200.0;
+  fdn4->_allpass_shift_frq_bas = 60.0;
+  fdn4->_allpass_shift_frq_mul = 1.1;
+  fdn4->_allpass_count = 128;
+  fdn4->matrixHouseholder(fdn4->_matrix_gain);
+  fdn4->update();
+  return fdn4;
+}
+///////////////////////////////////////////////////////////////////////////////
+std::shared_ptr<Fdn4ReverbData> appendGuyWireReverb(lyrdata_ptr_t layer, dspstagedata_ptr_t stage) {
+  auto fdn4               = stage->appendTypedBlock<Fdn4Reverb>("reverb");
+  fdn4->param(0)->_coarse = 0.5f; // wet/dry mix
+  fdn4->_input_gain = 0.5;
+  fdn4->_output_gain = 1.35;
+  fdn4->_time_base = 0.37;
+  fdn4->_time_scale = 0.7;
+  fdn4->_matrix_gain = 0.498;
+  fdn4->_hipass_cutoff = 200.0;
+  fdn4->_allpass_shift_frq_bas = 60.0;
+  fdn4->_allpass_shift_frq_mul = 1.1;
+  fdn4->_allpass_count = 128;
+  fdn4->matrixHouseholder(fdn4->_matrix_gain);
+  fdn4->update();
   return fdn4;
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -63,7 +114,7 @@ void appendStereoDistortion(
   r->addDspChannel(1);
 }
 ///////////////////////////////////////////////////////////////////////////////
-void appendStereoStereoDynamicEcho(
+dspblkdata_ptr_t appendStereoStereoDynamicEcho(
     lyrdata_ptr_t layer, //
     dspstagedata_ptr_t stage,
     float dtL,
@@ -77,6 +128,7 @@ void appendStereoStereoDynamicEcho(
   echo->param(3)->_coarse = wetness;
   echo->addDspChannel(0);
   echo->addDspChannel(1);
+  return echo;
 }
 ///////////////////////////////////////////////////////////////////////////////
 void appendStereoParaEQ(
@@ -136,24 +188,18 @@ dspblkdata_ptr_t appendStereoReverbX(
     float maxt,
     float minspeed,
     float maxspeed) {
-  auto fdn4 = stage->appendTypedBlock<Fdn4ReverbX>("reverb", tscale);
-  math::FRANDOMGEN rg(seed);
-  fdn4->_axis.x = rg.rangedf(-1, 1);
-  fdn4->_axis.y = rg.rangedf(-1, 1);
-  fdn4->_axis.z = rg.rangedf(-1, 1);
-  fdn4->_axis.normalizeInPlace();
+  auto fdn4 = stage->appendTypedBlock<Fdn4ReverbX>("reverb");
+
+  math::FRANDOMGEN rg(10);
   fdn4->_speed            = rg.rangedf(minspeed, maxspeed);
+  fdn4->param(0)->_coarse = 0.5f; // wet/dry mix
   fdn4->param(1)->_coarse = tscale * rg.rangedf(mint, maxt);
   fdn4->param(2)->_coarse = tscale * rg.rangedf(mint, maxt);
   fdn4->param(3)->_coarse = tscale * rg.rangedf(mint, maxt);
   fdn4->param(4)->_coarse = tscale * rg.rangedf(mint, maxt);
-  float input_g           = 0.75f;
-  float output_g          = 0.75f;
-  fdn4->_inputGainsL      = fvec4(input_g, input_g, input_g, input_g);
-  fdn4->_inputGainsR      = fvec4(input_g, input_g, input_g, input_g);
-  fdn4->_outputGainsL     = fvec4(output_g, output_g, 0, 0);
-  fdn4->_outputGainsR     = fvec4(0, 0, output_g, output_g);
-  fdn4->param(0)->_coarse = 0.5f; // wet/dry mix
+  fdn4->_input_gain       = 0.65;
+  fdn4->_output_gain      = 0.75;
+  fdn4->update();
   return fdn4;
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -164,7 +210,7 @@ void appendStereoEnhancer(lyrdata_ptr_t layer, dspstagedata_ptr_t stage) {
   width_mod->_src1         = WIDTHCONTROL;
   width_mod->_src1Depth    = 1.0;
   WIDTHCONTROL->_oncompute = [](CustomControllerInst* cci) { //
-    cci->_curval = 0.7f;
+    cci->setFloatValue( 0.7f);
   };
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -184,10 +230,11 @@ void appendPitchChorus(
     lyrdata_ptr_t fxlayer, //
     dspstagedata_ptr_t fxstage,
     float wetness,
-    float cents) {
+    float cents,
+    float feedback) {
   /////////////////
-  auto shifterL               = appendPitchShifter(fxlayer, fxstage);
-  auto shifterR               = appendPitchShifter(fxlayer, fxstage);
+  auto shifterL               = appendRecursivePitchShifter(fxlayer, fxstage,feedback);
+  auto shifterR               = appendRecursivePitchShifter(fxlayer, fxstage,feedback);
   shifterL->param(0)->_coarse = wetness; // wet/dry mix
   shifterR->param(0)->_coarse = wetness; // wet/dry mix
   /////////////////
@@ -204,14 +251,50 @@ void appendPitchChorus(
   pmodR->_src1Depth     = 1.0;
   PITCHMODL->_oncompute = [cents](CustomControllerInst* cci) { //
     float time   = cci->_layer->_layerTime;
-    cci->_curval = sinf(time * pi2 * 0.03f) * cents;
-    return cci->_curval;
+    cci->setFloatValue( cents + sinf(time * pi2 * 0.03f) * 25 );
+    return cci->getFloatValue();
   };
   PITCHMODR->_oncompute = [cents](CustomControllerInst* cci) { //
     float time   = cci->_layer->_layerTime;
-    cci->_curval = sinf(time * pi2 * 0.07f) * cents;
-    return cci->_curval;
+    cci->setFloatValue( cents + sinf(time * pi2 * 0.07f) * 30 );
+    return cci->getFloatValue();
   };
+}
+void appendPitchRec(
+    lyrdata_ptr_t fxlayer, //
+    dspstagedata_ptr_t fxstage,
+    float cents,
+    float wetness,
+    float feedback){
+  /////////////////
+  auto shifterL               = appendRecursivePitchShifter(fxlayer, fxstage, feedback);
+  auto shifterR               = appendRecursivePitchShifter(fxlayer, fxstage, feedback);
+  shifterL->param(0)->_coarse = wetness; // wet/dry mix
+  shifterR->param(0)->_coarse = wetness; // wet/dry mix
+  /////////////////
+  shifterL->addDspChannel(0); // chorus voice 1 on left
+  shifterR->addDspChannel(1); // chorus voice 2 on right
+  /////////////////
+  auto PITCHMODL        = fxlayer->appendController<CustomControllerData>("PITCHSHIFT1");
+  auto PITCHMODR        = fxlayer->appendController<CustomControllerData>("PITCHSHIFT2");
+  auto pmodL            = shifterL->param(1)->_mods;
+  auto pmodR            = shifterR->param(1)->_mods;
+  pmodL->_src1          = PITCHMODL;
+  pmodL->_src1Depth     = 1.0;
+  pmodR->_src1          = PITCHMODR;
+  pmodR->_src1Depth     = 1.0;
+  PITCHMODL->_oncompute = [cents](CustomControllerInst* cci) { //
+    float time   = cci->_layer->_layerTime;
+    cci->setFloatValue( cents + sinf(time * pi2 * 0.07f) * 15 );
+    return cci->getFloatValue();
+  };
+  PITCHMODR->_oncompute = [cents](CustomControllerInst* cci) { //
+    float time   = cci->_layer->_layerTime;
+    cci->setFloatValue( cents + sinf(time * pi2 * 0.17f) * 20 );
+    return cci->getFloatValue();
+  };
+
+  appendNiceVerb(fxlayer, fxstage, 0.1);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void appendWackiVerb(lyrdata_ptr_t fxlayer, dspstagedata_ptr_t fxstage) {
@@ -241,8 +324,8 @@ void appendWackiVerb(lyrdata_ptr_t fxlayer, dspstagedata_ptr_t fxstage) {
     float speed           = rg.rangedf(mins, maxs);
     RV0DTMODA->_oncompute = [speed, midt, rang](CustomControllerInst* cci) { //
       float time   = cci->_layer->_layerTime;
-      cci->_curval = midt + sinf(time * pi2 * speed) * rang;
-      return cci->_curval;
+      cci->setFloatValue( midt + sinf(time * pi2 * speed) * rang);
+      return cci->getFloatValue();
     };
     /////////////////
     auto RV0DTMODB        = fxlayer->appendController<CustomControllerData>(basename + "RV0DTB");
@@ -252,8 +335,8 @@ void appendWackiVerb(lyrdata_ptr_t fxlayer, dspstagedata_ptr_t fxstage) {
     speed                 = rg.rangedf(mins, maxs);
     RV0DTMODB->_oncompute = [speed, midt, rang](CustomControllerInst* cci) { //
       float time   = cci->_layer->_layerTime;
-      cci->_curval = midt + sinf(time * pi2 * speed) * rang;
-      return cci->_curval;
+      cci->setFloatValue( midt + sinf(time * pi2 * speed) * rang);
+      return cci->getFloatValue();
     };
     /////////////////
     auto RV0DTMODC        = fxlayer->appendController<CustomControllerData>(basename + "RV0DTC");
@@ -263,8 +346,8 @@ void appendWackiVerb(lyrdata_ptr_t fxlayer, dspstagedata_ptr_t fxstage) {
     speed                 = rg.rangedf(mins, maxs);
     RV0DTMODC->_oncompute = [speed, midt, rang](CustomControllerInst* cci) { //
       float time   = cci->_layer->_layerTime;
-      cci->_curval = midt + sinf(time * pi2 * speed) * rang;
-      return cci->_curval;
+      cci->setFloatValue( midt + sinf(time * pi2 * speed) * rang);
+      return cci->getFloatValue();
     };
     /////////////////
     auto RV0DTDMOD        = fxlayer->appendController<CustomControllerData>(basename + "RV0DTD");
@@ -274,8 +357,8 @@ void appendWackiVerb(lyrdata_ptr_t fxlayer, dspstagedata_ptr_t fxstage) {
     speed                 = rg.rangedf(mins, maxs);
     RV0DTDMOD->_oncompute = [speed, midt, rang](CustomControllerInst* cci) { //
       float time   = cci->_layer->_layerTime;
-      cci->_curval = midt + sinf(time * pi2 * speed) * rang;
-      return cci->_curval;
+      cci->setFloatValue( midt + sinf(time * pi2 * speed) * rang);
+      return cci->getFloatValue();
     };
   };
   crverb(11, 0.09, 0.13, 0.1, 0.17);

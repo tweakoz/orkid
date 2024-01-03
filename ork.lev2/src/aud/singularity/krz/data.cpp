@@ -6,7 +6,6 @@
 ////////////////////////////////////////////////////////////////
 
 #include <string>
-#include <assert.h>
 #include <unistd.h>
 #include <math.h>
 
@@ -15,23 +14,64 @@
 #include <ork/lev2/aud/singularity/envelope.h>
 #include <ork/lev2/aud/singularity/krzobjects.h>
 #include <ork/lev2/aud/singularity/sampler.h>
+#include <ork/kernel/datacache.h>
+#include <ork/kernel/datablock.h>
+#include "import/krzio.h"
 
 ///////////////////////////////////////////////////////////////////////////////
 
 namespace ork::audio::singularity {
 ///////////////////////////////////////////////////////////////////////////////
 
-static const auto krzbasedir = basePath() / "kurzweil" / "krz";
-
 bankdata_ptr_t KrzSynthData::baseObjects() {
-  static bankdata_ptr_t objdb = std::make_shared<BankData>();
-  objdb->loadJson("k2v3base", 0);
-  return objdb;
+  auto base      = ork::audio::singularity::basePath() / "kurzweil";
+  auto base_path = base/"k2v3base.bin";
+
+  auto bin_file = fopen(base_path.c_str(), "rb");
+  printf("file<%p:%s>\n", (void*) bin_file, base_path.c_str());
+  fseek(bin_file, 0, SEEK_END);
+  size_t ilen = ftell(bin_file);
+  printf("length<%zu>\n", ilen);
+  auto bin_data = malloc(ilen);
+  fseek(bin_file, 0, SEEK_SET);
+  fread(bin_data, ilen, 1, bin_file);
+  fclose(bin_file);
+
+  auto krzbasehasher = DataBlock::createHasher();
+  krzbasehasher->accumulateString("krzbaseobjects"); // identifier
+  krzbasehasher->accumulateItem<float>(1.5);         // version code
+  krzbasehasher->accumulate(bin_data, ilen);         // data
+
+  krzbasehasher->finish();
+  uint64_t krzbase_hash = krzbasehasher->result();
+  datablock_ptr_t dblock = DataBlockCache::findDataBlock(krzbase_hash);
+  if (dblock == nullptr) {
+    auto base_json = krzio::convert(base_path.c_str());
+    dblock        = std::make_shared<DataBlock>();
+    auto array = std::vector<uint8_t>(base_json.begin(), base_json.end());
+    array.push_back(0);
+    dblock->addData(array.data(), array.size());
+    DataBlockCache::setDataBlock(krzbase_hash, dblock);
+  }
+  KrzBankDataParser parser;
+  auto as_str = std::string(dblock->_storage.begin(), dblock->_storage.end());
+  parser.loadKrzJsonFromString(as_str, 0);
+  return parser._objdb;
 }
 
 KrzSynthData::KrzSynthData()
     : SynthData() {
+  _bankdata = baseObjects();
+  
 }
+
+void KrzSynthData::loadBank(const file::Path& syxpath){
+  auto as_json = krzio::convert(syxpath.c_str());
+  KrzBankDataParser parser;
+  parser.loadKrzJsonFromString(as_json, 0);
+  _bankdata->merge(*parser._objdb);
+}
+
 
 ///////////////////////////////////////////////////////////////////////////////
 

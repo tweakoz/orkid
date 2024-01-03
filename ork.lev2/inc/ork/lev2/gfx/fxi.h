@@ -101,6 +101,8 @@ public:
     return nullptr;
   }
 
+  bool _debugDrawCall = false;
+  
 protected:
   FxShader* _activeShader;
   const FxShaderTechnique* _activeTechnique;

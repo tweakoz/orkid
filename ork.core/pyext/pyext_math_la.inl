@@ -198,6 +198,7 @@ void pyinit_math_la_t(py::module& module_core, //
           })
           //////////////////////////////////////////////////////////////////////////
           .def(py::init<>())
+          .def(py::init<T>())
           .def(py::init<T, T, T, T>())
           .def(py::init<vec3_t>())
           .def(py::init<vec3_t, T>())
@@ -286,6 +287,10 @@ void pyinit_math_la_t(py::module& module_core, //
           .def("negate", &quat_t::negate)
           .def("normalize", &quat_t::normalizeInPlace)
           .def(py::self * py::self)
+          .def_property("x", [](const quat_t& quat) -> T { return quat.x; }, [](quat_t& quat, T val) { return quat.x = val; })
+          .def_property("y", [](const quat_t& quat) -> T { return quat.y; }, [](quat_t& quat, T val) { return quat.y = val; })
+          .def_property("z", [](const quat_t& quat) -> T { return quat.z; }, [](quat_t& quat, T val) { return quat.z = val; })
+          .def_property("w", [](const quat_t& quat) -> T { return quat.w; }, [](quat_t& quat, T val) { return quat.w = val; })
           .def(
               "__str__",
               [](const quat_t& v) -> std::string {

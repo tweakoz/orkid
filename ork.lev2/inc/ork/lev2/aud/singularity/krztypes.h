@@ -30,8 +30,8 @@ using namespace ork::audiomath;
 static constexpr int kmaxenvperlayer       = 8;
 static constexpr int kmaxdspblocksperstage = 16; // vertical dimension of layer's dsp grid
 static constexpr int kmaxdspstagesperlayer = 16; // horizontal dimension of layer's dsp grid
-static constexpr int kmaxctrlperblock      = 16;
-static constexpr int kmaxparmperblock      = 16;
+static constexpr int kmaxctrlperblock      = 32;
+static constexpr int kmaxparmperblock      = 32;
 static constexpr int kmaxlayerspersynth    = 512;
 ///////////////////////////////////////////////////////////////////////////////
 static constexpr double pi      = 3.141592654;
@@ -73,11 +73,12 @@ struct Layer;
 struct outputBuffer;
 struct RateLevelEnvData;
 struct natenvseg;
+struct NatEnv;
 struct BankData;
 struct DspParam;
 struct Wavetable;
 struct KeyOnInfo;
-struct IoMask;
+struct IoConfig;
 struct HudPanel;
 struct BlockModulationData;
 struct DspParamData;
@@ -103,6 +104,9 @@ struct KrzTestData;
 struct KrzKmTestData;
 struct CzProgData;
 struct OutputBus;
+struct KeyOnModifiers;
+struct NatEnvWrapperData;
+
 ///////////////////////////////////////////////////////////////////////////////
 // scope / signal analyzer
 ///////////////////////////////////////////////////////////////////////////////
@@ -114,8 +118,8 @@ struct ScopeSource;
 struct ScopeSink;
 ///////////////////////////////////////////////////////////////////////////////
 using outbus_ptr_t                = std::shared_ptr<OutputBus>;
-using iomask_ptr_t                = std::shared_ptr<IoMask>;
-using iomask_constptr_t           = std::shared_ptr<const IoMask>;
+using ioconfig_ptr_t              = std::shared_ptr<IoConfig>;
+using ioconfig_constptr_t         = std::shared_ptr<const IoConfig>;
 using algdata_ptr_t               = std::shared_ptr<AlgData>;
 using algdata_constptr_t          = std::shared_ptr<const AlgData>;
 using alg_ptr_t                   = std::shared_ptr<Alg>;
@@ -157,13 +161,14 @@ using hudpanel_ptr_t              = std::shared_ptr<HudPanel>;
 using scopesource_ptr_t           = std::shared_ptr<ScopeSource>;
 using scopesink_ptr_t             = std::shared_ptr<ScopeSink>;
 using signalscope_ptr_t           = std::shared_ptr<SignalScope>;
-using fxpresetmap_t               = std::map<std::string, lyrdata_ptr_t>;
-
+using fxpresetmap_t               = std::vector<lyrdata_ptr_t>;
+using keyonmod_ptr_t = std::shared_ptr<KeyOnModifiers>;
+using natenv_ptr_t = std::shared_ptr<NatEnv>;
 using dspparam_ptr_t         = std::shared_ptr<DspParamData>;
 using dspparam_constptr_t    = std::shared_ptr<const DspParamData>;
 using dspparammod_ptr_t      = std::shared_ptr<BlockModulationData>;
 using dspparammod_constptr_t = std::shared_ptr<const BlockModulationData>;
-
+using natenvwrapperdata_ptr_t = std::shared_ptr<NatEnvWrapperData>;
 ///////////////////////////////////////////////////////////////////////////////
 typedef std::function<float()> controller_t;
 typedef std::function<float(float)> mapper_t;

@@ -26,11 +26,12 @@ int main(int argc, char** argv,char**envp) {
   ////////////////////////////////////////////////
   auto toplayout = app->_hudvp->_layout;
   auto guidehl   = toplayout->left();
-  auto guidehc   = toplayout->centerH();
+  auto guidehc   = toplayout->proportionalVerticalGuide(0.5);
   auto guidehr   = toplayout->right();
   auto guidevt   = toplayout->top();
   auto guidev0   = toplayout->fixedHorizontalGuide(240);
-  auto guidev1   = toplayout->fixedHorizontalGuide(480);
+  //auto guidev0   = toplayout->proportionalHorizontalGuide(0.33);
+  auto guidev1   = toplayout->proportionalHorizontalGuide(0.66);
   auto guidehd   = toplayout->proportionalVerticalGuide(0.75);
   auto guidevb   = toplayout->bottom();
 
@@ -64,6 +65,10 @@ int main(int argc, char** argv,char**envp) {
   bottom_right         = middle_right;
   bottom_right._top    = guidev1;
   bottom_right._bottom = guidevb;
+
+  //guidehc->_locked = true;
+  guidev0->_locked = true;
+
   ////////////////////////////////////////////////
   // create visualizers
   ////////////////////////////////////////////////

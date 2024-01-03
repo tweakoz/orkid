@@ -150,7 +150,11 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
                 py::gil_scoped_acquire acquire;
                 auto pyfn = rval->_vars->typedValueForKey<py::function>("uievfn");
                 try {
-                  pyfn.value()(ev);
+                  auto res = pyfn.value()(ev).cast<ui::HandlerResult>();
+                  if(res.mHandler==nullptr){
+                    res = rval->_topLayoutGroup->OnUiEvent(ev);
+                  }
+                  return res;
                 } catch (std::exception& e) {
                   std::cerr << e.what();
                   OrkAssert(false);

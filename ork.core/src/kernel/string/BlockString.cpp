@@ -18,7 +18,7 @@ BlockString::BlockString()
 	, mStringIndex(-1)
 {}
 
-BlockString::BlockString(const StringBlock *block, int index)
+BlockString::BlockString(const StringBlock *block, size_t index)
 	: mStringBlock(block)
 	, mStringIndex(index)
 {
@@ -35,7 +35,7 @@ const char *BlockString::c_str() const
 	return mStringBlock->GetStringData(mStringIndex);
 }
 
-int BlockString::Index() const
+size_t BlockString::Index() const
 {
 	return mStringIndex;
 }

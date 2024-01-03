@@ -319,6 +319,11 @@ PYBIND11_MODULE(_core, module_core) {
             size_t numkeys = vmap->_themap.size();
             rval = FormatString("VarMap(nkeys:%zu)", numkeys );
             return rval;           
+          })
+          .def("clone", [](varmap::varmap_ptr_t vmap) -> varmap::varmap_ptr_t {
+            auto vmap_out = std::make_shared<varmap::VarMap>();
+            (*vmap_out) = (*vmap);
+            return vmap_out;           
           });
   //.def("__reversed__", [](varmap::varmap_ptr_t vmap) -> Sequence { return s.reversed(); })
   type_codec->registerStdCodec<varmap::varmap_ptr_t>(varmaptype_t);

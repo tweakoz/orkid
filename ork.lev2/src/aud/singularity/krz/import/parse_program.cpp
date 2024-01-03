@@ -23,10 +23,10 @@ void filescanner::ParseProgram(const datablock& db, datablock::iterator& it, int
   prg->_programID   = iObjectID;
   prg->_programName = ObjName;
 
-  if (iObjectID >= 189 && iObjectID <= 191) {
-    prg->_debug = true;
+  //if (iObjectID >= 189 && iObjectID <= 191) {
+    //prg->_debug = true;
     printf("/////////////////////////////////////// NEW PROGRAM <%d:%p:%s>\n", iObjectID, (void*)prg, ObjName.c_str());
-  }
+  //}
 
   _curProgram = prg;
 
@@ -245,8 +245,8 @@ void filescanner::ParseProgram(const datablock& db, datablock::iterator& it, int
 ///////////////////////////////////////////////////////////////////////////////
 
 void filescanner::emitProgram(const Program* p, rapidjson::Value& parent) {
-  if (p->_programID > 200)
-    return;
+  //if (p->_programID > 200)
+    //return;
 
   if (p->_debug)
     printf("/////////////////////////////////////// EMIT PROGRAM <%d:%p:%s>\n", p->_programID, (void*)p, p->_programName.c_str());

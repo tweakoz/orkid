@@ -42,6 +42,18 @@ BlockModulationData::BlockModulationData() {
       float { return param_inst._data->_coarse; };
 }
 
+dspparammod_ptr_t BlockModulationData::clone() const{
+  auto rval = std::make_shared<BlockModulationData>();
+  rval->_src1 = _src1;
+  rval->_src2 = _src2;
+  rval->_src2DepthCtrl = _src2DepthCtrl;
+  rval->_src1Depth = _src1Depth;
+  rval->_src2MinDepth = _src2MinDepth;
+  rval->_src2MaxDepth = _src2MaxDepth;
+  rval->_evaluator = _evaluator;
+  return rval;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 void DspParamData::describeX(class_t* clazz) {
@@ -57,18 +69,58 @@ void DspParamData::describeX(class_t* clazz) {
   clazz->directProperty("KeyStartBipolar", &DspParamData::_keystartBipolar);
 }
 
+dspparam_ptr_t DspParamData::clone() const{
+  auto rval = std::make_shared<DspParamData>();
+  rval->_name = _name;
+  rval->_mods = _mods->clone();
+  rval->_evaluatorid = _evaluatorid;
+  rval->_coarse = _coarse;
+  rval->_fine = _fine;
+  rval->_fineHZ = _fineHZ;
+  rval->_keyTrack = _keyTrack;
+  rval->_velTrack = _velTrack;
+  rval->_keystartNote = _keystartNote;
+  rval->_keystartBipolar = _keystartBipolar;
+  rval->_edit_coarse_min = _edit_coarse_min;
+  rval->_edit_coarse_max = _edit_coarse_max;
+  rval->_edit_coarse_numsteps = _edit_coarse_numsteps;
+  rval->_edit_fine_min = _edit_fine_min;
+  rval->_edit_fine_max = _edit_fine_max;
+  rval->_edit_fine_numsteps = _edit_fine_numsteps;
+  rval->_edit_keytrack_min = _edit_keytrack_min;
+  rval->_edit_keytrack_max = _edit_keytrack_max;
+  rval->_edit_keytrack_numsteps = _edit_keytrack_numsteps;
+  rval->_edit_keytrack_shape = _edit_keytrack_shape;
+  rval->_units = _units;
+  rval->_debug = _debug;
+  return rval;
+}
+
+void DspParamData::dump() const {
+  printf( "DspParam<%p:%s>\n", this, _name.c_str() );
+  printf( " _coarse<%f>\n", _coarse );
+  printf( " _fine<%f>\n", _fine );
+  printf( " _fineHZ<%f>\n", _fineHZ );
+  printf( " _keyTrack<%f>\n", _keyTrack );
+  printf( " _velTrack<%f>\n", _velTrack );
+  printf( " _keystartNote<%d>\n", _keystartNote );
+  printf( " _keystartBipolar<%d>\n", _keystartBipolar );
+  printf( " _units<%s>\n", _units.c_str() );
+  printf( " _evaluatorid<%s>\n", _evaluatorid.c_str() ); 
+}
 ///////////////////////////////////////////////////////////////////////////////
 
 DspParamData::DspParamData(std::string name) {
   _name = name;
   _mods = std::make_shared<BlockModulationData>();
   useDefaultEvaluator();
+  //_keyTrack = 100.0f;
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 bool DspParamData::postDeserialize(reflect::serdes::IDeserializer&, object_ptr_t shared) { // override
-
   if (_evaluatorid == "default")
     useDefaultEvaluator();
   else if (_evaluatorid == "amplitude")
@@ -109,7 +161,9 @@ void DspParamData::useDefaultEvaluator() {
                + param_inst._C1() //
                + param_inst._C2() //
                + kt + vt;
-     //printf("defaulteval rv<%g>\n", rv);
+     if(_debug){
+      printf("defeval<%s> rv<%g>\n", _name.c_str(), rv);
+     }
     return rv;
   };
 }
@@ -128,7 +182,9 @@ void DspParamData::useAmplitudeEvaluator() {
               + param_inst._s2val //
               + param_inst._kval  //
               + param_inst._vval;
-    // printf("vt<%f> kt<%f> x<%f>\n", _velTrack, _keyTrack, x);
+     if(_debug){
+      printf("ampeval<%s> vt<%f> kt<%f> x<%f>\n", _name.c_str(), _velTrack, _keyTrack, x);
+     }
     return x;
   };
 }
@@ -149,21 +205,36 @@ void DspParamData::usePitchEvaluator() {
   _edit_keytrack_min      = -200.0f;
   _edit_keytrack_max      = 200.0f;
   _edit_keytrack_numsteps = 400;
-  _keyTrack = 100.0;
 
   _mods->_evaluator = [this](DspParam& param_inst) -> float {
 
-    float kt       = _keyTrack * param_inst._keyOff;
+    float KEY = param_inst._keyOff;
+
+    float kr       = (KEY*_keyTrack);
     float vt       = _velTrack * param_inst._unitVel;
-    float totcents = param_inst._keyRaw*100 // 60(midi-middle-C) * 100 cents
-                     + (_coarse)   //
-                     + _fine       //
-                     + param_inst._C1()   //
-                     + param_inst._C2()   //
-                     + kt          //
-                     + vt;
-    // float ratio = cents_to_linear_freq_ratio(totcents);
-    // printf( "rat<%f>\n", ratio);
+    float c1      = param_inst._C1();
+    float c2      = param_inst._C2();
+    float totcents = (_coarse * 100.0)
+                   +_fine
+                   + kr // 
+                   + c1   //
+                   + c2   //
+                   + vt;
+     if( _debug and param_inst._update_count==0){
+       float ratio = cents_to_linear_freq_ratio(totcents);
+       printf( "pitcheval<%p:%s> _keyTrack<%g> kr<%g> course<%f> fine<%g> c1<%g> c2<%g> ko<%g> vt<%g> totcents<%f> rat<%f>\n", //
+               (void*) this, _name.c_str(), // 
+               _keyTrack,
+              kr, //  
+               _coarse, //
+               _fine, //
+                c1, //
+                c2, //
+               param_inst._keyOff, // 
+               vt, // 
+               totcents, // 
+               ratio);
+     }
     
     if(param_inst._update_count==0){
       logchan_modulation->log( "keyRaw<%d>", param_inst._keyRaw);
@@ -173,7 +244,7 @@ void DspParamData::usePitchEvaluator() {
       logchan_modulation->log( "c1<%f>", param_inst._C1());
       logchan_modulation->log( "c2<%f>", param_inst._C2());
       logchan_modulation->log( "vt<%f>", vt);
-      logchan_modulation->log( "kt<%f>", kt);
+      //logchan_modulation->log( "kt<%f>", kt);
       logchan_modulation->log( "totcents<%f>", totcents);
     }
 
@@ -192,8 +263,9 @@ void DspParamData::useFrequencyEvaluator() {
     float vtcents  = param_inst._vval;
     float totcents = param_inst._C1() + param_inst._C2() + ktcents + vtcents;
     float ratio    = cents_to_linear_freq_ratio(totcents);
-     printf( "vtcents<%f> ratio<%f>\n", vtcents, ratio );
-     printf( "ratio<%f>\n", ratio);
+     if(_debug){
+       printf( "frqeval<%s> vtcents<%f> ratio<%f>\n", _name.c_str(), vtcents, ratio );
+     }
     return _coarse * ratio;
   };
 }
@@ -212,7 +284,12 @@ void DspParamData::useKrzPosEvaluator() {
               + param_inst._s2val //
               + param_inst._kval  //
               + param_inst._vval;
-    return clip_float(x, -100, 100);
+    float rval = clip_float(x, -100, 100);
+
+    if(_debug){
+      printf( "krzposeval<%s> rval<%f>\n", _name.c_str(), rval );
+    }
+    return rval;
   };
 }
 
@@ -228,7 +305,9 @@ void DspParamData::useKrzEvnOddEvaluator() {
               + param_inst._C2() //
               + kt        //
               + vt;
-    // printf( "vt<%f> kt<%f> x<%f>\n", vt, kt, x );
+    if(_debug){
+      printf( "krzevnoddeval<%s> vt<%f> kt<%f> x<%f>\n", _name.c_str(), vt, kt, x );
+    }
     return clip_float(x, -10, 10);
   };
 }
@@ -251,10 +330,14 @@ void DspParam::keyOn(int ikey, int ivel) {
 
   _update_count = 0;
   _keyRaw  = ikey;
-  _keyOff  = float(60 - _data->_keystartNote);
+  _keyOff  = float(ikey - _data->_keystartNote);
   _unitVel = float(ivel) / 127.0f;
 
-   logchan_modulation->log( "DspParam::keyOn: ikey<%d> ivel<%d> keystart<%d> _keyOff<%g>", ikey, ivel, _data->_keystartNote, _keyOff );
+  float kt = _data->_keyTrack;
+
+  if(_data->_debug){
+   printf( "DspParam<%s> keyOn: ikey<%d> ivel<%d> keytrack<%g>  keystart<%d> _keyOff<%g>\n", _data->_name.c_str(), ikey, ivel, kt, _data->_keystartNote, _keyOff );
+  }
 
   if (false == _data->_keystartBipolar) {
     if (_keyOff < 0)
@@ -280,8 +363,9 @@ void DspParam::keyOn(int ikey, int ivel) {
 
 float DspParam::eval(bool dump) {
   float tot = _evaluator(*this);
-  if (dump)
+  if (dump){
     printf("coarse<%g> c1<%g> c2<%g> tot<%g>\n", _data->_coarse, _C1(), _C2(), tot);
+  }
 
   return tot;
 }

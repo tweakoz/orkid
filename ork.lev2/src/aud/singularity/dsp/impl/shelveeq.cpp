@@ -36,7 +36,11 @@ void LoShelveEq::set(float cf, float peakg) {
   float asq = sa * sa;
   float A   = powf(10, (peakg / 20.0));
 
-  float F = ((peakg < 6.0) && (peakg > -6.0)) ? sqrt(A) : (A > 1.0) ? A / sqrt(2.0) : A * sqrt(2.0);
+  float F = ((peakg < 6.0) && (peakg > -6.0)) //
+          ? sqrt(A) //
+          : (A > 1.0) //
+            ? A / sqrt(2.0) //
+            : A * sqrt(2.0);
 
   float F2  = F * F;
   float tmp = A * A - F2;

@@ -80,6 +80,7 @@ struct DeferredContext {
   textureassetptr_t _whiteTexture;
   textureassetptr_t _voltexA;
   bool _enableSDF = false;
+  void_lambda_t _onGpuInitialized;
   ////////////////////////////////////////////////////////////////////
   auxparambinding_ptr_t createAuxParamBinding(std::string paramname);
   ////////////////////////////////////////////////////////////////////
@@ -170,6 +171,7 @@ struct DeferredContext {
 
   std::string _layername;
   EBufferFormat _lightAccumFormat;
+  EBufferFormat _auxBufferFormat = EBufferFormat::NONE;
   float _specularLevel    = 1.0f;
   float _diffuseLevel     = 1.0f;
   float _depthFogPower    = 1.0f;

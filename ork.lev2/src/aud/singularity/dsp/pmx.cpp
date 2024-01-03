@@ -30,7 +30,7 @@ namespace ork::audio::singularity {
 // signal back to linear scale when required
 inline float proc_out(float inp) {
   constexpr float kclamp = 8.0f;
-  constexpr float kscale = 0.125f;
+  constexpr float kscale = 0.25f;
   validateSample(inp);
   if (isfinite(inp) and not isnan(inp)) {
     return clip_float(inp, -kclamp, kclamp) * kscale;
@@ -54,8 +54,6 @@ void PMXData::describeX(class_t* clazz) {
 PMXData::PMXData(std::string name)
     : DspBlockData(name) {
 
-  auto pitch = addParam("pitch");
-  pitch->usePitchEvaluator(); // pitch
   auto amp = addParam("amp");
   amp->useDefaultEvaluator(); // amp
   amp->_units = "0-1";
@@ -79,9 +77,11 @@ PMX::PMX(const DspBlockData* dbd)
 void PMX::compute(DspBuffer& dspbuf) { // final
   int inumframes   = _layer->_dspwritecount;
   float* output    = dspbuf.channel(_dspchannel[0]) + _layer->_dspwritebase;
-  float pitch_cents  = _param[0].eval();
-  float amp        = _param[1].eval();
-  float fbl        = _param[2].eval();
+
+  float pitch_cents = _layer->_curPitchOffsetInCents;
+
+  float amp        = _param[0].eval();
+  float fbl        = _param[1].eval();
   float note      = (pitch_cents) * 0.01;
   float frq        = midi_note_to_frequency(note);
   
@@ -161,7 +161,7 @@ PMXMix::PMXMix(const DspBlockData* dbd)
 ///////////////////////////////////////////////////////////////////////////////
 void PMXMix::compute(DspBuffer& dspbuf) { // final
   int inumframes = _layer->_dspwritecount;
-  float* output  = dspbuf.channel(_dspchannel[0]) + _layer->_dspwritebase;
+  float* output  = dspbuf.channel(0) + _layer->_dspwritebase;
   ///////////////////////////////////////////////////////////////
   // mix in each PM carrier oscillator
   ///////////////////////////////////////////////////////////////

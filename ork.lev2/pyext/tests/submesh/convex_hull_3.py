@@ -271,10 +271,14 @@ class SceneGraphApp(BasicUiCamSgApp):
     self.prim_isect.fromSubMesh(self.barysub_isect,self.context)
 
   def onUiEvent(self,uievent):
+    res = ui.HandlerResult()
     super().onUiEvent(uievent)
     if uievent.code == tokens.KEY_DOWN.hashed:
-        if uievent.keycode == 32: # spacebar
-          self.numsteps = (self.numsteps + 1) % 4
+      if uievent.keycode == 32: # spacebar
+        self.numsteps = (self.numsteps + 1) % 4
+      res = ui.HandlerResult()
+      res.setHandler(self.ezapp.topWidget)
+    return res
 
 ###############################################################################
 

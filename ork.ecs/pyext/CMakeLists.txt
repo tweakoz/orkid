@@ -2,7 +2,7 @@ project (pyext_ork__ecs CXX)
 SET( PACKAGE_VERSION "0.1.1" )
 include (GenerateExportHeader)
 
-set( CMAKE_MODULE_PATH $ENV{ORKID_WORKSPACE_DIR}:$ENV{OBT_STAGE}/share/cmake/pybind11 )
+list( PREPEND CMAKE_MODULE_PATH $ENV{OBT_STAGE}/share/cmake/pybind11 )
 
 find_package (Python COMPONENTS Interpreter Development)
 #find_package (Eigen3 3.3 REQUIRED NO_MODULE)

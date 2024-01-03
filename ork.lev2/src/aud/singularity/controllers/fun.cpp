@@ -32,6 +32,16 @@ ControllerInst* FunData::instantiate(layer_ptr_t l) const // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
+controllerdata_ptr_t FunData::clone() const {
+  auto rval = std::make_shared<FunData>();
+  rval->_a  = _a;
+  rval->_b  = _b;
+  rval->_op = _op;
+  return rval;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 FunInst::FunInst(const FunData* data, layer_ptr_t l)
     : ControllerInst(l)
     , _data(data) {
@@ -44,7 +54,7 @@ FunInst::FunInst(const FunData* data, layer_ptr_t l)
 
 void FunInst::compute() // final
 {
-  _curval = _op();
+  _value.x = _op();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

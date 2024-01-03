@@ -30,15 +30,15 @@ class MyApp(object):
     ###################################
     fpmtx = ctx.perspective(45,1,0.1,3)
     fvmtx = ctx.lookAt(vec3(0,0,-1),vec3(0,0,0),vec3(0,1,0))
-    frust = Frustum()
-    frust.set(fvmtx,fpmtx)
+    frust = dfrustum()
+    frust.set(fmtx4_to_dmtx4(fvmtx),fmtx4_to_dmtx4(fpmtx))
     self.prim = primitives.FrustumPrimitive()
-    self.prim.topColor = vec4(0.5,1.0,0.5,1)
-    self.prim.bottomColor = vec4(0.5,0.0,0.5,1)
-    self.prim.leftColor = vec4(0.0,0.5,0.5,1)
-    self.prim.rightColor = vec4(1.0,0.5,0.5,1)
-    self.prim.frontColor = vec4(0.5,0.5,1.0,1)
-    self.prim.backColor = vec4(0.5,0.5,0.0,1)
+    self.prim.topColor = dvec4(0.5,1.0,0.5,1)
+    self.prim.bottomColor = dvec4(0.5,0.0,0.5,1)
+    self.prim.leftColor = dvec4(0.0,0.5,0.5,1)
+    self.prim.rightColor = dvec4(1.0,0.5,0.5,1)
+    self.prim.nearColor = dvec4(0.5,0.5,1.0,1)
+    self.prim.farColor = dvec4(0.5,0.5,0.0,1)
     self.prim.frustum = frust
     self.prim.gpuInit(ctx)
   ###########################

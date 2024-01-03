@@ -13,7 +13,7 @@ from orkengine.lev2 import *
 
 ################################################################################
 
-sys.path.append((thisdir()/".."/".."/"examples"/"python").normalized.as_string) # add parent dir to path
+sys.path.append((thisdir()/".."/".."/".."/"examples"/"python").normalized.as_string) # add parent dir to path
 from common.cameras import *
 from common.shaders import *
 from common.primitives import createGridData
@@ -183,6 +183,7 @@ class SceneGraphApp(object):
       ##############################
       self.pbrcommon.specularLevel = self.specular
       self.pbrcommon.ambientLevel = vec3(self.ambient)
+    return ui.HandlerResult()
 
 ###############################################################################
 

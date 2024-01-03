@@ -8,6 +8,7 @@
 #pragma once
 
 #include "konoff.h"
+#include <ork/math/cvector4.h>
 
 namespace ork::audio::singularity {
 
@@ -17,13 +18,25 @@ struct FunData;
 ///////////////////////////////////////////////////////////////////////////////
 
 struct ControlBlockData {
-  template <typename T> std::shared_ptr<T> addController() {
+
+  controlblockdata_ptr_t clone() const;
+
+  template <typename T> std::shared_ptr<T> addController(std::string named) {
+    auto it = _controllers_by_name.find(named);
+    if(it!=_controllers_by_name.end()){
+      printf( "controller<%s> already exists\n", named.c_str() );
+      OrkAssert(false);
+    }
     OrkAssert((_numcontrollers + 1) <= kmaxctrlperblock);
     auto c                    = std::make_shared<T>();
-    _cdata[_numcontrollers++] = c;
+    c->_name             = named;
+    _controller_datas[_numcontrollers++] = c;
+    _controllers_by_name[named] = c;
     return c;
   }
-  controllerdata_constptr_t _cdata[kmaxctrlperblock];
+  controllerdata_ptr_t controllerByName(std::string named);
+  controllerdata_ptr_t _controller_datas[kmaxctrlperblock];
+  std::unordered_map<std::string, controllerdata_ptr_t> _controllers_by_name;
   size_t _numcontrollers = 0;
 };
 
@@ -32,6 +45,8 @@ struct ControlBlockData {
 struct ControllerData : public ork::Object {
 
   DeclareAbstractX(ControllerData, ork::Object);
+
+  virtual controllerdata_ptr_t clone() const = 0;
 
   virtual ControllerInst* instantiate(layer_ptr_t layer) const = 0;
 
@@ -50,12 +65,15 @@ struct ControllerInst {
   virtual void keyOn(const KeyOnInfo& KOI) = 0;
   virtual void keyOff()                    = 0;
   virtual void compute()                   = 0;
-  float getval() const {
-    return _curval;
-  }
-
-  float _curval;
+  void setFloatValue(float v);
+  void setVec4Value(fvec4 v);
+  float getFloatValue() const;
+  fvec4 getVec4Value() const;
+  fvec4 _value;
   layer_ptr_t _layer = nullptr;
+  std::string _name;
+  //controllerdata_constptr_t _controller_data;
+  KeyOnModifiers::data_ptr_t _keymoddata;
 };
 
 struct ControlBlockInst {
@@ -74,7 +92,10 @@ struct LfoData : public ControllerData {
 
   DeclareConcreteX(LfoData, ControllerData);
 
+  controllerdata_ptr_t clone() const final;
+
   LfoData();
+  ~LfoData();
   ControllerInst* instantiate(layer_ptr_t layer) const final;
 
   float _initialPhase;
@@ -88,6 +109,7 @@ struct LfoData : public ControllerData {
 
 struct LfoInst : public ControllerInst {
   LfoInst(const LfoData* data, layer_ptr_t layer);
+  ~LfoInst();
 
   void reset();
   void keyOn(const KeyOnInfo& KOI) final;
@@ -109,6 +131,7 @@ struct LfoInst : public ControllerInst {
 struct FunData : public ControllerData {
 
   DeclareConcreteX(FunData, ControllerData);
+  controllerdata_ptr_t clone() const final;
 
   ControllerInst* instantiate(layer_ptr_t layer) const final;
 
@@ -141,6 +164,7 @@ struct CustomControllerData final : public ControllerData {
   DeclareConcreteX(CustomControllerData, ControllerData);
 
   CustomControllerData();
+  controllerdata_ptr_t clone() const final;
   ControllerInst* instantiate(layer_ptr_t layer) const override;
   customcontroller_computemethod_t _oncompute;
   customcontroller_keyonmethod_t _onkeyon;
@@ -152,6 +176,9 @@ struct CustomControllerInst final : public ControllerInst {
   void keyOn(const KeyOnInfo& KOI) override;
   void keyOff() override;
   const CustomControllerData* _data = nullptr;
+  customcontroller_computemethod_t _oncompute;
+  customcontroller_keyonmethod_t _onkeyon;
+  customcontroller_keyoffmethod_t _onkeyoff;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -159,6 +186,7 @@ struct CustomControllerInst final : public ControllerInst {
 struct ConstantControllerData : public ControllerData {
 
   DeclareConcreteX(ConstantControllerData, ControllerData);
+  controllerdata_ptr_t clone() const final;
 
   ControllerInst* instantiate(layer_ptr_t layer) const final;
 

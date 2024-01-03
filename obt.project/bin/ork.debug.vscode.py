@@ -62,7 +62,8 @@ def create_vscode_config(workspace_path, bin_path, env_vars, exec_args):
                 ],
                 "preLaunchTask": "",
                 "miDebuggerPath": "gdb",
-                "console": "integratedTerminal"
+                "console": "integratedTerminal",
+                "stopAllThreads": True,
             }
         ]
     }

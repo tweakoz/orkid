@@ -65,31 +65,35 @@ fxpipelinecache_constptr_t FreestyleMaterial::_doFxPipelineCache(fxpipelinepermu
 
 ///////////////////////////////////////////////////////////////////////////////
 void FreestyleMaterial::dump() const {
-
+  printf("//////////////////////////////////\n");
   printf("freestylematerial<%p>\n", (void*) this);
   printf("fxshader<%p>\n", (void*) _shader);
 
+  printf("techniques count<%zu>\n", _shader->_techniques.size());
   for (auto item : _shader->_techniques) {
 
     auto name = item.first;
     auto tek  = item.second;
     printf("tek<%p:%s> validated<%d>\n", (void*) tek, name.c_str(), int(tek->_validated));
   }
+  printf("parametersByName count<%zu>\n", _shader->_parameterByName.size());
   for (auto item : _shader->_parameterByName) {
     auto name = item.first;
     auto par  = item.second;
-    printf("par<%p:%s> type<%s>\n", (void*) par, name.c_str(), par->mParameterType.c_str());
+    printf("  par<%p:%s> type<%s>\n", (void*) par, name.c_str(), par->mParameterType.c_str());
   }
   for (auto item : _shader->_uniformBlocks) {
     auto name   = item.first;
     auto parblk = item.second;
-    printf("parblk<%p:%s>\n", (void*) parblk, name.c_str());
+    printf("  parblk<%p:%s>\n", (void*) parblk, name.c_str());
   }
+  printf(" computeShadersByName count<%zu>\n", _shader->_computeShaderByName.size());
   for (auto item : _shader->_computeShaderByName) {
     auto name = item.first;
     auto csh  = item.second;
-    printf("csh<%p:%s>\n", (void*) csh, name.c_str());
+    printf("  csh<%p:%s>\n", (void*) csh, name.c_str());
   }
+  printf("//////////////////////////////////\n");
 }
 ///////////////////////////////////////////////////////////////////////////////
 // legacy methods

@@ -46,6 +46,7 @@ void DecoBlockNode::parse(GlSlFxParser* parser, const ScannerView& view) {
 
   // default extensions
 
+  #if !defined(__APPLE__)
   auto extnode        = std::make_shared<RequiredExtensionNode>();
   extnode->_extension = "GL_ARB_gpu_shader_int64";
   _requiredExtensions.push_back(extnode);
@@ -53,6 +54,7 @@ void DecoBlockNode::parse(GlSlFxParser* parser, const ScannerView& view) {
   extnode        = std::make_shared<RequiredExtensionNode>();
   extnode->_extension = "GL_NV_gpu_shader5";
   _requiredExtensions.push_back(extnode);
+#endif
 
   /////////////////////////////
   // fetch block decorators

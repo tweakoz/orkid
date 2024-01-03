@@ -73,11 +73,20 @@ Keymap::Keymap()
 
 SampleFile::SampleFile() {
   auto base      = ork::audio::singularity::basePath() / "kurzweil";
-  auto rompath   = base / "k2v3internalsamplerom.bin";
+  auto rompath   = base / "samplerom_internal.bin";
   FILE* fsamprom = fopen(rompath.c_str(), "rb");
-  mpSampleData   = new short[8 << 20];
-  fread((void*)mpSampleData, 1, 8 << 20, fsamprom);
-  fclose(fsamprom);
+  size_t romlen = 8 << 20;
+  auto sample_data = new uint8_t[romlen];
+  if(fsamprom){
+    fread((void*)sample_data, 1, romlen, fsamprom);
+    fclose(fsamprom);
+  }
+  else{
+    for( int i=0; i<romlen; i++ ){
+      sample_data[i] = 0;
+    }
+  }
+  mpSampleData = (const short*) sample_data;
 }
 
 float compute_slopeDBPerSample(float dbpsec, float samplerate) {

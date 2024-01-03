@@ -44,7 +44,7 @@ int main(int argc, char** argv,char**envp) {
   WIDTHCONTROL->_oncompute = [](CustomControllerInst* cci) { //
     float index  = cci->_layer->_layerTime;
     float wave   = (0.5f + sinf(index) * 0.5);
-    cci->_curval = wave;
+    cci->_value.x = wave;
   };
   /////////////////
   // stereo echo
@@ -205,7 +205,7 @@ int main(int argc, char** argv,char**envp) {
         pitch_mod->_src2MaxDepth = 1.0;
         DETUNE->_onkeyon         = [&](CustomControllerInst* cci, //
                                const KeyOnInfo& KOI) {    //
-          cci->_curval = rangedf(-50, 50);
+          cci->_value.x = rangedf(-50, 50);
         };
       }
       //////////////////////////////////////
@@ -245,7 +245,7 @@ int main(int argc, char** argv,char**envp) {
       index        = std::clamp(index, 0.0f, 1.0f);
       float pan    = ork::audiomath::lerp(-1.0f, 1.0f, index);
       pan          = std::clamp(pan, -1.0f, 1.0f);
-      cci->_curval = pan;
+      cci->_value.x = pan;
     };
     //////////////////////////////////////
     // play test notes

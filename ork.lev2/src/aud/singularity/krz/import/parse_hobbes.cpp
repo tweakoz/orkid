@@ -130,8 +130,9 @@ void filescanner::parseHobbes(const datablock& db, datablock::iterator& it, u8 c
     getFParamFRQ(hfp);
   else if (hfp._blockScheme == "DRV")
     getFParamDRV(hfp);
-  else if (hfp._blockScheme == "PCH")
+  else if (hfp._blockScheme == "PCH"){
     getFParamPCH(hfp);
+  }
   else if (hfp._blockScheme == "POS")
     getFParamPOS(hfp);
   else if (hfp._blockScheme == "RES")

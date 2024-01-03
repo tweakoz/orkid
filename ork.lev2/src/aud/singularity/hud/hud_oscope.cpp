@@ -32,16 +32,14 @@ struct ScopeSurf final : public ui::Surface {
   int64_t _oswidth                  = 0;
 };
 ///////////////////////////////////////////////////////////////////////////////
-signalscope_ptr_t create_oscilloscope(
-    hudvp_ptr_t vp, //
-    const ui::anchor::Bounds& bounds,
+signalscope_ptr_t create_oscilloscope2(
+    uilayoutgroup_ptr_t vp, //
     std::string named) {
   auto hudpanel    = std::make_shared<HudPanel>();
   auto scopesurf   = std::make_shared<ScopeSurf>();
-  auto uipanelitem = vp->makeChild<ui::Panel>("scope", 0, 0, 32, 32);
-  uipanelitem.applyBounds(bounds);
-  hudpanel->_uipanel                = uipanelitem.typedWidget();
-  hudpanel->_panelLayout            = uipanelitem._layout;
+  auto pnl = vp->makeChild<ui::Panel>("scope", 0, 0, 32, 32);
+  hudpanel->_uipanel                = pnl.typedWidget();
+  hudpanel->_panelLayout            = pnl._layout;
   hudpanel->_uipanel->_closeEnabled = false;
   hudpanel->_uipanel->_moveEnabled  = false;
   hudpanel->_uipanel->setTitle(named);
@@ -52,6 +50,7 @@ signalscope_ptr_t create_oscilloscope(
   auto instrument                 = std::make_shared<SignalScope>();
   instrument->_hudpanel           = hudpanel;
   instrument->_sink               = std::make_shared<ScopeSink>();
+  instrument->_layoutitem = pnl.as_shared();
   ///////////////////////////////////////////////////////////////////////
   instrument->_sink->_onupdate = [scopesurf](const ScopeSource* src) { //
     bool select = (scopesurf->_currentSource == nullptr);
@@ -87,8 +86,16 @@ signalscope_ptr_t create_oscilloscope(
   };
   ///////////////////////////////////////////////////////////////////////
   vp->addChild(hudpanel->_uipanel);
-  vp->_hudpanels.insert(hudpanel);
   return instrument;
+}
+///////////////////////////////////////////////////////////////////////////////
+signalscope_ptr_t create_oscilloscope(
+    uilayoutgroup_ptr_t vp, //
+    const ui::anchor::Bounds& bounds,
+    std::string named) {
+  auto scope = create_oscilloscope2(vp, named);
+  scope->_layoutitem->applyBounds(bounds);
+  return scope;
 }
 ///////////////////////////////////////////////////////////////////////////////
 ScopeSurf::ScopeSurf() //
@@ -352,6 +359,7 @@ void ScopeSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void ScopeSurf::_doGpuInit(lev2::Context* pt) {
+  Surface::_doGpuInit(pt);
   _pickbuffer = new lev2::PickBuffer(this, pt, width(), height());
   _ctxbase    = pt->GetCtxBase();
 }

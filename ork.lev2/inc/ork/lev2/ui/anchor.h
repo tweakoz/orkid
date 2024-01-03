@@ -81,7 +81,7 @@ struct Layout {
   guide_ptr_t fixedHorizontalGuide(int fixed);
   guide_ptr_t fixedVerticalGuide(int fixed);
 
-  void dump();
+  void dump(int level=0);
   void prune();
 
   using visit_fn_t = std::function<void(Layout* l)>;
@@ -95,6 +95,7 @@ struct Layout {
 
   Widget* _widget = nullptr;
 
+  Layout* _parent = nullptr;
   layout_ptr_t _fill   = nullptr;
   layout_ptr_t _center = nullptr;
 
@@ -104,6 +105,8 @@ struct Layout {
   guide_ptr_t _right   = nullptr;
   guide_ptr_t _centerH = nullptr;
   guide_ptr_t _centerV = nullptr;
+
+  bool _locked = false;
 
   std::set<guide_ptr_t> _customguides;
   std::vector<layout_ptr_t> _childlayouts;
@@ -135,7 +138,7 @@ struct Guide {
   void _disassociate(Guide* other);
   void _associate(Guide* other);
   float sortKey() const;
-  void dump();
+  void dump(int level=0);
 
   std::set<Guide*> _associates;
   int _name         = -1;
@@ -146,6 +149,8 @@ struct Guide {
   int _sign         = 1; // sign of offset: -1 or 1
   float _proportion = 0.0f;
   int _fixed         = 0;
+  int _centerpos = 0;
+  bool _locked = false;
   GuideType _type = GuideType::NONE;
 };
 
@@ -156,7 +161,7 @@ struct Bounds {
   guide_ptr_t _left;
   guide_ptr_t _bottom;
   guide_ptr_t _right;
-  int _margin = 2;
+  int _margin = 4;
 };
 
 /////////////////////////////////////////////////////////////////////////

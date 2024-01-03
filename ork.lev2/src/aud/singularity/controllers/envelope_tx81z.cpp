@@ -25,6 +25,18 @@ void TX81ZEnvData::describeX(class_t* clazz) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+controllerdata_ptr_t TX81ZEnvData::clone() const {
+  auto rval = std::make_shared<TX81ZEnvData>();
+  rval->_attackRate  = _attackRate;
+  rval->_decay1Rate  = _decay1Rate;
+  rval->_decay1Level = _decay1Level;
+  rval->_decay2Rate  = _decay2Rate;
+  rval->_releaseRate = _releaseRate;
+  return rval;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 PolynomialEval::PolynomialEval() {
 }
 
@@ -87,6 +99,12 @@ TX81ZEnvInst::TX81ZEnvInst(const TX81ZEnvData* data, layer_ptr_t l)
   _decay2Rate  = tables._decay2.evaluate(_envdata->_decay2Rate);
   _releaseRate = tables._release.evaluate(_envdata->_releaseRate);
 
+  _attackRate  = 32.0/float(_envdata->_attackRate+1);
+  _decay1Rate  = 32.0/float(_envdata->_decay1Rate+1);
+  _decay1Level = _envdata->_decay1Level/15.0f; 
+  _decay2Rate  = 32.0/float(_envdata->_decay2Rate+1);
+  _releaseRate = 32.0/float(_envdata->_releaseRate+1);
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -119,7 +137,7 @@ void TX81ZEnvInst::compute() {
     case 1: // Attack
       if (time_since_state < _attackRate) {
         double decay_factor = std::exp(-5.0 * time_since_state / _attackRate);
-        _curval = std::min(1.0 - decay_factor, 1.0);
+        _value.x = std::min(1.0 - decay_factor, 1.0);
       } else {
         state            = 2;
         time_since_state = 0;
@@ -130,7 +148,7 @@ void TX81ZEnvInst::compute() {
         double decay_factor = std::exp(-time_since_state / _decay1Rate);
         double value        = decay_factor + _decay1Level * (1 - decay_factor);
         if (value != _decay1Level) {
-          _curval = value;
+          _value.x = value;
         } else {
           state            = 3;
           time_since_state = 0;
@@ -140,9 +158,9 @@ void TX81ZEnvInst::compute() {
     case 3: // Decay 2
       if (_decay2Rate >= 0) {
         double decay_factor = std::exp(-time_since_state / _decay2Rate);
-        double value        = _curval * decay_factor + _decay1Level * (1 - decay_factor);
+        double value        = _value.x * decay_factor + _decay1Level * (1 - decay_factor);
         if (value != 0) {
-          _curval = value;
+          _value.x = value;
         } else {
           state            = 0;
           time_since_state = 0;
@@ -151,9 +169,9 @@ void TX81ZEnvInst::compute() {
       break;
     case 4: // Release
       double decay_factor = std::exp(-time_since_state / _releaseRate);
-      double value        = _curval * decay_factor;
+      double value        = _value.x * decay_factor;
       if (value != 0) {
-        _curval = value;
+        _value.x = value;
       } else {
         state            = 0;
         time_since_state = 0;

@@ -16,21 +16,33 @@ Group::Group(const std::string& name, int x, int y, int w, int h)
     : Widget(name, x, y, w, h) {
 }
 /////////////////////////////////////////////////////////////////////////
-Group::~Group(){
+Group::~Group() {
 }
 /////////////////////////////////////////////////////////////////////////
-void Group::visitHeirarchy(visit_fn_t vfn){
+void Group::visitHeirarchy(visit_fn_t vfn) {
   std::stack<Widget*> stk;
   stk.push(this);
-  while(not stk.empty()){
+  while (not stk.empty()) {
     auto w = stk.top();
     vfn(w);
     stk.pop();
     auto as_group = dynamic_cast<Group*>(this);
-    if(as_group){
-      for( auto it : as_group->_children ){
+    if (as_group) {
+      for (auto it : as_group->_children) {
         stk.push(it.get());
       }
+    }
+  }
+}
+/////////////////////////////////////////////////////////////////////////
+void Group::dumpTopology(int depth) {
+  std::string indent(depth * 2, ' ');
+  printf("%s Group <%s>\n", indent.c_str(), _name.c_str());
+  for (auto child : _children) {
+    if (auto as_gr = dynamic_pointer_cast<Group>(child)) {
+      as_gr->dumpTopology(depth + 1);
+    } else {
+      printf("%s%s Widget <%s>\n", indent.c_str(), indent.c_str(), child->_name.c_str());
     }
   }
 }
@@ -90,7 +102,10 @@ void Group::_doUpdateSurfaces(ui::drawevent_constptr_t drwev){
 }
 /////////////////////////////////////////////////////////////////////////
 void Group::_doOnResized() {
-  // printf( "Group<%s>::OnResize x<%d> y<%d> w<%d> h<%d>\n", _name.c_str(), miX, miY, miW, miH );
+  if (0) {
+    const auto& g = _geometry;
+    printf("Group<%s>::OnResize x<%d> y<%d> w<%d> h<%d>\n", _name.c_str(), g._x, g._y, g._w, g._h);
+  }
   for (auto& it : _children) {
     if (it->mSizeDirty)
       it->_doOnResized();
@@ -98,28 +113,31 @@ void Group::_doOnResized() {
 }
 /////////////////////////////////////////////////////////////////////////
 void Group::DoLayout() {
-  const auto& g = _geometry;
-  if (0)
+  if (0) {
+    const auto& g = _geometry;
     printf("Group<%s>::DoLayout x<%d> y<%d> w<%d> h<%d>\n", _name.c_str(), g._x, g._y, g._w, g._h);
+  }
   for (auto& it : _children) {
     it->ReLayout();
   }
 }
 /////////////////////////////////////////////////////////////////////////
 Widget* Group::doRouteUiEvent(event_constptr_t ev) {
-  if (0){
+  if (0) {
     printf("Group<%s>::doRouteUiEvent\n", _name.c_str());
   }
   //
   for (auto& child : _children) {
     bool inside = child->IsEventInside(ev);
-    if (0)
+    if (0) {
       printf("Group<%s>::doRouteUiEvent ch<%s> inside<%d>\n", _name.c_str(), child->_name.c_str(), int(inside));
+    }
     if (inside) {
       auto child_target = child->routeUiEvent(ev);
-      if (child_target){
-        if (0)
-          printf("  child_target<%s>\n", child_target->_name.c_str() );
+      if (child_target and not child_target->_ignoreEvents) {
+        if (0) {
+          printf("  child_target<%s>\n", child_target->_name.c_str());
+        }
         return child_target;
       }
     }
@@ -132,9 +150,9 @@ Widget* Group::doRouteUiEvent(event_constptr_t ev) {
 }
 /////////////////////////////////////////////////////////////////////////
 void Group::_doOnPreDestroy() {
-  for( auto c : _children ){
+  for (auto c : _children) {
     c->onPreDestroy();
   }
 }
 /////////////////////////////////////////////////////////////////////////
-} // namespace ork::ui
+}// namespace ork::ui

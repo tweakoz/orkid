@@ -15,6 +15,13 @@ namespace ork::varmap {
 
 typedef std::string key_t;
 
+struct VarParamFloatCast{
+  bool _was_set = false;
+  float _value = 0.0f;
+  operator bool () const { return _was_set; }
+  float value() const { return _value; }
+};
+
 template <typename val_t> struct TVarMap {
   using value_type = val_t;
   using str_transformer_t = std::function<std::string(const val_t&)>;
@@ -77,6 +84,31 @@ template <typename val_t> struct TVarMap {
   template <typename T> inline void set(const key_t& key, const T& val) {
     _themap[key].template set<T>(val);
   }
+  ///////////////////////////////////////////////////////////////////////////
+  VarParamFloatCast tryKeyAsNumber(const std::string& key) {
+        VarParamFloatCast rval;
+        if( auto as_float = typedValueForKey<float>(key)){
+          rval._value = as_float.value();
+          rval._was_set = true;
+        }
+        else if( auto as_double = typedValueForKey<double>(key)){
+          rval._value = as_double.value();
+          rval._was_set = true;
+        }
+        else if( auto as_int = typedValueForKey<int>(key)){
+          rval._value = float(as_int.value());
+          rval._was_set = true;
+        }
+        return rval;
+      };
+  ///////////////////////////////////////////////////////////////////////////
+  VarParamFloatCast tryKeysAsNumber(const std::string& key1, const std::string& key2) {
+    VarParamFloatCast rval = tryKeyAsNumber(key1);
+    if( rval._was_set == false ){
+      rval = tryKeyAsNumber(key2);
+    }
+    return rval;
+  };
   ///////////////////////////////////////////////////////////////////////////
   inline void removeItemForKey(const key_t& key) {
     auto it = _themap.find(key);

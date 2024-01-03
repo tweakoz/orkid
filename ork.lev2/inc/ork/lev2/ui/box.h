@@ -23,6 +23,7 @@ public:
 private:
   void DoDraw(ui::drawevent_constptr_t drwev) override;
   lev2::rasterstate_ptr_t _rasterstate;
+  HandlerResult DoOnUiEvent(event_constptr_t Ev) override;
 };
 
 ////////////////////////////////////////////////////////////////////

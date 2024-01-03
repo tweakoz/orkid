@@ -1,5 +1,6 @@
 #include <ork/lev2/ezapp.h>
 #include <ork/lev2/ui/viewport.h>
+#include <ork/lev2/aud/singularity/synth.h>
 #include <ork/lev2/ui/layoutgroup.inl>
 #include <ork/lev2/gfx/renderer/drawable.h>
 #include <ork/lev2/gfx/dbgfontman.h>
@@ -238,7 +239,7 @@ OrkEzApp::OrkEzApp(appinitdata_ptr_t initdata)
     _eztopwidget->_uicontext           = _uicontext.get();
     _mainWindow->_appwin->_rootWidget = _eztopwidget;
     _eztopwidget->_topLayoutGroup =
-        _uicontext->makeTop<ui::LayoutGroup>("top-layoutgroup", 0, 0, _initdata->_width, _initdata->_height);
+        _uicontext->makeTop<ui::LayoutGroup>("ezapp-top-layoutgroup", 0, 0, _initdata->_width, _initdata->_height);
     _topLayoutGroup = _eztopwidget->_topLayoutGroup;
     /////////////////////////////////////////////
     _updq     = ork::opq::updateSerialQueue();
@@ -481,6 +482,9 @@ int OrkEzApp::mainThreadLoop() {
   glfw_ctx->_onGpuUpdate = [this](lev2::Context* context) {
     if (_mainWindow->_onGpuUpdate) {
       _mainWindow->_onGpuUpdate(context);
+    }
+    if(audio::singularity::synth::instance()){
+      audio::singularity::synth::instance()->mainThreadHandler();
     }
   };
 

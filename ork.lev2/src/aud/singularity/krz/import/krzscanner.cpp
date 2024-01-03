@@ -89,15 +89,28 @@ void filescanner::scanAndDump() {
   _joprog.AddMember("KRZ", _joprogroot, _japrog);
 
   rapidjson::StringBuffer strbuf;
+  strbuf.Reserve(32<<20);
   rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(strbuf);
   _joprog.Accept(writer);
 
-  std::ofstream of("krzdump.json");
-  of << "\n";
-  of << strbuf.GetString();
-  of << "\n";
+  //std::ofstream of("krzdump.json");
+  //of << "\n";
+  //of << strbuf.GetString();
+  //of << "\n";
 
   // printf( "JSONOUT\n\n%s\n\n", strbuf.GetString() );
+}
+
+std::string filescanner::jsonPrograms() const{
+  rapidjson::StringBuffer strbuf;
+  strbuf.Reserve(32<<20);
+  rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(strbuf);
+  _joprog.Accept(writer);
+  std::string json_str = std::string(strbuf.GetString(), strbuf.GetSize());
+  printf( "json<^%s>\n", json_str.c_str() );
+  printf( "len1<%d>\n", (int) strbuf.GetSize() );
+  printf( "len2<%d>\n", (int) json_str.length() );
+  return json_str;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -203,7 +216,7 @@ void filescanner::ParseObject(const datablock& db, datablock::iterator& it) {
     iObjectTYPE = (uObjTypeID & 0xff00) >> 8;
     iObjectID   = (uObjTypeID & 0x00ff);
   }
-  printf("ObjID<%03d> ObjTyp<0x%02x> ObjName<%s>\n", iObjectID, iObjectTYPE, (const char*)pObjName);
+  //printf("ObjID<%03d> ObjTyp<0x%02x> ObjName<%s>\n", iObjectID, iObjectTYPE, (const char*)pObjName);
 
   // jsonobj.AddMember("objectID", iObjectID, _japrog);
   /////////////////////////////////////

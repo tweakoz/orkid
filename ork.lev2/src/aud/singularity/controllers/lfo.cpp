@@ -28,10 +28,22 @@ LfoData::LfoData()
     , _maxRate(1.0f)
     , _shape("Sine") {
 }
+LfoData::~LfoData(){
+  printf("XX\n");
+}
 
 ControllerInst* LfoData::instantiate(layer_ptr_t l) const {
-  auto r = new LfoInst(this, l);
-  return r;
+  return new LfoInst(this, l);
+}
+
+controllerdata_ptr_t LfoData::clone() const {
+  auto rval = std::make_shared<LfoData>();
+  rval->_initialPhase = _initialPhase;
+  rval->_minRate      = _minRate;
+  rval->_maxRate      = _maxRate;
+  rval->_shape        = _shape;
+  rval->_controller   = _controller;
+  return rval;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -48,6 +60,9 @@ LfoInst::LfoInst(const LfoData* data, layer_ptr_t l)
   _mapper = [](float inp) -> float { return 0.0f; };
 }
 
+LfoInst::~LfoInst(){
+  printf("XX\n");
+}
 ///////////////////////////////////////////////////////////////////////////////
 
 void LfoInst::reset() {
@@ -155,7 +170,7 @@ void LfoInst::keyOff() // final
 void LfoInst::compute() // final
 {
   if (nullptr == _data) {
-    _curval = 0.0f;
+    _value.x = 0.0f;
   } else {
     float SR = getSampleRate();
     float dt = float(_layer->_dspwritecount) / SR;
@@ -165,7 +180,7 @@ void LfoInst::compute() // final
     // printf( "lforate<%f>\n", rate );
     _phaseInc = dt * _currate;
     _phase += _phaseInc;
-    _curval = _mapper(_phase);
+    _value.x = _mapper(_phase);
   }
 }
 

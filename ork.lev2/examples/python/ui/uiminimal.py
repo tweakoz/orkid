@@ -54,10 +54,10 @@ class MinimalUiApp(object):
   ##############################################
 
   def onUiEvent(self,uievent):
-    pass
     #handled = self.uicam.uiEventHandler(uievent)
     #if handled:
     #  self.camera.copyFrom( self.uicam.cameradata )
+    return ui.HandlerResult()
 
 ###############################################################################
 

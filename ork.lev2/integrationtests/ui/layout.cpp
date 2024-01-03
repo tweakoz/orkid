@@ -36,14 +36,17 @@ int main(int argc, char** argv, char** envp) {
   auto l1          = w1._layout;
   auto l2          = w2._layout;
   auto l3          = w3._layout;
+  //root_layout->_locked = true;
   //////////////////////////////////////
   l0->setMargin(4);
   l1->setMargin(4);
-  l2->setMargin(16);
-  l3->setMargin(2);
+  l2->setMargin(4);
+  l3->setMargin(4);
   //////////////////////////////////////
   auto cg0 = root_layout->proportionalHorizontalGuide(0.25); // 0
   auto cg1 = root_layout->fixedHorizontalGuide(-32);         // 1
+  cg1->_locked = true;
+  auto cgH = root_layout->proportionalVerticalGuide(0.5);         // 1
   //////////////////////////////////////
   l0->top()->anchorTo(root_layout->top());     // 2,3
   l0->left()->anchorTo(root_layout->left());   // 4,5
@@ -53,10 +56,10 @@ int main(int argc, char** argv, char** envp) {
   l1->top()->anchorTo(cg0);                      // 9
   l1->left()->anchorTo(root_layout->left());     // 10
   l1->bottom()->anchorTo(cg1);                   // 11
-  l1->right()->anchorTo(root_layout->centerH()); // 12,13
+  l1->right()->anchorTo(cgH); // 12,13
   //////////////////////////////////////
   l2->top()->anchorTo(cg0);                     // 14
-  l2->left()->anchorTo(root_layout->centerH()); // 15
+  l2->left()->anchorTo(cgH); // 15
   l2->bottom()->anchorTo(cg1);                  // 16
   l2->right()->anchorTo(root_layout->right());  // 17
   //////////////////////////////////////

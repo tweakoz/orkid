@@ -25,6 +25,8 @@ struct EnvPoint {
   float _time  = 0.0f;
   float _level = 0.0f;
   float _shape = 1.0f;
+  int _raw_rate = 0;
+  int _raw_level = 0;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -43,6 +45,7 @@ struct RateLevelEnvData : public ControllerData {
 
   RateLevelEnvData();
   ControllerInst* instantiate(layer_ptr_t layer) const final;
+  controllerdata_ptr_t clone() const final;
   bool isBiPolar() const;
 
   void addSegment(std::string name, float time, float level, float power = 1.0f);
@@ -56,6 +59,7 @@ struct RateLevelEnvData : public ControllerData {
   int _sustainSegment = -1;
 };
 
+
 ///////////////////////////////////////////////////////////////////////////////
 
 struct RateLevelEnvInst : public ControllerInst {
@@ -66,6 +70,7 @@ struct RateLevelEnvInst : public ControllerInst {
   ////////////////////////////
   float shapedvalue() const;
   ////////////////////////////
+  void setState(int istate);
   void initSeg(int iseg);
   bool done() const;
   const RateLevelEnvData* _data;
@@ -88,9 +93,31 @@ struct RateLevelEnvInst : public ControllerInst {
   bool _ignoreRelease;
   bool _ampenv;
   int _state;
+  int _prevstate;
   RlEnvType _envType;
   KeyOnInfo _konoffinfo;
   int _updatecount = 0;
+  std::string _debugName;
+};
+
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct NatEnvWrapperData : public ControllerData {
+  DeclareConcreteX(NatEnvWrapperData, ControllerData);
+  NatEnvWrapperData();
+  ControllerInst* instantiate(layer_ptr_t layer) const final;
+  controllerdata_ptr_t clone() const final;
+  std::vector<natenvseg> _segments;
+};
+
+struct NatEnvWrapperInst : public ControllerInst {
+  NatEnvWrapperInst(const NatEnvWrapperData* data, layer_ptr_t l);
+  void compute() final;
+  void keyOn(const KeyOnInfo& KOI) final;
+  void keyOff() final;
+  KeyOnInfo _konoffinfo;
+  natenv_ptr_t _natenv;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -101,6 +128,7 @@ struct AsrData : public ControllerData {
 
   AsrData();
   ControllerInst* instantiate(layer_ptr_t layer) const final;
+  controllerdata_ptr_t clone() const final;
 
   std::string _trigger;
   std::string _mode;
@@ -139,6 +167,7 @@ struct YmEnvData : public ControllerData {
 
   YmEnvData();
   ControllerInst* instantiate(layer_ptr_t layer) const final;
+  controllerdata_ptr_t clone() const final;
 
   int _attackRate = 0; 
   int _decay1Rate  = 0; 
@@ -200,6 +229,7 @@ const TX81ZEnvTables& getTX81ZEnvTables();
 struct TX81ZEnvData : public ControllerData {
   DeclareConcreteX(TX81ZEnvData, ControllerData);
   TX81ZEnvData();
+  controllerdata_ptr_t clone() const final;
   ControllerInst* instantiate(layer_ptr_t layer) const final;
   int _attackRate = 0;
   int _decay1Rate  = 0;

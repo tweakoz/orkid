@@ -17,6 +17,15 @@ float wrap(float inp, float adj);
 
 ///////////////////////////////////////////////////////////////////////////////
 
+SHAPER_DATA::SHAPER_DATA(std::string name)
+    : DspBlockData(name) {
+  _blocktype = "SHAPER";
+  addParam("amount","x")->useDefaultEvaluator(); 
+}
+dspblk_ptr_t SHAPER_DATA::createInstance() const {
+  return std::make_shared<SHAPER>(this);
+}
+
 SHAPER::SHAPER(const DspBlockData* dbd)
     : DspBlock(dbd) {
 }
@@ -30,7 +39,7 @@ void SHAPER::compute(DspBuffer& dspbuf) // final
   _fval[0]  = amt;
 
   // float la = decibel_to_linear_amp_ratio(amt);
-  if (1) {
+  if (not _dbd->_bypass) {
     auto inputchan  = getInpBuf(dspbuf, 0) + _layer->_dspwritebase;
     auto outputchan = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
     for (int i = 0; i < inumframes; i++) {
@@ -41,6 +50,15 @@ void SHAPER::compute(DspBuffer& dspbuf) // final
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+SHAPE2_DATA::SHAPE2_DATA(std::string name)
+    : DspBlockData(name) {
+  _blocktype = "SHAPE2";
+  addParam("amount","x")->useDefaultEvaluator(); 
+}
+dspblk_ptr_t SHAPE2_DATA::createInstance() const {
+  return std::make_shared<SHAPE2>(this);
+}
 
 SHAPE2::SHAPE2(const DspBlockData* dbd)
     : DspBlock(dbd) {
@@ -64,6 +82,16 @@ void SHAPE2::compute(DspBuffer& dspbuf) // final
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+TWOPARAM_SHAPER_DATA::TWOPARAM_SHAPER_DATA(std::string name)
+    : DspBlockData(name) {
+  _blocktype = "TWOPARAM_SHAPER";
+  addParam("even")->useDefaultEvaluator(); 
+  addParam("odd")->useDefaultEvaluator(); 
+}
+dspblk_ptr_t TWOPARAM_SHAPER_DATA::createInstance() const {
+  return std::make_shared<TWOPARAM_SHAPER>(this);
+}
 
 TWOPARAM_SHAPER::TWOPARAM_SHAPER(const DspBlockData* dbd)
     : DspBlock(dbd) {
@@ -124,7 +152,7 @@ void TWOPARAM_SHAPER::compute(DspBuffer& dspbuf) // final
 WrapData::WrapData(std::string name)
     : DspBlockData(name) {
   _blocktype = "WRAP";
-  addParam()->useDefaultEvaluator();
+  addParam("adjust", "dB")->useAmplitudeEvaluator();
 }
 dspblk_ptr_t WrapData::createInstance() const {
   return std::make_shared<Wrap>(this);
@@ -136,13 +164,15 @@ Wrap::Wrap(const DspBlockData* dbd)
 void Wrap::compute(DspBuffer& dspbuf) // final
 {
   int inumframes = _layer->_dspwritecount;
-  float rpoint   = _param[0].eval();
-  _fval[0]       = rpoint;
-  if (1) {
-    auto inputchan  = getInpBuf(dspbuf, 0) + _layer->_dspwritebase;
-    auto outputchan = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
+  float adjust   = _param[0].eval(false);
+  _fval[0]       = adjust;
+ // printf( "adjust<%g>\n", adjust);
+  if (not _dbd->_bypass) {
+    auto inpbuf = getInpBuf(dspbuf, 0) + _layer->_dspwritebase;
+    auto outbuf = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
+    float gain = decibel_to_linear_amp_ratio(adjust+30.0f);
     for (int i = 0; i < inumframes; i++) {
-      outputchan[i] = wrap(inputchan[i], rpoint);
+      outbuf[i] = fmod(inpbuf[i] * gain, 1.0f);
     }
   }
 }
@@ -151,7 +181,7 @@ void Wrap::compute(DspBuffer& dspbuf) // final
 DistortionData::DistortionData(std::string name)
     : DspBlockData(name) {
   _blocktype = "DIST";
-  addParam()->useDefaultEvaluator();
+  addParam("drive","dB")->useDefaultEvaluator();
 }
 dspblk_ptr_t DistortionData::createInstance() const {
   return std::make_shared<Distortion>(this);

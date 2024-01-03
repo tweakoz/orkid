@@ -73,6 +73,10 @@ void Box::DoDraw(drawevent_constptr_t drwev) {
   mtxi->PopUIMatrix();
 }
 ///////////////////////////////////////////////////////////////////////////////
+HandlerResult Box::DoOnUiEvent(event_constptr_t Ev) {
+  return HandlerResult();
+}
+///////////////////////////////////////////////////////////////////////////////
 EvTestBox::EvTestBox(
     const std::string& name, //
     fvec4 colornormal,

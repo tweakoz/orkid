@@ -194,12 +194,15 @@ public:
   evrouter_t _evrouter   = nullptr;
   evhandler_t _evhandler = nullptr;
   int _depth = 0;
+  bool _ignoreEvents = false;
+
   std::string _name;
   uint64_t _userID = 0;
   drawevent_constptr_t _drawEvent;
   Rect _geometry;
   std::stack<eventfilter_ptr_t> _eventfilterstack;
   Rect _prevGeometry;
+  varmap::VarMap _uservars;
 
   virtual Widget* doRouteUiEvent(event_constptr_t Ev);
 

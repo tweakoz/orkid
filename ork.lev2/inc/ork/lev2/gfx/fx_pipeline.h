@@ -76,6 +76,7 @@ struct FxPipeline {
   using varval_generator_t = std::function<varval_t()>;
 
   void bindParam(fxparam_constptr_t p, varval_t v);
+  void dump() const;
 
   GfxMaterial* _material = nullptr;
   material_ptr_t _sharedMaterial = nullptr;
@@ -90,6 +91,8 @@ struct FxPipeline {
 
   std::unordered_map<int,fxdescriptorsetbindpoint_constptr_t> _descset_bindpoints;
   bool _debugBreak = false;
+  bool _debugPrint = false;
+  std::string _debugName;
 
 };
 

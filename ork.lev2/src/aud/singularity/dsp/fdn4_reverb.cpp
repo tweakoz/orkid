@@ -16,9 +16,8 @@ namespace ork::audio::singularity {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-Fdn4ReverbData::Fdn4ReverbData(std::string name, float tscale)
-    : DspBlockData(name)
-    , _tscale(tscale) {
+Fdn4ReverbData::Fdn4ReverbData(std::string name)
+    : DspBlockData(name) {
   _blocktype     = "Fdn4Reverb";
   auto mix_param = addParam();
   mix_param->useDefaultEvaluator();
@@ -30,31 +29,11 @@ dspblk_ptr_t Fdn4ReverbData::createInstance() const { // override
   return std::make_shared<Fdn4Reverb>(this);
 }
 
-///////////////////////////////////////////////////////////////////////////////
-
-Fdn4Reverb::Fdn4Reverb(const Fdn4ReverbData* dbd)
-    : DspBlock(dbd) {
-  ///////////////////////////
-  float input_g  = 0.75f;
-  float output_g = 0.75f;
-  float tscale   = dbd->_tscale;
-  ///////////////////////////
-  // matrixHadamard(0.0);
-  matrixHouseholder();
-  ///////////////////////////
-  _inputGainsL  = fvec4(input_g, input_g, input_g, input_g);
-  _inputGainsR  = fvec4(input_g, input_g, input_g, input_g);
-  _outputGainsL = fvec4(output_g, output_g, 0, 0);
-  _outputGainsR = fvec4(0, 0, output_g, output_g);
-  _delayA.setStaticDelayTime(tscale * 0.01f);
-  _delayB.setStaticDelayTime(tscale * 0.03f);
-  _delayC.setStaticDelayTime(tscale * 0.07f);
-  _delayD.setStaticDelayTime(tscale * 0.11f);
+void Fdn4ReverbData::update(){
 }
-
 ///////////////////////////////////////////////////////////////////////////////
 
-void Fdn4Reverb::matrixHadamard(float fblevel) {
+void Fdn4ReverbData::matrixHadamard(float fblevel) {
   float fbgain = lerp(0.40, 0.49, fblevel);
   _feedbackMatrix.setRow(0, fvec4(+fbgain, +fbgain, +fbgain, +fbgain));
   _feedbackMatrix.setRow(1, fvec4(+fbgain, -fbgain, +fbgain, -fbgain));
@@ -64,13 +43,36 @@ void Fdn4Reverb::matrixHadamard(float fblevel) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Fdn4Reverb::matrixHouseholder() {
-  float fbgain = 0.5f;
+void Fdn4ReverbData::matrixHouseholder(float fbgain) {
   _feedbackMatrix.setRow(0, fvec4(+fbgain, -fbgain, -fbgain, -fbgain));
   _feedbackMatrix.setRow(1, fvec4(-fbgain, +fbgain, -fbgain, -fbgain));
   _feedbackMatrix.setRow(2, fvec4(-fbgain, -fbgain, +fbgain, -fbgain));
   _feedbackMatrix.setRow(3, fvec4(-fbgain, -fbgain, -fbgain, +fbgain));
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
+Fdn4Reverb::Fdn4Reverb(const Fdn4ReverbData* dbd)
+    : DspBlock(dbd)
+    , _mydata(dbd) {
+  ///////////////////////////
+  float input_g  = dbd->_input_gain;
+  float output_g = dbd->_output_gain;
+  float tbase   = dbd->_time_base;
+  float tscale = dbd->_time_scale;
+  ///////////////////////////
+  // matrixHadamard(0.0);
+  ///////////////////////////
+  _inputGainsL  = fvec4(input_g, input_g, input_g, input_g);
+  _inputGainsR  = fvec4(input_g, input_g, input_g, input_g);
+  _outputGainsL = fvec4(output_g, output_g, 0, 0);
+  _outputGainsR = fvec4(0, 0, output_g, output_g);
+  _delayA.setStaticDelayTime(tbase);
+  _delayB.setStaticDelayTime(tbase * tscale);
+  _delayC.setStaticDelayTime(tbase * tscale*tscale);
+  _delayD.setStaticDelayTime(tbase * tscale*tscale*tscale);
+}
+
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -120,42 +122,75 @@ void Fdn4Reverb::compute(DspBuffer& dspbuf) // final
     float cinp = finl * _inputGainsL.z + finr * _inputGainsR.z;
     float dinp = finl * _inputGainsL.w + finr * _inputGainsR.w;
 
-    ainp += grp0.dotWith(abcd_out) + 1e-9;
-    binp += grp1.dotWith(abcd_out) + 1e-9;
-    cinp += grp2.dotWith(abcd_out) + 1e-9;
-    dinp += grp3.dotWith(abcd_out) + 1e-9;
+    float ainpA = ainp + grp0.dotWith(abcd_out) + 1e-9;
+    float binpA = binp + grp1.dotWith(abcd_out) + 1e-9;
+    float cinpA = cinp + grp2.dotWith(abcd_out) + 1e-9;
+    float dinpA = dinp + grp3.dotWith(abcd_out) + 1e-9;
 
-    _delayA.inp(ainp);
-    _delayB.inp(binp);
-    _delayC.inp(cinp);
-    _delayD.inp(dinp);
+    float ainpB = ainpA;
+    float binpB = binpA;
+    float cinpB = cinpA;
+    float dinpB = dinpA;
+    
+    for( int i=0; i<_mydata->_allpass_count; i++ ){
+      ainpB =_allpassA[i].Tick(ainpB);
+      binpB =_allpassB[i].Tick(binpB);
+      cinpB =_allpassC[i].Tick(cinpB);
+      dinpB =_allpassD[i].Tick(dinpB);
+    }
+
+    _delayA.inp(ainpB);
+    _delayB.inp(binpB);
+    _delayC.inp(cinpB);
+    _delayD.inp(dinpB);
 
     /////////////////////////////////////
     // output to dsp channels
     /////////////////////////////////////
 
-    float lout = ainp * _outputGainsL.x   //
-                 + binp * _outputGainsL.y //
-                 + cinp * _outputGainsL.z //
-                 + dinp * _outputGainsL.w;
+    float lout = ainpA* _outputGainsL.x   //
+               + binpA* _outputGainsL.y //
+               + cinpA* _outputGainsL.z //
+               + dinpA* _outputGainsL.w;
 
-    float rout = ainp * _outputGainsR.x   //
-                 + binp * _outputGainsR.y //
-                 + cinp * _outputGainsR.z //
-                 + dinp * _outputGainsR.w;
+    float rout = ainpA* _outputGainsR.x   //
+                 + binpA* _outputGainsR.y //
+                 + cinpA* _outputGainsR.z //
+                 + dinpA* _outputGainsR.w;
 
-    olbuf[i] = lerp(inl, lout, mix);
-    orbuf[i] = lerp(inr, rout, mix);
+    olbuf[i] = std::lerp( inl,lout, mix);
+    orbuf[i] = std::lerp( inr,rout, mix);
   }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Fdn4Reverb::doKeyOn(const KeyOnInfo& koi) // final
-{
+void Fdn4Reverb::doKeyOn(const KeyOnInfo& koi) { // final
+
+  _feedbackMatrix = _mydata->_feedbackMatrix;
+
   _hipassfilterL.Clear();
   _hipassfilterR.Clear();
-  _hipassfilterL.SetHpf(200.0f);
-  _hipassfilterR.SetHpf(200.0f);
+  _hipassfilterL.SetHpf(_mydata->_hipass_cutoff);
+  _hipassfilterR.SetHpf(_mydata->_hipass_cutoff);
+  int numalp = _mydata->_allpass_count;
+  _allpassA.resize(numalp);
+  _allpassB.resize(numalp);
+  _allpassC.resize(numalp);
+  _allpassD.resize(numalp);
+  for( int i=0; i<numalp; i++) {
+    _allpassA[i].Clear();
+    _allpassB[i].Clear();
+    _allpassC[i].Clear();
+    _allpassD[i].Clear();
+    float frq = _mydata->_allpass_shift_frq_bas * powf(_mydata->_allpass_shift_frq_mul,float(i));
+    _allpassA[i].set(frq);
+    _allpassB[i].set(frq);
+    _allpassC[i].set(frq);
+    _allpassD[i].set(frq);
+  }
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
 } // namespace ork::audio::singularity

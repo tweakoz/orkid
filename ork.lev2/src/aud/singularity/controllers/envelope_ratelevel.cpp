@@ -22,6 +22,20 @@ namespace ork::audio::singularity {
 void RateLevelEnvData::describeX(class_t* clazz) {
 }
 
+controllerdata_ptr_t RateLevelEnvData::clone() const {
+  auto rval = std::make_shared<RateLevelEnvData>();
+  rval->_name = _name;
+  rval->_ampenv = _ampenv;
+  rval->_bipolar = _bipolar;
+  rval->_envType = _envType;
+  rval->_sustainSegment = _sustainSegment;
+  rval->_releaseSegment = _releaseSegment;
+  rval->_envadjust = _envadjust;
+  rval->_segmentNames = _segmentNames;
+  rval->_segments = _segments;
+  return rval;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // 7-seg rate/level envelopes
 ///////////////////////////////////////////////////////////////////////////////
@@ -70,6 +84,11 @@ RateLevelEnvInst::RateLevelEnvInst(const RateLevelEnvData* data, layer_ptr_t l)
     , _released(false)
     , _ampenv(data->_ampenv)
     , _envType(data->_envType) {
+    _name = data->_name;
+  //printf("new RateLevelEnvInst<%s> ampenv<%d>\n",  _name.c_str(), int(_ampenv) );
+  //for( auto seg : data->_segments ){
+    //printf( "  seg t<%g> l<%g> shp<%g>\n", seg._time, seg._level, seg._shape );
+  //}
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -77,6 +96,7 @@ RateLevelEnvInst::RateLevelEnvInst(const RateLevelEnvData* data, layer_ptr_t l)
 void RateLevelEnvInst::initSeg(int iseg) {
   if (!_data)
     return;
+  int prevseg = _segmentIndex;
   const auto& edata = *_data;
   const auto& segs  = edata._segments;
   size_t numsegs    = segs.size();
@@ -88,7 +108,7 @@ void RateLevelEnvInst::initSeg(int iseg) {
   const auto& base_segment = segs[_segmentIndex];
   auto adjusted_segment    = edata._envadjust(base_segment, iseg, _konoffinfo);
   //////////////////////////////////////////////
-  _startval   = _curval;
+  _startval   = _value.x;
   _rawdestval = base_segment._level;
   _rawtime    = base_segment._time;
   _destval    = adjusted_segment._level;
@@ -100,9 +120,19 @@ void RateLevelEnvInst::initSeg(int iseg) {
     _lerpincr  = controlPeriod() / _adjtime;
     _lerpindex = 0.0f;
   } else {
-    _lerpincr  = 0.0f;
-    _lerpindex = 1.0f;
+    _lerpincr  = 0.07f;
+    _lerpindex = 0.0f;
   }
+  //printf( "basetime<%g> adjtime<%g> _lerpincr<%g>\n", _rawtime, _adjtime, _lerpincr);
+  if(_lerpincr>0.2){
+    _lerpincr = 0.2;
+  }
+  if(_keymoddata and _keymoddata->_subscriber){
+        _keymoddata->_evstrings.atomicOp([this,prevseg](std::vector<std::string>& unlocked){
+          auto s = FormatString("seg<%d->%d> _startval<%g> _destval<%g> _lerpincr<%g> _lerpindex<%g>", prevseg,  _segmentIndex, _startval, _destval, _lerpincr, _lerpindex );
+          unlocked.push_back(s);
+        });
+    }
 }
 ///////////////////////////////////////////////////////////////////////////////
 float RateLevelEnvInst::shapedvalue() const {
@@ -114,6 +144,20 @@ float RateLevelEnvInst::shapedvalue() const {
   return std::clamp(rawval, _clampmin, _clampmax);
 }
 ///////////////////////////////////////////////////////////////////////////////
+void RateLevelEnvInst::setState(int istate){
+  _prevstate = _state;
+  if(_ampenv){
+    //printf("env<%p:%s> state<%d->%d>\n", this, _name.c_str(), _prevstate, _state );
+  }
+  if(_keymoddata and _keymoddata->_subscriber){
+        _keymoddata->_evstrings.atomicOp([this,istate](std::vector<std::string>& unlocked){
+          auto s = FormatString("state<%d->%d> _value<%g> seg<%d>", _prevstate,  _state, _value.x, _segmentIndex );
+          unlocked.push_back(s);
+        });
+    }
+  _state = istate;
+}
+///////////////////////////////////////////////////////////////////////////////
 void RateLevelEnvInst::compute() // final
 {
   if (nullptr == _data)
@@ -121,28 +165,30 @@ void RateLevelEnvInst::compute() // final
   /////////////////////////////
   const auto& edata = *_data;
   const auto& segs  = edata._segments;
-  size_t numsegs    = segs.size();
-  size_t maxseg     = numsegs - 1;
+  int numsegs    = segs.size();
+  int maxseg     = numsegs - 1;
   /////////////////////////////
   switch (_state) {
     ////////////////////////////////////////////////////////////////////////////
     case 0: { // atkdec
       ///////////////////////////////////////////
       _lerpindex += _lerpincr;
-      _curval          = shapedvalue();
+      _value          = shapedvalue();
       bool try_advance = (_lerpindex >= 1.0);
       ///////////////////////////////////////////
       if (try_advance) {
         if (_segmentIndex == edata._sustainSegment) { // hold at sustain
-          _state = 1;
+          setState(1);
         } else if (edata._sustainSegment == -1) { // this env has no sustain...
           // so go to release
-          _state = 2;
+          setState(2);
+          //printf("env<%p:%s> pre-begin release _value<%g>\n", this, _name.c_str(), _value.x );
         } else if (_segmentIndex < edata._sustainSegment) { // we are not at sustain yet..
           if (_segmentIndex >= maxseg)
-            _state = 3; // straight to done..
-          else
+            setState(3); // straight to done.).
+          else {
             initSeg(_segmentIndex + 1);
+          }
         } else {
           OrkAssert(false);
         }
@@ -157,12 +203,15 @@ void RateLevelEnvInst::compute() // final
     case 2: { // release
       ///////////////////////////////////////////
       _lerpindex += _lerpincr;
-      _curval          = shapedvalue();
+      _value          = shapedvalue();
+      //printf( "_value<%g>\n", _value.x);
       bool try_advance = (_lerpindex >= 1.0);
       ///////////////////////////////////////////
       if (try_advance) {
-        if (_segmentIndex >= maxseg)
-          _state = 3;
+        if (_segmentIndex >= maxseg){
+          setState(5);
+          //printf("env<%p:%s> release adv1 _segmentIndex<%d> maxseg<%d> _value<%g>\n", this, _name.c_str(), _segmentIndex, maxseg, _value.x );
+        }
         else
           initSeg(_segmentIndex + 1);
       } else {
@@ -171,11 +220,13 @@ void RateLevelEnvInst::compute() // final
         //  when the value is inaudible
         ///////////////////////////////////////////
         if (_ampenv) {
-          float dbatten = linear_amp_ratio_to_decibel(_curval);
+          float dbatten = linear_amp_ratio_to_decibel(_value.x);
           bool done     = (_segmentIndex >= numsegs) //
                       and (dbatten < -96.0f);
-          if (done) //
-            _state = 3;
+          if (done){
+            setState(3);
+            //printf("env<%p:%s> release adv2 dbatten<%g>\n", this, _name.c_str(), dbatten );
+          }
         }
         ///////////////////////////////////////////
       }
@@ -183,20 +234,32 @@ void RateLevelEnvInst::compute() // final
     }
       ////////////////////////////////////////////////////////////////////////////
     case 3: // done
-      // printf("env<%p> done\n", this);
+       //printf("env<%p:%s> done\n", this, _name.c_str() );
       if (_ampenv) {
         // printf("ampenv<%p> RELEASING LAYER<%p>\n", this, _layer);
         synth::instance()->releaseLayer(_layer);
-        _curval = 0.0;
+        _value.x = 0.0;
       } else {
-        _curval = segs.rbegin()->_level;
+        _value.x = segs.rbegin()->_level;
       }
       _data  = nullptr;
-      _state = 4;
+      setState(4);
       break;
       ////////////////////////////////////////////////////////////////////////////
     case 4: // dead (NOP)
       break;
+      ////////////////////////////////////////////////////////////////////////////
+    case 5: { // ENDDECAYTEST
+       //printf("env<%p:%s> st5 <%g>\n", this, _name.c_str(), _value.x );
+      _value.x *= 0.995;
+      float dbatten = linear_amp_ratio_to_decibel(_value.x);
+      bool done     = dbatten<-96.0;
+      if(done){
+        setState(3);
+        //printf( "DONE\n" );
+      }
+      break;
+    }
   }
   //////////////////////////////////////
   // SignalScope
@@ -206,7 +269,15 @@ void RateLevelEnvInst::compute() // final
   }
   //////////////////////////////////////
   _updatecount++;
-  // printf("env<%p> _state<%d> _curval<%g>\n", this, _state, _curval);
+  if(_keymoddata){
+    _keymoddata->_currentValue = _value;
+  }
+  if (_ampenv) {
+    float ling = _value.x;
+    float dbg = (1.0f-ling)*-96.0f;
+    _layer->_ampenvgain = decibel_to_linear_amp_ratio(dbg);
+    //printf("ampenv dbg<%g>\n", dbg);
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -215,10 +286,12 @@ void RateLevelEnvInst::keyOn(const KeyOnInfo& KOI) {
   _layer         = KOI._layer;
   _konoffinfo    = KOI;
   _state         = 0;
+  _prevstate     = -1;
   auto ld        = KOI._layerdata;
   int ikey       = KOI._key;
   _ignoreRelease = ld->_ignRels;
   _released      = false;
+  _segmentIndex  = -1;
   //////////////////////////////////
   // printf("env<%p> keyon\n", this);
   //////////////////////////////////
@@ -237,7 +310,7 @@ void RateLevelEnvInst::keyOn(const KeyOnInfo& KOI) {
     }
     _clamprange = (_clampmax - _clampmin);
     ///////////////////////
-    _curval = 0.0f;
+    _value.x = 0.0f;
     initSeg(0);
     if (_ampenv)
       _layer->retain();
@@ -246,7 +319,7 @@ void RateLevelEnvInst::keyOn(const KeyOnInfo& KOI) {
   else {
     _startval   = 0.0f;
     _destval    = 0.0f;
-    _curval     = 0.0f;
+    _value.x    = 0.0f;
     _clampmin   = 0.0f;
     _clampmax   = 1.0f;
     _clamprange = 1.0f;
@@ -259,7 +332,7 @@ void RateLevelEnvInst::keyOn(const KeyOnInfo& KOI) {
 void RateLevelEnvInst::keyOff() {
   // printf("env<%p> keyoff\n", this);
   _released = true;
-  _state    = 2;
+  setState(2);
   if (_data && false == _ignoreRelease) {
     if (_data->_releaseSegment >= 0)
       initSeg(_data->_releaseSegment);

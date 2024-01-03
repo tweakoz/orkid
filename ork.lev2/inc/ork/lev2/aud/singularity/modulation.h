@@ -8,9 +8,32 @@
 #pragma once
 
 #include <ork/lev2/aud/singularity/krztypes.h>
+#include <ork/math/cvector4.h>
+#include <ork/kernel/varmap.inl>
 #include "reflection.h"
 
 namespace ork::audio::singularity {
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct KeyOnModifiers{
+  using fvec4_genfn_t = std::function<fvec4()>;
+  using fvec4_subfn_t = std::function<void(std::string name, svar64_t)>;
+  using strvect_t = std::vector<std::string>;
+  struct DATA{
+    std::string _name;
+    fvec4_genfn_t _generator;
+    fvec4_subfn_t _subscriber;
+    fvec4 _currentValue;
+    varmap::VarMap _vars;
+    LockedResource<strvect_t> _evstrings;
+  };
+  using data_ptr_t = std::shared_ptr<DATA>;
+  using map_t = std::unordered_map<std::string,data_ptr_t>;
+  map_t _mods;
+  uint32_t _layermask = 0xffffffff;
+  bool _dangling = false;
+};
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -21,6 +44,7 @@ struct BlockModulationData final : public ork::Object {
   BlockModulationData();
   BlockModulationData(const BlockModulationData&) = delete;
 
+  dspparammod_ptr_t clone() const;
   controllerdata_ptr_t _src1;
   controllerdata_ptr_t _src2;
   controllerdata_ptr_t _src2DepthCtrl;
@@ -40,6 +64,9 @@ struct DspParamData final : public ork::Object {
 
   DspParamData(std::string name = "");
 
+  dspparam_ptr_t clone() const;
+  void dump() const;
+  
   void useDefaultEvaluator();
   void usePitchEvaluator();
   void useFrequencyEvaluator();
@@ -50,6 +77,7 @@ struct DspParamData final : public ork::Object {
   std::string _name;
   std::string _units;
   std::string _evaluatorid;
+  mutable bool _debug = false;
 
   int _edit_coarse_numsteps = 1;
   float _edit_coarse_shape  = 1.0f;
@@ -70,7 +98,9 @@ struct DspParamData final : public ork::Object {
   float _fine           = 0.0f;
   float _fineHZ         = 0.0f;
   float _keyTrack       = 0.0f;
+  std::string _keyTrackUnits;
   float _velTrack       = 0.0f;
+  std::string _velTrackUnits;
   int _keystartNote     = 60;
   bool _keystartBipolar = true; // false==unipolar
   // evalit_t _evaluator;

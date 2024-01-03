@@ -151,6 +151,8 @@ void DeferredContext::gpuInit(Context* target) {
     //////////////////////////////////////////////////////////////
     _rtgs_laccum = std::make_shared<RtgSet>(target,MsaaSamples::MSAA_1X, true);
     _rtgs_laccum->addBuffer("DeferredLightAccum", _lightAccumFormat);
+    if(_auxBufferFormat!=EBufferFormat::NONE)
+      _rtgs_laccum->addBuffer("Auxiliary", _auxBufferFormat);
     _rtgs_laccum->_autoclear = false;
     //////////////////////////////////////////////////////////////
     auto mtl_load_req1 = std::make_shared<asset::LoadRequest>("src://effect_textures/white");
@@ -172,6 +174,13 @@ void DeferredContext::gpuInit(Context* target) {
 
   }
   //target->debugPopGroup();
+  target->debugPopGroup();
+  auto ev = std::make_shared<GpuEvent>();
+  ev->_eventID = "ork::lev2::pbr::deferrednode::DeferredContext::gpuInit";
+  target->enqueueGpuEvent(ev);
+  if(_onGpuInitialized){
+    _onGpuInitialized();
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////

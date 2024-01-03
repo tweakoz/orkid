@@ -20,6 +20,66 @@ float wrap(float inp, float adj);
 
 ///////////////////////////////////////////////////////////////////////////////
 
+PITCH_DATA::PITCH_DATA(std::string name)
+    : DspBlockData(name) {
+  _blocktype = "PITCH";
+  addParam("pitch")->usePitchEvaluator();
+  //addParam("pch2")->usePitchEvaluator();
+}
+
+dspblkdata_ptr_t PITCH_DATA::clone() const{
+  auto rval = std::make_shared<PITCH_DATA>(_name);
+  size_t numparams = _paramd.size();
+  rval->_paramd.clear();
+  rval->_paramd.resize(numparams);
+  for (size_t i=0; i<numparams; i++) {
+    auto p = _paramd[i];
+    auto p2 = p->clone();
+    rval->_paramd[i] = p2;
+    p->dump();
+    p2->dump();
+  }
+  rval->_blocktype = _blocktype;
+  rval->_numParams = _numParams;
+  rval->_inputPad = _inputPad;
+
+  rval->_blockIndex = _blockIndex;
+  rval->_vars = _vars;
+  rval->_bypass = _bypass;
+
+  return rval;
+}
+
+dspblk_ptr_t PITCH_DATA::createInstance() const { // override
+  return std::make_shared<PITCH>(this);
+}
+
+PITCH::PITCH(const DspBlockData* dbd)
+    : DspBlock(dbd) {
+
+}
+
+void PITCH::compute(DspBuffer& dspbuf) // final
+{
+  float value = _param[0].eval();
+  _layer->_curPitchOffsetInCents = value;
+  
+}
+void PITCH::doKeyOn(const KeyOnInfo& koi) // final
+{
+}
+
+///////////////////////////////////////////////////////////////////////////////
+SINE_DATA::SINE_DATA(std::string name)
+    : DspBlockData(name) {
+  _blocktype = "SINE";
+  addParam("pitch")->usePitchEvaluator();
+}
+
+dspblk_ptr_t SINE_DATA::createInstance() const { // override
+  return std::make_shared<SINE>(this);
+}
+
 SINE::SINE(const DspBlockData* dbd)
     : DspBlock(dbd)
     , _pblep(getSampleRate(), PolyBLEP::SINE) {
@@ -52,6 +112,15 @@ void SINE::doKeyOn(const KeyOnInfo& koi) // final
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+SAW_DATA::SAW_DATA(std::string name)
+    : DspBlockData(name) {
+  _blocktype = "SAW";
+  addParam("pitch")->usePitchEvaluator();
+}
+
+dspblk_ptr_t SAW_DATA::createInstance() const { // override
+  return std::make_shared<SAW>(this);
+}
 
 SAW::SAW(const DspBlockData* dbd)
     : DspBlock(dbd)
@@ -84,6 +153,15 @@ void SAW::doKeyOn(const KeyOnInfo& koi) // final
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+SQUARE_DATA::SQUARE_DATA(std::string name)
+    : DspBlockData(name) {
+  _blocktype = "SQUARE";
+  addParam("pitch")->usePitchEvaluator();
+}
+
+dspblk_ptr_t SQUARE_DATA::createInstance() const { // override
+  return std::make_shared<SQUARE>(this);
+}
 
 SQUARE::SQUARE(const DspBlockData* dbd)
     : DspBlock(dbd)
@@ -116,6 +194,15 @@ void SQUARE::doKeyOn(const KeyOnInfo& koi) // final
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+SINEPLUS_DATA::SINEPLUS_DATA(std::string name)
+    : DspBlockData(name) {
+  _blocktype = "SINEPLUS";
+  addParam("pitch")->usePitchEvaluator();
+}
+
+dspblk_ptr_t SINEPLUS_DATA::createInstance() const { // override
+  return std::make_shared<SINEPLUS>(this);
+}
 
 SINEPLUS::SINEPLUS(const DspBlockData* dbd)
     : DspBlock(dbd)
@@ -150,6 +237,15 @@ void SINEPLUS::doKeyOn(const KeyOnInfo& koi) // final
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+SAWPLUS_DATA::SAWPLUS_DATA(std::string name)
+    : DspBlockData(name) {
+  _blocktype = "SAWPLUS";
+  addParam("pitch")->usePitchEvaluator();
+}
+
+dspblk_ptr_t SAWPLUS_DATA::createInstance() const { // override
+  return std::make_shared<SAWPLUS>(this);
+}
 
 SAWPLUS::SAWPLUS(const DspBlockData* dbd)
     : DspBlock(dbd)
@@ -189,6 +285,15 @@ void SAWPLUS::doKeyOn(const KeyOnInfo& koi) // final
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+SWPLUSSHP_DATA::SWPLUSSHP_DATA(std::string name)
+    : DspBlockData(name) {
+  _blocktype = "SWPLUSSHP";
+  addParam("pitch")->usePitchEvaluator();
+}
+
+dspblk_ptr_t SWPLUSSHP_DATA::createInstance() const { // override
+  return std::make_shared<SWPLUSSHP>(this);
+}
 
 SWPLUSSHP::SWPLUSSHP(const DspBlockData* dbd)
     : DspBlock(dbd)
@@ -227,6 +332,16 @@ void SWPLUSSHP::doKeyOn(const KeyOnInfo& koi) // final
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+SHAPEMODOSC_DATA::SHAPEMODOSC_DATA(std::string name)
+    : DspBlockData(name) {
+  _blocktype = "SHAPEMODOSC";
+  addParam("pitch")->usePitchEvaluator();
+  addParam("depth")->useDefaultEvaluator();
+}
+
+dspblk_ptr_t SHAPEMODOSC_DATA::createInstance() const { // override
+  return std::make_shared<SHAPEMODOSC>(this);
+}
 
 SHAPEMODOSC::SHAPEMODOSC(const DspBlockData* dbd)
     : DspBlock(dbd)
@@ -291,6 +406,16 @@ void SHAPEMODOSC::doKeyOn(const KeyOnInfo& koi) // final
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+PLUSSHAPEMODOSC_DATA::PLUSSHAPEMODOSC_DATA(std::string name)
+    : DspBlockData(name) {
+  _blocktype = "PLUSSHAPEMODOSC";
+  addParam("pitch")->usePitchEvaluator();
+  addParam("depth")->useDefaultEvaluator();
+}
+
+dspblk_ptr_t PLUSSHAPEMODOSC_DATA::createInstance() const { // override
+  return std::make_shared<PLUSSHAPEMODOSC>(this);
+}
 
 PLUSSHAPEMODOSC::PLUSSHAPEMODOSC(const DspBlockData* dbd)
     : DspBlock(dbd)
@@ -368,6 +493,15 @@ void PLUSSHAPEMODOSC::doKeyOn(const KeyOnInfo& koi) // final
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+SYNCM_DATA::SYNCM_DATA(std::string name)
+    : DspBlockData(name) {
+  _blocktype = "SYNCM";
+  addParam("pitch")->usePitchEvaluator();
+}
+
+dspblk_ptr_t SYNCM_DATA::createInstance() const { // override
+  return std::make_shared<SYNCM>(this);
+}
 
 SYNCM::SYNCM(const DspBlockData* dbd)
     : DspBlock(dbd) {
@@ -402,6 +536,15 @@ void SYNCM::doKeyOn(const KeyOnInfo& koi) // final
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+SYNCS_DATA::SYNCS_DATA(std::string name)
+    : DspBlockData(name) {
+  _blocktype = "SYNCS";
+  addParam("pitch")->usePitchEvaluator();
+}
+
+dspblk_ptr_t SYNCS_DATA::createInstance() const { // override
+  return std::make_shared<SYNCS>(this);
+}
 
 SYNCS::SYNCS(const DspBlockData* dbd)
     : DspBlock(dbd)
@@ -446,6 +589,15 @@ void SYNCS::doKeyOn(const KeyOnInfo& koi) // final
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+PWM_DATA::PWM_DATA(std::string name)
+    : DspBlockData(name) {
+  _blocktype = "PWM";
+  addParam("offset")->useDefaultEvaluator();
+}
+
+dspblk_ptr_t PWM_DATA::createInstance() const { // override
+  return std::make_shared<PWM>(this);
+}
 
 PWM::PWM(const DspBlockData* dbd)
     : DspBlock(dbd)
@@ -473,6 +625,15 @@ void PWM::doKeyOn(const KeyOnInfo& koi) // final
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+NOISE_DATA::NOISE_DATA(std::string name)
+    : DspBlockData(name) {
+  _blocktype = "NOISE";
+  addParam("pitch")->usePitchEvaluator();
+}
+
+dspblk_ptr_t NOISE_DATA::createInstance() const { // override
+  return std::make_shared<NOISE>(this);
+}
 
 NOISE::NOISE(const DspBlockData* dbd)
     : DspBlock(dbd) {

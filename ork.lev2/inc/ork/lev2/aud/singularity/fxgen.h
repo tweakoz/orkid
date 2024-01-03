@@ -9,6 +9,7 @@
 #include <assert.h>
 #include <ork/lev2/aud/singularity/dsp_mix.h>
 #include <ork/lev2/aud/singularity/alg_eq.h>
+#include <ork/lev2/aud/singularity/alg_amp.h>
 #include <ork/lev2/aud/singularity/alg_nonlin.h>
 
 namespace ork::audio::singularity {
@@ -26,7 +27,7 @@ void appendStereoParaEQ(
     float w,
     float gain);
 ///////////////////////////////////////////////////////////////////////////////
-void appendStereoStereoDynamicEcho(
+dspblkdata_ptr_t appendStereoStereoDynamicEcho(
     lyrdata_ptr_t layer, //
     dspstagedata_ptr_t stage,
     float dtL,
@@ -70,10 +71,24 @@ dspblkdata_ptr_t appendPitchShifter(
     lyrdata_ptr_t layer, //
     dspstagedata_ptr_t stage);
 ///////////////////////////////////////////////////////////////////////////////
-dspblkdata_ptr_t appendStereoReverb(
+void appendPitchRec(
     lyrdata_ptr_t layer, //
     dspstagedata_ptr_t stage,
-    float tscale);
+    float cents,
+    float wetness,
+    float feedback);
+///////////////////////////////////////////////////////////////////////////////
+std::shared_ptr<Fdn4ReverbData> appendStereoReverb(
+    lyrdata_ptr_t layer, //
+    dspstagedata_ptr_t stage);
+///////////////////////////////////////////////////////////////////////////////
+std::shared_ptr<Fdn4ReverbData> appendOilTankReverb(
+    lyrdata_ptr_t layer, //
+    dspstagedata_ptr_t stage);
+///////////////////////////////////////////////////////////////////////////////
+std::shared_ptr<Fdn4ReverbData> appendGuyWireReverb(
+    lyrdata_ptr_t layer, //
+    dspstagedata_ptr_t stage);
 ///////////////////////////////////////////////////////////////////////////////
 void appendStereoEnhancer(
     lyrdata_ptr_t layer, //
@@ -83,7 +98,8 @@ void appendPitchChorus(
     lyrdata_ptr_t fxlayer, //
     dspstagedata_ptr_t fxstage,
     float wetness,
-    float cents);
+    float cents,
+    float feedback);
 ///////////////////////////////////////////////////////////////////////////////
 void appendWackiVerb(
     lyrdata_ptr_t fxlayer, //

@@ -18,13 +18,24 @@ ImplementReflectionX(ork::audio::singularity::AlgData, "SynAlgorithm");
 
 namespace ork::audio::singularity {
 
-dspblk_ptr_t createDspBlock(const DspBlockData* dbd);
-
 ///////////////////////////////////////////////////////////////////////////////
 
 void AlgData::describeX(class_t* clazz) {
   clazz->directProperty("Name", &AlgData::_name);
   clazz->directObjectMapProperty("Stages", &AlgData::_stageByName);
+}
+
+algdata_ptr_t AlgData::clone() const {
+  auto rval = std::make_shared<AlgData>();
+  rval->_name = _name;
+  rval->_numstages = _numstages;
+  for (size_t i=0; i<_numstages; i++) {
+    auto stage = _stages[i];
+    auto clone = stage->clone();
+    rval->_stages[i] = clone;
+    rval->_stageByName[clone->_name] = clone;
+  }
+  return rval;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -42,8 +53,18 @@ bool AlgData::postDeserialize(reflect::serdes::IDeserializer&, object_ptr_t shar
 ///////////////////////////////////////////////////////////////////////////////
 
 alg_ptr_t AlgData::createAlgInst() const {
-  auto alg = std::make_shared<Alg>(*this);
-  return alg;
+  alg_ptr_t rval = nullptr;
+  if(_voicecache.empty()){
+    rval = std::make_shared<Alg>(*this);
+  }
+  else{
+    rval = _voicecache.back();
+    _voicecache.pop_back();
+  }
+  return rval;
+}
+void AlgData::returnAlgInst(alg_ptr_t alg) const{
+  _voicecache.push_back(alg);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -106,38 +127,38 @@ dspblk_ptr_t Alg::lastBlock() const {
 void Alg::keyOn(KeyOnInfo& koi) {
   auto l = koi._layer;
   assert(l != nullptr);
-
-  const auto ld = l->_layerdata;
+  //const auto ld = l->_layerdata;
 
   ///////////////////////////////////////////////////
   // instantiate dspblock grid
   ///////////////////////////////////////////////////
 
+  auto& out_stages = _stageblock._stages;
   int numstages = 0;
   for (int istage = 0; istage < kmaxdspstagesperlayer; istage++) {
     auto stagedata = _algdata._stages[istage];
     if (stagedata) {
       auto stage      = std::make_shared<DspStage>();
-      _stages[istage] = stage;
+      out_stages[istage] = stage;
       numstages++;
       for (int iblock = 0; iblock < kmaxdspblocksperstage; iblock++) {
         auto blockdata = stagedata->_blockdatas[iblock];
         if (blockdata) {
-          auto block             = createDspBlock(blockdata.get());
+          auto block             = blockdata->createInstance();
           stage->_blocks[iblock] = block;
           block->_verticalIndex  = iblock;
-          block->_iomask         = stagedata->_iomask;
+          block->_ioconfig         = stagedata->_ioconfig;
         }
       }
     } else
-      _stages[istage] = nullptr;
+      out_stages[istage] = nullptr;
   }
   // printf("ALG<%p> numstages<%d>\n", this, numstages);
   ///////////////////////////////////////////////////
 
   // if (i == 0) // pitch block ?
   //{
-  //_block[i]->_iomask._outputMask = 3;
+  //_block[i]->_ioconfig._outputMask = 3;
   //}
   //} else
   //_block[i] = nullptr;
@@ -148,8 +169,9 @@ void Alg::keyOn(KeyOnInfo& koi) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void Alg::forEachStage(stagefn_t fn) {
+  auto& out_stages = _stageblock._stages;
   for (int istage = 0; istage < kmaxdspstagesperlayer; istage++) {
-    auto stage = _stages[istage];
+    auto stage = out_stages[istage];
     if (stage) {
       fn(stage);
     }

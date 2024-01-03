@@ -338,8 +338,6 @@ void filescanner::ParseKeyMap(const datablock& db, datablock::iterator& it, int 
 ///////////////////////////////////////////////////////////////////////////////
 
 void filescanner::emitKeymap(const Keymap* km, rapidjson::Value& parent) {
-  if (km->miKeymapID > 200)
-    return;
 
   rapidjson::Value kmapobject(kObjectType);
   AddStringKVMember(kmapobject, "Keymap", km->mKeymapName);

@@ -41,7 +41,6 @@ SingularityTestApp::SingularityTestApp(appinitdata_ptr_t initdata)
     // TODO - get init data with lev2 enabled...
     : OrkEzApp(initdata) {
   gaudiodevice = AudioDevice::instance();
-  _hudvp       = synth::instance()->_hudvp;
   // startupAudio();
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -57,7 +56,7 @@ std::string midiportname    = "";
 ///////////////////////////////////////////////////////////////////////////////
 singularitytestapp_ptr_t createEZapp(appinitdata_ptr_t init_data) {
 
-  // lev2::initModule(init_data);
+  lev2::initModule(init_data);
 
   auto desc = init_data->commandLineOptions("Singularity Options");
   desc->add_options()                                               //
@@ -98,8 +97,17 @@ singularitytestapp_ptr_t createEZapp(appinitdata_ptr_t init_data) {
   appwin->_rootWidget->_uicontext = uicontext.get();
   //////////////////////////////////////////////////////////
   // a wee bit convoluted, TODO: fixme
-  auto hudvplayout       = ezapp->_topLayoutGroup->layoutAndAddChild(ezapp->_hudvp);
-  ezapp->_hudvp->_layout = hudvplayout;
+  auto hudvplayout       = ezapp->_topLayoutGroup->makeChild<HudLayoutGroup>(); //here (name==1)
+  ezapp->_hudvp = hudvplayout.typedWidget();
+  synth::instance()->_hudvp = hudvplayout.typedWidget();
+
+  ezapp->_topLayoutGroup->_layout->dump();
+
+  ezapp->_topLayoutGroup->dumpTopology();
+  ezapp->_eztopwidget->enableUiDraw();
+
+  //OrkAssert(false);
+
   //////////////////////////////////////////////////////////
   // create references to various items scoped by ezapp
   //////////////////////////////////////////////////////////
@@ -173,9 +181,7 @@ singularitytestapp_ptr_t createEZapp(appinitdata_ptr_t init_data) {
     compositorimpl->pushCPD(*CPD);
     context->beginFrame();
     mtxi->PushUIMatrix();
-    // ezapp->_hudvp->draw(drwev);
-    //ezapp->_eztopwidget->_topLayoutGroup->draw(drwev);
-    //ezapp->_uicontext->draw(drwev);
+    ezapp->_uicontext->draw(drwev);
     mtxi->PopUIMatrix();
     context->endFrame();
     ////////////////////////////////////////////////////
@@ -185,7 +191,9 @@ singularitytestapp_ptr_t createEZapp(appinitdata_ptr_t init_data) {
   ezapp->onResize([=](int w, int h) { //
                                       // printf("GOTRESIZE<%d %d>\n", w, h);
                                       // ezapp->_eztopwidget->_topLayoutGroup->SetSize(w, h);
-    ezapp->_hudvp->SetSize(w, h);
+    ezapp->_eztopwidget->SetSize(w, h);
+    ezapp->_hudvp->SetSize(w,h);
+    ezapp->_eztopwidget->_topLayoutGroup->SetSize(w, h);
   });
   //////////////////////////////////////////////////////////
   const int64_t trackMAX = (4095 << 16);

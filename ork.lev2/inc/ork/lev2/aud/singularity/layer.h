@@ -21,7 +21,7 @@ struct LayerData : public ork::Object {
   bool postDeserialize(reflect::serdes::IDeserializer&, object_ptr_t shared) override;
 
   LayerData(const ProgramData* pdat = nullptr);
-
+  lyrdata_ptr_t clone() const;
   dspstagedata_ptr_t appendStage(const std::string& named);
   dspstagedata_ptr_t stageByIndex(int index);
   dspstagedata_ptr_t stageByName(const std::string& named);
@@ -29,13 +29,12 @@ struct LayerData : public ork::Object {
   ///////////////////////////////////////////////////
   template <typename T>                                                  //
   inline std::shared_ptr<T> appendController(const std::string& named) { //
-    std::shared_ptr<T> controllerdata = _ctrlBlock->addController<T>();
-    controllerdata->_name             = named;
-    _controllermap[named]             = controllerdata;
+    std::shared_ptr<T> controllerdata = _ctrlBlock->addController<T>(named);
+    //_controllermap[named]             = controllerdata;
     return controllerdata;
   }
   ///////////////////////////////////////////////////
-  controllerdata_ptr_t controllerByName(const std::string& named) const;
+  //controllerdata_ptr_t controllerByName(const std::string& named);
   ///////////////////////////////////////////////////
   scopesource_ptr_t createScopeSource();
   ///////////////////////////////////////////////////
@@ -57,12 +56,15 @@ struct LayerData : public ork::Object {
 
   algdata_ptr_t _algdata;
   std::string _outbus;
+  std::string _name;
 
   kmpblockdata_ptr_t _kmpBlock;
   dspblkdata_ptr_t _pchBlock;
   keymap_constptr_t _keymap;
-  std::map<std::string, controllerdata_ptr_t> _controllermap;
+  //std::map<std::string, controllerdata_ptr_t> _controllermap;
   controlblockdata_ptr_t _ctrlBlock = nullptr;
+  varmap::varmap_ptr_t _varmap;
+
   scopesource_ptr_t _scopesource = nullptr;
 };
 
@@ -119,7 +121,7 @@ struct Layer {
   int64_t _sampleindex = 0;
 
   int _layerBasePitch; // in cents
-
+  float _ampenvgain = 1.0f;
   float _pchc1;
   float _pchc2;
   float _sinrepPH = 0.0f;
@@ -129,7 +131,8 @@ struct Layer {
   outbus_ptr_t _outbus;
   KeyOnInfo _koi;
   scopesource_ptr_t _scopesource;
-
+  keyonmod_ptr_t _keymods;
+  std::string _name;
   ctrlblockinst_ptr_t _ctrlBlock = nullptr;
 
   std::map<std::string, ControllerInst*> _controlMap;

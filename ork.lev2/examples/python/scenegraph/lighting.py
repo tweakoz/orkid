@@ -145,6 +145,9 @@ class SceneGraphApp(object):
     self.b_lightnode.setMatrix(mtx)
     ###################################
     self.scene.updateScene(self.cameralut) # update and enqueue all scenenodes
+  ################################################
+  def onUiEvent(self,uievent):
+    return ui.HandlerResult()
 ################################################
 app = SceneGraphApp()
 app.ezapp.mainThreadLoop()

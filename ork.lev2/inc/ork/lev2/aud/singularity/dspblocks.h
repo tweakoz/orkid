@@ -35,13 +35,16 @@ private:
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-// IoMask:
+// IoConfig:
 //   specifies inputs and output configuration of a zpm module
 ////////////////////////////////////////////////////////////////////////////////
 
-struct IoMask final : public ork::Object {
-  DeclareConcreteX(IoMask, ork::Object);
-  IoMask();
+struct IoConfig final : public ork::Object {
+  DeclareConcreteX(IoConfig, ork::Object);
+  IoConfig();
+
+  ioconfig_ptr_t clone() const;
+
   size_t numInputs() const;
   size_t numOutputs() const;
   std::vector<int> _inputs;
@@ -56,6 +59,7 @@ struct DspBlockData : public ork::Object {
   bool postDeserialize(reflect::serdes::IDeserializer&, object_ptr_t shared) override;
 
   DspBlockData(std::string name = "");
+  virtual dspblkdata_ptr_t clone() const { return nullptr; }
 
   virtual dspblk_ptr_t createInstance() const {
     return nullptr;
@@ -63,18 +67,19 @@ struct DspBlockData : public ork::Object {
 
   scopesource_ptr_t createScopeSource();
 
-  std::string _blocktype;
-
-  dspparam_ptr_t addParam(std::string name = "");
+  dspparam_ptr_t addParam(std::string name = "", std::string units="");
   dspparam_ptr_t param(int index);
+  dspparam_ptr_t paramByName(std::string named);
   int addDspChannel(int channel);
 
   std::string _name;
+  std::string _blocktype;
   std::vector<int> _dspchannels;
   int _numParams  = 0;
   float _inputPad = 1.0f;
   int _blockIndex = -1;
   varmap::VarMap _vars;
+  bool _bypass = false;
   std::vector<dspparam_ptr_t> _paramd;
   scopesource_ptr_t _scopesource;
 };
@@ -115,6 +120,7 @@ struct DspBlock {
   virtual void doKeyOff() {
   }
 
+  float* getRawBuf(DspBuffer& dspbuf, int chanindex);
   const float* getInpBuf(DspBuffer& dspbuf, int chanindex);
   float* getOutBuf(DspBuffer& dspbuf, int chanindex);
 
@@ -139,7 +145,7 @@ struct DspBlock {
   int _dspchannel[kmaxdspblocksperstage];
   float _fval[kmaxparmperblock];
   DspParam _param[kmaxparmperblock];
-  iomask_constptr_t _iomask;
+  ioconfig_constptr_t _ioconfig;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -152,6 +158,9 @@ struct DspStageData final : public ork::Object {
   bool postDeserialize(reflect::serdes::IDeserializer&, object_ptr_t shared) override;
 
   DspStageData();
+
+  dspstagedata_ptr_t clone() const;
+
   dspblkdata_ptr_t appendBlock();
 
   template <typename T, typename... A>     //
@@ -173,8 +182,9 @@ struct DspStageData final : public ork::Object {
   int _stageIndex = -1;
   dspblkdata_ptr_t _blockdatas[kmaxdspblocksperstage];
   std::map<std::string, dspblkdata_ptr_t> _namedblockdatas;
-  iomask_ptr_t _iomask;
+  ioconfig_ptr_t _ioconfig;
   int _numblocks = 0;
+  void dump() const;
 };
 struct DspStage final {
   dspblk_ptr_t _blocks[kmaxdspblocksperstage];
@@ -183,24 +193,39 @@ struct DspStage final {
 };
 
 ///////////////////////////////////////////////////////////////////////////////
+// TODO - reuse DspStages
+///////////////////////////////////////////////////////////////////////////////
+
+struct AlgStageBlock{
+  dspstage_ptr_t _stages[kmaxdspstagesperlayer];
+};
+
+using algstacgeblock_ptr_t = std::shared_ptr<AlgStageBlock>();
+
+///////////////////////////////////////////////////////////////////////////////
 
 struct AlgData final : public ork::Object {
 
   DeclareConcreteX(AlgData, ork::Object);
   bool postDeserialize(reflect::serdes::IDeserializer&, object_ptr_t shared) override;
+  algdata_ptr_t clone() const;
 
   dspstagedata_ptr_t appendStage(const std::string& named);
   dspstagedata_ptr_t stageByName(const std::string& named);
   dspstagedata_ptr_t stageByIndex(int index);
   alg_ptr_t createAlgInst() const;
+  void returnAlgInst(alg_ptr_t alg) const;
 
   int _numstages = 0;
   std::string _name;
   dspstagedata_ptr_t _stages[kmaxdspstagesperlayer];
   std::map<std::string, dspstagedata_ptr_t> _stageByName;
+
+  mutable std::vector<alg_ptr_t> _voicecache;
 };
 
 algdata_ptr_t configureKrzAlgorithm(int algid);
+
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -222,7 +247,7 @@ struct Alg final {
   virtual void doKeyOn(KeyOnInfo& koi);
   dspblk_ptr_t lastBlock() const;
 
-  dspstage_ptr_t _stages[kmaxdspstagesperlayer];
+  AlgStageBlock _stageblock;
 
   const AlgData& _algdata;
 

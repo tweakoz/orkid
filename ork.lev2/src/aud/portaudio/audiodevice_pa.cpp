@@ -27,8 +27,6 @@
 
 #if defined(ENABLE_PORTAUDIO)
 
-int WTF = 0;
-
 using namespace ork::audio::singularity;
 
 template class ork::orklut<ork::Char8, float>;
@@ -41,7 +39,7 @@ const bool ENABLE_OUTPUT = true; // allow disabling for long debug sessions
 #if defined(__APPLE__)
 const int DESIRED_NUMFRAMES = 256;
 #else
-const int DESIRED_NUMFRAMES = 1024;
+const int DESIRED_NUMFRAMES = 512;
 #endif
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -75,10 +73,9 @@ static int patestCallback(
     }
   } else if (ENABLE_OUTPUT) {
     const auto& obuf = the_synth->_obuf;
-    float gain       = the_synth->_masterGain;
     for (i = 0; i < framesPerBuffer; i++) {
-      *out++ = obuf._leftBuffer[i]* gain;  // interleaved
-      *out++ = obuf._rightBuffer[i]* gain; // interleaved
+      *out++ = obuf._leftBuffer[i];  // interleaved
+      *out++ = obuf._rightBuffer[i]; // interleaved
     }
   } else {
     for (i = 0; i < framesPerBuffer; i++) {

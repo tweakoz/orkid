@@ -42,6 +42,19 @@ YmEnvData::YmEnvData() {
   };
 }
 
+controllerdata_ptr_t YmEnvData::clone() const {
+  auto rval = std::make_shared<YmEnvData>();
+  rval->_attackRate  = _attackRate;
+  rval->_attackShape = _attackShape;
+  rval->_decay1Rate  = _decay1Rate;
+  rval->_decay1Level = _decay1Level;
+  rval->_decay2Rate  = _decay2Rate;
+  rval->_releaseRate = _releaseRate;
+  rval->_egshift     = _egshift;
+  rval->_rateScale   = _rateScale;
+  return rval;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 ControllerInst* YmEnvData::instantiate(layer_ptr_t l) const // final
@@ -115,25 +128,25 @@ void YmEnvInst::compute() {
   }
   switch (_data->_egshift) {
     case 0:
-      _curval = _prcout;
+      _value.x = _prcout;
       break;
     case 1: {
       float lo = decibel_to_linear_amp_ratio(-12);
-      _curval  = lo + _prcout*(1.0f-lo);
+      _value.x  = lo + _prcout*(1.0f-lo);
       break;
     }
     case 2: {
       float lo = decibel_to_linear_amp_ratio(-24);
-      _curval  = lo + _prcout*(1.0f-lo);
+      _value.x  = lo + _prcout*(1.0f-lo);
       break;
     }
     case 3: {
       float lo = decibel_to_linear_amp_ratio(-48);
-      _curval  = lo + _prcout*(1.0f-lo);
+      _value.x  = lo + _prcout*(1.0f-lo);
       break;
     }
   }
-  validateSample(_curval);
+  validateSample(_value.x);
 }
 
 static constexpr float attacktimes[32] = {
@@ -230,7 +243,7 @@ void YmEnvInst::keyOn(const KeyOnInfo& KOI) {
   validateSample(_dec2ratefactor);
   validateSample(_data->_rateScale);
   validateSample(_atkinc);
-  validateSample(_curval);*/
+  validateSample(_value.x);*/
 }
 void YmEnvInst::keyOff() {
   _curseg = "RELEASE"_crcu;

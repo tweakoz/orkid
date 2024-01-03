@@ -160,7 +160,7 @@ void RtGroupOutputCompositingNode::composite(CompositorDrawData& drawdata) {
   auto gbi = context->GBI();
   auto output_rtg = impl->_outputRTG.get();
 
-  if(1)
+  if(0)
   printf( "composite into rtg<%s> w<%d> h<%d>\n", //
            output_rtg->_name.c_str(), //
            output_rtg->width(), //
@@ -180,7 +180,7 @@ void RtGroupOutputCompositingNode::composite(CompositorDrawData& drawdata) {
         int dstw = output_buffer->_width;
         int dsth = output_buffer->_height;
 
-        printf( "src<%d %d> dst<%d %d>\n", srcw, srch, dstw, dsth );
+        //printf( "src<%d %d> dst<%d %d>\n", srcw, srch, dstw, dsth );
 
         assert(src_buffer != nullptr);
         auto tex = src_buffer->texture();

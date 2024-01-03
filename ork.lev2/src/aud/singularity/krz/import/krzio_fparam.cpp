@@ -211,13 +211,13 @@ void getFParamPWM(fparam& fp) {
   float minDpt = makeSigned(fp._inputMinDepth);
   float maxDpt = makeSigned(fp._inputMaxDepth);
 
-  fp._varCoarseAdjust.set<float>("Coarse", "pct", "%d", int(fp._inputCourse));
+  fp._varCoarseAdjust.set<float>("Coarse", "pct", "%%d", int(fp._inputCourse));
 
   fp._varKeyTrack.set<float>("KeyTrack", "pct/key", "%%0.01f", float(keytrk) * 0.1f);
-  fp._varVelTrack.set<float>("VelTrack", "pct", "%d", veltrk);
-  fp._varSrc1Depth.set<float>("Depth", "pct", "%d", depth);
-  fp._varSrc2MinDepth.set<float>("MinDepth", "pct", "%d", minDpt);
-  fp._varSrc2MaxDepth.set<float>("MaxDepth", "pct", "%d", maxDpt);
+  fp._varVelTrack.set<float>("VelTrack", "pct", "%%d", veltrk);
+  fp._varSrc1Depth.set<float>("Depth", "pct", "%%d", depth);
+  fp._varSrc2MinDepth.set<float>("MinDepth", "pct", "%%d", minDpt);
+  fp._varSrc2MaxDepth.set<float>("MaxDepth", "pct", "%%d", maxDpt);
 }
 
 void getFParamSEP(fparam& fp) {
@@ -227,13 +227,13 @@ void getFParamSEP(fparam& fp) {
   float minDpt = getVelTrack96(fp._inputMinDepth);
   float maxDpt = getVelTrack96(fp._inputMaxDepth);
 
-  fp._varCoarseAdjust.set<float>("Coarse", "ct", "%d", 100 * makeSigned(fp._inputCourse));
+  fp._varCoarseAdjust.set<float>("Coarse", "ct", "%%d", 100 * makeSigned(fp._inputCourse));
 
-  fp._varKeyTrack.set<float>("KeyTrack", "ct/key", "%d", keytrk);
-  fp._varVelTrack.set<float>("VelTrack", "ct", "%d", veltrk);
-  fp._varSrc1Depth.set<float>("Depth", "ct", "%d", depth);
-  fp._varSrc2MinDepth.set<float>("MinDepth", "ct", "%d", minDpt);
-  fp._varSrc2MaxDepth.set<float>("MaxDepth", "ct", "%d", maxDpt);
+  fp._varKeyTrack.set<float>("KeyTrack", "ct/key", "%%d", keytrk);
+  fp._varVelTrack.set<float>("VelTrack", "ct", "%%d", veltrk);
+  fp._varSrc1Depth.set<float>("Depth", "ct", "%%d", depth);
+  fp._varSrc2MinDepth.set<float>("MinDepth", "ct", "%%d", minDpt);
+  fp._varSrc2MaxDepth.set<float>("MaxDepth", "ct", "%%d", maxDpt);
 }
 
 void getFParamEVNODD(fparam& fp) {
@@ -243,13 +243,13 @@ void getFParamEVNODD(fparam& fp) {
   float minDpt = makeSigned(fp._inputMinDepth);
   float maxDpt = makeSigned(fp._inputMaxDepth);
 
-  fp._varCoarseAdjust.set<float>("Coarse", "dB", "%d", makeSigned(fp._inputCourse));
+  fp._varCoarseAdjust.set<float>("Coarse", "dB", "%%d", makeSigned(fp._inputCourse));
 
-  fp._varKeyTrack.set<float>("KeyTrack", "dB/key", "%d", keytrk);
-  fp._varVelTrack.set<float>("VelTrack", "dB", "%d", veltrk);
-  fp._varSrc1Depth.set<float>("Depth", "dB", "%d", depth);
-  fp._varSrc2MinDepth.set<float>("MinDepth", "dB", "%d", minDpt);
-  fp._varSrc2MaxDepth.set<float>("MaxDepth", "dB", "%d", maxDpt);
+  fp._varKeyTrack.set<float>("KeyTrack", "dB/key", "%%d", keytrk);
+  fp._varVelTrack.set<float>("VelTrack", "dB", "%%d", veltrk);
+  fp._varSrc1Depth.set<float>("Depth", "dB", "%%d", depth);
+  fp._varSrc2MinDepth.set<float>("MinDepth", "dB", "%%d", minDpt);
+  fp._varSrc2MaxDepth.set<float>("MaxDepth", "dB", "%%d", maxDpt);
 }
 
 void filescanner::fparamVarOutput(const fparamVar& fpv, const std::string& blkname, rapidjson::Value& jsono) {
@@ -259,14 +259,18 @@ void filescanner::fparamVarOutput(const fparamVar& fpv, const std::string& blkna
 
   Value fpvout(kObjectType);
 
-  if (auto as_float = val.tryAs<float>())
-    AddMember(fpvout, "Value", as_float.value());
-  else if (auto as_int = val.tryAs<int>())
+  if (auto as_float = val.tryAs<float>()){
+    float fval = as_float.value();
+    AddMember(fpvout, "Value", fval);
+  }
+  else if (auto as_int = val.tryAs<int>()){
     AddMember(fpvout, "Value", as_int.value());
-  else if (auto as_str = val.tryAs<std::string>())
-    AddStringKVMember(fpvout, "Value", as_str.value());
+  }
+  else if (auto as_str = val.tryAs<std::string>()){
+    AddStringKVMember(fpvout, "Value", as_str.value().c_str());
+  }
   else {
-    assert(false);
+    OrkAssert(false);
   }
   AddMember(fpvout, "Unit", unit);
   AddMember(jsono, name, fpvout);

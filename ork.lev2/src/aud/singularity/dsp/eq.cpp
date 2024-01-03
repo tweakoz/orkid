@@ -13,6 +13,17 @@ namespace ork::audio::singularity {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+PARABASS_DATA::PARABASS_DATA(std::string name)
+    : DspBlockData(name) {
+  _blocktype = "PARABASS";
+  addParam("fc")->useFrequencyEvaluator();
+  addParam("gain")->useAmplitudeEvaluator();
+}
+
+dspblk_ptr_t PARABASS_DATA::createInstance() const { // override
+  return std::make_shared<PARABASS>(this);
+}
+
 PARABASS::PARABASS(const DspBlockData* dbd)
     : DspBlock(dbd) {
 }
@@ -20,7 +31,8 @@ PARABASS::PARABASS(const DspBlockData* dbd)
 void PARABASS::compute(DspBuffer& dspbuf) // final
 {
   int inumframes = _layer->_dspwritecount;
-  float* ubuf    = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
+  const float* inpbuf    = getInpBuf(dspbuf, 0) + _layer->_dspwritebase;
+  float* outbuf    = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
 
   float fc   = _param[0].eval();
   float gain = _param[1].eval();
@@ -39,11 +51,14 @@ void PARABASS::compute(DspBuffer& dspbuf) // final
 
   // float ling = decibel_to_linear_amp_ratio(gain);
 
+  //printf( "fc<%f> gain<%f> pad<%f>\n", fc, gain, pad);
+  //fc<311.126984> gain<36.000000> pad<0.501187>
+
   if (1)
     for (int i = 0; i < inumframes; i++) {
-      float input = ubuf[i] * pad;
+      float input = inpbuf[i] * pad;
       float outp  = _lsq.compute(input);
-      ubuf[i]     = outp;
+      outbuf[i]     = outp;
     }
 
   // printf( "ff<%f> wid<%f>\n", ff, wid );
@@ -54,6 +69,18 @@ void PARABASS::doKeyOn(const KeyOnInfo& koi) // final
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+STEEP_RESONANT_BASS_DATA::STEEP_RESONANT_BASS_DATA(std::string name)
+    : DspBlockData(name) {
+  _blocktype = "STEEP_RESONANT_BASS";
+  addParam("fc")->useFrequencyEvaluator();
+  addParam("resonance")->useDefaultEvaluator();
+  addParam("gain")->useAmplitudeEvaluator();
+}
+
+dspblk_ptr_t STEEP_RESONANT_BASS_DATA::createInstance() const { // override
+  return std::make_shared<STEEP_RESONANT_BASS>(this);
+}
 
 STEEP_RESONANT_BASS::STEEP_RESONANT_BASS(const DspBlockData* dbd)
     : DspBlock(dbd) {
@@ -97,6 +124,17 @@ void STEEP_RESONANT_BASS::doKeyOn(const KeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
+PARATREBLE_DATA::PARATREBLE_DATA(std::string name)
+    : DspBlockData(name) {
+  _blocktype = "PARATREBLE";
+  addParam("fc")->useFrequencyEvaluator();
+  addParam("gain")->useAmplitudeEvaluator();
+}
+
+dspblk_ptr_t PARATREBLE_DATA::createInstance() const { // override
+  return std::make_shared<PARATREBLE>(this);
+}
+
 PARATREBLE::PARATREBLE(const DspBlockData* dbd)
     : DspBlock(dbd) {
 }
@@ -136,6 +174,17 @@ void PARATREBLE::doKeyOn(const KeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
+PARAMID_DATA::PARAMID_DATA(std::string name)
+    : DspBlockData(name) {
+  _blocktype = "PARAMID";
+  addParam("fc")->useFrequencyEvaluator();
+  addParam("gain")->useAmplitudeEvaluator();
+}
+
+dspblk_ptr_t PARAMID_DATA::createInstance() const { // override
+  return std::make_shared<PARAMID>(this);
+}
+
 PARAMID::PARAMID(const DspBlockData* dbd)
     : DspBlock(dbd) {
 }
@@ -171,9 +220,10 @@ void PARAMID::doKeyOn(const KeyOnInfo& koi) // final
 ///////////////////////////////////////////////////////////////////////////////
 ParametricEqData::ParametricEqData(std::string name)
     : DspBlockData(name) {
-  auto fc_param    = addParam();
-  auto width_param = addParam();
-  auto gain_param  = addParam();
+      _blocktype = "ParametricEq";
+  auto fc_param    = addParam("cutoff","hz");
+  auto width_param = addParam("width", "oct");
+  auto gain_param  = addParam("gain", "db");
   fc_param->useDefaultEvaluator();
   width_param->useDefaultEvaluator();
   gain_param->useDefaultEvaluator();
@@ -189,7 +239,8 @@ ParametricEq::ParametricEq(const ParametricEqData* dbd)
 void ParametricEq::compute(DspBuffer& dspbuf) // final
 {
   int inumframes = _layer->_dspwritecount;
-  float* ubuf    = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
+  const float* ibuf    = getInpBuf(dspbuf, 0) + _layer->_dspwritebase;
+  float* obuf    = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
 
   float fc   = _param[0].eval();
   float wid  = clip_float(_param[1].eval(), 0.2, 8);
@@ -207,7 +258,7 @@ void ParametricEq::compute(DspBuffer& dspbuf) // final
   const float kf1 = 0.005f;
   const float kf2 = 1.0f - kf1;
 
-  if (1)
+  if (not _dbd->_bypass )
     for (int i = 0; i < inumframes; i++) {
       _smoothFC = fc;   // kf2*_smoothFC + kf1*fc;
       _smoothW  = wid;  // kf2 * _smoothW + kf1 * wid;
@@ -215,11 +266,12 @@ void ParametricEq::compute(DspBuffer& dspbuf) // final
 
       _peq1.set(_smoothFC, _smoothW, _smoothG);
 
-      float inp = ubuf[i] * pad;
+      float inp = ibuf[i] * pad;
+      //printf("inp<%g>\n", inp);
       // float outp = _biquad.compute2(inp);
       float outp = _peq1.compute(inp);
-      // outp = _peq.proc(1,ubuf,fc/48000.0f,wid,gain);
-      ubuf[i] = outp;
+      // outp = _peq.proc(1,obuf,fc/48000.0f,wid,gain);
+      obuf[i] = inp;
     }
 }
 void ParametricEq::doKeyOn(const KeyOnInfo& koi) // final

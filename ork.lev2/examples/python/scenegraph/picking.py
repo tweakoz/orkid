@@ -67,7 +67,7 @@ class PickingApp(_simsetup.SimApp):
           iset = self.instanceset
           iset.instancecolors[picked] = color
       self.scene.pickWithScreenCoord(self.camera,vec2(event.x,event.y),pick_callback)
-    pass
+    return ui.HandlerResult()
   ################################################
 app = PickingApp()
 app.ezapp.mainThreadLoop()

@@ -224,21 +224,42 @@ void CZX::compute(DspBuffer& dspbuf) // final
     // resowaves (window excluded)
     ////////////////////////////////////////////
     {
+      if (hsync_trigger){
+        _aafade = 0;
+        _resophaseB = 0;
+      } 
+
       double frqscale  = (1.0f + _modIndex * 15.0f);
       double resoinc   = kscale * frq * frqscale * ISR;
-      int64_t pos      = (_resophase)&0xffffff;
-      double _linphase = double(pos) * kinvscale;
-      double resowave  = cosf(_linphase * PI2);
-      _resophase += int64_t(resoinc);
-      if (hsync_trigger) // hardsync resowave to master
-        _resophase = 0;
-      _waveoutputs[6] = resowave;
+      int64_t posA      = (_resophaseA)&0xffffff;
+      double _linphaseA = double(posA) * kinvscale;
+      double resowaveA  = cosf(_linphaseA * PI2);
+      int64_t posB      = (_resophaseB)&0xffffff;
+      double _linphaseB = double(posB) * kinvscale;
+      double resowaveB  = cosf(_linphaseB * PI2);
+
+
+      if( _aafade < _gaafademax){
+        double lerpval = double(_aafade) / float(_gaafademax);
+        lerpval = powf(lerpval, 2);
+        double resowave = lerp(resowaveA, resowaveB, lerpval);
+        _waveoutputs[6] = resowave;
+        _aafade++;
+        if(_aafade==_gaafademax)
+          _resophaseA = _resophaseB;
+      }
+      else{
+        _waveoutputs[6] = resowaveA;
+      }
+      _resophaseA += int64_t(resoinc);
+      _resophaseB += int64_t(resoinc);
+
     }
     ////////////////////////////////////////////
     // windowing
     ////////////////////////////////////////////
     float window = 1.0;
-    switch (_oscdata->_dcoWindow) {
+    if(1)switch (_oscdata->_dcoWindow) {
       case 0: // none
         break;
       case 1: // saw
@@ -269,9 +290,10 @@ void CZX::compute(DspBuffer& dspbuf) // final
     _phase = nextphase;
     ////////////////////////////////////////////
     float waveraw     = _waveoutputs[waveswitch ? _waveIDB : _waveIDA];
-    float waveclamped = std::clamp(waveraw, -1.0f, 1.0f);
+    float waveclamped = std::clamp(waveraw, -8.0f, 8.0f);
     float waveout     = (1.0f - waveclamped) * window;
     outsamples[i]     = (1.0f - waveout);
+    //outsamples[i] = _waveoutputs[6];
     // outsamples[i] = linphase;
     // printf("i<%d> v<%g>\n", i, linphase);
     // outsamples[i] = double_linphase;
@@ -300,13 +322,18 @@ void CZX::doKeyOn(const KeyOnInfo& koi) // final
   _modIndex         = 0.0f;
   _noisemodcounter  = 0;
   _phase            = 0;
-  _resophase        = 0;
+  _resophaseA       = 0;
+  _resophaseB       = 0;
   _noisevalue       = 0;
+  _aafade = 0;
 
   for (int i = 0; i < 8; i++)
     _waveoutputs[i] = 0.0f;
 
   _updatecount = 0;
+
+  auto czdata = (const CZXDATA*) _dbd;
+  //czdata->_cxzdata->dump();
 }
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -321,8 +348,11 @@ CZXDATA::CZXDATA(std::string name, czxdata_constptr_t czdata, int dcochannel)
     , _cxzdata(czdata)
     , _dcochannel(dcochannel) {
   _blocktype = "CZX";
-  addParam()->usePitchEvaluator();
-  addParam()->useDefaultEvaluator();
+  auto P = addParam("pitch","cents"); 
+  P->_keyTrack = 100.0;
+  P->_coarse = 60;
+  P->usePitchEvaluator();
+  addParam("index", "x")->useDefaultEvaluator();
   _vars.makeValueForKey<czxdata_constptr_t>("CZX") = _cxzdata;
   _vars.makeValueForKey<int>("dcochannel")         = dcochannel;
 }

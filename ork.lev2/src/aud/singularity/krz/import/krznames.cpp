@@ -254,7 +254,7 @@ float getEnvCtrl(int ival) {
       14000, 15000, 16000, 18000, 20000, 22000, 25000, 27000, 30000, 33000, 36000, 40000, 43000, 47000, 50000,
   };
   static_assert((sizeof(valtab) / sizeof(int)) == 87, "incorrect num of envctrl values");
-  assert(ival >= 0);
+  OrkAssert(ival >= 0);
   if (ival > 87)
     ival = 87;
   return float(valtab[ival]) * 0.001f;
@@ -281,8 +281,10 @@ float get72Adjust(int index) {
 
   static_assert((sizeof(valtab) / sizeof(float)) == ktabsize, "incorrect num of values");
 
-  if (index > ktabsize)
-    index = ktabsize;
+  if (index < 0)
+    index = 0;
+  if (index >= ktabsize)
+    index = ktabsize-1;
   // if(ival>87) ival = 87;
 
   return valtab[index];
@@ -314,9 +316,9 @@ int getVelTrack96(int ival) {
 
   static_assert((sizeof(valtab) / sizeof(int)) == ktabsize, "incorrect num of values");
 
-  assert(ival >= 0);
-  if (ival > ktabsize)
-    ival = ktabsize;
+  OrkAssert(ival >= 0);
+  if (ival >= ktabsize)
+    ival = ktabsize-1;
   // if(ival>87) ival = 87;
 
   return valtab[ival];
@@ -350,9 +352,9 @@ float getVelTrack97(int ival) {
 
   static_assert((sizeof(valtab) / sizeof(float)) == ktabsize, "incorrect num of values");
 
-  assert(ival >= 0);
-  if (ival > ktabsize)
-    ival = ktabsize;
+  OrkAssert(ival >= 0);
+  if (ival >= ktabsize)
+    ival = ktabsize-1;
   // if(ival>87) ival = 87;
 
   return valtab[ival];
@@ -384,9 +386,9 @@ int getVelTrack98(int ival) {
 
   static_assert((sizeof(valtab) / sizeof(int)) == ktabsize, "incorrect num of values");
 
-  assert(ival >= 0);
-  if (ival > ktabsize)
-    ival = ktabsize;
+  OrkAssert(ival >= 0);
+  if (ival >= ktabsize)
+    ival = ktabsize-1;
   // if(ival>87) ival = 87;
 
   return valtab[ival];
@@ -422,7 +424,7 @@ Keystart getKeyStart81(int uval) {
   } else // if( nval<0 )
   {
     int kstart = nval + 120;
-    assert(kstart < 120);
+    OrkAssert(kstart < 120);
 
     int note     = kstart % 12;
     int octave   = kstart / 12;
@@ -482,9 +484,9 @@ float getLfoRate86(int ival) {
   };
   static_assert((sizeof(valtab) / sizeof(int)) == ktabsize, "incorrect num of values");
 
-  assert(ival >= 0);
-  if (ival > ktabsize)
-    ival = ktabsize;
+  OrkAssert(ival >= 0);
+  if (ival >= ktabsize)
+    ival = ktabsize-1;
   return valtab[ival];
 }
 int getKeyTrack85(int ival) {
@@ -510,9 +512,9 @@ int getKeyTrack85(int ival) {
 
   static_assert((sizeof(valtab) / sizeof(int)) == ktabsize, "incorrect num of values");
 
-  assert(ival >= 0);
-  if (ival > ktabsize)
-    ival = ktabsize;
+  OrkAssert(ival >= 0);
+  if (ival >= ktabsize)
+    ival = ktabsize-1;
   return valtab[ival];
 }
 

@@ -417,8 +417,9 @@ bool Reader::readFromDataBlock(datablock_ptr_t datablock) {
   mpstrtab = pst;
   OrkHeapCheck();
   ///////////////////////////
-  size_t marker = dblockstream.getItem<size_t>();
-  OrkAssert(marker == 0x0123456789abcdef);
+  #error fixme 
+  //size_t marker = dblockstream.getItem<size_t>();
+  //OrkAssert(marker == 0x0123456789abcdef);
   ///////////////////////////
   _chunkfiletype        = mpstrtab + ifiletype;
   OrkHeapCheck();
@@ -474,7 +475,7 @@ InputStream* Reader::GetStream(const char* streamname) {
   return (it == mInputStreams.end()) ? 0 : it->second;
 }
 ////////////////////////////////////////////////////////////////////////////////////
-const char* Reader::GetString(int index) const {
+const char* Reader::GetString(size_t index) const {
   OrkAssert(index < _strtablen);
   OrkAssert(mpstrtab);
   return mpstrtab + index;
@@ -499,10 +500,10 @@ OutputStream* Writer::AddStream(std::string stream_name) {
 
 ////////////////////////////////////////////////////////////////////////////////////
 
-int Writer::stringIndex(const char* pstr) {
+size_t Writer::stringIndex(const char* pstr) {
   return _stringblock.AddString(pstr).Index();
 }
-int Writer::stringIndex(const std::string& pstr) {
+size_t Writer::stringIndex(const std::string& pstr) {
   return _stringblock.AddString(pstr.c_str()).Index();
 }
 
@@ -518,28 +519,17 @@ void Writer::writeToDataBlock(datablock_ptr_t& out_datablock) {
   int inumchunks = (int)mOutputStreams.size();
   out_datablock->addItem<size_t>(inumchunks);
   ////////////////////////
-  _stringblock.dump();
-  int istringblksize = _stringblock.size();
-  out_datablock->addItem<size_t>(istringblksize);
-  out_datablock->addData(_stringblock.data(), istringblksize);
-  ////////////////////////
-  // marker
-  ////////////////////////
-  out_datablock->addItem<size_t>(0x0123456789abcdef);
-  ////////////////////////
-  size_t ioffset = 0;
+  size_t offset = 0;
   for (orkmap<int, OutputStream*>::const_iterator it = mOutputStreams.begin(); it != mOutputStreams.end(); it++) {
     size_t ichunkid         = it->first;
     OutputStream* stream = it->second;
-    size_t ichunklen        = stream->GetSize();
+    size_t chunklen        = stream->GetSize();
     ////////////////////////
-    printf( "write chunk<%s> offset<0x%zx> len<0x%zx>\n", stream->_name.c_str(), ioffset, ichunklen );
+    out_datablock->addItem<int>(ichunkid);
+    out_datablock->addItem<size_t>(offset);
+    out_datablock->addItem<size_t>(chunklen);
     ////////////////////////
-    out_datablock->addItem<size_t>(ichunkid);
-    out_datablock->addItem<size_t>(ioffset);
-    out_datablock->addItem<size_t>(ichunklen);
-    ////////////////////////
-    ioffset += ichunklen;
+    offset += chunklen;
   }
   ////////////////////////
   for (orkmap<int, OutputStream*>::const_iterator it = mOutputStreams.begin(); it != mOutputStreams.end(); it++) {

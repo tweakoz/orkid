@@ -408,9 +408,6 @@ void VkContext::_doBeginFrame() {
 
   ////////////////////////
 
-  for (auto l : _onBeginFrameCallbacks)
-    l();
-
   if (not _first_frame) {
     if(_is_visual_frame){
       auto swapchain = _fbi->_swapchain;
@@ -457,9 +454,6 @@ vkcmdbufimpl_ptr_t VkContext::primary_cb() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void VkContext::_doEndFrame() {
-
-  for (auto l : _onEndFrameCallbacks)
-    l();
 
   GBI()->EndFrame();
   MTXI()->PopMMatrix();

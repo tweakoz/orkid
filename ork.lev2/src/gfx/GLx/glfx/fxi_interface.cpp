@@ -164,6 +164,11 @@ void Interface::EndBlock() {
 ///////////////////////////////////////////////////////////////////////////////
 
 bool Interface::BindPass(int ipass) {
+
+  if(_debugDrawCall){
+    printf( "FxInterface::BindPass ipass<%d>\n", ipass );
+    printf( "FxInterface::BindPass mShaderCompileFailed<%d>\n", int(_active_effect->mShaderCompileFailed) );
+  }
   if (_active_effect->mShaderCompileFailed)
     return false;
 
@@ -181,6 +186,11 @@ bool Interface::BindPass(int ipass) {
     auto fx         = const_cast<FxShader*>(_active_effect->mFxShader);
     fx->SetFailedCompile(false == complinkok);
     was_compiled = true;
+  }
+  if(_debugDrawCall){
+    printf( "FxInterface::BindPass ipass<%d>\n", ipass );
+    printf( "FxInterface::BindPass _programObjectId<%d>\n", _active_effect->_activePass->_programObjectId );
+    printf( "FxInterface::BindPass was_compiled<%d>\n", int(was_compiled) );
   }
 
   GL_ERRORCHECK();

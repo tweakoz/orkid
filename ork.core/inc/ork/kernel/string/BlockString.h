@@ -34,7 +34,7 @@ public:
 	/// Constructs an empty block string.
 	BlockString();
 
-	int Index() const;
+	size_t Index() const;
 
 	/// @return a chararcter pointer to the data.
 	const char *data() const;
@@ -60,10 +60,10 @@ private:
 	friend class StringBlock;
 
 	/// Constructs a pool string from a character pointer, used by StringPool.
-	BlockString(const StringBlock *, int);
+	BlockString(const StringBlock *, size_t);
 
 	const StringBlock *mStringBlock; 
-	int mStringIndex;
+	size_t mStringIndex;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

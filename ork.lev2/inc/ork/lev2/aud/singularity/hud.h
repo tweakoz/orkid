@@ -100,6 +100,7 @@ struct HudPanel {
   void setRect(int iX, int iY, int iW, int iH, bool snap = false);
   ui::anchor::layout_ptr_t _panelLayout;
   ui::layoutgroup_ptr_t _layoutgroup;
+  ui::layoutitem_ptr_t _layoutitem;
   ui::panel_ptr_t _uipanel;
   ui::surface_ptr_t _uisurface;
 };
@@ -146,39 +147,52 @@ struct SignalScope {
     return _vars.typedValueForKey<T>(key).value();
   }
   ///////////////////////////////////////////////////////////////////////////
+  ui::layoutitem_ptr_t _layoutitem;
   hudpanel_ptr_t _hudpanel;
   scopesink_ptr_t _sink;
   varmap::VarMap _vars;
 };
 ///////////////////////////////////////////////////////////////////////////////
+signalscope_ptr_t create_oscilloscope2(
+    uilayoutgroup_ptr_t vp, //
+    std::string named);
 signalscope_ptr_t create_oscilloscope(
-    hudvp_ptr_t vp, //
+    uilayoutgroup_ptr_t vp, //
     const ui::anchor::Bounds& bounds,
     std::string named = "");
+signalscope_ptr_t create_spectrumanalyzer2(
+    uilayoutgroup_ptr_t vp, //
+    std::string named);
 signalscope_ptr_t create_spectrumanalyzer(
-    hudvp_ptr_t vp, //
+    uilayoutgroup_ptr_t vp, //
     const ui::anchor::Bounds& bounds,
     std::string named = "");
 signalscope_ptr_t create_envelope_analyzer(
-    hudvp_ptr_t vp, //
+    uilayoutgroup_ptr_t vp, //
     const ui::anchor::Bounds& bounds,
+    std::string named = "");
+hudpanel_ptr_t createProgramView2(
+    uilayoutgroup_ptr_t vp, //
     std::string named = "");
 hudpanel_ptr_t createProgramView(
-    hudvp_ptr_t vp, //
+    uilayoutgroup_ptr_t vp, //
     const ui::anchor::Bounds& bounds,
     std::string named = "");
+hudpanel_ptr_t createProfilerView2(
+    uilayoutgroup_ptr_t vp, //
+    std::string named = "");
 hudpanel_ptr_t createProfilerView(
-    hudvp_ptr_t vp, //
+    uilayoutgroup_ptr_t vp, //
     const ui::anchor::Bounds& bounds,
     std::string named = "");
 hudpanel_ptr_t createEnvYmEditView(
-    hudvp_ptr_t vp, //
+    uilayoutgroup_ptr_t vp, //
     std::string named,
     fvec4 color,
     controllerdata_ptr_t envdata,
     const ui::anchor::Bounds& bounds);
 hudpanel_ptr_t createPmxEditView(
-    hudvp_ptr_t vp, //
+    uilayoutgroup_ptr_t vp, //
     std::string named,
     fvec4 color,
     dspblkdata_ptr_t dbdata,
@@ -212,9 +226,20 @@ float ENVX(float vpw, float vph);
 float DSPW(float vpw, float vph);
 float DSPX(float vpw, float vph);
 void DrawBorder(lev2::Context* context, int X1, int Y1, int X2, int Y2, int color = 0);
-
+///////////////////////////////////////////////////////////////////////////////
+struct ProgramView final : public ui::Surface {
+  ProgramView();
+  void DoRePaintSurface(ui::drawevent_constptr_t drwev) override;
+  void _doGpuInit(lev2::Context* pt) override;
+  ui::HandlerResult DoOnUiEvent(ui::event_constptr_t EV) override;
+  ork::lev2::CTXBASE* _ctxbase = nullptr;
+  int _updatecount             = 0;
+  prgdata_constptr_t _curprogram;
+  int _octaveshift = 0;
+  int _velocity    = 127;
+};
 ///////////////////////////////////////////////////////////////////////////////
 
-static const float fontscale = 0.40;
+static const float fontscale = 0.125;
 
 } // namespace ork::audio::singularity

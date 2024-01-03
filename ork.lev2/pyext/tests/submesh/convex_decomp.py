@@ -206,9 +206,13 @@ class SceneGraphApp(object):
   ##############################################
 
   def onUiEvent(self,uievent):
+    res = ui.HandlerResult()
     handled = self.uicam.uiEventHandler(uievent)
     if handled:
       self.camera.copyFrom( self.uicam.cameradata )
+      res = ui.HandlerResult()
+      res.setHandler(self.ezapp.topWidget)
+    return res
 
   ################################################
 

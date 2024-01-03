@@ -10,7 +10,7 @@
 namespace ork::audio::singularity::krzio {
 ///////////////////////////////////////////////////////////////////////////////
 
-int convert(std::string krzpath) {
+std::string convert(std::string krzpath) {
 
   rapidjson::Document gconfigdoc;
   // document.Parse(json);
@@ -26,38 +26,41 @@ int convert(std::string krzpath) {
   bool bOK;
   /////////////////////////////////////////////
   bOK = scanner.GetData(u32v);
-  printf("u32v<%8x>\n", int(u32v));
+  //printf("u32v<%8x>\n", int(u32v));
   // assert(kKRZMagic==u32v);
   /////////////////////////////////////////////
   bOK = scanner.GetData(krz.miFileHeaderAndPRAMLength);
-  printf("u32v<%8x>\n", int(krz.miFileHeaderAndPRAMLength));
+  //printf("u32v<%8x>\n", int(krz.miFileHeaderAndPRAMLength));
   /////////////////////////////////////////////
   bOK = scanner.GetData(u32v);
-  printf("u32v<%8x>\n", int(u32v));
+  //printf("u32v<%8x>\n", int(u32v));
   bOK = scanner.GetData(u32v);
-  printf("u32v<%8x>\n", int(u32v));
+  //printf("u32v<%8x>\n", int(u32v));
   /////////////////////////////////////////////
   bOK = scanner.GetData(u32v);
-  printf("K2KOSRELEASE<%d>\n", int(u32v));
+  int os_release = int(u32v);
+  //printf("K2KOSRELEASE<%d>\n", int(u32v));
   /////////////////////////////////////////////
   bOK = scanner.GetData(u32v);
-  printf("HWTYPE<%08x>\n", int(u32v));
+  int hw_type = int(u32v);
+  //printf("HWTYPE<%08x>\n", int(u32v));
   //	switch( u32v )
   //	{}
   //	assert( kKRZHwTypeK2000==u32v );
+  printf( "importing krz file<%s> K2KOSRELEASE<%d> HWTYPE<%08x>\n", krzpath.c_str(), os_release, hw_type );
   /////////////////////////////////////////////
   scanner.SkipData(8);
   /////////////////////////////////////////////
   bool bdone = false;
   int iblock = 0;
-  printf("FileHeaderAndPRAMLength<0x%08x>\n", krz.miFileHeaderAndPRAMLength);
+  //printf("FileHeaderAndPRAMLength<0x%08x>\n", krz.miFileHeaderAndPRAMLength);
   while ((iblock < 10) && (false == bdone)) {
-    printf("iblock<%d>\n", iblock);
+    //printf("iblock<%d>\n", iblock);
     int blocklen = 0;
     int iseekpos = scanner.mMainIterator.miIndex;
     bOK          = scanner.GetData(blocklen);
     blocklen *= -1;
-    printf("SeekPos<0x%08x> Block<%d> Length<%d>\n", iseekpos, int(iblock), int(blocklen));
+    //printf("SeekPos<0x%08x> Block<%d> Length<%d>\n", iseekpos, int(iblock), int(blocklen));
     iblock++;
     if ((iseekpos + 4) < krz.miFileHeaderAndPRAMLength) {
       datablock newblock;
@@ -102,7 +105,7 @@ int convert(std::string krzpath) {
 
   /////////////////////////////
 
-  return 0;
+  return scanner.jsonPrograms();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
