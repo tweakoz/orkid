@@ -70,7 +70,7 @@ Orkid's synthesizer is loosely inspired by Kurzeil VAST, in that it supports ful
     - SynthData
     - KeyMap
 
-  - InstanceObjects (objects used in audio processing, derived from data objects)
+  - InstanceObjects (objects used in audio processing, references immutable data from data objects)
     - DspBlock
     - DspStage
     - Alg
