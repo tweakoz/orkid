@@ -53,49 +53,48 @@ Orkid's synthesizer is loosely inspired by Kurzeil VAST, in that it supports ful
 
   ![Singularity Architecture:1](Singul.png)
 
-  ### Objects Overview
+  ### Definitions of data objects (live performance mutable objects)
 
-  - DataObjects (objects used to construct instance objects, immutable from audio thread)
-    - DspBlockData     
-    - DspStageData
-    - AlgData
-    - KmpBlockData
-    - BlockModulationData
-    - DspParamData
-    - ControlBlockData
-    - ControllerData
-    - LayerData
-    - ProgramData
-    - BankData 
-    - SynthData
-    - KeyMap
+ Data objects are used to construct instance objects.
+ Data objects are immutable from audio thread.
+ They are typically created/modified by user from UI or c++/python code
 
-  - InstanceObjects (objects used in audio processing, references immutable data from data objects)
-    - DspBlock
-    - DspStage
-    - Alg
-    - IoConfig
-    - DspParam
-    - ControlBlockInst
-    - ControllerInst
-    - Layer
-    - Synth
-    - DspBuffer
-    - outputBuffer
-    - KeyOnInfo
-    - KeyOnModifiers
-    - OutputBus
+  - SynthData : (subclassed by import parsers) contains zero or more BankData's 
+  - BankData : contains zero or more ProgramData's
+  - ProgramData : contains zero or more LayerData
+  - LayerData : contains an AlgData, ControlBlockData
+  - AlgData : contains zero or more DspStageData's
+  - DspStageData : contains zero or more DspBlockData's
+  - DspBlockData : (subclassed) base class for all dsp block data objects
+    - A few examples: PITCH_DATA, SAMPLER_DATA, SINE_DATA, SAW_DATA, SQUARE_DATA, SHAPEMODOSC_DATA, BANDPASS_FILT_DATA
+    - has zero or more DspParamData which can dynamically alter the operation of the DspBlock (analogy: a gpu shader parameter)
+  - DspParamData : basic parameter for a DspBlock
+  - KmpBlockData : used by sampler - contains Keymap data
+  - BlockModulationData : contains 2 ControllerData (sources), a ControllerData for Controller2 depth modulation and an "Evaluator"
+  - Evaluator : c++ lambda function which combines controllers into a single value via some computation
+  - ControlBlockData : contains zero or more ControllerData's
+  - ControllerData : (subclassed) base class for controller data objects
+     - A few examples: LfoData, FunData, RateLevelEnvData, NatEnvWrapperData, AsrData, YmEnvData, TX81ZEnvData
+  - KeyMap : contains multisample layout with key, velocity splits, etc..
 
-  ### Definitions
+  ### Definitions of instance objects (live performance mutable objects)
 
-  - Synth : collection of all layers/busses that get mixed to final outputs
+  - Synth : collection of all layers/busses that get mixed to final outputs.
+  - OutputBus : set of DSP channels which sum layers which are assigned to it. 
+  - DspBuffer
+  - outputBuffer
+  - KeyOnInfo
+  - KeyOnModifiers
   - Layer : A single "voice", generating a sound using an Algorithm, despite being a single "voice" - it can still within itself have multiple sound generation components. Layers are also used for Effects processing, they could either be an effect per voice, or non-keyed effect layers can be attached to output busses.
   - Algorithm : A stack of DspStages that implement a sound generation method, comprised of 1 or more DspStage's.
-  - DspStage : typically a Directed Acyclic Graph (DAG) of DspBlocks conforming to an IoConfig, with 1 or more inputs, 0 or more middle DspBlocks, and 1 or more output DspBlocks. Cycles can be permitted in some cases.
   - IoConfig : Input Output topology description for a DspStage (num inputs, num outputs)
+  - DspStage : typically a Directed Acyclic Graph (DAG) of DspBlocks conforming to an IoConfig, with 1 or more inputs, 0 or more middle DspBlocks, and 1 or more output DspBlocks. Cycles can be permitted in some cases.
   - DspBlocks : Implementation of a specific DSP technique - can be sources, modifiers, or sinks. eg. PM Oscillator, Sample Playback Oscillator, Filter, Mono Output Amp, DelayLine, PitchShifter, Reverb, Chorus, etc.. Can have 0 or more DspParam's
   - DspParam : a parameter of a DspBlock that can be set, evaluated, modulated, etc..
   - BlockModulation : A set of up to 2 modulation sources (controller) that modulate a DspParam, coupled with an "evalutor" which handles block specific semantics.
-  - Controller : a realtime data source routed into a BlockModulation, eg. LFO, EG, FUN, Keyboard Input, MIDI CC, custom lambda etc..
+  - ControlBlockInst
+  - ControllerInst : a realtime data source routed into a BlockModulation, eg. LFO, EG, FUN, Keyboard Input, MIDI CC, custom lambda etc..
+  - FUN : K2000 style function generator (supports functions like "a+b", "a-b", "(a+b)/2", "a*b", "quantize b to a", "lowpass(f=a,b)", "warp1(a,b)", etc..
+
 
 
