@@ -199,10 +199,16 @@ vec8f ParallelDelay::output(float fi){
 }
 void ParallelDelay::input(const vec8f& input){
   for( int j=0; j<8; j++ ){
-    _delay[j].inp(input._elements[j]);
+    float x = _dcblock[j].compute(input._elements[j]);
+    _delay[j].inp(x);
   }
 }
-
+ParallelDelay::ParallelDelay(){
+  for( int j=0; j<8; j++ ){
+    _dcblock[j].Clear();
+    _dcblock[j].SetHpf(10.0f);
+  }
+}
 ///////////////////////////////////////////////////////////////////////////////
 
 Fdn8ReverbData::Fdn8ReverbData(std::string name)

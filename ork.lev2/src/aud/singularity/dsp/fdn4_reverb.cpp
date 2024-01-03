@@ -127,10 +127,10 @@ void Fdn4Reverb::compute(DspBuffer& dspbuf) // final
     float cinpA = cinp + grp2.dotWith(abcd_out) + 1e-9;
     float dinpA = dinp + grp3.dotWith(abcd_out) + 1e-9;
 
-    float ainpB = ainp;
-    float binpB = binp;
-    float cinpB = cinp;
-    float dinpB = dinp;
+    float ainpB = ainpA;
+    float binpB = binpA;
+    float cinpB = cinpA;
+    float dinpB = dinpA;
     
     for( int i=0; i<_mydata->_allpass_count; i++ ){
       ainpB =_allpassA[i].Tick(ainpB);
@@ -148,15 +148,15 @@ void Fdn4Reverb::compute(DspBuffer& dspbuf) // final
     // output to dsp channels
     /////////////////////////////////////
 
-    float lout = ainpB* _outputGainsL.x   //
-               + binpB* _outputGainsL.y //
-               + cinpB* _outputGainsL.z //
-               + dinpB* _outputGainsL.w;
+    float lout = ainpA* _outputGainsL.x   //
+               + binpA* _outputGainsL.y //
+               + cinpA* _outputGainsL.z //
+               + dinpA* _outputGainsL.w;
 
-    float rout = ainpB* _outputGainsR.x   //
-                 + binpB* _outputGainsR.y //
-                 + cinpB* _outputGainsR.z //
-                 + dinpB* _outputGainsR.w;
+    float rout = ainpA* _outputGainsR.x   //
+                 + binpA* _outputGainsR.y //
+                 + cinpA* _outputGainsR.z //
+                 + dinpA* _outputGainsR.w;
 
     olbuf[i] = std::lerp( inl,lout, mix);
     orbuf[i] = std::lerp( inr,rout, mix);

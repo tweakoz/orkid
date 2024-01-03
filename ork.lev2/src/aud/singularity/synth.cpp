@@ -37,11 +37,11 @@ void synth::nextEffect(outbus_ptr_t bus) {
       }
       ///////////////////////////////
       bus->_fxcurpreset    = it;
-      auto nextpreset = bus->_fxcurpreset->second;
+      auto nextpreset = *(bus->_fxcurpreset);
       assert(nextpreset->_algdata != nullptr); // did you add presets ?
       bus->setBusDSP(nextpreset);
-      bus->_fxname = it->first;
-      logchan_synth->log("switched to effect<%s>", it->first.c_str());
+      bus->_fxname = nextpreset->_name;
+      logchan_synth->log("switched to effect<%s>", bus->_fxname.c_str());
     }));
   });
 }
@@ -61,19 +61,24 @@ void synth::prevEffect(outbus_ptr_t bus) {
       }
       ///////////////////////////////
       bus->_fxcurpreset    = it;
-      auto nextpreset = bus->_fxcurpreset->second;
+      auto nextpreset = *(bus->_fxcurpreset);
       assert(nextpreset->_algdata != nullptr); // did you add presets ?
       bus->setBusDSP(nextpreset);
-      bus->_fxname = it->first;
-      logchan_synth->log("switched to effect<%s>", it->first.c_str());
+      bus->_fxname = nextpreset->_name;
+      logchan_synth->log("switched to effect<%s>", bus->_fxname.c_str());
     }));
   });
 }
 ///////////////////////////////////////////////////////////////////////////////
 void synth::setEffect(outbus_ptr_t bus, std::string name) {
-  auto it = _fxpresets.find(name);
+  fxpresetmap_t::iterator it = _fxpresets.begin();
+  for (; it != _fxpresets.end(); ++it) {
+    if ((*it)->_name == name) {
+      break;
+    }
+  }
   if (it != _fxpresets.end()) {
-    auto nextpreset = it->second;
+    auto nextpreset = (*it);
     _eventmap.atomicOp([=](eventmap_t& unlocked) { //
       float timestamp         = 0.0f;              // now
       auto deferred_operation = [=]() {

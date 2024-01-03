@@ -149,7 +149,7 @@ class KrzApp(SingulTestApp):
       "Bass_String_Sec",
       "Brite_Klav",
       "Chamber_Section",
-      "Digital_E_Piano",
+      #"Digital_E_Piano", # unstable
       "Dog_Chases_Tail",
       "Ethereal_Echos",
       "French_Horn_Sec1",

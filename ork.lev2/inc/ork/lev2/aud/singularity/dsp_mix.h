@@ -311,9 +311,12 @@ struct Fdn8ReverbData : public DspBlockData {
   mtx8f _permute;
 };
 struct ParallelDelay{
+  ParallelDelay();
   vec8f output(float fi);
   void input(const vec8f& input);
   DelayContext _delay[8];
+  BiQuad _dcblock[8];
+
 };
 struct Fdn8Reverb : public DspBlock {
   using dataclass_t = Fdn8ReverbData;
