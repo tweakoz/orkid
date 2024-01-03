@@ -116,7 +116,7 @@ class KrzApp(SingulTestApp):
       "CowGogiBell",
       "Chimes",
       "Cartoon_Perc",
-      "Brt_Dbl_Bass",
+      #"Brt_Dbl_Bass", # unstable
       "BrazKnuckles",
       "Big_Drum_Corp",
       "Arco_Dbl_Bass",
