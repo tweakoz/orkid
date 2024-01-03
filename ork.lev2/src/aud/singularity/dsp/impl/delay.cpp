@@ -26,12 +26,8 @@ DelayContext::DelayContext() {
 float DelayContext::out(float fi) const {
   int64_t index64       = _index << 16;
   float delaylen        = lerp(_basDelayLen, _tgtDelayLen, fi);
-  int64_t outdelayindex = index64 - int64_t(delaylen * 65536.0f);
-
-  while (outdelayindex < 0)
-    outdelayindex += _maxx;
-  while (outdelayindex >= _maxx)
-    outdelayindex -= _maxx;
+  int64_t outdelayindex = (index64 - int64_t(delaylen * 65536.0f));
+  outdelayindex = (outdelayindex % _maxx + _maxx) % _maxx;
 
   float fract    = float(outdelayindex & 0xffff) * kinv64k;
   float invfr    = 1.0f - fract;
@@ -47,10 +43,7 @@ float DelayContext::out(float fi) const {
 
 void DelayContext::inp(float inp) {
   int64_t inpdelayindex = _index++;
-  while (inpdelayindex < 0)
-    inpdelayindex += _maxdelay;
-  while (inpdelayindex >= _maxdelay)
-    inpdelayindex -= _maxdelay;
+  inpdelayindex = inpdelayindex % _maxdelay;
   _bufdata[inpdelayindex] = inp;
 }
 

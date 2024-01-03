@@ -115,4 +115,30 @@ struct OnePoleHiPass {
   float lp_outl;
 };
 
+struct SimpleHighPass {
+    float _xm1 = 0.0f;
+    float _ym1 = 0.0f;
+    float _alpha = 0.0f;
+
+    inline SimpleHighPass() {
+      set(100,44100);
+    }
+    inline void set(float fc, float sampleRate) {
+        float RC = 1.0f / (2.0f * M_PI * fc);
+        float dt = 1.0f / sampleRate;
+        _alpha = RC / (RC + dt);
+    }
+
+    inline void clear() {
+        _xm1 = 0.0f;
+        _ym1 = 0.0f;
+    }
+
+    inline float compute(float input) {
+        float output = _alpha * (_ym1 + input - _xm1);
+        _xm1 = input;
+        _ym1 = output;
+        return output;
+    }
+};
 } // namespace ork::audio::singularity

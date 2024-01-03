@@ -316,6 +316,7 @@ struct ParallelDelay{
   void input(const vec8f& input);
   DelayContext _delay[8];
   BiQuad _dcblock[8];
+  SimpleHighPass _dcblock2[8];
 
 };
 struct Fdn8Reverb : public DspBlock {
@@ -327,10 +328,15 @@ struct Fdn8Reverb : public DspBlock {
   struct DiffuserStep{
     DiffuserStep();
     void setTime(float time);
+    void tick();
     vec8f process(const vec8f& input,float fi);
     mtx8f _hadamard;
     mtx8f _permute;
     ParallelDelay _delays;
+    float _basetimes[8];
+    float _modulation[8];
+    float _phase = 0.0f;
+    vec8f _nodenorm;
   };
 
   const Fdn8ReverbData* _mydata;
@@ -339,11 +345,15 @@ struct Fdn8Reverb : public DspBlock {
   BiQuad _hipassfilterL;
   BiQuad _hipassfilterR;
   ParallelDelay _fbdelay;
+  float _fbbasetimes[8];
+  float _fbmodulations[8];
+  float _fbmodphase = 0.0f;
   ParallelDelay _early_refl;
   mtx8f _householder;
   float _inputGain;
   float _outputGain;
   mix8to2 _stereomix;
+  vec8f _nodenorm;
 };
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::audio::singularity

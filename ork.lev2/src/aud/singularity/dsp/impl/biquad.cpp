@@ -8,7 +8,7 @@
 #include <ork/lev2/aud/singularity/synth.h>
 #include <assert.h>
 #include <ork/lev2/aud/singularity/filters.h>
-
+#include <cstdint>
 namespace ork::audio::singularity {
 constexpr float KMAXFC = 0.36363636363636365f * getSampleRate();
 
@@ -32,6 +32,19 @@ void BiQuad::Clear() {
   _ym2 = 0.0f;
 }
 ///////////////////////////////////////////////////////////////////////////////
+inline bool isNanOrInf(float value) {
+    // IEEE 754 float: sign bit (1), exponent (8), fraction (23)
+    uint32_t bits;
+    //std::memcpy(&bits, &value, sizeof(bits)); // Bitwise copy of the float to an int
+    bits = *(reinterpret_cast<uint32_t*>(&value));
+    // Check for NaN or Inf: all exponent bits are 1
+    // NaN: All exponent bits 1, and non-zero fraction
+    // Inf: All exponent bits 1, and zero fraction
+    bool exponentAllOnes = ((bits & 0x7F800000) == 0x7F800000);
+    bool fractionNonZero = (bits & 0x007FFFFF) != 0;
+
+    return exponentAllOnes && !fractionNonZero;
+}
 float BiQuad::compute(float input) {
 
   float outputp = (_mfb0 * input)  //
@@ -48,9 +61,11 @@ float BiQuad::compute(float input) {
   _ym2 = _ym1;
   _ym1 = output;
 
-  if (isnan(_ym1) or isinf(_ym1)) {
+  //if (isnan(_ym1) or isinf(_ym1)) {
+  if(isNanOrInf(_ym1))
     _ym1 = 0.0f;
-  }
+  if(isNanOrInf(_ym2))
+    _ym2 = 0.0f;
 
   return output;
 }

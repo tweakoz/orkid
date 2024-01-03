@@ -199,14 +199,17 @@ vec8f ParallelDelay::output(float fi){
 }
 void ParallelDelay::input(const vec8f& input){
   for( int j=0; j<8; j++ ){
-    float x = _dcblock[j].compute(input._elements[j]);
-    _delay[j].inp(x);
+    float x = input._elements[j];
+    float y = _dcblock2[j].compute(x);
+    _delay[j].inp(y);
   }
 }
 ParallelDelay::ParallelDelay(){
   for( int j=0; j<8; j++ ){
     _dcblock[j].Clear();
-    _dcblock[j].SetHpf(10.0f);
+    _dcblock[j].SetHpf(120.0f);
+    _dcblock2[j].clear();
+    _dcblock2[j].set(120.0f,1.0f/getInverseSampleRate());
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -299,6 +302,17 @@ void Fdn8Reverb::compute(DspBuffer& dspbuf) // final
 
   vec8f split;
 
+  for( int i=0; i<k_num_diffusers; i++ ){
+    _diffuser[i].tick();
+  }
+  float val = sinf(_fbmodphase);
+  for( int i=0; i<8; i++ ){
+    float fbtime = _fbbasetimes[i];
+    fbtime *= (1.0f+val*_fbmodulations[i]);
+    _fbdelay._delay[i].setNextDelayTime(fbtime);
+  }
+  _fbmodphase += 0.0017f;
+
   for (int i = 0; i < inumframes; i++) {
     float fi = float(i) * invfr;
 
@@ -347,7 +361,8 @@ void Fdn8Reverb::compute(DspBuffer& dspbuf) // final
 
     vec8f fbout = _fbdelay.output(fi);
     auto x = _householder.transform(fbout*0.85);
-    _fbdelay.input((x+d7)*0.999f);
+    auto I = (x+d7)*0.99999f;
+    _fbdelay.input(I + _nodenorm);
 
     /////////////////////////////////////
     // mix down
@@ -375,7 +390,8 @@ void Fdn8Reverb::DiffuserStep::setTime(float time) {
     int irand    = rand() & 0xffff - 0x8000;
     float f      = float(irand) / float(0x8000);
     float tdelta = tstep * f;
-    _delays._delay[i].setStaticDelayTime(tstep * (float(i) + 0.5) + tdelta);
+    _basetimes[i] = (tstep * (float(i) + 0.5) + tdelta);
+    _modulation[i] = _basetimes[i]*0.03f;
   }
 }
 
@@ -392,9 +408,20 @@ vec8f mtx8f::transform(const vec8f& input) const{
   return result;
 }
 
+void Fdn8Reverb::DiffuserStep::tick(){
+  float s = sinf(_phase);
+  for (int i = 0; i < 8; i++) {
+    float t = _basetimes[i] + s*_modulation[i];
+    _delays._delay[i].setNextDelayTime(t);
+  }
+  _phase += 0.001f;
+}
+
 vec8f Fdn8Reverb::DiffuserStep::process(const vec8f& input, float fi) {
+
   vec8f delay_outs = _delays.output(fi);
-  _delays.input(input*0.999f);
+  vec8f I = input*0.99999f;
+  _delays.input(I + _nodenorm);
   vec8f permuted = _permute.transform(delay_outs); // shuffle and invert (permute)
   vec8f h = _hadamard.transform(permuted);         // hadamard
   return h;
@@ -407,15 +434,21 @@ void Fdn8Reverb::doKeyOn(const KeyOnInfo& koi) { // final
   for (int i = 0; i < k_num_diffusers; i++) {
     _diffuser[i]._hadamard    = _mydata->_hadamard;
     _diffuser[i]._permute     = _mydata->_permute;
+    _diffuser[i]._nodenorm.broadcast(1e-6);
   }
   _householder = _mydata->_householder;
-  
+
+  _nodenorm.broadcast(1e-6);
+
+
   float basetime = 0.15;
   for( int j=0; j<8; j++ ){
     int i = rand() & 0x8000;
     float fi = float(i) / float(0x4000);
     fi = (fi-1.0f)*0.1;
-    _fbdelay._delay[j].setStaticDelayTime(basetime+fi*basetime);
+    _fbbasetimes[j] = basetime+fi*basetime;
+    _fbmodulations[j] = _fbbasetimes[j]*0.03;
+    //_fbdelay._delay[j].setStaticDelayTime(basetime+fi*basetime);
     //_fbdelay._delay[j].setStaticDelayTime(basetime);
   }
   for( int j=0; j<8; j++ ){
