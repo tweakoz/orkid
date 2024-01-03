@@ -22,7 +22,7 @@ namespace ork { namespace chunkfile {
 
 ///////////////////////////////////////////////////////////////////////////////
 void OutputStream::addIndexedString(const std::string& str, Writer& writer){
-  uint64_t index = writer.stringIndex(str);
+  uint64_t index = writer.stringIndex(str.c_str());
   addItem<uint64_t>(index);
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -40,24 +40,12 @@ void OutputStream::addItem(const bool& data) {
   Write((unsigned char*)&temp, sizeof(temp));
 }
 ///////////////////////////////////////////////////////////////////////////////
-void OutputStream::addItem(const uint8_t& data) {
+void OutputStream::addItem(const unsigned char& data) {
   Write(&data, sizeof(data));
 }
 ///////////////////////////////////////////////////////////////////////////////
-void OutputStream::addItem(const uint16_t& data) {
-  uint16_t temp = data;
-  swapbytes_dynamic(temp);
-  Write((unsigned char*)&temp, sizeof(temp));
-}
-///////////////////////////////////////////////////////////////////////////////
-void OutputStream::addItem(const uint32_t& data) {
-  uint32_t temp = data;
-  swapbytes_dynamic(temp);
-  Write((unsigned char*)&temp, sizeof(temp));
-}
-///////////////////////////////////////////////////////////////////////////////
-void OutputStream::addItem(const uint64_t& data) {
-  uint64_t temp = data;
+void OutputStream::addItem(const unsigned short& data) {
+  unsigned short temp = data;
   swapbytes_dynamic(temp);
   Write((unsigned char*)&temp, sizeof(temp));
 }
@@ -197,27 +185,18 @@ InputStream::InputStream(const void* pb, size_t ilength)
     , milength(ilength) {
 }
 
-////////////////////////////////////////////////////////////////////////////////////
-
 const void* InputStream::GetCurrent() {
   const char* pchbase = (const char*)mpbase;
   return (const void*)&pchbase[midx];
 }
-
 void InputStream::dump() const{
   hexdumpbytes((const uint8_t*) mpbase, milength);
 }
-
-////////////////////////////////////////////////////////////////////////////////////
-
-std::string InputStream::readIndexedString(const Reader& reader){
-  uint64_t index;
-  GetItem<uint64_t>(index);
-  return reader.GetString(index);
+void* InputStream::GetDataAt(size_t idx) {
+  OrkAssert(idx < milength);
+  const char* pchbase = (const char*)mpbase;
+  return (void*)&pchbase[idx];
 }
-
-////////////////////////////////////////////////////////////////////////////////////
-
 std::vector<uint8_t> InputStream::readData(size_t length){
   std::vector<uint8_t> data;
   data.resize(length);
@@ -225,28 +204,6 @@ std::vector<uint8_t> InputStream::readData(size_t length){
   midx += length;
   return data;
 }
-
-////////////////////////////////////////////////////////////////////////////////////
-
-template <> std::string InputStream::readItem<std::string>(){
-  uint64_t size;
-  GetItem<uint64_t>(size);
-  printf( "size<0x%zx>\n", size);
-  std::vector<uint8_t> data = readData(size);
-  data.push_back(0);
-  return std::string((const char*)data.data());
-}
-
-////////////////////////////////////////////////////////////////////////////////////
-
-void* InputStream::GetDataAt(size_t idx) {
-  OrkAssert(idx < milength);
-  const char* pchbase = (const char*)mpbase;
-  return (void*)&pchbase[idx];
-}
-
-////////////////////////////////////////////////////////////////////////////////////
-
 void InputStream::getVarMap(varmap::VarMap& out_vmap, const Reader& reader) {
   size_t mkr_beginvarmap = 0;
   size_t mkr_endvarmap   = 0;
@@ -354,6 +311,14 @@ void InputStream::getVarMap(varmap::VarMap& out_vmap, const Reader& reader) {
   OrkAssert(mkr_endvarmap == "EndVarMap"_crcu);
 }
 
+////////////////////////////////////////////////////////////////////////////////////
+
+std::string InputStream::readIndexedString(const Reader& reader){
+  uint64_t index;
+  GetItem<uint64_t>(index);
+  return reader.GetString(index);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -396,71 +361,51 @@ Reader::Reader(datablock_ptr_t datablock, ILoadAllocator& allocator)
 ///////////////////////////////////////////////////////////////////////////////
 bool Reader::readFromDataBlock(datablock_ptr_t datablock) {
   DataBlockInputStream dblockstream(datablock);
+
   const Char4 good_chunk_magic("chkf");
   OrkHeapCheck();
   ///////////////////////////
   Char4 check_chunk_magic(dblockstream.getItem<uint32_t>());
   if (check_chunk_magic != good_chunk_magic)
     return false;
-  check_chunk_magic = dblockstream.getItem<uint32_t>();
-  if (check_chunk_magic != good_chunk_magic)
-    return false;
   ///////////////////////////
-  int32_t ifiletype     = dblockstream.getItem<size_t>();
-  ///////////////////////////
-  int32_t inumchunks = dblockstream.getItem<size_t>();
-  ///////////////////////////
-  _strtablen = dblockstream.getItem<size_t>();
+  _strtablen = dblockstream.getItem<int>();
   char* pst   = new char[_strtablen];
   memcpy_fast(pst, dblockstream.current(), _strtablen);
   dblockstream.advance(_strtablen);
   mpstrtab = pst;
   OrkHeapCheck();
   ///////////////////////////
-  #error fixme 
-  //size_t marker = dblockstream.getItem<size_t>();
-  //OrkAssert(marker == 0x0123456789abcdef);
-  ///////////////////////////
-  _chunkfiletype        = mpstrtab + ifiletype;
+  int32_t ifiletype     = dblockstream.getItem<int32_t>();
+  const char* pthistype = mpstrtab + ifiletype;
+  _chunkfiletype        = pthistype;
   OrkHeapCheck();
   ///////////////////////////
-  printf( "///////////////////chunkreader strtable////////////////////\n");
-  printf( "strtab_len<0x%zx>\n", _strtablen );
-  hexdumpbytes((const uint8_t*) mpstrtab, _strtablen);
-  printf( "///////////////////////////////////////////////////////////\n");
+  int32_t inumchunks = dblockstream.getItem<int32_t>();
   ///////////////////////////
   for (int ic = 0; ic < inumchunks; ic++) {
-    size_t ichunkid    = dblockstream.getItem<size_t>();
-    size_t ioffset     = dblockstream.getItem<size_t>();
-    size_t ichunklen   = dblockstream.getItem<size_t>();
-    PoolString psname  = AddPooledString(GetString(ichunkid));
-
-    printf( "parsing chunk<%s> offset<0x%zx> len<0x%zx>\n", psname.c_str(), ioffset, ichunklen );
-
+    int32_t ichunkid    = dblockstream.getItem<int32_t>();
+    size_t offset     = dblockstream.getItem<size_t>();
+    size_t chunklen   = dblockstream.getItem<size_t>();
+    PoolString psname   = AddPooledString(GetString(ichunkid));
     InputStream* stream = &mStreamBank[ic];
     OrkHeapCheck();
-    if (ichunklen) {
-      void* pdata = _allocator.alloc(psname.c_str(), ichunklen);
+    if (chunklen) {
+      void* pdata = _allocator.alloc(psname.c_str(), chunklen);
       OrkAssert(pdata != 0);
-      new (stream) InputStream(pdata, ichunklen);
+      new (stream) InputStream(pdata, chunklen);
       mInputStreams.AddSorted(psname, stream);
     } else {
       new (stream) InputStream(0, 0);
       mInputStreams.AddSorted(psname, stream);
     }
-    stream->_streamname = psname.c_str();
     OrkHeapCheck();
   }
   ///////////////////////////
   for (int ic = 0; ic < inumchunks; ic++) {
-    auto inputstream = &mStreamBank[ic];
-    if (inputstream->GetLength()) {
-      auto destaddr = inputstream->GetDataAt(0);
-      size_t length = inputstream->GetLength();
-      printf( "COPY TO INPUTSTREAM<%s> addr<%p> size<0x%zx>\n", //
-              inputstream->_streamname.c_str(), //
-              destaddr, //
-              length );
+    if (mStreamBank[ic].GetLength()) {
+      auto destaddr = mStreamBank[ic].GetDataAt(0);
+      size_t length = mStreamBank[ic].GetLength();
       memcpy_fast(destaddr, dblockstream.current(), length);
       dblockstream.advance(length);
     }
@@ -494,7 +439,6 @@ OutputStream* Writer::AddStream(std::string stream_name) {
   OutputStream* nstream = new OutputStream;
   int ichunkid          = _stringblock.AddString(stream_name.c_str()).Index();
   mOutputStreams.insert(std::make_pair(ichunkid, nstream));
-  nstream->_name = stream_name;
   return nstream;
 }
 
@@ -503,9 +447,6 @@ OutputStream* Writer::AddStream(std::string stream_name) {
 size_t Writer::stringIndex(const char* pstr) {
   return _stringblock.AddString(pstr).Index();
 }
-size_t Writer::stringIndex(const std::string& pstr) {
-  return _stringblock.AddString(pstr.c_str()).Index();
-}
 
 ////////////////////////////////////////////////////////////////////////////////////
 
@@ -513,15 +454,22 @@ void Writer::writeToDataBlock(datablock_ptr_t& out_datablock) {
   ////////////////////////
   Char4 chunk_magic("chkf");
   out_datablock->addItem<Char4>(chunk_magic);
-  out_datablock->addItem<Char4>(chunk_magic);
-  out_datablock->addItem<size_t>(_filetype);
+  ////////////////////////
+  OutputStream StringBlockStream;
+  StringBlockStream.Write((const unsigned char*)_stringblock.data(), _stringblock.size());
+  int istringblksize = StringBlockStream.GetSize();
+  ////////////////////////
+  out_datablock->addItem<int>(istringblksize);
+  out_datablock->addData(StringBlockStream.GetData(), StringBlockStream.GetSize());
+  ////////////////////////
+  out_datablock->addItem<int>(_filetype);
   ////////////////////////
   int inumchunks = (int)mOutputStreams.size();
-  out_datablock->addItem<size_t>(inumchunks);
+  out_datablock->addItem<int>(inumchunks);
   ////////////////////////
   size_t offset = 0;
   for (orkmap<int, OutputStream*>::const_iterator it = mOutputStreams.begin(); it != mOutputStreams.end(); it++) {
-    size_t ichunkid         = it->first;
+    int ichunkid         = it->first;
     OutputStream* stream = it->second;
     size_t chunklen        = stream->GetSize();
     ////////////////////////
@@ -533,7 +481,7 @@ void Writer::writeToDataBlock(datablock_ptr_t& out_datablock) {
   }
   ////////////////////////
   for (orkmap<int, OutputStream*>::const_iterator it = mOutputStreams.begin(); it != mOutputStreams.end(); it++) {
-    size_t ichunkid         = it->first;
+    int ichunkid         = it->first;
     OutputStream* stream = it->second;
     size_t ichunklen        = stream->GetSize();
     if (ichunklen && stream->GetData()) {
@@ -551,7 +499,4 @@ void Writer::WriteToFile(const file::Path& outpath) {
   ork::File outputfile(outpath, ork::EFM_WRITE);
   outputfile.Write(datablock->data(), datablock->length());
 }
-
-
-
 }} // namespace ork::chunkfile
