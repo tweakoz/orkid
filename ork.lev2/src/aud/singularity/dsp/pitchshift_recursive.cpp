@@ -160,7 +160,7 @@ void RecursivePitchShifter::compute(DspBuffer& dspbuf) // final
                 cout * maskc + //
                 dout * maskd;
 
-    float final_out = lerp(oinp, out * outgain, mix);
+    float final_out = lerp(oinp, oinp + out * outgain, mix);
     _delayOuter.inp(oinp+out*_mydata->_feedback);
 
     obuf[i] = final_out;
