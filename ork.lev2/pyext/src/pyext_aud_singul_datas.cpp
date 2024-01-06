@@ -232,7 +232,12 @@ void pyinit_aud_singularity_datas(py::module& singmodule) {
                               },
                             [](lyrdata_ptr_t ldata, std::string busname) { //
                               ldata->_outbus = busname; 
-                            });
+                            })
+                        .def("__repr__", [](lyrdata_ptr_t ldata) -> std::string {
+                            std::ostringstream oss;
+                            oss << "LayerData( name: " << ldata->_name << ", stage_count: " << ldata->_algdata->_numstages << " )";
+                            return oss.str();
+                        });
   type_codec->registerStdCodec<lyrdata_ptr_t>(ldata_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto pdata_type = py::class_<ProgramData, prgdata_ptr_t>(singmodule, "ProgramData") //
@@ -258,7 +263,12 @@ void pyinit_aud_singularity_datas(py::module& singmodule) {
                         .def_property(
                             "name", //
                             [](prgdata_ptr_t pdata) -> std::string { return pdata->_name; },
-                            [](prgdata_ptr_t pdata, std::string named) { pdata->_name = named; });
+                            [](prgdata_ptr_t pdata, std::string named) { pdata->_name = named; })
+                        .def("__repr__", [](prgdata_ptr_t pdata) -> std::string {
+                            std::ostringstream oss;
+                            oss << "ProgramData( name: " << pdata->_name << ", layer_count: " << pdata->_layerdatas.size() << " )";
+                            return oss.str();
+                        });
   type_codec->registerStdCodec<prgdata_ptr_t>(pdata_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto bankdata_type = py::class_<BankData, ::ork::Object, bankdata_ptr_t>(singmodule, "BankData")

@@ -24,6 +24,9 @@ sequencer = synth.sequencer
 
 syn_data_base = singularity.baseDataPath()/"kurzweil"
 krzdata = singularity.KrzSynthData()
+doomsday = krzdata.bankData.programByName("Doomsday")
+
+print(doomsday)
 
 ################################################################################
 
@@ -38,6 +41,8 @@ print(timebase)
 
 ts0 = singularity.TimeStamp(0,0,0)
 tr1 = sequence.createTrack("track1")
+tr1.program = doomsday
+
 cl1 = tr1.createEventClipAtTimeStamp("clip1",ts0)
 print(ts0)
 print(tr1)
