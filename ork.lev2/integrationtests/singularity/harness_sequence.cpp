@@ -9,7 +9,7 @@
 
 
 void seq1(float tempo, int basebar, prgdata_constptr_t program) {
-  Sequence sq;
+  Sequence sq("seq1");
   sq._timebase->_tempo = tempo;
   //sq._tempo = tempo;
   for (int baro = 0; baro < 4; baro += 2) {

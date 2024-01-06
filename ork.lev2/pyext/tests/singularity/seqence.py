@@ -30,12 +30,12 @@ print(doomsday)
 
 ################################################################################
 
-sequence = singularity.Sequence()
+sequence = singularity.Sequence("seq1")
 timebase = sequence.timebase
 timebase.numerator = 4
 timebase.denominator = 4
 timebase.tempo = TEMPO
-timebase.ppb = 100
+timebase.ppb = 100 # pulses per beat
 
 print(timebase)
 
@@ -49,6 +49,10 @@ ev0 = cl1.createNoteEvent(ts0,cl1.duration,60,127)
 print(ts0)
 print(tr1)
 print(cl1)
+
+playback = sequencer.playSequence(sequence)
+
+print(playback)
 
 ######################################################
 # main loop

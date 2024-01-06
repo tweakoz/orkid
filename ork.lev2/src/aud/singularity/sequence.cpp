@@ -131,7 +131,8 @@ clip_ptr_t Track::createEventClipAtTimeStamp(std::string named, timestamp_ptr_t 
 
 ////////////////////////////////////////////////////////////////
 
-Sequence::Sequence() {
+Sequence::Sequence(std::string named) {
+  _name = named;
   _timebase = std::make_shared<TimeBase>(); // 4/4 120bpm
 }
 
@@ -176,6 +177,14 @@ void Sequence::enqueue(prgdata_constptr_t program) {
     auto dur       = time_end - time_start;
     enqueue_audio_event(program, time_start, dur, e->_note, e->_vel);
   }
+}
+
+////////////////////////////////////////////////////////////////
+
+sequenceplayback_ptr_t Sequencer::playSequence(sequence_ptr_t sequence){
+  auto playback = std::make_shared<SequencePlayback>();
+  playback->_sequence = sequence;
+  return playback;
 }
 
 ////////////////////////////////////////////////////////////////

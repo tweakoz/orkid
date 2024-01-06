@@ -105,7 +105,7 @@ void pyinit_aud_singularity_sequencer(py::module& singmodule) {
   type_codec->registerStdCodec<track_ptr_t>(track_t);
   /////////////////////////////////////////////////////////////////////////////////
   auto sequence_t = py::class_<Sequence, sequence_ptr_t>(singmodule, "Sequence")
-    .def(py::init<>())
+    .def(py::init<std::string>())
     .def("enqueue", [](sequence_ptr_t& seq, prgdata_constptr_t program) { seq->enqueue(program); })
     .def("createTrack", [](sequence_ptr_t& seq, std::string name) -> track_ptr_t { return seq->createTrack(name); })
     .def_property("timebase", [](sequence_ptr_t seq) { return seq->_timebase; }, [](sequence_ptr_t seq, timebase_ptr_t val) { seq->_timebase = val; })
@@ -116,7 +116,18 @@ void pyinit_aud_singularity_sequencer(py::module& singmodule) {
     });
   type_codec->registerStdCodec<sequence_ptr_t>(sequence_t);
   /////////////////////////////////////////////////////////////////////////////////
-  auto sequencer_t = py::class_<Sequencer, sequencer_ptr_t>(singmodule, "Sequencer");
+  auto sequencepb_t = py::class_<SequencePlayback, sequenceplayback_ptr_t>(singmodule, "SequencePlayback")
+  .def("__repr__", [](sequenceplayback_ptr_t seqpb) -> std::string {
+        std::ostringstream oss;
+        oss << "SequencePlayback( sequence: " << seqpb->_sequence->_name << " )";
+        return oss.str();
+    });
+  type_codec->registerStdCodec<sequenceplayback_ptr_t>(sequencepb_t);
+  /////////////////////////////////////////////////////////////////////////////////
+  auto sequencer_t = py::class_<Sequencer, sequencer_ptr_t>(singmodule, "Sequencer")
+  .def("playSequence", [](sequencer_ptr_t& sequencer, sequence_ptr_t sequence) -> sequenceplayback_ptr_t{ //
+      return sequencer->playSequence(sequence);
+    });
   type_codec->registerStdCodec<sequencer_ptr_t>(sequencer_t);
 }
 ///////////////////////////////////////////////////////////////////////////////

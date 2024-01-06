@@ -101,7 +101,7 @@ enum class TransportState : uint64_t{
 
 struct Sequence{
 
-  Sequence();
+  Sequence(std::string name);
   std::vector<event_ptr_t> _events;
   void addNote(
       int meas, //
@@ -116,15 +116,21 @@ struct Sequence{
   void stop();
   void record();
 
+  std::string _name;
   trackmap_t _tracks; 
   timebase_ptr_t _timebase;
   TransportState _transportState;
 
 };
 
+struct SequencePlayback{
+  sequence_ptr_t _sequence;
+};
+
 using seqmap_t = std::unordered_map<std::string, sequence_ptr_t>;
 
 struct Sequencer{
+    sequenceplayback_ptr_t playSequence(sequence_ptr_t sequence);
     seqmap_t _sequences;
 };
 
