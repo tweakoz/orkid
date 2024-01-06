@@ -23,71 +23,85 @@ namespace ork::audio::singularity {
 ////////////////////////////////////////////////////////////////
 
 timestamp_ptr_t TimeStamp::clone() const {
-  auto out = std::make_shared<TimeStamp>();
+  auto out       = std::make_shared<TimeStamp>();
   out->_measures = _measures;
   out->_beats    = _beats;
-  out->_clocks  = _clocks;
+  out->_clocks   = _clocks;
   return out;
 }
 
 timestamp_ptr_t TimeStamp::add(timestamp_ptr_t duration) const {
-  auto out = std::make_shared<TimeStamp>();
+  auto out       = std::make_shared<TimeStamp>();
   out->_measures = _measures + duration->_measures;
   out->_beats    = _beats + duration->_beats;
-  out->_clocks  = _clocks + duration->_clocks;
+  out->_clocks   = _clocks + duration->_clocks;
   return out;
 }
 timestamp_ptr_t TimeStamp::sub(timestamp_ptr_t duration) const {
-  auto out = std::make_shared<TimeStamp>();
+  auto out       = std::make_shared<TimeStamp>();
   out->_measures = _measures - duration->_measures;
   out->_beats    = _beats - duration->_beats;
-  out->_clocks  = _clocks - duration->_clocks;
+  out->_clocks   = _clocks - duration->_clocks;
   return out;
 }
 
 ////////////////////////////////////////////////////////////////
 
 timestamp_ptr_t TimeBase::reduceTimeStamp(timestamp_ptr_t inp) const {
-  auto out = std::make_shared<TimeStamp>();
+  auto out       = std::make_shared<TimeStamp>();
   out->_measures = inp->_measures;
   out->_beats    = inp->_beats;
-  out->_clocks  = inp->_clocks;
-  while (out->_clocks >= _ppb) {
-    out->_clocks -= _ppb;
-    out->_beats++;
+  out->_clocks   = inp->_clocks;
+
+  // Normalize clocks and beats
+  if (out->_clocks < 0) {
+    int borrow_beats = (-out->_clocks + _ppb - 1) / _ppb; // Ceiling division
+    out->_beats -= borrow_beats;
+    out->_clocks += borrow_beats * _ppb;
   }
-  while (out->_beats > _numerator) {
-    out->_beats -= _numerator;
-    out->_measures++;
+  if (out->_beats < 0) {
+    int borrow_measures = (-out->_beats + _numerator - 1) / _numerator; // Ceiling division
+    out->_measures -= borrow_measures;
+    out->_beats += borrow_measures * _numerator;
   }
+
+  // Handle excess clocks
+  int full_beats_from_clocks = out->_clocks / _ppb;
+  out->_clocks %= _ppb;
+  out->_beats += full_beats_from_clocks;
+
+  // Handle excess beats
+  int full_measures_from_beats = out->_beats / _numerator;
+  out->_beats %= _numerator;
+  out->_measures += full_measures_from_beats;
+
   return out;
 }
 
 ////////////////////////////////////////////////////////////////
 
 float TimeBase::time(timestamp_ptr_t tstamp) const {
-    // Convert BPM to BPS (Beats Per Second), adjusted for the beat length
-    float beatLengthMultiplier = 4.0f / static_cast<float>(_denominator);
-    float beatsPerSecond = (_tempo / 60.0f) * beatLengthMultiplier;
+  // Convert BPM to BPS (Beats Per Second), adjusted for the beat length
+  float beatLengthMultiplier = 4.0f / static_cast<float>(_denominator);
+  float beatsPerSecond       = (_tempo / 60.0f) * beatLengthMultiplier;
 
-    // Time duration of one pulse (clock) in seconds
-    float secondsPerPulse = 1.0f / (beatsPerSecond * _ppb);
+  // Time duration of one pulse (clock) in seconds
+  float secondsPerPulse = 1.0f / (beatsPerSecond * _ppb);
 
-    // Calculate time for the measures, beats, and clocks
-    float timeForMeasures = tstamp->_measures * _numerator * _ppb * secondsPerPulse;
-    float timeForBeats = tstamp->_beats * _ppb * secondsPerPulse;
-    float timeForClocks = tstamp->_clocks * secondsPerPulse;
+  // Calculate time for the measures, beats, and clocks
+  float timeForMeasures = tstamp->_measures * _numerator * _ppb * secondsPerPulse;
+  float timeForBeats    = tstamp->_beats * _ppb * secondsPerPulse;
+  float timeForClocks   = tstamp->_clocks * secondsPerPulse;
 
-    // Total time in seconds
-    return _basetime + (timeForMeasures + timeForBeats + timeForClocks);
-
+  // Total time in seconds
+  return _basetime + (timeForMeasures + timeForBeats + timeForClocks);
 }
 
 ////////////////////////////////////////////////////////////////
 
-Event::Event(){
-  _timestamp = std::make_shared<TimeStamp>();
-  _duration = std::make_shared<TimeStamp>();
+Event::Event() {
+  _timestamp           = std::make_shared<TimeStamp>();
+  _duration            = std::make_shared<TimeStamp>();
   _duration->_measures = 0;
 }
 
@@ -106,15 +120,15 @@ void Sequence::addNote(
     int note,
     int vel,
     int dur) {
-  auto event = std::make_shared<Event>();
-  event->_timestamp = std::make_shared<TimeStamp>();
-  event->_duration = std::make_shared<TimeStamp>();
+  auto event                   = std::make_shared<Event>();
+  event->_timestamp            = std::make_shared<TimeStamp>();
+  event->_duration             = std::make_shared<TimeStamp>();
   event->_timestamp->_measures = meas;
   event->_timestamp->_beats    = beat;
-  event->_timestamp->_clocks  = clocks;
-  event->_duration->_beats    = dur;
-  event->_note                = note;
-  event->_vel                 = vel;
+  event->_timestamp->_clocks   = clocks;
+  event->_duration->_beats     = dur;
+  event->_note                 = note;
+  event->_vel                  = vel;
   _events.push_back(event);
 }
 
@@ -123,13 +137,13 @@ void Sequence::addNote(
 void Sequence::enqueue(prgdata_constptr_t program) {
   for (auto e : _events) {
     float time_start = _timebase->time(e->_timestamp);
-    auto t2 = e->_timestamp->clone();
+    auto t2          = e->_timestamp->clone();
     t2->_beats += e->_duration->_beats;
     t2->_measures += e->_duration->_measures;
     t2->_clocks += e->_duration->_clocks;
-    auto reduced = _timebase->reduceTimeStamp(t2);
+    auto reduced   = _timebase->reduceTimeStamp(t2);
     float time_end = _timebase->time(reduced);
-    auto dur = time_end - time_start;
+    auto dur       = time_end - time_start;
     enqueue_audio_event(program, time_start, dur, e->_note, e->_vel);
   }
 }
@@ -148,7 +162,7 @@ void enqueue_audio_event(
   if (time < s->_timeaccum) {
     time = s->_timeaccum;
   }
-  //printf("time<%g> note<%d> program<%s>\n", time, midinote, prog->_name.c_str());
+  // printf("time<%g> note<%d> program<%s>\n", time, midinote, prog->_name.c_str());
 
   s->addEvent(time, [=]() {
     // NOTE ON
@@ -160,4 +174,4 @@ void enqueue_audio_event(
     });
   });
 }
-} //namespace ork::audio::singularity {
+} // namespace ork::audio::singularity
