@@ -10,7 +10,8 @@
 
 void seq1(float tempo, int basebar, prgdata_constptr_t program) {
   Sequence sq;
-  sq._tempo = tempo;
+  sq._timebase->_tempo = tempo;
+  //sq._tempo = tempo;
   for (int baro = 0; baro < 4; baro += 2) {
     int dur = 8 + (baro >> 1) * 8;
     int bar = basebar + baro;

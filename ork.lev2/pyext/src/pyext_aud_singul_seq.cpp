@@ -29,10 +29,46 @@ void pyinit_aud_singularity_sequencer(py::module& singmodule) {
   /////////////////////////////////////////////////////////////////////////////////
   auto type_codec = python::TypeCodec::instance();
   /////////////////////////////////////////////////////////////////////////////////
+  auto timestamp_t = py::class_<TimeStamp, timestamp_ptr_t>(singmodule, "TimeStamp")
+    .def(py::init<>())
+    .def(py::init<int, int, int>())
+    .def_property("measures", [](timestamp_ptr_t ts) { return ts->_measures; }, [](timestamp_ptr_t ts, int val) { ts->_measures = val; })
+    .def_property("beats", [](timestamp_ptr_t ts) { return ts->_beats; }, [](timestamp_ptr_t ts, int val) { ts->_beats = val; })
+    .def_property("clocks", [](timestamp_ptr_t ts) { return ts->_clocks; }, [](timestamp_ptr_t ts, int val) { ts->_clocks = val; })
+    .def("clone", [](timestamp_ptr_t ts) -> timestamp_ptr_t { return ts->clone(); })
+    // implement + and - operators in terms of add and sub
+    .def("__add__", [](timestamp_ptr_t ts, timestamp_ptr_t duration) -> timestamp_ptr_t  {
+        return ts->add(duration);
+    })
+    .def("__sub__", [](timestamp_ptr_t ts, timestamp_ptr_t duration) -> timestamp_ptr_t  {
+        return ts->sub(duration);
+    })
+    .def("__repr__", [](timestamp_ptr_t ts) -> std::string {
+        std::ostringstream oss;
+        oss << "TimeStamp( M: " << ts->_measures << ", B: " << ts->_beats << ", C: " << ts->_clocks << ")";
+        return oss.str();
+    });
+  type_codec->registerStdCodec<timestamp_ptr_t>(timestamp_t);
+  /////////////////////////////////////////////////////////////////////////////////
+  auto timebase_t = py::class_<TimeBase, timebase_ptr_t>(singmodule, "TimeBase")
+    .def(py::init<>())
+    .def("time", [](timebase_ptr_t tbase, timestamp_ptr_t ts) -> float { return tbase->time(ts); })
+    .def("reduce", [](timebase_ptr_t tbase, timestamp_ptr_t ts) -> timestamp_ptr_t { return tbase->reduceTimeStamp(ts); })
+    .def_property("numerator", [](timebase_ptr_t tbase) { return tbase->_numerator; }, [](timebase_ptr_t tbase, int val) { tbase->_numerator = val; })
+    .def_property("denominator", [](timebase_ptr_t tbase) { return tbase->_denominator; }, [](timebase_ptr_t tbase, int val) { tbase->_denominator = val; })
+    .def_property("tempo", [](timebase_ptr_t tbase) { return tbase->_tempo; }, [](timebase_ptr_t tbase, float val) { tbase->_tempo = val; })
+    .def_property("ppb", [](timebase_ptr_t tbase) { return tbase->_ppb; }, [](timebase_ptr_t tbase, int val) { tbase->_ppb = val; })
+    .def("__repr__", [](timebase_ptr_t tbase) -> std::string {
+        std::ostringstream oss;
+        oss << "TimeBase( sig: " << tbase->_numerator << "/" << tbase->_denominator << ", BPM: " << tbase->_tempo << ", PPB: " << tbase->_ppb << " )";
+        return oss.str();
+    });
+  type_codec->registerStdCodec<timebase_ptr_t>(timebase_t);
+  /////////////////////////////////////////////////////////////////////////////////
   auto event_t = py::class_<Event, event_ptr_t>(singmodule, "Event")
     .def(py::init<>())
-    .def_property("time", [](event_ptr_t evt) { return evt->_time; }, [](event_ptr_t evt, float val) { evt->_time = val; })
-    .def_property("dur", [](event_ptr_t evt) { return evt->_dur; }, [](event_ptr_t evt, float val) { evt->_dur = val; })
+    .def_property("timestamp", [](event_ptr_t evt) { return evt->_timestamp; }, [](event_ptr_t evt, timestamp_ptr_t val) { evt->_timestamp = val; })
+    .def_property("duration", [](event_ptr_t evt) { return evt->_duration; }, [](event_ptr_t evt, timestamp_ptr_t val) { evt->_duration = val; })
     .def_property("note", [](event_ptr_t evt) { return evt->_note; }, [](event_ptr_t evt, int val) { evt->_note = val; })
     .def_property("vel", [](event_ptr_t evt) { return evt->_vel; }, [](event_ptr_t& evt, int val) { evt->_vel = val; });
   type_codec->registerStdCodec<event_ptr_t>(event_t);

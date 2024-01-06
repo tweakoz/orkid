@@ -111,6 +111,8 @@ struct Sequencer;
 struct Sequence;
 struct Track;
 struct Clip;
+struct TimeStamp;
+struct TimeBase;
 ///////////////////////////////////////////////////////////////////////////////
 // scope / signal analyzer
 ///////////////////////////////////////////////////////////////////////////////
@@ -179,6 +181,8 @@ using sequence_ptr_t = std::shared_ptr<Sequence>;
 using track_ptr_t = std::shared_ptr<Track>;
 using clip_ptr_t = std::shared_ptr<Clip>;
 using event_ptr_t = std::shared_ptr<Event>;
+using timestamp_ptr_t = std::shared_ptr<TimeStamp>;
+using timebase_ptr_t = std::shared_ptr<TimeBase>;
 ///////////////////////////////////////////////////////////////////////////////
 typedef std::function<float()> controller_t;
 typedef std::function<float(float)> mapper_t;

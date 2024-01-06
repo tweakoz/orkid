@@ -18,8 +18,124 @@
 #include <ork/lev2/aud/singularity/fxgen.h>
 #include <ork/util/logger.h>
 
+////////////////////////////////////////////////////////////////
 namespace ork::audio::singularity {
-    
+////////////////////////////////////////////////////////////////
+
+timestamp_ptr_t TimeStamp::clone() const {
+  auto out = std::make_shared<TimeStamp>();
+  out->_measures = _measures;
+  out->_beats    = _beats;
+  out->_clocks  = _clocks;
+  return out;
+}
+
+timestamp_ptr_t TimeStamp::add(timestamp_ptr_t duration) const {
+  auto out = std::make_shared<TimeStamp>();
+  out->_measures = _measures + duration->_measures;
+  out->_beats    = _beats + duration->_beats;
+  out->_clocks  = _clocks + duration->_clocks;
+  return out;
+}
+timestamp_ptr_t TimeStamp::sub(timestamp_ptr_t duration) const {
+  auto out = std::make_shared<TimeStamp>();
+  out->_measures = _measures - duration->_measures;
+  out->_beats    = _beats - duration->_beats;
+  out->_clocks  = _clocks - duration->_clocks;
+  return out;
+}
+
+////////////////////////////////////////////////////////////////
+
+timestamp_ptr_t TimeBase::reduceTimeStamp(timestamp_ptr_t inp) const {
+  auto out = std::make_shared<TimeStamp>();
+  out->_measures = inp->_measures;
+  out->_beats    = inp->_beats;
+  out->_clocks  = inp->_clocks;
+  while (out->_clocks >= _ppb) {
+    out->_clocks -= _ppb;
+    out->_beats++;
+  }
+  while (out->_beats > _numerator) {
+    out->_beats -= _numerator;
+    out->_measures++;
+  }
+  return out;
+}
+
+////////////////////////////////////////////////////////////////
+
+float TimeBase::time(timestamp_ptr_t tstamp) const {
+    // Convert BPM to BPS (Beats Per Second), adjusted for the beat length
+    float beatLengthMultiplier = 4.0f / static_cast<float>(_denominator);
+    float beatsPerSecond = (_tempo / 60.0f) * beatLengthMultiplier;
+
+    // Time duration of one pulse (clock) in seconds
+    float secondsPerPulse = 1.0f / (beatsPerSecond * _ppb);
+
+    // Calculate time for the measures, beats, and clocks
+    float timeForMeasures = tstamp->_measures * _numerator * _ppb * secondsPerPulse;
+    float timeForBeats = tstamp->_beats * _ppb * secondsPerPulse;
+    float timeForClocks = tstamp->_clocks * secondsPerPulse;
+
+    // Total time in seconds
+    return _basetime + (timeForMeasures + timeForBeats + timeForClocks);
+
+}
+
+////////////////////////////////////////////////////////////////
+
+Event::Event(){
+  _timestamp = std::make_shared<TimeStamp>();
+  _duration = std::make_shared<TimeStamp>();
+  _duration->_measures = 0;
+}
+
+////////////////////////////////////////////////////////////////
+
+Sequence::Sequence() {
+  _timebase = std::make_shared<TimeBase>(); // 4/4 120bpm
+}
+
+////////////////////////////////////////////////////////////////
+
+void Sequence::addNote(
+    int meas, //
+    int beat,
+    int clocks,
+    int note,
+    int vel,
+    int dur) {
+  auto event = std::make_shared<Event>();
+  event->_timestamp = std::make_shared<TimeStamp>();
+  event->_duration = std::make_shared<TimeStamp>();
+  event->_timestamp->_measures = meas;
+  event->_timestamp->_beats    = beat;
+  event->_timestamp->_clocks  = clocks;
+  event->_duration->_beats    = dur;
+  event->_note                = note;
+  event->_vel                 = vel;
+  _events.push_back(event);
+}
+
+////////////////////////////////////////////////////////////////
+
+void Sequence::enqueue(prgdata_constptr_t program) {
+  for (auto e : _events) {
+    float time_start = _timebase->time(e->_timestamp);
+    auto t2 = e->_timestamp->clone();
+    t2->_beats += e->_duration->_beats;
+    t2->_measures += e->_duration->_measures;
+    t2->_clocks += e->_duration->_clocks;
+    auto reduced = _timebase->reduceTimeStamp(t2);
+    float time_end = _timebase->time(reduced);
+    auto dur = time_end - time_start;
+    enqueue_audio_event(program, time_start, dur, e->_note, e->_vel);
+  }
+}
+
+////////////////////////////////////////////////////////////////
+
 void enqueue_audio_event(
     prgdata_constptr_t prog, //
     float time,
@@ -44,35 +160,4 @@ void enqueue_audio_event(
     });
   });
 }
-
-Sequence::Sequence()
-    : _tempo(120.0f) {
-}
-float Sequence::mbs2time(int meas, int sixteenth, int clocks) const {
-  float timepermeasure = 60.0 * 4.0 / _tempo;
-  float out_time       = float(meas) * timepermeasure;
-  out_time += float(sixteenth) * timepermeasure / 16.0f;
-  out_time += float(clocks) * timepermeasure / 256.0f;
-  return out_time;
-}
-void Sequence::addNote(
-    int meas, //
-    int sixteenth,
-    int clocks,
-    int note,
-    int vel,
-    int dur) {
-  Event out;
-  out._time = mbs2time(meas, sixteenth, clocks);
-  out._note = note;
-  out._vel  = vel;
-  out._dur  = mbs2time(0, 0, dur);
-  _events.push_back(out);
-}
-void Sequence::enqueue(prgdata_constptr_t program) {
-  for (auto e : _events) {
-    enqueue_audio_event(program, e._time, e._dur, e._note, e._vel);
-  }
-}
-
 } //namespace ork::audio::singularity {
