@@ -29,7 +29,6 @@ LfoData::LfoData()
     , _shape("Sine") {
 }
 LfoData::~LfoData(){
-  printf("XX\n");
 }
 
 ControllerInst* LfoData::instantiate(layer_ptr_t l) const {

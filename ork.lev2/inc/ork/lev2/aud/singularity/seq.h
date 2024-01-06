@@ -29,6 +29,20 @@ struct TimeStamp{
   int _beats;
   int _clocks;
 };
+struct TimeStampComparator {
+  bool operator()(const timestamp_ptr_t& lhs, const timestamp_ptr_t& rhs) const {
+    // First compare measures
+    if (lhs->_measures != rhs->_measures) {
+      return lhs->_measures < rhs->_measures;
+    }
+    // Then compare beats
+    if (lhs->_beats != rhs->_beats) {
+      return lhs->_beats < rhs->_beats;
+    }
+    // Finally compare clocks
+    return lhs->_clocks < rhs->_clocks;
+  }
+};
 
 struct TimeBase{
   float time(timestamp_ptr_t tstamp) const;
@@ -49,13 +63,24 @@ struct Event {
 };
 
 struct Clip{
-  std::vector<Event> _events;
+  Clip();
+  std::string _name;
+  timestamp_ptr_t _duration;
+  virtual ~Clip(){}
 };
 
-using clipmap_t = std::map<float, clip_ptr_t>;
+using evmap_t = std::multimap<timestamp_ptr_t, event_ptr_t,TimeStampComparator>;
+
+struct EventClip : public Clip{
+  evmap_t _events;
+};
+
+using clipmap_t = std::map<timestamp_ptr_t, clip_ptr_t,TimeStampComparator>;
 
 struct Track{
+    clip_ptr_t createEventClipAtTimeStamp(std::string named, timestamp_ptr_t ts);
     clipmap_t _clips_by_timestamp;
+    prgdata_constptr_t _program;
 };
 
 using trackmap_t = std::unordered_map<std::string, track_ptr_t>;
@@ -85,7 +110,7 @@ struct Sequence{
       int vel,
       int dur = 1);
   void enqueue(prgdata_constptr_t program);
-
+  track_ptr_t createTrack(const std::string& name);
   void play();
   void stop();
   void record();

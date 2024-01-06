@@ -73,6 +73,11 @@ void pyinit_aud_singularity_synth(py::module& singmodule) {
               [](synth_ptr_t synth, prginst_rawptr_t prgi) { //
                 synth->liveKeyOff(prgi.get());
               })
+          .def(
+              "mainThreadHandler",                           //
+              [](synth_ptr_t synth) { //
+                synth->mainThreadHandler();
+              })
           .def_property(
               "masterGain", //
               [](synth_ptr_t synth) -> float { return synth->_masterGain; },

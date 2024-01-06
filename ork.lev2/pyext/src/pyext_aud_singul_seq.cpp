@@ -74,19 +74,45 @@ void pyinit_aud_singularity_sequencer(py::module& singmodule) {
   type_codec->registerStdCodec<event_ptr_t>(event_t);
   /////////////////////////////////////////////////////////////////////////////////
   auto clip_t = py::class_<Clip, clip_ptr_t>(singmodule, "Clip")
-    .def(py::init<>());
+    .def_property("name", [](clip_ptr_t clip) { return clip->_name; }, [](clip_ptr_t clip, std::string val) { clip->_name = val; })
+    .def_property("duration", [](clip_ptr_t clip) { return clip->_duration; }, [](clip_ptr_t clip, timestamp_ptr_t val) { clip->_duration = val; });
     //.def_property("events", [](clip_ptr_t clip) { return clip->_events; }, [](clip_ptr_t clip, const std::vector<event_ptr_t>& val) { clip->_events = val; });
     //.def("addNote", [](clip_ptr_t& clip, int meas, int sixteenth, int clocks, int note, int vel, int dur) { clip->addNote(meas, sixteenth, clocks, note, vel, dur); });
   type_codec->registerStdCodec<clip_ptr_t>(clip_t);
   /////////////////////////////////////////////////////////////////////////////////
+  using eventclip_ptr_t = std::shared_ptr<EventClip>;
+  auto eventclip_t = py::class_<EventClip, Clip, eventclip_ptr_t>(singmodule, "EventClip")
+  .def("__repr__", [](eventclip_ptr_t clip) -> std::string {
+        std::ostringstream oss;
+        auto dur = clip->_duration;
+        oss << "EventClip( name: " << clip->_name << ", duration: " << "( M: " << dur->_measures << ", B: " << dur->_beats << ", C: " << dur->_clocks << ")" //
+            << ", event_count: " << clip->_events.size() << " )";
+        return oss.str();
+    });
+  type_codec->registerStdCodec<eventclip_ptr_t>(eventclip_t);
+  /////////////////////////////////////////////////////////////////////////////////
   auto track_t = py::class_<Track, track_ptr_t>(singmodule, "Track")
     .def(py::init<>())
-    .def_property("clips", [](const track_ptr_t& track) { return track->_clips_by_timestamp; }, [](track_ptr_t& track, const clipmap_t& val) { track->_clips_by_timestamp = val; });
+    .def("createEventClipAtTimeStamp", [](const track_ptr_t& track, std::string name, timestamp_ptr_t ts) { return track->createEventClipAtTimeStamp(name,ts); })
+    .def_property("clips", [](const track_ptr_t& track) { return track->_clips_by_timestamp; }, [](track_ptr_t& track, const clipmap_t& val) { track->_clips_by_timestamp = val; })
+    .def_property("program", [](const track_ptr_t& track) { return track->_program; }, [](track_ptr_t& track, prgdata_constptr_t val) { track->_program = val; })
+    .def("__repr__", [](track_ptr_t track) -> std::string {
+        std::ostringstream oss;
+        oss << "Track( clip_count: " << track->_clips_by_timestamp.size() << " )";
+        return oss.str();
+    });
   type_codec->registerStdCodec<track_ptr_t>(track_t);
   /////////////////////////////////////////////////////////////////////////////////
   auto sequence_t = py::class_<Sequence, sequence_ptr_t>(singmodule, "Sequence")
     .def(py::init<>())
-    .def("enqueue", [](sequence_ptr_t& seq, prgdata_constptr_t program) { seq->enqueue(program); });
+    .def("enqueue", [](sequence_ptr_t& seq, prgdata_constptr_t program) { seq->enqueue(program); })
+    .def("createTrack", [](sequence_ptr_t& seq, std::string name) -> track_ptr_t { return seq->createTrack(name); })
+    .def_property("timebase", [](sequence_ptr_t seq) { return seq->_timebase; }, [](sequence_ptr_t seq, timebase_ptr_t val) { seq->_timebase = val; })
+    .def("__repr__", [](sequence_ptr_t seq) -> std::string {
+        std::ostringstream oss;
+        oss << "Sequence( track_count: " << seq->_tracks.size() << " )";
+        return oss.str();
+    });
   type_codec->registerStdCodec<sequence_ptr_t>(sequence_t);
   /////////////////////////////////////////////////////////////////////////////////
   auto sequencer_t = py::class_<Sequencer, sequencer_ptr_t>(singmodule, "Sequencer");

@@ -105,10 +105,30 @@ Event::Event() {
   _duration->_measures = 0;
 }
 
+Clip::Clip(){
+  _duration = std::make_shared<TimeStamp>();
+  _duration->_measures = 1; 
+}
+
+////////////////////////////////////////////////////////////////
+
+clip_ptr_t Track::createEventClipAtTimeStamp(std::string named, timestamp_ptr_t ts){
+  auto clip = std::make_shared<EventClip>();
+  clip->_name = named;
+  _clips_by_timestamp[ts] = clip;
+  return clip;
+}
+
 ////////////////////////////////////////////////////////////////
 
 Sequence::Sequence() {
   _timebase = std::make_shared<TimeBase>(); // 4/4 120bpm
+}
+
+track_ptr_t Sequence::createTrack(const std::string& name){
+  auto track = std::make_shared<Track>();
+  _tracks[name] = track;
+  return track;
 }
 
 ////////////////////////////////////////////////////////////////
