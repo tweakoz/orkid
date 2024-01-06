@@ -110,6 +110,16 @@ Clip::Clip(){
   _duration->_measures = 1; 
 }
 
+event_ptr_t EventClip::createNoteEvent(timestamp_ptr_t ts, timestamp_ptr_t dur, int note, int vel){
+  auto event = std::make_shared<Event>();
+  event->_timestamp = ts;
+  event->_duration = dur;
+  event->_note = note;
+  event->_vel = vel;
+  _events.insert(std::make_pair(ts,event));
+  return event;
+}
+
 ////////////////////////////////////////////////////////////////
 
 clip_ptr_t Track::createEventClipAtTimeStamp(std::string named, timestamp_ptr_t ts){

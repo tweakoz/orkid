@@ -82,6 +82,7 @@ void pyinit_aud_singularity_sequencer(py::module& singmodule) {
   /////////////////////////////////////////////////////////////////////////////////
   using eventclip_ptr_t = std::shared_ptr<EventClip>;
   auto eventclip_t = py::class_<EventClip, Clip, eventclip_ptr_t>(singmodule, "EventClip")
+  .def("createNoteEvent", [](const eventclip_ptr_t& clip, timestamp_ptr_t ts, timestamp_ptr_t dur, int note, int vel) -> event_ptr_t { return clip->createNoteEvent(ts,dur,note,vel); })
   .def("__repr__", [](eventclip_ptr_t clip) -> std::string {
         std::ostringstream oss;
         auto dur = clip->_duration;

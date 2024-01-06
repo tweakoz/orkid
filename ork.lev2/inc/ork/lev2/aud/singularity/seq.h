@@ -72,6 +72,7 @@ struct Clip{
 using evmap_t = std::multimap<timestamp_ptr_t, event_ptr_t,TimeStampComparator>;
 
 struct EventClip : public Clip{
+  event_ptr_t createNoteEvent(timestamp_ptr_t ts, timestamp_ptr_t dur, int note, int vel);
   evmap_t _events;
 };
 

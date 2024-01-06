@@ -44,6 +44,8 @@ tr1 = sequence.createTrack("track1")
 tr1.program = doomsday
 
 cl1 = tr1.createEventClipAtTimeStamp("clip1",ts0)
+cl1.duration = singularity.TimeStamp(16,0,0)
+ev0 = cl1.createNoteEvent(ts0,cl1.duration,60,127)
 print(ts0)
 print(tr1)
 print(cl1)
