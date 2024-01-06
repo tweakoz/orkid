@@ -40,7 +40,7 @@ timestamp_c = timestamp_b - timestamp_a
 timestamp_d = timestamp_b + singularity.TimeStamp(1,3,700) + singularity.TimeStamp(1,3,707)
 timestamp_e = timebase.reduce(timestamp_d)
 
-timestamp_neg = timestamp_a-timestamp_b
+timestamp_neg = timebase.reduce(singularity.TimeStamp(1,1,0)-singularity.TimeStamp(0,1,137))
 
 ################################################################################
 
