@@ -23,6 +23,14 @@ DelayContext::DelayContext() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void DelayContext::clear(){
+  for( size_t i=0; i<_maxdelay; i++ ){
+    _bufdata[i] = 0.0f;
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 float DelayContext::out(float fi) const {
   int64_t index64       = _index << 16;
   float delaylen        = lerp(_basDelayLen, _tgtDelayLen, fi);
@@ -119,5 +127,30 @@ void DelayInput::inp(float inputSample) {
       _tapDelays.erase(_tapDelays.begin() + tapIndex);
     }
   }
+
+///////////////////////////////////////////////////////////////////////////////
+
+vec8f ParallelDelay::output(float fi){
+  vec8f rval;
+  for( int j=0; j<8; j++ ){
+    rval._elements[j] = _delay[j].out(fi);
+  }
+  return rval;
+}
+void ParallelDelay::input(const vec8f& input){
+  for( int j=0; j<8; j++ ){
+    float x = input._elements[j];
+    float y = _dcblock2[j].compute(x);
+    _delay[j].inp(y);
+  }
+}
+ParallelDelay::ParallelDelay(){
+  for( int j=0; j<8; j++ ){
+    _dcblock[j].Clear();
+    _dcblock[j].SetHpf(120.0f);
+    _dcblock2[j].clear();
+    _dcblock2[j].set(120.0f,1.0f/getInverseSampleRate());
+  }
+}
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::audio::singularity

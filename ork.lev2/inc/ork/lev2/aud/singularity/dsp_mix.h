@@ -11,6 +11,7 @@
 #include "reflection.h"
 #include "dspblocks.h"
 #include <ork/math/cmatrix4.h>
+#include <ork/math/cmatrix3.h>
 #include <ork/math/cvector4.h>
 #include <ork/math/cvector2.h>
 #include "shelveeq.h"
@@ -58,6 +59,7 @@ struct DelayContext {
   DelayContext();
   float out(float fi) const;
   void inp(float inp);
+  void clear();
   void setStaticDelayTime(float dt);
   void setNextDelayTime(float dt);
   static constexpr int64_t _maxdelay = 1 << 20;
@@ -290,6 +292,12 @@ struct mtx8f {
   static mtx8f householder(const vec8f& v);
   static mtx8f permute(int seed);
   vec8f transform(const vec8f& input) const;
+  mtx8f concat(const mtx8f& rhs) const;
+  void scramble();
+  void newRot();
+  void setToIdentity();
+  void embed3DRotation(const fmtx3& rotationMatrix, const int dimsA[3], const int dimsB[3]);
+  void dump() const;
 };
 struct mix8to2 {
     mix8to2();
@@ -297,6 +305,14 @@ struct mix8to2 {
     float _elements[2][8];
 };
 
+struct AllpassDelay {
+  void setParams(float time, float lingain);
+  float compute(float inp);
+  void clear();
+
+  DelayContext _delay;
+  float _gain = 0.5f;
+};
 
 struct Fdn8ReverbData : public DspBlockData {
   Fdn8ReverbData(std::string name);
@@ -310,15 +326,30 @@ struct Fdn8ReverbData : public DspBlockData {
   mtx8f _householder;
   mtx8f _permute;
 };
+struct ParallelLowPass{
+  ParallelLowPass();
+  vec8f compute(const vec8f& input);
+  void set(float cutoff);
+  TrapSVF _filter[8];
+  BiQuad _biquads[8];
+};
+struct ParallelHighPass{
+  ParallelHighPass();
+  vec8f compute(const vec8f& input);
+  void set(float cutoff);
+  OnePoleHighPass _filter[8];
+  BiQuad _biquads[8];
+};
 struct ParallelDelay{
   ParallelDelay();
   vec8f output(float fi);
   void input(const vec8f& input);
   DelayContext _delay[8];
   BiQuad _dcblock[8];
-  SimpleHighPass _dcblock2[8];
+  OnePoleHighPass _dcblock2[8];
 
 };
+
 struct Fdn8Reverb : public DspBlock {
   using dataclass_t = Fdn8ReverbData;
   Fdn8Reverb(const Fdn8ReverbData*);
@@ -332,11 +363,18 @@ struct Fdn8Reverb : public DspBlock {
     vec8f process(const vec8f& input,float fi);
     mtx8f _hadamard;
     mtx8f _permute;
+    mtx8f _rotstep;
+    mtx8f _rot;
     ParallelDelay _delays;
     float _basetimes[8];
-    float _modulation[8];
+    float _modulation;
     float _phase = 0.0f;
+    float _phaseinc = 0.0f;
+    float _modrate = 0.0f;
+    float _modamp = 0.0f;
     vec8f _nodenorm;
+    size_t _seed = 0;
+    float _fbgain = 0.75f;
   };
 
   const Fdn8ReverbData* _mydata;
@@ -344,16 +382,36 @@ struct Fdn8Reverb : public DspBlock {
   DiffuserStep _diffuser[k_num_diffusers];
   BiQuad _hipassfilterL;
   BiQuad _hipassfilterR;
+  ParallelLowPass _fbLP;
+  ParallelLowPass _fbLP2;
+  ParallelLowPass _fbLP3;
+  ParallelLowPass _fbLP4;
+  ParallelLowPass _fbLP5;
+  ParallelHighPass _fbHP;
+
   ParallelDelay _fbdelay;
   float _fbbasetimes[8];
   float _fbmodulations[8];
   float _fbmodphase = 0.0f;
   ParallelDelay _early_refl;
   mtx8f _householder;
-  float _inputGain;
-  float _outputGain;
   mix8to2 _stereomix;
   vec8f _nodenorm;
+};
+struct TestReverbData : public DspBlockData {
+  TestReverbData(std::string name);
+  dspblk_ptr_t createInstance() const override;
+};
+struct TestReverb : public DspBlock {
+  using dataclass_t = TestReverbData;
+  TestReverb(const TestReverbData*);
+  void compute(DspBuffer& dspbuf) final;
+  void doKeyOn(const KeyOnInfo& koi) final;
+  AllpassDelay _apdel[12];
+  OnePoleLoPass _lopass[3];
+  OnePoleHighPass _hipass;
+  float _out = 0.0f;
+  float _fb1 = 0.0f;
 };
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::audio::singularity

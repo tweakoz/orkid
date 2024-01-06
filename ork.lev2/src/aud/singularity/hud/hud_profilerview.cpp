@@ -150,23 +150,26 @@ void ProfilerView::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
         0);
   ycursor += hud_lineheight();
 
-  auto draw3cols = [&]( const std::string stra, //
+  auto draw4cols = [&]( const std::string stra, //
                         const std::string strb, // 
                         const std::string strc, // 
+                        const std::string strd, // 
                         float r, //
                         float g, //
                         float b) { //
     int w = width()/8;
     int w1 = w/4;
-    int w3 = w/3;
-    int w2 = w-w1-w3;
+    int w3 = w/5;
+    int w4 = w/4;
+    int w2 = w-w1-w3-w4;
     auto str1 = FormatString("%-*s", w1, stra.c_str());
     auto str2 = FormatString("%-*s", w2, strb.c_str());
-    auto str3 = FormatString("%*s", w3, strc.c_str());
+    auto str3 = FormatString("%-*s", w3, strc.c_str());
+    auto str4 = FormatString("%*s", w4, strd.c_str());
     drawtext(
         this,
         context, //
-        FormatString("%s%s%s", str1.c_str(), str2.c_str(), str3.c_str()),
+        FormatString("%s%s%s%s", str1.c_str(), str2.c_str(), str3.c_str(),str4.c_str()),
         0,
         ycursor,
         fontscale,
@@ -177,7 +180,7 @@ void ProfilerView::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
   };
 
 
-  draw3cols("OutputBus","Program","FX",1,1,1);
+  draw4cols("OutputBus","Program","Gain","FX",1,1,1);
 
   hudlines_t lines;
   float line_y = ycursor+2;
@@ -196,6 +199,7 @@ void ProfilerView::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
     auto busname = item.first;
     auto bus = item.second;
     auto fxname  = item.second->_fxname;
+    float gain = bus->_prog_gain;
     float r = 1;
     float g = 1;
     float b = 1;
@@ -207,7 +211,9 @@ void ProfilerView::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
 
     auto prgname = bus->_uiprogram ? bus->_uiprogram->_name : "----";
 
-    draw3cols(busname,prgname,fxname,r,g,b);
+    auto dbstr = FormatString("%gdB", gain);
+
+    draw4cols(busname,prgname,dbstr.c_str(),fxname,r,g,b);
   }
 
   // drawHudLines(this, context, lines);

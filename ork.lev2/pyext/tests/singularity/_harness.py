@@ -279,6 +279,7 @@ class SingulTestApp(object):
         if self.pgmview:
           self.pgmview.setProgram(self.prog)
         return res
+        self.prog_index += 1
       elif KC == ord("."): # next program
         self.prog_index += 1
         if self.prog_index >= len(self.sorted_progs):
@@ -305,12 +306,18 @@ class SingulTestApp(object):
          return res
       else:
         if KC == ord("["): # decr gain
-          self.gain -= 6.0
-          self.synth.masterGain = singularity.decibelsToLinear(self.gain)
+          if uievent.shift:
+            self.gain -= 6.0
+            self.synth.masterGain = singularity.decibelsToLinear(self.gain)
+          else:
+            self.synth.programbus.gain = self.synth.programbus.gain - 3.0
           return res
         if KC == ord("]"): # incr gain
-          self.gain += 6.0
-          self.synth.masterGain = singularity.decibelsToLinear(self.gain)
+          if uievent.shift:
+            self.gain += 6.0
+            self.synth.masterGain = singularity.decibelsToLinear(self.gain)
+          else:
+            self.synth.programbus.gain = self.synth.programbus.gain + 3.0
           return res
         elif KC == ord("-"): # next effect
           self.synth.prevEffect(self.synth.programbus)

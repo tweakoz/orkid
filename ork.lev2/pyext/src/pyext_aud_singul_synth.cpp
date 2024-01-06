@@ -104,7 +104,10 @@ void pyinit_aud_singularity_synth(py::module& singmodule) {
                        })
                        .def_property("uiprogram", //
                                      [](outbus_ptr_t bus) -> prgdata_constptr_t { return bus->_uiprogram; },
-                                     [](outbus_ptr_t bus, prgdata_constptr_t pd) { bus->_uiprogram = pd; });
+                                     [](outbus_ptr_t bus, prgdata_constptr_t pd) { bus->_uiprogram = pd; })
+                       .def_property("gain", //
+                                     [](outbus_ptr_t bus) -> float { return bus->_prog_gain; },
+                                     [](outbus_ptr_t bus, float g) { bus->_prog_gain = g; });
   type_codec->registerStdCodec<outbus_ptr_t>(obus_type);
 }
 ///////////////////////////////////////////////////////////////////////////////

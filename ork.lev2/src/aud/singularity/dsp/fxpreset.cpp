@@ -191,7 +191,8 @@ lyrdata_ptr_t fxpreset_fdnxreverb() {
   fxstage->setNumIos(2, 2); // stereo in, stereo out
   /////////////////
   auto fdn8               = fxstage->appendTypedBlock<Fdn8Reverb>("diffusionD");
-  fdn8->param(0)->_coarse = 0.5f; // wet/dry mix
+  fdn8->param(0)->_coarse = -12.0f; // input Gain
+  fdn8->param(1)->_coarse = 30.0f;  // output Gain
   fdn8->_time_base        = 0.1;
   /////////////////
   float matrix_gain = 0.458;
@@ -271,12 +272,25 @@ lyrdata_ptr_t fxpreset_fdn8reverb() {
   auto fxstage = fxalg->appendStage("FX");
   fxstage->setNumIos(2, 2); // stereo in, stereo out
   /////////////////
-  auto fdn8D               = fxstage->appendTypedBlock<Fdn8Reverb>("diffusionD");
-  fdn8D->param(0)->_coarse = 0.5f; // wet/dry mix
-  fdn8D->_time_base        = 0.1;
+  auto fdn8               = fxstage->appendTypedBlock<Fdn8Reverb>("diffusionD");
+  fdn8->paramByName("inputGain")->_coarse = -36.0f; // input Gain
+  fdn8->paramByName("ereflGain")->_coarse = -36.0f;  // output Gain
+  fdn8->paramByName("outputGain")->_coarse = 18.0f;  // output Gain
+  fdn8->paramByName("diffuserTimeModRate")->_coarse = 0.01f;  // feedback time modulation rate
+  fdn8->paramByName("diffuserTimeModAmp")->_coarse = 0.99f;  // feedback time modulation rate
+  fdn8->paramByName("diffuserGain")->_coarse = -3.0f;  // feedback time modulation rate
+  fdn8->paramByName("fbTimeModRate")->_coarse = 0.0001f;  // feedback time modulation rate
+  fdn8->paramByName("fbTimeModAmp")->_coarse = 0.001f;  // feedback time modulation rate
+  fdn8->paramByName("fbGain")->_coarse = -9.9f;  // feedback gain
+  fdn8->paramByName("fbLpCutoff")->_coarse = 7000.0f;  // feedback gain
+  fdn8->paramByName("fbHpCutoff")->_coarse = 1000.0f;  // feedback gain
+  fdn8->paramByName("inputHpCutoff")->_coarse = 300.0f;  // feedback time modulation rate
+  fdn8->paramByName("baseTime")->_coarse = 0.1f;  // feedback time modulation rate
+  fdn8->paramByName("ereflTime")->_coarse = 0.3f;  // feedback time modulation rate
+  fdn8->_time_base        = 0.1;
   /////////////////
   // fdn4D->update();
-  appendStereoEnhancer(fxlayer, fxstage);
+  //appendStereoEnhancer(fxlayer, fxstage);
   /////////////////
   return fxlayer;
 }
@@ -335,6 +349,26 @@ lyrdata_ptr_t fxpreset_niceverb() {
   rv0->param(0)->_coarse = 0.1f; // wet/dry mix
   rv1->param(0)->_coarse = 0.1f; // wet/dry mix
   rv2->param(0)->_coarse = 0.1f; // wet/dry mix
+  /////////////////
+  return fxlayer;
+}
+///////////////////////////////////////////////////////////////////////////////
+lyrdata_ptr_t fxpreset_testverb() {
+  auto fxprog       = std::make_shared<ProgramData>();
+  auto fxlayer      = fxprog->newLayer();
+  auto fxalg        = std::make_shared<AlgData>();
+  fxlayer->_algdata = fxalg;
+  fxalg->_name      = ork::FormatString("FxAlg");
+  /////////////////
+  // output effect
+  /////////////////
+  auto fxstage = fxalg->appendStage("FX");
+  fxstage->setNumIos(2, 2); // stereo in, stereo out
+  /////////////////
+  auto rev               = fxstage->appendTypedBlock<TestReverb>("Reverb:Test");
+  //rev->param(0)->_coarse = 0.5f; // wet/dry mix
+  //rev->_time_base        = 0.1;
+
   /////////////////
   return fxlayer;
 }
@@ -557,6 +591,7 @@ void loadAllFxPresets(synth* s) {
   addpreset("Reverb:FDN8", fxpreset_fdn8reverb());
   addpreset("Reverb:FDNX", fxpreset_fdnxreverb());
   addpreset("Reverb:OilTank", fxpreset_oiltankreverb());
+  addpreset("Reverb:TEST", fxpreset_testverb());
   addpreset("Reverb:GuyWire", fxpreset_guywireeverb());
   addpreset("Reverb:NiceVerb", fxpreset_niceverb());
   addpreset("Reverb:EchoVerb", fxpreset_echoverb());

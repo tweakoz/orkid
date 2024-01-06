@@ -156,7 +156,6 @@ void Layer::keyOn(int note, int velocity, lyrdata_ptr_t ld, outbus_ptr_t obus) {
   this->_HKF._layerdata  = ld;
   this->_HKF._layerIndex = this->_ldindex;
   this->_HKF._useFm4     = false;
-
   this->_layerBasePitch = clip_float(note * 100, -0, 12700);
 
   this->_ignoreRelease = ld->_ignRels;
@@ -164,6 +163,7 @@ void Layer::keyOn(int note, int velocity, lyrdata_ptr_t ld, outbus_ptr_t obus) {
   this->_layerdata     = ld;
   this->_outbus        = obus;
   this->_layerLinGain  = ld->_layerLinGain;
+  this->_gainModifier = decibel_to_linear_amp_ratio(obus->_prog_gain);
 
   this->_curvel = velocity;
 
@@ -283,15 +283,15 @@ void Layer::mixToBus(int base, int count) {
   float* bus_outl = out_buf._leftBuffer + base;
   float* bus_outr = out_buf._rightBuffer + base;
   for (int i = 0; i < count; i++) {
-    bus_outl[i] += lyroutl[i] * _layerLinGain;
-    bus_outr[i] += lyroutr[i] * _layerLinGain;
+    bus_outl[i] += lyroutl[i] * _layerLinGain * _gainModifier;
+    bus_outr[i] += lyroutr[i] * _layerLinGain * _gainModifier;
   }
   if (0) { // test tone
     for (int i = 0; i < _numFramesForBlock; i++) {
       double phase = 120.0 * pi2 * double(_testtoneph) / getSampleRate();
       float samp   = sinf(phase) * .6;
-      bus_outl[i]  = samp * _layerLinGain;
-      bus_outr[i]  = samp * _layerLinGain;
+      bus_outl[i]  = samp * _layerLinGain * _gainModifier;
+      bus_outr[i]  = samp * _layerLinGain * _gainModifier;
       _testtoneph++;
     }
   }
@@ -305,8 +305,8 @@ void Layer::replaceBus(int base, int count) {
   float* bus_outl      = out_buf._leftBuffer + base;
   float* bus_outr      = out_buf._rightBuffer + base;
   for (int i = 0; i < count; i++) {
-    bus_outl[i] = lyroutl[i] * _layerLinGain;
-    bus_outr[i] = lyroutr[i] * _layerLinGain;
+    bus_outl[i] = lyroutl[i] * _layerLinGain * _gainModifier;
+    bus_outr[i] = lyroutr[i] * _layerLinGain * _gainModifier;
   }
 }
 ///////////////////////////////////////////////////////////////////////////////

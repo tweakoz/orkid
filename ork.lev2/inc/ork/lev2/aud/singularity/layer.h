@@ -113,6 +113,7 @@ struct Layer {
   int _curvel;
   int _ldindex;
   float _layerLinGain = 1.0f;
+  float _gainModifier = 1.0f;
   float _curPitchOffsetInCents;
   float _centsPerKey;
   int _lyrPhase;
