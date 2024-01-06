@@ -127,6 +127,8 @@ synth::synth()
     , _hudpage(0)
     , _masterGain(1.0f) { //
 
+  _sequencer = std::make_shared<Sequencer>();
+  
   _tempbus         = std::make_shared<OutputBus>();
   _tempbus->_name  = "temp-dsp";
   _numactivevoices = 0;

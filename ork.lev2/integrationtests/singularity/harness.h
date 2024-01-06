@@ -42,53 +42,8 @@ using singularitytestapp_ptr_t = std::shared_ptr<SingularityTestApp>;
 
 singularitytestapp_ptr_t createEZapp(appinitdata_ptr_t initdata);
 
-inline void enqueue_audio_event(
-    prgdata_constptr_t prog, //
-    float time,
-    float duration,
-    int midinote,
-    int velocity = 128) {
-
-  auto s = synth::instance();
-
-  if (time < s->_timeaccum) {
-    time = s->_timeaccum;
-  }
-  //printf("time<%g> note<%d> program<%s>\n", time, midinote, prog->_name.c_str());
-
-  s->addEvent(time, [=]() {
-    // NOTE ON
-    auto noteinstance = s->keyOn(midinote, velocity, prog);
-    assert(noteinstance);
-    // NOTE OFF
-    s->addEvent(time + duration, [=]() { //
-      s->keyOff(noteinstance);
-    });
-  });
-}
-
 prgdata_constptr_t testpattern(syndata_ptr_t syndat, int argc, char** argv);
 
-struct Event {
-  float _time = 0.0f;
-  float _dur  = 0.0f;
-  int _note   = 0;
-  int _vel    = 0;
-};
-struct Sequence {
-  Sequence(float tempo);
-  std::vector<Event> _events;
-  float _tempo = 0.0f;
-  float mbs2time(int meas, int sixteenth, int clocks) const;
-  void addNote(
-      int meas, //
-      int sixteenth,
-      int clocks,
-      int note,
-      int vel,
-      int dur = 1);
-  void enqueue(prgdata_constptr_t program);
-};
 void seq1(float tempo, int basebar, prgdata_constptr_t program);
 ////////////////////////////////////////////////////////////////////////////////
 struct SingularityBenchMarkApp final : public OrkEzApp {

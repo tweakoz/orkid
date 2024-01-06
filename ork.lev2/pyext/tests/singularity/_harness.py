@@ -67,6 +67,8 @@ class SingulTestApp(object):
     self.context = ctx
     self.audiodevice = singularity.device.instance()
     self.synth = singularity.synth.instance()
+    self.synth.system_tempo = 120.0
+    self.sequencer = self.synth.sequencer
 
     self.mainbus = self.synth.outputBus("main")
     self.mainbus_source = self.mainbus.createScopeSource()

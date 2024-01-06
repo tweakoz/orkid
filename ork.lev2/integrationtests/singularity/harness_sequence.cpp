@@ -7,37 +7,10 @@
 
 #include "harness.h"
 
-Sequence::Sequence(float tempo)
-    : _tempo(tempo) {
-}
-float Sequence::mbs2time(int meas, int sixteenth, int clocks) const {
-  float timepermeasure = 60.0 * 4.0 / _tempo;
-  float out_time       = float(meas) * timepermeasure;
-  out_time += float(sixteenth) * timepermeasure / 16.0f;
-  out_time += float(clocks) * timepermeasure / 256.0f;
-  return out_time;
-}
-void Sequence::addNote(
-    int meas, //
-    int sixteenth,
-    int clocks,
-    int note,
-    int vel,
-    int dur) {
-  Event out;
-  out._time = mbs2time(meas, sixteenth, clocks);
-  out._note = note;
-  out._vel  = vel;
-  out._dur  = mbs2time(0, 0, dur);
-  _events.push_back(out);
-}
-void Sequence::enqueue(prgdata_constptr_t program) {
-  for (auto e : _events) {
-    enqueue_audio_event(program, e._time, e._dur, e._note, e._vel);
-  }
-}
+
 void seq1(float tempo, int basebar, prgdata_constptr_t program) {
-  Sequence sq(tempo);
+  Sequence sq;
+  sq._tempo = tempo;
   for (int baro = 0; baro < 4; baro += 2) {
     int dur = 8 + (baro >> 1) * 8;
     int bar = basebar + baro;

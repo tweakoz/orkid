@@ -14,7 +14,7 @@
 #include "layer.h"
 #include <ork/kernel/concurrent_queue.h>
 #include <ork/kernel/svariant.h>
-//#include <ork/lev2/gfx/gfxenv.h>
+#include <ork/lev2/aud/singularity/seq.h>
 
 namespace ork::audio::singularity {
 
@@ -150,6 +150,7 @@ struct synth {
   outputBuffer _obuf;
   float _sampleRate;
   float _dt;
+  float _system_tempo = 120.0f;
 
   using keyonmodvect_t = std::vector<keyonmod_ptr_t>;
   using proginstset_t = std::set<programInst*>;
@@ -210,7 +211,7 @@ struct synth {
 
   std::vector<keyonmod_ptr_t> _kmod_exec_list;
   std::vector<size_t> _kmod_rem_list;
-
+  sequencer_ptr_t _sequencer;
 };
 
 } // namespace ork::audio::singularity

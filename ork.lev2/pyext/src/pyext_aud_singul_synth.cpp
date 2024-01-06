@@ -84,7 +84,14 @@ void pyinit_aud_singularity_synth(py::module& singmodule) {
           .def_property(
               "programbus", //
               [](synth_ptr_t synth) -> outbus_ptr_t { return synth->_curprogrambus; },
-              [](synth_ptr_t synth, outbus_ptr_t bus) { synth->_curprogrambus = bus; });
+              [](synth_ptr_t synth, outbus_ptr_t bus) { synth->_curprogrambus = bus; })
+          .def_property_readonly(
+              "sequencer", //
+              [](synth_ptr_t synth) -> sequencer_ptr_t { return synth->_sequencer; })
+          .def_property(
+              "system_tempo", //
+              [](synth_ptr_t synth) -> float { return synth->_system_tempo; },
+              [](synth_ptr_t synth, float tempo) { synth->_system_tempo = tempo; });
   type_codec->registerStdCodec<synth_ptr_t>(synth_type_t);
   /////////////////////////////////////////////////////////////////////////////////
   auto prgi_type = py::class_<prginst_rawptr_t>(singmodule, "ProgramInst");

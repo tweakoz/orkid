@@ -27,6 +27,7 @@ using namespace ork::lev2;
 void pyinit_aud_singularity_synth(py::module& module_lev2);
 void pyinit_aud_singularity_datas(py::module& module_lev2);
 void pyinit_aud_singularity_ui(py::module& module_lev2);
+void pyinit_aud_singularity_sequencer(py::module& singmodule);
 ///////////////////////////////////////////////////////////////////////////////
 void pyinit_aud_singularity(py::module& module_lev2) {
   auto singmodule = module_lev2.def_submodule("singularity", "orkid audio synthesizer");
@@ -35,6 +36,7 @@ void pyinit_aud_singularity(py::module& module_lev2) {
   pyinit_aud_singularity_synth(singmodule);
   pyinit_aud_singularity_datas(singmodule);
   pyinit_aud_singularity_ui(singmodule);
+  pyinit_aud_singularity_sequencer(singmodule);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

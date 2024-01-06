@@ -106,7 +106,11 @@ struct CzProgData;
 struct OutputBus;
 struct KeyOnModifiers;
 struct NatEnvWrapperData;
-
+struct Event;
+struct Sequencer;
+struct Sequence;
+struct Track;
+struct Clip;
 ///////////////////////////////////////////////////////////////////////////////
 // scope / signal analyzer
 ///////////////////////////////////////////////////////////////////////////////
@@ -169,6 +173,12 @@ using dspparam_constptr_t    = std::shared_ptr<const DspParamData>;
 using dspparammod_ptr_t      = std::shared_ptr<BlockModulationData>;
 using dspparammod_constptr_t = std::shared_ptr<const BlockModulationData>;
 using natenvwrapperdata_ptr_t = std::shared_ptr<NatEnvWrapperData>;
+///////////////////////////////////////////////////////////////////////////////
+using sequencer_ptr_t = std::shared_ptr<Sequencer>;
+using sequence_ptr_t = std::shared_ptr<Sequence>;
+using track_ptr_t = std::shared_ptr<Track>;
+using clip_ptr_t = std::shared_ptr<Clip>;
+using event_ptr_t = std::shared_ptr<Event>;
 ///////////////////////////////////////////////////////////////////////////////
 typedef std::function<float()> controller_t;
 typedef std::function<float(float)> mapper_t;
