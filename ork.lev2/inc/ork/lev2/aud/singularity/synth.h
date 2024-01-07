@@ -87,6 +87,12 @@ struct OutputBus {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+struct AudioThreadHandler{
+  using audiohandler_t = std::function<void(synth*)>;
+  audiohandler_t _handler = [](synth*){};
+};
+
+using audiothreadhandler_ptr_t = std::shared_ptr<AudioThreadHandler>;
 
 struct synth {
   synth();
@@ -167,6 +173,7 @@ struct synth {
   std::map<std::string, hudsamples_t> _hudsample_map;
   LockedResource<keyonmodvect_t> _CCIVALS;
   LockedResource<eventmap_t> _eventmap;
+  std::vector<audiothreadhandler_ptr_t> _audiothreadhandlers;
 
   void resize(int numframes);
 

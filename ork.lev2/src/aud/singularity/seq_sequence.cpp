@@ -30,6 +30,8 @@ timestamp_ptr_t TimeStamp::clone() const {
   return out;
 }
 
+////////////////////////////////////////////////////////////////
+
 timestamp_ptr_t TimeStamp::add(timestamp_ptr_t duration) const {
   auto out       = std::make_shared<TimeStamp>();
   out->_measures = _measures + duration->_measures;
@@ -37,6 +39,9 @@ timestamp_ptr_t TimeStamp::add(timestamp_ptr_t duration) const {
   out->_clocks   = _clocks + duration->_clocks;
   return out;
 }
+
+////////////////////////////////////////////////////////////////
+
 timestamp_ptr_t TimeStamp::sub(timestamp_ptr_t duration) const {
   auto out       = std::make_shared<TimeStamp>();
   out->_measures = _measures - duration->_measures;
@@ -52,30 +57,35 @@ timestamp_ptr_t TimeBase::reduceTimeStamp(timestamp_ptr_t inp) const {
   out->_measures = inp->_measures;
   out->_beats    = inp->_beats;
   out->_clocks   = inp->_clocks;
+  reduceTimeStampInPlace(out);
+  return out;
+}
 
+////////////////////////////////////////////////////////////////
+
+void TimeBase::reduceTimeStampInPlace(timestamp_ptr_t inp) const{
   // Normalize clocks and beats
-  if (out->_clocks < 0) {
-    int borrow_beats = (-out->_clocks + _ppb - 1) / _ppb; // Ceiling division
-    out->_beats -= borrow_beats;
-    out->_clocks += borrow_beats * _ppb;
+  if (inp->_clocks < 0) {
+    int borrow_beats = (-inp->_clocks + _ppb - 1) / _ppb; // Ceiling division
+    inp->_beats -= borrow_beats;
+    inp->_clocks += borrow_beats * _ppb;
   }
-  if (out->_beats < 0) {
-    int borrow_measures = (-out->_beats + _numerator - 1) / _numerator; // Ceiling division
-    out->_measures -= borrow_measures;
-    out->_beats += borrow_measures * _numerator;
+  if (inp->_beats < 0) {
+    int borrow_measures = (-inp->_beats + _numerator - 1) / _numerator; // Ceiling division
+    inp->_measures -= borrow_measures;
+    inp->_beats += borrow_measures * _numerator;
   }
 
   // Handle excess clocks
-  int full_beats_from_clocks = out->_clocks / _ppb;
-  out->_clocks %= _ppb;
-  out->_beats += full_beats_from_clocks;
+  int full_beats_from_clocks = inp->_clocks / _ppb;
+  inp->_clocks %= _ppb;
+  inp->_beats += full_beats_from_clocks;
 
   // Handle excess beats
-  int full_measures_from_beats = out->_beats / _numerator;
-  out->_beats %= _numerator;
-  out->_measures += full_measures_from_beats;
+  int full_measures_from_beats = inp->_beats / _numerator;
+  inp->_beats %= _numerator;
+  inp->_measures += full_measures_from_beats;
 
-  return out;
 }
 
 ////////////////////////////////////////////////////////////////
@@ -99,32 +109,64 @@ float TimeBase::time(timestamp_ptr_t tstamp) const {
 
 ////////////////////////////////////////////////////////////////
 
+timestamp_ptr_t TimeBase::timeToTimeStamp(float time) const{
+  // Convert BPM to BPS (Beats Per Second), adjusted for the beat length
+  float beatLengthMultiplier = 4.0f / static_cast<float>(_denominator);
+  float beatsPerSecond       = (_tempo / 60.0f) * beatLengthMultiplier;
+
+  // Time duration of one pulse (clock) in seconds
+  float secondsPerPulse = 1.0f / (beatsPerSecond * _ppb);
+
+  // Calculate measures, beats, and clocks
+  int measures = static_cast<int>(floor(time / (secondsPerPulse * _numerator * _ppb)));
+  time -= measures * secondsPerPulse * _numerator * _ppb;
+  int beats = static_cast<int>(floor(time / (secondsPerPulse * _ppb)));
+  time -= beats * secondsPerPulse * _ppb;
+  int clocks = static_cast<int>(floor(time / secondsPerPulse));
+
+  // Create and return the timestamp
+  auto rval = std::make_shared<TimeStamp>(measures, beats, clocks);
+  reduceTimeStampInPlace(rval);
+  return rval;
+}
+
+////////////////////////////////////////////////////////////////
+
+EventIterator::EventIterator(timestamp_ptr_t ts){
+  _timestamp = ts;
+}
+
+////////////////////////////////////////////////////////////////
+
 Event::Event() {
   _timestamp           = std::make_shared<TimeStamp>();
   _duration            = std::make_shared<TimeStamp>();
   _duration->_measures = 0;
 }
 
+////////////////////////////////////////////////////////////////
+
 Clip::Clip(){
   _duration = std::make_shared<TimeStamp>();
   _duration->_measures = 1; 
 }
 
-event_ptr_t EventClip::createNoteEvent(timestamp_ptr_t ts, timestamp_ptr_t dur, int note, int vel){
-  auto event = std::make_shared<Event>();
-  event->_timestamp = ts;
-  event->_duration = dur;
-  event->_note = note;
-  event->_vel = vel;
-  _events.insert(std::make_pair(ts,event));
-  return event;
+////////////////////////////////////////////////////////////////
+
+clip_ptr_t Track::createEventClipAtTimeStamp(std::string named, timestamp_ptr_t ts, timestamp_ptr_t dur){
+  auto clip = std::make_shared<EventClip>();
+  clip->_name = named;
+  clip->_duration = dur;
+  _clips_by_timestamp[ts] = clip;
+  return clip;
 }
 
 ////////////////////////////////////////////////////////////////
 
-clip_ptr_t Track::createEventClipAtTimeStamp(std::string named, timestamp_ptr_t ts){
-  auto clip = std::make_shared<EventClip>();
+clip_ptr_t Track::createFourOnFloorClipAtTimeStamp(std::string named, timestamp_ptr_t ts, timestamp_ptr_t dur){
+  auto clip = std::make_shared<FourOnFloorClip>();
   clip->_name = named;
+  clip->_duration = dur;
   _clips_by_timestamp[ts] = clip;
   return clip;
 }
@@ -135,6 +177,8 @@ Sequence::Sequence(std::string named) {
   _name = named;
   _timebase = std::make_shared<TimeBase>(); // 4/4 120bpm
 }
+
+////////////////////////////////////////////////////////////////
 
 track_ptr_t Sequence::createTrack(const std::string& name){
   auto track = std::make_shared<Track>();
@@ -179,38 +223,4 @@ void Sequence::enqueue(prgdata_constptr_t program) {
   }
 }
 
-////////////////////////////////////////////////////////////////
-
-sequenceplayback_ptr_t Sequencer::playSequence(sequence_ptr_t sequence){
-  auto playback = std::make_shared<SequencePlayback>();
-  playback->_sequence = sequence;
-  return playback;
-}
-
-////////////////////////////////////////////////////////////////
-
-void enqueue_audio_event(
-    prgdata_constptr_t prog, //
-    float time,
-    float duration,
-    int midinote,
-    int velocity) {
-
-  auto s = synth::instance();
-
-  if (time < s->_timeaccum) {
-    time = s->_timeaccum;
-  }
-  // printf("time<%g> note<%d> program<%s>\n", time, midinote, prog->_name.c_str());
-
-  s->addEvent(time, [=]() {
-    // NOTE ON
-    auto noteinstance = s->keyOn(midinote, velocity, prog);
-    assert(noteinstance);
-    // NOTE OFF
-    s->addEvent(time + duration, [=]() { //
-      s->keyOff(noteinstance);
-    });
-  });
-}
 } // namespace ork::audio::singularity

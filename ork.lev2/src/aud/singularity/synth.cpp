@@ -127,7 +127,7 @@ synth::synth()
     , _hudpage(0)
     , _masterGain(1.0f) { //
 
-  _sequencer = std::make_shared<Sequencer>();
+  _sequencer = std::make_shared<Sequencer>(this);
   
   _tempbus         = std::make_shared<OutputBus>();
   _tempbus->_name  = "temp-dsp";
@@ -376,8 +376,29 @@ template <typename T> void _remove_items(std::vector<T>& vec, const std::vector<
 }
 
 void synth::mainThreadHandler() {
+
+  /////////////////////////////////
+  // execute external audio thread handlers
+  /////////////////////////////////
+
+  for( auto h : _audiothreadhandlers ){
+    h->_handler(this);
+  }
+
+  /////////////////////////////////
+  // process sequencer
+  /////////////////////////////////
+
+  _sequencer->process();
+
+  /////////////////////////////////
+  // in critical section,
+  //  separate _CCIVALS into items to execute and items to remove
+  /////////////////////////////////
+
   _kmod_exec_list.clear();
   _kmod_rem_list.clear();
+
   _CCIVALS.atomicOp([&](keyonmodvect_t& unlocked) {
     size_t index = 0;
     for (auto kmod : unlocked) {
@@ -388,7 +409,13 @@ void synth::mainThreadHandler() {
       }
       index++;
     }
+    _remove_items(unlocked, _kmod_rem_list); // remove dangling items
   });
+
+  /////////////////////////////////
+  // execute remaining items
+  /////////////////////////////////
+
   for (auto kmod : _kmod_exec_list) {
     for (auto item : kmod->_mods) {
       auto kmdata = item.second;
@@ -406,8 +433,8 @@ void synth::mainThreadHandler() {
       }
     }
   }
-  _CCIVALS.atomicOp([&](keyonmodvect_t& unlocked) { _remove_items(unlocked, _kmod_rem_list); });
 }
+
 
 programInst* synth::keyOn(int note, int velocity, prgdata_constptr_t pdata, keyonmod_ptr_t kmods) {
   assert(pdata);

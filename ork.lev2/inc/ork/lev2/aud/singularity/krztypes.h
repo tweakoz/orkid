@@ -106,6 +106,9 @@ struct CzProgData;
 struct OutputBus;
 struct KeyOnModifiers;
 struct NatEnvWrapperData;
+///////////////////////////////////////////////////////////////////////////////
+// sequencer
+///////////////////////////////////////////////////////////////////////////////
 struct Event;
 struct Sequencer;
 struct Sequence;
@@ -113,7 +116,12 @@ struct Track;
 struct Clip;
 struct TimeStamp;
 struct TimeBase;
+struct EventClip;
+struct FourOnFloorClip;
 struct SequencePlayback;
+struct TrackPlayback;
+struct ClipPlayback;
+struct EventIterator;
 ///////////////////////////////////////////////////////////////////////////////
 // scope / signal analyzer
 ///////////////////////////////////////////////////////////////////////////////
@@ -185,6 +193,8 @@ using event_ptr_t = std::shared_ptr<Event>;
 using timestamp_ptr_t = std::shared_ptr<TimeStamp>;
 using timebase_ptr_t = std::shared_ptr<TimeBase>;
 using sequenceplayback_ptr_t = std::shared_ptr<SequencePlayback>;
+using clipplayback_ptr_t = std::shared_ptr<ClipPlayback>;
+using trackplayback_ptr_t = std::shared_ptr<TrackPlayback>;
 ///////////////////////////////////////////////////////////////////////////////
 typedef std::function<float()> controller_t;
 typedef std::function<float(float)> mapper_t;
