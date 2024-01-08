@@ -29,8 +29,8 @@ synth.system_tempo = TEMPO
 sequencer = synth.sequencer
 #synth.setEffect(mainbus,"Reverb:FDN4")
 #synth.setEffect(mainbus,"Reverb:FDN8")
-#synth.setEffect(mainbus,"Reverb:FDNX")
-synth.setEffect(mainbus,"Reverb:NiceVerb")
+synth.setEffect(mainbus,"Reverb:FDNX")
+#synth.setEffect(mainbus,"Reverb:NiceVerb")
 
 ################################################################################
 
@@ -117,6 +117,7 @@ print("num_note_offs<%d>" % num_note_offs)
 for miditrack in mid.tracks:
   note_map = {}
   time = 0
+  TRIGGER = PIANO[2]
   for msg in miditrack:
     if msg.type == 'note_on':
       n = msg.note
@@ -129,8 +130,7 @@ for miditrack in mid.tracks:
         time2 = time + 1.0
         ts = timebase.timeToTimeStamp(time)
         dur = timebase.timeToTimeStamp(time2-time)
-        PIANO[2].createNoteEvent(ts,dur,n,v)
-        #PIZZO[2].createNoteEvent(ts,dur,n,v/2)
+        TRIGGER.createNoteEvent(ts,dur,n,v)
       time += t*timescale
       #print("non %d %d %g" % (n,v,time))
     elif msg.type == 'note_off':
@@ -141,8 +141,7 @@ for miditrack in mid.tracks:
         event = note_map[n]
         ts = timebase.timeToTimeStamp(time)
         dur = timebase.timeToTimeStamp(0.5+time2-time)
-        PIANO[2].createNoteEvent(ts,dur,event[0],event[1])
-        #PIZZO[2].createNoteEvent(ts,dur,event[0],event[1])
+        TRIGGER.createNoteEvent(ts,dur,event[0],event[1])
         del(note_map[n])
       time = time2
       #print("noff")
