@@ -55,19 +55,19 @@ tr_doom = sequence.createTrack("doomsday-track")
 tr_doom.program = doomsday
 
 cl1 = tr_doom.createEventClipAtTimeStamp("clip1",timestamp(0,0,0),dur1m)
-#cl2 = tr_doom.createEventClipAtTimeStamp("clip2",timestamp(1,0,0),dur2b)
-#cl3 = tr_doom.createEventClipAtTimeStamp("clip3",timestamp(2,1,0),dur1m)
+cl2 = tr_doom.createEventClipAtTimeStamp("clip2",timestamp(1,0,0),dur2b)
+cl3 = tr_doom.createEventClipAtTimeStamp("clip3",timestamp(2,1,0),dur1m)
 
 ev1 = cl1.createNoteEvent(ts0,cl1.duration,60,127)
-#ev2 = cl2.createNoteEvent(ts0,cl2.duration,72,127)
-#ev3 = cl3.createNoteEvent(ts0,cl3.duration,84,127)
+ev2 = cl2.createNoteEvent(ts0,cl2.duration,72,127)
+ev3 = cl3.createNoteEvent(ts0,cl3.duration,84,127)
 print(ts0)
 print(tr_doom)
 print(cl1)
 
 tr_click = sequence.createTrack("click-track")
 tr_click.program = click
-cl_click = tr_click.createFourOnFloorClipAtTimeStamp("clip4",timestamp(0,3,0),dur1m)
+cl_click = tr_click.createFourOnFloorClipAtTimeStamp("clip4",timestamp(0,3,0),dur4m)
 
 
 playback = sequencer.playSequence(sequence)
