@@ -92,4 +92,5 @@ batch_wget({
   "https://bitmidi.com/uploads/22424.mid": (dest_path/"midifiles"/"castle1.mid","96320847155ffc38e72a5b658259c465"),
   "https://bitmidi.com/uploads/107580.mid": (dest_path/"midifiles"/"castle2.mid","706e48788695b6aca723e2cdad03f097"),
   "https://bitmidi.com/uploads/107583.mid": (dest_path/"midifiles"/"castle3.mid","b370bcb8c9fdced91f174d9376154d5a"),
+  "https://bitmidi.com/uploads/16752.mid": (dest_path/"midifiles"/"moonlight.mid","3cb2f37a8f74f93a60d31c1b818ba43f"),
 })

@@ -166,7 +166,7 @@ void NatEnv::initSeg(int iseg) {
   _segtime   = seg._time;
   _framesrem = seg._time; /// 16.0f;// * _SR / 48000.0f;
 
-  printf(
+  if(0)printf(
       "SEG<%d/%d> CURAMP<%f> SLOPEPERSEC<%f> "
       "_slopePerSample<%f>  SEGT<%f>\n",
       _curseg + 1,

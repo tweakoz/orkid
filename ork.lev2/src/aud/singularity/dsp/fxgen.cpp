@@ -39,6 +39,35 @@ dspblkdata_ptr_t appendStereoChorus(lyrdata_ptr_t layer, dspstagedata_ptr_t stag
   return chorus;
 }
 ///////////////////////////////////////////////////////////////////////////////
+dspblkdata_ptr_t appendMildStereoChorus(lyrdata_ptr_t layer, dspstagedata_ptr_t stage) {
+  /////////////////
+  // stereo chorus
+  /////////////////
+  auto chorus                = stage->appendTypedBlock<StereoDynamicEcho>("echo");
+  chorus->param(0)->_coarse  = 0.0f; // delay time (L)
+  chorus->param(1)->_coarse  = 0.0f; // delay time (R)
+  chorus->param(2)->_coarse  = 0.15; // feedback
+  chorus->param(3)->_coarse  = 0.35;  // wet/dry mix
+  auto delaytime_modL        = chorus->param(0)->_mods;
+  auto delaytime_modR        = chorus->param(1)->_mods;
+  auto DELAYTIMEMODL         = layer->appendController<CustomControllerData>("DELAYTIMEL");
+  auto DELAYTIMEMODR         = layer->appendController<CustomControllerData>("DELAYTIMER");
+  delaytime_modL->_src1      = DELAYTIMEMODL;
+  delaytime_modL->_src1Depth = 1.0;
+  DELAYTIMEMODL->_oncompute  = [](CustomControllerInst* cci) { //
+    float time   = cci->_layer->_layerTime;
+    cci->setFloatValue( 0.010f + sinf(time * pi2 * .14) * 0.001f);
+  };
+  delaytime_modR->_src1      = DELAYTIMEMODR;
+  delaytime_modR->_src1Depth = 1.0;
+  DELAYTIMEMODR->_oncompute  = [](CustomControllerInst* cci) { //
+    float time   = cci->_layer->_layerTime;
+    cci->setFloatValue( 0.005f + sinf(time * pi2 * 0.09) * 0.0077f);
+  };
+  /////////////////
+  return chorus;
+}
+///////////////////////////////////////////////////////////////////////////////
 dspblkdata_ptr_t appendPitchShifter(lyrdata_ptr_t layer, dspstagedata_ptr_t stage) {
   auto shifter               = stage->appendTypedBlock<PitchShifter>("shifter");
   shifter->param(0)->_coarse = 0.5f; // wet/dry mix

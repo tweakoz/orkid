@@ -60,6 +60,10 @@ void StereoDynamicEcho::compute(DspBuffer& dspbuf) // final
 
   float invfr = 1.0f / inumframes;
 
+  delaytimeL = std::clamp(delaytimeL, 0.001f, 10.0f);
+  delaytimeR = std::clamp(delaytimeR, 0.001f, 10.0f);
+
+
   _delayL.setNextDelayTime(delaytimeL);
   _delayR.setNextDelayTime(delaytimeR);
   for (int i = 0; i < inumframes; i++) {

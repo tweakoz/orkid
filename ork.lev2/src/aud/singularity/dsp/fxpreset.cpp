@@ -189,6 +189,7 @@ lyrdata_ptr_t fxpreset_fdnxreverb() {
   /////////////////
   auto fxstage = fxalg->appendStage("FX");
   fxstage->setNumIos(2, 2); // stereo in, stereo out
+  appendStereoEnhancer(fxlayer, fxstage);
   /////////////////
   auto fdn8               = fxstage->appendTypedBlock<Fdn8Reverb>("diffusionD");
   fdn8->param(0)->_coarse = -12.0f; // input Gain
@@ -197,9 +198,10 @@ lyrdata_ptr_t fxpreset_fdnxreverb() {
   /////////////////
   float matrix_gain = 0.458;
   float out_gain    = 0.4;
+  float fdn4_mix = 0.4;
   /////////////////
   auto fdn4A                    = fxstage->appendTypedBlock<Fdn4Reverb>("diffusionA");
-  fdn4A->param(0)->_coarse      = 0.25f; // wet/dry mix
+  fdn4A->param(0)->_coarse      = fdn4_mix; // wet/dry mix
   fdn4A->_input_gain            = 0.3;
   fdn4A->_output_gain           = out_gain;
   fdn4A->_time_base             = 0.007;
@@ -213,7 +215,7 @@ lyrdata_ptr_t fxpreset_fdnxreverb() {
   fdn4A->update();
   /////////////////
   auto fdn4B                    = fxstage->appendTypedBlock<Fdn4Reverb>("diffusionB");
-  fdn4B->param(0)->_coarse      = 0.25f; // wet/dry mix
+  fdn4B->param(0)->_coarse      = fdn4_mix; // wet/dry mix
   fdn4B->_input_gain            = 0.4;
   fdn4B->_output_gain           = out_gain;
   fdn4B->_time_base             = 0.017;
@@ -227,7 +229,7 @@ lyrdata_ptr_t fxpreset_fdnxreverb() {
   fdn4B->update();
   /////////////////
   auto fdn4C                    = fxstage->appendTypedBlock<Fdn4Reverb>("diffusionC");
-  fdn4C->param(0)->_coarse      = 0.25f; // wet/dry mix
+  fdn4C->param(0)->_coarse      = fdn4_mix; // wet/dry mix
   fdn4C->_input_gain            = 0.5;
   fdn4C->_output_gain           = out_gain;
   fdn4C->_time_base             = 0.037;
@@ -241,10 +243,10 @@ lyrdata_ptr_t fxpreset_fdnxreverb() {
   fdn4C->update();
   /////////////////
   auto fdn4D                    = fxstage->appendTypedBlock<Fdn4Reverb>("diffusionD");
-  fdn4D->param(0)->_coarse      = 0.25f; // wet/dry mix
+  fdn4D->param(0)->_coarse      = fdn4_mix; // wet/dry mix
   fdn4D->_input_gain            = 0.5;
   fdn4D->_output_gain           = out_gain;
-  fdn4D->_time_base             = 0.077;
+  fdn4D->_time_base             = 0.127;
   fdn4D->_time_scale            = 1.161;
   fdn4D->_matrix_gain           = matrix_gain;
   fdn4D->_hipass_cutoff         = 100.0;
@@ -254,8 +256,8 @@ lyrdata_ptr_t fxpreset_fdnxreverb() {
   fdn4D->matrixHouseholder(fdn4D->_matrix_gain);
   fdn4D->update();
   /////////////////
+  appendMildStereoChorus(fxlayer, fxstage);
   // fdn4D->update();
-  appendStereoEnhancer(fxlayer, fxstage);
   /////////////////
   return fxlayer;
 }
