@@ -85,3 +85,11 @@ batch_wget({
  base_k2000man/"k2vx_reference_guide"/"k2vx.pdf": (dest_kurzweil/"k2vx.pdf","bd129f4b014c7a596420fe2ce9efb73c"),
  base_k2000man/"series_musicians_guide"/"k2000_series_musicians_guide.pdf": (dest_kurzweil/"k2000_series_musicians_guide.pdf","5814572ea8f5e8492e128dac08feea66"),
 })
+
+ensureDirectoryExists(dest_path/"midifiles")
+
+batch_wget({
+  "https://bitmidi.com/uploads/22424.mid": (dest_path/"midifiles"/"castle1.mid","96320847155ffc38e72a5b658259c465"),
+  "https://bitmidi.com/uploads/107580.mid": (dest_path/"midifiles"/"castle2.mid","706e48788695b6aca723e2cdad03f097"),
+  "https://bitmidi.com/uploads/107583.mid": (dest_path/"midifiles"/"castle3.mid","b370bcb8c9fdced91f174d9376154d5a"),
+})

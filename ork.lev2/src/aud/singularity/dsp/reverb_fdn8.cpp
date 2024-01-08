@@ -290,7 +290,7 @@ void Fdn8Reverb::DiffuserStep::tick(){
   for (int i = 0; i < 8; i++) {
     float t = _basetimes[i] * (1.0f+(s*_modulation));
     t = std::max(0.001f,t);
-    printf( "diff<%d> t<%g>\n", i, t);
+    //printf( "diff<%d> t<%g>\n", i, t);
     _delays._delay[i].setNextDelayTime(t);
   }
 }

@@ -122,7 +122,6 @@ class KrzApp(SingulTestApp):
       "Arco_Dbl_Bass",
       "Acoustic_Bass",
       "Touch_Clav",
-      "Touch_MiniBass",
       "Touch_StringOrch",
       "Tranquility",
       "Timpani_Chimes",

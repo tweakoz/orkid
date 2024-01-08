@@ -56,6 +56,7 @@ void pyinit_aud_singularity_sequencer(py::module& singmodule) {
       py::class_<TimeBase, timebase_ptr_t>(singmodule, "TimeBase")
           .def(py::init<>())
           .def("time", [](timebase_ptr_t tbase, timestamp_ptr_t ts) -> float { return tbase->time(ts); })
+          .def("timeToTimeStamp", [](timebase_ptr_t tbase, float time) -> timestamp_ptr_t { return tbase->timeToTimeStamp(time); })
           .def("reduce", [](timebase_ptr_t tbase, timestamp_ptr_t ts) -> timestamp_ptr_t { return tbase->reduceTimeStamp(ts); })
           .def_property(
               "numerator",

@@ -25,10 +25,12 @@ namespace ork::audio::singularity {
 TrackPlayback::TrackPlayback(track_ptr_t track) {
   _track                         = track;
   _next_clip                     = track->_clips_by_timestamp.begin();
-  _clip_playback                 = std::make_shared<ClipPlayback>();
-  auto clip                      = _next_clip->second;
-  _clip_playback->_clipX         = clip;
-  _clip_playback->_next_event_it = clip->firstEvent();
+    if(_next_clip!=track->_clips_by_timestamp.end()){
+        _clip_playback                 = std::make_shared<ClipPlayback>();
+        auto clip                      = _next_clip->second;
+        _clip_playback->_clipX         = clip;
+        _clip_playback->_next_event_it = clip->firstEvent();
+    }
 }
 
 ////////////////////////////////////////////////////////////////
@@ -151,7 +153,7 @@ void SequencePlayback::process(Sequencer* sequencer) {
       ///////////////////////////
       if(clip and clippb){
         auto next_event_it = clippb->_next_event_it;
-        if (clip->eventValid(next_event_it)) {
+        if (next_event_it and clip->eventValid(next_event_it)) {
           auto next_event      = next_event_it->_event;
           auto event_timestamp = next_event_it->_timestamp;
 
@@ -179,9 +181,9 @@ void SequencePlayback::process(Sequencer* sequencer) {
             event_end = tbase->reduceTimeStamp(event_end);
             active_event->_time_end = event_end;
             track_pb->_active_events.insert(active_event);
-            //float duration = tbase->time(next_event->_duration);
+            float duration = tbase->time(next_event->_duration);
             /////////////////
-            // enqueue_audio_event(program, time, duration, note, vel);
+            enqueue_audio_event(program, 0.0f, duration, note, vel);
             next_event_it          = clip->nextEvent(next_event_it);
             clippb->_next_event_it = next_event_it;
             if (next_event_it and clip->eventValid(next_event_it)) {
