@@ -71,11 +71,11 @@ void pyinit_aud_singularity_sequencer(py::module& singmodule) {
               [](timebase_ptr_t tbase) { return tbase->_tempo; },
               [](timebase_ptr_t tbase, float val) { tbase->_tempo = val; })
           .def_property(
-              "ppb", [](timebase_ptr_t tbase) { return tbase->_ppb; }, [](timebase_ptr_t tbase, int val) { tbase->_ppb = val; })
+              "ppq", [](timebase_ptr_t tbase) { return tbase->_ppq; }, [](timebase_ptr_t tbase, int val) { tbase->_ppq = val; })
           .def("__repr__", [](timebase_ptr_t tbase) -> std::string {
             std::ostringstream oss;
             oss << "TimeBase( sig: " << tbase->_numerator << "/" << tbase->_denominator << ", BPM: " << tbase->_tempo
-                << ", PPB: " << tbase->_ppb << " )";
+                << ", PPQ: " << tbase->_ppq << " )";
             return oss.str();
           });
   type_codec->registerStdCodec<timebase_ptr_t>(timebase_t);
@@ -187,6 +187,13 @@ void pyinit_aud_singularity_sequencer(py::module& singmodule) {
               "timebase",
               [](sequence_ptr_t seq) { return seq->_timebase; },
               [](sequence_ptr_t seq, timebase_ptr_t val) { seq->_timebase = val; })
+          .def(
+              "setTimeBaseForTime",
+              [](sequence_ptr_t seq, float time, timebase_ptr_t tb) { 
+                auto it = seq->_timebases.find(time);
+                OrkAssert(it==seq->_timebases.end());
+                seq->_timebases[time] = tb;
+           })
           .def("__repr__", [](sequence_ptr_t seq) -> std::string {
             std::ostringstream oss;
             oss << "Sequence( track_count: " << seq->_tracks.size() << " )";

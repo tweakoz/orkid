@@ -28,9 +28,10 @@ synth.system_tempo = TEMPO
 sequencer = synth.sequencer
 #synth.setEffect(mainbus,"Reverb:FDN4")
 #synth.setEffect(mainbus,"Reverb:FDN8")
-synth.setEffect(mainbus,"Reverb:FDNX")
+#synth.setEffect(mainbus,"Reverb:FDNX")
 #synth.setEffect(mainbus,"Reverb:NiceVerb")
 #synth.setEffect(mainbus,"StereoChorus")
+synth.setEffect(mainbus,"none")
 
 ################################################################################
 
@@ -44,7 +45,7 @@ timebase = sequence.timebase
 timebase.numerator = 4
 timebase.denominator = 4
 timebase.tempo = TEMPO
-timebase.ppb = 100 # pulses per beat
+timebase.ppq = 100 # pulses per beat
 
 ts0 = timestamp(0,0,0)
 dur1b = timestamp(0,1,0)
@@ -77,7 +78,7 @@ PIZZO = createTrack("Wet_Pizz_")
 ######################################################
 
 TRIGGER = PIANO[2]
-GenMidi(timebase,TRIGGER)
+GenMidi(0.0,timebase,TRIGGER)
 
 ######################################################
 

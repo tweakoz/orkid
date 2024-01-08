@@ -52,6 +52,18 @@ timestamp_ptr_t TimeStamp::sub(timestamp_ptr_t duration) const {
 
 ////////////////////////////////////////////////////////////////
 
+timebase_ptr_t TimeBase::clone() const{
+  auto out = std::make_shared<TimeBase>();
+  out->_numerator = _numerator;
+  out->_denominator = _denominator;
+  out->_tempo = _tempo;
+  out->_ppq = _ppq;
+  out->_basetime = _basetime;
+  return out;
+}
+
+////////////////////////////////////////////////////////////////
+
 timestamp_ptr_t TimeBase::reduceTimeStamp(timestamp_ptr_t inp) const {
   auto out       = std::make_shared<TimeStamp>();
   out->_measures = inp->_measures;
@@ -66,9 +78,9 @@ timestamp_ptr_t TimeBase::reduceTimeStamp(timestamp_ptr_t inp) const {
 void TimeBase::reduceTimeStampInPlace(timestamp_ptr_t inp) const{
   // Normalize clocks and beats
   if (inp->_clocks < 0) {
-    int borrow_beats = (-inp->_clocks + _ppb - 1) / _ppb; // Ceiling division
+    int borrow_beats = (-inp->_clocks + _ppq - 1) / _ppq; // Ceiling division
     inp->_beats -= borrow_beats;
-    inp->_clocks += borrow_beats * _ppb;
+    inp->_clocks += borrow_beats * _ppq;
   }
   if (inp->_beats < 0) {
     int borrow_measures = (-inp->_beats + _numerator - 1) / _numerator; // Ceiling division
@@ -77,8 +89,8 @@ void TimeBase::reduceTimeStampInPlace(timestamp_ptr_t inp) const{
   }
 
   // Handle excess clocks
-  int full_beats_from_clocks = inp->_clocks / _ppb;
-  inp->_clocks %= _ppb;
+  int full_beats_from_clocks = inp->_clocks / _ppq;
+  inp->_clocks %= _ppq;
   inp->_beats += full_beats_from_clocks;
 
   // Handle excess beats
@@ -96,11 +108,11 @@ float TimeBase::time(timestamp_ptr_t tstamp) const {
   float beatsPerSecond       = (_tempo / 60.0f) * beatLengthMultiplier;
 
   // Time duration of one pulse (clock) in seconds
-  float secondsPerPulse = 1.0f / (beatsPerSecond * _ppb);
+  float secondsPerPulse = 1.0f / (beatsPerSecond * _ppq);
 
   // Calculate time for the measures, beats, and clocks
-  float timeForMeasures = tstamp->_measures * _numerator * _ppb * secondsPerPulse;
-  float timeForBeats    = tstamp->_beats * _ppb * secondsPerPulse;
+  float timeForMeasures = tstamp->_measures * _numerator * _ppq * secondsPerPulse;
+  float timeForBeats    = tstamp->_beats * _ppq * secondsPerPulse;
   float timeForClocks   = tstamp->_clocks * secondsPerPulse;
 
   // Total time in seconds
@@ -115,13 +127,13 @@ timestamp_ptr_t TimeBase::timeToTimeStamp(float time) const{
   float beatsPerSecond       = (_tempo / 60.0f) * beatLengthMultiplier;
 
   // Time duration of one pulse (clock) in seconds
-  float secondsPerPulse = 1.0f / (beatsPerSecond * _ppb);
+  float secondsPerPulse = 1.0f / (beatsPerSecond * _ppq);
 
   // Calculate measures, beats, and clocks
-  int measures = static_cast<int>(floor(time / (secondsPerPulse * _numerator * _ppb)));
-  time -= measures * secondsPerPulse * _numerator * _ppb;
-  int beats = static_cast<int>(floor(time / (secondsPerPulse * _ppb)));
-  time -= beats * secondsPerPulse * _ppb;
+  int measures = static_cast<int>(floor(time / (secondsPerPulse * _numerator * _ppq)));
+  time -= measures * secondsPerPulse * _numerator * _ppq;
+  int beats = static_cast<int>(floor(time / (secondsPerPulse * _ppq)));
+  time -= beats * secondsPerPulse * _ppq;
   int clocks = static_cast<int>(floor(time / secondsPerPulse));
 
   // Create and return the timestamp

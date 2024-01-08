@@ -24,7 +24,7 @@ print("num_note_offs<%d>" % num_note_offs)
   
 
 def GenMidi(timeoffset,timebase,TRIGGER):
-  timebase.ppb = mid.ticks_per_beat
+  timebase.ppq = mid.ticks_per_beat
 
   for miditrack in mid.tracks:
     for msg in mid.tracks[0]:
@@ -41,9 +41,9 @@ def GenMidi(timeoffset,timebase,TRIGGER):
   print("timebase<%s>" % timebase)
   print("micros_per_quarter",micros_per_quarter)
 
-  timescale = micros_per_quarter / (timebase.ppb*1e6)
+  timescale = micros_per_quarter / (timebase.ppq*1e6)
 
-  ppq = timebase.ppb
+  ppq = timebase.ppq
   def calculate_timescale():
     return micros_per_quarter / (ppq * 1e6)
   for miditrack in mid.tracks:

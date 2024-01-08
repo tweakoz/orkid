@@ -76,6 +76,7 @@ struct TimeStampComparatorLessEqual {
 ////////////////////////////////////////////////////////////////
 
 struct TimeBase {
+  timebase_ptr_t clone() const;
   float time(timestamp_ptr_t tstamp) const;
   timestamp_ptr_t timeToTimeStamp(float time) const;
   timestamp_ptr_t reduceTimeStamp(timestamp_ptr_t inp) const;
@@ -84,7 +85,7 @@ struct TimeBase {
   int _numerator   = 4;
   int _denominator = 4;
   float _tempo     = 120.0f;
-  int _ppb         = 96;
+  int _ppq         = 96;
 };
 
 ////////////////////////////////////////////////////////////////
@@ -209,6 +210,7 @@ enum class TransportState : uint64_t {
 
 struct Sequence {
   using trackmap_t = std::unordered_map<std::string, track_ptr_t>;
+  using timebase_map_t = std::map<float,timebase_ptr_t>;
   Sequence(std::string name);
   std::vector<event_ptr_t> _events;
   void addNote(
@@ -227,6 +229,7 @@ struct Sequence {
   trackmap_t _tracks;
   timebase_ptr_t _timebase;
   TransportState _transportState;
+  timebase_map_t _timebases;
 };
 
 ////////////////////////////////////////////////////////////////
