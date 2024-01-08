@@ -121,7 +121,7 @@ struct synth {
   programInst* keyOn(int note, int velocity, prgdata_constptr_t pd, keyonmod_ptr_t kmod = nullptr);
   void keyOff(programInst* p);
 
-  void _keyOnLayer(layer_ptr_t l, int note, int velocity, lyrdata_ptr_t ld);
+  void _keyOnLayer(layer_ptr_t l, int note, int velocity, lyrdata_ptr_t ld, keyonmod_ptr_t kmod = nullptr);
   void _keyOffLayer(layer_ptr_t l);
   void _cleanupKeyOnModifiers();
 

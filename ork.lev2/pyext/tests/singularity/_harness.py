@@ -13,7 +13,10 @@ from collections import defaultdict
 import re
 from orkengine.core import *
 from orkengine.lev2 import *
+from _seq import GenMidi
+
 ################################################################################
+sys.path.append((thisdir()).normalized.as_string) # add parent dir to path
 sys.path.append((thisdir()/"..").normalized.as_string) # add parent dir to path
 from _boilerplate import *
 ################################################################################
@@ -199,6 +202,9 @@ class SingulTestApp(object):
     print("layerID<%d> layermask<%s> " % (self.layerID,as_bools))
     print("###########################################")
     pass
+  def setBusProgram(self,bus,prg):
+    self.synth.programbus = bus
+    self.synth.programbus.uiprogram = prg
   def setUiProgram(self,prg):
     self.synth.programbus.uiprogram = prg
     if self.pgmview:
@@ -342,6 +348,27 @@ class SingulTestApp(object):
           if self.octave > 8:
             self.octave = 8
           return res
+        elif KC == ord("M"): # 
+          timestamp = singularity.TimeStamp
+          prg = self.synth.programbus.uiprogram
+          prgname = prg.name
+          print(prgname)
+          print(prg)
+          sequence = singularity.Sequence(prgname)
+          timebase = sequence.timebase
+          timebase.numerator = 4
+          timebase.denominator = 4
+          timebase.tempo = 120.0
+          timebase.ppb = 100 # pulses per beat
+          sequencer = self.synth.sequencer
+          track = sequence.createTrack(prgname)
+          track.program = prg
+          track.outputbus = self.synth.programbus
+          clip = track.createEventClipAtTimeStamp(prgname,timestamp(0,0,0),timestamp(16,0,0))
+          GenMidi(self.synth.time,timebase,clip)
+          self.playback = sequencer.playSequence(sequence)
+          return res
+
         #elif KC == ord("N"): # new chart 
         #  self.clearChart()
         #  return res

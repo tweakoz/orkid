@@ -550,7 +550,10 @@ void pyinit_aud_singularity_datas(py::module& singmodule) {
                          .def_property(
                              "layerMask", //
                              [](keyonmod_ptr_t kmod) -> uint32_t { return kmod->_layermask; },
-                             [](keyonmod_ptr_t kmod, uint32_t val) { kmod->_layermask = val; });
+                             [](keyonmod_ptr_t kmod, uint32_t val) { kmod->_layermask = val; })
+                          .def_property("outputbus", //
+                             [](keyonmod_ptr_t kmod) -> outbus_ptr_t { return kmod->_outbus_override; },
+                             [](keyonmod_ptr_t kmod, outbus_ptr_t val) { kmod->_outbus_override = val; });
   type_codec->registerStdCodec<keyonmod_ptr_t>(konmod_type);
 }
 ///////////////////////////////////////////////////////////////////////////////

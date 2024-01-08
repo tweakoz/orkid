@@ -219,7 +219,7 @@ void Sequence::enqueue(prgdata_constptr_t program) {
     auto reduced   = _timebase->reduceTimeStamp(t2);
     float time_end = _timebase->time(reduced);
     auto dur       = time_end - time_start;
-    enqueue_audio_event(program, time_start, dur, e->_note, e->_vel);
+   // enqueue_audio_event(program, time_start, dur, e->_note, e->_vel);
   }
 }
 

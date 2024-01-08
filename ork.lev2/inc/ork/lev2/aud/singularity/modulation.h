@@ -16,27 +16,6 @@ namespace ork::audio::singularity {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct KeyOnModifiers{
-  using fvec4_genfn_t = std::function<fvec4()>;
-  using fvec4_subfn_t = std::function<void(std::string name, svar64_t)>;
-  using strvect_t = std::vector<std::string>;
-  struct DATA{
-    std::string _name;
-    fvec4_genfn_t _generator;
-    fvec4_subfn_t _subscriber;
-    fvec4 _currentValue;
-    varmap::VarMap _vars;
-    LockedResource<strvect_t> _evstrings;
-  };
-  using data_ptr_t = std::shared_ptr<DATA>;
-  using map_t = std::unordered_map<std::string,data_ptr_t>;
-  map_t _mods;
-  uint32_t _layermask = 0xffffffff;
-  bool _dangling = false;
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
 struct BlockModulationData final : public ork::Object {
 
   DeclareConcreteX(BlockModulationData, ork::Object);

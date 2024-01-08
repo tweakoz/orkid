@@ -168,6 +168,9 @@ void pyinit_aud_singularity_sequencer(py::module& singmodule) {
                          "program",
                          [](const track_ptr_t& track) { return track->_program; },
                          [](track_ptr_t& track, prgdata_constptr_t val) { track->_program = val; })
+                     .def_property(
+                         "outputbus",[&](const track_ptr_t& track) { return track->_outbus; },
+                         [](track_ptr_t& track, outbus_ptr_t val) { track->_outbus = val; })
                      .def("__repr__", [](track_ptr_t track) -> std::string {
                        std::ostringstream oss;
                        oss << "Track( clip_count: " << track->_clips_by_timestamp.size() << " )";

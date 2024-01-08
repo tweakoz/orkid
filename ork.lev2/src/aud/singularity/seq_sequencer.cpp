@@ -183,7 +183,7 @@ void SequencePlayback::process(Sequencer* sequencer) {
             track_pb->_active_events.insert(active_event);
             float duration = tbase->time(next_event->_duration);
             /////////////////
-            enqueue_audio_event(program, 0.0f, duration, note, vel);
+            enqueue_audio_event(track, 0.0f, duration, note, vel);
             next_event_it          = clip->nextEvent(next_event_it);
             clippb->_next_event_it = next_event_it;
             if (next_event_it and clip->eventValid(next_event_it)) {
@@ -261,6 +261,38 @@ void enqueue_audio_event(
   s->addEvent(time, [=]() {
     // NOTE ON
     auto noteinstance = s->keyOn(midinote, velocity, prog);
+    assert(noteinstance);
+    // NOTE OFF
+    s->addEvent(time + duration, [=]() { //
+      s->keyOff(noteinstance);
+    });
+  });
+}
+
+////////////////////////////////////////////////////////////////
+
+void enqueue_audio_event(
+    track_ptr_t track, //
+    float time,
+    float duration,
+    int midinote,
+    int velocity) {
+
+  auto p = track->_program;
+  auto b = track->_outbus;
+
+  auto s = synth::instance();
+
+  if (time < s->_timeaccum) {
+    time = s->_timeaccum;
+  }
+  //printf("time<%g> note<%d> program<%s> bus<%s>\n", time, midinote, p->_name.c_str(), b->_name.c_str() );
+
+  s->addEvent(time, [=]() {
+    // NOTE ON
+    auto mod = std::make_shared<KeyOnModifiers>();
+    mod->_outbus_override = b;
+    auto noteinstance = s->keyOn(midinote, velocity, p,mod);
     assert(noteinstance);
     // NOTE OFF
     s->addEvent(time + duration, [=]() { //

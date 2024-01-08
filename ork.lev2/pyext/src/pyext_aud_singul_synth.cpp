@@ -93,6 +93,9 @@ void pyinit_aud_singularity_synth(py::module& singmodule) {
           .def_property_readonly(
               "sequencer", //
               [](synth_ptr_t synth) -> sequencer_ptr_t { return synth->_sequencer; })
+          .def_property_readonly(
+              "time", //
+              [](synth_ptr_t synth) -> float { return synth->_timeaccum; })
           .def_property(
               "system_tempo", //
               [](synth_ptr_t synth) -> float { return synth->_system_tempo; },

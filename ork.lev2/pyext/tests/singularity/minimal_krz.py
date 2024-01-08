@@ -31,6 +31,7 @@ class KrzApp(SingulTestApp):
     modrate = math.sin(self.time)*5
     mods = singularity.KeyOnModifiers()
     mods.layerMask = self.layermask
+    mods.outputbus = self.synth.programbus
     #def sub(name,value):
     #  print("sub<%s> value<%s>" % (name,value))
     #mods.controllers.subscribers = {
@@ -156,10 +157,14 @@ class KrzApp(SingulTestApp):
     ]
     self.sorted_progs = sorted(ok_list)
     print("krzprogs<%s>" % self.krzprogs)    
-    self.prog_index = find_index(self.sorted_progs, "CowGogiBell")
+    self.prog_index = find_index(self.sorted_progs, "Stereo_Grand")
     #self.prog_index = find_index(self.sorted_progs, "Chorus_Gtr")
-    self.prog = self.soundbank.programByName("CowGogiBell")
+    self.prog = self.soundbank.programByName("Stereo_Grand")
     self.synth.masterGain = singularity.decibelsToLinear(-24.0)
+    main = self.synth.outputBus("main")
+    aux8 = self.synth.outputBus("aux8")
+    self.setBusProgram(aux8,self.soundbank.programByName("Chamber_Section"))
+    self.setBusProgram(main,self.soundbank.programByName("Stereo_Grand"))
     self.setUiProgram(self.prog)
 
 ###############################################################################

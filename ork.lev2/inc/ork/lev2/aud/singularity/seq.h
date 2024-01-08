@@ -167,6 +167,7 @@ struct Track {
   clip_ptr_t createFourOnFloorClipAtTimeStamp(std::string named, timestamp_ptr_t ts, timestamp_ptr_t dur);
   clipmap_t _clips_by_timestamp;
   prgdata_constptr_t _program;
+  outbus_ptr_t _outbus;
 };
 
 ////////////////////////////////////////////////////////////////
@@ -182,11 +183,19 @@ struct TrackPlayback {
 ////////////////////////////////////////////////////////////////
 
 void enqueue_audio_event(
-    prgdata_constptr_t prog, //
+    prgdata_constptr_t track, //
     float time,
     float duration,
     int midinote,
     int velocity = 128);
+
+void enqueue_audio_event(
+    track_ptr_t track, //
+    float time,
+    float duration,
+    int midinote,
+    int velocity
+    );
 
 ////////////////////////////////////////////////////////////////
 

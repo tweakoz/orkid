@@ -762,7 +762,7 @@ programInst::~programInst() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void synth::_keyOnLayer(layer_ptr_t l, int note, int velocity, lyrdata_ptr_t ld) {
+void synth::_keyOnLayer(layer_ptr_t l, int note, int velocity, lyrdata_ptr_t ld, keyonmod_ptr_t kmod) {
   std::lock_guard<std::mutex> lock(l->_mutex);
 
   assert(ld != nullptr);
@@ -776,6 +776,9 @@ void synth::_keyOnLayer(layer_ptr_t l, int note, int velocity, lyrdata_ptr_t ld)
 
   if (ld->_outbus.size()) {
     obus = outputBus(ld->_outbus);
+  }
+  if( kmod and kmod->_outbus_override ){
+    obus = kmod->_outbus_override;
   }
 
   l->keyOn(note, velocity, ld, obus);
@@ -825,15 +828,14 @@ void programInst::keyOn(int note, int velocity, prgdata_constptr_t pd, keyonmod_
     // printf("KEYON L%d\n", ilayer);
 
     auto l      = syn->allocLayer();
+    assert(l != nullptr);
+    assert(ld != nullptr);
+ 
     l->_ldindex = ilayer - 1;
     l->_keymods = _keymods;
     l->_name    = ld->_name;
 
-    assert(l != nullptr);
-
-    assert(ld != nullptr);
-
-    syn->_keyOnLayer(l, note, velocity, ld);
+    syn->_keyOnLayer(l, note, velocity, ld,kmod);
 
     _layers.push_back(l);
   }
