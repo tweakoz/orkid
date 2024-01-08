@@ -97,6 +97,14 @@ struct Event {
   int _vel  = 0;
 };
 
+struct ActiveEvent{
+  event_ptr_t _event;
+  timestamp_ptr_t _time_start;
+  timestamp_ptr_t _time_end;
+};
+
+using activeevent_ptr_t = std::shared_ptr<ActiveEvent>;
+
 ////////////////////////////////////////////////////////////////
 
 struct EventIterator {
@@ -168,6 +176,7 @@ struct TrackPlayback {
   track_ptr_t _track;
   clipmap_t::const_iterator _next_clip;
   clipplayback_ptr_t _clip_playback;
+  std::unordered_set<activeevent_ptr_t> _active_events;
 };
 
 ////////////////////////////////////////////////////////////////

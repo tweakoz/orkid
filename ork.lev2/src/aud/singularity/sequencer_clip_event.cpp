@@ -51,7 +51,7 @@ eventiterator_ptr_t EventClip::firstEvent() const {
 
 eventiterator_ptr_t EventClip::nextEvent(eventiterator_ptr_t abstract_iter) const {
   auto evmap_iter = abstract_iter->_impl.get<evmap_it_t>();
-  auto next_iter = evmap_iter++;
+  auto next_iter = ++evmap_iter;
   if( next_iter != _events.end() ){
     auto next_ts = next_iter->first;
     auto next_event = next_iter->second;
@@ -66,8 +66,11 @@ eventiterator_ptr_t EventClip::nextEvent(eventiterator_ptr_t abstract_iter) cons
 ////////////////////////////////////////////////////////////////
 
 bool EventClip::eventValid(eventiterator_ptr_t abstract_iter) const {
-  auto evmap_iter = abstract_iter->_impl.get<evmap_it_t>();
-  return ( evmap_iter != _events.end() );
+  if( auto as_evmap_iter = abstract_iter->_impl.tryAs<evmap_it_t>() ){
+    auto evmap_iter = as_evmap_iter.value();
+    return ( evmap_iter != _events.end() );
+  }
+  return false;
 }
 
 ////////////////////////////////////////////////////////////////
