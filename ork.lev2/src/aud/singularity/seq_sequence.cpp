@@ -76,6 +76,10 @@ timestamp_ptr_t TimeBase::reduceTimeStamp(timestamp_ptr_t inp) const {
 ////////////////////////////////////////////////////////////////
 
 void TimeBase::reduceTimeStampInPlace(timestamp_ptr_t inp) const{
+  int IM = inp->_measures;
+  int IB = inp->_beats;
+  int IC = inp->_clocks;
+
   // Normalize clocks and beats
   if (inp->_clocks < 0) {
     int borrow_beats = (-inp->_clocks + _ppq - 1) / _ppq; // Ceiling division
@@ -98,6 +102,16 @@ void TimeBase::reduceTimeStampInPlace(timestamp_ptr_t inp) const{
   inp->_beats %= _numerator;
   inp->_measures += full_measures_from_beats;
 
+  int OM = inp->_measures;
+  int OB = inp->_beats;
+  int OC = inp->_clocks;
+
+  int measure_length = (_ppq * _numerator);
+  int TM = int(IC / measure_length);
+  int TB = (IC % measure_length); 
+  int TC = IC % _ppq;
+
+  //printf( "RTIP inp<%d:%d:%d> out<%d %d %d> tst<%d:%d:%d>\n", IM, IB, IC, OM, OB, OC, TM, TB, TC );
 }
 
 ////////////////////////////////////////////////////////////////
@@ -141,6 +155,8 @@ timestamp_ptr_t TimeBase::timeToTimeStamp(float time) const{
   reduceTimeStampInPlace(rval);
   return rval;
 }
+
+////////////////////////////////////////////////////////////////
 
 float TimeBase::accumBaseTimes() const{
   float rval = 0.0f;

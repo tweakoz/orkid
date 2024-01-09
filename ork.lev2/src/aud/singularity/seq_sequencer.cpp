@@ -120,7 +120,7 @@ void SequencePlayback::process(Sequencer* sequencer) {
         int EEM        = event_end->_measures;
         int EEB        = event_end->_beats;
         int EEC        = event_end->_clocks;
-        ev_str += FormatString("[EVENT.END %d:%d:%d] ", EEM, EEB, EEC);
+        //ev_str += FormatString("[EVENT.END %d:%d:%d] ", EEM, EEB, EEC);
         active_events_to_erase.insert(active_event);
       }
     }
@@ -192,7 +192,7 @@ void SequencePlayback::process(Sequencer* sequencer) {
               int NM = nmpclip->_measures;
               int NB = nmpclip->_beats;
               int NC = nmpclip->_clocks;
-              ev_str += FormatString("[NEXT %d:%d:%d]", NM, NB, NC);
+              //ev_str += FormatString("[NEXT %d:%d:%d]", NM, NB, NC);
             } else {
               ev_str += FormatString("[NO MORE EVENTS]");
               clippb->_clipX          = nullptr;

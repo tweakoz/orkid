@@ -424,7 +424,7 @@ void sampleOsc::keyOn(const KeyOnInfo& koi) {
 void sampleOsc::keyOff() {
 
   _released = true;
-  printf("osc<%p> beginRelease\n", (void*) this);
+  //printf("osc<%p> beginRelease\n", (void*) this);
 
   if (_enableNatEnv)
     _natAmpEnv->keyOff();

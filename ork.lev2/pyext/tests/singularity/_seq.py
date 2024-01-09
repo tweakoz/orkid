@@ -1,89 +1,88 @@
-from mido import MidiFile 
 from orkengine.core import *
 from orkengine.lev2 import singularity
-
-midi_path = singularity.baseDataPath()/"midifiles"
-mid = MidiFile(str(midi_path/'moonlight.mid'), clip=True)
+import random 
 
 ######################################################
-
 micros_per_quarter = 0
-num_note_ons = 0
-num_note_offs = 0
+######################################################
 
-for miditrack in mid.tracks:
-  for msg in miditrack:
-    if msg.type == 'note_on':
-      num_note_ons += 1
-    elif msg.type == 'note_off':
-      num_note_offs += 1
+def MidiToSequence(
+  midifile = None,   # midi file object
+  sequence = None,   # singularity.Sequence object
+  CLIP = None,       # clip to which add the events
+  timeoffset = 0.0,  # time offset in seconds
+  temposcale = 1.0,  # tempo scale factor
+  feel = 0):         # clock ticks to randomly add to each note
 
-print("num_note_ons<%d>" % num_note_ons)
-print("num_note_offs<%d>" % num_note_offs)
+  timebase_seq = sequence.timebase
+  timebase_seq.ppq = int(midifile.ticks_per_beat)
 
-  
-
-def GenMidi(sequence,timeoffset,timebase,TRIGGER):
-  timebase.ppq = int(mid.ticks_per_beat*2.5)
-
-  for miditrack in mid.tracks:
-    for msg in mid.tracks[0]:
+  for miditrack in midifile.tracks:
+    for msg in midifile.tracks[0]:
       if msg.type == 'set_tempo':
         micros_per_quarter = msg.tempo
         print("micros_per_quarter<%s>" % micros_per_quarter)
-        TEMPO = 60000000.0/micros_per_quarter
-        timebase.tempo = TEMPO
+        TEMPO = temposcale*(60000000.0/micros_per_quarter)
+        timebase_seq.tempo = TEMPO
       if msg.type == 'time_signature':
-        timebase.numerator = msg.numerator
-        timebase.denominator = msg.denominator
+        timebase_seq.numerator = msg.numerator
+        timebase_seq.denominator = msg.denominator
 
-  print("numtracks<%d>" % len(mid.tracks))
-  print("timebase<%s>" % timebase)
+  print("numtracks<%d>" % len(midifile.tracks))
+  print("timebase<%s>" % timebase_seq)
   print("micros_per_quarter",micros_per_quarter)
+  
+  timebase_start = timebase_seq.clone()
 
-  timebase_start = timebase.clone()
+  #timescale = micros_per_quarter / (timebase_seq.ppq*1e6)
 
-  timescale = micros_per_quarter / (timebase.ppq*1e6)
-
-  ppq = timebase_start.ppq
-  def calculate_timescale():
-    return micros_per_quarter / (ppq * 1e6)
+  TPQ = timebase_start.ppq
+ 
   def calculate_tempo():
-    return 60000000.0 / micros_per_quarter
+    UPQ = micros_per_quarter
+    usptick = UPQ / TPQ
+    QPU = 1.0 / UPQ
+    QPS = QPU * 1e6
+    QPM = QPS * 60.0
+    return QPM*temposcale
 
   ##################################################3
   # create tempo map
   ##################################################3
 
-  for miditrack in mid.tracks:
-    time = 0  # Time in seconds
-    timescale = calculate_timescale() 
+  tr = 0
+  timebase_mut = timebase_start.clone()
+  for miditrack in midifile.tracks:
+    clocks = 0  # Time in seconds
     for msg in miditrack:
       # Update time with the current message's time
-      time += msg.time * timescale
+      clocks += msg.time # * timescale
 
       # Check for tempo change
       if msg.type == 'set_tempo':
-        micros_per_quarter = msg.tempo#*0.45
-        timescale = calculate_timescale() 
-        tbnext = timebase.clone()
+        micros_per_quarter = msg.tempo
+        tbnext = timebase_mut.clone()
         tbnext.tempo = calculate_tempo()
-        timebase.tempo = tbnext.tempo*2
-        tbnext.parent = timebase
-        tbnext.basetime = time
+        timebase_mut.tempo = tbnext.tempo
+        tbnext.parent = timebase_mut
+        tbnext.basetime = clocks
         tbnext.duration = 0.0
-        print("tempo<%s>" % tbnext.tempo)
-        sequence.setTimeBaseForTime(time,tbnext)
+        print("tr<%d> mpq<%d> tempo<%s>" % (tr, micros_per_quarter,tbnext.tempo))
+        #sequence.setTimeBaseForTime(time,tbnext)
+    tr += 1
 
   ##################################################3
   # perform piece
   ##################################################3
 
-  for miditrack in mid.tracks:
+  timebase_mut = timebase_start.clone()
+  for miditrack in midifile.tracks:
     note_map = {}
     clock = 0
     for msg in miditrack:
-      msg_num_clocks = msg.time
+      rand = int(random.uniform(-1,1)*feel)
+      msg_num_clocks = msg.time + rand
+      
       clock += msg_num_clocks # Update time with the current message's time
 
       #########################################
@@ -93,11 +92,13 @@ def GenMidi(sequence,timeoffset,timebase,TRIGGER):
       def ENQUEUE(n,v):
         ts = singularity.TimeStamp()
         dur = singularity.TimeStamp()
-        ts.clocks = note_map[n][3]
-        ts = timebase.reduce(ts)
+        ts.clocks = note_map[n][2]
+        #print(ts)
+        ts = timebase_mut.reduce(ts)
+        #print(TPQ, ts)
         dur.clocks = int(msg_num_clocks+100)
-        dur = timebase.reduce(dur)
-        TRIGGER.createNoteEvent(ts, dur, n, v)
+        dur = timebase_mut.reduce(dur)
+        CLIP.createNoteEvent(ts, dur, n, v)
         del(note_map[n])
 
       #########################################
@@ -105,8 +106,8 @@ def GenMidi(sequence,timeoffset,timebase,TRIGGER):
       #########################################
 
       if msg.type == 'set_tempo':
-        micros_per_quarter = msg.tempo #*0.45
-        timebase.tempo = calculate_tempo()
+        micros_per_quarter = msg.tempo
+        timebase_mut.tempo = calculate_tempo()
     
       #########################################
       # Process note_on events
@@ -119,7 +120,7 @@ def GenMidi(sequence,timeoffset,timebase,TRIGGER):
         if v == 0:
           if n in note_map:
             ENQUEUE(n,v)
-        note_map[n] = (n, v, time,clock)
+        note_map[n] = (n, v, clock)
 
       #########################################
       # Process note_off events
@@ -129,3 +130,6 @@ def GenMidi(sequence,timeoffset,timebase,TRIGGER):
         n = msg.note
         if n in note_map:
           ENQUEUE(n,v)
+
+
+  #assert(False)

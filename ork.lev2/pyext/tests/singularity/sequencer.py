@@ -12,7 +12,8 @@ from obt import path
 from orkengine.core import *
 from orkengine.lev2 import singularity
 sys.path.append((thisdir()).normalized.as_string)
-from _seq import GenMidi
+from _seq import MidiToSequence
+from mido import MidiFile 
 
 timestamp = singularity.TimeStamp
 
@@ -22,13 +23,12 @@ TEMPO = 120
 
 audiodevice = singularity.device.instance()
 synth = singularity.synth.instance()
-synth.masterGain = singularity.decibelsToLinear(18)
 mainbus = synth.outputBus("main")
 synth.system_tempo = TEMPO
 sequencer = synth.sequencer
 #synth.setEffect(mainbus,"Reverb:FDN4")
-synth.setEffect(mainbus,"Reverb:FDN8")
-#synth.setEffect(mainbus,"Reverb:FDNX")
+#synth.setEffect(mainbus,"Reverb:FDN8")
+synth.setEffect(mainbus,"Reverb:FDNX")
 #synth.setEffect(mainbus,"Reverb:NiceVerb")
 #synth.setEffect(mainbus,"StereoChorus")
 #synth.setEffect(mainbus,"none")
@@ -55,6 +55,8 @@ dur1m = timestamp(1,0,0)
 dur2m = timestamp(2,0,0)
 dur4m = timestamp(4,0,0)
 dur16m = timestamp(16,0,0)
+dur32m = timestamp(32,0,0)
+dur64m = timestamp(64,0,0)
 
 ######################################################
 # create programs/tracks/clips
@@ -64,7 +66,7 @@ def createTrack(name):
   program = krzdata.bankData.programByName(name)
   track = sequence.createTrack(name)
   track.program = program
-  clip = track.createEventClipAtTimeStamp(name,ts0,dur16m)
+  clip = track.createEventClipAtTimeStamp(name,ts0,dur64m)
   return (program,track,clip)
 
 DOOM = createTrack("Doomsday")
@@ -77,9 +79,26 @@ PIZZO = createTrack("Wet_Pizz_")
 
 ######################################################
 
-TRIGGER = PIANO[2]
-GenMidi(sequence,0.0,timebase,TRIGGER)
+def genSEQ(
+  name="",      # midi file name
+  clip=None,    # clip to which add the events
+  temposcale=1, # tempo scale factor
+  feel=0,       # clock ticks to randomly add to each note
+  gain=0):      # master synth gain in dB
 
+  synth.masterGain = singularity.decibelsToLinear(gain)
+  midi_path = singularity.baseDataPath()/"midifiles"
+  MidiToSequence(
+    midifile=MidiFile(str(midi_path/name)),
+    sequence=sequence,
+    CLIP=clip,
+    timeoffset=0,
+    temposcale=temposcale,
+    feel=feel)
+
+######################################################
+#genSEQ(name="castle1.mid",temposcale=1.0,feel=0,clip=PIANO[2],gain=12)
+genSEQ(name="moonlight.mid",temposcale=1.9,feel=1.1,clip=PIANO[2],gain=24)
 ######################################################
 
 playback = sequencer.playSequence(sequence)
