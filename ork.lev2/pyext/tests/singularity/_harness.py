@@ -365,7 +365,7 @@ class SingulTestApp(object):
           track.program = prg
           track.outputbus = self.synth.programbus
           clip = track.createEventClipAtTimeStamp(prgname,timestamp(0,0,0),timestamp(16,0,0))
-          GenMidi(self.synth.time,timebase,clip)
+          GenMidi(sequence,self.synth.time,timebase,clip)
           self.playback = sequencer.playSequence(sequence)
           return res
 

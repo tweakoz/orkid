@@ -55,9 +55,11 @@ void pyinit_aud_singularity_sequencer(py::module& singmodule) {
   auto timebase_t =
       py::class_<TimeBase, timebase_ptr_t>(singmodule, "TimeBase")
           .def(py::init<>())
+          .def("clone", [](timebase_ptr_t tbase) -> timebase_ptr_t { return tbase->clone(); })
           .def("time", [](timebase_ptr_t tbase, timestamp_ptr_t ts) -> float { return tbase->time(ts); })
           .def("timeToTimeStamp", [](timebase_ptr_t tbase, float time) -> timestamp_ptr_t { return tbase->timeToTimeStamp(time); })
           .def("reduce", [](timebase_ptr_t tbase, timestamp_ptr_t ts) -> timestamp_ptr_t { return tbase->reduceTimeStamp(ts); })
+          .def("accumBaseTimes", [](timebase_ptr_t tbase) -> float { return tbase->accumBaseTimes(); })
           .def_property(
               "numerator",
               [](timebase_ptr_t tbase) { return tbase->_numerator; },
@@ -71,7 +73,18 @@ void pyinit_aud_singularity_sequencer(py::module& singmodule) {
               [](timebase_ptr_t tbase) { return tbase->_tempo; },
               [](timebase_ptr_t tbase, float val) { tbase->_tempo = val; })
           .def_property(
+              "basetime",
+              [](timebase_ptr_t tbase) { return tbase->_basetime; },
+              [](timebase_ptr_t tbase, float val) { tbase->_basetime = val; })
+          .def_property(
+              "duration",
+              [](timebase_ptr_t tbase) { return tbase->_duration; },
+              [](timebase_ptr_t tbase, float val) { tbase->_duration = val; })
+          .def_property(
               "ppq", [](timebase_ptr_t tbase) { return tbase->_ppq; }, [](timebase_ptr_t tbase, int val) { tbase->_ppq = val; })
+          .def_property("parent", [](timebase_ptr_t tbase) { return tbase->_parent; }, [](timebase_ptr_t tbase, timebase_ptr_t val) {
+            tbase->_parent = val;
+          })
           .def("__repr__", [](timebase_ptr_t tbase) -> std::string {
             std::ostringstream oss;
             oss << "TimeBase( sig: " << tbase->_numerator << "/" << tbase->_denominator << ", BPM: " << tbase->_tempo

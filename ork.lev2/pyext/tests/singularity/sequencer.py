@@ -22,16 +22,16 @@ TEMPO = 120
 
 audiodevice = singularity.device.instance()
 synth = singularity.synth.instance()
-synth.masterGain = singularity.decibelsToLinear(24)
+synth.masterGain = singularity.decibelsToLinear(18)
 mainbus = synth.outputBus("main")
 synth.system_tempo = TEMPO
 sequencer = synth.sequencer
 #synth.setEffect(mainbus,"Reverb:FDN4")
-#synth.setEffect(mainbus,"Reverb:FDN8")
+synth.setEffect(mainbus,"Reverb:FDN8")
 #synth.setEffect(mainbus,"Reverb:FDNX")
 #synth.setEffect(mainbus,"Reverb:NiceVerb")
 #synth.setEffect(mainbus,"StereoChorus")
-synth.setEffect(mainbus,"none")
+#synth.setEffect(mainbus,"none")
 
 ################################################################################
 
@@ -78,7 +78,7 @@ PIZZO = createTrack("Wet_Pizz_")
 ######################################################
 
 TRIGGER = PIANO[2]
-GenMidi(0.0,timebase,TRIGGER)
+GenMidi(sequence,0.0,timebase,TRIGGER)
 
 ######################################################
 

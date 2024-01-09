@@ -142,6 +142,14 @@ timestamp_ptr_t TimeBase::timeToTimeStamp(float time) const{
   return rval;
 }
 
+float TimeBase::accumBaseTimes() const{
+  float rval = 0.0f;
+  if(_parent){
+    rval += _parent->_duration;
+  }
+  return rval;
+}
+
 ////////////////////////////////////////////////////////////////
 
 EventIterator::EventIterator(timestamp_ptr_t ts){

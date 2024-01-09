@@ -77,15 +77,18 @@ struct TimeStampComparatorLessEqual {
 
 struct TimeBase {
   timebase_ptr_t clone() const;
+  float accumBaseTimes() const;
   float time(timestamp_ptr_t tstamp) const;
   timestamp_ptr_t timeToTimeStamp(float time) const;
   timestamp_ptr_t reduceTimeStamp(timestamp_ptr_t inp) const;
   void reduceTimeStampInPlace(timestamp_ptr_t inp) const;
   float _basetime  = 0.0f;
+  float _duration = 0.0f;
   int _numerator   = 4;
   int _denominator = 4;
   float _tempo     = 120.0f;
   int _ppq         = 96;
+  timebase_ptr_t _parent;
 };
 
 ////////////////////////////////////////////////////////////////
