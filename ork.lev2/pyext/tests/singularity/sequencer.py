@@ -7,15 +7,28 @@
 # see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ################################################################################
 
-import sys, time, signal
+import sys, time, signal, argparse
 from obt import path
 from orkengine.core import *
 from orkengine.lev2 import singularity
 sys.path.append((thisdir()).normalized.as_string)
-from _seq import MidiToSequence
+from _seq import midiToSingularitySequence
 from mido import MidiFile 
 
 timestamp = singularity.TimeStamp
+
+################################################################################
+# arguments
+# -s seqid {0..3} : default 0
+# -c : enable click track
+################################################################################
+
+parser = argparse.ArgumentParser(description='singularity sequencer test')
+parser.add_argument('-s', '--seqid', type=int, default=0, help='sequence id')
+parser.add_argument('-c', '--click', action='store_true', help='enable click track')
+args = parser.parse_args()
+seqid = args.seqid
+add_click = args.click
 
 ################################################################################
 
@@ -26,12 +39,18 @@ synth = singularity.synth.instance()
 mainbus = synth.outputBus("main")
 synth.system_tempo = TEMPO
 sequencer = synth.sequencer
+
+
 #synth.setEffect(mainbus,"Reverb:FDN4")
 #synth.setEffect(mainbus,"Reverb:FDN8")
 synth.setEffect(mainbus,"Reverb:FDNX")
 #synth.setEffect(mainbus,"Reverb:NiceVerb")
 #synth.setEffect(mainbus,"StereoChorus")
 #synth.setEffect(mainbus,"none")
+
+auxbus = synth.createOutputBus("aux")
+synth.setEffect(auxbus,"none")
+auxbus.gain = -48
 
 ################################################################################
 
@@ -79,7 +98,7 @@ PIZZO = createTrack("Wet_Pizz_")
 
 ######################################################
 
-def genSEQ(
+def genSingularitySequence(
   name="",      # midi file name
   clip=None,    # clip to which add the events
   temposcale=1, # tempo scale factor
@@ -88,7 +107,7 @@ def genSEQ(
 
   synth.masterGain = singularity.decibelsToLinear(gain)
   midi_path = singularity.baseDataPath()/"midifiles"
-  MidiToSequence(
+  midiToSingularitySequence(
     midifile=MidiFile(str(midi_path/name)),
     sequence=sequence,
     CLIP=clip,
@@ -97,8 +116,26 @@ def genSEQ(
     feel=feel)
 
 ######################################################
-#genSEQ(name="castle1.mid",temposcale=1.0,feel=0,clip=PIANO[2],gain=12)
-genSEQ(name="moonlight.mid",temposcale=1.9,feel=1.1,clip=PIANO[2],gain=24)
+if seqid==0:
+  genSingularitySequence(name="moonlight.mid",temposcale=1.9,feel=3,clip=PIANO[2],gain=24)
+  auxbus.gain = -48
+elif seqid==1:
+  genSingularitySequence(name="castle1.mid",temposcale=1.0,feel=30,clip=PIANO[2],gain=6)
+  auxbus.gain = -36
+elif seqid==2:
+  genSingularitySequence(name="castle2.mid",temposcale=1.0,feel=10,clip=PIANO[2],gain=0)
+  auxbus.gain = -24
+elif seqid==3:
+  genSingularitySequence(name="castle3.mid",temposcale=1.0,feel=30,clip=PIANO[2],gain=24)
+  auxbus.gain = -96
+
+if add_click:
+  program = krzdata.bankData.programByName("Click")
+  track = sequence.createTrack("click")
+  track.program = program
+  clip = track.createFourOnFloorClipAtTimeStamp("click",ts0,dur64m)
+  track.outputbus = auxbus
+  
 ######################################################
 
 playback = sequencer.playSequence(sequence)

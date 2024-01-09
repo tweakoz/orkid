@@ -6,7 +6,7 @@ import random
 micros_per_quarter = 0
 ######################################################
 
-def MidiToSequence(
+def midiToSingularitySequence(
   midifile = None,   # midi file object
   sequence = None,   # singularity.Sequence object
   CLIP = None,       # clip to which add the events
@@ -34,8 +34,6 @@ def MidiToSequence(
   
   timebase_start = timebase_seq.clone()
 
-  #timescale = micros_per_quarter / (timebase_seq.ppq*1e6)
-
   TPQ = timebase_start.ppq
  
   def calculate_tempo():
@@ -56,8 +54,7 @@ def MidiToSequence(
     clocks = 0  # Time in seconds
     for msg in miditrack:
       # Update time with the current message's time
-      clocks += msg.time # * timescale
-
+      clocks += msg.time 
       # Check for tempo change
       if msg.type == 'set_tempo':
         micros_per_quarter = msg.tempo
@@ -79,9 +76,9 @@ def MidiToSequence(
   for miditrack in midifile.tracks:
     note_map = {}
     clock = 0
+    random.seed(0)
     for msg in miditrack:
-      rand = int(random.uniform(-1,1)*feel)
-      msg_num_clocks = msg.time + rand
+      msg_num_clocks = msg.time 
       
       clock += msg_num_clocks # Update time with the current message's time
 
@@ -92,10 +89,9 @@ def MidiToSequence(
       def ENQUEUE(n,v):
         ts = singularity.TimeStamp()
         dur = singularity.TimeStamp()
-        ts.clocks = note_map[n][2]
-        #print(ts)
+        feel_clocks = int(random.uniform(-1,1)*feel)
+        ts.clocks = note_map[n][2] + feel_clocks
         ts = timebase_mut.reduce(ts)
-        #print(TPQ, ts)
         dur.clocks = int(msg_num_clocks+100)
         dur = timebase_mut.reduce(dur)
         CLIP.createNoteEvent(ts, dur, n, v)
