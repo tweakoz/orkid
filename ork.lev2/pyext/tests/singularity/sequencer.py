@@ -111,7 +111,6 @@ def genSingularitySequence(
     midifile=MidiFile(str(midi_path/name)),
     sequence=sequence,
     CLIP=clip,
-    timeoffset=0,
     temposcale=temposcale,
     feel=feel)
 
@@ -138,7 +137,7 @@ if add_click:
   
 ######################################################
 
-playback = sequencer.playSequence(sequence)
+playback = sequencer.playSequence(sequence,0.0)
 
 print(playback)
 

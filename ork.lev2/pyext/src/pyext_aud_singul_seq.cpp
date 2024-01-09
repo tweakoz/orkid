@@ -223,8 +223,8 @@ void pyinit_aud_singularity_sequencer(py::module& singmodule) {
   type_codec->registerStdCodec<sequenceplayback_ptr_t>(sequencepb_t);
   /////////////////////////////////////////////////////////////////////////////////
   auto sequencer_t = py::class_<Sequencer, sequencer_ptr_t>(singmodule, "Sequencer")
-                         .def("playSequence", [](sequencer_ptr_t& sequencer, sequence_ptr_t sequence) -> sequenceplayback_ptr_t { //
-                           return sequencer->playSequence(sequence);
+                         .def("playSequence", [](sequencer_ptr_t& sequencer, sequence_ptr_t sequence, float timeoffset) -> sequenceplayback_ptr_t { //
+                           return sequencer->playSequence(sequence,timeoffset);
                          });
   type_codec->registerStdCodec<sequencer_ptr_t>(sequencer_t);
 }

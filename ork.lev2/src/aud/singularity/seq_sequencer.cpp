@@ -48,7 +48,7 @@ SequencePlayback::SequencePlayback(sequence_ptr_t seq) {
 ////////////////////////////////////////////////////////////////
 
 void SequencePlayback::process(Sequencer* sequencer) {
-  float time             = sequencer->_the_synth->_timeaccum;
+  float time             = sequencer->_the_synth->_timeaccum-_timeoffet;
   auto tbase             = _sequence->_timebase;
   auto current_timestamp = tbase->timeToTimeStamp(time);
   int M                  = current_timestamp->_measures;
@@ -222,8 +222,9 @@ void SequencePlayback::process(Sequencer* sequencer) {
 
 ////////////////////////////////////////////////////////////////
 
-sequenceplayback_ptr_t Sequencer::playSequence(sequence_ptr_t sequence) {
+sequenceplayback_ptr_t Sequencer::playSequence(sequence_ptr_t sequence,float timeoffset) {
   auto pb = std::make_shared<SequencePlayback>(sequence);
+  pb->_timeoffet = timeoffset;
   _sequence_playbacks.push_back(pb);
   return pb;
 }

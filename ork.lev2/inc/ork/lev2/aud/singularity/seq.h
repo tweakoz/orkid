@@ -243,6 +243,7 @@ struct SequencePlayback {
   void process(Sequencer* seq);
   sequence_ptr_t _sequence;
   trackpbmap_t _track_playbacks;
+  float _timeoffet = 0.0f;
 };
 
 ////////////////////////////////////////////////////////////////
@@ -250,7 +251,7 @@ struct SequencePlayback {
 struct Sequencer {
   using seqmap_t = std::unordered_map<std::string, sequence_ptr_t>;
   Sequencer(synth* the_synth);
-  sequenceplayback_ptr_t playSequence(sequence_ptr_t sequence);
+  sequenceplayback_ptr_t playSequence(sequence_ptr_t sequence,float timeoffset);
   void process();
   seqmap_t _sequences;
   std::vector<sequenceplayback_ptr_t> _sequence_playbacks;

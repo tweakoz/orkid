@@ -10,7 +10,6 @@ def midiToSingularitySequence(
   midifile = None,   # midi file object
   sequence = None,   # singularity.Sequence object
   CLIP = None,       # clip to which add the events
-  timeoffset = 0.0,  # time offset in seconds
   temposcale = 1.0,  # tempo scale factor
   feel = 0):         # clock ticks to randomly add to each note
 
