@@ -12,9 +12,13 @@
 #include <ork/lev2/aud/singularity/modulation.h>
 #include <ork/lev2/aud/singularity/alg_pan.inl>
 
+ImplementReflectionX(ork::audio::singularity::Fdn4ReverbXData, "DspFxReverbFDN4X");
+
 namespace ork::audio::singularity {
 
 ///////////////////////////////////////////////////////////////////////////////
+
+void Fdn4ReverbXData::describeX(class_t* clazz) {}
 
 Fdn4ReverbXData::Fdn4ReverbXData(std::string name)
     : DspBlockData(name){

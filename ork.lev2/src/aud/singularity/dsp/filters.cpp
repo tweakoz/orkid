@@ -9,9 +9,32 @@
 #include <assert.h>
 #include <ork/lev2/aud/singularity/alg_filters.h>
 
+ImplementReflectionX(ork::audio::singularity::BANDPASS_FILT_DATA, "DspFilterBandPass");
+ImplementReflectionX(ork::audio::singularity::BAND2_DATA, "DspFilterBandpass2");
+ImplementReflectionX(ork::audio::singularity::NOTCH_FILT_DATA, "DspFilterNotch");
+ImplementReflectionX(ork::audio::singularity::NOTCH2_DATA, "DspFilterNotch2");
+ImplementReflectionX(ork::audio::singularity::DOUBLE_NOTCH_W_SEP_DATA, "DspFilterDoubleNotchWithSep");
+ImplementReflectionX(ork::audio::singularity::LOPAS2_DATA, "DspFilterLowPass2");
+ImplementReflectionX(ork::audio::singularity::LP2RES_DATA, "DspFilterLowPass2Res");
+ImplementReflectionX(ork::audio::singularity::LPGATE_DATA, "DspFilterLowPassGate");
+ImplementReflectionX(ork::audio::singularity::FOURPOLE_HIPASS_W_SEP_DATA, "DspFilter4PoleWithSep");
+ImplementReflectionX(ork::audio::singularity::LPCLIP_DATA, "DspFilterLowPassClip");
+ImplementReflectionX(ork::audio::singularity::LowPassData, "DspFilterLowPass");
+ImplementReflectionX(ork::audio::singularity::HighPassData, "DspFilterHighPass");
+ImplementReflectionX(ork::audio::singularity::AllPassData, "DspFilterAllPass");
+ImplementReflectionX(ork::audio::singularity::HighFreqStimulatorData, "DspFilterHighFreqStimulator");
+ImplementReflectionX(ork::audio::singularity::TwoPoleLowPassData, "DspFilter2PoleLowPass");
+ImplementReflectionX(ork::audio::singularity::TwoPoleAllPassData, "DspFilter2PoleAllPass");
+ImplementReflectionX(ork::audio::singularity::FourPoleLowPassWithSepData, "DspFilter4PoleLowPassWithSep");
+
+
 namespace ork::audio::singularity {
 
 ///////////////////////////////////////////////////////////////////////////////
+
+void BANDPASS_FILT_DATA::describeX(class_t* clazz){
+
+}
 
 BANDPASS_FILT_DATA::BANDPASS_FILT_DATA(std::string name)
     : DspBlockData(name) {
@@ -62,6 +85,8 @@ void BANDPASS_FILT::doKeyOn(const KeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void BAND2_DATA::describeX(class_t* clazz){}
+
 BAND2_DATA::BAND2_DATA(std::string name)
     : DspBlockData(name) {
   _blocktype = "BAND2";
@@ -102,6 +127,8 @@ void BAND2::doKeyOn(const KeyOnInfo& koi) // final
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+void NOTCH_FILT_DATA::describeX(class_t* clazz){}
 
 NOTCH_FILT_DATA::NOTCH_FILT_DATA(std::string name)
     : DspBlockData(name) {
@@ -146,6 +173,8 @@ void NOTCH_FILT::doKeyOn(const KeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void NOTCH2_DATA::describeX(class_t* clazz){}
+
 NOTCH2_DATA::NOTCH2_DATA(std::string name)
     : DspBlockData(name) {
   _blocktype = "NOTCH2";
@@ -185,6 +214,8 @@ void NOTCH2::doKeyOn(const KeyOnInfo& koi) // final
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+void DOUBLE_NOTCH_W_SEP_DATA::describeX(class_t* clazz){}
 
 DOUBLE_NOTCH_W_SEP_DATA::DOUBLE_NOTCH_W_SEP_DATA(std::string name)
     : DspBlockData(name) {
@@ -238,6 +269,8 @@ void DOUBLE_NOTCH_W_SEP::doKeyOn(const KeyOnInfo& koi) // final
 // LOPAS2 = TWOPOLE_LOWPASS (fixed -6dB res)
 ///////////////////////////////////////////////////////////////////////////////
 
+void LOPAS2_DATA::describeX(class_t* clazz){}
+
 LOPAS2_DATA::LOPAS2_DATA(std::string name)
     : DspBlockData(name) {
   _blocktype = "LOPAS2";
@@ -279,6 +312,8 @@ void LOPAS2::doKeyOn(const KeyOnInfo& koi) // final
 // LOPAS2 = TWOPOLE_LOWPASS (fixed -6dB res)
 ///////////////////////////////////////////////////////////////////////////////
 
+void LP2RES_DATA::describeX(class_t* clazz){}
+
 LP2RES_DATA::LP2RES_DATA(std::string name)
     : DspBlockData(name) {
   _blocktype = "LP2RES";
@@ -318,6 +353,8 @@ void LP2RES::doKeyOn(const KeyOnInfo& koi) // final
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+void FOURPOLE_HIPASS_W_SEP_DATA::describeX(class_t* clazz){}
 
 FOURPOLE_HIPASS_W_SEP_DATA::FOURPOLE_HIPASS_W_SEP_DATA(std::string name)
     : DspBlockData(name) {
@@ -377,6 +414,8 @@ void FOURPOLE_HIPASS_W_SEP::doKeyOn(const KeyOnInfo& koi) // final
 // LPCLIP : 1 pole! lowpass
 ///////////////////////////////////////////////////////////////////////////////
 
+void LPCLIP_DATA::describeX(class_t* clazz){}
+
 LPCLIP_DATA::LPCLIP_DATA(std::string name)
     : DspBlockData(name) {
   _blocktype = "LPCLIP";
@@ -416,6 +455,8 @@ void LPCLIP::doKeyOn(const KeyOnInfo& koi) // final
 // LOPASS : 1 pole! lowpass
 ///////////////////////////////////////////////////////////////////////////////
 
+void LPGATE_DATA::describeX(class_t* clazz){}
+
 LPGATE_DATA::LPGATE_DATA(std::string name)
     : DspBlockData(name) {
   _blocktype = "LPGATE";
@@ -452,6 +493,9 @@ void LPGATE::doKeyOn(const KeyOnInfo& koi) // final
 ///////////////////////////////////////////////////////////////////////////////
 // LOPASS : 1 pole! lowpass
 ///////////////////////////////////////////////////////////////////////////////
+
+void LowPassData::describeX(class_t* clazz){}
+
 LowPassData::LowPassData(std::string name)
     : DspBlockData(name) {
   _blocktype = "LOPASS";
@@ -495,6 +539,8 @@ void LowPass::doKeyOn(const KeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void HighPassData::describeX(class_t* clazz){}
+
 HighPassData::HighPassData(std::string name)
     : DspBlockData(name) {
   _blocktype = "HIPASS";
@@ -530,6 +576,8 @@ void HighPass::doKeyOn(const KeyOnInfo& koi) // final
   _hpf.init();
 }
 ///////////////////////////////////////////////////////////////////////////////
+
+void HighFreqStimulatorData::describeX(class_t* clazz){}
 
 HighFreqStimulatorData::HighFreqStimulatorData(std::string name)
     : DspBlockData(name) {
@@ -583,6 +631,8 @@ void HighFreqStimulator::doKeyOn(const KeyOnInfo& koi) // final
 // 2pole allpass (for phasers, etc..)
 ///////////////////////////////////////////////////////////////////////////////
 
+void AllPassData::describeX(class_t* clazz){}
+
 AllPassData::AllPassData(std::string name)
     : DspBlockData(name) {
   _blocktype = "ALLPASS";
@@ -620,6 +670,9 @@ void AllPass::doKeyOn(const KeyOnInfo& koi) // final
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+void TwoPoleAllPassData::describeX(class_t* clazz){}
+
 TwoPoleAllPassData::TwoPoleAllPassData(std::string name)
     : DspBlockData(name) {
   _blocktype = "TwoPoleAllPass";
@@ -664,6 +717,9 @@ void TwoPoleAllPass::doKeyOn(const KeyOnInfo& koi) // final
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+void TwoPoleLowPassData::describeX(class_t* clazz){}
+
 TwoPoleLowPassData::TwoPoleLowPassData(std::string name)
     : DspBlockData(name) {
   _blocktype     = "TwoPoleLowPassData";
@@ -709,6 +765,8 @@ void TwoPoleLowPass::doKeyOn(const KeyOnInfo& koi) // final
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+void FourPoleLowPassWithSepData::describeX(class_t* clazz){}
 
 FourPoleLowPassWithSepData::FourPoleLowPassWithSepData(std::string name)
     : DspBlockData(name) {

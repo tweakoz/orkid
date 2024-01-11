@@ -200,6 +200,8 @@ void filescanner::ParseSampleHeader(const datablock& db, datablock::iterator& it
       pitem->_ualt         = uAltStart;
       pitem->_uloop        = uLoopOfSpan;
       pitem->_uend         = uEndOfSpan;
+      std::string nam = ork::FormatString("%s:%d", ObjName.c_str(), int(usamp));
+      printf( "/// sample==<%s>\n", nam.c_str() );
       if (bLoopSwitch) {
         // printf( "///\n");
         // printf( "/// sample==<%s>\n", nam.c_str() );

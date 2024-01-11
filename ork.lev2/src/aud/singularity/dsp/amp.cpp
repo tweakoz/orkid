@@ -12,12 +12,30 @@
 #include <ork/lev2/aud/singularity/alg_pan.inl>
 #include <ork/lev2/aud/singularity/modulation.h>
 
+ImplementReflectionX(ork::audio::singularity::AMP_ADAPTIVE_DATA, "DspAmpAdaptive");
+ImplementReflectionX(ork::audio::singularity::AMP_MONOIO_DATA, "DspAmpMono");
+ImplementReflectionX(ork::audio::singularity::PLUSAMP_DATA, "DspAmpPlus");
+ImplementReflectionX(ork::audio::singularity::XAMP_DATA, "DspAmpX");
+ImplementReflectionX(ork::audio::singularity::STEREO_GAIN_DATA, "DspAmpStereoGain");
+ImplementReflectionX(ork::audio::singularity::GAIN_DATA, "DspAmpMonoGain");
+ImplementReflectionX(ork::audio::singularity::BANGAMP_DATA, "DspAmpBang");
+ImplementReflectionX(ork::audio::singularity::AMPU_AMPL_DATA, "DspAmpUL");
+ImplementReflectionX(ork::audio::singularity::BAL_AMP_DATA, "DspAmpBalance");
+ImplementReflectionX(ork::audio::singularity::AMP_MOD_OSC_DATA, "DspAmpModOsc");
+ImplementReflectionX(ork::audio::singularity::XGAIN_DATA, "DspAmpXGain");
+ImplementReflectionX(ork::audio::singularity::XFADE_DATA, "DspAmpXFade");
+ImplementReflectionX(ork::audio::singularity::PANNER_DATA, "DspAmpPanner");
+
 namespace ork::audio::singularity {
 
 float shaper(float inp, float adj);
 float wrap(float inp, float adj);
 
 ///////////////////////////////////////////////////////////////////////////////
+
+void AMP_ADAPTIVE_DATA::describeX(class_t* clazz){
+
+}
 
 AMP_ADAPTIVE_DATA::AMP_ADAPTIVE_DATA(std::string name)
     : DspBlockData(name) {
@@ -98,6 +116,10 @@ void AMP_ADAPTIVE::doKeyOn(const KeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void AMP_MONOIO_DATA::describeX(class_t* clazz){
+
+}
+
 AMP_MONOIO_DATA::AMP_MONOIO_DATA(std::string name)
     : DspBlockData(name) {
   _blocktype = "AMP_MONOIO";
@@ -145,6 +167,10 @@ void AMP_MONOIO::doKeyOn(const KeyOnInfo& koi) // final
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+void PLUSAMP_DATA::describeX(class_t* clazz){
+
+}
 
 PLUSAMP_DATA::PLUSAMP_DATA(std::string name)
     : DspBlockData(name) {
@@ -205,6 +231,10 @@ void PLUSAMP::doKeyOn(const KeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void XAMP_DATA::describeX(class_t* clazz){
+
+}
+
 XAMP_DATA::XAMP_DATA(std::string name)
     : DspBlockData(name) {
   _blocktype = "XAMP";
@@ -257,6 +287,10 @@ void XAMP::doKeyOn(const KeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void GAIN_DATA::describeX(class_t* clazz){
+
+}
+
 GAIN_DATA::GAIN_DATA(std::string name)
     : DspBlockData(name) {
   _blocktype = "GAIN";
@@ -286,6 +320,10 @@ void GAIN::compute(DspBuffer& dspbuf) // final
       outputchan[i] = outp;
     }
   }
+}
+
+void STEREO_GAIN_DATA::describeX(class_t* clazz){
+
 }
 
 STEREO_GAIN_DATA::STEREO_GAIN_DATA(std::string name)
@@ -319,6 +357,10 @@ void STEREO_GAIN::compute(DspBuffer& dspbuf) // final
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
+
+void XFADE_DATA::describeX(class_t* clazz){
+
+}
 
 XFADE_DATA::XFADE_DATA(std::string name)
     : DspBlockData(name) {
@@ -370,6 +412,10 @@ void XFADE::doKeyOn(const KeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void XGAIN_DATA::describeX(class_t* clazz){
+
+}
+
 XGAIN_DATA::XGAIN_DATA(std::string name)
     : DspBlockData(name) {
   _blocktype = "XGAIN";
@@ -412,6 +458,10 @@ void XGAIN::doKeyOn(const KeyOnInfo& koi) // final
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+void AMPU_AMPL_DATA::describeX(class_t* clazz){
+
+}
 
 AMPU_AMPL_DATA::AMPU_AMPL_DATA(std::string name)
     : DspBlockData(name) {
@@ -479,6 +529,10 @@ void AMPU_AMPL::doKeyOn(const KeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void BAL_AMP_DATA::describeX(class_t* clazz){
+
+}
+
 BAL_AMP_DATA::BAL_AMP_DATA(std::string name)
     : DspBlockData(name) {
   _blocktype = "BALAMP";
@@ -516,6 +570,10 @@ void BAL_AMP::doKeyOn(const KeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void AMP_MOD_OSC_DATA::describeX(class_t* clazz){
+
+}
+
 AMP_MOD_OSC_DATA::AMP_MOD_OSC_DATA(std::string name)
     : DspBlockData(name) {
   _blocktype = "AMPMODOSC";
@@ -552,6 +610,10 @@ void AMP_MOD_OSC::doKeyOn(const KeyOnInfo& koi) // final
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+void PANNER_DATA::describeX(class_t* clazz){
+
+}
 
 PANNER_DATA::PANNER_DATA(std::string name)
     : DspBlockData(name) {
@@ -599,7 +661,9 @@ void PANNER::doKeyOn(const KeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
-///////////////////////////////////////////////////////////////////////////////
+void BANGAMP_DATA::describeX(class_t* clazz){
+
+}
 
 BANGAMP_DATA::BANGAMP_DATA(std::string name)
     : DspBlockData(name) {

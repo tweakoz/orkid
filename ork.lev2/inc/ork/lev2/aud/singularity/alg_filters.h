@@ -16,7 +16,8 @@ namespace ork::audio::singularity {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct BANDPASS_FILT_DATA : public DspBlockData {
-  BANDPASS_FILT_DATA(std::string name);
+  DeclareConcreteX(BANDPASS_FILT_DATA,DspBlockData);
+  BANDPASS_FILT_DATA(std::string name="X");
   dspblk_ptr_t createInstance() const override;
 };
 
@@ -29,7 +30,8 @@ struct BANDPASS_FILT : public DspBlock {
   void doKeyOn(const KeyOnInfo& koi) final;
 };
 struct BAND2_DATA : public DspBlockData {
-  BAND2_DATA(std::string name);
+  DeclareConcreteX(BAND2_DATA,DspBlockData);
+  BAND2_DATA(std::string name="X");
   dspblk_ptr_t createInstance() const override;
 };
 struct BAND2 : public DspBlock {
@@ -40,7 +42,8 @@ struct BAND2 : public DspBlock {
   void doKeyOn(const KeyOnInfo& koi) final;
 };
 struct NOTCH_FILT_DATA : public DspBlockData {
-  NOTCH_FILT_DATA(std::string name);
+  DeclareConcreteX(NOTCH_FILT_DATA,DspBlockData);
+  NOTCH_FILT_DATA(std::string name="X");
   dspblk_ptr_t createInstance() const override;
 };
 struct NOTCH_FILT : public DspBlock {
@@ -51,7 +54,8 @@ struct NOTCH_FILT : public DspBlock {
   void doKeyOn(const KeyOnInfo& koi) final;
 };
 struct NOTCH2_DATA : public DspBlockData {
-  NOTCH2_DATA(std::string name);
+  DeclareConcreteX(NOTCH2_DATA,DspBlockData);
+  NOTCH2_DATA(std::string name="X");
   dspblk_ptr_t createInstance() const override;
 };
 struct NOTCH2 : public DspBlock {
@@ -62,7 +66,8 @@ struct NOTCH2 : public DspBlock {
   void doKeyOn(const KeyOnInfo& koi) final;
 };
 struct DOUBLE_NOTCH_W_SEP_DATA : public DspBlockData {
-  DOUBLE_NOTCH_W_SEP_DATA(std::string name);
+  DeclareConcreteX(DOUBLE_NOTCH_W_SEP_DATA,DspBlockData);
+  DOUBLE_NOTCH_W_SEP_DATA(std::string name="X");
   dspblk_ptr_t createInstance() const override;
 };
 struct DOUBLE_NOTCH_W_SEP : public DspBlock {
@@ -74,7 +79,8 @@ struct DOUBLE_NOTCH_W_SEP : public DspBlock {
   void doKeyOn(const KeyOnInfo& koi) final;
 };
 struct LOPAS2_DATA : public DspBlockData {
-  LOPAS2_DATA(std::string name);
+  DeclareConcreteX(LOPAS2_DATA,DspBlockData);
+  LOPAS2_DATA(std::string name="X");
   dspblk_ptr_t createInstance() const override;
 };
 struct LOPAS2 : public DspBlock {
@@ -85,7 +91,8 @@ struct LOPAS2 : public DspBlock {
   void doKeyOn(const KeyOnInfo& koi) final;
 };
 struct LP2RES_DATA : public DspBlockData {
-  LP2RES_DATA(std::string name);
+  DeclareConcreteX(LP2RES_DATA,DspBlockData);
+  LP2RES_DATA(std::string name="X");
   dspblk_ptr_t createInstance() const override;
 };
 struct LP2RES : public DspBlock {
@@ -96,7 +103,8 @@ struct LP2RES : public DspBlock {
   void doKeyOn(const KeyOnInfo& koi) final;
 };
 struct LPGATE_DATA : public DspBlockData {
-  LPGATE_DATA(std::string name);
+  DeclareConcreteX(LPGATE_DATA,DspBlockData);
+  LPGATE_DATA(std::string name="X");
   dspblk_ptr_t createInstance() const override;
 };
 struct LPGATE : public DspBlock {
@@ -107,7 +115,8 @@ struct LPGATE : public DspBlock {
   void doKeyOn(const KeyOnInfo& koi) final;
 };
 struct FOURPOLE_HIPASS_W_SEP_DATA : public DspBlockData {
-  FOURPOLE_HIPASS_W_SEP_DATA(std::string name);
+  DeclareConcreteX(FOURPOLE_HIPASS_W_SEP_DATA,DspBlockData);
+  FOURPOLE_HIPASS_W_SEP_DATA(std::string name="X");
   dspblk_ptr_t createInstance() const override;
 };
 struct FOURPOLE_HIPASS_W_SEP : public DspBlock {
@@ -120,7 +129,8 @@ struct FOURPOLE_HIPASS_W_SEP : public DspBlock {
   void doKeyOn(const KeyOnInfo& koi) final;
 };
 struct LPCLIP_DATA : public DspBlockData {
-  LPCLIP_DATA(std::string name);
+  DeclareConcreteX(LPCLIP_DATA,DspBlockData);
+  LPCLIP_DATA(std::string name="X");
   dspblk_ptr_t createInstance() const override;
 };
 struct LPCLIP : public DspBlock {
@@ -134,7 +144,8 @@ struct LPCLIP : public DspBlock {
 // newstyle
 /////////////////
 struct LowPassData : public DspBlockData {
-  LowPassData(std::string name);
+  DeclareConcreteX(LowPassData,DspBlockData);
+  LowPassData(std::string name="X");
   dspblk_ptr_t createInstance() const override;
 };
 struct LowPass : public DspBlock {
@@ -146,7 +157,8 @@ struct LowPass : public DspBlock {
   void doKeyOn(const KeyOnInfo& koi) final;
 };
 struct HighPassData : public DspBlockData {
-  HighPassData(std::string name);
+  DeclareConcreteX(HighPassData,DspBlockData);
+  HighPassData(std::string name="X");
   dspblk_ptr_t createInstance() const override;
 };
 struct HighPass : public DspBlock {
@@ -158,7 +170,8 @@ struct HighPass : public DspBlock {
   void doKeyOn(const KeyOnInfo& koi) final;
 };
 struct AllPassData : public DspBlockData {
-  AllPassData(std::string name);
+  DeclareConcreteX(AllPassData,DspBlockData);
+  AllPassData(std::string name="X");
   dspblk_ptr_t createInstance() const override;
 };
 struct AllPass : public DspBlock {
@@ -170,7 +183,8 @@ struct AllPass : public DspBlock {
   void doKeyOn(const KeyOnInfo& koi) final;
 };
 struct HighFreqStimulatorData : public DspBlockData {
-  HighFreqStimulatorData(std::string name);
+  DeclareConcreteX(HighFreqStimulatorData,DspBlockData);
+  HighFreqStimulatorData(std::string name="X");
   dspblk_ptr_t createInstance() const override;
 };
 struct HighFreqStimulator : public DspBlock {
@@ -184,8 +198,9 @@ struct HighFreqStimulator : public DspBlock {
   void doKeyOn(const KeyOnInfo& koi) final;
 };
 struct TwoPoleLowPassData : public DspBlockData {
+  DeclareConcreteX(TwoPoleLowPassData,DspBlockData);
   // krzname: "2POLE LOWPASS"
-  TwoPoleLowPassData(std::string name);
+  TwoPoleLowPassData(std::string name="X");
   dspblk_ptr_t createInstance() const override;
 };
 struct TwoPoleLowPass : public DspBlock {
@@ -198,8 +213,9 @@ struct TwoPoleLowPass : public DspBlock {
 };
 
 struct TwoPoleAllPassData : public DspBlockData {
+  DeclareConcreteX(TwoPoleAllPassData,DspBlockData);
   // krzname: "2POLE ALLPASS"
-  TwoPoleAllPassData(std::string name);
+  TwoPoleAllPassData(std::string name="X");
   dspblk_ptr_t createInstance() const override;
 };
 struct TwoPoleAllPass : public DspBlock {
@@ -212,8 +228,9 @@ struct TwoPoleAllPass : public DspBlock {
 };
 
 struct FourPoleLowPassWithSepData : public DspBlockData {
+  DeclareConcreteX(FourPoleLowPassWithSepData,DspBlockData);
   // krzname: "4POLE LOPASS W/SEP"
-  FourPoleLowPassWithSepData(std::string name);
+  FourPoleLowPassWithSepData(std::string name="X");
   dspblk_ptr_t createInstance() const override;
 };
 struct FourPoleLowPassWithSep : public DspBlock {

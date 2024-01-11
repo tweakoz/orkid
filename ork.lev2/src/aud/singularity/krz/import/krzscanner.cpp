@@ -67,8 +67,10 @@ void filescanner::scanAndDump() {
   // parse blocks
   /////////////////////////////////////////////
 
-  for (size_t index = 0; index < inumb; index++)
+  for (size_t index = 0; index < inumb; index++){
+    //printf("ParseKrzBlock<%d>\n", int(index));
     ParseBlock(mDatablocks[index]);
+  }
 
   /////////////////////////////////////////////
 
@@ -140,7 +142,7 @@ void filescanner::ParseBlock(const datablock& db) {
   while (false == bdone) {
     u8 objhdr = *db.RefData(it);
     int ibase = it.miIndex;
-    // printf( "objhdr<%d> ibase<%d>\n", (int) objhdr, ibase );
+    //printf( "objhdr<%d> ibase<%d>\n", (int) objhdr, ibase );
     if (objhdr) {
       ParseObject(db, it);
     }
@@ -176,7 +178,7 @@ void filescanner::ParseObject(const datablock& db, datablock::iterator& it) {
   else
     ObjectName = (const char*)pObjName;
 
-  // printf( "obj<%s>\n",ObjectName.c_str());
+  printf( "obj<%s>\n",ObjectName.c_str());
   // Value jsonobj(kObjectType);
 
   // Value nameobj(kStringType);

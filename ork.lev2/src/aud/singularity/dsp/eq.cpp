@@ -9,9 +9,19 @@
 #include <assert.h>
 #include <ork/lev2/aud/singularity/alg_eq.h>
 
+ImplementReflectionX(ork::audio::singularity::STEEP_RESONANT_BASS_DATA, "DspEqSteepResonantBass");
+ImplementReflectionX(ork::audio::singularity::PARABASS_DATA, "DspEqParaBass");
+ImplementReflectionX(ork::audio::singularity::PARAMID_DATA, "DspEqParaMid");
+ImplementReflectionX(ork::audio::singularity::PARATREBLE_DATA, "DspEqParaTreble");
+ImplementReflectionX(ork::audio::singularity::ParametricEqData, "DspEqParametricEq");
+
 namespace ork::audio::singularity {
 
 ///////////////////////////////////////////////////////////////////////////////
+
+void PARABASS_DATA::describeX(class_t* clazz){
+
+}
 
 PARABASS_DATA::PARABASS_DATA(std::string name)
     : DspBlockData(name) {
@@ -70,6 +80,10 @@ void PARABASS::doKeyOn(const KeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void STEEP_RESONANT_BASS_DATA::describeX(class_t* clazz){
+
+}
+
 STEEP_RESONANT_BASS_DATA::STEEP_RESONANT_BASS_DATA(std::string name)
     : DspBlockData(name) {
   _blocktype = "STEEP_RESONANT_BASS";
@@ -124,6 +138,10 @@ void STEEP_RESONANT_BASS::doKeyOn(const KeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void PARATREBLE_DATA::describeX(class_t* clazz){
+
+}
+
 PARATREBLE_DATA::PARATREBLE_DATA(std::string name)
     : DspBlockData(name) {
   _blocktype = "PARATREBLE";
@@ -174,6 +192,10 @@ void PARATREBLE::doKeyOn(const KeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void PARAMID_DATA::describeX(class_t* clazz){
+
+}
+
 PARAMID_DATA::PARAMID_DATA(std::string name)
     : DspBlockData(name) {
   _blocktype = "PARAMID";
@@ -218,6 +240,11 @@ void PARAMID::doKeyOn(const KeyOnInfo& koi) // final
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+void ParametricEqData::describeX(class_t* clazz){
+
+}
+
 ParametricEqData::ParametricEqData(std::string name)
     : DspBlockData(name) {
       _blocktype = "ParametricEq";

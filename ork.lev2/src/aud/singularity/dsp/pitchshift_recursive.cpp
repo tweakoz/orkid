@@ -11,7 +11,11 @@
 #include <ork/lev2/aud/singularity/dsp_mix.h>
 #include <ork/lev2/aud/singularity/modulation.h>
 
+ImplementReflectionX(ork::audio::singularity::RecursivePitchShifterData, "DspFxPitchShifterRecursive");
+
 namespace ork::audio::singularity {
+
+void RecursivePitchShifterData::describeX(class_t* clazz) {}
 
 ///////////////////////////////////////////////////////////////////////////////
 

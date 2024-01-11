@@ -365,7 +365,7 @@ class SingulTestApp(object):
           track = sequence.createTrack(prgname)
           track.program = prg
           track.outputbus = self.synth.programbus
-          clip = track.createEventClipAtTimeStamp(prgname,timestamp(0,0,0),timestamp(16,0,0))
+          clip = track.createEventClipAtTimeStamp(prgname,timestamp(0,0,0),timestamp(64,0,0))
 
           midi_path = singularity.baseDataPath()/"midifiles"
           midiToSingularitySequence(

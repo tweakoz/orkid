@@ -47,7 +47,7 @@ class HybridApp(SingulTestApp):
     newprog.merge(krz_bank.programByName("Waterflute"))
     newprog.merge(cz1_bank.programByName("Bells and Chimes"))
     newprog.merge(cz1_bank.programByName("Delayed Pad"))
-    ####
+    ############################
     if True:
       def override(lid,bus,gain,coarse,kt):
          L = newprog.layer(lid)
@@ -64,15 +64,22 @@ class HybridApp(SingulTestApp):
       override(2,"aux2",0,-12,0)
       override(3,"aux4",18,0,0)
     ############################
+    newlyr = newprog.newLayer()
+    newstg = newlyr.appendStage("TESTX")
+    ioc = newstg.ioconfig
+    ioc.inputs = [0]
+    ioc.outputs = [0]
+    ampblock = newstg.appendDspBlock("DspAmpAdaptive","amp1")
+    ############################
     self.soundbank = self.new_soundbank
     ############################
     # hook up aux4 bus to oscope and spectra
     ############################
-    self.aux4_source = self.aux4bus.createScopeSource()
-    self.mainbus_source.disconnect(self.oscope_sink)
-    self.mainbus_source.disconnect(self.spectra_sink)
-    self.aux4_source.connect(self.oscope_sink)
-    self.aux4_source.connect(self.spectra_sink)
+    #self.aux4_source = self.aux4bus.createScopeSource()
+    #self.mainbus_source.disconnect(self.oscope_sink)
+    #self.mainbus_source.disconnect(self.spectra_sink)
+    #self.aux4_source.connect(self.oscope_sink)
+    #self.aux4_source.connect(self.spectra_sink)
     ############################
     ok_list = [
       "HYBRID1",

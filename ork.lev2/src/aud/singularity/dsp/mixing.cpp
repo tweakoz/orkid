@@ -17,10 +17,13 @@
 #include <iomanip> // For std::setw and std::setprecision
 
 ImplementReflectionX(ork::audio::singularity::MonoInStereoOutData, "SynMonoInStereoOut");
+ImplementReflectionX(ork::audio::singularity::StereoEnhancerData, "DspFxMixStereoEnhancer");
+ImplementReflectionX(ork::audio::singularity::Sum2Data, "DspFxMixSum2");
 
 namespace ork::audio::singularity {
 
 ///////////////////////////////////////////////////////////////////////////////
+void Sum2Data::describeX(class_t* clazz) {}
 Sum2Data::Sum2Data(std::string name)
     : DspBlockData(name) {
   _blocktype = "SUM2";
@@ -104,6 +107,8 @@ void MonoInStereoOut::doKeyOn(const KeyOnInfo& koi) // final
   _panbase = LD->_channelPans[chan];
 }
 ///////////////////////////////////////////////////////////////////////////////
+
+void StereoEnhancerData::describeX(class_t* clazz) {}
 
 StereoEnhancerData::StereoEnhancerData(std::string name)
     : DspBlockData(name) {

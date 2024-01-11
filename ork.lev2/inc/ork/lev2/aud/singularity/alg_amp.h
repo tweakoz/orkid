@@ -14,7 +14,8 @@ namespace ork::audio::singularity {
 // amp blocks
 ///////////////////////////////////////////////////////////////////////////////
 struct AMP_ADAPTIVE_DATA : public DspBlockData {
-  AMP_ADAPTIVE_DATA(std::string name);
+  DeclareConcreteX(AMP_ADAPTIVE_DATA,DspBlockData);
+  AMP_ADAPTIVE_DATA(std::string name="DspAmpAdaptive");
   dspblk_ptr_t createInstance() const override;
 };
 struct AMP_ADAPTIVE : public DspBlock {
@@ -25,7 +26,8 @@ struct AMP_ADAPTIVE : public DspBlock {
   float _filt;
 };
 struct AMP_MONOIO_DATA : public DspBlockData {
-  AMP_MONOIO_DATA(std::string name);
+  DeclareConcreteX(AMP_MONOIO_DATA,DspBlockData);
+  AMP_MONOIO_DATA(std::string name="DspAmpMono");
   dspblk_ptr_t createInstance() const override;
 };
 struct AMP_MONOIO : public DspBlock {
@@ -37,7 +39,8 @@ struct AMP_MONOIO : public DspBlock {
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct PLUSAMP_DATA : public DspBlockData {
-  PLUSAMP_DATA(std::string name);
+  DeclareConcreteX(PLUSAMP_DATA,DspBlockData);
+  PLUSAMP_DATA(std::string name="DspAmpPlus");
   dspblk_ptr_t createInstance() const override;
 };
 struct PLUSAMP : public DspBlock {
@@ -50,7 +53,8 @@ struct PLUSAMP : public DspBlock {
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct XAMP_DATA : public DspBlockData {
-  XAMP_DATA(std::string name);
+  DeclareConcreteX(XAMP_DATA,DspBlockData);
+  XAMP_DATA(std::string name="DspAmpX");
   dspblk_ptr_t createInstance() const override;
 };
 struct XAMP : public DspBlock {
@@ -63,7 +67,8 @@ struct XAMP : public DspBlock {
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct STEREO_GAIN_DATA : public DspBlockData {
-  STEREO_GAIN_DATA(std::string name);
+  DeclareConcreteX(STEREO_GAIN_DATA,DspBlockData);
+  STEREO_GAIN_DATA(std::string name="DspAmpStereoGain");
   dspblk_ptr_t createInstance() const override;
 };
 struct STEREO_GAIN : public DspBlock {
@@ -74,7 +79,8 @@ struct STEREO_GAIN : public DspBlock {
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct GAIN_DATA : public DspBlockData {
-  GAIN_DATA(std::string name);
+  DeclareConcreteX(GAIN_DATA,DspBlockData);
+  GAIN_DATA(std::string name="DspAmpMonoGain");
   dspblk_ptr_t createInstance() const override;
 };
 struct GAIN : public DspBlock {
@@ -85,7 +91,8 @@ struct GAIN : public DspBlock {
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct BANGAMP_DATA : public DspBlockData {
-  BANGAMP_DATA(std::string name);
+  DeclareConcreteX(BANGAMP_DATA,DspBlockData);
+  BANGAMP_DATA(std::string name="DspAmpBang");
   dspblk_ptr_t createInstance() const override;
 };
 struct BANGAMP : public DspBlock {
@@ -97,7 +104,8 @@ struct BANGAMP : public DspBlock {
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct AMPU_AMPL_DATA : public DspBlockData {
-  AMPU_AMPL_DATA(std::string name);
+  DeclareConcreteX(AMPU_AMPL_DATA,DspBlockData);
+  AMPU_AMPL_DATA(std::string name="DspAmpUL");
   dspblk_ptr_t createInstance() const override;
 };
 struct AMPU_AMPL : public DspBlock {
@@ -110,7 +118,8 @@ struct AMPU_AMPL : public DspBlock {
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct BAL_AMP_DATA : public DspBlockData {
-  BAL_AMP_DATA(std::string name);
+  DeclareConcreteX(BAL_AMP_DATA,DspBlockData);
+  BAL_AMP_DATA(std::string name="DspAmpBalance");
   dspblk_ptr_t createInstance() const override;
 };
 struct BAL_AMP : public DspBlock {
@@ -122,7 +131,8 @@ struct BAL_AMP : public DspBlock {
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct AMP_MOD_OSC_DATA : public DspBlockData {
-  AMP_MOD_OSC_DATA(std::string name);
+  DeclareConcreteX(AMP_MOD_OSC_DATA,DspBlockData);
+  AMP_MOD_OSC_DATA(std::string name="DspAmpModOsc");
   dspblk_ptr_t createInstance() const override;
 };
 struct AMP_MOD_OSC : public DspBlock {
@@ -134,7 +144,8 @@ struct AMP_MOD_OSC : public DspBlock {
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct XGAIN_DATA : public DspBlockData {
-  XGAIN_DATA(std::string name);
+  DeclareConcreteX(XGAIN_DATA,DspBlockData);
+  XGAIN_DATA(std::string name="DspAmpXGain");
   dspblk_ptr_t createInstance() const override;
 };
 struct XGAIN : public DspBlock {
@@ -146,7 +157,8 @@ struct XGAIN : public DspBlock {
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct XFADE_DATA : public DspBlockData {
-  XFADE_DATA(std::string name);
+  DeclareConcreteX(XFADE_DATA,DspBlockData);
+  XFADE_DATA(std::string name="DspAmpXFade");
   dspblk_ptr_t createInstance() const override;
 };
 struct XFADE : public DspBlock {
@@ -158,7 +170,8 @@ struct XFADE : public DspBlock {
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct PANNER_DATA : public DspBlockData {
-  PANNER_DATA(std::string name);
+  DeclareConcreteX(PANNER_DATA,DspBlockData);
+  PANNER_DATA(std::string name="DspAmpPanner");
   dspblk_ptr_t createInstance() const override;
 };
 struct PANNER : public DspBlock {

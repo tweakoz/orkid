@@ -6,6 +6,10 @@
 ////////////////////////////////////////////////////////////////
 
 #include "pyext.h"
+#include <ork/rtti/Class.h>
+#include <ork/rtti/Category.h>
+#include <ork/rtti/downcast.h>
+#include <ork/object/Object.h>
 #include <ork/lev2/aud/audiodevice.h>
 #include <ork/lev2/aud/singularity/cz1.h>
 #include <ork/lev2/aud/singularity/krzdata.h>
@@ -194,6 +198,27 @@ void pyinit_aud_singularity_datas(py::module& singmodule) {
               [](dspstagedata_ptr_t stgdata) -> std::string { //
                 return stgdata->_name;
               })
+          .def_property_readonly("ioconfig",[](dspstagedata_ptr_t stgdata) -> ioconfig_ptr_t {
+              return stgdata->_ioconfig;
+          })
+          .def("appendDspBlock",[](dspstagedata_ptr_t stgdata, std::string classname, std::string blockname) -> dspblkdata_ptr_t {
+
+            auto base_clazz    = rtti::Class::FindClass("SynDspBlock");
+            auto base_objclazz = dynamic_cast<object::ObjectClass*>(base_clazz);
+            auto clazz    = rtti::Class::FindClass(classname);
+            auto objclazz = dynamic_cast<object::ObjectClass*>(clazz);
+            OrkAssert(objclazz);
+            if(objclazz->Parent()!=base_objclazz){
+              printf("appendDspBlock<%s> objclazz<%p> base_objclazz<%p> parent mismatch", classname.c_str(), objclazz, base_objclazz );
+              OrkAssert(false);
+            }
+            printf("appendDspBlock objclazz<%p>", objclazz );
+            const auto& description = objclazz->Description();
+            auto instance = objclazz->createShared();
+            auto rval = std::dynamic_pointer_cast<DspBlockData>(instance);
+            OrkAssert(rval!=nullptr);
+            return rval;
+          })
           .def("dspblock", [](dspstagedata_ptr_t stgdata, int index) -> dspblkdata_ptr_t { return stgdata->_blockdatas[index]; })
           .def("dump", [](dspstagedata_ptr_t stgdata) { stgdata->dump(); });
   type_codec->registerStdCodec<dspstagedata_ptr_t>(stgdata_type);
@@ -203,6 +228,11 @@ void pyinit_aud_singularity_datas(py::module& singmodule) {
                             "stage",
                             [](lyrdata_ptr_t ldata, std::string named) -> dspstagedata_ptr_t { //
                               return ldata->stageByName(named);
+                            })
+                        .def(
+                            "appendStage",
+                            [](lyrdata_ptr_t ldata, std::string named) -> dspstagedata_ptr_t { //
+                              return ldata->appendStage(named);
                             })
                         .def(
                             "clone",
@@ -251,6 +281,11 @@ void pyinit_aud_singularity_datas(py::module& singmodule) {
                             "layer",
                             [](prgdata_ptr_t pdata, size_t index) -> lyrdata_ptr_t { //
                               return pdata->getLayer(index);
+                            })
+                        .def(
+                            "newLayer",
+                            [](prgdata_ptr_t pdata) -> lyrdata_ptr_t { //
+                              return pdata->newLayer();
                             })
                         .def(
                             "forkLayer",

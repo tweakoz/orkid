@@ -20,7 +20,8 @@ namespace ork::audio::singularity {
 
 ///////////////////////////////////////////////////////////////////////////////
 struct Sum2Data final : public DspBlockData {
-  Sum2Data(std::string name);
+  DeclareConcreteX(Sum2Data,DspBlockData);
+  Sum2Data(std::string name="X");
   dspblk_ptr_t createInstance() const override;
 };
 
@@ -31,8 +32,8 @@ struct SUM2 : public DspBlock {
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct MonoInStereoOutData : public DspBlockData {
-  DeclareConcreteX(MonoInStereoOutData, DspBlockData);
-  MonoInStereoOutData(std::string name = "");
+  DeclareConcreteX(MonoInStereoOutData,DspBlockData);
+  MonoInStereoOutData(std::string name="X");
   dspblk_ptr_t createInstance() const override;
 };
 struct MonoInStereoOut : public DspBlock {
@@ -45,7 +46,8 @@ struct MonoInStereoOut : public DspBlock {
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct StereoEnhancerData : public DspBlockData {
-  StereoEnhancerData(std::string name);
+  DeclareConcreteX(StereoEnhancerData,DspBlockData);
+  StereoEnhancerData(std::string name="X");
   dspblk_ptr_t createInstance() const override;
 };
 struct StereoEnhancer : public DspBlock {
@@ -94,7 +96,8 @@ struct DelayOutput {
 
 ///////////////////////////////////////////////////////////////////////////////
 struct PitchShifterData : public DspBlockData {
-  PitchShifterData(std::string name);
+  DeclareConcreteX(PitchShifterData,DspBlockData);
+  PitchShifterData(std::string name="X");
   dspblk_ptr_t createInstance() const override;
 };
 struct PitchShifter : public DspBlock {
@@ -124,7 +127,8 @@ struct PitchShifter : public DspBlock {
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct RecursivePitchShifterData : public DspBlockData {
-  RecursivePitchShifterData(std::string name,float feedback);
+  DeclareConcreteX(RecursivePitchShifterData,DspBlockData);
+  RecursivePitchShifterData(std::string name="X",float feedback=0.0f);
   dspblk_ptr_t createInstance() const override;
   float _feedback;
 };
@@ -159,7 +163,8 @@ struct RecursivePitchShifter : public DspBlock {
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct StereoDynamicEchoData : public DspBlockData {
-  StereoDynamicEchoData(std::string name);
+  DeclareConcreteX(StereoDynamicEchoData,DspBlockData);
+  StereoDynamicEchoData(std::string name="X");
   dspblk_ptr_t createInstance() const override;
 };
 struct StereoDynamicEcho : public DspBlock {
@@ -174,7 +179,8 @@ struct StereoDynamicEcho : public DspBlock {
 // Feedback Delay Network Reverb (4 nodes)
 ///////////////////////////////////////////////////////////////////////////////
 struct Fdn4ReverbData : public DspBlockData {
-  Fdn4ReverbData(std::string name);
+  DeclareConcreteX(Fdn4ReverbData,DspBlockData);
+  Fdn4ReverbData(std::string name="X");
   dspblk_ptr_t createInstance() const override;
   float _time_base  = 0.01 ; // sec
   float _time_scale = 0.031; // sec
@@ -219,7 +225,8 @@ struct Fdn4Reverb : public DspBlock {
 // Feedback Delay Network Reverb (4 nodes) with rotation matrix
 ///////////////////////////////////////////////////////////////////////////////
 struct Fdn4ReverbXData : public DspBlockData {
-  Fdn4ReverbXData(std::string name);
+  DeclareConcreteX(Fdn4ReverbXData,DspBlockData);
+  Fdn4ReverbXData(std::string name="X");
   dspblk_ptr_t createInstance() const override;
   float _tscale = 1.0f;
 
@@ -315,7 +322,8 @@ struct AllpassDelay {
 };
 
 struct Fdn8ReverbData : public DspBlockData {
-  Fdn8ReverbData(std::string name);
+  DeclareConcreteX(Fdn8ReverbData,DspBlockData);
+  Fdn8ReverbData(std::string name="X");
   dspblk_ptr_t createInstance() const override;
   float _time_base  = 0.01 ; // sec
   float _input_gain = 0.75;  // linear
@@ -399,7 +407,8 @@ struct Fdn8Reverb : public DspBlock {
   vec8f _nodenorm;
 };
 struct TestReverbData : public DspBlockData {
-  TestReverbData(std::string name);
+  DeclareConcreteX(TestReverbData,DspBlockData);
+  TestReverbData(std::string name="X");
   dspblk_ptr_t createInstance() const override;
 };
 struct TestReverb : public DspBlock {

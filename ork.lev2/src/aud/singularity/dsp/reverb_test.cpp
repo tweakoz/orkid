@@ -15,9 +15,13 @@
 #include <string>
 #include <iomanip> // For std::setw and std::setprecision
 
+ImplementReflectionX(ork::audio::singularity::TestReverbData, "DspFxReverbTest");
+
 namespace ork::audio::singularity {
 
 ///////////////////////////////////////////////////////////////////////////////
+
+void TestReverbData::describeX(class_t* clazz) {}
 
 TestReverbData::TestReverbData(std::string name){
 

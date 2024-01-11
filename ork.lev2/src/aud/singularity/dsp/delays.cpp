@@ -12,9 +12,13 @@
 #include <ork/lev2/aud/singularity/modulation.h>
 #include <ork/lev2/aud/singularity/alg_pan.inl>
 
+ImplementReflectionX(ork::audio::singularity::StereoDynamicEchoData, "DspFxDelayStereoDynamicEcho");
+
 namespace ork::audio::singularity {
 
 ///////////////////////////////////////////////////////////////////////////////
+
+void StereoDynamicEchoData::describeX(class_t* clazz) {}
 
 StereoDynamicEchoData::StereoDynamicEchoData(std::string name)
     : DspBlockData(name) {

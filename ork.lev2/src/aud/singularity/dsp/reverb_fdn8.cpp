@@ -15,7 +15,11 @@
 #include <string>
 #include <iomanip> // For std::setw and std::setprecision
 
+ImplementReflectionX(ork::audio::singularity::Fdn8ReverbData, "DspFxReverbFDN8");
+
 namespace ork::audio::singularity {
+
+void Fdn8ReverbData::describeX(class_t* clazz) {}
 
 ///////////////////////////////////////////////////////////////////////////////
 

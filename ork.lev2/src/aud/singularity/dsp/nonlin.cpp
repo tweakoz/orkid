@@ -10,12 +10,20 @@
 #include <ork/lev2/aud/singularity/filters.h>
 #include <ork/lev2/aud/singularity/alg_nonlin.h>
 
+ImplementReflectionX(ork::audio::singularity::SHAPER_DATA, "DspNonlinShaper");
+ImplementReflectionX(ork::audio::singularity::SHAPE2_DATA, "DspNonlinShaper2");
+ImplementReflectionX(ork::audio::singularity::TWOPARAM_SHAPER_DATA, "DspNonlinShaper2Param");
+ImplementReflectionX(ork::audio::singularity::WrapData, "DspNonlinWrap");
+ImplementReflectionX(ork::audio::singularity::DistortionData, "DspNonlinDistortion");
+
 namespace ork::audio::singularity {
 
 float shaper(float inp, float adj);
 float wrap(float inp, float adj);
 
 ///////////////////////////////////////////////////////////////////////////////
+
+void SHAPER_DATA::describeX(class_t* clazz){}
 
 SHAPER_DATA::SHAPER_DATA(std::string name)
     : DspBlockData(name) {
@@ -51,6 +59,8 @@ void SHAPER::compute(DspBuffer& dspbuf) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void SHAPE2_DATA::describeX(class_t* clazz){}
+
 SHAPE2_DATA::SHAPE2_DATA(std::string name)
     : DspBlockData(name) {
   _blocktype = "SHAPE2";
@@ -82,6 +92,8 @@ void SHAPE2::compute(DspBuffer& dspbuf) // final
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+void TWOPARAM_SHAPER_DATA::describeX(class_t* clazz){}
 
 TWOPARAM_SHAPER_DATA::TWOPARAM_SHAPER_DATA(std::string name)
     : DspBlockData(name) {
@@ -149,6 +161,8 @@ void TWOPARAM_SHAPER::compute(DspBuffer& dspbuf) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void WrapData::describeX(class_t* clazz){}
+
 WrapData::WrapData(std::string name)
     : DspBlockData(name) {
   _blocktype = "WRAP";
@@ -178,6 +192,9 @@ void Wrap::compute(DspBuffer& dspbuf) // final
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+void DistortionData::describeX(class_t* clazz){}
+
 DistortionData::DistortionData(std::string name)
     : DspBlockData(name) {
   _blocktype = "DIST";
