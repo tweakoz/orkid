@@ -42,6 +42,19 @@ void pyinit_reflection(py::module& module_core) {
         auto topnode    = ser.serializeRoot(obj);
         auto resultdata = ser.output();
         return resultdata.c_str();
+    })
+    .def_property_readonly("properties", [type_codec](object_ptr_t obj) -> py::dict {
+      py::dict rval;
+      auto clazz = obj->GetClass();
+      auto objclazz = dynamic_cast<object::ObjectClass*>(clazz);
+      auto& desc = objclazz->Description();
+      for( auto p : desc.properties() ){
+        
+        auto pname = p.second->_name;
+        rval[type_codec->encode(pname)] = type_codec->encode(1);
+
+      }
+      return rval;
     });
   type_codec->registerStdCodec<object_ptr_t>(objtype_t);
   /////////////////////////////////////////////////////////////////////////////////

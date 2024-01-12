@@ -69,7 +69,11 @@ class HybridApp(SingulTestApp):
     ioc = newstg.ioconfig
     ioc.inputs = [0]
     ioc.outputs = [0]
-    ampblock = newstg.appendDspBlock("DspAmpAdaptive","amp1")
+    ampblock = newstg.appendDspBlock("AmpAdaptive","amp1")
+    print(ampblock)
+    print(ampblock.params)
+    print(ampblock.properties)
+    assert(False)
     ############################
     self.soundbank = self.new_soundbank
     ############################

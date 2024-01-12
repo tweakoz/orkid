@@ -162,11 +162,19 @@ void pyinit_aud_singularity_datas(py::module& singmodule) {
                                      } else {
                                         OrkAssert(false);
                                      }
+                                   })
+                                   .def("__repr__",[](dspparam_ptr_t param)->std::string{
+                                      auto str = FormatString("dspparam<%s> ", param->_name.c_str() );
+                                      str += FormatString("coarse: %g ", param->_coarse );
+                                      str += FormatString("fine: %g ", param->_fine );
+                                      str += FormatString("units: %s ", param->_units.c_str() );
+                                      str += FormatString("eval: %s", param->_evaluatorid.c_str() );
+                                      return str;
                                    });
   type_codec->registerStdCodec<dspparam_ptr_t>(dspparamdata_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto dspdata_type =
-      py::class_<DspBlockData, dspblkdata_ptr_t>(singmodule, "DspBlockData") //
+      py::class_<DspBlockData, ::ork::Object, dspblkdata_ptr_t>(singmodule, "DspBlockData") //
           .def_property_readonly(
               "name",
               [](dspblkdata_ptr_t blkdata) -> std::string { //
@@ -176,6 +184,16 @@ void pyinit_aud_singularity_datas(py::module& singmodule) {
           .def(
               "paramByName",
               [](dspblkdata_ptr_t blkdata, std::string named) -> dspparam_ptr_t { return blkdata->paramByName(named); })
+          .def_property_readonly(
+              "params",
+              [type_codec](dspblkdata_ptr_t blkdata) -> py::dict { //
+                  py::dict rval;
+                  for (auto par : blkdata->_paramd) {
+                    auto name                      = par->_name;
+                    rval[type_codec->encode(name)] = type_codec->encode(par);
+                  }
+                  return rval;
+              })
           .def_property(
               "bypass",
               [](dspblkdata_ptr_t blkdata) -> bool { //
@@ -183,6 +201,14 @@ void pyinit_aud_singularity_datas(py::module& singmodule) {
               },
               [](dspblkdata_ptr_t blkdata, bool val) { //
                 blkdata->_bypass = val;
+              })
+              .def("__repr__",[](dspblkdata_ptr_t blkdata)->std::string{
+                auto str = FormatString("dspblock<%s> ", blkdata->_name.c_str() );
+                auto clazz = blkdata->GetClass();
+                auto& desc = clazz->Description();
+                auto clazzname = clazz->Name();
+                str += FormatString("class: %s", clazzname.c_str() );
+                return str;
               });
   type_codec->registerStdCodec<dspblkdata_ptr_t>(dspdata_type);
   /////////////////////////////////////////////////////////////////////////////////
@@ -205,7 +231,7 @@ void pyinit_aud_singularity_datas(py::module& singmodule) {
 
             auto base_clazz    = rtti::Class::FindClass("SynDspBlock");
             auto base_objclazz = dynamic_cast<object::ObjectClass*>(base_clazz);
-            auto clazz    = rtti::Class::FindClass(classname);
+            auto clazz    = rtti::Class::FindClass("Dsp"+classname);
             auto objclazz = dynamic_cast<object::ObjectClass*>(clazz);
             OrkAssert(objclazz);
             if(objclazz->Parent()!=base_objclazz){
