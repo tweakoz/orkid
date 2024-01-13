@@ -55,7 +55,7 @@ struct PMXData final : public DspBlockData {
   static constexpr int kmaxmodulators = 8;
   using inpchanarray_t                = int[kmaxmodulators];
 
-  PMXData(std::string name = "");
+  PMXData(std::string name = "X");
   dspblk_ptr_t createInstance() const override;
   void addPmInput(int dspchannel);
 

@@ -17,8 +17,8 @@
 #include <ork/reflect/properties/registerX.inl>
 //#include <ork/reflect/properties/DirectTyped.hpp>
 
-ImplementReflectionX(ork::audio::singularity::PMXData, "SynPMX");
-ImplementReflectionX(ork::audio::singularity::PMXMixData, "SynPMXMixer");
+ImplementReflectionX(ork::audio::singularity::PMXData, "DspOscPMX");
+ImplementReflectionX(ork::audio::singularity::PMXMixData, "DspOscPMX|Mixer");
 
 ////////////////////////////////////////////////////////////////////////////////
 namespace ork::audio::singularity {
@@ -56,9 +56,9 @@ PMXData::PMXData(std::string name)
 
   auto amp = addParam("amp");
   amp->useDefaultEvaluator(); // amp
-  amp->_units = "0-1";
+  amp->_units = "dB";
   auto fbl    = addParam("feedback");
-  fbl->_units = "0-1";
+  fbl->_units = "amount";
   fbl->useDefaultEvaluator(); // feedback
 }
 ///////////////////////////////////////////////////////////////////////////////

@@ -65,14 +65,16 @@ class HybridApp(SingulTestApp):
       override(3,"aux4",18,0,0)
     ############################
     newlyr = newprog.newLayer()
-    newstg = newlyr.appendStage("TESTX")
+    newstg = newlyr.appendStage("DSP")
     ioc = newstg.ioconfig
     ioc.inputs = [0]
     ioc.outputs = [0]
-    ampblock = newstg.appendDspBlock("AmpAdaptive","amp1")
-    print(ampblock)
-    print(ampblock.params)
-    print(ampblock.properties)
+    pmxblock = newstg.appendDspBlock("OscPMX","pmx")
+    pmxblock.properties.Waveform = 3
+    pmxblock.properties.InputChannel = 2
+    print(pmxblock)
+    print(pmxblock.params)
+    print(pmxblock.properties.dict)
     assert(False)
     ############################
     self.soundbank = self.new_soundbank

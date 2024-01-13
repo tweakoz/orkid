@@ -103,14 +103,13 @@ void AMP_ADAPTIVE::compute(DspBuffer& dspbuf) { // final
       OrkAssert(false);
   }
   //////////////////////////////////
-  _fval[0] = _filt;
+  _fval[0] = 0.0f;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void AMP_ADAPTIVE::doKeyOn(const KeyOnInfo& koi) // final
 {
-  _filt   = 0.0f;
   auto LD = koi._layer->_layerdata;
 }
 
@@ -146,23 +145,20 @@ void AMP_MONOIO::compute(DspBuffer& dspbuf) { // final
   float ampenv = _layer->_ampenvgain;
   //////////////////////////////////
   for (int i = 0; i < inumframes; i++) {
-    //_filt      = 0.995 * _filt + 0.005 * paramgain;
-    float linG = paramgain; // decibel_to_linear_amp_ratio(_filt);
+    float linG = paramgain; 
     linG *= laychgain;
     linG *= ampenv;
     float inp     = inputchan[i];
     outputchan[i] = clip_float(inp * linG * _dbd->_inputPad, kminclip, kmaxclip);
-    // printf("inp<%g>\n", inp);
   }
   //////////////////////////////////
-  _fval[0] = _filt;
+  _fval[0] = 0.0f;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void AMP_MONOIO::doKeyOn(const KeyOnInfo& koi) // final
 {
-  _filt   = 0.0f;
   auto LD = koi._layer->_layerdata;
 }
 

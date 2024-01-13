@@ -12,7 +12,8 @@
 namespace ork::audio::singularity {
 
 struct RingModData final : public DspBlockData {
-  RingModData(std::string name);
+  DeclareConcreteX(RingModData,DspBlockData);
+  RingModData(std::string name="X");
   dspblk_ptr_t createInstance() const override;
 };
 struct RingModSumAData final : public DspBlockData {

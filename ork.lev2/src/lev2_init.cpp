@@ -51,6 +51,7 @@
 #include <ork/lev2/aud/singularity/dsp_pmx.h>
 #include <ork/lev2/aud/singularity/dsp_mix.h>
 #include <ork/lev2/aud/singularity/alg_amp.h>
+#include <ork/lev2/aud/singularity/dsp_ringmod.h>
 #include <ork/lev2/aud/singularity/alg_eq.h>
 #include <ork/lev2/aud/singularity/alg_filters.h>
 #include <ork/lev2/aud/singularity/alg_nonlin.h>
@@ -292,6 +293,7 @@ struct ClassToucher {
     RegisterClassX(audio::singularity::XGAIN_DATA);
     RegisterClassX(audio::singularity::XFADE_DATA);
     RegisterClassX(audio::singularity::PANNER_DATA);
+    RegisterClassX(audio::singularity::RingModData);
 
     RegisterClassX(audio::singularity::STEEP_RESONANT_BASS_DATA);
     RegisterClassX(audio::singularity::PARABASS_DATA);

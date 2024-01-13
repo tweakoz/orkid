@@ -57,6 +57,12 @@ py::object PyCodecImpl::encode(const varval_t& val) const {
       return py::str(as_str.value());
     } else if (auto as_np = val.tryAs<std::nullptr_t>()) {
       return py::none();
+    } else if (auto as_intarray = val.tryAs<std::vector<int>>()) {
+      py::list pylist;
+      for (auto item : as_intarray.value()) {
+        pylist.append(py::int_(item));
+      }
+      return pylist;
     } else if (auto as_vmap = val.tryAs<varmap::VarMap>()) {
       return py::none();
     } else {

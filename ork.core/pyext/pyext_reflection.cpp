@@ -30,6 +30,122 @@ void pyinit_reflection(py::module& module_core) {
       });
   type_codec->registerStdCodec<rtti::castable_ptr_t>(icastable_type_t);
   /////////////////////////////////////////////////////////////////////////////////
+  struct PropertiesProxy {
+    PropertiesProxy(object_ptr_t obj,ork::python::typecodec_ptr_t codec)
+        : _object(obj)
+        , _codec(codec) {
+    }
+    py::object decodeProperty(const std::string& key) const {
+      auto clazz = _object->GetClass();
+      auto objclazz = dynamic_cast<object::ObjectClass*>(clazz);
+      auto& desc = objclazz->Description();
+      for( auto pitem : desc.properties() ){
+        auto refprop = pitem.second;
+        auto propname = refprop->_name;
+        if(propname==key){
+          using ityped_int = reflect::ITyped<int>;
+          using ityped_int_array = reflect::ITypedArray<int>;
+          using ityped_float = reflect::ITyped<float>;
+          using ityped_string = reflect::ITyped<std::string>;
+          varmap::var_t variant;
+          if( auto as_int = dynamic_cast<ityped_int*>(refprop) ){
+            int intvalue = 0;
+            as_int->get(intvalue,_object);
+            variant.set<int>(intvalue);
+            return _codec->encode(variant);
+          }
+          else if( auto as_intarray = dynamic_cast<ityped_int_array*>(refprop) ){
+            size_t count = as_intarray->count(_object);
+            std::vector<int> outints(count);
+            for( size_t i=0; i<count; i++ ){
+              int intvalue = 0;
+              as_intarray->get(intvalue,_object,i);
+              outints[i] = intvalue;
+            }
+            variant.set<std::vector<int>>(outints);
+            return _codec->encode(variant);
+          }
+          else if( auto as_float = dynamic_cast<ityped_float*>(refprop) ){
+            float floatvalue = 0;
+            as_float->get(floatvalue,_object);
+            variant.set<float>(floatvalue);
+            return _codec->encode(variant);
+          }
+          else if( auto as_str = dynamic_cast<ityped_string*>(refprop) ){
+            std::string strvalue;
+            as_str->get(strvalue,_object);
+            variant.set<std::string>(strvalue);
+            return _codec->encode(variant);
+          }
+          else{
+            printf( "reflection class<%s> prop<%s> unhandled type>\n", clazz->Name().c_str(), propname.c_str());
+            OrkAssert(false);
+          }
+        }
+      }
+      return py::none();
+    }
+    object_ptr_t _object;
+    ork::python::typecodec_ptr_t _codec;
+  };
+  using propsproxy_ptr_t = std::shared_ptr<PropertiesProxy>;
+  auto propsproxy_type   =                                                        //
+      py::class_<PropertiesProxy, propsproxy_ptr_t>(module_core, "PropertiesProxy") //
+          .def(
+              "__getattr__",                                                           //
+              [](propsproxy_ptr_t proxy, const std::string& key) -> py::object { //
+                return proxy->decodeProperty(key);
+              })
+          .def(
+              "__setattr__",                                                           //
+              [](propsproxy_ptr_t proxy, const std::string& key, py::object value) { //
+                auto obj = proxy->_object;
+                auto clazz = obj->GetClass();
+                auto objclazz = dynamic_cast<object::ObjectClass*>(clazz);
+                auto& desc = objclazz->Description();
+                for( auto pitem : desc.properties() ){
+                  auto refprop = pitem.second;
+                  auto propname = refprop->_name;
+                  if(propname==key){
+                    auto variant = proxy->_codec->decode(value);
+                    using ityped_int = reflect::ITyped<int>;
+                    using ityped_float = reflect::ITyped<float>;
+                    using ityped_string = reflect::ITyped<std::string>;
+                    if( auto as_int = dynamic_cast<ityped_int*>(refprop) ){
+                      as_int->set(variant.get<int>(),obj);
+                      return;
+                    }
+                    else if( auto as_float = dynamic_cast<ityped_float*>(refprop) ){
+                      as_float->set(variant.get<float>(),obj);
+                      return;
+                    }
+                    else if( auto as_str = dynamic_cast<ityped_string*>(refprop) ){
+                      as_str->set(variant.get<std::string>(),obj);
+                      return;
+                    }
+                    else{
+                      printf( "reflection class<%s> prop<%s> unhandled type>\n", clazz->Name().c_str(), propname.c_str());
+                      OrkAssert(false);
+                    }
+                                        
+                  }
+                }
+                OrkAssert(false);
+              })
+          .def_property_readonly("dict", [](propsproxy_ptr_t proxy) -> py::dict {
+            py::dict rval;
+            auto obj = proxy->_object;
+            auto clazz = obj->GetClass();
+            auto objclazz = dynamic_cast<object::ObjectClass*>(clazz);
+            auto& desc = objclazz->Description();
+            for( auto p : desc.properties() ){
+              auto key = p.second->_name;
+              rval[proxy->_codec->encode(key)] = proxy->decodeProperty(key);
+            }
+            return rval;
+          });
+  type_codec->registerStdCodec<propsproxy_ptr_t>(propsproxy_type);
+  /////////////////////////////////////////////////////////////////////////////////
   auto objtype_t = py::class_<Object,rtti::ICastable,object_ptr_t>(module_core, "Object")
     .def_static("deserializeJson", [](std::string json) -> object_ptr_t {
         reflect::serdes::JsonDeserializer deser(json.c_str());
@@ -43,18 +159,8 @@ void pyinit_reflection(py::module& module_core) {
         auto resultdata = ser.output();
         return resultdata.c_str();
     })
-    .def_property_readonly("properties", [type_codec](object_ptr_t obj) -> py::dict {
-      py::dict rval;
-      auto clazz = obj->GetClass();
-      auto objclazz = dynamic_cast<object::ObjectClass*>(clazz);
-      auto& desc = objclazz->Description();
-      for( auto p : desc.properties() ){
-        
-        auto pname = p.second->_name;
-        rval[type_codec->encode(pname)] = type_codec->encode(1);
-
-      }
-      return rval;
+    .def_property_readonly("properties", [type_codec](object_ptr_t obj) -> propsproxy_ptr_t {
+      return std::make_shared<PropertiesProxy>(obj,type_codec);
     });
   type_codec->registerStdCodec<object_ptr_t>(objtype_t);
   /////////////////////////////////////////////////////////////////////////////////

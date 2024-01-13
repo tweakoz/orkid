@@ -23,7 +23,6 @@ struct AMP_ADAPTIVE : public DspBlock {
   AMP_ADAPTIVE(const DspBlockData* dbd);
   void compute(DspBuffer& dspbuf) final;
   void doKeyOn(const KeyOnInfo& koi) final;
-  float _filt;
 };
 struct AMP_MONOIO_DATA : public DspBlockData {
   DeclareConcreteX(AMP_MONOIO_DATA,DspBlockData);
@@ -35,7 +34,6 @@ struct AMP_MONOIO : public DspBlock {
   AMP_MONOIO(const DspBlockData* dbd);
   void compute(DspBuffer& dspbuf) final;
   void doKeyOn(const KeyOnInfo& koi) final;
-  float _filt;
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct PLUSAMP_DATA : public DspBlockData {
