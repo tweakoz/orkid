@@ -42,12 +42,12 @@ TEST(Vector4CopyConstructor) {
   CHECK_CLOSE(4.0f, copy.w, MyEPSILON);
 }
 
-TEST(Vector4RGBAConstructor) {
-  fvec4 v(0xFF00FFFF);
-  CHECK_CLOSE(1.0f, v.x, MyEPSILON);
-  CHECK_CLOSE(0.0f, v.y, MyEPSILON);
-  CHECK_CLOSE(1.0f, v.z, MyEPSILON);
-  CHECK_CLOSE(1.0f, v.w, MyEPSILON);
+TEST(Vector4ScalarConstructor) {
+  fvec4 v(7);
+  CHECK_CLOSE(7.0f, v.x, MyEPSILON);
+  CHECK_CLOSE(7.0f, v.y, MyEPSILON);
+  CHECK_CLOSE(7.0f, v.z, MyEPSILON);
+  CHECK_CLOSE(7.0f, v.w, MyEPSILON);
 }
 
 TEST(Vector4RotateX) {

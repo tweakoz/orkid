@@ -8,7 +8,7 @@
 #include <ork/kernel/prop.h>
 #include <ork/kernel/opq.h>
 #include <ork/kernel/fixedstring.hpp>
-#include <ork/python/pycodec.h>
+#include <ork/python/pycodec.inl>
 #include <iostream>
 
 namespace py = pybind11;
@@ -57,6 +57,8 @@ py::object PyCodecImpl::encode(const varval_t& val) const {
       return py::str(as_str.value());
     } else if (auto as_np = val.tryAs<std::nullptr_t>()) {
       return py::none();
+    } else if (auto as_reflcodec = val.tryAs<refl_codec_adapter_ptr_t>()) {
+      return as_reflcodec.value()->encode();
     } else if (auto as_vmap = val.tryAs<varmap::VarMap>()) {
       return py::none();
     } else {
@@ -154,36 +156,6 @@ std::shared_ptr<TypeCodec> TypeCodec::instance() { // static
   };
   static auto _instance = std::make_shared<TypeCodecFactory>();
   return _instance;
-}
-//////////////////////////////////
-pybind11::object IntArrayPropertyCodec::encode( object_ptr_t obj, 
-                                                arrayprop_t* prop, 
-                                                typecodec_ptr_t codec){
-  pybind11::list pylist;
-  size_t count = prop->count(obj);
-  varmap::var_t variant;
-  for( size_t i=0; i<count; i++ ){
-    int value = 0;
-    prop->get(value,obj,i);
-    variant.set<int>(value);
-    pylist.append(pybind11::int_(value));
-  }
-  return pylist;
-}
-//////////////////////////////////
-pybind11::object FloatArrayPropertyCodec::encode( object_ptr_t obj, 
-                                                arrayprop_t* prop, 
-                                                typecodec_ptr_t codec){
-  pybind11::list pylist;
-  size_t count = prop->count(obj);
-  varmap::var_t variant;
-  for( size_t i=0; i<count; i++ ){
-    float value = 0.0f;
-    prop->get(value,obj,i);
-    variant.set<float>(value);
-    pylist.append(pybind11::float_(value));
-  }
-  return pylist;
 }
 
 } // namespace ork::python

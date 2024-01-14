@@ -13,7 +13,7 @@
 
 namespace ork { namespace reflect {
 
-using map_abstract_item_t = svar256_t;
+using map_abstract_item_t = svar128_t;
 using map_pair_t = std::pair<map_abstract_item_t,map_abstract_item_t>;
 using map_kvarray_t = std::vector<map_pair_t>;
 
