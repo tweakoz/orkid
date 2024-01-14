@@ -49,6 +49,7 @@ aout = a.createUniformFloatOutputPlug("outputX")
 binp = b.createUniformFloatXfInputPlug("inputX")
 graphdata.connect(binp,aout)
 
+
 #####################################################
 # generate execution topology
 #####################################################
@@ -74,6 +75,8 @@ graphinst.bindTopology(topo)
 updata = UpdateData()
 updata.absolutetime = 0
 updata.deltatime = 0.1
+
+print(graphdata.properties.dict)
 
 for i in range(10):
   graphinst.compute(updata)

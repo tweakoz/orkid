@@ -162,6 +162,7 @@ void GraphData::describeX(object::ObjectClass* clazz) {
 
   auto con_prop = new ConnectionsProperty();
   con_prop->annotate("editor.visible", false);
+  con_prop->annotate("python.visible", false);
   clazz->Description().addProperty("zzz_connections", con_prop);
 }
 ///////////////////////////////////////////////////////////////////////////////

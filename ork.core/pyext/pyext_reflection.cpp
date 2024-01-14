@@ -19,6 +19,7 @@ using ityped_int_array = ITypedArray<int>;
 using ityped_float_array = ITypedArray<float>;
 using iobject_array = IObjectArray;
 using iobject_map = IObjectMap;
+using sdobject_map = ITypedMap<std::string,ork::object_ptr_t>;
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork {
 //using namespace rtti;
@@ -51,8 +52,11 @@ void pyinit_reflection(py::module& module_core) {
       auto& desc = objclazz->Description();
       for( auto pitem : desc.properties() ){
         auto refprop = pitem.second;
+        auto annos = refprop->_annotations;
+        auto try_vis = refprop->typedAnnotation<bool>("python.visible");
+        bool is_visible = try_vis ? try_vis.value() : true;
         auto propname = refprop->_name;
-        if(propname==key){
+        if(propname==key and is_visible){
           varmap::var_t variant;
           if( auto as_int = dynamic_cast<ityped_int*>(refprop) ){
             int intvalue = 0;
@@ -101,9 +105,16 @@ void pyinit_reflection(py::module& module_core) {
           }
           else if( auto as_objmap = dynamic_cast<iobject_map*>(refprop) ){
             refl_codec_adapter_ptr_t adapter = //
-            std::make_shared<ObjectArrayCodecAdapter>( _object,//
-                                                       as_objarray, //
-                                                       _codec);
+            std::make_shared<ObjectMapCodecAdapter>( _object,//
+                                                     as_objmap, //
+                                                     _codec);
+            return _codec->encode(adapter);
+          }
+          else if( auto as_sdobjmap = dynamic_cast<sdobject_map*>(refprop) ){
+            refl_codec_adapter_ptr_t adapter = //
+            std::make_shared<SDObjectMapCodecAdapter>( _object,//
+                                                       as_sdobjmap, //
+                                                      _codec);
             return _codec->encode(adapter);
           }
           else{
@@ -165,8 +176,13 @@ void pyinit_reflection(py::module& module_core) {
             auto objclazz = dynamic_cast<object::ObjectClass*>(clazz);
             auto& desc = objclazz->Description();
             for( auto p : desc.properties() ){
-              auto key = p.second->_name;
-              rval[proxy->_codec->encode(key)] = proxy->ork_to_python(key);
+              auto prop = p.second;
+              auto key = prop->_name;
+                auto try_vis = prop->typedAnnotation<bool>("python.visible");
+                bool is_visible = try_vis ? try_vis.value() : true;
+                if(is_visible){
+                  rval[proxy->_codec->encode(key)] = proxy->ork_to_python(key);
+                }
             }
             return rval;
           });

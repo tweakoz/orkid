@@ -82,13 +82,16 @@ void MapTest::describeX(ObjectClass* clazz) {
       "directstrint_unordered_map", //
       &MapTest::_directstrintumap);
   ///////////////////////////////////
-  clazz->directMapProperty(
+  auto P1 = clazz->directMapProperty(
       "directstrint_lut", //
       &MapTest::_directstrintlut);
+  P1->annotate("editor.visible", false);  // not visible in UI editors
   ///////////////////////////////////
   clazz->directObjectMapProperty(
       "directstrobj_map", //
-      &MapTest::_directstrobjmap);
+      &MapTest::_directstrobjmap)        // annotation direct on property declaration
+      ->annotate("python.visible",false) // not visible from python bindings
+      ->annotate("hello",true);          // continued annotation
   ///////////////////////////////////
 }
 ///////////////////////////////////////////////////////////////////////////////
