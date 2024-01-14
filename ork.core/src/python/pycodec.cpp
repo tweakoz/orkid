@@ -57,12 +57,6 @@ py::object PyCodecImpl::encode(const varval_t& val) const {
       return py::str(as_str.value());
     } else if (auto as_np = val.tryAs<std::nullptr_t>()) {
       return py::none();
-    } else if (auto as_intarray = val.tryAs<std::vector<int>>()) {
-      py::list pylist;
-      for (auto item : as_intarray.value()) {
-        pylist.append(py::int_(item));
-      }
-      return pylist;
     } else if (auto as_vmap = val.tryAs<varmap::VarMap>()) {
       return py::none();
     } else {
@@ -160,6 +154,36 @@ std::shared_ptr<TypeCodec> TypeCodec::instance() { // static
   };
   static auto _instance = std::make_shared<TypeCodecFactory>();
   return _instance;
+}
+//////////////////////////////////
+pybind11::object IntArrayPropertyCodec::encode( object_ptr_t obj, 
+                                                arrayprop_t* prop, 
+                                                typecodec_ptr_t codec){
+  pybind11::list pylist;
+  size_t count = prop->count(obj);
+  varmap::var_t variant;
+  for( size_t i=0; i<count; i++ ){
+    int value = 0;
+    prop->get(value,obj,i);
+    variant.set<int>(value);
+    pylist.append(pybind11::int_(value));
+  }
+  return pylist;
+}
+//////////////////////////////////
+pybind11::object FloatArrayPropertyCodec::encode( object_ptr_t obj, 
+                                                arrayprop_t* prop, 
+                                                typecodec_ptr_t codec){
+  pybind11::list pylist;
+  size_t count = prop->count(obj);
+  varmap::var_t variant;
+  for( size_t i=0; i<count; i++ ){
+    float value = 0.0f;
+    prop->get(value,obj,i);
+    variant.set<float>(value);
+    pylist.append(pybind11::float_(value));
+  }
+  return pylist;
 }
 
 } // namespace ork::python

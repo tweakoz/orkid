@@ -11,6 +11,7 @@
 #include <ork/python/context.h>
 #include <ork/python/wraprawpointer.inl>
 #include <ork/kernel/varmap.inl>
+#include <ork/reflect/properties/ITypedArray.h>
 #include <iostream>
 
 namespace ork::python {
@@ -107,5 +108,18 @@ protected:
 };
 
 using typecodec_ptr_t = std::shared_ptr<TypeCodec>;
+
+struct IntArrayPropertyCodec {
+  using arrayprop_t = reflect::ITypedArray<int>;
+  static pybind11::object encode(object_ptr_t obj, //
+                                 arrayprop_t* prop, //
+                                 typecodec_ptr_t codec);
+};
+struct FloatArrayPropertyCodec {
+  using arrayprop_t = reflect::ITypedArray<float>;
+  static pybind11::object encode(object_ptr_t obj, //
+                                 arrayprop_t* prop, //
+                                 typecodec_ptr_t codec);
+};
 
 } // namespace ork::python

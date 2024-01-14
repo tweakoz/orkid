@@ -44,25 +44,15 @@ void pyinit_reflection(py::module& module_core) {
         auto propname = refprop->_name;
         if(propname==key){
           using ityped_int = reflect::ITyped<int>;
-          using ityped_int_array = reflect::ITypedArray<int>;
           using ityped_float = reflect::ITyped<float>;
           using ityped_string = reflect::ITyped<std::string>;
+          using ityped_int_array = reflect::ITypedArray<int>;
+          using ityped_float_array = reflect::ITypedArray<float>;
           varmap::var_t variant;
           if( auto as_int = dynamic_cast<ityped_int*>(refprop) ){
             int intvalue = 0;
             as_int->get(intvalue,_object);
             variant.set<int>(intvalue);
-            return _codec->encode(variant);
-          }
-          else if( auto as_intarray = dynamic_cast<ityped_int_array*>(refprop) ){
-            size_t count = as_intarray->count(_object);
-            std::vector<int> outints(count);
-            for( size_t i=0; i<count; i++ ){
-              int intvalue = 0;
-              as_intarray->get(intvalue,_object,i);
-              outints[i] = intvalue;
-            }
-            variant.set<std::vector<int>>(outints);
             return _codec->encode(variant);
           }
           else if( auto as_float = dynamic_cast<ityped_float*>(refprop) ){
@@ -76,6 +66,16 @@ void pyinit_reflection(py::module& module_core) {
             as_str->get(strvalue,_object);
             variant.set<std::string>(strvalue);
             return _codec->encode(variant);
+          }
+          else if( auto as_intarray = dynamic_cast<ityped_int_array*>(refprop) ){
+            return python::IntArrayPropertyCodec::encode( _object,//
+                                                          as_intarray, //
+                                                          _codec);
+          }
+          else if( auto as_floatarray = dynamic_cast<ityped_float_array*>(refprop) ){
+            return python::FloatArrayPropertyCodec::encode( _object,//
+                                                            as_floatarray, //
+                                                            _codec);
           }
           else{
             printf( "reflection class<%s> prop<%s> unhandled type>\n", clazz->Name().c_str(), propname.c_str());
