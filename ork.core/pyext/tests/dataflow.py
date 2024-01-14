@@ -76,8 +76,6 @@ updata = UpdateData()
 updata.absolutetime = 0
 updata.deltatime = 0.1
 
-print(graphdata.properties.dict)
-
 for i in range(10):
   graphinst.compute(updata)
   updata.absolutetime = updata.absolutetime + updata.deltatime

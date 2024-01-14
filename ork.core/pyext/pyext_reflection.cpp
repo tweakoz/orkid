@@ -8,6 +8,8 @@
 #include "pyext.h"
 #include <ork/util/hotkey.h>
 #include <ork/python/pycodec.inl>
+#include <boost/uuid/uuid_io.hpp>
+#include <boost/uuid/string_generator.hpp>
 ///////////////////////////////////////////////////////////////////////////////
 using namespace ::ork::python;
 using namespace ::ork::reflect;
@@ -203,6 +205,9 @@ void pyinit_reflection(py::module& module_core) {
     })
     .def_property_readonly("properties", [type_codec](object_ptr_t obj) -> propsproxy_ptr_t {
       return std::make_shared<PropertiesProxy>(obj,type_codec);
+    })
+    .def_property_readonly("uuid", [](object_ptr_t obj) -> std::string {
+      return boost::uuids::to_string(obj->_uuid);
     });
   type_codec->registerStdCodec<object_ptr_t>(objtype_t);
   /////////////////////////////////////////////////////////////////////////////////
