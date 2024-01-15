@@ -149,17 +149,29 @@ void pyinit_reflection(py::module& module_core) {
                   auto refprop = pitem.second;
                   auto propname = refprop->_name;
                   if(propname==key){
-                    auto variant = proxy->_codec->decode(value);
                     if( auto as_int = dynamic_cast<ityped_int*>(refprop) ){
+                      auto variant = proxy->_codec->decode(value);
                       as_int->set(variant.get<int>(),obj);
                       return;
                     }
                     else if( auto as_float = dynamic_cast<ityped_float*>(refprop) ){
+                      auto variant = proxy->_codec->decode(value);
                       as_float->set(variant.get<float>(),obj);
                       return;
                     }
                     else if( auto as_str = dynamic_cast<ityped_string*>(refprop) ){
+                      auto variant = proxy->_codec->decode(value);
                       as_str->set(variant.get<std::string>(),obj);
+                      return;
+                    }
+                    else if( auto as_iarray = dynamic_cast<ityped_int_array*>(refprop) ){
+                      auto as_list = value.cast<py::list>();
+                      size_t len = as_list.size();
+                      as_iarray->resize(obj,len);
+                      for( size_t index=0; index<len; index++ ){
+                        int ival = as_list[index].cast<int>();
+                        as_iarray->set(ival,obj,index);
+                      }
                       return;
                     }
                     else{
