@@ -43,7 +43,7 @@ class HybridApp(SingulTestApp):
     #  mixing different synth architectures
     ############################
     self.new_soundbank = singularity.BankData()
-    newprog = self.new_soundbank.newProgram("_HYBRID")
+    newprog = self.new_soundbank.newProgram("HYBRID1")
     newprog.merge(krz_bank.programByName("Waterflute"))
     newprog.merge(cz1_bank.programByName("Bells and Chimes"))
     newprog.merge(cz1_bank.programByName("Delayed Pad"))
@@ -64,31 +64,41 @@ class HybridApp(SingulTestApp):
       override(2,"aux2",0,-12,0)
       override(3,"aux4",18,0,0)
     ############################
+    newprog = self.new_soundbank.newProgram("FromScratch")
     newlyr = newprog.newLayer()
-    newstg = newlyr.appendStage("DSP")
-    ioc = newstg.ioconfig
-    ioc.inputs = [0]
-    ioc.outputs = [0]
-    pmxblock = newstg.appendDspBlock("OscPMX","pmx")
-    pmxblock.properties.Waveform = 3
-    pmxblock.properties.InputChannel = 2
+    newlyr.gain = 0.0
+    dspstg = newlyr.appendStage("DSP")
+    ampstg = newlyr.appendStage("AMP")
+    dspstg.ioconfig.inputs = [0]
+    dspstg.ioconfig.outputs = [0]
+    ampstg.ioconfig.inputs = [0]
+    ampstg.ioconfig.outputs = [0]
+    pchblock = dspstg.appendDspBlock("Pitch","pitch")
+    pmxblock = dspstg.appendDspBlock("OscilSine","sin")
+    ampblock = ampstg.appendDspBlock("AmpMono","amp")
+    env = newlyr.appendController("RateLevelEnv", "AMPENV")
+    env.ampenv = True
+    env.bipolar = False
+    env.addSegment("seg0", .2, .7,1)
+    env.addSegment("seg1", .2, .7,1)
+    env.addSegment("seg2", 1, 1,1)
+    env.addSegment("seg3", 120, .3,1)
+    env.addSegment("seg4", 120, 0,1)
+    ampblock.paramByName("gain").mods.src1 = env
+    ampblock.paramByName("gain").mods.src1depth = 1.0
+    print(env)
+    #pmxblock.properties.Waveform = 3
+    #pmxblock.properties.InputChannel = 2
     print(pmxblock)
     print(pmxblock.params)
     print(pmxblock.properties.dict)
-    assert(False)
+    #assert(False)
     ############################
     self.soundbank = self.new_soundbank
     ############################
-    # hook up aux4 bus to oscope and spectra
-    ############################
-    #self.aux4_source = self.aux4bus.createScopeSource()
-    #self.mainbus_source.disconnect(self.oscope_sink)
-    #self.mainbus_source.disconnect(self.spectra_sink)
-    #self.aux4_source.connect(self.oscope_sink)
-    #self.aux4_source.connect(self.spectra_sink)
-    ############################
     ok_list = [
       "HYBRID1",
+      "FromScratch"
     ]
     ############################
     self.sorted_progs = sorted(ok_list)

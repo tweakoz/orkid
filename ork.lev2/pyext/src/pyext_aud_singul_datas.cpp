@@ -32,6 +32,38 @@ using namespace ork::lev2;
 void pyinit_aud_singularity_datas(py::module& singmodule) {
   auto type_codec = python::TypeCodec::instance();
   /////////////////////////////////////////////////////////////////////////////////
+  auto ctrl_type = py::class_<ControllerData, Object,controllerdata_ptr_t>(singmodule, "ControllerData") //
+                      .def_property_readonly(
+                          "name",
+                          [](controllerdata_ptr_t ctrl) -> std::string { //
+                            return ctrl->_name;
+                          });
+  type_codec->registerStdCodec<controllerdata_ptr_t>(ctrl_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  auto ratlevenv_type = py::class_<RateLevelEnvData, ControllerData,ratelevelenvdata_ptr_t>(singmodule, "RateLevelEnvData") //
+                      .def_property(
+                          "ampenv",
+                          [](ratelevelenvdata_ptr_t env) -> bool { //
+                            return env->_ampenv;
+                          },
+                          [](ratelevelenvdata_ptr_t env, bool val) { //
+                            env->_ampenv = val;
+                          })
+                      .def_property(
+                          "bipolar",
+                          [](ratelevelenvdata_ptr_t env) -> bool { //
+                            return env->_bipolar;
+                          },
+                          [](ratelevelenvdata_ptr_t env, bool val) { //
+                            env->_bipolar = val;
+                          })
+                      .def(
+                          "addSegment",
+                          [](ratelevelenvdata_ptr_t env, std::string name, float time, float level, float power) { //
+                            env->addSegment(name, time, level, power);
+                          });
+  type_codec->registerStdCodec<ratelevelenvdata_ptr_t>(ratlevenv_type);
+  /////////////////////////////////////////////////////////////////////////////////
   auto ioc_type = py::class_<IoConfig, ioconfig_ptr_t>(singmodule, "IoConfig") //
                       .def_property_readonly(
                           "numInputs",
@@ -78,6 +110,46 @@ void pyinit_aud_singularity_datas(py::module& singmodule) {
                             }
                           });
   type_codec->registerStdCodec<ioconfig_ptr_t>(ioc_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  auto dspparammoddata_type = py::class_<BlockModulationData, dspparammod_ptr_t>(singmodule, "DspBlockModulationData") //
+    .def_property(
+        "src1",
+        [](dspparammod_ptr_t mod) -> controllerdata_ptr_t { //
+          return mod->_src1;
+        },
+        [](dspparammod_ptr_t mod, controllerdata_ptr_t ctrl) { //
+          mod->_src1 = ctrl;
+        })
+    .def_property("src2",
+        [](dspparammod_ptr_t mod) -> controllerdata_ptr_t { //
+          return mod->_src2;
+        },
+        [](dspparammod_ptr_t mod, controllerdata_ptr_t ctrl) { //
+          mod->_src2 = ctrl;
+        })
+    .def_property(
+        "src1depth",
+        [](dspparammod_ptr_t mod) -> float { //
+          return mod->_src1Depth;
+        },
+        [](dspparammod_ptr_t mod, float val) { //
+          mod->_src1Depth = val;
+        })
+    .def_property("src2mindepth",
+        [](dspparammod_ptr_t mod) -> float { //
+          return mod->_src2MinDepth;
+        },
+        [](dspparammod_ptr_t mod, float val) { //
+          mod->_src2MinDepth = val;
+        })
+    .def_property("src2maxdepth",
+        [](dspparammod_ptr_t mod) -> float { //
+          return mod->_src2MaxDepth;
+        },
+        [](dspparammod_ptr_t mod, float val) { //
+          mod->_src2MaxDepth = val;
+        });
+  type_codec->registerStdCodec<dspparammod_ptr_t>(dspparammoddata_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto dspparamdata_type = py::class_<DspParamData, dspparam_ptr_t>(singmodule, "DspParamData") //
                                .def_property_readonly(
@@ -162,6 +234,9 @@ void pyinit_aud_singularity_datas(py::module& singmodule) {
                                      } else {
                                         OrkAssert(false);
                                      }
+                                   })
+                                   .def_property_readonly("mods", [](dspparam_ptr_t param) -> dspparammod_ptr_t { //
+                                     return param->_mods;
                                    })
                                    .def("__repr__",[](dspparam_ptr_t param)->std::string{
                                       auto str = FormatString("dspparam<%s> ", param->_name.c_str() );
@@ -259,6 +334,30 @@ void pyinit_aud_singularity_datas(py::module& singmodule) {
                             "appendStage",
                             [](lyrdata_ptr_t ldata, std::string named) -> dspstagedata_ptr_t { //
                               return ldata->appendStage(named);
+                            })
+                        .def(
+                            "appendController",
+                            [](lyrdata_ptr_t ldata, std::string classname, std::string named) -> controllerdata_ptr_t { //
+                              auto base_clazz    = rtti::Class::FindClass("SynControllerData");
+                              auto base_objclazz = dynamic_cast<object::ObjectClass*>(base_clazz);
+                              auto clazz    = rtti::Class::FindClass("Syn"+classname);
+                              auto objclazz = dynamic_cast<object::ObjectClass*>(clazz);
+                              OrkAssert(objclazz);
+                              if(objclazz->Parent()!=base_objclazz){
+                                printf("appendSynController<%s> objclazz<%p> base_objclazz<%p> parent mismatch", classname.c_str(), objclazz, base_objclazz );
+                                OrkAssert(false);
+                              }
+                              printf("appendDspBlock objclazz<%p>", objclazz );
+                              const auto& description = objclazz->Description();
+                              auto instance = objclazz->createShared();
+                              auto rval = std::dynamic_pointer_cast<ControllerData>(instance);
+                              rval->_name = named;
+                              auto ctrlblok = ldata->_ctrlBlock;
+                              //ctrlblok->addController<T>(named);
+                              ctrlblok->_controller_datas[ctrlblok->_numcontrollers++] = rval;
+                              ctrlblok->_controllers_by_name[named] = rval;
+                              OrkAssert(rval!=nullptr);
+                              return rval;
                             })
                         .def(
                             "clone",

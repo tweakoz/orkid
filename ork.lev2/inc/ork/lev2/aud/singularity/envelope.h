@@ -59,6 +59,7 @@ struct RateLevelEnvData : public ControllerData {
   int _sustainSegment = -1;
 };
 
+using ratelevelenvdata_ptr_t = std::shared_ptr<RateLevelEnvData>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
