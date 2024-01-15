@@ -7,12 +7,10 @@
 # see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ################################################################################
 
-import sys, math, random, numpy, obt.path, time, bisect
-import plotly.graph_objects as go
-from collections import defaultdict
-import re
+import sys, random
 from orkengine.core import *
 from orkengine.lev2 import *
+
 ################################################################################
 sys.path.append((thisdir()/"..").normalized.as_string) # add parent dir to path
 from _boilerplate import *
@@ -28,6 +26,8 @@ class HybridApp(SingulTestApp):
 
   def onGpuInit(self,ctx):
     super().onGpuInit(ctx)
+    self.synth.setEffect(self.mainbus,"Reverb:FDNX")
+    self.mainbus.gain = 24
     ############################
     # load patches
     ############################
@@ -64,61 +64,19 @@ class HybridApp(SingulTestApp):
       override(2,"aux2",0,-12,0)
       override(3,"aux4",18,0,0)
     ############################
-    newprog = self.new_soundbank.newProgram("FromScratch")
-    ############################
-    def makeSawLayer(coarse,fine,finehz,kt):
-      newlyr = newprog.newLayer()
-      newlyr.gain = -18
-      dspstg = newlyr.appendStage("DSP")
-      ampstg = newlyr.appendStage("AMP")
-      dspstg.ioconfig.inputs = [0]
-      dspstg.ioconfig.outputs = [0]
-      ampstg.ioconfig.inputs = [0]
-      ampstg.ioconfig.outputs = [0]
-      pchblock = dspstg.appendDspBlock("Pitch","pitch")
-      sawblock = dspstg.appendDspBlock("OscilSaw","saw1")
-      ampblock = ampstg.appendDspBlock("AmpMono","amp")
-      #
-      ampenv = newlyr.appendController("RateLevelEnv", "AMPENV")
-      ampenv.ampenv = True
-      ampenv.bipolar = False
-      ampenv.addSegment("seg0", .05, 1,0.2)
-      ampenv.addSegment("seg1", 1, .5,2)
-      ampenv.addSegment("seg2", 1, 0,2.0)
-      #
-      pchenv = newlyr.appendController("RateLevelEnv", "PITCHENV")
-      pchenv.ampenv = False
-      pchenv.bipolar = False
-      pchenv.addSegment("seg0", 0.1, 0,2)
-      pchenv.addSegment("seg0", 10, 1,2)
-      pchenv.addSegment("seg1", 10, 0,2)
-      #
-      ampenv.sustainSegment = 0
-      #ampenv.releaseSegment=1
-      pchenv.releaseSegment=1
-      ampblock.paramByName("gain").mods.src1 = ampenv
-      ampblock.paramByName("gain").mods.src1depth = 1.0
-      sawblock.paramByName("pitch").coarse = coarse
-      sawblock.paramByName("pitch").fine = fine
-      sawblock.paramByName("pitch").fineHZ = finehz
-      sawblock.paramByName("pitch").mods.src1 = pchenv
-      sawblock.paramByName("pitch").mods.src1depth = -fine
-      #sawblock.paramByName("pitch").keyTrack = kt
-      return newlyr
-    for i in range(-30,30):
-      makeSawLayer(0,i*400,0,100)
-    #assert(False)
-    ############################
     self.soundbank = self.new_soundbank
     ############################
     ok_list = [
       "HYBRID1",
-      "FromScratch"
     ]
     ############################
     self.sorted_progs = sorted(ok_list)
     self.prog_index = find_index(self.sorted_progs, "HYBRID1")
-    self.octave = 3
+    self.synth.programbus.uiprogram = newprog
+    if self.pgmview:
+      self.pgmview.setProgram(newprog)
+    print(self.prog_index)
+    self.octave = 4
   ##############################################
 
 ###############################################################################

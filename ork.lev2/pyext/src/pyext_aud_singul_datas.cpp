@@ -328,7 +328,7 @@ void pyinit_aud_singularity_datas(py::module& singmodule) {
               printf("appendDspBlock<%s> objclazz<%p> base_objclazz<%p> parent mismatch", classname.c_str(), objclazz, base_objclazz );
               OrkAssert(false);
             }
-            printf("appendDspBlock objclazz<%p>", objclazz );
+            //printf("appendDspBlock objclazz<%p>", objclazz );
             const auto& description = objclazz->Description();
             auto instance = objclazz->createShared();
             auto rval = std::dynamic_pointer_cast<DspBlockData>(instance);
@@ -367,7 +367,7 @@ void pyinit_aud_singularity_datas(py::module& singmodule) {
                                 printf("appendSynController<%s> objclazz<%p> base_objclazz<%p> parent mismatch", classname.c_str(), objclazz, base_objclazz );
                                 OrkAssert(false);
                               }
-                              printf("appendDspBlock objclazz<%p>", objclazz );
+                              //printf("appendDspBlock objclazz<%p>", objclazz );
                               const auto& description = objclazz->Description();
                               auto instance = objclazz->createShared();
                               auto rval = std::dynamic_pointer_cast<ControllerData>(instance);
