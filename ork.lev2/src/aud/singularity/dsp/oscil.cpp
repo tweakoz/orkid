@@ -162,7 +162,7 @@ void SAW::compute(DspBuffer& dspbuf) // final
   float SR       = synth::instance()->_sampleRate;
   _pblep.setFrequency(frq);
 
-  // printf( "frq<%f> _phaseInc<%lld>\n", frq, _phaseInc );
+   printf( "frq<%f>\n", frq );
   if (1) {
     auto outputchan = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
     for (int i = 0; i < inumframes; i++) {

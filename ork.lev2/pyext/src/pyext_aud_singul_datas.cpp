@@ -57,6 +57,21 @@ void pyinit_aud_singularity_datas(py::module& singmodule) {
                           [](ratelevelenvdata_ptr_t env, bool val) { //
                             env->_bipolar = val;
                           })
+                      .def_property(
+                          "releaseSegment", //
+                          [](ratelevelenvdata_ptr_t env) -> int { //
+                            return env->_releaseSegment;
+                          },
+                          [](ratelevelenvdata_ptr_t env, int val) { //
+                            env->_releaseSegment = val;
+                          })
+                      .def_property("sustainSegment", //
+                          [](ratelevelenvdata_ptr_t env) -> int { //
+                            return env->_sustainSegment;
+                          },
+                          [](ratelevelenvdata_ptr_t env, int val) { //
+                            env->_sustainSegment = val;
+                          })
                       .def(
                           "addSegment",
                           [](ratelevelenvdata_ptr_t env, std::string name, float time, float level, float power) { //

@@ -74,22 +74,26 @@ class HybridApp(SingulTestApp):
     ampstg.ioconfig.inputs = [0]
     ampstg.ioconfig.outputs = [0]
     pchblock = dspstg.appendDspBlock("Pitch","pitch")
-    pmxblock = dspstg.appendDspBlock("OscilSine","sin")
+    pmxblock = dspstg.appendDspBlock("OscilSaw","saw1")
     ampblock = ampstg.appendDspBlock("AmpMono","amp")
     env = newlyr.appendController("RateLevelEnv", "AMPENV")
     env.ampenv = True
     env.bipolar = False
-    env.addSegment("seg0", .2, .7,1)
+    env.addSegment("seg0", .2, 0,1)
     env.addSegment("seg1", .2, .7,1)
-    env.addSegment("seg2", 1, 1,1)
-    env.addSegment("seg3", 120, .3,1)
-    env.addSegment("seg4", 120, 0,1)
+    env.addSegment("seg2", .5, 1,1)
+    env.addSegment("seg3", .5, .3,1)
+    env.addSegment("seg4", .5, 0,1)
+    env.sustainSegment = 1
     ampblock.paramByName("gain").mods.src1 = env
     ampblock.paramByName("gain").mods.src1depth = 1.0
     print(env)
+    print(ampblock.paramByName("gain"))
     #pmxblock.properties.Waveform = 3
     #pmxblock.properties.InputChannel = 2
+    print(pchblock)
     print(pmxblock)
+    print(ampblock)
     print(pmxblock.params)
     print(pmxblock.properties.dict)
     #assert(False)
