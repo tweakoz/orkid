@@ -65,37 +65,36 @@ class HybridApp(SingulTestApp):
       override(3,"aux4",18,0,0)
     ############################
     newprog = self.new_soundbank.newProgram("FromScratch")
-    newlyr = newprog.newLayer()
-    newlyr.gain = 0.0
-    dspstg = newlyr.appendStage("DSP")
-    ampstg = newlyr.appendStage("AMP")
-    dspstg.ioconfig.inputs = [0]
-    dspstg.ioconfig.outputs = [0]
-    ampstg.ioconfig.inputs = [0]
-    ampstg.ioconfig.outputs = [0]
-    pchblock = dspstg.appendDspBlock("Pitch","pitch")
-    pmxblock = dspstg.appendDspBlock("OscilSaw","saw1")
-    ampblock = ampstg.appendDspBlock("AmpMono","amp")
-    env = newlyr.appendController("RateLevelEnv", "AMPENV")
-    env.ampenv = True
-    env.bipolar = False
-    env.addSegment("seg0", .2, 0,1)
-    env.addSegment("seg1", .2, .7,1)
-    env.addSegment("seg2", .5, 1,1)
-    env.addSegment("seg3", .5, .3,1)
-    env.addSegment("seg4", .5, 0,1)
-    env.sustainSegment = 1
-    ampblock.paramByName("gain").mods.src1 = env
-    ampblock.paramByName("gain").mods.src1depth = 1.0
-    print(env)
-    print(ampblock.paramByName("gain"))
-    #pmxblock.properties.Waveform = 3
-    #pmxblock.properties.InputChannel = 2
-    print(pchblock)
-    print(pmxblock)
-    print(ampblock)
-    print(pmxblock.params)
-    print(pmxblock.properties.dict)
+    ############################
+    def makeSawLayer(coarse,fine,finehz,kt):
+      newlyr = newprog.newLayer()
+      newlyr.gain = -6
+      dspstg = newlyr.appendStage("DSP")
+      ampstg = newlyr.appendStage("AMP")
+      dspstg.ioconfig.inputs = [0]
+      dspstg.ioconfig.outputs = [0]
+      ampstg.ioconfig.inputs = [0]
+      ampstg.ioconfig.outputs = [0]
+      pchblock = dspstg.appendDspBlock("Pitch","pitch")
+      sawblock = dspstg.appendDspBlock("OscilSaw","saw1")
+      ampblock = ampstg.appendDspBlock("AmpMono","amp")
+      env = newlyr.appendController("RateLevelEnv", "AMPENV")
+      env.ampenv = True
+      env.bipolar = False
+      env.addSegment("seg0", .0, 1,0.2)
+      env.addSegment("seg1", 1, .5,2)
+      env.addSegment("seg2", 1, 0,2.0)
+      #env.sustainSegment = 2
+      env.releaseSegment=1
+      ampblock.paramByName("gain").mods.src1 = env
+      ampblock.paramByName("gain").mods.src1depth = 1.0
+      sawblock.paramByName("pitch").coarse = coarse
+      sawblock.paramByName("pitch").fine = fine
+      sawblock.paramByName("pitch").fineHZ = finehz
+      sawblock.paramByName("pitch").keyTrack = kt
+      return newlyr
+    for i in range(-3,3):
+      makeSawLayer(0,i*1.2,0,100)
     #assert(False)
     ############################
     self.soundbank = self.new_soundbank

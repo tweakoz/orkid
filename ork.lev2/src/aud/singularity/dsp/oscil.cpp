@@ -146,7 +146,7 @@ dspblk_ptr_t SAW_DATA::createInstance() const { // override
 
 SAW::SAW(const DspBlockData* dbd)
     : DspBlock(dbd)
-    , _pblep(getSampleRate(), PolyBLEP::SAWTOOTH) {
+    , _pblep(getSampleRate(), PolyBLEP::RAMP) {
 }
 
 void SAW::compute(DspBuffer& dspbuf) // final
@@ -162,7 +162,7 @@ void SAW::compute(DspBuffer& dspbuf) // final
   float SR       = synth::instance()->_sampleRate;
   _pblep.setFrequency(frq);
 
-   printf( "frq<%f>\n", frq );
+   //printf( "centoff<%g> frq<%f>\n", centoff, frq );
   if (1) {
     auto outputchan = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
     for (int i = 0; i < inumframes; i++) {

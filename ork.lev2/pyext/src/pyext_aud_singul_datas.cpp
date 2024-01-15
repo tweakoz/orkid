@@ -332,7 +332,12 @@ void pyinit_aud_singularity_datas(py::module& singmodule) {
             const auto& description = objclazz->Description();
             auto instance = objclazz->createShared();
             auto rval = std::dynamic_pointer_cast<DspBlockData>(instance);
+            rval->_name = blockname;
             OrkAssert(rval!=nullptr);
+            stgdata->_blockdatas[stgdata->_numblocks++]=rval;
+            auto it = stgdata->_namedblockdatas.find(blockname);
+            OrkAssert(it==stgdata->_namedblockdatas.end());
+            stgdata->_namedblockdatas[blockname]=rval;
             return rval;
           })
           .def("dspblock", [](dspstagedata_ptr_t stgdata, int index) -> dspblkdata_ptr_t { return stgdata->_blockdatas[index]; })

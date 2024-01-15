@@ -76,7 +76,8 @@ class SingulTestApp(object):
 
     self.mainbus = self.synth.outputBus("main")
     self.mainbus_source = self.mainbus.createScopeSource()
-    self.synth.setEffect(self.mainbus,"Reverb:OilTank")
+    #self.synth.setEffect(self.mainbus,"Reverb:OilTank")
+    self.synth.setEffect(self.mainbus,"none")
     self.numaux = 8
     self.auxbusses = []
     self.auxbus_sources = []

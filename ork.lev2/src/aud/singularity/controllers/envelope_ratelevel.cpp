@@ -86,9 +86,9 @@ RateLevelEnvInst::RateLevelEnvInst(const RateLevelEnvData* data, layer_ptr_t l)
     , _envType(data->_envType) {
     _name = data->_name;
   //printf("new RateLevelEnvInst<%s> ampenv<%d>\n",  _name.c_str(), int(_ampenv) );
-  for( auto seg : data->_segments ){
-    printf( "  seg t<%g> l<%g> shp<%g>\n", seg._time, seg._level, seg._shape );
-  }
+  //for( auto seg : data->_segments ){
+    //printf( "  seg t<%g> l<%g> shp<%g>\n", seg._time, seg._level, seg._shape );
+  //}
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -147,7 +147,7 @@ float RateLevelEnvInst::shapedvalue() const {
 void RateLevelEnvInst::setState(int istate){
   _prevstate = _state;
   if(_ampenv){
-    printf("env<%p:%s> state<%d->%d>\n", this, _name.c_str(), _prevstate, _state );
+    //printf("env<%p:%s> state<%d->%d>\n", this, _name.c_str(), _prevstate, _state );
   }
   if(_keymoddata and _keymoddata->_subscriber){
         _keymoddata->_evstrings.atomicOp([this,istate](std::vector<std::string>& unlocked){
@@ -276,7 +276,7 @@ void RateLevelEnvInst::compute() // final
     float ling = _value.x;
     float dbg = (1.0f-ling)*-96.0f;
     _layer->_ampenvgain = decibel_to_linear_amp_ratio(dbg);
-    printf("ampenv dbg<%g>\n", dbg);
+    //printf("ampenv dbg<%g>\n", dbg);
   }
 }
 
