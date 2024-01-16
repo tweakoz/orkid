@@ -63,7 +63,6 @@ class KrzApp(SingulTestApp):
     self.krzdata = singularity.KrzSynthData()
     self.krzdata.loadBank("alesisdr", self.syn_data_base/"alesisdr.krz")
     self.krzdata.loadBank("m1drums", self.syn_data_base/"m1drums.krz")
-    assert(False)
     self.soundbank = self.krzdata.bankData
     self.krzprogs = self.soundbank.programsByName
     self.sorted_progs = sorted(self.krzprogs.keys())

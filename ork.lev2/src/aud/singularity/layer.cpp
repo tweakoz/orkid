@@ -148,6 +148,13 @@ void Layer::reset() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void Layer::reTriggerMono(int note, int velocity){
+  this->_layerBasePitch = clip_float(note * 100, -0, 12700);
+  this->_curnote = note;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 void Layer::keyOn(int note, int velocity, lyrdata_ptr_t ld, outbus_ptr_t obus) {
   this->reset();
   this->_HKF._miscText   = "";

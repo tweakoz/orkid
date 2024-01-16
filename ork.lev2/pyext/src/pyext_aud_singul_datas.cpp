@@ -444,6 +444,20 @@ void pyinit_aud_singularity_datas(py::module& singmodule) {
                             "name", //
                             [](prgdata_ptr_t pdata) -> std::string { return pdata->_name; },
                             [](prgdata_ptr_t pdata, std::string named) { pdata->_name = named; })
+                          .def_property("monophonic",
+                            [](prgdata_ptr_t pdata) -> bool { //
+                              return pdata->_monophonic;
+                              },
+                            [](prgdata_ptr_t pdata, bool mono) { //
+                              pdata->_monophonic = mono; 
+                            })
+                          .def_property("portamentoRate",
+                            [](prgdata_ptr_t pdata) -> float { //
+                              return pdata->_portamento_rate;
+                              },
+                            [](prgdata_ptr_t pdata, float rate) { //
+                              pdata->_portamento_rate = rate; 
+                            })
                         .def("__repr__", [](prgdata_ptr_t pdata) -> std::string {
                             std::ostringstream oss;
                             oss << "ProgramData( name: " << pdata->_name << ", layer_count: " << pdata->_layerdatas.size() << " )";

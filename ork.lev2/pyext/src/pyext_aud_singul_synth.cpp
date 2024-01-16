@@ -70,8 +70,8 @@ void pyinit_aud_singularity_synth(py::module& singmodule) {
               })
           .def(
               "keyOff",                                      //
-              [](synth_ptr_t synth, prginst_rawptr_t prgi) { //
-                synth->liveKeyOff(prgi.get());
+              [](synth_ptr_t synth, prginst_rawptr_t prgi,int note, int vel) { //
+                synth->liveKeyOff(prgi.get(),note,vel);
               })
           .def(
               "mainThreadHandler",                           //

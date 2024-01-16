@@ -388,11 +388,13 @@ class SingulTestApp(object):
   
     elif uievent.code == tokens.KEY_UP.hashed:
       KC = uievent.keycode
-      if KC in self.voices:
-        voice = self.voices[KC]
-        self.synth.keyOff(voice)
-        del self.voices[KC]
-        return res
+      if KC in self.base_notes:
+        note = self.base_notes[KC] + (self.octave*12)
+        if KC in self.voices:
+          voice = self.voices[KC]
+          self.synth.keyOff(voice,note,0)
+          del self.voices[KC]
+          return res
 
     return ui.HandlerResult()
 

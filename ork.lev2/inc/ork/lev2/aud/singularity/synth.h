@@ -94,6 +94,14 @@ struct AudioThreadHandler{
 
 using audiothreadhandler_ptr_t = std::shared_ptr<AudioThreadHandler>;
 
+struct ProgramChannel{
+    prgdata_constptr_t _currentProgram;
+    std::unordered_set<programInst*> _monoprogs;
+    int _monokeycount = 0;
+    std::vector<int> _mononotes;
+};
+using programchannel_ptr_t = std::shared_ptr<ProgramChannel>;
+
 struct synth {
   synth();
   ~synth();
@@ -127,7 +135,7 @@ struct synth {
 
 
   programInst* liveKeyOn(int note, int velocity, prgdata_constptr_t pd, keyonmod_ptr_t kmod = nullptr);
-  void liveKeyOff(programInst* p);
+  void liveKeyOff(programInst* p,int note, int velocity);
 
   layer_ptr_t allocLayer();
   void releaseLayer(layer_ptr_t l);
@@ -157,6 +165,7 @@ struct synth {
   float _sampleRate;
   float _dt;
   float _system_tempo = 120.0f;
+  programchannel_ptr_t _prgchannel;
 
   using keyonmodvect_t = std::vector<keyonmod_ptr_t>;
   using proginstset_t = std::set<programInst*>;

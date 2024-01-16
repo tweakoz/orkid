@@ -40,9 +40,10 @@ void mymidicallback(double deltatime, std::vector<unsigned char>* message, void*
             _keymap[note] = pi;
           }
           else if(vel==0){
+            int note  = message->at(1);
             // yep, this again..
             auto pi = it->second;
-            synth::instance()->liveKeyOff(pi);
+            synth::instance()->liveKeyOff(pi,note,0);
             _keymap.erase(it);
           }
           break;
@@ -52,7 +53,7 @@ void mymidicallback(double deltatime, std::vector<unsigned char>* message, void*
           auto it  = _keymap.find(note);
           if (it != _keymap.end()) {
             auto pi = it->second;
-            synth::instance()->liveKeyOff(pi);
+            synth::instance()->liveKeyOff(pi,note,0);
             _keymap.erase(it);
           }
           break;

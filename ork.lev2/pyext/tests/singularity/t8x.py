@@ -36,6 +36,8 @@ class HybridApp(SingulTestApp):
     self.new_soundbank = singularity.BankData()
     ############################
     newprog = self.new_soundbank.newProgram("T8X")
+    newprog.monophonic = True
+    newprog.portamentoRate = 1200 # cents per second
     ############################
     def makeT8XLayer(fi,offset):
       fibi = (fi-0.5)*2.0

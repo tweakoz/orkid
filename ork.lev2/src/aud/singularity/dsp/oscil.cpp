@@ -39,7 +39,9 @@ void PITCH_DATA::describeX(class_t* clazz){}
 PITCH_DATA::PITCH_DATA(std::string name)
     : DspBlockData(name) {
   _blocktype = "PITCH";
-  addParam("pitch")->usePitchEvaluator();
+  auto P = addParam("pitch");
+  P->usePitchEvaluator();
+  P->_debug = true;
   //addParam("pch2")->usePitchEvaluator();
 }
 
@@ -77,12 +79,38 @@ PITCH::PITCH(const DspBlockData* dbd)
 
 void PITCH::compute(DspBuffer& dspbuf) // final
 {
+  auto LD = _layer->_layerdata;  
+  auto PD = LD->_programdata;
+  float portorate = PD->_portamento_rate;
+
   float value = _param[0].eval();
+  _target = _layer->_layerBasePitch + value;
+  if(portorate==0.0f){
+    _current = _target;
+  }
+  else {
+    float crate = controlRate();
+    float elapsed = 1.0f / crate;
+    // portorate in cents per second
+    // get in ticks..
+    float prate_this_tick = portorate*elapsed;
+    float delta = (_target-_current);
+    float delta_mag = abs(delta);
+    float delta_sgn = (delta>=0.0f) ? 1.0f : -1.0f;
+    float ir = 1.0f-portorate;
+    if(delta_mag>prate_this_tick){
+      delta_mag = prate_this_tick;
+    }
+    _current = _current+delta_mag*delta_sgn;
+  }
+
   _layer->_curPitchOffsetInCents = value;
+  _layer->_curPitchInCents = _current;
+  //printf( "pch<%g>\n", value );
   
 }
-void PITCH::doKeyOn(const KeyOnInfo& koi) // final
-{
+void PITCH::doKeyOn(const KeyOnInfo& koi) { // final
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////

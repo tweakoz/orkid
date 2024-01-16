@@ -42,6 +42,7 @@ struct PmOsc {
   float _prevOutput;
   float _wtsXisr;
   int64_t _wtsize;
+  
 
   const Wavetable* _waveform;
 };

@@ -101,6 +101,7 @@ struct Layer {
   bool isHudLayer() const;
 
   void keyOn(int note, int velocity, lyrdata_ptr_t ld, outbus_ptr_t obus);
+  void reTriggerMono(int note, int velocity);
   void keyOff();
 
   std::mutex _mutex;
@@ -115,6 +116,7 @@ struct Layer {
   float _layerLinGain = 1.0f;
   float _gainModifier = 1.0f;
   float _curPitchOffsetInCents;
+  float _curPitchInCents;
   float _centsPerKey;
   int _lyrPhase;
   bool _ignoreRelease;

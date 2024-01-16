@@ -12,12 +12,16 @@
 
 #include <ork/lev2/aud/singularity/synth.h>
 #include <ork/reflect/properties/registerX.inl>
-ImplementReflectionX(ork::audio::singularity::LfoData, "SynLfoData");
+ImplementReflectionX(ork::audio::singularity::LfoData, "SynLfo");
 
 namespace ork::audio::singularity {
 
 ///////////////////////////////////////////////////////////////////////////////
 void LfoData::describeX(class_t* clazz) {
+  clazz->directProperty("initialPhase", &LfoData::_initialPhase);
+  clazz->directProperty("minRate", &LfoData::_minRate);
+  clazz->directProperty("maxRate", &LfoData::_maxRate);
+  clazz->directProperty("shape", &LfoData::_shape);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

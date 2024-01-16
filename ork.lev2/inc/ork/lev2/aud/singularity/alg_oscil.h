@@ -26,6 +26,8 @@ struct PITCH : public DspBlock {
   PITCH(const DspBlockData* dbd);
   void compute(DspBuffer& dspbuf) final;
   void doKeyOn(const KeyOnInfo& koi) final;
+  float _target = 0.0f;
+  float _current = 0.0f;
 };
 
 struct SWPLUSSHP_DATA : public DspBlockData {

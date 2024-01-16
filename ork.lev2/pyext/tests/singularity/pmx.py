@@ -26,92 +26,109 @@ class HybridApp(SingulTestApp):
 
   def onGpuInit(self,ctx):
     super().onGpuInit(ctx)
-    self.synth.setEffect(self.mainbus,"Reverb:GuyWire")
     #self.synth.setEffect(self.mainbus,"none")
-    self.mainbus.gain = 72
+    self.synth.setEffect(self.mainbus,"Distortion+Chorus")
+    self.mainbus.gain = 18
+    self.octave = 4
     ############################
     # create a new hybrid patch
     #  mixing different synth architectures
     ############################
     self.new_soundbank = singularity.BankData()
     ############################
-    newprog = self.new_soundbank.newProgram("T8X")
+    newprog = self.new_soundbank.newProgram("PMX")
+    newprog.monophonic = True
+    newprog.portamentoRate = 36000 # cents per second
     ############################
-    def makePMXLayer(fi,offset):
-      fibi = (fi-0.5)*2.0
+    def makePMXLayer(mod_semis,car_semis,pan):
       newlyr = newprog.newLayer()
       dspstg = newlyr.appendStage("DSP")
       ampstg = newlyr.appendStage("AMP")
-      dspstg.ioconfig.inputs = [0]
-      dspstg.ioconfig.outputs = [0]
-      ampstg.ioconfig.inputs = [0]
-      ampstg.ioconfig.outputs = [0]
+      dspstg.ioconfig.inputs = []
+      dspstg.ioconfig.outputs = [0,1]
+      ampstg.ioconfig.inputs = [0,1]
+      ampstg.ioconfig.outputs = [0,1]
       pchblock = dspstg.appendDspBlock("Pitch","pitch")
-      pmxblock = dspstg.appendDspBlock("OscPMX","pmx")
-      #panblock = dspstg.appendDspBlock("AmpPanner","pan")
-      ampblock = ampstg.appendDspBlock("AmpAdaptive","amp")
+      #########################################
+      # modulator
+      #########################################
+      modblock = dspstg.appendDspBlock("OscPMX","pmx")
+      modenv = newlyr.appendController("RateLevelEnv", "MODENV")
+      modenv.ampenv = False
+      modenv.bipolar = False
+      modenv.sustainSegment = 0
+      modenv.addSegment("seg0", 0.0, 4,0.4)
+      modenv.addSegment("seg1", 0.2, .5,4)
+      modenv.addSegment("seg2", 0.2, 0,2.0)
+      pchenv = newlyr.appendController("RateLevelEnv", "MODPITCHENV")
+      pchenv.ampenv = False
+      pchenv.bipolar = True
+      pchenv.releaseSegment=2
+      pchenv.addSegment("seg0", 0, 1,1)
+      pchenv.addSegment("seg1", .01, .5,2)
+      pchenv.addSegment("seg2", .01, 0.01,1)
       #
-      #panblock.paramByName("POS").coarse=fibi
-      #
+      modblock.properties.InputChannel = 0
+      modblock.properties.PmInputChannels = [0,1,2,3]
+      modblock.paramByName("amp").coarse = 0.0
+      modblock.paramByName("amp").fine = 0.0
+      modblock.paramByName("amp").mods.src1 = modenv
+      modblock.paramByName("amp").mods.src1depth = 1
+      modblock.paramByName("pitch").coarse = mod_semis
+      modblock.paramByName("pitch").mods.src1 = pchenv
+      modblock.paramByName("pitch").mods.src1depth = 1200
+      #########################################
+      # carrier
+      #########################################
       ampenv = newlyr.appendController("RateLevelEnv", "AMPENV")
       ampenv.ampenv = True
       ampenv.bipolar = False
       ampenv.sustainSegment = 0
-      ampenv.addSegment("seg0", 0.5, 1,0.4)
-      ampenv.addSegment("seg1", 0.5, .5,4)
-      ampenv.addSegment("seg2", 0.5, 0,2.0)
+      ampenv.addSegment("seg0", 0, 1,0.4)
+      ampenv.addSegment("seg1", 0.2, .5,4)
+      ampenv.addSegment("seg2", 0.2, 0,2.0)
       #
+      carblock = dspstg.appendDspBlock("OscPMX","pmx2")
+      carblock.properties.InputChannel = 0
+      carblock.properties.PmInputChannels = [0,1,2,3]
+      carblock.paramByName("amp").coarse = 1.0
+      carblock.paramByName("pitch").coarse = car_semis
+      #
+      panlfo = newlyr.appendController("Lfo", "PANLFO")
+      panlfo.properties.shape = "Sine"
+      panlfo.properties.minRate = 2.0
+      panlfo.properties.maxRate = 2.0
+      panblock = dspstg.appendDspBlock("AmpPanner","pan")
+      panblock.paramByName("POS").coarse=pan
+      panblock.paramByName("POS").mods.src1 = panlfo
+      panblock.paramByName("POS").mods.src1depth = .5
+      #########################################
+      # post amp
+      #########################################
+      #
+      ampblock = ampstg.appendDspBlock("AmpAdaptive","amp")
       ampblock.paramByName("gain").mods.src1 = ampenv
       ampblock.paramByName("gain").mods.src1depth = 1.0
-      #
-      #r = random.randrange(-4,4)
-      #pchenv = newlyr.appendController("RateLevelEnv", "PITCHENV")
-      #pchenv.ampenv = False
-      #pchenv.bipolar = True
-      #pchenv.releaseSegment=1
-      #pchenv.addSegment("seg0", 0.1, 0,2)
-      #pchenv.addSegment("seg1", 16+r, 1,0.5)
-      #pchenv.addSegment("seg2", 10, 1,0.5)
-      #
-      #coarse = offset
-      #fine = fi*7200 # -4500 ..4500
-      #finehz = 0
-      #r = random.randrange(0,3)
-      #newlyr.gain = -30
-      #if r>0:
-      #  coarse = -12
-      #if r>1:
-      #  coarse = +12
-      #print(coarse)
-      #newlyr.gain -= (60+(coarse*0.5))
-      #
-      pmxblock.properties.InputChannel = 0
-      pmxblock.properties.PmInputChannels = [0,1,2,3]
-      #pmxblock.paramByName("pitch").coarse = coarse
-      #pmxblock.paramByName("pitch").fine = fine
-      #pmxblock.paramByName("pitch").fineHZ = finehz
-      #pmxblock.paramByName("pitch").mods.src1 = pchenv
-      #pmxblock.paramByName("pitch").mods.src1depth = -fine*0.997
-
       return newlyr
 
-    makePMXLayer(0,0)
-      #makeT8XLayer(fi,-36.01)
+    makePMXLayer(0,0,-0.5)
+    makePMXLayer(-12.0,-12.07,+0.5)
+    makePMXLayer(-24.0,12.07,0)
+      #makePMXLayer(fi,-36.01)
     #assert(False)
     ############################
     self.soundbank = self.new_soundbank
     ############################
     ok_list = [
-      "T8X"
+      "PMX"
     ]
     ############################
     self.sorted_progs = sorted(ok_list)
-    self.prog_index = find_index(self.sorted_progs, "T8X")
+    self.prog_index = find_index(self.sorted_progs, "PMX")
     self.synth.programbus.uiprogram = newprog
     print(self.prog_index)
     if self.pgmview:
       self.pgmview.setProgram(newprog)
-    self.octave = 5
   ##############################################
 
 ###############################################################################

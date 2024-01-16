@@ -626,27 +626,25 @@ PANNER::PANNER(const DspBlockData* dbd)
 void PANNER::compute(DspBuffer& dspbuf) // final
 {
   int inumframes = _layer->_dspwritecount;
-  float* ubuf    = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
-  float* lbuf    = getOutBuf(dspbuf, 1) + _layer->_dspwritebase;
+  float* bufL    = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
+  float* bufR    = getOutBuf(dspbuf, 1) + _layer->_dspwritebase;
   float pos      = _param[0].eval();
-  float pan      = pos * 0.01f;
-  float lmix     = (pan > 0) ? lerp(0.5, 0, pan) : lerp(0.5, 1, -pan);
-  float rmix     = (pan > 0) ? lerp(0.5, 1, pan) : lerp(0.5, 0, -pan);
 
-  lmix *= 0.25;
-  rmix *= 0.25;
+  // TODO: constant power
+  float lmix = (1.0-pos)*0.5;
+  float rmix = (1.0+pos)*0.5;
 
   _fval[0] = pos;
 
   // printf( "pan<%f> lmix<%f> rmix<%f>\n", pan, lmix, rmix );
   if (1)
     for (int i = 0; i < inumframes; i++) {
-      float input = ubuf[i] * _dbd->_inputPad;
+      float input = bufL[i] * _dbd->_inputPad;
       _plmix      = _plmix * 0.995f + lmix * 0.005f;
       _prmix      = _prmix * 0.995f + rmix * 0.005f;
 
-      ubuf[i] = input * _plmix;
-      lbuf[i] = input * _prmix;
+      bufL[i] = input * _plmix;
+      bufR[i] = input * _prmix;
     }
 }
 void PANNER::doKeyOn(const KeyOnInfo& koi) // final
