@@ -8,6 +8,7 @@
 #pragma once
 
 #include "dspblocks.h"
+#include "dsp_mix.h"
 
 namespace ork::audio::singularity {
 ///////////////////////////////////////////////////////////////////////////////
@@ -178,6 +179,21 @@ struct PANNER : public DspBlock {
   void compute(DspBuffer& dspbuf) final;
   void doKeyOn(const KeyOnInfo& koi) final;
   float _plmix, _prmix; // for smoothing
+};
+///////////////////////////////////////////////////////////////////////////////
+struct PANNER2D_DATA : public DspBlockData {
+  DeclareConcreteX(PANNER2D_DATA,DspBlockData);
+  PANNER2D_DATA(std::string name="DspAmpPanner2D");
+  dspblk_ptr_t createInstance() const override;
+};
+struct PANNER2D : public DspBlock {
+  using dataclass_t = PANNER2D_DATA;
+  PANNER2D(const DspBlockData* dbd);
+  void compute(DspBuffer& dspbuf) final;
+  void doKeyOn(const KeyOnInfo& koi) final;
+  float _mixL, _mixR; // for smoothing
+  DelayContext _delayL, _delayR;
+  TrapSVF _filter1L, _filter1R;
 };
 ///////////////////////////////////////////////////////////////////////////////
 

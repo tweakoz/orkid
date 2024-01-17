@@ -340,6 +340,38 @@ void pyinit_aud_singularity_datas(py::module& singmodule) {
             stgdata->_namedblockdatas[blockname]=rval;
             return rval;
           })
+          .def("replaceDspBlock",[](dspstagedata_ptr_t stgdata, std::string oldclassname, std::string newclassname, std::string blockname) -> dspblkdata_ptr_t {
+
+            auto base_clazz    = rtti::Class::FindClass("SynDspBlock");
+            auto base_objclazz = dynamic_cast<object::ObjectClass*>(base_clazz);
+            auto newclazz    = rtti::Class::FindClass("Dsp"+newclassname);
+            auto newobjclazz = dynamic_cast<object::ObjectClass*>(newclazz);
+            auto oldclazz    = rtti::Class::FindClass("Dsp"+oldclassname);
+            auto oldobjclazz = dynamic_cast<object::ObjectClass*>(oldclazz);
+            OrkAssert(newobjclazz);
+            if(newclazz->Parent()!=base_objclazz){
+              printf("appendDspBlock<%s> objclazz<%p> base_objclazz<%p> parent mismatch", newclassname.c_str(), newclazz, base_objclazz );
+              OrkAssert(false);
+            }
+            //printf("appendDspBlock objclazz<%p>", objclazz );
+            const auto& description = newobjclazz->Description();
+            auto instance = newobjclazz->createShared();
+            auto rval = std::dynamic_pointer_cast<DspBlockData>(instance);
+            rval->_name = blockname;
+            OrkAssert(rval!=nullptr);
+            int itoreplace = -1;
+            for(int i=0; i<stgdata->_numblocks; i++ ){
+              auto oldbd = stgdata->_blockdatas[i];
+              auto oldbdclazz = oldbd->GetClass();
+              if(oldobjclazz==oldbdclazz){
+                auto name = oldbd->_name;
+                stgdata->_namedblockdatas[name] = rval;
+                stgdata->_blockdatas[i] = rval;
+                return rval;
+              }
+            }
+            return nullptr;
+          })
           .def("dspblock", [](dspstagedata_ptr_t stgdata, int index) -> dspblkdata_ptr_t { return stgdata->_blockdatas[index]; })
           .def("dump", [](dspstagedata_ptr_t stgdata) { stgdata->dump(); });
   type_codec->registerStdCodec<dspstagedata_ptr_t>(stgdata_type);

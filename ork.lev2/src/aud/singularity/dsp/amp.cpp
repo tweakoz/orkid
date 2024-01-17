@@ -24,7 +24,6 @@ ImplementReflectionX(ork::audio::singularity::BAL_AMP_DATA, "DspAmpBalance");
 ImplementReflectionX(ork::audio::singularity::AMP_MOD_OSC_DATA, "DspAmpModOsc");
 ImplementReflectionX(ork::audio::singularity::XGAIN_DATA, "DspAmpXGain");
 ImplementReflectionX(ork::audio::singularity::XFADE_DATA, "DspAmpXFade");
-ImplementReflectionX(ork::audio::singularity::PANNER_DATA, "DspAmpPanner");
 
 namespace ork::audio::singularity {
 
@@ -607,54 +606,6 @@ void AMP_MOD_OSC::doKeyOn(const KeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void PANNER_DATA::describeX(class_t* clazz){
-
-}
-
-PANNER_DATA::PANNER_DATA(std::string name)
-    : DspBlockData(name) {
-  _blocktype = "PANNER";
-  addParam("POS")->useDefaultEvaluator(); // position: eval: "POS" 
-}
-dspblk_ptr_t PANNER_DATA::createInstance() const {
-  return std::make_shared<PANNER>(this);
-}
-
-PANNER::PANNER(const DspBlockData* dbd)
-    : DspBlock(dbd) {
-}
-void PANNER::compute(DspBuffer& dspbuf) // final
-{
-  int inumframes = _layer->_dspwritecount;
-  float* bufL    = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
-  float* bufR    = getOutBuf(dspbuf, 1) + _layer->_dspwritebase;
-  float pos      = _param[0].eval();
-
-  // TODO: constant power
-  float lmix = (1.0-pos)*0.5;
-  float rmix = (1.0+pos)*0.5;
-
-  _fval[0] = pos;
-
-  // printf( "pan<%f> lmix<%f> rmix<%f>\n", pan, lmix, rmix );
-  if (1)
-    for (int i = 0; i < inumframes; i++) {
-      float input = bufL[i] * _dbd->_inputPad;
-      _plmix      = _plmix * 0.995f + lmix * 0.005f;
-      _prmix      = _prmix * 0.995f + rmix * 0.005f;
-
-      bufL[i] = input * _plmix;
-      bufR[i] = input * _prmix;
-    }
-}
-void PANNER::doKeyOn(const KeyOnInfo& koi) // final
-{
-  _plmix = 0.0f;
-  _prmix = 0.0f;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
 void BANGAMP_DATA::describeX(class_t* clazz){
 
 }
@@ -703,5 +654,6 @@ void BANGAMP::doKeyOn(const KeyOnInfo& koi) // final
 {
   _smooth = 0.0f;
 }
+
 
 } // namespace ork::audio::singularity
