@@ -194,6 +194,15 @@ struct PANNER2D : public DspBlock {
   float _mixL, _mixR; // for smoothing
   DelayContext _delayL, _delayR;
   TrapSVF _filter1L, _filter1R;
+  TrapSVF _fbLP;
+  TrapSVF _dcBLOCK;
+  TrapAllpass _allpassA, _allpassB, _allpassC;
+  SimpleAllpass _ap2A, _ap2B, _ap2C;
+  float _feedback = 0.995f;
+  float _a0 = 1.0f;
+  float _a1 = 1.0f;
+  float _a2 = 1.0f;
+  float _ap2 = 0.0f;
 };
 ///////////////////////////////////////////////////////////////////////////////
 

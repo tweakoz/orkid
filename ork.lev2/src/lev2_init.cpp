@@ -270,6 +270,7 @@ struct ClassToucher {
     RegisterClassX(audio::singularity::RateLevelEnvData);
     RegisterClassX(audio::singularity::YmEnvData);
     RegisterClassX(audio::singularity::LfoData);
+    RegisterClassX(audio::singularity::GradientData);
     RegisterClassX(audio::singularity::FunData);
     RegisterClassX(audio::singularity::ConstantControllerData);
     RegisterClassX(audio::singularity::CustomControllerData);

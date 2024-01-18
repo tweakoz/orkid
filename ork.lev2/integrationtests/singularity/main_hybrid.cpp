@@ -40,7 +40,7 @@ int main(int argc, char** argv,char**envp) {
   auto WIDTHCONTROL        = fxlayer->appendController<CustomControllerData>("STEREOWIDTH");
   auto& width_mod          = stereoenh->param(0)->_mods;
   width_mod->_src1         = WIDTHCONTROL;
-  width_mod->_src1Depth    = 1.0;
+  width_mod->_src1Scale    = 1.0;
   WIDTHCONTROL->_oncompute = [](CustomControllerInst* cci) { //
     float index  = cci->_layer->_layerTime;
     float wave   = (0.5f + sinf(index) * 0.5);
@@ -196,7 +196,7 @@ int main(int argc, char** argv,char**envp) {
       //////////////////////////////////////
       auto pitch_mod        = dco->_paramd[0]->_mods;
       pitch_mod->_src1      = DCOENV;
-      pitch_mod->_src1Depth = 1.0f;
+      pitch_mod->_src1Scale = 1.0f;
       //////////////////////////////////////
       if (dcochannel == 1) { // add detune
         auto DETUNE              = layerdata->appendController<CustomControllerData>("DCO1DETUNE");
@@ -211,7 +211,7 @@ int main(int argc, char** argv,char**envp) {
       //////////////////////////////////////
       auto dcwmod            = dco->_paramd[1]->_mods;
       dcwmod->_src1          = DCWENV;
-      dcwmod->_src1Depth     = 1.0;
+      dcwmod->_src1Scale     = 1.0;
       dcwmod->_src2          = LFO1;
       dcwmod->_src2DepthCtrl = LFO2;
       dcwmod->_src2MinDepth  = 0.5;
@@ -226,7 +226,7 @@ int main(int argc, char** argv,char**envp) {
       amp_param->_coarse = 0.0f;
       amp_param->useDefaultEvaluator();
       amp_param->_mods->_src1      = DCAENV;
-      amp_param->_mods->_src1Depth = 1.0;
+      amp_param->_mods->_src1Scale = 1.0;
     };
     make_dco(0);
     make_dco(1);
@@ -239,7 +239,7 @@ int main(int argc, char** argv,char**envp) {
     auto panmod            = stereomix->param(1)->_mods;
     auto PANCONTROL        = layerdata->appendController<CustomControllerData>("PAN");
     panmod->_src1          = PANCONTROL;
-    panmod->_src1Depth     = 1.0;
+    panmod->_src1Scale     = 1.0;
     PANCONTROL->_oncompute = [](CustomControllerInst* cci) { //
       float index  = cci->_layer->_layerTime / 3.0f;
       index        = std::clamp(index, 0.0f, 1.0f);

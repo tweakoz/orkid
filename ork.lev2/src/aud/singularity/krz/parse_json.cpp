@@ -480,7 +480,7 @@ void KrzBankDataParser::parseFBlock(
     mods->_src1           = SRC1;
     if (s1.HasMember("Depth")) {
       auto& d          = s1["Depth"];
-      mods->_src1Depth = d["Value"].GetFloat();
+      mods->_src1Scale = d["Value"].GetFloat();
     }
     use_mods = true;
   }

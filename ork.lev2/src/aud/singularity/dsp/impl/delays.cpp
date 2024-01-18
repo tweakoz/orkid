@@ -7,6 +7,7 @@
 
 #include <ork/lev2/aud/singularity/synth.h>
 #include <assert.h>
+#include <ork/lev2/aud/singularity/dspblocks.h>
 #include <ork/lev2/aud/singularity/filters.h>
 #include <ork/lev2/aud/singularity/dsp_mix.h>
 #include <ork/lev2/aud/singularity/modulation.h>

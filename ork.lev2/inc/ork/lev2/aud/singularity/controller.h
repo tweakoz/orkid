@@ -88,6 +88,33 @@ using ctrlblockinst_ptr_t = std::shared_ptr<ControlBlockInst>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
+struct GradientData : public ControllerData {
+
+  DeclareConcreteX(GradientData, ControllerData);
+
+  controllerdata_ptr_t clone() const final;
+
+  GradientData();
+  ~GradientData();
+  ControllerInst* instantiate(layer_ptr_t layer) const final;
+
+  float _initial = 0.0f;
+  float _slope = 0.0f;
+};
+struct GradientInst : public ControllerInst {
+  GradientInst(const GradientData* data, layer_ptr_t layer);
+  ~GradientInst();
+
+  void reset();
+  void keyOn(const KeyOnInfo& KOI) final;
+  void keyOff() final;
+  void compute() final;
+  ////////////////////////////
+  const GradientData* _data;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
 struct LfoData : public ControllerData {
 
   DeclareConcreteX(LfoData, ControllerData);

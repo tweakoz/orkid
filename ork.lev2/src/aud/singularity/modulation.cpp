@@ -28,7 +28,7 @@ static logchannel_ptr_t logchan_modulation = logger()->createChannel("singul.mod
 
 void BlockModulationData::describeX(class_t* clazz) {
   clazz->directObjectProperty("Src1", &BlockModulationData::_src1);
-  clazz->directProperty("Src1Depth", &BlockModulationData::_src1Depth);
+  clazz->directProperty("Src1Depth", &BlockModulationData::_src1Scale);
   clazz->directObjectProperty("Src2", &BlockModulationData::_src2);
   clazz->directProperty("Src2MinDepth", &BlockModulationData::_src2MinDepth);
   clazz->directProperty("Src2MaxDepth", &BlockModulationData::_src2MaxDepth);
@@ -47,7 +47,7 @@ dspparammod_ptr_t BlockModulationData::clone() const{
   rval->_src1 = _src1;
   rval->_src2 = _src2;
   rval->_src2DepthCtrl = _src2DepthCtrl;
-  rval->_src1Depth = _src1Depth;
+  rval->_src1Scale = _src1Scale;
   rval->_src2MinDepth = _src2MinDepth;
   rval->_src2MaxDepth = _src2MaxDepth;
   rval->_evaluator = _evaluator;

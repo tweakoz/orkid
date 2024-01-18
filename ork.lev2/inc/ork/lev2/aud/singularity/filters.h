@@ -14,6 +14,7 @@
 #include <memory>
 #include <stdlib.h>
 #include "krztypes.h"
+#include "delays.h"
 
 namespace ork::audio::singularity {
 
@@ -46,6 +47,17 @@ struct TrapSVF {
 
 private:
   void _compute(float input);
+};
+
+struct SimpleAllpass {
+
+  SimpleAllpass();
+  float compute(float input);
+
+  float _feed = 0.99f;
+  float _y0 = 0.0f;
+  DelayContext _delay;
+
 };
 
 struct TrapAllpass {

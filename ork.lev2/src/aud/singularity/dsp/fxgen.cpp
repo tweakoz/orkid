@@ -24,13 +24,13 @@ dspblkdata_ptr_t appendStereoChorus(lyrdata_ptr_t layer, dspstagedata_ptr_t stag
   auto DELAYTIMEMODL         = layer->appendController<CustomControllerData>("DELAYTIMEL");
   auto DELAYTIMEMODR         = layer->appendController<CustomControllerData>("DELAYTIMER");
   delaytime_modL->_src1      = DELAYTIMEMODL;
-  delaytime_modL->_src1Depth = 1.0;
+  delaytime_modL->_src1Scale = 1.0;
   DELAYTIMEMODL->_oncompute  = [](CustomControllerInst* cci) { //
     float time   = cci->_layer->_layerTime;
     cci->setFloatValue( 0.010f + sinf(time * pi2 * .14) * 0.001f);
   };
   delaytime_modR->_src1      = DELAYTIMEMODR;
-  delaytime_modR->_src1Depth = 1.0;
+  delaytime_modR->_src1Scale = 1.0;
   DELAYTIMEMODR->_oncompute  = [](CustomControllerInst* cci) { //
     float time   = cci->_layer->_layerTime;
     cci->setFloatValue( 0.005f + sinf(time * pi2 * 0.09) * 0.0077f);
@@ -53,13 +53,13 @@ dspblkdata_ptr_t appendMildStereoChorus(lyrdata_ptr_t layer, dspstagedata_ptr_t 
   auto DELAYTIMEMODL         = layer->appendController<CustomControllerData>("DELAYTIMEL");
   auto DELAYTIMEMODR         = layer->appendController<CustomControllerData>("DELAYTIMER");
   delaytime_modL->_src1      = DELAYTIMEMODL;
-  delaytime_modL->_src1Depth = 1.0;
+  delaytime_modL->_src1Scale = 1.0;
   DELAYTIMEMODL->_oncompute  = [](CustomControllerInst* cci) { //
     float time   = cci->_layer->_layerTime;
     cci->setFloatValue( 0.010f + sinf(time * pi2 * .14) * 0.001f);
   };
   delaytime_modR->_src1      = DELAYTIMEMODR;
-  delaytime_modR->_src1Depth = 1.0;
+  delaytime_modR->_src1Scale = 1.0;
   DELAYTIMEMODR->_oncompute  = [](CustomControllerInst* cci) { //
     float time   = cci->_layer->_layerTime;
     cci->setFloatValue( 0.005f + sinf(time * pi2 * 0.09) * 0.0077f);
@@ -237,7 +237,7 @@ void appendStereoEnhancer(lyrdata_ptr_t layer, dspstagedata_ptr_t stage) {
   auto width_mod           = stereoenh->param(0)->_mods;
   auto WIDTHCONTROL        = layer->appendController<CustomControllerData>("WIDTH");
   width_mod->_src1         = WIDTHCONTROL;
-  width_mod->_src1Depth    = 1.0;
+  width_mod->_src1Scale    = 1.0;
   WIDTHCONTROL->_oncompute = [](CustomControllerInst* cci) { //
     cci->setFloatValue( 0.7f);
   };
@@ -275,9 +275,9 @@ void appendPitchChorus(
   auto pmodL            = shifterL->param(1)->_mods;
   auto pmodR            = shifterR->param(1)->_mods;
   pmodL->_src1          = PITCHMODL;
-  pmodL->_src1Depth     = 1.0;
+  pmodL->_src1Scale     = 1.0;
   pmodR->_src1          = PITCHMODR;
-  pmodR->_src1Depth     = 1.0;
+  pmodR->_src1Scale     = 1.0;
   PITCHMODL->_oncompute = [cents](CustomControllerInst* cci) { //
     float time   = cci->_layer->_layerTime;
     cci->setFloatValue( cents + sinf(time * pi2 * 0.03f) * 25 );
@@ -309,9 +309,9 @@ void appendPitchRec(
   auto pmodL            = shifterL->param(1)->_mods;
   auto pmodR            = shifterR->param(1)->_mods;
   pmodL->_src1          = PITCHMODL;
-  pmodL->_src1Depth     = 1.0;
+  pmodL->_src1Scale     = 1.0;
   pmodR->_src1          = PITCHMODR;
-  pmodR->_src1Depth     = 1.0;
+  pmodR->_src1Scale     = 1.0;
   PITCHMODL->_oncompute = [cents](CustomControllerInst* cci) { //
     float time   = cci->_layer->_layerTime;
     cci->setFloatValue( cents + sinf(time * pi2 * 0.07f) * 15 );
@@ -349,7 +349,7 @@ void appendWackiVerb(lyrdata_ptr_t fxlayer, dspstagedata_ptr_t fxstage) {
     auto RV0DTMODA        = fxlayer->appendController<CustomControllerData>(basename + "RV0DTA");
     auto& rvmoda          = rv->param(1)->_mods;
     rvmoda->_src1         = RV0DTMODA;
-    rvmoda->_src1Depth    = 1.0;
+    rvmoda->_src1Scale    = 1.0;
     float speed           = rg.rangedf(mins, maxs);
     RV0DTMODA->_oncompute = [speed, midt, rang](CustomControllerInst* cci) { //
       float time   = cci->_layer->_layerTime;
@@ -360,7 +360,7 @@ void appendWackiVerb(lyrdata_ptr_t fxlayer, dspstagedata_ptr_t fxstage) {
     auto RV0DTMODB        = fxlayer->appendController<CustomControllerData>(basename + "RV0DTB");
     auto rvmodb           = rv->param(2)->_mods;
     rvmodb->_src1         = RV0DTMODB;
-    rvmodb->_src1Depth    = 1.0;
+    rvmodb->_src1Scale    = 1.0;
     speed                 = rg.rangedf(mins, maxs);
     RV0DTMODB->_oncompute = [speed, midt, rang](CustomControllerInst* cci) { //
       float time   = cci->_layer->_layerTime;
@@ -371,7 +371,7 @@ void appendWackiVerb(lyrdata_ptr_t fxlayer, dspstagedata_ptr_t fxstage) {
     auto RV0DTMODC        = fxlayer->appendController<CustomControllerData>(basename + "RV0DTC");
     auto rvmodc           = rv->param(3)->_mods;
     rvmodc->_src1         = RV0DTMODC;
-    rvmodc->_src1Depth    = 1.0;
+    rvmodc->_src1Scale    = 1.0;
     speed                 = rg.rangedf(mins, maxs);
     RV0DTMODC->_oncompute = [speed, midt, rang](CustomControllerInst* cci) { //
       float time   = cci->_layer->_layerTime;
@@ -382,7 +382,7 @@ void appendWackiVerb(lyrdata_ptr_t fxlayer, dspstagedata_ptr_t fxstage) {
     auto RV0DTDMOD        = fxlayer->appendController<CustomControllerData>(basename + "RV0DTD");
     auto rvmodd           = rv->param(4)->_mods;
     rvmodd->_src1         = RV0DTDMOD;
-    rvmodd->_src1Depth    = 1.0;
+    rvmodd->_src1Scale    = 1.0;
     speed                 = rg.rangedf(mins, maxs);
     RV0DTDMOD->_oncompute = [speed, midt, rang](CustomControllerInst* cci) { //
       float time   = cci->_layer->_layerTime;

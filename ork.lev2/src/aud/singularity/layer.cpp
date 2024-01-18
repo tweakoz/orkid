@@ -386,8 +386,8 @@ controller_t Layer::getSRC1(dspparammod_constptr_t mods) {
   //}
 
   auto it = [=]() -> float {
-    float src1depth = mods->_src1Depth;
-    float out       = src1() * src1depth;
+    float src1scale = mods->_src1Scale;
+    float out       = src1() * src1scale + mods->_src1Bias ;
     // printf( "src1out<%f>\n", out );
     return out;
   };

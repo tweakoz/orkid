@@ -10,6 +10,7 @@
 #include <ork/lev2/aud/singularity/filters.h>
 #include <ork/lev2/aud/singularity/dsp_mix.h>
 #include <ork/lev2/aud/singularity/modulation.h>
+#include <ork/lev2/aud/singularity/delays.h>
 
 ImplementReflectionX(ork::audio::singularity::PitchShifterData, "DspFxPitchShifter");
 

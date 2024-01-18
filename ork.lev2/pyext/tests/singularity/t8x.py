@@ -64,7 +64,7 @@ class HybridApp(SingulTestApp):
       ampenv.addSegment("seg2", 0.5, 0,2.0)
       #
       ampblock.paramByName("gain").mods.src1 = ampenv
-      ampblock.paramByName("gain").mods.src1depth = 1.0
+      ampblock.paramByName("gain").mods.src1scale = 1.0
       #
       r = random.randrange(-4,4)
       pchenv = newlyr.appendController("RateLevelEnv", "PITCHENV")
@@ -91,7 +91,7 @@ class HybridApp(SingulTestApp):
       sawblock.paramByName("pitch").fine = fine
       sawblock.paramByName("pitch").fineHZ = finehz
       sawblock.paramByName("pitch").mods.src1 = pchenv
-      sawblock.paramByName("pitch").mods.src1depth = -fine*0.997
+      sawblock.paramByName("pitch").mods.src1scale = -fine*0.997
 
       return newlyr
     for index in range(0,8):

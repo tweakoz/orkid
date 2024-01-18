@@ -126,9 +126,9 @@ layoutgroup_ptr_t createParamEdit(
   ///////////////////////////////////////////////////////////////////////////////
   auto src1ditem = paramitem.typedWidget()->makeChild<Dial>("src1d", color);
   src1ditem.applyBounds({guidevt, guideh4, guidevb, guidehr, 2});
-  src1ditem.typedWidget()->setParams(202, param->_mods->_src1Depth, -1, 1, 2.0);
+  src1ditem.typedWidget()->setParams(202, param->_mods->_src1Scale, -1, 1, 2.0);
   src1ditem.typedWidget()->_onupdate = [param](float v) { //
-    param->_mods->_src1Depth = v;
+    param->_mods->_src1Scale = v;
   };
   ///////////////////////////////////////////////////////////////////////////////
   return paramitem.typedWidget();

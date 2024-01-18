@@ -170,7 +170,7 @@ lyrdata_ptr_t fxpreset_fdn4reverb() {
   auto width_mod           = stereoenh->param(0)->_mods;
   auto WIDTHCONTROL        = fxlayer->appendController<CustomControllerData>("WIDTH2");
   width_mod->_src1         = WIDTHCONTROL;
-  width_mod->_src1Depth    = 1.0;
+  width_mod->_src1Scale    = 1.0;
   WIDTHCONTROL->_oncompute = [](CustomControllerInst* cci) { //
     cci->setFloatValue(0.7f);
   };
@@ -488,7 +488,7 @@ lyrdata_ptr_t fxpreset_pitchwave() {
   auto PITCHMOD        = fxlayer->appendController<CustomControllerData>("PITCHSHIFT");
   auto pmod            = shifter->param(1)->_mods;
   pmod->_src1          = PITCHMOD;
-  pmod->_src1Depth     = 1.0;
+  pmod->_src1Scale     = 1.0;
   PITCHMOD->_oncompute = [](CustomControllerInst* cci) { //
     float time    = cci->_layer->_layerTime;
     cci->_value.x = (1.0f + sinf(time * pi2 * 0.03f)) * 2400.0f;

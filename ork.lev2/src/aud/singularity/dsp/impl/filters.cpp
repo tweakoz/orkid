@@ -451,5 +451,20 @@ void ParallelHighPass::set(float cutoff){
     _biquads[j].SetHpf(cutoff);
   }
 }
+
+//////////////////////////////////////////////////////////
+
+SimpleAllpass::SimpleAllpass(){
+  _delay.setStaticDelayTime(0.003);
+  _delay.clear();
+}
+
+float SimpleAllpass::compute(float input){
+  float output  = input*(-_feed)+_delay.out(0.0f);
+  _delay.inp(input+output*_feed);
+  return output;
+}
+
+
 //////////////////////////////////////////////////////////
 } // namespace ork::audio::singularity

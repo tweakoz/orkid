@@ -143,12 +143,20 @@ void pyinit_aud_singularity_datas(py::module& singmodule) {
           mod->_src2 = ctrl;
         })
     .def_property(
-        "src1depth",
+        "src1scale",
         [](dspparammod_ptr_t mod) -> float { //
-          return mod->_src1Depth;
+          return mod->_src1Scale;
         },
         [](dspparammod_ptr_t mod, float val) { //
-          mod->_src1Depth = val;
+          mod->_src1Scale = val;
+        })
+    .def_property(
+        "src1bias",
+        [](dspparammod_ptr_t mod) -> float { //
+          return mod->_src1Bias;
+        },
+        [](dspparammod_ptr_t mod, float val) { //
+          mod->_src1Bias = val;
         })
     .def_property("src2mindepth",
         [](dspparammod_ptr_t mod) -> float { //

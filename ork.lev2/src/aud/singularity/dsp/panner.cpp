@@ -83,6 +83,15 @@ PANNER2D_DATA::PANNER2D_DATA(std::string name)
   P->_coarse = 0;
   P->_fine = 0;
   // 0 radians == directly forward
+
+  P = addParam("DISTANCE");
+  P->useDefaultEvaluator(); // angle: 0..2pi
+  P->_units = "meters";
+  P->_keyTrack = 0;
+  P->_velTrack = 0;
+  P->_coarse = 1;
+  P->_fine = 0;
+
 }
 dspblk_ptr_t PANNER2D_DATA::createInstance() const {
   return std::make_shared<PANNER2D>(this);
@@ -95,10 +104,20 @@ PANNER2D::PANNER2D(const DspBlockData* dbd)
     float Q = 0.0f;
     _filter1L.Clear();
     _filter1R.Clear();
+    _fbLP.Clear();
+    _dcBLOCK.Clear();
     _filter1L.SetWithQ(EM_LPF,10000.0f,Q);
     _filter1R.SetWithQ(EM_LPF,10000.0f,Q);
+    _dcBLOCK.SetWithQ(EM_HPF,100,Q);
+    _fbLP.SetWithQ(EM_LPF,19000.0f,Q);
     _delayL.setNextDelayTime(0.001);
     _delayR.setNextDelayTime(0.001);
+    _allpassA.Clear();
+    _allpassB.Clear();
+    _allpassC.Clear();
+    _allpassA.set(1000.0f);
+    _allpassB.set(1000.0f);
+    _allpassC.set(1000.0f);
 }
 void PANNER2D::compute(DspBuffer& dspbuf) // final
 {
@@ -110,9 +129,9 @@ void PANNER2D::compute(DspBuffer& dspbuf) // final
   // assume point source at 1m
   constexpr float SOS = 343.0; // m/s
   constexpr float E2E = .152; // ear to ear distance in m
+  float angle = _param[0].eval();
+  float distance = _param[1].eval();
 
-  static float angle = 0.0f; //_param[0].eval();
-  angle += 0.001f;
   _fval[0] = angle;
   fvec3 snd_pos2d(0,0,1);
   snd_pos2d.rotateOnY(angle);
@@ -129,8 +148,11 @@ void PANNER2D::compute(DspBuffer& dspbuf) // final
   float filtposFront  = 0.5f+cosf(angle)*0.5;
   float filtposLeft  = 0.5f+cosf(angle+pi*0.5)*0.5;
   float filtposRight = 0.5f+cosf(angle+pi*1.5)*0.5;
-  float frqL = 3000+filtposFront*3000.0f+filtposLeft*3000.0f;
-  float frqR = 3000+filtposFront*3000.0f+filtposRight*3000.0f;
+  constexpr float termX = 2000.0f;
+  constexpr float termBASE = 1000.0f;
+  constexpr float termZ = 4000.0f;
+  float frqL = termBASE+filtposFront*termZ+filtposLeft*termX;
+  float frqR = termBASE+filtposFront*termZ+filtposRight*termX;
   float Q = 0.0f;
   _filter1L.SetWithQ(EM_LPF,frqL,Q);
   _filter1R.SetWithQ(EM_LPF,frqR,Q);
@@ -150,21 +172,52 @@ void PANNER2D::compute(DspBuffer& dspbuf) // final
   float lmix = cosf(pos*PI*0.5f);
   float rmix = sinf(pos*PI*0.5f);
 
+  _feedback = 0.9999;
+  _a0 = 1.0f;
+  _a1 = 1.0f;
+  _a2 = 1.0f;
+
   // printf( "pan<%f> lmix<%f> rmix<%f>\n", pan, lmix, rmix );
-  if (1)
+  if (0){ // ITD cues only test
     for (int i = 0; i < inumframes; i++) {
      float fi = float(i)/float(inumframes);
+      float fb = _fbLP.Tick(_ap2)*_feedback;
       float input = bufL[i] * _dbd->_inputPad;
       _delayL.inp(input);
       _delayR.inp(input);
+      float delayedL = _delayL.out(fi);
+      float delayedR = _delayR.out(fi);
+      bufL[i] = delayedL;
+      bufR[i] = delayedR;
+    }
+  }
+  else{ // ITD+IID+allpasses
+    for (int i = 0; i < inumframes; i++) {
+     float fi = float(i)/float(inumframes);
+      float fb = _fbLP.Tick(_ap2)*_feedback;
+      float input = _dcBLOCK.Tick(fb)+(bufL[i] * _dbd->_inputPad);
+      _ap2A._feed = 0.5f;
+      _ap2B._feed = 0.5f;
+      _ap2C._feed = 0.5f;
+      float ap0 = _ap2A.compute(input);
+      float ap1 = _ap2B.compute(ap0);
+      _ap2 = _ap2C.compute(ap1);
+
+      float ap_output = ap0*_a0 + ap1*_a1 + _ap2*_a2;
+
+      float delay_input = distance*ap_output+(1.0f-distance)*input;
+      float distanceSquared = distance*distance;
+      if(distanceSquared<1.0f) 
+        distanceSquared = 1.0f;
+      delay_input *= 1.0f/distanceSquared;
+      _delayL.inp(delay_input);
+      _delayR.inp(delay_input);
       float delayedL = _filter1L.Tick(_delayL.out(fi));
       float delayedR = _filter1R.Tick(_delayR.out(fi));
-      //_mixL      = _mixL * 0.995f + lmix * 0.005f;
-      //_mixR      = _mixR * 0.995f + rmix * 0.005f;
-
       bufL[i] = delayedL*lmix;
       bufR[i] = delayedR*rmix;
     }
+  }
 }
 void PANNER2D::doKeyOn(const KeyOnInfo& koi) // final
 {

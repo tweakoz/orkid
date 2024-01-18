@@ -28,7 +28,8 @@ struct BlockModulationData final : public ork::Object {
   controllerdata_ptr_t _src2;
   controllerdata_ptr_t _src2DepthCtrl;
 
-  float _src1Depth    = 0.0f;
+  float _src1Bias     = 0.0f;
+  float _src1Scale    = 0.0f;
   float _src2MinDepth = 0.0f;
   float _src2MaxDepth = 0.0f;
   evalit_t _evaluator;

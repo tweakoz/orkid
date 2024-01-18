@@ -73,10 +73,10 @@ class HybridApp(SingulTestApp):
       modblock.paramByName("amp").coarse = 0.0
       modblock.paramByName("amp").fine = 0.0
       modblock.paramByName("amp").mods.src1 = modenv
-      modblock.paramByName("amp").mods.src1depth = 1
+      modblock.paramByName("amp").mods.src1scale = 1
       modblock.paramByName("pitch").coarse = mod_semis
       modblock.paramByName("pitch").mods.src1 = pchenv
-      modblock.paramByName("pitch").mods.src1depth = 1200
+      modblock.paramByName("pitch").mods.src1scale = 1200
       #########################################
       # carrier
       #########################################
@@ -101,14 +101,14 @@ class HybridApp(SingulTestApp):
       panblock = dspstg.appendDspBlock("AmpPanner","pan")
       panblock.paramByName("POS").coarse=pan
       panblock.paramByName("POS").mods.src1 = panlfo
-      panblock.paramByName("POS").mods.src1depth = .5
+      panblock.paramByName("POS").mods.src1scale = .5
       #########################################
       # post amp
       #########################################
       #
       ampblock = ampstg.appendDspBlock("AmpAdaptive","amp")
       ampblock.paramByName("gain").mods.src1 = ampenv
-      ampblock.paramByName("gain").mods.src1depth = 1.0
+      ampblock.paramByName("gain").mods.src1scale = 1.0
       return newlyr
 
     makePMXLayer(0,0,-0.5)

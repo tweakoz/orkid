@@ -94,11 +94,11 @@ int main(int argc, char** argv,char**envp) {
     //////////////////////////////////////
     auto pitch_mod        = dco->_paramd[0]->_mods;
     pitch_mod->_src1      = DCOENV;
-    pitch_mod->_src1Depth = 1.0f;
+    pitch_mod->_src1Scale = 1.0f;
     //////////////////////////////////////
     auto modulation_index_param        = dco->_paramd[1]->_mods;
     modulation_index_param->_src1      = DCWENV;
-    modulation_index_param->_src1Depth = 1.0;
+    modulation_index_param->_src1Scale = 1.0;
     // modulation_index_param->_src2      = LFO1;
     // modulation_index_param->_src2DepthCtrl = LFO2;
     modulation_index_param->_src2MinDepth = 0.5;
@@ -112,7 +112,7 @@ int main(int argc, char** argv,char**envp) {
     amp_param->_coarse = 0.0f;
     amp_param->useDefaultEvaluator();
     amp_param->_mods->_src1      = DCAENV;
-    amp_param->_mods->_src1Depth = 1.0;
+    amp_param->_mods->_src1Scale = 1.0;
   }
   //////////////////////////////////////
   // create and connect oscilloscope

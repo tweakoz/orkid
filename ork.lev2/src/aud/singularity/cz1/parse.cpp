@@ -217,14 +217,14 @@ CZLAYERDATACTX configureCz1Algorithm(lyrdata_ptr_t layerdata, int numosc) {
 
   GAONCONST->_constvalue   = 1.0f;
   gain_modulator->_src1  = GAONCONST;
-  gain_modulator->_src1Depth = 1.0f;
+  gain_modulator->_src1Scale = 1.0f;
 
   PANCONST->_constvalue   = 0.0f;
   PANCUSTOM->_oncompute   = [](CustomControllerInst* cci) { //
     cci->_value.x = 0.0f;
   };
   pan_modulator->_src1  = PANCONST;
-  pan_modulator->_src1Depth = 1.0f;
+  pan_modulator->_src1Scale = 1.0f;
   pan_modulator->_src2  = PANCUSTOM;
   pan_modulator->_src2MinDepth = 1.0f;
   pan_modulator->_src2MaxDepth = 1.0f;
@@ -333,16 +333,16 @@ void make_dco(CZLAYERDATACTX czctx,
   //////////////////////////////////////
   auto pitch_mod        = dco->_paramd[0]->_mods;
   pitch_mod->_src1      = DCOENV;
-  pitch_mod->_src1Depth = 1.0f;
+  pitch_mod->_src1Scale = 1.0f;
   /////////////////////////////////////////////////
   auto modulation_index        = dco->_paramd[1]->_mods;
   modulation_index->_src1      = DCWENV;
-  modulation_index->_src1Depth = float(oscdata->_dcwDepth) / 15.0f;
+  modulation_index->_src1Scale = float(oscdata->_dcwDepth) / 15.0f;
   /////////////////////////////////////////////////
   auto amp_param = amp->_paramd[0];
   amp_param->useDefaultEvaluator();
   amp_param->_mods->_src1      = DCAENV;
-  amp_param->_mods->_src1Depth = float(oscdata->_dcaDepth) / 15.0f;
+  amp_param->_mods->_src1Scale = float(oscdata->_dcaDepth) / 15.0f;
   /////////////////////////////////////////////////
   if (dcochannel == 1) { // add detune
     auto DETUNE              = layerdata->appendController<CustomControllerData>("DCO1DETUNE");

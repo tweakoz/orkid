@@ -471,7 +471,7 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
         FUN->_b                      = opaname;
         FUN->_op                     = "a*b";
         amp_param->_mods->_src1      = FUN;
-        amp_param->_mods->_src1Depth = 1.0;
+        amp_param->_mods->_src1Scale = 1.0;
       }
       // printf( "OP<%d>\n", op );
       // printf( "    AR<%d> D1R<%d> D2R<%d> RR<%d> D1L<%d>\n", AR,D1R,D2R,RR,D1L);
@@ -646,7 +646,7 @@ void configureTx81zAlgorithm(
   auto STEREOC           = layerdata->appendController<ConstantControllerData>("STEREOMIX");
   auto stereo_mod        = stereoout->_paramd[0]->_mods;
   stereo_mod->_src1      = STEREOC;
-  stereo_mod->_src1Depth = 1.0f;
+  stereo_mod->_src1Scale = 1.0f;
   STEREOC->_constvalue   = 1.0f;
 }
 } // namespace ork::audio::singularity

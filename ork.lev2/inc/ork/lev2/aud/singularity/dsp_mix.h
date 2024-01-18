@@ -15,6 +15,7 @@
 #include <ork/math/cvector4.h>
 #include <ork/math/cvector2.h>
 #include "shelveeq.h"
+#include "delays.h"
 
 namespace ork::audio::singularity {
 
@@ -56,44 +57,6 @@ struct StereoEnhancer : public DspBlock {
   void compute(DspBuffer& dspbuf) final;
   void doKeyOn(const KeyOnInfo& koi) final;
 };
-///////////////////////////////////////////////////////////////////////////////
-struct DelayContext {
-  DelayContext();
-  float out(float fi) const;
-  void inp(float inp);
-  void clear();
-  void setStaticDelayTime(float dt);
-  void setNextDelayTime(float dt);
-  static constexpr int64_t _maxdelay = 1 << 20;
-  static constexpr int64_t _maxx     = _maxdelay << 16;
-
-  int64_t _index     = 0;
-  float _basDelayLen = 0.0f;
-  float _tgtDelayLen = 0.0f;
-  DspBuffer _buffer;
-  float* _bufdata = nullptr;
-};
-struct DelayInput {
-  DelayInput();
-  void inp(float inputSample);
-  void setDelayTime(float delayTime);
-  DspBuffer _buffer;
-  int64_t _index = 0;
-  float _delayLen = 0.0f;
-  float* _bufdata = nullptr;
-  static constexpr int64_t _maxdelay = 1 << 20;
-};
-struct DelayOutput {
-  DelayOutput(DelayInput& input);
-  float out(float fi, size_t tapIndex) const;
-  void addTap(float tapDelay);
-  void removeTap(size_t tapIndex);
-  DelayInput& _input;
-  std::vector<float> _tapDelays;
-  static constexpr int64_t _maxdelay = 1 << 20;
-  static constexpr int64_t _maxx = _maxdelay << 16;
-};
-
 ///////////////////////////////////////////////////////////////////////////////
 struct PitchShifterData : public DspBlockData {
   DeclareConcreteX(PitchShifterData,DspBlockData);

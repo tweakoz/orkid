@@ -22,6 +22,35 @@ class AmbiApp(SingulTestApp):
   def __init__(self):
     super().__init__()
   
+  #########################################
+  # PAN2D
+  #########################################
+  def gen_pan_block(self,newlyr,panblock,arate=None,drate=None):
+    ANGLE = panblock.paramByName("ANGLE")
+    DISTANCE = panblock.paramByName("DISTANCE")
+    #########################################
+    # angle will just keep going up...
+    #########################################
+    angle_gradient = newlyr.appendController("Gradient", "angle_gradient")
+    angle_gradient.properties.initial = 0.0
+    angle_gradient.properties.slope = arate
+    #
+    ANGLE.coarse=0
+    ANGLE.mods.src1 = angle_gradient
+    ANGLE.mods.src1scale = 1.0
+    ANGLE.mods.src1bias = -1.0
+    #########################################
+    # distance will follow a sine wave
+    #########################################
+    dist_lfo = newlyr.appendController("Lfo", "distanceLFO")
+    dist_lfo.properties.shape = "Sine"
+    dist_lfo.properties.minRate = drate
+    dist_lfo.properties.maxRate = drate
+    DISTANCE.coarse=0
+    DISTANCE.mods.src1 = dist_lfo
+    DISTANCE.mods.src1scale = 2.0
+    DISTANCE.mods.src1bias = 3.0
+
   ##############################################
 
   def onGpuInit(self,ctx):
@@ -29,8 +58,8 @@ class AmbiApp(SingulTestApp):
     self.krzdata = singularity.KrzSynthData()
     krz_bank = self.krzdata.bankData
     self.synth.setEffect(self.mainbus,"none")
-    self.mainbus.gain = 48
-    self.octave = 4
+    self.mainbus.gain = 36
+    self.octave = 2
     ############################
     # create a new hybrid patch
     #  mixing different synth architectures
@@ -41,85 +70,77 @@ class AmbiApp(SingulTestApp):
     newprog.monophonic = True
     newprog.portamentoRate = 36000 # cents per second
     ############################
-    def makePMXLayer(mod_semis,car_semis):
-      newlyr = newprog.newLayer()
-      newlyr.gain = -18
-      dspstg = newlyr.appendStage("DSP")
-      ampstg = newlyr.appendStage("AMP")
-      dspstg.ioconfig.inputs = []
-      dspstg.ioconfig.outputs = [0,1]
-      ampstg.ioconfig.inputs = [0,1]
-      ampstg.ioconfig.outputs = [0,1]
-      pchblock = dspstg.appendDspBlock("Pitch","pitch")
-      #########################################
-      # modulator
-      #########################################
-      modblock = dspstg.appendDspBlock("OscPMX","pmx")
-      modenv = newlyr.appendController("RateLevelEnv", "MODENV")
-      modenv.ampenv = False
-      modenv.bipolar = False
-      modenv.sustainSegment = 0
-      modenv.addSegment("seg0", 0.0, 4,0.4)
-      modenv.addSegment("seg1", 0.2, .5,4)
-      modenv.addSegment("seg2", 0.2, 0,2.0)
-      #
-      modblock.properties.InputChannel = 0
-      modblock.properties.PmInputChannels = [0,1,2,3]
-      modblock.paramByName("amp").coarse = 0.0
-      modblock.paramByName("amp").fine = 0.0
-      modblock.paramByName("amp").mods.src1 = modenv
-      modblock.paramByName("amp").mods.src1depth = 2
-      #########################################
-      # carrier
-      #########################################
-      ampenv = newlyr.appendController("RateLevelEnv", "AMPENV")
-      ampenv.ampenv = True
-      ampenv.bipolar = False
-      ampenv.sustainSegment = 0
-      ampenv.addSegment("seg0", 0, 1,0.4)
-      ampenv.addSegment("seg1", 0.2, .5,4)
-      ampenv.addSegment("seg2", 0.2, 0,2.0)
-      #
-      carblock = dspstg.appendDspBlock("OscPMX","pmx2")
-      carblock.properties.InputChannel = 0
-      carblock.properties.PmInputChannels = [0,1,2,3]
-      carblock.paramByName("amp").coarse = 1.0
-      carblock.paramByName("pitch").coarse = car_semis
-      #
-      panlfo = newlyr.appendController("Lfo", "PANLFO")
-      panlfo.properties.shape = "Saw"
-      panlfo.properties.minRate = 0.125
-      panlfo.properties.maxRate = 0.125
-      panblock = dspstg.appendDspBlock("AmpPanner2D","pan")
-      panblock.paramByName("ANGLE").coarse=-1
-      panblock.paramByName("ANGLE").mods.src1 = panlfo
-      panblock.paramByName("ANGLE").mods.src1depth = 1
-      #########################################
-      # post amp
-      #########################################
-      #
-      ampblock = ampstg.appendDspBlock("AmpAdaptive","amp")
-      ampblock.paramByName("gain").mods.src1 = ampenv
-      ampblock.paramByName("gain").mods.src1depth = 1.0
-      return newlyr
-
     if False:
       newprog = krz_bank.programByName("Doomsday")
       L0 = newprog.layer(0)
-      L0.gain = -36 # dB
       S0 = L0.stage("DSP")
-      para = S0.replaceDspBlock("EqParaBass","FilterHighPass","PANNER")
-      panblock = S0.replaceDspBlock("AmpPanner","AmpPanner2D","PANNER")
-      newprog.layer(1).gain = -96 #dB
-      newprog.layer(2).gain = -96 #dB
-      panlfo = L0.appendController("Lfo", "PANLFO")
-      panlfo.properties.shape = "Saw"
-      panlfo.properties.minRate = 0.125
-      panlfo.properties.maxRate = 0.125
-      panblock.paramByName("ANGLE").coarse=-1
-      panblock.paramByName("ANGLE").mods.src1 = panlfo
-      panblock.paramByName("ANGLE").mods.src1depth = 1
+      L1 = newprog.layer(1)
+      S1 = L1.stage("DSP")
+      L2 = newprog.layer(2)
+      S2 = L2.stage("DSP")
+      L0.gain = -96 #-12
+      L1.gain = -96
+      L2.gain = -12
+      x = S2.replaceDspBlock("FilterNotch","AmpAdaptive","X")
+      panblock = S2.replaceDspBlock("AmpPanner","AmpPanner2D","PANNER")
+      self.gen_pan_block(L2,panblock,arate=1.7,drate=0.1)
     else:
+      def makePMXLayer(mod_semis,car_semis):
+        newlyr = newprog.newLayer()
+        newlyr.gain = -18
+        dspstg = newlyr.appendStage("DSP")
+        ampstg = newlyr.appendStage("AMP")
+        dspstg.ioconfig.inputs = []
+        dspstg.ioconfig.outputs = [0,1]
+        ampstg.ioconfig.inputs = [0,1]
+        ampstg.ioconfig.outputs = [0,1]
+        pchblock = dspstg.appendDspBlock("Pitch","pitch")
+        #########################################
+        # modulator
+        #########################################
+        modblock = dspstg.appendDspBlock("OscPMX","pmx")
+        modenv = newlyr.appendController("RateLevelEnv", "MODENV")
+        modenv.ampenv = False
+        modenv.bipolar = False
+        modenv.sustainSegment = 0
+        modenv.addSegment("seg0", 0.0, 4,0.4)
+        modenv.addSegment("seg1", 0.2, .5,4)
+        modenv.addSegment("seg2", 0.2, 0,2.0)
+        #
+        modblock.properties.InputChannel = 0
+        modblock.properties.PmInputChannels = [0,1,2,3]
+        modblock.paramByName("pitch").coarse = 1.0
+        modblock.paramByName("amp").coarse = 0.0
+        modblock.paramByName("amp").fine = 0.0
+        modblock.paramByName("amp").mods.src1 = modenv
+        modblock.paramByName("amp").mods.src1scale = 2
+        #########################################
+        # carrier
+        #########################################
+        ampenv = newlyr.appendController("RateLevelEnv", "AMPENV")
+        ampenv.ampenv = True
+        ampenv.bipolar = False
+        ampenv.sustainSegment = 0
+        ampenv.addSegment("seg0", 0, 1,0.4)
+        ampenv.addSegment("seg1", 0.2, .5,4)
+        ampenv.addSegment("seg2", 0.2, 0,2.0)
+        #
+        carblock = dspstg.appendDspBlock("OscPMX","pmx2")
+        carblock.properties.InputChannel = 0
+        carblock.properties.PmInputChannels = [0,1,2,3]
+        carblock.paramByName("amp").coarse = 1.0
+        carblock.paramByName("pitch").coarse = car_semis
+        #########################################
+        # post amp
+        #########################################
+        #
+        panblock = dspstg.appendDspBlock("AmpPanner2D","pan")
+        self.gen_pan_block(newlyr,panblock,arate=1.0,drate=4.0)
+        #
+        ampblock = ampstg.appendDspBlock("AmpAdaptive","amp")
+        ampblock.paramByName("gain").mods.src1 = ampenv
+        ampblock.paramByName("gain").mods.src1scale = 1.0
+        return newlyr
       makePMXLayer(0,0)
       makePMXLayer(12,0)
     #assert(False)
