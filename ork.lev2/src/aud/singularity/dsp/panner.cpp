@@ -177,7 +177,13 @@ void PANNER2D::compute(DspBuffer& dspbuf) // final
   _a1 = 1.0f;
   _a2 = 1.0f;
 
+  float distanceSquared = distance*distance;
+  if(distanceSquared<1.0f) 
+    distanceSquared = 1.0f;
+  float oneOverDistanceSquared = 1.0f/distanceSquared;
+
   // printf( "pan<%f> lmix<%f> rmix<%f>\n", pan, lmix, rmix );
+
   if (0){ // ITD cues only test
     for (int i = 0; i < inumframes; i++) {
      float fi = float(i)/float(inumframes);
@@ -191,11 +197,28 @@ void PANNER2D::compute(DspBuffer& dspbuf) // final
       bufR[i] = delayedR;
     }
   }
-  else{ // ITD+IID+allpasses
+  else if (0){ // IID cues only test
     for (int i = 0; i < inumframes; i++) {
      float fi = float(i)/float(inumframes);
       float fb = _fbLP.Tick(_ap2)*_feedback;
-      float input = _dcBLOCK.Tick(fb)+(bufL[i] * _dbd->_inputPad);
+      float input = bufL[i] * _dbd->_inputPad;
+      bufL[i] = input*lmix;
+      bufR[i] = input*rmix;
+    }
+  }
+  else{ // ITD+IID+allpasses
+    for (int i = 0; i < inumframes; i++) {
+      float fi = float(i)/float(inumframes);
+      
+      float fb = _fbLP.Tick(_ap2)*_feedback;
+      float input = _dcBLOCK.Tick(fb) // DC blocking for feedback loop
+                  + (bufL[i] * _dbd->_inputPad);
+
+
+      //////////////////
+      // allpass 
+      //////////////////
+
       _ap2A._feed = 0.5f;
       _ap2B._feed = 0.5f;
       _ap2C._feed = 0.5f;
@@ -205,15 +228,33 @@ void PANNER2D::compute(DspBuffer& dspbuf) // final
 
       float ap_output = ap0*_a0 + ap1*_a1 + _ap2*_a2;
 
-      float delay_input = distance*ap_output+(1.0f-distance)*input;
-      float distanceSquared = distance*distance;
-      if(distanceSquared<1.0f) 
-        distanceSquared = 1.0f;
-      delay_input *= 1.0f/distanceSquared;
+      //////////////////
+      // select between allpass and dry
+      //. based on distance
+      //////////////////
+
+      float delay_input = distance*ap_output //
+                        +(1.0f-distance)*input;
+
+      //////////////////
+      // distance attenuation
+      //////////////////
+
+      delay_input *= oneOverDistanceSquared;
+
+      //////////////////
+      // ITD delay
+      //////////////////
+
       _delayL.inp(delay_input);
       _delayR.inp(delay_input);
       float delayedL = _filter1L.Tick(_delayL.out(fi));
       float delayedR = _filter1R.Tick(_delayR.out(fi));
+
+      //////////////////
+      // final panning
+      //////////////////
+
       bufL[i] = delayedL*lmix;
       bufR[i] = delayedR*rmix;
     }
