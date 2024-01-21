@@ -43,16 +43,16 @@ void Simulation::_serviceEventQueues() {
 
   for (const auto& e : _current_events) {
     bool do_continue = true;
-    if( auto as_ev = e.tryAs<Controller::Event>() ){
+    if( auto as_ev = e.tryAs<Controller::event_ptr_t>() ){
       if(_controller->_tracewriter)
-        _controller->_tracewriter->_traceEvent(as_ev.value());
+        _controller->_tracewriter->_traceEvent(*as_ev.value());
 
-      do_continue = _onControllerEvent(as_ev.value());
+      do_continue = _onControllerEvent(*(as_ev.value()));
     }
-    else if( auto as_req = e.tryAs<Controller::Request>() ){
+    else if( auto as_req = e.tryAs<Controller::request_ptr_t>() ){
       if(_controller->_tracewriter)
-        _controller->_tracewriter->_traceRequest(as_req.value());
-      do_continue = _onControllerRequest(as_req.value());
+        _controller->_tracewriter->_traceRequest(*as_req.value());
+      do_continue = _onControllerRequest(*(as_req.value()));
     }
     else{
       OrkAssert(false);

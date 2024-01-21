@@ -152,7 +152,7 @@ std::string Controller::TraceWriter::_traceVar64(const svar64_t& var){
 
 ///////////////////////////////////////////////////////////////////////////////
 
-std::string Controller::TraceWriter::_traceVar128(const svar128_t& var){
+std::string Controller::TraceWriter::_traceVar128(const svar160_t& var){
 
 	std::string rval;
 

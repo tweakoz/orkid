@@ -16,30 +16,30 @@ Orkid's synthesizer is loosely inspired by Kurzeil VAST, in that it supports ful
     - Soundfonts (.sf2 file import)
     - Casio CZx (including sysex bank import)
     - Yamaha Tx81z (including sysex bank import)
-  - Emulations are converted to singularity modular format
-    - this allows synth 'models' to be mixed freely.
+  - Emulations are converted to singularity native modular format, This facilitates freform combination of synthesis models.
   - A variety of DSP modules are included
     - Phase Modulation Oscillators (Tx81z style)
     - Phase Distortion Oscillators (CZ style)
-    - A variety of analog emulation oscillators with/without antialiasing covering the usual, Sin, Saw, Pulse, Square, Triangle, with synchronization support.
+    - A variety of virtual analog oscillators with/without antialiasing covering the usual, Sin, Saw, Pulse, Square, Triangle, with synchronization support.
     - Sample playback oscillators with loop, reverseloop, pingpong loop, etc..
     - Noise Oscillators
+    - TODO: Granular Synthesis, Speech Synthesis, Physical Modeling.
     - Nonlinear Operators (Waveshapers, Wrap, etc..)
     - Filters - Variety of Lowpass, BandPass, HighPass, Notch, Allpass filters.
     - Envelope Generators - variety of EG types.
-    - Amplifier operators, MonoIO, Mono-StereoIO, Ring Modulators, Splitters, etc.. 
+    - Amplifier operators, MonoIO, Mono-StereoIO, 2D Panning, Ring Modulators, Splitters, etc.. 
   - All DSPgraphs can be layered or split.
   - Flexible modulation routing (can apply to all modules that have modulation inputs)
     - LFO's, EG's, Sample/Hold, FUNS, etc..
     - Arbitrary modulation expressions supported.
     - Can modulate from c++ or python lambda functions.
   - Effects Section
-    - delays
+    - delays (static and variable)
     - flangers
     - chorus
-    - FDN reverb
-    - EQ
-    - distortion
+    - FDN4/FDN8 reverb
+    - Shelf/Parametric EQ
+    - Distortion
     - Can link up individual effects into FX chains/graphs
   - Flexible MixBus architecture 
     - not limited to a single stereo bus, have as many as you need and can afford.
@@ -48,6 +48,8 @@ Orkid's synthesizer is loosely inspired by Kurzeil VAST, in that it supports ful
     - ALSA
     - PipeWire
     - NULL (for debug)
+  - lev2 UI support for things like Oscilloscopes/Spectrum Analyzers/Control Signal Plotting for debugging.
+  - Accessible from C++ and Python bindings.
 
   ### Architecture
 
@@ -81,7 +83,7 @@ Orkid's synthesizer is loosely inspired by Kurzeil VAST, in that it supports ful
 
   - Synth : collection of all layers/busses that get mixed to final outputs.
   - OutputBus : set of DSP channels which sum layers which are assigned to it. 
-  - DspBuffer
+  - DspBuffer : set of parallel (n-channel) waveform buffers used for passing signals between DSP opertations in a stage.
   - outputBuffer
   - KeyOnInfo
   - KeyOnModifiers

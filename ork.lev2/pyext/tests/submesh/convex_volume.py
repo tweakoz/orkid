@@ -9,7 +9,7 @@ from orkengine.core import *
 from orkengine.lev2 import *
 from PIL import Image
 import numpy as np
-from ork.deco import Deco
+from obt.deco import Deco
 deco = Deco()
 coreappinit() # setup filesystem
 ################################################################################
