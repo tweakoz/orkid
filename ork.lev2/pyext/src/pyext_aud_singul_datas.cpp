@@ -380,11 +380,19 @@ void pyinit_aud_singularity_datas(py::module& singmodule) {
             }
             return nullptr;
           })
+          .def("appendPitchChorus",[](dspstagedata_ptr_t stgdata, 
+                                      lyrdata_ptr_t layer,                                      
+                                      float wetness,
+                                      float cents,
+                                      float feedback) {
+            appendPitchChorus(layer,stgdata,wetness,cents,feedback);
+          })
           .def("dspblock", [](dspstagedata_ptr_t stgdata, int index) -> dspblkdata_ptr_t { return stgdata->_blockdatas[index]; })
           .def("dump", [](dspstagedata_ptr_t stgdata) { stgdata->dump(); });
   type_codec->registerStdCodec<dspstagedata_ptr_t>(stgdata_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto ldata_type = py::class_<LayerData, lyrdata_ptr_t>(singmodule, "LayerData") //
+                        .def(py::init<>())
                         .def(
                             "stage",
                             [](lyrdata_ptr_t ldata, std::string named) -> dspstagedata_ptr_t { //

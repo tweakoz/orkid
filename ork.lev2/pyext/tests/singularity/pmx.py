@@ -38,7 +38,7 @@ class HybridApp(SingulTestApp):
     ############################
     newprog = self.new_soundbank.newProgram("PMX")
     newprog.monophonic = True
-    newprog.portamentoRate = 36000 # cents per second
+    newprog.portamentoRate = 60000 # cents per second
     ############################
     def makePMXLayer(mod_semis,car_semis,pan):
       newlyr = newprog.newLayer()
@@ -56,17 +56,18 @@ class HybridApp(SingulTestApp):
       modenv = newlyr.appendController("RateLevelEnv", "MODENV")
       modenv.ampenv = False
       modenv.bipolar = False
-      modenv.sustainSegment = 0
-      modenv.addSegment("seg0", 0.0, 4,0.4)
-      modenv.addSegment("seg1", 0.2, .5,4)
-      modenv.addSegment("seg2", 0.2, 0,2.0)
+      modenv.sustainSegment = 1
+      modenv.addSegment("seg0", 0.0, 0,1)
+      modenv.addSegment("seg0a", 0.0, 4,1)
+      modenv.addSegment("seg1", 0.1, .5,4)
+      modenv.addSegment("seg2", 0.1, 0,2.0)
       pchenv = newlyr.appendController("RateLevelEnv", "MODPITCHENV")
       pchenv.ampenv = False
       pchenv.bipolar = True
       pchenv.releaseSegment=2
       pchenv.addSegment("seg0", 0, 1,1)
-      pchenv.addSegment("seg1", .01, .5,2)
-      pchenv.addSegment("seg2", .01, 0.01,1)
+      pchenv.addSegment("seg1", .001, .5,2)
+      pchenv.addSegment("seg2", .001, 0.01,1)
       #
       modblock.properties.InputChannel = 0
       modblock.properties.PmInputChannels = [0,1,2,3]

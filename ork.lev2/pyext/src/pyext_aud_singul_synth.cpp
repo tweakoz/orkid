@@ -120,6 +120,10 @@ void pyinit_aud_singularity_synth(py::module& singmodule) {
                        .def_property("uiprogram", //
                                      [](outbus_ptr_t bus) -> prgdata_constptr_t { return bus->_uiprogram; },
                                      [](outbus_ptr_t bus, prgdata_constptr_t pd) { bus->_uiprogram = pd; })
+                       .def_property("layer", //
+                                     [](outbus_ptr_t bus) -> lyrdata_constptr_t { return bus->_dsplayerdata; },
+                                     [](outbus_ptr_t bus, lyrdata_ptr_t ld) { bus->setBusDSP(ld); })
+
                        .def_property("gain", //
                                      [](outbus_ptr_t bus) -> float { return bus->_prog_gain; },
                                      [](outbus_ptr_t bus, float g) { bus->_prog_gain = g; });

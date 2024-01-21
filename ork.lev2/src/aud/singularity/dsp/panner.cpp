@@ -148,9 +148,9 @@ void PANNER2D::compute(DspBuffer& dspbuf) // final
   float filtposFront  = 0.5f+cosf(angle)*0.5;
   float filtposLeft  = 0.5f+cosf(angle+pi*0.5)*0.5;
   float filtposRight = 0.5f+cosf(angle+pi*1.5)*0.5;
+  constexpr float termBASE = 3000.0f;
   constexpr float termX = 2000.0f;
-  constexpr float termBASE = 1000.0f;
-  constexpr float termZ = 4000.0f;
+  constexpr float termZ = 3000.0f;
   float frqL = termBASE+filtposFront*termZ+filtposLeft*termX;
   float frqR = termBASE+filtposFront*termZ+filtposRight*termX;
   float Q = 0.0f;
