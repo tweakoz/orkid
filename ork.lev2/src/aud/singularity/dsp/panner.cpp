@@ -193,8 +193,8 @@ void PANNER2D::compute(DspBuffer& dspbuf) // final
       _delayR.inp(input);
       float delayedL = _delayL.out(fi);
       float delayedR = _delayR.out(fi);
-      bufL[i] = delayedL;
-      bufR[i] = delayedR;
+      bufL[i] = delayedL*oneOverDistanceSquared;
+      bufR[i] = delayedR*oneOverDistanceSquared;
     }
   }
   else if (0){ // IID cues only test
@@ -202,8 +202,8 @@ void PANNER2D::compute(DspBuffer& dspbuf) // final
      float fi = float(i)/float(inumframes);
       float fb = _fbLP.Tick(_ap2)*_feedback;
       float input = bufL[i] * _dbd->_inputPad;
-      bufL[i] = input*lmix;
-      bufR[i] = input*rmix;
+      bufL[i] = input*lmix*oneOverDistanceSquared;
+      bufR[i] = input*rmix*oneOverDistanceSquared;
     }
   }
   else{ // ITD+IID+allpasses

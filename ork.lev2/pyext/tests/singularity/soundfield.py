@@ -12,9 +12,11 @@ from orkengine.core import *
 from orkengine.lev2 import *
 
 ################################################################################
+sys.path.append((thisdir()).normalized.as_string) # add parent dir to path
 sys.path.append((thisdir()/"..").normalized.as_string) # add parent dir to path
 from _boilerplate import *
 from singularity._harness import SingulTestApp, find_index
+from _t8x import makeT8XLayer
 ################################################################################
 
 class AmbiApp(SingulTestApp):
@@ -25,6 +27,7 @@ class AmbiApp(SingulTestApp):
     self.step = 0
     self.clickcnt = 0
     self.basscnt = 0
+    self.clickvoice = None
   #########################################
   # PAN2D
   #########################################
@@ -63,6 +66,16 @@ class AmbiApp(SingulTestApp):
     self.synth.setEffect(self.mainbus,"ShifterChorus")
     self.mainbus.gain = 30
 
+    ############################
+    newprog = krz_bank.newProgram("T8X")
+    newprog.monophonic = True
+    newprog.portamentoRate = 1200 # cents per second
+    for index in range(0,8):
+      fi = index/7.0
+      makeT8XLayer(newprog,fi,11.99)
+    self.t8x = newprog
+    ############################
+
     L0 = singularity.LayerData()
     S0 = L0.appendStage("PAN")
     S0.ioconfig.inputs = [0,1]
@@ -84,8 +97,16 @@ class AmbiApp(SingulTestApp):
     S0.ioconfig.inputs = [0,1]
     S0.ioconfig.outputs = [0,1]
     self.aux2panblock = S0.appendDspBlock("AmpPanner2D","PANNER")
-    self.auxbusses[2].gain = -6
+    self.auxbusses[2].gain = 90
     self.auxbusses[2].layer = L0
+
+    L0 = singularity.LayerData()
+    S0 = L0.appendStage("PAN")
+    S0.ioconfig.inputs = [0,1]
+    S0.ioconfig.outputs = [0,1]
+    self.aux3panblock = S0.appendDspBlock("AmpPanner2D","PANNER")
+    self.auxbusses[3].gain = -6
+    self.auxbusses[3].layer = L0
 
     L0 = singularity.LayerData()
     S0 = L0.appendStage("PAN")
@@ -148,6 +169,8 @@ class AmbiApp(SingulTestApp):
     self.aux0panblock.paramByName("DISTANCE").coarse = math.sin(self.time)+2
     self.aux1panblock.paramByName("ANGLE").coarse = self.time*-1.7
     self.aux1panblock.paramByName("DISTANCE").coarse = math.sin(self.time*3)+2
+    self.aux2panblock.paramByName("ANGLE").coarse = self.time*3.7
+    self.aux2panblock.paramByName("DISTANCE").coarse = math.sin(self.time*3)+2
     ########################################
     # click
     ########################################
@@ -158,11 +181,11 @@ class AmbiApp(SingulTestApp):
       self.aux7panblock.paramByName("ANGLE").coarse = self.clickcnt*0.5
       self.aux7panblock.paramByName("DISTANCE").coarse = 1
 
-      if len(self.voices)>=10!=None:
-        self.synth.keyOff(self.voices[2],48,127)
+      if self.clickvoice!=None:
+        self.synth.keyOff(self.clickvoice,48,127)
       kmod = singularity.KeyOnModifiers()
       kmod.outputbus = self.auxbusses[7]
-      self.voices[10] = self.synth.keyOn(48,127,self.click,kmod)
+      self.clickvoice = self.synth.keyOn(48,127,self.click,kmod)
     ########################################
     # bass
     ########################################
@@ -170,13 +193,13 @@ class AmbiApp(SingulTestApp):
       self.basscnt = 1
       x = random.randrange(-100,100)*0.01
       y = random.randrange(-100,100)*0.01
-      self.aux2panblock.paramByName("ANGLE").coarse = self.basscnt*0.5
-      self.aux2panblock.paramByName("DISTANCE").coarse = 1
+      self.aux3panblock.paramByName("ANGLE").coarse = self.basscnt*0.5
+      self.aux3panblock.paramByName("DISTANCE").coarse = 1
 
       if len(self.voices)>=9!=None:
         self.synth.keyOff(self.voices[9],48,127)
       kmod = singularity.KeyOnModifiers()
-      kmod.outputbus = self.auxbusses[2]
+      kmod.outputbus = self.auxbusses[3]
       self.voices[9] = self.synth.keyOn(36,127,self.bass,kmod)
     ########################################
     if self.step==0:
@@ -197,17 +220,23 @@ class AmbiApp(SingulTestApp):
         self.voices[2] = self.synth.keyOn(84,127,self.hirez,kmod)
         self.step = 3
     elif self.step==3:
-      if(self.time>13.5):
-        self.voices[3] = self.synth.keyOn(72,127,self.doomsday,None)
+      if(self.time>7.5):
+        kmod = singularity.KeyOnModifiers()
+        kmod.outputbus = self.auxbusses[2]
+        self.voices[6] = self.synth.keyOn(60,127,self.t8x,kmod)
         self.step = 4
     elif self.step==4:
-      if(self.time>8):
+      if(self.time>10.7):
         self.voices[4] = self.synth.keyOn(60,127,self.doomsday,None)
         self.step = 5
     elif self.step==5:
       if(self.time>13.5):
         self.voices[5] = self.synth.keyOn(72,127,self.doomsday,None)
         self.step = 6
+    elif self.step==6:
+      if(self.time>14.5):
+        self.voices[3] = self.synth.keyOn(72,127,self.doomsday,None)
+        self.step = 7
 
 
     return super().onGpuUpdate(ctx)   
