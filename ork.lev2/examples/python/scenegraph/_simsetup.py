@@ -78,6 +78,7 @@ class SimApp(object):
       "SpecularIntensity": float(1),
     }
     createSceneGraph(app=self,rendermodel="DeferredPBR",params_dict=params_dict)
+    self.scene.enablePickHud()
     model = XgmModel("src://environ/objects/misc/ref/uvsph.glb")
     self.instanceset = self.instance_set_class(model,self.layer1)
   ################################################

@@ -7,21 +7,6 @@ fxconfig fxcfg_default {
 	import "envtools.i";
 }
 ///////////////////////////////////////////////////////////////
-technique PIK_RI_NI {
-	fxconfig=fxcfg_default;
-	vf_pass={vs_pick_rigid_mono,ps_pick,sb_default}
-}
-///////////////////////////////////////////////////////////////
-technique PIK_SK_NI {
-	fxconfig=fxcfg_default;
-	vf_pass={vs_pick_skinned_mono,ps_pick,sb_default}
-}
-///////////////////////////////////////////////////////////////
-technique PIK_RI_IN {
-	fxconfig=fxcfg_default;
-	vf_pass={vs_pick_rigid_instanced_mono,ps_pick,sb_default}
-}
-///////////////////////////////////////////////////////////////
 technique FWD_SKYBOX_MO {
 	fxconfig=fxcfg_default;
 	vf_pass={vs_forward_skybox_mono,ps_forward_skybox_mono,sb_default}
@@ -127,6 +112,21 @@ technique GBU_CT_NM_RI_IN_MO {
 technique GBU_CT_NM_RI_IN_ST {
 	fxconfig=fxcfg_default;
 	vf_pass={vs_rigid_gbuffer_instanced_stereo,ps_gbuffer_n_stereo_instanced,sb_default}
+}
+///////////////////////////////////////////////////////////////
+technique PIK_RI_NI {
+	fxconfig=fxcfg_default;
+	vf_pass={vs_pick_rigid_mono,ps_pick,sb_default}
+}
+///////////////////////////////////////////////////////////////
+technique PIK_SK_NI {
+	fxconfig=fxcfg_default;
+	vf_pass={vs_pick_skinned_mono,ps_pick,sb_default}
+}
+///////////////////////////////////////////////////////////////
+technique PIK_RI_IN {
+	fxconfig=fxcfg_default;
+	vf_pass={vs_pick_rigid_instanced_mono,ps_pick,sb_default}
 }
 ///////////////////////////////////////////////////////////////
 

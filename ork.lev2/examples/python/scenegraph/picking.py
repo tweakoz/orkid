@@ -55,16 +55,18 @@ class PickingApp(_simsetup.SimApp):
     if True: #event.code==3:
       def pick_callback(pixel_fetch_context):
         obj = pixel_fetch_context.value(0)
-        picked = 0
-        if picked!=0xffffffffffffffff:
-          #print("%s"%(hex(picked)))
-          assert(picked<=numinstances);
+        ch1 = pixel_fetch_context.value(1)
+        ch2 = pixel_fetch_context.value(2)
+        ch3 = pixel_fetch_context.value(3)
+        if obj is not None:
+          iid = obj["y"]
+          assert(iid<=numinstances);
           color = vec4(random.uniform(0,1),
                       random.uniform(0,1),
                       random.uniform(0,1),
                       1)
           iset = self.instanceset
-          iset.instancecolors[picked] = color
+          iset.instancecolors[iid] = color
       self.scene.pickWithScreenCoord(self.camera,vec2(event.x,event.y),pick_callback)
     return ui.HandlerResult()
   ################################################
