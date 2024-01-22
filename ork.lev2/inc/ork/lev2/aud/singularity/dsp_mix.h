@@ -66,6 +66,7 @@ struct PitchShifterData : public DspBlockData {
 struct PitchShifter : public DspBlock {
   using dataclass_t = PitchShifterData;
   PitchShifter(const PitchShifterData* dbd);
+  ~PitchShifter();
   void compute(DspBuffer& dspbuf) final;
   void doKeyOn(const KeyOnInfo& koi) final;
 
@@ -83,10 +84,10 @@ struct PitchShifter : public DspBlock {
   BiQuad _lopassGfilter;
   BiQuad _lopassHfilter;
 
-  DelayContext _delayA;
-  DelayContext _delayB;
-  DelayContext _delayC;
-  DelayContext _delayD;
+  delaycontext_ptr_t _delayA;
+  delaycontext_ptr_t _delayB;
+  delaycontext_ptr_t _delayC;
+  delaycontext_ptr_t _delayD;
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct RecursivePitchShifterData : public DspBlockData {
@@ -98,6 +99,7 @@ struct RecursivePitchShifterData : public DspBlockData {
 struct RecursivePitchShifter : public DspBlock {
   using dataclass_t = RecursivePitchShifterData;
   RecursivePitchShifter(const dataclass_t* dbd);
+  ~RecursivePitchShifter();
   void compute(DspBuffer& dspbuf) final;
   void doKeyOn(const KeyOnInfo& koi) final;
 
@@ -115,12 +117,12 @@ struct RecursivePitchShifter : public DspBlock {
   BiQuad _lopassGfilter;
   BiQuad _lopassHfilter;
 
-  DelayContext _delayA;
-  DelayContext _delayB;
-  DelayContext _delayC;
-  DelayContext _delayD;
+  delaycontext_ptr_t _delayA;
+  delaycontext_ptr_t _delayB;
+  delaycontext_ptr_t _delayC;
+  delaycontext_ptr_t _delayD;
 
-  DelayContext _delayOuter;
+  delaycontext_ptr_t _delayOuter;
   const dataclass_t* _mydata;
 
 };
@@ -133,10 +135,11 @@ struct StereoDynamicEchoData : public DspBlockData {
 struct StereoDynamicEcho : public DspBlock {
   using dataclass_t = StereoDynamicEchoData;
   StereoDynamicEcho(const StereoDynamicEchoData* dbd);
+  ~StereoDynamicEcho();
   void compute(DspBuffer& dspbuf) final;
   void doKeyOn(const KeyOnInfo& koi) final;
-  DelayContext _delayL;
-  DelayContext _delayR;
+  delaycontext_ptr_t _delayL;
+  delaycontext_ptr_t _delayR;
 };
 ///////////////////////////////////////////////////////////////////////////////
 // Feedback Delay Network Reverb (4 nodes)
@@ -162,14 +165,16 @@ struct Fdn4ReverbData : public DspBlockData {
 struct Fdn4Reverb : public DspBlock {
   using dataclass_t = Fdn4ReverbData;
   Fdn4Reverb(const Fdn4ReverbData*);
+  ~Fdn4Reverb();
+
   void compute(DspBuffer& dspbuf) final;
   void doKeyOn(const KeyOnInfo& koi) final;
 
   const Fdn4ReverbData* _mydata;
-  DelayContext _delayA;
-  DelayContext _delayB;
-  DelayContext _delayC;
-  DelayContext _delayD;
+  delaycontext_ptr_t _delayA;
+  delaycontext_ptr_t _delayB;
+  delaycontext_ptr_t _delayC;
+  delaycontext_ptr_t _delayD;
   BiQuad _hipassfilterL;
   BiQuad _hipassfilterR;
   fmtx4 _feedbackMatrix;
@@ -212,6 +217,8 @@ struct Fdn4ReverbXData : public DspBlockData {
 struct Fdn4ReverbX : public DspBlock {
   using dataclass_t = Fdn4ReverbXData;
   Fdn4ReverbX(const Fdn4ReverbXData*);
+  ~Fdn4ReverbX();
+  
   void compute(DspBuffer& dspbuf) final;
   void doKeyOn(const KeyOnInfo& koi) final;
   void matrixHadamard(float fblevel);
@@ -222,10 +229,10 @@ struct Fdn4ReverbX : public DspBlock {
   float _angle;
   float _speed = 0.0f;
 
-  DelayContext _delayA;
-  DelayContext _delayB;
-  DelayContext _delayC;
-  DelayContext _delayD;
+  delaycontext_ptr_t _delayA;
+  delaycontext_ptr_t _delayB;
+  delaycontext_ptr_t _delayC;
+  delaycontext_ptr_t _delayD;
   BiQuad _filterA;
   BiQuad _filterB;
   BiQuad _filterC;
@@ -313,9 +320,10 @@ struct ParallelHighPass{
 };
 struct ParallelDelay{
   ParallelDelay();
+  ~ParallelDelay();
   vec8f output(float fi);
   void input(const vec8f& input);
-  DelayContext _delay[8];
+  delaycontext_ptr_t _delay[8];
   BiQuad _dcblock[8];
   OnePoleHighPass _dcblock2[8];
 

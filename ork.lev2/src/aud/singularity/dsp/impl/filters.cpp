@@ -5,6 +5,7 @@
 // see license-mit.txt in the root of the repo, and/or https://opensource.org/license/mit/
 ////////////////////////////////////////////////////////////////
 
+#include <ork/kernel/opq.h>
 #include <ork/lev2/aud/singularity/synth.h>
 #include <assert.h>
 #include <ork/lev2/aud/singularity/filters.h>
@@ -455,13 +456,15 @@ void ParallelHighPass::set(float cutoff){
 //////////////////////////////////////////////////////////
 
 SimpleAllpass::SimpleAllpass(){
-  _delay.setStaticDelayTime(0.003);
-  _delay.clear();
+  _delay = synth::instance()->allocDelayLine();
+  _delay->setStaticDelayTime(0.003);
 }
-
+SimpleAllpass::~SimpleAllpass(){
+  synth::instance()->freeDelayLine(_delay);
+}
 float SimpleAllpass::compute(float input){
-  float output  = input*(-_feed)+_delay.out(0.0f);
-  _delay.inp(input+output*_feed);
+  float output  = input*(-_feed)+_delay->out(0.0f);
+  _delay->inp(input+output*_feed);
   return output;
 }
 

@@ -192,7 +192,7 @@ struct PANNER2D : public DspBlock {
   void compute(DspBuffer& dspbuf) final;
   void doKeyOn(const KeyOnInfo& koi) final;
   float _mixL, _mixR; // for smoothing
-  DelayContext _delayL, _delayR;
+  delaycontext_ptr_t _delayL, _delayR;
   TrapSVF _filter1L, _filter1R;
   TrapSVF _fbLP;
   TrapSVF _dcBLOCK;

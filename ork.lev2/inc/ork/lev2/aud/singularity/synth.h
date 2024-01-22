@@ -184,6 +184,12 @@ struct synth {
   LockedResource<eventmap_t> _eventmap;
   std::vector<audiothreadhandler_ptr_t> _audiothreadhandlers;
 
+  using delaydequeue_t = std::deque<delaycontext_ptr_t>;
+  LockedResource<delaydequeue_t> _delayspool;
+
+  delaycontext_ptr_t allocDelayLine();
+  void freeDelayLine(delaycontext_ptr_t);
+
   void resize(int numframes);
 
   prgdata_constptr_t _globalprog;

@@ -110,8 +110,13 @@ PANNER2D::PANNER2D(const DspBlockData* dbd)
     _filter1R.SetWithQ(EM_LPF,10000.0f,Q);
     _dcBLOCK.SetWithQ(EM_HPF,100,Q);
     _fbLP.SetWithQ(EM_LPF,19000.0f,Q);
-    _delayL.setNextDelayTime(0.001);
-    _delayR.setNextDelayTime(0.001);
+
+    auto syni = synth::instance();
+    _delayL = syni->allocDelayLine();
+    _delayR = syni->allocDelayLine();
+
+    _delayL->setNextDelayTime(0.001);
+    _delayR->setNextDelayTime(0.001);
     _allpassA.Clear();
     _allpassB.Clear();
     _allpassC.Clear();
@@ -142,8 +147,8 @@ void PANNER2D::compute(DspBuffer& dspbuf) // final
   float dR = (snd_pos2d-earposR).magnitude(); // distance to R ear in meters
   float tL = dL/SOS; // time (seconds) for sound to travel from source to ear
   float tR = dR/SOS; // time (seconds) for sound to travel from source to ear
-  _delayL.setNextDelayTime(tL);
-  _delayR.setNextDelayTime(tR);
+  _delayL->setNextDelayTime(tL);
+  _delayR->setNextDelayTime(tR);
 
   float filtposFront  = 0.5f+cosf(angle)*0.5;
   float filtposLeft  = 0.5f+cosf(angle+pi*0.5)*0.5;
@@ -189,10 +194,10 @@ void PANNER2D::compute(DspBuffer& dspbuf) // final
      float fi = float(i)/float(inumframes);
       float fb = _fbLP.Tick(_ap2)*_feedback;
       float input = bufL[i] * _dbd->_inputPad;
-      _delayL.inp(input);
-      _delayR.inp(input);
-      float delayedL = _delayL.out(fi);
-      float delayedR = _delayR.out(fi);
+      _delayL->inp(input);
+      _delayR->inp(input);
+      float delayedL = _delayL->out(fi);
+      float delayedR = _delayR->out(fi);
       bufL[i] = delayedL*oneOverDistanceSquared;
       bufR[i] = delayedR*oneOverDistanceSquared;
     }
@@ -246,10 +251,10 @@ void PANNER2D::compute(DspBuffer& dspbuf) // final
       // ITD delay
       //////////////////
 
-      _delayL.inp(delay_input);
-      _delayR.inp(delay_input);
-      float delayedL = _filter1L.Tick(_delayL.out(fi));
-      float delayedR = _filter1R.Tick(_delayR.out(fi));
+      _delayL->inp(delay_input);
+      _delayR->inp(delay_input);
+      float delayedL = _filter1L.Tick(_delayL->out(fi));
+      float delayedR = _filter1R.Tick(_delayR->out(fi));
 
       //////////////////
       // final panning

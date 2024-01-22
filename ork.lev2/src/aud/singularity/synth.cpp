@@ -118,6 +118,23 @@ outbus_ptr_t synth::outputBus(std::string named) const {
              : nullptr;
 }
 ///////////////////////////////////////////////////////////////////////////////
+delaycontext_ptr_t synth::allocDelayLine(){
+  delaycontext_ptr_t rval;
+  _delayspool.atomicOp([&](delaydequeue_t& unlocked){
+    rval = unlocked.back();
+    unlocked.pop_back();
+  });
+  return rval;
+}
+void synth::freeDelayLine(delaycontext_ptr_t delay){
+  auto op = [this,delay](){
+    _delayspool.atomicOp([&](delaydequeue_t& unlocked){
+      unlocked.push_front(delay);
+    });
+  };
+
+}
+///////////////////////////////////////////////////////////////////////////////
 synth::synth()
     : _timeaccum(0.0f)
     , _sampleRate(0.0f)
@@ -125,6 +142,14 @@ synth::synth()
     , _soloLayer(-1)
     , _hudpage(0)
     , _masterGain(1.0f) { //
+
+  for( int i=0; i<256; i++){
+    _delayspool.atomicOp([&](delaydequeue_t& unlocked){
+      auto delay = std::make_shared<DelayContext>();
+      delay->clear();
+      unlocked.push_back(delay);
+    });
+  }
 
   _sequencer  = std::make_shared<Sequencer>(this);
   _prgchannel = std::make_shared<ProgramChannel>();

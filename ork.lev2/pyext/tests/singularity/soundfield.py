@@ -97,7 +97,7 @@ class AmbiApp(SingulTestApp):
     S0.ioconfig.inputs = [0,1]
     S0.ioconfig.outputs = [0,1]
     self.aux2panblock = S0.appendDspBlock("AmpPanner2D","PANNER")
-    self.auxbusses[2].gain = 90
+    self.auxbusses[2].gain = 84
     self.auxbusses[2].layer = L0
 
     L0 = singularity.LayerData()

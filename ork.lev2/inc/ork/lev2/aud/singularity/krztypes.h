@@ -106,6 +106,7 @@ struct CzProgData;
 struct OutputBus;
 struct KeyOnModifiers;
 struct NatEnvWrapperData;
+struct DelayContext;
 ///////////////////////////////////////////////////////////////////////////////
 // sequencer
 ///////////////////////////////////////////////////////////////////////////////
@@ -184,6 +185,7 @@ using dspparam_constptr_t    = std::shared_ptr<const DspParamData>;
 using dspparammod_ptr_t      = std::shared_ptr<BlockModulationData>;
 using dspparammod_constptr_t = std::shared_ptr<const BlockModulationData>;
 using natenvwrapperdata_ptr_t = std::shared_ptr<NatEnvWrapperData>;
+using delaycontext_ptr_t = std::shared_ptr<DelayContext>;
 ///////////////////////////////////////////////////////////////////////////////
 using sequencer_ptr_t = std::shared_ptr<Sequencer>;
 using sequence_ptr_t = std::shared_ptr<Sequence>;

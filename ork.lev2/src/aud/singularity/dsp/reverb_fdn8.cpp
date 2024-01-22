@@ -106,7 +106,7 @@ void Fdn8Reverb::doKeyOn(const KeyOnInfo& koi) { // final
     _fbmodulations[j] = _fbbasetimes[j];
   }
   for( int j=0; j<8; j++ ){
-    _early_refl._delay[j].setStaticDelayTime(0.01+float(j)*0.01f);
+    _early_refl._delay[j]->setStaticDelayTime(0.01+float(j)*0.01f);
   }
 
   _hipassfilterL.Clear();
@@ -163,7 +163,7 @@ void Fdn8Reverb::compute(DspBuffer& dspbuf) // final
     _diffuser[j]._fbgain = diffuserGain;
   }
   for( int j=0; j<8; j++ ){
-    _early_refl._delay[j].setNextDelayTime(ereflTime+float(j)*0.01f);
+    _early_refl._delay[j]->setNextDelayTime(ereflTime+float(j)*0.01f);
   }
 
   int inumframes = _layer->_dspwritecount;
@@ -188,7 +188,7 @@ void Fdn8Reverb::compute(DspBuffer& dspbuf) // final
   for( int i=0; i<8; i++ ){
     float fbtime = _fbbasetimes[i];
     fbtime *= (1.0f+(val*fbtModAmp));
-    _fbdelay._delay[i].setNextDelayTime(fbtime);
+    _fbdelay._delay[i]->setNextDelayTime(fbtime);
   }
 
   for (int i = 0; i < inumframes; i++) {
@@ -295,7 +295,7 @@ void Fdn8Reverb::DiffuserStep::tick(){
     float t = _basetimes[i] * (1.0f+(s*_modulation));
     t = std::max(0.001f,t);
     //printf( "diff<%d> t<%g>\n", i, t);
-    _delays._delay[i].setNextDelayTime(t);
+    _delays._delay[i]->setNextDelayTime(t);
   }
 }
 

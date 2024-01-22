@@ -134,7 +134,7 @@ void DelayInput::inp(float inputSample) {
 vec8f ParallelDelay::output(float fi){
   vec8f rval;
   for( int j=0; j<8; j++ ){
-    rval._elements[j] = _delay[j].out(fi);
+    rval._elements[j] = _delay[j]->out(fi);
   }
   return rval;
 }
@@ -142,15 +142,24 @@ void ParallelDelay::input(const vec8f& input){
   for( int j=0; j<8; j++ ){
     float x = input._elements[j];
     float y = _dcblock2[j].compute(x);
-    _delay[j].inp(y);
+    _delay[j]->inp(y);
   }
 }
 ParallelDelay::ParallelDelay(){
+  auto syni = synth::instance();
   for( int j=0; j<8; j++ ){
+    _delay[j] = syni->allocDelayLine();
+
     _dcblock[j].Clear();
     _dcblock[j].SetHpf(120.0f);
     _dcblock2[j].clear();
     _dcblock2[j].set(120.0f,1.0f/getInverseSampleRate());
+  }
+}
+ParallelDelay::~ParallelDelay(){
+  auto syni = synth::instance();
+  for( int j=0; j<8; j++ ){
+    syni->freeDelayLine(_delay[j]);
   }
 }
 ///////////////////////////////////////////////////////////////////////////////

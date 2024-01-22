@@ -43,8 +43,15 @@ dspblk_ptr_t StereoDynamicEchoData::createInstance() const { // override
 
 StereoDynamicEcho::StereoDynamicEcho(const StereoDynamicEchoData* dbd)
     : DspBlock(dbd) {
+  auto syni = synth::instance();
+  _delayL = syni->allocDelayLine();
+  _delayR = syni->allocDelayLine();
 }
-
+StereoDynamicEcho::~StereoDynamicEcho(){
+  auto syni = synth::instance();
+  syni->freeDelayLine(_delayL);
+  syni->freeDelayLine(_delayR);
+}
 ///////////////////////////////////////////////////////////////////////////////
 
 void StereoDynamicEcho::compute(DspBuffer& dspbuf) // final
@@ -68,8 +75,8 @@ void StereoDynamicEcho::compute(DspBuffer& dspbuf) // final
   delaytimeR = std::clamp(delaytimeR, 0.001f, 10.0f);
 
 
-  _delayL.setNextDelayTime(delaytimeL);
-  _delayR.setNextDelayTime(delaytimeR);
+  _delayL->setNextDelayTime(delaytimeL);
+  _delayR->setNextDelayTime(delaytimeR);
   for (int i = 0; i < inumframes; i++) {
     float fi = float(i) * invfr;
 
@@ -80,15 +87,15 @@ void StereoDynamicEcho::compute(DspBuffer& dspbuf) // final
     // read delayed signal
     /////////////////////////////////////
 
-    float delayoutL = _delayL.out(fi);
-    float delayoutR = _delayR.out(fi);
+    float delayoutL = _delayL->out(fi);
+    float delayoutR = _delayR->out(fi);
 
     /////////////////////////////////////
     // input to delayline
     /////////////////////////////////////
 
-    _delayL.inp(inl + delayoutL * feedback);
-    _delayR.inp(inr + delayoutR * feedback);
+    _delayL->inp(inl + delayoutL * feedback);
+    _delayR->inp(inr + delayoutR * feedback);
 
     /////////////////////////////////////
     // output to dsp channels

@@ -39,8 +39,21 @@ dspblk_ptr_t PitchShifterData::createInstance() const { // override
 
 PitchShifter::PitchShifter(const PitchShifterData* dbd)
     : DspBlock(dbd) {
-  _delayA.setStaticDelayTime(0.5);
-  _delayB.setStaticDelayTime(0.5);
+  auto syn = synth::instance();
+  _delayA = syn->allocDelayLine();
+  _delayB = syn->allocDelayLine();
+  _delayC = syn->allocDelayLine();
+  _delayD = syn->allocDelayLine();
+  _delayA->setStaticDelayTime(0.5);
+  _delayB->setStaticDelayTime(0.5);
+}
+
+PitchShifter::~PitchShifter(){
+  auto syn = synth::instance();
+  syn->freeDelayLine(_delayA);
+  syn->freeDelayLine(_delayB);
+  syn->freeDelayLine(_delayC);
+  syn->freeDelayLine(_delayD);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -110,10 +123,10 @@ void PitchShifter::compute(DspBuffer& dspbuf) // final
     float btime  = dbase + dscale * rampb;
     float ctime  = dbase + dscale * rampc;
     float dtime  = dbase + dscale * rampd;
-    _delayA.setStaticDelayTime(atime);
-    _delayB.setStaticDelayTime(btime);
-    _delayC.setStaticDelayTime(ctime);
-    _delayD.setStaticDelayTime(dtime);
+    _delayA->setStaticDelayTime(atime);
+    _delayB->setStaticDelayTime(btime);
+    _delayC->setStaticDelayTime(ctime);
+    _delayD->setStaticDelayTime(dtime);
     _phaseA += phaseinc;
     _phaseB += phaseinc;
     _phaseC += phaseinc;
@@ -139,15 +152,15 @@ void PitchShifter::compute(DspBuffer& dspbuf) // final
     // do fdn4 operation
     /////////////////////////////////////
 
-    float aout = _delayA.out(fi);
-    float bout = _delayB.out(fi);
-    float cout = _delayC.out(fi);
-    float dout = _delayD.out(fi);
+    float aout = _delayA->out(fi);
+    float bout = _delayB->out(fi);
+    float cout = _delayC->out(fi);
+    float dout = _delayD->out(fi);
 
-    _delayA.inp(inp);
-    _delayB.inp(inp);
-    _delayC.inp(inp);
-    _delayD.inp(inp);
+    _delayA->inp(inp);
+    _delayB->inp(inp);
+    _delayC->inp(inp);
+    _delayD->inp(inp);
 
     /////////////////////////////////////
     // output to dsp channels

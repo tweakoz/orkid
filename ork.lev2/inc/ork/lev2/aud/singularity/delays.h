@@ -28,6 +28,7 @@ struct DelayContext {
   DspBuffer _buffer;
   float* _bufdata = nullptr;
 };
+
 struct DelayInput {
   DelayInput();
   void inp(float inputSample);
