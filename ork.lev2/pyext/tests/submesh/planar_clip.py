@@ -258,7 +258,8 @@ class SceneGraphApp(object):
     handled = self.uicam.uiEventHandler(uievent)
     if handled:
       self.camera.copyFrom( self.uicam.cameradata )
-
+    return ui.HandlerResult()
+  
   ################################################
 
   def onUpdate(self,updinfo):

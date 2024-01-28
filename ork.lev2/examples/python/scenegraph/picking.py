@@ -48,6 +48,11 @@ class PickingApp(_simsetup.SimApp):
   ################################################
   def __init__(self):
     super().__init__(False,instance_set_class)
+  def onGpuInit(self,ctx):
+    super().onGpuInit(ctx)
+    self.scene.pickFormat = 1
+    self.scene.enablePickHud()
+
   def onUiEvent(self,event):
     #print("x<%d> y<%d> code<%d>"%(event.x,event.y,event.code))
     #print("shift<%d> alt<%d> ctrl<%d>"%(event.shift,event.alt,event.ctrl))
@@ -55,9 +60,9 @@ class PickingApp(_simsetup.SimApp):
     if True: #event.code==3:
       def pick_callback(pixel_fetch_context):
         obj = pixel_fetch_context.value(0)
-        ch1 = pixel_fetch_context.value(1)
-        ch2 = pixel_fetch_context.value(2)
-        ch3 = pixel_fetch_context.value(3)
+        #ch1 = pixel_fetch_context.value(1)
+        #ch2 = pixel_fetch_context.value(2)
+        #ch3 = pixel_fetch_context.value(3)
         if obj is not None:
           iid = obj["y"]
           assert(iid<=numinstances);

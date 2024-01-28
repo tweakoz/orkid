@@ -120,7 +120,7 @@ template <typename T> void Plane<T>::Reset(void) {
 
 template <typename T> bool Plane<T>::isPointInFront(const vect3_t& point) const {
   T distance = pointDistance(point);
-  return (distance >= T(0));
+  return (distance >= -Epsilon());
 }
 
 ///////////////////////////////////////////////////////////////////////////////

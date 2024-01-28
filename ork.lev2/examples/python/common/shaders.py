@@ -240,12 +240,15 @@ fragment_shader ps_texvtxcolor_noalpha : iface_fdefault {
   out_clr   = vec4(texc.xyz * frg_clr.xyz, 1.0);
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_frustum : iface_fdefault : lib_math : lib_mmnoise {
+fragment_shader ps_frustum 
+  : iface_fdefault 
+  : lib_math 
+  : lib_mmnoise {
   // octave noise with volume texture
-  float val = octavenoise(VolumeMap,frg_pos,8);
+  float val = octavenoise(VolumeMap,frg_pos,vec3(1,0,0),0,8);
   val = pow(saturateF(val),2);
   vec3 color = vec3(val,val,val)*frg_clr.xyz;
-  out_clr = vec4(color,1);
+  out_clr = vec4(1,0,1,1);
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_frustum_pbr

@@ -149,7 +149,7 @@ class SceneGraphApp(BasicUiCamSgApp):
   def onUpdate(self,updevent):
     super().onUpdate(updevent)
     self.maxsteps_sim += self.step_incr
-    #print(self.maxsteps_sim)
+    print(self.maxsteps_sim)
     while self.numsteps_sim < self.maxsteps_sim:
       self.numsteps_sim += 1
       self.dirty = True

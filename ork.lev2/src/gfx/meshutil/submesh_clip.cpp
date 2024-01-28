@@ -342,15 +342,13 @@ void SubMeshClipper::procEdges(merged_poly_const_ptr_t input_poly) { //
   int _f2b_count                  = 0;
   int _f2b_index                  = -1;
   int _b2f_count                  = 0;
-    bool do_log                     = true; //_debug; // matchTestPoly(input_poly);
+    bool do_log                     = _debug; // matchTestPoly(input_poly);
   printPoly("PROCEDGES POLY", input_poly);
 
   if (do_log){
     logchan_clip->log("  procEdges inppoly<%d> numv<%d>", input_poly->_submeshIndex, inuminverts);
   }
   
-  // rooms of realities - quest3
-
   for (int iva = 0; iva < inuminverts; iva++) {
 
     int ivb        = (iva + 1) % inuminverts;

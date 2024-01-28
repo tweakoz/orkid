@@ -66,7 +66,6 @@ class SceneGraphApp(BasicUiCamSgApp):
   ##############################################
   def onGpuIter(self):
     super().onGpuIter()
-
     phi = 0.5+math.sin(self.abstime*3.0)*0.5
     beveld = 1.5+phi*0.5
     cub_submesh = stripSubmesh(self.cube_submesh)
