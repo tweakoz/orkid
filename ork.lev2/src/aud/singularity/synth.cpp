@@ -143,13 +143,24 @@ synth::synth()
     , _hudpage(0)
     , _masterGain(1.0f) { //
 
+  logchan_synth->log("clearing delay lines...");
+  std::atomic<int> delayopcounter = 0;
   for( int i=0; i<256; i++){
-    _delayspool.atomicOp([&](delaydequeue_t& unlocked){
+    auto op = [this,&delayopcounter](){
+      delayopcounter.fetch_add(1);
       auto delay = std::make_shared<DelayContext>();
       delay->clear();
-      unlocked.push_back(delay);
-    });
+      _delayspool.atomicOp([&](delaydequeue_t& unlocked){
+        unlocked.push_back(delay);
+        delayopcounter.fetch_sub(1);
+      });
+    };
+    opq::concurrentQueue()->enqueue(op);
   }
+  while(delayopcounter.load()>0){
+    usleep(1000);
+  }
+  logchan_synth->log("delay lines cleared.");
 
   _sequencer  = std::make_shared<Sequencer>(this);
   _prgchannel = std::make_shared<ProgramChannel>();
