@@ -189,6 +189,7 @@ struct PANNER2D_DATA : public DspBlockData {
 struct PANNER2D : public DspBlock {
   using dataclass_t = PANNER2D_DATA;
   PANNER2D(const DspBlockData* dbd);
+  ~PANNER2D();
   void compute(DspBuffer& dspbuf) final;
   void doKeyOn(const KeyOnInfo& koi) final;
   float _mixL, _mixR; // for smoothing
