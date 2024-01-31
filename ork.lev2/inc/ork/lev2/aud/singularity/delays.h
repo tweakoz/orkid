@@ -19,7 +19,7 @@ struct DelayContext {
   void clear();
   void setStaticDelayTime(float dt);
   void setNextDelayTime(float dt);
-  static constexpr int64_t _maxdelay = 1 << 20;
+  static constexpr int64_t _maxdelay = 256<<10;
   static constexpr int64_t _maxx     = _maxdelay << 16;
 
   int64_t _index     = 0;

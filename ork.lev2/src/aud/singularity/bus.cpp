@@ -31,6 +31,16 @@ void OutputBus::setBusDSP(lyrdata_ptr_t ld) {
 
   assert(ld->_algdata != nullptr);
 
+  if(_dsplayer){
+    //_dsplayer->release();
+    //synth::instance()->releaseLayer(_dsplayer);
+    _dsplayer->keyOff();
+    _dsplayer->endCompute();
+    _dsplayer->_alg->_algdata.returnAlgInst(_dsplayer->_alg);
+    _dsplayer->_alg = nullptr;
+
+  }
+
   _dsplayer = nullptr;
 
   _dsplayerdata        = ld;

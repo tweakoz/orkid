@@ -124,6 +124,12 @@ PANNER2D::PANNER2D(const DspBlockData* dbd)
     _allpassB.set(1000.0f);
     _allpassC.set(1000.0f);
 }
+
+PANNER2D::~PANNER2D(){
+  auto syni = synth::instance();
+  syni->freeDelayLine(_delayL);
+  syni->freeDelayLine(_delayR);
+}
 void PANNER2D::compute(DspBuffer& dspbuf) // final
 {
   int inumframes = _layer->_dspwritecount;

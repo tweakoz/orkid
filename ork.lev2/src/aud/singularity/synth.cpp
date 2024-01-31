@@ -118,20 +118,28 @@ outbus_ptr_t synth::outputBus(std::string named) const {
              : nullptr;
 }
 ///////////////////////////////////////////////////////////////////////////////
+std::atomic<int> galloccount = 0;
 delaycontext_ptr_t synth::allocDelayLine(){
   delaycontext_ptr_t rval;
   _delayspool.atomicOp([&](delaydequeue_t& unlocked){
+    OrkAssert(unlocked.size());
     rval = unlocked.back();
     unlocked.pop_back();
+    int count = galloccount.fetch_add(1);
+    printf("alloc<%d>\n", count );
   });
   return rval;
 }
 void synth::freeDelayLine(delaycontext_ptr_t delay){
   auto op = [this,delay](){
+    delay->clear();
     _delayspool.atomicOp([&](delaydequeue_t& unlocked){
       unlocked.push_front(delay);
+      int count = galloccount.fetch_add(-1);
+      printf("free<%d>\n", count );
     });
   };
+  opq::concurrentQueue()->enqueue(op);
 
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -145,7 +153,7 @@ synth::synth()
 
   logchan_synth->log("clearing delay lines...");
   std::atomic<int> delayopcounter = 0;
-  for( int i=0; i<256; i++){
+  for( int i=0; i<1024; i++){
     auto op = [this,&delayopcounter](){
       delayopcounter.fetch_add(1);
       auto delay = std::make_shared<DelayContext>();
@@ -288,8 +296,9 @@ void synth::deactivateVoices() {
     }
 
     auto it = _activeVoices.find(l);
-    assert(it != _activeVoices.end());
-    _activeVoices.erase(it);
+    if(it!=_activeVoices.end()){
+      _activeVoices.erase(it);
+    }
 
     int inumv = _activeVoices.size();
 
