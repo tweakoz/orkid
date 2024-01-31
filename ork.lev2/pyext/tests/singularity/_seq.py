@@ -89,7 +89,7 @@ def midiToSingularitySequence(
         ts = singularity.TimeStamp()
         dur = singularity.TimeStamp()
         feel_clocks = int(random.uniform(-1,1)*feel)
-        ts.clocks = note_map[n][2] + feel_clocks
+        ts.clocks = note_map[n][2] + feel_clocks + 200
         ts = timebase_mut.reduce(ts)
         dur.clocks = int(msg_num_clocks+100)
         dur = timebase_mut.reduce(dur)

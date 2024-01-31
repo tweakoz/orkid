@@ -45,9 +45,9 @@ sequencer = synth.sequencer
 #synth.setEffect(mainbus,"Reverb:FDN4")
 #synth.setEffect(mainbus,"Reverb:FDN8")
 #synth.setEffect(mainbus,"Reverb:FDNX")
-#synth.setEffect(mainbus,"Reverb:NiceVerb")
+synth.setEffect(mainbus,"Reverb:NiceVerb")
 #synth.setEffect(mainbus,"StereoChorus")
-synth.setEffect(mainbus,"none")
+#synth.setEffect(mainbus,"none")
 
 auxbus = synth.createOutputBus("aux")
 synth.setEffect(auxbus,"none")
@@ -117,17 +117,20 @@ def genSingularitySequence(
 
 ######################################################
 if seqid==0:
-  genSingularitySequence(name="moonlight.mid",temposcale=1.9,feel=3,clip=PIANO[2],gain=0)
+  genSingularitySequence(name="moonlight.mid",temposcale=1.9,feel=1,clip=PIANO[2],gain=6)
   synth.velCurvePower = 1.25
   auxbus.gain = +6
 elif seqid==1:
-  genSingularitySequence(name="castle1.mid",temposcale=1.0,feel=30,clip=PIANO[2],gain=0)
+  genSingularitySequence(name="castle1.mid",temposcale=1.0,feel=30,clip=PIANO[2],gain=-6)
+  synth.velCurvePower = 1.25
   auxbus.gain = -36
 elif seqid==2:
-  genSingularitySequence(name="castle2.mid",temposcale=1.0,feel=10,clip=PIANO[2],gain=0)
+  genSingularitySequence(name="castle2.mid",temposcale=1.0,feel=10,clip=PIANO[2],gain=-6)
+  synth.velCurvePower = 1.25
   auxbus.gain = -24
 elif seqid==3:
-  genSingularitySequence(name="castle3.mid",temposcale=1.0,feel=30,clip=PIANO[2],gain=0)
+  genSingularitySequence(name="castle3.mid",temposcale=1.0,feel=30,clip=PIANO[2],gain=-6)
+  synth.velCurvePower = 1.25
   auxbus.gain = -96
 
 if add_click:
