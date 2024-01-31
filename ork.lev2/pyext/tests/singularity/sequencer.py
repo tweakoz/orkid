@@ -118,7 +118,7 @@ def genSingularitySequence(
 ######################################################
 if seqid==0:
   genSingularitySequence(name="moonlight.mid",temposcale=1.9,feel=3,clip=PIANO[2],gain=0)
-  synth.velCurvePower = 0.5
+  synth.velCurvePower = 1.25
   auxbus.gain = +6
 elif seqid==1:
   genSingularitySequence(name="castle1.mid",temposcale=1.0,feel=30,clip=PIANO[2],gain=0)
