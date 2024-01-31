@@ -42,12 +42,31 @@ void filescanner::parseHobbes(const datablock& db, datablock::iterator& it, u8 c
   // output word
   hfp._owrda = db.GetTypedData<u8>(it); // 3: headroom, 2:pair, 3:rfu2
   hfp._owrdb = db.GetTypedData<u8>(it); // 2: rfu, 2: panmode, 4: pan
-
+  // owrda 12 0x0c | 0b 000 01 100 
+  // owrdb 84 0x54 | 0b 0101 01 00 | 0100 01 01
   //
 
+  if( true ){ // big endian
   hfp._inputMoreTSCR  = hfp._tscrb;
-  hfp._filtalg = hfp._tscra & 0x3F;
-  hfp._downshift = hfp._tscra & 0xC0;
+  hfp._downshift = (hfp._tscra&3);
+  hfp._filtalg = (hfp._tscra>>2)&0x3f;
+  _curLayer->_headroom = (hfp._owrda&7);
+  _curLayer->_pair = (hfp._owrda>>2)&3;
+  _curLayer->_panmode = (hfp._owrdb>>2)&3;
+  _curLayer->_pan = (hfp._owrdb>>4)&0xf;
+  _curLayer->_headroom = 7-_curLayer->_headroom ;
+  _curLayer->_headroom = (_curLayer->_headroom-2)*6;
+  }
+  else{
+    hfp._inputMoreTSCR  = hfp._tscrb;
+    hfp._filtalg = hfp._tscra & 0x3F;
+    hfp._downshift = (hfp._tscra>>6)&3;
+    _curLayer->_headroom = (hfp._owrda>>5)&7;
+    _curLayer->_pair = (hfp._owrda>>3)&3;
+    _curLayer->_panmode = (hfp._owrdb>>4) & 0x3;
+    _curLayer->_pan = (hfp._owrdb) & 0xf;
+    _curLayer->_headroom = (_curLayer->_headroom-2)*6;
+  }
 
   //hfp._downshift  = db.GetTypedData<u8>(it); 
   //hfp._inputMoreTSCR = db.GetTypedData<u8>(it); // 3: headroom, 2:pair, 3:rfu2

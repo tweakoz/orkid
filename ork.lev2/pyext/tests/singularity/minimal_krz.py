@@ -157,14 +157,15 @@ class KrzApp(SingulTestApp):
     ]
     self.sorted_progs = sorted(ok_list)
     print("krzprogs<%s>" % self.krzprogs)    
-    self.prog_index = find_index(self.sorted_progs, "Stereo_Grand")
-    #self.prog_index = find_index(self.sorted_progs, "Chorus_Gtr")
-    self.prog = self.soundbank.programByName("Stereo_Grand")
+    PRG = "Doomsday" # "Stereo_Grand"
+    #self.prog_index = find_index(self.sorted_progs, "Stereo_Grand")
     self.synth.masterGain = singularity.decibelsToLinear(-24.0)
     main = self.synth.outputBus("main")
     aux8 = self.synth.outputBus("aux8")
     self.setBusProgram(aux8,self.soundbank.programByName("Chamber_Section"))
-    self.setBusProgram(main,self.soundbank.programByName("Stereo_Grand"))
+    self.setBusProgram(main,self.soundbank.programByName(PRG))
+    self.prog_index = find_index(self.sorted_progs, PRG)
+    self.prog = self.soundbank.programByName(PRG)
     self.setUiProgram(self.prog)
 
 ###############################################################################

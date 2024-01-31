@@ -292,6 +292,10 @@ void filescanner::emitLayer(const Layer* l, rapidjson::Value& parent) {
   layerobject.AddMember("dbg_vrange", int(l->_dbg_vrange), _japrog);
   layerobject.AddMember("dbg_flags", int(l->_dbg_flags), _japrog);
   layerobject.AddMember("dbg_moreflags", int(l->_dbg_moreflags), _japrog);
+  layerobject.AddMember("headroom", int(l->_headroom), _japrog);
+  layerobject.AddMember("panmode", int(l->_panmode), _japrog);
+  layerobject.AddMember("pan", int(l->_pan), _japrog);
+
   layerobject.AddMember("loKey", int(l->_loKey), _japrog);
   layerobject.AddMember("hiKey", int(l->_hiKey), _japrog);
   layerobject.AddMember("loVel", l->_loVel, _japrog);

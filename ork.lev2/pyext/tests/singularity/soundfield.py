@@ -78,44 +78,44 @@ class AmbiApp(SingulTestApp):
     self.t8x = newprog
     ############################
 
-    L0 = singularity.LayerData()
+    L0 = singularity.LayerData() # HIREZSWEEPER,DOOMSDAY
     S0 = L0.appendStage("PAN")
     S0.ioconfig.inputs = [0,1]
     S0.ioconfig.outputs = [0,1]
     self.aux0panblock = S0.appendDspBlock("AmpPanner2D","PANNER")
-    self.auxbusses[0].gain = 0+gainoffset
+    self.auxbusses[0].gain = -12+gainoffset
     self.auxbusses[0].layer = L0
 
-    L0 = singularity.LayerData()
+    L0 = singularity.LayerData() # HIREZSWEEPER
     S0 = L0.appendStage("PAN")
     S0.ioconfig.inputs = [0,1]
     S0.ioconfig.outputs = [0,1]
     self.aux1panblock = S0.appendDspBlock("AmpPanner2D","PANNER")
-    self.auxbusses[1].gain = -6+gainoffset
+    self.auxbusses[1].gain = -12+gainoffset
     self.auxbusses[1].layer = L0
 
-    L0 = singularity.LayerData()
+    L0 = singularity.LayerData() # T8X
     S0 = L0.appendStage("PAN")
     S0.ioconfig.inputs = [0,1]
     S0.ioconfig.outputs = [0,1]
     self.aux2panblock = S0.appendDspBlock("AmpPanner2D","PANNER")
-    self.auxbusses[2].gain = 84+gainoffset
+    self.auxbusses[2].gain = 72+gainoffset
     self.auxbusses[2].layer = L0
 
-    L0 = singularity.LayerData()
+    L0 = singularity.LayerData() # BASS
     S0 = L0.appendStage("PAN")
     S0.ioconfig.inputs = [0,1]
     S0.ioconfig.outputs = [0,1]
     self.aux3panblock = S0.appendDspBlock("AmpPanner2D","PANNER")
-    self.auxbusses[3].gain = -6+gainoffset
+    self.auxbusses[3].gain = -12+gainoffset
     self.auxbusses[3].layer = L0
 
-    L0 = singularity.LayerData()
+    L0 = singularity.LayerData() # CLICK
     S0 = L0.appendStage("PAN")
     S0.ioconfig.inputs = [0,1]
     S0.ioconfig.outputs = [0,1]
     self.aux7panblock = S0.appendDspBlock("AmpPanner2D","PANNER")
-    self.auxbusses[7].gain = 18+gainoffset
+    self.auxbusses[7].gain = -12+gainoffset
     self.auxbusses[7].layer = L0
 
 
@@ -147,7 +147,7 @@ class AmbiApp(SingulTestApp):
     ############################
     L0.gain = -96 #-12
     L1.gain = -96
-    L2.gain = -12
+    L2.gain = -48
     ############################
     self.soundbank = self.new_soundbank
     ############################

@@ -22,11 +22,11 @@ using namespace rapidjson;
 
 namespace ork::audio::singularity {
 
-const s16* getK2V3InternalSoundBlock() {
-  static s16* gdata = nullptr;
-  if (nullptr == gdata) {
-    gdata          = (s16*)malloc(24 << 20);
-    auto data_read = gdata;
+struct SoundBlockData{
+
+  SoundBlockData(){
+    _romDATA          = (s16*)malloc(24 << 20);
+    auto data_read = _romDATA;
     ///////////////////////////////////////////////////////////////////////////////////////////
     auto load_sound_block = [&](file::Path filename, size_t numbytes) {
       printf("Loading Soundblock<%s>\n", filename.c_str());
@@ -43,9 +43,13 @@ const s16* getK2V3InternalSoundBlock() {
     load_sound_block(basePath() / "kurzweil" / "k2vx_samples_base.bin", 8 << 20);
     load_sound_block(basePath() / "kurzweil" / "k2vx_samples_ext1.bin", 8 << 20);
     load_sound_block(basePath() / "kurzweil" / "k2vx_samples_ext2.bin", 8 << 20);
-    ///////////////////////////////////////////////////////////////////////////////////////////
   }
-  return gdata;
+  s16* _romDATA = nullptr;
+};
+
+const s16* getK2V3InternalSoundBlock() {
+  static auto romblocks = std::make_shared<SoundBlockData>();
+  return romblocks->_romDATA;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -772,6 +776,10 @@ lyrdata_ptr_t KrzBankDataParser::parseLayer(const Value& jsonobj, prgdata_ptr_t 
   layerdata->_keymap = km;
 
   parseKmpBlock(keymapSeg, *layerdata->_kmpBlock);
+
+  layerdata->_headroom = jsonobj["headroom"].GetInt();
+  layerdata->_panmode = jsonobj["panmode"].GetInt();
+  layerdata->_pan = jsonobj["pan"].GetInt();
 
   layerdata->_loKey = jsonobj["loKey"].GetInt();
   layerdata->_hiKey = jsonobj["hiKey"].GetInt();

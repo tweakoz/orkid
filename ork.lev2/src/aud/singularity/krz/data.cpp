@@ -22,8 +22,12 @@
 
 namespace ork::audio::singularity {
 ///////////////////////////////////////////////////////////////////////////////
+  const s16* getK2V3InternalSoundBlock();
 
 bankdata_ptr_t KrzSynthData::baseObjects() {
+
+  getK2V3InternalSoundBlock();
+
   auto base      = ork::audio::singularity::basePath() / "kurzweil";
   auto base_path = base/"k2v3base.bin";
 

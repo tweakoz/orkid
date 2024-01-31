@@ -111,10 +111,6 @@ struct fparam {
 
   int _downshift = -1;
   int _filtalg = -1;
-  int _headroom  = -1;
-  int _pair      = -1;
-  int _panmode   = -1;
-  int _pan      = -1;
 
   int _tscra      = -1;
   int _tscrb      = -1;
@@ -442,6 +438,11 @@ struct Layer {
   bool _chanNum, _trigOnKeyUp;
   int _bendMode;
   VTRIG _vt1, _vt2;
+
+  int _headroom  = -1;
+  int _pair      = -1;
+  int _panmode   = -1;
+  int _pan      = -1;
 
   uint8_t _dbg_vrange = 0;
   uint8_t _dbg_flags = 0;

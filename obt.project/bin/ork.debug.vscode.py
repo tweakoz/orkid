@@ -45,8 +45,8 @@ def create_vscode_config(workspace_path, bin_path, env_vars, exec_args):
         "configurations": [
             {
                 "name": "Debug Executable (GDB)",
-                #"type": "cppdbg",
-                "type": "sldb",
+                "type": "cppdbg",
+                #"type": "lldb",
                 "request": "launch",
                 "program": bin_path,
                 "args": exec_args,

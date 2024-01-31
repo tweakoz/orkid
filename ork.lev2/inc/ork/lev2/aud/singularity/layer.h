@@ -53,6 +53,9 @@ struct LayerData : public ork::Object {
   bool _atk3Hold                  = false; // TilDec
   bool _usenatenv                 = false; // todo: move to krz
   float _layerLinGain             = 1.0f;
+  int _panmode = -1;
+  int _pan = 0;
+  int _headroom = 0;
 
   algdata_ptr_t _algdata;
   std::string _outbus;

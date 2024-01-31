@@ -64,12 +64,39 @@ void AMP_ADAPTIVE::compute(DspBuffer& dspbuf) { // final
   //printf("paramgain<%g> laychgain<%g> _dbd->_inputPad<%g>\n", paramgain, laychgain, _dbd->_inputPad);
   float baseG = laychgain;
   baseG *= decibel_to_linear_amp_ratio(paramgain)*_dbd->_inputPad;
+  baseG *= decibel_to_linear_amp_ratio(LD->_headroom);
+  int panmode = LD->_panmode;
+  int pan = LD->_pan;
+  float fpan = float(pan-7)/7.0;
+  switch(panmode){
+    case 0: // Fixed
+      break;
+    case 1: // +MIDI
+      fpan += 0.5f;
+      break;
+    case 2:{ // Auto
+      int ko = _layer->_curnote-60;
+      fpan = float(ko)/60.0;
+      break;
+    }
+    case 3:{ // Reverse(Auto)
+      int ko = -(_layer->_curnote-60);
+      fpan = float(ko)/60.0;
+      break;
+    }
+  }
+  //////////////////////////////////
+  float panL = panBlend(fpan).lmix;
+  float panR = panBlend(fpan).rmix;
+  //////////////////////////////////
   bool use_natenv = LD->_usenatenv;
   //////////////////////////////////
   switch(numinp){
     case 1:{
       auto bufferL  = getRawBuf(dspbuf, 0) + _layer->_dspwritebase;
       auto bufferR  = getRawBuf(dspbuf, 1) + _layer->_dspwritebase;
+
+
       for (int i = 0; i < inumframes; i++) {
         //printf( "_layer->_ampenvgain<%g>\n", _layer->_ampenvgain ); 
         float ampenv = use_natenv //
@@ -77,8 +104,10 @@ void AMP_ADAPTIVE::compute(DspBuffer& dspbuf) { // final
                      : _layer->_ampenvgain;
         float linG = baseG*ampenv;
         float inp     = bufferL[i];
-        bufferL[i] = clip_float(inp * linG, kminclip, kmaxclip);
-        bufferR[i] = clip_float(inp * linG, kminclip, kmaxclip);
+
+
+        bufferL[i] = clip_float(inp * linG * panL, kminclip, kmaxclip);
+        bufferR[i] = clip_float(inp * linG * panR, kminclip, kmaxclip);
       }
       break;
     }
