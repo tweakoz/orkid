@@ -12,7 +12,7 @@ Orkid's synthesizer is loosely inspired by Kurzeil VAST, in that it supports ful
 
   - General purpose digital modular synthesizer
   - Can emulate a few hardware synths
-    - Kurzweil K2000 (including .krz file import)
+    - [Kurzweil K2000 (including .krz file import)](https://www.youtube.com/watch?v=NcKFVNdrGdM)
     - Soundfonts (.sf2 file import)
     - Casio CZx (including sysex bank import)
     - Yamaha Tx81z (including sysex bank import)
@@ -50,6 +50,8 @@ Orkid's synthesizer is loosely inspired by Kurzeil VAST, in that it supports ful
     - NULL (for debug)
   - lev2 UI support for things like Oscilloscopes/Spectrum Analyzers/Control Signal Plotting for debugging.
   - Accessible from C++ and Python bindings.
+  - Sequencer : [YoutubeVideo](https://www.youtube.com/watch?v=W2OUjiMKmN4)
+  - 2D Surround : [YoutubeVideo](https://www.youtube.com/watch?v=vxivKOwVijI)
 
   ### Architecture
 
