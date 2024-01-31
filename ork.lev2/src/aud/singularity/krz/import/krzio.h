@@ -103,16 +103,29 @@ struct fparam {
   int _inputMinDepth; // 9
   int _inputMaxDepth; // 10
   int _inputSrc2;     // 11
-  int _inputFiltAlg;  // 12
+  //int _inputFiltAlg;  // 12
   int _inputMoreTSCR; // 13
   int _inputRESERVED; // 14
   int _input14;       // 15 (FineHz/KStart/OutputPanUL)
   int _input15;       // 15 (FineHz/KStart/OutputPanUL)
 
+  int _downshift = -1;
+  int _filtalg = -1;
+  int _headroom  = -1;
+  int _pair      = -1;
+  int _panmode   = -1;
+  int _pan      = -1;
+
+  int _tscra      = -1;
+  int _tscrb      = -1;
+  int _owrda      = -1;
+  int _owrdb      = -1;
+
   fparamVar _varCoarseAdjust;
   fparamVar _varFine;
   fparamVar _var14;
   fparamVar _var15;
+
   Keystart _varKeyStart;
   fparamVar _varKeyTrack;
   fparamVar _varVelTrack;
@@ -429,6 +442,10 @@ struct Layer {
   bool _chanNum, _trigOnKeyUp;
   int _bendMode;
   VTRIG _vt1, _vt2;
+
+  uint8_t _dbg_vrange = 0;
+  uint8_t _dbg_flags = 0;
+  uint8_t _dbg_moreflags = 0;
 
   Program* _program;
   std::map<int, Asr*> _asrmap;

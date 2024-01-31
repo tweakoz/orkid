@@ -39,12 +39,12 @@ bankdata_ptr_t KrzSynthData::baseObjects() {
 
   auto krzbasehasher = DataBlock::createHasher();
   krzbasehasher->accumulateString("krzbaseobjects"); // identifier
-  krzbasehasher->accumulateItem<float>(1.5);         // version code
+  krzbasehasher->accumulateItem<float>(1.6);         // version code
   krzbasehasher->accumulate(bin_data, ilen);         // data
 
   krzbasehasher->finish();
   uint64_t krzbase_hash = krzbasehasher->result();
-  datablock_ptr_t dblock = DataBlockCache::findDataBlock(krzbase_hash);
+  datablock_ptr_t dblock = nullptr; //DataBlockCache::findDataBlock(krzbase_hash);
   if (dblock == nullptr) {
     auto base_json = krzio::convert(base_path.c_str());
     dblock        = std::make_shared<DataBlock>();
@@ -52,6 +52,10 @@ bankdata_ptr_t KrzSynthData::baseObjects() {
     array.push_back(0);
     dblock->addData(array.data(), array.size());
     DataBlockCache::setDataBlock(krzbase_hash, dblock);
+    auto json_path = base/"k2v3base.json";
+    FILE* json_file = fopen(json_path.c_str(), "wb");
+    fwrite(base_json.c_str(), base_json.size(), 1, json_file);
+    fclose(json_file);
   }
   KrzBankDataParser parser;
   auto as_str = std::string(dblock->_storage.begin(), dblock->_storage.end());

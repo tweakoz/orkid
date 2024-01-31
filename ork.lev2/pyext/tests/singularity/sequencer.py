@@ -26,6 +26,7 @@ timestamp = singularity.TimeStamp
 parser = argparse.ArgumentParser(description='singularity sequencer test')
 parser.add_argument('-s', '--seqid', type=int, default=0, help='sequence id')
 parser.add_argument('-c', '--click', action='store_true', help='enable click track')
+parser.add_argument("-g", "--gain", type=float, default=-48, help="gain(dB)")
 args = parser.parse_args()
 seqid = args.seqid
 add_click = args.click
@@ -43,15 +44,15 @@ sequencer = synth.sequencer
 
 #synth.setEffect(mainbus,"Reverb:FDN4")
 #synth.setEffect(mainbus,"Reverb:FDN8")
-synth.setEffect(mainbus,"Reverb:FDNX")
+#synth.setEffect(mainbus,"Reverb:FDNX")
 #synth.setEffect(mainbus,"Reverb:NiceVerb")
 #synth.setEffect(mainbus,"StereoChorus")
-#synth.setEffect(mainbus,"none")
+synth.setEffect(mainbus,"none")
 
 auxbus = synth.createOutputBus("aux")
 synth.setEffect(auxbus,"none")
-auxbus.gain = -48
-
+auxbus.gain = 0.0 #args.gain
+mainbus.gain = 0
 ################################################################################
 
 syn_data_base = singularity.baseDataPath()/"kurzweil"
@@ -116,16 +117,17 @@ def genSingularitySequence(
 
 ######################################################
 if seqid==0:
-  genSingularitySequence(name="moonlight.mid",temposcale=1.9,feel=3,clip=PIANO[2],gain=24)
-  auxbus.gain = -48
+  genSingularitySequence(name="moonlight.mid",temposcale=1.9,feel=3,clip=PIANO[2],gain=0)
+  synth.velCurvePower = 0.5
+  auxbus.gain = +6
 elif seqid==1:
-  genSingularitySequence(name="castle1.mid",temposcale=1.0,feel=30,clip=PIANO[2],gain=6)
+  genSingularitySequence(name="castle1.mid",temposcale=1.0,feel=30,clip=PIANO[2],gain=0)
   auxbus.gain = -36
 elif seqid==2:
   genSingularitySequence(name="castle2.mid",temposcale=1.0,feel=10,clip=PIANO[2],gain=0)
   auxbus.gain = -24
 elif seqid==3:
-  genSingularitySequence(name="castle3.mid",temposcale=1.0,feel=30,clip=PIANO[2],gain=24)
+  genSingularitySequence(name="castle3.mid",temposcale=1.0,feel=30,clip=PIANO[2],gain=0)
   auxbus.gain = -96
 
 if add_click:

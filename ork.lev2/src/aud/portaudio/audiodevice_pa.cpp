@@ -66,7 +66,7 @@ static int patestCallback(
     for (int i = 0; i < framesPerBuffer; i++) {
       double phase = 440.0 * pi2 * double(_testtoneph) / getSampleRate();
       //printf( "phase<%g>\n", phase );
-      float samp   = sinf(phase) * .6;
+      float samp   = sinf(phase) * 1.0;
       *out++       = samp; // interleaved
       *out++       = samp; // interleaved
       _testtoneph++;

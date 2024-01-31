@@ -18,6 +18,7 @@ from _boilerplate import *
 from singularity._harness import SingulTestApp, find_index
 from _t8x import makeT8XLayer
 ################################################################################
+gainoffset = 0
 
 class AmbiApp(SingulTestApp):
 
@@ -64,7 +65,8 @@ class AmbiApp(SingulTestApp):
     self.krzdata = singularity.KrzSynthData()
     krz_bank = self.krzdata.bankData
     self.synth.setEffect(self.mainbus,"ShifterChorus")
-    self.mainbus.gain = 30
+    self.mainbus.gain = 30+gainoffset
+    self.synth.masterGain = singularity.decibelsToLinear(0)
 
     ############################
     newprog = krz_bank.newProgram("T8X")
@@ -81,7 +83,7 @@ class AmbiApp(SingulTestApp):
     S0.ioconfig.inputs = [0,1]
     S0.ioconfig.outputs = [0,1]
     self.aux0panblock = S0.appendDspBlock("AmpPanner2D","PANNER")
-    self.auxbusses[0].gain = 0
+    self.auxbusses[0].gain = 0+gainoffset
     self.auxbusses[0].layer = L0
 
     L0 = singularity.LayerData()
@@ -89,7 +91,7 @@ class AmbiApp(SingulTestApp):
     S0.ioconfig.inputs = [0,1]
     S0.ioconfig.outputs = [0,1]
     self.aux1panblock = S0.appendDspBlock("AmpPanner2D","PANNER")
-    self.auxbusses[1].gain = -6
+    self.auxbusses[1].gain = -6+gainoffset
     self.auxbusses[1].layer = L0
 
     L0 = singularity.LayerData()
@@ -97,7 +99,7 @@ class AmbiApp(SingulTestApp):
     S0.ioconfig.inputs = [0,1]
     S0.ioconfig.outputs = [0,1]
     self.aux2panblock = S0.appendDspBlock("AmpPanner2D","PANNER")
-    self.auxbusses[2].gain = 84
+    self.auxbusses[2].gain = 84+gainoffset
     self.auxbusses[2].layer = L0
 
     L0 = singularity.LayerData()
@@ -105,7 +107,7 @@ class AmbiApp(SingulTestApp):
     S0.ioconfig.inputs = [0,1]
     S0.ioconfig.outputs = [0,1]
     self.aux3panblock = S0.appendDspBlock("AmpPanner2D","PANNER")
-    self.auxbusses[3].gain = -6
+    self.auxbusses[3].gain = -6+gainoffset
     self.auxbusses[3].layer = L0
 
     L0 = singularity.LayerData()
@@ -113,7 +115,7 @@ class AmbiApp(SingulTestApp):
     S0.ioconfig.inputs = [0,1]
     S0.ioconfig.outputs = [0,1]
     self.aux7panblock = S0.appendDspBlock("AmpPanner2D","PANNER")
-    self.auxbusses[7].gain = 18
+    self.auxbusses[7].gain = 18+gainoffset
     self.auxbusses[7].layer = L0
 
 

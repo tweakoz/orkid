@@ -530,6 +530,11 @@ void synth::mainThreadHandler() {
 }
 
 programInst* synth::keyOn(int note, int velocity, prgdata_constptr_t pdata, keyonmod_ptr_t kmods) {
+
+  float fv = float(velocity) / 127.0f;
+  fv = powf(fv, _velcurvepower);
+  velocity = int(fv*127.0f);
+
   assert(pdata);
   programInst* pi = nullptr;
 
@@ -820,9 +825,12 @@ void synth::compute(int inumframes, const void* inputBuffer) {
   /////////////////////////////
   // final clamping
   /////////////////////////////
+  float clamp = 2.0f;
   for (int i = 0; i < inumframes; i++) {
-    float L = clip_float(master_left[i] * _masterGain, -1.0f, 1.0f);
-    float R = clip_float(master_right[i] * _masterGain, -1.0f, 1.0f);
+    //float L = clip_float(master_left[i] * _masterGain, -clamp, clamp);
+    //float R = clip_float(master_right[i] * _masterGain, -clamp, clamp);
+    float L = master_left[i] * _masterGain;
+    float R = master_right[i] * _masterGain;
     if (isnan(L) or isinf(L)) {
       L = 0.0f;
     }

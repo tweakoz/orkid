@@ -79,6 +79,10 @@ void pyinit_aud_singularity_synth(py::module& singmodule) {
                 synth->mainThreadHandler();
               })
           .def_property(
+              "velCurvePower", //
+              [](synth_ptr_t synth) -> float { return synth->_velcurvepower; },
+              [](synth_ptr_t synth, float pwr) { synth->_velcurvepower = pwr; })
+          .def_property(
               "masterGain", //
               [](synth_ptr_t synth) -> float { return synth->_masterGain; },
               [](synth_ptr_t synth, float gain) { synth->_masterGain = gain; })

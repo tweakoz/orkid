@@ -219,6 +219,7 @@ struct synth {
   int64_t _samplesuntilnexttick = 0;
   bool _lock_compute            = true;
   float _cpuload                = 0.0f;
+  float _velcurvepower          = 0.5f;
 
   outbus_ptr_t _curprogrambus;
 

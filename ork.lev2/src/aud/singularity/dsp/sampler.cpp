@@ -520,7 +520,7 @@ RegionSearch SAMPLER_DATA::findRegion(lyrdata_constptr_t ld, const KeyOnInfo& ko
 
     //_totalGain = sample->_linGain* region->_linGain; // * _layerGain * outputPAD * ampCOARSE;
 
-    RFOUND._preDSPGAIN = sample->_linGain * region->_linGain;
+    RFOUND._preDSPGAIN = sample->_linGain * region->_linGain * 4.0;
 
     ///////////////////////////////////////
     //  trigger sample playback oscillator

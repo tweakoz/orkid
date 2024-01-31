@@ -810,7 +810,7 @@ void FourPoleLowPassWithSep::compute(DspBuffer& dspbuf) // final
   _fval[0] = _filtFC;
   _fval[1] = res;
   _fval[2] = sep;
-  // printf( "fc<%f> res<%f> sep<%f>\n", fc, res, sep );
+  //printf( "fc<%f> res<%f> sep<%f>\n", fc, res, sep );
 }
 
 void FourPoleLowPassWithSep::doKeyOn(const KeyOnInfo& koi) // final

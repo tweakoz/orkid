@@ -114,7 +114,8 @@ def midiToSingularitySequence(
         # note_on with velocity==0 is a note_off
         if v == 0:
           if n in note_map:
-            ENQUEUE(n,v)
+            orig_vel = note_map[n][1]
+            ENQUEUE(n,orig_vel)
         note_map[n] = (n, v, clock)
 
       #########################################
