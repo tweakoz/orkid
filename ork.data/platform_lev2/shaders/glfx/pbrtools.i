@@ -694,6 +694,7 @@ vertex_interface iface_vtx_pick_rigid {
   inputs {
     vec4 position : POSITION;
     vec3 normal : NORMAL;
+    uvec3 pickSUBID : TEXCOORD1;
   }
   outputs {
     vec3 frg_wpos;
