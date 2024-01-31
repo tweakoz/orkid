@@ -64,30 +64,6 @@ void AMP_ADAPTIVE::compute(DspBuffer& dspbuf) { // final
   //printf("paramgain<%g> laychgain<%g> _dbd->_inputPad<%g>\n", paramgain, laychgain, _dbd->_inputPad);
   float baseG = laychgain;
   baseG *= decibel_to_linear_amp_ratio(paramgain)*_dbd->_inputPad;
-  baseG *= decibel_to_linear_amp_ratio(LD->_headroom);
-  int panmode = LD->_panmode;
-  int pan = LD->_pan;
-  float fpan = float(pan-7)/7.0;
-  switch(panmode){
-    case 0: // Fixed
-      break;
-    case 1: // +MIDI
-      fpan += 0.5f;
-      break;
-    case 2:{ // Auto
-      int ko = _layer->_curnote-60;
-      fpan = float(ko)/60.0;
-      break;
-    }
-    case 3:{ // Reverse(Auto)
-      int ko = -(_layer->_curnote-60);
-      fpan = float(ko)/60.0;
-      break;
-    }
-  }
-  //////////////////////////////////
-  float panL = panBlend(fpan).lmix;
-  float panR = panBlend(fpan).rmix;
   //////////////////////////////////
   bool use_natenv = LD->_usenatenv;
   //////////////////////////////////
@@ -106,8 +82,8 @@ void AMP_ADAPTIVE::compute(DspBuffer& dspbuf) { // final
         float inp     = bufferL[i];
 
 
-        bufferL[i] = clip_float(inp * linG * panL, kminclip, kmaxclip);
-        bufferR[i] = clip_float(inp * linG * panR, kminclip, kmaxclip);
+        bufferL[i] = inp * linG;
+        bufferR[i] = inp * linG;
       }
       break;
     }
@@ -122,8 +98,8 @@ void AMP_ADAPTIVE::compute(DspBuffer& dspbuf) { // final
         float linG = baseG*ampenv;
         float inpL     = chanL[i];
         float inpR     = chanR[i];
-        chanL[i] = clip_float(inpL * linG, kminclip, kmaxclip);
-        chanR[i] = clip_float(inpR * linG, kminclip, kmaxclip);
+        chanL[i] = inpL * linG;
+        chanR[i] = inpR * linG;
       }
       break;
     }
@@ -177,7 +153,7 @@ void AMP_MONOIO::compute(DspBuffer& dspbuf) { // final
     linG *= laychgain;
     linG *= ampenv;
     float inp     = inputchan[i];
-    outputchan[i] = clip_float(inp * linG * _dbd->_inputPad, kminclip, kmaxclip);
+    outputchan[i] = inp * linG * _dbd->_inputPad;
   }
   //////////////////////////////////
   _fval[0] = 0.0f;
@@ -241,7 +217,7 @@ void PLUSAMP::compute(DspBuffer& dspbuf) // final
       //float ae   = _param[1].eval();
       // float ae   = aenv[i];
       float res = (inU + inL) * 0.5 * _filt * 2.0;
-      res       = clip_float(res, -2, 2);
+      res       = res;
       ubuf[i]   = res;
       lbuf[i]   = res;
     }
@@ -469,7 +445,7 @@ void XGAIN::compute(DspBuffer& dspbuf) // final
       float inU  = ubuf[i] * _dbd->_inputPad;
       float inL  = lbuf[i] * _dbd->_inputPad;
       float res  = (inU * inL) * linG;
-      res        = clip_float(res, -1, 1);
+      res        = res;
 
       outputchan[i] = res;
     }
@@ -533,8 +509,8 @@ void AMPU_AMPL::compute(DspBuffer& dspbuf) // final
       float resU  = inU * _filtU;
       float resL  = inL * _filtL;
 
-      ubuf[i] = clip_float(resU * u_lrmix.lmix + resL * l_lrmix.lmix, kminclip, kmaxclip);
-      lbuf[i] = clip_float(resU * u_lrmix.rmix + resL * l_lrmix.rmix, kminclip, kmaxclip);
+      ubuf[i] = resU * u_lrmix.lmix + resL * l_lrmix.lmix;
+      lbuf[i] = resU * u_lrmix.rmix + resL * l_lrmix.rmix;
     }
   _fval[0] = _filtU;
   _fval[1] = _filtL;

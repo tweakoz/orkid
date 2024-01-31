@@ -154,6 +154,8 @@ struct Layer {
   oschardsynctrack_ptr_t _oschsynctracks[kmaxdspblocksperstage];
   scopesynctrack_ptr_t _scopesynctracks[kmaxdspblocksperstage];
 
+  float currentPan() const;
+
 private:
 
   friend struct synth;

@@ -16,6 +16,7 @@
 #include <ork/lev2/aud/singularity/dspblocks.h>
 #include <ork/lev2/aud/singularity/hud.h>
 #include <ork/reflect/properties/registerX.inl>
+#include <ork/lev2/aud/singularity/alg_pan.inl>
 
 ImplementReflectionX(ork::audio::singularity::LayerData, "SynLayer");
 
@@ -283,15 +284,46 @@ void Layer::beginCompute(int numframes) {
     _alg->beginCompute();
 }
 ///////////////////////////////////////////////////////////////////////////////
+float Layer::currentPan() const{
+  int panmode = _layerdata->_panmode;
+  int pan = _layerdata->_pan;
+  float fpan = float(pan-7)/7.0;
+  switch(panmode){
+    case 0: // Fixed
+      break;
+    case 1: // +MIDI
+      fpan += 0.5f;
+      break;
+    case 2:{ // Auto
+      int ko = _curnote-60;
+      fpan = float(ko)/60.0;
+      break;
+    }
+    case 3:{ // Reverse(Auto)
+      int ko = -(_curnote-60);
+      fpan = float(ko)/60.0;
+      break;
+    }
+  }
+  return fpan;
+}
+///////////////////////////////////////////////////////////////////////////////
 void Layer::mixToBus(int base, int count) {
   float* lyroutl  = _dspbuffer->channel(0) + base;
   float* lyroutr  = _dspbuffer->channel(1) + base;
   auto& out_buf   = _outbus->_buffer;
   float* bus_outl = out_buf._leftBuffer + base;
   float* bus_outr = out_buf._rightBuffer + base;
+  //////////////////////////////////
+  float fpan = currentPan();
+  float panL = panBlend(fpan).lmix;
+  float panR = panBlend(fpan).rmix;
+  float headroom = decibel_to_linear_amp_ratio(_layerdata->_headroom);
+  float LG = _layerLinGain * _gainModifier * headroom;
+  //////////////////////////////////
   for (int i = 0; i < count; i++) {
-    bus_outl[i] += lyroutl[i] * _layerLinGain * _gainModifier;
-    bus_outr[i] += lyroutr[i] * _layerLinGain * _gainModifier;
+    bus_outl[i] += (lyroutl[i]*LG*panL);
+    bus_outr[i] += (lyroutr[i]*LG*panR);
   }
   if (0) { // test tone
     for (int i = 0; i < _numFramesForBlock; i++) {
@@ -311,9 +343,16 @@ void Layer::replaceBus(int base, int count) {
   auto& out_buf        = _outbus->_buffer;
   float* bus_outl      = out_buf._leftBuffer + base;
   float* bus_outr      = out_buf._rightBuffer + base;
+  //////////////////////////////////
+  float fpan = currentPan();
+  float panL = panBlend(fpan).lmix;
+  float panR = panBlend(fpan).rmix;
+  float headroom = decibel_to_linear_amp_ratio(_layerdata->_headroom);
+  float LG = _layerLinGain * _gainModifier * headroom;
+  //////////////////////////////////
   for (int i = 0; i < count; i++) {
-    bus_outl[i] = lyroutl[i] * _layerLinGain * _gainModifier;
-    bus_outr[i] = lyroutr[i] * _layerLinGain * _gainModifier;
+    bus_outl[i] = (lyroutl[i]*LG*panL);
+    bus_outr[i] = (lyroutr[i]*LG*panR);
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
