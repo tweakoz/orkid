@@ -31,8 +31,11 @@ struct natenvseg {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct sample {
-  sample();
+struct SampleData : public ork::Object {
+
+  DeclareConcreteX(SampleData, ork::Object);
+
+  SampleData();
 
   std::string _name;
   const s16* _sampleBlock;
@@ -59,17 +62,23 @@ struct sample {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct multisample {
+struct MultiSampleData : public ork::Object {
+
+  DeclareConcreteX(MultiSampleData, ork::Object);
+
   std::string _name;
   int _objid;
-  std::map<int, sample*> _samples;
+  std::map<int, sample_ptr_t> _samples;
+  std::map<std::string, sample_ptr_t> _samplesByName;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct kmregion {
+struct KmRegionData : public ork::Object {
 
-  kmregion* clone() const;
+  DeclareConcreteX(KmRegionData, ork::Object);
+
+  kmregion_ptr_t clone() const;
   int _lokey = 0, _hikey = 0;
   int _lovel = 0, _hivel = 127;
   int _tuning                 = 0;
@@ -78,21 +87,23 @@ struct kmregion {
   float _linGain              = 1.0f;
   int _multsampID = -1, _sampID = -1;
   std::string _sampleName;
-  const multisample* _multiSample = nullptr;
-  const sample* _sample           = nullptr;
+  multisample_constptr_t _multiSample = nullptr;
+  sample_constptr_t _sample           = nullptr;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct KeyMap {
+struct KeyMapData : public ork::Object {
+
+  DeclareConcreteX(KeyMapData, ork::Object);
 
   keymap_ptr_t clone() const;
 
   std::string _name;
-  std::vector<kmregion*> _regions;
+  std::vector<kmregion_ptr_t> _regions;
   int _kmID = -1;
 
-  kmregion* getRegion(int note, int vel) const;
+  kmregion_ptr_t getRegion(int note, int vel) const;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -115,19 +126,18 @@ struct RegionSearch{
   int _keydiff = -1;
   float _baseCents = 0.0f;
   float _preDSPGAIN = 1.0f;
-  const kmregion* _kmregion = nullptr;
   int _curpitchadjx = 0;
   int _curpitchadj = 0;
   int _kmcents = 0;
   int _pchcents = 0;
-  const sample* _sample = nullptr;
-
+  sample_constptr_t _sample = nullptr;
+  kmregion_constptr_t _kmregion = nullptr;
 };
 ///////////////////////////////////////////////////////////////////////////////
 
 struct NatEnv {
   NatEnv();
-  void keyOn(const KeyOnInfo& KOI, const sample* s);
+  void keyOn(const KeyOnInfo& KOI, sample_constptr_t s);
   void keyOff();
   const natenvseg& getCurSeg() const;
   float compute();

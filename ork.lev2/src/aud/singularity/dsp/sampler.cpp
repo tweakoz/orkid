@@ -15,8 +15,19 @@
 #include <ork/lev2/aud/singularity/synth.h>
 #include <ork/lev2/aud/singularity/dspblocks.h>
 #include <ork/lev2/aud/singularity/sampler.h>
+#include <ork/reflect/properties/registerX.inl>
+
+ImplementReflectionX(ork::audio::singularity::KmRegionData, "SynKmRegionData");
+ImplementReflectionX(ork::audio::singularity::KeyMapData, "SynKeyMapData");
+ImplementReflectionX(ork::audio::singularity::SampleData, "SynSampleData");
+ImplementReflectionX(ork::audio::singularity::MultiSampleData, "SynMultiSampleData");
 
 namespace ork::audio::singularity {
+
+void KmRegionData::describeX(class_t* clazz) {}
+void KeyMapData::describeX(class_t* clazz) {}
+void SampleData::describeX(class_t* clazz) {}
+void MultiSampleData::describeX(class_t* clazz) {}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -35,7 +46,7 @@ kmpblockdata_ptr_t KmpBlockData::clone() const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-kmregion* KeyMap::getRegion(int note, int vel) const {
+kmregion_ptr_t KeyMapData::getRegion(int note, int vel) const {
   int k2vel = vel / 18; // map 0..127 -> 0..7
 
   for (auto r : _regions) {
@@ -54,8 +65,8 @@ kmregion* KeyMap::getRegion(int note, int vel) const {
   return nullptr;
 }
 
-kmregion* kmregion::clone() const{
-  auto rval = new kmregion;
+kmregion_ptr_t KmRegionData::clone() const{
+  auto rval = std::make_shared<KmRegionData>();
   rval->_lokey = _lokey;
   rval->_hikey = _hikey;
   rval->_lovel = _lovel;
@@ -75,8 +86,8 @@ kmregion* kmregion::clone() const{
 
 ///////////////////////////////////////////////////////////////////////////////
 
-keymap_ptr_t KeyMap::clone() const {
-  auto rval = std::make_shared<KeyMap>();
+keymap_ptr_t KeyMapData::clone() const {
+  auto rval = std::make_shared<KeyMapData>();
   for (auto r : _regions) {
     auto rclone = r->clone();
     rval->_regions.push_back(rclone);
@@ -186,7 +197,7 @@ void SAMPLER::compute(DspBuffer& dspbuf) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
-sample::sample()
+SampleData::SampleData()
     : _sampleBlock(nullptr)
     , _blk_start(0)
     , _blk_alt(0)

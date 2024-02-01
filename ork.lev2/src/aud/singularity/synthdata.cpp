@@ -100,12 +100,35 @@ prgdata_ptr_t BankData::findProgramByName(const std::string named) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-keymap_constptr_t BankData::findKeymap(int kmID) const {
-  keymap_constptr_t kd = nullptr;
+multisample_ptr_t BankData::findMultiSampleByName(const std::string named) const {
+  multisample_ptr_t ms = nullptr;
+  auto it          = _multisamplesByName.find(named);
+  if (it == _multisamplesByName.end()) {
+    return _multisamplesByName.begin()->second;
+  }
+  assert(it != _multisamplesByName.end());
+  ms = it->second;
+  return ms;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+keymap_ptr_t BankData::findKeymap(int kmID) const {
+  keymap_ptr_t kd = nullptr;
   auto it              = _keymaps.find(kmID);
   if (it != _keymaps.end())
     kd = it->second;
   return kd;
+}
+keymap_ptr_t BankData::findKeymapByName(const std::string named) const {
+  keymap_ptr_t km = nullptr;
+  auto it          = _keymapsByName.find(named);
+  if (it == _keymapsByName.end()) {
+    return _keymapsByName.begin()->second;
+  }
+  assert(it != _keymapsByName.end());
+  km = it->second;
+  return km;
 }
 
 //////////////////////////////////////////////////////////////////////////////

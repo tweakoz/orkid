@@ -63,7 +63,7 @@ struct LayerData : public ork::Object {
 
   kmpblockdata_ptr_t _kmpBlock;
   dspblkdata_ptr_t _pchBlock;
-  keymap_constptr_t _keymap;
+  keymap_ptr_t _keymap;
   //std::map<std::string, controllerdata_ptr_t> _controllermap;
   controlblockdata_ptr_t _ctrlBlock = nullptr;
   varmap::varmap_ptr_t _varmap;

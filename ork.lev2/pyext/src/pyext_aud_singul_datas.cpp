@@ -17,6 +17,7 @@
 #include <ork/lev2/aud/singularity/fxgen.h>
 #include <ork/lev2/aud/singularity/hud.h>
 #include <ork/lev2/aud/singularity/alg_oscil.h>
+#include <ork/lev2/aud/singularity/sampler.h>
 #include <ork/lev2/ui/widget.h>
 #include <ork/lev2/ui/group.h>
 #include <ork/lev2/ui/surface.h>
@@ -456,12 +457,58 @@ void pyinit_aud_singularity_datas(py::module& singmodule) {
                             [](lyrdata_ptr_t ldata, std::string busname) { //
                               ldata->_outbus = busname; 
                             })
+                            .def_property("keymap",
+                            [](lyrdata_ptr_t ldata) -> keymap_ptr_t { //
+                              return ldata->_keymap;
+                              },
+                            [](lyrdata_ptr_t ldata, keymap_ptr_t kmap) { //
+                              ldata->_keymap = kmap; 
+                            })
                         .def("__repr__", [](lyrdata_ptr_t ldata) -> std::string {
                             std::ostringstream oss;
                             oss << "LayerData( name: " << ldata->_name << ", stage_count: " << ldata->_algdata->_numstages << " )";
                             return oss.str();
                         });
   type_codec->registerStdCodec<lyrdata_ptr_t>(ldata_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  auto kmapdata_type =
+      py::class_<KeyMapData, keymap_ptr_t>(singmodule, "KeyMapData") //
+          .def(py::init<>())
+          .def_property(
+              "name",
+              [](keymap_ptr_t kmap) -> std::string { //
+                return kmap->_name;
+              },
+              [](keymap_ptr_t kmap, std::string named) { //
+                kmap->_name = named;
+              });
+  type_codec->registerStdCodec<keymap_ptr_t>(kmapdata_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  auto sampdata_type =
+      py::class_<SampleData, sample_ptr_t>(singmodule, "SampleData") //
+          .def(py::init<>())
+          .def_property(
+              "name",
+              [](sample_ptr_t sample) -> std::string { //
+                return sample->_name;
+              },
+              [](sample_ptr_t sample, std::string named) { //
+                sample->_name = named;
+              });
+  type_codec->registerStdCodec<sample_ptr_t>(sampdata_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  auto msampdata_type =
+      py::class_<MultiSampleData, multisample_ptr_t>(singmodule, "MultiSampleData") //
+          .def(py::init<>())
+          .def_property(
+              "name",
+              [](multisample_ptr_t msample) -> std::string { //
+                return msample->_name;
+              },
+              [](multisample_ptr_t msample, std::string named) { //
+                msample->_name = named;
+              });
+  type_codec->registerStdCodec<multisample_ptr_t>(msampdata_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto pdata_type = py::class_<ProgramData, prgdata_ptr_t>(singmodule, "ProgramData") //
                         .def(py::init<>())
@@ -592,7 +639,43 @@ void pyinit_aud_singularity_datas(py::module& singmodule) {
                                [](bankdata_ptr_t bdata, int id) -> prgdata_ptr_t { //
                                  auto program = bdata->findProgram(id);
                                  return program;
-                               });
+                               })
+                           .def(
+                               "multisampleByName",                                               //
+                               [](bankdata_ptr_t bdata, std::string named) -> multisample_ptr_t { //
+                                 auto ms = bdata->findMultiSampleByName(named);
+                                 return ms;
+                               })
+                           .def_property_readonly(
+                              "multisamplesByName",                                //
+                              [type_codec](bankdata_ptr_t bdata) -> py::dict { //
+                                py::dict rval;
+                                for (auto item : bdata->_multisamplesByName) {
+                                  auto name                         = item.first;
+                                  auto msample                   = item.second;
+                                  auto objptr = std::dynamic_pointer_cast<Object>(msample);
+                                  rval[type_codec->encode(name)] = type_codec->encode(objptr);
+                                }
+                                return rval;
+                              })
+                           .def(
+                               "keymapByName",                                               //
+                               [](bankdata_ptr_t bdata, std::string named) -> keymap_ptr_t { //
+                                 auto ms = bdata->findKeymapByName(named);
+                                 return ms;
+                               })
+                           .def_property_readonly(
+                              "keymapsByName",                                //
+                              [type_codec](bankdata_ptr_t bdata) -> py::dict { //
+                                py::dict rval;
+                                for (auto item : bdata->_keymapsByName) {
+                                  auto name                         = item.first;
+                                  auto kmap                   = item.second;
+                                  auto objptr = std::dynamic_pointer_cast<Object>(kmap);
+                                  rval[type_codec->encode(name)] = type_codec->encode(objptr);
+                                }
+                                return rval;
+                              });
   type_codec->registerStdCodec<bankdata_ptr_t>(bankdata_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto syndata_type = py::class_<SynthData, syndata_ptr_t>(singmodule, "SynthData")

@@ -34,7 +34,7 @@ struct funframe {
 struct HudFrameControl {
   lyrdata_constptr_t _layerdata;
   alg_ptr_t _alg;
-  const kmregion* _kmregion = nullptr;
+  kmregion_constptr_t _kmregion = nullptr;
   int _note                 = 0;
   int _vel                  = 0;
   int _layerIndex           = -1;

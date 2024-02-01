@@ -60,7 +60,9 @@ struct BankData : public ork::Object {
   void addProgram(int idx, const std::string& name, prgdata_ptr_t program);
   prgdata_ptr_t findProgram(int idx) const;
   prgdata_ptr_t findProgramByName(const std::string named) const;
-  keymap_constptr_t findKeymap(int kmID) const;
+  multisample_ptr_t findMultiSampleByName(const std::string named) const;
+  keymap_ptr_t findKeymap(int kmID) const;
+  keymap_ptr_t findKeymapByName(std::string kmID) const;
 
   void merge( const BankData& oth );
   //
@@ -68,7 +70,9 @@ struct BankData : public ork::Object {
   std::map<int, prgdata_ptr_t> _programs;
   std::map<std::string, prgdata_ptr_t> _programsByName;
   std::map<int, keymap_ptr_t> _keymaps;
-  std::map<int, multisample*> _multisamples;
+  std::map<std::string, keymap_ptr_t> _keymapsByName;
+  std::map<int, multisample_ptr_t> _multisamples;
+  std::map<std::string, multisample_ptr_t> _multisamplesByName;
 
 };
 

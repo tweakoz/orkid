@@ -57,6 +57,7 @@
 #include <ork/lev2/aud/singularity/alg_nonlin.h>
 #include <ork/lev2/aud/singularity/alg_oscil.h>
 #include <ork/lev2/aud/singularity/alg_pan.inl>
+#include <ork/lev2/aud/singularity/sampler.h>
 #include <ork/math/plane.hpp>
 
 #include <ork/lev2/gfx/meshutil/meshutil.h>
@@ -261,6 +262,11 @@ struct ClassToucher {
     RegisterClassX(audio::singularity::LayerData);
     RegisterClassX(audio::singularity::AlgData);
     RegisterClassX(audio::singularity::DspStageData);
+
+    RegisterClassX(audio::singularity::KmRegionData);
+    RegisterClassX(audio::singularity::KeyMapData);
+    RegisterClassX(audio::singularity::SampleData);
+    RegisterClassX(audio::singularity::MultiSampleData);
 
     RegisterClassX(audio::singularity::BlockModulationData);
     RegisterClassX(audio::singularity::DspParamData);
