@@ -31,6 +31,10 @@ struct natenvseg {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+struct WaveformData{
+  std::vector<s16> _sampledata;
+};
+
 struct SampleData : public ork::Object {
 
   DeclareConcreteX(SampleData, ork::Object);
@@ -54,6 +58,8 @@ struct SampleData : public ork::Object {
   float _linGain;
   int _rootKey;
   int _highestPitch;
+
+  svar64_t _user;
 
   eLoopMode _loopMode = eLoopMode::NONE;
   natenvwrapperdata_ptr_t _naturalEnvelope;
@@ -160,7 +166,10 @@ struct NatEnv {
 };
 
 struct SAMPLER_DATA : public DspBlockData {
-  SAMPLER_DATA(std::string name);
+
+  DeclareConcreteX(SAMPLER_DATA, DspBlockData);
+
+  SAMPLER_DATA(std::string name="");
   dspblk_ptr_t createInstance() const override;
   RegionSearch findRegion(lyrdata_constptr_t ld, const KeyOnInfo& koi) const;
 };

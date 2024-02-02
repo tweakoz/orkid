@@ -17,6 +17,7 @@
 #include <ork/lev2/aud/singularity/sampler.h>
 #include <ork/reflect/properties/registerX.inl>
 
+ImplementReflectionX(ork::audio::singularity::SAMPLER_DATA, "SynSamplerData");
 ImplementReflectionX(ork::audio::singularity::KmRegionData, "SynKmRegionData");
 ImplementReflectionX(ork::audio::singularity::KeyMapData, "SynKeyMapData");
 ImplementReflectionX(ork::audio::singularity::SampleData, "SynSampleData");
@@ -24,6 +25,7 @@ ImplementReflectionX(ork::audio::singularity::MultiSampleData, "SynMultiSampleDa
 
 namespace ork::audio::singularity {
 
+void SAMPLER_DATA::describeX(class_t* clazz) {}
 void KmRegionData::describeX(class_t* clazz) {}
 void KeyMapData::describeX(class_t* clazz) {}
 void SampleData::describeX(class_t* clazz) {}

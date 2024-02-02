@@ -286,6 +286,7 @@ struct ClassToucher {
     RegisterClassX(audio::singularity::PMXData);
     RegisterClassX(audio::singularity::PMXMixData);
     RegisterClassX(audio::singularity::MonoInStereoOutData);
+    RegisterClassX(audio::singularity::SAMPLER_DATA);
 
     RegisterClassX(audio::singularity::AMP_ADAPTIVE_DATA);
     RegisterClassX(audio::singularity::AMP_MONOIO_DATA);
