@@ -316,6 +316,10 @@ void pyinit_aud_singularity_datas(py::module& singmodule) {
           });
   type_codec->registerStdCodec<dspblkdata_ptr_t>(dspdata_type);
   /////////////////////////////////////////////////////////////////////////////////
+  auto sampler_type =
+      py::class_<SAMPLER_DATA, DspBlockData, samplerdata_ptr_t>(singmodule, "SamplerData");
+  type_codec->registerStdCodec<samplerdata_ptr_t>(sampler_type);
+  /////////////////////////////////////////////////////////////////////////////////
   using pitchblk_ptr_t = std::shared_ptr<PITCH_DATA>;
   auto pitchdata_type  = py::class_<PITCH_DATA, DspBlockData, pitchblk_ptr_t>(singmodule, "PitchBlockData");
   type_codec->registerStdCodec<pitchblk_ptr_t>(pitchdata_type);
@@ -453,10 +457,13 @@ void pyinit_aud_singularity_datas(py::module& singmodule) {
                             [](lyrdata_ptr_t ldata) -> scopesource_ptr_t { //
                               return ldata->createScopeSource();
                             })
-                        .def_property_readonly(
+                        .def_property(
                             "pitchBlock",                               //
                             [](lyrdata_ptr_t ldata) -> pitchblk_ptr_t { //
                               return std::dynamic_pointer_cast<PITCH_DATA>(ldata->_pchBlock);
+                            },
+                            [](lyrdata_ptr_t ldata, pitchblk_ptr_t pchblk) { //
+                              ldata->_pchBlock = pchblk;
                             })
                         .def_property(
                             "gain",                            //
@@ -542,40 +549,65 @@ void pyinit_aud_singularity_datas(py::module& singmodule) {
   type_codec->registerStdCodec<keymap_ptr_t>(kmapdata_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto sampdata_type = py::class_<SampleData, sample_ptr_t>(singmodule, "SampleData") //
-                           .def(py::init([](py::kwargs kwargs) -> sample_ptr_t {
-                             auto sample   = std::make_shared<SampleData>();
+                           .def(py::init([type_codec](py::kwargs kwargs) -> sample_ptr_t {
+                             auto sample            = std::make_shared<SampleData>();
+                             sample->_highestPitch = 20000;
+                             sample->_blk_start = 0;
+                             sample->_blk_alt   = 0;
+                             sample->_blk_end   = 0;
+                             sample->_blk_loopstart = 0;
+                             sample->_blk_loopend = 0;
+                             sample->_loopPoint = 0;
+                             sample->_linGain = 1.0f;
+                             sample->_loopMode = eLoopMode::NONE;
+
+                             crcstring_ptr_t format = nullptr;
                              for (auto item : kwargs) {
                                auto key = item.first.cast<std::string>();
                                if (key == "name") {
-                                 auto name = item.second.cast<std::string>();
+                                 auto name     = item.second.cast<std::string>();
                                  sample->_name = name;
-                               }
-                               else if (key == "waveform") {
-                                 auto wavedataIN = item.second.cast<py::list>();
-                                 // is this a list of floats or a list of ints?
-                                  bool isfloat = false;
-                                  for (auto wsamp : wavedataIN) {
-                                    if (wsamp.is(py::float_())) {
-                                      isfloat = true;
-                                      break;
-                                    }
-                                  }
-                                  size_t count = wavedataIN.size();
-                                  auto& wavedataOUT = sample->_user.make<WaveformData>();
-                                  wavedataOUT._sampledata.resize(count);
-
-                                  if (isfloat) {
-                                    for( auto wsamp : wavedataIN ) {
-                                      float s = wsamp.cast<float>();
-                                    }
-                                  } else {
-                                    for( auto wsamp : wavedataIN ) {
-                                      float s = wsamp.cast<int>();
-                                    }
-                                  }
-                               }
-                               else if (key == "samplerate") {
+                               } else if (key == "format") {
+                                 // wsamp.cast<float>()
+                                 auto as_obj = py::reinterpret_borrow<py::object>(item.second);
+                                 auto fmt    = type_codec->decode(as_obj);
+                                 if (auto as_crc = fmt.tryAs<crcstring_ptr_t>()) {
+                                   format = as_crc.value();
+                                 }
+                               } else if (key == "waveform") {
+                                 auto wavedataIN   = item.second.cast<py::list>();
+                                 size_t count      = wavedataIN.size();
+                                 sample->_blk_end   = count-1;
+                                 auto& wavedataOUT = sample->_user.make<WaveformData>();
+                                 wavedataOUT._sampledata.resize(count);
+                                 OrkAssert(format != nullptr);
+                                 switch (format->_hashed) {
+                                   case "FLOAT32_LIST"_crcu: {
+                                     for (size_t i = 0; i < count; i++) {
+                                       auto wsamp                 = wavedataIN[i].cast<float>();
+                                       wavedataOUT._sampledata[i] = s16(wsamp*32767.0f);
+                                     }
+                                     sample->_sampleBlock = wavedataOUT._sampledata.data();
+                                     break;
+                                   }
+                                   case "S16_BYTES"_crcu: {
+                                     OrkAssert(false);
+                                     break;
+                                   }
+                                   default:
+                                     OrkAssert(false);
+                                     break;
+                                 }
+                               } else if (key == "sampleRate") {
                                  sample->_sampleRate = item.second.cast<float>();
+                               } else if (key == "highestPitch") {
+                                 sample->_highestPitch = (int) item.second.cast<float>();
+                               } else if (key == "rootKey") {
+                                 sample->_rootKey = item.second.cast<int>();
+                               } else if (key == "loopPoint") {
+                                 sample->_loopPoint = item.second.cast<int>();
+                                 sample->_blk_loopend = sample->_loopPoint + sample->_blk_start;
+                                 sample->_loopMode = eLoopMode::FWD;
                                }
                              }
                              return sample;

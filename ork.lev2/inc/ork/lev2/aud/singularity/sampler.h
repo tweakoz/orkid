@@ -46,11 +46,10 @@ struct SampleData : public ork::Object {
 
   int _blk_start;
   int _blk_alt;
+  int _blk_end;
 
   int _blk_loopstart;
   int _blk_loopend;
-
-  int _blk_end;
 
   int _loopPoint;
   int _subid;
@@ -165,15 +164,6 @@ struct NatEnv {
   envadjust_method_t _envadjust;
 };
 
-struct SAMPLER_DATA : public DspBlockData {
-
-  DeclareConcreteX(SAMPLER_DATA, DspBlockData);
-
-  SAMPLER_DATA(std::string name="");
-  dspblk_ptr_t createInstance() const override;
-  RegionSearch findRegion(lyrdata_constptr_t ld, const KeyOnInfo& koi) const;
-};
-
 ///////////////////////////////////////////////////////////////////////////////
 
 struct sampleOsc {
@@ -234,6 +224,17 @@ struct sampleOsc {
   natenv_ptr_t _natAmpEnv;
 
   bool _released;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct SAMPLER_DATA : public DspBlockData {
+
+  DeclareConcreteX(SAMPLER_DATA, DspBlockData);
+
+  SAMPLER_DATA(std::string name="");
+  dspblk_ptr_t createInstance() const override;
+  RegionSearch findRegion(lyrdata_constptr_t ld, const KeyOnInfo& koi) const;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

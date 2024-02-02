@@ -32,6 +32,15 @@ void pyinit_aud_singularity_sequencer(py::module& singmodule);
 void pyinit_aud_singularity(py::module& module_lev2) {
   auto singmodule = module_lev2.def_submodule("singularity", "orkid audio synthesizer");
   singmodule.def("decibelsToLinear", [](float dB) -> float { return decibel_to_linear_amp_ratio(dB); });
+  singmodule.def("midiNoteToFrequency", [](float midinote) -> float { 
+    return midi_note_to_frequency(midinote);
+    });
+  singmodule.def("frequencyToMidiNote", [](float frq) -> float { 
+    return frequency_to_midi_note(frq);
+    });
+  singmodule.def("linearFrequencyRatioToCents", [](float fratio) -> float { //
+    return linear_freq_ratio_to_cents(fratio);
+  });
   singmodule.def("baseDataPath", []() -> file::Path { return basePath(); });
   pyinit_aud_singularity_synth(singmodule);
   pyinit_aud_singularity_datas(singmodule);
