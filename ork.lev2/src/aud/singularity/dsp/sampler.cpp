@@ -531,7 +531,7 @@ RegionSearch SAMPLER_DATA::findRegion(lyrdata_constptr_t ld, const KeyOnInfo& ko
 
     //_basecentsOSC = 6000;//(note-0)*100;//pitchadjx_cents-1200;
     if (pitchadj_cents) {
-      RFOUND._baseCents = RFOUND._kmcents + pitchadj_cents;
+      RFOUND._baseCents = RFOUND._kmcents + pitchadjx_cents + pitchadj_cents;
       //_basecentsOSC = _pchcents+pitchadj ;
     }
     printf( "sampsr<%f> srrat<%f> rkc<%d> hp<%d> delc<%d> frqerc<%d> pitchadj<%d> pitchadjx<%d> bascents<%g>\n", sampsr, SRratio, RKcents, highestP,  delcents, frqerc, pitchadj_cents, pitchadjx_cents, RFOUND._baseCents );

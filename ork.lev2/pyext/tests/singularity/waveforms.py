@@ -79,7 +79,7 @@ class WaveformsApp(SingulTestApp):
     samplerate = 16000
     root_key = 48
     orig_pitch = (samplerate/wavelength)
-    rootpitch = singularity.midiNoteToFrequency(root_key) # 466.1637615180899
+    #rootpitch = singularity.midiNoteToFrequency(root_key) # 466.1637615180899
     highestPitch = orig_pitch * 48000.0/samplerate
     highestPitchN = singularity.frequencyToMidiNote(highestPitch)
     highestPitchCents = int(highestPitchN*100.0)+1
@@ -88,7 +88,7 @@ class WaveformsApp(SingulTestApp):
     calch    = root_key * (frqerc / 100.0)
     pitchADJcents = calch - highestPitchCents
     delcents = frqerc-pitchADJcents
-    print("rootpitch", rootpitch )
+    #print("rootpitch", rootpitch )
     print("orig_pitch", orig_pitch )
     print("highestPitch", highestPitch )
     print("highestPitchN", highestPitchN )
@@ -100,8 +100,9 @@ class WaveformsApp(SingulTestApp):
     print("delcents", delcents )
     
     print("#####################")
-
+    
     waveform = [math.sin(2.0 * math.pi * (i / wavelength)) for i in range(wavelength)]
+    
     the_sample = S.SampleData(
       name = "MySample",
       format = tokens.FLOAT32_LIST,
@@ -109,10 +110,10 @@ class WaveformsApp(SingulTestApp):
       # key which will play back at original pitch
       rootKey = root_key,                
       # offset in cents
-      pitchAdjust = pitchADJcents,   
+      pitchAdjustCents = 0.0,
       # samples per second of recording             
       sampleRate = samplerate,  
-      highestPitch = highestPitchCents,
+      highestPitchCents = highestPitchCents,
       # loop endpoint
       loopPoint = wavelength-1,        
     )

@@ -600,8 +600,10 @@ void pyinit_aud_singularity_datas(py::module& singmodule) {
                                  }
                                } else if (key == "sampleRate") {
                                  sample->_sampleRate = item.second.cast<float>();
-                               } else if (key == "highestPitch") {
+                               } else if (key == "highestPitchCents") {
                                  sample->_highestPitch = (int) item.second.cast<float>();
+                               } else if (key == "pitchAdjustCents") {
+                                 sample->_pitchAdjust = (int) item.second.cast<float>();
                                } else if (key == "rootKey") {
                                  sample->_rootKey = item.second.cast<int>();
                                } else if (key == "loopPoint") {
