@@ -108,3 +108,6 @@ batch_wget({
   wav_base/"snare/OldSnare/snare_f3.wav": (dest_path/"wavs"/"snare_f3.wav","9259193b9fa91197f09550b577fdf92c"),
   wav_base2/"Trem/VlnEns_Trem_A2_v1.wav": (dest_path/"wavs"/"VlnEns_Trem_A2_v1.wav","b40592fb499763f86eae4c39bdaad033")
 })
+
+batch_wget({
+  URL("http://www.tweakoz.com/resources/audio/Feb142023.mp3"): (dest_path/"wavs"/"feb142023.mp3","d6ade30fdc8f9c80a7c846c983b4877a")})

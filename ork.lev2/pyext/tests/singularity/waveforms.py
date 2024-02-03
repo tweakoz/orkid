@@ -184,7 +184,7 @@ class WaveformsApp(SingulTestApp):
           pitchAdjustCents = 0.0,
           #sampleRate = samplerate,  
           #highestPitchCents = highestPitchCents,
-          _interpMethod = 0,
+          _interpMethod = 2,
         )
         multisample = S.MultiSampleData("MSAMPLE",[the_sample])
         keymap = S.KeyMapData("KMAP")
@@ -198,9 +198,10 @@ class WaveformsApp(SingulTestApp):
         newlyr.keymap = keymap    
         SOSCIL.lowpassfreq = lowpass
     
+    createSampleLayer(singularity.baseDataPath()/"wavs"/"feb142023.mp3",31,0,36,12000)
+    createSampleLayer(singularity.baseDataPath()/"wavs"/"VlnEns_Trem_A2_v1.wav",110.5,37,57,7000)
     createSampleLayer(singularity.baseDataPath()/"wavs"/"bdrum2_pp_1.wav",47,58,59,12000)
     createSampleLayer(singularity.baseDataPath()/"wavs"/"snare_f3.wav",96,60,63,12000)
-    createSampleLayer(singularity.baseDataPath()/"wavs"/"VlnEns_Trem_A2_v1.wav",110.5,0,57,7000)
     #createSampleLayer(singularity.baseDataPath()/"wavs"/"bdrum_f_2.wav",73,96)
 
     ############################
