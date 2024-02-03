@@ -124,7 +124,7 @@ class WaveformsApp(SingulTestApp):
           fj = (j/30.0)
           fn = fs*fj + (1.0-fj)
           waveform = waveform + (np.sin(2 * np.pi * (j + 1)  * t) / (j + 1))*fn
-        waveform = waveform / np.max(np.abs(waveform))*0.06  # Normalize to -1 to 1
+        waveform = waveform / np.max(np.abs(waveform))*0.1  # Normalize to -1 to 1
         final_waveform[i * wavelength:(i + 1) * wavelength] = waveform
         
       #############################
@@ -147,7 +147,7 @@ class WaveformsApp(SingulTestApp):
       keymap = S.KeyMapData("KMAP")
       R0 = keymap.addRegion(
         lokey=0,
-        hikey=84,
+        hikey=56,
         lovel=0,
         hivel=127,
         multisample=multisample,
@@ -225,9 +225,9 @@ class WaveformsApp(SingulTestApp):
           sample=the_sample)
         newlyr.keymap = keymap      
     
-    createSampleLayer(singularity.baseDataPath()/"wavs"/"bdrum2_pp_1.wav",42,0,56)
-    createSampleLayer(singularity.baseDataPath()/"wavs"/"snare_f3.wav",92,57,63)
-    #createSampleLayer(singularity.baseDataPath()/"wavs"/"bdrum_f_1.wav",51,72)
+    createSampleLayer(singularity.baseDataPath()/"wavs"/"bdrum2_pp_1.wav",47,57,59)
+    createSampleLayer(singularity.baseDataPath()/"wavs"/"snare_f3.wav",96,60,63)
+    createSampleLayer(singularity.baseDataPath()/"wavs"/"VlnEns_Trem_A2_v1.wav",110.5,0,56)
     #createSampleLayer(singularity.baseDataPath()/"wavs"/"bdrum_f_2.wav",73,96)
 
     ############################

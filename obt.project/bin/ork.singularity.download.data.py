@@ -98,6 +98,7 @@ batch_wget({
 ensureDirectoryExists(dest_path/"wavs")
 
 wav_base = URL("https://github.com/sgossner/VSCO-2-CE/raw/master/VSCO%201%20Percussion/drums")
+wav_base2 = URL("https://github.com/sgossner/VSCO-2-CE/raw/master/Strings/Violin%20Section")
 
 batch_wget({
   wav_base/"bass/bdrum2_pp_1.wav": (dest_path/"wavs"/"bdrum2_pp_1.wav","4fb66f1bcb4e61c4afc5e30856dc0b0d"),
@@ -105,4 +106,5 @@ batch_wget({
   wav_base/"bass/bdrum_f_1.wav": (dest_path/"wavs"/"bdrum_f_1.wav","9b9d75dc4e1afec44d1c470f9d169bdb"),
   wav_base/"bass/bdrum_f_2.wav": (dest_path/"wavs"/"bdrum_f_2.wav","3261005b0abd0821eeb3de8e046563ab"),
   wav_base/"snare/OldSnare/snare_f3.wav": (dest_path/"wavs"/"snare_f3.wav","9259193b9fa91197f09550b577fdf92c"),
+  wav_base2/"Trem/VlnEns_Trem_A2_v1.wav": (dest_path/"wavs"/"VlnEns_Trem_A2_v1.wav","b40592fb499763f86eae4c39bdaad033")
 })
