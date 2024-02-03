@@ -57,7 +57,7 @@ Orkid's synthesizer is loosely inspired by Kurzeil VAST, in that it supports ful
 
   ![Singularity Architecture:1](Singul.png)
 
-  ### Definitions of data objects (live performance mutable objects)
+  ### Definitions of data objects (Factory/Builder immutable objects)
 
  Data objects are used to construct instance objects.
  Data objects are immutable from audio thread.
