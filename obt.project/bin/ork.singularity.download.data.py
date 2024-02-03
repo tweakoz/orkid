@@ -71,6 +71,15 @@ dest_kurzweil = dest_path/"kurzweil"
 ensureDirectoryExists(dest_path/"kurzweil")
 
 batch_wget({
+ base_kurzweil/"dx7works.krz": (dest_kurzweil/"dx7works.krz","b8eeafedd5e57353a0176ae3feab3767"),
+ base_kurzweil/"boychoir.krz": (dest_kurzweil/"boychoir.krz","1cff679da152b9e9a68e19c3bc6d4d0a"),
+ base_kurzweil/"monopoly.krz": (dest_kurzweil/"monopoly.krz","d3063a159e5ae27619810b82cc3c0531"),
+ base_kurzweil/"lostring.krz": (dest_kurzweil/"lostring.krz","e1d520463213c82bd732e0f108c8daec"),
+ base_kurzweil/"histring.krz": (dest_kurzweil/"histring.krz","a88ca0069a4762006bf3f663902728aa"),
+ base_kurzweil/"violin.krz": (dest_kurzweil/"violin.krz","6c874ccff0733de4a0eea8ce0c8bb0ee"),
+ base_kurzweil/"quartet.krz": (dest_kurzweil/"quartet.krz","7aa3c3ec11ca70d012795b110658cfd0"),
+ base_kurzweil/"seavoice.krz": (dest_kurzweil/"seavoice.krz","0367caf0df309101c4abb82e5f8d53de"),
+ base_kurzweil/"storms.krz": (dest_kurzweil/"storms.krz","c0400b99f3cf049751930ce793353f99"),
  base_kurzweil/"bigbells.krz": (dest_kurzweil/"bigbells.krz","31a1c64fe54d5a163e6af13ec80376e3"),
  base_kurzweil/"akaifunk.krz": (dest_kurzweil/"akaifunk.krz","1a2e0c78ec392e19bde0bb8ea942829d"),
  base_kurzweil/"drpad.krz": (dest_kurzweil/"drpad.krz","b92d808aecd754ca031447ba8e08fe16"),

@@ -37,26 +37,25 @@ class KrzApp(SingulTestApp):
     self.syn_data_base = singularity.baseDataPath()/"kurzweil"
     self.krzdata = singularity.KrzSynthData(base_objects=False)
 
-    self.krzdata.loadBank( name="alesisdr", 
-                           path=self.syn_data_base/"alesisdr.krz")
-    self.krzdata.loadBank( name="m1drums", 
-                           remap_base=300, 
-                           path=self.syn_data_base/"m1drums.krz")
-    self.krzdata.loadBank( name="emusp12", 
-                           remap_base=320, 
-                           path=self.syn_data_base/"emusp12.krz")
-    self.krzdata.loadBank( name="monksvox.kr1", 
-                           remap_base=320, 
-                           path=self.syn_data_base/"monksvox.kr1.krz")
-    self.krzdata.loadBank( name="monksvox.kr2", 
-                           remap_base=320, 
-                           path=self.syn_data_base/"monksvox.kr2.krz")
-    self.krzdata.loadBank( name="epsstrng.krz", 
-                           remap_base=320, 
-                           path=self.syn_data_base/"epsstrng.krz")
-    self.krzdata.loadBank( name="cp70.krz", 
-                           remap_base=320, 
-                           path=self.syn_data_base/"cp70.krz")
+    def do_bank(name,filename,remapbase=0):
+      self.krzdata.loadBank( name=name, 
+                             remap_base=remapbase,
+                             path=self.syn_data_base/filename)
+          
+    #do_bank( "quartet.krz", "quartet.krz")
+    #do_bank( "monopoly.krz", "monopoly.krz")
+    #do_bank( "dx7works.krz", "dx7works.krz")
+
+    do_bank( "alesisdr", "alesisdr.krz" )
+    do_bank( "m1drums", "m1drums.krz")
+    do_bank( "emusp12", "emusp12.krz")
+    do_bank( "monksvox.kr1", "monksvox.kr1.krz")
+    do_bank( "monksvox.kr2", "monksvox.kr2.krz")
+    do_bank( "epsstrng.krz", "epsstrng.krz")
+    do_bank( "boychoir.krz", "boychoir.krz")
+    do_bank( "lostring.krz", "lostring.krz")
+    do_bank( "seavoice.krz", "seavoice.krz")
+    #do_bank( "storms.krz", "storms.krz")
     
     
     self.soundbank = self.krzdata.bankData
@@ -121,17 +120,13 @@ class KrzApp(SingulTestApp):
         hikey=72,
         lowpass=10000,
         tuning=0)
-    #newprog3 = self.soundbank.newProgram("TOZMONKS2")
-    #createSampleLayer(
-    #    newprog3,
-    #    multisample=self.krzsamps["Midnite_Monkness"],
-    #    lokey=0,
-    #    hikey=72,
-    #    lowpass=10000,
-    #    tuning=0)
     #############################
-    self.sorted_progs = ["TOZDRUMS","TOZMONKS",
-                        "Midnite_Monkness","STRINGS_____","CP-70_((stereo))"]
+    self.sorted_progs = [
+      "TOZDRUMS","TOZMONKS",
+      "Midnite_Monkness","STRINGS_____","CP-70_((stereo))",
+      "Boys_Choir","LO_STRING_KC",
+      "Waves_n_Gulls"
+    ]
 #                        "Churchbell","Carillon","Chime"]
     #############################
     self.setBusProgram(main,self.soundbank.programByName(DRUM_PRG))

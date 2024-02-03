@@ -752,11 +752,11 @@ void pyinit_aud_singularity_datas(py::module& singmodule) {
                                "programsByName",                                //
                                [type_codec](bankdata_ptr_t bdata) -> py::dict { //
                                  py::dict rval;
-                                 for (auto item : bdata->_programs) {
-                                   int id                         = item.first;
+                                 for (auto item : bdata->_programsByName) {
+                                   //int id                         = item.first;
                                    auto prog                      = item.second;
                                    auto name                      = prog->_name;
-                                   rval[type_codec->encode(name)] = type_codec->encode(id);
+                                   rval[type_codec->encode(name)] = type_codec->encode(prog);
                                  }
                                  return rval;
                                })

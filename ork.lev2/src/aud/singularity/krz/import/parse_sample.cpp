@@ -61,7 +61,7 @@ void filescanner::ParseSampleHeader(const datablock& db, datablock::iterator& it
   multisample->_numSoundFiles   = uNumSoundFilesMinusOne + 1;
 
 
-  printf( "ParseSample id<%d> name<%s>\n", iObjectID, ObjName.c_str() );
+  //printf( "ParseSample id<%d> name<%s>\n", iObjectID, ObjName.c_str() );
 
   _samples[iObjectID]           = multisample;
 
@@ -221,15 +221,15 @@ void filescanner::ParseSampleHeader(const datablock& db, datablock::iterator& it
       pitem->_isLooped     = bLoopSwitch;
 
       std::string nam = ork::FormatString("%s:%d", ObjName.c_str(), int(usamp));
-      printf( "/// sample==<%s>\n", nam.c_str() );
+     //printf( "/// sample==<%s>\n", nam.c_str() );
       if (bLoopSwitch) {
-        printf( "///\n");
-        printf( "/// sample==<%s>\n", nam.c_str() );
-        printf( "///\n");
-        printf( "uSubFlags<%02x>\n", (u8) uSubFlags );
-        printf( "uStart<%08x:%d>\n", uStart,uStart );
-        printf( "uEnd<%08x:%d>\n", uEndOfSpan,uEndOfSpan );
-        printf( "uLoopOfSpan<%08x:%d>\n", uLoopOfSpan,uLoopOfSpan );
+        //printf( "///\n");
+        //printf( "/// sample==<%s>\n", nam.c_str() );
+        //printf( "///\n");
+        //printf( "uSubFlags<%02x>\n", (u8) uSubFlags );
+        //printf( "uStart<%08x:%d>\n", uStart,uStart );
+        //printf( "uEnd<%08x:%d>\n", uEndOfSpan,uEndOfSpan );
+        //printf( "uLoopOfSpan<%08x:%d>\n", uLoopOfSpan,uLoopOfSpan );
         opts.loopstart = pitem->_loopPoint;
       }
       // printf( "inumsmps<%d>\n", inumsmps );
