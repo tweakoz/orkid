@@ -42,6 +42,21 @@ class KrzApp(SingulTestApp):
     self.krzdata.loadBank( name="m1drums", 
                            remap_base=300, 
                            path=self.syn_data_base/"m1drums.krz")
+    self.krzdata.loadBank( name="emusp12", 
+                           remap_base=320, 
+                           path=self.syn_data_base/"emusp12.krz")
+    self.krzdata.loadBank( name="monksvox.kr1", 
+                           remap_base=320, 
+                           path=self.syn_data_base/"monksvox.kr1.krz")
+    self.krzdata.loadBank( name="monksvox.kr2", 
+                           remap_base=320, 
+                           path=self.syn_data_base/"monksvox.kr2.krz")
+    self.krzdata.loadBank( name="epsstrng.krz", 
+                           remap_base=320, 
+                           path=self.syn_data_base/"epsstrng.krz")
+    self.krzdata.loadBank( name="cp70.krz", 
+                           remap_base=320, 
+                           path=self.syn_data_base/"cp70.krz")
     
     
     self.soundbank = self.krzdata.bankData
@@ -59,8 +74,8 @@ class KrzApp(SingulTestApp):
     for key in self.krzkmaps:
       print("krzkmap<%s>" % key)
 
-    newprog = self.soundbank.newProgram("YO")
-
+    #############################
+    # create TOZDRUMS Program
     #############################
     layers = [
       { "name":"Kick1", "lokey":0, "hikey":60, "tuning":0, "lowpass":12000.0, "pan": 5 },
@@ -75,10 +90,13 @@ class KrzApp(SingulTestApp):
       { "name":"Open_HiHat", "lokey":70, "hikey":71, "tuning":-1200, "lowpass":18000.0, "pan": 7 },
       { "name":"Crash", "lokey":72, "hikey":72, "tuning":-1800, "lowpass":18000.0, "pan": 7 },
       { "name":"UNNAMED_WS_205", "lokey":73, "hikey":73, "tuning":-2400, "lowpass":12000.0, "pan": 7 },
+      { "name":"clank", "lokey":74, "hikey":74, "tuning":-2400, "lowpass":12000.0, "pan": 7 },
+      { "name":"electro", "lokey":75, "hikey":75, "tuning":-1200, "lowpass":12000.0, "pan": 7 },
+      { "name":"tom", "lokey":76, "hikey":76, "tuning":-1200, "lowpass":12000.0, "pan": 7 },
+      { "name":"tom2", "lokey":77, "hikey":77, "tuning":-1200, "lowpass":12000.0, "pan": 7 },
     ]
-    #############################
-    # create layers
-    #############################
+    DRUM_PRG = "TOZDRUMS"
+    newprog = self.soundbank.newProgram(DRUM_PRG)
     for item in layers:
       n = item["name"]
       lo = item["lokey"]
@@ -93,10 +111,32 @@ class KrzApp(SingulTestApp):
         lowpass=l,
         tuning=t)
     #############################
-    PRG = "YO"
-    self.setBusProgram(main,self.soundbank.programByName(PRG))
-    self.prog_index = find_index(self.sorted_progs, PRG)
-    self.prog = self.soundbank.programByName(PRG)
+    # create MONKSVOX Program
+    #############################
+    newprog2 = self.soundbank.newProgram("TOZMONKS")
+    createSampleLayer(
+        newprog2,
+        multisample=self.krzsamps["Tibetan_Monks"],
+        lokey=0,
+        hikey=72,
+        lowpass=10000,
+        tuning=0)
+    #newprog3 = self.soundbank.newProgram("TOZMONKS2")
+    #createSampleLayer(
+    #    newprog3,
+    #    multisample=self.krzsamps["Midnite_Monkness"],
+    #    lokey=0,
+    #    hikey=72,
+    #    lowpass=10000,
+    #    tuning=0)
+    #############################
+    self.sorted_progs = ["TOZDRUMS","TOZMONKS",
+                        "Midnite_Monkness","STRINGS_____","CP-70_((stereo))"]
+#                        "Churchbell","Carillon","Chime"]
+    #############################
+    self.setBusProgram(main,self.soundbank.programByName(DRUM_PRG))
+    self.prog_index = find_index(self.sorted_progs, DRUM_PRG)
+    self.prog = self.soundbank.programByName(DRUM_PRG)
     self.setUiProgram(self.prog)
     self.synth.setEffect(main,"Reverb:TEST")
 
