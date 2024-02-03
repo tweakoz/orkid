@@ -42,9 +42,10 @@ class KrzApp(SingulTestApp):
                              remap_base=remapbase,
                              path=self.syn_data_base/filename)
           
-    #do_bank( "quartet.krz", "quartet.krz")
-    #do_bank( "monopoly.krz", "monopoly.krz")
-    #do_bank( "dx7works.krz", "dx7works.krz")
+    do_bank( "quartet.krz", "quartet.krz")
+    do_bank( "monopoly.krz", "monopoly.krz")
+    do_bank( "rapkit.krz", "rapkit.krz")
+    do_bank( "choicdrm.krz", "choicdrm.krz")
 
     do_bank( "alesisdr", "alesisdr.krz" )
     do_bank( "m1drums", "m1drums.krz")
@@ -52,17 +53,32 @@ class KrzApp(SingulTestApp):
     do_bank( "monksvox.kr1", "monksvox.kr1.krz")
     do_bank( "monksvox.kr2", "monksvox.kr2.krz")
     do_bank( "epsstrng.krz", "epsstrng.krz")
-    do_bank( "boychoir.krz", "boychoir.krz")
+    #do_bank( "boychoir.krz", "boychoir.krz")
     do_bank( "lostring.krz", "lostring.krz")
-    do_bank( "seavoice.krz", "seavoice.krz")
-    #do_bank( "storms.krz", "storms.krz")
+    #do_bank( "seavoice.krz", "seavoice.krz")
+    do_bank( "rain_1.krz", "rain_1.krz")
+    do_bank( "moogbass.krz", "moogbass.krz")
+    do_bank( "steinway.krz", "steinway.krz")
+    do_bank( "trumpets.krz", "trumpets.krz")
+    do_bank( "bothfrhn.krz", "bothfrhn.krz")
+    do_bank( "b3.krz", "b3.krz")
+    do_bank( "pipeorgn.krz", "pipeorgn.krz")
+    do_bank( "harpsi.krz", "harpsi.krz")
+    do_bank( "acguit.krz", "acguit.krz")
+    do_bank( "classgtr.krz", "classgtr.krz")
+    do_bank( "guitloop.krz", "guitloop.krz")
+    do_bank( "sledge.krz", "sledge.krz")
+    do_bank( "flute.krz", "flute.krz")
+    do_bank( "indiperc.krz", "indiperc.krz")
+    do_bank( "african.krz", "african.krz")
+    do_bank( "gong.krz", "gong.krz")
+    do_bank( "idstperc.krz", "idstperc.krz")
     
     
     self.soundbank = self.krzdata.bankData
     self.krzprogs = self.soundbank.programsByName
     self.krzsamps = self.soundbank.multiSamplesByName
     self.krzkmaps = self.soundbank.keymapsByName
-
     for key in self.krzprogs:
       print("krzprog<%s>" % key)
     
@@ -121,22 +137,20 @@ class KrzApp(SingulTestApp):
         lowpass=10000,
         tuning=0)
     #############################
-    self.sorted_progs = [
-      "TOZDRUMS","TOZMONKS",
-      "Midnite_Monkness","STRINGS_____","CP-70_((stereo))",
-      "Boys_Choir","LO_STRING_KC",
-      "Waves_n_Gulls"
-    ]
-#                        "Churchbell","Carillon","Chime"]
+    self.sorted_progs = []
+    for item in self.krzprogs:
+      self.sorted_progs.append(item)
+    print(self.sorted_progs)
     #############################
     self.setBusProgram(main,self.soundbank.programByName(DRUM_PRG))
     self.prog_index = find_index(self.sorted_progs, DRUM_PRG)
     self.prog = self.soundbank.programByName(DRUM_PRG)
     self.setUiProgram(self.prog)
     self.synth.setEffect(main,"Reverb:TEST")
+    self.synth.setEffect(main,"none")
 
     
-    self.synth.masterGain = singularity.decibelsToLinear(-12.0)
+    self.synth.masterGain = singularity.decibelsToLinear(-24.0)
 
 ###############################################################################
 

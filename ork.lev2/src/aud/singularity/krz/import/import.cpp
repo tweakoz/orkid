@@ -49,18 +49,20 @@ krzimportdata_ptr_t convert(std::string krzpath) {
   //	{}
   //	assert( kKRZHwTypeK2000==u32v );
   /////////////////////////////////////////////
+  printf( "importing krz file<%s> K2KOSRELEASE<%d> HWTYPE<%08x>\n", krzpath.c_str(), os_release, hw_type );
+  /////////////////////////////////////////////
   scanner.SkipData(8);
   /////////////////////////////////////////////
   bool bdone = false;
   int iblock = 0;
   //printf("FileHeaderAndPRAMLength<0x%08x>\n", krz.miFileHeaderAndPRAMLength);
-  while ((iblock < 10) && (false == bdone)) {
-    //printf("iblock<%d>\n", iblock);
+  while ((false == bdone)) {
+    printf("iblock<%d>\n", iblock);
     int blocklen = 0;
     int iseekpos = scanner.mMainIterator.miIndex;
     bOK          = scanner.GetData(blocklen);
     blocklen *= -1;
-    //printf("SeekPos<0x%08x> Block<%d> Length<%d>\n", iseekpos, int(iblock), int(blocklen));
+    printf("SeekPos<0x%08x> Block<%d> Length<%d>\n", iseekpos, int(iblock), int(blocklen));
     iblock++;
     if ((iseekpos + 4) < krz.miFileHeaderAndPRAMLength) {
       datablock newblock;
@@ -75,8 +77,7 @@ krzimportdata_ptr_t convert(std::string krzpath) {
   ////////////////////////
   int isampledatacount = scanner.miSize - krz.miFileHeaderAndPRAMLength;
 
-  //printf("FileSize<%d> SampleDataSize<%d>\n", scanner.miSize, isampledatacount);
-  printf( "importing krz file<%s> K2KOSRELEASE<%d> HWTYPE<%08x> FileSize<%d> SampleDataSize<%d>\n", krzpath.c_str(), os_release, hw_type, scanner.miSize, isampledatacount );
+  printf("FileSize<%d> SampleDataSize<%d>\n", scanner.miSize, isampledatacount);
 
   if (isampledatacount) {
     krz.mpSampleData       = (s16*)malloc(isampledatacount);
