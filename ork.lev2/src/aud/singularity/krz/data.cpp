@@ -26,7 +26,7 @@ namespace ork::audio::singularity {
 
 bankdata_ptr_t KrzSynthData::baseObjects() {
 
-  getK2V3InternalSoundBlock();
+  auto SOUNDBLOCKS = getK2V3InternalSoundBlock();
 
   auto base      = ork::audio::singularity::basePath() / "kurzweil";
   auto base_path = base/"k2v3base.bin";
@@ -50,7 +50,9 @@ bankdata_ptr_t KrzSynthData::baseObjects() {
   uint64_t krzbase_hash = krzbasehasher->result();
   datablock_ptr_t dblock = nullptr; //DataBlockCache::findDataBlock(krzbase_hash);
   if (dblock == nullptr) {
-    auto base_json = krzio::convert(base_path.c_str());
+    auto krz_import = krzio::convert(base_path.c_str());
+
+    auto& base_json = krz_import->_json_programs;
     dblock        = std::make_shared<DataBlock>();
     auto array = std::vector<uint8_t>(base_json.begin(), base_json.end());
     array.push_back(0);
@@ -62,6 +64,8 @@ bankdata_ptr_t KrzSynthData::baseObjects() {
     fclose(json_file);
   }
   KrzBankDataParser parser;
+  parser._parsingROM = true;
+  parser._sampledata = SOUNDBLOCKS;
   auto as_str = std::string(dblock->_storage.begin(), dblock->_storage.end());
   parser.loadKrzJsonFromString(as_str, 0);
   return parser._objdb;
@@ -82,11 +86,13 @@ KrzSynthData::KrzSynthData(bool base_data)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void KrzSynthData::loadBank(const file::Path& syxpath, int remap_base){
-  auto as_json = krzio::convert(syxpath.c_str());
+bankdata_ptr_t KrzSynthData::loadBank(const file::Path& syxpath, int remap_base){
+  auto krz_data = krzio::convert(syxpath.c_str());
   KrzBankDataParser parser;
-  parser.loadKrzJsonFromString(as_json, remap_base);
-  _bankdata->merge(*parser._objdb);
+  parser._sampledata = (const s16*) krz_data->_sample_data.data();
+  bankdata_ptr_t bankdata = parser.loadKrzJsonFromString(krz_data->_json_programs, remap_base);
+  _bankdata->merge(*bankdata);
+  return bankdata;
 }
 
 

@@ -44,7 +44,14 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 namespace ork::audio::singularity::krzio {
-std::string convert(std::string krzpath);
+
+struct KurzweilImportData{
+  std::string _json_programs;
+  std::vector<uint8_t> _sample_data;
+};
+
+using krzimportdata_ptr_t = std::shared_ptr<KurzweilImportData>;
+krzimportdata_ptr_t convert(std::string krzpath);
 typedef uint32_t u32;
 typedef uint16_t u16;
 typedef int16_t s16;

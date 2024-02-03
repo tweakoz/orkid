@@ -213,7 +213,9 @@ keymap_ptr_t KrzBankDataParser::parseKeymap(int kmid, const Value& jsonobj) {
 
 sample_ptr_t KrzBankDataParser::parseSample(const Value& jsonobj, multisample_constptr_t parent) {
   auto sout           = std::make_shared<SampleData>();
-  sout->_sampleBlock  = getK2V3InternalSoundBlock();
+
+  sout->_sampleBlock  = _sampledata;
+
   sout->_name         = jsonobj["subSampleName"].GetString();
   sout->_subid        = jsonobj["subSampleIndex"].GetInt();
   sout->_rootKey      = jsonobj["rootKey"].GetInt();
@@ -1176,7 +1178,7 @@ prgdata_ptr_t KrzBankDataParser::parseProgram(const Value& jsonobj) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void KrzBankDataParser::loadKrzJsonFromFile(const std::string& fname, int ibaseid) {
+bankdata_ptr_t KrzBankDataParser::loadKrzJsonFromFile(const std::string& fname, int ibaseid) {
   auto realfname = basePath() / "kurzweil" / (fname + ".json");
   // printf("fname<%s>\n", realfname.c_str());
   FILE* fin = fopen(realfname.c_str(), "rt");
@@ -1189,13 +1191,14 @@ void KrzBankDataParser::loadKrzJsonFromFile(const std::string& fname, int ibasei
   fread(jsondata, size, 1, fin);
   jsondata[size] = 0;
   fclose(fin);
-  loadKrzJsonFromString(jsondata, ibaseid);
+  auto rval = loadKrzJsonFromString(jsondata, ibaseid);
   free((void*)jsondata);
+  return rval;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void KrzBankDataParser::loadKrzJsonFromString(const std::string& json_data, int ibaseid) {
+bankdata_ptr_t KrzBankDataParser::loadKrzJsonFromString(const std::string& json_data, int ibaseid) {
 
   _remap_base = ibaseid;
   _objdb      = std::make_shared<BankData>();
@@ -1294,7 +1297,7 @@ void KrzBankDataParser::loadKrzJsonFromString(const std::string& json_data, int 
     _objdb->_multisamples[objid]                   = multsample;
     _objdb->_multisamplesByName[multsample->_name] = multsample;
   }
-
+  return _objdb;
   /////////////////////////////////////////
 }
 

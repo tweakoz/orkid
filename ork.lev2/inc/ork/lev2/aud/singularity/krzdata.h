@@ -19,7 +19,7 @@ namespace ork::audio::singularity {
 struct KrzSynthData : public SynthData {
   static bankdata_ptr_t baseObjects();
   KrzSynthData(bool base_data=true);
-  void loadBank(const file::Path& syxpath, int remap_base=0);
+  bankdata_ptr_t loadBank(const file::Path& syxpath, int remap_base=0);
   int _remap_base = 0;
 };
 
@@ -39,8 +39,8 @@ struct KrzKmTestData : public SynthData {
 };
 
 struct KrzBankDataParser {
-  void loadKrzJsonFromFile(const std::string& fname, int bank);
-  void loadKrzJsonFromString(const std::string& json, int bank);
+  bankdata_ptr_t loadKrzJsonFromFile(const std::string& fname, int bank);
+  bankdata_ptr_t loadKrzJsonFromString(const std::string& json, int bank);
   keymap_ptr_t parseKeymap(int kmid, const rapidjson::Value& JO);
   void parseAsr(const rapidjson::Value& JO, controlblockdata_ptr_t cblock, const EnvCtrlData& ENVCTRL, const std::string& name);
   void parseLfo(const rapidjson::Value& JO, controlblockdata_ptr_t cblock, const std::string& name);
@@ -63,6 +63,8 @@ struct KrzBankDataParser {
   std::map<int, keymap_ptr_t> _tempkeymaps;
   std::map<int, multisample_ptr_t> _tempmultisamples;
   int _remap_base = 0;
+  bool _parsingROM = false;
+  const s16* _sampledata = nullptr;
 };
 
 } // namespace ork::audio::singularity

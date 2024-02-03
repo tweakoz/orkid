@@ -671,7 +671,13 @@ void pyinit_aud_singularity_datas(py::module& singmodule) {
                                 },
                                 [](multisample_ptr_t msample, std::string named) { //
                                   msample->_name = named;
-                                });
+                                })
+                            .def_property_readonly("numSamples", [](multisample_ptr_t msample) -> int { //
+                              return msample->_samplesByName.size(); //
+                            })
+                            .def("sampleByIndex", [](multisample_ptr_t msample, int index) -> sample_ptr_t { //
+                              return msample->_samples[index];
+                            });
   type_codec->registerStdCodec<multisample_ptr_t>(msampdata_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto pdata_type = py::class_<ProgramData, prgdata_ptr_t>(singmodule, "ProgramData") //
@@ -813,7 +819,7 @@ void pyinit_aud_singularity_datas(py::module& singmodule) {
                                  return ms;
                                })
                            .def_property_readonly(
-                               "multisamplesByName",                            //
+                               "multiSamplesByName",                            //
                                [type_codec](bankdata_ptr_t bdata) -> py::dict { //
                                  py::dict rval;
                                  for (auto item : bdata->_multisamplesByName) {

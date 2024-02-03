@@ -10,8 +10,9 @@
 namespace ork::audio::singularity::krzio {
 ///////////////////////////////////////////////////////////////////////////////
 
-std::string convert(std::string krzpath) {
+krzimportdata_ptr_t convert(std::string krzpath) {
 
+  krzimportdata_ptr_t rval = std::make_shared<KurzweilImportData>();
   rapidjson::Document gconfigdoc;
   // document.Parse(json);
 
@@ -84,6 +85,8 @@ std::string convert(std::string krzpath) {
     void* pdest          = (void*)krz.mpSampleData;
     const char* psrcbase = (const char*)scanner.mpData;
     const char* psrc     = psrcbase + krz.miFileHeaderAndPRAMLength;
+    rval->_sample_data.resize(isampledatacount);
+    memcpy((void*)rval->_sample_data.data(), (const void*)psrc, isampledatacount);
     memcpy((void*)pdest, (const void*)psrc, isampledatacount);
   }
   ////////////////////////
@@ -105,7 +108,8 @@ std::string convert(std::string krzpath) {
 
   /////////////////////////////
 
-  return scanner.jsonPrograms();
+  rval->_json_programs = scanner.jsonPrograms();
+  return rval;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

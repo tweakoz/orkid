@@ -13,6 +13,8 @@ from collections import defaultdict
 import re
 from orkengine.core import *
 from orkengine.lev2 import *
+from _sampler import createSampleLayer
+
 ################################################################################
 sys.path.append((thisdir()/"..").normalized.as_string) # add parent dir to path
 from _boilerplate import *
@@ -59,6 +61,10 @@ class KrzApp(SingulTestApp):
 
   def onGpuInit(self,ctx):
     super().onGpuInit(ctx)
+
+    main = self.synth.outputBus("main")
+    aux8 = self.synth.outputBus("aux8")
+
     self.syn_data_base = singularity.baseDataPath()/"kurzweil"
     self.krzdata = singularity.KrzSynthData(base_objects=False)
 
@@ -68,12 +74,39 @@ class KrzApp(SingulTestApp):
                            remap_base=300, 
                            path=self.syn_data_base/"m1drums.krz")
     
+    
     self.soundbank = self.krzdata.bankData
     self.krzprogs = self.soundbank.programsByName
+    self.krzsamps = self.soundbank.multiSamplesByName
+    self.krzkmaps = self.soundbank.keymapsByName
 
+    for key in self.krzprogs:
+      print("krzprog<%s>" % key)
+    
+    for key in self.krzsamps:
+      msample = self.krzsamps[key]
+      print("krzsamp<%s> nums<%d>" % (key,msample.numSamples))
+    
+    for key in self.krzkmaps:
+      print("krzkmap<%s>" % key)
+
+    newprog = self.soundbank.newProgram("YO")
+
+    createSampleLayer(
+      newprog,
+      multisample=self.krzsamps["Kick1"],
+      lokey=60,
+      hikey=63,
+      lowpass=8000)
+    
+    PRG = "YO"
+    self.setBusProgram(main,self.soundbank.programByName(PRG))
+    self.prog_index = find_index(self.sorted_progs, PRG)
+    self.prog = self.soundbank.programByName(PRG)
+    self.setUiProgram(self.prog)
+
+    
     self.synth.masterGain = singularity.decibelsToLinear(-24.0)
-    main = self.synth.outputBus("main")
-    aux8 = self.synth.outputBus("aux8")
 
 ###############################################################################
 

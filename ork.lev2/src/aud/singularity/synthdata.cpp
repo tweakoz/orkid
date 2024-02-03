@@ -61,16 +61,32 @@ void BankData::describeX(class_t* clazz) {
 
 void BankData::merge(const BankData& oth) {
   for (auto item : oth._programs) {
+    //printf( "merge program<%d>\n", item.first);
     _programs[item.first] = item.second;
   }
   for (auto item : oth._programsByName) {
     _programsByName[item.first] = item.second;
   }
   for (auto item : oth._keymaps) {
+    //printf( "merge keymap<%d>\n", item.first);
     _keymaps[item.first] = item.second;
   }
   for (auto item : oth._multisamples) {
-    _multisamples[item.first] = item.second;
+    int object_id = item.first;
+    auto multisample = item.second;
+    auto name = multisample->_name;
+    //printf( "merge multisample<%d:%s>\n", object_id, name.c_str() );
+    _multisamples[object_id] = multisample;
+
+    auto it_name = _multisamplesByName.find(name);
+    if( it_name != _multisamplesByName.end() ) {
+      name = name + FormatString("_%d",object_id);
+      it_name = _multisamplesByName.find(name);
+      if( it_name != _multisamplesByName.end() ) {
+        name = name + "X";
+      }
+    }
+    _multisamplesByName[name] = multisample;
   }
 }
 
